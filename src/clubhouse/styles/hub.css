@@ -17,7 +17,7 @@
   justify-content: space-between;
   gap: 16px;
   padding-bottom: 24px;
-  border-bottom: 1px solid var(--ch-champagne-rule);
+  border-bottom: var(--ch-hairline-w) solid var(--ch-champagne-rule);
 }
 .ch-hb-role {
   display: inline-flex;
@@ -167,7 +167,7 @@
   gap: 16px;
   align-items: center;
   padding: 12px 0;
-  border-top: 1px solid rgb(28 25 18 / 0.06);
+  border-top: var(--ch-hairline-w) solid var(--ch-border-hairline);
 }
 .ch-hb-rsvp__d {
   display: flex;
@@ -178,7 +178,7 @@
   height: 46px;
   border-radius: var(--ch-radius-md);
   background: var(--ch-ivory-50);
-  box-shadow: inset 0 0 0 1px rgb(28 25 18 / 0.06);
+  box-shadow: inset 0 0 0 var(--ch-hairline-w) var(--ch-border-hairline);
 }
 .ch-hb-rsvp__d em {
   font: var(--ch-type-11-strong);
@@ -339,7 +339,7 @@
   align-items: center;
   gap: 8px;
   padding-top: 16px;
-  border-top: 1px solid rgb(28 25 18 / 0.07);
+  border-top: var(--ch-hairline-w) solid var(--ch-border-hairline);
 }
 .ch-hb-ann__h > div {
   display: flex;
@@ -599,7 +599,7 @@
   gap: 24px;
   margin: 12px 0 0;
   padding-top: 12px;
-  border-top: 1px solid rgb(28 25 18 / 0.07);
+  border-top: var(--ch-hairline-w) solid var(--ch-border-hairline);
 }
 .ch-hb-pass__f:empty {
   display: none;
@@ -652,7 +652,7 @@
   align-items: center;
   gap: 8px;
   min-height: 34px;
-  border-top: 1px solid rgb(28 25 18 / 0.06);
+  border-top: var(--ch-hairline-w) solid var(--ch-border-hairline);
   font: var(--ch-type-13-medium);
 }
 .ch-hb-plan span {
@@ -684,7 +684,7 @@
 }
 .ch-hb-feed li {
   position: relative;
-  border-top: 1px solid rgb(28 25 18 / 0.06);
+  border-top: var(--ch-hairline-w) solid var(--ch-border-hairline);
 }
 .ch-hb-feed li > a,
 .ch-hb-feed li > .ch-hb-feed__row {
@@ -747,7 +747,7 @@
   padding: 12px 0;
 }
 .ch-hb-task + .ch-hb-task {
-  border-top: 1px solid rgb(28 25 18 / 0.06);
+  border-top: var(--ch-hairline-w) solid var(--ch-border-hairline);
 }
 .ch-hb-task > div {
   display: flex;
@@ -1289,7 +1289,7 @@
     max-width: none;
     margin: -6px calc(-1 * var(--ch-page-x-phone)) 0;
     padding: 0 var(--ch-page-x-phone);
-    box-shadow: inset 0 -1px 0 var(--ch-ledger-rule);
+    box-shadow: inset 0 calc(-1 * var(--ch-hairline-w)) 0 var(--ch-ledger-rule);
   }
   .ch-hb-tabs button {
     height: 44px;
@@ -1352,7 +1352,7 @@
     border-top: 0;
   }
   .ch-hb-rsvp__list li + li {
-    box-shadow: inset 0 1px 0 var(--ch-ledger-rule-soft);
+    box-shadow: inset 0 var(--ch-hairline-w) 0 var(--ch-ledger-rule-soft);
   }
   /* Square rows, so a seam runs straight to both ends (the desktop's 12px hover radius bent it up). */
   .ch-hb .ch-hb-rsvp__list li {
@@ -1361,7 +1361,7 @@
   .ch-hb-rsvp__d {
     border-radius: var(--ch-radius-md);
     background: none;
-    box-shadow: inset 0 0 0 1px var(--ch-ledger-rule);
+    box-shadow: inset 0 0 0 var(--ch-hairline-w) var(--ch-ledger-rule);
   }
   .ch-hb-rsvp__b {
     border-radius: var(--ch-radius-sm);
@@ -1479,7 +1479,7 @@
     padding: 16px 16px;
     border-radius: var(--ch-radius-md);
     background: var(--ch-sheet-bg);
-    box-shadow: 0 0 0 1px var(--ch-ledger-rule);
+    box-shadow: 0 0 0 var(--ch-hairline-w) var(--ch-ledger-rule);
     transition: background-color var(--ch-dur-press) var(--ch-ease);
   }
   .ch-hb-new:is(:active, [data-ch-pressed]) {
@@ -1490,7 +1490,7 @@
     padding: 24px 0;
   }
   .ch-hb-list > .ch-hb-ann + .ch-hb-ann {
-    box-shadow: inset 0 1px 0 var(--ch-ledger-rule);
+    box-shadow: inset 0 var(--ch-hairline-w) 0 var(--ch-ledger-rule);
   }
   .ch-hb-list > .ch-hb-ann h3 {
     font: var(--ch-type-22-strong);
@@ -1535,8 +1535,8 @@
     gap: 0;
     margin: 8px 0 0;
     padding: 12px 0;
-    border-top: 1px solid var(--ch-ledger-rule);
-    border-bottom: 1px solid var(--ch-ledger-rule);
+    border-top: var(--ch-hairline-w) solid var(--ch-ledger-rule);
+    border-bottom: var(--ch-hairline-w) solid var(--ch-ledger-rule);
   }
   .ch-hb-pass__f > div {
     min-width: 0;
@@ -1546,7 +1546,7 @@
     padding-left: 0;
   }
   .ch-hb-pass__f > div + div {
-    box-shadow: inset 1px 0 0 var(--ch-ledger-rule-soft);
+    box-shadow: inset var(--ch-hairline-w) 0 0 var(--ch-ledger-rule-soft);
   }
   .ch-hb-pass__f dd {
     font-weight: 600;
@@ -1575,7 +1575,7 @@
     gap: 4px;
     padding: 16px 0 0;
     border-top: 0;
-    box-shadow: inset 0 1px 0 var(--ch-ledger-rule);
+    box-shadow: inset 0 var(--ch-hairline-w) 0 var(--ch-ledger-rule);
   }
   .ch-hb-travel .ch-hb-pass:not(.is-big) .ch-hb-pass__main > b {
     font-size: calc(16 * var(--ch-type-k));
@@ -1595,7 +1595,7 @@
     border-top: 0;
   }
   .ch-hb-feed li + li {
-    box-shadow: inset 0 1px 0 var(--ch-ledger-rule-soft);
+    box-shadow: inset 0 var(--ch-hairline-w) 0 var(--ch-ledger-rule-soft);
   }
   .ch-hb-feed li > a,
   .ch-hb-feed li > .ch-hb-feed__row {
@@ -1632,7 +1632,7 @@
   }
   .ch-hb-task + .ch-hb-task {
     border-top: 0;
-    box-shadow: inset 0 1px 0 var(--ch-ledger-rule-soft);
+    box-shadow: inset 0 var(--ch-hairline-w) 0 var(--ch-ledger-rule-soft);
   }
   /* The title only: the completion ring's numeral is a <b> too. */
   .ch-hb-task > div b {
@@ -1648,7 +1648,7 @@
     padding: 0;
   }
   .ch-hb-file + .ch-hb-file {
-    box-shadow: inset 0 1px 0 var(--ch-ledger-rule-soft);
+    box-shadow: inset 0 var(--ch-hairline-w) 0 var(--ch-ledger-rule-soft);
   }
   .ch-hb-file__open {
     min-height: 58px;
@@ -1867,7 +1867,7 @@
   }
   .ch-hb[data-canopy] .ch-hb-card__h {
     padding: 0 0 12px;
-    box-shadow: inset 0 -1px 0 var(--ch-ledger-rule);
+    box-shadow: inset 0 calc(-1 * var(--ch-hairline-w)) 0 var(--ch-ledger-rule);
   }
   /* Rows start under the heading's rule, so the first one draws no seam of its own. */
   .ch-hb[data-canopy] .ch-hb-rsvp__list,
@@ -1888,7 +1888,7 @@
      never reads as a part of the section above it. */
   .ch-hb[data-canopy] .ch-hb-part {
     padding-top: 16px;
-    box-shadow: inset 0 1px 0 var(--ch-ledger-rule);
+    box-shadow: inset 0 var(--ch-hairline-w) 0 var(--ch-ledger-rule);
   }
   /* A section that didn't load: its notice stands a step under the rule, where the first row would start. */
   .ch-hb[data-canopy] .ch-hb-card__h + [role='alert'] {
@@ -1908,7 +1908,7 @@
   }
   .ch-hb[data-canopy] .ch-hb-col + .ch-hb-col {
     padding-left: 32px;
-    box-shadow: inset 1px 0 0 var(--ch-ledger-rule-soft);
+    box-shadow: inset var(--ch-hairline-w) 0 0 var(--ch-ledger-rule-soft);
   }
 
   /* Announcements: entries on the canvas, ruled apart; the featured one hangs a gilt rule in the gutter so its
@@ -1946,7 +1946,7 @@
   .ch-hb[data-canopy] .ch-hb-ann + .ch-hb-ann {
     margin-top: 32px;
     padding-top: 32px;
-    box-shadow: inset 0 1px 0 var(--ch-ledger-rule);
+    box-shadow: inset 0 var(--ch-hairline-w) 0 var(--ch-ledger-rule);
   }
 
   /* Trips: the name in the heading sans, the facts under a soft rule, the plan beside them on a soft column rule. */
@@ -1978,7 +1978,7 @@
   .ch-hb[data-canopy] .ch-hb-pass__stub {
     padding: 0 0 0 32px;
     border-left: 0;
-    box-shadow: inset 1px 0 0 var(--ch-ledger-rule-soft);
+    box-shadow: inset var(--ch-hairline-w) 0 0 var(--ch-ledger-rule-soft);
   }
   .ch-hb[data-canopy] .ch-hb-pass__stub::before,
   .ch-hb[data-canopy] .ch-hb-pass__stub::after {
@@ -1992,7 +1992,7 @@
   }
   .ch-hb[data-canopy] .ch-hb-travel > .ch-hb-pass {
     padding: 32px 0;
-    box-shadow: inset 0 1px 0 var(--ch-ledger-rule);
+    box-shadow: inset 0 var(--ch-hairline-w) 0 var(--ch-ledger-rule);
   }
 
   /* Documents: folders side by side a wide step apart; files are rows with soft seams on the folder's edges and a
@@ -2012,7 +2012,7 @@
     top: 0;
     right: 10px;
     left: 10px;
-    height: 1px;
+    height: var(--ch-hairline-w);
     background: var(--ch-ledger-rule-soft);
     content: '';
     pointer-events: none;
@@ -2057,7 +2057,7 @@
       margin-top: 20px;
       padding: 20px 0 0;
       border-top: 0;
-      box-shadow: inset 0 1px 0 var(--ch-ledger-rule-soft);
+      box-shadow: inset 0 var(--ch-hairline-w) 0 var(--ch-ledger-rule-soft);
     }
   }
 }
@@ -2083,7 +2083,7 @@ html[data-fw-theme='dark'] .ch-hb-pass__f {
   border-top-color: var(--ch-border-hairline);
 }
 html[data-fw-theme='dark'] .ch-hb-rsvp__d {
-  box-shadow: inset 0 0 0 1px var(--ch-border-hairline);
+  box-shadow: inset 0 0 0 var(--ch-hairline-w) var(--ch-border-hairline);
 }
 html[data-fw-theme='dark'] .ch-hb-rsvp__a {
   box-shadow: inset 0 1px 2px rgb(0 0 0 / 0.4);
@@ -2322,7 +2322,7 @@ html[data-fw-theme='dark'] .ch-hb-chip {
     flex-direction: column;
     gap: 8px;
     padding: 4px 0 0 20px;
-    box-shadow: inset 1px 0 0 var(--ch-ledger-rule-soft);
+    box-shadow: inset var(--ch-hairline-w) 0 0 var(--ch-ledger-rule-soft);
   }
   .ch-hb-margin__k {
     font: var(--ch-type-13-medium);
@@ -2393,7 +2393,7 @@ html[data-fw-theme='dark'] .ch-hb-chip {
 }
 .ch-hb-rsvp__d {
   background: linear-gradient(180deg, var(--ch-ivory-0), var(--ch-ivory-100));
-  box-shadow: inset 0 0 0 1px rgb(176 149 96 / 0.4), var(--ch-elevation-mark-ink);
+  box-shadow: inset 0 0 0 var(--ch-hairline-w) var(--ch-champagne-rule-strong), var(--ch-elevation-mark-ink);
 }
 .ch-hb-rsvp__list li {
   border-radius: var(--ch-radius-md);
@@ -2472,7 +2472,7 @@ html[data-fw-theme='dark'] .ch-hb-chip {
   align-items: center;
 }
 .ch-hb-strip li + li::before {
-  width: 1px;
+  width: var(--ch-hairline-w);
   height: 14px;
   margin: 0 16px;
   background: var(--ch-ledger-rule-strong);
@@ -2544,7 +2544,7 @@ html[data-fw-theme='dark'] .ch-hb-chip {
 }
 @media (min-width: 821px) {
   .ch-hb[data-canopy] .ch-hb-card__h {
-    box-shadow: inset 0 -1px 0 var(--ch-ledger-rule-strong);
+    box-shadow: inset 0 calc(-1 * var(--ch-hairline-w)) 0 var(--ch-ledger-rule-strong);
   }
   .ch-hb[data-canopy] .ch-hb-rsvp__list li,
   .ch-hb[data-canopy] .ch-hb-feed li,
@@ -2552,11 +2552,11 @@ html[data-fw-theme='dark'] .ch-hb-chip {
     border-top-color: var(--ch-ledger-rule);
   }
   .ch-hb[data-canopy] .ch-hb-col + .ch-hb-col {
-    box-shadow: inset 1px 0 0 var(--ch-ledger-rule);
+    box-shadow: inset var(--ch-hairline-w) 0 0 var(--ch-ledger-rule);
   }
   .ch-hb[data-canopy] .ch-hb-ann + .ch-hb-ann,
   .ch-hb[data-canopy] .ch-hb-travel > .ch-hb-pass {
-    box-shadow: inset 0 1px 0 var(--ch-ledger-rule-strong);
+    box-shadow: inset 0 var(--ch-hairline-w) 0 var(--ch-ledger-rule-strong);
   }
 }
 
@@ -2868,7 +2868,7 @@ html[data-fw-theme='dark'] .ch-hb-prog i::after {
   padding: 20px 24px 16px;
   border-radius: var(--ch-radius-lg);
   background: var(--ch-bg-surface);
-  box-shadow: 0 0 0 1px var(--ch-ledger-rule-strong);
+  box-shadow: 0 0 0 var(--ch-hairline-w) var(--ch-ledger-rule-strong);
 }
 .ch-hw__h {
   display: flex;
@@ -2936,7 +2936,7 @@ html[data-fw-theme='dark'] .ch-hb-prog i::after {
 .ch-hw-foot {
   margin: auto 0 0;
   padding-top: 12px;
-  border-top: 1px solid var(--ch-ledger-rule);
+  border-top: var(--ch-hairline-w) solid var(--ch-ledger-rule);
   font: var(--ch-type-13);
   font-variant-numeric: tabular-nums;
   color: var(--ch-text-secondary);
@@ -3116,7 +3116,7 @@ html[data-fw-theme='dark'] .ch-hb-prog i::after {
   gap: 12px;
   margin-top: auto;
   padding-top: 16px;
-  border-top: 1px solid rgb(255 255 255 / 0.16);
+  border-top: var(--ch-hairline-w) solid var(--ch-stage-rule);
 }
 .ch-hw-trip__a {
   display: inline-flex;
@@ -3173,7 +3173,7 @@ html[data-fw-theme='dark'] .ch-hb-prog i::after {
   align-items: center;
   gap: 8px 12px;
   padding: 12px 0;
-  border-top: 1px solid var(--ch-ledger-rule);
+  border-top: var(--ch-hairline-w) solid var(--ch-ledger-rule);
 }
 .ch-hw-agenda li:first-child {
   border-top: 0;
@@ -3270,7 +3270,7 @@ html[data-fw-theme='dark'] .ch-hb-prog i::after {
   gap: 4px;
   margin-top: auto;
   padding-top: 12px;
-  border-top: 1px solid var(--ch-ledger-rule);
+  border-top: var(--ch-hairline-w) solid var(--ch-ledger-rule);
 }
 .ch-hw-later > span {
   font: var(--ch-type-12-medium);
@@ -3331,7 +3331,7 @@ html[data-fw-theme='dark'] .ch-hb-prog i::after {
 }
 .ch-hw-led thead th {
   padding-bottom: 8px;
-  border-bottom: 1px solid var(--ch-ledger-rule-strong);
+  border-bottom: var(--ch-hairline-w) solid var(--ch-ledger-rule-strong);
 }
 .ch-hw-led thead button {
   padding: 4px 0;
@@ -3358,7 +3358,7 @@ html[data-fw-theme='dark'] .ch-hb-prog i::after {
 }
 .ch-hw-led tbody tr > * {
   height: 44px;
-  border-top: 1px solid var(--ch-ledger-rule);
+  border-top: var(--ch-hairline-w) solid var(--ch-ledger-rule);
 }
 .ch-hw-led tbody tr:first-child > * {
   border-top: 0;
@@ -3462,7 +3462,7 @@ html[data-fw-theme='dark'] .ch-hb-prog i::after {
   list-style: none;
 }
 .ch-hw-ledm li + li {
-  border-top: 1px solid var(--ch-ledger-rule);
+  border-top: var(--ch-hairline-w) solid var(--ch-ledger-rule);
 }
 .ch-hw-ledm button {
   display: grid;
@@ -3633,7 +3633,7 @@ html[data-fw-theme='dark'] .ch-hb-prog i::after {
   list-style: none;
 }
 .ch-hw-tlist li + li {
-  border-top: 1px solid var(--ch-ledger-rule);
+  border-top: var(--ch-hairline-w) solid var(--ch-ledger-rule);
 }
 .ch-hw-tlist button {
   display: grid;
@@ -3715,7 +3715,7 @@ html[data-fw-theme='dark'] .ch-hb-prog i::after {
   align-items: center;
   gap: 8px 16px;
   padding: 12px 0;
-  border-top: 1px solid var(--ch-ledger-rule);
+  border-top: var(--ch-hairline-w) solid var(--ch-ledger-rule);
 }
 .ch-hw-q__b {
   display: flex;
@@ -3854,7 +3854,7 @@ html[data-fw-theme='dark'] .ch-hb-prog i::after {
 }
 
 html[data-fw-theme='dark'] .ch-hw {
-  box-shadow: 0 0 0 1px var(--ch-ledger-rule-strong);
+  box-shadow: 0 0 0 var(--ch-hairline-w) var(--ch-ledger-rule-strong);
 }
 html[data-fw-theme='dark'] .ch-hw--dark {
   box-shadow: var(--ch-elevation-feature);

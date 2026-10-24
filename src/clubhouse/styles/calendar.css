@@ -999,7 +999,7 @@
   grid-auto-rows: minmax(112px, auto);
   overflow: hidden;
   border-radius: var(--ch-radius-md);
-  box-shadow: 0 0 0 1px var(--ch-border-hairline);
+  box-shadow: 0 0 0 var(--ch-hairline-w) var(--ch-border-hairline);
 }
 .ch-mo__cell {
   display: flex;
@@ -1364,7 +1364,7 @@
   gap: 6px;
 }
 .ch-in__resp div + div {
-  box-shadow: inset 1px 0 0 var(--ch-border-hairline);
+  box-shadow: inset var(--ch-hairline-w) 0 0 var(--ch-border-hairline);
 }
 .ch-in__resp dt {
   order: 2;
@@ -1533,14 +1533,14 @@
 }
 .ch-in__today .ch-in__next {
   background: rgb(255 255 255 / 0.1);
-  box-shadow: inset 0 0 0 1px rgb(255 255 255 / 0.12);
+  box-shadow: inset 0 0 0 var(--ch-hairline-w) var(--ch-stage-rule);
 }
 .ch-in__sec .ch-in__need {
   padding: 8px 12px;
   border-top: 0;
   border-radius: var(--ch-radius-lg);
   background: var(--ch-bg-surface);
-  box-shadow: 0 0 0 1px var(--ch-border-hairline), var(--ch-elevation-control);
+  box-shadow: 0 0 0 var(--ch-hairline-w) var(--ch-border-hairline), var(--ch-elevation-control);
 }
 .ch-in__sec .ch-in__need + .ch-in__need {
   margin-top: 6px;
@@ -1724,7 +1724,7 @@
   height: 34px;
   border-radius: var(--ch-radius-sm);
   background: var(--ch-bg-subtle);
-  box-shadow: inset 0 0 0 1px var(--ch-border-hairline);
+  box-shadow: inset 0 0 0 var(--ch-hairline-w) var(--ch-border-hairline);
 }
 .ch-lane__b {
   position: absolute;
@@ -1748,7 +1748,7 @@
 .ch-lane__b.is-busy {
   background: repeating-linear-gradient(135deg, #e3ded2 0 5px, #dcd6c8 5px 6px);
   color: var(--ch-text-secondary);
-  box-shadow: inset 0 0 0 1px rgb(28 25 18 / 0.1);
+  box-shadow: inset 0 0 0 var(--ch-hairline-w) var(--ch-border-subtle);
 }
 /* P006 D4: a clash stays in sight over the proposed time, in amber; it lets the pointer through to the band and lane. */
 .ch-lane__b.is-clash {
@@ -1803,7 +1803,7 @@
 }
 .ch-ed__col + .ch-ed__col {
   padding: 4px 0 12px 24px;
-  box-shadow: inset 1px 0 0 var(--ch-border-hairline);
+  box-shadow: inset var(--ch-hairline-w) 0 0 var(--ch-border-hairline);
 }
 .ch-ed__title {
   box-sizing: border-box;
@@ -1873,7 +1873,7 @@
   overflow: auto;
   border-radius: var(--ch-radius-lg);
   background: var(--ch-bg-subtle);
-  box-shadow: inset 0 0 0 1px var(--ch-border-hairline);
+  box-shadow: inset 0 0 0 var(--ch-hairline-w) var(--ch-border-hairline);
 }
 .ch-ed__inv label {
   display: grid;
@@ -1976,7 +1976,7 @@
   padding: 16px 16px;
   border-radius: var(--ch-radius-lg);
   background: var(--ch-bg-subtle);
-  box-shadow: inset 0 0 0 1px var(--ch-border-hairline);
+  box-shadow: inset 0 0 0 var(--ch-hairline-w) var(--ch-border-hairline);
 }
 .ch-rcpt dt {
   font: var(--ch-type-caption);
@@ -2068,7 +2068,7 @@
   }
   .ch-ed__col + .ch-ed__col {
     padding-top: 16px;
-    box-shadow: inset 0 1px 0 var(--ch-border-hairline);
+    box-shadow: inset 0 var(--ch-hairline-w) 0 var(--ch-border-hairline);
   }
   .ch-cal-legend {
     margin-left: 0;
@@ -2085,7 +2085,7 @@
   }
   .ch-ed__col + .ch-ed__col {
     padding-top: 16px;
-    box-shadow: inset 0 1px 0 var(--ch-border-hairline);
+    box-shadow: inset 0 var(--ch-hairline-w) 0 var(--ch-border-hairline);
   }
 }
 @container (max-width: 720px) {
@@ -2128,7 +2128,7 @@
 .ch-ev--busy {
   background: #f6f1e4;
   color: #6b5a2e;
-  box-shadow: inset 0 0 0 1px rgb(165 135 70 / 0.28);
+  box-shadow: inset 0 0 0 var(--ch-hairline-w) var(--ch-champagne-rule);
 }
 .ch-ev--busy::after {
   content: '';
@@ -2372,7 +2372,7 @@
     list-style: none;
   }
   .ch-calm-agenda > li + li {
-    box-shadow: inset 0 1px 0 var(--ch-ledger-rule-soft);
+    box-shadow: inset 0 var(--ch-hairline-w) 0 var(--ch-ledger-rule-soft);
   }
   .ch-calm-ev {
     position: relative;
@@ -2566,7 +2566,7 @@
   }
   .ch-calm-month__h {
     padding-bottom: 8px;
-    box-shadow: inset 0 -1px 0 var(--ch-ledger-rule);
+    box-shadow: inset 0 calc(-1 * var(--ch-hairline-w)) 0 var(--ch-ledger-rule);
   }
   .ch-calm-month__h span {
     font: var(--ch-type-12-medium);
@@ -2644,7 +2644,7 @@
     gap: 16px;
     margin-top: 8px;
     padding-top: 12px;
-    box-shadow: inset 0 1px 0 var(--ch-ledger-rule-soft);
+    box-shadow: inset 0 var(--ch-hairline-w) 0 var(--ch-ledger-rule-soft);
     font: var(--ch-type-caption);
     color: var(--ch-text-tertiary);
   }
@@ -2730,7 +2730,7 @@
     top: 0;
     right: 12px;
     left: 12px;
-    height: 1px;
+    height: var(--ch-hairline-w);
     background: var(--ch-ledger-rule-soft);
     content: '';
     pointer-events: none;
@@ -2839,7 +2839,7 @@
     top: 0;
     right: 332px;
     bottom: 0;
-    width: 1px;
+    width: var(--ch-hairline-w);
     background: var(--ch-ledger-rule-soft);
     content: '';
     pointer-events: none;
@@ -2882,7 +2882,7 @@
     padding: 4px 8px 8px;
   }
   .ch-cal[data-canopy] .ch-mo__grid {
-    border-top: 1px solid var(--ch-ledger-rule);
+    border-top: var(--ch-hairline-w) solid var(--ch-ledger-rule);
     border-radius: 0;
     box-shadow: none;
   }
@@ -2890,7 +2890,7 @@
     border-color: var(--ch-ledger-rule-soft);
   }
   .ch-cal[data-canopy] .ch-mo__cell:nth-last-child(-n + 7) {
-    border-bottom: 1px solid var(--ch-ledger-rule-soft);
+    border-bottom: var(--ch-hairline-w) solid var(--ch-ledger-rule-soft);
   }
   @media (hover: hover) {
     .ch-cal[data-canopy] .ch-mo__cell:hover {
@@ -2905,7 +2905,7 @@
   }
   .ch-cal[data-canopy] .ch-ag__day {
     padding-bottom: 16px;
-    box-shadow: inset 0 1px 0 var(--ch-ledger-rule);
+    box-shadow: inset 0 var(--ch-hairline-w) 0 var(--ch-ledger-rule);
   }
   .ch-cal[data-canopy] .ch-ag__when.is-today {
     margin: 6px 0 0 -12px;
@@ -2929,7 +2929,7 @@
     top: 0;
     right: 12px;
     left: 12px;
-    height: 1px;
+    height: var(--ch-hairline-w);
     background: var(--ch-ledger-rule-soft);
     content: '';
   }
@@ -2966,7 +2966,7 @@
     border-color: var(--ch-ledger-rule-soft);
   }
   .ch-cal[data-canopy] .ch-in-wrap .ch-in__resp div + div {
-    box-shadow: inset 1px 0 0 var(--ch-ledger-rule-soft);
+    box-shadow: inset var(--ch-hairline-w) 0 0 var(--ch-ledger-rule-soft);
   }
 
   /* A narrow canvas stacks the panel under the view: the column rule gives way to a rule above the panel. */
@@ -3107,7 +3107,7 @@ html[data-fw-theme='dark'] .ch-lane__b.is-ev {
 }
 html[data-fw-theme='dark'] .ch-lane__b.is-busy {
   background: repeating-linear-gradient(135deg, #252b26 0 5px, #2c332d 5px 6px);
-  box-shadow: inset 0 0 0 1px var(--ch-border-subtle);
+  box-shadow: inset 0 0 0 var(--ch-hairline-w) var(--ch-border-subtle);
 }
 html[data-fw-theme='dark'] .ch-lane__b.is-overlap {
   background: rgb(227 169 79 / 0.16);
@@ -3134,7 +3134,7 @@ html[data-fw-theme='dark'] .ch-ev-bar.ch-ev--busy {
   color: var(--ch-champagne-300);
 }
 html[data-fw-theme='dark'] .ch-ev--busy {
-  box-shadow: inset 0 0 0 1px rgb(201 173 116 / 0.3);
+  box-shadow: inset 0 0 0 var(--ch-hairline-w) var(--ch-champagne-rule);
 }
 html[data-fw-theme='dark'] .ch-ev--busy::after {
   background: repeating-linear-gradient(135deg, transparent 0 5px, rgb(201 173 116 / 0.08) 5px 6px);
@@ -3242,7 +3242,7 @@ html[data-fw-theme='dark'] .ch-ev--busy::after {
 .ch-evpeek__r {
   margin-top: 6px;
   padding-top: 8px;
-  box-shadow: inset 0 1px 0 var(--ch-border-hairline);
+  box-shadow: inset 0 var(--ch-hairline-w) 0 var(--ch-border-hairline);
   font: var(--ch-type-body-s);
   font-variant-numeric: tabular-nums;
   color: var(--ch-text-secondary);

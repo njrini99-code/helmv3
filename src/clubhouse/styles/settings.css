@@ -144,7 +144,7 @@
   padding: 8px 8px 8px 16px;
   border-radius: var(--ch-radius-lg);
   background: var(--ch-bg-surface);
-  box-shadow: var(--ch-elevation-overlay), 0 0 0 1px var(--ch-border-subtle);
+  box-shadow: var(--ch-elevation-overlay), 0 0 0 var(--ch-hairline-w) var(--ch-border-subtle);
 }
 .ch-set-savebar__acts {
   display: flex;
@@ -959,7 +959,7 @@
     top: 0;
     right: 0;
     left: 16px;
-    height: 1px;
+    height: var(--ch-hairline-w);
     background: var(--ch-border-hairline);
   }
   .ch-setm-row.has-tile {
@@ -1152,7 +1152,7 @@
     top: 0;
     right: 0;
     left: 16px;
-    height: 1px;
+    height: var(--ch-hairline-w);
     background: var(--ch-border-hairline);
   }
   .ch-setm-row.is-field {
@@ -1358,7 +1358,7 @@
     top: 0;
     right: 0;
     left: 46px;
-    height: 1px;
+    height: var(--ch-hairline-w);
     background: var(--ch-border-hairline);
   }
   /* While a row is held (phone/Reorder.tsx, dnd-kit): the place it left is a soft recess that travels to where it will
@@ -1478,10 +1478,10 @@
     box-shadow: none;
   }
   .ch-setm-page > .ch-setm-group > .ch-setm-card:first-child {
-    box-shadow: inset 0 1px 0 var(--ch-ledger-rule);
+    box-shadow: inset 0 var(--ch-hairline-w) 0 var(--ch-ledger-rule);
   }
   .ch-setm-page > .ch-setm-group.is-end {
-    box-shadow: inset 0 1px 0 var(--ch-ledger-rule);
+    box-shadow: inset 0 var(--ch-hairline-w) 0 var(--ch-ledger-rule);
   }
   .ch-setm-page > .ch-setm-group > .ch-setm-note {
     margin: 8px 0 0;
@@ -1516,7 +1516,7 @@
   /* The icon sits in an engraved tile rather than a filled one; CoachHelm keeps its dark tile. */
   .ch-setm-page > .ch-setm-group > .ch-setm-card > .ch-setm-row > .ch-setm-tile:not(.is-dark) {
     background: none;
-    box-shadow: inset 0 0 0 1px var(--ch-ledger-rule);
+    box-shadow: inset 0 0 0 var(--ch-hairline-w) var(--ch-ledger-rule);
   }
   .ch-setm-page > .ch-setm-group > .ch-setm-card > .ch-setm-row.is-danger {
     justify-content: flex-start;
@@ -1661,7 +1661,7 @@
   .ch-set[data-canopy] .ch-surface__head {
     align-items: flex-end;
     padding: 0 0 12px;
-    box-shadow: inset 0 -1px 0 var(--ch-ledger-rule);
+    box-shadow: inset 0 calc(-1 * var(--ch-hairline-w)) 0 var(--ch-ledger-rule);
   }
   .ch-set[data-canopy] .ch-surface__title {
     font: var(--ch-type-20-strong);
@@ -1681,7 +1681,7 @@
     border-top: 0;
     border-radius: 0;
     background: none;
-    box-shadow: inset 0 1px 0 var(--ch-ledger-rule-soft);
+    box-shadow: inset 0 var(--ch-hairline-w) 0 var(--ch-ledger-rule-soft);
   }
   .ch-set[data-canopy] .ch-set-failed {
     padding: 0;

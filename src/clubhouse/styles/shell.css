@@ -90,7 +90,7 @@
   background: rgb(250 248 241 / 0.14);
   box-shadow:
     inset 0 1px 0 rgb(255 255 255 / 0.12),
-    inset 0 0 0 1px rgb(220 205 166 / 0.26);
+    inset 0 0 0 var(--ch-hairline-w) var(--ch-champagne-rule);
   -webkit-backdrop-filter: blur(calc(var(--ch-glass-blur) * 0.7)) saturate(1.2);
   backdrop-filter: blur(calc(var(--ch-glass-blur) * 0.7)) saturate(1.2);
 }
@@ -309,7 +309,7 @@
   background: linear-gradient(180deg, var(--ch-ivory-25), var(--ch-on-green-plate));
   color: var(--ch-text-primary);
   text-decoration: none;
-  box-shadow: 0 0 0 1px rgb(176 149 96 / 0.4), 0 8px 18px -10px rgb(0 0 0 / 0.5), inset 0 1px 0 #fff;
+  box-shadow: 0 0 0 var(--ch-hairline-w) var(--ch-champagne-rule-strong), 0 8px 18px -10px rgb(0 0 0 / 0.5), inset 0 1px 0 #fff;
   transition: transform var(--ch-dur-quick) var(--ch-ease), box-shadow var(--ch-dur-quick) var(--ch-ease);
 }
 @media (hover: hover) {
@@ -893,7 +893,7 @@
 }
 .ch-skel-rule {
   display: block;
-  height: 1px;
+  height: var(--ch-hairline-w);
   background: var(--ch-ledger-rule);
 }
 .ch-skel-rows {
@@ -907,7 +907,7 @@
   padding: 8px 0;
 }
 .ch-skel-rows__r + .ch-skel-rows__r {
-  box-shadow: inset 0 1px 0 var(--ch-ledger-rule-soft);
+  box-shadow: inset 0 var(--ch-hairline-w) 0 var(--ch-ledger-rule-soft);
 }
 .ch-skel-rows__t {
   display: flex;
@@ -1358,7 +1358,7 @@ button.ch-more__row[disabled] {
     border-radius: 50%;
     background: rgb(255 255 255 / 0.08);
     background-clip: padding-box;
-    box-shadow: inset 0 0 0 1px rgb(255 255 255 / 0.1);
+    box-shadow: inset 0 0 0 var(--ch-hairline-w) var(--ch-stage-rule);
     color: var(--ch-on-fill-100);
   }
   /* The Ask key (CH-1840) is the bell's twin on the hero. */
@@ -1370,7 +1370,7 @@ button.ch-more__row[disabled] {
     border-radius: 50%;
     background: rgb(255 255 255 / 0.08);
     background-clip: padding-box;
-    box-shadow: inset 0 0 0 1px rgb(255 255 255 / 0.1);
+    box-shadow: inset 0 0 0 var(--ch-hairline-w) var(--ch-stage-rule);
     color: var(--ch-on-fill-100);
   }
   /* Keyboard focus on the green (CH-1806): the keys' focus shadow loses to the disc's own ring here, and its green would
@@ -1682,7 +1682,7 @@ button.ch-more__row[disabled] {
 .ch-bellp__body > section + section {
   margin-top: 4px;
   padding-top: 4px;
-  border-top: 1px solid rgb(28 25 18 / 0.08);
+  border-top: var(--ch-hairline-w) solid var(--ch-border-hairline);
 }
 .ch-bellp__row {
   display: flex;
@@ -2103,7 +2103,7 @@ html[data-ch-ua-pop] .ch-pscreen::after {
   [data-ui='clubhouse'] main[data-canopy] [data-canopy-head] {
     position: relative;
     padding: 32px 4px 32px;
-    box-shadow: inset 0 -1px 0 rgb(110 98 62 / 0.11);
+    box-shadow: inset 0 calc(-1 * var(--ch-hairline-w)) 0 var(--ch-ledger-rule-soft);
   }
   [data-ui='clubhouse'] main[data-canopy] [data-canopy-head]::before {
     position: absolute;
@@ -2111,8 +2111,8 @@ html[data-ch-ua-pop] .ch-pscreen::after {
     right: 0;
     left: 0;
     height: 3px;
-    border-top: 1px solid var(--ch-ledger-rule);
-    border-bottom: 1px solid rgb(110 98 62 / 0.07);
+    border-top: var(--ch-hairline-w) solid var(--ch-ledger-rule);
+    border-bottom: var(--ch-hairline-w) solid var(--ch-ledger-rule-soft);
     content: '';
     pointer-events: none;
   }
@@ -2603,14 +2603,14 @@ html[data-fw-theme='dark'] .ch-bellp__row:focus-visible {
 @media (min-width: 821px) {
   /* The frame is darker than the workspace at night: a faint ivory hairline keeps the join reading as an edge. */
   html[data-fw-theme='dark'] .ch-canvas {
-    box-shadow: var(--ch-elevation-framed), 0 0 0 1px rgb(237 231 216 / 0.07);
+    box-shadow: var(--ch-elevation-framed), 0 0 0 var(--ch-hairline-w) var(--ch-border-hairline);
   }
   html[data-fw-theme='dark'] .ch-topbar {
     border-bottom-color: var(--ch-border-hairline);
     background: color-mix(in oklab, var(--ch-workspace) 88%, transparent);
   }
   html[data-fw-theme='dark'] [data-ui='clubhouse'] main[data-canopy] [data-canopy-head] {
-    box-shadow: inset 0 -1px 0 var(--ch-ledger-rule-soft);
+    box-shadow: inset 0 calc(-1 * var(--ch-hairline-w)) 0 var(--ch-ledger-rule-soft);
   }
   html[data-fw-theme='dark'] [data-ui='clubhouse'] main[data-canopy] [data-canopy-head]::before {
     border-bottom-color: var(--ch-ledger-rule-soft);
@@ -2759,7 +2759,7 @@ html[data-fw-theme='dark'] .ch-offline {
     background: var(--ch-sheet-bg);
     color: var(--ch-text-primary);
     text-decoration: none;
-    box-shadow: var(--ch-elevation-floating), 0 0 0 1px var(--ch-border-subtle), var(--ch-highlight);
+    box-shadow: var(--ch-elevation-floating), 0 0 0 var(--ch-hairline-w) var(--ch-border-subtle), var(--ch-highlight);
     transition: transform var(--ch-dur-press) var(--ch-ease);
   }
   .ch-resume:is(:active, [data-ch-pressed]) {
@@ -2868,7 +2868,7 @@ html[data-fw-theme='dark'] .ch-offline {
   padding: 4px 8px 4px 8px;
   border-radius: 999px;
   background: var(--ch-bg-inset);
-  box-shadow: inset 0 0 0 1px var(--ch-border-hairline);
+  box-shadow: inset 0 0 0 var(--ch-hairline-w) var(--ch-border-hairline);
   font: var(--ch-type-label-s);
   color: var(--ch-text-secondary);
 }
@@ -2894,7 +2894,7 @@ html[data-fw-theme='dark'] .ch-offline {
   flex-direction: column;
   gap: 8px;
   padding: 8px 16px calc(16px + env(safe-area-inset-bottom));
-  box-shadow: inset 0 1px 0 var(--ch-border-hairline);
+  box-shadow: inset 0 var(--ch-hairline-w) 0 var(--ch-border-hairline);
 }
 .ch-asks__open {
   display: inline-flex;
@@ -3065,7 +3065,7 @@ html[data-fw-theme='dark'] .ch-offline {
     top: 0;
     right: 0;
     left: 54px;
-    height: 1px;
+    height: var(--ch-hairline-w);
     background: var(--ch-border-subtle);
     content: '';
     pointer-events: none;
@@ -3282,7 +3282,7 @@ html[data-fw-theme='dark'] .ch-offline {
   }
   .ch-strip__sep {
     flex: none;
-    width: 1px;
+    width: var(--ch-hairline-w);
     margin: 8px 2px;
     background: rgb(255 255 255 / 0.16);
   }
@@ -4005,7 +4005,7 @@ html[data-ch-handoff] [data-ui='clubhouse'] .ch-brand:has(.ch-brand__line.is-wri
     top: 50%;
     left: 10px;
     width: 16px;
-    height: 1px;
+    height: var(--ch-hairline-w);
     background: rgb(220 205 166 / 0.4);
     opacity: 0;
     transition: opacity calc(var(--ch-dur-quick) * 0.7) var(--ch-ease-vt-out);

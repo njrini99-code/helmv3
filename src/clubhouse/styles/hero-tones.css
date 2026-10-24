@@ -29,7 +29,7 @@
 .ch-hero[data-tone='framed'],
 .ch-hero[data-tone='topo'] {
   padding-bottom: 20px;
-  border-bottom: 1px solid var(--ch-hero-rule);
+  border-bottom: var(--ch-hairline-w) solid var(--ch-hero-rule);
 }
 
 /* Archival mat: a lighter mat with a fine inner line, set like a museum caption. */
@@ -37,7 +37,7 @@
   padding: 24px 32px 24px;
   border-radius: var(--ch-radius-lg);
   background: #f7f4ea;
-  box-shadow: 0 0 0 1px var(--ch-hero-rule), inset 0 0 0 6px #f7f4ea, inset 0 0 0 7px rgb(157 130 73 / 0.32);
+  box-shadow: 0 0 0 var(--ch-hairline-w) var(--ch-hero-rule), inset 0 0 0 6px #f7f4ea, inset 0 0 0 7px rgb(157 130 73 / 0.32);
 }
 
 /* Clubhouse plaque: a mounted plate; a forest rule stands at the title. */
@@ -45,7 +45,7 @@
   padding: 24px 24px 24px 32px;
   border-radius: var(--ch-radius-xl);
   background: #f2efe4;
-  box-shadow: 0 0 0 1px rgb(93 99 76 / 0.28), inset 0 1px 0 rgb(255 255 255 / 0.8);
+  box-shadow: 0 0 0 var(--ch-hairline-w) var(--ch-border-strong), inset 0 1px 0 rgb(255 255 255 / 0.8);
 }
 .ch-hero[data-tone='plaque'] .ch-hero__title {
   /* No green side bar (owner, 2026-10-16: "never that card style with the green side"). */
@@ -59,7 +59,7 @@
 /* Scorecard: ruled top and bottom like a club card, the bottom a double rule. */
 .ch-hero[data-tone='scorecard'] {
   padding: 16px 0 16px;
-  border-top: 1px solid var(--ch-hero-rule);
+  border-top: var(--ch-hairline-w) solid var(--ch-hero-rule);
   border-bottom: 3px double rgb(35 55 45 / 0.3);
 }
 .ch-hero[data-tone='scorecard'] .ch-hero__title {
@@ -95,7 +95,7 @@
 /* Tournament board: a thin forest rail, the title in engraved capitals, the page's numbers in the head. */
 .ch-hero[data-tone='board'] {
   padding: 16px 0 16px;
-  border-bottom: 1px solid var(--ch-hero-rule);
+  border-bottom: var(--ch-hairline-w) solid var(--ch-hero-rule);
   box-shadow: inset 0 3px 0 var(--ch-green-800);
 }
 .ch-hero[data-tone='board'] .ch-hero__title {
@@ -146,11 +146,11 @@ html[data-fw-theme='dark'] .ch-hero[data-tone]:not([data-tone='canopy']) .ch-her
 }
 html[data-fw-theme='dark'] .ch-hero[data-tone='archival'] {
   background: var(--ch-ivory-50);
-  box-shadow: 0 0 0 1px var(--ch-hero-rule), inset 0 0 0 6px var(--ch-ivory-50), inset 0 0 0 7px rgb(205 187 142 / 0.3);
+  box-shadow: 0 0 0 var(--ch-hairline-w) var(--ch-hero-rule), inset 0 0 0 6px var(--ch-ivory-50), inset 0 0 0 7px rgb(205 187 142 / 0.3);
 }
 html[data-fw-theme='dark'] .ch-hero[data-tone='plaque'] {
   background: var(--ch-ivory-100);
-  box-shadow: 0 0 0 1px rgb(205 187 142 / 0.2), inset 0 1px 0 rgb(255 255 255 / 0.05);
+  box-shadow: 0 0 0 var(--ch-hairline-w) var(--ch-ledger-rule), inset 0 1px 0 rgb(255 255 255 / 0.05);
 }
 html[data-fw-theme='dark'] .ch-hero[data-tone='scorecard'] {
   border-bottom-color: rgb(205 187 142 / 0.3);

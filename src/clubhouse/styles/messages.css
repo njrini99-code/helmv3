@@ -271,7 +271,7 @@
   top: 0;
   right: 12px;
   left: 69px;
-  height: 1px;
+  height: var(--ch-hairline-w);
   box-shadow: none;
   background: var(--ch-border-hairline);
 }
@@ -437,7 +437,7 @@
   overflow: hidden;
   border-radius: var(--ch-radius-lg);
   background: var(--ch-green-100);
-  box-shadow: 0 0 0 1px rgb(28 25 18 / 0.08);
+  box-shadow: 0 0 0 var(--ch-hairline-w) var(--ch-border-hairline);
 }
 .ch-ms-img img {
   display: block;
@@ -474,7 +474,7 @@
   padding: 4px 8px;
   border-radius: 999px;
   background: var(--ch-bg-surface);
-  box-shadow: 0 1px 2px rgb(28 25 18 / 0.05), 0 0 0 1px var(--ch-border-hairline);
+  box-shadow: 0 1px 2px rgb(28 25 18 / 0.05), 0 0 0 var(--ch-hairline-w) var(--ch-border-hairline);
   font: var(--ch-type-12-medium);
   line-height: var(--ch-lead-tight);
   color: var(--ch-text-secondary);
@@ -579,13 +579,13 @@
 }
 .ch-ms-bub.is-deleted {
   background: transparent;
-  box-shadow: inset 0 0 0 1px var(--ch-border-subtle);
+  box-shadow: inset 0 0 0 var(--ch-hairline-w) var(--ch-border-subtle);
   font-style: italic;
   color: var(--ch-text-tertiary);
 }
 .ch-ms-msg.is-mine .ch-ms-bub.is-deleted {
   background: transparent;
-  box-shadow: inset 0 0 0 1px var(--ch-border-subtle);
+  box-shadow: inset 0 0 0 var(--ch-hairline-w) var(--ch-border-subtle);
   color: var(--ch-text-tertiary);
 }
 /* A search hit the thread came to (useFocusMessage): a green ring that fades once the mark is lifted (FOUND_FOR_MS). */
@@ -1557,7 +1557,7 @@
     gap: 8px;
   }
   .ch-msp-skel__row + .ch-msp-skel__row {
-    box-shadow: inset 0 1px 0 var(--ch-ledger-rule-soft);
+    box-shadow: inset 0 var(--ch-hairline-w) 0 var(--ch-ledger-rule-soft);
   }
   /* A whole-page empty on the phone (no team): the bar carries the title, so the framed head is read, not drawn. */
   .ch-ms.ch-ms--first {
@@ -1742,7 +1742,7 @@
     top: 0;
     right: 12px;
     left: 68px;
-    height: 1px;
+    height: var(--ch-hairline-w);
     background: var(--ch-ledger-rule-soft);
     box-shadow: none;
   }
@@ -2155,7 +2155,7 @@
     border: 0;
     border-radius: var(--ch-radius-md);
     background: transparent;
-    box-shadow: inset 0 0 0 1px var(--ch-ledger-rule);
+    box-shadow: inset 0 0 0 var(--ch-hairline-w) var(--ch-ledger-rule);
     font: var(--ch-type-12-medium);
     line-height: var(--ch-lead-tight);
     color: var(--ch-green-700);
@@ -2185,7 +2185,7 @@
     flex-direction: column;
   }
   .ch-msp-panel.is-plain {
-    box-shadow: inset 0 1px 0 var(--ch-ledger-rule);
+    box-shadow: inset 0 var(--ch-hairline-w) 0 var(--ch-ledger-rule);
   }
   .ch-msp-panel__h {
     display: flex;
@@ -2248,7 +2248,7 @@
     top: 0;
     right: 0;
     left: 0;
-    height: 1px;
+    height: var(--ch-hairline-w);
     background: var(--ch-ledger-rule-soft);
     content: '';
     pointer-events: none;
@@ -2262,7 +2262,7 @@
     opacity: 0;
   }
   .ch-msp-row + .ch-msp-set {
-    box-shadow: inset 0 1px 0 var(--ch-ledger-rule-soft);
+    box-shadow: inset 0 var(--ch-hairline-w) 0 var(--ch-ledger-rule-soft);
   }
   .ch-msp-row.is-btn {
     width: calc(100% + 24px);
@@ -2364,7 +2364,7 @@
     padding: 0;
   }
   .ch-msp-set + .ch-msp-set {
-    box-shadow: inset 0 1px 0 var(--ch-ledger-rule-soft);
+    box-shadow: inset 0 var(--ch-hairline-w) 0 var(--ch-ledger-rule-soft);
   }
   .ch-msp-set .ch-switch {
     flex-direction: row-reverse;
@@ -2413,7 +2413,7 @@
     gap: 8px;
     padding: 10px var(--ch-page-x-phone);
     background: transparent;
-    box-shadow: inset 0 -1px 0 var(--ch-ledger-rule);
+    box-shadow: inset 0 calc(-1 * var(--ch-hairline-w)) 0 var(--ch-ledger-rule);
   }
   .ch-msp-to__k {
     font: var(--ch-type-15-medium);
@@ -2554,7 +2554,7 @@
   }
   .ch-msp-ann .ch-ms-ann__task + .ch-ms-ann__task,
   .ch-msp-ann .ch-ms-mem + .ch-ms-mem {
-    box-shadow: inset 0 1px 0 var(--ch-ledger-rule-soft);
+    box-shadow: inset 0 var(--ch-hairline-w) 0 var(--ch-ledger-rule-soft);
   }
   .ch-msp-ann .ch-ms-ann__task b,
   .ch-msp-ann .ch-ms-mem b {
@@ -2588,7 +2588,7 @@
     top: 0;
     right: 12px;
     left: 12px;
-    height: 1px;
+    height: var(--ch-hairline-w);
     background: var(--ch-ledger-rule-soft);
     content: '';
     pointer-events: none;

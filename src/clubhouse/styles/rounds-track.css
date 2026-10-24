@@ -203,7 +203,7 @@ button.ch-rt-strip__h {
   align-items: center;
   justify-content: center;
   gap: 4px;
-  border-left: 1px solid rgb(255 255 255 / 0.12);
+  border-left: var(--ch-hairline-w) solid var(--ch-stage-rule);
 }
 .ch-rt-strip__tot em {
   font: var(--ch-type-11-medium);
@@ -243,7 +243,7 @@ button.ch-rt-strip__h {
   border-radius: var(--ch-radius-xl);
   background: radial-gradient(90% 70% at 100% 0%, rgb(123 199 154 / 0.1), transparent 60%), var(--ch-bg-surface);
   box-shadow:
-    0 0 0 1px rgb(176 149 96 / 0.28),
+    0 0 0 var(--ch-hairline-w) var(--ch-champagne-rule),
     0 18px 40px -30px rgb(28 25 18 / 0.4);
 }
 .ch-rt-hero__main {
@@ -512,7 +512,7 @@ button.ch-rt-strip__h {
   border-radius: var(--ch-radius-lg);
   background: var(--ch-ivory-0);
   box-shadow:
-    0 0 0 1px rgb(28 25 18 / 0.1),
+    0 0 0 var(--ch-hairline-w) var(--ch-border-subtle),
     0 6px 14px -10px rgb(28 25 18 / 0.25);
   overflow: hidden;
 }
@@ -621,7 +621,7 @@ button.ch-rt-strip__h {
   align-items: center;
   gap: 8px;
   padding: 8px 12px;
-  border-top: 1px solid rgb(28 25 18 / 0.06);
+  border-top: var(--ch-hairline-w) solid var(--ch-border-hairline);
 }
 .ch-rt-log__n {
   flex: none;
@@ -689,7 +689,7 @@ button.ch-rt-strip__h {
 .ch-rt-sec {
   min-width: 0;
   padding: 16px 16px;
-  border-bottom: 1px solid rgb(28 25 18 / 0.07);
+  border-bottom: var(--ch-hairline-w) solid var(--ch-border-hairline);
 }
 .ch-rt-card > .ch-rt-sec:first-child {
   padding-top: 16px;
@@ -1168,7 +1168,7 @@ button.ch-rt-strip__h {
   gap: 12px;
   min-height: 56px;
   padding: 8px 16px;
-  border-top: 1px solid rgb(28 25 18 / 0.07);
+  border-top: var(--ch-hairline-w) solid var(--ch-border-hairline);
   color: var(--ch-text-tertiary);
 }
 @media (hover: hover) {
@@ -1207,7 +1207,7 @@ button.ch-rt-strip__h {
   gap: 8px;
   margin-top: 12px;
   padding: 16px;
-  border-top: 1px solid rgb(28 25 18 / 0.08);
+  border-top: var(--ch-hairline-w) solid var(--ch-border-hairline);
 }
 .ch-rt-review__f .ch-btn--primary {
   flex: 1;
@@ -1323,7 +1323,7 @@ button.ch-rt-strip__h {
   gap: 2px;
   border-radius: var(--ch-radius-lg);
   background: rgb(255 255 255 / 0.08);
-  box-shadow: inset 0 0 0 1px rgb(255 255 255 / 0.12);
+  box-shadow: inset 0 0 0 var(--ch-hairline-w) var(--ch-stage-rule);
 }
 .ch-rt-exitc__n b {
   font: var(--ch-type-22-strong);
@@ -1445,7 +1445,7 @@ button.ch-rt-strip__h {
   font-weight: 500;
 }
 .ch-rt-mc tr + tr > * {
-  border-top: 1px solid rgb(28 25 18 / 0.06);
+  border-top: var(--ch-hairline-w) solid var(--ch-border-hairline);
 }
 .ch-rt-mc th[scope='row'] {
   padding-left: 12px;
@@ -1617,7 +1617,7 @@ button.ch-rt-strip__h {
   background: var(--ch-green-800);
   color: var(--ch-on-fill-100);
   box-shadow:
-    inset 0 0 0 1px rgb(244 238 221 / 0.1),
+    inset 0 0 0 var(--ch-hairline-w) var(--ch-stage-rule),
     var(--ch-elevation-overlay);
 }
 /* On the card's green the one action is the ivory key. */
@@ -1764,7 +1764,7 @@ button.ch-rt-strip__h {
 :where(html[data-fw-theme='dark']) .ch-rt-hero {
   box-shadow:
     inset 0 1px 0 rgb(255 255 255 / 0.04),
-    0 0 0 1px rgb(201 173 116 / 0.22),
+    0 0 0 var(--ch-hairline-w) var(--ch-champagne-rule),
     var(--ch-elevation-cast);
 }
 /* The drawn hole is the same course at night (its greens are lit); only its shadow deepens. */
@@ -1959,7 +1959,7 @@ button.ch-rt-strip__h {
   background: rgb(7 38 25 / 0.62);
   -webkit-backdrop-filter: blur(calc(var(--ch-glass-blur) * 0.8));
   backdrop-filter: blur(calc(var(--ch-glass-blur) * 0.8));
-  box-shadow: inset 0 0 0 1px rgb(244 238 221 / 0.14);
+  box-shadow: inset 0 0 0 var(--ch-hairline-w) var(--ch-stage-rule);
 }
 .ch-rtcv__back {
   all: unset;
@@ -2016,7 +2016,7 @@ button.ch-rt-strip__h {
   color: var(--ch-on-green-ink);
 }
 .ch-rtcv__nav button + button {
-  border-left: 1px solid rgb(244 238 221 / 0.14);
+  border-left: var(--ch-hairline-w) solid var(--ch-stage-rule);
 }
 .ch-rtcv__nav button:disabled {
   cursor: default;
@@ -2073,7 +2073,7 @@ button.ch-rt-strip__h {
   align-items: center;
   column-gap: 8px;
   min-height: 44px;
-  border-bottom: 1px solid var(--ch-ivory-300);
+  border-bottom: var(--ch-hairline-w) solid var(--ch-ivory-300);
 }
 .ch-rtcv__list li:last-child {
   border-bottom: 0;
@@ -2274,7 +2274,7 @@ button.ch-rt-strip__h {
     inset: 7px 4px;
     border-radius: var(--ch-radius-md);
     background: transparent;
-    box-shadow: inset 0 0 0 1px rgb(244 238 221 / 0.18);
+    box-shadow: inset 0 0 0 var(--ch-hairline-w) var(--ch-stage-rule);
     transition:
       background-color var(--ch-dur-quick) var(--ch-ease),
       box-shadow var(--ch-dur-quick) var(--ch-ease);
@@ -2351,7 +2351,7 @@ button.ch-rt-strip__h {
     min-height: 44px;
     margin-left: 4px;
     padding: 0 6px 0 12px;
-    border-left: 1px solid rgb(244 238 221 / 0.16);
+    border-left: var(--ch-hairline-w) solid var(--ch-stage-rule);
     background: var(--ch-green-900);
     /* Covers the strip's own 8px right padding too, where a chip would otherwise show past it. */
     box-shadow: 8px 0 0 var(--ch-green-900);
@@ -2627,7 +2627,7 @@ button.ch-rt-strip__h {
   .ch-rt-sec,
   .ch-rt-card > .ch-rt-sec:first-child {
     padding: 0 0 12px;
-    border-bottom: 1px solid var(--ch-ivory-300);
+    border-bottom: var(--ch-hairline-w) solid var(--ch-ivory-300);
     border-radius: 0;
   }
   .ch-rt-sec + .ch-rt-sec {
@@ -2802,7 +2802,7 @@ button.ch-rt-strip__h {
     line-height: var(--ch-lead-tight);
     color: var(--ch-on-green-ink);
     background: rgb(244 238 221 / 0.08);
-    box-shadow: inset 0 0 0 1px rgb(244 238 221 / 0.14);
+    box-shadow: inset 0 0 0 var(--ch-hairline-w) var(--ch-stage-rule);
   }
   .ch-rt-bar__row > .ch-btn.ch-rt-bar__go {
     height: 56px;

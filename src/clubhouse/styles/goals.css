@@ -34,7 +34,7 @@
   justify-content: space-between;
   gap: 16px;
   padding: 12px 0;
-  border-top: 1px solid var(--ch-ledger-rule);
+  border-top: var(--ch-hairline-w) solid var(--ch-ledger-rule);
 }
 .ch-gs__row:first-child {
   border-top: 0;

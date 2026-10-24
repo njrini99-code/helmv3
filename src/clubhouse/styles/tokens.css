@@ -66,6 +66,7 @@
   --ch-stage-ink: #f4eedd;
   --ch-stage-ink-soft: rgb(244 238 221 / 0.62);
   --ch-stage-rule: rgb(244 238 221 / 0.14);
+  --ch-stage-rule-soft: rgb(244 238 221 / 0.1); /* row 36: a faint light line on the dark green */
   --ch-hero-mint: #9fe0b6;
   --ch-hero-mint-strong: #7bc79a;
   --ch-frame: #0a331f;
@@ -172,7 +173,8 @@
   --ch-accent-press: var(--ch-green-800);
   /* Decision 6 (owner, 2026-10-24): a touch darker than 0.07, so a one-device-pixel line still reads (B3). */
   --ch-border-hairline: rgb(28 25 18 / 0.1);
-  --ch-border-subtle: rgb(28 25 18 / 0.1);
+  /* Row 36 (T3): a step above the hairline, so the ladder stays ordered once the hairline darkened. */
+  --ch-border-subtle: rgb(28 25 18 / 0.13);
   --ch-border-control: rgb(28 25 18 / 0.14);
   --ch-border-strong: rgb(28 25 18 / 0.24);
   /* A seam between sections of one surface: an ink line with a lit line beside it, so it reads as an engraved join,
@@ -232,6 +234,7 @@
   --ch-ink-rule: rgb(28 25 18 / 0.2);
   --ch-champagne-ring: rgb(110 84 36 / 0.14);
   --ch-champagne-rule: rgb(176 149 96 / 0.25);
+  --ch-champagne-rule-strong: rgb(176 149 96 / 0.4);
   --ch-focus-halo: rgb(21 90 57 / 0.13);
 
   /* Type */
@@ -822,7 +825,7 @@ html[data-fw-theme='dark'] [data-ui='clubhouse'] {
   --ch-accent-hover: #2a7d53;
   --ch-accent-press: #1d613f;
   --ch-border-hairline: rgb(237 231 216 / 0.12); /* decision 6, from 0.08 */
-  --ch-border-subtle: rgb(237 231 216 / 0.11);
+  --ch-border-subtle: rgb(237 231 216 / 0.15); /* row 36 (T4): above the 0.12 hairline */
   --ch-border-control: rgb(237 231 216 / 0.17);
   --ch-border-strong: rgb(237 231 216 / 0.3);
   --ch-seam-ink: rgb(0 0 0 / 0.55);
@@ -845,6 +848,7 @@ html[data-fw-theme='dark'] [data-ui='clubhouse'] {
   --ch-ink-rule: rgb(237 231 216 / 0.22);
   --ch-champagne-ring: rgb(205 187 142 / 0.2);
   --ch-champagne-rule: rgb(205 187 142 / 0.28);
+  --ch-champagne-rule-strong: rgb(205 187 142 / 0.4);
   --ch-focus-halo: rgb(107 187 140 / 0.2);
 
   --ch-glass-bg: rgb(22 27 23 / 0.74);
@@ -1143,6 +1147,12 @@ html[data-fw-theme='dark']:has([data-ui='clubhouse']) body {
 @media (min-resolution: 2dppx) {
   [data-ui='clubhouse'] {
     --ch-hairline-w: 0.5px;
+  }
+}
+/* Row 36: one device pixel on a 3x phone too. Before the contrast block, which still wins with the full pixel. */
+@media (min-resolution: 3dppx) {
+  [data-ui='clubhouse'] {
+    --ch-hairline-w: 0.333px;
   }
 }
 

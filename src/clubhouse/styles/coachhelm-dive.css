@@ -252,7 +252,7 @@
   grid-template-columns: 52px minmax(0, 1fr);
   gap: 16px;
   padding: 12px 0;
-  border-top: 1px solid var(--ch-ledger-rule-soft);
+  border-top: var(--ch-hairline-w) solid var(--ch-ledger-rule-soft);
 }
 .ch-hd-read > div:last-child {
   padding-bottom: 0;
@@ -307,7 +307,7 @@
   flex-direction: column;
   gap: 16px;
   padding-top: 24px;
-  border-top: 1px solid rgb(28 25 18 / 0.08);
+  border-top: var(--ch-hairline-w) solid var(--ch-border-hairline);
 }
 .ch-hd-sec__h {
   display: flex;
@@ -384,7 +384,7 @@
   gap: 4px 16px;
   align-items: baseline;
   padding: 12px 0;
-  border-top: 1px solid rgb(28 25 18 / 0.07);
+  border-top: var(--ch-hairline-w) solid var(--ch-border-hairline);
 }
 .ch-hd-tr > li:first-child {
   border-top: 0;
@@ -457,7 +457,7 @@
   align-items: center;
   min-height: 52px;
   padding: 8px 8px;
-  border-top: 1px solid rgb(28 25 18 / 0.07);
+  border-top: var(--ch-hairline-w) solid var(--ch-border-hairline);
   color: inherit;
   text-decoration: none;
   transition: background var(--ch-dur-quick) var(--ch-ease);
@@ -517,7 +517,7 @@
   align-items: center;
   min-height: 52px;
   padding: 8px 8px;
-  border-top: 1px solid rgb(28 25 18 / 0.07);
+  border-top: var(--ch-hairline-w) solid var(--ch-border-hairline);
   color: inherit;
   text-decoration: none;
   transition: background var(--ch-dur-quick) var(--ch-ease);
@@ -596,7 +596,7 @@
   padding: 16px 20px;
   border-radius: var(--ch-radius-lg);
   background: var(--ch-ivory-50);
-  box-shadow: inset 0 0 0 1px rgb(28 25 18 / 0.05);
+  box-shadow: inset 0 0 0 var(--ch-hairline-w) var(--ch-border-hairline);
 }
 .ch-hd-dx__lvl {
   align-self: flex-start;
@@ -630,7 +630,7 @@
   justify-content: space-between;
   gap: 16px;
   padding: 8px 0;
-  border-top: 1px solid rgb(28 25 18 / 0.07);
+  border-top: var(--ch-hairline-w) solid var(--ch-border-hairline);
 }
 .ch-hd-dx__d dt {
   font: var(--ch-type-13);
@@ -687,7 +687,7 @@
   padding: 16px 16px;
   border-radius: var(--ch-radius-lg);
   background: var(--ch-ivory-50);
-  box-shadow: inset 0 0 0 1px rgb(28 25 18 / 0.06);
+  box-shadow: inset 0 0 0 var(--ch-hairline-w) var(--ch-border-hairline);
   color: inherit;
   text-decoration: none;
   transition: background var(--ch-dur-quick) var(--ch-ease);
@@ -864,13 +864,13 @@
   min-height: 64px;
   padding: 8px 6px;
   border-radius: 0;
-  border-top: 1px solid rgb(28 25 18 / 0.07);
+  border-top: var(--ch-hairline-w) solid var(--ch-border-hairline);
 }
 :is(.ch-hl.is-phone) .ch-hd-grp li:first-child .ch-hd-it {
   border-top: 0;
 }
 :is(.ch-hl.is-phone) .ch-hd-sk__it {
-  border-top: 1px solid rgb(28 25 18 / 0.07);
+  border-top: var(--ch-hairline-w) solid var(--ch-border-hairline);
 }
 
 /* The pushed screen on the phone: the read, scrolling under its top bar. It is its own size container, so the Board's phone rules for the evidence and the drill apply inside it. */
@@ -913,7 +913,7 @@
     align-items: center;
     min-height: 34px;
     padding: 0 0 12px;
-    box-shadow: inset 0 -1px 0 var(--ch-ledger-rule);
+    box-shadow: inset 0 calc(-1 * var(--ch-hairline-w)) 0 var(--ch-ledger-rule);
   }
   main[data-canopy] .ch-hd-it {
     width: calc(100% + 20px);
@@ -964,7 +964,7 @@
     border-radius: var(--ch-radius-md);
   }
   main[data-canopy] .ch-hd-plan > li + li .ch-hd-plan__i {
-    border-top: 1px solid var(--ch-ledger-rule-soft);
+    border-top: var(--ch-hairline-w) solid var(--ch-ledger-rule-soft);
   }
   @media (hover: hover) {
     main[data-canopy] .ch-hd-plan__i.is-link:hover {
@@ -1144,7 +1144,7 @@
     box-shadow: none;
   }
   .ch-hd-plan > li + li .ch-hd-plan__i {
-    box-shadow: inset 0 1px 0 var(--ch-ledger-rule-soft);
+    box-shadow: inset 0 var(--ch-hairline-w) 0 var(--ch-ledger-rule-soft);
   }
   .ch-hd-plan__i.is-link:is(:active, [data-ch-pressed]) {
     background: var(--ch-ledger-row-press);
@@ -1200,7 +1200,7 @@
 }
 :where(html[data-fw-theme='dark']) .ch-hd-dx,
 :where(html[data-fw-theme='dark']) .ch-hd-plan__i {
-  box-shadow: inset 0 0 0 1px var(--ch-border-hairline);
+  box-shadow: inset 0 0 0 var(--ch-hairline-w) var(--ch-border-hairline);
 }
 
 /* Deep dive at more contrast (owner, 2026-10-16: "this needs to have more contrast too. on deep dive"). What CoachHelm

@@ -95,7 +95,7 @@
 }
 .ch-hg-m.is-locked {
   background: var(--ch-ivory-50);
-  box-shadow: inset 0 0 0 1px rgb(28 25 18 / 0.06);
+  box-shadow: inset 0 0 0 var(--ch-hairline-w) var(--ch-border-hairline);
 }
 .ch-hg-m__k {
   display: flex;
@@ -184,7 +184,7 @@
   align-items: center;
   margin-top: auto;
   padding-top: 16px;
-  border-top: 1px solid rgb(28 25 18 / 0.07);
+  border-top: var(--ch-hairline-w) solid var(--ch-border-hairline);
   font: var(--ch-type-12);
   line-height: var(--ch-lead-tight);
   color: var(--ch-text-tertiary);
@@ -331,7 +331,7 @@
   }
   main[data-canopy] :is(.ch-hg-sec__h, .ch-hg-sec > h2) {
     padding-bottom: 12px;
-    box-shadow: inset 0 -1px 0 var(--ch-ledger-rule);
+    box-shadow: inset 0 calc(-1 * var(--ch-hairline-w)) 0 var(--ch-ledger-rule);
   }
   main[data-canopy] .ch-hg-sec {
     gap: 0;
@@ -353,7 +353,7 @@
     padding: 24px 0 20px;
   }
   main[data-canopy] .ch-hg-grid > * + * {
-    box-shadow: inset 0 1px 0 var(--ch-ledger-rule-soft);
+    box-shadow: inset 0 var(--ch-hairline-w) 0 var(--ch-ledger-rule-soft);
   }
   @container chhl (min-width: 901px) {
     main[data-canopy] .ch-hg-grid > :nth-child(odd) {
@@ -361,13 +361,13 @@
     }
     main[data-canopy] .ch-hg-grid > :nth-child(even) {
       padding-left: 32px;
-      box-shadow: inset 1px 0 0 var(--ch-ledger-rule-soft), inset 0 1px 0 var(--ch-ledger-rule-soft);
+      box-shadow: inset var(--ch-hairline-w) 0 0 var(--ch-ledger-rule-soft), inset 0 var(--ch-hairline-w) 0 var(--ch-ledger-rule-soft);
     }
     main[data-canopy] .ch-hg-grid > :nth-child(2) {
-      box-shadow: inset 1px 0 0 var(--ch-ledger-rule-soft);
+      box-shadow: inset var(--ch-hairline-w) 0 0 var(--ch-ledger-rule-soft);
     }
     main[data-canopy] .ch-hg-grid > :nth-child(odd):not(:first-child) {
-      box-shadow: inset 0 1px 0 var(--ch-ledger-rule-soft);
+      box-shadow: inset 0 var(--ch-hairline-w) 0 var(--ch-ledger-rule-soft);
     }
   }
   main[data-canopy] .ch-hg-m__f {
@@ -431,7 +431,7 @@
     box-shadow: none;
   }
   .ch-hg-grid > .ch-hg-m + .ch-hg-m {
-    box-shadow: inset 0 1px 0 var(--ch-ledger-rule-soft);
+    box-shadow: inset 0 var(--ch-hairline-w) 0 var(--ch-ledger-rule-soft);
   }
   .ch-hg-sc__d {
     background: var(--ch-workspace);
@@ -463,7 +463,7 @@
   background: linear-gradient(180deg, rgb(227 169 79 / 0.09), var(--ch-ivory-25) 46%);
 }
 :where(html[data-fw-theme='dark']) .ch-hg-m.is-locked {
-  box-shadow: inset 0 0 0 1px var(--ch-border-hairline);
+  box-shadow: inset 0 0 0 var(--ch-hairline-w) var(--ch-border-hairline);
 }
 :where(html[data-fw-theme='dark']) .ch-hg-tag.is-good {
   box-shadow: inset 0 0 0 1px rgb(107 187 140 / 0.24);

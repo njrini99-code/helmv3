@@ -127,7 +127,7 @@
   gap: 16px;
   min-height: 64px;
   padding: 12px 0;
-  border-top: 1px solid rgb(28 25 18 / 0.08);
+  border-top: var(--ch-hairline-w) solid var(--ch-border-hairline);
   color: var(--ch-text-primary);
   text-decoration: none;
   transition: color var(--ch-dur-quick) var(--ch-ease);

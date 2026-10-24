@@ -23,7 +23,7 @@
   gap: 24px;
   margin-bottom: 6px;
   padding-bottom: 20px;
-  border-bottom: 1px solid var(--ch-champagne-rule);
+  border-bottom: var(--ch-hairline-w) solid var(--ch-champagne-rule);
 }
 .ch-qf-head > div:first-child {
   display: flex;
@@ -334,8 +334,8 @@
 .ch-qf-grid.is-ledger {
   grid-template-columns: minmax(0, 1fr);
   gap: 0;
-  border-top: 1px solid var(--ch-champagne-rule);
-  border-bottom: 1px solid var(--ch-champagne-rule);
+  border-top: var(--ch-hairline-w) solid var(--ch-champagne-rule);
+  border-bottom: var(--ch-hairline-w) solid var(--ch-champagne-rule);
 }
 .ch-qf-grid.is-ledger .ch-qf-card {
   display: grid;
@@ -421,8 +421,8 @@
   grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
   row-gap: 16px;
   padding: 16px 0;
-  border-top: 1px solid var(--ch-champagne-rule);
-  border-bottom: 1px solid var(--ch-champagne-rule);
+  border-top: var(--ch-hairline-w) solid var(--ch-champagne-rule);
+  border-bottom: var(--ch-hairline-w) solid var(--ch-champagne-rule);
 }
 .ch-qf-facts > div {
   display: flex;
@@ -762,7 +762,7 @@
   padding: 12px 16px;
   border-radius: var(--ch-radius-md);
   background: var(--ch-bg-surface);
-  box-shadow: 0 0 0 1px var(--ch-border-hairline);
+  box-shadow: 0 0 0 var(--ch-hairline-w) var(--ch-border-hairline);
 }
 .ch-qf-sc__h {
   display: flex;
@@ -1207,7 +1207,7 @@
   content: '';
   flex: 1 1 16px;
   min-width: 16px;
-  height: 1px;
+  height: var(--ch-hairline-w);
   margin-left: 2px;
   background: var(--ch-ledger-rule);
 }
@@ -1555,7 +1555,7 @@
     width: 100%;
     margin-top: 6px;
     padding-top: 12px;
-    border-top: 1px solid rgb(255 255 255 / 0.1);
+    border-top: var(--ch-hairline-w) solid var(--ch-stage-rule);
     color: var(--ch-on-green-ink);
   }
   /* Meta: the dates, then the course and the spots on one line. */
@@ -1680,7 +1680,7 @@
     top: 0;
     right: 12px;
     left: 12px;
-    height: 1px;
+    height: var(--ch-hairline-w);
     background: var(--ch-ledger-rule-soft);
     content: '';
     pointer-events: none;
@@ -1753,7 +1753,7 @@
     padding: 12px 0;
     border-radius: 0;
     background: none;
-    box-shadow: inset 0 1px 0 var(--ch-ledger-rule-soft), inset 0 -1px 0 var(--ch-ledger-rule-soft);
+    box-shadow: inset 0 var(--ch-hairline-w) 0 var(--ch-ledger-rule-soft), inset 0 calc(-1 * var(--ch-hairline-w)) 0 var(--ch-ledger-rule-soft);
   }
   /* The figures between two hairlines, divided by soft rules (the kit's FigureRow), each with its drawing. */
   .ch-qfm-facts {
@@ -1761,8 +1761,8 @@
     /* Rounds in and Spots (no deadline since 2026-10-16). */
     grid-template-columns: repeat(2, minmax(0, 1fr));
     padding: 12px 0;
-    border-top: 1px solid var(--ch-ledger-rule);
-    border-bottom: 1px solid var(--ch-ledger-rule);
+    border-top: var(--ch-hairline-w) solid var(--ch-ledger-rule);
+    border-bottom: var(--ch-hairline-w) solid var(--ch-ledger-rule);
   }
   .ch-qfm-facts > div {
     display: flex;
@@ -1775,7 +1775,7 @@
     padding-left: 0;
   }
   .ch-qfm-facts > div + div {
-    box-shadow: inset 1px 0 0 var(--ch-ledger-rule-soft);
+    box-shadow: inset var(--ch-hairline-w) 0 0 var(--ch-ledger-rule-soft);
   }
   /* Every figure keeps the drawing's line, so the three values share one baseline. */
   .ch-qfm-facts dd.ch-qfm-facts__viz {
@@ -1841,7 +1841,7 @@
     border-bottom: 0;
   }
   .ch-qfm .ch-qf-list li + li {
-    box-shadow: inset 0 1px 0 var(--ch-ledger-rule-soft);
+    box-shadow: inset 0 var(--ch-hairline-w) 0 var(--ch-ledger-rule-soft);
   }
   .ch-qfm .ch-qf-list li > b {
     font-size: calc(15 * var(--ch-type-k));
@@ -1858,7 +1858,7 @@
     list-style: none;
   }
   .ch-qfm-lb > li + li {
-    box-shadow: inset 0 1px 0 var(--ch-ledger-rule-soft);
+    box-shadow: inset 0 var(--ch-hairline-w) 0 var(--ch-ledger-rule-soft);
   }
   /* A row with a cut line above it opens on the line, not on a seam as well. */
   .ch-qfm-lb > li:has(> .ch-qf-line) {
@@ -1872,7 +1872,7 @@
     align-items: end;
     margin-top: 6px;
     padding: 0 0 6px;
-    box-shadow: inset 0 -1px 0 var(--ch-ledger-rule-soft);
+    box-shadow: inset 0 calc(-1 * var(--ch-hairline-w)) 0 var(--ch-ledger-rule-soft);
     font: var(--ch-type-label-s);
     color: var(--ch-text-tertiary);
   }
@@ -2185,20 +2185,20 @@
     border-bottom: 0;
   }
   .ch-qfs .ch-qf-list li + li {
-    box-shadow: inset 0 1px 0 var(--ch-ledger-rule-soft);
+    box-shadow: inset 0 var(--ch-hairline-w) 0 var(--ch-ledger-rule-soft);
   }
   .ch-qfs .ch-qfs-pick {
     border-bottom: 0;
   }
   .ch-qfs .ch-qfs-pick + .ch-qfs-pick {
-    box-shadow: inset 0 1px 0 var(--ch-ledger-rule-soft);
+    box-shadow: inset 0 var(--ch-hairline-w) 0 var(--ch-ledger-rule-soft);
   }
   /* The stage note, flush: its icon and its line between two seams, with no box. */
   .ch-qfs > .ch-qf-note {
     padding: 12px 0;
     border-radius: 0;
     background: none;
-    box-shadow: inset 0 1px 0 var(--ch-ledger-rule-soft), inset 0 -1px 0 var(--ch-ledger-rule-soft);
+    box-shadow: inset 0 var(--ch-hairline-w) 0 var(--ch-ledger-rule-soft), inset 0 calc(-1 * var(--ch-hairline-w)) 0 var(--ch-ledger-rule-soft);
   }
   .ch-qfs-opt {
     touch-action: manipulation;
@@ -2243,7 +2243,7 @@
   /* The hero's place, without the green: the feature card arrives with what it says. */
   .ch-qf--list[aria-busy='true'] .ch-qf-hero {
     background: none;
-    box-shadow: inset 0 0 0 1px var(--ch-ledger-rule);
+    box-shadow: inset 0 0 0 var(--ch-hairline-w) var(--ch-ledger-rule);
   }
   .ch-qf--list[aria-busy='true'] > .ch-qf-hero,
   .ch-qf--list[aria-busy='true'] > .ch-qf-grid {
@@ -2333,7 +2333,7 @@
   height: 30px;
   border-radius: var(--ch-radius-xs);
   background: var(--ch-ivory-25);
-  box-shadow: inset 0 0 0 1px var(--ch-ink-rule), var(--ch-elevation-control);
+  box-shadow: inset 0 0 0 var(--ch-hairline-w) var(--ch-ink-rule), var(--ch-elevation-control);
   font: 600 17px/1 var(--ch-font-sans);
   font-variant-numeric: tabular-nums;
   font-variation-settings: 'wdth' 88;
@@ -2345,7 +2345,7 @@
 }
 .ch-qf-plate.is-none {
   background: transparent;
-  box-shadow: inset 0 0 0 1px var(--ch-border-hairline);
+  box-shadow: inset 0 0 0 var(--ch-hairline-w) var(--ch-border-hairline);
   color: var(--ch-text-tertiary);
 }
 .ch-qf-plate.is-card {
@@ -2635,7 +2635,7 @@ html:has([data-ui='clubhouse'])::view-transition-new(.ch-rank) {
     padding: 0 0 12px;
     font: var(--ch-type-20-strong);
     letter-spacing: var(--ch-track-20);
-    box-shadow: inset 0 -1px 0 var(--ch-ledger-rule);
+    box-shadow: inset 0 calc(-1 * var(--ch-hairline-w)) 0 var(--ch-ledger-rule);
   }
   .ch-qf--list[data-canopy] .ch-qf-grid.is-ledger {
     margin-inline: -12px;
@@ -2656,7 +2656,7 @@ html:has([data-ui='clubhouse'])::view-transition-new(.ch-rank) {
     top: 0;
     right: 12px;
     left: 12px;
-    height: 1px;
+    height: var(--ch-hairline-w);
     background: var(--ch-ledger-rule-soft);
     content: '';
     pointer-events: none;
@@ -2686,13 +2686,13 @@ html:has([data-ui='clubhouse'])::view-transition-new(.ch-rank) {
     padding: 20px 0;
     border-top: 0;
     border-bottom: 0;
-    box-shadow: inset 0 -1px 0 var(--ch-ledger-rule-soft);
+    box-shadow: inset 0 calc(-1 * var(--ch-hairline-w)) 0 var(--ch-ledger-rule-soft);
   }
   .ch-qf[data-canopy] .ch-qf-facts > div:first-child {
     padding-left: 0;
   }
   .ch-qf[data-canopy] .ch-qf-facts > div + div {
-    box-shadow: inset 1px 0 0 var(--ch-ledger-rule-soft);
+    box-shadow: inset var(--ch-hairline-w) 0 0 var(--ch-ledger-rule-soft);
   }
   .ch-qf[data-canopy] .ch-qf-body {
     gap: 40px 48px;
@@ -2717,7 +2717,7 @@ html:has([data-ui='clubhouse'])::view-transition-new(.ch-rank) {
     align-items: flex-end;
     margin-bottom: 12px;
     padding: 0 0 12px;
-    box-shadow: inset 0 -1px 0 var(--ch-ledger-rule);
+    box-shadow: inset 0 calc(-1 * var(--ch-hairline-w)) 0 var(--ch-ledger-rule);
   }
   .ch-qf[data-canopy] .ch-qf-panel > .ch-empty,
   .ch-qf[data-canopy] .ch-qf-panel > .ch-notice {
@@ -2749,7 +2749,7 @@ html:has([data-ui='clubhouse'])::view-transition-new(.ch-rank) {
     right: 12px;
     bottom: 0;
     left: 12px;
-    height: 1px;
+    height: var(--ch-hairline-w);
     background: var(--ch-ledger-rule-soft);
     content: '';
     pointer-events: none;
@@ -2790,7 +2790,7 @@ html:has([data-ui='clubhouse'])::view-transition-new(.ch-rank) {
   .ch-qf--form[data-canopy] .ch-qf-fs__h {
     margin-bottom: 2px;
     padding: 0 0 12px;
-    box-shadow: inset 0 -1px 0 var(--ch-ledger-rule);
+    box-shadow: inset 0 calc(-1 * var(--ch-hairline-w)) 0 var(--ch-ledger-rule);
   }
   .ch-qf--form[data-canopy] .ch-qf-fs__h h2 {
     font: var(--ch-type-20-strong);
@@ -2803,7 +2803,7 @@ html:has([data-ui='clubhouse'])::view-transition-new(.ch-rank) {
   .ch-qf--form[data-canopy] .ch-qf-formact {
     margin-top: 0;
     padding-top: 20px;
-    box-shadow: inset 0 1px 0 var(--ch-ledger-rule-soft);
+    box-shadow: inset 0 var(--ch-hairline-w) 0 var(--ch-ledger-rule-soft);
   }
   .ch-qf--form[data-canopy] .ch-qf-players {
     margin-inline: -8px;
@@ -2871,13 +2871,13 @@ html:has([data-ui='clubhouse'])::view-transition-new(.ch-rank) {
     grid-template-columns: minmax(0, 1fr);
     gap: 0;
     margin-top: 12px;
-    box-shadow: inset 0 1px 0 var(--ch-ledger-rule);
+    box-shadow: inset 0 var(--ch-hairline-w) 0 var(--ch-ledger-rule);
   }
   .ch-qf--list[aria-busy='true'][data-canopy] .ch-qf-card {
     padding: 16px 0;
     border-radius: 0;
     background: none;
-    box-shadow: inset 0 -1px 0 var(--ch-ledger-rule-soft);
+    box-shadow: inset 0 calc(-1 * var(--ch-hairline-w)) 0 var(--ch-ledger-rule-soft);
   }
 }
 
@@ -2987,7 +2987,7 @@ html:has([data-ui='clubhouse'])::view-transition-new(.ch-rank) {
   width: 0;
 }
 .ch-qf-sp__even {
-  border-left: 1px solid var(--ch-ink-300);
+  border-left: var(--ch-hairline-w) solid var(--ch-ink-300);
 }
 .ch-qf-sp__cut {
   border-left: 1px dashed var(--ch-ink-500);
@@ -3005,7 +3005,7 @@ html:has([data-ui='clubhouse'])::view-transition-new(.ch-rank) {
   position: absolute;
   inset: auto 0 0;
   height: 22px;
-  border-top: 1px solid var(--ch-ledger-rule);
+  border-top: var(--ch-hairline-w) solid var(--ch-ledger-rule);
 }
 .ch-qf-sp__axis span {
   position: absolute;
@@ -3068,7 +3068,7 @@ html:has([data-ui='clubhouse'])::view-transition-new(.ch-rank) {
   border-radius: 0;
   background: none;
   box-shadow: none;
-  border-bottom: 1px solid var(--ch-ink-rule);
+  border-bottom: var(--ch-hairline-w) solid var(--ch-ink-rule);
   font: var(--ch-type-13-medium);
   line-height: var(--ch-lead-tight);
   color: var(--ch-ink-500);
@@ -3199,13 +3199,13 @@ html[data-fw-theme='dark'] .ch-qf-board .ch-badge {
     border-radius: var(--ch-radius-card);
     background: var(--ch-bg-surface);
     box-shadow:
-      inset 0 0 0 1px var(--ch-border-subtle),
+      inset 0 0 0 var(--ch-hairline-w) var(--ch-border-subtle),
       var(--ch-elevation-cast);
     transition: box-shadow var(--ch-dur-quick) var(--ch-ease);
   }
   .ch-qf--list[data-canopy] .ch-qf-grid.is-ledger .ch-qf-card + .ch-qf-card {
     box-shadow:
-      inset 0 0 0 1px var(--ch-border-subtle),
+      inset 0 0 0 var(--ch-hairline-w) var(--ch-border-subtle),
       var(--ch-elevation-cast);
   }
   .ch-qf--list[data-canopy] .ch-qf-grid.is-ledger .ch-qf-card + .ch-qf-card::before {
@@ -3303,7 +3303,7 @@ html[data-fw-theme='dark'] .ch-qf-board .ch-badge {
     padding: 16px 24px;
     border-radius: var(--ch-radius-lg);
     background: color-mix(in srgb, var(--ch-bg-surface) 70%, transparent);
-    box-shadow: inset 0 0 0 1px var(--ch-border-subtle);
+    box-shadow: inset 0 0 0 var(--ch-hairline-w) var(--ch-border-subtle);
   }
   .ch-qf--list[data-canopy] .ch-qf-sec.is-done .ch-qf-card h3 {
     font-size: 15px;
@@ -3370,7 +3370,7 @@ html:not([data-fw-theme='dark']) .ch-qf :is(.ch-input, .ch-textarea)::placeholde
     border-radius: var(--ch-radius-xl);
     background: var(--ch-bg-surface);
     box-shadow:
-      inset 0 0 0 1px var(--ch-border-subtle),
+      inset 0 0 0 var(--ch-hairline-w) var(--ch-border-subtle),
       var(--ch-elevation-cast);
   }
   .ch-qf[data-canopy] .ch-qf-facts > div:first-child {
@@ -3384,7 +3384,7 @@ html:not([data-fw-theme='dark']) .ch-qf :is(.ch-input, .ch-textarea)::placeholde
     border-radius: var(--ch-radius-xl);
     background: var(--ch-bg-surface);
     box-shadow:
-      inset 0 0 0 1px var(--ch-border-subtle),
+      inset 0 0 0 var(--ch-hairline-w) var(--ch-border-subtle),
       var(--ch-elevation-cast);
   }
   .ch-qf[data-canopy] .ch-qf-board .ch-qf-row--head {
@@ -3499,7 +3499,7 @@ html[data-fw-theme='dark'] .ch-qf-dots i {
   background: rgb(255 255 255 / 0.07);
   box-shadow:
     inset 0 1px 0 rgb(255 255 255 / 0.08),
-    inset 0 0 0 1px rgb(255 255 255 / 0.06);
+    inset 0 0 0 var(--ch-hairline-w) var(--ch-stage-rule);
 }
 .ch-qf-prounds__r.is-best {
   background: rgb(159 224 182 / 0.14);
@@ -3877,7 +3877,7 @@ button.ch-qf-prounds__r.is-open {
     border-radius: var(--ch-radius-card);
     background: var(--ch-bg-surface);
     box-shadow:
-      inset 0 0 0 1px var(--ch-border-subtle),
+      inset 0 0 0 var(--ch-hairline-w) var(--ch-border-subtle),
       var(--ch-elevation-cast);
   }
   .ch-qf--list .ch-qf-grid.is-ledger .ch-qf-card + .ch-qf-card::before {

@@ -133,7 +133,7 @@
   border-radius: var(--ch-radius-xl);
   background: var(--ch-bg-surface);
   box-shadow:
-    0 0 0 1px rgb(28 25 18 / 0.08),
+    0 0 0 var(--ch-hairline-w) var(--ch-border-hairline),
     0 1px 2px rgb(28 25 18 / 0.05),
     0 14px 30px -24px rgb(28 25 18 / 0.35);
 }
@@ -465,7 +465,7 @@
   gap: 4px;
 }
 .ch-rsu-hc__sum > div + div {
-  border-left: 1px solid rgb(28 25 18 / 0.08);
+  border-left: var(--ch-hairline-w) solid var(--ch-border-hairline);
 }
 .ch-rsu-hc__sum dt {
   font: var(--ch-type-11-medium);
@@ -493,7 +493,7 @@
   gap: 8px;
   align-items: center;
   min-height: 48px;
-  border-bottom: 1px solid rgb(28 25 18 / 0.07);
+  border-bottom: var(--ch-hairline-w) solid var(--ch-border-hairline);
 }
 .ch-rsu-hole__n {
   width: 26px;
@@ -633,7 +633,7 @@
   backdrop-filter: blur(calc(var(--ch-glass-blur) * 1.7)) saturate(170%);
   -webkit-backdrop-filter: blur(calc(var(--ch-glass-blur) * 1.7)) saturate(170%);
   box-shadow:
-    0 0 0 1px rgb(28 25 18 / 0.1),
+    0 0 0 var(--ch-hairline-w) var(--ch-border-subtle),
     0 16px 36px -18px rgb(28 25 18 / 0.45);
 }
 .ch-rsu-dock__s {
@@ -712,7 +712,7 @@
   padding: 8px 16px;
 }
 .ch-rsu-crs + .ch-rsu-crs {
-  border-top: 1px solid rgb(28 25 18 / 0.07);
+  border-top: var(--ch-hairline-w) solid var(--ch-border-hairline);
 }
 @media (hover: hover) {
   .ch-rsu-crs:hover {
@@ -822,7 +822,7 @@
   position: absolute;
   inset: 0;
   border-radius: inherit;
-  box-shadow: inset 0 0 0 1px rgb(16 18 14 / 0.08);
+  box-shadow: inset 0 0 0 var(--ch-hairline-w) var(--ch-border-hairline);
   content: '';
 }
 /* A course without its own photo: a quiet tile with the flag, never a stand-in scene. */
@@ -925,7 +925,7 @@ html[data-fw-theme='dark'] .ch-cpk__media.is-blank {
     align-items: center;
     gap: 16px;
     padding: 8px 0;
-    border-bottom: 1px solid rgb(16 18 14 / 0.07);
+    border-bottom: var(--ch-hairline-w) solid var(--ch-border-hairline);
   }
   .ch-cpk__media {
     flex: none;
@@ -1154,7 +1154,7 @@ html[data-fw-theme='dark'] .ch-cpk__media.is-blank {
   padding: 16px 16px 16px;
   border-radius: var(--ch-radius-lg);
   background: rgb(16 18 14 / 0.035);
-  box-shadow: inset 0 0 0 1px rgb(16 18 14 / 0.06);
+  box-shadow: inset 0 0 0 var(--ch-hairline-w) var(--ch-border-hairline);
 }
 .ch-acs__k {
   font: var(--ch-type-12-medium);
@@ -1172,7 +1172,7 @@ html[data-fw-theme='dark'] .ch-cpk__media.is-blank {
   align-items: center;
   gap: 8px;
   padding: 8px 2px 0;
-  border-top: 1px solid rgb(16 18 14 / 0.07);
+  border-top: var(--ch-hairline-w) solid var(--ch-border-hairline);
   font: var(--ch-type-13);
   color: var(--ch-text-secondary);
 }
@@ -1191,10 +1191,10 @@ html[data-fw-theme='dark'] .ch-cpk__media.is-blank {
   grid-template-columns: 140px minmax(0, 1fr);
   gap: 16px;
   padding: 12px 0;
-  border-top: 1px solid rgb(16 18 14 / 0.07);
+  border-top: var(--ch-hairline-w) solid var(--ch-border-hairline);
 }
 .ch-acs-sum > div:last-child {
-  border-bottom: 1px solid rgb(16 18 14 / 0.07);
+  border-bottom: var(--ch-hairline-w) solid var(--ch-border-hairline);
 }
 .ch-acs-sum dt {
   font: var(--ch-type-14);
@@ -1291,7 +1291,7 @@ html[data-fw-theme='dark'] .ch-acs__photo.is-blank {
 }
 html[data-fw-theme='dark'] .ch-acs__preview {
   background: rgb(255 255 255 / 0.04);
-  box-shadow: inset 0 0 0 1px rgb(255 255 255 / 0.07);
+  box-shadow: inset 0 0 0 var(--ch-hairline-w) var(--ch-border-hairline);
 }
 html[data-fw-theme='dark'] .ch-acs__tee,
 html[data-fw-theme='dark'] .ch-acs-sum > div,
@@ -1745,7 +1745,7 @@ html[data-fw-theme='dark'] .ch-rsu-card__h h2 {
     position: absolute;
     right: 12px;
     left: 12px;
-    height: 1px;
+    height: var(--ch-hairline-w);
     background: var(--ch-ledger-rule);
     content: '';
   }
@@ -1771,8 +1771,8 @@ html[data-fw-theme='dark'] .ch-rsu-card__h h2 {
   .ch-rsu[data-ui='clubhouse'] .ch-rsu-cols .ch-rsu-opts {
     gap: 0;
     box-shadow:
-      inset 0 1px 0 var(--ch-ledger-rule-soft),
-      inset 0 -1px 0 var(--ch-ledger-rule-soft);
+      inset 0 var(--ch-hairline-w) 0 var(--ch-ledger-rule-soft),
+      inset 0 calc(-1 * var(--ch-hairline-w)) 0 var(--ch-ledger-rule-soft);
   }
   .ch-rsu[data-ui='clubhouse'] .ch-rsu-cols .ch-rsu-opt {
     min-height: 56px;
@@ -1782,7 +1782,7 @@ html[data-fw-theme='dark'] .ch-rsu-card__h h2 {
     box-shadow: none;
   }
   .ch-rsu[data-ui='clubhouse'] .ch-rsu-cols .ch-rsu-opt + .ch-rsu-opt {
-    box-shadow: inset 0 1px 0 var(--ch-ledger-rule-soft);
+    box-shadow: inset 0 var(--ch-hairline-w) 0 var(--ch-ledger-rule-soft);
   }
   .ch-rsu[data-ui='clubhouse'] .ch-rsu-cols .ch-rsu-opt[aria-checked='true'] {
     background: none;
@@ -1807,8 +1807,8 @@ html[data-fw-theme='dark'] .ch-rsu-card__h h2 {
     border-radius: 0;
     background: none;
     box-shadow:
-      inset 0 1px 0 var(--ch-ledger-rule),
-      inset 0 -1px 0 var(--ch-ledger-rule);
+      inset 0 var(--ch-hairline-w) 0 var(--ch-ledger-rule),
+      inset 0 calc(-1 * var(--ch-hairline-w)) 0 var(--ch-ledger-rule);
   }
   .ch-rsu[data-ui='clubhouse'] .ch-rsu-cols .ch-rsu-hc__sum.ch-rsu-ph {
     display: grid;
@@ -1850,7 +1850,7 @@ html[data-fw-theme='dark'] .ch-rsu-card__h h2 {
     display: flex;
     align-items: center;
     min-height: 52px;
-    box-shadow: inset 0 -1px 0 var(--ch-ledger-rule-soft);
+    box-shadow: inset 0 calc(-1 * var(--ch-hairline-w)) 0 var(--ch-ledger-rule-soft);
   }
   .ch-rsu[data-ui='clubhouse'] .ch-rsu-cols .ch-rsu-hc__ghost > .ch-skel {
     position: relative;
@@ -1865,7 +1865,7 @@ html[data-fw-theme='dark'] .ch-rsu-card__h h2 {
     right: 0;
     bottom: -8px;
     left: 0;
-    height: 1px;
+    height: var(--ch-hairline-w);
     background: var(--ch-ledger-rule-soft);
     content: '';
   }
@@ -1884,7 +1884,7 @@ html[data-fw-theme='dark'] .ch-rsu-card__h h2 {
     background: var(--ch-bg-surface);
     -webkit-backdrop-filter: none;
     backdrop-filter: none;
-    box-shadow: inset 0 1px 0 var(--ch-ledger-rule);
+    box-shadow: inset 0 var(--ch-hairline-w) 0 var(--ch-ledger-rule);
   }
 
   /* The course picker and the tees (the sheet): rows on seams, not cards in the sheet. */
@@ -1893,8 +1893,8 @@ html[data-fw-theme='dark'] .ch-rsu-card__h h2 {
     border-radius: 0;
     background: none;
     box-shadow:
-      inset 0 1px 0 var(--ch-ledger-rule),
-      inset 0 -1px 0 var(--ch-ledger-rule-soft);
+      inset 0 var(--ch-hairline-w) 0 var(--ch-ledger-rule),
+      inset 0 calc(-1 * var(--ch-hairline-w)) 0 var(--ch-ledger-rule-soft);
   }
   .ch-rsu[data-ui='clubhouse'] .ch-rsu-crs:not(.is-skel),
   .ch-rsu[data-ui='clubhouse'] .ch-rsu-tee:not(.is-skel) {
@@ -1916,7 +1916,7 @@ html[data-fw-theme='dark'] .ch-rsu-card__h h2 {
     top: 0;
     right: 12px;
     left: 12px;
-    height: 1px;
+    height: var(--ch-hairline-w);
     background: var(--ch-ledger-rule-soft);
     content: '';
   }
@@ -1940,8 +1940,8 @@ html[data-fw-theme='dark'] .ch-rsu-card__h h2 {
   .ch-rsu[data-ui='clubhouse'] .ch-rsu-tees {
     gap: 0;
     box-shadow:
-      inset 0 1px 0 var(--ch-ledger-rule),
-      inset 0 -1px 0 var(--ch-ledger-rule-soft);
+      inset 0 var(--ch-hairline-w) 0 var(--ch-ledger-rule),
+      inset 0 calc(-1 * var(--ch-hairline-w)) 0 var(--ch-ledger-rule-soft);
   }
   .ch-rsu[data-ui='clubhouse'] .ch-rsu-tee:not(.is-skel) {
     padding-block: 16px;
@@ -2123,7 +2123,7 @@ html[data-fw-theme='dark'] .ch-rsu-card__h h2 {
 }
 /* The open qualifier: a gilt ring on its medal, a raised green Play. */
 .ch-rsu-qual {
-  box-shadow: inset 0 0 0 1px rgb(176 149 96 / 0.5);
+  box-shadow: inset 0 0 0 var(--ch-hairline-w) var(--ch-champagne-rule-strong);
   transition: box-shadow var(--ch-dur-quick) var(--ch-ease);
 }
 .ch-rsu-qual__ic {
@@ -2151,7 +2151,7 @@ html[data-fw-theme='dark'] .ch-rsu-card__h h2 {
 .ch-rsu-hc__sum {
   background: linear-gradient(180deg, var(--ch-ivory-0), var(--ch-ivory-50));
   box-shadow:
-    inset 0 0 0 1px rgb(176 149 96 / 0.4),
+    inset 0 0 0 var(--ch-hairline-w) var(--ch-champagne-rule-strong),
     var(--ch-elevation-cast);
 }
 .ch-rsu-hc__sum > div + div {
@@ -2218,7 +2218,7 @@ html[data-fw-theme='dark'] .ch-rsu-card__h h2 {
     gap: 8px;
     min-height: 44px;
     padding: 0 2px;
-    border-bottom: 1px solid var(--ch-board-rule);
+    border-bottom: var(--ch-hairline-w) solid var(--ch-board-rule);
     transition: background var(--ch-dur-quick) var(--ch-ease);
   }
   .ch-rsu .ch-rsu-nine .ch-rsu-hole:last-child {
@@ -2315,7 +2315,7 @@ html[data-fw-theme='dark'] .ch-rsu-card__h h2 {
 @media (min-width: 821px) {
   .ch-rsu-dock {
     box-shadow:
-      0 0 0 1px rgb(176 149 96 / 0.35),
+      0 0 0 var(--ch-hairline-w) var(--ch-champagne-rule-strong),
       var(--ch-elevation-floating);
   }
 }
