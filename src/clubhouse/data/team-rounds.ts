@@ -3,7 +3,7 @@ import { createClient } from '@/lib/supabase/server';
 import { fetchAllRowsResult } from '@/lib/supabase/fetch-all-rows';
 import { chunkIds } from '@/lib/supabase/chunk-ids';
 import { chLogServer } from '../lib/track-server';
-import { fullName, seasonStartDate } from './season';
+import { fullName, loadTeamZone, seasonStartDate } from './season';
 import { teamSeasonFrom, toTeamRounds, type ChTeamRoundRow, type ChTeamRounds } from './team-rounds-shape';
 
 export type * from './team-rounds-shape';
@@ -26,12 +26,13 @@ const log = (what: string, err: unknown) => chLogServer('rounds.team', what, err
 export async function loadTeamRounds(input: { teamId: string }): Promise<ChTeamRounds> {
   const supabase = await createClient();
   const now = new Date();
-  const seasonStart = seasonStartDate(now);
-
-  const [teamRes, membersRes] = await Promise.all([
+  const [teamRes, membersRes, tz] = await Promise.all([
     supabase.from('golf_teams').select('name').eq('id', input.teamId).maybeSingle(),
     supabase.from('golf_team_members').select('player:golf_players(id, first_name, last_name)').eq('team_id', input.teamId).eq('status', 'active'),
+    loadTeamZone(supabase, input.teamId, 'rounds.team'),
   ]);
+  // The season turns on 1 August in the team's zone (owner decision 9), as the player's Rounds page does.
+  const seasonStart = seasonStartDate(now, tz);
   if (teamRes.error) log('team', teamRes.error);
   if (membersRes.error) log('members', membersRes.error);
 

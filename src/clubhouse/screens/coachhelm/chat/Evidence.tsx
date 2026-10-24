@@ -11,6 +11,7 @@ import { Icon } from '../../../ui/Icon';
 import { playerStatsHref } from './Prose';
 import { afterRailMove } from '../../../lib/rail-fold';
 import { Line } from '../../../ui/charts/Line';
+import { changeTone } from '../../../lib/format';
 
 /** Who is on the coach's team: a read about anyone else is drawn, never linked. */
 type Roster = ReadonlyArray<{ id: string }>;
@@ -214,15 +215,19 @@ function Legs({ block }: { block: Extract<AskEvidence, { kind: 'legs' }> }) {
   return (
     <div>
       <div className="ch-th-legs" role="list" aria-label={block.title}>
-        {block.rows.map((r) => (
-          <div key={r.label} className="ch-th-leg" role="listitem" data-sign={r.value < 0 ? 'loss' : 'gain'}>
-            <span className="ch-th-leg__label">{r.label}</span>
-            <span className="ch-th-leg__track" aria-hidden="true">
-              <span style={{ width: `${(Math.abs(r.value) / max) * 50}%` }} />
-            </span>
-            <span className="ch-th-leg__val">{r.display}</span>
-          </div>
-        ))}
+        {block.rows.map((r) => {
+          // The side and the tone come from the value as it prints (one decimal): a leg shown as 0.0 draws no bar (A2).
+          const tone = changeTone(r.value, false, 1);
+          return (
+            <div key={r.label} className="ch-th-leg" role="listitem" data-sign={tone === 'is-gain' ? 'gain' : tone === 'is-loss' ? 'loss' : undefined}>
+              <span className="ch-th-leg__label">{r.label}</span>
+              <span className="ch-th-leg__track" aria-hidden="true">
+                {tone && <span style={{ width: `${(Math.abs(r.value) / max) * 50}%` }} />}
+              </span>
+              <span className="ch-th-leg__val">{r.display}</span>
+            </div>
+          );
+        })}
       </div>
       <p className="ch-th-fig__take">{block.takeaway}</p>
     </div>
@@ -287,6 +292,8 @@ export function Trend({ block }: { block: Extract<AskEvidence, { kind: 'trend' }
         marks="trail"
         ends="spread"
         readAt="tip"
+        // The block's own "as a table" view is its data table (DataTable).
+        table={false}
         width={W}
         height={H}
       />

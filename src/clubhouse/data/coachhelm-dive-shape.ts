@@ -8,6 +8,7 @@ import { shortDate } from '@/lib/coachhelm/v3/lifecycle/delivery-shape';
 import { getMetricRenderConfig } from '@/lib/coachhelm/v3/standing/metric-config';
 import type { AssembledThemes, ThemeNode } from '@/lib/coachhelm/v3/themes/types';
 import { formatFixed, formatSG, formatToPar } from '../lib/format';
+import { diffSe, halvesTone, POOLED_SD, standardError } from '../lib/stats-signal';
 import { rebuiltHref } from '../shell/nav';
 import { formatComparison } from './coachhelm-map';
 import { toChRead, type ChRead } from './coachhelm-read-shape';
@@ -100,7 +101,7 @@ export interface ChDiveTheme {
   state: 'leak' | 'strength' | 'thin';
   /** Strokes gained per round in the category, when known ("−0.42"). */
   sg: string | null;
-  trend: { word: 'Improving' | 'Slipping' | 'Steady'; tone: ChDiveTone; text: string } | null;
+  trend: { word: 'Improving' | 'Slipping' | 'No clear change'; tone: ChDiveTone; text: string } | null;
 }
 
 /**
@@ -396,9 +397,13 @@ function themeRead(t: ThemeNode, role: ChViewer['role'] = 'player'): ChDiveTheme
   const trend = t.trend;
   const sg = t.sgPerRound != null ? formatSG(t.sgPerRound) : null;
   if (!trend) return { label: t.displayLabel, state: t.state, sg, trend: null };
-  const word = trend.direction === 'improving' ? 'Improving' : trend.direction === 'declining' ? 'Slipping' : 'Steady';
+  // The engine's direction cuts at a fixed 0.15 with no noise test; the page words and tones the change only past its standard
+  // error (A1, the one change rule), each window's rounds at the pooled strokes-gained spread, as every leg on Stats is judged.
+  const se = diffSe(standardError(POOLED_SD.sg, trend.recentN), standardError(POOLED_SD.sg, trend.priorN));
+  const tone = halvesTone({ delta: trend.recentAvg - trend.priorAvg, se }, false, 1);
+  const word = tone === 'is-gain' ? 'Improving' : tone === 'is-loss' ? 'Slipping' : 'No clear change';
   const span = `strokes gained averaged ${formatSG(trend.recentAvg)} a round over ${role === 'coach' ? 'the' : 'your'} last ${trend.recentN} rounds, against ${formatSG(trend.priorAvg)} over the ${trend.priorN} before`;
-  return { label: t.displayLabel, state: t.state, sg, trend: { word, tone: trend.direction === 'improving' ? 'good' : trend.direction === 'declining' ? 'warn' : 'plain', text: `${t.displayLabel}: ${span}` } };
+  return { label: t.displayLabel, state: t.state, sg, trend: { word, tone: tone === 'is-gain' ? 'good' : tone === 'is-loss' ? 'warn' : 'plain', text: `${t.displayLabel}: ${span}` } };
 }
 
 /** A read's span: the dates its window covers, or All rounds for a lifetime value. */

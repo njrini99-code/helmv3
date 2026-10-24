@@ -52,7 +52,7 @@ type Lens = 'sg' | 'score';
 const asText = (s: string) => (/^[=+\-@\t\r]/.test(s) ? `'${s}` : s);
 
 /** What the trend, the leg cards and the grid read; the rest of the page stays on the server. */
-export type ChTeamCharts = Pick<ChTeamStats, 'window' | 'filter' | 'weeks' | 'team' | 'players' | 'legWeeks' | 'legHalves' | 'legTotals' | 'grid' | 'tour' | 'roundCount' | 'figures'>;
+export type ChTeamCharts = Pick<ChTeamStats, 'window' | 'filter' | 'weeks' | 'weekStarts' | 'team' | 'players' | 'legWeeks' | 'legHalves' | 'legTotals' | 'grid' | 'tour' | 'roundCount' | 'figures'>;
 
 /** The filter in force and the one way to change it: the frame's offline refusal and slow notice, then the new address. */
 const GoFilter = createContext<{ filter: ChFilter; go: (next: ChFilter) => void; shown: ChRange }>({ filter: filterFor(), go: () => {}, shown: 'last10' });
@@ -233,24 +233,35 @@ function LegTrends({
 }) {
   const scale = legScale(legWeeks);
   return (
-    <section className="ch-sgm-row" aria-label="Strokes gained by leg, team">
-      {LEGS_LIST.map((l, i) => (
-        <LegTrend
-          key={l}
-          leg={l}
-          data={legWeeks[l]}
-          change={legHalves?.[l]}
-          mean={legTotals[i] ?? null}
-          scale={scale}
-          selected={leg === l}
-          onSelect={() => {
-            haptic('select');
-            setLeg(l);
-          }}
-        />
-      ))}
-    </section>
+    <>
+      <section className="ch-sgm-row" aria-label={`Strokes gained by leg, team. ${legScaleWords(scale)}.`}>
+        {LEGS_LIST.map((l, i) => (
+          <LegTrend
+            key={l}
+            leg={l}
+            data={legWeeks[l]}
+            change={legHalves?.[l]}
+            mean={legTotals[i] ?? null}
+            scale={scale}
+            selected={leg === l}
+            onSelect={() => {
+              haptic('select');
+              setLeg(l);
+            }}
+          />
+        ))}
+      </section>
+      {/* The four cards share one scale (B5); its ends are said once, under them (row 102). */}
+      <p className="ch-sv-note" aria-hidden="true">
+        {legScaleWords(scale)}
+      </p>
+    </>
   );
+}
+
+/** The leg cards' shared scale in words: "One scale for the four legs, −1.5 to +1.0 strokes gained a round". */
+export function legScaleWords(scale: { lo: number; hi: number }): string {
+  return `One scale for the four legs, ${formatSigned(scale.lo)} to ${formatSigned(scale.hi)} strokes gained a round`;
 }
 
 function TeamTrend({ data, focus, setFocus }: { data: ChTeamCharts; focus: string | null; setFocus: (id: string | null) => void }) {
@@ -280,10 +291,15 @@ function TeamTrend({ data, focus, setFocus }: { data: ChTeamCharts; focus: strin
     const pad = isSg ? 0.4 : 0.8;
     return isSg ? [mn - pad, mx + pad] : [mx + pad, mn - pad];
   }, [all, isSg, par, ref]);
-  const x = (i: number) => (n <= 1 ? (padL + w - padR) / 2 : padL + (i * (w - padL - padR)) / (n - 1));
+  // Weeks are spaced by their dates when the data has them (row 119): only weeks with rounds are listed, so a quiet week
+  // between two shows as a wider step, not as the next week.
+  const share = weekShares(n, data.weekStarts);
+  const x = (i: number) => (n <= 1 ? (padL + w - padR) / 2 : padL + share[i]! * (w - padL - padR));
   const y = (v: number) => padT + ((hi - v) / (hi - lo)) * (h - padT - padB);
   const ticks = isSg ? niceTicks(lo, hi) : niceTicks(Math.min(lo, hi), Math.max(lo, hi));
-  const good = (v: number) => (isSg ? v >= 0 : par != null && v <= par);
+  // A player's end figure is toned on its gap to the reference at the precision it prints (strokes gained at one decimal, a
+  // player's score in whole strokes), so a gap that prints as none is neither a gain nor a loss (A2).
+  const endTone = (v: number) => (ref == null ? '' : changeTone(v - ref, !isSg, isSg ? 1 : 0));
   const fmt = (v: number) => (isSg ? formatSigned(v) : formatFixed(v));
   // Players' scores read in whole strokes, as in the handoff; the team keeps its decimal.
   const fmtEnd = (v: number) => (isSg ? formatSigned(v) : formatFixed(v, 0));
@@ -355,11 +371,10 @@ function TeamTrend({ data, focus, setFocus }: { data: ChTeamCharts; focus: strin
     if (e.pointerType === 'touch') return;
     const r = e.currentTarget.getBoundingClientRect();
     const px = ((e.clientX - r.left) / r.width) * w;
-    const at = n <= 1 ? 0 : Math.max(0, Math.min(n - 1, Math.round(((px - padL) / (w - padL - padR)) * (n - 1))));
-    // The nearest week that has a team value (a week with no rounds is skipped, so the newest week always reads once it has one).
+    // The nearest week that has a team value, by where it is drawn (a week with no rounds is skipped, so the newest week always reads once it has one).
     let best: number | null = null;
     team.forEach((v, i) => {
-      if (v != null && (best == null || Math.abs(i - at) < Math.abs(best - at))) best = i;
+      if (v != null && (best == null || Math.abs(x(i) - px) < Math.abs(x(best) - px))) best = i;
     });
     setScrub(best);
   };
@@ -617,11 +632,11 @@ function TeamTrend({ data, focus, setFocus }: { data: ChTeamCharts; focus: strin
                     <Avatar name={p.name} id={p.id} size={22} />
                     <span>{p.first}</span>
                     <i
-                      className={'ch-sgt__bar' + (m != null && good(m) ? ' is-up' : '')}
+                      className={'ch-sgt__bar' + (m != null && endTone(m) === 'is-gain' ? ' is-up' : '')}
                       style={{ ['--ch-bar' as string]: `${widest > 0 ? (Math.abs(gapOf(m) ?? 0) / widest) * 100 : 0}%` }}
                       aria-hidden="true"
                     />
-                    <b className={`ch-num ${m == null ? '' : good(m) ? 'ch-gain' : 'ch-loss'}`}>{m != null ? fmtEnd(m) : NO_DATA}</b>
+                    <b className={`ch-num ${m == null ? '' : endTone(m) === 'is-gain' ? 'ch-gain' : endTone(m) === 'is-loss' ? 'ch-loss' : ''}`}>{m != null ? fmtEnd(m) : NO_DATA}</b>
                   </button>
                 );
               })}
@@ -652,7 +667,17 @@ function niceTicks(lo: number, hi: number): number[] {
 }
 
 /** The four leg charts' one scale: the handoff's range (−1.5 to +1), widened only when a week of any leg falls outside it. */
-function legScale(legWeeks: ChTeamStats['legWeeks']): { lo: number; hi: number } {
+/** Each week's share of the plot's width, first at 0 and last at 1: by date when every week has one, else evenly by index. */
+export function weekShares(n: number, starts: readonly string[] | undefined): number[] {
+  const even = Array.from({ length: n }, (_, i) => (n <= 1 ? 0.5 : i / (n - 1)));
+  const at = starts?.length === n ? starts.map((d) => Date.parse(d)) : null;
+  if (!at || n < 2 || at.some((t) => !Number.isFinite(t))) return even;
+  const t0 = at[0]!;
+  const t1 = at[n - 1]!;
+  return t1 > t0 ? at.map((t) => (t - t0) / (t1 - t0)) : even;
+}
+
+export function legScale(legWeeks: ChTeamStats['legWeeks']): { lo: number; hi: number } {
   const vals = LEGS_LIST.flatMap((l) => legWeeks[l]).filter((v): v is number => v != null);
   return { lo: Math.min(-1.5, Math.min(...vals) - 0.2), hi: Math.max(1, Math.max(...vals) + 0.2) };
 }

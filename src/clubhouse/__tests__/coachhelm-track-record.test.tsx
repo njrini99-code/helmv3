@@ -39,7 +39,8 @@ vi.mock('@/lib/supabase/server', () => {
       },
       from: (table: string) => {
         db.calls.push(`from:${table}`);
-        return chain(() => (table === 'golf_coach_insights' ? db.insights : table === 'golf_team_coachhelm_settings' ? db.teamSettings : db.corrections));
+        // golf_team_settings: the team's zone for the season's turn (owner decision 9); none stored is the default zone.
+        return chain(() => (table === 'golf_coach_insights' ? db.insights : table === 'golf_team_coachhelm_settings' ? db.teamSettings : table === 'golf_team_settings' ? { data: null, error: null } : db.corrections));
       },
     }),
   };
@@ -186,7 +187,7 @@ describe('loadCoachTrackRecord', () => {
     };
     db.corrections = { data: [{ insight_id: 'a', author_user_id: 'c1', author_role: 'coach', kind: 'confirm', created_at: '2026-10-01T00:00:00Z', team_id: 'team' }], error: null };
     const out = await loadCoachTrackRecord({ coachId: 'coach', teamId: 'team', now: new Date('2026-10-21T00:00:00Z') });
-    expect(db.calls).toEqual(['from:golf_team_coachhelm_settings', 'rpc:golf_coachhelm_shown_reads', 'from:golf_coach_insights', 'from:golf_coachhelm_corrections']);
+    expect(db.calls).toEqual(['from:golf_team_coachhelm_settings', 'from:golf_team_settings', 'rpc:golf_coachhelm_shown_reads', 'from:golf_coach_insights', 'from:golf_coachhelm_corrections']);
     if (out.status !== 'ready' || out.data.state !== 'ready') throw new Error('not ready');
     expect(out.data.program).toBe('Since Aug 1 CoachHelm showed 2 reads on this team. 1 held when rechecked, 0 cleared on their own, 0 were contradicted by later rounds. 1 not rechecked yet.');
     expect(out.data.corrections).toBe('Your staff marked 1 good read.');

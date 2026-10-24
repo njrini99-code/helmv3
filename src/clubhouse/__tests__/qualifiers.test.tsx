@@ -62,7 +62,7 @@ import { QualifierForm } from '../screens/qualifiers/QualifierForm';
 import { QualifierSelection } from '../screens/qualifiers/QualifierSelection';
 import { QualifierDetailSkeleton, QualifierFormSkeleton, QualifierSelectionSkeleton, QualifiersSkeleton } from '../screens/qualifiers/QualifiersSkeleton';
 import { useLiveStandings } from '../screens/qualifiers/live';
-import { buildBoard, roundPars, stageNoteText, validateForm, type ChQFormValues, type ChQRound } from '../screens/qualifiers/model';
+import { buildBoard, roundPars, sampleNote, stageNoteText, validateForm, type ChQFormValues, type ChQRound } from '../screens/qualifiers/model';
 import { LIVE_SELECTION_WRITES, runEditPlan, selectionReason, startSelecting, type ChQSelectionWrites, type ChQWrites } from '../screens/qualifiers/writes';
 import { DETAIL_INDEX, PLAYER_ID, PREVIEW_COURSES, PREVIEW_TEES, previewCreateForm, previewDetail, previewEditForm, previewList, previewSelection } from '../preview/fixtures-qualifiers';
 import { isRebuilt } from '../shell/nav';
@@ -165,10 +165,10 @@ describe('Qualifiers · the standings model', () => {
     course: 'Finley GC',
     holesPlayed,
   });
-  it('ranks by total to par, then strokes, then more rounds; ties share a T position', () => {
+  it('ranks by total to par, then strokes; ties share a T position', () => {
     const b = buildBoard({
       entrants: ['a', 'b', 'c', 'd', 'e'].map(e),
-      rounds: [rd('a', 1, 70, -2), rd('b', 1, 71, -1), rd('c', 1, 71, -1), rd('d', 1, 72, 1), rd('d', 2, 71, -1), rd('e', 1, 74, 2)],
+      rounds: [rd('a', 1, 70, -2), rd('b', 1, 71, -1), rd('c', 1, 71, -1), rd('d', 1, 72, 1), rd('e', 1, 74, 2)],
       squad: 3,
       picks: 1,
       status: 'in_progress',
@@ -186,7 +186,28 @@ describe('Qualifiers · the standings model', () => {
     // until the coach chooses (Q-114). D is fourth of a squad of three, below the travel cut, so D is out, not on the
     // Bubble: the Bubble is inside the squad (DESIGN.md, production's tiers; the parity fix of 2026-10-17).
     expect(b.rows.map((r) => r.state)).toEqual(['qualifying', 'tie', 'tie', null, null]);
-    expect(b.submitted).toBe(6);
+    expect(b.submitted).toBe(5);
+  });
+  it('owner decision 10: complete cards rank first; a card a round short goes below them, flagged, whatever its total', () => {
+    const b = buildBoard({
+      entrants: ['a', 'b', 'c', 'd'].map(e),
+      // A skipped round two with a −4 opening; B and C played both; D played both at the same total as C.
+      rounds: [rd('a', 1, 68, -4), rd('b', 1, 74, 2), rd('b', 2, 75, 3), rd('c', 1, 72, 0), rd('c', 2, 72, 0), rd('d', 1, 70, -2), rd('d', 2, 74, 2)],
+      squad: 2,
+      picks: 0,
+      status: 'in_progress',
+      selectionState: 'scoring',
+      selections: null,
+      numRounds: 3,
+    });
+    expect(b.rows.map((r) => [r.playerId, r.position, r.tied, r.missed])).toEqual([
+      ['c', 1, true, false],
+      ['d', 1, true, false],
+      ['b', 3, false, false],
+      ['a', 4, false, true],
+    ]);
+    expect(sampleNote(b.rows[3]!, b, 3)).toBe('Missed a round · 1 of 3 rounds');
+    expect(sampleNote(b.rows[0]!, b, 3)).toBeNull();
   });
   it('averages full rounds only, and counts the shorter ones it left out', () => {
     const b = buildBoard({ entrants: [e('a')], rounds: [rd('a', 1, 72, 0), rd('a', 2, 38, 2, 9)], squad: 5, picks: 1, status: 'in_progress', selectionState: 'open', selections: null });

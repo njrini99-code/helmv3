@@ -4,6 +4,7 @@ import { fetchAllRowsResult } from '@/lib/supabase/fetch-all-rows';
 import { chunkIds } from '@/lib/supabase/chunk-ids';
 import { isCountableRound } from '@/lib/golf/round-countable';
 import { withCanonicalRoundTotal } from '@/lib/golf/round-total';
+import { getValidTimezone } from '@/lib/calendar/timezone';
 import { chLogServer } from '../lib/track-server';
 import { deltaTone, halvesChange } from '../lib/stats-signal';
 import { hasHoleScores, isTotalOnlyCountable } from './round-scope';
@@ -68,6 +69,16 @@ export function seasonStartDate(now = new Date(), tz: string = SEASON_DEFAULT_TZ
   const year = Number(parts.find((x) => x.type === 'year')!.value);
   const month = Number(parts.find((x) => x.type === 'month')!.value);
   return `${month >= 8 ? year : year - 1}-08-01`;
+}
+
+/**
+ * The team's time zone, for the season's turn (owner decision 9: the season from 1 August in the team's zone). A failed read or a
+ * value that isn't a real zone falls back to the product's default, logged, so a season is never turned on the server's UTC.
+ */
+export async function loadTeamZone(supabase: Supabase, teamId: string, surface: string): Promise<string> {
+  const { data, error } = await supabase.from('golf_team_settings').select('timezone').eq('team_id', teamId).maybeSingle();
+  if (error) chLogServer(surface, 'timezone', error);
+  return getValidTimezone((data as { timezone?: string | null } | null)?.timezone ?? null);
 }
 
 /** How far back "Last 10" reads (Q-122): a rolling year, which always reaches the season start (1 August is never more than 365 days back). */

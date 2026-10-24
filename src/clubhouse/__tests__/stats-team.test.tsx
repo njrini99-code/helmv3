@@ -94,6 +94,22 @@ beforeEach(() => {
   tables.current = seasonTables();
 });
 
+describe('Stats team · the season turns in the team’s zone (row 116, owner decision 9)', () => {
+  it('at 11 PM on 31 July in Los Angeles a Pacific team’s round that day is this season; on New York’s clock it would not be', async () => {
+    vi.useFakeTimers({ toFake: ['Date'] });
+    vi.setSystemTime(new Date('2026-08-01T06:00:00Z'));
+    try {
+      const round = { ...(seasonTables().golf_rounds as { data: Array<Record<string, unknown>> }).data[0], round_date: '2026-07-31' };
+      tables.current = { ...seasonTables(), golf_rounds: { data: [round] }, golf_team_settings: { data: { timezone: 'America/Los_Angeles' } } };
+      expect((await load()).roundCount).toBe(1);
+      tables.current = { ...seasonTables(), golf_rounds: { data: [round] }, golf_team_settings: { data: { timezone: 'America/New_York' } } };
+      expect((await load()).roundCount).toBe(0);
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+});
+
 describe('Stats team · saves that fail', () => {
   it('CH-4001 CH-4702 42301 the export is blocked by the browser: a specific toast, the error tick, and a low-severity report', async () => {
     const user = userEvent.setup();
@@ -637,6 +653,19 @@ describe('Stats team · phone (v2, Coach - Stats - Mobile.html)', () => {
     wrap(stats());
     await user.click(screen.getByRole('radio', { name: /Season/ }));
     expect(router.push).toHaveBeenCalledWith('/golf/dashboard/stats?window=season', { scroll: false });
+  });
+
+  it('a phone window change keeps the legs and the rank mounted, so their bars glide instead of being redrawn (B9)', async () => {
+    const data = stats();
+    const view = wrap(data);
+    await waitFor(() => expect(document.querySelector('.ch-stm .ch-stm-leg__v')).not.toBeNull());
+    const bar = document.querySelector('.ch-stm .ch-stm-leg__v');
+    const dot = document.querySelector('.ch-stm .ch-sv-tr__dot');
+    expect(dot).not.toBeNull();
+    view.rerender(tree(stats({ window: 'season', legTotals: data.legTotals.map((v) => (v == null ? v : v * 2)) })));
+    // The same nodes: a remount would have drawn new ones at the new widths, with nothing to glide from.
+    expect(document.querySelector('.ch-stm .ch-stm-leg__v')).toBe(bar);
+    expect(document.querySelector('.ch-stm .ch-sv-tr__dot')).toBe(dot);
   });
 
   it('phone period changes clear unavailable comparisons and coverage without inventing zero changes', () => {

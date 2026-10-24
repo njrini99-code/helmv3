@@ -3,6 +3,7 @@
 import { useId, type ReactNode } from 'react';
 import { useGlide } from '../../lib/motion-glide';
 import { useChartPin } from '../../lib/use-chart-pin';
+import { ChartTable } from './ChartTable';
 
 /**
  * One line chart for Clubhouse (B5): every trend reads the same way. Better is always up (a lower score sits higher with
@@ -18,6 +19,22 @@ export interface ChLinePoint {
   /** What the point is called on the axis and in the readout ("Sep 23"). */
   x: string;
   y: number | null;
+  /** When the point happened (epoch ms). With every point dated, the line spaces them by real time, not by index (row 119). */
+  at?: number;
+}
+
+/**
+ * Where each of `n` points sits across a plot, as a share of its width: evenly by index (the middle of each of `n` slots),
+ * or, given every point's time, by real time between the first slot's middle and the last's, so a two-week gap is twice a
+ * one-week gap. Times that are all equal, or missing, fall back to the index.
+ */
+export function slotPositions(n: number, at?: ReadonlyArray<number | null | undefined>): number[] {
+  const even = Array.from({ length: n }, (_, i) => (i + 0.5) / Math.max(n, 1));
+  if (!at || n < 2 || at.length !== n || at.some((t) => t == null || !Number.isFinite(t))) return even;
+  const t0 = Math.min(...(at as number[]));
+  const t1 = Math.max(...(at as number[]));
+  if (t1 === t0) return even;
+  return (at as number[]).map((t) => (0.5 + (n - 1) * ((t - t0) / (t1 - t0))) / n);
 }
 
 /** Room for the value ticks at the left; without them the line runs nearly edge to edge. */
@@ -136,6 +153,7 @@ export function Line({
   readAt = 'line',
   ends = true,
   interactive = true,
+  table = true,
   width,
   height,
   className,
@@ -168,6 +186,8 @@ export function Line({
   ends?: boolean | 'spread';
   /** Off where the chart sits inside a control (a leg card is a button): no readout, no focus, hidden from a screen reader. */
   interactive?: boolean;
+  /** The figures as a visually hidden table after the summary (AX-17); off where the page offers its own table of them. */
+  table?: boolean;
   /** The plot's width in its own units: 340 on a phone, 680 on a desktop, or about its drawn width for a small multiple. */
   width?: number;
   /** The plot's height in its own units; the chart scales to fit its width. */
@@ -180,11 +200,12 @@ export function Line({
   const plotW = W - PAD.l - PAD.r;
   const plotH = H - PAD.t - PAD.b;
   const n = points.length;
-  const pin = useChartPin(n, 'x', [PAD.l / W, 1 - PAD.r / W]);
+  const slots = slotPositions(n, points.map((p) => p.at));
+  const pin = useChartPin(n, 'x', [PAD.l / W, 1 - PAD.r / W], slots);
   const values = points.map((p) => p.y);
   const dom = domain ?? lineDomain(values, baseline?.value ?? null);
   const y = lineY(dom, PAD.t, plotH, lowerIsBetter);
-  const x = (i: number) => PAD.l + ((i + 0.5) / Math.max(n, 1)) * plotW;
+  const x = (i: number) => PAD.l + slots[i]! * plotW;
   const ticks = axis ? lineTicks(dom[0], dom[1]) : [];
   const newest = values.reduce<number>((at, v, i) => (v != null ? i : at), -1);
   // The heights drawn, gliding from the old ones on a change (the baseline's last), so the path and the points move together.
@@ -323,6 +344,8 @@ export function Line({
           {refText}
         </p>
       )}
+      {/* The figures, for a screen reader that asks for them after the summary (AX-17). */}
+      {table && <ChartTable caption={label} columns={['Point', 'Value']} rows={points.map((p) => [p.x, p.y == null ? 'No figure' : format(p.y)])} />}
     </div>
   );
 }

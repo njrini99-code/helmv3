@@ -3,7 +3,8 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 
 vi.mock('../../lib/haptics', () => ({ haptic: vi.fn(), hapticScrub: vi.fn() }));
 
-import { FormLine, FormRange } from '../FormLine';
+import { FormLine, FormRange, formDomain } from '../FormLine';
+import { formRangeWords } from '../form-range';
 
 afterEach(cleanup);
 
@@ -45,5 +46,15 @@ describe('FormRange', () => {
     const img = screen.getByRole('img', { name: 'Form' });
     expect(img.querySelector('.ch-line')!.getAttribute('aria-hidden')).toBe('true');
     expect(img.querySelector('[tabindex]')).toBeNull();
+  });
+});
+
+describe('formRangeWords (row 102)', () => {
+  it('names the ends of the shared range: the drawn lines\' lowest and highest scores, the domain without its padding', () => {
+    const trends = [[72, 75, 70], [84, 80], [90]];
+    // [90] is under earlyBelow 2, so it draws nothing and stretches nothing.
+    expect(formRangeWords(trends)).toBe('70 to 84');
+    expect(formDomain(trends.slice(0, 2))).toEqual([70 - 0.6, 84 + 0.6]);
+    expect(formRangeWords([[74]], 2)).toBeNull();
   });
 });

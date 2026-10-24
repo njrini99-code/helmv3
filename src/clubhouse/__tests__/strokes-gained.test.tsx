@@ -39,6 +39,7 @@ import { RoundReview } from '../screens/rounds/RoundReview';
 import { StatsPlayer } from '../screens/stats/StatsPlayer';
 import { puttingNote } from '../screens/stats/notes';
 import { StatsTeam } from '../screens/stats/StatsTeam';
+import { legScale, legScaleWords } from '../screens/stats/StatsTeamIslands';
 import { CrumbProvider } from '../shell/crumbs';
 import { PhoneChromeProvider, usePhoneChromeState } from '../shell/phone-chrome';
 import { ToastProvider } from '../ui/Toast';
@@ -328,6 +329,14 @@ describe('team stats · desktop', () => {
     showTeam(team({ figures: [{ ...sg!, delta: null, context: 'No earlier rounds', state: 'no-comparison' }, ...rest] }));
     expect(code('CH-4312')!.textContent).toContain('No earlier rounds');
     expect(code('CH-4312')!.querySelector('svg')).toBeNull();
+  });
+
+  it('the leg cards say their one shared scale once, the same ends their lines are drawn on (row 102)', () => {
+    showTeam(team());
+    const words = legScaleWords(legScale(PREVIEW_TEAM_STATS.legWeeks));
+    const note = [...document.querySelectorAll('.ch-sv-note')].find((n) => /One scale for the four legs/.test(n.textContent ?? ''));
+    expect(note?.textContent).toBe(words);
+    expect(document.querySelector('.ch-sgm-row')!.getAttribute('aria-label')).toContain(words);
   });
 
   it('each leg card’s headline is the window’s mean a round, not the latest week: putting is −0.3 (amber) though its last week was +0.3', () => {

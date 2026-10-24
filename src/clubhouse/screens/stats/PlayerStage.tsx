@@ -2,7 +2,7 @@
 
 import { useState, type KeyboardEvent, type PointerEvent } from 'react';
 import { EmptyState } from '../../ui/States';
-import { formatAvg, formatSigned, formatToPar, NO_DATA } from '../../lib/format';
+import { changeTone, formatAvg, formatSigned, formatToPar, NO_DATA } from '../../lib/format';
 import { nearestIndex, readRound, stepIndex } from './scrub';
 
 export type StageRound = { label: string; course?: string; score: number; toPar: number | null; holes: number };
@@ -95,13 +95,14 @@ export function PlayerStage({ rounds, first, coach, teamAvg, meta, note }: { rou
       >
         {rounds.map((r, i) => {
           const dev = r.score - avg;
-          const better = dev < 0;
+          // Better or worse than the average as the readout prints it (one decimal): 0.0 against it is neither (A2).
+          const tone = changeTone(dev, true, 1);
           return (
             <li
               key={i}
-              className={'ch-fm__c' + (better ? ' is-up' : dev > 0 ? ' is-down' : '') + (i === n - 1 ? ' is-last' : '') + (i === at ? ' is-read' : '')}
+              className={'ch-fm__c' + (tone === 'is-gain' ? ' is-up' : tone === 'is-loss' ? ' is-down' : '') + (i === n - 1 ? ' is-last' : '') + (i === at ? ' is-read' : '')}
               style={{ ['--ch-bar' as string]: `${(Math.abs(dev) / widest) * 100}%` }}
-              aria-label={`${r.label}: ${r.score}, ${formatToPar(r.toPar)}, ${dev === 0 ? 'at' : `${formatSigned(dev, 1)} against`} the average`}
+              aria-label={`${r.label}: ${r.score}, ${formatToPar(r.toPar)}, ${tone === '' ? 'at' : `${formatSigned(dev, 1)} against`} the average`}
             >
               <span className="ch-fm__plot" aria-hidden="true">
                 <i className="ch-fm__bar" />

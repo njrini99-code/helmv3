@@ -200,6 +200,22 @@ describe('this window against the one before', () => {
     expect(row('Scoring avg')).toMatchObject({ last: 72, previous: 76, lowerIsBetter: true });
     expect(row('Putts per round')).toMatchObject({ last: 30, previous: 30, lowerIsBetter: true });
   });
+
+  it('each change carries its standard error (A1): the pooled score spread under five rounds; rates and putts none until five rounds measure them', () => {
+    const c = windowCompare(
+      [round('a', '2026-09-10', { total_gir: 9, total_gir_possible: 18, total_score: 72, total_putts: 30 })],
+      [round('b', '2026-09-01', { total_gir: 9, total_gir_possible: 18, total_score: 74, total_putts: 31 })],
+    )!;
+    const se = (l: string) => c.rows.find((r) => r.label === l)!.se;
+    // 3.6 a round over one round each side: √(3.6² + 3.6²).
+    expect(se('Scoring avg')).toBeCloseTo(Math.sqrt(2) * 3.6, 6);
+    expect(se('Greens in regulation')).toBeNull();
+    expect(se('Putts per round')).toBeNull();
+    const five = (p: string, girs: number[]) => girs.map((g, i) => round(`${p}${i}`, `2026-09-${String(10 + i).padStart(2, '0')}`, { total_gir: g, total_gir_possible: 18, total_score: 72 + i, total_putts: 30 + i }));
+    const both = windowCompare(five('n', [9, 10, 11, 12, 13]), five('o', [6, 7, 8, 9, 10]))!;
+    expect(both.rows.find((r) => r.label === 'Greens in regulation')!.se).toBeGreaterThan(0);
+    expect(both.rows.find((r) => r.label === 'Putts per round')!.se).toBeGreaterThan(0);
+  });
 });
 
 // Swap audit C-16: the strip set the fairway share of all tee shots beside left and right as shares of the misses only
@@ -729,9 +745,10 @@ describe('Rounds tab · bests and comparison', () => {
     expect(tile(bests, 'Fewest putts').textContent).toContain('Oakmont CC · Oct 12');
     const cmp = card('rx-compare');
     expect(cmp.querySelector('th[scope="col"]:nth-child(2)')!.textContent).toBe('Latest 10');
-    // Scoring 73.6 against 72.9 is worse (lower is better): amber; putts 29.8 against 30.6 is better: green.
+    // A change is coloured only past its standard error (A1): scoring's +0.7 is inside its 1.6, so it is printed in plain ink;
+    // putts 29.8 against 30.6 clears its 0.7 (better: green), greens' −5.6 points its 5.4 (worse: amber).
     expect(cells(rowOf(cmp, 'Scoring avg'))).toEqual(['73.6', '72.9', '+0.7']);
-    expect(rowOf(cmp, 'Scoring avg').querySelectorAll('td')[2]!.className).toContain('ch-loss');
+    expect(rowOf(cmp, 'Scoring avg').querySelectorAll('td')[2]!.className).not.toMatch(/ch-(gain|loss)/);
     expect(rowOf(cmp, 'Putts per round').querySelectorAll('td')[2]!.className).toContain('ch-gain');
     expect(rowOf(cmp, 'Greens in regulation').querySelectorAll('td')[2]!.className).toContain('ch-loss');
   });

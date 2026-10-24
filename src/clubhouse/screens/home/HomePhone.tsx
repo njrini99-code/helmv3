@@ -376,7 +376,7 @@ function Form({ form }: { form: ChTeamForm }) {
         </div>
         <div>
           <dt>GIR</dt>
-          <dd className="ch-num">{form.gir.pct != null ? `${Math.round(form.gir.pct)}%` : NO_DATA}</dd>
+          <dd className="ch-num">{form.gir.pct != null ? `${Math.round(form.gir.pct)}%` : (form.gir.needs ?? NO_DATA)}</dd>
           <dd className={'ch-num ' + deltaTone(form.gir.delta, form.gir.se, false)}>{form.gir.delta != null ? `${formatSigned(form.gir.delta, 0)} pts` : partOf(form.basis.girRounds, form.basis.rounds)}</dd>
         </div>
         <div>

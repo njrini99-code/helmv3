@@ -3,7 +3,7 @@
 import { formatFixed } from '../../lib/format';
 import { Line } from '../../ui/charts/Line';
 
-type Day = { label: string; score: number | null };
+type Day = { label: string; score: number | null; date?: string };
 
 /**
  * The phone's team scoring trend (P004, direction A), on the one line chart (ui/charts/Line, B5): the team's average on
@@ -16,7 +16,8 @@ export default function TeamTrendChart({ days, mean, label }: { days: Day[]; mea
     <Line
       className="ch-stm-line"
       label={label}
-      points={days.map((d) => ({ x: d.label, y: d.score }))}
+      // Round days spaced by their dates (row 119): a quiet fortnight shows as a gap, not as the next day.
+      points={days.map((d) => ({ x: d.label, y: d.score, ...(d.date ? { at: Date.parse(d.date) } : {}) }))}
       lowerIsBetter
       baseline={{ value: mean, dashed: true }}
       axis={false}

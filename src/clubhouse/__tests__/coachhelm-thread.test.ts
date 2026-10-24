@@ -251,6 +251,16 @@ describe('evidenceBlocks: the shape decides the drawing, and nothing is dropped'
       expect(b.takeaway).toBe('Largest loss: Strokes gained: putting at −1.9.');
     }
   });
+  it('a leg that prints as 0.0 is no loss: the takeaway does not name it (A2)', () => {
+    const sg = { ...ASK_EV_PARTIAL, coverage: 'complete' as const, coverage_note: null, measurements: [
+      { ...ASK_EV_PARTIAL.measurements[0]!, metric_id: 'sg_putting', metric_label: 'Strokes gained: putting', unit: 'strokes' as const, value: -0.04 },
+      { ...ASK_EV_PARTIAL.measurements[0]!, metric_id: 'sg_approach', metric_label: 'Strokes gained: approach', unit: 'strokes' as const, value: 0.3 },
+    ] };
+    const [b] = evidenceBlocks(sg);
+    if (b?.kind !== 'legs') throw new Error('expected legs');
+    expect(b.rows[0]?.display).toBe('0.0');
+    expect(b.takeaway).toBe('No leg is below zero.');
+  });
   it('a single team figure is a tile; a partial read keeps its note', () => {
     const [b] = evidenceBlocks(ASK_EV_PARTIAL);
     expect(b?.kind).toBe('tiles');

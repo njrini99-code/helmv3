@@ -435,6 +435,17 @@ describe('Stats player · phone (v2, Coach - Stats - Mobile.html)', () => {
     expect(screen.queryByRole('group', { name: /^Answer / })).toBeNull();
   });
 
+  it('the phone trend says which way the scores went by its halves past their standard error, never first against last (A1)', () => {
+    const base = PREVIEW_PLAYER.rounds[0]!;
+    // Newest first, as the profile holds them: 70s lately, 80s before, a clear change; a lone high last round is not one.
+    const at = (scores: number[]) => scores.map((score, i) => ({ ...base, id: `r${i}`, score, holes: 18 }));
+    phone(player({ rounds: at([70, 70, 70, 80, 80, 80]) }));
+    expect(screen.getByRole('group', { name: /Scores over the last 6 rounds/ }).getAttribute('aria-label')).toMatch(/, lower lately\./);
+    cleanup();
+    phone(player({ rounds: at([79, 72, 73, 72, 73, 72]) }));
+    expect(screen.getByRole('group', { name: /Scores over the last 6 rounds/ }).getAttribute('aria-label')).toMatch(/, no clear change\./);
+  });
+
   it('the phone trend: a line from two rounds; one round says what there is instead of vanishing; none leaves it out', () => {
     const [first, second] = PREVIEW_PLAYER.rounds;
     const trend = () => screen.queryByRole('heading', { level: 2, name: 'Scoring trend' });

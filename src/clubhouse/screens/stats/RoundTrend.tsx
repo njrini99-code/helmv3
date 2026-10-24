@@ -7,6 +7,8 @@ import { formatSigned } from '../../lib/format';
 import { needsText } from '../../lib/stats-signal';
 import { sgBaseline, type ChSgTour } from '../../lib/sg';
 import { useChartPin } from '../../lib/use-chart-pin';
+import { slotPositions } from '../../ui/charts/Line';
+import { ChartTable } from '../../ui/charts/ChartTable';
 import { meanSeries, niceTicks, parLine, readTrendRound, tickDigits, trendNote, trendState, withValue, type TrendKind, type TrendRound } from './round-trend';
 
 const PAD = { l: 34, r: 14, t: 14, b: 24 } as const;
@@ -41,7 +43,9 @@ export function RoundTrend({
   const plotW = W - PAD.l - PAD.r;
   const plotH = H - PAD.t - PAD.b;
   const n = rounds.length;
-  const pin = useChartPin(n, 'x', [PAD.l / W, 1 - PAD.r / W]);
+  // Rounds are spaced by their dates (row 119): a three-week break looks like one, not like the day after.
+  const slots = slotPositions(n, rounds.map((r) => r.at));
+  const pin = useChartPin(n, 'x', [PAD.l / W, 1 - PAD.r / W], slots);
 
   const known = withValue(rounds);
   if (known.length === 0 || (kind === 'sg' && known.length < 3)) {
@@ -70,7 +74,7 @@ export function RoundTrend({
   const hi = hi0 + pad;
   // The better value sits higher: a lower score, a higher strokes gained.
   const y = (v: number) => PAD.t + (kind === 'score' ? (v - lo) / (hi - lo) : (hi - v) / (hi - lo)) * plotH;
-  const x = (i: number) => PAD.l + ((i + 0.5) / n) * plotW;
+  const x = (i: number) => PAD.l + slots[i]! * plotW;
   const ticks = niceTicks(lo, hi, 3);
   const state = trendState(kind, rounds);
   const hollow = state === 'early';
@@ -147,6 +151,12 @@ export function RoundTrend({
           {rounds[n - 1]!.label}
         </text>
       </svg>
+      {/* The rounds, for a screen reader that asks for them after the summary (AX-17). */}
+      <ChartTable
+        caption={label}
+        columns={['Round', 'Course', kind === 'score' ? 'Score per 18' : 'Strokes gained per 18']}
+        rows={rounds.map((r) => [r.label, r.course ?? '', r.value == null ? 'No figure' : kind === 'score' ? String(Math.round(r.value)) : formatSigned(r.value)])}
+      />
     </div>
   );
 }

@@ -286,16 +286,20 @@ describe('the deep dive as the page draws it', () => {
       label: 'Putting',
       state: 'leak',
       sg: '−0.4',
-      trend: { word: 'Improving', tone: 'good', text: 'Putting: strokes gained averaged −0.3 a round over your last 5 rounds, against −0.6 over the 5 before' },
+      // +0.3 over five rounds against five is well inside its standard error (about 2.4 at the pooled spread): no clear change (A1).
+      trend: { word: 'No clear change', tone: 'plain', text: 'Putting: strokes gained averaged −0.3 a round over your last 5 rounds, against −0.6 over the 5 before' },
     });
     expect(t.course_management?.trend).toBeNull();
-    const node = (direction: 'improving' | 'declining' | 'steady'): ThemeNode => ({
+    // The word comes from the change against its standard error, never from the engine's fixed 0.15 cut.
+    const node = (direction: 'improving' | 'declining' | 'steady', recentAvg: number, priorAvg: number): ThemeNode => ({
       ...DIVE_THEMES.themes[0]!,
-      trend: { direction, recentAvg: 0.1, priorAvg: 0.2, delta: -0.1, recentN: 4, priorN: 4 },
+      trend: { direction, recentAvg, priorAvg, delta: recentAvg - priorAvg, recentN: 5, priorN: 5 },
     });
-    const word = (d: 'improving' | 'declining' | 'steady') => themesByCategory({ ...DIVE_THEMES, themes: [node(d)] }).putting!.trend;
-    expect(word('declining')).toMatchObject({ word: 'Slipping', tone: 'warn' });
-    expect(word('steady')).toMatchObject({ word: 'Steady', tone: 'plain' });
+    const word = (n: ThemeNode) => themesByCategory({ ...DIVE_THEMES, themes: [n] }).putting!.trend;
+    expect(word(node('declining', 0.1, 0.3))).toMatchObject({ word: 'No clear change', tone: 'plain' });
+    expect(word(node('improving', 1.5, -1.5))).toMatchObject({ word: 'Improving', tone: 'good' });
+    expect(word(node('declining', -1.5, 1.5))).toMatchObject({ word: 'Slipping', tone: 'warn' });
+    expect(word(node('steady', 0.1, 0.05))).toMatchObject({ word: 'No clear change', tone: 'plain' });
     expect(themesByCategory(null)).toEqual({});
   });
 
@@ -660,7 +664,7 @@ describe('the Deep dive screen', () => {
     show();
     const part = within(article()).getByRole('region', { name: 'How it has moved' });
     expect(part.textContent).toContain('From 31% to 23%, down 8 pts');
-    expect(part.textContent).toContain('Improving');
+    expect(part.textContent).toContain('No clear change');
     expect(part.textContent).toContain('Putting: strokes gained averaged −0.3 a round over your last 5 rounds, against −0.6 over the 5 before');
     expect(part.textContent).toContain('+6 to +2');
     expect(part.querySelector('svg')!.getAttribute('aria-hidden')).toBe('true');

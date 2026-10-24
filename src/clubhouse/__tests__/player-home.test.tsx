@@ -180,6 +180,22 @@ describe('Player Home · desktop (Player - Home.html)', () => {
     expect(legs[3]!.querySelector('.ch-ph-leg__sg')!.textContent).toMatch(/^\+0\.1/);
   });
 
+  it('a leg against the Tour: level as printed is neither, an early read is never toned, and one under its floor says what it needs (A2, A7)', () => {
+    const rows = PREVIEW_PLAYER_HOME.legs!.rows;
+    const with_ = (over: Partial<(typeof rows)[number]>) => home({ legs: { ...PREVIEW_PLAYER_HOME.legs!, rows: rows.map((r) => (r.key === 'approach' ? { ...r, ...over } : r)) } });
+    const bar = () => document.querySelectorAll('.ch-ph-leg')[1]!.querySelector('.ch-ph-bench__t i')!;
+    show(with_({ value: 66.4, bench: 66 }));
+    expect(bar().className).toBe('');
+    cleanup();
+    show(with_({ value: 74, bench: 66, early: 'Early read · 3 rounds' }));
+    expect(bar().className).toBe('');
+    expect(document.querySelectorAll('.ch-ph-leg')[1]!.textContent).toMatch(/Early read · 3 rounds/);
+    cleanup();
+    show(with_({ value: null, needs: 'Needs 2 rounds' }));
+    expect(document.querySelectorAll('.ch-ph-leg')[1]!.textContent).toMatch(/Needs 2 rounds/);
+    expect(document.querySelectorAll('.ch-ph-leg')[1]!.querySelector('.ch-ph-bench')).toBeNull();
+  });
+
   it('CH-2201 CH-2202 CH-2215 reads that fail say so, never zeros or an empty week', () => {
     show(PREVIEW_PLAYER_HOME_FAILED);
     for (const c of ['CH-2201', 'CH-2202', 'CH-2215']) expect(code(c)).not.toBeNull();

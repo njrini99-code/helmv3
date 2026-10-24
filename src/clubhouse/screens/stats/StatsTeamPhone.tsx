@@ -34,6 +34,7 @@ import TeamTrendChart from './TeamTrendChart';
 import { hasRange, isFiltered } from '../../data/stats-filter';
 import { useChSessionState } from '../../lib/session-state';
 import { useArrivalPainted } from '../../lib/use-painted';
+import { useGlide } from '../../lib/motion-glide';
 import { pluralWord } from '../../lib/plural';
 import { LargeTitle } from '../../ui/LargeTitle';
 
@@ -72,7 +73,8 @@ export function StatsTeamPhone({ data }: { data: ChTeamStats }) {
     if (data.puttsError) failed.push('team putting');
   }
   const covered = failed.length > 1;
-  // A window or filter change remounts the sections below, so their state starts clean for the new scope.
+  // A window or filter change remounts the players list, so its state starts clean for the new scope. The legs and the rank
+  // stay mounted so their bars and dots glide to the new window (B9); the rank lets go of a pin when its order changes.
   const scope = JSON.stringify(data.filter);
   // The legs, players and putting start below the first screen (the legs at 802px of 852), so a switch to Stats renders
   // them a frame after the page has painted: their peeks and rows were most of the switch's long frame.
@@ -146,10 +148,10 @@ export function StatsTeamPhone({ data }: { data: ChTeamStats }) {
               {below && (
                 <>
                   <SectionBoundary surface="stats.team.legs" label="Strokes gained by leg" code="CH-4206">
-                    <Legs key={scope} data={data} leg={leg} onLeg={pickLeg} />
+                    <Legs data={data} leg={leg} onLeg={pickLeg} />
                   </SectionBoundary>
                   <SectionBoundary surface="stats.team.rank" label="Who gains and loses" code="CH-4206">
-                    <TeamRank key={scope} data={data} phone />
+                    <TeamRank data={data} phone />
                   </SectionBoundary>
                   <SectionBoundary surface="stats.team.players" label="Players" code="CH-4206">
                     <Players key={scope} data={data} leg={leg} sort={sort} onSort={setSort} />
@@ -316,6 +318,17 @@ function Legs({ data, leg, onLeg }: { data: ChTeamStats; leg: ChLegPick; onLeg: 
   const legs = LEGS_LIST.map((l, i) => ({ l, v: data.legTotals[i] ?? null }));
   const known = legs.filter((x): x is { l: ChLeg; v: number } => x.v != null);
   const losing = known.filter((x) => x.v < -0.05);
+  // The team total is the window's own mean (data.team.sgMean), never the legs added up.
+  const rows: Array<{ key: ChLegPick; label: string; v: number | null; total?: boolean }> = [
+    ...legs.map(({ l, v }) => ({ key: l, label: l as string, v })),
+    { key: 'total', label: 'Team total', v: data.team.sgMean, total: true },
+  ];
+  const scale = sgScale(rows.map((r) => r.v));
+  // Each bar's signed share of its half rail glides to the new window's (B9); the section is not remounted on a window change.
+  const drawn = useGlide(
+    rows.map((r) => (r.v == null ? null : (r.v >= 0 ? 1 : -1) * sgShare(r.v, scale) * 50)),
+    rows.map((r) => r.key).join('|'),
+  );
   const head = (
     <div className="ch-stm-panel__h">
       <h2 id="ch-stm-legs">Strokes gained by leg</h2>
@@ -334,12 +347,6 @@ function Legs({ data, leg, onLeg }: { data: ChTeamStats; leg: ChLegPick; onLeg: 
     : losing.length === 1
       ? `${losing[0]!.l} is the only leg losing strokes, ${formatFixed(Math.abs(losing[0]!.v))} a round.`
       : `${losing.length} legs are losing strokes: ${losing.map((x) => x.l).join(', ')}.`;
-  // The team total is the window's own mean (data.team.sgMean), never the legs added up.
-  const rows: Array<{ key: ChLegPick; label: string; v: number | null; total?: boolean }> = [
-    ...legs.map(({ l, v }) => ({ key: l, label: l as string, v })),
-    { key: 'total', label: 'Team total', v: data.team.sgMean, total: true },
-  ];
-  const scale = sgScale(rows.map((r) => r.v));
   const picked = rows.find((r) => r.key === leg) ?? rows[rows.length - 1]!;
   const legKeys = tabListKeys(
     rows.map((r) => r.key),
@@ -360,8 +367,9 @@ function Legs({ data, leg, onLeg }: { data: ChTeamStats; leg: ChLegPick; onLeg: 
             mounted, two layouts of the whole arriving page inside React's commit (28ms of a switch's 163ms of script at
             4x CPU, Chromium, production build, 2026-10-15). Every row is 44px, so the wash's place is its index. */}
         <div className="ch-stm-legs" role="tablist" aria-label="Strokes gained leg" aria-orientation="vertical">
-          {rows.map(({ key, label, v, total }) => {
+          {rows.map(({ key, label, v, total }, i) => {
             const on = key === picked.key;
+            const bar = drawn[i];
             return (
               <button
                 key={key}
@@ -379,7 +387,7 @@ function Legs({ data, leg, onLeg }: { data: ChTeamStats; leg: ChLegPick; onLeg: 
                 <span>{label}</span>
                 <span className="ch-stm-leg__bar" aria-hidden="true">
                   <i className="ch-stm-leg__z" />
-                  {v != null && <i className={'ch-stm-leg__v ' + changeTone(v, false, 1)} style={{ [v >= 0 ? 'left' : 'right']: '50%', width: `${sgShare(v, scale) * 50}%` }} />}
+                  {v != null && bar != null && <i className={'ch-stm-leg__v ' + changeTone(v, false, 1)} style={bar >= 0 ? { left: '50%', width: `${bar}%` } : { right: '50%', width: `${-bar}%` }} />}
                 </span>
                 <b className={'ch-num ' + changeInk(v)}>{v == null ? NO_DATA : formatSigned(v)}</b>
               </button>

@@ -5,6 +5,7 @@ import { useGlide } from '../../lib/motion-glide';
 import { sgScale, sgShare } from '../../lib/sg';
 import { useChartPin } from '../../lib/use-chart-pin';
 import { legReadout, type SgLegRow } from './leg-rows';
+import { ChartTable } from '../../ui/charts/ChartTable';
 
 export type LegBarRow = Pick<SgLegRow, 'label' | 'value'> & Partial<Pick<SgLegRow, 'team' | 'n' | 'se' | 'state' | 'tag'>> & { means: string };
 
@@ -95,6 +96,17 @@ export function LegBars({ rows, baseline, teamName, onOpen }: { rows: LegBarRow[
           See {pinnedRow.label.toLowerCase()} in game detail
         </button>
       )}
+      {/* The legs, for a screen reader that asks for them after the summary (AX-17). */}
+      <ChartTable
+        caption="Strokes gained per round by leg"
+        columns={['Leg', 'Strokes gained', 'Likely range', ...(rows.some((r) => r.team != null) ? [`${teamName ?? 'Team'} average`] : [])]}
+        rows={rows.map((r) => [
+          r.label,
+          r.value == null ? (r.tag ?? 'No data') : formatSigned(r.value) + (r.state === 'early' && r.tag ? ` (${r.tag})` : ''),
+          r.value != null && r.se != null ? `${formatSigned(r.value - r.se)} to ${formatSigned(r.value + r.se)}` : '',
+          ...(rows.some((x) => x.team != null) ? [r.team == null ? '' : formatSigned(r.team)] : []),
+        ])}
+      />
     </div>
   );
 }
