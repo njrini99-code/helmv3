@@ -142,6 +142,12 @@ export async function loadCalendar(input: {
 }): Promise<ChCalendarData> {
   const supabase = await createClient();
 
+  // A deep link's event: only its day is read, from the same team-scoped table the window reads, so it shows nothing the
+  // window wouldn't. It starts with the first wave (C2), since it needs nothing from it; its day is placed in the zone after.
+  const targetRead =
+    !input.date && input.event && UUID.test(input.event)
+      ? supabase.from('golf_events').select('start_time, all_day').eq('id', input.event).eq('team_id', input.teamId).maybeSingle()
+      : null;
   const [settingsRes, teamRes, membersRes] = await Promise.all([
     supabase.from('golf_team_settings').select('timezone').eq('team_id', input.teamId).maybeSingle(),
     supabase.from('golf_teams').select('name').eq('id', input.teamId).maybeSingle(),
@@ -161,9 +167,8 @@ export async function loadCalendar(input: {
   const nowZ = zoned(new Date().toISOString(), timezone);
   const today = nowZ.date;
   let eventDate: string | undefined;
-  if (!input.date && input.event && UUID.test(input.event)) {
-    // Only its day is read, from the same team-scoped table the window reads, so it shows nothing the window wouldn't.
-    const { data: target, error } = await supabase.from('golf_events').select('start_time, all_day').eq('id', input.event).eq('team_id', input.teamId).maybeSingle();
+  if (targetRead) {
+    const { data: target, error } = await targetRead;
     if (error) chLogServer('calendar', 'deepLinkEvent', error, 'calendar');
     if (target?.start_time) eventDate = target.all_day ? target.start_time.slice(0, 10) : zoned(target.start_time, timezone).date;
   }
