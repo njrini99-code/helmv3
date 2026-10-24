@@ -197,8 +197,13 @@ export function useContextMenu<T>({
 
 /**
  * The menu on a phone: the same rows in a bottom sheet (`Modal`), so a long press, a keyboard and VoiceOver reach the
- * same actions as a right-click. The rows keep the menu's keys (arrows, Home, End).
+ * same actions as a right-click. The rows keep the menu's keys (arrows, Home, End). Exported as `MenuSheet` for a phone
+ * page's own menu of actions (Calendar's More, row 81).
  */
+export function MenuSheet(props: { open: boolean; title: string; label: string; items: MenuItem[]; onClose: () => void }) {
+  return <ContextMenuSheet {...props} />;
+}
+
 function ContextMenuSheet({ open, title, label, items, onClose }: { open: boolean; title: string; label: string; items: MenuItem[]; onClose: () => void }) {
   const list = useRef<HTMLDivElement | null>(null);
   return (

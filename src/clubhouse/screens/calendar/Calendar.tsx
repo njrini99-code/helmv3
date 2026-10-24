@@ -794,6 +794,7 @@ export function Calendar({
           onOpen={open}
           onNew={(d) => setEditor({ event: null, date: d })}
           onSubscribe={() => setSubs(true)}
+          more={coach ? moreItems.filter((i) => i.icon !== Printer) : undefined}
         />
         {/* The desktop's detail panel, as a sheet (board: event detail). */}
         <Modal

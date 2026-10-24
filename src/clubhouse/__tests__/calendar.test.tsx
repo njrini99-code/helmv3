@@ -1014,6 +1014,22 @@ describe('Calendar · phone (v2, Coach - Calendar - Mobile.html)', () => {
     expect(screen.getByRole('button', { name: /^Travel briefing/ })).toBeTruthy();
   });
 
+  it('row 81: the coach’s More on the phone opens desktop’s items without Print, and Add busy time opens its sheet; a player has none', async () => {
+    const user = userEvent.setup();
+    wrap(cal());
+    await user.click(screen.getByRole('button', { name: 'More' }));
+    const menu = await screen.findByRole('menu', { name: 'More' });
+    const items = within(menu).getAllByRole('menuitem').map((i) => i.textContent);
+    expect(items).toContain('Add to calendar app');
+    expect(items).toContain('Add busy time');
+    expect(items.some((t) => /^Print/.test(t ?? ''))).toBe(false);
+    await user.click(within(menu).getByRole('menuitem', { name: /Add busy time/ }));
+    expect(await screen.findByRole('heading', { name: 'Add busy time' })).toBeTruthy();
+    cleanup();
+    wrap(cal({ role: 'player', viewerPlayerId: 'jonah' }));
+    expect(screen.queryByRole('button', { name: 'More' })).toBeNull();
+  });
+
   it('B10.4 away from today, a Today key brings the phone back; on today it is not there', async () => {
     vi.useFakeTimers({ toFake: ['Date'] });
     try {

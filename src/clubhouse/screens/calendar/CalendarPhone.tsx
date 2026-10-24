@@ -1,6 +1,6 @@
 'use client';
 
-import { CalendarCheck, CalendarDays, ChevronLeft, ChevronRight, Plus, Rss, TriangleAlert } from 'lucide-react';
+import { CalendarCheck, CalendarDays, ChevronLeft, ChevronRight, Ellipsis, Plus, Rss, TriangleAlert } from 'lucide-react';
 import { useRef, useState, type ReactNode } from 'react';
 import type { ChCalendarData } from '../../data/calendar';
 import { Badge } from '../../ui/Badge';
@@ -8,6 +8,8 @@ import { EmptyState } from '../../ui/States';
 import { Icon } from '../../ui/Icon';
 import { Button, IconButton } from '../../ui/Button';
 import { PhoneIconAction } from '../../ui/PhoneBar';
+import { MenuSheet } from '../../ui/ContextMenu';
+import type { MenuItem } from '../../ui/Menu';
 import { SectionBoundary } from '../../ui/SectionBoundary';
 import { ScrollPager } from '../../ui/ScrollPager';
 import { Segmented } from '../../ui/Segmented';
@@ -53,6 +55,7 @@ export function CalendarPhone({
   onOpen,
   onNew,
   onSubscribe,
+  more,
 }: {
   data: ChCalendarData;
   events: ChCalEvent[];
@@ -72,6 +75,8 @@ export function CalendarPhone({
   onOpen: (id: string, date: string) => void;
   onNew: (date: string) => void;
   onSubscribe: () => void;
+  /** The coach's More (row 81): desktop's items without Print (Add to calendar app, Add busy time, Overlaps). */
+  more?: MenuItem[];
 }) {
   const coach = data.role === 'coach';
   // A player's own class is titled without their name; their replies still owed are marked (P006, wave 7).
@@ -84,6 +89,7 @@ export function CalendarPhone({
     haptic('select');
     onView(view, now.date);
   };
+  const [moreOpen, setMoreOpen] = useState(false);
 
   return (
     <main className="ch-calm" aria-label="Calendar">
@@ -118,9 +124,12 @@ export function CalendarPhone({
                 { value: 'list', label: 'List' },
               ]}
             />
+            {/* Row 81: the coach's More, beside the view switch; the top bar keeps its one action, New event (B10.1). */}
+            {!!more?.length && <IconButton icon={Ellipsis} label="More" className="ch-calm-more" onClick={() => setMoreOpen(true)} />}
           </span>
         </span>
       </header>
+      {more && <MenuSheet open={moreOpen} title="Calendar" label="More" items={more} onClose={() => setMoreOpen(false)} />}
       {notices}
       {data.eventsError &&
         (pv === 'day' ? (
