@@ -12,7 +12,7 @@ import { plural } from './plural';
 export const POOLED_SD = { sg: 3.8, score: 3.6 } as const;
 
 /**
- * The same within-player spread for each strokes-gained leg (production, 2026-10-24: 51 players with five or more rounds, 743
+ * The same within-player spread for each strokes-gained leg (production, 2026-10-24, test rows, players and teams left out: 51 players with five or more rounds, 743
  * rounds per 18 holes; the total read 4.0 on the same rounds). A leg moves far less than the total, so a leg's change judged
  * against the total's spread would almost never be called (the Deep dive, review of #2361).
  */

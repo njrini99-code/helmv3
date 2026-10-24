@@ -1349,3 +1349,27 @@ describe('Stats team · what changed (row 70)', () => {
     });
   }
 });
+
+describe('Stats team · phone putting rates (A2)', () => {
+  const real = window.matchMedia;
+  afterEach(() => {
+    window.matchMedia = real;
+  });
+  it('a make rate is amber only when it prints below the Tour’s: 69.6% against 70% is level, 68.8% is below', async () => {
+    window.matchMedia = ((q: string) => ({ ...real(q), matches: q === '(max-width: 820px)' })) as typeof window.matchMedia;
+    const bands = [
+      { label: '5–10 ft', made: 87, attempts: 125, bench: 70 },
+      { label: '10–15 ft', made: 86, attempts: 125, bench: 70 },
+    ];
+    wrap(stats({ putting: { ...PREVIEW_TEAM_STATS.putting!, bands } }));
+    const rows = await waitFor(() => {
+      const r = [...document.querySelectorAll('.ch-stm-putt__r')];
+      expect(r).toHaveLength(2);
+      return r;
+    });
+    expect(rows.map((r) => [r.querySelector('b')!.textContent, r.querySelector('b')!.classList.contains('ch-loss')])).toEqual([
+      ['70%', false],
+      ['69%', true],
+    ]);
+  });
+});
