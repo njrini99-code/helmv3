@@ -116,7 +116,7 @@ export function NoMatch({ query, stage, onClear, onAll, phone = false }: { query
   return <EmptyState kind="filtered" code="CH-14302" icon={SearchX} title={title} body={body} action={phone ? all : clear} secondaryAction={phone ? clear : all} />;
 }
 
-const ROW_KEYS: readonly ChPageKey[] = [{ label: 'Move between prospects', keys: ['↑', '↓'] }];
+const ROW_KEYS: readonly ChPageKey[] = [{ label: 'Move between prospects', keys: ['Up', 'Down'] }];
 
 function ProspectTable({ c }: { c: RecCtx }) {
   // B11: ↑ and ↓ walk the prospects, Home and End go to the ends; the table is one Tab stop.

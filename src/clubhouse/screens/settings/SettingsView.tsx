@@ -28,7 +28,7 @@ import { SettingsPhone } from './phone/SettingsPhone';
 import '../../styles/settings.css';
 import { canvasScrollNow } from '../../lib/smooth-scroll';
 
-const RAIL_KEYS: readonly ChPageKey[] = [{ label: 'Move between sections', keys: ['↑', '↓'] }];
+const RAIL_KEYS: readonly ChPageKey[] = [{ label: 'Move between sections', keys: ['Up', 'Down'] }];
 
 const ICON: Record<ChSettingsSection, LucideIcon> = {
   account: UserRound,

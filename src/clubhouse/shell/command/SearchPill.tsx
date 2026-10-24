@@ -22,7 +22,11 @@ export function SearchPill() {
       aria-label="Search Clubhouse"
       aria-haspopup="dialog"
       aria-keyshortcuts={apple ? 'Meta+K' : 'Control+K'}
-      onClick={() => openCommandPalette()}
+      onClick={(e) => {
+        // Safari doesn't focus a button it clicks, so the palette's dialog would hand focus back to the page on Esc.
+        e.currentTarget.focus({ preventScroll: true });
+        openCommandPalette();
+      }}
     >
       <Icon icon={Search} size={15} />
       <span className="ch-topbar__search-t">Search</span>

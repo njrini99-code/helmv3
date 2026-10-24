@@ -118,7 +118,7 @@ import { usePageKeys, type ChPageKey } from "../../shell/command/page-keys";
 import { plural } from "../../lib/plural";
 
 /** B11: the rail's keys, as the shortcuts sheet lists them. */
-const RAIL_KEYS: readonly ChPageKey[] = [{ label: "Move between conversations", keys: ["↑", "↓"] }];
+const RAIL_KEYS: readonly ChPageKey[] = [{ label: "Move between conversations", keys: ["Up", "Down"] }];
 
 /** The thread's glide, longer than the page's (a conversation is read down a long column). */
 const THREAD_SCROLL_DUR = 1.2;

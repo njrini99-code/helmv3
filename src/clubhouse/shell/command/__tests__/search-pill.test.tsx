@@ -60,6 +60,15 @@ describe('the top bar search pill (B11)', () => {
     expect(screen.getAllByRole('dialog', { name: 'Search Clubhouse' })).toHaveLength(1);
   });
 
+  it('takes focus as it is pressed, so Esc hands focus back to it (Safari focuses no button on a click)', () => {
+    mount();
+    const pill = screen.getByRole('button', { name: 'Search Clubhouse' });
+    let focused = false;
+    pill.addEventListener('focus', () => (focused = true));
+    act(() => void fireEvent.click(pill));
+    expect(focused).toBe(true);
+  });
+
   it('shows the platform chord and announces it', () => {
     mount();
     const pill = screen.getByRole('button', { name: 'Search Clubhouse' });
