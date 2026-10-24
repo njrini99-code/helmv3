@@ -8,6 +8,7 @@ import { chTrail } from '../../lib/track';
 import { friendlyReason, normalise, useAction, type ServerResult } from '../../lib/use-action';
 import { useChPhone } from '../../lib/use-phone';
 import { PhoneTop } from '../../shell/phone-chrome';
+import { PhoneIconAction } from '../../ui/PhoneBar';
 import { Button } from '../../ui/Button';
 import { InlineNotice } from '../../ui/Notices';
 import { Modal } from '../../ui/Modal';
@@ -345,8 +346,11 @@ export function ClassesView({ data, writes }: { data: ChClassesPage; writes: ChC
 
   return (
     <main className={'ch-cl' + (phone ? ' is-phone' : '')} aria-labelledby={phone ? undefined : 'ch-cl-title'} aria-label={phone ? 'Classes' : undefined} data-canopy={phone ? undefined : ''}>
-      {/* Phone: Classes opens from More (D-66), so the top bar goes back there. */}
-      {phone && <PhoneTop title="Classes" start />}
+      {/* Phone: the section's create action is the top bar's plus (B10.1), shown when the head's Add class would be: a
+          first run's empty state carries its own, and a failed read keeps it (CH-12201). */}
+      {phone && (
+        <PhoneTop title="Classes" start action={data.classes.error || !nothing ? <PhoneIconAction icon={Plus} label="Add class" onClick={startAdd} /> : undefined} />
+      )}
       <header className="ch-cl-h" data-canopy-head={phone ? undefined : ''}>
         <div>
           <span className="ch-cl-k">
@@ -371,9 +375,12 @@ export function ClassesView({ data, writes }: { data: ChClassesPage; writes: ChC
             <Button leftIcon={Upload} onClick={startImport}>
               Import schedule
             </Button>
-            <Button variant="primary" leftIcon={Plus} onClick={startAdd}>
-              Add class
-            </Button>
+            {/* On the phone it is the top bar's plus. */}
+            {!phone && (
+              <Button variant="primary" leftIcon={Plus} onClick={startAdd}>
+                Add class
+              </Button>
+            )}
           </div>
         )}
       </header>

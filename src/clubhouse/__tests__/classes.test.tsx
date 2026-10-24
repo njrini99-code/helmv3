@@ -1,5 +1,5 @@
 import { LazyMotion, domAnimation } from 'motion/react';
-import { act, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
+import { act, cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
@@ -1235,8 +1235,19 @@ describe('Classes, on the phone', () => {
     expect(within(top).getByRole('heading', { level: 1, name: 'Classes' })).toBeTruthy();
     expect(within(top).queryByRole('button', { name: 'Back to More' })).toBeNull();
     expect(names()).toHaveLength(5);
-    await user.click(headerButton('Add class'));
+    // B10.1: the create action is the top bar's plus, in the bell's place, and the head no longer repeats it.
+    expect(within(document.querySelector<HTMLElement>('.ch-cl-h')!).queryByRole('button', { name: 'Add class' })).toBeNull();
+    expect(within(document.querySelector<HTMLElement>('.ch-cl-h')!).getByRole('button', { name: 'Import schedule' })).toBeTruthy();
+    await user.click(within(top).getByRole('button', { name: 'Add class' }));
     expect(await screen.findByRole('dialog', { name: 'Add a class' })).toBeTruthy();
+  });
+
+  it('121901 B10.1: a first run has no plus (its empty state carries the add), and a failed read keeps it (CH-12201)', () => {
+    phoneView({ ...PREVIEW_CLASSES, classes: { list: [], error: false } });
+    expect(within(screen.getByTestId('phone-top')).queryByRole('button', { name: 'Add class' })).toBeNull();
+    cleanup();
+    phoneView({ ...PREVIEW_CLASSES, classes: { list: [], error: true } });
+    expect(within(screen.getByTestId('phone-top')).getByRole('button', { name: 'Add class' })).toBeTruthy();
   });
 
   function phoneView(data: ChClassesPage) {
