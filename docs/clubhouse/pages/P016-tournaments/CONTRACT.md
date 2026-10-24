@@ -34,6 +34,10 @@ Status: DEFINED
 
 Until a lane builds its view, the view says so honestly (CH-16301, preview only). Each view's real empty states (no events this season, no field entered, no rounds to link, and so on) are its lane's rows.
 
+| Bridge ID | Code | Name | Meaning |
+| --- | --- | --- | --- |
+| 160401 | CH-16301 | `A_VIEW_ITS_LANE_HASNT_BUILT_YET` | A view its lane hasn't built yet (preview only: no route serves Tournaments yet) |
+
 ## 05 — Validation
 
 Status: N/A — not defined yet: no view is built (each renders the base's placeholder) and nothing is wired. The lane that builds the view defines this category with its catalog rows (screens/tournaments/README.md).

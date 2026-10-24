@@ -1885,7 +1885,7 @@ Every Bridge ID (D-68: namespace, two-digit category, two-digit item), its catal
 | Bridge ID | Code | Category | Name | Status | Meaning |
 | --- | --- | --- | --- | --- | --- |
 | 160201 | CH-16401 | 02 Initial loading / skeleton | `A_TOURNAMENTS_VIEW_IS_ON_ITS_WAY` | implemented | A Tournaments view is on its way (`load: 'loading'`) |
-| 160401 | CH-16301 | 04 Empty | `A_VIEW_ITS_LANE_HASNT_BUILT_YET` | deprecated | A view its lane hasn't built yet (preview only: no route serves Tournaments yet) |
+| 160401 | CH-16301 | 04 Empty | `A_VIEW_ITS_LANE_HASNT_BUILT_YET` | implemented | A view its lane hasn't built yet (preview only: no route serves Tournaments yet) |
 | 160601 | CH-16201 | 06 Server / system error | `A_TOURNAMENTS_VIEWS_ONE_READ_FAILS` | implemented | A Tournaments view's one read fails (any view; `load: 'failed'`) |
 | 161601 | CH-16601 | 16 Micro animation | `A_VALUE_CHANGES_AFTER_FIRST_PAINT` | reserved | A value changes after first paint (a live score, a team total, a place) |
 | 161801 | CH-16801 | 18 Accessibility | `A_SIGNED_DIFFERENCE_OR_A_TRUST_STATE` | reserved | A signed difference or a trust state is read |

@@ -19220,7 +19220,7 @@
     "name": "A_VIEW_ITS_LANE_HASNT_BUILT_YET",
     "chCode": "CH-16301",
     "meaning": "A view its lane hasn't built yet (preview only: no route serves Tournaments yet)",
-    "status": "deprecated",
+    "status": "implemented",
     "catalog": "docs/clubhouse/catalog/tournaments.md"
   },
   {

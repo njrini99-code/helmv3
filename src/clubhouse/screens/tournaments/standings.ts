@@ -93,8 +93,8 @@ export function placeField<T extends ChTourPlaceable>(rows: readonly T[], tiebre
   order.forEach((row, i) => {
     const prev = order[i - 1];
     const level = (x: T, y: T) => x.total === y.total && separate(x, y) === 0;
-    const place = prev && level(prev, row) ? out[i - 1].place! : i + 1;
-    const tied = (prev != null && level(prev, row)) || (order[i + 1] != null && level(order[i + 1], row));
+    const place = prev && level(prev, row) ? out[i - 1]!.place! : i + 1;
+    const tied = (prev != null && level(prev, row)) || (order[i + 1] != null && level(order[i + 1]!, row));
     out.push({ id: row.id, place, tied, label: `${tied ? 'T' : ''}${place}` });
   });
   for (const row of rows) if (row.total == null) out.push({ id: row.id, place: null, tied: false, label: NO_DATA });

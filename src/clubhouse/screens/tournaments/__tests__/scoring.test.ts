@@ -58,8 +58,8 @@ describe('teamRound, 5 count 4', () => {
   it('matches the design fixture: 287, 286, 285, total 858, −6', () => {
     const rounds = [teamRound(DESIGN.r1, F54, PAR), teamRound(DESIGN.r2, F54, PAR), teamRound(DESIGN.r3, F54, PAR)];
     expect(rounds.map((r) => r.total)).toEqual([287, 286, 285]);
-    expect(rounds[1].dropped).toEqual(['drew']);
-    expect(rounds[2].dropped).toEqual(['ben']);
+    expect(rounds[1]!.dropped).toEqual(['drew']);
+    expect(rounds[2]!.dropped).toEqual(['ben']);
     const event = teamEvent(rounds);
     expect(event).toMatchObject({ kind: 'complete', total: 858, toPar: -6, droppedTotal: 75 + 76 + 74 });
   });
