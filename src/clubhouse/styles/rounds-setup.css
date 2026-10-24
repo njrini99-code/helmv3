@@ -341,8 +341,8 @@
 .ch-rsu-in:focus {
   outline: none;
   box-shadow:
-    0 0 0 1px var(--ch-green-600),
-    0 0 0 4px rgb(21 90 57 / 0.12);
+    0 0 0 1px var(--ch-border-focus),
+    0 0 0 4px var(--ch-focus-halo);
 }
 .ch-rsu-in[aria-invalid='true'] {
   box-shadow: 0 0 0 1.5px var(--ch-danger-600);
@@ -1535,7 +1535,15 @@ html[data-fw-theme='dark'] .ch-rsu-yds input {
   background: var(--ch-bg-inset);
   box-shadow: 0 0 0 1px var(--ch-border-control);
 }
+/* The resting rule above outranks the light focus rings, so the ring is restated at its weight (CONS-36); an invalid
+   field's red ring still wins, as in light. */
 html[data-fw-theme='dark'] .ch-rsu-in:focus,
+html[data-fw-theme='dark'] .ch-rsu-search:focus-within,
+html[data-fw-theme='dark'] .ch-rsu-yds input:focus-visible {
+  box-shadow:
+    0 0 0 1px var(--ch-border-focus),
+    0 0 0 4px var(--ch-focus-halo);
+}
 html[data-fw-theme='dark'] .ch-rsu-in[aria-invalid='true'],
 html[data-fw-theme='dark'] .ch-rsu-yds input[aria-invalid='true'] {
   box-shadow: 0 0 0 1.5px var(--ch-danger-600);
@@ -2255,8 +2263,8 @@ html[data-fw-theme='dark'] .ch-rsu-card__h h2 {
   }
   .ch-rsu .ch-rsu-nine .ch-rsu-yds input:focus-visible {
     box-shadow:
-      0 0 0 2px #dccda6,
-      0 0 0 5px rgb(220 205 166 / 0.2);
+      0 0 0 2px var(--ch-border-focus-on-dark),
+      0 0 0 5px color-mix(in srgb, var(--ch-border-focus-on-dark) 20%, transparent);
   }
   .ch-rsu .ch-rsu-nine .ch-rsu-yds input[aria-invalid='true'] {
     box-shadow: 0 0 0 2px var(--ch-stage-red);
