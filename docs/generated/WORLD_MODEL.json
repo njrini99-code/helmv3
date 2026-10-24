@@ -4347,7 +4347,11 @@
       },
       {
         "id": "sg_expected_strokes",
-        "definedIn": "supabase/migrations/20260607170000_gender_aware_strokes_gained.sql"
+        "definedIn": "supabase/migrations/20261023170000_golf_sg_other_lie_curve.sql"
+      },
+      {
+        "id": "sg_normalize_lie",
+        "definedIn": "supabase/migrations/20261023170000_golf_sg_other_lie_curve.sql"
       },
       {
         "id": "sg_scale_for_player",

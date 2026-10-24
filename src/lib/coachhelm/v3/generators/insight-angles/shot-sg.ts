@@ -34,11 +34,23 @@ export interface RawShotRow {
   putt_made: boolean | null;
   miss_direction: string | null;
   created_at: string | null;
+  /** Recovery tap: the player marked this shot's finish as blocked. */
+  lie_after_recovery?: boolean | null;
 }
 
+/**
+ * Which `public.sg_normalize_lie` body to port.
+ * - `live`: today's body, 'other' falls to fairway.
+ * - `held`: the body of held `20261023170000_golf_sg_other_lie_curve.sql`,
+ *   which keeps 'other' and 'recovery' (both priced by `getExpectedStrokes`).
+ */
+export type SgLieCurve = 'live' | 'held';
+
 /** `public.sg_normalize_lie`. */
-export function sgNormalizeLie(lie: string | null): string {
-  switch ((lie ?? 'fairway').toLowerCase()) {
+export function sgNormalizeLie(lie: string | null, curve: SgLieCurve = 'live'): string {
+  const key = (lie ?? 'fairway').toLowerCase();
+  if (curve === 'held' && (key === 'other' || key === 'recovery')) return key;
+  switch (key) {
     case 'tee':
     case 'teebox':
       return 'tee';
@@ -80,7 +92,12 @@ function expected(lie: string, yards: number, scale: number): number {
  *   own recorded finish: the endpoint rule of
  *   `20260930150000_golf_sg_penalty_charged_to_earning_shot.sql` (its `nx`
  *   lateral), so each hole telescopes. Only the counted families
- *   (`counted-shots.ts`) use it.
+ *   (`counted-shots.ts`) use it. It also ports the held
+ *   `20261023170000_golf_sg_other_lie_curve.sql`, which rewrites those same
+ *   Q-89 bodies and is applied right after them: 'other' keeps its own curve,
+ *   and the recovery tap (`lie_after_recovery`) prices the shot after a
+ *   blocked one from 'recovery' and ends the blocked shot there (see
+ *   {@link isFromBlocked}).
  */
 export type ShotEndpoint = 'own_finish' | 'next_shot_start';
 
@@ -99,6 +116,33 @@ function nextShotStart(holeShots: readonly RawShotRow[], s: RawShotRow): RawShot
   }
   return best;
 }
+
+/** A penalty row between `from` and `to` on the hole (`rc` / end rule of 20261023170000). */
+function penaltyBetween(holeShots: readonly RawShotRow[], from: RawShotRow, to: RawShotRow): boolean {
+  return holeShots.some((m) => m.is_penalty === true && m.shot_number > from.shot_number && m.shot_number < to.shot_number);
+}
+
+/** A shot the next shot can start from (the `nx` lateral's conditions). */
+function isUsableStart(n: RawShotRow): boolean {
+  if (n.is_penalty === true) return false;
+  if (n.distance_to_hole_before === null || !(Number(n.distance_to_hole_before) > 0)) return false;
+  return n.lie_before !== null || n.shot_type === 'putting';
+}
+
+/**
+ * 20261023170000's `rc.from_blocked`: `s` is the next shot of a non-penalty
+ * shot the player marked blocked, with no usable shot and no penalty row
+ * (a drop moves the ball) in between.
+ */
+function isFromBlocked(holeShots: readonly RawShotRow[], s: RawShotRow): boolean {
+  if (!isUsableStart(s)) return false;
+  return holeShots.some((p) => p.shot_number < s.shot_number
+    && p.lie_after_recovery === true && p.is_penalty !== true
+    && !holeShots.some((m) => m.shot_number > p.shot_number && m.shot_number < s.shot_number
+      && (m.is_penalty === true || isUsableStart(m))));
+}
+
+const RECOVERY_TAP_LIES: ReadonlySet<string> = new Set(['rough', 'other']);
 
 export interface ShotSg {
   shotId: string;
@@ -146,21 +190,27 @@ export function shotSgForRound(
     sorted.forEach((s, i) => {
       const next = sorted[i + 1];
       const pen = s.is_penalty === true;
-      const lb = s.shot_type === 'putting' ? 'green' : sgNormalizeLie(s.lie_before);
+      const curve: SgLieCurve = nextStart ? 'held' : 'live';
+      const holeAll = allByHole.get(holeId) ?? [];
+      let lb = s.shot_type === 'putting' ? 'green' : sgNormalizeLie(s.lie_before, curve);
+      if (nextStart && !pen && RECOVERY_TAP_LIES.has(lb) && isFromBlocked(holeAll, s)) lb = 'recovery';
+      const blocked = nextStart && !pen && s.lie_after_recovery === true;
       const db = yardsOf(s.distance_to_hole_before, s.distance_unit_before)!;
       const holed = s.putt_made === true || s.result === 'holed' || s.result === 'hole';
       let da: number;
       let la: string;
-      const nx = nextStart && !holed ? nextShotStart(allByHole.get(holeId) ?? [], s) : null;
+      const nx = nextStart && !holed ? nextShotStart(holeAll, s) : null;
       if (holed) {
         da = 0;
         la = 'green';
       } else if (nx) {
         da = yardsOf(nx.distance_to_hole_before, nx.distance_unit_before) ?? 0;
-        la = nx.shot_type === 'putting' ? 'green' : sgNormalizeLie(nx.lie_before);
+        la = nx.shot_type === 'putting' ? 'green' : sgNormalizeLie(nx.lie_before, curve);
+        if (blocked && nx.shot_type !== 'putting' && RECOVERY_TAP_LIES.has(la) && !penaltyBetween(holeAll, s, nx)) la = 'recovery';
       } else if (nextStart) {
         da = s.distance_to_hole_after !== null ? (yardsOf(s.distance_to_hole_after, s.distance_unit_after) ?? 0) : 0;
-        la = sgNormalizeLie(s.lie_after);
+        la = sgNormalizeLie(s.lie_after, curve);
+        if (blocked && s.lie_after !== null && RECOVERY_TAP_LIES.has(la)) la = 'recovery';
       } else {
         if (s.distance_to_hole_after !== null) da = yardsOf(s.distance_to_hole_after, s.distance_unit_after) ?? 0;
         else da = next ? (yardsOf(next.distance_to_hole_before, next.distance_unit_before) ?? 0) : 0;
