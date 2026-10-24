@@ -18,7 +18,7 @@ import { haptic } from '../../lib/haptics';
 import { chTrail } from '../../lib/track';
 import { changeInk, formatAvg, formatFixed, formatHcp, formatSigned, formatToPar, NO_DATA } from '../../lib/format';
 import { sgBaseline } from '../../lib/sg';
-import { deltaTone, halvesChange } from '../../lib/stats-signal';
+import { deltaTone, halvesChange, halvesTone } from '../../lib/stats-signal';
 import { rebuiltHref } from '../../shell/nav';
 import { PhoneTop } from '../../shell/phone-chrome';
 import { FigureGauge, SgChangeChip } from './charts';
@@ -363,7 +363,9 @@ function Trend({ data }: { data: ChPlayerProfile }) {
   if (rounds.length === 0) return null;
   const first = rounds[0]!;
   const last = rounds[rounds.length - 1]!;
-  const change = last.value! - first.value!;
+  // Which way the scores went is the newer half against the older, past its standard error (A1), never the first round against the last.
+  const moved = halvesTone(halvesChange(rounds.map((r) => r.value!), 'score'), true, 0);
+  const said = moved === 'is-gain' ? ', lower lately' : moved === 'is-loss' ? ', higher lately' : rounds.length >= 3 ? ', no clear change' : '';
   const sgRounds = trendRounds(data.rounds, 'sg');
   const openHref = (id: string) => rebuiltHref(`/golf/dashboard/rounds/${id}`, role);
   return (
@@ -380,7 +382,7 @@ function Trend({ data }: { data: ChPlayerProfile }) {
           rounds={rounds}
           kind="score"
           openHref={openHref}
-          label={`Scores over the last ${rounds.length} rounds, from ${Math.round(first.value!)} to ${Math.round(last.value!)}${Math.round(change) === 0 ? '' : `, ${Math.abs(Math.round(change))} ${change < 0 ? 'lower' : 'higher'}`}.`}
+          label={`Scores over the last ${rounds.length} rounds, from ${Math.round(first.value!)} to ${Math.round(last.value!)}${said}.`}
         />
       </section>
       {sgRounds.some((r) => r.value != null) && (

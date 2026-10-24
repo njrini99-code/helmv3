@@ -275,6 +275,12 @@ const clamp100 = (v: number) => Math.min(100, Math.max(0, v));
  * One measure from the registry and what the row stores for it. Exported for the tests, which draw a measure the registry has no copy
  * for. `role`: whose page it is on; a coach's reads the measure's words in no one's voice (`COACH_WORDS`).
  */
+/**
+ * Measures whose word is a change between two windows (Momentum: the last 30 days against the 60 before). The stored result
+ * carries no standard error, so its word is never painted on its own (A1, the one change rule); the persona's call still is.
+ */
+const UNMEASURED_CHANGE = new Set(['scoring_trend']);
+
 export function toMeasure(id: string, label: string, r: DimensionResult | undefined, stance: ChMeasureStance | null, role: ChViewer['role'] = 'player'): ChMeasure {
   const copy = COPY[id];
   const words = role === 'coach' ? COACH_WORDS[id] : undefined;
@@ -292,7 +298,7 @@ export function toMeasure(id: string, label: string, r: DimensionResult | undefi
     figureNote: shown?.note || null,
     bound: atEdge ? 'This is the edge of the scale, so the real gap may be larger.' : null,
     stance,
-    tone: stance === 'strength' ? 'good' : stance === 'watch' ? 'warn' : (r?.label ? LABEL_TONE[r.label.trim()] : undefined) ?? 'plain',
+    tone: stance === 'strength' ? 'good' : stance === 'watch' ? 'warn' : (r?.label && !UNMEASURED_CHANGE.has(id) ? LABEL_TONE[r.label.trim()] : undefined) ?? 'plain',
     pos: copy ? clamp100(((value - copy.scale.min) / (copy.scale.max - copy.scale.min)) * 100) : null,
     read: readOf(r?.confidence ?? null),
   };

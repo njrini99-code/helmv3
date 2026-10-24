@@ -91,9 +91,10 @@ describe('the genome as the profile draws it', () => {
     expect(PREVIEW_PROFILE.courseProfile).toBe('Mixed off the tee · thrives on par-3 holes · tendency to miss left.');
   });
 
-  it('a measure is coloured by the persona’s call, else by the verdict in its own word; a bias and a profile are plain', () => {
+  // Momentum's Improving is a change with no standard error stored beside it, so its word is not painted (A1).
+  it('a measure is coloured by the persona’s call, else by the verdict in its own word; a bias, a profile and an unmeasured change are plain', () => {
     const tone = Object.fromEntries(PREVIEW_PROFILE.measures.map((m) => [m.id, m.tone]));
-    expect(tone).toEqual({ miss_side_bias: 'plain', pressure_delta: 'warn', scrambling_rate: 'plain', par3_proficiency: 'good', back_nine_delta: 'warn', scoring_trend: 'good', driver_usage: 'plain' });
+    expect(tone).toEqual({ miss_side_bias: 'plain', pressure_delta: 'warn', scrambling_rate: 'plain', par3_proficiency: 'good', back_nine_delta: 'warn', scoring_trend: 'plain', driver_usage: 'plain' });
   });
 
   it('every word the tone list names is a word a dimension can give (the dimension files are read, so a rename cannot drop one silently)', () => {

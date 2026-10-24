@@ -408,7 +408,7 @@ function Spark({ data, lowerIsBetter, label }: { data: number[]; lowerIsBetter: 
   const ch = halvesChange(data, null);
   const mean = data.reduce((a, b) => a + b, 0) / data.length;
   const tone = ch ? deltaTone(ch.delta, ch.se, lowerIsBetter) : '';
-  const word = tone === 'is-gain' ? 'Improving' : tone === 'is-loss' ? 'Slipping' : 'Steady';
+  const word = tone === 'is-gain' ? 'Improving' : tone === 'is-loss' ? 'Slipping' : 'No clear change';
   const pts = data.map((v, i) => [x(i), y(v)] as [number, number]);
   const line = monotonePath(pts);
   const last = pts[pts.length - 1]!;
