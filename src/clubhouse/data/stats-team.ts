@@ -276,20 +276,24 @@ export async function loadTeamStats(input: { teamId: string; window: ChWindow; f
   // A4: only the players with three whole rounds with shots in the window count, as each player's own figure and the previous
   // stretch do, so one player's first round or two never swings the headline or the leg totals.
   const sgOf = (r: ChRound) => r.strokes_gained_total;
-  const sgReady = new Set(players.filter((p) => effectiveCount(holeWindow.filter((r) => r.player_id === p.id), sgOf) >= MIN_SG_ROUNDS).map((p) => p.id));
+  const atFloor = (rs: ChRound[]) => new Set(players.filter((p) => effectiveCount(rs.filter((r) => r.player_id === p.id), sgOf) >= MIN_SG_ROUNDS).map((p) => p.id));
+  const sgReady = atFloor(holeWindow);
   const sgWindow = holeWindow.filter((r) => sgReady.has(r.player_id));
-  const sgPairedWindow = holePaired.filter((r) => sgReady.has(r.player_id));
   const sgNow = sgWindow.map(sgOf).filter((v): v is number => v != null);
   const sgTotal = weightedMean(sgWindow, sgOf);
   const earlier = players.reduce((a, p) => a + earlierInFilter(byPlayer.get(p.id) ?? [], f), 0);
-  // The previous stretch needs three whole rounds with shots, as the window's own figures do.
-  const sgPrev = effectiveCount(holePrev, (r) => r.strokes_gained_total) >= MIN_SG_ROUNDS ? weightedMean(holePrev, (r) => r.strokes_gained_total) : null;
+  // The change is like for like (A4, Q-112): the same players on both sides, each at the floor in the window and in their own
+  // previous stretch, so a floored window is never set against an unfloored one (a player's two earlier rounds count nowhere).
+  const sgBoth = new Set([...atFloor(holePrev)].filter((id) => sgReady.has(id)));
+  const sgPairedWindow = holePaired.filter((r) => sgBoth.has(r.player_id));
+  const sgPrevWindow = holePrev.filter((r) => sgBoth.has(r.player_id));
+  const sgPrev = weightedMean(sgPrevWindow, sgOf);
   // The reason (or "vs previous 10") reads the whole window; the number compares the same players (Q-112).
   const sgBase = sgChange(sgTotal, sgPrev, effectiveWindow(f), earlier, null, f.last);
   const sgPaired = weightedMean(sgPairedWindow, sgOf);
   const sgDelta =
     sgBase.delta != null
-      ? { ...sgBase, delta: sgPaired != null && sgPrev != null ? sgPaired - sgPrev : null, se: windowChangeSe(sgPairedWindow, holePrev, sgOf, 'sg') }
+      ? { ...sgBase, delta: sgPaired != null && sgPrev != null ? sgPaired - sgPrev : null, se: windowChangeSe(sgPairedWindow, sgPrevWindow, sgOf, 'sg') }
       : sgBase;
   const baseline = sgBaseline(tour);
   // Weekly trend: team and each player, strokes gained and scoring.
@@ -300,7 +304,8 @@ export async function loadTeamStats(input: { teamId: string; window: ChWindow; f
   const figures: ChFigure[] = [
     {
       key: 'sg',
-      series: weekKeys.map((wk) => avgOf(inWeek(holeWindow, wk), (r) => r.strokes_gained_total)),
+      // The weekly line reads the same players as the headline (A4): a one-round player's week never moves it.
+      series: weekKeys.map((wk) => avgOf(inWeek(sgWindow, wk), sgOf)),
       label: 'Team SG per round',
       value: sgTotal,
       unit: '',
@@ -353,8 +358,9 @@ export async function loadTeamStats(input: { teamId: string; window: ChWindow; f
       };
     })
     .filter((s) => s.score.some((v) => v != null));
+  // Each leg's weeks read the players at the floor, as the leg totals do (A4).
   const legWeeks = Object.fromEntries(
-    LEGS.map((leg, i) => [leg, weekKeys.map((wk) => avgOf(inWeek(holeWindow, wk), (r) => sgLegs(r)[i] ?? null))]),
+    LEGS.map((leg, i) => [leg, weekKeys.map((wk) => avgOf(inWeek(sgWindow, wk), (r) => sgLegs(r)[i] ?? null))]),
   ) as Record<ChLeg, Array<number | null>>;
 
   // Player x leg grid.
@@ -391,7 +397,7 @@ export async function loadTeamStats(input: { teamId: string; window: ChWindow; f
         return { label: shortDate(d), score: avgOf(on, (r) => r.total_score), n: effectiveCount(on, (r) => r.total_score) };
       }),
     team: {
-      sg: weekKeys.map((wk) => avgOf(inWeek(holeWindow, wk), (r) => r.strokes_gained_total)),
+      sg: weekKeys.map((wk) => avgOf(inWeek(sgWindow, wk), sgOf)),
       score: weekKeys.map((wk) => avgOf(inWeek(windowRounds, wk), (r) => r.total_score)),
       sgMean: sgTotal,
       scoreMean: scoring,
