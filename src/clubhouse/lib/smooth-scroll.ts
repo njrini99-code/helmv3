@@ -362,15 +362,13 @@ export function usePanelSmoothScroll(ref: { current: HTMLElement | null }, { dur
         prevent: (node) => node !== wrapper && !!node.closest('[data-lenis-prevent], dialog, [role="dialog"], [role="menu"], [role="listbox"]'),
       });
       sleep = chLenisIdleLoop(lenis).stop;
-      // Another panel (a class, an event) swaps in under the same wrapper: the limit follows its height (B8: observed,
-      // not read every frame).
-      sizes = new ResizeObserver(() => lenis?.resize());
-      for (const child of Array.from(wrapper.children)) sizes.observe(child);
+      // Another panel (a class, an event) swaps in under the same wrapper: the limit follows its height.
+      unfollow = chFollowContent(wrapper, () => lenis?.resize());
     };
     const stop = () => {
       sleep();
-      sizes?.disconnect();
-      sizes = null;
+      unfollow();
+      unfollow = () => {};
       lenis?.destroy();
       lenis = null;
     };
