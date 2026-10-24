@@ -49,7 +49,9 @@ describe('CH-1815 every phone key reaches 44 by 44', () => {
 
   it('CH-1806 the hero bell shows keyboard focus as a champagne ring off the disc, with no shadow of its own', () => {
     const focus = withProp(shell, '.ch-root[data-phone-hero] .ch-topbar .ch-bell:focus-visible', 'outline');
-    expect(focus).toMatch(/outline:\s*2px solid var\(--ch-champagne-300\)/);
+    // The champagne ring is the on-dark focus token (CONS-36).
+    expect(focus).toMatch(/outline:\s*2px solid var\(--ch-border-focus-on-dark\)/);
+    expect(tokens).toMatch(/--ch-border-focus-on-dark:\s*var\(--ch-champagne-300\);/);
     expect(focus).toMatch(/outline-offset:\s*0/);
     expect(focus).not.toMatch(/box-shadow/);
   });
@@ -83,7 +85,7 @@ describe('CH-1815 every phone key reaches 44 by 44', () => {
 });
 
 describe('CH-1617 choices and the feature card answer a press without scaling', () => {
-  for (const selector of ['.ch-seg__b:not(.is-on):active', ".ch-pill:not([aria-pressed='true']):active"])
+  for (const selector of ['.ch-seg__b:not(.is-on)[data-ch-pressed]', ".ch-pill:not([aria-pressed='true'])[data-ch-pressed]"])
     it(`${selector} tints after the press delay`, () => {
       const r = withProp(controls, selector, 'background');
       expect(r).toMatch(/background:\s*var\(--ch-ledger-row-press\)/);
@@ -96,8 +98,8 @@ describe('CH-1617 choices and the feature card answer a press without scaling', 
   });
 
   it('the linked feature card lays a shade over its green and never scales', () => {
-    expect(ui).not.toMatch(/\.ch-feat\.is-link:active\s*\{[^}]*scale/);
-    expect(withProp(ui, '.ch-feat.is-link:active::after', 'opacity')).toMatch(/opacity:\s*1/);
+    expect(ui).not.toMatch(/\.ch-feat\.is-link(?:\[data-ch-pressed\]|:active)\s*\{[^}]*scale/);
+    expect(withProp(ui, '.ch-feat.is-link[data-ch-pressed]::after', 'opacity')).toMatch(/opacity:\s*1/);
     expect(withProp(ui, '.ch-feat.is-link::after', 'pointer-events')).toMatch(/pointer-events:\s*none/);
   });
 });

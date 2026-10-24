@@ -389,7 +389,7 @@ non-goal below that a coach reads a player only through the Board and Ask.
   for the player. The read kept for the tab is kept per player.
 - Standing. A stat with an open read on its metric gets "Open the read →" to
   the Deep dive on that read, in the row and in Most to gain; nothing else.
-  Start a round is not drawn.
+  New round is not drawn.
 - How Jonah plays. Standing's last section, as the player's; Keep reading is
   "Also for Jonah", to the Deep dive. (The Game profile's "CoachHelm sees"
   line went with it: the Deep dive is one tap away in the strip.)

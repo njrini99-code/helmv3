@@ -348,7 +348,7 @@ describe('Calendar · saves that fail', () => {
     // Pressing Publish again, then the toast's Retry: the same event, so the same id.
     await user.click(screen.getByRole('button', { name: 'Publish event' }));
     await waitFor(() => expect(a.createGolfEvent).toHaveBeenCalledTimes(2));
-    const retries = await screen.findAllByRole('button', { name: 'Retry' });
+    const retries = await screen.findAllByRole('button', { name: 'Try again' });
     await user.click(retries[retries.length - 1]!);
     await waitFor(() => expect(a.createGolfEvent).toHaveBeenCalledTimes(3));
     const ids = () => a.createGolfEvent.mock.calls.map((c) => (c[0] as { requestId?: string }).requestId);
@@ -656,7 +656,7 @@ describe('Calendar · saves that fail', () => {
     await user.type(d.getByPlaceholderText('Recruiting call'), 'Film');
     await user.click(d.getByRole('button', { name: 'Add busy time' }));
     await expectCode('CH-6006', /Couldn’t add your busy time/);
-    const retries = await screen.findAllByRole('button', { name: 'Retry' });
+    const retries = await screen.findAllByRole('button', { name: 'Try again' });
     await user.click(retries[retries.length - 1]!);
     await waitFor(() => expect(a.addCoachBlockedTime).toHaveBeenCalledTimes(2));
     const ids = () => a.addCoachBlockedTime.mock.calls.map((c) => (c[0] as { requestId?: string }).requestId);
@@ -975,7 +975,8 @@ describe('Calendar · no team', () => {
   it('CH-6307 a coach or player with no team gets the v2 page empty state', () => {
     const { unmount } = render(<CalendarNoTeam coach />);
     const el = code('CH-6307')!;
-    expect(el.classList.contains('ch-empty-page')).toBe(true);
+    // CONS-10: the one no-team state, a v2 page state.
+    expect(el.classList.contains('ch-es--page')).toBe(true);
     expect(within(el as HTMLElement).getByRole('heading', { level: 2, name: 'You aren’t on a team yet' })).toBeTruthy();
     expect(el.textContent).toMatch(/once your team is set up/);
     expect(within(el as HTMLElement).getByRole('link', { name: 'Open team settings' }).getAttribute('href')).toBe('/golf/dashboard/settings?section=team');
@@ -1011,6 +1012,40 @@ describe('Calendar · phone (v2, Coach - Calendar - Mobile.html)', () => {
     expect(hapticSpy).toHaveBeenCalledWith('select');
     expect(live('.ch-calm-dayk')!.textContent).toMatch(/Thu 15 October/);
     expect(screen.getByRole('button', { name: /^Travel briefing/ })).toBeTruthy();
+  });
+
+  it('row 81: the coach’s More on the phone opens desktop’s items without Print, and Add busy time opens its sheet; a player has none', async () => {
+    const user = userEvent.setup();
+    wrap(cal());
+    await user.click(screen.getByRole('button', { name: 'More' }));
+    const menu = await screen.findByRole('menu', { name: 'More' });
+    const items = within(menu).getAllByRole('menuitem').map((i) => i.textContent);
+    expect(items).toContain('Add to calendar app');
+    expect(items).toContain('Add busy time');
+    expect(items.some((t) => /^Print/.test(t ?? ''))).toBe(false);
+    await user.click(within(menu).getByRole('menuitem', { name: /Add busy time/ }));
+    expect(await screen.findByRole('heading', { name: 'Add busy time' })).toBeTruthy();
+    cleanup();
+    wrap(cal({ role: 'player', viewerPlayerId: 'jonah' }));
+    expect(screen.queryByRole('button', { name: 'More' })).toBeNull();
+  });
+
+  it('B10.4 away from today, a Today key brings the phone back; on today it is not there', async () => {
+    vi.useFakeTimers({ toFake: ['Date'] });
+    try {
+      // 2:40 PM Wed 14 October in New York, the day the page opens on.
+      vi.setSystemTime(new Date('2026-10-14T18:40:00Z'));
+      const user = userEvent.setup();
+      wrap(cal());
+      expect(screen.queryByRole('button', { name: 'Today' })).toBeNull();
+      const strip = screen.getByRole('list', { name: 'This week' });
+      await user.click(within(strip).getByRole('button', { name: /^Thu 15/ }));
+      await user.click(screen.getByRole('button', { name: 'Today' }));
+      expect(live('.ch-calm-dayk')!.textContent).toMatch(/Wed 14 October/);
+      expect(screen.queryByRole('button', { name: 'Today' })).toBeNull();
+    } finally {
+      vi.useRealTimers();
+    }
   });
 
   it('61901 Day: once the day is behind us the now line closes the agenda, and with events still to come it sits before them', () => {
@@ -1165,10 +1200,10 @@ describe('Calendar · phone (v2, Coach - Calendar - Mobile.html)', () => {
     const user = userEvent.setup();
     wrap(cal());
     const strip = screen.getByRole('list', { name: 'This week' });
-    expect(strip.style.getPropertyValue('--ch-calm-at')).toBe('3');
+    expect(strip.style.getPropertyValue('--ch-wks-at')).toBe('3');
     expect(screen.getByRole('heading', { level: 3, name: 'Wed 14 October' })).toBeTruthy();
     await user.click(within(strip).getByRole('button', { name: /^Thu 15/ }));
-    expect(strip.style.getPropertyValue('--ch-calm-at')).toBe('4');
+    expect(strip.style.getPropertyValue('--ch-wks-at')).toBe('4');
     expect(live('.ch-calm-dayk')!.textContent).toMatch(/Thu 15 October/);
     // The day that left is hidden from assistive tech while it fades.
     for (const h of screen.queryAllByRole('heading', { level: 3 })) expect(h.textContent).not.toMatch(/Wed 14 October/);
@@ -1446,7 +1481,7 @@ describe('Calendar · the failure toast’s Retry', () => {
       expect(write).toHaveBeenCalledTimes(1);
       sc.notYet();
       hapticSpy.mockClear();
-      await user.click(screen.getByRole('button', { name: 'Retry' }));
+      await user.click(screen.getByRole('button', { name: 'Try again' }));
       await waitFor(() => expect(write).toHaveBeenCalledTimes(2));
       expect(write.mock.calls[1]).toEqual(write.mock.calls[0]);
       await screen.findByText(sc.done);
@@ -2295,7 +2330,7 @@ describe('Calendar · a player’s own week (wave 7)', () => {
 
     it('a coach’s strip and rows never carry a player’s reply mark', () => {
       wrap(cal());
-      expect(document.querySelector('.ch-calm-week .is-reply')).toBeNull();
+      expect(document.querySelector('.ch-wks .is-reply')).toBeNull();
       expect(screen.queryByText('Reply')).toBeNull();
     });
   });

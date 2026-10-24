@@ -25,7 +25,7 @@ export function CalendarSkeleton() {
       </div>
       {/* The view and the panel in the loaded page's own classes, so they sit flush on the Ledger like it does. */}
       <div className="ch-cal-body">
-        <div className="ch-wk ch-cal-surface" style={{ display: 'grid', gap: 14 }}>
+        <div className="ch-wk ch-cal-surface" style={{ display: 'grid', gap: 16 }}>
           <Skeleton width="100%" height={48} radius={10} />
           <Skeleton width="100%" height={820} radius={10} />
         </div>

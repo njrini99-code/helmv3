@@ -4,6 +4,7 @@ import { ChevronDown } from 'lucide-react';
 import { CH_STAGES, stageMeta, type ChStage } from '../../data/recruiting-shape';
 import { haptic } from '../../lib/haptics';
 import { Icon } from '../../ui/Icon';
+import { plural } from '../../lib/plural';
 
 /**
  * The pipeline timeline (Main board; the phone's compact one is `compact`): the four stages left to right on one
@@ -37,7 +38,7 @@ export function Pipeline({
           <span className="ch-rec-pipe__sum">
             <b>Pipeline</b>
             <span className="ch-num">
-              {empty ? 'Nobody yet. Stages fill as you add prospects.' : `${total} ${total === 1 ? 'prospect' : 'prospects'} · ${counts.committed} committed`}
+              {empty ? 'Nobody yet. Stages fill as you add prospects.' : `${plural(total, 'prospect')} · ${counts.committed} committed`}
               {!empty && summary && <span className="ch-rec-pipe__next"> · {summary}</span>}
             </span>
           </span>
@@ -62,7 +63,7 @@ export function Pipeline({
               type="button"
               className={`ch-rec-pipe__stage is-${s.value}`}
               aria-pressed={on}
-              aria-label={`${s.label}, ${n} ${n === 1 ? 'prospect' : 'prospects'}`}
+              aria-label={`${s.label}, ${plural(n, 'prospect')}`}
               disabled={empty}
               onClick={() => {
                 // CH-14701: a stage picked as the filter is a selection.

@@ -184,7 +184,7 @@ export function SectionSwitchProvider({
     (delta: 1 | -1) => {
       const next = sections[indexOf(shownRef.current) + delta];
       if (!next) return false;
-      haptic('select');
+      // A step to the next section is navigation, so it is silent (D-70, A14).
       setDir(delta);
       setPending(next);
       if (openRef.current) setOpen(false);

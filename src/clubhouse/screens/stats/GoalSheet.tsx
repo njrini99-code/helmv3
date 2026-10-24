@@ -162,7 +162,7 @@ export function GoalSheet({ open, onClose }: { open: boolean; onClose: () => voi
           <Button variant="ghost" onClick={onClose} disabled={save.pending}>
             Cancel
           </Button>
-          <Button variant="primary" disabled={save.pending} feel={null} onClick={() => void submit()}>
+          <Button variant="primary" busy={save.pending} feel={null} onClick={() => void submit()}>
             {save.pending ? <span data-ch-code="CH-5405">Starting…</span> : 'Start goal'}
           </Button>
         </>

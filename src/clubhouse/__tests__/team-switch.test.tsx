@@ -195,7 +195,7 @@ describe('Team switcher · desktop', () => {
     await user.click(await screen.findByRole('option', { name: WOMEN.name }));
     await expectCode('CH-1003', /Couldn’t switch to UNCW Women's Golf/);
     expect(code('CH-1003')!.textContent).toMatch(/You aren’t staffed on that team\./);
-    expect(within(code('CH-1003') as HTMLElement).queryByRole('button', { name: 'Retry' })).toBeNull();
+    expect(within(code('CH-1003') as HTMLElement).queryByRole('button', { name: 'Try again' })).toBeNull();
     expect(trigger().getAttribute('aria-label')).toBe("UNCW Men's Golf. Switch team");
     expect(router.refresh).not.toHaveBeenCalled();
     expect(hapticSpy).toHaveBeenCalledWith('error');
@@ -209,7 +209,7 @@ describe('Team switcher · desktop', () => {
     await user.click(await screen.findByRole('option', { name: WOMEN.name }));
     await expectCode('CH-1003', /You’re still on UNCW Men's Golf\. Try again\./);
     expect(trigger().getAttribute('aria-label')).toBe("UNCW Men's Golf. Switch team");
-    await user.click(within(code('CH-1003') as HTMLElement).getByRole('button', { name: 'Retry' }));
+    await user.click(within(code('CH-1003') as HTMLElement).getByRole('button', { name: 'Try again' }));
     await waitFor(() => expect(router.refresh).toHaveBeenCalledTimes(1));
     expect(setActiveTeam).toHaveBeenCalledTimes(2);
     expect(setActiveTeam).toHaveBeenLastCalledWith(WOMEN.id);

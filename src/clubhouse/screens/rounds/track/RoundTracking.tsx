@@ -25,6 +25,7 @@ import { EditShotSheet, PenaltySheet, UnsavedSheet } from './sheets';
 import { ShotEntry } from './ShotEntry';
 import { useChPuttPrompt, useChRecoveryPrompt } from './use-data-prompts';
 import { useWakeLock } from './use-wake-lock';
+import { pluralWord } from '../../../lib/plural';
 import '../../../styles/rounds-track.css';
 
 /** The round this screen is scoring, for its top bar. */
@@ -234,7 +235,7 @@ export function RoundTracking(props: RoundTrackingProps) {
                     <div>
                       <b>{scoreName(stats.score, hole.par)}</b>
                       <span>
-                        {stats.score} strokes · {stats.putts} putt{stats.putts === 1 ? '' : 's'}
+                        {stats.score} strokes · {stats.putts} {pluralWord(stats.putts, 'putt')}
                       </span>
                     </div>
                   </div>

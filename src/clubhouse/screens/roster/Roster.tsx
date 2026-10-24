@@ -1,18 +1,19 @@
 'use client';
 
-import { Bandage, BarChart3, CircleCheck, Copy, Download, Ellipsis, LayoutGrid, List, MessageSquare, Plane, Share, Sparkles, UserCheck, UserMinus, UserPlus, UserX } from 'lucide-react';
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { ArrowDown, ArrowUp, Bandage, ChartColumn, CircleCheck, Copy, Download, Ellipsis, LayoutGrid, List, MessageSquare, Plane, Share, Sparkles, UserCheck, UserMinus, UserPlus, UserX } from 'lucide-react';
+import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { useChSessionState } from '../../lib/session-state';
 import { useRouter } from 'next/navigation';
 import { removePlayerFromTeam } from '@/app/golf/actions/roster';
 import { setPlayerAvailability, updatePlayerStatus } from '@/app/golf/actions/team-management';
 import type { ChAvailability, ChRoster, ChRosterPlayer } from '../../data/roster';
 import { Avatar } from '../../ui/Avatar';
-import { Button } from '../../ui/Button';
+import { Button, IconButton } from '../../ui/Button';
 import { EmptyState } from '../../ui/States';
 import { InlineNotice } from '../../ui/Notices';
 import { PageRefreshNotice } from '../../ui/RefreshNotice';
-import { FormLine } from '../../ui/FormLine';
+import { FormLine, FormRange } from '../../ui/FormLine';
+import { formRangeWords } from '../../ui/form-range';
 import { Icon } from '../../ui/Icon';
 import { Menu, type MenuItem } from '../../ui/Menu';
 import { useContextMenu, type ContextMenuBind } from '../../ui/ContextMenu';
@@ -26,10 +27,13 @@ import { useToast } from '../../ui/Toast';
 import { useAction } from '../../lib/use-action';
 import { haptic } from '../../lib/haptics';
 import { CH_PHONE_QUERY, useChPhone } from '../../lib/use-phone';
+import { RovingRows } from '../../ui/RovingRows';
+import { usePageKeys, type ChPageKey } from '../../shell/command/page-keys';
 import { chTrail } from '../../lib/track';
-import { changeTone, formatFixed, formatSigned, NO_DATA } from '../../lib/format';
+import { changeTone, formatAvg, formatFixed, formatHcp, formatSigned, NO_DATA } from '../../lib/format';
 import { coachPlayerHref } from '../../data/coachhelm-views-shape';
 import { rebuiltHref } from '../../shell/nav';
+import { usePressPrefetch } from '../../shell/use-prefetch-tabs';
 import { InviteByEmail } from './InviteByEmail';
 import { RosterRequests } from './RosterRequests';
 import { useJoinRequests } from './useJoinRequests';
@@ -39,18 +43,39 @@ import { RosterPhone } from './RosterPhone';
 import { PlayerPeek } from '../../ui/PlayerPeek';
 import { Tooltip } from '../../ui/Tooltip';
 import { RosterSpread } from './RosterSpread';
-import { AVAILABILITY_WORD, availabilityLine, earlyNeed, formatHcp, rosterFailedParts, rosterPeek, rosterStandings, teamInSentence, type RosterStanding } from './format';
+import { AVAILABILITY_WORD, availabilityLine, earlyNeed, rosterFailedParts, rosterPeek, rosterStandings, teamInSentence, type RosterStanding } from './format';
 import { StatusConfirm, statusCopy } from './RosterStatus';
 import '../../styles/roster.css';
 import { SideScroll } from '../../ui/SideScroll';
+import { ROSTER_SORT_DIRECTION, sortRoster, type RosterSort } from './sort';
+import { TERMS } from '../../lib/glossary';
+import { plural, pluralWord } from '../../lib/plural';
 
-type Sort = 'avg' | 'hcp' | 'rounds' | 'name';
+/**
+ * B10.5: a sortable column's header is a button that sorts by it (the same orders as Sort players, from ./sort), and the
+ * column sorted by says so (`aria-sort`, and an arrow the way it runs).
+ */
+function SortHeader({ k, sort, onSort, end = false, children }: { k: Sort; sort: Sort; onSort: (s: Sort) => void; end?: boolean; children: ReactNode }) {
+  const on = sort === k;
+  const dir = ROSTER_SORT_DIRECTION[k];
+  return (
+    <span role="columnheader" className={end ? 'r' : undefined} aria-sort={on ? dir : 'none'}>
+      <button type="button" className={'ch-rs-sorth' + (on ? ' is-on' : '')} onClick={() => onSort(k)}>
+        {children}
+        {/* The arrow's room is kept on every sortable header, so a right-aligned label doesn't move when it is chosen. */}
+        <span className="ch-rs-sorth__ar" aria-hidden="true">
+          <Icon icon={dir === 'ascending' ? ArrowUp : ArrowDown} size={12} />
+        </span>
+      </button>
+    </span>
+  );
+}
+
+type Sort = Extract<RosterSort, 'avg' | 'hcp' | 'rounds' | 'name'>;
 type Show = 'active' | 'inactive' | 'all';
 type View = 'faces' | 'list';
 const VIEW_KEY = 'ch-roster-view';
 
-const lastName = (n: string) => n.split(' ').slice(-1)[0] ?? n;
-const nullsLast = (a: number | null, b: number | null) => (a == null ? (b == null ? 0 : 1) : b == null ? -1 : a - b);
 /** A spreadsheet reads a cell that starts with = + - @ (or a tab or a return) as a formula. Players type their own names, so the export writes them as text (30502). */
 const asText = (s: string) => (/^[=+\-@\t\r]/.test(s) ? `'${s}` : s);
 
@@ -124,6 +149,7 @@ export function Roster({ data }: { data: ChRoster }) {
   const teamRef = teamInSentence(data);
   const jr = useJoinRequests(teamRef, data.requests);
   const phone = useChPhone();
+  usePageKeys('Roster', phone ? null : ROW_KEYS);
   useEffect(() => {
     if (!focusRequests || phone) return;
     requestsRef.current?.focus();
@@ -192,15 +218,7 @@ export function Roster({ data }: { data: ChRoster }) {
   const rows = useMemo(() => {
     const needle = q.trim().toLowerCase();
     const list = players.filter((p) => (show === 'all' || p.status === show) && p.name.toLowerCase().includes(needle));
-    return [...list].sort((a, b) =>
-      sortBy === 'name'
-        ? lastName(a.name).localeCompare(lastName(b.name))
-        : sortBy === 'avg'
-          ? nullsLast(a.avg, b.avg)
-          : sortBy === 'hcp'
-            ? nullsLast(a.handicap, b.handicap)
-            : b.rounds - a.rounds,
-    );
+    return sortRoster(list, sortBy);
   }, [players, q, show, sortBy]);
 
   const attn = players.filter((p) => p.attention && p.status === 'active');
@@ -210,13 +228,13 @@ export function Roster({ data }: { data: ChRoster }) {
     haptic('select');
     setSel((s) => (s === id ? null : id));
   }, []);
-  /** A player's face or name goes to their profile (owner, 2026-10-08); where that page isn't rebuilt it opens the peek. */
+  /** A player's face or name goes to their profile (owner, 2026-10-08); where that page isn't rebuilt it opens the peek.
+   *  Going there is navigation, so it is silent (D-70, A14); the peek, which opens in place, still ticks. */
   const openProfile = useCallback(
     (id: string) => {
-      const href = rebuiltHref(`/golf/dashboard/stats?player=${id}`);
+      const href = profileHref(id);
       if (!href) return select(id);
       chTrail('roster open profile');
-      haptic('select');
       router.push(href);
     },
     [router, select],
@@ -303,7 +321,7 @@ export function Roster({ data }: { data: ChRoster }) {
   );
 
   const exportCsv = () => {
-    const head = ['Player', 'Class', 'Status', 'Availability', 'Rounds', 'Scoring avg', 'SG per round', 'Handicap'];
+    const head = ['Player', 'Class', 'Status', 'Availability', 'Rounds', TERMS.scoringAvg.short, `${TERMS.strokesGained.short} per round`, TERMS.handicap.long];
     const lines = rows.map((p) =>
       [
         asText(p.name),
@@ -327,7 +345,7 @@ export function Roster({ data }: { data: ChRoster }) {
       URL.revokeObjectURL(a.href);
       // CH-3702: an export lands with the success tap.
       haptic('success');
-      toast({ title: `Roster exported · ${rows.length} ${rows.length === 1 ? 'player' : 'players'}` });
+      toast({ title: `Roster exported · ${plural(rows.length, 'player')}` });
     } catch {
       haptic('error');
       toast({ tone: 'error', title: 'Couldn’t export the roster', body: 'Your browser blocked the download. Try again, or use a desktop browser.', code: 'CH-3005' });
@@ -341,7 +359,7 @@ export function Roster({ data }: { data: ChRoster }) {
     const insights = rebuiltHref(coachPlayerHref('deep-dive', p.id), 'coach');
     if (insights) items.push({ label: 'View insights', icon: Sparkles, href: insights });
     const s = statsHref(p);
-    if (s) items.push({ label: 'View stats', icon: BarChart3, href: s });
+    if (s) items.push({ label: 'View stats', icon: ChartColumn, href: s });
     const messagesHref = rebuiltHref(`/golf/dashboard/messages?player=${encodeURIComponent(p.id)}`);
     if (messagesHref) items.push({ label: 'Message', icon: MessageSquare, href: messagesHref });
     if (items.length) items.push({ kind: 'separator' });
@@ -448,11 +466,11 @@ export function Roster({ data }: { data: ChRoster }) {
           <span className="ch-rs-team">
             <span className="ch-rs-team__name">{[data.teamName, data.season].filter(Boolean).join(' · ')}</span>
           </span>
-          <h1 className="ch-display">Your players</h1>
+          <h1 className="ch-display">Roster</h1>
           {/* With nobody on the roster every count is 0: the team and season above say enough (wave 10). */}
           {!data.playersError && players.length > 0 && (
             <p>
-              <span className="ch-num">{players.length}</span> {players.length === 1 ? 'player' : 'players'} &middot;{' '}
+              <span className="ch-num">{players.length}</span> {pluralWord(players.length, 'player')} &middot;{' '}
               <span className="ch-num">{active.length}</span> active
               {injuredCount > 0 && (
                 <>
@@ -470,7 +488,7 @@ export function Roster({ data }: { data: ChRoster }) {
               {teamAvg != null && (
                 <>
                   {' '}
-                  Team average <span className="ch-num">{teamAvg.toFixed(1)}</span> over the season.
+                  Team average <span className="ch-num">{formatAvg(teamAvg)}</span> over the season.
                 </>
               )}
             </p>
@@ -501,7 +519,7 @@ export function Roster({ data }: { data: ChRoster }) {
         <InlineNotice
           code="CH-3202"
           title="Season stats didn’t load"
-          body="The roster is complete, but averages, form and strokes gained are missing until the rounds load. The error has been reported."
+          body="The roster is complete, but averages, form and strokes gained are missing until the rounds load."
           onRetry={() => router.refresh()}
           covered={covered}
         />
@@ -513,7 +531,7 @@ export function Roster({ data }: { data: ChRoster }) {
           {attn.map((p) => (
             <PlayerPeek key={p.id} player={rosterPeek(p)}>
               <button type="button" className="ch-rs-attn__c" onClick={() => openSel(p.id)}>
-                <Avatar name={p.name} size={24} />
+                <Avatar name={p.name} id={p.id} size="xs" />
                 <b>{p.firstName}</b>
                 <span className={`ch-rs-attn__n is-${p.attention!.tone}`}>{p.attention!.text}</span>
               </button>
@@ -526,7 +544,7 @@ export function Roster({ data }: { data: ChRoster }) {
         <InlineNotice
           code="CH-3201"
           title="The roster didn’t load"
-          body="Your players are safe. Try again; the error has been reported."
+          body="Your players are safe. Try again."
           onRetry={() => router.refresh()}
           covered={covered}
         />
@@ -596,8 +614,8 @@ export function Roster({ data }: { data: ChRoster }) {
                 value={sortBy}
                 onChange={setSort}
                 options={[
-                  ...(data.statsError ? [] : [{ value: 'avg' as const, label: 'Avg score' }]),
-                  { value: 'hcp', label: 'Handicap' },
+                  ...(data.statsError ? [] : [{ value: 'avg' as const, label: TERMS.scoringAvg.short }]),
+                  { value: 'hcp', label: TERMS.handicap.long },
                   { value: 'rounds', label: 'Rounds' },
                   { value: 'name', label: 'Name' },
                 ]}
@@ -620,6 +638,9 @@ export function Roster({ data }: { data: ChRoster }) {
                   openProfile={openProfile}
                   menuFor={menuFor}
                   bind={ctx.bind}
+                  sortBy={sortBy}
+                  onSort={setSort}
+                  sortableAvg={!data.statsError}
                   onShowEveryone={() => {
                     setQ('');
                     setShow('all');
@@ -640,6 +661,11 @@ export function Roster({ data }: { data: ChRoster }) {
   );
 }
 
+const ROW_KEYS: readonly ChPageKey[] = [{ label: 'Move between players', keys: ['Up', 'Down'] }];
+
+/** A player's profile, where Stats is rebuilt for the coach; otherwise null (the peek opens instead). */
+const profileHref = (id: string) => rebuiltHref(`/golf/dashboard/stats?player=${id}`);
+
 /**
  * The roster itself, as cards or a table. Its own component so the
  * roster.list boundary contains everything it computes.
@@ -655,6 +681,9 @@ function RosterList({
   menuFor,
   bind,
   onShowEveryone,
+  sortBy,
+  onSort,
+  sortableAvg,
 }: {
   rows: ChRosterPlayer[];
   standings: ReturnType<typeof rosterStandings>;
@@ -667,124 +696,147 @@ function RosterList({
   /** The right-click menu's handlers for a row (ui/ContextMenu.tsx). */
   bind: (p: ChRosterPlayer) => ContextMenuBind;
   onShowEveryone: () => void;
+  sortBy: Sort;
+  onSort: (s: Sort) => void;
+  /** Avg sorts nothing while season stats are missing (P003 #7), so its header is plain then. */
+  sortableAvg: boolean;
 }) {
+  // The profile is fetched whole as the pointer goes down on a face or a name (A13).
+  const press = usePressPrefetch();
   return (
-    <>
-      {rows.length === 0 ? (
-        <EmptyState
-          kind="filtered"
-          code={q.trim() ? 'CH-3302' : 'CH-3303'}
-          title={q.trim() ? `No players match “${q.trim()}”` : show === 'inactive' ? 'No inactive players.' : 'No active players.'}
-          body={show === 'all' ? 'Search matches player names.' : `Only ${show} players are in view.`}
-          action={<Button onClick={onShowEveryone}>Show everyone</Button>}
-        />
-      ) : view === 'faces' ? (
-        <div className="ch-rs-faces">
-          {rows.map((p) => (
-            <button
-              key={p.id}
-              type="button"
-              className={'ch-rs-face' + (sel === p.id ? ' is-sel' : '') + (p.status === 'inactive' ? ' is-off' : '')}
-              aria-label={`${faceLabel(p, standings.byId.get(p.id))}. Open profile`}
-              onClick={() => openProfile(p.id)}
-              {...bind(p)}
-            >
-              <span className="ch-rs-face__top">
-                <span />
-                {/* CH-3802: the status is a word; the dot is decoration, drawn only under All where it tells players
-                    apart (P003-A3: under Active or Inactive every dot is the same). CH-3602: on desktop the cell takes
-                    the Ledger tint on hover and a deeper one on press; the phone's card lifts. */}
-                {show === 'all' && <span className={`ch-rs-face__dot is-${p.status}`} aria-hidden="true" />}
-                <span className="ch-sr-only">{p.status === 'active' ? 'Active' : 'Inactive'}</span>
-              </span>
-              <span className="ch-rs-face__av">
-                <Avatar name={p.name} size={76} />
-              </span>
-              <span className="ch-rs-face__name">{p.name}</span>
-              <span className="ch-rs-face__meta">{[p.classYear, p.hometown].filter(Boolean).join(' · ') || ' '}</span>
-              <span className="ch-rs-face__form">
-                <FormLine data={p.trend} width={150} height={30} earlyBelow={3} label={`${p.name} form`} />
-              </span>
-              <FaceFigures p={p} avgs={standings.avgs} standing={standings.byId.get(p.id)} />
-              {/* Injured or away takes the note slot in plain ink, in place of a Needs a look reason (CH-3809: a word). */}
-              {availabilityLine(p) ? (
-                <span className="ch-rs-face__note is-availability" title={availabilityLine(p)!}>
-                  {availabilityLine(p)}
+    // B5: every row's form line on one range, so the same height is the same score down the table.
+    <FormRange trends={rows.map((p) => p.trend)} earlyBelow={3}>
+        {rows.length === 0 ? (
+          <EmptyState
+            kind="filtered"
+            code={q.trim() ? 'CH-3302' : 'CH-3303'}
+            title={q.trim() ? `No players match “${q.trim()}”` : show === 'inactive' ? 'No inactive players.' : 'No active players.'}
+            body={show === 'all' ? 'Search matches player names.' : `Only ${show} players are in view.`}
+            action={<Button onClick={onShowEveryone}>Show everyone</Button>}
+          />
+        ) : view === 'faces' ? (
+          <div className="ch-rs-faces">
+            {rows.map((p) => (
+              <button
+                key={p.id}
+                type="button"
+                className={'ch-rs-face' + (sel === p.id ? ' is-sel' : '') + (p.status === 'inactive' ? ' is-off' : '')}
+                aria-label={`${faceLabel(p, standings.byId.get(p.id))}. Open profile`}
+                onClick={() => openProfile(p.id)}
+                {...press(profileHref(p.id))}
+                {...bind(p)}
+              >
+                <span className="ch-rs-face__top">
+                  <span />
+                  {/* CH-3802: the status is a word; the dot is decoration, drawn only under All where it tells players
+                      apart (P003-A3: under Active or Inactive every dot is the same). CH-3602: on desktop the cell takes
+                      the Ledger tint on hover and a deeper one on press; the phone's card lifts. */}
+                  {show === 'all' && <span className={`ch-rs-face__dot is-${p.status}`} aria-hidden="true" />}
+                  <span className="ch-sr-only">{p.status === 'active' ? 'Active' : 'Inactive'}</span>
+                </span>
+                <span className="ch-rs-face__av">
+                  <Avatar name={p.name} id={p.id} size={76} />
+                </span>
+                <span className="ch-rs-face__name">{p.name}</span>
+                <span className="ch-rs-face__meta">{[p.classYear, p.hometown].filter(Boolean).join(' · ') || ' '}</span>
+                <span className="ch-rs-face__form">
+                  <FormLine data={p.trend} width={150} height={30} earlyBelow={3} label={`${p.name} form`} />
+                </span>
+                <FaceFigures p={p} avgs={standings.avgs} standing={standings.byId.get(p.id)} />
+                {/* Injured or away takes the note slot in plain ink, in place of a Needs a look reason (CH-3809: a word). */}
+                {availabilityLine(p) ? (
+                  <span className="ch-rs-face__note is-availability" title={availabilityLine(p)!}>
+                    {availabilityLine(p)}
+                  </span>
+                ) : (
+                  p.attention && <span className={`ch-rs-face__note is-${p.attention.tone}`}>{p.attention.text}</span>
+                )}
+              </button>
+            ))}
+          </div>
+        ) : (
+          <>
+          {/* B11: Up and Down walk the table's players (their name buttons), Home and End go to the ends, and the table is
+              one Tab stop. Inside the roster.list boundary, so it runs once that has hydrated. */}
+          <RovingRows selector=".ch-rs-list .ch-rs-who" within=".ch-rs-body" />
+          <SideScroll className="ch-rs-list ch-sheet" role="table" aria-label="Roster" /* CH-3801: every value in a cell under a header */>
+            <div className="ch-rs-row ch-rs-row--head ch-well-soft" role="row">
+              <SortHeader k="name" sort={sortBy} onSort={onSort}>
+                Player
+              </SortHeader>
+              <span role="columnheader">Status</span>
+              {/* The lines share one range (B5), and the header says its ends (row 102). */}
+              <span role="columnheader">{['Last 7 rounds', formRangeWords(rows.map((p) => p.trend), 3)].filter(Boolean).join(' · ')}</span>
+              {!sortableAvg ? (
+                <span role="columnheader" className="r">
+                  Avg
                 </span>
               ) : (
-                p.attention && <span className={`ch-rs-face__note is-${p.attention.tone}`}>{p.attention.text}</span>
+                <SortHeader k="avg" sort={sortBy} onSort={onSort} end>
+                  Avg
+                </SortHeader>
               )}
-            </button>
-          ))}
-        </div>
-      ) : (
-        <SideScroll className="ch-rs-list ch-sheet" role="table" aria-label="Roster" /* CH-3801: every value in a cell under a header */>
-          <div className="ch-rs-row ch-rs-row--head ch-well-soft" role="row">
-            <span role="columnheader">Player</span>
-            <span role="columnheader">Status</span>
-            <span role="columnheader">Last 7 rounds</span>
-            <span role="columnheader" className="r">Avg</span>
-            <span role="columnheader" className="r">HCP</span>
-            <span role="columnheader" className="r">SG / rd</span>
-            <span role="columnheader" className="r">Rounds</span>
-            <span role="columnheader">
-              <span className="ch-sr-only">Actions</span>
-            </span>
-          </div>
-          {rows.map((p) => (
-            <div
-              key={p.id}
-              role="row"
-              className={'ch-rs-row' + (sel === p.id ? ' is-sel' : '') + (p.status === 'inactive' ? ' is-off' : '')}
-              {...bind(p)}
-            >
-              <span role="cell" className="ch-rs-who__cell">
-                <button
-                  type="button"
-                  className="ch-rs-who"
-                  onClick={() => openProfile(p.id)}
-                  aria-label={`${p.name}. Open profile`}
-                >
-                  <Avatar name={p.name} size={40} />
-                  <span>
-                    <b>{p.name}</b>
-                    <RowMeta p={p} />
-                  </span>
-                </button>
-              </span>
-              <span role="cell">
-                <span className={`ch-rs-status is-${p.status}`}>
-                  <i aria-hidden="true" />
-                  {p.status === 'active' ? 'Active' : 'Inactive'}
-                </span>
-              </span>
-              <span role="cell">
-                <FormLine data={p.trend} width={120} height={30} earlyBelow={3} label={`${p.name} form`} />
-              </span>
-              <span role="cell" className="r ch-num ch-rs-num">{formatFixed(p.avg)}</span>
-              <span role="cell" className="r ch-num ch-rs-num2">{formatHcp(p.handicap)}</span>
-              <span role="cell" className={'r ch-num ch-rs-sg ' + changeTone(p.sgPerRound, false, 1)}>
-                {p.sgPerRound == null ? NO_DATA : formatSigned(p.sgPerRound)}
-              </span>
-              <span role="cell" className="r ch-num ch-rs-num2">{p.rounds}</span>
-              <span role="cell" className="r">
-                <Menu
-                  label={`Actions for ${p.name}`}
-                  items={menuFor(p)}
-                  trigger={(t) => (
-                    <Tooltip>
-                      <button type="button" className="ch-btn ch-btn--ghost ch-iconbtn ch-btn--sm" aria-label={`Actions for ${p.name}`} {...t}>
-                        <Icon icon={Ellipsis} size={15} />
-                      </button>
-                    </Tooltip>
-                  )}
-                />
+              <SortHeader k="hcp" sort={sortBy} onSort={onSort} end>
+                HCP
+              </SortHeader>
+              <span role="columnheader" className="r">SG / rd</span>
+              <SortHeader k="rounds" sort={sortBy} onSort={onSort} end>
+                Rounds
+              </SortHeader>
+              <span role="columnheader">
+                <span className="ch-sr-only">Actions</span>
               </span>
             </div>
-          ))}
-        </SideScroll>
-      )}
-    </>
+            {rows.map((p) => (
+              <div
+                key={p.id}
+                role="row"
+                className={'ch-rs-row' + (sel === p.id ? ' is-sel' : '') + (p.status === 'inactive' ? ' is-off' : '')}
+                {...bind(p)}
+              >
+                <span role="cell" className="ch-rs-who__cell">
+                  <button
+                    type="button"
+                    className="ch-rs-who"
+                    onClick={() => openProfile(p.id)}
+                    {...press(profileHref(p.id))}
+                    aria-label={`${p.name}. Open profile`}
+                  >
+                    <Avatar name={p.name} id={p.id} size="lg" />
+                    <span>
+                      <b>{p.name}</b>
+                      <RowMeta p={p} />
+                    </span>
+                  </button>
+                </span>
+                <span role="cell">
+                  <span className={`ch-rs-status is-${p.status}`}>
+                    <i aria-hidden="true" />
+                    {p.status === 'active' ? 'Active' : 'Inactive'}
+                  </span>
+                </span>
+                <span role="cell">
+                  <FormLine data={p.trend} width={120} height={30} earlyBelow={3} label={`${p.name} form`} />
+                </span>
+                <span role="cell" className="r ch-num ch-rs-num">{formatFixed(p.avg)}</span>
+                <span role="cell" className="r ch-num ch-rs-num2">{formatHcp(p.handicap)}</span>
+                <span role="cell" className={'r ch-num ch-rs-sg ' + changeTone(p.sgPerRound, false, 1)}>
+                  {p.sgPerRound == null ? NO_DATA : formatSigned(p.sgPerRound)}
+                </span>
+                <span role="cell" className="r ch-num ch-rs-num2">{p.rounds}</span>
+                <span role="cell" className="r">
+                  <Menu
+                    label={`Actions for ${p.name}`}
+                    items={menuFor(p)}
+                    trigger={(t) => <IconButton icon={Ellipsis} size="sm" label={`Actions for ${p.name}`} menu={t} />}
+                  />
+                </span>
+              </div>
+            ))}
+          </SideScroll>
+          </>
+        )}
+    </FormRange>
   );
 }
 
@@ -824,7 +876,7 @@ function InviteModal({
       icon={UserPlus}
       title="Invite players"
       description={`Players who sign up with the team code or open the invite link join ${teamName} right away. Players already on GolfHelm who enter the code in Settings send a request you approve.`}
-      footer={<Button onClick={onClose}>Done</Button>}
+      footer={<Button variant="primary" onClick={onClose}>Done</Button>}
     >
       {code ? (
         <div className="ch-rs-inv">
@@ -908,7 +960,7 @@ function FaceFigures({
       <span className="ch-rs-fig">
         <span className="ch-rs-fig__k">Scoring</span>
         <b className="ch-num">{formatFixed(p.avg)}</b>
-        <span className="ch-rs-fig__m">{standing && standing.of > 1 ? `${ord(standing.place)} of ${standing.of}` : need ?? 'Avg'}</span>
+        <span className="ch-rs-fig__m">{standing && standing.of > 1 ? `${standing.tied ? `T${standing.place}` : ord(standing.place)} of ${standing.of}` : need ?? 'Avg'}</span>
         {p.avg != null && standing && standing.of > 1 && (
           <span className="ch-rs-strip" aria-hidden="true">
             {avgs.map((v, k) => (
@@ -939,8 +991,8 @@ function FaceFigures({
 function faceLabel(p: ChRosterPlayer, standing: RosterStanding | undefined): string {
   const out = p.availability && p.availability !== 'available' ? `, ${p.availability}` : '';
   if (p.avg == null) return `${p.name}${out}`;
-  const place = standing && standing.of > 1 ? `, ${standing.place} of ${standing.of}` : '';
-  return `${p.name}, scoring average ${p.avg.toFixed(1)}${place}${out}`;
+  const place = standing && standing.of > 1 ? `, ${standing.tied ? 'tied ' : ''}${standing.place} of ${standing.of}` : '';
+  return `${p.name}, scoring average ${formatAvg(p.avg)}${place}${out}`;
 }
 
 /**

@@ -200,6 +200,22 @@ describe('this window against the one before', () => {
     expect(row('Scoring avg')).toMatchObject({ last: 72, previous: 76, lowerIsBetter: true });
     expect(row('Putts per round')).toMatchObject({ last: 30, previous: 30, lowerIsBetter: true });
   });
+
+  it('each change carries its standard error (A1): the pooled score spread under five rounds; rates and putts none until five rounds measure them', () => {
+    const c = windowCompare(
+      [round('a', '2026-09-10', { total_gir: 9, total_gir_possible: 18, total_score: 72, total_putts: 30 })],
+      [round('b', '2026-09-01', { total_gir: 9, total_gir_possible: 18, total_score: 74, total_putts: 31 })],
+    )!;
+    const se = (l: string) => c.rows.find((r) => r.label === l)!.se;
+    // 3.6 a round over one round each side: √(3.6² + 3.6²).
+    expect(se('Scoring avg')).toBeCloseTo(Math.sqrt(2) * 3.6, 6);
+    expect(se('Greens in regulation')).toBeNull();
+    expect(se('Putts per round')).toBeNull();
+    const five = (p: string, girs: number[]) => girs.map((g, i) => round(`${p}${i}`, `2026-09-${String(10 + i).padStart(2, '0')}`, { total_gir: g, total_gir_possible: 18, total_score: 72 + i, total_putts: 30 + i }));
+    const both = windowCompare(five('n', [9, 10, 11, 12, 13]), five('o', [6, 7, 8, 9, 10]))!;
+    expect(both.rows.find((r) => r.label === 'Greens in regulation')!.se).toBeGreaterThan(0);
+    expect(both.rows.find((r) => r.label === 'Putts per round')!.se).toBeGreaterThan(0);
+  });
 });
 
 // Swap audit C-16: the strip set the fairway share of all tee shots beside left and right as shares of the misses only
@@ -729,9 +745,10 @@ describe('Rounds tab · bests and comparison', () => {
     expect(tile(bests, 'Fewest putts').textContent).toContain('Oakmont CC · Oct 12');
     const cmp = card('rx-compare');
     expect(cmp.querySelector('th[scope="col"]:nth-child(2)')!.textContent).toBe('Latest 10');
-    // Scoring 73.6 against 72.9 is worse (lower is better): amber; putts 29.8 against 30.6 is better: green.
+    // A change is coloured only past its standard error (A1): scoring's +0.7 is inside its 1.6, so it is printed in plain ink;
+    // putts 29.8 against 30.6 clears its 0.7 (better: green), greens' −5.6 points its 5.4 (worse: amber).
     expect(cells(rowOf(cmp, 'Scoring avg'))).toEqual(['73.6', '72.9', '+0.7']);
-    expect(rowOf(cmp, 'Scoring avg').querySelectorAll('td')[2]!.className).toContain('ch-loss');
+    expect(rowOf(cmp, 'Scoring avg').querySelectorAll('td')[2]!.className).not.toMatch(/ch-(gain|loss)/);
     expect(rowOf(cmp, 'Putts per round').querySelectorAll('td')[2]!.className).toContain('ch-gain');
     expect(rowOf(cmp, 'Greens in regulation').querySelectorAll('td')[2]!.className).toContain('ch-loss');
   });
@@ -805,7 +822,7 @@ describe('Overview · the zones', () => {
     const rows = [...document.querySelectorAll('.ch-zrow')];
     const near = rows.find((r) => r.textContent?.startsWith('50–125 yds'))!;
     expect(near.textContent).toContain('26 ft');
-    expect(near.querySelector('.ch-ztrack__fill')!.className).toContain('is-bad');
+    expect(near.querySelector('.ch-ztrack__fill')!.className).toContain('is-loss');
     expect(near.querySelector('.ch-ztrack__tick.is-tour')).not.toBeNull();
   });
 
@@ -960,9 +977,10 @@ describe('Game detail on the phone · the approach section', () => {
 
   it('the type contract in the stylesheet: the value is 28px and 600, its label and scope are 13 to 14px (Dynamic Type steps) in secondary ink, and nothing floors them back to 12px', () => {
     const css = readFileSync(resolve(dirname(fileURLToPath(import.meta.url)), '../styles/stats.css'), 'utf8');
-    expect(css).toMatch(/\.ch-gd\.is-phone \.ch-gm__figs dd:not\(\.ch-gm__sub\) \{\s*font: 600 28px\/32px/);
-    expect(css).toMatch(/\.ch-gd\.is-phone \.ch-gm__figs dt \{\s*font: 500 calc\(14 \* var\(--ch-type-k\)\)\/calc\(19 \* var\(--ch-type-k\)\) var\(--ch-font-sans\);\s*color: var\(--ch-text-secondary\)/);
-    expect(css).toMatch(/\.ch-gd\.is-phone \.ch-gm__figs dd\.ch-gm__sub \{\s*font: 400 calc\(13 \* var\(--ch-type-k\)\)\/calc\(18 \* var\(--ch-type-k\)\) var\(--ch-font-sans\);\s*color: var\(--ch-text-secondary\)/);
+    // The type roles (B1): 28 semibold on one tight line, 14 medium and 13 regular at the steps' own leading.
+    expect(css).toMatch(/\.ch-gd\.is-phone \.ch-gm__figs dd:not\(\.ch-gm__sub\) \{\s*font: var\(--ch-type-28-strong\);\s*line-height: var\(--ch-lead-tight\);/);
+    expect(css).toMatch(/\.ch-gd\.is-phone \.ch-gm__figs dt \{\s*font: var\(--ch-type-14-medium\);\s*color: var\(--ch-text-secondary\)/);
+    expect(css).toMatch(/\.ch-gd\.is-phone \.ch-gm__figs dd\.ch-gm__sub \{\s*font: var\(--ch-type-13\);\s*color: var\(--ch-text-secondary\)/);
     const floor = css.slice(css.indexOf('Phone text floor'));
     expect(floor).not.toMatch(/\.ch-gd\.is-phone \.ch-gm__figs d[td]/);
   });

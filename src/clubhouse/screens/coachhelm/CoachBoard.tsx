@@ -29,6 +29,7 @@ import { CoursePlan } from './CoursePlan';
 import { LIVE_COACHHELM_WRITES, LIVE_COURSE_PLAN_READS, LIVE_RECHECK_WRITES, type ChCoachHelmWrites, type ChCoursePlanReads, type ChRecheckWrites } from './writes';
 import { RecheckReads } from './Recheck';
 import { SideScroll } from '../../ui/SideScroll';
+import { pluralWord } from '../../lib/plural';
 
 /** Where each control goes. A target that isn't rebuilt yet isn't drawn (nav.rebuiltHref), never a dead button. */
 export const coachBoardLinks = {
@@ -190,7 +191,7 @@ export function CoachBoard({
                         setByHand(true);
                       }}
                     >
-                      <Avatar name={p.name} size={phone ? 28 : 34} />
+                      <Avatar name={p.name} id={p.id} size={phone ? 28 : 34} />
                       <span>
                         <b>{p.name}</b>
                         <em>{dismissed[p.top.id] ? 'Dismissed' : p.top.title}</em>
@@ -211,7 +212,7 @@ export function CoachBoard({
                             {r.name}
                           </Link>
                         ) : (
-                          (r.name ?? `${r.more} more ${r.more === 1 ? 'player' : 'players'}`)
+                          (r.name ?? `${r.more} more ${pluralWord(r.more, 'player')}`)
                         )}
                       </b>
                       <em>No reads yet</em>
@@ -220,7 +221,7 @@ export function CoachBoard({
                 ))}
                 {heldOnly.map((p) => (
                   <div key={p.id} className="ch-hl-pl is-none" data-ch-code="CH-13943">
-                    <Avatar name={p.name} size={phone ? 28 : 34} />
+                    <Avatar name={p.name} id={p.id} size={phone ? 28 : 34} />
                     <span>
                       <b>{p.name}</b>
                       <em>Not enough yet</em>
@@ -373,6 +374,10 @@ function SinceLine({ pulse }: { pulse: ChPulse }) {
             {gaps} didn’t load, so anything made from {pulse.missing.length === 1 ? 'it' : 'them'} is missing here and was not checked.
           </div>
         )}
+        {/* B11: the way into What's new, which had none but the palette. */}
+        <Link className="ch-hl-note__a ch-hl-since__all" href="/golf/dashboard/whats-new">
+          Everything in What’s new
+        </Link>
       </div>
     </div>
   );

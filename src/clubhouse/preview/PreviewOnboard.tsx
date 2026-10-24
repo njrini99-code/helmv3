@@ -81,7 +81,7 @@ function fakeWrites(sim: string | undefined): OnboardWrites {
     },
     async sendRequest() {
       await wait(900);
-      if (sim === 'network') return { ok: false, error: 'Unable to reach the server. Your details are still here. Check your connection and try again.' };
+      if (sim === 'network') return { ok: false, error: 'Your request didn’t send. Your details are still here. Try again.' };
       return { ok: true };
     },
   };

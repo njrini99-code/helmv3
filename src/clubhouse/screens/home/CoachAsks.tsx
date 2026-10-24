@@ -5,14 +5,15 @@ import { Badge } from '../../ui/Badge';
 import { Icon } from '../../ui/Icon';
 import { rebuiltHref } from '../../shell/nav';
 import { LinkPending } from '../../shell/LinkPending';
+import { plural } from '../../lib/plural';
 
 /** "2 replies · 1 to acknowledge · 1 task due": only the parts that aren't zero. */
 export function asksParts(asks: ChPlayerAsks | null | undefined): string[] {
   if (!asks) return [];
   return [
-    asks.rsvps ? `${asks.rsvps} ${asks.rsvps === 1 ? 'reply' : 'replies'}` : null,
+    asks.rsvps ? `${plural(asks.rsvps, 'reply', 'replies')}` : null,
     asks.acks ? `${asks.acks} to acknowledge` : null,
-    asks.tasksDue ? `${asks.tasksDue} ${asks.tasksDue === 1 ? 'task' : 'tasks'} due` : null,
+    asks.tasksDue ? `${plural(asks.tasksDue, 'task')} due` : null,
   ].filter((p): p is string => !!p);
 }
 

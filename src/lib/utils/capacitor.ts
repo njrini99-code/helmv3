@@ -142,6 +142,22 @@ export function canOpenNativeAppSettings(): boolean {
 }
 
 /**
+ * The native app's version and build number (Info.plist's CFBundleShortVersionString and CFBundleVersion), or null on
+ * the web or when the plugin can't answer. `@capacitor/app` is imported only here, on native, as the keyboard plugin is
+ * (see the note at the top), so the web never registers its proxy.
+ */
+export async function getNativeAppVersion(): Promise<{ version: string; build: string } | null> {
+  if (!isNativeApp()) return null;
+  try {
+    const { App } = await import('@capacitor/app');
+    const info = await App.getInfo();
+    return info.version ? { version: info.version, build: info.build } : null;
+  } catch {
+    return null;
+  }
+}
+
+/**
  * Open a URL in the appropriate browser.
  * In native apps, opens in-app via SFSafariViewController (iOS).
  * On web, opens in a new tab.

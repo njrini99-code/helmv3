@@ -3,7 +3,9 @@ import { Badge } from '../../ui/Badge';
 import { Icon } from '../../ui/Icon';
 import { formatToPar } from '../../lib/format';
 import type { ChPlayerPeek } from '../../ui/PlayerPeek';
-import { endedLabel, rangeLabel, shortRange, yearOf, STATE_LABEL, STATUS_LABEL, type ChQRow, type ChQRowState, type ChQStatus } from './model';
+import { endedLabel, lineGapText, positionLabel, rangeLabel, shortRange, viewerOutcomeText, viewerVsLines, yearOf, STATE_LABEL, STATUS_LABEL, type ChQBoard, type ChQRow, type ChQRowState, type ChQStatus, type ChQViewerSelection } from './model';
+import { firstName } from '../../lib/names';
+import { plural, pluralWord } from '../../lib/plural';
 
 /**
  * Live, Upcoming or Concluded (the list's own word for a finished one). Live is a static dot: no pulse (D-33). A live
@@ -107,7 +109,7 @@ export function Meta({
       </span>
       <span>
         <Icon icon={Flag} size={15} />
-        {squad} {squad === 1 ? 'spot' : 'spots'}
+        {squad} {pluralWord(squad, 'spot')}
       </span>
       {course && (
         <span className="ch-qf-meta__w">
@@ -124,7 +126,7 @@ export function qualifierPeek(r: ChQRow, numRounds: number): ChPlayerPeek {
   return {
     id: r.playerId,
     name: r.name,
-    sub: [r.classYear, `${r.played} of ${numRounds} ${numRounds === 1 ? 'round' : 'rounds'} in`].filter(Boolean).join(' \u00b7 '),
+    sub: [r.classYear, `${r.played} of ${plural(numRounds, 'round')} in`].filter(Boolean).join(' \u00b7 '),
     avg: r.avg,
   };
 }
@@ -134,7 +136,7 @@ export function qualifierPeek(r: ChQRow, numRounds: number): ChPlayerPeek {
  * eight rounds) keeps the figure, since a row of dots that long stops being countable at a glance.
  */
 export function ThruDots({ played, total }: { played: number; total: number }) {
-  const label = `${played} of ${total} ${total === 1 ? 'round' : 'rounds'}`;
+  const label = `${played} of ${plural(total, 'round')}`;
   if (total > 8) {
     return (
       <span role="img" className="ch-num" aria-label={label}>
@@ -148,5 +150,52 @@ export function ThruDots({ played, total }: { played: number; total: number }) {
         <i key={i} className={i < played ? 'is-on' : undefined} />
       ))}
     </span>
+  );
+}
+
+/**
+ * "You vs the line" (row 74): the viewer's own row (place, to par, rounds in) kept at the top of the board, so it is in
+ * view however long the field, and how far it sits from the top-score line and the travel cut; once the squad is
+ * confirmed, the outcome instead (viewerVsLines). Nothing for a coach (no row of their own) or when the board draws no line.
+ */
+export function ViewerLineCard({
+  board,
+  viewerId,
+  numRounds,
+  selection,
+}: {
+  board: Pick<ChQBoard, 'rows' | 'topScore' | 'squad'>;
+  viewerId: string | null | undefined;
+  numRounds: number;
+  selection: ChQViewerSelection;
+}) {
+  const v = viewerVsLines(board, viewerId, selection);
+  if (!v) return null;
+  const { me, gaps, outcome } = v;
+  const said = outcome ? viewerOutcomeText(outcome) : null;
+  return (
+    <section className="ch-qf-you-line" aria-labelledby="ch-qf-you-line-h" data-ch-code="CH-09908">
+      <h3 id="ch-qf-you-line-h">You vs the line</h3>
+      <p className="ch-qf-you-line__me ch-num">
+        {/* The place is named, as the board's Pos column names it, so the line never opens on a bare number (Round 3). */}
+        <b>Place {positionLabel(me)}</b>
+        <ToParPlate value={me.toPar} size="card" />
+        <span>
+          {me.played} of {plural(numRounds, 'round')}
+        </span>
+      </p>
+      <ul>
+        {said && (
+          <li className={outcome === 'not_selected' ? 'is-outside' : 'is-inside'}>
+            <b>{said.label}</b> {said.text}
+          </li>
+        )}
+        {gaps.map((g) => (
+          <li key={g.line} className={g.tie || g.picks ? 'is-tie' : g.inside ? 'is-inside' : 'is-outside'}>
+            <b>{g.label}</b> {lineGapText(g, me, numRounds, firstName)}
+          </li>
+        ))}
+      </ul>
+    </section>
   );
 }

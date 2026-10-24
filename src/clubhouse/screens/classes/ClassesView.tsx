@@ -8,6 +8,7 @@ import { chTrail } from '../../lib/track';
 import { friendlyReason, normalise, useAction, type ServerResult } from '../../lib/use-action';
 import { useChPhone } from '../../lib/use-phone';
 import { PhoneTop } from '../../shell/phone-chrome';
+import { PhoneIconAction } from '../../ui/PhoneBar';
 import { Button } from '../../ui/Button';
 import { InlineNotice } from '../../ui/Notices';
 import { Modal } from '../../ui/Modal';
@@ -21,6 +22,8 @@ import { AddTile, ClassCard, CoachNote, OverlapsCard, SyncStatus, TermBar, Timet
 import { newClassId, type ChClassesWrites, type ChRemoveAllData } from './writes';
 import { useChReducedMotion } from '../../lib/reduced-motion';
 import { chScrollIntoView } from '../../lib/smooth-scroll';
+import { pluralWord } from '../../lib/plural';
+import { LargeTitle } from '../../ui/LargeTitle';
 
 const label = (c: { code: string; name: string }) => c.code || c.name;
 
@@ -99,7 +102,7 @@ export function ClassesView({ data, writes }: { data: ChClassesPage; writes: ChC
     (list: ChClass[]) => ({
       done: '',
       failed: list.length === 1 ? `${label(list[0]!)} is saved, but not on your calendar` : `${list.length} classes are saved, but not all are on your calendar`,
-      hint: 'Retry to add it now. If it keeps failing, open the class and save it again.',
+      hint: 'Try again to add it now. If it keeps failing, open the class and save it again.',
       code: 'CH-12002',
     }),
     (res, c) => {
@@ -109,7 +112,7 @@ export function ClassesView({ data, writes }: { data: ChClassesPage; writes: ChC
       return {
         ...c,
         failed: total === 1 ? c.failed : `${failed.length} of ${total} classes are saved, but not on your calendar`,
-        hint: `${failed.slice(0, 3).join(', ')}${failed.length > 3 ? ' and more' : ''}${why ? `: ${why}` : '.'} Retry to try again.`,
+        hint: `${failed.slice(0, 3).join(', ')}${failed.length > 3 ? ' and more' : ''}${why ? `: ${why}` : '.'} Try again.`,
       };
     },
   );
@@ -151,7 +154,7 @@ export function ClassesView({ data, writes }: { data: ChClassesPage; writes: ChC
   const save = useAction('classes.save', saveAction, (input: ChClassInput, editing: ChClass | null) => ({
     done: editing ? 'Class updated' : 'Class added',
     failed: `Couldn’t ${editing ? 'update' : 'add'} ${label({ code: input.code, name: input.name })}`,
-    hint: 'Nothing was changed. Check your connection and try again.',
+    hint: 'Nothing was changed. Try again.',
     code: 'CH-12001',
   }));
 
@@ -200,9 +203,9 @@ export function ClassesView({ data, writes }: { data: ChClassesPage; writes: ChC
     'classes.removeAll',
     removeAllAction,
     (ids: string[]) => ({
-      done: `${ids.length === 1 ? 'Class' : `All ${ids.length} classes`} deleted`,
+      done: `${pluralWord(ids.length, 'Class', `All ${ids.length} classes`)} deleted`,
       failed: "Couldn’t delete your classes",
-      hint: 'Nothing was deleted. Check your connection and try again.',
+      hint: 'Nothing was deleted. Try again.',
       code: 'CH-12005',
     }),
     (result, c) => {
@@ -224,7 +227,7 @@ export function ClassesView({ data, writes }: { data: ChClassesPage; writes: ChC
       const parts = [
         kept.length ? `${list(kept.map((k) => k.id))} couldn’t be taken off your calendar, so ${kept.length === 1 ? 'it was' : 'they were'} kept.` : '',
         offCalendar.length ? `${list(offCalendar)} ${offCalendar.length === 1 ? 'is' : 'are'} off your calendar but still on your schedule.` : '',
-        'Retry to finish.',
+        'Try again to finish.',
       ].filter(Boolean);
       return { ...c, failed: removed.length ? `${removed.length} of ${total} classes deleted` : "Couldn’t finish deleting your classes", hint: parts.join(' '), code: 'CH-12006' };
     },
@@ -250,7 +253,7 @@ export function ClassesView({ data, writes }: { data: ChClassesPage; writes: ChC
   const doImport = useAction('classes.import', importAction, {
     done: '',
     failed: "Couldn’t import your schedule",
-    hint: 'Nothing was saved. Check your connection and try again.',
+    hint: 'Nothing was saved. Try again.',
     code: 'CH-12004',
   });
 
@@ -343,15 +346,25 @@ export function ClassesView({ data, writes }: { data: ChClassesPage; writes: ChC
 
   return (
     <main className={'ch-cl' + (phone ? ' is-phone' : '')} aria-labelledby={phone ? undefined : 'ch-cl-title'} aria-label={phone ? 'Classes' : undefined} data-canopy={phone ? undefined : ''}>
-      {/* Phone: Classes opens from More (D-66), so the top bar goes back there. */}
-      {phone && <PhoneTop title="Classes" start />}
+      {/* Phone: the section's create action is the top bar's plus (B10.1), shown when the head's Add class would be: a
+          first run's empty state carries its own, and a failed read keeps it (CH-12201). */}
+      {phone && (
+        <PhoneTop title="Classes" start action={data.classes.error || !nothing ? <PhoneIconAction icon={Plus} label="Add class" onClick={startAdd} /> : undefined} />
+      )}
       <header className="ch-cl-h" data-canopy-head={phone ? undefined : ''}>
         <div>
           <span className="ch-cl-k">
             {term.label} · {shortDay(term.start)} – {shortDay(term.end)}
           </span>
-          {/* Phone: the top bar is the page's one heading (iPhone brief: no second "Classes" under it). */}
-          {!phone && <h1 id="ch-cl-title">Classes</h1>}
+          {/* Phone: the top bar is the page's one heading, and the page draws the one large title under the term line (owner
+              decision 4, 2026-10-24: every phone section root has it), hidden from VoiceOver so the name is read once. */}
+          {phone ? (
+            <LargeTitle as="p" hidden className="ch-cl-title">
+              Classes
+            </LargeTitle>
+          ) : (
+            <h1 id="ch-cl-title">Classes</h1>
+          )}
         </div>
         {/* The head keeps its actions when the classes didn't load (owner decision, 2026-10-08: a failed read keeps the head and its
             primary action, CH-12201). Only a first run has none here, because its empty state carries them; Delete all classes stays
@@ -362,9 +375,12 @@ export function ClassesView({ data, writes }: { data: ChClassesPage; writes: ChC
             <Button leftIcon={Upload} onClick={startImport}>
               Import schedule
             </Button>
-            <Button variant="primary" leftIcon={Plus} onClick={startAdd}>
-              Add class
-            </Button>
+            {/* On the phone it is the top bar's plus. */}
+            {!phone && (
+              <Button variant="primary" leftIcon={Plus} onClick={startAdd}>
+                Add class
+              </Button>
+            )}
           </div>
         )}
       </header>
@@ -482,6 +498,7 @@ export function ClassesView({ data, writes }: { data: ChClassesPage; writes: ChC
             <Button
               variant="danger"
               busy={remove.pending}
+              // The warning came with the question (D-70): the yes is silent, and the result answers.
               feel={null}
               onClick={() => {
                 if (asking) void remove.run(asking);
@@ -510,6 +527,7 @@ export function ClassesView({ data, writes }: { data: ChClassesPage; writes: ChC
             <Button variant="ghost" disabled={removeAll.pending} onClick={() => setAskingAll(false)}>
               Keep them
             </Button>
+            {/* The warning came with the question (D-70): the yes is silent, and the result answers. */}
             <Button variant="danger" busy={removeAll.pending} disabled={classes.length === 0} feel={null} onClick={() => void removeAll.run(classes.map((c) => c.id))}>
               {removeAll.pending ? 'Deleting…' : 'Delete all classes'}
             </Button>
