@@ -38,7 +38,7 @@ const VIEWS: Array<[string, (load: ChTourLoad) => ReactElement]> = [
   ['player', (load) => <PlayerEvent data={f.player.events.e33!} load={load} />],
 ];
 
-const BUILT = new Set(['home', 'desk', 'review', 'history']);
+const BUILT = new Set(['home', 'desk', 'review', 'history', 'compare']);
 const BUILT_VIEWS = VIEWS.filter(([v]) => BUILT.has(v));
 const PLACEHOLDERS = VIEWS.filter(([v]) => !BUILT.has(v));
 

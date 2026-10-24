@@ -49,6 +49,9 @@ sync` mints its Bridge ID.
 | CH-16222 | Event desk, Overview and Who counted: the rounds read fails (`errors.rounds`) | "The rounds didn’t load" + "Scores are saved; they just can’t be shown right now. Try again; the error has been reported." + Try again, in place of the table | `InlineNotice` in `EventDesk` | tournaments-desk.test › CH-16222 |
 | CH-16235 | Review (its own page and the desk's Review tab): the review read fails (`errors.review`) | "The review didn’t load" + "Nothing has changed. Try again; the error has been reported." + Try again, in place of the layers; never "Nothing to review yet" | `InlineNotice` in `ReviewBody` | tournaments-review.test › CH-16235 |
 | CH-16236 | History: the trend read fails (`errors.trend`) | Under "Across seasons": "The trend didn’t load" + "The events below are unaffected. Try again; the error has been reported." + Try again; the ledger of every event stays | `InlineNotice` in `History` | tournaments-history.test › CH-16236 |
+| CH-16250 | Compare: the rounds read fails (`errors.rounds`) | Under the head: "The rounds didn’t load" + "Nothing has changed. Try again; the error has been reported." + Try again, in place of the presets, sides and grid; never "No rounds to compare yet" | `InlineNotice` in `Compare` | tournaments-compare.test › CH-16250 |
+| CH-16251 | Compare: the field read fails (`errors.field`) | Above the grid: "The field didn’t load" + "Versus field needs it, so it is left blank. The other figures are unaffected. Try again; the error has been reported." + Try again; Vs field reads "—" and every other figure stays | `InlineNotice` in `Compare` | tournaments-compare.test › CH-16251 |
+| CH-16252 | Compare: the hole figures read fails (`errors.holes`) | Above the grid: "The hole figures didn’t load" + "Birdies, greens, fairways and putts are left blank. Scores and strokes gained are unaffected. Try again; the error has been reported." + Try again | `InlineNotice` in `Compare` | tournaments-compare.test › CH-16252 |
 
 ## 163xx Empty
 
@@ -64,6 +67,8 @@ sync` mints its Bridge ID.
 | CH-16336 | Review: the event has no review (not played, nothing to read) | "Nothing to review yet" + "The review is written once the event has scores." | `EmptyState compact` in `ReviewBody` | tournaments-review.test › CH-16336 |
 | CH-16337 | Review: the review is open and has no notes or reflections | Under "Notes and reflections": "No notes or reflections yet" + "A coach’s note or a player’s reflection shows here once it is written." | `EmptyState compact` in `ReviewBody` | tournaments-review.test › CH-16337 |
 | CH-16340 | History: no event is finished (the read worked) | The head (without Add event), then "No results to compare yet" + "Once events are finished, the team’s scoring against the course rating shows here, season by season." + Add event (the page's one primary) | `EmptyState size="page"` in `History` | tournaments-history.test › CH-16340 |
+| CH-16350 | Compare: a side selects no rounds (a player with none in that context or period) | In that side's summary: "No rounds in this sample" (the phone's card says the same under the side's label); its figures read "—" with "No data", and the difference says "No rounds on one side"; the other side is unchanged | `SummaryLine` and the phone's scope card in `Compare` | tournaments-compare.test › CH-16350 |
+| CH-16351 | Compare: there are no rounds at all (the read worked) | The head, then "No rounds to compare yet" + "Rounds from events, qualifiers and practice show here once they are in, and you can set any two samples side by side." | `EmptyState size="page"` in `Compare` | tournaments-compare.test › CH-16351 |
 
 ## 164xx Loading
 

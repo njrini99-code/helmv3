@@ -13,7 +13,7 @@ ten. The split it kept still holds, so the files stay separable:
 | season home | `TournamentsHome.tsx` | `tournaments-home.css` | `.ch-tour-home-` | 10–19 |
 | event desk, who counted, holes, evidence drawer | `EventDesk.tsx`, `WhoCounted.tsx`, `HoleGrid.tsx`, `EvidenceDrawer.tsx`, `desk-model.ts` | `tournaments-desk.css` | `.ch-tour-desk-` | 20–34 |
 | review, history, link inbox | `Review.tsx`, `History.tsx`, `history-model.ts`, `LinkInbox.tsx` | `tournaments-review.css` | `.ch-tour-rev-` | 35–44 |
-| comparison | `Compare.tsx` | `tournaments-compare.css` | `.ch-tour-cmp-` | 45–59 |
+| comparison | `Compare.tsx`, `compare/` (`scope.ts`, `model.ts`, `ScopeControls.tsx`, `Timeline.tsx`, `CompareGrid.tsx`) | `tournaments-compare.css` | `.ch-tour-cmp-` | 45–59 |
 | event form, lineup builder | `EventForm.tsx`, `LineupBuilder.tsx` | `tournaments-lineup.css` | `.ch-tour-lu-` | 60–69 |
 | live round | `LiveRound.tsx` | `tournaments-live.css` | `.ch-tour-live-` | 70–89 |
 | player's view | `PlayerEvent.tsx` | `tournaments-player.css` | `.ch-tour-pl-` | 90–99 |

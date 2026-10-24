@@ -1,6 +1,7 @@
 'use client';
 
 import { Modal } from '../../ui/Modal';
+import '../../styles/tournaments-desk.css';
 import { ScoreMark } from '../../ui/ScoreMark';
 import { formatToPar, NO_DATA, tourDay } from './format';
 import type { ChTourEvidenceRef, ChTourExclusion, ChTourHoleScore } from './types';
@@ -69,7 +70,7 @@ export function EvidenceDrawer({ evidence, onClose }: { evidence: DeskEvidence |
                 <span className="ch-tour-desk-ev__d">{tourDay(r.date)}</span>
                 <span className="ch-tour-desk-ev__t">
                   {r.label}
-                  <em>{r.included ? 'Counted' : r.reason ? `Left out: ${REASON[r.reason]}` : 'Not counted'}</em>
+                  <em>{r.reasonWords ?? (r.included ? 'Counted' : r.reason ? `Left out: ${REASON[r.reason]}` : 'Not counted')}</em>
                 </span>
                 <span className="ch-tour-desk-ev__v ch-num">{r.value}</span>
               </li>

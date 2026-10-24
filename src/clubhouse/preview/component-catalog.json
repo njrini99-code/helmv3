@@ -5688,7 +5688,9 @@
         "Compare"
       ],
       "styles": [
-        "src/clubhouse/styles/tournaments-compare.css"
+        "src/clubhouse/styles/tournaments-compare.css",
+        "src/clubhouse/styles/tournaments.css",
+        "src/clubhouse/styles/ui.css"
       ],
       "examples": [],
       "fixture": "Contextual module"
@@ -5959,6 +5961,61 @@
         "src/clubhouse/styles/rounds.css",
         "src/clubhouse/styles/stats.css",
         "src/clubhouse/styles/tournaments-desk.css"
+      ],
+      "examples": [],
+      "fixture": "Contextual module"
+    },
+    {
+      "file": "src/clubhouse/screens/tournaments/compare/CompareGrid.tsx",
+      "group": "screens",
+      "exports": [
+        "CompareBlocks",
+        "CompareGrid"
+      ],
+      "styles": [
+        "src/clubhouse/styles/base.css",
+        "src/clubhouse/styles/calendar.css",
+        "src/clubhouse/styles/coachhelm.css",
+        "src/clubhouse/styles/goals.css",
+        "src/clubhouse/styles/home.css",
+        "src/clubhouse/styles/hub.css",
+        "src/clubhouse/styles/messages.css",
+        "src/clubhouse/styles/qualifiers.css",
+        "src/clubhouse/styles/rounds.css",
+        "src/clubhouse/styles/shell.css",
+        "src/clubhouse/styles/stats.css",
+        "src/clubhouse/styles/tournaments-compare.css",
+        "src/clubhouse/styles/tournaments-desk.css"
+      ],
+      "examples": [],
+      "fixture": "Contextual module"
+    },
+    {
+      "file": "src/clubhouse/screens/tournaments/compare/ScopeControls.tsx",
+      "group": "screens",
+      "exports": [
+        "Face",
+        "ScopeControls",
+        "ScopeTitle",
+        "SummaryLine"
+      ],
+      "styles": [
+        "src/clubhouse/styles/base.css",
+        "src/clubhouse/styles/home.css",
+        "src/clubhouse/styles/shell.css",
+        "src/clubhouse/styles/tournaments-compare.css"
+      ],
+      "examples": [],
+      "fixture": "Contextual module"
+    },
+    {
+      "file": "src/clubhouse/screens/tournaments/compare/Timeline.tsx",
+      "group": "screens",
+      "exports": [
+        "Timeline"
+      ],
+      "styles": [
+        "src/clubhouse/styles/tournaments-compare.css"
       ],
       "examples": [],
       "fixture": "Contextual module"
@@ -17424,8 +17481,99 @@
     },
     {
       "file": "src/clubhouse/styles/tournaments-compare.css",
-      "classes": [],
-      "tokens": []
+      "classes": [
+        "ch-tour-cmp",
+        "ch-tour-cmp-block",
+        "ch-tour-cmp-block__ab",
+        "ch-tour-cmp-block__d",
+        "ch-tour-cmp-block__h",
+        "ch-tour-cmp-blocks",
+        "ch-tour-cmp-body",
+        "ch-tour-cmp-ctls",
+        "ch-tour-cmp-ctls__dates",
+        "ch-tour-cmp-ctls__row",
+        "ch-tour-cmp-div",
+        "ch-tour-cmp-div__grip",
+        "ch-tour-cmp-dl",
+        "ch-tour-cmp-dl__none",
+        "ch-tour-cmp-edit",
+        "ch-tour-cmp-edit__k",
+        "ch-tour-cmp-edit__side",
+        "ch-tour-cmp-face",
+        "ch-tour-cmp-face__tag",
+        "ch-tour-cmp-foot",
+        "ch-tour-cmp-gap",
+        "ch-tour-cmp-groups",
+        "ch-tour-cmp-hd",
+        "ch-tour-cmp-hd__ab",
+        "ch-tour-cmp-link",
+        "ch-tour-cmp-m",
+        "ch-tour-cmp-pre",
+        "ch-tour-cmp-pres",
+        "ch-tour-cmp-presets",
+        "ch-tour-cmp-row",
+        "ch-tour-cmp-scope",
+        "ch-tour-cmp-scope__sub",
+        "ch-tour-cmp-scope__top",
+        "ch-tour-cmp-scopes",
+        "ch-tour-cmp-split",
+        "ch-tour-cmp-strip",
+        "ch-tour-cmp-strip__axis",
+        "ch-tour-cmp-strip__dot",
+        "ch-tour-cmp-strip__mean",
+        "ch-tour-cmp-strip__other",
+        "ch-tour-cmp-sum",
+        "ch-tour-cmp-swap",
+        "ch-tour-cmp-tag",
+        "ch-tour-cmp-title",
+        "ch-tour-cmp-title__n",
+        "ch-tour-cmp-title__t",
+        "ch-tour-cmp-tl",
+        "ch-tour-cmp-tl__axis",
+        "ch-tour-cmp-tl__bot",
+        "ch-tour-cmp-tl__col",
+        "ch-tour-cmp-tl__dates",
+        "ch-tour-cmp-tl__dot",
+        "ch-tour-cmp-tl__l",
+        "ch-tour-cmp-tl__lab",
+        "ch-tour-cmp-tl__legend",
+        "ch-tour-cmp-tl__mk",
+        "ch-tour-cmp-tl__plot",
+        "ch-tour-cmp-tl__season",
+        "ch-tour-cmp-tl__sel",
+        "ch-tour-cmp-tl__tag",
+        "ch-tour-cmp-tl__thumb",
+        "ch-tour-cmp-tl__top",
+        "ch-tour-cmp-tl__track",
+        "ch-tour-cmp-tl__yk",
+        "ch-tour-cmp-tl__zero",
+        "ch-tour-cmp-v",
+        "ch-tour-cmp-v__d",
+        "ch-tour-cmp-v__n",
+        "ch-tour-cmp-v__top"
+      ],
+      "tokens": [
+        {
+          "name": "--ch-tour-cmp-mcol",
+          "value": "190px",
+          "scope": ".ch-tour-cmp-body"
+        },
+        {
+          "name": "--ch-tour-cmp-dcol",
+          "value": "200px",
+          "scope": ".ch-tour-cmp-body"
+        },
+        {
+          "name": "--ch-tour-cmp-mcol",
+          "value": "130px",
+          "scope": "@media (max-width: 1100px) → .ch-tour-cmp-body"
+        },
+        {
+          "name": "--ch-tour-cmp-dcol",
+          "value": "150px",
+          "scope": "@media (max-width: 1100px) → .ch-tour-cmp-body"
+        }
+      ]
     },
     {
       "file": "src/clubhouse/styles/tournaments-desk.css",

@@ -163,3 +163,47 @@ Changed from the board, and why:
 
 Not drawn: head-to-head against other teams, the splits (by day length,
 event type and start) and the middle-50% band, none of which a board shows.
+
+## Compare
+
+Boards: `tour-compare.jsx` (`CompareDesk`, `ScopeCard`, `Timeline`, `Strip`) and
+`tour-m.jsx` (`MCompare`). Code: `Compare.tsx` and `compare/` (`scope.ts`,
+`model.ts`, `ScopeControls.tsx`, `Timeline.tsx`, `CompareGrid.tsx`), as its own
+page and as the desk's Compare tab (`embedded`: no head, A set to the event,
+nothing written to the address).
+
+Matched:
+
+- Two sides set separately, each a card: who (the team, returning players or
+  one player), the period, the context (tournaments, qualifiers, practice) or
+  one event and its rounds, and a line saying how many rounds it holds.
+- The history timeline: every 18-hole round against the course rating, the
+  tournaments as markers that pick an event, and the target side's period as a
+  range to drag (the bar, or either end); the other side's range stays in view,
+  dashed. Arrow keys move an end a week, Shift a month; the date fields say the
+  same dates.
+- The aligned grid: metric, A, a draggable divider, B and the difference. Each
+  value carries its rounds as dots on one scale for both sides, its own mean as
+  a bar and the other side's as a dashed line, and opens the rounds behind it.
+  The divider takes 35 to 65 percent and the arrows, Home and double click.
+- The phone: two side cards, one primary "Edit comparison" opening a sheet with
+  presets and both sides' controls, the groups as a sticky strip, one block a
+  metric with A and B side by side.
+
+Changed from the board, and why:
+
+- The difference is the kit's chip (`DeltaChip`), green only when it is larger
+  than its standard error, amber the other way, "No clear gap" otherwise; it
+  carries a sign or a word, never colour alone. The metrics engine's sample
+  floors decide "Early read", and a thin value says so beside the figure.
+- Rows are the engine's metrics (`metrics.ts`), grouped as the board groups
+  them. The engine has no penalties, proximity, scrambling, three-putt or
+  double rows, so they are not drawn.
+- A side's token in the address is this view's own grammar (`scope.ts`), since
+  the plan that would define it is absent: `p:<id>.ctx:events.per:season`.
+- The field not loading blanks Vs field and nothing else; the holes not loading
+  blanks the hole figures. Neither empties the grid.
+
+Not drawn: the question bar, the tiered verdicts and the benchmarks (`bench`)
+of the plan, which no board shows. The desk's Compare tab still links out until
+the desk carries compare data.

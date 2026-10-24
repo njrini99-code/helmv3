@@ -46,6 +46,8 @@ Until a lane builds its view, the view says so honestly (CH-16301, preview only)
 | 160408 | CH-16336 | `REVIEW_THE_EVENT_HAS_NO_REVIEW` | Review: the event has no review (not played, nothing to read) |
 | 160409 | CH-16337 | `REVIEW_THE_REVIEW_IS_OPEN_AND_HAS` | Review: the review is open and has no notes or reflections |
 | 160410 | CH-16340 | `HISTORY_NO_EVENT_IS_FINISHED` | History: no event is finished (the read worked) |
+| 160411 | CH-16350 | `COMPARE_A_SIDE_SELECTS_NO_ROUNDS` | Compare: a side selects no rounds (a player with none in that context or period) |
+| 160412 | CH-16351 | `COMPARE_THERE_ARE_NO_ROUNDS_AT_ALL` | Compare: there are no rounds at all (the read worked) |
 
 ## 05 — Validation
 
@@ -66,6 +68,9 @@ A view whose one read failed draws its head and "Tournaments didn’t load" with
 | 160605 | CH-16222 | `EVENT_DESK_OVERVIEW_AND_WHO_COUNTED_THE` | Event desk, Overview and Who counted: the rounds read fails (`errors.rounds`) |
 | 160606 | CH-16235 | `REVIEW_THE_REVIEW_READ_FAILS` | Review (its own page and the desk's Review tab): the review read fails (`errors.review`) |
 | 160607 | CH-16236 | `HISTORY_THE_TREND_READ_FAILS` | History: the trend read fails (`errors.trend`) |
+| 160608 | CH-16250 | `COMPARE_THE_ROUNDS_READ_FAILS` | Compare: the rounds read fails (`errors.rounds`) |
+| 160609 | CH-16251 | `COMPARE_THE_FIELD_READ_FAILS` | Compare: the field read fails (`errors.field`) |
+| 160610 | CH-16252 | `COMPARE_THE_HOLE_FIGURES_READ_FAILS` | Compare: the hole figures read fails (`errors.holes`) |
 
 ## 07 — Network / offline
 

@@ -435,7 +435,16 @@ export interface ChTourEvidenceRef {
   /** The formula in words: "Counting rate = rounds that counted ÷ rounds played in team events". */
   formula: string;
   denominator: string;
-  rounds: Array<{ key: string; label: string; date: string; value: string; included: boolean; reason: ChTourExclusion | null }>;
+  rounds: Array<{
+    key: string;
+    label: string;
+    date: string;
+    value: string;
+    included: boolean;
+    reason: ChTourExclusion | null;
+    /** The exclusion in words, where the reason is outside `ChTourExclusion` (the metrics engine names more): "Excluded: nine holes". */
+    reasonWords?: string | null;
+  }>;
 }
 
 /** "Where the event turned" (the design's finding cards; later the MomentumWorm pins). */
