@@ -64,6 +64,9 @@ export function useMessageResponses(conversationId: string, pollIds: string[], u
     }
   }, [client, conversationId, hasLiveSession, ids]);
 
+  const idsRef = useRef(ids);
+  idsRef.current = ids;
+
   useEffect(() => { setRows([]); setError(null); setReady(false); }, [conversationId]);
 
   useEffect(() => {
@@ -71,7 +74,15 @@ export function useMessageResponses(conversationId: string, pollIds: string[], u
     if (!conversationId || !ids.length) return;
     const channel = observeRealtimeChannel(
       client.channel(`golf-responses:${conversationId}`)
-        .on('postgres_changes', { event: '*', schema: 'public', table: 'golf_message_responses' }, () => { void refresh(); }),
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'golf_message_responses' }, (payload) => {
+          // A vote on a poll outside this thread changes nothing here. DELETE events carry only the primary key, so
+          // those still re-read.
+          if (payload && payload.eventType !== 'DELETE') {
+            const messageId = (payload.new as { message_id?: unknown } | null | undefined)?.message_id;
+            if (typeof messageId === 'string' && !idsRef.current.includes(messageId)) return;
+          }
+          void refresh();
+        }),
       { feature: 'golf.messages', channelClass: 'golf_message_responses', subscriptionType: 'postgres_changes' },
     );
     const onFocus = () => { void refresh(); };

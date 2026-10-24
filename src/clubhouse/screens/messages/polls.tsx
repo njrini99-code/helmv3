@@ -1,7 +1,7 @@
 "use client";
 
 import { Check, ListChecks, Lock, Minus, Plus } from "lucide-react";
-import { useId, useMemo, useRef, useState } from "react";
+import { useId, useRef, useState } from "react";
 import {
   POLL_MAX_OPTIONS,
   POLL_MIN_OPTIONS,
@@ -116,7 +116,7 @@ export function PollCard({
           const lead = !!tally && tally.leaders.includes(o.id) && tally.voterCount > 0;
           const faces = tally?.voters[o.id] ?? [];
           return (
-            <li key={o.id}>
+            <li key={o.id} role="none">
               <button
                 type="button"
                 role={poll.multi ? "checkbox" : "radio"}
@@ -150,7 +150,9 @@ export function PollCard({
         })}
       </ul>
       <div className="ch-ms-poll__foot">
-        <span className="ch-ms-poll__count ch-num" role="status">
+        {/* No live region: a thread with several polls would read out every vote on every card. A voter hears their own
+            pick through the option's checked state. */}
+        <span className="ch-ms-poll__count ch-num">
           {!tally
             ? polls?.error
               ? polls.error
@@ -323,15 +325,17 @@ export function PollSheet({ api, conv, open, onClose }: { api: ChMessagesApi; co
   const clientId = useRef<string>(crypto.randomUUID());
   const filled = options.filter((o) => o.trim()).length;
 
-  const draft = useMemo<PollDraft>(
-    () => ({
-      question,
-      options,
-      multi,
-      closesAt: ends === "none" ? null : new Date(Date.now() + ENDS_MS[ends]).toISOString(),
-    }),
-    [question, options, multi, ends],
-  );
+  // The end time is worked out when Send is pressed, so a sheet left open for a while can't send a poll that has
+  // already ended.
+  const draftAt = (now: number): PollDraft => ({
+    question,
+    options,
+    multi,
+    closesAt: ends === "none" ? null : new Date(now + ENDS_MS[ends]).toISOString(),
+  });
+  // The draft as last sent. When a failed send is retried after an edit, it gets a new client id, so the server can't
+  // answer the edited poll with the earlier one.
+  const lastTry = useRef<string | null>(null);
   const ready = !!question.trim() && filled >= POLL_MIN_OPTIONS;
 
   const reset = () => {
@@ -341,6 +345,7 @@ export function PollSheet({ api, conv, open, onClose }: { api: ChMessagesApi; co
     setEnds("none");
     setProblem(null);
     clientId.current = crypto.randomUUID();
+    lastTry.current = null;
   };
 
   const setOption = (i: number, text: string) => {
@@ -357,12 +362,16 @@ export function PollSheet({ api, conv, open, onClose }: { api: ChMessagesApi; co
 
   const send = async () => {
     if (!api.polls || busy) return;
+    const draft = draftAt(Date.now());
     const built = buildPollPayload(draft);
     if (!built.ok) {
       setProblem(PROBLEM[built.problem] ?? null);
       haptic("error");
       return;
     }
+    const signature = JSON.stringify([question, options, multi, ends]);
+    if (lastTry.current !== null && lastTry.current !== signature) clientId.current = crypto.randomUUID();
+    lastTry.current = signature;
     setBusy(true);
     const result = await api.polls.send(conv.id, draft, clientId.current);
     setBusy(false);

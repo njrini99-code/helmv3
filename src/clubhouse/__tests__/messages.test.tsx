@@ -1869,7 +1869,7 @@ describe('Messages · polls (premium features P-2)', () => {
     show();
     const card = await screen.findByRole('group', { name: 'Which van?' });
     expect(within(card).getByRole('radio', { name: 'Van B, 1 vote' })).toBeTruthy();
-    expect(within(card).getByRole('status').textContent).toBe('1 of 3 voted');
+    expect(card.querySelector('.ch-ms-poll__count')!.textContent).toBe('1 of 3 voted');
     expect(screen.queryByText(/Vote in GolfHelm/)).toBeNull();
   });
 

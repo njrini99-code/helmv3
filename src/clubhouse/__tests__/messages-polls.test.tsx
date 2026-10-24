@@ -88,7 +88,9 @@ describe('PollCard', () => {
     expect(a!.getAttribute('aria-label')).toBe('Van A, 0 votes');
     expect(b!.getAttribute('aria-label')).toBe('Van B, 1 vote');
     expect(b!.style.getPropertyValue('--ch-poll-share')).toBe('1');
-    expect(screen.getByRole('status').textContent).toBe('1 of 4 voted');
+    // The count is plain text: a live region per card would announce every poll in the thread on each vote.
+    expect(document.querySelector('.ch-ms-poll__count')!.textContent).toBe('1 of 4 voted');
+    expect(screen.queryByRole('status')).toBeNull();
     expect(screen.getByText('Choose one')).toBeTruthy();
   });
 
@@ -146,7 +148,7 @@ describe('PollCard', () => {
     const user = userEvent.setup();
     const loading = api(null);
     const { rerender } = render(<PollCard api={loading} messageId="m1" poll={poll()} mine={false} />);
-    expect(screen.getByRole('status').textContent).toBe('Loading votes…');
+    expect(document.querySelector('.ch-ms-poll__count')!.textContent).toBe('Loading votes…');
     await user.click(screen.getByRole('radio', { name: /Van A/ }));
     expect(loading.polls!.vote).not.toHaveBeenCalled();
 
@@ -242,5 +244,49 @@ describe('PollButton and the New poll sheet', () => {
     expect(calls).toHaveLength(2);
     // The same draft sent again keeps its id, so a send whose answer was lost can't post the poll twice.
     expect(calls[1]![2]).toBe(calls[0]![2]);
+  });
+
+  it('a draft changed after a refused send goes out with a new id', async () => {
+    const user = userEvent.setup();
+    const a = api([], { send: vi.fn(async () => ({ ok: false as const, error: 'Could not send the poll' })) });
+    render(<PollButton api={a} conv={conv()} />);
+    await user.click(screen.getByRole('button', { name: 'New poll' }));
+    const dialog = await screen.findByRole('dialog', { name: 'New poll' });
+    await user.type(within(dialog).getByLabelText('Question'), 'Which van?');
+    await user.type(within(dialog).getByRole('textbox', { name: 'Choice 1' }), 'Van A');
+    await user.type(within(dialog).getByRole('textbox', { name: 'Choice 2' }), 'Van B');
+    await user.click(within(dialog).getByRole('button', { name: 'Send poll' }));
+    expect(await within(dialog).findByRole('alert')).toBeTruthy();
+    await user.type(within(dialog).getByLabelText('Question'), ' Thursday');
+    await user.click(within(dialog).getByRole('button', { name: 'Send poll' }));
+    const calls = (a.polls!.send as ReturnType<typeof vi.fn>).mock.calls;
+    expect(calls).toHaveLength(2);
+    // An edited draft is a different poll; reusing the old id would let the server read it as a replay of the first.
+    expect(calls[1]![1]).toMatchObject({ question: 'Which van? Thursday' });
+    expect(calls[1]![2]).not.toBe(calls[0]![2]);
+  });
+
+  it('counts the end time from the moment Send is pressed, not from when the sheet opened', async () => {
+    const user = userEvent.setup();
+    const a = api([]);
+    const opened = Date.parse('2026-10-24T15:00:00.000Z');
+    const now = vi.spyOn(Date, 'now').mockReturnValue(opened);
+    try {
+      render(<PollButton api={a} conv={conv()} />);
+      await user.click(screen.getByRole('button', { name: 'New poll' }));
+      const dialog = await screen.findByRole('dialog', { name: 'New poll' });
+      await user.type(within(dialog).getByLabelText('Question'), 'Which van?');
+      await user.type(within(dialog).getByRole('textbox', { name: 'Choice 1' }), 'Van A');
+      await user.type(within(dialog).getByRole('textbox', { name: 'Choice 2' }), 'Van B');
+      await user.click(within(dialog).getByRole('radio', { name: '1 hour' }));
+      // Twenty minutes pass while the coach finishes the draft.
+      now.mockReturnValue(opened + 20 * 60_000);
+      await act(async () => {
+        await user.click(within(dialog).getByRole('button', { name: 'Send poll' }));
+      });
+    } finally {
+      now.mockRestore();
+    }
+    expect(a.polls!.send).toHaveBeenCalledWith('c1', expect.objectContaining({ closesAt: '2026-10-24T16:20:00.000Z' }), expect.any(String));
   });
 });

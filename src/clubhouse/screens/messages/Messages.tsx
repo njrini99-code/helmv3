@@ -54,8 +54,13 @@ const KEY_BY_EMOJI = Object.fromEntries(MESSAGE_REACTIONS.map((r) => [r.emoji, r
  * the Clubhouse view. Nothing about who can message whom changes here; the
  * actions and RLS decide, and this screen reports what they say.
  */
-/** A poll's plain-text copy is several lines (pollFallbackText); the inbox row shows its first, "Poll: Which van?". */
-const railText = (text: string) => (text.startsWith('Poll: ') ? text.split('\n')[0]! : text);
+/**
+ * A poll's plain-text copy is several lines (pollFallbackText); the inbox row shows its first, "Poll: Which van?". The row
+ * has no message kind, so a poll is known by its whole fallback shape, not its first word: an ordinary message that
+ * starts "Poll: " keeps its text.
+ */
+const railText = (text: string) =>
+  text.startsWith('Poll: ') && text.includes('\n') && text.trimEnd().endsWith('\nVote in GolfHelm.') ? text.split('\n')[0]! : text;
 
 export function Messages({ data }: { data: ChMessagesData }) {
   const hours = useChClock();
