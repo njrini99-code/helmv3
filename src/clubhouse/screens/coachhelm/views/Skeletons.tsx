@@ -2,6 +2,7 @@
 
 import { useChPhone } from '../../../lib/use-phone';
 import { Skeleton } from '../../../ui/States';
+import { LargeTitleSkeleton } from '../../../ui/LargeTitle';
 
 /**
  * Route loading for the player's views, each in its own final shape and height (Standing's is CH-13470, the Deep dive's CH-13480), so nothing jumps
@@ -34,18 +35,18 @@ function Chrome({ label, code, chained, brief = 2, coach, children }: { label: s
       <h1 className="ch-sr-only">CoachHelm</h1>
       {phone && tabs}
       {coach ? (
-        // The player's header: the eyebrow, the name (the phone's 31px title, desktop's 44px) and the one line.
+        // The player's header: the eyebrow, the name (the phone's large title, desktop's 44px) and the one line.
         <header className={'ch-hl-h' + (phone ? '' : ' has-aside')} data-canopy-head="">
           <Skeleton width={84} height={11} />
-          {phone ? <Line h={33.5} w={176} sh={28} r={8} /> : <Skeleton width={260} height={44} radius={10} />}
+          {phone ? <LargeTitleSkeleton width={176} /> : <Skeleton width={260} height={44} radius={10} />}
           <Skeleton width={phone ? '72%' : 280} height={14} />
           {!phone && <div className="ch-hl-h__aside">{tabs}</div>}
         </header>
       ) : phone ? (
-        // The phone's intro at its loaded line heights (the Mobile clubhouse pass): the 31px title (a player's page has no role eyebrow) and the brief under
+        // The phone's intro at its loaded line heights (the Mobile clubhouse pass): the large title (a player's page has no role eyebrow) and the brief under
         // the double rule, in the lines the view's own brief takes at the phone's width (`brief`: the Deep dive's runs to three).
         <header className="ch-hl-h" data-canopy-head="">
-          <Line h={33.5} w={176} sh={28} r={8} />
+          <LargeTitleSkeleton width={176} />
           <span className="ch-hl-sk__line is-two" style={brief === 3 ? { height: 65.25 } : undefined}>
             <Skeleton width="92%" height={13} />
             {brief === 3 && <Skeleton width="96%" height={13} />}

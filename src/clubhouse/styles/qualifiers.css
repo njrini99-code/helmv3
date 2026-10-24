@@ -1413,14 +1413,6 @@
     letter-spacing: var(--ch-track-eyebrow);
     color: var(--ch-ledger-eyebrow);
   }
-  .ch-qf--list .ch-qf-head h1 {
-    margin: 0;
-    font: var(--ch-type-34-strong);
-    line-height: 1.08;
-    letter-spacing: -0.038em;
-    font-variation-settings: 'wdth' 88;
-    color: var(--ch-ledger-ink);
-  }
   .ch-qf--list .ch-qf-head p {
     font: var(--ch-type-15);
     font-variant-numeric: tabular-nums;
@@ -2094,15 +2086,6 @@
     letter-spacing: var(--ch-track-eyebrow);
     color: var(--ch-ledger-eyebrow);
   }
-  .ch-qf--form .ch-qf-head h1,
-  .ch-qfs .ch-qf-head h1 {
-    margin: 0;
-    font: var(--ch-type-34-strong);
-    line-height: 1.08;
-    letter-spacing: -0.038em;
-    font-variation-settings: 'wdth' 88;
-    color: var(--ch-ledger-ink);
-  }
   .ch-qf--form .ch-qf-head p,
   .ch-qfs .ch-qf-head p {
     font: var(--ch-type-15);
@@ -2222,11 +2205,8 @@
     width: 150px !important;
     height: 14.4px !important;
   }
-  .ch-qf--list[aria-busy='true'] .ch-qf-head > div > .ch-skel:nth-child(2) {
-    width: 230px !important;
-    height: 33.48px !important;
-  }
-  .ch-qf--list[aria-busy='true'] .ch-qf-head > div > .ch-skel:nth-child(3) {
+  /* The title is the shared large-title block (ui/LargeTitle.tsx); the desktop's bar is held in .ch-qf-skel-desk. */
+  .ch-qf--list[aria-busy='true'] .ch-qf-head > div > .ch-skel:nth-child(4) {
     display: none;
   }
   /* A sentence in waiting (the list's lede, the form's, Manage selections' note) is the page's own sentence in its place,
@@ -2298,12 +2278,6 @@
   }
   .ch-qf[aria-busy='true'] .ch-qf-held--eyebrow {
     height: 14.4px;
-  }
-  .ch-qf[aria-busy='true'] .ch-qf-held--title {
-    height: 33.48px;
-  }
-  .ch-qf[aria-busy='true'] .ch-qf-held--title > .ch-skel {
-    height: 30px !important;
   }
   .ch-qf[aria-busy='true'] .ch-qf-held--line {
     height: 21.75px;

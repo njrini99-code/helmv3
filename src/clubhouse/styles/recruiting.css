@@ -809,9 +809,6 @@
   .ch-recm-skel {
     display: flex;
   }
-  .ch-recm-skel .ch-recm-title {
-    padding-bottom: 0.48px;
-  }
   .ch-rec-pipe.is-compact.ch-recm-skel__pipe {
     display: grid;
     grid-template-columns: repeat(4, minmax(0, 1fr));
@@ -858,15 +855,10 @@
     flex-direction: column;
     gap: 6px;
   }
+  /* The large title (.ch-large-title, shell.css) under the board's engraved double rule. */
   .ch-recm-title {
-    margin: 0;
     padding-top: 14px;
     border-top: var(--ch-ledger-rule-double);
-    font: var(--ch-type-34-strong);
-    line-height: 1.08;
-    letter-spacing: -0.038em;
-    font-variation-settings: 'wdth' 88;
-    color: var(--ch-ledger-ink);
   }
   /* The kit's field (its material kept), 36px drawn and 44px to the finger: the label's reach focuses the input, while
      the input and its clear key sit above it and take their own taps. */

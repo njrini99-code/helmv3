@@ -20,6 +20,7 @@ import { EmptyState } from '../../ui/States';
 import '../../styles/rounds.css';
 import '../../styles/whats-new.css';
 import { plural, pluralWord } from '../../lib/plural';
+import { LargeTitle } from '../../ui/LargeTitle';
 
 type Filter = 'all' | ChWhatsNewKind;
 
@@ -98,7 +99,7 @@ export function WhatsNew({ data: fresh }: { data: ChWhatsNew }) {
           <span className="ch-rd-upd" role="status" data-ch-code={refreshing ? 'CH-13431' : undefined}>
             {refreshing ? 'Updating…' : ''}
           </span>
-          <h1 id="ch-wn-title">What’s new</h1>
+          <LargeTitle id="ch-wn-title">What’s new</LargeTitle>
         </div>
       </header>
 

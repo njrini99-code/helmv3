@@ -10,6 +10,7 @@ import { RefreshNotice } from '../../../ui/RefreshNotice';
 import { EmptyState } from '../../../ui/States';
 import { Surface } from '../../../ui/Surface';
 import { BackLink } from '../../../ui/Section';
+import { LargeTitle } from '../../../ui/LargeTitle';
 
 const LINE = 'How often the reads CoachHelm showed your team held when their players’ next rounds came in.';
 
@@ -29,7 +30,9 @@ function TrackFrame({ children }: { children: ReactNode }) {
         )}
         <span className="ch-hl-role">Coach</span>
         {phone ? (
-          <p className="ch-hl-h__t">Track record</p>
+          <LargeTitle as="p" className="ch-hl-h__t">
+            Track record
+          </LargeTitle>
         ) : (
           <h1 id="ch-htr-title" className="ch-hl-h__t">
             Track record

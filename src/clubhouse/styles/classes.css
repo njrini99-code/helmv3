@@ -1447,6 +1447,11 @@
     padding-top: 14px;
     border-top: var(--ch-ledger-rule-double);
   }
+  /* The large title (.ch-large-title, shell.css) 10px under the term line, in the page and its skeleton alike. */
+  .ch-cl .ch-cl-h .ch-cl-title,
+  .ch-cl .ch-cl-sk-h .ch-cl-title {
+    margin-top: 10px;
+  }
   .ch-cl.is-phone .ch-cl-k {
     font: var(--ch-type-12-medium);
     letter-spacing: 0.01em;

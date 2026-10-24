@@ -9,26 +9,18 @@ import { useEffect, type RefObject } from 'react';
  * the bar's pushed title is hidden, and as the large title scrolls up under the bar it fades in. Pages with no large
  * title keep the bar's title.
  *
- * Which element is a page's large title is decided here, once, rather than on each screen: a screen can opt in with
- * `data-ch-large-title`, and the screens that already draw one are listed by their own title class. The same list
- * drives the CSS (styles/shell.css, "Phone large titles"), whose `:has()` hides the bar's title from the first paint;
- * this hook only adds `data-large-title="tucked"` to the bar once the title has gone under it. The Settings and
- * Recruiting skeletons draw the title's block and match too; the other skeletons do not yet, so while they show, the
- * bar keeps its title and fades it out as the page lands (a skeleton can opt in with `data-ch-large-title`).
+ * Which element is a page's large title is decided once, by one class: `.ch-large-title` (ui/LargeTitle.tsx, owner
+ * decision 4, 2026-10-24: one 34 semibold sans title on every phone section root, CONS-27). The same class drives the
+ * CSS (styles/shell.css, "Phone large titles"), whose `:has()` hides the bar's title from the first paint; this hook
+ * only adds `data-large-title="tucked"` to the bar once the title has gone under it. Every section root's loading
+ * skeleton draws the same title block (ui/LargeTitle.tsx LargeTitleSkeleton, CONS-13), so the bar's title stays hidden
+ * from the skeleton to the page and nothing flickers as the page lands.
  *
- * Calendar's month, a round's course and a qualifier's name are deliberately not here: they are the content's
- * heading, not the page's name, and the bar keeps "Calendar", "Round" and "Qualifier" over them.
+ * Home's greeting (its green hero swaps its own title), Calendar's month, a round's course and a qualifier's name are
+ * deliberately not large titles: the hero is Home's own head, and the others are the content's heading, not the page's
+ * name, so the bar keeps "Calendar", "Round" and "Qualifier" over them.
  */
-export const CH_LARGE_TITLES = [
-  '[data-ch-large-title]',
-  '.ch-rsm-title',
-  '.ch-recm-title',
-  '.ch-setm-title',
-  '.ch-qf-head h1',
-  '.ch-rd-h h1',
-  '.ch-hl-h__t',
-  '.ch-stm-head h1',
-] as const;
+export const CH_LARGE_TITLES = ['.ch-large-title'] as const;
 
 const SELECTOR = CH_LARGE_TITLES.join(', ');
 /** Never a large title: a visually hidden heading, or one inside a pushed screen or a dialog (they have their own bar). */

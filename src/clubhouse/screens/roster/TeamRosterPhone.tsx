@@ -12,6 +12,7 @@ import { formatHcp } from '../../lib/format';
 import { sortTeammates, teammateLine, type TeamSort } from './team';
 import { TERMS } from '../../lib/glossary';
 import { pluralWord } from '../../lib/plural';
+import { LargeTitle } from '../../ui/LargeTitle';
 
 /**
  * The player's phone Roster: the coach's phone list (docs/clubhouse/phone/roster.md) as plain text. The top bar
@@ -41,10 +42,10 @@ export function TeamRosterPhone({ data, onRetry }: { data: ChPlayerRoster; onRet
               )}
             </span>
           )}
-          {/* The top bar carries the page's heading; this is the design's large title. */}
-          <p className="ch-rsm-title" aria-hidden="true">
+          {/* The top bar carries the page's heading; this is the phone's one large title (owner decision 4). */}
+          <LargeTitle as="p" hidden>
             Roster
-          </p>
+          </LargeTitle>
         </header>
 
         <TeamCoachesPhone coaches={data.coaches} />

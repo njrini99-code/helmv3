@@ -22,6 +22,7 @@ import { EmptyState } from '../../ui/States';
 import { monthLabel, shortDay, TeeSwatch, TypePill } from './parts';
 import { noteOpenedFromLibrary } from './return-state';
 import { plural, pluralWord } from '../../lib/plural';
+import { LargeTitle } from '../../ui/LargeTitle';
 
 type Group = 'month' | 'player';
 
@@ -131,7 +132,7 @@ export function TeamRounds({ data: fresh, teamId }: { data: ChTeamRounds; teamId
           <span className="ch-rd-upd" role="status" data-ch-code={refreshing ? 'CH-11412' : undefined}>
             {refreshing ? 'Updating…' : ''}
           </span>
-          <h1 id="ch-trd-title">Team rounds</h1>
+          <LargeTitle id="ch-trd-title">Team rounds</LargeTitle>
         </div>
       </header>
 

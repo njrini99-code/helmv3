@@ -2048,10 +2048,13 @@ describe('Team Hub · phone', () => {
     window.matchMedia = real;
   });
 
-  it('101901 at 820px and below Team Hub is the phone build: the phone frame class, and the page title read by a screen reader instead of drawn', () => {
+  it('101901 at 820px and below Team Hub is the phone build: the phone frame class, and the page title drawn as the one large title (owner decision 4)', () => {
     show(PREVIEW_HUB_PLAYER);
     expect(screen.getByRole('main').classList.contains('is-phone')).toBe(true);
-    expect(screen.getByRole('heading', { level: 1, name: 'Team Hub' }).classList.contains('ch-sr-only')).toBe(true);
+    const title = screen.getByRole('heading', { level: 1, name: 'Team Hub' });
+    expect(title.classList.contains('ch-sr-only')).toBe(false);
+    expect(title.classList.contains('ch-large-title')).toBe(true);
+    expect(title.hasAttribute('data-ch-large-title')).toBe(true);
     cleanup();
     show(PREVIEW_HUB_COACH);
     expect(screen.getByRole('main').classList.contains('is-phone')).toBe(true);

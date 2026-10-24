@@ -17,6 +17,7 @@ import { Row } from './MondayBrief';
 import { BackLink } from '../../../ui/Section';
 import '../../../styles/coachhelm-brief.css';
 import { plural } from '../../../lib/plural';
+import { LargeTitle } from '../../../ui/LargeTitle';
 
 const LINE = 'Who to talk to this week, what the team is working on, and how CoachHelm’s reads have held.';
 
@@ -33,7 +34,9 @@ function Frame({ children }: { children: ReactNode }) {
         )}
         <span className="ch-hl-role">Coach</span>
         {phone ? (
-          <p className="ch-hl-h__t">Brief</p>
+          <LargeTitle as="p" className="ch-hl-h__t">
+            Brief
+          </LargeTitle>
         ) : (
           <h1 id="ch-hbr-title" className="ch-hl-h__t">
             Brief

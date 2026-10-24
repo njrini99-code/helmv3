@@ -41,6 +41,7 @@ import { useChReducedMotion } from '../../lib/reduced-motion';
 import { useArrivalPainted } from '../../lib/use-painted';
 import { TERMS } from '../../lib/glossary';
 import { plural, pluralWord } from '../../lib/plural';
+import { LargeTitle } from '../../ui/LargeTitle';
 
 /** Rounds the list shows before "All N rounds". */
 const ROUNDS_SHOWN = 5;
@@ -151,7 +152,7 @@ export function StatsPlayerPhone({
       <header className="ch-spm-head">
         <Avatar name={data.name} size={48} />
         <span className="ch-spm-head__id">
-          <h1>{data.name}</h1>
+          <LargeTitle>{data.name}</LargeTitle>
           <p className="ch-num">
             {/* The season's count, said as such: under it the window (Last 10) counts its own rounds ("5 rounds" over "10 countable rounds", 2026-10-14). */}
             {/* Each part keeps to one line with the dot after it (stats.css): the line breaks only between parts, never

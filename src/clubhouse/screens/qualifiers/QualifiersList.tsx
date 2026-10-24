@@ -24,6 +24,7 @@ import '../../styles/qualifiers.css';
 import { SerifText } from '../../ui/SerifText';
 import { usePressPrefetch } from '../../shell/use-prefetch-tabs';
 import { pluralWord } from '../../lib/plural';
+import { LargeTitle } from '../../ui/LargeTitle';
 
 type Filter = 'all' | 'active' | 'concluded';
 const isActive = (i: ChQListItem) => i.status !== 'completed';
@@ -80,7 +81,7 @@ export function QualifiersList({ data }: { data: ChQList }) {
           <span className="ch-qf-eyebrow ch-num is-bare">
             <span className="ch-qf-eyebrow__k">{data.mode === 'mine' ? 'My qualifiers' : 'Qualifiers'}</span>
           </span>
-          <h1>{title}</h1>
+          <LargeTitle>{title}</LargeTitle>
           <p>{lede}</p>
         </div>
         {/* One primary per screen: with no qualifiers the page empty state (CH-09301) carries Create qualifier. */}

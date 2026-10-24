@@ -1578,6 +1578,8 @@
   .ch-msp-home {
     gap: 36px;
   }
+  /* The large title (.ch-large-title, shell.css) over Search and the filters, 12px apart, as the skeleton draws them. */
+  .ch-msp-top,
   .ch-msp-tools {
     display: flex;
     flex-direction: column;

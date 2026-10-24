@@ -1167,14 +1167,6 @@ a.ch-rs-peek__dev:focus-visible,
     letter-spacing: var(--ch-track-eyebrow);
     color: var(--ch-ledger-eyebrow);
   }
-  .ch-rsm-title {
-    margin: 0;
-    font: var(--ch-type-34-strong);
-    line-height: 1.08;
-    letter-spacing: -0.038em;
-    font-variation-settings: 'wdth' 88;
-    color: var(--ch-ledger-ink);
-  }
   .ch-rsm-sort {
     display: flex;
     align-items: center;

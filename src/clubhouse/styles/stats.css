@@ -2016,11 +2016,6 @@
     font-variant-numeric: tabular-nums;
     color: var(--ch-text-tertiary);
   }
-  .ch-stm-head h1 {
-    font: 400 calc(38 * var(--ch-type-k))/1.05 var(--ch-font-serif);
-    letter-spacing: -0.008em;
-    color: var(--ch-text-primary);
-  }
   /* One card, the figures side by side split by hairlines (m.css .m-figs), never a grid of cards. */
   .ch-stm-figs {
     display: grid;
@@ -2401,11 +2396,6 @@
   .ch-spm-head h1 {
     display: -webkit-box;
     overflow: hidden;
-    font: var(--ch-type-34);
-    line-height: 1.05;
-    letter-spacing: var(--ch-track-34);
-    font-variation-settings: normal;
-    color: var(--ch-text-primary);
     text-wrap: balance;
     overflow-wrap: anywhere;
     -webkit-box-orient: vertical;
@@ -3651,14 +3641,7 @@
     font-variant-numeric: tabular-nums;
     color: var(--ch-text-tertiary);
   }
-  .ch-stm .ch-stm-head h1 {
-    font: var(--ch-type-34-strong);
-    line-height: 1.08;
-    letter-spacing: -0.038em;
-    font-variation-settings: 'wdth' 88;
-    color: var(--ch-ledger-ink);
-  }
-  /* A player's head: the avatar in the Ledger's ring beside the name in the same bold condensed sans. */
+  /* A player's head: the avatar in the Ledger's ring beside the name, the page's large title (.ch-large-title, shell.css). */
   .ch-stm .ch-spm-head {
     gap: 14px;
     padding: 16px 0 0;
@@ -3668,13 +3651,6 @@
   .ch-stm .ch-spm-head > .ch-avatar {
     margin-inline-start: 4px;
     box-shadow: var(--ch-ledger-avatar-ring);
-  }
-  .ch-stm .ch-spm-head h1 {
-    font: var(--ch-type-28-strong);
-    line-height: 1.1;
-    letter-spacing: var(--ch-track-28);
-    font-variation-settings: 'wdth' 88;
-    color: var(--ch-ledger-ink);
   }
   /* The figures as the Ledger's figure row (ui/Ledger.tsx FigureRow): a hairline above the values and one under their
      drawings, soft rules between the columns, the values in the bold sans. */
@@ -4223,13 +4199,6 @@ html[data-fw-theme='dark'] [data-ui='clubhouse'] {
     gap: 2px;
     padding-top: 4px;
     border-top: 0;
-  }
-  .ch-stm.is-team .ch-stm-head h1 {
-    font: var(--ch-type-34-strong);
-    line-height: 1.1;
-    letter-spacing: -0.03em;
-    font-variation-settings: normal;
-    color: var(--ch-text-primary);
   }
 
   /* The hero: the scoring average at 64px, its change and what it is against on the value's baseline. */

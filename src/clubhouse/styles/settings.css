@@ -775,13 +775,6 @@
   .ch-setm-skel {
     display: block;
   }
-  /* The title's bar holds the live title's line (31px at 1.08) under the same rule and padding. */
-  .ch-setm-skel .ch-setm-title {
-    display: flex;
-    box-sizing: content-box;
-    align-items: center;
-    height: 1.08em;
-  }
 
   .ch-setm {
     position: relative;
@@ -805,17 +798,11 @@
     z-index: 1;
     background: var(--ch-workspace);
   }
-  /* The large title, as the board's page intro (ui.css .ch-intro): an engraved double rule, then the bold sans in forest
-     ink. The top bar carries only the back link, and the page's heading for VoiceOver. */
+  /* The large title (.ch-large-title, shell.css), as the board's page intro (ui.css .ch-intro): under an engraved double
+     rule. The top bar carries only the back link, and the page's heading for VoiceOver. */
   .ch-setm-title {
-    margin: 0;
     padding-top: 14px;
     border-top: var(--ch-ledger-rule-double);
-    font: var(--ch-type-34-strong);
-    line-height: 1.08;
-    letter-spacing: -0.038em;
-    font-variation-settings: 'wdth' 88;
-    color: var(--ch-ledger-ink);
   }
   /* The intro's brief, 10px under the title (ui.css .ch-intro__brief); written against the page so it outranks the
      root's paragraph reset. */

@@ -22,6 +22,7 @@ import { newClassId, type ChClassesWrites, type ChRemoveAllData } from './writes
 import { useChReducedMotion } from '../../lib/reduced-motion';
 import { chScrollIntoView } from '../../lib/smooth-scroll';
 import { pluralWord } from '../../lib/plural';
+import { LargeTitle } from '../../ui/LargeTitle';
 
 const label = (c: { code: string; name: string }) => c.code || c.name;
 
@@ -351,8 +352,15 @@ export function ClassesView({ data, writes }: { data: ChClassesPage; writes: ChC
           <span className="ch-cl-k">
             {term.label} · {shortDay(term.start)} – {shortDay(term.end)}
           </span>
-          {/* Phone: the top bar is the page's one heading (iPhone brief: no second "Classes" under it). */}
-          {!phone && <h1 id="ch-cl-title">Classes</h1>}
+          {/* Phone: the top bar is the page's one heading, and the page draws the one large title under the term line (owner
+              decision 4, 2026-10-24: every phone section root has it), hidden from VoiceOver so the name is read once. */}
+          {phone ? (
+            <LargeTitle as="p" hidden className="ch-cl-title">
+              Classes
+            </LargeTitle>
+          ) : (
+            <h1 id="ch-cl-title">Classes</h1>
+          )}
         </div>
         {/* The head keeps its actions when the classes didn't load (owner decision, 2026-10-08: a failed read keeps the head and its
             primary action, CH-12201). Only a first run has none here, because its empty state carries them; Delete all classes stays

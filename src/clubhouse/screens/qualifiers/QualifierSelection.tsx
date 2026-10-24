@@ -23,6 +23,7 @@ import { ToPar } from './parts';
 import { useStepBack } from './return-state';
 import { LIVE_SELECTION_WRITES, startSelecting, type ChQSelectionWrites } from './writes';
 import '../../styles/qualifiers.css';
+import { LargeTitle } from '../../ui/LargeTitle';
 
 const LIST = '/golf/dashboard/qualifiers';
 
@@ -228,7 +229,7 @@ export function QualifierSelection({ data, writes = LIVE_SELECTION_WRITES }: { d
       <header className="ch-qf-head" data-canopy-head="">
         <div>
           <span className="ch-qf-eyebrow">Manage selections</span>
-          <h1>{data.name}</h1>
+          <LargeTitle>{data.name}</LargeTitle>
           <p className="ch-num">
             {data.squad}-player squad · {topN} on score{data.picks ? ` · ${plural(data.picks, 'coach’s pick', 'coach’s picks')}` : ''}
           </p>

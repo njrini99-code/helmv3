@@ -15,6 +15,7 @@ import { useToast } from '../../ui/Toast';
 import { CorrectionChips, ReadLater } from './Corrections';
 import { EngineState, WhyAudit } from './EngineState';
 import type { ChCoachHelmWrites } from './writes';
+import { LargeTitle } from '../../ui/LargeTitle';
 
 /**
  * The path line (design call D2): the card's second line, inside the card, in one fixed grammar: what was seen · count of
@@ -245,13 +246,19 @@ export function BoardPartial({ missing, what, focus = true }: { missing: ChBoard
  *  player puts "CoachHelm" there instead, and the player's name as the `title` (spec A). */
 /** `below`: one more line under the sentence, inside the header (the coach's "Since you were last here", D4). */
 export function Head({ who, title = 'CoachHelm', children, aside, below, phone = false }: { who?: ReactNode; title?: ReactNode; children: ReactNode; aside?: ReactNode; below?: ReactNode; phone?: boolean }) {
-  const Title = phone ? 'p' : 'h1';
   return (
     <header className={'ch-hl-h' + (aside ? ' has-aside' : '')} data-canopy-head="">
       {who && <span className="ch-hl-role">{who}</span>}
-      <Title id="ch-hl-title" className="ch-hl-h__t">
-        {title}
-      </Title>
+      {/* The phone's one large title (owner decision 4: the same 34 semibold sans as every section root, not the desktop's serif). */}
+      {phone ? (
+        <LargeTitle as="p" id="ch-hl-title" className="ch-hl-h__t">
+          {title}
+        </LargeTitle>
+      ) : (
+        <h1 id="ch-hl-title" className="ch-hl-h__t">
+          {title}
+        </h1>
+      )}
       <p>
         {children}
       </p>
