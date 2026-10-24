@@ -101,7 +101,7 @@ export interface ChDiveTheme {
   state: 'leak' | 'strength' | 'thin';
   /** Strokes gained per round in the category, when known ("−0.42"). */
   sg: string | null;
-  trend: { word: 'Improving' | 'Slipping' | 'Steady'; tone: ChDiveTone; text: string } | null;
+  trend: { word: 'Improving' | 'Slipping' | 'No clear change'; tone: ChDiveTone; text: string } | null;
 }
 
 /**
