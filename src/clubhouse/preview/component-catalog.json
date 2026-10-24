@@ -6946,6 +6946,19 @@
       "fixture": "Contextual module"
     },
     {
+      "file": "src/clubhouse/ui/charts/ChartTable.tsx",
+      "group": "ui",
+      "exports": [
+        "ChartTable"
+      ],
+      "styles": [
+        "src/clubhouse/styles/base.css",
+        "src/clubhouse/styles/shell.css"
+      ],
+      "examples": [],
+      "fixture": "Contextual module"
+    },
+    {
       "file": "src/clubhouse/ui/charts/Line.tsx",
       "group": "ui",
       "exports": [

@@ -292,6 +292,8 @@ export function Trend({ block }: { block: Extract<AskEvidence, { kind: 'trend' }
         marks="trail"
         ends="spread"
         readAt="tip"
+        // The block's own "as a table" view is its data table (DataTable).
+        table={false}
         width={W}
         height={H}
       />

@@ -8,6 +8,7 @@ import { needsText } from '../../lib/stats-signal';
 import { sgBaseline, type ChSgTour } from '../../lib/sg';
 import { useChartPin } from '../../lib/use-chart-pin';
 import { slotPositions } from '../../ui/charts/Line';
+import { ChartTable } from '../../ui/charts/ChartTable';
 import { meanSeries, niceTicks, parLine, readTrendRound, tickDigits, trendNote, trendState, withValue, type TrendKind, type TrendRound } from './round-trend';
 
 const PAD = { l: 34, r: 14, t: 14, b: 24 } as const;
@@ -150,6 +151,12 @@ export function RoundTrend({
           {rounds[n - 1]!.label}
         </text>
       </svg>
+      {/* The rounds, for a screen reader that asks for them after the summary (AX-17). */}
+      <ChartTable
+        caption={label}
+        columns={['Round', 'Course', kind === 'score' ? 'Score per 18' : 'Strokes gained per 18']}
+        rows={rounds.map((r) => [r.label, r.course ?? '', r.value == null ? 'No figure' : kind === 'score' ? String(Math.round(r.value)) : formatSigned(r.value)])}
+      />
     </div>
   );
 }

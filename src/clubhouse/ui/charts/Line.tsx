@@ -3,6 +3,7 @@
 import { useId, type ReactNode } from 'react';
 import { useGlide } from '../../lib/motion-glide';
 import { useChartPin } from '../../lib/use-chart-pin';
+import { ChartTable } from './ChartTable';
 
 /**
  * One line chart for Clubhouse (B5): every trend reads the same way. Better is always up (a lower score sits higher with
@@ -152,6 +153,7 @@ export function Line({
   readAt = 'line',
   ends = true,
   interactive = true,
+  table = true,
   width,
   height,
   className,
@@ -184,6 +186,8 @@ export function Line({
   ends?: boolean | 'spread';
   /** Off where the chart sits inside a control (a leg card is a button): no readout, no focus, hidden from a screen reader. */
   interactive?: boolean;
+  /** The figures as a visually hidden table after the summary (AX-17); off where the page offers its own table of them. */
+  table?: boolean;
   /** The plot's width in its own units: 340 on a phone, 680 on a desktop, or about its drawn width for a small multiple. */
   width?: number;
   /** The plot's height in its own units; the chart scales to fit its width. */
@@ -340,6 +344,8 @@ export function Line({
           {refText}
         </p>
       )}
+      {/* The figures, for a screen reader that asks for them after the summary (AX-17). */}
+      {table && <ChartTable caption={label} columns={['Point', 'Value']} rows={points.map((p) => [p.x, p.y == null ? 'No figure' : format(p.y)])} />}
     </div>
   );
 }
