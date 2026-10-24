@@ -87,52 +87,59 @@ export function Button(props: ButtonProps) {
   );
 }
 
-/**
- * An icon-only button. Its tooltip is its accessible name (and `shortcut`, when it has one: drawn as key caps, announced
- * through aria-keyshortcuts), shown on hover rest and keyboard focus and never on touch (ui/Tooltip.tsx).
- */
-export function IconButton({
-  icon,
-  label,
-  size = 'md',
-  onClick,
-  feel = null,
-  disabled,
-  className,
-  shortcut,
-  menu,
-  variant = 'ghost',
-  href,
-  scroll,
-}: {
+/** What every icon key takes, as a button or as a link. */
+interface IconButtonBase {
   icon: LucideIcon;
   label: string;
   size?: Size;
-  onClick?: () => void;
   feel?: ChHaptic | null;
-  disabled?: boolean;
   className?: string;
   /** The key that does the same, one string per key cap ("N", or "⌘" then "\\"). */
   shortcut?: readonly string[];
-  /** A menu's trigger props (ui/Menu's `trigger`): the key opens that menu (CONS-2). */
-  /** A link that looks like the key (Stats' previous and next player); `scroll` as next/link takes it. */
-  href?: string;
-  scroll?: boolean;
   /** Ghost by default; secondary where the key sits among a toolbar's raised keys (Calendar's More). */
   variant?: 'ghost' | 'secondary';
+}
+
+/** The icon key as a button. */
+interface IconButtonKey extends IconButtonBase {
+  href?: undefined;
+  scroll?: undefined;
+  onClick?: () => void;
+  disabled?: boolean;
+  /** A menu's trigger props (ui/Menu's `trigger`): the key opens that menu (CONS-2). */
   menu?: { ref: (el: HTMLButtonElement | null) => void; onClick: () => void; 'aria-expanded': boolean; 'aria-haspopup': 'menu'; 'aria-controls': string };
-}) {
+}
+
+/** The icon key as a link (Stats' previous and next player): a link can't be disabled, open a menu or run a click. */
+interface IconButtonLink extends IconButtonBase {
+  /** Where it goes; `scroll` as next/link takes it. */
+  href: string;
+  scroll?: boolean;
+  onClick?: never;
+  disabled?: never;
+  menu?: never;
+}
+
+/**
+ * An icon-only button. Its tooltip is its accessible name (and `shortcut`, when it has one: drawn as key caps, announced
+ * through aria-keyshortcuts), shown on hover rest and keyboard focus and never on touch (ui/Tooltip.tsx). As a link it
+ * reads and announces the same way.
+ */
+export function IconButton(props: IconButtonKey | IconButtonLink) {
+  const { icon, label, size = 'md', feel = null, className, shortcut, variant = 'ghost' } = props;
   const cls = ['ch-btn', `ch-btn--${variant}`, 'ch-iconbtn', size !== 'md' && `ch-btn--${size}`, className].filter(Boolean).join(' ');
-  if (href !== undefined)
+  const ariaKeys = shortcut?.length === 1 && shortcut[0]!.length === 1 ? shortcut[0] : undefined;
+  if (props.href !== undefined)
     return (
-      <Tooltip label={label} shortcut={shortcut}>
-        <Link href={href} scroll={scroll} className={cls} aria-label={label} onClick={() => feel && haptic(feel)}>
+      <Tooltip label={label} shortcut={shortcut} ariaKeys={ariaKeys}>
+        <Link href={props.href} scroll={props.scroll} className={cls} aria-label={label} onClick={() => feel && haptic(feel)}>
           <Icon icon={icon} size={size === 'sm' ? 15 : 16} />
         </Link>
       </Tooltip>
     );
+  const { menu, onClick } = props;
   return (
-    <Tooltip label={label} shortcut={shortcut} ariaKeys={shortcut?.length === 1 && shortcut[0]!.length === 1 ? shortcut[0] : undefined}>
+    <Tooltip label={label} shortcut={shortcut} ariaKeys={ariaKeys}>
       <button
         ref={menu?.ref}
         type="button"
@@ -140,7 +147,7 @@ export function IconButton({
         aria-expanded={menu?.['aria-expanded']}
         aria-haspopup={menu?.['aria-haspopup']}
         aria-controls={menu?.['aria-controls']}
-        disabled={disabled}
+        disabled={props.disabled}
         className={cls}
         onClick={() => {
           if (feel) haptic(feel);
