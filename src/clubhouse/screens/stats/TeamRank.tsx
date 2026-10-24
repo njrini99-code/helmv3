@@ -39,8 +39,9 @@ export function TeamRank({ data, phone = false }: { data: TeamRankData; phone?: 
   const mean = teamMeanFor(metric, data.team, data.legTotals);
   const scale = rankScale(rows, mean, metric, phone ? 3 : 5);
   const pin = useChartPin(rows.length, 'y');
-  // The pin is a row index, so a new order (another figure, a new window) must let go of it or it would point at someone else.
-  const order = rows.map((r) => r.id).join('|');
+  // The pin is a row index, so a new order (another figure) must let go of it or it would point at someone else; so does a new
+  // window or filter, since the chart stays mounted through one so its dots glide (B9).
+  const order = rows.map((r) => r.id).join('|') + '|' + JSON.stringify(data.filter);
   const { clear } = pin;
   useEffect(() => clear(), [order, clear]);
   const ranked = rows.filter((r) => r.rank != null).length;

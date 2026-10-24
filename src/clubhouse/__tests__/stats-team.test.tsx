@@ -639,6 +639,19 @@ describe('Stats team · phone (v2, Coach - Stats - Mobile.html)', () => {
     expect(router.push).toHaveBeenCalledWith('/golf/dashboard/stats?window=season', { scroll: false });
   });
 
+  it('a phone window change keeps the legs and the rank mounted, so their bars glide instead of being redrawn (B9)', async () => {
+    const data = stats();
+    const view = wrap(data);
+    await waitFor(() => expect(document.querySelector('.ch-stm .ch-stm-leg__v')).not.toBeNull());
+    const bar = document.querySelector('.ch-stm .ch-stm-leg__v');
+    const dot = document.querySelector('.ch-stm .ch-sv-tr__dot');
+    expect(dot).not.toBeNull();
+    view.rerender(tree(stats({ window: 'season', legTotals: data.legTotals.map((v) => (v == null ? v : v * 2)) })));
+    // The same nodes: a remount would have drawn new ones at the new widths, with nothing to glide from.
+    expect(document.querySelector('.ch-stm .ch-stm-leg__v')).toBe(bar);
+    expect(document.querySelector('.ch-stm .ch-sv-tr__dot')).toBe(dot);
+  });
+
   it('phone period changes clear unavailable comparisons and coverage without inventing zero changes', () => {
     const data = stats({ holeRoundCount: PREVIEW_TEAM_STATS.roundCount - 1 });
     const view = wrap(data);
