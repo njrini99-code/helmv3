@@ -123,7 +123,7 @@ Every Bridge ID (D-68: namespace, two-digit category, two-digit item), its catal
 | P013 | 7 | 15 |  | 36 | 1 | 45 | 71 | 7 | 3 |  |  | 1 |  | 3 | 4 | 4 | 9 | 18 | 1 |  | 1 |  | 1 |  |  | 227 |
 | P014 | 1 | 3 | 4 | 7 | 11 | 10 | 4 | 2 | 4 |  | 2 | 1 | 1 | 1 | 1 | 4 | 3 | 8 | 1 | 1 |  |  |  |  |  | 69 |
 | P015 |  | 7 | 2 | 3 | 12 | 21 | 27 | 2 | 2 |  |  | 3 |  | 1 |  | 17 | 7 | 6 | 2 | 1 | 1 |  | 1 |  |  | 115 |
-| P016 |  | 1 |  | 6 |  | 5 |  |  |  | 1 |  |  |  |  |  | 1 |  | 1 |  |  |  |  |  |  |  | 15 |
+| P016 |  | 1 |  | 10 |  | 7 |  |  |  | 1 |  |  |  |  |  | 1 |  | 1 |  |  |  |  |  |  |  | 21 |
 
 ## P001 Shell
 
@@ -1892,11 +1892,17 @@ Every Bridge ID (D-68: namespace, two-digit category, two-digit item), its catal
 | 160404 | CH-16312 | 04 Empty | `HOME_NO_EVENT_IS_UPCOMING_OR_LIVE` | implemented | Home: no event is upcoming or live |
 | 160405 | CH-16320 | 04 Empty | `EVENT_DESK_THE_EVENT_HAS_NO_SCORES` | implemented | Event desk: the event has no scores yet (not played, nothing entered) |
 | 160406 | CH-16321 | 04 Empty | `EVENT_DESK_HOLES_TAB_NO_SCORECARD_HAS` | implemented | Event desk, Holes tab: no scorecard has holes (a totals-only event, or none entered) |
+| 160407 | CH-16335 | 04 Empty | `REVIEW_THE_EVENT_HAS_A_REVIEW_THAT` | implemented | Review: the event has a review that is not open yet (`review.open` is false: a round is not final) |
+| 160408 | CH-16336 | 04 Empty | `REVIEW_THE_EVENT_HAS_NO_REVIEW` | implemented | Review: the event has no review (not played, nothing to read) |
+| 160409 | CH-16337 | 04 Empty | `REVIEW_THE_REVIEW_IS_OPEN_AND_HAS` | implemented | Review: the review is open and has no notes or reflections |
+| 160410 | CH-16340 | 04 Empty | `HISTORY_NO_EVENT_IS_FINISHED` | implemented | History: no event is finished (the read worked) |
 | 160601 | CH-16201 | 06 Server / system error | `A_TOURNAMENTS_VIEWS_ONE_READ_FAILS` | implemented | A Tournaments view's one read fails (any view; `load: 'failed'`) |
 | 160602 | CH-16210 | 06 Server / system error | `HOME_THE_EVENTS_READ_FAILS_WHILE_THE` | implemented | Home: the events read fails while the page itself loads (`errors.events`) |
 | 160603 | CH-16220 | 06 Server / system error | `EVENT_DESK_HOLES_TAB_THE_SCORECARDS_READ` | implemented | Event desk, Holes tab: the scorecards read fails (`errors.holes`) |
 | 160604 | CH-16221 | 06 Server / system error | `EVENT_DESK_THE_FIELD_READ_FAILS` | implemented | Event desk: the field read fails (`errors.field`) |
 | 160605 | CH-16222 | 06 Server / system error | `EVENT_DESK_OVERVIEW_AND_WHO_COUNTED_THE` | implemented | Event desk, Overview and Who counted: the rounds read fails (`errors.rounds`) |
+| 160606 | CH-16235 | 06 Server / system error | `REVIEW_THE_REVIEW_READ_FAILS` | implemented | Review (its own page and the desk's Review tab): the review read fails (`errors.review`) |
+| 160607 | CH-16236 | 06 Server / system error | `HISTORY_THE_TREND_READ_FAILS` | implemented | History: the trend read fails (`errors.trend`) |
 | 161001 | CH-16920 | 10 Warning | `EVENT_DESK_THE_HOSTS_PUBLISHED_NUMBER_DIFFERS` | implemented | Event desk: the host's published number differs from our scorecard (`officialTotal` set and unequal) |
 | 161601 | CH-16601 | 16 Micro animation | `A_VALUE_CHANGES_AFTER_FIRST_PAINT` | reserved | A value changes after first paint (a live score, a team total, a place) |
 | 161801 | CH-16801 | 18 Accessibility | `A_SIGNED_DIFFERENCE_OR_A_TRUST_STATE` | reserved | A signed difference or a trust state is read |

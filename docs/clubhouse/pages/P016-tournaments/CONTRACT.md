@@ -42,6 +42,10 @@ Until a lane builds its view, the view says so honestly (CH-16301, preview only)
 | 160404 | CH-16312 | `HOME_NO_EVENT_IS_UPCOMING_OR_LIVE` | Home: no event is upcoming or live |
 | 160405 | CH-16320 | `EVENT_DESK_THE_EVENT_HAS_NO_SCORES` | Event desk: the event has no scores yet (not played, nothing entered) |
 | 160406 | CH-16321 | `EVENT_DESK_HOLES_TAB_NO_SCORECARD_HAS` | Event desk, Holes tab: no scorecard has holes (a totals-only event, or none entered) |
+| 160407 | CH-16335 | `REVIEW_THE_EVENT_HAS_A_REVIEW_THAT` | Review: the event has a review that is not open yet (`review.open` is false: a round is not final) |
+| 160408 | CH-16336 | `REVIEW_THE_EVENT_HAS_NO_REVIEW` | Review: the event has no review (not played, nothing to read) |
+| 160409 | CH-16337 | `REVIEW_THE_REVIEW_IS_OPEN_AND_HAS` | Review: the review is open and has no notes or reflections |
+| 160410 | CH-16340 | `HISTORY_NO_EVENT_IS_FINISHED` | History: no event is finished (the read worked) |
 
 ## 05 — Validation
 
@@ -60,6 +64,8 @@ A view whose one read failed draws its head and "Tournaments didn’t load" with
 | 160603 | CH-16220 | `EVENT_DESK_HOLES_TAB_THE_SCORECARDS_READ` | Event desk, Holes tab: the scorecards read fails (`errors.holes`) |
 | 160604 | CH-16221 | `EVENT_DESK_THE_FIELD_READ_FAILS` | Event desk: the field read fails (`errors.field`) |
 | 160605 | CH-16222 | `EVENT_DESK_OVERVIEW_AND_WHO_COUNTED_THE` | Event desk, Overview and Who counted: the rounds read fails (`errors.rounds`) |
+| 160606 | CH-16235 | `REVIEW_THE_REVIEW_READ_FAILS` | Review (its own page and the desk's Review tab): the review read fails (`errors.review`) |
+| 160607 | CH-16236 | `HISTORY_THE_TREND_READ_FAILS` | History: the trend read fails (`errors.trend`) |
 
 ## 07 — Network / offline
 

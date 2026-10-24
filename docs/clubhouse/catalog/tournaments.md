@@ -47,6 +47,8 @@ sync` mints its Bridge ID.
 | CH-16220 | Event desk, Holes tab: the scorecards read fails (`errors.holes`) | "The scorecards didn’t load" + "Team scores are unaffected. Try again; the error has been reported." + Try again, in place of the grid; never "No hole-by-hole scores yet" | `InlineNotice` in `HoleGrid` | tournaments-desk.test › CH-16220 |
 | CH-16221 | Event desk: the field read fails (`errors.field`) | Under the head: "The field didn’t load" + "Where the team finished needs the field, so it is left out for now. Scores are unaffected. Try again; the error has been reported." + Try again; the scores stay | `InlineNotice` in `EventDesk` | tournaments-desk.test › CH-16221 |
 | CH-16222 | Event desk, Overview and Who counted: the rounds read fails (`errors.rounds`) | "The rounds didn’t load" + "Scores are saved; they just can’t be shown right now. Try again; the error has been reported." + Try again, in place of the table | `InlineNotice` in `EventDesk` | tournaments-desk.test › CH-16222 |
+| CH-16235 | Review (its own page and the desk's Review tab): the review read fails (`errors.review`) | "The review didn’t load" + "Nothing has changed. Try again; the error has been reported." + Try again, in place of the layers; never "Nothing to review yet" | `InlineNotice` in `ReviewBody` | tournaments-review.test › CH-16235 |
+| CH-16236 | History: the trend read fails (`errors.trend`) | Under "Across seasons": "The trend didn’t load" + "The events below are unaffected. Try again; the error has been reported." + Try again; the ledger of every event stays | `InlineNotice` in `History` | tournaments-history.test › CH-16236 |
 
 ## 163xx Empty
 
@@ -58,6 +60,10 @@ sync` mints its Bridge ID.
 | CH-16312 | Home: no event is upcoming or live | In place of the next-event card, one line: "Nothing on the calendar" + "Add an event and it shows here with its lineup and travel." | `EmptyState compact` in `TournamentsHome` | tournaments-home.test › CH-16312 |
 | CH-16320 | Event desk: the event has no scores yet (not played, nothing entered) | Where Who counted would be: "No scores yet" + "Scores show here as rounds are entered." + where the lineup stands ("Draft lineup · 4 of 5 set · locks Tue 7:50 AM.") and the event's note | `EmptyState compact` in `EventDesk` (`NoScores`) | tournaments-desk.test › CH-16320 |
 | CH-16321 | Event desk, Holes tab: no scorecard has holes (a totals-only event, or none entered) | "No hole-by-hole scores yet" + "Holes show here once scorecards are in. Team scores use whole rounds either way." For one round with none: "Round 3 has no scorecards with holes." | `EmptyState compact` in `HoleGrid` | tournaments-desk.test › CH-16321 |
+| CH-16335 | Review: the event has a review that is not open yet (`review.open` is false: a round is not final) | "The review opens when every round is final" + "Until then the scores can still change, so nothing is concluded from them." | `EmptyState compact` in `ReviewBody` | tournaments-review.test › CH-16335 |
+| CH-16336 | Review: the event has no review (not played, nothing to read) | "Nothing to review yet" + "The review is written once the event has scores." | `EmptyState compact` in `ReviewBody` | tournaments-review.test › CH-16336 |
+| CH-16337 | Review: the review is open and has no notes or reflections | Under "Notes and reflections": "No notes or reflections yet" + "A coach’s note or a player’s reflection shows here once it is written." | `EmptyState compact` in `ReviewBody` | tournaments-review.test › CH-16337 |
+| CH-16340 | History: no event is finished (the read worked) | The head (without Add event), then "No results to compare yet" + "Once events are finished, the team’s scoring against the course rating shows here, season by season." + Add event (the page's one primary) | `EmptyState size="page"` in `History` | tournaments-history.test › CH-16340 |
 
 ## 164xx Loading
 

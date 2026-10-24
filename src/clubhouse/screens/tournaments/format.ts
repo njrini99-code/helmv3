@@ -89,6 +89,11 @@ export function firstNames(ids: readonly string[], players: ReadonlyArray<{ id: 
   return ids.map((id) => players.find((p) => p.id === id)?.first ?? '').filter(Boolean).join(', ');
 }
 
+/** "A", "A and B", "A, B and C". */
+export function andList(names: readonly string[]): string {
+  return names.length <= 1 ? (names[0] ?? '') : `${names.slice(0, -1).join(', ')} and ${names[names.length - 1]}`;
+}
+
 /** "1 event", "3 events". */
 export function plural(n: number, one: string, many = `${one}s`): string {
   return `${n} ${n === 1 ? one : many}`;

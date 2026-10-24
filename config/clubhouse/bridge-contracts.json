@@ -19279,6 +19279,50 @@
     "catalog": "docs/clubhouse/catalog/tournaments.md"
   },
   {
+    "id": 160407,
+    "page": "P016",
+    "category": 4,
+    "item": 7,
+    "name": "REVIEW_THE_EVENT_HAS_A_REVIEW_THAT",
+    "chCode": "CH-16335",
+    "meaning": "Review: the event has a review that is not open yet (`review.open` is false: a round is not final)",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/tournaments.md"
+  },
+  {
+    "id": 160408,
+    "page": "P016",
+    "category": 4,
+    "item": 8,
+    "name": "REVIEW_THE_EVENT_HAS_NO_REVIEW",
+    "chCode": "CH-16336",
+    "meaning": "Review: the event has no review (not played, nothing to read)",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/tournaments.md"
+  },
+  {
+    "id": 160409,
+    "page": "P016",
+    "category": 4,
+    "item": 9,
+    "name": "REVIEW_THE_REVIEW_IS_OPEN_AND_HAS",
+    "chCode": "CH-16337",
+    "meaning": "Review: the review is open and has no notes or reflections",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/tournaments.md"
+  },
+  {
+    "id": 160410,
+    "page": "P016",
+    "category": 4,
+    "item": 10,
+    "name": "HISTORY_NO_EVENT_IS_FINISHED",
+    "chCode": "CH-16340",
+    "meaning": "History: no event is finished (the read worked)",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/tournaments.md"
+  },
+  {
     "id": 160601,
     "page": "P016",
     "category": 6,
@@ -19330,6 +19374,28 @@
     "name": "EVENT_DESK_OVERVIEW_AND_WHO_COUNTED_THE",
     "chCode": "CH-16222",
     "meaning": "Event desk, Overview and Who counted: the rounds read fails (`errors.rounds`)",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/tournaments.md"
+  },
+  {
+    "id": 160606,
+    "page": "P016",
+    "category": 6,
+    "item": 6,
+    "name": "REVIEW_THE_REVIEW_READ_FAILS",
+    "chCode": "CH-16235",
+    "meaning": "Review (its own page and the desk's Review tab): the review read fails (`errors.review`)",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/tournaments.md"
+  },
+  {
+    "id": 160607,
+    "page": "P016",
+    "category": 6,
+    "item": 7,
+    "name": "HISTORY_THE_TREND_READ_FAILS",
+    "chCode": "CH-16236",
+    "meaning": "History: the trend read fails (`errors.trend`)",
     "status": "implemented",
     "catalog": "docs/clubhouse/catalog/tournaments.md"
   },

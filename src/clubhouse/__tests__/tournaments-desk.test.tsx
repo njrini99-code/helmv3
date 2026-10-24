@@ -158,6 +158,36 @@ describe('Event desk, desktop', () => {
   });
 });
 
+describe('Event desk, review and compare tabs', () => {
+  it('embeds the review in its tab, with the same layers and notes and no second page head', () => {
+    const c = draw(oak, tab('review'));
+    expect(c.querySelectorAll('main')).toHaveLength(1);
+    expect(c.querySelectorAll('h1')).toHaveLength(1);
+    const panel = c.querySelector('[role="tabpanel"]') as HTMLElement;
+    expect(panel.querySelectorAll('.ch-tour-rev-layer')).toHaveLength(3);
+    expect(panel.querySelectorAll('.ch-tour-rev-note')).toHaveLength(3);
+    expect(c.querySelector('[data-ch-code="CH-16301"]')).toBeNull();
+  });
+
+  it('opens the comparison with this event preset from its tab, and the previous edition when there is one', () => {
+    const c = draw(oak, tab('compare'));
+    expect(within(c as HTMLElement).getByRole('link', { name: 'Compare Oakmont' })).toHaveAttribute('href', '/golf/dashboard/tournaments/compare?event=e33');
+    cleanup();
+    const prev = draw({ ...oak, previous: { eventId: 'e22', name: 'Holly Ridge Classic 2025' } }, tab('compare'));
+    expect(within(prev as HTMLElement).getByRole('link', { name: 'Holly Ridge Classic 2025' })).toHaveAttribute('href', '/golf/dashboard/tournaments/e22');
+  });
+
+  it('shows a Live tab only while the event is live', () => {
+    const live = tourFixture('live').desks.e34!;
+    const c = draw(live, tab('live'));
+    expect(within(c.querySelector('[role="tablist"]') as HTMLElement).getAllByRole('tab').map((t) => t.textContent?.replace(/\d+$/, ''))).toEqual(['Overview', 'Live', 'Who counted', 'Holes', 'Compare', 'Review']);
+    expect(within(c as HTMLElement).getAllByRole('link', { name: 'Follow live' })[0]).toHaveAttribute('href', '/golf/dashboard/tournaments/e34/live');
+    expect(c.querySelectorAll('.ch-btn--primary')).toHaveLength(1);
+    cleanup();
+    expect(within(draw(oak, tab('live')).querySelector('[role="tablist"]') as HTMLElement).queryByRole('tab', { name: 'Live' })).toBeNull();
+  });
+});
+
 describe('Event desk, holes', () => {
   it('draws a round’s holes with the team’s average against par and the three costliest holes marked', () => {
     const c = draw(oak, tab('holes', { round: 3 }));

@@ -107,8 +107,59 @@ Changed from the board, and why:
   words of the aria label say how each score counted.
 - The Compare tab links to Compare with the event preset, and Live to the
   live view: the desk data carries neither view's data, so they cannot embed.
-  Review embeds `Review` (`embedded`), which is built in its own change.
+  Review embeds `Review` (`embedded`).
 
 Not drawn: the field table, the story card (six-hole splits, bounce-back,
 swing hole) and the trip, none of which a board shows. `errors.travel` has
 no home on the desk and shows nothing.
+
+## Review
+
+Board: `tour.jsx` (`Review`). Code: `Review.tsx`, as its own page and as the
+desk's Review tab (`embedded`: no head, no page root).
+
+Matched:
+
+- What the rounds show: each layer as an observation, its evidence and a
+  possible reason, labelled in words (the board's italics are dropped; the
+  label says "possible").
+- Notes and reflections by author and kind, "Private to coaches until you
+  share", and who has not reflected yet ("Sofia and Eli haven’t added
+  reflections").
+
+Left out, and why:
+
+- Draft practice assignment, Discuss in 1:1 and Remind them: each is a write
+  the board answers with a toast, and no action exists yet, so a key would
+  claim something that did not happen. They arrive with the actions.
+- The leak table, the per-player debrief lines (what is shared one by one)
+  and Make it a focus: data is read, no board draws them.
+- The findings the desk shows on Overview are not repeated here.
+
+## History
+
+Boards: `tour.jsx` (`History`, `Trend`, `Ledger`) and `tour-m.jsx`
+(`MHistory`). Code: `History.tsx`, `history-model.ts`, the shared
+`SeasonLedger.tsx`.
+
+Matched:
+
+- Across seasons: the actual-lineups or returning-players switch, the trend
+  of team scoring against the course rating (a line a season, the dashed
+  mean, a point per event that opens it, the figure and the event under it),
+  and the sentence under it, worked out from the data and naming who left and
+  who joined. Every event: the shared ledger. The phone is the bars card.
+
+Changed from the board, and why:
+
+- Measured against: the URL carries `adjust`, so a second switch draws the
+  margin on the field where it is entered. Against the field, returning
+  players has no figure and is disabled, and the sentence is left out.
+- The sentence is computed (this season's mean against last season's) and
+  not fixed copy, and it says nothing without both seasons.
+- A point with no figure breaks the line, and a grey ring marks scorecards
+  only (the label and the link name say so too).
+- The phone has the same two switches under the title; the board has none.
+
+Not drawn: head-to-head against other teams, the splits (by day length,
+event type and start) and the middle-50% band, none of which a board shows.

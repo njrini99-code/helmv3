@@ -5770,6 +5770,17 @@
         "History"
       ],
       "styles": [
+        "src/clubhouse/styles/base.css",
+        "src/clubhouse/styles/calendar.css",
+        "src/clubhouse/styles/coachhelm.css",
+        "src/clubhouse/styles/goals.css",
+        "src/clubhouse/styles/home.css",
+        "src/clubhouse/styles/hub.css",
+        "src/clubhouse/styles/messages.css",
+        "src/clubhouse/styles/qualifiers.css",
+        "src/clubhouse/styles/rounds.css",
+        "src/clubhouse/styles/stats.css",
+        "src/clubhouse/styles/tournaments-desk.css",
         "src/clubhouse/styles/tournaments-review.css"
       ],
       "examples": [],
@@ -5851,7 +5862,8 @@
       "file": "src/clubhouse/screens/tournaments/Review.tsx",
       "group": "screens",
       "exports": [
-        "Review"
+        "Review",
+        "ReviewBody"
       ],
       "styles": [
         "src/clubhouse/styles/tournaments-review.css"
@@ -17517,7 +17529,33 @@
     },
     {
       "file": "src/clubhouse/styles/tournaments-review.css",
-      "classes": [],
+      "classes": [
+        "ch-tour-rev",
+        "ch-tour-rev-bar",
+        "ch-tour-rev-bars",
+        "ch-tour-rev-body",
+        "ch-tour-rev-dot",
+        "ch-tour-rev-layer",
+        "ch-tour-rev-layer__ev",
+        "ch-tour-rev-layers",
+        "ch-tour-rev-missing",
+        "ch-tour-rev-note",
+        "ch-tour-rev-note__k",
+        "ch-tour-rev-note__n",
+        "ch-tour-rev-note__w",
+        "ch-tour-rev-notes",
+        "ch-tour-rev-tools",
+        "ch-tour-rev-trend",
+        "ch-tour-rev-trend__div",
+        "ch-tour-rev-trend__key",
+        "ch-tour-rev-trend__labels",
+        "ch-tour-rev-trend__line",
+        "ch-tour-rev-trend__mean",
+        "ch-tour-rev-trend__note",
+        "ch-tour-rev-trend__plot",
+        "ch-tour-rev-trend__s",
+        "ch-tour-rev-trend__t"
+      ],
       "tokens": []
     },
     {

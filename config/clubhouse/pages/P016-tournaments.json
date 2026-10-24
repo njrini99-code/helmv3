@@ -63,6 +63,8 @@
       "src/clubhouse/__tests__/tournaments-views.test.tsx",
       "src/clubhouse/__tests__/tournaments-home.test.tsx",
       "src/clubhouse/__tests__/tournaments-desk.test.tsx",
+      "src/clubhouse/__tests__/tournaments-review.test.tsx",
+      "src/clubhouse/__tests__/tournaments-history.test.tsx",
       "src/clubhouse/screens/tournaments/__tests__/use-changed-wash.test.tsx",
       "src/clubhouse/preview/__tests__/fixtures-tournaments.test.ts",
       "src/clubhouse/ui/__tests__/delta-chip.test.tsx",
