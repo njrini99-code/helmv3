@@ -3555,7 +3555,7 @@ html[data-fw-theme='dark'] .ch-ph-legs-sec.is-phone .ch-ph-leg + .ch-ph-leg {
     outline: none;
   }
   .ch-root .ch-hm-day__open:focus-visible::after {
-    box-shadow: inset 0 0 0 2px var(--ch-on-green-ink);
+    box-shadow: inset 0 0 0 2px var(--ch-border-focus-on-dark);
   }
   /* A press on the card deepens its green, as the player's Up next does (a.ch-hm-next:active::after). The link's
      ::after is the hit area over the words, so the shade is the card's own layer under them; a press on an action

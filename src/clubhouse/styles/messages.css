@@ -1021,7 +1021,7 @@
   box-shadow: 0 0 0 1px rgb(21 90 57 / 0.14), var(--ch-elevation-floating);
 }
 .ch-ms-comp__field:focus-within {
-  box-shadow: 0 0 0 1.5px var(--ch-green-fill-600), 0 0 0 5px rgb(21 90 57 / 0.12), var(--ch-elevation-floating);
+  box-shadow: 0 0 0 1.5px var(--ch-border-focus), 0 0 0 5px var(--ch-focus-halo), var(--ch-elevation-floating);
 }
 .ch-ms-comp__field textarea {
   padding: 9px 6px;

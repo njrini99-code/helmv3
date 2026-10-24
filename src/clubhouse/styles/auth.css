@@ -509,7 +509,7 @@
   position: relative;
   font-weight: 500;
   border-radius: 4px;
-  outline-offset: 3px;
+  outline-offset: 2px;
 }
 /* 44px tall: 19.6px of line plus 12px above and below. */
 .ch-au-alt a::after {
@@ -581,7 +581,7 @@
   }
 }
 .ch-au-input:focus-within {
-  box-shadow: 0 0 0 1px var(--ch-green-600), 0 0 0 4px rgb(21 90 57 / 0.12);
+  box-shadow: 0 0 0 1px var(--ch-border-focus), 0 0 0 4px var(--ch-focus-halo);
 }
 .ch-au-input[data-invalid='true'] {
   box-shadow: 0 0 0 1px var(--ch-danger-600), 0 0 0 4px rgb(176 58 46 / 0.1);
@@ -634,7 +634,7 @@
 .ch-au-forgot,
 .ch-au-foot a {
   border-radius: 4px;
-  outline-offset: 3px;
+  outline-offset: 2px;
 }
 .ch-au-forgot--below {
   display: none;
@@ -817,7 +817,7 @@
   margin: -14px 0;
   padding: 0 6px;
   border-radius: var(--ch-radius-sm);
-  outline-offset: 0;
+  outline-offset: 2px;
   color: var(--ch-text-tertiary);
 }
 /* "Create an account" is a line of text: its hit area reaches 44px tall without moving it. On the phone the legal
@@ -938,7 +938,8 @@
 .ch-au-wl-mark span {
   font: 650 17px/1 var(--ch-font-sans);
   letter-spacing: -0.022em;
-  font-variation-settings: 'wdth' 92;
+  /* The wordmark's display width, as the 28px mark (B1: two widths). */
+  font-variation-settings: 'wdth' 96;
   color: var(--ch-text-primary);
 }
 .ch-au-wl-mark b {
@@ -1252,7 +1253,7 @@
   .ch-au-mark span {
     font: 600 17px/1 var(--ch-font-sans);
     letter-spacing: -0.022em;
-    font-variation-settings: 'wdth' 92;
+    font-variation-settings: 'wdth' 96;
     padding-top: 0;
   }
   .ch-au-panel {
@@ -1447,11 +1448,12 @@
   .ch-au-wl-body {
     margin-top: 34px;
   }
-  /* The board's 50px from a 390px phone, scaling down below it. One width step narrower (94) is what lets "Good
-     afternoon," hold one line there at the relaxed tracking: 341px of 346px at 390, 328px of 331px at 375. */
+  /* The board's 50px from a 390px phone, scaling down below it. The dense width (88, B1's two widths; it was 94, which
+     measured 341px of 346px at 390 and 328px of 331px at 375) is what lets "Good afternoon," hold one line there at the
+     relaxed tracking; 96 would not fit. */
   .ch-au-wl h1 {
     font-size: clamp(40px, 12.83vw, 50px);
-    font-variation-settings: 'wdth' 94;
+    font-variation-settings: 'wdth' 88;
     margin-top: 14px;
   }
   .ch-au-wl-card {
@@ -1567,7 +1569,7 @@ html[data-fw-theme='dark'] .ch-au-wl-mark b {
 }
 /* The fields' focus and refusal rings on the night paper, phone and desktop alike. */
 html[data-fw-theme='dark'] .ch-au-input:focus-within {
-  box-shadow: 0 0 0 1px var(--ch-green-600), 0 0 0 4px var(--ch-focus-halo);
+  box-shadow: 0 0 0 1px var(--ch-border-focus), 0 0 0 4px var(--ch-focus-halo);
 }
 html[data-fw-theme='dark'] .ch-au-input[data-invalid='true'] {
   box-shadow: 0 0 0 1px var(--ch-danger-600), 0 0 0 4px rgb(239 133 118 / 0.14);
@@ -1787,7 +1789,7 @@ html[data-fw-theme='dark'] .ch-au-wl:not([data-dark]) h1 {
   background: var(--ch-bg-surface);
   box-shadow: 0 0 0 1px var(--ch-border-control), var(--ch-elevation-control);
   font: 600 22px/1 var(--ch-font-sans);
-  font-variation-settings: 'wdth' 92;
+  font-variation-settings: 'wdth' 88;
   font-variant-numeric: tabular-nums;
   color: var(--ch-text-primary);
   transition: box-shadow var(--ch-dur-quick) var(--ch-ease);
@@ -1801,7 +1803,7 @@ html[data-fw-theme='dark'] .ch-au-wl:not([data-dark]) h1 {
   }
 }
 .ch-au-code[data-focus] .ch-au-slot[data-cur] {
-  box-shadow: 0 0 0 1px var(--ch-green-600), 0 0 0 4px rgb(21 90 57 / 0.12);
+  box-shadow: 0 0 0 1px var(--ch-border-focus), 0 0 0 4px var(--ch-focus-halo);
 }
 .ch-au-slot[data-cur]::after {
   content: '';
@@ -1923,7 +1925,7 @@ html[data-fw-theme='dark'] .ch-au-code[data-invalid] .ch-au-slot {
   box-shadow: 0 0 0 1px var(--ch-danger-600), 0 0 0 4px rgb(239 133 118 / 0.14);
 }
 html[data-fw-theme='dark'] .ch-au-code[data-focus] .ch-au-slot[data-cur] {
-  box-shadow: 0 0 0 1px var(--ch-green-600), 0 0 0 4px var(--ch-focus-halo);
+  box-shadow: 0 0 0 1px var(--ch-border-focus), 0 0 0 4px var(--ch-focus-halo);
 }
 
 /* A sentence with a way out in it ("Signed in as … Not you?"): the link is a button, set as a link. */
@@ -1937,7 +1939,7 @@ html[data-fw-theme='dark'] .ch-au-code[data-focus] .ch-au-slot[data-cur] {
   font-weight: 500;
   color: var(--ch-green-700);
   border-radius: 4px;
-  outline-offset: 3px;
+  outline-offset: 2px;
   cursor: pointer;
 }
 /* 44px tall around the words, as the other links in the panel. */

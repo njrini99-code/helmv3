@@ -20,6 +20,13 @@ describe('spacing scale (B2)', () => {
     expect(tokens).toMatch(/--ch-measure-text: 68ch;/);
   });
 
+  it('the phone gutter is one token at today’s 20, and the phone page roots take it (OQ-63 changes one line)', () => {
+    const tokens = readFileSync(join(ROOT, 'styles/tokens.css'), 'utf8');
+    expect(tokens).toContain('--ch-phone-gutter: var(--ch-space-5);');
+    expect(tokens).toContain('--ch-page-x-phone: var(--ch-phone-gutter);');
+    expect(tokens.match(/--ch-phone-gutter:/g)).toHaveLength(1);
+  });
+
   it.each(MIGRATED)('%s spaces only on the scale', (name) => {
     const file = join(ROOT, 'styles', name);
     const src = readFileSync(file, 'utf8').replace(/\/\*[\s\S]*?\*\//g, '');

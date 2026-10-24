@@ -76,7 +76,8 @@ const TOKENS: Record<string, string> = {
   '--ch-gap-grid': '18px',
   '--ch-gap-section': '28px',
   '--ch-gap-section-loose': 'var(--ch-space-8)',
-  '--ch-page-x-phone': 'var(--ch-space-5)',
+  // The phone side inset is the phone gutter (B2), held at today's 20 by spacing-scale.test.ts.
+  '--ch-page-x-phone': 'var(--ch-phone-gutter)',
   '--ch-page-top-phone': '26px',
   '--ch-page-bottom-phone': 'var(--ch-space-8)',
   '--ch-page-top-phone-docked': '14px',
