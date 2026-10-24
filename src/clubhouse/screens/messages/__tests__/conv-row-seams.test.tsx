@@ -70,3 +70,19 @@ describe('phone inbox seams across a row’s sheets', () => {
     }
   });
 });
+
+describe('desktop rail seams across a row’s mounted dialog', () => {
+  // A desktop row's Mute or Delete <dialog> stays mounted beside it after it first opens (Modal does not portal), so the
+  // seam rule must not need the next row to be the adjacent sibling (review of #2361).
+  it('draws the seam on any later row in the card, not only the adjacent one', () => {
+    expect(css).toMatch(/^\.ch-ms-row ~ \.ch-ms-row::before \{/m);
+    expect(css).not.toMatch(/^\.ch-ms-row \+ \.ch-ms-row::before/m);
+  });
+
+  it('a selected or hovered row hides its neighbour’s seam across one or two dialogs', () => {
+    for (const x of ['.ch-ms-row.is-sel', '.ch-ms-row:hover']) {
+      expect(css).toContain(`${x} + dialog + .ch-ms-row::before`);
+      expect(css).toContain(`${x} + dialog + dialog + .ch-ms-row::before`);
+    }
+  });
+});
