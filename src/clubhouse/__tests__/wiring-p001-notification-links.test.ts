@@ -140,7 +140,7 @@ describe('P001 the query a notification carries is read by its screen', () => {
 
   it('Calendar is handed ?event= and loads that event’s own day', () => {
     expect(readFileSync(join(DASH, 'calendar/page.tsx'), 'utf8')).toMatch(/event=\{initialEventId\}/);
-    expect(readFileSync(join(ROOT, 'src/clubhouse/data/calendar.ts'), 'utf8')).toMatch(/if \(!input\.date && input\.event && UUID\.test\(input\.event\)\)/);
+    expect(readFileSync(join(ROOT, 'src/clubhouse/data/calendar.ts'), 'utf8')).toMatch(/!input\.date && input\.event && UUID\.test\(input\.event\)/); // read in the first wave since C2
   });
 
   it('Messages reads ?conversation= from the address', () => {
