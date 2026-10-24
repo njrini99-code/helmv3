@@ -32,7 +32,7 @@ import { effectiveWindow, filterFor, hasPrevious, previousWords, type ChFilter, 
 import { effectiveCount, effectiveRounds, roundHalves, roundValues, summarizeWindow, weightedMean, windowChangeSe, type ChHalves } from './stats-weight';
 
 export type { ChHalves } from './stats-weight';
-import { changeSe, floorRate, meanSe, needsText, type SpreadKind } from '../lib/stats-signal';
+import { changeSe, floorRate, halvesTone, meanSe, needsText, type DeltaTone, type SpreadKind } from '../lib/stats-signal';
 import { plural } from '../lib/plural';
 
 /**
@@ -93,7 +93,9 @@ export interface ChRankSpread {
 export type ChGauge =
   | { kind: 'sg'; tour?: ChSgTour }
   | { kind: 'par'; toPar: number | null }
-  | { kind: 'rate'; ref?: number | null; refLabel?: string }
+  // `tone`: when the mark is the team's own earlier period, the bar is coloured by the tested change (A1), not by which side of
+  // the mark it ends; a benchmark mark (Tour) has none and colours by side.
+  | { kind: 'rate'; ref?: number | null; refLabel?: string; tone?: DeltaTone }
   | { kind: 'putts' }
   | { kind: 'holes' };
 
@@ -320,6 +322,17 @@ export async function loadTeamStats(input: { teamId: string; window: ChWindow; f
   const inWeek = (rs: ChRound[], wk: string) => rs.filter((r) => weekOf(r.round_date) === wk);
   const avgOf = (rs: ChRound[], pick: (r: ChRound) => number | null) => weightedMean(rs, pick);
   const weekRows = (wk: string) => rowsFor(inWeek(holeWindow, wk));
+  // Scrambling's mark is the team's own earlier period, not a Tour figure: it is named so, and the bar is coloured only when the
+  // change clears its standard error (review of #2361), as the change chip beside it is.
+  const scrambleDelta = steady(scramble) ? d(rate(curPaired, 'scrambles_converted', 'scramble_attempts'), rate(prev, 'scrambles_converted', 'scramble_attempts')) : null;
+  const scrambleSe = steady(scramble) ? rateSe('scrambles_converted', 'scramble_attempts') : null;
+  const scrambleRef = hasPrev ? rate(prev, 'scrambles_converted', 'scramble_attempts') : null;
+  const scrambleGauge: ChGauge = {
+    kind: 'rate',
+    ref: scrambleRef,
+    refLabel: 'Previous',
+    tone: scrambleDelta == null ? '' : halvesTone({ delta: scrambleDelta, se: scrambleSe }, false, 0),
+  };
   const figures: ChFigure[] = [
     {
       key: 'sg',
@@ -344,7 +357,7 @@ export async function loadTeamStats(input: { teamId: string; window: ChWindow; f
     // CH-4209: without Tour benchmarks, greens read against the sample instead of "Tour averages".
     { key: 'gir', series: weekKeys.map((wk) => rate(weekRows(wk), 'greens_hit', 'greens_total')), label: 'Greens in regulation', value: gir.value, unit: '%', digits: 0, delta: steady(gir) ? d(rate(curPaired, 'greens_hit', 'greens_total'), rate(prev, 'greens_hit', 'greens_total')) : null, se: steady(gir) ? rateSe('greens_hit', 'greens_total') : null, lowerIsBetter: false, context: gir.needs ?? (benchGir != null ? `Tour averages ${Math.round(benchGir)}%` : holeSample), ...(gir.needs ? { state: 'empty' as const } : {}), note: withEarly(gir.early), gauge: { kind: 'rate', ref: benchGir ?? null } },
     { key: 'putts', series: weekKeys.map((wk) => avgOf(inWeek(holeWindow, wk), puttsOf)), label: 'Putts per round', value: puttsPer, unit: '', digits: 1, delta: d(weightedMean(holePaired, puttsOf), weightedMean(holePrev, puttsOf)), se: seOf(puttsOf, holePaired, holePrev, null), lowerIsBetter: true, context: hasPrev ? previousWords(f.last) : holeSample, note: coverage, gauge: { kind: 'putts' } },
-    { key: 'scramble', series: weekKeys.map((wk) => rate(weekRows(wk), 'scrambles_converted', 'scramble_attempts')), label: 'Scrambling', value: scramble.value, unit: '%', digits: 0, delta: steady(scramble) ? d(rate(curPaired, 'scrambles_converted', 'scramble_attempts'), rate(prev, 'scrambles_converted', 'scramble_attempts')) : null, se: steady(scramble) ? rateSe('scrambles_converted', 'scramble_attempts') : null, lowerIsBetter: false, context: scramble.needs ?? (hasPrev ? previousWords(f.last) : holeSample), ...(scramble.needs ? { state: 'empty' as const } : {}), note: withEarly(scramble.early), gauge: { kind: 'rate', ref: hasPrev ? rate(prev, 'scrambles_converted', 'scramble_attempts') : null } },
+    { key: 'scramble', series: weekKeys.map((wk) => rate(weekRows(wk), 'scrambles_converted', 'scramble_attempts')), label: 'Scrambling', value: scramble.value, unit: '%', digits: 0, delta: scrambleDelta, se: scrambleSe, lowerIsBetter: false, context: scramble.needs ?? (hasPrev ? previousWords(f.last) : holeSample), ...(scramble.needs ? { state: 'empty' as const } : {}), note: withEarly(scramble.early), gauge: scrambleGauge },
     {
       key: 'birdies',
       series: weekKeys.map((wk) => avgOf(inWeek(holeWindow, wk), birdiesOf)),
