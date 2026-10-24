@@ -224,6 +224,9 @@ describe('Stats player · empty', () => {
     show(player({ rounds: [] }));
     await openTab(user, /Rounds/);
     await expectCode('CH-5302', /No rounds in this window/);
+    // A window with no rounds is a filtered empty: it says so and points at This season (2026-10-23, filtered empties).
+    const filtered = document.querySelector('[data-ch-code="CH-5302"][data-ch-state="filtered"]');
+    expect(filtered?.textContent).toMatch(/No rounds in this window.*Try This season to see every round posted since August\./);
   });
 
   it('CH-5303 CH-5304 no focus areas, no goals', async () => {
@@ -600,6 +603,8 @@ describe('Stats player · phone (v2, Coach - Stats - Mobile.html)', () => {
   it('CH-5302 no rounds in the window', () => {
     phone(player({ rounds: [] }));
     expect(code('CH-5302')).not.toBeNull();
+    expect(code('CH-5302')!.getAttribute('data-ch-state')).toBe('filtered');
+    expect(code('CH-5302')!.textContent).toMatch(/Try This season to see every round posted since August\./);
   });
 });
 

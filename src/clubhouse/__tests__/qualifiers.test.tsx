@@ -790,6 +790,8 @@ describe('Qualifiers · list', () => {
     expect(code('CH-09303')!.textContent).toMatch(/No concluded qualifiers yet/);
     await user.type(screen.getByLabelText('Search qualifiers'), 'zzz');
     await expectCode('CH-09302', /No qualifiers match your filters/);
+    // Filters that hide every qualifier are a filtered empty (2026-10-23, filtered empties).
+    expect(code('CH-09302')!.getAttribute('data-ch-state')).toBe('filtered');
     await user.click(screen.getByRole('button', { name: 'Clear filters' }));
     expect(code('CH-09302')).toBeNull();
     await user.click(screen.getByRole('button', { name: /Concluded/ }));
