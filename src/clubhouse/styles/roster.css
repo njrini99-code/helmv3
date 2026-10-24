@@ -1131,7 +1131,7 @@ a.ch-rs-peek__dev:focus-visible,
   }
   .ch-rs[aria-busy='true'],
   .ch-rs-none {
-    padding: 26px 20px 32px;
+    padding: var(--ch-page-top-phone) var(--ch-page-x-phone) var(--ch-page-bottom-phone);
   }
   .ch-rs-skel-desk {
     display: none;
@@ -1146,8 +1146,8 @@ a.ch-rs-peek__dev:focus-visible,
   .ch-rsm {
     display: flex;
     flex-direction: column;
-    gap: 16px;
-    padding: 26px 20px 32px;
+    gap: var(--ch-gap-section-phone-tight);
+    padding: var(--ch-page-top-phone) var(--ch-page-x-phone) var(--ch-page-bottom-phone);
   }
   .ch-rsm-page {
     display: flex;

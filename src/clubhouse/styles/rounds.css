@@ -1781,8 +1781,8 @@ a.ch-rd-sc:focus-visible {
    scorecard's grid, the search, the grouping control, the hole steps and the notices. */
 @media (max-width: 820px) {
   .ch-rd.is-phone {
-    gap: 28px;
-    padding: 14px 20px 110px;
+    gap: var(--ch-gap-section-phone);
+    padding: var(--ch-page-top-phone-docked) var(--ch-page-x-phone) var(--ch-page-bottom-phone-docked);
   }
   /* The eyebrow takes the page's whole width, as the intro's does; New round sits at the end of the title's line. */
   .ch-rd.is-phone > .ch-rd-h {
@@ -1964,8 +1964,8 @@ a.ch-rd-sc:focus-visible {
 
   /* A round's review. */
   .ch-rv.is-phone {
-    gap: 28px;
-    padding: 14px 20px 110px;
+    gap: var(--ch-gap-section-phone);
+    padding: var(--ch-page-top-phone-docked) var(--ch-page-x-phone) var(--ch-page-bottom-phone-docked);
   }
   .ch-rv.is-phone .ch-rv-hero {
     gap: 16px;
@@ -2110,8 +2110,8 @@ a.ch-rd-sc:focus-visible {
   }
   .ch-rd[data-ch-code='CH-11401'],
 .ch-rv[data-ch-code='CH-11406'] {
-    gap: 28px;
-    padding: 14px 20px 110px;
+    gap: var(--ch-gap-section-phone);
+    padding: var(--ch-page-top-phone-docked) var(--ch-page-x-phone) var(--ch-page-bottom-phone-docked);
   }
   /* At the loaded geometry (measured at 390): the intro is 84.5px (the eyebrow's 24px line box, the title 10px under it), New
      round sits at the end of the title's line, the card and season scoring stand 30px apart, a month opens 18px under the tools

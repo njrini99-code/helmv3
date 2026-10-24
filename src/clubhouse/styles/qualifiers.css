@@ -1389,8 +1389,8 @@
      feature card; every other section sits flush on the parchment under the double rule, its rows on seams. Real
      objects keep their material: the pills, the search, the status chips, the fields, the steps and the sheets. */
   .ch-qf {
-    gap: 16px;
-    padding: 26px 20px 32px;
+    gap: var(--ch-gap-section-phone-tight);
+    padding: var(--ch-page-top-phone) var(--ch-page-x-phone) var(--ch-page-bottom-phone);
   }
 
   /* 01 List: the desktop list, restyled. */
@@ -1695,8 +1695,8 @@
   .ch-qfm {
     display: flex;
     flex-direction: column;
-    gap: 22px;
-    padding: 26px 20px 32px;
+    gap: var(--ch-gap-section-phone-snug);
+    padding: var(--ch-page-top-phone) var(--ch-page-x-phone) var(--ch-page-bottom-phone);
   }
   .ch-qfm-head {
     display: flex;

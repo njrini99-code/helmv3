@@ -7,7 +7,7 @@
   max-width: calc(208px + 48px + 640px + 2 * var(--ch-page-gutter));
   margin: 0 auto;
   /* No eyebrow line over the title: its 24px is added to the head's top (tokens.css). */
-  padding: calc(var(--ch-page-head-top) + 24px) var(--ch-page-gutter) 96px;
+  padding: var(--ch-page-top-no-eyebrow) var(--ch-page-gutter) var(--ch-page-bottom-tall);
 }
 .ch-set-head {
   display: flex;
@@ -767,7 +767,7 @@
   /* The skeleton's page has the live page's padding, and draws its list in the live page's classes, so nothing moves
      when the list arrives. */
   .ch-set[aria-busy='true'] {
-    padding: 26px 20px 32px;
+    padding: var(--ch-page-top-phone) var(--ch-page-x-phone) var(--ch-page-bottom-phone);
   }
   .ch-set-skel-desk {
     display: none;
@@ -789,7 +789,7 @@
     box-sizing: border-box;
     /* A pushed section travels in from the right edge (CH-8609); the page never scrolls sideways while it does. */
     overflow-x: clip;
-    padding: 26px 20px 32px;
+    padding: var(--ch-page-top-phone) var(--ch-page-x-phone) var(--ch-page-bottom-phone);
     font-variant-numeric: tabular-nums;
   }
   /* The page (the Mobile clubhouse pass, owner 2026-10-08): the board's 36px between sections. */

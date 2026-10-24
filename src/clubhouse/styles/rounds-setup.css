@@ -4,10 +4,10 @@
   container-name: chrs;
   display: flex;
   flex-direction: column;
-  gap: 18px;
+  gap: var(--ch-gap-grid);
   max-width: 1200px;
   margin: 0 auto;
-  padding: 28px 40px 24px;
+  padding: var(--ch-page-top-setup) var(--ch-page-gutter-fixed) var(--ch-page-bottom-setup);
   color: var(--ch-text-primary);
 }
 .ch-rsu-k {

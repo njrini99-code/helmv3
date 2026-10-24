@@ -3,11 +3,11 @@
 .ch-st {
   display: flex;
   flex-direction: column;
-  gap: 28px;
+  gap: var(--ch-gap-section);
   max-width: 1240px;
   margin: 0 auto;
   /* The eyebrow line sits 2px lower than the page head's (tokens.css), so the top gives it back. */
-  padding: calc(var(--ch-page-head-top) - 2px) var(--ch-page-gutter) 80px;
+  padding: var(--ch-page-top-eyebrow-low-2) var(--ch-page-gutter) var(--ch-page-bottom);
   transition: opacity var(--ch-dur-quick) var(--ch-ease);
 }
 .ch-st-panel {

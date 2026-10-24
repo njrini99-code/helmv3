@@ -4,10 +4,10 @@
   container-name: chhl;
   display: flex;
   flex-direction: column;
-  gap: 28px;
+  gap: var(--ch-gap-section);
   max-width: 1180px;
   margin: 0 auto;
-  padding: 36px var(--ch-page-gutter) 80px;
+  padding: var(--ch-page-top-coachhelm) var(--ch-page-gutter) var(--ch-page-bottom);
   color: var(--ch-text-primary);
 }
 .ch-hl.is-phone {
@@ -44,7 +44,7 @@
 }
 /* The role line is 4px shorter than the page head's eyebrow (tokens.css), so the top adds it. */
 .ch-hl[data-canopy] {
-  padding-top: calc(var(--ch-page-head-top) + 4px);
+  padding-top: var(--ch-page-top-eyebrow-short-4);
 }
 .ch-hl[data-canopy] > .ch-hl-h {
   padding-top: 6px;
@@ -1159,8 +1159,8 @@
    material: the view switch, the player chips, the bars and the gauge, the pills, the buttons and the notices. */
 @media (max-width: 820px) {
   .ch-hl.is-phone {
-    gap: 28px;
-    padding: 14px 20px 110px;
+    gap: var(--ch-gap-section-phone);
+    padding: var(--ch-page-top-phone-docked) var(--ch-page-x-phone) var(--ch-page-bottom-phone-docked);
   }
   .ch-hl.is-phone > .ch-hl-h {
     display: flex;

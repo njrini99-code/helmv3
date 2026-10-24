@@ -32,11 +32,11 @@
   container-name: chcl;
   display: flex;
   flex-direction: column;
-  gap: 18px;
+  gap: var(--ch-gap-grid);
   max-width: 1240px;
   margin: 0 auto;
   /* The term line is 2px shorter than the page head's eyebrow (tokens.css), so the top adds it. */
-  padding: calc(var(--ch-page-head-top) + 2px) var(--ch-page-gutter) 80px;
+  padding: var(--ch-page-top-eyebrow-short-2) var(--ch-page-gutter) var(--ch-page-bottom);
   color: var(--ch-text-primary);
 }
 .ch-cl.is-phone {
@@ -1439,8 +1439,8 @@
    keys, the day keys, the flags, the buttons and the notices. */
 @media (max-width: 820px) {
   .ch-cl.is-phone {
-    gap: 28px;
-    padding: 14px 20px 110px;
+    gap: var(--ch-gap-section-phone);
+    padding: var(--ch-page-top-phone-docked) var(--ch-page-x-phone) var(--ch-page-bottom-phone-docked);
   }
   .ch-cl.is-phone > .ch-cl-h {
     gap: 14px;
@@ -1690,7 +1690,7 @@
      bar stays the page's one visible heading, as on the classes themselves (the iPhone brief); the title still names the
      page for a screen reader. */
   .ch-cl.is-noteam {
-    padding: 14px 20px 110px;
+    padding: var(--ch-page-top-phone-docked) var(--ch-page-x-phone) var(--ch-page-bottom-phone-docked);
   }
   .ch-cl.is-noteam > .ch-cl-h {
     position: absolute;
@@ -1709,8 +1709,8 @@
     display: contents;
   }
   .ch-cl[data-ch-code='CH-12401'] {
-    gap: 28px;
-    padding: 14px 20px 110px;
+    gap: var(--ch-gap-section-phone);
+    padding: var(--ch-page-top-phone-docked) var(--ch-page-x-phone) var(--ch-page-bottom-phone-docked);
   }
   /* At the loaded geometry (measured at 390): the head is 91px (the term line's 24px box, 14px, the 36px actions), each
      section's head 37.8px with its rows 4px under it on their seams, the overlaps' head two lines (59px) 14px over its rows,

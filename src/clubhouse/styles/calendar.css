@@ -3,11 +3,11 @@
 .ch-cal {
   display: flex;
   flex-direction: column;
-  gap: 18px;
+  gap: var(--ch-gap-grid);
   max-width: 1360px;
   margin: 0 auto;
   /* No eyebrow line over the week's title: its 24px is added to the head's top (tokens.css). */
-  padding: calc(var(--ch-page-head-top) + 24px) var(--ch-page-gutter) 64px;
+  padding: var(--ch-page-top-no-eyebrow) var(--ch-page-gutter) var(--ch-page-bottom-short);
   transition: opacity var(--ch-dur-quick) var(--ch-ease);
 }
 .ch-cal[aria-busy='true'] {
@@ -2192,7 +2192,7 @@
     visibility: hidden;
   }
   .ch-cal--page {
-    padding: 26px 20px 32px;
+    padding: var(--ch-page-top-phone) var(--ch-page-x-phone) var(--ch-page-bottom-phone);
   }
   /* The bar carries the title on the phone, so the framed head over a whole-page empty isn't drawn. */
   .ch-cal--page > .ch-cal-mast {
@@ -2201,8 +2201,8 @@
   .ch-calm {
     display: flex;
     flex-direction: column;
-    gap: 22px;
-    padding: 26px 20px 32px;
+    gap: var(--ch-gap-section-phone-snug);
+    padding: var(--ch-page-top-phone) var(--ch-page-x-phone) var(--ch-page-bottom-phone);
   }
   /* The view's swap (CH-6604) and the day's (CH-6606) stack their parts on the page's own rhythm. */
   .ch-calm > .ch-swap > .ch-swap__item > .ch-swap__body,
@@ -2213,7 +2213,7 @@
   /* The route skeleton on a phone: its own shape, the desktop's bars out of the way. Only the skeleton: the live page
      is aria-busy while a step or a retry is on its way, and must keep its week on screen (PAGE_PERFORMANCE.md rule 4). */
   .ch-cal--skel {
-    padding: 26px 20px 32px;
+    padding: var(--ch-page-top-phone) var(--ch-page-x-phone) var(--ch-page-bottom-phone);
   }
   .ch-cal--skel > :not(.ch-calm-skel) {
     display: none;

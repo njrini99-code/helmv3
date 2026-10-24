@@ -344,6 +344,39 @@
      page whose head has no eyebrow line, or a shorter one, adds that room to this top so its title lands level. */
   --ch-page-gutter: var(--ch-gutter);
   --ch-page-head-top: 34px;
+  /* CONS-34: page spacing per meaning. A page root (the list in __tests__/page-spacing.test.ts) takes its padding and
+     gap only from --ch-page-* and --ch-gap-*. Every value here is the one its roots used before (R7 section 13); where
+     two roots differ for one meaning there are two tokens, held at today's values until the owner settles them (OQ-63),
+     so collapsing them is a one-place edit. */
+  /* Desktop tops: the head top plus the room a shorter or missing eyebrow line leaves (see above). */
+  --ch-page-top-no-eyebrow: calc(var(--ch-page-head-top) + 24px); /* Calendar, Settings */
+  --ch-page-top-eyebrow-short-2: calc(var(--ch-page-head-top) + 2px); /* Classes' term line */
+  --ch-page-top-eyebrow-short-4: calc(var(--ch-page-head-top) + 4px); /* CoachHelm's role line, Home's date line */
+  --ch-page-top-eyebrow-low-2: calc(var(--ch-page-head-top) - 2px); /* Stats' eyebrow sits 2px lower */
+  --ch-page-top-coachhelm: 36px;
+  --ch-page-top-home: 52px;
+  --ch-page-top-home-desk: 40px;
+  --ch-page-top-setup: 28px;
+  /* Round recovery and setup keep 40px on the tablet tier, where --ch-page-gutter goes to 28px (shell.css). */
+  --ch-page-gutter-fixed: 40px;
+  --ch-page-bottom: 80px;
+  --ch-page-bottom-short: 64px; /* Calendar */
+  --ch-page-bottom-tall: 96px; /* Settings, Home */
+  --ch-page-bottom-setup: 24px;
+  /* Desktop gaps: cards in a grid, and sections down a page. */
+  --ch-gap-grid: 18px;
+  --ch-gap-section: 28px;
+  /* Phone page roots (max-width 820px). Docked: a page with a bar docked at its foot clears it at the bottom. */
+  --ch-page-x-phone: var(--ch-space-5);
+  --ch-page-top-phone: 26px;
+  --ch-page-bottom-phone: var(--ch-space-8);
+  --ch-page-top-phone-docked: 14px;
+  --ch-page-bottom-phone-docked: 110px;
+  /* Phone gaps between a page's sections (28 on the docked pages, 22 and 16 elsewhere), and within a group. */
+  --ch-gap-section-phone: 28px;
+  --ch-gap-section-phone-snug: 22px;
+  --ch-gap-section-phone-tight: var(--ch-space-4);
+  --ch-gap-group: var(--ch-space-3);
   --ch-sidebar-w: 240px;
   /* The sidebar folded to its icon rail (RailToggle): the rows' 16px icons, 20px in from the edge, stay where they are. */
   --ch-rail-w: 56px;

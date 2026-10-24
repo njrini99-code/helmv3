@@ -5,7 +5,7 @@
   flex-direction: column;
   max-width: 1120px;
   margin: 0 auto;
-  padding: 52px var(--ch-page-gutter) 96px;
+  padding: var(--ch-page-top-home) var(--ch-page-gutter) var(--ch-page-bottom-tall);
 }
 .ch-h-head {
   display: flex;
@@ -41,7 +41,7 @@
 /* Desktop Home opens on the canopy (shell.css, main[data-canopy]): the date, greeting and brief in ivory on the green
    field, the actions set level with the brief at the right. No box: the green fades into the page under the week. */
 .ch-h-main--desk {
-  padding-top: 40px;
+  padding-top: var(--ch-page-top-home-desk);
 }
 .ch-h-main--desk > .ch-h-head {
   display: grid;
@@ -79,7 +79,7 @@
 /* The canopy rises from under the top bar: the page's top padding is part of the green. The date line is 4px shorter
    than the page head's eyebrow (tokens.css), so the top adds it. */
 .ch-h-main--desk[data-canopy] {
-  padding-top: calc(var(--ch-page-head-top) + 4px);
+  padding-top: var(--ch-page-top-eyebrow-short-4);
 }
 .ch-h-main--desk[data-canopy] > .ch-h-head {
   padding-top: 4px;
@@ -2481,7 +2481,7 @@
    load (WebKit 1440, 2026-10-07: 183px with the sans greeting, the two-line brief and the actions). */
 @media (min-width: 821px) {
   .ch-h-main[aria-busy='true'][data-canopy] {
-    padding-top: calc(var(--ch-page-head-top) + 4px);
+    padding-top: var(--ch-page-top-eyebrow-short-4);
   }
   .ch-h-main[aria-busy='true'][data-canopy] > .ch-h-head {
     box-sizing: border-box;
@@ -3392,7 +3392,7 @@
    rules run the page's width, and the date and the greeting sit where the loaded Home sets them. */
 @media (min-width: 821px) {
   .ch-h-main--first[data-canopy] {
-    padding-top: calc(var(--ch-page-head-top) + 4px);
+    padding-top: var(--ch-page-top-eyebrow-short-4);
   }
   .ch-h-main--first[data-canopy] > .ch-h-head {
     gap: 4px;

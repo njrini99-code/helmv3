@@ -2,10 +2,10 @@
 .ch-rcv {
   display: flex;
   flex-direction: column;
-  gap: 18px;
+  gap: var(--ch-gap-grid);
   max-width: 760px;
   margin: 0 auto;
-  padding: 34px 40px 80px;
+  padding: var(--ch-page-head-top) var(--ch-page-gutter-fixed) var(--ch-page-bottom);
   color: var(--ch-text-primary);
 }
 .ch-rcv.is-phone {

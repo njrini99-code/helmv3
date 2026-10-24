@@ -801,7 +801,7 @@
   }
   .ch-rec[aria-busy='true'],
   .ch-rec-none {
-    padding: 26px 20px 32px;
+    padding: var(--ch-page-top-phone) var(--ch-page-x-phone) var(--ch-page-bottom-phone);
   }
   .ch-rec-skel-desk {
     display: none;
@@ -844,8 +844,8 @@
   .ch-recm {
     display: flex;
     flex-direction: column;
-    gap: 12px;
-    padding: 26px 20px 32px;
+    gap: var(--ch-gap-group);
+    padding: var(--ch-page-top-phone) var(--ch-page-x-phone) var(--ch-page-bottom-phone);
   }
   .ch-recm-page {
     display: flex;
