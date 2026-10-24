@@ -12,7 +12,7 @@ import { LinkPending } from './LinkPending';
 import { CH_PHONE_TABS, isRebuilt, type ChRole } from './nav';
 import { usePhoneChromeState } from './phone-chrome';
 import { useSectionSwitch } from './section-switch';
-import { usePrefetchTabs } from './use-prefetch-tabs';
+import { useIdleRowsAhead, usePrefetchTabs } from './use-prefetch-tabs';
 
 /**
  * The section strip (CH-1808, docs/clubhouse/phone/section-strip.md): every section as a pill in one row that slides
@@ -44,6 +44,8 @@ export function SectionStrip({ pathname, role, user }: { pathname: string; role:
     pathname,
     rebuiltSections.map((s) => s.href),
   );
+  // And the first few rows on each page, while it is idle (row 13).
+  useIdleRowsAhead(pathname);
 
   /** The current pill in the middle of the row, so it is under the finger that opened it. */
   const centre = useCallback(() => {

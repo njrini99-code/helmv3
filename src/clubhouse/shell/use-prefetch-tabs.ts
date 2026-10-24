@@ -249,12 +249,65 @@ export function prefetchOnPress(router: Router, href: string, now: number): void
   fetchAhead(router, href, now);
 }
 
-/** `onPointerDown` for a row link that pushes `href`: fetches the page ahead as the press starts (A13). */
-export function usePressPrefetch(): (href: string | null | undefined) => { onPointerDown?: () => void } {
+/**
+ * `onPointerDown` for a row link that pushes `href`: fetches the page ahead as the press starts (A13). The row is also
+ * marked `data-ch-ahead`, so the first few on screen are fetched while the page is idle (useIdleRowsAhead, row 13).
+ */
+export function usePressPrefetch(): (href: string | null | undefined) => { onPointerDown?: () => void; 'data-ch-ahead'?: string } {
   // Outside the app router (a preview harness, a test rendering one row) there is nothing to fetch with: rows stay plain.
   // The context, not useRouter, which throws there.
   const router = useContext(AppRouterContext) as Router | null;
-  return (href) => (href && router ? { onPointerDown: () => prefetchOnPress(router, href, Date.now()) } : {});
+  return (href) => (href && router ? { onPointerDown: () => prefetchOnPress(router, href, Date.now()), 'data-ch-ahead': href } : {});
+}
+
+/** How many of a page's push rows on screen are fetched ahead while it is idle. */
+export const CH_ROWS_AHEAD = 3;
+/** How many idle looks a page gets for its rows (a list that streams in after its skeleton is not there at the first). */
+const ROWS_AHEAD_LOOKS = 3;
+
+/**
+ * The first few push rows on screen (those `usePressPrefetch` marks), fetched whole once a page has settled and the
+ * thread is idle (A13 extension, row 13), so the row a reader is about to open is likely there already instead of its
+ * skeleton. Once per page: the top `CH_ROWS_AHEAD` rows that are on screen, in reading order; a scroll later leaves the
+ * rest to the press. The press's guards hold: nothing on Data Saver or offline, nothing Next holds fresh (`held`, and a
+ * held page past `CH_TAB_FRESH_MS` is fetched again, as `needsRefresh` would bring it up to date), never CoachHelm
+ * (CH-R1). Mounted once by the shell.
+ */
+export function useIdleRowsAhead(pathname: string): void {
+  const router = useContext(AppRouterContext) as Router | null;
+  useEffect(() => {
+    if (!router || typeof IntersectionObserver === 'undefined') return;
+    let io: IntersectionObserver | null = null;
+    let looks = 0;
+    let cancel = () => {};
+    const look = () => {
+      cancel = whenIdle(() => {
+        if (!prefetchAllowed(typeof navigator === 'undefined' ? undefined : navigator)) return;
+        const rows = [...document.querySelectorAll<HTMLElement>('[data-ch-ahead]')];
+        if (!rows.length) {
+          if (++looks < ROWS_AHEAD_LOOKS) look();
+          return;
+        }
+        io = new IntersectionObserver((entries) => {
+          io?.disconnect();
+          const seen = entries
+            .filter((e) => e.isIntersecting)
+            .sort((a, b) => a.boundingClientRect.top - b.boundingClientRect.top || a.boundingClientRect.left - b.boundingClientRect.left)
+            .map((e) => e.target.getAttribute('data-ch-ahead'))
+            .filter((href, i, all): href is string => !!href && all.indexOf(href) === i)
+            .slice(0, CH_ROWS_AHEAD);
+          const now = Date.now();
+          for (const href of seen) prefetchOnPress(router, href, now);
+        });
+        for (const row of rows) io.observe(row);
+      });
+    };
+    look();
+    return () => {
+      cancel();
+      io?.disconnect();
+    };
+  }, [pathname, router]);
 }
 
 /**
