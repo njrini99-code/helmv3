@@ -31,6 +31,32 @@ import { checkScreenshotLog } from './shots.mjs';
 import { checkLinks } from './links.mjs';
 
 const RED_TOKENS = /var\(--ch-(score-under|chart-flag|danger-600)\)/;
+/**
+ * CONS-20: a gain or loss tone (`.is-gain`, `.is-loss`) paints only with the chart's gain and loss tokens: the ink
+ * (--ch-chart-gain, --ch-chart-loss) and its family (-fill for bars and marks, -tint under a chip, -on-tint), so one
+ * pair of colours says better and worse everywhere. A surface where they would not read (a green stage) redefines the
+ * pair on itself rather than reaching for another colour. Neutral keywords and the ink on a filled key pass.
+ */
+const TONE_SELECTOR = /\.is-(gain|loss)\b/;
+const TONE_PROPS = /^(color|background(-color|-image)?|fill|stroke|border(-[a-z]+)?(-color)?|outline(-color)?|text-decoration-color|-webkit-text-fill-color|--[a-z0-9-]+)$/;
+const TONE_VARS = /^--ch-(chart-(gain|loss)(-[a-z-]+)?|text-on-accent)$/;
+const LITERAL_COLOUR = /#[0-9a-fA-F]{3,8}\b|\b(rgba?|hsla?|oklch|oklab|lab|lch)\(/;
+
+/** The colour declarations of a gain or loss rule that reach outside the gain and loss tokens. */
+export function offToneDeclarations(selector, body) {
+  if (!TONE_SELECTOR.test(selector.replace(/:not\([^()]*(\([^()]*\)[^()]*)*\)/g, ''))) return [];
+  const out = [];
+  for (const decl of body.split(';')) {
+    const i = decl.indexOf(':');
+    if (i < 0) continue;
+    const prop = decl.slice(0, i).trim();
+    const value = decl.slice(i + 1).trim();
+    if (!TONE_PROPS.test(prop)) continue;
+    const vars = [...value.matchAll(/var\((--[a-z0-9-]+)/g)].map((m) => m[1]);
+    if (LITERAL_COLOUR.test(value) || vars.some((v) => !TONE_VARS.test(v))) out.push(`${prop}: ${value}`);
+  }
+  return out;
+}
 const RED_ALLOWED_CONTEXT = /under|birdie|eagle|flag|danger|error|invalid/i;
 /** v2 motion (D-64): press, quick, base, release, reveal, in seconds. */
 const ALLOWED_DURATIONS_S = new Set(['0', '0.11', '.11', '0.18', '.18', '0.26', '.26', '0.28', '.28', '0.52', '.52']);
@@ -160,6 +186,9 @@ export function checkSource(file, raw) {
       }
       if (RED_TOKENS.test(body) && !RED_ALLOWED_CONTEXT.test(selector)) {
         add(m.index, `red token outside an under-par/flag/danger context in "${selector}"`);
+      }
+      for (const d of offToneDeclarations(selector, body)) {
+        add(m.index, `a gain or loss tone paints outside --ch-chart-gain/--ch-chart-loss (CONS-20): "${d}" in "${selector}"`);
       }
     }
   } else {

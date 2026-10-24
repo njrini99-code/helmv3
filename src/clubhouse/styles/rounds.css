@@ -3033,10 +3033,10 @@ html[data-fw-theme='dark'] .ch-rv .ch-rv-yn.is-y {
   color: rgb(244 241 232 / 0.86);
 }
 .ch-rv .ch-znbig.is-gain {
-  color: var(--ch-green-600);
+  color: var(--ch-chart-gain);
 }
 .ch-rv .ch-znbig.is-loss {
-  color: var(--ch-warning-600);
+  color: var(--ch-chart-loss);
 }
 .ch-rv .ch-rzsvg {
   display: block;
@@ -3529,13 +3529,6 @@ html[data-fw-theme='dark'] .ch-rv .ch-rv-yn.is-y {
 }
 
 /* the bands */
-.ch-rv .ch-znbig.is-gain {
-  background-image: linear-gradient(180deg, var(--ch-green-500), var(--ch-green-800));
-}
-.ch-rv .ch-znbig.is-loss {
-  background-image: linear-gradient(180deg, #c58a2c, #7a4a08);
-}
-
 /* strokes gained: thicker, filled with a gradient and a soft glow */
 .ch-rv .ch-zn .ch-rv-sg__bar {
   height: 16px;
@@ -3549,11 +3542,11 @@ html[data-fw-theme='dark'] .ch-rv .ch-rv-yn.is-y {
   background: var(--ch-champagne-500);
 }
 .ch-rv .ch-zn .ch-rv-sg__v.is-gain {
-  background: linear-gradient(90deg, var(--ch-green-400), var(--ch-green-700));
+  background: var(--ch-chart-gain-fill);
   box-shadow: var(--ch-elevation-mark);
 }
 .ch-rv .ch-zn .ch-rv-sg__v.is-loss {
-  background: linear-gradient(270deg, #d9a54a, #94600e);
+  background: var(--ch-chart-loss-fill);
   box-shadow: var(--ch-elevation-mark-warn);
 }
 .ch-rv .ch-zn .ch-rv-dist__t i {

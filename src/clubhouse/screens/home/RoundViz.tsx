@@ -21,12 +21,15 @@ export function GirViz({ gir }: { gir: string | null }) {
   );
 }
 
-/** Putts on a track to 40, ticked at 36 (two putts on every green). */
+/**
+ * Putts on a track to 40, ticked at 36 (two putts on every green). At or under the tick is the good side, over it the
+ * other; the tone is the vocabulary's (CONS-20: is-gain or is-loss). Whether exactly 36 is even waits on the owner.
+ */
 export function PuttsViz({ putts }: { putts: number | null }) {
   if (putts == null) return null;
   return (
     <span className="ch-rviz ch-rviz--putts" aria-hidden="true">
-      <i className={putts <= 36 ? 'is-gain' : 'is-over'} style={{ width: `${Math.min(100, (putts / 40) * 100)}%` }} />
+      <i className={putts <= 36 ? 'is-gain' : 'is-loss'} style={{ width: `${Math.min(100, (putts / 40) * 100)}%` }} />
       <b style={{ left: '90%' }} />
     </span>
   );

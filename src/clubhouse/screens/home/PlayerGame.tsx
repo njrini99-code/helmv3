@@ -64,7 +64,9 @@ function Scoring({ data, phone, covered }: { data: ChPlayerHome; phone: boolean;
       mean != null && prevMean != null ? (
         <span className="ch-ph-viz ch-ph-viz--avg" aria-hidden="true">
           <i className="is-was" style={{ left: `${at(prevMean)}%` }} />
-          <i className={'is-now ' + (mean <= prevMean ? 'is-gain' : 'is-loss')} style={{ left: `${at(mean)}%` }} />
+          {/* The mark takes the row's own verdict (deltaSignal): toned only when the change clears its standard error, so
+              equal or noisy averages draw a neutral mark beside "No clear change" (CONS-20). */}
+          <i className={('is-now ' + deltaSignal).trim()} style={{ left: `${at(mean)}%` }} />
           <b style={{ left: `${Math.min(at(mean), at(prevMean))}%`, width: `${Math.abs(at(mean) - at(prevMean))}%` }} />
         </span>
       ) : null,

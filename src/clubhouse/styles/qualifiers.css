@@ -2419,11 +2419,11 @@
 .ch-scoreboard .ch-qf-pos__n {
   color: var(--ch-on-green-ink);
 }
-.ch-scoreboard .ch-qf-move.is-gain {
-  color: var(--ch-hero-mint);
-}
-.ch-scoreboard .ch-qf-move.is-loss {
-  color: var(--ch-on-green-ink-soft);
+/* The gain and loss pair on the green board (CONS-20): mint for a climb, the board's soft ink for a drop. Set on the mark,
+   since .ch-scoreboard also frames Home's cards; .ch-qf-move.is-gain and .is-loss above paint with it. */
+.ch-scoreboard .ch-qf-move {
+  --ch-chart-gain: var(--ch-hero-mint);
+  --ch-chart-loss: var(--ch-on-green-ink-soft);
 }
 
 /* P009-C2: the sample-size note ("1 of 3 rounds") beside a thin total. */
