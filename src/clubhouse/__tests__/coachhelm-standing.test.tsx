@@ -17,11 +17,12 @@ const logServer = vi.hoisted(() => vi.fn());
 vi.mock('../lib/track-server', () => ({ chLogServer: logServer }));
 const tables = vi.hoisted(() => ({ current: {} as import('./supabase-fake').ChFakeTables }));
 vi.mock('@/lib/supabase/server', async () => (await import('./supabase-fake')).fakeServer(tables));
-const standingRead = vi.hoisted(() => ({ load: vi.fn() }));
+const standingRead = vi.hoisted(() => ({ season: vi.fn(async (_playerId?: string): Promise<{ status: string; rows?: unknown }> => ({ status: 'missing' })), load: vi.fn() }));
 // The ladder's reads are the Deep dive's own feed (`getInsightsForPlayer`, ranking, feedback, folding and limit included); here it answers what the destination delivers.
 const feed = vi.hoisted(() => ({ read: vi.fn() }));
 vi.mock('@/app/golf/actions/insight-delivery', () => ({ getInsightsForPlayer: feed.read, getTopInsightsForPlayers: vi.fn(), getThemesForPlayer: vi.fn() }));
-vi.mock('@/lib/coachhelm/v3/standing/loader', () => ({ loadPlayerStandingMap: standingRead.load }));
+// The season table (held migration 20261024151000) answers `missing` unless a test says otherwise, so the page reads the lifetime map.
+vi.mock('@/lib/coachhelm/v3/standing/loader', () => ({ loadPlayerStandingMap: standingRead.load, loadPlayerSeasonStandingMap: standingRead.season }));
 // The cohort lookup the loader reads beside the standing (CH-13272) goes to the service client; here it answers, and its failure is in coachhelm-failed-reads.test.
 vi.mock('@/lib/coachhelm/v3/counterfactual/player-cohort-loader', () => ({ loadPlayerCohort: vi.fn(async () => ({ gender: 'mens', level: null })) }));
 
@@ -302,6 +303,45 @@ describe('the loader reads the signed-in player’s own standing, and says when 
     expect(out.data.counts.measures).toBe(20);
   });
 
+  it('this season first (owner decision 9): the season rows, with their counts, and the lifetime map is not read', async () => {
+    const season = rows('pl-jonah').map((r) => ({ ...r, rounds_n: r.metric_id.startsWith('sg_') ? 11 : 13, season_start: '2026-08-01' }));
+    standingRead.season.mockResolvedValueOnce({ status: 'ok', rows: map(season) });
+    const out = await loadPlayerStanding({ playerId: 'pl-jonah' });
+    expect(standingRead.season).toHaveBeenLastCalledWith('pl-jonah');
+    expect(standingRead.load).not.toHaveBeenCalled();
+    expect(out.status).toBe('ready');
+    if (out.status !== 'ready') return;
+    expect(out.data.window).toEqual({ kind: 'season', label: 'This season', since: 'Aug 1' });
+    expect(out.data.rounds).toBe(13);
+    expect(out.data.groups.flatMap((g) => g.rows).find((r) => r.id === 'gir_pct')!.rounds).toBe(13);
+  });
+
+  it('while the season table is not deployed, the lifetime map, labelled "All time" and with no row counts', async () => {
+    standingRead.load.mockResolvedValue(map(rows('pl-jonah')));
+    const out = await loadPlayerStanding({ playerId: 'pl-jonah' });
+    expect(out.status).toBe('ready');
+    if (out.status !== 'ready') return;
+    expect(out.data.window.kind).toBe('all_time');
+    expect(out.data.rounds).toBe(14);
+    expect(out.data.groups.flatMap((g) => g.rows).every((r) => r.rounds === null)).toBe(true);
+  });
+
+  it('a season read that throws is the failed state, logged, and is not papered over with the lifetime map', async () => {
+    standingRead.season.mockRejectedValueOnce(new Error('connection reset'));
+    standingRead.load.mockResolvedValue(map(rows('pl-jonah')));
+    const out = await loadPlayerStanding({ playerId: 'pl-jonah' });
+    expect(out.status).toBe('failed');
+    expect(standingRead.load).not.toHaveBeenCalled();
+    expect(logServer).toHaveBeenCalledWith('coachhelm', 'standing.map', expect.any(Error), 'coachhelm');
+  });
+
+  it('a season row that is anyone else’s is never drawn either', async () => {
+    const theirs = rows('pl-other').map((r) => ({ ...r, rounds_n: 9, season_start: '2026-08-01' }));
+    standingRead.season.mockResolvedValueOnce({ status: 'ok', rows: map(theirs) });
+    const out = await loadPlayerStanding({ playerId: 'pl-jonah' });
+    expect(out.status === 'ready' && out.data.state).toBe('empty');
+  });
+
   it('a row that is anyone else’s is never drawn, whatever the standing loader returned', async () => {
     standingRead.load.mockResolvedValue(map([...rows('pl-jonah').slice(0, 2), { ...rows('pl-someone-else')[2]! }]));
     const out = await loadPlayerStanding({ playerId: 'pl-jonah' });
@@ -494,7 +534,8 @@ describe('the Standing screen', () => {
     // The design call: "Most to gain" drew the hero's gap a second time; it is gone, and the hero carries no number of its own.
     expect(screen.queryByText('Most to gain')).toBeNull();
     expect(hero.querySelector('h2')!.textContent).not.toMatch(/\d/);
-    expect(screen.getByText('14 rounds · Scoring average 77.2 · Refreshed Sep 29').textContent).toBe('14 rounds\u00a0· Scoring average 77.2\u00a0· Refreshed Sep\u00a029');
+    // The window comes first (owner decision 9), and a lifetime scoring average is never stated under "This season".
+    expect(screen.getByText('This season from Aug 1 · 14 rounds · Refreshed Sep 29').textContent).toBe('This season from Aug\u00a01\u00a0· 14 rounds\u00a0· Refreshed Sep\u00a029');
   });
 
   it('each row: the stat, how they stand in words and in colour-free text, the three figures with their keys, and what closing it is worth', () => {
@@ -507,6 +548,17 @@ describe('the Standing screen', () => {
     expect(within(figures).getByText('Tour').nextElementSibling!.textContent).toBe('88%');
     expect(within(figures).getByText('Team').nextElementSibling!.textContent).toBe('66%');
     expect(li.querySelector('.ch-hs-proj')!.textContent).toMatch(/^About 0\.6 strokes a round if it matched the Tour: your scoring average 77\.2 to 76\.6, typically in about \d+ weeks?\. The projection is capped, so it is a ceiling, not a forecast\.$/);
+  });
+
+  it('each season row says how many rounds it stands on; the lifetime rows say nothing, and only they name the scoring average', () => {
+    show();
+    const gir = screen.getByRole('heading', { name: 'Greens in regulation' }).closest('li')!;
+    expect(gir.querySelector('.ch-hs-n')!.textContent).toBe('14 rounds');
+    cleanup();
+    show(standingLoad(toChStanding(STANDING_ROWS, ok)));
+    const life = screen.getByRole('heading', { name: 'Greens in regulation' }).closest('li')!;
+    expect(life.querySelector('.ch-hs-n')).toBeNull();
+    expect(screen.getByText('All time · 14 rounds · Scoring average 77.2 · Refreshed Sep 29')).toBeTruthy();
   });
 
   it('the track is decoration, hidden from assistive tech: every number is in the text beside it', () => {
@@ -536,7 +588,7 @@ describe('the Standing screen', () => {
     expect(code('CH-13371')!.textContent).toBe('3 rounds so far, so this is an early read. Projections start at 5 rounds.');
     expect(document.querySelector('.ch-hs-proj')).toBeNull();
     expect(screen.queryByText('Most to gain')).toBeNull();
-    expect(screen.getByText('3 rounds · Refreshed Sep 29').textContent).toBe('3 rounds\u00a0· Refreshed Sep\u00a029');
+    expect(screen.getByText('All time · 3 rounds · Refreshed Sep 29').textContent).toBe('All time\u00a0· 3 rounds\u00a0· Refreshed Sep\u00a029');
   });
 
   it('CH-13371 the early notice names the team floor only where a row is short of teammates', () => {
