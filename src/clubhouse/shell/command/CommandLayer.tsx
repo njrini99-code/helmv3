@@ -7,7 +7,7 @@ import { chTrail } from '../../lib/track';
 import { CH_SETTINGS_ITEM, type ChRole } from '../nav';
 import type { ChPerson, ChRecent } from './commands';
 import { getPalettePeople } from '../../data/palette-people';
-import { seedPeople, setPeopleScope, usePeople } from './people';
+import { clearPeople, seedPeople, setPeopleScope, usePeople } from './people';
 import { CH_PALETTE_EVENT, useCommandDesktop } from './palette-open';
 import { Palette } from './Palette';
 import { noteVisit, readRecent } from './recent';
@@ -20,7 +20,7 @@ import { interpretKey, isApple, isInOverlay, isTypingTarget, itemForDigit, itemF
  * section, `/` focuses the page's search field and `?` shows the shortcuts. Nothing is listened for on a phone.
  *
  * It also remembers the sections the person has been in (the palette's Recent) and hands the roster a place to publish
- * the players it has already loaded (people.ts). Its keys never fire while typing in a field or inside a dialog, a
+ * the players it has already loaded (people.ts), which it empties when it unmounts (sign-out, the idle timeout). Its keys never fire while typing in a field or inside a dialog, a
  * menu or a list (shortcuts.ts); the sidebar's Cmd or Ctrl \ and Home's N keep their own handlers.
  */
 export function CommandLayer({
@@ -65,6 +65,16 @@ export function CommandLayer({
     setPeopleScope(peopleScope);
     seededFor.current = null;
   }, [peopleScope]);
+  // Leaving the signed-in frame drops the names, and any reply still on its way. Sign-out ends in a page load, which
+  // empties memory anyway; the idle timeout's sign-out (useSessionActivity) goes to login as a client navigation, which
+  // would otherwise keep the list in memory until the next sign-in.
+  useEffect(
+    () => () => {
+      seededFor.current = null;
+      clearPeople();
+    },
+    [],
+  );
   // The coach's names are read once per scope, when the palette first opens (decision 16); a page's own list still takes
   // precedence (people.ts). A reply for a scope that has since changed is dropped. Only a coach's are ever read.
   const seedOnOpen = useCallback(() => {

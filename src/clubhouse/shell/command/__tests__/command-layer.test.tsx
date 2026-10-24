@@ -252,6 +252,40 @@ describe('people across a team switch', () => {
     expect(options()).not.toContain('Jonah Okafor');
   });
 
+  it('leaving the frame (the idle timeout\'s sign-out goes to login without a page load) empties the list', () => {
+    let seen: readonly unknown[] = ['unset'];
+    function Probe() {
+      seen = usePeople();
+      return null;
+    }
+    const probe = render(<Probe />);
+    const { unmount } = render(tree('t1', ['Jonah Okafor']));
+    expect(seen).toHaveLength(1);
+    unmount();
+    probe.rerender(<Probe />);
+    expect(seen).toEqual([]);
+    probe.unmount();
+  });
+
+  it('a People reply that lands after the frame has gone never refills the list', async () => {
+    let seen: readonly unknown[] = ['unset'];
+    function Probe() {
+      seen = usePeople();
+      return null;
+    }
+    let answer: (list: { id: string; name: string }[]) => void = () => {};
+    const late = vi.fn(() => new Promise<{ id: string; name: string }[]>((done) => (answer = done)));
+    const probe = render(<Probe />);
+    const { unmount } = render(tree('t1', [], late));
+    key('k', { metaKey: true });
+    expect(late).toHaveBeenCalledTimes(1);
+    unmount();
+    await act(async () => answer([{ id: 'a', name: 'Jonah Okafor' }]));
+    probe.rerender(<Probe />);
+    expect(seen).toEqual([]);
+    probe.unmount();
+  });
+
   it('another person signing in on the same team never sees the last one\'s list', () => {
     const { rerender } = render(tree('t1', ['Jonah Okafor']));
     rerender(tree('t1', [], loaderOf(null), 'u2'));
