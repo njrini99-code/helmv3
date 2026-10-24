@@ -74,6 +74,8 @@ export interface ChProfileRound {
   id: string;
   course: string;
   date: string;
+  /** The round's date as stored (YYYY-MM-DD), for charts that space rounds by real time. */
+  iso?: string;
   /** practice, qualifier or tournament (a legacy "qualifying" reads as qualifier); null where the round has no type. */
   type: 'practice' | 'qualifier' | 'tournament' | null;
   /** 9 or 18. */
@@ -589,6 +591,7 @@ export async function loadPlayerProfile(input: {
         id: r.id,
         course: r.course_name ?? 'Course not recorded',
         date: shortDate(r.round_date),
+        iso: r.round_date.slice(0, 10),
         type: roundKind(r.round_type),
         holes: r.holes_played ?? 18,
         score: r.total_score as number,

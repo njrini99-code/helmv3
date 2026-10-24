@@ -107,3 +107,32 @@ describe('useChartPin', () => {
     expect(out()).toBe('-|-');
   });
 });
+
+describe('useChartPin on a line spaced by time (row 119)', () => {
+  function Area({ positions }: { positions?: number[] }) {
+    const pin = useChartPin(3, 'x', [0, 1], positions);
+    return (
+      <div>
+        <div data-testid="plot" {...pin.area} />
+        <output data-testid="out">{`${pin.active ?? '-'}|${pin.pinned ?? '-'}`}</output>
+      </div>
+    );
+  }
+  const at = (x: number) => {
+    const plot = screen.getByTestId('plot');
+    plot.getBoundingClientRect = () => ({ left: 0, width: 100, top: 0, height: 50, right: 100, bottom: 50, x: 0, y: 0, toJSON: () => ({}) });
+    fireEvent.pointerMove(plot, { pointerType: 'mouse', clientX: x });
+  };
+
+  it('reads the point nearest the pointer, not the slot it falls in', () => {
+    render(<Area positions={[0.1, 0.2, 0.9]} />);
+    at(60);
+    expect(out()).toBe('2|-');
+  });
+
+  it('without positions, the slot', () => {
+    render(<Area />);
+    at(60);
+    expect(out()).toBe('1|-');
+  });
+});

@@ -23,7 +23,7 @@ import { hapticScrub } from './haptics';
  */
 export const SCRUB_START_PX = 8;
 
-export function useChartPin(count: number, axis: 'x' | 'y' = 'y', inset: [number, number] = [0, 1]) {
+export function useChartPin(count: number, axis: 'x' | 'y' = 'y', inset: [number, number] = [0, 1], positions?: readonly number[]) {
   const [hover, setHover] = useState<number | null>(null);
   const [pin, setPin] = useState<number | null>(null);
   const root = useRef<HTMLElement | null>(null);
@@ -94,6 +94,8 @@ export function useChartPin(count: number, axis: 'x' | 'y' = 'y', inset: [number
   );
 
   const [from, to] = inset;
+  // A line spaced by time (`positions`, each point's share of the plot) reads the point nearest the pointer, not its slot.
+  const spots = positions && positions.length === count ? positions.join(',') : '';
   const indexAt = useCallback(
     (e: PointerEvent<Element>) => {
       const box = e.currentTarget.getBoundingClientRect();
@@ -101,9 +103,14 @@ export function useChartPin(count: number, axis: 'x' | 'y' = 'y', inset: [number
       const width = box.width * (to - from);
       if (count <= 0) return -1;
       if (width <= 0) return 0;
-      return Math.max(0, Math.min(count - 1, Math.floor(((e.clientX - left) / width) * count)));
+      const share = (e.clientX - left) / width;
+      if (spots) {
+        const at = spots.split(',').map(Number);
+        return at.reduce((best, p, i) => (Math.abs(p - share) < Math.abs(at[best]! - share) ? i : best), 0);
+      }
+      return Math.max(0, Math.min(count - 1, Math.floor(share * count)));
     },
-    [count, from, to],
+    [count, from, to, spots],
   );
 
   const area = {

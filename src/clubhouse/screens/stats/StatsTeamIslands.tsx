@@ -52,7 +52,7 @@ type Lens = 'sg' | 'score';
 const asText = (s: string) => (/^[=+\-@\t\r]/.test(s) ? `'${s}` : s);
 
 /** What the trend, the leg cards and the grid read; the rest of the page stays on the server. */
-export type ChTeamCharts = Pick<ChTeamStats, 'window' | 'filter' | 'weeks' | 'team' | 'players' | 'legWeeks' | 'legHalves' | 'legTotals' | 'grid' | 'tour' | 'roundCount' | 'figures'>;
+export type ChTeamCharts = Pick<ChTeamStats, 'window' | 'filter' | 'weeks' | 'weekStarts' | 'team' | 'players' | 'legWeeks' | 'legHalves' | 'legTotals' | 'grid' | 'tour' | 'roundCount' | 'figures'>;
 
 /** The filter in force and the one way to change it: the frame's offline refusal and slow notice, then the new address. */
 const GoFilter = createContext<{ filter: ChFilter; go: (next: ChFilter) => void; shown: ChRange }>({ filter: filterFor(), go: () => {}, shown: 'last10' });
@@ -291,7 +291,10 @@ function TeamTrend({ data, focus, setFocus }: { data: ChTeamCharts; focus: strin
     const pad = isSg ? 0.4 : 0.8;
     return isSg ? [mn - pad, mx + pad] : [mx + pad, mn - pad];
   }, [all, isSg, par, ref]);
-  const x = (i: number) => (n <= 1 ? (padL + w - padR) / 2 : padL + (i * (w - padL - padR)) / (n - 1));
+  // Weeks are spaced by their dates when the data has them (row 119): only weeks with rounds are listed, so a quiet week
+  // between two shows as a wider step, not as the next week.
+  const share = weekShares(n, data.weekStarts);
+  const x = (i: number) => (n <= 1 ? (padL + w - padR) / 2 : padL + share[i]! * (w - padL - padR));
   const y = (v: number) => padT + ((hi - v) / (hi - lo)) * (h - padT - padB);
   const ticks = isSg ? niceTicks(lo, hi) : niceTicks(Math.min(lo, hi), Math.max(lo, hi));
   // A player's end figure is toned on its gap to the reference at the precision it prints (strokes gained at one decimal, a
@@ -368,11 +371,10 @@ function TeamTrend({ data, focus, setFocus }: { data: ChTeamCharts; focus: strin
     if (e.pointerType === 'touch') return;
     const r = e.currentTarget.getBoundingClientRect();
     const px = ((e.clientX - r.left) / r.width) * w;
-    const at = n <= 1 ? 0 : Math.max(0, Math.min(n - 1, Math.round(((px - padL) / (w - padL - padR)) * (n - 1))));
-    // The nearest week that has a team value (a week with no rounds is skipped, so the newest week always reads once it has one).
+    // The nearest week that has a team value, by where it is drawn (a week with no rounds is skipped, so the newest week always reads once it has one).
     let best: number | null = null;
     team.forEach((v, i) => {
-      if (v != null && (best == null || Math.abs(i - at) < Math.abs(best - at))) best = i;
+      if (v != null && (best == null || Math.abs(x(i) - px) < Math.abs(x(best) - px))) best = i;
     });
     setScrub(best);
   };
@@ -665,6 +667,16 @@ function niceTicks(lo: number, hi: number): number[] {
 }
 
 /** The four leg charts' one scale: the handoff's range (−1.5 to +1), widened only when a week of any leg falls outside it. */
+/** Each week's share of the plot's width, first at 0 and last at 1: by date when every week has one, else evenly by index. */
+export function weekShares(n: number, starts: readonly string[] | undefined): number[] {
+  const even = Array.from({ length: n }, (_, i) => (n <= 1 ? 0.5 : i / (n - 1)));
+  const at = starts?.length === n ? starts.map((d) => Date.parse(d)) : null;
+  if (!at || n < 2 || at.some((t) => !Number.isFinite(t))) return even;
+  const t0 = at[0]!;
+  const t1 = at[n - 1]!;
+  return t1 > t0 ? at.map((t) => (t - t0) / (t1 - t0)) : even;
+}
+
 export function legScale(legWeeks: ChTeamStats['legWeeks']): { lo: number; hi: number } {
   const vals = LEGS_LIST.flatMap((l) => legWeeks[l]).filter((v): v is number => v != null);
   return { lo: Math.min(-1.5, Math.min(...vals) - 0.2), hi: Math.max(1, Math.max(...vals) + 0.2) };

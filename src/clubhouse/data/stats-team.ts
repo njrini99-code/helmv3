@@ -118,8 +118,10 @@ export interface ChTeamStats {
   roundsEffective: number;
   figures: ChFigure[];
   weeks: string[];
+  /** Each week's first day (YYYY-MM-DD), beside `weeks`, so the week chart spaces weeks by real time (row 119). */
+  weekStarts?: string[];
   /** The phone's scoring trend (m-stats.jsx: "Team avg · 10 rounds"): the team's average on each of its last ten round days, oldest first. */
-  days: Array<{ label: string; score: number | null; n?: number }>;
+  days: Array<{ label: string; score: number | null; n?: number; date?: string }>;
   /**
    * The round days' newer half against their older half (A1), from the rounds behind each half (`roundHalves`), never one round's
    * spread set on a day's mean. Null under three days; absent, unmeasured, so no change is claimed.
@@ -409,10 +411,11 @@ export async function loadTeamStats(input: { teamId: string; window: ChWindow; f
     roundsEffective: effectiveRounds(windowRounds),
     figures,
     weeks: weekKeys.map(weekLabel),
+    weekStarts: weekKeys,
     days: dayKeys.map((d) => {
       const on = onDay(d);
       // `n`: the whole rounds the day's average rests on, so the phone's mean weighs a day of six rounds above a day of one (A8.10).
-      return { label: shortDate(d), score: avgOf(on, (r) => r.total_score), n: effectiveCount(on, (r) => r.total_score) };
+      return { label: shortDate(d), date: d.slice(0, 10), score: avgOf(on, (r) => r.total_score), n: effectiveCount(on, (r) => r.total_score) };
     }),
     daysHalves: roundHalves(dayKeys.map(onDay), (r) => r.total_score, 'score'),
     team: {

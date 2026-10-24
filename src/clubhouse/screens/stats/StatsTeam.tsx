@@ -122,6 +122,7 @@ export function StatsTeam({ data }: { data: ChTeamStats }) {
                   window: data.window,
                   filter: data.filter,
                   weeks: data.weeks,
+                  weekStarts: data.weekStarts,
                   team: data.team,
                   players: data.players,
                   legWeeks: data.legWeeks,
