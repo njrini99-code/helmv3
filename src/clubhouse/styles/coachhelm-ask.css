@@ -306,12 +306,13 @@
     background: var(--ch-bg-inset);
   }
 }
-.ch-ask-hist__row:is(:active, [data-ch-pressed]) {
-  background: var(--ch-ledger-row-press);
-}
 .ch-ask-hist__row.is-on {
   background: var(--ch-bg-inset);
   font-weight: 500;
+}
+/* After the open chat's fill, so pressing it shows too. */
+.ch-ask-hist__row:is(:active, [data-ch-pressed]) {
+  background: var(--ch-ledger-row-press);
 }
 /* Inset: the history scroller clips a ring drawn outside the row. */
 .ch-ask-hist__row:focus-visible {
