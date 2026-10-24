@@ -206,8 +206,13 @@
     inset 0 1px 0 #fff;
   transition: transform var(--ch-dur-press) var(--ch-ease);
 }
-.ch-rd-unf__cta:is(:active, [data-ch-pressed]) {
+.ch-rd-unf__cta[data-ch-pressed] {
   transform: translateY(1px);
+}
+@media (hover: hover) {
+  .ch-rd-unf__cta:active {
+    transform: translateY(1px);
+  }
 }
 .ch-rd-unf__cta:focus-visible,
 .ch-rd-unf__discard:focus-visible {
@@ -1960,8 +1965,13 @@ a.ch-rd-sc:focus-visible {
   .ch-rd.is-phone .ch-rd-sc + .ch-rd-sc {
     box-shadow: inset 0 var(--ch-hairline-w) 0 var(--ch-ledger-rule-soft);
   }
-  .ch-rd.is-phone a.ch-rd-sc:is(:active, [data-ch-pressed]) {
+  .ch-rd.is-phone a.ch-rd-sc[data-ch-pressed] {
     background: var(--ch-ledger-row-press);
+  }
+  @media (hover: hover) {
+    .ch-rd.is-phone a.ch-rd-sc:active {
+      background: var(--ch-ledger-row-press);
+    }
   }
   .ch-rd.is-phone .ch-rd-sc__date {
     width: 44px;
@@ -2072,9 +2082,15 @@ a.ch-rd-sc:focus-visible {
   }
   /* A hole on the scorecard answers the press with the row press tint (it selects, so it does not scale; the steps beside
      the hole are keys and compress, data-ch-press). */
-  .ch-rv.is-phone .ch-rv-nine thead button:not(.is-sel):is(:active, [data-ch-pressed]),
-.ch-rv.is-phone .ch-rv-nine td[data-hole]:not(.is-sel):is(:active, [data-ch-pressed]) {
+  .ch-rv.is-phone .ch-rv-nine thead button:not(.is-sel)[data-ch-pressed],
+.ch-rv.is-phone .ch-rv-nine td[data-hole]:not(.is-sel)[data-ch-pressed] {
     background: var(--ch-ledger-row-press);
+  }
+  @media (hover: hover) {
+    .ch-rv.is-phone .ch-rv-nine thead button:not(.is-sel):active,
+    .ch-rv.is-phone .ch-rv-nine td[data-hole]:not(.is-sel):active {
+      background: var(--ch-ledger-row-press);
+    }
   }
   .ch-rv.is-phone .ch-rv-cols {
     gap: 32px;
@@ -2967,9 +2983,15 @@ html[data-fw-theme='dark'] .ch-rv .ch-rv-yn.is-y {
     }
   }
   /* CH-11601: a press deepens the tint over the press beat (the shell's CH-1606: a row never scales). */
-  .ch-rd[data-canopy] a.ch-rd-sc:is(:active, [data-ch-pressed]) {
+  .ch-rd[data-canopy] a.ch-rd-sc[data-ch-pressed] {
     background: var(--ch-ledger-row-press);
     transition-duration: var(--ch-dur-press);
+  }
+  @media (hover: hover) {
+    .ch-rd[data-canopy] a.ch-rd-sc:active {
+      background: var(--ch-ledger-row-press);
+      transition-duration: var(--ch-dur-press);
+    }
   }
 
   /* One column below a 860px page: the panes stack, the column rule goes. */
@@ -3740,9 +3762,15 @@ html[data-fw-theme='dark'] .ch-rv .ch-rv-yn.is-y {
     filter: brightness(1.1) saturate(1.1);
   }
 }
-.ch-rv .ch-rzcost button:is(:active, [data-ch-pressed]) {
+.ch-rv .ch-rzcost button[data-ch-pressed] {
   transform: scale(0.985);
   transition-duration: var(--ch-dur-press);
+}
+@media (hover: hover) {
+  .ch-rv .ch-rzcost button:active {
+    transform: scale(0.985);
+    transition-duration: var(--ch-dur-press);
+  }
 }
 .ch-rv .ch-rzcost button {
   transition:

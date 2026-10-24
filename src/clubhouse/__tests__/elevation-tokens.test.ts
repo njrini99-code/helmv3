@@ -1,14 +1,15 @@
 import { readFileSync } from 'node:fs';
 import { basename, join } from 'node:path';
 import { describe, expect, it } from 'vitest';
-import { ratchet, ROOT, slack, walk, type Hit } from './_scan';
+import { ratchet, ROOT, slack, walk, withoutPressedMirrors, type Hit } from './_scan';
 
 /**
  * B4: what floats lifts. In dark, sheets, the modal, popovers (menus and the bell are popovers) and the peek sit on
  * --ch-bg-elevated, lighter than the cards; and every frosted surface blurs from --ch-glass-blur, so Reduce
  * Transparency and Increase Contrast (which set it to 0) flatten it.
  */
-const css = (name: string) => readFileSync(join(ROOT, 'styles', name), 'utf8').replace(/\/\*[\s\S]*?\*\//g, '');
+// Pressed mirrors (_scan.ts) are counted once, by their [data-ch-pressed] twin.
+const css = (name: string) => withoutPressedMirrors(readFileSync(join(ROOT, 'styles', name), 'utf8').replace(/\/\*[\s\S]*?\*\//g, ''));
 const darkBlock = () => {
   const t = css('tokens.css');
   const from = t.indexOf("html[data-fw-theme='dark'] [data-ui='clubhouse'] {");

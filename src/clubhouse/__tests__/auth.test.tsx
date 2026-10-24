@@ -619,7 +619,7 @@ describe('the sign-in micro-motion', () => {
     render(<SignIn signIn={login} />);
     expect(document.querySelector('.ch-au-back svg')).not.toBeNull();
     expect(css()).toMatch(/@media \(hover: hover\) \{[^@]*\.ch-au-back:hover svg \{\s*transform: translateX\(-2px\);/);
-    expect(css()).toMatch(/\.ch-au-back:is\(:active, \[data-ch-pressed\]\) \{\s*background:/);
+    expect(css()).toMatch(/\.ch-au-back\[data-ch-pressed\] \{\s*background:/);
   });
 });
 

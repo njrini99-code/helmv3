@@ -702,8 +702,13 @@
   .ch-hs-ld__r {
     border-top-color: var(--ch-ledger-rule-soft);
   }
-  .ch-hs-ld__why:is(:active, [data-ch-pressed]) {
+  .ch-hs-ld__why[data-ch-pressed] {
     background: var(--ch-ledger-row-press);
+  }
+  @media (hover: hover) {
+    .ch-hs-ld__why:active {
+      background: var(--ch-ledger-row-press);
+    }
   }
 }
 :where(html[data-fw-theme='dark']) .ch-hs-ld__r {

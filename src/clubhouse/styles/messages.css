@@ -141,8 +141,13 @@
     background: rgb(28 25 18 / 0.045);
   }
 }
-.ch-ms-row:is(:active, [data-ch-pressed]) {
+.ch-ms-row[data-ch-pressed] {
   background: rgb(28 25 18 / 0.07);
+}
+@media (hover: hover) {
+  .ch-ms-row:active {
+    background: rgb(28 25 18 / 0.07);
+  }
 }
 .ch-ms-row:focus-visible {
   outline: 2px solid var(--ch-border-focus);
@@ -280,8 +285,13 @@
     background: rgb(28 25 18 / 0.05);
   }
 }
-.ch-ms-row:is(:active, [data-ch-pressed]) {
+.ch-ms-row[data-ch-pressed] {
   background: rgb(28 25 18 / 0.08);
+}
+@media (hover: hover) {
+  .ch-ms-row:active {
+    background: rgb(28 25 18 / 0.08);
+  }
 }
 .ch-ms-row .ch-avatar {
   --ch-av-size: 44px !important;
@@ -1583,11 +1593,21 @@
   }
   /* The app's global press (src/app/globals.css: every button shrinks to 0.98 on :active) is not Clubhouse's: rows
      and links here answer with their tint, and keys take the shell's press (CH-1606), so it is switched off. */
-  .ch-msp button:is(:active, [data-ch-pressed]) {
+  .ch-msp button[data-ch-pressed] {
     transform: none;
   }
-  .ch-msp [role='button']:is(:active, [data-ch-pressed]) {
+  @media (hover: hover) {
+    .ch-msp button:active {
+      transform: none;
+    }
+  }
+  .ch-msp [role='button'][data-ch-pressed] {
     transform: none;
+  }
+  @media (hover: hover) {
+    .ch-msp [role='button']:active {
+      transform: none;
+    }
   }
   /* The inbox: Search and the filters, then its sections a full step apart. */
   .ch-msp-home {
@@ -1662,9 +1682,15 @@
     content: '';
     pointer-events: none;
   }
-  .ch-msp-chip:is(:active, [data-ch-pressed]):not([aria-pressed='true']) {
+  .ch-msp-chip[data-ch-pressed]:not([aria-pressed='true']) {
     background: var(--ch-bg-subtle);
     transition-duration: var(--ch-dur-press);
+  }
+  @media (hover: hover) {
+    .ch-msp-chip:active:not([aria-pressed='true']) {
+      background: var(--ch-bg-subtle);
+      transition-duration: var(--ch-dur-press);
+    }
   }
   /* A 44px target around the 36px chip (the 6px gaps shared out, for a short chip such as All). */
   .ch-msp-chip::before {
@@ -1727,8 +1753,13 @@
       background: transparent;
     }
   }
-  .ch-msp .ch-ms-row:is(:active, [data-ch-pressed]) {
+  .ch-msp .ch-ms-row[data-ch-pressed] {
     background: var(--ch-ledger-row-press);
+  }
+  @media (hover: hover) {
+    .ch-msp .ch-ms-row:active {
+      background: var(--ch-ledger-row-press);
+    }
   }
   .ch-msp .ch-ms-row.is-sel {
     background: transparent;
@@ -1743,9 +1774,15 @@
     background: var(--ch-ledger-rule-soft);
     box-shadow: none;
   }
-  .ch-msp .ch-ms-row:is(:active, [data-ch-pressed])::before,
-  .ch-msp .ch-ms-row:is(:active, [data-ch-pressed]) + .ch-ms-row::before {
+  .ch-msp .ch-ms-row[data-ch-pressed]::before,
+  .ch-msp .ch-ms-row[data-ch-pressed] + .ch-ms-row::before {
     opacity: 0;
+  }
+  @media (hover: hover) {
+    .ch-msp .ch-ms-row:active::before,
+    .ch-msp .ch-ms-row:active + .ch-ms-row::before {
+      opacity: 0;
+    }
   }
   .ch-msp .ch-ms-row.is-ann + .ch-ms-row::before {
     left: 60px;
@@ -1769,11 +1806,17 @@
     content: '';
     pointer-events: none;
   }
-  .ch-msp .ch-ms-swipe .ch-ms-row:is(:active, [data-ch-pressed])::before,
-  .ch-msp .ch-ms-swipe:has(.ch-ms-row:is(:active, [data-ch-pressed])) + .ch-ms-swipe .ch-ms-row::before,
+  .ch-msp .ch-ms-swipe .ch-ms-row[data-ch-pressed]::before,
+  .ch-msp .ch-ms-swipe:has(.ch-ms-row[data-ch-pressed]) + .ch-ms-swipe .ch-ms-row::before,
   .ch-msp .ch-ms-swipe[data-side] .ch-ms-row::before,
   .ch-msp .ch-ms-swipe[data-side] + .ch-ms-swipe .ch-ms-row::before {
     opacity: 0;
+  }
+  @media (hover: hover) {
+    .ch-msp .ch-ms-swipe .ch-ms-row:active::before,
+    .ch-msp .ch-ms-swipe:has(.ch-ms-row:active) + .ch-ms-swipe .ch-ms-row::before {
+      opacity: 0;
+    }
   }
   .ch-msp .ch-ms-row .ch-ms-grp {
     width: 44px;
@@ -1887,8 +1930,13 @@
     border-radius: var(--ch-radius-md);
     transition: background var(--ch-dur-press) var(--ch-ease);
   }
-  .ch-msp-who:is(:active, [data-ch-pressed]) {
+  .ch-msp-who[data-ch-pressed] {
     background: rgb(255 255 255 / 0.08);
+  }
+  @media (hover: hover) {
+    .ch-msp-who:active {
+      background: rgb(255 255 255 / 0.08);
+    }
   }
   /* The push focuses the name for VoiceOver; from a keyboard it shows a gilt ring that reads on the green (the page's
      green focus ring was a dark box here). */
@@ -2160,9 +2208,15 @@
     cursor: pointer;
     transition: background var(--ch-dur-quick) var(--ch-ease), box-shadow var(--ch-dur-quick) var(--ch-ease);
   }
-  .ch-msp-tile:is(:active, [data-ch-pressed]):not(:disabled) {
+  .ch-msp-tile[data-ch-pressed]:not(:disabled) {
     background: var(--ch-ledger-row-press);
     transition-duration: var(--ch-dur-press);
+  }
+  @media (hover: hover) {
+    .ch-msp-tile:active:not(:disabled) {
+      background: var(--ch-ledger-row-press);
+      transition-duration: var(--ch-dur-press);
+    }
   }
   .ch-msp-tile span {
     color: var(--ch-text-secondary);
@@ -2254,9 +2308,15 @@
   .ch-msp-danger::before {
     margin-inline: 12px;
   }
-  .ch-msp-row.is-btn:is(:active, [data-ch-pressed])::before,
-  .ch-msp-row.is-btn:is(:active, [data-ch-pressed]) + .ch-msp-row::before {
+  .ch-msp-row.is-btn[data-ch-pressed]::before,
+  .ch-msp-row.is-btn[data-ch-pressed] + .ch-msp-row::before {
     opacity: 0;
+  }
+  @media (hover: hover) {
+    .ch-msp-row.is-btn:active::before,
+    .ch-msp-row.is-btn:active + .ch-msp-row::before {
+      opacity: 0;
+    }
   }
   .ch-msp-row + .ch-msp-set {
     box-shadow: inset 0 var(--ch-hairline-w) 0 var(--ch-ledger-rule-soft);
@@ -2269,8 +2329,13 @@
     cursor: pointer;
     transition: background var(--ch-dur-press) var(--ch-ease);
   }
-  .ch-msp-row.is-btn:is(:active, [data-ch-pressed]):not(:disabled) {
+  .ch-msp-row.is-btn[data-ch-pressed]:not(:disabled) {
     background: var(--ch-ledger-row-press);
+  }
+  @media (hover: hover) {
+    .ch-msp-row.is-btn:active:not(:disabled) {
+      background: var(--ch-ledger-row-press);
+    }
   }
   .ch-msp-row__b {
     display: flex;
@@ -2330,8 +2395,13 @@
     color: var(--ch-text-secondary);
     cursor: pointer;
   }
-  .ch-msp-icon:is(:active, [data-ch-pressed]) {
+  .ch-msp-icon[data-ch-pressed] {
     background: rgb(28 25 18 / 0.06);
+  }
+  @media (hover: hover) {
+    .ch-msp-icon:active {
+      background: rgb(28 25 18 / 0.06);
+    }
   }
   /* Remove sits before Message on a member's row: no pull to the edge, so the two targets don't overlap. */
   .ch-msp-icon.is-remove {
@@ -2397,8 +2467,13 @@
     cursor: pointer;
     transition: background var(--ch-dur-press) var(--ch-ease);
   }
-  .ch-msp-danger:is(:active, [data-ch-pressed]) {
+  .ch-msp-danger[data-ch-pressed] {
     background: var(--ch-ledger-row-press);
+  }
+  @media (hover: hover) {
+    .ch-msp-danger:active {
+      background: var(--ch-ledger-row-press);
+    }
   }
 
   /* New message */
@@ -2575,8 +2650,13 @@
     box-shadow: none;
     transition: background var(--ch-dur-press) var(--ch-ease);
   }
-  .ch-msp-ann .ch-ms-ann__sec > .ch-ms-bub--file:is(:active, [data-ch-pressed]) {
+  .ch-msp-ann .ch-ms-ann__sec > .ch-ms-bub--file[data-ch-pressed] {
     background: var(--ch-ledger-row-press);
+  }
+  @media (hover: hover) {
+    .ch-msp-ann .ch-ms-ann__sec > .ch-ms-bub--file:active {
+      background: var(--ch-ledger-row-press);
+    }
   }
   .ch-msp-ann .ch-ms-ann__sec > .ch-ms-bub--file + .ch-ms-bub--file::before {
     position: absolute;
@@ -2800,8 +2880,13 @@
     background: rgb(107 187 140 / 0.16);
   }
 }
-html[data-fw-theme='dark'] .ch-ms-row:is(:active, [data-ch-pressed]) {
+html[data-fw-theme='dark'] .ch-ms-row[data-ch-pressed] {
   background: rgb(237 231 216 / 0.07);
+}
+@media (hover: hover) {
+  html[data-fw-theme='dark'] .ch-ms-row:active {
+    background: rgb(237 231 216 / 0.07);
+  }
 }
 html[data-fw-theme='dark'] .ch-ms-row.is-sel {
   background: var(--ch-raised-bg);
@@ -2848,8 +2933,13 @@ html[data-fw-theme='dark'] .ch-ms-below {
       background: transparent;
     }
   }
-  html[data-fw-theme='dark'] .ch-msp .ch-ms-row:is(:active, [data-ch-pressed]) {
+  html[data-fw-theme='dark'] .ch-msp .ch-ms-row[data-ch-pressed] {
     background: var(--ch-ledger-row-press);
+  }
+  @media (hover: hover) {
+    html[data-fw-theme='dark'] .ch-msp .ch-ms-row:active {
+      background: var(--ch-ledger-row-press);
+    }
   }
   html[data-fw-theme='dark'] .ch-msp .ch-ms-row.is-sel {
     background: transparent;
@@ -2873,8 +2963,13 @@ html[data-fw-theme='dark'] .ch-ms-below {
   html[data-fw-theme='dark'] .ch-msp-new .ch-ms-send.is-ready {
     color: var(--ch-text-on-accent);
   }
-  html[data-fw-theme='dark'] .ch-msp-icon:is(:active, [data-ch-pressed]) {
+  html[data-fw-theme='dark'] .ch-msp-icon[data-ch-pressed] {
     background: rgb(237 231 216 / 0.06);
+  }
+  @media (hover: hover) {
+    html[data-fw-theme='dark'] .ch-msp-icon:active {
+      background: rgb(237 231 216 / 0.06);
+    }
   }
   html[data-fw-theme='dark'] .ch-msp-tok {
     box-shadow: inset 0 0 0 1px rgb(107 187 140 / 0.24);

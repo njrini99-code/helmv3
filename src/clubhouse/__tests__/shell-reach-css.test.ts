@@ -85,7 +85,7 @@ describe('CH-1815 every phone key reaches 44 by 44', () => {
 });
 
 describe('CH-1617 choices and the feature card answer a press without scaling', () => {
-  for (const selector of ['.ch-seg__b:not(.is-on):is(:active, [data-ch-pressed])', ".ch-pill:not([aria-pressed='true']):is(:active, [data-ch-pressed])"])
+  for (const selector of ['.ch-seg__b:not(.is-on)[data-ch-pressed]', ".ch-pill:not([aria-pressed='true'])[data-ch-pressed]"])
     it(`${selector} tints after the press delay`, () => {
       const r = withProp(controls, selector, 'background');
       expect(r).toMatch(/background:\s*var\(--ch-ledger-row-press\)/);
@@ -98,8 +98,8 @@ describe('CH-1617 choices and the feature card answer a press without scaling', 
   });
 
   it('the linked feature card lays a shade over its green and never scales', () => {
-    expect(ui).not.toMatch(/\.ch-feat\.is-link:is\(:active, \[data-ch-pressed\]\)\s*\{[^}]*scale/);
-    expect(withProp(ui, '.ch-feat.is-link:is(:active, [data-ch-pressed])::after', 'opacity')).toMatch(/opacity:\s*1/);
+    expect(ui).not.toMatch(/\.ch-feat\.is-link(?:\[data-ch-pressed\]|:active)\s*\{[^}]*scale/);
+    expect(withProp(ui, '.ch-feat.is-link[data-ch-pressed]::after', 'opacity')).toMatch(/opacity:\s*1/);
     expect(withProp(ui, '.ch-feat.is-link::after', 'pointer-events')).toMatch(/pointer-events:\s*none/);
   });
 });

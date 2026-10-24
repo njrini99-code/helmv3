@@ -196,8 +196,13 @@
     background: none;
     box-shadow: inset 0 0 0 1px var(--ch-ledger-rule);
   }
-  .ch-hv-chip:is(:active, [data-ch-pressed]) {
+  .ch-hv-chip[data-ch-pressed] {
     background: var(--ch-ledger-row-press);
+  }
+  @media (hover: hover) {
+    .ch-hv-chip:active {
+      background: var(--ch-ledger-row-press);
+    }
   }
   .ch-hv-chip[aria-current='true'] {
     background: var(--ch-selected-strong);
@@ -227,8 +232,13 @@
   .ch-hv-link {
     border-top-color: var(--ch-ledger-rule-soft);
   }
-  .ch-hv-link:is(:active, [data-ch-pressed]) {
+  .ch-hv-link[data-ch-pressed] {
     background: var(--ch-ledger-row-press);
+  }
+  @media (hover: hover) {
+    .ch-hv-link:active {
+      background: var(--ch-ledger-row-press);
+    }
   }
   /* A section's head while the view loads: the heading's line and its caption. */
   .ch-hv-sk-head {

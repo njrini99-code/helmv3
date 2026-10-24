@@ -438,8 +438,13 @@
   .ch-hg-m__f {
     border-top-color: var(--ch-ledger-rule-soft);
   }
-  .ch-hg-m__how summary:is(:active, [data-ch-pressed]) {
+  .ch-hg-m__how summary[data-ch-pressed] {
     background: var(--ch-ledger-row-press);
+  }
+  @media (hover: hover) {
+    .ch-hg-m__how summary:active {
+      background: var(--ch-ledger-row-press);
+    }
   }
 }
 

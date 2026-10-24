@@ -102,9 +102,15 @@
     box-shadow: inset 0 0 0 1px var(--ch-border-strong);
   }
 }
-.ch-qf-pill:is(:active, [data-ch-pressed]) {
+.ch-qf-pill[data-ch-pressed] {
   background: var(--ch-bg-subtle);
   transition-duration: var(--ch-dur-press);
+}
+@media (hover: hover) {
+  .ch-qf-pill:active {
+    background: var(--ch-bg-subtle);
+    transition-duration: var(--ch-dur-press);
+  }
 }
 .ch-qf-pill[aria-pressed='true'] {
   background: var(--ch-bg-selected);
@@ -356,9 +362,15 @@
   }
 }
 /* CH-09601: a pressed row deepens to the row press tint over the press beat; it never scales. */
-.ch-qf-grid.is-ledger .ch-qf-card:is(:active, [data-ch-pressed]) {
+.ch-qf-grid.is-ledger .ch-qf-card[data-ch-pressed] {
   background: var(--ch-ledger-row-press);
   transition-duration: var(--ch-dur-press);
+}
+@media (hover: hover) {
+  .ch-qf-grid.is-ledger .ch-qf-card:active {
+    background: var(--ch-ledger-row-press);
+    transition-duration: var(--ch-dur-press);
+  }
 }
 .ch-qf-grid.is-ledger .ch-qf-card__h p {
   -webkit-line-clamp: 1;
@@ -1512,8 +1524,13 @@
     content: '';
     pointer-events: none;
   }
-  .ch-qf-hero:is(:active, [data-ch-pressed])::after {
+  .ch-qf-hero[data-ch-pressed]::after {
     opacity: 1;
+  }
+  @media (hover: hover) {
+    .ch-qf-hero:active::after {
+      opacity: 1;
+    }
   }
   .ch-qf-hero .ch-badge {
     background: rgb(255 255 255 / 0.09);
@@ -1900,8 +1917,13 @@
     touch-action: manipulation;
     transition: background var(--ch-dur-press) var(--ch-ease);
   }
-  button.ch-qfm-lb__row:is(:active, [data-ch-pressed]) {
+  button.ch-qfm-lb__row[data-ch-pressed] {
     background: var(--ch-ledger-row-press);
+  }
+  @media (hover: hover) {
+    button.ch-qfm-lb__row:active {
+      background: var(--ch-ledger-row-press);
+    }
   }
   .ch-qfm-lb__row:focus-visible {
     outline: 2px solid var(--ch-border-focus);
@@ -2032,9 +2054,15 @@
     content: '';
     pointer-events: none;
   }
-  .ch-qfm-chip:is(:active, [data-ch-pressed]):not(:disabled):not([aria-pressed='true']) {
+  .ch-qfm-chip[data-ch-pressed]:not(:disabled):not([aria-pressed='true']) {
     background: var(--ch-ledger-row-press);
     transition-duration: var(--ch-dur-press);
+  }
+  @media (hover: hover) {
+    .ch-qfm-chip:active:not(:disabled):not([aria-pressed='true']) {
+      background: var(--ch-ledger-row-press);
+      transition-duration: var(--ch-dur-press);
+    }
   }
   /* 34px drawn, 44px to the finger. */
   .ch-qfm-chip::after {
@@ -2137,11 +2165,21 @@
     touch-action: manipulation;
     transition: background var(--ch-dur-press) var(--ch-ease);
   }
-  .ch-qf--form .ch-qf-prow:is(:active, [data-ch-pressed]) {
+  .ch-qf--form .ch-qf-prow[data-ch-pressed] {
     background: var(--ch-ledger-row-press);
   }
-  .ch-qf--form .ch-qf-prow.is-locked:is(:active, [data-ch-pressed]) {
+  @media (hover: hover) {
+    .ch-qf--form .ch-qf-prow:active {
+      background: var(--ch-ledger-row-press);
+    }
+  }
+  .ch-qf--form .ch-qf-prow.is-locked[data-ch-pressed] {
     background: none;
+  }
+  @media (hover: hover) {
+    .ch-qf--form .ch-qf-prow.is-locked:active {
+      background: none;
+    }
   }
   .ch-qf--form .ch-qf-rc {
     padding-block: 4px;
@@ -2200,9 +2238,15 @@
   .ch-qfs-opt {
     touch-action: manipulation;
   }
-  .ch-qfs-opt:is(:active, [data-ch-pressed]) {
+  .ch-qfs-opt[data-ch-pressed] {
     background: var(--ch-ledger-row-press);
     transition-duration: var(--ch-dur-press);
+  }
+  @media (hover: hover) {
+    .ch-qfs-opt:active {
+      background: var(--ch-ledger-row-press);
+      transition-duration: var(--ch-dur-press);
+    }
   }
 
   /* Loading on the phone: each skeleton draws the phone page's own shape with every line at its loaded height
@@ -2451,8 +2495,13 @@
   inset: -9px -4px;
   content: '';
 }
-.ch-qf-feed__refresh:is(:active, [data-ch-pressed]) {
+.ch-qf-feed__refresh[data-ch-pressed] {
   background: var(--ch-bg-inset);
+}
+@media (hover: hover) {
+  .ch-qf-feed__refresh:active {
+    background: var(--ch-bg-inset);
+  }
 }
 .ch-qf-feed__refresh:disabled {
   color: var(--ch-text-tertiary);
@@ -2664,13 +2713,25 @@ html:has([data-ui='clubhouse'])::view-transition-new(.ch-rank) {
   }
   /* CH-09601: a press deepens a row's tint, and the live qualifier's title deepens to forest, over the press beat.
      Nothing scales (the shell's CH-1606). */
-  .ch-qf--list[data-canopy] .ch-qf-grid.is-ledger .ch-qf-card:is(:active, [data-ch-pressed]) {
+  .ch-qf--list[data-canopy] .ch-qf-grid.is-ledger .ch-qf-card[data-ch-pressed] {
     background: var(--ch-ledger-row-press);
     transition-duration: var(--ch-dur-press);
   }
-  .ch-qf--list[data-canopy] .ch-qf-hero:is(:active, [data-ch-pressed]) h2 {
+  @media (hover: hover) {
+    .ch-qf--list[data-canopy] .ch-qf-grid.is-ledger .ch-qf-card:active {
+      background: var(--ch-ledger-row-press);
+      transition-duration: var(--ch-dur-press);
+    }
+  }
+  .ch-qf--list[data-canopy] .ch-qf-hero[data-ch-pressed] h2 {
     color: var(--ch-forest-800);
     transition-duration: var(--ch-dur-press);
+  }
+  @media (hover: hover) {
+    .ch-qf--list[data-canopy] .ch-qf-hero:active h2 {
+      color: var(--ch-forest-800);
+      transition-duration: var(--ch-dur-press);
+    }
   }
   /* A player's row keeps its link at the right of the first line; their standing runs under the row. */
   .ch-qf--list[data-canopy] .ch-qf-grid.is-ledger .ch-qf-cta {
@@ -2762,9 +2823,15 @@ html:has([data-ui='clubhouse'])::view-transition-new(.ch-rank) {
       background: var(--ch-ledger-row-hover);
     }
   }
-  .ch-qf[data-canopy] .ch-qf-rowbtn:is(:active, [data-ch-pressed]) {
+  .ch-qf[data-canopy] .ch-qf-rowbtn[data-ch-pressed] {
     background: var(--ch-ledger-row-press);
     transition-duration: var(--ch-dur-press);
+  }
+  @media (hover: hover) {
+    .ch-qf[data-canopy] .ch-qf-rowbtn:active {
+      background: var(--ch-ledger-row-press);
+      transition-duration: var(--ch-dur-press);
+    }
   }
   .ch-qf[data-canopy] .ch-qf-cap {
     padding: 16px 0 0;
@@ -2904,8 +2971,13 @@ html:has([data-ui='clubhouse'])::view-transition-new(.ch-rank) {
   }
 }
 @media (min-width: 821px) {
-  :where(html[data-fw-theme='dark']) .ch-qf--list[data-canopy] .ch-qf-hero:is(:active, [data-ch-pressed]) h2 {
+  :where(html[data-fw-theme='dark']) .ch-qf--list[data-canopy] .ch-qf-hero[data-ch-pressed] h2 {
     color: var(--ch-green-700);
+  }
+  @media (hover: hover) {
+    :where(html[data-fw-theme='dark']) .ch-qf--list[data-canopy] .ch-qf-hero:active h2 {
+      color: var(--ch-green-700);
+    }
   }
 }
 
@@ -3574,9 +3646,15 @@ a.ch-qf-prounds__r.is-play .ch-qf-prounds__m b {
     background: rgb(255 255 255 / 0.08);
   }
 }
-a.ch-qf-prounds__r.is-play:is(:active, [data-ch-pressed]) {
+a.ch-qf-prounds__r.is-play[data-ch-pressed] {
   background: rgb(255 255 255 / 0.14);
   transition-duration: var(--ch-dur-press);
+}
+@media (hover: hover) {
+  a.ch-qf-prounds__r.is-play:active {
+    background: rgb(255 255 255 / 0.14);
+    transition-duration: var(--ch-dur-press);
+  }
 }
 a.ch-qf-prounds__r.is-play:focus-visible {
   outline: 2px solid var(--ch-border-focus-on-dark);
@@ -3614,9 +3692,15 @@ button.ch-qf-prounds__r {
     background: rgb(255 255 255 / 0.12);
   }
 }
-button.ch-qf-prounds__r:is(:active, [data-ch-pressed]) {
+button.ch-qf-prounds__r[data-ch-pressed] {
   background: rgb(255 255 255 / 0.16);
   transition-duration: var(--ch-dur-press);
+}
+@media (hover: hover) {
+  button.ch-qf-prounds__r:active {
+    background: rgb(255 255 255 / 0.16);
+    transition-duration: var(--ch-dur-press);
+  }
 }
 button.ch-qf-prounds__r:focus-visible {
   outline: 2px solid var(--ch-border-focus-on-dark);

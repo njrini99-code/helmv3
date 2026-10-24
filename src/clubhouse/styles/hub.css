@@ -87,8 +87,13 @@
     color: var(--ch-text-primary);
   }
 }
-.ch-hb-tabs button:is(:active, [data-ch-pressed]) {
+.ch-hb-tabs button[data-ch-pressed] {
   color: var(--ch-text-primary);
+}
+@media (hover: hover) {
+  .ch-hb-tabs button:active {
+    color: var(--ch-text-primary);
+  }
 }
 .ch-hb-tabs button:focus-visible {
   outline: 2px solid var(--ch-border-focus);
@@ -478,9 +483,15 @@
   cursor: pointer;
   transition: background-color var(--ch-dur-press) var(--ch-ease);
 }
-.ch-hb-reads--open:is(:active, [data-ch-pressed]) {
+.ch-hb-reads--open[data-ch-pressed] {
   background-color: var(--ch-ledger-row-press);
   transition-delay: var(--ch-dur-press-delay);
+}
+@media (hover: hover) {
+  .ch-hb-reads--open:active {
+    background-color: var(--ch-ledger-row-press);
+    transition-delay: var(--ch-dur-press-delay);
+  }
 }
 .ch-hb-reads--open[aria-expanded='true'] svg {
   transform: rotate(180deg);
@@ -1366,9 +1377,15 @@
     transition: background-color var(--ch-dur-press) var(--ch-ease), box-shadow var(--ch-dur-press) var(--ch-ease);
   }
   /* The event's line opens it in Calendar: a press tints it a little past its words, without moving them. */
-  .ch-hb-rsvp__b:is(:active, [data-ch-pressed]) {
+  .ch-hb-rsvp__b[data-ch-pressed] {
     background-color: var(--ch-ledger-row-press);
     box-shadow: 0 0 0 6px var(--ch-ledger-row-press);
+  }
+  @media (hover: hover) {
+    .ch-hb-rsvp__b:active {
+      background-color: var(--ch-ledger-row-press);
+      box-shadow: 0 0 0 6px var(--ch-ledger-row-press);
+    }
   }
   .ch-hb-rsvp__b b {
     font-size: calc(15 * var(--ch-type-k));
@@ -1426,14 +1443,24 @@
     --ch-av-fg: #23402f;
     --ch-av-ring: rgb(35 64 47 / 0.18);
   }
-  .ch-hb-ann.is-featured .ch-hb-iconbtn:is(:active, [data-ch-pressed]) {
+  .ch-hb-ann.is-featured .ch-hb-iconbtn[data-ch-pressed] {
     background: rgb(255 255 255 / 0.08);
+  }
+  @media (hover: hover) {
+    .ch-hb-ann.is-featured .ch-hb-iconbtn:active {
+      background: rgb(255 255 255 / 0.08);
+    }
   }
   .ch-hb-ann.is-featured .ch-hb-reads {
     color: var(--ch-on-green-ink-soft);
   }
-  .ch-hb-ann.is-featured .ch-hb-reads--open:is(:active, [data-ch-pressed]) {
+  .ch-hb-ann.is-featured .ch-hb-reads--open[data-ch-pressed] {
     background-color: rgb(255 255 255 / 0.08);
+  }
+  @media (hover: hover) {
+    .ch-hb-ann.is-featured .ch-hb-reads--open:active {
+      background-color: rgb(255 255 255 / 0.08);
+    }
   }
   .ch-hb-ann.is-featured .ch-hb-reads__t {
     background: rgb(255 255 255 / 0.14);
@@ -1480,8 +1507,13 @@
     box-shadow: 0 0 0 var(--ch-hairline-w) var(--ch-ledger-rule);
     transition: background-color var(--ch-dur-press) var(--ch-ease);
   }
-  .ch-hb-new:is(:active, [data-ch-pressed]) {
+  .ch-hb-new[data-ch-pressed] {
     background-color: var(--ch-bg-hover);
+  }
+  @media (hover: hover) {
+    .ch-hb-new:active {
+      background-color: var(--ch-bg-hover);
+    }
   }
   .ch-hb-list > .ch-hb-ann {
     gap: 8px;
@@ -1606,8 +1638,13 @@
     border-radius: var(--ch-radius-md);
     transition: background-color var(--ch-dur-press) var(--ch-ease);
   }
-  .ch-hb-feed li > a:is(:active, [data-ch-pressed]) {
+  .ch-hb-feed li > a[data-ch-pressed] {
     background-color: var(--ch-ledger-row-press);
+  }
+  @media (hover: hover) {
+    .ch-hb-feed li > a:active {
+      background-color: var(--ch-ledger-row-press);
+    }
   }
   .ch-hb-feed li.is-new::after {
     top: 26px;
@@ -1655,8 +1692,13 @@
     border-radius: var(--ch-radius-md);
     transition: background-color var(--ch-dur-press) var(--ch-ease);
   }
-  .ch-hb-file__open:is(:active, [data-ch-pressed]) {
+  .ch-hb-file__open[data-ch-pressed] {
     background-color: var(--ch-ledger-row-press);
+  }
+  @media (hover: hover) {
+    .ch-hb-file__open:active {
+      background-color: var(--ch-ledger-row-press);
+    }
   }
   .ch-hb-file__b b {
     font-size: calc(15 * var(--ch-type-k));
@@ -2021,9 +2063,15 @@
     }
   }
   /* A press deepens a file row's tint over the press beat (the shell's CH-1606: a row never scales). */
-  .ch-hb[data-canopy] .ch-hb-file__open:is(:active, [data-ch-pressed]) {
+  .ch-hb[data-canopy] .ch-hb-file__open[data-ch-pressed] {
     background: var(--ch-ledger-row-press);
     transition-duration: var(--ch-dur-press);
+  }
+  @media (hover: hover) {
+    .ch-hb[data-canopy] .ch-hb-file__open:active {
+      background: var(--ch-ledger-row-press);
+      transition-duration: var(--ch-dur-press);
+    }
   }
 
   /* The route skeleton lays its bars flush, as the loaded sections are, and its tab strip is as tall as the tabs. */
@@ -3939,7 +3987,13 @@ html[data-fw-theme='dark'] .ch-hw--dark {
 
 /* B6 (last, so a fill set by a state rule above still takes the tint): a pick and a chip show a quick tap
    (lib/press.ts), the row-press tint over their fill. */
-.ch-hb-picks button:is(:active, [data-ch-pressed]),
-.ch-hb-chip:is(:active, [data-ch-pressed]) {
+.ch-hb-picks button[data-ch-pressed],
+.ch-hb-chip[data-ch-pressed] {
   background-image: linear-gradient(var(--ch-ledger-row-press), var(--ch-ledger-row-press));
+}
+@media (hover: hover) {
+  .ch-hb-picks button:active,
+  .ch-hb-chip:active {
+    background-image: linear-gradient(var(--ch-ledger-row-press), var(--ch-ledger-row-press));
+  }
 }

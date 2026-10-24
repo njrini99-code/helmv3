@@ -930,9 +930,15 @@
     }
   }
   /* A press deepens a row's tint over the press beat (the shell's CH-1606: a row never scales). */
-  main[data-canopy] .ch-hd-it:is(:active, [data-ch-pressed]) {
+  main[data-canopy] .ch-hd-it[data-ch-pressed] {
     background: var(--ch-ledger-row-press);
     transition-duration: var(--ch-dur-press);
+  }
+  @media (hover: hover) {
+    main[data-canopy] .ch-hd-it:active {
+      background: var(--ch-ledger-row-press);
+      transition-duration: var(--ch-dur-press);
+    }
   }
 
   /* The open read: its head is the Board's ruled category line; its parts on soft rules; the plan as rows, as the
@@ -948,9 +954,15 @@
       background: var(--ch-ledger-row-hover);
     }
   }
-  main[data-canopy] :is(.ch-hd-r, .ch-hd-where__i).is-link:is(:active, [data-ch-pressed]) {
+  main[data-canopy] :is(.ch-hd-r, .ch-hd-where__i).is-link[data-ch-pressed] {
     background: var(--ch-ledger-row-press);
     transition-duration: var(--ch-dur-press);
+  }
+  @media (hover: hover) {
+    main[data-canopy] :is(.ch-hd-r, .ch-hd-where__i).is-link:active {
+      background: var(--ch-ledger-row-press);
+      transition-duration: var(--ch-dur-press);
+    }
   }
   main[data-canopy] .ch-hd-plan {
     gap: 0;
@@ -967,9 +979,15 @@
       background: var(--ch-ledger-row-hover);
     }
   }
-  main[data-canopy] .ch-hd-plan__i.is-link:is(:active, [data-ch-pressed]) {
+  main[data-canopy] .ch-hd-plan__i.is-link[data-ch-pressed] {
     background: var(--ch-ledger-row-press);
     transition-duration: var(--ch-dur-press);
+  }
+  @media (hover: hover) {
+    main[data-canopy] .ch-hd-plan__i.is-link:active {
+      background: var(--ch-ledger-row-press);
+      transition-duration: var(--ch-dur-press);
+    }
   }
 
   /* Loading holds the loaded sections (WebKit 1440, 2026-10-07: what CoachHelm has found 156px) and draws each head's
@@ -1021,8 +1039,13 @@
     padding: 8px 0;
     border-top-color: var(--ch-ledger-rule-soft);
   }
-  :is(.ch-hl.is-phone) .ch-hd-it:is(:active, [data-ch-pressed]) {
+  :is(.ch-hl.is-phone) .ch-hd-it[data-ch-pressed] {
     background: var(--ch-ledger-row-press);
+  }
+  @media (hover: hover) {
+    :is(.ch-hl.is-phone) .ch-hd-it:active {
+      background: var(--ch-ledger-row-press);
+    }
   }
   :is(.ch-hl.is-phone) .ch-hd-sk__it {
     border-top-color: var(--ch-ledger-rule-soft);
@@ -1117,8 +1140,13 @@
     padding-inline: 0;
     border-top-color: var(--ch-ledger-rule-soft);
   }
-  .ch-hd-r.is-link:is(:active, [data-ch-pressed]) {
+  .ch-hd-r.is-link[data-ch-pressed] {
     background: var(--ch-ledger-row-press);
+  }
+  @media (hover: hover) {
+    .ch-hd-r.is-link:active {
+      background: var(--ch-ledger-row-press);
+    }
   }
   .ch-hd-dx {
     padding: 0;
@@ -1142,8 +1170,13 @@
   .ch-hd-plan > li + li .ch-hd-plan__i {
     box-shadow: inset 0 var(--ch-hairline-w) 0 var(--ch-ledger-rule-soft);
   }
-  .ch-hd-plan__i.is-link:is(:active, [data-ch-pressed]) {
+  .ch-hd-plan__i.is-link[data-ch-pressed] {
     background: var(--ch-ledger-row-press);
+  }
+  @media (hover: hover) {
+    .ch-hd-plan__i.is-link:active {
+      background: var(--ch-ledger-row-press);
+    }
   }
 
   /* Loading (CH-13480) in the same shapes: each area's head and rows. */

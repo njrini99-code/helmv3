@@ -236,8 +236,13 @@
     background: var(--ch-bg-inset);
   }
 }
-.ch-ask-hist__iconbtn:is(:active, [data-ch-pressed]) {
+.ch-ask-hist__iconbtn[data-ch-pressed] {
   background: var(--ch-ledger-row-press);
+}
+@media (hover: hover) {
+  .ch-ask-hist__iconbtn:active {
+    background: var(--ch-ledger-row-press);
+  }
 }
 .ch-ask-hist__new {
   display: flex;
@@ -264,8 +269,13 @@
     background: linear-gradient(var(--ch-ledger-row-hover), var(--ch-ledger-row-hover)), var(--ch-bg-surface);
   }
 }
-.ch-ask-hist__new:is(:active, [data-ch-pressed]) {
+.ch-ask-hist__new[data-ch-pressed] {
   background: linear-gradient(var(--ch-ledger-row-press), var(--ch-ledger-row-press)), var(--ch-bg-surface);
+}
+@media (hover: hover) {
+  .ch-ask-hist__new:active {
+    background: linear-gradient(var(--ch-ledger-row-press), var(--ch-ledger-row-press)), var(--ch-bg-surface);
+  }
 }
 .ch-ask-hist__scroll {
   flex: 1;
@@ -311,8 +321,13 @@
   font-weight: 500;
 }
 /* After the open chat's fill, so pressing it shows too. */
-.ch-ask-hist__row:is(:active, [data-ch-pressed]) {
+.ch-ask-hist__row[data-ch-pressed] {
   background: var(--ch-ledger-row-press);
+}
+@media (hover: hover) {
+  .ch-ask-hist__row:active {
+    background: var(--ch-ledger-row-press);
+  }
 }
 /* Inset: the history scroller clips a ring drawn outside the row. */
 .ch-ask-hist__row:focus-visible {
@@ -587,8 +602,13 @@
     color: var(--ch-text-primary);
   }
 }
-.ch-ask-cmp__chip:is(:active, [data-ch-pressed]) {
+.ch-ask-cmp__chip[data-ch-pressed] {
   background-image: linear-gradient(var(--ch-ledger-row-press), var(--ch-ledger-row-press));
+}
+@media (hover: hover) {
+  .ch-ask-cmp__chip:active {
+    background-image: linear-gradient(var(--ch-ledger-row-press), var(--ch-ledger-row-press));
+  }
 }
 .ch-ask-cmp__send {
   display: grid;
@@ -603,8 +623,13 @@
   color: var(--ch-text-on-accent);
   cursor: pointer;
 }
-.ch-ask-cmp__send:is(:active, [data-ch-pressed]):not(:disabled):not(.is-stop) {
+.ch-ask-cmp__send[data-ch-pressed]:not(:disabled):not(.is-stop) {
   background: var(--ch-accent-press);
+}
+@media (hover: hover) {
+  .ch-ask-cmp__send:active:not(:disabled):not(.is-stop) {
+    background: var(--ch-accent-press);
+  }
 }
 .ch-ask-cmp__send:disabled {
   background: var(--ch-ivory-300);
@@ -736,8 +761,13 @@
 .ch-ask-pick__row[data-selected='true'] {
   background: var(--ch-bg-inset);
 }
-.ch-ask-pick__row:is(:active, [data-ch-pressed]) {
+.ch-ask-pick__row[data-ch-pressed] {
   background: var(--ch-ledger-row-press);
+}
+@media (hover: hover) {
+  .ch-ask-pick__row:active {
+    background: var(--ch-ledger-row-press);
+  }
 }
 .ch-ask-pick__name {
   min-width: 0;
@@ -970,9 +1000,15 @@ body.keyboard-open .ch-ask-hist.is-drawer {
     cursor: pointer;
     transition: background var(--ch-dur-press) var(--ch-ease);
   }
-  .ch-ask-card:is(:active, [data-ch-pressed]) {
+  .ch-ask-card[data-ch-pressed] {
     background: var(--ch-ledger-row-press);
     transition-delay: var(--ch-dur-press-delay);
+  }
+  @media (hover: hover) {
+    .ch-ask-card:active {
+      background: var(--ch-ledger-row-press);
+      transition-delay: var(--ch-dur-press-delay);
+    }
   }
   .ch-ask-card:focus-visible {
     outline: 2px solid var(--ch-border-focus);

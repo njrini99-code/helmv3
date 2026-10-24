@@ -1043,13 +1043,25 @@
     }
   }
   /* CH-13602: a press deepens the tint over the press beat, as every flush row does (the shell's CH-1606). */
-  .ch-hl[data-canopy] .ch-hl-pl:is(:active, [data-ch-pressed]) {
+  .ch-hl[data-canopy] .ch-hl-pl[data-ch-pressed] {
     background: var(--ch-ledger-row-press);
     transition-duration: var(--ch-dur-press);
   }
-  .ch-hl[data-canopy] .ch-hl-row:is(:active, [data-ch-pressed]) {
+  @media (hover: hover) {
+    .ch-hl[data-canopy] .ch-hl-pl:active {
+      background: var(--ch-ledger-row-press);
+      transition-duration: var(--ch-dur-press);
+    }
+  }
+  .ch-hl[data-canopy] .ch-hl-row[data-ch-pressed] {
     background: var(--ch-ledger-row-press);
     transition-duration: var(--ch-dur-press);
+  }
+  @media (hover: hover) {
+    .ch-hl[data-canopy] .ch-hl-row:active {
+      background: var(--ch-ledger-row-press);
+      transition-duration: var(--ch-dur-press);
+    }
   }
   .ch-hl[data-canopy] .ch-hl-row {
     border-top-color: var(--ch-ledger-rule-soft);
@@ -1222,8 +1234,13 @@
     background: none;
     box-shadow: inset 0 0 0 var(--ch-hairline-w) var(--ch-ledger-rule);
   }
-  .ch-hl.is-phone .ch-hl-pl:is(:active, [data-ch-pressed]) {
+  .ch-hl.is-phone .ch-hl-pl[data-ch-pressed] {
     background: var(--ch-ledger-row-press);
+  }
+  @media (hover: hover) {
+    .ch-hl.is-phone .ch-hl-pl:active {
+      background: var(--ch-ledger-row-press);
+    }
   }
   .ch-hl.is-phone .ch-hl-pl__c {
     background: var(--ch-ledger-row-hover);
@@ -1263,8 +1280,13 @@
   .ch-hl.is-phone .ch-hl-why {
     border-top-color: var(--ch-ledger-rule-soft);
   }
-  .ch-hl.is-phone .ch-hl-why:is(:active, [data-ch-pressed]) {
+  .ch-hl.is-phone .ch-hl-why[data-ch-pressed] {
     background: var(--ch-ledger-row-press);
+  }
+  @media (hover: hover) {
+    .ch-hl.is-phone .ch-hl-why:active {
+      background: var(--ch-ledger-row-press);
+    }
   }
 
   /* What the coach did with a card: the dismissed note is a row between rules, not a card. */
@@ -1304,8 +1326,13 @@
   .ch-hl.is-phone .ch-hl-sec > h2 + .ch-hl-row {
     border-top-color: transparent;
   }
-  .ch-hl.is-phone .ch-hl-row:is(:active, [data-ch-pressed]) {
+  .ch-hl.is-phone .ch-hl-row[data-ch-pressed] {
     background: var(--ch-ledger-row-press);
+  }
+  @media (hover: hover) {
+    .ch-hl.is-phone .ch-hl-row:active {
+      background: var(--ch-ledger-row-press);
+    }
   }
 
   /* Loading (CH-13401, CH-13402) in the same shapes: the intro's lines at their loaded heights, the pulse's head and its
@@ -1747,8 +1774,13 @@ html:not([data-fw-theme='dark']) .ch-hl {
   border-color: var(--ch-border-strong);
   background: var(--ch-bg-selected);
 }
-.ch-hl-cx__c:is(:active, [data-ch-pressed]) {
+.ch-hl-cx__c[data-ch-pressed] {
   background: var(--ch-bg-hover);
+}
+@media (hover: hover) {
+  .ch-hl-cx__c:active {
+    background: var(--ch-bg-hover);
+  }
 }
 .ch-hl-cx__c:disabled {
   cursor: default;

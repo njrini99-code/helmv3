@@ -424,9 +424,15 @@
     transform: translateX(-2px);
   }
 }
-.ch-au-back:is(:active, [data-ch-pressed]) {
+.ch-au-back[data-ch-pressed] {
   background: rgb(28 25 18 / 0.09);
   color: var(--ch-text-primary) !important;
+}
+@media (hover: hover) {
+  .ch-au-back:active {
+    background: rgb(28 25 18 / 0.09);
+    color: var(--ch-text-primary) !important;
+  }
 }
 /* The stage: the lockup over the panel's view (sign in, the reset form, check your email), centred in the panel. The
    lockup stays put while the views slide under it (CH-15612). */
@@ -1554,8 +1560,13 @@ html[data-fw-theme='dark'] .ch-au-back:hover,
 html[data-fw-theme='dark'] .ch-au-eye:hover {
   background: rgb(237 231 216 / 0.06);
 }
-html[data-fw-theme='dark'] .ch-au-back:is(:active, [data-ch-pressed]) {
+html[data-fw-theme='dark'] .ch-au-back[data-ch-pressed] {
   background: rgb(237 231 216 / 0.1);
+}
+@media (hover: hover) {
+  html[data-fw-theme='dark'] .ch-au-back:active {
+    background: rgb(237 231 216 / 0.1);
+  }
 }
 html[data-fw-theme='dark'] .ch-au-lock img {
   filter: drop-shadow(0 1px 1.5px rgb(0 0 0 / 0.4));

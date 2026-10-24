@@ -833,8 +833,13 @@
   .ch-recm-row--static {
     cursor: default;
   }
-  .ch-recm-row.ch-recm-row--static:is(:active, [data-ch-pressed]) {
+  .ch-recm-row.ch-recm-row--static[data-ch-pressed] {
     background: none;
+  }
+  @media (hover: hover) {
+    .ch-recm-row.ch-recm-row--static:active {
+      background: none;
+    }
   }
 
   /* The Mobile clubhouse pass (owner, 2026-10-08; the Coach Home board carried to every phone screen): the page opens on
@@ -941,8 +946,13 @@
   .ch-rec-pipe.is-compact .ch-rec-pipe__stage.is-committed > .ch-rec-pipe__dot::after {
     background: rgb(2 18 10 / 0.22);
   }
-  .ch-rec-pipe.is-compact .ch-rec-pipe__stage:is(:active, [data-ch-pressed]):not(:disabled) > .ch-rec-pipe__dot::after {
+  .ch-rec-pipe.is-compact .ch-rec-pipe__stage[data-ch-pressed]:not(:disabled) > .ch-rec-pipe__dot::after {
     opacity: 1;
+  }
+  @media (hover: hover) {
+    .ch-rec-pipe.is-compact .ch-rec-pipe__stage:active:not(:disabled) > .ch-rec-pipe__dot::after {
+      opacity: 1;
+    }
   }
 
   .ch-recm-count {
@@ -973,8 +983,13 @@
     touch-action: manipulation;
     transition: background var(--ch-dur-press) var(--ch-ease);
   }
-  .ch-recm-sort:is(:active, [data-ch-pressed]) {
+  .ch-recm-sort[data-ch-pressed] {
     background: var(--ch-ledger-row-press);
+  }
+  @media (hover: hover) {
+    .ch-recm-sort:active {
+      background: var(--ch-ledger-row-press);
+    }
   }
   /* The prospects: rows on seams under a hairline, with no card. */
   .ch-recm-list {
@@ -1007,8 +1022,13 @@
     touch-action: manipulation;
     transition: background var(--ch-dur-press) var(--ch-ease);
   }
-  .ch-recm-row:is(:active, [data-ch-pressed]) {
+  .ch-recm-row[data-ch-pressed] {
     background: var(--ch-ledger-row-press);
+  }
+  @media (hover: hover) {
+    .ch-recm-row:active {
+      background: var(--ch-ledger-row-press);
+    }
   }
   .ch-recm-row:focus-visible {
     outline: 2px solid var(--ch-border-focus);
@@ -1128,8 +1148,13 @@
     content: '';
     pointer-events: none;
   }
-  .ch-recm-tile:is(:active, [data-ch-pressed])::after {
+  .ch-recm-tile[data-ch-pressed]::after {
     opacity: 1;
+  }
+  @media (hover: hover) {
+    .ch-recm-tile:active::after {
+      opacity: 1;
+    }
   }
   .ch-recm-tile:focus-visible {
     outline: 2px solid var(--ch-border-focus);
@@ -1174,8 +1199,13 @@
   .ch-recm-stagerow::after {
     bottom: 0;
   }
-  .ch-recm-stagerow:is(:active, [data-ch-pressed]) {
+  .ch-recm-stagerow[data-ch-pressed] {
     background: var(--ch-ledger-row-press);
+  }
+  @media (hover: hover) {
+    .ch-recm-stagerow:active {
+      background: var(--ch-ledger-row-press);
+    }
   }
   .ch-recm-stagerow:focus-visible {
     outline: 2px solid var(--ch-border-focus);
@@ -1243,8 +1273,13 @@
     touch-action: manipulation;
     transition: background var(--ch-dur-press) var(--ch-ease);
   }
-  .ch-recm-det .ch-rec-empty__a:is(:active, [data-ch-pressed]) {
+  .ch-recm-det .ch-rec-empty__a[data-ch-pressed] {
     background: var(--ch-ledger-row-press);
+  }
+  @media (hover: hover) {
+    .ch-recm-det .ch-rec-empty__a:active {
+      background: var(--ch-ledger-row-press);
+    }
   }
   /* 44px tall on the heading's line; it sits above the first row, so its reach is not cut by the row under it. */
   .ch-recm-det .ch-rec-link {
@@ -1256,8 +1291,13 @@
     touch-action: manipulation;
     transition: background var(--ch-dur-press) var(--ch-ease);
   }
-  .ch-recm-det .ch-rec-link:is(:active, [data-ch-pressed]) {
+  .ch-recm-det .ch-rec-link[data-ch-pressed] {
     background: var(--ch-ledger-row-press);
+  }
+  @media (hover: hover) {
+    .ch-recm-det .ch-rec-link:active {
+      background: var(--ch-ledger-row-press);
+    }
   }
   .ch-recm-det .ch-rec-notes {
     padding: 6px 0 0;
@@ -1292,8 +1332,13 @@
     touch-action: manipulation;
     transition: background var(--ch-dur-press) var(--ch-ease);
   }
-  .ch-recm-det .ch-rec-doc__open:is(:active, [data-ch-pressed]) {
+  .ch-recm-det .ch-rec-doc__open[data-ch-pressed] {
     background: var(--ch-ledger-row-press);
+  }
+  @media (hover: hover) {
+    .ch-recm-det .ch-rec-doc__open:active {
+      background: var(--ch-ledger-row-press);
+    }
   }
   .ch-recm-det .ch-rec-doc__t {
     font-size: calc(15 * var(--ch-type-k));
@@ -1305,8 +1350,13 @@
     touch-action: manipulation;
     transition: background var(--ch-dur-press) var(--ch-ease);
   }
-  .ch-recm-det .ch-rec-doc__x:is(:active, [data-ch-pressed]) {
+  .ch-recm-det .ch-rec-doc__x[data-ch-pressed] {
     background: var(--ch-ledger-row-press);
+  }
+  @media (hover: hover) {
+    .ch-recm-det .ch-rec-doc__x:active {
+      background: var(--ch-ledger-row-press);
+    }
   }
   .ch-recm-det .ch-rec-note {
     padding-top: 6px;
@@ -1627,9 +1677,15 @@
     background: color-mix(in oklab, var(--ch-green-600) 8%, transparent);
   }
   /* A press deepens the row's tint over the press beat (the shell's CH-1606: a row never scales). */
-  .ch-rec[data-canopy] .ch-rec-tb tbody tr .ch-rec-tb__name:is(:active, [data-ch-pressed])::before {
+  .ch-rec[data-canopy] .ch-rec-tb tbody tr .ch-rec-tb__name[data-ch-pressed]::before {
     background: var(--ch-ledger-row-press);
     transition-duration: var(--ch-dur-press);
+  }
+  @media (hover: hover) {
+    .ch-rec[data-canopy] .ch-rec-tb tbody tr .ch-rec-tb__name:active::before {
+      background: var(--ch-ledger-row-press);
+      transition-duration: var(--ch-dur-press);
+    }
   }
   .ch-rec[data-canopy] .ch-rec-skel-row {
     padding: 0;
@@ -1778,9 +1834,15 @@
   }
 }
 /* A press tints the pick a beat after the finger lands, as a Ledger row does (CH-1606). */
-.ch-rec-cal__pick:is(:active, [data-ch-pressed]) {
+.ch-rec-cal__pick[data-ch-pressed] {
   background-color: var(--ch-ledger-row-press);
   transition-delay: var(--ch-dur-press-delay);
+}
+@media (hover: hover) {
+  .ch-rec-cal__pick:active {
+    background-color: var(--ch-ledger-row-press);
+    transition-delay: var(--ch-dur-press-delay);
+  }
 }
 .ch-rec-cal__pick:focus-visible {
   outline: 2px solid var(--ch-border-focus);
@@ -2029,9 +2091,15 @@
     transform: translateY(-2px);
   }
 }
-.ch-rec-pipe__stage:not(:disabled):is(:active, [data-ch-pressed]) > .ch-rec-pipe__dot {
+.ch-rec-pipe__stage:not(:disabled)[data-ch-pressed] > .ch-rec-pipe__dot {
   transform: scale(0.96);
   transition-duration: var(--ch-dur-press);
+}
+@media (hover: hover) {
+  .ch-rec-pipe__stage:not(:disabled):active > .ch-rec-pipe__dot {
+    transform: scale(0.96);
+    transition-duration: var(--ch-dur-press);
+  }
 }
 .ch-rec-pipe__seg {
   transition: background var(--ch-dur-base) var(--ch-ease);

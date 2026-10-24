@@ -498,8 +498,13 @@
     background: color-mix(in oklab, var(--ch-green-600) 4.5%, transparent);
   }
 }
-.ch-h-rail__item:is(:active, [data-ch-pressed]) {
+.ch-h-rail__item[data-ch-pressed] {
   background: color-mix(in oklab, var(--ch-green-600) 8%, transparent);
+}
+@media (hover: hover) {
+  .ch-h-rail__item:active {
+    background: color-mix(in oklab, var(--ch-green-600) 8%, transparent);
+  }
 }
 .ch-h-rail__item.is-on {
   background: var(--ch-selected-bg);
@@ -647,8 +652,13 @@
     translate: 0 -50%;
   }
 }
-.ch-h-lb__row.is-link:is(:active, [data-ch-pressed]) {
+.ch-h-lb__row.is-link[data-ch-pressed] {
   background: color-mix(in oklab, var(--ch-green-600) 8%, transparent);
+}
+@media (hover: hover) {
+  .ch-h-lb__row.is-link:active {
+    background: color-mix(in oklab, var(--ch-green-600) 8%, transparent);
+  }
 }
 .ch-h-lb__row.is-link:has(.ch-h-lb__go:focus-visible) {
   outline: 2px solid var(--ch-border-focus);
@@ -1499,8 +1509,13 @@
     touch-action: manipulation;
     transition: background var(--ch-dur-quick) var(--ch-ease);
   }
-  .ch-hm-rd:is(:active, [data-ch-pressed]) {
+  .ch-hm-rd[data-ch-pressed] {
     background: var(--ch-bg-hover);
+  }
+  @media (hover: hover) {
+    .ch-hm-rd:active {
+      background: var(--ch-bg-hover);
+    }
   }
   .ch-hm-rd__b {
     display: flex;
@@ -2607,14 +2622,27 @@
   }
   /* CH-2602: a press deepens the row's tint and nudges its chevron 2px on, over the press beat; letting go eases back
      over quick. A row never scales (lib/press.ts, owner F02). */
-  .ch-h-main--desk[data-canopy] .ch-h-lb__row.is-link:is(:active, [data-ch-pressed]) {
+  .ch-h-main--desk[data-canopy] .ch-h-lb__row.is-link[data-ch-pressed] {
     background: var(--ch-ledger-row-press);
     transition-duration: var(--ch-dur-press);
   }
-  .ch-h-main--desk[data-canopy] .ch-h-lb__row.is-link:is(:active, [data-ch-pressed])::after {
+  @media (hover: hover) {
+    .ch-h-main--desk[data-canopy] .ch-h-lb__row.is-link:active {
+      background: var(--ch-ledger-row-press);
+      transition-duration: var(--ch-dur-press);
+    }
+  }
+  .ch-h-main--desk[data-canopy] .ch-h-lb__row.is-link[data-ch-pressed]::after {
     opacity: 1;
     translate: 2px -50%;
     transition-duration: var(--ch-dur-press);
+  }
+  @media (hover: hover) {
+    .ch-h-main--desk[data-canopy] .ch-h-lb__row.is-link:active::after {
+      opacity: 1;
+      translate: 2px -50%;
+      transition-duration: var(--ch-dur-press);
+    }
   }
   /* Player Home: Scoring runs from the week without a card, at the head's edge; "Your game" is four figures on the
      canvas divided by soft rules, not four cards. */
@@ -3175,9 +3203,15 @@
     pointer-events: none;
     transition: opacity var(--ch-dur-press) var(--ch-ease);
   }
-  a.ch-hm-next:is(:active, [data-ch-pressed])::after {
+  a.ch-hm-next[data-ch-pressed]::after {
     opacity: 0.38;
     transition-delay: var(--ch-dur-press-delay);
+  }
+  @media (hover: hover) {
+    a.ch-hm-next:active::after {
+      opacity: 0.38;
+      transition-delay: var(--ch-dur-press-delay);
+    }
   }
   /* Today's rows sit on the section's edge like the Ledger's rows (ui.css `.ch-lgr__row.is-link`): the tap area runs
      12px past the text on each side and a press tints it. */
@@ -3187,9 +3221,15 @@
     border-radius: var(--ch-radius-md);
     transition: background var(--ch-dur-press) var(--ch-ease);
   }
-  .ch-hm-tl__a:is(:active, [data-ch-pressed]) {
+  .ch-hm-tl__a[data-ch-pressed] {
     background: var(--ch-ledger-row-press);
     transition-delay: var(--ch-dur-press-delay);
+  }
+  @media (hover: hover) {
+    .ch-hm-tl__a:active {
+      background: var(--ch-ledger-row-press);
+      transition-delay: var(--ch-dur-press-delay);
+    }
   }
   .ch-hm-tl__a:focus-visible {
     outline: 2px solid var(--ch-border-focus);
@@ -3211,9 +3251,15 @@
     border-radius: var(--ch-radius-md);
     transition: background var(--ch-dur-press) var(--ch-ease);
   }
-  .ch-hm-rd:is(:active, [data-ch-pressed]) {
+  .ch-hm-rd[data-ch-pressed] {
     background: var(--ch-ledger-row-press);
     transition-delay: var(--ch-dur-press-delay);
+  }
+  @media (hover: hover) {
+    .ch-hm-rd:active {
+      background: var(--ch-ledger-row-press);
+      transition-delay: var(--ch-dur-press-delay);
+    }
   }
   .ch-hm-rd:focus-visible {
     outline: 2px solid var(--ch-border-focus);
@@ -3225,21 +3271,39 @@
   .ch-hm-link {
     transition: opacity var(--ch-dur-press) var(--ch-ease);
   }
-  .ch-hm-link:is(:active, [data-ch-pressed]) {
+  .ch-hm-link[data-ch-pressed] {
     opacity: 0.55;
     transition-delay: var(--ch-dur-press-delay);
+  }
+  @media (hover: hover) {
+    .ch-hm-link:active {
+      opacity: 0.55;
+      transition-delay: var(--ch-dur-press-delay);
+    }
   }
   .ch-hm-none__chip,
   .ch-hm-none__add {
     transition: background var(--ch-dur-press) var(--ch-ease);
   }
-  .ch-hm-none__chip:is(:active, [data-ch-pressed]) {
+  .ch-hm-none__chip[data-ch-pressed] {
     background: rgb(255 255 255 / 0.16);
     transition-delay: var(--ch-dur-press-delay);
   }
-  .ch-hm-none__add:is(:active, [data-ch-pressed]) {
+  @media (hover: hover) {
+    .ch-hm-none__chip:active {
+      background: rgb(255 255 255 / 0.16);
+      transition-delay: var(--ch-dur-press-delay);
+    }
+  }
+  .ch-hm-none__add[data-ch-pressed] {
     background: var(--ch-ivory-200);
     transition-delay: var(--ch-dur-press-delay);
+  }
+  @media (hover: hover) {
+    .ch-hm-none__add:active {
+      background: var(--ch-ivory-200);
+      transition-delay: var(--ch-dur-press-delay);
+    }
   }
   /* The first-run pages (CH-2308, CH-2312): the head is the Ledger's page intro (ui/Ledger.tsx PageIntro), the date as
      the eyebrow under the double rule and the greeting in the bold condensed sans, on the phone gutter like Home. */
@@ -3301,9 +3365,15 @@
     box-shadow: inset 0 0 0 1px var(--ch-ledger-rule);
     transition: background var(--ch-dur-press) var(--ch-ease);
   }
-  .ch-hm--player .ch-ph-pg button:is(:active, [data-ch-pressed])::before {
+  .ch-hm--player .ch-ph-pg button[data-ch-pressed]::before {
     background: var(--ch-ledger-row-press);
     transition-delay: var(--ch-dur-press-delay);
+  }
+  @media (hover: hover) {
+    .ch-hm--player .ch-ph-pg button:active::before {
+      background: var(--ch-ledger-row-press);
+      transition-delay: var(--ch-dur-press-delay);
+    }
   }
   .ch-hm--player .ch-ph-pg button:focus-visible::before {
     box-shadow: 0 0 0 2px var(--ch-border-focus);
@@ -3613,9 +3683,15 @@ html[data-fw-theme='dark'] .ch-ph-legs-sec.is-phone .ch-ph-leg + .ch-ph-leg {
     pointer-events: none;
     transition: opacity var(--ch-dur-press) var(--ch-ease);
   }
-  .ch-hm-day:has(.ch-hm-day__open:is(:active, [data-ch-pressed]))::after {
+  .ch-hm-day:has(.ch-hm-day__open[data-ch-pressed])::after {
     opacity: 0.38;
     transition-delay: var(--ch-dur-press-delay);
+  }
+  @media (hover: hover) {
+    .ch-hm-day:has(.ch-hm-day__open:active)::after {
+      opacity: 0.38;
+      transition-delay: var(--ch-dur-press-delay);
+    }
   }
   /* P002 D2: 28px coins whose 2px rings just touch, so two initials always clear the next coin. */
   .ch-hm-day__stack .ch-avatar + .ch-avatar {
@@ -3663,12 +3739,23 @@ html[data-fw-theme='dark'] .ch-ph-legs-sec.is-phone .ch-ph-leg + .ch-ph-leg {
     color: var(--ch-green-800);
     font-weight: 600;
   }
-  .ch-hm-day__act:is(:active, [data-ch-pressed]) {
+  .ch-hm-day__act[data-ch-pressed] {
     background: rgb(244 238 221 / 0.2);
     transition-delay: var(--ch-dur-press-delay);
   }
-  .ch-hm-day__act.is-primary:is(:active, [data-ch-pressed]) {
+  @media (hover: hover) {
+    .ch-hm-day__act:active {
+      background: rgb(244 238 221 / 0.2);
+      transition-delay: var(--ch-dur-press-delay);
+    }
+  }
+  .ch-hm-day__act.is-primary[data-ch-pressed] {
     background: var(--ch-champagne-100);
+  }
+  @media (hover: hover) {
+    .ch-hm-day__act.is-primary:active {
+      background: var(--ch-champagne-100);
+    }
   }
   .ch-root .ch-hm-day__act:focus-visible {
     outline: 2px solid var(--ch-border-focus-on-dark);

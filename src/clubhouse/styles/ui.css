@@ -68,9 +68,15 @@
     box-shadow: var(--ch-elevation-primary-hover);
   }
 }
-.ch-btn--primary:is(:active, [data-ch-pressed]):not(:disabled) {
+.ch-btn--primary[data-ch-pressed]:not(:disabled) {
   background: #08301e;
   box-shadow: 0 0 0 1px #0e462c, inset 0 1px 3px rgb(0 0 0 / 0.25);
+}
+@media (hover: hover) {
+  .ch-btn--primary:active:not(:disabled) {
+    background: #08301e;
+    box-shadow: 0 0 0 1px #0e462c, inset 0 1px 3px rgb(0 0 0 / 0.25);
+  }
 }
 /* Off, the primary key is unlit (owner, 2026-10-07; as Sign in, CH-15607): the same shape pressed into the paper with
    its word engraved, not a 42% fade of the green. In flight (aria-busy) it stays lit: working, not unavailable. */
@@ -98,9 +104,15 @@
     box-shadow: var(--ch-btn-secondary-hover-shadow);
   }
 }
-.ch-btn--secondary:is(:active, [data-ch-pressed]):not(:disabled) {
+.ch-btn--secondary[data-ch-pressed]:not(:disabled) {
   background: #f5f3ec;
   box-shadow: 0 0 0 1px rgb(28 25 18 / 0.1), inset 0 1px 2px rgb(28 25 18 / 0.12);
+}
+@media (hover: hover) {
+  .ch-btn--secondary:active:not(:disabled) {
+    background: #f5f3ec;
+    box-shadow: 0 0 0 1px rgb(28 25 18 / 0.1), inset 0 1px 2px rgb(28 25 18 / 0.12);
+  }
 }
 .ch-btn--ghost {
   color: var(--ch-green-600);
@@ -112,8 +124,13 @@
     background: var(--ch-green-50);
   }
 }
-.ch-btn--ghost:is(:active, [data-ch-pressed]):not(:disabled) {
+.ch-btn--ghost[data-ch-pressed]:not(:disabled) {
   background: var(--ch-green-100);
+}
+@media (hover: hover) {
+  .ch-btn--ghost:active:not(:disabled) {
+    background: var(--ch-green-100);
+  }
 }
 .ch-btn--ink {
   color: #faf9f5;
@@ -757,9 +774,15 @@
 }
 /* The tint waits a beat after the finger lands, so a scroll that starts on a row never flashes it; letting go clears it
    at once, since only the pressed state carries the delay (CH-1606). */
-.ch-lgr__row.is-link:is(:active, [data-ch-pressed]) {
+.ch-lgr__row.is-link[data-ch-pressed] {
   background: var(--ch-ledger-row-press);
   transition-delay: var(--ch-dur-press-delay);
+}
+@media (hover: hover) {
+  .ch-lgr__row.is-link:active {
+    background: var(--ch-ledger-row-press);
+    transition-delay: var(--ch-dur-press-delay);
+  }
 }
 @media (hover: hover) {
   .ch-lgr__row.is-link:hover {
@@ -890,9 +913,15 @@
   content: '';
   pointer-events: none;
 }
-.ch-feat.is-link:is(:active, [data-ch-pressed])::after {
+.ch-feat.is-link[data-ch-pressed]::after {
   opacity: 1;
   transition-delay: var(--ch-dur-press-delay);
+}
+@media (hover: hover) {
+  .ch-feat.is-link:active::after {
+    opacity: 1;
+    transition-delay: var(--ch-dur-press-delay);
+  }
 }
 /* The card as a button (FeatureCard onClick): the card's own face, not the browser's button. */
 button.ch-feat {
@@ -1022,8 +1051,13 @@ button.ch-feat {
 :where(html[data-fw-theme='dark']) .ch-btn--primary {
   background: linear-gradient(180deg, #2c7a52 0%, #25734d 50%, #25734d 50%, #1d613f 100%) 0 100% / 100% 200%;
 }
-html[data-fw-theme='dark'] .ch-btn--primary:is(:active, [data-ch-pressed]):not(:disabled) {
+html[data-fw-theme='dark'] .ch-btn--primary[data-ch-pressed]:not(:disabled) {
   background: #17543a;
+}
+@media (hover: hover) {
+  html[data-fw-theme='dark'] .ch-btn--primary:active:not(:disabled) {
+    background: #17543a;
+  }
 }
 html[data-fw-theme='dark'] .ch-btn--primary:disabled:not([aria-busy='true']) {
   text-shadow: 0 1px 0 rgb(0 0 0 / 0.4);
@@ -1031,9 +1065,15 @@ html[data-fw-theme='dark'] .ch-btn--primary:disabled:not([aria-busy='true']) {
 :where(html[data-fw-theme='dark']) .ch-btn--secondary {
   background: linear-gradient(180deg, #313932 0%, #29302a 50%, #2a312b 50%, #232a24 100%) 0 100% / 100% 200%;
 }
-html[data-fw-theme='dark'] .ch-btn--secondary:is(:active, [data-ch-pressed]):not(:disabled) {
+html[data-fw-theme='dark'] .ch-btn--secondary[data-ch-pressed]:not(:disabled) {
   background: #1f2520;
   box-shadow: 0 0 0 1px rgb(237 231 216 / 0.1), inset 0 1px 2px rgb(0 0 0 / 0.35);
+}
+@media (hover: hover) {
+  html[data-fw-theme='dark'] .ch-btn--secondary:active:not(:disabled) {
+    background: #1f2520;
+    box-shadow: 0 0 0 1px rgb(237 231 216 / 0.1), inset 0 1px 2px rgb(0 0 0 / 0.35);
+  }
 }
 :where(html[data-fw-theme='dark']) .ch-btn--ink {
   color: var(--ch-ink-950);
@@ -1253,8 +1293,13 @@ html[data-fw-theme='dark'] .ch-scoreboard .ch-score--double {
 .ch-peek__act + .ch-peek__act {
   box-shadow: inset 0 var(--ch-hairline-w) 0 var(--ch-border-hairline);
 }
-.ch-peek__act:is(:active, [data-ch-pressed]) {
+.ch-peek__act[data-ch-pressed] {
   background: var(--ch-bg-hover);
+}
+@media (hover: hover) {
+  .ch-peek__act:active {
+    background: var(--ch-bg-hover);
+  }
 }
 .ch-peek__act svg {
   color: var(--ch-text-secondary);
@@ -1825,8 +1870,13 @@ html[data-fw-theme='dark'] .ch-scoreboard .ch-score--double {
 :is(button, a).ch-wks__d {
   cursor: pointer;
 }
-:is(button, a).ch-wks__d:is(:active, [data-ch-pressed]):not(.is-on) {
+:is(button, a).ch-wks__d[data-ch-pressed]:not(.is-on) {
   background-color: var(--ch-ledger-row-press);
+}
+@media (hover: hover) {
+  :is(button, a).ch-wks__d:active:not(.is-on) {
+    background-color: var(--ch-ledger-row-press);
+  }
 }
 @media (hover: hover) {
   :is(button, a).ch-wks__d:not(.is-on):hover {

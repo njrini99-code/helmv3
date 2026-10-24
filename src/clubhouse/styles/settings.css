@@ -82,9 +82,15 @@
   }
 }
 /* CH-8607: a section presses with a deeper tint over the press beat, never a scale (the shell's CH-1606). */
-.ch-set-rail__i:is(:active, [data-ch-pressed]) {
+.ch-set-rail__i[data-ch-pressed] {
   background: var(--ch-ledger-row-press);
   transition-duration: var(--ch-dur-press);
+}
+@media (hover: hover) {
+  .ch-set-rail__i:active {
+    background: var(--ch-ledger-row-press);
+    transition-duration: var(--ch-dur-press);
+  }
 }
 .ch-set-rail__i.is-on {
   /* Flat selection: a soft green tint, no lift (owner, 2026-09-29). */
@@ -837,8 +843,13 @@
     touch-action: manipulation;
     transition: background var(--ch-dur-press) var(--ch-ease);
   }
-  .ch-setm-id:is(:active, [data-ch-pressed]) {
+  .ch-setm-id[data-ch-pressed] {
     background: var(--ch-ledger-row-press);
+  }
+  @media (hover: hover) {
+    .ch-setm-id:active {
+      background: var(--ch-ledger-row-press);
+    }
   }
   .ch-setm-id:focus-visible {
     outline: 2px solid var(--ch-border-focus);
@@ -969,9 +980,15 @@
   .ch-setm-row ~ .ch-setm-row.has-tile::before {
     left: 56px;
   }
-  button.ch-setm-row:is(:active, [data-ch-pressed]),
-  a.ch-setm-row:is(:active, [data-ch-pressed]) {
+  button.ch-setm-row[data-ch-pressed],
+  a.ch-setm-row[data-ch-pressed] {
     background: var(--ch-bg-hover);
+  }
+  @media (hover: hover) {
+    button.ch-setm-row:active,
+    a.ch-setm-row:active {
+      background: var(--ch-bg-hover);
+    }
   }
   .ch-setm-row:focus-visible {
     outline: 2px solid var(--ch-border-focus);
@@ -1307,8 +1324,13 @@
     touch-action: manipulation;
     transition: background var(--ch-dur-press) var(--ch-ease);
   }
-  .ch-setm-signout:is(:active, [data-ch-pressed]) {
+  .ch-setm-signout[data-ch-pressed] {
     background: var(--ch-ledger-row-press);
+  }
+  @media (hover: hover) {
+    .ch-setm-signout:active {
+      background: var(--ch-ledger-row-press);
+    }
   }
   .ch-setm-signout:disabled {
     opacity: 0.5;
@@ -1503,9 +1525,15 @@
     left: 12px;
     background: var(--ch-ledger-rule-soft);
   }
-  .ch-setm-page > .ch-setm-group > .ch-setm-card > button.ch-setm-row:is(:active, [data-ch-pressed]),
-  .ch-setm-page > .ch-setm-group > .ch-setm-card > a.ch-setm-row:is(:active, [data-ch-pressed]) {
+  .ch-setm-page > .ch-setm-group > .ch-setm-card > button.ch-setm-row[data-ch-pressed],
+  .ch-setm-page > .ch-setm-group > .ch-setm-card > a.ch-setm-row[data-ch-pressed] {
     background: var(--ch-ledger-row-press);
+  }
+  @media (hover: hover) {
+    .ch-setm-page > .ch-setm-group > .ch-setm-card > button.ch-setm-row:active,
+    .ch-setm-page > .ch-setm-group > .ch-setm-card > a.ch-setm-row:active {
+      background: var(--ch-ledger-row-press);
+    }
   }
   .ch-setm-page > .ch-setm-group > .ch-setm-card > .ch-setm-row.has-tile {
     gap: 16px;
@@ -1694,9 +1722,15 @@
     }
   }
   /* A press deepens a link row's tint over the press beat (the shell's CH-1606: a row never scales). */
-  .ch-set[data-canopy] .ch-surface .ch-set-link:is(:active, [data-ch-pressed]) {
+  .ch-set[data-canopy] .ch-surface .ch-set-link[data-ch-pressed] {
     background: var(--ch-ledger-row-press);
     transition-duration: var(--ch-dur-press);
+  }
+  @media (hover: hover) {
+    .ch-set[data-canopy] .ch-surface .ch-set-link:active {
+      background: var(--ch-ledger-row-press);
+      transition-duration: var(--ch-dur-press);
+    }
   }
   /* The notification table: its labels and switches align to the section's edge and a row's hover tint reaches 12px
      past it, as the Home leaderboard's does, so its seams are drawn inset to that edge instead of as full-width
@@ -1737,8 +1771,13 @@
   }
 }
 /* As in light: a press tints over hover, and the selected section keeps its own tint. */
-html[data-fw-theme='dark'] .ch-set-rail__i:is(:active, [data-ch-pressed]) {
+html[data-fw-theme='dark'] .ch-set-rail__i[data-ch-pressed] {
   background: var(--ch-ledger-row-press);
+}
+@media (hover: hover) {
+  html[data-fw-theme='dark'] .ch-set-rail__i:active {
+    background: var(--ch-ledger-row-press);
+  }
 }
 html[data-fw-theme='dark'] .ch-set-rail__i.is-on {
   background: rgb(107 187 140 / 0.1);

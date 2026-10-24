@@ -548,10 +548,17 @@
     box-shadow: var(--ch-elevation-primary-hover);
   }
 }
-.ch-ox-card:is(:active, [data-ch-pressed]) {
+.ch-ox-card[data-ch-pressed] {
   transform: translateY(1px);
   box-shadow: var(--ch-green-raised-shadow);
   transition-duration: var(--ch-dur-press);
+}
+@media (hover: hover) {
+  .ch-ox-card:active {
+    transform: translateY(1px);
+    box-shadow: var(--ch-green-raised-shadow);
+    transition-duration: var(--ch-dur-press);
+  }
 }
 .ch-ox-card:focus-visible {
   outline: 2px solid var(--ch-border-focus);
@@ -856,10 +863,17 @@
     box-shadow: var(--ch-raised-shadow);
   }
 }
-.ch-ox-tile:is(:active, [data-ch-pressed]) {
+.ch-ox-tile[data-ch-pressed] {
   background: var(--ch-well-soft-bg);
   box-shadow: var(--ch-well-soft-shadow);
   transform: translateY(1px);
+}
+@media (hover: hover) {
+  .ch-ox-tile:active {
+    background: var(--ch-well-soft-bg);
+    box-shadow: var(--ch-well-soft-shadow);
+    transform: translateY(1px);
+  }
 }
 .ch-ox-tile:focus-visible {
   outline: 2px solid var(--ch-border-focus);
@@ -1384,8 +1398,13 @@
     transform: translateX(2px);
   }
 }
-.ch-ox-nextstep:is(:active, [data-ch-pressed]) {
+.ch-ox-nextstep[data-ch-pressed] {
   background: var(--ch-ledger-row-press);
+}
+@media (hover: hover) {
+  .ch-ox-nextstep:active {
+    background: var(--ch-ledger-row-press);
+  }
 }
 .ch-ox-nextstep:focus-visible {
   outline: 2px solid var(--ch-border-focus);

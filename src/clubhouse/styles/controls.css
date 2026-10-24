@@ -49,9 +49,15 @@
 /* CH-1617: pressed, an option that isn't chosen takes the Ledger's press tint over the press beat, after the beat UIKit
    waits so a scroll that starts on it never flashes it; letting go clears it at once. It never scales (lib/press.ts):
    the chip arriving is the answer. The chosen option has nothing to change, so it doesn't answer. */
-.ch-seg__b:not(.is-on):is(:active, [data-ch-pressed]) {
+.ch-seg__b:not(.is-on)[data-ch-pressed] {
   background: var(--ch-ledger-row-press);
   transition-delay: var(--ch-dur-press-delay);
+}
+@media (hover: hover) {
+  .ch-seg__b:not(.is-on):active {
+    background: var(--ch-ledger-row-press);
+    transition-delay: var(--ch-dur-press-delay);
+  }
 }
 .ch-seg__b:focus-visible {
   outline: 2px solid var(--ch-border-focus);
@@ -111,9 +117,15 @@
   }
 }
 /* CH-1617: a pill that isn't on answers a press the way a segment does. */
-.ch-pill:not([aria-pressed='true']):is(:active, [data-ch-pressed]) {
+.ch-pill:not([aria-pressed='true'])[data-ch-pressed] {
   background: var(--ch-ledger-row-press);
   transition-delay: var(--ch-dur-press-delay);
+}
+@media (hover: hover) {
+  .ch-pill:not([aria-pressed='true']):active {
+    background: var(--ch-ledger-row-press);
+    transition-delay: var(--ch-dur-press-delay);
+  }
 }
 .ch-pill[aria-pressed='true'] {
   background: var(--ch-selected-pill-bg);
@@ -459,9 +471,15 @@
     background: linear-gradient(180deg, var(--ch-danger-hover), var(--ch-danger-fill-bottom));
   }
 }
-.ch-btn--danger:is(:active, [data-ch-pressed]):not(:disabled) {
+.ch-btn--danger[data-ch-pressed]:not(:disabled) {
   background: var(--ch-danger-press);
   box-shadow: 0 0 0 1px var(--ch-danger-ring), inset 0 1px 3px rgb(0 0 0 / 0.25);
+}
+@media (hover: hover) {
+  .ch-btn--danger:active:not(:disabled) {
+    background: var(--ch-danger-press);
+    box-shadow: 0 0 0 1px var(--ch-danger-ring), inset 0 1px 3px rgb(0 0 0 / 0.25);
+  }
 }
 @keyframes ch-pop {
   from {
@@ -725,11 +743,21 @@
    settles round as the finger lifts. The scale property composes with the travel's transform, so nothing reflows.
    Like the press (CH-1606), it is off with reduced motion and with Animations off. */
 @media (prefers-reduced-motion: no-preference) {
-  .ch-switch:not(.is-disabled):not(.is-busy):is(:active, [data-ch-pressed]) .ch-switch__thumb {
+  .ch-switch:not(.is-disabled):not(.is-busy)[data-ch-pressed] .ch-switch__thumb {
     scale: 1.2 1;
   }
-  [data-motion='off'] .ch-switch:not(.is-disabled):not(.is-busy):is(:active, [data-ch-pressed]) .ch-switch__thumb {
+  @media (hover: hover) {
+    .ch-switch:not(.is-disabled):not(.is-busy):active .ch-switch__thumb {
+      scale: 1.2 1;
+    }
+  }
+  [data-motion='off'] .ch-switch:not(.is-disabled):not(.is-busy)[data-ch-pressed] .ch-switch__thumb {
     scale: none;
+  }
+  @media (hover: hover) {
+    [data-motion='off'] .ch-switch:not(.is-disabled):not(.is-busy):active .ch-switch__thumb {
+      scale: none;
+    }
   }
 }
 .ch-switch input:focus-visible + .ch-switch__track {
@@ -968,8 +996,13 @@
     background: var(--ch-ledger-row-hover);
   }
 }
-.ch-df__open:is(:active, [data-ch-pressed]):not(:disabled) {
+.ch-df__open[data-ch-pressed]:not(:disabled) {
   background: var(--ch-ledger-row-press);
+}
+@media (hover: hover) {
+  .ch-df__open:active:not(:disabled) {
+    background: var(--ch-ledger-row-press);
+  }
 }
 .ch-df__open:focus-visible {
   outline: 2px solid var(--ch-border-focus);
@@ -1059,8 +1092,13 @@
     background: var(--ch-ledger-row-hover);
   }
 }
-.ch-df-nav:is(:active, [data-ch-pressed]):not(:disabled) {
+.ch-df-nav[data-ch-pressed]:not(:disabled) {
   background: var(--ch-ledger-row-press);
+}
+@media (hover: hover) {
+  .ch-df-nav:active:not(:disabled) {
+    background: var(--ch-ledger-row-press);
+  }
 }
 .ch-df-nav:disabled {
   color: var(--ch-ink-400);
@@ -1114,8 +1152,13 @@
     background: var(--ch-ledger-row-hover);
   }
 }
-.ch-df-day:is(:active, [data-ch-pressed]):not(:disabled):not(.is-on) {
+.ch-df-day[data-ch-pressed]:not(:disabled):not(.is-on) {
   background: var(--ch-ledger-row-press);
+}
+@media (hover: hover) {
+  .ch-df-day:active:not(:disabled):not(.is-on) {
+    background: var(--ch-ledger-row-press);
+  }
 }
 /* Today is a dot under its numeral, not a colour; the chosen day is the segmented control's lit chip. */
 .ch-df-day.is-today::after {
@@ -1206,8 +1249,13 @@
     background: var(--ch-ledger-row-hover);
   }
 }
-.ch-tf__row:is(:active, [data-ch-pressed]):not(:disabled):not(.is-on) {
+.ch-tf__row[data-ch-pressed]:not(:disabled):not(.is-on) {
   background: var(--ch-ledger-row-press);
+}
+@media (hover: hover) {
+  .ch-tf__row:active:not(:disabled):not(.is-on) {
+    background: var(--ch-ledger-row-press);
+  }
 }
 .ch-tf__row.is-on {
   background: var(--ch-seg-on-bg);
@@ -1654,9 +1702,15 @@ html[data-fw-theme='dark'] .ch-slider input::-moz-range-thumb {
     font-weight: 600;
     color: var(--ch-green-600);
   }
-  .ch-fsheet-act__btn:is(:active, [data-ch-pressed]),
-  .ch-fsheet-act__cancel:is(:active, [data-ch-pressed]) {
+  .ch-fsheet-act__btn[data-ch-pressed],
+  .ch-fsheet-act__cancel[data-ch-pressed] {
     background: var(--ch-bg-hover);
+  }
+  @media (hover: hover) {
+    .ch-fsheet-act__btn:active,
+    .ch-fsheet-act__cancel:active {
+      background: var(--ch-bg-hover);
+    }
   }
   .ch-fsheet-act__btn:focus-visible,
   .ch-fsheet-act__cancel:focus-visible {
