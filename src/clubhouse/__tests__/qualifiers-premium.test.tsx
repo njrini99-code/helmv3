@@ -208,10 +208,10 @@ describe('P009-B2 an honest Live state', () => {
 });
 
 describe('P009-A1 standings on hand-hung plates', () => {
-  it('movement is against the board before the latest round: Jonah up 2, Ava down 1, Priya down 2, Sofia unmoved', () => {
+  it('movement is against the board before the latest round: Jonah up 2, Ava down 1, Priya down 3, Sofia unmoved', () => {
     expect(at('jonah').move).toBe(2);
     expect(at('ava').move).toBe(-1);
-    expect(at('priya').move).toBe(-2);
+    expect(at('priya').move).toBe(-3);
     expect(at('sofia').move).toBe(0);
     // One round in: nothing to compare with.
     const e = (id: string) => ({ playerId: id, name: id, classYear: null });
@@ -220,7 +220,7 @@ describe('P009-A1 standings on hand-hung plates', () => {
     expect(one.rows.map((r) => r.move)).toEqual([null, null]);
     // A player first ranked in the latest round has no movement.
     const late = buildBoard({ entrants: [e('a'), e('b')], rounds: [rd('a', 1, 0), rd('a', 2, 0), rd('b', 2, -2)], squad: 1, picks: 0, status: 'in_progress', selectionState: 'scoring', selections: null, numRounds: 3 });
-    // (B, with only round two in, is a round short, so it stands below A: owner decision 10.)
+    // (B has no score for round one, which is over while round two is played, so B stands below A: owner decision 10.)
     expect(late.rows.map((r) => [r.playerId, r.move])).toEqual([
       ['a', 0],
       ['b', null],
@@ -237,7 +237,7 @@ describe('P009-A1 standings on hand-hung plates', () => {
     expect(row('Jonah').querySelector('.ch-qf-move.is-gain')!.textContent).toBe('2, up 2 since the last round');
     // The mark is an icon, hidden from the reader: the font has no "▲" (A23).
     expect(row('Jonah').querySelector('.ch-qf-move.is-gain [aria-hidden] svg')).not.toBeNull();
-    expect(row('Priya').querySelector('.ch-qf-move.is-loss')!.textContent).toBe('2, down 2 since the last round');
+    expect(row('Priya').querySelector('.ch-qf-move.is-loss')!.textContent).toBe('3, down 3 since the last round');
     // Thru is dots, one per scheduled round, the played ones filled (owner, 2026-10-16), read as words.
     expect(row('Jonah').querySelector('.ch-qf-dots')!.getAttribute('aria-label')).toBe('2 of 3 rounds');
     expect(row('Jonah').querySelectorAll('.ch-qf-dots i.is-on')).toHaveLength(2);
@@ -266,9 +266,9 @@ describe('P009-A1 standings on hand-hung plates', () => {
       const rows = [...document.querySelectorAll('.ch-qfm-lb__row')];
       expect(rows.length).toBe(8);
       for (const r of rows) expect(r.textContent).not.toMatch(/Rounds|Avg|Total/);
-      const luca = screen.getByRole('button', { name: /^Luca Ferraro, 7, \+8, 1 of 3 rounds, missed a round\. Show their rounds$/ });
+      const luca = screen.getByRole('button', { name: /^Luca Ferraro, 6, \+8, 1 of 3 rounds\. Show their rounds$/ });
       expect(luca.querySelector('.ch-qf-plate')!.textContent).toBe('+8');
-      expect(luca.querySelector('.ch-qf-thin')!.textContent).toBe('Missed a round · 1 of 3 rounds');
+      expect(luca.querySelector('.ch-qf-thin')!.textContent).toBe('1 of 3 rounds');
     } finally {
       window.matchMedia = real;
     }
@@ -287,16 +287,16 @@ describe('P009-C2 pace beside the total', () => {
     expect([1, 2, 3, 4, 5].map(bubbleMinRounds)).toEqual([1, 1, 2, 2, 3]);
     expect(at('luca').state).toBeNull();
     expect(at('eli').state).toBe('bubble');
-    // Owner decision 10: Luca, a round short, stands below every complete card, Priya's +10 included.
-    expect([at('luca').position, at('priya').position]).toEqual([7, 6]);
+    // The ranking itself is unchanged: Luca still stands 6th, above Priya.
+    expect([at('luca').position, at('priya').position]).toEqual([6, 7]);
     expect(bubbleNote(3, 'in_progress')).toBe(' The bubble needs 2 of 3 rounds in.');
     expect(bubbleNote(1, 'in_progress')).toBe('');
     expect(bubbleNote(3, 'completed')).toBe('');
   });
 
-  it('a row with fewer rounds in than the most anyone has carries "Missed a round · 1 of 3 rounds"; a row that kept pace carries nothing', () => {
+  it('a row with fewer rounds in than the most anyone has carries "1 of 3 rounds"; a row that kept pace carries nothing', () => {
     const b = live().board!;
-    expect(sampleNote(at('luca'), b, 3)).toBe('Missed a round · 1 of 3 rounds');
+    expect(sampleNote(at('luca'), b, 3)).toBe('1 of 3 rounds');
     expect(sampleNote(at('priya'), b, 3)).toBeNull();
   });
 });

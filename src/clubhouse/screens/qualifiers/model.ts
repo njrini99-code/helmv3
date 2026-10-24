@@ -148,7 +148,7 @@ export function parseSelectionState(s: string | null | undefined): ChQSelectionS
 }
 
 /** The scored rows ranked, with positions and ties assigned (states left null), and the unscored rows by name. */
-function rankRows(entrants: ChQEntrant[], rounds: ChQRound[]): { scored: ChQRow[]; unscored: ChQRow[]; all: ChQRow[] } {
+function rankRows(entrants: ChQEntrant[], rounds: ChQRound[], live = false): { scored: ChQRow[]; unscored: ChQRow[]; all: ChQRow[] } {
   const byPlayer = new Map<string, ChQRound[]>();
   for (const r of rounds) {
     const list = byPlayer.get(r.playerId) ?? [];
@@ -189,10 +189,21 @@ function rankRows(entrants: ChQEntrant[], rounds: ChQRound[]): { scored: ChQRow[
   });
   const scored = all.filter((r) => r.played > 0);
   const unscored = all.filter((r) => r.played === 0).sort((a, b) => a.name.localeCompare(b.name));
-  // Owner decision 10 (B13.3): complete cards rank first, a card with fewer rounds than the most anyone has goes below them,
-  // flagged, so a player who skipped a round never stands over one who played it. Ties are only within a group.
-  const most = scored.reduce((m, r) => Math.max(m, r.played), 0);
-  for (const row of scored) row.missed = row.played < most;
+  // Owner decision 10 (B13.3): complete cards rank first, a card a round short goes below them, flagged, so a player who skipped
+  // a round never stands over one who played it. Ties are only within a group. While the qualifier is live, the round being
+  // played (the highest any score is in for) is not missed yet: a player still on the course is not demoted by an early
+  // finisher; only a round before it that they have no score for is. Once it is completed, every round counts.
+  if (live) {
+    const numbers = (r: ChQRow) => new Set(r.rounds.filter((x) => counted(x) && x.numbered !== false).map((x) => x.number));
+    const latest = scored.reduce((m, r) => Math.max(m, ...numbers(r)), 0);
+    for (const row of scored) {
+      const has = numbers(row);
+      row.missed = Array.from({ length: Math.max(0, latest - 1) }, (_, i) => i + 1).some((n) => !has.has(n));
+    }
+  } else {
+    const most = scored.reduce((m, r) => Math.max(m, r.played), 0);
+    for (const row of scored) row.missed = row.played < most;
+  }
   scored.sort((a, b) => Number(a.missed) - Number(b.missed) || compareStandings(standingKey(a), standingKey(b)));
   scored.forEach((row, i) => {
     const prev = scored[i - 1];
@@ -226,10 +237,10 @@ export function bubbleMinRounds(numRounds: number): number {
  * board as it stood with every round of the latest round number left out. Null for a player who wasn't ranked then,
  * or when there is no earlier round to compare with. Never a refresh-to-refresh delta.
  */
-function movement(entrants: ChQEntrant[], rounds: ChQRound[], scored: ChQRow[]): void {
+function movement(entrants: ChQEntrant[], rounds: ChQRound[], scored: ChQRow[], live: boolean): void {
   const latest = rounds.filter(counted).reduce((m, r) => Math.max(m, r.number), 0);
   if (latest < 2) return;
-  const before = rankRows(entrants, rounds.filter((r) => r.number < latest)).scored;
+  const before = rankRows(entrants, rounds.filter((r) => r.number < latest), live).scored;
   const was = new Map(before.map((r) => [r.playerId, r.position]));
   for (const row of scored) {
     const p = was.get(row.playerId);
@@ -256,8 +267,9 @@ export function buildBoard(input: {
    */
   numRounds?: number;
 }): ChQBoard {
-  const { scored, unscored, all } = rankRows(input.entrants, input.rounds);
-  movement(input.entrants, input.rounds, scored);
+  const live = input.status !== 'completed';
+  const { scored, unscored, all } = rankRows(input.entrants, input.rounds, live);
+  movement(input.entrants, input.rounds, scored, live);
 
   const squad = Math.max(0, input.squad);
   const topScore = Math.max(0, squad - Math.max(0, input.picks));
@@ -291,10 +303,11 @@ export function bubbleNote(numRounds: number, status: ChQStatus): string {
  * The sample-size note (P009-C2): "Missed a round · 1 of 3 rounds" on a ranked row with fewer rounds in than the most anyone has, so a
  * total over one round never reads as the same thing as a total over two. Null when the row has kept pace.
  */
-export function sampleNote(row: Pick<ChQRow, 'played'>, board: Pick<ChQBoard, 'rows'>, numRounds: number): string | null {
+export function sampleNote(row: Pick<ChQRow, 'played' | 'missed'>, board: Pick<ChQBoard, 'rows'>, numRounds: number): string | null {
   const most = board.rows.reduce((m, r) => Math.max(m, r.played), 0);
-  // Owner decision 10: such a card ranks below the complete ones and says why.
-  return row.played > 0 && row.played < most ? `Missed a round · ${row.played} of ${plural(numRounds, 'round')}` : null;
+  if (!(row.played > 0 && row.played < most)) return null;
+  // Owner decision 10: a card that missed a round ranks below the complete ones and says why; one still on pace says its count.
+  return `${row.missed ? 'Missed a round · ' : ''}${row.played} of ${plural(numRounds, 'round')}`;
 }
 
 /**

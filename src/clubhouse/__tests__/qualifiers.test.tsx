@@ -195,7 +195,7 @@ describe('Qualifiers · the standings model', () => {
       rounds: [rd('a', 1, 68, -4), rd('b', 1, 74, 2), rd('b', 2, 75, 3), rd('c', 1, 72, 0), rd('c', 2, 72, 0), rd('d', 1, 70, -2), rd('d', 2, 74, 2)],
       squad: 2,
       picks: 0,
-      status: 'in_progress',
+      status: 'completed',
       selectionState: 'scoring',
       selections: null,
       numRounds: 3,
@@ -208,6 +208,25 @@ describe('Qualifiers · the standings model', () => {
     ]);
     expect(sampleNote(b.rows[3]!, b, 3)).toBe('Missed a round · 1 of 3 rounds');
     expect(sampleNote(b.rows[0]!, b, 3)).toBeNull();
+  });
+  it('owner decision 10 while live: the round being played is not missed yet; a round before it with no score is', () => {
+    const board = (rounds: ChQRound[]) =>
+      buildBoard({ entrants: ['a', 'b', 'c'].map(e), rounds, squad: 2, picks: 0, status: 'in_progress', selectionState: 'scoring', selections: null, numRounds: 3 });
+    // Round two under way: B and C are in, A is still on the course. A keeps the place its round one earned, unflagged.
+    const mid = board([rd('a', 1, 68, -4), rd('b', 1, 72, 0), rd('b', 2, 72, 0), rd('c', 1, 74, 2), rd('c', 2, 73, 1)]);
+    expect(mid.rows.map((r) => [r.playerId, r.position, r.missed])).toEqual([
+      ['a', 1, false],
+      ['b', 2, false],
+      ['c', 3, false],
+    ]);
+    expect(sampleNote(mid.rows[0]!, mid, 3)).toBe('1 of 3 rounds');
+    // Round three has begun and A never posted round two: now it is missed.
+    const later = board([rd('a', 1, 68, -4), rd('b', 1, 72, 0), rd('b', 2, 72, 0), rd('b', 3, 72, 0), rd('c', 1, 74, 2), rd('c', 2, 73, 1)]);
+    expect(later.rows.map((r) => [r.playerId, r.missed])).toEqual([
+      ['b', false],
+      ['c', false],
+      ['a', true],
+    ]);
   });
   it('averages full rounds only, and counts the shorter ones it left out', () => {
     const b = buildBoard({ entrants: [e('a')], rounds: [rd('a', 1, 72, 0), rd('a', 2, 38, 2, 9)], squad: 5, picks: 1, status: 'in_progress', selectionState: 'open', selections: null });

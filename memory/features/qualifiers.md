@@ -316,7 +316,9 @@ in `docs/clubhouse/catalog/qualifiers.md` (CH-09xxx).
   Clubhouse board a player with fewer counted rounds than the most anyone has
   ranks below every complete card, whatever the total, and carries "Missed a
   round · n of N rounds" (`missed` on the row, `sampleNote`); ties are only
-  within a group. `screens/qualifiers/model.ts` `rankRows`; tests:
+  within a group. While the qualifier is live the round being played (the
+  highest any score is in for) is not missed yet, so a player still on the
+  course keeps their place; only an earlier round with no score is missed. `screens/qualifiers/model.ts` `rankRows`; tests:
   `qualifiers.test.tsx` › "owner decision 10", `qualifiers-premium.test.tsx`.
   Not yet in the shared order: the selection workspace and confirm still rank
   by `rankCandidates` (`compareStandings`), so the two can disagree across the
