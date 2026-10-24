@@ -51,3 +51,12 @@ export function ratchet(found: Hit[], allow: Record<string, number>) {
     .map((f) => `${f}: now 0, delete it from the allowlist`);
   return { over, stale };
 }
+
+/** The other half of a tight ratchet: listed files now below their count, so the number must come down to the live one. */
+export function slack(found: Hit[], allow: Record<string, number>) {
+  const by: Record<string, number> = {};
+  for (const h of found) by[h.file] = (by[h.file] ?? 0) + 1;
+  return Object.entries(allow)
+    .filter(([f, n]) => (by[f] ?? 0) > 0 && by[f]! < n)
+    .map(([f, n]) => `${f}: now ${by[f]}, lower it from ${n}`);
+}

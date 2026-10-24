@@ -46,6 +46,7 @@
   border-radius: var(--ch-radius-xl);
   background: var(--ch-ivory-150);
   font: var(--ch-type-16);
+  letter-spacing: var(--ch-track-16);
   overflow-wrap: anywhere;
 }
 .ch-th--phone .ch-th-user {
@@ -95,6 +96,7 @@
 .ch-th-note {
   max-width: 68ch;
   font: var(--ch-type-15);
+  letter-spacing: var(--ch-track-15);
   color: var(--ch-text-secondary);
 }
 
@@ -106,6 +108,8 @@
 }
 .ch-th-p {
   font: var(--ch-type-16);
+
+  letter-spacing: var(--ch-track-16);
   text-wrap: pretty;
 }
 .ch-th-p--lead {
@@ -123,6 +127,7 @@
   padding-left: 20px;
   list-style: disc;
   font: var(--ch-type-16);
+  letter-spacing: var(--ch-track-16);
 }
 .ch-th-mention {
   font-weight: 500;
@@ -253,7 +258,7 @@
   background: none;
   cursor: pointer;
   font: var(--ch-type-13-medium);
-  line-height: 1;
+  line-height: var(--ch-lead-tight);
   color: var(--ch-green-600);
 }
 .ch-th-toggle[aria-pressed='true'] {
@@ -356,7 +361,7 @@
   background: var(--ch-chart-loss);
 }
 .ch-th-bar__val {
-  font: 600 14px/1.3 var(--ch-font-sans);
+  font: var(--ch-type-14-strong);
   font-variant-numeric: tabular-nums;
 }
 .ch-th-bar__val > span,
@@ -381,7 +386,8 @@
 }
 .ch-th-rank__n {
   width: 16px;
-  font: 600 13px/1 var(--ch-font-sans);
+  font: var(--ch-type-13-strong);
+  line-height: var(--ch-lead-tight);
   font-variant-numeric: tabular-nums;
   color: var(--ch-text-tertiary);
 }
@@ -390,6 +396,7 @@
   flex: 1 1 auto;
   min-width: 0;
   font: var(--ch-type-15-medium);
+  letter-spacing: var(--ch-track-15);
   color: inherit;
   overflow-wrap: anywhere;
 }
@@ -403,7 +410,7 @@ a.ch-th-rank__name::after {
 }
 .ch-th-rank__val {
   flex: none;
-  font: 400 14px/1.3 var(--ch-font-sans);
+  font: var(--ch-type-14);
   font-variant-numeric: tabular-nums;
 }
 .ch-th-rank__val b {
@@ -454,11 +461,13 @@ a.ch-th-reads__r:focus-visible {
 }
 .ch-th-reads__b b {
   font: var(--ch-type-15-medium);
+
+  letter-spacing: var(--ch-track-15);
   overflow-wrap: anywhere;
   transition: color var(--ch-dur-quick) var(--ch-ease);
 }
 .ch-th-reads__v {
-  font: 600 14px/1.3 var(--ch-font-sans);
+  font: var(--ch-type-14-strong);
   font-variant-numeric: tabular-nums;
 }
 
@@ -482,7 +491,10 @@ a.ch-th-reads__r:focus-visible {
   color: var(--ch-text-tertiary);
 }
 .ch-th-tile__value {
-  font: 600 22px/1.15 var(--ch-font-sans);
+  font: var(--ch-type-22-strong);
+
+  letter-spacing: var(--ch-track-22);
+  line-height: var(--ch-lead-tight);
   font-variant-numeric: tabular-nums;
 }
 .ch-th-tile[data-tone='loss'] .ch-th-tile__value {
@@ -538,7 +550,7 @@ a.ch-th-reads__r:focus-visible {
 }
 .ch-th-leg__val {
   text-align: right;
-  font: 600 14px/1.3 var(--ch-font-sans);
+  font: var(--ch-type-14-strong);
 }
 
 /* The trend, on ui/charts/Line (B5): green, amber when the last point is on the worse side of the reference; the
@@ -613,7 +625,7 @@ a.ch-th-reads__r:focus-visible {
 .ch-th-table {
   width: 100%;
   border-collapse: collapse;
-  font: 400 14px/1.4 var(--ch-font-sans);
+  font: var(--ch-type-14);
 }
 .ch-th-table th,
 .ch-th-table td {
@@ -780,6 +792,8 @@ a.ch-th-reads__r:focus-visible {
 }
 .ch-th-act__title b {
   font: var(--ch-type-16-strong);
+
+  letter-spacing: var(--ch-track-16);
 }
 .ch-th-act__title span {
   font: var(--ch-type-13);
@@ -793,6 +807,7 @@ a.ch-th-reads__r:focus-visible {
   grid-template-columns: 120px minmax(0, 1fr);
   gap: 12px;
   font: var(--ch-type-15);
+  letter-spacing: var(--ch-track-15);
 }
 .ch-th-act__facts > div + div {
   border-top: var(--ch-hairline-w) solid var(--ch-border-hairline);
@@ -814,6 +829,7 @@ a.ch-th-reads__r:focus-visible {
 .ch-th-act__sum {
   padding: 14px 20px 6px;
   font: var(--ch-type-15);
+  letter-spacing: var(--ch-track-15);
   color: var(--ch-text-secondary);
 }
 .ch-th-act__for {
@@ -923,6 +939,8 @@ a.ch-th-reads__r:focus-visible {
 }
 .ch-th-receipt__title {
   font: var(--ch-type-15-strong);
+
+  letter-spacing: var(--ch-track-15);
 }
 .ch-th-receipt__body {
   margin-top: 2px;
@@ -945,7 +963,7 @@ a.ch-th-reads__r:focus-visible {
   border-radius: 999px;
   background: var(--ch-ivory-100);
   font: var(--ch-type-13-medium);
-  line-height: 1;
+  line-height: var(--ch-lead-tight);
   color: var(--ch-text-primary);
 }
 @media (hover: hover) {
@@ -998,6 +1016,8 @@ a.ch-th-reads__r:focus-visible {
 }
 .ch-th-evp__titles b {
   font: var(--ch-type-15-strong);
+
+  letter-spacing: var(--ch-track-15);
 }
 .ch-th-evp__titles span {
   font: var(--ch-type-12);
@@ -1091,7 +1111,8 @@ a.ch-th-reads__r:focus-visible {
   .ch-th--phone .ch-th-tile__value,
   .ch-th-evp__body.is-phone .ch-th-tile__value {
     grid-area: value;
-    font: 600 20px/1 var(--ch-font-sans);
+    font: var(--ch-type-20-strong);
+    line-height: var(--ch-lead-tight);
     letter-spacing: -0.02em;
     font-variant-numeric: tabular-nums;
     text-align: right;

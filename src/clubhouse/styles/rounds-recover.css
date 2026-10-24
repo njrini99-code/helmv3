@@ -14,7 +14,7 @@
 }
 .ch-rcv-k {
   font: var(--ch-type-13-medium);
-  line-height: 1;
+  line-height: var(--ch-lead-tight);
   color: var(--ch-text-tertiary);
 }
 .ch-rcv-h {
@@ -26,7 +26,7 @@
 .ch-rcv-h h1 {
   margin: 8px 0 0;
   font: var(--ch-type-34-strong);
-  line-height: 1.05;
+  line-height: var(--ch-lead-tight);
   letter-spacing: var(--ch-track-34);
   font-variation-settings: 'wdth' 96;
 }
@@ -36,6 +36,7 @@
 .ch-rcv-lede {
   margin: 0;
   font: var(--ch-type-15);
+  letter-spacing: var(--ch-track-15);
   color: var(--ch-text-secondary);
 }
 .ch-rcv-note {
@@ -82,6 +83,7 @@
   min-width: 0;
   margin: 0;
   font: var(--ch-type-16-strong);
+  letter-spacing: var(--ch-track-16);
   overflow-wrap: anywhere;
 }
 .ch-rcv-top .ch-badge {

@@ -86,7 +86,7 @@
   background: var(--ch-bg-surface);
   color: var(--ch-text-secondary);
   font: var(--ch-type-13-medium);
-  line-height: 1;
+  line-height: var(--ch-lead-tight);
   box-shadow: inset 0 0 0 1px var(--ch-border-subtle);
   cursor: pointer;
   touch-action: manipulation;
@@ -189,7 +189,7 @@
   justify-content: space-between;
   padding: 2px 2px 8px;
   font: var(--ch-type-13-medium);
-  line-height: 1;
+  line-height: var(--ch-lead-tight);
   font-variant-numeric: tabular-nums;
   color: var(--ch-text-tertiary);
 }
@@ -205,14 +205,14 @@
 .ch-qf-lead__n {
   overflow: hidden;
   font: var(--ch-type-14-medium);
-  line-height: 1;
+  line-height: var(--ch-lead-tight);
   color: var(--ch-text-primary);
   white-space: nowrap;
   text-overflow: ellipsis;
 }
 .ch-qf-lead__th {
   font: var(--ch-type-13-medium);
-  line-height: 1;
+  line-height: var(--ch-lead-tight);
   color: var(--ch-text-tertiary);
   font-variant-numeric: tabular-nums;
   text-align: right;
@@ -247,6 +247,7 @@
 .ch-qf .ch-qf-card h3 {
   margin-bottom: 4px;
   font: var(--ch-type-16-medium);
+  letter-spacing: var(--ch-track-16);
   color: var(--ch-text-primary);
   transition: color var(--ch-dur-quick) var(--ch-ease);
 }
@@ -292,7 +293,7 @@
   gap: 6px;
   margin-top: auto;
   font: var(--ch-type-13-medium);
-  line-height: 1;
+  line-height: var(--ch-lead-tight);
   color: var(--ch-green-700);
 }
 .ch-qf-cta.is-quiet {
@@ -384,7 +385,8 @@
 
 /* Scores */
 .ch-qf-tp {
-  font: 500 14px/1 var(--ch-font-sans);
+  font: var(--ch-type-14-medium);
+  line-height: var(--ch-lead-tight);
   font-variant-numeric: tabular-nums;
   color: var(--ch-text-primary);
 }
@@ -396,7 +398,8 @@
   font-weight: 600;
 }
 .ch-qf-num {
-  font: 500 14px/1 var(--ch-font-sans);
+  font: var(--ch-type-14-medium);
+  line-height: var(--ch-lead-tight);
   font-variant-numeric: tabular-nums;
   color: var(--ch-text-secondary);
 }
@@ -474,12 +477,14 @@
   margin: 2px 0 0;
 }
 .ch-qf-facts dt {
-  font: 500 13px/1 var(--ch-font-sans);
+  font: var(--ch-type-13-medium);
+  line-height: var(--ch-lead-tight);
   color: var(--ch-text-tertiary);
 }
 .ch-qf-facts dd:not(.ch-qf-facts__sub):not(.ch-qf-facts__viz) {
   margin: 4px 0 0;
-  font: 500 22px/1.1 var(--ch-font-sans);
+  font: var(--ch-type-22-medium);
+  line-height: var(--ch-lead-tight);
   letter-spacing: -0.03em;
   font-variation-settings: 'wdth' 88;
   color: var(--ch-text-primary);
@@ -488,7 +493,7 @@
 }
 .ch-qf-facts .ch-qf-facts__sub {
   margin: 0;
-  font: 400 13px/1.3 var(--ch-font-sans);
+  font: var(--ch-type-13);
   color: var(--ch-text-tertiary);
   font-variant-numeric: tabular-nums;
 }
@@ -657,7 +662,8 @@
   }
 }
 .ch-qf-pos {
-  font: 500 14px/1 var(--ch-font-sans);
+  font: var(--ch-type-14-medium);
+  line-height: var(--ch-lead-tight);
   color: var(--ch-text-secondary);
   font-variant-numeric: tabular-nums;
 }
@@ -673,7 +679,7 @@
 .ch-qf-who b {
   display: block;
   overflow: hidden;
-  font: 600 14px/1.25 var(--ch-font-sans);
+  font: var(--ch-type-14-strong);
   color: var(--ch-text-primary);
   white-space: nowrap;
   text-overflow: ellipsis;
@@ -686,7 +692,7 @@
 .ch-qf-you {
   margin-left: 6px;
   font: var(--ch-type-12-strong);
-  line-height: 1;
+  line-height: var(--ch-lead-tight);
   color: var(--ch-green-700);
 }
 .ch-qf-line {
@@ -695,7 +701,7 @@
   gap: 10px;
   margin: 6px 12px;
   font: var(--ch-type-13-medium);
-  line-height: 1;
+  line-height: var(--ch-lead-tight);
   color: var(--ch-green-700);
 }
 .ch-qf-line::before,
@@ -766,7 +772,8 @@
   margin-bottom: 10px;
 }
 .ch-qf-sc__h b {
-  font: 600 14px/1 var(--ch-font-sans);
+  font: var(--ch-type-14-strong);
+  line-height: var(--ch-lead-tight);
 }
 .ch-qf-sc__h span {
   font: var(--ch-type-caption);
@@ -780,7 +787,8 @@
 .ch-qf-strip {
   width: 100%;
   border-collapse: collapse;
-  font: 500 13px/1 var(--ch-font-sans);
+  font: var(--ch-type-13-medium);
+  line-height: var(--ch-lead-tight);
   font-variant-numeric: tabular-nums;
   text-align: center;
 }
@@ -841,13 +849,13 @@
 .ch-qf-list__k {
   margin-bottom: 4px;
   font: var(--ch-type-13-medium);
-  line-height: 1;
+  line-height: var(--ch-lead-tight);
   color: var(--ch-text-tertiary);
 }
 .ch-qf-list__n {
   width: 16px;
   font: var(--ch-type-13-medium);
-  line-height: 1;
+  line-height: var(--ch-lead-tight);
   color: var(--ch-text-tertiary);
   font-variant-numeric: tabular-nums;
 }
@@ -1101,7 +1109,7 @@
 .ch-qf-picker__k {
   padding: 8px 10px 4px;
   font: var(--ch-type-13-medium);
-  line-height: 1;
+  line-height: var(--ch-lead-tight);
   color: var(--ch-text-tertiary);
 }
 
@@ -1415,6 +1423,8 @@
   }
   .ch-qf--list .ch-qf-head p {
     font: var(--ch-type-15);
+
+    letter-spacing: var(--ch-track-15);
     font-variant-numeric: tabular-nums;
     color: var(--ch-text-secondary);
   }
@@ -1514,7 +1524,7 @@
   .ch-qf .ch-qf-hero h2 {
     margin: 4px 0 0;
     font: var(--ch-type-22-strong);
-    line-height: 1.15;
+    line-height: var(--ch-lead-tight);
     letter-spacing: -0.03em;
     color: var(--ch-on-green-ink);
   }
@@ -1589,7 +1599,7 @@
     justify-content: flex-start;
     padding: 6px 0 4px;
     font: var(--ch-type-12);
-    line-height: 1;
+    line-height: var(--ch-lead-tight);
     font-variant-numeric: tabular-nums;
   }
   .ch-qf-lead__h span:first-child,
@@ -1711,7 +1721,7 @@
   .ch-qfm .ch-qfm-head h1 {
     margin: 2px 0 0;
     font: var(--ch-type-28-strong);
-    line-height: 1.1;
+    line-height: var(--ch-lead-tight);
     letter-spacing: var(--ch-track-28);
     font-variation-settings: 'wdth' 88;
     color: var(--ch-ledger-ink);
@@ -1778,7 +1788,8 @@
     color: var(--ch-text-tertiary);
   }
   .ch-qfm-facts dd {
-    font: 600 22px/1 var(--ch-font-sans);
+    font: var(--ch-type-22-strong);
+    line-height: var(--ch-lead-tight);
     font-variant-numeric: tabular-nums;
     letter-spacing: -0.03em;
     color: var(--ch-text-primary);
@@ -1955,7 +1966,7 @@
   .ch-qfm-lb__thru {
     justify-self: end;
     font: var(--ch-type-14-medium);
-    line-height: 1;
+    line-height: var(--ch-lead-tight);
     font-variant-numeric: tabular-nums;
     color: var(--ch-text-secondary);
   }
@@ -2003,7 +2014,7 @@
     background: none;
     color: var(--ch-text-secondary);
     font: var(--ch-type-13-medium);
-    line-height: 1;
+    line-height: var(--ch-lead-tight);
     font-variant-numeric: tabular-nums;
     text-shadow: 0 1px 0 rgb(255 255 255 / 0.6);
     cursor: pointer;
@@ -2053,7 +2064,9 @@
   }
   .ch-qfm-rdh b {
     font: var(--ch-type-15-strong);
-    line-height: 1;
+
+    letter-spacing: var(--ch-track-15);
+    line-height: var(--ch-lead-tight);
     color: var(--ch-text-primary);
   }
   .ch-qfm-muted {
@@ -2089,6 +2102,8 @@
   .ch-qf--form .ch-qf-head p,
   .ch-qfs .ch-qf-head p {
     font: var(--ch-type-15);
+
+    letter-spacing: var(--ch-track-15);
     font-variant-numeric: tabular-nums;
     color: var(--ch-text-secondary);
   }
@@ -2358,7 +2373,9 @@
 .ch-qf-pos__n {
   display: inline-flex;
   align-items: baseline;
-  font: 600 15px/1 var(--ch-font-sans);
+  font: var(--ch-type-15-strong);
+  letter-spacing: var(--ch-track-15);
+  line-height: var(--ch-lead-tight);
   font-variant-numeric: tabular-nums;
   font-variation-settings: 'wdth' 88;
   color: var(--ch-text-secondary);
@@ -2371,7 +2388,9 @@
 }
 .ch-qf-move {
   font: var(--ch-type-11-strong);
-  line-height: 1;
+
+  letter-spacing: var(--ch-track-11);
+  line-height: var(--ch-lead-tight);
   font-variant-numeric: tabular-nums;
 }
 /* The up or down mark is an icon, not "▲"/"▼", which the font does not have (A23). */
@@ -2425,7 +2444,7 @@
   background: var(--ch-bg-subtle);
   color: var(--ch-text-primary);
   font: var(--ch-type-13-strong);
-  line-height: 1;
+  line-height: var(--ch-lead-tight);
   cursor: pointer;
   touch-action: manipulation;
   transition: background var(--ch-dur-press) var(--ch-ease);
@@ -2507,7 +2526,9 @@ html:has([data-ui='clubhouse'])::view-transition-new(.ch-rank) {
     border-radius: 0;
     background: none;
     box-shadow: none;
-    font: 600 17px/1 var(--ch-font-sans);
+    font: var(--ch-type-17-strong);
+    letter-spacing: var(--ch-track-17);
+    line-height: var(--ch-lead-tight);
     font-variant-numeric: tabular-nums;
     font-variation-settings: 'wdth' 88;
     color: var(--ch-on-green-ink);
@@ -2612,7 +2633,8 @@ html:has([data-ui='clubhouse'])::view-transition-new(.ch-rank) {
   }
   .ch-qf--list[data-canopy] .ch-qf-sec > h2 {
     padding: 0 0 12px;
-    font: 600 20px/1.2 var(--ch-font-sans);
+    font: var(--ch-type-20-strong);
+    letter-spacing: var(--ch-track-20);
     box-shadow: inset 0 -1px 0 var(--ch-ledger-rule);
   }
   .ch-qf--list[data-canopy] .ch-qf-grid.is-ledger {
@@ -2771,7 +2793,9 @@ html:has([data-ui='clubhouse'])::view-transition-new(.ch-rank) {
     box-shadow: inset 0 -1px 0 var(--ch-ledger-rule);
   }
   .ch-qf--form[data-canopy] .ch-qf-fs__h h2 {
-    font: 600 20px/1.2 var(--ch-font-sans);
+    font: var(--ch-type-20-strong);
+
+    letter-spacing: var(--ch-track-20);
   }
   .ch-qf--form[data-canopy] .ch-qf-sticky {
     gap: 24px;
@@ -2973,7 +2997,7 @@ html:has([data-ui='clubhouse'])::view-transition-new(.ch-rank) {
   top: -6px;
   left: 0;
   transform: translate(-50%, -100%);
-  font: 600 12px/1.2 var(--ch-font-sans);
+  font: var(--ch-type-12-strong);
   color: var(--ch-ink-700);
   white-space: nowrap;
 }
@@ -3007,10 +3031,10 @@ html:has([data-ui='clubhouse'])::view-transition-new(.ch-rank) {
   white-space: nowrap;
 }
 .ch-qf-sp__tip b {
-  font: 600 13px/1.2 var(--ch-font-sans);
+  font: var(--ch-type-13-strong);
 }
 .ch-qf-sp__tip span {
-  font: 500 12px/1.2 var(--ch-font-sans);
+  font: var(--ch-type-12-medium);
   font-variant-numeric: tabular-nums;
   color: var(--ch-stage-ink-soft);
 }
@@ -3031,7 +3055,7 @@ html:has([data-ui='clubhouse'])::view-transition-new(.ch-rank) {
 .ch-qf[data-canopy] .ch-qf-board .ch-qf-panel__head h2,
 .ch-qfm .ch-qf-board .ch-qf-panel__head h2 {
   font: var(--ch-type-22-strong);
-  line-height: 1.1;
+  line-height: var(--ch-lead-tight);
   letter-spacing: -0.02em;
 }
 .ch-qf[data-canopy] .ch-qf-board .ch-qf-panel__head {
@@ -3045,7 +3069,8 @@ html:has([data-ui='clubhouse'])::view-transition-new(.ch-rank) {
   background: none;
   box-shadow: none;
   border-bottom: 1px solid var(--ch-ink-rule);
-  font: 500 13px/1 var(--ch-font-sans);
+  font: var(--ch-type-13-medium);
+  line-height: var(--ch-lead-tight);
   color: var(--ch-ink-500);
 }
 .ch-qf[data-canopy] .ch-qf-board .ch-qf-row {
@@ -3424,6 +3449,7 @@ html[data-fw-theme='dark'] .ch-qf-dots i {
 .ch-qfm .ch-qf-prounds .ch-qf-prounds__head h2 {
   margin: 0;
   font: var(--ch-type-15-strong);
+  letter-spacing: var(--ch-track-15);
   color: var(--ch-hero-mint);
 }
 .ch-qf-prounds__pos {
@@ -3668,7 +3694,10 @@ button.ch-qf-prounds__r.is-open {
   gap: 4px;
 }
 .ch-qf-rv__hole small {
-  font: 500 11px/1 var(--ch-font-sans);
+  font: var(--ch-type-11-medium);
+
+  letter-spacing: var(--ch-track-11);
+  line-height: var(--ch-lead-tight);
   font-variant-numeric: tabular-nums;
   color: var(--ch-text-tertiary);
 }
@@ -3682,7 +3711,10 @@ button.ch-qf-prounds__r.is-open {
   color: var(--ch-text-primary);
 }
 .ch-qf-rv__sum small {
-  font: 500 11px/1 var(--ch-font-sans);
+  font: var(--ch-type-11-medium);
+
+  letter-spacing: var(--ch-track-11);
+  line-height: var(--ch-lead-tight);
   color: var(--ch-text-tertiary);
 }
 .ch-qf-rv__counts {
@@ -3701,7 +3733,7 @@ button.ch-qf-prounds__r.is-open {
   border-radius: 999px;
   background: rgb(255 255 255 / 0.08);
   font: var(--ch-type-12-medium);
-  line-height: 1;
+  line-height: var(--ch-lead-tight);
   color: var(--ch-text-secondary);
 }
 .ch-qf-rv__counts li b {
@@ -3722,7 +3754,7 @@ button.ch-qf-prounds__r.is-open {
   gap: 6px;
   justify-self: start;
   font: var(--ch-type-13-strong);
-  line-height: 1;
+  line-height: var(--ch-lead-tight);
   color: var(--ch-hero-mint);
   text-decoration: none;
 }
@@ -3803,7 +3835,9 @@ button.ch-qf-prounds__r.is-open {
 .ch-qf-rv__scale {
   display: flex;
   justify-content: space-between;
-  font: 500 11px/1 var(--ch-font-sans);
+  font: var(--ch-type-11-medium);
+  letter-spacing: var(--ch-track-11);
+  line-height: var(--ch-lead-tight);
   font-variant-numeric: tabular-nums;
   color: var(--ch-text-tertiary);
 }

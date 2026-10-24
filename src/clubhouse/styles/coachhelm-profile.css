@@ -55,6 +55,7 @@
 .ch-hg-lede__s {
   max-width: 60ch;
   font: var(--ch-type-16-medium);
+  letter-spacing: var(--ch-track-16);
   color: var(--ch-text-primary);
   text-wrap: pretty;
 }
@@ -103,14 +104,14 @@
   gap: 10px;
   min-height: 22px;
   font: var(--ch-type-12-medium);
-  line-height: 1;
+  line-height: var(--ch-lead-tight);
   color: var(--ch-text-tertiary);
 }
 .ch-hg-tag {
   padding: 5px 10px;
   border-radius: 999px;
   font: var(--ch-type-12-strong);
-  line-height: 1;
+  line-height: var(--ch-lead-tight);
   background: var(--ch-ivory-150);
   color: var(--ch-text-secondary);
 }
@@ -130,7 +131,7 @@
 }
 .ch-hg-m__word {
   font: var(--ch-type-28-strong);
-  line-height: 1.08;
+  line-height: var(--ch-lead-tight);
   letter-spacing: -0.03em;
   font-variation-settings: 'wdth' 96;
   color: var(--ch-hg-ink);
@@ -143,7 +144,8 @@
   gap: 4px 10px;
 }
 .ch-hg-m__fig b {
-  font: 600 20px/1 var(--ch-font-sans);
+  font: var(--ch-type-20-strong);
+  line-height: var(--ch-lead-tight);
 
   font-variant-numeric: tabular-nums;
   letter-spacing: -0.02em;
@@ -169,7 +171,7 @@
   align-items: center;
   gap: 6px;
   font: var(--ch-type-20-strong);
-  line-height: 1.1;
+  line-height: var(--ch-lead-tight);
   letter-spacing: -0.02em;
   color: var(--ch-ink-500);
 }
@@ -184,7 +186,7 @@
   padding-top: 14px;
   border-top: 1px solid rgb(28 25 18 / 0.07);
   font: var(--ch-type-12);
-  line-height: 1;
+  line-height: var(--ch-lead-tight);
   color: var(--ch-text-tertiary);
 }
 .ch-hg-m__how {
@@ -201,7 +203,7 @@
   width: 100%;
   min-height: 36px;
   font: var(--ch-type-13-strong);
-  line-height: 1;
+  line-height: var(--ch-lead-tight);
   color: var(--ch-text-primary);
 }
 .ch-hg-m__how summary::-webkit-details-marker {
@@ -280,7 +282,7 @@
   justify-content: space-between;
   gap: 12px;
   font: var(--ch-type-12);
-  line-height: 1;
+  line-height: var(--ch-lead-tight);
   font-variant-numeric: tabular-nums;
   color: var(--ch-text-tertiary);
 }
@@ -338,7 +340,9 @@
     align-items: flex-end;
   }
   main[data-canopy] .ch-hg-sec h2 {
-    font: 600 20px/1.2 var(--ch-font-sans);
+    font: var(--ch-type-20-strong);
+
+    letter-spacing: var(--ch-track-20);
   }
   /* The measures: one table. A cell's figures align to the section's edge; columns split on a soft rule and rows on a
      soft seam, as the profile's figure line does. One column on a narrow canvas. */
@@ -488,6 +492,7 @@
   gap: 8px;
   margin: 26px 0 10px;
   font: var(--ch-type-15-strong);
+  letter-spacing: var(--ch-track-15);
   font-variant-numeric: tabular-nums;
   color: var(--ch-green-700);
 }

@@ -27,7 +27,7 @@
   padding: 0 10px;
   border-radius: 999px;
   box-shadow: inset 0 0 0 1px rgb(21 90 57 / 0.3);
-  font: 600 calc(12 * var(--ch-type-k))/24px var(--ch-font-sans);
+  font: var(--ch-type-12-strong);
   color: var(--ch-green-700);
 }
 .ch-hb-h h1 {
@@ -61,7 +61,7 @@
   border: 0;
   background: none;
   font: var(--ch-type-14-medium);
-  line-height: 1;
+  line-height: var(--ch-lead-tight);
   color: var(--ch-text-tertiary);
   white-space: nowrap;
   cursor: pointer;
@@ -181,12 +181,16 @@
   box-shadow: inset 0 0 0 1px rgb(28 25 18 / 0.06);
 }
 .ch-hb-rsvp__d em {
-  font: 600 11px/1 var(--ch-font-sans);
+  font: var(--ch-type-11-strong);
+
+  letter-spacing: var(--ch-track-11);
+  line-height: var(--ch-lead-tight);
   font-style: normal;
   color: var(--ch-green-700);
 }
 .ch-hb-rsvp__d b {
-  font: 500 17px/1 var(--ch-font-sans);
+  font: var(--ch-type-17-medium);
+  line-height: var(--ch-lead-tight);
   font-variant-numeric: tabular-nums;
   letter-spacing: -0.03em;
 }
@@ -204,6 +208,7 @@
   align-items: center;
   gap: 6px;
   font: var(--ch-type-15-strong);
+  letter-spacing: var(--ch-track-15);
 }
 .ch-hb-rsvp__b > span {
   font: var(--ch-type-13);
@@ -215,6 +220,7 @@
   border-radius: 999px;
   background: var(--ch-green-50);
   font: var(--ch-type-11-strong);
+  letter-spacing: var(--ch-track-11);
   color: var(--ch-green-700);
 }
 /* Pending feedback stays attached to its object; another row remains interactive. */
@@ -247,7 +253,7 @@
   border: 0;
   border-radius: var(--ch-radius-sm);
   background: none;
-  font: 500 calc(13 * var(--ch-type-k))/30px var(--ch-font-sans);
+  font: var(--ch-type-13-medium);
   color: var(--ch-text-secondary);
   cursor: pointer;
   touch-action: manipulation;
@@ -270,7 +276,7 @@
 }
 .ch-hb-rsvp__c em {
   font: var(--ch-type-12-medium);
-  line-height: 1;
+  line-height: var(--ch-lead-tight);
   font-variant-numeric: tabular-nums;
   font-style: normal;
   color: var(--ch-text-tertiary);
@@ -323,6 +329,7 @@
   max-width: 60ch;
   margin: 0;
   font: var(--ch-type-15);
+  letter-spacing: var(--ch-track-15);
   color: var(--ch-text-secondary);
   text-wrap: pretty;
   white-space: pre-line;
@@ -342,12 +349,12 @@
 }
 .ch-hb-ann__h b {
   font: var(--ch-type-14-strong);
-  line-height: 1;
+  line-height: var(--ch-lead-tight);
 }
 /* The byline's meta, not the avatar (a span too, whose colour this used to override). */
 .ch-hb-ann__h > div span {
   font: var(--ch-type-12);
-  line-height: 1;
+  line-height: var(--ch-lead-tight);
   font-variant-numeric: tabular-nums;
   color: var(--ch-text-tertiary);
 }
@@ -380,7 +387,7 @@
   background: none;
   color: var(--ch-text-secondary);
   font: var(--ch-type-13-strong);
-  line-height: 1;
+  line-height: var(--ch-lead-tight);
   font-variant-numeric: tabular-nums;
   cursor: pointer;
 }
@@ -422,7 +429,8 @@
 .ch-hb-ann__file em {
   flex: none;
   font: var(--ch-type-11-strong);
-  line-height: 1;
+  letter-spacing: var(--ch-track-11);
+  line-height: var(--ch-lead-tight);
   font-variant-numeric: tabular-nums;
   font-style: normal;
   color: var(--ch-text-tertiary);
@@ -448,7 +456,7 @@
   align-items: center;
   gap: 6px;
   font: var(--ch-type-13-strong);
-  line-height: 1;
+  line-height: var(--ch-lead-tight);
   color: var(--ch-green-700);
 }
 .ch-hb-reads {
@@ -456,7 +464,7 @@
   align-items: center;
   gap: 10px;
   font: var(--ch-type-13-medium);
-  line-height: 1;
+  line-height: var(--ch-lead-tight);
   font-variant-numeric: tabular-nums;
   color: var(--ch-text-secondary);
 }
@@ -524,7 +532,8 @@
   background: var(--ch-bg-surface);
   box-shadow: var(--ch-elevation-control);
   font: var(--ch-type-15);
-  line-height: 1;
+  letter-spacing: var(--ch-track-15);
+  line-height: var(--ch-lead-tight);
   color: var(--ch-text-tertiary);
   text-align: left;
   cursor: pointer;
@@ -578,7 +587,7 @@
 .ch-hb-pass__main > b {
   margin-top: 4px;
   font: var(--ch-type-22);
-  line-height: 1.15;
+  line-height: var(--ch-lead-tight);
   letter-spacing: var(--ch-track-22);
 }
 .ch-hb-pass.is-big .ch-hb-pass__main > b {
@@ -598,7 +607,7 @@
 .ch-hb-pass__f dt {
   margin-bottom: 5px;
   font: var(--ch-type-12-medium);
-  line-height: 1;
+  line-height: var(--ch-lead-tight);
   color: var(--ch-text-tertiary);
 }
 .ch-hb-pass__f dd {
@@ -719,7 +728,7 @@
 }
 .ch-hb-feed em {
   font: var(--ch-type-12-medium);
-  line-height: 1;
+  line-height: var(--ch-lead-tight);
   font-style: normal;
   color: var(--ch-text-tertiary);
 }
@@ -756,7 +765,7 @@
 }
 .ch-hb-task em {
   font: var(--ch-type-12-strong);
-  line-height: 1;
+  line-height: var(--ch-lead-tight);
   font-style: normal;
   color: var(--ch-text-secondary);
   white-space: nowrap;
@@ -846,12 +855,14 @@
 }
 .ch-hb-drop b {
   font: var(--ch-type-15-strong);
-  line-height: 1;
+
+  letter-spacing: var(--ch-track-15);
+  line-height: var(--ch-lead-tight);
   color: var(--ch-text-primary);
 }
 .ch-hb-drop em {
   font: var(--ch-type-13);
-  line-height: 1;
+  line-height: var(--ch-lead-tight);
   font-style: normal;
   color: var(--ch-text-tertiary);
 }
@@ -930,7 +941,7 @@
 }
 .ch-hb-file__b span {
   font: var(--ch-type-12);
-  line-height: 1;
+  line-height: var(--ch-lead-tight);
   font-variant-numeric: tabular-nums;
   color: var(--ch-text-tertiary);
 }
@@ -953,7 +964,7 @@
   border-radius: 999px;
   background: var(--ch-bg-surface);
   box-shadow: var(--ch-elevation-control);
-  font: 500 calc(13 * var(--ch-type-k))/34px var(--ch-font-sans);
+  font: var(--ch-type-13-medium);
   color: var(--ch-text-primary);
   cursor: pointer;
 }
@@ -983,7 +994,7 @@
   border: 0;
   background: none;
   font: var(--ch-type-13-strong);
-  line-height: 1;
+  line-height: var(--ch-lead-tight);
   color: var(--ch-green-700);
   cursor: pointer;
 }
@@ -1004,7 +1015,7 @@
   background: var(--ch-bg-surface);
   box-shadow: var(--ch-elevation-control);
   font: var(--ch-type-13-medium);
-  line-height: 1;
+  line-height: var(--ch-lead-tight);
   color: var(--ch-text-primary);
   cursor: pointer;
 }
@@ -1041,7 +1052,7 @@
   background: var(--ch-green-50);
   box-shadow: 0 0 0 1.5px var(--ch-green-600);
   font: var(--ch-type-13-medium);
-  line-height: 1;
+  line-height: var(--ch-lead-tight);
   color: var(--ch-forest-800);
   cursor: pointer;
 }
@@ -1063,7 +1074,7 @@
   display: block;
   padding: 8px 10px 4px;
   font: var(--ch-type-12-strong);
-  line-height: 1;
+  line-height: var(--ch-lead-tight);
   color: var(--ch-text-tertiary);
 }
 .ch-hb-dp__row {
@@ -1103,7 +1114,7 @@
 }
 .ch-hb-dp__b span {
   font: var(--ch-type-12);
-  line-height: 1;
+  line-height: var(--ch-lead-tight);
   font-variant-numeric: tabular-nums;
   color: var(--ch-text-tertiary);
 }
@@ -1307,7 +1318,7 @@
   }
   .ch-hb-card__h h2 {
     font: var(--ch-type-20-strong);
-    line-height: 1.1;
+    line-height: var(--ch-lead-tight);
     letter-spacing: var(--ch-track-20);
     font-variation-settings: 'wdth' 88;
     color: var(--ch-ledger-ink);
@@ -1388,7 +1399,7 @@
   .ch-hb-ann.is-featured h3 {
     margin: 2px 0 0;
     font: var(--ch-type-22-strong);
-    line-height: 1.15;
+    line-height: var(--ch-lead-tight);
     letter-spacing: -0.03em;
     color: var(--ch-on-green-ink);
   }
@@ -1483,7 +1494,7 @@
   }
   .ch-hb-list > .ch-hb-ann h3 {
     font: var(--ch-type-22-strong);
-    line-height: 1.15;
+    line-height: var(--ch-lead-tight);
     letter-spacing: var(--ch-track-22);
     color: var(--ch-ledger-ink);
   }
@@ -1509,7 +1520,7 @@
   .ch-hb-pass__main > b {
     margin-top: 2px;
     font: var(--ch-type-20-strong);
-    line-height: 1.15;
+    line-height: var(--ch-lead-tight);
     letter-spacing: var(--ch-track-20);
     font-variation-settings: 'wdth' 88;
     color: var(--ch-ledger-ink);
@@ -1670,7 +1681,8 @@
   height: 24px;
   padding: 0 10px;
   border-radius: 999px;
-  font: 600 calc(11 * var(--ch-type-k))/24px var(--ch-font-sans);
+  font: var(--ch-type-11-strong);
+  letter-spacing: var(--ch-track-11);
   background: var(--ch-bg-inset);
   color: var(--ch-text-tertiary);
 }
@@ -1945,7 +1957,8 @@
     padding: 0;
   }
   .ch-hb[data-canopy] .ch-hb-pass__main > b {
-    font: 600 22px/1.15 var(--ch-font-sans);
+    font: var(--ch-type-22-strong);
+    line-height: var(--ch-lead-tight);
     letter-spacing: var(--ch-track-22);
     color: var(--ch-ledger-ink);
   }
@@ -2292,7 +2305,7 @@ html[data-fw-theme='dark'] .ch-hb-chip {
     left: 0;
     display: block;
     width: 100px;
-    font: 500 13px/1.35 var(--ch-font-sans);
+    font: var(--ch-type-13-medium);
     font-variant-numeric: tabular-nums;
     color: var(--ch-text-tertiary);
   }
@@ -2312,11 +2325,13 @@ html[data-fw-theme='dark'] .ch-hb-chip {
     box-shadow: inset 1px 0 0 var(--ch-ledger-rule-soft);
   }
   .ch-hb-margin__k {
-    font: 500 13px/1.2 var(--ch-font-sans);
+    font: var(--ch-type-13-medium);
     color: var(--ch-ledger-eyebrow);
   }
   .ch-hb-margin__t {
-    font: 600 15px/1.3 var(--ch-font-sans);
+    font: var(--ch-type-15-strong);
+
+    letter-spacing: var(--ch-track-15);
     color: var(--ch-ledger-ink);
     text-wrap: balance;
   }
@@ -2339,7 +2354,7 @@ html[data-fw-theme='dark'] .ch-hb-chip {
     border: 0;
     background: none;
     color: var(--ch-text-secondary);
-    font: 400 calc(14 * var(--ch-type-k))/44px var(--ch-font-sans);
+    font: var(--ch-type-14);
     text-align: left;
     cursor: pointer;
   }
@@ -2755,7 +2770,7 @@ html[data-fw-theme='dark'] .ch-hb-chip {
 }
 .ch-hb-prog b {
   font: var(--ch-type-13-strong);
-  line-height: 1;
+  line-height: var(--ch-lead-tight);
   font-variant-numeric: tabular-nums;
   color: var(--ch-text-primary);
 }
@@ -2978,7 +2993,7 @@ html[data-fw-theme='dark'] .ch-hb-prog i::after {
 .ch-hw-pager span {
   min-width: 44px;
   font: var(--ch-type-13-medium);
-  line-height: 1;
+  line-height: var(--ch-lead-tight);
   text-align: center;
   color: var(--ch-on-green-ink-muted);
 }
@@ -3014,7 +3029,7 @@ html[data-fw-theme='dark'] .ch-hb-prog i::after {
 .ch-hw-count__t h3 {
   margin: 0;
   font: var(--ch-type-22-strong);
-  line-height: 1.15;
+  line-height: var(--ch-lead-tight);
   letter-spacing: -0.02em;
   color: var(--ch-on-green-ink);
   text-wrap: balance;
@@ -3122,7 +3137,8 @@ html[data-fw-theme='dark'] .ch-hb-prog i::after {
   background: var(--ch-on-dark-raised-bg);
   box-shadow: 0 0 0 2px var(--ch-green-800);
   font: var(--ch-type-11-strong);
-  line-height: 1;
+  letter-spacing: var(--ch-track-11);
+  line-height: var(--ch-lead-tight);
   font-style: normal;
   color: var(--ch-on-green-ink);
 }
@@ -3381,12 +3397,12 @@ html[data-fw-theme='dark'] .ch-hb-prog i::after {
 }
 .ch-hw-led__n b {
   font: var(--ch-type-14-strong);
-  line-height: 1;
+  line-height: var(--ch-lead-tight);
   color: var(--ch-text-primary);
 }
 .ch-hw-led__n em {
   font: var(--ch-type-12-strong);
-  line-height: 1;
+  line-height: var(--ch-lead-tight);
   font-style: normal;
   color: var(--ch-warning-600);
   white-space: nowrap;
@@ -3397,7 +3413,7 @@ html[data-fw-theme='dark'] .ch-hb-prog i::after {
 .ch-hw-led__0,
 .ch-hw-led__x {
   font: var(--ch-type-14-medium);
-  line-height: 1;
+  line-height: var(--ch-lead-tight);
   color: var(--ch-text-tertiary);
 }
 .ch-hw-led__more > td {
@@ -3464,6 +3480,8 @@ html[data-fw-theme='dark'] .ch-hb-prog i::after {
 }
 .ch-hw-ledm b {
   font: var(--ch-type-15-strong);
+
+  letter-spacing: var(--ch-track-15);
 }
 .ch-hw-ledm button > span {
   grid-row: 2;
@@ -3477,7 +3495,7 @@ html[data-fw-theme='dark'] .ch-hb-prog i::after {
   grid-row: 1 / span 2;
   grid-column: 2;
   font: var(--ch-type-13-medium);
-  line-height: 1;
+  line-height: var(--ch-lead-tight);
   font-style: normal;
   color: var(--ch-text-secondary);
 }
@@ -3535,7 +3553,7 @@ html[data-fw-theme='dark'] .ch-hb-prog i::after {
 }
 .ch-hw-reads b {
   font: var(--ch-type-34-medium);
-  line-height: 1;
+  line-height: var(--ch-lead-tight);
   letter-spacing: -0.03em;
   color: var(--ch-text-primary);
 }
@@ -3567,7 +3585,7 @@ html[data-fw-theme='dark'] .ch-hb-prog i::after {
   background: none;
   box-shadow: inset 0 0 0 1.5px var(--ch-warning-600);
   font: var(--ch-type-12-strong);
-  line-height: 1;
+  line-height: var(--ch-lead-tight);
   color: var(--ch-warning-600);
   cursor: pointer;
 }
@@ -3601,7 +3619,7 @@ html[data-fw-theme='dark'] .ch-hb-prog i::after {
 .ch-hw-figs dd {
   margin: 0;
   font: var(--ch-type-28-medium);
-  line-height: 1;
+  line-height: var(--ch-lead-tight);
   letter-spacing: -0.03em;
   color: var(--ch-text-primary);
 }
@@ -3665,7 +3683,7 @@ html[data-fw-theme='dark'] .ch-hb-prog i::after {
 }
 .ch-hw-mini b {
   font: var(--ch-type-13-strong);
-  line-height: 1;
+  line-height: var(--ch-lead-tight);
   color: var(--ch-text-primary);
 }
 .ch-hw-mini i {
@@ -3720,6 +3738,8 @@ html[data-fw-theme='dark'] .ch-hb-prog i::after {
 }
 .ch-hw-q b {
   font: var(--ch-type-15-strong);
+
+  letter-spacing: var(--ch-track-15);
   color: var(--ch-text-primary);
 }
 .ch-hw-q b .ch-hb-req {

@@ -15,11 +15,11 @@
   align-items: baseline;
   gap: 8px;
   margin: 0;
-  font: 600 14px/1.3 var(--ch-font-sans);
+  font: var(--ch-type-14-strong);
   color: var(--ch-text-primary);
 }
 .ch-gs__h .ch-num {
-  font: 500 13px/1.3 var(--ch-font-sans);
+  font: var(--ch-type-13-medium);
   color: var(--ch-text-tertiary);
 }
 .ch-gs__list {
@@ -41,13 +41,14 @@
 }
 .ch-gs__row b {
   display: block;
-  font: 600 15px/1.3 var(--ch-font-sans);
+  font: var(--ch-type-15-strong);
+  letter-spacing: var(--ch-track-15);
   color: var(--ch-text-primary);
 }
 .ch-gs__row span.ch-num {
   display: block;
   margin-top: 2px;
-  font: 400 14px/1.4 var(--ch-font-sans);
+  font: var(--ch-type-14);
   color: var(--ch-text-secondary);
 }
 .ch-gs__ans {
@@ -59,7 +60,7 @@
 .ch-gl-st {
   display: block;
   margin-top: 4px;
-  font: 500 13px/1.3 var(--ch-font-sans);
+  font: var(--ch-type-13-medium);
   color: var(--ch-text-secondary);
 }
 .ch-gl-ctl {

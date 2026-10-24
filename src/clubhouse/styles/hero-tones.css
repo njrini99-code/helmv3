@@ -21,7 +21,7 @@
   color: var(--ch-hero-ink);
 }
 .ch-hero[data-tone]:not([data-tone='canopy']) .ch-hero__line {
-  font: 400 14px/1.45 var(--ch-font-sans);
+  font: var(--ch-type-14);
   color: #4f5a52;
 }
 
@@ -114,12 +114,17 @@
   gap: 2px;
 }
 .ch-hero__figs dt {
-  font: 600 11px/1 var(--ch-font-sans);
+  font: var(--ch-type-11-strong);
+
+  letter-spacing: var(--ch-track-11);
+  line-height: var(--ch-lead-tight);
   color: var(--ch-hero-brass, var(--ch-ledger-eyebrow));
 }
 .ch-hero__figs dd {
   margin: 0;
-  font: 600 20px/1.1 var(--ch-font-sans);
+  font: var(--ch-type-20-strong);
+  letter-spacing: var(--ch-track-20);
+  line-height: var(--ch-lead-tight);
   color: var(--ch-hero-ink, #19392d);
 }
 @media (max-width: 820px) {

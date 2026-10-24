@@ -38,7 +38,7 @@
   background: var(--ch-ivory-25);
   color: var(--ch-text-secondary);
   font: var(--ch-type-14-medium);
-  line-height: 1;
+  line-height: var(--ch-lead-tight);
   text-decoration: none;
   white-space: nowrap;
   box-shadow: var(--ch-elevation-control);
@@ -139,6 +139,8 @@
 }
 .ch-hv-link b {
   font: var(--ch-type-15-strong);
+
+  letter-spacing: var(--ch-track-15);
 }
 .ch-hv-link em {
   font: var(--ch-type-13);

@@ -10,12 +10,14 @@
 .ch-htr-prog {
   max-width: 64ch;
   font: var(--ch-type-17-medium);
+  letter-spacing: var(--ch-track-17);
   color: var(--ch-text-primary);
 }
 .ch-htr-note,
 .ch-htr-corr {
   max-width: 64ch;
   font: var(--ch-type-15);
+  letter-spacing: var(--ch-track-15);
   color: var(--ch-text-secondary);
 }
 .ch-htr-note {
@@ -50,11 +52,13 @@
   grid-area: w;
   align-self: start;
   font: var(--ch-type-15-strong);
+  letter-spacing: var(--ch-track-15);
   color: var(--ch-text-primary);
 }
 .ch-htr-rung__l {
   grid-area: l;
   font: var(--ch-type-15-strong);
+  letter-spacing: var(--ch-track-15);
   color: var(--ch-text-primary);
 }
 .ch-htr-rung.is-plain .ch-htr-rung__l {
@@ -115,10 +119,14 @@
 }
 .ch-htr-fam__n {
   font: var(--ch-type-15-strong);
+
+  letter-spacing: var(--ch-track-15);
   color: var(--ch-text-primary);
 }
 .ch-htr-fam__l {
   font: var(--ch-type-15-strong);
+
+  letter-spacing: var(--ch-track-15);
   color: var(--ch-text-primary);
   text-align: right;
 }

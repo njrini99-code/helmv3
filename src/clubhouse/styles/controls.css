@@ -22,7 +22,7 @@
      Clubhouse (aesthetic audit X-1); secondary ink holds 5.4:1 and still reads lighter than the selected green. */
   color: var(--ch-text-secondary);
   font: var(--ch-type-13-medium);
-  line-height: 1;
+  line-height: var(--ch-lead-tight);
   white-space: nowrap;
   text-shadow: 0 1px 0 rgb(255 255 255 / 0.6);
   cursor: pointer;
@@ -96,7 +96,7 @@
   border-radius: 999px;
   background: transparent;
   color: var(--ch-text-secondary);
-  font: 500 calc(13 * var(--ch-type-k))/30px var(--ch-font-sans);
+  font: var(--ch-type-13-medium);
   font-variant-numeric: tabular-nums;
   box-shadow: inset 0 0 0 1px var(--ch-border-subtle);
   cursor: pointer;
@@ -149,7 +149,7 @@
   background: transparent;
   color: var(--ch-text-primary);
   font: var(--ch-type-14);
-  line-height: 1;
+  line-height: var(--ch-lead-tight);
   -webkit-appearance: none;
   appearance: none;
 }
@@ -313,7 +313,7 @@
   background: none;
   color: var(--ch-text-primary);
   font: var(--ch-type-14-medium);
-  line-height: 1;
+  line-height: var(--ch-lead-tight);
   text-align: left;
   text-decoration: none;
   cursor: pointer;
@@ -801,7 +801,7 @@
 }
 .ch-slider__v {
   font: var(--ch-type-14-strong);
-  line-height: 1;
+  line-height: var(--ch-lead-tight);
   font-variant-numeric: tabular-nums;
   color: var(--ch-green-700);
 }
@@ -859,7 +859,7 @@
   display: flex;
   justify-content: space-between;
   font: var(--ch-type-12);
-  line-height: 1;
+  line-height: var(--ch-lead-tight);
   color: var(--ch-text-tertiary);
 }
 
@@ -1079,7 +1079,7 @@
 }
 .ch-df-cal__h {
   height: 24px;
-  font: 500 calc(12 * var(--ch-type-k))/24px var(--ch-font-sans);
+  font: var(--ch-type-12-medium);
   color: var(--ch-text-tertiary);
   text-align: center;
 }
@@ -1100,7 +1100,7 @@
   background: transparent;
   color: var(--ch-text-primary);
   font: var(--ch-type-14-medium);
-  line-height: 1;
+  line-height: var(--ch-lead-tight);
   cursor: pointer;
   touch-action: manipulation;
   transition: background-color var(--ch-dur-quick) var(--ch-ease), color var(--ch-dur-quick) var(--ch-ease);
@@ -1190,7 +1190,7 @@
   background: transparent;
   color: var(--ch-text-primary);
   font: var(--ch-type-14-medium);
-  line-height: 1;
+  line-height: var(--ch-lead-tight);
   text-align: left;
   cursor: pointer;
   touch-action: manipulation;
@@ -1367,7 +1367,7 @@ html[data-fw-theme='dark'] .ch-slider input::-moz-range-thumb {
     padding: 22px 18px 8px 24px;
   }
   .ch-modal__titles h2 {
-    font: 600 20px/1.25 var(--ch-font-sans);
+    font: var(--ch-type-20-strong);
     letter-spacing: var(--ch-track-20);
   }
   .ch-modal__body {
@@ -1530,6 +1530,7 @@ html[data-fw-theme='dark'] .ch-slider input::-moz-range-thumb {
     overflow-wrap: anywhere;
     text-align: center;
     font: var(--ch-type-17-strong);
+    letter-spacing: var(--ch-track-17);
   }
   .ch-fsheet-bar__b {
     justify-self: start;
@@ -1539,7 +1540,8 @@ html[data-fw-theme='dark'] .ch-slider input::-moz-range-thumb {
     border: 0;
     background: none;
     font: var(--ch-type-16);
-    line-height: 1;
+    letter-spacing: var(--ch-track-16);
+    line-height: var(--ch-lead-tight);
     color: var(--ch-green-600);
     text-align: left;
     cursor: pointer;
@@ -1574,6 +1576,7 @@ html[data-fw-theme='dark'] .ch-slider input::-moz-range-thumb {
   .ch-fsheet-lbar__t h2 {
     margin: 0;
     font: var(--ch-type-20-strong);
+    letter-spacing: var(--ch-track-20);
   }
   .ch-fsheet-lbar__t span {
     font: var(--ch-type-14);
@@ -1629,7 +1632,8 @@ html[data-fw-theme='dark'] .ch-slider input::-moz-range-thumb {
     border: 0;
     background: none;
     font: var(--ch-type-20-medium);
-    line-height: 1;
+    letter-spacing: var(--ch-track-20);
+    line-height: var(--ch-lead-tight);
     cursor: pointer;
     touch-action: manipulation;
   }

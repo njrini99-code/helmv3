@@ -51,6 +51,8 @@
 }
 .ch-hmb-row__t {
   font: var(--ch-type-15-strong);
+
+  letter-spacing: var(--ch-track-15);
   color: var(--ch-text-primary);
   text-wrap: pretty;
 }
@@ -159,6 +161,8 @@
 }
 .ch-hbr-goals__p li b {
   font: var(--ch-type-15-strong);
+
+  letter-spacing: var(--ch-track-15);
   color: var(--ch-text-primary);
 }
 .ch-hbr-goals__st {

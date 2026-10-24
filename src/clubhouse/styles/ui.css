@@ -13,7 +13,7 @@
   border: 0;
   border-radius: var(--ch-radius-md);
   font: var(--ch-type-14-medium);
-  line-height: 1;
+  line-height: var(--ch-lead-tight);
   letter-spacing: var(--ch-track-14);
   white-space: nowrap;
   text-decoration: none;
@@ -234,7 +234,7 @@
   padding: 0 8px;
   border-radius: var(--ch-radius-xs);
   font: var(--ch-type-12-strong);
-  line-height: 1;
+  line-height: var(--ch-lead-tight);
   white-space: nowrap;
 }
 .ch-badge--neutral {
@@ -406,7 +406,7 @@
   background: rgb(255 255 255 / 0.08);
   color: #fff;
   font: var(--ch-type-13-medium);
-  line-height: 1;
+  line-height: var(--ch-lead-tight);
   cursor: pointer;
 }
 @media (hover: hover) {
@@ -467,7 +467,7 @@
   padding: 4px 8px;
   border-radius: 999px;
   font: var(--ch-type-12-medium);
-  line-height: 1;
+  line-height: var(--ch-lead-tight);
   color: var(--ch-text-tertiary);
   box-shadow: inset 0 0 0 1px var(--ch-border-subtle);
   white-space: nowrap;
@@ -556,7 +556,7 @@
 .ch-popover__label {
   padding: 8px 10px 6px;
   font: var(--ch-type-12-medium);
-  line-height: 1;
+  line-height: var(--ch-lead-tight);
   color: var(--ch-text-tertiary);
 }
 .ch-popover__sep {
@@ -575,7 +575,8 @@
   background: var(--ch-bg-surface);
   box-shadow: 0 0 0 1px var(--ch-border-hairline);
   table-layout: fixed;
-  font: 500 13px/1 var(--ch-font-sans);
+  font: var(--ch-type-13-medium);
+  line-height: var(--ch-lead-tight);
   font-variant-numeric: tabular-nums;
   color: var(--ch-text-primary);
 }
@@ -611,7 +612,8 @@
   color: var(--ch-text-secondary);
 }
 .ch-nine b {
-  font: 600 14px/1 var(--ch-font-sans);
+  font: var(--ch-type-14-strong);
+  line-height: var(--ch-lead-tight);
 }
 .ch-scoreboard .ch-nine .is-par td {
   border-bottom-color: var(--ch-board-rule);
@@ -794,7 +796,8 @@
 }
 .ch-lgr__trail {
   flex: none;
-  font: 600 17px/1 var(--ch-font-sans);
+  font: var(--ch-type-17-strong);
+  line-height: var(--ch-lead-tight);
   letter-spacing: -0.02em;
   color: var(--ch-text-primary);
 }
@@ -834,7 +837,8 @@
 }
 .ch-fgr dd {
   margin: 0;
-  font: 600 22px/1 var(--ch-font-sans);
+  font: var(--ch-type-22-strong);
+  line-height: var(--ch-lead-tight);
   font-variant-numeric: tabular-nums;
   letter-spacing: -0.03em;
   color: var(--ch-text-primary);
@@ -912,7 +916,7 @@ button.ch-feat {
   border-radius: 6px;
   background: rgb(255 255 255 / 0.09);
   font: var(--ch-type-12-strong);
-  line-height: 1;
+  line-height: var(--ch-lead-tight);
   color: var(--ch-on-green-ink);
 }
 .ch-feat__chip.is-soon {
@@ -921,7 +925,7 @@ button.ch-feat {
 }
 .ch-feat__title {
   font: var(--ch-type-22-strong);
-  line-height: 1.15;
+  line-height: var(--ch-lead-tight);
   letter-spacing: -0.03em;
   color: var(--ch-on-green-ink);
 }
@@ -966,7 +970,7 @@ button.ch-feat {
 .ch-intro__title {
   margin: 0;
   font: var(--ch-type-34-strong);
-  line-height: 1.08;
+  line-height: var(--ch-lead-tight);
   letter-spacing: -0.038em;
   font-variation-settings: 'wdth' 88;
   color: var(--ch-ledger-ink);
@@ -975,6 +979,7 @@ button.ch-feat {
   margin: 0;
   max-width: 60ch;
   font: var(--ch-type-15);
+  letter-spacing: var(--ch-track-15);
   color: var(--ch-text-secondary);
 }
 @media (min-width: 821px) {
@@ -1380,7 +1385,9 @@ html[data-fw-theme='dark'] .ch-scoreboard .ch-score--double {
 }
 .ch-ppeek__figs dd {
   margin: 0;
-  font: 600 22px/1.1 var(--ch-font-sans);
+  font: var(--ch-type-22-strong);
+  letter-spacing: var(--ch-track-22);
+  line-height: var(--ch-lead-tight);
   color: var(--ch-text-primary);
 }
 .ch-ppeek__figs dd small {
@@ -1509,7 +1516,7 @@ html[data-fw-theme='dark'] .ch-scoreboard .ch-score--double {
 .ch-zn__id h2 {
   margin: 0;
   font: var(--ch-type-28-strong);
-  line-height: 1.1;
+  line-height: var(--ch-lead-tight);
   letter-spacing: -0.02em;
   color: var(--ch-forest-800);
 }
@@ -1525,6 +1532,7 @@ html[data-fw-theme='dark'] .ch-scoreboard .ch-score--double {
 .ch-zn__def {
   margin: 0;
   font: var(--ch-type-15);
+  letter-spacing: var(--ch-track-15);
   color: var(--ch-text-secondary);
 }
 .ch-zn__def b {
@@ -1588,6 +1596,7 @@ html[data-fw-theme='dark'] .ch-scoreboard .ch-score--double {
 .ch-znb h3 {
   margin: 0 0 4px;
   font: var(--ch-type-15-strong);
+  letter-spacing: var(--ch-track-15);
   color: var(--ch-text-primary);
 }
 .ch-znb > p {
@@ -1723,6 +1732,8 @@ html[data-fw-theme='dark'] .ch-scoreboard .ch-score--double {
 }
 .ch-line__t {
   font: var(--ch-type-11-medium);
+
+  letter-spacing: var(--ch-track-11);
   font-variant-numeric: tabular-nums;
   fill: var(--ch-text-tertiary);
 }
@@ -1830,7 +1841,7 @@ html[data-fw-theme='dark'] .ch-scoreboard .ch-score--double {
   max-width: 100%;
   font: var(--ch-type-12-medium);
   font-style: normal;
-  line-height: 1;
+  line-height: var(--ch-lead-tight);
   white-space: nowrap;
   text-overflow: ellipsis;
   color: var(--ch-text-tertiary);
@@ -1838,7 +1849,9 @@ html[data-fw-theme='dark'] .ch-scoreboard .ch-score--double {
 }
 .ch-wks__d b {
   font: var(--ch-type-17-medium);
-  line-height: 1;
+
+  letter-spacing: var(--ch-track-17);
+  line-height: var(--ch-lead-tight);
   font-variant-numeric: tabular-nums;
   color: var(--ch-text-primary);
   transition: color var(--ch-dur-base) var(--ch-ease);
@@ -1859,7 +1872,9 @@ html[data-fw-theme='dark'] .ch-scoreboard .ch-score--double {
 }
 .ch-wks__d.is-today b {
   font: var(--ch-type-17-strong);
-  line-height: 1;
+
+  letter-spacing: var(--ch-track-17);
+  line-height: var(--ch-lead-tight);
   color: var(--ch-green-700);
 }
 .ch-wks__d.is-on em {
@@ -1867,7 +1882,9 @@ html[data-fw-theme='dark'] .ch-scoreboard .ch-score--double {
 }
 .ch-wks__d.is-on b {
   font: var(--ch-type-17-strong);
-  line-height: 1;
+
+  letter-spacing: var(--ch-track-17);
+  line-height: var(--ch-lead-tight);
   color: var(--ch-on-green-ink);
 }
 .ch-wks__d.is-on i {
@@ -1955,7 +1972,7 @@ html[data-fw-theme='dark'] .ch-scoreboard .ch-score--double {
 }
 .ch-es--page .ch-es__title {
   font: var(--ch-type-28-strong);
-  line-height: 1.15;
+  line-height: var(--ch-lead-tight);
   font-variation-settings: 'wdth' 96;
   letter-spacing: var(--ch-track-28);
   color: var(--ch-ledger-ink);
@@ -1970,6 +1987,7 @@ html[data-fw-theme='dark'] .ch-scoreboard .ch-score--double {
 .ch-es--page .ch-es__body {
   margin-top: 4px;
   font: var(--ch-type-15);
+  letter-spacing: var(--ch-track-15);
 }
 .ch-es__prog {
   margin: 8px 0 0;

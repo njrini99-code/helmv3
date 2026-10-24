@@ -26,6 +26,8 @@
 }
 .ch-rec-head p {
   font: var(--ch-type-15);
+
+  letter-spacing: var(--ch-track-15);
   color: var(--ch-text-secondary);
 }
 /* No team (CH-14306): the page state alone, in the page's frame. Not .ch-rec, which is hidden under 820px until the phone view takes over. */
@@ -74,7 +76,7 @@
   border-radius: var(--ch-radius-sm);
   background: none;
   font: var(--ch-type-13-medium);
-  line-height: 1;
+  line-height: var(--ch-lead-tight);
   color: var(--ch-green-600);
   cursor: pointer;
 }
@@ -178,6 +180,8 @@
 }
 .ch-rec-pipe__txt b {
   font: var(--ch-type-15-strong);
+
+  letter-spacing: var(--ch-track-15);
   color: var(--ch-text-primary);
 }
 .ch-rec-pipe__txt span {
@@ -216,11 +220,11 @@
 .ch-rec-tb {
   width: 100%;
   border-collapse: collapse;
-  font: 400 14px/1.4 var(--ch-font-sans);
+  font: var(--ch-type-14);
 }
 .ch-rec-tb th[scope='col'] {
   padding: 10px 12px;
-  font: 500 12px/1.3 var(--ch-font-sans);
+  font: var(--ch-type-12-medium);
   text-align: left;
   color: var(--ch-text-tertiary);
 }
@@ -286,7 +290,7 @@
 }
 .ch-rec-tb__sub {
   display: none;
-  font: 400 13px/1.3 var(--ch-font-sans);
+  font: var(--ch-type-13);
   color: var(--ch-text-tertiary);
 }
 /* The list is narrower than the table needs once the panel is open: class and hometown move under the name, then the date goes. */
@@ -337,7 +341,7 @@
   padding: 0 9px;
   border-radius: var(--ch-radius-sm);
   font: var(--ch-type-13-strong);
-  line-height: 1;
+  line-height: var(--ch-lead-tight);
   white-space: nowrap;
 }
 .ch-rec-chip.is-lg {
@@ -395,12 +399,12 @@
   min-width: 0;
 }
 .ch-rec-panel__id h2 {
-  font: 600 20px/1.2 var(--ch-font-sans);
+  font: var(--ch-type-20-strong);
   letter-spacing: var(--ch-track-20);
   overflow-wrap: anywhere;
 }
 .ch-rec-panel__id span {
-  font: 400 14px/1.4 var(--ch-font-sans);
+  font: var(--ch-type-14);
   color: var(--ch-text-secondary);
 }
 .ch-rec-stage .ch-seg {
@@ -440,7 +444,7 @@
   border-radius: var(--ch-radius-md);
   background: none;
   font: var(--ch-type-14-medium);
-  line-height: 1;
+  line-height: var(--ch-lead-tight);
   color: var(--ch-danger-600);
   cursor: pointer;
 }
@@ -507,7 +511,7 @@
   border-radius: var(--ch-radius-sm);
   background: none;
   font: var(--ch-type-13-medium);
-  line-height: 1;
+  line-height: var(--ch-lead-tight);
   color: var(--ch-green-600);
   cursor: pointer;
 }
@@ -551,7 +555,7 @@
 }
 .ch-rec-row__a {
   font: var(--ch-type-13-medium);
-  line-height: 1;
+  line-height: var(--ch-lead-tight);
   color: var(--ch-green-600);
 }
 .ch-rec-notes {
@@ -728,7 +732,7 @@
   border-radius: var(--ch-radius-sm);
   background: none;
   font: var(--ch-type-14-medium);
-  line-height: 1;
+  line-height: var(--ch-lead-tight);
   color: var(--ch-green-600);
   cursor: pointer;
 }
@@ -965,7 +969,7 @@
     border-radius: var(--ch-radius-md);
     background: none;
     font: var(--ch-type-14-medium);
-    line-height: 1;
+    line-height: var(--ch-lead-tight);
     color: var(--ch-green-600);
     cursor: pointer;
     touch-action: manipulation;
@@ -1057,7 +1061,7 @@
   }
   .ch-recm-hero b {
     font: var(--ch-type-28-strong);
-    line-height: 1.1;
+    line-height: var(--ch-lead-tight);
     letter-spacing: var(--ch-track-28);
     font-variation-settings: 'wdth' 88;
     color: var(--ch-ledger-ink);
@@ -1148,7 +1152,8 @@
     border-radius: var(--ch-radius-md);
     background: none;
     font: var(--ch-type-16-medium);
-    line-height: 1;
+    letter-spacing: var(--ch-track-16);
+    line-height: var(--ch-lead-tight);
     color: var(--ch-text-primary);
     text-align: left;
     cursor: pointer;
@@ -1354,6 +1359,7 @@
     /* The label column grows with Dynamic Type, so "Hometown" stays clear of its field at XXL. */
     width: calc(96 * var(--ch-type-k));
     font: var(--ch-type-16);
+    letter-spacing: var(--ch-track-16);
     color: var(--ch-text-secondary);
   }
   .ch-rec-form.is-phone .ch-rec-f .ch-input {
@@ -1481,7 +1487,7 @@
     gap: 3px;
   }
   .ch-rec[data-canopy] .ch-rec-pipe__sum b {
-    font: 600 20px/1.2 var(--ch-font-sans);
+    font: var(--ch-type-20-strong);
     letter-spacing: var(--ch-track-20);
     color: var(--ch-ledger-ink);
   }
@@ -1763,7 +1769,7 @@
   border-radius: var(--ch-radius-md);
   background: none;
   font: var(--ch-type-14-medium);
-  line-height: 1;
+  line-height: var(--ch-lead-tight);
   color: var(--ch-green-600);
   cursor: pointer;
   transition: background-color var(--ch-dur-press) var(--ch-ease);
@@ -1788,7 +1794,7 @@
     min-height: 24px;
     max-width: none;
     margin-top: 2px;
-    font: 400 14px/1.4 var(--ch-font-sans);
+    font: var(--ch-type-14);
     color: var(--ch-text-secondary);
   }
 }
@@ -1839,7 +1845,7 @@
   border-radius: var(--ch-radius-sm);
   box-shadow: inset 0 0 0 1px var(--ch-champagne-rule);
   font: var(--ch-type-12-medium);
-  line-height: 1;
+  line-height: var(--ch-lead-tight);
   font-variant-numeric: tabular-nums;
   color: var(--ch-text-secondary);
   white-space: nowrap;
@@ -1871,7 +1877,7 @@
   outline-offset: -2px;
 }
 .ch-rec-tb .is-next {
-  font: 400 14px/1.4 var(--ch-font-sans);
+  font: var(--ch-type-14);
   font-variant-numeric: tabular-nums;
   color: var(--ch-text-secondary);
   white-space: nowrap;
@@ -1945,7 +1951,7 @@
   .ch-recm-row__b .ch-rec-plate {
     margin-top: 5px;
     font: var(--ch-type-12-medium);
-    line-height: 1;
+    line-height: var(--ch-lead-tight);
     font-variant-numeric: tabular-nums;
     color: var(--ch-text-secondary);
   }

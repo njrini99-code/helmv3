@@ -50,7 +50,7 @@
 }
 .ch-hd-grp__h span {
   font: var(--ch-type-13-strong);
-  line-height: 1;
+  line-height: var(--ch-lead-tight);
   color: var(--ch-text-tertiary);
 }
 .ch-hd-grp ul {
@@ -137,7 +137,10 @@
   text-wrap: pretty;
 }
 .ch-hd-it__v {
-  font: 600 15px/1 var(--ch-font-sans);
+  font: var(--ch-type-15-strong);
+
+  letter-spacing: var(--ch-track-15);
+  line-height: var(--ch-lead-tight);
   color: var(--ch-hd-ink);
   text-align: right;
 }
@@ -203,7 +206,7 @@
   align-self: flex-start;
   min-height: 44px;
   padding: 0 6px;
-  font: 600 calc(13 * var(--ch-type-k))/44px var(--ch-font-sans);
+  font: var(--ch-type-13-strong);
   color: var(--ch-green-700);
 }
 .ch-hd-more:focus-visible {
@@ -263,6 +266,7 @@
   margin: 0;
   max-width: 62ch;
   font: var(--ch-type-15);
+  letter-spacing: var(--ch-track-15);
   color: var(--ch-ink-700);
   text-wrap: pretty;
 }
@@ -347,6 +351,7 @@
 .ch-hd-meas__v span {
   max-width: 40ch;
   font: var(--ch-type-15-medium);
+  letter-spacing: var(--ch-track-15);
   color: var(--ch-ink-700);
   text-wrap: pretty;
 }
@@ -400,6 +405,8 @@
 }
 .ch-hd-tr li > b {
   font: var(--ch-type-15-strong);
+
+  letter-spacing: var(--ch-track-15);
   color: var(--ch-hd-fig);
 }
 .ch-hd-tr li > b span {
@@ -427,7 +434,7 @@
   fill: var(--ch-ivory-25);
 }
 .ch-hd-strip__c {
-  font: 600 14px/1.4 var(--ch-font-sans);
+  font: var(--ch-type-14-strong);
   color: var(--ch-hd-fig);
 }
 .ch-hd-strip__c em {
@@ -552,7 +559,10 @@
   color: var(--ch-text-tertiary);
 }
 .ch-hd-r__s {
-  font: 600 15px/1 var(--ch-font-sans);
+  font: var(--ch-type-15-strong);
+
+  letter-spacing: var(--ch-track-15);
+  line-height: var(--ch-lead-tight);
   color: var(--ch-ink-700);
 }
 .ch-hd-r__p {
@@ -593,7 +603,7 @@
   padding: 5px 10px;
   border-radius: 999px;
   font: var(--ch-type-12-strong);
-  line-height: 1;
+  line-height: var(--ch-lead-tight);
 }
 .ch-hd-dx__lvl.is-observed {
   background: var(--ch-positive-100);
@@ -607,6 +617,7 @@
 .ch-hd-dx__c {
   max-width: 60ch;
   font: var(--ch-type-16);
+  letter-spacing: var(--ch-track-16);
   color: var(--ch-ink-700);
   text-wrap: pretty;
 }
@@ -628,7 +639,7 @@
 .ch-hd-dx__d dd {
   margin: 0;
   flex: none;
-  font: 600 14px/1.2 var(--ch-font-sans);
+  font: var(--ch-type-14-strong);
   color: var(--ch-ink-700);
 }
 .ch-hd-dx__d dd em {
@@ -653,6 +664,7 @@
 .ch-hd-why {
   max-width: 62ch;
   font: var(--ch-type-15);
+  letter-spacing: var(--ch-track-15);
   color: var(--ch-ink-700);
   text-wrap: pretty;
 }
@@ -720,6 +732,8 @@
 }
 .ch-hd-plan__b b {
   font: var(--ch-type-15-strong);
+
+  letter-spacing: var(--ch-track-15);
   text-wrap: pretty;
 }
 .ch-hd-plan__b span {
@@ -731,7 +745,7 @@
   border-radius: 999px;
   background: var(--ch-ivory-150);
   font: var(--ch-type-12-strong);
-  line-height: 1;
+  line-height: var(--ch-lead-tight);
   color: var(--ch-text-secondary);
   white-space: nowrap;
 }
@@ -1044,7 +1058,7 @@
   }
   .ch-hd-dos h2 {
     font: var(--ch-type-22-strong);
-    line-height: 1.15;
+    line-height: var(--ch-lead-tight);
     letter-spacing: -0.03em;
     color: var(--ch-on-green-ink);
   }
@@ -1235,7 +1249,7 @@ main[data-canopy] .ch-hd-it.is-on,
   min-height: 40px;
   padding: 0 6px;
   font: var(--ch-type-14-medium);
-  line-height: 1;
+  line-height: var(--ch-lead-tight);
   color: var(--ch-text-secondary);
   text-decoration: none;
   border-radius: var(--ch-radius-sm);

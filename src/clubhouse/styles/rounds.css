@@ -12,14 +12,14 @@
 }
 .ch-rd-k {
   font: var(--ch-type-13-medium);
-  line-height: 1;
+  line-height: var(--ch-lead-tight);
   color: var(--ch-text-tertiary);
 }
 /* A refresh with the page on screen: the page stays and says it is updating (an empty status region is not drawn) */
 .ch-rd-upd {
   margin-left: 8px;
   font: var(--ch-type-13-medium);
-  line-height: 1;
+  line-height: var(--ch-lead-tight);
   color: var(--ch-text-tertiary);
 }
 .ch-rd-upd:empty {
@@ -73,7 +73,7 @@
   align-items: center;
   gap: 7px;
   font: var(--ch-type-12-strong);
-  line-height: 1;
+  line-height: var(--ch-lead-tight);
   color: var(--ch-hero-mint);
 }
 .ch-rd-unf__k i {
@@ -89,13 +89,13 @@
 }
 .ch-rd-unf__t {
   font: var(--ch-type-12);
-  line-height: 1;
+  line-height: var(--ch-lead-tight);
   color: rgb(244 241 232 / 0.6);
 }
 .ch-rd-unf__c {
   margin-top: 18px;
   font: var(--ch-type-28-strong);
-  line-height: 1.05;
+  line-height: var(--ch-lead-tight);
   letter-spacing: -0.03em;
   font-variation-settings: 'wdth' 96;
 }
@@ -118,7 +118,8 @@
   display: grid;
   place-items: center;
   border-radius: var(--ch-radius-sm);
-  font: 600 12px/1 var(--ch-font-sans);
+  font: var(--ch-type-12-strong);
+  line-height: var(--ch-lead-tight);
   font-variant-numeric: tabular-nums;
   background: rgb(0 0 0 / 0.18);
   box-shadow: inset 0 1px 2px rgb(0 0 0 / 0.3);
@@ -131,7 +132,10 @@
   gap: 1px;
 }
 .ch-rd-strip span.is-played em {
-  font: 500 11px/1 var(--ch-font-sans);
+  font: var(--ch-type-11-medium);
+
+  letter-spacing: var(--ch-track-11);
+  line-height: var(--ch-lead-tight);
 
   font-variant-numeric: tabular-nums;
   font-style: normal;
@@ -174,7 +178,10 @@
   color: rgb(244 241 232 / 0.72);
 }
 .ch-rd-unf__f b {
-  font: 600 16px/1 var(--ch-font-sans);
+  font: var(--ch-type-16-strong);
+
+  letter-spacing: var(--ch-track-16);
+  line-height: var(--ch-lead-tight);
   font-variant-numeric: tabular-nums;
   color: var(--ch-on-fill-100);
 }
@@ -191,7 +198,7 @@
   padding: 0 14px;
   border-radius: var(--ch-radius-md);
   font: var(--ch-type-14-strong);
-  line-height: 1;
+  line-height: var(--ch-lead-tight);
   color: var(--ch-green-800);
   text-decoration: none;
   white-space: nowrap;
@@ -270,7 +277,8 @@
   font-variation-settings: 'wdth' 88;
 }
 .ch-rd-season__big em {
-  font: 500 13px/1 var(--ch-font-sans);
+  font: var(--ch-type-13-medium);
+  line-height: var(--ch-lead-tight);
 
   font-variant-numeric: tabular-nums;
   font-style: normal;
@@ -293,14 +301,15 @@
 }
 .ch-rd-fig dt {
   font: var(--ch-type-12-strong);
-  line-height: 1;
+  line-height: var(--ch-lead-tight);
   color: var(--ch-text-secondary);
 }
 .ch-rd-fig dd {
   margin: 0;
 }
 .ch-rd-fig__v {
-  font: 500 22px/1 var(--ch-font-sans);
+  font: var(--ch-type-22-medium);
+  line-height: var(--ch-lead-tight);
   font-variant-numeric: tabular-nums;
   letter-spacing: var(--ch-track-22);
   color: var(--ch-text-primary);
@@ -355,7 +364,8 @@
 .ch-rd-range__ends {
   display: flex;
   justify-content: space-between;
-  font: 600 12px/1 var(--ch-font-sans);
+  font: var(--ch-type-12-strong);
+  line-height: var(--ch-lead-tight);
   color: var(--ch-text-tertiary);
 }
 /* Putts: a bar against two putts a green (36), ticked. */
@@ -452,14 +462,18 @@
   paint-order: stroke;
 }
 .ch-rd-rib__t {
-  font: 500 11px var(--ch-font-sans);
+  font: var(--ch-type-11-medium);
+
+  letter-spacing: var(--ch-track-11);
   fill: var(--ch-ink-500);
 }
 .ch-rd-rib__t.is-avg {
   fill: var(--ch-green-500);
 }
 .ch-rd-rib__v {
-  font: 600 11px var(--ch-font-sans);
+  font: var(--ch-type-11-strong);
+
+  letter-spacing: var(--ch-track-11);
   fill: var(--ch-text-secondary);
   font-variant-numeric: tabular-nums;
 }
@@ -467,7 +481,9 @@
   fill: var(--ch-score-under);
 }
 .ch-rd-rib__d {
-  font: 600 11px var(--ch-font-sans);
+  font: var(--ch-type-11-strong);
+
+  letter-spacing: var(--ch-track-11);
   fill: var(--ch-text-secondary);
   font-variant-numeric: tabular-nums;
 }
@@ -476,7 +492,7 @@
   gap: 16px;
   padding-top: 6px;
   font: var(--ch-type-12-medium);
-  line-height: 1;
+  line-height: var(--ch-lead-tight);
   color: var(--ch-text-tertiary);
 }
 .ch-rd-season__lg span {
@@ -568,7 +584,7 @@
   height: 34px;
   padding: 0 12px;
   border-radius: var(--ch-radius-md);
-  font: 600 calc(13 * var(--ch-type-k))/34px var(--ch-font-sans);
+  font: var(--ch-type-13-strong);
   color: var(--ch-green-700);
   text-decoration: none;
   box-shadow: inset 0 0 0 1px rgb(21 90 57 / 0.25);
@@ -612,7 +628,7 @@
   gap: 14px;
   padding: 0 2px;
   font: var(--ch-type-13);
-  line-height: 1;
+  line-height: var(--ch-lead-tight);
   color: var(--ch-text-tertiary);
 }
 .ch-rd-grp__h h2 {
@@ -681,13 +697,14 @@ a.ch-rd-sc:focus-visible {
   box-shadow: var(--ch-key-raised-shadow);
 }
 .ch-rd-sc__date b {
-  font: 600 22px/1 var(--ch-font-sans);
+  font: var(--ch-type-22-strong);
+  line-height: var(--ch-lead-tight);
   font-variant-numeric: tabular-nums;
   letter-spacing: -0.02em;
 }
 .ch-rd-sc__date em {
   font: var(--ch-type-12-strong);
-  line-height: 1;
+  line-height: var(--ch-lead-tight);
   font-style: normal;
   color: var(--ch-text-tertiary);
 }
@@ -700,7 +717,7 @@ a.ch-rd-sc:focus-visible {
 .ch-rd-sc__c > b {
   overflow: hidden;
   font: var(--ch-type-16-strong);
-  line-height: 1.15;
+  line-height: var(--ch-lead-tight);
   letter-spacing: -0.01em;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -711,7 +728,7 @@ a.ch-rd-sc:focus-visible {
   align-items: center;
   gap: 5px 7px;
   font: var(--ch-type-13);
-  line-height: 1;
+  line-height: var(--ch-lead-tight);
   color: var(--ch-text-tertiary);
 }
 .ch-rd-tee {
@@ -747,7 +764,8 @@ a.ch-rd-sc:focus-visible {
   height: 20px;
   padding: 0 8px;
   border-radius: 999px;
-  font: 600 calc(11 * var(--ch-type-k))/20px var(--ch-font-sans);
+  font: var(--ch-type-11-strong);
+  letter-spacing: var(--ch-track-11);
   background: var(--ch-bg-inset);
   color: var(--ch-text-secondary);
 }
@@ -785,12 +803,18 @@ a.ch-rd-sc:focus-visible {
   border-left: 1px solid rgb(28 25 18 / 0.12);
 }
 .ch-rd-sc__grid em {
-  font: 500 11px/1 var(--ch-font-sans);
+  font: var(--ch-type-11-medium);
+
+  letter-spacing: var(--ch-track-11);
+  line-height: var(--ch-lead-tight);
   font-style: normal;
   color: var(--ch-text-tertiary);
 }
 .ch-rd-sc__grid b {
-  font: 600 16px/1 var(--ch-font-sans);
+  font: var(--ch-type-16-strong);
+
+  letter-spacing: var(--ch-track-16);
+  line-height: var(--ch-lead-tight);
   font-variant-numeric: tabular-nums;
 }
 .ch-rd-sc__grid .is-tot {
@@ -818,7 +842,7 @@ a.ch-rd-sc:focus-visible {
   gap: 8px;
   align-items: center;
   font: var(--ch-type-12-medium);
-  line-height: 1;
+  line-height: var(--ch-lead-tight);
   color: var(--ch-text-tertiary);
 }
 .ch-rd-meter em {
@@ -826,7 +850,8 @@ a.ch-rd-sc:focus-visible {
 }
 .ch-rd-meter b {
   text-align: right;
-  font: 600 12px/1 var(--ch-font-sans);
+  font: var(--ch-type-12-strong);
+  line-height: var(--ch-lead-tight);
   font-variant-numeric: tabular-nums;
   color: var(--ch-ink-950);
   white-space: nowrap;
@@ -861,13 +886,15 @@ a.ch-rd-sc:focus-visible {
   box-shadow: inset 0 1px 2px rgb(28 25 18 / 0.08);
 }
 .ch-rd-sc__s b {
-  font: 500 22px/1 var(--ch-font-sans);
+  font: var(--ch-type-22-medium);
+  line-height: var(--ch-lead-tight);
   font-variant-numeric: tabular-nums;
   letter-spacing: var(--ch-track-22);
   color: var(--ch-ink-950);
 }
 .ch-rd-sc__s em {
-  font: 500 12px/1 var(--ch-font-sans);
+  font: var(--ch-type-12-medium);
+  line-height: var(--ch-lead-tight);
   font-variant-numeric: tabular-nums;
   font-style: normal;
   color: var(--ch-text-tertiary);
@@ -1015,7 +1042,7 @@ a.ch-rd-sc:focus-visible {
   padding: 0 12px 0 8px;
   border-radius: 999px;
   font: var(--ch-type-14-medium);
-  line-height: 1;
+  line-height: var(--ch-lead-tight);
   color: var(--ch-text-primary);
   text-decoration: none;
   background: #fff;
@@ -1080,7 +1107,10 @@ a.ch-rd-sc:focus-visible {
   font-variation-settings: 'wdth' 96;
 }
 .ch-rv-hero__s em {
-  font: 600 17px/1 var(--ch-font-sans);
+  font: var(--ch-type-17-strong);
+
+  letter-spacing: var(--ch-track-17);
+  line-height: var(--ch-lead-tight);
   font-variant-numeric: tabular-nums;
   font-style: normal;
   color: #e7b866;
@@ -1090,7 +1120,7 @@ a.ch-rd-sc:focus-visible {
 }
 .ch-rv-hero__s span {
   font: var(--ch-type-12-medium);
-  line-height: 1;
+  line-height: var(--ch-lead-tight);
 
   font-variant-numeric: tabular-nums;
   color: rgb(244 241 232 / 0.6);
@@ -1121,19 +1151,20 @@ a.ch-rd-sc:focus-visible {
 }
 .ch-rv-figs dt {
   font: var(--ch-type-12-medium);
-  line-height: 1;
+  line-height: var(--ch-lead-tight);
   color: var(--ch-text-secondary);
 }
 .ch-rv-figs dd {
   margin: 0;
-  font: 500 28px/1 var(--ch-font-sans);
+  font: var(--ch-type-28-medium);
+  line-height: var(--ch-lead-tight);
   font-variant-numeric: tabular-nums;
   letter-spacing: var(--ch-track-28);
 }
 .ch-rv-figs dd + dd {
   letter-spacing: normal;
   font: var(--ch-type-12);
-  line-height: 1;
+  line-height: var(--ch-lead-tight);
   font-variant-numeric: tabular-nums;
   color: var(--ch-text-tertiary);
 }
@@ -1156,7 +1187,7 @@ a.ch-rd-sc:focus-visible {
 .ch-rv-card__h h3 {
   margin: 0 0 4px;
   font: var(--ch-type-17-strong);
-  line-height: 1.1;
+  line-height: var(--ch-lead-tight);
   letter-spacing: var(--ch-track-17);
 }
 .ch-rv-card__h span {
@@ -1178,7 +1209,8 @@ a.ch-rd-sc:focus-visible {
   gap: 4px;
 }
 .ch-rv-sg__tot b {
-  font: 500 34px/1 var(--ch-font-sans);
+  font: var(--ch-type-34-medium);
+  line-height: var(--ch-lead-tight);
   font-variant-numeric: tabular-nums;
   letter-spacing: var(--ch-track-34);
   font-variation-settings: 'wdth' 88;
@@ -1215,7 +1247,8 @@ a.ch-rd-sc:focus-visible {
 }
 .ch-rv-sg__r b {
   text-align: right;
-  font: 600 13px/1 var(--ch-font-sans);
+  font: var(--ch-type-13-strong);
+  line-height: var(--ch-lead-tight);
   font-variant-numeric: tabular-nums;
   color: var(--ch-text-primary);
 }
@@ -1265,7 +1298,8 @@ a.ch-rd-sc:focus-visible {
   border-radius: var(--ch-radius-lg);
   background: #fff;
   box-shadow: 0 0 0 1px rgb(28 25 18 / 0.1);
-  font: 500 13px/1 var(--ch-font-sans);
+  font: var(--ch-type-13-medium);
+  line-height: var(--ch-lead-tight);
   font-variant-numeric: tabular-nums;
 }
 .ch-rv-nine th,
@@ -1283,7 +1317,8 @@ a.ch-rd-sc:focus-visible {
   width: 56px;
   padding-left: 10px;
   text-align: left;
-  font: 500 12px/1 var(--ch-font-sans);
+  font: var(--ch-type-12-medium);
+  line-height: var(--ch-lead-tight);
   font-variant-numeric: tabular-nums;
   color: var(--ch-text-tertiary);
 }
@@ -1482,7 +1517,8 @@ a.ch-rd-sc:focus-visible {
   height: 22px;
   padding: 0 8px;
   border-radius: 999px;
-  font: 600 calc(11 * var(--ch-type-k))/22px var(--ch-font-sans);
+  font: var(--ch-type-11-strong);
+  letter-spacing: var(--ch-track-11);
   background: var(--ch-bg-inset);
   color: var(--ch-text-secondary);
   white-space: nowrap;
@@ -1505,12 +1541,13 @@ a.ch-rd-sc:focus-visible {
   gap: 10px;
   align-items: center;
   font: var(--ch-type-13-medium);
-  line-height: 1;
+  line-height: var(--ch-lead-tight);
   color: var(--ch-text-secondary);
 }
 .ch-rv-dist__r b {
   text-align: right;
-  font: 600 14px/1 var(--ch-font-sans);
+  font: var(--ch-type-14-strong);
+  line-height: var(--ch-lead-tight);
   font-variant-numeric: tabular-nums;
   color: var(--ch-ink-950);
 }
@@ -1556,12 +1593,13 @@ a.ch-rd-sc:focus-visible {
   align-items: center;
   gap: 6px;
   font: var(--ch-type-13-strong);
-  line-height: 1;
+  line-height: var(--ch-lead-tight);
   color: var(--ch-hero-mint);
 }
 .ch-rv-recap p {
   margin: 0;
   font: var(--ch-type-15);
+  letter-spacing: var(--ch-track-15);
   text-wrap: pretty;
 }
 /* CoachHelm's 30-second debrief (chs-30): the recap's panel, its four lines as label and text. */
@@ -1584,6 +1622,7 @@ a.ch-rd-sc:focus-visible {
 .ch-rv-debrief__l dd {
   margin: 0;
   font: var(--ch-type-15);
+  letter-spacing: var(--ch-track-15);
   text-wrap: pretty;
 }
 .ch-rv-debrief__l dd b {
@@ -1596,7 +1635,7 @@ a.ch-rd-sc:focus-visible {
   gap: 2px;
   min-height: 44px;
   font: var(--ch-type-14-strong);
-  line-height: 1;
+  line-height: var(--ch-lead-tight);
   color: var(--ch-hero-mint);
   text-decoration: none;
 }
@@ -1663,7 +1702,7 @@ a.ch-rd-sc:focus-visible {
 }
 .ch-trd-score b {
   font: var(--ch-type-17-strong);
-  line-height: 1.1;
+  line-height: var(--ch-lead-tight);
   letter-spacing: -0.01em;
   color: var(--ch-text-primary);
 }
@@ -1672,7 +1711,7 @@ a.ch-rd-sc:focus-visible {
 }
 .ch-trd-score em {
   font: var(--ch-type-13);
-  line-height: 1.1;
+  line-height: var(--ch-lead-tight);
   font-style: normal;
   color: var(--ch-text-tertiary);
 }
@@ -1972,7 +2011,7 @@ a.ch-rd-sc:focus-visible {
   .ch-rv.is-phone .ch-rv-hero h1,
 .ch-rv.is-phone .ch-rv-hero h2 {
     font: var(--ch-type-28-strong);
-    line-height: 1.1;
+    line-height: var(--ch-lead-tight);
     letter-spacing: -0.03em;
     font-variation-settings: 'wdth' 88;
   }
@@ -2000,7 +2039,7 @@ a.ch-rd-sc:focus-visible {
   }
   .ch-rv.is-phone .ch-rv-figs dd + dd {
     font: var(--ch-type-12);
-    line-height: 1;
+    line-height: var(--ch-lead-tight);
     font-variant-numeric: tabular-nums;
     letter-spacing: normal;
   }
@@ -2414,7 +2453,7 @@ html[data-fw-theme='dark'] .ch-rv .ch-rv-yn.is-y {
     border-radius: var(--ch-radius-md);
     background: none;
     box-shadow: none;
-    font: 500 13px/1.2 var(--ch-font-sans);
+    font: var(--ch-type-13-medium);
     color: var(--ch-green-700);
     transition: background var(--ch-dur-quick) var(--ch-ease);
   }
@@ -2431,12 +2470,14 @@ html[data-fw-theme='dark'] .ch-rv .ch-rv-yn.is-y {
     background: none;
   }
   .ch-rv[data-canopy] .ch-rv-hero__k {
-    font: 500 11px/1.3 var(--ch-font-sans);
+    font: var(--ch-type-11-medium);
     letter-spacing: 0.01em;
     color: var(--ch-ledger-eyebrow);
   }
   .ch-rv[data-canopy] .ch-rv-hero__m {
-    font: 400 15px/1.4 var(--ch-font-sans);
+    font: var(--ch-type-15);
+
+    letter-spacing: var(--ch-track-15);
     color: var(--ch-text-secondary);
   }
   .ch-rv[data-canopy] .ch-rv-hero__s b {
@@ -2477,7 +2518,9 @@ html[data-fw-theme='dark'] .ch-rv .ch-rv-yn.is-y {
   }
   .ch-rv[data-canopy] .ch-rv-card__h h2,
 .ch-rv[data-canopy] .ch-rv-card__h h3 {
-    font: 600 20px/1.2 var(--ch-font-sans);
+    font: var(--ch-type-20-strong);
+
+    letter-spacing: var(--ch-track-20);
     color: var(--ch-ledger-ink);
   }
   .ch-rv[data-canopy] .ch-rv-sg__legs,
@@ -2610,7 +2653,8 @@ html[data-fw-theme='dark'] .ch-rv .ch-rv-yn.is-y {
   height: auto;
   border-radius: 0;
   background: none;
-  font: 500 12px/1 var(--ch-font-sans);
+  font: var(--ch-type-12-medium);
+  line-height: var(--ch-lead-tight);
   font-style: normal;
   color: var(--ch-ink-500);
 }
@@ -2654,6 +2698,8 @@ html[data-fw-theme='dark'] .ch-rv .ch-rv-yn.is-y {
 }
 .ch-rv .ch-rv-recap p {
   font: var(--ch-type-15);
+
+  letter-spacing: var(--ch-track-15);
   color: var(--ch-text-primary);
 }
 .ch-rv .ch-rv-recap__by {
@@ -2666,7 +2712,7 @@ html[data-fw-theme='dark'] .ch-rv .ch-rv-yn.is-y {
 /* The review's head on the desktop: the eyebrow set plain, not tracked (doctrine; P001-D5). */
 @media (min-width: 821px) {
   .ch-rv[data-canopy] .ch-rv-hero__k {
-    font: 500 13px/1.3 var(--ch-font-sans);
+    font: var(--ch-type-13-medium);
     letter-spacing: 0.01em;
   }
 }
@@ -2682,7 +2728,7 @@ html[data-fw-theme='dark'] .ch-rv .ch-rv-yn.is-y {
   }
   /* The head: the eyebrow is set like the framed head's date line, the title is the shell's 44px sans. */
   .ch-rd[data-canopy] .ch-rd-h > div:first-child {
-    font: 500 13px/1.3 var(--ch-font-sans);
+    font: var(--ch-type-13-medium);
     letter-spacing: 0.01em;
   }
   .ch-rd[data-canopy] .ch-rd-h .ch-rd-k {
@@ -2715,7 +2761,7 @@ html[data-fw-theme='dark'] .ch-rv .ch-rv-yn.is-y {
   }
   .ch-rd[data-canopy] .ch-rd-unf__k {
     gap: 10px;
-    font: 600 20px/1.2 var(--ch-font-sans);
+    font: var(--ch-type-20-strong);
     letter-spacing: var(--ch-track-20);
     color: var(--ch-ledger-ink);
   }
@@ -2730,7 +2776,7 @@ html[data-fw-theme='dark'] .ch-rv .ch-rv-yn.is-y {
     box-shadow: none;
   }
   .ch-rd[data-canopy] .ch-rd-unf__t {
-    font: 500 13px/1.2 var(--ch-font-sans);
+    font: var(--ch-type-13-medium);
     color: var(--ch-text-tertiary);
   }
   .ch-rd[data-canopy] .ch-rd-unf__c {
@@ -2809,7 +2855,7 @@ html[data-fw-theme='dark'] .ch-rv .ch-rv-yn.is-y {
   .ch-rd[data-canopy] .ch-rd-season .ch-rd-k {
     grid-area: k;
     padding-bottom: 12px;
-    font: 600 20px/1.2 var(--ch-font-sans);
+    font: var(--ch-type-20-strong);
     letter-spacing: var(--ch-track-20);
     color: var(--ch-ledger-ink);
     box-shadow: inset 0 -1px 0 var(--ch-ledger-rule);
@@ -2859,7 +2905,8 @@ html[data-fw-theme='dark'] .ch-rv .ch-rv-yn.is-y {
   .ch-rd[data-canopy] .ch-rd-more h2 {
     margin: 0;
     padding-bottom: 12px;
-    font: 600 20px/1.2 var(--ch-font-sans);
+    font: var(--ch-type-20-strong);
+    letter-spacing: var(--ch-track-20);
     box-shadow: inset 0 -1px 0 var(--ch-ledger-rule);
   }
   .ch-rd[data-canopy] .ch-rd-more li {
@@ -3025,6 +3072,7 @@ html[data-fw-theme='dark'] .ch-rv .ch-rv-yn.is-y {
   margin: 4px 0 0;
   max-width: 52ch;
   font: var(--ch-type-15-medium);
+  letter-spacing: var(--ch-track-15);
   color: rgb(244 241 232 / 0.86);
 }
 .ch-rv .ch-znbig.is-gain {
@@ -3147,6 +3195,8 @@ html[data-fw-theme='dark'] .ch-rv .ch-rv-yn.is-y {
 .ch-rv .ch-rzcost__t {
   font: var(--ch-type-15-strong);
 
+  letter-spacing: var(--ch-track-15);
+
   font-variant-numeric: tabular-nums;
 }
 .ch-rv .ch-rzcost__t small {
@@ -3158,7 +3208,9 @@ html[data-fw-theme='dark'] .ch-rv .ch-rv-yn.is-y {
 }
 .ch-rv .ch-rzcost b {
   text-align: right;
-  font: 600 20px/1 var(--ch-font-sans);
+  font: var(--ch-type-20-strong);
+  letter-spacing: var(--ch-track-20);
+  line-height: var(--ch-lead-tight);
   font-variant-numeric: tabular-nums;
 }
 .ch-rv .ch-rzcost em {
@@ -3215,7 +3267,10 @@ html[data-fw-theme='dark'] .ch-rv .ch-rv-yn.is-y {
   background: var(--ch-ivory-400);
 }
 .ch-rv .ch-rzhit__c em {
-  font: 500 11px/1 var(--ch-font-sans);
+  font: var(--ch-type-11-medium);
+
+  letter-spacing: var(--ch-track-11);
+  line-height: var(--ch-lead-tight);
 
   font-variant-numeric: tabular-nums;
   font-style: normal;
@@ -3230,7 +3285,8 @@ html[data-fw-theme='dark'] .ch-rv .ch-rv-yn.is-y {
   gap: 4px;
 }
 .ch-rv .ch-rzpair b {
-  font: 600 34px/1 var(--ch-font-sans);
+  font: var(--ch-type-34-strong);
+  line-height: var(--ch-lead-tight);
   font-variant-numeric: tabular-nums;
   letter-spacing: var(--ch-track-34);
   color: var(--ch-forest-800);
@@ -3280,7 +3336,10 @@ html[data-fw-theme='dark'] .ch-rv .ch-rv-yn.is-y {
   background: var(--ch-warning-600);
 }
 .ch-rv .ch-rzpt__c em {
-  font: 500 11px/1 var(--ch-font-sans);
+  font: var(--ch-type-11-medium);
+
+  letter-spacing: var(--ch-track-11);
+  line-height: var(--ch-lead-tight);
 
   font-variant-numeric: tabular-nums;
   font-style: normal;
@@ -3750,14 +3809,15 @@ html[data-fw-theme='dark'] .ch-rv .ch-rv-yn.is-y {
 
 /* ---- The season: the average, then three figures that are each drawn ---- */
 .ch-rd .ch-rd-fig__v {
-  font: 600 28px/1 var(--ch-font-sans);
+  font: var(--ch-type-28-strong);
+  line-height: var(--ch-lead-tight);
   font-variant-numeric: tabular-nums;
   letter-spacing: var(--ch-track-28);
   font-variation-settings: 'wdth' 88;
 }
 .ch-rd .ch-rd-fig dt {
   font: var(--ch-type-13-strong);
-  line-height: 1;
+  line-height: var(--ch-lead-tight);
 }
 /* A caption wraps to a second line before it is cut: "5.1 unde…" said nothing. */
 .ch-rd .ch-rd-fig__m {
@@ -3858,7 +3918,7 @@ html[data-fw-theme='dark'] .ch-rv .ch-rv-yn.is-y {
   }
   .ch-rd[data-canopy] .ch-rd-season__big em {
     order: 3;
-    font: 500 13px/1.3 var(--ch-font-sans);
+    font: var(--ch-type-13-medium);
     font-variant-numeric: tabular-nums;
   }
   .ch-rd[data-canopy] .ch-rd-fig + .ch-rd-fig {
@@ -3907,6 +3967,7 @@ html[data-fw-theme='dark'] .ch-rv .ch-rv-yn.is-y {
   grid-column: 1;
   grid-row: 1;
   font: var(--ch-type-15-strong);
+  letter-spacing: var(--ch-track-15);
   color: var(--ch-rd-ink);
 }
 .ch-rd .ch-rd-stage .ch-rd-season__ch span {
@@ -3923,7 +3984,7 @@ html[data-fw-theme='dark'] .ch-rv .ch-rv-yn.is-y {
   gap: 6px 14px;
   padding: 0;
   font: var(--ch-type-12-medium);
-  line-height: 1;
+  line-height: var(--ch-lead-tight);
   color: var(--ch-rd-soft);
 }
 .ch-rd .ch-rd-stage .ch-rd-season__lg i {
@@ -4073,7 +4134,7 @@ html[data-fw-theme='dark'] .ch-rv .ch-rv-yn.is-y {
   font: 700 13px/1.2 var(--ch-font-sans);
 }
 .ch-rd .ch-rd-rib__tip span {
-  font: 600 13px/1.2 var(--ch-font-sans);
+  font: var(--ch-type-13-strong);
 }
 
 /* On the phone the chart stays on the page, as the Mobile pass has it (one green card there): the same picture in the page's own inks. */
@@ -4134,13 +4195,15 @@ html[data-fw-theme='dark'] .ch-rv .ch-rv-yn.is-y {
   font-size: calc(14 * var(--ch-type-k));
 }
 .ch-rd[data-canopy] .ch-rd-unf:not(.is-idle) .ch-rd-unf__f b {
-  font: 600 28px/1 var(--ch-font-sans);
+  font: var(--ch-type-28-strong);
+  line-height: var(--ch-lead-tight);
   font-variant-numeric: tabular-nums;
   letter-spacing: var(--ch-track-28);
   font-variation-settings: 'wdth' 88;
 }
 .ch-rd.is-phone .ch-rd-unf:not(.is-idle) .ch-rd-unf__f b {
-  font: 600 22px/1 var(--ch-font-sans);
+  font: var(--ch-type-22-strong);
+  line-height: var(--ch-lead-tight);
   font-variant-numeric: tabular-nums;
   letter-spacing: -0.03em;
   font-variation-settings: 'wdth' 88;
@@ -4174,7 +4237,7 @@ html[data-fw-theme='dark'] .ch-rv .ch-rv-yn.is-y {
 .ch-rd .ch-rd-grp__h {
   align-items: center;
   font: var(--ch-type-13-medium);
-  line-height: 1;
+  line-height: var(--ch-lead-tight);
 }
 .ch-rd .ch-rd-grp__h b {
   font-weight: 600;
@@ -4213,13 +4276,15 @@ html[data-fw-theme='dark'] .ch-rv .ch-rv-yn.is-y {
     color: var(--ch-green-700);
   }
   .ch-rd[data-canopy] .ch-rd-sc__date b {
-    font: 600 28px/1 var(--ch-font-sans);
+    font: var(--ch-type-28-strong);
+    line-height: var(--ch-lead-tight);
     font-variant-numeric: tabular-nums;
     letter-spacing: var(--ch-track-28);
     font-variation-settings: 'wdth' 88;
   }
   .ch-rd[data-canopy] .ch-rd-sc__date em {
-    font: 500 12px/1 var(--ch-font-sans);
+    font: var(--ch-type-12-medium);
+    line-height: var(--ch-lead-tight);
   }
   .ch-rd[data-canopy] .ch-rd-sc__c > b {
     font-size: 17px;
@@ -4277,7 +4342,8 @@ html[data-fw-theme='dark'] .ch-rv .ch-rv-yn.is-y {
     box-shadow: none;
   }
   .ch-rd[data-canopy] .ch-rd-sc__s b {
-    font: 600 28px/1 var(--ch-font-sans);
+    font: var(--ch-type-28-strong);
+    line-height: var(--ch-lead-tight);
     font-variant-numeric: tabular-nums;
     letter-spacing: var(--ch-track-28);
     font-variation-settings: 'wdth' 88;
@@ -4373,6 +4439,7 @@ html[data-fw-theme='dark'] .ch-rv .ch-rv-yn.is-y {
 .ch-rcard-h h2 {
   margin: 0;
   font: var(--ch-type-17-strong);
+  letter-spacing: var(--ch-track-17);
   color: var(--ch-text-primary);
 }
 .ch-rcard-h__m {
@@ -4392,13 +4459,17 @@ html[data-fw-theme='dark'] .ch-rv .ch-rv-yn.is-y {
   gap: 8px;
 }
 .ch-rcard-h__s b {
-  font: 600 34px/1 var(--ch-font-sans);
+  font: var(--ch-type-34-strong);
+  line-height: var(--ch-lead-tight);
 
   font-variant-numeric: tabular-nums;
   letter-spacing: -0.03em;
 }
 .ch-rcard-h__s em {
-  font: 600 16px/1 var(--ch-font-sans);
+  font: var(--ch-type-16-strong);
+
+  letter-spacing: var(--ch-track-16);
+  line-height: var(--ch-lead-tight);
 
   font-variant-numeric: tabular-nums;
   font-style: normal;
@@ -4466,7 +4537,7 @@ html[data-fw-theme='dark'] .ch-rv .ch-rv-yn.is-y {
   table-layout: fixed;
   border-collapse: collapse;
   font: var(--ch-type-13);
-  line-height: 1;
+  line-height: var(--ch-lead-tight);
   font-variant-numeric: tabular-nums;
   color: var(--ch-text-secondary);
 }
@@ -4539,7 +4610,7 @@ html[data-fw-theme='dark'] .ch-rv .ch-rv-yn.is-y {
   height: var(--ch-rcard-mk);
   place-items: center;
   font: var(--ch-type-13-medium);
-  line-height: 1;
+  line-height: var(--ch-lead-tight);
   font-variant-numeric: tabular-nums;
   color: var(--ch-text-primary);
 }
@@ -4608,7 +4679,9 @@ html[data-fw-theme='dark'] .ch-rv .ch-rv-yn.is-y {
 }
 .ch-rcard-sg dd {
   margin: 4px 0 0;
-  font: 600 20px/1 var(--ch-font-sans);
+  font: var(--ch-type-20-strong);
+  letter-spacing: var(--ch-track-20);
+  line-height: var(--ch-lead-tight);
   font-variant-numeric: tabular-nums;
 }
 .ch-rcard-sg .is-total dd {

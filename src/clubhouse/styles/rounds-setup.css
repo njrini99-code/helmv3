@@ -13,7 +13,7 @@
 .ch-rsu-k {
   display: block;
   font: var(--ch-type-13-medium);
-  line-height: 1;
+  line-height: var(--ch-lead-tight);
   color: var(--ch-hero-mint);
 }
 
@@ -38,7 +38,7 @@
   padding: 0 14px 0 8px;
   border-radius: 999px;
   font: var(--ch-type-14-medium);
-  line-height: 1;
+  line-height: var(--ch-lead-tight);
   color: var(--ch-on-fill-100);
   text-decoration: none;
   background: rgb(255 255 255 / 0.08);
@@ -52,7 +52,7 @@
   margin: 8px 0 6px;
   max-width: 30ch;
   font: var(--ch-type-28-strong);
-  line-height: 1.08;
+  line-height: var(--ch-lead-tight);
   letter-spacing: var(--ch-track-28);
   font-variation-settings: 'wdth' 96;
   text-wrap: balance;
@@ -62,6 +62,7 @@
   margin: 0;
   max-width: 56ch;
   font: var(--ch-type-15);
+  letter-spacing: var(--ch-track-15);
   color: rgb(244 241 232 / 0.72);
 }
 .ch-rsu-spine {
@@ -91,7 +92,7 @@
 }
 .ch-rsu-spine em {
   font: var(--ch-type-12-medium);
-  line-height: 1;
+  line-height: var(--ch-lead-tight);
   font-style: normal;
   color: var(--ch-on-green-ink-muted);
 }
@@ -146,7 +147,7 @@
 .ch-rsu-card__h h2 {
   margin: 0 0 4px;
   font: var(--ch-type-17-strong);
-  line-height: 1.1;
+  line-height: var(--ch-lead-tight);
   letter-spacing: var(--ch-track-17);
 }
 .ch-rsu-card__h span {
@@ -170,7 +171,7 @@
 }
 .ch-rsu-course__band b {
   font: var(--ch-type-22-strong);
-  line-height: 1.1;
+  line-height: var(--ch-lead-tight);
   letter-spacing: var(--ch-track-22);
 }
 .ch-rsu-course__band span {
@@ -178,7 +179,7 @@
   align-items: center;
   gap: 5px;
   font: var(--ch-type-13);
-  line-height: 1;
+  line-height: var(--ch-lead-tight);
   color: rgb(244 241 232 / 0.85);
 }
 .ch-rsu-course__f {
@@ -188,7 +189,7 @@
   gap: 6px 16px;
   padding: 12px 12px 12px 18px;
   font: var(--ch-type-13);
-  line-height: 1;
+  line-height: var(--ch-lead-tight);
   font-variant-numeric: tabular-nums;
   color: var(--ch-text-tertiary);
 }
@@ -202,7 +203,7 @@
 }
 .ch-rsu-course__tee b {
   font: var(--ch-type-14-strong);
-  line-height: 1;
+  line-height: var(--ch-lead-tight);
   color: var(--ch-text-primary);
 }
 .ch-rsu-course__empty {
@@ -219,6 +220,8 @@
 }
 .ch-rsu-course__empty b {
   font: var(--ch-type-16-strong);
+
+  letter-spacing: var(--ch-track-16);
 }
 .ch-rsu-course__empty span {
   font: var(--ch-type-caption);
@@ -273,12 +276,14 @@
 }
 .ch-rsu-qual__b em {
   font: var(--ch-type-12-strong);
-  line-height: 1;
+  line-height: var(--ch-lead-tight);
   font-style: normal;
   color: var(--ch-green-700);
 }
 .ch-rsu-qual__b b {
   font: var(--ch-type-15-strong);
+
+  letter-spacing: var(--ch-track-15);
 }
 .ch-rsu-qual__b span {
   font: var(--ch-type-caption);
@@ -288,7 +293,7 @@
   height: 30px;
   padding: 0 14px;
   border-radius: 999px;
-  font: 600 calc(13 * var(--ch-type-k))/30px var(--ch-font-sans);
+  font: var(--ch-type-13-strong);
   background: var(--ch-green-fill-700);
   color: var(--ch-on-fill-100);
 }
@@ -308,7 +313,7 @@
 .ch-rsu-field > span,
 .ch-rsu-field > label {
   font: var(--ch-type-13-medium);
-  line-height: 1;
+  line-height: var(--ch-lead-tight);
   color: var(--ch-ink-600);
 }
 .ch-rsu-field > .ch-rsu-field__hint {
@@ -326,7 +331,8 @@
   height: 44px;
   padding: 0 12px;
   border-radius: var(--ch-radius-md);
-  font: 400 calc(15 * var(--ch-type-k))/44px var(--ch-font-sans);
+  font: var(--ch-type-15);
+  letter-spacing: var(--ch-track-15);
   font-variant-numeric: tabular-nums;
   color: var(--ch-text-primary);
   background: var(--ch-ivory-0);
@@ -463,12 +469,15 @@
 }
 .ch-rsu-hc__sum dt {
   font: var(--ch-type-11-medium);
-  line-height: 1;
+
+  letter-spacing: var(--ch-track-11);
+  line-height: var(--ch-lead-tight);
   color: var(--ch-text-tertiary);
 }
 .ch-rsu-hc__sum dd {
   margin: 0;
-  font: 500 20px/1 var(--ch-font-sans);
+  font: var(--ch-type-20-medium);
+  line-height: var(--ch-lead-tight);
   letter-spacing: -0.03em;
   font-variant-numeric: tabular-nums;
 }
@@ -556,7 +565,10 @@
   box-shadow: 0 0 0 1.5px var(--ch-danger-600);
 }
 .ch-rsu-yds em {
-  font: 500 11px/1 var(--ch-font-sans);
+  font: var(--ch-type-11-medium);
+
+  letter-spacing: var(--ch-track-11);
+  line-height: var(--ch-lead-tight);
   font-style: normal;
   color: var(--ch-text-tertiary);
 }
@@ -664,7 +676,8 @@
   all: unset;
   flex: 1;
   font: var(--ch-type-15);
-  line-height: 1;
+  letter-spacing: var(--ch-track-15);
+  line-height: var(--ch-lead-tight);
   color: var(--ch-text-primary);
 }
 .ch-rsu-psec h4,
@@ -674,7 +687,7 @@
   gap: 8px;
   margin: 0 0 8px;
   font: var(--ch-type-13-strong);
-  line-height: 1;
+  line-height: var(--ch-lead-tight);
   color: var(--ch-ink-700);
 }
 .ch-rsu-psec h4 span {
@@ -730,6 +743,8 @@
 }
 .ch-rsu-crs__b b {
   font: var(--ch-type-15-strong);
+
+  letter-spacing: var(--ch-track-15);
 }
 .ch-rsu-crs__b span {
   overflow: hidden;
@@ -741,7 +756,7 @@
 .ch-rsu-crs__r {
   white-space: nowrap;
   font: var(--ch-type-12-medium);
-  line-height: 1;
+  line-height: var(--ch-lead-tight);
   color: var(--ch-green-700);
 }
 .ch-rsu-chev {
@@ -752,7 +767,7 @@
 @media (min-width: 821px) {
   /* The material is every window's (controls.css); the picker's title is a size up, as Claude's search dialog's. */
   .ch-modal[data-ch-code='CH-11510'] .ch-modal__titles h2 {
-    font: 600 22px/1.2 var(--ch-font-sans);
+    font: var(--ch-type-22-strong);
     letter-spacing: var(--ch-track-22);
   }
   /* Landscape (owner, 2026-10-16): wider than tall, the photo cards two to a row. */
@@ -1004,7 +1019,7 @@ html[data-fw-theme='dark'] .ch-cpk__media.is-blank {
 }
 .ch-rsu-add b {
   font: var(--ch-type-14-strong);
-  line-height: 1;
+  line-height: var(--ch-lead-tight);
 }
 .ch-rsu-add em {
   font: var(--ch-type-caption);
@@ -1060,7 +1075,9 @@ html[data-fw-theme='dark'] .ch-cpk__media.is-blank {
 }
 .ch-rsu-tee__b b {
   font: var(--ch-type-15-strong);
-  line-height: 1;
+
+  letter-spacing: var(--ch-track-15);
+  line-height: var(--ch-lead-tight);
 }
 .ch-rsu-tee__b span {
   font: var(--ch-type-caption);
@@ -1073,14 +1090,17 @@ html[data-fw-theme='dark'] .ch-cpk__media.is-blank {
   gap: 4px;
 }
 .ch-rsu-tee__y b {
-  font: 500 22px/1 var(--ch-font-sans);
+  font: var(--ch-type-22-medium);
+  line-height: var(--ch-lead-tight);
   letter-spacing: -0.03em;
   font-variant-numeric: tabular-nums;
 }
 .ch-rsu-tee__y em,
 .ch-rsu-tee__f em {
   font: var(--ch-type-11-medium);
-  line-height: 1;
+
+  letter-spacing: var(--ch-track-11);
+  line-height: var(--ch-lead-tight);
   font-style: normal;
   color: var(--ch-text-tertiary);
 }
@@ -1089,7 +1109,7 @@ html[data-fw-theme='dark'] .ch-cpk__media.is-blank {
   display: flex;
   gap: 20px;
   font: var(--ch-type-13-medium);
-  line-height: 1;
+  line-height: var(--ch-lead-tight);
   font-variant-numeric: tabular-nums;
 }
 .ch-rsu-tee__f span {
@@ -1138,7 +1158,7 @@ html[data-fw-theme='dark'] .ch-cpk__media.is-blank {
 }
 .ch-acs__k {
   font: var(--ch-type-12-medium);
-  line-height: 1;
+  line-height: var(--ch-lead-tight);
   color: var(--ch-text-tertiary);
 }
 .ch-acs__preview .ch-cpk__media {
@@ -1232,7 +1252,7 @@ html[data-fw-theme='dark'] .ch-cpk__media.is-blank {
   padding: 5px 9px;
   border-radius: var(--ch-radius-sm);
   font: var(--ch-type-12-medium);
-  line-height: 1;
+  line-height: var(--ch-lead-tight);
   color: #fff;
   background: rgb(0 0 0 / 0.55);
   opacity: 0;
@@ -1247,7 +1267,7 @@ html[data-fw-theme='dark'] .ch-cpk__media.is-blank {
   cursor: pointer;
   align-self: flex-start;
   font: var(--ch-type-13-medium);
-  line-height: 1;
+  line-height: var(--ch-lead-tight);
   color: var(--ch-text-secondary);
 }
 .ch-acs__photo-remove:hover {
@@ -1350,6 +1370,7 @@ html[data-fw-theme='dark'] .ch-acs-sum > div:last-child {
 .ch-rsu-rv__hero b {
   display: block;
   font: var(--ch-type-17-strong);
+  letter-spacing: var(--ch-track-17);
 }
 .ch-rsu-rv__hero div > span {
   font: var(--ch-type-13);
@@ -1362,7 +1383,7 @@ html[data-fw-theme='dark'] .ch-acs-sum > div:last-child {
   gap: 8px;
   margin: 0;
   font: var(--ch-type-13);
-  line-height: 1;
+  line-height: var(--ch-lead-tight);
   color: var(--ch-text-tertiary);
 }
 .ch-rsu-rv__tee b {
@@ -1682,7 +1703,7 @@ html[data-fw-theme='dark'] .ch-rsu-card__h h2 {
   }
   .ch-rsu[data-ui='clubhouse'] .ch-rsu-course__band b {
     font: var(--ch-type-28-strong);
-    line-height: 1.1;
+    line-height: var(--ch-lead-tight);
     letter-spacing: var(--ch-track-28);
     font-variation-settings: 'wdth' 88;
     color: var(--ch-ledger-ink);
@@ -2036,7 +2057,7 @@ html[data-fw-theme='dark'] .ch-rsu-card__h h2 {
 }
 .ch-rsu-band .ch-rsu-spine em {
   font: var(--ch-type-13-medium);
-  line-height: 1;
+  line-height: var(--ch-lead-tight);
   white-space: nowrap;
 }
 @container chrs (min-width: 861px) {
@@ -2140,7 +2161,8 @@ html[data-fw-theme='dark'] .ch-rsu-card__h h2 {
   font-size: calc(12 * var(--ch-type-k));
 }
 .ch-rsu-hc__sum dd {
-  font: 600 22px/1 var(--ch-font-sans);
+  font: var(--ch-type-22-strong);
+  line-height: var(--ch-lead-tight);
   font-variant-numeric: tabular-nums;
   letter-spacing: var(--ch-track-22);
   font-variation-settings: 'wdth' 88;
@@ -2155,6 +2177,8 @@ html[data-fw-theme='dark'] .ch-rsu-card__h h2 {
 }
 .ch-rsu-nine__h b {
   font: var(--ch-type-15-strong);
+
+  letter-spacing: var(--ch-track-15);
   color: var(--ch-text-primary);
 }
 .ch-rsu-nine__h span {

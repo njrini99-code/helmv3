@@ -128,6 +128,7 @@
   background: transparent;
   color: var(--ch-text-primary);
   font: var(--ch-type-16-medium);
+  letter-spacing: var(--ch-track-16);
 }
 .ch-root .ch-cmd-input:focus-visible {
   /* The field's own rule below it is the focus mark (the page's ring would box the input inside the field). */

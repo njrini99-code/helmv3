@@ -35,7 +35,7 @@
   padding: 0 12px;
   border-radius: var(--ch-radius-md);
   font: var(--ch-type-14-medium);
-  line-height: 1;
+  line-height: var(--ch-lead-tight);
   color: var(--ch-text-primary);
   box-shadow: 0 0 0 1px var(--ch-border-subtle);
 }
@@ -248,7 +248,7 @@
   background: var(--ch-bg-surface);
   box-shadow: var(--ch-shadow-sm);
   font: var(--ch-type-14-medium);
-  line-height: 1;
+  line-height: var(--ch-lead-tight);
   color: var(--ch-text-primary);
   cursor: pointer;
 }
@@ -288,7 +288,7 @@
   padding: 0 10px;
   overflow: hidden;
   border-radius: var(--ch-radius-md);
-  font: 400 calc(14 * var(--ch-type-k))/36px var(--ch-font-sans);
+  font: var(--ch-type-14);
   color: var(--ch-text-primary);
   text-decoration: none;
   text-overflow: ellipsis;
@@ -326,6 +326,8 @@
 }
 .ch-ask-hist__empty b {
   font: var(--ch-type-16-strong);
+
+  letter-spacing: var(--ch-track-16);
   color: var(--ch-text-primary);
 }
 .ch-ask-hist__emptyic {
@@ -346,7 +348,7 @@
   background: var(--ch-bg-surface);
   box-shadow: var(--ch-shadow-sm);
   font: var(--ch-type-14-strong);
-  line-height: 1;
+  line-height: var(--ch-lead-tight);
   color: var(--ch-green-600);
   cursor: pointer;
 }
@@ -377,6 +379,7 @@
 .ch-ask-greet p {
   margin: 0;
   font: var(--ch-type-15);
+  letter-spacing: var(--ch-track-15);
   color: var(--ch-text-secondary);
 }
 .ch-ask-pills {
@@ -434,6 +437,8 @@
 }
 .ch-ask-nothing__t b {
   font: var(--ch-type-15-strong);
+
+  letter-spacing: var(--ch-track-15);
   color: var(--ch-text-primary);
 }
 
@@ -515,6 +520,7 @@
   background: none;
   resize: none;
   font: var(--ch-type-16);
+  letter-spacing: var(--ch-track-16);
   color: var(--ch-text-primary);
 }
 .ch-ask-cmp__ta::placeholder {
@@ -558,7 +564,7 @@
   background: none;
   box-shadow: 0 0 0 1px var(--ch-border-control);
   font: var(--ch-type-14-medium);
-  line-height: 1;
+  line-height: var(--ch-lead-tight);
   color: var(--ch-text-secondary);
   cursor: pointer;
 }
@@ -705,6 +711,7 @@
   padding: 0 10px;
   border-radius: var(--ch-radius-md);
   font: var(--ch-type-15);
+  letter-spacing: var(--ch-track-15);
   color: var(--ch-text-primary);
   cursor: pointer;
   user-select: none;
@@ -970,7 +977,8 @@ body.keyboard-open .ch-ask-hist.is-drawer {
     min-width: 0;
     overflow: hidden;
     font: var(--ch-type-16-strong);
-    line-height: 1;
+    letter-spacing: var(--ch-track-16);
+    line-height: var(--ch-lead-tight);
     text-overflow: ellipsis;
     white-space: nowrap;
   }

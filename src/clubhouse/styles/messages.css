@@ -65,7 +65,7 @@
 .ch-ms-rail__title h1 {
   margin: 0;
   font: var(--ch-type-34-strong);
-  line-height: 1.15;
+  line-height: var(--ch-lead-tight);
   letter-spacing: var(--ch-track-34);
   font-variation-settings: 'wdth' 88;
   color: var(--ch-ledger-ink);
@@ -88,7 +88,7 @@
 .ch-ms-sec__l {
   padding: 0 8px 7px;
   font: var(--ch-type-12-medium);
-  line-height: 1;
+  line-height: var(--ch-lead-tight);
   color: var(--ch-text-tertiary);
 }
 /* One continuous rail (Mail's sidebar, not a stack of boxes): rows sit on the page, each a rounded target that
@@ -243,7 +243,7 @@
   border-radius: 999px;
   background: var(--ch-green-fill-600);
   font: var(--ch-type-12-strong);
-  line-height: 1;
+  line-height: var(--ch-lead-tight);
   font-variant-numeric: tabular-nums;
   color: var(--ch-text-on-accent);
 }
@@ -397,6 +397,7 @@
 .ch-ms-th__who b {
   display: block;
   font: var(--ch-type-15-strong);
+  letter-spacing: var(--ch-track-15);
   color: var(--ch-text-primary);
 }
 .ch-ms-th__who div > span {
@@ -475,7 +476,7 @@
   background: var(--ch-bg-surface);
   box-shadow: 0 1px 2px rgb(28 25 18 / 0.05), 0 0 0 1px var(--ch-border-hairline);
   font: var(--ch-type-12-medium);
-  line-height: 1;
+  line-height: var(--ch-lead-tight);
   color: var(--ch-text-secondary);
 }
 .ch-ms-msg {
@@ -508,7 +509,7 @@
 .ch-ms-msg__who {
   padding-left: 14px;
   font: var(--ch-type-12-medium);
-  line-height: 1;
+  line-height: var(--ch-lead-tight);
   color: var(--ch-text-tertiary);
 }
 .ch-ms-msg__line {
@@ -542,6 +543,7 @@
   background: var(--ch-sheet-bg);
   box-shadow: var(--ch-elevation-bubble);
   font: var(--ch-type-15);
+  letter-spacing: var(--ch-track-15);
   color: var(--ch-text-primary);
   white-space: pre-wrap;
   overflow-wrap: anywhere;
@@ -729,7 +731,7 @@
   border: 0;
   border-radius: 999px;
   font: var(--ch-type-12-strong);
-  line-height: 1;
+  line-height: var(--ch-lead-tight);
   font-variant-numeric: tabular-nums;
   cursor: pointer;
 }
@@ -828,7 +830,7 @@
   border-radius: 999px;
   background: rgb(255 255 255 / 0.18);
   font: var(--ch-type-12-strong);
-  line-height: 1;
+  line-height: var(--ch-lead-tight);
   font-variant-numeric: tabular-nums;
 }
 .ch-rx__list {
@@ -859,7 +861,7 @@
   border-top: var(--ch-hairline-w) solid var(--ch-border-hairline);
   background: var(--ch-bg-surface);
   font: var(--ch-type-13-strong);
-  line-height: 1;
+  line-height: var(--ch-lead-tight);
   color: var(--ch-green-700);
   text-align: left;
   cursor: pointer;
@@ -893,7 +895,7 @@
   border: 0;
   background: transparent;
   font: var(--ch-type-12-strong);
-  line-height: 1;
+  line-height: var(--ch-lead-tight);
   color: var(--ch-green-700);
   cursor: pointer;
 }
@@ -1035,6 +1037,7 @@
 .ch-ms-comp__field textarea {
   padding: 9px 6px;
   font: var(--ch-type-15);
+  letter-spacing: var(--ch-track-15);
 }
 .ch-ms-comp__field .ch-iconbtn {
   width: 38px;
@@ -1099,6 +1102,8 @@
 }
 .ch-ms-det__hero b {
   font: var(--ch-type-17-strong);
+
+  letter-spacing: var(--ch-track-17);
   color: var(--ch-text-primary);
 }
 .ch-ms-det__hero span {
@@ -1204,6 +1209,8 @@
 }
 .ch-ms-new__draft > q {
   font: var(--ch-type-15);
+
+  letter-spacing: var(--ch-track-15);
   color: var(--ch-text-primary);
   quotes: '\201C' '\201D';
 }
@@ -1230,7 +1237,7 @@
   background: var(--ch-green-50);
   box-shadow: var(--ch-elevation-control);
   font: var(--ch-type-13-medium);
-  line-height: 1;
+  line-height: var(--ch-lead-tight);
   color: var(--ch-forest-800);
 }
 .ch-ms-to__c button {
@@ -1319,7 +1326,7 @@
   border: 0;
   background: transparent;
   font: var(--ch-type-13-medium);
-  line-height: 1;
+  line-height: var(--ch-lead-tight);
   color: var(--ch-green-700);
   cursor: pointer;
 }
@@ -1451,6 +1458,8 @@
 }
 .ch-ms-ann__sig b {
   font: var(--ch-type-15-strong);
+
+  letter-spacing: var(--ch-track-15);
   color: var(--ch-text-primary);
 }
 .ch-ms-ann__sig span {
@@ -1634,7 +1643,7 @@
     background: var(--ch-bg-surface);
     box-shadow: inset 0 0 0 1px var(--ch-border-subtle);
     font: var(--ch-type-14-medium);
-    line-height: 1;
+    line-height: var(--ch-lead-tight);
     font-variant-numeric: tabular-nums;
     color: var(--ch-text-secondary);
     cursor: pointer;
@@ -1689,7 +1698,7 @@
     padding: 12px 0 0;
     border-top: var(--ch-ledger-rule-double);
     font: var(--ch-type-20-strong);
-    line-height: 1.1;
+    line-height: var(--ch-lead-tight);
     letter-spacing: var(--ch-track-20);
     font-variation-settings: 'wdth' 88;
     color: var(--ch-ledger-ink);
@@ -1829,7 +1838,7 @@
     min-height: 44px;
     margin: 0;
     font: var(--ch-type-13-strong);
-    line-height: 1;
+    line-height: var(--ch-lead-tight);
     color: var(--ch-green-600);
   }
 
@@ -1859,6 +1868,7 @@
   .ch-msp-who b {
     overflow: hidden;
     font: var(--ch-type-15-strong);
+    letter-spacing: var(--ch-track-15);
     color: var(--ch-on-green-ink);
     white-space: nowrap;
     text-overflow: ellipsis;
@@ -1866,7 +1876,7 @@
   .ch-msp-who em {
     overflow: hidden;
     font: var(--ch-type-12);
-    line-height: 1.1;
+    line-height: var(--ch-lead-tight);
     font-style: normal;
     color: var(--ch-on-green-ink-muted);
     white-space: nowrap;
@@ -1948,6 +1958,7 @@
     padding: 10px 14px;
     box-shadow: var(--ch-elevation-bubble);
     font: var(--ch-type-17);
+    letter-spacing: var(--ch-track-17);
   }
   .ch-msp-thread .ch-ms-msg.is-mine .ch-ms-bub:not(.ch-ms-bub--file) {
     background: var(--ch-bubble-mine-bg);
@@ -1982,12 +1993,12 @@
   .ch-msp-composer { flex: none; min-width: 0; }
   .ch-msp-thread .ch-ms-msg__t {
     font: var(--ch-type-12-medium);
-    line-height: 1;
+    line-height: var(--ch-lead-tight);
     font-variant-numeric: tabular-nums;
   }
   .ch-msp-thread .ch-ms-msg__who {
     font: var(--ch-type-13-strong);
-    line-height: 1;
+    line-height: var(--ch-lead-tight);
     color: var(--ch-text-secondary);
   }
 
@@ -2034,6 +2045,7 @@
     background-clip: padding-box;
     box-shadow: var(--ch-field-pill-edge);
     font: var(--ch-type-16);
+    letter-spacing: var(--ch-track-16);
   }
   .ch-msp-thread .ch-ms-comp__field textarea:focus,
   .ch-msp-new .ch-ms-comp__field textarea:focus {
@@ -2112,7 +2124,7 @@
   .ch-msp-prof h2 {
     margin: 12px 0 2px;
     font: var(--ch-type-34-strong);
-    line-height: 1.08;
+    line-height: var(--ch-lead-tight);
     letter-spacing: -0.038em;
     font-variation-settings: 'wdth' 88;
     color: var(--ch-ledger-ink);
@@ -2145,7 +2157,7 @@
     background: transparent;
     box-shadow: inset 0 0 0 1px var(--ch-ledger-rule);
     font: var(--ch-type-12-medium);
-    line-height: 1;
+    line-height: var(--ch-lead-tight);
     color: var(--ch-green-700);
     text-decoration: none;
     cursor: pointer;
@@ -2186,7 +2198,7 @@
   .ch-msp-panel__h h3 {
     margin: 0;
     font: var(--ch-type-20-strong);
-    line-height: 1.1;
+    line-height: var(--ch-lead-tight);
     letter-spacing: var(--ch-track-20);
     font-variation-settings: 'wdth' 88;
     color: var(--ch-ledger-ink);
@@ -2197,7 +2209,7 @@
     border: 0;
     background: none;
     font: var(--ch-type-13-strong);
-    line-height: 1;
+    line-height: var(--ch-lead-tight);
     color: var(--ch-green-600);
     cursor: pointer;
   }
@@ -2381,7 +2393,8 @@
     border-radius: var(--ch-radius-md);
     background: none;
     font: var(--ch-type-15-medium);
-    line-height: 1;
+    letter-spacing: var(--ch-track-15);
+    line-height: var(--ch-lead-tight);
     color: var(--ch-danger-600);
     text-align: left;
     cursor: pointer;
@@ -2403,7 +2416,9 @@
     box-shadow: inset 0 -1px 0 var(--ch-ledger-rule);
   }
   .ch-msp-to__k {
-    font: 500 calc(15 * var(--ch-type-k))/32px var(--ch-font-sans);
+    font: var(--ch-type-15-medium);
+
+    letter-spacing: var(--ch-track-15);
     color: var(--ch-text-tertiary);
   }
   .ch-msp-to__f {
@@ -2426,7 +2441,7 @@
     background: var(--ch-green-50);
     box-shadow: inset 0 0 0 1px rgb(21 90 57 / 0.18);
     font: var(--ch-type-14-medium);
-    line-height: 1;
+    line-height: var(--ch-lead-tight);
     color: var(--ch-green-700);
     cursor: pointer;
   }
@@ -2454,7 +2469,8 @@
     border: 0;
     outline: none;
     background: transparent;
-    font: 400 calc(16 * var(--ch-type-k))/44px var(--ch-font-sans);
+    font: var(--ch-type-16);
+    letter-spacing: var(--ch-track-16);
     color: var(--ch-text-primary);
   }
   .ch-msp-check {
@@ -2502,13 +2518,15 @@
   }
   .ch-msp-ann .ch-ms-ann__title {
     font: var(--ch-type-34-strong);
-    line-height: 1.08;
+    line-height: var(--ch-lead-tight);
     letter-spacing: -0.038em;
     font-variation-settings: 'wdth' 88;
     color: var(--ch-ledger-ink);
   }
   .ch-msp-ann .ch-ms-ann__body {
     font: var(--ch-type-16);
+
+    letter-spacing: var(--ch-track-16);
   }
   .ch-msp-ann .ch-ms-ann.is-letter {
     padding: 26px var(--ch-page-x-phone) 32px;
@@ -2524,7 +2542,7 @@
     padding: 12px 0 6px;
     border-top: var(--ch-ledger-rule-double);
     font: var(--ch-type-20-strong);
-    line-height: 1.1;
+    line-height: var(--ch-lead-tight);
     letter-spacing: var(--ch-track-20);
     font-variation-settings: 'wdth' 88;
     color: var(--ch-ledger-ink);
@@ -2595,7 +2613,7 @@
   border-radius: 999px;
   background: var(--ch-green-800);
   color: var(--ch-on-fill-100);
-  font: 600 calc(13 * var(--ch-type-k))/36px var(--ch-font-sans);
+  font: var(--ch-type-13-strong);
   box-shadow: 0 4px 12px -4px rgb(11 58 37 / 0.45);
   cursor: pointer;
 }
@@ -2763,6 +2781,7 @@
   white-space: pre-wrap;
   overflow-wrap: anywhere;
   font: var(--ch-type-17);
+  letter-spacing: var(--ch-track-17);
 }
 
 /* ── Dark: "Clubhouse at night" (owner, 2026-10-08) ──────────────────────────
@@ -2926,6 +2945,8 @@ html[data-fw-theme='dark'] .ch-msp-thread .ch-ms-msg.is-mine.is-failed .ch-ms-bu
 }
 .ch-ms-fold__b b {
   font: var(--ch-type-15-strong);
+
+  letter-spacing: var(--ch-track-15);
 }
 .ch-ms-fold__b b .ch-num {
   margin-left: 4px;
