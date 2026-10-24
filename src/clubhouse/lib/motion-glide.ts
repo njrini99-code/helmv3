@@ -13,7 +13,7 @@ export const CH_GLIDE_MS = CH_DUR.base * 1000;
 const ease = cubicBezier(...CH_EASE);
 
 const sameShape = (a: ChGlideGeometry, b: ChGlideGeometry) => a.length === b.length && a.every((v, i) => (v == null) === (b[i] == null));
-const keyOf = (g: ChGlideGeometry) => g.map((v) => (v == null ? '-' : v.toFixed(3))).join(',');
+const keyOf = (g: ChGlideGeometry) => g.map((v) => (v == null ? '-' : Math.round(v * 1000))).join(',');
 
 /**
  * Bars and lines glide to new values (owner decision 1, 2026-10-24, OQ-16 / B9): when a chart's figures change (a new
