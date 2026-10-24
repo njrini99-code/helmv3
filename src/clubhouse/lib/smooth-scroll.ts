@@ -85,16 +85,26 @@ export function chScrollsVertically(node: HTMLElement): boolean {
  * Lenis's frame loop, run only while something moves (B8): a wheel, a programmatic glide or a scroll wakes it, and it
  * sleeps once Lenis has been still for two frames, so an idle page asks for no frames at all. `scrollTo` wakes it too,
  * so a glide asked for while it sleeps still runs.
+ *
+ * Lenis steps a glide by the time since the last frame it saw (`raf`). After a sleep that is the whole pause, longer than
+ * any glide, so the first frame finished the glide and the page jumped (auditor on #2361). The first frame after a wake
+ * steps one frame, as it would have had the loop never slept: the display's frame, measured while the loop runs.
  */
-export function chLenisIdleLoop(lenis: Pick<Lenis, 'raf' | 'isScrolling' | 'on' | 'scrollTo'>) {
+export function chLenisIdleLoop(lenis: Pick<Lenis, 'raf' | 'isScrolling' | 'on' | 'scrollTo' | 'time'>) {
   let raf = 0;
   let running = false;
   let still = 0;
+  let last = 0;
+  let frame = 1000 / 60;
   const loop = (time: number) => {
+    if (last) frame = Math.min(1000 / 30, Math.max(1000 / 240, time - last));
+    else lenis.time = time - frame;
+    last = time;
     lenis.raf(time);
     still = lenis.isScrolling ? 0 : still + 1;
     if (still >= 2) {
       running = false;
+      last = 0;
       return;
     }
     raf = requestAnimationFrame(loop);
@@ -118,6 +128,7 @@ export function chLenisIdleLoop(lenis: Pick<Lenis, 'raf' | 'isScrolling' | 'on' 
     stop: () => {
       cancelAnimationFrame(raf);
       running = false;
+      last = 0;
       offScroll?.();
       offVirtual?.();
     },
