@@ -1,7 +1,6 @@
 'use client';
 
-import { useEffect, useId, useRef, type ReactNode } from 'react';
-import { hapticScrub } from '../../lib/haptics';
+import { useId, type ReactNode } from 'react';
 import { useGlide } from '../../lib/motion-glide';
 import { useChartPin } from '../../lib/use-chart-pin';
 
@@ -10,7 +9,7 @@ import { useChartPin } from '../../lib/use-chart-pin';
  * `lowerIsBetter`), a missing value is a gap in the line, never a bridge or a zero, segments are straight, small multiples
  * share one `domain` so the same value sits at the same height in each, and ticks are a few round numbers in tabular
  * figures. A pointer, a finger dragged sideways or the arrow keys read a point in the line above the plot (`useChartPin`),
- * with a scrub tick under the finger. An early line (`early`) draws its points hollow. No draw-in animation (Q-153); when the
+ * with a scrub tick under the finger (useChartPin's). An early line (`early`) draws its points hollow. No draw-in animation (Q-153); when the
  * figures change (a new window), the line, its points and its baseline glide to their new heights (useGlide, B9) while the
  * ticks and labels take theirs at once.
  */
@@ -213,13 +212,6 @@ export function Line({
       )
     : null;
   const read = (i: number | null) => (i == null ? null : readout ? readout(i) : `${points[i]!.x} · ${points[i]!.y == null ? 'No figure' : format(points[i]!.y!)}`);
-
-  // A tick under the finger as the readout moves from point to point while it scrubs (the slider's detent).
-  const last = useRef<number | null>(null);
-  useEffect(() => {
-    if (pin.active != null && last.current != null && pin.active !== last.current) hapticScrub('step');
-    last.current = pin.active;
-  }, [pin.active]);
 
   const washId = `ch-line-wash-${useId().replace(/:/g, '')}`;
   const shown = read(pin.active);
