@@ -4,7 +4,7 @@ import { LazyMotion, domAnimation } from 'motion/react';
 import { afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
 import '../../../__tests__/dialog-polyfill';
 import { CommandLayer } from '../CommandLayer';
-import { clearPeople, publishPeople } from '../people';
+import { clearPeople, publishPeople, usePeople } from '../people';
 import { resetRecent } from '../recent';
 
 const push = vi.fn();
@@ -39,12 +39,12 @@ afterEach(() => {
   cleanup();
 });
 
-function mount(role: 'coach' | 'player' = 'coach', extra: React.ReactNode = null) {
+function mount(role: 'coach' | 'player' = 'coach', extra: React.ReactNode = null, shellPeople: { id: string; name: string }[] | null = null) {
   return render(
     <LazyMotion features={domAnimation}>
       <div className="ch-root" data-ui="clubhouse">
         <main id="ch-canvas">{extra}</main>
-        <CommandLayer role={role} pathname="/golf/dashboard" userId="u1" teamId="t1" />
+        <CommandLayer role={role} pathname="/golf/dashboard" userId="u1" teamId="t1" shellPeople={shellPeople} />
       </div>
     </LazyMotion>,
   );
@@ -145,6 +145,50 @@ describe('the palette (Cmd or Ctrl K)', () => {
   });
 });
 
+describe('people from the shell data, before Roster opens (owner, decision 16)', () => {
+  const SHELL = [{ id: 's1', name: 'Mae Lindqvist' }, { id: 's2', name: 'Theo Barros' }];
+
+  it('a coach finds a player cold, from the shell\'s names alone, and opens their stats', () => {
+    mount('coach', null, SHELL);
+    key('k', { metaKey: true });
+    search('lindqvist');
+    expect(options()).toEqual(['Mae Lindqvist']);
+    fireEvent.click(within(palette()).getByRole('option', { name: /Mae Lindqvist/ }));
+    expect(push).toHaveBeenCalledWith('/golf/dashboard/stats?player=s1', { scroll: false });
+  });
+
+  it('a player is never seeded, even if handed names', () => {
+    let seen: readonly unknown[] = ['unset'];
+    function Probe() {
+      seen = usePeople();
+      return null;
+    }
+    mount('player', <Probe />, SHELL);
+    expect(seen).toEqual([]);
+    key('k', { metaKey: true });
+    search('mae');
+    expect(options()).not.toContain('Mae Lindqvist');
+  });
+
+  it('a page\'s own list wins over the seed, whether it publishes before or after', () => {
+    publishPeople([{ id: 'r1', name: 'Mae Lindqvist', detail: 'Junior' }]);
+    mount('coach', null, SHELL);
+    key('k', { metaKey: true });
+    search('theo');
+    expect(options()).not.toContain('Theo Barros');
+    cleanup();
+    clearPeople();
+
+    mount('coach', null, SHELL);
+    act(() => publishPeople([{ id: 'r1', name: 'Mae Lindqvist', detail: 'Junior' }]));
+    key('k', { metaKey: true });
+    search('theo');
+    expect(options()).not.toContain('Theo Barros');
+    search('mae');
+    expect(within(palette()).getByRole('option', { name: /Mae Lindqvist/ })).toHaveTextContent('Junior');
+  });
+});
+
 const COACH = 'coach' as const;
 describe('people across a team switch', () => {
   /** A page that publishes the players it loaded, in an effect, as the Roster does. */
@@ -152,11 +196,11 @@ describe('people across a team switch', () => {
     useEffect(() => publishPeople(names.map((n, i) => ({ id: `p${i}`, name: n }))), [names]);
     return null;
   }
-  const tree = (teamId: string, names: string[]) => (
+  const tree = (teamId: string, names: string[], shellPeople: { id: string; name: string }[] | null = null, userId = 'u1') => (
     <LazyMotion features={domAnimation}>
       <div className="ch-root" data-ui="clubhouse">
-        <Page names={names} />
-        <CommandLayer role={COACH} pathname="/golf/dashboard/roster" userId="u1" teamId={teamId} />
+        {names.length > 0 && <Page names={names} />}
+        <CommandLayer role={COACH} pathname="/golf/dashboard/roster" userId={userId} teamId={teamId} shellPeople={shellPeople} />
       </div>
     </LazyMotion>
   );
@@ -169,6 +213,24 @@ describe('people across a team switch', () => {
     key('k', { metaKey: true });
     search('pri');
     expect(options()).toContain('Priya Natarajan');
+    search('jon');
+    expect(options()).not.toContain('Jonah Okafor');
+  });
+
+  it('a team switch drops the old team\'s shell names, and a Roster list published on the old team, for the new team\'s', () => {
+    const { rerender } = render(tree('t1', ['Jonah Okafor'], [{ id: 'a', name: 'Jonah Okafor' }]));
+    rerender(tree('t2', [], [{ id: 'b', name: 'Priya Natarajan' }]));
+    key('k', { metaKey: true });
+    search('pri');
+    expect(options()).toContain('Priya Natarajan');
+    search('jon');
+    expect(options()).not.toContain('Jonah Okafor');
+  });
+
+  it('another person signing in on the same team never sees the last one\'s list', () => {
+    const { rerender } = render(tree('t1', ['Jonah Okafor']));
+    rerender(tree('t1', [], null, 'u2'));
+    key('k', { metaKey: true });
     search('jon');
     expect(options()).not.toContain('Jonah Okafor');
   });
