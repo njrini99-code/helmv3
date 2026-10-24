@@ -126,7 +126,7 @@ export function RosterProfile({
                 )}
                 <div className="ch-rsm-trend__lg">
                   {p.trend.length >= 3 && <span className="ch-num">{p.trend[0]}</span>}
-                  <span className={note?.tone === 'warning' ? 'is-warning' : undefined}>{note?.text}</span>
+                  <span className={note?.tone === 'warning' || note?.tone === 'loss' ? `is-${note.tone}` : undefined}>{note?.text}</span>
                   {p.trend.length >= 3 && <span className="ch-num">{p.trend[p.trend.length - 1]}</span>}
                 </div>
               </>

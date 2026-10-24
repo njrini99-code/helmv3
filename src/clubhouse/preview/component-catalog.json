@@ -7009,7 +7009,8 @@
       "file": "src/clubhouse/ui/charts/Line.tsx",
       "group": "ui",
       "exports": [
-        "Line"
+        "Line",
+        "MIN_SLOT_GAP"
       ],
       "styles": [
         "src/clubhouse/styles/base.css",

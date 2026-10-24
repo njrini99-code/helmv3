@@ -54,7 +54,8 @@ export interface ChRosterPlayer {
   focusAreas: number | null;
   goals: number | null;
   coachNote: string | null;
-  attention: { tone: 'warning' | 'positive'; text: string } | null;
+  /** `warning`: a player gone quiet (no verdict on their scores); `loss`/`gain`: their scores moved the bad or the good way (CONS-20). */
+  attention: { tone: 'warning' | 'loss' | 'gain'; text: string } | null;
   /**
    * Can they play right now (golf_team_members.availability). Display only, on the coach's roster: it never changes team
    * access, which is `status` (Mark inactive). Inactive players can carry it too. The word comes from the team row; the
@@ -148,11 +149,11 @@ export function attentionFor(
     if (days >= QUIET_DAYS) return { tone: 'warning', text: `No rounds in ${days} days` };
   }
   if (s.formChange != null && s.formChange >= 1.5) {
-    return { tone: 'warning', text: `Scoring up ${formatFixed(s.formChange, 1)}` };
+    return { tone: 'loss', text: `Scoring up ${formatFixed(s.formChange, 1)}` };
   }
   const last4 = s.recent.slice(0, 4).map((r) => r.total_score as number);
   if (s.avg != null && s.rounds >= 8 && last4.length === 4 && last4.every((x) => x < s.avg!)) {
-    return { tone: 'positive', text: '4 rounds under average' };
+    return { tone: 'gain', text: '4 rounds under average' };
   }
   return null;
 }

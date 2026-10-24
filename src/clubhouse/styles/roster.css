@@ -156,9 +156,13 @@
 .ch-rs-face__note.is-warning {
   color: var(--ch-warning-600);
 }
-.ch-rs-attn__n.is-positive,
-.ch-rs-face__note.is-positive {
-  color: var(--ch-green-700);
+.ch-rs-attn__n.is-loss,
+.ch-rs-face__note.is-loss {
+  color: var(--ch-chart-loss);
+}
+.ch-rs-attn__n.is-gain,
+.ch-rs-face__note.is-gain {
+  color: var(--ch-chart-gain);
 }
 
 /* Toolbar */
@@ -1305,7 +1309,10 @@ a.ch-rs-peek__dev:focus-visible,
   .ch-rsm-row__b > span > .is-warning {
     color: var(--ch-chart-loss);
   }
-  .ch-rsm-row__b > span > .is-positive {
+  .ch-rsm-row__b > span > .is-loss {
+    color: var(--ch-chart-loss);
+  }
+  .ch-rsm-row__b > span > .is-gain {
     color: var(--ch-chart-gain);
   }
   .ch-rsm-row__spark {
@@ -1513,6 +1520,9 @@ a.ch-rs-peek__dev:focus-visible,
     color: var(--ch-text-secondary);
   }
   .ch-rsm-trend__lg .is-warning {
+    color: var(--ch-chart-loss);
+  }
+  .ch-rsm-trend__lg .is-loss {
     color: var(--ch-chart-loss);
   }
   .ch-rsm-trend__empty {

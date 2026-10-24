@@ -74,6 +74,7 @@ const POOLED = (() => {
   return (active.reduce((a, p) => a + p.avg! * p.rounds, 0) / n).toFixed(1);
 })();
 import './dialog-polyfill';
+import { unsignedTones } from './_tone-sign';
 
 const code = (c: string) => document.querySelector(`[data-ch-code="${c}"]`);
 async function expectCode(c: string, text?: RegExp) {
@@ -746,6 +747,13 @@ describe('Roster · phone (docs/clubhouse/phone/roster.md)', () => {
       .map((b) => b.getAttribute('aria-label')!.split(',')[0]);
   const profileHeading = (name: string) => screen.queryByRole('heading', { level: 2, name });
 
+  it('a toned note or figure on the phone roster carries a sign or a word; scores rising are a loss, a good run a gain (row 48, CONS-20)', () => {
+    phone(roster());
+    expect(unsignedTones()).toEqual([]);
+    expect(document.querySelector('.ch-rsm-row__b .is-loss')?.textContent).toBe('Scoring up 2.1');
+    expect(document.querySelector('.ch-rsm-row__b .is-gain')?.textContent).toBe('4 rounds under average');
+    expect(document.querySelector('.ch-rsm-row__b .is-warning')?.textContent).toBe('No rounds in 9 days');
+  });
   it('the top bar is the section title Roster (no "‹ More") and Invite players, which opens the invite sheet', async () => {
     const user = userEvent.setup();
     phone(roster());
@@ -1200,7 +1208,7 @@ describe('Roster · availability (injured, away)', () => {
   it('Needs a look leaves out a player who is out, and the row note is the availability word', () => {
     const s = { rounds: 10, avg: 74, sgPerRound: null, trend: [], status: 'slipping', formChange: 2.1, recent: [], lastRoundDate: null } as unknown as Parameters<typeof attentionFor>[0];
     const now = new Date('2026-10-21T12:00:00Z');
-    expect(attentionFor(s, now, true)).toEqual({ tone: 'warning', text: 'Scoring up 2.1' });
+    expect(attentionFor(s, now, true)).toEqual({ tone: 'loss', text: 'Scoring up 2.1' });
     expect(attentionFor(s, now, true, 'injured')).toBeNull();
     expect(attentionFor(s, now, true, 'away')).toBeNull();
     expect(rowNote(ava, false)).toEqual({ text: 'Injured', tone: null });
@@ -1715,5 +1723,15 @@ describe('Roster · behaviour contracts (P003, docs/clubhouse/pages/P003-roster/
     // A floor, so an unreadable catalog can't pass by finding nothing.
     expect(forced.length).toBeGreaterThanOrEqual(27);
     expect(forced.filter((c) => !titles.includes(c))).toEqual([]);
+  });
+});
+
+describe('Roster tones say which way (row 48, CONS-20)', () => {
+  it('desktop: every toned note and figure carries a sign or a word; a quiet spell is a warning, not a loss', () => {
+    wrap(roster());
+    expect(unsignedTones()).toEqual([]);
+    expect([...document.querySelectorAll('.ch-rs-face__note.is-loss')].map((n) => n.textContent)).toEqual(['Scoring up 2.1']);
+    expect([...document.querySelectorAll('.ch-rs-face__note.is-gain')].map((n) => n.textContent)).toEqual(['4 rounds under average']);
+    expect([...document.querySelectorAll('.ch-rs-face__note.is-warning')].map((n) => n.textContent)).toEqual(['No rounds in 9 days']);
   });
 });
