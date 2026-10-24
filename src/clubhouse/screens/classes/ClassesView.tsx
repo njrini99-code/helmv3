@@ -101,7 +101,7 @@ export function ClassesView({ data, writes }: { data: ChClassesPage; writes: ChC
     (list: ChClass[]) => ({
       done: '',
       failed: list.length === 1 ? `${label(list[0]!)} is saved, but not on your calendar` : `${list.length} classes are saved, but not all are on your calendar`,
-      hint: 'Retry to add it now. If it keeps failing, open the class and save it again.',
+      hint: 'Try again to add it now. If it keeps failing, open the class and save it again.',
       code: 'CH-12002',
     }),
     (res, c) => {
@@ -111,7 +111,7 @@ export function ClassesView({ data, writes }: { data: ChClassesPage; writes: ChC
       return {
         ...c,
         failed: total === 1 ? c.failed : `${failed.length} of ${total} classes are saved, but not on your calendar`,
-        hint: `${failed.slice(0, 3).join(', ')}${failed.length > 3 ? ' and more' : ''}${why ? `: ${why}` : '.'} Retry to try again.`,
+        hint: `${failed.slice(0, 3).join(', ')}${failed.length > 3 ? ' and more' : ''}${why ? `: ${why}` : '.'} Try again.`,
       };
     },
   );
@@ -226,7 +226,7 @@ export function ClassesView({ data, writes }: { data: ChClassesPage; writes: ChC
       const parts = [
         kept.length ? `${list(kept.map((k) => k.id))} couldn’t be taken off your calendar, so ${kept.length === 1 ? 'it was' : 'they were'} kept.` : '',
         offCalendar.length ? `${list(offCalendar)} ${offCalendar.length === 1 ? 'is' : 'are'} off your calendar but still on your schedule.` : '',
-        'Retry to finish.',
+        'Try again to finish.',
       ].filter(Boolean);
       return { ...c, failed: removed.length ? `${removed.length} of ${total} classes deleted` : "Couldn’t finish deleting your classes", hint: parts.join(' '), code: 'CH-12006' };
     },
