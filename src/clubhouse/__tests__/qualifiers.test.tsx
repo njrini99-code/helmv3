@@ -184,6 +184,9 @@ describe('Qualifiers · the standings model', () => {
       expect(card).not.toBeNull();
       expect(within(card as HTMLElement).getByRole('heading', { name: 'You vs the line' })).toBeTruthy();
       expect(card!.textContent).toMatch(/Top-score line (Inside|Outside)/);
+      // The place is named, never a bare number before the to-par plate (Round 3).
+      const me = previewDetail(0, 'player').board!.rows.find((x) => x.playerId === previewDetail(0, 'player').viewerPlayerId)!;
+      expect(card!.querySelector('.ch-qf-you-line__me b')!.textContent).toBe(`Place ${(me.tied ? 'T' : '') + me.position}`);
       cleanup();
       const real = window.matchMedia;
       window.matchMedia = ((q: string) => ({ ...real(q), matches: q === '(max-width: 820px)' })) as typeof window.matchMedia;
