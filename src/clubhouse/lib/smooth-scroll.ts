@@ -137,6 +137,31 @@ export function chLenisIdleLoop(lenis: Pick<Lenis, 'raf' | 'isScrolling' | 'on' 
   };
 }
 
+/**
+ * Keeps a scroller's Lenis limit on what it holds (B8: observed, never read every frame). `resize` runs when a direct
+ * child of `wrapper` changes size and when one is added or removed, so a page or panel swapped in under the same wrapper
+ * is followed too. A child that leaves is let go: observed, it kept a route's detached page alive for the whole session.
+ * Not while the sidebar folds: the page reflows on every frame of it, and the limit is read once it settles
+ * (lib/rail-fold.ts). Returns the disconnect.
+ */
+export function chFollowContent(wrapper: HTMLElement, resize: () => void): () => void {
+  const read = () => (chRailMoving() ? afterRailMove(resize) : resize());
+  const sizes = new ResizeObserver(read);
+  for (const child of Array.from(wrapper.children)) sizes.observe(child);
+  const kids = new MutationObserver((records) => {
+    for (const r of records) {
+      for (const n of Array.from(r.removedNodes)) if (n instanceof Element) sizes.unobserve(n);
+      for (const n of Array.from(r.addedNodes)) if (n instanceof Element && n.parentNode === wrapper) sizes.observe(n);
+    }
+    read();
+  });
+  kids.observe(wrapper, { childList: true });
+  return () => {
+    kids.disconnect();
+    sizes.disconnect();
+  };
+}
+
 /** Mount once, in the Clubhouse frame. */
 export function useCanvasSmoothScroll(): void {
   const reduced = useChReducedMotion();
@@ -144,8 +169,7 @@ export function useCanvasSmoothScroll(): void {
     if (reduced) return;
     const desk = window.matchMedia(DESK);
     let lenis: Lenis | null = null;
-    let sizes: ResizeObserver | null = null;
-    let kids: MutationObserver | null = null;
+    let unfollow = () => {};
     let sleep = () => {};
 
     const start = () => {
@@ -177,24 +201,14 @@ export function useCanvasSmoothScroll(): void {
       });
       current = lenis;
       sleep = chLenisIdleLoop(lenis).stop;
-      // The canvas grows as a page streams in or a route changes; the scroll limit follows it, from a ResizeObserver on
-      // what the canvas holds, never a read every frame (B8). Not while the sidebar folds: the page reflows on every frame
-      // of it, and the limit is read once it settles (lib/rail-fold.ts).
-      const resize = () => (chRailMoving() ? afterRailMove(() => lenis?.resize()) : lenis?.resize());
-      sizes = new ResizeObserver(resize);
-      for (const child of Array.from(wrapper.children)) sizes.observe(child);
-      kids = new MutationObserver((records) => {
-        for (const r of records) for (const n of Array.from(r.addedNodes)) if (n instanceof Element) sizes?.observe(n);
-        resize();
-      });
-      kids.observe(wrapper, { childList: true });
+      // The canvas grows as a page streams in or a route changes; the scroll limit follows it.
+      unfollow = chFollowContent(wrapper, resizeCanvas);
     };
+    const resizeCanvas = () => lenis?.resize();
     const stop = () => {
       sleep();
-      sizes?.disconnect();
-      kids?.disconnect();
-      sizes = null;
-      kids = null;
+      unfollow();
+      unfollow = () => {};
       lenis?.destroy();
       lenis = null;
       current = null;
@@ -327,7 +341,7 @@ export function usePanelSmoothScroll(ref: { current: HTMLElement | null }, { dur
     if (reduced || !wrapper) return;
     const desk = window.matchMedia(DESK);
     let lenis: Lenis | null = null;
-    let sizes: ResizeObserver | null = null;
+    let unfollow = () => {};
     let sleep = () => {};
     const start = () => {
       if (lenis) return;
