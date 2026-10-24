@@ -5,7 +5,9 @@
  * error), because its words say so.
  */
 export function displayPlaces(values: ReadonlyArray<number | null>, digits = 1, higherIsBetter = false): Array<{ place: number; tied: boolean } | null> {
-  const shown = values.map((v) => (v == null ? null : Math.round(v * 10 ** digits) * (higherIsBetter ? -1 : 1)));
+  // Keyed on the printed figure itself: `toFixed` and `Math.round(v * 10 ** d)` disagree on x.x5 values (72.35 prints
+  // "72.3" but rounds to 724), and the rule is about what the reader sees.
+  const shown = values.map((v) => (v == null ? null : Number(v.toFixed(digits)) * (higherIsBetter ? -1 : 1)));
   return shown.map((s) => {
     if (s == null) return null;
     const ahead = shown.filter((o) => o != null && o < s).length;
