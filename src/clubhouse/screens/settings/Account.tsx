@@ -10,7 +10,7 @@ import { Modal } from '../../ui/Modal';
 import { haptic } from '../../lib/haptics';
 import { chTrail } from '../../lib/track';
 import { emailProblem, passwordProblem, profileProblem, type ChProfileInput, type ChSettingsData, type ChSettingsWrites } from './model';
-import { SAVE_COPY, useAvatarUpload, useDeleteAccount, useReportProblem, useSignOut } from './hooks';
+import { SAVE_COPY, useAppVersion, useAvatarUpload, useDeleteAccount, useReportProblem, useSignOut } from './hooks';
 import { Card, Field, focusProblemField, ReadFailed, Row, useDraft, useReportDirty, useSaveAction } from './parts';
 
 export function AccountSection({ data, writes, onDeleted }: { data: ChSettingsData; writes: ChSettingsWrites; onDeleted: () => void }) {
@@ -236,6 +236,7 @@ function PasswordCard({ writes, hasEmail }: { writes: ChSettingsWrites; hasEmail
 
 function HelpCard() {
   const { report, opening } = useReportProblem();
+  const version = useAppVersion();
   return (
     <Card id="set-help" title="Help and legal">
       <div className="ch-set-links">
@@ -259,6 +260,10 @@ function HelpCard() {
           </span>
         </a>
       </div>
+      {/* About: which GolfHelm this is, for a problem report or support. */}
+      <Row label="Version">
+        <span className="ch-set-value ch-num">{version}</span>
+      </Row>
     </Card>
   );
 }
