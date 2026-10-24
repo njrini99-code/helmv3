@@ -673,3 +673,41 @@ browser
   coachhelm tests; related tests; guard suite (287 files); `tsgo`,
   eslint, `clubhouse:check`, `clubhouse:css`. The spacing tokens were
   resolved and diffed against the old values (no change).
+
+## 2026-10-23 — Search pill, account menu, filtered empties
+
+```text
+Design package: none (Clubhouse A+ handoff, B11, CONS-11, CONS-22)
+PR/commit: #2361
+Contract IDs: none
+Actions: none
+Data impact: none
+Held items: a catalog code for the desktop sign-out failure; the
+first-run empties; the remaining selected paints
+```
+
+### Changed
+
+- The desktop top bar has a search pill ("Search", the platform's K
+  key) that opens the command palette. It draws only where the palette
+  works (a pointer that hovers, 821px and up).
+- The sidebar's identity block is a menu: the teams to switch to,
+  Settings, Help and Sign out (the existing sign-out, with its retry
+  toast).
+- Five search and filter empties (Rounds library, Qualifiers, What's
+  new, Stats' player window on both form factors) say they are
+  filtered.
+- CoachHelm's and Deep dive's chosen-row tint on the canopy is
+  `--ch-selected-tint`; the selected-state guard no longer counts an
+  unchosen `:not()` state (55 → 40).
+
+### Why
+
+- Search is visible, the account has a menu, and an empty filter reads
+  as a filter.
+
+### Verification
+
+- `search-pill`, `identity-menu`, `command-layer`, `empty-honest` and
+  `selected-state` tests; guard suite (287 files); `tsgo`, eslint,
+  `clubhouse:check`, `clubhouse:css`.
