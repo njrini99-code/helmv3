@@ -375,6 +375,29 @@ opens Overview. It is read once on load (`StatsPlayer({ initialTab })`, passed t
 as Roster's `rounds`, so the Rounds tab's count matches the N on the link. Tests: `src/clubhouse/__tests__/stats-player.test.tsx`
 › "Stats player · opened from a link" (commit 041ef83ee).
 
+## Clubhouse season, time and change rules (lanes C and S2, October 24)
+
+- The season starts on 1 August in the team's own zone (`golf_team_settings.timezone`, `loadTeamZone`; owner decision 9),
+  not the server's or New York's: Team and player Stats, Coach and Player Home, Roster, the team's Rounds and CoachHelm's
+  track record all turn it there (`seasonStartDate(now, tz)`; the track record asks from midnight in that zone,
+  `seasonStartInstant`). The class year turns with it (`classYearLabel(grad, now, tz)`). The SQL readers that use
+  `CURRENT_DATE` stay held (C10).
+- Dated charts space points by real time (`ui/charts/Line` `at`, `slotPositions`; the round trends, the phone team trend
+  and the desktop week chart), but every point keeps a slot of its own: no gap is narrower than half the even one
+  (`MIN_SLOT_GAP`), so two rounds on one day are two points the pointer can reach. Every Line, round trend and leg bar
+  chart carries its figures as a visually hidden table after its summary (`ChartTable`, AX-17).
+- A change word or tone (Improving, Slipping, a green or amber change) is shown only past its standard error: Game
+  detail's "Against the one before" (`windowCompare` rows carry `se`), the Deep dive's theme trend (each leg at its own
+  within-player spread, `POOLED_LEG_SD`, not the total's or the engine's fixed 0.15), CoachHelm's Momentum word, and the
+  phone trend's words; otherwise "No clear change".
+- The card at the top of Stats (row 70, `data/stats-insight.ts`, `screens/stats/StatsInsight.tsx`), team and player,
+  phone and desktop: the one or two changes that pass that rule, clearest first, each signed and toned as the page tones
+  it; "No clear change" when none does; no card with nothing to compare. Team reads the figures' changes, a player's
+  strokes gained and the window-against-window rows.
+- A toned figure carries a sign or a word (`src/clubhouse/__tests__/_tone-sign.ts`, row 48).
+- Player Home's fairways, greens and scrambling, and Coach Home's team greens, hold to the rate floors (two rounds with a
+  chance for fairways and greens, ten chances for scrambling); under them the stat says what it needs.
+
 ## Clubhouse interaction preferences, October 6
 
 Desktop Game detail section jumps use the canonical Clubhouse reduced-motion

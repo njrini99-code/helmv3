@@ -158,7 +158,7 @@ reminders off let an out-of-order schedule send and fail).
 Status: DEFINED
 
 Every change has its own toast (80601 to 80624) naming what failed and why when
-the server gave a short reason, otherwise "Check your connection and try again",
+the server gave a short reason, otherwise "Try again" (a form adds that its changes are kept),
 with Retry on saves and switches. Every section that fails to load shows its own
 notice with Try again (80625 to 80635), never a blank form that could be saved
 over real data; its Try again reads the whole page again (81401). When more than
@@ -255,7 +255,7 @@ error and no row; profile, team details, golf details and the coaching settings
 count the rows they change and fail with "Your account doesn’t have access to do
 this" (80808), as leaving a team already did. A refusal that arrives as an
 error, such as an upsert against a policy ("violates row-level security"), reads
-as "Check your connection" because the toast drops technical wording. All of
+as the access line too (saveFailureBody, since 2026-10-17). All of
 this was read from the migrations and the code, not checked against the live
 database. Off team: a coach with no team has no team cards (80401); a player
 with no team can join with a code (80402), and the server actions refuse a

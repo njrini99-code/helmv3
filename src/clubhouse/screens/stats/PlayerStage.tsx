@@ -2,8 +2,9 @@
 
 import { useState, type KeyboardEvent, type PointerEvent } from 'react';
 import { EmptyState } from '../../ui/States';
-import { changeTone, formatAvg, formatSigned, formatToPar, NO_DATA } from '../../lib/format';
+import { changeTone, formatAvg, formatSigned, formatToPar } from '../../lib/format';
 import { nearestIndex, readRound, stepIndex } from './scrub';
+import { NoData } from '../../ui/NoData';
 
 export type StageRound = { label: string; course?: string; score: number; toPar: number | null; holes: number };
 
@@ -112,7 +113,7 @@ export function PlayerStage({ rounds, first, coach, teamAvg, meta, note }: { rou
                 {r.label}
               </span>
               <span className={'ch-fm__tp ch-num' + (r.toPar != null && r.toPar < 0 ? ' is-under' : '')} aria-hidden="true">
-                {r.toPar == null ? NO_DATA : formatToPar(r.toPar)}
+                {r.toPar == null ? <NoData /> : formatToPar(r.toPar)}
               </span>
             </li>
           );

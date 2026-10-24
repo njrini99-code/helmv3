@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation';
 import { useEffect, type CSSProperties, type KeyboardEvent } from 'react';
 import type { ChTeamStats } from '../../data/stats-team';
 import { basisWords, type ChFilter } from '../../data/stats-filter';
-import { changeInk, changeTone, NO_DATA } from '../../lib/format';
+import { changeInk, changeTone } from '../../lib/format';
 import { useGlide } from '../../lib/motion-glide';
 import { useChSessionState } from '../../lib/session-state';
 import { useChartPin } from '../../lib/use-chart-pin';
@@ -13,6 +13,7 @@ import { EmptyState } from '../../ui/States';
 import { Select } from '../../ui/Select';
 import { teamPlayerHref } from './links';
 import { formatRankValue, metricDef, rankLabel, rankReadout, rankScale, rankSummary, teamMeanFor, teamRankRows, TEAM_RANK_METRICS, type TeamRankMetric } from './team-rank';
+import { NoData } from '../../ui/NoData';
 
 export type TeamRankData = Pick<ChTeamStats, 'grid' | 'team' | 'legTotals' | 'filter'>;
 
@@ -85,7 +86,7 @@ export function TeamRank({ data, phone = false }: { data: TeamRankData; phone?: 
           {r.value != null && dot != null && <b className={'ch-sv-tr__dot' + (r.state === 'early' ? '' : tone(r.value))} style={{ left: pct(dot) }} />}
           {r.value == null && <span className="ch-sv-tr__needs">{r.tag}</span>}
         </span>
-        <span className={'ch-sv-tr__v ch-num ' + (r.state === 'early' || !sg ? '' : changeInk(r.value))}>{r.value == null ? NO_DATA : fmt(r.value)}</span>
+        <span className={'ch-sv-tr__v ch-num ' + (r.state === 'early' || !sg ? '' : changeInk(r.value))}>{r.value == null ? <NoData /> : fmt(r.value)}</span>
       </div>
     );
   };

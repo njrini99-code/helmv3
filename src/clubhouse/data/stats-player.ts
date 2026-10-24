@@ -561,7 +561,7 @@ export async function loadPlayerProfile(input: {
     id: p.id,
     name: fullName(p),
     firstName: p.first_name || fullName(p),
-    classYear: classYearLabel(p.graduation_year, now),
+    classYear: classYearLabel(p.graduation_year, now, tz),
     gradYear: p.graduation_year,
     hometown: [p.hometown, p.state].filter(Boolean).join(', ') || null,
     status: memberRes.data.status === 'inactive' ? 'inactive' : 'active',

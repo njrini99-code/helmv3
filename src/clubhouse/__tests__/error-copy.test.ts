@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { FAILURE_COPY } from '../ui/Notices';
-import { hits, walk } from './_scan';
+import { hits, ratchet, walk } from './_scan';
 
 /**
  * B10.3: a failure says what didn't happen and what to do ("Your rounds didn't load. Posted rounds are safe. Try again."),
@@ -15,12 +15,23 @@ describe('error copy (B10)', () => {
   it('nothing guesses at the cause', () => {
     expect(hits(/display problem|usually clears/i, src)).toEqual([]);
   });
+  it('nothing tells the person to check their connection on a guess; offline has its own line (row 62)', () => {
+    // Only where the code classified a network failure (reset password: AuthRetryableFetchError, status 0, a fetch
+    // message). A catch-all is a guess. A ratchet: these may only go.
+    const { over, stale } = ratchet(hits(/check your (connection|signal)/i, src), {
+      'screens/auth/reset-state.ts': 1,
+    });
+    expect(over).toEqual([]);
+    expect(stale).toEqual([]);
+    expect(hits(/connection dropped/i, src)).toEqual([]);
+  });
   it('a hint beside Try again says Try again, not Retry (CONS-6)', () => {
     expect(hits(/['"`]Retry to\b|\. Retry to\b/, src)).toEqual([]);
   });
   it('the templates end on what to do, and never report or guess', () => {
-    const all = [FAILURE_COPY.load(['your rounds', 'this week’s schedule']), FAILURE_COPY.shown, FAILURE_COPY.page, FAILURE_COPY.offline];
+    const all = [FAILURE_COPY.load(['your rounds', 'this week’s schedule']), FAILURE_COPY.shown, FAILURE_COPY.page, FAILURE_COPY.save, FAILURE_COPY.kept, FAILURE_COPY.offline];
     expect(all[0]).toBe('Your rounds and this week’s schedule didn’t load. Nothing you saved is lost. Try again.');
+    expect(FAILURE_COPY.save).toBe('Couldn’t save. Your changes are kept. Try again.');
     for (const line of all) {
       expect(line).toMatch(/try again\.$/i);
       expect(line).not.toMatch(/reported|usually/i);

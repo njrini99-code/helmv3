@@ -555,7 +555,7 @@ describe('Recruiting · desktop', () => {
   it('CH-14201 CH-14911 a list that did not load says so with Try again, which asks the server again; it is never "your list starts here"', async () => {
     const user = userEvent.setup();
     const { again } = wrap(PREVIEW_RECRUITING_FAILED);
-    expect(code('CH-14201')?.textContent).toMatch(/Your prospects didn’t load.*Nothing was lost; this page just couldn’t reach them/);
+    expect(code('CH-14201')?.textContent).toMatch(/Your prospects didn’t load.*Nothing was lost\. Try again\./);
     expect(code('CH-14301')).toBeNull();
     expect(screen.queryByRole('group', { name: 'Filter by stage' })).toBeNull();
     // The board keeps New prospect in the header beside the notice.
@@ -1092,7 +1092,7 @@ describe('Recruiting · desktop', () => {
     await within(panel('Mason Reilly')).findByRole('button', { name: /^Fall tournament schedule\.pdf/ });
     await user.upload(document.querySelector('input[type="file"]') as HTMLInputElement, new File(['x'], 'a.pdf', { type: 'application/pdf' }));
     await user.click(within(dlg()).getByRole('button', { name: 'Upload' }));
-    await expectCode('CH-14005', /Couldn’t upload a.*Check your connection and try again\./);
+    await expectCode('CH-14005', /Couldn’t upload a.*Try again\./);
     expect(report).toHaveBeenCalledWith(expect.objectContaining({ message: 'body too large' }), expect.objectContaining({ action: 'recruiting.upload' }));
   });
 
@@ -1318,7 +1318,7 @@ describe('Recruiting · phone', () => {
     expect(within(dlg()).getByRole('heading', { name: 'New prospect' })).toBeTruthy();
     first.unmount();
     wrap(PREVIEW_RECRUITING_FAILED);
-    expect(code('CH-14201')?.textContent).toContain('Nothing was lost. Check your connection and try again.');
+    expect(code('CH-14201')?.textContent).toContain('Nothing was lost. Try again.');
     expect(top().queryByRole('button', { name: 'New prospect' })).toBeNull();
     await user.click(screen.getByRole('button', { name: 'Try again' }));
     expect(router.refresh).toHaveBeenCalled();

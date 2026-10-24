@@ -1497,7 +1497,7 @@ describe('Classes, writes that fail', () => {
     const w = show(PREVIEW_CLASSES, { save });
     await fillGeog(user);
     await submitForm(user);
-    await expectCode('CH-12001', /Couldn’t add GEOG 110.*Nothing was changed\. Check your connection and try again\./);
+    await expectCode('CH-12001', /Couldn’t add GEOG 110.*Nothing was changed\. Try again\./);
     expect(hapticSpy).toHaveBeenCalledWith('error');
     // The toast is in the open sheet, so Retry is where the person is looking.
     expect(sheet().contains(code('CH-12001'))).toBe(true);
@@ -1809,7 +1809,7 @@ describe('Classes, delete all', () => {
     show(PREVIEW_CLASSES, { removeAll });
     await user.click(deleteAll());
     await confirm(user);
-    await expectCode('CH-12005', /Couldn’t delete your classes.*Nothing was deleted\. Check your connection and try again\./);
+    await expectCode('CH-12005', /Couldn’t delete your classes.*Nothing was deleted\. Try again\./);
     expect(report).toHaveBeenCalled();
     expect(names()).toHaveLength(5);
     await user.click(within(code('CH-12005') as HTMLElement).getByRole('button', { name: 'Try again' }));
@@ -2023,7 +2023,7 @@ describe('Classes, import', () => {
     await pasteAndRead(user);
     await reviewArrived();
     await user.click(inSheet().getByRole('button', { name: 'Import 5 classes' }));
-    await expectCode('CH-12004', /Couldn’t import your schedule.*Nothing was saved\. Check your connection and try again\./);
+    await expectCode('CH-12004', /Couldn’t import your schedule.*Nothing was saved\. Try again\./);
     expect(hapticSpy).toHaveBeenCalledWith('error');
     expect(screen.getByRole('dialog', { name: 'Review your schedule' })).toBeTruthy();
     expect(names()).toHaveLength(5);

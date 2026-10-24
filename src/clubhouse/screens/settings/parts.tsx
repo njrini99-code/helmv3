@@ -5,7 +5,7 @@ import { Check } from 'lucide-react';
 import { createContext, useContext, useEffect, useRef, useState, type ReactNode } from 'react';
 import { Button } from '../../ui/Button';
 import { Icon } from '../../ui/Icon';
-import { InlineNotice, PageNotice } from '../../ui/Notices';
+import { FAILURE_COPY, InlineNotice, PageNotice } from '../../ui/Notices';
 import { Modal } from '../../ui/Modal';
 import { Switch } from '../../ui/Switch';
 import { chTween } from '../../lib/motion';
@@ -372,27 +372,31 @@ export function useUnsavedGuard(dirty: boolean) {
 
 /** A refusal the server gave no plain reason for (a constraint, a PostgREST code): still not the connection. */
 export const REFUSED_BODY = 'The server didn’t accept the change.';
-const CONNECTION_BODY = 'Check your connection and try again.';
+/** A save with no answer at all: the cause isn't known, so none is guessed (B10.3). A switch or an autosave has already
+ * gone back (its own "It is back where it was."); a form keeps the edit on screen and says so (`refineSaveFailure`). */
+const NO_ANSWER_BODY = 'Try again.';
 
 /**
- * What the toast under a failed settings save says (VERIFY 2026-10-02, fixed 2026-10-17). Only a save that never got an
- * answer (a throw, no reason at all, or the browser's own network wording) is told to check the connection. A save the
+ * What the toast under a failed settings save says (VERIFY 2026-10-02, fixed 2026-10-17). A save that never got an
+ * answer (a throw, no reason at all, or the browser's own network wording) says to try again (`noAnswer`: a form passes
+ * "Your changes are kept. Try again."), with no guess at the cause (B10.3); offline is said by useAction's own offline line. A save the
  * server refused says why in plain words: a policy or a missing grant ("violates row-level security", "permission
  * denied", 42501, which friendlyReason drops as technical) is the access line friendlyReason already gives "permission";
  * an expired token is the session line; a short server sentence passes through; anything else technical is
  * REFUSED_BODY. `hint` is the card's own next step, which a refusal with no plain reason keeps.
  */
-export function saveFailureBody(error: string | undefined, hint?: string): string {
+export function saveFailureBody(error: string | undefined, hint?: string, noAnswer: string = NO_ANSWER_BODY): string {
   const e = error?.trim();
-  if (!e || e === 'failed' || isRawBrowserFailure(e)) return hint ?? CONNECTION_BODY;
+  if (!e || e === 'failed' || isRawBrowserFailure(e)) return hint ?? noAnswer;
   if (/row[- ]level security|permission denied|insufficient privilege|\b42501\b/i.test(e)) return 'Your account doesn’t have access to do this.';
   if (/\bJWT\b|PGRST30[13]/i.test(e)) return 'Your session ended. Sign in again, then retry.';
   return friendlyReason(e) ?? hint ?? REFUSED_BODY;
 }
 
-/** useAction's `refine` for a settings save: the failure body by cause (saveFailureBody), shown as written. */
+/** useAction's `refine` for a settings form save: the failure body by cause (saveFailureBody), shown as written; the form
+ * keeps what was typed, so a save with no answer says so. */
 export function refineSaveFailure<T>(result: ActionResult<T>, copy: ActionCopy): ActionCopy {
-  return result.success ? copy : { ...copy, hint: saveFailureBody(result.error, copy.hint) };
+  return result.success ? copy : { ...copy, hint: saveFailureBody(result.error, copy.hint, FAILURE_COPY.kept) };
 }
 
 /**
@@ -544,7 +548,7 @@ export function useInstantSave(surface: string) {
     toast({
       tone: 'error',
       title: op.failed,
-      // A refusal says why; only a save that got no answer is told to check the connection.
+      // A refusal says why; a save that got no answer says only to try again (no guessed cause).
       body: `It is back where it was. ${saveFailureBody(r.error)}`,
       action: { label: 'Try again', run: () => void run(op) },
       code: op.code,

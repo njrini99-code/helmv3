@@ -266,12 +266,13 @@ describe('P009-A1 standings on hand-hung plates', () => {
       const rows = [...document.querySelectorAll('.ch-qfm-lb__row')];
       expect(rows.length).toBe(8);
       for (const r of rows) expect(r.textContent).not.toMatch(/Rounds|Avg|Total/);
-      const luca = screen.getByRole('button', { name: /^Luca Ferraro, 7, \+8, \d+ strokes, 1 of 3 rounds, missed a round\. Show their rounds$/ });
+      const luca = screen.getByRole('button', { name: /^Luca Ferraro, 7, \+8, \d+ strokes, 1 of 3 rounds\. Show their rounds$/ });
       expect(luca.querySelector('.ch-qf-plate')!.textContent).toBe('+8');
       expect(luca.querySelector('.ch-qfm-lb__tot')!.textContent).toMatch(/^\d+$/);
       // The same ranking sentence as desktop's caption (row 75), with decision 10's order.
       expect(document.querySelector('.ch-qf-cap')!.textContent).toMatch(/^Complete cards rank first, by total to par, then total strokes, then more rounds played; a card a round short sits below them\. Top \d+ qualify on score/);
-      expect(luca.querySelector('.ch-qf-thin')!.textContent).toBe('Missed a round · 1 of 3 rounds');
+      // During play a card a round short gives its pace, not "Missed a round": it may still play the round (decision 10).
+      expect(luca.querySelector('.ch-qf-thin')!.textContent).toBe('1 of 3 rounds');
     } finally {
       window.matchMedia = real;
     }
@@ -297,9 +298,10 @@ describe('P009-C2 pace beside the total', () => {
     expect(bubbleNote(3, 'completed')).toBe('');
   });
 
-  it('a row with fewer rounds in than the most anyone has carries "Missed a round · 1 of 3 rounds"; a row that kept pace carries nothing', () => {
+  it('during play a row with fewer rounds in than the most anyone has carries its pace, "1 of 3 rounds"; a row that kept pace carries nothing', () => {
     const b = live().board!;
-    expect(sampleNote(at('luca'), b, 3)).toBe('Missed a round · 1 of 3 rounds');
+    expect(at('luca').missed).toBe(false);
+    expect(sampleNote(at('luca'), b, 3)).toBe('1 of 3 rounds');
     expect(sampleNote(at('priya'), b, 3)).toBeNull();
   });
 });

@@ -45,6 +45,7 @@ import { resolveClubhouseTeam } from '../routes/team';
 import { StatsPlayer } from '../screens/stats/StatsPlayer';
 import { ClubhouseStatsRoute, NotOnTeam, StatsNoTeam } from '../routes/stats';
 import { ToastProvider } from '../ui/Toast';
+import { unsignedTones } from './_tone-sign';
 import { CrumbProvider, useCrumbTrail } from '../shell/crumbs';
 import { PhoneChromeProvider, usePhoneChromeState } from '../shell/phone-chrome';
 import { PREVIEW_PLAYER, PREVIEW_PLAYER_EARLY, PREVIEW_READS_FAILED } from '../preview/fixtures-stats';
@@ -224,6 +225,9 @@ describe('Stats player · empty', () => {
     show(player({ rounds: [] }));
     await openTab(user, /Rounds/);
     await expectCode('CH-5302', /No rounds in this window/);
+    // A window with no rounds is a filtered empty: it says so and points at This season (2026-10-23, filtered empties).
+    const filtered = document.querySelector('[data-ch-code="CH-5302"][data-ch-state="filtered"]');
+    expect(filtered?.textContent).toMatch(/No rounds in this window.*Try This season to see every round posted since August\./);
   });
 
   it('CH-5303 CH-5304 no focus areas, no goals', async () => {
@@ -600,6 +604,8 @@ describe('Stats player · phone (v2, Coach - Stats - Mobile.html)', () => {
   it('CH-5302 no rounds in the window', () => {
     phone(player({ rounds: [] }));
     expect(code('CH-5302')).not.toBeNull();
+    expect(code('CH-5302')!.getAttribute('data-ch-state')).toBe('filtered');
+    expect(code('CH-5302')!.textContent).toMatch(/Try This season to see every round posted since August\./);
   });
 });
 
@@ -1474,5 +1480,73 @@ describe('Stats player · tests', () => {
     // The hand contracts: each one this file claims is named in a test title.
     const ids = ['50101', '50102', '50103', '50104', '50611', '50803', '50804', '50805', '50806', '50901', '51201', '51202', '51401', '51501', '51901', '52001', '52101', '52301', '52401'];
     expect(ids.filter((id) => !mine.includes(id))).toEqual([]);
+  });
+});
+
+/**
+ * Row 48 (CONS-20): a toned figure carries a sign or a word. The profile still paints some rates against the Tour in colour alone
+ * (Game detail's figures and table, Overview's zone reads); these counts may only fall, toward none.
+ */
+describe('toned figures say which way (row 48)', () => {
+  // Measured on this base (the form line's chips toned against the player's average count on Overview): only ever lower.
+  const ALLOWED: Record<string, number> = { overview: 10, game: 24, rounds: 1, dev: 0 };
+  for (const [tab, most] of Object.entries(ALLOWED)) {
+    it(`${tab}: at most ${most} figures in colour alone`, async () => {
+      wrap(<StatsPlayer data={player()} coachId="c1" initialTab={tab} />);
+      await act(async () => {});
+      expect(unsignedTones().length).toBeLessThanOrEqual(most);
+    });
+  }
+});
+
+/** Row 70: the insight-first card at the top of a player's Stats, desktop and phone. */
+describe('Stats player · what changed (row 70)', () => {
+  const real = window.matchMedia;
+  afterEach(() => {
+    window.matchMedia = real;
+  });
+  const asPhone = () => {
+    window.matchMedia = ((q: string) => ({ ...real(q), matches: q === '(max-width: 820px)' })) as typeof window.matchMedia;
+  };
+  const card = () => screen.queryByRole('region', { name: /^(What changed|No clear change)$/ });
+  /** Each line the card states is toned the same way where the page draws that change: the same signed figure in the same ink. */
+  const agreesWithPage = (box: HTMLElement) => {
+    for (const b of box.querySelectorAll('b')) {
+      const ink = b.classList.contains('ch-gain') ? /\b(ch-gain|is-gain)\b/ : /\b(ch-loss|is-loss)\b/;
+      const twins = [...document.querySelectorAll('.ch-gain, .ch-loss, .is-gain, .is-loss')].filter((el) => !box.contains(el) && el.textContent?.includes(b.textContent!));
+      expect(twins.some((el) => ink.test(el.getAttribute('class') ?? '')), `${b.textContent} toned alike below`).toBe(true);
+    }
+  };
+  const LINES = ['−0.8 Putts per round, better vs previous 10', '−5.6 Greens in regulation, worse vs previous 10'];
+
+  it('desktop: the window against the one before, only past each change’s error, and the Rounds tab tones them alike', async () => {
+    const user = userEvent.setup();
+    show(player());
+    const box = card()!;
+    expect(within(box).getByRole('heading').textContent).toBe('What changed');
+    expect([...box.querySelectorAll('p')].map((p) => p.textContent)).toEqual(LINES);
+    expect(unsignedTones(box)).toEqual([]);
+    await openTab(user, /^Rounds/);
+    // The card stays on every tab; the comparison it reads is on Rounds.
+    agreesWithPage(card()!);
+  });
+
+  it('phone: the same card above the figures', async () => {
+    asPhone();
+    show(player());
+    const box = await waitFor(() => card()!);
+    expect([...box.querySelectorAll('p')].map((p) => p.textContent)).toEqual(LINES);
+    await act(async () => {});
+    agreesWithPage(box);
+  });
+
+  it('nothing past its error is "No clear change"; nothing to compare draws no card', () => {
+    const p = player();
+    const quiet = { ...p, sgChange: { ...p.sgChange, se: 9 }, extra: { ...p.extra, compare: { ...p.extra.compare!, rows: p.extra.compare!.rows.map((r) => ({ ...r, se: 9 })) } } };
+    const view = show(quiet);
+    expect(within(card()!).getByRole('heading').textContent).toBe('No clear change');
+    view.unmount();
+    show({ ...p, sgChange: { delta: null, context: '' }, extra: { ...p.extra, compare: null } });
+    expect(card()).toBeNull();
   });
 });

@@ -3,6 +3,7 @@
 import { requestPasswordResetAction } from '@/app/golf/actions/auth';
 import { raceWithTimeout } from '@/lib/demo/gate-probe';
 import { createClient } from '@/lib/supabase/client';
+import { FAILURE_COPY } from '../../ui/Notices';
 import { describeResetFailure, type ResetFailure } from './reset-state';
 
 /**
@@ -58,7 +59,7 @@ export const resetWrites: ResetWrites = {
       if (error) return { ok: false, failure: describeResetFailure(error) };
       return { ok: true };
     } catch {
-      return { ok: false, failure: { kind: 'banner', message: 'Couldn’t save. Check your connection and try again.' } };
+      return { ok: false, failure: { kind: 'banner', message: FAILURE_COPY.save } };
     }
   },
   async revokeOthers() {

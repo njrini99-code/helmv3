@@ -23,6 +23,17 @@ const textOf = (c: ChCommand) => [c.label, ...c.keywords].join(' ');
 const SEARCHING: readonly ChCmdGroup[] = ['goto', 'people', 'actions'];
 
 /**
+ * Where a coach's players are (decision 16): read when the palette first opens, so the first search can run before they
+ * arrive. `idle` is a player, or nothing asked yet.
+ */
+export type ChPeopleState = 'idle' | 'loading' | 'ready' | 'failed';
+/** The quiet line a search shows while a coach's players are still on their way, or when they didn't come. */
+const PEOPLE_LINE: Partial<Record<ChPeopleState, string>> = {
+  loading: 'Looking up your players…',
+  failed: 'Your players didn’t load. Close this and open it again to try again.',
+};
+
+/**
  * The command palette (Cmd or Ctrl K): jump to a section, a player or start an action, from the keyboard. It is the shared
  * Modal (focus returns to whatever opened it, Escape closes it, it sits in the top layer like every Clubhouse dialog) around
  * cmdk's list, which does the matching, the arrows, Home and End, and Enter.
@@ -36,6 +47,7 @@ export function Palette({
   role,
   pathname,
   people,
+  peopleState = 'idle',
   recent,
   keyword,
 }: {
@@ -44,18 +56,33 @@ export function Palette({
   role: ChRole;
   pathname: string;
   people: readonly ChPerson[];
+  peopleState?: ChPeopleState;
   recent: readonly ChRecent[];
   /** Counts the times it has opened, so each opening starts with an empty search. */
   keyword: number;
 }) {
   return (
     <Modal open={open} onClose={onClose} title="Search Clubhouse" width={580} initialFocus=".ch-cmd-input">
-      <PaletteBody key={keyword} onClose={onClose} role={role} pathname={pathname} people={people} recent={recent} />
+      <PaletteBody key={keyword} onClose={onClose} role={role} pathname={pathname} people={people} peopleState={peopleState} recent={recent} />
     </Modal>
   );
 }
 
-function PaletteBody({ onClose, role, pathname, people, recent }: { onClose: () => void; role: ChRole; pathname: string; people: readonly ChPerson[]; recent: readonly ChRecent[] }) {
+function PaletteBody({
+  onClose,
+  role,
+  pathname,
+  people,
+  peopleState,
+  recent,
+}: {
+  onClose: () => void;
+  role: ChRole;
+  pathname: string;
+  people: readonly ChPerson[];
+  peopleState: ChPeopleState;
+  recent: readonly ChRecent[];
+}) {
   const router = useRouter();
   const [q, setQ] = useState('');
   const commands = buildCommands({ role, pathname, people, recent });
@@ -63,6 +90,8 @@ function PaletteBody({ onClose, role, pathname, people, recent }: { onClose: () 
   const shown = searching ? SEARCHING : IDLE;
   // Worked out here, not read from cmdk's list: the nearest-section row is itself an item, and a list is never "empty" with it in.
   const noMatches = searching && !commands.some((c) => shown.includes(c.group) && defaultFilter(textOf(c), q.trim()) > 0);
+  // Only a coach's search waits on players; with nothing typed, People isn't shown at all.
+  const peopleLine = role === 'coach' && searching ? PEOPLE_LINE[peopleState] : undefined;
 
   // A pick goes somewhere, and navigation is silent (D-70, A14).
   const go = (c: ChCommand) => {
@@ -85,7 +114,7 @@ function PaletteBody({ onClose, role, pathname, people, recent }: { onClose: () 
         <Keys keys={['Esc']} />
       </div>
       <Command.List className="ch-cmd-list">
-        {noMatches && <NoResults query={q} role={role} onGo={go} peopleKnown={people.length > 0} />}
+        {noMatches && <NoResults query={q} onGo={go} role={role} peopleLine={peopleLine} />}
         {shown.map((group) => {
           const rows = commands.filter((c) => c.group === group);
           if (!rows.length) return null;
@@ -102,6 +131,12 @@ function PaletteBody({ onClose, role, pathname, people, recent }: { onClose: () 
             </Command.Group>
           );
         })}
+        {/* Results already showing: the players still on their way are said once, quietly, under them. */}
+        {!noMatches && peopleLine && (
+          <div className="ch-cmd-empty" role="status">
+            <p>{peopleLine}</p>
+          </div>
+        )}
       </Command.List>
       <div className="ch-cmd-foot" aria-hidden="true">
         <span>
@@ -121,7 +156,7 @@ function PaletteBody({ onClose, role, pathname, people, recent }: { onClose: () 
 /**
  * Nothing matched: said calmly, with the nearest section as a row to take (it is the one item, so Enter takes it).
  */
-function NoResults({ query, role, onGo, peopleKnown }: { query: string; role: ChRole; onGo: (c: ChCommand) => void; peopleKnown: boolean }) {
+function NoResults({ query, role, onGo, peopleLine }: { query: string; role: ChRole; onGo: (c: ChCommand) => void; peopleLine: string | undefined }) {
   const q = query.trim();
   const near = nearestSection(q, role);
   return (
@@ -131,8 +166,9 @@ function NoResults({ query, role, onGo, peopleKnown }: { query: string; role: Ch
           Nothing matches <b>“{q}”</b>.
         </p>
         <p>{near ? `The closest section is ${near.label}.` : 'Try a section, a player or an action.'}</p>
-        {/* A coach's players come from the roster they have opened (people.ts): say so rather than look as if there are none. */}
-        {role === 'coach' && !peopleKnown && <p>Players appear here once you have opened the Roster.</p>}
+        {/* A coach's players are read as the palette opens (decision 16): while they are on their way, or if they didn't
+            come, say so rather than look as if there are none. */}
+        {peopleLine && <p>{peopleLine}</p>}
       </div>
       {near && (
         <Command.Item

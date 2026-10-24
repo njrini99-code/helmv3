@@ -221,10 +221,14 @@ export function groupByPlayer(rounds: ChRound[]): Map<string, ChRound[]> {
   return map;
 }
 
-/** "Senior", "Junior"... from a graduation year and the academic year in progress. */
-export function classYearLabel(graduationYear: number | null, now = new Date()): string | null {
+/**
+ * "Senior", "Junior"... from a graduation year and the academic year in progress, which turns with the season: 1 August on the
+ * team's calendar (`seasonStartDate`, owner decision 9), never the server's UTC month. A caller without the team's zone gets the
+ * product default's.
+ */
+export function classYearLabel(graduationYear: number | null, now = new Date(), tz: string = SEASON_DEFAULT_TZ): string | null {
   if (!graduationYear) return null;
-  const academicEnd = now.getMonth() >= 7 ? now.getFullYear() + 1 : now.getFullYear();
+  const academicEnd = Number(seasonStartDate(now, tz).slice(0, 4)) + 1;
   const labels = ['Senior', 'Junior', 'Sophomore', 'Freshman'];
   return labels[graduationYear - academicEnd] ?? `Class of ${graduationYear}`;
 }

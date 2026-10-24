@@ -154,7 +154,7 @@ export function ClassesView({ data, writes }: { data: ChClassesPage; writes: ChC
   const save = useAction('classes.save', saveAction, (input: ChClassInput, editing: ChClass | null) => ({
     done: editing ? 'Class updated' : 'Class added',
     failed: `Couldn’t ${editing ? 'update' : 'add'} ${label({ code: input.code, name: input.name })}`,
-    hint: 'Nothing was changed. Check your connection and try again.',
+    hint: 'Nothing was changed. Try again.',
     code: 'CH-12001',
   }));
 
@@ -205,7 +205,7 @@ export function ClassesView({ data, writes }: { data: ChClassesPage; writes: ChC
     (ids: string[]) => ({
       done: `${pluralWord(ids.length, 'Class', `All ${ids.length} classes`)} deleted`,
       failed: "Couldn’t delete your classes",
-      hint: 'Nothing was deleted. Check your connection and try again.',
+      hint: 'Nothing was deleted. Try again.',
       code: 'CH-12005',
     }),
     (result, c) => {
@@ -253,7 +253,7 @@ export function ClassesView({ data, writes }: { data: ChClassesPage; writes: ChC
   const doImport = useAction('classes.import', importAction, {
     done: '',
     failed: "Couldn’t import your schedule",
-    hint: 'Nothing was saved. Check your connection and try again.',
+    hint: 'Nothing was saved. Try again.',
     code: 'CH-12004',
   });
 

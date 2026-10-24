@@ -1,11 +1,12 @@
 'use client';
 
-import { changeInk, changeTone, formatSigned, NO_DATA } from '../../lib/format';
+import { changeInk, changeTone, formatSigned } from '../../lib/format';
 import { useGlide } from '../../lib/motion-glide';
 import { sgScale, sgShare } from '../../lib/sg';
 import { useChartPin } from '../../lib/use-chart-pin';
 import { legReadout, type SgLegRow } from './leg-rows';
 import { ChartTable } from '../../ui/charts/ChartTable';
+import { NoData } from '../../ui/NoData';
 
 export type LegBarRow = Pick<SgLegRow, 'label' | 'value'> & Partial<Pick<SgLegRow, 'team' | 'n' | 'se' | 'state' | 'tag'>> & { means: string };
 
@@ -76,7 +77,7 @@ export function LegBars({ rows, baseline, teamName, onOpen }: { rows: LegBarRow[
               {r.team != null && team != null && <u className="ch-lb__team" style={{ left: `${team}%` }} title={`${teamName ?? 'Team'} ${formatSigned(r.team)}`} />}
               {r.value == null && r.tag && <span className="ch-sv-needs">{r.tag}</span>}
             </div>
-            <span className={'ch-lb__v ch-num ' + (muted ? '' : changeInk(r.value))}>{r.value == null ? NO_DATA : formatSigned(r.value)}</span>
+            <span className={'ch-lb__v ch-num ' + (muted ? '' : changeInk(r.value))}>{r.value == null ? <NoData /> : formatSigned(r.value)}</span>
           </div>
         );
       })}

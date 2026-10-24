@@ -2132,10 +2132,10 @@ a.ch-rd-sc:focus-visible {
   .ch-rv.is-phone .ch-rv-debrief__l dd b {
     color: var(--ch-text-primary);
   }
-  .ch-rv.is-phone .ch-rv-debrief__l dd b.is-good {
+  .ch-rv.is-phone .ch-rv-debrief__l dd b.is-gain {
     color: var(--ch-chart-gain);
   }
-  .ch-rv.is-phone .ch-rv-debrief__l dd b.is-bad {
+  .ch-rv.is-phone .ch-rv-debrief__l dd b.is-loss {
     color: var(--ch-chart-loss);
   }
   .ch-rv.is-phone .ch-rv-debrief__why {

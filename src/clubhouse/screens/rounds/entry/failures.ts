@@ -43,7 +43,7 @@ export function entryFailureToast(kind: EntryFailure, { course, reason, run }: E
       return {
         tone: 'error',
         title: `Couldn’t save your round${at}`,
-        body: reasonText(reason) ?? 'Your shots are still on this device. Check your connection, then try again.',
+        body: reasonText(reason) ?? 'Your shots are still on this device. Try again.',
         action: { label: 'Try again', run },
         code: 'CH-11010',
       };

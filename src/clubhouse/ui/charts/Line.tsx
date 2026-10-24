@@ -23,18 +23,36 @@ export interface ChLinePoint {
   at?: number;
 }
 
+/** The narrowest gap two dated points may have, as a share of the even gap (`slotPositions`). */
+export const MIN_SLOT_GAP = 0.5;
+
 /**
  * Where each of `n` points sits across a plot, as a share of its width: evenly by index (the middle of each of `n` slots),
  * or, given every point's time, by real time between the first slot's middle and the last's, so a two-week gap is twice a
  * one-week gap. Times that are all equal, or missing, fall back to the index.
+ *
+ * Every point keeps a slot of its own: two rounds on one day (or nearly so) would otherwise sit on one spot, one hiding the
+ * other from the eye and from the pointer. No gap is narrower than half the even one (`MIN_SLOT_GAP`); the others keep their
+ * real-time proportions, and a line with no such gap is spaced exactly by time. Points on the same time keep their given order.
  */
 export function slotPositions(n: number, at?: ReadonlyArray<number | null | undefined>): number[] {
   const even = Array.from({ length: n }, (_, i) => (i + 0.5) / Math.max(n, 1));
   if (!at || n < 2 || at.length !== n || at.some((t) => t == null || !Number.isFinite(t))) return even;
-  const t0 = Math.min(...(at as number[]));
-  const t1 = Math.max(...(at as number[]));
+  const times = at as number[];
+  const t0 = Math.min(...times);
+  const t1 = Math.max(...times);
   if (t1 === t0) return even;
-  return (at as number[]).map((t) => (0.5 + (n - 1) * ((t - t0) / (t1 - t0))) / n);
+  const order = times.map((t, i) => [t, i] as const).sort((a, b) => a[0] - b[0] || a[1] - b[1]);
+  const floor = MIN_SLOT_GAP / (n - 1);
+  const gaps = order.slice(1).map(([t], k) => Math.max((t - order[k]![0]) / (t1 - t0), floor));
+  const total = gaps.reduce((s, g) => s + g, 0);
+  const out = new Array<number>(n);
+  let run = 0;
+  order.forEach(([, i], k) => {
+    if (k > 0) run += gaps[k - 1]! / total;
+    out[i] = (0.5 + (n - 1) * run) / n;
+  });
+  return out;
 }
 
 /** Room for the value ticks at the left; without them the line runs nearly edge to edge. */

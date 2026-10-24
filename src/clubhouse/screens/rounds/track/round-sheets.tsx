@@ -386,7 +386,7 @@ export function SubmitOverlay({
             <h2 id="ch-rt-subm-t" ref={title} tabIndex={-1} data-ch-code="CH-11005">
               The round didn&rsquo;t post
             </h2>
-            <span className="ch-rt-subm__m">{error ?? 'It’s saved on this device. Check your connection, then try again.'}</span>
+            <span className="ch-rt-subm__m">{error ?? 'It’s saved on this device. Try again.'}</span>
             <Button variant="primary" size="lg" onClick={onRetry}>Try again</Button>
             {onGoBack && (
               <Button variant="ghost" onClick={onGoBack}>Go back</Button>

@@ -48,11 +48,11 @@ const FORM_WORD: Record<ChRosterPlayer['form'], string> = {
 
 /**
  * The note under a player's name: their availability word when they are injured or away ("Injured", plain ink: no
- * colour of its own), else their "needs a look" reason when there is one (amber for a warning, green for a good run),
+ * colour of its own), else their "needs a look" reason when there is one (amber for a quiet spell or scores rising, green for a good run),
  * otherwise their form in a word. The form is left out when season stats didn't load, so a missing read never looks
  * like "no rounds".
  */
-export function rowNote(p: ChRosterPlayer, statsError: boolean): { text: string; tone: 'warning' | 'positive' | null } | null {
+export function rowNote(p: ChRosterPlayer, statsError: boolean): { text: string; tone: NonNullable<ChRosterPlayer['attention']>['tone'] | null } | null {
   const away = availabilityLine(p);
   if (away) return { text: away, tone: null };
   if (p.attention) return { text: p.attention.text, tone: p.attention.tone };
