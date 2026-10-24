@@ -30,6 +30,11 @@ class GolfBridgeViewController: CAPBridgeViewController {
     private var installedSwipeFlag: Bool?
     private static let navMessageName = "helmNav"
     private static let swipeFlagMarker = "/* helm:nativeSwipe */"
+    /// C4: iOS Reduce Transparency, mirrored onto the page as `html[data-reduce-transparency]` so Clubhouse turns its
+    /// glass solid (src/clubhouse/styles/tokens.css). WebKit has no `prefers-reduced-transparency`, so the app says it.
+    private static let reduceTransparencyMarker = "/* helm:reduceTransparency */"
+    private var installedReduceTransparency: Bool?
+    private var reduceTransparencyObserver: NSObjectProtocol?
 
     /// UserDefaults key holding the CFBundleVersion that last cleared the web cache.
     private static let cacheClearedBuildKey = "HelmWebCacheClearedForBuild"
@@ -54,6 +59,28 @@ class GolfBridgeViewController: CAPBridgeViewController {
         webView?.configuration.userContentController.add(
             HelmNavMessageHandler(owner: self), name: Self.navMessageName)
         applySwipeBack()
+        applyReduceTransparency()
+        reduceTransparencyObserver = NotificationCenter.default.addObserver(
+            forName: UIAccessibility.reduceTransparencyStatusDidChangeNotification, object: nil, queue: .main
+        ) { [weak self] _ in self?.applyReduceTransparency() }
+    }
+
+    deinit {
+        if let observer = reduceTransparencyObserver { NotificationCenter.default.removeObserver(observer) }
+    }
+
+    /// Tells the page now, and installs the value for the next page load (a document-start script).
+    private func applyReduceTransparency() {
+        let on = UIAccessibility.isReduceTransparencyEnabled
+        webView?.evaluateJavaScript(Self.reduceTransparencySource(on), completionHandler: nil)
+        guard installedReduceTransparency != on else { return }
+        replaceUserScript(marker: Self.reduceTransparencyMarker, source: Self.reduceTransparencySource(on))
+        installedReduceTransparency = on
+    }
+
+    private static func reduceTransparencySource(_ on: Bool) -> String {
+        let set = on ? "setAttribute('data-reduce-transparency', '')" : "removeAttribute('data-reduce-transparency')"
+        return "\(reduceTransparencyMarker) document.documentElement && document.documentElement.\(set);"
     }
 
     fileprivate func setOverlayOpen(_ open: Bool) {
@@ -78,17 +105,21 @@ class GolfBridgeViewController: CAPBridgeViewController {
     /// WKUserContentController cannot remove one script, so every script but
     /// ours (Capacitor's bridge, the viewport fix) is put back in order.
     private func installSwipeFlagScript(_ nativeSwipe: Bool) {
-        guard installedSwipeFlag != nativeSwipe,
-              let controller = webView?.configuration.userContentController else { return }
-        let kept = controller.userScripts.filter { !$0.source.hasPrefix(Self.swipeFlagMarker) }
+        guard installedSwipeFlag != nativeSwipe, webView != nil else { return }
+        replaceUserScript(marker: Self.swipeFlagMarker, source: "\(Self.swipeFlagMarker) window.__helmNativeSwipe = \(nativeSwipe);")
+        installedSwipeFlag = nativeSwipe
+    }
+
+    /// Replaces the document-start script that starts with `marker`. WKUserContentController cannot remove one script, so
+    /// every other script (Capacitor's bridge, the viewport fix, the other flag) is put back in order.
+    private func replaceUserScript(marker: String, source: String) {
+        guard let controller = webView?.configuration.userContentController else { return }
+        let kept = controller.userScripts.filter { !$0.source.hasPrefix(marker) }
         controller.removeAllUserScripts()
         for script in kept {
             controller.addUserScript(script)
         }
-        let source = "\(Self.swipeFlagMarker) window.__helmNativeSwipe = \(nativeSwipe);"
-        let script = WKUserScript(source: source, injectionTime: .atDocumentStart, forMainFrameOnly: true)
-        controller.addUserScript(script)
-        installedSwipeFlag = nativeSwipe
+        controller.addUserScript(WKUserScript(source: source, injectionTime: .atDocumentStart, forMainFrameOnly: true))
     }
 
     /// Round entry: new round and continue round (FairwayDashboardShell
