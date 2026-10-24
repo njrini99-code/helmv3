@@ -45,6 +45,7 @@ import { PrefetchKind } from 'next/dist/client/components/router-reducer/router-
 import type { ContextType } from 'react';
 import { resetPrefetchTabsForTests } from '../shell/use-prefetch-tabs';
 import { teamPlayerHref } from '../screens/stats/links';
+import { unsignedTones } from './_tone-sign';
 
 const code = (c: string) => document.querySelector(`[data-ch-code="${c}"]`);
 async function expectCode(c: string, text?: RegExp) {
@@ -665,6 +666,14 @@ describe('Stats team · phone (v2, Coach - Stats - Mobile.html)', () => {
     expect(line().classList.contains('is-flat')).toBe(true);
     view.rerender(tree(stats({ daysHalves: null })));
     expect(line().classList.contains('is-flat')).toBe(true);
+  });
+
+  it('a toned figure on the team page carries a sign or a word; only the phone putting rates are still colour alone (row 48, CONS-20)', async () => {
+    wrap(stats());
+    await waitFor(() => expect(document.querySelector('.ch-stm .ch-stm-leg__v')).not.toBeNull());
+    // The phone's make rates below the Tour (StatsTeamPhone Putting) are amber with no word yet: may only fall, toward none.
+    expect(unsignedTones().filter((t) => !/^b\.ch-num ch-loss :: \d+%$/.test(t))).toEqual([]);
+    expect(unsignedTones().length).toBeLessThanOrEqual(4);
   });
 
   it('a phone window change keeps the legs and the rank mounted, so their bars glide instead of being redrawn (B9)', async () => {

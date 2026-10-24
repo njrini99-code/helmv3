@@ -45,6 +45,7 @@ import { resolveClubhouseTeam } from '../routes/team';
 import { StatsPlayer } from '../screens/stats/StatsPlayer';
 import { ClubhouseStatsRoute, NotOnTeam, StatsNoTeam } from '../routes/stats';
 import { ToastProvider } from '../ui/Toast';
+import { unsignedTones } from './_tone-sign';
 import { CrumbProvider, useCrumbTrail } from '../shell/crumbs';
 import { PhoneChromeProvider, usePhoneChromeState } from '../shell/phone-chrome';
 import { PREVIEW_PLAYER, PREVIEW_PLAYER_EARLY, PREVIEW_READS_FAILED } from '../preview/fixtures-stats';
@@ -1475,4 +1476,19 @@ describe('Stats player · tests', () => {
     const ids = ['50101', '50102', '50103', '50104', '50611', '50803', '50804', '50805', '50806', '50901', '51201', '51202', '51401', '51501', '51901', '52001', '52101', '52301', '52401'];
     expect(ids.filter((id) => !mine.includes(id))).toEqual([]);
   });
+});
+
+/**
+ * Row 48 (CONS-20): a toned figure carries a sign or a word. The profile still paints some rates against the Tour in colour alone
+ * (Game detail's figures and table, Overview's zone reads); these counts may only fall, toward none.
+ */
+describe('toned figures say which way (row 48)', () => {
+  const ALLOWED: Record<string, number> = { overview: 8, game: 29, rounds: 1, dev: 0 };
+  for (const [tab, most] of Object.entries(ALLOWED)) {
+    it(`${tab}: at most ${most} figures in colour alone`, async () => {
+      wrap(<StatsPlayer data={player()} coachId="c1" initialTab={tab} />);
+      await act(async () => {});
+      expect(unsignedTones().length).toBeLessThanOrEqual(most);
+    });
+  }
 });

@@ -490,7 +490,8 @@ function Putting({ data, covered }: { data: ChTeamStats; covered: boolean }) {
       <div className="ch-stm-putt ch-stm-group">
         {bands.map((b) => {
           const rate = b.attempts ? (b.made / b.attempts) * 100 : null;
-          const low = rate != null && b.bench != null && b.attempts >= 10 && rate < b.bench;
+          // Below the Tour as the two print (whole percents): 69.6 against 70 is level, never amber (A2).
+          const low = rate != null && b.bench != null && b.attempts >= 10 && Math.round(rate) < Math.round(b.bench);
           return (
             <div key={b.label} className="ch-stm-putt__r">
               <span className="ch-num">{b.label}</span>
