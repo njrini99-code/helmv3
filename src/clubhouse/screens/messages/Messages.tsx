@@ -5,6 +5,9 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useGolfConversations, useGolfMessages, type GolfConversationWithMeta } from '@/hooks/golf/use-golf-messages';
 import { MESSAGE_REACTIONS, summarizeReactions, useMessageReactions } from '@/hooks/golf/use-message-reactions';
 import { useMessageAttachments } from '@/hooks/golf/use-message-attachments';
+import { useMessageResponses } from '@/hooks/golf/use-message-responses';
+import { encodeChoice, parsePollPayload, tallyPoll } from '@/lib/golf/message-polls';
+import { closeGolfPoll, sendGolfPoll } from '@/app/golf/actions/message-polls';
 import {
   addGolfGroupMember,
   createGolfConversation,
@@ -51,6 +54,14 @@ const KEY_BY_EMOJI = Object.fromEntries(MESSAGE_REACTIONS.map((r) => [r.emoji, r
  * the Clubhouse view. Nothing about who can message whom changes here; the
  * actions and RLS decide, and this screen reports what they say.
  */
+/**
+ * A poll's plain-text copy is several lines (pollFallbackText); the inbox row shows its first, "Poll: Which van?". The row
+ * has no message kind, so a poll is known by its whole fallback shape, not its first word: an ordinary message that
+ * starts "Poll: " keeps its text.
+ */
+const railText = (text: string) =>
+  text.startsWith('Poll: ') && text.includes('\n') && text.trimEnd().endsWith('\nVote in GolfHelm.') ? text.split('\n')[0]! : text;
+
 export function Messages({ data }: { data: ChMessagesData }) {
   const hours = useChClock();
   const router = useRouter();
@@ -94,7 +105,7 @@ export function Messages({ data }: { data: ChMessagesData }) {
           unread: c.unread_count ?? 0,
           lastAt: c.last_message?.created_at ?? c.updated_at ?? null,
           lastSenderId: c.last_message?.sender_id ?? null,
-          lastText: decodeMessageContent(c.last_message?.content ?? ''),
+          lastText: railText(decodeMessageContent(c.last_message?.content ?? '')),
           creatorId: c.creator_id ?? null,
         };
       }),
@@ -377,9 +388,15 @@ export function Messages({ data }: { data: ChMessagesData }) {
           deleted: !!m.is_deleted,
           hasAttachments: !!m.has_attachments,
           replyToId: m.reply_to_id ?? null,
+          // A poll whose payload doesn't parse draws as its plain-text copy (`content`), never as a broken card.
+          poll: m.kind === 'poll' && !m.is_deleted ? parsePollPayload(m.payload) : null,
         })),
     [msgs.messages, msgs.currentUserId, selectedId, data.viewerUserId],
   );
+
+  // Votes on the thread's polls (P-2): one read and one realtime channel for all of them, as reactions do.
+  const pollIds = useMemo(() => chMsgs.filter((m) => m.poll && !m.failed).map((m) => m.id), [chMsgs]);
+  const responses = useMessageResponses(selectedId ?? '', pollIds, data.viewerUserId);
 
   const reactionMap = useMemo(() => {
     const out = new Map<string, ChReaction[]>();
@@ -687,6 +704,41 @@ export function Messages({ data }: { data: ChMessagesData }) {
       });
     },
     attachments: loadAttachments,
+    polls: {
+      tally: (messageId, poll) => (responses.ready ? tallyPoll(poll, responses.rows, messageId, data.viewerUserId) : null),
+      vote: (messageId, poll, optionIds) => {
+        if (responses.pending) return;
+        const choice = optionIds.length ? encodeChoice(poll, optionIds) : null;
+        if (optionIds.length && !choice) return;
+        void attempt('vote', { failed: 'Your vote wasn’t saved', hint: 'Try again in a moment.', code: 'CH-7026' }, async () => {
+          if ((await responses.vote(messageId, choice)) === false) throw new Error('Vote was not saved');
+        });
+      },
+      pending: responses.pending,
+      error: responses.error,
+      retry: () => void responses.refresh(),
+      send: async (conversationId, draft, clientId) => {
+        let reason = 'Try again in a moment.';
+        const ok = await attempt('sendPoll', { failed: 'Couldn’t send the poll', hint: 'Try again in a moment.', code: 'CH-7028' }, async () => {
+          const res = await sendGolfPoll(conversationId, draft, clientId);
+          if (!res.success) {
+            reason = res.error;
+            return false;
+          }
+          // The realtime insert lands the card; a refetch covers a channel that is reconnecting.
+          void msgs.refetch();
+          void refetch();
+          return true;
+        });
+        return ok ? { ok: true } : { ok: false, error: reason };
+      },
+      close: (messageId) =>
+        attempt('closePoll', { failed: 'Couldn’t close the poll', hint: 'Try again in a moment.', code: 'CH-7027' }, async () => {
+          const res = await closeGolfPoll(messageId);
+          if (!res.success) throw new Error(res.error);
+          void msgs.refetch();
+        }),
+    },
     members,
     membersError,
     retryMembers: () => setMembersAttempt((n) => n + 1),

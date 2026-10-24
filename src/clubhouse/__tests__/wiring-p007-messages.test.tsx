@@ -47,6 +47,13 @@ const live = vi.hoisted(() => ({
 }));
 vi.mock('@/hooks/golf/use-golf-messages', () => ({ useGolfConversations: () => live.convs, useGolfMessages: () => live.msgs }));
 vi.mock('@/hooks/golf/use-message-reactions', async (orig) => ({ ...(await orig<object>()), useMessageReactions: () => live.reactions }));
+const polls = vi.hoisted(() => ({
+  responses: { rows: [] as unknown[], error: null as string | null, ready: true, pending: null as string | null, refresh: vi.fn(async () => {}), vote: vi.fn(async (_messageId: string, _choice: string | null) => true) },
+  sendGolfPoll: vi.fn(async () => ({ success: true as const, id: 'poll-1' })),
+  closeGolfPoll: vi.fn(async () => ({ success: true as const, id: 'poll-1' })),
+}));
+vi.mock('@/hooks/golf/use-message-responses', () => ({ useMessageResponses: () => polls.responses }));
+vi.mock('@/app/golf/actions/message-polls', () => ({ sendGolfPoll: polls.sendGolfPoll, closeGolfPoll: polls.closeGolfPoll }));
 vi.mock('@/hooks/golf/use-message-attachments', () => ({ useMessageAttachments: () => live.files }));
 const a = vi.hoisted(() => ({
   createGolfConversation: vi.fn(),

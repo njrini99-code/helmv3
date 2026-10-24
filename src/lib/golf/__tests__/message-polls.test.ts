@@ -1,0 +1,195 @@
+import { describe, expect, it } from 'vitest';
+import {
+  buildPollPayload,
+  decodeChoice,
+  encodeChoice,
+  isPollClosed,
+  parsePollPayload,
+  pollFallbackText,
+  pollShare,
+  pollVoterIds,
+  pollWaiting,
+  tallyPoll,
+  type Poll,
+} from '@/lib/golf/message-polls';
+
+const NOW = Date.parse('2026-10-24T12:00:00Z');
+
+const draft = (over: Partial<Parameters<typeof buildPollPayload>[0]> = {}) => ({
+  question: 'Which van?',
+  options: ['Van A', 'Van B', ''],
+  multi: false,
+  closesAt: null,
+  ...over,
+});
+
+const poll = (over: Partial<Poll> = {}): Poll => ({
+  question: 'Which days work?',
+  options: [
+    { id: 'o1', label: 'Tue' },
+    { id: 'o2', label: 'Wed' },
+    { id: 'o3', label: 'Thu' },
+  ],
+  multi: false,
+  closesAt: null,
+  closedAt: null,
+  ...over,
+});
+
+describe('buildPollPayload', () => {
+  it('drops the spare empty row and numbers the options', () => {
+    const built = buildPollPayload(draft(), NOW);
+    expect(built).toEqual({
+      ok: true,
+      payload: {
+        v: 1,
+        question: 'Which van?',
+        options: [
+          { id: 'o1', label: 'Van A' },
+          { id: 'o2', label: 'Van B' },
+        ],
+        multi: false,
+        closes_at: null,
+        closed_at: null,
+      },
+    });
+  });
+
+  it('collapses spaces in the question and labels', () => {
+    const built = buildPollPayload(draft({ question: '  Which   van? ', options: [' Van  A', 'Van B'] }), NOW);
+    expect(built.ok && built.payload.question).toBe('Which van?');
+    expect(built.ok && built.payload.options[0]?.label).toBe('Van A');
+  });
+
+  it('names what is wrong', () => {
+    expect(buildPollPayload(draft({ question: '   ' }), NOW)).toEqual({ ok: false, problem: 'question' });
+    expect(buildPollPayload(draft({ question: 'x'.repeat(141) }), NOW)).toEqual({ ok: false, problem: 'question' });
+    expect(buildPollPayload(draft({ options: ['Only one'] }), NOW)).toEqual({ ok: false, problem: 'options' });
+    expect(buildPollPayload(draft({ options: ['a', 'b', 'c', 'd', 'e', 'f', 'g'] }), NOW)).toEqual({ ok: false, problem: 'options' });
+    expect(buildPollPayload(draft({ options: ['a', 'x'.repeat(61)] }), NOW)).toEqual({ ok: false, problem: 'options' });
+    expect(buildPollPayload(draft({ options: ['Van A', 'van  a'] }), NOW)).toEqual({ ok: false, problem: 'duplicate' });
+    expect(buildPollPayload(draft({ closesAt: '2026-10-24T11:59:00Z' }), NOW)).toEqual({ ok: false, problem: 'closes' });
+    expect(buildPollPayload(draft({ closesAt: 'tomorrow' }), NOW)).toEqual({ ok: false, problem: 'closes' });
+  });
+
+  it('keeps a future end time as ISO', () => {
+    const built = buildPollPayload(draft({ closesAt: '2026-10-25T12:00:00Z', multi: true }), NOW);
+    expect(built.ok && built.payload.closes_at).toBe('2026-10-25T12:00:00.000Z');
+    expect(built.ok && built.payload.multi).toBe(true);
+  });
+});
+
+describe('parsePollPayload', () => {
+  it('reads back what buildPollPayload wrote', () => {
+    const built = buildPollPayload(draft({ closesAt: '2026-10-25T12:00:00Z' }), NOW);
+    if (!built.ok) throw new Error('draft should build');
+    expect(parsePollPayload(built.payload)).toEqual({
+      question: 'Which van?',
+      options: [
+        { id: 'o1', label: 'Van A' },
+        { id: 'o2', label: 'Van B' },
+      ],
+      multi: false,
+      closesAt: '2026-10-25T12:00:00.000Z',
+      closedAt: null,
+    });
+  });
+
+  it('refuses anything it cannot draw honestly', () => {
+    const good = { v: 1, question: 'Q', options: [{ id: 'o1', label: 'A' }, { id: 'o2', label: 'B' }] };
+    expect(parsePollPayload(null)).toBeNull();
+    expect(parsePollPayload('poll')).toBeNull();
+    expect(parsePollPayload({ ...good, v: 2 })).toBeNull();
+    expect(parsePollPayload({ ...good, question: '' })).toBeNull();
+    expect(parsePollPayload({ ...good, options: [{ id: 'o1', label: 'A' }] })).toBeNull();
+    expect(parsePollPayload({ ...good, options: [{ id: 'o1', label: 'A' }, { id: 'o1', label: 'B' }] })).toBeNull();
+    expect(parsePollPayload({ ...good, options: [{ id: 'o1', label: 'A' }, { id: 'x9', label: 'B' }] })).toBeNull();
+    expect(parsePollPayload({ ...good, options: [{ id: 'o1', label: 'A' }, null] })).toBeNull();
+    expect(parsePollPayload(good)).not.toBeNull();
+  });
+
+  it('treats a bad date as no date', () => {
+    const parsed = parsePollPayload({ v: 1, question: 'Q', options: [{ id: 'o1', label: 'A' }, { id: 'o2', label: 'B' }], closes_at: 'soon' });
+    expect(parsed?.closesAt).toBeNull();
+  });
+});
+
+describe('pollFallbackText', () => {
+  it('numbers the options for readers that only see content', () => {
+    expect(pollFallbackText({ question: 'Which van?', options: [{ id: 'o1', label: 'Van A' }, { id: 'o2', label: 'Van B' }] })).toBe(
+      'Poll: Which van?\n1. Van A\n2. Van B\nVote in GolfHelm.',
+    );
+  });
+});
+
+describe('encodeChoice and decodeChoice', () => {
+  it('keeps option order and refuses two picks on a one-answer poll', () => {
+    expect(encodeChoice(poll(), ['o2'])).toBe('o2');
+    expect(encodeChoice(poll(), ['o2', 'o1'])).toBeNull();
+    expect(encodeChoice(poll({ multi: true }), ['o3', 'o1'])).toBe('o1,o3');
+    expect(encodeChoice(poll(), ['o9'])).toBeNull();
+    expect(encodeChoice(poll(), [])).toBeNull();
+  });
+
+  it('ignores unknown ids and trims a one-answer poll to one', () => {
+    expect(decodeChoice(poll({ multi: true }), 'o3,o9,o1')).toEqual(['o1', 'o3']);
+    expect(decodeChoice(poll(), 'o2,o3')).toEqual(['o2']);
+    expect(decodeChoice(poll(), 'nope')).toEqual([]);
+  });
+});
+
+describe('tallyPoll', () => {
+  const rows = [
+    { message_id: 'm1', user_id: 'me', choice: 'o1,o2' },
+    { message_id: 'm1', user_id: 'ana', choice: 'o2' },
+    { message_id: 'm1', user_id: 'ben', choice: 'o2,o3' },
+    { message_id: 'm1', user_id: 'ben', choice: 'o1' },
+    { message_id: 'm2', user_id: 'cal', choice: 'o1' },
+    { message_id: 'm1', user_id: 'dee', choice: 'o9' },
+  ];
+
+  it('counts each person once and only for this poll', () => {
+    const t = tallyPoll(poll({ multi: true }), rows, 'm1', 'me');
+    expect(t.counts).toEqual({ o1: 1, o2: 3, o3: 1 });
+    expect(t.voters).toEqual({ o1: ['me'], o2: ['me', 'ana', 'ben'], o3: ['ben'] });
+    expect(t.voterCount).toBe(3);
+    expect(t.mine).toEqual(['o1', 'o2']);
+    expect(t.leaders).toEqual(['o2']);
+  });
+
+  it('shares bars by voters, not votes', () => {
+    const t = tallyPoll(poll({ multi: true }), rows, 'm1', 'me');
+    expect(pollShare(t, 'o2')).toBe(1);
+    expect(pollShare(t, 'o1')).toBeCloseTo(1 / 3);
+  });
+
+  it('has no leader and no share before anyone votes', () => {
+    const t = tallyPoll(poll(), [], 'm1', 'me');
+    expect(t.leaders).toEqual([]);
+    expect(t.voterCount).toBe(0);
+    expect(pollShare(t, 'o1')).toBe(0);
+  });
+
+  it('lets ties share the lead', () => {
+    const t = tallyPoll(poll(), [
+      { message_id: 'm1', user_id: 'a', choice: 'o1' },
+      { message_id: 'm1', user_id: 'b', choice: 'o3' },
+    ], 'm1', 'me');
+    expect(t.leaders).toEqual(['o1', 'o3']);
+  });
+
+  it('lists who has and has not voted', () => {
+    const t = tallyPoll(poll({ multi: true }), rows, 'm1', 'me');
+    expect(pollVoterIds(t).sort()).toEqual(['ana', 'ben', 'me']);
+    expect(pollWaiting(t, ['me', 'ana', 'ben', 'cal', 'dee'])).toEqual(['cal', 'dee']);
+  });
+});
+
+describe('isPollClosed', () => {
+  it('closes early, at its end time, or never', () => {
+    expect(isPollClosed(poll(), NOW)).toBe(false);
+    expect(isPollClosed(poll({ closedAt: '2026-10-24T11:00:00Z' }), NOW)).toBe(true);
+    expect(isPollClosed(poll({ closesAt: '2026-10-24T12:00:00Z' }), NOW)).toBe(true);
+    expect(isPollClosed(poll({ closesAt: '2026-10-24T12:00:01Z' }), NOW)).toBe(false);
+  });
+});

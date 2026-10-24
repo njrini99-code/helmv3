@@ -782,7 +782,11 @@ CREATE POLICY "golf_message_responses_select" ON "public"."golf_message_response
    FROM "public"."golf_messages" "m"
   WHERE (("m"."id" = "golf_message_responses"."message_id") AND "public"."golf_conversation_has_me"("m"."conversation_id")))));
 
-CREATE POLICY "golf_message_responses_update" ON "public"."golf_message_responses" FOR UPDATE TO "authenticated" USING (("user_id" = ( SELECT "auth"."uid"() AS "uid"))) WITH CHECK (("user_id" = ( SELECT "auth"."uid"() AS "uid")));
+CREATE POLICY "golf_message_responses_update" ON "public"."golf_message_responses" FOR UPDATE TO "authenticated" USING ((("user_id" = ( SELECT "auth"."uid"() AS "uid")) AND (EXISTS ( SELECT 1
+   FROM "public"."golf_messages" "m"
+  WHERE (("m"."id" = "golf_message_responses"."message_id") AND "public"."golf_conversation_has_me"("m"."conversation_id")))))) WITH CHECK ((("user_id" = ( SELECT "auth"."uid"() AS "uid")) AND (EXISTS ( SELECT 1
+   FROM "public"."golf_messages" "m"
+  WHERE (("m"."id" = "golf_message_responses"."message_id") AND "public"."golf_conversation_has_me"("m"."conversation_id"))))));
 
 CREATE POLICY "golf_messages_delete" ON "public"."golf_messages" FOR DELETE TO "authenticated" USING (("sender_id" = ( SELECT "auth"."uid"() AS "uid")));
 

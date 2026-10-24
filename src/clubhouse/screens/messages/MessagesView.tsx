@@ -56,6 +56,7 @@ import type { ChClock } from "../../lib/clock-cookie";
 import { useThreadAnchor } from "./use-thread-anchor";
 import { useComposerInset } from "./composer-inset";
 import { useFocusMessage } from "./use-focus-message";
+import { PollButton, PollCard, type ChPollsApi } from "./polls";
 import { useChReducedMotion } from "../../lib/reduced-motion";
 import { Avatar } from "../../ui/Avatar";
 import { Badge } from "../../ui/Badge";
@@ -261,6 +262,8 @@ export interface ChMessagesApi {
     urgent: boolean;
     ack: boolean;
   }) => Promise<boolean>;
+  /** Polls in group threads (P-2): the votes, voting, sending and closing. Absent where polls aren't offered. */
+  polls?: ChPollsApi;
 }
 
 export const personOf = (api: ChMessagesApi, userId: string) =>
@@ -976,10 +979,14 @@ export function Bubble({
         <div className="ch-ms-msg__line">
           <div className="ch-ms-msg__stack" {...press} {...rightClick}>
             {m.replyToId && <ReplyQuote api={api} replyToId={m.replyToId} />}
-            {m.text && (
-              <div className="ch-ms-bub">
-                <MessageText text={m.text} />
-              </div>
+            {m.poll ? (
+              <PollCard api={api} messageId={m.id} poll={m.poll} mine={m.mine} />
+            ) : (
+              m.text && (
+                <div className="ch-ms-bub">
+                  <MessageText text={m.text} />
+                </div>
+              )
             )}
             {m.hasAttachments && (
               <Attachments load={api.attachments} id={m.id} mine={m.mine} />
@@ -1023,7 +1030,7 @@ export function Bubble({
                   align={m.mine ? "end" : "start"}
                   items={[
                     // An attachment-only message has no text to edit (as the phone's sheet: wave 5 #8).
-                    ...(m.text ? [{ label: "Edit", icon: Pencil, onSelect: onEdit }] : []),
+                    ...(m.text && !m.poll ? [{ label: "Edit", icon: Pencil, onSelect: onEdit }] : []),
                     {
                       label: "Delete",
                       icon: Trash2,
@@ -1512,6 +1519,7 @@ export function Composer({
           disabled={unconfirmed || checking || checkFailed || unavailable}
           onPick={(picked) => { setFiles(addFiles(filesRef.current, picked)); setMissingFiles((names) => names.filter((name) => !picked.some((file) => file.name === name))); }}
         />
+        <PollButton api={api} conv={conv} disabled={unconfirmed || checking || checkFailed || unavailable} />
         <textarea
           ref={ta}
           rows={1}

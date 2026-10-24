@@ -212,7 +212,7 @@ export type MessageWithReadStatus = GolfMessage;
  * thread would not stay where scroll-to-bottom had just put it.
  */
 export function applyRealtimeMessageUpdate<
-  T extends { id: string; content: string; edited_at: string | null; is_deleted?: boolean | null },
+  T extends { id: string; content: string; edited_at: string | null; is_deleted?: boolean | null; payload?: unknown },
 >(prev: T[], updated: T): T[] {
   if (updated.is_deleted) {
     if (!prev.some((msg) => msg.id === updated.id)) return prev;
@@ -223,12 +223,20 @@ export function applyRealtimeMessageUpdate<
   if (idx === -1) return prev;
 
   const current = prev[idx]!;
-  if (current.content === updated.content && current.edited_at === updated.edited_at) {
+  // A poll's sender closing it changes only `payload` (closeGolfPoll), so it is compared too; without it the card
+  // would keep taking votes on every screen but the sender's until a refetch.
+  const payloadChanged = 'payload' in updated && JSON.stringify(current.payload ?? null) !== JSON.stringify(updated.payload ?? null);
+  if (current.content === updated.content && current.edited_at === updated.edited_at && !payloadChanged) {
     return prev;
   }
 
   const next = prev.slice();
-  next[idx] = { ...current, content: updated.content, edited_at: updated.edited_at };
+  next[idx] = {
+    ...current,
+    content: updated.content,
+    edited_at: updated.edited_at,
+    ...(payloadChanged ? { payload: updated.payload } : {}),
+  };
   return next;
 }
 
@@ -620,7 +628,12 @@ export function useGolfMessages(
       // conversation was opened. That is the "Can't see pics" report from the
       // team chat: the sender saw it send, the recipients opened the thread
       // later and saw nothing.
-      .select('id, conversation_id, sender_id, content, read, has_attachments, created_at, is_deleted, edited_at, reply_to_id')
+      //
+      // `kind` and `payload` are required for the same reason: a poll (P-2) is
+      // `kind = 'poll'` with its question in `payload`. Without them a poll drew
+      // as a card only for whoever had the thread open when it arrived, and as
+      // its plain-text copy for everyone who opened the thread later.
+      .select('id, conversation_id, sender_id, content, read, has_attachments, created_at, is_deleted, edited_at, reply_to_id, kind, payload')
       .eq('conversation_id', conversationId)
       .eq('is_deleted', false)
       .order('created_at', { ascending: false })
