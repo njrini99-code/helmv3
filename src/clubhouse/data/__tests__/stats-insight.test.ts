@@ -24,13 +24,18 @@ describe('row 70: the insight-first card states only the changes that pass the o
     expect(statsInsight([ch({ delta: -0.3, se: 0.4 }), ch({ delta: 0.04, se: 0.001 }), ch({ delta: 3, se: null })])).toEqual({ state: 'none', against: 'vs previous 10' });
   });
 
+  it('a rate’s change carries its unit, percentage points; a stroke figure’s does not (Round 3 review)', () => {
+    const out = statsInsight([ch({ subject: 'Greens in regulation', delta: 6, se: 2, lowerIsBetter: false, digits: 0, unit: '%' }), ch({ delta: -1.2, se: 0.3 })]);
+    expect(out?.state === 'changes' && out.lines.map((l) => l.figure)).toEqual(['−1.2', '+6 pts']);
+  });
+
   it('nothing to compare draws no card', () => {
     expect(statsInsight([null, null])).toBeNull();
     expect(statsInsight([])).toBeNull();
   });
 
   it('team: from the figures the page draws with a change; a figure with no previous window is left out', () => {
-    const fig = (label: string, delta: number | null, se: number | null, lowerIsBetter: boolean) => ({ label, delta, se, lowerIsBetter, digits: 1 });
+    const fig = (label: string, delta: number | null, se: number | null, lowerIsBetter: boolean) => ({ label, delta, se, lowerIsBetter, digits: 1, unit: '' as const });
     expect(teamInsight([fig('Scoring avg', -1.5, 0.5, true), fig('Putts per round', null, null, true)], 'vs previous 20')).toMatchObject({ state: 'changes', lines: [{ subject: 'Scoring avg', tone: 'is-gain', words: 'Scoring avg, better vs previous 20' }] });
     expect(teamInsight([fig('Scoring avg', null, null, true)], 'vs previous 10')).toBeNull();
   });

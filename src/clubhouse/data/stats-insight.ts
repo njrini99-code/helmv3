@@ -19,13 +19,15 @@ export interface ChInsightChange {
   se: number | null | undefined;
   lowerIsBetter: boolean;
   digits: number;
+  /** '%' for a rate: its change is in percentage points, printed "+3 pts" (the card has no rate beside it to read "+3" against). */
+  unit?: '' | '%';
   /** What the change is against, in the page's words ("vs previous 10"). */
   against: string;
 }
 
 export interface ChInsightLine {
   subject: string;
-  /** The signed change as the page prints it ("−1.2"; a rate's change in points, "+3", as the page prints it). */
+  /** The signed change: "−1.2"; a rate's change in percentage points, "+3 pts". */
   figure: string;
   tone: 'is-gain' | 'is-loss';
   /** "Scoring avg, better vs previous 10". */
@@ -49,7 +51,7 @@ export function statsInsight(changes: ReadonlyArray<ChInsightChange | null>, mos
     state: 'changes',
     lines: toned.slice(0, most).map(({ c, tone }) => ({
       subject: c.subject,
-      figure: formatSigned(c.delta, c.digits),
+      figure: `${formatSigned(c.delta, c.digits)}${c.unit === '%' ? ' pts' : ''}`,
       tone,
       words: `${c.subject}, ${tone === 'is-gain' ? 'better' : 'worse'} ${c.against}`,
     })),
@@ -60,9 +62,9 @@ export function statsInsight(changes: ReadonlyArray<ChInsightChange | null>, mos
  * Team stats: every figure the page draws with a change (the phone hero and figure rows, the desktop trend and tape). Each change is
  * against the previous window (`against`, "vs previous 10"); a figure's own context can name something else ("Tour averages 66%").
  */
-export function teamInsight(figures: ReadonlyArray<Pick<ChFigure, 'label' | 'delta' | 'se' | 'lowerIsBetter' | 'digits'>>, against: string): ChInsight {
+export function teamInsight(figures: ReadonlyArray<Pick<ChFigure, 'label' | 'delta' | 'se' | 'lowerIsBetter' | 'digits' | 'unit'>>, against: string): ChInsight {
   return statsInsight(
-    figures.map((f) => (f.delta == null ? null : { subject: f.label, delta: f.delta, se: f.se, lowerIsBetter: f.lowerIsBetter, digits: f.digits, against })),
+    figures.map((f) => (f.delta == null ? null : { subject: f.label, delta: f.delta, se: f.se, lowerIsBetter: f.lowerIsBetter, digits: f.digits, unit: f.unit, against })),
   );
 }
 
@@ -74,7 +76,7 @@ export function playerInsight(p: { sgChange: ChSgChange; extra: { compare: ChCom
   const against = previousWords(p.filter.last);
   const sg = p.sgChange.delta == null ? null : { subject: 'Strokes gained a round', delta: p.sgChange.delta, se: p.sgChange.se, lowerIsBetter: false, digits: 1, against: p.sgChange.context || against };
   const rows = (p.extra.compare?.rows ?? []).map((r) =>
-    r.last == null || r.previous == null ? null : { subject: r.label, delta: r.last - r.previous, se: r.se, lowerIsBetter: r.lowerIsBetter, digits: r.digits, against },
+    r.last == null || r.previous == null ? null : { subject: r.label, delta: r.last - r.previous, se: r.se, lowerIsBetter: r.lowerIsBetter, digits: r.digits, unit: r.unit, against },
   );
   return statsInsight([sg, ...rows]);
 }

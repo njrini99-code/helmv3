@@ -1318,7 +1318,9 @@ describe('Stats team · what changed (row 70)', () => {
   const agreesWithPage = (box: HTMLElement) => {
     for (const b of box.querySelectorAll('b')) {
       const ink = b.classList.contains('ch-gain') ? /\b(ch-gain|is-gain)\b/ : /\b(ch-loss|is-loss)\b/;
-      const twins = [...document.querySelectorAll('.ch-gain, .ch-loss, .is-gain, .is-loss')].filter((el) => !box.contains(el) && el.textContent?.includes(b.textContent!));
+      // The page prints a rate's change bare beside its rate ("+3"); the card says the unit ("+3 pts").
+      const signed = b.textContent!.replace(/ pts$/, '');
+      const twins = [...document.querySelectorAll('.ch-gain, .ch-loss, .is-gain, .is-loss')].filter((el) => !box.contains(el) && el.textContent?.includes(signed));
       expect(twins.some((el) => ink.test(el.getAttribute('class') ?? '')), `${b.textContent} toned alike below`).toBe(true);
     }
   };
@@ -1330,7 +1332,7 @@ describe('Stats team · what changed (row 70)', () => {
       // Greens +3% (1.25 errors) and the scoring average −0.9 (1.18); strokes gained, putts, scrambling and birdies are inside theirs.
       const box = await waitFor(() => card()!);
       expect(within(box).getByRole('heading').textContent).toBe('What changed');
-      expect([...box.querySelectorAll('p')].map((p) => p.textContent)).toEqual(['+3 Greens in regulation, better vs previous 10', '−0.9 Scoring average, better vs previous 10']);
+      expect([...box.querySelectorAll('p')].map((p) => p.textContent)).toEqual(['+3 pts Greens in regulation, better vs previous 10', '−0.9 Scoring average, better vs previous 10']);
       expect(unsignedTones(box)).toEqual([]);
       agreesWithPage(box);
     });

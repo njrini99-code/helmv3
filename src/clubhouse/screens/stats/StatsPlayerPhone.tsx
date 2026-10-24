@@ -316,7 +316,7 @@ function Figures({ data, readCaveat }: { data: ChPlayerProfile; readCaveat: Reac
             <span className="ch-num">{countWords(w.rounds, w.effRounds)} in this window.</span>
             {/* P005-D6: the chip names what it measures, since it sits away from the SG figure. */}
             {w.sgPerRound != null && d != null && (
-              <SgChangeChip change={data.sgChange} subject="SG a round" code="CH-5310" />
+              <SgChangeChip change={data.sgChange} subject="Change in SG a round" code="CH-5310" />
             )}
           </>
         )}
