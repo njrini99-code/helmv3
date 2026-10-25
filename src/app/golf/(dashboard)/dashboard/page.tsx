@@ -32,6 +32,7 @@ import { CoachHome, CoachHomeNoTeam } from '@/clubhouse/screens/home/CoachHome';
 import { loadPlayerHome } from '@/clubhouse/data/player-home';
 import { PlayerHome, PlayerHomeNoTeam } from '@/clubhouse/screens/home/PlayerHome';
 import { resolveClubhouseTeam } from '@/clubhouse/routes/team';
+import { marksHint } from '@/clubhouse/lib/phone-hint';
 
 export const dynamic = 'force-dynamic';
 
@@ -202,7 +203,7 @@ export default async function GolfDashboardPage({
         // Clubhouse Home: its own loader and screen, no Fairway payload.
         if (clubhouse) {
             if (!teamId) return <CoachHomeNoTeam />;
-            const home = await loadCoachHome({ teamId, coachName: coach.full_name || 'Coach', userId });
+            const home = await loadCoachHome({ teamId, coachName: coach.full_name || 'Coach', userId, coachId: coach.id, marks: await marksHint() });
             return <CoachHome data={home} />;
         }
 
@@ -280,7 +281,7 @@ export default async function GolfDashboardPage({
     if (player && clubhouse) {
         const team = await resolveClubhouseTeam(session);
         if (!team || team.role !== 'player') return <PlayerHomeNoTeam />;
-        const home = await loadPlayerHome({ teamId: team.teamId, playerId: team.playerId, firstName: player.first_name?.trim() || 'there' });
+        const home = await loadPlayerHome({ teamId: team.teamId, playerId: team.playerId, firstName: player.first_name?.trim() || 'there', marks: await marksHint() });
         return <PlayerHome data={home} />;
     }
     if (player) {

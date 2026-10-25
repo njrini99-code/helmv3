@@ -4,6 +4,7 @@ import { loadCalendar, parseNewType, parseView } from '../data/calendar';
 import { Calendar } from '../screens/calendar/Calendar';
 import { CalendarNoTeam } from '../screens/calendar/CalendarNoTeam';
 import { resolveClubhouseTeam } from './team';
+import { marksHint } from '../lib/phone-hint';
 import '../styles/calendar.css';
 
 /**
@@ -43,6 +44,7 @@ export async function ClubhouseCalendarRoute({
     view: parseView(view),
     date,
     event,
+    marks: await marksHint(),
   });
   return <Calendar data={data} initialEvent={event} initialNew={isNew} initialWith={withPlayer} initialType={parseNewType(newType)} live />;
 }

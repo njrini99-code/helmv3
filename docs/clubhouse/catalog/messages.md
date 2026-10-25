@@ -52,13 +52,18 @@ the thread with Retry (CH-7016), and the draft is never lost.
 | CH-7017 | A message's send can't be confirmed | In the thread: "Couldn't confirm this message sent. Check before sending again." + Retry | `Msg` | messages.test › CH-7017 |
 | CH-7018 | Adding someone to a group fails (the group's creator, desktop or phone Details › Add) | "Couldn't add Nora" + "Try again in a moment." Done: "Added Nora to Varsity team" | `attempt('addMember')` | messages.test › CH-7018 |
 | CH-7019 | A coach's new group is created, but a coach picked for it couldn't be added (D-45) | "Group created, but Dan wasn't added" + "Add them from Details." (warning haptic) | `createGroup` | messages.test › CH-7019 |
-| CH-7020 | Copying a message fails (phone, from the long-press sheet) | "Couldn't copy the message" + "Try again in a moment." Done: "Copied" | `PhoneThread` | messages.test › CH-7020 |
+| CH-7020 | Copying a message fails (phone, from the long-press sheet; desktop, from the message menu) | "Couldn't copy the message" + "Try again in a moment." Done: "Copied" | `PhoneThread`, `Bubble` menu | messages.test › CH-7020 |
 | CH-7021 | A shared file won't open (Details › Files, or an announcement's Files) | "Couldn't open Room list · Pinehurst.pdf" + "Try again in a moment."; an announcement file with no stored copy: "That file has no stored copy to open." | `FilesPanel`, `FilesSection`, announcements `openDoc` | messages.test › CH-7021, wiring-p007-messages.test |
 | CH-7022 | Text delivered, attachment metadata refused | "Message sent; attachments not saved". Only unsaved files and the original reply remain; retry sends no copy of delivered text | `sendFiles`, `Composer` | messages.test › CH-7022 |
 | CH-7023 | Attachment send cannot be confirmed | Frozen original text/files/reply, "Couldn’t confirm this send", Retry send; reload restores stored filenames/request identity; queued later draft survives pending Retry and resumes after confirmation | `sendFiles`, `Composer` | messages.test › CH-7023 |
 | CH-7024 | Removing someone from a group fails (the group's creator, desktop or phone Details › Remove) | "Couldn’t remove Eli" + the server's reason, or "They’re still in the group. Try again in a moment." The row comes back. Done: "Removed Eli from Varsity team" | `attempt('removeMember')` | wiring-p007-messages.test › a refusal puts the row back |
 | CH-7025 | Deleting a conversation from your inbox fails | "Couldn’t delete the conversation" + "Try again in a moment." Done: "Conversation deleted" (it had shared mute's CH-7011) | `attempt('deleteConversation')` | messages.test › CH-7025 |
 | CH-7026 | Marking a conversation read or unread from its row (menu or swipe) fails | "Couldn’t mark the conversation read" + "It still shows as unread. Try again in a moment."; the row keeps its old state | `attempt('markRead')` in `Messages.tsx` | messages.test › CH-7026 |
+| CH-7027 | Closing a poll fails (the sender's Close poll, after the confirm) | "Couldn’t close the poll" + the server's reason. The confirm stays open and the poll stays open | `attempt('closePoll')`, `closeGolfPoll` | messages-polls.test › the sender closes it after a confirm |
+| CH-7028 | Sending a poll fails (New poll › Send poll) | A refusal shows its reason under the form and keeps the draft; a send that throws also toasts "Couldn’t send the poll" + "Try again in a moment." A retry of the same draft reuses its id, so it can't post twice | `attempt('sendPoll')`, `sendGolfPoll` | messages-polls.test › a refused send keeps the draft |
+| CH-7029 | A vote on a poll isn't saved (tap a choice in a poll card) | "Your vote wasn’t saved" + "Try again in a moment." The card goes back to the votes the server holds. Also a vote refused because the voter left the group (42501, RLS or the held vote guard) and a choice the poll does not offer (HINT `golf_poll_choice`) | `attempt('vote')`, `useMessageResponses.vote` (reasons `failed`, `member`) | use-message-responses.test › a refused vote goes back; messages.test › CH-7030 deleted, CH-7029 former member |
+| CH-7030 | A vote is refused because the poll ended between the tap and the write (only with the held vote guard, OQ-68) | "Voting has ended" + "Your vote wasn’t counted. The result is final." ("This poll was deleted." when its sender deleted it meanwhile). The viewer's own row goes back to what the server holds | `attempt('vote')`, `useMessageResponses.vote` (reasons `closed`, `deleted`; HINT `golf_poll_closed`, `golf_poll_deleted`) | messages.test › CH-7030 |
+| CH-7031 | An edited poll is sent after a send that threw, and the earlier copy had landed after all | "An earlier copy of this poll was already sent" + "Check the thread. Send this version too?", with Send this version (a new id) and Done (closes and clears the draft). Nothing is posted until the person chooses | `PollSheet`, `sendGolfPoll(priorClientId)` | messages-polls.test › CH-7031 |
 
 ## 71xx Validation
 
@@ -92,6 +97,7 @@ the thread with Retry (CH-7016), and the draft is never lost.
 | CH-7215 | The Add sheet's team list doesn't load | "The team list didn’t load" Try again | `AddMembersModal` | messages.test › CH-7215 |
 | CH-7216 | A conversation's messages don't refresh while an earlier copy is shown | The messages stay; above them "This conversation may be out of date" + "It didn’t refresh…" Try again | `Thread`, `PhoneThread` | messages.test › CH-7216 |
 | CH-7217 | Pending attachment recovery cannot be checked | "Couldn’t check a pending send" + "Try again before sending another message." Try again; ordinary Send stays locked | `Composer` | messages.test › CH-7217 |
+| CH-7218 | The Seen by list couldn't load (P-1) | "Couldn’t load who’s seen this" + "Try again in a moment." Retry; the receipt keeps the copy it held | `SeenByBody` | messages-seen-by.test › CH-7218 |
 
 ## 73xx Empty
 
@@ -106,6 +112,7 @@ the thread with Retry (CH-7016), and the draft is never lost.
 | CH-7307 | Everyone on the team is already in the group (Add) | "Everyone on the team is already in this group." | `AddMembersModal` | messages.test › CH-7307 |
 | CH-7308 | Signed in with no team (coach or player) | The page empty state: "You aren’t on a team yet" + "Messages open once you’re on a team roster, with your coaches and teammates." + Open team settings (a coach's Team, a player's Golf profile; the route passes the role) | `MessagesNoTeam`, from the route | messages.test › CH-7308 |
 | CH-7309 | Nothing at all yet: no conversation and no announcement (D-71) | The page empty state: "No conversations yet" + (coach) "Start a thread with the whole team or message a player directly." / (player) "Message a coach or a teammate. Team announcements show up here too." + New message; the rail and thread empties (CH-7301, CH-7305) show only once something is listed | `MessagesFirstRun` (desktop and phone) | messages.test › CH-7309 |
+| CH-7310 | Nobody has seen a group message yet (the Seen by list) | Title "Not seen yet"; only Not yet, with when each last opened the chat | `SeenByBody` | messages-seen-by.test › CH-7310 |
 
 ## 74xx Loading
 
@@ -121,6 +128,7 @@ the thread with Retry (CH-7016), and the draft is never lost.
 | CH-7408 | A message's attachments are loading | A skeleton file tile | `Attachments` | messages.test › CH-7408 |
 | CH-7409 | The shared files are loading (Details) | A skeleton row | `FilesPanel`, `FilesSection` | messages.test › CH-7409 |
 | CH-7410 | The Add sheet's list is loading | Three skeleton rows | `AddMembersModal` | messages.test › CH-7410 |
+| CH-7411 | The Seen by list is loading | Three skeleton rows, `aria-busy`; the title reads "Seen by" alone | `SeenByBody` | messages-seen-by.test › CH-7411 |
 
 ## 75xx Confirm
 
@@ -142,6 +150,8 @@ the thread with Retry (CH-7016), and the draft is never lost.
 | CH-7605 | Opening another conversation or announcement (desktop) | The new one settles in with a 6px rise (260ms) while the last fades out (180ms), hidden from assistive tech; each keeps its own scroll and a thread opens at its end. The first one a visit opens (the newest thread, or a link's) appears at once. Instant with reduced motion | `Swap` keyed on the pane's turn in `MessagesDesktop` | messages.test › CH-7605; preview (the timing) |
 | CH-7606 | Changing the inbox filter on the phone (All, Unread, Groups) | The chosen chip takes the green fill and ink (a layer that fades in over the quick beat) while the last one lets go; the list under it settles in with a 6px rise (260ms) as the last fades out (180ms), hidden from assistive tech. Typing in Search filters in place. Instant with reduced motion | `.ch-msp-chip` transitions; `Swap` keyed on the filter in `PhoneInbox` | preview (the timing, WebKit 390) |
 | CH-7607 | Muting a conversation from its row (owner decision 14) | The row's Mute… opens this sheet on that conversation, reading its mute as it opens; the same choices as the thread's Details | `RowMuteModal` in `MessagesView.tsx` | conv-context-menu.test › CH-7607 |
+| CH-7608 | A group message's receipt changes ("Sent" → "Seen by 4 of 11" → "Seen by everyone") | The words cross-fade in place (180ms), the double check arrives on everyone; nothing on first paint, instant with reduced motion | `SeenByReceipt` | messages-seen-by.test › the receipt |
+| CH-7609 | The Seen by sheet (phone) or popover (desktop) opens and updates live | Phone: a bottom sheet; desktop: a popover above the receipt (radius 16, opaque). Not yet first; a person who opens the chat moves to Seen | `SeenBySheet`, `SeenByPopover` | messages-seen-by.test › the list |
 
 ## 77xx Haptics
 
@@ -160,3 +170,4 @@ the thread with Retry (CH-7016), and the draft is never lost.
 | CH-7802 | Search results are announced as they arrive; desktop Enter sends and Shift+Enter adds a line; phone Return adds a line and Send sends. Desktop React: the reaction bar takes focus on its first reaction, ← → Home End move along it, Esc or a pick returns focus to React, Tab moves on | `aria-live`, key handlers | messages-audit.test › A-26; preview |
 | CH-7803 | No axe violations in any preview state, 1280px and 390px | `npm run clubhouse:a11y` | a11y scan |
 | CH-7804 | Phone: a message's actions have a path besides the long press (a "Message actions" button VoiceOver and keyboards reach, or a right click); each pushed screen is named by its title, and its back link names where it goes ("Back to Messages", "Back to Chat"). New message opens on its title; a hardware keyboard's Esc is Cancel, and focus returns to New message | `Bubble` `onActions`, `PhoneScreen`, `PhoneBar` | messages.test › CH-7804; messages-audit.test › A-28 |
+| CH-7805 | The receipt's accessible name ("Seen by 9 of 11 people. Show who") sits on one stable node, its fading copies `aria-hidden`, so a count change isn't announced; the open list says moves politely ("Eli Brandt has seen it.") | `SeenByReceipt`, `SeenByBody` | messages-seen-by.test › CH-7805 |

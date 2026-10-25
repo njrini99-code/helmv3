@@ -4424,3 +4424,14 @@ html[data-fw-theme='dark'] .ch-h-form__bar {
 :root[data-reduce-transparency][data-fw-theme='dark'] .ch-h-day--today {
   background: var(--ch-ivory-200);
 }
+
+/* P-14 change marks on Home. Up next wears the badge in its kicker and the old value struck under its range, in the card's
+   own muted ink (the card is light or lit by theme, so the struck value takes whatever the line beside it takes). */
+.ch-hm-next .ch-was,
+.ch-ph-next .ch-was {
+  color: inherit;
+}
+.ch-hm-next__type .ch-badge,
+.ch-ph-next__k .ch-badge {
+  margin-inline-start: var(--ch-space-2);
+}

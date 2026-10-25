@@ -1,6 +1,7 @@
 import 'server-only';
 import { cookies, headers } from 'next/headers';
 import { CH_CLOCK_COOKIE, parseChClock, type ChClock } from './clock-cookie';
+import { CH_MARKS_COOKIE, parseMarks, type MarkEntries } from './marks-cookie';
 import { CH_PHONE_COOKIE } from './phone-cookie';
 import { CH_RAIL_COOKIE } from './rail-cookie';
 
@@ -36,4 +37,9 @@ export async function railHint(): Promise<boolean> {
 /** The clock this browser last chose in Settings (use-clock.tsx), so a 24-hour device's first frame is already in 24 hours. */
 export async function clockHint(): Promise<ChClock> {
   return parseChClock((await cookies()).get(CH_CLOCK_COOKIE)?.value);
+}
+
+/** Which change marks this browser has seen or cleared (use-change-marks.tsx), so a mark it already saw paints as seen on the first frame. */
+export async function marksHint(): Promise<MarkEntries> {
+  return parseMarks((await cookies()).get(CH_MARKS_COOKIE)?.value);
 }
