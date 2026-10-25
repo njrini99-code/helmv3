@@ -1,12 +1,15 @@
 # P016 — Tournaments: page contract
 
-Every behaviour Tournaments promises, by the 25 V2 categories (D-69). A contract's number is its Bridge ID (D-68:
-namespace 16, category, item); `Code` is the catalog code on the element and in the test
-(`docs/clubhouse/catalog/tournaments.md`). The shell's contracts (P001) apply here too and are named where they carry
-a category. `clubhouse:check` holds this file to the registry.
+Every behaviour Tournaments promises, by the 25 V2 categories (D-69). A
+contract's number is its Bridge ID (D-68: namespace 16, category, item); `Code`
+is the catalog code on the element and in the test
+(`docs/clubhouse/catalog/tournaments.md`). The shell's contracts (P001) apply
+here too and are named where they carry a category. `clubhouse:check` holds this
+file to the registry.
 
 Status: the base only (types, fixtures, primitives, placeholders, preview screens). Several lanes build the views in
-parallel; each fills the categories its view touches, from its own serial range in the catalog.
+parallel; each fills the categories its view touches, from its own serial range
+in the catalog.
 
 ## 01 — Default / core UI
 
@@ -16,7 +19,10 @@ Status: N/A — not defined yet: no view is built (each renders the base's place
 
 Status: DEFINED
 
-Every view takes `load`; `loading` draws the view's head and body as placeholders in place, marked busy (CH-16401). A built view replaces the placeholder with its own skeleton at its final geometry and keeps the code. The route skeletons arrive with the routes (Phase 7).
+Every view takes `load`; `loading` draws the view's head and body as
+placeholders in place, marked busy (CH-16401). A built view replaces the
+placeholder with its own skeleton at its final geometry and keeps the code. The
+route skeletons arrive with the routes (Phase 7).
 
 | Bridge ID | Code | Name | Meaning |
 | --- | --- | --- | --- |
@@ -32,7 +38,9 @@ Status: N/A — not defined yet: no view is built (each renders the base's place
 
 Status: DEFINED
 
-Until a lane builds its view, the view says so honestly (CH-16301, preview only). Each view's real empty states (no events this season, no field entered, no rounds to link, and so on) are its lane's rows.
+Until a lane builds its view, the view says so honestly (CH-16301, preview
+only). Each view's real empty states (no events this season, no field entered,
+no rounds to link, and so on) are its lane's rows.
 
 | Bridge ID | Code | Name | Meaning |
 | --- | --- | --- | --- |
@@ -61,7 +69,9 @@ Status: N/A — not defined yet: no view is built (each renders the base's place
 
 Status: DEFINED
 
-A view whose one read failed draws its head and "Tournaments didn’t load" with Try again (CH-16201); sections that fail on their own are each view's `errors` flags and its lane's rows.
+A view whose one read failed draws its head and "Tournaments didn’t load" with
+Try again (CH-16201); sections that fail on their own are each view's `errors`
+flags and its lane's rows.
 
 | Bridge ID | Code | Name | Meaning |
 | --- | --- | --- | --- |
@@ -80,7 +90,8 @@ A view whose one read failed draws its head and "Tournaments didn’t load" with
 
 Status: DEFINED
 
-No Tournaments route is served yet, so the shell's offline contracts are the whole of it today; the live round's outbox (5L.8.5) adds its own.
+No Tournaments route is served yet, so the shell's offline contracts are the
+whole of it today; the live round's outbox (5L.8.5) adds its own.
 
 From the shell (P001): 10701 CH-1901, 10702 CH-1902, 10703 CH-1903,
 10704 CH-1905, 10705 CH-1909, 10706 CH-1910.
@@ -89,7 +100,9 @@ From the shell (P001): 10701 CH-1901, 10702 CH-1902, 10703 CH-1903,
 
 Status: DEFINED
 
-Coach-only views (new, edit, lineup, compare, history, links, review) and the player's own view are decided by the route (plan 14.2, Phase 7); until then the shell's gate is the only one, and Tournaments is reachable in the preview only.
+Coach-only views (new, edit, lineup, compare, history, links, review) and the
+player's own view are decided by the route (plan 14.2, Phase 7); until then the
+shell's gate is the only one, and Tournaments is reachable in the preview only.
 
 From the shell (P001): 10801 CLUBHOUSE_GATE, 10802 ROLE_SCOPED_NAV,
 10803 TEAM_SWITCH_IS_A_HEAD_COACHS, 10804 CH-1911.
@@ -102,7 +115,8 @@ Status: N/A — not defined yet: no view is built (each renders the base's place
 
 Status: DEFINED
 
-The event desk tells the coach when the host's published number differs from our scorecard (CH-16920): shown with both numbers, never silently picked (D-82).
+The event desk tells the coach when the host's published number differs from our
+scorecard (CH-16920): shown with both numbers, never silently picked (D-82).
 
 | Bridge ID | Code | Name | Meaning |
 | --- | --- | --- | --- |
@@ -132,7 +146,9 @@ Status: N/A — not defined yet: no view is built (each renders the base's place
 
 Status: DEFINED
 
-A value that changes after first paint takes its new value in place and gets the 520 ms changed-wash (CH-16601, D-100); nothing rolls and nothing draws in on first paint.
+A value that changes after first paint takes its new value in place and gets the
+520 ms changed-wash (CH-16601, D-100); nothing rolls and nothing draws in on
+first paint.
 
 | Bridge ID | Code | Name | Meaning |
 | --- | --- | --- | --- |
@@ -152,7 +168,8 @@ Status: N/A — not defined yet: no view is built (each renders the base's place
 
 Status: DEFINED
 
-DeltaChip and TrustChip speak their meaning in words and never rest on hue alone (CH-16801).
+DeltaChip and TrustChip speak their meaning in words and never rest on hue alone
+(CH-16801).
 
 | Bridge ID | Code | Name | Meaning |
 | --- | --- | --- | --- |

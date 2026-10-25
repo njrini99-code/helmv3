@@ -9,9 +9,10 @@
 -- (push_tournaments preference), 100500 (live round); each through
 -- npm run db:apply, no BEGIN/COMMIT in any of them. Never leave this file
 -- applied without 100300 once players use the flag. 20261024100300 replaces
--- four of the player read rules below (entries, round lineups and field scores become
--- reveal-gated and window-gated, player rounds window-gated; finding 3 in
--- 0-R.3, D-85, D-87) and the player notes read rule (unshared lines).
+-- four of the player read rules below (entries, round lineups and field
+-- scores become reveal-gated and window-gated, player rounds window-gated;
+-- finding 3 in 0-R.3, D-85, D-87) and the player notes read rule (unshared
+-- lines).
 --
 -- WHO MAY TOUCH WHAT (is_golf_team_coach / is_golf_team_player are the
 -- existing SECURITY DEFINER helpers):

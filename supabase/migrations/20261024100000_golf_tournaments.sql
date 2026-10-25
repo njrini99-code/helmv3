@@ -160,6 +160,7 @@ create table if not exists public.golf_tournaments (
     constraint golf_tournaments_dates check (end_date >= start_date),
     constraint golf_tournaments_id_team_uq unique (id, team_id)
 );
+alter table public.golf_tournaments enable row level security;
 
 -- 2. Competition rounds. Each is an ordinary golf_events row
 -- (event_type 'tournament', parent_event_id left NULL). Deferred NO ACTION
@@ -191,6 +192,7 @@ create table if not exists public.golf_tournament_rounds (
     unique (tournament_id, round_number),
     unique (round_event_id, team_id)
 );
+alter table public.golf_tournament_rounds enable row level security;
 
 -- 3. Entries: who is in the event (lineup, alternate or individual)
 create table if not exists public.golf_tournament_entries (
@@ -208,6 +210,7 @@ create table if not exists public.golf_tournament_entries (
     constraint golf_tournament_entries_slot_role
     check ((role = 'lineup') = (slot is not null))
 );
+alter table public.golf_tournament_entries enable row level security;
 create unique index if not exists golf_tournament_entries_slot_uq
 on public.golf_tournament_entries (tournament_id, slot)
 where slot is not null;
@@ -229,6 +232,7 @@ create table if not exists public.golf_tournament_round_lineups (
     references public.golf_tournament_rounds (round_event_id, team_id)
     on delete cascade
 );
+alter table public.golf_tournament_round_lineups enable row level security;
 
 -- 5. A player's score in a tournament round: a linked GolfHelm round, or an
 -- entered score (D-82). golf_rounds itself is never updated.
@@ -256,6 +260,7 @@ create table if not exists public.golf_tournament_player_rounds (
     constraint golf_tpr_one_source
     check (not (round_id is not null and entered_total is not null))
 );
+alter table public.golf_tournament_player_rounds enable row level security;
 
 -- 6. The field: the other teams (and us), and their totals per round
 create table if not exists public.golf_tournament_field_teams (
@@ -274,6 +279,7 @@ create table if not exists public.golf_tournament_field_teams (
     references public.golf_tournaments (id, team_id) on delete cascade,
     unique (id, team_id)
 );
+alter table public.golf_tournament_field_teams enable row level security;
 create unique index if not exists golf_tournament_field_us_uq
 on public.golf_tournament_field_teams (tournament_id)
 where is_us;
@@ -290,6 +296,7 @@ create table if not exists public.golf_tournament_field_scores (
     references public.golf_tournament_field_teams (id, team_id)
     on delete cascade
 );
+alter table public.golf_tournament_field_scores enable row level security;
 
 -- 7. Result trust log (D-84), append-only: final, official, reopened
 create table if not exists public.golf_tournament_result_marks (
@@ -308,6 +315,7 @@ create table if not exists public.golf_tournament_result_marks (
     references public.golf_tournament_rounds (round_event_id, team_id)
     on delete set null (round_event_id)
 );
+alter table public.golf_tournament_result_marks enable row level security;
 
 -- 8. Coach-only reasoning and review; per-player debrief; the player's own
 -- reflection
@@ -322,6 +330,7 @@ create table if not exists public.golf_tournament_entry_notes (
     foreign key (tournament_id, team_id)
     references public.golf_tournaments (id, team_id) on delete cascade
 );
+alter table public.golf_tournament_entry_notes enable row level security;
 
 create table if not exists public.golf_tournament_reviews (
     tournament_id uuid primary key,
@@ -334,6 +343,7 @@ create table if not exists public.golf_tournament_reviews (
     foreign key (tournament_id, team_id)
     references public.golf_tournaments (id, team_id) on delete cascade
 );
+alter table public.golf_tournament_reviews enable row level security;
 
 create table if not exists public.golf_tournament_player_notes (
     tournament_id uuid not null,
@@ -349,6 +359,7 @@ create table if not exists public.golf_tournament_player_notes (
     foreign key (tournament_id, team_id)
     references public.golf_tournaments (id, team_id) on delete cascade
 );
+alter table public.golf_tournament_player_notes enable row level security;
 
 create table if not exists public.golf_tournament_reflections (
     tournament_id uuid not null,
@@ -361,6 +372,7 @@ create table if not exists public.golf_tournament_reflections (
     foreign key (tournament_id, team_id)
     references public.golf_tournaments (id, team_id) on delete cascade
 );
+alter table public.golf_tournament_reflections enable row level security;
 
 -- 9. Staff on course: the two advice givers, and who a coach is with
 create table if not exists public.golf_tournament_advice_givers (
@@ -371,6 +383,7 @@ create table if not exists public.golf_tournament_advice_givers (
     foreign key (tournament_id, team_id)
     references public.golf_tournaments (id, team_id) on delete cascade
 );
+alter table public.golf_tournament_advice_givers enable row level security;
 
 create table if not exists public.golf_tournament_coach_presence (
     round_event_id uuid not null,
@@ -385,6 +398,7 @@ create table if not exists public.golf_tournament_coach_presence (
     references public.golf_tournament_rounds (round_event_id, team_id)
     on delete cascade
 );
+alter table public.golf_tournament_coach_presence enable row level security;
 
 -- 10. Saved comparisons and the team's season profile
 create table if not exists public.golf_saved_comparisons (
@@ -402,6 +416,7 @@ create table if not exists public.golf_saved_comparisons (
     shared boolean not null default false,
     created_at timestamptz not null default now()
 );
+alter table public.golf_saved_comparisons enable row level security;
 
 create table if not exists public.golf_team_seasons (
     team_id uuid not null
@@ -414,6 +429,7 @@ create table if not exists public.golf_team_seasons (
     official_rank_at date,
     primary key (team_id, season)
 );
+alter table public.golf_team_seasons enable row level security;
 
 create table if not exists public.golf_tournament_link_dismissals (
     team_id uuid not null
@@ -424,6 +440,7 @@ create table if not exists public.golf_tournament_link_dismissals (
     dismissed_at timestamptz not null default now(),
     primary key (team_id, round_id)
 );
+alter table public.golf_tournament_link_dismissals enable row level security;
 
 -- 11. Indexes for the loaders and for every foreign key without a leading
 -- index of its own (.claude/rules/database.md)

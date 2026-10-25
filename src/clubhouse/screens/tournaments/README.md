@@ -1,11 +1,14 @@
 # Tournaments views (P016)
 
-The coach's tournament workspace and the player's event view. Page docs: `docs/clubhouse/pages/P016-tournaments/`;
-catalog: `docs/clubhouse/catalog/tournaments.md`; boards: `design/handoff/Coach - Tournaments.html`, its phone board,
-`tour.jsx`, `tour-m.jsx`, `tour-compare.jsx` (v3, `design/handoff/VERSIONS.md`).
+The coach's tournament workspace and the player's event view. Page docs:
+`docs/clubhouse/pages/P016-tournaments/`; catalog:
+`docs/clubhouse/catalog/tournaments.md`; boards:
+`design/handoff/Coach - Tournaments.html`, its phone board, `tour.jsx`,
+`tour-m.jsx`, `tour-compare.jsx` (v3, `design/handoff/VERSIONS.md`).
 
-The base set the views up for parallel lanes; one session (round 6, the Tournaments screens session) now builds all
-ten. The split it kept still holds, so the files stay separable:
+The base set the views up for parallel lanes; one session (round 6, the
+Tournaments screens session) now builds all ten. The split it kept still holds,
+so the files stay separable:
 
 | View | File | Sheet | Class prefix | Catalog serials |
 | --- | --- | --- | --- | --- |
@@ -20,15 +23,20 @@ ten. The split it kept still holds, so the files stay separable:
 
 Rules every view keeps:
 
-- **Props.** Each view takes `{ data, load, phone }` (and `search` where its URL state lives) from `types.ts`. `load`
-  draws the view's skeleton (CH-16401) or the page failure (CH-16201); `ready` draws the data, and a section whose read
+- **Props.** Each view takes `{ data, load, phone }` (and `search` where its URL
+  state lives) from `types.ts`. `load` draws the view's skeleton (CH-16401) or
+  the page failure (CH-16201); `ready` draws the data, and a section whose read
   failed carries an `errors` flag and its own notice.
-- **Data.** `types.ts` is base-owned: team math arrives computed (`scoring.ts`, `standings.ts`) and a view never
-  recomputes it. Metrics come from `metrics.ts`. A view that needs a new shape extends `types.ts` and the preview
+- **Data.** `types.ts` is base-owned: team math arrives computed (`scoring.ts`,
+  `standings.ts`) and a view never recomputes it. Metrics come from
+  `metrics.ts`. A view that needs a new shape extends `types.ts` and the preview
   fixture together and says so in its changelog.
-- **Links.** Views build hrefs through `useTourPaths()` (`paths.tsx`): the real routes by default (the manifest's
-  `plannedRoutes`), the preview's `/clubhouse-preview/tournament-*` inside `TourPathsProvider`.
-- **Motion.** Nothing draws in on first paint. A value that changes afterwards takes its new value in place with the
-  changed-wash (`useChangedWash`, D-100); a chart glides only on a change of its data.
-- **Tests.** Tests that name a catalog code live in `src/clubhouse/__tests__/tournaments-*.test.tsx`, where
-  `clubhouse:check` reads them; pure modules keep theirs in `__tests__/` here.
+- **Links.** Views build hrefs through `useTourPaths()` (`paths.tsx`): the real
+  routes by default (the manifest's `plannedRoutes`), the preview's
+  `/clubhouse-preview/tournament-*` inside `TourPathsProvider`.
+- **Motion.** Nothing draws in on first paint. A value that changes afterwards
+  takes its new value in place with the changed-wash (`useChangedWash`, D-100);
+  a chart glides only on a change of its data.
+- **Tests.** Tests that name a catalog code live in
+  `src/clubhouse/__tests__/tournaments-*.test.tsx`, where `clubhouse:check`
+  reads them; pure modules keep theirs in `__tests__/` here.
