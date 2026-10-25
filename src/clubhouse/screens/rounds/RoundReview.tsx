@@ -30,6 +30,7 @@ import { EmptyState } from '../../ui/States';
 import { dateOf, TeeSwatch, TYPE_LABEL } from './parts';
 import { approachFinish, costliest, flow, headline, puttSplit, teeMisses, turningStretch } from './round-insights';
 import { RoundSays, saysFigures } from './RoundSays';
+import { RecordChips } from './RecordChips';
 import { Zone, ZoneBig, ZoneBlock, Zones } from '../../ui/Zone';
 import { Tooltip } from '../../ui/Tooltip';
 import { PuttingViz, ScoreFlow, ShotTrail, TeeToGreen } from './RoundZones';
@@ -526,6 +527,7 @@ export function RoundReview({ review, typeEdit = null }: { review: ChRoundReview
           <span className="ch-rv-hero__k">{kicker}</span>
           {/* D11: one h1 per screen, the course; the phone bar's "Round" is plain text (heading={false}). */}
           <h1 id="ch-rv-title">{r.course}</h1>
+          <RecordChips marks={r.history?.records ?? []} settle={justSubmitted && !reduced} />
           {insight && <p className="ch-rv-hero__h">{insight}</p>}
           {(r.tee || r.teeFacts) && (
             <span className="ch-rv-hero__m">

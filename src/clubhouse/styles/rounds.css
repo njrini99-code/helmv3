@@ -2621,8 +2621,8 @@ html[data-fw-theme='dark'] .ch-rv .ch-rv-yn.is-y {
 }
 .ch-rv .ch-rv-nine th:last-child,
 .ch-rv .ch-rv-nine td:last-child {
-  border-left: 2px solid transparent;
-  background-clip: padding-box;
+  /* P-7 4.5.6: a 2 px inset, not a 2 px left border. */
+  padding-inline-start: 2px;
 }
 .ch-rv .ch-rv-nine tbody tr:not(.is-par) td:last-child:not(:empty) {
   background-color: var(--ch-ivory-200);
@@ -4951,5 +4951,75 @@ html[data-fw-theme='dark'] .ch-rv .ch-rv-yn.is-y {
   }
   .ch-rv .ch-says__tile:first-child {
     border-left: 0;
+  }
+}
+/* P-7 4.5.1: record chips under the course name. Plain text, not controls (no hover, no hit target); the glyph is the tier. */
+.ch-rv-rec {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 10px 0;
+  padding: 0;
+  list-style: none;
+}
+.ch-rv-rec__chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 28px;
+  padding: 0 10px;
+  border: var(--ch-hairline-w) solid var(--ch-stage-rule);
+  border-radius: 999px;
+  background: rgb(244 238 221 / 0.1);
+  font: var(--ch-type-13-medium);
+  color: var(--ch-stage-ink);
+}
+.ch-rv-rec__g {
+  position: relative;
+  flex: none;
+  width: 10px;
+  height: 10px;
+}
+.ch-rv-rec__g::before {
+  content: '';
+  position: absolute;
+  inset: 1px;
+  border-radius: 50%;
+  border: 1.5px solid var(--ch-stage-gold);
+}
+.ch-rv-rec__g.is-filled::before {
+  background: var(--ch-stage-gold);
+}
+.ch-rv-rec__g.is-half::before {
+  background: linear-gradient(90deg, var(--ch-stage-gold) 50%, transparent 50%);
+}
+/* On the ivory desktop canopy the chips take the page's ink. */
+.ch-rv[data-canopy] .ch-rv-rec__chip {
+  border-color: var(--ch-border-subtle);
+  background: var(--ch-bg-surface);
+  color: var(--ch-text-primary);
+}
+.ch-rv[data-canopy] .ch-rv-rec__g::before {
+  border-color: var(--ch-champagne-500);
+}
+.ch-rv[data-canopy] .ch-rv-rec__g.is-filled::before {
+  background: var(--ch-champagne-500);
+}
+.ch-rv[data-canopy] .ch-rv-rec__g.is-half::before {
+  background: linear-gradient(90deg, var(--ch-champagne-500) 50%, transparent 50%);
+}
+/* M11: only on the visit straight from Post round, with the round card; both chips together, no stagger. */
+@keyframes ch-rv-rec-settle {
+  from {
+    opacity: 0;
+    transform: scale(0.9);
+  }
+}
+.ch-rv-rec.is-just {
+  animation: ch-rv-rec-settle var(--ch-dur-spring-smooth) var(--ch-ease-spring-smooth) backwards;
+}
+@media (prefers-reduced-motion: reduce) {
+  .ch-rv-rec.is-just {
+    animation: none;
   }
 }
