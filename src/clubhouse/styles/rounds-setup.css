@@ -2418,3 +2418,43 @@ html[data-fw-theme='dark'] .ch-rsu-card__h h2 {
 :root[data-reduce-transparency][data-fw-theme='dark'] .ch-rsu-dock {
   background: var(--ch-bg-surface);
 }
+
+/* P-7 4.6: "Your history here" under the picked course. Flush plate, full hairline, no left rule. */
+.ch-rsu-hist {
+  margin: 12px 0 0;
+  padding: 14px 16px 4px;
+  border: var(--ch-hairline-w) solid var(--ch-border-hairline);
+  border-radius: var(--ch-radius-lg);
+  background: var(--ch-bg-subtle);
+}
+.ch-rsu-hist__k {
+  font: var(--ch-type-12-medium);
+  color: var(--ch-text-secondary);
+}
+.ch-rsu-hist__l {
+  margin: 4px 0 0;
+  font: var(--ch-type-15);
+  color: var(--ch-text-primary);
+}
+.ch-rsu-hist__n {
+  display: -webkit-box;
+  margin: 4px 0 0;
+  overflow: hidden;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  font: var(--ch-type-14);
+  color: var(--ch-ink-600);
+}
+.ch-rsu-hist__go {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  min-height: 44px;
+  font: var(--ch-type-14-strong);
+  color: var(--ch-text-primary);
+  text-decoration: none;
+}
+.ch-rsu-hist__go:focus-visible {
+  outline: 2px solid var(--ch-border-focus);
+  outline-offset: 2px;
+}
