@@ -47,6 +47,15 @@ function handleError(error: unknown): string {
 // 'golf-documents/{teamId}/{fileName}'. The previous `slice(-2)` heuristic
 // silently dropped the 'golf-documents/' prefix and broke signed-URL resolution.
 function deriveStoragePathFromPublicUrl(fileUrl: string): string {
+  // A malformed % sequence (URIError) is not a path in any team's folder: the caller's check refuses an empty path.
+  try {
+    return derivePath(fileUrl);
+  } catch {
+    return '';
+  }
+}
+
+function derivePath(fileUrl: string): string {
   const marker = '/object/public/documents/';
   const idx = fileUrl.indexOf(marker);
   if (idx !== -1) {

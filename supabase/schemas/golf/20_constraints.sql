@@ -121,6 +121,9 @@ ALTER TABLE ONLY "public"."golf_conversation_participants"
 ALTER TABLE ONLY "public"."golf_conversation_participants"
     ADD CONSTRAINT "golf_conversation_participants_pkey" PRIMARY KEY ("id");
 
+ALTER TABLE ONLY "public"."golf_conversation_read_marks"
+    ADD CONSTRAINT "golf_conversation_read_marks_pkey" PRIMARY KEY ("id");
+
 ALTER TABLE ONLY "public"."golf_conversations"
     ADD CONSTRAINT "golf_conversations_pkey" PRIMARY KEY ("id");
 
@@ -594,6 +597,12 @@ ALTER TABLE ONLY "public"."golf_conversation_participants"
 
 ALTER TABLE ONLY "public"."golf_conversation_participants"
     ADD CONSTRAINT "golf_conversation_participants_user_id_fkey" FOREIGN KEY ("user_id") REFERENCES "public"."users"("id") ON DELETE CASCADE;
+
+ALTER TABLE ONLY "public"."golf_conversation_read_marks"
+    ADD CONSTRAINT "golf_conversation_read_marks_conversation_id_fkey" FOREIGN KEY ("conversation_id") REFERENCES "public"."golf_conversations"("id") ON DELETE CASCADE;
+
+ALTER TABLE ONLY "public"."golf_conversation_read_marks"
+    ADD CONSTRAINT "golf_conversation_read_marks_user_id_fkey" FOREIGN KEY ("user_id") REFERENCES "public"."users"("id") ON DELETE CASCADE;
 
 ALTER TABLE ONLY "public"."golf_conversations"
     ADD CONSTRAINT "golf_conversations_created_by_fkey" FOREIGN KEY ("created_by") REFERENCES "public"."users"("id") ON DELETE CASCADE;

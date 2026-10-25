@@ -1,0 +1,29 @@
+schema_version: 1
+replay_id: calibration-in-chunk-2026-10-24
+incident_id: INC-2026-10-24-calibration-in-filter-url-400
+feature_id: coachhelm_ai
+title: >-
+  The calibration cron fetched parent predictions with one .in() over 633 ids;
+  the URL was too long and PostgREST returned 400 Bad Request, failing the
+  cron. The lookup now runs in 200-id chunks.
+bad_version: f30a6d509980475d4b1ad64627a46196492e630e
+fixed_version: 14f8a808aea7e72d2e009a6eeb97f4a87d5676e0
+fixture:
+  - source: coachhelm-calibration.test.ts
+    target: src/test/api/cron/coachhelm-calibration.test.ts
+test_command: "./node_modules/.bin/vitest run --project unit src/test/api/cron/coachhelm-calibration.test.ts"
+expected:
+  bad_version: fail
+  fixed_version: pass
+expected_failure_mode: assertion
+sanitization:
+  reviewed: true
+  contains_production_data: false
+  notes: >-
+    Synthetic ids p0..p632 and a mocked Supabase client; only the production
+    id count (633) is reused. No rows, PII, tokens or logs.
+source_incident_status: fixed
+created_at: "2026-10-24"
+notes: >-
+  On bad_version the new case returns 500 because the mock rejects any .in()
+  over 200 ids, as PostgREST rejected the 633-id URL on 2026-10-24 03:40Z.

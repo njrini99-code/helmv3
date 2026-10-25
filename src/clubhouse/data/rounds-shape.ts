@@ -34,6 +34,9 @@ export interface ChLibraryRound {
   totalOnly?: boolean;
   /** Counts toward the score figures (isScoreCountable: every hole scored, or an 18-hole total posted without its holes, Q-123). */
   countable: boolean;
+  /** P-7: the library course and the name as typed, which group the round by course (`course-key.ts`); absent in older fixtures. */
+  courseId?: string | null;
+  courseRaw?: string | null;
 }
 
 export interface ChUnfinishedRound {
@@ -140,6 +143,8 @@ export type ChRoundListRow = {
   total_gir_possible: number | null;
   total_fairways_hit: number | null;
   total_fairways: number | null;
+  /** P-7: read by the library and the course page; absent in older fixtures. */
+  course_id?: string | null;
 };
 
 export function toLibraryRound(raw: ChRoundListRow): ChLibraryRound | null {
@@ -163,6 +168,7 @@ export function toLibraryRound(raw: ChRoundListRow): ChLibraryRound | null {
     putts: recordedPutts(r.total_putts),
     ...(isTotalOnlyCountable(r) ? { totalOnly: true } : {}),
     countable: isScoreCountable(r),
+    ...(raw.course_id !== undefined ? { courseId: raw.course_id, courseRaw: raw.course_name } : {}),
   };
 }
 

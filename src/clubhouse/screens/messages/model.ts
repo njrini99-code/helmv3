@@ -6,6 +6,7 @@
  */
 
 import type { GolfAnnouncementMeta } from '@/lib/types/golf';
+import type { Poll } from '@/lib/golf/message-polls';
 import type { ChClock } from '../../lib/clock-cookie';
 
 export interface ChPerson {
@@ -34,6 +35,8 @@ export interface ChConv {
   lastAt: string | null;
   lastSenderId: string | null;
   lastText: string;
+  /** The last message is a poll's plain-text copy (`isPollFallbackText`): the row shows its glyph and question. */
+  lastIsPoll?: boolean;
   creatorId: string | null;
 }
 
@@ -51,6 +54,17 @@ export interface ChMsg {
   hasAttachments: boolean;
   /** Persisted parent in this conversation; content is read only from loaded messages. */
   replyToId?: string | null;
+  /** A poll (kind 'poll' with a payload we can draw); its `text` is then the plain-text copy, never shown in the card. */
+  poll?: Poll | null;
+  /** Still sending: the server hasn't confirmed it, so it carries no receipt (P-1). */
+  pending?: boolean;
+}
+
+/** P-1 Seen by: every member's last_read_at in the open conversation, from the messages hook. */
+export interface ChReceipts {
+  status: 'loading' | 'ready' | 'error';
+  marks: ReadonlyMap<string, string | null>;
+  retry: () => void;
 }
 
 export interface ChAttachment {
