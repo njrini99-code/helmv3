@@ -512,7 +512,7 @@ function PhoneThread({
       <Modal code="CH-7604" open={acting != null} onClose={() => setActing(null)} title="Message">
         {acting && (
           <div className="ch-msp-acts">
-            <div className="ch-msp-acts__preview" aria-label="Selected message">
+            <div role="group" className="ch-msp-acts__preview" aria-label="Selected message">
               {/* Whose it is, then when (wave 5 #20): in a group the time alone doesn't say. */}
               <span className="ch-ms-msg__t ch-num">
                 {acting.mine ? "You" : firstName(personOf(api, acting.senderId)?.name ?? "Member")} · {clock(acting.at, api.timeZone, api.clock)}

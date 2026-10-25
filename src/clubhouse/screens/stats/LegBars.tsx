@@ -1,13 +1,13 @@
 'use client';
 
-import { formatSigned, NO_DATA } from '../../lib/format';
+import { changeInk, changeTone, formatSigned, NO_DATA } from '../../lib/format';
 import { sgScale, sgShare } from '../../lib/sg';
 import { useChartPin } from '../../lib/use-chart-pin';
 import { legReadout, type SgLegRow } from './leg-rows';
 
 export type LegBarRow = Pick<SgLegRow, 'label' | 'value'> & Partial<Pick<SgLegRow, 'team' | 'n' | 'se' | 'state' | 'tag'>> & { means: string };
 
-const tone = (v: number) => (v >= 0 ? 'is-gain' : 'is-loss');
+const tone = (v: number) => changeTone(v, false, 1);
 
 /**
  * P005: strokes gained by leg as aligned bars from one zero (the baseline the figures are measured against): a gain
@@ -65,7 +65,7 @@ export function LegBars({ rows, baseline, teamName, onOpen }: { rows: LegBarRow[
               {r.team != null && <u className="ch-lb__team" style={{ left: `${at(r.team)}%` }} title={`${teamName ?? 'Team'} ${formatSigned(r.team)}`} />}
               {r.value == null && r.tag && <span className="ch-sv-needs">{r.tag}</span>}
             </div>
-            <span className={'ch-lb__v ch-num ' + (r.value == null || muted ? '' : r.value >= 0 ? 'ch-gain' : 'ch-loss')}>{r.value == null ? NO_DATA : formatSigned(r.value)}</span>
+            <span className={'ch-lb__v ch-num ' + (muted ? '' : changeInk(r.value))}>{r.value == null ? NO_DATA : formatSigned(r.value)}</span>
           </div>
         );
       })}

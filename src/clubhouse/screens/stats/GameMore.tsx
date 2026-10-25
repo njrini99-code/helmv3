@@ -2,7 +2,7 @@ import type { ReactNode } from 'react';
 import type { GolfStats } from '@/lib/utils/golf-stats-calculator-shots';
 import type { ChPuttBand } from '../../data/stats-common';
 import type { ChProfileExtra } from '../../data/stats-player';
-import { formatPct, formatSigned, formatToPar, NO_DATA } from '../../lib/format';
+import { changeInk, formatPct, formatSigned, formatToPar, NO_DATA } from '../../lib/format';
 import { InlineNotice } from '../../ui/Notices';
 import { Compare } from './charts';
 import { ScoreMixBar } from './ScoreMixBar';
@@ -26,8 +26,8 @@ const NOTHING = 'CH-5317';
 const LINE = 'CH-5314';
 
 /** A per-round line needs two rounds with the figure; with fewer it says what it needs. */
-function ByRound({ points, unit, digits, label, what }: { points: Array<{ label: string; value: number }>; unit: string; digits: number; label: string; what: string }) {
-  return points.length >= 2 ? <RoundLine points={points} unit={unit} digits={digits} label={label} /> : <Empty code={LINE}>A line needs two rounds with {what}; this window has {points.length}.</Empty>;
+function ByRound({ points, unit, digits, label, what, lowerIsBetter = false }: { points: Array<{ label: string; value: number }>; unit: string; digits: number; label: string; what: string; lowerIsBetter?: boolean }) {
+  return points.length >= 2 ? <RoundLine points={points} unit={unit} digits={digits} label={label} lowerIsBetter={lowerIsBetter} /> : <Empty code={LINE}>A line needs two rounds with {what}; this window has {points.length}.</Empty>;
 }
 
 /** A shot read that failed is said, not shown as none logged. */
@@ -130,7 +130,7 @@ export function ScoringMore({ s, x, onRetry }: { s: GolfStats; x: ChProfileExtra
                   <em className="ch-num">
                     {h.plays} plays · {h.doublePlus} double or worse
                   </em>
-                  <span className={'ch-num ' + (h.avgToPar > 0 ? 'ch-loss' : 'ch-gain')}>{formatSigned(h.avgToPar, 2)}</span>
+                  <span className={'ch-num ' + changeInk(h.avgToPar, true, 2)}>{formatSigned(h.avgToPar, 2)}</span>
                 </li>
               ))}
             </ol>
@@ -456,7 +456,7 @@ export function PuttingMore({ s, x, sixBands }: { s: GolfStats; x: ChProfileExtr
         )}
       </Panel>
       <Panel title="Putts by round" wide>
-        <ByRound points={x.series.putts} unit="" digits={0} label="Putts by round" what="putts" />
+        <ByRound points={x.series.putts} unit="" digits={0} label="Putts by round" what="putts" lowerIsBetter />
       </Panel>
     </>
   );

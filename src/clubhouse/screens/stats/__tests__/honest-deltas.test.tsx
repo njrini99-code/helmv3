@@ -127,3 +127,27 @@ describe('the Overview’s strokes gained track', () => {
     expect(c.textContent).not.toMatch(/Down 1\.3 on the previous 10/);
   });
 });
+
+/** A5: ahead of or behind the team is decided on the values as printed, so two equal figures are level. */
+describe('the Overview against the team', () => {
+  const zones = (sg: number, teamSg: number, avg: number, teamAvg: number) => {
+    cleanup();
+    const comparisons = PREVIEW_PLAYER.comparisons.map((c) => (c.label === 'SG total' ? { ...c, team: teamSg } : c));
+    const data = { ...PREVIEW_PLAYER, teamAvg, comparisons, win: { ...PREVIEW_PLAYER.win, sgPerRound: sg, avg } } as ChPlayerProfile;
+    return render(<OverviewZones data={data} coach ribbon={null} />).container.textContent ?? '';
+  };
+
+  it('says level when both print alike, never "0.1 ahead"', () => {
+    const text = zones(0.44, 0.36, 72.04, 71.96);
+    expect(text).toContain('Team +0.4 · level with the team');
+    expect(text).toContain('Team 72.0 · level with the team');
+    expect(text).not.toMatch(/0\.[01] (ahead of|behind) them/);
+  });
+
+  it('gives the printed gap, and lower is better for scoring', () => {
+    const text = zones(0.84, 0.36, 71.04, 71.96);
+    expect(text).toContain('Team +0.4 · 0.4 ahead of them');
+    expect(text).toContain('Team 72.0 · 1.0 ahead of them');
+    expect(zones(-0.2, 0.36, 73.0, 71.96)).toContain('Team 72.0 · 1.0 behind them');
+  });
+});

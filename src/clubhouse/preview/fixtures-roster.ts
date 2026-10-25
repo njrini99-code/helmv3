@@ -44,6 +44,13 @@ export const PREVIEW_ROSTER_HELM: ChRoster['helm'] = {
   },
 };
 
+/** The team average as loadRoster pools it (A3): each active player's rounds at their average, over every round, not a mean of the means. */
+const POOLED_AVG = (() => {
+  const active = RAW.filter((r) => r[5] === 'active');
+  const rounds = active.reduce((a, r) => a + r[8], 0);
+  return rounds ? active.reduce((a, r) => a + r[6] * r[8], 0) / rounds : null;
+})();
+
 export const PREVIEW_ROSTER: ChRoster = {
   teamName: 'Varsity',
   season: 'Fall 2026',
@@ -52,6 +59,7 @@ export const PREVIEW_ROSTER: ChRoster = {
   notesError: false,
   playersError: false,
   statsError: false,
+  teamAvg: POOLED_AVG,
   requestsError: false,
   helm: PREVIEW_ROSTER_HELM,
   requests: [
@@ -101,12 +109,13 @@ export const PREVIEW_ROSTER_AVAILABILITY: ChRoster = {
   players: PREVIEW_ROSTER.players.map((p) => (AVAILABILITY[p.id] ? { ...p, ...AVAILABILITY[p.id], attention: null } : p)),
 };
 
-export const PREVIEW_ROSTER_EMPTY: ChRoster = { ...PREVIEW_ROSTER, players: [], requests: [] };
-export const PREVIEW_ROSTER_FAILED: ChRoster = { ...PREVIEW_ROSTER, playersError: true, requestsError: true, players: [], requests: [] };
+export const PREVIEW_ROSTER_EMPTY: ChRoster = { ...PREVIEW_ROSTER, players: [], requests: [], teamAvg: null };
+export const PREVIEW_ROSTER_FAILED: ChRoster = { ...PREVIEW_ROSTER, playersError: true, requestsError: true, players: [], requests: [], teamAvg: null };
 /** Reads that fail while the roster itself loads: stats, the team row and this coach's notes. */
 export const PREVIEW_ROSTER_PARTIAL: ChRoster = {
   ...PREVIEW_ROSTER,
   statsError: true,
+  teamAvg: null,
   teamError: true,
   notesError: true,
   joinCode: null,

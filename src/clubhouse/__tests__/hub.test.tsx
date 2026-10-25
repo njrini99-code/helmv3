@@ -2767,3 +2767,21 @@ describe('Team Hub · this file', () => {
 afterEach(() => {
   vi.restoreAllMocks();
 });
+
+describe('Team Hub · the palette’s Post announcement (A16)', () => {
+  afterEach(() => window.history.replaceState(null, '', '/'));
+
+  it('?tab=ann&compose=1 opens the composer for a coach and leaves the address on Announcements', async () => {
+    window.history.replaceState(null, '', '/golf/dashboard/team-hub?tab=ann&compose=1');
+    router.replace.mockClear();
+    show(PREVIEW_HUB_COACH, writes(), 'ann');
+    expect(await screen.findByRole('dialog', { name: 'New announcement' })).toBeTruthy();
+    expect(router.replace).toHaveBeenCalledWith('/golf/dashboard/team-hub?tab=ann', { scroll: false });
+  });
+
+  it('a player never gets it', () => {
+    window.history.replaceState(null, '', '/golf/dashboard/team-hub?tab=ann&compose=1');
+    show(PREVIEW_HUB_PLAYER, writes(), 'ann');
+    expect(screen.queryByRole('dialog', { name: 'New announcement' })).toBeNull();
+  });
+});

@@ -9,7 +9,7 @@
   immune to that, and resolution-independent besides.
 
   The solid fill matches capacitor.config.ts `android.backgroundColor`
-  (#F2E6D2, Fairway cream) so there is no colour step between the splash, the
+  (the native canvas, config/native-canvas.json) so there is no colour step between the splash, the
   window behind the WebView, and the app canvas on cold start.
 -->
 <layer-list xmlns:android="http://schemas.android.com/apk/res/android">

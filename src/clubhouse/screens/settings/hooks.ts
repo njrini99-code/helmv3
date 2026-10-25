@@ -8,6 +8,7 @@ import { useDistanceUnits } from '@/hooks/golf/use-distance-units';
 import type { DistancePreference } from '@/lib/golf/distance-units';
 import { areHapticsEnabled, setHapticsEnabled } from '@/lib/utils/haptics-pref';
 import { useToast } from '../../ui/Toast';
+import { SIGN_OUT_FAILED } from '../../lib/sign-out-copy';
 import { useChClockPref } from '../../lib/use-clock';
 import type { ChClock } from '../../lib/clock-cookie';
 import { haptic } from '../../lib/haptics';
@@ -470,7 +471,7 @@ export function useSignOut(writes: ChSettingsWrites) {
     } catch (err) {
       chReport(err, { surface: 'settings.session', action: 'signOut' });
       haptic('error');
-      toast({ tone: 'error', title: "Couldn’t sign you out", body: 'Check your connection and try again.', code: 'CH-8024' });
+      toast({ tone: 'error', title: SIGN_OUT_FAILED.title, body: SIGN_OUT_FAILED.body, code: 'CH-8024', action: { label: SIGN_OUT_FAILED.retry, run: () => void signOut() } });
       setSigningOut(false);
     }
   };

@@ -950,7 +950,7 @@
 }
 .ch-ox-input input::placeholder,
 .ch-ox-input textarea::placeholder {
-  color: var(--ch-text-tertiary);
+  color: var(--ch-text-placeholder);
 }
 .ch-ox-input textarea {
   min-height: 84px;

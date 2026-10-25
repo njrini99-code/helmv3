@@ -31,9 +31,11 @@ describe('a line per section, with its counts', () => {
   it('draws under the rule of each section that has reads, and none where there are none', () => {
     draw(PREVIEW_PLAYER_READS);
     expect(lines()).toHaveLength(3);
-    expect(lineIn('approach')?.textContent).toBe('CoachHelm sees 2 reads costing strokes on approach and 1 working. Deep dive →');
-    expect(lineIn('tee')?.textContent).toBe('CoachHelm sees 1 read costing strokes off the tee. Deep dive →');
-    expect(lineIn('putting')?.textContent).toBe('CoachHelm sees 1 read working on the greens. Deep dive →');
+    expect(lineIn('approach')?.textContent).toBe('CoachHelm sees 2 reads costing strokes on approach and 1 working. Deep dive ');
+    expect(lineIn('tee')?.textContent).toBe('CoachHelm sees 1 read costing strokes off the tee. Deep dive ');
+    expect(lineIn('putting')?.textContent).toBe('CoachHelm sees 1 read working on the greens. Deep dive ');
+    // The arrow is an icon, not the text "→", which the font does not have (A23).
+    expect(lineIn('approach')?.querySelector('.ch-gm__reads-go svg')).not.toBeNull();
     expect(lineIn('scoring')).toBeNull();
     expect(lineIn('short')).toBeNull();
     // Directly under the section's rule line.

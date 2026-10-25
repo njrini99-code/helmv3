@@ -63,7 +63,7 @@ export function PlayerHelmTabs({ active, onGo, coach = false }: { active: Player
             </button>
           ))}
           {development && (
-            <Link className="ch-hv-chip is-link" href={development} onClick={() => haptic('select')}>
+            <Link className="ch-hv-chip is-link" href={development}>
               Development
               <Icon icon={ArrowUpRight} size={14} />
             </Link>

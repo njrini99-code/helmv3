@@ -12,6 +12,11 @@ describe('what each role is offered', () => {
     const player = ids(actionsFor('player'));
     expect(coach).toEqual(['action:new-event', 'action:new-message', 'action:post-announcement', 'action:new-qualifier', 'action:whats-new']);
     expect(player).toEqual(['action:new-round', 'action:new-message', 'action:add-class']);
+    // A16: each opens its form, not just the page.
+    const href = (role: 'coach' | 'player', id: string) => actionsFor(role).find((c) => c.id === `action:${id}`)!.href;
+    expect(href('coach', 'new-message')).toBe('/golf/dashboard/messages?compose=1');
+    expect(href('coach', 'post-announcement')).toBe('/golf/dashboard/team-hub?tab=ann&compose=1');
+    expect(href('player', 'add-class')).toBe('/golf/dashboard/classes?new=1');
     for (const coachOnly of ['action:new-event', 'action:post-announcement', 'action:new-qualifier', 'action:whats-new']) expect(player).not.toContain(coachOnly);
     for (const playerOnly of ['action:new-round', 'action:add-class']) expect(coach).not.toContain(playerOnly);
   });

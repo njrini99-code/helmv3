@@ -469,6 +469,14 @@ export function TeamHub({
     setTab('ann');
     setCompose(true);
   };
+  // `?tab=ann&compose=1` (the command palette's Post announcement, A16) opens the composer once, for a coach, then leaves
+  // the address on Announcements, so Back or a reload never opens it again.
+  useEffect(() => {
+    if (!coach || new URL(window.location.href).searchParams.get('compose') !== '1') return;
+    router.replace('/golf/dashboard/team-hub?tab=ann', { scroll: false });
+    openCompose();
+    // Once, on arrival.
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
   // P010 D6: the head's one primary follows the tab (Documents' own drop zone is its primary), and a tab whose read
   // failed offers none.
   const primary = !coach

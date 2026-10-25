@@ -54,10 +54,11 @@ const config: CapacitorConfig = {
     // Marker appended to UA so the server-side proxy can detect native iOS
     // requests and block marketing/membership pages (App Store Guideline 3.1.1).
     appendUserAgent: 'HelmSportsLabsApp',
-    // Light page canvas (--fw-color-canvas, #F2E6D2) for the webview before
-    // the first paint. GolfBridgeViewController then swaps in the dynamic
-    // FwColorCanvas colour (light #F2E6D2 / dark #0D0F0D), which this static
-    // config cannot express.
+    // The native canvas's light colour for the webview before the first paint.
+    // GolfBridgeViewController then swaps in the dynamic AppCanvas colour
+    // (light + dark), which this static config cannot express. Every colour
+    // here is the active palette of config/native-canvas.json, written by
+    // scripts/native-canvas.mjs (A15); don't edit them by hand.
     backgroundColor: '#F2E6D2',
   },
   android: {
@@ -77,7 +78,7 @@ const config: CapacitorConfig = {
     allowMixedContent: false,
     // Same posture as iOS: no inspector in shipped builds.
     webContentsDebuggingEnabled: false,
-    // Cream (#F2E6D2, --fw-color-canvas) matches the splash and the app's canvas, so the window
+    // The native canvas (config/native-canvas.json) matches the splash and the app's canvas, so the window
     // behind the WebView never flashes white during navigation or rotation.
     backgroundColor: '#F2E6D2',
   },
@@ -99,9 +100,9 @@ const config: CapacitorConfig = {
     // frozen rather than merely slow. Reproduced on an Android 16 emulator:
     // stuck on the splash indefinitely. launchShowDuration is the ceiling, not
     // the target -- a healthy cold start still hides early via hideSplashScreen().
-    // backgroundColor is the light page canvas (--fw-color-canvas, #F2E6D2),
+    // backgroundColor is the native canvas's light colour (config/native-canvas.json),
     // the same colour baked into the iOS Splash images, LaunchScreen.storyboard
-    // (FwColorCanvas colour asset) and the native webview background, so a cold
+    // (AppCanvas colour asset) and the native webview background, so a cold
     // start has no colour step. Android's splash resources
     // (android/app/src/main/res: splash.xml, styles.xml) carry the same value.
     SplashScreen: {
