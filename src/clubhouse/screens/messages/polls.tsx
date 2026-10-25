@@ -1,7 +1,8 @@
 "use client";
 
 import { Check, ListChecks, Lock, Minus, Plus } from "lucide-react";
-import { createContext, useContext, useEffect, useId, useRef, useState, type KeyboardEvent } from "react";
+import { AnimatePresence, m, useIsPresent } from "motion/react";
+import { createContext, useContext, useEffect, useId, useMemo, useRef, useState, type KeyboardEvent, type ReactNode } from "react";
 import {
   POLL_MAX_OPTIONS,
   POLL_MIN_OPTIONS,
@@ -25,13 +26,16 @@ import {
   type PollTally,
 } from "@/lib/golf/message-polls";
 import { haptic } from "../../lib/haptics";
+import { CH_DUR, chTween } from "../../lib/motion";
 import { plural } from "../../lib/plural";
+import { useChReducedMotion } from "../../lib/reduced-motion";
 import { Avatar } from "../../ui/Avatar";
 import { Button, IconButton } from "../../ui/Button";
 import { DateField } from "../../ui/DateField";
 import { Icon } from "../../ui/Icon";
 import { Menu } from "../../ui/Menu";
 import { Modal } from "../../ui/Modal";
+import { ListPresence, PresenceRow } from "../../ui/ListPresence";
 import { InlineNotice } from "../../ui/Notices";
 import { Segmented } from "../../ui/Segmented";
 import { Switch } from "../../ui/Switch";
@@ -156,6 +160,52 @@ function shortNames(ids: readonly string[], nameOf: (id: string) => string): str
   });
 }
 
+/**
+ * One copy of a crossfade (M5, M7, M8, M11): the new copy fades in over the base beat, the old one out over the quick
+ * one, and the leaving copy drops out of assistive tech and focus at once. Instant under reduced motion and Animations off.
+ */
+function FadeCopy({ as = "span", className, children }: { as?: "span" | "div"; className?: string; children: ReactNode }) {
+  const reduced = useChReducedMotion();
+  const present = useIsPresent();
+  const Item = as === "div" ? m.div : m.span;
+  return (
+    <Item
+      className={className}
+      aria-hidden={present ? undefined : true}
+      inert={!present}
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1, transition: chTween("base", reduced) }}
+      exit={{ opacity: 0, transition: chTween("quick", reduced) }}
+    >
+      {children}
+    </Item>
+  );
+}
+
+/**
+ * A figure or line that changes in place: the copies stack in one grid cell (messages.css `.ch-ms-poll__x`), so the old
+ * and the new share the spot while they cross. Keyed by what it shows; first paint never animates. A caller draws a
+ * plain element until the votes have loaded, so the first figures arrive without motion.
+ */
+function Crossfade({ k, className, children }: { k: string | number; className?: string; children: ReactNode }) {
+  return (
+    <span className={"ch-ms-poll__x" + (className ? ` ${className}` : "")}>
+      <AnimatePresence initial={false}>
+        <FadeCopy key={k}>{children}</FadeCopy>
+      </AnimatePresence>
+    </span>
+  );
+}
+
+/** A part of the sheet that fades out when it leaves and back in when it returns (M11, M17); drawn at once the first time. */
+function FadePart({ className, children }: { className?: string; children: ReactNode }) {
+  return (
+    <FadeCopy as="div" className={className}>
+      {children}
+    </FadeCopy>
+  );
+}
+
 export function PollCard({
   api,
   messageId,
@@ -173,6 +223,8 @@ export function PollCard({
   const qid = useId();
   const [votesOpen, setVotesOpen] = useState(false);
   const [closing, setClosing] = useState(false);
+  // M3: the row the viewer last tapped; only its check plays the pop (a card that loads voted shows it at rest).
+  const [tapped, setTapped] = useState<string | null>(null);
   const tally = polls?.tally(messageId, poll) ?? null;
   const nowMs = usePollClock(poll.closesAt, api.now);
   const closed = isPollClosed(poll, nowMs);
@@ -229,9 +281,25 @@ export function PollCard({
     // encodeChoice orders the ids as the options are, so "o3,o1" can't be stored.
     const ordered = next.length ? (encodeChoice(poll, next)?.split(",") ?? []) : [];
     haptic("select");
+    setTapped(optionId);
     polls.vote(messageId, poll, ordered);
   };
 
+  const countText = !tally
+    ? polls?.error
+      ? "Votes didn’t load"
+      : "Loading votes…"
+    : tally.voterCount === 0
+      ? closed
+        ? "No one voted"
+        : "No votes yet"
+      : eligible
+        ? tally.voterCount >= eligible
+          ? "Everyone voted"
+          : `${tally.voterCount} of ${eligible} voted`
+        : tally.voterCount === 1
+          ? "1 vote"
+          : `${tally.voterCount} voted`;
   const ends = endsLabel(poll, closed, api.now, api.timeZone, api.clock ?? "12", nowMs);
   const state = pollState(poll, nowMs);
   const soon = !closed && !!poll.closesAt && Date.parse(poll.closesAt) - nowMs < 3_600_000;
@@ -253,9 +321,11 @@ export function PollCard({
   return (
     <div className={"ch-ms-poll" + (closed ? " is-closed" : "")} role="group" aria-labelledby={qid} aria-busy={busy || undefined}>
       <div className="ch-ms-poll__head">
-        <Icon icon={closed ? Lock : ListChecks} size={14} />
-        {/* D12: says what happened: the sender closed it, or its time ran out. */}
-        <span>{state === "closed" ? "Poll closed" : state === "ended" ? "Voting ended" : "Poll"}</span>
+        {/* D12: says what happened: the sender closed it, or its time ran out. M8: the glyph and words cross when it closes live. */}
+        <Crossfade k={state}>
+          <Icon icon={closed ? Lock : ListChecks} size={14} />
+          <span>{state === "closed" ? "Poll closed" : state === "ended" ? "Voting ended" : "Poll"}</span>
+        </Crossfade>
         {ends && (
           <>
             <span className="ch-ms-poll__dot" aria-hidden="true">
@@ -296,15 +366,24 @@ export function PollCard({
               >
                 <span className="ch-ms-poll__fill" aria-hidden="true" />
                 <span className="ch-ms-poll__level" aria-hidden="true" />
-                <span className="ch-ms-poll__mark" aria-hidden="true">
+                <span className="ch-ms-poll__mark" aria-hidden="true" data-pop={on && tapped === o.id ? "" : undefined}>
                   {on && <Icon icon={Check} size={12} />}
                 </span>
                 <span className="ch-ms-poll__label">{o.label}</span>
-                {lead && closed && <span className="ch-ms-poll__tag">{tied ? "Tied" : "Most votes"}</span>}
-                <span className={"ch-ms-poll__n ch-num" + (tally && n === 0 ? " is-zero" : "")} aria-hidden="true">
-                  {/* An honest "0" (tertiary ink) open or final; "—" only while the votes load or failed to. */}
-                  {!tally ? "—" : n}
-                </span>
+                {/* M8: the leader's tag fades in when the poll closes live (nothing animates on a card drawn final). */}
+                <AnimatePresence initial={false}>
+                  {lead && closed && <FadeCopy key="tag" className="ch-ms-poll__tag">{tied ? "Tied" : "Most votes"}</FadeCopy>}
+                </AnimatePresence>
+                {/* An honest "0" (tertiary ink) open or final; "—" only while the votes load or failed to. M5: a changed count crosses in place. */}
+                {tally ? (
+                  <span className={"ch-ms-poll__n ch-num" + (n === 0 ? " is-zero" : "")} aria-hidden="true">
+                    <Crossfade k={n}>{n}</Crossfade>
+                  </span>
+                ) : (
+                  <span className="ch-ms-poll__n ch-num" aria-hidden="true">
+                    —
+                  </span>
+                )}
               </button>
             </li>
           );
@@ -313,23 +392,14 @@ export function PollCard({
       <div className="ch-ms-poll__foot">
         {/* No live region: a thread with several polls would read out every vote on every card. A voter hears their own
             pick through the option's checked state. */}
-        <span className="ch-ms-poll__count ch-num">
-          {!tally
-            ? polls?.error
-              ? "Votes didn’t load"
-              : "Loading votes…"
-            : tally.voterCount === 0
-              ? closed
-                ? "No one voted"
-                : "No votes yet"
-            : eligible
-              ? tally.voterCount >= eligible
-                ? "Everyone voted"
-                : `${tally.voterCount} of ${eligible} voted`
-              : tally.voterCount === 1
-                ? "1 vote"
-                : `${tally.voterCount} voted`}
-        </span>
+        {/* M5, M7: a changed line (and "Everyone voted") crosses in place once the votes are in. */}
+        {tally ? (
+          <Crossfade k={countText} className="ch-ms-poll__count ch-num">
+            {countText}
+          </Crossfade>
+        ) : (
+          <span className="ch-ms-poll__count ch-num">{countText}</span>
+        )}
         {!tally && polls?.error ? (
           <button type="button" className="ch-ms-poll__link" onClick={polls.retry}>
             Retry
@@ -511,6 +581,11 @@ interface PollSheetDraft {
   customTime: string;
 }
 const drafts = new Map<string, PollSheetDraft>();
+/** A choice row of the sheet: its text and an id that stays with it as rows come and go. */
+interface PollRow {
+  id: number;
+  text: string;
+}
 /** Test seam: the kept drafts start empty in each test. */
 export const clearPollDrafts = () => drafts.clear();
 
@@ -542,7 +617,12 @@ export function PollSheet({ api, conv, open, onClose }: { api: ChMessagesApi; co
   const hours = api.clock ?? "12";
   const kept = drafts.get(conv.id);
   const [question, setQuestion] = useState(kept?.question ?? "");
-  const [options, setOptions] = useState<string[]>(kept?.options ?? ["", ""]);
+  // M10: each choice row keeps an id of its own, so a row that is added or removed animates and the others stay put.
+  const rowIds = useRef(0);
+  const [rows, setRows] = useState<PollRow[]>(() => (kept?.options ?? ["", ""]).map((text) => ({ id: rowIds.current++, text })));
+  const options = useMemo(() => rows.map((r) => r.text), [rows]);
+  // The same texts on the rows that are already there, by place; new places get new ids.
+  const fit = (prev: PollRow[], texts: readonly string[]): PollRow[] => texts.map((text, i) => ({ id: prev[i]?.id ?? rowIds.current++, text }));
   const [placeholders, setPlaceholders] = useState<readonly string[] | null>(kept?.placeholders ?? null);
   const [multi, setMulti] = useState(kept?.multi ?? false);
   const [ends, setEnds] = useState<Ends>(kept?.ends ?? "none");
@@ -587,6 +667,17 @@ export function PollSheet({ api, conv, open, onClose }: { api: ChMessagesApi; co
     return () => ro.disconnect();
   }, [open, endsFit]);
 
+  // M12: the fields stay drawn while the row closes on the base beat, then go (inert and hidden meanwhile).
+  const [customShown, setCustomShown] = useState(ends === "custom");
+  useEffect(() => {
+    if (ends === "custom") {
+      setCustomShown(true);
+      return;
+    }
+    const t = setTimeout(() => setCustomShown(false), CH_DUR.base * 1000 + 40);
+    return () => clearTimeout(t);
+  }, [ends]);
+
   const customEnd = ends === "custom" ? zonedWallTimeToInstant(custom.date, custom.time, zone) : null;
   // The end time is worked out when Send is pressed, so a sheet left open for a while can't send a poll that has
   // already ended.
@@ -597,7 +688,7 @@ export function PollSheet({ api, conv, open, onClose }: { api: ChMessagesApi; co
 
   const reset = () => {
     setQuestion("");
-    setOptions(["", ""]);
+    setRows((prev) => fit(prev, ["", ""]));
     setPlaceholders(null);
     setMulti(false);
     setEnds("none");
@@ -611,12 +702,12 @@ export function PollSheet({ api, conv, open, onClose }: { api: ChMessagesApi; co
   };
 
   const setOption = (i: number, text: string) => {
-    setOptions((prev) => {
+    setRows((prev) => {
       const next = prev.slice();
-      next[i] = text;
+      next[i] = { ...next[i]!, text };
       // A spare row once every row has text, up to six; trailing empty rows past two fold away.
-      if (next.every((o) => o.trim()) && next.length < POLL_MAX_OPTIONS) next.push("");
-      while (next.length > POLL_MIN_OPTIONS && !next[next.length - 1]!.trim() && !next[next.length - 2]!.trim()) next.pop();
+      if (next.every((r) => r.text.trim()) && next.length < POLL_MAX_OPTIONS) next.push({ id: rowIds.current++, text: "" });
+      while (next.length > POLL_MIN_OPTIONS && !next[next.length - 1]!.text.trim() && !next[next.length - 2]!.text.trim()) next.pop();
       return next;
     });
     setProblem(null);
@@ -626,14 +717,14 @@ export function PollSheet({ api, conv, open, onClose }: { api: ChMessagesApi; co
     const s = POLL_SUGGESTIONS[i]!;
     haptic("select");
     setQuestion(s.question);
-    setOptions([...s.options]);
+    setRows((prev) => fit(prev, s.options));
     setPlaceholders(s.placeholders ?? null);
     setMulti(s.multi);
     setEnds(s.ends);
     setProblem(null);
     // Focus the first empty choice, or the question's end.
     requestAnimationFrame(() => {
-      const inputs = [...(list.current?.querySelectorAll<HTMLInputElement>("input") ?? [])];
+      const inputs = [...(list.current?.querySelectorAll<HTMLInputElement>("li:not([data-leaving]) input") ?? [])];
       const target = inputs.find((x) => !x.value) ?? document.querySelector<HTMLInputElement>("#ch-ms-poll-q");
       target?.focus();
       if (target === document.querySelector("#ch-ms-poll-q")) target?.setSelectionRange(target.value.length, target.value.length);
@@ -756,7 +847,7 @@ export function PollSheet({ api, conv, open, onClose }: { api: ChMessagesApi; co
             onKeyDown={(e) => {
               if (sendKey(e) || e.key !== "Enter") return;
               e.preventDefault();
-              list.current?.querySelector<HTMLInputElement>("input")?.focus();
+              list.current?.querySelector<HTMLInputElement>("li:not([data-leaving]) input")?.focus();
             }}
           />
           {left <= 20 && (
@@ -765,62 +856,67 @@ export function PollSheet({ api, conv, open, onClose }: { api: ChMessagesApi; co
             </p>
           )}
         </div>
-        {empty && (
-          <div className="ch-ms-pollf__quick">
-            <span className="ch-ms-pollf__quickl" id="ch-ms-poll-quick">
-              Quick start
-            </span>
-            <div className="ch-ms-pollf__chips" role="group" aria-labelledby="ch-ms-poll-quick">
-              {POLL_SUGGESTIONS.map((sg, i) => (
-                <button key={sg.chip} type="button" className="ch-ms-pollf__chip" onClick={() => suggest(i)}>
-                  {sg.chip}
-                </button>
-              ))}
-            </div>
-          </div>
-        )}
+        {/* M11, M17: the chips fade out once there is something to keep, and back in when Clear empties the form. */}
+        <AnimatePresence initial={false}>
+          {empty && (
+            <FadePart key="quick" className="ch-ms-pollf__quick">
+              <span className="ch-ms-pollf__quickl" id="ch-ms-poll-quick">
+                Quick start
+              </span>
+              <div className="ch-ms-pollf__chips" role="group" aria-labelledby="ch-ms-poll-quick">
+                {POLL_SUGGESTIONS.map((sg, i) => (
+                  <button key={sg.chip} type="button" className="ch-ms-pollf__chip" onClick={() => suggest(i)}>
+                    {sg.chip}
+                  </button>
+                ))}
+              </div>
+            </FadePart>
+          )}
+        </AnimatePresence>
         <fieldset className="ch-ms-pollf__set" aria-invalid={invalid("options")}>
           <legend className="ch-field__label">Choices</legend>
           <ol ref={list} className="ch-ms-pollf__opts">
-            {options.map((o, i) => (
-              <li key={i} className="ch-ms-pollf__opt">
-                <span className="ch-ms-pollf__n ch-num" aria-hidden="true">
-                  {i + 1}
-                </span>
-                <input
-                  className="ch-input"
-                  aria-label={`Choice ${i + 1}`}
-                  value={o}
-                  maxLength={POLL_OPTION_MAX}
-                  placeholder={placeholders?.[i] ?? (i < POLL_MIN_OPTIONS ? `Choice ${i + 1}` : "Add a choice")}
-                  autoComplete="off"
-                  readOnly={busy}
-                  enterKeyHint={i === options.length - 1 ? "done" : "next"}
-                  onChange={(e) => setOption(i, e.target.value)}
-                  onKeyDown={(e) => {
-                    if (sendKey(e) || e.key !== "Enter") return;
-                    e.preventDefault();
-                    // Return moves on; on an empty spare it does nothing.
-                    if (!o.trim()) return;
-                    list.current?.querySelectorAll<HTMLInputElement>("input")[i + 1]?.focus();
-                  }}
-                />
-                {options.length > POLL_MIN_OPTIONS && o.trim() && (
-                  <IconButton
-                    icon={Minus}
-                    label={`Remove choice ${i + 1}`}
-                    size="sm"
-                    onClick={() =>
-                      setOptions((prev) => {
-                        const next = prev.filter((_, j) => j !== i);
-                        if (next.every((x) => x.trim()) && next.length < POLL_MAX_OPTIONS) next.push("");
-                        return next;
-                      })
-                    }
+            <ListPresence>
+              {options.map((o, i) => (
+                <PresenceRow as="li" key={rows[i]!.id} className="ch-ms-pollf__opt">
+                  <span className="ch-ms-pollf__n ch-num" aria-hidden="true">
+                    {i + 1}
+                  </span>
+                  <input
+                    className="ch-input"
+                    aria-label={`Choice ${i + 1}`}
+                    value={o}
+                    maxLength={POLL_OPTION_MAX}
+                    placeholder={placeholders?.[i] ?? (i < POLL_MIN_OPTIONS ? `Choice ${i + 1}` : "Add a choice")}
+                    autoComplete="off"
+                    readOnly={busy}
+                    enterKeyHint={i === options.length - 1 ? "done" : "next"}
+                    onChange={(e) => setOption(i, e.target.value)}
+                    onKeyDown={(e) => {
+                      if (sendKey(e) || e.key !== "Enter") return;
+                      e.preventDefault();
+                      // Return moves on; on an empty spare it does nothing.
+                      if (!o.trim()) return;
+                      list.current?.querySelectorAll<HTMLInputElement>("li:not([data-leaving]) input")[i + 1]?.focus();
+                    }}
                   />
-                )}
-              </li>
-            ))}
+                  {options.length > POLL_MIN_OPTIONS && o.trim() && (
+                    <IconButton
+                      icon={Minus}
+                      label={`Remove choice ${i + 1}`}
+                      size="sm"
+                      onClick={() =>
+                        setRows((prev) => {
+                          const next = prev.filter((_, j) => j !== i);
+                          if (next.every((x) => x.text.trim()) && next.length < POLL_MAX_OPTIONS) next.push({ id: rowIds.current++, text: "" });
+                          return next;
+                        })
+                      }
+                    />
+                  )}
+                </PresenceRow>
+              ))}
+            </ListPresence>
           </ol>
           {options.length >= POLL_MAX_OPTIONS && options.every((o) => o.trim()) ? (
             <p className="ch-field__help">A poll takes up to 6 choices.</p>
@@ -851,9 +947,9 @@ export function PollSheet({ api, conv, open, onClose }: { api: ChMessagesApi; co
               )}
             />
           )}
-          <div className={"ch-ms-pollf__custom" + (ends === "custom" ? " is-open" : "")} aria-hidden={ends === "custom" ? undefined : true}>
+          <div className={"ch-ms-pollf__custom" + (ends === "custom" ? " is-open" : "")} aria-hidden={ends === "custom" ? undefined : true} inert={ends !== "custom"}>
             <div className="ch-ms-pollf__customin">
-              {ends === "custom" && (
+              {customShown && (
                 <>
                   <DateField label="Date" value={custom.date} onChange={(v) => v && setCustom((c) => ({ ...c, date: v }))} />
                   <TimeField label="Time" value={custom.time} onChange={(v) => v && setCustom((c) => ({ ...c, time: v }))} />
