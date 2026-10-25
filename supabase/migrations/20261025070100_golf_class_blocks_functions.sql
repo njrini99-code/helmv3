@@ -376,6 +376,17 @@ as $$
     )
 $$;
 
+-- Pure helpers: new functions in public are callable by anon through default privileges, so close that; the invoker
+-- functions below call them as the signed-in user, so authenticated keeps EXECUTE.
+revoke all on function public.golf_day_token_dow(text) from public, anon;
+revoke all on function public.golf_safe_time_zone(text) from public, anon;
+revoke all on function public.golf_class_in_term(text, timestamptz, public.golf_team_terms) from public, anon;
+revoke all on function public.golf_class_usable(public.golf_player_classes, public.golf_team_terms) from public, anon;
+grant execute on function public.golf_day_token_dow(text) to authenticated, service_role;
+grant execute on function public.golf_safe_time_zone(text) to authenticated, service_role;
+grant execute on function public.golf_class_in_term(text, timestamptz, public.golf_team_terms) to authenticated, service_role;
+grant execute on function public.golf_class_usable(public.golf_player_classes, public.golf_team_terms) to authenticated, service_role;
+
 revoke all on function public.golf_class_blocks_internal(uuid, date, uuid) from public, anon, authenticated;
 grant execute on function public.golf_class_blocks_internal(uuid, date, uuid) to service_role;
 

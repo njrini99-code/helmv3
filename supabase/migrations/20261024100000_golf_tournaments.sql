@@ -619,7 +619,7 @@ as $$
 BEGIN
   IF NOT EXISTS (
     SELECT 1 FROM public.golf_team_members m
-    WHERE m.team_id = p_team_id AND m.player_id = p_player_id) THEN
+    WHERE m.team_id = p_team_id AND m.player_id = p_player_id AND m.status = 'active') THEN
     RAISE EXCEPTION 'player % is not on team %', p_player_id, p_team_id
       USING ERRCODE = '23514';
   END IF;
@@ -761,7 +761,7 @@ BEGIN
   ]
   LOOP
     EXECUTE format('alter table public.%I enable row level security', t);
-    EXECUTE format('revoke all on public.%I from public, anon', t);
+    EXECUTE format('revoke all on public.%I from public, anon, authenticated', t);  -- authenticated keeps only the grant below (no TRUNCATE, which ignores RLS)
     EXECUTE format(
       'grant select, insert, update, delete on public.%I to authenticated', t);
     EXECUTE format('grant all on public.%I to service_role', t);

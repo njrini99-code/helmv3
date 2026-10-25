@@ -12598,6 +12598,45 @@ export type Database = {
           },
         ]
       }
+      golf_conversation_read_marks: {
+        Row: {
+          conversation_id: string
+          id: number
+          is_baseline: boolean
+          read_at: string
+          user_id: string
+        }
+        Insert: {
+          conversation_id: string
+          id?: never
+          is_baseline?: boolean
+          read_at: string
+          user_id: string
+        }
+        Update: {
+          conversation_id?: string
+          id?: never
+          is_baseline?: boolean
+          read_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "golf_conversation_read_marks_conversation_id_fkey"
+            columns: ["conversation_id"]
+            isOneToOne: false
+            referencedRelation: "golf_conversations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "golf_conversation_read_marks_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       golf_conversations: {
         Row: {
           created_at: string | null
@@ -16459,6 +16498,153 @@ export type Database = {
           },
         ]
       }
+      golf_round_live: {
+        Row: {
+          course_id: string | null
+          course_name: string | null
+          current_hole: number | null
+          emit_count: number
+          emit_window_at: string
+          ended_at: string | null
+          heard_at: string
+          holes: Json
+          holes_planned: number
+          is_test: boolean
+          last_hole_at: string | null
+          phase: string
+          player_id: string
+          qualifier_id: string | null
+          qualifier_round: number | null
+          round_date: string
+          round_id: string
+          round_type: string
+          seq: number
+          share: string
+          share_changes: number
+          start_position: number
+          started_at: string
+          strokes: number | null
+          team_id: string
+          thru: number
+          to_par: number | null
+          updated_at: string
+        }
+        Insert: {
+          course_id?: string | null
+          course_name?: string | null
+          current_hole?: number | null
+          emit_count?: number
+          emit_window_at?: string
+          ended_at?: string | null
+          heard_at?: string
+          holes?: Json
+          holes_planned?: number
+          is_test?: boolean
+          last_hole_at?: string | null
+          phase?: string
+          player_id: string
+          qualifier_id?: string | null
+          qualifier_round?: number | null
+          round_date: string
+          round_id: string
+          round_type: string
+          seq?: number
+          share: string
+          share_changes?: number
+          start_position?: number
+          started_at?: string
+          strokes?: number | null
+          team_id: string
+          thru?: number
+          to_par?: number | null
+          updated_at?: string
+        }
+        Update: {
+          course_id?: string | null
+          course_name?: string | null
+          current_hole?: number | null
+          emit_count?: number
+          emit_window_at?: string
+          ended_at?: string | null
+          heard_at?: string
+          holes?: Json
+          holes_planned?: number
+          is_test?: boolean
+          last_hole_at?: string | null
+          phase?: string
+          player_id?: string
+          qualifier_id?: string | null
+          qualifier_round?: number | null
+          round_date?: string
+          round_id?: string
+          round_type?: string
+          seq?: number
+          share?: string
+          share_changes?: number
+          start_position?: number
+          started_at?: string
+          strokes?: number | null
+          team_id?: string
+          thru?: number
+          to_par?: number | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "golf_round_live_player_id_fkey"
+            columns: ["player_id"]
+            isOneToOne: false
+            referencedRelation: "golf_players"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "golf_round_live_round_id_fkey"
+            columns: ["round_id"]
+            isOneToOne: true
+            referencedRelation: "golf_rounds"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "golf_round_live_team_id_fkey"
+            columns: ["team_id"]
+            isOneToOne: false
+            referencedRelation: "golf_teams"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      golf_round_live_prefs: {
+        Row: {
+          next_share: string | null
+          next_share_at: string | null
+          player_id: string
+          practice_share: string
+          updated_at: string
+        }
+        Insert: {
+          next_share?: string | null
+          next_share_at?: string | null
+          player_id: string
+          practice_share?: string
+          updated_at?: string
+        }
+        Update: {
+          next_share?: string | null
+          next_share_at?: string | null
+          player_id?: string
+          practice_share?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "golf_round_live_prefs_player_id_fkey"
+            columns: ["player_id"]
+            isOneToOne: true
+            referencedRelation: "golf_players"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       golf_round_recap_locks: {
         Row: {
           expires_at: string
@@ -17211,6 +17397,35 @@ export type Database = {
             foreignKeyName: "golf_staff_invite_redemptions_team_id_fkey"
             columns: ["team_id"]
             isOneToOne: false
+            referencedRelation: "golf_teams"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      golf_standing_refresh_queue: {
+        Row: {
+          first_marked_at: string
+          marked_at: string
+          marks: number
+          team_id: string
+        }
+        Insert: {
+          first_marked_at?: string
+          marked_at?: string
+          marks?: number
+          team_id: string
+        }
+        Update: {
+          first_marked_at?: string
+          marked_at?: string
+          marks?: number
+          team_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "golf_standing_refresh_queue_team_id_fkey"
+            columns: ["team_id"]
+            isOneToOne: true
             referencedRelation: "golf_teams"
             referencedColumns: ["id"]
           },
@@ -21459,6 +21674,10 @@ export type Database = {
           holder_token: string
         }[]
       }
+      clear_dirty_standing_teams: {
+        Args: { p_marked_ats: string[]; p_team_ids: string[] }
+        Returns: number
+      }
       coach_id_for_team: {
         Args: { p_team_id: string; p_user_id: string }
         Returns: string
@@ -21858,6 +22077,13 @@ export type Database = {
         Args: { p_announcement_id: string }
         Returns: boolean
       }
+      golf_change_marks_capability: {
+        Args: never
+        Returns: {
+          marks: boolean
+          pushes: boolean
+        }[]
+      }
       golf_coachhelm_shown_reads: {
         Args: { p_since: string; p_team_id: string }
         Returns: {
@@ -21896,6 +22122,15 @@ export type Database = {
         Returns: {
           team_id: string
           team_name: string
+        }[]
+      }
+      golf_live_viewer_on_course: { Args: { p_team: string }; Returns: boolean }
+      golf_message_seen_times: {
+        Args: { p_message_id: string }
+        Returns: {
+          exact: boolean
+          seen_at: string
+          user_id: string
         }[]
       }
       golf_my_join_requests: {
@@ -21939,7 +22174,19 @@ export type Database = {
           player_id: string
         }[]
       }
+      golf_read_marks_visible: {
+        Args: { p_conversation_id: string; p_user_id: string }
+        Returns: boolean
+      }
       golf_readable_round_ids: { Args: never; Returns: string[] }
+      golf_round_live_set_next_share: {
+        Args: { p_remember?: boolean; p_share: string }
+        Returns: Json
+      }
+      golf_round_live_set_share: {
+        Args: { p_remember?: boolean; p_round_id: string; p_share: string }
+        Returns: Json
+      }
       golf_set_course_image: {
         Args: { p_course_id: string; p_image_url: string }
         Returns: undefined
@@ -22203,6 +22450,10 @@ export type Database = {
         Returns: undefined
       }
       mark_task_reminder_sent: { Args: { p_task_id: string }; Returns: boolean }
+      mark_team_standing_dirty: {
+        Args: { p_player_id: string }
+        Returns: number
+      }
       owns_golf_shot: { Args: { p_shot_id: string }; Returns: boolean }
       prune_stale_player_standing: {
         Args: { p_cutoff: string; p_team_ids: string[] }
@@ -22482,6 +22733,17 @@ export type Database = {
       save_round_ai_recap: {
         Args: { p_recap: string; p_round_id: string }
         Returns: Json
+      }
+      select_dirty_standing_teams: {
+        Args: {
+          p_limit: number
+          p_max_wait_seconds?: number
+          p_quiet_seconds?: number
+        }
+        Returns: {
+          marked_at: string
+          team_id: string
+        }[]
       }
       select_stalest_teams: {
         Args: { p_limit: number }

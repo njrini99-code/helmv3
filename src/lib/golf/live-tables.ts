@@ -1,7 +1,8 @@
-/** Held live-round tables (20261025050000), typed until the production apply regenerates database.ts. */
+/** Live-round tables (20261025050000, applied to production 2026-10-25), typed from the generated database types. */
 import type { SupabaseClient } from '@supabase/supabase-js';
+import type { Database } from '@/lib/types/database';
 
-/** `public.golf_round_live`, as PostgREST returns it. The table is not in the generated types until it is applied. */
+/** `public.golf_round_live`, as PostgREST returns it: the generated row with its JSON and bigint columns given their real shape. */
 export interface GolfRoundLiveRow {
   round_id: string;
   team_id: string;
@@ -28,19 +29,23 @@ export interface GolfRoundLiveRow {
   seq: number | string;
 }
 
-type HeldTable<Row> = { Row: { [K in keyof Row]: Row[K] }; Insert: Partial<Row>; Update: Partial<Row>; Relationships: [] };
-type LiveDatabase = {
-  public: {
-    Tables: {
-      golf_round_live: HeldTable<GolfRoundLiveRow>;
-      golf_round_live_prefs: HeldTable<{ player_id: string; practice_share: string; updated_at: string }>;
-    };
-    Views: Record<never, never>;
-    Functions: Record<never, never>;
-  };
+type GeneratedLiveRow = Database['public']['Tables']['golf_round_live']['Row'];
+// Fails the build if the generated row and the narrowed interface above drift apart (a column added, removed or retyped).
+type _LiveRowMatchesGenerated = {
+  [K in keyof GolfRoundLiveRow]: K extends keyof GeneratedLiveRow ? true : never;
 };
+const _liveRowKeys: _LiveRowMatchesGenerated | null = null;
+void _liveRowKeys;
 
-/** Uses the caller's session and RLS; only the schema typing changes. */
-export function liveTable<T extends keyof LiveDatabase['public']['Tables']>(client: object, table: T) {
-  return (client as SupabaseClient<LiveDatabase>).from(table);
+const liveBuilder = (client: SupabaseClient<Database>) => client.from('golf_round_live');
+const livePrefsBuilder = (client: SupabaseClient<Database>) => client.from('golf_round_live_prefs');
+type LiveBuilder = ReturnType<typeof liveBuilder>;
+type LivePrefsBuilder = ReturnType<typeof livePrefsBuilder>;
+
+/** Uses the caller's session and RLS. */
+export function liveTable(client: object, table: 'golf_round_live'): LiveBuilder;
+export function liveTable(client: object, table: 'golf_round_live_prefs'): LivePrefsBuilder;
+export function liveTable(client: object, table: 'golf_round_live' | 'golf_round_live_prefs'): LiveBuilder | LivePrefsBuilder {
+  const typed = client as SupabaseClient<Database>;
+  return table === 'golf_round_live' ? liveBuilder(typed) : livePrefsBuilder(typed);
 }
