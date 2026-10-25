@@ -20000,8 +20000,8 @@
     "item": 6,
     "name": "HOME_NO_EVENT_IN_THE_SEASON_NOTHING",
     "chCode": "CH-16310",
-    "meaning": "Home: no event in the season, nothing failed",
-    "status": "implemented",
+    "meaning": "Retired 2026-10-25 (P-5 4.11.1): replaced by CH-16352. Home: no event in the season, nothing failed",
+    "status": "deprecated",
     "catalog": "docs/clubhouse/catalog/tournaments.md"
   },
   {
@@ -20111,6 +20111,17 @@
     "name": "COMPARE_THERE_ARE_NO_ROUNDS_AT_ALL",
     "chCode": "CH-16351",
     "meaning": "Compare: there are no rounds at all (the read worked)",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/tournaments.md"
+  },
+  {
+    "id": 160417,
+    "page": "P016",
+    "category": 4,
+    "item": 17,
+    "name": "HOME_NO_EVENT_IN_THE_SEASON_NOTHING_2",
+    "chCode": "CH-16352",
+    "meaning": "Home: no event in the season, nothing failed (P-5 4.11.1; replaces CH-16310)",
     "status": "implemented",
     "catalog": "docs/clubhouse/catalog/tournaments.md"
   },
@@ -20225,6 +20236,61 @@
     "catalog": "docs/clubhouse/catalog/tournaments.md"
   },
   {
+    "id": 160611,
+    "page": "P016",
+    "category": 6,
+    "item": 11,
+    "name": "STOP_TRACKING_CONFIRMED_ON_THE_DESK_AND",
+    "chCode": "CH-16050",
+    "meaning": "Stop tracking confirmed on the desk (CH-16550) and written (P-5)",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/tournaments.md"
+  },
+  {
+    "id": 160612,
+    "page": "P016",
+    "category": 6,
+    "item": 12,
+    "name": "CANCEL_TOURNAMENT_CONFIRMED_ON_THE_DESK",
+    "chCode": "CH-16051",
+    "meaning": "Cancel tournament confirmed on the desk (CH-16551)",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/tournaments.md"
+  },
+  {
+    "id": 160613,
+    "page": "P016",
+    "category": 6,
+    "item": 13,
+    "name": "RESTORE_TOURNAMENT_ON_THE_DESK",
+    "chCode": "CH-16052",
+    "meaning": "Restore tournament on the desk",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/tournaments.md"
+  },
+  {
+    "id": 160614,
+    "page": "P016",
+    "category": 6,
+    "item": 14,
+    "name": "STOP_TRACKING_REFUSED_THE_RESULTS_ARE_OFFICIAL",
+    "chCode": "CH-16053",
+    "meaning": "Stop tracking refused: the results are official",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/tournaments.md"
+  },
+  {
+    "id": 160615,
+    "page": "P016",
+    "category": 6,
+    "item": 15,
+    "name": "HOME_THE_READ_OF_THE_CALENDARS_UNTRACKED",
+    "chCode": "CH-16253",
+    "meaning": "Home (coach): the read of the calendar's untracked tournaments fails (`errors.untracked`, P-5)",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/tournaments.md"
+  },
+  {
     "id": 161001,
     "page": "P016",
     "category": 10,
@@ -20232,6 +20298,28 @@
     "name": "EVENT_DESK_THE_HOSTS_PUBLISHED_NUMBER_DIFFERS",
     "chCode": "CH-16920",
     "meaning": "Event desk: the host's published number differs from our scorecard (`officialTotal` set and unequal)",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/tournaments.md"
+  },
+  {
+    "id": 161101,
+    "page": "P016",
+    "category": 11,
+    "item": 1,
+    "name": "STOP_TRACKING_FROM_THE_DESKS_TOURNAMENT_MENU",
+    "chCode": "CH-16550",
+    "meaning": "Stop tracking, from the desk's tournament menu (P-5)",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/tournaments.md"
+  },
+  {
+    "id": 161102,
+    "page": "P016",
+    "category": 11,
+    "item": 2,
+    "name": "CANCEL_TOURNAMENT_FROM_THE_DESKS_TOURNAMENT_MENU",
+    "chCode": "CH-16551",
+    "meaning": "Cancel tournament, from the desk's tournament menu (P-5; the calendar's CH-6541)",
     "status": "implemented",
     "catalog": "docs/clubhouse/catalog/tournaments.md"
   },
@@ -20247,6 +20335,17 @@
     "catalog": "docs/clubhouse/catalog/tournaments.md"
   },
   {
+    "id": 161602,
+    "page": "P016",
+    "category": 16,
+    "item": 2,
+    "name": "HOME_A_TOURNAMENT_ARRIVES_WHILE_THE_PAGE",
+    "chCode": "CH-16650",
+    "meaning": "Home: a tournament arrives while the page is open (another tab or coach set it up; P-5 M9)",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/tournaments.md"
+  },
+  {
     "id": 161801,
     "page": "P016",
     "category": 18,
@@ -20255,6 +20354,17 @@
     "chCode": "CH-16801",
     "meaning": "A signed difference or a trust state is read",
     "status": "reserved",
+    "catalog": "docs/clubhouse/catalog/tournaments.md"
+  },
+  {
+    "id": 161802,
+    "page": "P016",
+    "category": 18,
+    "item": 2,
+    "name": "HOME_A_TOURNAMENT_ARRIVES_WHILE_THE_PAGE_2",
+    "chCode": "CH-16850",
+    "meaning": "Home: a tournament arrives while the page is open",
+    "status": "implemented",
     "catalog": "docs/clubhouse/catalog/tournaments.md"
   }
 ]

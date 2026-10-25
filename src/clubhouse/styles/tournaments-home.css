@@ -113,3 +113,62 @@
   line-height: var(--ch-lead-tight);
   color: var(--ch-text-secondary);
 }
+
+/* P-5 4.11: "Set up today" on a tournament made today (on a fresh load, in place of the arrival wash). */
+.ch-tour-home__today {
+  font: var(--ch-type-12-medium);
+  letter-spacing: var(--ch-track-12);
+  color: var(--ch-green-700);
+  white-space: nowrap;
+}
+
+/* P-5 4.11.3: Set up from calendar. A quiet plate and a text cue; the whole row is the link. */
+.ch-tour-home-setup__plate {
+  display: grid;
+  place-items: center;
+  width: 32px;
+  height: 32px;
+  border-radius: var(--ch-radius-sm);
+  background: var(--ch-bg-subtle);
+  color: var(--ch-text-secondary);
+}
+.ch-tour-home-setup__go {
+  font: var(--ch-type-13-medium);
+  letter-spacing: var(--ch-track-13);
+  color: var(--ch-green-700);
+}
+
+/* P-5 4.11.2: next season, folded at the end of the ledger. It opens in place, with no motion. */
+.ch-tour-home-next {
+  margin-top: var(--ch-space-3);
+  border-top: var(--ch-hairline-w) solid var(--ch-border-hairline);
+}
+.ch-tour-home-next__row {
+  display: flex;
+  align-items: center;
+  gap: var(--ch-space-2);
+  width: 100%;
+  min-height: 52px;
+  padding: 0 var(--ch-space-1);
+  border: 0;
+  background: transparent;
+  font: var(--ch-type-14-medium);
+  letter-spacing: var(--ch-track-14);
+  color: var(--ch-text-primary);
+  text-align: start;
+  cursor: pointer;
+}
+.ch-tour-home-next__row:focus-visible {
+  outline: 2px solid var(--ch-border-focus);
+  outline-offset: 2px;
+}
+.ch-tour-home-next__n {
+  color: var(--ch-text-tertiary);
+}
+.ch-tour-home-next__chev {
+  margin-inline-start: auto;
+  color: var(--ch-text-tertiary);
+}
+.ch-tour-home-next__row[aria-expanded='true'] .ch-tour-home-next__chev {
+  transform: rotate(180deg);
+}

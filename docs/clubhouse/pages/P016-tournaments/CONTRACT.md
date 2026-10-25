@@ -49,7 +49,6 @@ no rounds to link, and so on) are its lane's rows.
 | 160403 | CH-16303 | `A_TOURNAMENTS_ROUTE_SIGNED_IN_BUT_ON` | A Tournaments route, signed in but on no team |
 | 160404 | CH-16304 | `AN_EVENT_ADDRESS_THAT_IS_NOT_THIS` | An event address that is not this team's (deleted, another team's, not an id) |
 | 160405 | CH-16305 | `A_PLAYER_ON_A_COACHS_TOURNAMENTS_PAGE` | A player on a coach's Tournaments page (new or edit event, lineup, live, compare, history, link rounds) |
-| 160406 | CH-16310 | `HOME_NO_EVENT_IN_THE_SEASON_NOTHING` | Home: no event in the season, nothing failed |
 | 160407 | CH-16311 | `THE_SEASON_LEDGER_THE_SEASON_HAS_NO` | The season ledger (Home, History): the season has no finished event yet |
 | 160408 | CH-16312 | `HOME_NO_EVENT_IS_UPCOMING_OR_LIVE` | Home: no event is upcoming or live |
 | 160409 | CH-16320 | `EVENT_DESK_THE_EVENT_HAS_NO_SCORES` | Event desk: the event has no scores yet (not played, nothing entered) |
@@ -60,6 +59,7 @@ no rounds to link, and so on) are its lane's rows.
 | 160414 | CH-16340 | `HISTORY_NO_EVENT_IS_FINISHED` | History: no event is finished (the read worked) |
 | 160415 | CH-16350 | `COMPARE_A_SIDE_SELECTS_NO_ROUNDS` | Compare: a side selects no rounds (a player with none in that context or period) |
 | 160416 | CH-16351 | `COMPARE_THERE_ARE_NO_ROUNDS_AT_ALL` | Compare: there are no rounds at all (the read worked) |
+| 160417 | CH-16352 | `HOME_NO_EVENT_IN_THE_SEASON_NOTHING_2` | Home: no event in the season, nothing failed (P-5 4.11.1; replaces CH-16310) |
 
 ## 05 — Validation
 
@@ -85,6 +85,11 @@ flags and its lane's rows.
 | 160608 | CH-16250 | `COMPARE_THE_ROUNDS_READ_FAILS` | Compare: the rounds read fails (`errors.rounds`) |
 | 160609 | CH-16251 | `COMPARE_THE_FIELD_READ_FAILS` | Compare: the field read fails (`errors.field`) |
 | 160610 | CH-16252 | `COMPARE_THE_HOLE_FIGURES_READ_FAILS` | Compare: the hole figures read fails (`errors.holes`) |
+| 160611 | CH-16050 | `STOP_TRACKING_CONFIRMED_ON_THE_DESK_AND` | Stop tracking confirmed on the desk (CH-16550) and written (P-5) |
+| 160612 | CH-16051 | `CANCEL_TOURNAMENT_CONFIRMED_ON_THE_DESK` | Cancel tournament confirmed on the desk (CH-16551) |
+| 160613 | CH-16052 | `RESTORE_TOURNAMENT_ON_THE_DESK` | Restore tournament on the desk |
+| 160614 | CH-16053 | `STOP_TRACKING_REFUSED_THE_RESULTS_ARE_OFFICIAL` | Stop tracking refused: the results are official |
+| 160615 | CH-16253 | `HOME_THE_READ_OF_THE_CALENDARS_UNTRACKED` | Home (coach): the read of the calendar's untracked tournaments fails (`errors.untracked`, P-5) |
 
 ## 07 — Network / offline
 
@@ -124,7 +129,18 @@ scorecard (CH-16920): shown with both numbers, never silently picked (D-82).
 
 ## 11 — Destructive
 
-Status: N/A — not defined yet: no view is built (each renders the base's placeholder) and nothing is wired. The lane that builds the view defines this category with its catalog rows (screens/tournaments/README.md).
+Status: DEFINED
+
+P-5 (2026-10-25): the desk's tournament menu. Stop tracking asks first (161101)
+and, with scores entered or the results official, says why it stays tracked
+instead. Cancel tournament asks first (161102), shows at once, and is written
+only when its toast's Undo runs out, so Undo sends nothing. Both fire the
+warning haptic. Restore is the safe direction and doesn't ask.
+
+| Bridge ID | Code | Name | Meaning |
+| --- | --- | --- | --- |
+| 161101 | CH-16550 | `STOP_TRACKING_FROM_THE_DESKS_TOURNAMENT_MENU` | Stop tracking, from the desk's tournament menu (P-5) |
+| 161102 | CH-16551 | `CANCEL_TOURNAMENT_FROM_THE_DESKS_TOURNAMENT_MENU` | Cancel tournament, from the desk's tournament menu (P-5; the calendar's CH-6541) |
 
 ## 12 — State preservation
 
@@ -153,6 +169,7 @@ first paint.
 | Bridge ID | Code | Name | Meaning |
 | --- | --- | --- | --- |
 | 161601 | CH-16601 | `A_VALUE_CHANGES_AFTER_FIRST_PAINT` | A value changes after first paint (a live score, a team total, a place) |
+| 161602 | CH-16650 | `HOME_A_TOURNAMENT_ARRIVES_WHILE_THE_PAGE` | Home: a tournament arrives while the page is open (another tab or coach set it up; P-5 M9) |
 
 From the shell (P001): 11601 CH-1601, 11602 CH-1602, 11603 CH-1603,
 11604 CH-1604, 11605 CH-1605, 11606 CH-1606, 11607 CH-1607, 11608 CH-1608,
@@ -174,6 +191,7 @@ DeltaChip and TrustChip speak their meaning in words and never rest on hue alone
 | Bridge ID | Code | Name | Meaning |
 | --- | --- | --- | --- |
 | 161801 | CH-16801 | `A_SIGNED_DIFFERENCE_OR_A_TRUST_STATE` | A signed difference or a trust state is read |
+| 161802 | CH-16850 | `HOME_A_TOURNAMENT_ARRIVES_WHILE_THE_PAGE_2` | Home: a tournament arrives while the page is open |
 
 From the shell (P001): 11801 CH-1801, 11802 CH-1802, 11803 CH-1803,
 11804 CH-1804, 11805 CH-1805, 11806 CH-1806, 11807 CH-1807, 11808 CH-1808,

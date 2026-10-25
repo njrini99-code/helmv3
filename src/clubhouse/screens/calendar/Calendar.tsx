@@ -578,6 +578,7 @@ function CalendarBody({
   initialType,
   frozen = false,
   live = false,
+  initialSetUp = false,
 }: {
   data: ChCalendarData;
   initialEvent?: string;
@@ -589,6 +590,8 @@ function CalendarBody({
   frozen?: boolean;
   /** Follow the team's events as they change (realtime, `useCalendarLive`). The route turns it on; tests and the preview leave it off. */
   live?: boolean;
+  /** P-5 4.11.3: with `initialEvent`, open the editor on it with Track on (the season home's Set up from calendar). */
+  initialSetUp?: boolean;
 }) {
   const preview = frozen;
   const router = useRouter();
@@ -605,9 +608,11 @@ function CalendarBody({
   });
   // `?new=1` (Home's New event) opens the editor once; `&with=<playerId>` (Roster's Plan 1:1) makes it a
   // meeting with only that player invited. The params are dropped so a reload doesn't reopen it.
-  const [editor, setEditor] = useState<EditorSeed | null>(() =>
-    initialNew && coach ? (initialWith ? { event: null, type: 'meeting', invite: [initialWith] } : { event: null, type: initialType }) : null,
-  );
+  const [editor, setEditor] = useState<EditorSeed | null>(() => {
+    const setUpEvent = initialSetUp && coach && data.tournamentsEnabled && initialEvent ? data.events.find((x) => x.id === initialEvent && x.type === 'tournament' && !x.round) : undefined;
+    if (setUpEvent) return { event: setUpEvent, track: true };
+    return initialNew && coach ? (initialWith ? { event: null, type: 'meeting', invite: [initialWith] } : { event: null, type: initialType }) : null;
+  });
   useEffect(() => {
     if (!initialNew || frozen) return;
     const url = new URL(window.location.href);
