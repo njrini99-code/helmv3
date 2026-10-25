@@ -4210,6 +4210,8 @@ html[data-fw-theme='dark'] .ch-ev--busy::after {
 @media (prefers-reduced-motion: reduce) {
   .ch-oldslot {
     animation: none;
+  }
+}
 
 /* P-5 4.9: tracked tournament rounds. The round pill on a block is a darker tab of the block's own green. */
 .ch-ev__round {
