@@ -22,6 +22,7 @@ import { TeamRoundsSkeleton } from '@/clubhouse/screens/rounds/TeamRoundsSkeleto
 import { WhatsNew } from '@/clubhouse/screens/whats-new/WhatsNew';
 import { WhatsNewSkeleton } from '@/clubhouse/screens/whats-new/WhatsNewSkeleton';
 import { PREVIEW_WHATS_NEW, PREVIEW_WHATS_NEW_EMPTY, PREVIEW_WHATS_NEW_FAILED, PREVIEW_WHATS_NEW_TRUNCATED } from '@/clubhouse/preview/fixtures-whats-new';
+import { PreviewTournaments, TOUR_PREVIEW_PATHS } from '@/clubhouse/preview/PreviewTournaments';
 import { PREVIEW_TEAM_ROUNDS, PREVIEW_TEAM_ROUNDS_EMPTY, PREVIEW_TEAM_ROUNDS_FAILED, PREVIEW_TEAM_ROUNDS_NO_ROSTER, PREVIEW_TEAM_ROUNDS_ROSTER_FAILED } from '@/clubhouse/preview/fixtures-team-rounds';
 import { PreviewClasses } from '@/clubhouse/preview/PreviewClasses';
 import { ClassesNoTeam } from '@/clubhouse/screens/classes/ClassesNoTeam';
@@ -202,6 +203,7 @@ import { ChClockProvider } from '@/clubhouse/lib/use-clock';
  *   /clubhouse-preview/coachhelm-brief ?state=empty | failed | off | loading   (the coach's Monday brief; synthetic reads through computeMondayBrief)
  *   /clubhouse-preview/coachhelm-coach-brief ?state=thin | noreads | partial | failed | off | loading, &section=patterns | working | record | goals   (the coach's Brief behind /intelligence)
  *   /clubhouse-preview/recruiting ?state=empty | nomatch | failed | loading | sparse | noteam | detail | add | edit | delete | docsfailed | failwrites | failstage | slow   (the coach; eight prospects, Mason Reilly first)
+ *   /clubhouse-preview/tournaments, tournament-desk, -review, -history, -links, -compare, -lineup, -form, -live, -player ?state=loading | empty | failed | partial | thin | provisional | live, &event=, &tab=, &view=edit   (P016; preview/PreviewTournaments.tsx; tournament-player is Jonah)
  *   any screen &bell=empty | failed | slow   (the top-bar notifications feed)
  *   any coach screen &teams=2   (a head coach on two teams: the team switcher; picking one fails here, there is no session)
  */
@@ -606,6 +608,8 @@ export default async function ClubhousePreview({
         ),
     },
   };
+  // P016 Tournaments: every view from one fixture per ?state= (preview/PreviewTournaments.tsx).
+  for (const [id, path] of Object.entries(TOUR_PREVIEW_PATHS)) screens[id] = { path, node: <PreviewTournaments screen={id} state={state} event={event} tab={tab} view={view} /> };
   const entry = screens[screen];
   if (!entry) notFound();
   const who = previewViewer(screen, state);

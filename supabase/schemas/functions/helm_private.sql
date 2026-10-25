@@ -972,3 +972,180 @@ CREATE OR REPLACE FUNCTION "helm_private"."trace_safe_metadata"("p_metadata" "js
 $$;
 
 ALTER FUNCTION "helm_private"."trace_safe_metadata"("p_metadata" "jsonb") OWNER TO "postgres";
+
+-- P016 Tournaments: held migrations 20261024100000 (tables), 100100 (RLS)
+-- and 100200 (RPCs, lineup guard), WRITTEN — HOLD — NOT APPLIED in production.
+-- Generated 2026-10-25 by pg_dump of the three files applied in order to a
+-- scratch Postgres 16 (docs/clubhouse/held/data/tournaments.md).
+
+CREATE OR REPLACE FUNCTION "helm_private"."guard_tournament_lineup"() RETURNS "trigger"
+    LANGUAGE "plpgsql" SECURITY DEFINER
+    SET "search_path" TO ''
+    AS $$
+DECLARE
+  v_tournament uuid;
+  v_round uuid;
+  v_locked timestamptz;
+BEGIN
+  IF coalesce(current_setting('helm.tournament_write', true), '') = 'substitute' THEN
+    RETURN coalesce(NEW, OLD);
+  END IF;
+  IF TG_TABLE_NAME = 'golf_tournament_entries' THEN
+    IF TG_OP = 'DELETE' THEN v_tournament := OLD.tournament_id; ELSE v_tournament := NEW.tournament_id; END IF;
+  ELSE
+    IF TG_OP = 'DELETE' THEN v_round := OLD.round_event_id; ELSE v_round := NEW.round_event_id; END IF;
+    SELECT r.tournament_id INTO v_tournament
+    FROM public.golf_tournament_rounds r WHERE r.round_event_id = v_round;
+  END IF;
+  SELECT t.lineup_locked_at INTO v_locked
+  FROM public.golf_tournaments t WHERE t.id = v_tournament;
+  -- Not locked, or the tournament (or its round) is already gone: the
+  -- cascade of a delete, which must not be blocked by its own lock.
+  IF v_locked IS NULL THEN
+    RETURN coalesce(NEW, OLD);
+  END IF;
+  RAISE EXCEPTION 'locked' USING ERRCODE = 'P0001',
+    DETAIL = format('the lineup of tournament %s locked at %s; substitute instead', v_tournament, v_locked);
+END $$;
+
+
+ALTER FUNCTION "helm_private"."guard_tournament_lineup"() OWNER TO "postgres";
+
+COMMENT ON FUNCTION "helm_private"."guard_tournament_lineup"() IS 'P016 Tournaments: refuses entry and round-lineup changes after the lineup locks, unless helm.tournament_write = substitute (golf_tournament_substitute). HELD 20261024100200.';
+
+CREATE OR REPLACE FUNCTION "helm_private"."guard_tournament_team"() RETURNS "trigger"
+    LANGUAGE "plpgsql" SECURITY DEFINER
+    SET "search_path" TO ''
+    AS $$
+DECLARE
+  v_ins boolean := TG_OP = 'INSERT';
+  v_team_changed boolean := TG_OP = 'INSERT' OR NEW.team_id IS DISTINCT FROM OLD.team_id;
+BEGIN
+  -- Field access on NEW is only evaluated inside the branch for a table that
+  -- has the field (plpgsql resolves record fields per expression).
+  CASE TG_TABLE_NAME
+  WHEN 'golf_tournament_rounds' THEN
+    IF v_team_changed OR NEW.round_event_id IS DISTINCT FROM OLD.round_event_id THEN
+      PERFORM helm_private.tournament_assert(EXISTS (
+        SELECT 1 FROM public.golf_events e
+        WHERE e.id = NEW.round_event_id AND e.team_id = NEW.team_id),
+        format('tournament round %s is not an event of team %s',
+          NEW.round_event_id, NEW.team_id));
+    END IF;
+
+  WHEN 'golf_tournament_advice_givers' THEN
+    IF v_team_changed OR NEW.user_id IS DISTINCT FROM OLD.user_id THEN
+      PERFORM helm_private.tournament_assert(EXISTS (
+        SELECT 1 FROM public.golf_team_coach_staff s
+        JOIN public.golf_coaches c ON c.id = s.coach_id
+        WHERE s.team_id = NEW.team_id AND c.user_id = NEW.user_id),
+        format('user %s is not a coach of team %s', NEW.user_id, NEW.team_id));
+    END IF;
+
+  WHEN 'golf_tournament_coach_presence' THEN
+    IF v_team_changed OR NEW.coach_user_id IS DISTINCT FROM OLD.coach_user_id THEN
+      PERFORM helm_private.tournament_assert(EXISTS (
+        SELECT 1 FROM public.golf_team_coach_staff s
+        JOIN public.golf_coaches c ON c.id = s.coach_id
+        WHERE s.team_id = NEW.team_id AND c.user_id = NEW.coach_user_id),
+        format('user %s is not a coach of team %s', NEW.coach_user_id,
+          NEW.team_id));
+    END IF;
+    IF NEW.with_player_id IS NOT NULL AND (v_team_changed
+        OR NEW.with_player_id IS DISTINCT FROM OLD.with_player_id) THEN
+      PERFORM helm_private.tournament_assert_member(NEW.team_id,
+        NEW.with_player_id);
+    END IF;
+
+  WHEN 'golf_tournament_link_dismissals' THEN
+    IF v_team_changed OR NEW.round_id IS DISTINCT FROM OLD.round_id THEN
+      PERFORM helm_private.tournament_assert(EXISTS (
+        SELECT 1 FROM public.golf_rounds r
+        JOIN public.golf_team_members m ON m.player_id = r.player_id
+        WHERE r.id = NEW.round_id AND m.team_id = NEW.team_id),
+        format('round %s is not a round of a team %s player', NEW.round_id,
+          NEW.team_id));
+    END IF;
+
+  WHEN 'golf_tournament_result_marks' THEN
+    IF NEW.round_event_id IS NOT NULL THEN
+      PERFORM helm_private.tournament_assert(EXISTS (
+        SELECT 1 FROM public.golf_tournament_rounds r
+        WHERE r.round_event_id = NEW.round_event_id
+          AND r.tournament_id = NEW.tournament_id),
+        format('round %s is not in tournament %s', NEW.round_event_id,
+          NEW.tournament_id));
+    END IF;
+
+  ELSE
+    -- entries, round lineups, player rounds, entry notes, player notes,
+    -- reflections: player_id is on the team.
+    IF v_team_changed OR NEW.player_id IS DISTINCT FROM OLD.player_id THEN
+      PERFORM helm_private.tournament_assert_member(NEW.team_id,
+        NEW.player_id);
+    END IF;
+    IF TG_TABLE_NAME = 'golf_tournament_round_lineups' THEN
+      IF NEW.substituted_for IS NOT NULL AND (v_team_changed
+          OR NEW.substituted_for IS DISTINCT FROM OLD.substituted_for) THEN
+        PERFORM helm_private.tournament_assert_member(NEW.team_id,
+          NEW.substituted_for);
+      END IF;
+    ELSIF TG_TABLE_NAME = 'golf_tournament_player_rounds' THEN
+      IF NEW.round_id IS NOT NULL AND (v_ins
+          OR NEW.round_id IS DISTINCT FROM OLD.round_id
+          OR NEW.player_id IS DISTINCT FROM OLD.player_id) THEN
+        PERFORM helm_private.tournament_assert(EXISTS (
+          SELECT 1 FROM public.golf_rounds r
+          WHERE r.id = NEW.round_id AND r.player_id = NEW.player_id),
+          format('round %s is not player %s''s', NEW.round_id,
+            NEW.player_id));
+      END IF;
+    END IF;
+  END CASE;
+  RETURN NEW;
+END $$;
+
+
+ALTER FUNCTION "helm_private"."guard_tournament_team"() OWNER TO "postgres";
+
+CREATE OR REPLACE FUNCTION "helm_private"."touch_tournament_version"() RETURNS "trigger"
+    LANGUAGE "plpgsql"
+    SET "search_path" TO ''
+    AS $$
+BEGIN
+  NEW.updated_at := now();
+  NEW.version := OLD.version + 1;
+  RETURN NEW;
+END $$;
+
+
+ALTER FUNCTION "helm_private"."touch_tournament_version"() OWNER TO "postgres";
+
+CREATE OR REPLACE FUNCTION "helm_private"."tournament_assert"("p_ok" boolean, "p_message" "text") RETURNS "void"
+    LANGUAGE "plpgsql" IMMUTABLE
+    SET "search_path" TO ''
+    AS $$
+BEGIN
+  IF NOT coalesce(p_ok, false) THEN
+    RAISE EXCEPTION '%', p_message USING ERRCODE = '23514';
+  END IF;
+END $$;
+
+
+ALTER FUNCTION "helm_private"."tournament_assert"("p_ok" boolean, "p_message" "text") OWNER TO "postgres";
+
+CREATE OR REPLACE FUNCTION "helm_private"."tournament_assert_member"("p_team_id" "uuid", "p_player_id" "uuid") RETURNS "void"
+    LANGUAGE "plpgsql" STABLE SECURITY DEFINER
+    SET "search_path" TO ''
+    AS $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM public.golf_team_members m
+    WHERE m.team_id = p_team_id AND m.player_id = p_player_id) THEN
+    RAISE EXCEPTION 'player % is not on team %', p_player_id, p_team_id
+      USING ERRCODE = '23514';
+  END IF;
+END $$;
+
+
+ALTER FUNCTION "helm_private"."tournament_assert_member"("p_team_id" "uuid", "p_player_id" "uuid") OWNER TO "postgres";

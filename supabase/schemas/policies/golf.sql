@@ -1272,3 +1272,86 @@ CREATE POLICY "team_chs_settings_write_team" ON "public"."golf_team_coachhelm_se
 COMMENT ON POLICY "team_chs_settings_write_team" ON "public"."golf_team_coachhelm_settings" IS 'Only a head coach of the team may write team-level CoachHelm settings. Head-coach (not primary) so a program head can manage both teams; assistants stay locked out.';
 
 CREATE POLICY "golf_read_marks_select" ON "public"."golf_conversation_read_marks" FOR SELECT TO "authenticated" USING ("public"."golf_read_marks_visible"("conversation_id", "user_id"));
+
+-- P016 Tournaments: held migrations 20261024100000 (tables), 100100 (RLS)
+-- and 100200 (RPCs, lineup guard), WRITTEN — HOLD — NOT APPLIED in production.
+-- Generated 2026-10-25 by pg_dump of the three files applied in order to a
+-- scratch Postgres 16 (docs/clubhouse/held/data/tournaments.md).
+
+CREATE POLICY "golf_sc_owner" ON "public"."golf_saved_comparisons" TO "authenticated" USING ((("owner_id" = ( SELECT "auth"."uid"() AS "uid")) AND "public"."is_golf_team_coach"("team_id"))) WITH CHECK ((("owner_id" = ( SELECT "auth"."uid"() AS "uid")) AND "public"."is_golf_team_coach"("team_id")));
+
+CREATE POLICY "golf_sc_shared_read" ON "public"."golf_saved_comparisons" FOR SELECT TO "authenticated" USING (("shared" AND "public"."is_golf_team_coach"("team_id")));
+
+CREATE POLICY "golf_tcp_own" ON "public"."golf_tournament_coach_presence" TO "authenticated" USING (("public"."is_golf_team_coach"("team_id") AND ("coach_user_id" = ( SELECT "auth"."uid"() AS "uid")))) WITH CHECK (("public"."is_golf_team_coach"("team_id") AND ("coach_user_id" = ( SELECT "auth"."uid"() AS "uid"))));
+
+CREATE POLICY "golf_tcp_select" ON "public"."golf_tournament_coach_presence" FOR SELECT TO "authenticated" USING ("public"."is_golf_team_coach"("team_id"));
+
+CREATE POLICY "golf_team_seasons_coach_write" ON "public"."golf_team_seasons" TO "authenticated" USING ("public"."is_golf_team_coach"("team_id")) WITH CHECK ("public"."is_golf_team_coach"("team_id"));
+
+CREATE POLICY "golf_team_seasons_select" ON "public"."golf_team_seasons" FOR SELECT TO "authenticated" USING (("public"."is_golf_team_coach"("team_id") OR "public"."is_golf_team_player"("team_id") OR "public"."is_admin"()));
+
+CREATE POLICY "golf_ten_coach" ON "public"."golf_tournament_entry_notes" TO "authenticated" USING ("public"."is_golf_team_coach"("team_id")) WITH CHECK ("public"."is_golf_team_coach"("team_id"));
+
+CREATE POLICY "golf_tfs_coach_write" ON "public"."golf_tournament_field_scores" TO "authenticated" USING ("public"."is_golf_team_coach"("team_id")) WITH CHECK ("public"."is_golf_team_coach"("team_id"));
+
+CREATE POLICY "golf_tfs_select" ON "public"."golf_tournament_field_scores" FOR SELECT TO "authenticated" USING (("public"."is_golf_team_coach"("team_id") OR "public"."is_golf_team_player"("team_id")));
+
+CREATE POLICY "golf_tld_coach" ON "public"."golf_tournament_link_dismissals" TO "authenticated" USING ("public"."is_golf_team_coach"("team_id")) WITH CHECK ("public"."is_golf_team_coach"("team_id"));
+
+CREATE POLICY "golf_tournament_advice_givers_coach_write" ON "public"."golf_tournament_advice_givers" TO "authenticated" USING ("public"."is_golf_team_coach"("team_id")) WITH CHECK ("public"."is_golf_team_coach"("team_id"));
+
+CREATE POLICY "golf_tournament_advice_givers_select" ON "public"."golf_tournament_advice_givers" FOR SELECT TO "authenticated" USING (("public"."is_golf_team_coach"("team_id") OR "public"."is_golf_team_player"("team_id") OR "public"."is_admin"()));
+
+CREATE POLICY "golf_tournament_entries_coach_write" ON "public"."golf_tournament_entries" TO "authenticated" USING ("public"."is_golf_team_coach"("team_id")) WITH CHECK ("public"."is_golf_team_coach"("team_id"));
+
+CREATE POLICY "golf_tournament_entries_select" ON "public"."golf_tournament_entries" FOR SELECT TO "authenticated" USING (("public"."is_golf_team_coach"("team_id") OR "public"."is_golf_team_player"("team_id") OR "public"."is_admin"()));
+
+CREATE POLICY "golf_tournament_field_teams_coach_write" ON "public"."golf_tournament_field_teams" TO "authenticated" USING ("public"."is_golf_team_coach"("team_id")) WITH CHECK ("public"."is_golf_team_coach"("team_id"));
+
+CREATE POLICY "golf_tournament_field_teams_select" ON "public"."golf_tournament_field_teams" FOR SELECT TO "authenticated" USING (("public"."is_golf_team_coach"("team_id") OR "public"."is_golf_team_player"("team_id") OR "public"."is_admin"()));
+
+CREATE POLICY "golf_tournament_round_lineups_coach_write" ON "public"."golf_tournament_round_lineups" TO "authenticated" USING ("public"."is_golf_team_coach"("team_id")) WITH CHECK ("public"."is_golf_team_coach"("team_id"));
+
+CREATE POLICY "golf_tournament_round_lineups_select" ON "public"."golf_tournament_round_lineups" FOR SELECT TO "authenticated" USING (("public"."is_golf_team_coach"("team_id") OR "public"."is_golf_team_player"("team_id") OR "public"."is_admin"()));
+
+CREATE POLICY "golf_tournament_rounds_coach_write" ON "public"."golf_tournament_rounds" TO "authenticated" USING ("public"."is_golf_team_coach"("team_id")) WITH CHECK ("public"."is_golf_team_coach"("team_id"));
+
+CREATE POLICY "golf_tournament_rounds_select" ON "public"."golf_tournament_rounds" FOR SELECT TO "authenticated" USING (("public"."is_golf_team_coach"("team_id") OR "public"."is_golf_team_player"("team_id") OR "public"."is_admin"()));
+
+CREATE POLICY "golf_tournaments_coach_write" ON "public"."golf_tournaments" TO "authenticated" USING ("public"."is_golf_team_coach"("team_id")) WITH CHECK ("public"."is_golf_team_coach"("team_id"));
+
+CREATE POLICY "golf_tournaments_select" ON "public"."golf_tournaments" FOR SELECT TO "authenticated" USING (("public"."is_golf_team_coach"("team_id") OR "public"."is_golf_team_player"("team_id") OR "public"."is_admin"()));
+
+CREATE POLICY "golf_tpn_coach" ON "public"."golf_tournament_player_notes" TO "authenticated" USING ("public"."is_golf_team_coach"("team_id")) WITH CHECK ("public"."is_golf_team_coach"("team_id"));
+
+CREATE POLICY "golf_tpn_player_read" ON "public"."golf_tournament_player_notes" FOR SELECT TO "authenticated" USING ((("shared_at" IS NOT NULL) AND "public"."is_golf_team_player"("team_id") AND (EXISTS ( SELECT 1
+   FROM "public"."golf_players" "gp"
+  WHERE (("gp"."id" = "golf_tournament_player_notes"."player_id") AND ("gp"."user_id" = ( SELECT "auth"."uid"() AS "uid")))))));
+
+CREATE POLICY "golf_tpr_coach_write" ON "public"."golf_tournament_player_rounds" TO "authenticated" USING ("public"."is_golf_team_coach"("team_id")) WITH CHECK ("public"."is_golf_team_coach"("team_id"));
+
+CREATE POLICY "golf_tpr_player_link" ON "public"."golf_tournament_player_rounds" FOR INSERT TO "authenticated" WITH CHECK (((EXISTS ( SELECT 1
+   FROM "public"."golf_players" "gp"
+  WHERE (("gp"."id" = "golf_tournament_player_rounds"."player_id") AND ("gp"."user_id" = ( SELECT "auth"."uid"() AS "uid"))))) AND "public"."is_golf_team_player"("team_id") AND (EXISTS ( SELECT 1
+   FROM "public"."golf_tournament_round_lineups" "rl"
+  WHERE (("rl"."round_event_id" = "golf_tournament_player_rounds"."round_event_id") AND ("rl"."player_id" = "golf_tournament_player_rounds"."player_id") AND ("rl"."role" = ANY (ARRAY['lineup'::"text", 'individual'::"text"]))))) AND ("entered_total" IS NULL) AND ("status" = 'ok'::"text") AND ("link_source" = 'player'::"text") AND (EXISTS ( SELECT 1
+   FROM "public"."golf_rounds" "r"
+  WHERE (("r"."id" = "golf_tournament_player_rounds"."round_id") AND ("r"."player_id" = "golf_tournament_player_rounds"."player_id"))))));
+
+CREATE POLICY "golf_tpr_select" ON "public"."golf_tournament_player_rounds" FOR SELECT TO "authenticated" USING (("public"."is_golf_team_coach"("team_id") OR ("public"."is_golf_team_player"("team_id") AND ((EXISTS ( SELECT 1
+   FROM "public"."golf_players" "gp"
+  WHERE (("gp"."id" = "golf_tournament_player_rounds"."player_id") AND ("gp"."user_id" = ( SELECT "auth"."uid"() AS "uid"))))) OR "public"."golf_tournament_round_is_final"("round_event_id")))));
+
+CREATE POLICY "golf_tref_coach_read" ON "public"."golf_tournament_reflections" FOR SELECT TO "authenticated" USING ("public"."is_golf_team_coach"("team_id"));
+
+CREATE POLICY "golf_tref_own" ON "public"."golf_tournament_reflections" TO "authenticated" USING (("public"."is_golf_team_player"("team_id") AND (EXISTS ( SELECT 1
+   FROM "public"."golf_players" "gp"
+  WHERE (("gp"."id" = "golf_tournament_reflections"."player_id") AND ("gp"."user_id" = ( SELECT "auth"."uid"() AS "uid"))))))) WITH CHECK (((EXISTS ( SELECT 1
+   FROM "public"."golf_players" "gp"
+  WHERE (("gp"."id" = "golf_tournament_reflections"."player_id") AND ("gp"."user_id" = ( SELECT "auth"."uid"() AS "uid"))))) AND "public"."is_golf_team_player"("team_id")));
+
+CREATE POLICY "golf_trev_coach" ON "public"."golf_tournament_reviews" TO "authenticated" USING ("public"."is_golf_team_coach"("team_id")) WITH CHECK ("public"."is_golf_team_coach"("team_id"));
+
+CREATE POLICY "golf_trm_coach_insert" ON "public"."golf_tournament_result_marks" FOR INSERT TO "authenticated" WITH CHECK (("public"."is_golf_team_coach"("team_id") AND ("created_by" = ( SELECT "auth"."uid"() AS "uid"))));
+
+CREATE POLICY "golf_trm_select" ON "public"."golf_tournament_result_marks" FOR SELECT TO "authenticated" USING (("public"."is_golf_team_coach"("team_id") OR "public"."is_golf_team_player"("team_id")));

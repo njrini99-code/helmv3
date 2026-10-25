@@ -1140,3 +1140,194 @@ ALTER TABLE ONLY "public"."golf_travel_itineraries"
 
 ALTER TABLE ONLY "public"."putt_details"
     ADD CONSTRAINT "putt_details_shot_id_fkey" FOREIGN KEY ("shot_id") REFERENCES "public"."golf_shots"("id") ON DELETE CASCADE;
+
+-- P016 Tournaments: held migrations 20261024100000 (tables), 100100 (RLS)
+-- and 100200 (RPCs, lineup guard), WRITTEN — HOLD — NOT APPLIED in production.
+-- Generated 2026-10-25 by pg_dump of the three files applied in order to a
+-- scratch Postgres 16 (docs/clubhouse/held/data/tournaments.md).
+
+ALTER TABLE ONLY "public"."golf_saved_comparisons"
+    ADD CONSTRAINT "golf_saved_comparisons_pkey" PRIMARY KEY ("id");
+
+ALTER TABLE ONLY "public"."golf_team_seasons"
+    ADD CONSTRAINT "golf_team_seasons_pkey" PRIMARY KEY ("team_id", "season");
+
+ALTER TABLE ONLY "public"."golf_tournament_advice_givers"
+    ADD CONSTRAINT "golf_tournament_advice_givers_pkey" PRIMARY KEY ("tournament_id", "user_id");
+
+ALTER TABLE ONLY "public"."golf_tournament_coach_presence"
+    ADD CONSTRAINT "golf_tournament_coach_presence_pkey" PRIMARY KEY ("round_event_id", "coach_user_id");
+
+ALTER TABLE ONLY "public"."golf_tournament_entries"
+    ADD CONSTRAINT "golf_tournament_entries_pkey" PRIMARY KEY ("tournament_id", "player_id");
+
+ALTER TABLE ONLY "public"."golf_tournament_entry_notes"
+    ADD CONSTRAINT "golf_tournament_entry_notes_pkey" PRIMARY KEY ("tournament_id", "player_id");
+
+ALTER TABLE ONLY "public"."golf_tournament_field_scores"
+    ADD CONSTRAINT "golf_tournament_field_scores_pkey" PRIMARY KEY ("field_team_id", "round_number");
+
+ALTER TABLE ONLY "public"."golf_tournament_field_teams"
+    ADD CONSTRAINT "golf_tournament_field_teams_id_team_id_key" UNIQUE ("id", "team_id");
+
+ALTER TABLE ONLY "public"."golf_tournament_field_teams"
+    ADD CONSTRAINT "golf_tournament_field_teams_pkey" PRIMARY KEY ("id");
+
+ALTER TABLE ONLY "public"."golf_tournament_link_dismissals"
+    ADD CONSTRAINT "golf_tournament_link_dismissals_pkey" PRIMARY KEY ("team_id", "round_id");
+
+ALTER TABLE ONLY "public"."golf_tournament_player_notes"
+    ADD CONSTRAINT "golf_tournament_player_notes_pkey" PRIMARY KEY ("tournament_id", "player_id");
+
+ALTER TABLE ONLY "public"."golf_tournament_player_rounds"
+    ADD CONSTRAINT "golf_tournament_player_rounds_pkey" PRIMARY KEY ("round_event_id", "player_id");
+
+ALTER TABLE ONLY "public"."golf_tournament_player_rounds"
+    ADD CONSTRAINT "golf_tournament_player_rounds_round_id_key" UNIQUE ("round_id");
+
+ALTER TABLE ONLY "public"."golf_tournament_reflections"
+    ADD CONSTRAINT "golf_tournament_reflections_pkey" PRIMARY KEY ("tournament_id", "player_id");
+
+ALTER TABLE ONLY "public"."golf_tournament_result_marks"
+    ADD CONSTRAINT "golf_tournament_result_marks_pkey" PRIMARY KEY ("id");
+
+ALTER TABLE ONLY "public"."golf_tournament_reviews"
+    ADD CONSTRAINT "golf_tournament_reviews_pkey" PRIMARY KEY ("tournament_id");
+
+ALTER TABLE ONLY "public"."golf_tournament_round_lineups"
+    ADD CONSTRAINT "golf_tournament_round_lineups_pkey" PRIMARY KEY ("round_event_id", "player_id");
+
+ALTER TABLE ONLY "public"."golf_tournament_rounds"
+    ADD CONSTRAINT "golf_tournament_rounds_pkey" PRIMARY KEY ("round_event_id");
+
+ALTER TABLE ONLY "public"."golf_tournament_rounds"
+    ADD CONSTRAINT "golf_tournament_rounds_round_event_id_team_id_key" UNIQUE ("round_event_id", "team_id");
+
+ALTER TABLE ONLY "public"."golf_tournament_rounds"
+    ADD CONSTRAINT "golf_tournament_rounds_tournament_id_round_number_key" UNIQUE ("tournament_id", "round_number");
+
+ALTER TABLE ONLY "public"."golf_tournaments"
+    ADD CONSTRAINT "golf_tournaments_id_team_uq" UNIQUE ("id", "team_id");
+
+ALTER TABLE ONLY "public"."golf_tournaments"
+    ADD CONSTRAINT "golf_tournaments_pkey" PRIMARY KEY ("id");
+
+ALTER TABLE ONLY "public"."golf_saved_comparisons"
+    ADD CONSTRAINT "golf_saved_comparisons_owner_id_fkey" FOREIGN KEY ("owner_id") REFERENCES "auth"."users"("id") ON DELETE CASCADE;
+
+ALTER TABLE ONLY "public"."golf_saved_comparisons"
+    ADD CONSTRAINT "golf_saved_comparisons_team_id_fkey" FOREIGN KEY ("team_id") REFERENCES "public"."golf_teams"("id") ON DELETE CASCADE;
+
+ALTER TABLE ONLY "public"."golf_team_seasons"
+    ADD CONSTRAINT "golf_team_seasons_team_id_fkey" FOREIGN KEY ("team_id") REFERENCES "public"."golf_teams"("id") ON DELETE CASCADE;
+
+ALTER TABLE ONLY "public"."golf_tournament_advice_givers"
+    ADD CONSTRAINT "golf_tournament_advice_givers_tournament_id_team_id_fkey" FOREIGN KEY ("tournament_id", "team_id") REFERENCES "public"."golf_tournaments"("id", "team_id") ON DELETE CASCADE;
+
+ALTER TABLE ONLY "public"."golf_tournament_advice_givers"
+    ADD CONSTRAINT "golf_tournament_advice_givers_user_id_fkey" FOREIGN KEY ("user_id") REFERENCES "auth"."users"("id") ON DELETE CASCADE;
+
+ALTER TABLE ONLY "public"."golf_tournament_coach_presence"
+    ADD CONSTRAINT "golf_tournament_coach_presence_coach_user_id_fkey" FOREIGN KEY ("coach_user_id") REFERENCES "auth"."users"("id") ON DELETE CASCADE;
+
+ALTER TABLE ONLY "public"."golf_tournament_coach_presence"
+    ADD CONSTRAINT "golf_tournament_coach_presence_round_event_id_team_id_fkey" FOREIGN KEY ("round_event_id", "team_id") REFERENCES "public"."golf_tournament_rounds"("round_event_id", "team_id") ON DELETE CASCADE;
+
+ALTER TABLE ONLY "public"."golf_tournament_coach_presence"
+    ADD CONSTRAINT "golf_tournament_coach_presence_with_player_id_fkey" FOREIGN KEY ("with_player_id") REFERENCES "public"."golf_players"("id") ON DELETE SET NULL;
+
+ALTER TABLE ONLY "public"."golf_tournament_entries"
+    ADD CONSTRAINT "golf_tournament_entries_player_id_fkey" FOREIGN KEY ("player_id") REFERENCES "public"."golf_players"("id") ON DELETE CASCADE;
+
+ALTER TABLE ONLY "public"."golf_tournament_entries"
+    ADD CONSTRAINT "golf_tournament_entries_tournament_id_team_id_fkey" FOREIGN KEY ("tournament_id", "team_id") REFERENCES "public"."golf_tournaments"("id", "team_id") ON DELETE CASCADE;
+
+ALTER TABLE ONLY "public"."golf_tournament_entry_notes"
+    ADD CONSTRAINT "golf_tournament_entry_notes_player_id_fkey" FOREIGN KEY ("player_id") REFERENCES "public"."golf_players"("id") ON DELETE CASCADE;
+
+ALTER TABLE ONLY "public"."golf_tournament_entry_notes"
+    ADD CONSTRAINT "golf_tournament_entry_notes_tournament_id_team_id_fkey" FOREIGN KEY ("tournament_id", "team_id") REFERENCES "public"."golf_tournaments"("id", "team_id") ON DELETE CASCADE;
+
+ALTER TABLE ONLY "public"."golf_tournament_field_scores"
+    ADD CONSTRAINT "golf_tournament_field_scores_field_team_id_team_id_fkey" FOREIGN KEY ("field_team_id", "team_id") REFERENCES "public"."golf_tournament_field_teams"("id", "team_id") ON DELETE CASCADE;
+
+ALTER TABLE ONLY "public"."golf_tournament_field_teams"
+    ADD CONSTRAINT "golf_tournament_field_teams_tournament_id_team_id_fkey" FOREIGN KEY ("tournament_id", "team_id") REFERENCES "public"."golf_tournaments"("id", "team_id") ON DELETE CASCADE;
+
+ALTER TABLE ONLY "public"."golf_tournament_link_dismissals"
+    ADD CONSTRAINT "golf_tournament_link_dismissals_dismissed_by_fkey" FOREIGN KEY ("dismissed_by") REFERENCES "auth"."users"("id") ON DELETE SET NULL;
+
+ALTER TABLE ONLY "public"."golf_tournament_link_dismissals"
+    ADD CONSTRAINT "golf_tournament_link_dismissals_round_id_fkey" FOREIGN KEY ("round_id") REFERENCES "public"."golf_rounds"("id") ON DELETE CASCADE;
+
+ALTER TABLE ONLY "public"."golf_tournament_link_dismissals"
+    ADD CONSTRAINT "golf_tournament_link_dismissals_team_id_fkey" FOREIGN KEY ("team_id") REFERENCES "public"."golf_teams"("id") ON DELETE CASCADE;
+
+ALTER TABLE ONLY "public"."golf_tournament_player_notes"
+    ADD CONSTRAINT "golf_tournament_player_notes_player_id_fkey" FOREIGN KEY ("player_id") REFERENCES "public"."golf_players"("id") ON DELETE CASCADE;
+
+ALTER TABLE ONLY "public"."golf_tournament_player_notes"
+    ADD CONSTRAINT "golf_tournament_player_notes_tournament_id_team_id_fkey" FOREIGN KEY ("tournament_id", "team_id") REFERENCES "public"."golf_tournaments"("id", "team_id") ON DELETE CASCADE;
+
+ALTER TABLE ONLY "public"."golf_tournament_player_rounds"
+    ADD CONSTRAINT "golf_tournament_player_rounds_player_id_fkey" FOREIGN KEY ("player_id") REFERENCES "public"."golf_players"("id") ON DELETE CASCADE;
+
+ALTER TABLE ONLY "public"."golf_tournament_player_rounds"
+    ADD CONSTRAINT "golf_tournament_player_rounds_round_event_id_team_id_fkey" FOREIGN KEY ("round_event_id", "team_id") REFERENCES "public"."golf_tournament_rounds"("round_event_id", "team_id") ON DELETE CASCADE;
+
+ALTER TABLE ONLY "public"."golf_tournament_player_rounds"
+    ADD CONSTRAINT "golf_tournament_player_rounds_round_id_fkey" FOREIGN KEY ("round_id") REFERENCES "public"."golf_rounds"("id") ON DELETE SET NULL;
+
+ALTER TABLE ONLY "public"."golf_tournament_player_rounds"
+    ADD CONSTRAINT "golf_tournament_player_rounds_updated_by_fkey" FOREIGN KEY ("updated_by") REFERENCES "auth"."users"("id") ON DELETE SET NULL;
+
+ALTER TABLE ONLY "public"."golf_tournament_reflections"
+    ADD CONSTRAINT "golf_tournament_reflections_player_id_fkey" FOREIGN KEY ("player_id") REFERENCES "public"."golf_players"("id") ON DELETE CASCADE;
+
+ALTER TABLE ONLY "public"."golf_tournament_reflections"
+    ADD CONSTRAINT "golf_tournament_reflections_tournament_id_team_id_fkey" FOREIGN KEY ("tournament_id", "team_id") REFERENCES "public"."golf_tournaments"("id", "team_id") ON DELETE CASCADE;
+
+ALTER TABLE ONLY "public"."golf_tournament_result_marks"
+    ADD CONSTRAINT "golf_tournament_result_marks_created_by_fkey" FOREIGN KEY ("created_by") REFERENCES "auth"."users"("id") ON DELETE SET NULL;
+
+ALTER TABLE ONLY "public"."golf_tournament_result_marks"
+    ADD CONSTRAINT "golf_tournament_result_marks_tournament_id_team_id_fkey" FOREIGN KEY ("tournament_id", "team_id") REFERENCES "public"."golf_tournaments"("id", "team_id") ON DELETE CASCADE;
+
+ALTER TABLE ONLY "public"."golf_tournament_reviews"
+    ADD CONSTRAINT "golf_tournament_reviews_tournament_id_team_id_fkey" FOREIGN KEY ("tournament_id", "team_id") REFERENCES "public"."golf_tournaments"("id", "team_id") ON DELETE CASCADE;
+
+ALTER TABLE ONLY "public"."golf_tournament_reviews"
+    ADD CONSTRAINT "golf_tournament_reviews_updated_by_fkey" FOREIGN KEY ("updated_by") REFERENCES "auth"."users"("id") ON DELETE SET NULL;
+
+ALTER TABLE ONLY "public"."golf_tournament_round_lineups"
+    ADD CONSTRAINT "golf_tournament_round_lineups_player_id_fkey" FOREIGN KEY ("player_id") REFERENCES "public"."golf_players"("id") ON DELETE CASCADE;
+
+ALTER TABLE ONLY "public"."golf_tournament_round_lineups"
+    ADD CONSTRAINT "golf_tournament_round_lineups_round_event_id_team_id_fkey" FOREIGN KEY ("round_event_id", "team_id") REFERENCES "public"."golf_tournament_rounds"("round_event_id", "team_id") ON DELETE CASCADE;
+
+ALTER TABLE ONLY "public"."golf_tournament_round_lineups"
+    ADD CONSTRAINT "golf_tournament_round_lineups_substituted_for_fkey" FOREIGN KEY ("substituted_for") REFERENCES "public"."golf_players"("id") ON DELETE SET NULL;
+
+ALTER TABLE ONLY "public"."golf_tournament_rounds"
+    ADD CONSTRAINT "golf_tournament_rounds_course_id_fkey" FOREIGN KEY ("course_id") REFERENCES "public"."golf_courses"("id") ON DELETE SET NULL;
+
+ALTER TABLE ONLY "public"."golf_tournament_rounds"
+    ADD CONSTRAINT "golf_tournament_rounds_round_event_id_fkey" FOREIGN KEY ("round_event_id") REFERENCES "public"."golf_events"("id") DEFERRABLE INITIALLY DEFERRED;
+
+ALTER TABLE ONLY "public"."golf_tournament_rounds"
+    ADD CONSTRAINT "golf_tournament_rounds_tee_id_fkey" FOREIGN KEY ("tee_id") REFERENCES "public"."golf_course_tees"("id") ON DELETE SET NULL;
+
+ALTER TABLE ONLY "public"."golf_tournament_rounds"
+    ADD CONSTRAINT "golf_tournament_rounds_tournament_id_team_id_fkey" FOREIGN KEY ("tournament_id", "team_id") REFERENCES "public"."golf_tournaments"("id", "team_id") ON DELETE CASCADE;
+
+ALTER TABLE ONLY "public"."golf_tournaments"
+    ADD CONSTRAINT "golf_tournaments_course_id_fkey" FOREIGN KEY ("course_id") REFERENCES "public"."golf_courses"("id") ON DELETE SET NULL;
+
+ALTER TABLE ONLY "public"."golf_tournaments"
+    ADD CONSTRAINT "golf_tournaments_created_by_fkey" FOREIGN KEY ("created_by") REFERENCES "auth"."users"("id") ON DELETE SET NULL;
+
+ALTER TABLE ONLY "public"."golf_tournaments"
+    ADD CONSTRAINT "golf_tournaments_team_id_fkey" FOREIGN KEY ("team_id") REFERENCES "public"."golf_teams"("id") ON DELETE CASCADE;
+
+ALTER TABLE ONLY "public"."golf_tournament_result_marks"
+    ADD CONSTRAINT "golf_trm_round_fkey" FOREIGN KEY ("round_event_id", "team_id") REFERENCES "public"."golf_tournament_rounds"("round_event_id", "team_id") ON DELETE SET NULL ("round_event_id");

@@ -96,3 +96,19 @@ export function isClubhouseForTeam(teamId: string | null | undefined): boolean {
 export function isClubhouseFrontDoor(): boolean {
   return isFlagEnabled('golf_clubhouse_front_door');
 }
+
+/**
+ * Tournaments (P016) is a Clubhouse page behind its own release flag, `golf_tournaments_v1` (off in production until
+ * the owner applies its held migrations and turns it on). Every Tournaments route, loader and server action asks this
+ * first, so with the flag off nothing reads a tournament table and the routes answer not found. A `'use server'` export
+ * is callable without its route, which is why the actions ask too.
+ */
+export async function isTournamentsFor(role: 'coach' | 'player' | null | undefined): Promise<boolean> {
+  if (!isFlagEnabled('golf_tournaments_v1')) return false;
+  return isClubhouseFor(role);
+}
+
+/** Whether the Tournaments nav entry may show: the flag only (the shell that draws it is already Clubhouse's). */
+export function tournamentsNavEnabled(): boolean {
+  return isFlagEnabled('golf_tournaments_v1');
+}

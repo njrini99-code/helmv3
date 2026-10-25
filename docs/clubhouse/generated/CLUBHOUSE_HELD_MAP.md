@@ -15,3 +15,6 @@ Held features and data plans (D-61), by page. Nothing here is applied or active 
 | P011 Rounds | `docs/clubhouse/held/data/live-rounds.md` | HELD | supabase/migrations/20261025050000_golf_round_live.sql |
 | P011 Rounds | `docs/clubhouse/held/data/live-rounds-realtime.md` | HELD | supabase/migrations/20261025050100_golf_round_live_realtime.sql |
 | P014 Recruiting | `docs/clubhouse/held/data/recruit-documents-film.md` | RELEASED | supabase/migrations/20260930140000_recruit_documents_film.sql |
+| P016 Tournaments | `docs/clubhouse/held/data/tournaments.md` | HELD | supabase/migrations/20261024100000_golf_tournaments.sql |
+| P016 Tournaments | `docs/clubhouse/held/data/tournaments-rls.md` | HELD | supabase/migrations/20261024100100_golf_tournaments_rls.sql |
+| P016 Tournaments | `docs/clubhouse/held/data/tournaments-rpcs.md` | HELD | supabase/migrations/20261024100200_golf_tournaments_rpcs.sql |
