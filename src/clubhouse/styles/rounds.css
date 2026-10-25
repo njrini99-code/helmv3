@@ -5307,21 +5307,23 @@ a.ch-rd-grp__h.is-link:focus-visible {
 .ch-hmap-sec[data-view='list'] .ch-hmap-mapv {
   display: none;
 }
+/* The phone gate and the fit carry [data-view] so they match the data-view rule's (0,3,0) and, coming after it, win:
+   at 414 px and wider the fit still says 'map', and a (0,2,0) gate lost to it and hid both views. */
 @container ch-hmap (max-width: 22.9em) {
-  .ch-hmap-mapv,
-  .ch-hmap-switch {
+  .ch-hmap-sec[data-view] .ch-hmap-mapv,
+  .ch-hmap-sec[data-view] .ch-hmap-switch {
     display: none;
   }
-  .ch-hmap-sec .ch-hmap-listv {
+  .ch-hmap-sec[data-view] .ch-hmap-listv {
     display: block;
   }
 }
 @media (max-width: 599px) {
-  .ch-hmap-sec .ch-hmap-mapv,
-  .ch-hmap-sec .ch-hmap-switch {
+  .ch-hmap-sec[data-view] .ch-hmap-mapv,
+  .ch-hmap-sec[data-view] .ch-hmap-switch {
     display: none;
   }
-  .ch-hmap-sec .ch-hmap-listv {
+  .ch-hmap-sec[data-view] .ch-hmap-listv {
     display: block;
   }
 }
