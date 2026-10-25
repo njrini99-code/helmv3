@@ -81,6 +81,11 @@ export function clashesAt(e: ChCalEvent, to: ChMoveTarget, events: ChCalEvent[])
   );
 }
 
+/** P-4 4.1: a block's size tier by its drawn height (desktop hour 52px, so a quarter is 13px). */
+export function blockTier(h: number): 'sliver' | 'short' | 'standard' | 'tall' {
+  return h < 24 ? 'sliver' : h < 40 ? 'short' : h < 70 ? 'standard' : 'tall';
+}
+
 const byStart = (a: ChCalEvent, b: ChCalEvent) => (a.allDay ? -1 : (a.start ?? 0)) - (b.allDay ? -1 : (b.start ?? 0));
 
 /** An event that has ended: on a day before today, or today with its end at or before now. */
@@ -130,6 +135,8 @@ function EventBlock({
   // At least one line of title (A26): a 15-minute block was 20px and cut its title's descenders.
   const h = Math.max((end - start) * CAL_HH - 2, 22);
   const short = h < 40;
+  // P-4 4.1 tiers: a sliver (under 24px) is one 12px row with no glyph; from 24px the type's glyph leads the title.
+  const tier = blockTier(h);
   /** Overlapping events cascade, as Apple Calendar does (owner, 2026-10-06: the split lanes crushed titles into
    *  fragments): each later lane steps right and lies over the earlier ones, reaching the column's right edge, so every
    *  block keeps a readable width and an earlier one shows in full above where the next begins. */
@@ -146,7 +153,7 @@ function EventBlock({
   // of a run over several days keeps rangeLabel's one phrase ("From 8:00 AM").
   const timed = !e.allDay && !(e.span?.start != null && e.span.end != null && e.date);
   // On the 24-hour clock there is no half to carry: "08:00" and "08:00 – 09:30".
-  const when = timed ? [fmtHour(e.start!, false, clock), meridiemOfHour(e.start!, clock), ...(short ? [] : [` – ${fmtHour(e.end!, true, clock)}`])].filter(Boolean) : [rangeLabel(e, clock)];
+  const when = e.cancelled ? ['Cancelled'] : timed ? [fmtHour(e.start!, false, clock), meridiemOfHour(e.start!, clock), ...(short ? [] : [` – ${fmtHour(e.end!, true, clock)}`])].filter(Boolean) : [rangeLabel(e, clock)];
   const where = !shared && h > 70 && e.location && !e.busyOnly ? ` · ${e.location}` : null;
   // P006 D2: a block on its own wraps its title to the lines its height leaves above the time (padding 12, gap 2, time 15;
   // a title line is 15.6), at most three, so "Bus to Pinehurst" isn't cut to "Bus to Pine…" in a block with room.
@@ -158,7 +165,7 @@ function EventBlock({
       type="button"
       data-print-visible
       // CH-6801: a button named with its title, time and any overlap. CH-6601: it lifts on hover and marks its selection.
-      className={`ch-ev ch-ev--${e.type}${short ? ' ch-ev--short' : ''}${shared ? ' ch-ev--lane' : ''}${under ? ' ch-ev--under' : ''}${lines ? ' ch-ev--wrap' : ''}${sel ? ' is-sel' : ''}${drag ? ' is-draggable' : ''}${state ? ` is-${state}` : ''}${past && !state ? ' is-past' : ''}`}
+      className={`ch-ev ch-ev--${e.cancelled ? 'other' : e.type}${tier === 'sliver' ? ' ch-ev--sliver' : ''}${e.cancelled ? ' is-cancelled' : ''}${short ? ' ch-ev--short' : ''}${shared ? ' ch-ev--lane' : ''}${under ? ' ch-ev--under' : ''}${lines ? ' ch-ev--wrap' : ''}${sel ? ' is-sel' : ''}${drag ? ' is-draggable' : ''}${state ? ` is-${state}` : ''}${past && !state ? ' is-past' : ''}`}
       style={{ top, height: h, left: `calc(${left}% + 3px)`, width: `calc(${100 - left}% - 6px)`, zIndex: state === 'ghost' ? 6 : under ? undefined : shared ? lane + 1 : undefined, ...(lines ? { '--ch-ev-lines': lines } : {}) } as CSSProperties}
       aria-label={`${title}, ${rangeLabel(e, clock)}${past && !state ? ', ended' : ''}${flagged ? ', schedule overlap' : ''}${drag ? '. Alt and the arrow keys move it 15 minutes' : ''}`}
       aria-pressed={sel}
@@ -180,14 +187,17 @@ function EventBlock({
         onSelect(e.id);
       }}
     >
-      <span className="ch-ev__t">{title}</span>
+      <span className="ch-ev__t">
+        {tier !== 'sliver' && <Icon icon={TYPE_ICON[e.type]} size={12} className="ch-ev__g" />}
+        {title}
+      </span>
       <span className="ch-ev__m ch-ev__m--fit">
         {when.map((part, i) => (
           <span key={i}>{part}</span>
         ))}
         {where && <span>{where}</span>}
       </span>
-      {flagged && !short && (
+      {(flagged || state === 'clash') && !short && (
         <span className="ch-ev__warn" aria-hidden="true">
           <Icon icon={TriangleAlert} size={10} />
         </span>
@@ -336,7 +346,7 @@ export function TimeGrid({
                       onSelect(e.id);
                     }}
                   >
-                    <Icon icon={TYPE_ICON[e.type]} size={12} />
+                    <Icon icon={TYPE_ICON[e.type]} size={12} className="ch-ev__g" />
                     <span>{eventTitle(e, people, viewerId)}</span>
                   </button>
                 ))}
@@ -463,8 +473,8 @@ export function MonthView({
             >
               <span className="ch-mo__n">{dayNum(date)}</span>
               {shown.map((e) => (
-                <span key={e.id} className={'ch-mo__ev' + (isMajor(e.type) ? ' is-major' : '')}>
-                  <i className={`ch-dot-${e.type}`} />
+                <span key={e.id} className={'ch-mo__ev' + (isMajor(e.type) ? ` is-major is-${e.type}` : '')}>
+                  {isMajor(e.type) ? <Icon icon={TYPE_ICON[e.type]} size={11} /> : <i className={`ch-dot-${e.type}`} />}
                   <span>{e.title}</span>
                 </span>
               ))}
