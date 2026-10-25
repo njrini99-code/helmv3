@@ -3326,3 +3326,114 @@ html[data-fw-theme='dark'] .ch-ev--busy::after {
     background: rgb(255 255 255 / 0.16);
   }
 }
+
+/* P-14 change marks. A row's sub line carries the old value struck beside the new, kept whole and clamped to two lines;
+   the detail opens on one quiet panel: a full hairline in a neutral wash, no stripe. Got it leaves one caption line, and
+   what sits below glides up by a transform (change-note.tsx). */
+.ch-calm-ev__b span.ch-calm-ev__sub {
+  display: -webkit-box;
+  overflow: hidden;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+}
+.ch-change-note {
+  display: grid;
+  grid-template-columns: 20px minmax(0, 1fr) auto;
+  gap: var(--ch-space-1) var(--ch-space-3);
+  align-items: start;
+  padding: var(--ch-space-3);
+  border-radius: var(--ch-radius-lg);
+  background: var(--ch-bg-subtle);
+  box-shadow: inset 0 0 0 var(--ch-hairline-w) var(--ch-border-subtle);
+}
+.ch-change-note__g {
+  margin-top: var(--ch-space-0_5);
+  color: var(--ch-ink-600);
+}
+.ch-change-note__t {
+  display: flex;
+  flex-direction: column;
+  gap: var(--ch-space-1);
+  min-width: 0;
+}
+.ch-change-note__h {
+  font: var(--ch-type-15-strong);
+  letter-spacing: var(--ch-track-15);
+  color: var(--ch-text-primary);
+  overflow-wrap: anywhere;
+}
+.ch-change-note__by {
+  font: var(--ch-type-13);
+  color: var(--ch-ink-600);
+}
+.ch-change-note__why {
+  font: var(--ch-type-14);
+  color: var(--ch-text-primary);
+}
+.ch-change-note__rows {
+  display: flex;
+  flex-direction: column;
+  gap: var(--ch-space-1);
+  margin: var(--ch-space-1) 0;
+}
+.ch-change-note__rows > div {
+  display: grid;
+  grid-template-columns: 52px minmax(0, 1fr);
+  gap: var(--ch-space-2);
+  align-items: baseline;
+}
+.ch-change-note__rows dt {
+  font: var(--ch-type-13-medium);
+  color: var(--ch-ink-600);
+}
+.ch-change-note__rows dd {
+  margin: 0;
+  font: var(--ch-type-14);
+  color: var(--ch-text-primary);
+}
+.ch-change-note__a {
+  display: flex;
+  gap: var(--ch-space-2);
+}
+/* The hit area reaches 44px though the key is 32px tall. */
+.ch-change-note__got,
+.ch-change-note__again {
+  position: relative;
+}
+.ch-change-note__got::before,
+.ch-change-note__again::before {
+  position: absolute;
+  inset-block: -6px;
+  inset-inline: 0;
+  content: '';
+}
+.ch-change-note__hidden {
+  display: flex;
+  align-items: center;
+  gap: var(--ch-space-2);
+  margin: 0;
+  font: var(--ch-type-13);
+  color: var(--ch-ink-600);
+  animation: ch-change-note-in var(--ch-dur-quick) var(--ch-ease) both;
+}
+@keyframes ch-change-note-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+@media (max-width: 359px) {
+  .ch-change-note {
+    grid-template-columns: 20px minmax(0, 1fr);
+  }
+  .ch-change-note__a {
+    grid-column: 2;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .ch-change-note__hidden {
+    animation: none;
+  }
+}

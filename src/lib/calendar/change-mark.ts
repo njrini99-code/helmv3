@@ -390,7 +390,7 @@ function byPhrase(names: string[], byMe: boolean | undefined): { who: string | n
 }
 
 /** When the edit happened: "9:14 PM" today, "Yesterday 9:14 PM", "Tue 9:14 PM" within 6 days, else "21 October 9:14 PM". */
-function whenPhrase(atIso: string, nowIso: string, timeZone: string): string {
+export function whenPhrase(atIso: string, nowIso: string, timeZone: string): string {
   const at = zonedParts(Date.parse(atIso), timeZone);
   const now = zonedParts(Date.parse(nowIso), timeZone);
   const n = dayDiff(now.date, at.date);

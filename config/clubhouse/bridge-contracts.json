@@ -5466,6 +5466,17 @@
     "catalog": "docs/clubhouse/catalog/calendar.md"
   },
   {
+    "id": 60631,
+    "page": "P006",
+    "category": 6,
+    "item": 31,
+    "name": "A_CHANGE_MARK_CANT_BE_READ_THE",
+    "chCode": "CH-6023",
+    "meaning": "A change mark can't be read (P-14): the stored mark is a shape this version doesn't know (an unknown version, a missing baseline)",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/calendar.md"
+  },
+  {
     "id": 60701,
     "page": "P006",
     "category": 7,

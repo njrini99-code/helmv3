@@ -18,6 +18,7 @@ import { WeekStrip, type WeekStripDay } from '../../ui/WeekStrip';
 import { haptic } from '../../lib/haptics';
 import { useChClock } from '../../lib/use-clock';
 import { EventPeek } from './peek';
+import { MarkBadge, useRowMark } from './change-note';
 import { PhoneTop } from '../../shell/phone-chrome';
 import { addDays, dayNum, dowOf, fmtHour, monthKey, monthName, playerReplyNeeded, rangeLabel, startLabel, weekDates, yearOf, type ChCalEvent, type ChCalPerson, type ChCalView } from './model';
 import { AgendaView, eventTitle, type ChNow } from './views';
@@ -295,6 +296,7 @@ function DayPage({
   onNew?: (date: string) => void;
 }) {
   const clock = useChClock();
+  const rowMark = useRowMark();
   const anchor = date;
   const list = events.filter((e) => e.date === anchor).sort(byStart);
   const team = list.filter((e) => e.type !== 'class' && e.type !== 'busy');
@@ -356,6 +358,7 @@ function DayPage({
             // The player's reply is still owed (and the server would take it): marked as Team Hub marks one.
             const reply = playerReplyNeeded(e, viewerId, now);
             const title = eventTitle(e, people, viewerId);
+            const mark = rowMark(e);
             return (
               <li key={`${e.id}${e.date}`}>
                 {i === nowAt && nowLine}
@@ -364,7 +367,7 @@ function DayPage({
                   <button
                     type="button"
                     className={`ch-calm-ev is-${e.type}` + (past ? ' is-past' : '') + (live ? ' is-live' : '') + (selId === e.id ? ' is-sel' : '') + (e.cancelled ? ' is-cancelled' : '')}
-                    aria-label={`${title}, ${e.allDay ? 'all day' : e.span?.start != null ? rangeLabel(e, clock) : `${fmtHour(e.start!, true, clock)} to ${fmtHour(e.end!, true, clock)}`}${past ? ', ended' : ''}${flagged.has(e.id) ? ', schedule overlap' : ''}${reply ? ', needs your reply' : ''}${e.cancelled ? ', cancelled' : ''}`}
+                    aria-label={`${title}, ${e.allDay ? 'all day' : e.span?.start != null ? rangeLabel(e, clock) : `${fmtHour(e.start!, true, clock)} to ${fmtHour(e.end!, true, clock)}`}${past ? ', ended' : ''}${flagged.has(e.id) ? ', schedule overlap' : ''}${reply ? ', needs your reply' : ''}${e.cancelled ? ', cancelled' : ''}${mark?.aria ?? ''}`}
                     onClick={() => {
                       haptic('select');
                       onOpen(e.id, e.date);
@@ -381,7 +384,7 @@ function DayPage({
                     <span className="ch-calm-ev__b">
                       <b>{title}</b>
                       {/* A class's code is already in its title ("Priya · STAT 201"), so its line names only the room. */}
-                      <span>{block && e.busyOnly ? 'Busy' : e.type === 'busy' ? 'Your busy time' : (e.location ?? '')}</span>
+                      <span className={mark?.sub ? 'ch-calm-ev__sub' : undefined}>{mark?.sub ?? (block && e.busyOnly ? 'Busy' : e.type === 'busy' ? 'Your busy time' : (e.location ?? ''))}</span>
                     </span>
                     {reply ? (
                       // The reply is the action on this row; an overlap still reads in its label and on the event.
@@ -390,6 +393,11 @@ function DayPage({
                       <span className="ch-calm-ev__w" aria-hidden="true">
                         <Icon icon={TriangleAlert} size={13} />
                       </span>
+                    ) : e.cancelled ? (
+                      <Badge tone="warning">Cancelled</Badge>
+                    ) : mark ? (
+                      // A live event that moved shows Moved, not Now, until Got it (P-14).
+                      <MarkBadge change={mark.change} />
                     ) : live ? (
                       <Badge tone="accent">Now</Badge>
                     ) : null}

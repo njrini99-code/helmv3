@@ -29,6 +29,8 @@ const tables = vi.hoisted(() => ({ current: {} as import('./supabase-fake').ChFa
 vi.mock('@/lib/supabase/server', async () => (await import('./supabase-fake')).fakeServer(tables));
 vi.mock('@/lib/auth/session', () => ({ getGolfSessionProfile: vi.fn() }));
 vi.mock('../routes/team', () => ({ resolveClubhouseTeam: vi.fn() }));
+// The route reads which change marks this device has seen from a cookie; there is no request in a test (P-14).
+vi.mock('../lib/phone-hint', () => ({ marksHint: () => Promise.resolve([]) }));
 const gate = vi.hoisted(() => ({ on: true }));
 vi.mock('@/clubhouse/gate', () => ({ isClubhouseFor: (role: string | null) => gate.on && (role === 'coach' || role === 'player') }));
 const a = vi.hoisted(() => ({
@@ -2333,5 +2335,36 @@ describe('Calendar · a player’s own week (wave 7)', () => {
       expect(document.querySelector('.ch-wks .is-reply')).toBeNull();
       expect(screen.queryByText('Reply')).toBeNull();
     });
+  });
+});
+
+describe('Calendar · change marks (P-14)', () => {
+  beforeEach(freezeClock);
+  afterEach(() => vi.useRealTimers());
+
+  it('CH-6023 a stored mark the loader cannot read is reported once, and its event still loads with a bare Changed badge', async () => {
+    const at = '2026-10-14T18:14:00.000Z';
+    const good = { v: 1, id: '6f1c2a90-aaaa-4bbb-8ccc-000000000001', first_at: at, at, by: 'c1', by_names: ['Maya Reyes'], fields: ['start_time'], from: { start_time: '2026-10-14T19:00:00Z', end_time: '2026-10-14T20:30:00Z', all_day: false, location: 'Range', title: 'Event e3', event_type: 'practice', cancelled: false } };
+    serve({
+      ...healthy(),
+      golf_events: { data: [eventRow('e1', { change: { v: 2, id: 'x', at } }), eventRow('e2', { change: { v: 3, id: 'y', at } }), eventRow('e3', { change: good }), eventRow('e4', { change: null })] },
+    });
+    const data = await load();
+    expect(data.events.filter((e) => e.type !== 'busy').map((e) => e.id)).toEqual(['e1', 'e2', 'e3', 'e4']);
+    expect(data.events.find((e) => e.id === 'e1')?.change).toMatchObject({ partial: true, badge: 'Changed', panelLine1: 'Changed' });
+    expect(data.events.find((e) => e.id === 'e3')?.change).toMatchObject({ partial: false, badge: 'Moved', was: { time: '3:00 PM' }, byMe: true });
+    expect(data.events.find((e) => e.id === 'e4')?.change).toBeNull();
+    const reports = logServer.mock.calls.filter((c) => c[1] === 'changeMark');
+    expect(reports).toHaveLength(1);
+    expect(String((reports[0]![2] as Error).message)).toMatch(/^CH-6023: 2 change mark/);
+  });
+
+  it('a player is never shown "By you", and the device\'s seen marks come through with the data', async () => {
+    const at = '2026-10-14T18:14:00.000Z';
+    const mark = { v: 1, id: '6f1c2a90-aaaa-4bbb-8ccc-000000000001', first_at: at, at, by: 'c1', by_names: ['Maya Reyes'], fields: ['start_time'], from: { start_time: '2026-10-14T19:00:00Z', end_time: '2026-10-14T20:30:00Z', all_day: false, location: 'Range', title: 'Event e1', event_type: 'practice', cancelled: false } };
+    serve({ ...healthy(), golf_events: { data: [eventRow('e1', { change: mark })] } });
+    const data = await load({ ...asPlayer('p2'), marks: [['6f1c2a90', 's']] });
+    expect(data.events[0]!.change).toMatchObject({ byMe: false, panelLine2: 'By Coach Reyes · 2:14 PM' });
+    expect(data.marks).toEqual([['6f1c2a90', 's']]);
   });
 });

@@ -3,8 +3,9 @@
 import { CalendarCheck, CalendarDays, Check, Lock, ChevronDown, ChevronLeft, ChevronRight, ChevronsUpDown, Ellipsis, Plus, Printer, Rss, TriangleAlert, Users, X } from 'lucide-react';
 import { AnimatePresence, m, useIsPresent } from 'motion/react';
 import { useRouter } from 'next/navigation';
-import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, useTransition, type CSSProperties, type ReactNode, type RefObject } from 'react';
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, useTransition, type ComponentProps, type CSSProperties, type ReactNode, type RefObject } from 'react';
 import { useChSessionState } from '../../lib/session-state';
+import { ChangeMarksProvider } from '../../lib/use-change-marks';
 import type { ChCalendarData } from '../../data/calendar';
 import { Avatar } from '../../ui/Avatar';
 import { Button, IconButton } from '../../ui/Button';
@@ -404,7 +405,15 @@ const buildUrl = (view: ChCalView, date: string, today: string, event?: string) 
 };
 
 /** `frozen` pins the clock to the loaded "now" (the dev preview renders a fixed day). */
-export function Calendar({
+export function Calendar(props: ComponentProps<typeof CalendarBody>) {
+  return (
+    <ChangeMarksProvider marks={props.data.marks ?? []}>
+      <CalendarBody {...props} />
+    </ChangeMarksProvider>
+  );
+}
+
+function CalendarBody({
   data,
   initialEvent,
   initialNew = false,

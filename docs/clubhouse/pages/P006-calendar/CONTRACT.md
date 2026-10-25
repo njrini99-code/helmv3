@@ -180,6 +180,7 @@ request id that becomes the row's key, and a repeat returns the row that landed
 | 60628 | CH-6015 | `MOVING_AN_EVENT_BY_DRAG_OR_ALT` | Moving an event by drag or Alt+arrow fails (P006-B3) |
 | 60629 | CH-6016 | `RESTORING_A_CANCELLED_EVENT_FAILS` | Restoring a cancelled event fails |
 | 60630 | CH-6017 | `DELETING_A_CANCELLED_EVENT_PERMANENTLY_FAILS` | Deleting a cancelled event permanently fails |
+| 60631 | CH-6023 | `A_CHANGE_MARK_CANT_BE_READ_THE` | A change mark can't be read (P-14): the stored mark is a shape this version doesn't know (an unknown version, a missing baseline) |
 
 From the shell (P001): 10601 CH-1001, 10602 CH-1201, 10603 CH-1202,
 10604 CH-1203, 10605 CH-1204, 10606 CH-1205, 10607 CH-1206, 10608 CH-1207,
