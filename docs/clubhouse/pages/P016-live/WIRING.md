@@ -17,6 +17,11 @@ Home:                    src/app/golf/(dashboard)/dashboard/page.tsx loads the s
 Player Home:             the same page loads loadPlayerLive beside loadPlayerHome (Promise.all); PlayerHome and PlayerHomePhone
                          mount OwnLiveCard. Strokes gained by leg (practice only) are computed on the server from the shots so
                          far (calculateStatsFromShots, the team's sg_scale_for_player): reads only
+Sharing:                 src/clubhouse/live/share-ports.ts (browser reads of golf_round_live_prefs and golf_round_live, and the three
+                         actions in src/app/golf/actions/round-live.ts); the controls are LiveShareField (Round setup),
+                         LiveShareSheet and the Exit sheet's Sharing row (RoundRuntime, new and continued rounds) and
+                         screens/settings/LiveRounds.tsx. Each is drawn only when the live table answers; the setup choice
+                         reaches the database through golf_round_live_set_next_share and never through ChSetupForm.
 Dock:                    data/shell.ts embeds golf_holes(par, score) in the existing in-progress round read for the Resume
                          accessory's "Hole 12 · −2"; no new read
 ```

@@ -181,6 +181,7 @@ export const FEATURE_REGISTRY: readonly FeatureDef[] = [
       'src/app/golf/actions/round-drafts.ts': 'ALL',
       'src/app/golf/actions/round-submit.ts': ['submitGolfRoundComprehensive'],
       'src/app/golf/actions/round-partial.ts': ['savePartialRound', 'deleteInProgressRound'],
+      'src/app/golf/actions/round-live.ts': ['setLiveShare', 'setNextLiveShare', 'setLivePrefs'],
       'src/app/golf/actions/shot-actions.ts': ['deleteShot', 'updateShot', 'getRoundShotDetails'],
     },
     primaryTable: 'golf_rounds',

@@ -898,3 +898,17 @@ section.ch-lv-card {
   width: 100%;
   height: 44px;
 }
+
+/* Sharing: the Round setup field and the in-round sheet (4.6). */
+.ch-lv-share__remember {
+  display: flex;
+  align-items: center;
+  min-height: 44px;
+}
+.ch-lv-share .ch-rsu-field__hint.ch-lv-share__error {
+  color: var(--ch-danger-600);
+}
+.ch-lv-sheetshare {
+  display: grid;
+  gap: var(--ch-space-3);
+}

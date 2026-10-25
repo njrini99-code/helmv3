@@ -487,6 +487,16 @@ GRANT ALL ON TABLE "public"."golf_review_events" TO "authenticated";
 
 GRANT ALL ON TABLE "public"."golf_review_events" TO "service_role";
 
+GRANT SELECT ON TABLE "public"."golf_round_live" TO "authenticated";
+
+GRANT ALL ON TABLE "public"."golf_round_live" TO "service_role";
+
+GRANT SELECT,INSERT,UPDATE ON TABLE "public"."golf_round_live_prefs" TO "authenticated";
+
+GRANT ALL ON TABLE "public"."golf_round_live_prefs" TO "service_role";
+
+GRANT SELECT,USAGE ON SEQUENCE "public"."golf_round_live_seq" TO "service_role";
+
 GRANT ALL ON TABLE "public"."golf_round_recap_locks" TO "service_role";
 
 GRANT SELECT ON TABLE "public"."golf_round_recap_provenance" TO "authenticated";

@@ -11,6 +11,7 @@
 | Checklist | [screens/live.md](../../screens/live.md) |
 | Phone spec | [phone/live.md](../../phone/live.md) |
 | Code | [live](../../../../src/clubhouse/screens/live) · [live-rounds.ts](../../../../src/clubhouse/data/live-rounds.ts) · [live.tsx](../../../../src/clubhouse/routes/live.tsx) · [live.css](../../../../src/clubhouse/styles/live.css) · [live](../../../../src/clubhouse/live) |
+| Held plans | [live-rounds.md](../../held/data/live-rounds.md) · [live-rounds-realtime.md](../../held/data/live-rounds-realtime.md) |
 | Audits | [all audits](../../AUDITS.md) |
 | Tracker | [PROGRESS.md](../../PROGRESS.md), row "Live rounds" |
 | Screenshot log | [VERIFY.md, Screenshots](VERIFY.md#screenshots) |

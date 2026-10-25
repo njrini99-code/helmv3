@@ -4952,6 +4952,48 @@ ALTER FUNCTION "public"."golf_my_join_requests"() OWNER TO "postgres";
 
 COMMENT ON FUNCTION "public"."golf_my_join_requests"() IS 'The CALLER''s own pending golf join requests, with team and organization names resolved. Runs with definer rights because a pending requester is not yet a member and so cannot read golf_teams under RLS. Scoped internally by golf_players.user_id = auth.uid() — it cannot answer for anyone else.';
 
+CREATE OR REPLACE FUNCTION "public"."golf_live_topic_allowed"("p_topic" "text") RETURNS boolean
+    LANGUAGE "plpgsql" STABLE SECURITY DEFINER
+    SET "search_path" TO 'public', 'pg_temp'
+    AS $$
+DECLARE
+  m text[];
+  v_team uuid;
+BEGIN
+  IF p_topic IS NULL THEN
+    RETURN false;
+  END IF;
+  m := regexp_match(p_topic,
+    '^golf-live:(coach|team):([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})$');
+  IF m IS NULL THEN
+    RETURN false;
+  END IF;
+  v_team := m[2]::uuid;
+  IF m[1] = 'coach' THEN
+    RETURN public.is_golf_team_coach(v_team);
+  END IF;
+  RETURN public.is_golf_team_player(v_team) AND NOT public.golf_live_viewer_on_course(v_team);
+END $$;
+
+ALTER FUNCTION "public"."golf_live_topic_allowed"("p_topic" "text") OWNER TO "postgres";
+
+CREATE OR REPLACE FUNCTION "public"."golf_live_viewer_on_course"("p_team" "uuid") RETURNS boolean
+    LANGUAGE "sql" STABLE SECURITY DEFINER
+    SET "search_path" TO 'public', 'pg_temp'
+    AS $$
+  SELECT EXISTS (
+    SELECT 1
+      FROM public.golf_round_live l
+      JOIN public.golf_players gp ON gp.id = l.player_id
+     WHERE gp.user_id = auth.uid()
+       AND l.team_id = p_team
+       AND l.phase IN ('on_course', 'finished')
+       AND l.heard_at > now() - interval '4 hours'
+  );
+$$;
+
+ALTER FUNCTION "public"."golf_live_viewer_on_course"("p_team" "uuid") OWNER TO "postgres";
+
 CREATE OR REPLACE FUNCTION "public"."golf_normalize_name"("p" "text") RETURNS "text"
     LANGUAGE "sql" IMMUTABLE
     SET "search_path" TO 'public', 'pg_temp'
@@ -4992,6 +5034,101 @@ end;
 $$;
 
 ALTER FUNCTION "public"."golf_player_anonymize_on_unlink"() OWNER TO "postgres";
+
+CREATE OR REPLACE FUNCTION "public"."golf_round_live_set_next_share"("p_share" "text", "p_remember" boolean DEFAULT false) RETURNS "jsonb"
+    LANGUAGE "plpgsql" SECURITY DEFINER
+    SET "search_path" TO 'public', 'pg_temp'
+    AS $$
+DECLARE
+  v_player uuid;
+BEGIN
+  IF p_share IS NULL OR p_share NOT IN ('off', 'coaches', 'team') THEN
+    RETURN jsonb_build_object('ok', false, 'error', 'invalid_share');
+  END IF;
+  SELECT gp.id INTO v_player FROM public.golf_players gp WHERE gp.user_id = auth.uid();
+  IF v_player IS NULL THEN
+    RETURN jsonb_build_object('ok', false, 'error', 'not_found');
+  END IF;
+
+  INSERT INTO public.golf_round_live_prefs AS p (player_id, practice_share, next_share, next_share_at, updated_at)
+  VALUES (v_player, CASE WHEN p_remember THEN p_share ELSE 'off' END, p_share, now(), now())
+  ON CONFLICT (player_id) DO UPDATE SET
+    next_share = excluded.next_share,
+    next_share_at = excluded.next_share_at,
+    practice_share = CASE WHEN p_remember THEN excluded.practice_share ELSE p.practice_share END,
+    updated_at = now();
+
+  RETURN jsonb_build_object('ok', true, 'share', p_share);
+END $$;
+
+ALTER FUNCTION "public"."golf_round_live_set_next_share"("p_share" "text", "p_remember" boolean) OWNER TO "postgres";
+
+CREATE OR REPLACE FUNCTION "public"."golf_round_live_set_share"("p_round_id" "uuid", "p_share" "text", "p_remember" boolean DEFAULT true) RETURNS "jsonb"
+    LANGUAGE "plpgsql" SECURITY DEFINER
+    SET "search_path" TO 'public', 'pg_temp'
+    SET "lock_timeout" TO '2s'
+    AS $$
+DECLARE
+  r      public.golf_rounds%ROWTYPE;
+  v_prev public.golf_round_live%ROWTYPE;
+  v_new  public.golf_round_live%ROWTYPE;
+  v_share text;
+BEGIN
+  IF p_share IS NULL OR p_share NOT IN ('off', 'coaches', 'team') THEN
+    RETURN jsonb_build_object('ok', false, 'error', 'invalid_share');
+  END IF;
+
+  BEGIN
+    SELECT gr.* INTO r
+      FROM public.golf_rounds gr
+      JOIN public.golf_players gp ON gp.id = gr.player_id AND gp.user_id = auth.uid()
+     WHERE gr.id = p_round_id
+       FOR KEY SHARE OF gr;
+    IF NOT FOUND THEN
+      RETURN jsonb_build_object('ok', false, 'error', 'not_found');
+    END IF;
+    IF r.status IS DISTINCT FROM 'in_progress' THEN
+      RETURN jsonb_build_object('ok', false, 'error', 'not_in_progress');
+    END IF;
+    IF r.team_id IS NULL THEN
+      RETURN jsonb_build_object('ok', false, 'error', 'no_team');
+    END IF;
+
+    PERFORM helm_private.golf_round_live_refresh(p_round_id, false); -- creates the row if it is missing
+    SELECT * INTO v_prev FROM public.golf_round_live WHERE round_id = p_round_id FOR UPDATE;
+    IF NOT FOUND THEN
+      RETURN jsonb_build_object('ok', false, 'error', 'not_live');
+    END IF;
+
+    v_share := helm_private.golf_round_live_floor(v_prev.round_type, p_share);
+
+    IF v_share IS DISTINCT FROM v_prev.share THEN
+      IF v_prev.share_changes >= 30 THEN
+        RETURN jsonb_build_object('ok', false, 'error', 'too_many_changes', 'share', v_prev.share);
+      END IF;
+      UPDATE public.golf_round_live
+         SET share = v_share, share_changes = share_changes + 1,
+             seq = nextval('public.golf_round_live_seq'), updated_at = now()
+       WHERE round_id = p_round_id
+       RETURNING * INTO v_new;
+      PERFORM helm_private.golf_round_live_emit(v_new, v_prev.team_id, v_prev.share, '[]'::jsonb, false);
+    ELSE
+      v_new := v_prev;
+    END IF;
+
+    IF p_remember AND v_new.round_type = 'practice' THEN
+      INSERT INTO public.golf_round_live_prefs AS p (player_id, practice_share, updated_at)
+      VALUES (r.player_id, v_share, now())
+      ON CONFLICT (player_id) DO UPDATE SET practice_share = excluded.practice_share, updated_at = now();
+    END IF;
+
+    RETURN jsonb_build_object('ok', true, 'share', v_new.share, 'seq', v_new.seq, 'clamped', v_share IS DISTINCT FROM p_share);
+  EXCEPTION WHEN lock_not_available THEN
+    RETURN jsonb_build_object('ok', false, 'error', 'busy');
+  END;
+END $$;
+
+ALTER FUNCTION "public"."golf_round_live_set_share"("p_round_id" "uuid", "p_share" "text", "p_remember" boolean) OWNER TO "postgres";
 
 CREATE OR REPLACE FUNCTION "public"."golf_round_canonical_total"("p_total_score" integer, "p_front_nine" integer, "p_back_nine" integer) RETURNS integer
     LANGUAGE "sql" IMMUTABLE PARALLEL SAFE

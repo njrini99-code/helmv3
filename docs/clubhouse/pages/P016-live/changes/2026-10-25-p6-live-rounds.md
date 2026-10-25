@@ -34,3 +34,31 @@ Held items:     migrations 20261025050000 to 20261025050200 (slices 2, 3 and 5)
 - vitest in `src/clubhouse/live/__tests__`, `screens/live/__tests__`, `data/__tests__/live-rounds.test.ts`,
   `screens/qualifiers/__tests__/live-refresh-gate.test.ts` and `__tests__/live-rounds-copy.test.ts`.
 - Not done: before and after screenshots (no browser was run here) and the device pass. No VERIFY row is invented.
+
+## 2026-10-25 — Sharing, the held migrations and the player's own card (slices 1 and 2)
+
+```text
+Design package: build plan P-6 sections 4.4, 4.6 and 8 with the 2026-10-25 changelog and recheck
+PR/commit:      claude/clubhouse-live-rounds (slices 1 and 2)
+Contract IDs:   CH-16680, CH-16681, CH-16683, CH-16660 to CH-16666, CH-16684
+Actions:        setLiveShare, setNextLiveShare, setLivePrefs
+Data impact:    three migrations written and held (golf_round_live and its prefs, the push policy, the sweep); the
+                supabase/schemas mirror; no change to anything a player records
+Held items:     docs/clubhouse/held/data/live-rounds.md, docs/clubhouse/held/data/live-rounds-realtime.md
+```
+
+### Changed
+
+- The three held migrations, their rows in supabase/migrations/HELD.md, the declarative mirror and
+  `supabase/tests/rls/golf_round_live.sql`.
+- `OwnLiveCard` on Player Home; the Dock reads "Hole 12 · −2".
+- The sharing controls (setup field, Exit sheet row and sheet, Settings group) and their three server actions.
+
+### Why
+
+- Practice rounds need a sharing control (OQ-72), and push needs the table; both wait for the owner to apply them.
+
+### Verification
+
+- `supabase/tests/rls/golf_round_live.sql` ran on a scratch Postgres 16 with a stub schema and a pgTAP stand-in (54 of
+  54), not on a Supabase stack. The app tests are listed in the page manifest.

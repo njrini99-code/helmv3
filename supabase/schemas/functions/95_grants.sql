@@ -1,5 +1,21 @@
 REVOKE ALL ON FUNCTION "helm_private"."configure_trace_context"("p_round_data" "jsonb") FROM PUBLIC;
 
+REVOKE ALL ON FUNCTION "helm_private"."golf_holes_round_live"() FROM PUBLIC, "anon", "authenticated";
+
+REVOKE ALL ON FUNCTION "helm_private"."golf_live_broadcast"("p_topic" "text", "p_event" "text", "p_payload" "jsonb") FROM PUBLIC, "anon", "authenticated";
+
+REVOKE ALL ON FUNCTION "helm_private"."golf_round_live_emit"("p_new" "public"."golf_round_live", "p_old_team" "uuid", "p_old_share" "text", "p_changed" "jsonb", "p_late" boolean) FROM PUBLIC, "anon", "authenticated";
+
+REVOKE ALL ON FUNCTION "helm_private"."golf_round_live_refresh"("p_round_id" "uuid", "p_quiet" boolean) FROM PUBLIC, "anon", "authenticated";
+
+REVOKE ALL ON FUNCTION "helm_private"."golf_round_live_touch"("p_round_id" "uuid") FROM PUBLIC, "anon", "authenticated";
+
+REVOKE ALL ON FUNCTION "helm_private"."golf_rounds_round_live"() FROM PUBLIC, "anon", "authenticated";
+
+REVOKE ALL ON FUNCTION "helm_private"."golf_rounds_round_live_gone"() FROM PUBLIC, "anon", "authenticated";
+
+REVOKE ALL ON FUNCTION "helm_private"."golf_team_today"("p_team" "uuid") FROM PUBLIC, "anon", "authenticated";
+
 REVOKE ALL ON FUNCTION "helm_private"."guard_golf_round_lifecycle"() FROM PUBLIC;
 
 REVOKE ALL ON FUNCTION "helm_private"."prevent_qualifier_entry_active_round_stranding"() FROM PUBLIC, "anon", "authenticated";
@@ -615,6 +631,30 @@ REVOKE ALL ON FUNCTION "public"."golf_player_anonymize_on_unlink"() FROM PUBLIC;
 GRANT ALL ON FUNCTION "public"."golf_player_anonymize_on_unlink"() TO "authenticated";
 
 GRANT ALL ON FUNCTION "public"."golf_player_anonymize_on_unlink"() TO "service_role";
+
+REVOKE ALL ON FUNCTION "public"."golf_live_topic_allowed"("p_topic" "text") FROM PUBLIC, "anon", "authenticated";
+
+GRANT ALL ON FUNCTION "public"."golf_live_topic_allowed"("p_topic" "text") TO "authenticated";
+
+GRANT ALL ON FUNCTION "public"."golf_live_topic_allowed"("p_topic" "text") TO "service_role";
+
+REVOKE ALL ON FUNCTION "public"."golf_live_viewer_on_course"("p_team" "uuid") FROM PUBLIC, "anon", "authenticated";
+
+GRANT ALL ON FUNCTION "public"."golf_live_viewer_on_course"("p_team" "uuid") TO "authenticated";
+
+GRANT ALL ON FUNCTION "public"."golf_live_viewer_on_course"("p_team" "uuid") TO "service_role";
+
+REVOKE ALL ON FUNCTION "public"."golf_round_live_set_next_share"("p_share" "text", "p_remember" boolean) FROM PUBLIC, "anon", "authenticated";
+
+GRANT ALL ON FUNCTION "public"."golf_round_live_set_next_share"("p_share" "text", "p_remember" boolean) TO "authenticated";
+
+GRANT ALL ON FUNCTION "public"."golf_round_live_set_next_share"("p_share" "text", "p_remember" boolean) TO "service_role";
+
+REVOKE ALL ON FUNCTION "public"."golf_round_live_set_share"("p_round_id" "uuid", "p_share" "text", "p_remember" boolean) FROM PUBLIC, "anon", "authenticated";
+
+GRANT ALL ON FUNCTION "public"."golf_round_live_set_share"("p_round_id" "uuid", "p_share" "text", "p_remember" boolean) TO "authenticated";
+
+GRANT ALL ON FUNCTION "public"."golf_round_live_set_share"("p_round_id" "uuid", "p_share" "text", "p_remember" boolean) TO "service_role";
 
 REVOKE ALL ON FUNCTION "public"."golf_readable_round_ids"() FROM PUBLIC;
 

@@ -934,6 +934,28 @@ CREATE POLICY "golf_recruits_select_coach" ON "public"."golf_recruits" FOR SELEC
 
 CREATE POLICY "golf_recruits_update_coach" ON "public"."golf_recruits" FOR UPDATE USING ("public"."is_golf_team_coach"("team_id")) WITH CHECK ("public"."is_golf_team_coach"("team_id"));
 
+CREATE POLICY "golf_round_live_prefs_insert_own" ON "public"."golf_round_live_prefs" FOR INSERT TO "authenticated" WITH CHECK ((EXISTS ( SELECT 1
+   FROM "public"."golf_players" "gp"
+  WHERE (("gp"."id" = "golf_round_live_prefs"."player_id") AND ("gp"."user_id" = ( SELECT "auth"."uid"() AS "uid"))))));
+
+CREATE POLICY "golf_round_live_prefs_select_own" ON "public"."golf_round_live_prefs" FOR SELECT TO "authenticated" USING ((EXISTS ( SELECT 1
+   FROM "public"."golf_players" "gp"
+  WHERE (("gp"."id" = "golf_round_live_prefs"."player_id") AND ("gp"."user_id" = ( SELECT "auth"."uid"() AS "uid"))))));
+
+CREATE POLICY "golf_round_live_prefs_update_own" ON "public"."golf_round_live_prefs" FOR UPDATE TO "authenticated" USING ((EXISTS ( SELECT 1
+   FROM "public"."golf_players" "gp"
+  WHERE (("gp"."id" = "golf_round_live_prefs"."player_id") AND ("gp"."user_id" = ( SELECT "auth"."uid"() AS "uid")))))) WITH CHECK ((EXISTS ( SELECT 1
+   FROM "public"."golf_players" "gp"
+  WHERE (("gp"."id" = "golf_round_live_prefs"."player_id") AND ("gp"."user_id" = ( SELECT "auth"."uid"() AS "uid"))))));
+
+CREATE POLICY "golf_round_live_select_coach" ON "public"."golf_round_live" FOR SELECT TO "authenticated" USING (((NOT "is_test") AND ("share" = ANY (ARRAY['coaches'::"text", 'team'::"text"])) AND "public"."is_golf_team_coach"("team_id")));
+
+CREATE POLICY "golf_round_live_select_own" ON "public"."golf_round_live" FOR SELECT TO "authenticated" USING ((EXISTS ( SELECT 1
+   FROM "public"."golf_players" "gp"
+  WHERE (("gp"."id" = "golf_round_live"."player_id") AND ("gp"."user_id" = ( SELECT "auth"."uid"() AS "uid"))))));
+
+CREATE POLICY "golf_round_live_select_team" ON "public"."golf_round_live" FOR SELECT TO "authenticated" USING (((NOT "is_test") AND ("share" = 'team'::"text") AND ("round_type" = 'practice'::"text") AND "public"."is_golf_team_player"("team_id") AND (NOT "public"."golf_live_viewer_on_course"("team_id"))));
+
 CREATE POLICY "golf_rounds_delete" ON "public"."golf_rounds" FOR DELETE TO "authenticated" USING ((EXISTS ( SELECT 1
    FROM "public"."golf_players"
   WHERE (("golf_players"."id" = "golf_rounds"."player_id") AND ("golf_players"."user_id" = ( SELECT "auth"."uid"() AS "uid"))))));

@@ -179,6 +179,10 @@ COMMENT ON COLUMN "public"."golf_qualifiers"."is_test" IS 'QA/demo row: hidden f
 
 COMMENT ON TABLE "public"."golf_review_events" IS 'Timeline of events related to reviews for history display';
 
+COMMENT ON TABLE "public"."golf_round_live" IS 'P-6: live state of an in-progress team round, refreshed in place at commit (helm_private.golf_round_live_refresh). Never written by clients; sharing changes go through golf_round_live_set_share. Swept by golf-round-live-sweep.';
+
+COMMENT ON TABLE "public"."golf_round_live_prefs" IS 'P-6: a player''s default live sharing for practice rounds (OQ-72: off unless they choose), and the one-round choice made in round setup. Qualifier and tournament rounds are always shared with coaches.';
+
 COMMENT ON TABLE "public"."golf_round_recap_locks" IS 'Single-flight lease for a per-round LLM call, taken BEFORE compose() so a concurrent second request for the same (round_id, revision, kind) waits for or reads the first call''s result instead of making a second billable LLM call. Serves round-recap.ts (kind = ''recap'') and the round-review narrative (kind = ''round_review_narrative'') — the name predates the second caller. Row-per-(round_id,revision,kind), TTL-expiring, service-role-only — written and cleared exclusively through public.claim_round_recap_lock / public.release_round_recap_lock, never through a direct client write.';
 
 COMMENT ON TABLE "public"."golf_round_recap_provenance" IS 'One row per generated golf_rounds.ai_recap: which path produced it (llm vs deterministic fallback), the golf_coachhelm_llm_calls row for the llm path (full audit trail: evidence, citations, cost), whether the typed claim packet gate was engaged, and the season-stats snapshot the prose was generated against. Written best-effort by the service role from round-recap.ts; a write failure never blocks or throws the recap.';

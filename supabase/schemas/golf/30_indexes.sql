@@ -661,3 +661,12 @@ CREATE INDEX "idx_putt_details_shot_id" ON "public"."putt_details" USING "btree"
 CREATE INDEX "idx_standing_computed_at" ON "public"."golf_player_standing" USING "btree" ("computed_at" DESC);
 
 CREATE INDEX "idx_standing_team_metric" ON "public"."golf_player_standing" USING "btree" ("metric_id", "team_pct") INCLUDE ("player_id");
+
+CREATE INDEX "golf_round_live_course_date_idx" ON "public"."golf_round_live" USING "btree" ("course_id", "round_date") WHERE ("course_id" IS NOT NULL);
+
+CREATE INDEX "golf_round_live_player_idx" ON "public"."golf_round_live" USING "btree" ("player_id");
+
+CREATE INDEX "golf_round_live_qualifier_idx" ON "public"."golf_round_live" USING "btree" ("qualifier_id") WHERE ("qualifier_id" IS NOT NULL);
+
+CREATE INDEX "golf_round_live_team_date_idx" ON "public"."golf_round_live" USING "btree" ("team_id", "round_date" DESC);
+

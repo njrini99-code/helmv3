@@ -1679,6 +1679,69 @@ ALTER TABLE "public"."golf_review_events" OWNER TO "postgres";
 -- Written and cleared exclusively through public.claim_round_recap_lock /
 -- public.release_round_recap_lock; see 90_comments.sql for the full
 -- COMMENT ON TABLE text.
+CREATE SEQUENCE IF NOT EXISTS "public"."golf_round_live_seq"
+    AS bigint
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+ALTER SEQUENCE "public"."golf_round_live_seq" OWNER TO "postgres";
+
+CREATE TABLE IF NOT EXISTS "public"."golf_round_live" (
+    "round_id" "uuid" NOT NULL,
+    "team_id" "uuid" NOT NULL,
+    "player_id" "uuid" NOT NULL,
+    "round_type" "text" NOT NULL,
+    "qualifier_id" "uuid",
+    "qualifier_round" integer,
+    "round_date" "date" NOT NULL,
+    "course_id" "uuid",
+    "course_name" "text",
+    "holes_planned" smallint DEFAULT 18 NOT NULL,
+    "start_position" smallint DEFAULT 1 NOT NULL,
+    "current_hole" smallint,
+    "share" "text" NOT NULL,
+    "phase" "text" DEFAULT 'on_course'::"text" NOT NULL,
+    "thru" smallint DEFAULT 0 NOT NULL,
+    "to_par" smallint,
+    "strokes" smallint,
+    "holes" "jsonb" DEFAULT '[]'::"jsonb" NOT NULL,
+    "last_hole_at" timestamp with time zone,
+    "heard_at" timestamp with time zone DEFAULT "now"() NOT NULL,
+    "is_test" boolean DEFAULT false NOT NULL,
+    "seq" bigint DEFAULT "nextval"('"public"."golf_round_live_seq"'::"regclass") NOT NULL,
+    "emit_window_at" timestamp with time zone DEFAULT "now"() NOT NULL,
+    "emit_count" integer DEFAULT 0 NOT NULL,
+    "share_changes" smallint DEFAULT 0 NOT NULL,
+    "started_at" timestamp with time zone DEFAULT "now"() NOT NULL,
+    "ended_at" timestamp with time zone,
+    "updated_at" timestamp with time zone DEFAULT "now"() NOT NULL,
+    CONSTRAINT "golf_round_live_current_hole_chk" CHECK ((("current_hole" IS NULL) OR (("current_hole" >= 1) AND ("current_hole" <= 18)))),
+    CONSTRAINT "golf_round_live_holes_chk" CHECK ((("jsonb_typeof"("holes") = 'array'::"text") AND ("jsonb_array_length"("holes") <= 18))),
+    CONSTRAINT "golf_round_live_holes_planned_chk" CHECK (("holes_planned" = ANY (ARRAY[9, 18]))),
+    CONSTRAINT "golf_round_live_phase_chk" CHECK (("phase" = ANY (ARRAY['on_course'::"text", 'finished'::"text", 'posted'::"text", 'stopped'::"text"]))),
+    CONSTRAINT "golf_round_live_round_type_chk" CHECK (("round_type" = ANY (ARRAY['practice'::"text", 'qualifier'::"text", 'tournament'::"text"]))),
+    CONSTRAINT "golf_round_live_share_chk" CHECK (("share" = ANY (ARRAY['off'::"text", 'coaches'::"text", 'team'::"text"]))),
+    CONSTRAINT "golf_round_live_share_floor_chk" CHECK ((("round_type" = 'practice'::"text") OR ("share" = 'coaches'::"text"))),
+    CONSTRAINT "golf_round_live_thru_chk" CHECK ((("thru" >= 0) AND ("thru" <= 18)))
+);
+
+ALTER TABLE "public"."golf_round_live" OWNER TO "postgres";
+
+CREATE TABLE IF NOT EXISTS "public"."golf_round_live_prefs" (
+    "player_id" "uuid" NOT NULL,
+    "practice_share" "text" DEFAULT 'off'::"text" NOT NULL,
+    "next_share" "text",
+    "next_share_at" timestamp with time zone,
+    "updated_at" timestamp with time zone DEFAULT "now"() NOT NULL,
+    CONSTRAINT "golf_round_live_prefs_next_share_chk" CHECK ((("next_share" IS NULL) OR ("next_share" = ANY (ARRAY['off'::"text", 'coaches'::"text", 'team'::"text"])))),
+    CONSTRAINT "golf_round_live_prefs_practice_share_chk" CHECK (("practice_share" = ANY (ARRAY['off'::"text", 'coaches'::"text", 'team'::"text"])))
+);
+
+ALTER TABLE "public"."golf_round_live_prefs" OWNER TO "postgres";
+
 CREATE TABLE IF NOT EXISTS "public"."golf_round_recap_locks" (
     "round_id" "uuid" NOT NULL,
     "revision" integer DEFAULT 1 NOT NULL,

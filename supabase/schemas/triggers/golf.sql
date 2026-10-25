@@ -8,6 +8,8 @@ CREATE OR REPLACE TRIGGER "golf_holes_recompute_round_totals" AFTER INSERT OR DE
 
 CREATE OR REPLACE TRIGGER "golf_holes_reject_completed_round_mutation" BEFORE INSERT OR DELETE OR UPDATE ON "public"."golf_holes" FOR EACH ROW EXECUTE FUNCTION "helm_private"."reject_completed_round_child_mutation"();
 
+CREATE CONSTRAINT TRIGGER "golf_holes_round_live" AFTER INSERT OR DELETE OR UPDATE OF "score", "par" ON "public"."golf_holes" DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION "helm_private"."golf_holes_round_live"();
+
 CREATE OR REPLACE TRIGGER "golf_holes_set_gir" BEFORE INSERT OR UPDATE OF "par", "score", "putts" ON "public"."golf_holes" FOR EACH ROW EXECUTE FUNCTION "public"."golf_holes_set_gir_fn"();
 
 CREATE OR REPLACE TRIGGER "golf_players_anonymize_on_unlink" BEFORE UPDATE OF "user_id" ON "public"."golf_players" FOR EACH ROW EXECUTE FUNCTION "public"."golf_player_anonymize_on_unlink"();
@@ -21,6 +23,12 @@ CREATE OR REPLACE TRIGGER "golf_recruit_documents_same_team" BEFORE INSERT OR UP
 CREATE OR REPLACE TRIGGER "golf_recruit_documents_touch" BEFORE UPDATE ON "public"."golf_recruit_documents" FOR EACH ROW EXECUTE FUNCTION "public"."golf_recruit_documents_touch_updated_at"();
 
 CREATE OR REPLACE TRIGGER "golf_rounds_guard_lifecycle" BEFORE INSERT OR DELETE OR UPDATE ON "public"."golf_rounds" FOR EACH ROW EXECUTE FUNCTION "helm_private"."guard_golf_round_lifecycle"();
+
+CREATE TRIGGER "golf_rounds_round_live_gone" BEFORE DELETE ON "public"."golf_rounds" FOR EACH ROW WHEN (("old"."status" = 'in_progress'::"text")) EXECUTE FUNCTION "helm_private"."golf_rounds_round_live_gone"();
+
+CREATE CONSTRAINT TRIGGER "golf_rounds_round_live_ins" AFTER INSERT ON "public"."golf_rounds" DEFERRABLE INITIALLY DEFERRED FOR EACH ROW WHEN ((("new"."team_id" IS NOT NULL) AND ("new"."status" = 'in_progress'::"text"))) EXECUTE FUNCTION "helm_private"."golf_rounds_round_live"();
+
+CREATE CONSTRAINT TRIGGER "golf_rounds_round_live_upd" AFTER UPDATE OF "status", "round_type", "qualifier_id", "qualifier_round_number", "current_hole", "holes_played", "team_id", "course_name", "draft_data" ON "public"."golf_rounds" DEFERRABLE INITIALLY DEFERRED FOR EACH ROW WHEN ((("old"."status" IS DISTINCT FROM "new"."status") OR ("old"."round_type" IS DISTINCT FROM "new"."round_type") OR ("old"."qualifier_id" IS DISTINCT FROM "new"."qualifier_id") OR ("old"."qualifier_round_number" IS DISTINCT FROM "new"."qualifier_round_number") OR ("old"."current_hole" IS DISTINCT FROM "new"."current_hole") OR ("old"."holes_played" IS DISTINCT FROM "new"."holes_played") OR ("old"."team_id" IS DISTINCT FROM "new"."team_id") OR ("old"."course_name" IS DISTINCT FROM "new"."course_name") OR (("old"."draft_data" -> 'holes'::"text") IS DISTINCT FROM ("new"."draft_data" -> 'holes'::"text")) OR (("old"."draft_data" -> 'startHole'::"text") IS DISTINCT FROM ("new"."draft_data" -> 'startHole'::"text")))) EXECUTE FUNCTION "helm_private"."golf_rounds_round_live"();
 
 CREATE OR REPLACE TRIGGER "golf_shots_reject_completed_round_mutation" BEFORE INSERT OR DELETE OR UPDATE ON "public"."golf_shots" FOR EACH ROW EXECUTE FUNCTION "helm_private"."reject_completed_round_child_mutation"();
 
