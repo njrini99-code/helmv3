@@ -1,0 +1,109 @@
+/* P016 Tournaments, season home (TournamentsHome, NextCard, OtherEvents; the ledger itself is shared and lives in
+   tournaments.css as .ch-tour-led-*).
+   Owned by the home area (src/clubhouse/screens/tournaments/README.md). Every class here starts .ch-tour-home; shared
+   pieces (the view root .ch-tour, the changed-wash) live in tournaments.css. Tokens only. */
+
+/* Up next (board .tr-up): the card beside the other events on the calendar. */
+.ch-tour-home__up {
+  display: grid;
+  grid-template-columns: minmax(0, 1.3fr) minmax(0, 1fr);
+  gap: 14px;
+  align-items: stretch;
+}
+@media (max-width: 980px) {
+  .ch-tour-home__up {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+/* The one green card: the kit's FeatureCard with the board's roomier padding (board .tr-upc). It is a group, not a
+   link: the title opens the desk, the foot carries the week's one action. */
+.ch-tour-home-feat {
+  gap: 12px;
+  padding: 20px;
+  border-radius: var(--ch-tour-r-card);
+}
+.ch-tour-home-feat .ch-feat__title {
+  font-size: calc(28 * var(--ch-type-k));
+  line-height: 1.1;
+}
+.ch-tour-home-feat__t {
+  color: inherit;
+  text-decoration: none;
+}
+.ch-tour-home-feat__t:hover {
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+.ch-tour-home-feat__t:focus-visible {
+  outline: 2px solid var(--ch-champagne-300);
+  outline-offset: 3px;
+  border-radius: var(--ch-radius-xs);
+}
+.ch-tour-home-feat__p,
+.ch-tour-home-feat__ready {
+  display: block;
+}
+/* What is missing before the event: the first open item, in the card's own ink at a heavier weight (never dimmed). */
+.ch-tour-home-feat__ready {
+  margin-top: 8px;
+  font-weight: 600;
+  color: var(--ch-on-green-ink);
+}
+.ch-tour-home-feat .ch-feat__foot {
+  flex-wrap: wrap;
+  margin-top: auto;
+}
+/* Keys on the green: the week's action is an ivory key with forest ink (the plate stays light at night), the second a
+   ringed key in the card's ink. */
+.ch-tour-home-feat__go,
+.ch-tour-home-feat__go:hover:not(:disabled) {
+  background: var(--ch-on-green-plate);
+  color: var(--ch-green-800);
+  box-shadow: var(--ch-on-dark-primary-shadow);
+}
+.ch-tour-home-feat__alt,
+.ch-tour-home-feat__alt:hover:not(:disabled) {
+  background: rgb(255 255 255 / 0.1);
+  color: var(--ch-on-green-ink);
+  box-shadow: inset 0 0 0 1px rgb(255 255 255 / 0.16);
+}
+.ch-tour-home-feat__go:focus-visible,
+.ch-tour-home-feat__alt:focus-visible {
+  outline: 2px solid var(--ch-champagne-300);
+  outline-offset: 2px;
+}
+.ch-tour-home.is-phone .ch-tour-home-feat {
+  padding: 16px;
+}
+.ch-tour-home.is-phone .ch-tour-home-feat .ch-feat__title {
+  font-size: calc(22 * var(--ch-type-k));
+  line-height: 1.15;
+}
+.ch-tour-home.is-phone .ch-tour-home-feat__go {
+  min-height: 44px;
+  flex: 1 1 auto;
+  justify-content: center;
+}
+
+/* The date block that leads each other event (board .tr-date): the day over the month, in a soft well. */
+.ch-tour-home-date {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  width: 52px;
+  height: 52px;
+  border-radius: var(--ch-radius-lg);
+  background: var(--ch-bg-subtle);
+  box-shadow: inset 0 0 0 1px var(--ch-border-hairline);
+}
+.ch-tour-home-date b {
+  font: 600 calc(17 * var(--ch-type-k))/1 var(--ch-font-sans);
+  color: var(--ch-text-primary);
+}
+.ch-tour-home-date span {
+  margin-top: 3px;
+  font: 500 calc(11 * var(--ch-type-k))/1 var(--ch-font-sans);
+  color: var(--ch-text-secondary);
+}

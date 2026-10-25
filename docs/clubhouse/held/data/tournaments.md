@@ -36,14 +36,17 @@ section 0.
 | --- | --- | --- |
 | 1 | `20261024100000_golf_tournaments.sql` | written, HOLD |
 | 2 | `20261024100100_golf_tournaments_rls.sql` | written, HOLD |
-| 3 | `20261024100200_golf_tournaments_rpcs` | not written |
+| 3 | `20261024100200_golf_tournaments_rpcs.sql` | written, HOLD |
 | 4 | `20261024100300_golf_tournaments_player_moments` | not written |
 | 5 | `20261024100400_notification_preferences_push_tournaments` | not written |
 | 6 | `20261024100500_golf_tournament_live` | not written |
 
-Files 1 and 2 are in `supabase/migrations/` and have rows in
-`supabase/migrations/HELD.md`. Files 3 to 6 get their rows when they are
-written (see the note under the register in HELD.md).
+Files 1 to 3 are in `supabase/migrations/` and have rows in
+`supabase/migrations/HELD.md`. Files 4 to 6 get their rows when they are
+written (see the note under the register in HELD.md). The registry claims
+one migration per plan, so files 2 and 3 also have short plans of their own:
+[tournaments-rls.md](tournaments-rls.md) and
+[tournaments-rpcs.md](tournaments-rpcs.md).
 
 ### 1. Tables (100000)
 
@@ -111,7 +114,7 @@ file 2 lets a player read a lineup the coach is still drafting (handoff
 finding 0-R.3 item 3: the builder autosaves entries). That is the main reason
 files 1 to 4 must go in together.
 
-### 3. RPCs and the lineup guard (100200, not written)
+### 3. RPCs and the lineup guard (100200, written 2026-10-25)
 
 From handoff 11.4. All `SECURITY INVOKER` with `search_path = ''` unless
 stated:
@@ -137,6 +140,15 @@ stated:
 
 Touches live data only through `golf_events` inserts and deletes made by the
 RPCs, on rows they own.
+
+As written: ten RPCs (the list above), every refusal a P0001 whose message
+is the bare code (`stale`, `not_coach`, `locked`, `round_order`,
+`rounds_linked`, and the rest in the file header). Defaults taken where this
+section is silent are in [tournaments-rpcs.md](tournaments-rpcs.md): the
+substitute bypass is the GUC alone; leaving `upcoming` takes the lineup
+snapshot if the coach has not locked; publish sets `lineup_published_at`
+only until file 4 adds `reveal_at`; the guard passes a row whose tournament
+is gone, so a delete cascades past a locked lineup.
 
 ### 4. Player moments (100300, not written)
 
@@ -255,8 +267,9 @@ Nothing until `golf_tournaments_v1` is on. The flag is planned in
 Tournaments loader and action checks it before any read, so with the flag off
 no code queries a missing table. The preview route renders from fixtures and
 needs no table. Until `npm run db:types` runs after the apply, the tables are
-typed by hand in one Clubhouse data module (handoff 11.7); that module goes in
-the same PR that regenerates the types.
+typed by hand in one module, `src/lib/golf/tournaments-tables.ts` (handoff
+11.7; in `src/lib` so the server actions may import it too); that module is
+deleted in the same PR that regenerates the types.
 
 ## Privacy / sensitive data
 
@@ -368,21 +381,33 @@ Recommended defaults are what the next agent should build to.
   those columns is measured.
 - **Q-168 (itinerary RLS)** stays out of these six files; a separate held
   migration if the owner wants it.
-- **Registry claim.** The Clubhouse registry lets a plan claim one migration
-  (its first `Migration:` line), and only plans listed in a page manifest's
-  `held` count. Default: list this plan in the P016 manifest's `held` and set
-  its data status to `held`; add one short plan per remaining file (or teach
-  the registry to read several `Migration:` lines) when each file is written.
+- **Registry claim (settled 2026-10-25).** The registry claims one migration
+  per plan, so files 2 and 3 have short plans of their own
+  ([tournaments-rls.md](tournaments-rls.md),
+  [tournaments-rpcs.md](tournaments-rpcs.md)), all three are listed in the
+  P016 manifest's `held`, and its data status is `held`. Files 4 to 6 get one
+  each when written.
+- **Turning it on.** File 2 without file 4 lets a player read a lineup the
+  coach is still drafting, through PostgREST, whatever the loader does.
+  Default: production's `golf_tournaments_v1` stays off until file 4 is
+  written and applied, unless the owner accepts that exposure for a
+  coach-only start in writing.
 
 ## SQL preparation status
 
 ```text
-WRITTEN — HOLD — NOT APPLIED     (files 1 and 2)
-NOT WRITTEN                      (files 3 to 6)
+WRITTEN — HOLD — NOT APPLIED     (files 1 to 3)
+NOT WRITTEN                      (files 4 to 6)
 ```
 
-Files 1 and 2 start with `-- STATUS: WRITTEN — HOLD — NOT APPLIED`. Not yet
-run on the local stack; no pgTAP yet.
+Files 1 to 3 start with `-- STATUS: WRITTEN — HOLD — NOT APPLIED`. On
+2026-10-25 files 1 to 3 were applied in order to a scratch Postgres 16 with
+stub live tables, and `supabase/tests/rls/golf_tournaments_rpcs.sql` (file
+3's pgTAP) passed 16 of 16 under a pgTAP shim; a team delete with a locked
+tournament cascaded cleanly. Not yet run on the local Supabase stack
+(`npm run test:rls`); no pgTAP for files 1 and 2 yet. The three files are
+mirrored under `supabase/schemas/**` (generated by `pg_dump` of that scratch
+database, appended under a marked header in each file).
 
 ## HELD.md registration
 
@@ -390,14 +415,16 @@ run on the local stack; no pgTAP yet.
 Required: yes
 Registered: supabase/migrations/HELD.md, rows
   20261024100000_golf_tournaments.sql (HOLD) and
-  20261024100100_golf_tournaments_rls.sql (HOLD), 2026-10-24, each linking
-  this plan; files 3 to 6 noted under the register, rows added when written.
+  20261024100100_golf_tournaments_rls.sql (HOLD), 2026-10-24, and
+  20261024100200_golf_tournaments_rpcs.sql (HOLD), 2026-10-25, each linking
+  this plan; files 4 to 6 noted under the register, rows added when written.
 ```
 
 ## Activation checklist
 
 - [ ] current schema re-read (the dependencies above)
-- [ ] files 3 to 6 written, each with a HELD.md row
+- [ ] files 4 to 6 written, each with a HELD.md row (file 3 written
+  2026-10-25)
 - [ ] open questions above answered or defaulted in the SQL
 - [ ] all six run on the local stack; team delete tested
 - [ ] `npm run test:rls` green (pgTAP for files 2, 4 and 6)

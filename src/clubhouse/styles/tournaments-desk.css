@@ -1,0 +1,692 @@
+/* P016 Tournaments, event desk (EventDesk, WhoCounted, HoleGrid, FindingCard, EvidenceDrawer).
+   Owned by the desk area (src/clubhouse/screens/tournaments/README.md). Every class here starts .ch-tour-desk; shared
+   pieces (the view root .ch-tour, the changed-wash) live in tournaments.css. Tokens only. */
+
+.ch-tour-desk-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 28px;
+  min-width: 0;
+}
+.ch-tour-desk.is-phone .ch-tour-desk-panel {
+  gap: 20px;
+}
+
+/* The head: chips under the title, and on the right the result with the event's actions under it (board .tr-meta, .tr-res). */
+.ch-tour-desk-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 4px;
+}
+.ch-tour-desk.is-phone .ch-tour-desk-meta {
+  margin-top: 0;
+}
+.ch-tour-desk-side {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 12px;
+  margin-left: auto;
+}
+.ch-tour-desk.is-phone .ch-tour-desk-side {
+  align-items: stretch;
+  width: 100%;
+  margin-left: 0;
+}
+.ch-tour-desk-res {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  margin: 0;
+}
+.ch-tour-desk-res b {
+  font: 500 40px/1 var(--ch-font-sans);
+  letter-spacing: -0.045em;
+  color: var(--ch-text-primary);
+}
+.ch-tour-desk-res > .ch-num:not(b) {
+  font: 600 calc(16 * var(--ch-type-k))/1 var(--ch-font-sans);
+}
+.ch-tour-desk-res em {
+  font: var(--ch-type-caption);
+  font-style: normal;
+  color: var(--ch-text-secondary);
+}
+.ch-tour-desk.is-phone .ch-tour-desk-res b {
+  font-size: calc(34 * var(--ch-type-k));
+}
+
+/* Provisional (CH-16920): the host's number differs from our card. The words say so; the amber only backs them up. */
+.ch-tour-desk-warn {
+  padding: 12px 16px;
+  border-radius: var(--ch-radius-lg);
+  background: var(--ch-warning-100);
+  color: var(--ch-warning-600);
+  box-shadow: inset 0 0 0 1px color-mix(in oklab, var(--ch-warning-600) 25%, transparent);
+}
+.ch-tour-desk-warn p {
+  margin: 0;
+  font: var(--ch-type-body);
+}
+.ch-tour-desk-warn .ch-tour-desk-warn__t {
+  margin-bottom: 2px;
+  font: var(--ch-type-title);
+}
+
+/* The sections (Hub's tab strip: an underline under the selected one, the row scrolls on a phone). */
+.ch-tour-desk-tabs {
+  display: flex;
+  gap: 22px;
+  max-width: calc(100% + 8px);
+  margin: -8px -4px -4px;
+  padding: 4px;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+.ch-tour-desk-tabs::-webkit-scrollbar {
+  display: none;
+}
+.ch-tour-desk-tabs button {
+  position: relative;
+  flex: none;
+  height: 34px;
+  padding: 0;
+  border: 0;
+  background: none;
+  font: 500 calc(14 * var(--ch-type-k))/1 var(--ch-font-sans);
+  color: var(--ch-text-secondary);
+  white-space: nowrap;
+  cursor: pointer;
+  transition: color var(--ch-dur-quick) var(--ch-ease);
+}
+.ch-tour-desk-tabs button[aria-selected='true'] {
+  color: var(--ch-text-primary);
+}
+.ch-tour-desk-tabs button:focus-visible {
+  outline: 2px solid var(--ch-border-focus);
+  outline-offset: 2px;
+  border-radius: var(--ch-radius-xs);
+}
+@media (hover: hover) {
+  .ch-tour-desk-tabs button:not([aria-selected='true']):hover {
+    color: var(--ch-text-primary);
+  }
+}
+.ch-tour-desk-tabs__bar {
+  position: absolute;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  height: 2px;
+  border-radius: 1px;
+  background: var(--ch-forest-800);
+}
+.ch-tour-desk-tabs__n {
+  display: inline-grid;
+  place-items: center;
+  min-width: 18px;
+  height: 18px;
+  margin-left: 7px;
+  padding: 0 5px;
+  border-radius: 9px;
+  background: var(--ch-bg-selected);
+  font: 600 calc(11 * var(--ch-type-k))/1 var(--ch-font-sans);
+  color: var(--ch-green-700);
+  vertical-align: 1px;
+}
+.ch-tour-desk.is-phone .ch-tour-desk-tabs button {
+  height: 44px;
+}
+
+.ch-tour-desk-line {
+  margin: 0 0 12px;
+  max-width: 60ch;
+  font: var(--ch-type-body-l);
+  color: var(--ch-text-secondary);
+}
+.ch-tour-desk-links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+.ch-tour-desk-note {
+  margin: 10px 0 0;
+  max-width: 80ch;
+  font: var(--ch-type-body-s);
+  color: var(--ch-text-secondary);
+}
+
+/* Round and view pills over Who counted (the Qualifiers pill idiom). */
+.ch-tour-desk-tools {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px 18px;
+  margin-bottom: 12px;
+}
+.ch-tour-desk-pills {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.ch-tour-desk-pill {
+  display: inline-flex;
+  align-items: center;
+  height: 32px;
+  padding: 0 12px;
+  border: 0;
+  border-radius: 999px;
+  background: var(--ch-bg-subtle);
+  box-shadow: inset 0 0 0 1px var(--ch-border-hairline);
+  font: 500 calc(13 * var(--ch-type-k))/1 var(--ch-font-sans);
+  color: var(--ch-text-secondary);
+  cursor: pointer;
+}
+.ch-tour-desk-pill[aria-pressed='true'] {
+  background: var(--ch-bg-selected);
+  box-shadow: inset 0 0 0 1.5px var(--ch-green-600);
+  color: var(--ch-green-700);
+}
+.ch-tour-desk-pill:focus-visible {
+  outline: 2px solid var(--ch-border-focus);
+  outline-offset: 2px;
+}
+.ch-tour-desk.is-phone .ch-tour-desk-pill {
+  height: 44px;
+}
+
+/* Who counted (board .tr-ct; phone .tm-ct): players by rounds, the team under the lineup. Flush on the canvas on desktop. */
+.ch-tour-desk-ct__scroll {
+  --ch-tour-desk-n: 3;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+.ch-tour-desk-ct__row {
+  display: grid;
+  grid-template-columns: minmax(200px, 1fr) repeat(var(--ch-tour-desk-n), 78px) 88px 120px;
+  gap: 10px;
+  align-items: center;
+  min-width: 640px;
+  padding: 10px 8px;
+  border-radius: var(--ch-radius-md);
+}
+.ch-tour-desk-ct__scroll.is-single .ch-tour-desk-ct__row {
+  grid-template-columns: minmax(200px, 1fr) 78px minmax(200px, 1.2fr);
+}
+.ch-tour-desk-ct__row + .ch-tour-desk-ct__row {
+  box-shadow: inset 0 1px 0 var(--ch-ledger-rule-soft);
+}
+.ch-tour-desk-ct__row.is-head {
+  font: var(--ch-type-label-s);
+  color: var(--ch-text-secondary);
+  box-shadow: inset 0 -1px 0 var(--ch-ledger-rule);
+}
+.ch-tour-desk-ct__row.is-team {
+  margin-top: 4px;
+  background: var(--ch-bg-subtle);
+  box-shadow: none;
+}
+.ch-tour-desk-ct__row .is-r {
+  justify-self: end;
+  text-align: right;
+}
+.ch-tour-desk-ct__who {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+}
+.ch-tour-desk-ct__n {
+  display: block;
+  font: 600 calc(15 * var(--ch-type-k))/1.25 var(--ch-font-sans);
+  color: var(--ch-text-primary);
+}
+.ch-tour-desk-ct__row.is-team > .ch-tour-desk-ct__n {
+  font-weight: 700;
+}
+.ch-tour-desk-ct__s {
+  display: block;
+  margin-top: 3px;
+  font: var(--ch-type-caption);
+  color: var(--ch-text-secondary);
+}
+.ch-tour-desk-ct__c {
+  display: flex;
+  justify-content: flex-end;
+}
+.ch-tour-desk-ct__tot,
+.ch-tour-desk-ct__fin {
+  font: 600 calc(15 * var(--ch-type-k))/1 var(--ch-font-sans);
+  color: var(--ch-text-primary);
+}
+.ch-tour-desk-ct__cnt,
+.ch-tour-desk-ct__w {
+  font: var(--ch-type-caption);
+  color: var(--ch-text-secondary);
+}
+.ch-tour-desk-ct__row.is-team .ch-tour-desk-ct__fin {
+  padding-right: 10px;
+}
+
+/* A score is a key to its evidence: the number, NC where it did not count, a dot for shot data (green) or a ring for
+   a scorecard only, and an amber ring where it tied at the line. */
+.ch-tour-desk-sc {
+  display: inline-flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 5px;
+  min-width: 64px;
+  height: 34px;
+  padding: 0 10px;
+  border: 0;
+  border-radius: 9px;
+  background: none;
+  font: 500 calc(15 * var(--ch-type-k))/1 var(--ch-font-sans);
+  color: var(--ch-text-primary);
+}
+button.ch-tour-desk-sc {
+  cursor: pointer;
+}
+@media (hover: hover) {
+  button.ch-tour-desk-sc:hover {
+    background: var(--ch-ledger-row-hover);
+  }
+}
+button.ch-tour-desk-sc:focus-visible {
+  outline: 2px solid var(--ch-border-focus);
+  outline-offset: 1px;
+}
+.ch-tour-desk-sc.is-nc {
+  background: var(--ch-bg-inset);
+  color: var(--ch-text-secondary);
+}
+.ch-tour-desk-sc em {
+  font: 600 calc(11 * var(--ch-type-k))/1 var(--ch-font-sans);
+  font-style: normal;
+  color: var(--ch-text-secondary);
+}
+.ch-tour-desk-sc.is-tie {
+  box-shadow: inset 0 0 0 1.5px var(--ch-champagne-500);
+}
+.ch-tour-desk-sc.is-none {
+  color: var(--ch-text-secondary);
+}
+.ch-tour-desk-dot {
+  display: inline-block;
+  flex: none;
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: var(--ch-green-600);
+}
+.ch-tour-desk-sc.no-shot .ch-tour-desk-dot,
+.ch-tour-desk-dot.no-shot {
+  background: transparent;
+  box-shadow: inset 0 0 0 1px var(--ch-ink-400);
+}
+.ch-tour-desk-key {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 16px;
+  margin: 0;
+  padding: 10px 8px 0;
+  font: var(--ch-type-body-s);
+  color: var(--ch-text-secondary);
+}
+.ch-tour-desk-key > span {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+.ch-tour-desk-key .ch-tour-desk-sc {
+  min-width: 0;
+  height: 22px;
+  padding: 0 6px;
+  font-size: calc(12 * var(--ch-type-k));
+}
+
+/* The phone's Who counted (board .tm-ct): a card, first names, three narrow columns. */
+.ch-tour-desk-ct.is-phone .ch-tour-desk-ct__scroll {
+  padding: 4px;
+  border-radius: var(--ch-tour-r-card);
+  background: var(--ch-bg-surface);
+  box-shadow: var(--ch-elevation-reading);
+}
+.ch-tour-desk-ct.is-phone .ch-tour-desk-ct__row {
+  grid-template-columns: minmax(0, 1fr) repeat(var(--ch-tour-desk-n), 48px) 44px;
+  gap: 4px;
+  min-width: 0;
+  min-height: 52px;
+  padding: 8px 10px;
+}
+.ch-tour-desk-ct.is-phone .ch-tour-desk-ct__scroll.is-single .ch-tour-desk-ct__row {
+  grid-template-columns: minmax(0, 1fr) 48px minmax(0, 1.2fr);
+}
+.ch-tour-desk-ct.is-phone .ch-tour-desk-sc {
+  flex-direction: column;
+  align-items: flex-end;
+  justify-content: center;
+  gap: 3px;
+  min-width: 44px;
+  height: 44px;
+  padding: 0 6px;
+}
+.ch-tour-desk-ct.is-phone .ch-tour-desk-sc .ch-tour-desk-dot {
+  display: none;
+}
+.ch-tour-desk-ct.is-phone .ch-tour-desk-ct__n {
+  font-size: calc(14 * var(--ch-type-k));
+}
+.ch-tour-desk-ct.is-phone .ch-tour-desk-ct__s {
+  font-size: calc(12 * var(--ch-type-k));
+}
+
+/* Where the event turned (board .tr-find): three findings side by side, one column on the phone. */
+.ch-tour-desk-find {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+}
+@media (max-width: 1100px) {
+  .ch-tour-desk-find {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+.ch-tour-desk-fc {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 16px 18px;
+  border-radius: var(--ch-tour-r-card);
+  background: var(--ch-bg-surface);
+  box-shadow: var(--ch-elevation-reading);
+}
+.ch-tour-desk-fc h3 {
+  margin: 0;
+  font: var(--ch-type-title);
+  color: var(--ch-text-primary);
+  text-wrap: pretty;
+}
+.ch-tour-desk-fc p {
+  margin: 0;
+  font: var(--ch-type-body);
+  color: var(--ch-text-secondary);
+}
+.ch-tour-desk-fc__a {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 16px;
+  margin-top: auto;
+}
+.ch-tour-desk-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  min-height: 32px;
+  padding: 0;
+  border: 0;
+  background: none;
+  font: 500 calc(14 * var(--ch-type-k))/1 var(--ch-font-sans);
+  color: var(--ch-accent);
+  cursor: pointer;
+}
+.ch-tour-desk-link:hover {
+  text-decoration: underline;
+}
+.ch-tour-desk-link:focus-visible {
+  outline: 2px solid var(--ch-border-focus);
+  outline-offset: 2px;
+  border-radius: var(--ch-radius-xs);
+}
+.ch-tour-desk.is-phone .ch-tour-desk-link {
+  min-height: 44px;
+}
+
+/* Hole analysis (board .tr-hg; phone .tm-hg): a round's holes, scores or to par, and the team's average against par. */
+.ch-tour-desk-hg__tools {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-bottom: 12px;
+}
+.ch-tour-desk-hg__scroll {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+.ch-tour-desk-hg.is-phone .ch-tour-desk-hg__scroll {
+  padding: 6px;
+  border-radius: var(--ch-tour-r-card);
+  background: var(--ch-bg-surface);
+  box-shadow: var(--ch-elevation-reading);
+}
+.ch-tour-desk-hg__row {
+  display: grid;
+  gap: 2px;
+  align-items: center;
+  min-width: 960px;
+  padding: 4px 10px;
+}
+.ch-tour-desk-hg.is-phone .ch-tour-desk-hg__row {
+  min-width: 720px;
+  padding: 0 6px;
+}
+.ch-tour-desk-hg__nine {
+  display: contents;
+}
+.ch-tour-desk-hg__row > span,
+.ch-tour-desk-hg__nine > span {
+  display: grid;
+  place-items: center;
+  height: 32px;
+  font: 500 calc(13 * var(--ch-type-k))/1 var(--ch-font-sans);
+}
+.ch-tour-desk-hg__row > .ch-tour-desk-hg__who {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+  font-weight: 600;
+  color: var(--ch-text-primary);
+}
+.ch-tour-desk-hg.is-phone .ch-tour-desk-hg__row > :first-child {
+  position: sticky;
+  left: 0;
+  z-index: 1;
+  justify-items: start;
+  place-items: center start;
+  background: var(--ch-bg-surface);
+}
+.ch-tour-desk-hg__row.is-head > span,
+.ch-tour-desk-hg__row.is-head .ch-tour-desk-hg__nine > span,
+.ch-tour-desk-hg__row.is-par > span,
+.ch-tour-desk-hg__row.is-par .ch-tour-desk-hg__nine > span {
+  height: 22px;
+  font-size: calc(12 * var(--ch-type-k));
+  color: var(--ch-text-secondary);
+}
+.ch-tour-desk-hg__row.is-par {
+  box-shadow: inset 0 -1px 0 var(--ch-border-hairline);
+}
+.ch-tour-desk-hg__row.is-cost {
+  margin-top: 4px;
+  padding-top: 8px;
+  box-shadow: inset 0 1px 0 var(--ch-border-hairline);
+}
+.ch-tour-desk-hg__group {
+  padding: 10px 10px 2px;
+  font: 600 calc(13 * var(--ch-type-k))/1.2 var(--ch-font-sans);
+  color: var(--ch-text-secondary);
+}
+.ch-tour-desk-hg__cell {
+  display: grid;
+  place-items: center;
+  width: 34px;
+  height: 32px;
+  padding: 0;
+  border: 0;
+  border-radius: 7px;
+  background: none;
+  cursor: pointer;
+}
+@media (hover: hover) {
+  .ch-tour-desk-hg__cell:hover {
+    background: var(--ch-ledger-row-hover);
+  }
+}
+.ch-tour-desk-hg__cell:focus-visible {
+  outline: 2px solid var(--ch-border-focus);
+  outline-offset: -2px;
+}
+.ch-tour-desk-hg__tp {
+  font: 500 calc(13 * var(--ch-type-k))/1 var(--ch-font-sans);
+  color: var(--ch-text-primary);
+}
+.ch-tour-desk-hg__c.is-disputed .ch-tour-desk-hg__cell {
+  box-shadow: inset 0 0 0 1.5px var(--ch-champagne-500);
+}
+.ch-tour-desk-hg__row .ch-tour-desk-hg__tot {
+  font-weight: 600;
+  color: var(--ch-text-primary);
+}
+.ch-tour-desk-heat {
+  display: grid;
+  place-items: center;
+  width: 30px;
+  height: 22px;
+  border-radius: 6px;
+  font: 600 calc(11 * var(--ch-type-k))/1 var(--ch-font-sans);
+  font-style: normal;
+  color: var(--ch-text-secondary);
+}
+.ch-tour-desk-heat.is-bad {
+  background: var(--ch-warning-100);
+  color: var(--ch-warning-600);
+}
+.ch-tour-desk-heat.is-worst {
+  background: color-mix(in oklab, var(--ch-warning-600) 26%, var(--ch-warning-100));
+  color: var(--ch-chart-loss-on-tint);
+}
+.ch-tour-desk-heat.is-good {
+  background: var(--ch-positive-100);
+  color: var(--ch-positive-600);
+}
+
+/* The evidence drawer's body: the figure, the rounds behind it, the card. */
+.ch-tour-desk-ev {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+.ch-tour-desk-ev__fig {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+  margin: 0;
+}
+.ch-tour-desk-ev__fig > div {
+  padding: 12px;
+  border-radius: var(--ch-radius-lg);
+  background: var(--ch-bg-subtle);
+  box-shadow: inset 0 0 0 1px var(--ch-border-hairline);
+}
+.ch-tour-desk-ev__fig dt {
+  font: 500 calc(12 * var(--ch-type-k))/1 var(--ch-font-sans);
+  color: var(--ch-text-secondary);
+}
+.ch-tour-desk-ev__fig dd {
+  margin: 6px 0 0;
+  font: 500 calc(20 * var(--ch-type-k))/1.15 var(--ch-font-sans);
+  letter-spacing: -0.03em;
+  color: var(--ch-text-primary);
+}
+.ch-tour-desk-ev__list {
+  margin: 0;
+  padding: 4px;
+  list-style: none;
+  border-radius: var(--ch-radius-lg);
+  background: var(--ch-bg-surface);
+  box-shadow: var(--ch-elevation-reading);
+}
+.ch-tour-desk-ev__list li {
+  display: grid;
+  grid-template-columns: 52px minmax(0, 1fr) auto;
+  gap: 12px;
+  align-items: center;
+  padding: 10px;
+}
+.ch-tour-desk-ev__list li + li {
+  box-shadow: inset 0 1px 0 var(--ch-border-hairline);
+}
+.ch-tour-desk-ev__d {
+  font: 500 calc(12 * var(--ch-type-k))/1.2 var(--ch-font-sans);
+  color: var(--ch-text-secondary);
+}
+.ch-tour-desk-ev__t {
+  font: 600 calc(14 * var(--ch-type-k))/1.25 var(--ch-font-sans);
+  color: var(--ch-text-primary);
+}
+.ch-tour-desk-ev__t em {
+  display: block;
+  margin-top: 3px;
+  font: var(--ch-type-caption);
+  font-style: normal;
+  color: var(--ch-text-secondary);
+}
+.ch-tour-desk-ev__v {
+  font: 600 calc(15 * var(--ch-type-k))/1 var(--ch-font-sans);
+  color: var(--ch-text-primary);
+}
+.ch-tour-desk-ev__card {
+  padding: 14px;
+  border-radius: var(--ch-radius-lg);
+  background: var(--ch-bg-subtle);
+  box-shadow: inset 0 0 0 1px var(--ch-border-hairline);
+  overflow-x: auto;
+}
+.ch-tour-desk-ev__card h3 {
+  margin: 0 0 8px;
+  font: var(--ch-type-title);
+  color: var(--ch-text-primary);
+}
+.ch-tour-desk-ev__card h3 span {
+  display: block;
+  margin-top: 3px;
+  font: var(--ch-type-caption);
+  color: var(--ch-text-secondary);
+}
+.ch-tour-desk-ev__card p {
+  margin: 8px 0 0;
+  font: var(--ch-type-body-s);
+  color: var(--ch-text-secondary);
+}
+.ch-tour-desk-ev__nine {
+  display: grid;
+  gap: 0;
+  min-width: 360px;
+}
+.ch-tour-desk-ev__nine > [role='row'] {
+  display: grid;
+  grid-template-columns: 40px repeat(9, minmax(22px, 1fr)) 34px;
+  align-items: center;
+  justify-items: center;
+  font: 500 calc(12 * var(--ch-type-k))/1 var(--ch-font-sans);
+  color: var(--ch-text-secondary);
+}
+.ch-tour-desk-ev__nine > [role='row'] > span {
+  display: grid;
+  place-items: center;
+  height: 26px;
+}
+.ch-tour-desk-ev__nine > [role='row'] > span:first-child {
+  justify-self: start;
+}
+.ch-tour-desk-ev__nine > [role='row']:last-child {
+  margin-bottom: 8px;
+}
+.ch-tour-desk-ev__tot {
+  font-weight: 700;
+  color: var(--ch-text-primary);
+}

@@ -53,6 +53,7 @@
     "CH-8902": { "category": 8, "why": "The phone's push permission before iOS has asked: a permission request, not the network." },
     "CH-8903": { "category": 8, "why": "The phone's push permission as iOS answered it, changed only in its Settings app." },
     "CH-09901": { "category": 10, "why": "The qualifier is closed: a standing condition the coach and players are told about." },
+    "CH-16920": { "category": 10, "why": "The host's number differs from our scorecard: a standing condition the coach is told about, with both numbers shown and neither picked." },
     "CH-09902": { "category": 6, "why": "An edit saved only in part, or not at all: the server refused a step." },
     "CH-1904": { "category": 1, "why": "Core navigation behaviour: a new page opens at the top." },
     "CH-1911": { "category": 8, "why": "The app asks for the phone's push permission: a permission outcome, not the network." },

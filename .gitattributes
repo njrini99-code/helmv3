@@ -40,3 +40,7 @@ docs/generated/** linguist-generated=true
 docs/clubhouse/generated/** linguist-generated=true
 src/clubhouse/preview/component-catalog.json linguist-generated=true
 *.generated.ts linguist-generated=true
+
+# Design exports are kept byte-exact as received (design/handoff/VERSIONS.md), so
+# `git diff --check` (the pre-push hook and CI) does not read their whitespace.
+design/handoff/*.html -whitespace

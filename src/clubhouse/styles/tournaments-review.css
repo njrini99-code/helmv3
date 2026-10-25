@@ -1,0 +1,243 @@
+/* P016 Tournaments, review, history and the link inbox (Review, History, LinkInbox).
+   Owned by the review area (src/clubhouse/screens/tournaments/README.md). Every class here starts .ch-tour-rev-; shared
+   pieces (the view root .ch-tour, the changed-wash) live in tournaments.css. Tokens only. */
+
+/* Review: what the rounds show as layers (board .tr-layer), then notes and reflections (board .tr-note). */
+.ch-tour-rev-body {
+  display: flex;
+  flex-direction: column;
+  gap: 28px;
+  min-width: 0;
+}
+.ch-tour-rev.is-phone .ch-tour-rev-body {
+  gap: 20px;
+}
+.ch-tour-rev-layers {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.ch-tour-rev-layer {
+  border-radius: var(--ch-tour-r-card);
+  background: var(--ch-bg-surface);
+  box-shadow: var(--ch-elevation-reading);
+}
+.ch-tour-rev-layer dl {
+  margin: 0;
+}
+.ch-tour-rev-layer dl > div {
+  display: grid;
+  grid-template-columns: 110px minmax(0, 1fr);
+  gap: 14px;
+  padding: 14px 18px;
+}
+.ch-tour-rev-layer dl > div + div {
+  box-shadow: inset 0 1px 0 var(--ch-border-hairline);
+}
+.ch-tour-rev-layer dt {
+  font: 600 calc(13 * var(--ch-type-k))/1.4 var(--ch-font-sans);
+  color: var(--ch-text-secondary);
+}
+.ch-tour-rev-layer dd {
+  margin: 0;
+  font: var(--ch-type-body);
+  color: var(--ch-text-primary);
+}
+.ch-tour-rev-layer dd.ch-tour-rev-layer__ev,
+.ch-tour-rev-layer .is-hyp dd {
+  color: var(--ch-text-secondary);
+}
+.ch-tour-rev.is-phone .ch-tour-rev-layer dl > div {
+  grid-template-columns: minmax(0, 1fr);
+  gap: 4px;
+  padding: 12px 14px;
+}
+.ch-tour-rev-notes {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  border-radius: var(--ch-tour-r-card);
+  background: var(--ch-bg-surface);
+  box-shadow: var(--ch-elevation-reading);
+}
+.ch-tour-rev-note {
+  padding: 14px 16px;
+}
+.ch-tour-rev-note + .ch-tour-rev-note {
+  box-shadow: inset 0 1px 0 var(--ch-border-hairline);
+}
+.ch-tour-rev-note__w {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.ch-tour-rev-note__n {
+  font: var(--ch-type-title);
+  color: var(--ch-text-primary);
+}
+.ch-tour-rev-note__k {
+  margin-top: 2px;
+  font: var(--ch-type-caption);
+  color: var(--ch-text-secondary);
+}
+.ch-tour-rev-note p {
+  margin: 8px 0 0;
+  font: var(--ch-type-body);
+  color: var(--ch-text-secondary);
+}
+.ch-tour-rev-missing {
+  margin: 10px 0 0;
+  font: var(--ch-type-body-s);
+  color: var(--ch-text-secondary);
+}
+
+/* History: the trend (board .tr-trend; phone .tm-trend). */
+.ch-tour-rev-tools {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.ch-tour-rev-trend {
+  padding: 18px 20px 14px;
+  border-radius: var(--ch-tour-r-card);
+  background: var(--ch-bg-surface);
+  box-shadow: var(--ch-elevation-reading);
+}
+.ch-tour-rev-trend.is-phone {
+  padding: 16px;
+}
+.ch-tour-rev-trend__t {
+  margin: 0;
+  font: var(--ch-type-title);
+  color: var(--ch-text-primary);
+}
+.ch-tour-rev-trend__s {
+  margin: 3px 0 0;
+  font: var(--ch-type-caption);
+  color: var(--ch-text-secondary);
+}
+.ch-tour-rev-trend__plot {
+  position: relative;
+  height: 220px;
+  margin-top: 8px;
+}
+.ch-tour-rev-trend__plot svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+}
+.ch-tour-rev-trend__line {
+  fill: none;
+  stroke: var(--ch-green-600);
+  stroke-width: 2.2;
+}
+.ch-tour-rev-trend__mean {
+  stroke: var(--ch-ink-300);
+  stroke-width: 1;
+  stroke-dasharray: 3 5;
+}
+.ch-tour-rev-trend__div {
+  stroke: var(--ch-ledger-rule);
+  stroke-width: 1;
+}
+.ch-tour-rev-dot {
+  position: absolute;
+  display: grid;
+  place-items: center;
+  width: 24px;
+  height: 24px;
+  margin: -12px 0 0 -12px;
+  border-radius: 50%;
+}
+.ch-tour-rev-dot i {
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: var(--ch-bg-surface);
+  box-shadow: inset 0 0 0 3px var(--ch-green-600);
+}
+.ch-tour-rev-dot.is-cards i {
+  box-shadow: inset 0 0 0 3px var(--ch-ink-400);
+}
+.ch-tour-rev-dot:focus-visible {
+  outline: 2px solid var(--ch-border-focus);
+  outline-offset: 2px;
+}
+.ch-tour-rev-trend__labels {
+  display: grid;
+  gap: 0;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.ch-tour-rev-trend__labels li {
+  text-align: center;
+  font: var(--ch-type-caption);
+  color: var(--ch-text-secondary);
+}
+.ch-tour-rev-trend__labels b {
+  display: block;
+  font-weight: 600;
+  color: var(--ch-text-primary);
+}
+.ch-tour-rev-trend__key {
+  margin: 8px 0 0;
+  font: var(--ch-type-caption);
+  color: var(--ch-text-secondary);
+}
+.ch-tour-rev-trend__note {
+  margin: 8px 0 0;
+  max-width: 80ch;
+  font: var(--ch-type-body);
+  color: var(--ch-text-secondary);
+}
+.ch-tour-rev-bars {
+  display: grid;
+  gap: 4px;
+  align-items: end;
+  height: 140px;
+  margin: 14px 0 0;
+  padding: 0;
+  list-style: none;
+}
+.ch-tour-rev-bars li {
+  height: 100%;
+  min-width: 0;
+}
+.ch-tour-rev-bar {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 5px;
+  height: 100%;
+  min-height: 44px;
+  text-decoration: none;
+}
+.ch-tour-rev-bar i {
+  display: block;
+  width: 70%;
+  border-radius: 6px 6px 2px 2px;
+  background: var(--ch-green-200);
+}
+.ch-tour-rev-bar.is-now i {
+  background: var(--ch-green-600);
+}
+.ch-tour-rev-bar b {
+  font: 600 calc(11 * var(--ch-type-k))/1 var(--ch-font-sans);
+  color: var(--ch-text-primary);
+}
+.ch-tour-rev-bar span {
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font: 400 calc(11 * var(--ch-type-k))/1 var(--ch-font-sans);
+  color: var(--ch-text-secondary);
+}
+.ch-tour-rev-bar:focus-visible {
+  outline: 2px solid var(--ch-border-focus);
+  outline-offset: 2px;
+  border-radius: var(--ch-radius-xs);
+}
