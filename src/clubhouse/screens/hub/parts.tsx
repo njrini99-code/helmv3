@@ -613,7 +613,7 @@ function TaskRow({ t, coach, d, pending, onToggle, onDelete, focus = false, onFo
     >
       {coach ? (
         // A text figure and a track under it: "3/6" reads at a glance where the old ring's numeral was 8.5px.
-        <span className="ch-hb-prog" aria-label={t.done ? `${t.done[0]} of ${t.done[1]} done` : 'Completion didn’t load'}>
+        <span role="img" className="ch-hb-prog" aria-label={t.done ? `${t.done[0]} of ${t.done[1]} done` : 'Completion didn’t load'}>
           <b className="ch-num">{t.done ? `${t.done[0]}/${t.done[1]}` : '—'}</b>
           <i style={{ ['--ch-hb-p' as string]: t.done && t.done[1] ? t.done[0] / t.done[1] : 0 }} aria-hidden="true" />
         </span>

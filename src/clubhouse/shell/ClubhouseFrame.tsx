@@ -31,6 +31,7 @@ import { ClubhouseMarker } from './context';
 import { LightProvider } from './light';
 import { DockProvider, PhoneDock } from './Dock';
 import { PushAsk } from './PushAsk';
+import { useQuietRefresh } from './use-quiet-refresh';
 import { AskSheetProvider } from './AskSheet';
 import { CrumbProvider } from './crumbs';
 import { PhoneChromeProvider, PhoneUnderlay, usePhoneChromeState } from './phone-chrome';
@@ -137,6 +138,8 @@ export function ClubhouseFrame({
   // A stored link to the screen already open, naming another item (the bell's `?conversation=` on Messages): the screen
   // mounts again for it, as it would arriving from elsewhere (relink.ts).
   const relink = useRelinkEpoch(pathname, search);
+  // A17: back after a minute away, or back online, the page fetches again (shell/use-quiet-refresh.ts).
+  useQuietRefresh(pathname);
 
   // The live shell renders the animation features above the frame (ChMotionFeatures, below); a preview renders the frame alone.
   const scoped = useContext(ChMotionScope);

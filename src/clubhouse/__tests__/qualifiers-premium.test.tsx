@@ -233,8 +233,10 @@ describe('P009-A1 standings on hand-hung plates', () => {
     const row = (name: string) => within(table).getByRole('rowheader', { name: new RegExp(name) }).closest('[role="row"]') as HTMLElement;
     expect(row('Sofia').querySelector('.ch-qf-plate.is-under')!.textContent).toBe('−3');
     expect(row('Jonah').querySelector('.ch-qf-plate')!.className).not.toMatch(/is-under/);
-    expect(row('Jonah').querySelector('.ch-qf-move.is-gain')!.textContent).toBe('▲2, up 2 since the last round');
-    expect(row('Priya').querySelector('.ch-qf-move.is-loss')!.textContent).toBe('▼3, down 3 since the last round');
+    expect(row('Jonah').querySelector('.ch-qf-move.is-gain')!.textContent).toBe('2, up 2 since the last round');
+    // The mark is an icon, hidden from the reader: the font has no "▲" (A23).
+    expect(row('Jonah').querySelector('.ch-qf-move.is-gain [aria-hidden] svg')).not.toBeNull();
+    expect(row('Priya').querySelector('.ch-qf-move.is-loss')!.textContent).toBe('3, down 3 since the last round');
     // Thru is dots, one per scheduled round, the played ones filled (owner, 2026-10-16), read as words.
     expect(row('Jonah').querySelector('.ch-qf-dots')!.getAttribute('aria-label')).toBe('2 of 3 rounds');
     expect(row('Jonah').querySelectorAll('.ch-qf-dots i.is-on')).toHaveLength(2);

@@ -215,12 +215,15 @@ describe('owner 2026-10-15: a sheet rises from the bottom, never part way', () =
     rerender({ o: true });
     expect(panel.hasAttribute('data-ch-hold')).toBe(true);
     expect(dialog.hasAttribute('data-ch-hold')).toBe(true);
+    // The scrim is held clear by its opacity (A9), not a paused keyframe.
+    expect(dialog.style.getPropertyValue('--ch-scrim-a')).toBe('0');
     frames.shift()?.(0);
     expect(panel.hasAttribute('data-ch-hold')).toBe(true);
     while (frames.length) frames.shift()?.(16);
     expect(panel.hasAttribute('data-ch-hold')).toBe(false);
     expect(dialog.hasAttribute('data-ch-hold')).toBe(false);
-    expect(css('controls.css')).toMatch(/\.ch-root \[data-ch-hold\],\s*\.ch-root dialog\[data-ch-hold\]::backdrop \{\s*animation-play-state: paused;/);
+    expect(dialog.style.getPropertyValue('--ch-scrim-a')).toBe('1');
+    expect(css('controls.css')).toMatch(/\.ch-root \[data-ch-hold\] \{\s*animation-play-state: paused;/);
     raf.mockRestore();
     dialog.remove();
   });

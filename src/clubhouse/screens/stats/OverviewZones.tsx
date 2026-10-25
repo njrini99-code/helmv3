@@ -1,6 +1,6 @@
 import type { CSSProperties, ReactNode } from 'react';
 import type { ChPlayerProfile } from '../../data/stats-player';
-import { formatSigned, formatToPar, NO_DATA } from '../../lib/format';
+import { changeVerdict, formatSigned, formatToPar, NO_DATA, versusTeam } from '../../lib/format';
 import { sgBaseline, sgScale } from '../../lib/sg';
 import { deltaTone, deltaWords } from '../../lib/stats-signal';
 import { holeCoverage } from '../../data/round-scope';
@@ -67,9 +67,17 @@ export function OverviewZones({ data, coach, ribbon, onOpenLeg }: { data: ChPlay
   const sgLo = -sgEnd;
   const sgTone = deltaTone(data.sgChange.delta, data.sgChange.se, false);
   // A rate's big reading is green or amber only against a reference (the team for a coach, the Tour for a player); none, no colour.
+  // Toned on the whole percents it prints (A5): 61% beside a reference of 61% is level, no tone. An early read is untoned (A7).
   const against = (you: number | null | undefined, label: string): 'good' | 'bad' | undefined => {
     const r = ref(label);
-    return you == null || r == null ? undefined : you >= r ? 'good' : 'bad';
+    if (you == null || r == null || cmp(label)?.early || Math.round(you) === Math.round(r)) return undefined;
+    return you > r ? 'good' : 'bad';
+  };
+  // What a rate under its floor needs, or its early-read tag (A7).
+  const floorNote = (label: string) => {
+    const c = cmp(label);
+    const note = c?.you == null ? c?.floor : c.early;
+    return note ? <span className="ch-zfloor">{note}</span> : null;
   };
 
   // 2 · scoring
@@ -83,7 +91,8 @@ export function OverviewZones({ data, coach, ribbon, onOpenLeg }: { data: ChPlay
         return { p, you: d.avgToPar, tour: tourAvg == null ? null : tourAvg - p };
       })
     : [];
-  const toParAvg = data.rounds.length ? data.rounds.reduce((a, r) => a + (r.toPar ?? 0) / (r.holes / 18), 0) / data.rounds.length : null;
+  // The window's own weighted to par a round, per 18 (A6): the same figure as the Stats hero, and a round with no par is left out, not 0.
+  const toParAvg = w.toPar;
 
   // 3 · off the tee
   const fwOpp = s?.fairwayOpportunities ?? 0;
@@ -144,11 +153,11 @@ export function OverviewZones({ data, coach, ribbon, onOpenLeg }: { data: ChPlay
         }
         read={
           <>
-            <Big value={sg == null ? NO_DATA : formatSigned(sg)} tone={sg == null ? undefined : sg >= 0 ? 'good' : 'bad'} />
+            <Big value={sg == null ? NO_DATA : formatSigned(sg)} tone={changeVerdict(sg)} />
             <div className="ch-znlines">
               {sgTeam != null && sg != null && (
                 <span>
-                  <b>Team {formatSigned(sgTeam)}</b> · {Math.abs(sg - sgTeam).toFixed(1)} {sg >= sgTeam ? 'ahead of' : 'behind'} them
+                  <b>Team {formatSigned(sgTeam)}</b> · {versusTeam(sg, sgTeam, false)}
                 </span>
               )}
               {data.sgChange.delta != null && (
@@ -190,7 +199,7 @@ export function OverviewZones({ data, coach, ribbon, onOpenLeg }: { data: ChPlay
         )}
         {withValue(sgTrend).length >= 3 && (
           <Vis title="Round by round" note="Strokes gained in each round, per 18 holes. Zero is the Tour baseline; the line is the five-round average.">
-            <RoundTrend rounds={sgTrend} kind="sg" size="desktop" openHref={openHref} label="Strokes gained in each round of the window." />
+            <RoundTrend rounds={sgTrend} kind="sg" tour={data.tour} size="desktop" openHref={openHref} label="Strokes gained in each round of the window." />
           </Vis>
         )}
       </Zone>
@@ -215,7 +224,7 @@ export function OverviewZones({ data, coach, ribbon, onOpenLeg }: { data: ChPlay
               )}
               {coach && data.teamAvg != null && w.avg != null && (
                 <span>
-                  Team <b>{data.teamAvg.toFixed(1)}</b> · {Math.abs(w.avg - data.teamAvg).toFixed(1)} {w.avg <= data.teamAvg ? 'ahead of' : 'behind'} them
+                  Team <b>{data.teamAvg.toFixed(1)}</b> · {versusTeam(w.avg, data.teamAvg, true)}
                 </span>
               )}
             </div>
@@ -256,6 +265,7 @@ export function OverviewZones({ data, coach, ribbon, onOpenLeg }: { data: ChPlay
               <span>
                 fairways hit{ref('Fairways hit') != null && <> · <b>{refName} {Math.round(ref('Fairways hit')!)}%</b></>}
               </span>
+              {floorNote('Fairways hit')}
               {s?.penaltiesPerRound != null && (
                 <span>
                   <b>{s.penaltiesPerRound.toFixed(1)}</b> penalty strokes a round
@@ -342,6 +352,7 @@ export function OverviewZones({ data, coach, ribbon, onOpenLeg }: { data: ChPlay
                 greens in regulation
                 {ref('Greens in regulation') != null && <> · <b>{refName} {Math.round(ref('Greens in regulation')!)}%</b></>}
               </span>
+              {floorNote('Greens in regulation')}
               {w.sgLegs.approach != null && (
                 <span>
                   Strokes gained <b>{formatSigned(w.sgLegs.approach)}</b>
@@ -408,6 +419,7 @@ export function OverviewZones({ data, coach, ribbon, onOpenLeg }: { data: ChPlay
               <span>
                 scrambling{ref('Scrambling') != null && <> · <b>{refName} {Math.round(ref('Scrambling')!)}%</b></>}
               </span>
+              {floorNote('Scrambling')}
               {sandAtt > 0 && (
                 <span>
                   Sand saves <b>{sandMade} of {sandAtt}</b>
@@ -569,10 +581,12 @@ function ParDots({ rows }: { rows: Array<{ p: 3 | 4 | 5; you: number | null; tou
 }
 
 /** A green seen from above, its four edges thickened by the share of missed approaches that finish there. */
-function GreenDiagram({ short, long, left, right, gir }: { short: number; long: number; left: number; right: number; gir: number | null }) {
+export function GreenDiagram({ short, long, left, right, gir }: { short: number; long: number; left: number; right: number; gir: number | null }) {
   const stroke = (v: number) => 5 + (v / 100) * 28;
   const worst = Math.max(short, long, left, right);
   const tone = (v: number) => (v === worst ? 'var(--ch-warning-600)' : 'var(--ch-champagne-500)');
+  // The side most misses finish on is the one in bold, by the same test as its colour, never "Short" by default (A8.6).
+  const lab = (v: number) => (v === worst ? { fontSize: 15, fontWeight: 700, fill: tone(v) } : { fontSize: 13, fontWeight: 600, fill: 'var(--ch-text-secondary)' });
   return (
     <svg className="ch-zsvg ch-zgreen" viewBox="0 0 340 250" role="img" aria-label={`Missed greens: ${short} percent short, ${long} long, ${left} left, ${right} right`}>
       <g transform="translate(20,6)">
@@ -590,10 +604,10 @@ function GreenDiagram({ short, long, left, right, gir }: { short: number; long: 
         <path d="M 96 50.6 A 84 84 0 0 1 204 50.6" fill="none" stroke={tone(long)} strokeWidth={stroke(long)} />
         <path d="M 85.6 169 A 84 84 0 0 1 85.6 61" fill="none" stroke={tone(left)} strokeWidth={stroke(left)} />
         <path d="M 214.4 61 A 84 84 0 0 1 214.4 169" fill="none" stroke={tone(right)} strokeWidth={stroke(right)} />
-        <text x={150} y={232} textAnchor="middle" fontSize={15} fontWeight={700} fill={tone(short)}>Short {short}%</text>
-        <text x={150} y={24} textAnchor="middle" fontSize={13} fontWeight={600} fill="var(--ch-text-secondary)">Long {long}%</text>
-        <text x={62} y={119} textAnchor="end" fontSize={13} fontWeight={600} fill="var(--ch-text-secondary)">Left {left}%</text>
-        <text x={238} y={119} fontSize={13} fontWeight={600} fill="var(--ch-text-secondary)">Right {right}%</text>
+        <text x={150} y={232} textAnchor="middle" {...lab(short)}>Short {short}%</text>
+        <text x={150} y={24} textAnchor="middle" {...lab(long)}>Long {long}%</text>
+        <text x={62} y={119} textAnchor="end" {...lab(left)}>Left {left}%</text>
+        <text x={238} y={119} {...lab(right)}>Right {right}%</text>
       </g>
     </svg>
   );

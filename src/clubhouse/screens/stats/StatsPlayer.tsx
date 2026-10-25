@@ -26,7 +26,7 @@ import { useSlidePlate } from '../../lib/slide-plate';
 import { useChReducedMotion } from '../../lib/reduced-motion';
 import { useChPhone } from '../../lib/use-phone';
 import { tabListKeys } from '../../lib/tabs';
-import { formatFixed, formatSigned, formatToPar, NO_DATA } from '../../lib/format';
+import { changeInk, formatFixed, formatSigned, formatToPar, NO_DATA } from '../../lib/format';
 import { sgBaseline } from '../../lib/sg';
 import { rebuiltHref } from '../../shell/nav';
 import { formatHcp } from '../roster/format';
@@ -169,7 +169,7 @@ export function StatsPlayer({ data, coachId, initialTab, reads }: { data: ChPlay
     ['Scoring avg', failed ? NO_DATA : formatFixed(w.avg), failed ? 'Didn’t load' : coach && data.teamAvg != null ? `Team ${data.teamAvg.toFixed(1)}` : `${w.rounds} rounds`],
     ['Handicap', formatHcp(data.handicap), 'Index'],
     // The change's line is always there (a window with no change leaves it empty, `hold`), so the figures, the tabs and the page below do not move between windows.
-    ['SG / round', failed || w.sgPerRound == null ? NO_DATA : formatSigned(w.sgPerRound), `Per round ${baseline.vs}`, failed || w.sgPerRound == null ? undefined : w.sgPerRound >= 0 ? 'ch-gain' : 'ch-loss', !failed && w.sgPerRound != null && (data.sgChange.delta != null || data.sgChange.context) ? <SgChangeChip change={data.sgChange} code="CH-5310" /> : <span aria-hidden="true" />],
+    ['SG / round', failed || w.sgPerRound == null ? NO_DATA : formatSigned(w.sgPerRound), `Per round ${baseline.vs}`, failed ? undefined : changeInk(w.sgPerRound) || undefined, !failed && w.sgPerRound != null && (data.sgChange.delta != null || data.sgChange.context) ? <SgChangeChip change={data.sgChange} code="CH-5310" /> : <span aria-hidden="true" />],
     ['Rounds', failed ? NO_DATA : String(data.season.rounds), 'This season'],
   ];
   const pickTab = (t: Tab) => {
@@ -234,13 +234,13 @@ export function StatsPlayer({ data, coachId, initialTab, reads }: { data: ChPlay
             </Button>
             {data.nav && (
               <div className="ch-st-back__nav">
-                <Link className="ch-btn ch-btn--ghost ch-iconbtn ch-btn--sm" href={href(data.nav.prev, data.filter)} aria-label="Previous player" onClick={() => haptic('select')} scroll={false}>
+                <Link className="ch-btn ch-btn--ghost ch-iconbtn ch-btn--sm" href={href(data.nav.prev, data.filter)} aria-label="Previous player" scroll={false}>
                   <Icon icon={ChevronLeft} size={15} />
                 </Link>
                 <span className="ch-num">
                   {data.nav.index} of {data.nav.total}
                 </span>
-                <Link className="ch-btn ch-btn--ghost ch-iconbtn ch-btn--sm" href={href(data.nav.next, data.filter)} aria-label="Next player" onClick={() => haptic('select')} scroll={false}>
+                <Link className="ch-btn ch-btn--ghost ch-iconbtn ch-btn--sm" href={href(data.nav.next, data.filter)} aria-label="Next player" scroll={false}>
                   <Icon icon={ChevronRight} size={15} />
                 </Link>
               </div>
@@ -440,7 +440,7 @@ const Overview = memo(function Overview({ data, coach, onOpenLeg }: { data: ChPl
 function RoundsTable({ rounds, role, tour, holes }: { rounds: ChPlayerProfile['rounds']; role: 'coach' | 'player'; tour: ChPlayerProfile['tour']; holes: ChHoles }) {
   const baseline = sgBaseline(tour);
   return (
-    <div className="ch-zt" aria-label={`Rounds: countable ${HOLES_ADJ[holes]} rounds, newest first, strokes gained ${baseline.vs}`}>
+    <div role="group" className="ch-zt" aria-label={`Rounds: countable ${HOLES_ADJ[holes]} rounds, newest first, strokes gained ${baseline.vs}`}>
       {rounds.length === 0 ? (
         <EmptyState code="CH-5302" compact title="No rounds in this window." body="Try This season to see every round posted since August." />
       ) : (
@@ -484,9 +484,9 @@ function RoundsTable({ rounds, role, tour, holes }: { rounds: ChPlayerProfile['r
                 <span role="cell" className={'r ch-num ch-topar' + (r.toPar != null && r.toPar < 0 ? ' is-under' : '')}>{formatToPar(r.toPar)}</span>
                 <span role="cell" className="r ch-num ch-n2 ch-tr__x">{r.gir ?? NO_DATA}</span>
                 <span role="cell" className="r ch-num ch-n2 ch-tr__x">{r.putts ?? NO_DATA}</span>
-                <span role="cell" className={'r ch-num ch-n2' + (r.sg == null ? '' : r.sg >= 0 ? ' ch-gain' : ' ch-loss')}>{formatSigned(r.sg)}</span>
+                <span role="cell" className={'r ch-num ch-n2 ' + changeInk(r.sg)}>{formatSigned(r.sg)}</span>
                 {r.sgLegs.map((v, i) => (
-                  <span key={i} role="cell" className={'r ch-num ch-n2' + (v == null ? '' : v >= 0 ? ' ch-gain' : ' ch-loss')}>
+                  <span key={i} role="cell" className={'r ch-num ch-n2 ' + changeInk(v)}>
                     {formatSigned(v)}
                   </span>
                 ))}

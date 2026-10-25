@@ -970,7 +970,7 @@ button.ch-rt-strip__h {
 }
 .ch-rt-ask__s {
   margin: 10px 0 0;
-  font: 400 calc(12.5 * var(--ch-type-k))/1.35 var(--ch-font-sans);
+  font: 400 calc(13 * var(--ch-type-k))/1.35 var(--ch-font-sans);
   font-variant-numeric: tabular-nums;
   color: var(--ch-text-tertiary);
 }
@@ -1078,7 +1078,8 @@ button.ch-rt-strip__h {
 }
 .ch-rt-bar__go:disabled {
   background: #e4e0d6;
-  color: #8a857a;
+  /* 4.6:1, readable on a sunny course and still plainly dimmer than Next (A27); #8a857a was 2.8:1. */
+  color: #66625a;
   box-shadow: none;
   opacity: 1;
 }
@@ -1905,6 +1906,9 @@ button.ch-rt-strip__h {
 }
 .ch-rtcv-d::backdrop {
   background: rgb(4 20 12 / 0.62);
+  /* The dim fades by its own opacity, which the dialog drives (--ch-scrim-a: open, close, drag); never a keyframe (A9). */
+  opacity: var(--ch-scrim-a, 1);
+  transition: opacity var(--ch-scrim-dur, var(--ch-dur-base)) var(--ch-scrim-ease, var(--ch-ease));
 }
 .ch-rtcv {
   position: relative;
@@ -2490,7 +2494,10 @@ button.ch-rt-strip__h {
     letter-spacing: -0.05em;
     color: var(--ch-on-green-ink);
   }
+  /* The words take their own line under the figure: beside it, "yards to the pin" ran into the hole drawing's tee
+     disc at 390px (A29). */
   .ch-rt-hero__dist > em {
+    width: 100%;
     font: 400 calc(14 * var(--ch-type-k))/1 var(--ch-font-sans);
 
     font-variant-numeric: tabular-nums;

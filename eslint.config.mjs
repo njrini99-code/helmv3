@@ -270,6 +270,11 @@ export default tseslint.config(
           message:
             "Do not read e.target / e.currentTarget inside a state updater: it runs later and can see a stale value. Read the value in the handler first (const value = e.target.value) and use that.",
         },
+        {
+          // D-70 (Clubhouse A+ A14): navigation is silent, as on iOS. A Link may tick 'press' or 'commit' (a primary action), never 'select'.
+          selector: "JSXOpeningElement[name.name='Link'] JSXAttribute CallExpression[callee.name='haptic'][arguments.0.value='select']",
+          message: "A navigation link is silent (D-70): drop haptic('select') from this Link. A primary action may use haptic('press').",
+        },
       ],
     },
   },

@@ -19,6 +19,7 @@ import {
   previousInFilter,
   PUTT_BANDS_NINE,
   rate,
+  rateSample,
   roundsInFilter,
   seasonOnly,
   sgChange,
@@ -29,6 +30,7 @@ import {
   type ChWindow,
 } from './stats-common';
 import { holeRounds } from './round-scope';
+import { floorRate } from '../lib/stats-signal';
 import { effectiveWindow, filterFor, roundKind, type ChFilter, type ChFilterOptions, type ChLast } from './stats-filter';
 import { bigNumberRate, effectiveCount, perEighteen, summarizeWindow, weightedMean, windowChangeSe, type ChWindowSeason } from './stats-weight';
 import { approachBands, inStatsContext, loadApproachShots, loadHoles, loadSpray, statsActionContext, type ChApproachBand, type ChSpray } from './stats-detail';
@@ -106,6 +108,8 @@ export interface ChComparison {
   signed?: boolean;
   /** What the row needs before it has a value, said under its label while it has none (CH-5318). */
   floor?: string;
+  /** An early read: the value is shown muted with this tag ("Early read · 3 rounds"), under its steady floor (A7). */
+  early?: string;
 }
 
 /** What the profile's Game detail and Rounds tab show beyond the shot-level figures (the parity pass, PARITY.md). */
@@ -461,7 +465,7 @@ export async function loadPlayerProfile(input: {
     unit: ChComparison['unit'],
     digits: number,
     lowerIsBetter: boolean,
-    opts: { signed?: boolean; floor?: string } = {},
+    opts: { signed?: boolean; floor?: string; early?: string } = {},
   ): ChComparison => ({
     label,
     group,
@@ -473,7 +477,17 @@ export async function loadPlayerProfile(input: {
     lowerIsBetter,
     ...(opts.signed ? { signed: true } : {}),
     ...(opts.floor ? { floor: opts.floor } : {}),
+    ...(opts.early ? { early: opts.early } : {}),
   });
+  // Fairways and greens need two rounds with a chance at them, scrambling and sand saves ten chances (FLOORS, A7).
+  const floored = (kind: 'fraction' | 'scramble', made: keyof ChRoundCache, total: keyof ChRoundCache) => {
+    const f = floorRate(kind, rateSample(mineCache, total, kind === 'fraction' ? 'round' : 'chance'), rate(mineCache, made, total));
+    return { value: f.value, opts: { floor: f.needs, early: f.early } };
+  };
+  const fw = floored('fraction', 'fairways_hit', 'fairways_total');
+  const gir = floored('fraction', 'greens_hit', 'greens_total');
+  const scr = floored('scramble', 'scrambles_converted', 'scramble_attempts');
+  const sand = floored('scramble', 'sand_saves', 'sand_attempts');
   const PROX_FLOOR = 'Needs 10 approaches from the range.';
   const BAND_FLOOR = 'Needs 10 putts in the band.';
   const comparisons: ChComparison[] = [
@@ -487,15 +501,15 @@ export async function loadPlayerProfile(input: {
     row('Scoring', 'Par 4 scoring', parAvg(4), null, 'scoring_par_4', '', 2, true),
     row('Scoring', 'Par 5 scoring', parAvg(5), null, 'scoring_par_5', '', 2, true),
     row('Scoring', 'Big numbers', bigNumbersPct(holeWin), t ? bigNumbersPct(teamHole) : null, 'big_number_rate', '%', 1, true),
-    row('Driving', 'Fairways hit', rate(mineCache, 'fairways_hit', 'fairways_total'), teamRate('fairways_hit', 'fairways_total'), null, '%', 0, false),
-    row('Approach', 'Greens in regulation', rate(mineCache, 'greens_hit', 'greens_total'), teamRate('greens_hit', 'greens_total'), 'gir_pct', '%', 0, false),
+    row('Driving', 'Fairways hit', fw.value, teamRate('fairways_hit', 'fairways_total'), null, '%', 0, false, fw.opts),
+    row('Approach', 'Greens in regulation', gir.value, teamRate('greens_hit', 'greens_total'), 'gir_pct', '%', 0, false, gir.opts),
     row('Approach', 'Proximity 50–125 yd', prox('50-125 yd'), null, 'approach_proximity_50_125ft', ' ft', 0, true, { floor: PROX_FLOOR }),
     row('Approach', 'Proximity 125–175 yd', prox('125-175 yd'), null, 'approach_proximity_125_175ft', ' ft', 0, true, { floor: PROX_FLOOR }),
     row('Approach', 'Proximity 175+ yd', prox('175+ yd'), null, 'approach_proximity_175_plus_ft', ' ft', 0, true, { floor: PROX_FLOOR }),
-    row('Short game', 'Scrambling', rate(mineCache, 'scrambles_converted', 'scramble_attempts'), teamRate('scrambles_converted', 'scramble_attempts'), null, '%', 0, false),
+    row('Short game', 'Scrambling', scr.value, teamRate('scrambles_converted', 'scramble_attempts'), null, '%', 0, false, scr.opts),
     row('Short game', 'Scrambling from the fairway', s?.scramblingPctFairway ?? null, null, 'scrambling_pct_fairway', '%', 0, false),
     row('Short game', 'Scrambling from the rough', s?.scramblingPctRough ?? null, null, 'scrambling_pct_rough', '%', 0, false),
-    row('Short game', 'Sand saves', rate(mineCache, 'sand_saves', 'sand_attempts'), teamRate('sand_saves', 'sand_attempts'), 'scrambling_pct_sand', '%', 0, false),
+    row('Short game', 'Sand saves', sand.value, teamRate('sand_saves', 'sand_attempts'), 'scrambling_pct_sand', '%', 0, false, sand.opts),
     row('Putting', 'Putts per round', perPutts(holeWin, 'total_putts'), teamPerPutts('total_putts'), null, '', 1, true),
     row('Putting', '3-putts per round', perPutts(holeWin, 'three_putts'), teamPerPutts('three_putts'), null, '', 2, true),
     row('Putting', 'Make 3–5 ft', makeRate('3–5 ft'), null, 'putts_made_3_5ft_pct', '%', 0, false, { floor: BAND_FLOOR }),

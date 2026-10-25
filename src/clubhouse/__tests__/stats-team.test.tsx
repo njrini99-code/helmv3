@@ -40,7 +40,6 @@ import { StatsSkeleton } from '../screens/stats/StatsSkeleton';
 import { ToastProvider } from '../ui/Toast';
 import { PREVIEW_PLAYER, PREVIEW_TEAM_STATS } from '../preview/fixtures-stats';
 import { filterFor } from '../data/stats-filter';
-import { ScoreLine } from '../screens/stats/StatsTeamPhone';
 
 const code = (c: string) => document.querySelector(`[data-ch-code="${c}"]`);
 async function expectCode(c: string, text?: RegExp) {
@@ -255,10 +254,27 @@ describe('Stats team · reads that fail', () => {
     quiet.mockRestore();
   });
 
+  it('A7 the team greens and scrambling cards hold to their floors: one round and six chances say what they need', async () => {
+    const data = await load();
+    const gir = data.figures.find((f) => f.key === 'gir')!;
+    const scr = data.figures.find((f) => f.key === 'scramble')!;
+    expect(gir).toMatchObject({ value: null, context: 'Needs 2 rounds', state: 'empty' });
+    expect(scr).toMatchObject({ value: null, context: 'Needs 10 chances', state: 'empty' });
+  });
+
   it('CH-4209 Tour benchmarks do not load: greens read against the sample, not a made-up benchmark', async () => {
+    // Two rounds with greens, so the rate clears its floor (A7) and the context is the benchmark's, not "Needs 2 rounds".
+    const base = seasonTables();
+    const day = new Date(Date.now() - 86_400_000).toISOString().slice(0, 10);
+    const twoRounds = {
+      ...base,
+      golf_rounds: { data: ['r1', 'r2'].map((id) => ({ id, player_id: 'p1', round_date: day, total_score: 72, score_to_par: 0, front_nine: 36, back_nine: 36, holes_played: 18, status: 'completed', round_type: 'practice' })) },
+      golf_round_stats_cache: { data: ['r1', 'r2'].map((round_id) => ({ round_id, greens_hit: 12, greens_total: 18, total_putts: 30, scramble_attempts: 6, scrambles_converted: 3, birdies: 2, eagles: 0 })) },
+    };
+    tables.current = twoRounds;
     const ok = await load();
     expect(ok.figures.find((f) => f.label === 'Greens in regulation')!.context).toBe('Tour averages 67%');
-    tables.current = { ...seasonTables(), golf_pga_standards: { error: { message: 'boom' } } };
+    tables.current = { ...twoRounds, golf_pga_standards: { error: { message: 'boom' } } };
     const data = await load();
     expect(logServer).toHaveBeenCalledWith('stats', 'tourBenchmarks', expect.anything());
     expect(data.figures.find((f) => f.label === 'Greens in regulation')!.context).not.toMatch(/Tour/);
@@ -575,7 +591,9 @@ describe('Stats team · phone (v2, Coach - Stats - Mobile.html)', () => {
     // The trend sits right under the hero, before the round's other figures.
     const order = [...document.querySelectorAll('.ch-stm-hero, .ch-stm-trend, section[aria-labelledby="ch-stm-round"]')];
     expect(order.map((el) => el.className.split(' ')[0])).toEqual(['ch-stm-hero', 'ch-stm-trend', 'ch-stm-panel']);
-    expect(screen.getByRole('img', { name: /Team scoring average by round day, from 74\.8 to 73\.4\. Down 1\.4 strokes since Aug 30/ })).toBeTruthy();
+    // One change rule (A1): the newer half of the days against the older half, past its standard error, never first against last.
+    expect(screen.getByRole('img', { name: /Team scoring average by round day, from 74\.8 to 73\.4\. Down 0\.9 strokes a round, newer half vs older half\./ })).toBeTruthy();
+    expect(document.querySelector('.ch-stm-trend')!.textContent).not.toMatch(/since/);
     expect(screen.getByText('2 legs are losing strokes: Approach, Putting.')).toBeTruthy();
     // Sentence case, never tracked: the context line is the team, its active players and its sample.
     expect(document.querySelector('.ch-stm-head span')!.textContent).toBe('Varsity · 7 active players · countable rounds only');
@@ -1095,7 +1113,29 @@ describe('Stats team · the figures by hand (swap audit §10)', () => {
     expect(fig('Putts per round')).toBeCloseTo((30 + 34 + 28) / 3, 10);
     // Birdies only: r3's eagle is not a birdie, as on production's Team stats page (stats-production-parity.test.ts).
     expect(fig('Birdies per round')).toBeCloseTo((2 + 0 + 3) / 3, 10);
-    expect(fig('Team SG per round')).toBeCloseTo((1.0 - 2.0 + 2.5) / 3, 10);
+    // Neither player has three rounds with shots: the team's strokes gained waits for one who does (A4).
+    expect(fig('Team SG per round')).toBeNull();
+  });
+
+  it('A4 the team strokes gained headline and leg totals read only the players at the three-round floor', async () => {
+    const legs = (r: ReturnType<typeof round>, l: number[]) => ({ ...r, strokes_gained_tee: l[0], strokes_gained_approach: l[1], strokes_gained_around_green: l[2], strokes_gained_putting: l[3] });
+    tables.current = {
+      ...seasonTables(),
+      golf_team_members: { data: [{ player: { id: 'p1', first_name: 'Theo', last_name: 'Marchetti' } }, { player: { id: 'p2', first_name: 'Jonah', last_name: 'Okafor' } }] },
+      golf_rounds: {
+        data: [
+          ...[1, 2, 3, 4, 5].map((n) => legs(round(`a${n}`, 'p1', n, 72, 1.0), [0.4, 0.3, 0.2, 0.1])),
+          legs(round('b1', 'p2', 6, 80, -4.0), [-1, -1, -1, -1]),
+        ],
+      },
+      golf_round_stats_cache: { data: [] },
+    };
+    const data = await loadTeamStats({ teamId: 't1', window: 'season' });
+    const sg = data.figures.find((f) => f.key === 'sg')!;
+    expect(sg.value).toBeCloseTo(1.0, 10);
+    expect(data.team.sgMean).toBeCloseTo(1.0, 10);
+    expect(sg.state).toBeUndefined();
+    expect(data.legTotals.map((v) => Number(v!.toFixed(2)))).toEqual([0.4, 0.3, 0.2, 0.1]);
   });
 
   // Swap audit C-24(a): a cache row with no hole scored holds zero birdies; it is no figure, not a round without a birdie.
@@ -1144,25 +1184,7 @@ describe('Stats team · the figures by hand (swap audit §10)', () => {
   });
 });
 
-describe('ScoreLine · the mean label keeps off the line', () => {
-  const at = (values: number[]) => {
-    const { container, unmount } = render(<ScoreLine values={values} from="Aug 30" to="Oct 12" label="Scoring" />);
-    const t = container.querySelector('.ch-stm-chart__t')!;
-    const out = { anchor: t.getAttribute('text-anchor'), y: Number(t.getAttribute('y')), mean: Number(container.querySelector('.ch-stm-chart__mean')!.getAttribute('y1')) };
-    unmount();
-    return out;
-  };
-  it('a line ending above its mean (a better finish) puts the label below the mean at the right end', () => {
-    const r = at([74.8, 74.6, 74.2, 74.4, 73.9, 73.8, 73.1, 73.5, 73.6, 73.4]);
-    expect(r.anchor).toBe('end');
-    expect(r.y).toBeGreaterThan(r.mean);
-  });
-  it('a line ending below its mean keeps the label above it at the right end', () => {
-    const r = at([73.0, 73.2, 73.4, 73.8, 74.6, 74.8]);
-    expect(r.anchor).toBe('end');
-    expect(r.y).toBeLessThan(r.mean);
-  });
-
+describe('Team stats phone · window switch', () => {
   it('a window tap re-renders the switch, not the phone page (the page no longer reads the frame)', () => {
     // The phone page read the shown window itself, so every tap re-rendered every chart in the click (2026-10-14 audit).
     const src = readFileSync('src/clubhouse/screens/stats/StatsTeamPhone.tsx', 'utf8');

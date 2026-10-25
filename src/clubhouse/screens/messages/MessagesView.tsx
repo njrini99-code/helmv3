@@ -444,7 +444,7 @@ function ConvRowButton({ api, c, avatarSize, onOpen, bind }: { api: ChMessagesAp
             )}
           </span>
           {c.unread > 0 && (
-            <span
+            <span role="img"
               className="ch-ms-count ch-num"
               aria-label={`${c.unread} unread`}
             >
@@ -1499,7 +1499,7 @@ export function Composer({
           <IconButton icon={X} label="Cancel reply" onClick={() => { setRecoveredParent(null); onClearReply?.(); }} disabled={sending || unconfirmed || checking || checkFailed || unavailable} />
         </div>
       )}
-      {resumed && !files.length && <div className="ch-ms-to" aria-label="Pending attachments">{resumed.filenames.map((name, i) => <span key={`${name}-${i}`} className="ch-ms-to__c"><Icon icon={FileText} size={13} />{name}</span>)}</div>}
+      {resumed && !files.length && <div role="group" className="ch-ms-to" aria-label="Pending attachments">{resumed.filenames.map((name, i) => <span key={`${name}-${i}`} className="ch-ms-to__c"><Icon icon={FileText} size={13} />{name}</span>)}</div>}
       {missingFiles.length > 0 && <div role="status" className="ch-ms-to" aria-label="Attachments to choose again">Choose these files again: {missingFiles.map((name, i) => <span key={`${name}-${i}`} className="ch-ms-to__c">{name}<Tooltip><button type="button" aria-label={`Dismiss ${name}`} onClick={() => setMissingFiles((now) => now.filter((_, j) => j !== i))}><Icon icon={X} size={12} /></button></Tooltip></span>)}</div>}
       <AttachChips
         disabled={unconfirmed || checking || checkFailed || unavailable}
@@ -2114,7 +2114,7 @@ export function AddMembersModal({ api, conv, open, onClose }: { api: ChMessagesA
           Everyone on the team is already in this group.
         </p>
       ) : (
-        <div className="ch-ms-pick" aria-label="People to add">
+        <div role="group" className="ch-ms-pick" aria-label="People to add">
           {people.map((p) => {
             const done = added.includes(p.userId);
             return (

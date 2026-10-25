@@ -292,6 +292,13 @@ export function SectionTrigger({ children }: { children: ReactNode }) {
     const watch = new ResizeObserver(([entry]) => {
       const w = entry?.borderBoxSize?.[0]?.inlineSize ?? entry?.contentRect.width;
       if (w === undefined) return;
+      // A name with no width is not drawn (its bar is display: none while the page's own bar holds the switcher, or its
+      // text has no font yet). There is no place to glide from, so the next drawn width lands where it is: gliding from 0
+      // started the chevron and dot on top of the name's first letters (A22).
+      if (w < 1) {
+        width.current = null;
+        return;
+      }
       const from = width.current;
       width.current = w;
       const el = tail.current;

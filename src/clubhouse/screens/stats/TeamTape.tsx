@@ -3,7 +3,7 @@ import { ArrowDownRight, ArrowUpRight, Minus } from 'lucide-react';
 import { Icon } from '../../ui/Icon';
 import type { ChGauge } from '../../data/stats-team';
 import { gappedPath, lastValue } from '../../lib/chart';
-import { formatSigned, NO_DATA } from '../../lib/format';
+import { changeTone, formatSigned, NO_DATA } from '../../lib/format';
 import { deltaTone, deltaWords } from '../../lib/stats-signal';
 
 export type TapeItem = {
@@ -124,10 +124,11 @@ function Dial({ it, tone }: { it: TapeItem; tone: string }) {
   if (!g || n == null) return null;
   if (g.kind === 'par') {
     if (g.toPar == null) return null;
-    const under = g.toPar <= 0;
+    // The tone and the E use one zero test: a par average that prints as E is neither good nor bad.
+    const par = changeTone(g.toPar, true, 1);
     return (
-      <span className={`ch-tp__par ch-num ${under ? 'is-good' : 'is-bad'}`} aria-hidden="true">
-        {Math.abs(g.toPar) < 0.05 ? 'E' : formatSigned(g.toPar, 1)}
+      <span className={`ch-tp__par ch-num ${par === 'is-gain' ? 'is-good' : par === 'is-loss' ? 'is-bad' : ''}`} aria-hidden="true">
+        {par === '' ? 'E' : formatSigned(g.toPar, 1)}
         <em>to par</em>
       </span>
     );

@@ -336,7 +336,8 @@
   box-shadow: var(--ch-board-double-shadow);
 }
 .ch-score--empty {
-  color: var(--ch-ink-300);
+  /* A hole not played reads at 4.5:1 (A18), still quieter than a score. */
+  color: var(--ch-text-tertiary);
 }
 
 .ch-toasts {
@@ -1189,7 +1190,9 @@ html[data-fw-theme='dark'] .ch-scoreboard .ch-score--double {
    re-blurs the page on every frame of the open and the close. The deeper tint keeps the card lifted. */
 .ch-peek::backdrop {
   background: rgb(20 20 18 / 0.36);
-  animation: ch-fade var(--ch-dur-base) var(--ch-ease);
+  /* The dim fades by its own opacity, which the dialog drives (--ch-scrim-a: open, close, drag); never a keyframe (A9). */
+  opacity: var(--ch-scrim-a, 1);
+  transition: opacity var(--ch-scrim-dur, var(--ch-dur-base)) var(--ch-scrim-ease, var(--ch-ease));
 }
 .ch-peek__panel {
   position: absolute;

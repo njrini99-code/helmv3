@@ -13,6 +13,7 @@ import { Icon } from '../../ui/Icon';
 import { Tooltip } from '../../ui/Tooltip';
 
 import { dateOf, TYPE_LABEL } from './labels';
+import { usePressPrefetch } from '../../shell/use-prefetch-tabs';
 
 export { dateOf, TYPE_LABEL };
 const fmt = (o: Intl.DateTimeFormatOptions) => new Intl.DateTimeFormat('en-US', { timeZone: 'UTC', ...o });
@@ -374,9 +375,16 @@ function SeasonFigures({ season }: { season: ChRoundsSeason }) {
             </span>
           </dd>
         )}
-        {/* A non-breaking hyphen: "two-" never ends a line on the phone (overnight polish, 2026-10-15). */}
+        {/* "two-putting" never breaks at its hyphen on the phone (overnight polish, 2026-10-15); a plain hyphen in a
+            no-wrap span, because the font has no non-breaking hyphen (A23). */}
         <dd className="ch-rd-fig__m">
-          {putts == null ? 'a round' : `a round · ${formatFixed(Math.abs(twoPutt - putts), 1)} ${putts <= twoPutt ? 'under' : 'over'} two‑putting`}
+          {putts == null ? (
+            'a round'
+          ) : (
+            <>
+              a round · {formatFixed(Math.abs(twoPutt - putts), 1)} {putts <= twoPutt ? 'under' : 'over'} <span className="ch-nowrap">two-putting</span>
+            </>
+          )}
         </dd>
       </div>
       <div className="ch-rd-fig">
@@ -404,8 +412,8 @@ export function SeasonCard({ season, phone = false }: { season: ChRoundsSeason; 
         <span className="ch-rd-k" id="ch-rd-season-k">
           Season scoring
         </span>
-        {/* A non-breaking hyphen (U+2011), so the line never breaks "18- / hole". */}
-        <b className="ch-rd-season__none">Your season starts with your first {'18\u2011hole'} round</b>
+        {/* "18-hole" never breaks at its hyphen: a plain hyphen in a no-wrap span, because the font has no U+2011 (A23). */}
+        <b className="ch-rd-season__none">Your season starts with your first <span className="ch-nowrap">18-hole</span> round</b>
         <span className="ch-rd-season__nonebody">Scoring average, best round, putts and greens fill in here from 18-hole rounds posted since August 1.</span>
       </section>
     );
@@ -480,7 +488,11 @@ function SeasonStage({ ribbon, avg, phone }: { ribbon: ChRoundsSeason['ribbon'];
  * figures beside it say the rest. Skipped for fewer than two rounds with a par to read against.
  */
 export function MonthSpark({ rounds }: { rounds: ChLibraryRound[] }) {
-  const pts = rounds.filter((r): r is ChLibraryRound & { toPar: number } => r.toPar != null).reverse();
+  // Per 18 holes (A8.7): a nine-hole +2 is a +4 round, so a month of nines does not read as a month of great rounds.
+  const pts = rounds
+    .filter((r): r is ChLibraryRound & { toPar: number } => r.toPar != null)
+    .map((r) => ({ id: r.id, toPar: r.holes > 0 ? (r.toPar * 18) / r.holes : r.toPar }))
+    .reverse();
   if (pts.length < 2) return null;
   const lo = Math.min(...pts.map((r) => r.toPar));
   const hi = Math.max(...pts.map((r) => r.toPar));
@@ -509,6 +521,8 @@ function Meter({ label, value, pct, muted }: { label: string; value: string; pct
  * desktop Ledger a round that opens its review takes the row tint on hover (quick) and a deeper one on press, no lift.
  */
 export function RoundRow({ r, href, onOpen, bind }: { r: ChLibraryRound; href: string | null; /** Called as the review opens (the library notes it, so the review's Back is a step back). */ onOpen?: () => void; /** The library's right-click menu (desktop). */ bind?: ContextMenuBind }) {
+  // The review is fetched whole as a finger lands on the card, so it opens without its skeleton (A13).
+  const press = usePressPrefetch();
   const under = r.toPar != null && r.toPar < 0;
   const body = (
     <>
@@ -526,7 +540,7 @@ export function RoundRow({ r, href, onOpen, bind }: { r: ChLibraryRound; href: s
           {!r.countable && <span className="ch-rd-pill is-nc">Not counted</span>}
         </span>
       </span>
-      <span className="ch-rd-sc__grid" aria-label={r.inn != null ? `Out ${r.out ?? NO_DATA}, in ${r.inn}, total ${r.score}` : `${r.holes} holes, total ${r.score}`}>
+      <span role="group" className="ch-rd-sc__grid" aria-label={r.inn != null ? `Out ${r.out ?? NO_DATA}, in ${r.inn}, total ${r.score}` : `${r.holes} holes, total ${r.score}`}>
         {r.holes === 18 ? (
           <>
             <span>
@@ -568,9 +582,9 @@ export function RoundRow({ r, href, onOpen, bind }: { r: ChLibraryRound; href: s
       className={'ch-rd-sc' + (under ? ' is-under' : '')}
       aria-label={label}
       {...bind}
+      {...press(href)}
       onClick={(e) => {
-        haptic('select');
-        // A plain left click only: a new-tab click may copy this tab's storage into a tab with no history behind it.
+        // Silent, as navigation is (D-70, A14). A plain left click only: a new-tab click may copy this tab's storage into a tab with no history behind it.
         if (e.button === 0 && !e.metaKey && !e.ctrlKey && !e.shiftKey && !e.altKey) onOpen?.();
       }}
     >

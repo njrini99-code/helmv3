@@ -128,7 +128,7 @@
   outline: none;
 }
 .ch-cmd-input::placeholder {
-  color: var(--ch-ink-500);
+  color: var(--ch-text-placeholder);
 }
 /* A fixed height, so the dialog does not grow and shrink under the typing. */
 .ch-cmd-list {
