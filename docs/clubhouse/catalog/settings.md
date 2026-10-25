@@ -25,7 +25,8 @@ The second line of an 80xx error toast is chosen by cause (`saveFailureBody` in
 `parts.tsx`). A save that got no answer (it threw, gave no reason, or failed
 with the browser's network wording) guesses no cause (row 62): a form, which
 keeps what was typed, says "Your changes are kept. Try again."; a switch or an
-autosave, which has gone back, says "It is back where it was. Try again." A save the server refused says why: "Your account doesn't have access to
+autosave, which has gone back, says "It is back where it was. Try again." A save
+the server refused says why: "Your account doesn't have access to
 do this." for a policy or a missing grant (also when the database words it as
 "violates row-level security"), the session line for an expired sign-in, the
 server's own short sentence as written, and "The server didn't accept the
@@ -49,7 +50,7 @@ are the "Settings · phone" group in `settings.test.tsx`.
 | --- | --- | --- | --- | --- |
 | CH-8001 | Saving the profile (name, a coach's title, or photo) fails | "Couldn't save your profile" + the reason or "Your changes are kept. Try again.", Retry. On success: "Profile saved" | `useAction('settings.saveProfile')` | settings.test › CH-8001 |
 | CH-8002 | A photo can't be uploaded: wrong type, over 2 MB, or the upload fails | "Couldn't upload that photo" + "Use a JPEG, PNG, GIF or WebP photo." / "Photos must be under 2 MB." / "Your photo wasn’t changed. Try again." | `writes.uploadAvatar`, toast in `ProfileCard` | settings.test › CH-8002 |
-| CH-8003 | Sending the email-change confirmation fails | "Couldn't start the email change", Retry. On success: "Confirmation sent to name@school.edu" and a notice to check that inbox | `useAction('settings.changeEmail')` | settings.test › CH-8003 |
+| CH-8003 | Sending the email-change confirmation fails | "Couldn't start the email change", Retry. On success: "Confirmation sent to <name@school.edu>" and a notice to check that inbox | `useAction('settings.changeEmail')` | settings.test › CH-8003 |
 | CH-8004 | Changing the password fails, including a wrong current password | "Couldn't update your password" + "Your current password is incorrect." when that's why. On success: "Password updated" and the fields clear | `useAction('settings.changePassword')`, re-auth first | settings.test › CH-8004 |
 | CH-8005 | An email or push switch (or quiet mode) doesn't save | "Couldn't change messages email" (the switch named) + "It is back where it was…", Retry; the switch flips back | `useInstantSave('notifications')` (`useDelivery`); on the phone, the switch in the kind's sheet | settings.test › CH-8005 |
 | CH-8006 | The weekly team email switch doesn't save (coach) | "Couldn't change the weekly email", switch flips back | `useInstantSave` | settings.test › CH-8006 |

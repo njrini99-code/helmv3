@@ -16,18 +16,23 @@ Held items:     none
 
 ### Changed
 
-- Coach Home gets a "Live now · n on the course" card: the first section under the green hero on the phone, under the
-  head on desktop. It exists only while someone is out, or finished within the last half hour; no card is the empty state.
-  A lane opens the player's sheet; the head and "See all" open the live view (the live view). A tournament that already tracks a
+- Coach Home gets a "Live now · n on the course" card: the first section under
+  the green hero on the phone, under the
+  head on desktop. It exists only while someone is out, or finished within the
+last half hour; no card is the empty state.
+  A lane opens the player's sheet; the head and "See all" open the live view
+(the live view). A tournament that already tracks a
   live round shows as one row linking to its own live view.
 
 ### Why
 
-- A coach opening Home on a qualifier day should see who is out first (plan section 4.2).
+- A coach opening Home on a qualifier day should see who is out first (plan
+  section 4.2).
 
 ### Verification
 
-- `screens/home/__tests__/home-live-now.test.tsx`. No screenshots were captured (no browser was run here).
+- `screens/home/__tests__/home-live-now.test.tsx`. No screenshots were captured
+  (no browser was run here).
 
 ## 2026-10-25 — Player Home shows the round in progress (slice 1)
 
@@ -44,20 +49,27 @@ Held items:     none
 
 ### Changed
 
-- Player Home gets a "Round in progress" card while the player has a round going, of any type: to-par at 34, thru, the last
-  three holes with their numbers, "Next: 12 · Par 4 · 412 yds", "Last saved n min ago" once the round has been quiet for
-  10 minutes, and a full-width Resume round. A practice round also shows strokes gained by leg (Off the tee, Approach,
-  Around the green, Putting); a qualifier or a tournament round never does. The card is the first section under the hero on the
+- Player Home gets a "Round in progress" card while the player has a round
+  going, of any type: to-par at 34, thru, the last
+  three holes with their numbers, "Next: 12 · Par 4 · 412 yds", "Last saved n
+min ago" once the round has been quiet for
+  10 minutes, and a full-width Resume round. A practice round also shows strokes
+gained by leg (Off the tee, Approach,
+  Around the green, Putting); a qualifier or a tournament round never does. The
+card is the first section under the hero on the
   phone and sits under the head on desktop, including on the first-run page.
-- The card refreshes itself every 20 seconds while the page is visible, with the same reads the server made.
+- The card refreshes itself every 20 seconds while the page is visible, with the
+  same reads the server made.
 
 ### Why
 
-- A glance between holes should say where the round stands and where the next tee is (plan section 4.4).
+- A glance between holes should say where the round stands and where the next
+  tee is (plan section 4.4).
 
 ### Verification
 
-- `screens/home/__tests__/own-live-card.test.tsx`, `data/__tests__/live-rounds.test.ts`. No screenshots were captured
+- `screens/home/__tests__/own-live-card.test.tsx`,
+  `data/__tests__/live-rounds.test.ts`. No screenshots were captured
   (no browser was run here).
 
 ## 2026-10-25 — Teammates on the course (slice 4)
@@ -73,9 +85,12 @@ Held items:     none
 
 ### Changed
 
-- Player Home shows "Teammates on the course · n" under the own card, only while the player has no round of their own on
-  the course and at least one teammate shares with the team. Four compact lanes, then See all n expands the rest in
-  place (a player has no live view of their own). A lane opens a read-only sheet: no Message, no qualifier link.
+- Player Home shows "Teammates on the course · n" under the own card, only while
+  the player has no round of their own on
+  the course and at least one teammate shares with the team. Four compact lanes,
+then See all n expands the rest in
+  place (a player has no live view of their own). A lane opens a read-only
+sheet: no Message, no qualifier link.
 
 ### Verification
 

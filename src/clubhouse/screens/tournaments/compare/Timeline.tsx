@@ -157,8 +157,8 @@ export function Timeline({
           ))}
           <span className="ch-tour-cmp-tl__col" style={{ left: `${pct(cur[0])}%`, width: `${Math.max(0.4, pct(cur[1]) - pct(cur[0]))}%` }} />
           <span className="ch-tour-cmp-tl__zero" />
-          <span className="ch-tour-cmp-tl__yk is-up">Better than rating</span>
-          <span className="ch-tour-cmp-tl__yk is-dn">Worse</span>
+          <span className="ch-tour-cmp-tl__yk is-top">Better than rating</span>
+          <span className="ch-tour-cmp-tl__yk is-bottom">Worse</span>
           {dots.map((o) => (
             <i key={`${o.d}|${o.ctx}`} className={`ch-tour-cmp-tl__dot is-${o.ctx}${o.d >= cur[0] && o.d <= cur[1] ? ' is-in' : ''}`} style={{ left: `${pct(o.d)}%`, top: 28 + (o.m / ext) * 20 }} title={`${tourDay(o.d)} · ${formatSigned(o.m, 1)}`} />
           ))}

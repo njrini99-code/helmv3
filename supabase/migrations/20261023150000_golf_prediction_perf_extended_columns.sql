@@ -4,7 +4,7 @@
 -- the owner lifts the migration freeze.
 -- Apply (one line):
 --   npm run db:apply --
---   supabase/migrations/20261023150000_golf_prediction_perf_extended_columns.sql
+-- supabase/migrations/20261023150000_golf_prediction_perf_extended_columns.sql
 -- Risk: LOW. Three nullable columns with no default on a 685-row table
 -- (304 kB, 2026-10-23). No data, no index, no policy or grant change.
 --
@@ -49,9 +49,12 @@ ADD COLUMN IF NOT EXISTS naive_mean_absolute_error numeric,
 ADD COLUMN IF NOT EXISTS naive_sample_count bigint,
 ADD COLUMN IF NOT EXISTS interval_coverage numeric;
 
-COMMENT ON COLUMN public.golf_prediction_model_performance.naive_mean_absolute_error
-IS 'MAE of the naive comparator (mean of the last 5 countable rounds) over the same graded predictions; read beside mean_absolute_error.';
+COMMENT ON COLUMN
+public.golf_prediction_model_performance.naive_mean_absolute_error
+IS 'MAE of the naive comparator (mean of the last 5 countable rounds) '
+'over the same graded predictions; read beside mean_absolute_error.';
 COMMENT ON COLUMN public.golf_prediction_model_performance.naive_sample_count
 IS 'Graded predictions that carried a naive comparator.';
 COMMENT ON COLUMN public.golf_prediction_model_performance.interval_coverage
-IS 'Share of graded predictions whose actual landed inside the stored band (0 to 1); null when none were graded.';
+IS 'Share of graded predictions whose actual landed '
+'inside the stored band (0 to 1); null when none were graded.';

@@ -14,15 +14,20 @@ Held items:     docs/clubhouse/held/data/live-rounds.md
 
 ### Changed
 
-- Golf profile (player), desktop and phone: a "Live rounds" group with two rows. Practice rounds is a menu of Not live,
-  Coaches and Coaches and team (the default a new practice round starts at). Qualifier rounds reads Coaches, with the
-  reason, because a qualifier is always shown to coaches. A refusal puts the menu back and toasts CH-16664.
+- Golf profile (player), desktop and phone: a "Live rounds" group with two rows.
+  Practice rounds is a menu of Not live,
+  Coaches and Coaches and team (the default a new practice round starts at).
+Qualifier rounds reads Coaches, with the
+  reason, because a qualifier is always shown to coaches. A refusal puts the
+menu back and toasts CH-16664.
 - The group is not drawn until the live table exists.
 
 ### Why
 
-- The sharing choice is made once and remembered, and round setup can still change it for one round.
+- The sharing choice is made once and remembered, and round setup can still
+  change it for one round.
 
 ### Verification
 
-- `screens/settings/__tests__/LiveRounds.test.tsx`. No screenshots were captured (no browser was run here).
+- `screens/settings/__tests__/LiveRounds.test.tsx`. No screenshots were captured
+  (no browser was run here).

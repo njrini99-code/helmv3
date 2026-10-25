@@ -91,6 +91,22 @@ describe('useGolfMessages read marks (P-1 slice 2)', () => {
     expect([...result.current.readMarks.byUser]).toEqual([['viewer', T2], ['ava', T1], ['eli', null]]);
   });
 
+  it('clears the previous group on a thread switch even when the new read fails, and ignores its old channel', async () => {
+    const { result, rerender } = renderHook(({ id }) => useGolfMessages(id, 'viewer'), { initialProps: { id: 'c1' } });
+    await waitFor(() => expect(result.current.readMarks.status).toBe('ready'));
+    const old = mock.handlers.filter((h) => h.table === 'golf_conversation_participants');
+    mock.participantsError = { message: 'unavailable', code: '500' };
+    rerender({ id: 'c2' });
+    await waitFor(() => expect(result.current.readMarks.status).toBe('error'));
+    expect(result.current.readMarks.byUser.size).toBe(0);
+    act(() => old.forEach((h) => h.fn({ new: { user_id: 'ava', last_read_at: T2 } })));
+    expect(result.current.readMarks.byUser.size).toBe(0);
+    mock.participantsError = null;
+    mock.participants = [{ user_id: 'viewer', last_read_at: T2 }, { user_id: 'new-member', last_read_at: T1 }];
+    await act(async () => { await result.current.refetchReadMarks(); });
+    expect([...result.current.readMarks.byUser.keys()]).toEqual(['viewer', 'new-member']);
+  });
+
   it('a realtime update moves one member forward; an older time is ignored', async () => {
     const { result } = renderHook(() => useGolfMessages('c1', 'viewer'));
     await waitFor(() => expect(result.current.readMarks.status).toBe('ready'));

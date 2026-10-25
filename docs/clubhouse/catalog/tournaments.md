@@ -44,15 +44,15 @@ sync` mints its Bridge ID.
 | # | When | They see | How | Test |
 | --- | --- | --- | --- | --- |
 | CH-16201 | A Tournaments view's one read fails (any view; `load: 'failed'`) | The view's head, then "Tournaments didn’t load" + "Nothing is lost. Your events and scores are still saved; try again in a moment." + Try again (which re-runs the server render; offline it says so, CH-1905) | `TourPlaceholder` → `EmptyState size="page" tone="danger"`; a built view keeps this code for its page failure | tournaments/views.test › CH-16201 |
-| CH-16210 | Home: the events read fails while the page itself loads (`errors.events`) | The head stays, then "The events didn’t load" + "Nothing has changed. Try again; the error has been reported." + Try again; never an empty ledger or "No tournaments yet" | `InlineNotice` in `TournamentsHome` | tournaments-home.test › CH-16210 |
-| CH-16220 | Event desk, Holes tab: the scorecards read fails (`errors.holes`) | "The scorecards didn’t load" + "Team scores are unaffected. Try again; the error has been reported." + Try again, in place of the grid; never "No hole-by-hole scores yet" | `InlineNotice` in `HoleGrid` | tournaments-desk.test › CH-16220 |
-| CH-16221 | Event desk: the field read fails (`errors.field`) | Under the head: "The field didn’t load" + "Where the team finished needs the field, so it is left out for now. Scores are unaffected. Try again; the error has been reported." + Try again; the scores stay | `InlineNotice` in `EventDesk` | tournaments-desk.test › CH-16221 |
-| CH-16222 | Event desk, Overview and Who counted: the rounds read fails (`errors.rounds`) | "The rounds didn’t load" + "Scores are saved; they just can’t be shown right now. Try again; the error has been reported." + Try again, in place of the table | `InlineNotice` in `EventDesk` | tournaments-desk.test › CH-16222 |
-| CH-16235 | Review (its own page and the desk's Review tab): the review read fails (`errors.review`) | "The review didn’t load" + "Nothing has changed. Try again; the error has been reported." + Try again, in place of the layers; never "Nothing to review yet" | `InlineNotice` in `ReviewBody` | tournaments-review.test › CH-16235 |
-| CH-16236 | History: the trend read fails (`errors.trend`) | Under "Across seasons": "The trend didn’t load" + "The events below are unaffected. Try again; the error has been reported." + Try again; the ledger of every event stays | `InlineNotice` in `History` | tournaments-history.test › CH-16236 |
-| CH-16250 | Compare: the rounds read fails (`errors.rounds`) | Under the head: "The rounds didn’t load" + "Nothing has changed. Try again; the error has been reported." + Try again, in place of the presets, sides and grid; never "No rounds to compare yet" | `InlineNotice` in `Compare` | tournaments-compare.test › CH-16250 |
-| CH-16251 | Compare: the field read fails (`errors.field`) | Above the grid: "The field didn’t load" + "Versus field needs it, so it is left blank. The other figures are unaffected. Try again; the error has been reported." + Try again; Vs field reads "—" and every other figure stays | `InlineNotice` in `Compare` | tournaments-compare.test › CH-16251 |
-| CH-16252 | Compare: the hole figures read fails (`errors.holes`) | Above the grid: "The hole figures didn’t load" + "Birdies, greens, fairways and putts are left blank. Scores and strokes gained are unaffected. Try again; the error has been reported." + Try again | `InlineNotice` in `Compare` | tournaments-compare.test › CH-16252 |
+| CH-16210 | Home: the events read fails while the page itself loads (`errors.events`) | The head stays, then "The events didn’t load" + "Nothing has changed. Try again." + Try again; never an empty ledger or "No tournaments yet" | `InlineNotice` in `TournamentsHome` | tournaments-home.test › CH-16210 |
+| CH-16220 | Event desk, Holes tab: the scorecards read fails (`errors.holes`) | "The scorecards didn’t load" + "Team scores are unaffected. Try again." + Try again, in place of the grid; never "No hole-by-hole scores yet" | `InlineNotice` in `HoleGrid` | tournaments-desk.test › CH-16220 |
+| CH-16221 | Event desk: the field read fails (`errors.field`) | Under the head: "The field didn’t load" + "Where the team finished needs the field, so it is left out for now. Scores are unaffected. Try again." + Try again; the scores stay | `InlineNotice` in `EventDesk` | tournaments-desk.test › CH-16221 |
+| CH-16222 | Event desk, Overview and Who counted: the rounds read fails (`errors.rounds`) | "The rounds didn’t load" + "Scores are saved; they just can’t be shown right now. Try again." + Try again, in place of the table | `InlineNotice` in `EventDesk` | tournaments-desk.test › CH-16222 |
+| CH-16235 | Review (its own page and the desk's Review tab): the review read fails (`errors.review`) | "The review didn’t load" + "Nothing has changed. Try again." + Try again, in place of the layers; never "Nothing to review yet" | `InlineNotice` in `ReviewBody` | tournaments-review.test › CH-16235 |
+| CH-16236 | History: the trend read fails (`errors.trend`) | Under "Across seasons": "The trend didn’t load" + "The events below are unaffected. Try again." + Try again; the ledger of every event stays | `InlineNotice` in `History` | tournaments-history.test › CH-16236 |
+| CH-16250 | Compare: the rounds read fails (`errors.rounds`) | Under the head: "The rounds didn’t load" + "Nothing has changed. Try again." + Try again, in place of the presets, sides and grid; never "No rounds to compare yet" | `InlineNotice` in `Compare` | tournaments-compare.test › CH-16250 |
+| CH-16251 | Compare: the field read fails (`errors.field`) | Above the grid: "The field didn’t load" + "Versus field needs it, so it is left blank. The other figures are unaffected. Try again." + Try again; Vs field reads "—" and every other figure stays | `InlineNotice` in `Compare` | tournaments-compare.test › CH-16251 |
+| CH-16252 | Compare: the hole figures read fails (`errors.holes`) | Above the grid: "The hole figures didn’t load" + "Birdies, greens, fairways and putts are left blank. Scores and strokes gained are unaffected. Try again." + Try again | `InlineNotice` in `Compare` | tournaments-compare.test › CH-16252 |
 
 ## 163xx Empty
 
@@ -111,16 +111,48 @@ sync` mints its Bridge ID.
 
 ## Live rounds (P-6)
 
-> Rows CH-16600 to CH-16677 (CH-16650 to CH-16653 are the tournaments lanes') and CH-16680 to CH-16685 belong to Clubhouse P-6, Live rounds, which registers no page of its own. Plan: handoff 4.34.6; notes in `docs/clubhouse/live-rounds/`.
+> Rows CH-16600 to CH-16677 (CH-16650 to CH-16653 are the tournaments lanes')
+  and CH-16680 to CH-16685 belong to Clubhouse P-6, Live rounds, which registers
+  no page of its own. Plan: handoff 4.34.6; notes in
+  `docs/clubhouse/live-rounds/`.
 
-Route `/golf/dashboard/live` (coaches) · surfaces Coach Home (`LiveNowCard`), the live view, the player's sheet, the player's own card, the Teammates card, Round setup and the in-round sheet, Team rounds, the player's library, Calendar and Qualifiers · code `src/clubhouse/live/` (the lane, beads, feed, queries and model), `src/clubhouse/screens/live/` · loader `src/clubhouse/data/live-rounds.ts` · tests `src/clubhouse/__tests__/live-rounds-copy.test.ts`, `src/clubhouse/live/__tests__/` · preview `/clubhouse-preview/live` (`?state=busy|one|many|finished|starts|event|longnames|empty|failed|denied`) and `/clubhouse-preview/home?live=busy|one|many|finished|event|failed`.
+Route `/golf/dashboard/live` (coaches) · surfaces Coach Home (`LiveNowCard`),
+the live view, the player's sheet, the player's own card, the Teammates card,
+Round setup and the in-round sheet, Team rounds, the player's library, Calendar
+and Qualifiers · code `src/clubhouse/live/` (the lane, beads, feed, queries and
+model), `src/clubhouse/screens/live/` · loader
+`src/clubhouse/data/live-rounds.ts` · tests
+`src/clubhouse/__tests__/live-rounds-copy.test.ts`,
+`src/clubhouse/live/__tests__/` · preview `/clubhouse-preview/live`
+(`?state=busy|one|many|finished|starts|event|longnames|empty|failed|denied`) and
+`/clubhouse-preview/home?live=busy|one|many|finished|event|failed`.
 
-Live rounds (build plan P-6, handoff 4.34.6): who is on the course now, hole by hole, for the coach; the player's own round and the practice rounds teammates share. It only reads what the save path already writes: how shots and scores are entered and stored does not change. The numbers follow the plan's copy deck, so the second digit of a code here does not follow the kinds in [the catalog README](README.md): every CH-166xx row is the words of a live surface, and the checker does not require them to be used or tested by kind. A test names each of them regardless (`live-rounds-copy.test.ts`). The sharing words use open-call version 2 until the owner answers: the first level reads "Not live" (stored `off`), and rounds that a tournament tracks are shown by the tournament's own live view.
+Live rounds (build plan P-6, handoff 4.34.6): who is on the course now, hole by
+hole, for the coach; the player's own round and the practice rounds teammates
+share. It only reads what the save path already writes: how shots and scores are
+entered and stored does not change. The numbers follow the plan's copy deck, so
+the second digit of a code here does not follow the kinds in [the catalog
+README](README.md): every CH-166xx row is the words of a live surface, and the
+checker does not require them to be used or tested by kind. A test names each of
+them regardless (`live-rounds-copy.test.ts`). The sharing words use open-call
+version 2 until the owner answers: the first level reads "Not live" (stored
+`off`), and rounds that a tournament tracks are shown by the tournament's own
+live view.
 
 Where things live:
-- The lane (`live/PlayerLane.tsx`), the bead row (`live/HoleBeads.tsx`), the momentum line, the feed chip (`live/FreshnessChip.tsx`) and the polite live region (`live/LiveAnnouncer.tsx`) are shared by every live surface; the stylesheet is `styles/live.css` (`.ch-lv-*`).
-- `live/model.ts` holds the pure rules (freshness, groups, sort, moments, the late rule, the next hole); `live/live-rounds-adapter.ts` turns a `golf_round_live` row or a v0 poll row into one lane; `live/live-queries.ts` is the read, run on the server for the first paint and in the browser for the 20 second poll.
-- Until held migration `20261025050000_golf_round_live.sql` is applied the live table is absent and the page reads the v0 poll (qualifier and tournament rounds only; no practice, no sharing).
+
+- The lane (`live/PlayerLane.tsx`), the bead row (`live/HoleBeads.tsx`), the
+  momentum line, the feed chip (`live/FreshnessChip.tsx`) and the polite live
+  region (`live/LiveAnnouncer.tsx`) are shared by every live surface; the
+  stylesheet is `styles/live.css` (`.ch-lv-*`).
+- `live/model.ts` holds the pure rules (freshness, groups, sort, moments, the
+  late rule, the next hole); `live/live-rounds-adapter.ts` turns a
+  `golf_round_live` row or a v0 poll row into one lane; `live/live-queries.ts`
+  is the read, run on the server for the first paint and in the browser for the
+  20 second poll.
+- Until held migration `20261025050000_golf_round_live.sql` is applied the live
+  table is absent and the page reads the v0 poll (qualifier and tournament
+  rounds only; no practice, no sharing).
 
 ## 166xx Copy: the live surfaces
 
@@ -176,4 +208,3 @@ Where things live:
 | CH-16683 | The player's own live card, not saved for 10 minutes (slice 1) | "Last saved {n} min ago" | `OwnLiveCard` | live-rounds-copy.test › CH-16683 |
 | CH-16684 | Round setup, open call (a) version 2 (slice 2) | "Not live keeps this round off live views. Your team can still open it in Rounds." The raw round reads are unchanged until the owner decides | `LiveShareField` | live-rounds-copy.test › CH-16684 |
 | CH-16685 | Coach Home, a tournament tracks a live round | One 44px row per live tournament: "{event} · live" with the static dot, linking to the tournament's own live view. Tracked rounds get no lane | `LiveNowCard`, `readLiveEvents` | live-rounds-copy.test › CH-16685 |
-||||||| a1e117397

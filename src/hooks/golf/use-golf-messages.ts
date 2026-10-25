@@ -538,6 +538,14 @@ export function useGolfMessages(
   const [readMarks, setReadMarks] = useState<GolfReadMarks>(() =>
     warmMarks?.data ? { status: 'ready', byUser: new Map(warmMarks.data) } : { status: 'loading', byUser: new Map() },
   );
+  // A thread switch must never paint the previous group's receipts, even while the new read is pending or fails.
+  const marksScope = `${conversationId}\u0000${viewerUserId ?? ''}`;
+  const [readMarksScope, setReadMarksScope] = useState(marksScope);
+  if (readMarksScope !== marksScope) {
+    setReadMarksScope(marksScope);
+    setReadMarks(warmMarks?.data ? { status: 'ready', byUser: new Map(warmMarks.data) } : { status: 'loading', byUser: new Map() });
+    setOtherParticipantLastReadAt(null);
+  }
   const [isOtherTyping, setIsOtherTyping] = useState(false);
   const [currentUserId, setCurrentUserId] = useState<string | null>(viewerUserId ?? null);
   /**
@@ -969,6 +977,7 @@ export function useGolfMessages(
           filter: `conversation_id=eq.${conversationId}`,
         },
         (payload) => {
+          if (liveConversationIdRef.current !== conversationId) return;
           const updated = payload.new as { user_id: string; last_read_at: string | null };
           // Every member's read, kept monotonic (a late event never takes a "seen" back).
           setReadMarks((prev) => (prev.byUser.has(updated.user_id) || prev.status === 'ready'

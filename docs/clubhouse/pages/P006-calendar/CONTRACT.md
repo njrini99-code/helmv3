@@ -1,7 +1,8 @@
 # P006 — Calendar: page contract
 
 Date-jump and people popovers remain beside their anchors, choose available
-viewport space and scroll their long content. See the [popup audit](../../POPUP_AUDIT.md).
+viewport space and scroll their long content. See the [popup
+audit](../../POPUP_AUDIT.md).
 
 <!-- clubhouse:release-audit:start -->
 ## Current contract audit — 2026-10-06
@@ -18,7 +19,8 @@ reserve new IDs or mark manual contracts verified.
 
 Every behaviour Calendar promises, by the 25 V2 categories (D-69). A contract's
 number is its Bridge ID (D-68: namespace 6, category, item); `Code` is the
-catalog code on the element and in the test (`docs/clubhouse/catalog/calendar.md`).
+catalog code on the element and in the test
+(`docs/clubhouse/catalog/calendar.md`).
 Rows without a code are behaviours with no single element, recorded in
 `config/clubhouse/bridge-contracts.json` by hand. The shell's contracts (P001,
 namespace 1) apply here too and are named where they carry a category.
@@ -664,4 +666,7 @@ From the shell (P001): 12401 TESTS_NAME_CONTRACTS.
 
 ## 25 — Helm Bridge action
 
-Status: N/A — the Bridge is wired later (owner, D-68). Every contract above already has its Bridge ID; the commands (open New event, go to today, step to the next week, reply to an event) are defined when the Bridge is.
+Status: N/A — the Bridge is wired later (owner, D-68). Every contract above
+
+already has its Bridge ID; the commands (open New event, go to today, step to
+the next week, reply to an event) are defined when the Bridge is.

@@ -364,8 +364,13 @@
   text-decoration: none;
   transition: background-color var(--ch-dur-press) var(--ch-ease);
 }
+.ch-tfx-card[data-ch-pressed] {
+  background: var(--ch-ledger-row-press);
+}
+@media (hover: hover) {
 .ch-tfx-card:active {
   background: var(--ch-ledger-row-press);
+}
 }
 .ch-tfx-card:focus-visible {
   outline: 2px solid var(--ch-border-focus);

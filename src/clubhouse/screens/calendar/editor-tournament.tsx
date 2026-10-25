@@ -4,6 +4,7 @@ import { m } from 'motion/react';
 import { Trophy } from 'lucide-react';
 import { forwardRef } from 'react';
 import { Icon } from '../../ui/Icon';
+import { Button } from '../../ui/Button';
 import { haptic } from '../../lib/haptics';
 import { chTween } from '../../lib/motion';
 import { useChReducedMotion } from '../../lib/reduced-motion';
@@ -79,9 +80,9 @@ export const TournamentSection = forwardRef<HTMLElement, {
       {track && orphan && (
         <div className="ch-tfx-note ch-tfx-note--info" data-ch-code="CH-6144">
           <span>{`This was R${orphan.round} of a tournament that was removed. Set it up again from the season home to keep all its days together.`}</span>
-          <a className="ch-btn ch-btn--secondary ch-btn--sm ch-tfx-note__act" href="/golf/dashboard/tournaments">
+          <Button variant="secondary" size="sm" className="ch-tfx-note__act" href="/golf/dashboard/tournaments">
             Open Set up from calendar
-          </a>
+          </Button>
         </div>
       )}
       {track && (
@@ -108,14 +109,14 @@ export function TournamentSaveNotice({ code, text, onOpen, onReload }: { code: s
       <b>{code === 'CH-6241' ? text : 'Couldn’t set up the tournament. Nothing was saved.'}</b>
       {code !== 'CH-6241' && code !== 'CH-6056' && <span>{text}</span>}
       {onOpen && (
-        <button type="button" className="ch-btn ch-btn--secondary ch-btn--sm ch-tfx-note__act" onClick={onOpen}>
+        <Button variant="secondary" size="sm" className="ch-tfx-note__act" onClick={onOpen}>
           Open
-        </button>
+        </Button>
       )}
       {onReload && (
-        <button type="button" className="ch-btn ch-btn--secondary ch-btn--sm ch-tfx-note__act" onClick={onReload}>
+        <Button variant="secondary" size="sm" className="ch-tfx-note__act" onClick={onReload}>
           Reload
-        </button>
+        </Button>
       )}
     </div>
   );

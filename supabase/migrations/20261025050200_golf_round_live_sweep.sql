@@ -1,12 +1,20 @@
--- DECLARATIVE: exempt a pg_cron job (cron.schedule) is not expressible in the declarative schema
+-- DECLARATIVE: exempt a pg_cron job (cron.schedule) is not expressible in the
+-- declarative schema
 -- 20261025050200_golf_round_live_sweep.sql
--- STATUS: WRITTEN, NOT APPLIED (HOLD, see supabase/migrations/HELD.md). Owner applies. Written 2026-10-25 for Clubhouse P-6 (handoff 4.34.6).
--- Apply: npm run db:apply -- supabase/migrations/20261025050200_golf_round_live_sweep.sql
--- Purpose: P-6 retention. Every 15 minutes, delete live rows 18 hours after the round ended, and rows not heard from for 36 hours.
--- Risk: LOW. Deletes only from golf_round_live (derived data; the round itself is untouched). Skips with a NOTICE where pg_cron is not installed (the VERIFY lines then fail on purpose: nothing was scheduled).
+-- STATUS: WRITTEN, NOT APPLIED (HOLD, see supabase/migrations/HELD.md). Owner
+-- applies. Written 2026-10-25 for Clubhouse P-6 (handoff 4.34.6).
+-- Apply: npm run db:apply --
+-- supabase/migrations/20261025050200_golf_round_live_sweep.sql
+-- Purpose: P-6 retention. Every 15 minutes, delete live rows 18 hours after the
+-- round ended, and rows not heard from for 36 hours.
+-- Risk: LOW. Deletes only from golf_round_live (derived data; the round itself
+-- is untouched). Skips with a NOTICE where pg_cron is not installed (the VERIFY
+-- lines then fail on purpose: nothing was scheduled).
 -- ORDER: after 20261025050000.
--- VERIFY: select 1 where (select count(*) from cron.job where jobname = 'golf-round-live-sweep') = 1;
--- VERIFY: select 1 where not exists (select 1 from public.golf_round_live where heard_at < now() - interval '37 hours');
+-- VERIFY: select 1 where (select count(*) from cron.job where jobname =
+-- VERIFY: 'golf-round-live-sweep') = 1;
+-- VERIFY: select 1 where not exists (select 1 from public.golf_round_live where
+-- VERIFY: heard_at < now() - interval '37 hours');
 -- ROLLBACK: select cron.unschedule('golf-round-live-sweep');
 
 SET lock_timeout = '3s';

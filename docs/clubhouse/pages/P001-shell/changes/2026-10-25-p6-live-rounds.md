@@ -13,13 +13,17 @@ Held items:     none
 
 ### Changed
 
-- The Dock's Resume round accessory reads the hole and the score to par, "Hole 12 · −2" (`toParOf` from the live model).
-  `nav.ts` lists `/golf/dashboard/live` as rebuilt for coaches and aliased (a player's address opens Home); `Dock.tsx` draws the extra word.
+- The Dock's Resume round accessory reads the hole and the score to par, "Hole
+  12 · −2" (`toParOf` from the live model).
+  `nav.ts` lists `/golf/dashboard/live` as rebuilt for coaches and aliased (a
+player's address opens Home); `Dock.tsx` draws the extra word.
 
 ### Why
 
-- A player resuming a round sees where they stand without opening it (plan section 4.4).
+- A player resuming a round sees where they stand without opening it (plan
+  section 4.4).
 
 ### Verification
 
-- `shell/__tests__` and `data/__tests__/shell.test.ts` pass in the full `src/clubhouse` run. No screenshots (no browser was run).
+- `shell/__tests__` and `data/__tests__/shell.test.ts` pass in the full
+  `src/clubhouse` run. No screenshots (no browser was run).

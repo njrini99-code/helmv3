@@ -364,7 +364,7 @@ export function RoundEditor({
                             set({ invited: d.invited.includes(p.id) ? d.invited.filter((x) => x !== p.id) : [...d.invited, p.id].sort() });
                           }}
                         />
-                        <Avatar name={byId.get(p.id)?.name ?? p.name} size={22} />
+                        <Avatar id={p.id} name={byId.get(p.id)?.name ?? p.name} size="xs" />
                         <span>{p.name}</span>
                       </label>
                     ))}

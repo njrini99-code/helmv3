@@ -1,22 +1,40 @@
 -- STATUS: WRITTEN — HOLD — NOT APPLIED
--- P-5 Tournaments from the calendar: keep a round's golf_events row and its tournament in step from any write path
--- (owner call 1 in the plan; held separately so the owner can apply 20261025040000 without it).
--- Apply: npm run db:apply -- supabase/migrations/20261025040100_golf_tournament_calendar_sync.sql
--- Transaction: apply.mjs wraps this file in one transaction, so it has no BEGIN/COMMIT of its own.
+-- P-5 Tournaments from the calendar: keep a round's golf_events row and its
+-- tournament in step from any write path
+-- (owner call 1 in the plan; held separately so the owner can apply
+-- 20261025040000 without it).
+-- Apply: npm run db:apply --
+-- supabase/migrations/20261025040100_golf_tournament_calendar_sync.sql
+-- Transaction: apply.mjs wraps this file in one transaction, so it has no
+-- BEGIN/COMMIT of its own.
 -- Requires: 20261025040000 applied first (the DO block refuses otherwise).
--- Risk: medium-low. A DEFERRABLE INITIALLY DEFERRED constraint trigger on golf_events that fires only when a
---   tournament event's start_time, end_time or all_day changes, or it is restored from cancelled, and two small AFTER
---   triggers on 4.33's tournament tables. A round moved out of order by any path is refused at commit ('round_order').
--- Why: the legacy dashboard and 4.33's own golf_tournament_update also write golf_events; this keeps first_tee_at,
---   the tournament dates, the version, round titles and the round's course in step without each path doing it.
+-- Risk: medium-low. A DEFERRABLE INITIALLY DEFERRED constraint trigger on
+-- golf_events that fires only when a
+--   tournament event's start_time, end_time or all_day changes, or it is
+-- restored from cancelled, and two small AFTER
+--   triggers on 4.33's tournament tables. A round moved out of order by any
+-- path is refused at commit ('round_order').
+-- Why: the legacy dashboard and 4.33's own golf_tournament_update also write
+-- golf_events; this keeps first_tee_at,
+--   the tournament dates, the version, round titles and the round's course in
+-- step without each path doing it.
 --
--- VERIFY: select 1 where exists (select 1 from pg_trigger where tgname = 'golf_events_tournament_round_sync' and tgdeferrable and tginitdeferred);
--- VERIFY: select 1 where exists (select 1 from pg_trigger where tgname = 'golf_tournaments_round_titles' and not tgisinternal);
--- VERIFY: select 1 where exists (select 1 from pg_trigger where tgname = 'golf_tournament_rounds_event_fields' and not tgisinternal);
--- ROLLBACK: DROP TRIGGER IF EXISTS golf_tournament_rounds_event_fields ON public.golf_tournament_rounds;
--- ROLLBACK: DROP TRIGGER IF EXISTS golf_tournaments_round_titles ON public.golf_tournaments;
--- ROLLBACK: DROP TRIGGER IF EXISTS golf_events_tournament_round_sync ON public.golf_events;
--- ROLLBACK: DROP FUNCTION IF EXISTS helm_private.sync_round_event_fields(), helm_private.sync_tournament_round_titles(), helm_private.sync_tournament_round_from_event();
+-- VERIFY: select 1 where exists (select 1 from pg_trigger where tgname =
+-- VERIFY: 'golf_events_tournament_round_sync' and tgdeferrable and
+-- VERIFY: tginitdeferred);
+-- VERIFY: select 1 where exists (select 1 from pg_trigger where tgname =
+-- VERIFY: 'golf_tournaments_round_titles' and not tgisinternal);
+-- VERIFY: select 1 where exists (select 1 from pg_trigger where tgname =
+-- VERIFY: 'golf_tournament_rounds_event_fields' and not tgisinternal);
+-- ROLLBACK: DROP TRIGGER IF EXISTS golf_tournament_rounds_event_fields ON
+-- public.golf_tournament_rounds;
+-- ROLLBACK: DROP TRIGGER IF EXISTS golf_tournaments_round_titles ON
+-- public.golf_tournaments;
+-- ROLLBACK: DROP TRIGGER IF EXISTS golf_events_tournament_round_sync ON
+-- public.golf_events;
+-- ROLLBACK: DROP FUNCTION IF EXISTS helm_private.sync_round_event_fields(),
+-- helm_private.sync_tournament_round_titles(),
+-- helm_private.sync_tournament_round_from_event();
 
 SET lock_timeout = '3s';
 
@@ -28,9 +46,12 @@ BEGIN
   END IF;
 END $$;
 
--- 1. Calendar side to tournament side. Deferred to commit, so a multi-round reschedule (4.33 golf_tournament_update)
---    is judged on its final state, and the RPCs that already set the same values cause no second version bump.
---    Same order key as 20261025040000: an untimed round keys at the very end of its day.
+-- 1. Calendar side to tournament side. Deferred to commit, so a multi-round
+-- reschedule (4.33 golf_tournament_update)
+--    is judged on its final state, and the RPCs that already set the same
+-- values cause no second version bump.
+--    Same order key as 20261025040000: an untimed round keys at the very end of
+-- its day.
 CREATE OR REPLACE FUNCTION helm_private.sync_tournament_round_from_event()
 RETURNS trigger
 LANGUAGE plpgsql
@@ -97,16 +118,23 @@ $fn$;
 
 DROP TRIGGER IF EXISTS golf_events_tournament_round_sync ON public.golf_events;
 CREATE CONSTRAINT TRIGGER golf_events_tournament_round_sync
-  AFTER UPDATE OF start_time, end_time, all_day, status ON public.golf_events
-  DEFERRABLE INITIALLY DEFERRED
-  FOR EACH ROW
-  WHEN (NEW.event_type = 'tournament'
-        AND (OLD.start_time IS DISTINCT FROM NEW.start_time
-             OR OLD.all_day IS DISTINCT FROM NEW.all_day
-             OR (OLD.status = 'cancelled' AND NEW.status IS DISTINCT FROM 'cancelled')))
-  EXECUTE FUNCTION helm_private.sync_tournament_round_from_event();
+AFTER UPDATE OF start_time, end_time, all_day, status ON public.golf_events
+DEFERRABLE INITIALLY DEFERRED
+FOR EACH ROW
+WHEN (
+    new.event_type = 'tournament'
+    AND (
+        old.start_time IS DISTINCT FROM new.start_time
+        OR old.all_day IS DISTINCT FROM new.all_day
+        OR (
+            old.status = 'cancelled' AND new.status IS DISTINCT FROM 'cancelled'
+        )
+    )
+)
+EXECUTE FUNCTION helm_private.sync_tournament_round_from_event();
 
--- 2. Tournament renamed on the desk: every round's calendar title follows ("Name · R2", D-81). The UPDATE runs at
+-- 2. Tournament renamed on the desk: every round's calendar title follows
+-- ("Name · R2", D-81). The UPDATE runs at
 --    trigger depth 2, which P-5's guard lets through.
 CREATE OR REPLACE FUNCTION helm_private.sync_tournament_round_titles()
 RETURNS trigger
@@ -126,12 +154,13 @@ $fn$;
 
 DROP TRIGGER IF EXISTS golf_tournaments_round_titles ON public.golf_tournaments;
 CREATE TRIGGER golf_tournaments_round_titles
-  AFTER UPDATE OF name ON public.golf_tournaments
-  FOR EACH ROW
-  WHEN (OLD.name IS DISTINCT FROM NEW.name)
-  EXECUTE FUNCTION helm_private.sync_tournament_round_titles();
+AFTER UPDATE OF name ON public.golf_tournaments
+FOR EACH ROW
+WHEN (old.name IS DISTINCT FROM new.name)
+EXECUTE FUNCTION helm_private.sync_tournament_round_titles();
 
--- 3. A round renumbered or given another course on the desk: its calendar row follows (depth 2, as above).
+-- 3. A round renumbered or given another course on the desk: its calendar row
+-- follows (depth 2, as above).
 CREATE OR REPLACE FUNCTION helm_private.sync_round_event_fields()
 RETURNS trigger
 LANGUAGE plpgsql
@@ -157,15 +186,27 @@ BEGIN
 END
 $fn$;
 
-DROP TRIGGER IF EXISTS golf_tournament_rounds_event_fields ON public.golf_tournament_rounds;
+DROP TRIGGER IF EXISTS golf_tournament_rounds_event_fields
+ON public.golf_tournament_rounds;
 CREATE TRIGGER golf_tournament_rounds_event_fields
-  AFTER UPDATE OF round_number, course_id, course_label ON public.golf_tournament_rounds
-  FOR EACH ROW
-  WHEN (OLD.round_number IS DISTINCT FROM NEW.round_number
-        OR OLD.course_id IS DISTINCT FROM NEW.course_id
-        OR OLD.course_label IS DISTINCT FROM NEW.course_label)
-  EXECUTE FUNCTION helm_private.sync_round_event_fields();
+AFTER UPDATE OF round_number,
+course_id,
+course_label ON public.golf_tournament_rounds
+FOR EACH ROW
+WHEN (
+    old.round_number IS DISTINCT FROM new.round_number
+    OR old.course_id IS DISTINCT FROM new.course_id
+    OR old.course_label IS DISTINCT FROM new.course_label
+)
+EXECUTE FUNCTION helm_private.sync_round_event_fields();
 
-REVOKE ALL ON FUNCTION helm_private.sync_tournament_round_from_event() FROM PUBLIC, anon, authenticated;
-REVOKE ALL ON FUNCTION helm_private.sync_tournament_round_titles() FROM PUBLIC, anon, authenticated;
-REVOKE ALL ON FUNCTION helm_private.sync_round_event_fields() FROM PUBLIC, anon, authenticated;
+REVOKE ALL ON FUNCTION helm_private.sync_tournament_round_from_event()
+FROM public,
+anon,
+authenticated;
+REVOKE ALL ON FUNCTION helm_private.sync_tournament_round_titles() FROM public,
+anon,
+authenticated;
+REVOKE ALL ON FUNCTION helm_private.sync_round_event_fields() FROM public,
+anon,
+authenticated;

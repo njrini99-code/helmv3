@@ -123,12 +123,12 @@ create table if not exists public.golf_tournaments (
             'individual'
         )
     ),
-    players_per_team smallint not null default 5
+    players_per_team bigint not null default 5
     check (players_per_team between 1 and 9),
-    counting smallint not null default 4 check (counting between 1 and 9),
-    holes_per_round smallint not null default 18
+    counting bigint not null default 4 check (counting between 1 and 9),
+    holes_per_round bigint not null default 18
     check (holes_per_round in (9, 18)),
-    rounds_count smallint not null default 3
+    rounds_count bigint not null default 3
     check (rounds_count between 1 and 6),
     event_kind text not null default 'regular'
     check (
@@ -139,11 +139,11 @@ create table if not exists public.golf_tournaments (
     ),
     tiebreak text not null default 'ties_stand'
     check (tiebreak in ('ties_stand', 'ncaa', 'playoff', 'card_playoff')),
-    field_size smallint check (field_size between 1 and 40),
+    field_size bigint check (field_size between 1 and 40),
     line_kind text check (line_kind in ('advance', 'cut', 'match_play')),
-    line_value smallint check (line_value between 1 and 40),
+    line_value bigint check (line_value between 1 and 40),
     substitutions boolean not null default false,
-    lock_minutes smallint not null default 10
+    lock_minutes bigint not null default 10
     check (lock_minutes between 0 and 1440),
     lineup_locked_at timestamptz,
     lineup_published_at timestamptz,
@@ -154,7 +154,7 @@ create table if not exists public.golf_tournaments (
     created_by uuid references auth.users (id) on delete set null,
     created_at timestamptz not null default now(),
     updated_at timestamptz not null default now(),
-    version integer not null default 1,
+    version bigint not null default 1,
     constraint golf_tournaments_counting_le_players
     check (counting <= players_per_team),
     constraint golf_tournaments_dates check (end_date >= start_date),
@@ -172,7 +172,7 @@ create table if not exists public.golf_tournament_rounds (
     deferrable initially deferred,
     tournament_id uuid not null,
     team_id uuid not null,
-    round_number smallint not null check (round_number between 1 and 6),
+    round_number bigint not null check (round_number between 1 and 6),
     course_id uuid references public.golf_courses (id) on delete set null,
     tee_id uuid references public.golf_course_tees (id) on delete set null,
     start_type text not null default 'tee_times'
@@ -201,7 +201,7 @@ create table if not exists public.golf_tournament_entries (
     player_id uuid not null
     references public.golf_players (id) on delete cascade,
     role text not null check (role in ('lineup', 'alternate', 'individual')),
-    slot smallint check (slot between 1 and 9),
+    slot bigint check (slot between 1 and 9),
     created_at timestamptz not null default now(),
     updated_at timestamptz not null default now(),
     primary key (tournament_id, player_id),
@@ -223,7 +223,7 @@ create table if not exists public.golf_tournament_round_lineups (
     player_id uuid not null
     references public.golf_players (id) on delete cascade,
     role text not null check (role in ('lineup', 'alternate', 'individual')),
-    slot smallint check (slot between 1 and 9),
+    slot bigint check (slot between 1 and 9),
     substituted_for uuid
     references public.golf_players (id) on delete set null,
     substituted_at timestamptz,
@@ -243,12 +243,12 @@ create table if not exists public.golf_tournament_player_rounds (
     references public.golf_players (id) on delete cascade,
     round_id uuid unique
     references public.golf_rounds (id) on delete set null,
-    entered_total smallint check (entered_total between 20 and 200),
-    entered_front smallint check (entered_front between 10 and 100),
-    entered_back smallint check (entered_back between 10 and 100),
+    entered_total bigint check (entered_total between 20 and 200),
+    entered_front bigint check (entered_front between 10 and 100),
+    entered_back bigint check (entered_back between 10 and 100),
     status text not null default 'ok'
     check (status in ('ok', 'wd', 'dq', 'dq_pending')),
-    wd_after_hole smallint check (wd_after_hole between 0 and 18),
+    wd_after_hole bigint check (wd_after_hole between 0 and 18),
     link_source text check (link_source in ('coach', 'auto', 'player')),
     note text check (char_length(note) <= 280),
     updated_by uuid references auth.users (id) on delete set null,
@@ -271,10 +271,10 @@ create table if not exists public.golf_tournament_field_teams (
     is_us boolean not null default false,
     is_b_team boolean not null default false,
     same_division boolean not null default true,
-    seed smallint,
-    final_place smallint,
+    seed bigint,
+    final_place bigint,
     final_place_tied boolean not null default false,
-    final_total smallint,
+    final_total bigint,
     foreign key (tournament_id, team_id)
     references public.golf_tournaments (id, team_id) on delete cascade,
     unique (id, team_id)
@@ -287,9 +287,9 @@ where is_us;
 create table if not exists public.golf_tournament_field_scores (
     field_team_id uuid not null,
     team_id uuid not null,
-    round_number smallint not null check (round_number between 1 and 6),
-    total smallint check (total between 60 and 800),
-    thru smallint check (thru between 0 and 18),
+    round_number bigint not null check (round_number between 1 and 6),
+    total bigint check (total between 60 and 800),
+    thru bigint check (thru between 0 and 18),
     entered_at timestamptz not null default now(),
     primary key (field_team_id, round_number),
     foreign key (field_team_id, team_id)
@@ -425,7 +425,7 @@ create table if not exists public.golf_team_seasons (
     division text
     check (division in ('d1', 'd2', 'd3', 'naia', 'njcaa', 'other')),
     conference text check (char_length(conference) <= 80),
-    official_rank smallint check (official_rank between 1 and 400),
+    official_rank bigint check (official_rank between 1 and 400),
     official_rank_at date,
     primary key (team_id, season)
 );

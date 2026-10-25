@@ -117,7 +117,10 @@ describe('the words of the live surfaces', () => {
 
   it('has a case for every row of the catalog, and a row for every case', () => {
     const catalog = readFileSync(join(ROOT, '../../docs/clubhouse/catalog/tournaments.md'), 'utf8');
-    const rows = [...catalog.matchAll(/^\| (CH-\d{5}) \|/gm)].map((m) => m[1]!).sort();
+    // P016 and live rounds share this catalog; this suite owns the P-6 copy deck.
+    const deck = catalog.split('## Live rounds (P-6)')[1]!;
+    expect(deck).toBeTruthy();
+    const rows = [...deck.matchAll(/^\| (CH-\d{5}) \|/gm)].map((m) => m[1]!).sort();
     expect(CASES.map(([c]) => c).sort()).toEqual(rows);
   });
 

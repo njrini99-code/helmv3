@@ -75,7 +75,7 @@ describe('Event desk, desktop', () => {
     expect(Array.from(team.querySelectorAll('[role="cell"]')).map((x) => text(x))).toEqual(['Team · lowest 4 each round', '287', '286', '285', '858 −6', 'Par 864']);
     const priya = rowOf(table, 'Priya Natarajan');
     expect(text(priya)).toContain('Individual entry · not in team score');
-    expect(Array.from(priya.querySelectorAll('[role="cell"]')).map((x) => text(x)).slice(-2)).toEqual(['223', '—']);
+    expect(Array.from(priya.querySelectorAll('[role="cell"]')).map((x) => text(x)).slice(-2)).toEqual(['223', '— Not counted']);
     // The individual comes after the team row, never inside the team’s score.
     const order = within(table).getAllByRole('row').map((r) => r.querySelector('.ch-tour-desk-ct__n')?.textContent ?? '');
     expect(order.indexOf('Team · lowest 4 each round')).toBeLessThan(order.indexOf('Priya Natarajan'));

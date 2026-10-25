@@ -48,9 +48,11 @@ Dock:                    data/shell.ts embeds golf_holes(par, score) in the exis
 | Tracked tournament rounds | `golf_tournament_player_rounds`, `golf_tournament_rounds`, `golf_tournaments` | absent until the tournaments migration: nothing is tracked then |
 | Event scope | `golf_events` | `?event=` narrows by the event's day (team zone) and course |
 
-Nothing here writes. The save path (`save_partial_round_atomic`, `round-partial.ts`, `RoundTracking.tsx`, `draft_data`)
+Nothing here writes. The save path (`save_partial_round_atomic`,
+`round-partial.ts`, `RoundTracking.tsx`, `draft_data`)
 is not changed.
 
 ## Tests
 
-Listed in the manifest. The words are pinned by `src/clubhouse/__tests__/live-rounds-copy.test.ts`.
+Listed in the manifest. The words are pinned by
+`src/clubhouse/__tests__/live-rounds-copy.test.ts`.

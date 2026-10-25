@@ -83,5 +83,5 @@ export const TOUR_REFUSAL_COPY: Record<TourRefusalCode, string> = {
   reason_required: 'Say why the result is being reopened.',
   not_final: 'Every round has to be final before the result is official.',
   event_taken: 'That calendar event is already a round of another tournament.',
-  failed: 'It didn’t save. Try again; the error has been reported.',
+  failed: 'It didn’t save. Try again.',
 };

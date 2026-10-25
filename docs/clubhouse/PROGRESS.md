@@ -644,7 +644,7 @@ Phone, on `agent/clubhouse-messages-mobile` (local, not yet merged):
   (the merge pass). After Clubhouse: the queued attachment migration (Data
   gaps).
 
-6. Roster phone (`agent/clubhouse-roster-mobile`, d9b1c81fc and this pass):
+1. Roster phone (`agent/clubhouse-roster-mobile`, d9b1c81fc and this pass):
    phone-spec is done, and phone is doing. It is built on the foundation, and
    D-50 to D-59 are in code. It passed the browser check at 390 and
    `clubhouse:a11y roster`. Open for the phone gate:
@@ -1159,7 +1159,8 @@ check). The turn-on steps and rollback are in [STATUS.md](STATUS.md).
     submit, prints on one page and exports an image drawn on the device (player,
     course, Golfhelm foot). No share endpoint or public URL.
 
-- Decisions of 2026-10-23 (P016 Tournaments, the handoff's section 4.33). Approved by
+- Decisions of 2026-10-23 (P016 Tournaments, the handoff's section 4.33).
+  Approved by
   the owner as written, 2026-10-23 (Nick: "yeah approve. whatever you think";
   OQ-65). The approval covers the product decisions only: applying migrations,
   flipping flags, merging and deploying stay with the owner, and every SQL
@@ -1197,7 +1198,8 @@ check). The turn-on steps and rollback are in [STATUS.md](STATUS.md).
     preview diff the coach confirms. The server never fetches a results URL.
     Each number keeps its source and time. A sync adapter is later and gated on
     a provider agreement.
-  - D-84: Trust has three public states, per score, per round and per event: Live
+  - D-84: Trust has three public states, per score, per round and per event:
+    Live
     (provisional), Final (our cards are returned and our numbers are settled;
     the field can still move) and Official (the coach marked the host's
     published results, or an official paste marked "Published"). Inside Live,
@@ -1206,7 +1208,8 @@ check). The turn-on steps and rollback are in [STATUS.md](STATUS.md).
     the player signs. Source (Card, Coach, Estimate, Pasted) is a separate,
     quieter label. Reopening a Final or Official round needs a reason and is
     logged.
-  - D-85: What players see, and when. Players see the published lineup, tee times,
+  - D-85: What players see, and when. Players see the published lineup, tee
+    times,
     the trip and their own scores at any time. They see teammates' scores for a
     round only once that round is Final and they are outside their own
     competition window (D-87). They never see the coach's lineup reasoning, the
@@ -1215,7 +1218,8 @@ check). The turn-on steps and rollback are in [STATUS.md](STATUS.md).
     tables and by tests. It is not a hard boundary over `golf_rounds` and
     `golf_holes`, which teammates can read under D-36; tightening that is a
     separate decision.
-  - D-86: The comparison is asked with one question bar (a sentence with a pair of
+  - D-86: The comparison is asked with one question bar (a sentence with a pair
+    of
     subjects, shared context and period, and per-side overrides) and answered by
     a rule-based, tiered verdict (D-101), never AI text. The design's
     side-by-side scope cards become the result's identity plates
@@ -1226,7 +1230,8 @@ check). The turn-on steps and rollback are in [STATUS.md](STATUS.md).
     timeline, divider, evidence drawer and presets stay. On phone, the paired
     A/B plates and the Edit comparison sheet stay, and the sheet closes over the
     result.
-  - D-87: Record-only competition window. From 30 minutes before a player's first
+  - D-87: Record-only competition window. From 30 minutes before a player's
+    first
     tee time of a competition day until they post that day's last round (or the
     round goes Final, or 12 hours after the first tee), the player app records
     but does not interpret. Players may enter their own hole scores (Rule 4.3a
@@ -1266,7 +1271,8 @@ check). The turn-on steps and rollback are in [STATUS.md](STATUS.md).
     2026-27 checkpoints and the women's single check. Other divisions get the
     record, rounds and an entered ranking, with "Eligibility rules for your
     division aren't tracked yet" until each set is verified.
-  - D-92: A and B squads, individuals and combined events. Entries carry a squad.
+  - D-92: A and B squads, individuals and combined events. Entries carry a
+    squad.
     Only the A squad feeds team stats, the season record and the .500 line; a B
     squad gets its own team score labelled "B team · not in the season record".
     Individuals never count in a team score. Combined events are two tournaments
@@ -1297,7 +1303,8 @@ check). The turn-on steps and rollback are in [STATUS.md](STATUS.md).
     event-scoped compare, and picker tokens to result plates, on the smooth
     spring inside the existing page crossfade. Phone keeps the push. New motion
     inside the owner's "crossfade, never a slide" rule (2026-10-01).
-  - D-99: Comparison share cards (player vs player, player progress, event recap)
+  - D-99: Comparison share cards (player vs player, player progress, event
+    recap)
     with audience-based redaction for recruits and parents, as a PNG through the
     existing `BestCard` share path. No links and no server rendering.
   - D-100: No digit rolling anywhere in P016, live included (confirms the owner
@@ -1707,13 +1714,13 @@ decision named.
   approved chat mockups; Signals, Players and the Team view in the draft are not
   built, and the draft stays for reference only. Launch scope for screens
   without a board: only Recruiting is rebuilt (mockups approved 2026-09-30:
-  https://claude.ai/artifact/BuCcHSQ3ps3zJxcsmraTza, including the pipeline
+  <https://claude.ai/artifact/BuCcHSQ3ps3zJxcsmraTza>, including the pipeline
   timeline and every empty and failure state); Courses, the Team page, What's
   new and the player deep-dive (game, print, genome, genome compare) stay as
   they are. Also asked: check that player stats show every stat we gather,
   strokes gained above all. A Vercel preview deploy for the audit is approved
   for after the screens are done) (earlier: chat mockups approved at
-  https://claude.ai/artifact/QkmQKWRevxPRcHy2sxYCDv; chat budget stays $3 per
+  <https://claude.ai/artifact/QkmQKWRevxPRcHy2sxYCDv>; chat budget stays $3 per
   coach per day; all four chat writes behind Confirm once Confirm is proven; one
   shared focus-area sheet. The rest of the draft is still open) Intelligence has
   no board, so a draft spec is written for approval:
@@ -1987,11 +1994,13 @@ decision named.
 - Q-179 (open, 2026-10-23; P016 Tournaments, plan 4.33 section 18) Expected time
   per hole for the quiet alert: a fixed 14 minutes, or the event's pace chart?
   Default, built to until the owner answers: 14 minutes, editable per event.
-- Q-178 (open, 2026-10-23; P016 Tournaments, plan 4.33 section 18) Should a coach
+- Q-178 (open, 2026-10-23; P016 Tournaments, plan 4.33 section 18) Should a
+  coach
   be able to score for a player who **is** scoring in GolfHelm, or only correct
   finished holes? Default, built to until the owner answers: Allowed. A
   different value becomes a dispute.
-- Q-177 (open, 2026-10-23; P016 Tournaments, plan 4.33 section 18) A "course mode"
+- Q-177 (open, 2026-10-23; P016 Tournaments, plan 4.33 section 18) A "course
+  mode"
   with heavier numerals for sunlight, as a toggle, without new type sizes?
   Default, built to until the owner answers: No toggle. The live screen uses the
   heaviest existing weights and 7:1 targets.
@@ -2013,10 +2022,12 @@ decision named.
 - Q-172 (open, 2026-10-23; P016 Tournaments, plan 4.33 section 18) Should
   CoachHelm for players be locked during the window, or only its advice answers?
   Default, built to until the owner answers: Fully locked (simplest to prove).
-- Q-171 (open, 2026-10-23; P016 Tournaments, plan 4.33 section 18) Does the coach
+- Q-171 (open, 2026-10-23; P016 Tournaments, plan 4.33 section 18) Does the
+  coach
   want the team debrief view (meeting-room sequence) in v1? Default, built to
   until the owner answers: Yes, desktop only, team-level content only.
-- Q-170 (open, 2026-10-23; P016 Tournaments, plan 4.33 section 18) Verify the .500
+- Q-170 (open, 2026-10-23; P016 Tournaments, plan 4.33 section 18) Verify the
+  .500
   tie treatment and the D2, D3, NAIA and NJCAA eligibility rules before showing
   any line for them. Default, built to until the owner answers: Ties count half;
   other divisions show "not tracked yet".
@@ -2035,12 +2046,14 @@ decision named.
   giver's quick score show on the coach live board as an estimate? Default,
   built to until the owner answers: Yes, labelled Estimate, replaced by the card
   when posted.
-- Q-165 (open, 2026-10-23; P016 Tournaments, plan 4.33 section 18) Combined men's
+- Q-165 (open, 2026-10-23; P016 Tournaments, plan 4.33 section 18) Combined
+  men's
   and women's events: one shared trip and one desk view, or two separate
   tournaments only? Default, built to until the owner answers: Two tournaments
   linked by `event_group_id`, sharing one itinerary if the coach links it. A
   combined desk view comes later.
-- Q-164 (open, 2026-10-23; P016 Tournaments, plan 4.33 section 18) Should players
+- Q-164 (open, 2026-10-23; P016 Tournaments, plan 4.33 section 18) Should
+  players
   who aren't travelling hear before the rest, or everyone at the same moment?
   Default, built to until the owner answers: Same moment, with an optional time.
 - Q-163 (open, 2026-10-23; P016 Tournaments, plan 4.33 section 18) On a 36-hole
@@ -2050,13 +2063,15 @@ decision named.
 - Q-162 (open, 2026-10-23; P016 Tournaments, plan 4.33 section 18) Match-play
   events: does the team want bracket entry in v1, or W/L/T only? Default, built
   to until the owner answers: W/L/T only in v1; bracket in v2.
-- Q-161 (open, 2026-10-23; P016 Tournaments, plan 4.33 section 18) Weather on the
+- Q-161 (open, 2026-10-23; P016 Tournaments, plan 4.33 section 18) Weather on
+  the
   event desk: which source, if any? Default, built to until the owner answers:
   None in v1.
 - Q-160 (open, 2026-10-23; P016 Tournaments, plan 4.33 section 18) Should player
   reflections be visible to teammates if the player chooses? Default, built to
   until the owner answers: No in v1; coach only.
-- Q-159 (open, 2026-10-23; P016 Tournaments, plan 4.33 section 18) Should "Top 25
+- Q-159 (open, 2026-10-23; P016 Tournaments, plan 4.33 section 18) Should "Top
+  25
   benchmark" exist? It needs a benchmark table GolfHelm does not have. Default,
   built to until the owner answers: Hidden until a table exists.
 - Q-158 (open, 2026-10-23; P016 Tournaments, plan 4.33 section 18) Division and
@@ -2065,11 +2080,13 @@ decision named.
 - Q-157 (open, 2026-10-23; P016 Tournaments, plan 4.33 section 18) Should the
   lineup publish post to team chat automatically or ask each time? Default,
   built to until the owner answers: Ask each time with the message previewed.
-- Q-156 (open, 2026-10-23; P016 Tournaments, plan 4.33 section 18) Does the coach
+- Q-156 (open, 2026-10-23; P016 Tournaments, plan 4.33 section 18) Does the
+  coach
   want a TV or "clubhouse screen" mode for the live board (auto-cycling, large
   type)? Default, built to until the owner answers: Out of v1; leave a route
   slot.
-- Q-155 (open, 2026-10-23; P016 Tournaments, plan 4.33 section 18) Should players
+- Q-155 (open, 2026-10-23; P016 Tournaments, plan 4.33 section 18) Should
+  players
   be able to link their own tournament rounds, or only coaches? Default, built
   to until the owner answers: Both; the player link is limited by RLS to their
   own round.
@@ -2141,7 +2158,8 @@ decision named.
 - Q-153 (answered 2026-10-21, three independent votes, 3 to 0 for A; the owner
   delegated open design calls to a vote) The motion pass found three
   first-paint draw-ins on the 520 ms reveal: Home's team-form wipe, Roster's
-  and Qualifiers' spread dots gliding out from the team line, and Rounds' staggered bars (plus
+  and Qualifiers' spread dots gliding out from the team line, and Rounds'
+staggered bars (plus
   the round review's line, fill, dots and shot arcs). Options: A instant, B a
   narrow chart exception, C keep only Home's wipe. All three voters chose A:
   Q-139 already retired the reveal ("crossfade only"), the rules say content
@@ -3248,7 +3266,7 @@ shows the options as they were put.
   round-tracking.test 21/21 driving the real hook, mutation-checked (20 of 21
   killed; the survivor, the quick pick's unit dispatch, is equivalent: the
   engine derives the stored unit). Preview `/clubhouse-preview/track`
-  (`?state=approach|putt|holed|checkpointfail|last|meters|exit|card|summary|submitting|posted|submitfail`),
+(`?state=approach|putt|holed|checkpointfail|last|meters|exit|card|summary|submitting|posted|submitfail`),
   with a stand-in round screen; desktop and 390px checked headless. Not yet:
   Setup, wiring `/rounds/new` and `/continue` (the engine moves), the iOS
   numeric-pad Done bar, an iPhone pass.
@@ -3590,7 +3608,7 @@ shows the options as they were put.
   were added to the check.
 - 2026-09-30 · Settings (P008) · the owner approved the phone design
   (docs/clubhouse/phone/settings.md, mockups
-  https://claude.ai/artifact/CLN6ENqA9BEqJ2Vom6mev2). Contract 81901
+  <https://claude.ai/artifact/CLN6ENqA9BEqJ2Vom6mev2>). Contract 81901
   PHONE_LAYOUT can move from reserved to built when the phone screens land.
 - 2026-09-30 · Settings (P008) · phone screens built for coach and player from
   the approved mockups (a sonnet agent; the lead ran the sync and checks):

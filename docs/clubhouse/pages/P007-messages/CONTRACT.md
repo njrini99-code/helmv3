@@ -120,7 +120,8 @@ the whole team. Message fields stop at 5,000 characters, the server's limit.
 
 Status: DEFINED
 
-Every change has its own toast (70601 to 70616, 70636) naming what failed and what to
+Every change has its own toast (70601 to 70616, 70636) naming what failed and
+what to
 do; every section that fails to load has its own notice with Try again (70617 to
 70631). A crash stays in its section (SectionBoundary).
 
@@ -235,7 +236,8 @@ Status: DEFINED
 Delete a message, Leave a group, Delete a conversation and Remove a member ask
 first (71101, 71102, 71103, 71104) and fire the warning haptic. Remove a member
 is the group's creator's, on anyone but themselves (`removeGolfGroupMember`, as
-Fairway's group details allow); the creator still can't leave (D-47). Delete a conversation (owner request,
+Fairway's group details allow); the creator still can't leave (D-47). Delete a
+conversation (owner request,
 2026-10-08, superseding D-48's "hidden") hides the thread from the person's own
 inbox only: the others keep theirs, a new message brings it back, and a team
 channel can't be deleted. It is offered only where the database has the
@@ -269,7 +271,8 @@ Status: DEFINED
 
 Sends are optimistic and reconciled in place by id; a refused one stays marked
 Not sent (71301). A removed member's row leaves at once and comes back if the
-server refuses (CH-7024). Reactions are not optimistic: picking one waits for the write.
+server refuses (CH-7024). Reactions are not optimistic: picking one waits for
+the write.
 A click on a
 reaction chip opens who reacted, and adding or taking back your own from that
 card waits for the write too; a failure toasts (70607).

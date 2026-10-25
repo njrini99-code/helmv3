@@ -9,32 +9,8 @@ import { normalizeRoundType, thruOf, toParOf, type LiveHole, type LiveLane, type
 
 export type LiveRoster = Record<string, string>;
 
-/** `public.golf_round_live`, as PostgREST returns it. The table is not in the generated types until it is applied. */
-export interface GolfRoundLiveRow {
-  round_id: string;
-  team_id: string;
-  player_id: string;
-  round_type: string;
-  qualifier_id: string | null;
-  qualifier_round: number | null;
-  round_date: string;
-  course_id: string | null;
-  course_name: string | null;
-  holes_planned: number;
-  start_position: number;
-  current_hole: number | null;
-  share: string;
-  phase: string;
-  thru: number;
-  to_par: number | null;
-  strokes: number | null;
-  holes: Array<{ n: number; p: number | null; y: number | null; s: number | null; at: string | null }> | null;
-  last_hole_at: string | null;
-  heard_at: string;
-  started_at: string | null;
-  ended_at: string | null;
-  seq: number | string;
-}
+export type { GolfRoundLiveRow } from '@/lib/golf/live-tables';
+import type { GolfRoundLiveRow } from '@/lib/golf/live-tables';
 
 /** A `golf_rounds` row with its plan and scored holes, the v0 poll's shape (8.14). */
 export interface PollRoundRow {

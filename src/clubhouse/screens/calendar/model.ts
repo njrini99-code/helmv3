@@ -64,8 +64,6 @@ export interface ChCalEvent {
   seriesId: string | null;
   /** The stored start instant (series edits and cancels key on it). */
   startIso: string;
-  /** `golf_events.course_id`: the live rows match an event's course to the players' (P-6). Absent in older fixtures. */
-  courseId?: string | null;
   /** P-14: what a coach changed on this event in the last 72 hours (until it ends): the new value beside the old one struck. */
   change?: ChCalChange | null;
   /** A cancelled event with no live mark: when it was cancelled and why ("Cancelled Tue 9:14 PM"), so the detail still says. */

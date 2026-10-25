@@ -1,5 +1,6 @@
 'use client';
 
+import { plural } from '../../lib/plural';
 import { CalendarPlus, Check, Copy, Pencil, RotateCw, Rss, Trash2, TriangleAlert, CircleX } from 'lucide-react';
 import { useEffect, useMemo, useRef, useState, type KeyboardEvent, type PointerEvent } from 'react';
 import { createGolfEvent, deleteGolfEvent, deleteGolfEventPermanently, updateGolfEvent } from '@/app/golf/actions/calendar-events';
@@ -706,7 +707,7 @@ export function EventEditor({
               track={tracked}
               onTrack={(on) => {
                 setTrackPref(on);
-                setSaid(on ? `Tournament details shown. ${tour.rounds.length} round${tour.rounds.length === 1 ? '' : 's'}.` : 'Tournament details hidden.');
+                setSaid(on ? `Tournament details shown. ${plural(tour.rounds.length, 'round')}.` : 'Tournament details hidden.');
               }}
               legacy={legacyTour}
               block={trackBlock}

@@ -57,12 +57,13 @@
   min-width: 0;
 }
 .ch-tour-head__k {
-  font: var(--ch-type-label-s);
+  font: var(--ch-type-13-medium);
+  line-height: var(--ch-lead-label);
   color: var(--ch-ledger-eyebrow);
 }
 .ch-tour-head h1 {
   margin: 0;
-  font: var(--ch-type-display-l);
+  font: var(--ch-type-34-strong);
   letter-spacing: -0.02em;
   color: var(--ch-text-primary);
   overflow-wrap: anywhere;
@@ -77,7 +78,8 @@
   gap: 8px;
 }
 .ch-tour.is-phone .ch-tour-head h1 {
-  font: var(--ch-type-display-s);
+  font: var(--ch-type-22-strong);
+  letter-spacing: var(--ch-track-22);
 }
 /* On the phone the head is the kit's PageIntro, with the actions under it at full width: one switch, then the action. */
 .ch-tour.is-phone .ch-tour-head__a {
@@ -102,7 +104,8 @@
   align-self: flex-start;
   gap: 4px;
   min-height: 32px;
-  font: var(--ch-type-label-s);
+  font: var(--ch-type-13-medium);
+  line-height: var(--ch-lead-label);
   color: var(--ch-text-secondary);
   text-decoration: none;
 }
@@ -211,7 +214,8 @@
 .ch-tour-led__row.is-head {
   padding-top: 8px;
   padding-bottom: 8px;
-  font: var(--ch-type-label-s);
+  font: var(--ch-type-13-medium);
+  line-height: var(--ch-lead-label);
   color: var(--ch-text-secondary);
   box-shadow: inset 0 calc(-1 * var(--ch-hairline-w)) 0 var(--ch-ledger-rule);
 }
@@ -254,7 +258,8 @@
   background: var(--ch-ledger-row-hover);
 }
 .ch-tour-led__t2 {
-  font: var(--ch-type-caption);
+  font: var(--ch-type-13);
+  line-height: var(--ch-lead-caption);
   color: var(--ch-text-secondary);
 }
 .ch-tour-led__fin {
@@ -302,8 +307,13 @@
 .ch-tour-led__list li + li .ch-tour-led__m {
   box-shadow: inset 0 var(--ch-hairline-w) 0 var(--ch-border-hairline);
 }
-.ch-tour-led__m:active {
+.ch-tour-led__m[data-ch-pressed] {
   background: var(--ch-press-well);
+}
+@media (hover: hover) {
+  .ch-tour-led__m:active {
+    background: var(--ch-press-well);
+  }
 }
 .ch-tour-led__m:focus-visible {
   outline: 2px solid var(--ch-border-focus);

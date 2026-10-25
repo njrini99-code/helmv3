@@ -2,7 +2,8 @@
 
 Popup sizing, native top-layer placement and description association follow the
 [popup audit](../../POPUP_AUDIT.md). Long content remains scrollable within the
-available viewport; source/browser checks do not grant physical-device acceptance.
+available viewport; source/browser checks do not grant physical-device
+acceptance.
 
 <!-- clubhouse:release-audit:start -->
 ## Current contract audit — 2026-10-06
@@ -263,7 +264,11 @@ From the shell (P001): 10901 CHANGE_LANDED.
 
 ## 10 — Warning
 
-Status: N/A — Recruiting warns about nothing before it happens. The one thing that could go wrong without the coach noticing, losing a prospect or a document, is a confirmation (category 11), and nothing else on the page needs a caution, a limit notice or a soft block.
+Status: N/A — Recruiting warns about nothing before it happens. The one thing
+
+that could go wrong without the coach noticing, losing a prospect or a document,
+is a confirmation (category 11), and nothing else on the page needs a caution, a
+limit notice or a soft block.
 
 ## 11 — Destructive
 
@@ -531,4 +536,7 @@ From the shell (P001): 12401 TESTS_NAME_CONTRACTS.
 
 ## 25 — Helm Bridge action
 
-Status: N/A — the Bridge is wired later (owner, D-68). Every contract above already has its Bridge ID; the commands (open a prospect, add one, move one to a stage) are defined when the Bridge is.
+Status: N/A — the Bridge is wired later (owner, D-68). Every contract above
+
+already has its Bridge ID; the commands (open a prospect, add one, move one to a
+stage) are defined when the Bridge is.

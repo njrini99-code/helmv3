@@ -4,6 +4,7 @@ import { Clock, Ellipsis } from 'lucide-react';
 import { useEffect, useRef } from 'react';
 import { DateField } from '../../../ui/DateField';
 import { Icon } from '../../../ui/Icon';
+import { Button } from '../../../ui/Button';
 import { Menu, type MenuItem } from '../../../ui/Menu';
 import { TimeField } from '../../../ui/TimeField';
 import { shortDay, spokenDay, type ChRoundDraft, type ChTourStartType } from './rounds-model';
@@ -87,10 +88,9 @@ export function RoundRow({
           {round.tee || editingTee ? (
             <TimeField label={`Round ${n} first tee`} stepMinutes={1} value={round.tee ?? ''} onChange={(v) => v && onTee(v)} />
           ) : (
-            <button type="button" className="ch-btn ch-btn--ghost ch-btn--sm" aria-label={`Add a tee time for round ${n}`} onClick={onEditTee}>
-              <Icon icon={Clock} size={14} />
+            <Button variant="ghost" size="sm" aria={{ label: `Add a tee time for round ${n}` }} leftIcon={Clock} onClick={onEditTee}>
               Add time
-            </button>
+            </Button>
           )}
         </span>
         <Menu

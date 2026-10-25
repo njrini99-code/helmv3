@@ -1,4 +1,5 @@
--- STATUS: WRITTEN — HOLD — NOT APPLIED. Awaits the owner (supabase/migrations/HELD.md).
+-- STATUS: WRITTEN — HOLD — NOT APPLIED. Awaits the owner
+-- (supabase/migrations/HELD.md).
 -- Apply: npm run db:apply -- <this file>
 --
 -- Clubhouse P-10 "In class until 11:50" (class awareness). Build plan:
@@ -6,53 +7,82 @@
 -- 2026-10-25 review fixes (Must 3, 5; Should 1, 9; S-6, S-7, S-8, S-14).
 --
 -- Adds three tables, one helper, one column and a realtime entry:
---   golf_team_terms            coach-confirmed term dates and the class time zone
---   golf_player_class_settings a player's sharing and push-hold choices (kept out of
+--   golf_team_terms            coach-confirmed term dates and the class time
+-- zone
+--   golf_player_class_settings a player's sharing and push-hold choices (kept
+-- out of
 --                              users.notification_preferences, whose whitelist
 --                              trigger from 20261017100000 drops unknown keys)
---   golf_player_shares_class_status(team, player)  definer helper; the only way a
+--   golf_player_shares_class_status(team, player)  definer helper; the only way
+-- a
 --                              coach-side policy learns the sharing switch
 --   golf_class_exceptions      "no class today", team breaks, exam blocks
 --   golf_player_classes.status_enabled  per-class switch, default true
 --   golf_class_exceptions in the supabase_realtime publication
 --
--- Tables locked while this runs: golf_player_classes (ADD COLUMN, a metadata-only
+-- Tables locked while this runs: golf_player_classes (ADD COLUMN, a
+-- metadata-only
 -- change on PG 11+ but it still takes ACCESS EXCLUSIVE for an instant; the
 -- lock_timeout below makes it give up instead of queueing behind a long read).
 -- Every other object is new. No index is added to golf_events: main's
--- idx_golf_events_team_start (team_id, start_time) serves the class-occurrence scan.
+-- idx_golf_events_team_start (team_id, start_time) serves the class-occurrence
+-- scan.
 --
 -- Nothing reads these until the app ships; the app treats a missing table or
 -- function (PGRST202 / 42P01) as "no class status", so either order is safe.
 -- Risk: LOW. New tables, one additive column with a default.
 -- pgTAP: supabase/tests/rls/golf_class_awareness.sql
 --
--- ROLLBACK: supabase/rollbacks/20261025070000_golf_class_awareness_tables.rollback.sql
--- ROLLBACK: order: 070200 and 070100 first (they read these tables), then this file; 070300 is independent.
--- VERIFY: select 1 where to_regclass('public.golf_team_terms') is not null and to_regclass('public.golf_class_exceptions') is not null and to_regclass('public.golf_player_class_settings') is not null and exists (select 1 from information_schema.columns where table_schema = 'public' and table_name = 'golf_player_classes' and column_name = 'status_enabled') and (select relrowsecurity from pg_class where oid = 'public.golf_team_terms'::regclass) and (select relrowsecurity from pg_class where oid = 'public.golf_class_exceptions'::regclass) and (select relrowsecurity from pg_class where oid = 'public.golf_player_class_settings'::regclass);
--- VERIFY: select 1 where not has_table_privilege('authenticated', 'public.golf_team_terms', 'truncate') and not has_table_privilege('authenticated', 'public.golf_class_exceptions', 'truncate') and not has_table_privilege('authenticated', 'public.golf_player_class_settings', 'truncate') and not has_table_privilege('anon', 'public.golf_team_terms', 'select') and not has_table_privilege('anon', 'public.golf_class_exceptions', 'select') and not has_table_privilege('anon', 'public.golf_player_class_settings', 'select');
--- VERIFY: select 1 where has_function_privilege('authenticated', 'public.golf_player_shares_class_status(uuid, uuid)', 'execute') and not has_function_privilege('anon', 'public.golf_player_shares_class_status(uuid, uuid)', 'execute');
--- VERIFY: select 1 where exists (select 1 from pg_publication_tables where pubname = 'supabase_realtime' and schemaname = 'public' and tablename = 'golf_class_exceptions');
+-- ROLLBACK:
+-- supabase/rollbacks/20261025070000_golf_class_awareness_tables.rollback.sql
+-- ROLLBACK: order: 070200 and 070100 first (they read these tables), then this
+-- file; 070300 is independent.
+-- VERIFY: select 1 where to_regclass('public.golf_team_terms') is not null and
+-- VERIFY: to_regclass('public.golf_class_exceptions') is not null and
+-- VERIFY: to_regclass('public.golf_player_class_settings') is not null and
+-- VERIFY: exists (select 1 from information_schema.columns where table_schema =
+-- VERIFY: 'public' and table_name = 'golf_player_classes' and column_name =
+-- VERIFY: 'status_enabled') and (select relrowsecurity from pg_class where oid
+-- VERIFY: = 'public.golf_team_terms'::regclass) and (select relrowsecurity from
+-- VERIFY: pg_class where oid = 'public.golf_class_exceptions'::regclass) and
+-- VERIFY: (select relrowsecurity from pg_class where oid =
+-- VERIFY: 'public.golf_player_class_settings'::regclass);
+-- VERIFY: select 1 where not has_table_privilege('authenticated',
+-- VERIFY: 'public.golf_team_terms', 'truncate') and not
+-- VERIFY: has_table_privilege('authenticated', 'public.golf_class_exceptions',
+-- VERIFY: 'truncate') and not has_table_privilege('authenticated',
+-- VERIFY: 'public.golf_player_class_settings', 'truncate') and not
+-- VERIFY: has_table_privilege('anon', 'public.golf_team_terms', 'select') and
+-- VERIFY: not has_table_privilege('anon', 'public.golf_class_exceptions',
+-- VERIFY: 'select') and not has_table_privilege('anon',
+-- VERIFY: 'public.golf_player_class_settings', 'select');
+-- VERIFY: select 1 where has_function_privilege('authenticated',
+-- VERIFY: 'public.golf_player_shares_class_status(uuid, uuid)', 'execute') and
+-- VERIFY: not has_function_privilege('anon',
+-- VERIFY: 'public.golf_player_shares_class_status(uuid, uuid)', 'execute');
+-- VERIFY: select 1 where exists (select 1 from pg_publication_tables where
+-- VERIFY: pubname = 'supabase_realtime' and schemaname = 'public' and tablename
+-- VERIFY: = 'golf_class_exceptions');
 
 SET lock_timeout = '3s';
 
 -- 1. Terms -----------------------------------------------------------------
 
-create table if not exists public.golf_team_terms (
-    id            uuid primary key default gen_random_uuid(),
-    team_id       uuid not null references public.golf_teams(id) on delete cascade,
-    label         text not null,
-    classes_start date not null,
-    classes_end   date not null,
-    exams_end     date not null,
-    time_zone     text not null,
-    confirmed_by  uuid references auth.users(id) on delete set null,
-    confirmed_at  timestamptz not null default now(),
-    created_at    timestamptz not null default now(),
-    updated_at    timestamptz not null default now()
+CREATE TABLE IF NOT EXISTS public.golf_team_terms (
+    id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+    team_id uuid NOT NULL REFERENCES public.golf_teams (id) ON DELETE CASCADE,
+    label text NOT NULL,
+    classes_start date NOT NULL,
+    classes_end date NOT NULL,
+    exams_end date NOT NULL,
+    time_zone text NOT NULL,
+    confirmed_by uuid REFERENCES auth.users (id) ON DELETE SET NULL,
+    confirmed_at timestamptz NOT NULL DEFAULT now(),
+    created_at timestamptz NOT NULL DEFAULT now(),
+    updated_at timestamptz NOT NULL DEFAULT now()
 );
 
-do $$
+DO $$
 begin
   if not exists (select 1 from pg_constraint where conname = 'golf_team_terms_label_len') then
     alter table public.golf_team_terms
@@ -70,19 +100,20 @@ begin
   end if;
 end $$;
 
-create index if not exists idx_golf_team_terms_team_start
-  on public.golf_team_terms (team_id, classes_start);
+CREATE INDEX IF NOT EXISTS idx_golf_team_terms_team_start
+ON public.golf_team_terms (team_id, classes_start);
 
 -- Validate the zone, refuse overlaps, stamp updated_at and confirmed_by.
 -- The advisory lock closes the two-coaches race (Should 1): btree_gist is not
 -- installed, so an exclusion constraint is not available, and without the lock
--- two concurrent inserts could each pass the overlap check before either commits.
-create or replace function public.golf_team_terms_guard()
-returns trigger
-language plpgsql
-security definer
-set search_path = public, pg_temp
-as $$
+-- two concurrent inserts could each pass the overlap check before either
+-- commits.
+CREATE OR REPLACE FUNCTION public.golf_team_terms_guard()
+RETURNS trigger
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public, pg_temp
+AS $$
 begin
   if not exists (select 1 from pg_timezone_names where name = new.time_zone) then
     raise exception 'unknown time zone %', new.time_zone using errcode = '22023';
@@ -103,74 +134,89 @@ begin
   return new;
 end $$;
 
-revoke all on function public.golf_team_terms_guard() from public, anon, authenticated;
+REVOKE ALL ON FUNCTION public.golf_team_terms_guard() FROM public,
+anon,
+authenticated;
 
-drop trigger if exists golf_team_terms_guard on public.golf_team_terms;
-create trigger golf_team_terms_guard
-  before insert or update on public.golf_team_terms
-  for each row execute function public.golf_team_terms_guard();
+DROP TRIGGER IF EXISTS golf_team_terms_guard ON public.golf_team_terms;
+CREATE TRIGGER golf_team_terms_guard
+BEFORE INSERT OR UPDATE ON public.golf_team_terms
+FOR EACH ROW EXECUTE FUNCTION public.golf_team_terms_guard();
 
-alter table public.golf_team_terms enable row level security;
+ALTER TABLE public.golf_team_terms ENABLE ROW LEVEL SECURITY;
 
-drop policy if exists golf_team_terms_select on public.golf_team_terms;
-create policy golf_team_terms_select on public.golf_team_terms
-  for select to authenticated
-  using (public.is_golf_team_coach(team_id) or public.user_is_golf_team_member(team_id));
+DROP POLICY IF EXISTS golf_team_terms_select ON public.golf_team_terms;
+CREATE POLICY golf_team_terms_select ON public.golf_team_terms
+FOR SELECT TO authenticated
+USING (
+    public.is_golf_team_coach(team_id)
+    OR public.user_is_golf_team_member(team_id)
+);
 
-drop policy if exists golf_team_terms_insert_coach on public.golf_team_terms;
-create policy golf_team_terms_insert_coach on public.golf_team_terms
-  for insert to authenticated
-  with check (public.is_golf_team_coach(team_id));
+DROP POLICY IF EXISTS golf_team_terms_insert_coach ON public.golf_team_terms;
+CREATE POLICY golf_team_terms_insert_coach ON public.golf_team_terms
+FOR INSERT TO authenticated
+WITH CHECK (public.is_golf_team_coach(team_id));
 
-drop policy if exists golf_team_terms_update_coach on public.golf_team_terms;
-create policy golf_team_terms_update_coach on public.golf_team_terms
-  for update to authenticated
-  using (public.is_golf_team_coach(team_id))
-  with check (public.is_golf_team_coach(team_id));
+DROP POLICY IF EXISTS golf_team_terms_update_coach ON public.golf_team_terms;
+CREATE POLICY golf_team_terms_update_coach ON public.golf_team_terms
+FOR UPDATE TO authenticated
+USING (public.is_golf_team_coach(team_id))
+WITH CHECK (public.is_golf_team_coach(team_id));
 
-drop policy if exists golf_team_terms_delete_coach on public.golf_team_terms;
-create policy golf_team_terms_delete_coach on public.golf_team_terms
-  for delete to authenticated
-  using (public.is_golf_team_coach(team_id));
+DROP POLICY IF EXISTS golf_team_terms_delete_coach ON public.golf_team_terms;
+CREATE POLICY golf_team_terms_delete_coach ON public.golf_team_terms
+FOR DELETE TO authenticated
+USING (public.is_golf_team_coach(team_id));
 
-revoke all on public.golf_team_terms from anon, authenticated;
-grant select, insert, update, delete on public.golf_team_terms to authenticated;
-grant all on public.golf_team_terms to service_role;
+REVOKE ALL ON public.golf_team_terms FROM anon, authenticated;
+GRANT SELECT, INSERT, UPDATE, DELETE ON public.golf_team_terms TO authenticated;
+GRANT ALL ON public.golf_team_terms TO service_role;
 
 -- 2. Player settings ---------------------------------------------------------
 
-create table if not exists public.golf_player_class_settings (
-    player_id     uuid primary key references public.golf_players(id) on delete cascade,
-    share_status  boolean not null default true,
-    hold_pushes   boolean not null default true,
-    updated_at    timestamptz not null default now()
+CREATE TABLE IF NOT EXISTS public.golf_player_class_settings (
+    player_id uuid PRIMARY KEY REFERENCES public.golf_players (
+        id
+    ) ON DELETE CASCADE,
+    share_status boolean NOT NULL DEFAULT true,
+    hold_pushes boolean NOT NULL DEFAULT true,
+    updated_at timestamptz NOT NULL DEFAULT now()
 );
 
-alter table public.golf_player_class_settings enable row level security;
+ALTER TABLE public.golf_player_class_settings ENABLE ROW LEVEL SECURITY;
 
-drop policy if exists golf_player_class_settings_own on public.golf_player_class_settings;
-create policy golf_player_class_settings_own on public.golf_player_class_settings
-  for all to authenticated
-  using (player_id = (select public.get_current_golf_player_id()))
-  with check (player_id = (select public.get_current_golf_player_id()));
+DROP POLICY IF EXISTS golf_player_class_settings_own
+ON public.golf_player_class_settings;
+CREATE POLICY golf_player_class_settings_own
+ON public.golf_player_class_settings
+FOR ALL TO authenticated
+USING (player_id = (SELECT public.get_current_golf_player_id()))
+WITH CHECK (player_id = (SELECT public.get_current_golf_player_id()));
 -- Coaches never read this table directly; golf_team_class_day exposes only the
 -- derived "tracked" and "holds" booleans for their own team's players.
 
-revoke all on public.golf_player_class_settings from anon, authenticated;
-grant select, insert, update on public.golf_player_class_settings to authenticated;
-grant all on public.golf_player_class_settings to service_role;
+REVOKE ALL ON public.golf_player_class_settings FROM anon, authenticated;
+GRANT SELECT,
+INSERT,
+UPDATE ON public.golf_player_class_settings TO authenticated;
+GRANT ALL ON public.golf_player_class_settings TO service_role;
 
 -- The sharing switch as a definer helper, so a coach-side policy can honour it
--- without reading the settings table (Must 5). It answers only for a coach of the
--- team or the player themself; everyone else gets false. Known exception, stated
+-- without reading the settings table (Must 5). It answers only for a coach of
+-- the
+-- team or the player themself; everyone else gets false. Known exception,
+-- stated
 -- in plan 8.10: a coach calling this through the API learns that one boolean.
-create or replace function public.golf_player_shares_class_status(p_team_id uuid, p_player_id uuid)
-returns boolean
-language sql
-stable
-security definer
-set search_path = public, pg_temp
-as $$
+CREATE OR REPLACE FUNCTION public.golf_player_shares_class_status(
+    p_team_id uuid, p_player_id uuid
+)
+RETURNS boolean
+LANGUAGE sql
+STABLE
+SECURITY DEFINER
+SET search_path = public, pg_temp
+AS $$
   select case
     when p_team_id is null or p_player_id is null then false
     when not (public.is_golf_team_coach(p_team_id)
@@ -181,27 +227,37 @@ as $$
   end
 $$;
 
-revoke all on function public.golf_player_shares_class_status(uuid, uuid) from public, anon;
-grant execute on function public.golf_player_shares_class_status(uuid, uuid) to authenticated, service_role;
+REVOKE ALL ON FUNCTION public.golf_player_shares_class_status(
+    uuid, uuid
+) FROM public,
+anon;
+GRANT EXECUTE ON FUNCTION public.golf_player_shares_class_status(
+    uuid, uuid
+) TO authenticated,
+service_role;
 
 -- 3. Exceptions: off days, team breaks, exam blocks ------------------------
 
-create table if not exists public.golf_class_exceptions (
-    id          uuid primary key default gen_random_uuid(),
-    team_id     uuid not null references public.golf_teams(id) on delete cascade,
-    player_id   uuid references public.golf_players(id) on delete cascade,      -- null: team-wide
-    class_id    uuid references public.golf_player_classes(id) on delete cascade, -- null: all classes
-    kind        text not null,
-    starts_on   date not null,
-    ends_on     date not null,
-    start_time  time,
-    end_time    time,
-    label       text,
-    created_by  uuid default auth.uid() references auth.users(id) on delete set null,
-    created_at  timestamptz not null default now()
+CREATE TABLE IF NOT EXISTS public.golf_class_exceptions (
+    id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+    team_id uuid NOT NULL REFERENCES public.golf_teams (id) ON DELETE CASCADE,
+    -- null: team-wide
+    player_id uuid REFERENCES public.golf_players (id) ON DELETE CASCADE,
+    -- null: all classes
+    class_id uuid REFERENCES public.golf_player_classes (id) ON DELETE CASCADE,
+    kind text NOT NULL,
+    starts_on date NOT NULL,
+    ends_on date NOT NULL,
+    start_time time,
+    end_time time,
+    label text,
+    created_by uuid DEFAULT auth.uid() REFERENCES auth.users (
+        id
+    ) ON DELETE SET NULL,
+    created_at timestamptz NOT NULL DEFAULT now()
 );
 
-do $$
+DO $$
 begin
   if not exists (select 1 from pg_constraint where conname = 'golf_class_exceptions_kind') then
     alter table public.golf_class_exceptions
@@ -238,20 +294,23 @@ begin
   end if;
 end $$;
 
-create index if not exists idx_golf_class_exceptions_player_on
-  on public.golf_class_exceptions (player_id, starts_on) where player_id is not null;
-create index if not exists idx_golf_class_exceptions_team_on
-  on public.golf_class_exceptions (team_id, starts_on);
-create index if not exists idx_golf_class_exceptions_class
-  on public.golf_class_exceptions (class_id) where class_id is not null;
+CREATE INDEX IF NOT EXISTS idx_golf_class_exceptions_player_on
+ON public.golf_class_exceptions (
+    player_id, starts_on
+) WHERE player_id IS NOT null;
+CREATE INDEX IF NOT EXISTS idx_golf_class_exceptions_team_on
+ON public.golf_class_exceptions (team_id, starts_on);
+CREATE INDEX IF NOT EXISTS idx_golf_class_exceptions_class
+ON public.golf_class_exceptions (class_id) WHERE class_id IS NOT null;
 
--- class_id must belong to player_id; player must be an active member of team_id.
-create or replace function public.golf_class_exceptions_guard()
-returns trigger
-language plpgsql
-security definer
-set search_path = public, pg_temp
-as $$
+-- class_id must belong to player_id; player must be an active member of
+-- team_id.
+CREATE OR REPLACE FUNCTION public.golf_class_exceptions_guard()
+RETURNS trigger
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public, pg_temp
+AS $$
 begin
   if new.class_id is not null and not exists (
     select 1 from public.golf_player_classes c
@@ -268,68 +327,80 @@ begin
   return new;
 end $$;
 
-revoke all on function public.golf_class_exceptions_guard() from public, anon, authenticated;
+REVOKE ALL ON FUNCTION public.golf_class_exceptions_guard() FROM public,
+anon,
+authenticated;
 
-drop trigger if exists golf_class_exceptions_guard on public.golf_class_exceptions;
-create trigger golf_class_exceptions_guard
-  before insert on public.golf_class_exceptions
-  for each row execute function public.golf_class_exceptions_guard();
+DROP TRIGGER IF EXISTS golf_class_exceptions_guard
+ON public.golf_class_exceptions;
+CREATE TRIGGER golf_class_exceptions_guard
+BEFORE INSERT ON public.golf_class_exceptions
+FOR EACH ROW EXECUTE FUNCTION public.golf_class_exceptions_guard();
 
-alter table public.golf_class_exceptions enable row level security;
+ALTER TABLE public.golf_class_exceptions ENABLE ROW LEVEL SECURITY;
 
 -- Read: your own rows; team-wide rows of your team; coaches read their team's
 -- team-wide rows and the rows of players who share class status (Must 5: the
 -- coach branch is gated on the sharing switch through the definer helper).
-drop policy if exists golf_class_exceptions_select on public.golf_class_exceptions;
-create policy golf_class_exceptions_select on public.golf_class_exceptions
-  for select to authenticated
-  using (
-    player_id = (select public.get_current_golf_player_id())
-    or (player_id is null and public.user_is_golf_team_member(team_id))
-    or (
-      public.is_golf_team_coach(team_id)
-      and (player_id is null or public.golf_player_shares_class_status(team_id, player_id))
+DROP POLICY IF EXISTS golf_class_exceptions_select
+ON public.golf_class_exceptions;
+CREATE POLICY golf_class_exceptions_select ON public.golf_class_exceptions
+FOR SELECT TO authenticated
+USING (
+    player_id = (SELECT public.get_current_golf_player_id())
+    OR (player_id IS null AND public.user_is_golf_team_member(team_id))
+    OR (
+        public.is_golf_team_coach(team_id)
+        AND (
+            player_id IS null
+            OR public.golf_player_shares_class_status(team_id, player_id)
+        )
     )
-  );
+);
 
 -- Players add their own rows on a team they belong to.
-drop policy if exists golf_class_exceptions_insert_player on public.golf_class_exceptions;
-create policy golf_class_exceptions_insert_player on public.golf_class_exceptions
-  for insert to authenticated
-  with check (
-    player_id = (select public.get_current_golf_player_id())
-    and public.user_is_golf_team_member(team_id)
-  );
+DROP POLICY IF EXISTS golf_class_exceptions_insert_player
+ON public.golf_class_exceptions;
+CREATE POLICY golf_class_exceptions_insert_player
+ON public.golf_class_exceptions
+FOR INSERT TO authenticated
+WITH CHECK (
+    player_id = (SELECT public.get_current_golf_player_id())
+    AND public.user_is_golf_team_member(team_id)
+);
 
 -- Coaches add team-wide breaks only (never a row for a single player).
-drop policy if exists golf_class_exceptions_insert_coach on public.golf_class_exceptions;
-create policy golf_class_exceptions_insert_coach on public.golf_class_exceptions
-  for insert to authenticated
-  with check (player_id is null and public.is_golf_team_coach(team_id));
+DROP POLICY IF EXISTS golf_class_exceptions_insert_coach
+ON public.golf_class_exceptions;
+CREATE POLICY golf_class_exceptions_insert_coach ON public.golf_class_exceptions
+FOR INSERT TO authenticated
+WITH CHECK (player_id IS null AND public.is_golf_team_coach(team_id));
 
-drop policy if exists golf_class_exceptions_delete on public.golf_class_exceptions;
-create policy golf_class_exceptions_delete on public.golf_class_exceptions
-  for delete to authenticated
-  using (
-    player_id = (select public.get_current_golf_player_id())
-    or (player_id is null and public.is_golf_team_coach(team_id))
-  );
+DROP POLICY IF EXISTS golf_class_exceptions_delete
+ON public.golf_class_exceptions;
+CREATE POLICY golf_class_exceptions_delete ON public.golf_class_exceptions
+FOR DELETE TO authenticated
+USING (
+    player_id = (SELECT public.get_current_golf_player_id())
+    OR (player_id IS null AND public.is_golf_team_coach(team_id))
+);
 -- No update policy: rows are replaced, never edited.
 
-revoke all on public.golf_class_exceptions from anon, authenticated;
-grant select, insert, delete on public.golf_class_exceptions to authenticated;
-grant all on public.golf_class_exceptions to service_role;
+REVOKE ALL ON public.golf_class_exceptions FROM anon, authenticated;
+GRANT SELECT, INSERT, DELETE ON public.golf_class_exceptions TO authenticated;
+GRANT ALL ON public.golf_class_exceptions TO service_role;
 
 -- 4. Per-class switch --------------------------------------------------------
 
-alter table public.golf_player_classes
-  add column if not exists status_enabled boolean not null default true;
+ALTER TABLE public.golf_player_classes
+ADD COLUMN IF NOT EXISTS status_enabled boolean NOT NULL DEFAULT true;
 
 -- 5. Realtime: coach views learn about "no class today" within seconds -------
--- The publication change has no declarative mirror: supabase/schemas declares no
+-- The publication change has no declarative mirror: supabase/schemas declares
+-- no
 -- publication (S-6).
 
-do $$
+DO $$
 declare
   t text;
   wanted text[] := ARRAY['golf_class_exceptions'];

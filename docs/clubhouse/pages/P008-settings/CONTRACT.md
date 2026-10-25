@@ -2,7 +2,8 @@
 
 Popup sizing, native top-layer placement and description association follow the
 [popup audit](../../POPUP_AUDIT.md). Long content remains scrollable within the
-available viewport; source/browser checks do not grant physical-device acceptance.
+available viewport; source/browser checks do not grant physical-device
+acceptance.
 
 <!-- clubhouse:release-audit:start -->
 ## 2026-10-06 — Smoothness repair
@@ -29,7 +30,8 @@ reserve new IDs or mark manual contracts verified.
 
 Every behaviour Settings promises, by the 25 V2 categories (D-69). A contract's
 number is its Bridge ID (D-68: namespace 8, category, item); `Code` is the
-catalog code on the element and in the test (`docs/clubhouse/catalog/settings.md`).
+catalog code on the element and in the test
+(`docs/clubhouse/catalog/settings.md`).
 Rows without a code are behaviours with no single element, recorded in
 `config/clubhouse/bridge-contracts.json` by hand. The shell's contracts (P001,
 namespace 1) apply here too and are named where they carry a category.
@@ -588,7 +590,10 @@ From the shell (P001): 12401 TESTS_NAME_CONTRACTS.
 
 ## 25 — Helm Bridge action
 
-Status: N/A — the Bridge is wired later (owner, D-68). Every contract above already has its Bridge ID; the commands (open a section, save the open card) are defined when the Bridge is.
+Status: N/A — the Bridge is wired later (owner, D-68). Every contract above
+
+already has its Bridge ID; the commands (open a section, save the open card) are
+defined when the Bridge is.
 
 ## October 6 premium interaction corrections
 

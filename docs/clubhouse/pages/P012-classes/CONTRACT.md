@@ -15,26 +15,38 @@ reserve new IDs or mark manual contracts verified.
 
 Every behaviour Classes promises, by the 25 V2 categories (D-69). A contract's
 number is its Bridge ID (D-68: namespace 12, category, item); `Code` is the
-catalog code on the element and in the test (`docs/clubhouse/catalog/classes.md`).
+catalog code on the element and in the test
+(`docs/clubhouse/catalog/classes.md`).
 Rows without a code are behaviours with no single element, recorded in
 `config/clubhouse/bridge-contracts.json` by hand. The shell's contracts (P001,
 namespace 1) apply here too and are named where they carry a category.
 `clubhouse:check` holds this file to the registry.
 
-Classes is the player's page. Coaches have no Classes page in Clubhouse and keep the current
-Fairway page at the same address (`LegacyClassesPage.tsx`, unchanged), so every contract below is
+Classes is the player's page. Coaches have no Classes page in Clubhouse and keep
+the current
+Fairway page at the same address (`LegacyClassesPage.tsx`, unchanged), so every
+contract below is
 a player's.
 
-The hand contracts (the rows with no code) are all `reserved`: a hand contract is `implemented`
-only when a test title carries its Bridge ID, and the Classes tests were written before these IDs
-existed. VERIFY.md says, for each, whether a test in `classes.test.tsx` covers it, covers part of
+The hand contracts (the rows with no code) are all `reserved`: a hand contract
+is `implemented`
+only when a test title carries its Bridge ID, and the Classes tests were written
+before these IDs
+existed. VERIFY.md says, for each, whether a test in `classes.test.tsx` covers
+it, covers part of
 it, or none does.
 
 ## 01 — Default / core UI
 
 Status: DEFINED
 
-Classes opens on the term at a glance for a player. There are no tabs and no address parameters: the page is the term overview, the deck of classes and the side column, and everything else (a class, the form, the import, the remove question) is a sheet over it. The server loader has read the page before first paint, so nothing is fetched in the browser to draw it. A class's own sheet is opened by tapping its card; the Add class tile at the end of the deck and the header's Add class open the same form.
+Classes opens on the term at a glance for a player. There are no tabs and no
+address parameters: the page is the term overview, the deck of classes and the
+side column, and everything else (a class, the form, the import, the remove
+question) is a sheet over it. The server loader has read the page before first
+paint, so nothing is fetched in the browser to draw it. A class's own sheet is
+opened by tapping its card; the Add class tile at the end of the deck and the
+header's Add class open the same form.
 
 | Bridge ID | Code | Name | Meaning |
 | --- | --- | --- | --- |
@@ -46,7 +58,12 @@ Classes opens on the term at a glance for a player. There are no tabs and no add
 
 Status: DEFINED
 
-The route skeleton (CH-12401) is the Clubhouse one for a player inside the shell (the loading file reads the shell's role from context); a coach there, and anyone outside the shell, get the Fairway skeleton, because that is the page they get. Classes loads no section on its own after the server render, so there are no section skeletons; a schedule being read says so (CH-12402) and classes being put on the calendar say so in the header (CH-12403).
+The route skeleton (CH-12401) is the Clubhouse one for a player inside the shell
+(the loading file reads the shell's role from context); a coach there, and
+anyone outside the shell, get the Fairway skeleton, because that is the page
+they get. Classes loads no section on its own after the server render, so there
+are no section skeletons; a schedule being read says so (CH-12402) and classes
+being put on the calendar say so in the header (CH-12403).
 
 | Bridge ID | Code | Name | Meaning |
 | --- | --- | --- | --- |
@@ -58,13 +75,28 @@ From the shell (P001): 10201 CH-1401, 10202 CH-1402.
 
 ## 03 — Background loading / refresh
 
-Status: N/A — apart from the Class status panel (P-10), Classes has no realtime, polling or pull to refresh: the server reads the page once per visit, and Try again reads it again (category 14). A write updates the list in place from what the database sent back and does not read the page again. The panel reads the player's class day through one shared cache (`useMyClassDay`): on focus, every five minutes while visible, at the class zone's midnight and after its own writes; a payload older than 15 minutes is not claimed (`use-class-day.test.tsx`).
+Status: N/A — apart from the Class status panel (P-10), Classes has no realtime,
+
+polling or pull to refresh: the server reads the page once per visit, and Try
+again reads it again (category 14). A write updates the list in place from what
+the database sent back and does not read the page again. The panel reads the
+player's class day through one shared cache (`useMyClassDay`): on focus, every
+five minutes while visible, at the class zone's midnight and after its own
+writes; a payload older than 15 minutes is not claimed
+(`use-class-day.test.tsx`).
 
 ## 04 — Empty
 
 Status: DEFINED
 
-First run is the whole-page empty state (CH-12301), which offers Import schedule first and Add a class second and draws none of the rest of the page (no header actions, no overview, no deck). A player on no team gets CH-12305. Nothing overlapping this week (CH-12302) and a class with no fixed meeting (CH-12303) or with times and no days (CH-12304) are quiet states, not errors, and an import where every class is already on the schedule says so (CH-12307). A failed read is never shown as empty (120407). Classes has no search or filter, so it has no filtered empty state.
+First run is the whole-page empty state (CH-12301), which offers Import schedule
+first and Add a class second and draws none of the rest of the page (no header
+actions, no overview, no deck). A player on no team gets CH-12305. Nothing
+overlapping this week (CH-12302) and a class with no fixed meeting (CH-12303) or
+with times and no days (CH-12304) are quiet states, not errors, and an import
+where every class is already on the schedule says so (CH-12307). A failed read
+is never shown as empty (120407). Classes has no search or filter, so it has no
+filtered empty state.
 
 | Bridge ID | Code | Name | Meaning |
 | --- | --- | --- | --- |
@@ -81,7 +113,15 @@ First run is the whole-page empty state (CH-12301), which offers Import schedule
 
 Status: DEFINED
 
-The form's rules show beside their field after the first refused Save (CH-12101 to CH-12107), each answering as it is fixed, with `role="alert"`, `aria-invalid` and the first field that needs it taking focus (CH-12804). A class at exactly another class's days and times is refused (CH-12107); one that only overlaps is a note that does not block (CH-12108), and so is an overlap with a team event this week (CH-12109). Both notes and the refusal count only classes in the term the form is set to (120516). The import checks a paste, a file and the reader's answer before anything is saved (CH-12110 to CH-12114), and skips classes already on the schedule (120515).
+The form's rules show beside their field after the first refused Save (CH-12101
+to CH-12107), each answering as it is fixed, with `role="alert"`, `aria-invalid`
+and the first field that needs it taking focus (CH-12804). A class at exactly
+another class's days and times is refused (CH-12107); one that only overlaps is
+a note that does not block (CH-12108), and so is an overlap with a team event
+this week (CH-12109). Both notes and the refusal count only classes in the term
+the form is set to (120516). The import checks a paste, a file and the reader's
+answer before anything is saved (CH-12110 to CH-12114), and skips classes
+already on the schedule (120515).
 
 | Bridge ID | Code | Name | Meaning |
 | --- | --- | --- | --- |
@@ -109,7 +149,15 @@ The form's rules show beside their field after the first refused Save (CH-12101 
 
 Status: DEFINED
 
-Every write has its own toast naming what failed and what to do, with Retry (CH-12001 to CH-12004); each read that fails has its own notice with Try again (CH-12201, CH-12202); a section that crashes stays in its section (CH-12203, SectionBoundary); a reader that fails offers Paste text (CH-12204). An edit that a policy hides is a failure, never "Class updated" (120609), and a sync that wrote nothing for a class that has meetings is a failure (120610). A route-level failure (the loader throws when it can find no academic term for the day, or any read the loader does not catch) shows the shared route error view (`classes/error.tsx`).
+Every write has its own toast naming what failed and what to do, with Retry
+(CH-12001 to CH-12004); each read that fails has its own notice with Try again
+(CH-12201, CH-12202); a section that crashes stays in its section (CH-12203,
+SectionBoundary); a reader that fails offers Paste text (CH-12204). An edit that
+a policy hides is a failure, never "Class updated" (120609), and a sync that
+wrote nothing for a class that has meetings is a failure (120610). A route-level
+failure (the loader throws when it can find no academic term for the day, or any
+read the loader does not catch) shows the shared route error view
+(`classes/error.tsx`).
 
 | Bridge ID | Code | Name | Meaning |
 | --- | --- | --- | --- |
@@ -140,7 +188,12 @@ Every write has its own toast naming what failed and what to do, with Retry (CH-
 
 Status: DEFINED
 
-Every write refuses while offline before anything is sent, with the shell's toast naming what did not happen (120703). Reading a screenshot offline says so and offers Try again and Paste text, and pasted text and TXT files are read on the device (CH-12901); a read over 5 seconds says so once (CH-12902) and a save over 5 seconds says so once (the shell's CH-1902). Classes has no realtime, so it has no connection-lost state of its own.
+Every write refuses while offline before anything is sent, with the shell's
+toast naming what did not happen (120703). Reading a screenshot offline says so
+and offers Try again and Paste text, and pasted text and TXT files are read on
+the device (CH-12901); a read over 5 seconds says so once (CH-12902) and a save
+over 5 seconds says so once (the shell's CH-1902). Classes has no realtime, so
+it has no connection-lost state of its own.
 
 | Bridge ID | Code | Name | Meaning |
 | --- | --- | --- | --- |
@@ -155,7 +208,13 @@ From the shell (P001): 10701 CH-1901, 10702 CH-1902, 10703 CH-1903,
 
 Status: DEFINED
 
-Who may open the page: a player with `golf_clubhouse_ui` on for the player role (the shell's gate, and `page.tsx`); anyone else gets the Fairway page (120801). A player on no team gets the no-team page (CH-12305), because a class is saved with the team whose calendar it goes on. A player's reads and writes are their own (120802), and the calendar actions check the caller again (120803, reserved: read, not run). Nothing on the page is drawn for one role and hidden for another: the page has one role.
+Who may open the page: a player with `golf_clubhouse_ui` on for the player role
+(the shell's gate, and `page.tsx`); anyone else gets the Fairway page (120801).
+A player on no team gets the no-team page (CH-12305), because a class is saved
+with the team whose calendar it goes on. A player's reads and writes are their
+own (120802), and the calendar actions check the caller again (120803, reserved:
+read, not run). Nothing on the page is drawn for one role and hidden for
+another: the page has one role.
 
 | Bridge ID | Code | Name | Meaning |
 | --- | --- | --- | --- |
@@ -170,7 +229,12 @@ From the shell (P001): 10801 CLUBHOUSE_GATE, 10802 ROLE_SCOPED_NAV,
 
 Status: DEFINED
 
-A class added, updated or removed names itself in a toast with the success haptic (120901). An import that lands shows the Schedule imported view instead of a toast, and that view says what reached the calendar and what could not (120902). The calendar sync landing shows nothing: the header's "Adding to your calendar…" goes away and a class's flag clears (the shell's action layer still fires the success haptic).
+A class added, updated or removed names itself in a toast with the success
+haptic (120901). An import that lands shows the Schedule imported view instead
+of a toast, and that view says what reached the calendar and what could not
+(120902). The calendar sync landing shows nothing: the header's "Adding to your
+calendar…" goes away and a class's flag clears (the shell's action layer still
+fires the success haptic).
 
 | Bridge ID | Code | Name | Meaning |
 | --- | --- | --- | --- |
@@ -181,13 +245,23 @@ From the shell (P001): 10901 CHANGE_LANDED.
 
 ## 10 — Warning
 
-Status: N/A — Classes has no non-blocking warnings of its own to number here: an overlap with another class or the team is a note in the form that does not block (category 05: CH-12108 and CH-12109), a class with no time or no days says so on its card (category 04, CH-12304, and 121503), and Remove and Discard ask first (category 11).
+Status: N/A — Classes has no non-blocking warnings of its own to number here: an
+
+overlap with another class or the team is a note in the form that does not block
+(category 05: CH-12108 and CH-12109), a class with no time or no days says so on
+its card (category 04, CH-12304, and 121503), and Remove and Discard ask first
+(category 11).
 
 ## 11 — Destructive
 
 Status: DEFINED
 
-Removing a class asks first, with the warning haptic before the question, and says what goes: the class comes off the schedule and the calendar, and it cannot be undone (CH-12501). Nothing is optimistic: the class leaves the list only once the calendar removal and the delete have both landed. Closing a form that has changes asks first and comes back with what was typed if the answer is Keep editing (CH-12502). There is no Undo and no Delete all (Q-75).
+Removing a class asks first, with the warning haptic before the question, and
+says what goes: the class comes off the schedule and the calendar, and it cannot
+be undone (CH-12501). Nothing is optimistic: the class leaves the list only once
+the calendar removal and the delete have both landed. Closing a form that has
+changes asks first and comes back with what was typed if the answer is Keep
+editing (CH-12502). There is no Undo and no Delete all (Q-75).
 
 | Bridge ID | Code | Name | Meaning |
 | --- | --- | --- | --- |
@@ -201,7 +275,11 @@ Removing a class asks first, with the warning haptic before the question, and sa
 
 Status: DEFINED
 
-A class that fails to save keeps the sheet open with every field as typed, an import that fails keeps its review, and a remove that fails keeps the question (121201). A form with changes asks before it is thrown away (CH-12502). Nothing is kept across a reload: the open sheet and a half-typed form are in the page's memory, and the calendar flags are held for the visit only (121504).
+A class that fails to save keeps the sheet open with every field as typed, an
+import that fails keeps its review, and a remove that fails keeps the question
+(121201). A form with changes asks before it is thrown away (CH-12502). Nothing
+is kept across a reload: the open sheet and a half-typed form are in the page's
+memory, and the calendar flags are held for the visit only (121504).
 
 | Bridge ID | Code | Name | Meaning |
 | --- | --- | --- | --- |
@@ -209,13 +287,23 @@ A class that fails to save keeps the sheet open with every field as typed, an im
 
 ## 13 — Optimistic UI
 
-Status: N/A — nothing on Classes is optimistic except the Class status panel's sharing switch (P-10), which holds its new position while the write runs and goes back with a toast when it is refused (CH-12070). A class joins, changes or leaves the list only when the write has landed, and the toast, the list and the sheet all wait for it. The calendar sync is a separate action that follows the save (121501), not an optimistic view of it.
+Status: N/A — nothing on Classes is optimistic except the Class status panel's
+
+sharing switch (P-10), which holds its new position while the write runs and
+goes back with a toast when it is refused (CH-12070). A class joins, changes or
+leaves the list only when the write has landed, and the toast, the list and the
+sheet all wait for it. The calendar sync is a separate action that follows the
+save (121501), not an optimistic view of it.
 
 ## 14 — Retry / recovery
 
 Status: DEFINED
 
-The error toast's Retry runs the same action again with the same arguments, and when it lands everything the button would have done follows (121401). A calendar Retry replays the start each class was first synced from (121402), and a save retried after a lost answer reaches the row it may already have stored (121404). Try again on a failed-read notice has the server read the page again (121403).
+The error toast's Retry runs the same action again with the same arguments, and
+when it lands everything the button would have done follows (121401). A calendar
+Retry replays the start each class was first synced from (121402), and a save
+retried after a lost answer reaches the row it may already have stored (121404).
+Try again on a failed-read notice has the server read the page again (121403).
 
 | Bridge ID | Code | Name | Meaning |
 | --- | --- | --- | --- |
@@ -230,7 +318,15 @@ From the shell (P001): 11401 ROUTE_TRY_AGAIN, 11402 TOAST_RETRY.
 
 Status: DEFINED
 
-Nothing refreshes in the background, and a change that lands does not read the page again: the list is what the server read plus what this page's own writes returned (the stored row after a save, the stored rows after an import), so a class another device changed shows on the next visit or on Try again. The team's events for the week are read once and are not re-read either. The calendar is a second write that follows the save without being waited on (121501), starts from the class's own term (121502), takes a class with no time off the calendar (121503), and is remembered as failed for the visit only (121504). Every date and time is resolved in the team's zone on the server.
+Nothing refreshes in the background, and a change that lands does not read the
+page again: the list is what the server read plus what this page's own writes
+returned (the stored row after a save, the stored rows after an import), so a
+class another device changed shows on the next visit or on Try again. The team's
+events for the week are read once and are not re-read either. The calendar is a
+second write that follows the save without being waited on (121501), starts from
+the class's own term (121502), takes a class with no time off the calendar
+(121503), and is remembered as failed for the visit only (121504). Every date
+and time is resolved in the team's zone on the server.
 
 | Bridge ID | Code | Name | Meaning |
 | --- | --- | --- | --- |
@@ -265,7 +361,11 @@ From the shell (P001): 11601 CH-1601, 11602 CH-1602, 11603 CH-1603,
 
 Status: DEFINED
 
-On the v2 grammar (D-70): a tick for opening a class, choosing or clearing a day and switching between a file and pasted text (CH-12701, CH-12703, CH-12705); a warning before the remove question and on Discard (CH-12702, CH-12502); an error when a file cannot be read or a write fails; success and error for every save come from the shell's action layer. Every other tap is silent.
+On the v2 grammar (D-70): a tick for opening a class, choosing or clearing a day
+and switching between a file and pasted text (CH-12701, CH-12703, CH-12705); a
+warning before the remove question and on Discard (CH-12702, CH-12502); an error
+when a file cannot be read or a write fails; success and error for every save
+come from the shell's action layer. Every other tap is silent.
 
 | Bridge ID | Code | Name | Meaning |
 | --- | --- | --- | --- |
@@ -283,7 +383,16 @@ From the shell (P001): 11701 CH-1701, 11702 CH-1702, 11703 CH-1703,
 
 Status: DEFINED
 
-The page is labelled "Classes" and each class is one button named for its code, name and when it meets (CH-12801); the card's week strip and the overview's drawing are hidden and the labels say the same in words (CH-12802, CH-12803); a refused save marks each field and moves focus to the first (CH-12804); the import's drop zone is a real button (CH-12805); status changes and errors are announced (`role="status"` on CH-12402 and CH-12403, `role="alert"` on the form's messages and the import's errors). Sheets are native dialogs that trap focus and close on Esc. Axe over the six preview states at 1280 and 390 is reserved because it is a dev-server run and not a test (121806). A full keyboard walk and a screen reader pass are open.
+The page is labelled "Classes" and each class is one button named for its code,
+name and when it meets (CH-12801); the card's week strip and the overview's
+drawing are hidden and the labels say the same in words (CH-12802, CH-12803); a
+refused save marks each field and moves focus to the first (CH-12804); the
+import's drop zone is a real button (CH-12805); status changes and errors are
+announced (`role="status"` on CH-12402 and CH-12403, `role="alert"` on the
+form's messages and the import's errors). Sheets are native dialogs that trap
+focus and close on Esc. Axe over the six preview states at 1280 and 390 is
+reserved because it is a dev-server run and not a test (121806). A full keyboard
+walk and a screen reader pass are open.
 
 CH-1804, 11805 CH-1805, 11806 CH-1806, 11807 CH-1807, 11808 CH-1808, 11809
 CH-1809, 11810 CH-1810, 11811 CH-1811, 11812 CH-1812, 11813 CH-1813, 11814
@@ -312,7 +421,11 @@ From the shell (P001): 11801 CH-1801, 11802 CH-1802, 11803 CH-1803,
 
 Status: DEFINED
 
-The phone build at 820px and below (121901); the phone spec is `docs/clubhouse/phone/classes.md` (approved, from `Player - Classes - Mobile.html`). Classes opens from More on the phone (D-66), so its top bar goes back there. That the sheets are bottom sheets that drag to close, and the reflow below 1000px and 640px, are CSS and are not tested.
+The phone build at 820px and below (121901); the phone spec is
+`docs/clubhouse/phone/classes.md` (approved, from `Player - Classes -
+Mobile.html`). Classes opens from More on the phone (D-66), so its top bar goes
+back there. That the sheets are bottom sheets that drag to close, and the reflow
+below 1000px and 640px, are CSS and are not tested.
 
 | Bridge ID | Code | Name | Meaning |
 | --- | --- | --- | --- |
@@ -324,7 +437,11 @@ From the shell (P001): 11901 PHONE_CHROME.
 
 Status: DEFINED
 
-Enter in a form field saves, and Esc closes any sheet through the same path as Cancel, so a form with changes asks first and focus returns to what opened it (122001, reserved: no test presses Enter or Esc). The days, the file drop zone and every other control are native buttons in the tab order. No shortcuts of its own.
+Enter in a form field saves, and Esc closes any sheet through the same path as
+Cancel, so a form with changes asks first and focus returns to what opened it
+(122001, reserved: no test presses Enter or Esc). The days, the file drop zone
+and every other control are native buttons in the tab order. No shortcuts of its
+own.
 
 | Bridge ID | Code | Name | Meaning |
 | --- | --- | --- | --- |
@@ -334,7 +451,9 @@ Enter in a form field saves, and Esc closes any sheet through the same path as C
 
 Status: DEFINED
 
-The loader reads the page in one pass: the team's zone, then the classes and the week's events together, each limited to 500 rows (122101). Web vitals are the shell's.
+The loader reads the page in one pass: the team's zone, then the classes and the
+week's events together, each limited to 500 rows (122101). Web vitals are the
+shell's.
 
 | Bridge ID | Code | Name | Meaning |
 | --- | --- | --- | --- |
@@ -346,7 +465,8 @@ From the shell (P001): 12101 CH-1954.
 
 Status: DEFINED
 
-The shell records rage, dead and slow clicks for every page. Classes adds no events of its own.
+The shell records rage, dead and slow clicks for every page. Classes adds no
+events of its own.
 
 From the shell (P001): 12201 CH-1951, 12202 CH-1952, 12203 CH-1953.
 
@@ -354,7 +474,10 @@ From the shell (P001): 12201 CH-1951, 12202 CH-1952, 12203 CH-1953.
 
 Status: DEFINED
 
-Failed reads are logged by name, failed writes are reported under the `classes` surface with their action, intents leave a breadcrumb (`classes add`, `classes import`, `classes open` and `action classes.<name>`), and a crash reports under its own section (122301).
+Failed reads are logged by name, failed writes are reported under the `classes`
+surface with their action, intents leave a breadcrumb (`classes add`, `classes
+import`, `classes open` and `action classes.<name>`), and a crash reports under
+its own section (122301).
 
 | Bridge ID | Code | Name | Meaning |
 | --- | --- | --- | --- |
@@ -366,7 +489,10 @@ From the shell (P001): 12301 FAILURES_REPORTED.
 
 Status: DEFINED
 
-`src/clubhouse/__tests__/classes.test.tsx` names every catalog code of kinds 0 to 5 it forces, and `clubhouse:check` fails a row of kinds 0 to 5 that no test names (122401). The hand contracts are named by Bridge ID in a test title once the IDs are added (VERIFY.md has the map).
+`src/clubhouse/__tests__/classes.test.tsx` names every catalog code of kinds 0
+to 5 it forces, and `clubhouse:check` fails a row of kinds 0 to 5 that no test
+names (122401). The hand contracts are named by Bridge ID in a test title once
+the IDs are added (VERIFY.md has the map).
 
 | Bridge ID | Code | Name | Meaning |
 | --- | --- | --- | --- |
@@ -376,4 +502,7 @@ From the shell (P001): 12401 TESTS_NAME_CONTRACTS.
 
 ## 25 — Helm Bridge action
 
-Status: N/A — the Bridge is wired later (owner, D-68). Every contract above already has its Bridge ID; the commands (open a class, add a class, import a schedule, remove a class) are defined when the Bridge is.
+Status: N/A — the Bridge is wired later (owner, D-68). Every contract above
+
+already has its Bridge ID; the commands (open a class, add a class, import a
+schedule, remove a class) are defined when the Bridge is.

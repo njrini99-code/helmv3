@@ -13,11 +13,21 @@ Automated browser checks do not replace physical keyboard, gesture or
 assistive-technology acceptance.
 <!-- clubhouse:release-audit:end -->
 
-Reference: design/handoff/Qualifiers.html, qualifiers.jsx, qual-core.jsx, qual-data.js, qual.css (desktop); design/handoff/mobile/Qualifiers Mobile.html, qual-mobile.jsx, qual-mobile.css (iPhone, mapped in `docs/clubhouse/phone/qualifiers.md`). Rendered 2026-09-29 at 1280 and 924 (`qualifiers-01..21`) and 390 × 844 (`qualifiers-01..11`); the captures are not committed.
-Route: `/golf/dashboard/qualifiers` with `/new`, `/[id]`, `/[id]/edit` (coach; list and detail are also read by players today), and `/golf/dashboard/my-qualifiers` (player). The player view is not drawn (Q-5).
-Surface tag: `qualifiers.<list|hero|facts|leaderboard|scorecard|rounds|selections|courses|rules|form|status>`
+Reference: design/handoff/Qualifiers.html, qualifiers.jsx, qual-core.jsx,
+qual-data.js, qual.css (desktop); design/handoff/mobile/Qualifiers Mobile.html,
+qual-mobile.jsx, qual-mobile.css (iPhone, mapped in
+`docs/clubhouse/phone/qualifiers.md`). Rendered 2026-09-29 at 1280 and 924
+(`qualifiers-01..21`) and 390 × 844 (`qualifiers-01..11`); the captures are not
+committed.
+Route: `/golf/dashboard/qualifiers` with `/new`, `/[id]`, `/[id]/edit` (coach;
+list and detail are also read by players today), and
+`/golf/dashboard/my-qualifiers` (player). The player view is not drawn (Q-5).
+Surface tag:
+`qualifiers.<list|hero|facts|leaderboard|scorecard|rounds|selections|courses|rules|form|status>`
 
-One tracker row covers both roles. Players already read `/qualifiers` and `/qualifiers/[id]`, like Calendar and Messages. The checklist file comes from the row name, so the slug is `qualifiers`.
+One tracker row covers both roles. Players already read `/qualifiers` and
+`/qualifiers/[id]`, like Calendar and Messages. The checklist file comes from
+the row name, so the slug is `qualifiers`.
 
 Feature doc: `memory/features/qualifiers.md`. Its rules hold in Clubhouse:
 
@@ -47,7 +57,9 @@ There is no player view in either file. Every capture is the coach's view.
 
 ### Figures and their data
 
-Types come from `src/lib/types/database.ts` and were checked against the live schema on 2026-09-29 with read-only SQL: columns, constraints, RLS policies and aggregate counts.
+Types come from `src/lib/types/database.ts` and were checked against the live
+schema on 2026-09-29 with read-only SQL: columns, constraints, RLS policies and
+aggregate counts.
 
 | Figure (view) | Source | Notes |
 | --- | --- | --- |
@@ -107,98 +119,156 @@ Types come from `src/lib/types/database.ts` and were checked against the live sc
 Missing actions:
 
 - Nothing changes squad size or coach picks after creation.
-- Nothing adds or removes an entrant after creation. RLS already lets a coach do both, so this needs actions, not a migration (Q-11).
-- No migration is written in this run. Every schema candidate depends on an open question: a per-round date (Q-12), and started rounds after a close (Q-7).
+- Nothing adds or removes an entrant after creation. RLS already lets a coach do
+  both, so this needs actions, not a migration (Q-11).
+- No migration is written in this run. Every schema candidate depends on an open
+  question: a per-round date (Q-12), and started rounds after a close (Q-7).
 
 ### Role permissions (live RLS, 2026-09-29)
 
 - `golf_qualifiers`, `golf_qualifier_entries`, `golf_qualifier_round_courses`:
-  - Read: team coaches (`is_golf_team_coach`) and active team players (`is_golf_team_player`, membership `status = 'active'`).
+  - Read: team coaches (`is_golf_team_coach`) and active team players
+    (`is_golf_team_player`, membership `status = 'active'`).
   - Insert, update, delete: coaches only.
   - `golf_qualifiers` also has an admin read.
 - `golf_qualifier_selections`:
   - Coaches of the team can do everything (`is_team_coach`).
-  - Active team players can read only once `selection_state = 'selected'`, and that read includes `coach_reasoning`.
-- `golf_rounds`, `golf_holes`: read by the player who owns the round, and by team coaches and active team players when the round has a `team_id` (all 219 live qualifier rounds do). So RLS lets a player read teammates' scorecards. Today's UI shows players only the leaderboard, with no round-by-round and no selections (Q-14).
+  - Active team players can read only once `selection_state = 'selected'`, and
+    that read includes `coach_reasoning`.
+- `golf_rounds`, `golf_holes`: read by the player who owns the round, and by
+  team coaches and active team players when the round has a `team_id` (all 219
+  live qualifier rounds do). So RLS lets a player read teammates' scorecards.
+  Today's UI shows players only the leaderboard, with no round-by-round and no
+  selections (Q-14).
 - Server actions check the coach before writing:
-  - `updateQualifierStatus` compares the coach's organisation with the qualifier team's.
+  - `updateQualifierStatus` compares the coach's organisation with the qualifier
+    team's.
   - The selection actions use `verifyTeamAccess`.
   - `createGolfQualifier` resolves the coach's active team.
 - Rounds:
-  - `submit_round_atomic` refuses any round linked to a completed qualifier, including a started one (Q-7).
-  - Players enter only the qualifiers they are entered in, and within `num_rounds`.
+  - `submit_round_atomic` refuses any round linked to a completed qualifier,
+    including a started one (Q-7).
+  - Players enter only the qualifiers they are entered in, and within
+    `num_rounds`.
 
 ## spec
 
 - [x] Desktop reference files and screenshots are named above
-- [x] Every figure on the screen is mapped to a table and column, or logged as a data gap in PROGRESS.md
-- [x] Every control is mapped to an existing server action, or to a migration that has to be written (never applied by an agent)
-- [x] Differences between the README and the screenshots are resolved as decisions in PROGRESS.md (D-30 to D-33; Q-16, the phone tab, is D-34)
+- [x] Every figure on the screen is mapped to a table and column, or logged as a
+  data gap in PROGRESS.md
+- [x] Every control is mapped to an existing server action, or to a migration
+  that has to be written (never applied by an agent)
+- [x] Differences between the README and the screenshots are resolved as
+  decisions in PROGRESS.md (D-30 to D-33; Q-16, the phone tab, is D-34)
 
 ## desktop
 
-- [x] Matches the reference at 924px and at 1280px or wider (spacing, type, radius, depth): 38 states at each width, side by side with the prototype captures; the differences left are decisions, logged in PROGRESS.md
+- [x] Matches the reference at 924px and at 1280px or wider (spacing, type,
+  radius, depth): 38 states at each width, side by side with the prototype
+  captures; the differences left are decisions, logged in PROGRESS.md
 - [x] Only Clubhouse tokens and classes are used, and `clubhouse:check` is clean
 - [x] Numbers are tabular, with a true minus, `E` for even and `—` for no data
-- [x] Red appears only for under par and the pin flag; gains are green and losses amber
-- [x] Copy is in sentence case, in the head-pro voice, and actions are a verb plus an object
-- [x] Controls that point at an unbuilt screen are hidden via `rebuiltHref`, never dead (Enter round and the selection workspace aren't rendered; every link stays inside the rebuilt Qualifiers routes)
-- [x] A narrow canvas (container below 860px) reflows without horizontal page scroll (checked at 924px on every captured state: no page, canvas or panel overflow)
+- [x] Red appears only for under par and the pin flag; gains are green and
+  losses amber
+- [x] Copy is in sentence case, in the head-pro voice, and actions are a verb
+  plus an object
+- [x] Controls that point at an unbuilt screen are hidden via `rebuiltHref`,
+  never dead (Enter round and the selection workspace aren't rendered; every
+  link stays inside the rebuilt Qualifiers routes)
+- [x] A narrow canvas (container below 860px) reflows without horizontal page
+  scroll (checked at 924px on every captured state: no page, canvas or panel
+  overflow)
 
 ## wired
 
-- [x] Everything is read server-side in one pass, so final data is on first paint (no client fetch waterfall; the course picker looks courses up on demand, and a live qualifier refreshes on new rounds)
-- [x] Reads go through the RLS-scoped client, with no service role for a user's own data (the setup actions too)
-- [x] Every Supabase call reads `error`; lists over 1,000 rows paginate, and `.in()` is chunked
-- [x] Null, zero and "early read" render differently, and windows and samples are stated (`—`, `E`, `0/3`, "No rounds yet"; the average says it counts 18-hole rounds)
-- [x] Dates and times are resolved in the team's timezone on the server, with no hydration mismatch (qualifier dates are calendar dates, formatted the same on server and client; no times are shown)
+- [x] Everything is read server-side in one pass, so final data is on first
+  paint (no client fetch waterfall; the course picker looks courses up on
+  demand, and a live qualifier refreshes on new rounds)
+- [x] Reads go through the RLS-scoped client, with no service role for a user's
+  own data (the setup actions too)
+- [x] Every Supabase call reads `error`; lists over 1,000 rows paginate, and
+  `.in()` is chunked
+- [x] Null, zero and "early read" render differently, and windows and samples
+  are stated (`—`, `E`, `0/3`, "No rounds yet"; the average says it counts
+  18-hole rounds)
+- [x] Dates and times are resolved in the team's timezone on the server, with no
+  hydration mismatch (qualifier dates are calendar dates, formatted the same on
+  server and client; no times are shown)
 - [x] Unit tests cover the loader's derivations
 
 ## states
 
-- [x] Loading: a route skeleton shaped like the page, so nothing shifts when data lands
+- [x] Loading: a route skeleton shaped like the page, so nothing shifts when
+  data lands
 - [x] Empty (first run): says what will appear here and the one next step
-- [x] Empty (filtered or no results): distinct from first run, and offers to clear filters
-- [x] Partial failure: each section has its own failure flag and shows an inline notice with Try again; the rest of the page still works (the form's round courses, CH-09217, has no Try again on purpose: a refresh mid-edit would drop the coach's changes)
-- [x] Crash containment: every section is wrapped in a `SectionBoundary` with a surface tag
-- [x] Route error: the Clubhouse error view (it inherits the `logError`, chunk and stale-action recovery)
+- [x] Empty (filtered or no results): distinct from first run, and offers to
+  clear filters
+- [x] Partial failure: each section has its own failure flag and shows an inline
+  notice with Try again; the rest of the page still works (the form's round
+  courses, CH-09217, has no Try again on purpose: a refresh mid-edit would drop
+  the coach's changes)
+- [x] Crash containment: every section is wrapped in a `SectionBoundary` with a
+  surface tag
+- [x] Route error: the Clubhouse error view (it inherits the `logError`, chunk
+  and stale-action recovery)
 - [x] Not found and no access: plain words and a way back
 - [x] Offline or slow network: the action says so instead of spinning forever
-- [x] User errors: every mutation goes through `useAction`, with a specific failure message, Retry, an error haptic and a Sentry event
-- [x] Forms: inline field messages, focus moves to the first invalid field, and double submit is prevented
+- [x] User errors: every mutation goes through `useAction`, with a specific
+  failure message, Retry, an error haptic and a Sentry event
+- [x] Forms: inline field messages, focus moves to the first invalid field, and
+  double submit is prevented
 - [x] Destructive actions: a confirm step or Undo
-- [x] Optimistic updates roll back on failure and tell the coach (none: every write waits for the server; a partial edit save says what saved, CH-09902)
+- [x] Optimistic updates roll back on failure and tell the coach (none: every
+  write waits for the server; a partial edit save says what saved, CH-09902)
 
 ## error-tracking
 
 - [x] Server read failures are logged with `chLogServer('<screen>', '<read>')`
-- [x] Client crashes are reported with `chReport`, tagged `ui=clubhouse` and `surface=<screen>.<section>`
+- [x] Client crashes are reported with `chReport`, tagged `ui=clubhouse` and
+  `surface=<screen>.<section>`
 - [x] Key intents leave a `chTrail` breadcrumb (open, filter, submit)
 - [x] No `catch` swallows an error without reporting or handling it on screen
-- [x] Handled failures are low severity and crashes are high, so alerts stay meaningful
-- [x] Every failure path was forced once locally and seen in the console or Sentry (each numbered failure in qualifiers.test; close, save and course lookup in the preview console, with outbound reports blocked)
+- [x] Handled failures are low severity and crashes are high, so alerts stay
+  meaningful
+- [x] Every failure path was forced once locally and seen in the console or
+  Sentry (each numbered failure in qualifiers.test; close, save and course
+  lookup in the preview console, with outbound reports blocked)
 
 ## phone-spec
 
-- [x] `docs/clubhouse/phone/<slug>.md` names the owner's mobile design in `design/handoff/mobile/` (or is a draft the owner approved), and maps each screen to components
-- [x] It says `Status: approved` (the design is the owner's, D-22; Q-5, Q-15, Q-16 and Q-20 answered by D-30, D-33 and D-34)
+- [x] `docs/clubhouse/phone/<slug>.md` names the owner's mobile design in
+  `design/handoff/mobile/` (or is a draft the owner approved), and maps each
+  screen to components
+- [x] It says `Status: approved` (the design is the owner's, D-22; Q-5, Q-15,
+  Q-16 and Q-20 answered by D-30, D-33 and D-34)
 
 ## phone
 <!-- Built 2026-09-30: list (phone CSS), detail (QualifierDetailPhone), player sheet (PlayerRounds), form (PhoneTop, tab bar hidden), Manage selections. Checked by tests at the phone width; not yet in a browser at 390/430 or on an iPhone. -->
 - [ ] Built at 390px and 430px, respecting the safe areas
-- [ ] Touch targets are at least 44px, and hover-only affordances have a tap equivalent
+- [ ] Touch targets are at least 44px, and hover-only affordances have a tap
+  equivalent
 - [ ] Sheets are used instead of popovers, and they drag to dismiss
 - [ ] The bottom tab bar and toasts don't overlap content
-- [ ] Checked on a real iPhone through `npm run ios:dev` (docs/clubhouse/MOBILE.md): keyboard, swipe-back with a sheet open, haptics felt
+- [ ] Checked on a real iPhone through `npm run ios:dev`
+  (docs/clubhouse/MOBILE.md): keyboard, swipe-back with a sheet open, haptics
+  felt
 
 ## motion
 <!-- Rewritten for v2 motion (D-64) and v2 haptics (D-70) on 2026-09-29; earlier evidence was against the old timings, so every box starts again. -->
-- [ ] Transitions use only the v2 tokens (press 110, quick 180, base 260, release 280, reveal 520ms) and the v2 curves (D-64)
-- [ ] Press: every tappable shrinks about 6px and springs back (`useChPress`), and nothing scales twice
-- [ ] First paint: sections rise in once (`.ch-reveal`); no count-ups and no other stagger; a refresh never replays it
+- [ ] Transitions use only the v2 tokens (press 110, quick 180, base 260,
+  release 280, reveal 520ms) and the v2 curves (D-64)
+- [ ] Press: every tappable shrinks about 6px and springs back (`useChPress`),
+  and nothing scales twice
+- [ ] First paint: sections rise in once (`.ch-reveal`); no count-ups and no
+  other stagger; a refresh never replays it
 - [ ] Skeletons wait 150ms, fade in, and share one shimmer sweep
-- [ ] Reduced motion and Animations off remove the rise, the press and the shimmer (`useChReducedMotion`)
-- [ ] Haptics follow v2 (D-70): selection for tabs, segmented controls, switches and choices; light for primary buttons; success for Post, Save, Send, Share, Assign and Got it; warning for Remove, Delete, Discard and Dismiss; medium only for a sheet settling or a shot logged; error when an import or sync fails; every other tap silent
+- [ ] Reduced motion and Animations off remove the rise, the press and the
+  shimmer (`useChReducedMotion`)
+- [ ] Haptics follow v2 (D-70): selection for tabs, segmented controls, switches
+  and choices; light for primary buttons; success for Post, Save, Send, Share,
+  Assign and Got it; warning for Remove, Delete, Discard and Dismiss; medium
+  only for a sheet settling or a shot logged; error when an import or sync
+  fails; every other tap silent
 
 ## accessibility
 
@@ -211,11 +281,16 @@ Missing actions:
 ## performance
 
 - [x] No request waterfall on the server, with independent reads in parallel
-- [x] Client JS is limited to the interactive islands, and animation code is loaded lazily (the list, detail and form are client components, interactive throughout; Qualifiers loads no animation or chart library)
-- [x] No layout shift after first paint (CLS 0.0001 or less on seven preview states)
+- [x] Client JS is limited to the interactive islands, and animation code is
+  loaded lazily (the list, detail and form are client components, interactive
+  throughout; Qualifiers loads no animation or chart library)
+- [x] No layout shift after first paint (CLS 0.0001 or less on seven preview
+  states)
 
 ## verified
 
-- [x] typecheck, lint, `clubhouse:check` and the screen's tests are green, with exit codes recorded in the log
-- [ ] Browser pass on desktop and phone with a real coach account, logged in PROGRESS.md
+- [x] typecheck, lint, `clubhouse:check` and the screen's tests are green, with
+  exit codes recorded in the log
+- [ ] Browser pass on desktop and phone with a real coach account, logged in
+  PROGRESS.md
 - [ ] Owner review of the built screen

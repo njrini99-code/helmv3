@@ -5,16 +5,17 @@
  * agree whatever the machine's zone. "Today" is always the view's `data.now`, never the clock.
  */
 import { formatDateOnly } from '@/lib/golf/date-only';
-import { formatFixed, formatSigned, formatToPar, MINUS, NO_DATA } from '../../lib/format';
+import { formatClock } from '../../lib/dates';
+import { formatFixed, formatSigned, formatToPar, MINUS } from '../../lib/format';
 import type { ChTourEvent, ChTourRecord, TourFormat } from './types';
 import { formatPct } from './standings';
 
 /** The kit's number formatters, re-exported so a view takes every figure from here (no `.toFixed(` in a view). */
-export { formatFixed, formatPct, formatSigned, formatToPar, MINUS, NO_DATA };
+export { formatFixed, formatPct, formatSigned, formatToPar, MINUS };
 
 /** "Oct 5" by default; any date options. The calendar day the value names, the same in every zone (lib/golf/date-only). */
 export function tourDay(iso: string, opts: Intl.DateTimeFormatOptions = { month: 'short', day: 'numeric' }): string {
-  return formatDateOnly(iso, opts, NO_DATA);
+  return formatDateOnly(iso, opts);
 }
 
 /** "Oct 5 – 7", "Sep 30 – Oct 2", or one day: the board's range. */
@@ -42,7 +43,7 @@ export function inDays(now: string, iso: string): string {
 /** "7:50 AM" from an instant, in the instant's own offset (the team's zone as the server wrote it). */
 export function tourTime(instant: string): string {
   const m = /T(\d{2}):(\d{2})/.exec(instant);
-  if (!m) return NO_DATA;
+  if (!m) return formatClock(instant);
   const h = Number(m[1]);
   return `${h % 12 || 12}:${m[2]} ${h < 12 ? 'AM' : 'PM'}`;
 }

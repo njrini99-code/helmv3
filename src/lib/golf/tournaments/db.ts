@@ -7,7 +7,7 @@
  * course_label, golf_team_timezone and the four RPCs, with their jsonb returns).
  */
 import type { SupabaseClient } from '@supabase/supabase-js';
-import { fromUntyped } from '@/lib/supabase/untyped';
+import type { TourPlayerRoundRow } from '@/lib/golf/tournaments-tables';
 
 export type TourRoundStatus = 'upcoming' | 'live' | 'suspended_weather' | 'suspended_other' | 'final';
 export type TourStartType = 'tee_times' | 'shotgun' | 'two_tees';
@@ -69,13 +69,23 @@ export interface GolfTournamentEntryRow {
 
 export type TourTable = 'golf_tournaments' | 'golf_tournament_rounds' | 'golf_tournament_entries' | 'golf_tournament_player_rounds';
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-type AnyClient = SupabaseClient<any>;
+type HeldTable<Row> = { Row: { [K in keyof Row]: Row[K] }; Insert: Partial<Row>; Update: Partial<Row>; Relationships: [] };
+type CalendarTourDatabase = {
+  public: {
+    Tables: {
+      golf_tournaments: HeldTable<GolfTournamentRow>;
+      golf_tournament_rounds: HeldTable<GolfTournamentRoundRow>;
+      golf_tournament_entries: HeldTable<GolfTournamentEntryRow>;
+      golf_tournament_player_rounds: HeldTable<TourPlayerRoundRow>;
+    };
+    Views: Record<never, never>;
+    Functions: Record<never, never>;
+  };
+};
 
-/** A tournament table that is not in the generated types yet. */
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-export function tourTable(client: AnyClient, table: TourTable): any {
-  return fromUntyped(client, table);
+/** The held columns above, on the request's unchanged RLS client. */
+export function tourTable<T extends TourTable>(client: object, table: T) {
+  return (client as SupabaseClient<CalendarTourDatabase>).from(table);
 }
 
 /** golf_tournament_create_from_calendar(p jsonb). */
@@ -160,11 +170,11 @@ export interface TourRpcs {
 
 /** Call a P-5 RPC that is not in the generated types yet. */
 export async function tourRpc<K extends keyof TourRpcs>(
-  client: AnyClient,
+  client: object,
   name: K,
   args: TourRpcs[K]['args'],
 ): Promise<{ data: TourRpcs[K]['result'] | null; error: { code?: string; message: string; details?: string | null } | null }> {
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const res = await (client as any).rpc(name, args);
+  const rpc = client as { rpc: (name: K, args: TourRpcs[K]['args']) => PromiseLike<{ data: TourRpcs[K]['result'] | null; error: { code?: string; message: string; details?: string | null } | null }> };
+  const res = await rpc.rpc(name, args);
   return { data: (res?.data ?? null) as TourRpcs[K]['result'] | null, error: res?.error ?? null };
 }

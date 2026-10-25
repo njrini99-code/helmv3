@@ -80,5 +80,6 @@ its own.
 Pages: [shell](shell.md) · [home](home.md) · [roster](roster.md) ·
 [stats-team](stats-team.md) · [stats-player](stats-player.md) ·
 [calendar](calendar.md) · [messages](messages.md) · [settings](settings.md) ·
-[qualifiers](qualifiers.md) · [classes](classes.md) · [coachhelm](coachhelm.md) ·
+[qualifiers](qualifiers.md) · [classes](classes.md) · [coachhelm](coachhelm.md)
+·
 [recruiting](recruiting.md) · [auth](auth.md) · [tournaments](tournaments.md).

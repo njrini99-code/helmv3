@@ -30,7 +30,7 @@ export function Review({ data, load, phone: forced, embedded = false }: ReviewPr
       <div className={'ch-tour-rev' + (phone ? ' is-phone' : '')} data-ch-tour-view="review">
         {tourGate(load, {
           loading: () => (
-            <div aria-busy="true" aria-label="Loading the review" data-ch-code="CH-16401">
+            <div role="status" aria-busy="true" aria-label="Loading the review" data-ch-code="CH-16401">
               <Skeleton width="100%" height={160} radius={16} shape="solid" />
             </div>
           ),
@@ -69,9 +69,9 @@ export function ReviewBody({ data, phone }: { data: ChTourReviewData; phone: boo
   const { refresh, refreshing } = useRefresh();
   const r = data.review;
   if (data.errors.review)
-    return <InlineNotice code="CH-16235" title="The review didn’t load" body="Nothing has changed. Try again; the error has been reported." onRetry={refresh} retrying={refreshing} />;
-  if (!r) return <EmptyState compact code="CH-16336" title="Nothing to review yet" body="The review is written once the event has scores." />;
-  if (!r.open) return <EmptyState compact code="CH-16335" title="The review opens when every round is final" body="Until then the scores can still change, so nothing is concluded from them." />;
+    return <InlineNotice code="CH-16235" title="The review didn’t load" body="Nothing has changed. Try again." onRetry={refresh} retrying={refreshing} />;
+  if (!r) return <EmptyState compact kind="first-run" code="CH-16336" title="Nothing to review yet" body="The review is written once the event has scores." />;
+  if (!r.open) return <EmptyState compact kind="first-run" code="CH-16335" title="The review opens when every round is final" body="Until then the scores can still change, so nothing is concluded from them." />;
   const missing = r.missingReflections.map((id) => data.players.find((p) => p.id === id)?.first ?? '').filter(Boolean);
   const names = andList(missing);
   return (
@@ -100,7 +100,7 @@ export function ReviewBody({ data, phone }: { data: ChTourReviewData; phone: boo
       </Section>
       <Section id="ch-tour-rev-notes" title="Notes and reflections" meta="Private to coaches until you share">
         {r.notes.length === 0 ? (
-          <EmptyState compact code="CH-16337" title="No notes or reflections yet" body="A coach’s note or a player’s reflection shows here once it is written." />
+          <EmptyState compact kind="first-run" code="CH-16337" title="No notes or reflections yet" body="A coach’s note or a player’s reflection shows here once it is written." />
         ) : (
           <ul className="ch-tour-rev-notes">
             {r.notes.map((n) => (

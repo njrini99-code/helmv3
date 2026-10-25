@@ -13,24 +13,71 @@ browser checks do not replace physical keyboard, gesture or
 assistive-technology acceptance.
 <!-- clubhouse:release-audit:end -->
 
-Route: `/golf/dashboard/classes` (players). Coaches keep the Fairway page there; the page gives a Clubhouse player the new screen and everyone else the current one. Spec: `docs/clubhouse/phone/classes.md`. Boards: `design/handoff/Player - Classes.html` and `Player - Classes - Mobile.html`.
+Route: `/golf/dashboard/classes` (players). Coaches keep the Fairway page there;
+the page gives a Clubhouse player the new screen and everyone else the current
+one. Spec: `docs/clubhouse/phone/classes.md`. Boards: `design/handoff/Player -
+Classes.html` and `Player - Classes - Mobile.html`.
 
-The player's class schedule by term: the term at a glance, every class as a card, this week's overlaps with the team's events, and the sheets to add, edit, import and remove, and Delete all classes. A class is a row of `golf_player_classes`, put on the team calendar by `syncClassToCalendar` and taken off it by `removeClassFromCalendar` (the same tables and actions the current page uses).
+The player's class schedule by term: the term at a glance, every class as a
+card, this week's overlaps with the team's events, and the sheets to add, edit,
+import and remove, and Delete all classes. A class is a row of
+`golf_player_classes`, put on the team calendar by `syncClassToCalendar` and
+taken off it by `removeClassFromCalendar` (the same tables and actions the
+current page uses).
 
 Where things live:
-- Code: `src/clubhouse/screens/classes/` (`Classes` live wrapper, `ClassesView`, `parts`, `ClassForm`, `ClassDetail`, `ImportSchedule`, `import-read`, `writes`, `ClassesSkeleton`, `ClassesNoTeam`)
-- Loader: `src/clubhouse/data/classes.ts` (`loadClasses`), with its pure steps in `classes-shape.ts`
-- Route: `src/clubhouse/routes/classes.tsx`; page: `src/app/golf/(dashboard)/dashboard/classes/page.tsx` (`LegacyClassesPage.tsx` is the current page, kept for everyone else)
+
+- Code: `src/clubhouse/screens/classes/` (`Classes` live wrapper, `ClassesView`,
+  `parts`, `ClassForm`, `ClassDetail`, `ImportSchedule`, `import-read`,
+  `writes`, `ClassesSkeleton`, `ClassesNoTeam`)
+- Loader: `src/clubhouse/data/classes.ts` (`loadClasses`), with its pure steps
+  in `classes-shape.ts`
+- Route: `src/clubhouse/routes/classes.tsx`; page:
+  `src/app/golf/(dashboard)/dashboard/classes/page.tsx` (`LegacyClassesPage.tsx`
+  is the current page, kept for everyone else)
 - Tests: `src/clubhouse/__tests__/classes.test.tsx`
-- Preview: `/clubhouse-preview/classes` (`?state=clear|empty|failed|partial|mixed|noteam|loading|failwrites|failsync|failpartial|read-notschedule|read-fault|read-none|read-warn`; the default is the board's Fall 2026 with the Pinehurst trip). Pasted text is really read by the current parser; a file is read as the state says
+- Preview: `/clubhouse-preview/classes`
+(`?state=clear|empty|failed|partial|mixed|noteam|loading|failwrites|failsync|failpartial|read-notschedule|read-fault|read-none|read-warn`;
+  the default is the board's Fall 2026 with the Pinehurst trip). Pasted text is
+  really read by the current parser; a file is read as the state says
 
-Saving a class and putting it on the calendar are two actions on purpose. A failed sync's Retry only syncs; it never inserts the class a second time (audit DATA-02: a sync failure once made a re-submit insert the class again; the current page fixed it with `syncClassSafely`, and this page avoids it by construction). A new class's row id is made in the browser when the sheet opens and travels with the save, so a save that is retried (the toast's Retry, or Add tapped again) after its answer was lost reaches the row it stored: a duplicate-key answer (23505) on that id updates that row rather than adding a second copy.
+Saving a class and putting it on the calendar are two actions on purpose. A
+failed sync's Retry only syncs; it never inserts the class a second time (audit
+DATA-02: a sync failure once made a re-submit insert the class again; the
+current page fixed it with `syncClassSafely`, and this page avoids it by
+construction). A new class's row id is made in the browser when the sheet opens
+and travels with the save, so a save that is retried (the toast's Retry, or Add
+tapped again) after its answer was lost reaches the row it stored: a
+duplicate-key answer (23505) on that id updates that row rather than adding a
+second copy.
 
-The calendar start is decided per class (`syncStartFor`). An import puts each class on the calendar from next Monday, so a schedule read mid-term doesn't fill it with meetings already held, but only where that day is inside the class's own term and leaves it standing; a class in next term, one imported before its term begins, or one in the last weeks of a term is put on the term's whole window (the sync refuses, or re-derives another term for, a start outside it). A Retry starts each class from where its failed attempt did; a save syncs the whole term. A class with no start or no end time is not synced: it is taken off the calendar (`removeClassFromCalendar`), and its card, sheet and the import result say "no time set".
+The calendar start is decided per class (`syncStartFor`). An import puts each
+class on the calendar from next Monday, so a schedule read mid-term doesn't fill
+it with meetings already held, but only where that day is inside the class's own
+term and leaves it standing; a class in next term, one imported before its term
+begins, or one in the last weeks of a term is put on the term's whole window
+(the sync refuses, or re-derives another term for, a start outside it). A Retry
+starts each class from where its failed attempt did; a save syncs the whole
+term. A class with no start or no end time is not synced: it is taken off the
+calendar (`removeClassFromCalendar`), and its card, sheet and the import result
+say "no time set".
 
-Delete all classes is `writes.removeAll`: the calendar first, one class at a time (`removeClassFromCalendar`, which is safe to repeat and cleans up a class that is already gone), then one delete of the rows that came off it, scoped to the player. The current page's rule is kept: a class whose events are still on the team calendar keeps its row, because once the row is gone nothing can target its `[class:<id>]` tag. A class is reported deleted only when the delete returned its row, or a read-back shows it is gone (a Retry after an answer was lost); a failed delete, a row a policy hid and a read-back that fails are all "off the calendar but still on your schedule". The page then drops exactly what is gone, flags the rest, and Retry repeats the same classes.
+Delete all classes is `writes.removeAll`: the calendar first, one class at a
+time (`removeClassFromCalendar`, which is safe to repeat and cleans up a class
+that is already gone), then one delete of the rows that came off it, scoped to
+the player. The current page's rule is kept: a class whose events are still on
+the team calendar keeps its row, because once the row is gone nothing can target
+its `[class:<id>]` tag. A class is reported deleted only when the delete
+returned its row, or a read-back shows it is gone (a Retry after an answer was
+lost); a failed delete, a row a policy hid and a read-back that fails are all
+"off the calendar but still on your schedule". The page then drops exactly what
+is gone, flags the rest, and Retry repeats the same classes.
 
-Every write goes through `useAction`, so these belong to the shell as well: offline refusal (CH-1903), slow saves (CH-1902) and the success and error haptics (D-70). The sync is its own action: the save and the import do not wait for it, so their sheets are free and their own slow-save notice is not held open while the calendar is told.
+Every write goes through `useAction`, so these belong to the shell as well:
+offline refusal (CH-1903), slow saves (CH-1902) and the success and error
+haptics (D-70). The sync is its own action: the save and the import do not wait
+for it, so their sheets are free and their own slow-save notice is not held open
+while the calendar is told.
 
 ## 120xx Error toasts
 

@@ -1,5 +1,4 @@
 import 'server-only';
-import type { SupabaseClient } from '@supabase/supabase-js';
 import { tourTable } from './tournaments-db';
 import type { ChCalRoundRef } from '../screens/calendar/model';
 
@@ -20,8 +19,7 @@ type RoundRow = {
  * the lineup is published (4.33's revealed-only rule). Any failure returns `failed`: events load without refs.
  */
 export async function loadRoundRefs(
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  supabase: SupabaseClient<any>,
+  supabase: object,
   eventIds: string[],
   role: 'coach' | 'player',
 ): Promise<{ refs: Map<string, ChCalRoundRef>; failed: boolean; error?: unknown }> {
@@ -31,7 +29,7 @@ export async function loadRoundRefs(
     .select('round_event_id, tournament_id, round_number, start_type, status, course_label, tournament:golf_tournaments(id, name, rounds_count, version, lineup_locked_at, lineup_published_at)')
     .in('round_event_id', eventIds);
   if (error) return { refs, failed: true, error };
-  const rows = (data ?? []) as RoundRow[];
+  const rows = (data ?? []) as unknown as RoundRow[];
   if (!rows.length) return { refs, failed: false };
   const tids = [...new Set(rows.map((r) => r.tournament_id))];
   const [allRes, entriesRes] = await Promise.all([
@@ -41,7 +39,7 @@ export async function loadRoundRefs(
   if (allRes.error) return { refs, failed: true, error: allRes.error };
   if (entriesRes?.error) return { refs, failed: true, error: entriesRes.error };
   const live = new Map<string, boolean>();
-  for (const r of (allRes.data ?? []) as Array<{ tournament_id: string; event: { status: string | null } | Array<{ status: string | null }> | null }>) {
+  for (const r of (allRes.data ?? []) as unknown as Array<{ tournament_id: string; event: { status: string | null } | Array<{ status: string | null }> | null }>) {
     const ev = Array.isArray(r.event) ? r.event[0] : r.event;
     if (ev?.status !== 'cancelled') live.set(r.tournament_id, true);
   }

@@ -4102,8 +4102,7 @@ html[data-fw-theme='dark'] .ch-ev--busy::after {
 .ch-ev .ch-was {
   color: var(--ch-ink-500);
 }
-.ch-ev--tournament .ch-was,
-.ch-ev--qualifier .ch-was {
+.ch-ev--tournament:not(.is-cancelled) .ch-was {
   color: var(--ch-on-green-ink-soft);
 }
 .ch-ev__m--fit:has(.ch-was) {

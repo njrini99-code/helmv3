@@ -1,5 +1,7 @@
 'use client';
 
+import { plural } from '../../../lib/plural';
+import { formatWhole } from '../../../lib/format';
 import { AnimatePresence, m } from 'motion/react';
 import { ChevronDown, Clock, Flag, Plus } from 'lucide-react';
 import { useState } from 'react';
@@ -38,7 +40,7 @@ import {
 type Picking = { kind: 'main' } | { kind: 'round'; id: string } | null;
 
 const teeLineOf = (p: { teeName: string | null; yards?: number | null; courseId: string | null }) =>
-  !p.courseId ? 'Not in the course library' : p.teeName ? [p.teeName.toLowerCase().endsWith('tees') ? p.teeName : `${p.teeName} tees`, p.yards ? `${p.yards.toLocaleString('en-US')} yds` : null].filter(Boolean).join(' · ') : 'Tees later';
+  !p.courseId ? 'Not in the course library' : p.teeName ? [p.teeName.toLowerCase().endsWith('tees') ? p.teeName : `${p.teeName} tees`, p.yards ? `${formatWhole(p.yards)} yds` : null].filter(Boolean).join(' · ') : 'Tees later';
 
 /**
  * The tournament fields (P-5 4.1.4 to 4.1.7): first and last day, course, same course every round, the rounds, the lock
@@ -103,7 +105,7 @@ export function TournamentFields({
       return;
     }
     const rounds = roundsFromRange(s.firstDay, last, s.rounds);
-    if (rounds.length !== s.rounds.length) announce?.(`${rounds.length} round${rounds.length === 1 ? '' : 's'}, ${spokenDay(s.firstDay)} to ${spokenDay(last)}.`);
+    if (rounds.length !== s.rounds.length) announce?.(`${plural(rounds.length, 'round')}, ${spokenDay(s.firstDay)} to ${spokenDay(last)}.`);
     onChange({ ...s, lastDay: last, rounds });
   };
 

@@ -13,17 +13,21 @@ Held items:     none
 
 ### Changed
 
-- `shell/nav.ts` lists `/golf/dashboard/live` as rebuilt for coaches and as an aliased
-  route for players (their layout sends them Home). It has no sidebar entry: Home's
+- `shell/nav.ts` lists `/golf/dashboard/live` as rebuilt for coaches and as an
+  aliased
+  route for players (their layout sends them Home). It has no sidebar entry:
+Home's
   card is the way in.
 
 ### Why
 
-- The live view is reached from Home, Calendar, Qualifiers and Rounds, not from the nav.
+- The live view is reached from Home, Calendar, Qualifiers and Rounds, not from
+  the nav.
 
 ### Verification
 
-- `__tests__/alias.test.ts` and `__tests__/route-label.test.ts` (unchanged and green).
+- `__tests__/alias.test.ts` and `__tests__/route-label.test.ts` (unchanged and
+  green).
 
 ## 2026-10-25 — The Resume accessory carries the score (slice 1)
 
@@ -38,13 +42,16 @@ Held items:     none
 
 ### Changed
 
-- The phone Dock's Resume round accessory and the desktop sidebar's round card read "Oakmont CC · Hole 12 · −2" and
-  "Hole 12 · −2": the score so far rides with the hole. Nothing scored yet, no figure.
+- The phone Dock's Resume round accessory and the desktop sidebar's round card
+  read "Oakmont CC · Hole 12 · −2" and
+  "Hole 12 · −2": the score so far rides with the hole. Nothing scored yet, no
+figure.
 - `ChRoundInProgress` gains an optional `toPar`.
 
 ### Why
 
-- The same figure as the own card, one glance from any screen (plan section 3, Dock row).
+- The same figure as the own card, one glance from any screen (plan section 3,
+  Dock row).
 
 ### Verification
 

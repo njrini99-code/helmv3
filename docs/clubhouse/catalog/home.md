@@ -138,7 +138,7 @@ events follow Calendar's date-span rules. Owner decision: Safari review,
 | CH-2804 | The round pager announces "2 of 3"; each form line has a text equivalent ("last 7 rounds: 72, 71…") | `aria-live="polite"`, `FormLine label` | home.test › CH-2701 |
 | CH-2805 | No axe violations in any preview state, 1280px and 390px | `npm run clubhouse:a11y` | a11y scan |
 | CH-2806 | On a phone the scorecard scrolls sideways; it is a named region that takes focus, so the arrow keys scroll it | `ScrollRegion` (named, focusable) | a11y scan |
-| CH-2870 | The Home class line | One button named by the whole line ("4 of 9 in class now. Everyone out of class from 2:15 PM. Opens class status"); the book glyph is decoration; Enter opens the sheet, Escape closes it and returns focus to the line, Up and Down move between rows | `ClassHomeLine`, `InClassSheet` | class-awareness.test › CH-2870 |
+| CH-2870 | The Home class line | One button named by the whole line ("4 of 9 in class now. Everyone out of class from 2:15 PM. Opens class status"); the book glyph is decoration; Enter opens the sheet, Escape closes it and returns focus to the line, Up and Down move between rows |`ClassHomeLine`, `InClassSheet`; class-awareness.test › CH-2870|
 
 ## 29xx Network and UX
 

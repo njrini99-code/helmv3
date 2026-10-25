@@ -2328,6 +2328,14 @@ features:
     code:
       components:
         - src/clubhouse/**
+        - src/lib/golf/live-tables.ts
+        - src/lib/golf/live-share-copy.ts
+        - src/lib/golf/tournament-refusals.ts
+        - src/lib/golf/tournaments-tables.ts
+        - src/lib/golf/tournaments/**
+        - src/app/golf/actions/tournaments*.ts
+        - src/app/golf/actions/round-live*.ts
+        - src/app/api/cron/class-holds-release/**
         - src/app/clubhouse-preview/entry/**
       db:
         # P-10 class awareness (2026-10-25, held): terms and exceptions, the class-block functions, held pushes.

@@ -4,7 +4,7 @@
 -- migration freeze.
 -- Apply (one line):
 --   npm run db:apply --
---   supabase/migrations/20261023151000_graveyard_orphan_admin_telemetry_tables.sql
+-- 20261023151000_graveyard_orphan_admin_telemetry_tables.sql
 -- Risk: LOW. Moves two empty tables (0 rows ever: n_tup_ins = 0 on
 -- 2026-10-23) to the graveyard schema. Nothing is dropped.
 --
@@ -54,7 +54,7 @@
 SET LOCAL lock_timeout = '3s';
 
 CREATE SCHEMA IF NOT EXISTS graveyard;
-REVOKE ALL ON SCHEMA graveyard FROM PUBLIC, anon, authenticated;
+REVOKE ALL ON SCHEMA graveyard FROM public, anon, authenticated;
 
 DO $$
 DECLARE

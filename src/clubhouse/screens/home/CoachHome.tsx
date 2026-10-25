@@ -38,7 +38,7 @@ export function CoachHome(props: { data: ChCoachHome; /** Preview and tests: a f
   );
 }
 
-function CoachHomeBody({ data, now }: { data: ChCoachHome; now?: string; live?: LiveSnapshot }) {
+function CoachHomeBody({ data, now, live }: { data: ChCoachHome; now?: string; live?: LiveSnapshot }) {
   const phone = useChPhone();
   // A page left open past the team's midnight reads itself again, so "today" is today (desktop and phone).
   useHomeDayRollover(data.clock, now !== undefined);

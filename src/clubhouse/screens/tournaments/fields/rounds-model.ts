@@ -10,6 +10,7 @@
  * wall time; a round with no tee time keys at the very end of its day, so it sorts after that day's timed rounds. Two
  * untimed rounds may share a day (a 36-hole day with no times yet); two timed rounds may not share a minute.
  */
+import { plural } from '../../../lib/plural';
 import { offsetMinutesFor } from '@/lib/golf/timezone';
 import { rangeText, shortDay } from '@/lib/golf/tournaments/dates';
 import type { ChClock } from '../../../lib/clock-cookie';
@@ -326,7 +327,7 @@ export function receiptSentence({ state, convert, rsvp, qualifierName }: ChTourR
     const added = n === 1 ? '' : n === 2 ? '; R2 is added' : n === 3 ? '; R2 and R3 are added' : `; R2 to R${n} are added`;
     parts.push(`Sets up ${name || 'the tournament'} in Tournaments. This event becomes R1 and keeps its replies and files${added}.`);
   } else {
-    parts.push(`Creates ${name || 'the tournament'} in Tournaments with ${n} round${n === 1 ? '' : 's'}${when}${where}.`);
+    parts.push(`Creates ${name || 'the tournament'} in Tournaments with ${plural(n, 'round')}${when}${where}.`);
   }
   parts.push('Players see the rounds now and the lineup when you publish it.');
   if (rsvp) parts.push('Players are asked to reply for each round.');

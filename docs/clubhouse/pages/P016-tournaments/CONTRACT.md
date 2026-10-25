@@ -7,7 +7,8 @@ is the catalog code on the element and in the test
 here too and are named where they carry a category. `clubhouse:check` holds this
 file to the registry.
 
-Status: the base only (types, fixtures, primitives, placeholders, preview screens). Several lanes build the views in
+Status: the base only (types, fixtures, primitives, placeholders, preview
+screens). Several lanes build the views in
 parallel; each fills the categories its view touches, from its own serial range
 in the catalog.
 
@@ -102,7 +103,10 @@ no rounds to link, and so on) are its lane's rows.
 
 ## 05 — Validation
 
-Status: N/A — not defined yet: no view is built (each renders the base's placeholder) and nothing is wired. The lane that builds the view defines this category with its catalog rows (screens/tournaments/README.md).
+Status: N/A — not defined yet: no view is built (each renders the base's
+
+placeholder) and nothing is wired. The lane that builds the view defines this
+category with its catalog rows (screens/tournaments/README.md).
 
 ## 06 — Server / system error
 
@@ -158,7 +162,10 @@ From the shell (P001): 10801 CLUBHOUSE_GATE, 10802 ROLE_SCOPED_NAV,
 
 ## 09 — Success
 
-Status: N/A — not defined yet: no view is built (each renders the base's placeholder) and nothing is wired. The lane that builds the view defines this category with its catalog rows (screens/tournaments/README.md).
+Status: N/A — not defined yet: no view is built (each renders the base's
+
+placeholder) and nothing is wired. The lane that builds the view defines this
+category with its catalog rows (screens/tournaments/README.md).
 
 ## 10 — Warning
 
@@ -174,7 +181,10 @@ scorecard (CH-16920): shown with both numbers, never silently picked (D-82).
 
 ## 11 — Destructive
 
-Status: N/A — not defined yet: no view is built (each renders the base's placeholder) and nothing is wired. The lane that builds the view defines this category with its catalog rows (screens/tournaments/README.md).
+Status: N/A — not defined yet: no view is built (each renders the base's
+
+placeholder) and nothing is wired. The lane that builds the view defines this
+category with its catalog rows (screens/tournaments/README.md).
 
 ## 12 — State preservation
 
@@ -186,11 +196,17 @@ Status: DEFINED
 
 ## 13 — Optimistic UI
 
-Status: N/A — not defined yet: no view is built (each renders the base's placeholder) and nothing is wired. The lane that builds the view defines this category with its catalog rows (screens/tournaments/README.md).
+Status: N/A — not defined yet: no view is built (each renders the base's
+
+placeholder) and nothing is wired. The lane that builds the view defines this
+category with its catalog rows (screens/tournaments/README.md).
 
 ## 14 — Retry / recovery
 
-Status: N/A — not defined yet: no view is built (each renders the base's placeholder) and nothing is wired. The lane that builds the view defines this category with its catalog rows (screens/tournaments/README.md).
+Status: N/A — not defined yet: no view is built (each renders the base's
+
+placeholder) and nothing is wired. The lane that builds the view defines this
+category with its catalog rows (screens/tournaments/README.md).
 
 ## 15 — Data freshness / sync
 
@@ -224,7 +240,10 @@ From the shell (P001): 11601 CH-1601, 11602 CH-1602, 11603 CH-1603,
 
 ## 17 — Haptic
 
-Status: N/A — not defined yet: no view is built (each renders the base's placeholder) and nothing is wired. The lane that builds the view defines this category with its catalog rows (screens/tournaments/README.md).
+Status: N/A — not defined yet: no view is built (each renders the base's
+
+placeholder) and nothing is wired. The lane that builds the view defines this
+category with its catalog rows (screens/tournaments/README.md).
 
 ## 18 — Accessibility
 
@@ -247,28 +266,49 @@ From the shell (P001): 11801 CH-1801, 11802 CH-1802, 11803 CH-1803,
 
 ## 19 — Responsive layout
 
-Status: N/A — not defined yet: no view is built (each renders the base's placeholder) and nothing is wired. The lane that builds the view defines this category with its catalog rows (screens/tournaments/README.md).
+Status: N/A — not defined yet: no view is built (each renders the base's
+
+placeholder) and nothing is wired. The lane that builds the view defines this
+category with its catalog rows (screens/tournaments/README.md).
 
 ## 20 — Keyboard / input
 
-Status: N/A — not defined yet: no view is built (each renders the base's placeholder) and nothing is wired. The lane that builds the view defines this category with its catalog rows (screens/tournaments/README.md).
+Status: N/A — not defined yet: no view is built (each renders the base's
+
+placeholder) and nothing is wired. The lane that builds the view defines this
+category with its catalog rows (screens/tournaments/README.md).
 
 ## 21 — Performance
 
-Status: N/A — not defined yet: no view is built (each renders the base's placeholder) and nothing is wired. The lane that builds the view defines this category with its catalog rows (screens/tournaments/README.md).
+Status: N/A — not defined yet: no view is built (each renders the base's
+
+placeholder) and nothing is wired. The lane that builds the view defines this
+category with its catalog rows (screens/tournaments/README.md).
 
 ## 22 — Analytics
 
-Status: N/A — not defined yet: no view is built (each renders the base's placeholder) and nothing is wired. The lane that builds the view defines this category with its catalog rows (screens/tournaments/README.md).
+Status: N/A — not defined yet: no view is built (each renders the base's
+
+placeholder) and nothing is wired. The lane that builds the view defines this
+category with its catalog rows (screens/tournaments/README.md).
 
 ## 23 — Logging / observability
 
-Status: N/A — not defined yet: no view is built (each renders the base's placeholder) and nothing is wired. The lane that builds the view defines this category with its catalog rows (screens/tournaments/README.md).
+Status: N/A — not defined yet: no view is built (each renders the base's
+
+placeholder) and nothing is wired. The lane that builds the view defines this
+category with its catalog rows (screens/tournaments/README.md).
 
 ## 24 — CI / automated test
 
-Status: N/A — not defined yet: no view is built (each renders the base's placeholder) and nothing is wired. The lane that builds the view defines this category with its catalog rows (screens/tournaments/README.md).
+Status: N/A — not defined yet: no view is built (each renders the base's
+
+placeholder) and nothing is wired. The lane that builds the view defines this
+category with its catalog rows (screens/tournaments/README.md).
 
 ## 25 — Helm Bridge action
 
-Status: N/A — not defined yet: no view is built (each renders the base's placeholder) and nothing is wired. The lane that builds the view defines this category with its catalog rows (screens/tournaments/README.md).
+Status: N/A — not defined yet: no view is built (each renders the base's
+
+placeholder) and nothing is wired. The lane that builds the view defines this
+category with its catalog rows (screens/tournaments/README.md).

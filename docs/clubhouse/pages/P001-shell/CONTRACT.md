@@ -2,7 +2,8 @@
 
 Popup sizing, native top-layer placement and description association follow the
 [popup audit](../../POPUP_AUDIT.md). Long content remains scrollable within the
-available viewport; source/browser checks do not grant physical-device acceptance.
+available viewport; source/browser checks do not grant physical-device
+acceptance.
 
 <!-- clubhouse:release-audit:start -->
 ## 2026-10-06 — Smoothness repair
@@ -94,7 +95,8 @@ A page not rebuilt yet (10401), an empty bell (10402), a bell filter with
 nothing (10403), no next event (10404, the card is left out), and a team that is
 a plain label because there is nothing to switch to (10405). For a player the
 next event is the next one their Calendar shows: a meeting nobody is invited to
-is the coach's own and is skipped (D2-8); a failed invite read hides nothing. Each page's own
+is the coach's own and is skipped (D2-8); a failed invite read hides nothing.
+Each page's own
 first-run and filtered empties are in its contract.
 
 | Bridge ID | Code | Name | Meaning |
@@ -108,7 +110,9 @@ first-run and filtered empties are in its contract.
 
 ## 05 — Validation
 
-Status: N/A — the shell takes no typed input. Fields and their validation belong to the pages (for example Settings and Messages).
+Status: N/A — the shell takes no typed input. Fields and their validation belong
+
+to the pages (for example Settings and Messages).
 
 ## 06 — Server / system error
 
@@ -203,15 +207,24 @@ instant switch shows no toast (10901, D-70). Every page's saves go through this.
 
 ## 10 — Warning
 
-Status: N/A — the shell raises no warnings of its own. A slow save is a network state (10702), and the pages own their partial-success warnings.
+Status: N/A — the shell raises no warnings of its own. A slow save is a network
+
+state (10702), and the pages own their partial-success warnings.
 
 ## 11 — Destructive
 
-Status: N/A — the frame has no destructive control. Sign out lives in Settings; every destructive action is a page's and asks first there.
+Status: N/A — the frame has no destructive control. Sign out lives in Settings;
+
+every destructive action is a page's and asks first there.
 
 ## 12 — State preservation
 
-Status: N/A — the frame holds nothing the user typed. A refused offline save changes nothing (10703), and the pages keep their own drafts (for example Messages 71202). Since 2026-10-17 the frame keeps one choice of the user's: the sidebar folded to its icon rail (RailToggle), in the `ch_rail` cookie, read by the layout so a reload draws the same layout first.
+Status: N/A — the frame holds nothing the user typed. A refused offline save
+
+changes nothing (10703), and the pages keep their own drafts (for example
+Messages 71202). Since 2026-10-17 the frame keeps one choice of the user's: the
+sidebar folded to its icon rail (RailToggle), in the `ch_rail` cookie, read by
+the layout so a reload draws the same layout first.
 
 ## 13 — Optimistic UI
 
@@ -241,7 +254,14 @@ that part is the shared `RouteErrorBoundary`'s and is not tested here.
 
 ## 15 — Data freshness / sync
 
-Status: N/A — the shell keeps no data that can go stale on screen: the bell re-reads on open (10301) and the sidebar reads come with each page. The one exception is a player's held-pushes row (P-10), which reads the shared class-day cache (refreshed on focus and every five minutes) and re-reads it after Deliver now; a payload older than 15 minutes is not trusted. A page built for an older version, or one open across an update, is caught as a route error (10603, 10604).
+Status: N/A — the shell keeps no data that can go stale on screen: the bell
+
+re-reads on open (10301) and the sidebar reads come with each page. The one
+exception is a player's held-pushes row (P-10), which reads the shared class-day
+cache (refreshed on focus and every five minutes) and re-reads it after Deliver
+now; a payload older than 15 minutes is not trusted. A page built for an older
+version, or one open across an update, is caught as a route error (10603,
+10604).
 
 The iPhone app's pull to refresh (10705) reads a page again on demand; the
 shell keeps nothing of its own that it refreshes.
@@ -439,4 +459,7 @@ the shell's states by their codes and Bridge IDs.
 
 ## 25 — Helm Bridge action
 
-Status: N/A — the Bridge is wired later (owner, D-68). Every contract above already has its Bridge ID; the shell's commands (open the bell, go to a page, open More) are defined when the Bridge is.
+Status: N/A — the Bridge is wired later (owner, D-68). Every contract above
+
+already has its Bridge ID; the shell's commands (open the bell, go to a page,
+open More) are defined when the Bridge is.

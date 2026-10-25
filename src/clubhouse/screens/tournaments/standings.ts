@@ -6,7 +6,7 @@
  * team level. B teams never count, and teams outside the division are shown but left out of the division record.
  */
 
-import { NO_DATA } from '../../lib/format';
+import { formatFixed, formatPlace } from '../../lib/format';
 
 export type ChTourTiebreak = 'ties_stand' | 'ncaa' | 'playoff' | 'card_playoff';
 
@@ -95,9 +95,9 @@ export function placeField<T extends ChTourPlaceable>(rows: readonly T[], tiebre
     const level = (x: T, y: T) => x.total === y.total && separate(x, y) === 0;
     const place = prev && level(prev, row) ? out[i - 1]!.place! : i + 1;
     const tied = (prev != null && level(prev, row)) || (order[i + 1] != null && level(order[i + 1]!, row));
-    out.push({ id: row.id, place, tied, label: `${tied ? 'T' : ''}${place}` });
+    out.push({ id: row.id, place, tied, label: formatPlace(place, tied) });
   });
-  for (const row of rows) if (row.total == null) out.push({ id: row.id, place: null, tied: false, label: NO_DATA });
+  for (const row of rows) if (row.total == null) out.push({ id: row.id, place: null, tied: false, label: formatPlace(null) });
   return out;
 }
 
@@ -153,9 +153,8 @@ export function formatRecord(r: ChTourRecord): string {
 
 /** ".533" the way college golf writes it, "1.000" for a perfect record, the dash with no results. */
 export function formatPct(pct: number | null): string {
-  if (pct == null) return NO_DATA;
-  const fixed = pct.toFixed(3);
-  return pct >= 1 ? fixed : fixed.replace(/^0/, '');
+  const fixed = formatFixed(pct, 3);
+  return pct != null && pct >= 1 ? fixed : fixed.replace(/^0/, '');
 }
 
 /**

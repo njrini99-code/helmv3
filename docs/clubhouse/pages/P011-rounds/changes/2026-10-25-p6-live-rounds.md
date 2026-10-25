@@ -15,23 +15,32 @@ Held items:     docs/clubhouse/held/data/live-rounds.md
 
 ### Changed
 
-- Round setup, inside Round details after the qualifier choice: "Show this round live to" with Not live, Coaches and
-  Coaches and team (the first level reads "Not live", version 2 of open call a). Practice starts at the player's own
-  default; a qualifier is fixed at Coaches with a caption; a tournament has a line instead of a control. Changing the level
-  offers "Use this for future practice rounds". The choice reaches the database as it changes and applies to that one round.
-- The Exit sheet gains a Sharing row (it shows the level in words) that opens a sheet with the same choices, applied at
+- Round setup, inside Round details after the qualifier choice: "Show this round
+  live to" with Not live, Coaches and
+  Coaches and team (the first level reads "Not live", version 2 of open call a).
+Practice starts at the player's own
+  default; a qualifier is fixed at Coaches with a caption; a tournament has a
+line instead of a control. Changing the level
+  offers "Use this for future practice rounds". The choice reaches the database
+as it changes and applies to that one round.
+- The Exit sheet gains a Sharing row (it shows the level in words) that opens a
+  sheet with the same choices, applied at
   once and put back if the database refuses.
-- Nothing is drawn until the live table exists: until migration 1 is applied the round screens are as they were.
+- Nothing is drawn until the live table exists: until migration 1 is applied the
+  round screens are as they were.
 
 ### Why
 
-- A practice round stays private until the player shares it (OQ-72), and the player should be able to change their mind
+- A practice round stays private until the player shares it (OQ-72), and the
+  player should be able to change their mind
   mid-round without leaving it.
 
 ### Verification
 
-- `screens/rounds/setup/__tests__/LiveShareField.test.tsx`, `screens/rounds/track/__tests__/LiveShareSheet.test.tsx`,
-  `live/__tests__/share.test.ts`. No screenshots were captured (no browser was run here).
+- `screens/rounds/setup/__tests__/LiveShareField.test.tsx`,
+  `screens/rounds/track/__tests__/LiveShareSheet.test.tsx`,
+  `live/__tests__/share.test.ts`. No screenshots were captured (no browser was
+run here).
 
 ## 2026-10-25 — Team rounds band and the share chip (slice 4)
 
@@ -46,18 +55,27 @@ Held items:     none
 
 ### Changed
 
-- Team rounds gets a "Live now" band (three lanes, See all) above the season figures; no band when nobody is out.
-- The player's round in progress carries a chip with its sharing level (Not live, Coaches, Coaches and team) that opens
-  the same sharing sheet as the Exit sheet. It is not drawn for a tournament round or while sharing is not there yet.
+- Team rounds gets a "Live now" band (three lanes, See all) above the season
+  figures; no band when nobody is out.
+- The player's round in progress carries a chip with its sharing level (Not
+  live, Coaches, Coaches and team) that opens
+  the same sharing sheet as the Exit sheet. It is not drawn for a tournament
+round or while sharing is not there yet.
 
 ### Verification
 
-- `screens/rounds/__tests__/live-surfaces.test.tsx`; the existing rounds tests and `rounds-reads.test.ts` pass unchanged.
+- `screens/rounds/__tests__/live-surfaces.test.tsx`; the existing rounds tests
+  and `rounds-reads.test.ts` pass unchanged.
 
 ## 2026-10-25 — Where the rest of P-6 is written down
 
-P-6 (Live rounds) registers no page of its own: namespace 16 is P016 Tournaments (P-5). Its CH-16600 to CH-16677 (minus
-CH-16650 to CH-16653, P-5's) and CH-16680 to CH-16685 rows are in `docs/clubhouse/catalog/tournaments.md` for now and
-move into P016's catalog when #2369 lands. Its held plans are claimed by this page's manifest. The wiring map, the full
-slice-by-slice change notes and the hand-offs (Lock Screen / Live Activity contract; what 4.33 must expose, the tournament
-id behind `/golf/dashboard/tournaments/<id>/live`) are in `docs/clubhouse/live-rounds/`.
+P-6 (Live rounds) registers no page of its own: namespace 16 is P016 Tournaments
+(P-5). Its CH-16600 to CH-16677 (minus
+CH-16650 to CH-16653, P-5's) and CH-16680 to CH-16685 rows are in
+`docs/clubhouse/catalog/tournaments.md` for now and
+move into P016's catalog when #2369 lands. Its held plans are claimed by this
+page's manifest. The wiring map, the full
+slice-by-slice change notes and the hand-offs (Lock Screen / Live Activity
+contract; what 4.33 must expose, the tournament
+id behind `/golf/dashboard/tournaments/<id>/live`) are in
+`docs/clubhouse/live-rounds/`.

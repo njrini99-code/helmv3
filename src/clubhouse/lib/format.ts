@@ -79,6 +79,12 @@ export function formatDistance(value: number | null | undefined, unit = 'yds', d
   return `${value.toFixed(digits)} ${unit}`;
 }
 
+/** A finishing place: "1", "T3", or the no-data dash when there is no place. */
+export function formatPlace(place: number | null | undefined, tied = false): string {
+  if (place == null) return NO_DATA;
+  return `${tied ? 'T' : ''}${place}`;
+}
+
 export function formatFixed(value: number | null | undefined, digits = 1): string {
   if (value == null || Number.isNaN(value)) return NO_DATA;
   return value.toFixed(digits);
@@ -90,4 +96,9 @@ export function initials(name: string): string {
   const first = parts[0]?.[0] ?? '';
   const last = parts.length > 1 ? (parts[parts.length - 1]?.[0] ?? '') : '';
   return (first + last).toUpperCase();
+}
+
+/** A whole count, with the US grouping used for course yardages. */
+export function formatWhole(value: number): string {
+  return new Intl.NumberFormat('en-US', { maximumFractionDigits: 0 }).format(value);
 }

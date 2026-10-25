@@ -1,6 +1,8 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
+import type { Database } from '@/lib/types/database';
+import { tourTable } from '@/lib/golf/tournaments-tables';
+import { liveTable } from '@/lib/golf/live-tables';
 import { readGolfPlayerProfiles } from '@/lib/golf/player-profiles';
-import { fromUntyped } from '@/lib/supabase/untyped';
 import { laneFromLiveRow, laneFromPollRow, type GolfRoundLiveRow, type LiveRoster, type PollRoundRow } from './live-rounds-adapter';
 import { isoDay } from '../lib/dates';
 import { EMPTY_SNAPSHOT, viewerWithheld, type LiveEventRow, type LiveLane, type LiveSnapshot } from './model';
@@ -11,8 +13,7 @@ import { EMPTY_SNAPSHOT, viewerWithheld, type LiveEventRow, type LiveLane, type 
  * touched: these only read what the save path already wrote.
  */
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-export type LiveClient = SupabaseClient<any, any, any>;
+export type LiveClient = SupabaseClient<Database>;
 type ReadError = { message?: string; code?: string | null } | null;
 
 /** The table (or function) comes with a held migration: "not there" is the expected answer until it is applied. */
@@ -40,7 +41,7 @@ export type LiveRead<T> = { rows: T[]; absent: boolean; error: boolean };
 
 /** Today's and yesterday's rows of the live table that this viewer's RLS lets through. */
 export async function readLiveTable(supabase: LiveClient, a: { teamId: string; sinceDate: string }): Promise<LiveRead<GolfRoundLiveRow>> {
-  const { data, error } = await fromUntyped(supabase, 'golf_round_live').select(LIVE_COLUMNS).eq('team_id', a.teamId).gte('round_date', a.sinceDate);
+  const { data, error } = await liveTable(supabase, 'golf_round_live').select(LIVE_COLUMNS).eq('team_id', a.teamId).gte('round_date', a.sinceDate);
   if (error) return { rows: [], absent: isMissing(error), error: !isMissing(error) };
   return { rows: (data ?? []) as GolfRoundLiveRow[], absent: false, error: false };
 }
@@ -79,18 +80,18 @@ export async function readOwnPollRounds(supabase: LiveClient, a: { playerId: str
  */
 export async function readTrackedRoundIds(supabase: LiveClient, roundIds: readonly string[]): Promise<Set<string>> {
   if (!roundIds.length) return new Set();
-  const { data, error } = await fromUntyped(supabase, 'golf_tournament_player_rounds').select('round_id').in('round_id', [...roundIds]);
+  const { data, error } = await tourTable(supabase, 'golf_tournament_player_rounds').select('round_id').in('round_id', [...roundIds]);
   if (error) return new Set();
   return new Set(((data ?? []) as Array<{ round_id: string | null }>).flatMap((r) => (r.round_id ? [r.round_id] : [])));
 }
 
 /** One row per tournament with a round live right now; the Home card links each to the tournament's live view. */
 export async function readLiveEvents(supabase: LiveClient, teamId: string): Promise<LiveEventRow[]> {
-  const rounds = await fromUntyped(supabase, 'golf_tournament_rounds').select('tournament_id').eq('team_id', teamId).eq('status', 'live');
+  const rounds = await tourTable(supabase, 'golf_tournament_rounds').select('tournament_id').eq('team_id', teamId).eq('status', 'live');
   if (rounds.error) return [];
   const ids = [...new Set(((rounds.data ?? []) as Array<{ tournament_id: string | null }>).flatMap((r) => (r.tournament_id ? [r.tournament_id] : [])))];
   if (!ids.length) return [];
-  const names = await fromUntyped(supabase, 'golf_tournaments').select('id, name').in('id', ids);
+  const names = await tourTable(supabase, 'golf_tournaments').select('id, name').in('id', ids);
   if (names.error) return [];
   return ((names.data ?? []) as Array<{ id: string; name: string | null }>).map((t) => ({ tournamentId: t.id, name: (t.name ?? '').trim() || 'Tournament' }));
 }

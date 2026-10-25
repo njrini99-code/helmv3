@@ -18,7 +18,8 @@
 -- (realtime.list_changes is the database's largest consumer of exec time).
 -- golf_rounds was ~96% of all published changes. And at submit the round is
 -- already status = 'completed' when the holes are rewritten, so each of those
--- 36 trigger writes also fires trg_update_round_stats_cache: golf_round_stats_cache
+-- 36 trigger writes also fires trg_update_round_stats_cache:
+-- golf_round_stats_cache
 -- took 4,865 updates for 140 rounds.
 --
 -- WHAT. While the RPC rewrites the holes, the trigger only notes that the
@@ -69,10 +70,10 @@
 -- ROLLBACK: trigger change only adds one redundant recompute.
 
 CREATE OR REPLACE FUNCTION public.golf_holes_recompute_round_totals_fn()
- RETURNS trigger
- LANGUAGE plpgsql
- SECURITY DEFINER
- SET search_path TO 'public'
+RETURNS trigger
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path TO 'public'
 AS $function$
 DECLARE
   v_round uuid;
@@ -185,9 +186,13 @@ END;
 $$;
 
 -- VERIFY: select 1 where position('helm.defer_round_totals' in
--- VERIFY: pg_get_functiondef('public.golf_holes_recompute_round_totals_fn()'::regprocedure)) > 0;
+-- VERIFY:
+-- VERIFY: pg_get_functiondef(
+-- VERIFY: 'public.golf_holes_recompute_round_totals_fn()'::regprocedure))
+-- VERIFY: > 0;
 -- VERIFY: select 1 where not exists (select 1 from pg_proc p
 -- VERIFY: join pg_namespace n on n.oid = p.pronamespace
 -- VERIFY: where n.nspname = 'public'
 -- VERIFY: and p.proname in ('save_partial_round_atomic', 'submit_round_atomic')
--- VERIFY: and position('helm.defer_round_totals' in pg_get_functiondef(p.oid)) = 0);
+-- VERIFY: and position('helm.defer_round_totals' in pg_get_functiondef(p.oid))
+-- VERIFY: = 0);
