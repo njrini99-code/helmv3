@@ -2,6 +2,8 @@ import type { ChRound } from './season';
 import { mean, type summarizePlayer } from './season';
 import { recordedPutts } from './round-scope';
 import type { ChRoundCache } from './stats-common';
+import { plural } from '../lib/plural';
+import { floorRate, type FloorKind } from '../lib/stats-signal';
 
 /**
  * The four parts of the game as rates and a per-round figure over a window of rounds (Player Home's legs, and the
@@ -19,8 +21,12 @@ export interface ChPlayerLeg {
   label: string;
   /** "Fairways hit" */
   stat: string;
-  /** Over the last LEG_WINDOW rounds; null with nothing logged. */
+  /** Over the last LEG_WINDOW rounds; null with nothing logged, or for a rate under its floor (A7). */
   value: number | null;
+  /** A rate under its show floor says what it needs ("Needs 2 rounds") instead of a value. */
+  needs?: string;
+  /** A rate between its floors is an early read: shown muted with this tag and never toned. */
+  early?: string;
   unit: '%' | '';
   digits: number;
   lowerIsBetter: boolean;
@@ -56,7 +62,7 @@ export function legRows(window: ChRound[], cache: Map<string, ChRoundCache>, ben
         total += p.total;
       }
     }
-    return { value: total ? (made / total) * 100 : null, made, total };
+    return { value: total ? (made / total) * 100 : null, made, total, rounds: window.filter((r) => (pick(r)?.total ?? 0) > 0).length };
   };
   const trendOf = (pick: (r: ChRound) => Pick) =>
     oldestFirst
@@ -88,12 +94,27 @@ export function legRows(window: ChRound[], cache: Map<string, ChRoundCache>, ben
     },
     { saves: 0, att: 0 },
   );
-  const rounds = (k: number) => `${k} ${k === 1 ? 'round' : 'rounds'}`;
-  const row = (key: ChLegKey, value: number | null, unit: '%' | '', digits: number, lowerIsBetter: boolean, legSg: number | null, benchValue: number | null, trend: number[], note: string | null): ChPlayerLeg => ({
+  const rounds = (k: number) => `${plural(k, 'round')}`;
+  // Fairways and greens need two rounds with a chance at them, scrambling ten chances (FLOORS, A7), as Stats holds them.
+  const floored = (kind: FloorKind, n: number, value: number | null) => {
+    const f = floorRate(kind, n, value);
+    return { value: f.value, ...(f.needs ? { needs: f.needs } : {}), ...(f.early ? { early: f.early } : {}) };
+  };
+  const row = (
+    key: ChLegKey,
+    value: number | null | { value: number | null; needs?: string; early?: string },
+    unit: '%' | '',
+    digits: number,
+    lowerIsBetter: boolean,
+    legSg: number | null,
+    benchValue: number | null,
+    trend: number[],
+    note: string | null,
+  ): ChPlayerLeg => ({
     key,
     label: LEG_LABELS[key][0],
     stat: LEG_LABELS[key][1],
-    value,
+    ...(value != null && typeof value === 'object' ? value : { value }),
     unit,
     digits,
     lowerIsBetter,
@@ -103,11 +124,11 @@ export function legRows(window: ChRound[], cache: Map<string, ChRoundCache>, ben
     note,
   });
   return [
-    row('tee', tee.value, '%', 0, false, sg.tee, bench?.get('fairway_pct') ?? null, trendOf(fairways), tee.total ? `${tee.made} of ${tee.total} fairways in the last ${rounds(n)}` : null),
-    row('approach', gir.value, '%', 0, false, sg.approach, bench?.get('gir_pct') ?? null, trendOf(greens), gir.total ? `${gir.made} of ${gir.total} greens in the last ${rounds(n)}` : null),
+    row('tee', floored('fraction', tee.rounds, tee.value), '%', 0, false, sg.tee, bench?.get('fairway_pct') ?? null, trendOf(fairways), tee.total ? `${tee.made} of ${tee.total} fairways in the last ${rounds(n)}` : null),
+    row('approach', floored('fraction', gir.rounds, gir.value), '%', 0, false, sg.approach, bench?.get('gir_pct') ?? null, trendOf(greens), gir.total ? `${gir.made} of ${gir.total} greens in the last ${rounds(n)}` : null),
     row(
       'short',
-      scr.value,
+      floored('scramble', scr.total, scr.value),
       '%',
       0,
       false,

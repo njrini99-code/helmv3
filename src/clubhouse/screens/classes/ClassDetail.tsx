@@ -22,6 +22,7 @@ import { haptic } from '../../lib/haptics';
 import { Button } from '../../ui/Button';
 import { Icon } from '../../ui/Icon';
 import { Modal } from '../../ui/Modal';
+import { plural } from '../../lib/plural';
 
 /**
  * One class (classes.jsx `Detail`): when and where it meets, its next
@@ -75,7 +76,7 @@ export function ClassDetail({
       open={!!c}
       onClose={onClose}
       title={c?.name ?? ''}
-      description={c ? [c.code, c.credits != null ? `${c.credits} ${c.credits === 1 ? 'credit' : 'credits'}` : null, c.semester].filter(Boolean).join(' · ') : undefined}
+      description={c ? [c.code, c.credits != null ? `${plural(c.credits, 'credit')}` : null, c.semester].filter(Boolean).join(' · ') : undefined}
       width={460}
       footer={
         c && (

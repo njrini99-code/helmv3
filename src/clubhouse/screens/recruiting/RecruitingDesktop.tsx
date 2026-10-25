@@ -1,9 +1,9 @@
 'use client';
 
 import { Ellipsis, Plus, SearchX, Trash2 } from 'lucide-react';
+import { useRef } from 'react';
 import { CH_STAGES, isNextStepLate, nextStepLine, rowLineOf, stageMeta, subtitleOf, whenLabel, type ChProspect, type ChStage } from '../../data/recruiting-shape';
-import { Button } from '../../ui/Button';
-import { Icon } from '../../ui/Icon';
+import { Button, IconButton } from '../../ui/Button';
 import { Menu } from '../../ui/Menu';
 import { InlineNotice } from '../../ui/Notices';
 import { SearchField } from '../../ui/SearchField';
@@ -11,7 +11,8 @@ import { Segmented } from '../../ui/Segmented';
 import { SectionBoundary } from '../../ui/SectionBoundary';
 import { Swap } from '../../ui/Swap';
 import { EmptyState } from '../../ui/States';
-import { Tooltip } from '../../ui/Tooltip';
+import { useRovingRows } from '../../lib/roving';
+import { usePageKeys, type ChPageKey } from '../../shell/command/page-keys';
 import type { RecCtx } from './ctx';
 import { Documents } from './Documents';
 import { CalendarLine, CommitRule, ContactSection, MetaLine, NextStepPlate, NextStepSection, NextStepSrPrefix, NotesSection, ProspectAvatar, StageChip, isStrong } from './parts';
@@ -35,7 +36,7 @@ export function RecruitingDesktop({ c }: { c: RecCtx }) {
         {/* One primary per screen: first run carries Add your first prospect in the page below. */}
         {(!nothing || c.error) && (
           <Button variant="primary" leftIcon={Plus} onClick={c.startAdd}>
-            Add prospect
+            New prospect
           </Button>
         )}
       </header>
@@ -44,7 +45,7 @@ export function RecruitingDesktop({ c }: { c: RecCtx }) {
         <InlineNotice
           code="CH-14201"
           title="Your prospects didn’t load"
-          body="Nothing was lost; this page just couldn’t reach them. Check your connection and try again."
+          body="Nothing was lost. Try again."
           onRetry={c.tryAgain}
         />
       ) : (
@@ -115,9 +116,15 @@ export function NoMatch({ query, stage, onClear, onAll, phone = false }: { query
   return <EmptyState kind="filtered" code="CH-14302" icon={SearchX} title={title} body={body} action={phone ? all : clear} secondaryAction={phone ? clear : all} />;
 }
 
+const ROW_KEYS: readonly ChPageKey[] = [{ label: 'Move between prospects', keys: ['Up', 'Down'] }];
+
 function ProspectTable({ c }: { c: RecCtx }) {
+  // B11: ↑ and ↓ walk the prospects, Home and End go to the ends; the table is one Tab stop.
+  const table = useRef<HTMLTableElement>(null);
+  useRovingRows(table, '.ch-rec-tb__name');
+  usePageKeys('Recruiting', ROW_KEYS);
   return (
-    <table className="ch-rec-tb" data-ch-code="CH-14802">
+    <table ref={table} className="ch-rec-tb" data-ch-code="CH-14802">
       <caption className="ch-sr-only">Prospects, {c.rows.length} shown</caption>
       <thead>
         <tr>
@@ -203,13 +210,7 @@ function ProspectPanel({ p, c }: { p: ChProspect; c: RecCtx }) {
             label={`More for ${p.name}`}
             align="end"
             items={[{ label: 'Delete prospect', icon: Trash2, danger: true, onSelect: () => c.askDelete(p) }]}
-            trigger={(t) => (
-              <Tooltip>
-                <button type="button" className="ch-btn ch-btn--ghost ch-iconbtn ch-btn--sm" aria-label={`More for ${p.name}`} {...t}>
-                  <Icon icon={Ellipsis} size={18} />
-                </button>
-              </Tooltip>
-            )}
+            trigger={(t) => <IconButton icon={Ellipsis} size="sm" label={`More for ${p.name}`} menu={t} />}
           />
         </div>
         <div className="ch-rec-stage" data-ch-code="CH-14803">

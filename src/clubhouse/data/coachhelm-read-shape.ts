@@ -3,6 +3,7 @@ import type { InsightEvidence } from '@/lib/coachhelm/v2/insights/types';
 import { teamPoolLine } from '@/lib/coachhelm/reads/team-pool-line';
 import type { ChInsight } from './coachhelm-shape';
 import type { ChViewer } from './coachhelm-voice';
+import { formatFixed } from '../lib/format';
 
 /**
  * The Read (Clubhouse P013, the player's Deep dive): one insight as four fixed lines, What, Why, Next and When, each answering
@@ -171,7 +172,7 @@ function strokesOf(ev: InsightEvidence, closes: ChReadInputs['closes']): ChReadS
   if (closes && Number(closes.strokes) > 0) return { value: closes.strokes, anchor: closes.anchor };
   const v = num(ev.strokes_impact);
   if (v == null || !ESTIMATED.has(ev.strokes_impact_method)) return null;
-  const r = Math.abs(v).toFixed(1);
+  const r = formatFixed(Math.abs(v), 1);
   return Number(r) > 0 ? { value: r, anchor: null } : null;
 }
 

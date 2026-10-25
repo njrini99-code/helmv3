@@ -1,6 +1,7 @@
 import type { InsightEvidence } from '@/lib/coachhelm/v2/insights/types';
 import { isPlaceholderCause } from '@/lib/coachhelm/reads/placeholder-cause';
 import type { ChViewer } from './coachhelm-voice';
+import { plural } from '../lib/plural';
 
 /**
  * The path line (design call D2): the second line of every read, inside its card, in one fixed grammar: what was seen · count of
@@ -35,7 +36,6 @@ export const NOT_TRACED_SHOT_BY_SHOT = 'Not yet traced shot by shot';
 /** The prefix a narrowing keeps verbatim (PR #2073 tests it): a narrowing says where, never why. */
 export const NARROWING_PREFIX = 'Observed, not a cause:';
 
-const plural = (n: number, one: string, many = `${one}s`) => `${n} ${n === 1 ? one : many}`;
 const count = (n: number | null | undefined): n is number => typeof n === 'number' && Number.isFinite(n) && n >= 0;
 const trimEnd = (s: string) => s.replace(/\s+/g, ' ').trim().replace(/[.;:,]+$/, '');
 

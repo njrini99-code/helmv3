@@ -62,7 +62,8 @@ import { QualifierForm } from '../screens/qualifiers/QualifierForm';
 import { QualifierSelection } from '../screens/qualifiers/QualifierSelection';
 import { QualifierDetailSkeleton, QualifierFormSkeleton, QualifierSelectionSkeleton, QualifiersSkeleton } from '../screens/qualifiers/QualifiersSkeleton';
 import { useLiveStandings } from '../screens/qualifiers/live';
-import { buildBoard, roundPars, stageNoteText, validateForm, type ChQFormValues, type ChQRound } from '../screens/qualifiers/model';
+import { buildBoard, lineGapText, roundPars, sampleNote, stageNoteText, validateForm, viewerOutcomeText, viewerSelection, viewerVsLines, type ChQFormValues, type ChQRound, type ChQRow } from '../screens/qualifiers/model';
+import { firstName } from '../lib/names';
 import { LIVE_SELECTION_WRITES, runEditPlan, selectionReason, startSelecting, type ChQSelectionWrites, type ChQWrites } from '../screens/qualifiers/writes';
 import { DETAIL_INDEX, PLAYER_ID, PREVIEW_COURSES, PREVIEW_TEES, previewCreateForm, previewDetail, previewEditForm, previewList, previewSelection } from '../preview/fixtures-qualifiers';
 import { isRebuilt } from '../shell/nav';
@@ -154,6 +155,120 @@ beforeEach(() => {
 });
 
 describe('Qualifiers · the standings model', () => {
+  describe('CH-09908 you vs the line (row 74)', () => {
+    const r = (id: string, name: string, toPar: number, played = 2) => ({ playerId: id, name, toPar, played, total: 140 + toPar, position: 0, tied: false }) as unknown as ChQRow;
+    const rows = [r('a', 'Ava Chen', -2), r('b', 'Eli Park', 1), r('c', 'Jonah Okafor', 4), r('d', 'Maya Reyes', 4), r('e', 'Luca Ferraro', 9, 1)];
+    const board = { rows, topScore: 2, squad: 4 };
+    const say = (id: string) => {
+      const v = viewerVsLines(board, id, 'open')!;
+      return v.gaps.map((g) => `${g.label}: ${lineGapText(g, v.me, 3, firstName)}`);
+    };
+    it('measures from the board’s own order and the rows its lines are drawn at', () => {
+      expect(say('a')).toEqual([
+        'Top-score line: Inside by 6 strokes. Jonah is first below it.',
+        'Travel cut: Inside. Luca has played 1 of 3 rounds to your 2, so the gap isn’t comparable yet.',
+      ]);
+    });
+    it('says Outside with the last place above the line', () => {
+      expect(say('c')[0]).toBe('Top-score line: Outside by 3 strokes. Eli holds the last place above it.');
+    });
+    it('gives no strokes across a different number of rounds, and nothing for a coach or a board with no line', () => {
+      expect(say('e')).toEqual(['Top-score line: Outside. Eli has played 2 of 3 rounds to your 1, so the gap isn’t comparable yet.', 'Travel cut: Outside. Maya has played 2 of 3 rounds to your 1, so the gap isn’t comparable yet.']);
+      expect(viewerVsLines(board, null, 'open')).toBeNull();
+      expect(viewerVsLines({ rows, topScore: 0, squad: 0 }, 'a', 'open')).toBeNull();
+      expect(viewerVsLines({ rows: rows.slice(0, 2), topScore: 2, squad: 2 }, 'a', 'open')).toBeNull();
+    });
+    it('is drawn at the top of a player’s board, desktop and phone, and never for a coach', () => {
+      wrap(<QualifierDetail data={previewDetail(0, 'player')} writes={fakeWrites()} live={false} />);
+      const card = code('CH-09908');
+      expect(card).not.toBeNull();
+      expect(within(card as HTMLElement).getByRole('heading', { name: 'You vs the line' })).toBeTruthy();
+      expect(card!.textContent).toMatch(/Top-score line (Inside|Outside)/);
+      // The place is named, never a bare number before the to-par plate (Round 3).
+      const me = previewDetail(0, 'player').board!.rows.find((x) => x.playerId === previewDetail(0, 'player').viewerPlayerId)!;
+      expect(card!.querySelector('.ch-qf-you-line__me b')!.textContent).toBe(`Place ${(me.tied ? 'T' : '') + me.position}`);
+      cleanup();
+      const real = window.matchMedia;
+      window.matchMedia = ((q: string) => ({ ...real(q), matches: q === '(max-width: 820px)' })) as typeof window.matchMedia;
+      try {
+        wrap(<QualifierDetail data={previewDetail(0, 'player')} writes={fakeWrites()} live={false} />);
+        expect(code('CH-09908')).not.toBeNull();
+      } finally {
+        window.matchMedia = real;
+      }
+      cleanup();
+      wrap(<QualifierDetail data={previewDetail(0, 'coach')} writes={fakeWrites()} live={false} />);
+      expect(code('CH-09908')).toBeNull();
+    });
+    it('level on to par but not on strokes across the line: total strokes decide', () => {
+      const level = { rows: [r('a', 'Ava Chen', 1), { ...r('b', 'Eli Park', 1), total: 142 }], topScore: 1, squad: 1 };
+      const v = viewerVsLines(level, 'b', 'open')!;
+      expect(lineGapText(v.gaps[0]!, v.me, 3, firstName)).toBe('Outside, level with Ava on to par: total strokes decide.');
+    });
+
+    // The card follows the board's row state and, after confirm, the squad (selectionOutcomeFor's rule), never the index
+    // its lines are drawn at. Built with buildBoard, so each row carries the state the board draws.
+    const ent = (id: string, name: string) => ({ playerId: id, name, classYear: null });
+    const rnd = (playerId: string, total: number, toPar: number): ChQRound => ({ id: `${playerId}1`, playerId, number: 1, total, toPar, date: '2026-09-22', course: 'Finley GC', holesPlayed: 18 });
+    const field = [ent('a', 'Ava Chen'), ent('b', 'Eli Park'), ent('c', 'Jonah Okafor'), ent('d', 'Maya Reyes')];
+    const scores = [rnd('a', 70, -2), rnd('b', 72, 0), rnd('c', 74, 2), rnd('d', 76, 4)];
+    const confirmed = (selections: { playerId: string; type: 'top_score' | 'coach_pick' }[]) =>
+      buildBoard({ entrants: field, rounds: scores, squad: 3, picks: 1, status: 'completed', selectionState: 'selected', selections: selections.map((x) => ({ ...x, reasoning: null })), numRounds: 1 });
+    const card = (b: ReturnType<typeof buildBoard>, id: string) => {
+      const v = viewerVsLines(b, id, 'confirmed')!;
+      return { outcome: v.outcome, gaps: v.gaps.length, words: viewerOutcomeText(v.outcome!) };
+    };
+    it('after confirm, a picked player is never Outside: a coach’s pick below the travel cut reads Coach’s pick', () => {
+      // Two on score (A, B), and the coach picks D from fourth, below the travel cut at three.
+      const b = confirmed([{ playerId: 'a', type: 'top_score' }, { playerId: 'b', type: 'top_score' }, { playerId: 'd', type: 'coach_pick' }]);
+      expect(card(b, 'd')).toEqual({ outcome: 'pick', gaps: 0, words: { label: 'Coach’s pick', text: 'You made the travel squad.' } });
+      expect(card(b, 'a')).toEqual({ outcome: 'selected', gaps: 0, words: { label: 'Selected', text: 'You made the travel squad.' } });
+    });
+    it('after confirm with coach’s picks, an unpicked player is never Inside, even above the travel cut', () => {
+      // C is third, inside a squad of three, but the coach picked D: C is not selected.
+      const b = confirmed([{ playerId: 'a', type: 'top_score' }, { playerId: 'b', type: 'top_score' }, { playerId: 'd', type: 'coach_pick' }]);
+      expect(b.rows.findIndex((x) => x.playerId === 'c')).toBeLessThan(b.squad);
+      expect(card(b, 'c')).toEqual({ outcome: 'not_selected', gaps: 0, words: { label: 'Not selected', text: 'You were not selected this time.' } });
+      // Confirmed, but the selections didn't load: nothing is said on a guess.
+      expect(viewerVsLines(b, 'c', 'unknown')).toBeNull();
+      expect(viewerSelection('selected', null)).toBe('unknown');
+      expect(viewerSelection('selected', [])).toBe('confirmed');
+      expect(viewerSelection('scoring', null)).toBe('open');
+    });
+    it('Q-114: players level on to par and strokes at the top-score line read Tie at cut, on either side of it', () => {
+      const b = buildBoard({ entrants: field, rounds: [rnd('a', 70, -2), rnd('b', 72, 0), rnd('c', 72, 0), rnd('d', 76, 4)], squad: 3, picks: 1, status: 'in_progress', selectionState: 'scoring', selections: null, numRounds: 1 });
+      expect(b.rows.map((x) => x.state)).toEqual(['qualifying', 'tie', 'tie', null]);
+      const say = (id: string) => {
+        const v = viewerVsLines(b, id, 'open')!;
+        return v.gaps.map((g) => `${g.label}: ${lineGapText(g, v.me, 1, firstName)}`);
+      };
+      expect(say('b')[0]).toBe('Top-score line: Tie at cut, level with Jonah on to par and total strokes: your coach decides.');
+      expect(say('c')[0]).toBe('Top-score line: Tie at cut, level with Eli on to par and total strokes: your coach decides.');
+      // Between the two lines before confirm, the places are the coach's picks: C is neither inside nor outside the travel cut.
+      expect(say('c')[1]).toBe('Travel cut: In the coach’s pick places: your coach chooses who fills them.');
+      expect(say('a')[1]).toBe('Travel cut: Inside by 6 strokes. Maya is first below it.');
+    });
+    it('draws the outcome on a confirmed board for the player, desktop and phone', () => {
+      const data = previewDetail(DETAIL_INDEX.selected!, 'player');
+      expect(data.selectionState).toBe('selected');
+      expect(data.selections).not.toBeNull();
+      const me = data.board!.rows.find((x) => x.playerId === data.viewerPlayerId)!;
+      const words = viewerOutcomeText(me.state === 'pick' ? 'pick' : me.state === 'selected' ? 'selected' : 'not_selected');
+      wrap(<QualifierDetail data={data} writes={fakeWrites()} live={false} />);
+      expect(code('CH-09908')!.textContent).toContain(`${words.label} ${words.text}`);
+      expect(code('CH-09908')!.textContent).not.toMatch(/Inside|Outside|Top-score line/);
+      cleanup();
+      const real = window.matchMedia;
+      window.matchMedia = ((q: string) => ({ ...real(q), matches: q === '(max-width: 820px)' })) as typeof window.matchMedia;
+      try {
+        wrap(<QualifierDetail data={data} writes={fakeWrites()} live={false} />);
+        expect(code('CH-09908')!.textContent).toContain(`${words.label} ${words.text}`);
+      } finally {
+        window.matchMedia = real;
+      }
+    });
+  });
+
   const e = (id: string) => ({ playerId: id, name: id.toUpperCase(), classYear: null });
   const rd = (playerId: string, number: number, total: number, toPar: number, holesPlayed: number | null = 18): ChQRound => ({
     id: `${playerId}${number}`,
@@ -165,10 +280,10 @@ describe('Qualifiers · the standings model', () => {
     course: 'Finley GC',
     holesPlayed,
   });
-  it('ranks by total to par, then strokes, then more rounds; ties share a T position', () => {
+  it('ranks by total to par, then strokes; ties share a T position', () => {
     const b = buildBoard({
       entrants: ['a', 'b', 'c', 'd', 'e'].map(e),
-      rounds: [rd('a', 1, 70, -2), rd('b', 1, 71, -1), rd('c', 1, 71, -1), rd('d', 1, 72, 1), rd('d', 2, 71, -1), rd('e', 1, 74, 2)],
+      rounds: [rd('a', 1, 70, -2), rd('b', 1, 71, -1), rd('c', 1, 71, -1), rd('d', 1, 72, 1), rd('e', 1, 74, 2)],
       squad: 3,
       picks: 1,
       status: 'in_progress',
@@ -186,7 +301,58 @@ describe('Qualifiers · the standings model', () => {
     // until the coach chooses (Q-114). D is fourth of a squad of three, below the travel cut, so D is out, not on the
     // Bubble: the Bubble is inside the squad (DESIGN.md, production's tiers; the parity fix of 2026-10-17).
     expect(b.rows.map((r) => r.state)).toEqual(['qualifying', 'tie', 'tie', null, null]);
-    expect(b.submitted).toBe(6);
+    expect(b.submitted).toBe(5);
+  });
+  // A skipped round two with a −4 opening; B and C played both; D played both at the same total as C.
+  const decision10 = (status: 'in_progress' | 'completed') =>
+    buildBoard({
+      entrants: ['a', 'b', 'c', 'd'].map(e),
+      rounds: [rd('a', 1, 68, -4), rd('b', 1, 74, 2), rd('b', 2, 75, 3), rd('c', 1, 72, 0), rd('c', 2, 72, 0), rd('d', 1, 70, -2), rd('d', 2, 74, 2)],
+      squad: 2,
+      picks: 0,
+      status,
+      selectionState: 'scoring',
+      selections: null,
+      numRounds: 3,
+    });
+  it('owner decision 10: complete cards rank first; a card a round short goes below them whatever its total, and is flagged once the event is complete', () => {
+    const done = decision10('completed');
+    expect(done.rows.map((r) => [r.playerId, r.position, r.tied, r.missed])).toEqual([
+      ['c', 1, true, false],
+      ['d', 1, true, false],
+      ['b', 3, false, false],
+      ['a', 4, false, true],
+    ]);
+    expect(sampleNote(done.rows[3]!, done, 3)).toBe('Missed a round · 1 of 3 rounds');
+    expect(sampleNote(done.rows[0]!, done, 3)).toBeNull();
+  });
+  it('owner decision 10 during play: the same order, but a card a round short is not "Missed a round" yet, only its pace', () => {
+    const live = decision10('in_progress');
+    // Decision 10's order holds while the event is on: complete cards by to par, then strokes, then rounds; the short card below.
+    expect(live.rows.map((r) => [r.playerId, r.position, r.tied])).toEqual(decision10('completed').rows.map((r) => [r.playerId, r.position, r.tied]));
+    expect(live.rows.map((r) => r.missed)).toEqual([false, false, false, false]);
+    expect(sampleNote(live.rows[3]!, live, 3)).toBe('1 of 3 rounds');
+    expect(sampleNote(live.rows[0]!, live, 3)).toBeNull();
+  });
+  it('a short card and a complete card level on to par and strokes are never tied, during play or after (decision 10 groups)', () => {
+    for (const status of ['in_progress', 'completed'] as const) {
+      const b = buildBoard({
+        entrants: ['a', 'b', 'c'].map(e),
+        // A and B played both rounds at 144 (E); C played one round at 144 strokes, E: level on to par and strokes, a round short.
+        rounds: [rd('a', 1, 72, 0), rd('a', 2, 72, 0), rd('b', 1, 70, -2), rd('b', 2, 74, 2), rd('c', 1, 144, 0)],
+        squad: 2,
+        picks: 0,
+        status,
+        selectionState: 'scoring',
+        selections: null,
+        numRounds: 2,
+      });
+      expect(b.rows.map((r) => [r.playerId, r.position, r.tied, r.state === 'tie'])).toEqual([
+        ['a', 1, true, false],
+        ['b', 1, true, false],
+        ['c', 3, false, false],
+      ]);
+    }
   });
   it('averages full rounds only, and counts the shorter ones it left out', () => {
     const b = buildBoard({ entrants: [e('a')], rounds: [rd('a', 1, 72, 0), rd('a', 2, 38, 2, 9)], squad: 5, picks: 1, status: 'in_progress', selectionState: 'open', selections: null });
@@ -406,7 +572,7 @@ describe('Qualifiers · the loader', () => {
     expect(created).toMatchObject({ mode: 'create', id: null, playersError: false, squadLocked: false, minRounds: 1, initial: { name: '', rounds: '3', squad: '5', picks: '1', oneRoundAck: false } });
     expect([...created.initial.playerIds].sort()).toEqual(['p1', 'p3']);
     const { unmount } = wrap(<QualifierForm data={created} writes={fakeWrites()} />);
-    expect(screen.getByRole('heading', { level: 1, name: 'Create a qualifier' })).toBeTruthy();
+    expect(screen.getByRole('heading', { level: 1, name: 'New qualifier' })).toBeTruthy();
     expect((screen.getByLabelText('Rounds') as HTMLInputElement).value).toBe('3');
     expect((screen.getByLabelText('Squad size') as HTMLInputElement).value).toBe('5');
     expect((screen.getByLabelText('Coach’s picks') as HTMLInputElement).value).toBe('1');
@@ -595,6 +761,20 @@ describe('Qualifiers · a failed read is never an empty (owner rule 1, 2026-10-0
 });
 
 describe('Qualifiers · list', () => {
+  it('row 63 B11: ↓ and ↑ walk the qualifiers (hero, then cards), which are one Tab stop', () => {
+    wrap(<QualifiersList data={previewList('coach')} />);
+    const rows = [...document.querySelectorAll<HTMLElement>('.ch-qf-hero, .ch-qf-card')];
+    expect(rows.length).toBeGreaterThan(2);
+    expect(rows.filter((r) => r.tabIndex === 0)).toHaveLength(1);
+    rows[0]!.focus();
+    fireEvent.keyDown(rows[0]!, { key: 'ArrowDown' });
+    expect(document.activeElement).toBe(rows[1]);
+    fireEvent.keyDown(rows[1]!, { key: 'ArrowUp' });
+    expect(document.activeElement).toBe(rows[0]);
+    fireEvent.keyDown(rows[0]!, { key: 'End' });
+    expect(document.activeElement).toBe(rows.at(-1));
+  });
+
   it('90101 the list opens on the live qualifier as the hero, then Active and Concluded, with the counts in the head', () => {
     const data = list();
     wrap(<QualifiersList data={data} />);
@@ -605,7 +785,7 @@ describe('Qualifiers · list', () => {
     expect(screen.getByRole('button', { name: /^Concluded\s*3$/ })).toBeTruthy();
     expect(screen.getByText('Rank players over counted rounds and pick who travels.')).toBeTruthy();
     expect([...document.querySelectorAll('.ch-qf-pill')].map((b) => b.textContent)).toEqual(['All5', 'Active2', 'Concluded3']);
-    expect(screen.getByRole('link', { name: 'Create qualifier' }).getAttribute('href')).toBe('/golf/dashboard/qualifiers/new');
+    expect(screen.getByRole('link', { name: 'New qualifier' }).getAttribute('href')).toBe('/golf/dashboard/qualifiers/new');
     // The live one leads, with its leaders; the other active one is a card under Active.
     const hero = document.querySelector('.ch-qf-hero') as HTMLAnchorElement;
     expect(hero.getAttribute('href')).toBe(`/golf/dashboard/qualifiers/${data.items[0]!.id}`);
@@ -620,16 +800,16 @@ describe('Qualifiers · list', () => {
   it('CH-09301 a team with no qualifiers: the coach can create one, a player is told who does', () => {
     const { unmount } = wrap(<QualifiersList data={list('coach', 'all', { items: [] })} />);
     expect(code('CH-09301')!.textContent).toMatch(/No qualifiers yet/);
-    expect(within(code('CH-09301') as HTMLElement).getByRole('link', { name: 'Create qualifier' })).toBeTruthy();
-    // One primary per screen: the header's Create qualifier steps aside (D-71).
-    expect(screen.getAllByRole('link', { name: 'Create qualifier' })).toHaveLength(1);
+    expect(within(code('CH-09301') as HTMLElement).getByRole('link', { name: 'New qualifier' })).toBeTruthy();
+    // One primary per screen: the header's New qualifier steps aside (D-71).
+    expect(screen.getAllByRole('link', { name: 'New qualifier' })).toHaveLength(1);
     // The eyebrow is the name alone (the phone, whose bar names the page, hides it).
     expect(document.querySelector('.ch-qf-eyebrow')!.textContent).toBe('Qualifiers');
     expect(document.querySelector('.ch-qf-eyebrow')!.classList.contains('is-bare')).toBe(true);
     unmount();
     wrap(<QualifiersList data={list('player', 'all', { items: [] })} />);
     expect(code('CH-09301')!.textContent).toMatch(/Your coach’s qualifiers show here/);
-    expect(screen.queryByRole('link', { name: 'Create qualifier' })).toBeNull();
+    expect(screen.queryByRole('link', { name: 'New qualifier' })).toBeNull();
   });
 
   it('CH-09306 a player entered in nothing', () => {
@@ -644,6 +824,8 @@ describe('Qualifiers · list', () => {
     expect(code('CH-09303')!.textContent).toMatch(/No concluded qualifiers yet/);
     await user.type(screen.getByLabelText('Search qualifiers'), 'zzz');
     await expectCode('CH-09302', /No qualifiers match your filters/);
+    // Filters that hide every qualifier are a filtered empty (2026-10-23, filtered empties).
+    expect(code('CH-09302')!.getAttribute('data-ch-state')).toBe('filtered');
     await user.click(screen.getByRole('button', { name: 'Clear filters' }));
     expect(code('CH-09302')).toBeNull();
     await user.click(screen.getByRole('button', { name: /Concluded/ }));
@@ -763,7 +945,7 @@ describe('Qualifiers · one qualifier', () => {
 
   it('90808 a player never gets a coach control: not Create on the list, and not Manage selections, Edit, Close, Reopen, round-by-round or selections on a qualifier', () => {
     const on = wrap(<QualifiersList data={list('player')} />);
-    expect(screen.queryByRole('link', { name: 'Create qualifier' })).toBeNull();
+    expect(screen.queryByRole('link', { name: 'New qualifier' })).toBeNull();
     on.unmount();
     for (const name of ['live', 'completed', 'selected', 'upcoming'] as const) {
       const view = wrap(<QualifierDetail data={detail(name, 'player')} writes={fakeWrites()} live={false} />);
@@ -1782,7 +1964,7 @@ describe('Qualifiers · create and edit', () => {
     await user.click(screen.getByRole('button', { name: 'Save changes' }));
     await expectCode('CH-09002', /Couldn’t save the qualifier.*Check the form and save again/);
     expect(code('CH-09902')).toBeNull();
-    expect(screen.getByRole('button', { name: 'Retry' })).toBeTruthy();
+    expect(screen.getByRole('button', { name: 'Try again' })).toBeTruthy();
   });
 
   it('90513 editing: a player with a round stays entered; a changed squad and entrants are sent, an unchanged one is not', async () => {
@@ -1859,7 +2041,7 @@ describe('Qualifiers · create and edit', () => {
     const f = form();
     wrap(<QualifierForm data={{ ...f, players: f.players.map((p, i) => (i === 0 ? { ...p, name: null as never } : p)) }} writes={fakeWrites()} />);
     expect(code('CH-09216')!.textContent).toMatch(/The qualifier form couldn’t be shown/);
-    expect(screen.getByRole('heading', { name: 'Create a qualifier' })).toBeTruthy();
+    expect(screen.getByRole('heading', { name: 'New qualifier' })).toBeTruthy();
     quiet.mockRestore();
   });
 
@@ -2817,7 +2999,8 @@ describe('Qualifiers · the route (who reaches which address)', () => {
     vi.mocked(resolveClubhouseTeam).mockResolvedValue(null);
     for (const view of ['list', 'mine', 'new', 'edit', 'selection', 'detail'] as const) {
       const { unmount } = wrap((await route(view, QID)) as never);
-      expect([view, code('CH-09309')!.textContent]).toEqual([view, 'You aren’t on a team yet' + 'Qualifiers fill in once your team is set up.']);
+      // CONS-10: the one no-team state, with its one way on.
+      expect([view, code('CH-09309')!.textContent]).toEqual([view, 'You aren’t on a team yet' + 'Qualifiers fill in once your team is set up.' + 'Open team settings']);
       unmount();
     }
     vi.mocked(getGolfSessionProfile).mockResolvedValue({ coach: null, player: { id: 'p2' } } as never);
@@ -3168,7 +3351,7 @@ describe('Qualifiers · every write', () => {
       await toldOnce(sc);
       // The notice has no Retry of its own: the coach saves again, which is the same write.
       if (sc.notice) await sc.act(userEvent.setup());
-      else await userEvent.setup().click(screen.getByRole('button', { name: 'Retry' }));
+      else await userEvent.setup().click(screen.getByRole('button', { name: 'Try again' }));
       await waitFor(() => expect(sc.write(c)).toHaveBeenCalledTimes(2));
       expect([sc.name, sc.write(c).mock.calls[1]]).toEqual([sc.name, sc.write(c).mock.calls[0]]);
       await screen.findByText(sc.done);

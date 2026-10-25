@@ -1,6 +1,6 @@
 'use client';
 
-import { ArrowRight, ChevronLeft, Clock, FileText, Lock, Paperclip, Plane, Repeat, Text, Trash2, X } from 'lucide-react';
+import { ArrowRight, Clock, FileText, Lock, Paperclip, Plane, Repeat, Text, Trash2, X } from 'lucide-react';
 import Link from 'next/link';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { getItineraryForEvent } from '@/app/golf/actions/travel';
@@ -9,7 +9,7 @@ import { attachDocumentToEvent, detachDocumentFromEvent, getEventDocuments } fro
 import { getDocuments } from '@/app/golf/actions/documents';
 import { serializeRecurrenceRule } from '@/lib/golf/recurrence';
 import { Badge } from '../../ui/Badge';
-import { Button } from '../../ui/Button';
+import { Button, IconButton } from '../../ui/Button';
 import { DateField } from '../../ui/DateField';
 import { TimeField } from '../../ui/TimeField';
 import { Icon } from '../../ui/Icon';
@@ -19,7 +19,6 @@ import { SearchField } from '../../ui/SearchField';
 import { Segmented } from '../../ui/Segmented';
 import { Skeleton } from '../../ui/States';
 import { useToast } from '../../ui/Toast';
-import { Tooltip } from '../../ui/Tooltip';
 import { isOffline, normalise, useAction } from '../../lib/use-action';
 import { chReport } from '../../lib/track';
 import { newRequestId } from '../../data/recruiting-shape';
@@ -27,6 +26,7 @@ import { haptic } from '../../lib/haptics';
 import { useChClock } from '../../lib/use-clock';
 import { addDays, dayLabel, dayNum, dowOf, monthName, rangeLabel, type ChCalEvent } from './model';
 import type { ChNow } from './views';
+import { BackLink } from '../../ui/Section';
 
 const toHHMM = (h: number) => `${String(Math.floor(h)).padStart(2, '0')}:${String(Math.round((h % 1) * 60)).padStart(2, '0')}`;
 const fromHHMM = (v: string) => {
@@ -65,9 +65,9 @@ export function BusyDetail({ e, now, zoneLabel, onBack, onDeleted }: { e: ChCalE
   );
   return (
     <div className="ch-in">
-      <Button className="ch-in__back" size="sm" variant="ghost" leftIcon={ChevronLeft} onClick={onBack}>
+      <BackLink className="ch-in__up" onClick={onBack}>
         Today
-      </Button>
+      </BackLink>
       <div className="ch-in__plate" data-tone="champagne">
         <div className="ch-in__kick">
           <Badge tone="neutral">
@@ -257,7 +257,7 @@ export function BusySheet({ open, onClose, onSaved, today }: { open: boolean; on
         </>
       }
     >
-      <div style={{ display: 'grid', gap: 14 }}>
+      <div style={{ display: 'grid', gap: 16 }}>
         <label className="ch-field">
           <span className="ch-field__label">What</span>
           <input className="ch-input" placeholder="Recruiting call" value={title} onChange={(e) => setTitle(e.target.value)} maxLength={200} aria-invalid={touched && !title.trim()} />
@@ -403,7 +403,7 @@ export function EventFiles({ eventId, teamId, canEdit, preview }: { eventId: str
         )}
       </div>
       {failed ? (
-        <InlineNotice code="CH-6207" title="Files didn’t load." body="Try again; the error has been reported." onRetry={() => setAttempt((a) => a + 1)} />
+        <InlineNotice code="CH-6207" title="Files didn’t load." body="Try again." onRetry={() => setAttempt((a) => a + 1)} />
       ) : !files ? (
         <div aria-busy="true" data-ch-code="CH-6403">
           <Skeleton height={36} />
@@ -424,11 +424,7 @@ export function EventFiles({ eventId, teamId, canEdit, preview }: { eventId: str
                 <span>{[fileSize(f.size), f.note].filter(Boolean).join(' · ')}</span>
               </a>
               {canEdit ? (
-                <Tooltip>
-                  <button type="button" className="ch-btn ch-btn--ghost ch-iconbtn ch-btn--sm" aria-label={`Remove ${f.title}`} onClick={() => void detach(f)}>
-                    <Icon icon={X} size={14} />
-                  </button>
-                </Tooltip>
+                <IconButton icon={X} size="sm" label={`Remove ${f.title}`} onClick={() => void detach(f)} />
               ) : (
                 <span />
               )}
@@ -536,7 +532,7 @@ function FilePicker({ open, teamId, eventId, attached, preview, onClose, onAttac
       <div style={{ display: 'grid', gap: 12 }}>
         <SearchField value={q} onChange={setQ} placeholder="Find a document" label="Find a document" />
         {failed ? (
-          <InlineNotice code="CH-6208" title="Documents didn’t load." body="Try again; the error has been reported." onRetry={() => setAttempt((a) => a + 1)} />
+          <InlineNotice code="CH-6208" title="Documents didn’t load." body="Try again." onRetry={() => setAttempt((a) => a + 1)} />
         ) : !docs ? (
           <div style={{ display: 'grid', gap: 8 }} aria-busy="true" data-ch-code="CH-6404">
             <Skeleton height={44} />

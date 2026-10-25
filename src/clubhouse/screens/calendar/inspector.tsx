@@ -3,7 +3,6 @@
 import {
   ArrowRight,
   CalendarCheck,
-  ChevronLeft,
   ChevronRight,
   CircleX,
   ClipboardCheck,
@@ -33,14 +32,13 @@ import { Avatar } from '../../ui/Avatar';
 import { AVAILABILITY_WORD } from '../roster/format';
 import { PlayerPeek } from '../../ui/PlayerPeek';
 import { Badge, type BadgeTone } from '../../ui/Badge';
-import { Button } from '../../ui/Button';
+import { Button, IconButton } from '../../ui/Button';
 import { Icon } from '../../ui/Icon';
 import { Menu } from '../../ui/Menu';
 import { InlineNotice } from '../../ui/Notices';
 import { PillGroup, Segmented, type SegOption } from '../../ui/Segmented';
 import { Skeleton } from '../../ui/States';
 import { useToast } from '../../ui/Toast';
-import { Tooltip } from '../../ui/Tooltip';
 import { normalise, useAction } from '../../lib/use-action';
 import { chReport, chTrail } from '../../lib/track';
 import { haptic } from '../../lib/haptics';
@@ -68,6 +66,8 @@ import type { ChNow } from './views';
 import { messageCoachHref } from '../home/player-links';
 import { BusyDetail, EventFiles, LinkedTrip } from './extras';
 import { courseParts } from './class-group';
+import { BackLink } from '../../ui/Section';
+import { plural, pluralWord } from '../../lib/plural';
 
 export type ChInsp =
   | { kind: 'event'; id: string; date: string }
@@ -120,9 +120,9 @@ const plateTone = (t: ChCalType) => (t === 'practice' ? 'green' : isMajor(t) ? '
 
 function Back({ label, onClick }: { label: string; onClick: () => void }) {
   return (
-    <Button className="ch-in__back" size="sm" variant="ghost" leftIcon={ChevronLeft} onClick={onClick}>
+    <BackLink className="ch-in__up" onClick={onClick}>
       {label}
-    </Button>
+    </BackLink>
   );
 }
 
@@ -185,7 +185,7 @@ export function Summary({ ctx }: { ctx: InspCtx }) {
           <span className="ch-num">{fmtHour(now.hour, true, clock)}</span>
         </div>
         <h2 className="ch-in__title">
-        {today.length === 0 ? <span data-ch-code="CH-6302">Nothing on the team calendar today</span> : `${today.length} team ${today.length === 1 ? 'event' : 'events'} today`}
+        {today.length === 0 ? <span data-ch-code="CH-6302">Nothing on the team calendar today</span> : `${today.length} team ${pluralWord(today.length, 'event')} today`}
       </h2>
       {next && (
         <button
@@ -266,7 +266,7 @@ export function Summary({ ctx }: { ctx: InspCtx }) {
                   <Icon icon={MailQuestion} size={14} />
                 </span>
                 <span style={{ minWidth: 0 }}>
-                  <b>{role === 'coach' ? `${pending.length} ${pending.length === 1 ? 'reply' : 'replies'} pending` : e.title}</b>
+                  <b>{role === 'coach' ? `${plural(pending.length, 'reply', 'replies')} pending` : e.title}</b>
                   <span>
                     {role === 'coach' ? `${e.title} · ${pending.length <= 2 ? pending.map((p) => first(people.get(p)?.name)).join(', ') : `${dowOf(e.date)} ${dayNum(e.date)}`}` : `${dowOf(e.date)} ${dayNum(e.date)} · ${rangeLabel(e, clock)}`}
                   </span>
@@ -293,7 +293,7 @@ export function Summary({ ctx }: { ctx: InspCtx }) {
           {role === 'coach' ? (
             <>
               <Fact icon={BookOpen} tone="class">
-                Class schedules for {classOwners.size} {classOwners.size === 1 ? 'player' : 'players'}
+                Class schedules for {classOwners.size} {pluralWord(classOwners.size, 'player')}
               </Fact>
               <Fact icon={Lock} tone="own">Your busy time · only you see it</Fact>
             </>
@@ -465,13 +465,7 @@ export function EventDetail({ ctx, id, date }: { ctx: InspCtx; id: string; date:
               ? ([{ kind: 'separator' }, { label: 'Delete permanently', icon: Trash2, danger: true, onSelect: () => ctx.onDelete!(e) }] as const)
               : []),
           ]}
-          trigger={(p) => (
-            <Tooltip>
-              <button type="button" className="ch-btn ch-btn--ghost ch-iconbtn ch-btn--sm" aria-label="More actions" {...p}>
-                <Icon icon={Ellipsis} size={15} />
-              </button>
-            </Tooltip>
-          )}
+          trigger={(p) => <IconButton icon={Ellipsis} size="sm" label="More actions" menu={p} />}
         />
       </div>
       <h2 className="ch-in__title" tabIndex={-1} style={e.cancelled ? { textDecoration: 'line-through' } : undefined}>
@@ -523,7 +517,7 @@ export function EventDetail({ ctx, id, date }: { ctx: InspCtx; id: string; date:
           <div className="ch-in__sechead">
             {/* Replies are counted only when the coach asked for them; otherwise this is the invite list (owner, 2026-10-08). */}
             <b>{e.rsvpRequired ? 'Responses' : 'Invited'}</b>
-            <span>{e.rsvpRequired ? `${e.people.length} invited` : `${e.people.length} ${e.people.length === 1 ? 'player' : 'players'}`}</span>
+            <span>{e.rsvpRequired ? `${e.people.length} invited` : `${plural(e.people.length, 'player')}`}</span>
           </div>
           {ctx.rsvpError ? (
             <InlineNotice
@@ -719,7 +713,7 @@ export function Attendance({ ctx, id, date }: { ctx: InspCtx; id: string; date: 
       return failed.length ? { success: false, error: failed.length === results.length ? failed[0]?.error : `${failed.length} of ${results.length} marks didn’t save` } : { success: true };
     },
     () => ({
-      done: `${unsaved.current.length} attendance ${unsaved.current.length === 1 ? 'mark' : 'marks'} saved`,
+      done: `${unsaved.current.length} attendance ${pluralWord(unsaved.current.length, 'mark')} saved`,
       failed: "Couldn’t save attendance",
       hint: 'The marks that saved are kept. Try again for the rest.',
       code: 'CH-6011',
@@ -739,7 +733,7 @@ export function Attendance({ ctx, id, date }: { ctx: InspCtx; id: string; date: 
         </div>
       </div>
       {loadError ? (
-        <InlineNotice code="CH-6209" title="Attendance didn’t load." body="Marks already saved are safe. Try again; the error has been reported." onRetry={() => setAttempt((a) => a + 1)} />
+        <InlineNotice code="CH-6209" title="Attendance didn’t load." body="Marks already saved are safe. Try again." onRetry={() => setAttempt((a) => a + 1)} />
       ) : !saved ? (
         <div className="ch-in__facts" aria-busy="true" data-ch-code="CH-6405">
           {e.people.slice(0, 5).map((p) => (

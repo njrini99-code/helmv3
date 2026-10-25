@@ -1,6 +1,7 @@
 import { act, cleanup, fireEvent, render, screen } from '@testing-library/react';
 import { afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
 import { TIP_OPEN_DELAY_MS } from '../../shell/command/tooltip-clock';
+import { haptic } from '../../lib/haptics';
 import { Button } from '../Button';
 import { SideScroll } from '../SideScroll';
 import { ScrollRegion } from '../ScrollRegion';
@@ -46,6 +47,24 @@ describe('Button busy', () => {
     expect(b).toBeDisabled();
     expect(b).not.toHaveAttribute('aria-busy');
     expect(b.querySelector('.ch-spinner')).toBeNull();
+  });
+});
+
+describe('the danger key (CONS-1)', () => {
+  it('warns as it is pressed, by default', () => {
+    vi.mocked(haptic).mockClear();
+    render(<Button variant="danger">Remove</Button>);
+    fireEvent.click(screen.getByRole('button', { name: 'Remove' }));
+    expect(haptic).toHaveBeenCalledWith('warning');
+  });
+
+  it('draws from its tokens: no literal hex in its rules', async () => {
+    const { readFileSync } = await import('node:fs');
+    const { join } = await import('node:path');
+    const css = readFileSync(join(process.cwd(), 'src/clubhouse/styles/controls.css'), 'utf8');
+    const rules = [...css.matchAll(/([^{}]*\.ch-btn--danger[^{}]*)\{([^{}]*)\}/g)];
+    expect(rules.length).toBeGreaterThanOrEqual(3);
+    for (const r of rules) expect(r[2], r[1]).not.toMatch(/#[0-9a-f]{3,6}\b/i);
   });
 });
 

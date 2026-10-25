@@ -10,6 +10,8 @@ import { normalise, useAction } from '../../lib/use-action';
 import { useChSessionState } from '../../lib/session-state';
 import { useLastGood } from '../../lib/use-last-good';
 import { useChPhone } from '../../lib/use-phone';
+import { RovingRows } from '../../ui/RovingRows';
+import { usePageKeys, type ChPageKey } from '../../shell/command/page-keys';
 import { useRefresh } from '../../lib/use-refresh';
 import { PhoneTop } from '../../shell/phone-chrome';
 import { rebuiltHref } from '../../shell/nav';
@@ -26,6 +28,8 @@ import { Tooltip } from '../../ui/Tooltip';
 import { monthLabel, MonthSpark, RoundRow, SeasonCard, shortDay, UnfinishedCard } from './parts';
 import { noteOpenedFromLibrary } from './return-state';
 import { LIVE_ROUNDS_WRITES, type ChRoundsWrites } from './writes';
+import { pluralWord } from '../../lib/plural';
+import { LargeTitle } from '../../ui/LargeTitle';
 
 type Group = 'month' | 'course';
 
@@ -53,6 +57,8 @@ export function groupRounds(list: ChLibraryRound[], by: Group, q: string): Array
   return [...groups].map(([key, rounds]) => ({ key, rounds }));
 }
 
+const ROW_KEYS: readonly ChPageKey[] = [{ label: 'Move between rounds', keys: ['Up', 'Down'] }];
+
 /**
  * Rounds (P011) library, for the player (design/handoff/Player - Rounds.html,
  * rounds-flow.jsx `Library`; spec docs/clubhouse/phone/rounds.md). The round
@@ -62,6 +68,7 @@ export function groupRounds(list: ChLibraryRound[], by: Group, q: string): Array
 export function RoundsLibrary({ data: fresh, playerId, writes = LIVE_ROUNDS_WRITES }: { data: ChRoundsLibrary; playerId: string; writes?: ChRoundsWrites }) {
   const phone = useChPhone();
   const { refresh, refreshing } = useRefresh();
+  usePageKeys('Rounds', phone ? null : ROW_KEYS);
   // Rule 2: a refresh that fails does not replace what the player was looking at with an error. The last library that landed in full
   // stays (`stale`) and says it may be out of date; a first load that fails, or another player's, is the error as it came.
   const { value: data, stale } = useLastGood(playerId, fresh, libraryLanded);
@@ -141,13 +148,13 @@ export function RoundsLibrary({ data: fresh, playerId, writes = LIVE_ROUNDS_WRIT
       {phone && <PhoneTop start heading={false} title="Rounds" />}
       <header className="ch-rd-h" data-canopy-head={phone ? undefined : ''}>
         <div>
-          <span className="ch-rd-k">{counted ? `Since August 1 · ${counted} counted ${counted === 1 ? 'round' : 'rounds'}` : 'Since August 1'}</span>
+          <span className="ch-rd-k">{counted ? `Since August 1 · ${counted} counted ${pluralWord(counted, 'round')}` : 'Since August 1'}</span>
           {/* CH-11410: a refresh with the page on screen keeps it and says it is updating (a Try again is the usual cause). */}
           <span className="ch-rd-upd" role="status" data-ch-code={refreshing ? 'CH-11410' : undefined}>
             {refreshing ? 'Updating…' : ''}
           </span>
           {/* D11: one h1 per screen; the phone bar's "Rounds" is plain text (heading={false}). */}
-          <h1 id="ch-rd-title">Your rounds</h1>
+          <LargeTitle id="ch-rd-title">Rounds</LargeTitle>
         </div>
         {/* One primary for one action: the idle card carries Start a round, so the head's New round is for when a round is
             in progress, or the check for one failed (that card is a notice with no Start). */}
@@ -172,7 +179,7 @@ export function RoundsLibrary({ data: fresh, playerId, writes = LIVE_ROUNDS_WRIT
           action={
             newHref ? (
               <Button variant="primary" leftIcon={Plus} href={newHref}>
-                Start a round
+                New round
               </Button>
             ) : undefined
           }
@@ -207,7 +214,7 @@ export function RoundsLibrary({ data: fresh, playerId, writes = LIVE_ROUNDS_WRIT
           {more.length > 0 && (
             <section className="ch-rd-more" aria-labelledby="ch-rd-more-h">
               <h2 id="ch-rd-more-h">
-                {more.length} more unfinished {more.length === 1 ? 'round' : 'rounds'}
+                {more.length} more unfinished {pluralWord(more.length, 'round')}
               </h2>
               <ul>
                 {more.map((r) => {
@@ -240,6 +247,8 @@ export function RoundsLibrary({ data: fresh, playerId, writes = LIVE_ROUNDS_WRIT
 
           {!data.rounds.error && list.length > 0 && (
             <SectionBoundary surface="rounds.book" label="Your rounds" code="CH-11203">
+              {/* B11: on desktop, Up and Down walk the rounds that open (their links), Home and End go to the ends; one Tab stop. */}
+              {!phone && <RovingRows selector=".ch-rd-book a.ch-rd-sc" within=".ch-rd" />}
               <div className="ch-rd-tools">
                 <SearchField value={q} onChange={setQ} placeholder="Search course…" label="Search rounds by course" />
                 <Segmented redraws
@@ -254,7 +263,7 @@ export function RoundsLibrary({ data: fresh, playerId, writes = LIVE_ROUNDS_WRIT
                 />
               </div>
               {groups.length === 0 ? (
-                <EmptyState code="CH-11303" compact title={`No rounds at “${q.trim()}”`} body="Check the spelling, or search part of the course name." />
+                <EmptyState code="CH-11303" kind="filtered" compact title={`No rounds at “${q.trim()}”`} body="Check the spelling, or search part of the course name." />
               ) : (
                 groups.map((g) => {
                   const full = g.rounds.filter((r) => r.holes === 18);
@@ -265,7 +274,7 @@ export function RoundsLibrary({ data: fresh, playerId, writes = LIVE_ROUNDS_WRIT
                         <span className="ch-rd-grp__rule" />
                         <MonthSpark rounds={g.rounds} />
                         <span className="ch-num">
-                          {g.rounds.length} {g.rounds.length === 1 ? 'round' : 'rounds'}
+                          {g.rounds.length} {pluralWord(g.rounds.length, 'round')}
                         </span>
                         {full.length > 0 && (
                           <span className="ch-num">
@@ -314,6 +323,7 @@ export function RoundsLibrary({ data: fresh, playerId, writes = LIVE_ROUNDS_WRIT
             <Button variant="ghost" onClick={() => setAsking(null)}>
               Keep it
             </Button>
+            {/* The warning came with the question (D-70): the yes is silent, and the result answers. */}
             <Button variant="danger" busy={discard.pending} feel={null} onClick={() => void confirmDiscard()}>
               {discard.pending ? 'Discarding…' : 'Discard round'}
             </Button>

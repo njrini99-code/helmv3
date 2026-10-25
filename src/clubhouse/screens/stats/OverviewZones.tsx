@@ -1,6 +1,6 @@
 import type { CSSProperties, ReactNode } from 'react';
 import type { ChPlayerProfile } from '../../data/stats-player';
-import { formatSigned, formatToPar, NO_DATA } from '../../lib/format';
+import { changeVerdict, formatAvg, formatFixed, formatSigned, formatToPar, NO_DATA, versusTeam } from '../../lib/format';
 import { sgBaseline, sgScale } from '../../lib/sg';
 import { deltaTone, deltaWords } from '../../lib/stats-signal';
 import { holeCoverage } from '../../data/round-scope';
@@ -13,6 +13,7 @@ import { trendRounds, withValue } from './round-trend';
 import { PuttBands } from './PuttBands';
 import { ScoreMixBar } from './ScoreMixBar';
 import { sgLegBars } from './leg-rows';
+import { plural, pluralWord } from '../../lib/plural';
 
 /**
  * P005: the Overview as seven zones, one per stat area (strokes gained, scoring, off the tee, approach, short game, putting,
@@ -24,7 +25,7 @@ import { sgLegBars } from './leg-rows';
 
 type Stats = NonNullable<ChPlayerProfile['stats']>;
 
-const fixed = (v: number | null | undefined, d = 1) => (v == null || Number.isNaN(v) ? NO_DATA : v.toFixed(d));
+const fixed = formatFixed;
 const clamp = (v: number, lo = 0, hi = 100) => Math.max(lo, Math.min(hi, v));
 const pos = (v: number, lo: number, hi: number) => clamp(((v - lo) / (hi - lo)) * 100);
 
@@ -37,7 +38,7 @@ function Track({ value, lo = 0, hi = 100, team, tour, bad = false, neutral = fal
   const b = pos(value, lo, hi);
   return (
     <div className="ch-ztrack" aria-hidden="true">
-      <i className={'ch-ztrack__fill' + (neutral ? ' is-neutral' : bad ? ' is-bad' : '')} style={{ '--ch-z-a': Math.min(a, b) / 100, '--ch-z-w': Math.abs(b - a) / 100 } as CSSProperties} />
+      <i className={'ch-ztrack__fill' + (neutral ? ' is-neutral' : bad ? ' is-loss' : '')} style={{ '--ch-z-a': Math.min(a, b) / 100, '--ch-z-w': Math.abs(b - a) / 100 } as CSSProperties} />
       {team != null && <u className="ch-ztrack__tick is-team" style={{ '--ch-z-x': pos(team, lo, hi) } as CSSProperties} />}
       {tour != null && <u className="ch-ztrack__tick is-tour" style={{ '--ch-z-x': pos(tour, lo, hi) } as CSSProperties} />}
     </div>
@@ -67,9 +68,17 @@ export function OverviewZones({ data, coach, ribbon, onOpenLeg }: { data: ChPlay
   const sgLo = -sgEnd;
   const sgTone = deltaTone(data.sgChange.delta, data.sgChange.se, false);
   // A rate's big reading is green or amber only against a reference (the team for a coach, the Tour for a player); none, no colour.
+  // Toned on the whole percents it prints (A5): 61% beside a reference of 61% is level, no tone. An early read is untoned (A7).
   const against = (you: number | null | undefined, label: string): 'good' | 'bad' | undefined => {
     const r = ref(label);
-    return you == null || r == null ? undefined : you >= r ? 'good' : 'bad';
+    if (you == null || r == null || cmp(label)?.early || Math.round(you) === Math.round(r)) return undefined;
+    return you > r ? 'good' : 'bad';
+  };
+  // What a rate under its floor needs, or its early-read tag (A7).
+  const floorNote = (label: string) => {
+    const c = cmp(label);
+    const note = c?.you == null ? c?.floor : c.early;
+    return note ? <span className="ch-zfloor">{note}</span> : null;
   };
 
   // 2 · scoring
@@ -83,7 +92,8 @@ export function OverviewZones({ data, coach, ribbon, onOpenLeg }: { data: ChPlay
         return { p, you: d.avgToPar, tour: tourAvg == null ? null : tourAvg - p };
       })
     : [];
-  const toParAvg = data.rounds.length ? data.rounds.reduce((a, r) => a + (r.toPar ?? 0) / (r.holes / 18), 0) / data.rounds.length : null;
+  // The window's own weighted to par a round, per 18 (A6): the same figure as the Stats hero, and a round with no par is left out, not 0.
+  const toParAvg = w.toPar;
 
   // 3 · off the tee
   const fwOpp = s?.fairwayOpportunities ?? 0;
@@ -139,16 +149,16 @@ export function OverviewZones({ data, coach, ribbon, onOpenLeg }: { data: ChPlay
         title="Strokes gained"
         def={
           <>
-            Strokes gained or lost a round, shot by shot, against a benchmark. <b>Zero is {baseline.noun}.</b> Below zero is normal for most players; what matters is the gap {coach ? 'to the team' : 'to the Tour'} and which leg it comes from.
+            Strokes gained or lost a round, shot by shot, against a benchmark. <b>Zero is {baseline.noun}.</b> Below zero is normal for most players; what matters is the gap {coach ? 'to the team' : `to ${baseline.name}`} and which leg it comes from.
           </>
         }
         read={
           <>
-            <Big value={sg == null ? NO_DATA : formatSigned(sg)} tone={sg == null ? undefined : sg >= 0 ? 'good' : 'bad'} />
+            <Big value={sg == null ? NO_DATA : formatSigned(sg)} tone={changeVerdict(sg)} />
             <div className="ch-znlines">
               {sgTeam != null && sg != null && (
                 <span>
-                  <b>Team {formatSigned(sgTeam)}</b> · {Math.abs(sg - sgTeam).toFixed(1)} {sg >= sgTeam ? 'ahead of' : 'behind'} them
+                  <b>Team {formatSigned(sgTeam)}</b> · {versusTeam(sg, sgTeam, false)}
                 </span>
               )}
               {data.sgChange.delta != null && (
@@ -169,7 +179,7 @@ export function OverviewZones({ data, coach, ribbon, onOpenLeg }: { data: ChPlay
           </Vis>
         )}
         {sg != null && (
-          <Vis title={coach ? 'Against the team and the Tour' : 'Against the Tour'} note={`Total strokes gained a round, ${formatSigned(sgLo, 0)} to ${formatSigned(sgHi, 0)}.`}>
+          <Vis title={coach ? `Against the team and ${baseline.name}` : `Against ${baseline.name}`} note={`Total strokes gained a round, ${formatSigned(sgLo, 0)} to ${formatSigned(sgHi, 0)}.`}>
             <div className="ch-zpin">
               <span style={{ left: `${pos(sg, sgLo, sgHi)}%` }}>You {formatSigned(sg)}</span>
             </div>
@@ -183,14 +193,14 @@ export function OverviewZones({ data, coach, ribbon, onOpenLeg }: { data: ChPlay
               )}
               <span>
                 <i className="is-tour" />
-                Tour 0.0
+                {baseline.mark} 0.0
               </span>
             </div>
           </Vis>
         )}
         {withValue(sgTrend).length >= 3 && (
-          <Vis title="Round by round" note="Strokes gained in each round, per 18 holes. Zero is the Tour baseline; the line is the five-round average.">
-            <RoundTrend rounds={sgTrend} kind="sg" size="desktop" openHref={openHref} label="Strokes gained in each round of the window." />
+          <Vis title="Round by round" note={`Strokes gained in each round, per 18 holes. Zero is ${baseline.noun}; the line is the five-round average.`}>
+            <RoundTrend rounds={sgTrend} kind="sg" tour={data.tour} size="desktop" openHref={openHref} label="Strokes gained in each round of the window." />
           </Vis>
         )}
       </Zone>
@@ -215,7 +225,7 @@ export function OverviewZones({ data, coach, ribbon, onOpenLeg }: { data: ChPlay
               )}
               {coach && data.teamAvg != null && w.avg != null && (
                 <span>
-                  Team <b>{data.teamAvg.toFixed(1)}</b> · {Math.abs(w.avg - data.teamAvg).toFixed(1)} {w.avg <= data.teamAvg ? 'ahead of' : 'behind'} them
+                  Team <b>{formatAvg(data.teamAvg)}</b> · {versusTeam(w.avg, data.teamAvg, true)}
                 </span>
               )}
             </div>
@@ -229,7 +239,7 @@ export function OverviewZones({ data, coach, ribbon, onOpenLeg }: { data: ChPlay
         )}
         {s && holesScored > 0 ? (
           <>
-            <Vis title="Every hole, by result" note={`${holesScored} holes over ${s.roundsPlayed} ${s.roundsPlayed === 1 ? 'round' : 'rounds'}.`}>
+            <Vis title="Every hole, by result" note={`${holesScored} holes over ${plural(s.roundsPlayed, 'round')}.`}>
               <ScoreMixBar counts={mixCounts!} perRound={mixPer} triple={data.extra.triplePlus} label="Every hole, by result" />
             </Vis>
             <Vis title="Each par against par" note="Average strokes over or under par a hole. The gold tick is the Tour.">
@@ -256,9 +266,10 @@ export function OverviewZones({ data, coach, ribbon, onOpenLeg }: { data: ChPlay
               <span>
                 fairways hit{ref('Fairways hit') != null && <> · <b>{refName} {Math.round(ref('Fairways hit')!)}%</b></>}
               </span>
+              {floorNote('Fairways hit')}
               {s?.penaltiesPerRound != null && (
                 <span>
-                  <b>{s.penaltiesPerRound.toFixed(1)}</b> penalty strokes a round
+                  <b>{formatFixed(s.penaltiesPerRound)}</b> penalty strokes a round
                 </span>
               )}
               {w.sgLegs.tee != null && (
@@ -301,7 +312,7 @@ export function OverviewZones({ data, coach, ribbon, onOpenLeg }: { data: ChPlay
                   <div className="l">
                     Penalty strokes<span>A round{penBench != null ? `. The Tour has ${penBench}.` : '.'}</span>
                   </div>
-                  <b className="ch-num">{s.penaltiesPerRound.toFixed(1)}</b>
+                  <b className="ch-num">{formatFixed(s.penaltiesPerRound)}</b>
                   <Track value={s.penaltiesPerRound} lo={0} hi={Math.max(1.2, (penBench ?? 0) * 2, s.penaltiesPerRound * 1.4)} bad={penBench != null && s.penaltiesPerRound > penBench} neutral={penBench == null} tour={penBench} />
                 </div>
               )}
@@ -342,6 +353,7 @@ export function OverviewZones({ data, coach, ribbon, onOpenLeg }: { data: ChPlay
                 greens in regulation
                 {ref('Greens in regulation') != null && <> · <b>{refName} {Math.round(ref('Greens in regulation')!)}%</b></>}
               </span>
+              {floorNote('Greens in regulation')}
               {w.sgLegs.approach != null && (
                 <span>
                   Strokes gained <b>{formatSigned(w.sgLegs.approach)}</b>
@@ -408,6 +420,7 @@ export function OverviewZones({ data, coach, ribbon, onOpenLeg }: { data: ChPlay
               <span>
                 scrambling{ref('Scrambling') != null && <> · <b>{refName} {Math.round(ref('Scrambling')!)}%</b></>}
               </span>
+              {floorNote('Scrambling')}
               {sandAtt > 0 && (
                 <span>
                   Sand saves <b>{sandMade} of {sandAtt}</b>
@@ -439,9 +452,9 @@ export function OverviewZones({ data, coach, ribbon, onOpenLeg }: { data: ChPlay
                   Saved par or better<small>The scramble</small>
                 </span>
                 <div>
-                  <i className="is-win" style={{ '--ch-z-p': scrMade / scrAtt } as CSSProperties} />
+                  <i className="is-made" style={{ '--ch-z-p': scrMade / scrAtt } as CSSProperties} />
                 </div>
-                <b className="ch-num is-win">{scrMade}</b>
+                <b className="ch-num is-made">{scrMade}</b>
               </div>
               {sandAtt > 0 && (
                 <>
@@ -489,11 +502,11 @@ export function OverviewZones({ data, coach, ribbon, onOpenLeg }: { data: ChPlay
             <Big value={fixed(puttsYou)} />
             <div className="ch-znlines">
               <span>
-                putts a round{ref('Putts per round') != null && <> · <b>{refName} {ref('Putts per round')!.toFixed(1)}</b></>}
+                putts a round{ref('Putts per round') != null && <> · <b>{refName} {formatFixed(ref('Putts per round'))}</b></>}
               </span>
               {threePutts != null && (
                 <span>
-                  <b>{threePutts.toFixed(1)}</b> 3-putts a round
+                  <b>{formatFixed(threePutts)}</b> 3-putts a round
                 </span>
               )}
               {w.sgLegs.putting != null && (
@@ -523,7 +536,7 @@ export function OverviewZones({ data, coach, ribbon, onOpenLeg }: { data: ChPlay
             Each round against {first}’s own average. Green rises when a round beat it, gold hangs when it didn’t. <b>Lower is better.</b>
           </>
         }
-        read={<div className="ch-znlines">{data.rounds.length} {data.rounds.length === 1 ? 'round' : 'rounds'} in this window</div>}
+        read={<div className="ch-znlines">{data.rounds.length} {pluralWord(data.rounds.length, 'round')} in this window</div>}
       >
         {ribbon}
       </Zone>
@@ -569,10 +582,12 @@ function ParDots({ rows }: { rows: Array<{ p: 3 | 4 | 5; you: number | null; tou
 }
 
 /** A green seen from above, its four edges thickened by the share of missed approaches that finish there. */
-function GreenDiagram({ short, long, left, right, gir }: { short: number; long: number; left: number; right: number; gir: number | null }) {
+export function GreenDiagram({ short, long, left, right, gir }: { short: number; long: number; left: number; right: number; gir: number | null }) {
   const stroke = (v: number) => 5 + (v / 100) * 28;
   const worst = Math.max(short, long, left, right);
   const tone = (v: number) => (v === worst ? 'var(--ch-warning-600)' : 'var(--ch-champagne-500)');
+  // The side most misses finish on is the one in bold, by the same test as its colour, never "Short" by default (A8.6).
+  const lab = (v: number) => (v === worst ? { fontSize: 15, fontWeight: 700, fill: tone(v) } : { fontSize: 13, fontWeight: 600, fill: 'var(--ch-text-secondary)' });
   return (
     <svg className="ch-zsvg ch-zgreen" viewBox="0 0 340 250" role="img" aria-label={`Missed greens: ${short} percent short, ${long} long, ${left} left, ${right} right`}>
       <g transform="translate(20,6)">
@@ -590,10 +605,10 @@ function GreenDiagram({ short, long, left, right, gir }: { short: number; long: 
         <path d="M 96 50.6 A 84 84 0 0 1 204 50.6" fill="none" stroke={tone(long)} strokeWidth={stroke(long)} />
         <path d="M 85.6 169 A 84 84 0 0 1 85.6 61" fill="none" stroke={tone(left)} strokeWidth={stroke(left)} />
         <path d="M 214.4 61 A 84 84 0 0 1 214.4 169" fill="none" stroke={tone(right)} strokeWidth={stroke(right)} />
-        <text x={150} y={232} textAnchor="middle" fontSize={15} fontWeight={700} fill={tone(short)}>Short {short}%</text>
-        <text x={150} y={24} textAnchor="middle" fontSize={13} fontWeight={600} fill="var(--ch-text-secondary)">Long {long}%</text>
-        <text x={62} y={119} textAnchor="end" fontSize={13} fontWeight={600} fill="var(--ch-text-secondary)">Left {left}%</text>
-        <text x={238} y={119} fontSize={13} fontWeight={600} fill="var(--ch-text-secondary)">Right {right}%</text>
+        <text x={150} y={232} textAnchor="middle" {...lab(short)}>Short {short}%</text>
+        <text x={150} y={24} textAnchor="middle" {...lab(long)}>Long {long}%</text>
+        <text x={62} y={119} textAnchor="end" {...lab(left)}>Left {left}%</text>
+        <text x={238} y={119} {...lab(right)}>Right {right}%</text>
       </g>
     </svg>
   );

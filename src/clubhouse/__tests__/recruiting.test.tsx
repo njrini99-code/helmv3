@@ -386,6 +386,21 @@ describe('Recruiting · the loader, the route and the page', () => {
 // ── Desktop ──────────────────────────────────────────────────────────────────
 
 describe('Recruiting · desktop', () => {
+  it('B11 ↓ and ↑ walk the prospect table, which is one Tab stop', () => {
+    wrap();
+    const rows = [...document.querySelectorAll<HTMLElement>('.ch-rec-tb__name')];
+    expect(rows.length).toBeGreaterThan(2);
+    expect(rows.filter((r) => r.tabIndex === 0)).toHaveLength(1);
+    rows[0]!.focus();
+    fireEvent.keyDown(rows[0]!, { key: 'ArrowDown' });
+    expect(document.activeElement).toBe(rows[1]);
+    fireEvent.keyDown(rows[1]!, { key: 'ArrowUp' });
+    expect(document.activeElement).toBe(rows[0]);
+    fireEvent.keyDown(rows[0]!, { key: 'End' });
+    expect(document.activeElement).toBe(rows.at(-1));
+    expect(rows.filter((r) => r.tabIndex === 0)).toEqual([rows.at(-1)]);
+  });
+
   it('CH-14904 CH-14801 CH-14802 it opens on the pipeline, the list by recently updated and the first prospect, as the board does', () => {
     wrap();
     expect(code('CH-14904')?.tagName).toBe('MAIN');
@@ -411,7 +426,7 @@ describe('Recruiting · desktop', () => {
     expect(within(p).getByRole('radio', { name: 'Offered' }).getAttribute('aria-checked')).toBe('true');
     expect(within(p).getByText(/Saw Mason at the Carolinas Junior/)).toBeTruthy();
     expect(within(p).getByText('Added Aug 12 · Updated 2 days ago')).toBeTruthy();
-    expect(screen.getByRole('button', { name: 'Add prospect' })).toBeTruthy();
+    expect(screen.getByRole('button', { name: 'New prospect' })).toBeTruthy();
   });
 
   it('CH-14801 CH-14701 a stage is a filter: pressing it shows only those prospects, "Show all 8" and pressing it again undo it, and the counts ignore the search', async () => {
@@ -540,11 +555,11 @@ describe('Recruiting · desktop', () => {
   it('CH-14201 CH-14911 a list that did not load says so with Try again, which asks the server again; it is never "your list starts here"', async () => {
     const user = userEvent.setup();
     const { again } = wrap(PREVIEW_RECRUITING_FAILED);
-    expect(code('CH-14201')?.textContent).toMatch(/Your prospects didn’t load.*Nothing was lost; this page just couldn’t reach them/);
+    expect(code('CH-14201')?.textContent).toMatch(/Your prospects didn’t load.*Nothing was lost\. Try again\./);
     expect(code('CH-14301')).toBeNull();
     expect(screen.queryByRole('group', { name: 'Filter by stage' })).toBeNull();
-    // The board keeps Add prospect in the header beside the notice.
-    expect(screen.getByRole('button', { name: 'Add prospect' })).toBeTruthy();
+    // The board keeps New prospect in the header beside the notice.
+    expect(screen.getByRole('button', { name: 'New prospect' })).toBeTruthy();
     await user.click(screen.getByRole('button', { name: 'Try again' }));
     expect(router.refresh).toHaveBeenCalledTimes(1);
     // CH-14912: what the server sends next replaces what the page held.
@@ -653,7 +668,7 @@ describe('Recruiting · desktop', () => {
     expect(report).toHaveBeenCalledWith(expect.any(Error), expect.objectContaining({ action: 'recruiting.stage' }));
     // Retry: the same move, through the same action.
     w.update.mockImplementation(() => ok());
-    await user.click(within(code('CH-14003') as HTMLElement).getByRole('button', { name: 'Retry' }));
+    await user.click(within(code('CH-14003') as HTMLElement).getByRole('button', { name: 'Try again' }));
     await waitFor(() => expect(stageOf('Mason Reilly')).toBe('Committed'));
     expect(w.update).toHaveBeenCalledTimes(2);
     expect(w.update).toHaveBeenLastCalledWith('p-mason', { status: 'committed' });
@@ -666,7 +681,7 @@ describe('Recruiting · desktop', () => {
     wrap(PREVIEW_RECRUITING, w);
     await user.click(within(panel('Mason Reilly')).getByRole('radio', { name: 'Watched' }));
     await expectCode('CH-14003');
-    await user.click(within(code('CH-14003') as HTMLElement).getByRole('button', { name: 'Retry' }));
+    await user.click(within(code('CH-14003') as HTMLElement).getByRole('button', { name: 'Try again' }));
     await waitFor(() => expect(w.update).toHaveBeenCalledTimes(2));
     await waitFor(() => expect(stageOf('Mason Reilly')).toBe('Offered'));
     w.update.mockImplementation(() => Promise.reject(new Error('network down')));
@@ -688,7 +703,7 @@ describe('Recruiting · desktop', () => {
     expect(stageOf('Mason Reilly')).toBe('Offered');
     // Back online, Retry does it.
     online.mockRestore();
-    await user.click(within(code('CH-1903') as HTMLElement).getByRole('button', { name: 'Retry' }));
+    await user.click(within(code('CH-1903') as HTMLElement).getByRole('button', { name: 'Try again' }));
     await waitFor(() => expect(stageOf('Mason Reilly')).toBe('Committed'));
   });
 
@@ -752,7 +767,7 @@ describe('Recruiting · desktop', () => {
     expect(code('CH-14501')).not.toBeNull();
     expect(rowNames()).toHaveLength(8);
     w.remove.mockImplementation(() => ok());
-    await user.click(within(code('CH-14004') as HTMLElement).getByRole('button', { name: 'Retry' }));
+    await user.click(within(code('CH-14004') as HTMLElement).getByRole('button', { name: 'Try again' }));
     await waitFor(() => expect(rowNames()).toHaveLength(7));
     expect(w.remove).toHaveBeenCalledTimes(2);
   });
@@ -763,9 +778,9 @@ describe('Recruiting · desktop', () => {
     const user = userEvent.setup();
     const w = fakeWrites();
     wrap(PREVIEW_RECRUITING, w);
-    await user.click(screen.getByRole('button', { name: 'Add prospect' }));
+    await user.click(screen.getByRole('button', { name: 'New prospect' }));
     const form = within(dlg());
-    await user.click(form.getByRole('button', { name: 'Add prospect' }));
+    await user.click(form.getByRole('button', { name: 'Add' }));
     const first = form.getByRole('textbox', { name: 'First name' });
     expect(first.getAttribute('aria-invalid')).toBe('true');
     expect(form.getByText('Add a first name.').getAttribute('role')).toBe('alert');
@@ -780,7 +795,7 @@ describe('Recruiting · desktop', () => {
     await user.type(form.getByRole('textbox', { name: 'Class of' }), '1999');
     await user.click(form.getByRole('textbox', { name: 'Notes' }));
     await user.paste('x'.repeat(FIELD_LIMITS.notes + 1));
-    await user.click(form.getByRole('button', { name: 'Add prospect' }));
+    await user.click(form.getByRole('button', { name: 'Add' }));
     expect(form.getByText('Use the two-letter state code, like NC.').getAttribute('data-ch-code')).toBe('CH-14103');
     expect(form.getByText('Class year is a four-digit year from 2020 to 2040.').getAttribute('data-ch-code')).toBe('CH-14102');
     expect(form.getByText('Notes is too long (5,000 characters at most).').getAttribute('data-ch-code')).toBe('CH-14104');
@@ -797,7 +812,7 @@ describe('Recruiting · desktop', () => {
     const user = userEvent.setup();
     const w = fakeWrites();
     wrap(PREVIEW_RECRUITING, w);
-    await user.click(screen.getByRole('button', { name: 'Add prospect' }));
+    await user.click(screen.getByRole('button', { name: 'New prospect' }));
     const form = within(dlg());
     expect(form.getByRole('radio', { name: 'Watched' }).getAttribute('aria-checked')).toBe('true');
     await waitFor(() => expect(document.activeElement).toBe(form.getByRole('textbox', { name: 'First name' })));
@@ -821,9 +836,9 @@ describe('Recruiting · desktop', () => {
   it('CH-14905 a prospect the stage filter or the search would hide is shown anyway after it is added', async () => {
     const user = userEvent.setup();
     wrap(PREVIEW_RECRUITING, fakeWrites(), { stage: 'offered', query: 'mason' });
-    await user.click(screen.getByRole('button', { name: 'Add prospect' }));
+    await user.click(screen.getByRole('button', { name: 'New prospect' }));
     await user.type(within(dlg()).getByRole('textbox', { name: 'First name' }), 'Ellie');
-    await user.click(within(dlg()).getByRole('button', { name: 'Add prospect' }));
+    await user.click(within(dlg()).getByRole('button', { name: 'Add' }));
     await waitFor(() => expect(rowNames()[0]).toBe('Ellie'));
     expect(rowNames()).toHaveLength(9);
     expect((screen.getByRole('searchbox') as HTMLInputElement).value).toBe('');
@@ -835,10 +850,10 @@ describe('Recruiting · desktop', () => {
     const answer = deferred<{ success: boolean; error?: string }>();
     w.create.mockReturnValue(answer.promise as never);
     wrap(PREVIEW_RECRUITING, w);
-    await user.click(screen.getByRole('button', { name: 'Add prospect' }));
+    await user.click(screen.getByRole('button', { name: 'New prospect' }));
     await user.type(within(dlg()).getByRole('textbox', { name: 'First name' }), 'Ellie');
     await user.type(within(dlg()).getByRole('textbox', { name: 'Hometown' }), 'Wilmington');
-    await user.click(within(dlg()).getByRole('button', { name: 'Add prospect' }));
+    await user.click(within(dlg()).getByRole('button', { name: 'Add' }));
     expect(code('CH-14403')?.textContent).toBe('Saving…');
     expect((within(dlg()).getByRole('button', { name: 'Saving…' }) as HTMLButtonElement).disabled).toBe(true);
     await act(async () => answer.resolve({ success: false, error: 'Failed to add recruit' }));
@@ -847,7 +862,7 @@ describe('Recruiting · desktop', () => {
     expect((within(dlg()).getByRole('textbox', { name: 'Hometown' }) as HTMLInputElement).value).toBe('Wilmington');
     expect(rowNames()).toHaveLength(8);
     w.create.mockImplementation(() => ok({ id: 'new-2' }));
-    await user.click(within(code('CH-14001') as HTMLElement).getByRole('button', { name: 'Retry' }));
+    await user.click(within(code('CH-14001') as HTMLElement).getByRole('button', { name: 'Try again' }));
     await waitFor(() => expect(rowNames()).toHaveLength(9));
     expect(w.create).toHaveBeenCalledTimes(2);
     expect(w.create).toHaveBeenLastCalledWith(expect.objectContaining({ first_name: 'Ellie', hometown: 'Wilmington' }), expect.any(String));
@@ -858,23 +873,23 @@ describe('Recruiting · desktop', () => {
     const w = fakeWrites();
     w.create.mockImplementationOnce(() => Promise.resolve({ success: false, error: 'Failed to add recruit' }) as never);
     wrap(PREVIEW_RECRUITING, w);
-    await user.click(screen.getByRole('button', { name: 'Add prospect' }));
+    await user.click(screen.getByRole('button', { name: 'New prospect' }));
     await user.type(within(dlg()).getByRole('textbox', { name: 'First name' }), 'Ellie');
     await user.type(within(dlg()).getByRole('textbox', { name: 'Hometown' }), 'Wilmington');
-    await user.click(within(dlg()).getByRole('button', { name: 'Add prospect' }));
+    await user.click(within(dlg()).getByRole('button', { name: 'Add' }));
     await expectCode('CH-14001');
     await user.click(within(dlg()).getByRole('button', { name: 'Cancel' }));
     await waitFor(() => expect(dlg()).toBeNull());
-    await user.click(screen.getByRole('button', { name: 'Add prospect' }));
+    await user.click(screen.getByRole('button', { name: 'New prospect' }));
     expect((within(dlg()).getByRole('textbox', { name: 'First name' }) as HTMLInputElement).value).toBe('Ellie');
     expect((within(dlg()).getByRole('textbox', { name: 'Hometown' }) as HTMLInputElement).value).toBe('Wilmington');
     w.create.mockImplementation(() => ok({ id: 'new-2' }));
-    await user.click(within(dlg()).getByRole('button', { name: 'Add prospect' }));
+    await user.click(within(dlg()).getByRole('button', { name: 'Add' }));
     await waitFor(() => expect(dlg()).toBeNull());
     expect(w.create).toHaveBeenCalledTimes(2);
     const ids = w.create.mock.calls.map((c) => (c as unknown as [unknown, string])[1]);
     expect(ids[1]).toBe(ids[0]);
-    await user.click(screen.getByRole('button', { name: 'Add prospect' }));
+    await user.click(screen.getByRole('button', { name: 'New prospect' }));
     expect((within(dlg()).getByRole('textbox', { name: 'First name' }) as HTMLInputElement).value).toBe('');
   });
 
@@ -929,7 +944,7 @@ describe('Recruiting · desktop', () => {
     expect((within(dlg()).getByRole('textbox', { name: 'Hometown' }) as HTMLInputElement).value).toBe('Raleigh');
     expect(within(panel('Mason Reilly')).getByText('Class of 2027 · Charlotte, NC')).toBeTruthy();
     w.update.mockImplementation(() => ok());
-    await user.click(within(code('CH-14002') as HTMLElement).getByRole('button', { name: 'Retry' }));
+    await user.click(within(code('CH-14002') as HTMLElement).getByRole('button', { name: 'Try again' }));
     await waitFor(() => expect(document.querySelector('dialog[open]')).toBeNull());
     expect(within(panel('Mason Reilly')).getByText('Class of 2027 · Raleigh, NC')).toBeTruthy();
   });
@@ -1009,7 +1024,7 @@ describe('Recruiting · desktop', () => {
     w.documents.list.mockImplementation(() => ok(PREVIEW_DOCUMENTS['p-mason']!.slice(1).map((d) => ({ ...d }))));
     const slow = deferred<{ success: boolean }>();
     w.documents.remove.mockReturnValueOnce(slow.promise as never);
-    await user.click(within(code('CH-14006') as HTMLElement).getByRole('button', { name: 'Retry' }));
+    await user.click(within(code('CH-14006') as HTMLElement).getByRole('button', { name: 'Try again' }));
     expect(code('CH-14405')?.textContent).toBe('Removing…');
     await act(async () => slow.resolve({ success: true }));
     await waitFor(() => expect(screen.queryByText('Fall tournament schedule.pdf')).toBeNull());
@@ -1063,7 +1078,7 @@ describe('Recruiting · desktop', () => {
     expect((within(dlg()).getByRole('textbox', { name: 'Title' }) as HTMLInputElement).value).toBe('Film notes');
     expect(w.documents.list).toHaveBeenCalledTimes(1);
     w.documents.upload.mockImplementation(() => ok({ id: 'd-x' }));
-    await user.click(within(code('CH-14005') as HTMLElement).getByRole('button', { name: 'Retry' }));
+    await user.click(within(code('CH-14005') as HTMLElement).getByRole('button', { name: 'Try again' }));
     await waitFor(() => expect(w.documents.upload).toHaveBeenCalledTimes(2));
     await waitFor(() => expect(document.querySelector('dialog[open]')).toBeNull());
     expect(w.documents.list).toHaveBeenCalledTimes(2);
@@ -1077,7 +1092,7 @@ describe('Recruiting · desktop', () => {
     await within(panel('Mason Reilly')).findByRole('button', { name: /^Fall tournament schedule\.pdf/ });
     await user.upload(document.querySelector('input[type="file"]') as HTMLInputElement, new File(['x'], 'a.pdf', { type: 'application/pdf' }));
     await user.click(within(dlg()).getByRole('button', { name: 'Upload' }));
-    await expectCode('CH-14005', /Couldn’t upload a.*Check your connection and try again\./);
+    await expectCode('CH-14005', /Couldn’t upload a.*Try again\./);
     expect(report).toHaveBeenCalledWith(expect.objectContaining({ message: 'body too large' }), expect.objectContaining({ action: 'recruiting.upload' }));
   });
 
@@ -1135,7 +1150,7 @@ describe('Recruiting · phone', () => {
     expect(code('CH-14904')?.tagName).toBe('MAIN');
     expect(top().getByRole('heading', { level: 1, name: 'Recruiting' })).toBeTruthy();
     expect(top().queryByRole('button', { name: 'Back to More' })).toBeNull();
-    expect(top().getByRole('button', { name: 'Add prospect' })).toBeTruthy();
+    expect(top().getByRole('button', { name: 'New prospect' })).toBeTruthy();
     expect(screen.getByRole('searchbox', { name: 'Search prospects' })).toBeTruthy();
     const group = screen.getByRole('group', { name: 'Filter by stage' });
     expect(within(group).getByRole('button', { name: 'Watched, 3 prospects' })).toBeTruthy();
@@ -1256,18 +1271,18 @@ describe('Recruiting · phone', () => {
     await expectCode('CH-14004', /Couldn’t delete Mason Reilly/);
     expect(detail()).not.toBeNull();
     w.remove.mockImplementation(() => ok());
-    await user.click(within(code('CH-14004') as HTMLElement).getByRole('button', { name: 'Retry' }));
+    await user.click(within(code('CH-14004') as HTMLElement).getByRole('button', { name: 'Try again' }));
     await waitFor(() => expect(w.remove).toHaveBeenCalledTimes(2));
     await waitFor(() => expect(detail()).toBeNull());
     await waitFor(() => expect(document.querySelector('dialog[open]')).toBeNull());
     expect(names()).not.toContain('Mason Reilly');
   });
 
-  it('Add prospect opens the new-prospect sheet with its stage row (Watched), and a saved prospect opens as a pushed screen', async () => {
+  it('New prospect opens the new-prospect sheet with its stage row (Watched), and a saved prospect opens as a pushed screen', async () => {
     const user = userEvent.setup();
     const w = fakeWrites();
     wrap(PREVIEW_RECRUITING, w);
-    await user.click(top().getByRole('button', { name: 'Add prospect' }));
+    await user.click(top().getByRole('button', { name: 'New prospect' }));
     const sheet = within(dlg());
     expect(sheet.getByRole('heading', { name: 'New prospect' })).toBeTruthy();
     expect(sheet.getByRole('radio', { name: 'Watched' }).getAttribute('aria-checked')).toBe('true');
@@ -1297,14 +1312,14 @@ describe('Recruiting · phone', () => {
     const user = userEvent.setup();
     const first = wrap(PREVIEW_RECRUITING_EMPTY);
     expect(code('CH-14301')?.textContent).toContain('Add the golfers you’re watching and move them through Watched, Recruiting, Offered and Committed.');
-    expect(top().queryByRole('button', { name: 'Add prospect' })).toBeNull();
+    expect(top().queryByRole('button', { name: 'New prospect' })).toBeNull();
     expect(screen.queryByRole('searchbox')).toBeNull();
     await user.click(screen.getByRole('button', { name: 'Add your first prospect' }));
     expect(within(dlg()).getByRole('heading', { name: 'New prospect' })).toBeTruthy();
     first.unmount();
     wrap(PREVIEW_RECRUITING_FAILED);
-    expect(code('CH-14201')?.textContent).toContain('Nothing was lost. Check your connection and try again.');
-    expect(top().queryByRole('button', { name: 'Add prospect' })).toBeNull();
+    expect(code('CH-14201')?.textContent).toContain('Nothing was lost. Try again.');
+    expect(top().queryByRole('button', { name: 'New prospect' })).toBeNull();
     await user.click(screen.getByRole('button', { name: 'Try again' }));
     expect(router.refresh).toHaveBeenCalled();
   });
@@ -1581,7 +1596,7 @@ describe('Recruiting · findings (P014 #1, #6, #7)', () => {
     expect(code('CH-14302')?.textContent).toContain('names, hometowns, states, email and notes');
     await user.clear(screen.getByRole('searchbox', { name: 'Search prospects' }));
     expect(screen.queryByText(/Only coaches see this page/)).toBeNull();
-    await user.click(screen.getByRole('button', { name: 'Add prospect' }));
+    await user.click(screen.getByRole('button', { name: 'New prospect' }));
     const form = within(dlg());
     expect(form.getByRole('textbox', { name: 'State' }).getAttribute('placeholder')).toBeNull();
     expect(form.getByRole('textbox', { name: 'Class of' }).getAttribute('placeholder')).toBe('e.g. 2028');
@@ -1592,7 +1607,7 @@ describe('Recruiting · findings (P014 #1, #6, #7)', () => {
     const user = userEvent.setup();
     const w = { ...fakeWrites(), nextStepWrites: true };
     wrap(PREVIEW_RECRUITING_NEXT, w);
-    await user.click(screen.getByRole('button', { name: 'Add prospect' }));
+    await user.click(screen.getByRole('button', { name: 'New prospect' }));
     expect(within(dlg()).getByRole('textbox', { name: 'Notes' }).getAttribute('placeholder')).toBe('Where you saw them, what stood out');
   });
 });

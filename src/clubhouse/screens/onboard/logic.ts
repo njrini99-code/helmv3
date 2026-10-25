@@ -233,9 +233,6 @@ export function accountErrorFor(raw: string): AccountError {
 export const HCP_MIN = -6;
 export const HCP_MAX = 36;
 
-/** A plus handicap is stored negative (as production does) and shown with a plus. */
-export const fmtHcp = (n: number | null): string => (n == null ? '' : n < 0 ? `+${Math.abs(n).toFixed(1)}` : n.toFixed(1));
-
 export const clampHcp = (v: number): number => Math.round(Math.max(HCP_MIN, Math.min(HCP_MAX, v)) * 10) / 10;
 
 export function hcpWords(n: number | null): string {

@@ -58,6 +58,7 @@ the thread with Retry (CH-7016), and the draft is never lost.
 | CH-7023 | Attachment send cannot be confirmed | Frozen original text/files/reply, "Couldn’t confirm this send", Retry send; reload restores stored filenames/request identity; queued later draft survives pending Retry and resumes after confirmation | `sendFiles`, `Composer` | messages.test › CH-7023 |
 | CH-7024 | Removing someone from a group fails (the group's creator, desktop or phone Details › Remove) | "Couldn’t remove Eli" + the server's reason, or "They’re still in the group. Try again in a moment." The row comes back. Done: "Removed Eli from Varsity team" | `attempt('removeMember')` | wiring-p007-messages.test › a refusal puts the row back |
 | CH-7025 | Deleting a conversation from your inbox fails | "Couldn’t delete the conversation" + "Try again in a moment." Done: "Conversation deleted" (it had shared mute's CH-7011) | `attempt('deleteConversation')` | messages.test › CH-7025 |
+| CH-7026 | Marking a conversation read or unread from its row (menu or swipe) fails | "Couldn’t mark the conversation read" + "It still shows as unread. Try again in a moment."; the row keeps its old state | `attempt('markRead')` in `Messages.tsx` | messages.test › CH-7026 |
 
 ## 71xx Validation
 
@@ -140,6 +141,7 @@ the thread with Retry (CH-7016), and the draft is never lost.
 | CH-7604 | A long press on a message (phone) | The message sheet rises (260ms), retaining selected text, whose it is and its actual timestamp ("Jonah · 2:05 PM", "You · …"): six reactions, Reply, Copy, and Edit and Delete on your own. Screens push and pop as the shell's CH-1610 | `PhoneThread`, `Modal` | messages.test › CH-7804 (the sheet and its actions); preview (the rise) |
 | CH-7605 | Opening another conversation or announcement (desktop) | The new one settles in with a 6px rise (260ms) while the last fades out (180ms), hidden from assistive tech; each keeps its own scroll and a thread opens at its end. The first one a visit opens (the newest thread, or a link's) appears at once. Instant with reduced motion | `Swap` keyed on the pane's turn in `MessagesDesktop` | messages.test › CH-7605; preview (the timing) |
 | CH-7606 | Changing the inbox filter on the phone (All, Unread, Groups) | The chosen chip takes the green fill and ink (a layer that fades in over the quick beat) while the last one lets go; the list under it settles in with a 6px rise (260ms) as the last fades out (180ms), hidden from assistive tech. Typing in Search filters in place. Instant with reduced motion | `.ch-msp-chip` transitions; `Swap` keyed on the filter in `PhoneInbox` | preview (the timing, WebKit 390) |
+| CH-7607 | Muting a conversation from its row (owner decision 14) | The row's Mute… opens this sheet on that conversation, reading its mute as it opens; the same choices as the thread's Details | `RowMuteModal` in `MessagesView.tsx` | conv-context-menu.test › CH-7607 |
 
 ## 77xx Haptics
 

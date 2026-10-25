@@ -19,7 +19,7 @@ export function teamPlace(team: { season?: string | null; organization?: { name:
  * not a failure: nothing is wrong with the code, and the way forward is to leave that team first. CH-15939 / CH-15032.
  */
 export function joinFailure(error?: string | null, network = false): { message: string; tone: 'danger' | 'warning'; code: string } {
-  if (network) return { message: 'Network error. Please check your connection and try again.', tone: 'danger', code: 'CH-15033' };
+  if (network) return { message: 'Couldn’t join the team. Try again.', tone: 'danger', code: 'CH-15033' };
   const message = error || 'Failed to join team. Please try again.';
   if (/already on|one team/i.test(message)) return { message, tone: 'warning', code: 'CH-15939' };
   return { message, tone: 'danger', code: 'CH-15032' };

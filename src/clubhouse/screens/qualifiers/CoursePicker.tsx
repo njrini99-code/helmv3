@@ -119,7 +119,7 @@ export function CoursePicker({
                 ))}
               </div>
             ) : courses.length === 0 ? (
-              <EmptyState compact code="CH-09312" title={q.trim() ? `No courses match “${q.trim()}”.` : 'No courses in the library yet.'} body="Courses are added from the course library." />
+              <EmptyState compact kind={q.trim() ? 'filtered' : undefined} code="CH-09312" title={q.trim() ? `No courses match “${q.trim()}”.` : 'No courses in the library yet.'} body="Courses are added from the course library." />
             ) : (
               <div className="ch-qf-picker__list" role="list" aria-label="Courses">
                 {courses.map((c) => (

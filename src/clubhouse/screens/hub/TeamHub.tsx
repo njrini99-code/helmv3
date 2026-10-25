@@ -20,6 +20,7 @@ import { useChPhone } from '../../lib/use-phone';
 import { tabListKeys } from '../../lib/tabs';
 import { HUB_TABS, type ChHubTab } from '../../lib/hub-tabs';
 import { PhoneTop } from '../../shell/phone-chrome';
+import { PhoneIconAction } from '../../ui/PhoneBar';
 import { HubStrip, TaskBoard } from './band';
 import { hubStrip, queueOf, tabAttention, taskFigures } from './hub-summary';
 import { Announcement, Documents, NewAnnouncementLine, Tasks, TripPass, Updates } from './parts';
@@ -31,6 +32,8 @@ import { LIVE_HUB_WRITES, type ChHubWrites } from './writes';
 import { useToast } from '../../ui/Toast';
 import { useHScroll } from '../../ui/use-hscroll';
 import '../../styles/hub.css';
+import { ListPresence } from '../../ui/ListPresence';
+import { LargeTitle } from '../../ui/LargeTitle';
 
 // The tabs and their `?tab=` parser live in a plain module so the server route can call the parser.
 export { parseHubTab, type ChHubTab } from '../../lib/hub-tabs';
@@ -469,6 +472,14 @@ export function TeamHub({
     setTab('ann');
     setCompose(true);
   };
+  // `?tab=ann&compose=1` (the command palette's Post announcement, A16) opens the composer once, for a coach, then leaves
+  // the address on Announcements, so Back or a reload never opens it again.
+  useEffect(() => {
+    if (!coach || new URL(window.location.href).searchParams.get('compose') !== '1') return;
+    router.replace('/golf/dashboard/team-hub?tab=ann', { scroll: false });
+    openCompose();
+    // Once, on arrival.
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
   // P010 D6: the head's one primary follows the tab (Documents' own drop zone is its primary), and a tab whose read
   // failed offers none.
   const primary = !coach
@@ -519,7 +530,11 @@ export function TeamHub({
   return (
     <main className={'ch-hb' + (phone ? ' is-phone' : '')} aria-labelledby="ch-hb-title" data-canopy={phone ? undefined : ''}>
       {phone && !coach && <PhoneTop start title="Team Hub" heading={false} />}
-      {phone && coach && <PhoneTop title="Team Hub" start heading={false} />}
+      {/* B10.1: a coach's create action is the top bar's plus, following the tab as the desktop head's primary does
+          (a post, a trip, a task; none on Documents or a tab whose read failed). */}
+      {phone && coach && (
+        <PhoneTop title="Team Hub" start heading={false} action={primary ? <PhoneIconAction icon={primary.icon} label={primary.label} onClick={primary.run} /> : undefined} />
+      )}
       <header className="ch-hb-h" data-canopy-head="">
         <div>
           {/* Coach only (wave 7): a player is never told their own role. */}
@@ -529,12 +544,12 @@ export function TeamHub({
               Coach view
             </span>
           )}
-          <h1 id="ch-hb-title" className={phone ? 'ch-sr-only' : undefined}>
-            Team Hub
-          </h1>
+          {/* The phone's one large title (owner decision 4); desktop keeps its hero rule (hub.css). Drawn from the first
+              paint, before useChPhone hydrates, since its look is the phone's CSS alone. */}
+          <LargeTitle id="ch-hb-title">Team Hub</LargeTitle>
           <span className="ch-hb-muted">{[data.teamName, data.season].filter(Boolean).join(' · ')}</span>
         </div>
-        {primary && (
+        {primary && !phone && (
           <Button variant="primary" leftIcon={primary.icon} onClick={primary.run}>
             {primary.label}
           </Button>
@@ -547,7 +562,7 @@ export function TeamHub({
         <RefreshNotice
           code="CH-10208"
           title="The team list didn’t load."
-          body="Players can’t be chosen for a post, a trip or a task until it does; a post to the whole team still goes out. Try again; the error has been reported."
+          body="Players can’t be chosen for a post, a trip or a task until it does; a post to the whole team still goes out. Try again."
         />
       )}
 
@@ -673,11 +688,11 @@ export function TeamHub({
               <div className={'ch-hb-list' + (anns.length ? ' is-edited' : '') + (coach && !phone && anns.length ? ' has-margin' : '')}>
                 {coach && <NewAnnouncementLine name={viewerName} onOpen={() => setCompose(true)} />}
                 {data.announcements.error ? (
-                  <RefreshNotice code="CH-10206" title="Announcements didn’t load." body="Nothing was lost. Try again; the error has been reported." covered={covered} />
+                  <RefreshNotice code="CH-10206" title="Announcements didn’t load." body="Nothing was lost. Try again." covered={covered} />
                 ) : !anns.length ? (
                   <EmptyState code="CH-10307" shape="rows" shapeCount={3} title="No announcements yet" body={coach ? 'Post one and see who has read it.' : 'Posts from your coaches show here.'} />
                 ) : (
-                  anns.map((a, i) => <Announcement key={a.id} a={a} role={data.role} rank={i === 0 ? 'lead' : 'older'} acked={isAcked(a)} pending={ackPending(a)} onAck={onAck} onEdit={setEditing} onDelete={(x) => askDelete({ kind: 'ann', a: x })} files={attachments} />)
+                  <ListPresence>{anns.map((a, i) => <Announcement key={a.id} a={a} role={data.role} rank={i === 0 ? 'lead' : 'older'} acked={isAcked(a)} pending={ackPending(a)} onAck={onAck} onEdit={setEditing} onDelete={(x) => askDelete({ kind: 'ann', a: x })} files={attachments} />)}</ListPresence>
                 )}
                 {coach && !phone && anns.length > 0 && !data.announcements.error && <ReadMargin anns={anns} />}
               </div>
@@ -688,18 +703,18 @@ export function TeamHub({
             <SectionBoundary surface="hub.travel" label="Travel" code="CH-10205">
               <div className="ch-hb-travel">
                 {data.trips.error ? (
-                  <RefreshNotice code="CH-10207" title="Travel didn’t load." body="Trips are safe. Try again; the error has been reported." covered={covered} />
+                  <RefreshNotice code="CH-10207" title="Travel didn’t load." body="Trips are safe. Try again." covered={covered} />
                 ) : !tripRows.length ? (
                   <EmptyState code="CH-10308" shape="time" shapeCount={3} title="No trips planned" body={coach ? 'Plan a trip and players see the itinerary here.' : 'Trips your coaches plan show here with the bus time and hotel.'} />
                 ) : (
-                  <>
-                    {nextTrip && <TripPass t={nextTrip} big role={data.role} focus={tripToFocus === nextTrip.id} onFocused={tripFocused} {...tripActions} />}
+                  <ListPresence>
+                    {nextTrip && <TripPass key={nextTrip.id} t={nextTrip} big role={data.role} focus={tripToFocus === nextTrip.id} onFocused={tripFocused} {...tripActions} />}
                     {tripRows
                       .filter((t) => t !== nextTrip)
                       .map((t) => (
                         <TripPass key={t.id} t={t} later role={data.role} focus={tripToFocus === t.id} onFocused={tripFocused} {...tripActions} />
                       ))}
-                  </>
+                  </ListPresence>
                 )}
               </div>
             </SectionBoundary>

@@ -3,6 +3,7 @@ import type { ChReadEngine } from './coachhelm-engine-shape';
 import type { ChPathLine } from './coachhelm-path';
 import type { ChNotEnough } from './coachhelm-firm';
 import type { ChTeamPatterns } from './coachhelm-team-pattern';
+import { plural, pluralWord } from '../lib/plural';
 
 /**
  * CoachHelm's data shapes (Clubhouse P013) and the steps the screens share,
@@ -327,7 +328,7 @@ export function withoutSignalsLine(count: number, names: readonly string[] = [])
 export function withoutSignalsRuns(count: number, names: readonly string[] = []): Array<string | number> {
   if (count <= 0) return [''];
   const shown = names.slice(0, Math.min(WITHOUT_NAMED_MAX, count));
-  if (shown.length === 0) return [`${count} ${count === 1 ? 'player has' : 'players have'} no insights yet.`];
+  if (shown.length === 0) return [`${plural(count, 'player has', 'players have')} no insights yet.`];
   const more = count - shown.length;
   const sep = (i: number) => (more > 0 ? (i === shown.length - 1 ? ` and ${more} more` : ', ') : i === shown.length - 1 ? '' : i === shown.length - 2 ? ' and ' : ', ');
   return [...shown.flatMap((_, i) => [i, sep(i)]), ` ${count === 1 ? 'has' : 'have'} no insights yet.`];
@@ -365,7 +366,7 @@ export function stanceOf(ins: ChInsight, assigned: ChHelmAssigned | null = ins.a
   return { cls: ins.priority, word: PRI_LABEL[ins.priority] };
 }
 
-export const firstName = (name: string) => name.trim().split(/\s+/)[0] || name;
+export { firstName } from '../lib/names';
 
 const PRI_WEIGHT: Record<ChHelmPri, number> = { high: 3, medium: 2, low: 1 };
 
@@ -403,7 +404,7 @@ export function partitionInsights(
 /** "6 more reads in the Deep dive": what the Board leaves out, said where it is. Empty when it shows every read. */
 export function moreReadsLine(more: number): string {
   if (more <= 0) return '';
-  return `${more} more ${more === 1 ? 'read' : 'reads'} in the Deep dive`;
+  return `${more} more ${pluralWord(more, 'read')} in the Deep dive`;
 }
 
 /** Most pressing first: the top insight's priority (an out-of-date read or a strength after it, a note last), then how many signals, then the name. */
@@ -419,7 +420,7 @@ export function sortCoachPlayers(list: readonly ChCoachPlayer[]): ChCoachPlayer[
  */
 export function playersLine(players: number): string {
   if (players <= 0) return 'No open signals.';
-  return `${players} ${players === 1 ? 'player has' : 'players have'} an open signal.`;
+  return `${plural(players, 'player has', 'players have')} an open signal.`;
 }
 
 const PULSE_ICON: Array<[RegExp, ChPulseIcon]> = [

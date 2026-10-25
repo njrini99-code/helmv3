@@ -48,7 +48,8 @@ describe('Team stats reads', () => {
     tables.gate = waves.gate;
     tables.current = base();
     const { result, waves: depth } = await waves.run(loadTeamStats({ teamId: 't1', window: 'last10', filter: filterFor('last10') }));
-    expect(depth).toEqual([['golf_team_members', 'golf_teams'], ['golf_pga_standards', 'golf_rounds'], ['golf_round_stats_cache', 'golf_shots', 'golf_shots']]);
+    // The team's zone (the season's turn, owner decision 9) is read in the first wave, beside the team.
+    expect(depth).toEqual([['golf_team_members', 'golf_team_settings', 'golf_teams'], ['golf_pga_standards', 'golf_rounds'], ['golf_round_stats_cache', 'golf_shots', 'golf_shots']]);
     expect(result.roundCount).toBe(20);
   });
 

@@ -11,7 +11,8 @@ import { chLogServer } from '../lib/track-server';
 import { loadCoachHelmGate } from './coachhelm';
 import { toChTrackRecord, type ChTrackRecord } from './coachhelm-track-record-shape';
 import type { ChViewLoad } from './coachhelm-views-shape';
-import { seasonStartDate } from './season';
+import { wallClockInZone } from '@/lib/golf/timezone';
+import { loadTeamZone, seasonStartDate } from './season';
 
 export type * from './coachhelm-track-record-shape';
 
@@ -37,9 +38,15 @@ type ShownReadsRpc = (
   args: { p_team_id: string; p_since: string },
 ) => PromiseLike<{ data: ShownReadRow[] | null; error: ReadError }>;
 
-async function loadShownReads(supabase: Supabase, teamId: string, since: string) {
+/** The instant the season starts: midnight on its first day (YYYY-MM-DD) in the team's zone, not UTC's (owner decision 9). */
+export function seasonStartInstant(since: string, tz: string): string {
+  const [y, m, d] = since.split('-').map(Number);
+  return wallClockInZone(new Date(y!, m! - 1, d!), '00:00', tz).toISOString();
+}
+
+async function loadShownReads(supabase: Supabase, teamId: string, since: string, tz: string) {
   const rpc = supabase.rpc.bind(supabase) as unknown as ShownReadsRpc;
-  return rpc('golf_coachhelm_shown_reads', { p_team_id: teamId, p_since: `${since}T00:00:00Z` });
+  return rpc('golf_coachhelm_shown_reads', { p_team_id: teamId, p_since: seasonStartInstant(since, tz) });
 }
 
 interface InsightRow {
@@ -120,9 +127,11 @@ export async function loadCoachTrackRecord(input: { coachId: string; teamId: str
   const teamOff = await loadTeamOff(supabase, input.teamId);
   if (teamOff === 'failed') return { status: 'failed' };
   if (teamOff) return { status: 'off', reason: teamOff.reason };
-  const since = seasonStartDate(input.now);
+  // The season turns on 1 August in the team's zone (owner decision 9).
+  const tz = await loadTeamZone(supabase, input.teamId, 'coachhelm');
+  const since = seasonStartDate(input.now, tz);
 
-  const shown = await loadShownReads(supabase, input.teamId, since);
+  const shown = await loadShownReads(supabase, input.teamId, since, tz);
   if (shown.error) {
     if (isMissingFunctionError(shown.error)) return { status: 'ready', data: { state: 'unavailable' } };
     chLogServer('coachhelm', 'track_record_shown', shown.error);

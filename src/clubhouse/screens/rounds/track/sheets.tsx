@@ -10,6 +10,7 @@ import type { ShotRecord } from '@/lib/types/golf';
 import type { LieType } from '@/lib/utils/shot-helpers';
 import { haptic } from '../../../lib/haptics';
 import { roving } from '../../../ui/use-roving';
+import { Button } from '../../../ui/Button';
 import { Icon } from '../../../ui/Icon';
 import { Modal } from '../../../ui/Modal';
 import { APPROACH_GRID, BREAK_OPTIONS, cleanDistance, distanceText, isDistanceText, PENALTY_OPTIONS, PUTT_TAGS, RESULT_LABEL, SLOPE_OPTIONS, shotTitle } from './labels';
@@ -88,12 +89,8 @@ export function PenaltySheet({
       code="CH-11503"
       footer={
         <>
-          <button type="button" className="ch-btn ch-btn--ghost" onClick={close}>
-            <span>Cancel</span>
-          </button>
-          <button type="button" className="ch-btn ch-btn--primary" disabled={!penaltyType} onClick={onConfirm}>
-            <span>Add 1 stroke</span>
-          </button>
+          <Button variant="ghost" onClick={close}>Cancel</Button>
+          <Button variant="primary" disabled={!penaltyType} onClick={onConfirm}>Add 1 stroke</Button>
         </>
       }
     >
@@ -137,19 +134,10 @@ export function UnsavedSheet({ open, onStay, onDiscard }: { open: boolean; onSta
       code="CH-11504"
       footer={
         <>
-          <button type="button" className="ch-btn ch-btn--ghost" onClick={onStay}>
-            <span>Stay</span>
-          </button>
-          <button
-            type="button"
-            className="ch-btn ch-btn--danger"
-            onClick={() => {
-              haptic('warning');
-              onDiscard();
-            }}
-          >
-            <span>Leave without it</span>
-          </button>
+          <Button variant="ghost" onClick={onStay}>Stay</Button>
+          <Button variant="danger" onClick={onDiscard}>
+            Leave without it
+          </Button>
         </>
       }
     />
@@ -226,35 +214,20 @@ export function EditShotSheet({
       footer={
         showDeleteConfirm ? (
           <>
-            <button type="button" className="ch-btn ch-btn--ghost" disabled={saving} onClick={() => dispatch({ type: 'HIDE_DELETE_CONFIRM' })}>
-              <span>Keep it</span>
-            </button>
-            <button
-              type="button"
-              className="ch-btn ch-btn--danger"
-              disabled={saving}
-              onClick={() => {
-                // CH-11707: deleting a shot is a warning.
-                haptic('warning');
-                onDelete();
-              }}
-            >
-              <span>{saving ? 'Deleting…' : 'Delete shot'}</span>
-            </button>
+            <Button variant="ghost" disabled={saving} onClick={() => dispatch({ type: 'HIDE_DELETE_CONFIRM' })}>Keep it</Button>
+            {/* CH-11707: deleting a shot is a warning (a danger Button warns as it is pressed). */}
+            <Button variant="danger" busy={saving} onClick={onDelete}>
+              {saving ? 'Deleting…' : 'Delete shot'}
+            </Button>
           </>
         ) : (
           <>
-            <button type="button" className="ch-btn ch-btn--ghost ch-rt-danger" disabled={saving} onClick={() => dispatch({ type: 'SHOW_DELETE_CONFIRM' })}>
-              <Icon icon={Trash2} size={15} />
-              <span>Delete</span>
-            </button>
+            <Button variant="ghost" className="ch-rt-danger" leftIcon={Trash2} disabled={saving} onClick={() => dispatch({ type: 'SHOW_DELETE_CONFIRM' })}>Delete</Button>
             <span className="ch-rt-grow" />
-            <button type="button" className="ch-btn ch-btn--ghost" disabled={saving} onClick={onClose}>
-              <span>Cancel</span>
-            </button>
-            <button type="button" className="ch-btn ch-btn--primary" disabled={saving || issue?.severity === 'block'} onClick={save}>
-              <span>{saving ? 'Saving…' : issue?.severity === 'confirm' ? 'Save anyway' : 'Save shot'}</span>
-            </button>
+            <Button variant="ghost" disabled={saving} onClick={onClose}>Cancel</Button>
+            <Button variant="primary" busy={saving} disabled={issue?.severity === 'block'} onClick={save}>
+              {saving ? 'Saving…' : issue?.severity === 'confirm' ? 'Save anyway' : 'Save shot'}
+            </Button>
           </>
         )
       }
@@ -341,8 +314,8 @@ export function EditShotSheet({
                 value={form.missDirection as 'left' | 'right' | null}
                 onChange={(v) => update({ missDirection: form.missDirection === v ? null : v })}
                 options={[
-                  { value: 'left', label: '← Left' },
-                  { value: 'right', label: 'Right →' },
+                  { value: 'left', label: 'Left' },
+                  { value: 'right', label: 'Right' },
                 ]}
               />
             </div>

@@ -5,6 +5,7 @@ import { Printer, Share } from 'lucide-react';
 import { useGolfUserOptional } from '@/contexts/golf-user-context';
 import type { ChRoundReview } from '../../../data/round-review-shape';
 import { formatSigned, formatToPar, NO_DATA } from '../../../lib/format';
+import { NoData } from '../../../ui/NoData';
 import { haptic } from '../../../lib/haptics';
 import { chTrail } from '../../../lib/track';
 import { Button } from '../../../ui/Button';
@@ -29,7 +30,9 @@ const ROW_LABEL: Record<RowKey, string> = { par: 'Par', score: 'Score', putts: '
 
 /** A hole's mark, in scorecard notation. Outlines, so they survive a black and white printer; red is for under par only. */
 function CardMarkFigure({ hole }: { hole: CardHole }) {
-  if (hole.score == null) return <span className="ch-rcard-mk is-none">{NO_DATA}</span>;
+  if (hole.score == null) return <span className="ch-rcard-mk is-none">
+      <NoData label="Not played" />
+    </span>;
   return (
     <span className={'ch-rcard-mk' + (hole.mark ? ` is-${hole.mark}` : '')} role="img" aria-label={`${hole.score}${hole.mark ? `, ${MARK_NAME[hole.mark].toLowerCase()}` : ''}`}>
       <b aria-hidden="true">{hole.score}</b>
@@ -92,15 +95,25 @@ function totalCell(key: RowKey, m: CardModel) {
   }
 }
 
-function SgStrip({ m }: { m: CardModel }) {
+/** On a phone a leg shows its short label ("Off tee") and says its full one to a screen reader (A24). */
+function SgStrip({ m, phone }: { m: CardModel; phone: boolean }) {
   if (!m.sg) return null;
   const tone = (v: number | null) => (v == null || Math.abs(v) < 0.05 ? '' : v > 0 ? ' is-gain' : ' is-loss');
-  const cells: Array<[string, number | null]> = [['Strokes gained', m.sg.total], ...m.sg.legs.map((l) => [l.label, l.value] as [string, number | null])];
+  const cells: Array<[string, string, number | null]> = [['Strokes gained', 'Strokes gained', m.sg.total], ...m.sg.legs.map((l) => [l.label, l.short, l.value] as [string, string, number | null])];
   return (
     <dl className="ch-rcard-sg">
-      {cells.map(([label, v], i) => (
+      {cells.map(([label, short, v], i) => (
         <div key={label} className={i === 0 ? 'is-total' : undefined}>
-          <dt>{label}</dt>
+          <dt>
+            {phone && short !== label ? (
+              <>
+                <span aria-hidden="true">{short}</span>
+                <span className="ch-sr-only">{label}</span>
+              </>
+            ) : (
+              label
+            )}
+          </dt>
           <dd className={'ch-num' + tone(v)}>{formatSigned(v)}</dd>
         </div>
       ))}
@@ -346,7 +359,7 @@ export function RoundCard({ review: r, phone, just, settle }: { review: ChRoundR
         <div className="ch-rcard-body">
           <CardTables m={m} wide={!phone} tally />
         </div>
-        <SgStrip m={m} />
+        <SgStrip m={m} phone={phone} />
       </article>
       {story && (
         <p className="ch-rcard-story" data-ch-code="CH-11924">

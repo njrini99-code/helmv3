@@ -1,5 +1,5 @@
 import { LazyMotion, domAnimation } from 'motion/react';
-import { cleanup, render, screen, waitFor, within } from '@testing-library/react';
+import { cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
@@ -74,7 +74,7 @@ afterEach(() => {
 describe('112401 Rounds library, on screen', () => {
   it('110101 shows the round in progress: course, tees, type, holes, and the score through the holes played', () => {
     show(PREVIEW_ROUNDS);
-    expect(screen.getByRole('heading', { level: 1, name: 'Your rounds' })).toBeTruthy();
+    expect(screen.getByRole('heading', { level: 1, name: 'Rounds' })).toBeTruthy();
     expect(screen.getByText('In progress')).toBeTruthy();
     expect(screen.getByText('Blue tees · Practice · 18 holes')).toBeTruthy();
     expect(document.querySelector('.ch-rd-unf__f > span')!.textContent).toBe('+1 through 3');
@@ -97,10 +97,12 @@ describe('112401 Rounds library, on screen', () => {
     expect(screen.queryByRole('link', { name: /Sep 26, Finley GC/ })).toBeNull();
   });
 
-  it('CH-11304 one primary for one action: with no round in progress the idle card carries Start a round, so the head has no New round', () => {
+  it('CH-11304 one primary for one action: with no round in progress the idle card carries New round, so the head has none of its own', () => {
     show(PREVIEW_ROUNDS_IDLE);
-    expect(screen.queryByRole('link', { name: 'New round' })).toBeNull();
-    expect(screen.getByRole('link', { name: /Start a round/ }).getAttribute('href')).toBe('/golf/dashboard/rounds/new');
+    const starts = screen.getAllByRole('link', { name: 'New round' });
+    expect(starts).toHaveLength(1);
+    expect(starts[0]!.closest('.ch-rd-unf')).not.toBeNull();
+    expect(starts[0]!.getAttribute('href')).toBe('/golf/dashboard/rounds/new');
     cleanup();
     // The check for a round in progress failed: that card is a notice with no Start, so the head keeps New round.
     show(PREVIEW_ROUNDS_UNFINISHED_FAILED);
@@ -171,11 +173,12 @@ describe('112401 Rounds library, on screen', () => {
     expect(document.querySelectorAll('.ch-rd-strip.is-ghost span')).toHaveLength(18);
   });
 
-  it('CH-11301 nothing posted and nothing in progress: the first-run page, with Start a round (and no second New round)', async () => {
+  it('CH-11301 nothing posted and nothing in progress: the first-run page, with one New round', async () => {
     show(PREVIEW_ROUNDS_EMPTY);
     await expectCode('CH-11301', /No rounds yet.*Track your first round shot by shot/);
-    expect(screen.getByRole('link', { name: 'Start a round' }).getAttribute('href')).toBe('/golf/dashboard/rounds/new');
-    expect(screen.queryByRole('link', { name: 'New round' })).toBeNull();
+    const starts = screen.getAllByRole('link', { name: 'New round' });
+    expect(starts).toHaveLength(1);
+    expect(starts[0]!.getAttribute('href')).toBe('/golf/dashboard/rounds/new');
     expect(screen.queryByRole('searchbox')).toBeNull();
   });
 
@@ -218,8 +221,9 @@ describe('112401 Rounds library, on screen', () => {
 
   it('110107 CH-11302 rounds posted but no countable 18-hole round this season: the season card says how it fills; the round still lists', async () => {
     show(PREVIEW_ROUNDS_NO_SEASON);
-    // A non-breaking hyphen (U+2011), so the headline never breaks "18- / hole".
-    await expectCode('CH-11302', /Your season starts with your first 18\u2011hole round/);
+    // The headline never breaks "18- / hole": a plain hyphen in a no-wrap span, since the font has no U+2011 (A23).
+    await expectCode('CH-11302', /Your season starts with your first 18-hole round/);
+    expect(code('CH-11302')!.querySelector('.ch-nowrap')?.textContent).toBe('18-hole');
     const row = screen.getByRole('link', { name: 'Sep 9, Finley GC, 38 (+2)' });
     expect(within(row).getByText('Holes').nextSibling!.textContent).toBe('9');
     expect(screen.getByText('Since August 1')).toBeTruthy();
@@ -231,6 +235,8 @@ describe('112401 Rounds library, on screen', () => {
     const search = screen.getByRole('searchbox', { name: 'Search rounds by course' });
     await user.type(search, 'Pinehurst');
     await expectCode('CH-11303', /No rounds at “Pinehurst”/);
+    // A search that hides every round is a filtered empty, not a first run (2026-10-23, filtered empties).
+    expect(document.querySelector('[data-ch-code="CH-11303"]')!.getAttribute('data-ch-state')).toBe('filtered');
     await user.clear(search);
     await user.type(search, 'hope');
     expect(screen.getAllByRole('link').map((g) => g.getAttribute('aria-label')).filter(Boolean)).toEqual(['Sep 18, Hope Valley CC, 71 (+1)', 'Sep 12, Hope Valley CC, 74 (+4)']);
@@ -259,13 +265,13 @@ describe('112401 Rounds library, on screen', () => {
     expect(within(screen.getByRole('link', { name: 'Sep 1, Finley GC, 40 (−32)' })).getByText('Not counted')).toBeTruthy();
   });
 
-  it('CH-11702 CH-11801 each round is one named link to its review, with the selection haptic', async () => {
+  it('CH-11702 CH-11801 each round is one named link to its review, silent as navigation is (A14)', async () => {
     const user = userEvent.setup();
     show(PREVIEW_ROUNDS_IDLE);
     const r = screen.getByRole('link', { name: 'Sep 26, Finley GC, 72 (E)' });
     expect(r.getAttribute('href')).toBe('/golf/dashboard/rounds/a0000000-0000-4000-8000-000000000001');
     await user.click(r);
-    expect(hapticSpy).toHaveBeenCalledWith('select');
+    expect(hapticSpy).not.toHaveBeenCalledWith('select');
     expect(screen.getByRole('main').getAttribute('aria-labelledby')).toBe('ch-rd-title');
     expect(screen.getByRole('region', { name: 'September 2026' })).toBeTruthy();
   });
@@ -303,6 +309,23 @@ describe('112401 Rounds library, on screen', () => {
 /**
  * Owner rules (2026-10-01), rule 1: no zero or empty copy beside a failed or unread read; a retry that lands shows what it read.
  */
+describe('Rounds library · keyboard (B11)', () => {
+  it('row 63: ↓ and ↑ walk the rounds that open, which are one Tab stop', () => {
+    show(PREVIEW_ROUNDS);
+    const rows = [...document.querySelectorAll<HTMLElement>('.ch-rd-book a.ch-rd-sc')];
+    expect(rows.length).toBeGreaterThan(2);
+    expect(rows.filter((r) => r.tabIndex === 0)).toHaveLength(1);
+    rows[0]!.focus();
+    fireEvent.keyDown(rows[0]!, { key: 'ArrowDown' });
+    expect(document.activeElement).toBe(rows[1]);
+    fireEvent.keyDown(rows[1]!, { key: 'ArrowUp' });
+    expect(document.activeElement).toBe(rows[0]);
+    fireEvent.keyDown(rows[0]!, { key: 'End' });
+    expect(document.activeElement).toBe(rows.at(-1));
+    expect(rows.filter((r) => r.tabIndex === 0)).toEqual([rows.at(-1)]);
+  });
+});
+
 describe('Rounds library: never a false empty or a wrong figure', () => {
   const lib = (data: ChRoundsLibrary) => (
     <LazyMotion features={domAnimation}>
@@ -451,7 +474,7 @@ describe('Discarding an unfinished round', () => {
     await expectCode('CH-11001', /Couldn’t discard the round at Finley GC/);
     expect(hapticSpy).toHaveBeenCalledWith('error');
     expect(screen.getByText('In progress')).toBeTruthy();
-    await user.click(within(code('CH-11001') as HTMLElement).getByRole('button', { name: 'Retry' }));
+    await user.click(within(code('CH-11001') as HTMLElement).getByRole('button', { name: 'Try again' }));
     await waitFor(() => expect(screen.getByText('No round in progress')).toBeTruthy());
     expect(discard).toHaveBeenCalledTimes(2);
   });

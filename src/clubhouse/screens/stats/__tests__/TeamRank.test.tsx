@@ -160,6 +160,13 @@ describe('TeamRank', () => {
     expect(document.querySelector('.ch-sv-note')!.textContent).toContain('Eli Brandt');
   });
 
+  it('rests on a hint that names the whisker as it is drawn: one standard error, the likely range (B14)', () => {
+    render(<TeamRank data={D} />);
+    expect(read()).toBe('Select a player to see their likely range; select again to open them.');
+    expect(document.querySelector('.ch-sv-tr')!.textContent).not.toContain('margin of error');
+    cleanup();
+  });
+
   it('hover reads a player without announcing; a click pins, announces and offers Open player; a second click opens', () => {
     render(<TeamRank data={D} />);
     const sofia = rowsEl()[1]!;

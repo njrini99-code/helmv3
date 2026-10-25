@@ -22,6 +22,8 @@ import {
   ThumbsUp,
   HandHeart,
   Trash2,
+  Mail,
+  MailOpen,
   Users,
   X,
   Check,
@@ -36,7 +38,6 @@ import {
   type LucideIcon,
 } from "lucide-react";
 import {
-  Fragment,
   useCallback,
   useEffect,
   useLayoutEffect,
@@ -63,6 +64,7 @@ import { Button, IconButton } from "../../ui/Button";
 import { Icon } from "../../ui/Icon";
 import { Menu } from "../../ui/Menu";
 import { useContextMenu, type ContextMenuBind } from "../../ui/ContextMenu";
+import { SwipeRow } from "../../ui/SwipeRow";
 import { Modal } from "../../ui/Modal";
 import { InlineNotice } from "../../ui/Notices";
 import { SearchField } from "../../ui/SearchField";
@@ -84,6 +86,7 @@ import {
   firstName,
   firstUnreadId,
   groupLacksPlayer,
+  isUnread,
   linkParts,
   MESSAGE_MAX,
   railTime,
@@ -112,6 +115,13 @@ export { fileSize } from "./files";
 import { isMessagesFirstRun, MessagesFirstRun } from "./MessagesFirstRun";
 import { MessagesHead } from "./MessagesNoTeam";
 import { Tooltip } from '../../ui/Tooltip';
+import { ListPresence, PresenceRow } from '../../ui/ListPresence';
+import { useRovingRows } from "../../lib/roving";
+import { usePageKeys, type ChPageKey } from "../../shell/command/page-keys";
+import { plural } from "../../lib/plural";
+
+/** B11: the rail's keys, as the shortcuts sheet lists them. */
+const RAIL_KEYS: readonly ChPageKey[] = [{ label: "Move between conversations", keys: ["Up", "Down"] }];
 
 /** The thread's glide, longer than the page's (a conversation is read down a long column). */
 const THREAD_SCROLL_DUR = 1.2;
@@ -203,8 +213,11 @@ export interface ChMessagesApi {
   membersError: boolean;
   retryMembers: () => void;
   leave: () => Promise<boolean>;
-  /** Hides the open conversation from the viewer's own inbox (CH-7011); null until the database supports it. */
-  deleteConversation: (() => Promise<boolean>) | null;
+  /**
+   * Hides a conversation from the viewer's own inbox (CH-7025 when it fails): the open one's details, or any row's
+   * menu and the phone's trailing swipe (owner decision 14). Null until the database supports it.
+   */
+  deleteConversation: ((conversationId: string) => Promise<boolean>) | null;
   /** The open group's creator only: who on the team isn't in it yet, and adding one (D-47). */
   addCandidates: () => Promise<ChMember[] | null>;
   addMember: (userId: string, name: string) => Promise<boolean>;
@@ -239,6 +252,15 @@ export interface ChMessagesApi {
   muteError: boolean;
   retryMute: () => void;
   setMute: (muted: boolean, hours: number | null) => Promise<boolean>;
+  /** Any conversation's mute, read when a row's Mute sheet opens (owner decision 14); null when it didn't load. */
+  muteOf: (conversationId: string) => Promise<ChMute | null>;
+  /** Mutes or unmutes any conversation by id, from a row's menu; the open one's `mute` follows. */
+  muteConversation: (conversationId: string, muted: boolean, hours: number | null) => Promise<boolean>;
+  /**
+   * A row's Mark as read / Mark as unread (owner decision 14). Read clears the server's count (markGolfMessagesAsRead);
+   * unread is this device's own mark (marked-unread.ts), cleared when the conversation opens.
+   */
+  setRead: (conversationId: string, read: boolean) => Promise<boolean>;
 
   announcements: ChAnnouncement[];
   /** The first announcements read hasn't answered: the list waits, so they don't push it down when they land (CLS). */
@@ -265,6 +287,14 @@ export interface ChMessagesApi {
 
 export const personOf = (api: ChMessagesApi, userId: string) =>
   api.directory.find((p) => p.userId === userId);
+
+/** B19: a direct conversation's coin takes the other person's tone, from the id their coin has everywhere (a player's
+ *  player id, else a coach's user id); a group has none. */
+export const convAvatarId = (api: ChMessagesApi, c: ChConv): string | null => {
+  if (c.group) return null;
+  const other = c.memberIds.find((id) => id !== api.viewer.userId);
+  return other ? (personOf(api, other)?.playerId ?? other) : null;
+};
 
 /**
  * P003-C1: for the coach, a player's avatar and name in a thread peek at the player, from the team directory Messages
@@ -371,47 +401,156 @@ export function MessageHits({ api, q }: { api: ChMessagesApi; q: string }) {
 }
 
 /** One conversation in the list: the desktop rail and the phone inbox. */
-export function ConvRow({ api, c, avatarSize = 36 }: { api: ChMessagesApi; c: ChConv; avatarSize?: number }) {
+export function ConvRow({ api, c, avatarSize = 36, phone = false }: { api: ChMessagesApi; c: ChConv; avatarSize?: number; phone?: boolean }) {
   const open = () => {
     haptic("select");
     chTrail("messages open conversation");
     api.select(c.id);
   };
-  // Right-click (desktop): the row's one action, as a tap does it. Mute, Leave and Delete act on the open conversation
-  // only, so they are not offered on a row that may not be it (ui/ContextMenu.tsx).
+  const unread = isUnread(c);
+  // The row's own sheets, mounted once first asked for, so a long inbox doesn't hold two dialogs per row.
+  const [muting, setMuting] = useState<boolean | null>(null);
+  const [deleting, setDeleting] = useState<boolean | null>(null);
+  const toggleRead = () => {
+    chTrail(unread ? "messages mark read" : "messages mark unread");
+    void api.setRead(c.id, unread);
+  };
+  const askDelete = api.deleteConversation ? () => setDeleting(true) : null;
+  // Owner decision 14: the row's actions, each on this row's conversation whether or not it is the open one. Right-click
+  // and Shift+F10 on the desktop; on the phone a 500ms long press, a keyboard's Shift+F10 or the VoiceOver button below
+  // open the same rows as a sheet (ui/ContextMenu.tsx). The phone's swipes repeat Mark as read/unread and Delete.
   const ctx = useContextMenu<ChConv>({
     label: (row) => `Actions for ${row.title}`,
-    items: () => [{ label: "Open conversation", icon: MessageSquare, onSelect: open }],
+    title: (row) => row.title,
+    touchHold: phone,
+    items: () => [
+      { label: "Open conversation", icon: MessageSquare, onSelect: open },
+      { label: unread ? "Mark as read" : "Mark as unread", icon: unread ? MailOpen : Mail, onSelect: toggleRead },
+      { label: "Mute…", icon: BellOff, onSelect: () => setMuting(true) },
+      ...(askDelete ? [{ kind: "separator" as const }, { label: "Delete", icon: Trash2, danger: true, onSelect: askDelete }] : []),
+    ],
   });
+  const sheets = (
+    <>
+      {ctx.menu}
+      {muting != null && <RowMuteModal api={api} c={c} open={muting} onClose={() => setMuting(false)} />}
+      {deleting != null && <DeleteConversationModal api={api} conv={c} open={deleting} onClose={() => setDeleting(false)} onDeleted={() => {}} />}
+    </>
+  );
+  if (!phone) {
+    return (
+      <>
+        <ConvRowButton api={api} c={c} avatarSize={avatarSize} onOpen={open} bind={ctx.bind(c)} />
+        {sheets}
+      </>
+    );
+  }
   return (
     <>
-      <ConvRowButton api={api} c={c} avatarSize={avatarSize} onOpen={open} bind={ctx.bind(c)} />
-      {ctx.menu}
+      <SwipeRow
+        className="ch-ms-swipe"
+        onClaim={ctx.cancelHold}
+        leading={{ label: unread ? "Read" : "Unread", icon: unread ? MailOpen : Mail, tone: "accent", run: toggleRead }}
+        trailing={askDelete && { label: "Delete", icon: Trash2, tone: "danger", run: askDelete }}
+      >
+        <ConvRowButton api={api} c={c} avatarSize={avatarSize} onOpen={open} bind={ctx.bind(c)} plain />
+        {/* VoiceOver and a keyboard can't swipe or hold: the same actions, one control away (shown when focused). */}
+        <span className="ch-sr-only ch-sr-only--focusable">
+          <button type="button" onClick={() => ctx.openSheet(c)}>
+            Actions for {c.title}
+          </button>
+        </span>
+      </SwipeRow>
+      {sheets}
     </>
   );
 }
 
-function ConvRowButton({ api, c, avatarSize, onOpen, bind }: { api: ChMessagesApi; c: ChConv; avatarSize: number; onOpen: () => void; bind: ContextMenuBind }) {
+/**
+ * Mute or unmute one conversation from its row (owner decision 14): reads that conversation's mute as it opens, then
+ * offers desktop's three lengths, or Unmute when it is already muted.
+ */
+function RowMuteModal({ api, c, open, onClose }: { api: ChMessagesApi; c: ChConv; open: boolean; onClose: () => void }) {
+  const [state, setState] = useState<ChMute | "failed" | null>(null);
+  const [attempt, setAttempt] = useState(0);
+  const [busy, setBusy] = useState(false);
+  const muteOf = api.muteOf;
+  useEffect(() => {
+    if (!open) return;
+    let live = true;
+    setState(null);
+    void muteOf(c.id).then((m) => {
+      if (live) setState(m ?? "failed");
+    });
+    return () => {
+      live = false;
+    };
+  }, [open, attempt, c.id, muteOf]);
+  const set = async (muted: boolean, hours: number | null) => {
+    setBusy(true);
+    const ok = await api.muteConversation(c.id, muted, hours);
+    setBusy(false);
+    if (ok) onClose();
+  };
+  const muted = state != null && state !== "failed" && state.muted;
   return (
-    <button
-      type="button"
-      className={
-        "ch-ms-row" +
-        (c.unread ? " is-unread" : "") +
-        (api.selectedId === c.id ? " is-sel" : "")
-      }
-      aria-current={
-        api.selectedId === c.id ? "true" : undefined
-      }
-      onClick={onOpen}
-      {...bind}
+    <Modal
+      code="CH-7607"
+      open={open}
+      onClose={onClose}
+      icon={BellOff}
+      title={muted ? `${c.title} is muted` : `Mute ${c.title}`}
+      description={muted ? undefined : "No email, push or bell for it. Unread messages still show here."}
     >
+      {state === "failed" ? (
+        <InlineNotice code="CH-7208" title="The mute setting didn’t load" body="Try again." onRetry={() => setAttempt((n) => n + 1)} />
+      ) : !state ? (
+        <div aria-busy="true" data-ch-code="CH-7407">
+          <Skeleton height={30} />
+        </div>
+      ) : state.muted ? (
+        <div className="ch-ms-mute">
+          <span>
+            <Icon icon={BellOff} size={15} />
+            {muteLabel(state, api)}
+          </span>
+          <Button size="sm" busy={busy} onClick={() => void set(false, null)}>
+            Unmute
+          </Button>
+        </div>
+      ) : (
+        <div className="ch-ms-mute__opts">
+          <Button size="sm" disabled={busy} onClick={() => void set(true, 8)}>
+            Mute 8 hours
+          </Button>
+          <Button size="sm" disabled={busy} onClick={() => void set(true, 24 * 7)}>
+            Mute a week
+          </Button>
+          <Button size="sm" variant="ghost" disabled={busy} onClick={() => void set(true, null)}>
+            Until I turn it on
+          </Button>
+        </div>
+      )}
+    </Modal>
+  );
+}
+
+function ConvRowButton({ api, c, avatarSize, onOpen, bind, plain = false }: { api: ChMessagesApi; c: ChConv; avatarSize: number; onOpen: () => void; bind: ContextMenuBind; plain?: boolean }) {
+  const row = {
+    type: "button" as const,
+    className: "ch-ms-row" + (isUnread(c) ? " is-unread" : "") + (api.selectedId === c.id ? " is-sel" : ""),
+    "aria-current": api.selectedId === c.id ? ("true" as const) : undefined,
+    onClick: onOpen,
+    ...bind,
+  };
+  const body = (
+    <>
       {c.group ? (
         <span className="ch-ms-grp">
           <Icon icon={Users} size={15} />
         </span>
       ) : (
-        <Avatar name={c.title} size={avatarSize} />
+        <Avatar name={c.title} id={convAvatarId(api, c)} size={avatarSize} />
       )}
       <span className="ch-ms-row__main">
         <span className="ch-ms-row__top">
@@ -443,26 +582,40 @@ function ConvRowButton({ api, c, avatarSize, onOpen, bind }: { api: ChMessagesAp
               "No messages yet"
             )}
           </span>
-          {c.unread > 0 && (
-            <span
+          {c.unread > 0 ? (
+            <span role="img"
               className="ch-ms-count ch-num"
               aria-label={`${c.unread} unread`}
             >
               {c.unread}
             </span>
-          )}
+          ) : c.markedUnread ? (
+            // Marked unread with nothing new in it: a dot, not a count it doesn't have.
+            <span role="img" className="ch-ms-count is-dot" aria-label="Marked unread" />
+          ) : null}
         </span>
       </span>
-    </button>
+    </>
+  );
+  // On the phone the swipe wrapper is the list's row (its arrivals and departures); the button sits inside it.
+  if (plain) return <button {...row}>{body}</button>;
+  return (
+    // B7: the row itself arrives, leaves and moves (a conversation with a new message slides to the top of its day).
+    <PresenceRow as="button" {...row}>
+      {body}
+    </PresenceRow>
   );
 }
 
 function Rail({ api, onNew }: { api: ChMessagesApi; onNew: () => void }) {
   const body = useRef<HTMLDivElement | null>(null);
   usePanelSmoothScroll(body);
+  // B11: ↑ and ↓ walk the conversations; the rail is one Tab stop.
+  useRovingRows(body, ".ch-ms-row");
+  usePageKeys("Messages", RAIL_KEYS);
   const [filter, setFilter] = useState<ChConvFilter>("all");
   const [q, setQ] = useState("");
-  const unread = api.convs.filter((c) => c.unread > 0).length;
+  const unread = api.convs.filter(isUnread).length;
   const list = filterConvs(api.convs, filter, q);
   const sections: Array<[ReturnType<typeof sectionOf>, string]> = [
     ["today", "Today"],
@@ -510,7 +663,7 @@ function Rail({ api, onNew }: { api: ChMessagesApi; onNew: () => void }) {
             <InlineNotice
               code="CH-7201"
               title="Conversations didn’t load"
-              body="Your messages are safe. Try again; the error has been reported."
+              body="Your messages are safe. Try again."
               onRetry={api.refetchConvs}
             />
           </div>
@@ -519,7 +672,7 @@ function Rail({ api, onNew }: { api: ChMessagesApi; onNew: () => void }) {
             {Array.from({ length: 5 }, (_, i) => (
               <div key={i} className="ch-ms-row" style={{ cursor: "default" }}>
                 <Skeleton width={36} height={36} radius={18} />
-                <span style={{ display: "grid", gap: 7 }}>
+                <span style={{ display: "grid", gap: 8 }}>
                   <Skeleton width="60%" height={13} />
                   <Skeleton width="85%" height={12} />
                 </span>
@@ -554,9 +707,11 @@ function Rail({ api, onNew }: { api: ChMessagesApi; onNew: () => void }) {
                 <section key={k} className="ch-ms-sec" aria-label={l}>
                   <div className="ch-ms-sec__l">{l}</div>
                   <div className="ch-ms-sec__card">
-                    {rows.map((c) => (
-                      <ConvRow key={c.id} api={api} c={c} />
-                    ))}
+                    <ListPresence>
+                      {rows.map((c) => (
+                        <ConvRow key={c.id} api={api} c={c} />
+                      ))}
+                    </ListPresence>
                   </div>
                 </section>
               );
@@ -668,7 +823,7 @@ function ReactionChip({ api, messageId, r }: { api: ChMessagesApi; messageId: st
               <div className="ch-rx__list">
                 {people.map((p) => (
                   <div key={p.id} className="ch-rx__row">
-                    <Avatar name={p.name === "You" ? api.viewer.name : p.name} size={28} />
+                    <Avatar name={p.name === "You" ? api.viewer.name : p.name} size="sm" />
                     <span>{p.name}</span>
                   </div>
                 ))}
@@ -944,7 +1099,8 @@ export function Bubble({
     );
   }
   return (
-    <div
+    <PresenceRow
+      as="div"
       id={`ch-ms-message-${m.id}`}
       className={
         "ch-ms-msg" +
@@ -960,7 +1116,7 @@ export function Bubble({
         <span className="ch-ms-msg__av">
           {last && (
             <SenderPeek api={api} who={who}>
-              <Avatar name={who?.name ?? "Member"} size={30} />
+              <Avatar name={who?.name ?? "Member"} id={who ? (who.playerId ?? who.userId) : null} size={30} />
             </SenderPeek>
           )}
         </span>
@@ -1109,7 +1265,7 @@ export function Bubble({
               type="button"
               onClick={() => api.retry(m.id)}
             >
-              Retry
+              Try again
             </button>
             <button type="button" onClick={() => api.discard(m.id)}>
               Discard
@@ -1125,7 +1281,7 @@ export function Bubble({
           )
         )}
       </div>
-    </div>
+    </PresenceRow>
   );
 }
 
@@ -1499,7 +1655,7 @@ export function Composer({
           <IconButton icon={X} label="Cancel reply" onClick={() => { setRecoveredParent(null); onClearReply?.(); }} disabled={sending || unconfirmed || checking || checkFailed || unavailable} />
         </div>
       )}
-      {resumed && !files.length && <div className="ch-ms-to" aria-label="Pending attachments">{resumed.filenames.map((name, i) => <span key={`${name}-${i}`} className="ch-ms-to__c"><Icon icon={FileText} size={13} />{name}</span>)}</div>}
+      {resumed && !files.length && <div role="group" className="ch-ms-to" aria-label="Pending attachments">{resumed.filenames.map((name, i) => <span key={`${name}-${i}`} className="ch-ms-to__c"><Icon icon={FileText} size={13} />{name}</span>)}</div>}
       {missingFiles.length > 0 && <div role="status" className="ch-ms-to" aria-label="Attachments to choose again">Choose these files again: {missingFiles.map((name, i) => <span key={`${name}-${i}`} className="ch-ms-to__c">{name}<Tooltip><button type="button" aria-label={`Dismiss ${name}`} onClick={() => setMissingFiles((now) => now.filter((_, j) => j !== i))}><Icon icon={X} size={12} /></button></Tooltip></span>)}</div>}
       <AttachChips
         disabled={unconfirmed || checking || checkFailed || unavailable}
@@ -1575,9 +1731,9 @@ export function useNewDivider(api: ChMessagesApi, conv: ChConv): string | null {
 /** Where the divider sits, before its message. */
 export function NewDivider() {
   return (
-    <div className="ch-ms-day is-new" role="separator" aria-label="New messages">
+    <PresenceRow as="div" className="ch-ms-day is-new" role="separator" aria-label="New messages">
       <span>New</span>
-    </div>
+    </PresenceRow>
   );
 }
 
@@ -1589,7 +1745,7 @@ export function ThreadBelow({ anchor }: { anchor: { unseen: number; atEnd: boole
   if (anchor.unseen > 0) {
     return (
       <button type="button" className="ch-ms-below" onClick={anchor.toEnd}>
-        {anchor.unseen === 1 ? "1 new message" : `${anchor.unseen} new messages`}
+        {plural(anchor.unseen, "new message")}
       </button>
     );
   }
@@ -1704,7 +1860,7 @@ function Thread({
               <Icon icon={Users} size={17} />
             </span>
           ) : (
-            <Avatar name={conv.title} size={38} />
+            <Avatar name={conv.title} id={convAvatarId(api, conv)} size={38} />
           )}
           <div style={{ minWidth: 0 }}>
             <b>{conv.title}</b>
@@ -1754,7 +1910,7 @@ function Thread({
             <InlineNotice
               code="CH-7216"
               title="This conversation may be out of date"
-              body="It didn’t refresh. What’s here is what was last loaded. Try again; the error has been reported."
+              body="It didn’t refresh. What’s here is what was last loaded. Try again."
               onRetry={api.refetchMsgs}
             />
           )}
@@ -1762,7 +1918,7 @@ function Thread({
             <InlineNotice
               code="CH-7202"
               title="This conversation didn’t load"
-              body="Nothing was lost. Try again; the error has been reported."
+              body="Nothing was lost. Try again."
               onRetry={api.refetchMsgs}
             />
           ) : api.msgsLoading && !api.msgs.length ? (
@@ -1780,35 +1936,40 @@ function Thread({
           ) : !api.msgs.length ? (
             <EmptyState compact code="CH-7304" title="No messages yet" body={`Say hello to ${conv.group ? "the group" : firstName(conv.title)}.`} />
           ) : (
-            items.map((it) =>
-              it.kind === "day" ? (
-                <div key={it.key} className="ch-ms-day">
-                  <span>{it.label}</span>
-                </div>
-              ) : (
-                <Fragment key={it.key}>
-                  {it.m.id === newId && <NewDivider />}
-                  <Bubble
-                    api={api}
-                    m={it.m}
-                    first={it.first}
-                    last={it.last}
-                    group={conv.group}
-                    picking={picking === it.m.id}
-                    setPicking={(v) => setPicking(v ? it.m.id : null)}
-                    onEdit={() => setEditing(it.m)}
-                    onDelete={() => setDeleting(it.m)}
-                    onReply={() => reply(it.m)}
-                  />
-                </Fragment>
-              ),
-            )
+            // B7: a message that arrives or is deleted opens or closes in place; the thread's scroll stays with
+            // useThreadAnchor (no FLIP), and another conversation is a new list, whose messages never arrive.
+            <ListPresence key={conv.id} flip={false}>
+              {items.flatMap((it) =>
+                it.kind === "day"
+                  ? [
+                      <PresenceRow as="div" key={it.key} className="ch-ms-day">
+                        <span>{it.label}</span>
+                      </PresenceRow>,
+                    ]
+                  : [
+                      ...(it.m.id === newId ? [<NewDivider key={`new-${it.key}`} />] : []),
+                      <Bubble
+                        key={it.key}
+                        api={api}
+                        m={it.m}
+                        first={it.first}
+                        last={it.last}
+                        group={conv.group}
+                        picking={picking === it.m.id}
+                        setPicking={(v) => setPicking(v ? it.m.id : null)}
+                        onEdit={() => setEditing(it.m)}
+                        onDelete={() => setDeleting(it.m)}
+                        onReply={() => reply(it.m)}
+                      />,
+                    ],
+              )}
+            </ListPresence>
           )}
           {/* No dots under a thread that didn't load or is still loading (states audit c9): nothing to type into yet. */}
           {api.typing && !api.msgsError && !(api.msgsLoading && !api.msgs.length) && (
             <div className="ch-ms-msg is-first" /* CH-7602: the typing dots */>
               {/* The realtime hook says someone is typing, not who: a direct thread knows, a group doesn't. */}
-              <span className="ch-ms-msg__av">{!conv.group && <Avatar name={conv.title} size={30} />}</span>
+              <span className="ch-ms-msg__av">{!conv.group && <Avatar name={conv.title} id={convAvatarId(api, conv)} size={30} />}</span>
               <div className="ch-ms-msg__col">
                 <div
                   className="ch-ms-typing"
@@ -1997,7 +2158,7 @@ export function DeleteConversationModal({ api, conv, open, onClose, onDeleted }:
             busy={busy}
             onClick={async () => {
               setBusy(true);
-              const ok = (await api.deleteConversation?.()) ?? false;
+              const ok = (await api.deleteConversation?.(conv.id)) ?? false;
               setBusy(false);
               if (ok) {
                 onClose();
@@ -2100,11 +2261,11 @@ export function AddMembersModal({ api, conv, open, onClose }: { api: ChMessagesA
         <InlineNotice
           code="CH-7215"
           title="The team list didn’t load"
-          body="Try again; the error has been reported."
+          body="Try again."
           onRetry={() => setAttempt((n) => n + 1)}
         />
       ) : !people ? (
-        <div style={{ display: "grid", gap: 10 }} aria-busy="true" data-ch-code="CH-7410">
+        <div style={{ display: "grid", gap: 8 }} aria-busy="true" data-ch-code="CH-7410">
           <Skeleton height={30} />
           <Skeleton height={30} />
           <Skeleton height={30} />
@@ -2114,12 +2275,12 @@ export function AddMembersModal({ api, conv, open, onClose }: { api: ChMessagesA
           Everyone on the team is already in this group.
         </p>
       ) : (
-        <div className="ch-ms-pick" aria-label="People to add">
+        <div role="group" className="ch-ms-pick" aria-label="People to add">
           {people.map((p) => {
             const done = added.includes(p.userId);
             return (
               <div key={p.userId} className="ch-pp__row">
-                <Avatar name={p.name} size={28} />
+                <Avatar name={p.name} id={personOf(api, p.userId)?.playerId ?? p.userId} size="sm" />
                 <span className="ch-pp__name">
                   <b>{p.name}</b>
                   <span>{p.subtitle}</span>
@@ -2189,7 +2350,7 @@ function Details({
             <Icon icon={Users} size={22} />
           </span>
         ) : (
-          <Avatar name={conv.title} size={64} ring />
+          <Avatar name={conv.title} id={convAvatarId(api, conv)} size="xl" ring />
         )}
         <b>{conv.title}</b>
         <span>
@@ -2225,12 +2386,12 @@ function Details({
             <InlineNotice
               code="CH-7204"
               title="Members didn’t load"
-              body="Try again; the error has been reported."
+              body="Try again."
               onRetry={api.retryMembers}
             />
           ) : !api.members ? (
             <div
-              style={{ display: "grid", gap: 10 }}
+              style={{ display: "grid", gap: 8 }}
               aria-busy="true"
               data-ch-code="CH-7405"
             >
@@ -2241,7 +2402,7 @@ function Details({
           ) : (
             api.members.map((mb) => (
               <div key={mb.userId} className="ch-ms-mem">
-                <Avatar name={mb.name} size={30} />
+                <Avatar name={mb.name} id={personOf(api, mb.userId)?.playerId ?? mb.userId} size={30} />
                 <span style={{ minWidth: 0 }}>
                   <b>
                     {mb.name}
@@ -2307,7 +2468,7 @@ function FilesSection({ api, conv }: { api: ChMessagesApi; conv: ChConv }) {
         <InlineNotice
           code="CH-7214"
           title="Files didn’t load"
-          body="Your messages are safe. Try again; the error has been reported."
+          body="Your messages are safe. Try again."
           onRetry={retry}
         />
       ) : !files ? (
@@ -2361,7 +2522,7 @@ function MuteControl({ api }: { api: ChMessagesApi }) {
         <InlineNotice
           code="CH-7208"
           title="The mute setting didn’t load"
-          body="Try again; the error has been reported."
+          body="Try again."
           onRetry={api.retryMute}
         />
       ) : !m ? (
@@ -2645,7 +2806,7 @@ function NewMessage({
                   const p = personOf(api, id);
                   return (
                     <span key={id} className="ch-ms-to__c">
-                      <Avatar name={p?.name ?? "Member"} size={20} />
+                      <Avatar name={p?.name ?? "Member"} id={p?.playerId ?? id} size={20} />
                       {firstName(p?.name ?? "Member")}
                       <Tooltip>
                         <button
@@ -2665,7 +2826,7 @@ function NewMessage({
               <InlineNotice
                 code="CH-7205"
                 title="Your team list didn’t load"
-                body="Try again; the error has been reported."
+                body="Try again."
                 onRetry={api.retryDirectory}
               />
             ) : (
@@ -2686,7 +2847,7 @@ function NewMessage({
                       className="ch-pp__row"
                       onClick={() => toggle(p.userId)}
                     >
-                      <Avatar name={p.name} size={28} />
+                      <Avatar name={p.name} id={p.playerId ?? p.userId} size="sm" />
                       <span className="ch-pp__name">
                         <b>{p.name}</b>
                         <span>{p.subtitle}</span>

@@ -33,10 +33,10 @@ export function ProposalAnswer({ id, title }: { id: string; title: string }) {
   const pending = accept.pending || decline.pending;
   return (
     <span className="ch-pf-answer" role="group" aria-label={`Answer ${title}`}>
-      <Button size="sm" variant="primary" disabled={pending} onClick={() => void accept.run()}>
+      <Button size="sm" variant="primary" busy={accept.pending} disabled={pending} onClick={() => void accept.run()}>
         {accept.pending ? <span data-ch-code="CH-5404">Accepting…</span> : 'Accept'}
       </Button>
-      <Button size="sm" variant="ghost" disabled={pending} onClick={() => void decline.run()}>
+      <Button size="sm" variant="ghost" busy={decline.pending} disabled={pending} onClick={() => void decline.run()}>
         {decline.pending ? <span data-ch-code="CH-5404">Declining…</span> : 'Decline'}
       </Button>
     </span>

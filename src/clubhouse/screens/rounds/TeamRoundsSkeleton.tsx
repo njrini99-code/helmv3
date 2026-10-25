@@ -1,5 +1,6 @@
 import { Skeleton } from '../../ui/States';
 import '../../styles/rounds.css';
+import { LargeTitleSkeleton } from '../../ui/LargeTitle';
 
 /** Route loading for Team rounds: the head, the season's four figures, the tools, then a month of rows, in place. */
 export function TeamRoundsSkeleton() {
@@ -9,7 +10,10 @@ export function TeamRoundsSkeleton() {
         <div>
           <Skeleton width={200} height={13} />
           <div style={{ height: 10 }} />
-          <Skeleton width={190} height={36} radius={10} />
+          <span className="ch-rd-sk-desk">
+            <Skeleton width={190} height={36} radius={10} />
+          </span>
+          <LargeTitleSkeleton width={190} />
         </div>
       </header>
       <Skeleton width="100%" height={76} radius={12} />

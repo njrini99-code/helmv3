@@ -21,6 +21,7 @@ import { calculateShotDistanceWithDirection } from '@/lib/utils/shot-helpers';
 import { haptic } from '../../../lib/haptics';
 import { roving } from '../../../ui/use-roving';
 import { useChReducedMotion } from '../../../lib/reduced-motion';
+import { Button } from '../../../ui/Button';
 import { Icon } from '../../../ui/Icon';
 import { APPROACH_GRID, BREAK_OPTIONS, cleanDistance, isDistanceText, PUTT_TAGS, quickPicks, RESULT_LABEL, SLOPE_OPTIONS, shotTitle } from './labels';
 import { Sec, Seg } from './parts';
@@ -144,9 +145,7 @@ export function ShotEntry(p: ShotEntryProps) {
       <div className="ch-rt-note is-warn" data-ch-code="CH-11102">
         <Icon icon={TriangleAlert} size={15} />
         <span>{issue.message}</span>
-        <button type="button" className="ch-btn ch-btn--secondary ch-btn--sm" onClick={() => setConfirmedKey(key)}>
-          <span>Confirm</span>
-        </button>
+        <Button variant="secondary" size="sm" onClick={() => setConfirmedKey(key)}>Confirm</Button>
       </div>
     )
   ) : null;
@@ -209,8 +208,8 @@ export function ShotEntry(p: ShotEntryProps) {
               value={p.missDirection as 'left' | 'right' | null}
               onChange={(v) => p.dispatch({ type: 'SET_MISS_DIRECTION', payload: v })}
               options={[
-                { value: 'left', label: '← Left' },
-                { value: 'right', label: 'Right →' },
+                { value: 'left', label: 'Left' },
+                { value: 'right', label: 'Right' },
               ]}
             />
           </Sec>
@@ -420,21 +419,11 @@ export function UndoConfirm({ shots, saving, error, dispatch, onUndo }: { shots:
           </span>
         )}
       </div>
-      <button type="button" className="ch-btn ch-btn--ghost" onClick={() => dispatch({ type: 'HIDE_UNDO_CONFIRM' })}>
-        <span>Keep it</span>
-      </button>
-      <button
-        type="button"
-        className="ch-btn ch-btn--danger"
-        disabled={saving}
-        onClick={() => {
-          // CH-11707: removing a shot is a warning.
-          haptic('warning');
-          onUndo();
-        }}
-      >
-        <span>{saving ? 'Undoing…' : 'Undo'}</span>
-      </button>
+      <Button variant="ghost" onClick={() => dispatch({ type: 'HIDE_UNDO_CONFIRM' })}>Keep it</Button>
+      {/* CH-11707: removing a shot is a warning (a danger Button warns as it is pressed). */}
+      <Button variant="danger" busy={saving} onClick={onUndo}>
+        {saving ? 'Undoing…' : 'Undo'}
+      </Button>
     </div>
   );
 }
