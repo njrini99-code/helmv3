@@ -81,8 +81,8 @@ DECLARE
   t text;
 BEGIN
   FOREACH t IN ARRAY ARRAY[
-    'golf_tournaments', 'golf_tournament_rounds', 'golf_tournament_entries',
-    'golf_tournament_round_lineups', 'golf_tournament_field_teams',
+    'golf_tournaments', 'golf_tournament_rounds',
+    'golf_tournament_field_teams',
     'golf_tournament_advice_givers', 'golf_team_seasons'
   ]
   LOOP
@@ -102,12 +102,41 @@ BEGIN
   END LOOP;
 END $$;
 
--- 2. Field scores carry their team id; read through it.
+-- 1b. Entries and round lineups are the coach's draft until the reveal rules
+-- (20261024100300, not yet written) say when a player may see them. Until that
+-- file exists a player reads neither, so a lineup the coach is still drafting
+-- never leaks to the team through the API; coaches and admins read and coaches
+-- write, as for the tables above.
+do $$
+DECLARE
+  t text;
+BEGIN
+  FOREACH t IN ARRAY ARRAY[
+    'golf_tournament_entries', 'golf_tournament_round_lineups'
+  ]
+  LOOP
+    EXECUTE format('drop policy if exists %I on public.%I', t || '_select', t);
+    EXECUTE format(
+      'create policy %I on public.%I for select to authenticated using ('
+      || 'public.is_golf_team_coach(team_id) or public.is_admin())',
+      t || '_select', t);
+    EXECUTE format(
+      'drop policy if exists %I on public.%I', t || '_coach_write', t);
+    EXECUTE format(
+      'create policy %I on public.%I for all to authenticated '
+      || 'using (public.is_golf_team_coach(team_id)) '
+      || 'with check (public.is_golf_team_coach(team_id))',
+      t || '_coach_write', t);
+  END LOOP;
+END $$;
+
+-- 2. Field scores carry their team id; read through it. Coach-only for the same
+-- reason as 1b: a player sees scores once the reveal rules exist.
 drop policy if exists golf_tfs_select on public.golf_tournament_field_scores;
 create policy golf_tfs_select on public.golf_tournament_field_scores
 for select to authenticated
 using (
-    public.is_golf_team_coach(team_id) or public.is_golf_team_player(team_id)
+    public.is_golf_team_coach(team_id) or public.is_admin()
 );
 drop policy if exists golf_tfs_coach_write
 on public.golf_tournament_field_scores;

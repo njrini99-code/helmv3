@@ -219,8 +219,14 @@ SET search_path = public, pg_temp
 AS $$
   select case
     when p_team_id is null or p_player_id is null then false
-    when not (public.is_golf_team_coach(p_team_id)
-              or p_player_id = public.get_current_golf_player_id()) then false
+    -- A coach reads the switch only for a player who is on THEIR team: without the membership test a coach of team A could
+    -- pass any other team's player and learn that player's setting.
+    -- coalesce: a caller with no player id makes the OR below NULL, and a NULL WHEN would fall through to the data branch.
+    when not coalesce(
+              (public.is_golf_team_coach(p_team_id)
+               and exists (select 1 from public.golf_team_members m
+                            where m.team_id = p_team_id and m.player_id = p_player_id and m.status = 'active'))
+              or p_player_id = public.get_current_golf_player_id(), false) then false
     else coalesce(
       (select s.share_status from public.golf_player_class_settings s where s.player_id = p_player_id),
       true)

@@ -11,7 +11,7 @@
 BEGIN;
 \ir _helpers.sql
 
-SELECT plan(38);
+SELECT plan(39);
 
 -- Test helper (rolled back with the transaction): rows touched by one statement.
 CREATE FUNCTION public.p10_rows_affected(p_sql text) RETURNS integer
@@ -342,6 +342,12 @@ SELECT is(
   public.golf_player_shares_class_status('00000000-0000-0000-0000-0000000b1121', '00000000-0000-0000-0000-0000000b1131'),
   false,
   'the helper tells a coach of the team that this player has sharing off'
+);
+
+SELECT is(
+  public.golf_player_shares_class_status('00000000-0000-0000-0000-0000000b1121', '00000000-0000-0000-0000-0000000b9999'),
+  false,
+  'the helper tells a coach nothing about a player who is not on their team (no switch value leaks across teams)'
 );
 
 SET LOCAL request.jwt.claims TO '{"sub": "00000000-0000-0000-0000-0000000b1104", "role": "authenticated"}';
