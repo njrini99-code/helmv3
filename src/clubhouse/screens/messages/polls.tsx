@@ -284,7 +284,7 @@ export function PollCard({
                 tabIndex={stop == null || stop === o.id ? 0 : -1}
                 onKeyDown={onKey}
                 aria-disabled={closed || !tally || undefined}
-                aria-label={`${o.label}, ${plural(n, 'vote')}${on ? ", your vote" : ""}${lead && closed ? ", most votes" : ""}`}
+                aria-label={`${o.label}, ${plural(n, "vote")}${on ? ", your vote" : ""}${lead && closed ? ", most votes" : ""}`}
                 className={
                   "ch-ms-poll__opt" + (on ? " is-on" : "") + (lead ? " is-lead" : "") + (poll.multi ? " is-multi" : "")
                 }

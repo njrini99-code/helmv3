@@ -111,11 +111,14 @@ async function sendGolfPollImpl(conversationId: string, draft: PollDraft, client
     // A retry after a send that committed with only its answer lost: the same id, the same sender, a poll. Report it
     // as the success it is, as sendMessage does for text (23505 on the primary key).
     if (clientMessageId && error.code === '23505') {
-      const { data: existing } = await supabase
+      const { data: existing, error: existingError } = await supabase
         .from('golf_messages')
         .select('id, sender_id, conversation_id, kind')
         .eq('id', clientMessageId)
         .maybeSingle();
+      if (existingError) {
+        await logServerError(`[sendGolfPoll] retry lookup failed: ${describeError(existingError)}`, { action: 'golf.sendGolfPoll', featureArea: 'messaging' });
+      }
       if (existing && existing.sender_id === user.id && existing.conversation_id === conversationId && existing.kind === 'poll') {
         return { success: true, id: existing.id };
       }
