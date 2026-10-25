@@ -970,7 +970,7 @@ button.ch-rt-strip__h {
 }
 .ch-rt-ask__s {
   margin: 10px 0 0;
-  font: 400 calc(12.5 * var(--ch-type-k))/1.35 var(--ch-font-sans);
+  font: 400 calc(13 * var(--ch-type-k))/1.35 var(--ch-font-sans);
   font-variant-numeric: tabular-nums;
   color: var(--ch-text-tertiary);
 }
