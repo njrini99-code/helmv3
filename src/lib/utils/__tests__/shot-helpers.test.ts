@@ -97,6 +97,34 @@ describe('deriveLieAfter', () => {
     expect(deriveLieAfter(shot)).toBe('fairway');
   });
 
+  it('keeps the starting lie for a stroke that ends where it began (stroke-and-distance stroke)', () => {
+    const shot = makeShotRecord({
+      shotType: 'tee',
+      lieBefore: 'tee',
+      distanceToHoleBefore: 400,
+      distanceUnitBefore: 'yards',
+      result: 'other',
+      distanceToHoleAfter: 400,
+      distanceUnitAfter: 'yards',
+      shotDistance: 0,
+    });
+    expect(deriveLieAfter(shot)).toBe('tee');
+  });
+
+  it('still maps an ordinary "other" result to rough', () => {
+    const shot = makeShotRecord({
+      shotType: 'tee',
+      lieBefore: 'tee',
+      distanceToHoleBefore: 400,
+      distanceUnitBefore: 'yards',
+      result: 'other',
+      distanceToHoleAfter: 160,
+      distanceUnitAfter: 'yards',
+      shotDistance: 240,
+    });
+    expect(deriveLieAfter(shot)).toBe('rough');
+  });
+
   it('falls back to result when no approach miss type', () => {
     expect(deriveLieAfter(baseShot)).toBe('green');
   });
