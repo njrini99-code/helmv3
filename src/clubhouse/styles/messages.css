@@ -3579,8 +3579,8 @@ html[data-fw-theme='dark'] [data-ui='clubhouse'] .ch-ms-poll {
 .ch-ms-pollf__custom {
   display: grid;
   grid-template-rows: 0fr;
-  transition: grid-template-rows var(--ch-dur-base) var(--ch-ease);
 }
+/* The row opens at once (0fr to 1fr, no height animation); only its fields fade in. */
 .ch-ms-pollf__custom.is-open {
   grid-template-rows: 1fr;
 }
@@ -3590,6 +3590,11 @@ html[data-fw-theme='dark'] [data-ui='clubhouse'] .ch-ms-poll {
   gap: var(--ch-space-2);
   min-height: 0;
   overflow: hidden;
+  opacity: 0;
+  transition: opacity var(--ch-dur-base) var(--ch-ease);
+}
+.ch-ms-pollf__custom.is-open .ch-ms-pollf__customin {
+  opacity: 1;
 }
 .ch-ms-pollf__custom.is-open .ch-ms-pollf__customin {
   padding-top: var(--ch-space-2);
