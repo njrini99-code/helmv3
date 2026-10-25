@@ -3337,7 +3337,7 @@ html[data-fw-theme='dark'] .ch-ms-sec.is-ann {
   padding: var(--ch-space-3);
   border-radius: var(--ch-radius-card);
   background: var(--ch-sheet-bg);
-  box-shadow: 0 0 0 1px var(--ch-border-hairline), var(--ch-elevation-bubble);
+  box-shadow: 0 0 0 var(--ch-hairline-w) var(--ch-border-hairline), var(--ch-elevation-bubble);
   color: var(--ch-text-primary);
 }
 html[data-fw-theme='dark'] [data-ui='clubhouse'] .ch-ms-poll {
@@ -3414,7 +3414,7 @@ html[data-fw-theme='dark'] [data-ui='clubhouse'] .ch-ms-poll {
   border: 0;
   border-radius: var(--ch-radius-md);
   background: var(--ch-bg-subtle);
-  box-shadow: inset 0 0 0 1px var(--ch-border-hairline);
+  box-shadow: inset 0 0 0 var(--ch-hairline-w) var(--ch-border-hairline);
   color: var(--ch-text-primary);
   font: var(--ch-type-16-medium);
   letter-spacing: var(--ch-track-16);
