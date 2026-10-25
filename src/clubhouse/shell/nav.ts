@@ -7,6 +7,7 @@ import {
   Flag,
   GraduationCap,
   House,
+  Medal,
   MessageSquare,
   Settings,
   Trophy,
@@ -74,6 +75,35 @@ export const CH_NAV_PLAYER: readonly ChNavItem[] = [
 export type ChRole = 'coach' | 'player';
 
 /**
+ * Pages behind a release flag of their own, read on the server and carried to the shell in its data (`ChShellData`):
+ * `tournaments` is golf_tournaments_v1 (P016). Without it (every caller that passes nothing) the page is not in the
+ * nav, not on the phone's strip and not a rebuilt route, so a flag that is off shows no way in.
+ */
+export interface ChNavFeatures {
+  tournaments?: boolean;
+}
+
+/** Tournaments (P016, D-80): the Team group after Qualifiers, for coaches and players; a More row on the phone. */
+export const CH_NAV_TOURNAMENTS: ChNavItem = { id: 'tournaments', label: 'Tournaments', href: '/golf/dashboard/tournaments', icon: Medal, section: 'Team' };
+
+/**
+ * The flagged routes (P016's nine). Both roles: a player on a coach's address (the form, the lineup) gets the page's own
+ * coach-only notice, as Qualifiers does, not the not-rebuilt page.
+ */
+const CH_FEATURE_ROUTES: Record<keyof ChNavFeatures, { exact: readonly string[]; children: RegExp }> = {
+  tournaments: {
+    exact: ['/golf/dashboard/tournaments'],
+    children: /^\/golf\/dashboard\/tournaments\/(new|compare|history|links|[0-9a-f-]{36}(\/(edit|lineup|live))?)$/i,
+  },
+};
+
+function withFeatures(nav: readonly ChNavItem[], features: ChNavFeatures | null | undefined): readonly ChNavItem[] {
+  if (!features?.tournaments) return nav;
+  const at = nav.findIndex((i) => i.id === 'qualifiers');
+  return at < 0 ? [...nav, CH_NAV_TOURNAMENTS] : [...nav.slice(0, at + 1), CH_NAV_TOURNAMENTS, ...nav.slice(at + 1)];
+}
+
+/**
  * The phone's first sections, in order (D-66, v2 GH.tabs; once the tab bar, now the head of the section strip, see
  * docs/clubhouse/phone/section-strip.md). Coach: Home, CoachHelm, Calendar, Stats. Player: Home, CoachHelm, Rounds,
  * Team Hub. They are fetched ahead of the first tap.
@@ -84,8 +114,8 @@ export const CH_PHONE_TABS: Record<ChRole, readonly string[]> = {
 };
 
 /** The role's phone tabs, in order, and everything else (the More sheet), in sidebar order. */
-export function phoneTabsFor(role: ChRole): { tabs: ChNavItem[]; more: ChNavItem[] } {
-  const nav = navFor(role);
+export function phoneTabsFor(role: ChRole, features?: ChNavFeatures | null): { tabs: ChNavItem[]; more: ChNavItem[] } {
+  const nav = navFor(role, features);
   const ids = CH_PHONE_TABS[role];
   return {
     tabs: ids.map((id) => nav.find((i) => i.id === id)).filter((i): i is ChNavItem => !!i),
@@ -100,20 +130,20 @@ export const CH_SETTINGS_ITEM: ChNavItem = { id: 'settings', label: 'Settings', 
  * The phone's section strip, in order: the first sections, then the rest in sidebar order, then Settings, each only
  * once its screen is rebuilt for the role.
  */
-export function phoneSectionsFor(role: ChRole): ChNavItem[] {
-  const { tabs, more } = phoneTabsFor(role);
-  return [...tabs, ...more, CH_SETTINGS_ITEM].filter((i) => isRebuilt(i.href, role));
+export function phoneSectionsFor(role: ChRole, features?: ChNavFeatures | null): ChNavItem[] {
+  const { tabs, more } = phoneTabsFor(role, features);
+  return [...tabs, ...more, CH_SETTINGS_ITEM].filter((i) => isRebuilt(i.href, role, features));
 }
 
 /** The section a phone address belongs to, Settings included; undefined for a page outside every section. */
-export function phoneSectionFor(pathname: string, role: ChRole): ChNavItem | undefined {
+export function phoneSectionFor(pathname: string, role: ChRole, features?: ChNavFeatures | null): ChNavItem | undefined {
   const path = pathname.replace(/\/$/, '') || '/';
   if (path === CH_SETTINGS_ITEM.href || path.startsWith(`${CH_SETTINGS_ITEM.href}/`)) return CH_SETTINGS_ITEM;
-  return activeNavItem(path, role);
+  return activeNavItem(path, role, features);
 }
 
-export function navFor(role: ChRole): readonly ChNavItem[] {
-  return role === 'player' ? CH_NAV_PLAYER : CH_NAV_COACH;
+export function navFor(role: ChRole, features?: ChNavFeatures | null): readonly ChNavItem[] {
+  return withFeatures(role === 'player' ? CH_NAV_PLAYER : CH_NAV_COACH, features);
 }
 
 /** @deprecated use navFor(role); kept for coach-only callers. */
@@ -134,9 +164,9 @@ export function routeLabel(pathname: string): string | null {
   return words.charAt(0).toUpperCase() + words.slice(1);
 }
 
-export function activeNavItem(pathname: string, role: ChRole = 'coach'): ChNavItem | undefined {
+export function activeNavItem(pathname: string, role: ChRole = 'coach', features?: ChNavFeatures | null): ChNavItem | undefined {
   let best: ChNavItem | undefined;
-  for (const item of navFor(role)) {
+  for (const item of navFor(role, features)) {
     // Home owns only itself: /golf/dashboard/settings isn't "in" Home.
     const hit = pathname === item.href || (item.id !== 'home' && pathname.startsWith(item.href + '/'));
     if (hit && (!best || item.href.length > best.href.length)) best = item;
@@ -216,16 +246,19 @@ export function isAliased(pathname: string): boolean {
   return CH_ALIASED_ROUTES.some((re) => re.test(path));
 }
 
-export function isRebuilt(pathname: string, role: ChRole = 'coach'): boolean {
+export function isRebuilt(pathname: string, role: ChRole = 'coach', features?: ChNavFeatures | null): boolean {
   const path = pathname.replace(/\/$/, '') || '/';
   if (CH_REBUILT_ROUTES[role].includes(path)) return true;
+  for (const [key, routes] of Object.entries(CH_FEATURE_ROUTES) as Array<[keyof ChNavFeatures, (typeof CH_FEATURE_ROUTES)[keyof ChNavFeatures]]>) {
+    if (features?.[key] && (routes.exact.includes(path) || routes.children.test(path))) return true;
+  }
   if (CH_REBUILT_PATTERNS[role].some((re) => re.test(path))) return true;
   return Object.entries(CH_REBUILT_CHILDREN).some(([parent, child]) => CH_REBUILT_ROUTES[role].includes(parent) && child.test(path));
 }
 
 /** A link target only once its screen is rebuilt; until then the control isn't rendered. */
-export function rebuiltHref(href: string, role: ChRole = 'coach'): string | null {
-  return isRebuilt(href.split('?')[0] ?? href, role) ? href : null;
+export function rebuiltHref(href: string, role: ChRole = 'coach', features?: ChNavFeatures | null): string | null {
+  return isRebuilt(href.split('?')[0] ?? href, role, features) ? href : null;
 }
 
 /** The pushed top bar a phone page draws with its `PhoneTop`: a back link named for where it goes, and the title. */

@@ -2333,3 +2333,87 @@ html[data-fw-theme='dark'] .ch-scoreboard .ch-score--double {
     width: 100%;
   }
 }
+
+/* A signed difference against a baseline (ui/DeltaChip.tsx, P016 7.A): toned only past one standard error. The triangle
+   points up for better and down for worse whatever the sign, so the meaning never rests on hue (gain and loss sit close
+   in lightness). Level is neutral ink with a dash. */
+.ch-delta {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font: var(--ch-type-13-strong);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+  color: var(--ch-text-secondary);
+}
+.ch-delta__g {
+  flex: none;
+  fill: currentColor;
+}
+.ch-delta--gain {
+  color: var(--ch-chart-gain);
+}
+.ch-delta--loss {
+  color: var(--ch-chart-loss);
+}
+.ch-delta--none {
+  color: var(--ch-text-tertiary);
+}
+
+/* How settled a number is (ui/TrustChip.tsx, D-84): Live breathes on the live loop, which stops under reduced motion and
+   Animations off (the token goes to 0). Suspended is amber on the warning tint; Official is positive ink with a check.
+   The source label is quieter and never changes the tone. */
+.ch-trust {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 22px;
+  padding: 0 8px;
+  border-radius: var(--ch-radius-xs);
+  font: var(--ch-type-12-strong);
+  line-height: var(--ch-lead-tight);
+  white-space: nowrap;
+  color: var(--ch-text-secondary);
+  background: var(--ch-bg-subtle);
+  box-shadow: inset 0 0 0 var(--ch-hairline-w) var(--ch-border-subtle);
+}
+.ch-trust--live {
+  color: var(--ch-text-primary);
+}
+.ch-trust--suspended {
+  color: var(--ch-warning-600);
+  background: var(--ch-warning-100);
+}
+.ch-trust--official {
+  color: var(--ch-positive-600);
+  background: var(--ch-positive-100);
+}
+.ch-trust--upcoming {
+  color: var(--ch-text-tertiary);
+}
+.ch-trust__dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--ch-accent);
+  animation: ch-trust-live var(--ch-dur-live) var(--ch-ease-io) infinite;
+}
+.ch-trust__at,
+.ch-trust__src {
+  font: var(--ch-type-12-medium);
+  color: var(--ch-text-tertiary);
+}
+@keyframes ch-trust-live {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.35;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .ch-trust__dot {
+    animation: none;
+  }
+}

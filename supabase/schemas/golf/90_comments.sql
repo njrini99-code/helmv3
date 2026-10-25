@@ -298,3 +298,12 @@ COMMENT ON COLUMN "public"."golf_travel_expenses"."category" IS 'Expense categor
 COMMENT ON COLUMN "public"."golf_travel_expenses"."paid_by" IS 'Who paid: team, player, pending_reimbursement, split';
 
 COMMENT ON COLUMN "public"."golf_travel_itineraries"."is_test" IS 'QA/demo row: hidden from team reads (OD-03).';
+
+-- P016 Tournaments: held migrations 20261024100000 (tables), 100100 (RLS)
+-- and 100200 (RPCs, lineup guard), WRITTEN — HOLD — NOT APPLIED in production.
+-- Generated 2026-10-25 by pg_dump of the three files applied in order to a
+-- scratch Postgres 16 (docs/clubhouse/held/data/tournaments.md).
+
+COMMENT ON TABLE "public"."golf_tournament_player_rounds" IS 'P016 Tournaments (D-82): one row per player per tournament round, linking a golf_rounds row or holding an entered score. golf_rounds is never updated by tournaments. HELD 20261024100000.';
+
+COMMENT ON TABLE "public"."golf_tournaments" IS 'P016 Tournaments (D-81): one tournament edition for one GolfHelm team. Each competition round is a golf_events row linked through golf_tournament_rounds. version is bumped on every update (compare-and-set). HELD 20261024100000.';

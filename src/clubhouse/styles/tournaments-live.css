@@ -1,0 +1,3 @@
+/* P016 Tournaments, the live round (LiveRound, LiveRow, CountBadge, HoleMap, MomentsFeed, the score sheets).
+   Owned by the live area (src/clubhouse/screens/tournaments/README.md). Every class here starts .ch-tour-live-; shared
+   pieces (the view root .ch-tour, the changed-wash) live in tournaments.css. Tokens only. */

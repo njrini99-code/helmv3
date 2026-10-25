@@ -40,6 +40,7 @@ export const HOLD_HEADER = '-- STATUS: WRITTEN — HOLD — NOT APPLIED';
 const GATES = ['spec', 'desktop', 'wired', 'states', 'error-tracking', 'phone-spec', 'phone', 'motion', 'accessibility', 'performance', 'verified'];
 
 export const pad2 = (n) => String(n).padStart(2, '0');
+const s0 = (m) => m.status ?? {};
 export const bridgeId = (ns, category, item) => Number(`${ns}${pad2(category)}${pad2(item)}`);
 /** Decodes from the right, so any namespace width works. */
 export function decodeBridgeId(id) {
@@ -230,9 +231,18 @@ export function checkRegistry(ctx) {
       if (!/^\/golf\/dashboard(\/|$)/.test(r)) v.push(`${at}: route ${r} is not under /golf/dashboard`);
       else if (!exists(routeToPage(r))) v.push(`${at}: route ${r} has no ${routeToPage(r)}`);
     }
+    // A page built in the preview before its routes are wired (P016) lists the routes it will own as plannedRoutes:
+    // under /golf/dashboard, with no page.tsx yet (once one exists the route moves to routes), and never on a page that
+    // claims its implementation complete.
+    for (const r of m.plannedRoutes ?? []) {
+      if (!/^\/golf\/dashboard(\/|$)/.test(r)) v.push(`${at}: planned route ${r} is not under /golf/dashboard`);
+      else if (exists(routeToPage(r))) v.push(`${at}: planned route ${r} has ${routeToPage(r)}; move it to routes`);
+      if ((m.routes ?? []).includes(r)) v.push(`${at}: ${r} is in both routes and plannedRoutes`);
+    }
+    if ((m.plannedRoutes ?? []).length && s0(m).implementation === 'complete') v.push(`${at}: implementation complete with planned routes still unwired`);
     if (m.area !== undefined && m.area !== 'auth') v.push(`${at}: area "${m.area}" is not auth`);
     if (m.area === 'auth' && (m.roles ?? []).length) v.push(`${at}: an auth page is drawn for a visitor with no role, so roles must be empty`);
-    if (!(m.routes ?? []).length && m.id !== 'P001') v.push(`${at}: no routes`);
+    if (!(m.routes ?? []).length && !(m.plannedRoutes ?? []).length && m.id !== 'P001') v.push(`${at}: no routes`);
     for (const r of m.roles ?? []) if (!['coach', 'player'].includes(r)) v.push(`${at}: role ${r} is not coach or player`);
     for (const f of m.semanticFeatures ?? []) if (!features.has(f)) v.push(`${at}: semantic feature ${f} is not in memory/registry.yml`);
     if (!(m.semanticFeatures ?? []).length) v.push(`${at}: no semantic features`);
@@ -490,7 +500,8 @@ export function generateDocs({ manifests, bridge, map, tombstones, read, exists,
   pm += '\n| Page | Name | Routes | Roles | Features | Design | Implementation | Contract | Bridge | Data | Verification | Docs |\n| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |\n';
   for (const m of pages) {
     const s = m.status;
-    pm += `| ${m.id} | ${cell(m.name)} | ${(m.routes ?? []).map((r) => `\`${r}\``).join('<br>') || '(shell)'} | ${(m.roles ?? []).join(', ') || 'signed out'} | ${m.semanticFeatures.join(', ')} | ${s.design} | ${s.implementation} | ${s.contract} | ${s.bridge} | ${s.data} | ${s.verification} | ${s.docs} |\n`;
+    const routes = [...(m.routes ?? []).map((r) => `\`${r}\``), ...(m.plannedRoutes ?? []).map((r) => `\`${r}\` (planned)`)];
+    pm += `| ${m.id} | ${cell(m.name)} | ${routes.join('<br>') || '(shell)'} | ${(m.roles ?? []).join(', ') || 'signed out'} | ${m.semanticFeatures.join(', ')} | ${s.design} | ${s.implementation} | ${s.contract} | ${s.bridge} | ${s.data} | ${s.verification} | ${s.docs} |\n`;
   }
   pm += '\nA page gets its ID when its build starts (D-60, D-67); a page not designed yet has none. Every v2 page (`design/handoff/VERSIONS.md`) is registered: Team Hub P010, Rounds P011, Classes P012, CoachHelm P013, with player Home under P002. Current state and what is left: `docs/clubhouse/STATUS.md`.\n';
   out['docs/clubhouse/generated/CLUBHOUSE_PAGE_MAP.md'] = pm;

@@ -1484,3 +1484,62 @@ GRANT ALL ON FUNCTION "public"."golf_record_read_mark"() TO "service_role";
 REVOKE ALL ON FUNCTION "public"."golf_events_change_mark"() FROM PUBLIC, "anon", "authenticated";
 REVOKE ALL ON FUNCTION "public"."golf_change_marks_capability"() FROM PUBLIC, "anon", "authenticated";
 GRANT EXECUTE ON FUNCTION "public"."golf_change_marks_capability"() TO "service_role";
+
+-- P016 Tournaments: held migrations 20261024100000 (tables), 100100 (RLS)
+-- and 100200 (RPCs, lineup guard), WRITTEN — HOLD — NOT APPLIED in production.
+-- Generated 2026-10-25 by pg_dump of the three files applied in order to a
+-- scratch Postgres 16 (docs/clubhouse/held/data/tournaments.md).
+
+REVOKE ALL ON FUNCTION "helm_private"."guard_tournament_lineup"() FROM PUBLIC;
+
+REVOKE ALL ON FUNCTION "helm_private"."guard_tournament_team"() FROM PUBLIC;
+
+REVOKE ALL ON FUNCTION "helm_private"."touch_tournament_version"() FROM PUBLIC;
+
+REVOKE ALL ON FUNCTION "helm_private"."tournament_assert"("p_ok" boolean, "p_message" "text") FROM PUBLIC;
+
+REVOKE ALL ON FUNCTION "helm_private"."tournament_assert_member"("p_team_id" "uuid", "p_player_id" "uuid") FROM PUBLIC;
+
+REVOKE ALL ON FUNCTION "public"."golf_tournament_create"("p_payload" "jsonb") FROM PUBLIC;
+GRANT ALL ON FUNCTION "public"."golf_tournament_create"("p_payload" "jsonb") TO "authenticated";
+GRANT ALL ON FUNCTION "public"."golf_tournament_create"("p_payload" "jsonb") TO "service_role";
+
+REVOKE ALL ON FUNCTION "public"."golf_tournament_delete"("p_id" "uuid", "p_unlink" boolean) FROM PUBLIC;
+GRANT ALL ON FUNCTION "public"."golf_tournament_delete"("p_id" "uuid", "p_unlink" boolean) TO "authenticated";
+GRANT ALL ON FUNCTION "public"."golf_tournament_delete"("p_id" "uuid", "p_unlink" boolean) TO "service_role";
+
+REVOKE ALL ON FUNCTION "public"."golf_tournament_link_candidates"("p_team_id" "uuid") FROM PUBLIC;
+GRANT ALL ON FUNCTION "public"."golf_tournament_link_candidates"("p_team_id" "uuid") TO "authenticated";
+GRANT ALL ON FUNCTION "public"."golf_tournament_link_candidates"("p_team_id" "uuid") TO "service_role";
+
+REVOKE ALL ON FUNCTION "public"."golf_tournament_lock_lineup"("p_id" "uuid") FROM PUBLIC;
+GRANT ALL ON FUNCTION "public"."golf_tournament_lock_lineup"("p_id" "uuid") TO "authenticated";
+GRANT ALL ON FUNCTION "public"."golf_tournament_lock_lineup"("p_id" "uuid") TO "service_role";
+
+REVOKE ALL ON FUNCTION "public"."golf_tournament_mark"("p_id" "uuid", "p_state" "text", "p_reason" "text") FROM PUBLIC;
+GRANT ALL ON FUNCTION "public"."golf_tournament_mark"("p_id" "uuid", "p_state" "text", "p_reason" "text") TO "authenticated";
+GRANT ALL ON FUNCTION "public"."golf_tournament_mark"("p_id" "uuid", "p_state" "text", "p_reason" "text") TO "service_role";
+
+REVOKE ALL ON FUNCTION "public"."golf_tournament_publish"("p_id" "uuid", "p_at" timestamp with time zone) FROM PUBLIC;
+GRANT ALL ON FUNCTION "public"."golf_tournament_publish"("p_id" "uuid", "p_at" timestamp with time zone) TO "authenticated";
+GRANT ALL ON FUNCTION "public"."golf_tournament_publish"("p_id" "uuid", "p_at" timestamp with time zone) TO "service_role";
+
+REVOKE ALL ON FUNCTION "public"."golf_tournament_round_is_final"("p_round_event_id" "uuid") FROM PUBLIC;
+GRANT ALL ON FUNCTION "public"."golf_tournament_round_is_final"("p_round_event_id" "uuid") TO "authenticated";
+GRANT ALL ON FUNCTION "public"."golf_tournament_round_is_final"("p_round_event_id" "uuid") TO "service_role";
+
+REVOKE ALL ON FUNCTION "public"."golf_tournament_set_entries"("p_id" "uuid", "p_entries" "jsonb", "p_version" integer) FROM PUBLIC;
+GRANT ALL ON FUNCTION "public"."golf_tournament_set_entries"("p_id" "uuid", "p_entries" "jsonb", "p_version" integer) TO "authenticated";
+GRANT ALL ON FUNCTION "public"."golf_tournament_set_entries"("p_id" "uuid", "p_entries" "jsonb", "p_version" integer) TO "service_role";
+
+REVOKE ALL ON FUNCTION "public"."golf_tournament_set_round_status"("p_round_event_id" "uuid", "p_status" "text", "p_reason" "text") FROM PUBLIC;
+GRANT ALL ON FUNCTION "public"."golf_tournament_set_round_status"("p_round_event_id" "uuid", "p_status" "text", "p_reason" "text") TO "authenticated";
+GRANT ALL ON FUNCTION "public"."golf_tournament_set_round_status"("p_round_event_id" "uuid", "p_status" "text", "p_reason" "text") TO "service_role";
+
+REVOKE ALL ON FUNCTION "public"."golf_tournament_substitute"("p_round_event_id" "uuid", "p_out" "uuid", "p_in" "uuid") FROM PUBLIC;
+GRANT ALL ON FUNCTION "public"."golf_tournament_substitute"("p_round_event_id" "uuid", "p_out" "uuid", "p_in" "uuid") TO "authenticated";
+GRANT ALL ON FUNCTION "public"."golf_tournament_substitute"("p_round_event_id" "uuid", "p_out" "uuid", "p_in" "uuid") TO "service_role";
+
+REVOKE ALL ON FUNCTION "public"."golf_tournament_update"("p_id" "uuid", "p_payload" "jsonb", "p_version" integer) FROM PUBLIC;
+GRANT ALL ON FUNCTION "public"."golf_tournament_update"("p_id" "uuid", "p_payload" "jsonb", "p_version" integer) TO "authenticated";
+GRANT ALL ON FUNCTION "public"."golf_tournament_update"("p_id" "uuid", "p_payload" "jsonb", "p_version" integer) TO "service_role";

@@ -12706,3 +12706,636 @@ $fn$;
 ALTER FUNCTION "public"."golf_change_marks_capability"() OWNER TO "postgres";
 
 COMMENT ON FUNCTION "public"."golf_change_marks_capability"() IS 'P-14: whether the change-mark trigger is installed (marks) and an outbox sender exists (pushes). Service role only.';
+
+-- P016 Tournaments: held migrations 20261024100000 (tables), 100100 (RLS)
+-- and 100200 (RPCs, lineup guard), WRITTEN — HOLD — NOT APPLIED in production.
+-- Generated 2026-10-25 by pg_dump of the three files applied in order to a
+-- scratch Postgres 16 (docs/clubhouse/held/data/tournaments.md).
+
+CREATE OR REPLACE FUNCTION "public"."golf_tournament_create"("p_payload" "jsonb") RETURNS "uuid"
+    LANGUAGE "plpgsql"
+    SET "search_path" TO ''
+    AS $$
+DECLARE
+  v_team uuid := nullif(p_payload->>'team_id', '')::uuid;
+  v_coach uuid;
+  v_tz text;
+  v_team_name text;
+  v_id uuid;
+  v_rounds jsonb := coalesce(p_payload->'rounds', '[]'::jsonb);
+  v_n integer;
+  v_from uuid := nullif(p_payload->>'from_event_id', '')::uuid;
+  v_round jsonb;
+  v_i integer := 0;
+  v_event uuid;
+  v_date date;
+  v_tee timestamptz;
+  v_name text := btrim(coalesce(p_payload->>'name', ''));
+BEGIN
+  IF v_team IS NULL OR NOT public.is_golf_team_coach(v_team) THEN
+    RAISE EXCEPTION 'not_coach' USING ERRCODE = 'P0001';
+  END IF;
+  SELECT c.id INTO v_coach
+  FROM public.golf_team_coach_staff s
+  JOIN public.golf_coaches c ON c.id = s.coach_id
+  WHERE s.team_id = v_team AND c.user_id = (SELECT auth.uid())
+  LIMIT 1;
+  IF v_coach IS NULL THEN
+    RAISE EXCEPTION 'not_coach' USING ERRCODE = 'P0001';
+  END IF;
+  v_n := CASE WHEN jsonb_typeof(v_rounds) = 'array' THEN jsonb_array_length(v_rounds) ELSE 0 END;
+  IF v_n < 1 OR v_n > 6 OR v_name = '' THEN
+    RAISE EXCEPTION 'invalid' USING ERRCODE = 'P0001', DETAIL = 'a name and one to six rounds are required';
+  END IF;
+  SELECT t.timezone, t.name INTO v_tz, v_team_name FROM public.golf_teams t WHERE t.id = v_team;
+
+  INSERT INTO public.golf_tournaments (
+    team_id, name, start_date, end_date, course_id, format, players_per_team,
+    counting, holes_per_round, rounds_count, event_kind, tiebreak, field_size,
+    line_kind, line_value, substitutions, lock_minutes, results_url, host,
+    created_by)
+  VALUES (
+    v_team, v_name,
+    (p_payload->>'start_date')::date, (p_payload->>'end_date')::date,
+    nullif(p_payload->>'course_id', '')::uuid,
+    coalesce(p_payload->>'format', '5c4'),
+    coalesce((p_payload->>'players_per_team')::smallint, 5),
+    coalesce((p_payload->>'counting')::smallint, 4),
+    coalesce((p_payload->>'holes_per_round')::smallint, 18),
+    v_n,
+    coalesce(p_payload->>'event_kind', 'regular'),
+    coalesce(p_payload->>'tiebreak', 'ties_stand'),
+    (p_payload->>'field_size')::smallint,
+    nullif(p_payload->>'line_kind', ''),
+    (p_payload->>'line_value')::smallint,
+    coalesce((p_payload->>'substitutions')::boolean, false),
+    coalesce((p_payload->>'lock_minutes')::smallint, 10),
+    nullif(p_payload->>'results_url', ''),
+    nullif(p_payload->>'host', ''),
+    (SELECT auth.uid()))
+  RETURNING id INTO v_id;
+
+  FOR v_round IN SELECT value FROM jsonb_array_elements(v_rounds) LOOP
+    v_i := v_i + 1;
+    v_date := (v_round->>'date')::date;
+    v_tee := nullif(v_round->>'first_tee_at', '')::timestamptz;
+    IF v_i = 1 AND v_from IS NOT NULL THEN
+      -- Adopt a calendar event of this team as round 1; never one that is
+      -- already a tournament round.
+      IF NOT EXISTS (
+        SELECT 1 FROM public.golf_events e WHERE e.id = v_from AND e.team_id = v_team) THEN
+        RAISE EXCEPTION 'not_found' USING ERRCODE = 'P0001', DETAIL = 'from_event_id is not an event of this team';
+      END IF;
+      IF EXISTS (SELECT 1 FROM public.golf_tournament_rounds r WHERE r.round_event_id = v_from) THEN
+        RAISE EXCEPTION 'event_taken' USING ERRCODE = 'P0001';
+      END IF;
+      v_event := v_from;
+    ELSE
+      INSERT INTO public.golf_events (
+        team_id, title, event_type, start_time, all_day, course_id, created_by)
+      VALUES (
+        v_team,
+        format('%s · Round %s', v_name, v_i),
+        'tournament',
+        coalesce(v_tee, (v_date + time '12:00') AT TIME ZONE coalesce(v_tz, 'America/New_York')),
+        v_tee IS NULL,
+        coalesce(nullif(v_round->>'course_id', '')::uuid, nullif(p_payload->>'course_id', '')::uuid),
+        v_coach)
+      RETURNING id INTO v_event;
+    END IF;
+    INSERT INTO public.golf_tournament_rounds (
+      round_event_id, tournament_id, team_id, round_number, course_id, tee_id,
+      start_type, first_tee_at, event_adopted)
+    VALUES (
+      v_event, v_id, v_team, v_i,
+      coalesce(nullif(v_round->>'course_id', '')::uuid, nullif(p_payload->>'course_id', '')::uuid),
+      nullif(v_round->>'tee_id', '')::uuid,
+      coalesce(nullif(v_round->>'start_type', ''), 'tee_times'),
+      v_tee,
+      v_i = 1 AND v_from IS NOT NULL);
+  END LOOP;
+
+  INSERT INTO public.golf_tournament_field_teams (tournament_id, team_id, name, is_us)
+  VALUES (v_id, v_team, left(coalesce(v_team_name, 'Us'), 80), true);
+  INSERT INTO public.golf_tournament_field_teams (
+    tournament_id, team_id, name, is_b_team, same_division, seed)
+  SELECT v_id, v_team, left(btrim(f->>'name'), 80),
+    coalesce((f->>'is_b_team')::boolean, false),
+    coalesce((f->>'same_division')::boolean, true),
+    (f->>'seed')::smallint
+  FROM jsonb_array_elements(coalesce(p_payload->'field_teams', '[]'::jsonb)) f
+  WHERE btrim(coalesce(f->>'name', '')) <> '';
+
+  INSERT INTO public.golf_tournament_advice_givers (tournament_id, team_id, user_id)
+  SELECT DISTINCT v_id, v_team, a::uuid
+  FROM jsonb_array_elements_text(coalesce(p_payload->'advice_givers', '[]'::jsonb)) a;
+
+  RETURN v_id;
+END $$;
+
+
+ALTER FUNCTION "public"."golf_tournament_create"("p_payload" "jsonb") OWNER TO "postgres";
+
+CREATE OR REPLACE FUNCTION "public"."golf_tournament_delete"("p_id" "uuid", "p_unlink" boolean DEFAULT false) RETURNS "void"
+    LANGUAGE "plpgsql"
+    SET "search_path" TO ''
+    AS $$
+DECLARE
+  v_team uuid;
+  v_owned uuid[];
+BEGIN
+  SELECT t.team_id INTO v_team FROM public.golf_tournaments t WHERE t.id = p_id FOR UPDATE;
+  IF NOT FOUND THEN
+    RAISE EXCEPTION 'not_found' USING ERRCODE = 'P0001';
+  END IF;
+  IF NOT public.is_golf_team_coach(v_team) THEN
+    RAISE EXCEPTION 'not_coach' USING ERRCODE = 'P0001';
+  END IF;
+  IF NOT coalesce(p_unlink, false) AND EXISTS (
+    SELECT 1 FROM public.golf_tournament_player_rounds pr
+    JOIN public.golf_tournament_rounds r ON r.round_event_id = pr.round_event_id
+    WHERE r.tournament_id = p_id AND pr.round_id IS NOT NULL) THEN
+    RAISE EXCEPTION 'rounds_linked' USING ERRCODE = 'P0001';
+  END IF;
+  SELECT coalesce(array_agg(r.round_event_id), '{}') INTO v_owned
+  FROM public.golf_tournament_rounds r
+  WHERE r.tournament_id = p_id AND NOT r.event_adopted;
+  DELETE FROM public.golf_tournaments t WHERE t.id = p_id;
+  DELETE FROM public.golf_events e
+  WHERE e.id = ANY (v_owned) AND e.team_id = v_team AND e.event_type = 'tournament';
+END $$;
+
+
+ALTER FUNCTION "public"."golf_tournament_delete"("p_id" "uuid", "p_unlink" boolean) OWNER TO "postgres";
+
+CREATE OR REPLACE FUNCTION "public"."golf_tournament_link_candidates"("p_team_id" "uuid") RETURNS TABLE("round_id" "uuid", "player_id" "uuid", "round_date" "date", "course_id" "uuid", "course_name" "text", "total_score" integer, "holes_played" integer, "score_to_par" integer, "round_type" "text")
+    LANGUAGE "plpgsql" STABLE
+    SET "search_path" TO ''
+    AS $$
+BEGIN
+  IF p_team_id IS NULL OR NOT public.is_golf_team_coach(p_team_id) THEN
+    RAISE EXCEPTION 'not_coach' USING ERRCODE = 'P0001';
+  END IF;
+  RETURN QUERY
+  SELECT r.id, r.player_id, r.round_date::date, r.course_id, r.course_name::text,
+    r.total_score::integer, r.holes_played::integer, r.score_to_par::integer,
+    r.round_type::text
+  FROM public.golf_rounds r
+  JOIN public.golf_team_members m ON m.player_id = r.player_id AND m.team_id = p_team_id
+  WHERE r.status = 'completed' AND NOT r.is_test AND r.round_type = 'tournament'
+    AND r.round_date >= current_date - 400
+    AND NOT EXISTS (
+      SELECT 1 FROM public.golf_tournament_player_rounds pr WHERE pr.round_id = r.id)
+    AND NOT EXISTS (
+      SELECT 1 FROM public.golf_tournament_link_dismissals d
+      WHERE d.team_id = p_team_id AND d.round_id = r.id)
+  ORDER BY r.round_date DESC, r.id
+  LIMIT 500;
+END $$;
+
+
+ALTER FUNCTION "public"."golf_tournament_link_candidates"("p_team_id" "uuid") OWNER TO "postgres";
+
+CREATE OR REPLACE FUNCTION "public"."golf_tournament_lock_lineup"("p_id" "uuid") RETURNS timestamp with time zone
+    LANGUAGE "plpgsql"
+    SET "search_path" TO ''
+    AS $$
+DECLARE
+  v_t public.golf_tournaments%ROWTYPE;
+  v_at timestamptz := now();
+BEGIN
+  SELECT * INTO v_t FROM public.golf_tournaments t WHERE t.id = p_id FOR UPDATE;
+  IF NOT FOUND THEN
+    RAISE EXCEPTION 'not_found' USING ERRCODE = 'P0001';
+  END IF;
+  IF NOT public.is_golf_team_coach(v_t.team_id) THEN
+    RAISE EXCEPTION 'not_coach' USING ERRCODE = 'P0001';
+  END IF;
+  IF v_t.lineup_locked_at IS NOT NULL THEN
+    RAISE EXCEPTION 'locked' USING ERRCODE = 'P0001';
+  END IF;
+  IF v_t.format <> 'individual' AND NOT EXISTS (
+    SELECT 1 FROM public.golf_tournament_entries en
+    WHERE en.tournament_id = p_id AND en.role = 'lineup') THEN
+    RAISE EXCEPTION 'lineup_empty' USING ERRCODE = 'P0001';
+  END IF;
+  INSERT INTO public.golf_tournament_round_lineups (round_event_id, team_id, player_id, role, slot)
+  SELECT r.round_event_id, v_t.team_id, en.player_id, en.role, en.slot
+  FROM public.golf_tournament_rounds r
+  CROSS JOIN public.golf_tournament_entries en
+  WHERE r.tournament_id = p_id AND en.tournament_id = p_id
+  ON CONFLICT (round_event_id, player_id) DO NOTHING;
+  UPDATE public.golf_tournaments t SET lineup_locked_at = v_at WHERE t.id = p_id;
+  RETURN v_at;
+END $$;
+
+
+ALTER FUNCTION "public"."golf_tournament_lock_lineup"("p_id" "uuid") OWNER TO "postgres";
+
+CREATE OR REPLACE FUNCTION "public"."golf_tournament_mark"("p_id" "uuid", "p_state" "text", "p_reason" "text" DEFAULT NULL::"text") RETURNS "void"
+    LANGUAGE "plpgsql"
+    SET "search_path" TO ''
+    AS $$
+DECLARE
+  v_t public.golf_tournaments%ROWTYPE;
+BEGIN
+  SELECT * INTO v_t FROM public.golf_tournaments t WHERE t.id = p_id FOR UPDATE;
+  IF NOT FOUND THEN
+    RAISE EXCEPTION 'not_found' USING ERRCODE = 'P0001';
+  END IF;
+  IF NOT public.is_golf_team_coach(v_t.team_id) THEN
+    RAISE EXCEPTION 'not_coach' USING ERRCODE = 'P0001';
+  END IF;
+  IF p_state = 'official' THEN
+    IF EXISTS (
+      SELECT 1 FROM public.golf_tournament_rounds r
+      WHERE r.tournament_id = p_id AND r.status <> 'final') THEN
+      RAISE EXCEPTION 'not_final' USING ERRCODE = 'P0001';
+    END IF;
+    UPDATE public.golf_tournaments t SET official_at = now() WHERE t.id = p_id;
+    INSERT INTO public.golf_tournament_result_marks (
+      tournament_id, team_id, state, reason, snapshot, created_by)
+    SELECT p_id, v_t.team_id, 'official', nullif(btrim(coalesce(p_reason, '')), ''),
+      coalesce(jsonb_agg(jsonb_build_object(
+        'round_event_id', pr.round_event_id, 'player_id', pr.player_id,
+        'round_id', pr.round_id, 'entered_total', pr.entered_total,
+        'status', pr.status) ORDER BY pr.round_event_id, pr.player_id), '[]'::jsonb),
+      (SELECT auth.uid())
+    FROM public.golf_tournament_player_rounds pr
+    JOIN public.golf_tournament_rounds r ON r.round_event_id = pr.round_event_id
+    WHERE r.tournament_id = p_id;
+  ELSIF p_state = 'reopened' THEN
+    IF btrim(coalesce(p_reason, '')) = '' THEN
+      RAISE EXCEPTION 'reason_required' USING ERRCODE = 'P0001';
+    END IF;
+    UPDATE public.golf_tournaments t SET official_at = NULL WHERE t.id = p_id;
+    INSERT INTO public.golf_tournament_result_marks (
+      tournament_id, team_id, state, reason, created_by)
+    VALUES (p_id, v_t.team_id, 'reopened', left(btrim(p_reason), 280), (SELECT auth.uid()));
+  ELSE
+    RAISE EXCEPTION 'invalid' USING ERRCODE = 'P0001';
+  END IF;
+END $$;
+
+
+ALTER FUNCTION "public"."golf_tournament_mark"("p_id" "uuid", "p_state" "text", "p_reason" "text") OWNER TO "postgres";
+
+CREATE OR REPLACE FUNCTION "public"."golf_tournament_publish"("p_id" "uuid", "p_at" timestamp with time zone DEFAULT NULL::timestamp with time zone) RETURNS timestamp with time zone
+    LANGUAGE "plpgsql"
+    SET "search_path" TO ''
+    AS $$
+DECLARE
+  v_team uuid;
+  v_at timestamptz := greatest(coalesce(p_at, now()), now());
+BEGIN
+  SELECT t.team_id INTO v_team FROM public.golf_tournaments t WHERE t.id = p_id FOR UPDATE;
+  IF NOT FOUND THEN
+    RAISE EXCEPTION 'not_found' USING ERRCODE = 'P0001';
+  END IF;
+  IF NOT public.is_golf_team_coach(v_team) THEN
+    RAISE EXCEPTION 'not_coach' USING ERRCODE = 'P0001';
+  END IF;
+  IF NOT EXISTS (
+    SELECT 1 FROM public.golf_tournament_entries en WHERE en.tournament_id = p_id) THEN
+    RAISE EXCEPTION 'lineup_empty' USING ERRCODE = 'P0001';
+  END IF;
+  UPDATE public.golf_tournaments t SET lineup_published_at = v_at WHERE t.id = p_id;
+  RETURN v_at;
+END $$;
+
+
+ALTER FUNCTION "public"."golf_tournament_publish"("p_id" "uuid", "p_at" timestamp with time zone) OWNER TO "postgres";
+
+CREATE OR REPLACE FUNCTION "public"."golf_tournament_round_is_final"("p_round_event_id" "uuid") RETURNS boolean
+    LANGUAGE "sql" STABLE SECURITY DEFINER
+    SET "search_path" TO ''
+    AS $$
+  SELECT EXISTS (
+    SELECT 1 FROM public.golf_tournament_rounds r
+    WHERE r.round_event_id = p_round_event_id AND r.status = 'final'
+  );
+$$;
+
+
+ALTER FUNCTION "public"."golf_tournament_round_is_final"("p_round_event_id" "uuid") OWNER TO "postgres";
+
+CREATE OR REPLACE FUNCTION "public"."golf_tournament_set_entries"("p_id" "uuid", "p_entries" "jsonb", "p_version" integer DEFAULT NULL::integer) RETURNS integer
+    LANGUAGE "plpgsql"
+    SET "search_path" TO ''
+    AS $$
+DECLARE
+  v_t public.golf_tournaments%ROWTYPE;
+  v_lineup integer;
+BEGIN
+  SELECT * INTO v_t FROM public.golf_tournaments t WHERE t.id = p_id FOR UPDATE;
+  IF NOT FOUND THEN
+    RAISE EXCEPTION 'not_found' USING ERRCODE = 'P0001';
+  END IF;
+  IF NOT public.is_golf_team_coach(v_t.team_id) THEN
+    RAISE EXCEPTION 'not_coach' USING ERRCODE = 'P0001';
+  END IF;
+  IF p_version IS NOT NULL AND v_t.version <> p_version THEN
+    RAISE EXCEPTION 'stale' USING ERRCODE = 'P0001';
+  END IF;
+  IF v_t.lineup_locked_at IS NOT NULL THEN
+    RAISE EXCEPTION 'locked' USING ERRCODE = 'P0001';
+  END IF;
+  IF jsonb_typeof(coalesce(p_entries, '[]'::jsonb)) <> 'array' THEN
+    RAISE EXCEPTION 'invalid' USING ERRCODE = 'P0001';
+  END IF;
+  SELECT count(*) INTO v_lineup
+  FROM jsonb_array_elements(coalesce(p_entries, '[]'::jsonb)) e
+  WHERE e->>'role' = 'lineup';
+  IF v_lineup > v_t.players_per_team THEN
+    RAISE EXCEPTION 'too_many' USING ERRCODE = 'P0001';
+  END IF;
+
+  DELETE FROM public.golf_tournament_entries en WHERE en.tournament_id = p_id;
+  INSERT INTO public.golf_tournament_entries (tournament_id, team_id, player_id, role, slot)
+  SELECT p_id, v_t.team_id, (e->>'player_id')::uuid, e->>'role',
+    CASE WHEN e->>'role' = 'lineup' THEN (e->>'slot')::smallint END
+  FROM jsonb_array_elements(coalesce(p_entries, '[]'::jsonb)) e;
+
+  INSERT INTO public.golf_tournament_entry_notes (tournament_id, team_id, player_id, reasoning)
+  SELECT p_id, v_t.team_id, (e->>'player_id')::uuid, left(e->>'reasoning', 500)
+  FROM jsonb_array_elements(coalesce(p_entries, '[]'::jsonb)) e
+  WHERE e ? 'reasoning'
+  ON CONFLICT (tournament_id, player_id) DO UPDATE SET reasoning = excluded.reasoning;
+
+  -- Touch the tournament so its version moves with the lineup.
+  UPDATE public.golf_tournaments t SET updated_at = now() WHERE t.id = p_id;
+  RETURN (SELECT t.version FROM public.golf_tournaments t WHERE t.id = p_id);
+END $$;
+
+
+ALTER FUNCTION "public"."golf_tournament_set_entries"("p_id" "uuid", "p_entries" "jsonb", "p_version" integer) OWNER TO "postgres";
+
+CREATE OR REPLACE FUNCTION "public"."golf_tournament_set_round_status"("p_round_event_id" "uuid", "p_status" "text", "p_reason" "text" DEFAULT NULL::"text") RETURNS "void"
+    LANGUAGE "plpgsql"
+    SET "search_path" TO ''
+    AS $$
+DECLARE
+  v_round public.golf_tournament_rounds%ROWTYPE;
+  v_t public.golf_tournaments%ROWTYPE;
+  v_from text;
+  v_ok boolean;
+BEGIN
+  SELECT * INTO v_round FROM public.golf_tournament_rounds r WHERE r.round_event_id = p_round_event_id FOR UPDATE;
+  IF NOT FOUND THEN
+    RAISE EXCEPTION 'not_found' USING ERRCODE = 'P0001';
+  END IF;
+  SELECT * INTO v_t FROM public.golf_tournaments t WHERE t.id = v_round.tournament_id;
+  IF NOT public.is_golf_team_coach(v_t.team_id) THEN
+    RAISE EXCEPTION 'not_coach' USING ERRCODE = 'P0001';
+  END IF;
+  v_from := v_round.status;
+  v_ok := CASE
+    WHEN v_from = 'upcoming' THEN p_status IN ('live', 'final')
+    WHEN v_from = 'live' THEN p_status IN ('suspended_weather', 'suspended_other', 'final')
+    WHEN v_from IN ('suspended_weather', 'suspended_other') THEN p_status IN ('live', 'final')
+    WHEN v_from = 'final' THEN p_status = 'live'
+    ELSE false
+  END;
+  IF NOT coalesce(v_ok, false) THEN
+    RAISE EXCEPTION 'bad_transition' USING ERRCODE = 'P0001',
+      DETAIL = format('%s -> %s', v_from, p_status);
+  END IF;
+  IF v_from = 'final' AND btrim(coalesce(p_reason, '')) = '' THEN
+    RAISE EXCEPTION 'reason_required' USING ERRCODE = 'P0001';
+  END IF;
+  IF v_from = 'upcoming' AND EXISTS (
+    SELECT 1 FROM public.golf_tournament_rounds r
+    WHERE r.tournament_id = v_round.tournament_id
+      AND r.round_number < v_round.round_number AND r.status = 'upcoming') THEN
+    RAISE EXCEPTION 'round_order' USING ERRCODE = 'P0001';
+  END IF;
+  IF v_from = 'upcoming' AND v_t.lineup_locked_at IS NULL THEN
+    PERFORM public.golf_tournament_lock_lineup(v_t.id);
+  END IF;
+
+  UPDATE public.golf_tournament_rounds r
+  SET status = p_status, status_changed_at = now()
+  WHERE r.round_event_id = p_round_event_id;
+
+  IF p_status = 'final' THEN
+    INSERT INTO public.golf_tournament_result_marks (
+      tournament_id, team_id, round_event_id, state, reason, snapshot, created_by)
+    SELECT v_t.id, v_t.team_id, p_round_event_id, 'final', nullif(btrim(coalesce(p_reason, '')), ''),
+      coalesce(jsonb_agg(jsonb_build_object(
+        'player_id', pr.player_id, 'round_id', pr.round_id,
+        'entered_total', pr.entered_total, 'status', pr.status)
+        ORDER BY pr.player_id), '[]'::jsonb),
+      (SELECT auth.uid())
+    FROM public.golf_tournament_player_rounds pr
+    WHERE pr.round_event_id = p_round_event_id;
+  ELSIF v_from = 'final' THEN
+    INSERT INTO public.golf_tournament_result_marks (
+      tournament_id, team_id, round_event_id, state, reason, created_by)
+    VALUES (v_t.id, v_t.team_id, p_round_event_id, 'reopened', left(btrim(p_reason), 280), (SELECT auth.uid()));
+    UPDATE public.golf_tournaments t SET official_at = NULL
+    WHERE t.id = v_t.id AND t.official_at IS NOT NULL;
+  END IF;
+END $$;
+
+
+ALTER FUNCTION "public"."golf_tournament_set_round_status"("p_round_event_id" "uuid", "p_status" "text", "p_reason" "text") OWNER TO "postgres";
+
+CREATE OR REPLACE FUNCTION "public"."golf_tournament_substitute"("p_round_event_id" "uuid", "p_out" "uuid", "p_in" "uuid") RETURNS "void"
+    LANGUAGE "plpgsql"
+    SET "search_path" TO ''
+    AS $$
+DECLARE
+  v_round public.golf_tournament_rounds%ROWTYPE;
+  v_t public.golf_tournaments%ROWTYPE;
+  v_later record;
+  v_slot smallint;
+  v_role text;
+BEGIN
+  SELECT * INTO v_round FROM public.golf_tournament_rounds r WHERE r.round_event_id = p_round_event_id;
+  IF NOT FOUND THEN
+    RAISE EXCEPTION 'not_found' USING ERRCODE = 'P0001';
+  END IF;
+  SELECT * INTO v_t FROM public.golf_tournaments t WHERE t.id = v_round.tournament_id FOR UPDATE;
+  IF NOT public.is_golf_team_coach(v_t.team_id) THEN
+    RAISE EXCEPTION 'not_coach' USING ERRCODE = 'P0001';
+  END IF;
+  IF NOT v_t.substitutions THEN
+    RAISE EXCEPTION 'no_substitutions' USING ERRCODE = 'P0001';
+  END IF;
+  IF v_round.status <> 'upcoming' THEN
+    RAISE EXCEPTION 'round_started' USING ERRCODE = 'P0001';
+  END IF;
+  IF p_out IS NULL OR p_in IS NULL OR p_out = p_in THEN
+    RAISE EXCEPTION 'invalid' USING ERRCODE = 'P0001';
+  END IF;
+
+  PERFORM set_config('helm.tournament_write', 'substitute', true);
+  FOR v_later IN
+    SELECT r.round_event_id FROM public.golf_tournament_rounds r
+    WHERE r.tournament_id = v_round.tournament_id
+      AND r.round_number >= v_round.round_number AND r.status = 'upcoming'
+    ORDER BY r.round_number
+  LOOP
+    SELECT rl.slot INTO v_slot FROM public.golf_tournament_round_lineups rl
+    WHERE rl.round_event_id = v_later.round_event_id AND rl.player_id = p_out AND rl.role = 'lineup';
+    IF NOT FOUND THEN
+      IF v_later.round_event_id = p_round_event_id THEN
+        RAISE EXCEPTION 'not_in_lineup' USING ERRCODE = 'P0001';
+      END IF;
+      CONTINUE;
+    END IF;
+    SELECT rl.role INTO v_role FROM public.golf_tournament_round_lineups rl
+    WHERE rl.round_event_id = v_later.round_event_id AND rl.player_id = p_in;
+    IF v_role = 'lineup' THEN
+      RAISE EXCEPTION 'already_in' USING ERRCODE = 'P0001';
+    END IF;
+    UPDATE public.golf_tournament_round_lineups rl
+    SET role = 'alternate', slot = NULL
+    WHERE rl.round_event_id = v_later.round_event_id AND rl.player_id = p_out;
+    INSERT INTO public.golf_tournament_round_lineups (
+      round_event_id, team_id, player_id, role, slot, substituted_for, substituted_at)
+    VALUES (v_later.round_event_id, v_t.team_id, p_in, 'lineup', v_slot, p_out, now())
+    ON CONFLICT (round_event_id, player_id) DO UPDATE SET
+      role = 'lineup', slot = excluded.slot,
+      substituted_for = excluded.substituted_for, substituted_at = excluded.substituted_at;
+  END LOOP;
+  PERFORM set_config('helm.tournament_write', '', true);
+END $$;
+
+
+ALTER FUNCTION "public"."golf_tournament_substitute"("p_round_event_id" "uuid", "p_out" "uuid", "p_in" "uuid") OWNER TO "postgres";
+
+CREATE OR REPLACE FUNCTION "public"."golf_tournament_update"("p_id" "uuid", "p_payload" "jsonb", "p_version" integer) RETURNS integer
+    LANGUAGE "plpgsql"
+    SET "search_path" TO ''
+    AS $$
+DECLARE
+  v_t public.golf_tournaments%ROWTYPE;
+  v_coach uuid;
+  v_tz text;
+  v_rounds jsonb := p_payload->'rounds';
+  v_n integer;
+  v_round jsonb;
+  v_i integer := 0;
+  v_event uuid;
+  v_date date;
+  v_tee timestamptz;
+  v_course uuid;
+  v_gone record;
+  v_name text;
+BEGIN
+  SELECT * INTO v_t FROM public.golf_tournaments t WHERE t.id = p_id FOR UPDATE;
+  IF NOT FOUND THEN
+    RAISE EXCEPTION 'not_found' USING ERRCODE = 'P0001';
+  END IF;
+  IF NOT public.is_golf_team_coach(v_t.team_id) THEN
+    RAISE EXCEPTION 'not_coach' USING ERRCODE = 'P0001';
+  END IF;
+  IF p_version IS NULL OR v_t.version <> p_version THEN
+    RAISE EXCEPTION 'stale' USING ERRCODE = 'P0001',
+      DETAIL = format('version is %s, the edit was made on %s', v_t.version, p_version);
+  END IF;
+  v_name := CASE WHEN p_payload ? 'name' THEN btrim(p_payload->>'name') ELSE v_t.name END;
+  IF coalesce(v_name, '') = '' THEN
+    RAISE EXCEPTION 'invalid' USING ERRCODE = 'P0001', DETAIL = 'a name is required';
+  END IF;
+
+  IF v_rounds IS NOT NULL THEN
+    v_n := CASE WHEN jsonb_typeof(v_rounds) = 'array' THEN jsonb_array_length(v_rounds) ELSE 0 END;
+    IF v_n < 1 OR v_n > 6 THEN
+      RAISE EXCEPTION 'invalid' USING ERRCODE = 'P0001', DETAIL = 'one to six rounds are required';
+    END IF;
+    -- Rounds past the new count go only when nothing was played or scored.
+    FOR v_gone IN
+      SELECT r.round_event_id, r.status, r.event_adopted
+      FROM public.golf_tournament_rounds r
+      WHERE r.tournament_id = p_id AND r.round_number > v_n
+    LOOP
+      IF v_gone.status <> 'upcoming' OR EXISTS (
+        SELECT 1 FROM public.golf_tournament_player_rounds pr
+        WHERE pr.round_event_id = v_gone.round_event_id
+          AND (pr.round_id IS NOT NULL OR pr.entered_total IS NOT NULL)) THEN
+        RAISE EXCEPTION 'round_has_scores' USING ERRCODE = 'P0001';
+      END IF;
+      DELETE FROM public.golf_tournament_rounds r WHERE r.round_event_id = v_gone.round_event_id;
+      IF NOT v_gone.event_adopted THEN
+        DELETE FROM public.golf_events e WHERE e.id = v_gone.round_event_id;
+      END IF;
+    END LOOP;
+  END IF;
+
+  UPDATE public.golf_tournaments t SET
+    name = v_name,
+    start_date = coalesce((p_payload->>'start_date')::date, t.start_date),
+    end_date = coalesce((p_payload->>'end_date')::date, t.end_date),
+    course_id = CASE WHEN p_payload ? 'course_id' THEN nullif(p_payload->>'course_id', '')::uuid ELSE t.course_id END,
+    format = coalesce(p_payload->>'format', t.format),
+    players_per_team = coalesce((p_payload->>'players_per_team')::smallint, t.players_per_team),
+    counting = coalesce((p_payload->>'counting')::smallint, t.counting),
+    holes_per_round = coalesce((p_payload->>'holes_per_round')::smallint, t.holes_per_round),
+    rounds_count = coalesce(v_n, t.rounds_count),
+    event_kind = coalesce(p_payload->>'event_kind', t.event_kind),
+    tiebreak = coalesce(p_payload->>'tiebreak', t.tiebreak),
+    field_size = CASE WHEN p_payload ? 'field_size' THEN (p_payload->>'field_size')::smallint ELSE t.field_size END,
+    line_kind = CASE WHEN p_payload ? 'line_kind' THEN nullif(p_payload->>'line_kind', '') ELSE t.line_kind END,
+    line_value = CASE WHEN p_payload ? 'line_value' THEN (p_payload->>'line_value')::smallint ELSE t.line_value END,
+    substitutions = coalesce((p_payload->>'substitutions')::boolean, t.substitutions),
+    lock_minutes = coalesce((p_payload->>'lock_minutes')::smallint, t.lock_minutes),
+    results_url = CASE WHEN p_payload ? 'results_url' THEN nullif(p_payload->>'results_url', '') ELSE t.results_url END,
+    host = CASE WHEN p_payload ? 'host' THEN nullif(p_payload->>'host', '') ELSE t.host END
+  WHERE t.id = p_id;
+
+  IF v_rounds IS NOT NULL THEN
+    SELECT tm.timezone INTO v_tz FROM public.golf_teams tm WHERE tm.id = v_t.team_id;
+    SELECT c.id INTO v_coach
+    FROM public.golf_team_coach_staff s
+    JOIN public.golf_coaches c ON c.id = s.coach_id
+    WHERE s.team_id = v_t.team_id AND c.user_id = (SELECT auth.uid())
+    LIMIT 1;
+    FOR v_round IN SELECT value FROM jsonb_array_elements(v_rounds) LOOP
+      v_i := v_i + 1;
+      v_date := (v_round->>'date')::date;
+      v_tee := nullif(v_round->>'first_tee_at', '')::timestamptz;
+      v_course := coalesce(nullif(v_round->>'course_id', '')::uuid, nullif(p_payload->>'course_id', '')::uuid, v_t.course_id);
+      SELECT r.round_event_id INTO v_event
+      FROM public.golf_tournament_rounds r
+      WHERE r.tournament_id = p_id AND r.round_number = v_i;
+      IF FOUND THEN
+        UPDATE public.golf_tournament_rounds r SET
+          course_id = v_course,
+          tee_id = nullif(v_round->>'tee_id', '')::uuid,
+          start_type = coalesce(nullif(v_round->>'start_type', ''), r.start_type),
+          first_tee_at = v_tee
+        WHERE r.round_event_id = v_event;
+        UPDATE public.golf_events e SET
+          start_time = coalesce(v_tee, (v_date + time '12:00') AT TIME ZONE coalesce(v_tz, 'America/New_York')),
+          all_day = v_tee IS NULL,
+          course_id = v_course,
+          title = CASE WHEN e.event_type = 'tournament' THEN format('%s · Round %s', v_name, v_i) ELSE e.title END
+        WHERE e.id = v_event;
+      ELSE
+        INSERT INTO public.golf_events (
+          team_id, title, event_type, start_time, all_day, course_id, created_by)
+        VALUES (
+          v_t.team_id, format('%s · Round %s', v_name, v_i), 'tournament',
+          coalesce(v_tee, (v_date + time '12:00') AT TIME ZONE coalesce(v_tz, 'America/New_York')),
+          v_tee IS NULL, v_course, v_coach)
+        RETURNING id INTO v_event;
+        INSERT INTO public.golf_tournament_rounds (
+          round_event_id, tournament_id, team_id, round_number, course_id,
+          tee_id, start_type, first_tee_at)
+        VALUES (
+          v_event, p_id, v_t.team_id, v_i, v_course,
+          nullif(v_round->>'tee_id', '')::uuid,
+          coalesce(nullif(v_round->>'start_type', ''), 'tee_times'), v_tee);
+      END IF;
+    END LOOP;
+  END IF;
+
+  RETURN (SELECT t.version FROM public.golf_tournaments t WHERE t.id = p_id);
+END $$;
+
+
+ALTER FUNCTION "public"."golf_tournament_update"("p_id" "uuid", "p_payload" "jsonb", "p_version" integer) OWNER TO "postgres";
+
+COMMENT ON FUNCTION "public"."golf_tournament_update"("p_id" "uuid", "p_payload" "jsonb", "p_version" integer) IS 'P016 Tournaments: compare-and-set edit of a tournament (P0001 stale when version moved). HELD 20261024100200.';
