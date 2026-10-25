@@ -3942,6 +3942,14 @@
         "definedIn": "supabase/migrations/20260807030600_golf_join_one_team_rule_ignores_status.sql"
       },
       {
+        "id": "golf_message_responses_poll_guard",
+        "definedIn": "supabase/migrations/20261025020100_golf_poll_vote_guard.sql"
+      },
+      {
+        "id": "golf_messages_poll_freeze",
+        "definedIn": "supabase/migrations/20261025020200_golf_poll_payload_freeze.sql"
+      },
+      {
         "id": "golf_my_join_requests",
         "definedIn": "supabase/migrations/20260807030100_golf_my_join_requests_rpc.sql"
       },

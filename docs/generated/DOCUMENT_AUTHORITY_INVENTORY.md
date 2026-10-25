@@ -1024,6 +1024,7 @@ them would bury everything above.
 | `docs/clubhouse/pages/P007-messages/changes/2026-10-25-polls-actions.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P007-messages/changes/2026-10-25-polls-correctness.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P007-messages/changes/2026-10-25-polls-create-sheet.md` | current | - | - | - | - |
+| `docs/clubhouse/pages/P007-messages/changes/2026-10-25-polls-held-migrations.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P007-messages/changes/2026-10-25-polls-landing.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P007-messages/changes/2026-10-25-polls-visual.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P008-settings/CHANGELOG.md` | current | - | - | - | - |
