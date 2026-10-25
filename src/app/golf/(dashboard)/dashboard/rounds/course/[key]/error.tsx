@@ -1,8 +1,23 @@
 'use client';
 
-import { ClubhouseRouteError } from '@/clubhouse/shell/ClubhouseRouteError';
+import { RouteErrorBoundary } from '@/components/errors';
 
-/** P-7: the course page is Clubhouse only, so its route error is Clubhouse's, like its loading fallback. */
-export default function Error({ error, reset }: { error: Error & { digest?: string }; reset: () => void }) {
-  return <ClubhouseRouteError error={error} reset={reset} route="/golf/dashboard/rounds/course/[key]" homePath="/golf/dashboard/rounds" />;
+export default function Error({
+  error,
+  reset,
+}: {
+  error: Error & { digest?: string };
+  reset: () => void;
+}) {
+  return (
+    <RouteErrorBoundary
+      error={error}
+      reset={reset}
+      route="/golf/dashboard/rounds/course/[key]"
+      component="CourseHistoryPage"
+      title="Failed to load course history"
+      message="We couldn't load your history at this course. Please try again."
+      homePath="/golf/dashboard/rounds"
+    />
+  );
 }
