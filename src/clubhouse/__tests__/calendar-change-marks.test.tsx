@@ -530,8 +530,10 @@ describe('on the desktop', () => {
   it('the month shows a small glyph after a changed title and counts it in the cell’s name', () => {
     wrap(withMarks([recRow()], { anchor: '2026-10-17', view: 'month' }));
     const cell = screen.getByRole('button', { name: /^Sat 17 October: .*, 1 changed$/ });
-    expect(cell.querySelector('.ch-mo__chg')).not.toBeNull();
-    expect(cell.textContent).not.toContain('3:00');
+    // The chips are their own buttons beside the day number, so the glyph sits in the cell, not in the day button.
+    const box = cell.closest('.ch-mo__cell')!;
+    expect(box.querySelector('.ch-mo__chg')).not.toBeNull();
+    expect(box.textContent).not.toContain('3:00');
   });
 
   it('the agenda row strikes the old time before the type and shows the badge; a cancelled row says Cancelled', () => {
@@ -577,7 +579,7 @@ describe('on the desktop', () => {
   it('a change that arrives while the page is open is said once, politely; what was there already and a coach’s own change are not', async () => {
     const before = withMarks([row()], { anchor: '2026-10-14' });
     const { rerender } = render(tree(before));
-    const status = () => [...document.querySelectorAll('[role="status"]')].map((n) => n.textContent).join('|');
+    const status = () => [...document.querySelectorAll('[role="status"]')].map((n) => n.textContent).filter(Boolean).join('|');
     expect(status()).toBe('');
     const other = buildChangeMarks([recRow({ change: stored({ id: '77777777-aaaa-4bbb-8ccc-000000000009', by: 'c9', from: recFrom }) })], { timeZone: TZ, nowMs: NOW, coachId: 'c1' }).marks.get('e14')!;
     const after = { ...before, events: before.events.map((e) => (e.id === 'e14' ? { ...e, change: other } : e)) };

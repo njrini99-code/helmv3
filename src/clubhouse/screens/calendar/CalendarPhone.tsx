@@ -1,7 +1,7 @@
 'use client';
 
-import { CalendarCheck, CalendarDays, ChevronLeft, ChevronRight, Ellipsis, Plus, Rss, TriangleAlert } from 'lucide-react';
-import { Fragment, useRef, useState, type ReactNode } from 'react';
+import { CalendarCheck, CalendarDays, ChevronLeft, ChevronRight, Ellipsis, Plus, Rss, TriangleAlert, X } from 'lucide-react';
+import { Fragment, useEffect, useRef, useState, type ReactNode } from 'react';
 import type { ChCalendarData } from '../../data/calendar';
 import { Badge } from '../../ui/Badge';
 import { EmptyState } from '../../ui/States';
@@ -17,6 +17,11 @@ import { Swap } from '../../ui/Swap';
 import { WeekStrip, type WeekStripDay } from '../../ui/WeekStrip';
 import { haptic } from '../../lib/haptics';
 import { useChClock } from '../../lib/use-clock';
+import { useChReducedMotion } from '../../lib/reduced-motion';
+import { claimTouch } from '../../lib/touch-claim';
+import type { PeekLift } from '../../ui/Peek';
+import { DayTimeline, usePhoneDayDrag } from './day-timeline';
+import type { ChMoveTarget } from './drag-model';
 import { EventPeek } from './peek';
 import { MarkBadge, MovedAwayRow, useRowMark } from './change-note';
 import type { ChMovedAway } from './change-view';
@@ -59,6 +64,7 @@ export function CalendarPhone({
   onNew,
   onSubscribe,
   more,
+  onMove,
 }: {
   data: ChCalendarData;
   events: ChCalEvent[];
@@ -80,6 +86,8 @@ export function CalendarPhone({
   onSubscribe: () => void;
   /** The coach's More (row 81): desktop's items without Print (Add to calendar app, Add busy time, Overlaps). */
   more?: MenuItem[];
+  /** P-4 4.7: a coach's held move from the phone Day (Calendar's `useHeldMoves`); players get none. */
+  onMove?: (e: ChCalEvent, to: ChMoveTarget, kind: 'move' | 'resize') => void;
 }) {
   const coach = data.role === 'coach';
   // A player's own class is titled without their name; their replies still owed are marked (P006, wave 7).
@@ -144,7 +152,7 @@ export function CalendarPhone({
         <SectionBoundary surface={`calendar.phone.${pv}`} label="The calendar" code="CH-6210">
           {/* CH-6604: Day, Month and List settle in as the switch moves (base in, quick out); instant with reduced motion. */}
           <Swap swapKey={pv}>
-            {pv === 'day' && <DayView anchor={anchor} events={events} people={people} now={now} flagged={flagged} selId={selId} onDay={(d) => onView('day', d)} onOpen={onOpen} coach={coach} viewerId={viewerId} range={data.range} onNew={onNew} movedAway={data.movedAway} />}
+            {pv === 'day' && <DayView anchor={anchor} events={events} people={people} now={now} flagged={flagged} selId={selId} onDay={(d) => onView('day', d)} onOpen={onOpen} coach={coach} viewerId={viewerId} range={data.range} onNew={onNew} onMove={coach ? onMove : undefined} movedAway={data.movedAway} />}
             {pv === 'month' && <MonthGrid anchor={anchor} events={events} now={now} onPick={(d) => onView('day', d)} onStep={onStep} onMonth={(d) => onView('month', d)} />}
             {pv === 'list' &&
               (events.some((e) => e.date >= now.date) ? (
@@ -179,6 +187,7 @@ function DayView({
   failed,
   onNew,
   movedAway,
+  onMove,
 }: {
   anchor: string;
   events: ChCalEvent[];
@@ -200,8 +209,17 @@ function DayView({
   failed?: ReactNode;
   /** P-14: events that left a day for another; each is a quiet row on the day it left. */
   movedAway?: ChMovedAway[];
+  onMove?: (e: ChCalEvent, to: ChMoveTarget, kind: 'move' | 'resize') => void;
 }) {
-  const week = weekDates(anchor);
+  const root = useRef<HTMLDivElement | null>(null);
+  const reduced = useChReducedMotion();
+  const hint = useDragHint();
+  // P-4 4.7: the gesture's owner sits above the pager and the day's swap, so a day change mid-drag swaps what is drawn
+  // and never unmounts the row the finger is on.
+  const engine = usePhoneDayDrag({ root, events, coach: coach && !!onMove, anchor, reduced, onDrop: (e, to, kind) => onMove?.(e, to, kind), onDay, onLanded: hint.dismiss });
+  const held = !!engine.lifted || engine.unfolded;
+  const shown = engine.unfolded ? engine.day : anchor;
+  const week = weekDates(shown);
   const stripDays = (dates: string[]): WeekStripDay[] =>
     dates.map((d) => {
       const n = events.filter((e) => e.date === d && e.type !== 'class' && e.type !== 'busy').length;
@@ -230,21 +248,40 @@ function DayView({
         </h3>
       </div>
     ) : (
-      <DayPage date={date} events={events} people={people} now={now} flagged={flagged} selId={selId} onOpen={onOpen} coach={coach} viewerId={viewerId} onWeek={live ? (dir) => ((swiped.current = false), onDay(addDays(anchor, 7 * dir))) : undefined} onNew={live ? onNew : undefined} movedAway={movedAway} />
+      <DayPage
+        date={date}
+        events={events}
+        people={people}
+        now={now}
+        flagged={flagged}
+        selId={selId}
+        onOpen={onOpen}
+        coach={coach}
+        viewerId={viewerId}
+        onWeek={live ? (dir) => ((swiped.current = false), onDay(addDays(anchor, 7 * dir))) : undefined}
+        onNew={live ? onNew : undefined}
+        liftFor={live && onMove ? engine.liftFor : undefined}
+        onAdjust={live && onMove ? engine.adjust : undefined}
+        liftedId={live ? (engine.lifted?.id ?? null) : null}
+        hint={live && onMove && hint.show ? hint.dismiss : undefined}
+        movedAway={movedAway}
+      />
     );
   return (
-    <>
+    <div ref={root} className={'ch-calm-dayv' + (held ? ' is-held' : '') + (engine.unfolded ? ' is-unfolded' : '')}>
       <WeekStrip
         label="This week"
         days={stripDays(week)}
-        selected={anchor}
+        selected={shown}
+        frozen={held}
+        dropDate={engine.over}
         onSelect={(d) => {
           if (d !== anchor) haptic('select');
           swiped.current = false;
           onDay(d);
         }}
         onPage={failed ? undefined : (dir) => ((swiped.current = false), onDay(addDays(anchor, 7 * dir)))}
-        around={{ prev: stripDays(weekDates(addDays(anchor, -7))), next: stripDays(weekDates(addDays(anchor, 7))) }}
+        around={{ prev: stripDays(weekDates(addDays(shown, -7))), next: stripDays(weekDates(addDays(shown, 7))) }}
       />
       {failed ? (
         <DayPage date={anchor} events={[]} people={people} now={now} flagged={flagged} selId={selId} onOpen={onOpen} coach={coach} viewerId={viewerId} onWeek={(dir) => onDay(addDays(anchor, 7 * dir))} failed={failed} />
@@ -254,6 +291,7 @@ function DayView({
           className="ch-calm-pager"
           pageClassName="ch-calm-page"
           label="The day"
+          frozen={held}
           onSettle={(dir) => {
             swiped.current = true;
             onDay(addDays(anchor, dir));
@@ -266,8 +304,32 @@ function DayView({
           </Swap>
         </ScrollPager>
       )}
-    </>
+      <DayTimeline engine={engine} events={events} people={people} now={now} viewerId={viewerId} range={range} />
+    </div>
   );
+}
+
+const HINT_KEY = 'ch-cal-drag-hint';
+
+/** P-4 4.7.7 (OC-6): "Hold an event to move it." once per device, until the first drag or the close. */
+function useDragHint() {
+  const [show, setShow] = useState(false);
+  useEffect(() => {
+    try {
+      setShow(window.localStorage.getItem(HINT_KEY) !== 'done');
+    } catch {
+      setShow(false);
+    }
+  }, []);
+  const dismiss = () => {
+    setShow(false);
+    try {
+      window.localStorage.setItem(HINT_KEY, 'done');
+    } catch {
+      // A private window keeps no note: the hint simply comes back next time.
+    }
+  };
+  return { show, dismiss };
 }
 
 /** One day's heading and agenda: classes in their place, the now line on today. `onWeek`: the day on show's week steps. */
@@ -285,6 +347,10 @@ function DayPage({
   failed,
   onNew,
   movedAway,
+  liftFor,
+  onAdjust,
+  liftedId = null,
+  hint,
 }: {
   date: string;
   events: ChCalEvent[];
@@ -302,6 +368,14 @@ function DayPage({
   onNew?: (date: string) => void;
   /** P-14: events that left a day for another; each is a quiet row on the day it left. */
   movedAway?: ChMovedAway[];
+  /** P-4: a coach's movable row lifts on a hold (the day on show only). */
+  liftFor?: (e: ChCalEvent) => PeekLift | undefined;
+  /** P-4: the peek's "Adjust time". */
+  onAdjust?: (e: ChCalEvent) => void;
+  /** The row in hand. */
+  liftedId?: string | null;
+  /** The first-run hint is due: its close. */
+  hint?: () => void;
 }) {
   const clock = useChClock();
   const rowMark = useRowMark();
@@ -343,6 +417,12 @@ function DayPage({
           </span>
         )}
       </div>
+      {hint && !failed && list.some((e) => liftFor?.(e)) && (
+        <p className="ch-calm-hint">
+          <span>Hold an event to move it.</span>
+          <IconButton icon={X} label="Dismiss" size="sm" className="ch-calm-hint__x" onClick={hint} />
+        </p>
+      )}
       {failed ? (
         failed
       ) : !list.length && !gone.length ? (
@@ -372,6 +452,7 @@ function DayPage({
             const reply = playerReplyNeeded(e, viewerId, now);
             const title = eventTitle(e, people, viewerId);
             const mark = rowMark(e);
+            const lift = liftFor?.(e);
             return (
               <Fragment key={`${e.id}${e.date}`}>
                 {before.map((g) => (
@@ -379,13 +460,15 @@ function DayPage({
                     <MovedAwayRow g={g} variant="phone" onOpen={() => (haptic('select'), onOpen(g.id, g.toDate))} />
                   </li>
                 ))}
-              <li>
+              <li data-ev-id={e.id}>
                 {i === nowAt && nowLine}
-                {/* P006-C3: a hold lifts the event's card with its actions; the row keeps its tap. */}
-                <EventPeek e={e} coach={coach} people={people} onOpen={() => onOpen(e.id, e.date)}>
+                {/* P006-C3: a hold lifts the event's card with its actions; the row keeps its tap. P-4: a coach's movable
+                    row is picked up by the hold instead, and opens its peek when let go without moving. */}
+                <EventPeek e={e} coach={coach} people={people} onOpen={() => onOpen(e.id, e.date)} lift={lift} onAdjust={onAdjust && (() => onAdjust(e))}>
                   <button
                     type="button"
-                    className={`ch-calm-ev is-${e.type}` + (past ? ' is-past' : '') + (live ? ' is-live' : '') + (selId === e.id ? ' is-sel' : '') + (e.cancelled ? ' is-cancelled' : '')}
+                    className={`ch-calm-ev is-${e.type}` + (past ? ' is-past' : '') + (live ? ' is-live' : '') + (selId === e.id ? ' is-sel' : '') + (e.cancelled ? ' is-cancelled' : '') + (lift ? ' is-movable' : '') + (liftedId === e.id ? ' is-lifted' : '')}
+                    onTouchStart={lift ? () => claimTouch('pending') : undefined}
                     aria-label={`${title}, ${e.allDay ? 'all day' : e.span?.start != null ? rangeLabel(e, clock) : `${fmtHour(e.start!, true, clock)} to ${fmtHour(e.end!, true, clock)}`}${past ? ', ended' : ''}${flagged.has(e.id) ? ', schedule overlap' : ''}${reply ? ', needs your reply' : ''}${e.cancelled ? ', cancelled' : ''}${mark?.aria ?? ''}`}
                     onClick={() => {
                       haptic('select');

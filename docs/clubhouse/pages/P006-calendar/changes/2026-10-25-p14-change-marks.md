@@ -76,3 +76,16 @@ the coach sends.
   live, leads the event's DESCRIPTION with one line ("Moved from 1:00 PM by Coach Okafor on Wed 14 October."), ahead of the
   coach's own notes. Each occurrence of a series says its own change. An event with no mark, an old one or one this version
   cannot read is exactly what it was (`src/lib/calendar/change-feed.ts`, feed-change-line.test).
+
+### Together with P-4 (drag and drop)
+
+- Merged onto `claude/clubhouse-drag-drop`. The week and day blocks keep P-4's drag engine, grips, tiers and cancelled paper
+  look; the change marks sit on them (the old value struck in the time line, the glyph slot, the hairline "Was 3:00 PM"). A block
+  in hand (`card`) carries no mark; the footprint it leaves (`held`) does.
+- The month is P-4's `DndMonth`: a changed chip wears the glyph after its title and the day's name says ", N changed".
+  The all-day lane bars say ", cancelled" and strike a cancelled title.
+- The phone Day keeps P-4's lift and Adjust time on the rows; moved-away rows sit in the same list.
+- The Calendar read selects both `updated_at` (P-4's concurrency token) and the change mark. The mark trigger sets
+  `updated_at` on a tracked change, and P-4's touch trigger skips a write the mark trigger made.
+- Not built: the remote-move glide. P-4's settle path is for scrolling and for the card in hand, not for a block another person
+  moved, so a glide would need its own position tracking across refreshes.

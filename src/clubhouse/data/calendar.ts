@@ -215,7 +215,7 @@ export async function loadCalendar(input: {
     fetchAllRowsResult((from, to) =>
       supabase
         .from('golf_events')
-        .select('id, title, event_type, start_time, end_time, location, description, status, all_day, recurrence_rule, parent_event_id, requires_rsvp, rsvp_deadline, cancellation_reason, cancelled_at, change:metadata->change')
+        .select('id, title, event_type, start_time, end_time, location, description, status, all_day, recurrence_rule, parent_event_id, requires_rsvp, rsvp_deadline, updated_at, cancellation_reason, cancelled_at, change:metadata->change')
         .eq('team_id', input.teamId)
         .lt('start_time', toIso)
         .or(overlapsWindow)
@@ -358,6 +358,8 @@ export async function loadCalendar(input: {
       cancelled,
       seriesId: r.parent_event_id ?? (r.recurrence_rule ? r.id : null),
       startIso: r.start_time,
+      // P-4: the row's updated_at, an opaque concurrency token a move sends back untouched.
+      version: r.updated_at ?? null,
       change: cls ? null : (changeMarks.get(r.id) ?? null),
       cancelNote:
         !cls && cancelled && !changeMarks.get(r.id) && r.cancelled_at

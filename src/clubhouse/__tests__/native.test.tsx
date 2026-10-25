@@ -122,6 +122,39 @@ describe('Clubhouse in the iOS app', () => {
   });
 });
 
+describe('pull to refresh and a calendar row’s hold (P-4 4.7.1)', () => {
+  it('waits while a row’s hold may still lift, and stays off once it has', async () => {
+    const { claimTouch, releaseTouch } = await import('../lib/touch-claim');
+    vi.spyOn(window, 'matchMedia').mockImplementation((query: string) => ({ matches: query.includes('max-width: 820px'), media: query, addEventListener: vi.fn(), removeEventListener: vi.fn() }) as unknown as MediaQueryList);
+    document.body.classList.add('capacitor', 'capacitor-ios');
+    try {
+      for (const claim of ['pending', 'lifted'] as const) {
+        document.body.innerHTML = '<div class="ch-root" data-ui="clubhouse"><div class="ch-canvas" id="ch-canvas"><main><p class="row">Row</p></main></div><div class="host"></div></div>';
+        render(<PullToRefresh pathname="/golf/dashboard" />, { container: document.querySelector<HTMLElement>('.host')! });
+        const row = document.querySelector('.row')!;
+        const fire = (type: string, y: number) => {
+          const e = new Event(type, { bubbles: true, cancelable: true });
+          Object.defineProperty(e, 'touches', { value: type === 'touchend' ? [] : [{ clientX: 100, clientY: y }] });
+          act(() => void row.dispatchEvent(e));
+          return e;
+        };
+        const before = pulled.refresh.mock.calls.length;
+        fire('touchstart', 300);
+        claimTouch(claim);
+        const moves = [1, 2, 3, 4, 5, 6].map((i) => fire('touchmove', 300 + i * 40));
+        fire('touchend', 540);
+        expect(moves.some((m) => m.defaultPrevented)).toBe(false);
+        expect(pulled.refresh.mock.calls.length).toBe(before);
+        releaseTouch();
+        cleanup();
+      }
+    } finally {
+      document.body.className = '';
+      vi.restoreAllMocks();
+    }
+  });
+});
+
 describe('phone width', () => {
   it('useChPhone follows the 820px breakpoint the stylesheets use', async () => {
     const { useChPhone, CH_PHONE_QUERY } = await import('../lib/use-phone');

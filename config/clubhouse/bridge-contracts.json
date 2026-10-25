@@ -4893,7 +4893,7 @@
     "category": 1,
     "item": 4,
     "name": "TIMES_ARE_THE_TEAMS_ZONE",
-    "meaning": "The loader reads every event that overlaps its window (it starts before the window ends and ends on or after its start), not only those that start in it, so a trip that began before the window fills the window's first days. Every time is resolved on the server in the team's timezone (Eastern time until the team sets one, and the page says so): a timed event is filed under its local day and hour; one that runs past midnight is on every day it covers, as production's calendar places it (its start to midnight, whole days, midnight to its end; one that ends at midnight exactly holds nothing of the next day), each day naming its part (From 7:00 AM, All day, Until 4:30 PM) and the panel the run's start and end; editing, Duplicate and a series edit from any of its days send the run's first day, start, last day and end, and it never drags; an all-day event keeps its stored dates, one entry for each day of a span.",
+    "meaning": "The loader reads every event that overlaps its window (it starts before the window ends and ends on or after its start), not only those that start in it, so a trip that began before the window fills the window's first days. Every time is resolved on the server in the team's timezone (Eastern time until the team sets one, and the page says so): a timed event is filed under its local day and hour; one that runs past midnight is on every day it covers, as production's calendar places it (its start to midnight, whole days, midnight to its end; one that ends at midnight exactly holds nothing of the next day), each day naming its part (From 7:00 AM, All day, Until 4:30 PM) and the panel the run's start and end; editing, Duplicate and a series edit from any of its days send the run's first day, start, last day and end, and in the week it is one bar in the all-day lane that drags by whole days with its times kept (P-4 4.5); an all-day event keeps its stored dates, one entry for each day of a span.",
     "status": "implemented",
     "where": "src/clubhouse/data/calendar.ts#loadCalendar, zoned",
     "tests": [
@@ -5470,9 +5470,64 @@
     "page": "P006",
     "category": 6,
     "item": 31,
+    "name": "SOMEONE_ELSE_CHANGED_THE_EVENT_WHILE_IT",
+    "chCode": "CH-6018",
+    "meaning": "Someone else changed the event while it was being moved (P-4 6.5)",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/calendar.md"
+  },
+  {
+    "id": 60632,
+    "page": "P006",
+    "category": 6,
+    "item": 32,
+    "name": "A_THIS_AND_FOLLOWING_SERIES_MOVE_FAILS",
+    "chCode": "CH-6019",
+    "meaning": "A \"This and following\" series move fails",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/calendar.md"
+  },
+  {
+    "id": 60633,
+    "page": "P006",
+    "category": 6,
+    "item": 33,
+    "name": "CHANGING_AN_EVENTS_LENGTH_FAILS",
+    "chCode": "CH-6020",
+    "meaning": "Changing an event's length (a grip or Alt+Shift+arrow) fails",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/calendar.md"
+  },
+  {
+    "id": 60634,
+    "page": "P006",
+    "category": 6,
+    "item": 34,
+    "name": "THE_SERVER_REFUSES_A_MOVE_BY_ROLE",
+    "chCode": "CH-6021",
+    "meaning": "The server refuses a move by role",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/calendar.md"
+  },
+  {
+    "id": 60635,
+    "page": "P006",
+    "category": 6,
+    "item": 35,
     "name": "A_CHANGE_MARK_CANT_BE_READ_THE",
     "chCode": "CH-6023",
     "meaning": "A change mark can't be read (P-14): the stored mark is a shape this version doesn't know (an unknown version, a missing baseline)",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/calendar.md"
+  },
+  {
+    "id": 60636,
+    "page": "P006",
+    "category": 6,
+    "item": 36,
+    "name": "THE_EVENT_WAS_CANCELLED_OR_DELETED_WHILE",
+    "chCode": "CH-6022",
+    "meaning": "The event was cancelled or deleted while it was being moved",
     "status": "implemented",
     "catalog": "docs/clubhouse/catalog/calendar.md"
   },
@@ -5928,6 +5983,28 @@
     "chCode": "CH-6804",
     "meaning": "No axe violations in any preview view and state, 1280px and 390px. One known exception, listed in the scan: the 7-day week at 390px squeezes overlapping events under 24px until the phone Calendar is designed",
     "status": "reserved",
+    "catalog": "docs/clubhouse/catalog/calendar.md"
+  },
+  {
+    "id": 61805,
+    "page": "P006",
+    "category": 18,
+    "item": 5,
+    "name": "A_COMPLETED_MOVE_IS_SAID_ONCE_NEVER",
+    "chCode": "CH-6805",
+    "meaning": "A completed move is said once, never during a drag: \"Practice moved to 4:00 PM, Wednesday 15 October. Undo with Command Z.\" (Control Z off a Mac; on touch \"Undo is in the notice.\"); a resize \"Practice now ends at 6:30 PM.\"; a clash appended; Undo \"Move undone.\"",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/calendar.md"
+  },
+  {
+    "id": 61806,
+    "page": "P006",
+    "category": 18,
+    "item": 6,
+    "name": "MONTH_DRAG_IS_ANNOUNCED_PICKED_UP_FALL",
+    "chCode": "CH-6806",
+    "meaning": "Month drag is announced: \"Picked up Fall qualifier R2, Thursday 16 October. Arrow keys choose a day, Space drops, Escape cancels.\", \"Over Friday 17 October.\", \"Fall qualifier R2 moved to Friday 17 October at 8:42 AM.\", or \"Move cancelled. Fall qualifier R2 stays on Thursday 16 October.\"",
+    "status": "implemented",
     "catalog": "docs/clubhouse/catalog/calendar.md"
   },
   {

@@ -1,4 +1,5 @@
 import { clockLabel, longDateLabel, slotOf, snapshotOf } from '@/lib/calendar/change-mark';
+import { dowOf } from '../calendar/model';
 import { buildChangeMarks, type ChCalChange, type ChangeRow } from '../calendar/change-view';
 
 /**
@@ -28,7 +29,6 @@ const hmOf = (hour: number): string => {
   return `${String(Math.floor(total / 60) % 24).padStart(2, '0')}:${String(total % 60).padStart(2, '0')}`;
 };
 const bare = (label: string): string => label.replace(/ [AP]M$/, '');
-const WEEKDAY = new Intl.DateTimeFormat('en-US', { timeZone: 'UTC', weekday: 'short' });
 
 /**
  * The rows for the live changes someone else made, newest first, and the marks by event (for Up next and the agenda). A
@@ -61,7 +61,7 @@ export function homeChangeRows(
     let lead: ChHomeChange['lead'];
     if (count > 1) lead = { text: String(count) };
     else if (m.kind === 'cancel') lead = { text: m.fromSlot.label ? bare(m.fromSlot.label) : 'All day', ...(m.fromSlot.start != null ? { hm: hmOf(m.fromSlot.start) } : {}), struck: true };
-    else if (m.kind === 'day') lead = { text: WEEKDAY.format(new Date(`${at.date}T12:00:00Z`)) };
+    else if (m.kind === 'day') lead = { text: dowOf(at.date) };
     else lead = { text: newLabel ? bare(newLabel) : 'All day', ...(at.hour != null ? { hm: hmOf(at.hour) } : {}) };
 
     let text: string;

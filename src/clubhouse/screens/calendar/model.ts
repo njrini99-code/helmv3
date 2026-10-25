@@ -74,6 +74,13 @@ export interface ChCalEvent {
    * entry draws only its part of the run (the start to midnight, the whole day, midnight to the end).
    */
   span: { from: string; to: string; start?: number; end?: number } | null;
+  /**
+   * P-4: `golf_events.updated_at` as read, an opaque token a move sends back so it never overwrites a newer change.
+   * Absent or null for rows that are not team events (classes, busy time).
+   */
+  version?: string | null;
+  /** P-5 (not built yet): set on a tournament round; until then tournament events drag like any event. */
+  round?: { tournamentId: string; roundNo: number; lockedAt: string | null };
 }
 
 export interface ChCalOverlap {

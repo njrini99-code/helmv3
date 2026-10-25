@@ -507,10 +507,13 @@
 .ch-ev.is-past {
   filter: saturate(0.55);
 }
-.ch-ev.is-past:is(.ch-ev--practice, .ch-ev--workout, .ch-ev--meeting, .ch-ev--other, .ch-ev--busy, .ch-ev--travel, .ch-ev--class:not(.ch-ev--fill-3)):not(:hover):not(:focus-visible):not(.is-sel) {
+.ch-ev.is-past:is(.ch-ev--practice, .ch-ev--workout, .ch-ev--meeting, .ch-ev--other, .ch-ev--busy, .ch-ev--travel, .ch-ev--qualifier, .ch-ev--class:not(.ch-ev--fill-3)):not(:hover):not(:focus-visible):not(.is-sel) {
   color: var(--ch-ink-500);
 }
-.ch-ev.is-past:is(.ch-ev--tournament, .ch-ev--qualifier):not(:hover):not(:focus-visible):not(.is-sel) {
+.ch-ev.is-past:is(.ch-ev--practice, .ch-ev--workout, .ch-ev--meeting, .ch-ev--other, .ch-ev--travel, .ch-ev--qualifier):not(:hover):not(:focus-visible):not(.is-sel) .ch-ev__m {
+  color: var(--ch-ink-500);
+}
+.ch-ev.is-past.ch-ev--tournament:not(:hover):not(:focus-visible):not(.is-sel) {
   background-color: color-mix(in srgb, var(--ch-green-fill-700) 75%, var(--ch-bg-page));
 }
 .ch-ev.is-past .ch-ev__m {
@@ -527,16 +530,20 @@
 .ch-mo__cell.is-past .ch-mo__ev:not(.is-major) {
   color: var(--ch-ink-500);
 }
-.ch-mo__cell.is-past .ch-mo__ev.is-major {
+.ch-mo__cell.is-past .ch-mo__ev.is-major:not(.is-qualifier) {
   background-color: color-mix(in srgb, var(--ch-green-fill-700) 75%, var(--ch-bg-page));
 }
 .ch-wk__now {
   position: absolute;
   left: 0;
   right: 0;
-  z-index: 3;
+  z-index: calc(var(--ch-z-raised) - 3);
   height: 0;
   border-top: 1.5px solid var(--ch-green-600);
+  /* P-4 4.1: green on the tournament fill is 1.25:1; the ivory halo holds 9.86:1, so the line crosses any block. */
+  box-shadow:
+    0 -1px 0 var(--ch-bg-surface),
+    0 1px 0 var(--ch-bg-surface);
   pointer-events: none;
 }
 .ch-wk__now::before {
@@ -587,6 +594,237 @@
   color: var(--ch-green-700);
 }
 
+/* P-4 4.2, the drag parts. The column under the card takes a faint green wash and its day's numeral goes green; no
+   side bar. */
+.ch-wk__col.is-target {
+  background-color: color-mix(in oklab, var(--ch-green-600) 5%, transparent);
+}
+.ch-wk__day.is-target .ch-wk__n {
+  color: var(--ch-green-600);
+}
+/* The card in hand (a mouse drag): full material, a touch larger, lifted on the overlay shadow, snapped to where it
+   would land. It never takes the pointer, so the grid under it keeps hit-testing. */
+.ch-dd-card {
+  position: absolute;
+  z-index: calc(var(--ch-z-raised) + 4);
+  pointer-events: none;
+}
+.ch-ev.is-card {
+  scale: 1.02;
+  cursor: grabbing;
+}
+.ch-ev.is-card::before {
+  opacity: 1;
+  box-shadow: var(--ch-elevation-overlay);
+}
+/* The time pill: the new time travelling with the card, ink on ivory by day and ivory on ink at night (the tokens flip). */
+.ch-dd-pill {
+  position: absolute;
+  right: 3px;
+  bottom: calc(100% + var(--ch-space-2));
+  z-index: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  min-height: 22px;
+  padding: 0 var(--ch-space-2);
+  border-radius: var(--ch-radius-md);
+  background: var(--ch-text-primary);
+  color: var(--ch-bg-surface);
+  font: var(--ch-type-12-strong);
+  box-shadow: var(--ch-elevation-raised);
+  white-space: nowrap;
+}
+.ch-dd-pill.is-below {
+  top: calc(100% + var(--ch-space-2));
+  bottom: auto;
+}
+.ch-dd-pill.is-clash {
+  padding-block: var(--ch-space-1);
+}
+.ch-dd-pill__clash {
+  font: var(--ch-type-12-medium);
+  color: var(--ch-on-ink-warning);
+}
+/* The resize grips (P-4 4.3): a full-width strip at each edge takes the pointer; a 20 by 4 pill shows inside it on
+   hover and on the selected block. They never open the block. */
+.ch-ev__grip {
+  position: absolute;
+  left: 0;
+  right: 0;
+  z-index: 1;
+  height: 9px;
+  cursor: ns-resize;
+}
+.ch-ev__grip.is-top {
+  top: 0;
+}
+.ch-ev__grip.is-bottom {
+  bottom: 0;
+}
+.ch-ev__grip.is-small {
+  height: 6px;
+}
+.ch-ev__grip::after {
+  content: '';
+  position: absolute;
+  left: 50%;
+  width: 20px;
+  height: 4px;
+  translate: -50% 0;
+  border-radius: var(--ch-radius-mark);
+  background: currentColor;
+  opacity: 0;
+  transition: opacity var(--ch-dur-quick) var(--ch-ease);
+}
+.ch-ev__grip.is-top::after {
+  top: 3px;
+}
+.ch-ev__grip.is-bottom::after {
+  bottom: 3px;
+}
+.ch-ev__grip.is-small::after {
+  bottom: 1px;
+}
+@media (hover: hover) {
+  .ch-ev.is-draggable:hover .ch-ev__grip::after {
+    opacity: 0.7;
+  }
+}
+.ch-ev.is-draggable.is-sel .ch-ev__grip::after {
+  opacity: 0.7;
+}
+
+/* P-4 4.8, the series question on a drop: 44px rows in the shared menu material. */
+.ch-dd-scope {
+  padding: var(--ch-space-1);
+}
+.ch-dd-scope__h {
+  padding: var(--ch-space-3) var(--ch-space-2) var(--ch-space-1);
+  font: var(--ch-type-13-strong);
+  color: var(--ch-text-secondary);
+}
+.ch-dd-scope .ch-menu__item {
+  height: 44px;
+  font: var(--ch-type-15);
+  letter-spacing: var(--ch-track-15);
+}
+.ch-dd-scope .ch-menu__item[aria-checked='true'] {
+  font: var(--ch-type-15-strong);
+  letter-spacing: var(--ch-track-15);
+}
+.ch-dd-scope .ch-menu__item[aria-disabled='true'] {
+  cursor: not-allowed;
+}
+.ch-dd-scope__help {
+  margin: 0;
+  padding: 0 var(--ch-space-2) var(--ch-space-2);
+  font: var(--ch-type-12);
+  color: var(--ch-text-secondary);
+}
+.ch-dd-scope__cancel {
+  color: var(--ch-text-secondary);
+}
+
+/* P-4 4.5, the week lane's bars: one bar across the days it covers, stacked in 26px rows 4px apart. A run prints its
+   start at the left end and its end at the right; an end cut by the week takes a chevron, never a side bar. */
+.ch-wk__allday {
+  row-gap: var(--ch-space-1);
+}
+.ch-ev-bar--span {
+  position: relative;
+  max-width: none;
+  min-width: 0;
+  height: 26px;
+}
+.ch-ev-bar--span > span {
+  flex: 1;
+  min-width: 0;
+}
+.ch-ev-bar__t {
+  flex: none;
+  font: var(--ch-type-12-medium);
+  font-style: normal;
+}
+.ch-ev-bar--span.is-clip-start {
+  clip-path: polygon(6px 0, 100% 0, 100% 100%, 6px 100%, 0 50%);
+  padding-left: var(--ch-space-3);
+}
+.ch-ev-bar--span.is-clip-end {
+  clip-path: polygon(0 0, calc(100% - 6px) 0, 100% 50%, calc(100% - 6px) 100%, 0 100%);
+  padding-right: var(--ch-space-3);
+}
+.ch-ev-bar--span.is-clip-start.is-clip-end {
+  clip-path: polygon(6px 0, calc(100% - 6px) 0, 100% 50%, calc(100% - 6px) 100%, 6px 100%, 0 50%);
+}
+.ch-ev-bar.is-draggable {
+  cursor: grab;
+}
+.ch-ev-bar.is-held {
+  background: transparent;
+  box-shadow: none;
+  color: var(--ch-ink-500);
+  outline: 1.5px dashed var(--ch-ink-500);
+  outline-offset: -1.5px;
+}
+.ch-ev-bar.is-held > :not(span:not([class])) {
+  visibility: hidden;
+}
+.ch-dd-barcard {
+  position: relative;
+  z-index: calc(var(--ch-z-raised) + 4);
+  display: flex;
+  pointer-events: none;
+}
+.ch-dd-barcard .ch-ev-bar {
+  flex: 1;
+  scale: 1.02;
+  box-shadow: var(--ch-elevation-overlay);
+}
+.ch-ev-bar__grip {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 9px;
+  cursor: ew-resize;
+}
+.ch-ev-bar__grip.is-from {
+  left: 0;
+}
+.ch-ev-bar__grip.is-to {
+  right: 0;
+}
+.ch-ev-bar__grip::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  width: 4px;
+  height: 14px;
+  translate: 0 -50%;
+  border-radius: var(--ch-radius-mark);
+  background: currentColor;
+  opacity: 0;
+  transition: opacity var(--ch-dur-quick) var(--ch-ease);
+}
+.ch-ev-bar__grip.is-from::after {
+  left: 3px;
+}
+.ch-ev-bar__grip.is-to::after {
+  right: 3px;
+}
+@media (hover: hover) {
+  .ch-ev-bar.is-draggable:hover .ch-ev-bar__grip::after {
+    opacity: 0.7;
+  }
+}
+.ch-ev-bar.is-draggable.is-sel .ch-ev-bar__grip::after {
+  opacity: 0.7;
+}
+html[data-fw-theme='dark'] .ch-ev-bar.is-held {
+  color: var(--ch-ink-400);
+  outline-color: var(--ch-ink-400);
+}
+
 /* Event blocks */
 .ch-ev {
   position: absolute;
@@ -600,11 +838,53 @@
   border-radius: var(--ch-radius-sm);
   text-align: left;
   cursor: pointer;
+  /* P-4 4.1: the block measures itself, so its glyph shows only when it is 64px wide. */
+  container-type: inline-size;
   transition:
-    box-shadow var(--ch-dur-quick) var(--ch-ease),
     transform var(--ch-dur-quick) var(--ch-ease),
     opacity var(--ch-dur-quick) var(--ch-ease),
     filter var(--ch-dur-quick) var(--ch-ease);
+}
+/* P-4 4.1 (audit D12): the hover shadow is a layer that fades in, never a box-shadow transition on the block itself. */
+.ch-ev::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  box-shadow: var(--ch-elevation-chip-hover);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity var(--ch-dur-quick) var(--ch-ease);
+}
+@media (hover: hover) {
+  .ch-ev:hover::before {
+    opacity: 1;
+  }
+}
+/* The type's leading glyph: 12px before the title, shown on a block at least 64px wide and 24px tall. */
+.ch-ev__g {
+  display: inline-block;
+  margin-inline-end: var(--ch-space-1);
+  vertical-align: -0.125em;
+}
+@container (max-width: 63.98px) {
+  .ch-ev__g {
+    display: none;
+  }
+}
+/* A sliver (under 24px drawn): one row, a 12px title and its start, no glyph, the smaller corner. */
+.ch-ev--sliver {
+  border-radius: var(--ch-radius-xs);
+}
+.ch-ev--sliver .ch-ev__t {
+  font: var(--ch-type-12-strong);
+}
+.ch-ev--sliver .ch-ev__g {
+  display: none;
+}
+/* Cancelled: paper, the title struck, the time line says so; it never drags. */
+.ch-ev.is-cancelled .ch-ev__t {
+  text-decoration: line-through;
 }
 .ch-ev:focus-visible {
   outline: 2px solid var(--ch-border-focus);
@@ -624,18 +904,33 @@
   cursor: grabbing;
 }
 .ch-ev.is-held {
-  opacity: 0.4;
+  /* P-4 4.2, the footprint: where the event was, drawn as an empty dashed box, never faded. */
+  background: transparent;
+  box-shadow: none;
+  color: var(--ch-ink-500);
+  outline: 1.5px dashed var(--ch-ink-500);
+  outline-offset: -1.5px;
 }
-.ch-ev.is-ghost {
-  pointer-events: none;
-  outline: 2px dashed var(--ch-border-focus);
-  outline-offset: -2px;
-  box-shadow: var(--ch-elevation-raised);
+.ch-ev.is-held .ch-ev__g,
+.ch-ev.is-held .ch-ev__m {
+  visibility: hidden;
 }
 .ch-ev.is-clash {
   z-index: 5;
-  box-shadow: inset 0 0 0 2px var(--ch-warning-600);
-  background: var(--ch-warning-100);
+  box-shadow: inset 0 0 0 1.5px var(--ch-warning-600);
+}
+/* On the solid tournament fill the amber ring measures 1.74:1; champagne holds 3.91:1 (P-4 changelog, clash ring). */
+.ch-ev--tournament.is-clash {
+  box-shadow: inset 0 0 0 1.5px var(--ch-champagne-300);
+}
+/* The clash hatch lies over the block's own material, so its words stay legible (forest on the hatched tint 8.99:1). */
+.ch-ev.is-clash::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: repeating-linear-gradient(135deg, transparent 0 6px, color-mix(in oklab, var(--ch-warning-600) 18%, transparent) 6px 8px);
+  pointer-events: none;
 }
 @media (hover: hover) {
   .ch-ev:hover {
@@ -664,7 +959,6 @@
   font-variant-numeric: tabular-nums;
   white-space: nowrap;
   text-overflow: ellipsis;
-  opacity: 0.82;
 }
 /* An event block's time in whole parts (views.tsx): "8:00", " AM", " – 9:30 AM", " · Finley GC". One line shows; a part
    that doesn't fit wraps out of sight with every part after it, so the block keeps the longest start of its time that
@@ -684,12 +978,7 @@
   flex-shrink: 0;
   max-width: calc(100% - 30px);
 }
-/* Faded to 0.82 the time on a class or busy block measured 3.6:1 and 4.0:1; its own color holds 5.2:1 and 6.0:1.
-   Aesthetic audit X-3. */
-.ch-ev--class .ch-ev__m,
-.ch-ev--busy .ch-ev__m {
-  opacity: 1;
-}
+/* P-4 4.1: the time is never faded (0.82 measured 3.6:1 on a class); each type names its own time ink below. */
 /* A block of players' classes: the title is the kind, set apart from the words under it (who, in the body's ink). */
 .ch-ev--group .ch-ev__t {
   font-weight: 600;
@@ -893,11 +1182,20 @@
   padding-top: 0;
   padding-bottom: 0;
 }
+/* P-4 4.1, the type key. Type reads by material first (solid, outline, tint, paper, dashed paper, slate, hatch), then
+   the leading glyph, then ink: a 20px sliver with no glyph still tells a tournament (solid green) from a qualifier (a
+   green ring) from practice (pale green). No block has a side stripe (owner, 2026-10-24). */
 .ch-ev--practice,
 .ch-ev--workout {
   background: var(--ch-green-50);
   color: var(--ch-forest-800);
-  box-shadow: inset 0 0 0 1px rgb(21 90 57 / 0.14);
+  box-shadow: inset 0 0 0 1px rgb(21 90 57 / 0.16);
+}
+.ch-ev--practice .ch-ev__m,
+.ch-ev--workout .ch-ev__m,
+.ch-ev--practice .ch-ev__g,
+.ch-ev--workout .ch-ev__g {
+  color: var(--ch-green-700);
 }
 .ch-ev--meeting,
 .ch-ev--other {
@@ -905,28 +1203,44 @@
   color: var(--ch-text-primary);
   box-shadow: inset 0 0 0 1px var(--ch-border-control);
 }
+.ch-ev--meeting .ch-ev__m,
+.ch-ev--other .ch-ev__m {
+  color: var(--ch-text-secondary);
+}
+.ch-ev--meeting .ch-ev__g,
+.ch-ev--other .ch-ev__g,
+.ch-ev--travel .ch-ev__g {
+  color: var(--ch-ink-600);
+}
 @media (hover: hover) {
-  .ch-ev--practice:hover,
-  .ch-ev--workout:hover,
-  .ch-ev--meeting:hover,
-  .ch-ev--other:hover,
-  .ch-ev--tournament:hover,
-  .ch-ev--qualifier:hover,
-  .ch-ev--travel:hover,
-  .ch-ev--busy:hover,
   .ch-ev-bar:hover {
     box-shadow: var(--ch-elevation-chip-hover);
   }
 }
-.ch-ev--tournament,
-.ch-ev--qualifier {
+.ch-ev--tournament {
   background: var(--ch-green-fill-700);
   color: var(--ch-on-fill-100);
+  box-shadow: var(--ch-ev-sheen);
 }
+.ch-ev--tournament .ch-ev__m {
+  color: var(--ch-on-green-ink-soft);
+}
+.ch-ev--tournament .ch-ev__g {
+  color: var(--ch-champagne-300);
+}
+.ch-ev--qualifier {
+  background: var(--ch-bg-surface);
+  color: var(--ch-green-700);
+  box-shadow: inset 0 0 0 1.5px var(--ch-green-600);
+}
+.ch-ev--qualifier .ch-ev__g {
+  color: var(--ch-green-600);
+}
+/* Opaque paper (was 50% white): the night wash never tints a trip; the dashed edge is time in transit. */
 .ch-ev--travel {
-  background: rgb(255 255 255 / 0.5);
+  background: var(--ch-bg-surface);
   color: var(--ch-text-secondary);
-  outline: 1px dashed rgb(28 25 18 / 0.28);
+  outline: 1px dashed var(--ch-ink-500);
   outline-offset: -1px;
 }
 /* Players' classes (owner, 2026-10-08: never ivory on ivory, and never a coloured side stripe): the info slate, a cool
@@ -938,12 +1252,22 @@
 }
 @media (hover: hover) {
   .ch-ev--class:hover {
-    box-shadow: inset 0 0 0 1px rgb(45 92 119 / 0.28), var(--ch-elevation-chip-hover);
+    box-shadow: var(--ch-ev-class-ring-hover);
   }
+}
+.ch-ev--class .ch-ev__g {
+  color: var(--ch-info-600);
 }
 .ch-ev.is-sel {
   z-index: 5;
   box-shadow: 0 0 0 2px var(--ch-green-600), 0 6px 16px -6px rgb(11 58 37 / 0.35);
+}
+/* The green ring is 1.25:1 on the solid fill (CON-10): a selected tournament takes champagne; a qualifier keeps its own. */
+.ch-ev--tournament.is-sel {
+  box-shadow: 0 0 0 2px var(--ch-champagne-300), var(--ch-elevation-raised);
+}
+.ch-ev--qualifier.is-sel {
+  box-shadow: inset 0 0 0 1.5px var(--ch-green-600), 0 0 0 2px var(--ch-green-600), var(--ch-elevation-raised);
 }
 .ch-ev__warn {
   position: absolute;
@@ -1001,15 +1325,26 @@
   color: var(--ch-text-tertiary);
 }
 .ch-mo__grid {
-  display: grid;
-  grid-template-columns: repeat(7, minmax(0, 1fr));
-  grid-auto-rows: minmax(112px, auto);
+  display: flex;
+  flex-direction: column;
   overflow: hidden;
   border-radius: var(--ch-radius-md);
   box-shadow: 0 0 0 var(--ch-hairline-w) var(--ch-border-hairline);
 }
+/* P-4 4.4: a week is a row of gridcells; each day holds its numeral button and one button per chip. */
+.ch-mo__week {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  min-height: 112px;
+}
+.ch-mo__gc {
+  position: relative;
+  display: flex;
+  min-width: 0;
+}
 .ch-mo__cell {
   display: flex;
+  flex: 1;
   flex-direction: column;
   gap: 4px;
   min-width: 0;
@@ -1022,11 +1357,112 @@
   cursor: pointer;
   transition: background var(--ch-dur-quick) var(--ch-ease);
 }
-.ch-mo__cell:nth-child(7n) {
+.ch-mo__gc:last-child .ch-mo__cell {
   border-right: 0;
 }
-.ch-mo__cell:nth-last-child(-n + 7) {
+.ch-mo__week:last-child .ch-mo__cell {
   border-bottom: 0;
+}
+.ch-mo__cell.is-target {
+  background: var(--ch-green-50);
+  box-shadow: var(--ch-ring-drop);
+}
+.ch-mo__evs {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+  margin-top: calc(var(--ch-mo-lanes, 0) * 24px);
+}
+button.ch-mo__n,
+button.ch-mo__ev {
+  border: 0;
+  background: none;
+  color: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+button.ch-mo__ev.is-major {
+  background: var(--ch-green-fill-700);
+}
+button.ch-mo__ev.is-major.is-qualifier {
+  background: var(--ch-bg-surface);
+}
+button.ch-mo__ev:not(.is-major) {
+  color: var(--ch-text-secondary);
+}
+.ch-mo__n:focus-visible,
+.ch-mo__ev:focus-visible,
+.ch-mo__ribbon:focus-visible {
+  outline: 2px solid var(--ch-border-focus);
+  outline-offset: 2px;
+}
+.ch-mo__ev.is-draggable,
+.ch-mo__ribbon.is-draggable {
+  cursor: grab;
+}
+.ch-mo__ev.is-held,
+.ch-mo__ribbon.is-held {
+  background: transparent;
+  box-shadow: none;
+  color: var(--ch-ink-500);
+  outline: 1.5px dashed var(--ch-ink-500);
+  outline-offset: -1.5px;
+}
+/* A run across the week's days, once per row; squared where the week breaks, a chevron on an end cut by it. */
+.ch-mo__ribbon {
+  position: absolute;
+  top: calc(var(--ch-space-2) + 30px + var(--ch-mo-lane, 0) * 24px);
+  left: var(--ch-space-1);
+  z-index: 1;
+  display: flex;
+  align-items: center;
+  gap: var(--ch-space-1);
+  box-sizing: border-box;
+  width: calc(var(--ch-mo-span, 1) * 100% - var(--ch-space-2));
+  height: 20px;
+  padding: 0 var(--ch-space-2);
+  overflow: hidden;
+  border: 0;
+  border-radius: var(--ch-radius-xs);
+  font: var(--ch-type-12-strong);
+  text-align: left;
+  white-space: nowrap;
+  cursor: pointer;
+}
+.ch-mo__ribbon span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.ch-mo__ribbon.is-clip-start {
+  left: 0;
+  clip-path: polygon(6px 0, 100% 0, 100% 100%, 6px 100%, 0 50%);
+  padding-left: var(--ch-space-3);
+}
+.ch-mo__ribbon.is-clip-end {
+  clip-path: polygon(0 0, calc(100% - 6px) 0, 100% 50%, calc(100% - 6px) 100%, 0 100%);
+}
+.ch-mo__ribbon.is-clip-start.is-clip-end {
+  clip-path: polygon(6px 0, calc(100% - 6px) 0, 100% 50%, calc(100% - 6px) 100%, 6px 100%, 0 50%);
+}
+/* The chip in hand: lifted at 1.02 on the overlay shadow, no tilt; the pill rides above it. */
+.ch-mo__lift {
+  position: relative;
+}
+.ch-mo__lift .ch-mo__ev {
+  padding: 2px var(--ch-space-2);
+  border-radius: var(--ch-radius-xs);
+  background: var(--ch-bg-surface);
+  scale: 1.02;
+  box-shadow: var(--ch-elevation-overlay);
+}
+.ch-mo__lift .ch-mo__ev.is-major:not(.is-qualifier) {
+  background: var(--ch-green-fill-700);
+}
+html[data-fw-theme='dark'] .ch-mo__ev.is-held,
+html[data-fw-theme='dark'] .ch-mo__ribbon.is-held {
+  color: var(--ch-ink-400);
+  outline-color: var(--ch-ink-400);
 }
 @media (hover: hover) {
   .ch-mo__cell:hover {
@@ -1095,8 +1531,30 @@
   color: var(--ch-on-fill-100);
   font-weight: 600;
 }
-.ch-mo__ev.is-major i {
-  background: var(--ch-green-200);
+.ch-mo__ev.is-major svg {
+  flex: none;
+  color: var(--ch-champagne-300);
+}
+/* P-4 4.4: a qualifier is an outlined chip with its Target, a tournament the solid chip with its Trophy. */
+.ch-mo__ev.is-major.is-qualifier {
+  background: var(--ch-bg-surface);
+  color: var(--ch-green-700);
+  box-shadow: inset 0 0 0 1.5px var(--ch-green-600);
+}
+.ch-mo__ev.is-major.is-qualifier svg {
+  color: var(--ch-green-600);
+}
+/* The minor markers sit on the page (cells and the surface are clear on desktop): ink-500 5.40:1, green-500 5.23:1,
+   and travel a ring, never the 2.10:1 ink-300 dot. */
+.ch-mo__ev i:is(.ch-dot-practice, .ch-dot-workout) {
+  background: var(--ch-green-500);
+}
+.ch-mo__ev i:is(.ch-dot-meeting, .ch-dot-other) {
+  background: var(--ch-ink-500);
+}
+.ch-mo__ev i.ch-dot-travel {
+  background: transparent;
+  box-shadow: inset 0 0 0 1.5px var(--ch-ink-500);
 }
 .ch-mo__more {
   margin-top: 1px;
@@ -3085,25 +3543,33 @@ html[data-fw-theme='dark'] .ch-ev--workout {
   }
 }
 html[data-fw-theme='dark'] .ch-ev--tournament,
-html[data-fw-theme='dark'] .ch-ev--qualifier,
-html[data-fw-theme='dark'] .ch-mo__ev.is-major,
+html[data-fw-theme='dark'] .ch-mo__ev.is-major:not(.is-qualifier),
 html[data-fw-theme='dark'] .ch-in__next {
   color: var(--ch-on-green-ink);
 }
 html[data-fw-theme='dark'] .ch-ev--travel {
-  background: rgb(255 255 255 / 0.03);
-  outline-color: rgb(237 231 216 / 0.3);
+  outline-color: var(--ch-ink-400);
+}
+html[data-fw-theme='dark'] .ch-ev.is-held {
+  color: var(--ch-ink-400);
+  outline-color: var(--ch-ink-400);
 }
 html[data-fw-theme='dark'] .ch-ev--class {
   box-shadow: inset 0 0 0 1px rgb(134 182 212 / 0.2);
 }
 /* At night ivory holds 10:1 on the filled green halfway to the page, so an ended competition can step further back. */
-html[data-fw-theme='dark'] .ch-ev.is-past:is(.ch-ev--tournament, .ch-ev--qualifier):not(:hover):not(:focus-visible):not(.is-sel),
-html[data-fw-theme='dark'] .ch-mo__cell.is-past .ch-mo__ev.is-major {
+html[data-fw-theme='dark'] .ch-ev.is-past.ch-ev--tournament:not(:hover):not(:focus-visible):not(.is-sel),
+html[data-fw-theme='dark'] .ch-mo__cell.is-past .ch-mo__ev.is-major:not(.is-qualifier) {
   background-color: color-mix(in srgb, var(--ch-green-fill-700) 50%, var(--ch-bg-page));
 }
 html[data-fw-theme='dark'] .ch-ev.is-sel {
   box-shadow: 0 0 0 2px var(--ch-green-600), var(--ch-elevation-raised);
+}
+html[data-fw-theme='dark'] .ch-ev--tournament.is-sel {
+  box-shadow: 0 0 0 2px var(--ch-champagne-300), var(--ch-elevation-raised);
+}
+html[data-fw-theme='dark'] .ch-ev--qualifier.is-sel {
+  box-shadow: inset 0 0 0 1.5px var(--ch-green-600), 0 0 0 2px var(--ch-green-600), var(--ch-elevation-raised);
 }
 html[data-fw-theme='dark'] .ch-ev__warn {
   box-shadow: 0 0 0 1px rgb(227 169 79 / 0.3);
@@ -3327,6 +3793,169 @@ html[data-fw-theme='dark'] .ch-ev--busy::after {
   }
 }
 
+/* P-4 4.7: the phone Day's drag. The row in hand lifts in place; the day unfolds into hours under it (64px an hour,
+   blocks from the list's title column, measured into --ch-tl-rail); the strip stays in reach, sticky under the top bar;
+   both pagers hold still. The list stays in the document under the timeline (the touch's row must not unmount). */
+@media (max-width: 820px) {
+  .ch-calm-dayv {
+    position: relative;
+    isolation: isolate;
+    display: flex;
+    flex-direction: column;
+    gap: var(--ch-gap-section-phone-snug);
+  }
+  /* iOS's text loupe and link callout would answer a hold before the lift does. */
+  .ch-calm-ev.is-movable {
+    -webkit-touch-callout: none;
+    -webkit-user-select: none;
+    user-select: none;
+  }
+  .ch-calm-ev.is-lifted {
+    scale: 1.02;
+    border-radius: var(--ch-radius-md);
+    background-color: var(--ch-bg-surface);
+    box-shadow: var(--ch-elevation-overlay);
+    transition:
+      scale var(--ch-dur-press) var(--ch-ease),
+      box-shadow var(--ch-dur-press) var(--ch-ease);
+  }
+  .ch-calm-ev.is-lifted .ch-calm-ev__rail {
+    opacity: 0;
+  }
+  .ch-calm-dayv.is-held > .ch-wks-pager,
+  .ch-calm-dayv.is-held > .ch-wks {
+    position: sticky;
+    top: calc(var(--ch-phone-topbar-h) + env(safe-area-inset-top));
+    z-index: calc(var(--ch-z-raised) + 5);
+    background: var(--ch-bg-page);
+  }
+  .ch-calm-pager[data-frozen],
+  .ch-wks-pager[data-frozen] {
+    overflow-x: hidden;
+  }
+  .ch-calm-dayv.is-unfolded > .ch-calm-pager {
+    position: absolute;
+    inset-inline: 0;
+    top: 0;
+    z-index: -1;
+    opacity: 0;
+  }
+  .ch-wks__d.is-drop {
+    background-color: var(--ch-green-50);
+    box-shadow: var(--ch-ring-drop);
+  }
+
+  .ch-tl {
+    display: flex;
+    flex-direction: column;
+  }
+  .ch-tl__grid {
+    position: relative;
+    margin-top: 16px;
+  }
+  .ch-tl__h {
+    position: absolute;
+    left: 0;
+    right: 0;
+    height: 0;
+    border-top: 1px solid var(--ch-ledger-rule-soft);
+  }
+  .ch-tl__h em {
+    position: absolute;
+    left: 0;
+    width: 44px;
+    padding-right: 6px;
+    transform: translateY(-50%);
+    text-align: right;
+    font: var(--ch-type-11-medium);
+    font-style: normal;
+    letter-spacing: var(--ch-track-11);
+    color: var(--ch-text-tertiary);
+  }
+  .ch-tl__col {
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    left: var(--ch-tl-rail, 92px);
+    right: 0;
+  }
+  .ch-tl__slot {
+    position: absolute;
+    left: 3px;
+    right: 3px;
+    border: 1.5px dashed var(--ch-green-600);
+    border-radius: var(--ch-radius-md);
+    top: 0;
+    pointer-events: none;
+    transition: transform var(--ch-dur-quick) var(--ch-ease);
+  }
+  .ch-tl__card {
+    top: 0;
+    left: 0;
+    right: 0;
+    will-change: transform;
+  }
+  .ch-tl.is-adjust .ch-tl__card {
+    pointer-events: auto;
+    touch-action: none;
+  }
+  .ch-tl__card .ch-dd-pill {
+    bottom: calc(100% + 6px);
+  }
+  /* Adjust time's grips: a 28 by 5 pill 4px inside each edge, its 44 by 44 hit area centred on it. */
+  .ch-tl__grip {
+    position: absolute;
+    left: 50%;
+    z-index: 1;
+    display: grid;
+    place-items: center;
+    width: 44px;
+    height: 44px;
+    translate: -50% 0;
+    touch-action: none;
+  }
+  .ch-tl__grip.is-top {
+    top: -15px;
+  }
+  .ch-tl__grip.is-bottom {
+    bottom: -15px;
+  }
+  .ch-tl__grip i {
+    width: 28px;
+    height: 5px;
+    border-radius: var(--ch-radius-xs);
+    background: currentColor;
+  }
+  .ch-tl__bar {
+    position: sticky;
+    bottom: calc(12px + env(safe-area-inset-bottom));
+    z-index: calc(var(--ch-z-raised) + 5);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    height: 56px;
+    margin-top: 16px;
+    padding: 0 6px;
+    border-radius: var(--ch-radius-sheet);
+    background: var(--ch-sheet-bg);
+    box-shadow: var(--ch-elevation-overlay);
+  }
+  /* 4.7.7: the first-run hint, one quiet line under the day's heading with a 44px close. */
+  .ch-calm-hint {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    margin: 4px 0 0;
+    font: var(--ch-type-13);
+    letter-spacing: var(--ch-track-13);
+    color: var(--ch-text-tertiary);
+  }
+  .ch-calm-hint__x {
+    min-width: 44px;
+    min-height: 44px;
+  }
+}
 /* P-14 change marks. A row's sub line carries the old value struck beside the new, kept whole and clamped to two lines;
    the detail opens on one quiet panel: a full hairline in a neutral wash, no stripe. Got it leaves one caption line, and
    what sits below glides up by a transform (change-note.tsx). */
