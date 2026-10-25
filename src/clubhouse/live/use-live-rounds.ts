@@ -3,6 +3,8 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import { chReport } from '../lib/track';
+import { joinLiveTopic, type LiveRealtime } from './channel';
+import { applyBroadcast } from './live-rounds-adapter';
 import { fetchLiveSnapshot, type LiveClient } from './live-queries';
 import { laneMatchesScope, type LiveScope } from './scope';
 import { isLate, momentsFrom, washOf, type LiveLane, type LiveMoment, type LiveSnapshot, type LiveWash } from './model';
@@ -14,11 +16,20 @@ import { isLate, momentsFrom, washOf, type LiveLane, type LiveMoment, type LiveS
  * is true (pointer over the list, a scroll, a sheet open) it waits, `pending` counts what is waiting and `applyPending`
  * lets it in. A change rides a one second queue so a burst becomes one pass (5L.8.3).
  *
- * `frozen` (the preview and the tests) turns the polling off and leaves the snapshot as given.
+ * With the push migration applied (20261025050100) a screen that listens also joins a private broadcast topic
+ * (`golf-live:coach:<team>`, or `golf-live:team:<team>` for a player who is not on the course) and applies `lane`, `hide`
+ * and `gone` messages through the same queue, by `seq`. While the channel is down the 20 second poll keeps the screen
+ * current; once it is up the poll slows to a 60 second snapshot. A channel that drops is rejoined with a backoff of 1, 2,
+ * 4, 8, 16 and 30 seconds; a hidden tab leaves it after five minutes and rejoins on return.
+ *
+ * `frozen` (the preview and the tests) turns the polling and the channel off and leaves the snapshot as given.
  */
 
 export const POLL_MS = 20_000;
+/** While the channel is up the poll is only a safety net. */
+export const SNAPSHOT_MS = 60_000;
 export const QUEUE_MS = 1_000;
+export { BACKOFF_MS, HIDDEN_LEAVE_MS, type LiveChannel, type LiveRealtime } from './channel';
 /** The moments list keeps this many, newest first. */
 const MOMENT_CAP = 50;
 
@@ -53,8 +64,15 @@ export interface UseLiveRoundsOptions {
   scope?: LiveScope;
   hold?: boolean;
   frozen?: boolean;
+  /**
+   * Join the broadcast topic. Default: a coach does, a player does not (their own card polls); the Teammates card passes
+   * true, and a player who is on the course leaves the team topic whatever this says.
+   */
+  listen?: boolean;
   /** Test seam: the client the polls read with. */
   client?: () => LiveClient;
+  /** Test seam: the Realtime client the channel is made with. */
+  realtime?: () => LiveRealtime;
 }
 
 /** What differs between two reads of a lane: enough to say the screen has something new to show. */
@@ -69,7 +87,7 @@ function sameLanes(a: readonly LiveLane[], b: readonly LiveLane[]): boolean {
 }
 
 export function useLiveRounds(opts: UseLiveRoundsOptions): UseLiveRounds {
-  const { role, playerId = null, scope, hold = false, frozen = false } = opts;
+  const { role, playerId = null, scope, hold = false, frozen = false, listen = role === 'coach' } = opts;
   const zone = opts.initial.zone;
   const [snapshot, setSnapshot] = useState<LiveSnapshot>(opts.initial);
   const [moments, setMoments] = useState<LiveMoment[]>([]);
@@ -80,6 +98,9 @@ export function useLiveRounds(opts: UseLiveRoundsOptions): UseLiveRounds {
   const shown = useRef(snapshot);
   const counter = useRef(0);
   const seen = useRef(new Set<string>());
+  const queuedRef = useRef<LiveSnapshot | null>(null);
+  const channelUp = useRef(false);
+  const reschedule = useRef<() => void>(() => {});
   const holdRef = useRef(hold);
   holdRef.current = hold;
   const scopeRef = useRef(scope);
@@ -88,6 +109,7 @@ export function useLiveRounds(opts: UseLiveRoundsOptions): UseLiveRounds {
   // A new server snapshot (router.refresh) replaces what is on screen; it is data, not news.
   useEffect(() => {
     shown.current = opts.initial;
+    queuedRef.current = null;
     setSnapshot(opts.initial);
     setQueued(null);
     setChanges(new Map());
@@ -112,6 +134,7 @@ export function useLiveRounds(opts: UseLiveRoundsOptions): UseLiveRounds {
       }
     }
     shown.current = next;
+    queuedRef.current = null;
     setSnapshot(next);
     setChanges(fresh);
     if (news.length) setMoments((cur) => [...news, ...cur].slice(0, MOMENT_CAP));
@@ -130,10 +153,15 @@ export function useLiveRounds(opts: UseLiveRoundsOptions): UseLiveRounds {
       const view = scopeRef.current;
       const scoped = view ? { ...next, lanes: next.lanes.filter((l) => laneMatchesScope(l, view)) } : next;
       if (sameLanes(shown.current.lanes, scoped.lanes) && shown.current.events.length === scoped.events.length && shown.current.viewerOnCourse === scoped.viewerOnCourse) {
-        // Nothing new: only the clock of the read moves.
+        // Nothing new: only the clock of the read moves (and an update still waiting that this undoes is dropped).
         shown.current = { ...shown.current, fetchedAt: scoped.fetchedAt, roster: scoped.roster };
+        if (queuedRef.current) {
+          queuedRef.current = null;
+          setQueued(null);
+        }
         return;
       }
+      queuedRef.current = scoped;
       setQueued(scoped);
     },
     [],
@@ -162,7 +190,7 @@ export function useLiveRounds(opts: UseLiveRoundsOptions): UseLiveRounds {
       if (hidden()) return;
       if (typeof navigator !== 'undefined' && navigator.onLine === false) setFeed('offline');
       else await read();
-      if (alive && !hidden()) timer = window.setTimeout(tick, POLL_MS);
+      if (alive && !hidden()) timer = window.setTimeout(tick, channelUp.current ? SNAPSHOT_MS : POLL_MS);
     };
     const onVis = () => {
       window.clearTimeout(timer);
@@ -173,18 +201,59 @@ export function useLiveRounds(opts: UseLiveRoundsOptions): UseLiveRounds {
       void tick();
     };
     const onOffline = () => setFeed('offline');
-    timer = window.setTimeout(tick, POLL_MS);
+    timer = window.setTimeout(tick, channelUp.current ? SNAPSHOT_MS : POLL_MS);
+    // The channel going up or down changes how long the next wait is.
+    reschedule.current = () => {
+      window.clearTimeout(timer);
+      if (!hidden()) timer = window.setTimeout(tick, channelUp.current ? SNAPSHOT_MS : POLL_MS);
+    };
     document.addEventListener('visibilitychange', onVis);
     window.addEventListener('online', onOnline);
     window.addEventListener('offline', onOffline);
     return () => {
       alive = false;
       window.clearTimeout(timer);
+      reschedule.current = () => {};
       document.removeEventListener('visibilitychange', onVis);
       window.removeEventListener('online', onOnline);
       window.removeEventListener('offline', onOffline);
     };
   }, [frozen, read]);
+
+  // A broadcast applies to what is queued if something is, else to what is shown, so a burst of them composes.
+  const onMessage = useCallback(
+    (payload: unknown) => {
+      const base = queuedRef.current ?? shown.current;
+      const res = applyBroadcast(base.lanes, payload, base.roster);
+      if (res.needsSnapshot) void read();
+      // A lane whose player's name is not known yet waits for the snapshot that brings it.
+      if (res.changed) incoming({ ...base, lanes: res.lanes.filter((l) => l.name), fetchedAt: new Date().toISOString(), error: false });
+    },
+    [read, incoming],
+  );
+  const readRef = useRef(read);
+  readRef.current = read;
+  const onMessageRef = useRef(onMessage);
+  onMessageRef.current = onMessage;
+
+  // The channel. Coach: the team's coach topic. Player: the team topic, and only while not on the course themselves.
+  const teamId = snapshot.teamId;
+  const topic = frozen || !listen || !teamId ? null : role === 'coach' ? `golf-live:coach:${teamId}` : snapshot.viewerOnCourse ? null : `golf-live:team:${teamId}`;
+  useEffect(() => {
+    if (!topic) return;
+    return joinLiveTopic({
+      topic,
+      realtime: opts.realtime,
+      onMessage: (payload) => onMessageRef.current(payload),
+      onUp: (up) => {
+        channelUp.current = up;
+        reschedule.current();
+        // Anything sent before the join is in the table: catch up once.
+        if (up) void readRef.current();
+      },
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [topic]);
 
   // The queue: an update lands one second after it arrived, unless the person is holding the list.
   useEffect(() => {

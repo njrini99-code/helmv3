@@ -183,3 +183,143 @@ export function laneFromPollRow(row: PollRoundRow, roster: LiveRoster, prev?: Li
     source: 'poll',
   };
 }
+
+// ─────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+// The push path (held migration 20261025050100): the database sends `lane`, `hide` and `gone` on private topics.
+// ─────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+
+/** One hole inside a broadcast: `{ n, p, y, s, at }` (number, par, yards, score, time). */
+export interface LiveMessageHole {
+  n: number;
+  p: number | null;
+  y: number | null;
+  s: number | null;
+  at: string | null;
+}
+
+/**
+ * The payload of version 1 (8.10). `full` says whether `h` is every hole or only the ones that changed; `cur` is the hole
+ * NUMBER the player is on. The player's name is never in it: it comes from the roster.
+ */
+export interface LiveMessageV1 {
+  v: 1;
+  k: 'lane' | 'hide' | 'gone';
+  r: string;
+  p?: string;
+  seq: number;
+  rt?: string;
+  q?: string | null;
+  qr?: number | null;
+  d?: string;
+  c?: string | null;
+  cn?: string | null;
+  hp?: number;
+  sp?: number;
+  cur?: number | null;
+  ph?: string;
+  t?: number;
+  tp?: number | null;
+  st?: number | null;
+  la?: string | null;
+  hd?: string;
+  sh?: string;
+  e?: string | null;
+  late?: boolean;
+  full?: boolean;
+  h?: LiveMessageHole[];
+}
+
+export interface BroadcastResult {
+  lanes: LiveLane[];
+  /** The message could not be applied alone (an unknown round with only some holes, or a player with no name yet): read the snapshot. */
+  needsSnapshot: boolean;
+  /** Whether the lanes differ from the ones given. */
+  changed: boolean;
+}
+
+/** Narrow an unknown channel payload to a version 1 message, or null. */
+export function parseBroadcast(raw: unknown): LiveMessageV1 | null {
+  if (!raw || typeof raw !== 'object') return null;
+  const m = raw as Record<string, unknown>;
+  const k = m.k;
+  if (m.v !== 1 || (k !== 'lane' && k !== 'hide' && k !== 'gone') || typeof m.r !== 'string' || !m.r) return null;
+  const seq = num(m.seq);
+  if (seq == null) return null;
+  return { ...(m as unknown as LiveMessageV1), seq };
+}
+
+const toHole = (h: LiveMessageHole): LiveHole => ({ n: num(h.n) ?? 0, par: num(h.p), yds: num(h.y), score: num(h.s), at: h.at ?? null });
+
+/**
+ * Applies one broadcast to the lanes on screen (8.10). A message older than the lane (`seq`) is dropped; `hide` and
+ * `gone` remove the lane; a partial `lane` message merges only the holes it names, and when the round is not known it asks
+ * for a snapshot instead of guessing. Pure: the hook turns the result into a queued update.
+ */
+export function applyBroadcast(lanes: readonly LiveLane[], raw: unknown, roster: LiveRoster): BroadcastResult {
+  const msg = parseBroadcast(raw);
+  const same: BroadcastResult = { lanes: [...lanes], needsSnapshot: false, changed: false };
+  if (!msg) return same;
+  const at = lanes.findIndex((l) => l.roundId === msg.r);
+  const known = at >= 0 ? lanes[at]! : null;
+
+  if (msg.k === 'hide' || msg.k === 'gone') {
+    if (!known) return same;
+    // A hide older than what is on screen is a stale message; a gone always wins (the round no longer exists).
+    if (msg.k === 'hide' && msg.seq <= known.seq) return same;
+    return { lanes: lanes.filter((l) => l.roundId !== msg.r), needsSnapshot: false, changed: true };
+  }
+
+  if (known && msg.seq <= known.seq) return same;
+  const phase = PHASES.find((p) => p === msg.ph) ?? known?.phase;
+  const share = SHARES.find((s) => s === msg.sh) ?? known?.share;
+  const playerId = msg.p ?? known?.playerId;
+  if (!phase || !share || !playerId) return { ...same, needsSnapshot: !known };
+
+  let holes: LiveHole[];
+  if (msg.full === true && Array.isArray(msg.h)) {
+    holes = msg.h.map(toHole).filter((h) => h.n >= 1 && h.n <= 18);
+  } else if (known) {
+    const byNumber = new Map(known.holes.map((h) => [h.n, h]));
+    for (const h of (Array.isArray(msg.h) ? msg.h : []).map(toHole)) if (h.n >= 1 && h.n <= 18) byNumber.set(h.n, h);
+    holes = [...byNumber.values()];
+  } else {
+    // An unknown round with only the holes that changed: the snapshot has the rest.
+    return { ...same, needsSnapshot: true };
+  }
+  holes.sort((a, b) => a.n - b.n);
+
+  const holesPlanned = msg.hp != null ? planned(msg.hp) : (known?.holesPlanned ?? 18);
+  const name = known?.name || roster[playerId] || '';
+  const next: LiveLane = {
+    roundId: msg.r,
+    playerId,
+    name,
+    initials: initials(name),
+    roundType: msg.rt ? normalizeRoundType(msg.rt) : (known?.roundType ?? 'practice'),
+    qualifierId: msg.q !== undefined ? msg.q : (known?.qualifierId ?? null),
+    qualifierRound: msg.qr !== undefined ? msg.qr : (known?.qualifierRound ?? null),
+    courseId: msg.c !== undefined ? msg.c : (known?.courseId ?? null),
+    courseName: msg.cn !== undefined ? msg.cn : (known?.courseName ?? null),
+    roundDate: msg.d ?? known?.roundDate ?? '',
+    holesPlanned,
+    startPosition: msg.sp != null ? normalizeStartHole(msg.sp, holesPlanned) : (known?.startPosition ?? 1),
+    currentHole: msg.cur !== undefined ? holeNumberOrNull(msg.cur) : (known?.currentHole ?? null),
+    share,
+    phase,
+    thru: num(msg.t) ?? thruOf(holes),
+    toPar: msg.tp !== undefined ? num(msg.tp) : (known?.toPar ?? null),
+    strokes: msg.st !== undefined ? num(msg.st) : (known?.strokes ?? null),
+    holes,
+    lastHoleAt: msg.la !== undefined ? msg.la : (known?.lastHoleAt ?? null),
+    heardAt: msg.hd ?? known?.heardAt ?? new Date().toISOString(),
+    startedAt: known?.startedAt ?? null,
+    endedAt: msg.e !== undefined ? msg.e : (known?.endedAt ?? null),
+    seq: msg.seq,
+    source: 'live',
+  };
+  const out = [...lanes];
+  if (at >= 0) out[at] = next;
+  else out.push(next);
+  // A player whose name the roster does not have yet is shown only once the snapshot brings it.
+  return { lanes: out, needsSnapshot: !name, changed: true };
+}

@@ -17,6 +17,10 @@ Home:                    src/app/golf/(dashboard)/dashboard/page.tsx loads the s
 Player Home:             the same page loads loadPlayerLive beside loadPlayerHome (Promise.all); PlayerHome and PlayerHomePhone
                          mount OwnLiveCard. Strokes gained by leg (practice only) are computed on the server from the shots so
                          far (calculateStatsFromShots, the team's sg_scale_for_player): reads only
+Push:                    src/clubhouse/live/channel.ts joinLiveTopic (private topic, token auth, backoff 1 2 4 8 16 30 s, leaves after 5
+                         hidden minutes); use-live-rounds applies lane, hide and gone by seq through applyBroadcast and the 1 s queue.
+                         While the channel is up the poll is a 60 s snapshot, else 20 s. The qualifier page joins the same coach topic
+                         (qualifiers/live.ts useLiveStandings) and re-reads through its 5 s gate.
 Sharing:                 src/clubhouse/live/share-ports.ts (browser reads of golf_round_live_prefs and golf_round_live, and the three
                          actions in src/app/golf/actions/round-live.ts); the controls are LiveShareField (Round setup),
                          LiveShareSheet and the Exit sheet's Sharing row (RoundRuntime, new and continued rounds) and

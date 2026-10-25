@@ -1,9 +1,11 @@
 'use client';
 
-import { useCallback, useEffect, useReducer, useState } from 'react';
+import { useCallback, useEffect, useReducer, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
 import { chReport } from '../../lib/track';
+import { joinLiveTopic, type LiveRealtime } from '../../live/channel';
+import { parseBroadcast } from '../../live/live-rounds-adapter';
 
 /**
  * What the Live chip may say (P009-B2): `live` only while the realtime feed is subscribed; `paused` when it errored,
@@ -103,6 +105,12 @@ export function changeMatters(payload: { new?: Record<string, unknown> | null } 
   return !before || before.updated_at !== mark.updated_at || before.status !== mark.status;
 }
 
+/** The coach topic's team, and a test seam for the Realtime client. */
+export interface LivePush {
+  teamId: string | null;
+  realtime?: () => LiveRealtime;
+}
+
 export interface ChLiveStandings {
   feed: ChLiveFeed;
   /** Re-read the page, and reopen the feed when it dropped. */
@@ -118,8 +126,18 @@ export interface ChLiveStandings {
  * label (P009-B2); it is still reported. `version` is the data on screen: when
  * it changes, a fresh read landed.
  */
-export function useLiveStandings(qualifierId: string, enabled: boolean, version?: unknown): ChLiveStandings {
+export function useLiveStandings(qualifierId: string, enabled: boolean, version?: unknown, push?: LivePush): ChLiveStandings {
   const router = useRouter();
+  // One refresh gate for both feeds (the 800 ms debounce and the 5 s gap), and whether the push channel is carrying the news.
+  const gate = useRef<{ timer: number | undefined; last: number }>({ timer: undefined, last: 0 });
+  const pushUp = useRef(false);
+  const scheduleRefresh = useCallback(() => {
+    window.clearTimeout(gate.current.timer);
+    gate.current.timer = window.setTimeout(() => {
+      gate.current.last = Date.now();
+      router.refresh();
+    }, refreshDelay(Date.now(), gate.current.last));
+  }, [router]);
   const [state, dispatch] = useReducer(feedReduce, FEED_START);
   const [epoch, setEpoch] = useState(0);
 
@@ -136,20 +154,17 @@ export function useLiveStandings(qualifierId: string, enabled: boolean, version?
     if (!enabled) return;
     // The cleanup's removeChannel answers CLOSED through this same callback: once torn down, nothing it says is shown.
     let alive = true;
-    let timer: number | undefined;
-    let lastRefreshAt = 0;
     const seen = new Map<string, RoundMark>();
     dispatch({ type: 'reset' });
     const sb = createClient();
     const channel = sb
       .channel(`ch-qualifier-${qualifierId}`)
       .on('postgres_changes', { event: '*', schema: 'public', table: 'golf_rounds', filter: `qualifier_id=eq.${qualifierId}` }, (payload) => {
+        // With the push channel up the news comes from the live table's own broadcasts, one per real change: this feed only
+        // keeps the page's Live label honest, and no longer re-reads the page for every autosave (the recompute storm).
+        if (pushUp.current) return;
         if (!changeMatters(payload as { new?: Record<string, unknown> | null }, seen)) return;
-        window.clearTimeout(timer);
-        timer = window.setTimeout(() => {
-          lastRefreshAt = Date.now();
-          router.refresh();
-        }, refreshDelay(Date.now(), lastRefreshAt));
+        scheduleRefresh();
       })
       .subscribe((status) => {
         if (!alive) return;
@@ -159,10 +174,35 @@ export function useLiveStandings(qualifierId: string, enabled: boolean, version?
       });
     return () => {
       alive = false;
-      window.clearTimeout(timer);
+      window.clearTimeout(gate.current.timer);
       void sb.removeChannel(channel);
     };
-  }, [qualifierId, enabled, router, epoch]);
+  }, [qualifierId, enabled, router, epoch, scheduleRefresh]);
+
+  // The push channel (held migration 20261025050100): the team's coach topic carries a message when a live row really
+  // changes. One about this qualifier re-reads the page through the same gate. Until the migration is applied the join
+  // never reaches SUBSCRIBED and the postgres_changes feed above does the work, as before.
+  const teamId = push?.teamId ?? null;
+  const realtime = push?.realtime;
+  useEffect(() => {
+    if (!enabled || !teamId) return;
+    return joinLiveTopic({
+      topic: `golf-live:coach:${teamId}`,
+      realtime,
+      surface: 'qualifiers.push',
+      onUp: (up) => {
+        pushUp.current = up;
+      },
+      onMessage: (payload) => {
+        const msg = parseBroadcast(payload);
+        if (!msg) return;
+        // A lane names its qualifier; hide and gone do not, and are rare enough to re-read for.
+        if (msg.k === 'lane' && msg.q !== qualifierId) return;
+        scheduleRefresh();
+      },
+    });
+  }, [enabled, teamId, qualifierId, realtime, scheduleRefresh]);
+  useEffect(() => () => void (pushUp.current = false), []);
 
   useEffect(() => {
     if (!enabled) return;

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { laneFromLiveRow, laneFromPollRow, type GolfRoundLiveRow, type PollRoundRow } from '../live-rounds-adapter';
+import { applyBroadcast, laneFromLiveRow, laneFromPollRow, parseBroadcast, type GolfRoundLiveRow, type PollRoundRow } from '../live-rounds-adapter';
 
 const ROSTER = { p1: 'Sofia Reyes' };
 
@@ -125,5 +125,67 @@ describe('laneFromPollRow (v0)', () => {
   it('ignores a score of zero and a par out of range', () => {
     const lane = laneFromPollRow(pollRow({ plan: [{ number: 1, par: 12 }], golf_holes: [{ hole_number: 1, par: null, score: 0, yardage: 0 }] }), ROSTER)!;
     expect(lane.holes).toEqual([{ n: 1, par: null, yds: null, score: null, at: null }]);
+  });
+});
+
+
+describe('the broadcast path (8.10)', () => {
+  const base = () => laneFromLiveRow(liveRow({ seq: 5 }), ROSTER)!;
+  const msg = (over: Record<string, unknown> = {}) => ({ v: 1, k: 'lane', r: 'r1', p: 'p1', seq: 6, rt: 'qualifier', d: '2026-10-14', hp: 18, sp: 1, cur: 5, ph: 'on_course', t: 4, tp: -2, st: 15, la: '2026-10-14T17:45:00Z', hd: '2026-10-14T17:45:00Z', sh: 'coaches', late: false, full: false, h: [{ n: 4, p: 3, y: 176, s: 3, at: '2026-10-14T17:45:00Z' }], ...over });
+
+  it('parses version 1 and nothing else', () => {
+    expect(parseBroadcast(msg())).toMatchObject({ k: 'lane', r: 'r1', seq: 6 });
+    expect(parseBroadcast(msg({ v: 2 }))).toBeNull();
+    expect(parseBroadcast(msg({ k: 'ping' }))).toBeNull();
+    expect(parseBroadcast(msg({ r: '' }))).toBeNull();
+    expect(parseBroadcast(msg({ seq: 'x' }))).toBeNull();
+    expect(parseBroadcast('lane')).toBeNull();
+    expect(parseBroadcast(null)).toBeNull();
+  });
+
+  it('a partial lane message merges only the holes it names and moves cur, to-par and thru', () => {
+    const r = applyBroadcast([base()], msg(), ROSTER);
+    expect(r).toMatchObject({ changed: true, needsSnapshot: false });
+    const lane = r.lanes[0]!;
+    expect(lane.holes.map((h) => [h.n, h.score])).toEqual([[1, 4], [2, 4], [3, 4], [4, 3]]);
+    expect(lane).toMatchObject({ thru: 4, toPar: -2, strokes: 15, currentHole: 5, seq: 6, source: 'live', name: 'Sofia Reyes' });
+  });
+
+  it('a full lane message replaces the holes, and creates the lane for a round it did not have', () => {
+    const full = msg({ full: true, r: 'r2', p: 'p1', h: [{ n: 1, p: 4, y: 380, s: 4, at: null }, { n: 2, p: 5, y: 500, s: null, at: null }] });
+    const r = applyBroadcast([base()], full, ROSTER);
+    expect(r.lanes.map((l) => l.roundId)).toEqual(['r1', 'r2']);
+    expect(r.lanes[1]!.holes).toHaveLength(2);
+    expect(r.needsSnapshot).toBe(false);
+  });
+
+  it('drops a message that is not newer than the lane (seq), and one with nothing to apply', () => {
+    expect(applyBroadcast([base()], msg({ seq: 5 }), ROSTER)).toMatchObject({ changed: false });
+    expect(applyBroadcast([base()], msg({ seq: 1 }), ROSTER)).toMatchObject({ changed: false });
+    expect(applyBroadcast([base()], { v: 1, k: 'lane' }, ROSTER)).toMatchObject({ changed: false, needsSnapshot: false });
+  });
+
+  it('a partial message for an unknown round asks for the snapshot instead of guessing', () => {
+    const r = applyBroadcast([base()], msg({ r: 'r9', p: 'p9', seq: 1 }), ROSTER);
+    expect(r).toMatchObject({ changed: false, needsSnapshot: true });
+    expect(r.lanes).toHaveLength(1);
+  });
+
+  it('a player the roster does not have yet is applied but asks for the snapshot that brings the name', () => {
+    const r = applyBroadcast([], msg({ full: true, r: 'r7', p: 'p7', seq: 1 }), ROSTER);
+    expect(r).toMatchObject({ changed: true, needsSnapshot: true });
+    expect(r.lanes[0]!.name).toBe('');
+  });
+
+  it('hide removes a lane unless it is older than the lane; gone always does', () => {
+    expect(applyBroadcast([base()], { v: 1, k: 'hide', r: 'r1', seq: 9 }, ROSTER)).toMatchObject({ changed: true, lanes: [] });
+    expect(applyBroadcast([base()], { v: 1, k: 'hide', r: 'r1', seq: 4 }, ROSTER)).toMatchObject({ changed: false });
+    expect(applyBroadcast([base()], { v: 1, k: 'gone', r: 'r1', seq: 1 }, ROSTER)).toMatchObject({ changed: true, lanes: [] });
+    expect(applyBroadcast([base()], { v: 1, k: 'gone', r: 'unknown', seq: 1 }, ROSTER)).toMatchObject({ changed: false });
+  });
+
+  it('cur outside 1 to 18 is unknown, and a 9-hole round is 9', () => {
+    expect(applyBroadcast([base()], msg({ cur: 40 }), ROSTER).lanes[0]!.currentHole).toBeNull();
+    expect(applyBroadcast([base()], msg({ hp: 9 }), ROSTER).lanes[0]!.holesPlanned).toBe(9);
   });
 });
