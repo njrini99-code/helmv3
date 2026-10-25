@@ -324,6 +324,8 @@ ALTER TABLE "public"."golf_confidence_calibration" ENABLE ROW LEVEL SECURITY;
 
 ALTER TABLE "public"."golf_conversation_participants" ENABLE ROW LEVEL SECURITY;
 
+ALTER TABLE "public"."golf_conversation_read_marks" ENABLE ROW LEVEL SECURITY;
+
 ALTER TABLE "public"."golf_conversations" ENABLE ROW LEVEL SECURITY;
 
 ALTER TABLE "public"."golf_course_edit_history" ENABLE ROW LEVEL SECURITY;

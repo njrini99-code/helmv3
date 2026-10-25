@@ -2814,6 +2814,196 @@
   font-weight: 600;
 }
 
+/* Seen by (P-1, handoff 4.34.1): the receipt joins the time line under a group message. The receipt never wraps inside
+   itself; the line may break before it at the largest Text Size. No faces, no left accents. */
+.ch-ms-seen {
+  /* The button takes the time line's own type (12 or 13 by layout): unset, every inherited property follows it. */
+  all: unset;
+  display: inline;
+  white-space: nowrap;
+}
+.ch-ms-seen__w {
+  display: inline-flex;
+  align-items: baseline;
+  gap: var(--ch-space-1);
+}
+.ch-ms-seen__swap {
+  display: inline-grid;
+}
+.ch-ms-seen__swap > * {
+  grid-area: 1 / 1;
+}
+.ch-ms-seen__all {
+  display: inline-flex;
+  align-self: center;
+  color: var(--ch-positive-600);
+}
+.ch-ms-seen.is-open {
+  position: relative;
+  cursor: pointer;
+}
+@media (hover: hover) and (pointer: fine) {
+  .ch-ms-seen.is-open {
+    padding: var(--ch-space-1) var(--ch-space-2);
+    margin: calc(-1 * var(--ch-space-1)) calc(-1 * var(--ch-space-2));
+    transition: color var(--ch-dur-quick) var(--ch-ease);
+  }
+  .ch-ms-seen.is-open:hover {
+    color: var(--ch-text-secondary);
+    text-decoration: underline;
+    text-decoration-thickness: 1px;
+    text-underline-offset: 2px;
+  }
+}
+.ch-ms-seen.is-open:focus-visible {
+  outline: 2px solid var(--ch-border-focus);
+  outline-offset: 2px;
+  border-radius: var(--ch-radius-xs);
+}
+/* Phone: a 44 px tap box that grows 2 px up into the column gap and down into the reserve below, never over the
+   bubble (whose press handlers sit on a sibling). 2 + 13.2 + 30 = 45.2 px at the phone time line's 1.1 leading. */
+.ch-msp-thread .ch-ms-seen.is-open::after,
+.ch-ms-seen.is-open::after {
+  content: '';
+  position: absolute;
+  top: -2px;
+  right: -8px;
+  bottom: -30px;
+  left: -8px;
+}
+.ch-msp-thread.is-seen-list .ch-ms-msg.is-group.is-mine.is-last {
+  margin-bottom: var(--ch-space-6);
+}
+@media (pointer: coarse) and (min-width: 821px) {
+  .ch-ms-msg.is-group.is-mine.is-last:has(.ch-ms-seen.is-open) {
+    margin-bottom: var(--ch-space-4);
+  }
+}
+@media (hover: hover) and (pointer: fine) {
+  .ch-ms-seen.is-open::after {
+    content: none;
+  }
+}
+
+/* The list: a sheet on the phone, a popover on desktop (radius 16, opaque, no coloured band). */
+.ch-seen-pop {
+  position: fixed;
+  z-index: calc(var(--ch-z-popover) + 1);
+  display: flex;
+  flex-direction: column;
+  width: 320px;
+  max-height: min(60vh, 440px);
+  border-radius: var(--ch-radius-lg);
+  background: var(--ch-bg-surface);
+  box-shadow: var(--ch-elevation-overlay), 0 0 0 1px var(--ch-border-subtle);
+  color: var(--ch-text-primary);
+}
+.ch-seen-pop__head {
+  padding: var(--ch-space-3) var(--ch-space-4) var(--ch-space-2);
+}
+.ch-seen-pop__title {
+  display: flex;
+  align-items: center;
+  gap: var(--ch-space-2);
+  margin: 0;
+  font: var(--ch-type-15-strong);
+  letter-spacing: var(--ch-track-15);
+}
+.ch-seen-pop__title:focus {
+  outline: none;
+}
+.ch-seen-pop__title svg,
+.ch-modal__titles svg {
+  color: var(--ch-positive-600);
+}
+.ch-seen-pop__quote {
+  margin: var(--ch-space-1) 0 0;
+  overflow: hidden;
+  color: var(--ch-text-tertiary);
+  font: var(--ch-type-13);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.ch-seen-pop__list {
+  min-height: 0;
+  padding: var(--ch-space-1) var(--ch-space-2) var(--ch-space-3);
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+.ch-seen-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--ch-space-2);
+}
+.ch-seen-sec__h {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  margin: var(--ch-space-2) 0 0;
+  padding: var(--ch-space-1) 0;
+  background: var(--ch-bg-surface);
+  color: var(--ch-text-secondary);
+  font: var(--ch-type-13-strong);
+}
+.ch-seen-sec__rows {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.ch-seen-row {
+  display: grid;
+  grid-template-columns: 36px minmax(0, 1fr);
+  align-items: center;
+  gap: var(--ch-space-3);
+  min-height: 56px;
+  padding: var(--ch-space-2) 0;
+}
+.ch-seen-pop .ch-seen-row {
+  grid-template-columns: 28px minmax(0, 1fr);
+  gap: var(--ch-space-3);
+  min-height: 40px;
+  padding: var(--ch-space-1) var(--ch-space-2);
+  border-radius: var(--ch-radius-sm);
+}
+.ch-seen-row__body {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+/* The separator starts at the name column (48 px in), from each section's second row. */
+.ch-seen-row + .ch-seen-row .ch-seen-row__body::before {
+  content: '';
+  position: absolute;
+  top: calc(-1 * var(--ch-space-2));
+  right: 0;
+  left: 0;
+  height: var(--ch-hairline-w);
+  background: var(--ch-border-subtle);
+}
+.ch-seen-row__name {
+  overflow: hidden;
+  color: var(--ch-text-primary);
+  font: var(--ch-type-16-medium);
+  letter-spacing: var(--ch-track-16);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.ch-seen-pop .ch-seen-row__name {
+  font: var(--ch-type-14-medium);
+  letter-spacing: var(--ch-track-14);
+}
+.ch-seen-row__meta {
+  color: var(--ch-text-tertiary);
+  font: var(--ch-type-13);
+}
+.ch-seen-note {
+  margin: var(--ch-space-2) 0 0;
+  color: var(--ch-text-tertiary);
+  font: var(--ch-type-13);
+}
+
+
 /* Phone text floor (high-fidelity audit F09, PROGRESS Q-141): on a phone no text in this stylesheet is drawn
    under 12px. Desktop keeps the sizes above. SVG chart text is in viewBox units, so it takes 12.5px. Kept
    exceptions: the tab bar labels (11.5px, Q-139) and the bell's count numeral. Keep this block last. */

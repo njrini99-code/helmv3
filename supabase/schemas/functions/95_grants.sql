@@ -1457,3 +1457,17 @@ ALTER DEFAULT PRIVILEGES FOR ROLE "postgres" IN SCHEMA "public" GRANT ALL ON FUN
 REVOKE ALL ON FUNCTION "public"."golf_import_player_classes"("p_player_id" "uuid", "p_team_id" "uuid", "p_term" "text", "p_rows" "jsonb") FROM PUBLIC;
 GRANT ALL ON FUNCTION "public"."golf_import_player_classes"("p_player_id" "uuid", "p_team_id" "uuid", "p_term" "text", "p_rows" "jsonb") TO "authenticated";
 GRANT ALL ON FUNCTION "public"."golf_import_player_classes"("p_player_id" "uuid", "p_team_id" "uuid", "p_term" "text", "p_rows" "jsonb") TO "service_role";
+
+REVOKE ALL ON FUNCTION "public"."golf_forget_read_marks"() FROM PUBLIC;
+GRANT ALL ON FUNCTION "public"."golf_forget_read_marks"() TO "service_role";
+
+REVOKE ALL ON FUNCTION "public"."golf_message_seen_times"("p_message_id" "uuid") FROM PUBLIC;
+GRANT ALL ON FUNCTION "public"."golf_message_seen_times"("p_message_id" "uuid") TO "authenticated";
+GRANT ALL ON FUNCTION "public"."golf_message_seen_times"("p_message_id" "uuid") TO "service_role";
+
+REVOKE ALL ON FUNCTION "public"."golf_read_marks_visible"("p_conversation_id" "uuid", "p_user_id" "uuid") FROM PUBLIC;
+GRANT ALL ON FUNCTION "public"."golf_read_marks_visible"("p_conversation_id" "uuid", "p_user_id" "uuid") TO "authenticated";
+GRANT ALL ON FUNCTION "public"."golf_read_marks_visible"("p_conversation_id" "uuid", "p_user_id" "uuid") TO "service_role";
+
+REVOKE ALL ON FUNCTION "public"."golf_record_read_mark"() FROM PUBLIC;
+GRANT ALL ON FUNCTION "public"."golf_record_read_mark"() TO "service_role";

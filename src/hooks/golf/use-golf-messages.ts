@@ -191,6 +191,61 @@ export interface GolfMessage extends GolfMessageRow {
    * asking for them and are not invented here.
    */
   sendOutcome?: 'refused' | 'unknown';
+  /**
+   * CLIENT-ONLY: an optimistic row the server hasn't echoed yet (P-1 Seen by: a message still sending carries no
+   * receipt). The realtime echo and every fetch replace the row without it.
+   */
+  pending?: boolean;
+}
+
+/**
+ * Every current member's `last_read_at` in a conversation (P-1 Seen by). `error` keeps the last map it held, so a
+ * failed refetch never draws a false zero; a viewer missing from the members (removed) is an error with no map.
+ */
+export interface GolfReadMarks {
+  status: 'loading' | 'ready' | 'error';
+  byUser: ReadonlyMap<string, string | null>;
+}
+
+/** The viewer-scoped cache key of a conversation's read map. */
+export function readMarksCacheKey(conversationId: string, viewerUserId: string): string {
+  return `golf.readmarks:${conversationId}:${viewerUserId}`;
+}
+
+/** A read only ever moves forward: an older or equal `last_read_at` for someone is ignored (out-of-order realtime). */
+export function monotonicReadMark(prev: ReadonlyMap<string, string | null>, userId: string, lastReadAt: string | null): ReadonlyMap<string, string | null> {
+  if (!lastReadAt) return prev;
+  const held = prev.get(userId);
+  if (held && Date.parse(held) >= Date.parse(lastReadAt)) return prev;
+  const next = new Map(prev);
+  next.set(userId, lastReadAt);
+  return next;
+}
+
+/** One member's seen time for a message; `exact` is false when it is the read mark that covered it, not a recorded open. */
+export type GolfSeenTime = { userId: string; seenAt: string; exact: boolean };
+
+/**
+ * P-1 slice 9: per-message seen times from `golf_message_seen_times`. The migration is HELD, so until it is applied
+ * the function is missing and this returns 'unavailable' (PGRST202 / 42883) and the list keeps its count-only rows.
+ * Any other failure returns null: the caller shows what it already had, never a false zero.
+ */
+export async function fetchSeenTimes(
+  supabase: Pick<ReturnType<typeof createClient>, 'rpc'>,
+  messageId: string,
+): Promise<GolfSeenTime[] | 'unavailable' | null> {
+  // Not in the generated types until the held migration is applied.
+  const rpc = supabase.rpc as unknown as (fn: string, args: Record<string, unknown>) => PromiseLike<{ data: unknown; error: { code?: string } | null }>;
+  try {
+    const { data, error } = await rpc('golf_message_seen_times', { p_message_id: messageId });
+    if (error) return error.code === 'PGRST202' || error.code === '42883' ? 'unavailable' : null;
+    if (!Array.isArray(data)) return null;
+    return data
+      .filter((r): r is { user_id: string; seen_at: string; exact: boolean | null } => typeof r?.user_id === 'string' && typeof r?.seen_at === 'string')
+      .map((r) => ({ userId: r.user_id, seenAt: r.seen_at, exact: r.exact === true }));
+  } catch {
+    return null;
+  }
 }
 
 // Keep old name for backward compatibility
@@ -458,6 +513,13 @@ export function useGolfMessages(
   // consumer (MessageThreadPane) reads this to render a recoverable error instead.
   const [error, setError] = useState<boolean>(false);
   const [otherParticipantLastReadAt, setOtherParticipantLastReadAt] = useState<string | null>(null);
+  const warmMarks =
+    canReadCache && conversationId && viewerUserId
+      ? readCachedResource<Array<[string, string | null]>>(readMarksCacheKey(conversationId, viewerUserId))
+      : null;
+  const [readMarks, setReadMarks] = useState<GolfReadMarks>(() =>
+    warmMarks?.data ? { status: 'ready', byUser: new Map(warmMarks.data) } : { status: 'loading', byUser: new Map() },
+  );
   const [isOtherTyping, setIsOtherTyping] = useState(false);
   const [currentUserId, setCurrentUserId] = useState<string | null>(viewerUserId ?? null);
   /**
@@ -583,13 +645,44 @@ export function useGolfMessages(
     // G-13: dropped if the reader moved on while this was in flight.
     if (liveConversationIdRef.current !== conversationId) return;
 
-    if (participants) {
+    if (participantsError || !participants) {
+      // Keep the map held so far: a failed refetch never draws a false zero.
+      setReadMarks((prev) => ({ status: 'error', byUser: prev.byUser }));
+      return;
+    }
+    if (!participants.some((p) => p.user_id === uid)) {
+      // The viewer is no longer a member (removed): no receipts.
+      setReadMarks({ status: 'error', byUser: new Map() });
+      return;
+    }
+    const byUser = new Map(participants.map((p) => [p.user_id, p.last_read_at] as [string, string | null]));
+    setReadMarks({ status: 'ready', byUser });
+    if (getCacheEpoch() === cacheEpochAtMountRef.current) {
+      writeCachedResourceIfCurrent(readMarksCacheKey(conversationId, uid), [...byUser], cacheEpochAtMountRef.current);
+    }
+    // Direct threads only (exactly two members): "the other participant" is meaningless in a group, which used to
+    // keep an arbitrary member's time here (P-1 8.1). A group never sets isRead.
+    if (participants.length === 2) {
       const otherParticipant = participants.find(p => p.user_id !== uid);
-      if (otherParticipant) {
-        setOtherParticipantLastReadAt(otherParticipant.last_read_at);
-      }
+      if (otherParticipant) setOtherParticipantLastReadAt(otherParticipant.last_read_at);
+    } else {
+      setOtherParticipantLastReadAt(null);
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [conversationId]);
+
+  const fetchOtherParticipantReadStatusRef = useRef(fetchOtherParticipantReadStatus);
+  fetchOtherParticipantReadStatusRef.current = fetchOtherParticipantReadStatus;
+  const readMarksSizeRef = useRef(0);
+  readMarksSizeRef.current = readMarks.byUser.size;
+  // P-1: back from the background (iOS pauses the socket), read the map again.
+  useEffect(() => {
+    if (!conversationId) return;
+    const onVisible = () => {
+      if (document.visibilityState === 'visible') void fetchOtherParticipantReadStatusRef.current();
+    };
+    document.addEventListener('visibilitychange', onVisible);
+    return () => document.removeEventListener('visibilitychange', onVisible);
   }, [conversationId]);
 
   const fetchMessages = useCallback(async () => {
@@ -846,9 +939,13 @@ export function useGolfMessages(
         },
         (payload) => {
           const updated = payload.new as { user_id: string; last_read_at: string | null };
-          // Only update if it's the other participant's read status
-          if (updated.user_id !== currentUserIdRef.current && updated.last_read_at) {
-            setOtherParticipantLastReadAt(updated.last_read_at);
+          // Every member's read, kept monotonic (a late event never takes a "seen" back).
+          setReadMarks((prev) => (prev.byUser.has(updated.user_id) || prev.status === 'ready'
+            ? { status: prev.status, byUser: monotonicReadMark(prev.byUser, updated.user_id, updated.last_read_at) }
+            : prev));
+          // Only update if it's the other participant's read status (a direct thread: two members).
+          if (updated.user_id !== currentUserIdRef.current && updated.last_read_at && readMarksSizeRef.current <= 2) {
+            setOtherParticipantLastReadAt((held) => (held && Date.parse(held) >= Date.parse(updated.last_read_at!) ? held : updated.last_read_at));
           }
         }
       )
@@ -872,7 +969,20 @@ export function useGolfMessages(
           }
         }
       );
-    observeRealtimeChannel(channel, { feature: 'golf.messages', channelClass: 'golf_conversation', subscriptionType: 'mixed' });
+    // P-1: a channel that dropped and came back refetches the read map once (the first SUBSCRIBED does not).
+    let sawDrop = false;
+    observeRealtimeChannel(channel, {
+      feature: 'golf.messages',
+      channelClass: 'golf_conversation',
+      subscriptionType: 'mixed',
+      onStatus: (status) => {
+        if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT' || status === 'CLOSED') sawDrop = true;
+        else if (status === 'SUBSCRIBED' && sawDrop) {
+          sawDrop = false;
+          void fetchOtherParticipantReadStatusRef.current();
+        }
+      },
+    });
 
     return () => {
       supabase.removeChannel(channel);
@@ -950,6 +1060,7 @@ export function useGolfMessages(
     // reusing it across a retry is safe rather than merely convenient.
     const optimisticId = generateClientMessageId();
     const optimisticMessage: MessageWithReadStatus = {
+      pending: true,
       id: optimisticId,
       conversation_id: conversationId,
       sender_id: currentUserId || '',
@@ -1003,6 +1114,8 @@ export function useGolfMessages(
         throw new Error('Failed to send message');
       }
 
+      // The server confirmed it: no longer pending, even if the realtime echo is late (P-1: "Sent" can show).
+      setMessages(prev => prev.map(m => (m.id === optimisticId && m.pending ? { ...m, pending: false } : m)));
       return true;
     } catch (error) {
       // Retain the message, marked failed — see markSendFailed (G-19) — and
@@ -1168,6 +1281,9 @@ export function useGolfMessages(
      * follows, kept in order by its time.
      */
     insertConfirmed: (row: MessageWithReadStatus) => setMessages((prev) => applyRealtimeMessageInsert(prev, row)),
+    /** P-1 Seen by: every member's last_read_at, kept monotonic; `refetchReadMarks` reads it again. */
+    readMarks,
+    refetchReadMarks: fetchOtherParticipantReadStatus,
     isOtherTyping,
     sendTypingStatus,
     currentUserId,

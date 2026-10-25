@@ -294,6 +294,12 @@ CREATE INDEX "idx_golf_conv_participants_conv_id" ON "public"."golf_conversation
 
 CREATE INDEX "idx_golf_conv_participants_user_id" ON "public"."golf_conversation_participants" USING "btree" ("user_id");
 
+CREATE INDEX "idx_golf_read_marks_conv_read_at" ON "public"."golf_conversation_read_marks" USING "btree" ("conversation_id", "read_at") INCLUDE ("user_id", "is_baseline");
+
+CREATE INDEX "idx_golf_read_marks_user_id" ON "public"."golf_conversation_read_marks" USING "btree" ("user_id");
+
+CREATE UNIQUE INDEX "uq_golf_read_marks_baseline" ON "public"."golf_conversation_read_marks" USING "btree" ("conversation_id", "user_id") WHERE "is_baseline";
+
 CREATE INDEX "idx_golf_conversations_created_by" ON "public"."golf_conversations" USING "btree" ("created_by");
 
 CREATE INDEX "idx_golf_conversations_team_channel" ON "public"."golf_conversations" USING "btree" ("team_id", "is_team_channel") WHERE ("is_team_channel" = true);

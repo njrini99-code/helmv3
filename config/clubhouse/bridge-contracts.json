@@ -6122,6 +6122,17 @@
     "catalog": "docs/clubhouse/catalog/messages.md"
   },
   {
+    "id": 70211,
+    "page": "P007",
+    "category": 2,
+    "item": 11,
+    "name": "THE_SEEN_BY_LIST_IS_LOADING",
+    "chCode": "CH-7411",
+    "meaning": "The Seen by list is loading",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/messages.md"
+  },
+  {
     "id": 70301,
     "page": "P007",
     "category": 3,
@@ -6230,6 +6241,17 @@
     "name": "NOTHING_AT_ALL_YET_NO_CONVERSATION_AND",
     "chCode": "CH-7309",
     "meaning": "Nothing at all yet: no conversation and no announcement (D-71)",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/messages.md"
+  },
+  {
+    "id": 70410,
+    "page": "P007",
+    "category": 4,
+    "item": 10,
+    "name": "NOBODY_HAS_SEEN_A_GROUP_MESSAGE_YET",
+    "chCode": "CH-7310",
+    "meaning": "Nobody has seen a group message yet (the Seen by list)",
     "status": "implemented",
     "catalog": "docs/clubhouse/catalog/messages.md"
   },
@@ -6773,6 +6795,17 @@
     "catalog": "docs/clubhouse/catalog/messages.md"
   },
   {
+    "id": 70644,
+    "page": "P007",
+    "category": 6,
+    "item": 44,
+    "name": "THE_SEEN_BY_LIST_COULDNT_LOAD",
+    "chCode": "CH-7218",
+    "meaning": "The Seen by list couldn't load (P-1)",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/messages.md"
+  },
+  {
     "id": 70701,
     "page": "P007",
     "category": 7,
@@ -7040,6 +7073,28 @@
     "catalog": "docs/clubhouse/catalog/messages.md"
   },
   {
+    "id": 71608,
+    "page": "P007",
+    "category": 16,
+    "item": 8,
+    "name": "A_GROUP_MESSAGES_RECEIPT_CHANGES",
+    "chCode": "CH-7608",
+    "meaning": "A group message's receipt changes (\"Sent\" → \"Seen by 4 of 11\" → \"Seen by everyone\")",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/messages.md"
+  },
+  {
+    "id": 71609,
+    "page": "P007",
+    "category": 16,
+    "item": 9,
+    "name": "THE_SEEN_BY_SHEET_OR_POPOVER_OPENS",
+    "chCode": "CH-7609",
+    "meaning": "The Seen by sheet (phone) or popover (desktop) opens and updates live",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/messages.md"
+  },
+  {
     "id": 71701,
     "page": "P007",
     "category": 17,
@@ -7124,6 +7179,17 @@
     "name": "PHONE_A_MESSAGES_ACTIONS_HAVE_A_PATH",
     "chCode": "CH-7804",
     "meaning": "Phone: a message's actions have a path besides the long press (a \"Message actions\" button VoiceOver and keyboards reach, or a right click); each pushed screen is named by its title, and its back link names where it goes (\"Back to Messages\", \"Back to Chat\"). New message opens on its title; a hardware keyboard's Esc is Cancel, and focus returns to New message",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/messages.md"
+  },
+  {
+    "id": 71805,
+    "page": "P007",
+    "category": 18,
+    "item": 5,
+    "name": "THE_RECEIPTS_ACCESSIBLE_NAME_ON_ONE_STABLE",
+    "chCode": "CH-7805",
+    "meaning": "The receipt's accessible name (\"Seen by 9 of 11 people. Show who\") sits on one stable node, its fading copies `aria-hidden`, so a count change isn't announced; the open list says moves politely (\"Eli Brandt has seen it.\")",
     "status": "implemented",
     "catalog": "docs/clubhouse/catalog/messages.md"
   },

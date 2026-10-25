@@ -333,13 +333,12 @@ export function AnnouncementPane({ api, a, onBack }: { api: ChMessagesApi; a: Ch
                       <Avatar name={x.name} size={30} />
                       <span style={{ minWidth: 0 }}>
                         <b>{x.name}</b>
+                        {/* P-1 8.6: the act is acknowledging, not reading; "Read" appears nowhere in Messages. */}
                         <span className="ch-num">
-                          {dayLabel(x.at, api.now, api.timeZone)} · {clock(x.at, api.timeZone, api.clock)}
+                          Acknowledged {dayLabel(x.at, api.now, api.timeZone)} · {clock(x.at, api.timeZone, api.clock)}
                         </span>
                       </span>
-                      <Badge tone="positive" dot>
-                        Read
-                      </Badge>
+                      <span />
                     </div>
                   ))}
                 </div>

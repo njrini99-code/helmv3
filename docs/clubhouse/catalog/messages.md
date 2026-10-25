@@ -97,6 +97,7 @@ the thread with Retry (CH-7016), and the draft is never lost.
 | CH-7215 | The Add sheet's team list doesn't load | "The team list didn’t load" Try again | `AddMembersModal` | messages.test › CH-7215 |
 | CH-7216 | A conversation's messages don't refresh while an earlier copy is shown | The messages stay; above them "This conversation may be out of date" + "It didn’t refresh…" Try again | `Thread`, `PhoneThread` | messages.test › CH-7216 |
 | CH-7217 | Pending attachment recovery cannot be checked | "Couldn’t check a pending send" + "Try again before sending another message." Try again; ordinary Send stays locked | `Composer` | messages.test › CH-7217 |
+| CH-7218 | The Seen by list couldn't load (P-1) | "Couldn’t load who’s seen this" + "Try again in a moment." Retry; the receipt keeps the copy it held | `SeenByBody` | messages-seen-by.test › CH-7218 |
 
 ## 73xx Empty
 
@@ -111,6 +112,7 @@ the thread with Retry (CH-7016), and the draft is never lost.
 | CH-7307 | Everyone on the team is already in the group (Add) | "Everyone on the team is already in this group." | `AddMembersModal` | messages.test › CH-7307 |
 | CH-7308 | Signed in with no team (coach or player) | The page empty state: "You aren’t on a team yet" + "Messages open once you’re on a team roster, with your coaches and teammates." + Open team settings (a coach's Team, a player's Golf profile; the route passes the role) | `MessagesNoTeam`, from the route | messages.test › CH-7308 |
 | CH-7309 | Nothing at all yet: no conversation and no announcement (D-71) | The page empty state: "No conversations yet" + (coach) "Start a thread with the whole team or message a player directly." / (player) "Message a coach or a teammate. Team announcements show up here too." + New message; the rail and thread empties (CH-7301, CH-7305) show only once something is listed | `MessagesFirstRun` (desktop and phone) | messages.test › CH-7309 |
+| CH-7310 | Nobody has seen a group message yet (the Seen by list) | Title "Not seen yet"; only Not yet, with when each last opened the chat | `SeenByBody` | messages-seen-by.test › CH-7310 |
 
 ## 74xx Loading
 
@@ -126,6 +128,7 @@ the thread with Retry (CH-7016), and the draft is never lost.
 | CH-7408 | A message's attachments are loading | A skeleton file tile | `Attachments` | messages.test › CH-7408 |
 | CH-7409 | The shared files are loading (Details) | A skeleton row | `FilesPanel`, `FilesSection` | messages.test › CH-7409 |
 | CH-7410 | The Add sheet's list is loading | Three skeleton rows | `AddMembersModal` | messages.test › CH-7410 |
+| CH-7411 | The Seen by list is loading | Three skeleton rows, `aria-busy`; the title reads "Seen by" alone | `SeenByBody` | messages-seen-by.test › CH-7411 |
 
 ## 75xx Confirm
 
@@ -147,6 +150,8 @@ the thread with Retry (CH-7016), and the draft is never lost.
 | CH-7605 | Opening another conversation or announcement (desktop) | The new one settles in with a 6px rise (260ms) while the last fades out (180ms), hidden from assistive tech; each keeps its own scroll and a thread opens at its end. The first one a visit opens (the newest thread, or a link's) appears at once. Instant with reduced motion | `Swap` keyed on the pane's turn in `MessagesDesktop` | messages.test › CH-7605; preview (the timing) |
 | CH-7606 | Changing the inbox filter on the phone (All, Unread, Groups) | The chosen chip takes the green fill and ink (a layer that fades in over the quick beat) while the last one lets go; the list under it settles in with a 6px rise (260ms) as the last fades out (180ms), hidden from assistive tech. Typing in Search filters in place. Instant with reduced motion | `.ch-msp-chip` transitions; `Swap` keyed on the filter in `PhoneInbox` | preview (the timing, WebKit 390) |
 | CH-7607 | Muting a conversation from its row (owner decision 14) | The row's Mute… opens this sheet on that conversation, reading its mute as it opens; the same choices as the thread's Details | `RowMuteModal` in `MessagesView.tsx` | conv-context-menu.test › CH-7607 |
+| CH-7608 | A group message's receipt changes ("Sent" → "Seen by 4 of 11" → "Seen by everyone") | The words cross-fade in place (180ms), the double check arrives on everyone; nothing on first paint, instant with reduced motion | `SeenByReceipt` | messages-seen-by.test › the receipt |
+| CH-7609 | The Seen by sheet (phone) or popover (desktop) opens and updates live | Phone: a bottom sheet; desktop: a popover above the receipt (radius 16, opaque). Not yet first; a person who opens the chat moves to Seen | `SeenBySheet`, `SeenByPopover` | messages-seen-by.test › the list |
 
 ## 77xx Haptics
 
@@ -165,3 +170,4 @@ the thread with Retry (CH-7016), and the draft is never lost.
 | CH-7802 | Search results are announced as they arrive; desktop Enter sends and Shift+Enter adds a line; phone Return adds a line and Send sends. Desktop React: the reaction bar takes focus on its first reaction, ← → Home End move along it, Esc or a pick returns focus to React, Tab moves on | `aria-live`, key handlers | messages-audit.test › A-26; preview |
 | CH-7803 | No axe violations in any preview state, 1280px and 390px | `npm run clubhouse:a11y` | a11y scan |
 | CH-7804 | Phone: a message's actions have a path besides the long press (a "Message actions" button VoiceOver and keyboards reach, or a right click); each pushed screen is named by its title, and its back link names where it goes ("Back to Messages", "Back to Chat"). New message opens on its title; a hardware keyboard's Esc is Cancel, and focus returns to New message | `Bubble` `onActions`, `PhoneScreen`, `PhoneBar` | messages.test › CH-7804; messages-audit.test › A-28 |
+| CH-7805 | The receipt's accessible name ("Seen by 9 of 11 people. Show who") sits on one stable node, its fading copies `aria-hidden`, so a count change isn't announced; the open list says moves politely ("Eli Brandt has seen it.") | `SeenByReceipt`, `SeenByBody` | messages-seen-by.test › CH-7805 |

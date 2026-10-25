@@ -113,7 +113,7 @@ Every Bridge ID (D-68: namespace, two-digit category, two-digit item), its catal
 | P004 | 2 | 1 | 1 | 19 | 2 | 12 | 3 | 2 | 1 |  |  | 1 |  | 1 |  | 4 | 4 | 6 | 1 | 1 | 1 |  | 1 | 1 |  | 64 |
 | P005 | 4 | 4 | 2 | 23 | 3 | 25 | 3 | 6 | 1 |  | 1 | 2 |  | 1 | 1 | 4 | 3 | 10 | 1 | 1 | 1 |  | 1 | 1 |  | 98 |
 | P006 | 4 | 5 | 3 | 9 | 4 | 30 | 1 | 8 | 1 | 2 | 5 | 3 | 2 | 2 | 1 | 6 | 3 | 4 | 1 | 1 | 1 |  | 1 | 1 |  | 98 |
-| P007 | 2 | 10 | 1 | 9 | 6 | 43 | 1 | 2 | 2 | 1 | 4 | 2 | 1 | 2 | 1 | 7 | 4 | 4 | 1 | 1 | 1 |  | 2 | 1 |  | 108 |
+| P007 | 2 | 11 | 1 | 10 | 6 | 44 | 1 | 2 | 2 | 1 | 4 | 2 | 1 | 2 | 1 | 9 | 4 | 5 | 1 | 1 | 1 |  | 2 | 1 |  | 114 |
 | P008 | 2 | 1 | 3 | 6 | 15 | 42 | 3 | 10 | 3 | 3 | 8 | 6 | 2 | 2 | 1 | 9 | 8 | 7 | 1 | 1 | 1 |  | 1 | 1 |  | 136 |
 | P009 | 7 | 7 | 4 | 13 | 14 | 34 | 7 | 12 | 2 | 1 | 4 | 4 | 1 | 2 | 1 | 3 | 3 | 4 | 4 | 3 | 2 |  | 4 | 1 |  | 137 |
 | P010 | 3 | 10 |  | 16 | 10 | 25 | 1 | 4 | 1 |  | 4 | 1 | 1 | 2 | 1 | 2 | 2 | 2 | 1 | 1 | 1 |  | 1 | 1 |  | 90 |
@@ -690,6 +690,7 @@ Every Bridge ID (D-68: namespace, two-digit category, two-digit item), its catal
 | 70208 | CH-7408 | 02 Initial loading / skeleton | `A_MESSAGES_ATTACHMENTS_ARE_LOADING` | implemented | A message's attachments are loading |
 | 70209 | CH-7409 | 02 Initial loading / skeleton | `THE_SHARED_FILES_ARE_LOADING` | implemented | The shared files are loading (Details) |
 | 70210 | CH-7410 | 02 Initial loading / skeleton | `THE_ADD_SHEETS_LIST_IS_LOADING` | implemented | The Add sheet's list is loading |
+| 70211 | CH-7411 | 02 Initial loading / skeleton | `THE_SEEN_BY_LIST_IS_LOADING` | implemented | The Seen by list is loading |
 | 70301 |  | 03 Background loading / refresh | `REALTIME_UPDATES_ARRIVE` | implemented | New messages, edits, deletes and reactions arrive over realtime while the page is open, without a reload; the rail refreshes its last message and unread counts the same way. |
 | 70401 | CH-7301 | 04 Empty | `NO_CONVERSATIONS_YET` | implemented | No conversations yet |
 | 70402 | CH-7302 | 04 Empty | `A_RAIL_SEARCH_OR_THE_UNREAD_FILTER` | implemented | A rail search or a filter has nothing |
@@ -700,6 +701,7 @@ Every Bridge ID (D-68: namespace, two-digit category, two-digit item), its catal
 | 70407 | CH-7307 | 04 Empty | `EVERYONE_ON_THE_TEAM_IS_ALREADY_IN` | implemented | Everyone on the team is already in the group (Add) |
 | 70408 | CH-7308 | 04 Empty | `SIGNED_IN_WITH_NO_TEAM` | implemented | Signed in with no team (coach or player) |
 | 70409 | CH-7309 | 04 Empty | `NOTHING_AT_ALL_YET_NO_CONVERSATION_AND` | implemented | Nothing at all yet: no conversation and no announcement (D-71) |
+| 70410 | CH-7310 | 04 Empty | `NOBODY_HAS_SEEN_A_GROUP_MESSAGE_YET` | implemented | Nobody has seen a group message yet (the Seen by list) |
 | 70501 | CH-7101 | 05 Validation | `A_FILE_OF_THE_WRONG_TYPE_OR` | implemented | A file of the wrong type or size |
 | 70502 | CH-7102 | 05 Validation | `AN_ANNOUNCEMENT_WITH_NO_TITLE` | implemented | An announcement with no title |
 | 70503 | CH-7103 | 05 Validation | `AN_ANNOUNCEMENT_WITH_NO_BODY` | implemented | An announcement with no body |
@@ -749,6 +751,7 @@ Every Bridge ID (D-68: namespace, two-digit category, two-digit item), its catal
 | 70641 | CH-7030 | 06 Server / system error | `A_VOTE_IS_REFUSED_BECAUSE_THE_POLL` | implemented | A vote is refused because the poll ended between the tap and the write (only with the held vote guard, OQ-68) |
 | 70642 | CH-7029 | 06 Server / system error | `A_VOTE_ON_A_POLL_ISNT_SAVED` | implemented | A vote on a poll isn't saved (tap a choice in a poll card) |
 | 70643 | CH-7031 | 06 Server / system error | `AN_EDITED_POLL_IS_SENT_AFTER_A` | implemented | An edited poll is sent after a send that threw, and the earlier copy had landed after all |
+| 70644 | CH-7218 | 06 Server / system error | `THE_SEEN_BY_LIST_COULDNT_LOAD` | implemented | The Seen by list couldn't load (P-1) |
 | 70701 | CH-7005 | 07 Network / offline | `THE_NETWORK_DROPS_MID_SEND` | implemented | The network drops mid-send (Safari's "Load failed", Chrome's "Failed to fetch", Firefox's "NetworkError…": the same test the bubble's CH-7017 uses, so the toast and the bubble agree; the browser's text is never shown) |
 | 70801 | CH-7001 | 08 Permission / authorization | `A_LINK_OPENS_A_PLAYER_WHO_ISNT` | implemented | A link opens a player (`?player=`) or a person (`?user=`, a player's Message coach) who isn't on the team |
 | 70802 | CH-7015 | 08 Permission / authorization | `AN_OPEN_CONVERSATION_DISAPPEARS` | implemented | An open conversation disappears (left, or another team's) |
@@ -772,6 +775,8 @@ Every Bridge ID (D-68: namespace, two-digit category, two-digit item), its catal
 | 71605 | CH-7605 | 16 Micro animation | `OPENING_ANOTHER_CONVERSATION_OR_ANNOUNCEMENT` | implemented | Opening another conversation or announcement (desktop) |
 | 71606 | CH-7606 | 16 Micro animation | `CHANGING_THE_INBOX_FILTER_ON_THE_PHONE` | implemented | Changing the inbox filter on the phone (All, Unread, Groups) |
 | 71607 | CH-7607 | 16 Micro animation | `MUTING_A_CONVERSATION_FROM_ITS_ROW` | implemented | Muting a conversation from its row (owner decision 14) |
+| 71608 | CH-7608 | 16 Micro animation | `A_GROUP_MESSAGES_RECEIPT_CHANGES` | implemented | A group message's receipt changes ("Sent" → "Seen by 4 of 11" → "Seen by everyone") |
+| 71609 | CH-7609 | 16 Micro animation | `THE_SEEN_BY_SHEET_OR_POPOVER_OPENS` | implemented | The Seen by sheet (phone) or popover (desktop) opens and updates live |
 | 71701 | CH-7701 | 17 Haptic | `A_CHANGE_FAILS` | implemented | A change fails |
 | 71702 | CH-7702 | 17 Haptic | `A_CHANGE_LANDS` | implemented | A change lands (edited, deleted, muted, group created; acknowledging uses the success pattern) |
 | 71703 | CH-7703 | 17 Haptic | `PICKING_A_REACTION_A_FILTER_OR_A` | implemented | Picking a reaction, a filter or a conversation |
@@ -780,6 +785,7 @@ Every Bridge ID (D-68: namespace, two-digit category, two-digit item), its catal
 | 71802 | CH-7802 | 18 Accessibility | `SEARCH_RESULTS_ARE_ANNOUNCED_AS_THEY_ARRIVE` | implemented | Search results are announced as they arrive; desktop Enter sends and Shift+Enter adds a line; phone Return adds a line and Send sends. Desktop React: the reaction bar takes focus on its first reaction, ← → Home End move along it, Esc or a pick returns focus to React, Tab moves on |
 | 71803 | CH-7803 | 18 Accessibility | `NO_AXE_VIOLATIONS_IN_ANY_PREVIEW_STATE` | reserved | No axe violations in any preview state, 1280px and 390px |
 | 71804 | CH-7804 | 18 Accessibility | `PHONE_A_MESSAGES_ACTIONS_HAVE_A_PATH` | implemented | Phone: a message's actions have a path besides the long press (a "Message actions" button VoiceOver and keyboards reach, or a right click); each pushed screen is named by its title, and its back link names where it goes ("Back to Messages", "Back to Chat"). New message opens on its title; a hardware keyboard's Esc is Cancel, and focus returns to New message |
+| 71805 | CH-7805 | 18 Accessibility | `THE_RECEIPTS_ACCESSIBLE_NAME_ON_ONE_STABLE` | implemented | The receipt's accessible name ("Seen by 9 of 11 people. Show who") sits on one stable node, its fading copies `aria-hidden`, so a count change isn't announced; the open list says moves politely ("Eli Brandt has seen it.") |
 | 71901 |  | 19 Responsive layout | `PHONE_STACK` | implemented | At 820px and below Messages is the phone stack: Inbox, Thread, Details and New message push and pop as screens, never a shrunken desktop. |
 | 72001 |  | 20 Keyboard / input | `ENTER_TO_SEND` | implemented | In the composer Enter sends, Shift+Enter adds a line, and Enter while an IME is composing is left to the IME. |
 | 72101 |  | 21 Performance | `ONE_LOAD_PER_THREAD` | implemented | Opening a thread fetches it and subscribes to it exactly once; the server loader reads the directory in one pass and never throws for a partial read. |

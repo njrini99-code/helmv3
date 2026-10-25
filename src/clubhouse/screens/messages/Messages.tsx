@@ -413,6 +413,7 @@ export function Messages({ data }: { data: ChMessagesData }) {
           replyToId: m.reply_to_id ?? null,
           // A poll whose payload doesn't parse draws as its plain-text copy (`content`), never as a broken card.
           poll: m.kind === 'poll' && !m.is_deleted ? parsePollPayload(m.payload) : null,
+          pending: !!m.pending,
         })),
     [msgs.messages, msgs.currentUserId, selectedId, data.viewerUserId],
   );
@@ -755,6 +756,8 @@ export function Messages({ data }: { data: ChMessagesData }) {
       });
     },
     attachments: loadAttachments,
+    // P-1 Seen by: the open conversation's read map, from the thread's hook.
+    receipts: msgs.readMarks ? { status: msgs.readMarks.status, marks: msgs.readMarks.byUser, retry: () => void msgs.refetchReadMarks?.() } : undefined,
     polls: {
       tally: (messageId, poll) => (responses.ready ? tallyPoll(poll, responses.rows, messageId, data.viewerUserId) : null),
       vote: (messageId, poll, optionIds) => {
