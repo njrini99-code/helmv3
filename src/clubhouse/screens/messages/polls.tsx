@@ -393,7 +393,7 @@ function PollVotesModal({
   const waiting = tally && conv ? order(pollWaiting(tally, [me, ...conv.memberIds])) : [];
   const row = (id: string) => (
     <li key={id} className="ch-ms-pollv__row">
-      <Avatar name={id === me ? api.viewer.name : nameOf(id)} size={28} />
+      <Avatar name={id === me ? api.viewer.name : nameOf(id)} size="sm" />
       <span className="ch-ms-pollv__name">{nameOf(id)}</span>
       {!members.has(id) && <span className="ch-ms-pollv__left">Left the group</span>}
     </li>
@@ -719,7 +719,7 @@ export function PollSheet({ api, conv, open, onClose }: { api: ChMessagesApi; co
           <Button variant="ghost" onClick={onClose}>
             Cancel
           </Button>
-          <Button variant="primary" busy={busy} disabled={!ready} onClick={() => void send()}>
+          <Button variant={earlier ? "secondary" : "primary"} busy={busy} disabled={!ready} onClick={() => void send()}>
             {busy ? "Sending…" : "Send poll"}
           </Button>
         </>
@@ -875,7 +875,7 @@ export function PollSheet({ api, conv, open, onClose }: { api: ChMessagesApi; co
                 Send this version
               </Button>
               <Button
-                variant="ghost"
+                variant="primary"
                 size="sm"
                 onClick={() => {
                   reset();

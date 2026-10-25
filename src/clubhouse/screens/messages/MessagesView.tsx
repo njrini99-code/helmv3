@@ -1511,11 +1511,7 @@ export function ComposerPlus({ api, conv, disabled, onPick }: { api: ChMessagesA
           { label: "Photo or file", icon: Paperclip, onSelect: () => input.current?.click() },
           { label: "Poll", icon: ListChecks, onSelect: () => setPolling(true) },
         ]}
-        trigger={(p) => (
-          <button type="button" className="ch-btn ch-btn--ghost ch-iconbtn ch-btn--sm" aria-label="Add a file or a poll" disabled={disabled} {...p}>
-            <Icon icon={Plus} size={18} />
-          </button>
-        )}
+        trigger={(p) => <IconButton icon={Plus} size="sm" label="Add a file or a poll" disabled={disabled} menu={p} />}
       />
       <input
         ref={input}
