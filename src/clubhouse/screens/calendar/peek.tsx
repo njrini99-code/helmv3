@@ -11,6 +11,7 @@ import { rebuiltHref } from '../../shell/nav';
 import { messagesPrefillHref } from '../messages/prefill';
 import { dayNum, dowOf, fmtHour, monthName, rangeLabel, TYPE_LABEL, type ChCalEvent, type ChCalPerson } from './model';
 import { TYPE_ICON } from './type-icon';
+import { EventLiveRow } from './live-events';
 import { useRowMark } from './change-note';
 
 /**
@@ -54,6 +55,7 @@ export function EventPeekCard({ e, coach, people }: { e: ChCalEvent; coach: bool
         {dowOf(e.date)} {dayNum(e.date)} {monthName(e.date)} · {rangeLabel(e, clock)}
       </span>
       {e.location && <span className="ch-evpeek__m">{e.location}</span>}
+      {coach && <EventLiveRow e={e} />}
       {/* P-14: what changed, in one quiet line (the strike is static here; nothing animates in a peek). */}
       {mark && (
         <span className="ch-evpeek__chg">

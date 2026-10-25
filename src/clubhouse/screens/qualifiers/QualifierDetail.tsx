@@ -30,6 +30,8 @@ import { PrintHead } from './PrintHead';
 import { StandingsSpread } from './StandingsSpread';
 import { createOpenRow, PlayerRounds, type OpenRow } from './RoundsShowcase';
 import { QualifierDetailPhone } from './QualifierDetailPhone';
+import { LiveOnCourse } from './LiveOnCourse';
+import type { ChQOnCourse } from './on-course';
 import { LIST_HREF, noteIfSelectionLink, useStepBack } from './return-state';
 import { CardBodySkeleton, ParLineSkeleton, SecondaryProvider, Streamed, fulfilled, secondaryOf, settled, type ChQDetailView } from './streamed';
 import { useChPhone } from '../../lib/use-phone';
@@ -49,6 +51,7 @@ export function QualifierDetail({
   writes = LIVE_WRITES,
   live = true,
   feed: forcedFeed,
+  onCourse,
 }: {
   data: ChQDetailView;
   /** The courses and the scorecards, streaming in behind the standings. A fixture or a test may give them inside `data` instead. */
@@ -57,6 +60,8 @@ export function QualifierDetail({
   live?: boolean;
   /** The preview's stand-in for the realtime feed (it draws without one): the chip shows this state instead. */
   feed?: { feed: ChLiveFeed; updatedAt: number };
+  /** The live rounds of this qualifier (P-6): the coach's "On the course" section, and the held-back standings of a player mid-round. */
+  onCourse?: ChQOnCourse;
 }) {
   const router = useRouter();
   // Back is a step back in history when the list opened this qualifier (the list returns with its filter, search and place), and the
@@ -77,9 +82,11 @@ export function QualifierDetail({
   const [status, setStatus] = useState<ChQStatus>(data.status);
   const [confirmClose, setConfirmClose] = useState(false);
   useEffect(() => setStatus(data.status), [data.status]);
-  const liveFeed = useLiveStandings(data.id, live && status === 'in_progress', fresh);
+  // A player with a round of their own under way is held back (CH-16621): their board stays as it was until the round is posted.
+  const heldBack = !!onCourse?.heldBack;
+  const liveFeed = useLiveStandings(data.id, live && status === 'in_progress' && !heldBack, fresh, coach && onCourse ? { teamId: onCourse.teamId } : undefined);
   const feed: LiveFeedView = {
-    feed: status !== 'in_progress' ? 'off' : (forcedFeed?.feed ?? liveFeed.feed),
+    feed: status !== 'in_progress' || heldBack ? 'off' : (forcedFeed?.feed ?? liveFeed.feed),
     version: fresh,
     updatedAt: forcedFeed?.updatedAt,
     refresh: liveFeed.refresh,
@@ -173,6 +180,7 @@ export function QualifierDetail({
           }}
           onReopen={reopenNow}
           reopenPending={reopen.pending}
+          onCourse={onCourse}
         />
         {closeConfirm}
       </SecondaryProvider>
@@ -248,6 +256,9 @@ export function QualifierDetail({
 
         <div className="ch-qf-body">
           <div className="ch-qf-col">
+            <SectionBoundary surface="qualifiers.live" label="Players on the course" code="CH-16620">
+              <LiveOnCourse onCourse={onCourse} qualifierId={data.id} day={data.today ?? null} coach={coach} active={status === 'in_progress'} phone={false} />
+            </SectionBoundary>
             <SectionBoundary surface="qualifiers.leaderboard" label="The leaderboard" code="CH-09212">
               <Leaderboard data={data} status={status} stale={stale} feed={feed} openRow={openRow} />
             </SectionBoundary>

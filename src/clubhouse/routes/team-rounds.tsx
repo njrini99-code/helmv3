@@ -1,5 +1,6 @@
 import 'server-only';
 import { getGolfSessionProfile } from '@/lib/auth/session';
+import { loadLiveRounds } from '../data/live-rounds';
 import { loadTeamRounds } from '../data/team-rounds';
 import { TeamRounds } from '../screens/rounds/TeamRounds';
 import { resolveClubhouseTeam } from './team';
@@ -21,5 +22,7 @@ export async function ClubhouseTeamRoundsRoute() {
       </main>
     );
   }
-  return <TeamRounds data={await loadTeamRounds({ teamId: team.teamId })} teamId={team.teamId} />;
+  // The live band is read beside the book, never ahead of it; a failed live read is an empty snapshot, which draws no band.
+  const [data, live] = await Promise.all([loadTeamRounds({ teamId: team.teamId }), loadLiveRounds({ teamId: team.teamId, viewer: { role: 'coach', playerId: null } })]);
+  return <TeamRounds data={data} teamId={team.teamId} live={live} />;
 }

@@ -20,6 +20,7 @@ import { chSpringCurve, CH_EASE } from '../../lib/motion';
 import { chSupportsLinear } from '../../lib/sheet-drag';
 import { useChReducedMotion } from '../../lib/reduced-motion';
 import { EventPeek } from './peek';
+import { EventLiveDot } from './live-events';
 import { MarkBadge, MovedAwayRow, OldSlotLine, agendaSub, markGlyph, useRowMark } from './change-note';
 import type { ChMovedAway } from './change-view';
 import {
@@ -224,6 +225,7 @@ export function EventBlock({
           </span>
         )}
       </span>
+      <EventLiveDot e={e} />
       {showWarn && (
         <span className="ch-ev__warn" aria-hidden="true">
           <Icon icon={TriangleAlert} size={10} />

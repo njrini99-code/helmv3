@@ -799,3 +799,10 @@ CREATE INDEX "golf_trm_parent_idx" ON "public"."golf_tournament_result_marks" US
 CREATE INDEX "golf_trm_round_idx" ON "public"."golf_tournament_result_marks" USING "btree" ("round_event_id", "team_id");
 
 CREATE INDEX "golf_trm_team_idx" ON "public"."golf_tournament_result_marks" USING "btree" ("team_id");
+CREATE INDEX "golf_round_live_course_date_idx" ON "public"."golf_round_live" USING "btree" ("course_id", "round_date") WHERE ("course_id" IS NOT NULL);
+
+CREATE INDEX "golf_round_live_player_idx" ON "public"."golf_round_live" USING "btree" ("player_id");
+
+CREATE INDEX "golf_round_live_qualifier_idx" ON "public"."golf_round_live" USING "btree" ("qualifier_id") WHERE ("qualifier_id" IS NOT NULL);
+
+CREATE INDEX "golf_round_live_team_date_idx" ON "public"."golf_round_live" USING "btree" ("team_id", "round_date" DESC);

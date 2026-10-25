@@ -86,6 +86,15 @@ describe('the phone dock (P001-C1)', () => {
     expect(code('CH-1822')!.getAttribute('href')).toBe(`/golf/dashboard/rounds/continue/${ROUND.id}`);
     expect(resumeRoundLabel({ ...ROUND, hole: null })).toBe('Oakmont CC');
   });
+
+  it('P-6: the score so far rides with the hole, in the dock and on the desktop card; no figure before a hole is scored', () => {
+    expect(resumeRoundLabel({ ...ROUND, toPar: -2 })).toBe('Oakmont CC · Hole 7 · −2');
+    expect(resumeRoundLabel({ ...ROUND, toPar: 0 })).toBe('Oakmont CC · Hole 7 · E');
+    expect(resumeRoundLabel({ ...ROUND, toPar: null })).toBe('Oakmont CC · Hole 7');
+    expect(resumeRoundLabel({ ...ROUND })).toBe('Oakmont CC · Hole 7');
+    render(<ResumeRoundCard round={{ ...ROUND, toPar: 3 }} />);
+    expect(code('CH-1822')!.textContent).toContain('Hole 7 · +3');
+  });
 });
 
 describe('the dock and the keyboard (CH-1820)', () => {

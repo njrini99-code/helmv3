@@ -6,6 +6,7 @@ import type { DataGapAsk } from '@/lib/coachhelm/data-gap/asks';
 import { localDayIso } from '@/lib/golf/local-day';
 import { useNewRoundSession } from '@/lib/golf/round-session/use-new-round-session';
 import { normalizeStartHole } from '@/lib/golf/round-session/play-order';
+import { browserSharePorts } from '../../../live/share-ports';
 import { haptic } from '../../../lib/haptics';
 import { useToast } from '../../../ui/Toast';
 import { RoundEntrySkeleton } from '../RoundsSkeleton';
@@ -223,12 +224,20 @@ export function NewRound({ playerId, dataGapAsks, dataPromptsV2 = false }: { pla
   return (
     <>
       {tracking ? (
-        <RoundRuntime session={session} capture={capture} routes={ROUTES} errorsHeld={session.recovery.open || !!conflict} />
+        <RoundRuntime
+          session={session}
+          capture={capture}
+          routes={ROUTES}
+          errorsHeld={session.recovery.open || !!conflict}
+          // The saved round's id lives in a ref: it is current at any render after the first save, which is when the sheet can open.
+          sharing={{ roundId: engine.savedRoundIdRef.current, type: session.round.type ?? 'practice', ports: browserSharePorts }}
+        />
       ) : today === null || qualifiers === 'loading' ? (
         <RoundEntrySkeleton />
       ) : (
         <RoundSetup
           ports={setupPorts}
+          liveShare={browserSharePorts}
           qualifiers={qualifiers}
           today={today}
           backHref={LIBRARY}

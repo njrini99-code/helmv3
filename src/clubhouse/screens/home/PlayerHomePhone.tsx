@@ -3,6 +3,7 @@
 import { ArrowRight, CalendarDays, ChevronLeft, ChevronRight, Flag, GraduationCap, MessageSquare, Plus } from 'lucide-react';
 import { useMemo, useState } from 'react';
 import type { ChPlayerHome } from '../../data/player-home';
+import type { ChPlayerLive } from '../../data/live-rounds';
 import { Button } from '../../ui/Button';
 import { FigureRow } from '../../ui/Ledger';
 import { EmptyState } from '../../ui/States';
@@ -21,6 +22,8 @@ import { Countdown } from './Countdown';
 import { Today, UpNext, WeekStrip } from './HomePhone';
 import { SinceYouLooked } from './DayCard';
 import { noRoundsYet, playerFailedParts } from './model';
+import { OwnLiveCard } from './OwnLiveCard';
+import { TeammatesLiveCard } from './TeammatesLiveCard';
 import { PlayerGame } from './PlayerGame';
 import { messageCoachHref, MY_STATS, postRoundHref, roundHref } from './player-links';
 import { GirViz, PuttsViz, SgViz } from './RoundViz';
@@ -35,7 +38,7 @@ import { GirViz, PuttsViz, SgViz } from './RoundViz';
  * scorecard inline), scoring and the parts of the game. Same loader and
  * catalog as desktop.
  */
-export function PlayerHomePhone({ data, now: frozen }: { data: ChPlayerHome; now?: string }) {
+export function PlayerHomePhone({ data, now: frozen, live, playerId }: { data: ChPlayerHome; now?: string; /** The player's live round and their team's (P-6); omitted, the own card is not drawn. */ live?: ChPlayerLive; playerId?: string }) {
   usePhoneHero(true);
   const ticking = useNow();
   const now = useMemo(() => (frozen ? new Date(frozen) : ticking), [frozen, ticking]);
@@ -96,6 +99,12 @@ export function PlayerHomePhone({ data, now: frozen }: { data: ChPlayerHome; now
       </header>
 
       <div className="ch-hm-body">
+        {live && playerId && (
+          <SectionBoundary surface="home.live" label="Round in progress">
+            <OwnLiveCard initial={live.snapshot} playerId={playerId} legs={live.legs} frozen={frozen !== undefined} now={frozen !== undefined ? Date.parse(frozen) : undefined} />
+            <TeammatesLiveCard initial={live.snapshot} playerId={playerId} frozen={frozen !== undefined} now={frozen !== undefined ? Date.parse(frozen) : undefined} />
+          </SectionBoundary>
+        )}
         {/* P-14: what the coach changed on the schedule since this device last looked (changes only; a player sees no teammate's rounds here). */}
         <SinceYouLooked rounds={[]} event={null} changes={data.changes ?? []} onOpenRound={() => {}} />
         {!data.week.error && !nothingAhead ? (

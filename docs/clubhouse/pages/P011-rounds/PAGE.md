@@ -24,6 +24,7 @@ earlier observations below retain their original date and scope.
 | Phone spec | [phone/rounds.md](../../phone/rounds.md) |
 | Design boards | [Player - Rounds.html](../../../../design/handoff/Player%20-%20Rounds.html) · [rounds-flow.jsx](../../../../design/handoff/rounds-flow.jsx) · [rounds-course.jsx](../../../../design/handoff/rounds-course.jsx) · [rounds-track.jsx](../../../../design/handoff/rounds-track.jsx) · [rounds-review.jsx](../../../../design/handoff/rounds-review.jsx) · [rounds-flow.css](../../../../design/handoff/rounds-flow.css) · [rounds-track.css](../../../../design/handoff/rounds-track.css) · [rounds-data.js](../../../../design/handoff/rounds-data.js) · [Player - Rounds - Mobile.html](../../../../design/handoff/Player%20-%20Rounds%20-%20Mobile.html) · [rounds-flow.jsx](../../../../design/handoff/rounds-flow.jsx) |
 | Code | [rounds](../../../../src/clubhouse/screens/rounds) · [rounds.ts](../../../../src/clubhouse/data/rounds.ts) · [rounds.tsx](../../../../src/clubhouse/routes/rounds.tsx) · [rounds.css](../../../../src/clubhouse/styles/rounds.css) |
+| Held plans | [live-rounds.md](../../held/data/live-rounds.md) · [live-rounds-realtime.md](../../held/data/live-rounds-realtime.md) |
 | Audits | [ROUNDS_PLAN](../../ROUNDS_PLAN.md) · [PAGE_PERFORMANCE](../../PAGE_PERFORMANCE.md) · [AESTHETIC_AUDIT](../../AESTHETIC_AUDIT.md) · [all audits](../../AUDITS.md) |
 | Tracker | [PROGRESS.md](../../PROGRESS.md), row "Rounds" |
 | Screenshot log | [VERIFY.md, Screenshots](VERIFY.md#screenshots) |

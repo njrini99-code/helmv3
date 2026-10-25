@@ -27,6 +27,8 @@ import { Courses, LiveChip, Selections, StaleStandings } from './QualifierSectio
 import { NinesSkeleton, Streamed } from './streamed';
 import { SerifText } from '../../ui/SerifText';
 import { createOpenRow, PlayerRounds as ShowcaseRounds } from './RoundsShowcase';
+import { LiveOnCourse } from './LiveOnCourse';
+import type { ChQOnCourse } from './on-course';
 
 const LIST = '/golf/dashboard/qualifiers';
 
@@ -51,6 +53,7 @@ export function QualifierDetailPhone({
   onAskClose,
   onReopen,
   reopenPending,
+  onCourse,
 }: {
   data: ChQDetailCore;
   /** The standings are the last good ones, because the latest read of them failed. */
@@ -66,6 +69,7 @@ export function QualifierDetailPhone({
   /** Runs the reopen and answers once the server has: the sheet that asked stays up until then. */
   onReopen: () => Promise<{ success: boolean }>;
   reopenPending: boolean;
+  onCourse?: ChQOnCourse;
 }) {
   const coach = data.role === 'coach';
   const [actions, setActions] = useState(false);
@@ -170,6 +174,10 @@ export function QualifierDetailPhone({
           <ShowcaseRounds data={data} openRow={NO_OPEN_ROW} ownOnly />
         </SectionBoundary>
       )}
+
+      <SectionBoundary surface="qualifiers.live" label="Players on the course" code="CH-16620">
+        <LiveOnCourse onCourse={onCourse} qualifierId={data.id} day={data.today ?? null} coach={coach} active={status === 'in_progress'} phone />
+      </SectionBoundary>
 
       <SectionBoundary surface="qualifiers.leaderboard" label="The leaderboard" code="CH-09212">
         <Board data={data} status={status} stale={stale} feed={feed} onPeek={setPeek} sheetOpen={!!peeked || actions} />

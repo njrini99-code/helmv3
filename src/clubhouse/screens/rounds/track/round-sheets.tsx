@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useRef, useState, type ReactNode } from 'react';
-import { ArrowRight, Bookmark, Check, CirclePlay, Flag, Send, Table2, Trash2, TriangleAlert } from 'lucide-react';
+import { ArrowRight, Bookmark, Check, CirclePlay, Eye, Flag, Send, Table2, Trash2, TriangleAlert } from 'lucide-react';
 import { formatToPar } from '../../../lib/format';
 import { NoData } from '../../../ui/NoData';
 import { useDialogLifetime } from '../../../lib/dialog-lifetime';
@@ -119,6 +119,7 @@ export function ExitSheet({
   onKeep,
   onDiscard,
   roundType,
+  sharing,
 }: {
   open: boolean;
   course: string;
@@ -127,6 +128,8 @@ export function ExitSheet({
   discarding: boolean;
   /** What the round counts as now ("Practice"), and what opens the round-type sheet. Absent: no row. */
   roundType?: { label: string; onChange: () => void };
+  /** Who sees this round live now ("Coaches"), and what opens the Sharing sheet (P-6). Absent: no row. */
+  sharing?: { label: string; onChange: () => void };
   /** Save for later is writing the round (R-12: it shows, and the sheet can't be dismissed under it). */
   saving?: boolean;
   discardError: string | null;
@@ -199,6 +202,15 @@ export function ExitSheet({
               <span>
                 <b>Change round type</b>
                 <em>{roundType.label} now. Changes what it counts toward.</em>
+              </span>
+            </button>
+          )}
+          {sharing && (
+            <button type="button" className="ch-rt-xopt" disabled={busy} onClick={sharing.onChange}>
+              <Icon icon={Eye} size={18} />
+              <span>
+                <b>Sharing</b>
+                <em>{sharing.label} now. Who sees this round live.</em>
               </span>
             </button>
           )}

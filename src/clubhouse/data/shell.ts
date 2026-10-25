@@ -10,6 +10,7 @@ import { isFlagEnabled } from '@/lib/flags/is-enabled';
 import { todayIsoInZone } from '@/lib/golf/timezone';
 import { isoDay } from '../lib/dates';
 import { fullName } from './season';
+import { toParOf } from '../live/model';
 
 export interface ChNextEvent {
   id: string;
@@ -70,6 +71,8 @@ export interface ChRoundInProgress {
   course: string;
   /** The hole the player is on, when the round has recorded one. */
   hole: number | null;
+  /** Strokes over or under par through the holes scored (P-6): the Dock's "Hole 12 · −2". Null until a hole is scored. */
+  toPar?: number | null;
 }
 
 /** A round untouched for this long is not "in progress" for the accessory; the Rounds library still lists it. */
@@ -155,7 +158,7 @@ export async function loadClubhouseShell(teamId: string | undefined, playerId?: 
     playerId
       ? supabase
           .from('golf_rounds')
-          .select('id, course_name, current_hole')
+          .select('id, course_name, current_hole, golf_holes(par, score)')
           .eq('player_id', playerId)
           .eq('is_test', false)
           .eq('status', 'in_progress')
@@ -260,7 +263,7 @@ export async function loadClubhouseShell(teamId: string | undefined, playerId?: 
     askAvailable: askOn,
     classAwareness: isFlagEnabled('class_awareness_v1'),
     course: courseOf(courseRes),
-    roundInProgress: round ? { id: round.id, course: round.course_name?.trim() || 'Your round', hole: round.current_hole ?? null } : null,
+    roundInProgress: round ? { id: round.id, course: round.course_name?.trim() || 'Your round', hole: round.current_hole ?? null, toPar: toParOf(round.golf_holes ?? []) } : null,
     viewerIsHeadCoach: !!staffRes && !staffRes.error && (staffRes.data ?? []).some((row) => row.role === 'head_coach'),
   };
 }

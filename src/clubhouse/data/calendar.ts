@@ -367,7 +367,7 @@ export async function loadCalendar(input: {
       // P-4: the row's updated_at, an opaque concurrency token a move sends back untouched.
       version: r.updated_at ?? null,
       // P-5 WP-P5: the library course the event is at, when one was chosen.
-      courseId: r.course_id ?? null,
+      courseId: cls ? null : (r.course_id ?? null),
       change: cls ? null : (changeMarks.get(r.id) ?? null),
       cancelNote:
         !cls && cancelled && !changeMarks.get(r.id) && r.cancelled_at

@@ -4,6 +4,8 @@ import { HeroToneProvider } from '@/clubhouse/ui/PageHero';
 import { heroToneFrom } from '@/clubhouse/ui/hero-tone';
 import { previewLightTime } from '@/clubhouse/lib/light';
 import { CoachHome } from '@/clubhouse/screens/home/CoachHome';
+import { LiveView } from '@/clubhouse/screens/live/LiveView';
+import { PREVIEW_LIVE_NOW, previewLive, previewOwn } from '@/clubhouse/preview/fixtures-live';
 import { PlayerHome } from '@/clubhouse/screens/home/PlayerHome';
 import { PreviewHub } from '@/clubhouse/preview/PreviewHub';
 import { PreviewRounds } from '@/clubhouse/preview/PreviewRounds';
@@ -165,7 +167,10 @@ import { ChClockProvider } from '@/clubhouse/lib/use-clock';
  *
  *   /clubhouse-preview/home   ?state=empty | eventsonly | norounds | noevents | failed | loading | error | cachefailed | tourfailed | queuefailed | noholes | unranked   (empty and eventsonly are the first-run page)
  *   any screen &at=HH:MM holds the global light; &round=1 adds a round in progress (the Resume accessory)
+ *   /clubhouse-preview/home &live=busy | one | many | finished | event | failed   (the Live now card; P-6)
+ *   /clubhouse-preview/live ?state=busy | one | many | finished | starts | event | longnames | empty | failed | denied   (the coach's live view; P-6)
  *   /clubhouse-preview/home-player ?state=empty | norounds | noevents | failed | loading   (Theo; empty is the first-run page)
+ *   /clubhouse-preview/home-player &live=practice | qualifier | stale | none   (the player's own live card; P-6)
  *   /clubhouse-preview/hub, hub-player ?state=empty | failed | failwrites, &tab=home | ann | travel | docs | tasks
  *   /clubhouse-preview/rounds ?state=idle | many | empty | noseason | failed | unfinished-failed | failwrites   (Jonah)
  *   /clubhouse-preview/round ?state=coach | noshots | noholes | total | holebyhole | nosg   (a round's review)
@@ -208,11 +213,11 @@ export default async function ClubhousePreview({
   searchParams,
 }: {
   params: Promise<{ screen: string }>;
-  searchParams: Promise<{ state?: string; view?: string; date?: string; event?: string; bell?: string; new?: string; section?: string; q?: string; tab?: string; teams?: string; tone?: string; at?: string; round?: string; ask?: string }>;
+  searchParams: Promise<{ state?: string; view?: string; date?: string; event?: string; bell?: string; new?: string; section?: string; q?: string; tab?: string; teams?: string; tone?: string; at?: string; round?: string; ask?: string; live?: string }>;
 }) {
   if (process.env.NODE_ENV === 'production') notFound();
   const { screen } = await params;
-  const { state, view, date, event, bell, new: isNew, section, q, tab, teams, tone, at, round, ask } = await searchParams;
+  const { state, view, date, event, bell, new: isNew, section, q, tab, teams, tone, at, round, ask, live } = await searchParams;
   // The header lab (/clubhouse-preview/header-lab) renders a page with one of the hero tones.
   const heroTone = heroToneFrom(tone);
   const qDetail = (role: 'coach' | 'player') => {
@@ -250,6 +255,8 @@ export default async function ClubhousePreview({
           <CoachHome
             data={state === 'empty' ? PREVIEW_HOME_EMPTY : state === 'failed' ? PREVIEW_HOME_FAILED : state === 'noevents' ? PREVIEW_HOME_NO_EVENTS : state === 'eventsonly' ? PREVIEW_HOME_EVENTS_ONLY : state === 'norounds' ? PREVIEW_HOME_NO_ROUNDS : state === 'cachefailed' ? PREVIEW_HOME_LEGS_CACHE_FAILED : state === 'tourfailed' ? PREVIEW_HOME_LEGS_TOUR_FAILED : state === 'queuefailed' ? PREVIEW_HOME_QUEUE_FAILED : state === 'noholes' ? PREVIEW_HOME_LEGS_NO_HOLES : state === 'unranked' ? PREVIEW_HOME_LEGS_UNRANKED : PREVIEW_HOME}
             now={PREVIEW_HOME_NOW}
+            // &live=busy | one | many | finished | event | failed: the Live now card (P-6), off unless asked for.
+            live={live ? previewLive(live) : undefined}
           />
         ),
     },
@@ -262,6 +269,9 @@ export default async function ClubhousePreview({
           <PlayerHome
             data={state === 'empty' ? PREVIEW_PLAYER_HOME_EMPTY : state === 'failed' ? PREVIEW_PLAYER_HOME_FAILED : state === 'noevents' ? PREVIEW_PLAYER_HOME_NO_EVENTS : state === 'norounds' ? PREVIEW_PLAYER_HOME_NO_ROUNDS : PREVIEW_PLAYER_HOME}
             now={PREVIEW_HOME_NOW}
+            // &live=practice | qualifier | stale | none: the player's own live card (P-6), off unless asked for.
+            live={previewOwn(live)?.live}
+            playerId={previewOwn(live)?.playerId}
           />
         ),
     },
@@ -338,6 +348,10 @@ export default async function ClubhousePreview({
             data={{ empty: PREVIEW_TEAM_ROUNDS_EMPTY, failed: PREVIEW_TEAM_ROUNDS_FAILED, rosterfailed: PREVIEW_TEAM_ROUNDS_ROSTER_FAILED, noroster: PREVIEW_TEAM_ROUNDS_NO_ROSTER }[state ?? ''] ?? PREVIEW_TEAM_ROUNDS}
           />
         ),
+    },
+    live: {
+      path: '/golf/dashboard/live',
+      node: <LiveView initial={previewLive(state)} denied={state === 'denied'} frozen now={PREVIEW_LIVE_NOW} />,
     },
     'whats-new': {
       path: '/golf/dashboard/whats-new',

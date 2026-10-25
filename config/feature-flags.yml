@@ -945,9 +945,6 @@ flags:
       Once the owner has applied the six held Tournaments migrations, turned
       production on and coaches have used it for a season, remove the flag
       checks in src/clubhouse/gate.ts and this entry in one change.
-    cleanup_plan: >-
-      Retire the flag once the owner has enabled Tournaments and verified it
-      for all teams.
 
   # Clubhouse P-10 class awareness (plan clubhouse-handoff/build-plans/P-10-class-awareness.md). Held
   # migrations 20261025070000 to 20261025070300 (supabase/migrations/HELD.md) must be applied first; with

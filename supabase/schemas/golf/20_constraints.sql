@@ -349,6 +349,12 @@ ALTER TABLE ONLY "public"."golf_recruits"
 ALTER TABLE ONLY "public"."golf_review_events"
     ADD CONSTRAINT "golf_review_events_pkey" PRIMARY KEY ("id");
 
+ALTER TABLE ONLY "public"."golf_round_live"
+    ADD CONSTRAINT "golf_round_live_pkey" PRIMARY KEY ("round_id");
+
+ALTER TABLE ONLY "public"."golf_round_live_prefs"
+    ADD CONSTRAINT "golf_round_live_prefs_pkey" PRIMARY KEY ("player_id");
+
 ALTER TABLE ONLY "public"."golf_round_recap_locks"
     ADD CONSTRAINT "golf_round_recap_locks_pkey" PRIMARY KEY ("round_id", "revision", "kind");
 
@@ -957,6 +963,18 @@ ALTER TABLE ONLY "public"."golf_review_events"
 
 ALTER TABLE ONLY "public"."golf_round_recap_provenance"
     ADD CONSTRAINT "golf_round_recap_provenance_call_log_id_fkey" FOREIGN KEY ("call_log_id") REFERENCES "public"."golf_coachhelm_llm_calls"("id") ON DELETE SET NULL;
+
+ALTER TABLE ONLY "public"."golf_round_live"
+    ADD CONSTRAINT "golf_round_live_player_id_fkey" FOREIGN KEY ("player_id") REFERENCES "public"."golf_players"("id") ON DELETE CASCADE;
+
+ALTER TABLE ONLY "public"."golf_round_live_prefs"
+    ADD CONSTRAINT "golf_round_live_prefs_player_id_fkey" FOREIGN KEY ("player_id") REFERENCES "public"."golf_players"("id") ON DELETE CASCADE;
+
+ALTER TABLE ONLY "public"."golf_round_live"
+    ADD CONSTRAINT "golf_round_live_round_id_fkey" FOREIGN KEY ("round_id") REFERENCES "public"."golf_rounds"("id") ON DELETE CASCADE;
+
+ALTER TABLE ONLY "public"."golf_round_live"
+    ADD CONSTRAINT "golf_round_live_team_id_fkey" FOREIGN KEY ("team_id") REFERENCES "public"."golf_teams"("id") ON DELETE CASCADE;
 
 ALTER TABLE ONLY "public"."golf_round_recap_locks"
     ADD CONSTRAINT "golf_round_recap_locks_round_id_fkey" FOREIGN KEY ("round_id") REFERENCES "public"."golf_rounds"("id") ON DELETE CASCADE;
