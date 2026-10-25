@@ -1163,6 +1163,11 @@ export function useGolfMessages(
     editMessage,
     removeMessage,
     refetch: fetchMessages,
+    /**
+     * A row the server just confirmed (a sent poll, D27): drawn at once, deduped by id against the realtime insert that
+     * follows, kept in order by its time.
+     */
+    insertConfirmed: (row: MessageWithReadStatus) => setMessages((prev) => applyRealtimeMessageInsert(prev, row)),
     isOtherTyping,
     sendTypingStatus,
     currentUserId,

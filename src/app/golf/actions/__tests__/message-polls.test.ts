@@ -80,7 +80,7 @@ beforeEach(() => {
 
 describe('sendGolfPoll', () => {
   it('posts a poll row with its fallback text and tells the other members', async () => {
-    expect(await sendGolfPoll(CONVERSATION, draft, MESSAGE)).toEqual({ success: true, id: MESSAGE });
+    expect(await sendGolfPoll(CONVERSATION, draft, MESSAGE)).toMatchObject({ success: true, id: MESSAGE });
     const row = state.messages.get(MESSAGE)!;
     expect(row).toMatchObject({ kind: 'poll', sender_id: USER, conversation_id: CONVERSATION });
     expect(String(row.content)).toMatch(/^Poll: Which van Thursday\?\n/);

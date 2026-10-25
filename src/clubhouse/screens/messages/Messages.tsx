@@ -784,7 +784,9 @@ export function Messages({ data }: { data: ChMessagesData }) {
             reason = res.error;
             return false;
           }
-          // The realtime insert lands the card; a refetch covers a channel that is reconnecting.
+          // D27: the saved row lands the card at once (deduped by id against the realtime insert that follows); a
+          // background refetch still covers a channel that is reconnecting.
+          if (res.row && conversationId === selectedId) msgs.insertConfirmed(res.row as Parameters<typeof msgs.insertConfirmed>[0]);
           void msgs.refetch();
           void refetch();
           return true;

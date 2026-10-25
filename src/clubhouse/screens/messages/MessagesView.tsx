@@ -58,7 +58,7 @@ import type { ChClock } from "../../lib/clock-cookie";
 import { useThreadAnchor } from "./use-thread-anchor";
 import { useComposerInset } from "./composer-inset";
 import { useFocusMessage } from "./use-focus-message";
-import { PollButton, PollCard, type ChPollsApi } from "./polls";
+import { PollButton, PollCard, PollSheet, type ChPollsApi } from "./polls";
 import { useChReducedMotion } from "../../lib/reduced-motion";
 import { Avatar } from "../../ui/Avatar";
 import { Badge } from "../../ui/Badge";
@@ -1463,6 +1463,42 @@ export function AttachButton({
   );
 }
 
+/** The phone composer's "+" in a group thread: a menu with Photo or file and Poll (P-2 4.5). */
+export function ComposerPlus({ api, conv, disabled, onPick }: { api: ChMessagesApi; conv: ChConv; disabled?: boolean; onPick: (picked: File[]) => void }) {
+  const input = useRef<HTMLInputElement | null>(null);
+  const [polling, setPolling] = useState(false);
+  return (
+    <>
+      <Menu
+        label="Add to the message"
+        align="start"
+        items={[
+          { label: "Photo or file", icon: Paperclip, onSelect: () => input.current?.click() },
+          { label: "Poll", icon: ListChecks, onSelect: () => setPolling(true) },
+        ]}
+        trigger={(p) => (
+          <button type="button" className="ch-btn ch-btn--ghost ch-iconbtn ch-btn--sm" aria-label="Add a file or a poll" disabled={disabled} {...p}>
+            <Icon icon={Plus} size={18} />
+          </button>
+        )}
+      />
+      <input
+        ref={input}
+        type="file"
+        disabled={disabled}
+        multiple
+        hidden
+        onChange={(e) => {
+          const picked = Array.from(e.target.files ?? []);
+          if (picked.length) onPick(picked);
+          e.target.value = "";
+        }}
+      />
+      <PollSheet api={api} conv={conv} open={polling} onClose={() => setPolling(false)} />
+    </>
+  );
+}
+
 /** A composer's textarea grows with what is written, up to its CSS max-height (132px when it has none). */
 export function useAutosize(ta: RefObject<HTMLTextAreaElement | null>, value: string) {
   useLayoutEffect(() => {
@@ -1692,12 +1728,24 @@ export function Composer({
         onRemove={(i) => setFiles((s) => s.filter((_, j) => j !== i))}
       />
       <div className="ch-ms-comp__field">
-        <AttachButton
-          phone={phone}
-          disabled={unconfirmed || checking || checkFailed || unavailable}
-          onPick={(picked) => { setFiles(addFiles(filesRef.current, picked)); setMissingFiles((names) => names.filter((name) => !picked.some((file) => file.name === name))); }}
-        />
-        <PollButton api={api} conv={conv} disabled={unconfirmed || checking || checkFailed || unavailable} />
+        {phone && conv.group && api.polls ? (
+          // D21: on a phone, one "+" with a menu (Photo or file, Poll), as iMessage's; a direct thread keeps the plain "+".
+          <ComposerPlus
+            api={api}
+            conv={conv}
+            disabled={unconfirmed || checking || checkFailed || unavailable}
+            onPick={(picked) => { setFiles(addFiles(filesRef.current, picked)); setMissingFiles((names) => names.filter((name) => !picked.some((file) => file.name === name))); }}
+          />
+        ) : (
+          <>
+            <AttachButton
+              phone={phone}
+              disabled={unconfirmed || checking || checkFailed || unavailable}
+              onPick={(picked) => { setFiles(addFiles(filesRef.current, picked)); setMissingFiles((names) => names.filter((name) => !picked.some((file) => file.name === name))); }}
+            />
+            <PollButton api={api} conv={conv} disabled={unconfirmed || checking || checkFailed || unavailable} />
+          </>
+        )}
         <textarea
           ref={ta}
           rows={1}

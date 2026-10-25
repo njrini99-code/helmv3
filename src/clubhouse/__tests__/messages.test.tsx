@@ -34,6 +34,7 @@ const live = vi.hoisted(() => ({
     markRead: vi.fn(async () => {}),
     isOtherTyping: false,
     sendTypingStatus: vi.fn(),
+    insertConfirmed: vi.fn(),
   },
   reactions: { rows: [] as unknown[], setReaction: vi.fn(async () => {}) },
   files: {
@@ -1065,7 +1066,7 @@ describe('Messages · phone', () => {
     expect(box.readOnly).toBe(true);
     expect((within(thread).getByRole('button', { name: 'Cancel reply' }) as HTMLButtonElement).disabled).toBe(true);
     expect((within(thread).getByRole('button', { name: 'Remove plan.pdf' }) as HTMLButtonElement).disabled).toBe(true);
-    expect((within(thread).getByRole('button', { name: 'Attach a file' }) as HTMLButtonElement).disabled).toBe(true);
+    expect((within(thread).getByRole('button', { name: /^(Attach a file|Add a file or a poll)$/ }) as HTMLButtonElement).disabled).toBe(true);
     expect(hapticSpy).not.toHaveBeenCalledWith('success');
     await user.type(box, 'Changed');
     expect(box.value).toBe('Original text');
@@ -1971,5 +1972,33 @@ describe('Messages · polls (premium features P-2)', () => {
     expect(await within(dialog).findByText('You are not in this conversation')).toBeTruthy();
     const ids = polls.sendGolfPoll.mock.calls.map((c) => (c as unknown[])[2]);
     expect(ids[1]).toBe(ids[0]);
+  });
+
+  it('D21: on a phone a group thread’s "+" opens Photo or file and Poll', async () => {
+    const user = userEvent.setup();
+    showPhone();
+    await waitFor(() => expect(screen.getAllByRole('button', { name: /Varsity team/ })).toHaveLength(1), { timeout: 5000 });
+    await user.click(screen.getByRole('button', { name: /Varsity team/ }));
+    const thread = await screen.findByRole('region', { name: /Varsity team/ });
+    await user.click(within(thread).getByRole('button', { name: 'Add a file or a poll' }));
+    const menu = await screen.findByRole('menu', { name: 'Add to the message' });
+    expect(within(menu).getAllByRole('menuitem').map((m) => m.textContent)).toEqual(['Photo or file', 'Poll']);
+    await user.click(within(menu).getByRole('menuitem', { name: 'Poll' }));
+    expect(await screen.findByRole('dialog', { name: 'New poll' })).toBeTruthy();
+  });
+
+  it('D27: a sent poll lands in the thread at once from its saved row', async () => {
+    const user = userEvent.setup();
+    const row = { id: 'poll-9', conversation_id: 'g1', sender_id: 'me', kind: 'poll', content: 'Poll: Dinner?', created_at: '2026-10-24T15:00:00Z' };
+    polls.sendGolfPoll.mockResolvedValueOnce({ success: true, id: 'poll-9', row } as never);
+    live.msgs.insertConfirmed.mockClear();
+    show();
+    await user.click(await screen.findByRole('button', { name: 'New poll' }));
+    const dialog = await screen.findByRole('dialog', { name: 'New poll' });
+    await user.type(within(dialog).getByLabelText('Question'), 'Dinner?');
+    await user.type(within(dialog).getByRole('textbox', { name: 'Choice 1' }), 'Tacos');
+    await user.type(within(dialog).getByRole('textbox', { name: 'Choice 2' }), 'Pasta');
+    await user.click(within(dialog).getByRole('button', { name: 'Send poll' }));
+    await waitFor(() => expect(live.msgs.insertConfirmed).toHaveBeenCalledWith(row));
   });
 });

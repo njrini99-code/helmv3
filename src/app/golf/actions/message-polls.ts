@@ -1,7 +1,7 @@
 'use server';
 
 import { createClient } from '@/lib/supabase/server';
-import type { Json } from '@/lib/types/database';
+import type { Json, Tables } from '@/lib/types/database';
 import { logServerError } from '@/lib/server-error-logger';
 import { describeError } from '@/lib/utils/describe-error';
 import { withAdminObserved } from '@/lib/admin/observed-action';
@@ -26,6 +26,8 @@ import { buildPollPayload, parsePollPayload, pollFallbackText, type PollDraft } 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 type PollResult = { success: true; id: string } | { success: false; error: string };
+/** A sent poll also carries its saved row, so the thread can draw it at once (D27) instead of waiting on realtime. */
+type SendPollResult = { success: true; id: string; row?: Tables<'golf_messages'> } | { success: false; error: string };
 
 const PROBLEM_COPY = {
   question: 'Add a question of up to 140 characters.',
@@ -35,7 +37,7 @@ const PROBLEM_COPY = {
   closes_far: 'Pick an end time within 30 days.',
 } as const;
 
-async function sendGolfPollImpl(conversationId: string, draft: PollDraft, clientMessageId?: string): Promise<PollResult> {
+async function sendGolfPollImpl(conversationId: string, draft: PollDraft, clientMessageId?: string): Promise<SendPollResult> {
   if (typeof conversationId !== 'string' || !UUID.test(conversationId)) return { success: false, error: 'Invalid conversation' };
   if (clientMessageId !== undefined && (typeof clientMessageId !== 'string' || !UUID.test(clientMessageId))) {
     return { success: false, error: 'Invalid message id' };
@@ -77,7 +79,7 @@ async function sendGolfPollImpl(conversationId: string, draft: PollDraft, client
       kind: 'poll',
       payload: built.payload as unknown as Json,
     })
-    .select('id')
+    .select('*')
     .single();
 
   if (error) {
@@ -99,7 +101,7 @@ async function sendGolfPollImpl(conversationId: string, draft: PollDraft, client
 
   await supabase.from('golf_conversations').update({ updated_at: new Date().toISOString() }).eq('id', conversationId);
   await notifyGolfMessageRecipients(conversationId, user.id, `Poll: ${built.payload.question}`);
-  return { success: true, id: data.id };
+  return { success: true, id: data.id, row: data };
 }
 
 async function closeGolfPollImpl(messageId: string): Promise<PollResult> {
@@ -137,7 +139,7 @@ async function closeGolfPollImpl(messageId: string): Promise<PollResult> {
 const observedSendGolfPoll = withAdminObserved('sendGolfPoll', { sport: 'golf', feature: 'messaging' }, sendGolfPollImpl);
 const observedCloseGolfPoll = withAdminObserved('closeGolfPoll', { sport: 'golf', feature: 'messaging' }, closeGolfPollImpl);
 
-export async function sendGolfPoll(conversationId: string, draft: PollDraft, clientMessageId?: string): Promise<PollResult> {
+export async function sendGolfPoll(conversationId: string, draft: PollDraft, clientMessageId?: string): Promise<SendPollResult> {
   return observedSendGolfPoll(conversationId, draft, clientMessageId);
 }
 
