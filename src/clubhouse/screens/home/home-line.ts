@@ -74,22 +74,26 @@ export function homeLineFor(input: { day: ChClassDay | null; now: number | null;
 
   if (tn.lastEndAt == null || (inBlock === 0 && now >= tn.lastEndAt)) return null;
 
+  // Below full coverage the numbers are about the tracked players, and say so (honest counts): "4 of 6 tracked in class
+  // now", "Tracked players out of class from 2:15 PM", "No one tracked in class now". Never "everyone" for people we can't see.
+  const partial = tn.tracked < total;
+  const who = partial ? 'Tracked players' : 'Everyone';
   const cutoff = clockFromMinutes(HOME_LINE_UNTIL_HOUR * 60, opts.clock).replace(':00 ', ' ');
   const fw = tn.freeWindow;
   const window =
     fw === 'none_before_cutoff'
-      ? `No hour with everyone out of class before ${cutoff}`
+      ? `No hour with ${partial ? 'tracked players' : 'everyone'} out of class before ${cutoff}`
       : fw && fw.to == null
-        ? `Everyone out of class from ${statusClock(fw.from, opts) ?? ''}`.trim()
+        ? `${who} out of class from ${statusClock(fw.from, opts) ?? ''}`.trim()
         : fw
-          ? `Everyone out of class ${windowRange(fw.from, fw.to, opts) ?? ''}`.trim()
+          ? `${who} out of class ${windowRange(fw.from, fw.to, opts) ?? ''}`.trim()
           : null;
 
-  if (inBlock > 0) return make(`${inBlock} of ${total} in class now`, window);
+  if (inBlock > 0) return make(partial ? `${inBlock} of ${tn.tracked} tracked in class now` : `${inBlock} of ${total} in class now`, window);
   if (tn.firstClassAt != null && now < tn.firstClassAt) {
     const t = statusClock(tn.firstClassAt, opts);
     return t ? make(`First class ${t}`, window) : null;
   }
   const next = tn.nextClass && statusClock(tn.nextClass.at, opts);
-  return make('No one in class now', next && tn.nextClass ? `Next class ${next} · ${plural(tn.nextClass.count, 'player')}` : window);
+  return make(partial ? 'No one tracked in class now' : 'No one in class now', next && tn.nextClass ? `Next class ${next} · ${plural(tn.nextClass.count, 'player')}` : window);
 }

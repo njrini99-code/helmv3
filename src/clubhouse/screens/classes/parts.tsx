@@ -396,13 +396,19 @@ export function OverlapsCard({ groups, error, onRetry }: { groups: readonly ChCo
 }
 
 /** What the coach can and can't see. The board says "busy time only"; the read policy lets an active coach read the class row itself. */
-export function CoachNote() {
+export function CoachNote({ aware = false }: { aware?: boolean }) {
   return (
     <section className="ch-cl-card2 ch-cl-note">
       <Icon icon={Eye} size={16} />
       <div>
         <b>What your coach sees</b>
-        <span>Your coach can see your classes, when they meet and where, so practice and travel are planned around them. Your teammates don’t see them.</span>
+        {/* With class status on the panel above says what coaches see; this says where your classes also show. Your classes, with their times
+            and rooms, are on the team calendar, which your coaches and teammates can read (calendar-sync.ts, golf_events_select_team). */}
+        <span>
+          {aware
+            ? 'Your coach can see your classes, when they meet and where, so practice and travel are planned around them. They are on the team calendar, which your teammates can see too.'
+            : 'Your coach can see your classes, when they meet and where, so practice and travel are planned around them. Your teammates don’t see them.'}
+        </span>
       </div>
     </section>
   );

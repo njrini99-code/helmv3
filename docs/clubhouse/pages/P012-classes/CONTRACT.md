@@ -58,7 +58,7 @@ From the shell (P001): 10201 CH-1401, 10202 CH-1402.
 
 ## 03 — Background loading / refresh
 
-Status: N/A — Classes has no realtime, polling or pull to refresh: the server reads the page once per visit, and Try again reads it again (category 14). A write updates the list in place from what the database sent back and does not read the page again (category 15).
+Status: N/A — apart from the Class status panel (P-10), Classes has no realtime, polling or pull to refresh: the server reads the page once per visit, and Try again reads it again (category 14). A write updates the list in place from what the database sent back and does not read the page again. The panel reads the player's class day through one shared cache (`useMyClassDay`): on focus, every five minutes while visible, at the class zone's midnight and after its own writes; a payload older than 15 minutes is not claimed (`use-class-day.test.tsx`).
 
 ## 04 — Empty
 
@@ -101,6 +101,9 @@ The form's rules show beside their field after the first refused Save (CH-12101 
 | 120514 | CH-12114 | `THE_READER_FINDS_NO_CLASSES` | The reader finds no classes |
 | 120515 | — | `IMPORT_SKIPS_WHAT_IS_ALREADY_ON_THE_SCHEDULE` | An import reads the classes the player already has before it writes, and skips any with the same stored name and term, so importing a schedule twice never doubles the calendar. A class saved with no term, or a blank one, is in the current term, so it is the same class; the same class in another term is another class and is imported. A read that fails stops the import with nothing saved. When every class is already there nothing is inserted and nothing is synced (CH-12307). |
 | 120516 | — | `ONLY_CLASSES_IN_THE_SAME_TERM_COUNT` | Every check that compares classes counts only the classes of the term in question. The exact-same-time refusal (CH-12107) and the overlap note (CH-12108) count only classes in the term the form is set to. This week's overlaps with the team (CH-12109), on the overview, the cards, the side card, the form and the import result, count only classes in the current term, because the week's events are this term's. The week's team events are the ones the player's Calendar shows: a meeting that invites no one is the coach's own (D2-8) and is left out, decided by `golf_event_attendance_counts` or, until migration 20261017102000 is applied, the attendance rows; a read that fails leaves every event in. A class with no term is in the current term. The same days and times in another term never refuse a save. |
+| 120517 | CH-12170 | `AN_EXAM_ENDS_AT_OR_BEFORE_IT` | An exam ends at or before it starts |
+| 120518 | CH-12171 | `AN_EXAM_IS_LONGER_THAN_4_HOURS` | An exam is longer than 4 hours |
+| 120519 | CH-12172 | `AN_EXAMS_DATE_IS_OUTSIDE_THE_CONFIRMED` | An exam's date is outside the confirmed term (classes start to exams end) |
 
 ## 06 — Server / system error
 
@@ -122,6 +125,14 @@ Every write has its own toast naming what failed and what to do, with Retry (CH-
 | 120610 | — | `A_SYNC_THAT_WROTE_NOTHING_IS_A_FAILURE` | A calendar sync that returns no error but wrote no meetings for a class that has days and a time is a failure, so the class is flagged and CH-12002 says why, instead of a quietly empty calendar. A class with no days has nothing to write and is not a failure. A sync that throws is reported (surface classes.sync, low severity) and its reason reads "The calendar sync did not finish". |
 | 120611 | CH-12005 | `DELETE_ALL_CLASSES_CHANGED_NOTHING_NO_CLASS` | Delete all classes changed nothing: no class could be taken off the calendar (every removal failed or threw), the connection dropped, or the write threw |
 | 120612 | CH-12006 | `DELETE_ALL_CLASSES_STOPPED_HALF_WAY_SOME` | Delete all classes stopped half-way: some classes are gone and some are not |
+| 120613 | CH-12070 | `THE_SHARING_SWITCHS_WRITE_IS_REFUSED` | The sharing switch's write is refused (class status, P-10) |
+| 120614 | CH-12071 | `NO_CLASS_TODAY_IS_REFUSED` | "No class today" is refused |
+| 120615 | CH-12072 | `UNDO_ON_NO_CLASS_TODAY_IS_REFUSED` | Undo on "No class today" is refused |
+| 120616 | CH-12073 | `TAGGING_UNTAGGED_CLASSES_WITH_THE_TERM_IS` | Tagging untagged classes with the term is refused |
+| 120617 | CH-12074 | `A_CLASSS_USE_FOR_CLASS_STATUS_SWITCH` | A class's "Use for class status" switch is refused |
+| 120618 | CH-12075 | `ADDING_AN_EXAM_IS_REFUSED` | Adding an exam is refused |
+| 120619 | CH-12076 | `REMOVING_AN_EXAM_IS_REFUSED` | Removing an exam is refused |
+| 120620 | CH-12270 | `THE_PLAYERS_CLASS_DAY_DIDNT_LOAD` | The player's class day didn't load |
 
 ## 07 — Network / offline
 
@@ -182,6 +193,7 @@ Removing a class asks first, with the warning haptic before the question, and sa
 | 121102 | CH-12502 | `CANCEL_OR_CLOSE_A_FORM_THAT_HAS` | Cancel or close a form that has changes |
 | 121103 | CH-12503 | `DELETE_ALL_CLASSES_NOT_DRAWN_WITH_NO` | Delete all classes (a quiet red button under the deck, with a bin icon; 44px tall and full width on the phone). Not drawn with no classes (CH-12301) or when they didn't load (CH-12201); off while a save, an import, a remove, a calendar sync or a delete-all is running, because a write beside it would put back what was just taken off |
 | 121104 | CH-12504 | `START_OVER_IN_THE_IMPORT_REVIEW_ONCE` | Start over in the import review, once it holds three or more classes or one came off (an emptied review, or one or two classes as read, starts over at once) |
+| 121105 | CH-12570 | `THE_PLAYER_REMOVES_AN_EXAM` | The player removes an exam |
 
 ## 12 — State preservation
 
@@ -195,7 +207,7 @@ A class that fails to save keeps the sheet open with every field as typed, an im
 
 ## 13 — Optimistic UI
 
-Status: N/A — nothing on Classes is optimistic: a class joins, changes or leaves the list only when the write has landed, and the toast, the list and the sheet all wait for it. The calendar sync is a separate action that follows the save (121501), not an optimistic view of it.
+Status: N/A — nothing on Classes is optimistic except the Class status panel's sharing switch (P-10), which holds its new position while the write runs and goes back with a toast when it is refused (CH-12070). A class joins, changes or leaves the list only when the write has landed, and the toast, the list and the sheet all wait for it. The calendar sync is a separate action that follows the save (121501), not an optimistic view of it.
 
 ## 14 — Retry / recovery
 
@@ -285,6 +297,7 @@ CH-1842, 11825 CH-1816.
 | 121804 | CH-12804 | `A_SAVE_IS_REFUSED` | A save is refused |
 | 121805 | CH-12805 | `THE_IMPORTS_DROP_ZONE` | The import's drop zone |
 | 121806 | — | `NO_AXE_VIOLATIONS_IN_ANY_PREVIEW_STATE` | No axe violations on the six preview states (the board's Fall 2026, empty, failed, partial, no team and loading) at 1280px and 390px, run by npm run clubhouse:a11y from the entries in scripts/clubhouse/a11y.mjs. Reserved: it ran clean on 2026-09-30 (12 of 12), but it is a dev-server run, not a test, so no test names it. |
+| 121807 | CH-12870 | `THE_CLASS_STATUS_PANEL` | The Class status panel |
 
 From the shell (P001): 11801 CH-1801, 11802 CH-1802, 11803 CH-1803,
 11804 CH-1804, 11805 CH-1805, 11806 CH-1806, 11807 CH-1807, 11808 CH-1808,

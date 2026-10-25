@@ -42,7 +42,8 @@ describe('In class now sheet model (P-10)', () => {
   it('lists who is in class by end time, the next class, trips and untracked players', () => {
     const m = sheetModel(day(players), at('14:30'), o);
     expect(m.title).toBe('In class now');
-    expect(m.sub).toBe('2 of 6 · Class names show to coaches only.');
+    // Two of six have no class status, so the count is about the tracked four.
+    expect(m.sub).toBe('2 of 4 tracked · Class names show to coaches only.');
     expect(m.inClass.map((r) => r.name)).toEqual(['Theo Test', 'Avery Test']);
     expect(m.inClass[0]).toMatchObject({ time: 'until 11:50 AM', meta: 'STAT 201' });
     // Avery's island runs to 12:15 PM and holds a second class.
@@ -65,7 +66,7 @@ describe('In class now sheet model (P-10)', () => {
     expect(m.strip!.density).toBeNull();
     expect(m.strip!.now).toBeGreaterThan(0);
     expect(m.strip!.ticks[0]).toMatchObject({ label: '8 AM' });
-    expect(m.strip!.free).toMatchObject({ label: 'Everyone out from 2:15 PM' });
+    expect(m.strip!.free).toMatchObject({ label: 'Tracked players out from 2:15 PM' });
   });
 
   it('marks an exam block', () => {

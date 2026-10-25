@@ -78,6 +78,12 @@ describe('Coach Home line (P-10 copy table)', () => {
     expect(line(day(busy), at('14:30'))!.line2).toBe('No hour with everyone out of class before 7 PM');
   });
 
+  it('below full coverage the numbers are about the tracked players, and say so', () => {
+    const six = [...['a', 'b', 'c', 'd'].map((id) => player(id, { blocks: [block('13:30', '15:50')] })), ...['e', 'f'].map((id) => player(id, { blocks: [block('17:00', '18:15')] })), ...['g', 'h', 'i'].map((id) => player(id, { tracked: false, holds: false }))];
+    expect(line(day(six), at('14:30'))).toMatchObject({ line1: '4 of 6 tracked in class now', line2: 'Tracked players out of class 11:50 AM to 1:00 PM' });
+    expect(line(day(six), at('16:00'))).toMatchObject({ line1: 'No one tracked in class now' });
+  });
+
   it('under half tracked: schedules shared, with the ask; with some in class, the tracked count leads', () => {
     const few = [player('a', { blocks: [block('13:30', '15:50')] }), ...['b', 'c', 'd', 'e', 'f', 'g'].map((id) => player(id, { tracked: false, holds: false }))];
     expect(line(day(few), at('12:00'))).toMatchObject({ line1: 'Class schedules shared by 1 of 7', line2: 'Ask for schedules' });

@@ -40,6 +40,8 @@ export interface ChClassRow {
   notes: string | null;
   semester: string | null;
   created_at: string | null;
+  /** P-10: `golf_player_classes.status_enabled`. Present only when the query asked for it (`class_awareness_v1` on). */
+  status_enabled?: boolean | null;
 }
 
 export interface ChClass {
@@ -66,6 +68,8 @@ export interface ChClass {
   tone: ChTone;
   /** Newest last; the tone follows this order. */
   createdAt: string | null;
+  /** P-10: the class counts for class status. Absent reads as on. */
+  statusEnabled?: boolean;
 }
 
 // ---------------------------------------------------------------------------
@@ -194,6 +198,7 @@ export function toChClass(row: ChClassRow, tone: ChTone): ChClass {
     notes: row.notes?.trim() || null,
     tone,
     createdAt: row.created_at,
+    ...(row.status_enabled === false ? { statusEnabled: false } : {}),
   };
 }
 

@@ -14259,6 +14259,39 @@
     ]
   },
   {
+    "id": 120517,
+    "page": "P012",
+    "category": 5,
+    "item": 17,
+    "name": "AN_EXAM_ENDS_AT_OR_BEFORE_IT",
+    "chCode": "CH-12170",
+    "meaning": "An exam ends at or before it starts",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/classes.md"
+  },
+  {
+    "id": 120518,
+    "page": "P012",
+    "category": 5,
+    "item": 18,
+    "name": "AN_EXAM_IS_LONGER_THAN_4_HOURS",
+    "chCode": "CH-12171",
+    "meaning": "An exam is longer than 4 hours",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/classes.md"
+  },
+  {
+    "id": 120519,
+    "page": "P012",
+    "category": 5,
+    "item": 19,
+    "name": "AN_EXAMS_DATE_IS_OUTSIDE_THE_CONFIRMED",
+    "chCode": "CH-12172",
+    "meaning": "An exam's date is outside the confirmed term (classes start to exams end)",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/classes.md"
+  },
+  {
     "id": 120601,
     "page": "P012",
     "category": 6,
@@ -14391,6 +14424,94 @@
     "name": "DELETE_ALL_CLASSES_STOPPED_HALF_WAY_SOME",
     "chCode": "CH-12006",
     "meaning": "Delete all classes stopped half-way: some classes are gone and some are not",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/classes.md"
+  },
+  {
+    "id": 120613,
+    "page": "P012",
+    "category": 6,
+    "item": 13,
+    "name": "THE_SHARING_SWITCHS_WRITE_IS_REFUSED",
+    "chCode": "CH-12070",
+    "meaning": "The sharing switch's write is refused (class status, P-10)",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/classes.md"
+  },
+  {
+    "id": 120614,
+    "page": "P012",
+    "category": 6,
+    "item": 14,
+    "name": "NO_CLASS_TODAY_IS_REFUSED",
+    "chCode": "CH-12071",
+    "meaning": "\"No class today\" is refused",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/classes.md"
+  },
+  {
+    "id": 120615,
+    "page": "P012",
+    "category": 6,
+    "item": 15,
+    "name": "UNDO_ON_NO_CLASS_TODAY_IS_REFUSED",
+    "chCode": "CH-12072",
+    "meaning": "Undo on \"No class today\" is refused",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/classes.md"
+  },
+  {
+    "id": 120616,
+    "page": "P012",
+    "category": 6,
+    "item": 16,
+    "name": "TAGGING_UNTAGGED_CLASSES_WITH_THE_TERM_IS",
+    "chCode": "CH-12073",
+    "meaning": "Tagging untagged classes with the term is refused",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/classes.md"
+  },
+  {
+    "id": 120617,
+    "page": "P012",
+    "category": 6,
+    "item": 17,
+    "name": "A_CLASSS_USE_FOR_CLASS_STATUS_SWITCH",
+    "chCode": "CH-12074",
+    "meaning": "A class's \"Use for class status\" switch is refused",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/classes.md"
+  },
+  {
+    "id": 120618,
+    "page": "P012",
+    "category": 6,
+    "item": 18,
+    "name": "ADDING_AN_EXAM_IS_REFUSED",
+    "chCode": "CH-12075",
+    "meaning": "Adding an exam is refused",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/classes.md"
+  },
+  {
+    "id": 120619,
+    "page": "P012",
+    "category": 6,
+    "item": 19,
+    "name": "REMOVING_AN_EXAM_IS_REFUSED",
+    "chCode": "CH-12076",
+    "meaning": "Removing an exam is refused",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/classes.md"
+  },
+  {
+    "id": 120620,
+    "page": "P012",
+    "category": 6,
+    "item": 20,
+    "name": "THE_PLAYERS_CLASS_DAY_DIDNT_LOAD",
+    "chCode": "CH-12270",
+    "meaning": "The player's class day didn't load",
     "status": "implemented",
     "catalog": "docs/clubhouse/catalog/classes.md"
   },
@@ -14532,6 +14653,17 @@
     "name": "START_OVER_IN_THE_IMPORT_REVIEW_ONCE",
     "chCode": "CH-12504",
     "meaning": "Start over in the import review, once it holds three or more classes or one came off (an emptied review, or one or two classes as read, starts over at once)",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/classes.md"
+  },
+  {
+    "id": 121105,
+    "page": "P012",
+    "category": 11,
+    "item": 5,
+    "name": "THE_PLAYER_REMOVES_AN_EXAM",
+    "chCode": "CH-12570",
+    "meaning": "The player removes an exam",
     "status": "implemented",
     "catalog": "docs/clubhouse/catalog/classes.md"
   },
@@ -14793,6 +14925,17 @@
     "meaning": "No axe violations on the six preview states (the board's Fall 2026, empty, failed, partial, no team and loading) at 1280px and 390px, run by npm run clubhouse:a11y from the entries in scripts/clubhouse/a11y.mjs. Reserved: it ran clean on 2026-09-30 (12 of 12), but it is a dev-server run, not a test, so no test names it.",
     "status": "reserved",
     "where": "scripts/clubhouse/a11y.mjs (CH_A11Y_PAGES)"
+  },
+  {
+    "id": 121807,
+    "page": "P012",
+    "category": 18,
+    "item": 7,
+    "name": "THE_CLASS_STATUS_PANEL",
+    "chCode": "CH-12870",
+    "meaning": "The Class status panel",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/classes.md"
   },
   {
     "id": 121901,

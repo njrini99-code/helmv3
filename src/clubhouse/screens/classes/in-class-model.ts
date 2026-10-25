@@ -128,7 +128,7 @@ export function sheetModel(day: ChClassDay, now: number, o: ChStatusTextOptions)
   const shared = 'Class names show to coaches only.';
   return {
     title: hasBlocks ? 'In class now' : 'No classes today',
-    sub: hasBlocks ? `${inBlock} of ${total} · ${shared}` : `${plural(total, 'player')} · ${shared}`,
+    sub: hasBlocks ? `${tn.tracked < total ? `${inBlock} of ${tn.tracked} tracked` : `${inBlock} of ${total}`} · ${shared}` : `${plural(total, 'player')} · ${shared}`,
     inClass: inClass.map((r) => r.row),
     next: next.map((r) => r.row),
     travelling,
@@ -191,7 +191,7 @@ function buildStrip(day: ChClassDay, now: number, o: ChStatusTextOptions, tn: Re
     // An unbounded window runs to the end of the strip: "Everyone out from 2:15 PM".
     const to = fw.to != null ? minutesOfDay(fw.to, zone) : max;
     const range = fw.to != null ? windowRange(fw.from, fw.to, o) : statusClock(fw.from, o);
-    if (from != null && to != null && range) free = { left: pct(from), width: Math.max(0, pct(to) - pct(from)), label: fw.to != null ? `Everyone out ${range}` : `Everyone out from ${range}` };
+    if (from != null && to != null && range) free = { left: pct(from), width: Math.max(0, pct(to) - pct(from)), label: `${tn.tracked < day.players.length ? 'Tracked players' : 'Everyone'} out ${fw.to != null ? '' : 'from '}${range}` };
   }
   return { ticks, lanes, density, now: nowMin != null && nowMin >= min && nowMin <= max ? pct(nowMin) : null, free };
 }
