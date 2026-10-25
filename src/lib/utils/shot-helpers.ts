@@ -37,9 +37,23 @@ export function deriveLieAfterFromResult(result: string | null | undefined): str
  */
 export function deriveLieAfter(shot: ShotRecord): string | null {
   if (shot.isPenalty || shot.result === 'penalty') return 'penalty';
+  // A stroke that ends exactly where it began (the stroke-and-distance stroke
+  // buildErrantStroke writes: result 'other', 0 yards, after == before) is
+  // replayed from that same spot, so it ends in the lie it started from.
+  // Mapping its 'other' to 'rough' stored "rough at the tee yardage" and broke
+  // the chain to the re-tee (13 of 15 stroke-and-distance gaps, Oct 2026).
+  if (shot.result === 'other' && endsWhereItBegan(shot)) return shot.lieBefore;
   const approachLie = normalizeApproachMissLieType(shot.approachMissLieType);
   if (approachLie) return approachLie;
   return deriveLieAfterFromResult(shot.result);
+}
+
+function endsWhereItBegan(shot: ShotRecord): boolean {
+  return (
+    shot.shotDistance === 0 &&
+    shot.distanceToHoleAfter === shot.distanceToHoleBefore &&
+    shot.distanceUnitAfter === shot.distanceUnitBefore
+  );
 }
 
 /**

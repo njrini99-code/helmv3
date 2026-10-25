@@ -26,6 +26,12 @@
  *      2026-09-26 neither was honoured and the nightly job reported 258
  *      "missing" objects of which two were real (#1897) — a check that is
  *      always red hides the one finding that matters.
+ *      Objects listed in `scripts/db/ledger-vs-catalog-accepted.json` are
+ *      reported as accepted, not FAIL: each entry is one object checked
+ *      against production and given a class and a reason. An entry that no
+ *      longer matches a missing object WARNs. Until 2026-10-23 the nightly
+ *      job was red on 22 baseball objects (DB-DRIFT-2094) whose ledger rows
+ *      carry no statements and whose protection is live under other names.
  *   2. For every table in the `public` schema, asserts it traces to SOME
  *      migration file (any file that CREATEs a table by that name) or to a
  *      schema file under `supabase/schemas/**` (D2's declarative-schema
@@ -42,7 +48,7 @@
  *   SUPABASE_ACCESS_TOKEN=... SUPABASE_PROJECT_ID=... node scripts/db/check-ledger-vs-catalog.mjs
  *
  * Exit 0: no FAILs (WARNs print but do not fail the run).
- * Exit 1: at least one missing-in-catalog object.
+ * Exit 1: at least one missing-in-catalog object that is not an accepted absence.
  * Exit 2: could not connect.
  */
 import { helpOnly } from '../lib/cli-guard.mjs';
@@ -63,6 +69,7 @@ import { createManagementApiSql, buildConnectionString } from './check-supabase-
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '../..');
 const MIGRATIONS_DIR = resolve(ROOT, 'supabase/migrations');
 const SCHEMAS_DIR = resolve(ROOT, 'supabase/schemas');
+const ACCEPTED_FILE = resolve(ROOT, 'scripts/db/ledger-vs-catalog-accepted.json');
 
 // Load .env.local first, then .env as a FALLBACK. dotenv does not override an
 // already-set variable, so .env.local keeps precedence; .env only fills gaps.
@@ -270,6 +277,63 @@ export function reconcileLedgerToCatalog({
   return missing;
 }
 
+export const ACCEPTED_CLASSES = ['superseded', 'retired', 'not-needed'];
+
+const acceptedKey = (o) => `${o.version}|${o.kind}|${o.name}`;
+
+/**
+ * Validates the accepted-absence register (`ledger-vs-catalog-accepted.json`).
+ * Every entry must name one object exactly, say which class of absence it is,
+ * and give a reason: an unexplained entry is how a real gap gets waved through.
+ *
+ * @param {unknown} doc
+ * @returns {{ version: string, kind: string, name: string, class: string, reason: string }[]}
+ */
+export function parseAcceptedAbsences(doc) {
+  const entries = doc && typeof doc === 'object' ? /** @type {any} */ (doc).entries : undefined;
+  if (!Array.isArray(entries)) throw new Error('accepted-absence register: `entries` must be an array');
+  const seen = new Set();
+  for (const [i, e] of entries.entries()) {
+    const where = `accepted-absence register entry ${i}`;
+    for (const field of ['version', 'kind', 'name', 'reason']) {
+      if (typeof e?.[field] !== 'string' || e[field].trim() === '') throw new Error(`${where}: \`${field}\` is required`);
+    }
+    if (!['table', 'function', 'policy'].includes(e.kind)) throw new Error(`${where}: unknown kind "${e.kind}"`);
+    if (!ACCEPTED_CLASSES.includes(e.class)) throw new Error(`${where}: class must be one of ${ACCEPTED_CLASSES.join(', ')}`);
+    const key = acceptedKey(e);
+    if (seen.has(key)) throw new Error(`${where}: duplicate of ${key}`);
+    seen.add(key);
+  }
+  return entries;
+}
+
+/**
+ * Splits the missing objects into the ones still failing and the ones the
+ * register accepts. An entry that matches nothing is `stale` (the object came
+ * back, or the migration changed): reported so the register cannot quietly
+ * grow into a list of things nobody checks any more.
+ *
+ * @param {{ version: string, file: string, kind: string, name: string }[]} missing
+ * @param {{ version: string, kind: string, name: string, class: string, reason: string }[]} accepted
+ */
+export function applyAcceptedAbsences(missing, accepted) {
+  const byKey = new Map(accepted.map((a) => [acceptedKey(a), a]));
+  const matched = new Set();
+  const failing = [];
+  const acceptedMissing = [];
+  for (const m of missing) {
+    const entry = byKey.get(acceptedKey(m));
+    if (entry === undefined) {
+      failing.push(m);
+    } else {
+      matched.add(acceptedKey(m));
+      acceptedMissing.push({ ...m, class: entry.class, reason: entry.reason });
+    }
+  }
+  const stale = accepted.filter((a) => !matched.has(acceptedKey(a)));
+  return { failing, accepted: acceptedMissing, stale };
+}
+
 /**
  * @param {Object} params
  * @param {string[]} params.catalogTables
@@ -369,6 +433,11 @@ async function main() {
       catalogPolicies,
     });
 
+    const accepted = parseAcceptedAbsences(
+      existsSync(ACCEPTED_FILE) ? JSON.parse(readFileSync(ACCEPTED_FILE, 'utf-8')) : { entries: [] },
+    );
+    const { failing, accepted: acceptedMissing, stale } = applyAcceptedAbsences(missing, accepted);
+
     const unexplained = reconcileUnexplainedTables({
       catalogTables: publicTables,
       allMigrationFileContents: contents,
@@ -376,11 +445,19 @@ async function main() {
     });
 
     console.log('check-ledger-vs-catalog — object-level drift\n' + '='.repeat(60));
-    if (missing.length === 0) {
-      console.log('✅ every parsed CREATE TABLE/FUNCTION/POLICY in an applied migration exists in the catalog');
+    if (failing.length === 0) {
+      console.log('✅ every parsed CREATE TABLE/FUNCTION/POLICY in an applied migration exists in the catalog (or is an accepted absence)');
     } else {
-      console.log(`❌ FAIL — ${missing.length} object(s) an applied migration claims to create are missing from the catalog:`);
-      for (const m of missing) console.log(`   [${m.kind}] ${m.name} — ${m.file} (version ${m.version})`);
+      console.log(`❌ FAIL — ${failing.length} object(s) an applied migration claims to create are missing from the catalog:`);
+      for (const m of failing) console.log(`   [${m.kind}] ${m.name} — ${m.file} (version ${m.version})`);
+    }
+    if (acceptedMissing.length > 0) {
+      console.log(`ℹ️  ${acceptedMissing.length} accepted absence(s), see scripts/db/ledger-vs-catalog-accepted.json:`);
+      for (const m of acceptedMissing) console.log(`   [${m.kind}] ${m.name} (${m.class}) — ${m.reason}`);
+    }
+    if (stale.length > 0) {
+      console.log(`⚠️  WARN — ${stale.length} accepted-absence entr(ies) match no missing object; remove them:`);
+      for (const a of stale) console.log(`   [${a.kind}] ${a.name} (version ${a.version})`);
     }
 
     if (unexplained.length === 0) {
@@ -391,8 +468,8 @@ async function main() {
     }
 
     console.log('='.repeat(60));
-    if (missing.length > 0) {
-      console.error(`${missing.length} FAIL(s).`);
+    if (failing.length > 0) {
+      console.error(`${failing.length} FAIL(s).`);
       process.exit(1);
     }
     console.log('No FAILs. (WARNs above, if any, do not fail this check.)');
