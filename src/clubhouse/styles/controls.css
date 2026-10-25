@@ -33,7 +33,7 @@
   border-radius: calc(var(--ch-radius-lg) - 3px);
   height: 26px;
   padding: 0 11px;
-  font-size: calc(12.5 * var(--ch-type-k));
+  font-size: calc(13 * var(--ch-type-k));
 }
 @media (hover: hover) {
   .ch-seg__b:hover {
@@ -147,7 +147,7 @@
   outline: 0;
   background: transparent;
   color: var(--ch-text-primary);
-  font: 400 calc(13.5 * var(--ch-type-k))/1 var(--ch-font-sans);
+  font: 400 calc(14 * var(--ch-type-k))/1 var(--ch-font-sans);
   -webkit-appearance: none;
   appearance: none;
 }
@@ -157,7 +157,7 @@
 /* A placeholder is the field's only label until it is filled: ink-400 measured 2.8:1 on the phone page and 3.4:1 on a
    desktop card (aesthetic audit M-L3); tertiary holds 4.5:1 on both and still reads lighter than typed text. */
 .ch-search input::placeholder {
-  color: var(--ch-text-tertiary);
+  color: var(--ch-text-placeholder);
 }
 .ch-search__x {
   display: grid;
@@ -196,7 +196,7 @@
 }
 .ch-field__opt {
   margin-left: auto;
-  font: 500 calc(12.5 * var(--ch-type-k))/1.3 var(--ch-font-sans);
+  font: 500 calc(13 * var(--ch-type-k))/1.3 var(--ch-font-sans);
   color: var(--ch-green-700);
 }
 .ch-field__help {
@@ -227,6 +227,17 @@
   padding: 10px 12px;
   line-height: 1.5;
   resize: vertical;
+}
+/* A finger has no grip to drag: on a touch screen the field grows with what is typed instead (A29). */
+@media (pointer: coarse) {
+  .ch-textarea {
+    resize: none;
+  }
+  @supports (field-sizing: content) {
+    .ch-textarea {
+      field-sizing: content;
+    }
+  }
 }
 @media (hover: hover) {
   .ch-input:hover,
@@ -273,7 +284,7 @@
 /* A placeholder sits a step under the tertiary ink, so a sample never reads as a value typed in (wave-6 #2). */
 .ch-input::placeholder,
 .ch-textarea::placeholder {
-  color: var(--ch-ink-500);
+  color: var(--ch-text-placeholder);
 }
 
 /* Menu */
@@ -297,7 +308,7 @@
   border-radius: var(--ch-radius-md);
   background: none;
   color: var(--ch-text-primary);
-  font: 500 calc(13.5 * var(--ch-type-k))/1 var(--ch-font-sans);
+  font: 500 calc(14 * var(--ch-type-k))/1 var(--ch-font-sans);
   text-align: left;
   text-decoration: none;
   cursor: pointer;
@@ -331,9 +342,9 @@
   background: rgb(28 25 18 / 0.08);
 }
 
-/* A sheet's rise and its scrim wait at their first frame until the sheet has painted (useDialogLifetime). */
-.ch-root [data-ch-hold],
-.ch-root dialog[data-ch-hold]::backdrop {
+/* A sheet's rise waits at its first frame until the sheet has painted (useDialogLifetime); its scrim is held at 0 the
+   same two frames by --ch-scrim-a (A9). */
+.ch-root [data-ch-hold] {
   animation-play-state: paused;
 }
 
@@ -351,10 +362,13 @@
 }
 .ch-modal::backdrop {
   background: var(--ch-scrim, rgb(20 20 18 / 0.36));
-  animation: ch-fade var(--ch-dur-base) var(--ch-ease);
+  /* The dim fades by its own opacity, which the dialog drives (--ch-scrim-a: open, close, drag); never a keyframe (A9). */
+  opacity: var(--ch-scrim-a, 1);
+  transition: opacity var(--ch-scrim-dur, var(--ch-dur-base)) var(--ch-scrim-ease, var(--ch-ease));
 }
-.ch-root dialog[data-closing]::backdrop {
-  animation: ch-fade var(--ch-dur-base) var(--ch-ease) reverse forwards;
+/* Every dialog's dim starts at full; useDialogLifetime and the sheet drag move it (A9). */
+.ch-root dialog {
+  --ch-scrim-a: 1;
 }
 .ch-modal__panel {
   box-sizing: border-box;
@@ -612,7 +626,7 @@
   min-width: 0;
 }
 .ch-pp__name b {
-  font: 500 calc(13.5 * var(--ch-type-k))/1.2 var(--ch-font-sans);
+  font: 500 calc(14 * var(--ch-type-k))/1.2 var(--ch-font-sans);
   color: var(--ch-text-primary);
 }
 .ch-pp__row[aria-pressed='true'] .ch-pp__name b,
@@ -832,7 +846,7 @@
 .ch-slider__ends {
   display: flex;
   justify-content: space-between;
-  font: 400 calc(11.5 * var(--ch-type-k))/1 var(--ch-font-sans);
+  font: 400 calc(12 * var(--ch-type-k))/1 var(--ch-font-sans);
   color: var(--ch-text-tertiary);
 }
 
@@ -1072,7 +1086,7 @@
   border-radius: var(--ch-radius-md);
   background: transparent;
   color: var(--ch-text-primary);
-  font: 500 calc(13.5 * var(--ch-type-k))/1 var(--ch-font-sans);
+  font: 500 calc(14 * var(--ch-type-k))/1 var(--ch-font-sans);
   cursor: pointer;
   touch-action: manipulation;
   transition: background-color var(--ch-dur-quick) var(--ch-ease), color var(--ch-dur-quick) var(--ch-ease);
@@ -1161,7 +1175,7 @@
   border-radius: var(--ch-radius-md);
   background: transparent;
   color: var(--ch-text-primary);
-  font: 500 calc(13.5 * var(--ch-type-k))/1 var(--ch-font-sans);
+  font: 500 calc(14 * var(--ch-type-k))/1 var(--ch-font-sans);
   text-align: left;
   cursor: pointer;
   touch-action: manipulation;
@@ -1320,15 +1334,16 @@ html[data-fw-theme='dark'] .ch-slider input::-moz-range-thumb {
   background: linear-gradient(180deg, #f4eedd 0%, #e6dfcd 70%, #d8d1bf 100%);
 }
 
-/* Every window on the desktop is one material (owner, 2026-10-16: "more premium and add same blur"), the one the
-   course picker was researched to: the page behind dimmed with a light blur, no tint; the panel a solid surface
-   with one hairline edge, one soft shadow and 20px corners (the Claude and ChatGPT dialogs: solid, a 1px edge, one
-   shadow, 16-20px); a 20px title; the footer on the panel's own surface over a hairline, not a tinted bar. */
+/* Every window on the desktop is one material (owner, 2026-10-16), the one the course picker was researched to: the
+   page behind dimmed, no tint; the panel a solid surface with one hairline edge, one soft shadow and 20px corners (the
+   Claude and ChatGPT dialogs: solid, a 1px edge, one shadow, 16-20px); a 20px title; the footer on the panel's own
+   surface over a hairline, not a tinted bar. The dim is a solid wash, as a macOS sheet's is, and no blur (motion pass
+   2026-10-22, mot-02): the backdrop fades in over --ch-dur-base, and a blur under a fading layer re-blurs the whole page
+   on every frame of the open and the close, the stutter the phone lost on 2026-10-12. A shade deeper than the blur's
+   tint, so the panel still lifts off the page. */
 @media (min-width: 821px) {
   .ch-modal::backdrop {
-    background: rgb(12 12 10 / 0.38);
-    -webkit-backdrop-filter: blur(8px);
-    backdrop-filter: blur(8px);
+    background: rgb(12 12 10 / 0.42);
   }
   .ch-modal__panel {
     border-radius: 20px;

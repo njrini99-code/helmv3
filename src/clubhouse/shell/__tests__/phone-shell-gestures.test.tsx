@@ -306,6 +306,25 @@ describe('the edge swipe on a pushed screen', () => {
     expect(el.style.translate).toBe('');
   });
 
+  it('a screen that goes before its exit spring ends leaves no timer or frame behind, and hands the exit back once', () => {
+    const exit = exitHold();
+    vi.useFakeTimers({ toFake: ['requestAnimationFrame', 'cancelAnimationFrame', 'setTimeout', 'clearTimeout'] });
+    const view = render(<Harness exit={exit} onBack={vi.fn()} />);
+    swipeTo(screen.getByTestId('screen'), 170);
+    now += 200;
+    touch(screen.getByTestId('screen'), 'touchend', 0, 0, now);
+    expect(exit.current.holding).toBe(true);
+    expect(vi.getTimerCount()).toBeGreaterThan(0);
+    view.unmount();
+    expect(vi.getTimerCount()).toBe(0);
+    expect(exit.current.holding).toBe(false);
+    expect(exit.current.done).toHaveBeenCalledTimes(1);
+    act(() => {
+      vi.advanceTimersByTime(2000);
+    });
+    expect(exit.current.done).toHaveBeenCalledTimes(1);
+  });
+
   it('is off when not enabled (a covered screen)', () => {
     const { el } = mount({ enabled: false });
     expect(swipeTo(el, 150).prevented()).toBe(false);

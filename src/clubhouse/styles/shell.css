@@ -52,7 +52,7 @@
   border-radius: var(--ch-radius-md);
   background: var(--ch-bg-surface);
   color: var(--ch-forest-800);
-  font: 500 calc(13.5 * var(--ch-type-k))/1 var(--ch-font-sans);
+  font: 500 calc(14 * var(--ch-type-k))/1 var(--ch-font-sans);
   text-decoration: none;
   box-shadow: var(--ch-shadow-md);
   transform: translateY(-160%);
@@ -177,7 +177,7 @@
   border-radius: var(--ch-radius-md);
   background: none;
   color: var(--ch-text-primary);
-  font: 500 calc(13.5 * var(--ch-type-k))/1.25 var(--ch-font-sans);
+  font: 500 calc(14 * var(--ch-type-k))/1.25 var(--ch-font-sans);
   text-align: left;
   cursor: pointer;
 }
@@ -244,7 +244,7 @@
   padding: 0 10px;
   border-radius: var(--ch-radius-md);
   color: var(--ch-on-green-label);
-  font: 500 13.5px/1 var(--ch-font-sans);
+  font: 500 14px/1 var(--ch-font-sans);
   letter-spacing: -0.006em;
   text-decoration: none;
   transition: background var(--ch-dur-quick) var(--ch-ease), color var(--ch-dur-quick) var(--ch-ease),
@@ -401,7 +401,7 @@
   align-items: center;
   gap: 6px;
   min-width: 0;
-  font: 500 13.5px/1 var(--ch-font-sans);
+  font: 500 14px/1 var(--ch-font-sans);
   color: var(--ch-text-tertiary);
 }
 .ch-topbar__crumb {
@@ -444,7 +444,7 @@
   border-radius: var(--ch-radius-md);
   background: var(--ch-well-soft-bg);
   box-shadow: var(--ch-well-soft-shadow);
-  font: 400 calc(11.5 * var(--ch-type-k))/1.5 var(--ch-font-mono);
+  font: 400 calc(12 * var(--ch-type-k))/1.5 var(--ch-font-mono);
   color: var(--ch-text-secondary);
   white-space: pre-wrap;
 }
@@ -528,7 +528,7 @@
    confirm). */
 .ch-empty-page__title {
   margin: 0;
-  font: 600 calc(26 * var(--ch-type-k))/1.15 var(--ch-font-sans);
+  font: 600 calc(28 * var(--ch-type-k))/1.15 var(--ch-font-sans);
   font-variation-settings: 'wdth' 96;
   letter-spacing: -0.028em;
   color: var(--ch-ledger-ink);
@@ -562,7 +562,7 @@
   background: var(--ch-green-fill-600);
 }
 .ch-empty-page__prog-t {
-  font: 500 calc(12.5 * var(--ch-type-k))/1 var(--ch-font-sans);
+  font: 500 calc(13 * var(--ch-type-k))/1 var(--ch-font-sans);
   color: var(--ch-text-secondary);
 }
 .ch-empty-page__a {
@@ -628,10 +628,10 @@
     height: 120px;
   }
   .ch-empty-page__title {
-    font-size: calc(21 * var(--ch-type-k));
+    font-size: calc(22 * var(--ch-type-k));
   }
   .ch-empty-page__body {
-    font-size: calc(14.5 * var(--ch-type-k));
+    font-size: calc(15 * var(--ch-type-k));
   }
   .ch-empty-page__a {
     flex-direction: column;
@@ -892,7 +892,7 @@
   min-width: 0;
 }
 .ch-toast__body {
-  font: 400 calc(12.5 * var(--ch-type-k))/1.4 var(--ch-font-sans);
+  font: 400 calc(13 * var(--ch-type-k))/1.4 var(--ch-font-sans);
   color: #c9c5bb;
 }
 .ch-toast--error .ch-toast__icon {
@@ -941,7 +941,7 @@
   justify-content: space-between;
   gap: 10px;
   padding: 8px 0 12px;
-  font: 600 calc(18 * var(--ch-type-k))/1.2 var(--ch-font-sans);
+  font: 600 calc(17 * var(--ch-type-k))/1.2 var(--ch-font-sans);
   letter-spacing: -0.015em;
   color: var(--ch-text-primary);
 }
@@ -982,7 +982,7 @@
   padding: 8px 16px;
   border-top: 1px solid var(--ch-border-hairline);
   color: var(--ch-text-primary);
-  font: 500 calc(14.5 * var(--ch-type-k))/1.25 var(--ch-font-sans);
+  font: 500 calc(15 * var(--ch-type-k))/1.25 var(--ch-font-sans);
   text-decoration: none;
   transition: background var(--ch-dur-quick) var(--ch-ease), transform var(--ch-dur-quick) var(--ch-ease);
 }
@@ -1017,7 +1017,7 @@
   border-radius: 10px;
   background: var(--ch-green-fill-600);
   color: var(--ch-text-on-accent);
-  font: 600 calc(11.5 * var(--ch-type-k))/20px var(--ch-font-sans);
+  font: 600 calc(12 * var(--ch-type-k))/20px var(--ch-font-sans);
   text-align: center;
 }
 .ch-more__row[aria-current='page'] {
@@ -1051,7 +1051,7 @@ button.ch-more__row[disabled] {
   display: block;
   overflow: hidden;
   margin-top: 2px;
-  font: 400 calc(12.5 * var(--ch-type-k))/1.25 var(--ch-font-sans);
+  font: 400 calc(13 * var(--ch-type-k))/1.25 var(--ch-font-sans);
   color: var(--ch-text-tertiary);
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -1090,7 +1090,7 @@ button.ch-more__row[disabled] {
 }
 .ch-more__cap {
   padding: 0 4px 6px;
-  font: 500 calc(12.5 * var(--ch-type-k))/1.2 var(--ch-font-sans);
+  font: 500 calc(13 * var(--ch-type-k))/1.2 var(--ch-font-sans);
   color: var(--ch-text-tertiary);
 }
 .ch-more__row[aria-current='true'] {
@@ -1520,7 +1520,7 @@ button.ch-more__row[disabled] {
   border-radius: 999px;
   background: var(--ch-green-fill-600);
   box-shadow: 0 0 0 2px var(--ch-bg-page);
-  font: 600 10px/1 var(--ch-font-sans);
+  font: 600 11px/1 var(--ch-font-sans);
   font-variant-numeric: tabular-nums;
   color: var(--ch-text-on-accent);
 }
@@ -1553,7 +1553,7 @@ button.ch-more__row[disabled] {
   gap: 3px;
 }
 .ch-bellp__stitle b {
-  font: 600 calc(18 * var(--ch-type-k))/1.2 var(--ch-font-sans);
+  font: 600 calc(17 * var(--ch-type-k))/1.2 var(--ch-font-sans);
   letter-spacing: -0.015em;
   color: var(--ch-text-primary);
 }
@@ -1582,7 +1582,7 @@ button.ch-more__row[disabled] {
 }
 .ch-bellp__head b {
   flex: 1;
-  font: 600 calc(13.5 * var(--ch-type-k))/1 var(--ch-font-sans);
+  font: 600 calc(14 * var(--ch-type-k))/1 var(--ch-font-sans);
   color: var(--ch-text-primary);
 }
 .ch-bellp__head b span {
@@ -1668,7 +1668,7 @@ button.ch-more__row[disabled] {
   min-width: 0;
   flex: 1;
   overflow: hidden;
-  font: 500 calc(13.5 * var(--ch-type-k))/1.3 var(--ch-font-sans);
+  font: 500 calc(14 * var(--ch-type-k))/1.3 var(--ch-font-sans);
   color: var(--ch-text-primary);
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -1818,6 +1818,21 @@ html:has([data-ui='clubhouse'])::view-transition-old(ch-strip) {
    never a blank page between them. */
 html[data-ch-vt-hold]:has([data-ui='clubhouse'])::view-transition-old(ch-page) {
   animation-delay: var(--ch-dur-vt-hold);
+}
+/* A section switch (the tab bar, a sidebar item; lib/nav-motion.ts sets data-ch-tab; motion pass 2026-10-22, mot-03)
+   swaps at once, as a tab bar and a sidebar do on iOS and macOS: the new page is there in the first frame and the old
+   one is gone. The fade-through's dip, the old page out before the new one in, read as a blank beat on every section
+   change. Onto a route skeleton the old page still stays up through the hold and the skeleton's own delay, then goes in
+   one step as the skeleton fades in; a page that arrives sooner takes the hold off, and the old page goes with it. */
+html[data-ch-tab]:has([data-ui='clubhouse'])::view-transition-new(ch-page) {
+  animation: none;
+}
+html[data-ch-tab]:has([data-ui='clubhouse'])::view-transition-old(ch-page) {
+  display: none;
+}
+html[data-ch-tab][data-ch-vt-hold]:has([data-ui='clubhouse'])::view-transition-old(ch-page) {
+  display: block;
+  animation: calc(var(--ch-dur-vt-hold) + var(--ch-dur-vt-out)) step-end both ch-vt-out;
 }
 /* A drill-in pushes and Back pops (P1-1, P1-2; lib/nav-motion.ts sets data-ch-nav), as a pushed phone screen does
    (PhoneScreen): the new page slides in from the right edge on the smooth spring while the one under it draws back by
@@ -2036,7 +2051,7 @@ html[data-ch-ua-pop] .ch-pscreen::after {
   }
   /* P001-D5: not tracked (letterspaced mixed case read as a mistake); colour and the double rule carry the hierarchy. */
   [data-ui='clubhouse'] main[data-canopy] [data-canopy-head] :is(.ch-h-head__date, .ch-hl-role, .ch-hero__eyebrow) {
-    font: 500 12.5px/1.3 var(--ch-font-sans);
+    font: 500 13px/1.3 var(--ch-font-sans);
     letter-spacing: 0.01em;
     color: var(--ch-ledger-eyebrow);
   }
@@ -2072,9 +2087,9 @@ html[data-ch-ua-pop] .ch-pscreen::after {
    dialog) keeps its own material. Phone keeps its approved boards. */
 @media (min-width: 821px) {
   [data-ui='clubhouse'] main[data-canopy] {
-    --ch-type-serif-l: 600 32px/1.1 var(--ch-font-sans);
+    --ch-type-serif-l: 600 34px/1.1 var(--ch-font-sans);
     --ch-type-serif-m: 600 22px/1.15 var(--ch-font-sans);
-    --ch-type-serif-s: 600 19px/1.2 var(--ch-font-sans);
+    --ch-type-serif-s: 600 20px/1.2 var(--ch-font-sans);
   }
   [data-ui='clubhouse'] main[data-canopy] h2,
   [data-ui='clubhouse'] main[data-canopy] h3 {
@@ -2209,7 +2224,7 @@ html[data-ch-ua-pop] .ch-pscreen::after {
   grid-column: 1;
 }
 .ch-hero__eyebrow {
-  font: 600 calc(13.5 * var(--ch-type-k))/1 var(--ch-font-sans);
+  font: 600 calc(14 * var(--ch-type-k))/1 var(--ch-font-sans);
   color: var(--ch-text-tertiary);
 }
 .ch-hero__title {
@@ -2729,7 +2744,9 @@ html[data-fw-theme='dark'] .ch-offline {
 }
 .ch-asks::backdrop {
   background: var(--ch-scrim, rgb(20 20 18 / 0.36));
-  animation: ch-fade var(--ch-dur-base) var(--ch-ease);
+  /* The dim fades by its own opacity, which the dialog drives (--ch-scrim-a: open, close, drag); never a keyframe (A9). */
+  opacity: var(--ch-scrim-a, 1);
+  transition: opacity var(--ch-scrim-dur, var(--ch-dur-base)) var(--ch-scrim-ease, var(--ch-ease));
 }
 .ch-asks__panel {
   box-sizing: border-box;
@@ -2938,7 +2955,7 @@ html[data-fw-theme='dark'] .ch-offline {
     background: color-mix(in oklab, var(--ch-text-primary) 4.5%, transparent);
     box-shadow: none;
   }
-  /* A list row's type, not a card's label: 16px, a shade over regular (the current page and team keep their 600). */
+  /* A list row's type, not a card's label: 16px regular, as an iOS list row (the current page and team keep their 600). */
   .ch-more__row,
   button.ch-more__row {
     position: relative;
@@ -2946,7 +2963,7 @@ html[data-fw-theme='dark'] .ch-offline {
     min-height: 50px;
     border-top: 0;
     font-size: calc(16 * var(--ch-type-k));
-    font-weight: 450;
+    font-weight: 400;
     letter-spacing: -0.01em;
   }
   /* 16px padding, the 24px icon column and the 14px gap: the hairline starts where the label does. */
@@ -3165,7 +3182,7 @@ html[data-fw-theme='dark'] .ch-offline {
     border-radius: 9px;
     background: var(--ch-champagne-300);
     color: var(--ch-frame);
-    font: 650 calc(12 * var(--ch-type-k))/calc(14 * var(--ch-type-k)) var(--ch-font-sans);
+    font: 600 calc(12 * var(--ch-type-k))/calc(14 * var(--ch-type-k)) var(--ch-font-sans);
     font-variant-numeric: tabular-nums;
     text-align: center;
   }
@@ -3268,7 +3285,7 @@ html[data-fw-theme='dark'] .ch-offline {
     touch-action: none;
   }
   .ch-bst__head b {
-    font: 650 calc(24 * var(--ch-type-k))/1.1 var(--ch-font-sans);
+    font: 600 calc(22 * var(--ch-type-k))/1.1 var(--ch-font-sans);
     letter-spacing: -0.02em;
   }
   .ch-bst__all {
@@ -3370,7 +3387,7 @@ html[data-fw-theme='dark'] .ch-offline {
     border-radius: 14px;
     background: rgb(255 255 255 / 0.13);
     color: var(--ch-on-green-ink);
-    font: 600 calc(12.5 * var(--ch-type-k)) var(--ch-font-sans);
+    font: 600 calc(13 * var(--ch-type-k)) var(--ch-font-sans);
     cursor: pointer;
   }
   .ch-bst-pill::before {
@@ -3491,7 +3508,7 @@ html[data-fw-theme='dark'] .ch-offline {
   .ch-bst-card__more {
     margin-top: 4px;
     color: var(--ch-text-tertiary);
-    font: 500 calc(12.5 * var(--ch-type-k)) var(--ch-font-sans);
+    font: 500 calc(13 * var(--ch-type-k)) var(--ch-font-sans);
   }
   /* What a swipe uncovers behind the card. */
   .ch-bst-clear {
@@ -3503,7 +3520,7 @@ html[data-fw-theme='dark'] .ch-offline {
     padding-right: 22px;
     border-radius: 22px;
     color: var(--ch-champagne-300);
-    font: 600 calc(13.5 * var(--ch-type-k)) var(--ch-font-sans);
+    font: 600 calc(14 * var(--ch-type-k)) var(--ch-font-sans);
     pointer-events: none;
   }
   /* A folded card's edge under the top card. */
@@ -3580,7 +3597,7 @@ html[data-fw-theme='dark'] .ch-offline {
   }
   .ch-sidebar .ch-nav__section {
     padding: 10px 10px 6px;
-    font: 600 11.5px/1 var(--ch-font-sans);
+    font: 600 12px/1 var(--ch-font-sans);
     letter-spacing: 0.01em;
     color: var(--ch-hero-mint);
     opacity: 0.9;
@@ -3761,6 +3778,14 @@ html[data-ch-handoff] [data-ui='clubhouse'] .ch-brand:has(.ch-brand__line.is-wri
     overflow-x: hidden;
     transition: width var(--ch-dur-spring-smooth) var(--ch-ease-spring-smooth);
   }
+  /* While the fold moves (lib/rail-fold.ts sets data-ch-rail-moving; motion pass 2026-10-22, mot-01), the brand panel
+     drops its frost: a blur under a box that changes size is redrawn on every frame of the spring. Over the sidebar's
+     clear field, a smooth gradient, the panel reads nearly the same without it, and the frost is back as it settles.
+     The page's own size readers wait the fold out in the same way (afterRailMove). */
+  .ch-app[data-ch-rail-moving] .ch-brand {
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
+  }
 
   /* The circle on the seam, level with the brand panel's centre. */
   .ch-railtoggle {
@@ -3912,7 +3937,7 @@ html[data-ch-handoff] [data-ui='clubhouse'] .ch-brand:has(.ch-brand__line.is-wri
     border-radius: 8px;
     background: var(--ch-hero-mint);
     color: var(--ch-green-800);
-    font: 600 9.5px/1 var(--ch-font-sans);
+    font: 600 11px/1 var(--ch-font-sans);
     font-variant-numeric: tabular-nums;
     box-shadow: 0 0 0 1.5px var(--ch-shell);
     animation: ch-rail-count var(--ch-dur-base) var(--ch-ease) calc(var(--ch-dur-quick) * 0.8) both;

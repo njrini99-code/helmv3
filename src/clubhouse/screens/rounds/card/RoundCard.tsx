@@ -92,15 +92,25 @@ function totalCell(key: RowKey, m: CardModel) {
   }
 }
 
-function SgStrip({ m }: { m: CardModel }) {
+/** On a phone a leg shows its short label ("Off tee") and says its full one to a screen reader (A24). */
+function SgStrip({ m, phone }: { m: CardModel; phone: boolean }) {
   if (!m.sg) return null;
   const tone = (v: number | null) => (v == null || Math.abs(v) < 0.05 ? '' : v > 0 ? ' is-gain' : ' is-loss');
-  const cells: Array<[string, number | null]> = [['Strokes gained', m.sg.total], ...m.sg.legs.map((l) => [l.label, l.value] as [string, number | null])];
+  const cells: Array<[string, string, number | null]> = [['Strokes gained', 'Strokes gained', m.sg.total], ...m.sg.legs.map((l) => [l.label, l.short, l.value] as [string, string, number | null])];
   return (
     <dl className="ch-rcard-sg">
-      {cells.map(([label, v], i) => (
+      {cells.map(([label, short, v], i) => (
         <div key={label} className={i === 0 ? 'is-total' : undefined}>
-          <dt>{label}</dt>
+          <dt>
+            {phone && short !== label ? (
+              <>
+                <span aria-hidden="true">{short}</span>
+                <span className="ch-sr-only">{label}</span>
+              </>
+            ) : (
+              label
+            )}
+          </dt>
           <dd className={'ch-num' + tone(v)}>{formatSigned(v)}</dd>
         </div>
       ))}
@@ -346,7 +356,7 @@ export function RoundCard({ review: r, phone, just, settle }: { review: ChRoundR
         <div className="ch-rcard-body">
           <CardTables m={m} wide={!phone} tally />
         </div>
-        <SgStrip m={m} />
+        <SgStrip m={m} phone={phone} />
       </article>
       {story && (
         <p className="ch-rcard-story" data-ch-code="CH-11924">

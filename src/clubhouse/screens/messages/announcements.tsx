@@ -56,7 +56,7 @@ export function AnnouncementsSection({ api, q }: { api: ChMessagesApi; q: string
           <span>{api.announcements[0]?.title}</span>
         </span>
         {waiting > 0 && (
-          <span className="ch-ms-count ch-num" aria-label={`${waiting} need your acknowledgement`}>
+          <span role="img" className="ch-ms-count ch-num" aria-label={`${waiting} need your acknowledgement`}>
             {waiting}
           </span>
         )}
@@ -85,7 +85,7 @@ export function AnnouncementsSection({ api, q }: { api: ChMessagesApi; q: string
                   <span className="ch-ms-row__main">
                     <span className="ch-ms-row__top">
                       <b>{a.title}</b>
-                      <span className="ch-num">{railTime(a.publishedAt, api.now, api.timeZone)}</span>
+                      <span className="ch-num">{railTime(a.publishedAt, api.now, api.timeZone, api.clock)}</span>
                     </span>
                     <span className="ch-ms-row__bot">
                       <span>
@@ -93,7 +93,7 @@ export function AnnouncementsSection({ api, q }: { api: ChMessagesApi; q: string
                         {api.viewer.role === 'coach' && a.requiresAck ? <em>{`${a.ackCount} of ${a.total} acknowledged · `}</em> : mine ? <em>Needs your acknowledgement · </em> : null}
                         {a.body}
                       </span>
-                      {mine && <span className="ch-ms-count" aria-label="Needs your acknowledgement">1</span>}
+                      {mine && <span role="img" className="ch-ms-count" aria-label="Needs your acknowledgement">1</span>}
                     </span>
                   </span>
                 </button>
@@ -170,7 +170,7 @@ export function AnnouncementPane({ api, a, onBack }: { api: ChMessagesApi; a: Ch
   const coach = api.viewer.role === 'coach';
   const mine = needsMyAck(a, api.viewer.role);
   const signer = a.authorId ? api.signers?.[a.authorId] : undefined;
-  const published = a.publishedAt ? `${dayLabel(a.publishedAt, api.now, api.timeZone)} · ${clock(a.publishedAt, api.timeZone)}` : 'Scheduled';
+  const published = a.publishedAt ? `${dayLabel(a.publishedAt, api.now, api.timeZone)} · ${clock(a.publishedAt, api.timeZone, api.clock)}` : 'Scheduled';
 
   return (
     <section className="ch-ms-thread" aria-label={`Announcement: ${a.title}`}>
@@ -333,7 +333,7 @@ export function AnnouncementPane({ api, a, onBack }: { api: ChMessagesApi; a: Ch
                       <span style={{ minWidth: 0 }}>
                         <b>{x.name}</b>
                         <span className="ch-num">
-                          {dayLabel(x.at, api.now, api.timeZone)} · {clock(x.at, api.timeZone)}
+                          {dayLabel(x.at, api.now, api.timeZone)} · {clock(x.at, api.timeZone, api.clock)}
                         </span>
                       </span>
                       <Badge tone="positive" dot>

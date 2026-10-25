@@ -2627,7 +2627,7 @@ describe('Classes reader', () => {
     expect(await readScheduleLive({ kind: 'file', file: big })).toMatchObject({ ok: false, kind: 'tooLarge' });
   });
 
-  it('a large photo is not refused for its size on disk: what is sent is measured, against the vision action’s own ceiling', async () => {
+  it('a large photo is not refused for its size on disk: what is sent is measured, against what one request can carry (UP-1)', async () => {
     // jsdom has no image decoder, so each photo is sent as it is: the path a browser takes for a format it cannot open.
     actions.extract.mockReset();
     actions.extract.mockResolvedValue({ success: true, classes: [{ id: 'r1', course_code: 'STAT 201', course_name: 'Statistics', instructor: '', days: ['M'], start_time: '09:00', end_time: '09:50', location: '', building: '', room: '', credits: 3, semester: 'Fall 2026' }], warnings: [] });
@@ -2640,5 +2640,21 @@ describe('Classes reader', () => {
     const huge = new File([new Uint8Array(12.5 * 1024 * 1024)], 'IMG_2042.png', { type: 'image/png' });
     expect(await readScheduleLive({ kind: 'file', file: huge })).toMatchObject({ ok: false, kind: 'tooLarge' });
     expect(actions.extract).not.toHaveBeenCalled();
+    // 3.5 MB sent as it is is 4.7 MB of base64, past the ~4.5 MB a request body may be on Vercel: refused here, in words.
+    const past = new File([new Uint8Array(3.5 * 1024 * 1024)], 'IMG_2043.png', { type: 'image/png' });
+    expect(await readScheduleLive({ kind: 'file', file: past })).toEqual({ ok: false, kind: 'tooLarge', message: 'That image is too large to send. Use a PNG or JPG screenshot, or paste the text.' });
+    expect(actions.extract).not.toHaveBeenCalled();
+  });
+});
+
+describe('Classes · the palette’s Add class (A16)', () => {
+  afterEach(() => window.history.replaceState(null, '', '/'));
+
+  it('?new=1 opens the add form once and cleans the address', async () => {
+    window.history.replaceState(null, '', '/golf/dashboard/classes?new=1');
+    router.replace.mockClear();
+    show();
+    expect(await screen.findByRole('dialog', { name: 'Add a class' })).toBeTruthy();
+    expect(router.replace).toHaveBeenCalledWith('/golf/dashboard/classes', { scroll: false });
   });
 });

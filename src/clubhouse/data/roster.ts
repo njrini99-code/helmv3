@@ -5,6 +5,7 @@ import { getTeamJoinRequests } from '@/app/golf/actions/teams';
 import { chLogServer } from '../lib/track-server';
 import { coachTour, earliestStaleFloor, loadCoachHelmGate, loadVisible, newestRounds } from './coachhelm';
 import { countReads, type ChReadCount } from './coachhelm-classify';
+import { canEmailPlayerInvites } from '@/lib/golf/player-invite-email';
 import { relativeAgo } from '../screens/roster/format';
 import { NOTE_TABLE_MISSING_CODES, parseAvailability, type ChAvailability } from './availability';
 import { fromUntyped } from '@/lib/supabase/untyped';
@@ -13,7 +14,9 @@ import {
   displayHandicap,
   fullName,
   groupByPlayer,
+  isFull18,
   loadSeasonRounds,
+  mean,
   shortDate,
   summarizePlayer,
   type ChForm,
@@ -83,6 +86,11 @@ export interface ChRoster {
   joinCode: string | null;
   /** The team row didn't load: the name falls back and the join code is unknown, not missing. */
   teamError: boolean;
+  /**
+   * An invite email can leave the product right now (the owner's customer-email switch is on and a transport is set). The
+   * invite sheet then offers "Email invites"; without it the sheet says email is off and keeps the code and link. Absent reads as false.
+   */
+  emailInvites?: boolean;
   players: ChRosterPlayer[];
   playersError: boolean;
   /** This coach's notes didn't load: note fields are locked so a blank field can't overwrite one. */
@@ -94,6 +102,12 @@ export interface ChRoster {
    */
   availabilityCoachNotes?: boolean;
   statsError: boolean;
+  /**
+   * The team's season scoring average, pooled per round (A3): every active player's 18-hole round counts once, so a player
+   * with 3 rounds weighs a tenth of one with 30. The rounds the players' own averages read, and the team scoring average
+   * Stats shows by default (18 holes). Null with no such round or when the season read failed.
+   */
+  teamAvg: number | null;
   requests: ChJoinRequest[];
   requestsError: boolean;
   /**
@@ -238,6 +252,9 @@ export async function loadRoster(input: { teamId: string; coachId: string }): Pr
     };
   });
 
+  const activeIds = new Set(players.filter((p) => p.status === 'active').map((p) => p.id));
+  const teamAvg = season.error ? null : mean(season.rounds.filter((r) => activeIds.has(r.player_id) && isFull18(r)).map((r) => r.total_score as number));
+
   const requests: ChJoinRequest[] = (requestsRes.success ? (requestsRes.data ?? []) : [])
     .filter((r) => r.status === 'pending')
     .map((r) => {
@@ -260,11 +277,13 @@ export async function loadRoster(input: { teamId: string; coachId: string }): Pr
     season: teamRes.data?.season ?? null,
     joinCode: teamRes.data?.join_code ?? null,
     teamError: !!teamRes.error,
+    emailInvites: canEmailPlayerInvites(),
     players,
     playersError: !!membersRes.error,
     notesError: notes.error,
     availabilityCoachNotes: availNotes.ready,
     statsError: season.error,
+    teamAvg,
     requests,
     requestsError: !requestsRes.success,
     helm,

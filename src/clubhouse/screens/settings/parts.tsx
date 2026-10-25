@@ -110,9 +110,9 @@ export function SavedMark({ show }: { show: boolean }) {
 }
 
 /** One setting: label and help on the left, the control on the right (stacks when narrow). `saved`: it just saved. */
-export function Row({ label, help, htmlFor, children, dim, saved }: { label: ReactNode; help?: ReactNode; htmlFor?: string; children: ReactNode; dim?: boolean; saved?: boolean }) {
+export function Row({ label, help, htmlFor, children, dim, saved, code }: { label: ReactNode; help?: ReactNode; htmlFor?: string; children: ReactNode; dim?: boolean; saved?: boolean; code?: string }) {
   return (
-    <div className={'ch-set-row' + (dim ? ' is-dim' : '')}>
+    <div className={'ch-set-row' + (dim ? ' is-dim' : '')} data-ch-code={code}>
       <div className="ch-set-row__txt">
         <span className="ch-set-row__top">
           {htmlFor ? (

@@ -4,13 +4,14 @@ import { acknowledgeAnnouncement } from '@/app/golf/actions/communication';
 import { createEnrichedAnnouncement, deleteAnnouncement, getAnnouncementDetail, updateAnnouncement } from '@/app/golf/actions/announcements';
 import { markTravelSeen } from '@/app/golf/actions/player-notifications';
 import { markNotificationRead } from '@/app/golf/actions/unified-notifications';
-import { resolveMimeType } from '@/lib/storage/mime';
-import { createGolfDocument, deleteGolfDocument, getPreviewUrl, uploadGolfDocument } from '@/app/golf/actions/documents';
+import { createGolfDocument, deleteGolfDocument, getPreviewUrl, prepareGolfDocumentUpload } from '@/app/golf/actions/documents';
 import { respondToEvent, updateGolfEvent } from '@/app/golf/actions/calendar-events';
 import { completeTask, createTask, deleteTask, uncompleteTask } from '@/app/golf/actions/tasks';
 import { createGolfTravelItinerary, deleteGolfTravelItinerary, getTravelerClassConflicts, updateGolfTravelItinerary } from '@/app/golf/actions/travel';
 import type { ChHubUrgency } from '../../data/hub';
 import type { ChTravelerClass, ChTripWindow } from '../../data/hub-shape';
+import { putWithProgress } from '../recruiting/upload';
+import { uploadTeamDocument } from './upload';
 import type { ServerResult } from '../../lib/use-action';
 
 /**
@@ -129,22 +130,8 @@ export const LIVE_HUB_WRITES: ChHubWrites = {
     }) as Promise<ServerResult<{ id: string }>>,
   setTravelers: (eventId, c) => updateGolfEvent(eventId, { addAttendeeIds: c.add, removeAttendeeIds: c.remove }) as Promise<ServerResult>,
   travelerClasses: (i) => getTravelerClassConflicts(i),
-  async uploadDocument(i) {
-    const up = await uploadGolfDocument(i.file, i.teamId);
-    if (!up.success || !up.file_url) return { success: false, error: up.error };
-    return createGolfDocument({
-      team_id: i.teamId,
-      title: i.file.name.replace(/\.[^.]+$/, ''),
-      file_url: up.file_url,
-      // The MIME type, as Fairway's Documents stores it (and the version row's mime_type copies it); the extension was
-      // stored here, so a Clubhouse upload's version read `pdf` where every other row reads `application/pdf`.
-      file_type: resolveMimeType(i.file),
-      file_size: i.file.size,
-      player_visible: true,
-      folder: i.folder ?? undefined,
-      storage_path: up.storage_path,
-    });
-  },
+  // UP-1: the file goes straight to Storage on a signed URL, never through a server action's body (hub/upload.ts).
+  uploadDocument: (i) => uploadTeamDocument({ prepare: prepareGolfDocumentUpload, put: (url, file, type) => putWithProgress(url, file, type), create: createGolfDocument }, i),
   deleteDocument: (id) => deleteGolfDocument(id),
   editTrip: (i) =>
     updateGolfTravelItinerary({

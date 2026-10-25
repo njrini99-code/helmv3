@@ -200,7 +200,9 @@ const CH_REBUILT_PATTERNS: Record<ChRole, readonly RegExp[]> = {
 export const CH_ALIASED_ROUTES: readonly RegExp[] = [
   /^\/golf\/dashboard\/(tasks|intelligence|courses|announcements|team|documents|travel)$/,
   /^\/golf\/dashboard\/roster\/[^/]+$/,
-  /^\/golf\/dashboard\/players\/[^/]+$/,
+  // A player's old pages and everything under them: next.config sends /players/<id> on to /players/<id>/game, and an old
+  // genome link to /players/<id>/genome, before any layout runs (A30), so those are the addresses that arrive here.
+  /^\/golf\/dashboard\/players\/[^/]+(\/.*)?$/,
   /^\/golf\/dashboard\/coachhelm\/(chat|qualifying\/[^/]+|genome\/compare|genome\/[^/]+)$/,
   /^\/golf\/dashboard\/rounds\/[^/]+\/review$/,
   // Rebuilt for one role and moved for the other (My qualifiers to a coach's Qualifiers, a player's Team stats to their

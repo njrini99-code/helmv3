@@ -21,6 +21,7 @@ import {
   type ChTerm,
   type ChWeek,
 } from '../../data/classes-shape';
+import { useChClock } from '../../lib/use-clock';
 import { haptic } from '../../lib/haptics';
 import { useChReducedMotion } from '../../lib/reduced-motion';
 import { CH_SLOW_SAVE_AFTER, isOffline } from '../../lib/use-action';
@@ -89,6 +90,7 @@ export function ImportSchedule({
   term: ChTerm;
   week: ChWeek;
 }) {
+  const hours = useChClock();
   const [was, setWas] = useState(false);
   const [step, setStep] = useState<Step>('pick');
   const [tab, setTab] = useState<Tab>('file');
@@ -338,7 +340,7 @@ export function ImportSchedule({
                 <ul className="ch-cl-rv" aria-label="Classes found">
                   {rows.slice(0, shown).map((r, i) => {
                     const tab = tabParts({ code: r.code, name: r.name });
-                    const meta = [daysLabel(r.days) || 'No days', timeRange(r.start, r.end) ?? 'No time', [r.building, r.room].filter(Boolean).join(' ')].filter(Boolean).join(' · ');
+                    const meta = [daysLabel(r.days) || 'No days', timeRange(r.start, r.end, hours) ?? 'No time', [r.building, r.room].filter(Boolean).join(' ')].filter(Boolean).join(' · ');
                     return (
                       <li key={r.key} className={'ch-cl-rv__r' + (r.look ? ' is-check' : '')}>
                         <span className={`ch-cl-rv__tab ch-cl-t-${CH_TONES[i % CH_TONES.length]}`}>

@@ -3,19 +3,22 @@
 import { Flag, MessageSquare, Navigation, Sunset, TriangleAlert } from 'lucide-react';
 import Link from 'next/link';
 import { useEffect, useRef, useState, type ReactNode } from 'react';
-import type { ChHomeEvent, ChLatestRound } from '../../data/home';
+import type { ChAgendaRow, ChHomeEvent, ChLatestRound } from '../../data/home';
 import { Avatar } from '../../ui/Avatar';
 import { Icon } from '../../ui/Icon';
 import { LedgerList, LedgerRow } from '../../ui/Ledger';
 import { formatToPar } from '../../lib/format';
 import { haptic } from '../../lib/haptics';
 import { chTrail } from '../../lib/track';
+import type { ChClock } from '../../lib/clock-cookie';
+import { useChClockText } from '../../lib/use-clock';
 import { rebuiltHref } from '../../shell/nav';
 import { LinkPending } from '../../shell/LinkPending';
 import { TYPE_LABEL } from '../calendar/model';
 import { TYPE_ICON } from '../calendar/views';
 import { messagesPrefillHref } from '../messages/prefill';
 import { sunTimes, type LatLng } from '../../lib/sun';
+import { agendaDetail } from './agenda-clock';
 import { CALENDAR, eventHref, whenLabel } from './event-links';
 import { nudgeDraft } from './nudge-draft';
 
@@ -57,11 +60,12 @@ export function DayCard({ phase, now, today, onOpenRound }: { phase: Exclude<ChD
 }
 
 function EventCard({ e, live, now, today }: { e: ChHomeEvent; live: boolean; now: Date | null; today: string | null }) {
+  const t = useChClockText();
   const when = whenLabel(e, now);
   const people = e.invitees ?? [];
   const awaiting = e.awaiting ?? [];
   const end = e.rangeLabel.split(' – ')[1];
-  const kicker = e.allDay ? `${e.date === today ? 'Today' : WEEKDAY.format(new Date(`${e.date}T12:00:00Z`))} · all day` : live ? `Now${end ? ` · until ${end}` : ''}` : `Next up · ${e.startLabel}`;
+  const kicker = e.allDay ? `${e.date === today ? 'Today' : WEEKDAY.format(new Date(`${e.date}T12:00:00Z`))} · all day` : live ? `Now${end ? ` · until ${t(end)}` : ''}` : `Next up · ${t(e.startLabel)}`;
   const open = (h: string | null) => (h ? rebuiltHref(h) : null);
   const nudge = awaiting.length ? open(messagesPrefillHref({ players: awaiting.map((p) => p.id), draft: nudgeDraft(e, today), title: e.title })) : null;
   const message = !nudge && e.inviteeIds?.length ? open(messagesPrefillHref({ players: e.inviteeIds, draft: '', title: e.title })) : null;
@@ -73,7 +77,7 @@ function EventCard({ e, live, now, today }: { e: ChHomeEvent; live: boolean; now
           <Icon icon={TYPE_ICON[e.type]} size={13} />
           {kicker}
         </span>
-        <span className={'ch-hm-next__when ch-num' + (when.soon ? ' is-soon' : '')}>{when.text}</span>
+        <span className={'ch-hm-next__when ch-num' + (when.soon ? ' is-soon' : '')}>{t(when.text)}</span>
       </span>
       <h2 id="ch-hm-day-t">
         {/* The title opens the event; its press area covers the card, under the actions. */}
@@ -81,7 +85,7 @@ function EventCard({ e, live, now, today }: { e: ChHomeEvent; live: boolean; now
           {e.title}
         </Link>
       </h2>
-      <p className="ch-num">{[live || e.allDay ? null : e.rangeLabel, e.location ?? TYPE_LABEL[e.type]].filter(Boolean).join(' · ')}</p>
+      <p className="ch-num">{[live || e.allDay ? null : t(e.rangeLabel), e.location ?? TYPE_LABEL[e.type]].filter(Boolean).join(' · ')}</p>
       {e.invitees && people.length > 0 && (
         <span className="ch-hm-next__f ch-hm-day__people">
           <span className="ch-hm-stack ch-hm-day__stack" aria-hidden="true">
@@ -105,13 +109,13 @@ function EventCard({ e, live, now, today }: { e: ChHomeEvent; live: boolean; now
       {(nudge || message || directions) && (
         <span className="ch-hm-day__acts">
           {nudge && (
-            <Link href={nudge} className="ch-hm-day__act is-primary" data-ch-press="" onClick={() => (haptic('select'), chTrail('home nudge'))}>
+            <Link href={nudge} className="ch-hm-day__act is-primary" data-ch-press="" onClick={() => chTrail('home nudge')}>
               <Icon icon={MessageSquare} size={16} />
               {awaiting.length === 1 ? `Nudge ${firstName(awaiting[0]!.name)}` : `Nudge ${awaiting.length}`}
             </Link>
           )}
           {message && (
-            <Link href={message} className="ch-hm-day__act is-primary" data-ch-press="" onClick={() => (haptic('select'), chTrail('home message invitees'))}>
+            <Link href={message} className="ch-hm-day__act is-primary" data-ch-press="" onClick={() => chTrail('home message invitees')}>
               <Icon icon={MessageSquare} size={16} />
               Message
             </Link>
@@ -173,6 +177,7 @@ export interface ChRailExtra {
  * `extras` in time order (the sunset from the global light once it lands; a competition later this week).
  */
 export function LaterToday({ todays, cardId, now, extras }: { todays: ChHomeEvent[]; cardId: string | null; now: Date | null; extras: ChRailExtra[] }) {
+  const t12 = useChClockText();
   const t = now?.getTime();
   const rows: Array<{ key: string; at: number; node: ReactNode }> = todays
     .filter((e) => e.id !== cardId && (t == null || !over(e, t)))
@@ -181,7 +186,7 @@ export function LaterToday({ todays, cardId, now, extras }: { todays: ChHomeEven
       at: e.allDay ? -1 : minutesOf(e.startIso, e.timezone),
       node: (
         <Link href={eventHref(e)} className="ch-hm-tl__a">
-          <span className="ch-hm-tl__t ch-num">{e.allDay ? 'All day' : e.startLabel.replace(/\s?[AP]M$/, '')}</span>
+          <span className="ch-hm-tl__t ch-num">{e.allDay ? 'All day' : t12(e.startLabel).replace(/\s?[AP]M$/, '')}</span>
           <span className="ch-hm-tl__rail" aria-hidden="true">
             <i className={`is-${e.type}`} />
           </span>
@@ -260,12 +265,12 @@ function minutesOf(iso: string, timeZone?: string): number {
  * The sunset row (concept board 1): today's sunset at the team's place (the global light's sun, lib/sun.ts sunTimes),
  * while it is still ahead; its line says when the light turns golden. Nothing after sunset, or where the sun doesn't set.
  */
-export function sunsetExtra(today: string | null, now: Date | null, place: { place: LatLng; timeZone: string }): ChRailExtra[] {
+export function sunsetExtra(today: string | null, now: Date | null, place: { place: LatLng; timeZone: string }, clock: ChClock = '12'): ChRailExtra[] {
   if (!today || !now) return [];
   const { sunset, goldenStart } = sunTimes(today, place.place, place.timeZone);
   if (sunset === null || sunset <= now.getTime()) return [];
-  const clock = new Intl.DateTimeFormat('en-US', { timeZone: place.timeZone, hour: 'numeric', minute: '2-digit' });
-  const short = (ms: number) => clock.format(ms).replace(/\s?[AP]M$/, '');
+  const fmt = new Intl.DateTimeFormat('en-US', { timeZone: place.timeZone, hour: clock === '24' ? '2-digit' : 'numeric', minute: '2-digit', ...(clock === '24' ? { hourCycle: 'h23' as const } : {}) });
+  const short = (ms: number) => fmt.format(ms).replace(/\s?[AP]M$/, '');
   return [
     {
       key: 'sunset',
@@ -279,9 +284,9 @@ export function sunsetExtra(today: string | null, now: Date | null, place: { pla
 }
 
 /** A competition later this week, for the rail: after today, so it sorts below today's rows. */
-export function competitionExtra(row: { id: string; timeLabel: string; title: string; detail: string | null } | undefined): ChRailExtra[] {
+export function competitionExtra(row: Pick<ChAgendaRow, 'id' | 'timeLabel' | 'title' | 'detail' | 'hm' | 'when'> | undefined, clock: ChClock = '12'): ChRailExtra[] {
   if (!row) return [];
-  return [{ key: `comp-${row.id}`, at: 24 * 60 + 1, time: row.timeLabel, title: row.title, sub: row.detail, mark: 'competition', href: `${CALENDAR}?event=${row.id}` }];
+  return [{ key: `comp-${row.id}`, at: 24 * 60 + 1, time: row.timeLabel, title: row.title, sub: agendaDetail(row, clock), mark: 'competition', href: `${CALENDAR}?event=${row.id}` }];
 }
 
 /**

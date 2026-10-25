@@ -9,6 +9,7 @@ import { Button } from '../../../ui/Button';
 import { Icon } from '../../../ui/Icon';
 import { ExitSheet, RoundCompleteSheet, ScorecardSheet, SubmitOverlay } from '../track/round-sheets';
 import { RoundTracking } from '../track/RoundTracking';
+import { CourseNudge } from './CourseNudge';
 import { reasonText } from './labels';
 import type { RoundNotices } from './ports';
 import { RecoveryDialog } from './RecoveryDialog';
@@ -16,7 +17,9 @@ import { ReloadBanner, RoundErrorBanner } from './ReloadBanner';
 import { QUALIFIER_CLOSED_REASON, SaveAsPracticeSheet } from './SaveAsPracticeSheet';
 import { cardHoles, outcomeOf, postedScore, recoveryFacts, summaryHoles, type ChRecovery, type ChRoundSession } from './session';
 import { useEntryFailureToast } from './failures';
+import { SETUP_READ_PORTS } from './setup-reads';
 import '../../../styles/rounds-track.css';
+import { invalidatePrefetchTabs } from '../../../shell/use-prefetch-tabs';
 
 /** After a round posts, its review opens once the check has had a moment (the legacy overlay counted three seconds). */
 export const POSTED_OPEN_MS = 2500;
@@ -235,6 +238,8 @@ export function RoundRuntime({
     if (ticked.current !== id) {
       ticked.current = id;
       haptic('success');
+      // Rounds, Stats and Roster held from before the submit would miss the new round (A21).
+      invalidatePrefetchTabs();
     }
     const t = window.setTimeout(() => routerRef.current.push(`${routesRef.current.review(id)}${JUST_SUBMITTED}`), POSTED_OPEN_MS);
     return () => window.clearTimeout(t);
@@ -276,6 +281,8 @@ export function RoundRuntime({
     ) : null;
 
   const card = cardHoles(session.holes, session.completedHoleStats);
+  // The course nudge (CH-11962) at the round's start and before posting; one view, so a link or a Skip holds in both places.
+  const nudge = session.courseNudge ?? null;
   const current = session.holes[session.currentHoleIndex]?.number ?? 1;
   const shots = (session.pendingFinalStats ?? session.completedHoleStats).reduce((n, h) => n + (h?.shots.length ?? 0), 0);
 
@@ -298,6 +305,9 @@ export function RoundRuntime({
         holeShots={(i) => session.completedHoleStats[i]?.shots ?? null}
         onReviewRound={session.pendingFinalStats && !session.submitting ? () => s.current.setShowFinishConfirm(true) : undefined}
         onAutoSave={session.onAutoSave}
+        dataGapAsks={session.dataGapAsks}
+        recoveryPrompt={session.recoveryPrompt ?? false}
+        startPrompt={nudge ? <CourseNudge nudge={nudge} ports={SETUP_READ_PORTS} /> : undefined}
         autoSaveInterval={15000}
         autoSaveDisabled={session.autoSaveDisabled}
         statusSlot={
@@ -336,6 +346,7 @@ export function RoundRuntime({
         heading={session.heading}
         holes={summaryHoles(session.holes, session.pendingFinalStats ?? [])}
         backHole={current}
+        notice={nudge ? <CourseNudge nudge={nudge} ports={SETUP_READ_PORTS} sheet /> : undefined}
         onBack={() => s.current.setShowFinishConfirm(false)}
         onSubmit={() => {
           const stats = s.current.pendingFinalStats;

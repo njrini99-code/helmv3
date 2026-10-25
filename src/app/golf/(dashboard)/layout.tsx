@@ -13,8 +13,9 @@ import { describeError } from '@/lib/utils/describe-error';
 import { resolveGolfCoachEntry } from '@/lib/golf/coach-entry-path';
 import { isClubhouseFor } from '@/clubhouse/gate';
 import { ClubhouseShell } from '@/clubhouse/shell/ClubhouseShell';
+import { SplashHide } from '@/clubhouse/shell/SplashHide';
 import { loadClubhouseShell } from '@/clubhouse/data/shell';
-import { phoneHint, railHint } from '@/clubhouse/lib/phone-hint';
+import { clockHint, phoneHint, railHint } from '@/clubhouse/lib/phone-hint';
 
 /**
  * Golf Dashboard Layout — SERVER COMPONENT
@@ -293,11 +294,15 @@ export default async function GolfDashboardLayout({
   // Clubhouse (golf_clubhouse_ui): the from-scratch coach UI. A separate tree,
   // never layered on Fairway; see docs/clubhouse/PROGRESS.md.
   if ((await isClubhouseFor(userData.role))) {
-    const [shell, phone, folded] = await Promise.all([loadClubhouseShell(userData.teamId, userData.role === 'player' ? userData.playerId : null, userData.role === 'coach' ? userData.coachId : null), phoneHint(), railHint()]);
+    const [shell, phone, folded, clock] = await Promise.all([loadClubhouseShell(userData.teamId, userData.role === 'player' ? userData.playerId : null, userData.role === 'coach' ? userData.coachId : null), phoneHint(), railHint(), clockHint()]);
     return (
-      <ClubhouseShell userData={userData} shell={shell} phone={phone} folded={folded}>
-        {children}
-      </ClubhouseShell>
+      <>
+        {/* A15: the app's splash comes down on the first painted frame, not after hydration. */}
+        <SplashHide />
+        <ClubhouseShell userData={userData} shell={shell} phone={phone} folded={folded} clock={clock}>
+          {children}
+        </ClubhouseShell>
+      </>
     );
   }
 

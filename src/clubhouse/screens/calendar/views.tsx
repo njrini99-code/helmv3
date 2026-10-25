@@ -6,6 +6,8 @@ import { Button } from '../../ui/Button';
 import { Badge } from '../../ui/Badge';
 import { Icon } from '../../ui/Icon';
 import { haptic } from '../../lib/haptics';
+import { useChClock } from '../../lib/use-clock';
+import { clockHourLabel, meridiemOfHour } from '../../lib/clock-format';
 import { ClassGroupBlock } from './class-group';
 import { EventPeek } from './peek';
 import {
@@ -120,10 +122,12 @@ function EventBlock({
   /** It has ended: it steps back so what is still to come reads first (it comes forward on hover, focus and selection). */
   past?: boolean;
 }) {
+  const clock = useChClock();
   const start = Math.max(e.start!, from);
   const end = Math.min(e.end!, to);
   const top = (start - from) * CAL_HH;
-  const h = Math.max((end - start) * CAL_HH - 2, 20);
+  // At least one line of title (A26): a 15-minute block was 20px and cut its title's descenders.
+  const h = Math.max((end - start) * CAL_HH - 2, 22);
   const short = h < 40;
   /** Overlapping events cascade, as Apple Calendar does (owner, 2026-10-06: the split lanes crushed titles into
    *  fragments): each later lane steps right and lies over the earlier ones, reaching the column's right edge, so every
@@ -131,13 +135,17 @@ function EventBlock({
   const step = lanes > 1 ? Math.min(46, 70 / (lanes - 1)) : 0;
   const left = step * lane;
   const shared = lanes > 1;
+  // A busy block (someone's time, not a team event) lies under the events it overlaps, whatever its lane (A26): stepped in
+  // over a team round it hid the round's title.
+  const under = shared && (e.type === 'busy' || e.busyOnly);
   const title = eventTitle(e, people, viewerId);
   // The time in parts, each kept whole: the block shows as many as fit on its one line (calendar.css, .ch-ev__m--fit),
   // so a narrow block reads "8:00 AM" and a narrower one "8:00", never a cut "8:00 – 9:…" or a bare start where AM or PM
   // fits. The start carries its half, so a range reads "8:00 AM – 9:30 AM". A short block gives only its start; a day
   // of a run over several days keeps rangeLabel's one phrase ("From 8:00 AM").
   const timed = !e.allDay && !(e.span?.start != null && e.span.end != null && e.date);
-  const when = timed ? [fmtHour(e.start!, false), e.start! < 12 ? ' AM' : ' PM', ...(short ? [] : [` – ${fmtHour(e.end!)}`])] : [rangeLabel(e)];
+  // On the 24-hour clock there is no half to carry: "08:00" and "08:00 – 09:30".
+  const when = timed ? [fmtHour(e.start!, false, clock), meridiemOfHour(e.start!, clock), ...(short ? [] : [` – ${fmtHour(e.end!, true, clock)}`])].filter(Boolean) : [rangeLabel(e, clock)];
   const where = !shared && h > 70 && e.location && !e.busyOnly ? ` · ${e.location}` : null;
   // P006 D2: a block on its own wraps its title to the lines its height leaves above the time (padding 12, gap 2, time 15;
   // a title line is 15.6), at most three, so "Bus to Pinehurst" isn't cut to "Bus to Pine…" in a block with room.
@@ -149,9 +157,9 @@ function EventBlock({
       type="button"
       data-print-visible
       // CH-6801: a button named with its title, time and any overlap. CH-6601: it lifts on hover and marks its selection.
-      className={`ch-ev ch-ev--${e.type}${short ? ' ch-ev--short' : ''}${shared ? ' ch-ev--lane' : ''}${lines ? ' ch-ev--wrap' : ''}${sel ? ' is-sel' : ''}${drag ? ' is-draggable' : ''}${state ? ` is-${state}` : ''}${past && !state ? ' is-past' : ''}`}
-      style={{ top, height: h, left: `calc(${left}% + 3px)`, width: `calc(${100 - left}% - 6px)`, zIndex: state === 'ghost' ? 6 : shared ? lane + 1 : undefined, ...(lines ? { '--ch-ev-lines': lines } : {}) } as CSSProperties}
-      aria-label={`${title}, ${rangeLabel(e)}${past && !state ? ', ended' : ''}${flagged ? ', schedule overlap' : ''}${drag ? '. Alt and the arrow keys move it 15 minutes' : ''}`}
+      className={`ch-ev ch-ev--${e.type}${short ? ' ch-ev--short' : ''}${shared ? ' ch-ev--lane' : ''}${under ? ' ch-ev--under' : ''}${lines ? ' ch-ev--wrap' : ''}${sel ? ' is-sel' : ''}${drag ? ' is-draggable' : ''}${state ? ` is-${state}` : ''}${past && !state ? ' is-past' : ''}`}
+      style={{ top, height: h, left: `calc(${left}% + 3px)`, width: `calc(${100 - left}% - 6px)`, zIndex: state === 'ghost' ? 6 : under ? undefined : shared ? lane + 1 : undefined, ...(lines ? { '--ch-ev-lines': lines } : {}) } as CSSProperties}
+      aria-label={`${title}, ${rangeLabel(e, clock)}${past && !state ? ', ended' : ''}${flagged ? ', schedule overlap' : ''}${drag ? '. Alt and the arrow keys move it 15 minutes' : ''}`}
       aria-pressed={sel}
       aria-hidden={state === 'ghost' || undefined}
       tabIndex={state === 'ghost' ? -1 : undefined}
@@ -224,7 +232,8 @@ export function TimeGrid({
   const from = Math.max(0, Math.min(CAL_START, ...timed.map((e) => Math.floor(e.start!))));
   const to = Math.min(24, Math.max(CAL_END, ...timed.map((e) => Math.ceil(e.end!))));
   const hours = Array.from({ length: to - from }, (_, i) => from + i);
-  const nowLabel = fmtHour(now.hour, false);
+  const clock = useChClock();
+  const nowLabel = fmtHour(now.hour, false, clock);
   const nowVisible = now.hour >= from && now.hour <= to;
   const grid = useRef<HTMLDivElement | null>(null);
   const [drag, setDrag] = useState<{ e: ChCalEvent; to: ChMoveTarget } | null>(null);
@@ -340,7 +349,7 @@ export function TimeGrid({
             (h) =>
               h > from && (
                 <span key={h} style={{ top: (h - from) * CAL_HH }}>
-                  {((h + 11) % 12) + 1} {h < 12 ? 'AM' : 'PM'}
+                  {clockHourLabel(h, clock)}
                 </span>
               ),
           )}
@@ -379,7 +388,7 @@ export function TimeGrid({
                 <EventBlock e={{ ...drag.e, date: d, start: drag.to.start, end: drag.to.end }} lane={0} lanes={1} sel={false} flagged={false} people={people} viewerId={viewerId} onSelect={() => {}} from={from} to={to} state="ghost" />
               )}
               {d === now.date && nowVisible && (
-                <div className="ch-wk__now" /* CH-6603: the current time, a line across today */ style={{ top: (now.hour - from) * CAL_HH }} role="separator" aria-label={`Now, ${fmtHour(now.hour)}`}>
+                <div className="ch-wk__now" /* CH-6603: the current time, a line across today */ style={{ top: (now.hour - from) * CAL_HH }} role="separator" aria-label={`Now, ${fmtHour(now.hour, true, clock)}`}>
                   <span className="ch-wk__nowlbl">{nowLabel}</span>
                 </div>
               )}
@@ -397,6 +406,7 @@ export function TimeGrid({
  * tints an event or a figure, and a block covers it.
  */
 function Daylight({ dl, from, to, label }: { dl: ChDaylight; from: number; to: number; label: boolean }) {
+  const clock = useChClock();
   const y = (h: number) => (Math.min(to, Math.max(from, h)) - from) * CAL_HH;
   return (
     <span className="ch-wk__sky" aria-hidden="true">
@@ -405,7 +415,7 @@ function Daylight({ dl, from, to, label }: { dl: ChDaylight; from: number; to: n
       {dl.golden !== null && dl.set !== null && dl.set > dl.golden && <i className="is-golden" style={{ top: y(dl.golden), height: y(dl.set) - y(dl.golden) }} />}
       {label && dl.set !== null && dl.set > from && dl.set < to && (
         <em className="ch-wk__sunset ch-num" style={{ top: y(dl.set) }}>
-          Sunset {fmtHour(dl.set)}
+          Sunset {fmtHour(dl.set, true, clock)}
         </em>
       )}
     </span>
@@ -484,6 +494,7 @@ export function AgendaView({
   /** The signed-in player: their own class is titled without their name. */
   viewerId?: string | null;
 }) {
+  const clock = useChClock();
   const [early, setEarly] = useState(false);
   const days = [...new Set(events.map((e) => e.date))].sort();
   const past = days.filter((d) => d < now.date);
@@ -508,8 +519,8 @@ export function AgendaView({
           const prev = evs[i - 1];
           if (d === now.date && !e.allDay && e.start! > now.hour && (!prev || prev.allDay || prev.start! <= now.hour)) {
             rows.push(
-              <div key="now" className="ch-ag__now" role="separator" aria-label={`Now, ${fmtHour(now.hour)}`}>
-                <span>Now · {fmtHour(now.hour)}</span>
+              <div key="now" className="ch-ag__now" role="separator" aria-label={`Now, ${fmtHour(now.hour, true, clock)}`}>
+                <span>Now · {fmtHour(now.hour, true, clock)}</span>
               </div>,
             );
           }
@@ -526,8 +537,8 @@ export function AgendaView({
               }}
             >
               <span className="ch-ag__t">
-                {startLabel(e)}
-                {!e.allDay && <span>{fmtHour(e.end!)}</span>}
+                {startLabel(e, true, clock)}
+                {!e.allDay && <span>{fmtHour(e.end!, true, clock)}</span>}
               </span>
               <span className={`ch-ag__dot ch-dot-${e.type}`} aria-hidden="true" />
               <span style={{ minWidth: 0 }}>

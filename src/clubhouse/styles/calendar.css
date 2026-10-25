@@ -121,7 +121,7 @@
   border: 0;
   border-radius: var(--ch-radius-sm);
   background: transparent;
-  font: 500 12.5px/1 var(--ch-font-sans);
+  font: 500 13px/1 var(--ch-font-sans);
   font-variant-numeric: tabular-nums;
   color: var(--ch-text-primary);
   cursor: pointer;
@@ -278,7 +278,7 @@
   text-align: left;
 }
 .ch-pp__txt b {
-  font: 600 calc(13.5 * var(--ch-type-k))/1.1 var(--ch-font-sans);
+  font: 600 calc(14 * var(--ch-type-k))/1.1 var(--ch-font-sans);
   color: var(--ch-text-primary);
 }
 .ch-pp__trigger.is-on .ch-pp__txt b {
@@ -401,7 +401,7 @@
   outline-offset: 1px;
 }
 .ch-wk__d {
-  font: 500 11.5px/1 var(--ch-font-sans);
+  font: 500 12px/1 var(--ch-font-sans);
   color: var(--ch-text-tertiary);
 }
 .ch-wk__n {
@@ -567,7 +567,7 @@
   padding: 2px 4px;
   border-radius: 4px;
   background: var(--ch-bg-surface);
-  font: 600 10.5px/1 var(--ch-font-sans);
+  font: 600 11px/1 var(--ch-font-sans);
   font-variant-numeric: tabular-nums;
   color: var(--ch-green-700);
 }
@@ -629,7 +629,7 @@
 }
 .ch-ev__t {
   overflow: hidden;
-  font: 600 12.5px/1.25 var(--ch-font-sans);
+  font: 600 13px/1.25 var(--ch-font-sans);
   white-space: nowrap;
   text-overflow: ellipsis;
 }
@@ -645,7 +645,7 @@
 }
 .ch-ev__m {
   overflow: hidden;
-  font: 400 11.5px/1.3 var(--ch-font-sans);
+  font: 400 12px/1.3 var(--ch-font-sans);
   font-variant-numeric: tabular-nums;
   white-space: nowrap;
   text-overflow: ellipsis;
@@ -677,11 +677,11 @@
 }
 /* A block of players' classes: the title is the kind, set apart from the words under it (who, in the body's ink). */
 .ch-ev--group .ch-ev__t {
-  font-weight: 650;
+  font-weight: 600;
 }
 .ch-ev__who {
   overflow: hidden;
-  font: 400 11.5px/15px var(--ch-font-sans);
+  font: 400 12px/15px var(--ch-font-sans);
   color: var(--ch-text-secondary);
   white-space: nowrap;
   text-overflow: ellipsis;
@@ -732,10 +732,10 @@
   min-width: 0;
 }
 .ch-cg__title b {
-  font: 650 calc(15 * var(--ch-type-k))/1.2 var(--ch-font-sans);
+  font: 600 calc(15 * var(--ch-type-k))/1.2 var(--ch-font-sans);
 }
 .ch-cg__title span {
-  font: 400 calc(12.5 * var(--ch-type-k))/1.3 var(--ch-font-sans);
+  font: 400 calc(13 * var(--ch-type-k))/1.3 var(--ch-font-sans);
   font-variant-numeric: tabular-nums;
   opacity: 0.8;
 }
@@ -791,11 +791,11 @@
   min-width: 0;
 }
 .ch-cg__who b {
-  font: 600 calc(13.5 * var(--ch-type-k))/1.25 var(--ch-font-sans);
+  font: 600 calc(14 * var(--ch-type-k))/1.25 var(--ch-font-sans);
 }
 .ch-cg__who > span {
   overflow: hidden;
-  font: 400 calc(12.5 * var(--ch-type-k))/1.3 var(--ch-font-sans);
+  font: 400 calc(13 * var(--ch-type-k))/1.3 var(--ch-font-sans);
   color: var(--ch-text-secondary);
   white-space: nowrap;
   text-overflow: ellipsis;
@@ -838,6 +838,18 @@
   .ch-ev--lane .ch-ev__t {
     -webkit-line-clamp: 1;
     line-clamp: 1;
+  }
+}
+/* A busy block lies under the events it overlaps (A26), by its class, not an inline z-index, so hover (z-index 4) can
+   still bring it forward. */
+.ch-ev--under {
+  z-index: 0;
+}
+/* Under about 72px a block (58px of text) keeps its title alone, cut with an ellipsis; its time and the rest are in its
+   peek and its name (A26). */
+@container (max-width: 58px) {
+  .ch-ev--lane .ch-ev__m {
+    display: none;
   }
 }
 .ch-ev--lane.ch-ev--short {
@@ -1065,7 +1077,7 @@
 .ch-mo__more {
   margin-top: 1px;
   padding-left: 13px;
-  font: 500 11.5px/1 var(--ch-font-sans);
+  font: 500 12px/1 var(--ch-font-sans);
   color: var(--ch-text-tertiary);
 }
 
@@ -1206,7 +1218,7 @@
   padding: 3px 7px;
   border-radius: 4px;
   background: var(--ch-green-fill-600);
-  font: 600 calc(10.5 * var(--ch-type-k))/1 var(--ch-font-sans);
+  font: 600 calc(11 * var(--ch-type-k))/1 var(--ch-font-sans);
   font-variant-numeric: tabular-nums;
   color: var(--ch-text-on-accent);
   transform: translateY(-1px);
@@ -1335,12 +1347,12 @@
 }
 .ch-in__resp dt {
   order: 2;
-  font: 500 calc(11.5 * var(--ch-type-k))/1 var(--ch-font-sans);
+  font: 500 calc(12 * var(--ch-type-k))/1 var(--ch-font-sans);
   color: var(--ch-text-tertiary);
 }
 .ch-in__resp dd {
   margin: 0;
-  font: 600 18px/1 var(--ch-font-sans);
+  font: 600 17px/1 var(--ch-font-sans);
   font-variant-numeric: tabular-nums;
   color: var(--ch-text-primary);
 }
@@ -1361,7 +1373,7 @@
 .ch-in__person > span:nth-child(2) {
   flex: 1;
   min-width: 0;
-  font: 500 calc(13.5 * var(--ch-type-k))/1.2 var(--ch-font-sans);
+  font: 500 calc(14 * var(--ch-type-k))/1.2 var(--ch-font-sans);
   color: var(--ch-text-primary);
 }
 .ch-in__foot {
@@ -1412,7 +1424,7 @@
 }
 .ch-in__need b {
   display: block;
-  font: 600 calc(13.5 * var(--ch-type-k))/1.3 var(--ch-font-sans);
+  font: 600 calc(14 * var(--ch-type-k))/1.3 var(--ch-font-sans);
   font-variant-numeric: tabular-nums;
   color: var(--ch-text-primary);
   transition: color var(--ch-dur-quick) var(--ch-ease);
@@ -1632,7 +1644,7 @@
   align-items: center;
   gap: 10px;
   min-width: 0;
-  font: 500 calc(13.5 * var(--ch-type-k))/1.2 var(--ch-font-sans);
+  font: 500 calc(14 * var(--ch-type-k))/1.2 var(--ch-font-sans);
   color: var(--ch-text-primary);
 }
 .ch-in__who small {
@@ -1666,7 +1678,7 @@
 }
 .ch-lanes__who {
   overflow: hidden;
-  font: 500 12.5px/1.2 var(--ch-font-sans);
+  font: 500 13px/1.2 var(--ch-font-sans);
   color: var(--ch-text-secondary);
   white-space: nowrap;
   text-overflow: ellipsis;
@@ -1678,7 +1690,7 @@
 .ch-lanes__axis span {
   position: absolute;
   transform: translateX(-50%);
-  font: 500 10.5px/1 var(--ch-font-sans);
+  font: 500 11px/1 var(--ch-font-sans);
   font-variant-numeric: tabular-nums;
   color: var(--ch-text-tertiary);
 }
@@ -1774,7 +1786,7 @@
   border-bottom: 1px solid var(--ch-border-subtle);
   background: transparent;
   font: var(--ch-type-display-s);
-  font-size: calc(24 * var(--ch-type-k));
+  font-size: calc(22 * var(--ch-type-k));
   letter-spacing: -0.028em;
   font-variation-settings: 'wdth' 96;
   color: var(--ch-text-primary);
@@ -1782,7 +1794,7 @@
   transition: border-color var(--ch-dur-quick) var(--ch-ease);
 }
 .ch-ed__title::placeholder {
-  color: var(--ch-text-disabled);
+  color: var(--ch-text-placeholder);
 }
 .ch-ed__title:focus {
   border-bottom-color: var(--ch-border-focus);
@@ -1842,7 +1854,7 @@
   gap: 10px;
   align-items: center;
   padding: 7px 0;
-  font: 500 calc(13.5 * var(--ch-type-k))/1.2 var(--ch-font-sans);
+  font: 500 calc(14 * var(--ch-type-k))/1.2 var(--ch-font-sans);
   color: var(--ch-text-primary);
   cursor: pointer;
 }
@@ -2075,7 +2087,7 @@
 }
 .ch-cal-warn b {
   display: block;
-  font: 600 calc(13.5 * var(--ch-type-k))/1.3 var(--ch-font-sans);
+  font: 600 calc(14 * var(--ch-type-k))/1.3 var(--ch-font-sans);
   color: var(--ch-text-primary);
 }
 .ch-cal-warn p {
@@ -2121,7 +2133,7 @@
 .ch-in__file b {
   display: block;
   overflow: hidden;
-  font: 500 calc(13.5 * var(--ch-type-k))/1.25 var(--ch-font-sans);
+  font: 500 calc(14 * var(--ch-type-k))/1.25 var(--ch-font-sans);
   color: var(--ch-text-primary);
   white-space: nowrap;
   text-overflow: ellipsis;
@@ -2344,7 +2356,7 @@
   }
   .ch-calm-dayk h3 {
     margin: 0;
-    font: 600 calc(19 * var(--ch-type-k))/1.1 var(--ch-font-sans);
+    font: 600 calc(20 * var(--ch-type-k))/1.1 var(--ch-font-sans);
     font-variant-numeric: tabular-nums;
     letter-spacing: -0.025em;
     font-variation-settings: 'wdth' 88;
@@ -2470,7 +2482,7 @@
     display: flex;
     flex-direction: column;
     gap: 4px;
-    font: 600 calc(13.5 * var(--ch-type-k))/1 var(--ch-font-sans);
+    font: 600 calc(14 * var(--ch-type-k))/1 var(--ch-font-sans);
     font-variant-numeric: tabular-nums;
     color: var(--ch-text-primary);
   }
@@ -2727,7 +2739,7 @@
     box-shadow: none;
   }
   .ch-calm .ch-ag__when b {
-    font: 600 calc(19 * var(--ch-type-k))/1.1 var(--ch-font-sans);
+    font: 600 calc(20 * var(--ch-type-k))/1.1 var(--ch-font-sans);
     letter-spacing: -0.025em;
     font-variation-settings: 'wdth' 88;
     color: var(--ch-ledger-ink);
@@ -3229,7 +3241,7 @@ html[data-fw-theme='dark'] .ch-ev--busy::after {
   right: 6px;
   transform: translateY(-100%);
   padding-bottom: 2px;
-  font: 500 10.5px/1 var(--ch-font-sans);
+  font: 500 11px/1 var(--ch-font-sans);
   font-variant-numeric: tabular-nums;
   font-style: normal;
   color: var(--ch-ledger-eyebrow);

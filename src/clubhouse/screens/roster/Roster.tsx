@@ -27,9 +27,10 @@ import { useAction } from '../../lib/use-action';
 import { haptic } from '../../lib/haptics';
 import { CH_PHONE_QUERY, useChPhone } from '../../lib/use-phone';
 import { chTrail } from '../../lib/track';
-import { formatFixed, formatSigned, NO_DATA } from '../../lib/format';
+import { changeTone, formatFixed, formatSigned, NO_DATA } from '../../lib/format';
 import { coachPlayerHref } from '../../data/coachhelm-views-shape';
 import { rebuiltHref } from '../../shell/nav';
+import { InviteByEmail } from './InviteByEmail';
 import { RosterRequests } from './RosterRequests';
 import { useJoinRequests } from './useJoinRequests';
 import { useCopyText } from './useCopyText';
@@ -179,10 +180,8 @@ export function Roster({ data }: { data: ChRoster }) {
   // Injured and away are counted among the active players: availability never changes who is on the active roster.
   const injuredCount = active.filter((p) => p.availability === 'injured').length;
   const awayCount = active.filter((p) => p.availability === 'away').length;
-  const teamAvg = useMemo(() => {
-    const avgs = active.map((p) => p.avg).filter((v): v is number => v != null);
-    return avgs.length ? avgs.reduce((a, b) => a + b, 0) / avgs.length : null;
-  }, [active]);
+  // Pooled per round on the server (A3), never a mean of the players' means.
+  const teamAvg = data.teamAvg;
 
   // Places and the team strip rank the active roster, never the rows a search or filter left (P003 #2).
   const standings = useMemo(() => rosterStandings(players), [players]);
@@ -377,6 +376,7 @@ export function Roster({ data }: { data: ChRoster }) {
         teamName={teamRef}
         code={data.joinCode}
         codeFailed={data.teamError}
+        emailInvites={data.emailInvites === true}
         onRetry={() => router.refresh()}
       />
       <Modal
@@ -763,7 +763,7 @@ function RosterList({
               </span>
               <span role="cell" className="r ch-num ch-rs-num">{formatFixed(p.avg)}</span>
               <span role="cell" className="r ch-num ch-rs-num2">{formatHcp(p.handicap)}</span>
-              <span role="cell" className={'r ch-num ch-rs-sg' + (p.sgPerRound == null ? '' : p.sgPerRound >= 0 ? ' is-gain' : ' is-loss')}>
+              <span role="cell" className={'r ch-num ch-rs-sg ' + changeTone(p.sgPerRound, false, 1)}>
                 {p.sgPerRound == null ? NO_DATA : formatSigned(p.sgPerRound)}
               </span>
               <span role="cell" className="r ch-num ch-rs-num2">{p.rounds}</span>
@@ -794,6 +794,7 @@ function InviteModal({
   teamName,
   code,
   codeFailed,
+  emailInvites,
   onRetry,
 }: {
   open: boolean;
@@ -801,6 +802,8 @@ function InviteModal({
   teamName: string;
   code: string | null;
   codeFailed: boolean;
+  /** An invite email can go out now (ChRoster.emailInvites). */
+  emailInvites: boolean;
   onRetry: () => void;
 }) {
   const copy = useCopyText();
@@ -851,6 +854,7 @@ function InviteModal({
               <span className="ch-field__help">Players who open it join right away, after making an account if they need one.</span>
             </div>
           )}
+          <InviteByEmail enabled={emailInvites} />
         </div>
       ) : codeFailed ? (
         <InlineNotice
@@ -916,11 +920,11 @@ function FaceFigures({
       </span>
       <span className="ch-rs-fig">
         <span className="ch-rs-fig__k">Strokes gained</span>
-        <b className={'ch-num' + (sg == null ? '' : sg >= 0 ? ' is-gain' : ' is-loss')}>{sg == null ? NO_DATA : formatSigned(sg)}</b>
+        <b className={'ch-num ' + changeTone(sg, false, 1)}>{sg == null ? NO_DATA : formatSigned(sg)}</b>
         {sg != null && <span className="ch-rs-fig__m">a round</span>}
         {sg != null && (
           <span className="ch-rs-sgbar" aria-hidden="true">
-            <i className={sg >= 0 ? 'is-gain' : 'is-loss'} style={sg >= 0 ? { left: '50%', width: `${sgW}%` } : { right: '50%', width: `${sgW}%` }} />
+            <i className={changeTone(sg, false, 1)} style={sg >= 0 ? { left: '50%', width: `${sgW}%` } : { right: '50%', width: `${sgW}%` }} />
           </span>
         )}
       </span>

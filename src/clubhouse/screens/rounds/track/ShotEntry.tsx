@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useRef, useState, type Dispatch, type RefObject } from 'react';
+import { useEffect, useRef, useState, type Dispatch, type ReactNode, type RefObject } from 'react';
 import { ArrowRight, Check, FlagTriangleRight, TriangleAlert, Undo2 } from 'lucide-react';
 import type { ShotAction } from '@/hooks/golf/use-shot-state-machine';
 import { displayToFeet, displayToYards, yardsToDisplay, type DistancePreference } from '@/lib/golf/distance-units';
@@ -59,6 +59,11 @@ export interface ShotEntryProps {
   tapIn?: TapInPlan | null;
   /** Resolves true once the tap in's hole is saved. */
   onTapIn?: () => Promise<boolean>;
+  /**
+   * The one-tap data prompts (CH-11960 to CH-11962), drawn first in the card: the round screen owns them, so a tap
+   * survives the entry being re-keyed for the next shot. Absent, the card is what it was.
+   */
+  prompts?: ReactNode;
 }
 
 const DIST_ID = 'ch-rt-dist';
@@ -152,6 +157,7 @@ export function ShotEntry(p: ShotEntryProps) {
     <section className="ch-rt-panel" aria-label={`Shot ${p.currentShot}`}>
       {/* Board 3: the entry is one ivory card; the bar under it sits on the green (phone). */}
       <div className="ch-rt-card">
+        {p.prompts}
         {p.isTeeShot && p.currentHole.par !== 3 && (
           <Sec label="Club off tee">
             <Seg
@@ -203,8 +209,8 @@ export function ShotEntry(p: ShotEntryProps) {
               value={p.missDirection as 'left' | 'right' | null}
               onChange={(v) => p.dispatch({ type: 'SET_MISS_DIRECTION', payload: v })}
               options={[
-                { value: 'left', label: '← Left' },
-                { value: 'right', label: 'Right →' },
+                { value: 'left', label: 'Left' },
+                { value: 'right', label: 'Right' },
               ]}
             />
           </Sec>

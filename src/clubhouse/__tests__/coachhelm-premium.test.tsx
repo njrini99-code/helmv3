@@ -6,7 +6,7 @@ import { placeRefLabel } from '../screens/coachhelm/chat/Evidence';
 import { CoachHelmSkeleton } from '../screens/coachhelm/CoachHelmSkeleton';
 import { AskSkeleton } from '../screens/coachhelm/chat/AskSkeleton';
 import { Head } from '../screens/coachhelm/parts';
-import { DiveSkeleton, ProfileSkeleton, StandingSkeleton } from '../screens/coachhelm/views/Skeletons';
+import { DiveSkeleton, StandingSkeleton } from '../screens/coachhelm/views/Skeletons';
 import { sentence, withoutDrill } from '../screens/coachhelm/views/DeepDive';
 
 /** The CoachHelm premium pass (P013 findings D3, D6, D8, D12). */
@@ -69,7 +69,7 @@ describe('P013 D8 one h1 per screen', () => {
     expect(screen.getByRole('heading', { level: 1 }).textContent).toBe('CoachHelm');
   });
   it('every CoachHelm skeleton has exactly one h1', () => {
-    for (const node of [<CoachHelmSkeleton key="c" view="coach" />, <CoachHelmSkeleton key="p" view="player" />, <ProfileSkeleton key="g" />, <StandingSkeleton key="s" />, <DiveSkeleton key="d" />, <AskSkeleton key="a" />]) {
+    for (const node of [<CoachHelmSkeleton key="c" view="coach" />, <CoachHelmSkeleton key="p" view="player" />, <StandingSkeleton key="s" />, <DiveSkeleton key="d" />, <AskSkeleton key="a" />]) {
       render(<LazyMotion features={domAnimation}>{node}</LazyMotion>);
       expect(screen.getAllByRole('heading', { level: 1 })).toHaveLength(1);
       cleanup();

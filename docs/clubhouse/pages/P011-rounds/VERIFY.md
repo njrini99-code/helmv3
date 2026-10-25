@@ -467,6 +467,20 @@ before, after, baseline or evidence.
 | `P011__season-figures__player__1440__default__after__2b3c6f5.png` | after | 2b3c6f5 | season-figures (player), 1440px, default, after: season figures, putts on the recorded basis; /clubhouse-preview/rounds; synthetic preview, captured in the cloud container (Chromium) |
 | `P011__month-spark__player__1440__default__before__2b3c6f5.png` | before | 2b3c6f5 | month-spark (player), 1440px, default, before: month heads with the flipped month sparks; /clubhouse-preview/rounds; synthetic preview, captured in the cloud container (Chromium) |
 | `P011__month-spark__player__1440__default__after__2b3c6f5.png` | after | 2b3c6f5 | month-spark (player), 1440px, default, after: month heads with the flipped month sparks; /clubhouse-preview/rounds; synthetic preview, captured in the cloud container (Chromium) |
+| `P011__track__player__390x844__course-nudge-dark__after__8b6bf54.png` | after | 8b6bf54 | track (player), 390x844px, course-nudge-dark |
+| `P011__track__player__390x844__course-nudge-light__after__8b6bf54.png` | after | 8b6bf54 | track (player), 390x844px, course-nudge-light |
+| `P011__track__player__390x844__course-nudge-picker-dark__after__8b6bf54.png` | after | 8b6bf54 | track (player), 390x844px, course-nudge-picker-dark |
+| `P011__track__player__390x844__course-nudge-picker-light__after__8b6bf54.png` | after | 8b6bf54 | track (player), 390x844px, course-nudge-picker-light |
+| `P011__track__player__390x844__course-nudge-summary-dark__after__8b6bf54.png` | after | 8b6bf54 | track (player), 390x844px, course-nudge-summary-dark |
+| `P011__track__player__390x844__course-nudge-summary-light__after__8b6bf54.png` | after | 8b6bf54 | track (player), 390x844px, course-nudge-summary-light |
+| `P011__track__player__390x844__putt-prompt-dark__after__8b6bf54.png` | after | 8b6bf54 | track (player), 390x844px, putt-prompt-dark |
+| `P011__track__player__390x844__putt-prompt-light__after__8b6bf54.png` | after | 8b6bf54 | track (player), 390x844px, putt-prompt-light |
+| `P011__track__player__390x844__putt-prompt-tagged-dark__after__8b6bf54.png` | after | 8b6bf54 | track (player), 390x844px, putt-prompt-tagged-dark |
+| `P011__track__player__390x844__putt-prompt-tagged-light__after__8b6bf54.png` | after | 8b6bf54 | track (player), 390x844px, putt-prompt-tagged-light |
+| `P011__track__player__390x844__recovery-answered-dark__after__8b6bf54.png` | after | 8b6bf54 | track (player), 390x844px, recovery-answered-dark |
+| `P011__track__player__390x844__recovery-answered-light__after__8b6bf54.png` | after | 8b6bf54 | track (player), 390x844px, recovery-answered-light |
+| `P011__track__player__390x844__recovery-dark__after__8b6bf54.png` | after | 8b6bf54 | track (player), 390x844px, recovery-dark |
+| `P011__track__player__390x844__recovery-light__after__8b6bf54.png` | after | 8b6bf54 | track (player), 390x844px, recovery-light |
 
 ## 2026-10-02 — Narrow setup layout and course selection
 
@@ -554,9 +568,11 @@ Captured states are not all visually approved.
 
 ## 2026-10-19 — Contract tests for nine reserved hand contracts
 
-Two new files close the gaps the sections above list: `src/clubhouse/__tests__/rounds-contracts.test.tsx` (31 cases) and
-`src/clubhouse/__tests__/rounds-actions-contracts.test.ts` (8 cases, the real `deleteInProgressRound` against a fake database). Each
-case names its Bridge ID in its title. No implementation file changed.
+Two new files close the gaps the sections above list:
+`src/clubhouse/__tests__/rounds-contracts.test.tsx` (31 cases) and
+`src/clubhouse/__tests__/rounds-actions-contracts.test.ts` (8 cases, the real
+`deleteInProgressRound` against a fake database). Each case names its Bridge ID
+in its title. No implementation file changed.
 
 | Contract | What the test forces | Result |
 | --- | --- | --- |
@@ -570,8 +586,9 @@ case names its Bridge ID in its title. No implementation file changed.
 | 112001 Esc and focus | all nine sheets: the dialog's `cancel` closes each, focus returns to the opener, and no side effect runs (nothing discarded, saved, posted or navigated). Add a course returns to the course picker it was opened from, and that picker returns focus to its opener | pass |
 | 112101 loaders read in rounds | read waves: the library is two (clock, posted rounds and in-progress rounds together, then one holes read for up to 20 rounds); posted rounds page by 1000; the review is the round, then (coach) the membership check, then holes, shots, tee, player and team together | pass |
 
-Run: `npx vitest run` on the four files, exit 0, 88 tests in 4 files; `npx eslint` on them, exit 0;
-`node scripts/clubhouse/registry.mjs check`, exit 0. The registry now shows 187 IDs, 185 on an element or in code, 2 reserved.
+Run: `npx vitest run` on the four files, exit 0, 88 tests in 4 files; `npx
+eslint` on them, exit 0; `node scripts/clubhouse/registry.mjs check`, exit 0.
+The registry now shows 187 IDs, 185 on an element or in code, 2 reserved.
 
 **Still reserved, and why.** 111809 is a script (`clubhouse:a11y`) that needs
 the dev server and a browser, not a vitest case. 110804 has its test, but one of
@@ -631,9 +648,10 @@ Checks on b8920a4: `npm run check:changed` exit 0 (eslint, tsgo, the new test
 and its related tests), `npm run clubhouse:check` exit 0,
 `clubhouse:shots -- check` exit 0.
 
-**Wording that predates the code.** 112101 describes the library's reads in sequence; the loader now starts the clock, the posted
-rounds and the in-progress rounds together (the 2026-10-01 perf pass) and the test pins that. 111201's and 111202's meanings said
-"no test covers this"; they now say where the test is.
+**Wording that predates the code.** 112101 describes the library's reads in
+sequence; the loader now starts the clock, the posted rounds and the in-progress
+rounds together (the 2026-10-01 perf pass) and the test pins that. 111201's and
+111202's meanings said "no test covers this"; they now say where the test is.
 
 ## 2026-10-20 — No data lost: Exit's Discard offline, and the engine under a dropped connection
 
