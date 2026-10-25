@@ -222,6 +222,32 @@ export function monotonicReadMark(prev: ReadonlyMap<string, string | null>, user
   return next;
 }
 
+/** One member's seen time for a message; `exact` is false when it is the read mark that covered it, not a recorded open. */
+export type GolfSeenTime = { userId: string; seenAt: string; exact: boolean };
+
+/**
+ * P-1 slice 9: per-message seen times from `golf_message_seen_times`. The migration is HELD, so until it is applied
+ * the function is missing and this returns 'unavailable' (PGRST202 / 42883) and the list keeps its count-only rows.
+ * Any other failure returns null: the caller shows what it already had, never a false zero.
+ */
+export async function fetchSeenTimes(
+  supabase: Pick<ReturnType<typeof createClient>, 'rpc'>,
+  messageId: string,
+): Promise<GolfSeenTime[] | 'unavailable' | null> {
+  // Not in the generated types until the held migration is applied.
+  const rpc = supabase.rpc as unknown as (fn: string, args: Record<string, unknown>) => PromiseLike<{ data: unknown; error: { code?: string } | null }>;
+  try {
+    const { data, error } = await rpc('golf_message_seen_times', { p_message_id: messageId });
+    if (error) return error.code === 'PGRST202' || error.code === '42883' ? 'unavailable' : null;
+    if (!Array.isArray(data)) return null;
+    return data
+      .filter((r): r is { user_id: string; seen_at: string; exact: boolean | null } => typeof r?.user_id === 'string' && typeof r?.seen_at === 'string')
+      .map((r) => ({ userId: r.user_id, seenAt: r.seen_at, exact: r.exact === true }));
+  } catch {
+    return null;
+  }
+}
+
 // Keep old name for backward compatibility
 export type MessageWithReadStatus = GolfMessage;
 

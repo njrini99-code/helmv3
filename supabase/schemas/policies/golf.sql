@@ -1248,3 +1248,5 @@ CREATE POLICY "team_chs_settings_select_team" ON "public"."golf_team_coachhelm_s
 CREATE POLICY "team_chs_settings_write_team" ON "public"."golf_team_coachhelm_settings" TO "authenticated" USING ("public"."is_golf_team_head_coach"("team_id")) WITH CHECK ("public"."is_golf_team_head_coach"("team_id"));
 
 COMMENT ON POLICY "team_chs_settings_write_team" ON "public"."golf_team_coachhelm_settings" IS 'Only a head coach of the team may write team-level CoachHelm settings. Head-coach (not primary) so a program head can manage both teams; assistants stay locked out.';
+
+CREATE POLICY "golf_read_marks_select" ON "public"."golf_conversation_read_marks" FOR SELECT TO "authenticated" USING ("public"."golf_read_marks_visible"("conversation_id", "user_id"));

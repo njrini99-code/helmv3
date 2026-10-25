@@ -11730,3 +11730,102 @@ end;
 $$;
 
 ALTER FUNCTION "public"."golf_import_player_classes"("p_player_id" "uuid", "p_team_id" "uuid", "p_term" "text", "p_rows" "jsonb") OWNER TO "postgres";
+
+CREATE OR REPLACE FUNCTION "public"."golf_forget_read_marks"() RETURNS "trigger"
+    LANGUAGE "plpgsql" SECURITY DEFINER
+    SET "search_path" TO 'public', 'pg_temp'
+    AS $$
+BEGIN
+  DELETE FROM public.golf_conversation_read_marks r
+  WHERE r.conversation_id = OLD.conversation_id
+    AND r.user_id = OLD.user_id;
+  RETURN OLD;
+END;
+$$;
+
+ALTER FUNCTION "public"."golf_forget_read_marks"() OWNER TO "postgres";
+
+CREATE OR REPLACE FUNCTION "public"."golf_message_seen_times"("p_message_id" "uuid") RETURNS TABLE("user_id" "uuid", "seen_at" timestamp with time zone, "exact" boolean)
+    LANGUAGE "sql" STABLE
+    SET "search_path" TO 'public', 'pg_temp'
+    AS $$
+  SELECT DISTINCT ON (r.user_id)
+    r.user_id, r.read_at AS seen_at, NOT r.is_baseline AS exact
+  FROM public.golf_messages m
+  JOIN public.golf_conversation_read_marks r
+    ON r.conversation_id = m.conversation_id
+   AND r.read_at >= m.created_at
+  WHERE m.id = p_message_id
+    AND r.user_id <> m.sender_id
+    AND m.created_at >= now() - interval '30 days'
+  ORDER BY r.user_id, r.read_at;
+$$;
+
+ALTER FUNCTION "public"."golf_message_seen_times"("p_message_id" "uuid") OWNER TO "postgres";
+
+COMMENT ON FUNCTION "public"."golf_message_seen_times"("p_message_id" "uuid") IS 'When each member first saw this message (the first read mark at or after its created_at), for messages up to 30 days old. Invoker rights: golf_conversation_read_marks RLS decides whose rows return. exact = false: seen before the log began, time unknown. Clubhouse Seen by (P-1).';
+
+CREATE OR REPLACE FUNCTION "public"."golf_read_marks_visible"("p_conversation_id" "uuid", "p_user_id" "uuid") RETURNS boolean
+    LANGUAGE "sql" STABLE SECURITY DEFINER
+    SET "search_path" TO 'public', 'pg_temp'
+    AS $$
+  SELECT
+    p_user_id = (SELECT auth.uid())
+    OR (
+      EXISTS (
+        SELECT 1 FROM public.golf_conversation_participants me
+        WHERE me.conversation_id = p_conversation_id
+          AND me.user_id = (SELECT auth.uid())
+      )
+      AND (
+        (SELECT count(*) FROM public.golf_conversation_participants p
+          WHERE p.conversation_id = p_conversation_id) = 2
+        OR EXISTS (
+          SELECT 1
+          FROM public.golf_conversations c
+          JOIN public.golf_team_coach_staff s ON s.team_id = c.team_id
+          JOIN public.golf_coaches gc ON gc.id = s.coach_id
+          WHERE c.id = p_conversation_id
+            AND c.team_id IS NOT NULL
+            AND gc.user_id = (SELECT auth.uid())
+        )
+      )
+    );
+$$;
+
+ALTER FUNCTION "public"."golf_read_marks_visible"("p_conversation_id" "uuid", "p_user_id" "uuid") OWNER TO "postgres";
+
+COMMENT ON FUNCTION "public"."golf_read_marks_visible"("p_conversation_id" "uuid", "p_user_id" "uuid") IS 'May the CALLER read p_user_id''s read marks in this conversation? Own marks; the other person''s in a two-person thread; everyone''s in a team conversation the caller belongs to and coaches. Reads auth.uid() itself, so it answers only for the caller. Policy helper for golf_conversation_read_marks.';
+
+CREATE OR REPLACE FUNCTION "public"."golf_record_read_mark"() RETURNS "trigger"
+    LANGUAGE "plpgsql" SECURITY DEFINER
+    SET "search_path" TO 'public', 'pg_temp'
+    AS $$
+DECLARE
+  -- A member can write any last_read_at on their own row (golf_participants_update is own-row only), so a forged
+  -- future time is clamped to the database clock before it is stored or compared (changelog P-01).
+  v_at timestamptz := LEAST(NEW.last_read_at, now());
+BEGIN
+  IF EXISTS (
+    SELECT 1 FROM public.golf_messages m
+    WHERE m.conversation_id = NEW.conversation_id
+      AND m.sender_id <> NEW.user_id
+      AND NOT COALESCE(m.is_deleted, false)
+      AND m.created_at <= v_at
+      AND (OLD.last_read_at IS NULL OR m.created_at > OLD.last_read_at)
+  ) THEN
+    INSERT INTO public.golf_conversation_read_marks (conversation_id, user_id, read_at)
+    VALUES (NEW.conversation_id, NEW.user_id, v_at);
+  END IF;
+
+  -- Retention, kept small and index-backed: only this person's marks here.
+  DELETE FROM public.golf_conversation_read_marks r
+  WHERE r.conversation_id = NEW.conversation_id
+    AND r.user_id = NEW.user_id
+    AND r.read_at < now() - interval '120 days';
+
+  RETURN NEW;
+END;
+$$;
+
+ALTER FUNCTION "public"."golf_record_read_mark"() OWNER TO "postgres";

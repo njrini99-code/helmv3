@@ -99,3 +99,7 @@ CREATE OR REPLACE TRIGGER "update_golf_travel_itineraries_updated_at" BEFORE UPD
 CREATE OR REPLACE TRIGGER "update_putt_details_updated_at" BEFORE UPDATE ON "public"."putt_details" FOR EACH ROW EXECUTE FUNCTION "public"."update_updated_at_column"();
 
 CREATE OR REPLACE TRIGGER "golf_coaches_guard_organization_id" BEFORE INSERT OR UPDATE OF "organization_id" ON "public"."golf_coaches" FOR EACH ROW EXECUTE FUNCTION "public"."guard_coach_organization_id"();
+
+CREATE OR REPLACE TRIGGER "golf_participants_read_mark" AFTER UPDATE OF "last_read_at" ON "public"."golf_conversation_participants" FOR EACH ROW WHEN ((("new"."last_read_at" IS NOT NULL) AND (("old"."last_read_at" IS NULL) OR ("new"."last_read_at" > "old"."last_read_at")))) EXECUTE FUNCTION "public"."golf_record_read_mark"();
+
+CREATE OR REPLACE TRIGGER "golf_participants_read_marks_on_leave" AFTER DELETE ON "public"."golf_conversation_participants" FOR EACH ROW EXECUTE FUNCTION "public"."golf_forget_read_marks"();

@@ -50,6 +50,8 @@ COMMENT ON COLUMN "public"."golf_coachhelm_settings"."llm_budget_usd_per_day" IS
 
 COMMENT ON COLUMN "public"."golf_conversation_participants"."notification_level" IS 'YOUR delivery preference for this conversation: all | mentions | muted. Per-participant, never per-conversation. With muted_until set, the level lapses back to all once that timestamp passes — evaluated on read, so a stalled job can never leave somebody permanently silent.';
 
+COMMENT ON TABLE "public"."golf_conversation_read_marks" IS 'One row per time a participant''s last_read_at advanced past at least one new message from someone else (golf_record_read_mark), plus one baseline row per participant from when the log started. The first mark at or after a message''s created_at is when that person first saw it (Clubhouse Seen by, P-1). Kept 120 days. Written only by triggers; members read through RLS.';
+
 COMMENT ON TABLE "public"."golf_course_tees" IS 'Cloud tee sets for a course (Championship/Blue/White/Women''s/custom). Open-contribution + last-edited metadata + soft-delete. Rounds reference a tee via golf_rounds.tee_id but still snapshot par/yards into golf_holes.';
 
 COMMENT ON COLUMN "public"."golf_demo_sessions"."traffic_quality" IS 'Verdict on whether this gate entry was a human or a security scanner: automated | likely_human | unknown. Classified at write time from send-to-entry latency and IP fan-out.';

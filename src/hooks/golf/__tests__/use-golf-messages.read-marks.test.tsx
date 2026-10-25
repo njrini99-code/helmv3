@@ -59,7 +59,7 @@ vi.mock('@/lib/observability/supabase/realtime', () => ({
 }));
 vi.mock('@/lib/error-logging', () => ({ logError: vi.fn() }));
 
-import { monotonicReadMark, useGolfMessages } from '../use-golf-messages';
+import { fetchSeenTimes, monotonicReadMark, useGolfMessages } from '../use-golf-messages';
 import { __resetCachedResourcesForTests } from '@/lib/golf/client-resource-cache';
 
 const T1 = '2026-10-24T18:00:00.000Z';
@@ -146,5 +146,18 @@ describe('monotonicReadMark', () => {
     expect(monotonicReadMark(m, 'a', T1)).toBe(m);
     expect(monotonicReadMark(m, 'a', null)).toBe(m);
     expect(monotonicReadMark(m, 'b', T1).get('b')).toBe(T1);
+  });
+});
+
+describe('fetchSeenTimes (P-1 slice 9, dormant until the held migration)', () => {
+  const client = (res: unknown) => ({ rpc: vi.fn(async () => res) }) as never;
+  it('maps rows; a missing function is "unavailable"; any other error is null (no false zero)', async () => {
+    expect(await fetchSeenTimes(client({ data: [{ user_id: 'ava', seen_at: T1, exact: true }, { user_id: 'eli', seen_at: T2, exact: null }], error: null }), 'm1')).toEqual([
+      { userId: 'ava', seenAt: T1, exact: true },
+      { userId: 'eli', seenAt: T2, exact: false },
+    ]);
+    expect(await fetchSeenTimes(client({ data: null, error: { code: 'PGRST202' } }), 'm1')).toBe('unavailable');
+    expect(await fetchSeenTimes(client({ data: null, error: { code: '42883' } }), 'm1')).toBe('unavailable');
+    expect(await fetchSeenTimes(client({ data: null, error: { code: '500' } }), 'm1')).toBeNull();
   });
 });

@@ -503,6 +503,25 @@ CREATE TABLE IF NOT EXISTS "public"."golf_conversation_participants" (
 
 ALTER TABLE "public"."golf_conversation_participants" OWNER TO "postgres";
 
+CREATE TABLE IF NOT EXISTS "public"."golf_conversation_read_marks" (
+    "id" bigint NOT NULL,
+    "conversation_id" "uuid" NOT NULL,
+    "user_id" "uuid" NOT NULL,
+    "read_at" timestamp with time zone NOT NULL,
+    "is_baseline" boolean DEFAULT false NOT NULL
+);
+
+ALTER TABLE "public"."golf_conversation_read_marks" OWNER TO "postgres";
+
+ALTER TABLE "public"."golf_conversation_read_marks" ALTER COLUMN "id" ADD GENERATED ALWAYS AS IDENTITY (
+    SEQUENCE NAME "public"."golf_conversation_read_marks_id_seq"
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1
+);
+
 CREATE TABLE IF NOT EXISTS "public"."golf_conversations" (
     "id" "uuid" DEFAULT "extensions"."uuid_generate_v4"() NOT NULL,
     "team_id" "uuid",
