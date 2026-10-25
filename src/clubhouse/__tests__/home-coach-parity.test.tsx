@@ -125,7 +125,7 @@ describe('20104 20103 “Waiting on you”: its words and where each part opens 
 
   it('the other parts open the screens that hold them', () => {
     expect(Object.fromEntries(queueParts(PREVIEW_QUEUE).parts.map((p) => [p.key, p.href]))).toMatchObject({
-      joins: '/golf/dashboard/roster',
+      joins: '/golf/dashboard/roster?tab=requests', // opens the join requests (A16)
       tasks: '/golf/dashboard/team-hub?tab=tasks',
       posts: '/golf/dashboard/team-hub?tab=ann',
     });

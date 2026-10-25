@@ -13,12 +13,16 @@ export interface ChSgBaseline {
   vs: string;
   /** For a sentence: "dashed line is the Tour baseline". */
   noun: string;
+  /** The zero mark on a gauge: "Tour", "Women's Tour" (A8.3). */
+  mark: string;
+  /** The zero line on a trend: "Zero is the Tour", "Zero is the women's Tour" (A8.3). */
+  zero: string;
 }
 
 export function sgBaseline(tour: ChSgTour): ChSgBaseline {
-  if (tour === 'pga') return { vs: 'vs Tour', noun: 'the Tour baseline' };
-  if (tour === 'lpga') return { vs: "vs the women's Tour baseline", noun: "the women's Tour baseline" };
-  return { vs: 'vs the baseline', noun: 'the baseline' };
+  if (tour === 'pga') return { vs: 'vs Tour', noun: 'the Tour baseline', mark: 'Tour', zero: 'Zero is the Tour' };
+  if (tour === 'lpga') return { vs: "vs the women's Tour baseline", noun: "the women's Tour baseline", mark: "Women's Tour", zero: "Zero is the women's Tour" };
+  return { vs: 'vs the baseline', noun: 'the baseline', mark: 'Baseline', zero: 'Zero is the baseline' };
 }
 
 /**
@@ -41,8 +45,10 @@ export function sgShare(value: number, scale: number): number {
  * A grid cell's tint: gain green, loss amber, as strong as the value's share of the scale; no value is a neutral cell. The colours
  * are the chart tokens (`--ch-chart-gain`, `--ch-chart-loss`) mixed toward transparent, so the tint follows the night palette too.
  */
-export function sgTint(value: number | null, scale: number): string {
+export function sgTint(value: number | null, scale: number, digits = 1): string {
   if (value == null) return 'var(--ch-ivory-100)';
+  // A value that shows as zero at the cell's digits is neither a gain nor a loss: a clear cell, unlike no data (F-54).
+  if (Math.abs(value) < 0.5 * 10 ** -digits) return 'transparent';
   const pct = Number(((0.06 + sgShare(value, scale) * 0.3) * 100).toFixed(1));
   return `color-mix(in srgb, var(${value >= 0 ? '--ch-chart-gain' : '--ch-chart-loss'}) ${pct}%, transparent)`;
 }

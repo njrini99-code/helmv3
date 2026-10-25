@@ -150,6 +150,11 @@
   clip: rect(0 0 0 0);
   white-space: nowrap;
 }
+/* Words that must stay on one line ("two-putting", "12:00 PM"): a plain hyphen or space in a span, because the font has
+   no non-breaking hyphen (A23, A24). */
+.ch-nowrap {
+  white-space: nowrap;
+}
 
 /* Opt in only for hidden interactive alternatives; descriptive labels stay hidden. */
 .ch-sr-only--focusable:focus-visible,

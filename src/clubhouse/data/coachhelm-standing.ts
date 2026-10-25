@@ -1,6 +1,7 @@
 import 'server-only';
 import { getInsightsForPlayer, type EvidenceInsight } from '@/app/golf/actions/insight-delivery';
 import { createClient } from '@/lib/supabase/server';
+import { getValidTimezone } from '@/lib/calendar/timezone';
 import { loadPlayerCohort } from '@/lib/coachhelm/v3/counterfactual/player-cohort-loader';
 import { loadPlayerStandingMap } from '@/lib/coachhelm/v3/standing/loader';
 import type { MetricId } from '@/lib/coachhelm/v3/metrics/registry';
@@ -126,6 +127,25 @@ async function readLadderReads(supabase: Supabase, playerId: string, viewer: ChV
 }
 
 /**
+ * The time zone of the player's team (`golf_team_settings.timezone`), the day "Refreshed" names (A20). Eastern, the product default,
+ * when the player has no team, the read fails or the stored value is not a real zone: a date is never worth failing the page.
+ */
+async function readTeamZone(supabase: Supabase, playerId: string): Promise<string> {
+  try {
+    const member = await supabase.from('golf_team_members').select('team_id').eq('player_id', playerId).eq('status', 'active').maybeSingle();
+    if (member.error) log('standing.zone', member.error);
+    const teamId = (member.data as { team_id: string } | null)?.team_id;
+    if (!teamId) return getValidTimezone(null);
+    const settings = await supabase.from('golf_team_settings').select('timezone').eq('team_id', teamId).maybeSingle();
+    if (settings.error) log('standing.zone', settings.error);
+    return getValidTimezone((settings.data as { timezone: string | null } | null)?.timezone);
+  } catch (err) {
+    log('standing.zone', err);
+    return getValidTimezone(null);
+  }
+}
+
+/**
  * The player's Standing (`?view=standing`), read after the route has checked CoachHelm is on for them. `playerId` is the session's,
  * or a coach's branded scope's (`data/coachhelm-player.ts`, the only other caller, with `viewer` the coach's), never an address's: `loadPlayerStandingMap` reads `golf_player_standing` through the service client (that table is written by
  * the nightly refresh and has no per-player policy to lean on), so the id it is given is the only thing scoping it.
@@ -136,7 +156,7 @@ async function readLadderReads(supabase: Supabase, playerId: string, viewer: ChV
 export async function loadPlayerStanding(input: { playerId: string; viewer?: ChViewer; feed?: () => Promise<EvidenceInsight[]> }): Promise<ChViewLoad<ChStanding>> {
   try {
     const supabase = await createClient();
-    const [map, baseline, cohort, reads] = await Promise.all([
+    const [map, baseline, cohort, reads, zone] = await Promise.all([
       loadPlayerStandingMap(input.playerId).then(
         // The map is this player's already; a row that is anyone else's is never drawn, whatever the loader returned.
         (m) => ({ ok: true as const, rows: [...m.values()].filter((r) => r.player_id === input.playerId) }),
@@ -148,9 +168,10 @@ export async function loadPlayerStanding(input: { playerId: string; viewer?: ChV
       readBaseline(supabase, input.playerId),
       readCohort(input.playerId),
       readLadderReads(supabase, input.playerId, input.viewer ?? { role: 'player' }, input.feed),
+      readTeamZone(supabase, input.playerId),
     ]);
     if (!map.ok) return { status: 'failed' };
-    return { status: 'ready', data: { ...toChStanding(map.rows, baseline, reads, input.viewer), ...(cohort.failed ? { cohortFailed: true as const } : {}) } };
+    return { status: 'ready', data: { ...toChStanding(map.rows, baseline, reads, input.viewer, zone), ...(cohort.failed ? { cohortFailed: true as const } : {}) } };
   } catch (err) {
     log('standing', err);
     return { status: 'failed' };

@@ -1253,12 +1253,13 @@
     letter-spacing: 0.01em;
     color: var(--ch-ledger-eyebrow);
   }
-  /* All five tabs sit on a 375px screen (the board draws them at 13px with no frame), on a hairline that runs edge to
-     edge: the strip bleeds past the page's gutters, so it drops the 100% cap that held it 40px short (and cut Tasks). */
+  /* The tabs on a hairline that runs edge to edge: the strip bleeds past the page's gutters, so it drops the 100% cap
+     that held it 40px short (and cut Tasks). At 14px the five tabs and their figures outgrow a 390px screen, so the row
+     is a sideways scroller (.ch-hscroll fades the clipped edge) with 16px between tabs, not packed edge to edge at 4px,
+     where "Documents Tasks" read as one word (A24). */
   .ch-hb-tabs {
-    justify-content: space-between;
-    /* 4px at the default text size; wider under Dynamic Type, when the row outgrows the screen and scrolls. */
-    gap: calc(4px + (var(--ch-type-k) - 1px) * 40);
+    justify-content: flex-start;
+    gap: calc(16 * var(--ch-type-k));
     max-width: none;
     margin: -6px -20px 0;
     padding: 0 20px;
@@ -2778,6 +2779,14 @@ html[data-fw-theme='dark'] .ch-hb-prog i::after {
   .ch-hb-h > .ch-hb-strip {
     order: 1;
     gap: 18px;
+    /* A clipped figure fades over 28px, not 14, so the edge reads as more to scroll to, and the row settles on a
+       figure, not half of one (A24). */
+    --ch-hs-fade: 28px;
+    scroll-snap-type: x proximity;
+    scroll-padding-inline: var(--ch-page-gutter);
+  }
+  .ch-hb-h > .ch-hb-strip li {
+    scroll-snap-align: start;
   }
   .ch-hb-h > button,
   .ch-hb-h > a {
@@ -2787,6 +2796,8 @@ html[data-fw-theme='dark'] .ch-hb-prog i::after {
     display: none;
   }
   .ch-hb-tabs__n {
+    margin-left: 0;
+    margin-inline-start: 4px;
     font-size: 12px;
   }
   .ch-hb-strip button::after {
@@ -2989,6 +3000,17 @@ html[data-fw-theme='dark'] .ch-hb-prog i::after {
   margin: 6px 0 0;
   font: 400 calc(14 * var(--ch-type-k))/1.45 var(--ch-font-sans);
   color: var(--ch-on-green-ink-soft);
+}
+/* The place on its own line under the trip's name, two lines at most; the dates under it (A24). */
+.ch-hw-count__where {
+  display: -webkit-box;
+  overflow: hidden;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+}
+.ch-hw-count__t .ch-hw-count__when {
+  margin-top: 2px;
 }
 /* The plan as a rail: a stop a column, the line through the stops. */
 .ch-hw-rail {

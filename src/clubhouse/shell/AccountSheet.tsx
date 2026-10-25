@@ -8,6 +8,7 @@ import { Avatar } from '../ui/Avatar';
 import { Icon } from '../ui/Icon';
 import { useToast } from '../ui/Toast';
 import { chSignOut } from '../lib/sign-out';
+import { SIGN_OUT_FAILED } from '../lib/sign-out-copy';
 import { chReport } from '../lib/track';
 import { haptic } from '../lib/haptics';
 import { chSpring, chTween } from '../lib/motion';
@@ -50,7 +51,7 @@ export function AccountSheet({
       chReport(err, { surface: 'shell.more', action: 'signOut' });
       haptic('error');
       setLeaving(false);
-      toast({ tone: 'error', title: "Couldn't sign out", body: 'You are still signed in. Try again.', code: 'CH-1002', action: { label: 'Retry', run: () => void signOut() } });
+      toast({ tone: 'error', title: SIGN_OUT_FAILED.title, body: SIGN_OUT_FAILED.body, code: 'CH-1002', action: { label: SIGN_OUT_FAILED.retry, run: () => void signOut() } });
     }
   };
   const reduced = useChReducedMotion();

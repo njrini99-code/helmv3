@@ -20,7 +20,7 @@
         <!-- android:background alone is NOT enough on Android 12+ (API 31+):
              the platform splash-screen API reads windowSplashScreenBackground
              and ignores the window background, which is why the launch screen
-             rendered system grey instead of Fairway cream on an Android 16
+             rendered system grey instead of the canvas colour on an Android 16
              emulator. Keep both: the legacy attribute covers API 24-30, the
              windowSplashScreen* attributes cover 31+. -->
         <item name="android:background">@drawable/splash</item>

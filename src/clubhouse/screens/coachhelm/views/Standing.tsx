@@ -7,7 +7,6 @@ import { ladderHeadlineFor, type ChLadderRow } from '../../../data/coachhelm-lad
 import type { ChStandRow, ChStanding, ChStandSense } from '../../../data/coachhelm-standing-shape';
 import type { ChGameLoad } from '../../../data/coachhelm-profile-shape';
 import { diveReadHref, helmViewHref, PLAYER_HELM_HREF, PLAYER_VOICE, STANDING_GAME_ID, type ChViewLoad, type ChViewVoice } from '../../../data/coachhelm-views-shape';
-import { haptic } from '../../../lib/haptics';
 import { useChPhone } from '../../../lib/use-phone';
 import { Button } from '../../../ui/Button';
 import { Icon } from '../../../ui/Icon';
@@ -50,7 +49,7 @@ function wordsFor(voice: ChViewVoice) {
 export function OpenRead({ href }: { href: string | null }) {
   if (!href) return null;
   return (
-    <Link className="ch-hs-open" href={href} onClick={() => haptic('select')}>
+    <Link className="ch-hs-open" href={href}>
       Open the read
       <Icon icon={ArrowRight} size={14} />
     </Link>

@@ -209,8 +209,8 @@ export function ShotEntry(p: ShotEntryProps) {
               value={p.missDirection as 'left' | 'right' | null}
               onChange={(v) => p.dispatch({ type: 'SET_MISS_DIRECTION', payload: v })}
               options={[
-                { value: 'left', label: '← Left' },
-                { value: 'right', label: 'Right →' },
+                { value: 'left', label: 'Left' },
+                { value: 'right', label: 'Right' },
               ]}
             />
           </Sec>

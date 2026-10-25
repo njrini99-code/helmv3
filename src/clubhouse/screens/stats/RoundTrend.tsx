@@ -5,8 +5,9 @@ import { EmptyState } from '../../ui/States';
 import { gappedPath } from '../../lib/chart';
 import { formatSigned } from '../../lib/format';
 import { needsText } from '../../lib/stats-signal';
+import { sgBaseline, type ChSgTour } from '../../lib/sg';
 import { useChartPin } from '../../lib/use-chart-pin';
-import { meanSeries, niceTicks, parLine, readTrendRound, trendNote, trendState, withValue, type TrendKind, type TrendRound } from './round-trend';
+import { meanSeries, niceTicks, parLine, readTrendRound, tickDigits, trendNote, trendState, withValue, type TrendKind, type TrendRound } from './round-trend';
 
 const PAD = { l: 34, r: 14, t: 14, b: 24 } as const;
 
@@ -22,10 +23,13 @@ export function RoundTrend({
   size = 'phone',
   label,
   openHref,
+  tour = 'pga',
 }: {
   /** Oldest first. */
   rounds: TrendRound[];
   kind: TrendKind;
+  /** Whose Tour strokes gained is measured against, for the zero line's words (A8.3); the men's Tour unless the team says otherwise. */
+  tour?: ChSgTour;
   size?: 'phone' | 'desktop';
   /** What the chart's group is called for a screen reader, before the arrow-key hint. */
   label: string;
@@ -70,7 +74,9 @@ export function RoundTrend({
   const ticks = niceTicks(lo, hi, 3);
   const state = trendState(kind, rounds);
   const hollow = state === 'early';
-  const fmt = (v: number) => (kind === 'score' ? String(Math.round(v)) : formatSigned(v, 0));
+  // Strokes gained ticks step by half a stroke when the span is small: one decimal then, so no two ticks print alike (A8.2).
+  const digits = tickDigits(ticks);
+  const fmt = (v: number) => (kind === 'score' ? String(Math.round(v)) : formatSigned(v, digits));
   const readout = (i: number | null) => (i == null ? null : readTrendRound(kind, rounds[i]!, means[i] ?? null));
   const shown = readout(pin.active);
   const spoken = readout(pin.pinned);
@@ -112,7 +118,7 @@ export function RoundTrend({
           <g>
             <line x1={PAD.l} x2={W - PAD.r} y1={y(ref)} y2={y(ref)} className="ch-sv-rt__ref" />
             <text x={W - PAD.r} y={y(ref) - 4} textAnchor="end" className="ch-sv-rt__t">
-              {kind === 'score' ? `Par ${Math.round(ref)}` : 'Zero is the Tour'}
+              {kind === 'score' ? `Par ${Math.round(ref)}` : sgBaseline(tour).zero}
             </text>
           </g>
         )}

@@ -202,6 +202,19 @@ export function rate(rows: ChRoundCache[], made: keyof ChRoundCache, total: keyo
   return t > 0 ? (m / t) * 100 : null;
 }
 
+/**
+ * The sample a rate rests on, in its floor's unit (A7): `round` counts the rounds with a chance at it (fairways, greens),
+ * `chance` the chances themselves (scrambles, bunker shots).
+ */
+export function rateSample(rows: ChRoundCache[], total: keyof ChRoundCache, unit: 'round' | 'chance'): number {
+  let n = 0;
+  for (const r of rows) {
+    const t = r[total];
+    if (typeof t === 'number' && t > 0) n += unit === 'round' ? 1 : t;
+  }
+  return n;
+}
+
 export function perRound(rows: ChRoundCache[], key: keyof ChRoundCache): number | null {
   const vals = rows.map((r) => r[key]).filter((v): v is number => typeof v === 'number');
   return vals.length ? vals.reduce((a, b) => a + b, 0) / vals.length : null;

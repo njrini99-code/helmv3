@@ -19,6 +19,7 @@ import { cardHoles, outcomeOf, postedScore, recoveryFacts, summaryHoles, type Ch
 import { useEntryFailureToast } from './failures';
 import { SETUP_READ_PORTS } from './setup-reads';
 import '../../../styles/rounds-track.css';
+import { invalidatePrefetchTabs } from '../../../shell/use-prefetch-tabs';
 
 /** After a round posts, its review opens once the check has had a moment (the legacy overlay counted three seconds). */
 export const POSTED_OPEN_MS = 2500;
@@ -237,6 +238,8 @@ export function RoundRuntime({
     if (ticked.current !== id) {
       ticked.current = id;
       haptic('success');
+      // Rounds, Stats and Roster held from before the submit would miss the new round (A21).
+      invalidatePrefetchTabs();
     }
     const t = window.setTimeout(() => routerRef.current.push(`${routesRef.current.review(id)}${JUST_SUBMITTED}`), POSTED_OPEN_MS);
     return () => window.clearTimeout(t);

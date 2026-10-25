@@ -109,13 +109,13 @@ function EventCard({ e, live, now, today }: { e: ChHomeEvent; live: boolean; now
       {(nudge || message || directions) && (
         <span className="ch-hm-day__acts">
           {nudge && (
-            <Link href={nudge} className="ch-hm-day__act is-primary" data-ch-press="" onClick={() => (haptic('select'), chTrail('home nudge'))}>
+            <Link href={nudge} className="ch-hm-day__act is-primary" data-ch-press="" onClick={() => chTrail('home nudge')}>
               <Icon icon={MessageSquare} size={16} />
               {awaiting.length === 1 ? `Nudge ${firstName(awaiting[0]!.name)}` : `Nudge ${awaiting.length}`}
             </Link>
           )}
           {message && (
-            <Link href={message} className="ch-hm-day__act is-primary" data-ch-press="" onClick={() => (haptic('select'), chTrail('home message invitees'))}>
+            <Link href={message} className="ch-hm-day__act is-primary" data-ch-press="" onClick={() => chTrail('home message invitees')}>
               <Icon icon={MessageSquare} size={16} />
               Message
             </Link>

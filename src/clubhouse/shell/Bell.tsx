@@ -338,7 +338,7 @@ export function Bell() {
     return () => cancelAnimationFrame(frame);
   }, [phone, open, moving]);
 
-  const markAll = useAction('shell.markAllRead', api.markAll, { done: 'All notifications marked read', failed: "Couldn't mark your notifications read", code: 'CH-1001' });
+  const markAll = useAction('shell.markAllRead', api.markAll, { done: 'All notifications marked read', failed: 'Couldn’t mark your notifications read', code: 'CH-1001' });
 
   /** Marks items read where the coach cleared them (a swipe, a stack's ×): the feed restacks at once, the server follows. */
   const clearItems = (list: UnifiedNotificationItem[]) => {
@@ -424,7 +424,7 @@ export function Bell() {
       {listFailed ? (
         <InlineNotice code="CH-1201" title="Notifications didn’t load" body="Try again; the error has been reported." onRetry={() => setAttempt((x) => x + 1)} />
       ) : items === null ? (
-        <div className="ch-bellp__skel" aria-busy="true" aria-label="Loading notifications" data-ch-code="CH-1401">
+        <div role="status" className="ch-bellp__skel" aria-busy="true" aria-label="Loading notifications" data-ch-code="CH-1401">
           {[0, 1, 2, 3].map((k) => (
             <div key={k} className="ch-bellp__skelrow">
               <Skeleton width={32} height={32} radius={9} />

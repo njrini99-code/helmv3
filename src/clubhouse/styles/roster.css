@@ -811,6 +811,11 @@ a.ch-rs-peek__dev:focus-visible,
   text-decoration: none;
   border-radius: var(--ch-radius-sm);
 }
+/* The arrow after "View insights" is an icon, not the text "→", which the font does not have (A23). */
+.ch-rs-peek__go svg,
+.ch-rsm-panel__link svg {
+  vertical-align: -0.15em;
+}
 @media (hover: hover) {
   .ch-rs-peek__go:hover {
     text-decoration: underline;
@@ -994,7 +999,7 @@ a.ch-rs-peek__dev:focus-visible,
   outline: none;
 }
 .ch-rs-em__in::placeholder {
-  color: var(--ch-ink-500);
+  color: var(--ch-text-placeholder);
 }
 .ch-rs-em__foot {
   display: flex;

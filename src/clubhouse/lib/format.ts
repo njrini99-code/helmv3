@@ -25,6 +25,31 @@ export function changeTone(value: number | null | undefined, lowerIsBetter: bool
   return value < 0 === lowerIsBetter ? 'is-gain' : 'is-loss';
 }
 
+/** `changeTone` as the text classes figures paint with: `ch-gain`, `ch-loss`, or '' when the shown value rounds to zero. */
+export function changeInk(value: number | null | undefined, lowerIsBetter = false, digits = 1): '' | 'ch-gain' | 'ch-loss' {
+  const tone = changeTone(value, lowerIsBetter, digits);
+  return tone === 'is-gain' ? 'ch-gain' : tone === 'is-loss' ? 'ch-loss' : '';
+}
+
+/** `changeTone` as the good or bad word a figure's `tone` prop takes, and no tone when the shown value rounds to zero. */
+export function changeVerdict(value: number | null | undefined, lowerIsBetter = false, digits = 1): 'good' | 'bad' | undefined {
+  const tone = changeTone(value, lowerIsBetter, digits);
+  return tone === 'is-gain' ? 'good' : tone === 'is-loss' ? 'bad' : undefined;
+}
+
+/**
+ * Where a figure stands against the team's, decided on the values as printed at `digits` (A5): "level with the team" when
+ * both print alike, otherwise the printed gap and "ahead of them" or "behind them". 0.44 against 0.36 prints 0.4 twice,
+ * so it is level, never "0.1 ahead".
+ */
+export function versusTeam(mine: number, team: number, lowerIsBetter: boolean, digits = 1): string {
+  const a = Number(mine.toFixed(digits));
+  const b = Number(team.toFixed(digits));
+  if (a === b) return 'level with the team';
+  const better = lowerIsBetter ? a < b : a > b;
+  return `${Math.abs(a - b).toFixed(digits)} ${better ? 'ahead of' : 'behind'} them`;
+}
+
 /** A percentage at a whole number by default: 61%, 0%, and an em dash for no data. */
 export function formatPct(value: number | null | undefined, digits = 0): string {
   if (value == null || Number.isNaN(value)) return NO_DATA;

@@ -225,7 +225,7 @@ function RoundRow({ r }: { r: ChDiveRound }) {
   return (
     <li>
       {r.href ? (
-        <Link className="ch-hd-r is-link" href={r.href} onClick={() => haptic('select')} aria-label={`Review the round on ${r.date}${r.course ? ` at ${r.course}` : ''}`}>
+        <Link className="ch-hd-r is-link" href={r.href} aria-label={`Review the round on ${r.date}${r.course ? ` at ${r.course}` : ''}`}>
           {body}
           <Icon icon={ChevronRight} size={15} />
         </Link>
@@ -302,7 +302,7 @@ function Where({ id, where }: { id: string; where: ChDiveWhere | null }) {
           return (
             <li key={h.key}>
               {h.href ? (
-                <Link className="ch-hd-where__i is-link" href={h.href} onClick={() => haptic('select')} aria-label={`Review the round on ${h.date}${h.course ? ` at ${h.course}` : ''}, hole ${h.hole}: ${h.what}`}>
+                <Link className="ch-hd-where__i is-link" href={h.href} aria-label={`Review the round on ${h.date}${h.course ? ` at ${h.course}` : ''}, hole ${h.hole}: ${h.what}`}>
                   {body}
                   <Icon icon={ChevronRight} size={15} />
                 </Link>
@@ -403,7 +403,7 @@ function Plan({ i, failed, covered = false, voice = PLAYER_VOICE }: { i: ChDeepI
         {href && <Icon icon={ChevronRight} size={15} />}
       </>
     );
-    return <li key={kind}>{href ? <Link className="ch-hd-plan__i is-link" href={href} onClick={() => haptic('select')}>{body}</Link> : <div className="ch-hd-plan__i">{body}</div>}</li>;
+    return <li key={kind}>{href ? <Link className="ch-hd-plan__i is-link" href={href}>{body}</Link> : <div className="ch-hd-plan__i">{body}</div>}</li>;
   };
   return (
     <Section id={`${i.base.id}-plan`} title="Where this goes">
@@ -493,7 +493,7 @@ function Dossier({ i, d, voice = PLAYER_VOICE, fa }: { i: ChDeepInsight; d: ChDe
           where="dive"
           extra={
             message ? (
-              <Link className="ch-hd-msg" href={message} onClick={() => haptic('select')}>
+              <Link className="ch-hd-msg" href={message}>
                 <Icon icon={MessageSquare} size={15} />
                 Message {coach.first}
               </Link>
