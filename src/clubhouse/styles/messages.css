@@ -2817,12 +2817,9 @@
 /* Seen by (P-1, handoff 4.34.1): the receipt joins the time line under a group message. The receipt never wraps inside
    itself; the line may break before it at the largest Text Size. No faces, no left accents. */
 .ch-ms-seen {
+  /* The button takes the time line's own type (12 or 13 by layout): unset, every inherited property follows it. */
+  all: unset;
   display: inline;
-  padding: 0;
-  border: 0;
-  background: none;
-  color: inherit;
-  font: inherit;
   white-space: nowrap;
 }
 .ch-ms-seen__w {
@@ -2988,11 +2985,13 @@
   overflow: hidden;
   color: var(--ch-text-primary);
   font: var(--ch-type-16-medium);
+  letter-spacing: var(--ch-track-16);
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 .ch-seen-pop .ch-seen-row__name {
   font: var(--ch-type-14-medium);
+  letter-spacing: var(--ch-track-14);
 }
 .ch-seen-row__meta {
   color: var(--ch-text-tertiary);
