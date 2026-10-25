@@ -3128,6 +3128,8 @@ html[data-fw-theme='dark'] .ch-ms-sec.is-ann {
 .ch-ms-row.is-hit {
   content-visibility: auto;
   contain-intrinsic-size: auto 60px;
+}
+
 /* Polls (P-2, handoff §4.34.2). The card is a quiet sheet surface on either side of the thread, never the green
    "mine" bubble, so the fills and the green check read the same for the sender and everyone else. Each choice is a
    44px row; its share of the voters fills behind it as a bar drawn at its width (no draw-in, Q-153) that moves only
