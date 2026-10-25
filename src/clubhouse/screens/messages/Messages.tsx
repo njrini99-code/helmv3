@@ -67,7 +67,8 @@ export function Messages({ data }: { data: ChMessagesData }) {
   const { conversations, loading, error, refetch } = useGolfConversations(data.viewerUserId, data.teamId);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   // P-10: class awareness is a coach's line. Off (the flag, a player, the migrations unapplied) it reads nothing.
-  const classOn = useClassAwareness() && data.role === 'coach';
+  const awareness = useClassAwareness();
+  const classOn = awareness && data.role === 'coach';
   const teamClass = useTeamClassDay(data.teamId, { enabled: classOn });
   const convTeamId = useConversationTeam(selectedId, classOn);
   const [autoOpened, setAutoOpened] = useState<string | null>(null);
@@ -122,7 +123,7 @@ export function Messages({ data }: { data: ChMessagesData }) {
     [conversations, people, data.viewerUserId, marked],
   );
 
-  const msgs = useGolfMessages(selectedId ?? '', data.viewerUserId, { deferMarkRead: !!selectedId && selectedId === autoOpened });
+  const msgs = useGolfMessages(selectedId ?? '', data.viewerUserId, { deferMarkRead: !!selectedId && selectedId === autoOpened, classAwareness: awareness });
   const liveIds = useMemo(() => msgs.messages.filter((m) => m.conversation_id === selectedId && !m.sendFailed).map((m) => m.id), [msgs.messages, selectedId]);
   const reactions = useMessageReactions(selectedId ?? '', liveIds, data.viewerUserId);
   const { sendMessageWithAttachments, getPendingAttachmentSend, retryPendingAttachmentSend } = useMessageAttachments({ recoverable: true });
@@ -406,6 +407,8 @@ export function Messages({ data }: { data: ChMessagesData }) {
           deleted: !!m.is_deleted,
           hasAttachments: !!m.has_attachments,
           replyToId: m.reply_to_id ?? null,
+          // "Notified anyway" only once a push really went out (the fan-out stamps it), never because the coach asked for one.
+          ...(m.notify_anyway && m.notify_anyway_pushed_at ? { notifiedAnyway: true } : {}),
         })),
     [msgs.messages, msgs.currentUserId, selectedId, data.viewerUserId],
   );
@@ -643,10 +646,11 @@ export function Messages({ data }: { data: ChMessagesData }) {
         return 'unknown';
       }
     },
-    send: async (text, replyToId) => {
+    send: async (text, replyToId, sendOptions) => {
       try {
         if (selectedId === autoOpened) select(selectedId);
-        if (replyToId) await msgs.sendMessage(text, replyToId);
+        if (sendOptions?.notifyAnyway) await msgs.sendMessage(text, replyToId ?? null, { notifyAnyway: true });
+        else if (replyToId) await msgs.sendMessage(text, replyToId);
         else await msgs.sendMessage(text);
         return true;
       } catch (err) {

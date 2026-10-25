@@ -33,6 +33,12 @@ export async function notifyGolfMessageRecipients(
   conversationId: string,
   senderId: string,
   previewText: string,
+  /**
+   * P-10 Notify anyway: this message was stored with `notify_anyway` (the database kept the coach's flag). Its pushes are never held for class, and
+   * once one has gone out the message is stamped `notify_anyway_pushed_at`, which is what the thread's "Notified anyway" caption keys on: the claim
+   * is made only after a push was actually dispatched, never because the coach asked for one.
+   */
+  opts?: { notifyAnyway?: boolean; messageId?: string | null },
 ): Promise<void> {
   try {
     const supabase = await createClient();
@@ -145,18 +151,31 @@ export async function notifyGolfMessageRecipients(
 
     // Push notifications — carry the conversation id so the push payload
     // deep-links straight to the thread that fired it (P260).
-    await allSettledReported(
+    const pushes = await allSettledReported(
       recipientProfiles.map(r =>
         gatedDelivery(prefsFor(r), 'push_messages')
           ? sendPushNotification('new_message', r.id, {
               senderName,
               preview: previewText,
               conversationId,
+              ...(opts?.notifyAnyway ? { hold: 'bypass' } : {}),
             })
           : Promise.resolve()
       ),
       { action: 'notifications.notifyGolfMessageRecipients', featureArea: 'messaging', label: 'push' },
     );
+
+    // Notify anyway: stamp the message once a push has really been dispatched to someone. Service role only (the trigger refuses anyone else), and
+    // best effort: a failed stamp means the caption does not show, never that a push fails.
+    if (opts?.notifyAnyway && opts.messageId && pushes.some(wentOut)) {
+      const { error: stampError } = await adminClient
+        .from('golf_messages')
+        .update({ notify_anyway_pushed_at: new Date().toISOString() } as never)
+        .eq('id', opts.messageId);
+      if (stampError) {
+        await logServerError(`[notifyGolfMessageRecipients] Notify anyway stamp failed: ${stampError.message}`, { action: 'notifications.notifyGolfMessageRecipients' });
+      }
+    }
 
     // In-app notifications (golf_calendar_notifications) — DELIBERATELY not
     // gated. This is the in-product bell, not an outbound channel: it is how a
@@ -190,6 +209,16 @@ export async function notifyGolfMessageRecipients(
     // Never block message delivery on notification failure
     await logServerError(`[notifyGolfMessageRecipients] Notification error (non-fatal): ${describeError(notifErr)}`, { action: 'notifications.notifyGolfMessageRecipients' });
   }
+}
+
+/**
+ * A push that really reached a device. `success: true` is not enough: an opted-out recipient, a recipient with no device and a push that was
+ * only queued all say so, and a "Notified anyway" caption over any of them would promise a delivery nobody can confirm. Only `delivered > 0` counts.
+ */
+function wentOut(settled: PromiseSettledResult<unknown>): boolean {
+  if (settled.status !== 'fulfilled') return false;
+  const value = settled.value as { success?: boolean; delivered?: number } | undefined;
+  return !!value && value.success === true && typeof value.delivered === 'number' && value.delivered > 0;
 }
 
 /**

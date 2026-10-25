@@ -288,7 +288,7 @@ export async function sendPushNotification(
   type: NotificationType,
   userId: string,
   data: Record<string, unknown>
-): Promise<{ success: boolean; error?: string }> {
+): Promise<PushResult> {
   if (isHelmQueueEnabled()) {
     const result = await enqueueJob('push_send', { type, userId, data });
     if (result.queued) {
@@ -297,6 +297,21 @@ export async function sendPushNotification(
     // fails open — fall through to the inline send below.
   }
   return sendPushNotificationDirect(type, userId, data);
+}
+
+/**
+ * `delivered` is how many devices a push really reached. It is set only by the path that sent one: an opted-out user, a user with no device
+ * and a push that was only queued all report `success: true` and leave it unset, so a caller that must know a push went out (the "Notified
+ * anyway" stamp) checks `delivered`, never `success`.
+ */
+export type PushResult = { success: boolean; error?: string; delivered?: number };
+
+/** `data` without the P-10 `hold` instruction (the same object when there is none). */
+function stripHold(data: Record<string, unknown>): Record<string, unknown> {
+  if (!('hold' in data)) return data;
+  const rest = { ...data };
+  delete rest.hold;
+  return rest;
 }
 
 /**
@@ -309,8 +324,11 @@ export async function sendPushNotification(
 export async function sendPushNotificationDirect(
   type: NotificationType,
   userId: string,
-  data: Record<string, unknown>
-): Promise<{ success: boolean; error?: string }> {
+  rawData: Record<string, unknown>
+): Promise<PushResult> {
+  // P-10: a sender may attach `hold` (a hold instruction for the class gate) to the data it queues. It is an instruction to this function,
+  // never part of the push, so it is removed before a payload is built.
+  const data = stripHold(rawData);
   try {
     // Check user preferences
     const prefs = await getUserNotificationPreferences(userId);
@@ -558,7 +576,7 @@ export async function sendPushNotificationDirect(
     }
 
     recordPushOutcome(type, 'success');
-    return { success: true };
+    return { success: true, delivered };
   } catch (error) {
     console.error('Failed to send push notification:', describeError(error));
     // Previously console.error-only: this is the outermost catch for the

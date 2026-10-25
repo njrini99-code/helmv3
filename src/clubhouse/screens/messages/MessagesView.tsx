@@ -200,7 +200,8 @@ export interface ChMessagesApi {
   refetchMsgs: () => void;
   typing: boolean;
   onTyping: (on: boolean) => void;
-  send: (text: string, replyToId?: string | null) => Promise<boolean>;
+  /** `notifyAnyway` is the coach's choice to interrupt (P-10); the composer offers it only in a later step, with class holds. */
+  send: (text: string, replyToId?: string | null, sendOptions?: { notifyAnyway?: boolean }) => Promise<boolean>;
   sendFiles: (text: string, files: File[], replyToId?: string | null) => Promise<boolean | "partial" | "unknown">;
   retry: (id: string) => void;
   discard: (id: string) => void;
@@ -1287,6 +1288,13 @@ export function Bubble({
               {m.mine && !group && m.seen ? " · Seen" : ""}
             </span>
           )
+        )}
+        {/* P-10: "Notified anyway", once a push really went out. A 1:1 shows it to both sides; in a group only a coach sees it (a teammate
+            reading it would learn who was in class). */}
+        {m.notifiedAnyway && !m.failed && (!group || api.viewer.role === "coach") && (
+          <span className="ch-ms-msg__na">
+            Notified anyway
+          </span>
         )}
       </div>
     </PresenceRow>

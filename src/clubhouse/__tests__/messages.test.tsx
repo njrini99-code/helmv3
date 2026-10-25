@@ -1881,3 +1881,48 @@ describe('Messages · wave 5 feedback', () => {
     });
   });
 });
+
+/** P-10 Notify anyway: the "Notified anyway" caption keys on the delivery stamp, never on the coach's request. */
+describe('Messages: Notified anyway caption', () => {
+  const dm = { id: 'dm', title: null, participant_ids: ['me', 'jonah'], participant_count: 2, unread_count: 0, other_participant: { id: 'jonah', name: 'Jonah Okafor' }, last_message: null, creator_id: 'me' };
+  const stamped = { ...mine, notify_anyway: true, notify_anyway_pushed_at: '2026-10-14T18:00:02Z' };
+  const caption = () => document.querySelector('.ch-ms-msg__na');
+
+  it('shows after a push went out, to a coach in a 1:1', async () => {
+    live.convs.conversations = [dm];
+    live.msgs.messages = [{ ...stamped, conversation_id: 'dm' }];
+    show();
+    await waitFor(() => expect(caption()?.textContent).toMatch(/Notified anyway/));
+  });
+
+  it('shows to a player in a 1:1 too', async () => {
+    live.convs.conversations = [dm];
+    live.msgs.messages = [{ ...stamped, conversation_id: 'dm', sender_id: 'jonah' }];
+    show({ ...data, role: 'player', viewerUserId: 'me', viewerPlayerId: 'p-me' });
+    await waitFor(() => expect(caption()?.textContent).toMatch(/Notified anyway/));
+  });
+
+  it('is not shown while the push is only requested (no stamp), or when the send failed', async () => {
+    live.convs.conversations = [dm];
+    live.msgs.messages = [{ ...mine, conversation_id: 'dm', notify_anyway: true, notify_anyway_pushed_at: null }];
+    const view = show();
+    await waitFor(() => expect(screen.getAllByText('Bus at 6:15').length).toBeGreaterThan(0));
+    expect(caption()).toBeNull();
+    view.unmount();
+    live.msgs.messages = [{ ...stamped, conversation_id: 'dm', sendFailed: true, sendOutcome: 'refused' }];
+    show();
+    await waitFor(() => expect(screen.getAllByText('Bus at 6:15').length).toBeGreaterThan(0));
+    expect(caption()).toBeNull();
+  });
+
+  it('in a group shows to a coach and stays hidden from a player', async () => {
+    live.msgs.messages = [stamped];
+    const view = show();
+    await waitFor(() => expect(caption()?.textContent).toMatch(/Notified anyway/));
+    view.unmount();
+    live.msgs.messages = [{ ...stamped, sender_id: 'jonah' }];
+    show({ ...data, role: 'player', viewerUserId: 'me', viewerPlayerId: 'p-me' });
+    await waitFor(() => expect(screen.getAllByText('Bus at 6:15').length).toBeGreaterThan(0));
+    expect(caption()).toBeNull();
+  });
+});

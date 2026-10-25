@@ -902,6 +902,13 @@
   font-variant-numeric: tabular-nums;
   color: var(--ch-text-tertiary);
 }
+/* P-10: "Notified anyway" under the time row, on the same side as the bubble. */
+.ch-ms-msg__na {
+  padding: 0 16px;
+  font: var(--ch-type-12);
+  line-height: var(--ch-lead-caption);
+  color: var(--ch-ink-500);
+}
 .ch-ms-msg__fail {
   display: inline-flex;
   flex-wrap: wrap;
