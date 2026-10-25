@@ -1351,7 +1351,14 @@ export function Bubble({
               {m.edited ? " · Edited" : ""}
               {/* OC-3: a direct thread's "Seen" sits on the carrier only (or a time revealed by a swipe), not every run-end. */}
               {m.mine && !group && m.seen && (carrier || showTime) ? " · Seen" : ""}
-              {group && (carrier || showTime) && <SeenByReceipt api={api} m={m} onOpen={onSeenBy ? (el) => onSeenBy(m, el) : undefined} />}
+              {/* P-1 M3: when the receipt moves to a newer message, the old one fades out on quick (instant when reduced). */}
+              <AnimatePresence initial={false}>
+                {group && (carrier || showTime) && (
+                  <M.span key="seen" className="ch-ms-seen-slot" exit={reduced ? undefined : { opacity: 0 }} transition={chTween("quick", reduced)}>
+                    <SeenByReceipt api={api} m={m} onOpen={onSeenBy ? (el) => onSeenBy(m, el) : undefined} />
+                  </M.span>
+                )}
+              </AnimatePresence>
             </span>
           )
         )}
