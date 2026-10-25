@@ -25,6 +25,10 @@ import {
   UserMinus,
   Users,
   X,
+  ListChecks,
+  BellRing,
+  Lock,
+  Share,
 } from "lucide-react";
 import {
   useCallback,
@@ -70,6 +74,7 @@ import {
 import { AnnouncementPane, AnnouncementsSection } from "./announcements";
 import { isMessagesFirstRun, MessagesFirstRun } from "./MessagesFirstRun";
 import { fileMeta, useConversationFiles } from "./files";
+import { notePollHold, pollCardActions, PollThreadContext, type PollThreadActions } from "./polls";
 import {
   AddMembersModal,
   AttachButton,
@@ -388,6 +393,19 @@ function PhoneThread({
     setReplyToId(message.id);
     setActing(null);
   };
+  // D30: Remind and Share result reply to the poll with a prefilled draft (the coach presses Send).
+  const [seed, setSeed] = useState<{ text: string; nonce: number } | null>(null);
+  const pollThread = useMemo<PollThreadActions>(
+    () => ({
+      replyWith: (messageId, text) => {
+        if (replySendingRef.current) return;
+        setReplyToId(messageId);
+        setActing(null);
+        setSeed({ text, nonce: Date.now() });
+      },
+    }),
+    [],
+  );
   useEffect(() => {
     if (replyToId && !acting) composerRef.current?.querySelector("textarea")?.focus();
   }, [replyToId, acting]);
@@ -419,6 +437,7 @@ function PhoneThread({
     }
   };
   return (
+    <PollThreadContext.Provider value={pollThread}>
     <PhoneScreen labelledBy={titleId} className="ch-msp-thread" keyboardAware covered={covered}>
       <PhoneBar
         lead
@@ -486,7 +505,7 @@ function PhoneThread({
                           setPicking={() => {}}
                           onEdit={() => setEditing(it.m)}
                           onDelete={() => setDeleting(it.m)}
-                          onActions={it.m.deleted ? undefined : () => setActing(it.m)}
+                          onActions={it.m.deleted ? undefined : () => (notePollHold(), setActing(it.m))}
                           onReply={() => reply(it.m)}
                         />,
                       ],
@@ -523,6 +542,7 @@ function PhoneThread({
         replyToId={replyToId}
         onClearReply={() => setReplyToId(null)}
         onSendingChange={(sending) => { replySendingRef.current = sending; setReplySending(sending); }}
+        seed={seed}
       />
       </div>
 
@@ -558,11 +578,12 @@ function PhoneThread({
               })}
             </div>
             <div className="ch-msp-panel">
+              {acting.poll && <PollSheetRows id={acting.id} done={() => setActing(null)} />}
               <SheetRow icon={Reply} label="Reply" disabled={replySending} onClick={() => reply(acting)} />
               {acting.text && (
-                <SheetRow icon={Copy} label="Copy" onClick={() => (setActing(null), void copy(acting))} />
+                <SheetRow icon={Copy} label={acting.poll ? "Copy poll" : "Copy"} onClick={() => (setActing(null), void copy(acting))} />
               )}
-              {acting.mine && acting.text && (
+              {acting.mine && acting.text && !acting.poll && (
                 <SheetRow icon={Pencil} label="Edit" onClick={() => (setActing(null), setEditing(acting))} />
               )}
               {acting.mine && (
@@ -575,6 +596,25 @@ function PhoneThread({
       <EditMessageModal api={api} message={editing} onClose={() => setEditing(null)} />
       <DeleteMessageModal api={api} message={deleting} onClose={() => setDeleting(null)} />
     </PhoneScreen>
+    </PollThreadContext.Provider>
+  );
+}
+
+/** D26: a poll's own rows in the long-press sheet, from its card's live state: See votes, Remind, Close poll, Share result. */
+function PollSheetRows({ id, done }: { id: string; done: () => void }) {
+  const a = pollCardActions(id);
+  if (!a) return null;
+  const run = (f: () => void) => () => {
+    done();
+    f();
+  };
+  return (
+    <>
+      {a.seeVotes && <SheetRow icon={ListChecks} label="See votes" onClick={run(a.seeVotes)} />}
+      {a.remind && <SheetRow icon={BellRing} label={`Remind ${a.remind.count}`} onClick={run(a.remind.run)} />}
+      {a.close && <SheetRow icon={Lock} label="Close poll" onClick={run(a.close)} />}
+      {a.share && <SheetRow icon={Share} label="Share result" onClick={run(a.share)} />}
+    </>
   );
 }
 

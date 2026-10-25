@@ -113,7 +113,7 @@ Every Bridge ID (D-68: namespace, two-digit category, two-digit item), its catal
 | P004 | 2 | 1 | 1 | 19 | 2 | 12 | 3 | 2 | 1 |  |  | 1 |  | 1 |  | 4 | 4 | 6 | 1 | 1 | 1 |  | 1 | 1 |  | 64 |
 | P005 | 4 | 4 | 2 | 23 | 3 | 25 | 3 | 6 | 1 |  | 1 | 2 |  | 1 | 1 | 4 | 3 | 10 | 1 | 1 | 1 |  | 1 | 1 |  | 98 |
 | P006 | 4 | 5 | 3 | 9 | 4 | 30 | 1 | 8 | 1 | 2 | 5 | 3 | 2 | 2 | 1 | 6 | 3 | 4 | 1 | 1 | 1 |  | 1 | 1 |  | 98 |
-| P007 | 2 | 10 | 1 | 9 | 6 | 38 | 1 | 2 | 2 | 1 | 4 | 2 | 1 | 2 | 1 | 7 | 4 | 4 | 1 | 1 | 1 |  | 2 | 1 |  | 103 |
+| P007 | 2 | 10 | 1 | 9 | 6 | 43 | 1 | 2 | 2 | 1 | 4 | 2 | 1 | 2 | 1 | 7 | 4 | 4 | 1 | 1 | 1 |  | 2 | 1 |  | 108 |
 | P008 | 2 | 1 | 3 | 6 | 15 | 42 | 3 | 10 | 3 | 3 | 8 | 6 | 2 | 2 | 1 | 9 | 8 | 7 | 1 | 1 | 1 |  | 1 | 1 |  | 136 |
 | P009 | 7 | 7 | 4 | 13 | 14 | 34 | 7 | 12 | 2 | 1 | 4 | 4 | 1 | 2 | 1 | 3 | 3 | 4 | 4 | 3 | 2 |  | 4 | 1 |  | 137 |
 | P010 | 3 | 10 |  | 16 | 10 | 25 | 1 | 4 | 1 |  | 4 | 1 | 1 | 2 | 1 | 2 | 2 | 2 | 1 | 1 | 1 |  | 1 | 1 |  | 90 |
@@ -720,7 +720,7 @@ Every Bridge ID (D-68: namespace, two-digit category, two-digit item), its catal
 | 70612 | CH-7014 | 06 Server / system error | `POSTING_AN_ANNOUNCEMENT_FAILS` | implemented | Posting an announcement fails |
 | 70613 | CH-7016 | 06 Server / system error | `A_MESSAGE_IS_REFUSED` | implemented | A message is refused |
 | 70614 | CH-7018 | 06 Server / system error | `ADDING_SOMEONE_TO_A_GROUP_FAILS` | implemented | Adding someone to a group fails (the group's creator, desktop or phone Details › Add) |
-| 70615 | CH-7020 | 06 Server / system error | `COPYING_A_MESSAGE_FAILS` | implemented | Copying a message fails (phone, from the long-press sheet) |
+| 70615 | CH-7020 | 06 Server / system error | `COPYING_A_MESSAGE_FAILS` | implemented | Copying a message fails (phone, from the long-press sheet; desktop, from the message menu) |
 | 70616 | CH-7021 | 06 Server / system error | `A_SHARED_FILE_WONT_OPEN` | implemented | A shared file won't open (Details › Files, or an announcement's Files) |
 | 70617 | CH-7201 | 06 Server / system error | `CONVERSATIONS_DONT_LOAD` | implemented | Conversations don't load |
 | 70618 | CH-7202 | 06 Server / system error | `A_CONVERSATIONS_MESSAGES_DONT_LOAD` | implemented | A conversation's messages don't load |
@@ -744,6 +744,11 @@ Every Bridge ID (D-68: namespace, two-digit category, two-digit item), its catal
 | 70636 | CH-7024 | 06 Server / system error | `REMOVING_SOMEONE_FROM_A_GROUP_FAILS` | implemented | Removing someone from a group fails (the group's creator, desktop or phone Details › Remove) |
 | 70637 | CH-7025 | 06 Server / system error | `DELETING_A_CONVERSATION_FROM_YOUR_INBOX_FAILS` | implemented | Deleting a conversation from your inbox fails |
 | 70638 | CH-7026 | 06 Server / system error | `MARKING_A_CONVERSATION_READ_OR_UNREAD_FROM` | implemented | Marking a conversation read or unread from its row (menu or swipe) fails |
+| 70639 | CH-7027 | 06 Server / system error | `CLOSING_A_POLL_FAILS` | implemented | Closing a poll fails (the sender's Close poll, after the confirm) |
+| 70640 | CH-7028 | 06 Server / system error | `SENDING_A_POLL_FAILS` | implemented | Sending a poll fails (New poll › Send poll) |
+| 70641 | CH-7030 | 06 Server / system error | `A_VOTE_IS_REFUSED_BECAUSE_THE_POLL` | implemented | A vote is refused because the poll ended between the tap and the write (only with the held vote guard, OQ-68) |
+| 70642 | CH-7029 | 06 Server / system error | `A_VOTE_ON_A_POLL_ISNT_SAVED` | implemented | A vote on a poll isn't saved (tap a choice in a poll card) |
+| 70643 | CH-7031 | 06 Server / system error | `AN_EDITED_POLL_IS_SENT_AFTER_A` | implemented | An edited poll is sent after a send that threw, and the earlier copy had landed after all |
 | 70701 | CH-7005 | 07 Network / offline | `THE_NETWORK_DROPS_MID_SEND` | implemented | The network drops mid-send (Safari's "Load failed", Chrome's "Failed to fetch", Firefox's "NetworkError…": the same test the bubble's CH-7017 uses, so the toast and the bubble agree; the browser's text is never shown) |
 | 70801 | CH-7001 | 08 Permission / authorization | `A_LINK_OPENS_A_PLAYER_WHO_ISNT` | implemented | A link opens a player (`?player=`) or a person (`?user=`, a player's Message coach) who isn't on the team |
 | 70802 | CH-7015 | 08 Permission / authorization | `AN_OPEN_CONVERSATION_DISAPPEARS` | implemented | An open conversation disappears (left, or another team's) |

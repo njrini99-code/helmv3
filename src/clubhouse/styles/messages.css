@@ -3129,3 +3129,504 @@ html[data-fw-theme='dark'] .ch-ms-sec.is-ann {
   content-visibility: auto;
   contain-intrinsic-size: auto 60px;
 }
+
+/* Polls (P-2, handoff §4.34.2). The card is a quiet sheet surface on either side of the thread, never the green
+   "mine" bubble, so the fills and the green check read the same for the sender and everyone else. Each choice is a
+   44px row; its share of the voters fills behind it as a bar drawn at its width (no draw-in, Q-153) that moves only
+   when a vote changes it, on the smooth spring. */
+.ch-ms-poll {
+  /* P-2 follow-up (D1 to D7): a card at 16 (sheets are 20), its own local tokens so the dark values sit in one place,
+     and the 3:1 marks, rings and level line the soft fill alone can't carry. */
+  --ch-poll-level: var(--ch-green-500);
+  --ch-poll-ring: var(--ch-green-500);
+  /* ink-500 holds 3:1 over every fill the mark sits on (4.30 on green-200 at its lowest; ink-400 fell to 2.19). */
+  --ch-poll-mark-ring: var(--ch-ink-500);
+  --ch-poll-check: var(--ch-text-on-accent);
+  container: ch-poll / inline-size;
+  width: min(360px, 100%);
+  padding: var(--ch-space-3);
+  border-radius: var(--ch-radius-card);
+  background: var(--ch-sheet-bg);
+  box-shadow: 0 0 0 1px var(--ch-border-hairline), var(--ch-elevation-bubble);
+  color: var(--ch-text-primary);
+}
+html[data-fw-theme='dark'] [data-ui='clubhouse'] .ch-ms-poll {
+  --ch-poll-level: var(--ch-green-600);
+  --ch-poll-ring: var(--ch-green-600);
+}
+/* D2: on a phone a poll's column takes the card's width, not the 82% a bubble gets. */
+.ch-msp-thread .ch-ms-msg__col:has(> .ch-ms-msg__line .ch-ms-poll) {
+  max-width: min(100%, 360px);
+}
+.ch-ms-msg.is-mine .ch-ms-poll {
+  border-bottom-right-radius: var(--ch-radius-tail);
+}
+.ch-ms-msg:not(.is-mine) .ch-ms-poll {
+  border-bottom-left-radius: var(--ch-radius-tail);
+}
+.ch-ms-poll__head {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 0 2px;
+  font: var(--ch-type-12-medium);
+  color: var(--ch-text-tertiary);
+}
+.ch-ms-poll__head svg {
+  color: var(--ch-green-700);
+}
+.ch-ms-poll.is-closed .ch-ms-poll__head svg {
+  color: var(--ch-text-tertiary);
+}
+.ch-ms-poll__dot {
+  color: var(--ch-text-tertiary);
+}
+.ch-ms-poll__ends {
+  min-width: 0;
+  flex: 0 1 auto;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.ch-ms-poll__ends.is-soon {
+  color: var(--ch-warning-600);
+}
+.ch-ms-poll__q {
+  margin: 6px 2px 0;
+  font: var(--ch-type-17-strong);
+  letter-spacing: var(--ch-track-17);
+  text-wrap: balance;
+  overflow-wrap: anywhere;
+}
+.ch-ms-poll__sub {
+  margin: 2px 2px 0;
+  font: var(--ch-type-13);
+  color: var(--ch-text-tertiary);
+}
+.ch-ms-poll__opts {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin: var(--ch-space-3) 0 0;
+  padding: 0;
+  list-style: none;
+}
+.ch-ms-poll__opt {
+  position: relative;
+  isolation: isolate;
+  display: flex;
+  align-items: center;
+  gap: var(--ch-space-2);
+  width: 100%;
+  min-height: 44px;
+  padding: var(--ch-space-2) var(--ch-space-3);
+  overflow: hidden;
+  border: 0;
+  border-radius: var(--ch-radius-md);
+  background: var(--ch-bg-subtle);
+  box-shadow: inset 0 0 0 1px var(--ch-border-hairline);
+  color: var(--ch-text-primary);
+  font: var(--ch-type-16-medium);
+  letter-spacing: var(--ch-track-16);
+  text-align: left;
+  cursor: pointer;
+  transition: box-shadow var(--ch-dur-quick) var(--ch-ease), background-color 0s linear;
+  -webkit-tap-highlight-color: transparent;
+}
+@media (pointer: fine) and (min-width: 821px) {
+  .ch-ms-poll__opt {
+    min-height: 40px;
+    font: var(--ch-type-15-medium);
+    letter-spacing: var(--ch-track-15);
+  }
+}
+/* D8: a full-width row deepens its tint on press (after the press delay), it doesn't shrink. */
+.ch-ms-poll__opt[data-ch-pressed]:not([aria-disabled='true']) {
+  background-color: color-mix(in oklab, var(--ch-bg-subtle), var(--ch-green-600) 11%);
+  transition-delay: var(--ch-dur-press-delay);
+}
+@media (hover: hover) {
+  .ch-ms-poll__opt:active:not([aria-disabled='true']) {
+    background-color: color-mix(in oklab, var(--ch-bg-subtle), var(--ch-green-600) 11%);
+    transition-delay: var(--ch-dur-press-delay);
+  }
+}
+.ch-ms-poll__opt[aria-disabled='true'] {
+  cursor: default;
+}
+.ch-ms-poll__opt.is-on {
+  background: var(--ch-selected-bg);
+  box-shadow: inset 0 0 0 1.5px var(--ch-poll-ring);
+}
+.ch-ms-poll__opt:focus-visible {
+  outline: 2px solid var(--ch-border-focus);
+  outline-offset: 2px;
+}
+/* The share of the voters, behind the label: a soft green on a track that takes the selected tint on the viewer's own
+   pick (CONS-22; D5: the leader is marked only once the poll is final, so an open poll never nudges toward it). */
+.ch-ms-poll__fill,
+.ch-ms-poll__level {
+  position: absolute;
+  left: 0;
+  transform: scaleX(var(--ch-poll-share, 0));
+  transform-origin: left center;
+  /* D3: interruptible (it moves on every vote), so a curve, not a CSS spring that would restart from rest. */
+  transition: transform var(--ch-dur-release) var(--ch-ease);
+}
+.ch-ms-poll__fill {
+  inset: 0;
+  z-index: -1;
+  background: var(--ch-green-100);
+}
+/* D4: the fill alone is 1.1:1 on the track; a 3 px line at the row's foot carries the share at 3:1. */
+.ch-ms-poll__level {
+  bottom: 0;
+  width: 100%;
+  height: 3px;
+  z-index: -1;
+  background: var(--ch-poll-level);
+}
+/* Final: the leader is named and filled, the rest recede (their labels stay at full ink). */
+.ch-ms-poll.is-closed .ch-ms-poll__opt.is-lead .ch-ms-poll__fill {
+  background: var(--ch-green-200);
+}
+.ch-ms-poll.is-closed .ch-ms-poll__opt.is-lead .ch-ms-poll__label {
+  font: var(--ch-type-16-strong);
+  letter-spacing: var(--ch-track-16);
+}
+@media (pointer: fine) and (min-width: 821px) {
+  .ch-ms-poll.is-closed .ch-ms-poll__opt.is-lead .ch-ms-poll__label {
+    font: var(--ch-type-15-strong);
+    letter-spacing: var(--ch-track-15);
+  }
+}
+.ch-ms-poll.is-closed .ch-ms-poll__opt:not(.is-lead) .ch-ms-poll__fill {
+  background: color-mix(in srgb, var(--ch-ink-400) 16%, transparent);
+}
+.ch-ms-poll.is-closed .ch-ms-poll__opt:not(.is-lead) .ch-ms-poll__level {
+  background: var(--ch-ink-500);
+}
+.ch-ms-poll__tag {
+  flex: none;
+  font: var(--ch-type-12-medium);
+  line-height: var(--ch-lead-tight);
+  color: var(--ch-green-700);
+}
+@media (hover: hover) {
+  .ch-ms-poll__opt:not([aria-disabled='true']):hover {
+    box-shadow: inset 0 0 0 1px var(--ch-border-strong);
+  }
+  .ch-ms-poll__opt.is-on:not([aria-disabled='true']):hover {
+    box-shadow: inset 0 0 0 1.5px var(--ch-poll-ring);
+  }
+}
+.ch-ms-poll__mark {
+  display: inline-grid;
+  flex: none;
+  place-items: center;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  box-shadow: inset 0 0 0 1.5px var(--ch-poll-mark-ring);
+  color: var(--ch-poll-check);
+  transition: background-color var(--ch-dur-quick) var(--ch-ease), box-shadow var(--ch-dur-quick) var(--ch-ease);
+}
+.ch-ms-poll__opt.is-multi .ch-ms-poll__mark {
+  border-radius: var(--ch-radius-xs);
+}
+.ch-ms-poll__opt.is-on .ch-ms-poll__mark {
+  background: var(--ch-selected-strong);
+  box-shadow: none;
+}
+.ch-ms-poll__opt.is-on .ch-ms-poll__mark svg {
+  animation: ch-ms-poll-check var(--ch-dur-release) var(--ch-ease-spring);
+}
+@keyframes ch-ms-poll-check {
+  from {
+    transform: scale(0.6);
+    opacity: 0;
+  }
+}
+.ch-ms-poll__label {
+  flex: 1;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+.ch-ms-poll__n {
+  flex: none;
+  min-width: 2ch;
+  font: var(--ch-type-15-strong);
+  line-height: var(--ch-lead-tight);
+  letter-spacing: var(--ch-track-15);
+  color: var(--ch-text-secondary);
+  text-align: right;
+}
+.ch-ms-poll.is-closed .ch-ms-poll__opt.is-lead .ch-ms-poll__n {
+  color: var(--ch-text-primary);
+}
+/* A row nobody picked: "0" in tertiary (8.81 / 9.43 on the track), open and final. */
+.ch-ms-poll__n.is-zero {
+  color: var(--ch-text-tertiary);
+}
+.ch-ms-poll__foot {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px 16px;
+  padding: 12px 2px 0;
+  font: var(--ch-type-13);
+  color: var(--ch-text-tertiary);
+}
+.ch-ms-poll__count {
+  margin-right: auto;
+}
+.ch-ms-poll__link {
+  min-height: 28px;
+  /* D10: 28 px seen, 44 px to a finger. */
+  padding: 8px;
+  margin: -8px;
+  border: 0;
+  background: none;
+  color: var(--ch-green-700);
+  font: var(--ch-type-13-medium);
+  line-height: var(--ch-lead-tight);
+  cursor: pointer;
+}
+.ch-ms-poll__link:focus-visible {
+  outline: 2px solid var(--ch-border-focus);
+  outline-offset: 2px;
+  border-radius: var(--ch-radius-xs);
+}
+@media (prefers-reduced-motion: reduce) {
+  .ch-ms-poll__fill,
+  .ch-ms-poll__level,
+  .ch-ms-poll__opt,
+  .ch-ms-poll__mark {
+    transition: none;
+  }
+  .ch-ms-poll__opt.is-on .ch-ms-poll__mark svg {
+    animation: none;
+  }
+}
+[data-motion='off'] .ch-ms-poll__fill,
+[data-motion='off'] .ch-ms-poll__level,
+[data-motion='off'] .ch-ms-poll__opt,
+[data-motion='off'] .ch-ms-poll__mark {
+  transition: none;
+}
+[data-motion='off'] .ch-ms-poll__opt.is-on .ch-ms-poll__mark svg {
+  animation: none;
+}
+
+/* Who voted for what (the card's See votes). */
+.ch-ms-pollv {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+.ch-ms-pollv__opt + .ch-ms-pollv__opt {
+  padding-top: var(--ch-space-3);
+  box-shadow: var(--ch-seam-x);
+}
+.ch-ms-pollv__h {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  margin: 0 0 8px;
+  font: var(--ch-type-15-strong);
+  letter-spacing: var(--ch-track-15);
+  color: var(--ch-text-primary);
+}
+.ch-ms-pollv__who {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+/* A voter: a 44 px row, avatar 28, the name on one line (the full name is its text), "Left the group" after it. */
+.ch-ms-pollv__row {
+  display: flex;
+  align-items: center;
+  gap: var(--ch-space-3);
+  min-height: 44px;
+  min-width: 0;
+  color: var(--ch-text-primary);
+  font: var(--ch-type-15);
+  letter-spacing: var(--ch-track-15);
+}
+.ch-ms-pollv__name {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.ch-ms-pollv__left {
+  flex: none;
+  color: var(--ch-text-tertiary);
+  font: var(--ch-type-13);
+}
+.ch-ms-pollv__none {
+  margin: 0;
+  color: var(--ch-text-tertiary);
+  font: var(--ch-type-14);
+}
+.ch-ms-pollv__final {
+  display: inline-flex;
+  align-items: center;
+  min-height: 24px;
+  padding: 0 var(--ch-space-2);
+  border-radius: 999px;
+  background: var(--ch-bg-subtle);
+  box-shadow: inset 0 0 0 var(--ch-hairline-w) var(--ch-border-hairline);
+  color: var(--ch-text-secondary);
+  font: var(--ch-type-12-medium);
+}
+
+/* The poll sheet: numbered choice rows, a spare one appearing as the last fills. */
+.ch-ms-pollf {
+  display: flex;
+  flex-direction: column;
+  gap: var(--ch-space-4);
+}
+.ch-ms-pollf__set {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 0;
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+.ch-ms-pollf__opts {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.ch-ms-pollf__opt {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.ch-ms-pollf__n {
+  flex: none;
+  width: 16px;
+  font: var(--ch-type-13-medium);
+  line-height: var(--ch-lead-tight);
+  color: var(--ch-text-tertiary);
+  text-align: right;
+}
+.ch-ms-pollf__set .ch-field__help {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+/* Slice 4: the sheet's Clear, Quick start, the end as one Menu row at a large Text Size, the Custom date and time
+   (revealed on the grid-rows pattern), and the earlier-copy notice (CH-7031). */
+.ch-ms-pollf__clear {
+  min-height: 44px;
+  padding: 0 var(--ch-space-2);
+  border: 0;
+  background: none;
+  color: var(--ch-green-700);
+  font: var(--ch-type-15-medium);
+  letter-spacing: var(--ch-track-15);
+  cursor: pointer;
+}
+.ch-ms-pollf__quick {
+  display: flex;
+  flex-direction: column;
+  gap: var(--ch-space-2);
+}
+.ch-ms-pollf__quickl {
+  color: var(--ch-text-tertiary);
+  font: var(--ch-type-13-medium);
+}
+.ch-ms-pollf__chips {
+  display: flex;
+  gap: var(--ch-space-2);
+  overflow-x: auto;
+  overscroll-behavior-x: contain;
+  scrollbar-width: none;
+}
+.ch-ms-pollf__chip {
+  flex: none;
+  min-height: 36px;
+  padding: 0 var(--ch-space-3);
+  border: 0;
+  border-radius: 999px;
+  background: var(--ch-bg-subtle);
+  box-shadow: inset 0 0 0 var(--ch-hairline-w) var(--ch-border-hairline);
+  color: var(--ch-text-secondary);
+  font: var(--ch-type-14-medium);
+  cursor: pointer;
+}
+@media (pointer: coarse) {
+  /* 44 px to the finger on a 36 px chip. */
+  .ch-ms-pollf__chip {
+    position: relative;
+  }
+  .ch-ms-pollf__chip::after {
+    content: '';
+    position: absolute;
+    inset: -4px 0;
+  }
+}
+.ch-ms-pollf__endsrow {
+  display: flex;
+  align-items: center;
+  width: 100%;
+  min-height: 44px;
+  padding: 0 var(--ch-space-3);
+  border: 0;
+  border-radius: var(--ch-radius-md);
+  background: var(--ch-bg-subtle);
+  box-shadow: inset 0 0 0 var(--ch-hairline-w) var(--ch-border-hairline);
+  color: var(--ch-text-primary);
+  font: var(--ch-type-15);
+  letter-spacing: var(--ch-track-15);
+  text-align: start;
+  cursor: pointer;
+}
+.ch-ms-pollf__custom {
+  display: grid;
+  grid-template-rows: 0fr;
+}
+/* The row opens at once (0fr to 1fr, no height animation); only its fields fade in. */
+.ch-ms-pollf__custom.is-open {
+  grid-template-rows: 1fr;
+}
+.ch-ms-pollf__customin {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--ch-space-2);
+  min-height: 0;
+  overflow: hidden;
+  opacity: 0;
+  transition: opacity var(--ch-dur-base) var(--ch-ease);
+}
+.ch-ms-pollf__custom.is-open .ch-ms-pollf__customin {
+  opacity: 1;
+}
+.ch-ms-pollf__custom.is-open .ch-ms-pollf__customin {
+  padding-top: var(--ch-space-2);
+}
+.ch-ms-pollf__earlier {
+  display: flex;
+  flex-direction: column;
+  gap: var(--ch-space-2);
+}
+.ch-ms-pollf__earlierb {
+  display: flex;
+  gap: var(--ch-space-2);
+}
+/* D25: the poll glyph in the inbox row and a reply quote. */
+.ch-ms-row__poll {
+  margin-right: 4px;
+  vertical-align: -2px;
+  color: var(--ch-green-700);
+}
