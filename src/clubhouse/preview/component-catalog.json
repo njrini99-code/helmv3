@@ -1,6 +1,16 @@
 {
   "components": [
     {
+      "file": "src/clubhouse/lib/use-change-marks.tsx",
+      "group": "lib",
+      "exports": [
+        "ChangeMarksProvider"
+      ],
+      "styles": [],
+      "examples": [],
+      "fixture": "Contextual module"
+    },
+    {
       "file": "src/clubhouse/lib/use-clock.tsx",
       "group": "lib",
       "exports": [
@@ -992,6 +1002,29 @@
       "styles": [
         "src/clubhouse/styles/calendar.css",
         "src/clubhouse/styles/ui.css"
+      ],
+      "examples": [],
+      "fixture": "Contextual module"
+    },
+    {
+      "file": "src/clubhouse/screens/calendar/change-note.tsx",
+      "group": "screens",
+      "exports": [
+        "ChangeNote",
+        "MarkBadge",
+        "MovedAwayRow",
+        "OldSlotLine"
+      ],
+      "styles": [
+        "src/clubhouse/styles/base.css",
+        "src/clubhouse/styles/calendar.css",
+        "src/clubhouse/styles/coachhelm.css",
+        "src/clubhouse/styles/goals.css",
+        "src/clubhouse/styles/home.css",
+        "src/clubhouse/styles/hub.css",
+        "src/clubhouse/styles/messages.css",
+        "src/clubhouse/styles/qualifiers.css",
+        "src/clubhouse/styles/stats.css"
       ],
       "examples": [],
       "fixture": "Contextual module"
@@ -3996,6 +4029,16 @@
         "src/clubhouse/styles/shell.css",
         "src/clubhouse/styles/stats.css"
       ],
+      "examples": [],
+      "fixture": "Contextual module"
+    },
+    {
+      "file": "src/clubhouse/screens/rounds/course-motion.tsx",
+      "group": "screens",
+      "exports": [
+        "FadeNum"
+      ],
+      "styles": [],
       "examples": [],
       "fixture": "Contextual module"
     },
@@ -7288,6 +7331,22 @@
       "fixture": "Contextual module"
     },
     {
+      "file": "src/clubhouse/ui/WasValue.tsx",
+      "group": "ui",
+      "exports": [
+        "WasValue"
+      ],
+      "styles": [
+        "src/clubhouse/styles/base.css",
+        "src/clubhouse/styles/calendar.css",
+        "src/clubhouse/styles/home.css",
+        "src/clubhouse/styles/shell.css",
+        "src/clubhouse/styles/ui.css"
+      ],
+      "examples": [],
+      "fixture": "Contextual module"
+    },
+    {
       "file": "src/clubhouse/ui/WeekStrip.tsx",
       "group": "ui",
       "exports": [
@@ -8182,6 +8241,8 @@
         "ch-ag__row",
         "ch-ag__t",
         "ch-ag__when",
+        "ch-away-go",
+        "ch-away-ring",
         "ch-badge",
         "ch-btn",
         "ch-cal",
@@ -8215,8 +8276,10 @@
         "ch-calm-dayswap",
         "ch-calm-dayv",
         "ch-calm-ev",
+        "ch-calm-ev--away",
         "ch-calm-ev__b",
         "ch-calm-ev__rail",
+        "ch-calm-ev__sub",
         "ch-calm-ev__t",
         "ch-calm-ev__w",
         "ch-calm-head",
@@ -8250,6 +8313,19 @@
         "ch-cg__time",
         "ch-cg__title",
         "ch-cg__who",
+        "ch-change-note",
+        "ch-change-note__a",
+        "ch-change-note__again",
+        "ch-change-note__by",
+        "ch-change-note__g",
+        "ch-change-note__got",
+        "ch-change-note__h",
+        "ch-change-note__hidden",
+        "ch-change-note__msg",
+        "ch-change-note__reach",
+        "ch-change-note__rows",
+        "ch-change-note__t",
+        "ch-change-note__why",
         "ch-dd-barcard",
         "ch-dd-card",
         "ch-dd-pill",
@@ -8298,14 +8374,17 @@
         "ch-ev-bar--span",
         "ch-ev-bar__grip",
         "ch-ev-bar__t",
+        "ch-ev__chg",
         "ch-ev__g",
         "ch-ev__grip",
         "ch-ev__m",
         "ch-ev__m--fit",
         "ch-ev__t",
         "ch-ev__warn",
+        "ch-ev__was",
         "ch-ev__who",
         "ch-evpeek",
+        "ch-evpeek__chg",
         "ch-evpeek__k",
         "ch-evpeek__m",
         "ch-evpeek__r",
@@ -8354,6 +8433,7 @@
         "ch-menu__item",
         "ch-mo",
         "ch-mo__cell",
+        "ch-mo__chg",
         "ch-mo__dow",
         "ch-mo__ev",
         "ch-mo__evs",
@@ -8365,6 +8445,7 @@
         "ch-mo__ribbon",
         "ch-mo__week",
         "ch-num",
+        "ch-oldslot",
         "ch-pp",
         "ch-pp__foot",
         "ch-pp__label",
@@ -8392,12 +8473,15 @@
         "ch-tl__bar",
         "ch-tl__card",
         "ch-tl__col",
+        "ch-tl__day",
         "ch-tl__grid",
         "ch-tl__grip",
         "ch-tl__h",
         "ch-tl__slot",
         "ch-verify",
         "ch-verify__ic",
+        "ch-was",
+        "ch-was-pair",
         "ch-wk",
         "ch-wk__allcell",
         "ch-wk__allday",
@@ -10208,6 +10292,7 @@
         "ch-seg__b",
         "ch-seg__pill",
         "ch-sheet",
+        "ch-was",
         "ch-well-soft"
       ],
       "tokens": [
@@ -10542,6 +10627,7 @@
         "ch-ms-poll__q",
         "ch-ms-poll__sub",
         "ch-ms-poll__tag",
+        "ch-ms-poll__x",
         "ch-ms-pollf",
         "ch-ms-pollf__chip",
         "ch-ms-pollf__chips",
@@ -10672,6 +10758,7 @@
         "ch-seen-row__name",
         "ch-seen-sec__h",
         "ch-seen-sec__rows",
+        "ch-seen-swap",
         "ch-seg",
         "ch-seg__b",
         "ch-sr-only--focusable",
@@ -12563,6 +12650,7 @@
         "ch-carc",
         "ch-carc__alt",
         "ch-carc__cap",
+        "ch-carc__ov",
         "ch-carc__pills",
         "ch-carc__svg",
         "ch-ch",
@@ -12579,6 +12667,7 @@
         "ch-ch-hero__p",
         "ch-ch-last__sub",
         "ch-ch-note",
+        "ch-ch-note__b",
         "ch-ch-note__l",
         "ch-ch-note__more",
         "ch-ch-plate",
@@ -12616,6 +12705,7 @@
         "ch-hmap-listv",
         "ch-hmap-mapv",
         "ch-hmap-sec",
+        "ch-hmap-sel",
         "ch-hmap-switch",
         "ch-hmap-t",
         "ch-hmap-t__n",
@@ -18519,6 +18609,7 @@
         "ch-toast__icon",
         "ch-toasts",
         "ch-toasts--in-dialog",
+        "ch-was",
         "ch-wks",
         "ch-wks-page",
         "ch-wks-pager",
