@@ -99,3 +99,5 @@ CREATE OR REPLACE TRIGGER "update_golf_travel_itineraries_updated_at" BEFORE UPD
 CREATE OR REPLACE TRIGGER "update_putt_details_updated_at" BEFORE UPDATE ON "public"."putt_details" FOR EACH ROW EXECUTE FUNCTION "public"."update_updated_at_column"();
 
 CREATE OR REPLACE TRIGGER "golf_coaches_guard_organization_id" BEFORE INSERT OR UPDATE OF "organization_id" ON "public"."golf_coaches" FOR EACH ROW EXECUTE FUNCTION "public"."guard_coach_organization_id"();
+
+CREATE OR REPLACE TRIGGER "golf_events_change_mark" BEFORE INSERT OR UPDATE ON "public"."golf_events" FOR EACH ROW EXECUTE FUNCTION "public"."golf_events_change_mark"();
