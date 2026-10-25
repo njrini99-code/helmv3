@@ -19,8 +19,9 @@ vi.mock('@/app/golf/actions/insight-delivery', () => ({
   getThemesForCoach: delivery.coachThemes,
   getThemesForPlayer: delivery.playerThemes,
 }));
-const standingRead = vi.hoisted(() => ({ load: vi.fn() }));
-vi.mock('@/lib/coachhelm/v3/standing/loader', () => ({ loadPlayerStandingMap: standingRead.load }));
+// The season table's migration is held: the season read answers `missing` and Standing reads the lifetime map.
+const standingRead = vi.hoisted(() => ({ load: vi.fn(), season: vi.fn() }));
+vi.mock('@/lib/coachhelm/v3/standing/loader', () => ({ loadPlayerStandingMap: standingRead.load, loadPlayerSeasonStandingMap: standingRead.season }));
 vi.mock('@/lib/coachhelm/v3/counterfactual/player-cohort-loader', () => ({ loadPlayerCohort: vi.fn(async () => ({ gender: 'mens', level: null })) }));
 vi.mock('@/lib/coachhelm/v3/goals/loader', () => ({ loadActiveGoals: vi.fn(async () => []), loadRecentlyAchievedGoals: vi.fn(async () => []) }));
 const genome = vi.hoisted(() => ({ load: vi.fn() }));
@@ -58,6 +59,7 @@ beforeEach(() => {
   delivery.coachThemes.mockReset().mockResolvedValue({ success: false, error: 'none' });
   delivery.playerThemes.mockReset();
   standingRead.load.mockReset().mockResolvedValue(new Map());
+  standingRead.season.mockReset().mockResolvedValue({ status: 'missing' });
   genome.load.mockReset().mockResolvedValue(null);
   tables.current = {
     golf_team_members: onTeam(),

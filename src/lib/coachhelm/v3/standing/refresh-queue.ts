@@ -26,6 +26,17 @@ export function isStandingQueueMissing(error: { code?: string | null } | null | 
   return error?.code === 'PGRST202';
 }
 
+/** What a held-migration RPC answers: PostgREST's `{ data, error }`, with `data` typed by the caller. */
+export type HeldRpcResult = { data: unknown; error: { message?: string; code?: string | null } | null };
+
+/**
+ * Call an RPC from a held migration (not in the generated Database types until the owner applies it and regenerates). One typed
+ * escape hatch instead of an `as any` at each call site; the callers already handle a missing function via isStandingQueueMissing.
+ */
+export function callHeldStandingRpc(client: object, fn: string, args: Record<string, unknown>): PromiseLike<HeldRpcResult> {
+  return (client as { rpc: (fn: string, args: Record<string, unknown>) => PromiseLike<HeldRpcResult> }).rpc(fn, args);
+}
+
 /** Another refresh holds the season RPC's advisory lock and this caller's lock_timeout ran out (55P03, lock_not_available). */
 export function isStandingRefreshBusy(error: { code?: string | null } | null | undefined): boolean {
   return error?.code === '55P03';
@@ -40,8 +51,7 @@ export type MarkStandingDirtyResult = { status: 'marked'; teams: number } | { st
 export async function markTeamStandingDirty(playerId: string): Promise<MarkStandingDirtyResult> {
   try {
     const supabase = createAdminClient();
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- the held migration's RPC is not in the generated types yet
-    const { data, error } = await (supabase as any).rpc('mark_team_standing_dirty', { p_player_id: playerId });
+    const { data, error } = await callHeldStandingRpc(supabase, 'mark_team_standing_dirty', { p_player_id: playerId });
     if (error) {
       if (isStandingQueueMissing(error)) return { status: 'not_applied' };
       await logServerError(

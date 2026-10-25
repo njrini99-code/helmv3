@@ -3405,6 +3405,12 @@
         ]
       },
       {
+        "id": "golf_player_standing_season",
+        "definedIn": [
+          "supabase/migrations/20261024151000_golf_player_standing_season.sql"
+        ]
+      },
+      {
         "id": "golf_qualifier_round_courses",
         "definedIn": [
           "supabase/migrations/20260621231000_qualifier_round_courses.sql"
@@ -3438,6 +3444,12 @@
         "id": "golf_staff_invite_redemptions",
         "definedIn": [
           "supabase/migrations/20260819030000_golf_staff_invite_single_use.sql"
+        ]
+      },
+      {
+        "id": "golf_standing_refresh_queue",
+        "definedIn": [
+          "supabase/migrations/20261024150000_golf_standing_refresh_queue.sql"
         ]
       },
       {
@@ -3778,6 +3790,10 @@
         "definedIn": "supabase/migrations/20260923100000_round_recap_single_flight_lock.sql"
       },
       {
+        "id": "clear_dirty_standing_teams",
+        "definedIn": "supabase/migrations/20261024150000_golf_standing_refresh_queue.sql"
+      },
+      {
         "id": "coach_organization_is_claimable",
         "definedIn": "supabase/migrations/20261016200000_coach_organization_pin.sql"
       },
@@ -3972,6 +3988,10 @@
       {
         "id": "golf_recruit_documents_touch_updated_at",
         "definedIn": "supabase/migrations/20260614020000_recruit_documents.sql"
+      },
+      {
+        "id": "golf_season_start",
+        "definedIn": "supabase/migrations/20261024151000_golf_player_standing_season.sql"
       },
       {
         "id": "golf_set_course_image",
@@ -4218,6 +4238,10 @@
         "definedIn": "supabase/migrations/20260710160000_mark_golf_messages_read_rpc.sql"
       },
       {
+        "id": "mark_team_standing_dirty",
+        "definedIn": "supabase/migrations/20261024150000_golf_standing_refresh_queue.sql"
+      },
+      {
         "id": "owns_golf_shot",
         "definedIn": "supabase/migrations/20260728030000_shot_detail_rls_correlated.sql"
       },
@@ -4298,6 +4322,10 @@
         "definedIn": "supabase/migrations/20260609170000_v3_gender_scoped_level_cohort.sql"
       },
       {
+        "id": "refresh_player_standing_season",
+        "definedIn": "supabase/migrations/20261024151000_golf_player_standing_season.sql"
+      },
+      {
         "id": "refresh_player_stats_cache",
         "definedIn": "supabase/migrations/20260610040000_stats_population_updown_and_trigger_columns.sql"
       },
@@ -4340,6 +4368,10 @@
       {
         "id": "save_round_ai_recap",
         "definedIn": "supabase/migrations/20260825233000_fix_round_recap_wrapper_definer.sql"
+      },
+      {
+        "id": "select_dirty_standing_teams",
+        "definedIn": "supabase/migrations/20261024150000_golf_standing_refresh_queue.sql"
       },
       {
         "id": "sg_baseline_scale",
@@ -4552,6 +4584,12 @@
         "kind": "vercel_cron",
         "path": "/api/cron/v3/standing-refresh",
         "schedule": "20 2 * * *"
+      },
+      {
+        "id": "vercel_cron:/api/cron/v3/standing-refresh-dirty",
+        "kind": "vercel_cron",
+        "path": "/api/cron/v3/standing-refresh-dirty",
+        "schedule": "*/5 * * * *"
       },
       {
         "id": "vercel_cron:/api/jobs/consume",
@@ -17627,6 +17665,11 @@
         },
         {
           "kind": "import_graph",
+          "path": "src/app/golf/actions/round-submit.ts",
+          "anchor": "src/lib/coachhelm/v3/standing/refresh-queue"
+        },
+        {
+          "kind": "import_graph",
           "path": "src/lib/coachhelm/v2/post-round-trigger.ts",
           "anchor": "src/lib/coachhelm/v3/engine/analysis-outcome"
         },
@@ -19919,6 +19962,11 @@
         {
           "kind": "import_graph",
           "path": "src/lib/coachhelm/v3/standing/pga-standards.ts",
+          "anchor": "src/lib/supabase/admin"
+        },
+        {
+          "kind": "import_graph",
+          "path": "src/lib/coachhelm/v3/standing/refresh-queue.ts",
           "anchor": "src/lib/supabase/admin"
         },
         {
@@ -24172,6 +24220,17 @@
     },
     {
       "source": "stats_analytics",
+      "target": "golf_player_standing_season",
+      "kind": "feature_table",
+      "evidence": [
+        {
+          "kind": "migration_schema",
+          "path": "supabase/migrations/20261024151000_golf_player_standing_season.sql"
+        }
+      ]
+    },
+    {
+      "source": "stats_analytics",
       "target": "golf_round_lifecycle",
       "kind": "feature_relation",
       "evidence": [
@@ -24289,6 +24348,17 @@
           "kind": "import_graph",
           "path": "src/app/golf/actions/team-sg-baseline.ts",
           "anchor": "src/lib/golf/sg-benchmarks"
+        }
+      ]
+    },
+    {
+      "source": "stats_analytics",
+      "target": "golf_standing_refresh_queue",
+      "kind": "feature_table",
+      "evidence": [
+        {
+          "kind": "migration_schema",
+          "path": "supabase/migrations/20261024150000_golf_standing_refresh_queue.sql"
         }
       ]
     },
@@ -26444,6 +26514,17 @@
         {
           "kind": "registry_glob",
           "path": "src/app/api/cron/v3/standing-refresh/route.ts"
+        }
+      ]
+    },
+    {
+      "source": "vercel_cron:/api/cron/v3/standing-refresh-dirty",
+      "target": "coachhelm_ai",
+      "kind": "job_feature",
+      "evidence": [
+        {
+          "kind": "registry_glob",
+          "path": "src/app/api/cron/v3/standing-refresh-dirty/route.ts"
         }
       ]
     }

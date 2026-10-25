@@ -24,7 +24,7 @@ import { requireCronAuth } from '@/lib/cron/auth';
 import { recordJobRun } from '@/lib/admin/job-log';
 import { describeError } from '@/lib/utils/describe-error';
 import { TEAMS_PER_CHUNK } from '@/lib/coachhelm/v3/standing/refresh';
-import { isStandingQueueMissing, isStandingRefreshBusy, STANDING_DIRTY_MAX_WAIT_SECONDS, STANDING_DIRTY_QUIET_SECONDS } from '@/lib/coachhelm/v3/standing/refresh-queue';
+import { callHeldStandingRpc, isStandingQueueMissing, isStandingRefreshBusy, STANDING_DIRTY_MAX_WAIT_SECONDS, STANDING_DIRTY_QUIET_SECONDS } from '@/lib/coachhelm/v3/standing/refresh-queue';
 
 export const runtime = 'nodejs';
 export const maxDuration = 300;
@@ -61,8 +61,7 @@ async function handle(): Promise<NextResponse> {
 
   let dirty: Array<{ team_id: string; marked_at: string }>;
   try {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- the held migration's RPC is not in the generated types yet
-    const res = await (supabase as any).rpc('select_dirty_standing_teams', {
+    const res = await callHeldStandingRpc(supabase, 'select_dirty_standing_teams', {
       p_limit: TEAMS_PER_CHUNK,
       p_quiet_seconds: STANDING_DIRTY_QUIET_SECONDS,
       p_max_wait_seconds: STANDING_DIRTY_MAX_WAIT_SECONDS,
@@ -82,8 +81,7 @@ async function handle(): Promise<NextResponse> {
   const teamIds = dirty.map((d) => d.team_id);
   let rpcRows: DirtyPassSummary['rpc_rows'];
   try {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- the held migration's RPC is not in the generated types yet
-    const res = await (supabase as any).rpc('refresh_player_standing_season', { p_team_ids: teamIds });
+    const res = await callHeldStandingRpc(supabase, 'refresh_player_standing_season', { p_team_ids: teamIds });
     if (res.error) {
       // The marks stay: the next tick (or, failing that, the nightly run) covers these teams.
       if (isStandingQueueMissing(res.error)) return summary({ teams_in_chunk: teamIds.length, team_ids: teamIds, skipped: 'season-not-applied' });
@@ -104,8 +102,7 @@ async function handle(): Promise<NextResponse> {
 
   let cleared = 0;
   try {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- the held migration's RPC is not in the generated types yet
-    const res = await (supabase as any).rpc('clear_dirty_standing_teams', {
+    const res = await callHeldStandingRpc(supabase, 'clear_dirty_standing_teams', {
       p_team_ids: teamIds,
       p_marked_ats: dirty.map((d) => d.marked_at),
     });

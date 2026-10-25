@@ -287,7 +287,7 @@ Shot Tracking · active · criticality high · owner product
 Stats And Analytics · active · criticality high · owner product
 
 - **Relations:** 0 doc/structurally-evidenced, 9 import-graph-only (weak)
-- **Tables:** `baseball_legacy_backfill_manifest`
+- **Tables:** `baseball_legacy_backfill_manifest`, `golf_player_standing_season`, `golf_standing_refresh_queue`
 - **RPCs:** `recalculate_round_strokes_gained`, `recompute_team_sg`, `refresh_player_stats_cache`, `sg_scale_for_player`
 - **Test surfaces:** 4
 - **Sentry/admin_events signals:** `my_game_profile`, `stats_analytics`
@@ -353,6 +353,7 @@ Team Operations · active · criticality high · owner product
 | `vercel_cron:/api/cron/v3/goal-suggestions-evaluate` | vercel_cron | `coachhelm_ai` |
 | `vercel_cron:/api/cron/v3/goal-suggestions-write` | vercel_cron | `coachhelm_ai` |
 | `vercel_cron:/api/cron/v3/standing-refresh` | vercel_cron | `coachhelm_ai` |
+| `vercel_cron:/api/cron/v3/standing-refresh-dirty` | vercel_cron | `coachhelm_ai` |
 | `vercel_cron:/api/jobs/consume` | vercel_cron | _unmapped_ |
 
 ---

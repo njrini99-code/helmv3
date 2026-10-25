@@ -64,6 +64,8 @@ CREATE TABLE IF NOT EXISTS public.golf_standing_refresh_queue (
   team_id uuid PRIMARY KEY REFERENCES public.golf_teams (id) ON DELETE CASCADE,
   first_marked_at timestamptz NOT NULL DEFAULT now(),
   marked_at timestamptz NOT NULL DEFAULT now(),
+  -- A per-team mark count between drains; never near 32 bits.
+  -- squawk-ignore prefer-bigint-over-int
   marks integer NOT NULL DEFAULT 1
 );
 

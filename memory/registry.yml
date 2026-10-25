@@ -787,6 +787,8 @@ features:
         - supabase/migrations/*scoring*.sql
         - supabase/migrations/*player_standing*.sql
         - supabase/migrations/*standing_global*.sql
+        # Clubhouse Standing's refresh queue (a saved round marks its teams dirty).
+        - supabase/migrations/*standing_refresh_queue*.sql
         - supabase/migrations/*cohort*.sql
         - supabase/migrations/*golf_metrics_seed*.sql
         - supabase/migrations/*penalty*.sql

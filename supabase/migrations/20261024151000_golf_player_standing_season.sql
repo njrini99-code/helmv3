@@ -150,16 +150,24 @@ CREATE TABLE IF NOT EXISTS public.golf_player_standing_season (
   metric_id text NOT NULL REFERENCES public.golf_metrics (metric_id) ON DELETE RESTRICT,
   player_value numeric NOT NULL,
   team_avg numeric,
+  -- A row count bounded by one team or level; never near 32 bits.
+  -- squawk-ignore prefer-bigint-over-int
   team_n integer NOT NULL DEFAULT 0,
   team_pct numeric,
   level_avg numeric,
+  -- A row count bounded by one team or level; never near 32 bits.
+  -- squawk-ignore prefer-bigint-over-int
   level_n integer NOT NULL DEFAULT 0,
   level_pct numeric,
   pga_value numeric NOT NULL,
   pga_delta numeric,
   basis text,
   on_green_proximity_feet numeric,
+  -- A count of one player's season shots; never near 32 bits.
+  -- squawk-ignore prefer-bigint-over-int
   layup_excluded_n integer,
+  -- A count of one player's season rounds; never near 32 bits.
+  -- squawk-ignore prefer-bigint-over-int
   rounds_n integer NOT NULL,
   season_start date NOT NULL,
   computed_at timestamptz NOT NULL DEFAULT now(),

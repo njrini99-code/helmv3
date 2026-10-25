@@ -269,8 +269,7 @@ const oneDecimal = (v: number) => v.toFixed(1);
 /** "Aug 1" from an ISO date, read as a calendar day (no zone shifts it). */
 function dayLabel(iso: string | null | undefined): string | null {
   if (!iso || !/^\d{4}-\d{2}-\d{2}/.test(iso)) return null;
-  const d = new Date(`${iso.slice(0, 10)}T12:00:00Z`);
-  return Number.isNaN(d.getTime()) ? null : new Intl.DateTimeFormat('en-US', { month: 'short', day: 'numeric', timeZone: 'UTC' }).format(d);
+  return refreshedOn(iso.slice(0, 10), 'UTC');
 }
 
 /** A row's own round count, when the row carries one (season rows). */
