@@ -1,9 +1,10 @@
 /**
  * Words and dates every Tournaments view writes the same way. Pure and client-safe.
  *
- * Dates are the team's `yyyy-mm-dd`, read at noon so a server render and its hydration land on the same day whatever
- * the machine's zone. "Today" is always the view's `data.now`, never the clock.
+ * Dates are the team's `yyyy-mm-dd`, written as that calendar day (lib/golf/date-only) so a server render and its hydration
+ * agree whatever the machine's zone. "Today" is always the view's `data.now`, never the clock.
  */
+import { formatDateOnly } from '@/lib/golf/date-only';
 import { formatFixed, formatSigned, formatToPar, MINUS, NO_DATA } from '../../lib/format';
 import type { ChTourEvent, ChTourRecord, TourFormat } from './types';
 import { formatPct } from './standings';
@@ -11,11 +12,9 @@ import { formatPct } from './standings';
 /** The kit's number formatters, re-exported so a view takes every figure from here (no `.toFixed(` in a view). */
 export { formatFixed, formatPct, formatSigned, formatToPar, MINUS, NO_DATA };
 
-const at = (iso: string) => new Date(`${iso.slice(0, 10)}T12:00:00`);
-
-/** "Oct 5" by default; any `toLocaleDateString` options. */
+/** "Oct 5" by default; any date options. The calendar day the value names, the same in every zone (lib/golf/date-only). */
 export function tourDay(iso: string, opts: Intl.DateTimeFormatOptions = { month: 'short', day: 'numeric' }): string {
-  return at(iso).toLocaleDateString('en-US', opts);
+  return formatDateOnly(iso, opts, NO_DATA);
 }
 
 /** "Oct 5 – 7", "Sep 30 – Oct 2", or one day: the board's range. */
@@ -94,7 +93,5 @@ export function andList(names: readonly string[]): string {
   return names.length <= 1 ? (names[0] ?? '') : `${names.slice(0, -1).join(', ')} and ${names[names.length - 1]}`;
 }
 
-/** "1 event", "3 events". */
-export function plural(n: number, one: string, many = `${one}s`): string {
-  return `${n} ${n === 1 ? one : many}`;
-}
+/** "1 event", "3 events": lib/plural's, re-exported for the tournament views. */
+export { plural } from '../../lib/plural';

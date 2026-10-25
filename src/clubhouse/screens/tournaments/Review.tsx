@@ -4,6 +4,7 @@ import { Avatar } from '../../ui/Avatar';
 import { InlineNotice } from '../../ui/Notices';
 import { Section } from '../../ui/Section';
 import { EmptyState, SkelRows, Skeleton } from '../../ui/States';
+import { pluralWord } from '../../lib/plural';
 import { useRefresh } from '../../lib/use-refresh';
 import { andList, tourRange } from './format';
 import { TourCrumb, TourFailed, TourHead, TourLoading, TourMain, TourPhoneTop, tourGate, useTourPhone } from './parts';
@@ -105,7 +106,7 @@ export function ReviewBody({ data, phone }: { data: ChTourReviewData; phone: boo
             {r.notes.map((n) => (
               <li key={n.id} className="ch-tour-rev-note">
                 <div className="ch-tour-rev-note__w">
-                  {!phone && <Avatar name={n.author} size={28} />}
+                  {!phone && <Avatar name={n.author} size="sm" />}
                   <div>
                     <div className="ch-tour-rev-note__n">{n.author}</div>
                     <div className="ch-tour-rev-note__k">{KIND[n.kind]}</div>
@@ -116,7 +117,7 @@ export function ReviewBody({ data, phone }: { data: ChTourReviewData; phone: boo
             ))}
           </ul>
         )}
-        {missing.length > 0 && <p className="ch-tour-rev-missing">{names} {missing.length === 1 ? 'hasn’t' : 'haven’t'} added {missing.length === 1 ? 'a reflection' : 'reflections'}.</p>}
+        {missing.length > 0 && <p className="ch-tour-rev-missing">{names} {missing.length === 1 ? 'hasn’t' : 'haven’t'} added {pluralWord(missing.length, 'a reflection', 'reflections')}.</p>}
       </Section>
     </div>
   );

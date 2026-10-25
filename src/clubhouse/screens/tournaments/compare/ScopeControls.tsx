@@ -1,6 +1,7 @@
 'use client';
 
-import { Avatar } from '../../../ui/Avatar';
+import { Avatar, AVATAR_SIZES } from '../../../ui/Avatar';
+import { pluralWord } from '../../../lib/plural';
 import { Segmented } from '../../../ui/Segmented';
 import { Select } from '../../../ui/Select';
 import { NO_DATA, plural, tourDay } from '../format';
@@ -11,15 +12,13 @@ const day = (iso: string) => tourDay(iso, { month: 'short', day: 'numeric' });
 const dayYear = (iso: string) => tourDay(iso, { month: 'short', day: 'numeric', year: 'numeric' });
 
 /** The person (or people) a side is about, as faces: a stack for a pooled side, one portrait for a player. */
-export function Face({ scope, side, names, size = 40 }: { scope: ChTourScope; side: 'a' | 'b'; names: ScopeNames; size?: number }) {
+export function Face({ scope, side, names }: { scope: ChTourScope; side: 'a' | 'b'; names: ScopeNames }) {
   const s = scope.subject;
   const who = s.kind === 'player' ? [subjectName(s, names)] : names.players.filter((p) => !p.alumni).slice(0, 3).map((p) => p.name);
   const stack = who.length > 1;
   return (
-    <span className={'ch-tour-cmp-face' + (stack ? ' is-stack' : '')} style={{ ['--ch-tour-cmp-face' as string]: `${size}px` }} aria-hidden="true">
-      {who.map((n) => (
-        <Avatar key={n} name={n} size={stack ? Math.round(size * 0.72) : size} />
-      ))}
+    <span className={'ch-tour-cmp-face' + (stack ? ' is-stack' : '')} style={{ ['--ch-tour-cmp-face' as string]: `${AVATAR_SIZES.lg}px` }} aria-hidden="true">
+      {who.map((n) => (stack ? <Avatar key={n} name={n} size="sm" /> : <Avatar key={n} name={n} size="lg" />))}
       <i className={'ch-tour-cmp-face__tag' + (side === 'b' ? ' is-b' : '')}>{side.toUpperCase()}</i>
     </span>
   );
@@ -37,7 +36,7 @@ export function SummaryLine({ summary, side }: { summary: ScopeSummary; side: 'a
   return (
     <div className="ch-tour-cmp-sum">
       <span>
-        <b>{summary.full}</b> {summary.full === 1 ? 'round' : 'rounds'}
+        <b>{summary.full}</b> {pluralWord(summary.full, 'round')}
         {summary.nine ? ` + ${summary.nine} nine-hole` : ''}
       </span>
       <span>

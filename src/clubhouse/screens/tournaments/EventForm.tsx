@@ -1,5 +1,6 @@
 'use client';
 
+import { plural } from '../../lib/plural';
 import { TourPlaceholder } from './TourPlaceholder';
 import type { EventFormProps } from './types';
 import '../../styles/tournaments-lineup.css';
@@ -16,7 +17,7 @@ export function EventForm({ data, load, phone }: EventFormProps) {
       view="form"
       eyebrow="Tournaments"
       title={data.mode === 'new' ? 'New event' : 'Edit event'}
-      detail={`${data.initial.name || 'A new event'} · ${n} ${n === 1 ? 'round' : 'rounds'}`}
+      detail={`${data.initial.name || 'A new event'} · ${plural(n, 'round')}`}
       load={load}
       phone={phone}
     />

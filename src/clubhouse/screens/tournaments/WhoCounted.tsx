@@ -59,7 +59,7 @@ export function WhoCounted({
   const line = (x: DeskRow) => (
     <div key={x.entry.playerId} className={'ch-tour-desk-ct__row' + (x.individual ? ' is-ind' : '')} role="row">
       <span role="cell" className="ch-tour-desk-ct__who">
-        {!phone && <Avatar name={x.player?.name ?? '—'} size={30} />}
+        {!phone && <Avatar name={x.player?.name ?? '—'} size="sm" />}
         <span>
           <span className="ch-tour-desk-ct__n">{phone ? (x.player?.first ?? NO_DATA) : (x.player?.name ?? NO_DATA)}</span>
           <span className="ch-tour-desk-ct__s">

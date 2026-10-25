@@ -3,9 +3,10 @@
  * sample state each figure is in, the difference between the sides with its standard error, and the evidence behind a figure.
  * Nothing here recounts a team round: the counting sets arrive on the rounds. Pure; client-safe.
  */
+import { TERMS } from '../../../lib/glossary';
 import { changeSe, type SampleState } from '../../../lib/stats-signal';
 import { exclusionWords, metric, METRICS, tourSampleState, TOUR_FLOORS, type MetricDef, type MetricResult, type TourMetricKey, type TourMetricRound } from '../metrics';
-import { formatFixed, formatSigned, formatToPar, NO_DATA, tourDay } from '../format';
+import { formatFixed, formatSigned, formatToPar, NO_DATA, plural, tourDay } from '../format';
 import type { ChTourCompareRound, ChTourEvent, ChTourEvidenceRef, ChTourScope } from '../types';
 
 /** The metric groups (the board's strip), each with the catalogue rows that can be read from the loaded rounds. */
@@ -14,7 +15,7 @@ export const GROUPS: ReadonlyArray<{ id: string; label: string; keys: readonly T
   { id: 'counting', label: 'Counting', keys: ['count_rate', 'gap_drop'] },
   { id: 'tee', label: 'Off the tee', keys: ['fir', 'sg_ott'] },
   { id: 'app', label: 'Approach', keys: ['gir', 'sg_app'] },
-  { id: 'short', label: 'Short game', keys: ['sg_arg'] },
+  { id: 'short', label: TERMS.sgArg.long, keys: ['sg_arg'] },
   { id: 'putt', label: 'Putting', keys: ['putts', 'sg_putt'] },
 ];
 
@@ -80,9 +81,9 @@ export function figureText(def: MetricDef, v: number | null): string {
 export function sampleWords(def: MetricDef, f: SideFigure): string {
   const unit = def.floor === 'holes' ? 'hole' : def.floor === 'counting' ? 'team round' : 'round';
   const n = def.floor === 'holes' ? (f.result.of ?? 0) : f.result.n;
-  const plural = `${n} ${unit}${n === 1 ? '' : 's'}`;
+  const count = plural(n, unit);
   if (f.state === 'none') return f.result.value == null && def.needs === 'shot data' ? 'No shot data' : 'No data';
-  return f.state === 'early' ? `Early read · ${plural}` : plural;
+  return f.state === 'early' ? `Early read · ${count}` : count;
 }
 
 export type Verdict = { kind: 'diff'; diff: number; se: number | null } | { kind: 'none'; why: string };
@@ -92,7 +93,7 @@ export function verdict(def: MetricDef, a: SideFigure, b: SideFigure): Verdict {
   if (a.result.value == null || b.result.value == null || a.state === 'none' || b.state === 'none') {
     const f = TOUR_FLOORS[def.floor];
     if (a.result.value == null && b.result.value == null && def.needs === 'shot data') return { kind: 'none', why: 'Needs shot data on both sides' };
-    if (a.result.value != null && b.result.value != null) return { kind: 'none', why: `Needs ${f.show} ${f.unit}${f.show === 1 ? '' : 's'} on both sides` };
+    if (a.result.value != null && b.result.value != null) return { kind: 'none', why: `Needs ${plural(f.show, f.unit)} on both sides` };
     return { kind: 'none', why: def.needs === 'shot data' ? 'Needs shot data on both sides' : 'No rounds on one side' };
   }
   const kind = def.unit === 'sg' ? 'sg' : def.key === 'score_avg' || def.key === 'to_par_avg' || def.key === 'vs_field' ? 'score' : null;
@@ -129,7 +130,7 @@ export function figureEvidence(args: {
     title: `${def.label} · ${args.side.toUpperCase()}`,
     figure: figureText(def, figure.result.value),
     formula: `${def.formula}. ${args.title}.`,
-    denominator: def.floor === 'holes' ? `${n} holes` : `${n} ${n === 1 ? 'round' : 'rounds'}`,
+    denominator: def.floor === 'holes' ? `${n} holes` : plural(n, 'round'),
     rounds: [...rounds]
       .sort((a, b) => b.date.localeCompare(a.date) || a.id.localeCompare(b.id))
       .map((r) => {

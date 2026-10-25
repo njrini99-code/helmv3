@@ -1,5 +1,6 @@
 'use client';
 
+import { plural } from '../../lib/plural';
 import { TourPlaceholder } from './TourPlaceholder';
 import type { LinkInboxProps } from './types';
 import '../../styles/tournaments-review.css';
@@ -11,5 +12,5 @@ import '../../styles/tournaments-review.css';
  */
 export function LinkInbox({ data, load, phone }: LinkInboxProps) {
   const n = data.candidates.length;
-  return <TourPlaceholder view="links" eyebrow="Tournaments" title="Link rounds" detail={`${n} ${n === 1 ? 'round' : 'rounds'} to link`} load={load} phone={phone} />;
+  return <TourPlaceholder view="links" eyebrow="Tournaments" title="Link rounds" detail={`${plural(n, 'round')} to link`} load={load} phone={phone} />;
 }

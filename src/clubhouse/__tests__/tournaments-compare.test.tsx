@@ -40,7 +40,7 @@ describe('Compare on the desktop', () => {
     expect(presets.length).toBeGreaterThan(0);
     expect(presets.filter((p) => p.getAttribute('aria-pressed') === 'true')).toHaveLength(1);
     const tabs = within(c as HTMLElement).getAllByRole('tab');
-    expect(tabs.map((t) => t.textContent)).toEqual(['Scoring', 'Counting', 'Off the tee', 'Approach', 'Short game', 'Putting']);
+    expect(tabs.map((t) => t.textContent)).toEqual(['Scoring', 'Counting', 'Off the tee', 'Approach', 'Around the green', 'Putting']);
     expect(tabs[0]).toHaveAttribute('aria-selected', 'true');
     const rows = c.querySelectorAll('.ch-tour-cmp-body .ch-tour-cmp-row');
     expect(rows).toHaveLength(5);

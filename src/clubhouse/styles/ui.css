@@ -2303,8 +2303,8 @@ html[data-fw-theme='dark'] .ch-scoreboard .ch-score--double {
 .ch-delta {
   display: inline-flex;
   align-items: center;
-  gap: 5px;
-  font: 600 calc(13 * var(--ch-type-k))/1.2 var(--ch-font-sans);
+  gap: 4px;
+  font: var(--ch-type-13-strong);
   font-variant-numeric: tabular-nums;
   white-space: nowrap;
   color: var(--ch-text-secondary);
@@ -2333,11 +2333,12 @@ html[data-fw-theme='dark'] .ch-scoreboard .ch-score--double {
   height: 22px;
   padding: 0 8px;
   border-radius: var(--ch-radius-xs);
-  font: 600 calc(12 * var(--ch-type-k))/1 var(--ch-font-sans);
+  font: var(--ch-type-12-strong);
+  line-height: var(--ch-lead-tight);
   white-space: nowrap;
   color: var(--ch-text-secondary);
   background: var(--ch-bg-subtle);
-  box-shadow: inset 0 0 0 1px var(--ch-border-subtle);
+  box-shadow: inset 0 0 0 var(--ch-hairline-w) var(--ch-border-subtle);
 }
 .ch-trust--live {
   color: var(--ch-text-primary);
@@ -2362,7 +2363,7 @@ html[data-fw-theme='dark'] .ch-scoreboard .ch-score--double {
 }
 .ch-trust__at,
 .ch-trust__src {
-  font-weight: 500;
+  font: var(--ch-type-12-medium);
   color: var(--ch-text-tertiary);
 }
 @keyframes ch-trust-live {

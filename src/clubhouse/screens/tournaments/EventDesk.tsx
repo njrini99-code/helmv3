@@ -1,6 +1,6 @@
 'use client';
 
-import { ArrowRight, ClipboardCheck, ExternalLink, GitCompare, Radio, Users } from 'lucide-react';
+import { ArrowRight, ArrowUpRight, ClipboardCheck, GitCompare, Radio, Users } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useMemo, useState, type KeyboardEvent } from 'react';
 import { Button } from '../../ui/Button';
@@ -108,7 +108,7 @@ function DeskReady({ data, search, phone }: { data: ChTourDeskData; search: ChTo
   const result = e.team.result;
   const mismatch = e.playerRounds.filter((p) => p.officialTotal != null && p.officialTotal !== p.total);
   const first = mismatch[0];
-  const firstName = first ? (data.players.find((p) => p.id === first.playerId)?.first ?? 'A player') : '';
+  const firstWho = first ? (data.players.find((p) => p.id === first.playerId)?.first ?? 'A player') : '';
   const covered = e.coverage.scorecards;
   const withShots = e.coverage.withShots;
 
@@ -139,8 +139,8 @@ function DeskReady({ data, search, phone }: { data: ChTourDeskData; search: ChTo
       )}
       <div className="ch-tour-head__a">
         {e.resultsUrl && !phone && (
-          <a className="ch-btn ch-btn--secondary" href={e.resultsUrl} target="_blank" rel="noopener noreferrer">
-            <Icon icon={ExternalLink} size={15} />
+          <a className="ch-tour-desk-link" href={e.resultsUrl} target="_blank" rel="noopener noreferrer">
+            <Icon icon={ArrowUpRight} size={15} />
             <span>Official results</span>
           </a>
         )}
@@ -198,7 +198,7 @@ function DeskReady({ data, search, phone }: { data: ChTourDeskData; search: ChTo
         <div className="ch-tour-desk-warn" role="status" data-ch-code="CH-16920">
           <p className="ch-tour-desk-warn__t">Results are provisional</p>
           <p>
-            The imported leaderboard has {firstName} at {first.officialTotal} in round {first.roundNumber}. The scorecard says {first.total}.
+            The imported leaderboard has {firstWho} at {first.officialTotal} in round {first.roundNumber}. The scorecard says {first.total}.
             {mismatch.length > 1 ? ` ${mismatch.length - 1} more differ.` : ''} Team totals use the scorecard until you confirm which is right.
           </p>
         </div>
