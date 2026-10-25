@@ -752,8 +752,10 @@ BEGIN
 END $$;
 
 -- 11. Link candidates (read only): the team's players' completed, non-test
--- GolfHelm rounds of the last 400 days that are not linked to a tournament
--- round and not dismissed. Coaches only; 500 newest at most.
+-- GolfHelm rounds of type 'tournament' from the last 400 days that are not
+-- linked to a tournament round and not dismissed. Coaches only; 500 newest
+-- at most. The suggestion (which event round, how sure) is the app's
+-- (src/clubhouse/screens/tournaments/links.ts).
 create or replace function public.golf_tournament_link_candidates(p_team_id uuid)
 returns table (
     round_id uuid,
@@ -763,7 +765,8 @@ returns table (
     course_name text,
     total_score integer,
     holes_played integer,
-    score_to_par integer
+    score_to_par integer,
+    round_type text
 )
 language plpgsql
 stable
@@ -776,10 +779,11 @@ BEGIN
   END IF;
   RETURN QUERY
   SELECT r.id, r.player_id, r.round_date::date, r.course_id, r.course_name::text,
-    r.total_score::integer, r.holes_played::integer, r.score_to_par::integer
+    r.total_score::integer, r.holes_played::integer, r.score_to_par::integer,
+    r.round_type::text
   FROM public.golf_rounds r
   JOIN public.golf_team_members m ON m.player_id = r.player_id AND m.team_id = p_team_id
-  WHERE r.status = 'completed' AND NOT r.is_test
+  WHERE r.status = 'completed' AND NOT r.is_test AND r.round_type = 'tournament'
     AND r.round_date >= current_date - 400
     AND NOT EXISTS (
       SELECT 1 FROM public.golf_tournament_player_rounds pr WHERE pr.round_id = r.id)
