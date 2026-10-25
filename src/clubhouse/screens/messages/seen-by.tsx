@@ -1,11 +1,12 @@
 "use client";
 
 import { CheckCheck } from "lucide-react";
-import { AnimatePresence, LayoutGroup, m as M } from "motion/react";
+import { AnimatePresence, m as M } from "motion/react";
 import { useEffect, useLayoutEffect, useRef, useState, type ReactNode } from "react";
 import { createPortal } from "react-dom";
 import { orderReceiptRows, seenBy, seenByAccess, seenByAccessibleName, seenByLabel, SEEN_BY_VISIBILITY, type ReceiptRowInput, type SeenBy } from "@/lib/golf/message-receipts";
-import { chSpring, chTween } from "../../lib/motion";
+import { chSpring, chSpringCurve, chTween, CH_EASE } from "../../lib/motion";
+import { chSupportsLinear } from "../../lib/sheet-drag";
 import { useChMotionMode, useChReducedMotion } from "../../lib/reduced-motion";
 import { Avatar } from "../../ui/Avatar";
 import { Icon } from "../../ui/Icon";
@@ -146,6 +147,27 @@ function SeenByBody({ api, m, compact }: { api: ChMessagesApi; m: ChMsg; compact
     }, 2000);
   }, [seenKey]); // eslint-disable-line react-hooks/exhaustive-deps
   useEffect(() => () => void (timer.current && window.clearTimeout(timer.current)), []);
+  // M6: a row that changes place (Not yet to Seen) springs there on the compositor, measured against the list, not
+  // Motion's shared layout (lib/slide-plate.ts: layoutId was dropped for jank, owner 2026-10-15).
+  const listEl = useRef<HTMLDivElement | null>(null);
+  const rowTops = useRef<Map<string, number>>(new Map());
+  useLayoutEffect(() => {
+    const el = listEl.current;
+    if (!el) return;
+    const base = el.getBoundingClientRect().top;
+    const before = rowTops.current;
+    const now = new Map<string, number>();
+    el.querySelectorAll<HTMLElement>("[data-user]").forEach((row) => now.set(row.dataset.user!, row.getBoundingClientRect().top - base));
+    rowTops.current = now;
+    if (reduced || !before.size) return;
+    const curve = chSpringCurve("smooth");
+    el.querySelectorAll<HTMLElement>("[data-user]").forEach((row) => {
+      const was = before.get(row.dataset.user!);
+      const dy = was == null ? 0 : was - now.get(row.dataset.user!)!;
+      if (Math.abs(dy) < 0.5 || typeof row.animate !== "function") return;
+      row.animate([{ transform: `translateY(${dy}px)` }, { transform: "none" }], { duration: curve.ms, easing: chSupportsLinear() ? curve.linear : `cubic-bezier(${CH_EASE.join(",")})` });
+    });
+  });
 
   if (r?.status === "error" && !r.marks.size) {
     return (
@@ -209,26 +231,24 @@ function SeenByBody({ api, m, compact }: { api: ChMessagesApi; m: ChMsg; compact
         </h3>
         <ul className="ch-seen-sec__rows">
           {rows.map((x) => (
-            <M.li key={x.userId} layoutId={reduced ? undefined : `ch-seen-${x.userId}`} layout={reduced ? false : "position"} transition={chSpring("smooth", reduced)} className="ch-seen-row" aria-label={x.label}>
+            <li key={x.userId} data-user={x.userId} className="ch-seen-row" aria-label={x.label}>
               {compact ? <Avatar name={x.name} size="sm" /> : <Avatar name={x.name} size="md" />}
               <span className="ch-seen-row__body">
                 <span className="ch-seen-row__name">{x.name}</span>
                 {x.meta && <span className="ch-seen-row__meta">{fade(x.meta, x.meta)}</span>}
               </span>
-            </M.li>
+            </li>
           ))}
         </ul>
       </M.section>
     );
   return (
-    <div className="ch-seen-list" data-ch-code={s.seen.length === 0 ? "CH-7310" : undefined}>
+    <div ref={listEl} className="ch-seen-list" data-ch-code={s.seen.length === 0 ? "CH-7310" : undefined}>
       {offline && <p className="ch-seen-note">You’re offline. This may be out of date.</p>}
-      <LayoutGroup id={`ch-seen-${m.id}`}>
-        <AnimatePresence initial={false}>
-          {section("notYet", "Not yet", notYet)}
-          {section("seen", "Seen", seen)}
-        </AnimatePresence>
-      </LayoutGroup>
+      <AnimatePresence initial={false}>
+        {section("notYet", "Not yet", notYet)}
+        {section("seen", "Seen", seen)}
+      </AnimatePresence>
       <p className="ch-seen-note">
         Seen means they opened this chat after it was sent.
         {m.poll ? " Voting is in See votes." : ""}
