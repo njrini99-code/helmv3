@@ -1988,6 +1988,43 @@ html[data-fw-theme='dark'] .ch-scoreboard .ch-score--double {
   }
 }
 
+/* P-14 change marks: the old value of a changed event, struck. The line is a pseudo-element so it can draw. A mark this
+   device has not seen is `pending` and draws once with a CSS animation, so it ends struck with no script; a seen one is
+   `done` from the first frame and never moves. Only transform animates, and the colour is the quiet ink from the first
+   frame. With Animations off the durations are zero, so it is struck at once. */
+.ch-was {
+  position: relative;
+  text-decoration: none;
+  white-space: nowrap;
+  color: var(--ch-ink-500);
+}
+.ch-was::after {
+  position: absolute;
+  inset-inline: -1px;
+  top: 54%;
+  height: 1.5px;
+  border-radius: var(--ch-radius-mark);
+  background: currentColor;
+  transform-origin: left center;
+  content: '';
+}
+.ch-was[data-draw='pending']::after {
+  animation: ch-was-strike var(--ch-dur-release) var(--ch-ease) var(--ch-dur-quick) both;
+}
+@keyframes ch-was-strike {
+  from {
+    transform: scaleX(0);
+  }
+  to {
+    transform: scaleX(1);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .ch-was[data-draw='pending']::after {
+    animation: none;
+  }
+}
+
 /* The page is waiting, not missing (EmptyState with a `shape` or `kind`; ui/EmptyShape.tsx). The sentence takes the place
    of the first row, flush on the Ledger like the rows that will follow it, and under it the layout's own rules, rings and
    baseline are drawn empty. Hairlines only: no bars, no sheen (those are the loading skeleton's) and no motion, so there
@@ -2294,88 +2331,5 @@ html[data-fw-theme='dark'] .ch-scoreboard .ch-score--double {
   .ch-toast__action::before,
   .ch-toast__close::before {
     width: 100%;
-  }
-}
-
-/* A signed difference against a baseline (ui/DeltaChip.tsx, P016 7.A): toned only past one standard error. The triangle
-   points up for better and down for worse whatever the sign, so the meaning never rests on hue (gain and loss sit close
-   in lightness). Level is neutral ink with a dash. */
-.ch-delta {
-  display: inline-flex;
-  align-items: center;
-  gap: 5px;
-  font: 600 calc(13 * var(--ch-type-k))/1.2 var(--ch-font-sans);
-  font-variant-numeric: tabular-nums;
-  white-space: nowrap;
-  color: var(--ch-text-secondary);
-}
-.ch-delta__g {
-  flex: none;
-  fill: currentColor;
-}
-.ch-delta--gain {
-  color: var(--ch-chart-gain);
-}
-.ch-delta--loss {
-  color: var(--ch-chart-loss);
-}
-.ch-delta--none {
-  color: var(--ch-text-tertiary);
-}
-
-/* How settled a number is (ui/TrustChip.tsx, D-84): Live breathes on the live loop, which stops under reduced motion and
-   Animations off (the token goes to 0). Suspended is amber on the warning tint; Official is positive ink with a check.
-   The source label is quieter and never changes the tone. */
-.ch-trust {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  height: 22px;
-  padding: 0 8px;
-  border-radius: var(--ch-radius-xs);
-  font: 600 calc(12 * var(--ch-type-k))/1 var(--ch-font-sans);
-  white-space: nowrap;
-  color: var(--ch-text-secondary);
-  background: var(--ch-bg-subtle);
-  box-shadow: inset 0 0 0 1px var(--ch-border-subtle);
-}
-.ch-trust--live {
-  color: var(--ch-text-primary);
-}
-.ch-trust--suspended {
-  color: var(--ch-warning-600);
-  background: var(--ch-warning-100);
-}
-.ch-trust--official {
-  color: var(--ch-positive-600);
-  background: var(--ch-positive-100);
-}
-.ch-trust--upcoming {
-  color: var(--ch-text-tertiary);
-}
-.ch-trust__dot {
-  width: 6px;
-  height: 6px;
-  border-radius: 50%;
-  background: var(--ch-accent);
-  animation: ch-trust-live var(--ch-dur-live) var(--ch-ease-io) infinite;
-}
-.ch-trust__at,
-.ch-trust__src {
-  font-weight: 500;
-  color: var(--ch-text-tertiary);
-}
-@keyframes ch-trust-live {
-  0%,
-  100% {
-    opacity: 1;
-  }
-  50% {
-    opacity: 0.35;
-  }
-}
-@media (prefers-reduced-motion: reduce) {
-  .ch-trust__dot {
-    animation: none;
   }
 }

@@ -10,7 +10,7 @@ import { PageRefreshNotice } from '../../ui/RefreshNotice';
 import { Icon } from '../../ui/Icon';
 import { SectionBoundary } from '../../ui/SectionBoundary';
 import { useChPhone } from '../../lib/use-phone';
-import { useChClockText } from '../../lib/use-clock';
+import { useChClock, useChClockText } from '../../lib/use-clock';
 import { useNow } from '../../lib/use-now';
 import { rebuiltHref } from '../../shell/nav';
 import { LinkPending } from '../../shell/LinkPending';
@@ -26,6 +26,8 @@ import { NoRoundsYet, PlayerHomePhone } from './PlayerHomePhone';
 import { Week } from './Week';
 import { messageCoachHref, postRoundHref } from './player-links';
 import { useHomeDayRollover } from './use-day-rollover';
+import { ChangeMarksProvider } from '../../lib/use-change-marks';
+import { MarkBadge, markSub, useRowMark } from '../calendar/change-note';
 import { NoTeam } from '../../ui/NoTeam';
 import '../../styles/home.css';
 
@@ -36,7 +38,15 @@ import '../../styles/home.css';
  * next and its countdown beside the latest round; then the player's scoring
  * and the four parts of the game. The phone is PlayerHomePhone (v2 board).
  */
-export function PlayerHome({ data, now }: { data: ChPlayerHome; /** Preview and tests: a frozen clock (ISO). */ now?: string }) {
+export function PlayerHome(props: { data: ChPlayerHome; /** Preview and tests: a frozen clock (ISO). */ now?: string }) {
+  return (
+    <ChangeMarksProvider marks={props.data.marks ?? []}>
+      <PlayerHomeBody {...props} />
+    </ChangeMarksProvider>
+  );
+}
+
+function PlayerHomeBody({ data, now }: { data: ChPlayerHome; now?: string }) {
   const phone = useChPhone();
   // A page left open past the team's midnight reads itself again, so "today" is today (desktop and phone).
   useHomeDayRollover(data.clock, now !== undefined);
@@ -111,6 +121,10 @@ function DeskHead({ data, post }: { data: ChPlayerHome; post: string | null }) {
 /** Up next inside the week (Player - Home.html `pv-next`): type, when, where, and the countdown. */
 function DeskNext({ e, frozen }: { e: ChHomeEvent; frozen?: string }) {
   const t = useChClockText();
+  const clock = useChClock();
+  // P-14: a changed event wears a badge in the kicker and its old value struck under the range, until Got it.
+  const mark = useRowMark()(e);
+  const was = mark && !mark.change.partial ? markSub(e.location, mark.change, clock, false) : null;
   const ticking = useNow();
   const now = frozen ? new Date(frozen) : ticking;
   const when = whenLabel(e, now);
@@ -120,11 +134,13 @@ function DeskNext({ e, frozen }: { e: ChHomeEvent; frozen?: string }) {
         <span>
           <Icon icon={TYPE_ICON[e.type]} size={13} />
           Up next · {TYPE_LABEL[e.type]}
+          {mark && <MarkBadge change={mark.change} />}
         </span>
         <span className={'ch-num' + (when.soon ? ' is-soon' : '')}>{t(when.text)}</span>
       </span>
       <span className="ch-ph-next__t">{e.title}</span>
       <span className="ch-ph-next__m ch-num">{[t(e.rangeLabel), e.location].filter(Boolean).join(' · ')}</span>
+      {was && <span className="ch-ph-next__m ch-num">{was}</span>}
       <MineBadge mine={e.mine} />
       {!e.allDay && <Countdown to={e.startIso} frozen={frozen} />}
       <LinkPending />

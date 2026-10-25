@@ -31,6 +31,9 @@ export const CRON_REGISTRY: readonly CronRegistryEntry[] = [
   // minute as event-reminders, which owns the top of the hour.
   { jobType: 'task-reminders', path: '/api/cron/task-reminders', cadenceMinutes: 60, schedule: '5 * * * *' },
   { jobType: 'v3-standing-refresh', path: '/api/cron/v3/standing-refresh', cadenceMinutes: DAILY, schedule: '20 2 * * *' },
+  // Clubhouse A+ rows 105/121: refreshes the season Standing of teams a saved round marked dirty. An idle tick is one read; a 200
+  // no-op until 20261024150000 / 20261024151000 (held) are applied.
+  { jobType: 'v3-standing-refresh-dirty', path: '/api/cron/v3/standing-refresh-dirty', cadenceMinutes: 5, schedule: '*/5 * * * *' },
   { jobType: 'v3-genome-nightly', path: '/api/cron/v3/genome-nightly', cadenceMinutes: DAILY, schedule: '40 2 * * *' },
   { jobType: 'v3-causality-attribute', path: '/api/cron/v3/causality-attribute', cadenceMinutes: DAILY, schedule: '0 3 * * *' },
   { jobType: 'v3-goal-suggestions-write', path: '/api/cron/v3/goal-suggestions-write', cadenceMinutes: DAILY, schedule: '20 3 * * *' },

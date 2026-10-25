@@ -76,4 +76,15 @@ describe('applyRealtimeMessageUpdate (P007 70301) — read receipts must not chu
       id: 'm3', content: 'third', edited_at: null, is_deleted: true,
     })).toBe(removed);
   });
+
+  it('applies a poll closing, which changes only payload, and ignores an unchanged payload (premium features P-2)', () => {
+    type PollMsg = Msg & { payload?: unknown };
+    const open = { v: 1, question: 'Which van?', options: [], closed_at: null };
+    const polls: PollMsg[] = [{ id: 'p1', content: 'Poll: Which van?', edited_at: null, payload: open }];
+    expect(applyRealtimeMessageUpdate(polls, { ...polls[0]!, payload: { ...open } })).toBe(polls);
+    const closed = { ...open, closed_at: '2026-10-24T15:00:00Z' };
+    const next = applyRealtimeMessageUpdate(polls, { ...polls[0]!, payload: closed });
+    expect(next).not.toBe(polls);
+    expect(next[0]!.payload).toEqual(closed);
+  });
 });

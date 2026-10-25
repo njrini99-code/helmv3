@@ -11,7 +11,11 @@ import { formatToPar } from '../../lib/format';
 import { haptic } from '../../lib/haptics';
 import { chTrail } from '../../lib/track';
 import type { ChClock } from '../../lib/clock-cookie';
-import { useChClockText } from '../../lib/use-clock';
+import { useChClock, useChClockText } from '../../lib/use-clock';
+import { restyleClock } from '../../lib/clock-format';
+import { useMarkReader } from '../../lib/use-change-marks';
+import { WasValue } from '../../ui/WasValue';
+import type { ChHomeChange } from './change-rows';
 import { rebuiltHref } from '../../shell/nav';
 import { LinkPending } from '../../shell/LinkPending';
 import { TYPE_LABEL } from '../calendar/model';
@@ -299,10 +303,20 @@ const SEEN_KEY = 'ch.home.seen.v1';
 interface Seen {
   rounds: string[];
   event: { id: string; going: number } | null;
+  /** P-14: the change sessions this device has shown (older stored values have none). */
+  changes?: string[];
 }
 export interface ChSinceChip {
   key: string;
   big: string;
+  /** A schedule change's lead as a 24-hour clock reads it ("16:00"). */
+  hm?: string;
+  /** A cancelled event's old start, struck. */
+  struck?: boolean;
+  /** The edit session this row tells of, for its strike. */
+  changeId?: string;
+  /** The row's second line (a schedule change: what it was, when, who). */
+  meta?: string;
   /** The figure's under-par part, shown in the under-par red (D-42). */
   toPar?: { text: string; under: boolean };
   label: string;
@@ -310,12 +324,35 @@ export interface ChSinceChip {
   href?: string;
 }
 
-/** Pure: the chips between what was seen and what is here now. */
-export function sinceChips(prev: Seen | null, rounds: ChLatestRound[], event: ChHomeEvent | null): ChSinceChip[] {
+/** The most schedule changes the section lists before one row says how many more. */
+const MAX_CHANGE_ROWS = 3;
+
+/**
+ * Pure: the chips between what was seen and what is here now. A schedule change (P-14) leads, since a change to the plan
+ * outranks a posted round: other people's live changes this device has not shown yet and the player has not cleared with
+ * Got it, newest first, three at most and then one row for the rest.
+ */
+export function sinceChips(prev: Seen | null, rounds: ChLatestRound[], event: ChHomeEvent | null, changes: ChHomeChange[] = [], cleared: (changeId: string) => boolean = () => false): ChSinceChip[] {
   if (!prev) return [];
-  const chips: ChSinceChip[] = rounds
+  const fresh = changes.filter((c) => !(prev.changes ?? []).includes(c.changeId) && !cleared(c.changeId));
+  const changeChips: ChSinceChip[] = fresh.slice(0, MAX_CHANGE_ROWS).map((c) => ({
+    key: `c-${c.changeId}`,
+    big: c.lead.text,
+    ...(c.lead.hm ? { hm: c.lead.hm } : {}),
+    ...(c.lead.struck ? { struck: true } : {}),
+    changeId: c.changeId,
+    label: c.title,
+    meta: c.meta,
+    href: `${CALENDAR}?date=${c.date}&event=${c.eventId}`,
+  }));
+  if (fresh.length > MAX_CHANGE_ROWS) {
+    const more = fresh.length - MAX_CHANGE_ROWS;
+    changeChips.push({ key: 'c-more', big: `+${more}`, label: `${more} more ${pluralWord(more, 'change')} · Calendar`, href: CALENDAR });
+  }
+  const chips: ChSinceChip[] = changeChips;
+  chips.push(...rounds
     .filter((r) => !prev.rounds.includes(r.id))
-    .map((r) => ({ key: `r-${r.id}`, big: String(r.score), toPar: r.toPar != null ? { text: formatToPar(r.toPar), under: r.toPar < 0 } : undefined, label: `${firstName(r.playerName)} posted`, round: r }));
+    .map((r) => ({ key: `r-${r.id}`, big: String(r.score), toPar: r.toPar != null ? { text: formatToPar(r.toPar), under: r.toPar < 0 } : undefined, label: `${firstName(r.playerName)} posted`, round: r })));
   if (event && event.going != null && prev.event?.id === event.id && event.going > prev.event.going) {
     const more = event.going - prev.event.going;
     chips.push({ key: `e-${event.id}`, big: `+${more}`, label: `${pluralWord(more, 'Reply', 'Replies')} · ${event.title}`, href: eventHref(event) });
@@ -327,25 +364,33 @@ function readSeen(): Seen | null {
   try {
     const raw = localStorage.getItem(SEEN_KEY);
     const v: unknown = raw ? JSON.parse(raw) : null;
-    return v && typeof v === 'object' && Array.isArray((v as Seen).rounds) ? (v as Seen) : null;
+    return v && typeof v === 'object' && Array.isArray((v as Seen).rounds) ? ({ ...(v as Seen), changes: Array.isArray((v as Seen).changes) ? (v as Seen).changes : [] }) : null;
   } catch {
     return null;
   }
 }
 
-export function SinceYouLooked({ rounds, event, onOpenRound }: { rounds: ChLatestRound[]; event: ChHomeEvent | null; onOpenRound: (r: ChLatestRound) => void }) {
+/** A stable empty list: a fresh `[]` default would re-run the effect below on every render. */
+const NO_CHANGES: ChHomeChange[] = [];
+
+export function SinceYouLooked({ rounds, event, changes = NO_CHANGES, onOpenRound }: { rounds: ChLatestRound[]; event: ChHomeEvent | null; changes?: ChHomeChange[]; onOpenRound: (r: ChLatestRound) => void }) {
   // Read once, after mount; the snapshot survives StrictMode's second effect, which would otherwise read the write.
   const prev = useRef<Seen | null | undefined>(undefined);
   const [chips, setChips] = useState<ChSinceChip[]>([]);
+  const read = useMarkReader();
+  const clock = useChClock();
   useEffect(() => {
     if (prev.current === undefined) prev.current = readSeen();
-    setChips(sinceChips(prev.current, rounds, event));
+    setChips(sinceChips(prev.current, rounds, event, changes, (id) => read(id).got));
     try {
-      localStorage.setItem(SEEN_KEY, JSON.stringify({ rounds: rounds.map((r) => r.id), event: event && event.going != null ? { id: event.id, going: event.going } : null } satisfies Seen));
+      localStorage.setItem(
+        SEEN_KEY,
+        JSON.stringify({ rounds: rounds.map((r) => r.id), event: event && event.going != null ? { id: event.id, going: event.going } : null, changes: changes.map((c) => c.changeId) } satisfies Seen),
+      );
     } catch {
       // Private mode or full storage: the chips just don't appear next time.
     }
-  }, [rounds, event]);
+  }, [rounds, event, changes, read]);
   if (!chips.length) return null;
   return (
     <section className="ch-hm-sec ch-hm-since" aria-labelledby="ch-hm-since">
@@ -356,16 +401,17 @@ export function SinceYouLooked({ rounds, event, onOpenRound }: { rounds: ChLates
           the titles of the two lists stand on one line; not a sideways rail of filled tiles. */}
       <LedgerList className="ch-hm-since__l">
         {chips.map((c) => {
+          const figure = clock === '24' && c.hm ? c.hm : c.big;
           const lead = (
             <b className="ch-hm-since__fig ch-num">
-              {c.big}
+              {c.struck && c.changeId ? <WasValue changeId={c.changeId}>{figure}</WasValue> : figure}
               {c.toPar && <em className={c.toPar.under ? 'is-under' : undefined}> {c.toPar.text}</em>}
             </b>
           );
           return c.round ? (
             <LedgerRow key={c.key} className="ch-hm-since__c" lead={lead} title={c.label} meta={c.round.meta.split(' · ').slice(0, 2).join(' · ') || undefined} onClick={() => (haptic('select'), onOpenRound(c.round!))} />
           ) : (
-            <LedgerRow key={c.key} className="ch-hm-since__c" lead={lead} title={c.label} href={c.href ?? CALENDAR} />
+            <LedgerRow key={c.key} className="ch-hm-since__c" lead={lead} title={c.label} meta={c.meta ? restyleClock(c.meta, clock) : undefined} href={c.href ?? CALENDAR} />
           );
         })}
       </LedgerList>

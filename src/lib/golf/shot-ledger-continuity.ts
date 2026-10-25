@@ -14,6 +14,10 @@
  * Deliberately NOT flagged:
  * - penalty strokes (`is_penalty` / lie_after 'penalty'): a drop legitimately
  *   restarts the chain at a new lie and distance;
+ * - a shot followed by an OB / lost-ball penalty: stroke and distance replays
+ *   from where that shot was hit, not from where it ended, so the chain
+ *   restarts by rule (strokes gained reads the replay spot as its end: see
+ *   withNextShotStart);
  * - an unknown `lie_after` (null): nothing to compare;
  * - rough -> 'other': the logger records a recovery lie (trees, pine straw)
  *   as 'other' on the next shot while the landing was called rough (1,015
@@ -29,6 +33,7 @@ export interface ContinuityShot {
   distance_to_hole_after: number | null;
   distance_unit_after: string | null;
   is_penalty: boolean | null;
+  penalty_type?: string | null;
 }
 
 export interface ShotChainDiscontinuity {
@@ -40,9 +45,11 @@ export interface ShotChainDiscontinuity {
   next_before: string | number;
 }
 
+const STROKE_AND_DISTANCE = new Set(['ob', 'lost']);
+
 const COMPATIBLE_LIES: ReadonlyArray<readonly [string, string]> = [['rough', 'other']];
 
-function liesChain(after: string, nextBefore: string): boolean {
+export function liesChain(after: string, nextBefore: string): boolean {
   if (after === nextBefore) return true;
   return COMPATIBLE_LIES.some(([a, b]) => a === after && b === nextBefore);
 }
@@ -68,6 +75,7 @@ export function findShotChainDiscontinuities(
       const next = shots[i + 1];
       if (!cur || !next) continue;
       if (cur.is_penalty || cur.lie_after === 'penalty') continue;
+      if (next.is_penalty && next.penalty_type && STROKE_AND_DISTANCE.has(next.penalty_type)) continue;
 
       if (cur.lie_after && next.lie_before && !liesChain(cur.lie_after, next.lie_before)) {
         out.push({
@@ -96,4 +104,20 @@ export function findShotChainDiscontinuities(
     }
   }
   return out;
+}
+
+/**
+ * One line per break ("h8 s1 lie rough>tee; h12 s3 distance 150>70") for
+ * telemetry: Sentry stores nested arrays in `extra` as "[Array]", so the list
+ * itself never reached the event.
+ */
+export function summarizeShotChainDiscontinuities(
+  breaks: ReadonlyArray<ShotChainDiscontinuity>,
+  limit = 20,
+): string {
+  const shown = breaks
+    .slice(0, limit)
+    .map(b => `h${b.hole_number} s${b.shot_number} ${b.kind} ${b.after}>${b.next_before}`);
+  const more = breaks.length > limit ? `; +${breaks.length - limit} more` : '';
+  return shown.join('; ') + more;
 }

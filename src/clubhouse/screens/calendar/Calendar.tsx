@@ -3,8 +3,9 @@
 import { CalendarCheck, CalendarDays, Check, Lock, ChevronDown, ChevronLeft, ChevronRight, ChevronsUpDown, Ellipsis, Plus, Printer, Rss, TriangleAlert, Users, X } from 'lucide-react';
 import { AnimatePresence, m, useIsPresent } from 'motion/react';
 import { useRouter } from 'next/navigation';
-import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, useTransition, type CSSProperties, type ReactNode, type RefObject } from 'react';
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, useTransition, type ComponentProps, type CSSProperties, type ReactNode, type RefObject } from 'react';
 import { useChSessionState } from '../../lib/session-state';
+import { ChangeMarksProvider } from '../../lib/use-change-marks';
 import type { ChCalendarData } from '../../data/calendar';
 import { Avatar } from '../../ui/Avatar';
 import { Button, IconButton } from '../../ui/Button';
@@ -524,6 +525,33 @@ function PeoplePicker({ people, sel, setSel }: { people: ChCalendarData['people'
   );
 }
 
+/**
+ * P-14: a change that arrives while the page is open (the realtime refresh) is said once, politely: "Practice moved to 4:00 PM.
+ * It was 3:00 PM." Nothing is said for what was already there when the page opened, for a change the reader made themselves
+ * (their toast covers it), or twice for the same change.
+ */
+function ChangeAnnouncer({ events }: { events: ChCalEvent[] }) {
+  const known = useRef<Set<string> | null>(null);
+  const [said, setSaid] = useState('');
+  useEffect(() => {
+    const ids = new Set<string>();
+    let fresh = '';
+    for (const e of events) {
+      const c = e.change;
+      if (!c || c.partial) continue;
+      ids.add(c.id);
+      if (known.current && !known.current.has(c.id) && !c.byMe && !fresh) fresh = c.liveText;
+    }
+    known.current = new Set([...(known.current ?? []), ...ids]);
+    if (fresh) setSaid(fresh);
+  }, [events]);
+  return (
+    <span className="ch-sr-only" role="status" aria-live="polite">
+      {said}
+    </span>
+  );
+}
+
 const buildUrl = (view: ChCalView, date: string, today: string, event?: string) => {
   const q = new URLSearchParams();
   if (view !== 'week') q.set('view', view);
@@ -534,7 +562,15 @@ const buildUrl = (view: ChCalView, date: string, today: string, event?: string) 
 };
 
 /** `frozen` pins the clock to the loaded "now" (the dev preview renders a fixed day). */
-export function Calendar({
+export function Calendar(props: ComponentProps<typeof CalendarBody>) {
+  return (
+    <ChangeMarksProvider marks={props.data.marks ?? []}>
+      <CalendarBody {...props} />
+    </ChangeMarksProvider>
+  );
+}
+
+function CalendarBody({
   data,
   initialEvent,
   initialNew = false,
@@ -817,7 +853,11 @@ export function Calendar({
   const selId = insp && (insp.kind === 'event' || insp.kind === 'attendance') ? insp.id : insp?.kind === 'overlap' ? (overlaps.find((o) => o.id === insp.id)?.eventId ?? null) : null;
   const open = (id: string, date?: string) => {
     const e = data.events.find((x) => x.id === id && (!date || x.date === date)) ?? data.events.find((x) => x.id === id);
-    if (!e) return;
+    if (!e) {
+      // P-14: a moved-away row can link to a day outside the loaded window; the address carries the event, and its own day opens.
+      if (date && !data.eventsError) window.location.assign(buildUrl(view, date, data.today, id));
+      return;
+    }
     // A-25: an event opened from the keyboard (Enter or Space on its block, bar or agenda row) takes focus into its
     // panel, and closing the panel hands focus back to it. A click leaves focus where the pointer put it.
     const from = document.activeElement;
@@ -1008,6 +1048,7 @@ export function Calendar({
       <>
         <CalendarFirstRun onNew={() => setEditor({ event: null })} />
         {dialogs}
+        <ChangeAnnouncer events={data.events} />
       </>
     );
   }
@@ -1209,7 +1250,7 @@ export function Calendar({
                   )}
                   {view === 'agenda' &&
                     (events.some((e) => e.date >= now.date) || events.length ? (
-                      <AgendaView events={events} people={people} now={now} selId={selId} flagged={flagged} onSelect={open} viewerId={data.viewerPlayerId} />
+                      <AgendaView events={events} people={people} now={now} selId={selId} flagged={flagged} onSelect={open} viewerId={data.viewerPlayerId} movedAway={data.movedAway} onOpenAt={open} />
                     ) : (
                       <div className="ch-cal-surface">
                         <EmptyState
@@ -1243,6 +1284,7 @@ export function Calendar({
       )}
 
       {dialogs}
+      <ChangeAnnouncer events={data.events} />
     </main>
   );
 }

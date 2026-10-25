@@ -8,6 +8,8 @@ import { teeColorFor } from '../../../data/rounds-shape';
 import { chReport } from '../../../lib/track';
 import { blankHoles, holesForRound, startPosition, yardageRule, type ChResult, type ChSetupCourse, type ChSetupForm, type ChSetupHole, type ChSetupPorts, type ChSetupQualifier, type ChSetupTee, type ChStartFailure } from '../setup/shape';
 import { plural } from '../../../lib/plural';
+import { createClient } from '@/lib/supabase/client';
+import { courseGlances, type ChCourseGlance, type ChGlanceRow } from '../../../data/course-glance';
 
 /*
  * The reads and the start form behind round setup's ports (docs/clubhouse/ROUNDS_PLAN.md step 3 to 5): the course
@@ -140,6 +142,30 @@ export function listCoursesRead(): Promise<ChResult<ChSetupCourse[]>> {
     const recentCount = out.filter((c) => c.group === 'recent').length;
     return { ok: true, data: [...out.slice(0, recentCount), ...mine, ...out.slice(recentCount)] };
   });
+}
+
+/**
+ * P-7 4.6: the player's history at each course, for the block beside a picked course. Their own completed, non-test rounds
+ * (RLS keeps it to what they may read; the player filter keeps it to theirs). Best-effort: a failed read is reported and
+ * the block just doesn't show.
+ */
+export async function readCourseGlances(playerId: string): Promise<Record<string, ChCourseGlance>> {
+  try {
+    const { data, error } = await createClient()
+      .from('golf_rounds')
+      .select('id, course_id, course_name, round_date, holes_played, total_score, front_nine, back_nine, total_putts, notes')
+      .eq('player_id', playerId)
+      .eq('is_test', false)
+      .eq('status', 'completed')
+      .order('round_date', { ascending: false })
+      .order('id', { ascending: false })
+      .limit(1000);
+    if (error) throw new Error(error.message);
+    return courseGlances((data ?? []) as ChGlanceRow[]);
+  } catch (err) {
+    chReport(err, { surface: 'rounds', action: 'rounds.courses.glances', severity: 'low' });
+    return {};
+  }
 }
 
 const CATEGORY: Record<string, string> = { mens: 'Men’s', womens: 'Women’s', tournament: 'Tournament', mixed: 'Mixed', senior: 'Senior', junior: 'Junior' };

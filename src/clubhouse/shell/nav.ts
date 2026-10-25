@@ -217,8 +217,9 @@ const CH_REBUILT_CHILDREN: Record<string, RegExp> = {
  * /rounds/new and /rounds/recover are rebuilt routes above).
  */
 const CH_REBUILT_PATTERNS: Record<ChRole, readonly RegExp[]> = {
-  coach: [/^\/golf\/dashboard\/rounds\/[0-9a-f-]{36}$/i],
-  player: [/^\/golf\/dashboard\/rounds\/[0-9a-f-]{36}$/i, /^\/golf\/dashboard\/rounds\/continue\/[0-9a-f-]{36}$/i],
+  // P-7: a player's history at one course, reached from a round or the library (a coach's from a player's round).
+  coach: [/^\/golf\/dashboard\/rounds\/[0-9a-f-]{36}$/i, /^\/golf\/dashboard\/rounds\/course\/[^/]+$/],
+  player: [/^\/golf\/dashboard\/rounds\/[0-9a-f-]{36}$/i, /^\/golf\/dashboard\/rounds\/continue\/[0-9a-f-]{36}$/i, /^\/golf\/dashboard\/rounds\/course\/[^/]+$/],
 };
 
 /**
@@ -290,6 +291,8 @@ const PUSHED_BELOW: ReadonlyArray<{ path: RegExp; top: (role: ChRole, m: RegExpE
     top: (role) => (role === 'coach' ? { back: 'Stats', title: 'Round', parent: '/golf/dashboard/stats' } : { back: 'Rounds', title: 'Round', parent: '/golf/dashboard/rounds' }),
   },
   { path: /^\/golf\/dashboard\/rounds\/recover$/, top: () => ({ back: 'Rounds', title: 'Recover', parent: '/golf/dashboard/rounds' }) },
+  // P-7: no parent, so Back steps back to the round or the library it came from (D-41).
+  { path: /^\/golf\/dashboard\/rounds\/course\/[^/]+$/, top: (role) => ({ back: role === 'coach' ? 'Round' : 'Rounds', title: 'Course' }) },
 ];
 
 const SETTINGS = '/golf/dashboard/settings';

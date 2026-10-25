@@ -24,16 +24,26 @@ Rows without a code are behaviours with no single element, recorded in
 namespace 1) apply here too and are named where they carry a category.
 `clubhouse:check` holds this file to the registry.
 
-The page serves two roles from one address. A coach plans the team's schedule, sees every rostered
-player's classes and takes attendance; a player sees the team's events, replies to the ones they are
-invited to and sees only their own classes (D-1). Category 08 says which role gets what, and how each
-gate is proved.
+The page serves two roles from one address. A coach plans the team's schedule,
+sees every rostered player's classes and takes attendance; a player sees the
+team's events, replies to the ones they are invited to and sees only their own
+classes (D-1). Category 08 says which role gets what, and how each gate is
+proved.
 
 ## 01 — Default / core UI
 
 Status: DEFINED
 
-Calendar opens on the week that holds today, with the team's events on a grid and the day's panel beside it (60101). The address decides the view, the day and the open event, and anything that is not real falls back (60102). Other pages open New event through `?new=1` and its seeds (60103). Every time is in the team's zone (60104). On the phone the same data is Day, Month and List (61901). The page opens at the top (10101). v2 also draws a whole-page first-run state for a team that has never scheduled anything (D-71): built, `CalendarFirstRun` (corrected 2026-10-17); an empty range on a team that has scheduled before still draws the grid, and the panel says there is nothing on the team calendar today (60402).
+Calendar opens on the week that holds today, with the team's events on a grid
+and the day's panel beside it (60101). The address decides the view, the day and
+the open event, and anything that is not real falls back (60102). Other pages
+open New event through `?new=1` and its seeds (60103). Every time is in the
+team's zone (60104). On the phone the same data is Day, Month and List (61901).
+The page opens at the top (10101). v2 also draws a whole-page first-run state
+for a team that has never scheduled anything (D-71): built, `CalendarFirstRun`
+(corrected 2026-10-17); an empty range on a team that has scheduled before still
+draws the grid, and the panel says there is nothing on the team calendar today
+(60402).
 
 | Bridge ID | Code | Name | Meaning |
 | --- | --- | --- | --- |
@@ -71,7 +81,20 @@ From the shell (P001): 10201 CH-1401, 10202 CH-1402.
 
 Status: DEFINED
 
-The page follows the team's events as production's calendar does: one realtime channel on `golf_events` for the team (`useCalendarLive`, live.ts); any change, and a reconnect after the feed dropped, re-reads the page on the server (`router.refresh`, a burst of changes is one re-read after 800 ms), and a dropped feed is reported. The server also reads it when it opens, after a change of your own lands and when Try again is pressed. Replies and attendance are not on the feed (nor in production): a player's reply shows on the next read. Stepping inside the loaded window is instant and rewrites the address without a request (60302); going past the window loads the next one and marks the page busy, and a save in flight reads Publishing…, Saving…, Cancelling…, Removing… or Attaching… on a button that cannot be pressed twice (60301). The screen follows the server when it sends a different view or day (60303). Not built: pull to refresh, and a periodic re-read while the page is open; "Checked" says how old the data is (61501).
+The page follows the team's events as production's calendar does: one realtime
+channel on `golf_events` for the team (`useCalendarLive`, live.ts); any change,
+and a reconnect after the feed dropped, re-reads the page on the server
+(`router.refresh`, a burst of changes is one re-read after 800 ms), and a
+dropped feed is reported. The server also reads it when it opens, after a change
+of your own lands and when Try again is pressed. Replies and attendance are not
+on the feed (nor in production): a player's reply shows on the next read.
+Stepping inside the loaded window is instant and rewrites the address without a
+request (60302); going past the window loads the next one and marks the page
+busy, and a save in flight reads Publishing…, Saving…, Cancelling…, Removing… or
+Attaching… on a button that cannot be pressed twice (60301). The screen follows
+the server when it sends a different view or day (60303). Not built: pull to
+refresh, and a periodic re-read while the page is open; "Checked" says how old
+the data is (61501).
 
 | Bridge ID | Code | Name | Meaning |
 | --- | --- | --- | --- |
@@ -113,7 +136,11 @@ the bar carries the title (states audit c1, c4, 2026-10-08).
 
 Status: DEFINED
 
-Checked before anything is sent, with the warning haptic. An event needs a title (60501, the title field takes focus) and must end after it starts (60502; all-day events skip the time check). Busy time needs a name (60503) and an end after its start (60504). Nothing else is free text: type, date, repeat, scope and invitees are choices, and the title, place and notes have length limits.
+Checked before anything is sent, with the warning haptic. An event needs a title
+(60501, the title field takes focus) and must end after it starts (60502;
+all-day events skip the time check). Busy time needs a name (60503) and an end
+after its start (60504). Nothing else is free text: type, date, repeat, scope
+and invitees are choices, and the title, place and notes have length limits.
 
 | Bridge ID | Code | Name | Meaning |
 | --- | --- | --- | --- |
@@ -147,17 +174,17 @@ section: the calendar view (60622) and the detail panel (60623) each sit in a
 SectionBoundary. A write that goes through the shell's save hook gets Retry,
 which sends the same write again and finishes the job (61401). Three failures
 have no Retry because there is nothing to send again: copying a link
-(60604, 60612) and an Undo that fails (60609); removing a file has none either, and its
-toast says to try again in a moment (60608). Making a new calendar-app link has
-no Retry either (60626): the server deletes the old link before it makes the new
-one, so a failure can leave either state, and the links are read again so the
-row shows what exists. Removing a link has one (60627). A server refusal written
-for a person is shown as the toast's reason (a reply's lock: the deadline
-passed, the event started or was cancelled); one written for a developer is
-replaced by the toast's own hint. A create whose answer is lost on the way back
-is safe to retry: a new event, a repeating series and busy time each send a
-request id that becomes the row's key, and a repeat returns the row that landed
-(C-17; busy time 2026-10-17).
+(60604, 60612) and an Undo that fails (60609); removing a file has none either,
+and its toast says to try again in a moment (60608). Making a new calendar-app
+link has no Retry either (60626): the server deletes the old link before it
+makes the new one, so a failure can leave either state, and the links are read
+again so the row shows what exists. Removing a link has one (60627). A server
+refusal written for a person is shown as the toast's reason (a reply's lock: the
+deadline passed, the event started or was cancelled); one written for a
+developer is replaced by the toast's own hint. A create whose answer is lost on
+the way back is safe to retry: a new event, a repeating series and busy time
+each send a request id that becomes the row's key, and a repeat returns the row
+that landed (C-17; busy time 2026-10-17).
 
 | Bridge ID | Code | Name | Meaning |
 | --- | --- | --- | --- |
@@ -195,28 +222,29 @@ request id that becomes the row's key, and a repeat returns the row that landed
 | 60632 | CH-6019 | `A_THIS_AND_FOLLOWING_SERIES_MOVE_FAILS` | A "This and following" series move fails |
 | 60633 | CH-6020 | `CHANGING_AN_EVENTS_LENGTH_FAILS` | Changing an event's length (a grip or Alt+Shift+arrow) fails |
 | 60634 | CH-6021 | `THE_SERVER_REFUSES_A_MOVE_BY_ROLE` | The server refuses a move by role |
-| 60635 | CH-6022 | `THE_EVENT_WAS_CANCELLED_OR_DELETED_WHILE` | The event was cancelled or deleted while it was being moved |
-| 60636 | CH-6040 | `A_TOURNAMENT_IS_SET_UP_FROM_THE` | A tournament is set up from the editor (P-5, `golf_tournaments_v1`) |
-| 60637 | CH-6048 | `SETTING_UP_A_TOURNAMENT_FROM_AN_EVENT` | Setting up a tournament from an event that is already a round (someone else just did) |
-| 60638 | CH-6049 | `THE_EVENT_BEING_SET_UP_WAS_DELETED` | The event being set up was deleted or moved to another team |
-| 60639 | CH-6050 | `A_ROUND_THAT_IS_UNDER_WAY_SUSPENDED` | A round that is under way, suspended or final is changed or cancelled from the calendar |
-| 60640 | CH-6051 | `CANCELLING_A_ROUND_OR_STOPPING_TRACKING_WHEN` | Cancelling a round, or stopping tracking, when scores are entered |
-| 60641 | CH-6052 | `THE_QUALIFIER_TO_LINK_WAS_DELETED_MEANWHILE` | The qualifier to link was deleted meanwhile |
-| 60642 | CH-6053 | `THE_TRIP_TO_LINK_IS_ALREADY_LINKED` | The trip to link is already linked to another event |
-| 60643 | CH-6054 | `A_PLAIN_SAVE_TRIES_TO_CHANGE_A` | A plain save tries to change a round's type, team, series, name, place or course (the round guard) |
-| 60644 | CH-6055 | `THE_COACH_ISNT_STAFFED_ON_THE_TEAM` | The coach isn't staffed on the team (a permission refusal) |
-| 60645 | CH-6056 | `SETTING_UP_THE_TOURNAMENT_FAILS_FOR_ANY` | Setting up the tournament fails for any other reason (the transaction never committed) |
-| 60646 | CH-6057 | `THE_QUALIFIER_TO_LINK_ALREADY_COUNTS_TOWARD` | The qualifier to link already counts toward another event (not stolen) |
-| 60647 | CH-6058 | `RESTORING_A_ROUND_THAT_ANOTHER_ROUND_HAS` | Restoring a round that another round has moved in front of |
-| 60648 | CH-6059 | `A_LINEUP_IS_SENT_BEFORE_4_33S` | A lineup is sent before 4.33's set_entries RPC is applied |
-| 60649 | CH-6060 | `SAVING_A_ROUND_FROM_THE_CALENDAR_FAILS` | Saving a round from the calendar fails for any other reason |
-| 60650 | CH-6061 | `CANCELLING_RESTORING_OR_STOPPING_TRACKING_FAILS_FOR` | Cancelling, restoring or stopping tracking fails for any other reason |
-| 60651 | CH-6241 | `THE_TOURNAMENT_CHANGED_SINCE_IT_WAS_OPENED` | The tournament changed since it was opened (a version conflict) |
-| 60652 | CH-6041 | `A_ROUNDS_DAY_OR_TIME_IS_SAVED` | A round's day or time is saved from round mode (P-5 4.3) |
-| 60653 | CH-6240 | `ROUND_MODE_FOR_A_TOURNAMENT_EVENT_WHOSE` | Round mode for a tournament event whose round ref didn't load (the calendar's events did) |
-| 60654 | CH-6042 | `A_ROUND_IS_CANCELLED_FROM_THE_CALENDAR` | A round is cancelled from the calendar (CH-6540 confirmed) |
-| 60655 | CH-6043 | `THE_WHOLE_TOURNAMENT_IS_CANCELLED_FROM_THE` | The whole tournament is cancelled from the calendar (CH-6541 confirmed) |
-| 60656 | CH-6044 | `A_ROUND_OR_THE_TOURNAMENT_IS_RESTORED` | A round or the tournament is restored |
+| 60635 | CH-6023 | `A_CHANGE_MARK_CANT_BE_READ_THE` | A change mark can't be read (P-14): the stored mark is a shape this version doesn't know (an unknown version, a missing baseline) |
+| 60636 | CH-6022 | `THE_EVENT_WAS_CANCELLED_OR_DELETED_WHILE` | The event was cancelled or deleted while it was being moved |
+| 60637 | CH-6040 | `A_TOURNAMENT_IS_SET_UP_FROM_THE` | A tournament is set up from the editor (P-5, `golf_tournaments_v1`) |
+| 60638 | CH-6041 | `A_ROUNDS_DAY_OR_TIME_IS_SAVED` | A round's day or time is saved from round mode (P-5 4.3) |
+| 60639 | CH-6042 | `A_ROUND_IS_CANCELLED_FROM_THE_CALENDAR` | A round is cancelled from the calendar (CH-6540 confirmed) |
+| 60640 | CH-6043 | `THE_WHOLE_TOURNAMENT_IS_CANCELLED_FROM_THE` | The whole tournament is cancelled from the calendar (CH-6541 confirmed) |
+| 60641 | CH-6044 | `A_ROUND_OR_THE_TOURNAMENT_IS_RESTORED` | A round or the tournament is restored |
+| 60642 | CH-6048 | `SETTING_UP_A_TOURNAMENT_FROM_AN_EVENT` | Setting up a tournament from an event that is already a round (someone else just did) |
+| 60643 | CH-6049 | `THE_EVENT_BEING_SET_UP_WAS_DELETED` | The event being set up was deleted or moved to another team |
+| 60644 | CH-6050 | `A_ROUND_THAT_IS_UNDER_WAY_SUSPENDED` | A round that is under way, suspended or final is changed or cancelled from the calendar |
+| 60645 | CH-6051 | `CANCELLING_A_ROUND_OR_STOPPING_TRACKING_WHEN` | Cancelling a round, or stopping tracking, when scores are entered |
+| 60646 | CH-6052 | `THE_QUALIFIER_TO_LINK_WAS_DELETED_MEANWHILE` | The qualifier to link was deleted meanwhile |
+| 60647 | CH-6053 | `THE_TRIP_TO_LINK_IS_ALREADY_LINKED` | The trip to link is already linked to another event |
+| 60648 | CH-6054 | `A_PLAIN_SAVE_TRIES_TO_CHANGE_A` | A plain save tries to change a round's type, team, series, name, place or course (the round guard) |
+| 60649 | CH-6055 | `THE_COACH_ISNT_STAFFED_ON_THE_TEAM` | The coach isn't staffed on the team (a permission refusal) |
+| 60650 | CH-6056 | `SETTING_UP_THE_TOURNAMENT_FAILS_FOR_ANY` | Setting up the tournament fails for any other reason (the transaction never committed) |
+| 60651 | CH-6057 | `THE_QUALIFIER_TO_LINK_ALREADY_COUNTS_TOWARD` | The qualifier to link already counts toward another event (not stolen) |
+| 60652 | CH-6058 | `RESTORING_A_ROUND_THAT_ANOTHER_ROUND_HAS` | Restoring a round that another round has moved in front of |
+| 60653 | CH-6059 | `A_LINEUP_IS_SENT_BEFORE_4_33S` | A lineup is sent before 4.33's set_entries RPC is applied |
+| 60654 | CH-6060 | `SAVING_A_ROUND_FROM_THE_CALENDAR_FAILS` | Saving a round from the calendar fails for any other reason |
+| 60655 | CH-6061 | `CANCELLING_RESTORING_OR_STOPPING_TRACKING_FAILS_FOR` | Cancelling, restoring or stopping tracking fails for any other reason |
+| 60656 | CH-6240 | `ROUND_MODE_FOR_A_TOURNAMENT_EVENT_WHOSE` | Round mode for a tournament event whose round ref didn't load (the calendar's events did) |
+| 60657 | CH-6241 | `THE_TOURNAMENT_CHANGED_SINCE_IT_WAS_OPENED` | The tournament changed since it was opened (a version conflict) |
 
 From the shell (P001): 10601 CH-1001, 10602 CH-1201, 10603 CH-1202,
 10604 CH-1203, 10605 CH-1204, 10606 CH-1205, 10607 CH-1206, 10608 CH-1207,
@@ -227,7 +255,11 @@ From the shell (P001): 10601 CH-1001, 10602 CH-1201, 10603 CH-1202,
 
 Status: DEFINED
 
-Offline and slow saves are the shell's: nothing is sent offline (10703), a save over 5 seconds says so once (10702), the banner (10701), Try again while offline (10704). Removing a file, and Undo on that, are not routed through the shell's save hook, so they carry the same rule themselves: offline, nothing is sent, the file stays, and the toast says nothing was changed (60701).
+Offline and slow saves are the shell's: nothing is sent offline (10703), a save
+over 5 seconds says so once (10702), the banner (10701), Try again while offline
+(10704). Removing a file, and Undo on that, are not routed through the shell's
+save hook, so they carry the same rule themselves: offline, nothing is sent, the
+file stays, and the toast says nothing was changed (60701).
 
 | Bridge ID | Code | Name | Meaning |
 | --- | --- | --- | --- |
@@ -240,17 +272,57 @@ From the shell (P001): 10701 CH-1901, 10702 CH-1902, 10703 CH-1903,
 
 Status: DEFINED
 
-The route decides who reaches the page, the loader decides what a player's browser is sent, and every write is checked again by its server action and by row-level security. Hiding a control from a player is a courtesy and never the gate (60806).
+The route decides who reaches the page, the loader decides what a player's
+browser is sent, and every write is checked again by its server action and by
+row-level security. Hiding a control from a player is a courtesy and never the
+gate (60806).
 
-Who opens it. A signed-in coach or player who has a team. With no session the page sends the visitor to login and the route renders nothing; a coach or player with no team gets the no-team page and nothing is read; a player whose team membership cannot be read gets the route error view with Try again and is never told they have no team (60805). With the Clubhouse off for the caller the page is the existing Fairway calendar (the shell's 10801).
+Who opens it. A signed-in coach or player who has a team. With no session the
+page sends the visitor to login and the route renders nothing; a coach or player
+with no team gets the no-team page and nothing is read; a player whose team
+membership cannot be read gets the route error view with Try again and is never
+told they have no team (60805). With the Clubhouse off for the caller the page
+is the existing Fairway calendar (the shell's 10801).
 
-What a coach has. Everything: New event, the N key and `?new=1` with its seeds, editing, moving and cancelling any event of the team (a series by scope), attendance, the people filter, overlaps, attaching and removing files, busy time, and both calendar-app links.
+What a coach has. Everything: New event, the N key and `?new=1` with its seeds,
+editing, moving and cancelling any event of the team (a series by scope),
+attendance, the people filter, overlaps, attaching and removing files, busy
+time, and both calendar-app links.
 
-What a player has. The team's events with their times, places, notes and files; the reply on an event they are invited to (60807); their own classes and nothing of a teammate's (60802); and the calendar-app sheet with their own schedule link (60804). A player never has a planning tool (60801), never a teammate's reply, because the browser is sent only the player's own place on each invite list and own answer (60803), and never a coach's busy time (60808). Attendance marks are a coach's: the screen does not ask for them for a player.
+What a player has. The team's events with their times, places, notes and files;
+the reply on an event they are invited to (60807); their own classes and nothing
+of a teammate's (60802); and the calendar-app sheet with their own schedule link
+(60804). A player never has a planning tool (60801), never a teammate's reply,
+because the browser is sent only the player's own place on each invite list and
+own answer (60803), and never a coach's busy time (60808). Attendance marks are
+a coach's: the screen does not ask for them for a player.
 
-The server, read in this pass and not run (60806). `createGolfEvent`, `updateGolfEvent` and `deleteGolfEvent` refuse anyone who is not a coach ("Only coaches can create team events", and the same for update and delete) and an event of another team ("Access denied"). The three series actions look up the caller's coach row ("Coach not found"), and `editRecurringEvent` and `deleteRecurringEvent` act only on events the caller created ("Not authorized"), so a second coach on the team can edit or cancel one event but not a series by scope, though the screen offers the scopes to every coach. `addCoachBlockedTime` and `deleteCoachBlockedTime` work on the caller's own coach row only. `markAttendance` needs a coach on the event's team's staff ("Only this team's coaches can record attendance"). `createCalendarFeed` refuses a team link to a player ("Only coaches can create team feeds"). `respondToEvent` needs an active member of the event's team, refuses class meetings, and refuses a reply after the deadline, after the start and on a cancelled event. `attachDocumentToEvent` and `detachDocumentFromEvent` are for the event's team coaches through row-level security ("Only this team's coaches can detach documents"). A class read relies on row-level security to give a player only their own classes (not re-read in this pass); the loader filters again (60802).
+The server, read in this pass and not run (60806). `createGolfEvent`,
+`updateGolfEvent` and `deleteGolfEvent` refuse anyone who is not a coach ("Only
+coaches can create team events", and the same for update and delete) and an
+event of another team ("Access denied"). The three series actions look up the
+caller's coach row ("Coach not found"), and `editRecurringEvent` and
+`deleteRecurringEvent` act only on events the caller created ("Not authorized"),
+so a second coach on the team can edit or cancel one event but not a series by
+scope, though the screen offers the scopes to every coach. `addCoachBlockedTime`
+and `deleteCoachBlockedTime` work on the caller's own coach row only.
+`markAttendance` needs a coach on the event's team's staff ("Only this team's
+coaches can record attendance"). `createCalendarFeed` refuses a team link to a
+player ("Only coaches can create team feeds"). `respondToEvent` needs an active
+member of the event's team, refuses class meetings, and refuses a reply after
+the deadline, after the start and on a cancelled event. `attachDocumentToEvent`
+and `detachDocumentFromEvent` are for the event's team coaches through row-level
+security ("Only this team's coaches can detach documents"). A class read relies
+on row-level security to give a player only their own classes (not re-read in
+this pass); the loader filters again (60802).
 
-Open, not this page's to fix. The baseline migration's `golf_event_attendance_select_team` policy lets any active player on the team read every reply on the team's events (not re-read against the live database), and `getAttendanceReport` returns a whole event's attendance to an active team player. So 60803 is what this page guarantees (it never asks for a teammate's reply and never sends one to a player's browser), not what the database enforces.
+Open, not this page's to fix. The baseline migration's
+`golf_event_attendance_select_team` policy lets any active player on the team
+read every reply on the team's events (not re-read against the live database),
+and `getAttendanceReport` returns a whole event's attendance to an active team
+player. So 60803 is what this page guarantees (it never asks for a teammate's
+reply and never sends one to a player's browser), not what the database
+enforces.
 
 | Bridge ID | Code | Name | Meaning |
 | --- | --- | --- | --- |
@@ -270,7 +342,12 @@ From the shell (P001): 10801 CLUBHOUSE_GATE, 10802 ROLE_SCOPED_NAV,
 
 Status: DEFINED
 
-A change that goes through the shell's save hook names itself in a toast and fires the success haptic (60901; the mechanism is the shell's 10901): Published, Moved or Saved, Cancelled, Team schedule link ready, Busy time added, Removed, Attached, the player's reply, and the number of attendance marks saved. A copied link also toasts with the success haptic. Removing a file toasts Removed with Undo (61302).
+A change that goes through the shell's save hook names itself in a toast and
+fires the success haptic (60901; the mechanism is the shell's 10901): Published,
+Moved or Saved, Cancelled, Team schedule link ready, Busy time added, Removed,
+Attached, the player's reply, and the number of attendance marks saved. A copied
+link also toasts with the success haptic. Removing a file toasts Removed with
+Undo (61302).
 
 | Bridge ID | Code | Name | Meaning |
 | --- | --- | --- | --- |
@@ -282,7 +359,10 @@ From the shell (P001): 10901 CHANGE_LANDED.
 
 Status: DEFINED
 
-Two warnings, and neither blocks anything. While a coach picks who to invite and when, the editor names who is busy at that time and marks each name (61001). A coach's event that collides with a class or another event is marked on the grid and in the agenda and offers Review (61002). A player sees neither.
+Two warnings, and neither blocks anything. While a coach picks who to invite and
+when, the editor names who is busy at that time and marks each name (61001). A
+coach's event that collides with a class or another event is marked on the grid
+and in the agenda and offers Review (61002). A player sees neither.
 
 | Bridge ID | Code | Name | Meaning |
 | --- | --- | --- | --- |
@@ -293,7 +373,16 @@ Two warnings, and neither blocks anything. While a coach picks who to invite and
 
 Status: DEFINED
 
-Cancelling an event asks first (61101) and says what happens. One event is a soft cancel: everyone invited is told, replies and attendance are kept, and the event stays on the calendar marked cancelled. A series asks which events, and "This and following" and "All in series" go through `deleteRecurringEvent`, which deletes the events (everyone invited is told, and the replies and attendance go with them); the question says so, and until 2026-09-30 it promised the soft cancel for those scopes too. Removing busy time asks first (61102). Both fire the warning haptic. Removing a file does not ask: it is undone with Undo (61302). Closing the editor with unpublished changes asks before anything is lost (61201).
+Cancelling an event asks first (61101) and says what happens. One event is a
+soft cancel: everyone invited is told, replies and attendance are kept, and the
+event stays on the calendar marked cancelled. A series asks which events, and
+"This and following" and "All in series" go through `deleteRecurringEvent`,
+which deletes the events (everyone invited is told, and the replies and
+attendance go with them); the question says so, and until 2026-09-30 it promised
+the soft cancel for those scopes too. Removing busy time asks first (61102).
+Both fire the warning haptic. Removing a file does not ask: it is undone with
+Undo (61302). Closing the editor with unpublished changes asks before anything
+is lost (61201).
 
 | Bridge ID | Code | Name | Meaning |
 | --- | --- | --- | --- |
@@ -309,7 +398,16 @@ Cancelling an event asks first (61101) and says what happens. One event is a sof
 
 Status: DEFINED
 
-A publish, save or busy-time add that fails keeps the editor or sheet open with everything as typed (61202). Closing the editor with changes asks first (61201). Attendance marks that did not save stay Unsaved and the button offers the rest (61203). The view and the day live in the address (60102); the open event does not, so a reload keeps the week and not the panel. The people filter and the jump panel are local to the open page and are not kept. Open, not fixed: the editor sets its fields again whenever the page re-reads while it is open (its effect depends on the people list, which is a new array after a re-read), so a Retry that lands from an earlier toast while a coach is typing would reset the form. Read in the code, not reproduced.
+A publish, save or busy-time add that fails keeps the editor or sheet open with
+everything as typed (61202). Closing the editor with changes asks first (61201).
+Attendance marks that did not save stay Unsaved and the button offers the rest
+(61203). The view and the day live in the address (60102); the open event does
+not, so a reload keeps the week and not the panel. The people filter and the
+jump panel are local to the open page and are not kept. Open, not fixed: the
+editor sets its fields again whenever the page re-reads while it is open (its
+effect depends on the people list, which is a new array after a re-read), so a
+Retry that lands from an earlier toast while a coach is typing would reset the
+form. Read in the code, not reproduced.
 
 | Bridge ID | Code | Name | Meaning |
 | --- | --- | --- | --- |
@@ -321,7 +419,11 @@ A publish, save or busy-time add that fails keeps the editor or sheet open with 
 
 Status: DEFINED
 
-A player's reply shows the moment it is tapped and goes back to the last confirmed answer if the server refuses (61301). Removing a file takes it off the list at once and puts it back if the server refuses (61302). Nothing else is optimistic: an event waits for its write and the editor stays open until it lands, and attendance marks are local until Save.
+A player's reply shows the moment it is tapped and goes back to the last
+confirmed answer if the server refuses (61301). Removing a file takes it off the
+list at once and puts it back if the server refuses (61302). Nothing else is
+optimistic: an event waits for its write and the editor stays open until it
+lands, and attendance marks are local until Save.
 
 | Bridge ID | Code | Name | Meaning |
 | --- | --- | --- | --- |
@@ -342,7 +444,14 @@ several reads failed the one Try again is the page's (CH-1209). Attendance
 offers Retry too; it sends every changed mark again, including the ones that had
 saved, which is harmless because each mark is an upsert.
 
-What this is proved on. The Retry tests run in jsdom, where a toast can be clicked while a dialog is open. In a browser a native modal dialog makes everything outside it inert, and the toasts are outside it, so a Retry raised by a failure inside a dialog (the editor, the two confirms, the busy time, file and calendar-app sheets, and every panel sheet on the phone) is probably not clickable until the dialog closes; the button that failed is still there to press again. This was not verified in a browser. The fix is in the shell's Toast and Modal, not in this page, and it affects every page's Retry.
+What this is proved on. The Retry tests run in jsdom, where a toast can be
+clicked while a dialog is open. In a browser a native modal dialog makes
+everything outside it inert, and the toasts are outside it, so a Retry raised by
+a failure inside a dialog (the editor, the two confirms, the busy time, file and
+calendar-app sheets, and every panel sheet on the phone) is probably not
+clickable until the dialog closes; the button that failed is still there to
+press again. This was not verified in a browser. The fix is in the shell's Toast
+and Modal, not in this page, and it affects every page's Retry.
 
 | Bridge ID | Code | Name | Meaning |
 | --- | --- | --- | --- |
@@ -355,7 +464,11 @@ From the shell (P001): 11401 ROUTE_TRY_AGAIN, 11402 TOAST_RETRY.
 
 Status: DEFINED
 
-"Checked 2:40 PM" in Sources is the hour the server read the data (61501). Another coach's change to an event arrives on the realtime feed and re-reads the page; a player's reply shows on the next read (replies are not on the feed, as in production). The now line and "today" follow the browser's clock in the team's zone.
+"Checked 2:40 PM" in Sources is the hour the server read the data (61501).
+Another coach's change to an event arrives on the realtime feed and re-reads the
+page; a player's reply shows on the next read (replies are not on the feed, as
+in production). The now line and "today" follow the browser's clock in the
+team's zone.
 
 | Bridge ID | Code | Name | Meaning |
 | --- | --- | --- | --- |
@@ -399,7 +512,11 @@ From the shell (P001): 11601 CH-1601, 11602 CH-1602, 11603 CH-1603,
 
 Status: DEFINED
 
-Calendar's own haptics (61701 to 61703) on the v2 grammar (D-70): selection for opening and choosing, the warning pattern for a form with a problem and for closing the editor with changes, success when a link is copied. Success on a landed change and error on a failed one come from the shell's save hook (60901). The shell's own are 11701 to 11706.
+Calendar's own haptics (61701 to 61703) on the v2 grammar (D-70): selection for
+opening and choosing, the warning pattern for a form with a problem and for
+closing the editor with changes, success when a link is copied. Success on a
+landed change and error on a failed one come from the shell's save hook (60901).
+The shell's own are 11701 to 11706.
 
 | Bridge ID | Code | Name | Meaning |
 | --- | --- | --- | --- |
@@ -415,7 +532,12 @@ From the shell (P001): 11701 CH-1701, 11702 CH-1702, 11703 CH-1703,
 
 Status: DEFINED
 
-Calendar's own (61801 to 61804): each event is a button named with its title and time and, when it has one, "schedule overlap"; the detail panel is a polite live region and form errors are tied to their field; changing the people filter is announced; axe runs at 1280 and 390 (`clubhouse:a11y`), with one known exception, the 7-day week at 390px, which the phone build replaces. The shell's skip link, landmarks and dialog behaviour (11801 to 11811).
+Calendar's own (61801 to 61804): each event is a button named with its title and
+time and, when it has one, "schedule overlap"; the detail panel is a polite live
+region and form errors are tied to their field; changing the people filter is
+announced; axe runs at 1280 and 390 (`clubhouse:a11y`), with one known
+exception, the 7-day week at 390px, which the phone build replaces. The shell's
+skip link, landmarks and dialog behaviour (11801 to 11811).
 
 CH-1804, 11805 CH-1805, 11806 CH-1806, 11807 CH-1807, 11808 CH-1808, 11809
 CH-1809, 11810 CH-1810, 11811 CH-1811, 11812 CH-1812, 11813 CH-1813, 11814
@@ -447,7 +569,13 @@ From the shell (P001): 11801 CH-1801, 11802 CH-1802, 11803 CH-1803,
 
 Status: DEFINED
 
-At 820px and below Calendar is the phone build (61901): Day with a week strip, the day's agenda, classes in their slots and the now line; Month as a compact grid (the arrows walk its days, Page Up and Down and a sideways swipe turn the month); List; an event opens in a sheet and New event is the full editor as a sheet. Below a 860px container the desktop reflows without a horizontal page scroll. The phone spec is `docs/clubhouse/phone/calendar.md` (approved, D-22); its differences from the board are Q-67.
+At 820px and below Calendar is the phone build (61901): Day with a week strip,
+the day's agenda, classes in their slots and the now line; Month as a compact
+grid (the arrows walk its days, Page Up and Down and a sideways swipe turn the
+month); List; an event opens in a sheet and New event is the full editor as a
+sheet. Below a 860px container the desktop reflows without a horizontal page
+scroll. The phone spec is `docs/clubhouse/phone/calendar.md` (approved, D-22);
+its differences from the board are Q-67.
 
 | Bridge ID | Code | Name | Meaning |
 | --- | --- | --- | --- |
@@ -459,7 +587,19 @@ From the shell (P001): 11901 PHONE_CHROME.
 
 Status: DEFINED
 
-On the desktop N opens New event (coach), T goes to today, the arrows step a day, week or month, and Esc closes the panel; none fires while typing or with a dialog open (62001). The arrows are not the page's while a control that uses them has focus (the View radios, a menu, the jump panel or the people picker), and a key a control already handled (a popover's Esc) is not also a shortcut. New event opens on its title field on the desktop; an edit and the phone open on the heading. The jump panel and the people picker take focus as they open and hand it back to their button on Esc, Close, Done or a pick. An event opened with Enter or Space takes focus to its panel's heading, and Esc or Back hands it back to the event (audit 2026-10-14, A-09 to A-25; calendar-keyboard-focus.test.tsx). The Find a time band moves a quarter hour with the left and right arrows and an hour with Shift (read in the code, not tested). The shell's edge swipe and browser back pop a pushed screen (12001).
+On the desktop N opens New event (coach), T goes to today, the arrows step a
+day, week or month, and Esc closes the panel; none fires while typing or with a
+dialog open (62001). The arrows are not the page's while a control that uses
+them has focus (the View radios, a menu, the jump panel or the people picker),
+and a key a control already handled (a popover's Esc) is not also a shortcut.
+New event opens on its title field on the desktop; an edit and the phone open on
+the heading. The jump panel and the people picker take focus as they open and
+hand it back to their button on Esc, Close, Done or a pick. An event opened with
+Enter or Space takes focus to its panel's heading, and Esc or Back hands it back
+to the event (audit 2026-10-14, A-09 to A-25; calendar-keyboard-focus.test.tsx).
+The Find a time band moves a quarter hour with the left and right arrows and an
+hour with Shift (read in the code, not tested). The shell's edge swipe and
+browser back pop a pushed screen (12001).
 
 | Bridge ID | Code | Name | Meaning |
 | --- | --- | --- | --- |
@@ -471,7 +611,11 @@ From the shell (P001): 12001 CH-1906, 12002 CH-1907, 12003 CH-1908.
 
 Status: DEFINED
 
-One loader for the whole screen, in three rounds of reads and no request from the browser at first paint (62101). The browser reads more only for the sections a person opens (calendar-app links, an event's files, the documents to attach, attendance), each once per opening. Web vitals are the shell's (12101). Not measured: layout shift, and the cost of drawing a busy month.
+One loader for the whole screen, in three rounds of reads and no request from
+the browser at first paint (62101). The browser reads more only for the sections
+a person opens (calendar-app links, an event's files, the documents to attach,
+attendance), each once per opening. Web vitals are the shell's (12101). Not
+measured: layout shift, and the cost of drawing a busy month.
 
 | Bridge ID | Code | Name | Meaning |
 | --- | --- | --- | --- |
@@ -483,7 +627,8 @@ From the shell (P001): 12101 CH-1954.
 
 Status: DEFINED
 
-The shell records rage, dead and slow clicks for every page (12201 to 12203). Calendar adds no events of its own.
+The shell records rage, dead and slow clicks for every page (12201 to 12203).
+Calendar adds no events of its own.
 
 From the shell (P001): 12201 CH-1951, 12202 CH-1952, 12203 CH-1953.
 
@@ -491,7 +636,10 @@ From the shell (P001): 12201 CH-1951, 12202 CH-1952, 12203 CH-1953.
 
 Status: DEFINED
 
-Loader reads log through `chLogServer("calendar", <read>)` and are named on the page; failed writes and sections are reported through `chReport` and each intent leaves a `chTrail` breadcrumb (62301). Handled failures are low severity and a crash is high.
+Loader reads log through `chLogServer("calendar", <read>)` and are named on the
+page; failed writes and sections are reported through `chReport` and each intent
+leaves a `chTrail` breadcrumb (62301). Handled failures are low severity and a
+crash is high.
 
 | Bridge ID | Code | Name | Meaning |
 | --- | --- | --- | --- |
@@ -503,7 +651,10 @@ From the shell (P001): 12301 FAILURES_REPORTED.
 
 Status: DEFINED
 
-Every catalog code of kinds 0 to 5 that is not marked preview is forced by a named test, and every hand contract on this page is named by its Bridge ID in a test title (62401). The calendar model (weeks, months, lanes, overlaps, open times) is checked in `logic.test.ts`.
+Every catalog code of kinds 0 to 5 that is not marked preview is forced by a
+named test, and every hand contract on this page is named by its Bridge ID in a
+test title (62401). The calendar model (weeks, months, lanes, overlaps, open
+times) is checked in `logic.test.ts`.
 
 | Bridge ID | Code | Name | Meaning |
 | --- | --- | --- | --- |

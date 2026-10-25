@@ -185,4 +185,47 @@ describe('GET /api/cron/coachhelm-calibration', () => {
     );
     expect(res.status).toBe(500);
   });
+
+  it('chunks the predictions lookup so 633 ids never build a URL PostgREST rejects (07cd1dea)', async () => {
+    // Production 2026-10-24 03:40Z: 633 validation ids in one `.in()` built a
+    // ~24 KB query string and PostgREST answered 400 "Bad Request" before
+    // Postgres saw it, failing the whole cron. Model that limit here.
+    const ids = Array.from({ length: 633 }, (_, i) => `p${i}`);
+    const validations: Validation[] = ids.map((id, i) => ({
+      prediction_id: id,
+      within_interval: i % 2 === 0,
+    }));
+    const inSizes: number[] = [];
+    const inMock = vi.fn((_col: string, chunk: string[]) => {
+      inSizes.push(chunk.length);
+      if (chunk.length > 200) {
+        return Promise.resolve({ data: null, error: { message: 'Bad Request', code: null } });
+      }
+      return Promise.resolve({
+        data: chunk.map((id) => ({ id, confidence: 0.85, metric: 'scoreToPar' })),
+        error: null,
+      });
+    });
+    const upsertSpy = vi.fn().mockResolvedValue({ error: null });
+    const supabase = buildSupabase({ validations, upsertSpy });
+    const original = (supabase as unknown as { from: (t: string) => unknown }).from;
+    (supabase as unknown as { from: (t: string) => unknown }).from = vi.fn((table: string) =>
+      table === 'golf_predictions'
+        ? { select: vi.fn().mockReturnValue({ in: inMock }) }
+        : original(table),
+    );
+    createAdminMock.mockReturnValueOnce(supabase);
+
+    const res = await GET(
+      new Request('http://x/api/cron/coachhelm-calibration', {
+        headers: { authorization: 'Bearer cs' },
+      }) as unknown as import('next/server').NextRequest,
+    );
+
+    expect(res.status).toBe(200);
+    const body = (await res.json()) as { totalValidations: number };
+    expect(body.totalValidations).toBe(633);
+    expect(Math.max(...inSizes)).toBeLessThanOrEqual(200);
+    expect(inSizes.reduce((a, b) => a + b, 0)).toBe(633);
+  });
 });

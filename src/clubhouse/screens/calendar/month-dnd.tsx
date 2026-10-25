@@ -41,6 +41,7 @@ import { barSpan, daysBetween, draggable, isBar, laneBars, moveSpan, type ChBarT
 import { addDays, dayNum, dowOf, fmtHour, isMajor, monthCells, monthName, type ChCalEvent } from './model';
 import { TYPE_ICON } from './type-icon';
 import { roundLabel, RoundTitle } from './round-label';
+import { markGlyph, useRowMark } from './change-note';
 import type { ChDragKind } from './use-time-drag';
 
 const DOW_LONG = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'] as const;
@@ -85,6 +86,7 @@ export function DndMonth({
   const cells = monthCells(anchor);
   const weeks = useMemo(() => Array.from({ length: cells.length / 7 }, (_, i) => cells.slice(i * 7, i * 7 + 7)), [cells]);
   const team = events.filter((e) => e.type !== 'class' && e.type !== 'busy');
+  const rowMark = useRowMark();
   const [focusDate, setFocusDate] = useState(() => (cells.some((c) => c.date === selDate) ? selDate : cells.find((c) => !c.out)!.date));
   const grid = useRef<HTMLDivElement | null>(null);
   const [active, setActive] = useState<{ e: ChCalEvent; ribbon: boolean } | null>(null);
@@ -144,7 +146,7 @@ export function DndMonth({
           <span key={d}>{d}</span>
         ))}
       </div>
-      <div className="ch-mo__grid" role="grid" aria-label={`${monthName(anchor)} ${anchor.slice(0, 4)}`} ref={grid} onKeyDown={gridKey}>
+      <div className="ch-mo__grid" role="grid" tabIndex={-1} aria-label={`${monthName(anchor)} ${anchor.slice(0, 4)}`} ref={grid} onKeyDown={gridKey}>
         {weeks.map((week) => {
           const dates = week.map((c) => c.date);
           const ribbons = laneBars(team, dates);
@@ -156,6 +158,8 @@ export function DndMonth({
                 const spanned = team.filter((e) => e.date === date && isBar(e)).length;
                 const shown = evs.slice(0, Math.max(0, 3 - lanes));
                 const hidden = evs.length - shown.length;
+                // P-14: a changed event wears a small glyph after its title (month cells are too small to read a struck value).
+                const changed = evs.filter((e) => rowMark(e)).length;
                 return (
                   <Cell key={date} date={date} over={over === date} drop={!!active}>
                     <div
@@ -167,7 +171,7 @@ export function DndMonth({
                         data-print-visible
                         className="ch-mo__n"
                         tabIndex={date === focusDate ? 0 : -1}
-                        aria-label={`${dowOf(date)} ${dayNum(date)} ${monthName(date)}: ${evs.length + spanned ? plural(evs.length + spanned, 'event') : 'no events'}`}
+                        aria-label={`${dowOf(date)} ${dayNum(date)} ${monthName(date)}: ${evs.length + spanned ? plural(evs.length + spanned, 'event') : 'no events'}${changed ? `, ${changed} changed` : ''}`}
                         aria-pressed={date === selDate}
                         onFocus={() => setFocusDate(date)}
                         onClick={() => {
@@ -274,6 +278,7 @@ function useMaybeDraggable(id: string, data: object, on: boolean) {
 
 function Chip({ e, tab, canDrag, onPick, lifted, onAltMove }: { e: ChCalEvent; tab: boolean; canDrag: boolean; onPick: () => void; lifted: boolean; onAltMove: (days: number) => void }) {
   const { setNodeRef, attributes, listeners } = useMaybeDraggable(`chip:${e.id}`, { e, ribbon: false }, canDrag);
+  const mk = useRowMark()(e);
   return (
     <button
       ref={setNodeRef}
@@ -283,8 +288,8 @@ function Chip({ e, tab, canDrag, onPick, lifted, onAltMove }: { e: ChCalEvent; t
       {...listeners}
       tabIndex={tab ? 0 : -1}
       aria-roledescription={canDrag ? 'draggable event' : undefined}
-      aria-label={`${roundLabel(e, e.title).name}${roundLabel(e, e.title).spoken}${e.allDay || e.start == null ? '' : `, ${fmtHour(e.start, true)}`}`}
-      className={'ch-mo__ev' + (isMajor(e.type) ? ` is-major is-${e.type}` : '') + (canDrag ? ' is-draggable' : '') + (lifted ? ' is-held' : '')}
+      aria-label={`${roundLabel(e, e.title).name}${roundLabel(e, e.title).spokenRound}${e.allDay || e.start == null ? '' : `, ${fmtHour(e.start, true)}`}${e.cancelled ? ', cancelled' : ''}${mk?.aria ?? ''}`}
+      className={'ch-mo__ev' + (isMajor(e.type) ? ` is-major is-${e.type}` : '') + (canDrag ? ' is-draggable' : '') + (lifted ? ' is-held' : '') + (e.cancelled ? ' is-cancelled' : '')}
       onKeyDown={(ev) => {
         if (canDrag && ev.altKey && (ev.key === 'ArrowLeft' || ev.key === 'ArrowRight')) {
           ev.preventDefault();
@@ -301,6 +306,7 @@ function Chip({ e, tab, canDrag, onPick, lifted, onAltMove }: { e: ChCalEvent; t
     >
       {isMajor(e.type) ? <Icon icon={TYPE_ICON[e.type]} size={11} /> : <i className={`ch-dot-${e.type}`} />}
       <RoundTitle e={e} title={e.title} />
+      {mk && !e.cancelled && <Icon icon={markGlyph(mk.change)} size={10} className="ch-mo__chg" />}
     </button>
   );
 }

@@ -25,6 +25,11 @@ import {
   UserMinus,
   Users,
   X,
+  ListChecks,
+  BellRing,
+  Lock,
+  Share,
+  CheckCheck,
 } from "lucide-react";
 import {
   useCallback,
@@ -70,6 +75,9 @@ import {
 import { AnnouncementPane, AnnouncementsSection } from "./announcements";
 import { isMessagesFirstRun, MessagesFirstRun } from "./MessagesFirstRun";
 import { fileMeta, useConversationFiles } from "./files";
+import { notePollHold, pollCardActions, PollThreadContext, type PollThreadActions } from "./polls";
+import { useSeenBy, useSeenByList } from "./seen-by";
+import { receiptCarrierId, seenByAccess, SEEN_BY_VISIBILITY } from "@/lib/golf/message-receipts";
 import {
   AddMembersModal,
   AttachButton,
@@ -388,6 +396,27 @@ function PhoneThread({
     setReplyToId(message.id);
     setActing(null);
   };
+  // P-1: the message that carries the receipt, and the Seen by sheet.
+  const carrierId = useMemo(
+    () => receiptCarrierId(api.msgs, { viewerId: api.viewer.userId, scope: conv.group && SEEN_BY_VISIBILITY === "everyone" ? "thread" : "mine" }),
+    [api.msgs, api.viewer.userId, conv.group],
+  );
+  const seenList = useSeenByList();
+  // A coach's own group run-ends keep room for the receipt's 44 px tap box (changelog P-01).
+  const seenListAccess = conv.group && seenByAccess(SEEN_BY_VISIBILITY, api.viewer.role, true).list;
+  // D30: Remind and Share result reply to the poll with a prefilled draft (the coach presses Send).
+  const [seed, setSeed] = useState<{ text: string; nonce: number } | null>(null);
+  const pollThread = useMemo<PollThreadActions>(
+    () => ({
+      replyWith: (messageId, text) => {
+        if (replySendingRef.current) return;
+        setReplyToId(messageId);
+        setActing(null);
+        setSeed({ text, nonce: Date.now() });
+      },
+    }),
+    [],
+  );
   useEffect(() => {
     if (replyToId && !acting) composerRef.current?.querySelector("textarea")?.focus();
   }, [replyToId, acting]);
@@ -419,7 +448,8 @@ function PhoneThread({
     }
   };
   return (
-    <PhoneScreen labelledBy={titleId} className="ch-msp-thread" keyboardAware covered={covered}>
+    <PollThreadContext.Provider value={pollThread}>
+    <PhoneScreen labelledBy={titleId} className={"ch-msp-thread" + (seenListAccess ? " is-seen-list" : "")} keyboardAware covered={covered}>
       <PhoneBar
         lead
         titleId={titleId}
@@ -486,8 +516,10 @@ function PhoneThread({
                           setPicking={() => {}}
                           onEdit={() => setEditing(it.m)}
                           onDelete={() => setDeleting(it.m)}
-                          onActions={it.m.deleted ? undefined : () => setActing(it.m)}
+                          onActions={it.m.deleted ? undefined : () => (notePollHold(), setActing(it.m))}
                           onReply={() => reply(it.m)}
+                          carrier={it.m.id === carrierId}
+                          onSeenBy={conv.group ? (m) => seenList.open(m, null) : undefined}
                         />,
                       ],
                 )}
@@ -523,6 +555,7 @@ function PhoneThread({
         replyToId={replyToId}
         onClearReply={() => setReplyToId(null)}
         onSendingChange={(sending) => { replySendingRef.current = sending; setReplySending(sending); }}
+        seed={seed}
       />
       </div>
 
@@ -533,6 +566,7 @@ function PhoneThread({
               {/* Whose it is, then when (wave 5 #20): in a group the time alone doesn't say. */}
               <span className="ch-ms-msg__t ch-num">
                 {acting.mine ? "You" : firstName(personOf(api, acting.senderId)?.name ?? "Member")} · {clock(acting.at, api.timeZone, api.clock)}
+                {conv.group && <ActingSeenMeta api={api} m={acting} />}
               </span>
               <p>{acting.text || (acting.hasAttachments ? "Attachment" : "Message")}</p>
             </div>
@@ -558,11 +592,13 @@ function PhoneThread({
               })}
             </div>
             <div className="ch-msp-panel">
+              {acting.poll && <PollSheetRows id={acting.id} done={() => setActing(null)} />}
               <SheetRow icon={Reply} label="Reply" disabled={replySending} onClick={() => reply(acting)} />
+              {conv.group && <SeenSheetRow api={api} m={acting} open={() => (setActing(null), seenList.open(acting, null))} />}
               {acting.text && (
-                <SheetRow icon={Copy} label="Copy" onClick={() => (setActing(null), void copy(acting))} />
+                <SheetRow icon={Copy} label={acting.poll ? "Copy poll" : "Copy"} onClick={() => (setActing(null), void copy(acting))} />
               )}
-              {acting.mine && acting.text && (
+              {acting.mine && acting.text && !acting.poll && (
                 <SheetRow icon={Pencil} label="Edit" onClick={() => (setActing(null), setEditing(acting))} />
               )}
               {acting.mine && (
@@ -574,7 +610,41 @@ function PhoneThread({
       </Modal>
       <EditMessageModal api={api} message={editing} onClose={() => setEditing(null)} />
       <DeleteMessageModal api={api} message={deleting} onClose={() => setDeleting(null)} />
+      {seenList.render(api, true)}
     </PhoneScreen>
+    </PollThreadContext.Provider>
+  );
+}
+
+/** P-1 slice 6: "Seen by 9 of 11" in the long-press sheet, for a coach, between Reply and Copy. */
+function SeenSheetRow({ api, m, open }: { api: ChMessagesApi; m: ChMsg; open: () => void }) {
+  const seen = useSeenBy(api, m);
+  if (!seen?.canOpen) return null;
+  return <SheetRow icon={CheckCheck} label={seen.label === "Sent" ? "Not seen yet" : seen.label} onClick={open} />;
+}
+
+/** P-1: a player under (a) sees the count of their own message in the sheet's preview line, never the list. */
+function ActingSeenMeta({ api, m }: { api: ChMessagesApi; m: ChMsg }) {
+  const seen = useSeenBy(api, m);
+  if (!seen || seen.canOpen) return null;
+  return <> · {seen.label}</>;
+}
+
+/** D26: a poll's own rows in the long-press sheet, from its card's live state: See votes, Remind, Close poll, Share result. */
+function PollSheetRows({ id, done }: { id: string; done: () => void }) {
+  const a = pollCardActions(id);
+  if (!a) return null;
+  const run = (f: () => void) => () => {
+    done();
+    f();
+  };
+  return (
+    <>
+      {a.seeVotes && <SheetRow icon={ListChecks} label="See votes" onClick={run(a.seeVotes)} />}
+      {a.remind && <SheetRow icon={BellRing} label={`Remind ${a.remind.count}`} onClick={run(a.remind.run)} />}
+      {a.close && <SheetRow icon={Lock} label="Close poll" onClick={run(a.close)} />}
+      {a.share && <SheetRow icon={Share} label="Share result" onClick={run(a.share)} />}
+    </>
   );
 }
 

@@ -45,6 +45,7 @@ import { normalise, useAction } from '../../lib/use-action';
 import { chReport, chTrail } from '../../lib/track';
 import { haptic } from '../../lib/haptics';
 import { useChClock } from '../../lib/use-clock';
+import { ChangeNote } from './change-note';
 import { restyleClock } from '../../lib/clock-format';
 import type { ChClock } from '../../lib/clock-cookie';
 import {
@@ -510,6 +511,8 @@ export function EventDetail({ ctx, id, date }: { ctx: InspCtx; id: string; date:
         {rl.name}
       </h2>
       </div>
+      {/* P-14: what changed, who and when, between the title and the facts. */}
+      <ChangeNote e={e} coach={coach && e.canEdit} />
       <div className="ch-in__facts">
         <Fact icon={Clock}>
           {e.span ? `${dowOf(e.span.from)} ${dayNum(e.span.from)} – ${dowOf(e.span.to)} ${dayNum(e.span.to)}` : dayLabel(e.date, ctx.now.date)}
