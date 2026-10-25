@@ -21,4 +21,11 @@ describe('the poll card styles', () => {
     expect(poll).toMatch(/border-bottom-right-radius: var\(--ch-radius-tail\);/);
     expect(poll).not.toMatch(/border-radius: 6px/);
   });
+
+  it('gives the poll card a real width in the desktop thread: the column has a width, the line stretches, the stack grows', () => {
+    expect(css).toMatch(/\.ch-ms-msg__col:has\(> \.ch-ms-msg__line \.ch-ms-poll\) \{\s*width: min\(460px, 78%\);/);
+    expect(css).toMatch(/\.ch-ms-msg__line:has\(> \.ch-ms-msg__stack \.ch-ms-poll\) \{\s*align-self: stretch;/);
+    expect(css).toMatch(/\.ch-ms-msg__stack:has\(> \.ch-ms-poll\) \{\s*flex: 1 1 0;\s*min-width: 0;/);
+    expect(css).toMatch(/\.ch-msp-thread \.ch-ms-msg__col:has\(> \.ch-ms-msg__line \.ch-ms-poll\) \{\s*width: min\(100%, 360px\);/);
+  });
 });

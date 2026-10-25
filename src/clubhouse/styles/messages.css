@@ -3439,7 +3439,23 @@ html[data-fw-theme='dark'] [data-ui='clubhouse'] .ch-ms-poll {
   --ch-poll-ring: var(--ch-green-600);
 }
 /* D2: on a phone a poll's column takes the card's width, not the 82% a bubble gets. */
+/* The card is an inline-size container, so its content gives its column no width, and a percentage width inside a
+   column that sizes to its content resolves against nothing: in the two-pane desktop thread the card collapsed to a
+   24px strip (the line shrank to its buttons, the stack to the line). The column carries a real width, the line
+   stretches to it, and the stack takes what the buttons leave, in every layout. The column is wider than the card so
+   the hover actions beside it never squeeze the card under its 360px. */
+.ch-ms-msg__col:has(> .ch-ms-msg__line .ch-ms-poll) {
+  width: min(460px, 78%);
+}
+.ch-ms-msg__line:has(> .ch-ms-msg__stack .ch-ms-poll) {
+  align-self: stretch;
+}
+.ch-ms-msg__stack:has(> .ch-ms-poll) {
+  flex: 1 1 0;
+  min-width: 0;
+}
 .ch-msp-thread .ch-ms-msg__col:has(> .ch-ms-msg__line .ch-ms-poll) {
+  width: min(100%, 360px);
   max-width: min(100%, 360px);
 }
 .ch-ms-msg.is-mine .ch-ms-poll {
