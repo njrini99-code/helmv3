@@ -1,6 +1,6 @@
 'use client';
 
-import { ChevronRight, CircleX, History, MapPin, MessageSquare, PenLine, RotateCcw, type LucideIcon } from 'lucide-react';
+import { ChevronRight, CircleX, History, MapPin, MessageSquare, Pencil, RotateCcw, type LucideIcon } from 'lucide-react';
 import { useRef, type ReactNode } from 'react';
 import { flushSync } from 'react-dom';
 import { Badge } from '../../ui/Badge';
@@ -32,7 +32,7 @@ export function markGlyph(change: Pick<ChCalChange, 'kind' | 'badge' | 'was'>): 
     case 'place':
       return MapPin;
     case 'rename':
-      return PenLine;
+      return Pencil;
     case 'restore':
       return RotateCcw;
     case 'cancel':
