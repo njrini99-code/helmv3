@@ -123,7 +123,7 @@ Every Bridge ID (D-68: namespace, two-digit category, two-digit item), its catal
 | P013 | 7 | 15 |  | 36 | 1 | 45 | 71 | 7 | 3 |  |  | 1 |  | 3 | 4 | 4 | 9 | 18 | 1 |  | 1 |  | 1 |  |  | 227 |
 | P014 | 1 | 3 | 4 | 7 | 11 | 10 | 4 | 2 | 4 |  | 2 | 1 | 1 | 1 | 1 | 4 | 3 | 8 | 1 | 1 |  |  |  |  |  | 69 |
 | P015 |  | 7 | 2 | 3 | 12 | 21 | 27 | 2 | 2 |  |  | 3 |  | 1 |  | 17 | 7 | 6 | 2 | 1 | 1 |  | 1 |  |  | 115 |
-| P016 |  | 1 |  | 12 |  | 10 |  |  |  | 1 |  |  |  |  |  | 1 |  | 1 |  |  |  |  |  |  |  | 26 |
+| P016 |  | 1 |  | 16 |  | 10 |  |  |  | 1 |  |  |  |  |  | 1 |  | 1 |  |  |  |  |  |  |  | 30 |
 
 ## P001 Shell
 
@@ -1886,7 +1886,7 @@ Every Bridge ID (D-68: namespace, two-digit category, two-digit item), its catal
 | Bridge ID | Code | Category | Name | Status | Meaning |
 | --- | --- | --- | --- | --- | --- |
 | 160201 | CH-16401 | 02 Initial loading / skeleton | `A_TOURNAMENTS_VIEW_IS_ON_ITS_WAY` | implemented | A Tournaments view is on its way (`load: 'loading'`) |
-| 160401 | CH-16301 | 04 Empty | `A_VIEW_ITS_LANE_HASNT_BUILT_YET` | implemented | A view its lane hasn't built yet (preview only: no route serves Tournaments yet) |
+| 160401 | CH-16301 | 04 Empty | `A_VIEW_ITS_LANE_HASNT_BUILT_YET` | implemented | A view its lane hasn't built yet (the event form, lineup builder, link inbox, live round and player view; their routes are wired and draw it with real data) |
 | 160402 | CH-16310 | 04 Empty | `HOME_NO_EVENT_IN_THE_SEASON_NOTHING` | implemented | Home: no event in the season, nothing failed |
 | 160403 | CH-16311 | 04 Empty | `THE_SEASON_LEDGER_THE_SEASON_HAS_NO` | implemented | The season ledger (Home, History): the season has no finished event yet |
 | 160404 | CH-16312 | 04 Empty | `HOME_NO_EVENT_IS_UPCOMING_OR_LIVE` | implemented | Home: no event is upcoming or live |
@@ -1898,6 +1898,10 @@ Every Bridge ID (D-68: namespace, two-digit category, two-digit item), its catal
 | 160410 | CH-16340 | 04 Empty | `HISTORY_NO_EVENT_IS_FINISHED` | implemented | History: no event is finished (the read worked) |
 | 160411 | CH-16350 | 04 Empty | `COMPARE_A_SIDE_SELECTS_NO_ROUNDS` | implemented | Compare: a side selects no rounds (a player with none in that context or period) |
 | 160412 | CH-16351 | 04 Empty | `COMPARE_THERE_ARE_NO_ROUNDS_AT_ALL` | implemented | Compare: there are no rounds at all (the read worked) |
+| 160413 | CH-16302 | 04 Empty | `A_TOURNAMENTS_ROUTE_OPENS_BEFORE_THE_HELD` | implemented | A Tournaments route opens before the held migrations are applied (a tournament table or RPC is missing: PGRST205, 42P01, PGRST202) |
+| 160414 | CH-16303 | 04 Empty | `A_TOURNAMENTS_ROUTE_SIGNED_IN_BUT_ON` | implemented | A Tournaments route, signed in but on no team |
+| 160415 | CH-16304 | 04 Empty | `AN_EVENT_ADDRESS_THAT_IS_NOT_THIS` | implemented | An event address that is not this team's (deleted, another team's, not an id) |
+| 160416 | CH-16305 | 04 Empty | `A_PLAYER_ON_A_COACHS_TOURNAMENTS_PAGE` | implemented | A player on a coach's Tournaments page (new or edit event, lineup, live, compare, history, link rounds) |
 | 160601 | CH-16201 | 06 Server / system error | `A_TOURNAMENTS_VIEWS_ONE_READ_FAILS` | implemented | A Tournaments view's one read fails (any view; `load: 'failed'`) |
 | 160602 | CH-16210 | 06 Server / system error | `HOME_THE_EVENTS_READ_FAILS_WHILE_THE` | implemented | Home: the events read fails while the page itself loads (`errors.events`) |
 | 160603 | CH-16220 | 06 Server / system error | `EVENT_DESK_HOLES_TAB_THE_SCORECARDS_READ` | implemented | Event desk, Holes tab: the scorecards read fails (`errors.holes`) |

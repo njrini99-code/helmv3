@@ -3,7 +3,7 @@
   "name": "Tournaments",
   "slug": "tournaments",
   "bridgeNamespace": 16,
-  "plannedRoutes": [
+  "routes": [
     "/golf/dashboard/tournaments",
     "/golf/dashboard/tournaments/new",
     "/golf/dashboard/tournaments/compare",
@@ -29,7 +29,7 @@
     "contract": "partial",
     "bridge": "reserved",
     "data": "held",
-    "verification": "not_started",
+    "verification": "partial",
     "docs": "current"
   },
   "design": {
@@ -57,7 +57,15 @@
       "src/clubhouse/styles/tournaments-compare.css",
       "src/clubhouse/styles/tournaments-lineup.css",
       "src/clubhouse/styles/tournaments-live.css",
-      "src/clubhouse/styles/tournaments-player.css"
+      "src/clubhouse/styles/tournaments-player.css",
+      "src/clubhouse/data/tournaments-shape.ts",
+      "src/lib/golf/tournaments-tables.ts",
+      "src/clubhouse/routes/tournaments.tsx",
+      "src/clubhouse/routes/tournaments-search.ts",
+      "src/clubhouse/screens/tournaments/TourNotice.tsx",
+      "src/clubhouse/screens/tournaments/TournamentsLoading.tsx",
+      "src/app/golf/actions/tournaments.ts",
+      "src/lib/golf/tournament-refusals.ts"
     ],
     "tests": [
       "src/clubhouse/__tests__/tournaments-views.test.tsx",
@@ -71,11 +79,185 @@
       "src/clubhouse/screens/tournaments/__tests__/use-changed-wash.test.tsx",
       "src/clubhouse/preview/__tests__/fixtures-tournaments.test.ts",
       "src/clubhouse/ui/__tests__/delta-chip.test.tsx",
-      "src/clubhouse/ui/__tests__/trust-chip.test.tsx"
-    ]
+      "src/clubhouse/ui/__tests__/trust-chip.test.tsx",
+      "src/clubhouse/__tests__/tournaments-wired.test.tsx",
+      "src/clubhouse/data/__tests__/tournaments-shape.test.ts",
+      "src/clubhouse/data/__tests__/tournaments.test.ts",
+      "src/app/golf/actions/__tests__/tournaments.test.ts",
+      "src/lib/golf/__tests__/tournament-refusals.test.ts"
+    ],
+    "loader": "src/clubhouse/data/tournaments.ts"
   },
   "catalog": "docs/clubhouse/catalog/tournaments.md",
-  "actions": [],
+  "actions": [
+    {
+      "id": "ACT-P016-CREATE",
+      "label": "Create a tournament",
+      "handler": "none yet (no screen calls it; the view is a placeholder or read-only)",
+      "service": "src/app/golf/actions/tournaments.ts#createTournament",
+      "data": [
+        "golf_tournaments",
+        "golf_tournament_rounds",
+        "golf_events",
+        "golf_tournament_field_teams",
+        "golf_tournament_advice_givers"
+      ],
+      "tests": [
+        "src/app/golf/actions/__tests__/tournaments.test.ts"
+      ]
+    },
+    {
+      "id": "ACT-P016-UPDATE",
+      "label": "Save an edited tournament",
+      "handler": "none yet (no screen calls it; the view is a placeholder or read-only)",
+      "service": "src/app/golf/actions/tournaments.ts#updateTournament",
+      "data": [
+        "golf_tournaments",
+        "golf_tournament_rounds",
+        "golf_events"
+      ],
+      "tests": [
+        "src/app/golf/actions/__tests__/tournaments.test.ts"
+      ]
+    },
+    {
+      "id": "ACT-P016-DELETE",
+      "label": "Delete a tournament",
+      "handler": "none yet (no screen calls it; the view is a placeholder or read-only)",
+      "service": "src/app/golf/actions/tournaments.ts#deleteTournament",
+      "data": [
+        "golf_tournaments",
+        "golf_events"
+      ],
+      "tests": [
+        "src/app/golf/actions/__tests__/tournaments.test.ts"
+      ]
+    },
+    {
+      "id": "ACT-P016-SET-ENTRIES",
+      "label": "Save the lineup",
+      "handler": "none yet (no screen calls it; the view is a placeholder or read-only)",
+      "service": "src/app/golf/actions/tournaments.ts#setTournamentEntries",
+      "data": [
+        "golf_tournament_entries",
+        "golf_tournament_entry_notes"
+      ],
+      "tests": [
+        "src/app/golf/actions/__tests__/tournaments.test.ts"
+      ]
+    },
+    {
+      "id": "ACT-P016-LOCK",
+      "label": "Lock the lineup",
+      "handler": "none yet (no screen calls it; the view is a placeholder or read-only)",
+      "service": "src/app/golf/actions/tournaments.ts#lockTournamentLineup",
+      "data": [
+        "golf_tournaments",
+        "golf_tournament_round_lineups"
+      ],
+      "tests": [
+        "src/app/golf/actions/__tests__/tournaments.test.ts"
+      ]
+    },
+    {
+      "id": "ACT-P016-SUBSTITUTE",
+      "label": "Substitute a player",
+      "handler": "none yet (no screen calls it; the view is a placeholder or read-only)",
+      "service": "src/app/golf/actions/tournaments.ts#substituteTournamentPlayer",
+      "data": [
+        "golf_tournament_round_lineups"
+      ],
+      "tests": [
+        "src/app/golf/actions/__tests__/tournaments.test.ts"
+      ]
+    },
+    {
+      "id": "ACT-P016-ROUND-STATUS",
+      "label": "Change a round’s status",
+      "handler": "none yet (no screen calls it; the view is a placeholder or read-only)",
+      "service": "src/app/golf/actions/tournaments.ts#setTournamentRoundStatus",
+      "data": [
+        "golf_tournament_rounds",
+        "golf_tournament_result_marks"
+      ],
+      "tests": [
+        "src/app/golf/actions/__tests__/tournaments.test.ts"
+      ]
+    },
+    {
+      "id": "ACT-P016-MARK",
+      "label": "Mark the result official or reopen it",
+      "handler": "none yet (no screen calls it; the view is a placeholder or read-only)",
+      "service": "src/app/golf/actions/tournaments.ts#markTournament",
+      "data": [
+        "golf_tournaments",
+        "golf_tournament_result_marks"
+      ],
+      "tests": [
+        "src/app/golf/actions/__tests__/tournaments.test.ts"
+      ]
+    },
+    {
+      "id": "ACT-P016-PUBLISH",
+      "label": "Publish the lineup",
+      "handler": "none yet (no screen calls it; the view is a placeholder or read-only)",
+      "service": "src/app/golf/actions/tournaments.ts#publishTournamentLineup",
+      "data": [
+        "golf_tournaments"
+      ],
+      "tests": [
+        "src/app/golf/actions/__tests__/tournaments.test.ts"
+      ]
+    },
+    {
+      "id": "ACT-P016-LINK-ROUND",
+      "label": "Link a GolfHelm round",
+      "handler": "none yet (no screen calls it; the view is a placeholder or read-only)",
+      "service": "src/app/golf/actions/tournaments.ts#linkTournamentRound",
+      "data": [
+        "golf_tournament_player_rounds"
+      ],
+      "tests": [
+        "src/app/golf/actions/__tests__/tournaments.test.ts"
+      ]
+    },
+    {
+      "id": "ACT-P016-ENTER-SCORE",
+      "label": "Enter a score",
+      "handler": "none yet (no screen calls it; the view is a placeholder or read-only)",
+      "service": "src/app/golf/actions/tournaments.ts#enterTournamentScore",
+      "data": [
+        "golf_tournament_player_rounds"
+      ],
+      "tests": [
+        "src/app/golf/actions/__tests__/tournaments.test.ts"
+      ]
+    },
+    {
+      "id": "ACT-P016-DISMISS-LINK",
+      "label": "Not a tournament round",
+      "handler": "none yet (no screen calls it; the view is a placeholder or read-only)",
+      "service": "src/app/golf/actions/tournaments.ts#dismissTournamentLink",
+      "data": [
+        "golf_tournament_link_dismissals"
+      ],
+      "tests": [
+        "src/app/golf/actions/__tests__/tournaments.test.ts"
+      ]
+    },
+    {
+      "id": "ACT-P016-SAVE-REVIEW",
+      "label": "Save the review",
+      "handler": "none yet (no screen calls it; the view is a placeholder or read-only)",
+      "service": "src/app/golf/actions/tournaments.ts#saveTournamentReview",
+      "data": [
+        "golf_tournament_reviews"
+      ],
+      "tests": [
+        "src/app/golf/actions/__tests__/tournaments.test.ts"
+      ]
+    }
+  ],
   "held": [
     "docs/clubhouse/held/data/tournaments.md",
     "docs/clubhouse/held/data/tournaments-rls.md",

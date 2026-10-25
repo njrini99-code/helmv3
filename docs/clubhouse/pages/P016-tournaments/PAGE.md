@@ -4,13 +4,15 @@ The coach's tournament workspace and the player's event view (plan: the Clubhous
 D-80 to D-101, approved by the owner 2026-10-23). One desk per event whose emphasis follows the week (prep, live,
 result, review), a season home, the comparison workspace, the lineup builder, the live round and the player's own view.
 
-Where it stands: **the base only**. Types (`screens/tournaments/types.ts`), the preview fixtures
-(`preview/fixtures-tournaments.ts`, from the design's `tour-data.js`), the shared primitives `ui/DeltaChip` and
-`ui/TrustChip`, the changed-wash hook, and every view as a placeholder that keeps its final props contract. The views
-are built in parallel lanes against that contract (`src/clubhouse/screens/tournaments/README.md`). Nothing is wired:
-there are no routes, loaders, actions or tables yet; the routes are listed as `plannedRoutes` in the manifest and the
-data is the held plan of section 11 (its own lane). The page renders in the preview only, at
-`/clubhouse-preview/tournaments` and `/clubhouse-preview/tournament-*`.
+Where it stands: **wired behind `golf_tournaments_v1`** (off in production). The
+nine routes, the loaders, the server actions and the nav entry are in
+(WIRING.md); held migration 3 (the RPCs and the lineup guard) is written. Built
+views: the season home, the event desk with its review, history and compare; the
+event form, lineup builder, link inbox, live round and player's view still draw
+their placeholders, now with real data. Until the owner applies the held
+migrations, every route says "Tournaments aren't set up yet" (CH-16302). The
+preview keeps every state at `/clubhouse-preview/tournaments` and
+`/clubhouse-preview/tournament-*`.
 
 Where it lives once wired (D-80): coach sidebar, Team group, after Qualifiers; a phone More row below Qualifiers; for
 players, the sidebar Team group, a More row and the Home "Up next" card.
@@ -24,7 +26,7 @@ players, the sidebar Team group, a More row and the Home "Up next" card.
 | Page docs | [PAGE](PAGE.md) · [DESIGN](DESIGN.md) · [CONTRACT](CONTRACT.md) · [WIRING](WIRING.md) · [VERIFY](VERIFY.md) · [CHANGELOG](CHANGELOG.md) |
 | State catalog | [catalog/tournaments.md](../../catalog/tournaments.md) |
 | Design boards | [Coach - Tournaments.html](../../../../design/handoff/Coach%20-%20Tournaments.html) · [Coach - Tournaments - Mobile.html](../../../../design/handoff/Coach%20-%20Tournaments%20-%20Mobile.html) |
-| Code | [tournaments](../../../../src/clubhouse/screens/tournaments) · [tournaments.css](../../../../src/clubhouse/styles/tournaments.css) · [types.ts](../../../../src/clubhouse/screens/tournaments/types.ts) · [README.md](../../../../src/clubhouse/screens/tournaments/README.md) · [fixtures-tournaments.ts](../../../../src/clubhouse/preview/fixtures-tournaments.ts) · [PreviewTournaments.tsx](../../../../src/clubhouse/preview/PreviewTournaments.tsx) · [DeltaChip.tsx](../../../../src/clubhouse/ui/DeltaChip.tsx) · [TrustChip.tsx](../../../../src/clubhouse/ui/TrustChip.tsx) · [tournaments-home.css](../../../../src/clubhouse/styles/tournaments-home.css) · [tournaments-desk.css](../../../../src/clubhouse/styles/tournaments-desk.css) · [tournaments-review.css](../../../../src/clubhouse/styles/tournaments-review.css) · [tournaments-compare.css](../../../../src/clubhouse/styles/tournaments-compare.css) · [tournaments-lineup.css](../../../../src/clubhouse/styles/tournaments-lineup.css) · [tournaments-live.css](../../../../src/clubhouse/styles/tournaments-live.css) · [tournaments-player.css](../../../../src/clubhouse/styles/tournaments-player.css) |
+| Code | [tournaments](../../../../src/clubhouse/screens/tournaments) · [tournaments.ts](../../../../src/clubhouse/data/tournaments.ts) · [tournaments.css](../../../../src/clubhouse/styles/tournaments.css) · [types.ts](../../../../src/clubhouse/screens/tournaments/types.ts) · [README.md](../../../../src/clubhouse/screens/tournaments/README.md) · [fixtures-tournaments.ts](../../../../src/clubhouse/preview/fixtures-tournaments.ts) · [PreviewTournaments.tsx](../../../../src/clubhouse/preview/PreviewTournaments.tsx) · [DeltaChip.tsx](../../../../src/clubhouse/ui/DeltaChip.tsx) · [TrustChip.tsx](../../../../src/clubhouse/ui/TrustChip.tsx) · [tournaments-home.css](../../../../src/clubhouse/styles/tournaments-home.css) · [tournaments-desk.css](../../../../src/clubhouse/styles/tournaments-desk.css) · [tournaments-review.css](../../../../src/clubhouse/styles/tournaments-review.css) · [tournaments-compare.css](../../../../src/clubhouse/styles/tournaments-compare.css) · [tournaments-lineup.css](../../../../src/clubhouse/styles/tournaments-lineup.css) · [tournaments-live.css](../../../../src/clubhouse/styles/tournaments-live.css) · [tournaments-player.css](../../../../src/clubhouse/styles/tournaments-player.css) · [tournaments-shape.ts](../../../../src/clubhouse/data/tournaments-shape.ts) · [tournaments-tables.ts](../../../../src/lib/golf/tournaments-tables.ts) · [tournaments.tsx](../../../../src/clubhouse/routes/tournaments.tsx) · [tournaments-search.ts](../../../../src/clubhouse/routes/tournaments-search.ts) · [TourNotice.tsx](../../../../src/clubhouse/screens/tournaments/TourNotice.tsx) · [TournamentsLoading.tsx](../../../../src/clubhouse/screens/tournaments/TournamentsLoading.tsx) · [tournaments.ts](../../../../src/app/golf/actions/tournaments.ts) · [tournament-refusals.ts](../../../../src/lib/golf/tournament-refusals.ts) |
 | Held plans | [tournaments.md](../../held/data/tournaments.md) · [tournaments-rls.md](../../held/data/tournaments-rls.md) · [tournaments-rpcs.md](../../held/data/tournaments-rpcs.md) |
 | Audits | [all audits](../../AUDITS.md) |
 | Tracker | [PROGRESS.md](../../PROGRESS.md), row "Tournaments" |

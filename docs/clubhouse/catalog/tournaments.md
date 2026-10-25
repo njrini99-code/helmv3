@@ -1,9 +1,10 @@
 # Tournaments catalog (16xxx)
 
 Page P016 (`config/clubhouse/pages/P016-tournaments.json`; plan: the handoff's
-section 4.33). Routes, once wired (Phase 7, behind `golf_tournaments_v1`):
-`/golf/dashboard/tournaments` and its children in plan 14.1. Until then every
-view renders in the preview only (`/clubhouse-preview/tournament*`).
+section 4.33). Routes, wired 2026-10-25 behind `golf_tournaments_v1` (off in
+production): `/golf/dashboard/tournaments` and its children in plan 14.1; the
+preview (`/clubhouse-preview/tournament*`) keeps drawing every state from
+fixtures.
 
 Numbers are `CH-16` + the kind digit + a two-digit serial. Several lanes build
 this page in parallel, so each owns a serial range in every kind and never
@@ -57,7 +58,11 @@ sync` mints its Bridge ID.
 
 | # | When | They see | How | Test |
 | --- | --- | --- | --- | --- |
-| CH-16301 | A view its lane hasn't built yet (preview only: no route serves Tournaments yet) | The view's head, then "[View] isn’t built yet", one line read from the view's data, and "Its data, types and preview states are ready." It goes when the last placeholder does | `TourPlaceholder` | tournaments/views.test › CH-16301 |
+| CH-16301 | A view its lane hasn't built yet (the event form, lineup builder, link inbox, live round and player view; their routes are wired and draw it with real data) | The view's head, then "[View] isn’t built yet", one line read from the view's data, and "Its data, types and preview states are ready." It goes when the last placeholder does | `TourPlaceholder` | tournaments/views.test › CH-16301 |
+| CH-16302 | A Tournaments route opens before the held migrations are applied (a tournament table or RPC is missing: PGRST205, 42P01, PGRST202) | The head, then "Tournaments aren’t set up yet" + (coach) "Your events, lineups and results show here once Tournaments is set up for your team. Nothing is missing: there is nothing saved here yet." (player) "Your team’s events show here once your coach’s Tournaments is set up." Never an empty season, never a crash | `TourNotice kind="not_set_up"`, from every loader's `not_set_up` (`data/tournaments.ts`) | tournaments-wired.test › CH-16302 |
+| CH-16303 | A Tournaments route, signed in but on no team | "You aren’t on a team yet" + "Tournaments fill in once your team is set up." (a player: "…once a coach adds you to a team roster.") | `TourNotice kind="no_team"` in `routes/tournaments.tsx` | tournaments-wired.test › CH-16303 |
+| CH-16304 | An event address that is not this team's (deleted, another team's, not an id) | "That event isn’t on your team" + "It may have been deleted, or the link is from another team." + Back to tournaments | `TourNotice kind="not_found"` | tournaments-wired.test › CH-16304 |
+| CH-16305 | A player on a coach's Tournaments page (new or edit event, lineup, live, compare, history, link rounds) | "Only coaches open this page" + "You can see your team’s events and your own results in Tournaments." + See your tournaments | `TourNotice kind="coach_only"` | tournaments-wired.test › CH-16305 |
 | CH-16310 | Home: no event in the season, nothing failed | The head (without Add event), then "No tournaments yet" + "Add your first event to see who counted, how the team finished and how it compares with qualifying and last season." + Add event (the page's one primary) | `EmptyState size="page"` in `TournamentsHome` | tournaments-home.test › CH-16310 |
 | CH-16311 | The season ledger (Home, History): the season has no finished event yet | Under the season's heading, one line: "No finished events yet" + "Results show here once an event is complete." A past season with none is left out | `EmptyState compact` in `SeasonLedger` | tournaments-home.test › CH-16311 |
 | CH-16312 | Home: no event is upcoming or live | In place of the next-event card, one line: "Nothing on the calendar" + "Add an event and it shows here with its lineup and travel." | `EmptyState compact` in `TournamentsHome` | tournaments-home.test › CH-16312 |
