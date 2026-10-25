@@ -4052,6 +4052,10 @@
         "definedIn": "supabase/migrations/20261025010000_golf_conversation_read_marks.sql"
       },
       {
+        "id": "golf_holes_recompute_round_totals_fn",
+        "definedIn": "supabase/migrations/20261023152000_round_save_one_totals_write.sql"
+      },
+      {
         "id": "golf_import_player_classes",
         "definedIn": "supabase/migrations/20261021110000_golf_import_player_classes.sql"
       },

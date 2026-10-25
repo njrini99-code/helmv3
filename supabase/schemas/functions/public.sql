@@ -4840,6 +4840,18 @@ CREATE OR REPLACE FUNCTION "public"."golf_holes_recompute_round_totals_fn"() RET
 DECLARE
   v_round uuid;
 BEGIN
+  -- A round RPC is rewriting this round's holes and recomputes the totals
+  -- once after its last hole write. Note that a hole changed and skip the
+  -- per-row write. See 20261023152000_round_save_one_totals_write.sql.
+  IF current_setting('helm.defer_round_totals', true) IN ('on', 'dirty') THEN
+    PERFORM set_config('helm.defer_round_totals', 'dirty', true);
+    IF TG_OP = 'DELETE' THEN
+      RETURN OLD;
+    ELSE
+      RETURN NEW;
+    END IF;
+  END IF;
+
   IF TG_OP = 'DELETE' THEN
     v_round := OLD.round_id;
   ELSE
@@ -9677,6 +9689,9 @@ BEGIN
     AND player_id = v_player_id;
 
   PERFORM helm_private.trace_checkpoint('db.save_partial_round_atomic.replace_snapshot', 'db.save_partial_round_atomic', 'before', 'started', jsonb_build_object('tables', jsonb_build_array('golf_shots', 'golf_holes')));
+  -- One totals write after the hole rewrite, not one per hole row
+  -- (20261023152000_round_save_one_totals_write.sql).
+  PERFORM set_config('helm.defer_round_totals', 'on', true);
   DELETE FROM golf_shots WHERE round_id = p_round_id;
   DELETE FROM golf_holes WHERE round_id = p_round_id;
 
@@ -9708,6 +9723,13 @@ BEGIN
         'hole_number', v_hole_number
       );
     END LOOP;
+  END IF;
+
+  IF current_setting('helm.defer_round_totals', true) = 'dirty' THEN
+    PERFORM set_config('helm.defer_round_totals', 'off', true);
+    PERFORM public.recompute_golf_round_totals(p_round_id);
+  ELSE
+    PERFORM set_config('helm.defer_round_totals', 'off', true);
   END IF;
 
   PERFORM helm_private.trace_checkpoint('db.save_partial_round_atomic.insert_shots', 'db.save_partial_round_atomic', 'before', 'started', jsonb_build_object('shot_groups', coalesce(jsonb_array_length(p_shots), 0)));
@@ -10979,6 +11001,9 @@ BEGIN
   WHERE id = p_round_id AND player_id = v_player_id;
 
   PERFORM helm_private.trace_checkpoint('db.submit_round_atomic.replace_snapshot', 'db.submit_round_atomic', 'before', 'started', jsonb_build_object('tables', jsonb_build_array('golf_shots', 'golf_holes')));
+  -- One totals write after the hole rewrite, not one per hole row
+  -- (20261023152000_round_save_one_totals_write.sql).
+  PERFORM set_config('helm.defer_round_totals', 'on', true);
   DELETE FROM golf_shots WHERE round_id = p_round_id;
   DELETE FROM golf_holes WHERE round_id = p_round_id;
 
@@ -11007,6 +11032,13 @@ BEGIN
 
       v_inserted_holes := v_inserted_holes || jsonb_build_object('hole_id', v_hole_id, 'hole_number', v_hole_number);
     END LOOP;
+  END IF;
+
+  IF current_setting('helm.defer_round_totals', true) = 'dirty' THEN
+    PERFORM set_config('helm.defer_round_totals', 'off', true);
+    PERFORM public.recompute_golf_round_totals(p_round_id);
+  ELSE
+    PERFORM set_config('helm.defer_round_totals', 'off', true);
   END IF;
 
   PERFORM helm_private.trace_checkpoint('db.submit_round_atomic.insert_shots', 'db.submit_round_atomic', 'before', 'started', jsonb_build_object('shot_groups', coalesce(jsonb_array_length(p_shots), 0)));
