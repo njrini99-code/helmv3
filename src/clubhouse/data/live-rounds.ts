@@ -86,8 +86,9 @@ export async function loadOwnLegs(input: { roundId: string; playerId: string; ro
       supabase.from('golf_holes').select('round_id, hole_number, par, yardage, gir, score, putts, fairway_hit, sand_save, penalty_strokes').eq('round_id', input.roundId).limit(40),
       supabase.rpc('sg_scale_for_player', { p_player_id: input.playerId }),
     ]);
-    if (shots.error || holes.error) {
-      chLogServer('live', 'ownLegs', shots.error ?? holes.error ?? new Error('own legs read failed'));
+    // A scale that failed to read would put the figure on a different footing from the stats pages, so it hides the grid too.
+    if (shots.error || holes.error || scale.error) {
+      chLogServer('live', 'ownLegs', shots.error ?? holes.error ?? scale.error ?? new Error('own legs read failed'));
       return null;
     }
     if (!shots.data?.length) return null;

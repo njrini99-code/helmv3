@@ -7,7 +7,7 @@
 -- Lock: CREATE TRIGGER takes SHARE ROW EXCLUSIVE on golf_holes and golf_rounds and waits for in-flight saves; lock_timeout 3s makes it fail fast instead of queueing saves. Apply outside a qualifier day.
 -- ORDER: after 20260820170000 and 20260825052141. Before 20261025050100 and 20261025050200. Independent of 4.33's 20261024100500.
 -- Desired schema: mirrored by hand in supabase/schemas (golf/10_tables, 20_constraints, 30_indexes, 90_comments, 95_grants; policies/golf and rls_enable; functions/helm_private, public and 95_grants; triggers/golf). Check with supabase db diff.
--- squawk: integer and smallint columns are deliberate (a hole number, a stroke count, a position; at most 18 per round), so each carries a squawk-ignore line (predicted, not run; CI squawk-cli 2.64.0).
+-- squawk: integer and smallint columns are deliberate (a hole number, a stroke count, a position; at most 18 per round), so each carries an ignore comment for the rule (predicted, not run; CI squawk-cli 2.64.0).
 -- VERIFY: select 1 where to_regclass('public.golf_round_live') is not null and to_regclass('public.golf_round_live_prefs') is not null;
 -- VERIFY: select 1 where (select count(*) from pg_trigger where tgname in ('golf_holes_round_live','golf_rounds_round_live_ins','golf_rounds_round_live_upd') and tgdeferrable and tginitdeferred) = 3;
 -- VERIFY: select 1 where (select count(*) from pg_trigger where tgname = 'golf_rounds_round_live_gone') = 1;

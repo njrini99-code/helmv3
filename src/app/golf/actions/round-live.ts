@@ -4,7 +4,7 @@ import { createClient } from '@/lib/supabase/server';
 import { withAdminObserved } from '@/lib/admin/observed-action';
 import { logServerError } from '@/lib/server-error-logger';
 import { describeError } from '@/lib/utils/describe-error';
-import { fromUntyped } from '@/lib/supabase/untyped';
+import { liveTable } from '@/lib/supabase/query-shape';
 import { isLiveShareLevel, liveShareFailureFromError, liveShareFailureFromReason, type LiveShareFailure, type LiveShareLevel } from './round-live-errors';
 
 /**
@@ -97,7 +97,7 @@ async function setLivePrefsImpl(prefs: { practiceShare: LiveShareLevel }): Promi
     if (userError || !user) return fail(liveShareFailureFromReason(undefined));
     const { data: player, error: playerError } = await supabase.from('golf_players').select('id').eq('user_id', user.id).maybeSingle();
     if (playerError || !player) return fail(liveShareFailureFromReason('not_found'));
-    const { error } = await fromUntyped(supabase, 'golf_round_live_prefs').upsert(
+    const { error } = await liveTable(supabase, 'golf_round_live_prefs').upsert(
       { player_id: player.id, practice_share: prefs.practiceShare, updated_at: new Date().toISOString() },
       { onConflict: 'player_id' },
     );
