@@ -5185,8 +5185,11 @@ html[data-fw-theme='dark'] .ch-rv .ch-rv-yn.is-y {
   font: var(--ch-type-12-medium);
   color: var(--ch-text-secondary);
 }
+.ch-ch-note__b {
+  margin-top: 4px;
+}
 .ch-ch-note p {
-  margin: 4px 0 0;
+  margin: 0;
   font: var(--ch-type-16);
   letter-spacing: var(--ch-track-16);
   color: var(--ch-text-primary);
@@ -5361,6 +5364,10 @@ a.ch-rd-grp__h.is-link:focus-visible {
   background: var(--ch-hm-level);
   color: var(--ch-ink-900);
   font: var(--ch-type-13);
+  /* M5: a new window re-tints the tiles. */
+  transition:
+    background-color var(--ch-dur-base) var(--ch-ease),
+    border-color var(--ch-dur-base) var(--ch-ease);
 }
 @media (min-width: 414px) {
   .ch-hmap-t {
@@ -5414,8 +5421,8 @@ a.ch-rd-grp__h.is-link:focus-visible {
   line-height: var(--ch-lead-tight);
   letter-spacing: var(--ch-track-11);
 }
-.ch-hmap-t.is-sel::after {
-  content: '';
+/* M1: the ring is a span inside the picked tile; it slides from the tile it left (useSlidePlate in HoleMap). */
+.ch-hmap-sel {
   position: absolute;
   inset: -4px;
   border: 2px solid var(--ch-green-600);
@@ -5501,6 +5508,9 @@ a.ch-rd-grp__h.is-link:focus-visible {
   border-radius: 50%;
   background: var(--ch-hm-level);
   vertical-align: middle;
+  transition:
+    background-color var(--ch-dur-base) var(--ch-ease),
+    border-color var(--ch-dur-base) var(--ch-ease);
 }
 .ch-hmap-list__dot.is-u1,
 .ch-hmap-list__dot.is-u2 {
@@ -5714,6 +5724,9 @@ button.ch-hip__row:focus-visible,
   color: var(--ch-text-secondary);
 }
 .ch-cmp-row__c {
+  transition:
+    background-color var(--ch-dur-quick) var(--ch-ease),
+    border-color var(--ch-dur-quick) var(--ch-ease);
   display: grid;
   place-items: center;
   width: 22px;
@@ -5729,6 +5742,70 @@ button.ch-hip__row:focus-visible,
 }
 .ch-cmp-row.is-off {
   opacity: 0.5;
+}
+
+/* P-7 5.1 (M4, M8, M9): the course page's CSS fades, all opacity over the quick beat. OS Reduce Motion does not zero the
+   Clubhouse durations (only [data-motion='off'] does), so each has its own override below. */
+@keyframes ch-course-fade {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+/* M4: the view the Map / List switch brings in fades in; set only once the reader has switched (never on first paint). */
+.ch-hmap-sec[data-swapped] .ch-hmap-mapv,
+.ch-hmap-sec[data-swapped] .ch-hmap-listv {
+  animation: ch-course-fade var(--ch-dur-quick) var(--ch-ease);
+}
+/* M9: the compare rows' circles fade in with the list, and a tick as it is chosen. */
+.ch-cmp-row__c,
+.ch-cmp-row__c > svg {
+  animation: ch-course-fade var(--ch-dur-quick) var(--ch-ease);
+}
+/* M8: the best and last overlays fade, they do not pop. */
+.ch-carc__ov {
+  opacity: 1;
+  transition: opacity var(--ch-dur-quick) var(--ch-ease);
+}
+.ch-carc__ov.is-off {
+  opacity: 0;
+  pointer-events: none;
+}
+@media (prefers-reduced-motion: reduce) {
+  .ch-hmap-t,
+  .ch-hmap-list__dot,
+  .ch-cmp-row__c,
+  .ch-carc__ov {
+    transition: none;
+  }
+  .ch-hmap-sec[data-swapped] .ch-hmap-mapv,
+  .ch-hmap-sec[data-swapped] .ch-hmap-listv,
+  .ch-cmp-row__c,
+  .ch-cmp-row__c > svg {
+    animation: none;
+  }
+}
+[data-ui='clubhouse'][data-motion='off'] .ch-hmap-t,
+[data-motion='off'] [data-ui='clubhouse'] .ch-hmap-t,
+[data-ui='clubhouse'][data-motion='off'] .ch-hmap-list__dot,
+[data-motion='off'] [data-ui='clubhouse'] .ch-hmap-list__dot,
+[data-ui='clubhouse'][data-motion='off'] .ch-cmp-row__c,
+[data-motion='off'] [data-ui='clubhouse'] .ch-cmp-row__c,
+[data-ui='clubhouse'][data-motion='off'] .ch-carc__ov,
+[data-motion='off'] [data-ui='clubhouse'] .ch-carc__ov {
+  transition: none;
+}
+[data-ui='clubhouse'][data-motion='off'] .ch-hmap-sec[data-swapped] .ch-hmap-mapv,
+[data-motion='off'] [data-ui='clubhouse'] .ch-hmap-sec[data-swapped] .ch-hmap-mapv,
+[data-ui='clubhouse'][data-motion='off'] .ch-hmap-sec[data-swapped] .ch-hmap-listv,
+[data-motion='off'] [data-ui='clubhouse'] .ch-hmap-sec[data-swapped] .ch-hmap-listv,
+[data-ui='clubhouse'][data-motion='off'] .ch-cmp-row__c,
+[data-motion='off'] [data-ui='clubhouse'] .ch-cmp-row__c,
+[data-ui='clubhouse'][data-motion='off'] .ch-cmp-row__c > svg,
+[data-motion='off'] [data-ui='clubhouse'] .ch-cmp-row__c > svg {
+  animation: none;
 }
 .ch-cmp-bar {
   position: fixed;

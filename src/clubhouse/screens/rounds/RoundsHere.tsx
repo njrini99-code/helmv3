@@ -1,5 +1,6 @@
 'use client';
 
+import { AnimatePresence, m } from 'motion/react';
 import { useMemo, useState } from 'react';
 import { Check } from 'lucide-react';
 import type { ChCompareCard } from '../../data/compare-rounds';
@@ -7,6 +8,8 @@ import { compareRounds } from '../../data/compare-rounds';
 import { shortDate } from '../../data/course-page-shape';
 import type { ChLibraryRound } from '../../data/rounds-shape';
 import { haptic } from '../../lib/haptics';
+import { chSpring } from '../../lib/motion';
+import { useChReducedMotion } from '../../lib/reduced-motion';
 import { Button } from '../../ui/Button';
 import { Icon } from '../../ui/Icon';
 import { Modal } from '../../ui/Modal';
@@ -16,6 +19,8 @@ import { RoundRow } from './parts';
 /**
  * P-7 4.2.7: the player's rounds at the course, newest first, each opening its review; and Compare, which picks two
  * 18-hole rounds with every hole and lays them over each other (CH-11530). A round that can't be compared says why.
+ * M9: the compare bar rises from the bottom edge on the smooth spring and leaves the same way; the row circles fade in
+ * (CSS, rounds.css). Reduced motion and Animations off show the bar at once, without the translate.
  */
 
 const reviewHref = (id: string) => `/golf/dashboard/rounds/${id}`;
@@ -24,6 +29,7 @@ export function RoundsHere({ rounds, cards, title }: { rounds: ChLibraryRound[];
   const [comparing, setComparing] = useState(false);
   const [picked, setPicked] = useState<string[]>([]);
   const [open, setOpen] = useState(false);
+  const reduced = useChReducedMotion();
   const canCompare = Object.keys(cards).length >= 2;
   const toggle = (id: string) => {
     haptic('select');
@@ -81,25 +87,36 @@ export function RoundsHere({ rounds, cards, title }: { rounds: ChLibraryRound[];
           ))}
         </div>
       )}
-      {comparing && (
-        <div className="ch-cmp-bar" role="region" aria-label="Compare">
-          <span className="ch-sr-only" aria-live="polite">
-            {picked.length === 2 ? '2 chosen' : `${picked.length} of 2 chosen`}
-          </span>
-          {pair ? (
-            <Button
-              variant="primary"
-              onClick={() => {
-                setOpen(true);
-              }}
-            >
-              Compare {shortDate(pair[0].date)} and {shortDate(pair[1].date)}
-            </Button>
-          ) : (
-            <span className="ch-cmp-bar__t">Choose two rounds</span>
-          )}
-        </div>
-      )}
+      <AnimatePresence>
+        {comparing && (
+          <m.div
+            key="bar"
+            className="ch-cmp-bar"
+            role="region"
+            aria-label="Compare"
+            initial={reduced ? false : { transform: 'translateY(100%)' }}
+            animate={{ transform: 'translateY(0%)' }}
+            exit={reduced ? undefined : { transform: 'translateY(100%)' }}
+            transition={chSpring('smooth', reduced)}
+          >
+            <span className="ch-sr-only" aria-live="polite">
+              {picked.length === 2 ? '2 chosen' : `${picked.length} of 2 chosen`}
+            </span>
+            {pair ? (
+              <Button
+                variant="primary"
+                onClick={() => {
+                  setOpen(true);
+                }}
+              >
+                Compare {shortDate(pair[0].date)} and {shortDate(pair[1].date)}
+              </Button>
+            ) : (
+              <span className="ch-cmp-bar__t">Choose two rounds</span>
+            )}
+          </m.div>
+        )}
+      </AnimatePresence>
       {pair && <CompareSheet open={open} onClose={() => setOpen(false)} a={pair[0]} b={pair[1]} />}
     </section>
   );

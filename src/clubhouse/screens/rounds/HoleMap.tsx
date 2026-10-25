@@ -1,15 +1,19 @@
 'use client';
 
 import Link from 'next/link';
+import { m } from 'motion/react';
 import { useEffect, useRef, useState, type KeyboardEvent, type PointerEvent } from 'react';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { avgToPar, shortDate, type ChCourseHole } from '../../data/course-page-shape';
 import { haptic, hapticScrub } from '../../lib/haptics';
+import { useChReducedMotion } from '../../lib/reduced-motion';
+import { useSlidePlate } from '../../lib/slide-plate';
 import { formatFixed, formatToPar } from '../../lib/format';
 import { plural } from '../../lib/plural';
 import { Icon } from '../../ui/Icon';
 import { ScoreMark } from '../../ui/ScoreMark';
 import { Segmented } from '../../ui/Segmented';
+import { FadeNum, useFadeOnChange } from './course-motion';
 
 /**
  * P-7 4.2.4: the course hole by hole. A map of 18 tiles, Out over In, tinted by the player's average to par there (D-42:
@@ -75,6 +79,11 @@ export function HoleMap({ holes, selected, onSelect, coverage, sample }: { holes
   const [view, setView] = useState<'map' | 'list'>('map');
   const [fits, setFits] = useState(true);
   const [allPlays, setAllPlays] = useState(false);
+  // M4: the views fade once the reader has switched them (CSS, [data-swapped]); never on first paint.
+  const [swapped, setSwapped] = useState(false);
+  // M3: the hole a scrub began on. While a finger scrubs, the detail panel keeps its fade key, so it updates in place and fades once on release (M2).
+  const [scrubFrom, setScrubFrom] = useState<number | null>(null);
+  const reduced = useChReducedMotion();
   const group = useRef<HTMLDivElement>(null);
   const root = useRef<HTMLElement>(null);
   const scrub = useRef<{ active: boolean; last: number; at: number }>({
@@ -84,6 +93,9 @@ export function HoleMap({ holes, selected, onSelect, coverage, sample }: { holes
   });
   const gain = mostToGain(holes);
   const hole = holes.find((h) => h.n === selected) ?? holes[0]!;
+  // M1: the 2 px selection ring settles from the tile it left to the one picked, on the compositor (lib/slide-plate.ts, which replaced layoutId here and elsewhere).
+  useSlidePlate(group, '[data-hole][aria-checked="true"] > .ch-hmap-sel', selected, { reduced, still: () => !group.current?.offsetWidth });
+  const panelFade = useFadeOnChange(scrubFrom ?? hole.n, reduced);
 
   // The CSS container query decides the first paint; this mirrors it to the switch as the width or the text size changes.
   useEffect(() => {
@@ -139,6 +151,7 @@ export function HoleMap({ holes, selected, onSelect, coverage, sample }: { holes
     const n = nearest(e);
     if (n == null) return;
     scrub.current = { active: true, last: n, at: e.timeStamp };
+    setScrubFrom(selected);
     hapticScrub('start');
     pick(n);
   };
@@ -156,6 +169,7 @@ export function HoleMap({ holes, selected, onSelect, coverage, sample }: { holes
   const onUp = () => {
     if (!scrub.current.active) return;
     scrub.current.active = false;
+    setScrubFrom(null);
     hapticScrub('end');
   };
   const step = (d: 1 | -1) => {
@@ -184,9 +198,10 @@ export function HoleMap({ holes, selected, onSelect, coverage, sample }: { holes
       >
         <span className="ch-hmap-t__n ch-num">{h.n}</span>
         <b>
-          <span className="ch-num">{s.n === 0 ? '–' : s.n === 1 ? formatToPar(s.avg as number) : avgWords(s.avg as number)}</span>
+          <FadeNum className="ch-num" text={s.n === 0 ? '–' : s.n === 1 ? formatToPar(s.avg as number) : avgWords(s.avg as number)} />
         </b>
         <span className="ch-hmap-t__p ch-num">{h.par != null ? `P${h.par}` : ''}</span>
+        {on && <span className="ch-hmap-sel" aria-hidden="true" />}
       </button>
     );
   };
@@ -196,7 +211,7 @@ export function HoleMap({ holes, selected, onSelect, coverage, sample }: { holes
   const reviewAt = (roundId: string) => `/golf/dashboard/rounds/${roundId}?hole=${hole.n}`;
 
   return (
-    <section ref={root} className="ch-ch-sec ch-hmap-sec" data-view={fits ? view : 'list'} aria-labelledby="ch-hmap-h">
+    <section ref={root} className="ch-ch-sec ch-hmap-sec" data-view={fits ? view : 'list'} data-swapped={swapped ? '' : undefined} aria-labelledby="ch-hmap-h">
       <div className="ch-ch-sec__h">
         <h2 id="ch-hmap-h">Hole by hole</h2>
         <div className="ch-hmap-switch">
@@ -206,6 +221,7 @@ export function HoleMap({ holes, selected, onSelect, coverage, sample }: { holes
             value={fits ? view : 'list'}
             onChange={(v) => {
               haptic('select');
+              setSwapped(true);
               setView(v);
             }}
             options={[
@@ -265,7 +281,7 @@ export function HoleMap({ holes, selected, onSelect, coverage, sample }: { holes
                 <td className="ch-num">{h.par ?? '–'}</td>
                 <td className="ch-num">
                   <i className={`ch-hmap-list__dot is-${h.stats.tint}`} aria-hidden="true" />
-                  {h.stats.n === 0 ? 'Not played' : avgWords(h.stats.avg as number)}
+                  <FadeNum text={h.stats.n === 0 ? 'Not played' : avgWords(h.stats.avg as number)} />
                 </td>
                 <td className="ch-num">{h.stats.best == null ? '–' : formatToPar(h.stats.best)}</td>
                 <td className="ch-num">{h.stats.n}</td>
@@ -275,35 +291,39 @@ export function HoleMap({ holes, selected, onSelect, coverage, sample }: { holes
         </table>
       </div>
       <div id="ch-hmap-detail" className="ch-hmap-d">
-        <div className="ch-hmap-d__h">
-          <h3>Hole {hole.n}</h3>
-          <span className="ch-num">{[hole.par != null ? `par ${hole.par}` : null, hole.yards ? `${hole.yards} yards` : null].filter(Boolean).join(' · ')}</span>
-          {gain === hole.n && <span className="ch-hmap-d__tag">Most to gain</span>}
-        </div>
-        {hole.stats.n === 0 ? (
-          <p className="ch-hmap-d__s">Not played here yet.</p>
-        ) : (
-          <p className="ch-hmap-d__v">
-            <b className="ch-num">{hole.stats.n === 1 ? formatToPar(hole.stats.avg as number) : avgWords(hole.stats.avg as number)}</b>
-            <span>{hole.stats.n === 1 ? 'played once' : hole.stats.state === 'early' ? `Early read · ${hole.stats.n} times` : `average to par · ${hole.stats.n} times`}</span>
-          </p>
-        )}
-        {plays.length > 0 && (
-          <div className="ch-hmap-d__plays">
-            {plays.map((p) => (
-              <Link key={p.roundId} className="ch-hmap-d__pill" href={reviewAt(p.roundId)} aria-label={`${shortDate(p.date)}: ${p.score} on par ${p.par}. Open the round at this hole`}>
-                <ScoreMark score={p.score} par={p.par} size="sm" />
-                <span className="ch-num">{shortDate(p.date)}</span>
-              </Link>
-            ))}
-            {!allPlays && hole.plays.length > PILLS_MAX && (
-              <button type="button" className="ch-hmap-d__all" onClick={() => setAllPlays(true)}>
-                All {hole.plays.length}
-              </button>
-            )}
+        <m.div className="ch-hmap-d__c" style={{ opacity: panelFade }}>
+          <div className="ch-hmap-d__h">
+            <h3>Hole {hole.n}</h3>
+            <span className="ch-num">{[hole.par != null ? `par ${hole.par}` : null, hole.yards ? `${hole.yards} yards` : null].filter(Boolean).join(' · ')}</span>
+            {gain === hole.n && <span className="ch-hmap-d__tag">Most to gain</span>}
           </div>
-        )}
-        {facts && <p className="ch-hmap-d__f">{facts}</p>}
+          {hole.stats.n === 0 ? (
+            <p className="ch-hmap-d__s">Not played here yet.</p>
+          ) : (
+            <p className="ch-hmap-d__v">
+              <b className="ch-num">
+                <FadeNum text={hole.stats.n === 1 ? formatToPar(hole.stats.avg as number) : avgWords(hole.stats.avg as number)} scope={hole.n} />
+              </b>
+              <span>{hole.stats.n === 1 ? 'played once' : hole.stats.state === 'early' ? `Early read · ${hole.stats.n} times` : `average to par · ${hole.stats.n} times`}</span>
+            </p>
+          )}
+          {plays.length > 0 && (
+            <div className="ch-hmap-d__plays">
+              {plays.map((p) => (
+                <Link key={p.roundId} className="ch-hmap-d__pill" href={reviewAt(p.roundId)} aria-label={`${shortDate(p.date)}: ${p.score} on par ${p.par}. Open the round at this hole`}>
+                  <ScoreMark score={p.score} par={p.par} size="sm" />
+                  <span className="ch-num">{shortDate(p.date)}</span>
+                </Link>
+              ))}
+              {!allPlays && hole.plays.length > PILLS_MAX && (
+                <button type="button" className="ch-hmap-d__all" onClick={() => setAllPlays(true)}>
+                  All {hole.plays.length}
+                </button>
+              )}
+            </div>
+          )}
+          {facts && <p className="ch-hmap-d__f">{facts}</p>}
+      </m.div>
       </div>
     </section>
   );

@@ -4,13 +4,16 @@ import { useState, type KeyboardEvent } from 'react';
 import { haptic } from '../../lib/haptics';
 import { formatFixed } from '../../lib/format';
 import { monotonePath } from '../../lib/chart';
+import { useGlide } from '../../lib/motion-glide';
 import { flowGeometry, flowKeyStep } from './RoundZones';
 
 /**
  * P-7 4.2.6: the round here, on the review's stage material: the player's average running score to par after each hole
  * across their full rounds here, with the usual spread from five rounds, and the best and the last round as optional
  * overlays. It shares ScoreFlow's scales (`flowGeometry`), so the two charts line up hole for hole. Drawn at its final
- * state; it is a slider over the holes, synced with the hole map.
+ * state; it is a slider over the holes, synced with the hole map. A new window glides the average and the band to their
+ * new places (M7, useGlide: the scale moves with the window, so the drawn y values glide, not the data); the best and last
+ * overlays always draw and fade in and out (M8, CSS), so a toggle that moves the scale glides the lines with it.
  */
 
 const W = 720;
@@ -43,13 +46,23 @@ export function CourseArc({
   const lo = Math.floor(Math.min(...all)) - 1;
   const hi = Math.ceil(Math.max(...all)) + 1;
   const { x, y, split } = flowGeometry({ x0: X0, x1: X1, top: TOP, height: PLOT, holes: 18, lo, hi });
-  const path = (vals: readonly number[]) => monotonePath(vals.map((v, i) => [x(i + 1), y(v)]));
-  const band = arc.sd
-    ? `${arc.mean.map((m, i) => `${x(i + 1)},${y(m - arc.sd![i]!)}`).join(' ')} ${[...arc.mean]
-        .map((m, i) => `${x(i + 1)},${y(m + arc.sd![i]!)}`)
-        .reverse()
-        .join(' ')}`
-    : null;
+  // What is drawn, as y values in the viewBox, in one array: the mean, the band's low and high edges, then the overlays.
+  const n = arc.mean.length;
+  const ys = useGlide([
+    ...arc.mean.map(y),
+    ...(arc.sd ? arc.mean.map((m, i) => y(m - arc.sd![i]!)) : []),
+    ...(arc.sd ? arc.mean.map((m, i) => y(m + arc.sd![i]!)) : []),
+    ...(lines.best ? lines.best.cum.map(y) : []),
+    ...(lines.last ? lines.last.cum.map(y) : []),
+  ]) as number[];
+  const mid = (from: number, len: number) => ys.slice(from, from + len);
+  const path = (vals: readonly number[]) => monotonePath(vals.map((v, i) => [x(i + 1), v]));
+  const meanY = mid(0, n);
+  const lowY = arc.sd ? mid(n, n) : [];
+  const highY = arc.sd ? mid(2 * n, n) : [];
+  const bestY = lines.best ? mid(arc.sd ? 3 * n : n, lines.best.cum.length) : [];
+  const lastY = lines.last ? mid((arc.sd ? 3 * n : n) + (lines.best ? lines.best.cum.length : 0), lines.last.cum.length) : [];
+  const band = arc.sd ? `${lowY.map((v, i) => `${x(i + 1)},${v}`).join(' ')} ${highY.map((v, i) => `${x(i + 1)},${v}`).reverse().join(' ')}` : null;
   const at = selected - 1;
   const toggle = (k: 'best' | 'last') => {
     haptic('select');
@@ -103,9 +116,9 @@ export function CourseArc({
           )}
           {band && <polygon className="ch-carc__band" points={band} fill="var(--ch-stage-line)" fillOpacity={0.12} />}
           <line x1={x(selected)} x2={x(selected)} y1={TOP - 12} y2={TOP + PLOT + 8} stroke="var(--ch-stage-ink-soft)" strokeWidth={1} />
-          <path className="ch-carc__mean" d={path(arc.mean)} fill="none" stroke="var(--ch-stage-line)" strokeWidth={2} />
-          {show.best && lines.best && <path className="ch-carc__best" d={path(lines.best.cum)} fill="none" stroke="var(--ch-stage-gold)" strokeWidth={1.5} />}
-          {show.last && lines.last && <path className="ch-carc__last" d={path(lines.last.cum)} fill="none" stroke="var(--ch-stage-ink)" strokeOpacity={0.55} strokeWidth={1.5} strokeDasharray="4 3" />}
+          <path className="ch-carc__mean" d={path(meanY)} fill="none" stroke="var(--ch-stage-line)" strokeWidth={2} />
+          {lines.best && <path className={'ch-carc__best ch-carc__ov' + (show.best ? '' : ' is-off')} d={path(bestY)} fill="none" stroke="var(--ch-stage-gold)" strokeWidth={1.5} />}
+          {lines.last && <path className={'ch-carc__last ch-carc__ov' + (show.last ? '' : ' is-off')} d={path(lastY)} fill="none" stroke="var(--ch-stage-ink)" strokeOpacity={0.55} strokeWidth={1.5} strokeDasharray="4 3" />}
           <g fontSize={11} textAnchor="middle" fill="var(--ch-stage-ink-soft)">
             {arc.mean.map((_, i) => (
               <text key={i} x={x(i + 1)} y={H - 14} className={'ch-num' + (i % 2 === 1 ? ' ch-carc__alt' : '')} fontWeight={i + 1 === selected ? 700 : 500}>
