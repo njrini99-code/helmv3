@@ -3501,6 +3501,100 @@ html[data-fw-theme='dark'] [data-ui='clubhouse'] .ch-ms-poll {
   align-items: center;
   gap: 4px;
 }
+/* Slice 4: the sheet's Clear, Quick start, the end as one Menu row at a large Text Size, the Custom date and time
+   (revealed on the grid-rows pattern), and the earlier-copy notice (CH-7031). */
+.ch-ms-pollf__clear {
+  min-height: 44px;
+  padding: 0 var(--ch-space-2);
+  border: 0;
+  background: none;
+  color: var(--ch-green-700);
+  font: var(--ch-type-15-medium);
+  letter-spacing: var(--ch-track-15);
+  cursor: pointer;
+}
+.ch-ms-pollf__quick {
+  display: flex;
+  flex-direction: column;
+  gap: var(--ch-space-2);
+}
+.ch-ms-pollf__quickl {
+  color: var(--ch-text-tertiary);
+  font: var(--ch-type-13-medium);
+}
+.ch-ms-pollf__chips {
+  display: flex;
+  gap: var(--ch-space-2);
+  overflow-x: auto;
+  overscroll-behavior-x: contain;
+  scrollbar-width: none;
+}
+.ch-ms-pollf__chip {
+  flex: none;
+  min-height: 36px;
+  padding: 0 var(--ch-space-3);
+  border: 0;
+  border-radius: 999px;
+  background: var(--ch-bg-subtle);
+  box-shadow: inset 0 0 0 var(--ch-hairline-w) var(--ch-border-hairline);
+  color: var(--ch-text-secondary);
+  font: var(--ch-type-14-medium);
+  cursor: pointer;
+}
+@media (pointer: coarse) {
+  /* 44 px to the finger on a 36 px chip. */
+  .ch-ms-pollf__chip {
+    position: relative;
+  }
+  .ch-ms-pollf__chip::after {
+    content: '';
+    position: absolute;
+    inset: -4px 0;
+  }
+}
+.ch-ms-pollf__endsrow {
+  display: flex;
+  align-items: center;
+  width: 100%;
+  min-height: 44px;
+  padding: 0 var(--ch-space-3);
+  border: 0;
+  border-radius: var(--ch-radius-md);
+  background: var(--ch-bg-subtle);
+  box-shadow: inset 0 0 0 var(--ch-hairline-w) var(--ch-border-hairline);
+  color: var(--ch-text-primary);
+  font: var(--ch-type-15);
+  letter-spacing: var(--ch-track-15);
+  text-align: start;
+  cursor: pointer;
+}
+.ch-ms-pollf__custom {
+  display: grid;
+  grid-template-rows: 0fr;
+  transition: grid-template-rows var(--ch-dur-base) var(--ch-ease);
+}
+.ch-ms-pollf__custom.is-open {
+  grid-template-rows: 1fr;
+}
+.ch-ms-pollf__customin {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--ch-space-2);
+  min-height: 0;
+  overflow: hidden;
+}
+.ch-ms-pollf__custom.is-open .ch-ms-pollf__customin {
+  padding-top: var(--ch-space-2);
+}
+.ch-ms-pollf__earlier {
+  display: flex;
+  flex-direction: column;
+  gap: var(--ch-space-2);
+}
+.ch-ms-pollf__earlierb {
+  display: flex;
+  gap: var(--ch-space-2);
+}
 /* D25: the poll glyph in the inbox row and a reply quote. */
 .ch-ms-row__poll {
   margin-right: 4px;

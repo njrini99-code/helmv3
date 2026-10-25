@@ -165,6 +165,7 @@ do; every section that fails to load has its own notice with Try again (70617 to
 | 70640 | CH-7028 | `SENDING_A_POLL_FAILS` | Sending a poll fails (New poll › Send poll) |
 | 70641 | CH-7030 | `A_VOTE_IS_REFUSED_BECAUSE_THE_POLL` | A vote is refused because the poll ended between the tap and the write (only with the held vote guard, OQ-68) |
 | 70642 | CH-7029 | `A_VOTE_ON_A_POLL_ISNT_SAVED` | A vote on a poll isn't saved (tap a choice in a poll card) |
+| 70643 | CH-7031 | `AN_EDITED_POLL_IS_SENT_AFTER_A` | An edited poll is sent after a send that threw, and the earlier copy had landed after all |
 
 ## 07 — Network / offline
 

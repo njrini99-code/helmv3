@@ -1494,7 +1494,7 @@ export function ComposerPlus({ api, conv, disabled, onPick }: { api: ChMessagesA
           e.target.value = "";
         }}
       />
-      <PollSheet api={api} conv={conv} open={polling} onClose={() => setPolling(false)} />
+      <PollSheet key={conv.id} api={api} conv={conv} open={polling} onClose={() => setPolling(false)} />
     </>
   );
 }

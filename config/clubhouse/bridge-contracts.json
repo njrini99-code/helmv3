@@ -6762,6 +6762,17 @@
     "catalog": "docs/clubhouse/catalog/messages.md"
   },
   {
+    "id": 70643,
+    "page": "P007",
+    "category": 6,
+    "item": 43,
+    "name": "AN_EDITED_POLL_IS_SENT_AFTER_A",
+    "chCode": "CH-7031",
+    "meaning": "An edited poll is sent after a send that threw, and the earlier copy had landed after all",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/messages.md"
+  },
+  {
     "id": 70701,
     "page": "P007",
     "category": 7,

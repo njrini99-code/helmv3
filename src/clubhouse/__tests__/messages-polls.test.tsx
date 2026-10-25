@@ -15,9 +15,10 @@ import { haptic } from '../lib/haptics';
 import { tallyPoll, type Poll, type PollResponseRow } from '@/lib/golf/message-polls';
 import type { ChMessagesApi } from '../screens/messages/MessagesView';
 import type { ChConv } from '../screens/messages/model';
-import { notePollHold, PollButton, PollCard, type ChPollsApi } from '../screens/messages/polls';
+import { clearPollDrafts, notePollHold, PollButton, PollCard, type ChPollsApi } from '../screens/messages/polls';
 
 afterEach(() => {
+  clearPollDrafts();
   cleanup();
   vi.clearAllMocks();
 });
@@ -208,7 +209,7 @@ describe('PollButton and the New poll sheet', () => {
     await act(async () => {
       await user.click(send);
     });
-    expect(a.polls!.send).toHaveBeenCalledWith('c1', expect.objectContaining({ question: 'Which van?', options: ['Van A', 'Van B', ''], multi: true, closesAt: null }), expect.stringMatching(/^[0-9a-f-]{36}$/));
+    expect(a.polls!.send).toHaveBeenCalledWith('c1', expect.objectContaining({ question: 'Which van?', options: ['Van A', 'Van B', ''], multi: true, closesAt: null }), expect.stringMatching(/^[0-9a-f-]{36}$/), undefined);
     expect(haptic).toHaveBeenCalledWith('success');
   });
 
@@ -288,7 +289,7 @@ describe('PollButton and the New poll sheet', () => {
     } finally {
       now.mockRestore();
     }
-    expect(a.polls!.send).toHaveBeenCalledWith('c1', expect.objectContaining({ closesAt: '2026-10-24T16:20:00.000Z' }), expect.any(String));
+    expect(a.polls!.send).toHaveBeenCalledWith('c1', expect.objectContaining({ closesAt: '2026-10-24T16:20:00.000Z' }), expect.any(String), undefined);
   });
 });
 
@@ -407,5 +408,92 @@ describe('PollCard, slice 2: the visual spec and its states (P-2 4.1, 4.2)', () 
     expect(screen.getByText('Choose any that work')).toBeTruthy();
     expect(document.querySelector('.ch-ms-poll__count')!.textContent).toBe('Votes didn’t load');
     expect(screen.getByRole('button', { name: 'Retry' })).toBeTruthy();
+  });
+});
+
+describe('the create sheet (P-2 slice 4)', () => {
+  const openSheet = async (a: ChMessagesApi) => {
+    const user = userEvent.setup();
+    render(<PollButton api={a} conv={conv()} />);
+    await user.click(screen.getByRole('button', { name: 'New poll' }));
+    return { user, dialog: await screen.findByRole('dialog', { name: 'New poll' }) };
+  };
+
+  it('Quick start fills the form, then hides; the description says who sees the votes', async () => {
+    const { user, dialog } = await openSheet(api([]));
+    expect(within(dialog).getByText('Everyone in Travel squad can vote and see who voted.')).toBeTruthy();
+    await user.click(within(dialog).getByRole('button', { name: 'Which days work?' }));
+    expect((within(dialog).getByLabelText('Question') as HTMLInputElement).value).toBe('Which days work?');
+    expect((within(dialog).getByRole('textbox', { name: 'Choice 4' }) as HTMLInputElement).value).toBe('Thursday');
+    expect(within(dialog).queryByText('Quick start')).toBeNull();
+    expect(haptic).toHaveBeenCalledWith('select');
+  });
+
+  it('Cancel keeps the draft for the conversation; Clear throws it away', async () => {
+    const { user, dialog } = await openSheet(api([]));
+    await user.type(within(dialog).getByLabelText('Question'), 'Which van?');
+    await user.click(within(dialog).getByRole('button', { name: 'Cancel' }));
+    await user.click(screen.getByRole('button', { name: 'New poll' }));
+    const again = await screen.findByRole('dialog', { name: 'New poll' });
+    expect((within(again).getByLabelText('Question') as HTMLInputElement).value).toBe('Which van?');
+    await user.click(within(again).getByRole('button', { name: 'Clear' }));
+    expect((within(again).getByLabelText('Question') as HTMLInputElement).value).toBe('');
+    expect(haptic).toHaveBeenCalledWith('warning');
+  });
+
+  it('a Custom end is a time on the team clock, said back as "Voting ends …"', async () => {
+    const now = vi.spyOn(Date, 'now').mockReturnValue(Date.parse(NOW));
+    try {
+      const a = api([]);
+      const { user, dialog } = await openSheet(a);
+      await user.type(within(dialog).getByLabelText('Question'), 'Which van?');
+      await user.type(within(dialog).getByRole('textbox', { name: 'Choice 1' }), 'Van A');
+      await user.type(within(dialog).getByRole('textbox', { name: 'Choice 2' }), 'Van B');
+      await user.click(within(dialog).getByRole('radio', { name: 'Custom' }));
+      // 10 AM in Chicago: the default is today at 9:00 PM there (02:00Z next day), whatever the device's zone.
+      expect(within(dialog).getByText('Voting ends today at 9:00 PM')).toBeTruthy();
+      await user.click(within(dialog).getByRole('button', { name: 'Send poll' }));
+      expect(a.polls!.send).toHaveBeenCalledWith('c1', expect.objectContaining({ closesAt: '2026-10-25T02:00:00.000Z' }), expect.any(String), undefined);
+    } finally {
+      now.mockRestore();
+    }
+  });
+
+  it('CH-7031 an edited retry after a send that threw passes the earlier id, and an earlier copy that landed asks first', async () => {
+    const send = vi
+      .fn<ChPollsApi['send']>()
+      .mockResolvedValueOnce({ ok: false, error: 'Try again in a moment.', threw: true })
+      .mockResolvedValueOnce({ ok: false, error: 'An earlier copy of this poll was already sent', earlierCopy: true })
+      .mockResolvedValueOnce({ ok: true });
+    const a = api([], { send });
+    const { user, dialog } = await openSheet(a);
+    await user.type(within(dialog).getByLabelText('Question'), 'Which van?');
+    await user.type(within(dialog).getByRole('textbox', { name: 'Choice 1' }), 'Van A');
+    await user.type(within(dialog).getByRole('textbox', { name: 'Choice 2' }), 'Van B');
+    await user.click(within(dialog).getByRole('button', { name: 'Send poll' }));
+    await user.type(within(dialog).getByLabelText('Question'), ' Thursday');
+    await user.click(within(dialog).getByRole('button', { name: 'Send poll' }));
+    const first = send.mock.calls[0]!;
+    const second = send.mock.calls[1]!;
+    expect(second[2]).not.toBe(first[2]);
+    expect(second[3]).toBe(first[2]);
+    expect(await within(dialog).findByText('An earlier copy of this poll was already sent')).toBeTruthy();
+    expect(dialog.querySelector('[data-ch-code="CH-7031"]')).not.toBeNull();
+    await user.click(within(dialog).getByRole('button', { name: 'Send this version' }));
+    const third = send.mock.calls[2]!;
+    expect(third[2]).not.toBe(second[2]);
+    expect(third[3]).toBeUndefined();
+  });
+
+  it('a refused send passes no earlier id: only a throw does', async () => {
+    const send = vi.fn<ChPollsApi['send']>().mockResolvedValue({ ok: false, error: 'Could not send the poll' });
+    const { user, dialog } = await openSheet(api([], { send }));
+    await user.type(within(dialog).getByLabelText('Question'), 'Which van?');
+    await user.type(within(dialog).getByRole('textbox', { name: 'Choice 1' }), 'Van A');
+    await user.type(within(dialog).getByRole('textbox', { name: 'Choice 2' }), 'Van B');
+    await user.click(within(dialog).getByRole('button', { name: 'Send poll' }));
+    await user.type(within(dialog).getByLabelText('Question'), '!');
+    await user.click(within(dialog).getByRole('button', { name: 'Send poll' }));
+    expect(send.mock.calls[1]![3]).toBeUndefined();
   });
 });

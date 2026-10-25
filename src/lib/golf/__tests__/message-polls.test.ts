@@ -230,3 +230,28 @@ describe('follow-up rules (P-2 0.3)', () => {
     expect(M.POLL_TIMER_CHUNK_MS).toBe(6 * 60 * 60 * 1000);
   });
 });
+
+describe('the custom end, on the team clock (P-2 4.4.1)', () => {
+  it('reads a wall time in the team zone, not the device one', () => {
+    expect(M.zonedWallTimeToInstant('2026-10-30', '21:00', 'America/New_York')).toEqual({ at: '2026-10-31T01:00:00.000Z', shifted: false });
+    expect(M.zonedWallTimeToInstant('2026-10-30', '21:00', 'America/Los_Angeles')!.at).toBe('2026-10-31T04:00:00.000Z');
+    expect(M.zonedWallTimeToInstant('2026-13-01', '21:00', 'America/New_York')).toBeNull();
+  });
+
+  it('moves a spring-forward gap forward and takes the first of a repeated fall-back time', () => {
+    // 2027-03-14 2:30 AM does not exist in New York: 3:30 AM EDT.
+    expect(M.zonedWallTimeToInstant('2027-03-14', '02:30', 'America/New_York')).toEqual({ at: '2027-03-14T07:30:00.000Z', shifted: true });
+    // 2026-11-01 1:30 AM happens twice: the first is EDT (05:30Z).
+    expect(M.zonedWallTimeToInstant('2026-11-01', '01:30', 'America/New_York')).toEqual({ at: '2026-11-01T05:30:00.000Z', shifted: false });
+  });
+
+  it('defaults to tonight at 9 before 8 PM on the team clock, else tomorrow', () => {
+    expect(M.defaultCustomEnd(Date.parse('2026-10-30T22:00:00Z'), 'America/New_York')).toEqual({ date: '2026-10-30', time: '21:00' });
+    expect(M.defaultCustomEnd(Date.parse('2026-10-31T00:30:00Z'), 'America/New_York')).toEqual({ date: '2026-10-31', time: '21:00' });
+  });
+
+  it('quick start fills four polls, Pick a time with placeholders and a day', () => {
+    expect(M.POLL_SUGGESTIONS.map((s) => s.chip)).toEqual(['Which van?', 'Can you make it?', 'Which days work?', 'Pick a time']);
+    expect(M.POLL_SUGGESTIONS[3]).toMatchObject({ options: ['', ''], placeholders: ['First time', 'Second time'], ends: '1d' });
+  });
+});

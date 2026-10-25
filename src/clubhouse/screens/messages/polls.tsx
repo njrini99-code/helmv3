@@ -7,7 +7,9 @@ import {
   POLL_MIN_OPTIONS,
   POLL_OPTION_MAX,
   POLL_QUESTION_MAX,
+  POLL_SUGGESTIONS,
   buildPollPayload,
+  defaultCustomEnd,
   encodeChoice,
   isPollClosed,
   nextPollCheckDelay,
@@ -15,6 +17,7 @@ import {
   pollState,
   pollShare,
   pollWaiting,
+  zonedWallTimeToInstant,
   type Poll,
   type PollDraft,
   type PollTally,
@@ -22,10 +25,14 @@ import {
 import { haptic } from "../../lib/haptics";
 import { Avatar } from "../../ui/Avatar";
 import { Button, IconButton } from "../../ui/Button";
+import { DateField } from "../../ui/DateField";
 import { Icon } from "../../ui/Icon";
+import { Menu } from "../../ui/Menu";
 import { Modal } from "../../ui/Modal";
+import { InlineNotice } from "../../ui/Notices";
 import { Segmented } from "../../ui/Segmented";
 import { Switch } from "../../ui/Switch";
+import { TimeField } from "../../ui/TimeField";
 import { clock, firstName, untilLabel, type ChConv } from "./model";
 import type { ChMessagesApi } from "./MessagesView";
 
@@ -48,8 +55,17 @@ export interface ChPollsApi {
   pending: ReadonlySet<string>;
   error: string | null;
   retry: () => void;
-  /** `clientId` stays the same for one draft, so a Send retried after a lost answer can't post the poll twice. */
-  send: (conversationId: string, draft: PollDraft, clientId: string) => Promise<{ ok: true } | { ok: false; error: string }>;
+  /**
+   * `clientId` stays the same for one draft, so a Send retried after a lost answer can't post the poll twice.
+   * `priorClientId` is the id of a send that threw, only when the draft was edited since (D19). The answer says
+   * whether the send threw (`threw`) and whether that earlier copy had landed after all (`earlierCopy`, CH-7031).
+   */
+  send: (
+    conversationId: string,
+    draft: PollDraft,
+    clientId: string,
+    priorClientId?: string,
+  ) => Promise<{ ok: true } | { ok: false; error: string; threw?: true; earlierCopy?: true }>;
   close: (messageId: string) => Promise<boolean>;
 }
 
@@ -370,14 +386,15 @@ function ClosePollModal({ api, messageId, open, onClose }: { api: ChMessagesApi;
   );
 }
 
-type Ends = "none" | "1h" | "1d" | "3d";
+type Ends = "none" | "1h" | "1d" | "3d" | "custom";
 const ENDS: ReadonlyArray<{ value: Ends; label: string }> = [
   { value: "none", label: "No end" },
   { value: "1h", label: "1 hour" },
   { value: "1d", label: "1 day" },
   { value: "3d", label: "3 days" },
+  { value: "custom", label: "Custom" },
 ];
-const ENDS_MS: Record<Ends, number> = { none: 0, "1h": 3_600_000, "1d": 86_400_000, "3d": 3 * 86_400_000 };
+const ENDS_MS: Record<Exclude<Ends, "custom">, number> = { none: 0, "1h": 3_600_000, "1d": 86_400_000, "3d": 3 * 86_400_000 };
 
 const PROBLEM: Record<string, string> = {
   question: "Add a question.",
@@ -386,6 +403,27 @@ const PROBLEM: Record<string, string> = {
   closes: "Pick an end time that hasn’t passed.",
   closes_far: "Pick an end time within 30 days.",
 };
+/** Which field a problem points at, for its `aria-invalid`. */
+const PROBLEM_FIELD: Record<string, "question" | "options" | "ends"> = { question: "question", options: "options", duplicate: "options", closes: "ends", closes_far: "ends" };
+
+/** One conversation's unsent poll, kept for the session when the sheet is cancelled (4.4.1 Cancel). */
+interface PollSheetDraft {
+  question: string;
+  options: string[];
+  placeholders: readonly string[] | null;
+  multi: boolean;
+  ends: Ends;
+  customDate: string;
+  customTime: string;
+}
+const drafts = new Map<string, PollSheetDraft>();
+/** Test seam: the kept drafts start empty in each test. */
+export const clearPollDrafts = () => drafts.clear();
+
+/** "today at 7:12 PM", "tomorrow at …", "Thursday at …", "Oct 30 at …", on the team's clock. */
+function endsWords(iso: string, nowIso: string, timeZone: string, hours: "12" | "24") {
+  return `${untilLabel(iso, nowIso, timeZone)} at ${clock(iso, timeZone, hours)}`;
+}
 
 /** The composer's poll button: group threads only, where "9 of 12 voted" means something. */
 export function PollButton({ api, conv, disabled }: { api: ChMessagesApi; conv: ChConv; disabled?: boolean }) {
@@ -394,7 +432,7 @@ export function PollButton({ api, conv, disabled }: { api: ChMessagesApi; conv: 
   return (
     <>
       <IconButton icon={ListChecks} label="New poll" size="sm" disabled={disabled} onClick={() => setOpen(true)} />
-      <PollSheet api={api} conv={conv} open={open} onClose={() => setOpen(false)} />
+      <PollSheet key={conv.id} api={api} conv={conv} open={open} onClose={() => setOpen(false)} />
     </>
   );
 }
@@ -402,39 +440,80 @@ export function PollButton({ api, conv, disabled }: { api: ChMessagesApi; conv: 
 /**
  * Write a poll: a question, two to six choices (a spare row appears as the last one fills, as Reminders adds a row),
  * more than one answer or not, and an optional end. Send writes it into the thread; nothing is saved before that.
+ * Cancel keeps the draft for this conversation for the session; Clear throws it away. Quick start fills the empty form.
+ * A Custom end is a date and time on the team's clock (`api.timeZone`), never the device's.
  */
 export function PollSheet({ api, conv, open, onClose }: { api: ChMessagesApi; conv: ChConv; open: boolean; onClose: () => void }) {
-  const [question, setQuestion] = useState("");
-  const [options, setOptions] = useState<string[]>(["", ""]);
-  const [multi, setMulti] = useState(false);
-  const [ends, setEnds] = useState<Ends>("none");
+  const zone = api.timeZone;
+  const hours = api.clock ?? "12";
+  const kept = drafts.get(conv.id);
+  const [question, setQuestion] = useState(kept?.question ?? "");
+  const [options, setOptions] = useState<string[]>(kept?.options ?? ["", ""]);
+  const [placeholders, setPlaceholders] = useState<readonly string[] | null>(kept?.placeholders ?? null);
+  const [multi, setMulti] = useState(kept?.multi ?? false);
+  const [ends, setEnds] = useState<Ends>(kept?.ends ?? "none");
+  const [custom, setCustom] = useState(() => (kept ? { date: kept.customDate, time: kept.customTime } : defaultCustomEnd(Date.now(), zone)));
   const [busy, setBusy] = useState(false);
-  const [problem, setProblem] = useState<string | null>(null);
+  const [problem, setProblem] = useState<{ text: string; field: "question" | "options" | "ends" | null } | null>(null);
+  const [earlier, setEarlier] = useState(false);
+  const [nowMs, setNowMs] = useState(() => Date.now());
   const list = useRef<HTMLOListElement | null>(null);
+  const endsRow = useRef<HTMLDivElement | null>(null);
+  const [endsFit, setEndsFit] = useState(true);
   const clientId = useRef<string>(crypto.randomUUID());
+  // D19: the last Send that threw, and the draft it carried. An edited retry passes that id as `priorClientId`.
+  const threw = useRef<{ id: string; signature: string } | null>(null);
+  const lastTry = useRef<string | null>(null);
   const filled = options.filter((o) => o.trim()).length;
+  const empty = !question.trim() && options.every((o) => !o.trim());
+  const ready = !!question.trim() && filled >= POLL_MIN_OPTIONS;
+  const signature = JSON.stringify([question, options, multi, ends, ends === "custom" ? custom : null]);
 
+  // Kept for the session as it is typed, so Cancel, a closed sheet or a thread switch never loses it; an empty form keeps nothing.
+  useEffect(() => {
+    if (empty && !multi && ends === "none") drafts.delete(conv.id);
+    else drafts.set(conv.id, { question, options, placeholders, multi, ends, customDate: custom.date, customTime: custom.time });
+  }, [conv.id, question, options, placeholders, multi, ends, custom, empty]);
+  // The resolved line re-reads once a minute while open, so "1 hour" always shows the real end.
+  useEffect(() => {
+    if (!open) return;
+    setNowMs(Date.now());
+    const t = setInterval(() => setNowMs(Date.now()), 60_000);
+    return () => clearInterval(t);
+  }, [open]);
+  // 4.4.1: at a large Text Size the five segments stop fitting; the field then draws one Menu row instead.
+  useEffect(() => {
+    const el = endsRow.current;
+    if (!el || typeof ResizeObserver === "undefined") return;
+    const ro = new ResizeObserver(() => {
+      const labels = [...el.querySelectorAll<HTMLElement>(".ch-seg__l")];
+      setEndsFit(!labels.some((l) => l.scrollWidth > l.clientWidth + 1));
+    });
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, [open, endsFit]);
+
+  const customEnd = ends === "custom" ? zonedWallTimeToInstant(custom.date, custom.time, zone) : null;
   // The end time is worked out when Send is pressed, so a sheet left open for a while can't send a poll that has
   // already ended.
-  const draftAt = (now: number): PollDraft => ({
-    question,
-    options,
-    multi,
-    closesAt: ends === "none" ? null : new Date(now + ENDS_MS[ends]).toISOString(),
-  });
-  // The draft as last sent. When a failed send is retried after an edit, it gets a new client id, so the server can't
-  // answer the edited poll with the earlier one.
-  const lastTry = useRef<string | null>(null);
-  const ready = !!question.trim() && filled >= POLL_MIN_OPTIONS;
+  const closesAtFor = (now: number): string | null =>
+    ends === "none" ? null : ends === "custom" ? (customEnd?.at ?? null) : new Date(now + ENDS_MS[ends]).toISOString();
+  const preview = closesAtFor(nowMs);
+  const nowIso = new Date(nowMs).toISOString();
 
   const reset = () => {
     setQuestion("");
     setOptions(["", ""]);
+    setPlaceholders(null);
     setMulti(false);
     setEnds("none");
+    setCustom(defaultCustomEnd(Date.now(), zone));
     setProblem(null);
+    setEarlier(false);
     clientId.current = crypto.randomUUID();
+    threw.current = null;
     lastTry.current = null;
+    drafts.delete(conv.id);
   };
 
   const setOption = (i: number, text: string) => {
@@ -449,30 +528,75 @@ export function PollSheet({ api, conv, open, onClose }: { api: ChMessagesApi; co
     setProblem(null);
   };
 
-  const send = async () => {
+  const suggest = (i: number) => {
+    const s = POLL_SUGGESTIONS[i]!;
+    haptic("select");
+    setQuestion(s.question);
+    setOptions([...s.options]);
+    setPlaceholders(s.placeholders ?? null);
+    setMulti(s.multi);
+    setEnds(s.ends);
+    setProblem(null);
+    // Focus the first empty choice, or the question's end.
+    requestAnimationFrame(() => {
+      const inputs = [...(list.current?.querySelectorAll<HTMLInputElement>("input") ?? [])];
+      const target = inputs.find((x) => !x.value) ?? document.querySelector<HTMLInputElement>("#ch-ms-poll-q");
+      target?.focus();
+      if (target === document.querySelector("#ch-ms-poll-q")) target?.setSelectionRange(target.value.length, target.value.length);
+    });
+  };
+
+  const send = async (fresh = false) => {
     if (!api.polls || busy) return;
-    const draft = draftAt(Date.now());
-    const built = buildPollPayload(draft);
-    if (!built.ok) {
-      setProblem(PROBLEM[built.problem] ?? null);
+    const draft: PollDraft = { question, options, multi, closesAt: closesAtFor(Date.now()) };
+    if (ends === "custom" && !customEnd) {
+      setProblem({ text: PROBLEM.closes!, field: "ends" });
       haptic("error");
       return;
     }
-    const signature = JSON.stringify([question, options, multi, ends]);
-    if (lastTry.current !== null && lastTry.current !== signature) clientId.current = crypto.randomUUID();
+    const built = buildPollPayload(draft);
+    if (!built.ok) {
+      setProblem({ text: PROBLEM[built.problem] ?? "", field: PROBLEM_FIELD[built.problem] ?? null });
+      haptic("error");
+      return;
+    }
+    // An unedited retry keeps its id (the server answers its own replay as success). An edited one is a new poll: a
+    // new id, and if the last Send threw, that send's id goes along so the server can say whether it landed.
+    let prior: string | undefined;
+    if (fresh || (lastTry.current !== null && lastTry.current !== signature)) {
+      if (!fresh && threw.current && threw.current.signature !== signature) prior = threw.current.id;
+      clientId.current = crypto.randomUUID();
+    }
     lastTry.current = signature;
     setBusy(true);
-    const result = await api.polls.send(conv.id, draft, clientId.current);
+    setEarlier(false);
+    const sentId = clientId.current;
+    const result = await api.polls.send(conv.id, draft, sentId, prior);
     setBusy(false);
     if (result.ok) {
       haptic("success");
       reset();
       onClose();
-    } else {
-      setProblem(result.error);
-      haptic("error");
+      return;
     }
+    if (result.earlierCopy) {
+      setEarlier(true);
+      return;
+    }
+    threw.current = result.threw ? { id: sentId, signature } : null;
+    if (!result.threw) setProblem({ text: result.error, field: null });
+    haptic("error");
   };
+
+  // Cmd or Ctrl Enter sends from any field (desktop).
+  const sendKey = (e: KeyboardEvent<HTMLInputElement>) => {
+    if (e.key !== "Enter" || !(e.metaKey || e.ctrlKey)) return false;
+    e.preventDefault();
+    void send();
+    return true;
+  };
+  const invalid = (field: "question" | "options" | "ends") => (problem?.field === field ? true : undefined);
+  const left = POLL_QUESTION_MAX - question.length;
 
   return (
     <Modal
@@ -480,9 +604,23 @@ export function PollSheet({ api, conv, open, onClose }: { api: ChMessagesApi; co
       onClose={onClose}
       icon={ListChecks}
       title="New poll"
-      description={`Everyone in ${conv.title} can vote and see the votes.`}
+      description={`Everyone in ${conv.title} can vote and see who voted.`}
       initialFocus="#ch-ms-poll-q"
       width={480}
+      action={
+        !empty || multi || ends !== "none" ? (
+          <button
+            type="button"
+            className="ch-ms-pollf__clear"
+            onClick={() => {
+              haptic("warning");
+              reset();
+            }}
+          >
+            Clear
+          </button>
+        ) : undefined
+      }
       footer={
         <>
           <Button variant="ghost" onClick={onClose}>
@@ -511,16 +649,43 @@ export function PollSheet({ api, conv, open, onClose }: { api: ChMessagesApi; co
             className="ch-input"
             value={question}
             maxLength={POLL_QUESTION_MAX}
-            placeholder="Which van are you riding in?"
+            placeholder="Ask the team something"
             autoComplete="off"
             enterKeyHint="next"
+            readOnly={busy}
+            aria-invalid={invalid("question")}
+            aria-describedby={left <= 20 ? "ch-ms-poll-q-left" : undefined}
             onChange={(e) => {
               setQuestion(e.target.value);
               setProblem(null);
             }}
+            onKeyDown={(e) => {
+              if (sendKey(e) || e.key !== "Enter") return;
+              e.preventDefault();
+              list.current?.querySelector<HTMLInputElement>("input")?.focus();
+            }}
           />
+          {left <= 20 && (
+            <p id="ch-ms-poll-q-left" className={"ch-field__help ch-num" + (left === 0 ? " is-error" : "")}>
+              {left === 0 ? "No characters left" : `${left} left`}
+            </p>
+          )}
         </div>
-        <fieldset className="ch-ms-pollf__set">
+        {empty && (
+          <div className="ch-ms-pollf__quick">
+            <span className="ch-ms-pollf__quickl" id="ch-ms-poll-quick">
+              Quick start
+            </span>
+            <div className="ch-ms-pollf__chips" role="group" aria-labelledby="ch-ms-poll-quick">
+              {POLL_SUGGESTIONS.map((sg, i) => (
+                <button key={sg.chip} type="button" className="ch-ms-pollf__chip" onClick={() => suggest(i)}>
+                  {sg.chip}
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
+        <fieldset className="ch-ms-pollf__set" aria-invalid={invalid("options")}>
           <legend className="ch-field__label">Choices</legend>
           <ol ref={list} className="ch-ms-pollf__opts">
             {options.map((o, i) => (
@@ -533,13 +698,16 @@ export function PollSheet({ api, conv, open, onClose }: { api: ChMessagesApi; co
                   aria-label={`Choice ${i + 1}`}
                   value={o}
                   maxLength={POLL_OPTION_MAX}
-                  placeholder={i < POLL_MIN_OPTIONS ? `Choice ${i + 1}` : "Add a choice"}
+                  placeholder={placeholders?.[i] ?? (i < POLL_MIN_OPTIONS ? `Choice ${i + 1}` : "Add a choice")}
                   autoComplete="off"
+                  readOnly={busy}
                   enterKeyHint={i === options.length - 1 ? "done" : "next"}
                   onChange={(e) => setOption(i, e.target.value)}
                   onKeyDown={(e) => {
-                    if (e.key !== "Enter") return;
+                    if (sendKey(e) || e.key !== "Enter") return;
                     e.preventDefault();
+                    // Return moves on; on an empty spare it does nothing.
+                    if (!o.trim()) return;
                     list.current?.querySelectorAll<HTMLInputElement>("input")[i + 1]?.focus();
                   }}
                 />
@@ -548,18 +716,20 @@ export function PollSheet({ api, conv, open, onClose }: { api: ChMessagesApi; co
                     icon={Minus}
                     label={`Remove choice ${i + 1}`}
                     size="sm"
-                    onClick={() => setOptions((prev) => {
-                      const next = prev.filter((_, j) => j !== i);
-                      if (next.every((x) => x.trim()) && next.length < POLL_MAX_OPTIONS) next.push("");
-                      return next;
-                    })}
+                    onClick={() =>
+                      setOptions((prev) => {
+                        const next = prev.filter((_, j) => j !== i);
+                        if (next.every((x) => x.trim()) && next.length < POLL_MAX_OPTIONS) next.push("");
+                        return next;
+                      })
+                    }
                   />
                 )}
               </li>
             ))}
           </ol>
           {options.length >= POLL_MAX_OPTIONS && options.every((o) => o.trim()) ? (
-            <p className="ch-field__help">Six choices is the most a poll takes.</p>
+            <p className="ch-field__help">A poll takes up to 6 choices.</p>
           ) : (
             <p className="ch-field__help">
               <Icon icon={Plus} size={12} /> A new row appears as you fill the last one.
@@ -567,15 +737,66 @@ export function PollSheet({ api, conv, open, onClose }: { api: ChMessagesApi; co
           )}
         </fieldset>
         <Switch checked={multi} onChange={setMulti} label="Allow more than one answer" />
-        <div className="ch-field">
+        <div className="ch-field" aria-invalid={invalid("ends")}>
           <span className="ch-field__label" id="ch-ms-poll-ends">
             Voting ends
           </span>
-          <Segmented<Ends> label="Voting ends" value={ends} options={ENDS} onChange={setEnds} block size="sm" />
+          {endsFit ? (
+            <div ref={endsRow}>
+              <Segmented<Ends> label="Voting ends" value={ends} options={ENDS} onChange={setEnds} block size="sm" />
+            </div>
+          ) : (
+            <Menu
+              label="Voting ends"
+              align="start"
+              items={ENDS.map((e) => ({ label: e.label, checked: e.value === ends, onSelect: () => setEnds(e.value) }))}
+              trigger={(p) => (
+                <button type="button" className="ch-ms-pollf__endsrow" {...p}>
+                  Voting ends · {ENDS.find((e) => e.value === ends)!.label}
+                </button>
+              )}
+            />
+          )}
+          <div className={"ch-ms-pollf__custom" + (ends === "custom" ? " is-open" : "")} aria-hidden={ends === "custom" ? undefined : true}>
+            <div className="ch-ms-pollf__customin">
+              {ends === "custom" && (
+                <>
+                  <DateField label="Date" value={custom.date} onChange={(v) => v && setCustom((c) => ({ ...c, date: v }))} />
+                  <TimeField label="Time" value={custom.time} onChange={(v) => v && setCustom((c) => ({ ...c, time: v }))} />
+                </>
+              )}
+            </div>
+          </div>
+          {preview && (
+            <p className="ch-field__help ch-num" aria-live="polite">
+              Voting ends {endsWords(preview, nowIso, zone, hours)}
+            </p>
+          )}
+          {customEnd?.shifted && <p className="ch-field__help">That time is skipped when the clocks go forward, so voting ends an hour later.</p>}
         </div>
+        {earlier && (
+          <div className="ch-ms-pollf__earlier" data-ch-code="CH-7031">
+            <InlineNotice title="An earlier copy of this poll was already sent" body="Check the thread. Send this version too?" />
+            <div className="ch-ms-pollf__earlierb">
+              <Button variant="secondary" size="sm" onClick={() => void send(true)}>
+                Send this version
+              </Button>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => {
+                  reset();
+                  onClose();
+                }}
+              >
+                Done
+              </Button>
+            </div>
+          </div>
+        )}
         {problem && (
           <p className="ch-field__help is-error" role="alert">
-            {problem}
+            {problem.text}
           </p>
         )}
       </form>

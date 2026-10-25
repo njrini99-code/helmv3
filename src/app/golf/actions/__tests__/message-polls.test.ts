@@ -124,6 +124,19 @@ describe('sendGolfPoll', () => {
 });
 
 describe('closeGolfPoll', () => {
+  it('D19: an edited retry after a throw asks first when the earlier copy landed, and posts when it did not', async () => {
+    const PRIOR = '66666666-6666-4666-8666-666666666666';
+    seedPoll({ id: PRIOR });
+    state.messages.set(PRIOR, { ...state.messages.get(MESSAGE)!, id: PRIOR });
+    state.messages.delete(MESSAGE);
+    expect(await sendGolfPoll(CONVERSATION, draft, MESSAGE, PRIOR)).toEqual({ success: false, error: 'An earlier copy of this poll was already sent', earlierCopy: true });
+    expect(state.messages.has(MESSAGE)).toBe(false);
+    expect(state.notify).not.toHaveBeenCalled();
+    state.messages.clear();
+    expect(await sendGolfPoll(CONVERSATION, draft, MESSAGE, PRIOR)).toMatchObject({ success: true, id: MESSAGE });
+    expect(await sendGolfPoll(CONVERSATION, draft, MESSAGE, MESSAGE)).toEqual({ success: false, error: 'Invalid message id' });
+  });
+
   it('lets the sender close their poll', async () => {
     seedPoll();
     expect(await closeGolfPoll(MESSAGE)).toEqual({ success: true, id: MESSAGE });

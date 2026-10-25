@@ -27,7 +27,9 @@ const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 type PollResult = { success: true; id: string } | { success: false; error: string };
 /** A sent poll also carries its saved row, so the thread can draw it at once (D27) instead of waiting on realtime. */
-type SendPollResult = { success: true; id: string; row?: Tables<'golf_messages'> } | { success: false; error: string };
+type SendPollResult =
+  | { success: true; id: string; row?: Tables<'golf_messages'> }
+  | { success: false; error: string; earlierCopy?: true };
 
 const PROBLEM_COPY = {
   question: 'Add a question of up to 140 characters.',
@@ -37,9 +39,17 @@ const PROBLEM_COPY = {
   closes_far: 'Pick an end time within 30 days.',
 } as const;
 
-async function sendGolfPollImpl(conversationId: string, draft: PollDraft, clientMessageId?: string): Promise<SendPollResult> {
+/**
+ * `priorClientId` (D19): the id of a send that threw, passed only when the draft was edited after it. If that copy
+ * landed, nothing is posted and the answer says so (`earlierCopy`), so the sheet can ask before a second copy goes out.
+ * There is no payload compare anywhere: an unedited retry keeps its id and its 23505 is answered as the success it is.
+ */
+async function sendGolfPollImpl(conversationId: string, draft: PollDraft, clientMessageId?: string, priorClientId?: string): Promise<SendPollResult> {
   if (typeof conversationId !== 'string' || !UUID.test(conversationId)) return { success: false, error: 'Invalid conversation' };
   if (clientMessageId !== undefined && (typeof clientMessageId !== 'string' || !UUID.test(clientMessageId))) {
+    return { success: false, error: 'Invalid message id' };
+  }
+  if (priorClientId !== undefined && (typeof priorClientId !== 'string' || !UUID.test(priorClientId) || priorClientId === clientMessageId)) {
     return { success: false, error: 'Invalid message id' };
   }
   if (!draft || typeof draft !== 'object' || !Array.isArray(draft.options)) return { success: false, error: PROBLEM_COPY.options };
@@ -66,6 +76,21 @@ async function sendGolfPollImpl(conversationId: string, draft: PollDraft, client
     return { success: false, error: 'Could not send the poll' };
   }
   if (!participants?.some((p) => p.user_id === user.id)) return { success: false, error: 'You are not in this conversation' };
+
+  if (priorClientId) {
+    const { data: prior, error: priorError } = await supabase
+      .from('golf_messages')
+      .select('id, sender_id, conversation_id, kind, is_deleted')
+      .eq('id', priorClientId)
+      .maybeSingle();
+    if (priorError) {
+      await logServerError(`[sendGolfPoll] earlier copy read failed: ${describeError(priorError)}`, { action: 'golf.sendGolfPoll', featureArea: 'messaging' });
+      return { success: false, error: 'Could not send the poll' };
+    }
+    if (prior && prior.sender_id === user.id && prior.conversation_id === conversationId && prior.kind === 'poll' && !prior.is_deleted) {
+      return { success: false, error: 'An earlier copy of this poll was already sent', earlierCopy: true };
+    }
+  }
 
   const content = pollFallbackText(built.payload);
   const { data, error } = await supabase
@@ -139,8 +164,8 @@ async function closeGolfPollImpl(messageId: string): Promise<PollResult> {
 const observedSendGolfPoll = withAdminObserved('sendGolfPoll', { sport: 'golf', feature: 'messaging' }, sendGolfPollImpl);
 const observedCloseGolfPoll = withAdminObserved('closeGolfPoll', { sport: 'golf', feature: 'messaging' }, closeGolfPollImpl);
 
-export async function sendGolfPoll(conversationId: string, draft: PollDraft, clientMessageId?: string): Promise<SendPollResult> {
-  return observedSendGolfPoll(conversationId, draft, clientMessageId);
+export async function sendGolfPoll(conversationId: string, draft: PollDraft, clientMessageId?: string, priorClientId?: string): Promise<SendPollResult> {
+  return observedSendGolfPoll(conversationId, draft, clientMessageId, priorClientId);
 }
 
 export async function closeGolfPoll(messageId: string): Promise<PollResult> {

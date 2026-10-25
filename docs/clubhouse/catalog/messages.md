@@ -63,6 +63,7 @@ the thread with Retry (CH-7016), and the draft is never lost.
 | CH-7028 | Sending a poll fails (New poll › Send poll) | A refusal shows its reason under the form and keeps the draft; a send that throws also toasts "Couldn’t send the poll" + "Try again in a moment." A retry of the same draft reuses its id, so it can't post twice | `attempt('sendPoll')`, `sendGolfPoll` | messages-polls.test › a refused send keeps the draft |
 | CH-7029 | A vote on a poll isn't saved (tap a choice in a poll card) | "Your vote wasn’t saved" + "Try again in a moment." The card goes back to the votes the server holds | `attempt('vote')`, `useMessageResponses.vote` | use-message-responses.test › a refused vote goes back |
 | CH-7030 | A vote is refused because the poll ended between the tap and the write (only with the held vote guard, OQ-68) | "Voting has ended" + "Your vote wasn’t counted. The result is final." The viewer's own row goes back to what the server holds | `attempt('vote')`, `useMessageResponses.vote` (reason `closed`) | messages.test › CH-7030 |
+| CH-7031 | An edited poll is sent after a send that threw, and the earlier copy had landed after all | "An earlier copy of this poll was already sent" + "Check the thread. Send this version too?", with Send this version (a new id) and Done (closes and clears the draft). Nothing is posted until the person chooses | `PollSheet`, `sendGolfPoll(priorClientId)` | messages-polls.test › CH-7031 |
 
 ## 71xx Validation
 

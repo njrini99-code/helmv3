@@ -776,12 +776,16 @@ export function Messages({ data }: { data: ChMessagesData }) {
       pending: responses.pending,
       error: responses.error,
       retry: () => void responses.refresh(),
-      send: async (conversationId, draft, clientId) => {
+      send: async (conversationId, draft, clientId, priorClientId) => {
         let reason = 'Try again in a moment.';
+        let answered = false;
+        let earlierCopy = false;
         const ok = await attempt('sendPoll', { failed: 'Couldn’t send the poll', hint: 'Try again in a moment.', code: 'CH-7028' }, async () => {
-          const res = await sendGolfPoll(conversationId, draft, clientId);
+          const res = await sendGolfPoll(conversationId, draft, clientId, priorClientId);
+          answered = true;
           if (!res.success) {
             reason = res.error;
+            earlierCopy = res.earlierCopy === true;
             return false;
           }
           // D27: the saved row lands the card at once (deduped by id against the realtime insert that follows); a
@@ -791,7 +795,10 @@ export function Messages({ data }: { data: ChMessagesData }) {
           void refetch();
           return true;
         });
-        return ok ? { ok: true } : { ok: false, error: reason };
+        // No answer at all (it threw, or offline): the sheet keeps the id so an edited retry can ask about it (D19).
+        if (ok) return { ok: true };
+        if (earlierCopy) return { ok: false, error: reason, earlierCopy: true };
+        return answered ? { ok: false, error: reason } : { ok: false, error: reason, threw: true };
       },
       close: (messageId) =>
         attempt('closePoll', { failed: 'Couldn’t close the poll', hint: 'Try again in a moment.', code: 'CH-7027' }, async () => {

@@ -287,3 +287,64 @@ export function pollHitOnlyInFooter(text: string, query: string): boolean {
   return !body.includes(q);
 }
 
+
+/** Quick start (P-2 4.4.2): static polls that fill the form, shown only while it is empty. No reads, no model calls. */
+export const POLL_SUGGESTIONS: ReadonlyArray<{
+  chip: string;
+  question: string;
+  options: readonly string[];
+  /** Placeholders for choices left empty ("Pick a time"). */
+  placeholders?: readonly string[];
+  multi: boolean;
+  ends: 'none' | '1d';
+}> = [
+  { chip: 'Which van?', question: 'Which van are you riding in?', options: ['Van 1', 'Van 2'], multi: false, ends: 'none' },
+  { chip: 'Can you make it?', question: 'Can you make it?', options: ['Yes', 'No'], multi: false, ends: 'none' },
+  { chip: 'Which days work?', question: 'Which days work?', options: ['Monday', 'Tuesday', 'Wednesday', 'Thursday'], multi: true, ends: 'none' },
+  { chip: 'Pick a time', question: 'Which time works?', options: ['', ''], placeholders: ['First time', 'Second time'], multi: false, ends: '1d' },
+];
+
+/** The wall clock of an instant in a time zone, as numbers. */
+function wallOf(t: number, zone: string): { y: number; mo: number; d: number; h: number; mi: number } {
+  const parts = new Intl.DateTimeFormat('en-US', { timeZone: zone, year: 'numeric', month: 'numeric', day: 'numeric', hour: 'numeric', minute: 'numeric', hourCycle: 'h23' }).formatToParts(new Date(t));
+  const n = (type: string) => Number(parts.find((p) => p.type === type)!.value);
+  return { y: n('year'), mo: n('month'), d: n('day'), h: n('hour') % 24, mi: n('minute') };
+}
+
+/** How far a zone's wall clock is ahead of UTC at an instant, in ms. */
+function offsetAt(t: number, zone: string): number {
+  const w = wallOf(t, zone);
+  return Date.UTC(w.y, w.mo - 1, w.d, w.h, w.mi) - Math.floor(t / 60_000) * 60_000;
+}
+
+/**
+ * A date and time on the team's wall clock (`golf_team_settings.timezone`), as an instant. A time skipped by a spring-
+ * forward change moves forward by the gap (2:30 AM becomes 3:30 AM) and says so (`shifted`); a time a fall-back change
+ * repeats takes the first. Null for a date or time that doesn't parse.
+ */
+export function zonedWallTimeToInstant(date: string, time: string, zone: string): { at: string; shifted: boolean } | null {
+  const dm = /^(\d{4})-(\d{2})-(\d{2})$/.exec(date);
+  const tm = /^(\d{2}):(\d{2})$/.exec(time);
+  if (!dm || !tm) return null;
+  const [y, mo, d, h, mi] = [Number(dm[1]), Number(dm[2]), Number(dm[3]), Number(tm[1]), Number(tm[2])];
+  const wall = Date.UTC(y, mo - 1, d, h, mi);
+  // Date.UTC rolls a 13th month or a 31 June over: a date that doesn't come back unchanged isn't a date.
+  if (!Number.isFinite(wall) || h > 23 || mi > 59 || new Date(wall).toISOString().slice(0, 10) !== date) return null;
+  const before = offsetAt(wall - 86_400_000, zone);
+  const after = offsetAt(wall + 86_400_000, zone);
+  const same = (t: number) => {
+    const w = wallOf(t, zone);
+    return w.y === y && w.mo === mo && w.d === d && w.h === h && w.mi === mi;
+  };
+  const hits = [...new Set([wall - before, wall - after])].filter(same).sort((a, b) => a - b);
+  if (hits.length) return { at: new Date(hits[0]!).toISOString(), shifted: false };
+  // The wall time doesn't exist (a spring-forward gap): read it on the clock from before the change, which lands past it.
+  return { at: new Date(wall - before).toISOString(), shifted: true };
+}
+
+/** The Custom end's default, on the team's clock: today at 9:00 PM before 8:00 PM, else tomorrow at 9:00 PM. */
+export function defaultCustomEnd(now: number, zone: string): { date: string; time: string } {
+  const w = wallOf(now, zone);
+  const day = new Date(Date.UTC(w.y, w.mo - 1, w.d + (w.h < 20 ? 0 : 1)));
+  return { date: day.toISOString().slice(0, 10), time: '21:00' };
+}
