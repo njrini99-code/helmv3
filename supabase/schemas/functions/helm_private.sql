@@ -565,3 +565,163 @@ CREATE OR REPLACE FUNCTION "helm_private"."trace_safe_metadata"("p_metadata" "js
 $$;
 
 ALTER FUNCTION "helm_private"."trace_safe_metadata"("p_metadata" "jsonb") OWNER TO "postgres";
+
+
+-- P-5 Tournaments from the calendar: HELD 20261025040000 / 20261025040100 (not applied; see supabase/migrations/HELD.md).
+-- The columns, index and triggers on 4.33's golf_tournaments and golf_tournament_rounds are mirrored with 4.33's
+-- tables when those are mirrored (4.33 has not mirrored them yet).
+
+CREATE OR REPLACE FUNCTION "helm_private"."guard_tournament_round_event"() RETURNS "trigger"
+    LANGUAGE "plpgsql"
+    SET "search_path" TO ''
+    AS $$
+DECLARE
+  v_status text;
+BEGIN
+  SELECT r.status INTO v_status FROM public.golf_tournament_rounds r WHERE r.round_event_id = OLD.id;
+  IF NOT FOUND THEN
+    RETURN NEW;
+  END IF;
+  IF NEW.event_type IS DISTINCT FROM 'tournament' THEN
+    RAISE EXCEPTION 'round_type_locked' USING ERRCODE = 'P0001';
+  END IF;
+  IF NEW.team_id IS DISTINCT FROM OLD.team_id THEN
+    RAISE EXCEPTION 'round_team_locked' USING ERRCODE = 'P0001';
+  END IF;
+  IF COALESCE(NEW.recurring, false) OR NEW.recurrence_rule IS NOT NULL OR NEW.parent_event_id IS NOT NULL THEN
+    RAISE EXCEPTION 'round_series_locked' USING ERRCODE = 'P0001';
+  END IF;
+  IF (NEW.title IS DISTINCT FROM OLD.title OR NEW.location IS DISTINCT FROM OLD.location
+      OR NEW.course_id IS DISTINCT FROM OLD.course_id)
+     AND pg_trigger_depth() < 2
+     AND current_setting('helm.tournament_write', true) IS DISTINCT FROM 'rounds' THEN
+    RAISE EXCEPTION 'round_fields_locked' USING ERRCODE = 'P0001';
+  END IF;
+  IF NEW.status = 'cancelled' AND OLD.status IS DISTINCT FROM 'cancelled' THEN
+    IF v_status <> 'upcoming' THEN
+      RAISE EXCEPTION 'round_started' USING ERRCODE = 'P0001';
+    END IF;
+    IF EXISTS (
+      SELECT 1 FROM public.golf_tournament_player_rounds pr
+       WHERE pr.round_event_id = OLD.id
+         AND (pr.round_id IS NOT NULL OR pr.entered_total IS NOT NULL)) THEN
+      RAISE EXCEPTION 'round_has_scores' USING ERRCODE = 'P0001';
+    END IF;
+  END IF;
+  RETURN NEW;
+END
+$$;
+
+
+ALTER FUNCTION "helm_private"."guard_tournament_round_event"() OWNER TO "postgres";
+
+CREATE OR REPLACE FUNCTION "helm_private"."sync_tournament_round_from_event"() RETURNS "trigger"
+    LANGUAGE "plpgsql"
+    SET "search_path" TO ''
+    AS $$
+DECLARE
+  v_round public.golf_tournament_rounds%ROWTYPE;
+  v_ev    public.golf_events%ROWTYPE;
+  v_tz    text;
+  v_first timestamptz;
+  v_bad   boolean;
+  v_min   date;
+  v_max   date;
+BEGIN
+  SELECT * INTO v_round FROM public.golf_tournament_rounds r WHERE r.round_event_id = NEW.id;
+  IF NOT FOUND THEN
+    RETURN NULL;
+  END IF;
+  SELECT * INTO v_ev FROM public.golf_events e WHERE e.id = NEW.id;  -- the row as it stands at commit
+  IF NOT FOUND THEN
+    RETURN NULL;
+  END IF;
+  v_tz := public.golf_team_timezone(v_round.team_id);
+
+  WITH k AS (
+    SELECT r.round_number, COALESCE(e.all_day, false) AS all_day,
+           CASE WHEN COALESCE(e.all_day, false)
+                THEN ((e.start_time AT TIME ZONE 'UTC')::date + 1)::timestamp - interval '1 microsecond'
+                ELSE e.start_time AT TIME ZONE v_tz END AS key
+      FROM public.golf_tournament_rounds r
+      JOIN public.golf_events e ON e.id = r.round_event_id
+     WHERE r.tournament_id = v_round.tournament_id
+       AND e.status IS DISTINCT FROM 'cancelled'
+  )
+  SELECT EXISTS (
+    SELECT 1 FROM k a JOIN k b ON b.round_number > a.round_number
+     WHERE b.key < a.key OR (b.key = a.key AND NOT (a.all_day AND b.all_day))
+  ) INTO v_bad;
+  IF v_bad THEN
+    RAISE EXCEPTION 'round_order' USING ERRCODE = 'P0001';
+  END IF;
+
+  v_first := CASE WHEN COALESCE(v_ev.all_day, false) THEN NULL ELSE v_ev.start_time END;
+  IF v_round.first_tee_at IS DISTINCT FROM v_first THEN
+    UPDATE public.golf_tournament_rounds SET first_tee_at = v_first WHERE round_event_id = NEW.id;
+  END IF;
+
+  SELECT min(d), max(d) INTO v_min, v_max FROM (
+    SELECT CASE WHEN COALESCE(e.all_day, false) THEN (e.start_time AT TIME ZONE 'UTC')::date
+                ELSE (e.start_time AT TIME ZONE v_tz)::date END AS d
+      FROM public.golf_tournament_rounds r
+      JOIN public.golf_events e ON e.id = r.round_event_id
+     WHERE r.tournament_id = v_round.tournament_id
+  ) s;
+
+  -- Bump the version only when something the tournament shows actually changed.
+  UPDATE public.golf_tournaments t SET start_date = v_min, end_date = v_max
+   WHERE t.id = v_round.tournament_id
+     AND (t.start_date IS DISTINCT FROM v_min OR t.end_date IS DISTINCT FROM v_max
+          OR v_round.first_tee_at IS DISTINCT FROM v_first);
+  RETURN NULL;
+END
+$$;
+
+
+ALTER FUNCTION "helm_private"."sync_tournament_round_from_event"() OWNER TO "postgres";
+
+CREATE OR REPLACE FUNCTION "helm_private"."sync_tournament_round_titles"() RETURNS "trigger"
+    LANGUAGE "plpgsql"
+    SET "search_path" TO ''
+    AS $$
+BEGIN
+  UPDATE public.golf_events e
+     SET title = NEW.name || ' · R' || r.round_number, updated_at = now()
+    FROM public.golf_tournament_rounds r
+   WHERE r.tournament_id = NEW.id
+     AND e.id = r.round_event_id
+     AND e.title IS DISTINCT FROM NEW.name || ' · R' || r.round_number;
+  RETURN NULL;
+END
+$$;
+
+
+ALTER FUNCTION "helm_private"."sync_tournament_round_titles"() OWNER TO "postgres";
+
+CREATE OR REPLACE FUNCTION "helm_private"."sync_round_event_fields"() RETURNS "trigger"
+    LANGUAGE "plpgsql"
+    SET "search_path" TO ''
+    AS $$
+DECLARE
+  v_name text;
+  v_loc  text;
+BEGIN
+  SELECT t.name INTO v_name FROM public.golf_tournaments t WHERE t.id = NEW.tournament_id;
+  SELECT c.name INTO v_loc FROM public.golf_courses c WHERE c.id = NEW.course_id;
+  v_loc := COALESCE(v_loc, NEW.course_label);
+  UPDATE public.golf_events e SET
+    title      = v_name || ' · R' || NEW.round_number,
+    course_id  = NEW.course_id,
+    location   = COALESCE(v_loc, e.location),
+    updated_at = now()
+  WHERE e.id = NEW.round_event_id
+    AND (e.title IS DISTINCT FROM v_name || ' · R' || NEW.round_number
+         OR e.course_id IS DISTINCT FROM NEW.course_id
+         OR (v_loc IS NOT NULL AND e.location IS DISTINCT FROM v_loc));
+  RETURN NULL;
+END
+$$;
+
+
+ALTER FUNCTION "helm_private"."sync_round_event_fields"() OWNER TO "postgres";

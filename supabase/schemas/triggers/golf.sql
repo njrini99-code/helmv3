@@ -101,3 +101,8 @@ CREATE OR REPLACE TRIGGER "update_golf_travel_itineraries_updated_at" BEFORE UPD
 CREATE OR REPLACE TRIGGER "update_putt_details_updated_at" BEFORE UPDATE ON "public"."putt_details" FOR EACH ROW EXECUTE FUNCTION "public"."update_updated_at_column"();
 
 CREATE OR REPLACE TRIGGER "golf_coaches_guard_organization_id" BEFORE INSERT OR UPDATE OF "organization_id" ON "public"."golf_coaches" FOR EACH ROW EXECUTE FUNCTION "public"."guard_coach_organization_id"();
+
+-- P-5 (HELD 20261025040000 / 20261025040100)
+CREATE OR REPLACE TRIGGER "golf_events_tournament_round_guard" BEFORE UPDATE OF "event_type", "team_id", "recurring", "recurrence_rule", "parent_event_id", "status", "title", "location", "course_id" ON "public"."golf_events" FOR EACH ROW WHEN (("old"."event_type" = 'tournament'::"text")) EXECUTE FUNCTION "helm_private"."guard_tournament_round_event"();
+
+CREATE CONSTRAINT TRIGGER "golf_events_tournament_round_sync" AFTER UPDATE OF "start_time", "end_time", "all_day", "status" ON "public"."golf_events" DEFERRABLE INITIALLY DEFERRED FOR EACH ROW WHEN ((("new"."event_type" = 'tournament'::"text") AND (("old"."start_time" IS DISTINCT FROM "new"."start_time") OR ("old"."all_day" IS DISTINCT FROM "new"."all_day") OR (("old"."status" = 'cancelled'::"text") AND ("new"."status" IS DISTINCT FROM 'cancelled'::"text"))))) EXECUTE FUNCTION "helm_private"."sync_tournament_round_from_event"();

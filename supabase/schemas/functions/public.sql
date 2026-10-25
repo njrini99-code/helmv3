@@ -11730,3 +11730,618 @@ end;
 $$;
 
 ALTER FUNCTION "public"."golf_import_player_classes"("p_player_id" "uuid", "p_team_id" "uuid", "p_term" "text", "p_rows" "jsonb") OWNER TO "postgres";
+
+
+-- P-5 Tournaments from the calendar: HELD 20261025040000 / 20261025040100 (not applied; see supabase/migrations/HELD.md).
+-- The columns, index and triggers on 4.33's golf_tournaments and golf_tournament_rounds are mirrored with 4.33's
+-- tables when those are mirrored (4.33 has not mirrored them yet).
+
+CREATE OR REPLACE FUNCTION "public"."golf_team_timezone"("p_team_id" "uuid") RETURNS "text"
+    LANGUAGE "plpgsql" STABLE
+    SET "search_path" TO ''
+    AS $$
+DECLARE
+  v_tz text;
+BEGIN
+  SELECT btrim(s.timezone) INTO v_tz FROM public.golf_team_settings s WHERE s.team_id = p_team_id LIMIT 1;
+  IF v_tz IS NULL OR v_tz = '' THEN
+    RETURN 'America/New_York';
+  END IF;
+  BEGIN
+    PERFORM now() AT TIME ZONE v_tz;
+  EXCEPTION WHEN invalid_parameter_value THEN
+    RETURN 'America/New_York';
+  END;
+  RETURN v_tz;
+END
+$$;
+
+
+ALTER FUNCTION "public"."golf_team_timezone"("p_team_id" "uuid") OWNER TO "postgres";
+
+CREATE OR REPLACE FUNCTION "public"."golf_tournament_create_from_calendar"("p" "jsonb") RETURNS "jsonb"
+    LANGUAGE "plpgsql"
+    SET "search_path" TO ''
+    AS $_$
+DECLARE
+  v_uid         uuid := (SELECT auth.uid());
+  v_team        uuid := NULLIF(p->>'team_id', '')::uuid;
+  v_request     uuid := NULLIF(p->>'request_id', '')::uuid;
+  v_from        uuid := NULLIF(p->>'from_event_id', '')::uuid;
+  v_name        text := btrim(COALESCE(p->>'name', ''));
+  v_rounds      jsonb := p->'rounds';
+  v_holes       smallint := COALESCE(NULLIF(p->>'holes_per_round', '')::smallint, 18);
+  v_format      text := COALESCE(NULLIF(p->>'format', ''), '5c4');
+  v_entries_fn  regprocedure := to_regprocedure('public.golf_tournament_set_entries(uuid, jsonb, integer)');
+  v_has_entries boolean := jsonb_typeof(p->'entries') = 'array' AND jsonb_array_length(p->'entries') > 0;
+  v_qualifier   uuid := NULLIF(p->>'qualifier_id', '')::uuid;
+  v_itinerary   uuid := NULLIF(p->>'itinerary_id', '')::uuid;
+  v_q_target    uuid;
+  v_t_event     uuid;
+  v_n           int;
+  v_tz          text;
+  v_coach       uuid;
+  v_tid         uuid;
+  v_version     int;
+  v_existing    public.golf_tournaments%ROWTYPE;
+  v_from_row    public.golf_events%ROWTYPE;
+  v_r           jsonb;
+  v_i           int;
+  v_start       timestamptz;
+  v_end         timestamptz;
+  v_all_day     boolean;
+  v_key         timestamp;
+  v_prev_key    timestamp;
+  v_prev_allday boolean;
+  v_day         date;
+  v_min_date    date;
+  v_max_date    date;
+  v_adopt       uuid;
+  v_event       uuid;
+  v_r1          uuid;
+  v_course      uuid;
+  v_label       text;
+  v_loc         text;
+  v_desc        text;
+  v_rsvp        boolean;
+  v_deadline    timestamptz;
+  v_attendees   uuid[];
+  v_ppt         smallint;
+  v_count       smallint;
+  v_out         jsonb := '[]'::jsonb;
+BEGIN
+  IF v_team IS NULL OR v_request IS NULL THEN
+    RAISE EXCEPTION 'bad_input' USING ERRCODE = 'P0001';
+  END IF;
+  IF NOT public.is_golf_team_coach(v_team) THEN
+    RAISE EXCEPTION 'not_coach' USING ERRCODE = '42501';
+  END IF;
+
+  -- 4a. Replay: the same request returns what it made the first time, and writes nothing.
+  --     Invoker rights hide another team's row, so a replay of another team's id finds nothing here and loses on the
+  --     unique index instead (23505).
+  SELECT * INTO v_existing FROM public.golf_tournaments WHERE request_id = v_request;
+  IF FOUND THEN
+    IF v_existing.team_id <> v_team OR v_existing.created_by IS DISTINCT FROM v_uid THEN
+      RAISE EXCEPTION 'request_conflict' USING ERRCODE = 'P0001';
+    END IF;
+    RETURN jsonb_build_object(
+      'tournament_id', v_existing.id,
+      'version', v_existing.version,
+      'replayed', true,
+      'rounds', COALESCE((
+        SELECT jsonb_agg(jsonb_build_object('round_number', r.round_number, 'event_id', r.round_event_id)
+                         ORDER BY r.round_number)
+        FROM public.golf_tournament_rounds r
+        WHERE r.tournament_id = v_existing.id), '[]'::jsonb));
+  END IF;
+
+  -- 4b. Shape.
+  IF char_length(v_name) NOT BETWEEN 1 AND 120 THEN
+    RAISE EXCEPTION 'bad_name' USING ERRCODE = 'P0001';
+  END IF;
+  IF v_rounds IS NULL OR jsonb_typeof(v_rounds) <> 'array' THEN
+    RAISE EXCEPTION 'bad_input' USING ERRCODE = 'P0001';
+  END IF;
+  v_n := jsonb_array_length(v_rounds);
+  IF v_n < 1 OR v_n > 6 THEN
+    RAISE EXCEPTION 'round_count' USING ERRCODE = 'P0001';
+  END IF;
+  -- Entries go through 4.33's own function (100200). Until it exists the create refuses them instead of dropping them.
+  IF v_has_entries AND v_entries_fn IS NULL THEN
+    RAISE EXCEPTION 'entries_unavailable' USING ERRCODE = 'P0001';
+  END IF;
+
+  v_tz := public.golf_team_timezone(v_team);
+
+  -- Counting: the named formats fix players and counting; custom and the match formats take them from p.
+  v_ppt := CASE v_format WHEN '5c4' THEN 5 WHEN '6c5' THEN 6 WHEN '6c4' THEN 6
+           ELSE COALESCE(NULLIF(p->>'players_per_team', '')::smallint, 5) END;
+  v_count := CASE v_format WHEN '5c4' THEN 4 WHEN '6c5' THEN 5 WHEN '6c4' THEN 4
+             ELSE COALESCE(NULLIF(p->>'counting', '')::smallint, LEAST(4, v_ppt)::smallint) END;
+
+  -- 4c. The event to adopt as R1.
+  IF v_from IS NOT NULL THEN
+    SELECT * INTO v_from_row FROM public.golf_events WHERE id = v_from FOR UPDATE;
+    IF NOT FOUND OR v_from_row.team_id <> v_team THEN
+      RAISE EXCEPTION 'event_not_found' USING ERRCODE = 'P0001';
+    END IF;
+    IF COALESCE(v_from_row.recurring, false) OR v_from_row.recurrence_rule IS NOT NULL
+       OR v_from_row.parent_event_id IS NOT NULL THEN
+      RAISE EXCEPTION 'event_is_series' USING ERRCODE = 'P0001';
+    END IF;
+    IF v_from_row.status = 'cancelled' THEN
+      RAISE EXCEPTION 'event_cancelled' USING ERRCODE = 'P0001';
+    END IF;
+    IF EXISTS (SELECT 1 FROM public.golf_tournament_rounds r WHERE r.round_event_id = v_from) THEN
+      RAISE EXCEPTION 'already_tracked' USING ERRCODE = 'P0001';
+    END IF;
+  END IF;
+
+  -- 4d. Validate every round before writing anything: order, dates, events to adopt.
+  FOR v_r, v_i IN
+    SELECT e.value, e.ord::int FROM jsonb_array_elements(v_rounds) WITH ORDINALITY AS e(value, ord) ORDER BY e.ord
+  LOOP
+    v_start   := NULLIF(v_r->>'start_at', '')::timestamptz;
+    v_all_day := COALESCE((v_r->>'all_day')::boolean, false);
+    IF v_start IS NULL THEN
+      RAISE EXCEPTION 'bad_input' USING ERRCODE = 'P0001';
+    END IF;
+    v_key := CASE WHEN v_all_day THEN ((v_start AT TIME ZONE 'UTC')::date + 1)::timestamp - interval '1 microsecond'
+                  ELSE v_start AT TIME ZONE v_tz END;
+    IF v_prev_key IS NOT NULL
+       AND (v_key < v_prev_key OR (v_key = v_prev_key AND NOT (v_all_day AND v_prev_allday))) THEN
+      RAISE EXCEPTION 'round_order' USING ERRCODE = 'P0001';
+    END IF;
+    v_prev_key := v_key;
+    v_prev_allday := v_all_day;
+    v_day := v_key::date;
+    v_min_date := LEAST(COALESCE(v_min_date, v_day), v_day);
+    v_max_date := GREATEST(COALESCE(v_max_date, v_day), v_day);
+
+    v_adopt := NULLIF(v_r->>'event_id', '')::uuid;
+    IF v_adopt IS NOT NULL AND v_adopt IS DISTINCT FROM v_from THEN
+      IF v_i = 1 AND v_from IS NOT NULL THEN
+        RAISE EXCEPTION 'bad_input' USING ERRCODE = 'P0001';
+      END IF;
+      PERFORM 1 FROM public.golf_events e
+       WHERE e.id = v_adopt AND e.team_id = v_team
+         AND e.status IS DISTINCT FROM 'cancelled'
+         AND NOT COALESCE(e.recurring, false) AND e.recurrence_rule IS NULL AND e.parent_event_id IS NULL
+       FOR UPDATE;
+      IF NOT FOUND THEN
+        RAISE EXCEPTION 'event_not_found' USING ERRCODE = 'P0001';
+      END IF;
+      IF EXISTS (SELECT 1 FROM public.golf_tournament_rounds r WHERE r.round_event_id = v_adopt) THEN
+        RAISE EXCEPTION 'already_tracked' USING ERRCODE = 'P0001';
+      END IF;
+    END IF;
+  END LOOP;
+
+  -- 4e. Links, checked and locked before any write. A qualifier already pointing at another event is not stolen
+  --     (qualifier_linked); one pointing at the event being converted stays allowed. A trip linked elsewhere is refused.
+  IF v_qualifier IS NOT NULL THEN
+    SELECT q.target_tournament_id INTO v_q_target
+      FROM public.golf_qualifiers q
+     WHERE q.id = v_qualifier AND q.team_id = v_team
+       FOR UPDATE;
+    IF NOT FOUND THEN
+      RAISE EXCEPTION 'qualifier_not_found' USING ERRCODE = 'P0001';
+    END IF;
+    IF v_q_target IS NOT NULL AND v_q_target IS DISTINCT FROM v_from THEN
+      RAISE EXCEPTION 'qualifier_linked' USING ERRCODE = 'P0001';
+    END IF;
+  END IF;
+  IF v_itinerary IS NOT NULL THEN
+    SELECT ti.event_id INTO v_t_event
+      FROM public.golf_travel_itineraries ti
+     WHERE ti.id = v_itinerary AND ti.team_id = v_team
+       FOR UPDATE;
+    IF NOT FOUND OR (v_t_event IS NOT NULL AND v_t_event IS DISTINCT FROM v_from) THEN
+      RAISE EXCEPTION 'trip_not_found' USING ERRCODE = 'P0001';
+    END IF;
+  END IF;
+
+  -- 4f. The tournament row. golf_events.created_by is golf_coaches.id (FK), not auth.uid().
+  SELECT c.id INTO v_coach
+    FROM public.golf_coaches c
+    JOIN public.golf_team_coach_staff s ON s.coach_id = c.id
+   WHERE c.user_id = v_uid AND s.team_id = v_team
+   LIMIT 1;
+
+  INSERT INTO public.golf_tournaments (
+    team_id, name, start_date, end_date, course_id, format, players_per_team, counting,
+    holes_per_round, rounds_count, event_kind, field_size, host, results_url, created_by, request_id)
+  VALUES (
+    v_team, v_name, v_min_date, v_max_date, NULLIF(p->>'course_id', '')::uuid, v_format, v_ppt, v_count,
+    v_holes, v_n, COALESCE(NULLIF(p->>'event_kind', ''), 'regular'),
+    NULLIF(p->>'field_size', '')::smallint, NULLIF(btrim(p->>'host'), ''), NULLIF(btrim(p->>'results_url'), ''),
+    v_uid, v_request)
+  RETURNING id, version INTO v_tid, v_version;
+
+  -- 4g. Who is on every round: the editor's list (active members only), else R1's own list, else the whole team.
+  v_desc     := NULLIF(btrim(p->'event'->>'description'), '');
+  v_rsvp     := COALESCE((p->'event'->>'requires_rsvp')::boolean, v_from_row.requires_rsvp, false);
+  v_deadline := NULLIF(p->'event'->>'rsvp_deadline', '')::timestamptz;
+
+  IF jsonb_typeof(p->'event'->'attendee_ids') = 'array' THEN
+    SELECT COALESCE(array_agg(m.player_id), '{}') INTO v_attendees
+      FROM public.golf_team_members m
+     WHERE m.team_id = v_team AND m.status = 'active'
+       AND m.player_id IN (SELECT x.id::uuid FROM jsonb_array_elements_text(p->'event'->'attendee_ids') AS x(id));
+  ELSIF v_from IS NOT NULL AND EXISTS (SELECT 1 FROM public.golf_event_attendance a WHERE a.event_id = v_from) THEN
+    SELECT COALESCE(array_agg(a.player_id), '{}') INTO v_attendees
+      FROM public.golf_event_attendance a
+      JOIN public.golf_team_members m ON m.player_id = a.player_id AND m.team_id = v_team AND m.status = 'active'
+     WHERE a.event_id = v_from;
+  ELSE
+    SELECT COALESCE(array_agg(m.player_id), '{}') INTO v_attendees
+      FROM public.golf_team_members m
+     WHERE m.team_id = v_team AND m.status = 'active';
+  END IF;
+
+  -- 4h. The adopt below rewrites an existing event's title, type and course. Marked for this transaction (is_local),
+  --     and deliberately not cleared, so the adopt UPDATE carries it: P-5's guard lets it through and P-14's change
+  --     marks skip a convert's title-only "rename" (P-14 12.6, owner call 12.10).
+  PERFORM set_config('helm.tournament_write', 'rounds', true);
+
+  -- 4i. One golf_events row per round (adopted or new), its golf_tournament_rounds link, and its attendance.
+  FOR v_r, v_i IN
+    SELECT e.value, e.ord::int FROM jsonb_array_elements(v_rounds) WITH ORDINALITY AS e(value, ord) ORDER BY e.ord
+  LOOP
+    v_start   := (v_r->>'start_at')::timestamptz;
+    v_all_day := COALESCE((v_r->>'all_day')::boolean, false);
+    v_end     := NULLIF(v_r->>'end_at', '')::timestamptz;
+    IF v_all_day THEN
+      v_end := COALESCE(v_end, v_start);  -- the calendar's all-day convention: date T00:00Z, end = start for one day
+    ELSIF v_end IS NULL THEN
+      v_end := v_start + CASE WHEN v_holes = 9 THEN interval '2 hours 30 minutes' ELSE interval '5 hours' END;
+    END IF;
+
+    v_course := COALESCE(NULLIF(v_r->>'course_id', '')::uuid, NULLIF(p->>'course_id', '')::uuid);
+    v_label  := NULLIF(btrim(COALESCE(v_r->>'course_label', p->>'course_label', '')), '');
+    v_loc    := NULL;
+    SELECT gc.name INTO v_loc FROM public.golf_courses gc WHERE gc.id = v_course;
+    v_loc := COALESCE(v_loc, v_label);
+
+    v_adopt := CASE WHEN v_i = 1 AND v_from IS NOT NULL THEN v_from
+                    ELSE NULLIF(v_r->>'event_id', '')::uuid END;
+
+    IF v_adopt IS NOT NULL THEN
+      UPDATE public.golf_events SET
+        title         = v_name || ' · R' || v_i,
+        event_type    = 'tournament',
+        start_time    = v_start,
+        end_time      = v_end,
+        all_day       = v_all_day,
+        course_id     = v_course,
+        location      = COALESCE(v_loc, location),
+        description   = COALESCE(v_desc, description),
+        requires_rsvp = v_rsvp,
+        rsvp_deadline = COALESCE(v_deadline, rsvp_deadline),
+        updated_at    = now()
+      WHERE id = v_adopt;
+      v_event := v_adopt;
+    ELSE
+      INSERT INTO public.golf_events (
+        team_id, created_by, title, description, event_type, location, course_id,
+        start_time, end_time, all_day, status, requires_rsvp, rsvp_deadline)
+      VALUES (
+        v_team, v_coach, v_name || ' · R' || v_i, v_desc, 'tournament', v_loc, v_course,
+        v_start, v_end, v_all_day, 'confirmed', v_rsvp, v_deadline)
+      RETURNING id INTO v_event;
+    END IF;
+    IF v_i = 1 THEN
+      v_r1 := v_event;
+    END IF;
+
+    -- event_adopted: an adopted event is the coach's own entry, so 4.33's golf_tournament_delete keeps it.
+    INSERT INTO public.golf_tournament_rounds (
+      round_event_id, tournament_id, team_id, round_number, course_id, tee_id, start_type, first_tee_at,
+      course_label, event_adopted)
+    VALUES (
+      v_event, v_tid, v_team, v_i, v_course, NULLIF(v_r->>'tee_id', '')::uuid,
+      COALESCE(NULLIF(v_r->>'start_type', ''), 'tee_times'),
+      CASE WHEN v_all_day THEN NULL ELSE v_start END,
+      CASE WHEN v_course IS NULL THEN v_label END,
+      v_adopt IS NOT NULL);
+
+    -- Add who is missing; drop only invitations nobody answered for players taken off the list. Replies stay.
+    INSERT INTO public.golf_event_attendance (event_id, player_id, status, notified_at)
+    SELECT v_event, a.id, 'pending', now() FROM unnest(v_attendees) AS a(id)
+    ON CONFLICT (event_id, player_id) DO NOTHING;
+    DELETE FROM public.golf_event_attendance x
+     WHERE x.event_id = v_event AND x.status = 'pending' AND x.rsvp_at IS NULL
+       AND NOT (x.player_id = ANY (v_attendees));
+
+    v_out := v_out || jsonb_build_array(jsonb_build_object('round_number', v_i, 'event_id', v_event));
+  END LOOP;
+
+  -- 4j. Links (checked in 4e). R1 keeps the original id on a convert, so an existing link already points at it.
+  IF v_qualifier IS NOT NULL THEN
+    UPDATE public.golf_qualifiers q SET target_tournament_id = v_r1 WHERE q.id = v_qualifier AND q.team_id = v_team;
+  END IF;
+  IF v_itinerary IS NOT NULL THEN
+    UPDATE public.golf_travel_itineraries ti SET event_id = v_r1 WHERE ti.id = v_itinerary AND ti.team_id = v_team;
+  END IF;
+
+  -- 4k. Draft entries through 4.33's own function (its validation and guard apply), when it exists (checked in 4b).
+  IF v_has_entries THEN
+    EXECUTE 'SELECT public.golf_tournament_set_entries($1, $2, $3)' USING v_tid, p->'entries', v_version;
+  END IF;
+
+  SELECT t.version INTO v_version FROM public.golf_tournaments t WHERE t.id = v_tid;
+  RETURN jsonb_build_object('tournament_id', v_tid, 'version', v_version, 'replayed', false, 'rounds', v_out);
+END
+$_$;
+
+
+ALTER FUNCTION "public"."golf_tournament_create_from_calendar"("p" "jsonb") OWNER TO "postgres";
+
+CREATE OR REPLACE FUNCTION "public"."golf_tournament_update_round"("p_round_event_id" "uuid", "p" "jsonb", "p_expected_version" integer) RETURNS "jsonb"
+    LANGUAGE "plpgsql"
+    SET "search_path" TO ''
+    AS $_$
+DECLARE
+  v_round     public.golf_tournament_rounds%ROWTYPE;
+  v_t         public.golf_tournaments%ROWTYPE;
+  v_ev        public.golf_events%ROWTYPE;
+  v_tz        text;
+  v_start     timestamptz;
+  v_end       timestamptz;
+  v_all_day   boolean;
+  v_key       timestamp;
+  v_delta     interval;
+  v_min       date;
+  v_max       date;
+  v_new       int;
+  v_shifted   int := 0;
+  v_attendees uuid[];
+  v_added     uuid[] := '{}';
+BEGIN
+  IF p_expected_version IS NULL OR p_round_event_id IS NULL THEN
+    RAISE EXCEPTION 'bad_input' USING ERRCODE = 'P0001';
+  END IF;
+  SELECT * INTO v_round FROM public.golf_tournament_rounds WHERE round_event_id = p_round_event_id;
+  IF NOT FOUND THEN
+    RAISE EXCEPTION 'not_found' USING ERRCODE = 'P0001';
+  END IF;
+  IF NOT public.is_golf_team_coach(v_round.team_id) THEN
+    RAISE EXCEPTION 'not_coach' USING ERRCODE = '42501';
+  END IF;
+  SELECT * INTO v_t FROM public.golf_tournaments WHERE id = v_round.tournament_id FOR UPDATE;
+  IF v_t.version IS DISTINCT FROM p_expected_version THEN
+    RAISE EXCEPTION 'stale' USING ERRCODE = 'P0001';
+  END IF;
+  IF v_round.status <> 'upcoming' THEN
+    RAISE EXCEPTION 'round_started' USING ERRCODE = 'P0001';
+  END IF;
+  SELECT * INTO v_ev FROM public.golf_events WHERE id = p_round_event_id FOR UPDATE;
+  v_tz := public.golf_team_timezone(v_round.team_id);
+
+  v_start   := COALESCE(NULLIF(p->>'start_at', '')::timestamptz, v_ev.start_time);
+  v_all_day := COALESCE((p->>'all_day')::boolean, v_ev.all_day, false);
+  v_end     := CASE
+                 WHEN p ? 'end_at' AND NULLIF(p->>'end_at', '') IS NOT NULL THEN (p->>'end_at')::timestamptz
+                 WHEN v_all_day THEN v_start
+                 WHEN COALESCE(v_ev.all_day, false) OR v_ev.end_time IS NULL THEN v_start + interval '5 hours'
+                 ELSE v_ev.end_time + (v_start - v_ev.start_time)
+               END;
+  v_key := CASE WHEN v_all_day THEN ((v_start AT TIME ZONE 'UTC')::date + 1)::timestamp - interval '1 microsecond'
+                ELSE v_start AT TIME ZONE v_tz END;
+
+  -- Order against the tournament's other rounds that are not cancelled.
+  IF EXISTS (
+    SELECT 1
+      FROM public.golf_tournament_rounds r
+      JOIN public.golf_events e ON e.id = r.round_event_id
+      CROSS JOIN LATERAL (
+        SELECT CASE WHEN COALESCE(e.all_day, false)
+                    THEN ((e.start_time AT TIME ZONE 'UTC')::date + 1)::timestamp - interval '1 microsecond'
+                    ELSE e.start_time AT TIME ZONE v_tz END AS k) o
+     WHERE r.tournament_id = v_round.tournament_id
+       AND r.round_event_id <> p_round_event_id
+       AND e.status IS DISTINCT FROM 'cancelled'
+       AND ((r.round_number < v_round.round_number
+             AND (o.k > v_key OR (o.k = v_key AND NOT (COALESCE(e.all_day, false) AND v_all_day))))
+         OR (r.round_number > v_round.round_number
+             AND (o.k < v_key OR (o.k = v_key AND NOT (COALESCE(e.all_day, false) AND v_all_day)))))
+  ) THEN
+    RAISE EXCEPTION 'round_order' USING ERRCODE = 'P0001';
+  END IF;
+
+  v_delta := v_start - v_ev.start_time;
+
+  UPDATE public.golf_events SET
+    start_time    = v_start,
+    end_time      = v_end,
+    all_day       = v_all_day,
+    description   = CASE WHEN p ? 'description' THEN NULLIF(btrim(p->>'description'), '') ELSE description END,
+    requires_rsvp = COALESCE((p->>'requires_rsvp')::boolean, requires_rsvp),
+    rsvp_deadline = CASE WHEN p ? 'rsvp_deadline' THEN NULLIF(p->>'rsvp_deadline', '')::timestamptz ELSE rsvp_deadline END,
+    updated_at    = now()
+  WHERE id = p_round_event_id;
+
+  UPDATE public.golf_tournament_rounds SET
+    first_tee_at = CASE WHEN v_all_day THEN NULL ELSE v_start END,
+    start_type   = COALESCE(NULLIF(p->>'start_type', ''), start_type)
+  WHERE round_event_id = p_round_event_id;
+
+  -- Invitees, under the same version check: active members of the team only. Missing ones get a pending row; a
+  -- pending row nobody answered goes when its player is taken off. Replies stay.
+  IF jsonb_typeof(p->'attendee_ids') = 'array' THEN
+    SELECT COALESCE(array_agg(m.player_id), '{}') INTO v_attendees
+      FROM public.golf_team_members m
+     WHERE m.team_id = v_round.team_id AND m.status = 'active'
+       AND m.player_id IN (SELECT x.id::uuid FROM jsonb_array_elements_text(p->'attendee_ids') AS x(id));
+    WITH ins AS (
+      INSERT INTO public.golf_event_attendance (event_id, player_id, status, notified_at)
+      SELECT p_round_event_id, a.id, 'pending', now() FROM unnest(v_attendees) AS a(id)
+      ON CONFLICT (event_id, player_id) DO NOTHING
+      RETURNING player_id)
+    SELECT COALESCE(array_agg(ins.player_id), '{}') INTO v_added FROM ins;
+    DELETE FROM public.golf_event_attendance x
+     WHERE x.event_id = p_round_event_id AND x.status = 'pending' AND x.rsvp_at IS NULL
+       AND NOT (x.player_id = ANY (v_attendees));
+  END IF;
+
+  -- Owner call 2: move each player's tee time by the same amount, only between two timed starts, and only when 4.33's
+  -- tee sheet (100300) exists.
+  IF COALESCE((p->>'shift_tee_sheet')::boolean, false)
+     AND NOT COALESCE(v_ev.all_day, false) AND NOT v_all_day AND v_delta <> interval '0'
+     AND to_regclass('public.golf_tournament_tee_sheet') IS NOT NULL THEN
+    EXECUTE 'UPDATE public.golf_tournament_tee_sheet SET tee_at = tee_at + $1, updated_by = $2, updated_at = now()'
+         || ' WHERE round_event_id = $3'
+      USING v_delta, (SELECT auth.uid()), p_round_event_id;
+    GET DIAGNOSTICS v_shifted = ROW_COUNT;
+  END IF;
+
+  -- The tournament's local dates follow its rounds; the UPDATE always bumps version (4.33's touch trigger).
+  SELECT min(CASE WHEN COALESCE(e.all_day, false) THEN (e.start_time AT TIME ZONE 'UTC')::date ELSE (e.start_time AT TIME ZONE v_tz)::date END),
+         max(CASE WHEN COALESCE(e.all_day, false) THEN (e.start_time AT TIME ZONE 'UTC')::date ELSE (e.start_time AT TIME ZONE v_tz)::date END)
+    INTO v_min, v_max
+    FROM public.golf_tournament_rounds r JOIN public.golf_events e ON e.id = r.round_event_id
+   WHERE r.tournament_id = v_round.tournament_id;
+
+  UPDATE public.golf_tournaments SET start_date = v_min, end_date = v_max
+   WHERE id = v_round.tournament_id
+  RETURNING version INTO v_new;
+  RETURN jsonb_build_object('version', v_new, 'tee_times_shifted', v_shifted, 'added_player_ids', to_jsonb(v_added));
+END
+$_$;
+
+
+ALTER FUNCTION "public"."golf_tournament_update_round"("p_round_event_id" "uuid", "p" "jsonb", "p_expected_version" integer) OWNER TO "postgres";
+
+CREATE OR REPLACE FUNCTION "public"."golf_tournament_set_cancelled"("p_tournament_id" "uuid", "p_round_event_id" "uuid", "p_cancelled" boolean, "p_reason" "text", "p_expected_version" integer) RETURNS "jsonb"
+    LANGUAGE "plpgsql"
+    SET "search_path" TO ''
+    AS $$
+DECLARE
+  v_t       public.golf_tournaments%ROWTYPE;
+  v_tz      text;
+  v_new     int;
+  v_changed uuid[];
+  v_bad     boolean;
+BEGIN
+  IF p_expected_version IS NULL OR p_tournament_id IS NULL OR p_cancelled IS NULL THEN
+    RAISE EXCEPTION 'bad_input' USING ERRCODE = 'P0001';
+  END IF;
+  SELECT * INTO v_t FROM public.golf_tournaments WHERE id = p_tournament_id FOR UPDATE;
+  IF NOT FOUND THEN
+    RAISE EXCEPTION 'not_found' USING ERRCODE = 'P0001';
+  END IF;
+  IF NOT public.is_golf_team_coach(v_t.team_id) THEN
+    RAISE EXCEPTION 'not_coach' USING ERRCODE = '42501';
+  END IF;
+  IF v_t.version IS DISTINCT FROM p_expected_version THEN
+    RAISE EXCEPTION 'stale' USING ERRCODE = 'P0001';
+  END IF;
+  IF p_round_event_id IS NOT NULL AND NOT EXISTS (
+       SELECT 1 FROM public.golf_tournament_rounds r
+        WHERE r.round_event_id = p_round_event_id AND r.tournament_id = p_tournament_id) THEN
+    RAISE EXCEPTION 'not_found' USING ERRCODE = 'P0001';
+  END IF;
+
+  IF p_cancelled THEN
+    IF EXISTS (
+      SELECT 1 FROM public.golf_tournament_rounds r
+       WHERE r.tournament_id = p_tournament_id
+         AND (p_round_event_id IS NULL OR r.round_event_id = p_round_event_id)
+         AND r.status <> 'upcoming') THEN
+      RAISE EXCEPTION 'round_started' USING ERRCODE = 'P0001';
+    END IF;
+    IF EXISTS (
+      SELECT 1 FROM public.golf_tournament_player_rounds pr
+        JOIN public.golf_tournament_rounds r ON r.round_event_id = pr.round_event_id
+       WHERE r.tournament_id = p_tournament_id
+         AND (p_round_event_id IS NULL OR r.round_event_id = p_round_event_id)
+         AND (pr.round_id IS NOT NULL OR pr.entered_total IS NOT NULL)) THEN
+      RAISE EXCEPTION 'round_has_scores' USING ERRCODE = 'P0001';
+    END IF;
+  END IF;
+
+  WITH changed AS (
+    UPDATE public.golf_events e SET
+      status              = CASE WHEN p_cancelled THEN 'cancelled' ELSE 'confirmed' END,
+      cancelled_at        = CASE WHEN p_cancelled THEN now() ELSE NULL END,
+      cancellation_reason = CASE WHEN p_cancelled THEN NULLIF(btrim(COALESCE(p_reason, '')), '') ELSE NULL END,
+      updated_at          = now()
+    FROM public.golf_tournament_rounds r
+    WHERE r.round_event_id = e.id
+      AND r.tournament_id = p_tournament_id
+      AND (p_round_event_id IS NULL OR r.round_event_id = p_round_event_id)
+      AND (e.status = 'cancelled') IS DISTINCT FROM p_cancelled
+    RETURNING e.id)
+  SELECT COALESCE(array_agg(changed.id), '{}') INTO v_changed FROM changed;
+
+  -- A restore puts rounds back where they were; if another round moved there meanwhile, the order breaks.
+  IF NOT p_cancelled THEN
+    v_tz := public.golf_team_timezone(v_t.team_id);
+    WITH k AS (
+      SELECT r.round_number, COALESCE(e.all_day, false) AS all_day,
+             CASE WHEN COALESCE(e.all_day, false)
+                  THEN ((e.start_time AT TIME ZONE 'UTC')::date + 1)::timestamp - interval '1 microsecond'
+                  ELSE e.start_time AT TIME ZONE v_tz END AS key
+        FROM public.golf_tournament_rounds r
+        JOIN public.golf_events e ON e.id = r.round_event_id
+       WHERE r.tournament_id = p_tournament_id
+         AND e.status IS DISTINCT FROM 'cancelled'
+    )
+    SELECT EXISTS (
+      SELECT 1 FROM k a JOIN k b ON b.round_number > a.round_number
+       WHERE b.key < a.key OR (b.key = a.key AND NOT (a.all_day AND b.all_day))
+    ) INTO v_bad;
+    IF v_bad THEN
+      RAISE EXCEPTION 'round_order' USING ERRCODE = 'P0001';
+    END IF;
+  END IF;
+
+  -- Touch the tournament so other editors see a new version.
+  UPDATE public.golf_tournaments SET updated_at = now()
+   WHERE id = p_tournament_id
+  RETURNING version INTO v_new;
+  RETURN jsonb_build_object('version', v_new, 'changed_event_ids', to_jsonb(v_changed));
+END
+$$;
+
+
+ALTER FUNCTION "public"."golf_tournament_set_cancelled"("p_tournament_id" "uuid", "p_round_event_id" "uuid", "p_cancelled" boolean, "p_reason" "text", "p_expected_version" integer) OWNER TO "postgres";
+
+CREATE OR REPLACE FUNCTION "public"."golf_tournament_untrack"("p_tournament_id" "uuid", "p_expected_version" integer) RETURNS "void"
+    LANGUAGE "plpgsql"
+    SET "search_path" TO ''
+    AS $$
+DECLARE
+  v_t public.golf_tournaments%ROWTYPE;
+BEGIN
+  IF p_expected_version IS NULL OR p_tournament_id IS NULL THEN
+    RAISE EXCEPTION 'bad_input' USING ERRCODE = 'P0001';
+  END IF;
+  SELECT * INTO v_t FROM public.golf_tournaments WHERE id = p_tournament_id FOR UPDATE;
+  IF NOT FOUND THEN
+    RAISE EXCEPTION 'not_found' USING ERRCODE = 'P0001';
+  END IF;
+  IF NOT public.is_golf_team_coach(v_t.team_id) THEN
+    RAISE EXCEPTION 'not_coach' USING ERRCODE = '42501';
+  END IF;
+  IF v_t.version IS DISTINCT FROM p_expected_version THEN
+    RAISE EXCEPTION 'stale' USING ERRCODE = 'P0001';
+  END IF;
+  IF v_t.official_at IS NOT NULL THEN
+    RAISE EXCEPTION 'tournament_official' USING ERRCODE = 'P0001';
+  END IF;
+  IF EXISTS (
+    SELECT 1 FROM public.golf_tournament_player_rounds pr
+      JOIN public.golf_tournament_rounds r ON r.round_event_id = pr.round_event_id
+     WHERE r.tournament_id = p_tournament_id
+       AND (pr.round_id IS NOT NULL OR pr.entered_total IS NOT NULL)) THEN
+    RAISE EXCEPTION 'round_has_scores' USING ERRCODE = 'P0001';
+  END IF;
+  -- golf_tournament_rounds cascades from golf_tournaments; the events it pointed at stay (plain tournament events).
+  DELETE FROM public.golf_tournaments WHERE id = p_tournament_id;
+END
+$$;
+
+
+ALTER FUNCTION "public"."golf_tournament_untrack"("p_tournament_id" "uuid", "p_expected_version" integer) OWNER TO "postgres";

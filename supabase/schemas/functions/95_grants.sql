@@ -1437,3 +1437,33 @@ ALTER DEFAULT PRIVILEGES FOR ROLE "postgres" IN SCHEMA "public" GRANT ALL ON FUN
 REVOKE ALL ON FUNCTION "public"."golf_import_player_classes"("p_player_id" "uuid", "p_team_id" "uuid", "p_term" "text", "p_rows" "jsonb") FROM PUBLIC;
 GRANT ALL ON FUNCTION "public"."golf_import_player_classes"("p_player_id" "uuid", "p_team_id" "uuid", "p_term" "text", "p_rows" "jsonb") TO "authenticated";
 GRANT ALL ON FUNCTION "public"."golf_import_player_classes"("p_player_id" "uuid", "p_team_id" "uuid", "p_term" "text", "p_rows" "jsonb") TO "service_role";
+
+
+-- P-5 (HELD 20261025040000 / 20261025040100)
+REVOKE ALL ON FUNCTION "public"."golf_team_timezone"("p_team_id" "uuid") FROM PUBLIC, "anon";
+GRANT ALL ON FUNCTION "public"."golf_team_timezone"("p_team_id" "uuid") TO "authenticated";
+GRANT ALL ON FUNCTION "public"."golf_team_timezone"("p_team_id" "uuid") TO "service_role";
+
+REVOKE ALL ON FUNCTION "public"."golf_tournament_create_from_calendar"("p" "jsonb") FROM PUBLIC, "anon";
+GRANT ALL ON FUNCTION "public"."golf_tournament_create_from_calendar"("p" "jsonb") TO "authenticated";
+GRANT ALL ON FUNCTION "public"."golf_tournament_create_from_calendar"("p" "jsonb") TO "service_role";
+
+REVOKE ALL ON FUNCTION "public"."golf_tournament_update_round"("p_round_event_id" "uuid", "p" "jsonb", "p_expected_version" integer) FROM PUBLIC, "anon";
+GRANT ALL ON FUNCTION "public"."golf_tournament_update_round"("p_round_event_id" "uuid", "p" "jsonb", "p_expected_version" integer) TO "authenticated";
+GRANT ALL ON FUNCTION "public"."golf_tournament_update_round"("p_round_event_id" "uuid", "p" "jsonb", "p_expected_version" integer) TO "service_role";
+
+REVOKE ALL ON FUNCTION "public"."golf_tournament_set_cancelled"("p_tournament_id" "uuid", "p_round_event_id" "uuid", "p_cancelled" boolean, "p_reason" "text", "p_expected_version" integer) FROM PUBLIC, "anon";
+GRANT ALL ON FUNCTION "public"."golf_tournament_set_cancelled"("p_tournament_id" "uuid", "p_round_event_id" "uuid", "p_cancelled" boolean, "p_reason" "text", "p_expected_version" integer) TO "authenticated";
+GRANT ALL ON FUNCTION "public"."golf_tournament_set_cancelled"("p_tournament_id" "uuid", "p_round_event_id" "uuid", "p_cancelled" boolean, "p_reason" "text", "p_expected_version" integer) TO "service_role";
+
+REVOKE ALL ON FUNCTION "public"."golf_tournament_untrack"("p_tournament_id" "uuid", "p_expected_version" integer) FROM PUBLIC, "anon";
+GRANT ALL ON FUNCTION "public"."golf_tournament_untrack"("p_tournament_id" "uuid", "p_expected_version" integer) TO "authenticated";
+GRANT ALL ON FUNCTION "public"."golf_tournament_untrack"("p_tournament_id" "uuid", "p_expected_version" integer) TO "service_role";
+
+REVOKE ALL ON FUNCTION "helm_private"."guard_tournament_round_event"() FROM PUBLIC, "anon", "authenticated";
+
+REVOKE ALL ON FUNCTION "helm_private"."sync_tournament_round_from_event"() FROM PUBLIC, "anon", "authenticated";
+
+REVOKE ALL ON FUNCTION "helm_private"."sync_tournament_round_titles"() FROM PUBLIC, "anon", "authenticated";
+
+REVOKE ALL ON FUNCTION "helm_private"."sync_round_event_fields"() FROM PUBLIC, "anon", "authenticated";
