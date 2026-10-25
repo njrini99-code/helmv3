@@ -4928,6 +4928,208 @@ ALTER FUNCTION "public"."golf_join_team_with_code"("p_code" "text") OWNER TO "po
 
 COMMENT ON FUNCTION "public"."golf_join_team_with_code"("p_code" "text") IS 'Joins the caller''s golf player to the team matching the supplied code, verified server-side (#1257).';
 
+CREATE OR REPLACE FUNCTION "public"."golf_message_responses_poll_guard"() RETURNS "trigger"
+    LANGUAGE "plpgsql" SECURITY DEFINER
+    SET "search_path" TO ''
+    AS $$
+DECLARE
+  v_row      public.golf_message_responses%ROWTYPE;
+  v_kind     text;
+  v_conv     uuid;
+  v_payload  jsonb;
+  v_deleted  boolean;
+  v_closes   timestamptz;
+  v_ids      text[];
+  v_picked   text[];
+  v_role     text := (SELECT auth.role());
+BEGIN
+  -- Support fixes (service_role) and the owner's own sessions (no JWT role) pass.
+  IF v_role IS NULL OR v_role = 'service_role' THEN
+    RETURN COALESCE(NEW, OLD);
+  END IF;
+  -- Cascades from a deleted message or user pass.
+  IF TG_OP = 'DELETE' AND pg_trigger_depth() > 1 THEN
+    RETURN OLD;
+  END IF;
+
+  -- A vote stays on its poll and with its voter. A move onto a conversation the caller is not in is refused as RLS
+  -- would refuse it (42501); any other move off or onto a poll is P0001.
+  IF TG_OP = 'UPDATE'
+     AND (NEW.message_id IS DISTINCT FROM OLD.message_id
+       OR NEW.user_id IS DISTINCT FROM OLD.user_id) THEN
+    IF NOT EXISTS (
+      SELECT 1 FROM public.golf_messages m
+      WHERE m.id IN (OLD.message_id, NEW.message_id) AND m.kind = 'poll'
+    ) THEN
+      RETURN NEW;
+    END IF;
+    IF NOT EXISTS (
+      SELECT 1 FROM public.golf_messages m
+      WHERE m.id = NEW.message_id AND public.golf_conversation_has_me(m.conversation_id)
+    ) THEN
+      RAISE EXCEPTION 'Only people in this conversation can vote on its polls'
+        USING ERRCODE = '42501';
+    END IF;
+    RAISE EXCEPTION 'A vote stays on its poll'
+      USING ERRCODE = 'P0001', HINT = 'golf_poll_choice';
+  END IF;
+
+  IF TG_OP = 'DELETE' THEN
+    v_row := OLD;
+  ELSE
+    v_row := NEW;
+  END IF;
+
+  SELECT m.kind, m.conversation_id, m.payload, coalesce(m.is_deleted, false)
+    INTO v_kind, v_conv, v_payload, v_deleted
+  FROM public.golf_messages m
+  WHERE m.id = v_row.message_id;
+
+  -- Not a poll (or no such message: the foreign key refuses the write).
+  IF v_kind IS DISTINCT FROM 'poll' THEN
+    RETURN COALESCE(NEW, OLD);
+  END IF;
+
+  -- Only someone in the conversation may vote, change or take back a vote.
+  IF NOT public.golf_conversation_has_me(v_conv) THEN
+    RAISE EXCEPTION 'Only people in this conversation can vote on its polls'
+      USING ERRCODE = '42501';
+  END IF;
+
+  IF v_deleted THEN
+    RAISE EXCEPTION 'This poll was deleted'
+      USING ERRCODE = 'P0001', HINT = 'golf_poll_deleted';
+  END IF;
+
+  BEGIN
+    v_closes := (v_payload->>'closes_at')::timestamptz;
+  EXCEPTION WHEN others THEN
+    v_closes := NULL;  -- the app reads a bad date as no end, so does this
+  END;
+
+  IF (v_payload->>'closed_at') IS NOT NULL
+     OR (v_closes IS NOT NULL AND v_closes <= now()) THEN
+    RAISE EXCEPTION 'This poll is closed'
+      USING ERRCODE = 'P0001', HINT = 'golf_poll_closed';
+  END IF;
+
+  IF TG_OP = 'DELETE' THEN
+    RETURN OLD;
+  END IF;
+
+  SELECT coalesce(array_agg(o->>'id'), ARRAY[]::text[])
+    INTO v_ids
+  FROM jsonb_array_elements(
+    CASE WHEN jsonb_typeof(v_payload->'options') = 'array'
+         THEN v_payload->'options' ELSE '[]'::jsonb END
+  ) AS o;
+
+  v_picked := string_to_array(NEW.choice, ',');
+
+  IF v_picked IS NULL
+     OR cardinality(v_picked) = 0
+     OR NOT (v_picked <@ v_ids)
+     OR cardinality(v_picked) <> (SELECT count(DISTINCT x) FROM unnest(v_picked) AS x)
+     OR (coalesce((v_payload->>'multi')::boolean, false) = false
+         AND cardinality(v_picked) > 1) THEN
+    RAISE EXCEPTION 'That choice is not on this poll'
+      USING ERRCODE = 'P0001', HINT = 'golf_poll_choice';
+  END IF;
+
+  RETURN NEW;
+END;
+$$;
+
+ALTER FUNCTION "public"."golf_message_responses_poll_guard"() OWNER TO "postgres";
+
+COMMENT ON FUNCTION "public"."golf_message_responses_poll_guard"() IS 'Clubhouse polls (P-2): a vote is refused when the caller is not in the poll''s conversation (42501), the poll is deleted, closed or ended, or the choice is not one the poll offers (P0001 with HINT golf_poll_deleted, golf_poll_closed, golf_poll_choice). SECURITY DEFINER so it reads the poll by primary key; checks only requests with a JWT role other than service_role. Held 20261025020100.';
+
+CREATE OR REPLACE FUNCTION "public"."golf_messages_poll_freeze"() RETURNS "trigger"
+    LANGUAGE "plpgsql"
+    SET "search_path" TO ''
+    AS $$
+DECLARE
+  v_opts jsonb;
+  v_role text := (SELECT auth.role());
+BEGIN
+  -- Support fixes (service_role) and the owner's own sessions (no JWT role) pass.
+  IF v_role IS NULL OR v_role = 'service_role' THEN
+    RETURN NEW;
+  END IF;
+
+  IF TG_OP = 'INSERT' THEN
+    IF NEW.kind IS DISTINCT FROM 'poll' THEN
+      RETURN NEW;
+    END IF;
+    v_opts := NEW.payload->'options';
+    IF NEW.payload IS NULL
+       OR (NEW.payload->>'v') IS DISTINCT FROM '1'
+       OR char_length(coalesce(NEW.payload->>'question', '')) NOT BETWEEN 1 AND 140
+       OR jsonb_typeof(v_opts) IS DISTINCT FROM 'array'
+       OR jsonb_array_length(v_opts) NOT BETWEEN 2 AND 6
+       OR jsonb_typeof(NEW.payload->'multi') IS DISTINCT FROM 'boolean'
+       OR (NEW.payload->>'closed_at') IS NOT NULL THEN
+      RAISE EXCEPTION 'Not a poll this app can draw'
+        USING ERRCODE = 'P0001', HINT = 'golf_poll_shape';
+    END IF;
+    IF EXISTS (
+      SELECT 1
+      FROM jsonb_array_elements(v_opts) WITH ORDINALITY AS e(o, i)
+      WHERE (e.o->>'id') IS DISTINCT FROM ('o' || e.i)
+         OR char_length(coalesce(e.o->>'label', '')) NOT BETWEEN 1 AND 60
+    ) THEN
+      RAISE EXCEPTION 'Not a poll this app can draw'
+        USING ERRCODE = 'P0001', HINT = 'golf_poll_shape';
+    END IF;
+    RETURN NEW;
+  END IF;
+
+  -- UPDATE
+  IF OLD.kind IS DISTINCT FROM 'poll' AND NEW.kind IS DISTINCT FROM 'poll' THEN
+    RETURN NEW;
+  END IF;
+  IF OLD.kind IS DISTINCT FROM NEW.kind THEN
+    RAISE EXCEPTION 'A message cannot become or stop being a poll'
+      USING ERRCODE = 'P0001', HINT = 'golf_poll_frozen';
+  END IF;
+
+  -- A deleted poll stays deleted, and stays as it was deleted.
+  IF coalesce(OLD.is_deleted, false) THEN
+    IF NOT coalesce(NEW.is_deleted, false)
+       OR NEW.content IS DISTINCT FROM OLD.content
+       OR NEW.payload IS DISTINCT FROM OLD.payload THEN
+      RAISE EXCEPTION 'A deleted poll cannot be changed'
+        USING ERRCODE = 'P0001', HINT = 'golf_poll_frozen';
+    END IF;
+    RETURN NEW;
+  END IF;
+
+  -- The app's soft delete: content kept or cleared, payload kept or cleared, nothing else of the poll.
+  IF coalesce(NEW.is_deleted, false) THEN
+    IF (NEW.content IS DISTINCT FROM OLD.content AND NEW.content IS DISTINCT FROM '')
+       OR (NEW.payload IS DISTINCT FROM OLD.payload AND NEW.payload IS NOT NULL) THEN
+      RAISE EXCEPTION 'A poll cannot be changed after it is sent'
+        USING ERRCODE = 'P0001', HINT = 'golf_poll_frozen';
+    END IF;
+    RETURN NEW;
+  END IF;
+
+  -- An open poll: only closed_at may change, once, from null to a time.
+  IF NEW.content IS DISTINCT FROM OLD.content
+     OR (NEW.payload - 'closed_at') IS DISTINCT FROM (OLD.payload - 'closed_at')
+     OR ((OLD.payload->>'closed_at') IS NOT NULL
+         AND (NEW.payload->>'closed_at') IS DISTINCT FROM (OLD.payload->>'closed_at')) THEN
+    RAISE EXCEPTION 'A poll cannot be changed after it is sent'
+      USING ERRCODE = 'P0001', HINT = 'golf_poll_frozen';
+  END IF;
+  RETURN NEW;
+END;
+$$;
+
+ALTER FUNCTION "public"."golf_messages_poll_freeze"() OWNER TO "postgres";
+
+COMMENT ON FUNCTION "public"."golf_messages_poll_freeze"() IS 'Clubhouse polls (P-2): a poll is inserted only in payload v1 shape and never changes after it is sent, except closed_at set once and the app''s soft delete (content and payload kept or cleared). Refusals are P0001 with HINT golf_poll_shape or golf_poll_frozen. Checks only requests with a JWT role other than service_role. Held 20261025020200.';
+
 CREATE OR REPLACE FUNCTION "public"."golf_my_join_requests"() RETURNS TABLE("id" "uuid", "status" "text", "message" "text", "created_at" timestamp with time zone, "team_id" "uuid", "team_name" "text", "organization_name" "text")
     LANGUAGE "sql" STABLE SECURITY DEFINER
     SET "search_path" TO 'public', 'pg_temp'

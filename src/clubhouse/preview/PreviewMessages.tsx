@@ -63,7 +63,23 @@ const vanPoll: Poll = {
   closesAt: at(15, 18, 0),
   closedAt: null,
 };
+/** P-2 slice 8: a closed multi-answer poll, so the preview draws a final result beside the open one. */
+const daysPoll: Poll = {
+  question: 'Which days work for qualifying next week?',
+  options: [
+    { id: 'o1', label: 'Monday' },
+    { id: 'o2', label: 'Tuesday' },
+    { id: 'o3', label: 'Wednesday' },
+  ],
+  multi: true,
+  closesAt: null,
+  closedAt: at(13, 20, 0),
+};
 const baseVotes: PollResponseRow[] = [
+  { message_id: 'v0', user_id: 'theo', choice: 'o1,o2' },
+  { message_id: 'v0', user_id: 'sofia', choice: 'o2' },
+  { message_id: 'v0', user_id: 'ava', choice: 'o1,o3' },
+  { message_id: 'v0', user_id: 'dan', choice: 'o2' },
   { message_id: 'v3', user_id: 'theo', choice: 'o1' },
   { message_id: 'v3', user_id: 'sofia', choice: 'o2' },
   { message_id: 'v3', user_id: 'ava', choice: 'o1' },
@@ -87,6 +103,7 @@ const baseThreads: Record<string, ChMsg[]> = {
     msg('j2', 'jonah', at(14, 13, 58), 'Can we push to 5? I have ECON until 2:15 and then a TA meeting.'),
   ],
   travel: [
+    msg('v0', 'me', at(13, 9, 15), 'Poll: Which days work for qualifying next week?\n1. Monday\n2. Tuesday\n3. Wednesday\nVote in GolfHelm.', { poll: daysPoll }),
     msg('v1', 'me', at(14, 11, 2), '', { hasAttachments: true }),
     msg('v2', 'me', at(14, 11, 4), 'Room list is pinned. Two to a room, same as Wolfpack.'),
     msg('v3', 'me', at(14, 11, 6), 'Poll: Which van are you riding in Thursday?\n1. Van 1 with Coach Reyes\n2. Van 2 with Coach Whitfield\nVote in GolfHelm.', { poll: vanPoll }),

@@ -185,6 +185,16 @@ describe('useMessageResponses', () => {
     expect(result.current.error).toBe('Voting has ended.');
   });
 
+  it('the guard on a deleted poll reads as deleted, and its 42501 for a former member as member (held 020100)', async () => {
+    const { result } = renderHook(() => useMessageResponses('conv-1', IDS, 'me'));
+    await waitFor(() => expect(result.current.ready).toBe(true));
+    state.saveError = { message: 'This poll was deleted', code: 'P0001', hint: 'golf_poll_deleted' } as { message: string; code: string };
+    await act(async () => { expect(await result.current.vote('poll-1', 'o1')).toEqual({ ok: false, reason: 'deleted' }); });
+    expect(result.current.error).toBe('This poll was deleted.');
+    state.saveError = { message: 'You are not in this conversation', code: '42501' };
+    await act(async () => { expect(await result.current.vote('poll-1', null)).toEqual({ ok: false, reason: 'member' }); });
+  });
+
   it('a second tap while the first is saving is not dropped: the latest one is written (D15)', async () => {
     const { result } = renderHook(() => useMessageResponses('conv-1', ['poll-1', 'poll-2'], 'me'));
     await waitFor(() => expect(result.current.ready).toBe(true));

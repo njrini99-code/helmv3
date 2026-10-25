@@ -18,12 +18,17 @@ import type { PollResponseRow } from '@/lib/golf/message-polls';
  * auth.uid()`, and insert only in a conversation the voter is in (`golf_message_responses_insert`). Changing a vote is
  * an upsert on the unique pair; taking it back is a delete.
  */
-export type PollVoteResult = { ok: true } | { ok: false; reason: 'closed' | 'member' | 'session' | 'failed' };
+export type PollVoteResult = { ok: true } | { ok: false; reason: 'closed' | 'deleted' | 'member' | 'session' | 'failed' };
 
-/** Why a write was refused: the closed-poll guard (held OQ-68 trigger), RLS (not in the conversation), or anything else. */
-function refusal(cause: unknown): 'closed' | 'member' | 'failed' {
+/**
+ * Why a write was refused: the poll guard (held 20261025020100, OQ-68) says closed or deleted by HINT, a 42501 is RLS or
+ * the guard's membership check (not in the conversation), and anything else (a choice the poll doesn't offer) failed.
+ */
+function refusal(cause: unknown): 'closed' | 'deleted' | 'member' | 'failed' {
   const e = cause as { code?: string; hint?: string; message?: string } | null;
-  if (e && (`${e.hint ?? ''} ${e.message ?? ''}`.includes('golf_poll_closed'))) return 'closed';
+  const said = `${e?.hint ?? ''} ${e?.message ?? ''}`;
+  if (said.includes('golf_poll_closed')) return 'closed';
+  if (said.includes('golf_poll_deleted')) return 'deleted';
   if (e?.code === '42501') return 'member';
   return 'failed';
 }
@@ -197,7 +202,7 @@ export function useMessageResponses(conversationId: string, pollIds: string[], u
         restore(messageId);
         // Read the poll again first (it clears a read error), then say why the vote didn't save.
         await refresh();
-        if (scope.current === conversationId) setError(reason === 'closed' ? 'Voting has ended.' : 'Your vote wasn’t saved. Try again.');
+        if (scope.current === conversationId) setError(reason === 'closed' ? 'Voting has ended.' : reason === 'deleted' ? 'This poll was deleted.' : 'Your vote wasn’t saved. Try again.');
       }
       if (!isClientDeadlineAbort(cause)) console.error('Message poll vote failed to save:', describeError(cause));
       return { ok: false, reason };

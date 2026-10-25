@@ -594,6 +594,14 @@ GRANT ALL ON FUNCTION "public"."golf_join_team_with_code"("p_code" "text") TO "a
 
 GRANT ALL ON FUNCTION "public"."golf_join_team_with_code"("p_code" "text") TO "service_role";
 
+REVOKE ALL ON FUNCTION "public"."golf_message_responses_poll_guard"() FROM PUBLIC, "anon", "authenticated";
+
+GRANT ALL ON FUNCTION "public"."golf_message_responses_poll_guard"() TO "service_role";
+
+REVOKE ALL ON FUNCTION "public"."golf_messages_poll_freeze"() FROM PUBLIC, "anon", "authenticated";
+
+GRANT ALL ON FUNCTION "public"."golf_messages_poll_freeze"() TO "service_role";
+
 REVOKE ALL ON FUNCTION "public"."golf_my_join_requests"() FROM PUBLIC;
 
 GRANT ALL ON FUNCTION "public"."golf_my_join_requests"() TO "authenticated";

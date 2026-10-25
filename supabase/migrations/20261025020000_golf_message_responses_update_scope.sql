@@ -15,8 +15,8 @@
 -- drops a policy that lacks the membership check. The second VERIFY
 -- (count(*) = 4) holds only on production or after 20261024090000 (S-15).
 --
--- VERIFY: SELECT 1 FROM pg_policies WHERE schemaname = 'public' AND tablename = 'golf_message_responses' AND policyname = 'golf_message_responses_update' AND with_check LIKE '%golf_conversation_has_me%' AND qual LIKE '%golf_conversation_has_me%';
--- VERIFY: SELECT 1 FROM pg_policies WHERE schemaname = 'public' AND tablename = 'golf_message_responses' HAVING count(*) = 4;
+-- VERIFY: select 1 where exists (select 1 from pg_policies where schemaname = 'public' and tablename = 'golf_message_responses' and policyname = 'golf_message_responses_update' and with_check like '%golf_conversation_has_me%' and qual like '%golf_conversation_has_me%');
+-- VERIFY: select 1 where (select count(*) from pg_policies where schemaname = 'public' and tablename = 'golf_message_responses') = 4;
 -- ROLLBACK: DROP POLICY golf_message_responses_update ON public.golf_message_responses; then CREATE POLICY golf_message_responses_update ON public.golf_message_responses FOR UPDATE TO authenticated USING (user_id = (SELECT auth.uid())) WITH CHECK (user_id = (SELECT auth.uid()));
 
 SET lock_timeout = '3s';
