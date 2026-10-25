@@ -212,6 +212,8 @@ request id that becomes the row's key, and a repeat returns the row that landed
 | 60649 | CH-6060 | `SAVING_A_ROUND_FROM_THE_CALENDAR_FAILS` | Saving a round from the calendar fails for any other reason |
 | 60650 | CH-6061 | `CANCELLING_RESTORING_OR_STOPPING_TRACKING_FAILS_FOR` | Cancelling, restoring or stopping tracking fails for any other reason |
 | 60651 | CH-6241 | `THE_TOURNAMENT_CHANGED_SINCE_IT_WAS_OPENED` | The tournament changed since it was opened (a version conflict) |
+| 60652 | CH-6041 | `A_ROUNDS_DAY_OR_TIME_IS_SAVED` | A round's day or time is saved from round mode (P-5 4.3) |
+| 60653 | CH-6240 | `ROUND_MODE_FOR_A_TOURNAMENT_EVENT_WHOSE` | Round mode for a tournament event whose round ref didn't load (the calendar's events did) |
 
 From the shell (P001): 10601 CH-1001, 10602 CH-1201, 10603 CH-1202,
 10604 CH-1203, 10605 CH-1204, 10606 CH-1205, 10607 CH-1206, 10608 CH-1207,

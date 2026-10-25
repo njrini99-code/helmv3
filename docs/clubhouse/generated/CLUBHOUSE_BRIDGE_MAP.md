@@ -112,7 +112,7 @@ Every Bridge ID (D-68: namespace, two-digit category, two-digit item), its catal
 | P003 | 2 | 3 | 3 | 9 | 4 | 24 | 2 | 6 | 1 |  | 2 | 3 | 1 | 3 |  | 4 | 4 | 10 | 1 | 1 | 1 |  | 1 | 1 |  | 86 |
 | P004 | 2 | 1 | 1 | 19 | 2 | 12 | 3 | 2 | 1 |  |  | 1 |  | 1 |  | 4 | 4 | 6 | 1 | 1 | 1 |  | 1 | 1 |  | 64 |
 | P005 | 4 | 4 | 2 | 23 | 3 | 25 | 3 | 6 | 1 |  | 1 | 2 |  | 1 | 1 | 4 | 3 | 10 | 1 | 1 | 1 |  | 1 | 1 |  | 98 |
-| P006 | 4 | 5 | 3 | 10 | 14 | 51 | 1 | 8 | 1 | 2 | 5 | 3 | 2 | 2 | 1 | 7 | 3 | 9 | 1 | 1 | 1 |  | 1 | 1 |  | 136 |
+| P006 | 4 | 5 | 3 | 10 | 14 | 53 | 1 | 8 | 1 | 2 | 5 | 3 | 2 | 2 | 1 | 7 | 3 | 9 | 1 | 1 | 1 |  | 1 | 1 |  | 138 |
 | P007 | 2 | 10 | 1 | 9 | 6 | 38 | 1 | 2 | 2 | 1 | 4 | 2 | 1 | 2 | 1 | 7 | 4 | 4 | 1 | 1 | 1 |  | 2 | 1 |  | 103 |
 | P008 | 2 | 1 | 3 | 6 | 15 | 42 | 3 | 10 | 3 | 3 | 8 | 6 | 2 | 2 | 1 | 9 | 8 | 7 | 1 | 1 | 1 |  | 1 | 1 |  | 136 |
 | P009 | 7 | 7 | 4 | 13 | 14 | 34 | 7 | 12 | 2 | 1 | 4 | 4 | 1 | 2 | 1 | 3 | 3 | 4 | 4 | 3 | 2 |  | 4 | 1 |  | 137 |
@@ -662,6 +662,8 @@ Every Bridge ID (D-68: namespace, two-digit category, two-digit item), its catal
 | 60649 | CH-6060 | 06 Server / system error | `SAVING_A_ROUND_FROM_THE_CALENDAR_FAILS` | implemented | Saving a round from the calendar fails for any other reason |
 | 60650 | CH-6061 | 06 Server / system error | `CANCELLING_RESTORING_OR_STOPPING_TRACKING_FAILS_FOR` | implemented | Cancelling, restoring or stopping tracking fails for any other reason |
 | 60651 | CH-6241 | 06 Server / system error | `THE_TOURNAMENT_CHANGED_SINCE_IT_WAS_OPENED` | implemented | The tournament changed since it was opened (a version conflict) |
+| 60652 | CH-6041 | 06 Server / system error | `A_ROUNDS_DAY_OR_TIME_IS_SAVED` | implemented | A round's day or time is saved from round mode (P-5 4.3) |
+| 60653 | CH-6240 | 06 Server / system error | `ROUND_MODE_FOR_A_TOURNAMENT_EVENT_WHOSE` | implemented | Round mode for a tournament event whose round ref didn't load (the calendar's events did) |
 | 60701 |  | 07 Network / offline | `FILE_REMOVAL_REFUSES_OFFLINE` | implemented | Removing a file from an event, and Undo on that, send nothing while the browser is offline: the file stays where it was, the error haptic fires, and the toast says nothing was changed (the shell's CH-1903 wording). |
 | 60801 |  | 08 Permission / authorization | `PLAYER_HAS_NO_PLANNING_TOOLS` | implemented | A player is never given a planning tool: no New event (button, N key or an editor from ?new=1), no Add busy time or Overlaps in More, no people filter, no responses, attendance, Edit event, Cancel event, Attach or Remove file, and no schedule-overlap marks. The same address for a coach has all of them. Hiding them is a courtesy; every write is checked again by its server action (60806). |
 | 60802 |  | 08 Permission / authorization | `PLAYER_READS_ONLY_THEIR_OWN_CLASSES` | implemented | The loader gives a player only their own classes (another player's class, and one whose owner cannot be resolved, are dropped before they reach the browser) and only themselves as a person; a coach gets every rostered player's classes, each with its owner. |

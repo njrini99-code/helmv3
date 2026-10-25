@@ -5818,6 +5818,28 @@
     "catalog": "docs/clubhouse/catalog/calendar.md"
   },
   {
+    "id": 60652,
+    "page": "P006",
+    "category": 6,
+    "item": 52,
+    "name": "A_ROUNDS_DAY_OR_TIME_IS_SAVED",
+    "chCode": "CH-6041",
+    "meaning": "A round's day or time is saved from round mode (P-5 4.3)",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/calendar.md"
+  },
+  {
+    "id": 60653,
+    "page": "P006",
+    "category": 6,
+    "item": 53,
+    "name": "ROUND_MODE_FOR_A_TOURNAMENT_EVENT_WHOSE",
+    "chCode": "CH-6240",
+    "meaning": "Round mode for a tournament event whose round ref didn't load (the calendar's events did)",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/calendar.md"
+  },
+  {
     "id": 60701,
     "page": "P006",
     "category": 7,

@@ -69,3 +69,28 @@ Held items:     as above
   Tournaments" with Set up, which opens the editor with Track on.
 - Without refs (the flag off, or the read failed) every surface shows the
   stored title, as before.
+
+## 2026-10-25 — Step 7: round mode
+
+```text
+Design package: P-5 build plan, 4.3
+PR/commit:      claude/clubhouse-tournaments-from-calendar
+Contract IDs:   CH-6041, CH-6240 (and CH-6143, CH-6241, CH-6503 reused)
+Actions:        updateTournamentRound; updateGolfEvent when the ref failed
+Data impact:    none new
+Held items:     as above
+```
+
+### Changed
+
+- Edit round on a tracked round opens round mode, not the event editor: a
+  banner ("Part of Pinehurst Invitational · R2 of 3", Edit tournament to the
+  desk, after the discard question when there are changes), then Day, First
+  tee, Ends (moving with the tee), Start, Notes, Invite and Ask players to
+  RSVP. No title, type, place, repeat or find a time.
+- Saves go through `updateTournamentRound` with the round's version; a move
+  toasts where it went (CH-6041). A stale version keeps the values with Reload
+  (CH-6241); an out-of-order day is refused in order words (CH-6143).
+- A round under way, final, or in a cancelled tournament opens read-only with
+  only Close. A round whose ref didn't load shows CH-6240 and changes only its
+  day and times, through the calendar's own save.

@@ -32,6 +32,7 @@ import { friendlyReason, isOffline, normalise, useAction } from '../../lib/use-a
 import { Attendance, EventDetail, Overlap, Summary, type ChInsp, type InspCtx } from './inspector';
 import { CancelEvent, DeleteEvent, EventEditor, SubscribeSheet, type ChTournamentSaved, type EditorSeed } from './editor';
 import { roundsOverlay } from './round-overlay';
+import { RoundEditor } from './editor-round';
 import { BusySheet } from './extras';
 import { CalendarPhone } from './CalendarPhone';
 import { Modal } from '../../ui/Modal';
@@ -884,11 +885,28 @@ export function Calendar({
 
     </>
   );
+  // P-5 4.3: a tracked round (or one whose ref didn't load) opens round mode, never the event editor.
+  const roundSeed = !!data.tournamentsEnabled && !!editor?.event && !editor.track && (!!editor.event.round || !!editor.event.roundRefFailed);
   const dialogs = (
     <>
       {coach && (
+        <RoundEditor
+          event={roundSeed ? editor!.event : null}
+          onClose={() => setEditor(null)}
+          onSaved={(d) => {
+            setEditor(null);
+            setInsp(null);
+            if (d < data.range.from || d > data.range.to) go(view, d);
+            else refresh();
+          }}
+          people={data.people}
+          peopleError={!!data.membersError}
+          timezone={data.timezone}
+        />
+      )}
+      {coach && (
         <EventEditor
-          seed={editor}
+          seed={roundSeed ? null : editor}
           onClose={() => setEditor(null)}
           onSaved={(d) => {
             setEditor(null);

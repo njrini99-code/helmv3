@@ -2507,6 +2507,25 @@ describe('P-5 tournaments from the calendar', () => {
     expect(onPickLoose).toHaveBeenCalledWith(1, expect.objectContaining({ courseId: null, courseName: 'Southern Pines' }));
   });
 
+  it('CH-6041: a round moved from round mode says where it went, or that it has no tee time', async () => {
+    const { roundSavedToast } = await import('../screens/calendar/editor-round');
+    expect(roundSavedToast({ label: 'R2', date: '2026-11-06', tee: '08:30', moved: true, teeTimesShifted: 0 })).toEqual({ code: 'CH-6041', title: 'R2 moved to Fri 6 Nov, 8:30 AM' });
+    expect(roundSavedToast({ label: 'R2', date: '2026-11-06', tee: null, moved: true, teeTimesShifted: 0 })).toEqual({ code: 'CH-6041', title: 'R2 has no tee time now' });
+  });
+
+  it('CH-6240: round mode for a round whose tournament didn’t load says so and keeps only its time', async () => {
+    const { RoundEditor } = await import('../screens/calendar/editor-round');
+    const base = PREVIEW_CALENDAR.events.find((e) => e.type === 'tournament' && !e.allDay)!;
+    inMotion(
+      <ToastProvider>
+        <RoundEditor event={{ ...base, roundRefFailed: true, round: undefined }} onClose={vi.fn()} onSaved={vi.fn()} people={PREVIEW_CALENDAR.people} timezone="America/New_York" />
+      </ToastProvider>,
+    );
+    const dlg = await screen.findByRole('dialog', { name: 'Edit round' });
+    expect(dlg.querySelector('[data-ch-code="CH-6240"]')?.textContent).toBe('Couldn’t load the tournament for this round. You can still change its time.');
+    expect(within(dlg).queryByRole('radiogroup', { name: 'Start' })).toBeNull();
+  });
+
   it('CH-6841: a longer range says the new round count once, politely', async () => {
     const { model, fields } = await p5();
     const announce = vi.fn();
