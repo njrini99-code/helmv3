@@ -1009,4 +1009,3 @@ export async function loadPlayerTournaments(ctx: TourCtx, eventId: string | null
     };
   });
 }
-

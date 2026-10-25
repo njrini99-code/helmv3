@@ -35,4 +35,3 @@ export function compareSearchOf(search: Search): ChTourCompareSearch {
     split: Number.isFinite(split) && split > 0 && split < 100 ? split : null,
   };
 }
-
