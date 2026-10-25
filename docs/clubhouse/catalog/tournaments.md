@@ -33,6 +33,10 @@ sync` mints its Bridge ID.
 
 | # | When | They see | How | Test |
 | --- | --- | --- | --- | --- |
+| CH-16050 | Stop tracking confirmed on the desk (CH-16550) and written (P-5) | "Pinehurst Invitational is no longer tracked. Its calendar entries stay." No Undo: the tournament's own rows are gone; the season home opens | `deskTrackToast`, `DeskTrackMenu` | tournaments-p5.test › CH-16050 |
+| CH-16051 | Cancel tournament confirmed on the desk (CH-16551) | "Pinehurst Invitational is cancelled" with Undo. Shown cancelled at once; written when the toast goes or the page is left, so Undo sends nothing | `deskTrackToast`, `DeskTrackMenu` | tournaments-p5.test › CH-16051 |
+| CH-16052 | Restore tournament on the desk | "Pinehurst Invitational is back on the calendar". Written at once, no Undo | `deskTrackToast`, `DeskTrackMenu` | tournaments-p5.test › CH-16052 |
+| CH-16053 | Stop tracking refused: the results are official | "This tournament’s results are official, so it can’t stop being tracked." | refusal `tournament_official` (`golf_tournament_untrack`) | tournaments-p5.test › CH-16053 |
 
 ## 161xx Validation
 
@@ -53,6 +57,7 @@ sync` mints its Bridge ID.
 | CH-16250 | Compare: the rounds read fails (`errors.rounds`) | Under the head: "The rounds didn’t load" + "Nothing has changed. Try again." + Try again, in place of the presets, sides and grid; never "No rounds to compare yet" | `InlineNotice` in `Compare` | tournaments-compare.test › CH-16250 |
 | CH-16251 | Compare: the field read fails (`errors.field`) | Above the grid: "The field didn’t load" + "Versus field needs it, so it is left blank. The other figures are unaffected. Try again." + Try again; Vs field reads "—" and every other figure stays | `InlineNotice` in `Compare` | tournaments-compare.test › CH-16251 |
 | CH-16252 | Compare: the hole figures read fails (`errors.holes`) | Above the grid: "The hole figures didn’t load" + "Birdies, greens, fairways and putts are left blank. Scores and strokes gained are unaffected. Try again." + Try again | `InlineNotice` in `Compare` | tournaments-compare.test › CH-16252 |
+| CH-16253 | Home (coach): the read of the calendar's untracked tournaments fails (`errors.untracked`, P-5) | In place of Set up from calendar: "Couldn’t load your tournaments." + "The calendar’s untracked tournaments didn’t load. Try again." + Try again. The rest of the home is unaffected | `SetUpFromCalendar` | tournaments-p5.test › CH-16253 |
 
 ## 163xx Empty
 
@@ -63,7 +68,7 @@ sync` mints its Bridge ID.
 | CH-16303 | A Tournaments route, signed in but on no team | "You aren’t on a team yet" + "Tournaments fill in once your team is set up." (a player: "…once a coach adds you to a team roster.") | `TourNotice kind="no_team"` in `routes/tournaments.tsx` | tournaments-wired.test › CH-16303 |
 | CH-16304 | An event address that is not this team's (deleted, another team's, not an id) | "That event isn’t on your team" + "It may have been deleted, or the link is from another team." + Back to tournaments | `TourNotice kind="not_found"` | tournaments-wired.test › CH-16304 |
 | CH-16305 | A player on a coach's Tournaments page (new or edit event, lineup, live, compare, history, link rounds) | "Only coaches open this page" + "You can see your team’s events and your own results in Tournaments." + See your tournaments | `TourNotice kind="coach_only"` | tournaments-wired.test › CH-16305 |
-| CH-16310 | Home: no event in the season, nothing failed | The head (without Add event), then "No tournaments yet" + "Add your first event to see who counted, how the team finished and how it compares with qualifying and last season." + Add event (the page's one primary) | `EmptyState size="page"` in `TournamentsHome` | tournaments-home.test › CH-16310 |
+| CH-16310 | Retired 2026-10-25 (P-5 4.11.1): replaced by CH-16352. Home: no event in the season, nothing failed | The head (without Add event), then "No tournaments yet" + "Add your first event to see who counted, how the team finished and how it compares with qualifying and last season." + Add event (the page's one primary) | `EmptyState size="page"` in `TournamentsHome` | tournaments-home.test › CH-16310 |
 | CH-16311 | The season ledger (Home, History): the season has no finished event yet | Under the season's heading, one line: "No finished events yet" + "Results show here once an event is complete." A past season with none is left out | `EmptyState compact` in `SeasonLedger` | tournaments-home.test › CH-16311 |
 | CH-16312 | Home: no event is upcoming or live | In place of the next-event card, one line: "Nothing on the calendar" + "Add an event and it shows here with its lineup and travel." | `EmptyState compact` in `TournamentsHome` | tournaments-home.test › CH-16312 |
 | CH-16320 | Event desk: the event has no scores yet (not played, nothing entered) | Where Who counted would be: "No scores yet" + "Scores show here as rounds are entered." + where the lineup stands ("Draft lineup · 4 of 5 set · locks Tue 7:50 AM.") and the event's note | `EmptyState compact` in `EventDesk` (`NoScores`) | tournaments-desk.test › CH-16320 |
@@ -74,6 +79,7 @@ sync` mints its Bridge ID.
 | CH-16340 | History: no event is finished (the read worked) | The head (without Add event), then "No results to compare yet" + "Once events are finished, the team’s scoring against the course rating shows here, season by season." + Add event (the page's one primary) | `EmptyState size="page"` in `History` | tournaments-history.test › CH-16340 |
 | CH-16350 | Compare: a side selects no rounds (a player with none in that context or period) | In that side's summary: "No rounds in this sample" (the phone's card says the same under the side's label); its figures read "—" with "No data", and the difference says "No rounds on one side"; the other side is unchanged | `SummaryLine` and the phone's scope card in `Compare` | tournaments-compare.test › CH-16350 |
 | CH-16351 | Compare: there are no rounds at all (the read worked) | The head, then "No rounds to compare yet" + "Rounds from events, qualifiers and practice show here once they are in, and you can set any two samples side by side." | `EmptyState size="page"` in `Compare` | tournaments-compare.test › CH-16351 |
+| CH-16352 | Home: no event in the season, nothing failed (P-5 4.11.1; replaces CH-16310) | The head (without Add event), then "Your season starts on the calendar" + "Add a tournament on the calendar and it shows up here with its rounds, lineup and results." + Add a tournament (to the calendar's editor on Tournament, the page's one primary) and Plan from here instead, or Set up from calendar (2) when the calendar has untracked tournaments | `FirstRun` | tournaments-p5.test › CH-16352 |
 
 ## 164xx Loading
 
@@ -85,12 +91,15 @@ sync` mints its Bridge ID.
 
 | # | When | They see | How | Test |
 | --- | --- | --- | --- | --- |
+| CH-16550 | Stop tracking, from the desk's tournament menu (P-5) | "Stop tracking Pinehurst Invitational?" + "Its 3 calendar entries stay, so players still see the days. The lineup, tee times and notes for it are removed." Keep tracking / Stop tracking (felt: warning). With scores entered or results official it says why instead ("Scores are entered for R1, so this tournament stays tracked.") with only Close | `DeskTrackMenu` | tournaments-p5.test › CH-16550 |
+| CH-16551 | Cancel tournament, from the desk's tournament menu (P-5; the calendar's CH-6541) | "Cancel Pinehurst Invitational?" + "All 3 rounds are struck through for players. Nothing is deleted, so you can restore it." An optional reason. Keep tournament / Cancel tournament (felt: warning) | `DeskTrackMenu` | tournaments-p5.test › CH-16551 |
 
 ## 166xx Motion
 
 | # | When | They see | How | Test |
 | --- | --- | --- | --- | --- |
 | CH-16601 | A value changes after first paint (a live score, a team total, a place) | It takes its new value in place (no rolling, D-100) and its cell is washed in `--ch-bg-selected` for 520 ms, then fades on `--ch-dur-reveal`. Never on first paint. Under reduced motion and Animations off the wash still shows; only its fade is skipped | `useChangedWash` + `.ch-tour-washable` / `.ch-tour-changed` (`styles/tournaments.css`) | tournaments/use-changed-wash.test |
+| CH-16650 | Home: a tournament arrives while the page is open (another tab or coach set it up; P-5 M9) | Its row (or the next-event card) takes the changed wash for the reveal duration, then fades; nothing moves, and never on first paint. On a fresh load the row instead carries "Set up today" | `useArrivals`, `.ch-tour-washable` | tournaments-p5.test |
 
 ## 167xx Haptics
 
@@ -102,6 +111,7 @@ sync` mints its Bridge ID.
 | # | When | They get | How | Test |
 | --- | --- | --- | --- | --- |
 | CH-16801 | A signed difference or a trust state is read | A delta says "Better by 1.4 strokes than his season average", "Worse by …" or "Level: … no clear change"; the triangle is hidden and points by better or worse, not by sign, so hue never carries the meaning alone. A trust chip says its state in words; the live dot and the check are hidden | `ui/DeltaChip.tsx`, `ui/TrustChip.tsx` | delta-chip.test, trust-chip.test |
+| CH-16850 | Home: a tournament arrives while the page is open | One polite line: "Pinehurst Invitational added to your season." | `useArrivals`, the home's status region | tournaments-p5.test |
 
 ## 169xx Network and UX
 

@@ -458,23 +458,23 @@ export async function loadCalendar(input: {
   }
 
   // P-5: round refs for the tournament events, only with golf_tournaments_v1 on (off: no tournament table is read).
-  const tournamentsEnabled = isFlagEnabled('golf_tournaments_v1');
+  let tournamentsEnabled = isFlagEnabled('golf_tournaments_v1');
   let roundRefsFailed = false;
   if (tournamentsEnabled) {
     const tourIds = [...new Set(events.filter((e) => e.type === 'tournament').map((e) => e.id))];
-    if (tourIds.length) {
-      const { refs, failed, error } = await loadRoundRefs(supabase, tourIds, input.role);
-      if (failed) {
-        chLogServer('calendar', 'roundRefs', error, 'calendar');
-        roundRefsFailed = true;
-      }
-      for (let i = 0; i < events.length; i++) {
-        const e = events[i]!;
-        if (e.type !== 'tournament') continue;
-        const ref = refs.get(e.id);
-        if (ref) events[i] = { ...e, round: ref };
-        else if (failed) events[i] = { ...e, roundRefFailed: true };
-      }
+    const { refs, failed, missing, error } = await loadRoundRefs(supabase, tourIds, input.role);
+    // The held migrations aren't applied (a preview on production's data): the calendar is today's, with no section.
+    if (missing) tournamentsEnabled = false;
+    if (failed) {
+      chLogServer('calendar', 'roundRefs', error, 'calendar');
+      roundRefsFailed = true;
+    }
+    for (let i = 0; i < events.length; i++) {
+      const e = events[i]!;
+      if (e.type !== 'tournament') continue;
+      const ref = refs.get(e.id);
+      if (ref) events[i] = { ...e, round: ref };
+      else if (failed) events[i] = { ...e, roundRefFailed: true };
     }
   }
 

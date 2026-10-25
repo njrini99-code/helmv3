@@ -42,11 +42,13 @@ import {
   type TourRow,
   type TourTeamSeasonRow,
 } from '@/lib/golf/tournaments-tables';
+import { setupGroups } from '../screens/tournaments/setup-groups';
 import type {
   ChTourCompareData,
   ChTourCompareRound,
   ChTourCourse,
   ChTourDeskData,
+  ChTourTrack,
   ChTourEvent,
   ChTourEventDraft,
   ChTourFormData,
@@ -388,6 +390,30 @@ export async function loadTournamentsHome(ctx: TourCtx): Promise<TourLoad<ChTour
     const season = seasons.find((s) => s.id === seasonIdOf(info.today)) ?? seasons[0]!;
     const upcoming = events.filter((e) => e.status !== 'complete').sort((a, b) => a.startDate.localeCompare(b.startDate));
     const links = await section('home', 'links', () => linkTeaser(ctx, events));
+    // P-5 4.11.3: tournament events on the calendar this season with no tournament row yet (a coach's Set up from
+    // calendar). Series and cancelled events can't become tournaments, so they aren't offered.
+    const tracked = new Set(events.flatMap((e) => e.rounds.map((r) => r.roundEventId)));
+    const untracked = ctx.role === 'coach'
+      ? await section('home', 'untracked', async () => {
+          const from = `${seasonIdOf(info.today).slice(0, 4)}-08-01T00:00:00Z`;
+          const rows = await all<{ id: string; title: string; start_time: string; all_day: boolean | null }>('untracked', (a, b) =>
+            ctx.supabase
+              .from('golf_events')
+              .select('id, title, start_time, all_day')
+              .eq('team_id', ctx.teamId)
+              .eq('event_type', 'tournament')
+              .neq('status', 'cancelled')
+              .is('recurrence_rule', null)
+              .is('parent_event_id', null)
+              .gte('start_time', from)
+              .order('start_time', { ascending: true })
+              .order('id', { ascending: true })
+              .range(a, b),
+          );
+          return setupGroups(rows.filter((r) => !tracked.has(r.id)).map((r) => ({ id: r.id, title: r.title, // An all-day event is stored at UTC midnight of its date (the calendar's convention).
+            date: r.all_day ? r.start_time.slice(0, 10) : isoDay(r.start_time, info.team.timezone) })));
+        })
+      : null;
     return {
       kind: 'ready',
       data: {
@@ -405,7 +431,8 @@ export async function loadTournamentsHome(ctx: TourCtx): Promise<TourLoad<ChTour
         ladder: [],
         heatmap: { playerIds: [], eventIds: [], cells: {} },
         links: links.ok ? links.value : null,
-        errors: { ...(read.ok ? {} : { events: true as const }), ...(links.ok ? {} : { links: true as const }) },
+        errors: { ...(read.ok ? {} : { events: true as const }), ...(links.ok ? {} : { links: true as const }), ...(untracked && !untracked.ok ? { untracked: true as const } : {}) },
+        untracked: untracked?.ok ? untracked.value : [],
       },
     };
   });
@@ -481,6 +508,18 @@ export async function loadTournamentDesk(ctx: TourCtx, eventId: string): Promise
         return rows.map((r) => staff.find((s) => s.userId === r.user_id)?.name ?? 'Coach');
       }),
     ]);
+    // P-5 4.11.5: the desk's tournament menu (cancel, restore, stop tracking) needs the version, whether it is cancelled,
+    // official or scored. The cancel state is the rounds' calendar entries'.
+    const raw = read.raws.find((r) => r.t.id === event.id);
+    const track = await section('desk', 'track', async (): Promise<ChTourTrack | null> => {
+      if (!raw) return null;
+      const ids = event.rounds.map((r) => r.roundEventId);
+      const rows = ids.length
+        ? await allIn<{ id: string; status: string | null }>('roundStatus', ids, (chunk, from, to) => ctx.supabase.from('golf_events').select('id, status').in('id', chunk).order('id').range(from, to))
+        : [];
+      const scored = event.playerRounds.filter((p) => p.total != null).map((p) => p.roundNumber).sort((a, b) => a - b)[0] ?? null;
+      return { version: raw.t.version, cancelled: rows.length > 0 && rows.every((r) => r.status === 'cancelled'), official: raw.t.official_at != null, scoredRound: scored, entries: event.rounds.length };
+    });
     const previous = read.events
       .filter((e) => e.id !== event.id && e.startDate < event.startDate && e.courseIds.some((c) => event.courseIds.includes(c)))
       .sort((a, b) => b.startDate.localeCompare(a.startDate))[0];
@@ -502,6 +541,7 @@ export async function loadTournamentDesk(ctx: TourCtx, eventId: string): Promise
         adviceGivers: givers.ok ? givers.value : [],
         previous: previous ? { eventId: previous.id, name: previous.name } : null,
         errors: { ...(holes.ok ? {} : { holes: true as const }), ...(review.ok ? {} : { review: true as const }) },
+        track: track.ok ? track.value : null,
       },
     };
   });
