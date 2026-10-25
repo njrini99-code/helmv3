@@ -2,7 +2,9 @@
 
 import { useRouter } from 'next/navigation';
 import { PrefetchKind } from 'next/dist/client/components/router-reducer/router-reducer-types';
-import { useEffect, useRef } from 'react';
+import { useContext, useEffect, useRef } from 'react';
+import { AppRouterContext } from 'next/dist/shared/lib/app-router-context.shared-runtime';
+import { fullPrefetchAllowed } from '../lib/prefetch-guard';
 import { chReturning } from '../lib/pop-mark';
 
 /** Whether the device asked to save data or is offline: then nothing is fetched ahead of a tap. */
@@ -46,6 +48,8 @@ export function needsRefresh(at: number | null | undefined, shown: number | unde
 type Router = ReturnType<typeof useRouter>;
 
 export function fetchAhead(router: Router, href: string, now: number): void {
+  // CoachHelm records what it returns as shown: never fetched ahead (CH-R1, lib/prefetch-guard.ts).
+  if (!fullPrefetchAllowed(href)) return;
   // Not held (never fetched, dropped by a refresh, or past Next's hold): this call fetches it now.
   if (!held(fetchedAt.get(href), shownAt.get(href), now)) fetchedAt.set(href, now);
   router.prefetch?.(href, { kind: PrefetchKind.FULL });
@@ -216,6 +220,112 @@ function rememberVisit(href: string): void {
   if (at >= 0) visited.splice(at, 1);
   visited.unshift(href);
   visited.splice(CH_VISITED_KEPT);
+}
+
+/**
+ * A write that changes what the section pages show (a round submitted, discarded, or its type changed): forget what was
+ * fetched ahead and shown, so the next tab tap fetches the page again instead of serving one held from before the write
+ * for up to 300s (A21). Next's own copies go with the server's revalidate or the caller's refresh.
+ */
+export function invalidatePrefetchTabs(): void {
+  fetchedAt.clear();
+  shownAt.clear();
+}
+
+/** Whether Next still holds `href` from a fetch ahead or a visit in the last 300s, as far as this tab knows. */
+export function heldPage(href: string, now: number): boolean {
+  return held(fetchedAt.get(href), shownAt.get(href), now);
+}
+
+/**
+ * A row's push target, fetched whole the moment a finger lands on the row (A13), so the page it opens is there by the time
+ * the tap ends instead of its skeleton. Not again within the fresh window (Next answers from what it holds), nor when the
+ * device saves data or is offline. One full prefetch per press.
+ */
+export function prefetchOnPress(router: Router, href: string, now: number): void {
+  if (!prefetchAllowed(typeof navigator === 'undefined' ? undefined : navigator)) return;
+  const at = fetchedAt.get(href);
+  if (at != null && heldPage(href, now) && now - at <= CH_TAB_FRESH_MS) return;
+  fetchAhead(router, href, now);
+}
+
+/**
+ * `onPointerDown` for a row link that pushes `href`: fetches the page ahead as the press starts (A13). The row is also
+ * marked `data-ch-ahead`, so the first few on screen are fetched while the page is idle (useIdleRowsAhead, row 13).
+ */
+export function usePressPrefetch(): (href: string | null | undefined) => { onPointerDown?: () => void; 'data-ch-ahead'?: string } {
+  // Outside the app router (a preview harness, a test rendering one row) there is nothing to fetch with: rows stay plain.
+  // The context, not useRouter, which throws there.
+  const router = useContext(AppRouterContext) as Router | null;
+  return (href) => (href && router ? { onPointerDown: () => prefetchOnPress(router, href, Date.now()), 'data-ch-ahead': href } : {});
+}
+
+/** How many of a page's push rows on screen are fetched ahead while it is idle. */
+export const CH_ROWS_AHEAD = 3;
+/** How many idle looks a page gets for its rows (a list that streams in after its skeleton is not there at the first). */
+const ROWS_AHEAD_LOOKS = 3;
+
+/**
+ * The first few push rows on screen (those `usePressPrefetch` marks), fetched whole once a page has settled and the
+ * thread is idle (A13 extension, row 13), so the row a reader is about to open is likely there already instead of its
+ * skeleton. Once per page: the top `CH_ROWS_AHEAD` rows that are on screen, in reading order; a scroll later leaves the
+ * rest to the press. The press's guards hold: nothing on Data Saver or offline, nothing Next holds fresh (`held`, and a
+ * held page past `CH_TAB_FRESH_MS` is fetched again, as `needsRefresh` would bring it up to date), never CoachHelm
+ * (CH-R1). Mounted once by the shell.
+ */
+export function useIdleRowsAhead(pathname: string): void {
+  const router = useContext(AppRouterContext) as Router | null;
+  useEffect(() => {
+    if (!router || typeof IntersectionObserver === 'undefined') return;
+    let io: IntersectionObserver | null = null;
+    let looks = 0;
+    let cancel = () => {};
+    const look = () => {
+      cancel = whenIdle(() => {
+        if (!prefetchAllowed(typeof navigator === 'undefined' ? undefined : navigator)) return;
+        const rows = [...document.querySelectorAll<HTMLElement>('[data-ch-ahead]')];
+        if (!rows.length) {
+          if (++looks < ROWS_AHEAD_LOOKS) look();
+          return;
+        }
+        io = new IntersectionObserver((entries) => {
+          io?.disconnect();
+          const seen = entries
+            .filter((e) => e.isIntersecting)
+            .sort((a, b) => a.boundingClientRect.top - b.boundingClientRect.top || a.boundingClientRect.left - b.boundingClientRect.left)
+            .map((e) => e.target.getAttribute('data-ch-ahead'))
+            .filter((href, i, all): href is string => !!href && all.indexOf(href) === i)
+            .slice(0, CH_ROWS_AHEAD);
+          const now = Date.now();
+          for (const href of seen) prefetchOnPress(router, href, now);
+        });
+        for (const row of rows) io.observe(row);
+      });
+    };
+    look();
+    return () => {
+      cancel();
+      io?.disconnect();
+    };
+  }, [pathname, router]);
+}
+
+/**
+ * Pages the reader is likely to open next (the Stats windows either side of the one shown, row 15), fetched whole once
+ * the page has settled and the thread is idle, so the switch shows them at once instead of dimming the figures while it
+ * loads. The same guards as a press: nothing on Data Saver or offline, nothing Next holds fresh, never CoachHelm (CH-R1).
+ * Pass none while a change is in flight; outside the app router it does nothing.
+ */
+export function useIdleFetchAhead(hrefs: readonly string[]): void {
+  const router = useContext(AppRouterContext) as Router | null;
+  const key = hrefs.join('|');
+  useEffect(() => {
+    if (!key || !router) return;
+    return whenIdle(() => {
+      const now = Date.now();
+      for (const href of key.split('|')) prefetchOnPress(router, href, now);
+    });
+  }, [key, router]);
 }
 
 /** Tests only: forget what was fetched. */

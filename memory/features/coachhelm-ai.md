@@ -264,6 +264,10 @@ Use `memory/context/golfhelm-database.md` for exact columns and `memory/glossary
     green-hit by band has no LPGA figure, so a women's approach read stays
     absent and a women's standing omits the marker. Never PGA numbers.
 
+- Genome `scoring_trend` (2026-10-24): the result carries an optional `se`,
+  the change's Welch standard error from both windows' own spreads.
+  Clubhouse's Momentum says Improving/Regressing only past it; rows stored
+  before have no `se` and read "No clear change" until the nightly run.
 - Wave 6 (2026-10-18):
   - Persona (`v3/genome/persona.ts`): `driver_usage` and `miss_side_bias` are
     style dims, never strengths or watch-outs; they only feed the course
@@ -372,6 +376,21 @@ Use `memory/context/golfhelm-database.md` for exact columns and `memory/glossary
   `hole_number`); derived tee distances carry `distance_method:
   'derived_progress'`. The metric identity table lives in
   `docs/architecture/coachhelm-evidence-contract.md`.
+- Season Standing (2026-10-24, Clubhouse A+ rows 104/105/121, owner decision
+  9; migrations `20261024150000` and `20261024151000`, both HELD, so their
+  objects are named here by migration until they are applied and
+  `db:types` picks them up): Clubhouse Standing reads the season table that
+  `20261024151000` creates, through `loadPlayerSeasonStandingMap`. Every metric
+  there covers 1 August onward in the team's `golf_team_settings.timezone`,
+  and each row carries `rounds_n` (the rounds it was built from) and
+  `season_start`. It is written by `refresh_player_standing_season` from the
+  nightly standing-refresh cron and from `/api/cron/v3/standing-refresh-dirty`
+  (every 5 min). That pass refreshes the teams a round save marked dirty
+  (`markTeamStandingDirty`, through the queue table `20261024150000` creates;
+  3-minute debounce, 30-minute cap). `golf_player_standing` (lifetime cache
+  metrics, 90-day pressure rows) is unchanged and still feeds Fairway and
+  every generator. While the season table is missing, Clubhouse falls back to
+  `golf_player_standing`, labelled "All time" with no row counts.
 - Standing Tour basis (2026-09-22, Package 7B / addendum A2): the three
   `approach_proximity_*` standing rows carry a `basis` column
   (`'on_green' | 'all_shot' | null`) written by

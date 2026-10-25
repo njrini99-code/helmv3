@@ -341,7 +341,7 @@ export function CDone({ d, finish, dir }: StepProps) {
       )}
       <div className="ch-ox-act">
         {/* Next (STATE-O3): a new team's dashboard is empty until players join, so the roster, where invites live, is first. */}
-        <Button variant="primary" size="lg" rightIcon={ArrowRight} feel="commit" onClick={() => finish('/golf/dashboard/roster')}>
+        <Button variant="primary" size="lg" rightIcon={ArrowRight} feel="success" onClick={() => finish('/golf/dashboard/roster')}>
           Invite players
         </Button>
         <Button variant="ghost" size="lg" onClick={() => finish('/golf/dashboard')}>

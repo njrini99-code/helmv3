@@ -9,15 +9,17 @@ wins; the stale ones found by this audit are listed at the end. `PROGRESS.md`
 keeps the full history (gates, decisions, questions, data gaps, verification
 log). What is left, and who has it: [QUEUE.md](QUEUE.md).
 
-## Release plan (2026-10-23)
+## Release plan (2026-10-23, refreshed 2026-10-25)
 
-Read-only check on 2026-10-23, refreshed the same evening after the
-overnight merges. Nothing below has been deployed or applied by this plan;
-the owner said prepare only.
+Read-only check on 2026-10-23, refreshed after the 10-23 overnight merges
+and again on 2026-10-25 after the 10-24/25 merges. Nothing below has been
+deployed or applied by this plan; the owner said prepare only.
 
-- **Production** is Vercel `dpl_CeADrBdMKv2MkZMhfJRxRv6CBYAc` (2026-10-21
-  10:35 UTC, release `d0f467a73`), flag off. `main` (`f30a6d509`) is 72
-  commits ahead and has not been built for production.
+- **Production** is still Vercel `dpl_CeADrBdMKv2MkZMhfJRxRv6CBYAc`
+  (2026-10-21 10:35 UTC, release `d0f467a73`), flag off (checked
+  2026-10-25). `main` (`a1e117397`) is 80 commits ahead and has not been
+  built for production. The production ledger's newest row is still
+  `20261022090000`.
 - **Held list corrected.** Applied since this page last listed them (ledger
   read 2026-10-23): `20260929120000`, `20260929200000`, `20260930140000`,
   `20261008160000`, `20261016220000`, `20261017100000`, `20261017101000`,
@@ -28,6 +30,14 @@ the owner said prepare only.
   (after the deploy that carries #2276), `20261007100000`, `20261005120000`
   and `20261007102000` (last), plus `20261023130000` (anon surface grants,
   from #2344, independent of the others). `20260928160000` stays OBSOLETE.
+  Added on `main` 10-24/25, all held and none applied: Standing
+  `20261024150000` (Tier 1, any time) and `20261024151000` (right after the
+  OD-01 chain); polls `20261024090000` (a no-op on production),
+  `20261025020000`, `20261025020050`, and `20261025020100` plus
+  `20261025020200` (only if OQ-68 is yes); Seen by `20261025010000` (owner
+  call OC-2); drag and drop `20261025030000`, then change marks
+  `20261025080000` after it; course page index `20261025060000` (only if
+  measured slow). The app works before and after each one.
   HELD.md's apply queue is the authority for order and prerequisites.
 - **The production calendar error** (Sentry `JAVASCRIPT-NEXTJS-1D3`) is the
   Oct 21 build calling `golf_event_attendance_counts` before
@@ -37,12 +47,15 @@ the owner said prepare only.
 - **Order.** Overnight on 10-23 the owner merged #2330, #2340, #2332,
   #2339 and #2337 as planned, and also #2328, #2333, #2334 and #2338
   (Next.js 16.4.2), which this plan had held until after the rollout; #2327
-  is closed. So the flag-off deploy of `main` now also carries Next 16.4.2,
-  the CoachHelm changes and the 12/24-hour clock, and that deploy is the
-  rollback target (owner call: keep that cut, or pick another). Before it,
-  turn `main` green: the type-scale fix (#2357, or the same two lines in
-  #2356) and the journeys fix (#2355). Then deploy `main` with the flag off
-  and record it as the rollback target. Apply Q-120 and attendance privacy,
+  is closed. On 10-24/25 `main` also took #2355 (journeys fix), #2356 (A+
+  honest numbers, with the type-scale fix; #2357 closed), #2361 (A+ Phase
+  2 systems), #2351, #2346 (shot chain), #2349, #2360 and #2368 (the A+
+  feature train: Standing, Polls, Seen by, drag and drop, course page). So
+  the flag-off deploy of `main` now carries all of that, and that deploy
+  is the rollback target (owner call: keep that cut, or pick another).
+  `main` is green for it: journeys 18 of 18 on `21211bf39` (run
+  40163136985). Deploy `main` with the flag off and record it as the
+  rollback target. Apply Q-120 and attendance privacy,
   then on a separate day the null-putts, SG and OD-01 corrections. Then turn
   the flag on for one team, then a second, then everyone.
 - **Canary order (owner, 2026-10-22):** Demo University Golf
@@ -77,15 +90,17 @@ the owner said prepare only.
     `HELM_CLUBHOUSE_TEAMS` set to another team gives Fairway; set to the
     team gives Clubhouse. 25 coach and 19 player routes answer with no error,
     medians 144 to 501 ms against the local stack.
-  - Journeys (on GitHub, 10-23): main's run 39886557860 failed only on the
+  - Journeys (on GitHub): 10-25, run 40163136985 on `main` after #2355
+    passed every journey. 10-23: main's run 39886557860 failed only on the
     player acknowledgement test, left stale by the Team Hub redesign
     (#2287); #2355's run on its head passed 18 of 18. The 10-23 nightly on
     `f30a6d509` failed the same way, with the 8 journeys before it passing
     and the accessibility scan clean (610 of 610). Earlier failures: 10-21
     a WebKit hydration bug fixed by #2274, 10-22 the build out of memory,
     fixed by #2336. `clubhouse:perf` has not run (no browser here).
-  - Unit tests: main's shard 1 fails at `look-feel-pass-css.test.ts:59`
-    since #2328 (two 12.5 sizes off the type scale); #2357 fixes it.
+  - Unit tests: main's shard 1 failed at `look-feel-pass-css.test.ts:59`
+    from #2328 (two 12.5 sizes off the type scale) until #2356 fixed it
+    on 10-25.
   - Watch: a `HELM_CLUBHOUSE_TEAMS` value with no id (for example `,`) passes
     `check-required-env` but means every team; confirm the exact value
     before the canary deploy.

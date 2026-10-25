@@ -40,7 +40,7 @@ export function teamSwitchFor(user: GolfUserData): ChTeamSwitch | null {
 const REFUSED: Record<string, string> = {
   unauthenticated: 'Your session ended. Sign in again.',
   'switching-not-permitted': 'Only a head coach staffed on more than one team can switch.',
-  unauthorized: "You aren't staffed on that team.",
+  unauthorized: 'You aren’t staffed on that team.',
 };
 
 /**
@@ -83,8 +83,8 @@ export function useTeamSwitch({ choices, activeId }: ChTeamSwitch, onSwitched?: 
     },
     (teamId: string): ActionCopy => ({
       done: '',
-      failed: `Couldn't switch to ${nameOf(teamId)}`,
-      hint: `You're still on ${nameOf(activeId)}. Try again.`,
+      failed: `Couldn’t switch to ${nameOf(teamId)}`,
+      hint: `You’re still on ${nameOf(activeId)}. Try again.`,
       code: 'CH-1003',
     }),
     (result: ActionResult, copy: ActionCopy): ActionCopy =>

@@ -6,6 +6,7 @@
  */
 
 import type { GolfAnnouncementMeta } from '@/lib/types/golf';
+import type { Poll } from '@/lib/golf/message-polls';
 import type { ChClock } from '../../lib/clock-cookie';
 
 export interface ChPerson {
@@ -26,9 +27,16 @@ export interface ChConv {
   memberIds: string[];
   memberCount: number;
   unread: number;
+  /**
+   * Marked unread from the row menu or a swipe (owner decision 14). The database has no per-person unread flag, so the
+   * mark is this device's own (marked-unread.ts) and opening or marking the conversation read clears it.
+   */
+  markedUnread?: boolean;
   lastAt: string | null;
   lastSenderId: string | null;
   lastText: string;
+  /** The last message is a poll's plain-text copy (`isPollFallbackText`): the row shows its glyph and question. */
+  lastIsPoll?: boolean;
   creatorId: string | null;
 }
 
@@ -46,6 +54,17 @@ export interface ChMsg {
   hasAttachments: boolean;
   /** Persisted parent in this conversation; content is read only from loaded messages. */
   replyToId?: string | null;
+  /** A poll (kind 'poll' with a payload we can draw); its `text` is then the plain-text copy, never shown in the card. */
+  poll?: Poll | null;
+  /** Still sending: the server hasn't confirmed it, so it carries no receipt (P-1). */
+  pending?: boolean;
+}
+
+/** P-1 Seen by: every member's last_read_at in the open conversation, from the messages hook. */
+export interface ChReceipts {
+  status: 'loading' | 'ready' | 'error';
+  marks: ReadonlyMap<string, string | null>;
+  retry: () => void;
 }
 
 export interface ChAttachment {
@@ -144,12 +163,17 @@ export function threadItems(msgs: ChMsg[], now: string, timeZone: string): ChThr
   return out;
 }
 
-export function filterConvs(convs: ChConv[], filter: ChConvFilter, q: string): ChConv[] {
-  const s = q.trim().toLowerCase();
-  return convs.filter((c) => (filter === 'unread' ? c.unread > 0 : filter === 'groups' ? c.group : true) && (!s || c.title.toLowerCase().includes(s) || c.lastText.toLowerCase().includes(s)));
+/** Whether a conversation reads as unread: something new in it, or marked unread by the viewer. */
+export function isUnread(c: Pick<ChConv, 'unread' | 'markedUnread'>): boolean {
+  return c.unread > 0 || !!c.markedUnread;
 }
 
-export const firstName = (name: string) => name.split(/\s+/)[0] ?? name;
+export function filterConvs(convs: ChConv[], filter: ChConvFilter, q: string): ChConv[] {
+  const s = q.trim().toLowerCase();
+  return convs.filter((c) => (filter === 'unread' ? isUnread(c) : filter === 'groups' ? c.group : true) && (!s || c.title.toLowerCase().includes(s) || c.lastText.toLowerCase().includes(s)));
+}
+
+export { firstName } from '../../lib/names';
 
 /**
  * Where the "New" divider goes when a thread opens: the earliest of the last `unread` messages someone else sent. Null

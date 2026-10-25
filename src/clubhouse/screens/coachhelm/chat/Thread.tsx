@@ -13,6 +13,7 @@ import {
   type AskAssistantTurn,
   type EvidenceFocus,
 } from '../../../data/coachhelm-chat-thread';
+import { formatFixed } from '../../../lib/format';
 import { haptic } from '../../../lib/haptics';
 import { useChReducedMotion } from '../../../lib/reduced-motion';
 import { Button } from '../../../ui/Button';
@@ -265,7 +266,7 @@ function Work({ turn, onStop }: { turn: AskAssistantTurn; onStop?: () => void })
   const [open, setOpen] = useState(false);
   const listId = useId();
   if (turn.steps.length === 0) return null;
-  const secs = elapsed === null ? '' : ` · ${elapsed.toFixed(1)}s`;
+  const secs = elapsed === null ? '' : ` · ${formatFixed(elapsed)}s`;
   const list = (live: boolean) => (
     <ol id={live ? undefined : listId} className="ch-th-steps" aria-label="What CoachHelm is doing" aria-live={live ? 'polite' : undefined} aria-relevant={live ? 'additions text' : undefined}>
       {turn.steps.map((s, i) => {

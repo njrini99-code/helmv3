@@ -7,6 +7,9 @@ import type { NewRoundStartForm, NewRoundStartResult } from '@/lib/golf/round-se
 import { teeColorFor } from '../../../data/rounds-shape';
 import { chReport } from '../../../lib/track';
 import { blankHoles, holesForRound, startPosition, yardageRule, type ChResult, type ChSetupCourse, type ChSetupForm, type ChSetupHole, type ChSetupPorts, type ChSetupQualifier, type ChSetupTee, type ChStartFailure } from '../setup/shape';
+import { plural } from '../../../lib/plural';
+import { createClient } from '@/lib/supabase/client';
+import { courseGlances, type ChCourseGlance, type ChGlanceRow } from '../../../data/course-glance';
 
 /*
  * The reads and the start form behind round setup's ports (docs/clubhouse/ROUNDS_PLAN.md step 3 to 5): the course
@@ -141,6 +144,30 @@ export function listCoursesRead(): Promise<ChResult<ChSetupCourse[]>> {
   });
 }
 
+/**
+ * P-7 4.6: the player's history at each course, for the block beside a picked course. Their own completed, non-test rounds
+ * (RLS keeps it to what they may read; the player filter keeps it to theirs). Best-effort: a failed read is reported and
+ * the block just doesn't show.
+ */
+export async function readCourseGlances(playerId: string): Promise<Record<string, ChCourseGlance>> {
+  try {
+    const { data, error } = await createClient()
+      .from('golf_rounds')
+      .select('id, course_id, course_name, round_date, holes_played, total_score, front_nine, back_nine, total_putts, notes')
+      .eq('player_id', playerId)
+      .eq('is_test', false)
+      .eq('status', 'completed')
+      .order('round_date', { ascending: false })
+      .order('id', { ascending: false })
+      .limit(1000);
+    if (error) throw new Error(error.message);
+    return courseGlances((data ?? []) as ChGlanceRow[]);
+  } catch (err) {
+    chReport(err, { surface: 'rounds', action: 'rounds.courses.glances', severity: 'low' });
+    return {};
+  }
+}
+
 const CATEGORY: Record<string, string> = { mens: 'Men’s', womens: 'Women’s', tournament: 'Tournament', mixed: 'Mixed', senior: 'Senior', junior: 'Junior' };
 
 export function teeFrom(t: GolfCourseTee): ChSetupTee {
@@ -220,7 +247,7 @@ export const QUALIFIER_READ_MS = 6000;
  */
 export function qualifierBlockedReason(next: { error?: string; code?: string }, numRounds: number): string {
   const error = next.error ?? '';
-  if (next.code === 'qualifier_round_limit_reached') return `All ${numRounds} ${numRounds === 1 ? 'round is' : 'rounds are'} in. Ask your coach to add a round if you need another.`;
+  if (next.code === 'qualifier_round_limit_reached') return `All ${plural(numRounds, 'round is', 'rounds are')} in. Ask your coach to add a round if you need another.`;
   if (/more than one saved round/i.test(error)) return 'You have more than one saved round in this qualifier. Continue one from Rounds.';
   if (/not entered in this qualifier/i.test(error)) return 'You’re no longer entered in this qualifier. Ask your coach.';
   if (/qualifier not found/i.test(error)) return 'This qualifier isn’t there any more. Ask your coach.';

@@ -1,6 +1,7 @@
 'use client';
 
-import { CH_EASE, chSpringCurve } from './motion';
+import { CH_EASE, CH_FADE_MS, chSpringCurve } from './motion';
+import { chMotionModeNow } from './reduced-motion';
 
 /**
  * Which way a phone navigation moves (native-feel audit 2026-10-08, P1-1 and P1-2). Changing tabs swaps the page at
@@ -61,7 +62,8 @@ function mark(kind: ChNavKind, tab = false) {
   const root = document.documentElement;
   window.clearTimeout(lapse);
   root.toggleAttribute(TAB, tab);
-  if (kind === 'fade' || !window.matchMedia?.(PHONE).matches) root.removeAttribute('data-ch-nav');
+  // Under Reduce Motion a drill-in or a Back crossfades instead of sliding (owner decision 2, OQ-15; shell.css).
+  if (kind === 'fade' || !window.matchMedia?.(PHONE).matches || chMotionModeNow() !== 'full') root.removeAttribute('data-ch-nav');
   else root.setAttribute('data-ch-nav', kind);
   if (tab || root.hasAttribute('data-ch-nav')) lapse = window.setTimeout(clear, LAPSE_MS);
 }
@@ -103,18 +105,15 @@ function onClick(e: MouseEvent) {
   mark(classifyNav({ from, to: url.pathname, tabRoots: tabRoots(), tabBar }), tab);
 }
 
-/** Whether motion is off: the OS setting, or Settings › Animations off (data-motion on the Clubhouse root). */
-function motionOff(): boolean {
-  return !!window.matchMedia?.('(prefers-reduced-motion: reduce)').matches || !!document.querySelector("[data-ui='clubhouse'][data-motion='off']");
-}
 
 /**
  * Back from a pushed page (P1-2). React commits a Back synchronously inside the popstate event, and a synchronous
  * commit never starts a view transition, so the pop is drawn here: a copy of the leaving page, taken before the router
  * acts, slides off to the right edge on top while the page it uncovers comes in from the parallax mark, both on the
  * smooth spring a pushed screen pops on. The copy is inert, hidden from assistive tech, under the bars, and gone when
- * the slide ends. Not when iOS already played the Back with its edge swipe (data-ch-ua-pop), with reduced motion or
- * Animations off, or on desktop. Transform only.
+ * the slide ends. Not when iOS already played the Back with its edge swipe (data-ch-ua-pop), with Animations off, or on
+ * desktop. Transform only; under the OS Reduce Motion setting the copy fades out over the quick beat instead, in opacity
+ * only, and the page beneath stays still (owner decision 2, 2026-10-24, OQ-15).
  */
 /**
  * A copy of `el` for the pop's slide without what lies below the window: a block wholly under it can't move anything in
@@ -164,7 +163,8 @@ export function takeRunningPush(): number {
 function playPop(from = 1) {
   const frame = document.getElementById('ch-content');
   const root = frame?.closest<HTMLElement>('.ch-root');
-  if (!frame || !root || document.documentElement.hasAttribute('data-ch-ua-pop') || motionOff()) return;
+  const mode = chMotionModeNow();
+  if (!frame || !root || document.documentElement.hasAttribute('data-ch-ua-pop') || mode === 'off') return;
   const box = frame.getBoundingClientRect();
   const page = cloneInView(frame, window.innerHeight, 4);
   page.removeAttribute('id');
@@ -186,6 +186,12 @@ function playPop(from = 1) {
   const parallax = getComputedStyle(document.documentElement).getPropertyValue('--ch-vt-parallax').trim() || '-30%';
   // The next frame, once the router's synchronous commit has put the page beneath in place.
   requestAnimationFrame(() => {
+    if (mode === 'fade') {
+      const gone = copy.animate?.([{ opacity: 1 }, { opacity: 0 }], { duration: CH_FADE_MS, easing: `cubic-bezier(${CH_EASE.join(', ')})` });
+      if (!gone) return copy.remove();
+      gone.finished.then(() => copy.remove(), () => copy.remove());
+      return;
+    }
     const under = document.getElementById('ch-content');
     // From where a push still sliding in had it (takeRunningPush): the page goes back the way it came, without a jump.
     const share = Math.min(1, Math.max(0, from));

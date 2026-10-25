@@ -1,7 +1,7 @@
 'use client';
 
 import { useRef, useState } from 'react';
-import { RefreshCw } from 'lucide-react';
+import { RotateCw } from 'lucide-react';
 import { COACHHELM_ENGINE_RATE_LIMITED } from '@/lib/auth/action-rate-limit-messages';
 import { haptic } from '../../lib/haptics';
 import { friendlyReason } from '../../lib/friendly-reason';
@@ -88,7 +88,7 @@ export function RecheckReads({ players, writes = LIVE_RECHECK_WRITES }: { player
   const running = state.kind === 'running';
   return (
     <div className="ch-hl-rck" data-ch-code="CH-13944">
-      <Button variant="secondary" leftIcon={RefreshCw} busy={running} onClick={() => void run()}>
+      <Button variant="secondary" leftIcon={RotateCw} busy={running} onClick={() => void run()}>
         {running ? recheckRunningLabel(players) : 'Re-check reads'}
       </Button>
       <p className={'ch-hl-rck__s' + (state.kind === 'failed' || state.kind === 'limited' ? ' is-failed' : '')} role="status">

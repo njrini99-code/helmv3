@@ -23,6 +23,12 @@ against production, in order:
    it silently failed). It also checks that every table in `public` traces
    to some migration file or to a `supabase/schemas/**` file (WARN, never
    FAIL — legitimate exceptions exist).
+   Objects known to be absent on purpose live in
+   `scripts/db/ledger-vs-catalog-accepted.json`, one entry per object with a
+   class (`superseded`, `retired`, `not-needed`) and a reason. They print as
+   accepted instead of failing; an entry that no longer matches a missing
+   object prints a WARN so it gets removed. Add one only after checking
+   production read-only, never to silence a real gap.
 
 If either check fails, the workflow alerts the owner within the run,
 through two owner-only channels, never customer mail:

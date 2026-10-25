@@ -1,11 +1,42 @@
-import { monotonePath } from '../lib/chart';
+'use client';
+
+import { createContext, useContext, useMemo, type ReactNode } from 'react';
 import { deltaTone, halvesChange } from '../lib/stats-signal';
+import { Line } from './charts/Line';
+
 /**
- * Last-rounds form line: smooth, drawn against a dashed mean. Lower scores
- * sit higher (better is up, the one scoring-axis convention). It is green
- * or amber only when the newer half of the scores moved from the older half
- * by more than that change's standard error (`halvesChange`, `deltaTone`:
- * stats visuals Q4), green when scoring fell; otherwise ink, no clear change.
+ * What the form lines of one table share (B5): the scores' range, so the same height is the same score in every row, and
+ * the number of round slots, so a shorter line ends at its newest round under everyone else's.
+ */
+const FormRangeContext = createContext<{ domain: [number, number]; slots: number } | undefined>(undefined);
+
+/** The range around a set of last-rounds lines: every score in them, with 0.6 of a stroke above and below. */
+export function formDomain(trends: Array<readonly number[] | null | undefined>): [number, number] | undefined {
+  const all = trends.flatMap((t) => t ?? []);
+  if (!all.length) return undefined;
+  return [Math.min(...all) - 0.6, Math.max(...all) + 0.6];
+}
+
+/**
+ * One range for the form lines inside: a table, a list or a leaderboard. Only the lines that draw count (`earlyBelow`
+ * matches the rows' FormLine), so an "Early read" row can't stretch the others.
+ */
+export function FormRange({ trends, earlyBelow = 2, children }: { trends: Array<readonly number[] | null | undefined>; earlyBelow?: number; children: ReactNode }) {
+  const drawn = trends.filter((t) => (t?.length ?? 0) >= earlyBelow);
+  const key = drawn.map((t) => t!.join(',')).join('|');
+  const shared = useMemo(() => {
+    const domain = formDomain(drawn);
+    return domain ? { domain, slots: Math.max(...drawn.map((t) => t!.length)) } : undefined;
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- keyed on the scores, not the array's identity
+  }, [key]);
+  return <FormRangeContext.Provider value={shared}>{children}</FormRangeContext.Provider>;
+}
+
+/**
+ * Last-rounds form line, on the one line chart (ui/charts/Line, B5): straight segments against a dashed mean, lower
+ * scores higher (better is up, the one scoring-axis convention), on the range its table shares (`FormRange`) or its own.
+ * It is green or amber only when the newer half of the scores moved from the older half by more than that change's
+ * standard error (`halvesChange`, `deltaTone`: stats visuals Q4), green when scoring fell; otherwise ink, no clear change.
  */
 export function FormLine({
   data,
@@ -24,6 +55,7 @@ export function FormLine({
   /** Line and end point only, no mean or fill: the phone roster's row spark. */
   bare?: boolean;
 }) {
+  const shared = useContext(FormRangeContext);
   if (data.length < earlyBelow) {
     return (
       <span className={data.length ? 'ch-form-early' : 'ch-form-empty'} role="img" aria-label={label}>
@@ -31,24 +63,26 @@ export function FormLine({
       </span>
     );
   }
-  const pad = 4;
-  const lo = Math.min(...data) - 0.6;
-  const hi = Math.max(...data) + 0.6;
-  const x = (i: number) => pad + (i * (width - pad * 2)) / (data.length - 1);
-  const y = (v: number) => pad + ((v - lo) / (hi - lo)) * (height - pad * 2);
-  const pts = data.map((v, i) => [x(i), y(v)] as [number, number]);
   const avg = data.reduce((a, b) => a + b, 0) / data.length;
   const half = halvesChange(data);
   const signal = deltaTone(half?.delta, half?.se, true);
   const tone = signal === 'is-gain' ? 'gain' : signal === 'is-loss' ? 'loss' : 'flat';
-  const line = monotonePath(pts);
-  const [ex, ey] = pts[pts.length - 1]!;
   return (
-    <svg style={{ maxWidth: width }} viewBox={`0 0 ${width} ${height}`} className={`ch-form ch-form--${tone}`} role="img" aria-label={label}>
-      {!bare && <line x1={pad} x2={width - pad} y1={y(avg)} y2={y(avg)} className="ch-form__mean" />}
-      {!bare && <path d={`${line} L${ex},${height} L${pad},${height} Z`} className="ch-form__fill" />}
-      <path d={line} className="ch-form__line" />
-      <circle cx={ex} cy={ey} r="3" className="ch-form__end" />
-    </svg>
+    <span style={{ maxWidth: width }} className={`ch-form ch-form--${tone}`} role="img" aria-label={label}>
+      <Line
+        interactive={false}
+        label={label}
+        points={[...Array<null>(Math.max(0, (shared?.slots ?? 0) - data.length)).fill(null), ...data].map((y, i) => ({ x: String(i + 1), y }))}
+        lowerIsBetter
+        domain={shared?.domain ?? formDomain([data])}
+        baseline={bare ? undefined : { value: avg, dashed: true }}
+        axis={false}
+        ends={false}
+        marks="last"
+        wash={!bare}
+        width={width}
+        height={height}
+      />
+    </span>
   );
 }

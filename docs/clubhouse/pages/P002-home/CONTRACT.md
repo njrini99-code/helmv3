@@ -267,7 +267,7 @@ checked; the screen never has a name to draw.
 Controls (20806). Each role's Home draws its own role's controls only. A player
 has no Message team, New event or N shortcut, no Plan, Add event or quick event
 types, no leaderboard and no link to another player's stats or thread; a coach
-has no Message coach, Start a round or countdown. Start a round and Add classes
+has no Message coach, New round or countdown. New round and Add classes
 are not drawn for a player until round entry and Classes are rebuilt (Q-69), so
 a control never leads to a screen the player's Clubhouse does not have.
 
@@ -289,7 +289,7 @@ program has more than 50 coaches; that edge was not tested end to end.
 | 20803 | — | `PLAYER_READS_ONLY_OWN_ROUNDS` | Player Home asks only for the signed-in player's own rounds (golf_rounds filtered to their player id) and their own player row, reads no roster or teammate's figures, and sets the player against D1 benchmarks, never against teammates. |
 | 20804 | — | `PLAYER_WEEK_NAMES_NO_ONE` | A player's week never names another player: loadHomeWeek is given no names, so an event reads at most a count (Green 2 · 2 players, First tee 8:42 · 1 of 2 going), and no teammate's name or id is in what the page receives. |
 | 20805 | — | `MESSAGE_COACH_FINDS_THE_TEAMS_COACH` | Message coach opens Messages on ?user=<the coach's user id>: the coach who created the team (golf_teams.created_by is a golf_coaches.id) if they have an account, else a coach of the organisation who has one (the query sets no order, so which one is not fixed), else plain Messages; Messages itself opens the thread only for someone in the team directory (CH-7001, 70801). |
-| 20806 | — | `CONTROLS_STAY_WITH_THEIR_ROLE` | Home draws its own role's controls only: Player Home has no Message team, New event or N shortcut, no Plan, Add event or quick event types, no leaderboard and no link to another player's stats or thread, and Coach Home has no Message coach, Start a round or countdown. |
+| 20806 | — | `CONTROLS_STAY_WITH_THEIR_ROLE` | Home draws its own role's controls only: Player Home has no Message team, New event or N shortcut, no Plan, Add event or quick event types, no leaderboard and no link to another player's stats or thread, and Coach Home has no Message coach, New round or countdown. |
 
 From the shell (P001): 10801 CLUBHOUSE_GATE, 10802 ROLE_SCOPED_NAV,
 10803 TEAM_SWITCH_IS_A_HEAD_COACHS, 10804 CH-1911.

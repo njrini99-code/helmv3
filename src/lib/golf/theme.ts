@@ -38,10 +38,11 @@ const DARK_QUERY = '(prefers-color-scheme: dark)';
  * holds. These hex values are only the fallback for when the token can't be
  * read. They are the token converted OKLCH → sRGB: light
  * oklch(0.93 0.03 82) = #f2e6d2, dark oklch(0.165 0.004 150) = #0d0f0d.
- * The native shell can't read CSS, so it carries the same pair in the
- * FwColorCanvas colour asset (ios/App/App/Assets.xcassets), capacitor.config.ts
- * and the splash images. src/test/static/canvas-color-sync.test.ts fails when
- * the token and those copies drift apart. Without a theme-color the address
+ * The native shell can't read CSS; its canvas is one switch,
+ * config/native-canvas.json (this pair, or Clubhouse's page colours), written
+ * into the AppCanvas colour asset, capacitor.config.ts and the splash images by
+ * scripts/native-canvas.mjs. src/test/static/canvas-color-sync.test.ts fails
+ * when a token and its copies drift apart. Without a theme-color the address
  * bar / status bar stayed at the UA default and framed a dark page in white
  * on iOS and Android.
  *

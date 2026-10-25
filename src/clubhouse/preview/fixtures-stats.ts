@@ -34,6 +34,27 @@ const MEANS: Record<(typeof P)[number][0], { sgMean: number; scoreMean: number }
   priya: { sgMean: -1.2, scoreMean: 75.2 },
 };
 
+/**
+ * A fixture trend's newer half against its older half (A1), as the loader shapes it (`roundHalves`): the change of the halves' means,
+ * and its standard error from about `perPoint` rounds behind each point on a spread of `sd` a round (the loader measures both).
+ */
+/** A fixture figure to two places, as the loader stores it. */
+const hundredths = (v: number) => Math.round(v * 100) / 100;
+const halvesOf = (xs: readonly number[], sd: number, perPoint: number) => {
+  const half = Math.floor(xs.length / 2);
+  const m = (a: readonly number[]) => a.reduce((t, v) => t + v, 0) / a.length;
+  return { delta: hundredths(m(xs.slice(xs.length - half)) - m(xs.slice(0, half))), se: hundredths(sd * Math.sqrt(2 / (half * perPoint))) };
+};
+const TEAM_SG = [-1.0, -0.8, -0.6, -0.3, -0.1, 0.0, 0.0];
+const TEAM_SCORE = [74.8, 74.4, 74.2, 73.9, 73.1, 73.5, 73.4];
+const TEAM_DAYS = [74.8, 74.6, 74.2, 74.4, 73.9, 73.8, 73.1, 73.5, 73.6, 73.4];
+const LEG_WEEKS = {
+  'Off the tee': [0.1, 0.2, 0.2, 0.3, 0.3, 0.4, 0.4],
+  Approach: [-1.2, -1.1, -1.0, -0.9, -0.9, -0.8, -0.8],
+  'Around green': [0.0, -0.1, 0.1, 0.0, 0.1, 0.1, 0.1],
+  Putting: [0.1, 0.2, 0.1, 0.3, 0.2, 0.3, 0.3],
+};
+
 const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
 /** 'Sep 27' as the season's calendar date. */
 const isoDay = (label: string) => {
@@ -70,7 +91,7 @@ const TEAM_PICK_ROUNDS: ChPickRound[] = P.flatMap(([id, name, scores], pi) =>
 ).sort((a, b) => (a.date < b.date ? 1 : a.date > b.date ? -1 : a.id.localeCompare(b.id)));
 
 /** A grid row's leg samples for the ranked dot plot: `n` whole rounds with shots, each leg's own spread about 1.2 a round. */
-const rankLegs = (n: number) => [1.1, 1.3, 0.9, 1.2].map((sd) => ({ n, se: Number((sd / Math.sqrt(n)).toFixed(2)) }));
+const rankLegs = (n: number) => [1.1, 1.3, 0.9, 1.2].map((sd) => ({ n, se: hundredths(sd / Math.sqrt(n)) }));
 
 export const PREVIEW_TEAM_STATS: ChTeamStats = {
   teamName: 'Varsity',
@@ -91,15 +112,14 @@ export const PREVIEW_TEAM_STATS: ChTeamStats = {
     { key: 'birdies', series: [2.1, 2.3, 2.3, 2.5, 2.6, 2.8, 2.7], label: 'Birdies per round', value: 2.6, unit: '', digits: 1, delta: 0.2, se: 0.25, lowerIsBetter: false, context: 'Eagles not counted', gauge: { kind: 'holes' } },
   ],
   weeks: WEEKS,
-  days: ['Aug 30', 'Sep 3', 'Sep 9', 'Sep 14', 'Sep 20', 'Sep 25', 'Sep 29', 'Oct 4', 'Oct 8', 'Oct 12'].map((label, i) => ({ label, score: [74.8, 74.6, 74.2, 74.4, 73.9, 73.8, 73.1, 73.5, 73.6, 73.4][i]! })),
-  team: { sg: [-1.0, -0.8, -0.6, -0.3, -0.1, 0.0, 0.0], score: [74.8, 74.4, 74.2, 73.9, 73.1, 73.5, 73.4], sgMean: -0.5, scoreMean: 73.6 },
-  players: P.map(([id, name, score, sg]) => ({ id, name, first: name.split(' ')[0]!, score: [...score], sg: [...sg], ...MEANS[id] })),
-  legWeeks: {
-    'Off the tee': [0.1, 0.2, 0.2, 0.3, 0.3, 0.4, 0.4],
-    Approach: [-1.2, -1.1, -1.0, -0.9, -0.9, -0.8, -0.8],
-    'Around green': [0.0, -0.1, 0.1, 0.0, 0.1, 0.1, 0.1],
-    Putting: [0.1, 0.2, 0.1, 0.3, 0.2, 0.3, 0.3],
-  },
+  days: ['Aug 30', 'Sep 3', 'Sep 9', 'Sep 14', 'Sep 20', 'Sep 25', 'Sep 29', 'Oct 4', 'Oct 8', 'Oct 12'].map((label, i) => ({ label, score: TEAM_DAYS[i]! })),
+  // About six rounds a round day, nine a week (64 rounds), on the team's own spread: scoring's halves clear their standard error.
+  daysHalves: halvesOf(TEAM_DAYS, 3.4, 6.4),
+  team: { sg: [...TEAM_SG], score: [...TEAM_SCORE], sgMean: -0.5, scoreMean: 73.6, sgHalves: halvesOf(TEAM_SG, 3.8, 9), scoreHalves: halvesOf(TEAM_SCORE, 3.4, 9) },
+  // A player plays about one and a half rounds a week: no player's halves clear one round's spread over seven weeks.
+  players: P.map(([id, name, score, sg]) => ({ id, name, first: name.split(' ')[0]!, score: [...score], sg: [...sg], ...MEANS[id], sgHalves: halvesOf(sg, 3.8, 1.5), scoreHalves: halvesOf(score, 3.6, 1.5) })),
+  legWeeks: LEG_WEEKS,
+  legHalves: Object.fromEntries(Object.entries(LEG_WEEKS).map(([leg, weeks]) => [leg, halvesOf(weeks, 1.2, 9)])),
   grid: [
     { id: 'theo', name: 'Theo Marchetti', rounds: 10, legs: [0.4, 0.7, 0.2, 0.4], total: 1.7, change: 0.6, avg: 70.9, spread: { sg: { n: 10, se: 0.63 }, legs: rankLegs(10), score: { n: 10, se: 0.85 } } },
     { id: 'sofia', name: 'Sofia Alvarez', rounds: 10, legs: [0.4, 0.5, 0.1, 0.4], total: 1.2, change: 0.3, avg: 71.6, spread: { sg: { n: 10, se: 0.66 }, legs: rankLegs(10), score: { n: 10, se: 0.8 } } },
@@ -451,10 +471,10 @@ export const PREVIEW_PLAYER: ChPlayerProfile = {
       lastHoleRounds: 10,
       previousHoleRounds: 10,
       rows: [
-        { label: 'Scoring avg', last: 73.6, previous: 72.9, unit: '', digits: 1, lowerIsBetter: true },
-        { label: 'Greens in regulation', last: 47.2, previous: 52.8, unit: '%', digits: 1, lowerIsBetter: false },
-        { label: 'Fairways hit', last: 62.7, previous: 61.1, unit: '%', digits: 1, lowerIsBetter: false },
-        { label: 'Putts per round', last: 29.8, previous: 30.6, unit: '', digits: 1, lowerIsBetter: true },
+        { label: 'Scoring avg', last: 73.6, previous: 72.9, unit: '', digits: 1, lowerIsBetter: true, se: 1.6 },
+        { label: 'Greens in regulation', last: 47.2, previous: 52.8, unit: '%', digits: 1, lowerIsBetter: false, se: 5.4 },
+        { label: 'Fairways hit', last: 62.7, previous: 61.1, unit: '%', digits: 1, lowerIsBetter: false, se: 6.0 },
+        { label: 'Putts per round', last: 29.8, previous: 30.6, unit: '', digits: 1, lowerIsBetter: true, se: 0.7 },
       ],
     },
     pressure: { gap: 0.8, pressureRounds: 4, practiceRounds: 6 },

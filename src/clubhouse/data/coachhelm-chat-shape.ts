@@ -1,6 +1,7 @@
 import type { UIMessage } from 'ai';
 import type { PulseItem } from '@/lib/coachhelm/v3/chat/program-pulse';
 import type { ChPulseMissing } from './coachhelm-shape';
+import { isoDay } from '../lib/dates';
 
 /**
  * Ask CoachHelm's frame data (Clubhouse P013, the Ask sub-tab): the shapes the loader
@@ -131,7 +132,7 @@ const GROUP_LABEL: Record<ChAskGroupKey, string> = { today: 'Today', week: 'This
 
 /** The calendar day of an instant in a zone, as `YYYY-MM-DD` (en-CA orders it that way). */
 export function localDay(iso: string, timeZone: string): string {
-  return new Intl.DateTimeFormat('en-CA', { timeZone, year: 'numeric', month: '2-digit', day: '2-digit' }).format(new Date(iso));
+  return isoDay(iso, timeZone);
 }
 
 function daysBetween(from: string, to: string): number {

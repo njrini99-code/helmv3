@@ -178,17 +178,19 @@ describe('Standings parity: the score', () => {
     expect(pick(F, SCORE)).toEqual(pick(C, SCORE));
   });
 
-  it('a player with fewer rounds is ranked on what is in, not excluded or averaged; level players order by more rounds in Clubhouse and the workspace', async () => {
+  it('a player with fewer rounds is ranked on what is in by Fairway and the workspace; Clubhouse puts complete cards first (owner decision 10, Clubhouse kept)', async () => {
     const fx: ParityFixture = {
       qualifier: qualifier({ num_rounds: 3 }),
       entries: entrants('a', 'b', 'c'),
       rounds: [rd('a', 1, 72, 0), rd('a', 2, 72, 0), rd('b', 1, 70, -2), rd('c', 1, 71, -1), rd('c', 2, 73, 1)],
     };
     const { F, W, C } = await all(fx);
-    // b (one round, −2) leads a and c (two rounds, E). a and c are level on to par and strokes: a tie.
-    expect(rankedOrder(C)).toEqual([['b'], ['a', 'c']]);
-    expect(rankedOrder(W)).toEqual(rankedOrder(C));
-    expect(rankedOrder(F)).toEqual(rankedOrder(C));
+    // On what is in, b (one round, −2) leads a and c (two rounds, E), and a and c are level on to par and strokes: a tie.
+    expect(rankedOrder(W)).toEqual([['b'], ['a', 'c']]);
+    expect(rankedOrder(F)).toEqual(rankedOrder(W));
+    // Clubhouse (decision 10, B13.3): b has fewer rounds than the most anyone has, so it goes below the complete cards,
+    // flagged "Missed a round". The scores themselves still agree everywhere.
+    expect(rankedOrder(C)).toEqual([['a', 'c'], ['b']]);
     expect(pick(F, SCORE)).toEqual(pick(C, SCORE));
   });
 

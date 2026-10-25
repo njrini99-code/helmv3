@@ -1,3 +1,4 @@
+import { plural } from './plural';
 /**
  * How sure a stat is, said once for every chart. Pure functions, no React: floors, standard errors, the tone of a change,
  * the Wilson interval of a make rate, a trailing mean, and a ranking that ties players who can't be told apart.
@@ -9,6 +10,13 @@
 
 /** Production's within-player standard deviation of a round (players with five or more rounds): the fallback while a player has too few rounds to measure their own. */
 export const POOLED_SD = { sg: 3.8, score: 3.6 } as const;
+
+/**
+ * The same within-player spread for each strokes-gained leg (production, 2026-10-24, test rows, players and teams left out: 51 players with five or more rounds, 743
+ * rounds per 18 holes; the total read 4.0 on the same rounds). A leg moves far less than the total, so a leg's change judged
+ * against the total's spread would almost never be called (the Deep dive, review of #2361).
+ */
+export const POOLED_LEG_SD = { tee: 1.3, approach: 2.5, around: 1.4, putting: 2.0 } as const;
 
 /** The figures with a pooled spread to fall back on. */
 export type SpreadKind = keyof typeof POOLED_SD;
@@ -47,7 +55,17 @@ export function sampleState(kind: FloorKind, n: number | null | undefined): Samp
   return n < f.early ? 'early' : 'steady';
 }
 
-const plural = (n: number, unit: string) => `${n} ${unit}${n === 1 ? '' : 's'}`;
+/**
+ * A rate held to its floor (A7): no value under `show`, with what it needs; between `show` and `early` the value with its
+ * early-read tag; from `early` the value alone. "100% sand saves" from one bunker shot never reads as a rate.
+ */
+export function floorRate(kind: FloorKind, n: number, value: number | null): { value: number | null; state: SampleState; needs?: string; early?: string } {
+  const state = sampleState(kind, n);
+  if (value == null) return { value: null, state };
+  if (state === 'none') return { value: null, state, needs: needsText(kind) };
+  return state === 'early' ? { value, state, early: earlyTag(n, FLOORS[kind].unit) } : { value, state };
+}
+
 
 /** The tag on a muted value: "Early read · 6 rounds", or in the stat's own unit ("Early read · 24 holes"). */
 export function earlyTag(n: number, unit: string = 'round'): string {
@@ -122,15 +140,16 @@ export function changeSe(
 /**
  * A short run of scores (oldest first) split in half: the newer half's mean less the older half's, and that change's standard
  * error. The split is the form line's and `summarizeWindow`'s own (`formChange`): with an odd count the middle score is in
- * neither half. Null under three scores.
+ * neither half. Null under three scores. `kind` names the pooled spread a short half falls back on (score by default; null for a
+ * figure with none, whose change then has a standard error only once each half has five values).
  */
-export function halvesChange(trend: number[]): { delta: number; se: number | null } | null {
+export function halvesChange(trend: number[], kind: SpreadKind | null = 'score'): { delta: number; se: number | null } | null {
   if (trend.length < 3) return null;
   const half = Math.floor(trend.length / 2);
   const newer = trend.slice(trend.length - half);
   const older = trend.slice(0, half);
   const m = (xs: number[]) => xs.reduce((a, b) => a + b, 0) / xs.length;
-  return { delta: m(newer) - m(older), se: changeSe(newer, older, 'score') };
+  return { delta: m(newer) - m(older), se: changeSe(newer, older, kind) };
 }
 
 export type DeltaTone = '' | 'is-gain' | 'is-loss';
@@ -144,6 +163,16 @@ export function deltaTone(delta: number | null | undefined, se: number | null | 
   if (delta == null || Number.isNaN(delta) || se == null || !(se > 0)) return '';
   if (Math.abs(delta) < se) return '';
   return delta < 0 === lowerIsBetter ? 'is-gain' : 'is-loss';
+}
+
+/**
+ * A trend's halves (A1: the newer half against the older half, with the standard error of the rounds behind them) as a tone: signed
+ * only when the change clears its standard error and still prints at `digits`, else '' and the words are "No clear change".
+ * Unmeasured halves (null or absent) are never a change.
+ */
+export function halvesTone(h: { delta: number; se: number | null } | null | undefined, lowerIsBetter: boolean, digits = 1): DeltaTone {
+  if (!h || Math.abs(h.delta) < 0.5 * 10 ** -digits) return '';
+  return deltaTone(h.delta, h.se, lowerIsBetter);
 }
 
 /** The words for a change, which never claim more than the tone does. */

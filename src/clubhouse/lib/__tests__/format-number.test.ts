@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { formatFixed, formatPct, formatSigned, formatToPar, MINUS, NO_DATA } from '../format';
+import { formatAvg, formatDistance, formatFixed, formatHcp, formatPct, formatSG, formatSigned, formatToPar, MINUS, NO_DATA } from '../format';
 
 describe('one number voice', () => {
   it('a signed delta carries an explicit plus, a true minus, and no sign on zero', () => {
@@ -31,5 +31,23 @@ describe('one number voice', () => {
     expect(formatPct(61.4)).toBe('61%');
     expect(formatPct(61.5)).toBe('62%');
     expect(formatPct(88.46, 1)).toBe('88.5%');
+  });
+
+  it('one precision per metric (CONS-15); strokes gained at one decimal (owner decision 11)', () => {
+    expect(formatSG(0.844)).toBe('+0.8');
+    expect(formatSG(-1.2)).toBe(`${MINUS}1.2`);
+    expect(formatSG(0.001)).toBe('0.0');
+    expect(formatSG(-0.04)).toBe('0.0');
+    expect(formatHcp(-1.2)).toBe('+1.2');
+    expect(formatHcp(4)).toBe('4.0');
+    expect(formatHcp(-0.04)).toBe('0.0');
+    expect(formatHcp(null)).toBe(NO_DATA);
+    expect(formatAvg(72.44)).toBe('72.4');
+    expect(formatAvg(undefined)).toBe(NO_DATA);
+    expect(formatPct(56.4)).toBe('56%');
+    expect(formatToPar(0)).toBe('E');
+    expect(formatDistance(152.4)).toBe('152 yds');
+    expect(formatDistance(8.46, 'ft', 1)).toBe('8.5 ft');
+    expect(formatDistance(null)).toBe(NO_DATA);
   });
 });

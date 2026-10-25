@@ -6,6 +6,7 @@ import type { ChGameLoad, ChMeasure } from '../../../data/coachhelm-profile-shap
 import { PLAYER_VOICE, STANDING_GAME_ID, type ChViewVoice } from '../../../data/coachhelm-views-shape';
 import { Icon } from '../../../ui/Icon';
 import { RefreshNotice } from '../../../ui/RefreshNotice';
+import { plural } from '../../../lib/plural';
 
 /** The section's own words for whose page it is: the player's, or a coach's about the player by first name (spec A). */
 function wordsFor(voice: ChViewVoice) {
@@ -135,7 +136,7 @@ export function HowYouPlay({ load, voice = PLAYER_VOICE }: { load: ChGameLoad; v
   const g = load.data;
   const ready = g.measures.filter((m) => !m.locked);
   const locked = g.measures.filter((m) => m.locked);
-  const meta = [`Last ${g.windowDays} days`, g.rounds != null ? `${g.rounds} ${g.rounds === 1 ? 'round' : 'rounds'}` : null, g.refreshed ? `Refreshed ${g.refreshed.replace(' ', ' ')}` : null].filter(Boolean);
+  const meta = [`Last ${g.windowDays} days`, g.rounds != null ? `${plural(g.rounds, 'round')}` : null, g.refreshed ? `Refreshed ${g.refreshed.replace(' ', ' ')}` : null].filter(Boolean);
   return (
     <section id={STANDING_GAME_ID} className="ch-hg-sec ch-hg-game" aria-labelledby="ch-hg-game-t" data-ch-code="CH-13915">
       {head}

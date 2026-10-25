@@ -2,6 +2,7 @@
 
 import { useClubhouseRole } from '../../shell/context';
 import { Skeleton } from '../../ui/States';
+import { LargeTitleSkeleton } from '../../ui/LargeTitle';
 
 /**
  * The phone skeleton's opening and tab strip in the role's own shape (CH-10405): the shell knows who is signed in
@@ -16,6 +17,7 @@ export function HubSkeletonTop() {
         <div className={coach ? undefined : 'is-player'}>
           {coach && <Skeleton width={96} height={24} radius={12} />}
           <Skeleton width={128} height={10} />
+          <LargeTitleSkeleton width={150} />
         </div>
         <HubSkeletonStrip />
         {coach && <Skeleton width="100%" height={44} radius={10} />}

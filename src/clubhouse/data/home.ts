@@ -6,7 +6,7 @@ import { CLASS_EVENT_TYPE } from '@/lib/calendar/class-events';
 import { eventDaySpan } from '@/lib/calendar/timezone';
 import { chLogServer } from '../lib/track-server';
 import { homeClock, ymd } from './home-clock';
-import { classYearLabel, fullName, groupByPlayer, isFull18, lastTenFloor, loadSeasonRounds, mean, MIN_SG_ROUNDS, summarizePlayer, type ChForm, type ChRound } from './season';
+import { classYearLabel, fullName, groupByPlayer, isFull18, lastTenFloor, loadSeasonRounds, mean, MIN_SG_ROUNDS, seasonStartDate, summarizePlayer, type ChForm, type ChRound } from './season';
 import { LEGS, sgLegs, teamGrid, type ChLeg } from './stats-team';
 import { legRows } from './leg-rows';
 import { loadCoachQueue, type ChCoachQueue } from './home-queue';
@@ -16,12 +16,17 @@ import { hasHoleScores, holeRounds, recordedPutts } from './round-scope';
 import { loadRoundCache, previousInFilter, readTourBenchmarks, roundsInFilter, seasonOnly, tourForGender, type ChRoundCache } from './stats-common';
 import { filterFor } from './stats-filter';
 import { effectiveCount, weightedMean, windowChangeSe } from './stats-weight';
-import { changeSe } from '../lib/stats-signal';
+import { changeSe, floorRate } from '../lib/stats-signal';
 import { rsvpOf } from './calendar';
 import { parseAvailability, type ChAvailability } from './availability';
 import { playerMine, playerSeesMeeting, replyClosedAt, type ChRsvp } from '../screens/calendar/model';
 import { loadAttendanceCounts, loadInvitedCounts, type ChAttendanceCounts } from './attendance-counts';
 import { confirmedLine, daysBetween, homeSubline, inviteDetail } from '../screens/home/model';
+import { firstName } from '../lib/names';
+import type { MarkEntries } from '../lib/marks-cookie';
+import type { ChCalChange } from '../screens/calendar/change-view';
+import type { ChHomeChange } from '../screens/home/change-rows';
+import { loadHomeChanges, withChange, withWas } from './home-changes';
 
 export { classYearLabel, formStatus } from './season';
 export { homeClock } from './home-clock';
@@ -61,6 +66,8 @@ export interface ChAgendaRow {
   isCompetition: boolean;
   /** Today's rows, then competitions later this week. */
   when: 'today' | 'later';
+  /** P-14: the old value of a changed event (a live mark), struck at the head of the detail line. */
+  was?: { text: string; changeId: string } | null;
 }
 
 export interface ChHoleScore {
@@ -120,6 +127,8 @@ export interface ChHomeEvent {
   /** "3:30 – 5:30 PM", or "All day" */
   rangeLabel: string;
   location: string | null;
+  /** P-14: what a coach changed on this event in the last 72 hours (a live mark), for Up next. */
+  change?: ChCalChange | null;
   /** Invitees' names, in roster order; null when replies didn't load (CH-2209). */
   invitees: string[] | null;
   /**
@@ -165,7 +174,8 @@ export interface ChTeamForm {
   /** What the average, greens and putts rest on: the rounds, their first and last dates, and how many carry greens and putts. */
   basis: { rounds: number; from: string; to: string; girRounds: number; puttsRounds: number };
   /** Greens in regulation, percent; delta in points. */
-  gir: { pct: number | null; delta: number | null; se?: number | null };
+  /** Under its floor (two rounds with greens, A7) the share is null and `needs` says what it needs. */
+  gir: { pct: number | null; delta: number | null; se?: number | null; needs?: string };
   /** Per 18 holes, over the rounds with putts recorded (`recordedPutts`: a round written 0 putts has none), as Stats counts them. */
   putts: { avg: number | null; delta: number | null; se?: number | null };
 }
@@ -188,7 +198,7 @@ export interface ChTeamLeg {
   /** Team Stats' leg name, verbatim (`LEGS`). */
   label: ChLeg;
   /** The part's plain stat over the same rounds: Fairways, Greens, Up and down (a rate) or Putts (per round), with the Tour's mark. */
-  stat: { label: 'Fairways' | 'Greens' | 'Up and down' | 'Putts'; value: number | null; unit: '%' | ''; digits: number; tour: number | null };
+  stat: { label: 'Fairways' | 'Greens' | 'Up and down' | 'Putts'; value: number | null; unit: '%' | ''; digits: number; tour: number | null; needs?: string; early?: string };
   /** The team's strokes gained per round in the part over its hole-by-hole rounds; null under MIN_SG_ROUNDS. */
   sg: number | null;
   /** Against each player's previous ten (the same players, Q-112); null with no earlier ten to compare. */
@@ -252,6 +262,10 @@ export interface ChCoachHome {
   legs?: ChTeamLegs | null;
   /** What is waiting on the coach (desktop and phone, first run too); each part null when it didn't load. Optional for fixtures. */
   queue?: ChCoachQueue;
+  /** P-14: schedule changes other people made in the last 72 hours, newest first, for "Since you last looked". Optional for fixtures. */
+  changes?: ChHomeChange[];
+  /** Which change marks this device has seen (`s`) or cleared (`g`), from the `ch_marks` cookie. Optional for fixtures. */
+  marks?: MarkEntries;
 }
 
 const COMPETITION_TYPES = new Set(['tournament', 'qualifier']);
@@ -293,7 +307,16 @@ export function wideEventWindow(now: Date): { from: string; to: string } {
 
 const WEEKDAYS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
 
-export async function loadCoachHome(input: { teamId: string; coachName: string; /** For Team Hub's announcements read (the queue); it reads the session itself. */ userId?: string }): Promise<ChCoachHome> {
+export async function loadCoachHome(input: {
+  teamId: string;
+  coachName: string;
+  /** For Team Hub's announcements read (the queue); it reads the session itself. */
+  userId?: string;
+  /** The coach's own `golf_coaches.id`: their own schedule changes are never news to them (P-14). */
+  coachId?: string | null;
+  /** The device's seen and cleared change marks (phone-hint.ts `marksHint`). */
+  marks?: MarkEntries;
+}): Promise<ChCoachHome> {
   const supabase = await createClient();
   const now = new Date();
 
@@ -301,7 +324,7 @@ export async function loadCoachHome(input: { teamId: string; coachName: string; 
   // have: the timezone, the roster, the team chat and the week's events go together; the season's rounds follow the roster alone
   // (they used to wait for the events and their replies too); the newest rounds' cards follow the rounds.
   const clockRead = homeClock(supabase, input.teamId, now);
-  const firstName = input.coachName.trim().split(/\s+/)[0] || 'Coach';
+  const coachFirst = firstName(input.coachName) || 'Coach';
   type RosterPlayer = { id: string; first_name: string | null; last_name: string | null; graduation_year: number | null };
   const rosterRead = Promise.resolve(
     supabase.from('golf_team_members').select('availability, player:golf_players(id, first_name, last_name, graduation_year)').eq('team_id', input.teamId).eq('status', 'active'),
@@ -326,8 +349,10 @@ export async function loadCoachHome(input: { teamId: string; coachName: string; 
     return loadSeasonRounds(supabase, players.map((p) => p.id), { surface: 'home', since: lastTenFloor() });
   });
   const playerById = rosterRead.then((res) => new Map(rosterOf(res).map((p) => [p.id, p])));
-  const latestRead = Promise.all([roundsRead, playerById]).then(([res, byId]) =>
-    latestWithHoles(supabase, seasonOnly(res.rounds.filter(isFull18)), (id) => {
+  // The season turns on 1 August in the team's zone (owner decision 9), the clock's.
+  const startRead = clockRead.then((c) => seasonStartDate(now, c.tz));
+  const latestRead = Promise.all([roundsRead, playerById, startRead]).then(([res, byId, start]) =>
+    latestWithHoles(supabase, seasonOnly(res.rounds.filter(isFull18), start), (id) => {
       const p = byId.get(id);
       return p ? nameOf(p) : 'Former player';
     }),
@@ -348,7 +373,9 @@ export async function loadCoachHome(input: { teamId: string; coachName: string; 
     tz: clockRead.then((c) => c.tz),
     names: rosterRead.then((res) => (res.error ? null : new Map(rosterOf(res).map((p) => [p.id, nameOf(p)])))),
   });
-  const [{ greeting, todayLabel, tz, day }, rosterRes, chatRes, wk, seasonRead, latest, teamRes, bench, cache, queue] = await Promise.all([
+  // P-14: the schedule changes, read beside the rest once the team's zone is known.
+  const changesRead = loadHomeChanges(supabase, { teamId: input.teamId, tz: clockRead.then((c) => c.tz), now, coachId: input.coachId ?? null });
+  const [{ greeting, todayLabel, tz, day }, rosterRes, chatRes, wk, seasonRead, latest, teamRes, bench, cache, queue, changes] = await Promise.all([
     clockRead,
     rosterRead,
     chatRead,
@@ -359,6 +386,7 @@ export async function loadCoachHome(input: { teamId: string; coachName: string; 
     benchRead,
     cacheRead,
     queueRead,
+    changesRead,
   ]);
   if (teamRes.error) log('team', teamRes.error);
   // CH-2208: without the team chat, Message team opens Messages instead.
@@ -376,8 +404,9 @@ export async function loadCoachHome(input: { teamId: string; coachName: string; 
   // ── Season rounds ──
   const { rounds, error: roundsError } = seasonRead;
   const full = rounds.filter(isFull18);
-  const seasonRounds = seasonOnly(rounds);
-  const seasonFull = seasonOnly(full);
+  const start = seasonStartDate(now, tz);
+  const seasonRounds = seasonOnly(rounds, start);
+  const seasonFull = seasonOnly(full, start);
 
   // ── Latest rounds with hole-by-hole (read above, as soon as the rounds were in) ──
   const { rounds: latestRounds, holesError } = latest;
@@ -395,7 +424,7 @@ export async function loadCoachHome(input: { teamId: string; coachName: string; 
     rows.push({
       playerId: p.id,
       name: nameOf(p),
-      classYear: classYearLabel(p.graduation_year, now),
+      classYear: classYearLabel(p.graduation_year, now, tz),
       rounds: season.rounds,
       avg: season.avg ?? 0,
       toPar: season.toPar,
@@ -416,17 +445,19 @@ export async function loadCoachHome(input: { teamId: string; coachName: string; 
   const legs = form ? teamLegs({ full, players: roster, cache, bench, tour: teamRes.error || !teamRes.data ? null : tourForGender(teamRes.data.gender) }) : null;
 
   return {
-    greeting: `${greeting}, ${firstName}.`,
+    greeting: `${greeting}, ${coachFirst}`,
     teamChatId: chatRes.error ? null : (chatRes.data?.[0]?.id ?? null),
     subline: homeSubline(rows, { roundsError, nextCompetition: wk.nextCompetition }),
     todayLabel,
     clock: { tz, day },
-    week: wk.week,
+    week: { ...wk.week, agenda: withWas(wk.week.agenda, changes.byEvent) },
     latestRounds: { rounds: latestRounds, error: roundsError, holesError },
     leaderboard: { rows, scorecards: seasonFull.length, rosterSize: roster.length, error: roundsError },
-    phone: { next: wk.next, today: wk.todayEvents, form, weekNote: wk.weekNote },
+    phone: { next: withChange(wk.next, changes.byEvent), today: wk.todayEvents.map((e) => withChange(e, changes.byEvent)), form, weekNote: wk.weekNote },
     legs,
     queue,
+    changes: changes.rows,
+    marks: input.marks ?? [],
   };
 }
 
@@ -821,7 +852,9 @@ export function teamForm(full: ChRound[], roundsThisWeek: number): ChTeamForm | 
   const avg = weightedMean(last, scoreOf) as number;
   const prevAvg = comparable ? weightedMean(prev, scoreOf) : null;
   const pairedAvg = comparable ? weightedMean(lastPaired, scoreOf) : null;
-  const gir = girOf(last);
+  // Greens hold to Stats' floor (A7): under two rounds with greens there is no share, only what it needs.
+  const girFloor = floorRate('fraction', last.filter(hasGir).length, girOf(last));
+  const gir = girFloor.value;
   const prevGir = comparable ? girOf(prev) : null;
   const pairedGir = comparable ? girOf(lastPaired) : null;
   const putts = weightedMean(last, puttsOf);
@@ -842,7 +875,7 @@ export function teamForm(full: ChRound[], roundsThisWeek: number): ChTeamForm | 
     line,
     roundsThisWeek,
     basis: { rounds: last.length, from: dates[0]!, to: dates[dates.length - 1]!, girRounds: last.filter(hasGir).length, puttsRounds: last.filter((r) => puttsOf(r) != null).length },
-    gir: { pct: gir, delta: pairedGir != null && prevGir != null ? pairedGir - prevGir : null, se: comparable ? changeSe(girRates(lastPaired), girRates(prev), null) : null },
+    gir: { pct: gir, ...(girFloor.needs ? { needs: girFloor.needs } : {}), delta: gir != null && pairedGir != null && prevGir != null ? pairedGir - prevGir : null, se: comparable ? changeSe(girRates(lastPaired), girRates(prev), null) : null },
     putts: { avg: putts, delta: pairedPutts != null && prevPutts != null ? pairedPutts - prevPutts : null, se: comparable ? windowChangeSe(lastPaired, prev, puttsOf, null) : null },
   };
 }
@@ -910,7 +943,7 @@ export function teamLegs(input: {
     return {
       key,
       label: LEGS[i]!,
-      stat: { label: LEG_STATS[key].label, value: stat.value, unit: stat.unit, digits: stat.digits, tour: marks ? stat.bench : null },
+      stat: { label: LEG_STATS[key].label, value: stat.value, unit: stat.unit, digits: stat.digits, tour: marks ? stat.bench : null, ...(stat.needs ? { needs: stat.needs } : {}), ...(stat.early ? { early: stat.early } : {}) },
       sg,
       delta,
       se: delta != null ? windowChangeSe(holePaired, holePrev, pick, 'sg') : null,

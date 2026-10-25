@@ -78,6 +78,30 @@ export function windowChangeSe<T extends HoleCount>(
   return changeSe(a.values, b.values, kind, a.n, b.n);
 }
 
+/** A change and its standard error: a trend's newer half against its older half (A1). */
+export interface ChHalves {
+  delta: number;
+  se: number | null;
+}
+
+/**
+ * A trend's newer half against its older half, from the rounds behind it (A1). `groups` are the rounds behind each point of the
+ * trend, oldest first (a week's, a day's); the points with a value split as the form line's halves do (`halvesChange`: with an odd
+ * count the middle point is in neither half). The change is the newer half's rounds' mean less the older half's, per 18 holes, and
+ * its standard error is those rounds' own (`windowChangeSe`): a week's mean of eight rounds is never read as a single round, whose
+ * spread would leave nearly every team trend at "No clear change". Null under three points with a value.
+ */
+export function roundHalves<T extends HoleCount>(groups: T[][], pick: (r: T) => number | null | undefined, kind: SpreadKind | null): ChHalves | null {
+  const known = groups.filter((g) => g.some((r) => pick(r) != null));
+  if (known.length < 3) return null;
+  const half = Math.floor(known.length / 2);
+  const older = known.slice(0, half).flat();
+  const newer = known.slice(known.length - half).flat();
+  const a = weightedMean(newer, pick);
+  const b = weightedMean(older, pick);
+  return a == null || b == null ? null : { delta: a - b, se: windowChangeSe(newer, older, pick, kind) };
+}
+
 /** Doubles or worse as a share of holes (production's big-number rate), from the rounds' cached counts over their holes. */
 export function bigNumberRate(rounds: Array<HoleCount & { doubles: number | null; triples: number | null }>): number | null {
   let big = 0;

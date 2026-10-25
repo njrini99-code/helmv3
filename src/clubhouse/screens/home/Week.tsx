@@ -1,7 +1,7 @@
 'use client';
 
 import { CalendarDays, MessageSquare } from 'lucide-react';
-import Link from 'next/link';
+import { Button } from '../../ui/Button';
 import type { ReactNode } from 'react';
 import type { ChAgendaRow, ChCoachHome, ChHomeEvent } from '../../data/home';
 import { Badge } from '../../ui/Badge';
@@ -12,16 +12,20 @@ import { TYPE_ICON } from '../calendar/type-icon';
 import { messagesPrefillHref } from '../messages/prefill';
 import { rebuiltHref } from '../../shell/nav';
 import { useChClock } from '../../lib/use-clock';
+import { restyleClock } from '../../lib/clock-format';
+import { useMarkReader } from '../../lib/use-change-marks';
+import { WasValue } from '../../ui/WasValue';
 import { agendaDetail, agendaTime } from './agenda-clock';
 import { nudgeDraft } from './nudge-draft';
+import { firstName } from '../../lib/names';
+import { plural } from '../../lib/plural';
 
 /** What the dots under a day say to a screen reader. */
 export function dayLabel(count: number, competition: boolean): string {
-  const events = count === 0 ? 'no events' : count === 1 ? '1 event' : `${count} events`;
+  const events = count === 0 ? 'no events' : plural(count, 'event');
   return competition ? `competition, ${events}` : events;
 }
 
-const firstName = (name: string) => name.split(' ')[0] ?? name;
 
 /**
  * The coach's Next row, second line (spec B §4): who is going and who hasn't replied, with one Nudge, only while the
@@ -60,7 +64,7 @@ export function Week({ week, between, covered = false, events }: { week: ChCoach
         <RefreshNotice
           code="CH-2201"
           title="This week’s schedule didn’t load"
-          body="Your events are safe. This is a display problem, and trying again usually clears it."
+          body="Your events are safe. Try again."
           covered={covered}
         />
       ) : (
@@ -110,20 +114,28 @@ export function Week({ week, between, covered = false, events }: { week: ChCoach
 function AgendaRow({ r, replies = null }: { r: ChAgendaRow; replies?: ReturnType<typeof nextReplies> }) {
   const clock = useChClock();
   const detail = agendaDetail(r, clock);
+  // P-14: the old value of a changed event leads the detail line, struck, until Got it.
+  const read = useMarkReader();
+  const was = r.was && !read(r.was.changeId).got ? r.was : null;
   return (
     <div className={'ch-h-agenda__row' + (r.isNext ? ' is-next' : '') + (r.isCompetition ? ' is-event' : '') + (replies ? ' has-replies' : '')}>
       <span className="ch-h-agenda__t ch-num">{agendaTime(r, clock)}</span>
       <div className="ch-h-agenda__txt">
         <div className="ch-h-agenda__a">{r.title}</div>
-        {detail && <div className="ch-h-agenda__b">{detail}</div>}
+        {(detail || was) && (
+          <div className="ch-h-agenda__b">
+            {was && <WasValue changeId={was.changeId}>{restyleClock(was.text, clock)}</WasValue>}
+            {was && detail ? ' · ' : ''}
+            {detail}
+          </div>
+        )}
         {replies && <div className="ch-h-agenda__rsvp ch-num">{replies.line}</div>}
       </div>
       {r.isNext && <Badge tone="accent">Next</Badge>}
       {replies?.nudge && (
-        <Link href={replies.nudge.href} className="ch-btn ch-btn--ghost ch-btn--sm ch-h-agenda__nudge" aria-label={replies.nudge.aria}>
-          <Icon icon={MessageSquare} size={14} />
-          <span>{replies.nudge.label}</span>
-        </Link>
+        <Button variant="ghost" size="sm" leftIcon={MessageSquare} className="ch-h-agenda__nudge" href={replies.nudge.href} aria={{ label: replies.nudge.aria }}>
+          {replies.nudge.label}
+        </Button>
       )}
     </div>
   );

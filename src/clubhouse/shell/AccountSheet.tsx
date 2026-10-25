@@ -8,13 +8,14 @@ import { Avatar } from '../ui/Avatar';
 import { Icon } from '../ui/Icon';
 import { useToast } from '../ui/Toast';
 import { chSignOut } from '../lib/sign-out';
+import { SIGN_OUT_FAILED } from '../lib/sign-out-copy';
 import { chReport } from '../lib/track';
 import { haptic } from '../lib/haptics';
-import { chSpring, chTween } from '../lib/motion';
+import { chFade, chSpring, chTween } from '../lib/motion';
 import { chThrownExit, takeSheetFling, useSheetDrag } from '../lib/sheet-drag';
 import { OverlayScrollLock } from '../lib/overlay-scroll';
 import { usePaintedAfter } from '../lib/use-painted';
-import { useChReducedMotion } from '../lib/reduced-motion';
+import { useChMotionMode, useChReducedMotion } from '../lib/reduced-motion';
 import type { ChRole } from './nav';
 import { focusSectionTitle, useSectionSwitch } from './section-switch';
 import { MoreTeamSwitch } from './TeamSwitch';
@@ -50,10 +51,12 @@ export function AccountSheet({
       chReport(err, { surface: 'shell.more', action: 'signOut' });
       haptic('error');
       setLeaving(false);
-      toast({ tone: 'error', title: "Couldn't sign out", body: 'You are still signed in. Try again.', code: 'CH-1002', action: { label: 'Retry', run: () => void signOut() } });
+      toast({ tone: 'error', title: SIGN_OUT_FAILED.title, body: SIGN_OUT_FAILED.body, code: 'CH-1002', action: { label: SIGN_OUT_FAILED.retry, run: () => void signOut() } });
     }
   };
   const reduced = useChReducedMotion();
+  // Reduce Motion fades the sheet and its dim over the quick beat (owner decision 2, OQ-15); Animations off is instant.
+  const mode = useChMotionMode();
   const sw = useSectionSwitch();
   const moreOpen = sw?.accountOpen ?? false;
   const setMoreOpen = useCallback((open: boolean) => sw?.setAccountOpen(open), [sw]);
@@ -77,10 +80,10 @@ export function AccountSheet({
   // A transform string, not framer's `y`: Motion hands transform and opacity to the compositor (WAAPI), so the sheet
   // keeps moving while the page under it is busy (owner, 2026-10-15: "All transitions need fixed. All popups").
   const sheetMotion = {
-    shown: { transform: 'translateY(0%)', opacity: 1, transition: chSpring('smooth', reduced) },
+    shown: { transform: 'translateY(0%)', opacity: 1, transition: reduced ? chFade(mode) : chSpring('smooth') },
     gone: () => {
       if (jumped.current) return { opacity: 0, transition: { duration: 0 } };
-      if (reduced) return { transform: 'translateY(0%)', opacity: 0, transition: { duration: 0 } };
+      if (reduced) return { transform: 'translateY(0%)', opacity: 0, transition: chFade(mode) };
       const el = sheet.current;
       const travel = el?.offsetHeight ?? 0;
       if (!el || !travel) return { transform: 'translateY(100%)', transition: chTween('base') };
@@ -157,7 +160,7 @@ export function AccountSheet({
               initial={{ opacity: 0 }}
               animate={painted ? { opacity: 1 } : undefined}
               exit={{ opacity: 0 }}
-              transition={reduced ? { duration: 0 } : chTween('base')}
+              transition={reduced ? chFade(mode) : chTween('base')}
               onClick={() => setMoreOpen(false)}
             />
             <m.div
@@ -181,7 +184,7 @@ export function AccountSheet({
               }}
             >
               <OverlayScrollLock />
-              <div className="ch-more__grab" aria-hidden="true" onPointerDown={drag.onPointerDown} />
+              <div className="ch-grab" aria-hidden="true" onPointerDown={drag.onPointerDown} />
               <div className="ch-more__head" onPointerDown={drag.onPointerDown}>
                 <span>Account</span>
                 <button type="button" className="ch-more__x" aria-label="Close" onClick={() => setMoreOpen(false)}>

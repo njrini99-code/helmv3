@@ -9,7 +9,7 @@ import type { ChPlayerProfile } from '../../data/stats-player';
 import type { ChStatsReads } from '../../data/stats-reads';
 import { basisWords, clearFilters, HOLES_ADJ, hasRange, per18, type ChHoles, isFiltered, isWindowChange, statsHref, rangeOf, withScope, type ChFilter, type ChRange } from '../../data/stats-filter';
 import { Avatar } from '../../ui/Avatar';
-import { Button } from '../../ui/Button';
+import { Button, IconButton } from '../../ui/Button';
 import { EmptyState } from '../../ui/States';
 import { InlineNotice } from '../../ui/Notices';
 import { Icon } from '../../ui/Icon';
@@ -26,10 +26,12 @@ import { useSlidePlate } from '../../lib/slide-plate';
 import { useChReducedMotion } from '../../lib/reduced-motion';
 import { useChPhone } from '../../lib/use-phone';
 import { tabListKeys } from '../../lib/tabs';
-import { formatFixed, formatSigned, formatToPar, NO_DATA } from '../../lib/format';
+import { useIdleFetchAhead } from '../../shell/use-prefetch-tabs';
+import { windowsAhead } from './window-ahead';
+import { changeInk, formatAvg, formatFixed, formatHcp, formatSigned, formatToPar, NO_DATA } from '../../lib/format';
+import { TERMS } from '../../lib/glossary';
 import { sgBaseline } from '../../lib/sg';
 import { rebuiltHref } from '../../shell/nav';
-import { formatHcp } from '../roster/format';
 import { usePageCrumbs } from '../../shell/crumbs';
 import { gameSectionFromHash, LEGS_LIST, LEG_SECTION } from './legs';
 import { SgChangeChip } from './charts';
@@ -50,6 +52,9 @@ import { OverviewZones } from './OverviewZones';
 import { Zone, ZoneBig as Big, Zones } from '../../ui/Zone';
 import { FilterEmpty, NineHint, StatsFilter } from './StatsFilter';
 import { devMetric, devProgress, devTitle, devValue, goalLine } from './dev-format';
+import { pluralWord } from '../../lib/plural';
+import { PlayerInsight } from './StatsInsight';
+import { NoData } from '../../ui/NoData';
 
 type Tab = 'overview' | 'game' | 'rounds' | 'dev';
 const TABS: readonly Tab[] = ['overview', 'game', 'rounds', 'dev'];
@@ -60,8 +65,8 @@ export function formNote(first: string, scores: number[]): string {
   const half = Math.floor(scores.length / 2);
   const m = (xs: number[]) => xs.reduce((a, b) => a + b, 0) / xs.length;
   const c = m(scores.slice(scores.length - half)) - m(scores.slice(0, half));
-  if (c <= -FORM_STEADY) return `${first} is scoring ${Math.abs(c).toFixed(1)} lower in the newer half of these rounds.`;
-  if (c >= FORM_STEADY) return `${first} is scoring ${c.toFixed(1)} higher in the newer half of these rounds.`;
+  if (c <= -FORM_STEADY) return `${first} is scoring ${formatFixed(Math.abs(c), 1)} lower in the newer half of these rounds.`;
+  if (c >= FORM_STEADY) return `${first} is scoring ${formatFixed(c, 1)} higher in the newer half of these rounds.`;
   return `${first} is holding steady across these rounds.`;
 }
 
@@ -157,6 +162,8 @@ export function StatsPlayer({ data, coachId, initialTab, reads }: { data: ChPlay
     go(data.id, next);
   };
   const changeWindow = (r: ChRange) => changeFilter(withScope(data.filter, r));
+  // Row 15: once the window has settled, the windows either side are fetched whole when idle, so a switch to one is instant.
+  useIdleFetchAhead(loading || pending ? [] : windowsAhead(data.filter).map((f) => href(data.id, f)));
   const filterCodes = { empty: 'CH-5320', pickEmpty: 'CH-5321', pickCap: 'CH-5322', range: 'CH-5102', holes: 'CH-5323' };
   // A coach's Message opens the direct thread with this player (Messages' ?player= link), not the bare inbox.
   const messageHref = coach ? rebuiltHref(`/golf/dashboard/messages?player=${data.id}`) : null;
@@ -166,10 +173,10 @@ export function StatsPlayer({ data, coachId, initialTab, reads }: { data: ChPlay
   const insightsHref = coach ? rebuiltHref(`/golf/dashboard/coachhelm?player=${data.id}`, 'coach') : null;
 
   const heroFigs: Array<[string, string, string, string?, ReactNode?]> = [
-    ['Scoring avg', failed ? NO_DATA : formatFixed(w.avg), failed ? 'Didn’t load' : coach && data.teamAvg != null ? `Team ${data.teamAvg.toFixed(1)}` : `${w.rounds} rounds`],
-    ['Handicap', formatHcp(data.handicap), 'Index'],
+    [TERMS.scoringAvg.short, failed ? NO_DATA : formatFixed(w.avg), failed ? 'Didn’t load' : coach && data.teamAvg != null ? `Team ${formatAvg(data.teamAvg)}` : `${w.rounds} rounds`],
+    [TERMS.handicap.long, formatHcp(data.handicap), 'Index'],
     // The change's line is always there (a window with no change leaves it empty, `hold`), so the figures, the tabs and the page below do not move between windows.
-    ['SG / round', failed || w.sgPerRound == null ? NO_DATA : formatSigned(w.sgPerRound), `Per round ${baseline.vs}`, failed || w.sgPerRound == null ? undefined : w.sgPerRound >= 0 ? 'ch-gain' : 'ch-loss', !failed && w.sgPerRound != null && (data.sgChange.delta != null || data.sgChange.context) ? <SgChangeChip change={data.sgChange} code="CH-5310" /> : <span aria-hidden="true" />],
+    ['SG / round', failed || w.sgPerRound == null ? NO_DATA : formatSigned(w.sgPerRound), `Per round ${baseline.vs}`, failed ? undefined : changeInk(w.sgPerRound) || undefined, !failed && w.sgPerRound != null && (data.sgChange.delta != null || data.sgChange.context) ? <SgChangeChip change={data.sgChange} code="CH-5310" /> : <span aria-hidden="true" />],
     ['Rounds', failed ? NO_DATA : String(data.season.rounds), 'This season'],
   ];
   const pickTab = (t: Tab) => {
@@ -234,15 +241,11 @@ export function StatsPlayer({ data, coachId, initialTab, reads }: { data: ChPlay
             </Button>
             {data.nav && (
               <div className="ch-st-back__nav">
-                <Link className="ch-btn ch-btn--ghost ch-iconbtn ch-btn--sm" href={href(data.nav.prev, data.filter)} aria-label="Previous player" onClick={() => haptic('select')} scroll={false}>
-                  <Icon icon={ChevronLeft} size={15} />
-                </Link>
+                <IconButton icon={ChevronLeft} size="sm" label="Previous player" href={href(data.nav.prev, data.filter)} scroll={false} />
                 <span className="ch-num">
                   {data.nav.index} of {data.nav.total}
                 </span>
-                <Link className="ch-btn ch-btn--ghost ch-iconbtn ch-btn--sm" href={href(data.nav.next, data.filter)} aria-label="Next player" onClick={() => haptic('select')} scroll={false}>
-                  <Icon icon={ChevronRight} size={15} />
-                </Link>
+                <IconButton icon={ChevronRight} size="sm" label="Next player" href={href(data.nav.next, data.filter)} scroll={false} />
               </div>
             )}
           </div>
@@ -250,7 +253,7 @@ export function StatsPlayer({ data, coachId, initialTab, reads }: { data: ChPlay
 
         <section className="ch-pf-hero" aria-label={data.name} data-canopy-head="">
           <span className="ch-pf-hero__av">
-            <Avatar name={data.name} size={84} />
+            <Avatar name={data.name} id={data.id} size={84} />
           </span>
           <div className="ch-pf-hero__id">
             <div className="ch-pf-hero__tags">
@@ -339,7 +342,14 @@ export function StatsPlayer({ data, coachId, initialTab, reads }: { data: ChPlay
           </div>
         )}
         {data.roundsError && (
-          <InlineNotice code="CH-5201" title="Rounds didn’t load." body="Posted rounds are safe. Every figure that reads them would be incomplete, so they’re hidden. Try again; the error has been reported." onRetry={() => router.refresh()} />
+          <InlineNotice code="CH-5201" title="Rounds didn’t load." body="Posted rounds are safe. Every figure that reads them would be incomplete, so they’re hidden. Try again." onRetry={() => router.refresh()} />
+        )}
+
+        {/* Row 70: what changed, in words, before the tabs' figures; the same on every tab. */}
+        {!emptyFilter && !failed && (
+          <SectionBoundary surface="stats.player.insight" label="What changed" code="CH-5204">
+            <PlayerInsight data={data} />
+          </SectionBoundary>
         )}
 
         {/* The tab's panel swaps (CH-5603) behind the underline that already moved (CH-5601). */}
@@ -360,11 +370,11 @@ export function StatsPlayer({ data, coachId, initialTab, reads }: { data: ChPlay
                   <InlineNotice
                     code="CH-5202"
                     title="Shot-level detail didn’t load."
-                    body="Scores and rounds above are correct. Try again; the error has been reported."
+                    body="Scores and rounds above are correct. Try again."
                     onRetry={() => router.refresh()}
                   />
                 ) : data.stats && data.stats.roundsPlayed > 0 ? (
-                  <GameDetail s={data.stats} x={data.extra} bench={data.bench} first={coach ? first : 'You'} rounds={w.rounds} window={data.window} basis={basisWords(data.filter)} holes={data.filter.holes} puttBands={data.puttBands} reads={reads} onRetry={() => router.refresh()} />
+                  <GameDetail s={data.stats} x={data.extra} bench={data.bench} tour={data.tour} first={coach ? first : 'You'} rounds={w.rounds} window={data.window} basis={basisWords(data.filter)} holes={data.filter.holes} puttBands={data.puttBands} reads={reads} onRetry={() => router.refresh()} />
                 ) : (
                   <div className="ch-st-card">
                     <EmptyState code="CH-5301" title="No shot-by-shot rounds in this window." body="Game detail fills in from rounds posted hole by hole with shots. Totals-only rounds still count toward scoring." />
@@ -429,7 +439,7 @@ const Overview = memo(function Overview({ data, coach, onOpenLeg }: { data: ChPl
           first={first}
           coach={coach}
           teamAvg={data.teamAvg}
-          meta={`Last ${trendRounds.length} ${HOLES_ADJ[data.filter.holes]} ${trendRounds.length === 1 ? 'round' : 'rounds'}${trendRounds.some((r) => r.holes === 9) ? ' · 9-hole scores doubled' : ''}`}
+          meta={`Last ${trendRounds.length} ${HOLES_ADJ[data.filter.holes]} ${pluralWord(trendRounds.length, 'round')}${trendRounds.some((r) => r.holes === 9) ? ' · 9-hole scores doubled' : ''}`}
           note={trendRounds.length ? formNote(first, trendRounds.map((r) => r.score)) : undefined}
         />
       }
@@ -440,9 +450,9 @@ const Overview = memo(function Overview({ data, coach, onOpenLeg }: { data: ChPl
 function RoundsTable({ rounds, role, tour, holes }: { rounds: ChPlayerProfile['rounds']; role: 'coach' | 'player'; tour: ChPlayerProfile['tour']; holes: ChHoles }) {
   const baseline = sgBaseline(tour);
   return (
-    <div className="ch-zt" aria-label={`Rounds: countable ${HOLES_ADJ[holes]} rounds, newest first, strokes gained ${baseline.vs}`}>
+    <div role="group" className="ch-zt" aria-label={`Rounds: countable ${HOLES_ADJ[holes]} rounds, newest first, strokes gained ${baseline.vs}`}>
       {rounds.length === 0 ? (
-        <EmptyState code="CH-5302" compact title="No rounds in this window." body="Try This season to see every round posted since August." />
+        <EmptyState code="CH-5302" kind="filtered" compact title="No rounds in this window." body="Try This season to see every round posted since August." />
       ) : (
         <ScrollRegion label="Rounds, scrolls sideways" className="ch-tbl">
           <div role="table" aria-label="Rounds">
@@ -482,11 +492,11 @@ function RoundsTable({ rounds, role, tour, holes }: { rounds: ChPlayerProfile['r
                 <span role="cell" className="ch-n2">{r.date}</span>
                 <span role="cell" className="r ch-num ch-n">{r.score}</span>
                 <span role="cell" className={'r ch-num ch-topar' + (r.toPar != null && r.toPar < 0 ? ' is-under' : '')}>{formatToPar(r.toPar)}</span>
-                <span role="cell" className="r ch-num ch-n2 ch-tr__x">{r.gir ?? NO_DATA}</span>
-                <span role="cell" className="r ch-num ch-n2 ch-tr__x">{r.putts ?? NO_DATA}</span>
-                <span role="cell" className={'r ch-num ch-n2' + (r.sg == null ? '' : r.sg >= 0 ? ' ch-gain' : ' ch-loss')}>{formatSigned(r.sg)}</span>
+                <span role="cell" className="r ch-num ch-n2 ch-tr__x">{r.gir ?? <NoData />}</span>
+                <span role="cell" className="r ch-num ch-n2 ch-tr__x">{r.putts ?? <NoData />}</span>
+                <span role="cell" className={'r ch-num ch-n2 ' + changeInk(r.sg)}>{formatSigned(r.sg)}</span>
                 {r.sgLegs.map((v, i) => (
-                  <span key={i} role="cell" className={'r ch-num ch-n2' + (v == null ? '' : v >= 0 ? ' ch-gain' : ' ch-loss')}>
+                  <span key={i} role="cell" className={'r ch-num ch-n2 ' + changeInk(v)}>
                     {formatSigned(v)}
                   </span>
                 ))}
@@ -510,7 +520,7 @@ function DevTrack({ title, state, line, baseline, current, target, metric, done 
           <span>{state ?? line}</span>
           {extra}
         </div>
-        <em className="ch-num">{done ? 'Achieved' : progress == null ? NO_DATA : `${progress}% of the way`}</em>
+        <em className="ch-num">{done ? 'Achieved' : progress == null ? <NoData /> : `${progress}% of the way`}</em>
       </div>
       {progress != null && (
         <div className="ch-dv__rail" role="img" aria-label={`${title}: ${devValue(baseline, metric)} to start, ${devValue(current, metric)} now, ${devValue(target, metric)} target, ${progress} percent of the way`}>
@@ -537,7 +547,7 @@ function Development({ data, coach, first, onAdd }: { data: ChPlayerProfile; coa
   const waiting = data.focusAreas.filter((f) => f.status === 'proposed').length;
   return (
     <>
-      {data.devError && <InlineNotice code="CH-5203" title="Some development items didn’t load." body="Try again; the error has been reported." onRetry={() => router.refresh()} />}
+      {data.devError && <InlineNotice code="CH-5203" title="Some development items didn’t load." body="Try again." onRetry={() => router.refresh()} />}
       <Zones>
         <Zone
           n={1}
@@ -702,7 +712,7 @@ function FocusAreaSheet({ open, onClose, playerId, coachId, first }: { open: boo
           <Button variant="ghost" onClick={onClose}>
             Cancel
           </Button>
-          <Button variant="primary" disabled={save.pending} feel={null} onClick={() => void submit()}>
+          <Button variant="primary" busy={save.pending} feel={null} onClick={() => void submit()}>
             {save.pending ? <span data-ch-code="CH-5401">Adding…</span> : 'Propose focus area'}
           </Button>
         </>

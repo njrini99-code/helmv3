@@ -1,4 +1,5 @@
 import type { ChReadArea, ChReadCount } from '../../data/coachhelm-classify';
+import { pluralWord } from '../../lib/plural';
 
 /**
  * Game detail's "CoachHelm sees…" sentence (P005, spec D build A), in the same words for a coach and a player: it names the reads,
@@ -16,9 +17,9 @@ export const READ_AREA_PHRASE: Record<ChReadArea, string> = {
 /** The sentence as parts, so the counts can be set as figures: `[text, count, text, …]`, counts at the odd places. */
 export function readsLineParts(area: ChReadArea, c: ChReadCount): Array<string | number> | null {
   const where = READ_AREA_PHRASE[area];
-  if (c.costing > 0 && c.working > 0) return ['CoachHelm sees ', c.costing, ` ${c.costing === 1 ? 'read' : 'reads'} costing strokes ${where} and `, c.working, ' working.'];
-  if (c.costing > 0) return ['CoachHelm sees ', c.costing, ` ${c.costing === 1 ? 'read' : 'reads'} costing strokes ${where}.`];
-  if (c.working > 0) return ['CoachHelm sees ', c.working, ` ${c.working === 1 ? 'read' : 'reads'} working ${where}.`];
+  if (c.costing > 0 && c.working > 0) return ['CoachHelm sees ', c.costing, ` ${pluralWord(c.costing, 'read')} costing strokes ${where} and `, c.working, ' working.'];
+  if (c.costing > 0) return ['CoachHelm sees ', c.costing, ` ${pluralWord(c.costing, 'read')} costing strokes ${where}.`];
+  if (c.working > 0) return ['CoachHelm sees ', c.working, ` ${pluralWord(c.working, 'read')} working ${where}.`];
   return null;
 }
 

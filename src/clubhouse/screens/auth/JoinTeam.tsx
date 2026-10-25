@@ -91,7 +91,7 @@ export function JoinTeam({ data, playerId, writes = gateWrites, initial, navigat
           <p className="ch-au-sub">{teamPlace(team)}</p>
           <div className="ch-au-plate">
             <div className="ch-au-plate__row">
-              {team.organization?.logoUrl ? <img className="ch-au-plate__logo" src={team.organization.logoUrl} alt="" width={40} height={40} /> : <Avatar name={team.name} size={40} />}
+              {team.organization?.logoUrl ? <img className="ch-au-plate__logo" src={team.organization.logoUrl} alt="" width={40} height={40} /> : <Avatar name={team.name} size="lg" />}
               <div>
                 <span className="ch-au-plate__k">Team</span>
                 <b>{team.name}</b>
@@ -99,7 +99,7 @@ export function JoinTeam({ data, playerId, writes = gateWrites, initial, navigat
               </div>
             </div>
             <div className="ch-au-plate__row">
-              <Avatar name={player.name} size={40} />
+              <Avatar name={player.name} size="lg" />
               <div>
                 <span className="ch-au-plate__k">Joining as</span>
                 <b>{player.name}</b>

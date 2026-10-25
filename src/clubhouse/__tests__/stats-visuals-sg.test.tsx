@@ -70,12 +70,13 @@ describe('LegBars: read, pin, keys', () => {
 
   it('rests on a hint, reads a leg under the pointer, and does not announce a hover', () => {
     show();
-    expect(read()).toBe('Select a leg to see how sure its figure is.');
+    // B14: the whisker is one standard error (about 68%), which the readout calls the likely range; "margin of error" implies 95%.
+    expect(read()).toBe('Select a leg to see its likely range.');
     fireEvent.pointerEnter(row(1), { pointerType: 'mouse' });
     expect(read()).toMatch(/^Approach · [+−]\d\.\d a round · 10 rounds · likely range/);
     expect(live()).toBe('');
     fireEvent.pointerLeave(row(1), { pointerType: 'mouse' });
-    expect(read()).toBe('Select a leg to see how sure its figure is.');
+    expect(read()).toBe('Select a leg to see its likely range.');
   });
 
   it('pins a leg on a tap and announces it; Esc lets go', () => {
@@ -116,7 +117,9 @@ describe('LegBars: read, pin, keys', () => {
     expect(putting.querySelector('.ch-sv-needs')!.textContent).toBe('Needs 5 rounds');
     expect(putting.querySelector('.ch-lb__bar')).toBeNull();
     expect(putting.querySelector('.ch-sv-whisk')).toBeNull();
-    expect(putting.querySelector('.ch-lb__v')!.textContent).toBe('—');
+    // The dash to the eye, "No data" to a screen reader (row 46, ui/NoData).
+    expect(putting.querySelector('.ch-lb__v [aria-hidden="true"]')!.textContent).toBe('—');
+    expect(putting.querySelector('.ch-lb__v .ch-sr-only')!.textContent).toBe('No data');
   });
 
   it('keeps the bar on the data’s own scale: a whisker never moves it', () => {
@@ -132,6 +135,11 @@ describe('SgBars: the phone’s rows', () => {
   const rows = () => sgLegRows(PREVIEW_PLAYER, false);
   const leg = (i: number) => document.querySelectorAll('.ch-stm-leg')[i] as HTMLElement;
   const live = () => document.querySelector('[aria-live="polite"]')!.textContent;
+
+  it('rests on the same words as the desktop legs: the whisker is the likely range (B14)', () => {
+    render(<SgBars rows={rows()} />);
+    expect(document.querySelector('.ch-sv-read')!.textContent).toBe('Tap a leg to see its likely range.');
+  });
 
   it('five rows, the total last, each a tap target that pins its reading', () => {
     render(<SgBars rows={rows()} />);

@@ -38,7 +38,8 @@ export const PEEK_HOLD_MS = 450;
 export const PEEK_HOVER_MS = 400;
 export const PEEK_FOCUS_MS = 600;
 
-const SLOP_PX = 8;
+/** GES-1: a touch that moves this far is a scroll (before a hold) or a drag (after a lift). */
+const SLOP_PX = 10;
 const HOVER_GRACE_MS = 160;
 const CARD_W = 328;
 
@@ -51,7 +52,24 @@ export function hoverCardWidth(fit: boolean, anchorWidth: number): number {
   return fit ? Math.min(CARD_W, Math.max(0, Math.floor(anchorWidth))) : CARD_W;
 }
 
-type Mode = { kind: 'press' | 'hover'; rect: DOMRect } | null;
+/** `up`: the press peek opened as the finger came up (a lift let go), so no lift is still to come. */
+type Mode = { kind: 'press' | 'hover'; rect: DOMRect; up?: boolean } | null;
+
+/**
+ * P-4 4.7.1: a target that can be picked up. The hold ticks once (`select`, the peek's own), then `lift` decides: true and
+ * the target is in hand, false and the peek opens as before. From the lift, a 10px move is a drag (`drag`; the peek
+ * never opens and the tap is swallowed), and a release without moving settles it back and opens the peek.
+ */
+export interface PeekLift {
+  /** At the hold: lift the target. Return false to fall back to the plain peek. */
+  lift: (at: { x: number; y: number; pointerId: number }, rect: DOMRect) => boolean;
+  /** The finger moved 10px after the lift: the drag owns the gesture from here; the peek never opens. */
+  drag: (at: { x: number; y: number }) => void;
+  /** The finger came up without moving: the target settles and the peek opens. */
+  settle: () => void;
+  /** The hold gave up before it lifted (a move past the slop, a scroll, a cancel). */
+  cancel?: () => void;
+}
 
 export function PeekTarget({
   label,
@@ -59,6 +77,7 @@ export function PeekTarget({
   actions = [],
   disabled = false,
   within,
+  lift,
   children,
 }: {
   /** Names the card for VoiceOver ("Theo Marchetti"). */
@@ -72,6 +91,8 @@ export function PeekTarget({
   card: () => ReactNode;
   actions?: PeekAction[];
   disabled?: boolean;
+  /** P-4: the hold picks the target up instead of opening the peek (a coach's movable event). */
+  lift?: PeekLift;
   children: ReactNode;
 }) {
   const wrap = useRef<HTMLSpanElement>(null);
@@ -80,12 +101,25 @@ export function PeekTarget({
   const closeTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const start = useRef<{ x: number; y: number } | null>(null);
   const swallowClick = useRef(false);
+  /** From a lift to the end of its touch: `held` until a 10px move makes it `drag`. */
+  const lifted = useRef<{ x: number; y: number; phase: 'held' | 'drag' } | null>(null);
+  const liftRef = useRef(lift);
+  liftRef.current = lift;
   const cardId = useId();
   const shown = actions.filter((a) => a.href || a.onSelect);
 
+  const unscroll = useRef<(() => void) | null>(null);
   const clear = () => {
     if (timer.current) clearTimeout(timer.current);
     timer.current = null;
+    unscroll.current?.();
+    unscroll.current = null;
+  };
+  /** The hold gave up before lifting: the target's owner hears of it. */
+  const giveUp = () => {
+    const was = !!timer.current;
+    clear();
+    if (was) liftRef.current?.cancel?.();
   };
   const anchorEl = useCallback((): HTMLElement | null => {
     const el = (wrap.current?.firstElementChild as HTMLElement | null) ?? null;
@@ -93,12 +127,12 @@ export function PeekTarget({
   }, [within]);
   const anchor = useCallback((): DOMRect | null => anchorEl()?.getBoundingClientRect() ?? null, [anchorEl]);
   const open = useCallback(
-    (kind: 'press' | 'hover') => {
+    (kind: 'press' | 'hover', up = false) => {
       const el = (wrap.current?.firstElementChild as HTMLElement | null) ?? null;
       if (!el) return;
       // The press sheet keeps the target's own box; only the hover card follows `within`.
       const box = kind === 'hover' ? anchorEl() ?? el : el;
-      setMode({ kind, rect: box.getBoundingClientRect() });
+      setMode({ kind, rect: box.getBoundingClientRect(), up });
     },
     [anchorEl],
   );
@@ -148,23 +182,59 @@ export function PeekTarget({
         onPointerDown: (e: React.PointerEvent) => {
           // A hold's lift may have ended on the peek, not here: its swallow never fired, and must not eat this tap.
           swallowClick.current = false;
+          lifted.current = null;
           if (e.pointerType !== 'touch' || !e.isPrimary) return;
           start.current = { x: e.clientX, y: e.clientY };
+          const pointerId = e.pointerId;
           clear();
           timer.current = setTimeout(() => {
             timer.current = null;
+            unscroll.current?.();
+            unscroll.current = null;
             swallowClick.current = true;
             haptic('select');
+            const el = (wrap.current?.firstElementChild as HTMLElement | null) ?? null;
+            const s = start.current;
+            const l = liftRef.current;
+            if (l && el && s && l.lift({ x: s.x, y: s.y, pointerId }, el.getBoundingClientRect())) {
+              lifted.current = { x: s.x, y: s.y, phase: 'held' };
+              return;
+            }
             open('press');
           }, PEEK_HOLD_MS);
+          // GES-23: a scroll before the lift is the page's (scroll wins). Removed at the lift: the drag scrolls itself.
+          const onScroll = () => giveUp();
+          window.addEventListener('scroll', onScroll, true);
+          unscroll.current = () => window.removeEventListener('scroll', onScroll, true);
         },
         onPointerMove: (e: React.PointerEvent) => {
+          const l = lifted.current;
+          if (l) {
+            if (l.phase === 'held' && Math.hypot(e.clientX - l.x, e.clientY - l.y) >= SLOP_PX) {
+              l.phase = 'drag';
+              liftRef.current?.drag({ x: e.clientX, y: e.clientY });
+            }
+            return;
+          }
           const s = start.current;
           if (!s || !timer.current) return;
-          if (Math.hypot(e.clientX - s.x, e.clientY - s.y) > SLOP_PX) clear();
+          if (Math.hypot(e.clientX - s.x, e.clientY - s.y) > SLOP_PX) giveUp();
         },
-        onPointerUp: () => clear(),
-        onPointerCancel: () => clear(),
+        onPointerUp: () => {
+          const l = lifted.current;
+          lifted.current = null;
+          if (l?.phase === 'held') {
+            liftRef.current?.settle();
+            open('press', true);
+            return;
+          }
+          giveUp();
+        },
+        // A cancel after the lift is the drag owner's to read; it neither settles nor opens the peek.
+        onPointerCancel: () => {
+          lifted.current = null;
+          giveUp();
+        },
         onPointerEnter: (e: React.PointerEvent) => {
           if (e.pointerType !== 'mouse') return;
           holdHover();
@@ -215,7 +285,7 @@ export function PeekTarget({
           {card()}
         </HoverCard>
       )}
-      <PressPeek open={mode?.kind === 'press'} rect={mode?.rect ?? null} label={label} actions={shown} onClose={close}>
+      <PressPeek open={mode?.kind === 'press'} up={!!mode?.up} rect={mode?.rect ?? null} label={label} actions={shown} onClose={close}>
         {mode?.kind === 'press' ? card() : null}
       </PressPeek>
     </>
@@ -311,6 +381,7 @@ function HoverCard({
 
 function PressPeek({
   open,
+  up = false,
   rect,
   label,
   actions,
@@ -318,6 +389,8 @@ function PressPeek({
   children,
 }: {
   open: boolean;
+  /** It opened as the finger came up (P-4: a lift let go): there is no lift still to come, its keys answer at once. */
+  up?: boolean;
   rect: DOMRect | null;
   label: string;
   actions: PeekAction[];
@@ -336,7 +409,8 @@ function PressPeek({
   const settled = useRef(false);
   useEffect(() => {
     if (!open) return;
-    settled.current = false;
+    settled.current = up;
+    if (up) return;
     let tick = 0;
     const settle = () => {
       tick = window.setTimeout(() => {
@@ -350,7 +424,7 @@ function PressPeek({
       window.removeEventListener('pointerup', settle, { capture: true });
       window.removeEventListener('pointercancel', settle, { capture: true });
     };
-  }, [open]);
+  }, [open, up]);
   // The card opens where the held row was, kept on screen: under the row when there is room, else lifted to fit.
   useLayoutEffect(() => {
     if (!open || !rect) return;

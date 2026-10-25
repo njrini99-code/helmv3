@@ -198,6 +198,17 @@ describe('100101 100102 Team Hub · Tasks (a player has the tab; the coach’s b
   });
 });
 
+describe('Team Hub · the trip card at phone width (A24)', () => {
+  it('the place has its own line; a date or a time never breaks inside itself, only between', () => {
+    show(PREVIEW_HUB_PLAYER);
+    const card = screen.getByRole('region', { name: 'Next trip' });
+    expect(card.querySelector('.ch-hw-count__where')?.textContent).toBe('Pine Needles · Southern Pines, NC');
+    expect(card.querySelector('.ch-hw-count__when')?.textContent).toBe('Mon\u00a03 – Wed\u00a05\u00a0Nov');
+    const leaves = [...card.querySelectorAll('.ch-hw-rail li')].find((li) => li.querySelector('span')?.textContent === 'Leaves');
+    expect(leaves?.querySelector('b')?.textContent).toBe('Mon · 12:00\u00a0PM');
+  });
+});
+
 describe('Team Hub · Travel', () => {
   it('the next trip’s pass counts the days to go, and only that pass', () => {
     show(PREVIEW_HUB_COACH, 'travel');

@@ -39,7 +39,7 @@ Facts per page, from the manifests and the Bridge registry. Gate evidence lives 
 - Design: approved
 - Implementation: in_progress
 - Contract: complete; 19 of 25 categories have catalog contracts
-- Bridge: reserved; 64 IDs, 55 on an element or in code, 9 reserved
+- Bridge: reserved; 64 IDs, 54 on an element or in code, 10 reserved
 - Data: existing; 0 held plan(s)
 - Verification: partial
 - Docs: current
@@ -59,7 +59,7 @@ Facts per page, from the manifests and the Bridge registry. Gate evidence lives 
 - Design: approved
 - Implementation: in_progress
 - Contract: complete; 23 of 25 categories have catalog contracts
-- Bridge: reserved; 98 IDs, 96 on an element or in code, 2 reserved
+- Bridge: reserved; 106 IDs, 104 on an element or in code, 2 reserved
 - Data: existing; 0 held plan(s)
 - Verification: partial
 - Docs: current
@@ -69,7 +69,7 @@ Facts per page, from the manifests and the Bridge registry. Gate evidence lives 
 - Design: approved
 - Implementation: in_progress
 - Contract: complete; 23 of 25 categories have catalog contracts
-- Bridge: reserved; 101 IDs, 99 on an element or in code, 2 reserved
+- Bridge: reserved; 114 IDs, 112 on an element or in code, 2 reserved
 - Data: existing; 2 held plan(s)
 - Verification: partial
 - Docs: current
@@ -89,7 +89,7 @@ Facts per page, from the manifests and the Bridge registry. Gate evidence lives 
 - Design: approved
 - Implementation: in_progress
 - Contract: complete; 23 of 25 categories have catalog contracts
-- Bridge: reserved; 136 IDs, 127 on an element or in code, 9 reserved
+- Bridge: reserved; 137 IDs, 128 on an element or in code, 9 reserved
 - Data: existing; 2 held plan(s)
 - Verification: partial
 - Docs: current
@@ -109,7 +109,7 @@ Facts per page, from the manifests and the Bridge registry. Gate evidence lives 
 - Design: approved
 - Implementation: in_progress
 - Contract: complete; 21 of 25 categories have catalog contracts
-- Bridge: reserved; 205 IDs, 203 on an element or in code, 2 reserved
+- Bridge: reserved; 210 IDs, 208 on an element or in code, 2 reserved
 - Data: existing; 0 held plan(s)
 - Verification: partial
 - Docs: current

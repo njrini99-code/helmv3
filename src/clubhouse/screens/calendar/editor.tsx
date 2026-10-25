@@ -1,6 +1,6 @@
 'use client';
 
-import { CalendarPlus, Check, Copy, Pencil, RefreshCw, Rss, Trash2, TriangleAlert, CircleX } from 'lucide-react';
+import { CalendarPlus, Check, Copy, Pencil, RotateCw, Rss, Trash2, TriangleAlert, CircleX } from 'lucide-react';
 import { useEffect, useMemo, useRef, useState, type KeyboardEvent, type PointerEvent } from 'react';
 import { createGolfEvent, deleteGolfEvent, deleteGolfEventPermanently, updateGolfEvent } from '@/app/golf/actions/calendar-events';
 import { createRecurringEvent, deleteRecurringEvent, editRecurringEvent } from '@/app/golf/actions/recurring-events';
@@ -710,7 +710,7 @@ export function EventEditor({
           </div>
           {!allDay && !multiTimed && invited.length > 0 && (
             <div>
-              <div className="ch-in__sechead" style={{ marginBottom: 10 }}>
+              <div className="ch-in__sechead" style={{ marginBottom: 8 }}>
                 <span className="ch-ed__lbl" style={{ margin: 0 }}>
                   Find a time · {dowOf(date)} {dayNum(date)}
                 </span>
@@ -1026,9 +1026,9 @@ export function SubscribeSheet({ open, onClose, role }: { open: boolean; onClose
     { type: 'personal', name: 'My schedule', desc: role === 'coach' ? 'Events you run and your busy time' : 'Events you’re invited to and your classes' },
   ];
   return (
-    <Modal open={open} onClose={onClose} width={560} icon={Rss} title="Add to your calendar app" description="One-way: changes in Helm appear in Apple, Google or Outlook within an hour. Edits made there don’t come back." footer={<Button onClick={onClose}>Done</Button>}>
+    <Modal open={open} onClose={onClose} width={560} icon={Rss} title="Add to your calendar app" description="One-way: changes in Helm appear in Apple, Google or Outlook within an hour. Edits made there don’t come back." footer={<Button variant="primary" onClick={onClose}>Done</Button>}>
       {failed ? (
-        <InlineNotice code="CH-6206" title="Your calendar links didn’t load." body="Try again; the error has been reported." onRetry={() => setAttempt((a) => a + 1)} />
+        <InlineNotice code="CH-6206" title="Your calendar links didn’t load." body="Try again." onRetry={() => setAttempt((a) => a + 1)} />
       ) : !feeds ? (
         <div style={{ display: 'grid', gap: 12 }} aria-busy="true" data-ch-code="CH-6402">
           <Skeleton height={44} />
@@ -1075,7 +1075,7 @@ export function SubscribeSheet({ open, onClose, role }: { open: boolean; onClose
                 ) : (
                   f && (
                     <div className="ch-feed__acts">
-                      <Button size="sm" variant="ghost" leftIcon={RefreshCw} disabled={busy} onClick={() => setAsking({ type: r.type, kind: 'new' })}>
+                      <Button size="sm" variant="ghost" leftIcon={RotateCw} disabled={busy} onClick={() => setAsking({ type: r.type, kind: 'new' })}>
                         New link
                       </Button>
                       <Button size="sm" variant="ghost" leftIcon={Trash2} disabled={busy} onClick={() => setAsking({ type: r.type, kind: 'remove' })}>

@@ -4,7 +4,7 @@ import Lenis from 'lenis';
 import { useEffect } from 'react';
 import { CH_SCROLL_DUR } from './motion';
 import { useChReducedMotion } from './reduced-motion';
-import { chRailMoving } from './rail-fold';
+import { afterRailMove, chRailMoving } from './rail-fold';
 
 /**
  * Smooth scrolling for the desktop canvas (owner, 2026-10-06: "use smooth scroll all around"). Safari on the Mac moves a
@@ -28,6 +28,32 @@ export function canvasLenis(): Lenis | null {
 export function canvasScrollNow(top: number): void {
   if (current) current.scrollTo(top, { immediate: true, force: true });
   else document.getElementById('ch-canvas')?.scrollTo({ top, behavior: 'instant' });
+}
+
+/**
+ * P-4: what a calendar drag scrolls. On desktop the canvas; on a phone the canvas is `overflow: visible` and Lenis is
+ * off, so the document scrolls (a `#ch-canvas.scrollTo` there does nothing).
+ */
+export function chDragScroller(): HTMLElement {
+  const c = document.getElementById('ch-canvas');
+  if (c && getComputedStyle(c).overflowY !== 'visible' && c.scrollHeight > c.clientHeight + 1) return c;
+  return (document.scrollingElement as HTMLElement | null) ?? document.documentElement;
+}
+
+/**
+ * P-4: move a drag's scroller by `dy` without fighting Lenis. canvasScrollNow resets Lenis (an immediate jump that
+ * stops its easing), so drag code never calls it: while Lenis glides the step adds to its target, at rest it moves at
+ * once in step with Lenis (`programmatic: false` keeps it from reading as a programmatic scroll), and with no Lenis the
+ * scroller moves itself.
+ */
+export function chDragScrollBy(dy: number, { immediate = false }: { immediate?: boolean } = {}): void {
+  if (!dy) return;
+  if (current) {
+    if (current.isScrolling === 'smooth' && !immediate) current.scrollTo(current.targetScroll + dy, { programmatic: false });
+    else current.scrollTo(current.animatedScroll + dy, { immediate: true, force: true, programmatic: false });
+    return;
+  }
+  chDragScroller().scrollBy({ top: dy, behavior: 'instant' });
 }
 
 /** Scroll an element into view, eased unless motion is off. Goes through the canvas scroller when one runs. */
@@ -81,6 +107,87 @@ export function chScrollsVertically(node: HTMLElement): boolean {
   return /(auto|scroll)/.test(getComputedStyle(node).overflowY) && node.scrollHeight > node.clientHeight;
 }
 
+/**
+ * Lenis's frame loop, run only while something moves (B8): a wheel, a programmatic glide or a scroll wakes it, and it
+ * sleeps once Lenis has been still for two frames, so an idle page asks for no frames at all. `scrollTo` wakes it too,
+ * so a glide asked for while it sleeps still runs.
+ *
+ * Lenis steps a glide by the time since the last frame it saw (`raf`). After a sleep that is the whole pause, longer than
+ * any glide, so the first frame finished the glide and the page jumped (auditor on #2361). The first frame after a wake
+ * steps one frame, as it would have had the loop never slept: the display's frame, measured while the loop runs.
+ */
+export function chLenisIdleLoop(lenis: Pick<Lenis, 'raf' | 'isScrolling' | 'on' | 'scrollTo' | 'time'>) {
+  let raf = 0;
+  let running = false;
+  let still = 0;
+  let last = 0;
+  let frame = 1000 / 60;
+  const loop = (time: number) => {
+    if (last) frame = Math.min(1000 / 30, Math.max(1000 / 240, time - last));
+    else lenis.time = time - frame;
+    last = time;
+    lenis.raf(time);
+    still = lenis.isScrolling ? 0 : still + 1;
+    if (still >= 2) {
+      running = false;
+      last = 0;
+      return;
+    }
+    raf = requestAnimationFrame(loop);
+  };
+  const wake = () => {
+    still = 0;
+    if (running) return;
+    running = true;
+    raf = requestAnimationFrame(loop);
+  };
+  const offScroll = lenis.on('scroll', wake);
+  const offVirtual = lenis.on('virtual-scroll', wake);
+  const scrollTo = lenis.scrollTo.bind(lenis);
+  lenis.scrollTo = ((...args: Parameters<Lenis['scrollTo']>) => {
+    wake();
+    return scrollTo(...args);
+  }) as Lenis['scrollTo'];
+  wake();
+  return {
+    wake,
+    stop: () => {
+      cancelAnimationFrame(raf);
+      running = false;
+      last = 0;
+      offScroll?.();
+      offVirtual?.();
+    },
+    /** Whether a frame is wanted (for tests). */
+    running: () => running,
+  };
+}
+
+/**
+ * Keeps a scroller's Lenis limit on what it holds (B8: observed, never read every frame). `resize` runs when a direct
+ * child of `wrapper` changes size and when one is added or removed, so a page or panel swapped in under the same wrapper
+ * is followed too. A child that leaves is let go: observed, it kept a route's detached page alive for the whole session.
+ * Not while the sidebar folds: the page reflows on every frame of it, and the limit is read once it settles
+ * (lib/rail-fold.ts). Returns the disconnect.
+ */
+export function chFollowContent(wrapper: HTMLElement, resize: () => void): () => void {
+  const read = () => (chRailMoving() ? afterRailMove(resize) : resize());
+  const sizes = new ResizeObserver(read);
+  for (const child of Array.from(wrapper.children)) sizes.observe(child);
+  const kids = new MutationObserver((records) => {
+    for (const r of records) {
+      for (const n of Array.from(r.removedNodes)) if (n instanceof Element) sizes.unobserve(n);
+      for (const n of Array.from(r.addedNodes)) if (n instanceof Element && n.parentNode === wrapper) sizes.observe(n);
+    }
+    read();
+  });
+  kids.observe(wrapper, { childList: true });
+  return () => {
+    kids.disconnect();
+    sizes.disconnect();
+  };
+}
+
 /** Mount once, in the Clubhouse frame. */
 export function useCanvasSmoothScroll(): void {
   const reduced = useChReducedMotion();
@@ -88,8 +195,8 @@ export function useCanvasSmoothScroll(): void {
     if (reduced) return;
     const desk = window.matchMedia(DESK);
     let lenis: Lenis | null = null;
-    let raf = 0;
-    let height = 0;
+    let unfollow = () => {};
+    let sleep = () => {};
 
     const start = () => {
       const wrapper = document.getElementById('ch-canvas');
@@ -119,24 +226,18 @@ export function useCanvasSmoothScroll(): void {
         },
       });
       current = lenis;
-      const loop = (time: number) => {
-        // The canvas grows as a page streams in or a route changes; the scroll limit follows it. Not while the sidebar
-        // folds: the page reflows on every frame of it, and the limit is read once it settles (lib/rail-fold.ts).
-        if (!chRailMoving() && wrapper.scrollHeight !== height) {
-          height = wrapper.scrollHeight;
-          lenis?.resize();
-        }
-        lenis?.raf(time);
-        raf = requestAnimationFrame(loop);
-      };
-      raf = requestAnimationFrame(loop);
+      sleep = chLenisIdleLoop(lenis).stop;
+      // The canvas grows as a page streams in or a route changes; the scroll limit follows it.
+      unfollow = chFollowContent(wrapper, resizeCanvas);
     };
+    const resizeCanvas = () => lenis?.resize();
     const stop = () => {
-      cancelAnimationFrame(raf);
+      sleep();
+      unfollow();
+      unfollow = () => {};
       lenis?.destroy();
       lenis = null;
       current = null;
-      height = 0;
     };
     const sync = () => (desk.matches ? start() : stop());
     sync();
@@ -266,8 +367,8 @@ export function usePanelSmoothScroll(ref: { current: HTMLElement | null }, { dur
     if (reduced || !wrapper) return;
     const desk = window.matchMedia(DESK);
     let lenis: Lenis | null = null;
-    let raf = 0;
-    let height = 0;
+    let unfollow = () => {};
+    let sleep = () => {};
     const start = () => {
       if (lenis) return;
       const fromTrackpad = chTrackpadGesture();
@@ -286,22 +387,16 @@ export function usePanelSmoothScroll(ref: { current: HTMLElement | null }, { dur
         },
         prevent: (node) => node !== wrapper && !!node.closest('[data-lenis-prevent], dialog, [role="dialog"], [role="menu"], [role="listbox"]'),
       });
-      const loop = (time: number) => {
-        // Another panel (a class, an event) swaps in under the same wrapper: the limit follows its height.
-        if (wrapper.scrollHeight !== height) {
-          height = wrapper.scrollHeight;
-          lenis?.resize();
-        }
-        lenis?.raf(time);
-        raf = requestAnimationFrame(loop);
-      };
-      raf = requestAnimationFrame(loop);
+      sleep = chLenisIdleLoop(lenis).stop;
+      // Another panel (a class, an event) swaps in under the same wrapper: the limit follows its height.
+      unfollow = chFollowContent(wrapper, () => lenis?.resize());
     };
     const stop = () => {
-      cancelAnimationFrame(raf);
+      sleep();
+      unfollow();
+      unfollow = () => {};
       lenis?.destroy();
       lenis = null;
-      height = 0;
     };
     const sync = () => (desk.matches ? start() : stop());
     sync();
