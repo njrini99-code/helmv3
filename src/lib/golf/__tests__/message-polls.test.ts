@@ -278,3 +278,17 @@ describe('remind and share result drafts (P-2 4.6, 4.7)', () => {
     expect(M.pollResultDraft(vans, tallyOf(vans, {}))).toBe('No one voted in the poll.');
   });
 });
+
+describe('pollEndsPhraseServer (P-2 4.9)', () => {
+  it('says the end with no time zone', () => {
+    const now = Date.parse('2026-10-24T15:00:00Z');
+    const at = (ms: number) => new Date(now + ms).toISOString();
+    expect(M.pollEndsPhraseServer(null, now)).toBeNull();
+    expect(M.pollEndsPhraseServer(at(-1), now)).toBeNull();
+    expect(M.pollEndsPhraseServer(at(20 * 60_000), now)).toBe('in under an hour');
+    expect(M.pollEndsPhraseServer(at(3_600_000), now)).toBe('in 1 hour');
+    expect(M.pollEndsPhraseServer(at(5 * 3_600_000), now)).toBe('in 5 hours');
+    expect(M.pollEndsPhraseServer(at(24 * 3_600_000), now)).toBe('in 1 day');
+    expect(M.pollEndsPhraseServer(at(3 * 86_400_000), now)).toBe('in 3 days');
+  });
+});

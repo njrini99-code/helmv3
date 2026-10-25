@@ -385,3 +385,18 @@ export function pollResultDraft(poll: Poll, tally: PollTally): string {
   const [lead, ...rest] = top;
   return `${lead!.label} has it with ${lead!.n} of the ${voted} who voted.${rest.map((o) => ` ${o.label} had ${o.n}.`).join('')}${more}`;
 }
+
+/**
+ * The push and Bell end phrase, free of any time zone (P-2 4.9): "in 1 hour", "in 5 hours", "in 1 day", "in 3 days".
+ * Under an hour reads "in under an hour"; null with no end or once ended.
+ */
+export function pollEndsPhraseServer(closesAt: string | null, now: number): string | null {
+  if (!closesAt) return null;
+  const left = Date.parse(closesAt) - now;
+  if (!Number.isFinite(left) || left <= 0) return null;
+  const hours = Math.round(left / 3_600_000);
+  if (hours < 1) return 'in under an hour';
+  if (hours < 24) return `in ${hours} ${hours === 1 ? 'hour' : 'hours'}`;
+  const days = Math.round(left / 86_400_000);
+  return `in ${days} ${days === 1 ? 'day' : 'days'}`;
+}

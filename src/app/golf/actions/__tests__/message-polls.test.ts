@@ -84,7 +84,16 @@ describe('sendGolfPoll', () => {
     const row = state.messages.get(MESSAGE)!;
     expect(row).toMatchObject({ kind: 'poll', sender_id: USER, conversation_id: CONVERSATION });
     expect(String(row.content)).toMatch(/^Poll: Which van Thursday\?\n/);
-    expect(state.notify).toHaveBeenCalledWith(CONVERSATION, USER, 'Poll: Which van Thursday?');
+    // D22: email keeps "Poll: …"; push and the Bell get the poll's own title and body.
+    expect(state.notify).toHaveBeenCalledWith(CONVERSATION, USER, 'Poll: Which van Thursday?', expect.objectContaining({ pushBody: 'Which van Thursday?' }));
+    const opts = (state.notify.mock.calls[0] as unknown as [string, string, string, { titleFor: (n: string) => string }])[3];
+    expect(opts.titleFor('Coach Reyes')).toBe('Poll from Coach Reyes');
+  });
+
+  it('D22: a poll with an end says when voting ends in the push body', async () => {
+    const closesAt = new Date(Date.now() + 26 * 3_600_000).toISOString();
+    await sendGolfPoll(CONVERSATION, { ...draft, closesAt }, MESSAGE);
+    expect(state.notify).toHaveBeenCalledWith(CONVERSATION, USER, 'Poll: Which van Thursday?', expect.objectContaining({ pushBody: 'Which van Thursday? Voting ends in 1 day.' }));
   });
 
   it('refuses a sender who is not in the conversation, before any write', async () => {

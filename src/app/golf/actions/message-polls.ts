@@ -6,7 +6,7 @@ import { logServerError } from '@/lib/server-error-logger';
 import { describeError } from '@/lib/utils/describe-error';
 import { withAdminObserved } from '@/lib/admin/observed-action';
 import { notifyGolfMessageRecipients } from '@/lib/notifications/golf-message-fanout';
-import { buildPollPayload, parsePollPayload, pollFallbackText, type PollDraft } from '@/lib/golf/message-polls';
+import { buildPollPayload, parsePollPayload, pollEndsPhraseServer, pollFallbackText, type PollDraft } from '@/lib/golf/message-polls';
 
 /**
  * Polls in a thread (premium features P-2, handoff §4.34.2).
@@ -125,7 +125,12 @@ async function sendGolfPollImpl(conversationId: string, draft: PollDraft, client
   }
 
   await supabase.from('golf_conversations').update({ updated_at: new Date().toISOString() }).eq('id', conversationId);
-  await notifyGolfMessageRecipients(conversationId, user.id, `Poll: ${built.payload.question}`);
+  // D22: email keeps "Poll: …"; push and the Bell say who asked and when voting ends.
+  const ends = pollEndsPhraseServer(built.payload.closes_at, Date.now());
+  await notifyGolfMessageRecipients(conversationId, user.id, `Poll: ${built.payload.question}`, {
+    titleFor: (senderName) => `Poll from ${senderName}`,
+    pushBody: ends ? `${built.payload.question} Voting ends ${ends}.` : built.payload.question,
+  });
   return { success: true, id: data.id, row: data };
 }
 
