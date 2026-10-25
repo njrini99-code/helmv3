@@ -5986,6 +5986,17 @@
     "catalog": "docs/clubhouse/catalog/calendar.md"
   },
   {
+    "id": 61806,
+    "page": "P006",
+    "category": 18,
+    "item": 6,
+    "name": "MONTH_DRAG_IS_ANNOUNCED_PICKED_UP_FALL",
+    "chCode": "CH-6806",
+    "meaning": "Month drag is announced: \"Picked up Fall qualifier R2, Thursday 16 October. Arrow keys choose a day, Space drops, Escape cancels.\", \"Over Friday 17 October.\", \"Fall qualifier R2 moved to Friday 17 October at 8:42 AM.\", or \"Move cancelled. Fall qualifier R2 stays on Thursday 16 October.\"",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/calendar.md"
+  },
+  {
     "id": 61901,
     "page": "P006",
     "category": 19,

@@ -112,7 +112,7 @@ Every Bridge ID (D-68: namespace, two-digit category, two-digit item), its catal
 | P003 | 2 | 3 | 3 | 9 | 4 | 24 | 2 | 6 | 1 |  | 2 | 3 | 1 | 3 |  | 4 | 4 | 10 | 1 | 1 | 1 |  | 1 | 1 |  | 86 |
 | P004 | 2 | 1 | 1 | 19 | 2 | 12 | 3 | 2 | 1 |  |  | 1 |  | 1 |  | 4 | 4 | 6 | 1 | 1 | 1 |  | 1 | 1 |  | 64 |
 | P005 | 4 | 4 | 2 | 23 | 3 | 25 | 3 | 6 | 1 |  | 1 | 2 |  | 1 | 1 | 4 | 3 | 10 | 1 | 1 | 1 |  | 1 | 1 |  | 98 |
-| P006 | 4 | 5 | 3 | 9 | 4 | 35 | 1 | 8 | 1 | 2 | 5 | 3 | 2 | 2 | 1 | 6 | 3 | 5 | 1 | 1 | 1 |  | 1 | 1 |  | 104 |
+| P006 | 4 | 5 | 3 | 9 | 4 | 35 | 1 | 8 | 1 | 2 | 5 | 3 | 2 | 2 | 1 | 6 | 3 | 6 | 1 | 1 | 1 |  | 1 | 1 |  | 105 |
 | P007 | 2 | 10 | 1 | 9 | 6 | 38 | 1 | 2 | 2 | 1 | 4 | 2 | 1 | 2 | 1 | 7 | 4 | 4 | 1 | 1 | 1 |  | 2 | 1 |  | 103 |
 | P008 | 2 | 1 | 3 | 6 | 15 | 42 | 3 | 10 | 3 | 3 | 8 | 6 | 2 | 2 | 1 | 9 | 8 | 7 | 1 | 1 | 1 |  | 1 | 1 |  | 136 |
 | P009 | 7 | 7 | 4 | 13 | 14 | 34 | 7 | 12 | 2 | 1 | 4 | 4 | 1 | 2 | 1 | 3 | 3 | 4 | 4 | 3 | 2 |  | 4 | 1 |  | 137 |
@@ -674,6 +674,7 @@ Every Bridge ID (D-68: namespace, two-digit category, two-digit item), its catal
 | 61803 | CH-6803 | 18 Accessibility | `CHANGING_THE_PLAYER_FILTER_IS_ANNOUNCED` | implemented | Changing the player filter is announced ("Showing 2 players") |
 | 61804 | CH-6804 | 18 Accessibility | `NO_AXE_VIOLATIONS_IN_ANY_PREVIEW_VIEW` | reserved | No axe violations in any preview view and state, 1280px and 390px. One known exception, listed in the scan: the 7-day week at 390px squeezes overlapping events under 24px until the phone Calendar is designed |
 | 61805 | CH-6805 | 18 Accessibility | `A_COMPLETED_MOVE_IS_SAID_ONCE_NEVER` | implemented | A completed move is said once, never during a drag: "Practice moved to 4:00 PM, Wednesday 15 October. Undo with Command Z." (Control Z off a Mac; on touch "Undo is in the notice."); a resize "Practice now ends at 6:30 PM."; a clash appended; Undo "Move undone." |
+| 61806 | CH-6806 | 18 Accessibility | `MONTH_DRAG_IS_ANNOUNCED_PICKED_UP_FALL` | implemented | Month drag is announced: "Picked up Fall qualifier R2, Thursday 16 October. Arrow keys choose a day, Space drops, Escape cancels.", "Over Friday 17 October.", "Fall qualifier R2 moved to Friday 17 October at 8:42 AM.", or "Move cancelled. Fall qualifier R2 stays on Thursday 16 October." |
 | 61901 |  | 19 Responsive layout | `PHONE_LAYOUT` | implemented | At 820px and below Calendar is the phone build, never a shrunken desktop: Day with a week strip, Month and List; an event opens in a sheet and New event is a sheet. State, writes and dialogs are the desktop's. |
 | 62001 |  | 20 Keyboard / input | `KEYBOARD_SHORTCUTS` | implemented | On the desktop N opens New event (coach), T goes to today, the left and right arrows step a day, week or month (not in the agenda), and Esc closes the open panel. None of them fires while typing in a field or with a dialog open. |
 | 62101 |  | 21 Performance | `LOADER_READS_IN_THREE_ROUNDS` | implemented | The server loader reads each table once for the whole screen, in three rounds and never per event or per player: the team's zone, name and roster; then events, class schedules and (for a coach) their busy time together; then every event's replies, one read for each 200 events. A read that fails is flagged and logged, never thrown. |

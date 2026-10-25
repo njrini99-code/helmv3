@@ -11,6 +11,7 @@ import { clockHourLabel, meridiemOfHour } from '../../lib/clock-format';
 import { ClassGroupBlock } from './class-group';
 import { barPill, clashSummary, daysBetween, draggable, isBar, laneBars, movePill, resizePill, type ChBarTarget, type ChLaneBar, type ChMoveTarget } from './drag-model';
 import { useBarDrag } from './use-bar-drag';
+import { DndMonth } from './month-dnd';
 import { useTimeDrag, type ChDragKind, type ChTimeDrag } from './use-time-drag';
 import { chSpringCurve, CH_EASE } from '../../lib/motion';
 import { chSupportsLinear } from '../../lib/sheet-drag';
@@ -24,11 +25,9 @@ import {
   dayNum,
   dowOf,
   fmtHour,
-  isMajor,
   groupClasses,
   isClassGroup,
   layoutLanes,
-  monthCells,
   monthName,
   rangeLabel,
   startLabel,
@@ -39,7 +38,7 @@ import {
 } from './model';
 
 import { TYPE_ICON } from './type-icon';
-import { plural, pluralWord } from '../../lib/plural';
+import { pluralWord } from '../../lib/plural';
 export { TYPE_ICON };
 
 export interface ChNow {
@@ -534,58 +533,17 @@ function Daylight({ dl, from, to, label }: { dl: ChDaylight; from: number; to: n
   );
 }
 
-export function MonthView({
-  anchor,
-  events,
-  now,
-  selDate,
-  onPick,
-}: {
+/** The desktop Month (P-4 4.4: gridcells, ribbons, and drag to another day for a coach). */
+export function MonthView(props: {
   anchor: string;
   events: ChCalEvent[];
   now: ChNow;
   selDate: string;
   onPick: (date: string) => void;
+  onMove?: (e: ChCalEvent, to: ChMoveTarget, kind: ChDragKind) => void;
+  onBarMove?: (e: ChCalEvent, to: ChBarTarget) => void;
 }) {
-  const cells = monthCells(anchor);
-  return (
-    <div className="ch-mo ch-cal-surface">
-      <div className="ch-mo__dow" aria-hidden="true">
-        {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map((d) => (
-          <span key={d}>{d}</span>
-        ))}
-      </div>
-      <div className="ch-mo__grid">
-        {cells.map(({ date, out }) => {
-          const evs = events.filter((e) => e.date === date && e.type !== 'class' && e.type !== 'busy').sort(byStart);
-          const shown = evs.slice(0, 3);
-          return (
-            <button
-              key={date}
-              type="button"
-              data-print-visible
-              className={'ch-mo__cell' + (out ? ' is-out' : '') + (date === now.date ? ' is-today' : !out && date < now.date ? ' is-past' : '') + (date === selDate ? ' is-sel' : '')}
-              aria-label={`${dowOf(date)} ${dayNum(date)} ${monthName(date)}: ${evs.length ? `${plural(evs.length, 'event')}` : 'no events'}`}
-              aria-pressed={date === selDate}
-              onClick={() => {
-                haptic('select');
-                onPick(date);
-              }}
-            >
-              <span className="ch-mo__n">{dayNum(date)}</span>
-              {shown.map((e) => (
-                <span key={e.id} className={'ch-mo__ev' + (isMajor(e.type) ? ` is-major is-${e.type}` : '')}>
-                  {isMajor(e.type) ? <Icon icon={TYPE_ICON[e.type]} size={11} /> : <i className={`ch-dot-${e.type}`} />}
-                  <span>{e.title}</span>
-                </span>
-              ))}
-              {evs.length > 3 && <span className="ch-mo__more">{evs.length - 3} more</span>}
-            </button>
-          );
-        })}
-      </div>
-    </div>
-  );
+  return <DndMonth {...props} coach={!!props.onMove} />;
 }
 
 export function AgendaView({

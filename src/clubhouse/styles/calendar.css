@@ -1325,15 +1325,26 @@ html[data-fw-theme='dark'] .ch-ev-bar.is-held {
   color: var(--ch-text-tertiary);
 }
 .ch-mo__grid {
-  display: grid;
-  grid-template-columns: repeat(7, minmax(0, 1fr));
-  grid-auto-rows: minmax(112px, auto);
+  display: flex;
+  flex-direction: column;
   overflow: hidden;
   border-radius: var(--ch-radius-md);
   box-shadow: 0 0 0 var(--ch-hairline-w) var(--ch-border-hairline);
 }
+/* P-4 4.4: a week is a row of gridcells; each day holds its numeral button and one button per chip. */
+.ch-mo__week {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  min-height: 112px;
+}
+.ch-mo__gc {
+  position: relative;
+  display: flex;
+  min-width: 0;
+}
 .ch-mo__cell {
   display: flex;
+  flex: 1;
   flex-direction: column;
   gap: 4px;
   min-width: 0;
@@ -1346,11 +1357,112 @@ html[data-fw-theme='dark'] .ch-ev-bar.is-held {
   cursor: pointer;
   transition: background var(--ch-dur-quick) var(--ch-ease);
 }
-.ch-mo__cell:nth-child(7n) {
+.ch-mo__gc:last-child .ch-mo__cell {
   border-right: 0;
 }
-.ch-mo__cell:nth-last-child(-n + 7) {
+.ch-mo__week:last-child .ch-mo__cell {
   border-bottom: 0;
+}
+.ch-mo__cell.is-target {
+  background: var(--ch-green-50);
+  box-shadow: inset 0 0 0 2px var(--ch-green-600);
+}
+.ch-mo__evs {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+  margin-top: calc(var(--ch-mo-lanes, 0) * 24px);
+}
+button.ch-mo__n,
+button.ch-mo__ev {
+  border: 0;
+  background: none;
+  color: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+button.ch-mo__ev.is-major {
+  background: var(--ch-green-fill-700);
+}
+button.ch-mo__ev.is-major.is-qualifier {
+  background: var(--ch-bg-surface);
+}
+button.ch-mo__ev:not(.is-major) {
+  color: var(--ch-text-secondary);
+}
+.ch-mo__n:focus-visible,
+.ch-mo__ev:focus-visible,
+.ch-mo__ribbon:focus-visible {
+  outline: 2px solid var(--ch-border-focus);
+  outline-offset: 2px;
+}
+.ch-mo__ev.is-draggable,
+.ch-mo__ribbon.is-draggable {
+  cursor: grab;
+}
+.ch-mo__ev.is-held,
+.ch-mo__ribbon.is-held {
+  background: transparent;
+  box-shadow: none;
+  color: var(--ch-ink-500);
+  outline: 1.5px dashed var(--ch-ink-500);
+  outline-offset: -1.5px;
+}
+/* A run across the week's days, once per row; squared where the week breaks, a chevron on an end cut by it. */
+.ch-mo__ribbon {
+  position: absolute;
+  top: calc(var(--ch-space-2) + 30px + var(--ch-mo-lane, 0) * 24px);
+  left: var(--ch-space-1);
+  z-index: 1;
+  display: flex;
+  align-items: center;
+  gap: var(--ch-space-1);
+  box-sizing: border-box;
+  width: calc(var(--ch-mo-span, 1) * 100% - var(--ch-space-2));
+  height: 20px;
+  padding: 0 var(--ch-space-2);
+  overflow: hidden;
+  border: 0;
+  border-radius: var(--ch-radius-xs);
+  font: var(--ch-type-12-strong);
+  text-align: left;
+  white-space: nowrap;
+  cursor: pointer;
+}
+.ch-mo__ribbon span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.ch-mo__ribbon.is-clip-start {
+  left: 0;
+  clip-path: polygon(6px 0, 100% 0, 100% 100%, 6px 100%, 0 50%);
+  padding-left: var(--ch-space-3);
+}
+.ch-mo__ribbon.is-clip-end {
+  clip-path: polygon(0 0, calc(100% - 6px) 0, 100% 50%, calc(100% - 6px) 100%, 0 100%);
+}
+.ch-mo__ribbon.is-clip-start.is-clip-end {
+  clip-path: polygon(6px 0, calc(100% - 6px) 0, 100% 50%, calc(100% - 6px) 100%, 6px 100%, 0 50%);
+}
+/* The chip in hand: lifted at 1.02 on the overlay shadow, no tilt; the pill rides above it. */
+.ch-mo__lift {
+  position: relative;
+}
+.ch-mo__lift .ch-mo__ev {
+  padding: 2px var(--ch-space-2);
+  border-radius: var(--ch-radius-xs);
+  background: var(--ch-bg-surface);
+  scale: 1.02;
+  box-shadow: var(--ch-elevation-overlay);
+}
+.ch-mo__lift .ch-mo__ev.is-major:not(.is-qualifier) {
+  background: var(--ch-green-fill-700);
+}
+html[data-fw-theme='dark'] .ch-mo__ev.is-held,
+html[data-fw-theme='dark'] .ch-mo__ribbon.is-held {
+  color: var(--ch-ink-400);
+  outline-color: var(--ch-ink-400);
 }
 @media (hover: hover) {
   .ch-mo__cell:hover {

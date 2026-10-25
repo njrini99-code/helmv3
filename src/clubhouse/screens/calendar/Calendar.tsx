@@ -1110,6 +1110,8 @@ export function Calendar({
                         if (firstEv) open(firstEv.id, d);
                         else if (monthKey(d) !== monthKey(anchor)) go('month', d);
                       }}
+                      onMove={coach ? onGridMove : undefined}
+                      onBarMove={coach ? (e, to) => onGridMove(e, to, 'bar') : undefined}
                     />
                   )}
                   {view === 'agenda' &&
