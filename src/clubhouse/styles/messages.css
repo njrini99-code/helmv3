@@ -2895,7 +2895,7 @@
   max-height: min(60vh, 440px);
   border-radius: var(--ch-radius-lg);
   background: var(--ch-bg-surface);
-  box-shadow: var(--ch-elevation-overlay), 0 0 0 1px var(--ch-border-subtle);
+  box-shadow: var(--ch-elevation-overlay), 0 0 0 var(--ch-hairline-w) var(--ch-border-subtle);
   color: var(--ch-text-primary);
 }
 .ch-seen-pop__head {

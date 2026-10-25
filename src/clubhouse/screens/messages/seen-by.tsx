@@ -188,7 +188,7 @@ function SeenByBody({ api, m, compact }: { api: ChMessagesApi; m: ChMsg; compact
         <ul className="ch-seen-sec__rows">
           {rows.map((x) => (
             <M.li key={x.userId} layout={reduced ? false : "position"} transition={chSpring("smooth", reduced)} className="ch-seen-row" aria-label={x.label}>
-              <Avatar name={x.name} size={compact ? 28 : 36} />
+              {compact ? <Avatar name={x.name} size="sm" /> : <Avatar name={x.name} size="md" />}
               <span className="ch-seen-row__body">
                 <span className="ch-seen-row__name">{x.name}</span>
                 {x.meta && <span className="ch-seen-row__meta">{x.meta}</span>}

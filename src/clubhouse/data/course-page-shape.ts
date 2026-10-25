@@ -4,6 +4,7 @@ import { averageArc, holeStats, nineOf, ownHoleSd, playsCompared, stretches, typ
 import { holeCoverage, isScoreCountable, recordedPutts } from './round-scope';
 import { toLibraryRound, type ChLibraryRound } from './rounds-shape';
 import { formatFixed, formatSigned, formatToPar } from '../lib/format';
+import { plural } from '../lib/plural';
 import type { ChPlayHole } from './stats-extra';
 import type { ChCompareCard } from './compare-rounds';
 
@@ -102,7 +103,6 @@ export const shortDate = (d: string) => formatDateOnlyShort(d);
 /** "Sep 2025". */
 const monthYear = (d: string) => formatDateOnly(d, { month: 'short', year: 'numeric' });
 const signed = (v: number | null | undefined) => (v == null ? null : formatToPar(v));
-const plural = (n: number, one: string, many = `${one}s`) => `${n} ${n === 1 ? one : many}`;
 
 const countable = (r: ChCourseListRow) => isScoreCountable(r);
 const TYPE_WORD: Record<string, string> = { practice: 'Practice', tournament: 'Tournament', qualifier: 'Qualifier' };

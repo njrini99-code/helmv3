@@ -2,6 +2,7 @@
 
 import { useId, useState } from 'react';
 import { Info } from 'lucide-react';
+import { Icon } from '../../ui/Icon';
 import type { ChReviewHole } from '../../data/round-review-shape';
 import type { ChUsualWords } from '../../data/round-history-shape';
 import { bigNumbers, bounceBack, closingThree, holesInPlayOrder, puttsPerGir, ROUND_MIN_GREENS, type ChPlayHole } from '../../data/stats-extra';
@@ -100,7 +101,7 @@ function SaysTile({ f }: { f: ChSaysFigure }) {
         <span className="ch-says__cap">{f.caption}</span>
       </figcaption>
       <button type="button" className="ch-says__info" aria-label={`About ${lowerFirst(f.label)}`} aria-expanded={open} aria-controls={id} onClick={() => setOpen((o) => !o)}>
-        <Info size={16} aria-hidden="true" />
+        <Icon icon={Info} size={16} />
       </button>
       <p id={id} className="ch-says__about" hidden={!open}>
         {f.about}

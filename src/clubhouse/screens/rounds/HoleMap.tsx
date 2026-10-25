@@ -6,6 +6,7 @@ import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { avgToPar, shortDate, type ChCourseHole } from '../../data/course-page-shape';
 import { haptic, hapticScrub } from '../../lib/haptics';
 import { formatFixed, formatToPar } from '../../lib/format';
+import { plural } from '../../lib/plural';
 import { Icon } from '../../ui/Icon';
 import { ScoreMark } from '../../ui/ScoreMark';
 import { Segmented } from '../../ui/Segmented';
@@ -215,7 +216,7 @@ export function HoleMap({ holes, selected, onSelect, coverage, sample }: { holes
         </div>
       </div>
       <p className="ch-ch-sec__note">
-        {coverage ?? `From ${sample} ${sample === 1 ? 'round' : 'rounds'} with hole scores`}
+        {coverage ?? `From ${plural(sample, 'round')} with hole scores`}
         {holes.some((h) => h.stats.state === 'early') ? ' · Colour shows from 5 plays of a hole' : ''}
       </p>
       {/* Both views render; CSS shows one (data-view, the phone gate, the fit), so the first paint is final. */}

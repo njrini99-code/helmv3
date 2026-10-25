@@ -25,6 +25,7 @@ import {
   type PollTally,
 } from "@/lib/golf/message-polls";
 import { haptic } from "../../lib/haptics";
+import { plural } from "../../lib/plural";
 import { Avatar } from "../../ui/Avatar";
 import { Button, IconButton } from "../../ui/Button";
 import { DateField } from "../../ui/DateField";
@@ -283,7 +284,7 @@ export function PollCard({
                 tabIndex={stop == null || stop === o.id ? 0 : -1}
                 onKeyDown={onKey}
                 aria-disabled={closed || !tally || undefined}
-                aria-label={`${o.label}, ${n === 1 ? "1 vote" : `${n} votes`}${on ? ", your vote" : ""}${lead && closed ? ", most votes" : ""}`}
+                aria-label={`${o.label}, ${plural(n, 'vote')}${on ? ", your vote" : ""}${lead && closed ? ", most votes" : ""}`}
                 className={
                   "ch-ms-poll__opt" + (on ? " is-on" : "") + (lead ? " is-lead" : "") + (poll.multi ? " is-multi" : "")
                 }

@@ -496,7 +496,9 @@ export function DayTimeline({
           <Button variant="ghost" onClick={engine.cancel}>
             Cancel
           </Button>
-          <Button onClick={engine.done}>Done</Button>
+          <Button variant="primary" onClick={engine.done}>
+            Done
+          </Button>
         </div>
       )}
     </section>

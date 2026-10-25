@@ -1,3 +1,4 @@
+import { plural } from '../lib/plural';
 /*
  * P-7 4.2.7: two rounds at one course, hole by hole. Pure: no Supabase, no React.
  */
@@ -46,7 +47,7 @@ export function compareRounds(a: ChCompareCard, b: ChCompareCard): ChCompareResu
       if (Math.sign(sum) === Math.sign(total) && (!best || Math.abs(sum) > Math.abs(best.sum))) best = { from, sum };
     }
     const shots = Math.abs(total);
-    summary = `${da} was ${shots} ${shots === 1 ? 'shot' : 'shots'} ${worse ? 'worse' : 'better'}`;
+    summary = `${da} was ${plural(shots, 'shot')} ${worse ? 'worse' : 'better'}`;
     if (best) summary += ` · most on ${best.from} to ${best.from + 2} (${best.sum > 0 ? '+' : '−'}${Math.abs(best.sum)})`;
   }
   return { cumA: cum(a), cumB: cum(b), cells, summary };

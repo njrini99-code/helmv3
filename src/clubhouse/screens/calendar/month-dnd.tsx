@@ -145,7 +145,7 @@ export function DndMonth({
           <span key={d}>{d}</span>
         ))}
       </div>
-      <div className="ch-mo__grid" role="grid" aria-label={`${monthName(anchor)} ${anchor.slice(0, 4)}`} ref={grid} onKeyDown={gridKey}>
+      <div className="ch-mo__grid" role="grid" tabIndex={-1} aria-label={`${monthName(anchor)} ${anchor.slice(0, 4)}`} ref={grid} onKeyDown={gridKey}>
         {weeks.map((week) => {
           const dates = week.map((c) => c.date);
           const ribbons = laneBars(team, dates);
