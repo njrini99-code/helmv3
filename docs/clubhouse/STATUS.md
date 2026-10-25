@@ -55,7 +55,27 @@ deployed or applied by this plan; the owner said prepare only.
   is the rollback target (owner call: keep that cut, or pick another).
   `main` is green for it: journeys 18 of 18 on `21211bf39` (run
   40163136985). Deploy `main` with the flag off and record it as the
-  rollback target. Apply Q-120 and attendance privacy,
+  rollback target.
+- **First deploy cut (owner call, laid out 2026-10-25).** (A) All of `main`
+  at `a1e117397`: green on CI, the exact code the canary will run. Beyond
+  the flag it changes, for every team, shot-chain relinking after round
+  edits (#2346), the `error_logs` retention query (#2349), the
+  release-status check (#2360) and a new 5-minute cron,
+  `standing-refresh-dirty`, which does nothing until `20261024150000` is
+  applied. (B) `2eeee2601` (through #2361, the last green commit before
+  the feature train): the same Clubhouse base and Next 16.4.2 without
+  those four, but the feature train then needs a second flag-off deploy
+  before the canary, so its risk moves rather than goes away. The commits
+  between the 10-23 cut and B (`21211bf39`, `d394a36b5`) are red on CI.
+  Neither cut needs a migration to deploy; both fall back. Recommended:
+  (A), watching round edits for a day after it goes out.
+- **Must fix before the flag flips (review of #2368, read on `main`
+  2026-10-25):** Seen by keeps the last chat's read marks after switching
+  chats until the new read returns (`useGolfMessages` holds `readMarks`
+  across a `conversationId` change), so a group can show another group's
+  counts; and on a qualifier event in light mode the crossed-out old time
+  (`.ch-ev--qualifier .ch-was`) is drawn in the on-green ivory ink on paper
+  and is nearly invisible. Both are behind the flag. Apply Q-120 and attendance privacy,
   then on a separate day the null-putts, SG and OD-01 corrections. Then turn
   the flag on for one team, then a second, then everyone.
 - **Canary order (owner, 2026-10-22):** Demo University Golf
