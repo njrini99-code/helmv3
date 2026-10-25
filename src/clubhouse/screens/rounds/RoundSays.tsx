@@ -10,6 +10,7 @@ import { bigNumbers, bounceBack, closingThree, holesInPlayOrder, puttsPerGir, RO
 export const RATE_MIN_GREENS = 10;
 import { formatFixed, formatToPar } from '../../lib/format';
 import { NoData } from '../../ui/NoData';
+import { Icon } from '../../ui/Icon';
 import { ZoneBlock } from '../../ui/Zone';
 
 /**
@@ -100,7 +101,7 @@ function SaysTile({ f }: { f: ChSaysFigure }) {
         <span className="ch-says__cap">{f.caption}</span>
       </figcaption>
       <button type="button" className="ch-says__info" aria-label={`About ${lowerFirst(f.label)}`} aria-expanded={open} aria-controls={id} onClick={() => setOpen((o) => !o)}>
-        <Info size={16} aria-hidden="true" />
+        <Icon icon={Info} size={16} />
       </button>
       <p id={id} className="ch-says__about" hidden={!open}>
         {f.about}
