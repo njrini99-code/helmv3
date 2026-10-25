@@ -7,14 +7,14 @@
 -- the class always spans [now - 30 minutes, now + 90 minutes] and never crosses
 -- midnight, whatever time the suite runs.
 --
--- Plan arithmetic: 5 structural + 4 heartbeat + 15 put + 5 cancel + 12 claims and
+-- Plan arithmetic: 5 structural + 6 heartbeat + 15 put + 5 cancel + 12 claims and
 -- marks + 9 reconcile and dirty + 4 cleanup and release + 3 inline release and held
--- count + 3 player read = 60.
+-- count + 3 player read = 62.
 
 BEGIN;
 \ir _helpers.sql
 
-SELECT plan(60);
+SELECT plan(62);
 
 CREATE FUNCTION public.p10_id(k text) RETURNS uuid LANGUAGE sql IMMUTABLE AS
 $$ SELECT md5('p10-holds:' || k)::uuid $$;
@@ -35,6 +35,14 @@ CREATE FUNCTION public.p10_put(
 ) RETURNS jsonb LANGUAGE sql AS $$
   SELECT public.golf_push_hold_put(p_user, p_hold, 'new_message', 'coach_dm', p_key,
                                    'Coach: hi', 'a message', '{}'::jsonb, p_conv, NULL, p_exp, p_reason)
+$$;
+
+-- What the coach payload says about holding for player h1 right now (golf_class_holds_live decides).
+CREATE FUNCTION public.p10_holds_flag() RETURNS text LANGUAGE sql AS $$
+  SELECT (public.golf_class_day_players_internal(
+            public.p10_id('t1'),
+            (now() AT TIME ZONE (SELECT time_zone FROM public.golf_team_terms WHERE team_id = public.p10_id('t1')))::date,
+            public.p10_id('p:h1'), now()) -> 0 ->> 'holds')
 $$;
 
 -- An open row written directly (service-role style) with a chosen release time.
@@ -183,11 +191,25 @@ SELECT is(
   'and no row was written'
 );
 
+-- Should 14: the coach payload promises a hold only while holding is live. With no heartbeat the placeholder
+-- and Notify anyway must not appear, so `holds` is false even though the player's switch is on.
+SELECT is(
+  public.p10_holds_flag(),
+  'false',
+  'with no heartbeat the payload says holds = false: nothing can be held, so nothing is promised'
+);
+
 SELECT public.p10_as_service();
 SELECT lives_ok($$SELECT public.golf_push_holds_beat('pgtap')$$, 'the job can write its heartbeat as service_role');
 SELECT public.p10_as_service();
 SELECT public.golf_push_holds_beat('pgtap-again');
 RESET role;
+
+SELECT is(
+  public.p10_holds_flag(),
+  'true',
+  'with a fresh heartbeat the payload says holds = true'
+);
 
 SELECT throws_ok(
   $$INSERT INTO public.golf_push_hold_heartbeat (id, source) VALUES (false, 'x')$$,

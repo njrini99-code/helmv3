@@ -11,6 +11,7 @@
 --   golf_class_player_team(player)       the team class status is computed for
 --   golf_player_on_course(player, at)    P-06 8.19 rule, v0 fallback while that table is absent
 --   golf_class_blocks_internal(...)      blocks for a team and date (no client grant)
+--   golf_class_holds_live(at)            false here; 070200 makes it "the release job is alive"
 --   golf_class_day_players_internal(...) the per-player object, shared by both reads
 --   golf_team_class_day(team, on)        coach read, SECURITY DEFINER, coach-checked
 --   golf_my_class_day(on)                the player's own day plus the exact coach object
@@ -38,6 +39,7 @@
 -- ROLLBACK: order: 070200 first (it re-creates golf_my_class_day and calls these), then this file, then 070000.
 -- VERIFY: select 1 where has_function_privilege('authenticated', 'public.golf_team_class_day(uuid, date)', 'execute') and has_function_privilege('authenticated', 'public.golf_my_class_day(date)', 'execute') and not has_function_privilege('anon', 'public.golf_team_class_day(uuid, date)', 'execute') and not has_function_privilege('anon', 'public.golf_my_class_day(date)', 'execute');
 -- VERIFY: select 1 where not has_function_privilege('authenticated', 'public.golf_class_hold_until(uuid, timestamptz)', 'execute') and not has_function_privilege('authenticated', 'public.golf_class_blocks_internal(uuid, date, uuid)', 'execute') and not has_function_privilege('authenticated', 'public.golf_class_day_players_internal(uuid, date, uuid, timestamptz)', 'execute') and not has_function_privilege('authenticated', 'public.golf_player_on_course(uuid, timestamptz)', 'execute') and not has_function_privilege('authenticated', 'public.golf_class_term_at(uuid, timestamptz)', 'execute') and has_function_privilege('service_role', 'public.golf_class_hold_until(uuid, timestamptz)', 'execute');
+-- VERIFY: select 1 where not has_function_privilege('authenticated', 'public.golf_class_holds_live(timestamptz)', 'execute') and has_function_privilege('service_role', 'public.golf_class_holds_live(timestamptz)', 'execute') and public.golf_class_holds_live() = false;
 -- VERIFY: select 1 where public.golf_day_token_dow('sunday') = 7 and public.golf_day_token_dow('th') = 4 and public.golf_day_token_dow('s') is null and public.golf_safe_time_zone('Not/AZone') = 'America/New_York' and public.golf_safe_time_zone('America/Los_Angeles') = 'America/Los_Angeles';
 
 SET lock_timeout = '3s';
@@ -377,6 +379,21 @@ $$;
 revoke all on function public.golf_class_blocks_internal(uuid, date, uuid) from public, anon, authenticated;
 grant execute on function public.golf_class_blocks_internal(uuid, date, uuid) to service_role;
 
+-- Whether pushes can really be held right now (Should 14: the coach payload, the composer
+-- placeholder and Notify anyway must never promise a hold that will not happen). Here it is
+-- false: nothing can be held until the held-push tables exist. 20261025070200 re-creates it
+-- to require a fresh release-job heartbeat (the gate holds nothing while the job is stale, so
+-- neither may the payload say it does). Callers are SECURITY DEFINER reads; no client grant.
+create or replace function public.golf_class_holds_live(p_at timestamptz default now())
+returns boolean
+language sql
+stable
+set search_path = public, pg_temp
+as $$ select false $$;
+
+revoke all on function public.golf_class_holds_live(timestamptz) from public, anon, authenticated;
+grant execute on function public.golf_class_holds_live(timestamptz) to service_role;
+
 -- The per-player object. The coach RPC builds the whole team with it; the player's
 -- RPC takes element 0 for one player, so "Coaches see" is the same SQL, not a copy
 -- (Should 8). There is no `shared` key: a player with no schedule and a player who
@@ -459,7 +476,7 @@ begin
       'last_name',  mb.last_name,
       'avatar_url', mb.avatar_url,
       'tracked',    st.shared and hu.has_usable,
-      'holds',      st.holds and hu.has_usable,
+      'holds',      st.holds and hu.has_usable and public.golf_class_holds_live(p_at),
       'on_course',  v_today and public.golf_player_on_course(mb.player_id, p_at),
       'off_today',  st.shared and exists (
                       select 1 from public.golf_class_exceptions x

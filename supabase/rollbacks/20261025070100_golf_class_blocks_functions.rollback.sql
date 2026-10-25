@@ -16,6 +16,7 @@
 SET lock_timeout = '3s';
 
 drop function if exists public.golf_class_hold_until(uuid, timestamptz);
+drop function if exists public.golf_class_holds_live(timestamptz);
 drop function if exists public.golf_my_class_day(date);
 drop function if exists public.golf_team_class_day(uuid, date);
 drop function if exists public.golf_class_day_players_internal(uuid, date, uuid, timestamptz);

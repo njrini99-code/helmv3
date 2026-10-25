@@ -107,6 +107,11 @@ describe('holdOrPass', () => {
     expect(await holdOrPass(admin(), USER, 'x', PAYLOAD, {}, { group: 'events' })).toBe('pass');
   });
 
+  it('never throws: a client with no rpc at all (a test double, a broken client) passes', async () => {
+    expect(await holdOrPass({} as never, USER, 'x', PAYLOAD, {}, { group: 'events' })).toBe('pass');
+    expect(await holdOrPass({ rpc: () => { throw new Error('boom'); } } as never, USER, 'x', PAYLOAD, {}, { group: 'events' })).toBe('pass');
+  });
+
   it('fails open on an error, a missing function, and logs once a minute without the payload', async () => {
     replies.golf_push_hold_put = { data: null, error: { code: 'PGRST202', message: 'missing' } };
     expect(await holdOrPass(admin(), USER, 'x', { title: 'SECRET TITLE', body: 'SECRET BODY' }, {}, { group: 'events' })).toBe('pass');

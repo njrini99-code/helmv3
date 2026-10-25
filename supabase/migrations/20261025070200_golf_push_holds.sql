@@ -12,6 +12,7 @@
 --   golf_push_hold_heartbeat           one row: when the release job last ran (Must 1)
 --   golf_class_hold_dirty              teams whose class data changed (Should 5)
 --   golf_push_holds_beat(source)       step 0 of every tick
+--   golf_class_holds_live(at)          re-created: true only while the heartbeat is fresh (Should 14)
 --   golf_push_hold_put(...)            decide-and-hold; returns {held, release_at | why, due_waiting}
 --   golf_push_holds_cancel(id, user)   tombstone for a put that timed out (Should 4)
 --   golf_push_holds_claim(...)         claim users with due rows, then all of their due rows
@@ -43,7 +44,7 @@
 -- pgTAP: supabase/tests/rls/golf_push_holds.sql
 --
 -- ROLLBACK: supabase/rollbacks/20261025070200_golf_push_holds.rollback.sql
--- ROLLBACK: order: drop the five triggers, the twelve functions, golf_my_class_day back to its 070100 body, then the three tables; before 070100.
+-- ROLLBACK: order: drop the five triggers, the twelve functions, golf_my_class_day and golf_class_holds_live back to their 070100 bodies, then the three tables; before 070100.
 -- VERIFY: select 1 where to_regclass('public.golf_push_holds') is not null and to_regclass('public.golf_push_hold_heartbeat') is not null and to_regclass('public.golf_class_hold_dirty') is not null and (select relrowsecurity from pg_class where oid = 'public.golf_push_holds'::regclass) and (select relrowsecurity from pg_class where oid = 'public.golf_push_hold_heartbeat'::regclass) and (select relrowsecurity from pg_class where oid = 'public.golf_class_hold_dirty'::regclass);
 -- VERIFY: select 1 where not has_table_privilege('authenticated', 'public.golf_push_holds', 'truncate') and not has_table_privilege('authenticated', 'public.golf_push_hold_heartbeat', 'select') and not has_table_privilege('authenticated', 'public.golf_class_hold_dirty', 'select') and not has_table_privilege('anon', 'public.golf_push_holds', 'select') and has_table_privilege('authenticated', 'public.golf_push_holds', 'select') and not has_table_privilege('authenticated', 'public.golf_push_holds', 'insert');
 -- VERIFY: select 1 where not has_function_privilege('authenticated', 'public.golf_push_hold_put(uuid, uuid, text, text, text, text, text, jsonb, uuid, uuid, timestamptz, text)', 'execute') and has_function_privilege('service_role', 'public.golf_push_hold_put(uuid, uuid, text, text, text, text, text, jsonb, uuid, uuid, timestamptz, text)', 'execute') and has_function_privilege('service_role', 'public.golf_push_holds_claim(uuid, integer, timestamptz, text)', 'execute') and has_function_privilege('service_role', 'public.golf_push_holds_claim_failed(uuid, integer, timestamptz)', 'execute') and has_function_privilege('service_role', 'public.golf_push_holds_claim_user(uuid, uuid, text, boolean)', 'execute') and has_function_privilege('service_role', 'public.golf_push_holds_cancel(uuid, uuid)', 'execute') and has_function_privilege('service_role', 'public.golf_push_holds_beat(text)', 'execute') and has_function_privilege('service_role', 'public.golf_push_holds_reconcile(timestamptz, boolean)', 'execute');
@@ -265,6 +266,21 @@ begin
   on conflict (id) do update set beat_at = excluded.beat_at, source = excluded.source;
   return v_at;
 end $$;
+
+-- Replaces the 070100 stub: holding is live only while the release job's heartbeat is fresh
+-- (the same 3-minute rule golf_push_hold_put applies), so `holds` in the class payload, the
+-- composer placeholder and Notify anyway promise a hold only when one will happen.
+create or replace function public.golf_class_holds_live(p_at timestamptz default now())
+returns boolean
+language sql
+stable
+set search_path = public, pg_temp
+as $$
+  select exists (
+    select 1 from public.golf_push_hold_heartbeat hb
+    where hb.id and hb.beat_at >= p_at - interval '3 minutes'
+  )
+$$;
 
 -- 5. Decide and hold ----------------------------------------------------------
 -- Answers jsonb: { held: true, release_at, due_waiting } or

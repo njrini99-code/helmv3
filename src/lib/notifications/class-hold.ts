@@ -79,6 +79,23 @@ export async function holdOrPass(
   spec: HoldSpec | undefined,
 ): Promise<'held' | 'pass'> {
   if (!spec || spec === 'bypass') return 'pass';
+  try {
+    return await holdOrPassUnguarded(admin, userId, type, payload, data, spec);
+  } catch (error) {
+    // Nothing in the gate may fail a push: anything unexpected sends it now.
+    warnFailOpen(error instanceof Error ? error.message : 'gate failed');
+    return 'pass';
+  }
+}
+
+async function holdOrPassUnguarded(
+  admin: SupabaseClient,
+  userId: string,
+  type: string,
+  payload: { title: string; body: string },
+  data: Record<string, unknown>,
+  spec: Exclude<HoldSpec, 'bypass'>,
+): Promise<'held' | 'pass'> {
   const holdId = randomUUID();
   const rpc = rpcOf(admin);
   const control = new AbortController();

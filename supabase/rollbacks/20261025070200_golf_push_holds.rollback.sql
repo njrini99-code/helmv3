@@ -28,7 +28,8 @@ drop trigger if exists golf_class_hold_mark_dirty on public.golf_player_classes;
 drop trigger if exists golf_class_hold_mark_dirty on public.golf_event_attendance;
 drop function if exists public.golf_class_hold_mark_dirty();
 
--- golf_my_class_day back to its 070100 body (no table dependency) before the table goes.
+-- golf_class_holds_live back to its 070100 stub (false: nothing can be held without the tables)
+-- and golf_my_class_day back to its 070100 body (no table dependency) before the table goes.
 create or replace function public.golf_my_class_day(p_on date default null)
 returns jsonb
 language plpgsql
@@ -138,6 +139,13 @@ begin
     'held', null
   );
 end $$;
+
+create or replace function public.golf_class_holds_live(p_at timestamptz default now())
+returns boolean
+language sql
+stable
+set search_path = public, pg_temp
+as $$ select false $$;
 
 revoke all on function public.golf_my_class_day(date) from public, anon;
 grant execute on function public.golf_my_class_day(date) to authenticated, service_role;

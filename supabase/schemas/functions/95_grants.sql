@@ -1452,6 +1452,10 @@ REVOKE ALL ON FUNCTION "public"."golf_class_blocks_internal"(uuid, date, uuid) F
 REVOKE ALL ON FUNCTION "public"."golf_class_blocks_internal"(uuid, date, uuid) FROM "anon";
 REVOKE ALL ON FUNCTION "public"."golf_class_blocks_internal"(uuid, date, uuid) FROM "authenticated";
 GRANT ALL ON FUNCTION "public"."golf_class_blocks_internal"(uuid, date, uuid) TO "service_role";
+REVOKE ALL ON FUNCTION "public"."golf_class_holds_live"(timestamptz) FROM PUBLIC;
+REVOKE ALL ON FUNCTION "public"."golf_class_holds_live"(timestamptz) FROM "anon";
+REVOKE ALL ON FUNCTION "public"."golf_class_holds_live"(timestamptz) FROM "authenticated";
+GRANT ALL ON FUNCTION "public"."golf_class_holds_live"(timestamptz) TO "service_role";
 REVOKE ALL ON FUNCTION "public"."golf_class_day_players_internal"(uuid, date, uuid, timestamptz) FROM PUBLIC;
 REVOKE ALL ON FUNCTION "public"."golf_class_day_players_internal"(uuid, date, uuid, timestamptz) FROM "anon";
 REVOKE ALL ON FUNCTION "public"."golf_class_day_players_internal"(uuid, date, uuid, timestamptz) FROM "authenticated";

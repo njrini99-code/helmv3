@@ -12133,6 +12133,20 @@ $$;
 
 ALTER FUNCTION "public"."golf_class_blocks_internal"(uuid, date, uuid) OWNER TO "postgres";
 
+create or replace function public.golf_class_holds_live(p_at timestamptz default now())
+returns boolean
+language sql
+stable
+set search_path = public, pg_temp
+as $$
+  select exists (
+    select 1 from public.golf_push_hold_heartbeat hb
+    where hb.id and hb.beat_at >= p_at - interval '3 minutes'
+  )
+$$;
+
+ALTER FUNCTION "public"."golf_class_holds_live"(timestamptz) OWNER TO "postgres";
+
 create or replace function public.golf_class_day_players_internal(
     p_team_id uuid,
     p_on date,
@@ -12211,7 +12225,7 @@ begin
       'last_name',  mb.last_name,
       'avatar_url', mb.avatar_url,
       'tracked',    st.shared and hu.has_usable,
-      'holds',      st.holds and hu.has_usable,
+      'holds',      st.holds and hu.has_usable and public.golf_class_holds_live(p_at),
       'on_course',  v_today and public.golf_player_on_course(mb.player_id, p_at),
       'off_today',  st.shared and exists (
                       select 1 from public.golf_class_exceptions x

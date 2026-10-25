@@ -23,8 +23,8 @@ export const FLAG_REGISTRY: readonly FlagDefinition[] = [
     default: false,
     environment: {
       production: false,
-      preview: false,
-      development: false,
+      preview: true,
+      development: true,
     },
     kill_switch_behavior: null,
     cleanup_plan: "After one team has run it for a week with no overdue or fail-open signals and every team is on, delete the flag and its checks in their own reviewed change.",

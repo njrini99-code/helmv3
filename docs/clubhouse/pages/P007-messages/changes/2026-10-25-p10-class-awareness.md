@@ -23,6 +23,7 @@ Held items: migration 20261025070300 (columns and trigger); with class_awareness
 - Group line (CH-7272). A coach in a group sees "4 in class now" ("All 11 in class now") directly above the composer, hidden at 0, no names; it opens the In class now sheet scoped to the group with "4 of 11 in this group · Class names show to coaches only." and a count of players with no status in place of the list.
 - Details (CH-7273). A coach's 1:1 Details gains a Class status block: the status with the class, today's blocks in order, and "From Theo's class schedule · pushes held during class" ("not held"); "No class status" alone for an untracked player. The class name shows here and never in the header.
 - Shared `Menu` gains optional `open`/`onOpenChange` (controlled), `width`, and an item `caption` and `shortcut`; nothing else uses them yet.
+- The placeholder, the menu and the group line promise a hold only when one can happen: the class payload's `holds` is false until 070200 is applied and while the release job's heartbeat is stale (golf_class_holds_live).
 - Not here: Notify anyway on a send with attachments (the attachment path has no flag; the menu is hidden while files are attached).
 
 ### Verification
