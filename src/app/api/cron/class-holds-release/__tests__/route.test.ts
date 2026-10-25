@@ -10,6 +10,7 @@ vi.mock('@/lib/supabase/admin', () => ({ createAdminClient: () => ({}) }));
 vi.mock('@/lib/server-error-logger', () => ({ logServerError: vi.fn(async () => {}) }));
 const release = vi.hoisted(() => ({ run: vi.fn() }));
 vi.mock('@/lib/notifications/class-hold', () => ({ runClassHoldRelease: release.run }));
+vi.mock('@/lib/notifications/push', () => ({ sendPushNotificationDirect: vi.fn(), shouldSendPush: vi.fn() }));
 
 import { GET } from '../route';
 

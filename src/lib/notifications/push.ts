@@ -408,7 +408,7 @@ export async function sendPushNotificationDirect(
     // job and this send ends here; any doubt (an error, a timeout, a missing function) falls through to the send exactly as before.
     if (isFlagEnabled(CLASS_AWARENESS_FLAG, { skipTelemetry: true })) {
       const spec = holdSpecFor(type, rawData);
-      if (spec && spec !== 'bypass' && (await holdOrPass(supabase, userId, type, payload, data, spec)) === 'held') {
+      if (spec && spec !== 'bypass' && (await holdOrPass(supabase, userId, type, payload, data, spec, { sendPushNotificationDirect, shouldSendPush })) === 'held') {
         helmLog.info('push.send_held', { feature: 'push_notifications', action: type, result: 'held', runtime: process.env.NEXT_RUNTIME });
         return { success: true };
       }

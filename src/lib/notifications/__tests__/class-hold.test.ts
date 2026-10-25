@@ -11,13 +11,14 @@ vi.mock('@/lib/server-error-logger', () => ({ logServerError: (...a: unknown[]) 
 const prefs = vi.hoisted(() => ({ current: { push_messages: true } as Record<string, unknown> }));
 vi.mock('../email', () => ({ getUserNotificationPreferences: async () => prefs.current }));
 const sent = vi.hoisted(() => ({ calls: [] as [string, string, Record<string, unknown>][], next: [] as { success: boolean; delivered?: number }[] }));
-vi.mock('@/lib/notifications/push', () => ({
+// The release is handed the sender (push.ts imports class-hold, so class-hold cannot import push.ts back).
+const push = {
   sendPushNotificationDirect: async (type: string, userId: string, data: Record<string, unknown>) => {
     sent.calls.push([type, userId, data]);
     return sent.next.shift() ?? { success: true, delivered: 1 };
   },
   shouldSendPush: (type: string, p: Record<string, unknown>) => (type === 'new_message' ? p.push_messages !== false : true),
-}));
+} as never as import('../class-hold').PushDeps;
 
 type Row = Record<string, unknown>;
 type Reply = { data: unknown; error: { code?: string; message?: string } | null };
@@ -82,14 +83,14 @@ const names = () => rpcLog.map((c) => c.fn);
 
 describe('holdOrPass', () => {
   it('passes without asking the database when there is no instruction or it is bypass', async () => {
-    expect(await holdOrPass(admin(), USER, 'x', PAYLOAD, {}, undefined)).toBe('pass');
-    expect(await holdOrPass(admin(), USER, 'x', PAYLOAD, {}, 'bypass')).toBe('pass');
+    expect(await holdOrPass(admin(), USER, 'x', PAYLOAD, {}, undefined, push)).toBe('pass');
+    expect(await holdOrPass(admin(), USER, 'x', PAYLOAD, {}, 'bypass', push)).toBe('pass');
     expect(rpcLog).toHaveLength(0);
   });
 
   it('is held when the database says it stored the hold, and sends the whole instruction', async () => {
     replies.golf_push_hold_put = { data: { held: true, release_at: '2026-10-26T15:50:00Z', due_waiting: 0 }, error: null };
-    const verdict = await holdOrPass(admin(), USER, 'new_message', PAYLOAD, { conversationId: CONV }, { group: 'group', conversationId: CONV, messageId: MSG, dedupeKey: 'k', expiresAt: '2026-10-26T17:00:00.000Z' });
+    const verdict = await holdOrPass(admin(), USER, 'new_message', PAYLOAD, { conversationId: CONV }, { group: 'group', conversationId: CONV, messageId: MSG, dedupeKey: 'k', expiresAt: '2026-10-26T17:00:00.000Z'  }, push);
     expect(verdict).toBe('held');
     const args = rpcLog[0]!.args;
     expect(args).toMatchObject({ p_user_id: USER, p_notification_type: 'new_message', p_group_key: 'group', p_dedupe_key: 'k', p_title: 'Team Announcement', p_body: 'Bus at 6', p_data: { conversationId: CONV }, p_conversation_id: CONV, p_message_id: MSG, p_expires_at: '2026-10-26T17:00:00.000Z' });
@@ -104,18 +105,18 @@ describe('holdOrPass', () => {
     ['null', null],
   ])('passes when the database answers %s', async (_n, data) => {
     replies.golf_push_hold_put = { data, error: null };
-    expect(await holdOrPass(admin(), USER, 'x', PAYLOAD, {}, { group: 'events' })).toBe('pass');
+    expect(await holdOrPass(admin(), USER, 'x', PAYLOAD, {}, { group: 'events' }, push)).toBe('pass');
   });
 
   it('never throws: a client with no rpc at all (a test double, a broken client) passes', async () => {
-    expect(await holdOrPass({} as never, USER, 'x', PAYLOAD, {}, { group: 'events' })).toBe('pass');
-    expect(await holdOrPass({ rpc: () => { throw new Error('boom'); } } as never, USER, 'x', PAYLOAD, {}, { group: 'events' })).toBe('pass');
+    expect(await holdOrPass({} as never, USER, 'x', PAYLOAD, {}, { group: 'events' }, push)).toBe('pass');
+    expect(await holdOrPass({ rpc: () => { throw new Error('boom'); } } as never, USER, 'x', PAYLOAD, {}, { group: 'events' }, push)).toBe('pass');
   });
 
   it('fails open on an error, a missing function, and logs once a minute without the payload', async () => {
     replies.golf_push_hold_put = { data: null, error: { code: 'PGRST202', message: 'missing' } };
-    expect(await holdOrPass(admin(), USER, 'x', { title: 'SECRET TITLE', body: 'SECRET BODY' }, {}, { group: 'events' })).toBe('pass');
-    expect(await holdOrPass(admin(), USER, 'x', PAYLOAD, {}, { group: 'events' })).toBe('pass');
+    expect(await holdOrPass(admin(), USER, 'x', { title: 'SECRET TITLE', body: 'SECRET BODY' }, {}, { group: 'events' }, push)).toBe('pass');
+    expect(await holdOrPass(admin(), USER, 'x', PAYLOAD, {}, { group: 'events' }, push)).toBe('pass');
     expect(logServerEvent.mock.calls.length).toBeLessThanOrEqual(1);
     for (const c of logServerEvent.mock.calls) expect(JSON.stringify(c)).not.toContain('SECRET');
   });
@@ -124,7 +125,7 @@ describe('holdOrPass', () => {
     putDelayMs = 2000;
     replies.golf_push_hold_put = { data: { held: true, due_waiting: 0 }, error: null };
     replies.golf_push_holds_cancel = { data: true, error: null };
-    expect(await holdOrPass(admin(), USER, 'x', PAYLOAD, {}, { group: 'events' })).toBe('pass');
+    expect(await holdOrPass(admin(), USER, 'x', PAYLOAD, {}, { group: 'events' }, push)).toBe('pass');
     const put = rpcLog.find((c) => c.fn === 'golf_push_hold_put')!;
     const cancel = rpcLog.find((c) => c.fn === 'golf_push_holds_cancel')!;
     expect(cancel.args).toEqual({ p_hold_id: put.args.p_hold_id, p_user_id: USER });
@@ -133,20 +134,20 @@ describe('holdOrPass', () => {
   it('on a timeout, a hold a release is already delivering stays held (no second delivery)', async () => {
     putDelayMs = 2000;
     replies.golf_push_holds_cancel = { data: false, error: null };
-    expect(await holdOrPass(admin(), USER, 'x', PAYLOAD, {}, { group: 'events' })).toBe('held');
+    expect(await holdOrPass(admin(), USER, 'x', PAYLOAD, {}, { group: 'events' }, push)).toBe('held');
   });
 
   it('on a timeout whose cancel also fails, passes', async () => {
     putDelayMs = 2000;
     replies.golf_push_holds_cancel = { data: null, error: { message: 'down' } };
-    expect(await holdOrPass(admin(), USER, 'x', PAYLOAD, {}, { group: 'events' })).toBe('pass');
+    expect(await holdOrPass(admin(), USER, 'x', PAYLOAD, {}, { group: 'events' }, push)).toBe('pass');
   });
 
   it('releases the user\'s due rows first when the put reports some waiting (a stopped job leaves rows behind)', async () => {
     replies.golf_push_hold_put = { data: { held: false, why: 'job_stale', due_waiting: 2 }, error: null };
     replies.golf_push_holds_claim_user = { data: [held(), held()], error: null };
     replies.golf_push_holds_mark = { data: 2, error: null };
-    expect(await holdOrPass(admin(), USER, 'x', PAYLOAD, {}, { group: 'events' })).toBe('pass');
+    expect(await holdOrPass(admin(), USER, 'x', PAYLOAD, {}, { group: 'events' }, push)).toBe('pass');
     const claim = rpcLog.find((c) => c.fn === 'golf_push_holds_claim_user')!;
     expect(claim.args).toMatchObject({ p_user_id: USER, p_reason: 'class', p_due_only: true });
     expect(sent.calls).toHaveLength(1);
@@ -157,14 +158,14 @@ describe('holdOrPass', () => {
 describe('releaseHeldForUser', () => {
   it('Deliver now claims every open row, not only the due ones', async () => {
     replies.golf_push_holds_claim_user = { data: [], error: null };
-    await releaseHeldForUser(admin(), USER, { dueOnly: false });
+    await releaseHeldForUser(admin(), USER, { dueOnly: false, push });
     expect(rpcLog[0]!.args).toMatchObject({ p_due_only: false, p_reason: 'class' });
   });
 
   it('one row goes out as itself, bypassing the gate, and is marked sent_alone', async () => {
     replies.golf_push_holds_claim_user = { data: [held({ data: { title: 'Bus at 6', content: 'x' } })], error: null };
     replies.golf_push_holds_mark = { data: 1, error: null };
-    const tally = await releaseHeldForUser(admin(), USER);
+    const tally = await releaseHeldForUser(admin(), USER, { push });
     expect(sent.calls).toHaveLength(1);
     expect(sent.calls[0]).toEqual(['team_announcement', USER, { title: 'Bus at 6', content: 'x', hold: 'bypass', interruptionLevel: 'active' }]);
     expect(rpcLog.find((c) => c.fn === 'golf_push_holds_mark')!.args).toMatchObject({ p_outcome: 'sent_alone' });
@@ -174,7 +175,7 @@ describe('releaseHeldForUser', () => {
   it('two rows go out as one summary and are both marked summarized', async () => {
     replies.golf_push_holds_claim_user = { data: [held(), held({ notification_type: 'event_rsvp_reminder', group_key: 'events', body: 'Practice moved to 3:30 PM' })], error: null };
     replies.golf_push_holds_mark = { data: 2, error: null };
-    await releaseHeldForUser(admin(), USER);
+    await releaseHeldForUser(admin(), USER, { push });
     expect(sent.calls).toHaveLength(1);
     const [type, , data] = sent.calls[0]!;
     expect(type).toBe('class_summary');
@@ -202,7 +203,7 @@ describe('releaseHeldForUser', () => {
     ];
     replies.golf_push_holds_claim_user = { data: [read, deleted, muted, keep], error: null };
     replies.golf_push_holds_mark = { data: 1, error: null };
-    await releaseHeldForUser(admin(), USER);
+    await releaseHeldForUser(admin(), USER, { push });
     const outcomes = Object.fromEntries(rpcLog.filter((c) => c.fn === 'golf_push_holds_mark').map((c) => [c.args.p_outcome as string, c.args.p_ids]));
     expect(outcomes.read_in_app).toEqual([read.id]);
     expect(outcomes.cancelled).toEqual(expect.arrayContaining([deleted.id, muted.id]));
@@ -218,7 +219,7 @@ describe('releaseHeldForUser', () => {
       error: null,
     };
     replies.golf_push_holds_mark = { data: 1, error: null };
-    await releaseHeldForUser(admin(), USER);
+    await releaseHeldForUser(admin(), USER, { push });
     expect(sent.calls).toHaveLength(0);
     const outcomes = rpcLog.filter((c) => c.fn === 'golf_push_holds_mark').map((c) => c.args.p_outcome).sort();
     expect(outcomes).toEqual(['cancelled', 'expired']);
@@ -228,19 +229,19 @@ describe('releaseHeldForUser', () => {
     replies.golf_push_holds_claim_user = { data: [held()], error: null };
     replies.golf_push_holds_unclaim = { data: 1, error: null };
     sent.next.push({ success: false });
-    await releaseHeldForUser(admin(), USER);
+    await releaseHeldForUser(admin(), USER, { push });
     expect(names()).toContain('golf_push_holds_unclaim');
     expect(names()).not.toContain('golf_push_holds_mark');
 
     rpcLog.length = 0;
     replies.golf_push_holds_mark = { data: 1, error: null };
     sent.next.push({ success: true });
-    await releaseHeldForUser(admin(), USER);
+    await releaseHeldForUser(admin(), USER, { push });
     expect(rpcLog.find((c) => c.fn === 'golf_push_holds_mark')!.args.p_outcome).toBe('no_device');
   });
 
   it('does nothing when the function is not there', async () => {
-    const tally = await releaseHeldForUser(admin(), USER);
+    const tally = await releaseHeldForUser(admin(), USER, { push });
     expect(tally.rows).toBe(0);
     expect(sent.calls).toHaveLength(0);
   });
@@ -250,7 +251,7 @@ describe('runClassHoldRelease', () => {
   const NOW = new Date(Date.UTC(2026, 9, 26, 15, 7, 0));
 
   it('is unavailable (and touches nothing else) when the heartbeat function is missing', async () => {
-    const out = await runClassHoldRelease(admin(), NOW);
+    const out = await runClassHoldRelease(admin(), push, NOW);
     expect(out.unavailable).toBe(true);
     expect(names()).toEqual(['golf_push_holds_beat']);
   });
@@ -262,7 +263,7 @@ describe('runClassHoldRelease', () => {
     replies.golf_push_holds_claim_failed = { data: [held({ attempts: 3 })], error: null };
     replies.golf_push_holds_mark = { data: 1, error: null };
     replies.golf_push_holds_cleanup = { data: 0, error: null };
-    const out = await runClassHoldRelease(admin(), NOW);
+    const out = await runClassHoldRelease(admin(), push, NOW);
     expect(names().filter((f) => f !== 'golf_push_holds_mark')).toEqual([
       'golf_push_holds_beat', 'golf_push_holds_reconcile', 'golf_push_holds_claim', 'golf_push_holds_claim_failed', 'golf_push_holds_cleanup',
     ]);
@@ -275,11 +276,11 @@ describe('runClassHoldRelease', () => {
   it('reconciles fully every 15 minutes and warns about overdue rows', async () => {
     replies.golf_push_holds_beat = { data: null, error: null };
     replies.golf_push_holds_reconcile = { data: { moved: 0, expired: 0, overdue: 4 }, error: null };
-    await runClassHoldRelease(admin(), new Date(Date.UTC(2026, 9, 26, 15, 30, 0)));
+    await runClassHoldRelease(admin(), push, new Date(Date.UTC(2026, 9, 26, 15, 30, 0)));
     expect(rpcLog.find((c) => c.fn === 'golf_push_holds_reconcile')!.args.p_full).toBe(true);
     expect(logServerError.mock.calls.some((c) => String(c[0]).includes('overdue'))).toBe(true);
     rpcLog.length = 0;
-    await runClassHoldRelease(admin(), new Date(Date.UTC(2026, 9, 26, 15, 31, 0)));
+    await runClassHoldRelease(admin(), push, new Date(Date.UTC(2026, 9, 26, 15, 31, 0)));
     expect(rpcLog.find((c) => c.fn === 'golf_push_holds_reconcile')!.args.p_full).toBe(false);
   });
 
@@ -288,7 +289,7 @@ describe('runClassHoldRelease', () => {
     replies.golf_push_holds_claim_failed = { data: [held({ attempts: 3 })], error: null };
     replies.golf_push_holds_mark = { data: 1, error: null };
     sent.next.push({ success: false });
-    await runClassHoldRelease(admin(), new Date(Date.UTC(2026, 9, 26, 15, 8, 0)));
+    await runClassHoldRelease(admin(), push, new Date(Date.UTC(2026, 9, 26, 15, 8, 0)));
     expect(rpcLog.find((c) => c.fn === 'golf_push_holds_mark')!.args.p_outcome).toBe('failed');
   });
 });

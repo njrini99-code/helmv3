@@ -20,6 +20,7 @@ import { logServerError } from '@/lib/server-error-logger';
 import { describeError } from '@/lib/utils/describe-error';
 import { CLASS_AWARENESS_FLAG } from '@/lib/notifications/class-hold-core';
 import { runClassHoldRelease } from '@/lib/notifications/class-hold';
+import { sendPushNotificationDirect, shouldSendPush } from '@/lib/notifications/push';
 
 export const runtime = 'nodejs';
 export const maxDuration = 60;
@@ -30,7 +31,7 @@ const JOB = 'class-holds-release';
 async function handle() {
   if (!isFlagEnabled(CLASS_AWARENESS_FLAG)) return NextResponse.json({ success: true, skipped: 'flag_off' });
   try {
-    const run = await runClassHoldRelease(createAdminClient());
+    const run = await runClassHoldRelease(createAdminClient(), { sendPushNotificationDirect, shouldSendPush });
     if (run.unavailable) return NextResponse.json({ success: true, skipped: 'not_applied' });
     return NextResponse.json({ success: true, ...run });
   } catch (error) {

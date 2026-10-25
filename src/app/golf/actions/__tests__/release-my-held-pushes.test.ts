@@ -14,6 +14,7 @@ vi.mock('@/lib/supabase/server', () => ({
 vi.mock('@/lib/supabase/admin', () => ({ createAdminClient: () => ({ admin: true }) }));
 const release = vi.hoisted(() => ({ run: vi.fn() }));
 vi.mock('@/lib/notifications/class-hold', () => ({ releaseHeldForUser: release.run }));
+vi.mock('@/lib/notifications/push', () => ({ sendPushNotificationDirect: vi.fn(), shouldSendPush: vi.fn() }));
 
 import { releaseMyHeldPushes } from '../class-status';
 
@@ -29,7 +30,7 @@ describe('releaseMyHeldPushes', () => {
     const r = await releaseMyHeldPushes();
     expect(r).toEqual({ success: true, data: { released: 3 } });
     expect(session.rpc).toHaveBeenCalledWith('golf_push_holds_release_mine');
-    expect(release.run).toHaveBeenCalledWith({ admin: true }, 'player-user', { dueOnly: false });
+    expect(release.run).toHaveBeenCalledWith({ admin: true }, 'player-user', expect.objectContaining({ dueOnly: false, push: expect.anything() }));
   });
 
   it('does nothing while the flag is off, and nothing for a signed-out caller', async () => {

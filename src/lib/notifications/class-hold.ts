@@ -21,7 +21,7 @@ import {
   type HeldRow,
   type HoldSpec,
 } from './class-hold-core';
-import type { NotificationType } from './types';
+import type { NotificationPreferences, NotificationType } from './types';
 
 type Failure = { code?: string; message?: string } | null;
 type RpcResult = { data: unknown; error: Failure };
@@ -29,11 +29,14 @@ type RpcBuilder = PromiseLike<RpcResult> & { abortSignal?: (signal: AbortSignal)
 type Rpc = (fn: string, args: object) => RpcBuilder;
 
 /**
- * push.ts imports this module (the gate), so this module reaches back for the sender only when a release runs. One shared promise keeps
- * concurrent releases (a pool of 8) from racing the first import.
+ * push.ts imports this module (the gate), so this module cannot import the sender back without a runtime import cycle. A release is
+ * handed the sender instead: push.ts passes its own for the inline release, and the callers outside it (the cron, Deliver now) import
+ * push.ts themselves.
  */
-let pushModule: Promise<typeof import('./push')> | undefined;
-const loadPush = () => (pushModule ??= import('./push'));
+export type PushDeps = {
+  sendPushNotificationDirect: (type: NotificationType, userId: string, data: Record<string, unknown>) => Promise<{ success: boolean; delivered?: number }>;
+  shouldSendPush: (type: NotificationType, prefs: NotificationPreferences) => boolean;
+};
 
 const rpcOf = (admin: SupabaseClient): Rpc => (admin as unknown as { rpc: Rpc }).rpc.bind(admin);
 
@@ -77,10 +80,11 @@ export async function holdOrPass(
   payload: { title: string; body: string },
   data: Record<string, unknown>,
   spec: HoldSpec | undefined,
+  push: PushDeps,
 ): Promise<'held' | 'pass'> {
   if (!spec || spec === 'bypass') return 'pass';
   try {
-    return await holdOrPassUnguarded(admin, userId, type, payload, data, spec);
+    return await holdOrPassUnguarded(admin, userId, type, payload, data, spec, push);
   } catch (error) {
     // Nothing in the gate may fail a push: anything unexpected sends it now.
     warnFailOpen(error instanceof Error ? error.message : 'gate failed');
@@ -95,6 +99,7 @@ async function holdOrPassUnguarded(
   payload: { title: string; body: string },
   data: Record<string, unknown>,
   spec: Exclude<HoldSpec, 'bypass'>,
+  push: PushDeps,
 ): Promise<'held' | 'pass'> {
   const holdId = randomUUID();
   const rpc = rpcOf(admin);
@@ -143,7 +148,7 @@ async function holdOrPassUnguarded(
   if (numberOr0(answer.due_waiting) > 0) {
     // Rows held before a stop go out on this user's next push (Should 20): due rows only, class reason only.
     try {
-      await releaseHeldForUser(admin, userId, { dueOnly: true });
+      await releaseHeldForUser(admin, userId, { dueOnly: true, push });
     } catch {
       /* the next tick or Deliver now picks them up */
     }
@@ -175,10 +180,10 @@ async function unclaim(admin: SupabaseClient, token: string, ids: string[]): Pro
  * then send what is left as itself (one row) or as one summary (two or more). Edits made during class are what the player sees: a
  * message's preview is read again here.
  */
-async function releaseClaimed(admin: SupabaseClient, userId: string, rows: HoldRow[], token: string, now: Date, tally: ReleaseTally): Promise<void> {
+async function releaseClaimed(admin: SupabaseClient, userId: string, rows: HoldRow[], token: string, now: Date, tally: ReleaseTally, push: PushDeps): Promise<void> {
   tally.users += 1;
   tally.rows += rows.length;
-  const { sendPushNotificationDirect, shouldSendPush } = await loadPush();
+  const { sendPushNotificationDirect, shouldSendPush } = push;
   const gone = (ids: string[], outcome: Outcome) => {
     tally.dropped += ids.length;
     return mark(admin, token, ids, outcome);
@@ -323,7 +328,7 @@ async function pool<T>(items: T[], size: number, fn: (item: T) => Promise<void>)
 export async function releaseHeldForUser(
   admin: SupabaseClient,
   userId: string,
-  opts: { dueOnly?: boolean; now?: Date } = {},
+  opts: { dueOnly?: boolean; now?: Date; push: PushDeps },
 ): Promise<ReleaseTally> {
   const tally = emptyTally();
   const token = randomUUID();
@@ -335,7 +340,7 @@ export async function releaseHeldForUser(
     p_due_only: opts.dueOnly === true,
   });
   if (error || !Array.isArray(data) || data.length === 0) return tally;
-  await releaseClaimed(admin, userId, data as HoldRow[], token, now, tally);
+  await releaseClaimed(admin, userId, data as HoldRow[], token, now, tally, opts.push);
   return tally;
 }
 
@@ -354,7 +359,7 @@ export type ClassHoldRelease = {
  * One tick: beat (so the gate knows the job is alive), reconcile, claim users with due rows and release them, send what failed three
  * times as itself, and clean up once an hour. A missing function (the migrations are held) returns `unavailable` and does nothing.
  */
-export async function runClassHoldRelease(admin: SupabaseClient, now: Date = new Date()): Promise<ClassHoldRelease> {
+export async function runClassHoldRelease(admin: SupabaseClient, push: PushDeps, now: Date = new Date()): Promise<ClassHoldRelease> {
   const rpc = rpcOf(admin);
   const out: ClassHoldRelease = { moved: 0, expired: 0, overdue: 0, tally: emptyTally(), safetyNet: 0, unavailable: false };
 
@@ -379,14 +384,14 @@ export async function runClassHoldRelease(admin: SupabaseClient, now: Date = new
   const claim = await rpc('golf_push_holds_claim', { p_token: token, p_max_users: CLAIM_USERS, p_now: now.toISOString(), p_reason: 'class' });
   if (!claim.error && Array.isArray(claim.data) && claim.data.length > 0) {
     const groups = [...byUser(claim.data as HoldRow[])];
-    await pool(groups, CONCURRENCY, ([userId, rows]) => releaseClaimed(admin, userId, rows, token, now, out.tally));
+    await pool(groups, CONCURRENCY, ([userId, rows]) => releaseClaimed(admin, userId, rows, token, now, out.tally, push));
   }
 
   // Safety net: a row that failed three times goes out as itself, so a hold never ends as silence because of our own failure.
   const netToken = randomUUID();
   const failed = await rpc('golf_push_holds_claim_failed', { p_token: netToken, p_limit: 100, p_now: now.toISOString() });
   if (!failed.error && Array.isArray(failed.data) && failed.data.length > 0) {
-    const { sendPushNotificationDirect } = await loadPush();
+    const { sendPushNotificationDirect } = push;
     await pool(failed.data as HoldRow[], CONCURRENCY, async (row) => {
       const sent = await sendPushNotificationDirect(row.notification_type as NotificationType, row.user_id, { ...(row.data ?? {}), hold: 'bypass', interruptionLevel: 'active' });
       out.safetyNet += 1;

@@ -177,7 +177,8 @@ async function releaseMyHeldPushesImpl(): Promise<Result<{ released: number }>> 
       return { success: false, error: 'Could not deliver them. Try again' };
     }
     const { releaseHeldForUser } = await import('@/lib/notifications/class-hold');
-    const tally = await releaseHeldForUser(createAdminClient(), u.id, { dueOnly: false });
+    const push = await import('@/lib/notifications/push');
+    const tally = await releaseHeldForUser(createAdminClient(), u.id, { dueOnly: false, push });
     return { success: true, data: { released: tally.rows } };
   } catch (err) {
     await logServerError(`releaseMyHeldPushes threw: ${err instanceof Error ? err.message : String(err)}`, { action: 'classes.releaseMyHeldPushes' });
