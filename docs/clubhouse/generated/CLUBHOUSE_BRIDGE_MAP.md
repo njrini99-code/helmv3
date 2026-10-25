@@ -112,7 +112,7 @@ Every Bridge ID (D-68: namespace, two-digit category, two-digit item), its catal
 | P003 | 2 | 3 | 3 | 9 | 4 | 24 | 2 | 6 | 1 |  | 2 | 3 | 1 | 3 |  | 4 | 4 | 10 | 1 | 1 | 1 |  | 1 | 1 |  | 86 |
 | P004 | 2 | 1 | 1 | 19 | 2 | 12 | 3 | 2 | 1 |  |  | 1 |  | 1 |  | 4 | 4 | 6 | 1 | 1 | 1 |  | 1 | 1 |  | 64 |
 | P005 | 4 | 4 | 2 | 23 | 3 | 25 | 3 | 6 | 1 |  | 1 | 2 |  | 1 | 1 | 4 | 3 | 10 | 1 | 1 | 1 |  | 1 | 1 |  | 98 |
-| P006 | 4 | 5 | 3 | 9 | 4 | 30 | 1 | 8 | 1 | 2 | 5 | 3 | 2 | 2 | 1 | 6 | 3 | 4 | 1 | 1 | 1 |  | 1 | 1 |  | 98 |
+| P006 | 4 | 5 | 3 | 9 | 4 | 35 | 1 | 8 | 1 | 2 | 5 | 3 | 2 | 2 | 1 | 6 | 3 | 5 | 1 | 1 | 1 |  | 1 | 1 |  | 104 |
 | P007 | 2 | 10 | 1 | 9 | 6 | 38 | 1 | 2 | 2 | 1 | 4 | 2 | 1 | 2 | 1 | 7 | 4 | 4 | 1 | 1 | 1 |  | 2 | 1 |  | 103 |
 | P008 | 2 | 1 | 3 | 6 | 15 | 42 | 3 | 10 | 3 | 3 | 8 | 6 | 2 | 2 | 1 | 9 | 8 | 7 | 1 | 1 | 1 |  | 1 | 1 |  | 136 |
 | P009 | 7 | 7 | 4 | 13 | 14 | 34 | 7 | 12 | 2 | 1 | 4 | 4 | 1 | 2 | 1 | 3 | 3 | 4 | 4 | 3 | 2 |  | 4 | 1 |  | 137 |
@@ -630,6 +630,11 @@ Every Bridge ID (D-68: namespace, two-digit category, two-digit item), its catal
 | 60628 | CH-6015 | 06 Server / system error | `MOVING_AN_EVENT_BY_DRAG_OR_ALT` | implemented | Moving an event by drag or Alt+arrow fails (P006-B3) |
 | 60629 | CH-6016 | 06 Server / system error | `RESTORING_A_CANCELLED_EVENT_FAILS` | implemented | Restoring a cancelled event fails |
 | 60630 | CH-6017 | 06 Server / system error | `DELETING_A_CANCELLED_EVENT_PERMANENTLY_FAILS` | implemented | Deleting a cancelled event permanently fails |
+| 60631 | CH-6018 | 06 Server / system error | `SOMEONE_ELSE_CHANGED_THE_EVENT_WHILE_IT` | implemented | Someone else changed the event while it was being moved (P-4 6.5) |
+| 60632 | CH-6019 | 06 Server / system error | `A_THIS_AND_FOLLOWING_SERIES_MOVE_FAILS` | implemented | A "This and following" series move fails |
+| 60633 | CH-6020 | 06 Server / system error | `CHANGING_AN_EVENTS_LENGTH_FAILS` | implemented | Changing an event's length (a grip or Alt+Shift+arrow) fails |
+| 60634 | CH-6021 | 06 Server / system error | `THE_SERVER_REFUSES_A_MOVE_BY_ROLE` | implemented | The server refuses a move by role |
+| 60635 | CH-6022 | 06 Server / system error | `THE_EVENT_WAS_CANCELLED_OR_DELETED_WHILE` | implemented | The event was cancelled or deleted while it was being moved |
 | 60701 |  | 07 Network / offline | `FILE_REMOVAL_REFUSES_OFFLINE` | implemented | Removing a file from an event, and Undo on that, send nothing while the browser is offline: the file stays where it was, the error haptic fires, and the toast says nothing was changed (the shell's CH-1903 wording). |
 | 60801 |  | 08 Permission / authorization | `PLAYER_HAS_NO_PLANNING_TOOLS` | implemented | A player is never given a planning tool: no New event (button, N key or an editor from ?new=1), no Add busy time or Overlaps in More, no people filter, no responses, attendance, Edit event, Cancel event, Attach or Remove file, and no schedule-overlap marks. The same address for a coach has all of them. Hiding them is a courtesy; every write is checked again by its server action (60806). |
 | 60802 |  | 08 Permission / authorization | `PLAYER_READS_ONLY_THEIR_OWN_CLASSES` | implemented | The loader gives a player only their own classes (another player's class, and one whose owner cannot be resolved, are dropped before they reach the browser) and only themselves as a person; a coach gets every rostered player's classes, each with its owner. |
@@ -668,6 +673,7 @@ Every Bridge ID (D-68: namespace, two-digit category, two-digit item), its catal
 | 61802 | CH-6802 | 18 Accessibility | `THE_DETAIL_PANEL_IS_A_POLITE_LIVE` | implemented | The detail panel is a polite live region; form errors are tied to their field |
 | 61803 | CH-6803 | 18 Accessibility | `CHANGING_THE_PLAYER_FILTER_IS_ANNOUNCED` | implemented | Changing the player filter is announced ("Showing 2 players") |
 | 61804 | CH-6804 | 18 Accessibility | `NO_AXE_VIOLATIONS_IN_ANY_PREVIEW_VIEW` | reserved | No axe violations in any preview view and state, 1280px and 390px. One known exception, listed in the scan: the 7-day week at 390px squeezes overlapping events under 24px until the phone Calendar is designed |
+| 61805 | CH-6805 | 18 Accessibility | `A_COMPLETED_MOVE_IS_SAID_ONCE_NEVER` | implemented | A completed move is said once, never during a drag: "Practice moved to 4:00 PM, Wednesday 15 October. Undo with Command Z." (Control Z off a Mac; on touch "Undo is in the notice."); a resize "Practice now ends at 6:30 PM."; a clash appended; Undo "Move undone." |
 | 61901 |  | 19 Responsive layout | `PHONE_LAYOUT` | implemented | At 820px and below Calendar is the phone build, never a shrunken desktop: Day with a week strip, Month and List; an event opens in a sheet and New event is a sheet. State, writes and dialogs are the desktop's. |
 | 62001 |  | 20 Keyboard / input | `KEYBOARD_SHORTCUTS` | implemented | On the desktop N opens New event (coach), T goes to today, the left and right arrows step a day, week or month (not in the agenda), and Esc closes the open panel. None of them fires while typing in a field or with a dialog open. |
 | 62101 |  | 21 Performance | `LOADER_READS_IN_THREE_ROUNDS` | implemented | The server loader reads each table once for the whole screen, in three rounds and never per event or per player: the team's zone, name and roster; then events, class schedules and (for a coach) their busy time together; then every event's replies, one read for each 200 events. A read that fails is flagged and logged, never thrown. |

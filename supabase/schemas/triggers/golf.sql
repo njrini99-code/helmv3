@@ -2,6 +2,8 @@ CREATE OR REPLACE TRIGGER "approach_miss_details_reject_completed_round_mutation
 
 CREATE OR REPLACE TRIGGER "golf_event_documents_team_consistency" BEFORE INSERT OR UPDATE ON "public"."golf_event_documents" FOR EACH ROW EXECUTE FUNCTION "public"."golf_event_documents_assert_same_team"();
 
+CREATE OR REPLACE TRIGGER "golf_events_touch_updated_at" BEFORE UPDATE ON "public"."golf_events" FOR EACH ROW WHEN (((old.* IS DISTINCT FROM new.*) AND (current_setting('helm.change_mark_writer'::text, true) IS DISTINCT FROM 'on'::text))) EXECUTE FUNCTION "public"."touch_updated_at"();
+
 CREATE OR REPLACE TRIGGER "golf_global_patterns_touch" BEFORE UPDATE ON "public"."golf_global_patterns" FOR EACH ROW EXECUTE FUNCTION "public"."touch_updated_at"();
 
 CREATE OR REPLACE TRIGGER "golf_holes_recompute_round_totals" AFTER INSERT OR DELETE OR UPDATE ON "public"."golf_holes" FOR EACH ROW EXECUTE FUNCTION "public"."golf_holes_recompute_round_totals_fn"();

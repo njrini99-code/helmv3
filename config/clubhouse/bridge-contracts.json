@@ -5466,6 +5466,61 @@
     "catalog": "docs/clubhouse/catalog/calendar.md"
   },
   {
+    "id": 60631,
+    "page": "P006",
+    "category": 6,
+    "item": 31,
+    "name": "SOMEONE_ELSE_CHANGED_THE_EVENT_WHILE_IT",
+    "chCode": "CH-6018",
+    "meaning": "Someone else changed the event while it was being moved (P-4 6.5)",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/calendar.md"
+  },
+  {
+    "id": 60632,
+    "page": "P006",
+    "category": 6,
+    "item": 32,
+    "name": "A_THIS_AND_FOLLOWING_SERIES_MOVE_FAILS",
+    "chCode": "CH-6019",
+    "meaning": "A \"This and following\" series move fails",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/calendar.md"
+  },
+  {
+    "id": 60633,
+    "page": "P006",
+    "category": 6,
+    "item": 33,
+    "name": "CHANGING_AN_EVENTS_LENGTH_FAILS",
+    "chCode": "CH-6020",
+    "meaning": "Changing an event's length (a grip or Alt+Shift+arrow) fails",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/calendar.md"
+  },
+  {
+    "id": 60634,
+    "page": "P006",
+    "category": 6,
+    "item": 34,
+    "name": "THE_SERVER_REFUSES_A_MOVE_BY_ROLE",
+    "chCode": "CH-6021",
+    "meaning": "The server refuses a move by role",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/calendar.md"
+  },
+  {
+    "id": 60635,
+    "page": "P006",
+    "category": 6,
+    "item": 35,
+    "name": "THE_EVENT_WAS_CANCELLED_OR_DELETED_WHILE",
+    "chCode": "CH-6022",
+    "meaning": "The event was cancelled or deleted while it was being moved",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/calendar.md"
+  },
+  {
     "id": 60701,
     "page": "P006",
     "category": 7,
@@ -5917,6 +5972,17 @@
     "chCode": "CH-6804",
     "meaning": "No axe violations in any preview view and state, 1280px and 390px. One known exception, listed in the scan: the 7-day week at 390px squeezes overlapping events under 24px until the phone Calendar is designed",
     "status": "reserved",
+    "catalog": "docs/clubhouse/catalog/calendar.md"
+  },
+  {
+    "id": 61805,
+    "page": "P006",
+    "category": 18,
+    "item": 5,
+    "name": "A_COMPLETED_MOVE_IS_SAID_ONCE_NEVER",
+    "chCode": "CH-6805",
+    "meaning": "A completed move is said once, never during a drag: \"Practice moved to 4:00 PM, Wednesday 15 October. Undo with Command Z.\" (Control Z off a Mac; on touch \"Undo is in the notice.\"); a resize \"Practice now ends at 6:30 PM.\"; a clash appended; Undo \"Move undone.\"",
+    "status": "implemented",
     "catalog": "docs/clubhouse/catalog/calendar.md"
   },
   {

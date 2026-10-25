@@ -594,6 +594,138 @@
   color: var(--ch-green-700);
 }
 
+/* P-4 4.2, the drag parts. The column under the card takes a faint green wash and its day's numeral goes green; no
+   side bar. */
+.ch-wk__col.is-target {
+  background-color: color-mix(in oklab, var(--ch-green-600) 5%, transparent);
+}
+.ch-wk__day.is-target .ch-wk__n {
+  color: var(--ch-green-600);
+}
+/* The card in hand (a mouse drag): full material, a touch larger, lifted on the overlay shadow, snapped to where it
+   would land. It never takes the pointer, so the grid under it keeps hit-testing. */
+.ch-dd-card {
+  position: absolute;
+  z-index: calc(var(--ch-z-raised) + 4);
+  pointer-events: none;
+}
+.ch-ev.is-card {
+  scale: 1.02;
+  cursor: grabbing;
+}
+.ch-ev.is-card::before {
+  opacity: 1;
+  box-shadow: var(--ch-elevation-overlay);
+}
+/* The time pill: the new time travelling with the card, ink on ivory by day and ivory on ink at night (the tokens flip). */
+.ch-dd-pill {
+  position: absolute;
+  right: 3px;
+  bottom: calc(100% + var(--ch-space-2));
+  z-index: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  min-height: 22px;
+  padding: 0 var(--ch-space-2);
+  border-radius: var(--ch-radius-md);
+  background: var(--ch-text-primary);
+  color: var(--ch-bg-surface);
+  font: var(--ch-type-12-strong);
+  box-shadow: var(--ch-elevation-floating);
+  white-space: nowrap;
+}
+.ch-dd-pill.is-below {
+  top: calc(100% + var(--ch-space-2));
+  bottom: auto;
+}
+.ch-dd-pill.is-clash {
+  padding-block: var(--ch-space-1);
+}
+.ch-dd-pill__clash {
+  font: var(--ch-type-12-medium);
+  color: var(--ch-on-ink-warning);
+}
+/* The resize grips (P-4 4.3): a full-width strip at each edge takes the pointer; a 20 by 4 pill shows inside it on
+   hover and on the selected block. They never open the block. */
+.ch-ev__grip {
+  position: absolute;
+  left: 0;
+  right: 0;
+  z-index: 1;
+  height: 9px;
+  cursor: ns-resize;
+}
+.ch-ev__grip.is-top {
+  top: 0;
+}
+.ch-ev__grip.is-bottom {
+  bottom: 0;
+}
+.ch-ev__grip.is-small {
+  height: 6px;
+}
+.ch-ev__grip::after {
+  content: '';
+  position: absolute;
+  left: 50%;
+  width: 20px;
+  height: 4px;
+  translate: -50% 0;
+  border-radius: var(--ch-radius-mark);
+  background: currentColor;
+  opacity: 0;
+  transition: opacity var(--ch-dur-quick) var(--ch-ease);
+}
+.ch-ev__grip.is-top::after {
+  top: 3px;
+}
+.ch-ev__grip.is-bottom::after {
+  bottom: 3px;
+}
+.ch-ev__grip.is-small::after {
+  bottom: 1px;
+}
+@media (hover: hover) {
+  .ch-ev.is-draggable:hover .ch-ev__grip::after {
+    opacity: 0.7;
+  }
+}
+.ch-ev.is-draggable.is-sel .ch-ev__grip::after {
+  opacity: 0.7;
+}
+
+/* P-4 4.8, the series question on a drop: 44px rows in the shared menu material. */
+.ch-dd-scope {
+  padding: var(--ch-space-1);
+}
+.ch-dd-scope__h {
+  padding: var(--ch-space-3) var(--ch-space-2) var(--ch-space-1);
+  font: var(--ch-type-13-strong);
+  color: var(--ch-text-secondary);
+}
+.ch-dd-scope .ch-menu__item {
+  height: 44px;
+  font: var(--ch-type-15);
+  letter-spacing: var(--ch-track-15);
+}
+.ch-dd-scope .ch-menu__item[aria-checked='true'] {
+  font: var(--ch-type-15-strong);
+  letter-spacing: var(--ch-track-15);
+}
+.ch-dd-scope .ch-menu__item[aria-disabled='true'] {
+  cursor: not-allowed;
+}
+.ch-dd-scope__help {
+  margin: 0;
+  padding: 0 var(--ch-space-2) var(--ch-space-2);
+  font: var(--ch-type-12);
+  color: var(--ch-text-secondary);
+}
+.ch-dd-scope__cancel {
+  color: var(--ch-text-secondary);
+}
+
 /* Event blocks */
 .ch-ev {
   position: absolute;
@@ -683,12 +815,6 @@
 .ch-ev.is-held .ch-ev__g,
 .ch-ev.is-held .ch-ev__m {
   visibility: hidden;
-}
-.ch-ev.is-ghost {
-  pointer-events: none;
-  outline: 2px dashed var(--ch-border-focus);
-  outline-offset: -2px;
-  box-shadow: var(--ch-elevation-raised);
 }
 .ch-ev.is-clash {
   z-index: 5;

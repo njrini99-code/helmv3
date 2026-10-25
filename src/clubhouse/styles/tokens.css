@@ -192,6 +192,8 @@
      the surface with depth (owner, 2026-10-06: "more ivory and text depth in the green"). */
   --ch-on-green-ink: #f4eedd;
   --ch-on-green-ink-soft: rgb(240 233 214 / 0.86);
+  /* P-4: a clash line on the dark ink pill (the drag time pill): champagne on ink by day, a deep amber on ivory at night. */
+  --ch-on-ink-warning: var(--ch-champagne-300);
   /* 0.8, not 0.72: holds 4.5:1 at the light end of the green gradients too (rendered 4.1:1 before, 2026-10-14). */
   --ch-on-green-ink-muted: rgb(222 214 190 / 0.8);
   --ch-on-green-text-shadow: 0 1px 0 rgb(2 18 10 / 0.45), 0 2px 10px rgb(2 18 10 / 0.25);
@@ -756,6 +758,7 @@
  */
 html[data-fw-theme='dark'] [data-ui='clubhouse'] {
   color-scheme: dark;
+  --ch-on-ink-warning: #8a5a0c;
   --ch-text-placeholder: #8f897c;
   /* The sidebar's selected plate at night (overnight polish, 2026-10-15): the day plate's gradient ran from the night
      ivory to the day's, a white bar with dark ink on the dark frame. A raised green plate under ivory ink instead. */

@@ -152,6 +152,8 @@ interface ActionResult<T = void> {
   success: boolean;
   data?: T;
   error?: string;
+  /** P-4: the target row changed since the caller read it (`expectedUpdatedAt`). */
+  code?: 'stale';
 }
 
 interface CreateRecurringEventInput {
@@ -198,6 +200,8 @@ interface EditRecurringEventInput {
   timezoneOffset?: number; // Minutes from UTC (from Date.getTimezoneOffset())
   /** The series' IANA zone, for occurrences a rule change appends (CAL-05). */
   timeZone?: string;
+  /** P-4: the target row's `updated_at` as the caller read it; the edit is refused as stale when it differs. */
+  expectedUpdatedAt?: string;
   updates: {
     title?: string;
     description?: string;
@@ -1164,6 +1168,11 @@ async function editRecurringEventImpl(
       return { success: false, error: 'Not authorized' };
     }
 
+    // P-4 concurrency: the target row is checked against the version the caller read (the later rows are not, one by one).
+    if (input.expectedUpdatedAt && targetEvent.updated_at !== input.expectedUpdatedAt) {
+      return { success: false, error: 'This event changed since you opened it.', code: 'stale' };
+    }
+
     // Resolve the series root id. Modern recurring rows have either
     // recurrence_rule (root) or parent_event_id (child). Legacy rows have
     // neither — those fall back to the title/team/type heuristic below.
@@ -1482,12 +1491,14 @@ async function editRecurringEventImpl(
       const idsToNotify = notifiedIds;
       const notifyScope = input.scope;
       const notifyEventId = input.eventId;
+      const notifyRootId = rootId ?? input.eventId;
       after(async () => {
         try {
-          const { notifyEventUpdate } = await import('@/lib/calendar/rsvp');
+          const { notifyEventUpdate, notifyEventSeriesUpdate } = await import('@/lib/calendar/rsvp');
           const adminClient = createAdminClient();
+          // P-4: a move over twelve weeks is one Bell row per player, not twelve.
           const results = await Promise.allSettled(
-            idsToNotify.map((id) => notifyEventUpdate(id, adminClient)),
+            idsToNotify.length > 1 ? [notifyEventSeriesUpdate(notifyRootId, idsToNotify, adminClient)] : idsToNotify.map((id) => notifyEventUpdate(id, adminClient)),
           );
           const failed = results.filter((r) => r.status === 'rejected').length;
           if (failed > 0) {

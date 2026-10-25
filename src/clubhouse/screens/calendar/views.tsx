@@ -1,7 +1,7 @@
 'use client';
 
 import { ChevronDown, ChevronUp, TriangleAlert } from 'lucide-react';
-import { useRef, useState, type CSSProperties, type PointerEvent } from 'react';
+import { useEffect, useLayoutEffect, useRef, useState, type CSSProperties, type KeyboardEvent, type PointerEvent, type RefObject } from 'react';
 import { Button } from '../../ui/Button';
 import { Badge } from '../../ui/Badge';
 import { Icon } from '../../ui/Icon';
@@ -9,6 +9,11 @@ import { haptic } from '../../lib/haptics';
 import { useChClock } from '../../lib/use-clock';
 import { clockHourLabel, meridiemOfHour } from '../../lib/clock-format';
 import { ClassGroupBlock } from './class-group';
+import { clashSummary, draggable, movePill, resizePill, type ChMoveTarget } from './drag-model';
+import { useTimeDrag, type ChDragKind, type ChTimeDrag } from './use-time-drag';
+import { chSpringCurve, CH_EASE } from '../../lib/motion';
+import { chSupportsLinear } from '../../lib/sheet-drag';
+import { useChReducedMotion } from '../../lib/reduced-motion';
 import { EventPeek } from './peek';
 import {
   CAL_END,
@@ -55,31 +60,10 @@ export function eventTitle(e: ChCalEvent, people: Map<string, ChCalPerson>, view
   return first ? `${first} · ${e.title}` : e.title;
 }
 
-/** Where a dragged event would land: its day and decimal hours. */
-export interface ChMoveTarget {
-  date: string;
-  start: number;
-  end: number;
-}
-
-export const snapQuarter = (h: number) => Math.round(h * 4) / 4;
-
-/**
- * What a coach can drag (P006-B3): one timed team event they can edit, on one day. A series asks "this event or all"
- * and a multi-day event moves its whole span, so both stay in the editor; classes and busy time aren't team events.
- */
-export const movable = (e: ChCalEvent) => e.canEdit && !e.allDay && !e.cancelled && !e.seriesId && !e.span && e.start != null && e.end != null && e.type !== 'class' && e.type !== 'busy';
-
-/** The events an invitee of `e` is already at (or in class for) where `e` would land. */
-export function clashesAt(e: ChCalEvent, to: ChMoveTarget, events: ChCalEvent[]): Set<string> {
-  const who = new Set(e.people);
-  return new Set(
-    events
-      .filter((o) => o.id !== e.id && o.date === to.date && !o.allDay && !o.cancelled && o.start != null && o.end != null && o.start < to.end && to.start < o.end)
-      .filter((o) => (o.type === 'class' ? o.owner != null && who.has(o.owner) : o.people.some((p) => who.has(p))))
-      .map((o) => o.id),
-  );
-}
+// P-4: the drag maths live in drag-model.ts; these names stay importable from here.
+export { clashesAt, snapTime as snapQuarter, type ChMoveTarget } from './drag-model';
+/** What drags in the time grid: one day's timed team event (a run over several days drags as a bar, P-4 4.5). */
+export const movable = (e: ChCalEvent) => draggable(e, true) === 'timed' && !e.span;
 
 /** P-4 4.1: a block's size tier by its drawn height (desktop hour 52px, so a quarter is 13px). */
 export function blockTier(h: number): 'sliver' | 'short' | 'standard' | 'tall' {
@@ -121,10 +105,15 @@ function EventBlock({
   /** The grid's first and last hour. */
   from: number;
   to: number;
-  /** P006-B3: a coach's block can be picked up (pointer) or nudged 15 minutes (Alt+↑/↓). */
-  drag?: { onPointerDown: (ev: PointerEvent<HTMLButtonElement>) => void; onNudge: (dir: 1 | -1) => void; moved: () => boolean };
-  /** While a block is dragged: it is the one held (`held`), the ghost where it would land (`ghost`), or a clash (`clash`). */
-  state?: 'held' | 'ghost' | 'clash';
+  /** P006-B3 / P-4: a coach's block can be picked up, stretched by its grips, or nudged with Alt and the arrows. */
+  drag?: {
+    onPointerDown: (ev: PointerEvent<HTMLElement>) => void;
+    onKeyDown: (ev: KeyboardEvent<HTMLElement>) => boolean;
+    moved: () => boolean;
+    grip: (edge: 'start' | 'end') => (ev: PointerEvent<HTMLElement>) => void;
+  };
+  /** While a block is dragged: the footprint where it was (`held`), the card in hand (`card`), or a clash (`clash`). */
+  state?: 'held' | 'card' | 'clash';
   /** It has ended: it steps back so what is still to come reads first (it comes forward on hover, focus and selection). */
   past?: boolean;
 }) {
@@ -166,20 +155,14 @@ function EventBlock({
       data-print-visible
       // CH-6801: a button named with its title, time and any overlap. CH-6601: it lifts on hover and marks its selection.
       className={`ch-ev ch-ev--${e.cancelled ? 'other' : e.type}${tier === 'sliver' ? ' ch-ev--sliver' : ''}${e.cancelled ? ' is-cancelled' : ''}${short ? ' ch-ev--short' : ''}${shared ? ' ch-ev--lane' : ''}${under ? ' ch-ev--under' : ''}${lines ? ' ch-ev--wrap' : ''}${sel ? ' is-sel' : ''}${drag ? ' is-draggable' : ''}${state ? ` is-${state}` : ''}${past && !state ? ' is-past' : ''}`}
-      style={{ top, height: h, left: `calc(${left}% + 3px)`, width: `calc(${100 - left}% - 6px)`, zIndex: state === 'ghost' ? 6 : under ? undefined : shared ? lane + 1 : undefined, ...(lines ? { '--ch-ev-lines': lines } : {}) } as CSSProperties}
-      aria-label={`${title}, ${rangeLabel(e, clock)}${past && !state ? ', ended' : ''}${flagged ? ', schedule overlap' : ''}${drag ? '. Alt and the arrow keys move it 15 minutes' : ''}`}
+      data-ev-id={state === 'card' ? undefined : e.id}
+      style={{ top, height: h, left: `calc(${left}% + 3px)`, width: `calc(${100 - left}% - 6px)`, zIndex: under || state === 'card' ? undefined : shared ? lane + 1 : undefined, ...(lines ? { '--ch-ev-lines': lines } : {}) } as CSSProperties}
+      aria-label={`${title}, ${rangeLabel(e, clock)}${past && !state ? ', ended' : ''}${flagged ? ', schedule overlap' : ''}${drag ? '. Alt and the arrow keys move it; add Shift to change its length' : ''}`}
       aria-pressed={sel}
-      aria-hidden={state === 'ghost' || undefined}
-      tabIndex={state === 'ghost' ? -1 : undefined}
+      aria-hidden={state === 'card' || undefined}
+      tabIndex={state === 'card' ? -1 : undefined}
       onPointerDown={drag?.onPointerDown}
-      onKeyDown={
-        drag &&
-        ((ev) => {
-          if (!ev.altKey || (ev.key !== 'ArrowUp' && ev.key !== 'ArrowDown')) return;
-          ev.preventDefault();
-          drag.onNudge(ev.key === 'ArrowUp' ? -1 : 1);
-        })
-      }
+      onKeyDown={drag && ((ev) => void drag.onKeyDown(ev))}
       onClick={() => {
         // A drop is not a click: the pointer that moved the block doesn't also open it.
         if (drag?.moved()) return;
@@ -201,6 +184,13 @@ function EventBlock({
         <span className="ch-ev__warn" aria-hidden="true">
           <Icon icon={TriangleAlert} size={10} />
         </span>
+      )}
+      {/* P-4 4.3: the resize grips, pointer-only (the keyboard path is Alt+Shift); a block under 32px keeps the bottom one. */}
+      {drag && !state && (
+        <>
+          {h >= 32 && <span className="ch-ev__grip is-top" aria-hidden="true" onPointerDown={drag.grip('start')} onClick={(ev) => ev.stopPropagation()} />}
+          <span className={'ch-ev__grip is-bottom' + (h < 32 ? ' is-small' : '')} aria-hidden="true" onPointerDown={drag.grip('end')} onClick={(ev) => ev.stopPropagation()} />
+        </>
       )}
     </button>
   );
@@ -230,8 +220,8 @@ export function TimeGrid({
   flagged: Set<string>;
   onSelect: (id: string) => void;
   onDay: (date: string) => void;
-  /** P006-B3, the coach's desktop: an event dropped at a new day and time (decimal hours). Absent, nothing drags. */
-  onMove?: (e: ChCalEvent, to: ChMoveTarget) => void;
+  /** P006-B3 / P-4, the coach's desktop: an event dropped at a new day and time (decimal hours). Absent, nothing drags. */
+  onMove?: (e: ChCalEvent, to: ChMoveTarget, kind: ChDragKind) => void;
   /** P006-A1: a day's sunrise, golden hour and sunset on the team's clock (the global light's sun); absent, no daylight. */
   daylight?: (date: string) => ChDaylight;
   /** P006-C3: the hover card's Nudge is the coach's. */
@@ -240,68 +230,50 @@ export function TimeGrid({
   // 6 AM to 9 PM, widened to the hour around anything earlier or later on the days shown, so a 5 AM bus or a 9:30 PM
   // meeting is on the grid instead of dropped from it (CAL-07).
   const timed = events.filter((e) => !e.allDay && e.start != null && e.end != null && dates.includes(e.date));
-  const from = Math.max(0, Math.min(CAL_START, ...timed.map((e) => Math.floor(e.start!))));
-  const to = Math.min(24, Math.max(CAL_END, ...timed.map((e) => Math.ceil(e.end!))));
+  // P-4 4.3: a drag at the grid's edge grows it an hour at a time; the extra hours go when the drag does.
+  const [grow, setGrow] = useState({ before: 0, after: 0 });
+  const from = Math.max(0, Math.min(CAL_START, ...timed.map((e) => Math.floor(e.start!))) - grow.before);
+  const to = Math.min(24, Math.max(CAL_END, ...timed.map((e) => Math.ceil(e.end!))) + grow.after);
   const hours = Array.from({ length: to - from }, (_, i) => from + i);
   const clock = useChClock();
   const nowLabel = fmtHour(now.hour, false, clock);
   const nowVisible = now.hour >= from && now.hour <= to;
   const grid = useRef<HTMLDivElement | null>(null);
-  const [drag, setDrag] = useState<{ e: ChCalEvent; to: ChMoveTarget } | null>(null);
-  const moved = useRef(false);
-  const target = (e: ChCalEvent, x: number, y: number, y0: number): ChMoveTarget => {
-    const rect = grid.current!.getBoundingClientRect();
-    const col = Math.min(dates.length - 1, Math.max(0, Math.floor(((x - rect.left - 52) / (rect.width - 52)) * dates.length)));
-    const len = e.end! - e.start!;
-    const start = Math.min(to - len, Math.max(from, snapQuarter(e.start! + (y - y0) / CAL_HH)));
-    return { date: dates[col]!, start, end: start + len };
-  };
-  const dragFor = (e: ChCalEvent) =>
-    onMove && movable(e)
-      ? {
-          moved: () => moved.current,
-          onNudge: (dir: 1 | -1) => {
-            const start = e.start! + dir * 0.25;
-            if (start < 0 || e.end! + dir * 0.25 > 24) return;
-            haptic('select');
-            onMove(e, { date: e.date, start, end: e.end! + dir * 0.25 });
-          },
-          onPointerDown: (ev: PointerEvent<HTMLButtonElement>) => {
-            if (ev.button !== 0 || ev.pointerType === 'touch') return;
-            const x0 = ev.clientX;
-            const y0 = ev.clientY;
-            moved.current = false;
-            let last: ChMoveTarget | null = null;
-            const move = (m: globalThis.PointerEvent) => {
-              if (!moved.current && Math.hypot(m.clientX - x0, m.clientY - y0) < 5) return;
-              moved.current = true;
-              const t = target(e, m.clientX, m.clientY, y0);
-              // A detent: a tick each time the block lands on a new quarter hour or day.
-              if (last && (last.start !== t.start || last.date !== t.date)) haptic('select');
-              last = t;
-              setDrag({ e, to: t });
-            };
-            const up = () => {
-              window.removeEventListener('pointermove', move);
-              window.removeEventListener('pointerup', up);
-              window.removeEventListener('pointercancel', cancel);
-              setDrag(null);
-              if (moved.current && last && (last.date !== e.date || last.start !== e.start)) onMove(e, last);
-              // The click that follows this pointerup still sees `moved`; clear it after.
-              window.setTimeout(() => (moved.current = false), 0);
-            };
-            const cancel = () => {
-              last = null;
-              up();
-            };
-            window.addEventListener('pointermove', move);
-            window.addEventListener('pointerup', up);
-            window.addEventListener('pointercancel', cancel);
-          },
-        }
-      : undefined;
+  const refocus = useRef<string | null>(null);
+  const engine = useTimeDrag({
+    grid,
+    dates,
+    bounds: { from, to },
+    hourPx: CAL_HH,
+    rail: RAIL_PX,
+    events,
+    coach: !!onMove,
+    onDrop: (e, target, kind) => {
+      // Focus stays on the moved block by id, even when it lands in another column (a new element).
+      if (document.activeElement instanceof HTMLElement && document.activeElement.dataset.evId === e.id) refocus.current = e.id;
+      onMove?.(e, target, kind);
+    },
+    onGrow: (edge) => {
+      if (edge === 'after' ? to >= 24 : from <= 0) return false;
+      setGrow((g) => ({ ...g, [edge]: g[edge] + 1 }));
+      return true;
+    },
+  });
+  const drag = engine.state;
+  useEffect(() => {
+    if (!drag && (grow.before || grow.after)) setGrow({ before: 0, after: 0 });
+  }, [drag, grow.before, grow.after]);
+  useEffect(() => {
+    const id = refocus.current;
+    if (!id) return;
+    const el = grid.current?.querySelector<HTMLElement>(`[data-ev-id="${CSS.escape(id)}"]`);
+    if (el && document.activeElement !== el) {
+      el.focus({ preventScroll: true });
+      refocus.current = null;
+    }
+  });
   // The invitees' clashes, lit while the block is held where it would land.
-  const clashes = drag ? clashesAt(drag.e, drag.to, events) : null;
+  const clashes = drag?.clashes ?? null;
   return (
     <div
       className="ch-wk ch-cal-surface"
@@ -316,7 +288,7 @@ export function TimeGrid({
               key={d}
               type="button"
               data-print-visible
-              className={'ch-wk__day' + (d === now.date ? ' is-today' : '')}
+              className={'ch-wk__day' + (d === now.date ? ' is-today' : '') + (drag?.kind === 'move' && drag.to.date === d ? ' is-target' : '')}
               onClick={() => {
                 haptic('select');
                 onDay(d);
@@ -368,7 +340,7 @@ export function TimeGrid({
         {dates.map((d) => {
           const laid = layoutLanes(groupClasses(events.filter((e) => !e.allDay && e.date === d && e.start != null && e.end != null)));
           return (
-            <div key={d} className={'ch-wk__col' + (d === now.date ? ' is-today' : d < now.date ? ' is-past' : '')}>
+            <div key={d} className={'ch-wk__col' + (d === now.date ? ' is-today' : d < now.date ? ' is-past' : '') + (drag?.kind === 'move' && drag.to.date === d ? ' is-target' : '')}>
               {daylight && <Daylight dl={daylight(d)} from={from} to={to} label={d === dates[dates.length - 1]} />}
               {/* Today's hours behind the now line take the past days' wash, so the day reads from the line down. */}
               {d === now.date && nowVisible && <span className="ch-wk__gone" aria-hidden="true" style={{ height: (now.hour - from) * CAL_HH }} />}
@@ -388,16 +360,13 @@ export function TimeGrid({
                     onSelect={onSelect}
                     from={from}
                     to={to}
-                    drag={dragFor(g)}
+                    drag={engine.bind(g)}
                     state={drag?.e.id === g.id ? 'held' : clashes?.has(g.id) ? 'clash' : undefined}
                     past={isPastEvent(g, now)}
                   />
                 </EventPeek>
                 );
               })}
-              {drag && drag.to.date === d && (
-                <EventBlock e={{ ...drag.e, date: d, start: drag.to.start, end: drag.to.end }} lane={0} lanes={1} sel={false} flagged={false} people={people} viewerId={viewerId} onSelect={() => {}} from={from} to={to} state="ghost" />
-              )}
               {d === now.date && nowVisible && (
                 <div className="ch-wk__now" /* CH-6603: the current time, a line across today */ style={{ top: (now.hour - from) * CAL_HH }} role="separator" aria-label={`Now, ${fmtHour(now.hour, true, clock)}`}>
                   <span className="ch-wk__nowlbl">{nowLabel}</span>
@@ -406,9 +375,75 @@ export function TimeGrid({
             </div>
           );
         })}
+        {drag && <DragCard drag={drag} dates={dates} from={from} people={people} viewerId={viewerId} events={events} grid={grid} />}
       </div>
     </div>
   );
+}
+
+/** The time grid's hour rail, left of the first column (calendar.css .ch-wk__grid's first track). */
+const RAIL_PX = 52;
+
+/**
+ * P-4 4.2-4.3, the card in hand with a mouse: the event in full material, a touch larger and lifted, snapped to where it
+ * would land and gliding there (one element across quarters and days, so it reads as one object). The pill rides above
+ * it ("Wed 15 · 4:00 – 6:00 PM", a clash on a second line) and flips below it near the visible top.
+ */
+function DragCard({ drag, dates, from, people, viewerId, events, grid }: { drag: ChTimeDrag; dates: string[]; from: number; people: Map<string, ChCalPerson>; viewerId?: string | null; events: ChCalEvent[]; grid: RefObject<HTMLDivElement | null> }) {
+  const clock = useChClock();
+  const reduced = useChReducedMotion();
+  const box = useRef<HTMLDivElement | null>(null);
+  const [below, setBelow] = useState(false);
+  const col = Math.max(0, dates.indexOf(drag.to.date));
+  const { e, to } = drag;
+  const top = (to.start - from) * CAL_HH;
+  useGlide(box, `${col}:${to.start}:${to.end}`, reduced);
+  useLayoutEffect(() => {
+    const el = box.current;
+    const head = grid.current?.closest('.ch-wk')?.querySelector('.ch-wk__top')?.getBoundingClientRect().bottom ?? 0;
+    if (el) setBelow(el.getBoundingClientRect().top - head < 40);
+  }, [top, grid]);
+  const pill = drag.kind === 'resize' ? resizePill(drag.edge!, to, clock) : movePill(e, to, clock);
+  const clash = clashSummary(e, drag.clashes, events, people).line;
+  return (
+    <div
+      ref={box}
+      className="ch-dd-card"
+      aria-hidden="true"
+      style={{ top, height: Math.max((to.end - to.start) * CAL_HH, 22), left: `calc(${RAIL_PX}px + (100% - ${RAIL_PX}px) * ${col} / ${dates.length})`, width: `calc((100% - ${RAIL_PX}px) / ${dates.length})` } as CSSProperties}
+    >
+      <EventBlock e={{ ...e, date: to.date, start: to.start, end: to.end }} lane={0} lanes={1} sel={false} flagged={false} people={people} viewerId={viewerId} onSelect={() => {}} from={to.start} to={to.end} state="card" />
+      <span className={'ch-dd-pill ch-num' + (below ? ' is-below' : '') + (clash ? ' is-clash' : '')}>
+        <span>{pill}</span>
+        {clash && <span className="ch-dd-pill__clash">{clash}</span>}
+      </span>
+    </div>
+  );
+}
+
+/**
+ * A glide on the smooth spring from where an element was drawn to where it is now (FLIP), retargeted from its current
+ * place when a new step lands mid-glide, so a fast drag never queues. Transform only (WAAPI translate); none under
+ * reduced motion.
+ */
+function useGlide(ref: RefObject<HTMLElement | null>, key: string, reduced: boolean) {
+  const last = useRef<DOMRect | null>(null);
+  useLayoutEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+    const shown = el.getBoundingClientRect();
+    el.getAnimations?.().forEach((a) => a.cancel());
+    const laid = el.getBoundingClientRect();
+    const prev = last.current;
+    last.current = laid;
+    if (!prev || reduced || typeof el.animate !== 'function') return;
+    // Where it shows now (old layout plus the glide in flight), measured against where it is laid out.
+    const dx = prev.left - laid.left + (shown.left - laid.left);
+    const dy = prev.top - laid.top + (shown.top - laid.top);
+    if (!dx && !dy) return;
+    const curve = chSpringCurve('smooth');
+    el.animate([{ translate: `${dx}px ${dy}px` }, { translate: '0 0' }], { duration: curve.ms, easing: chSupportsLinear() ? curve.linear : `cubic-bezier(${CH_EASE.join(',')})` });
+  }, [ref, key, reduced]);
 }
 
 /**

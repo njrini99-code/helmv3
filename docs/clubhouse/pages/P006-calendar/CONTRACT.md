@@ -180,6 +180,11 @@ request id that becomes the row's key, and a repeat returns the row that landed
 | 60628 | CH-6015 | `MOVING_AN_EVENT_BY_DRAG_OR_ALT` | Moving an event by drag or Alt+arrow fails (P006-B3) |
 | 60629 | CH-6016 | `RESTORING_A_CANCELLED_EVENT_FAILS` | Restoring a cancelled event fails |
 | 60630 | CH-6017 | `DELETING_A_CANCELLED_EVENT_PERMANENTLY_FAILS` | Deleting a cancelled event permanently fails |
+| 60631 | CH-6018 | `SOMEONE_ELSE_CHANGED_THE_EVENT_WHILE_IT` | Someone else changed the event while it was being moved (P-4 6.5) |
+| 60632 | CH-6019 | `A_THIS_AND_FOLLOWING_SERIES_MOVE_FAILS` | A "This and following" series move fails |
+| 60633 | CH-6020 | `CHANGING_AN_EVENTS_LENGTH_FAILS` | Changing an event's length (a grip or Alt+Shift+arrow) fails |
+| 60634 | CH-6021 | `THE_SERVER_REFUSES_A_MOVE_BY_ROLE` | The server refuses a move by role |
+| 60635 | CH-6022 | `THE_EVENT_WAS_CANCELLED_OR_DELETED_WHILE` | The event was cancelled or deleted while it was being moved |
 
 From the shell (P001): 10601 CH-1001, 10602 CH-1201, 10603 CH-1202,
 10604 CH-1203, 10605 CH-1204, 10606 CH-1205, 10607 CH-1206, 10608 CH-1207,
@@ -389,6 +394,7 @@ CH-1842, 11825 CH-1816.
 | 61802 | CH-6802 | `THE_DETAIL_PANEL_IS_A_POLITE_LIVE` | The detail panel is a polite live region; form errors are tied to their field |
 | 61803 | CH-6803 | `CHANGING_THE_PLAYER_FILTER_IS_ANNOUNCED` | Changing the player filter is announced ("Showing 2 players") |
 | 61804 | CH-6804 | `NO_AXE_VIOLATIONS_IN_ANY_PREVIEW_VIEW` | No axe violations in any preview view and state, 1280px and 390px. One known exception, listed in the scan: the 7-day week at 390px squeezes overlapping events under 24px until the phone Calendar is designed |
+| 61805 | CH-6805 | `A_COMPLETED_MOVE_IS_SAID_ONCE_NEVER` | A completed move is said once, never during a drag: "Practice moved to 4:00 PM, Wednesday 15 October. Undo with Command Z." (Control Z off a Mac; on touch "Undo is in the notice."); a resize "Practice now ends at 6:30 PM."; a clash appended; Undo "Move undone." |
 
 From the shell (P001): 11801 CH-1801, 11802 CH-1802, 11803 CH-1803,
 11804 CH-1804, 11805 CH-1805, 11806 CH-1806, 11807 CH-1807, 11808 CH-1808,
