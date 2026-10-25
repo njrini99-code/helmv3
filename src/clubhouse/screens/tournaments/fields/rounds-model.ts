@@ -11,6 +11,7 @@
  * untimed rounds may share a day (a 36-hole day with no times yet); two timed rounds may not share a minute.
  */
 import { offsetMinutesFor } from '@/lib/golf/timezone';
+import { rangeText, shortDay } from '@/lib/golf/tournaments/dates';
 import type { ChClock } from '../../../lib/clock-cookie';
 import { addDays, dayNum, dowOf, fmtHour, monthName } from '../../calendar/model';
 
@@ -229,18 +230,11 @@ export function lockAt(rounds: readonly Pick<ChRoundDraft, 'date' | 'tee' | 'can
   return { at: zonedIso(date, hhmm(mins), timeZone), date, minutes: mins, r1Cancelled: !!r1.cancelled };
 }
 
-const mon = (d: string) => monthName(d).slice(0, 3);
-/** "Thu 5 Nov". */
-export const shortDay = (d: string) => `${dowOf(d)} ${dayNum(d)} ${mon(d)}`;
+export { rangeText, shortDay };
 /** "Thursday 5 November", for speech. */
 export function spokenDay(d: string): string {
   const long: Record<string, string> = { Sun: 'Sunday', Mon: 'Monday', Tue: 'Tuesday', Wed: 'Wednesday', Thu: 'Thursday', Fri: 'Friday', Sat: 'Saturday' };
   return `${long[dowOf(d)] ?? dowOf(d)} ${dayNum(d)} ${monthName(d)}`;
-}
-/** "Thu 5 to Sat 7 Nov", "Sat 31 Oct to Mon 2 Nov", or one day "Thu 5 Nov". */
-export function rangeText(first: string, last: string): string {
-  if (first === last) return shortDay(first);
-  return mon(first) === mon(last) ? `${dowOf(first)} ${dayNum(first)} to ${shortDay(last)}` : `${shortDay(first)} to ${shortDay(last)}`;
 }
 export const teeText = (tee: string, clock: ChClock = '12') => fmtHour(teeMinutes(tee) / 60, true, clock);
 
