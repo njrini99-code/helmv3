@@ -18,7 +18,7 @@ import '../styles/rounds.css';
  * doesn't exist, get the same "not here" page, so the page never confirms
  * that someone else's round exists.
  */
-export async function ClubhouseRoundReviewRoute({ id }: { id: string }) {
+export async function ClubhouseRoundReviewRoute({ id, hole = null }: { id: string; hole?: number | null }) {
   const session = await getGolfSessionProfile();
   if (!session) return null;
   // The round is read while the team resolves (the team only says who is looking, not which round), so the review pays one read, not two in a row.
@@ -56,5 +56,5 @@ export async function ClubhouseRoundReviewRoute({ id }: { id: string }) {
       </main>
     );
   }
-  return <RoundReview review={result.review} typeEdit={result.typeEdit} />;
+  return <RoundReview review={result.review} typeEdit={result.typeEdit} initialHole={hole} />;
 }

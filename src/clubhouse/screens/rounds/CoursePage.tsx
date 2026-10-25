@@ -7,6 +7,10 @@ import { formatFixed, formatToPar } from '../../lib/format';
 import { Button } from '../../ui/Button';
 import { NoData } from '../../ui/NoData';
 import { RoundRow } from './parts';
+import { HoleMap, mostToGain } from './HoleMap';
+import { useRouter } from 'next/navigation';
+import { haptic } from '../../lib/haptics';
+import { Segmented } from '../../ui/Segmented';
 
 /**
  * P-7 4.2 to 4.4: one player's history at one course. The hero is the one green card; everything under it is flush under
@@ -20,7 +24,17 @@ const toneOf = (toPar: number | null | undefined) => (toPar == null || toPar ===
 export function CoursePage({ history: h, playerName, playerId, initialHole }: { history: ChCourseHistory; playerName: string | null; playerId: string | null; initialHole: number | null }) {
   const coach = playerId != null;
   const who = coach ? (playerName ?? 'This player') : null;
-  void initialHole;
+  const router = useRouter();
+  const [hole, setHole] = useState<number>(() => initialHole ?? mostToGain(h.holes) ?? 1);
+  // The window is the server's (`?w=season`): the page asks again, keeping the player and the hole.
+  const setWindow = (w: 'all' | 'season') => {
+    haptic('select');
+    const q = new URLSearchParams();
+    if (playerId) q.set('player', playerId);
+    if (w === 'season') q.set('w', 'season');
+    q.set('hole', String(hole));
+    router.replace(`?${q.toString()}`, { scroll: false });
+  };
   return (
     <main className="ch-ch" aria-labelledby="ch-ch-title">
       <CourseHero h={h} coach={coach} />
@@ -50,6 +64,33 @@ export function CoursePage({ history: h, playerName, playerId, initialHole }: { 
         </div>
       </section>
       {h.lastTime && <LastTime t={h.lastTime} who={who} />}
+      {h.windows && (
+        <div className="ch-ch-win">
+          <Segmented
+            label="Which rounds"
+            size="sm"
+            value={h.window}
+            onChange={setWindow}
+            options={[
+              { value: 'all', label: 'All time' },
+              { value: 'season', label: 'This season' },
+            ]}
+          />
+        </div>
+      )}
+      {h.holes.length > 0 ? (
+        <HoleMap holes={h.holes} selected={hole} onSelect={setHole} coverage={h.coverage} sample={h.holeRounds} />
+      ) : (
+        <section className="ch-ch-sec" aria-labelledby="ch-hmap-h">
+          <div className="ch-ch-sec__h">
+            <h2 id="ch-hmap-h">Hole by hole</h2>
+          </div>
+          <div className="ch-ch-plate" data-ch-code="CH-11333">
+            <b>{h.holesError ? 'The holes didn’t load' : 'Needs 2 rounds with hole scores'}</b>
+            <p>{h.holesError ? 'The rest of your history here is still right. Try again in a moment.' : 'Hole scores come from rounds entered hole by hole.'}</p>
+          </div>
+        </section>
+      )}
       <section className="ch-ch-sec" aria-labelledby="ch-ch-rounds-h">
         <div className="ch-ch-sec__h">
           <h2 id="ch-ch-rounds-h">{who ? `${who}’s rounds here` : 'Your rounds here'}</h2>

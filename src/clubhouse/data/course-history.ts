@@ -27,8 +27,8 @@ export type ChCourseHistoryResult =
 
 const LIST_COLUMNS =
   'id, course_id, course_name, course_city, course_state, tee_id, tees_played, round_date, round_type, holes_played, total_score, score_to_par, front_nine, back_nine, total_putts, total_gir, total_gir_possible, total_fairways_hit, total_fairways, notes';
-const HOLE_COLUMNS = 'round_id, hole_number, par, score, putts, gir, fairway_hit';
-type HoleRow = { round_id: string; hole_number: number; par: number | null; score: number | null; putts: number | null; gir: boolean | null; fairway_hit: boolean | null };
+const HOLE_COLUMNS = 'round_id, hole_number, par, score, putts, gir, fairway_hit, yardage';
+type HoleRow = { round_id: string; hole_number: number; par: number | null; score: number | null; putts: number | null; gir: boolean | null; fairway_hit: boolean | null; yardage: number | null };
 
 const log = (what: string, err: unknown) => chLogServer('rounds.course', what, err);
 
@@ -90,7 +90,7 @@ export async function loadCourseHistory(rawKey: string, viewer: ChCourseViewer, 
       for (const h of res.data ?? []) {
         if (h.par == null) continue;
         const arr = holes.get(h.round_id) ?? [];
-        arr.push({ n: h.hole_number, par: h.par, score: h.score, putts: h.putts, gir: h.gir, fairway: h.fairway_hit });
+        arr.push({ n: h.hole_number, par: h.par, score: h.score, putts: h.putts, gir: h.gir, fairway: h.fairway_hit, yards: h.yardage });
         holes.set(h.round_id, arr);
       }
     }

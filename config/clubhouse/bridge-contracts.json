@@ -11997,6 +11997,17 @@
     "catalog": "docs/clubhouse/catalog/rounds.md"
   },
   {
+    "id": 110426,
+    "page": "P011",
+    "category": 4,
+    "item": 26,
+    "name": "THE_COURSE_PAGES_HOLE_BY_HOLE_WITH",
+    "chCode": "CH-11333",
+    "meaning": "The course page's Hole by hole with no round here entered hole by hole (or the holes didn't load)",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/rounds.md"
+  },
+  {
     "id": 110501,
     "page": "P011",
     "category": 5,

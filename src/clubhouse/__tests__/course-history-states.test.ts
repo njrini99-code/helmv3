@@ -15,4 +15,11 @@ describe('course history states', () => {
     expect(toCourseHistory({ ...base, rawKey: 'n-finley%20gc', list: [] })).toEqual({ kind: 'notFound' });
     expect(toCourseHistory({ ...base, rawKey: 'n-finley%20gc', list: [row()] }).kind).toBe('ok');
   });
+
+  it('CH-11333: a course with no hole scores has no holes to map, and says why, not that it failed', () => {
+    const res = toCourseHistory({ ...base, holes: new Map(), rawKey: 'n-finley%20gc', list: [row({ front_nine: null, back_nine: null })] });
+    expect(res.kind === 'ok' && { holes: res.data.holes.length, failed: res.data.holesError }).toEqual({ holes: 0, failed: false });
+    const failed = toCourseHistory({ ...base, holes: null, rawKey: 'n-finley%20gc', list: [row()] });
+    expect(failed.kind === 'ok' && failed.data.holesError).toBe(true);
+  });
 });

@@ -3578,6 +3578,27 @@
       "fixture": "Contextual module"
     },
     {
+      "file": "src/clubhouse/screens/rounds/HoleMap.tsx",
+      "group": "screens",
+      "exports": [
+        "HoleMap"
+      ],
+      "styles": [
+        "src/clubhouse/styles/base.css",
+        "src/clubhouse/styles/calendar.css",
+        "src/clubhouse/styles/coachhelm.css",
+        "src/clubhouse/styles/goals.css",
+        "src/clubhouse/styles/home.css",
+        "src/clubhouse/styles/hub.css",
+        "src/clubhouse/styles/messages.css",
+        "src/clubhouse/styles/qualifiers.css",
+        "src/clubhouse/styles/rounds.css",
+        "src/clubhouse/styles/stats.css"
+      ],
+      "examples": [],
+      "fixture": "Contextual module"
+    },
+    {
       "file": "src/clubhouse/screens/rounds/RecordChips.tsx",
       "group": "screens",
       "exports": [
@@ -12219,8 +12240,31 @@
         "ch-ch-note",
         "ch-ch-note__l",
         "ch-ch-note__more",
+        "ch-ch-plate",
         "ch-ch-sec",
         "ch-ch-sec__h",
+        "ch-ch-sec__note",
+        "ch-ch-win",
+        "ch-hmap",
+        "ch-hmap-d",
+        "ch-hmap-d__all",
+        "ch-hmap-d__f",
+        "ch-hmap-d__h",
+        "ch-hmap-d__pill",
+        "ch-hmap-d__plays",
+        "ch-hmap-d__s",
+        "ch-hmap-d__tag",
+        "ch-hmap-d__v",
+        "ch-hmap-list",
+        "ch-hmap-list__dot",
+        "ch-hmap-list__go",
+        "ch-hmap-t",
+        "ch-hmap-t__n",
+        "ch-hmap-t__p",
+        "ch-hmap__cap",
+        "ch-hmap__row",
+        "ch-hmap__step",
+        "ch-hmap__steps",
         "ch-lgr__lead",
         "ch-notice",
         "ch-notice--danger",
@@ -14485,6 +14529,46 @@
           "scope": "[data-ui='clubhouse']"
         },
         {
+          "name": "--ch-hm-under-2",
+          "value": "#edd4cd",
+          "scope": "[data-ui='clubhouse']"
+        },
+        {
+          "name": "--ch-hm-under-1",
+          "value": "var(--ch-score-under-bg)",
+          "scope": "[data-ui='clubhouse']"
+        },
+        {
+          "name": "--ch-hm-level",
+          "value": "var(--ch-bg-subtle)",
+          "scope": "[data-ui='clubhouse']"
+        },
+        {
+          "name": "--ch-hm-over-1",
+          "value": "#ebe3d4",
+          "scope": "[data-ui='clubhouse']"
+        },
+        {
+          "name": "--ch-hm-over-2",
+          "value": "#dbccb3",
+          "scope": "[data-ui='clubhouse']"
+        },
+        {
+          "name": "--ch-hm-ring-under",
+          "value": "#c46c62",
+          "scope": "[data-ui='clubhouse']"
+        },
+        {
+          "name": "--ch-hm-ring-level",
+          "value": "var(--ch-ink-400)",
+          "scope": "[data-ui='clubhouse']"
+        },
+        {
+          "name": "--ch-hm-ring-over",
+          "value": "#a7844a",
+          "scope": "[data-ui='clubhouse']"
+        },
+        {
           "name": "--ch-score-under-fill",
           "value": "#b03a2e",
           "scope": "[data-ui='clubhouse']"
@@ -16655,6 +16739,36 @@
           "scope": "html[data-fw-theme='dark'] [data-ui='clubhouse']"
         },
         {
+          "name": "--ch-hm-under-2",
+          "value": "#5b3e37",
+          "scope": "html[data-fw-theme='dark'] [data-ui='clubhouse']"
+        },
+        {
+          "name": "--ch-hm-over-1",
+          "value": "#3b3624",
+          "scope": "html[data-fw-theme='dark'] [data-ui='clubhouse']"
+        },
+        {
+          "name": "--ch-hm-over-2",
+          "value": "#57492b",
+          "scope": "html[data-fw-theme='dark'] [data-ui='clubhouse']"
+        },
+        {
+          "name": "--ch-hm-ring-under",
+          "value": "#9e5f54",
+          "scope": "html[data-fw-theme='dark'] [data-ui='clubhouse']"
+        },
+        {
+          "name": "--ch-hm-ring-level",
+          "value": "#827d71",
+          "scope": "html[data-fw-theme='dark'] [data-ui='clubhouse']"
+        },
+        {
+          "name": "--ch-hm-ring-over",
+          "value": "#97753c",
+          "scope": "html[data-fw-theme='dark'] [data-ui='clubhouse']"
+        },
+        {
           "name": "--ch-chart-paper",
           "value": "#171c18",
           "scope": "html[data-fw-theme='dark'] [data-ui='clubhouse']"
@@ -17747,6 +17861,21 @@
         {
           "name": "--ch-chart-flag",
           "value": "#922e23",
+          "scope": "@media (prefers-contrast: more) → [data-ui='clubhouse']"
+        },
+        {
+          "name": "--ch-hm-ring-under",
+          "value": "var(--ch-border-strong)",
+          "scope": "@media (prefers-contrast: more) → [data-ui='clubhouse']"
+        },
+        {
+          "name": "--ch-hm-ring-level",
+          "value": "var(--ch-border-strong)",
+          "scope": "@media (prefers-contrast: more) → [data-ui='clubhouse']"
+        },
+        {
+          "name": "--ch-hm-ring-over",
+          "value": "var(--ch-border-strong)",
           "scope": "@media (prefers-contrast: more) → [data-ui='clubhouse']"
         },
         {

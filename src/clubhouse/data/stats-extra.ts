@@ -16,6 +16,8 @@ export interface ChPlayHole {
   putts: number | null;
   gir: boolean | null;
   fairway: boolean | null;
+  /** The hole's yardage on this card, when the loader read it (the course page's detail). */
+  yards?: number | null;
 }
 
 /** The usual needs this many rounds behind it, and putts per green hit this many greens (P-7 4.1.3). */

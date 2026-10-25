@@ -176,6 +176,7 @@ same the Fairway entry runs, so the hint can never disagree with the button.
 | CH-11322 | Team rounds: completed rounds with no score at all | One line under the list: "1 posted round has no score recorded, so it isn’t listed here." (or "N posted rounds have no score recorded, so they aren’t listed here.") | `TeamRounds`, `toTeamRounds` (`unscored`) | team-rounds-shape.test › CH-11322 |
 | CH-11330 | A course page this viewer has no rounds at: an unknown key, or another player's course | "No rounds here" + "There are no rounds at this course to show." + Go to your rounds (a coach: Go to Stats). It never confirms that someone else's rounds exist (P-7) | `ClubhouseCourseHistoryRoute`, `toCourseHistory` | course-history-states.test › CH-11330 |
 | CH-11331 | A coach's course page for a player who isn't on their team, or no player named | "This player isn’t on your team" + "Their history at this course isn’t yours to see." + Go to Stats (P-7) | `ClubhouseCourseHistoryRoute` | preview |
+| CH-11333 | The course page's Hole by hole with no round here entered hole by hole (or the holes didn't load) | A plate: "Needs 2 rounds with hole scores" + "Hole scores come from rounds entered hole by hole." (the holes failed: "The holes didn’t load" + "The rest of your history here is still right. Try again in a moment."). The hero, figures and rounds still show (P-7) | `CoursePage` | course-history-states.test › CH-11333 |
 
 ## 114xx Loading
 

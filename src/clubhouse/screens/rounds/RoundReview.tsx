@@ -424,7 +424,7 @@ function RoundDebrief({ debrief: d }: { debrief: ChDebrief }) {
   );
 }
 
-export function RoundReview({ review, typeEdit = null }: { review: ChRoundReview; typeEdit?: ChReviewTypeEdit | null }) {
+export function RoundReview({ review, typeEdit = null, initialHole = null }: { review: ChRoundReview; typeEdit?: ChReviewTypeEdit | null; /** P-7: `?hole=`, a hole to open on. */ initialHole?: number | null }) {
   const phone = useChPhone();
   const reduced = useChReducedMotion();
   const justSubmitted = useJustSubmitted();
@@ -433,7 +433,7 @@ export function RoundReview({ review, typeEdit = null }: { review: ChRoundReview
   const r = review;
   // Only a hole the player picked is kept; until then the review opens on the first hole over par of what it has. A card that
   // arrives after a retry therefore opens there, not on the hole 1 an empty card defaulted to.
-  const [picked, setPicked] = useState<number | null>(null);
+  const [picked, setPicked] = useState<number | null>(() => (initialHole != null && review.holes.some((h) => h.n === initialHole) ? initialHole : null));
   // Which way the last move went, so the hole's shots slide in from that side.
   const [holeDir, setHoleDir] = useState<1 | -1>(1);
   const sel = picked ?? firstHole(r.holes);

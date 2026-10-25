@@ -55,7 +55,11 @@ export interface ChCourseFigure {
 export interface ChCourseHole {
   n: number;
   par: number | null;
+  /** The newest play's yardage; null when no play has one. */
+  yards: number | null;
   stats: ChHoleStats;
+  /** Each play of the hole here, newest first: the round, its date and the score. */
+  plays: Array<{ roundId: string; date: string; score: number; par: number }>;
 }
 
 export interface ChCourseHistory {
@@ -77,6 +81,10 @@ export interface ChCourseHistory {
   arc: ReturnType<typeof averageArc>;
   /** The holes failed to load: the hole sections say so, the rest stands. */
   holesError: boolean;
+  /** Rounds with hole scores in the window. */
+  holeRounds: number;
+  /** The All time / This season choice, when the season holds two rounds with holes and differs from all time; else null. */
+  windows: { all: number; season: number } | null;
 }
 
 export type ChCourseShapeResult = { kind: 'ok'; data: ChCourseHistory } | { kind: 'redirect'; key: string } | { kind: 'notFound' };
@@ -185,16 +193,24 @@ export function toCourseHistory(input: {
   const withHoles = holesById ? all.filter((r) => (holesById.get(r.id) ?? []).some((h) => h.score != null)) : [];
   const plays = new Map<number, ChHolePlay[]>();
   const pars = new Map<number, number>();
+  const yards = new Map<number, number>();
+  // Newest first (the list's order), so the first par and yardage seen are the newest card's.
   for (const r of withHoles) {
     for (const h of holesById!.get(r.id) ?? []) {
-      pars.set(h.n, h.par);
+      if (!pars.has(h.n)) pars.set(h.n, h.par);
+      if (h.yards != null && !yards.has(h.n)) yards.set(h.n, h.yards);
       if (h.score == null) continue;
       const arr = plays.get(h.n) ?? [];
       arr.push({ score: h.score, par: h.par, putts: h.putts, gir: h.gir, fairway: h.fairway, roundId: r.id, date: r.round_date.slice(0, 10) });
       plays.set(h.n, arr);
     }
   }
-  const holes: ChCourseHole[] = withHoles.length ? Array.from({ length: 18 }, (_, i) => ({ n: i + 1, par: pars.get(i + 1) ?? null, stats: holeStats(plays.get(i + 1) ?? []) })) : [];
+  const holes: ChCourseHole[] = withHoles.length
+    ? Array.from({ length: 18 }, (_, i) => {
+        const p = plays.get(i + 1) ?? [];
+        return { n: i + 1, par: pars.get(i + 1) ?? null, yards: yards.get(i + 1) ?? null, stats: holeStats(p), plays: p.map((x) => ({ roundId: x.roundId, date: x.date, score: x.score, par: x.par })) };
+      })
+    : [];
   const fullCards = withHoles.filter((r) => (r.holes_played ?? 18) === 18).map((r) => holesById!.get(r.id)!);
   const here = eighteens.map((r) => r.score_to_par).filter((v): v is number => v != null);
   const elsewhere = input.list
@@ -219,6 +235,14 @@ export function toCourseHistory(input: {
       compared: playsCompared(here, elsewhere),
       arc: averageArc(fullCards),
       holesError: holesById == null,
+      holeRounds: withHoles.length,
+      windows: (() => {
+        if (!holesById) return null;
+        const has = (r: ChCourseListRow) => (holesById.get(r.id) ?? []).some((h) => h.score != null);
+        const allN = group.rounds.filter(has).length;
+        const seasonN = group.rounds.filter((r) => r.round_date.slice(0, 10) >= input.seasonStart && has(r)).length;
+        return seasonN >= 2 && seasonN !== allN ? { all: allN, season: seasonN } : null;
+      })(),
     },
   };
 }

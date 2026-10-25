@@ -5268,3 +5268,290 @@ a.ch-rd-grp__h.is-link:focus-visible {
   flex: none;
   color: var(--ch-text-secondary);
 }
+
+/* P-7 4.2.4: the hole map. Nine tiles a row (36 × 56 at 390, up to 64 × 72 on desktop), radius 7, the tint and its 1 px
+   ring; the picked tile a 2 px green ring outside it. On a phone the map is one surface: vertical drags scroll the
+   page (touch-action), horizontal ones scrub. */
+.ch-ch-sec__note {
+  margin: 0 0 12px;
+  font: var(--ch-type-13);
+  color: var(--ch-text-secondary);
+}
+.ch-ch-win {
+  margin-top: 28px;
+}
+.ch-ch-plate {
+  padding: 14px 16px;
+  border: var(--ch-hairline-w) solid var(--ch-border-hairline);
+  border-radius: var(--ch-radius-lg);
+  background: var(--ch-bg-subtle);
+}
+.ch-ch-plate b {
+  font: var(--ch-type-15-strong);
+  color: var(--ch-text-primary);
+}
+.ch-ch-plate p {
+  margin: 4px 0 0;
+  font: var(--ch-type-13);
+  color: var(--ch-text-secondary);
+}
+.ch-hmap {
+  touch-action: pan-y;
+}
+.ch-hmap__cap {
+  display: block;
+  margin: 8px 0 4px;
+  font: var(--ch-type-12-medium);
+  color: var(--ch-text-secondary);
+}
+.ch-hmap__row {
+  display: grid;
+  grid-template-columns: repeat(9, minmax(0, 64px));
+  gap: 4px;
+}
+@media (min-width: 1024px) {
+  .ch-hmap__row {
+    gap: 6px;
+  }
+}
+.ch-hmap-t {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  min-width: 0;
+  height: 56px;
+  padding: 0;
+  border: 1px solid var(--ch-hm-ring-level);
+  border-radius: var(--ch-radius-sm);
+  background: var(--ch-hm-level);
+  color: var(--ch-ink-900);
+  font: inherit;
+}
+@media (min-width: 428px) {
+  .ch-hmap-t {
+    height: 60px;
+  }
+}
+@media (min-width: 1024px) {
+  .ch-hmap-t {
+    height: 72px;
+  }
+  .ch-hmap-t:hover {
+    border-color: var(--ch-border-strong);
+  }
+}
+.ch-hmap-t.is-u2 {
+  background: var(--ch-hm-under-2);
+  border-color: var(--ch-hm-ring-under);
+}
+.ch-hmap-t.is-u1 {
+  background: var(--ch-hm-under-1);
+  border-color: var(--ch-hm-ring-under);
+}
+.ch-hmap-t.is-o1 {
+  background: var(--ch-hm-over-1);
+  border-color: var(--ch-hm-ring-over);
+}
+.ch-hmap-t.is-o2 {
+  background: var(--ch-hm-over-2);
+  border-color: var(--ch-hm-ring-over);
+}
+.ch-hmap-t b {
+  font: var(--ch-type-15-strong);
+  font-variant-numeric: tabular-nums;
+}
+@media (min-width: 1024px) {
+  .ch-hmap-t b {
+    font-size: calc(17 * var(--ch-type-k));
+  }
+}
+.ch-hmap-t.is-once b,
+.ch-hmap-t.is-none b,
+.ch-hmap-t__n,
+.ch-hmap-t__p {
+  color: var(--ch-ink-600);
+}
+.ch-hmap-t__n,
+.ch-hmap-t__p {
+  font: var(--ch-type-mono);
+}
+.ch-hmap-t.is-sel::after {
+  content: '';
+  position: absolute;
+  inset: -4px;
+  border: 2px solid var(--ch-green-600);
+  border-radius: calc(var(--ch-radius-sm) + 3px);
+  pointer-events: none;
+}
+.ch-hmap-t:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 6px var(--ch-focus-halo);
+}
+/* Most to gain: a 4 px dot top right. */
+.ch-hmap-t.is-gain::before {
+  content: '';
+  position: absolute;
+  top: 4px;
+  right: 4px;
+  width: 4px;
+  height: 4px;
+  border-radius: 50%;
+  background: var(--ch-chart-loss);
+}
+.ch-hmap__steps {
+  display: flex;
+  justify-content: flex-end;
+  gap: 4px;
+  margin-top: 8px;
+}
+.ch-hmap__step {
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  padding: 0;
+  border: var(--ch-hairline-w) solid var(--ch-border-hairline);
+  border-radius: var(--ch-radius-lg);
+  background: none;
+  color: var(--ch-text-primary);
+}
+.ch-hmap__step:focus-visible,
+.ch-hmap-list__go:focus-visible,
+.ch-hmap-d__pill:focus-visible,
+.ch-hmap-d__all:focus-visible {
+  outline: 2px solid var(--ch-border-focus);
+  outline-offset: 2px;
+}
+.ch-hmap-list {
+  width: 100%;
+  border-collapse: collapse;
+  font: var(--ch-type-15);
+  font-variant-numeric: tabular-nums;
+}
+.ch-hmap-list th,
+.ch-hmap-list td {
+  height: 44px;
+  padding: 0 8px;
+  border-bottom: var(--ch-hairline-w) solid var(--ch-border-hairline);
+  text-align: left;
+}
+.ch-hmap-list thead th {
+  font: var(--ch-type-12-medium);
+  color: var(--ch-text-secondary);
+}
+.ch-hmap-list tr.is-sel {
+  background: var(--ch-bg-subtle);
+}
+.ch-hmap-list__go {
+  min-width: 44px;
+  min-height: 44px;
+  padding: 0;
+  border: 0;
+  background: none;
+  font: var(--ch-type-15-strong);
+  color: var(--ch-text-primary);
+  text-align: left;
+}
+.ch-hmap-list__dot {
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  margin-right: 8px;
+  border: 1px solid var(--ch-hm-ring-level);
+  border-radius: 50%;
+  background: var(--ch-hm-level);
+  vertical-align: middle;
+}
+.ch-hmap-list__dot.is-u1,
+.ch-hmap-list__dot.is-u2 {
+  border-color: var(--ch-hm-ring-under);
+  background: var(--ch-hm-under-2);
+}
+.ch-hmap-list__dot.is-o1,
+.ch-hmap-list__dot.is-o2 {
+  border-color: var(--ch-hm-ring-over);
+  background: var(--ch-hm-over-2);
+}
+/* The detail panel keeps its height, so changing holes never moves the page. */
+.ch-hmap-d {
+  min-height: 168px;
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: var(--ch-hairline-w) solid var(--ch-border-hairline);
+}
+@media (min-width: 1024px) {
+  .ch-hmap-d {
+    min-height: 152px;
+  }
+}
+.ch-hmap-d__h {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.ch-hmap-d__h h3 {
+  margin: 0;
+  font: var(--ch-type-15-strong);
+}
+.ch-hmap-d__h > span {
+  font: var(--ch-type-13);
+  color: var(--ch-text-secondary);
+}
+.ch-hmap-d__tag {
+  display: inline-flex;
+  align-items: center;
+  height: 24px;
+  margin-left: auto;
+  padding: 0 10px;
+  border-radius: 999px;
+  background: var(--ch-hm-over-1);
+  font: var(--ch-type-13);
+  color: var(--ch-ink-900);
+}
+.ch-hmap-d__v {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  margin: 6px 0 0;
+}
+.ch-hmap-d__v b {
+  font: var(--ch-type-display-s);
+}
+.ch-hmap-d__v span,
+.ch-hmap-d__s {
+  font: var(--ch-type-13);
+  color: var(--ch-text-secondary);
+}
+.ch-hmap-d__plays {
+  display: flex;
+  gap: 8px;
+  margin-top: 10px;
+  overflow-x: auto;
+  padding-right: 16px;
+  mask-image: linear-gradient(90deg, #000 calc(100% - 16px), transparent);
+  scrollbar-width: none;
+}
+.ch-hmap-d__pill,
+.ch-hmap-d__all {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  gap: 6px;
+  min-height: 44px;
+  padding: 0 10px;
+  border: var(--ch-hairline-w) solid var(--ch-border-hairline);
+  border-radius: 999px;
+  background: none;
+  font: var(--ch-type-13);
+  color: var(--ch-text-primary);
+  text-decoration: none;
+}
+.ch-hmap-d__f {
+  margin: 10px 0 0;
+  font: var(--ch-type-13);
+  color: var(--ch-ink-600);
+}
