@@ -88,10 +88,13 @@ function placePenalty(row: ShotRecord, spot: Spot): ShotRecord {
 
 /**
  * Start a real shot at `spot`, keeping a recovery lie the player chose ('other'
- * after rough). A putt whose start is now off the green becomes what live entry
- * writes for a shot from there: around the green inside 50 yd, an approach from
- * farther (use-shot-state-machine's split), hit with a non-driver, and without
- * its putt-only fields.
+ * after rough). The shot type follows the new start the way live entry types a
+ * shot (getShotTypeFromState):
+ * - a putt whose start is now off the green becomes around the green inside
+ *   50 yd or an approach from farther, hit with a non-driver, without its
+ *   putt-only fields;
+ * - any other shot whose start is now on the green becomes a putt with the
+ *   putter, without its approach-only fields, so the hole's putt count follows.
  */
 function startShotAt(shot: ShotRecord, spot: Spot, previousLieAfter: string | null): ShotRecord {
   const keepLie = previousLieAfter !== null && liesChain(previousLieAfter, shot.lieBefore);
@@ -115,6 +118,15 @@ function startShotAt(shot: ShotRecord, spot: Spot, previousLieAfter: string | nu
       shotType: yards < AROUND_GREEN_THRESHOLD_YARDS ? 'around_green' : 'approach',
       clubType: 'non_driver',
     };
+  } else if (moved.shotType !== 'putting' && moved.lieBefore === 'green') {
+    const {
+      approachMissDirection: _direction,
+      approachMissLieType: _missLie,
+      distanceFromGreenYards: _fromGreen,
+      missDirection: _miss,
+      ...rest
+    } = moved;
+    moved = { ...rest, shotType: 'putting', clubType: 'putter' };
   }
   if (moved.shotType === 'putting') {
     const feet = spot.unit === 'yards' ? spot.distance * 3 : spot.distance;

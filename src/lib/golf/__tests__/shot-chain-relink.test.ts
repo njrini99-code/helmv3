@@ -3,6 +3,7 @@ import type { ShotRecord } from '@/lib/types/golf';
 import { relinkAfterDelete, relinkAfterEdit } from '@/lib/golf/shot-chain-relink';
 import { findShotChainDiscontinuities } from '@/lib/golf/shot-ledger-continuity';
 import { deriveLieAfter } from '@/lib/utils/shot-helpers';
+import { deriveHoleCounts } from '@/lib/golf/round-entry-validation';
 
 function shot(n: number, o: Partial<ShotRecord> = {}): ShotRecord {
   return {
@@ -246,6 +247,29 @@ describe('relinkAfterEdit', () => {
 
     expect(at(49)).toBe('around_green');
     expect(at(50)).toBe('approach');
+  });
+
+  it('turns a chip that now starts on the green into a putt, so the hole counts it as one', () => {
+    const tee = shot(1, { shotType: 'tee', lieBefore: 'tee', distanceToHoleBefore: 400, result: 'fairway', distanceToHoleAfter: 150, distanceUnitAfter: 'yards', shotDistance: 250 });
+    const approach = shot(2, { distanceToHoleBefore: 150, result: 'rough', distanceToHoleAfter: 15, distanceUnitAfter: 'yards', approachMissDirection: 'short', approachMissLieType: 'rough' });
+    const chip = shot(3, { shotType: 'around_green', lieBefore: 'rough', distanceToHoleBefore: 15, distanceUnitBefore: 'yards', result: 'hole', distanceToHoleAfter: 0, distanceUnitAfter: 'feet', shotDistance: 15, missDirection: 'long', distanceFromGreenYards: 3 });
+    const edited = { ...approach, result: 'green' as const, distanceToHoleAfter: 45, distanceUnitAfter: 'feet' as const, approachMissDirection: undefined, approachMissLieType: undefined };
+
+    const { history: out, changed } = relinkAfterEdit([tee, edited, chip], 1, approach);
+
+    expect(changed).toEqual([2]);
+    expect(out[2]).toMatchObject({
+      shotType: 'putting',
+      clubType: 'putter',
+      lieBefore: 'green',
+      distanceToHoleBefore: 45,
+      distanceUnitBefore: 'feet',
+      puttDistanceFeet: 45,
+      result: 'hole',
+    });
+    expect(out[2]!.missDirection).toBeUndefined();
+    expect(out[2]!.distanceFromGreenYards).toBeUndefined();
+    expect(deriveHoleCounts(out)).toMatchObject({ score: 3, putts: 1 });
   });
 
   it('changes nothing around an edit that keeps the shot\'s start and end', () => {
