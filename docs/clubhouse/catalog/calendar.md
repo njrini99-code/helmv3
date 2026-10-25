@@ -50,6 +50,7 @@ same way.
 | CH-6020 | Changing an event's length (a grip or Alt+Shift+arrow) fails | "Couldn’t change the length of Practice" + the reason, or "It’s back as it was. Try again in a moment." Done: "Ends at 6:30 PM" or "Starts at 3:00 PM" with Undo | `useHeldMoves` kind `resize` | calendar.test › CH-6020 |
 | CH-6021 | The server refuses a move by role | "Only coaches can move team events" + "Nothing was changed." | `useHeldMoves` (code `forbidden`) | calendar.test › CH-6021 |
 | CH-6022 | The event was cancelled or deleted while it was being moved | "Practice was cancelled or deleted" + "It was changed by someone else while you were moving it." | `useHeldMoves` (code `gone`) | calendar.test › CH-6022 |
+| CH-6023 | A change mark can't be read (P-14): the stored mark is a shape this version doesn't know (an unknown version, a missing baseline) | Nothing is thrown at the person: the event shows a bare Changed badge, and its detail opens on "Changed" with no struck values (a mark whose time can't be read either shows nothing). Reported once per load as `clubhouse.calendar.changeMark` | `loadCalendar` → `buildChangeMarks` | calendar.test › CH-6023, calendar-change-marks.test › CH-6023 |
 
 ## 61xx Validation (nothing is sent; the first problem takes focus; a warning haptic)
 

@@ -111,3 +111,5 @@ CREATE OR REPLACE TRIGGER "golf_coaches_guard_organization_id" BEFORE INSERT OR 
 CREATE OR REPLACE TRIGGER "golf_participants_read_mark" AFTER UPDATE OF "last_read_at" ON "public"."golf_conversation_participants" FOR EACH ROW WHEN ((("new"."last_read_at" IS NOT NULL) AND (("old"."last_read_at" IS NULL) OR ("new"."last_read_at" > "old"."last_read_at")))) EXECUTE FUNCTION "public"."golf_record_read_mark"();
 
 CREATE OR REPLACE TRIGGER "golf_participants_read_marks_on_leave" AFTER DELETE ON "public"."golf_conversation_participants" FOR EACH ROW EXECUTE FUNCTION "public"."golf_forget_read_marks"();
+
+CREATE OR REPLACE TRIGGER "golf_events_change_mark" BEFORE INSERT OR UPDATE ON "public"."golf_events" FOR EACH ROW EXECUTE FUNCTION "public"."golf_events_change_mark"();

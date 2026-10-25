@@ -184,7 +184,8 @@ request id that becomes the row's key, and a repeat returns the row that landed
 | 60632 | CH-6019 | `A_THIS_AND_FOLLOWING_SERIES_MOVE_FAILS` | A "This and following" series move fails |
 | 60633 | CH-6020 | `CHANGING_AN_EVENTS_LENGTH_FAILS` | Changing an event's length (a grip or Alt+Shift+arrow) fails |
 | 60634 | CH-6021 | `THE_SERVER_REFUSES_A_MOVE_BY_ROLE` | The server refuses a move by role |
-| 60635 | CH-6022 | `THE_EVENT_WAS_CANCELLED_OR_DELETED_WHILE` | The event was cancelled or deleted while it was being moved |
+| 60635 | CH-6023 | `A_CHANGE_MARK_CANT_BE_READ_THE` | A change mark can't be read (P-14): the stored mark is a shape this version doesn't know (an unknown version, a missing baseline) |
+| 60636 | CH-6022 | `THE_EVENT_WAS_CANCELLED_OR_DELETED_WHILE` | The event was cancelled or deleted while it was being moved |
 
 From the shell (P001): 10601 CH-1001, 10602 CH-1201, 10603 CH-1202,
 10604 CH-1203, 10605 CH-1204, 10606 CH-1205, 10607 CH-1206, 10608 CH-1207,

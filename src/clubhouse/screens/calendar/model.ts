@@ -2,6 +2,7 @@ import { sunTimes, type LatLng } from '../../lib/sun';
 import type { ChClock } from '../../lib/clock-cookie';
 import { clockFromHour } from '../../lib/clock-format';
 import type { ChAvailability } from '../../data/availability';
+import type { ChCalChange } from './change-view';
 
 /**
  * Calendar view model. The loader resolves every time into the team's
@@ -63,6 +64,10 @@ export interface ChCalEvent {
   seriesId: string | null;
   /** The stored start instant (series edits and cancels key on it). */
   startIso: string;
+  /** P-14: what a coach changed on this event in the last 72 hours (until it ends): the new value beside the old one struck. */
+  change?: ChCalChange | null;
+  /** A cancelled event with no live mark: when it was cancelled and why ("Cancelled Tue 9:14 PM"), so the detail still says. */
+  cancelNote?: { line: string; reason: string | null } | null;
   /**
    * Multi-day events: the whole span, repeated on each day's entry. A timed one (a tournament from Friday 7 AM to Sunday
    * 4:30 PM, an overnight trip) also carries its first day's start and its last day's end, in decimal hours: each day's

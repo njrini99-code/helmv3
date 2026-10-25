@@ -1479,3 +1479,8 @@ GRANT ALL ON FUNCTION "public"."golf_read_marks_visible"("p_conversation_id" "uu
 
 REVOKE ALL ON FUNCTION "public"."golf_record_read_mark"() FROM PUBLIC;
 GRANT ALL ON FUNCTION "public"."golf_record_read_mark"() TO "service_role";
+
+-- P-14 change marks (20261025080000): the trigger function and the capability probe are not callable by clients.
+REVOKE ALL ON FUNCTION "public"."golf_events_change_mark"() FROM PUBLIC, "anon", "authenticated";
+REVOKE ALL ON FUNCTION "public"."golf_change_marks_capability"() FROM PUBLIC, "anon", "authenticated";
+GRANT EXECUTE ON FUNCTION "public"."golf_change_marks_capability"() TO "service_role";
