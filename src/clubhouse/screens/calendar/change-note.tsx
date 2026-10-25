@@ -52,7 +52,7 @@ export function MarkBadge({ change }: { change: Pick<ChCalChange, 'kind' | 'badg
 }
 
 /** The mark this device still shows on a row: live, near enough for a row, and not cleared with Got it (a cancellation is never cleared). */
-export function useRowMark(): (e: Pick<ChCalEvent, 'change' | 'location' | 'date' | 'span'>) => RowMark | null {
+export function useRowMark(): (e: { change?: ChCalChange | null; location: string | null; date: string; span?: ChCalEvent['span'] }) => RowMark | null {
   const read = useMarkReader();
   const clock = useChClock();
   return (e) => {
@@ -79,7 +79,7 @@ const rs = (text: string, clock: ChClock): string => restyleClock(text, clock);
  * The sub line of a changed row: the old time struck before the place ("~~3:00 PM~~ · Finley range"); a changed place reads
  * new first and the old struck after ("Finley range ~~Lonnie Poole~~"); a rename puts the old name first.
  */
-export function markSub(location: string | null, change: ChCalChange, clock: ChClock): ReactNode | null {
+export function markSub(location: string | null, change: ChCalChange, clock: ChClock, withLocation = true): ReactNode | null {
   const { was, kind } = change;
   if (change.kind === 'cancel') return location ? `Cancelled · ${location}` : 'Cancelled';
   const parts: ReactNode[] = [];
@@ -97,7 +97,7 @@ export function markSub(location: string | null, change: ChCalChange, clock: ChC
         {location ?? 'No place'} {old(was.place, 'place')}
       </span>,
     );
-  } else if (location) {
+  } else if (location && withLocation) {
     parts.push(location);
   }
   if (rename && kind !== 'rename') parts.push(rename);

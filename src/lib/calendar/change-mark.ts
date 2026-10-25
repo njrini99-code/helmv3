@@ -182,6 +182,9 @@ function rangeText(a: Zoned, b: Zoned | null): string {
 }
 
 /** "Wed 15 April". */
+export function longDateLabel(date: string): string {
+  return longDate(date);
+}
 function longDate(date: string): string {
   const [, m, d] = date.split('-').map(Number);
   return `${DOW[new Date(`${date}T12:00:00Z`).getUTCDay()]} ${d} ${MONTH[m! - 1]}`;

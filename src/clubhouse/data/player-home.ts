@@ -3,6 +3,9 @@ import { createClient } from '@/lib/supabase/server';
 import { chLogServer } from '../lib/track-server';
 import type { ChSgTour } from '../lib/sg';
 import { homeClock, latestWithHoles, loadHomeWeek, type ChHomeClock, type ChHomeEvent, type ChHomeWeek, type ChLatestRound } from './home';
+import type { MarkEntries } from '../lib/marks-cookie';
+import type { ChHomeChange } from '../screens/home/change-rows';
+import { loadHomeChanges, withChange, withWas } from './home-changes';
 import { isFull18, lastTenFloor, loadSeasonRounds, mean, seasonStartDate, summarizePlayer, type ChRound } from './season';
 import { holeRounds } from './round-scope';
 import { legRows, type ChPlayerLeg } from './leg-rows';
@@ -70,6 +73,10 @@ export interface ChPlayerHome {
   legs: { rows: ChPlayerLeg[]; cacheError: boolean; benchError: boolean } | null;
   /** What the coach is waiting on, as Team Hub lists it (`loadPlayerAsks`); null when any of it didn't load (the row hides). */
   asks?: ChPlayerAsks | null;
+  /** P-14: schedule changes the coach made in the last 72 hours, newest first, for "Since you last looked". Optional for fixtures. */
+  changes?: ChHomeChange[];
+  /** Which change marks this device has seen (`s`) or cleared (`g`), from the `ch_marks` cookie. Optional for fixtures. */
+  marks?: MarkEntries;
 }
 
 /**
@@ -92,7 +99,7 @@ function log(read: string, error: unknown) {
 
 const shortDate = new Intl.DateTimeFormat('en-US', { timeZone: 'UTC', month: 'short', day: 'numeric' });
 
-export async function loadPlayerHome(input: { teamId: string; playerId: string; firstName: string }): Promise<ChPlayerHome> {
+export async function loadPlayerHome(input: { teamId: string; playerId: string; firstName: string; /** The device's seen and cleared change marks (phone-hint.ts `marksHint`). */ marks?: MarkEntries }): Promise<ChPlayerHome> {
   const supabase = await createClient();
   const now = new Date();
 
@@ -121,7 +128,14 @@ export async function loadPlayerHome(input: { teamId: string; playerId: string; 
   // Without the team's row its tour is unknown, so no benchmark is claimed (as on Stats, CH-4210).
   const benchRead = teamRead.then((team) => (team.data ? loadTourBenchmarks(supabase, tourForGender(team.data.gender), 'home') : null));
   const coachRead = teamRead.then((team) => coachFor(supabase, team.data ?? null));
-  const [{ greeting, todayLabel, tz, day }, wk, roundsRes, playerRes, teamRes, latest, cache, bench, coachUserId, asks] = await Promise.all([
+  // P-14: the coach's schedule changes, read once the team's zone and the player's week (which meetings are theirs) are known.
+  const changesRead = loadHomeChanges(supabase, {
+    teamId: input.teamId,
+    tz: clockRead.then((c) => c.tz),
+    now,
+    visibleMeetings: weekRead.then((w) => new Set([w.next, ...w.todayEvents].filter((e): e is ChHomeEvent => !!e && e.type === 'meeting').map((e) => e.id))),
+  });
+  const [{ greeting, todayLabel, tz, day }, wk, roundsRes, playerRes, teamRes, latest, cache, bench, coachUserId, asks, changes] = await Promise.all([
     clockRead,
     weekRead,
     roundsRead,
@@ -132,6 +146,7 @@ export async function loadPlayerHome(input: { teamId: string; playerId: string; 
     benchRead,
     coachRead,
     asksRead,
+    changesRead,
   ]);
   if (playerRes.error) log('player', playerRes.error);
   if (teamRes.error) log('team', teamRes.error);
@@ -160,11 +175,11 @@ export async function loadPlayerHome(input: { teamId: string; playerId: string; 
     clock: { tz, day },
     brief: roundsRes.error ? null : briefFor(full, legs?.rows ?? []),
     coachUserId,
-    week: wk.week,
+    week: { ...wk.week, agenda: withWas(wk.week.agenda, changes.byEvent) },
     // Who hasn't replied, and the invitees' ids, are the coach's (Nudge and Message); a player's page never carries them.
     // Which meetings are theirs at all (Decision B, D2-8 when their own replies fail) is decided in loadHomeWeek.
-    next: wk.next ? coachOnlyOut(wk.next) : null,
-    today: wk.todayEvents.map(coachOnlyOut),
+    next: wk.next ? withChange(coachOnlyOut(wk.next), changes.byEvent) : null,
+    today: wk.todayEvents.map((e) => withChange(coachOnlyOut(e), changes.byEvent)),
     weekNote: wk.weekNote,
     latest: { rounds: latest.rounds, error: roundsRes.error, holesError: latest.holesError },
     scoring: { points, error: roundsRes.error },
@@ -173,6 +188,8 @@ export async function loadPlayerHome(input: { teamId: string; playerId: string; 
     handicap: playerRes.data?.handicap_index ?? playerRes.data?.handicap ?? null,
     legs,
     asks,
+    changes: changes.rows,
+    marks: input.marks ?? [],
   };
 }
 
