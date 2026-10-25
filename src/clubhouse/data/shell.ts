@@ -47,6 +47,8 @@ export interface ChShellData {
   roundInProgress?: ChRoundInProgress | null;
   /** The signed-in coach is this team's head coach: the identity line says "Head coach". False when unread (plain "Coach"). */
   viewerIsHeadCoach?: boolean;
+  /** golf_tournaments_v1 is on (P016): the Tournaments nav entry and its routes. Set by the dashboard layout, server side. */
+  tournaments?: boolean;
 }
 
 export interface ChRoundInProgress {

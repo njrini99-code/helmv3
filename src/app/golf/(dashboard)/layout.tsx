@@ -11,7 +11,7 @@ import type { GolfUserData } from '@/contexts/golf-user-context';
 import { logServerError } from '@/lib/server-error-logger';
 import { describeError } from '@/lib/utils/describe-error';
 import { resolveGolfCoachEntry } from '@/lib/golf/coach-entry-path';
-import { isClubhouseFor } from '@/clubhouse/gate';
+import { isClubhouseFor, tournamentsNavEnabled } from '@/clubhouse/gate';
 import { ClubhouseShell } from '@/clubhouse/shell/ClubhouseShell';
 import { loadClubhouseShell } from '@/clubhouse/data/shell';
 import { clockHint, phoneHint, railHint } from '@/clubhouse/lib/phone-hint';
@@ -295,7 +295,8 @@ export default async function GolfDashboardLayout({
   if ((await isClubhouseFor(userData.role))) {
     const [shell, phone, folded, clock] = await Promise.all([loadClubhouseShell(userData.teamId, userData.role === 'player' ? userData.playerId : null, userData.role === 'coach' ? userData.coachId : null), phoneHint(), railHint(), clockHint()]);
     return (
-      <ClubhouseShell userData={userData} shell={shell} phone={phone} folded={folded} clock={clock}>
+      // Tournaments (golf_tournaments_v1) rides in the shell's data: the nav is drawn on the client, the flag is read here.
+      <ClubhouseShell userData={userData} shell={tournamentsNavEnabled() ? { ...shell, tournaments: true } : shell} phone={phone} folded={folded} clock={clock}>
         {children}
       </ClubhouseShell>
     );

@@ -119,8 +119,8 @@ export function ClubhouseFrame({
   const role = userData.role;
   const [folded, setFolded] = useState(foldedHint);
   const teamSwitch = teamSwitchFor(userData);
-  const item = activeNavItem(pathname, role);
-  const rebuilt = forceRebuilt || isRebuilt(pathname, role);
+  const item = activeNavItem(pathname, role, shell);
+  const rebuilt = forceRebuilt || isRebuilt(pathname, role, shell);
   // A pushed page's bar, drawn by the shell until the page's own arrives (CH-1402); a page not rebuilt keeps the plain bar.
   // A full-screen flow hides the tab bar from its first frame, as its page will.
   const pushed = rebuilt ? phonePushedTop(pathname, role, search ? new URLSearchParams(search) : null) : null;

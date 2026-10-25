@@ -523,6 +523,23 @@ export const FLAG_REGISTRY: readonly FlagDefinition[] = [
     cleanup_plan: "Not on the day production is turned on. Retire the Fairway shell and this flag in their own reviewed change, only after every coach and player route in docs/clubhouse/SWAP_AUDIT.md has a Clubhouse destination, no local round recovery depends on Fairway, and an observation window with a known rollback deployment has passed.",
   },
   {
+    feature_id: "golf_tournaments_v1",
+    owner: "golf/clubhouse",
+    purpose: "Draws the Clubhouse Tournaments pages (season home, event desk, review, history, comparison, link inbox, event form, lineup and live round) and their nav entry for coaches and players, and lets the tournament server actions run. Off: the routes answer not found and the nav entry is hidden.",
+    type: "release",
+    status: "active",
+    created_at: "2026-10-25",
+    expires_at: null,
+    default: false,
+    environment: {
+      production: false,
+      preview: true,
+      development: true,
+    },
+    kill_switch_behavior: null,
+    cleanup_plan: "Once the owner has applied the six held Tournaments migrations, turned production on and coaches have used it for a season, remove the flag checks in src/clubhouse/gate.ts and this entry in one change.",
+  },
+  {
     feature_id: "verification_ensemble",
     owner: "platform (Bridge)",
     purpose: "Runs a multi-pass adversarial/security/product review chain over an already-produced root-cause analysis before it reaches the repair queue; default off, no recurring cost.",

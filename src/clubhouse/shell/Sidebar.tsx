@@ -35,8 +35,8 @@ export function Sidebar({
   folded?: boolean;
 }) {
   const badges = useNotificationBadges();
-  const nav = navFor(userData.role);
-  const current = activeNavItem(pathname, userData.role)?.id;
+  const nav = navFor(userData.role, shell);
+  const current = activeNavItem(pathname, userData.role, shell)?.id;
   const sections = CH_NAV_SECTIONS;
 
   const brandWrite = useBrandWrite();
