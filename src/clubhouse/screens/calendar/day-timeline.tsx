@@ -61,7 +61,7 @@ export function rectsOf(root: ParentNode | null | undefined, selector: string): 
 }
 
 /**
- * P-4 M6, M11 (CH-6609): a local FLIP until GES-16's `lib/use-flip.ts` lands. Each element starts at the rect its event
+ * P-4 M6, M11: a local FLIP until GES-16's `lib/use-flip.ts` lands. Each element starts at the rect its event
  * had (`from`) and springs on smooth to where it now lays out; `fade` crossfades its contents in over the first 110ms.
  */
 export function flipFrom(els: Iterable<HTMLElement>, from: Map<string, DOMRect>, fade: boolean): Animation[] {
@@ -296,7 +296,7 @@ export function usePhoneDayDrag(opts: {
       if (el && gridEl && !live.current.reduced && typeof el.animate === 'function') {
         const slot = (to.start - boundsRef.current.from) * PHONE_HH;
         const now = el.style.transform;
-        // M8 (CH-6610): the settle starts at the finger's speed, as a share of the distance left per second.
+        // M8: the settle starts at the finger's speed, as a share of the distance left per second.
         const dist = slot - (s.y - s.grabPx - gridEl.getBoundingClientRect().top);
         el.style.transform = `translate3d(0, ${slot}px, 0)`;
         const curve = chSpringCurve('settle', { velocity: Math.abs(dist) > 1 ? s.vy / dist : 0 });
@@ -516,7 +516,7 @@ export function DayTimeline({
     const dir = day > was ? 1 : -1;
     el.animate([{ transform: `translateX(${12 * dir}px)`, opacity: 0 }, { transform: 'none', opacity: 1 }], { duration: CH_DUR.base * 1000, easing: `cubic-bezier(${CH_EASE.join(',')})` });
   }, [day, reduced]);
-  // M4 (CH-6608): the landing slot springs to each new quarter on settle; a CSS transition retargets from where it is.
+  // M4: the landing slot springs to each new quarter on settle; a CSS transition retargets from where it is.
   const slotCurve = drag && !reduced ? chSpringCurve('settle') : null;
   if (!drag) return null;
   const { from, to } = bounds;

@@ -384,7 +384,7 @@ function DayPage({
   const list = events.filter((e) => e.date === anchor).sort(byStart);
   // The rows of events that left this day, at the time they started; not counted in the day's total, not part of the now line.
   const gone = (movedAway ?? []).filter((m) => m.fromDate === anchor && !read(m.changeId).got);
-  // P-4 M12, M13 (CH-6612): Undo, a refused or stale write, or another coach's move puts a row somewhere else in the
+  // P-4 M12, M13: Undo, a refused or stale write, or another coach's move puts a row somewhere else in the
   // day; it glides there on smooth from where it stood. Measured against the list, so a scroll in between moves nothing.
   const reduced = useChReducedMotion();
   const agenda = useRef<HTMLOListElement | null>(null);

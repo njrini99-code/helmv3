@@ -128,7 +128,7 @@ CoachHelm AI · active · criticality high · owner product
 
 - **Relations:** 5 doc/structurally-evidenced, 12 import-graph-only (weak)
 - **Tables:** `golf_coachhelm_action_runs`, `golf_coachhelm_corrections`, `golf_coachhelm_player_state`, `golf_coachhelm_run_log`, `golf_insight_action`, `golf_insight_exposure`, `golf_insight_outcome`
-- **RPCs:** `claim_round_recap_lock`, `clear_dirty_standing_teams`, `prune_stale_player_standing`, `refresh_player_standing`, `refresh_player_standing_season`, `refresh_player_stats_cache`, `release_round_recap_lock`, `select_dirty_standing_teams`
+- **RPCs:** `claim_round_recap_lock`, `prune_stale_player_standing`, `refresh_player_standing`, `refresh_player_stats_cache`, `release_round_recap_lock`
 - **Test surfaces:** 3
 - **Sentry/admin_events signals:** `coachhelm_ai_engine`, `coachhelm_analytics`, `insights_management`, `round_review_ai`
 
@@ -218,7 +218,7 @@ Player CoachHelm And Development · active · criticality high · owner product
 
 - **Relations:** 1 doc/structurally-evidenced, 19 import-graph-only (weak)
 - **Tables:** `golf_focus_area_criteria`, `golf_focus_area_practice_sessions`
-- **RPCs:** `ingest_external_round_atomic`, `mark_team_standing_dirty`, `sg_scale_for_player`
+- **RPCs:** `ingest_external_round_atomic`, `sg_scale_for_player`
 - **Test surfaces:** 3
 - **Sentry/admin_events signals:** `coachhelm_v3_goals`, `development_plans_coach`, `drills_practice_rx`, `my_development`, `player_coachhelm_dashboard`
 

@@ -14831,18 +14831,6 @@
     },
     {
       "source": "coachhelm_ai",
-      "target": "clear_dirty_standing_teams",
-      "kind": "feature_rpc",
-      "evidence": [
-        {
-          "kind": "rpc_call",
-          "path": "src/app/api/cron/v3/standing-refresh-dirty/route.ts",
-          "anchor": "clear_dirty_standing_teams"
-        }
-      ]
-    },
-    {
-      "source": "coachhelm_ai",
       "target": "coach_intelligence_triage",
       "kind": "feature_relation",
       "evidence": [
@@ -15503,23 +15491,6 @@
     },
     {
       "source": "coachhelm_ai",
-      "target": "refresh_player_standing_season",
-      "kind": "feature_rpc",
-      "evidence": [
-        {
-          "kind": "rpc_call",
-          "path": "src/app/api/cron/v3/standing-refresh-dirty/route.ts",
-          "anchor": "refresh_player_standing_season"
-        },
-        {
-          "kind": "rpc_call",
-          "path": "src/app/api/cron/v3/standing-refresh/route.ts",
-          "anchor": "refresh_player_standing_season"
-        }
-      ]
-    },
-    {
-      "source": "coachhelm_ai",
       "target": "refresh_player_stats_cache",
       "kind": "feature_rpc",
       "evidence": [
@@ -15575,18 +15546,6 @@
           "kind": "registry_glob",
           "path": "memory/registry.yml",
           "pattern": "src/app/golf/(dashboard)/dashboard/coachhelm/**"
-        }
-      ]
-    },
-    {
-      "source": "coachhelm_ai",
-      "target": "select_dirty_standing_teams",
-      "kind": "feature_rpc",
-      "evidence": [
-        {
-          "kind": "rpc_call",
-          "path": "src/app/api/cron/v3/standing-refresh-dirty/route.ts",
-          "anchor": "select_dirty_standing_teams"
         }
       ]
     },
@@ -21120,18 +21079,6 @@
           "kind": "rpc_call",
           "path": "src/test/coachhelm/v3/ingest/arccos-transactional.test.ts",
           "anchor": "ingest_external_round_atomic"
-        }
-      ]
-    },
-    {
-      "source": "player_coachhelm_development",
-      "target": "mark_team_standing_dirty",
-      "kind": "feature_rpc",
-      "evidence": [
-        {
-          "kind": "rpc_call",
-          "path": "src/lib/coachhelm/v3/standing/refresh-queue.ts",
-          "anchor": "mark_team_standing_dirty"
         }
       ]
     },
