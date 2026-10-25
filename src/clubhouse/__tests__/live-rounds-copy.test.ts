@@ -116,7 +116,9 @@ describe('the words of the live surfaces', () => {
   });
 
   it('has a case for every row of the catalog, and a row for every case', () => {
-    const catalog = readFileSync(join(ROOT, '../../docs/clubhouse/catalog/tournaments.md'), 'utf8');
+    // The tournaments page shares this catalog; the P-6 rows are the ones under its own heading.
+    const whole = readFileSync(join(ROOT, '../../docs/clubhouse/catalog/tournaments.md'), 'utf8');
+    const catalog = whole.slice(whole.indexOf('## Live rounds (P-6)'));
     const rows = [...catalog.matchAll(/^\| (CH-\d{5}) \|/gm)].map((m) => m[1]!).sort();
     expect(CASES.map(([c]) => c).sort()).toEqual(rows);
   });
