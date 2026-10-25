@@ -35,6 +35,7 @@ const IN_PLACE_GATED_PAGES = [
   'rounds/recover/page.tsx',
   'qualifiers/new/page.tsx',
   'whats-new/page.tsx',
+  'live/page.tsx',
 ];
 
 /** `if (!session) redirect('/golf/login')` — the one allowed bounce. */

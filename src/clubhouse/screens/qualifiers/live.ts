@@ -73,6 +73,36 @@ export interface LiveFeedView {
   ended: { outstanding: number | null } | null;
 }
 
+/** The least time between two re-reads of the page while a qualifier is live (P-6, 8.14): five seconds. */
+export const REFRESH_GAP_MS = 5_000;
+const DEBOUNCE_MS = 800;
+
+/**
+ * How long to wait before the next re-read: the usual 800 ms debounce, stretched so two re-reads are never closer than
+ * REFRESH_GAP_MS. Each autosave of each player updates their `golf_rounds` row about 37 times (recompute_golf_round_totals,
+ * once per hole row), so without a gap every watching page refreshed on every autosave.
+ */
+export function refreshDelay(now: number, lastRefreshAt: number): number {
+  return Math.max(DEBOUNCE_MS, lastRefreshAt + REFRESH_GAP_MS - now);
+}
+
+type RoundMark = { updated_at: string | null; status: string | null };
+
+/**
+ * Whether a change to a qualifier round is worth a re-read. The same `updated_at` and `status` as the last change seen
+ * for that round carries nothing the page does not already have; a new round, a new `updated_at` or a new status does.
+ * `seen` is the caller's memory and is updated here.
+ */
+export function changeMatters(payload: { new?: Record<string, unknown> | null } | undefined, seen: Map<string, RoundMark>): boolean {
+  const row = payload?.new;
+  const id = typeof row?.id === 'string' ? row.id : null;
+  if (!id) return true;
+  const mark: RoundMark = { updated_at: typeof row?.updated_at === 'string' ? row.updated_at : null, status: typeof row?.status === 'string' ? row.status : null };
+  const before = seen.get(id);
+  seen.set(id, mark);
+  return !before || before.updated_at !== mark.updated_at || before.status !== mark.status;
+}
+
 export interface ChLiveStandings {
   feed: ChLiveFeed;
   /** Re-read the page, and reopen the feed when it dropped. */
@@ -107,13 +137,19 @@ export function useLiveStandings(qualifierId: string, enabled: boolean, version?
     // The cleanup's removeChannel answers CLOSED through this same callback: once torn down, nothing it says is shown.
     let alive = true;
     let timer: number | undefined;
+    let lastRefreshAt = 0;
+    const seen = new Map<string, RoundMark>();
     dispatch({ type: 'reset' });
     const sb = createClient();
     const channel = sb
       .channel(`ch-qualifier-${qualifierId}`)
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'golf_rounds', filter: `qualifier_id=eq.${qualifierId}` }, () => {
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'golf_rounds', filter: `qualifier_id=eq.${qualifierId}` }, (payload) => {
+        if (!changeMatters(payload as { new?: Record<string, unknown> | null }, seen)) return;
         window.clearTimeout(timer);
-        timer = window.setTimeout(() => router.refresh(), 800);
+        timer = window.setTimeout(() => {
+          lastRefreshAt = Date.now();
+          router.refresh();
+        }, refreshDelay(Date.now(), lastRefreshAt));
       })
       .subscribe((status) => {
         if (!alive) return;

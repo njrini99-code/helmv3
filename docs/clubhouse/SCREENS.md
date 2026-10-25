@@ -80,6 +80,9 @@ Mobile designs are tracked per screen in `PROGRESS.md` (the `phone-spec` and
 - [ ] **Team info** `/team` — Team details, settings and roster information
 - [x] **What's New** `/whats-new` — The team's activity over the past 7 days
   (search palette only)
+- [x] **Live** `/live` — Who is on the course right now, hole by hole: groups,
+  a filter and sort, and a player's round in a sheet or panel (opens from Home's
+  Live now card, Calendar, Qualifiers and Rounds; not in the sidebar)
 
 ## Players
 

@@ -164,6 +164,7 @@ export const CH_REBUILT_ROUTES: Record<ChRole, readonly string[]> = {
     '/golf/dashboard/stats/team',
     '/golf/dashboard/rounds',
     '/golf/dashboard/whats-new',
+    '/golf/dashboard/live',
     '/golf/dashboard/qualifiers',
     '/golf/dashboard/team-hub',
     ...SETTINGS_ROUTES,
@@ -207,7 +208,7 @@ export const CH_ALIASED_ROUTES: readonly RegExp[] = [
   /^\/golf\/dashboard\/rounds\/[^/]+\/review$/,
   // Rebuilt for one role and moved for the other (My qualifiers to a coach's Qualifiers, a player's Team stats to their
   // Stats, What's new to Home): the segment must render for its redirect to run.
-  /^\/golf\/dashboard\/(my-qualifiers|stats\/team|whats-new)$/,
+  /^\/golf\/dashboard\/(my-qualifiers|stats\/team|whats-new|live)$/,
 ];
 
 export function isAliased(pathname: string): boolean {

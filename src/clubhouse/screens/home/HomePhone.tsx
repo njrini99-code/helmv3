@@ -30,6 +30,8 @@ import { TYPE_LABEL } from '../calendar/model';
 import { TYPE_ICON } from '../calendar/views';
 import { coachFailedParts } from './model';
 import { CoachQueue } from './CoachQueue';
+import { LiveNowCard } from './LiveNowCard';
+import type { LiveSnapshot } from '../../live/model';
 import { TeamLegsPhone } from './TeamLegs';
 import { roundHref } from './player-links';
 import { leaderPeek } from './Leaderboard';
@@ -50,7 +52,7 @@ const newEventHref = (type?: ChHomeEvent['type']) => `${CALENDAR}?new=1${type ? 
  * phone's extra figures come from `data.phone`. `now` freezes the clock for
  * the preview and the tests.
  */
-export function HomePhone({ data, now: frozen }: { data: ChCoachHome; now?: string }) {
+export function HomePhone({ data, now: frozen, live }: { data: ChCoachHome; now?: string; /** Who is on the course now (P-6); omitted, the card is not drawn. */ live?: LiveSnapshot }) {
   usePhoneHero(true);
   const ticking = useNow();
   const now = useMemo(() => (frozen ? new Date(frozen) : ticking), [frozen, ticking]);
@@ -90,6 +92,11 @@ export function HomePhone({ data, now: frozen }: { data: ChCoachHome; now?: stri
       </header>
 
       <div className="ch-hm-body">
+        {live && (
+          <SectionBoundary surface="home.live" label="Live now">
+            <LiveNowCard initial={live} phone frozen={frozen !== undefined} now={frozen !== undefined ? Date.parse(frozen) : undefined} />
+          </SectionBoundary>
+        )}
         <SectionBoundary surface="home.today" label="Today" code="CH-2214">
           <Later data={data} rounds={rounds} now={now} today={today} quiet={nothingAhead} onOpenRound={setOpen} />
         </SectionBoundary>

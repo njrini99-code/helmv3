@@ -1,0 +1,55 @@
+{
+  "id": "P016",
+  "name": "Live rounds",
+  "slug": "live",
+  "bridgeNamespace": 16,
+  "routes": [
+    "/golf/dashboard/live"
+  ],
+  "roles": [
+    "coach",
+    "player"
+  ],
+  "semanticFeatures": [
+    "golf_round_lifecycle",
+    "team_operations"
+  ],
+  "progressRow": "Live rounds",
+  "status": {
+    "design": "draft",
+    "implementation": "in_progress",
+    "contract": "partial",
+    "bridge": "reserved",
+    "data": "existing",
+    "verification": "not_started",
+    "docs": "current"
+  },
+  "design": {
+    "version": "none from the owner: build plan P-6 (handoff 4.34.6) is the spec; the lane and bead grammar is 5L's",
+    "desktop": [],
+    "phone": []
+  },
+  "implementation": {
+    "root": "src/clubhouse/screens/live",
+    "loader": "src/clubhouse/data/live-rounds.ts",
+    "route": "src/clubhouse/routes/live.tsx",
+    "styles": "src/clubhouse/styles/live.css",
+    "also": [
+      "src/clubhouse/live"
+    ],
+    "tests": [
+      "src/clubhouse/__tests__/live-rounds-copy.test.ts",
+      "src/clubhouse/screens/live/__tests__/LiveView.test.tsx",
+      "src/clubhouse/screens/home/__tests__/home-live-now.test.tsx",
+      "src/clubhouse/live/__tests__/model.test.ts",
+      "src/clubhouse/live/__tests__/PlayerLane.test.tsx",
+      "src/clubhouse/live/__tests__/use-live-rounds.test.tsx",
+      "src/clubhouse/data/__tests__/live-rounds.test.ts"
+    ]
+  },
+  "catalog": "docs/clubhouse/catalog/live.md",
+  "checklist": "docs/clubhouse/screens/live.md",
+  "phoneSpec": "docs/clubhouse/phone/live.md",
+  "actions": [],
+  "held": []
+}

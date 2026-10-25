@@ -16,6 +16,8 @@ import { HomeActions } from './HomeActions';
 import { HomePhone, WeekStrip } from './HomePhone';
 import { coachFailedParts } from './model';
 import { CoachQueue } from './CoachQueue';
+import { LiveNowCard } from './LiveNowCard';
+import type { LiveSnapshot } from '../../live/model';
 import { TeamLegs } from './TeamLegs';
 import { useHomeDayRollover } from './use-day-rollover';
 import { NoTeam } from '../../ui/NoTeam';
@@ -26,12 +28,12 @@ import '../../styles/home.css';
  * and the latest round in one lit sheet, then the season leaderboard. Calm
  * and not card-heavy (the owner rejected card grids and imagery).
  */
-export function CoachHome({ data, now }: { data: ChCoachHome; /** Preview and tests: a frozen clock (ISO) for the phone's countdown. */ now?: string }) {
+export function CoachHome({ data, now, live }: { data: ChCoachHome; /** Preview and tests: a frozen clock (ISO) for the phone's countdown. */ now?: string; /** Who is on the course now (P-6); omitted, the card is not drawn. */ live?: LiveSnapshot }) {
   const phone = useChPhone();
   // A page left open past the team's midnight reads itself again, so "today" is today (desktop and phone).
   useHomeDayRollover(data.clock, now !== undefined);
   if (isFirstRun(data)) return <HomeFirstRun data={data} phone={phone} />;
-  if (phone) return <HomePhone data={data} now={now} />;
+  if (phone) return <HomePhone data={data} now={now} live={live} />;
   // Two or more failed reads are told once under the head, with one Try again; each part keeps its title (CH-1209).
   const failed = coachFailedParts(data, false);
   const covered = failed.length > 1;
@@ -47,6 +49,13 @@ export function CoachHome({ data, now }: { data: ChCoachHome; /** Preview and te
         <HomeActions teamChatId={data.teamChatId} />
       </header>
       <PageRefreshNotice parts={failed} />
+      {live && (
+        <SectionBoundary surface="home.live" label="Live now">
+          <div className="ch-lv-deskwrap">
+            <LiveNowCard initial={live} phone={false} frozen={now !== undefined} now={now !== undefined ? Date.parse(now) : undefined} />
+          </div>
+        </SectionBoundary>
+      )}
       <CoachQueue queue={data.queue} covered={covered} />
       {/* Row 79: the day comes first. The week, with today's events, and the latest round sit under Waiting on you, above
           the two cards of figures; the team's game stays under the team's form (20105). */}

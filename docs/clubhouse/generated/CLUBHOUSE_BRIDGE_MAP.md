@@ -102,6 +102,51 @@ Every Bridge ID (D-68: namespace, two-digit category, two-digit item), its catal
 | CH-15920 | 12 State preservation | Forgot password? opens the reset form in place with the typed address, the view kept in the URL so Back and a reload hold it. |
 | CH-15921 | 09 Success | A positive confirmation: the reset link was asked for. |
 | CH-15922 | 12 State preservation | Back to sign in brings the typed address back and pops the reset form's history entry rather than stacking one. |
+| CH-16600 | 01 Default / core UI | P-6 copy deck, numbered by the plan (CH-166xx) rather than by the catalog kinds: the category the words belong to. |
+| CH-16601 | 01 Default / core UI | P-6 copy deck, numbered by the plan (CH-166xx) rather than by the catalog kinds: the category the words belong to. |
+| CH-16602 | 01 Default / core UI | P-6 copy deck, numbered by the plan (CH-166xx) rather than by the catalog kinds: the category the words belong to. |
+| CH-16603 | 01 Default / core UI | P-6 copy deck, numbered by the plan (CH-166xx) rather than by the catalog kinds: the category the words belong to. |
+| CH-16604 | 03 Background loading / refresh | P-6 copy deck, numbered by the plan (CH-166xx) rather than by the catalog kinds: the category the words belong to. |
+| CH-16605 | 07 Network / offline | P-6 copy deck, numbered by the plan (CH-166xx) rather than by the catalog kinds: the category the words belong to. |
+| CH-16609 | 08 Permission / authorization | P-6 copy deck, numbered by the plan (CH-166xx) rather than by the catalog kinds: the category the words belong to. |
+| CH-16610 | 01 Default / core UI | P-6 copy deck, numbered by the plan (CH-166xx) rather than by the catalog kinds: the category the words belong to. |
+| CH-16611 | 01 Default / core UI | P-6 copy deck, numbered by the plan (CH-166xx) rather than by the catalog kinds: the category the words belong to. |
+| CH-16612 | 01 Default / core UI | P-6 copy deck, numbered by the plan (CH-166xx) rather than by the catalog kinds: the category the words belong to. |
+| CH-16613 | 01 Default / core UI | P-6 copy deck, numbered by the plan (CH-166xx) rather than by the catalog kinds: the category the words belong to. |
+| CH-16614 | 15 Data freshness / sync | P-6 copy deck, numbered by the plan (CH-166xx) rather than by the catalog kinds: the category the words belong to. |
+| CH-16615 | 01 Default / core UI | P-6 copy deck, numbered by the plan (CH-166xx) rather than by the catalog kinds: the category the words belong to. |
+| CH-16616 | 01 Default / core UI | P-6 copy deck, numbered by the plan (CH-166xx) rather than by the catalog kinds: the category the words belong to. |
+| CH-16617 | 01 Default / core UI | P-6 copy deck, numbered by the plan (CH-166xx) rather than by the catalog kinds: the category the words belong to. |
+| CH-16618 | 01 Default / core UI | P-6 copy deck, numbered by the plan (CH-166xx) rather than by the catalog kinds: the category the words belong to. |
+| CH-16619 | 04 Empty | P-6 copy deck, numbered by the plan (CH-166xx) rather than by the catalog kinds: the category the words belong to. |
+| CH-16620 | 01 Default / core UI | P-6 copy deck, numbered by the plan (CH-166xx) rather than by the catalog kinds: the category the words belong to. |
+| CH-16621 | 12 State preservation | P-6 copy deck, numbered by the plan (CH-166xx) rather than by the catalog kinds: the category the words belong to. |
+| CH-16622 | 01 Default / core UI | P-6 copy deck, numbered by the plan (CH-166xx) rather than by the catalog kinds: the category the words belong to. |
+| CH-16630 | 01 Default / core UI | P-6 copy deck, numbered by the plan (CH-166xx) rather than by the catalog kinds: the category the words belong to. |
+| CH-16631 | 01 Default / core UI | P-6 copy deck, numbered by the plan (CH-166xx) rather than by the catalog kinds: the category the words belong to. |
+| CH-16640 | 01 Default / core UI | P-6 copy deck, numbered by the plan (CH-166xx) rather than by the catalog kinds: the category the words belong to. |
+| CH-16641 | 18 Accessibility | P-6 copy deck, numbered by the plan (CH-166xx) rather than by the catalog kinds: the category the words belong to. |
+| CH-16660 | 01 Default / core UI | P-6 copy deck, numbered by the plan (CH-166xx) rather than by the catalog kinds: the category the words belong to. |
+| CH-16661 | 01 Default / core UI | P-6 copy deck, numbered by the plan (CH-166xx) rather than by the catalog kinds: the category the words belong to. |
+| CH-16662 | 01 Default / core UI | P-6 copy deck, numbered by the plan (CH-166xx) rather than by the catalog kinds: the category the words belong to. |
+| CH-16663 | 01 Default / core UI | P-6 copy deck, numbered by the plan (CH-166xx) rather than by the catalog kinds: the category the words belong to. |
+| CH-16664 | 06 Server / system error | P-6 copy deck, numbered by the plan (CH-166xx) rather than by the catalog kinds: the category the words belong to. |
+| CH-16665 | 10 Warning | P-6 copy deck, numbered by the plan (CH-166xx) rather than by the catalog kinds: the category the words belong to. |
+| CH-16666 | 06 Server / system error | P-6 copy deck, numbered by the plan (CH-166xx) rather than by the catalog kinds: the category the words belong to. |
+| CH-16670 | 01 Default / core UI | P-6 copy deck, numbered by the plan (CH-166xx) rather than by the catalog kinds: the category the words belong to. |
+| CH-16671 | 01 Default / core UI | P-6 copy deck, numbered by the plan (CH-166xx) rather than by the catalog kinds: the category the words belong to. |
+| CH-16672 | 15 Data freshness / sync | P-6 copy deck, numbered by the plan (CH-166xx) rather than by the catalog kinds: the category the words belong to. |
+| CH-16673 | 15 Data freshness / sync | P-6 copy deck, numbered by the plan (CH-166xx) rather than by the catalog kinds: the category the words belong to. |
+| CH-16674 | 01 Default / core UI | P-6 copy deck, numbered by the plan (CH-166xx) rather than by the catalog kinds: the category the words belong to. |
+| CH-16675 | 01 Default / core UI | P-6 copy deck, numbered by the plan (CH-166xx) rather than by the catalog kinds: the category the words belong to. |
+| CH-16676 | 01 Default / core UI | P-6 copy deck, numbered by the plan (CH-166xx) rather than by the catalog kinds: the category the words belong to. |
+| CH-16677 | 15 Data freshness / sync | P-6 copy deck, numbered by the plan (CH-166xx) rather than by the catalog kinds: the category the words belong to. |
+| CH-16680 | 01 Default / core UI | P-6 copy deck, numbered by the plan (CH-166xx) rather than by the catalog kinds: the category the words belong to. |
+| CH-16681 | 01 Default / core UI | P-6 copy deck, numbered by the plan (CH-166xx) rather than by the catalog kinds: the category the words belong to. |
+| CH-16682 | 01 Default / core UI | P-6 copy deck, numbered by the plan (CH-166xx) rather than by the catalog kinds: the category the words belong to. |
+| CH-16683 | 15 Data freshness / sync | P-6 copy deck, numbered by the plan (CH-166xx) rather than by the catalog kinds: the category the words belong to. |
+| CH-16684 | 01 Default / core UI | P-6 copy deck, numbered by the plan (CH-166xx) rather than by the catalog kinds: the category the words belong to. |
+| CH-16685 | 01 Default / core UI | P-6 copy deck, numbered by the plan (CH-166xx) rather than by the catalog kinds: the category the words belong to. |
 
 ## Count by page and category
 
@@ -122,6 +167,7 @@ Every Bridge ID (D-68: namespace, two-digit category, two-digit item), its catal
 | P013 | 7 | 15 |  | 36 | 1 | 45 | 71 | 7 | 3 |  |  | 1 |  | 3 | 4 | 4 | 9 | 18 | 1 |  | 1 |  | 1 |  |  | 227 |
 | P014 | 1 | 3 | 4 | 7 | 11 | 10 | 4 | 2 | 4 |  | 2 | 1 | 1 | 1 | 1 | 4 | 3 | 8 | 1 | 1 |  |  |  |  |  | 69 |
 | P015 |  | 7 | 2 | 3 | 12 | 21 | 27 | 2 | 2 |  |  | 3 |  | 1 |  | 17 | 7 | 6 | 2 | 1 | 1 |  | 1 |  |  | 115 |
+| P016 | 31 | 1 | 1 | 1 |  | 2 | 1 | 1 |  | 1 |  | 1 |  |  | 5 |  |  | 1 |  |  |  |  |  |  |  | 46 |
 
 ## P001 Shell
 
@@ -1881,6 +1927,57 @@ Every Bridge ID (D-68: namespace, two-digit category, two-digit item), its catal
 | 152001 | CH-15910 | 20 Keyboard / input | `THE_KEYBOARD` | implemented | The keyboard |
 | 152101 | CH-15907 | 21 Performance | `EITHER_SCREEN_LOADS_ON_A_SLOW_PHONE` | implemented | Either screen loads, on a slow phone or a fast desktop |
 | 152301 | CH-15908 | 23 Logging / observability | `A_READ_FAILS_OR_THE_COURSE_CRASHES` | implemented | A read fails, or the course crashes |
+
+## P016 Live rounds
+
+| Bridge ID | Code | Category | Name | Status | Meaning |
+| --- | --- | --- | --- | --- | --- |
+| 160101 | CH-16600 | 01 Default / core UI | `COACH_HOME_SOMEONE_IS_ON_THE_COURSE` | implemented | Coach Home, someone is on the course |
+| 160102 | CH-16601 | 01 Default / core UI | `MORE_LANES_THAN_THE_CARD_SHOWS` | implemented | More lanes than the card shows |
+| 160103 | CH-16602 | 01 Default / core UI | `COACH_HOME_ONLY_FINISHED_LANES_REMAIN` | implemented | Coach Home, only finished lanes remain (each stays 30 minutes after it posted) |
+| 160104 | CH-16603 | 01 Default / core UI | `THE_HEAD_OF_THE_CARD` | implemented | The head of the card |
+| 160105 | CH-16610 | 01 Default / core UI | `THE_LIVE_VIEW` | implemented | The live view |
+| 160106 | CH-16611 | 01 Default / core UI | `TWO_OR_MORE_ROUND_TYPES_HAVE_LANES` | implemented | Two or more round types have lanes |
+| 160107 | CH-16612 | 01 Default / core UI | `LANES_ON_THE_COURSE` | implemented | Lanes on the course |
+| 160108 | CH-16613 | 01 Default / core UI | `LANES_THAT_POSTED_OR_STOPPED_TODAY` | implemented | Lanes that posted or stopped today |
+| 160109 | CH-16615 | 01 Default / core UI | `THE_SORT_CONTROL` | implemented | The sort control |
+| 160110 | CH-16616 | 01 Default / core UI | `A_PLAYERS_SHEET_THE_HOLE_THEY_PLAY` | implemented | A player's sheet, the hole they play next |
+| 160111 | CH-16617 | 01 Default / core UI | `A_PLAYERS_SHEET_MOMENTS` | implemented | A player's sheet, Moments |
+| 160112 | CH-16618 | 01 Default / core UI | `WIDE_LIVE_VIEW_NOBODY_SELECTED` | implemented | Wide live view, nobody selected |
+| 160113 | CH-16620 | 01 Default / core UI | `QUALIFIER_DETAIL` | implemented | Qualifier detail (built in slice 4) |
+| 160114 | CH-16622 | 01 Default / core UI | `THE_QUALIFIER_LIST` | implemented | The qualifier list (slice 4) |
+| 160115 | CH-16630 | 01 Default / core UI | `THE_TEAM_ROUNDS_BAND_HOME_WHEN_ONLY` | implemented | The Team rounds band (slice 4); Home when only tournaments are live |
+| 160116 | CH-16631 | 01 Default / core UI | `THE_SHARE_CHIP_ON_AN_IN_PROGRESS` | implemented | The share chip on an in-progress round in the player's library (slice 4) |
+| 160117 | CH-16640 | 01 Default / core UI | `CALENDAR_PEEK_AND_INSPECTOR_AN_EVENT_WITH` | implemented | Calendar peek and inspector, an event with lanes linked to it (slice 4) |
+| 160118 | CH-16660 | 01 Default / core UI | `ROUND_SETUP` | implemented | Round setup (slice 2) |
+| 160119 | CH-16661 | 01 Default / core UI | `ROUND_SETUP_2` | implemented | Round setup (slice 2) |
+| 160120 | CH-16662 | 01 Default / core UI | `A_QUALIFIER_ROUND_IN_SETUP` | implemented | A qualifier round in setup (slice 2) |
+| 160121 | CH-16663 | 01 Default / core UI | `ROUND_SETUP_3` | implemented | Round setup (slice 2) |
+| 160122 | CH-16670 | 01 Default / core UI | `A_QUALIFIER_LANES_SECOND_LINE` | implemented | A qualifier lane's second line |
+| 160123 | CH-16671 | 01 Default / core UI | `A_PRACTICE_OR_TOURNAMENT_LANES_SECOND_LINE` | implemented | A practice or tournament lane's second line |
+| 160124 | CH-16674 | 01 Default / core UI | `A_ROUND_THE_PLAYER_STOPPED` | implemented | A round the player stopped |
+| 160125 | CH-16675 | 01 Default / core UI | `ALL_HOLES_SCORED_NOT_POSTED` | implemented | All holes scored, not posted |
+| 160126 | CH-16676 | 01 Default / core UI | `A_ROUND_WAS_POSTED` | reserved | A round was posted |
+| 160127 | CH-16680 | 01 Default / core UI | `THE_PLAYERS_OWN_LIVE_CARD` | implemented | The player's own live card (slice 1) |
+| 160128 | CH-16681 | 01 Default / core UI | `THE_PLAYERS_OWN_LIVE_CARD_2` | implemented | The player's own live card (slice 1) |
+| 160129 | CH-16682 | 01 Default / core UI | `THE_PLAYERS_TEAMMATES_CARD` | implemented | The player's Teammates card (slice 4) |
+| 160130 | CH-16684 | 01 Default / core UI | `ROUND_SETUP_OPEN_CALL_VERSION_2` | implemented | Round setup, open call (a) version 2 (slice 2) |
+| 160131 | CH-16685 | 01 Default / core UI | `COACH_HOME_A_TOURNAMENT_TRACKS_A_LIVE` | implemented | Coach Home, a tournament tracks a live round |
+| 160201 |  | 02 Initial loading / skeleton | `LIVE_DRAWS_THE_FIRST_READ_AT_ONCE` | reserved | The live view and Home's Live now card draw the server's first read at once, with no skeleton of their own (plan 4.12): the dashboard's loading frame covers the wait, nothing moves on first paint, and only a value that changes afterwards may animate. |
+| 160301 | CH-16604 | 03 Background loading / refresh | `A_LIVE_READ_FAILED_OR_THE_FEED` | implemented | A live read failed or the feed dropped |
+| 160401 | CH-16619 | 04 Empty | `NOBODY_IS_ON_THE_COURSE` | implemented | Nobody is on the course |
+| 160601 | CH-16664 | 06 Server / system error | `CHANGING_THE_SHARE_LEVEL_FAILS` | implemented | Changing the share level fails (slice 2) |
+| 160602 | CH-16666 | 06 Server / system error | `THE_SHARE_FUNCTION_IS_NOT_IN_THE` | implemented | The share function is not in the database yet (slice 2) |
+| 160701 | CH-16605 | 07 Network / offline | `THE_DEVICE_IS_OFFLINE_WHILE_THE_CARD` | implemented | The device is offline while the card or the live view is open |
+| 160801 | CH-16609 | 08 Permission / authorization | `THE_COACH_HAS_NO_TEAM_OR_LOST` | implemented | The coach has no team, or lost access to it |
+| 161001 | CH-16665 | 10 Warning | `A_ROUNDS_SHARING_WAS_CHANGED_30_TIMES` | implemented | A round's sharing was changed 30 times (slice 2) |
+| 161201 | CH-16621 | 12 State preservation | `A_PLAYER_WITH_THEIR_OWN_ROUND_ON` | implemented | A player with their own round on this qualifier (slice 4) |
+| 161501 | CH-16614 | 15 Data freshness / sync | `LANES_WITH_NO_WORD_FOR_90_MINUTES` | implemented | Lanes with no word for 90 minutes |
+| 161502 | CH-16672 | 15 Data freshness / sync | `A_LANE_SILENT_FOR_10_MINUTES_WITH` | implemented | A lane silent for 10 minutes with the last hole at least as old |
+| 161503 | CH-16673 | 15 Data freshness / sync | `A_LANE_SILENT_FOR_90_MINUTES` | implemented | A lane silent for 90 minutes |
+| 161504 | CH-16677 | 15 Data freshness / sync | `TWO_OR_MORE_HOLES_LAND_IN_ONE` | reserved | Two or more holes land in one read (a phone that reconnected) |
+| 161505 | CH-16683 | 15 Data freshness / sync | `THE_PLAYERS_OWN_LIVE_CARD_NOT_SAVED` | implemented | The player's own live card, not saved for 10 minutes (slice 1) |
+| 161801 | CH-16641 | 18 Accessibility | `CALENDAR_GRID_BLOCK` | implemented | Calendar grid block (slice 4) |
 
 ## Tombstones
 

@@ -28,6 +28,7 @@ import { getCurrentDecimalHourInTz } from '@/lib/utils/timezone';
 import { getGreeting, timeOfDayForHour } from '@/lib/utils/time-of-day';
 import { isClubhouseFor } from '@/clubhouse/gate';
 import { loadCoachHome } from '@/clubhouse/data/home';
+import { loadLiveRounds } from '@/clubhouse/data/live-rounds';
 import { CoachHome, CoachHomeNoTeam } from '@/clubhouse/screens/home/CoachHome';
 import { loadPlayerHome } from '@/clubhouse/data/player-home';
 import { PlayerHome, PlayerHomeNoTeam } from '@/clubhouse/screens/home/PlayerHome';
@@ -202,8 +203,12 @@ export default async function GolfDashboardPage({
         // Clubhouse Home: its own loader and screen, no Fairway payload.
         if (clubhouse) {
             if (!teamId) return <CoachHomeNoTeam />;
-            const home = await loadCoachHome({ teamId, coachName: coach.full_name || 'Coach', userId });
-            return <CoachHome data={home} />;
+            // Who is on the course rides beside Home's own reads and never fails them (loadLiveRounds catches its own).
+            const [home, live] = await Promise.all([
+                loadCoachHome({ teamId, coachName: coach.full_name || 'Coach', userId }),
+                loadLiveRounds({ teamId, viewer: { role: 'coach', playerId: null } }),
+            ]);
+            return <CoachHome data={home} live={live} />;
         }
 
         if (teamId) {
