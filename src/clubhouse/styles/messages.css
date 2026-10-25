@@ -3141,11 +3141,10 @@ html[data-fw-theme='dark'] .ch-ms-sec.is-ann {
   --ch-poll-ring: var(--ch-green-500);
   /* ink-500 holds 3:1 over every fill the mark sits on (4.30 on green-200 at its lowest; ink-400 fell to 2.19). */
   --ch-poll-mark-ring: var(--ch-ink-500);
-  --ch-poll-mark-on: var(--ch-accent);
   --ch-poll-check: var(--ch-text-on-accent);
   container: ch-poll / inline-size;
   width: min(360px, 100%);
-  padding: 14px 14px 12px;
+  padding: var(--ch-space-3);
   border-radius: var(--ch-radius-card);
   background: var(--ch-sheet-bg);
   box-shadow: 0 0 0 1px var(--ch-border-hairline), var(--ch-elevation-bubble);
@@ -3154,8 +3153,6 @@ html[data-fw-theme='dark'] .ch-ms-sec.is-ann {
 html[data-fw-theme='dark'] [data-ui='clubhouse'] .ch-ms-poll {
   --ch-poll-level: var(--ch-green-600);
   --ch-poll-ring: var(--ch-green-600);
-  --ch-poll-mark-on: var(--ch-green-600);
-  --ch-poll-check: var(--ch-green-900);
 }
 /* D2: on a phone a poll's column takes the card's width, not the 82% a bubble gets. */
 .ch-msp-thread .ch-ms-msg__col:has(> .ch-ms-msg__line .ch-ms-poll) {
@@ -3172,7 +3169,7 @@ html[data-fw-theme='dark'] [data-ui='clubhouse'] .ch-ms-poll {
   align-items: center;
   gap: 6px;
   padding: 0 2px;
-  font: 500 calc(12 * var(--ch-type-k))/1.3 var(--ch-font-sans);
+  font: var(--ch-type-12-medium);
   color: var(--ch-text-tertiary);
 }
 .ch-ms-poll__head svg {
@@ -3196,21 +3193,21 @@ html[data-fw-theme='dark'] [data-ui='clubhouse'] .ch-ms-poll {
 }
 .ch-ms-poll__q {
   margin: 6px 2px 0;
-  font: 600 calc(17 * var(--ch-type-k))/1.3 var(--ch-font-sans);
-  letter-spacing: -0.01em;
+  font: var(--ch-type-17-strong);
+  letter-spacing: var(--ch-track-17);
   text-wrap: balance;
   overflow-wrap: anywhere;
 }
 .ch-ms-poll__sub {
   margin: 2px 2px 0;
-  font: 400 calc(13 * var(--ch-type-k))/1.3 var(--ch-font-sans);
+  font: var(--ch-type-13);
   color: var(--ch-text-tertiary);
 }
 .ch-ms-poll__opts {
   display: flex;
   flex-direction: column;
   gap: 6px;
-  margin: 10px 0 0;
+  margin: var(--ch-space-3) 0 0;
   padding: 0;
   list-style: none;
 }
@@ -3219,17 +3216,18 @@ html[data-fw-theme='dark'] [data-ui='clubhouse'] .ch-ms-poll {
   isolation: isolate;
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: var(--ch-space-2);
   width: 100%;
   min-height: 44px;
-  padding: 8px 12px 8px 10px;
+  padding: var(--ch-space-2) var(--ch-space-3);
   overflow: hidden;
   border: 0;
   border-radius: var(--ch-radius-md);
   background: var(--ch-bg-subtle);
   box-shadow: inset 0 0 0 1px var(--ch-border-hairline);
   color: var(--ch-text-primary);
-  font: 500 calc(16 * var(--ch-type-k))/1.3 var(--ch-font-sans);
+  font: var(--ch-type-16-medium);
+  letter-spacing: var(--ch-track-16);
   text-align: left;
   cursor: pointer;
   transition: box-shadow var(--ch-dur-quick) var(--ch-ease), background-color 0s linear;
@@ -3238,26 +3236,34 @@ html[data-fw-theme='dark'] [data-ui='clubhouse'] .ch-ms-poll {
 @media (pointer: fine) and (min-width: 821px) {
   .ch-ms-poll__opt {
     min-height: 40px;
-    font-size: calc(15 * var(--ch-type-k));
+    font: var(--ch-type-15-medium);
+    letter-spacing: var(--ch-track-15);
   }
 }
 /* D8: a full-width row deepens its tint on press (after the press delay), it doesn't shrink. */
-.ch-ms-poll__opt:active:not([aria-disabled='true']) {
+.ch-ms-poll__opt[data-ch-pressed]:not([aria-disabled='true']) {
   background-color: color-mix(in oklab, var(--ch-bg-subtle), var(--ch-green-600) 11%);
   transition-delay: var(--ch-dur-press-delay);
+}
+@media (hover: hover) {
+  .ch-ms-poll__opt:active:not([aria-disabled='true']) {
+    background-color: color-mix(in oklab, var(--ch-bg-subtle), var(--ch-green-600) 11%);
+    transition-delay: var(--ch-dur-press-delay);
+  }
 }
 .ch-ms-poll__opt[aria-disabled='true'] {
   cursor: default;
 }
 .ch-ms-poll__opt.is-on {
+  background: var(--ch-selected-bg);
   box-shadow: inset 0 0 0 1.5px var(--ch-poll-ring);
 }
 .ch-ms-poll__opt:focus-visible {
   outline: 2px solid var(--ch-border-focus);
   outline-offset: 2px;
 }
-/* The share of the voters, behind the label: a soft green, a step stronger on the viewer's own pick (D5: the leader is
-   marked only once the poll is final, so an open poll never nudges toward it). */
+/* The share of the voters, behind the label: a soft green on a track that takes the selected tint on the viewer's own
+   pick (CONS-22; D5: the leader is marked only once the poll is final, so an open poll never nudges toward it). */
 .ch-ms-poll__fill,
 .ch-ms-poll__level {
   position: absolute;
@@ -3272,9 +3278,6 @@ html[data-fw-theme='dark'] [data-ui='clubhouse'] .ch-ms-poll {
   z-index: -1;
   background: var(--ch-green-100);
 }
-.ch-ms-poll__opt.is-on .ch-ms-poll__fill {
-  background: var(--ch-green-200);
-}
 /* D4: the fill alone is 1.1:1 on the track; a 3 px line at the row's foot carries the share at 3:1. */
 .ch-ms-poll__level {
   bottom: 0;
@@ -3288,7 +3291,14 @@ html[data-fw-theme='dark'] [data-ui='clubhouse'] .ch-ms-poll {
   background: var(--ch-green-200);
 }
 .ch-ms-poll.is-closed .ch-ms-poll__opt.is-lead .ch-ms-poll__label {
-  font-weight: 600;
+  font: var(--ch-type-16-strong);
+  letter-spacing: var(--ch-track-16);
+}
+@media (pointer: fine) and (min-width: 821px) {
+  .ch-ms-poll.is-closed .ch-ms-poll__opt.is-lead .ch-ms-poll__label {
+    font: var(--ch-type-15-strong);
+    letter-spacing: var(--ch-track-15);
+  }
 }
 .ch-ms-poll.is-closed .ch-ms-poll__opt:not(.is-lead) .ch-ms-poll__fill {
   background: color-mix(in srgb, var(--ch-ink-400) 16%, transparent);
@@ -3298,7 +3308,8 @@ html[data-fw-theme='dark'] [data-ui='clubhouse'] .ch-ms-poll {
 }
 .ch-ms-poll__tag {
   flex: none;
-  font: 500 calc(12 * var(--ch-type-k))/1 var(--ch-font-sans);
+  font: var(--ch-type-12-medium);
+  line-height: var(--ch-lead-tight);
   color: var(--ch-green-700);
 }
 @media (hover: hover) {
@@ -3324,7 +3335,7 @@ html[data-fw-theme='dark'] [data-ui='clubhouse'] .ch-ms-poll {
   border-radius: var(--ch-radius-xs);
 }
 .ch-ms-poll__opt.is-on .ch-ms-poll__mark {
-  background: var(--ch-poll-mark-on);
+  background: var(--ch-selected-strong);
   box-shadow: none;
 }
 .ch-ms-poll__opt.is-on .ch-ms-poll__mark svg {
@@ -3344,7 +3355,9 @@ html[data-fw-theme='dark'] [data-ui='clubhouse'] .ch-ms-poll {
 .ch-ms-poll__n {
   flex: none;
   min-width: 2ch;
-  font: 600 calc(15 * var(--ch-type-k))/1 var(--ch-font-sans);
+  font: var(--ch-type-15-strong);
+  line-height: var(--ch-lead-tight);
+  letter-spacing: var(--ch-track-15);
   color: var(--ch-text-secondary);
   text-align: right;
 }
@@ -3361,7 +3374,7 @@ html[data-fw-theme='dark'] [data-ui='clubhouse'] .ch-ms-poll {
   align-items: center;
   gap: 4px 16px;
   padding: 12px 2px 0;
-  font: 400 calc(13 * var(--ch-type-k))/1.3 var(--ch-font-sans);
+  font: var(--ch-type-13);
   color: var(--ch-text-tertiary);
 }
 .ch-ms-poll__count {
@@ -3375,13 +3388,14 @@ html[data-fw-theme='dark'] [data-ui='clubhouse'] .ch-ms-poll {
   border: 0;
   background: none;
   color: var(--ch-green-700);
-  font: 500 calc(13 * var(--ch-type-k))/1 var(--ch-font-sans);
+  font: var(--ch-type-13-medium);
+  line-height: var(--ch-lead-tight);
   cursor: pointer;
 }
 .ch-ms-poll__link:focus-visible {
   outline: 2px solid var(--ch-border-focus);
   outline-offset: 2px;
-  border-radius: 4px;
+  border-radius: var(--ch-radius-xs);
 }
 @media (prefers-reduced-motion: reduce) {
   .ch-ms-poll__fill,
@@ -3411,7 +3425,7 @@ html[data-fw-theme='dark'] [data-ui='clubhouse'] .ch-ms-poll {
   gap: 16px;
 }
 .ch-ms-pollv__opt + .ch-ms-pollv__opt {
-  padding-top: 14px;
+  padding-top: var(--ch-space-3);
   box-shadow: var(--ch-seam-x);
 }
 .ch-ms-pollv__h {
@@ -3419,7 +3433,8 @@ html[data-fw-theme='dark'] [data-ui='clubhouse'] .ch-ms-poll {
   justify-content: space-between;
   gap: 12px;
   margin: 0 0 8px;
-  font: 600 calc(15 * var(--ch-type-k))/1.3 var(--ch-font-sans);
+  font: var(--ch-type-15-strong);
+  letter-spacing: var(--ch-track-15);
   color: var(--ch-text-primary);
 }
 .ch-ms-pollv__who {
@@ -3473,7 +3488,7 @@ html[data-fw-theme='dark'] [data-ui='clubhouse'] .ch-ms-poll {
 .ch-ms-pollf {
   display: flex;
   flex-direction: column;
-  gap: 18px;
+  gap: var(--ch-space-4);
 }
 .ch-ms-pollf__set {
   display: flex;
@@ -3500,7 +3515,8 @@ html[data-fw-theme='dark'] [data-ui='clubhouse'] .ch-ms-poll {
 .ch-ms-pollf__n {
   flex: none;
   width: 16px;
-  font: 500 calc(13 * var(--ch-type-k))/1 var(--ch-font-sans);
+  font: var(--ch-type-13-medium);
+  line-height: var(--ch-lead-tight);
   color: var(--ch-text-tertiary);
   text-align: right;
 }
