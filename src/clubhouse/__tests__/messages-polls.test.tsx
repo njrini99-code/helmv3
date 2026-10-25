@@ -373,9 +373,10 @@ describe('PollCard, slice 1 of the follow-up plan (P-2 0.2)', () => {
 describe('PollCard, slice 2: the visual spec and its states (P-2 4.1, 4.2)', () => {
   const n = (label: RegExp) => screen.getByRole('radio', { name: label }).querySelector('.ch-ms-poll__n')!.textContent;
 
-  it('open: blank at zero, a level line under every fill, no leader marked, "No votes yet"', () => {
+  it('open: an honest 0 in tertiary, a level line under every fill, no leader marked, "No votes yet"', () => {
     render(<PollCard api={api([])} messageId="m1" poll={poll()} mine={false} />);
-    expect(n(/Van A/)).toBe('');
+    expect(n(/Van A/)).toBe('0');
+    expect(document.querySelector('.ch-ms-poll__n')!.className).toContain('is-zero');
     expect(document.querySelectorAll('.ch-ms-poll__level')).toHaveLength(2);
     expect(document.querySelector('.ch-ms-poll__tag')).toBeNull();
     expect(document.querySelector('.ch-ms-poll__count')!.textContent).toBe('No votes yet');

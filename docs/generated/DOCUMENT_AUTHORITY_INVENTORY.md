@@ -1020,6 +1020,10 @@ them would bury everything above.
 | `docs/clubhouse/pages/P007-messages/changes/2026-10-23-type-roles.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P007-messages/changes/2026-10-23-type-scale.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P007-messages/changes/2026-10-24-desktop-seams.md` | current | - | - | - | - |
+| `docs/clubhouse/pages/P007-messages/changes/2026-10-24-polls.md` | current | - | - | - | - |
+| `docs/clubhouse/pages/P007-messages/changes/2026-10-25-polls-correctness.md` | current | - | - | - | - |
+| `docs/clubhouse/pages/P007-messages/changes/2026-10-25-polls-landing.md` | current | - | - | - | - |
+| `docs/clubhouse/pages/P007-messages/changes/2026-10-25-polls-visual.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P008-settings/CHANGELOG.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P008-settings/CONTRACT.md` | current | - | - | yes | - |
 | `docs/clubhouse/pages/P008-settings/DESIGN.md` | current | - | - | - | - |

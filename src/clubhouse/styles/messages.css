@@ -3137,13 +3137,14 @@ html[data-fw-theme='dark'] .ch-ms-sec.is-ann {
      and the 3:1 marks, rings and level line the soft fill alone can't carry. */
   --ch-poll-level: var(--ch-green-500);
   --ch-poll-ring: var(--ch-green-500);
-  --ch-poll-mark-ring: var(--ch-ink-400);
+  /* ink-500 holds 3:1 over every fill the mark sits on (4.30 on green-200 at its lowest; ink-400 fell to 2.19). */
+  --ch-poll-mark-ring: var(--ch-ink-500);
   --ch-poll-mark-on: var(--ch-accent);
   --ch-poll-check: var(--ch-text-on-accent);
   container: ch-poll / inline-size;
   width: min(360px, 100%);
   padding: 14px 14px 12px;
-  border-radius: var(--ch-radius-lg);
+  border-radius: var(--ch-radius-card);
   background: var(--ch-sheet-bg);
   box-shadow: 0 0 0 1px var(--ch-border-hairline), var(--ch-elevation-bubble);
   color: var(--ch-text-primary);
@@ -3159,10 +3160,10 @@ html[data-fw-theme='dark'] [data-ui='clubhouse'] .ch-ms-poll {
   max-width: min(100%, 360px);
 }
 .ch-ms-msg.is-mine .ch-ms-poll {
-  border-bottom-right-radius: 6px;
+  border-bottom-right-radius: var(--ch-radius-tail);
 }
 .ch-ms-msg:not(.is-mine) .ch-ms-poll {
-  border-bottom-left-radius: 6px;
+  border-bottom-left-radius: var(--ch-radius-tail);
 }
 .ch-ms-poll__head {
   display: flex;
@@ -3262,7 +3263,7 @@ html[data-fw-theme='dark'] [data-ui='clubhouse'] .ch-ms-poll {
   transform: scaleX(var(--ch-poll-share, 0));
   transform-origin: left center;
   /* D3: interruptible (it moves on every vote), so a curve, not a CSS spring that would restart from rest. */
-  transition: transform var(--ch-dur-base) var(--ch-ease);
+  transition: transform var(--ch-dur-release) var(--ch-ease);
 }
 .ch-ms-poll__fill {
   inset: 0;
@@ -3318,7 +3319,7 @@ html[data-fw-theme='dark'] [data-ui='clubhouse'] .ch-ms-poll {
   transition: background-color var(--ch-dur-quick) var(--ch-ease), box-shadow var(--ch-dur-quick) var(--ch-ease);
 }
 .ch-ms-poll__opt.is-multi .ch-ms-poll__mark {
-  border-radius: 6px;
+  border-radius: var(--ch-radius-xs);
 }
 .ch-ms-poll__opt.is-on .ch-ms-poll__mark {
   background: var(--ch-poll-mark-on);
@@ -3363,6 +3364,10 @@ html[data-fw-theme='dark'] [data-ui='clubhouse'] .ch-ms-poll {
 }
 .ch-ms-poll.is-closed .ch-ms-poll__opt.is-lead .ch-ms-poll__n {
   color: var(--ch-text-primary);
+}
+/* A row nobody picked: "0" in tertiary (8.81 / 9.43 on the track), open and final. */
+.ch-ms-poll__n.is-zero {
+  color: var(--ch-text-tertiary);
 }
 .ch-ms-poll__foot {
   display: flex;

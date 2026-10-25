@@ -10,9 +10,10 @@
 -- PR #2362) only ever upsert on (message_id, user_id), so requiring
 -- membership on both sides of the UPDATE, as golf_message_responses_insert
 -- already does, changes nothing the app does. Review of PR #2362, should-fix 1.
--- Order: after 20261024090000 or on its own; each creates the policy only if
--- it is missing, and this file first drops a policy that lacks the
--- membership check.
+-- Order: after 20261024090000 on any fresh database; on production either
+-- order. Each creates the policy only if it is missing, and this file first
+-- drops a policy that lacks the membership check. The second VERIFY
+-- (count(*) = 4) holds only on production or after 20261024090000 (S-15).
 --
 -- VERIFY: SELECT 1 FROM pg_policies WHERE schemaname = 'public' AND tablename = 'golf_message_responses' AND policyname = 'golf_message_responses_update' AND with_check LIKE '%golf_conversation_has_me%' AND qual LIKE '%golf_conversation_has_me%';
 -- VERIFY: SELECT 1 FROM pg_policies WHERE schemaname = 'public' AND tablename = 'golf_message_responses' HAVING count(*) = 4;

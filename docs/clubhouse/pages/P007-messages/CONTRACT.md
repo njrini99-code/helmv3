@@ -161,6 +161,10 @@ do; every section that fails to load has its own notice with Try again (70617 to
 | 70636 | CH-7024 | `REMOVING_SOMEONE_FROM_A_GROUP_FAILS` | Removing someone from a group fails (the group's creator, desktop or phone Details › Remove) |
 | 70637 | CH-7025 | `DELETING_A_CONVERSATION_FROM_YOUR_INBOX_FAILS` | Deleting a conversation from your inbox fails |
 | 70638 | CH-7026 | `MARKING_A_CONVERSATION_READ_OR_UNREAD_FROM` | Marking a conversation read or unread from its row (menu or swipe) fails |
+| 70639 | CH-7027 | `CLOSING_A_POLL_FAILS` | Closing a poll fails (the sender's Close poll, after the confirm) |
+| 70640 | CH-7028 | `SENDING_A_POLL_FAILS` | Sending a poll fails (New poll › Send poll) |
+| 70641 | CH-7030 | `A_VOTE_IS_REFUSED_BECAUSE_THE_POLL` | A vote is refused because the poll ended between the tap and the write (only with the held vote guard, OQ-68) |
+| 70642 | CH-7029 | `A_VOTE_ON_A_POLL_ISNT_SAVED` | A vote on a poll isn't saved (tap a choice in a poll card) |
 
 ## 07 — Network / offline
 

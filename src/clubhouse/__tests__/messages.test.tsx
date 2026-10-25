@@ -1927,12 +1927,12 @@ describe('Messages · polls (premium features P-2)', () => {
     await waitFor(() => expect(polls.responses.vote).toHaveBeenCalledWith('p1', 'o1'));
   });
 
-  it('CH-7026 a vote that isn’t saved says so', async () => {
+  it('CH-7029 a vote that isn’t saved says so', async () => {
     const user = userEvent.setup();
     polls.responses.vote.mockResolvedValue({ ok: false, reason: 'failed' });
     show();
     await user.click(await screen.findByRole('radio', { name: /Van A/ }));
-    await expectCode('CH-7026', /Your vote wasn’t saved/);
+    await expectCode('CH-7029', /Your vote wasn’t saved/);
   });
 
   it('CH-7030 a vote refused because the poll ended says the result is final', async () => {

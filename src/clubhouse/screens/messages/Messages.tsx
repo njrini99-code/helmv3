@@ -761,7 +761,7 @@ export function Messages({ data }: { data: ChMessagesData }) {
         // A tap while this poll's vote is saving is not dropped: the hook writes the latest one when the first lands.
         const choice = optionIds.length ? encodeChoice(poll, optionIds) : null;
         if (optionIds.length && !choice) return;
-        void attempt('vote', { failed: 'Your vote wasn’t saved', hint: 'Try again in a moment.', code: 'CH-7026' }, async () => {
+        void attempt('vote', { failed: 'Your vote wasn’t saved', hint: 'Try again in a moment.', code: 'CH-7029' }, async () => {
           const res = await responses.vote(messageId, choice);
           if (res.ok) return;
           if (res.reason === 'closed') {

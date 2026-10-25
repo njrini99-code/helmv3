@@ -222,9 +222,9 @@ export function PollCard({
                   </span>
                 )}
                 {lead && closed && <span className="ch-ms-poll__tag">{tied ? "Tied" : "Most votes"}</span>}
-                <span className="ch-ms-poll__n ch-num" aria-hidden="true">
-                  {/* Blank at zero while open (a column of zeros reads as a result); "0" once final. */}
-                  {!tally ? "—" : n === 0 && !closed ? "" : n}
+                <span className={"ch-ms-poll__n ch-num" + (tally && n === 0 ? " is-zero" : "")} aria-hidden="true">
+                  {/* An honest "0" (tertiary ink) open or final; "—" only while the votes load or failed to. */}
+                  {!tally ? "—" : n}
                 </span>
               </button>
             </li>

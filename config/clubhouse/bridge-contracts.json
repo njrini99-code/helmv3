@@ -6718,6 +6718,28 @@
     "catalog": "docs/clubhouse/catalog/messages.md"
   },
   {
+    "id": 70639,
+    "page": "P007",
+    "category": 6,
+    "item": 39,
+    "name": "CLOSING_A_POLL_FAILS",
+    "chCode": "CH-7027",
+    "meaning": "Closing a poll fails (the sender's Close poll, after the confirm)",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/messages.md"
+  },
+  {
+    "id": 70640,
+    "page": "P007",
+    "category": 6,
+    "item": 40,
+    "name": "SENDING_A_POLL_FAILS",
+    "chCode": "CH-7028",
+    "meaning": "Sending a poll fails (New poll › Send poll)",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/messages.md"
+  },
+  {
     "id": 70641,
     "page": "P007",
     "category": 6,
@@ -6725,6 +6747,17 @@
     "name": "A_VOTE_IS_REFUSED_BECAUSE_THE_POLL",
     "chCode": "CH-7030",
     "meaning": "A vote is refused because the poll ended between the tap and the write (only with the held vote guard, OQ-68)",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/messages.md"
+  },
+  {
+    "id": 70642,
+    "page": "P007",
+    "category": 6,
+    "item": 42,
+    "name": "A_VOTE_ON_A_POLL_ISNT_SAVED",
+    "chCode": "CH-7029",
+    "meaning": "A vote on a poll isn't saved (tap a choice in a poll card)",
     "status": "implemented",
     "catalog": "docs/clubhouse/catalog/messages.md"
   },
