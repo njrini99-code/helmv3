@@ -20,6 +20,7 @@ import { rebuiltHref } from '../../shell/nav';
 import { CoachAsks } from './CoachAsks';
 import { Countdown } from './Countdown';
 import { Today, UpNext, WeekStrip } from './HomePhone';
+import { SinceYouLooked } from './DayCard';
 import { noRoundsYet, playerFailedParts } from './model';
 import { OwnLiveCard } from './OwnLiveCard';
 import { TeammatesLiveCard } from './TeammatesLiveCard';
@@ -104,6 +105,8 @@ export function PlayerHomePhone({ data, now: frozen, live, playerId }: { data: C
             <TeammatesLiveCard initial={live.snapshot} playerId={playerId} frozen={frozen !== undefined} now={frozen !== undefined ? Date.parse(frozen) : undefined} />
           </SectionBoundary>
         )}
+        {/* P-14: what the coach changed on the schedule since this device last looked (changes only; a player sees no teammate's rounds here). */}
+        <SinceYouLooked rounds={[]} event={null} changes={data.changes ?? []} onOpenRound={() => {}} />
         {!data.week.error && !nothingAhead ? (
           <SectionBoundary surface="home.week" label="This week" code="CH-2205">
             {/* The board's Today is a small label inside This week, not a section of its own. */}

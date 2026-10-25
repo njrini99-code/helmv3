@@ -33,6 +33,7 @@ import { CoachHome, CoachHomeNoTeam } from '@/clubhouse/screens/home/CoachHome';
 import { loadPlayerHome } from '@/clubhouse/data/player-home';
 import { PlayerHome, PlayerHomeNoTeam } from '@/clubhouse/screens/home/PlayerHome';
 import { resolveClubhouseTeam } from '@/clubhouse/routes/team';
+import { marksHint } from '@/clubhouse/lib/phone-hint';
 
 export const dynamic = 'force-dynamic';
 
@@ -205,7 +206,7 @@ export default async function GolfDashboardPage({
             if (!teamId) return <CoachHomeNoTeam />;
             // Who is on the course rides beside Home's own reads and never fails them (loadLiveRounds catches its own).
             const [home, live] = await Promise.all([
-                loadCoachHome({ teamId, coachName: coach.full_name || 'Coach', userId }),
+                loadCoachHome({ teamId, coachName: coach.full_name || 'Coach', userId, coachId: coach.id, marks: await marksHint() }),
                 loadLiveRounds({ teamId, viewer: { role: 'coach', playerId: null } }),
             ]);
             return <CoachHome data={home} live={live} />;
@@ -286,7 +287,7 @@ export default async function GolfDashboardPage({
         const team = await resolveClubhouseTeam(session);
         if (!team || team.role !== 'player') return <PlayerHomeNoTeam />;
         const [home, live] = await Promise.all([
-            loadPlayerHome({ teamId: team.teamId, playerId: team.playerId, firstName: player.first_name?.trim() || 'there' }),
+            loadPlayerHome({ teamId: team.teamId, playerId: team.playerId, firstName: player.first_name?.trim() || 'there', marks: await marksHint() }),
             loadPlayerLive({ teamId: team.teamId, playerId: team.playerId }),
         ]);
         return <PlayerHome data={home} live={live} playerId={team.playerId} />;

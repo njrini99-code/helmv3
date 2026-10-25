@@ -38,6 +38,38 @@ export function flow(holes: ChReviewHole[]): FlowPoint[] {
   return out;
 }
 
+/**
+ * P-7: where the round turned. Of every run of two, three or four holes in a row (in the order `points` are played), the one
+ * with the largest strokes to par either way, when that is at least 2; ties go to the shorter run, then the later one, and a
+ * loss beats a gain of the same size. Null when no run moved the score by 2. A run that wraps past the last hole (a start on
+ * 10) lists its holes: "Lost 3 on 17, 18 and 1".
+ */
+export function turningStretch(points: readonly FlowPoint[]): { from: number; to: number; sum: number; words: string } | null {
+  type Run = { i: number; len: number; sum: number };
+  // Larger swing first; at the same size a loss, then the shorter run, then the later one.
+  const beats = (a: Run, b: Run): boolean => {
+    if (Math.abs(a.sum) !== Math.abs(b.sum)) return Math.abs(a.sum) > Math.abs(b.sum);
+    if (Math.sign(a.sum) !== Math.sign(b.sum)) return a.sum > 0;
+    if (a.len !== b.len) return a.len < b.len;
+    return a.i > b.i;
+  };
+  let best: Run | null = null;
+  for (const len of [2, 3, 4]) {
+    for (let i = 0; i + len <= points.length; i++) {
+      const run = { i, len, sum: points.slice(i, i + len).reduce((a, p) => a + p.delta, 0) };
+      if (Math.abs(run.sum) >= 2 && (!best || beats(run, best))) best = run;
+    }
+  }
+  if (!best) return null;
+  const run = points.slice(best.i, best.i + best.len).map((p) => p.n);
+  const from = run[0]!;
+  const to = run[run.length - 1]!;
+  const wraps = run.some((n, k) => k > 0 && n < run[k - 1]!);
+  const span = wraps ? `${run.slice(0, -1).join(', ')} and ${to}` : `${from} to ${to}`;
+  const words = best.sum > 0 ? `Lost ${best.sum} on ${span}` : `Got ${-best.sum} back on ${span}`;
+  return { from, to, sum: best.sum, words };
+}
+
 /** The holes that cost the most strokes against par, worst first (ties by hole number); only holes over par. */
 export function costliest(holes: ChReviewHole[], k = 3): FlowPoint[] {
   return flow(holes)

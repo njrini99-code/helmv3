@@ -21,7 +21,8 @@ import { RecoveryHost, RoundRuntime, type RoundRuntimeRoutes } from './RoundRunt
 import { useRoundDoneKey } from './use-done-key';
 import { ENGINE_ROUTES } from './routes';
 import { roundHeading, trackingRound, type ChRoundSession } from './session';
-import { afterSavedCourseStart, loadSetupQualifiers, QUALIFIER_READ_MS, SETUP_READ_PORTS, startRefusal, toStartForm } from './setup-reads';
+import { afterSavedCourseStart, loadSetupQualifiers, QUALIFIER_READ_MS, readCourseGlances, SETUP_READ_PORTS, startRefusal, toStartForm } from './setup-reads';
+import type { ChCourseGlance } from '../../../data/course-glance';
 import { canvasScrollNow } from '../../../lib/smooth-scroll';
 
 const LIBRARY = '/golf/dashboard/rounds';
@@ -62,6 +63,16 @@ export function NewRound({ playerId, dataGapAsks, dataPromptsV2 = false }: { pla
   // offers is never one the engine then refuses. It is known after hydration, as the server has no device day.
   const [today, setToday] = useState<string | null>(null);
   useEffect(() => setToday(localDayIso()), []);
+
+  // P-7 4.6: the player's history at each course, beside a picked course; read once, best-effort.
+  const [glances, setGlances] = useState<Record<string, ChCourseGlance> | null>(null);
+  useEffect(() => {
+    let alive = true;
+    void readCourseGlances(playerId).then((g) => alive && setGlances(g));
+    return () => {
+      alive = false;
+    };
+  }, [playerId]);
 
   const [qualifiers, setQualifiers] = useState<ChSetupQualifier[] | null | 'loading'>('loading');
   useEffect(() => {
@@ -232,6 +243,8 @@ export function NewRound({ playerId, dataGapAsks, dataPromptsV2 = false }: { pla
           backHref={LIBRARY}
           onStarted={() => undefined}
           preselectQualifierId={params.get('qualifier')}
+          preselectCourseId={params.get('course')}
+          glances={glances}
           isOffline={offline}
           viewerId={playerId}
         />

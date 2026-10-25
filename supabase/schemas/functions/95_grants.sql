@@ -610,6 +610,14 @@ GRANT ALL ON FUNCTION "public"."golf_join_team_with_code"("p_code" "text") TO "a
 
 GRANT ALL ON FUNCTION "public"."golf_join_team_with_code"("p_code" "text") TO "service_role";
 
+REVOKE ALL ON FUNCTION "public"."golf_message_responses_poll_guard"() FROM PUBLIC, "anon", "authenticated";
+
+GRANT ALL ON FUNCTION "public"."golf_message_responses_poll_guard"() TO "service_role";
+
+REVOKE ALL ON FUNCTION "public"."golf_messages_poll_freeze"() FROM PUBLIC, "anon", "authenticated";
+
+GRANT ALL ON FUNCTION "public"."golf_messages_poll_freeze"() TO "service_role";
+
 REVOKE ALL ON FUNCTION "public"."golf_my_join_requests"() FROM PUBLIC;
 
 GRANT ALL ON FUNCTION "public"."golf_my_join_requests"() TO "authenticated";
@@ -1162,6 +1170,26 @@ REVOKE ALL ON FUNCTION "public"."select_stalest_teams"("p_limit" integer) FROM P
 
 GRANT ALL ON FUNCTION "public"."select_stalest_teams"("p_limit" integer) TO "service_role";
 
+REVOKE ALL ON FUNCTION public.golf_season_start(text, timestamptz) FROM PUBLIC;
+
+GRANT ALL ON FUNCTION public.golf_season_start(text, timestamptz) TO "service_role";
+
+REVOKE ALL ON FUNCTION public.mark_team_standing_dirty(uuid) FROM PUBLIC;
+
+GRANT ALL ON FUNCTION public.mark_team_standing_dirty(uuid) TO "service_role";
+
+REVOKE ALL ON FUNCTION public.select_dirty_standing_teams(integer, integer, integer) FROM PUBLIC;
+
+GRANT ALL ON FUNCTION public.select_dirty_standing_teams(integer, integer, integer) TO "service_role";
+
+REVOKE ALL ON FUNCTION public.clear_dirty_standing_teams(uuid[], timestamptz[]) FROM PUBLIC;
+
+GRANT ALL ON FUNCTION public.clear_dirty_standing_teams(uuid[], timestamptz[]) TO "service_role";
+
+REVOKE ALL ON FUNCTION public.refresh_player_standing_season(uuid[]) FROM PUBLIC;
+
+GRANT ALL ON FUNCTION public.refresh_player_standing_season(uuid[]) TO "service_role";
+
 REVOKE ALL ON FUNCTION "public"."set_calendar_feed_token"() FROM PUBLIC;
 
 GRANT ALL ON FUNCTION "public"."set_calendar_feed_token"() TO "service_role";
@@ -1477,3 +1505,22 @@ ALTER DEFAULT PRIVILEGES FOR ROLE "postgres" IN SCHEMA "public" GRANT ALL ON FUN
 REVOKE ALL ON FUNCTION "public"."golf_import_player_classes"("p_player_id" "uuid", "p_team_id" "uuid", "p_term" "text", "p_rows" "jsonb") FROM PUBLIC;
 GRANT ALL ON FUNCTION "public"."golf_import_player_classes"("p_player_id" "uuid", "p_team_id" "uuid", "p_term" "text", "p_rows" "jsonb") TO "authenticated";
 GRANT ALL ON FUNCTION "public"."golf_import_player_classes"("p_player_id" "uuid", "p_team_id" "uuid", "p_term" "text", "p_rows" "jsonb") TO "service_role";
+
+REVOKE ALL ON FUNCTION "public"."golf_forget_read_marks"() FROM PUBLIC;
+GRANT ALL ON FUNCTION "public"."golf_forget_read_marks"() TO "service_role";
+
+REVOKE ALL ON FUNCTION "public"."golf_message_seen_times"("p_message_id" "uuid") FROM PUBLIC;
+GRANT ALL ON FUNCTION "public"."golf_message_seen_times"("p_message_id" "uuid") TO "authenticated";
+GRANT ALL ON FUNCTION "public"."golf_message_seen_times"("p_message_id" "uuid") TO "service_role";
+
+REVOKE ALL ON FUNCTION "public"."golf_read_marks_visible"("p_conversation_id" "uuid", "p_user_id" "uuid") FROM PUBLIC;
+GRANT ALL ON FUNCTION "public"."golf_read_marks_visible"("p_conversation_id" "uuid", "p_user_id" "uuid") TO "authenticated";
+GRANT ALL ON FUNCTION "public"."golf_read_marks_visible"("p_conversation_id" "uuid", "p_user_id" "uuid") TO "service_role";
+
+REVOKE ALL ON FUNCTION "public"."golf_record_read_mark"() FROM PUBLIC;
+GRANT ALL ON FUNCTION "public"."golf_record_read_mark"() TO "service_role";
+
+-- P-14 change marks (20261025080000): the trigger function and the capability probe are not callable by clients.
+REVOKE ALL ON FUNCTION "public"."golf_events_change_mark"() FROM PUBLIC, "anon", "authenticated";
+REVOKE ALL ON FUNCTION "public"."golf_change_marks_capability"() FROM PUBLIC, "anon", "authenticated";
+GRANT EXECUTE ON FUNCTION "public"."golf_change_marks_capability"() TO "service_role";

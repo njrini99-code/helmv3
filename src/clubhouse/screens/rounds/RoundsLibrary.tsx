@@ -1,8 +1,8 @@
 'use client';
 
-import { useMemo, useState } from 'react';
+import { useMemo, useState, type ReactNode } from 'react';
 import Link from 'next/link';
-import { ArrowRight, Flag, Plus, ScrollText, Trash2, TriangleAlert } from 'lucide-react';
+import { ArrowRight, ChevronRight, Flag, Plus, ScrollText, Trash2, TriangleAlert } from 'lucide-react';
 import type { ChLibraryRound, ChRoundsLibrary, ChUnfinishedRound } from '../../data/rounds-shape';
 import { formatFixed } from '../../lib/format';
 import { haptic } from '../../lib/haptics';
@@ -32,6 +32,7 @@ import { pluralWord } from '../../lib/plural';
 import { browserSharePorts, type LiveSharePorts } from '../../live/share-ports';
 import { useRoundSharing } from './track/LiveShareSheet';
 import { LargeTitle } from '../../ui/LargeTitle';
+import { courseHref, groupCourseRounds } from '../../data/course-key';
 
 type Group = 'month' | 'course';
 
@@ -43,20 +44,50 @@ export const roundsLinks = {
   newRound: () => rebuiltHref('/golf/dashboard/rounds/new', 'player'),
   continueRound: (id: string) => rebuiltHref(`/golf/dashboard/rounds/continue/${id}`, 'player'),
   review: (id: string) => rebuiltHref(`/golf/dashboard/rounds/${id}`, 'player'),
+  course: (key: string) => rebuiltHref(courseHref(key), 'player'),
 };
 
-/** Groups in display order: months newest first, or courses by their newest round. */
-export function groupRounds(list: ChLibraryRound[], by: Group, q: string): Array<{ key: string; rounds: ChLibraryRound[] }> {
+/**
+ * Groups in display order: months newest first, or courses by their newest round. By course, rounds group as the course
+ * page does (P-7, `groupCourseRounds`: the library id, then the normalized name), so "Finley GC" and "finley gc" are one
+ * course and the counts agree with its page; each such group links there (`href`). A round with no course stays apart.
+ */
+export function groupRounds(list: ChLibraryRound[], by: Group, q: string): Array<{ key: string; rounds: ChLibraryRound[]; href?: string | null }> {
   const needle = q.trim().toLowerCase();
   const shown = needle ? list.filter((r) => r.course.toLowerCase().includes(needle)) : list;
+  if (by === 'course') {
+    const courses = groupCourseRounds(shown.map((r) => ({ id: r.id, course_id: r.courseId ?? null, course_name: r.courseRaw === undefined ? r.course : r.courseRaw, r })));
+    const of = new Map<string, string>();
+    for (const [k, g] of courses) for (const x of g.rounds) of.set(x.id, k);
+    const out = new Map<string, { key: string; rounds: ChLibraryRound[]; href?: string | null }>();
+    for (const r of shown) {
+      const k = of.get(r.id);
+      const id = k ?? `raw:${r.course}`;
+      const g = out.get(id) ?? { key: k ? courses.get(k)!.name || r.course : r.course, rounds: [], ...(k ? { href: roundsLinks.course(k) } : {}) };
+      g.rounds.push(r);
+      out.set(id, g);
+    }
+    return [...out.values()];
+  }
   const groups = new Map<string, ChLibraryRound[]>();
   for (const r of shown) {
-    const k = by === 'month' ? monthLabel(r.date) : r.course;
+    const k = monthLabel(r.date);
     const xs = groups.get(k) ?? [];
     xs.push(r);
     groups.set(k, xs);
   }
   return [...groups].map(([key, rounds]) => ({ key, rounds }));
+}
+
+/** A "By course" group's header: a link row to the course page when the group is a course (P-7 E3), else plain. */
+function GroupHead({ href, name, children }: { href: string | null; name: string; children: ReactNode }) {
+  if (!href) return <div className="ch-rd-grp__h">{children}</div>;
+  return (
+    <Link className="ch-rd-grp__h is-link" href={href} aria-label={`${name}: your history here`}>
+      {children}
+      <Icon icon={ChevronRight} size={16} className="ch-rd-grp__go" />
+    </Link>
+  );
 }
 
 const ROW_KEYS: readonly ChPageKey[] = [{ label: 'Move between rounds', keys: ['Up', 'Down'] }];
@@ -273,8 +304,8 @@ export function RoundsLibrary({ data: fresh, playerId, writes = LIVE_ROUNDS_WRIT
                 groups.map((g) => {
                   const full = g.rounds.filter((r) => r.holes === 18);
                   return (
-                    <section key={g.key} className="ch-rd-grp" aria-label={g.key}>
-                      <div className="ch-rd-grp__h">
+                    <section key={g.href ?? g.key} className="ch-rd-grp" aria-label={g.key}>
+                      <GroupHead href={g.href ?? null} name={g.key}>
                         <h2>{g.key}</h2>
                         <span className="ch-rd-grp__rule" />
                         <MonthSpark rounds={g.rounds} />
@@ -292,7 +323,7 @@ export function RoundsLibrary({ data: fresh, playerId, writes = LIVE_ROUNDS_WRIT
                             low <b>{Math.min(...full.map((r) => r.score))}</b>
                           </span>
                         )}
-                      </div>
+                      </GroupHead>
                       <div className="ch-rd-book">
                         {g.rounds.map((r) => (
                           <RoundRow key={r.id} r={r} href={roundsLinks.review(r.id)} onOpen={() => noteOpenedFromLibrary(r.id)} bind={postedCtx.bind(r)} />

@@ -12,6 +12,9 @@ import { TYPE_ICON } from '../calendar/type-icon';
 import { messagesPrefillHref } from '../messages/prefill';
 import { rebuiltHref } from '../../shell/nav';
 import { useChClock } from '../../lib/use-clock';
+import { restyleClock } from '../../lib/clock-format';
+import { useMarkReader } from '../../lib/use-change-marks';
+import { WasValue } from '../../ui/WasValue';
 import { agendaDetail, agendaTime } from './agenda-clock';
 import { nudgeDraft } from './nudge-draft';
 import { firstName } from '../../lib/names';
@@ -111,12 +114,21 @@ export function Week({ week, between, covered = false, events }: { week: ChCoach
 function AgendaRow({ r, replies = null }: { r: ChAgendaRow; replies?: ReturnType<typeof nextReplies> }) {
   const clock = useChClock();
   const detail = agendaDetail(r, clock);
+  // P-14: the old value of a changed event leads the detail line, struck, until Got it.
+  const read = useMarkReader();
+  const was = r.was && !read(r.was.changeId).got ? r.was : null;
   return (
     <div className={'ch-h-agenda__row' + (r.isNext ? ' is-next' : '') + (r.isCompetition ? ' is-event' : '') + (replies ? ' has-replies' : '')}>
       <span className="ch-h-agenda__t ch-num">{agendaTime(r, clock)}</span>
       <div className="ch-h-agenda__txt">
         <div className="ch-h-agenda__a">{r.title}</div>
-        {detail && <div className="ch-h-agenda__b">{detail}</div>}
+        {(detail || was) && (
+          <div className="ch-h-agenda__b">
+            {was && <WasValue changeId={was.changeId}>{restyleClock(was.text, clock)}</WasValue>}
+            {was && detail ? ' · ' : ''}
+            {detail}
+          </div>
+        )}
         {replies && <div className="ch-h-agenda__rsvp ch-num">{replies.line}</div>}
       </div>
       {r.isNext && <Badge tone="accent">Next</Badge>}

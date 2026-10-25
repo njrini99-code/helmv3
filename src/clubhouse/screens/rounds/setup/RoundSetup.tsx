@@ -2,9 +2,10 @@
 
 import { useCallback, useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
-import { ArrowRight, ChartColumn, ChevronLeft, MapPin, Medal, Search } from 'lucide-react';
+import { ArrowRight, ChartColumn, ChevronLeft, ChevronRight, MapPin, Medal, Search } from 'lucide-react';
 import type { ChRoundType } from '../../../data/rounds-shape';
 import { haptic } from '../../../lib/haptics';
+import { plural } from '../../../lib/plural';
 import { roving } from '../../../ui/use-roving';
 import { Segmented } from '../../../ui/Segmented';
 import { useAction } from '../../../lib/use-action';
@@ -21,6 +22,9 @@ import { HoleConfig } from './HoleConfig';
 import { holesForRound, parOf, setupBlocker, startPosition, type ChSetupCourse, type ChSetupForm, type ChSetupHole, type ChSetupPick, type ChSetupPorts, type ChSetupQualifier, type ChStartFailure, type ChStartResult } from './shape';
 import { LiveShareField } from './LiveShareField';
 import type { LiveSharePorts } from '../../../live/share-ports';
+import { glanceFor, type ChCourseGlance } from '../../../data/course-glance';
+import { courseHref } from '../../../data/course-key';
+import { formatFixed } from '../../../lib/format';
 import '../../../styles/rounds-setup.css';
 
 const STEPS = ['Course', 'Scorecard', 'Track'] as const;
@@ -40,6 +44,10 @@ export interface RoundSetupProps {
   onStarted: (roundId: string) => void;
   /** A qualifier to play when the page opens (`?qualifier=`): chosen once, when it is in `qualifiers` with a round open. */
   preselectQualifierId?: string | null;
+  /** P-7: a library course to open the picker on (`?course=`, from the course page's Start a round here); ignored when unknown. */
+  preselectCourseId?: string | null;
+  /** P-7 4.6: the player's history at each course, for the block under a picked course; absent or empty, no block. */
+  glances?: Record<string, ChCourseGlance> | null;
   /**
    * Whether Start counts as offline, in place of `navigator.onLine` alone. The round engine reads the connection probe
    * as well (WKWebView reports false on reachable networks) and refuses an offline start itself, with its own words.
@@ -72,7 +80,7 @@ function ScorecardHead() {
  * screen draws; the round screen's ports read the course library and start
  * the round (docs/clubhouse/ROUNDS_PLAN.md).
  */
-export function RoundSetup({ ports, liveShare, qualifiers, today, backHref, onStarted, preselectQualifierId = null, isOffline, viewerId = null }: RoundSetupProps) {
+export function RoundSetup({ ports, liveShare, qualifiers, today, backHref, onStarted, preselectQualifierId = null, preselectCourseId = null, glances = null, isOffline, viewerId = null }: RoundSetupProps) {
   const [form, setForm] = useState<ChSetupForm>({
     pick: null,
     type: 'practice',
@@ -203,6 +211,21 @@ export function RoundSetup({ ports, liveShare, qualifiers, today, backHref, onSt
     applyPreselected.current(q);
   }, [preselectQualifierId, qualifiers]);
 
+  // The page opened on a course (`?course=`): open the picker on its tees, once, when the library lists it.
+  const coursePreselected = useRef(false);
+  useEffect(() => {
+    if (coursePreselected.current || !preselectCourseId) return;
+    coursePreselected.current = true;
+    let alive = true;
+    void ports.listCourses().then((r) => {
+      const c = r.ok ? r.data.find((x) => x.id === preselectCourseId) : null;
+      if (alive && c) setPicker({ course: c });
+    });
+    return () => {
+      alive = false;
+    };
+  }, [preselectCourseId, ports]);
+
   const blocker = holesLoad.state === 'loading' ? 'Loading the scorecard' : holesLoad.state === 'failed' ? 'The scorecard didn’t load' : setupBlocker(form, today);
   const open = qualifiers?.filter((q) => q.nextRound != null) ?? [];
   const offer = form.type !== 'qualifier' ? open[0] : undefined;
@@ -256,6 +279,7 @@ export function RoundSetup({ ports, liveShare, qualifiers, today, backHref, onSt
                     </span>
                   )}
                 </div>
+                {glances && <HistoryHere glance={glanceFor(glances, p)} />}
                 <div className="ch-rsu-course__f">
                   <span className="ch-rsu-course__tee">
                     <TeeSwatch color={p.teeColor} />
@@ -512,5 +536,29 @@ export function RoundSetup({ ports, liveShare, qualifiers, today, backHref, onSt
         }}
       />
     </main>
+  );
+}
+
+const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'June', 'July', 'Aug', 'Sept', 'Oct', 'Nov', 'Dec'];
+const shortDay = (d: string) => `${MONTHS[Number(d.slice(5, 7)) - 1]} ${Number(d.slice(8, 10))}`;
+
+/**
+ * P-7 4.6: "Your history here" under the picked course: the average, the best and the last time, the last round's note,
+ * and the way to the course page (the setup draft survives the trip, draft.ts). Nothing with no rounds here.
+ */
+function HistoryHere({ glance: g }: { glance: ChCourseGlance | null }) {
+  if (!g) return null;
+  const last = g.last ? `Last time ${g.last.score} on ${shortDay(g.last.date)}` : null;
+  const line = g.average != null ? [`Average ${formatFixed(g.average, 1)}`, g.best != null ? `Best ${g.best}` : null, last].filter(Boolean).join(' · ') : last;
+  return (
+    <div className="ch-rsu-hist">
+      <span className="ch-rsu-hist__k">Your history here · {plural(g.rounds, 'round')}</span>
+      {line && <p className="ch-rsu-hist__l ch-num">{line}</p>}
+      {g.last?.note && <p className="ch-rsu-hist__n">Your note: {g.last.note}</p>}
+      <Link className="ch-rsu-hist__go" href={courseHref(g.key)}>
+        See hole by hole
+        <Icon icon={ChevronRight} size={16} />
+      </Link>
+    </div>
   );
 }

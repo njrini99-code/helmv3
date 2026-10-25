@@ -4928,6 +4928,208 @@ ALTER FUNCTION "public"."golf_join_team_with_code"("p_code" "text") OWNER TO "po
 
 COMMENT ON FUNCTION "public"."golf_join_team_with_code"("p_code" "text") IS 'Joins the caller''s golf player to the team matching the supplied code, verified server-side (#1257).';
 
+CREATE OR REPLACE FUNCTION "public"."golf_message_responses_poll_guard"() RETURNS "trigger"
+    LANGUAGE "plpgsql" SECURITY DEFINER
+    SET "search_path" TO ''
+    AS $$
+DECLARE
+  v_row      public.golf_message_responses%ROWTYPE;
+  v_kind     text;
+  v_conv     uuid;
+  v_payload  jsonb;
+  v_deleted  boolean;
+  v_closes   timestamptz;
+  v_ids      text[];
+  v_picked   text[];
+  v_role     text := (SELECT auth.role());
+BEGIN
+  -- Support fixes (service_role) and the owner's own sessions (no JWT role) pass.
+  IF v_role IS NULL OR v_role = 'service_role' THEN
+    RETURN COALESCE(NEW, OLD);
+  END IF;
+  -- Cascades from a deleted message or user pass.
+  IF TG_OP = 'DELETE' AND pg_trigger_depth() > 1 THEN
+    RETURN OLD;
+  END IF;
+
+  -- A vote stays on its poll and with its voter. A move onto a conversation the caller is not in is refused as RLS
+  -- would refuse it (42501); any other move off or onto a poll is P0001.
+  IF TG_OP = 'UPDATE'
+     AND (NEW.message_id IS DISTINCT FROM OLD.message_id
+       OR NEW.user_id IS DISTINCT FROM OLD.user_id) THEN
+    IF NOT EXISTS (
+      SELECT 1 FROM public.golf_messages m
+      WHERE m.id IN (OLD.message_id, NEW.message_id) AND m.kind = 'poll'
+    ) THEN
+      RETURN NEW;
+    END IF;
+    IF NOT EXISTS (
+      SELECT 1 FROM public.golf_messages m
+      WHERE m.id = NEW.message_id AND public.golf_conversation_has_me(m.conversation_id)
+    ) THEN
+      RAISE EXCEPTION 'Only people in this conversation can vote on its polls'
+        USING ERRCODE = '42501';
+    END IF;
+    RAISE EXCEPTION 'A vote stays on its poll'
+      USING ERRCODE = 'P0001', HINT = 'golf_poll_choice';
+  END IF;
+
+  IF TG_OP = 'DELETE' THEN
+    v_row := OLD;
+  ELSE
+    v_row := NEW;
+  END IF;
+
+  SELECT m.kind, m.conversation_id, m.payload, coalesce(m.is_deleted, false)
+    INTO v_kind, v_conv, v_payload, v_deleted
+  FROM public.golf_messages m
+  WHERE m.id = v_row.message_id;
+
+  -- Not a poll (or no such message: the foreign key refuses the write).
+  IF v_kind IS DISTINCT FROM 'poll' THEN
+    RETURN COALESCE(NEW, OLD);
+  END IF;
+
+  -- Only someone in the conversation may vote, change or take back a vote.
+  IF NOT public.golf_conversation_has_me(v_conv) THEN
+    RAISE EXCEPTION 'Only people in this conversation can vote on its polls'
+      USING ERRCODE = '42501';
+  END IF;
+
+  IF v_deleted THEN
+    RAISE EXCEPTION 'This poll was deleted'
+      USING ERRCODE = 'P0001', HINT = 'golf_poll_deleted';
+  END IF;
+
+  BEGIN
+    v_closes := (v_payload->>'closes_at')::timestamptz;
+  EXCEPTION WHEN others THEN
+    v_closes := NULL;  -- the app reads a bad date as no end, so does this
+  END;
+
+  IF (v_payload->>'closed_at') IS NOT NULL
+     OR (v_closes IS NOT NULL AND v_closes <= now()) THEN
+    RAISE EXCEPTION 'This poll is closed'
+      USING ERRCODE = 'P0001', HINT = 'golf_poll_closed';
+  END IF;
+
+  IF TG_OP = 'DELETE' THEN
+    RETURN OLD;
+  END IF;
+
+  SELECT coalesce(array_agg(o->>'id'), ARRAY[]::text[])
+    INTO v_ids
+  FROM jsonb_array_elements(
+    CASE WHEN jsonb_typeof(v_payload->'options') = 'array'
+         THEN v_payload->'options' ELSE '[]'::jsonb END
+  ) AS o;
+
+  v_picked := string_to_array(NEW.choice, ',');
+
+  IF v_picked IS NULL
+     OR cardinality(v_picked) = 0
+     OR NOT (v_picked <@ v_ids)
+     OR cardinality(v_picked) <> (SELECT count(DISTINCT x) FROM unnest(v_picked) AS x)
+     OR (coalesce((v_payload->>'multi')::boolean, false) = false
+         AND cardinality(v_picked) > 1) THEN
+    RAISE EXCEPTION 'That choice is not on this poll'
+      USING ERRCODE = 'P0001', HINT = 'golf_poll_choice';
+  END IF;
+
+  RETURN NEW;
+END;
+$$;
+
+ALTER FUNCTION "public"."golf_message_responses_poll_guard"() OWNER TO "postgres";
+
+COMMENT ON FUNCTION "public"."golf_message_responses_poll_guard"() IS 'Clubhouse polls (P-2): a vote is refused when the caller is not in the poll''s conversation (42501), the poll is deleted, closed or ended, or the choice is not one the poll offers (P0001 with HINT golf_poll_deleted, golf_poll_closed, golf_poll_choice). SECURITY DEFINER so it reads the poll by primary key; checks only requests with a JWT role other than service_role. Held 20261025020100.';
+
+CREATE OR REPLACE FUNCTION "public"."golf_messages_poll_freeze"() RETURNS "trigger"
+    LANGUAGE "plpgsql"
+    SET "search_path" TO ''
+    AS $$
+DECLARE
+  v_opts jsonb;
+  v_role text := (SELECT auth.role());
+BEGIN
+  -- Support fixes (service_role) and the owner's own sessions (no JWT role) pass.
+  IF v_role IS NULL OR v_role = 'service_role' THEN
+    RETURN NEW;
+  END IF;
+
+  IF TG_OP = 'INSERT' THEN
+    IF NEW.kind IS DISTINCT FROM 'poll' THEN
+      RETURN NEW;
+    END IF;
+    v_opts := NEW.payload->'options';
+    IF NEW.payload IS NULL
+       OR (NEW.payload->>'v') IS DISTINCT FROM '1'
+       OR char_length(coalesce(NEW.payload->>'question', '')) NOT BETWEEN 1 AND 140
+       OR jsonb_typeof(v_opts) IS DISTINCT FROM 'array'
+       OR jsonb_array_length(v_opts) NOT BETWEEN 2 AND 6
+       OR jsonb_typeof(NEW.payload->'multi') IS DISTINCT FROM 'boolean'
+       OR (NEW.payload->>'closed_at') IS NOT NULL THEN
+      RAISE EXCEPTION 'Not a poll this app can draw'
+        USING ERRCODE = 'P0001', HINT = 'golf_poll_shape';
+    END IF;
+    IF EXISTS (
+      SELECT 1
+      FROM jsonb_array_elements(v_opts) WITH ORDINALITY AS e(o, i)
+      WHERE (e.o->>'id') IS DISTINCT FROM ('o' || e.i)
+         OR char_length(coalesce(e.o->>'label', '')) NOT BETWEEN 1 AND 60
+    ) THEN
+      RAISE EXCEPTION 'Not a poll this app can draw'
+        USING ERRCODE = 'P0001', HINT = 'golf_poll_shape';
+    END IF;
+    RETURN NEW;
+  END IF;
+
+  -- UPDATE
+  IF OLD.kind IS DISTINCT FROM 'poll' AND NEW.kind IS DISTINCT FROM 'poll' THEN
+    RETURN NEW;
+  END IF;
+  IF OLD.kind IS DISTINCT FROM NEW.kind THEN
+    RAISE EXCEPTION 'A message cannot become or stop being a poll'
+      USING ERRCODE = 'P0001', HINT = 'golf_poll_frozen';
+  END IF;
+
+  -- A deleted poll stays deleted, and stays as it was deleted.
+  IF coalesce(OLD.is_deleted, false) THEN
+    IF NOT coalesce(NEW.is_deleted, false)
+       OR NEW.content IS DISTINCT FROM OLD.content
+       OR NEW.payload IS DISTINCT FROM OLD.payload THEN
+      RAISE EXCEPTION 'A deleted poll cannot be changed'
+        USING ERRCODE = 'P0001', HINT = 'golf_poll_frozen';
+    END IF;
+    RETURN NEW;
+  END IF;
+
+  -- The app's soft delete: content kept or cleared, payload kept or cleared, nothing else of the poll.
+  IF coalesce(NEW.is_deleted, false) THEN
+    IF (NEW.content IS DISTINCT FROM OLD.content AND NEW.content IS DISTINCT FROM '')
+       OR (NEW.payload IS DISTINCT FROM OLD.payload AND NEW.payload IS NOT NULL) THEN
+      RAISE EXCEPTION 'A poll cannot be changed after it is sent'
+        USING ERRCODE = 'P0001', HINT = 'golf_poll_frozen';
+    END IF;
+    RETURN NEW;
+  END IF;
+
+  -- An open poll: only closed_at may change, once, from null to a time.
+  IF NEW.content IS DISTINCT FROM OLD.content
+     OR (NEW.payload - 'closed_at') IS DISTINCT FROM (OLD.payload - 'closed_at')
+     OR ((OLD.payload->>'closed_at') IS NOT NULL
+         AND (NEW.payload->>'closed_at') IS DISTINCT FROM (OLD.payload->>'closed_at')) THEN
+    RAISE EXCEPTION 'A poll cannot be changed after it is sent'
+      USING ERRCODE = 'P0001', HINT = 'golf_poll_frozen';
+  END IF;
+  RETURN NEW;
+END;
+$$;
+
+ALTER FUNCTION "public"."golf_messages_poll_freeze"() OWNER TO "postgres";
+
+COMMENT ON FUNCTION "public"."golf_messages_poll_freeze"() IS 'Clubhouse polls (P-2): a poll is inserted only in payload v1 shape and never changes after it is sent, except closed_at set once and the app''s soft delete (content and payload kept or cleared). Refusals are P0001 with HINT golf_poll_shape or golf_poll_frozen. Checks only requests with a JWT role other than service_role. Held 20261025020200.';
+
 CREATE OR REPLACE FUNCTION "public"."golf_my_join_requests"() RETURNS TABLE("id" "uuid", "status" "text", "message" "text", "created_at" timestamp with time zone, "team_id" "uuid", "team_name" "text", "organization_name" "text")
     LANGUAGE "sql" STABLE SECURITY DEFINER
     SET "search_path" TO 'public', 'pg_temp'
@@ -9744,6 +9946,455 @@ $$;
 
 ALTER FUNCTION "public"."select_stalest_teams"("p_limit" integer) OWNER TO "postgres";
 
+-- Clubhouse A+ rows 104/105/121 (2026-10-24, held): 20261024150000 and 20261024151000.
+CREATE OR REPLACE FUNCTION public.clear_dirty_standing_teams(p_team_ids uuid[], p_marked_ats timestamptz[])
+  RETURNS integer
+  LANGUAGE plpgsql
+  SECURITY DEFINER
+  SET search_path = pg_catalog, public
+AS $$
+DECLARE
+  v_cleared integer;
+BEGIN
+  -- Lock the rows first, in team order (the mark's order), so a clear and a
+  -- mark on overlapping teams cannot lock them in opposite orders.
+  PERFORM 1
+     FROM public.golf_standing_refresh_queue q
+     JOIN unnest(p_team_ids, p_marked_ats) AS seen(team_id, marked_at) ON seen.team_id = q.team_id
+    WHERE q.marked_at <= seen.marked_at
+    ORDER BY q.team_id
+      FOR UPDATE OF q;
+
+  DELETE FROM public.golf_standing_refresh_queue q
+   USING unnest(p_team_ids, p_marked_ats) AS seen(team_id, marked_at)
+   WHERE q.team_id = seen.team_id
+     AND q.marked_at <= seen.marked_at;
+  GET DIAGNOSTICS v_cleared = ROW_COUNT;
+  RETURN v_cleared;
+END;
+$$;
+
+ALTER FUNCTION public.clear_dirty_standing_teams(uuid[], timestamptz[]) OWNER TO "postgres";
+
+COMMENT ON FUNCTION public.clear_dirty_standing_teams(uuid[], timestamptz[]) IS 'Clears the marks a refresh run has covered: a team''s row goes only if its marked_at is not later than the value the run read, so a round saved during the refresh keeps its team dirty. Returns the rows removed. service_role only.';
+
+CREATE OR REPLACE FUNCTION public.golf_season_start(p_tz text, p_at timestamptz DEFAULT now())
+  RETURNS date
+  LANGUAGE sql
+  STABLE
+  SET search_path = pg_catalog, public
+AS $$
+  WITH zone AS (
+    SELECT CASE
+             WHEN EXISTS (SELECT 1 FROM pg_catalog.pg_timezone_names z WHERE z.name = p_tz) THEN p_tz
+             ELSE 'America/New_York'
+           END AS tz
+  ),
+  local_day AS (
+    SELECT (p_at AT TIME ZONE zone.tz)::date AS d FROM zone
+  )
+  SELECT make_date(
+           EXTRACT(YEAR FROM d)::integer - CASE WHEN EXTRACT(MONTH FROM d) >= 8 THEN 0 ELSE 1 END,
+           8, 1)
+    FROM local_day;
+$$;
+
+ALTER FUNCTION public.golf_season_start(text, timestamptz) OWNER TO "postgres";
+
+COMMENT ON FUNCTION public.golf_season_start(text, timestamptz) IS 'Owner decision 9 (2026-10-24): the golf season starts 1 August on the team''s wall clock. Returns that date for the season p_at falls in, read in p_tz; a zone Postgres does not know reads America/New_York, the product default. SQL twin of seasonStartDate (src/clubhouse/data/season.ts).';
+
+CREATE OR REPLACE FUNCTION public.mark_team_standing_dirty(p_player_id uuid)
+  RETURNS integer
+  LANGUAGE sql
+  SECURITY DEFINER
+  SET search_path = pg_catalog, public
+  SET lock_timeout = '2s'
+AS $$
+  -- Team order is fixed so two marks on overlapping teams lock rows in the
+  -- same order.
+  WITH teams AS (
+    SELECT DISTINCT tm.team_id
+      FROM public.golf_team_members tm
+     WHERE tm.player_id = p_player_id
+       AND tm.status = 'active'::public.team_member_status
+  ),
+  marked AS (
+    INSERT INTO public.golf_standing_refresh_queue AS q (team_id)
+    SELECT t.team_id FROM teams t ORDER BY t.team_id
+    ON CONFLICT (team_id) DO UPDATE
+      SET marked_at = now(), marks = q.marks + 1
+    RETURNING 1
+  )
+  SELECT count(*)::integer FROM marked;
+$$;
+
+ALTER FUNCTION public.mark_team_standing_dirty(uuid) OWNER TO "postgres";
+
+COMMENT ON FUNCTION public.mark_team_standing_dirty(uuid) IS 'Marks every team the player is active on as needing a Standing refresh; returns how many teams were marked. Called after a round save through the service client (never inside the save). service_role only.';
+
+CREATE OR REPLACE FUNCTION public.refresh_player_standing_season(p_team_ids uuid[])
+  RETURNS TABLE (out_metric_id text, out_rows_upserted bigint)
+  LANGUAGE plpgsql
+  SECURITY DEFINER
+  SET search_path = pg_catalog, public
+AS $$
+DECLARE
+  v_min_rounds constant int := 5;         -- cache-metric gate (cache.rounds_played >= 5)
+  v_min_team_n constant int := 5;         -- team percentile floor (20260925120000)
+  v_min_cohort_n constant int := 8;       -- cohort floor
+  v_min_attempts constant int := 10;      -- approach proximity: shots
+  v_min_shot_rounds constant int := 3;    -- approach proximity: rounds
+  v_min_greens constant int := 3;         -- approach proximity: on-green figure
+BEGIN
+  IF p_team_ids IS NULL OR array_length(p_team_ids, 1) IS NULL THEN
+    RETURN;
+  END IF;
+
+  -- Single flight: the nightly run and the dirty pass queue behind each other.
+  PERFORM pg_advisory_xact_lock(hashtext('public.refresh_player_standing_season'));
+
+  RETURN QUERY
+  WITH
+  -- golf_season_start reads pg_timezone_names (tens to hundreds of ms a
+  -- call), so it runs once per distinct zone and once for the default, never
+  -- per member (MATERIALIZED, so neither is inlined and re-run per row).
+  zones AS MATERIALIZED (
+    SELECT tz.timezone, public.golf_season_start(tz.timezone) AS season_start
+      FROM (SELECT DISTINCT s.timezone FROM public.golf_team_settings s) tz
+  ),
+  default_start AS MATERIALIZED (
+    SELECT public.golf_season_start('America/New_York') AS d
+  ),
+  -- Every active membership app-wide: the cohort is app-wide.
+  members AS (
+    SELECT tm.player_id, tm.team_id, COALESCE(t.gender, 'mens') AS gender,
+           COALESCE(z.season_start, ds.d) AS season_start
+      FROM public.golf_team_members tm
+      JOIN public.golf_teams t ON t.id = tm.team_id
+      CROSS JOIN default_start ds
+      LEFT JOIN public.golf_team_settings s ON s.team_id = tm.team_id
+      LEFT JOIN zones z ON z.timezone IS NOT DISTINCT FROM s.timezone
+     WHERE tm.status = 'active'::public.team_member_status
+  ),
+  player_season AS (
+    SELECT m.player_id, MIN(m.season_start) AS season_start
+      FROM members m
+     GROUP BY m.player_id
+  ),
+  season_rounds AS (
+    SELECT r.id, r.player_id, r.status, r.round_type, r.score_to_par, r.holes_played,
+           public.golf_round_is_countable(r.status, r.holes_played, r.total_score, r.front_nine, r.back_nine, r.total_putts, r.strokes_gained_total) AS hole_ok,
+           public.golf_round_is_score_countable(r.status, r.holes_played, r.total_score, r.front_nine, r.back_nine, r.total_putts, r.strokes_gained_total) AS score_ok,
+           (r.status = 'completed' AND r.total_score IS NOT NULL) AS putt_ok
+      FROM public.golf_rounds r
+      JOIN player_season ps ON ps.player_id = r.player_id
+     WHERE r.round_date >= ps.season_start
+       AND NOT r.is_test
+  ),
+  -- golf_round_stats_cache over hole-countable season rounds
+  -- (update_player_stats_complete's sums, season-bounded).
+  rsc AS (
+    SELECT sr.player_id,
+           COUNT(*) AS rounds,
+           COALESCE(SUM(COALESCE(sr.holes_played, 18)), 0) AS holes,
+           SUM(c.greens_hit) AS greens_hit, SUM(c.greens_total) AS greens_total,
+           SUM(c.sand_saves) AS sand_saves, SUM(c.sand_attempts) AS sand_attempts,
+           SUM(c.penalty_strokes) AS penalties,
+           SUM(COALESCE(c.eagles, 0) + COALESCE(c.birdies, 0) + COALESCE(c.pars, 0) + COALESCE(c.bogeys, 0) + COALESCE(c.double_bogeys, 0) + COALESCE(c.triple_plus, 0)) AS scored_holes,
+           SUM(COALESCE(c.double_bogeys, 0) + COALESCE(c.triple_plus, 0)) AS big_holes,
+           AVG(c.strokes_gained_total) FILTER (WHERE c.strokes_gained_total IS NOT NULL) AS sg_total,
+           AVG(c.strokes_gained_tee) FILTER (WHERE c.strokes_gained_total IS NOT NULL) AS sg_ott,
+           AVG(c.strokes_gained_approach) FILTER (WHERE c.strokes_gained_total IS NOT NULL) AS sg_approach,
+           AVG(c.strokes_gained_around_green) FILTER (WHERE c.strokes_gained_total IS NOT NULL) AS sg_around_green,
+           AVG(c.strokes_gained_putting) FILTER (WHERE c.strokes_gained_total IS NOT NULL) AS sg_putting,
+           COUNT(*) FILTER (WHERE c.strokes_gained_total IS NOT NULL) AS sg_n,
+           COUNT(*) FILTER (WHERE c.greens_total > 0) AS gir_n,
+           COUNT(*) FILTER (WHERE c.sand_attempts > 0) AS sand_n
+      FROM season_rounds sr
+      JOIN public.golf_round_stats_cache c ON c.round_id = sr.id
+     WHERE sr.hole_ok
+     GROUP BY sr.player_id
+  ),
+  par_scoring AS (
+    SELECT sr.player_id,
+           AVG(h.score) FILTER (WHERE h.par = 3) AS par3, COUNT(DISTINCT sr.id) FILTER (WHERE h.par = 3 AND h.score IS NOT NULL) AS par3_n,
+           AVG(h.score) FILTER (WHERE h.par = 4) AS par4, COUNT(DISTINCT sr.id) FILTER (WHERE h.par = 4 AND h.score IS NOT NULL) AS par4_n,
+           AVG(h.score) FILTER (WHERE h.par = 5) AS par5, COUNT(DISTINCT sr.id) FILTER (WHERE h.par = 5 AND h.score IS NOT NULL) AS par5_n
+      FROM season_rounds sr
+      JOIN public.golf_holes h ON h.round_id = sr.id
+     WHERE sr.hole_ok
+     GROUP BY sr.player_id
+  ),
+  putts AS (
+    SELECT sr.player_id, sr.id AS round_id,
+           LEAST(GREATEST(gs.distance_to_hole_before, 0), 120) AS feet,
+           (gs.result = 'hole' OR gs.putt_made IS TRUE) AS made
+      FROM season_rounds sr
+      JOIN public.golf_shots gs ON gs.round_id = sr.id
+     WHERE sr.hole_ok AND sr.putt_ok
+       AND lower(gs.shot_type) = 'putting'
+       AND gs.distance_to_hole_before IS NOT NULL
+  ),
+  putt_bands AS (
+    SELECT p.player_id, b.metric_id,
+           ROUND(100.0 * COUNT(*) FILTER (WHERE p.made) / NULLIF(COUNT(*), 0), 1) AS player_value,
+           COUNT(DISTINCT p.round_id) AS rounds_n
+      FROM putts p
+      JOIN (VALUES
+              ('putts_made_3_5ft_pct',      3::numeric,  5::numeric),
+              ('putts_made_5_10ft_pct',     5::numeric,  10::numeric),
+              ('putts_made_10_15ft_pct',    10::numeric, 15::numeric),
+              ('putts_made_15_25ft_pct',    15::numeric, 25::numeric),
+              ('putts_made_25_plus_ft_pct', 25::numeric, 1000::numeric)
+           ) AS b(metric_id, lo, hi)
+        ON p.feet > b.lo AND p.feet <= b.hi
+     GROUP BY p.player_id, b.metric_id
+  ),
+  -- The 17 cache metrics, gated at 5 hole-countable season rounds.
+  cache_vals AS (
+    SELECT x.player_id, x.metric_id, x.player_value, x.rounds_n
+      FROM rsc
+      LEFT JOIN par_scoring ps ON ps.player_id = rsc.player_id
+      CROSS JOIN LATERAL (VALUES
+        (rsc.player_id, 'sg_total',               ROUND(rsc.sg_total, 2),        rsc.sg_n),
+        (rsc.player_id, 'sg_ott',                 ROUND(rsc.sg_ott, 2),          rsc.sg_n),
+        (rsc.player_id, 'sg_approach',            ROUND(rsc.sg_approach, 2),     rsc.sg_n),
+        (rsc.player_id, 'sg_around_green',        ROUND(rsc.sg_around_green, 2), rsc.sg_n),
+        (rsc.player_id, 'sg_putting',             ROUND(rsc.sg_putting, 2),      rsc.sg_n),
+        (rsc.player_id, 'gir_pct',                CASE WHEN rsc.greens_total > 0 THEN ROUND(100.0 * rsc.greens_hit / rsc.greens_total, 2) END, rsc.gir_n),
+        (rsc.player_id, 'scrambling_pct_sand',    CASE WHEN rsc.sand_attempts > 0 THEN ROUND(100.0 * rsc.sand_saves / rsc.sand_attempts, 2) END, rsc.sand_n),
+        (rsc.player_id, 'penalty_rate_per_round', CASE WHEN rsc.holes > 0 THEN ROUND(rsc.penalties::numeric / rsc.holes * 18, 2)
+                                                       WHEN rsc.rounds > 0 THEN ROUND(rsc.penalties::numeric / rsc.rounds, 2) END, rsc.rounds),
+        (rsc.player_id, 'big_number_rate',        CASE WHEN rsc.scored_holes > 0 THEN 100.0 * rsc.big_holes / rsc.scored_holes END, rsc.rounds),
+        (rsc.player_id, 'scoring_par_3',          ROUND(ps.par3, 2), COALESCE(ps.par3_n, 0)),
+        (rsc.player_id, 'scoring_par_4',          ROUND(ps.par4, 2), COALESCE(ps.par4_n, 0)),
+        (rsc.player_id, 'scoring_par_5',          ROUND(ps.par5, 2), COALESCE(ps.par5_n, 0))
+      ) AS x(player_id, metric_id, player_value, rounds_n)
+     WHERE rsc.rounds >= v_min_rounds
+    UNION ALL
+    SELECT pb.player_id, pb.metric_id, pb.player_value, pb.rounds_n
+      FROM putt_bands pb
+      JOIN rsc ON rsc.player_id = pb.player_id AND rsc.rounds >= v_min_rounds
+  ),
+  -- Pressure gap: refresh_player_standing_round_metrics' rule over the season.
+  pressure_vals AS (
+    SELECT sr.player_id, 'practice_tournament_delta'::text AS metric_id,
+           AVG(sr.score_to_par::numeric * 18 / NULLIF(COALESCE(sr.holes_played, 18), 0)) FILTER (WHERE sr.round_type IN ('tournament', 'qualifier', 'qualifying'))
+             - AVG(sr.score_to_par::numeric * 18 / NULLIF(COALESCE(sr.holes_played, 18), 0)) FILTER (WHERE sr.round_type = 'practice') AS player_value,
+           COUNT(*) FILTER (WHERE sr.round_type IN ('tournament', 'qualifier', 'qualifying', 'practice') AND sr.score_to_par IS NOT NULL) AS rounds_n
+      FROM season_rounds sr
+     WHERE sr.score_ok
+     GROUP BY sr.player_id
+    HAVING COUNT(*) FILTER (WHERE sr.round_type IN ('tournament', 'qualifier', 'qualifying') AND sr.score_to_par IS NOT NULL) >= 3
+       AND COUNT(*) FILTER (WHERE sr.round_type = 'practice' AND sr.score_to_par IS NOT NULL) >= 3
+       AND COUNT(*) >= v_min_rounds
+  ),
+  -- Opening hole gap: the same function's rule over the season.
+  opening_vals AS (
+    SELECT sr.player_id, 'opening_hole_delta'::text AS metric_id,
+           AVG((h.score - h.par)::numeric) FILTER (WHERE h.hole_number = 1)
+             - AVG((h.score - h.par)::numeric) FILTER (WHERE h.hole_number BETWEEN 2 AND 18) AS player_value,
+           COUNT(DISTINCT sr.id) AS rounds_n
+      FROM season_rounds sr
+      JOIN public.golf_holes h ON h.round_id = sr.id AND h.score IS NOT NULL AND h.par IS NOT NULL
+     WHERE sr.hole_ok
+     GROUP BY sr.player_id
+    HAVING COUNT(DISTINCT sr.id) >= v_min_rounds
+       AND COUNT(*) FILTER (WHERE h.hole_number = 1) > 0
+       AND COUNT(*) FILTER (WHERE h.hole_number BETWEEN 2 AND 18) > 0
+  ),
+  -- Approach proximity: refresh_player_standing_shot_metrics' all-shot rule
+  -- over the season.
+  shots AS (
+    SELECT sr.player_id, sr.id AS round_id, b.metric_id, h.par,
+           (lower(coalesce(s.result, '')) IN ('green', 'hole', 'gir') OR lower(coalesce(s.lie_after, '')) = 'green') AS on_green,
+           (CASE WHEN lower(coalesce(s.distance_unit_after, 'feet')) = 'yards' THEN s.distance_to_hole_after * 3.0 ELSE s.distance_to_hole_after END) AS after_ft
+      FROM season_rounds sr
+      JOIN public.golf_shots s
+        ON s.round_id = sr.id
+       AND s.shot_type = 'approach'
+       AND s.distance_to_hole_before IS NOT NULL
+       AND s.distance_to_hole_after IS NOT NULL
+      JOIN (VALUES
+              ('approach_proximity_50_125ft',    50::numeric,  125::numeric),
+              ('approach_proximity_125_175ft',   125::numeric, 175::numeric),
+              ('approach_proximity_175_plus_ft', 175::numeric, 100000::numeric)
+           ) AS b(metric_id, lo, hi)
+        ON (CASE WHEN lower(coalesce(s.distance_unit_before, 'yards')) = 'feet' THEN s.distance_to_hole_before / 3.0 ELSE s.distance_to_hole_before END) >= b.lo
+       AND (CASE WHEN lower(coalesce(s.distance_unit_before, 'yards')) = 'feet' THEN s.distance_to_hole_before / 3.0 ELSE s.distance_to_hole_before END) < b.hi
+      LEFT JOIN public.golf_holes h ON h.id = s.hole_id
+     WHERE sr.status = 'completed'
+  ),
+  shot_tagged AS (
+    SELECT sh.*,
+           (sh.metric_id = 'approach_proximity_175_plus_ft' AND sh.par IS NOT DISTINCT FROM 5 AND NOT sh.on_green) AS is_likely_layup
+      FROM shots sh
+  ),
+  shot_vals AS (
+    SELECT st.player_id, st.metric_id,
+           AVG(st.after_ft) FILTER (WHERE NOT st.is_likely_layup) AS player_value,
+           COUNT(DISTINCT st.round_id) FILTER (WHERE NOT st.is_likely_layup) AS rounds_n,
+           CASE WHEN COUNT(*) FILTER (WHERE NOT st.is_likely_layup AND st.on_green) >= v_min_greens
+                THEN AVG(st.after_ft) FILTER (WHERE NOT st.is_likely_layup AND st.on_green) END AS on_green_avg,
+           COUNT(*) FILTER (WHERE st.is_likely_layup) AS layup_n
+      FROM shot_tagged st
+     GROUP BY st.player_id, st.metric_id
+    HAVING COUNT(*) FILTER (WHERE NOT st.is_likely_layup) >= v_min_attempts
+       AND COUNT(DISTINCT st.round_id) FILTER (WHERE NOT st.is_likely_layup) >= v_min_shot_rounds
+  ),
+  vals AS (
+    SELECT cv.player_id, cv.metric_id, cv.player_value, cv.rounds_n::int AS rounds_n,
+           NULL::text AS basis, NULL::numeric AS on_green_avg, NULL::int AS layup_n
+      FROM cache_vals cv
+     WHERE cv.player_value IS NOT NULL
+    UNION ALL
+    SELECT pv.player_id, pv.metric_id, pv.player_value, pv.rounds_n::int, NULL, NULL, NULL
+      FROM pressure_vals pv
+     WHERE pv.player_value IS NOT NULL
+    UNION ALL
+    SELECT ov.player_id, ov.metric_id, ov.player_value, ov.rounds_n::int, NULL, NULL, NULL
+      FROM opening_vals ov
+     WHERE ov.player_value IS NOT NULL
+    UNION ALL
+    SELECT sv.player_id, sv.metric_id, sv.player_value, sv.rounds_n::int, 'all_shot', sv.on_green_avg, sv.layup_n::int
+      FROM shot_vals sv
+     WHERE sv.player_value IS NOT NULL
+  ),
+  -- Direction, as the lifetime functions rank: higher is better unless listed.
+  lower_better (metric_id) AS (
+    VALUES ('penalty_rate_per_round'), ('big_number_rate'), ('scoring_par_3'), ('scoring_par_4'), ('scoring_par_5'),
+           ('practice_tournament_delta'), ('opening_hole_delta'),
+           ('approach_proximity_50_125ft'), ('approach_proximity_125_175ft'), ('approach_proximity_175_plus_ft')
+  ),
+  vals_team AS (
+    SELECT v.*, m.team_id, m.gender,
+           CASE WHEN lb.metric_id IS NOT NULL THEN -v.player_value ELSE v.player_value END AS rank_value
+      FROM vals v
+      JOIN members m ON m.player_id = v.player_id
+      LEFT JOIN lower_better lb ON lb.metric_id = v.metric_id
+  ),
+  team_ranked AS (
+    SELECT vt.*,
+           AVG(vt.player_value) OVER (PARTITION BY vt.team_id, vt.metric_id) AS team_avg,
+           COUNT(*) OVER (PARTITION BY vt.team_id, vt.metric_id) AS team_n,
+           100 * PERCENT_RANK() OVER (PARTITION BY vt.team_id, vt.metric_id ORDER BY vt.rank_value ASC) AS team_pct
+      FROM vals_team vt
+     WHERE vt.team_id = ANY (p_team_ids)
+  ),
+  -- One row per (player, metric) even for a player on two chunk teams: the
+  -- larger team, then the lower team id.
+  chosen AS (
+    SELECT DISTINCT ON (tr.player_id, tr.metric_id) tr.*
+      FROM team_ranked tr
+     ORDER BY tr.player_id, tr.metric_id, tr.team_n DESC, tr.team_id
+  ),
+  population AS (
+    SELECT DISTINCT vt.player_id, vt.gender, vt.metric_id, vt.player_value, vt.rank_value
+      FROM vals_team vt
+  ),
+  pop_stats AS (
+    SELECT p.gender, p.metric_id, AVG(p.player_value) AS level_avg, COUNT(*) AS level_n
+      FROM population p
+     GROUP BY p.gender, p.metric_id
+  ),
+  pop_ranked AS (
+    SELECT p.player_id, p.gender, p.metric_id,
+           100 * PERCENT_RANK() OVER (PARTITION BY p.gender, p.metric_id ORDER BY p.rank_value ASC) AS level_pct
+      FROM population p
+  ),
+  upserted AS (
+    INSERT INTO public.golf_player_standing_season AS s (
+      player_id, metric_id, player_value, team_avg, team_n, team_pct,
+      level_avg, level_n, level_pct, pga_value, pga_delta,
+      basis, on_green_proximity_feet, layup_excluded_n, rounds_n, season_start, computed_at
+    )
+    SELECT c.player_id, c.metric_id, c.player_value, c.team_avg, c.team_n::int,
+           CASE WHEN c.team_n >= v_min_team_n THEN c.team_pct END,
+           CASE WHEN ps.level_n >= v_min_cohort_n THEN ps.level_avg END,
+           ps.level_n::int,
+           CASE WHEN ps.level_n >= v_min_cohort_n THEN pr.level_pct END,
+           pga.value,
+           c.player_value - pga.value,
+           c.basis, c.on_green_avg, c.layup_n, c.rounds_n, pse.season_start, now()
+      FROM chosen c
+      JOIN player_season pse ON pse.player_id = c.player_id
+      JOIN pop_stats ps ON ps.gender = c.gender AND ps.metric_id = c.metric_id
+      LEFT JOIN pop_ranked pr ON pr.player_id = c.player_id AND pr.gender = c.gender AND pr.metric_id = c.metric_id
+      CROSS JOIN LATERAL (
+        SELECT COALESCE(g.pga_tour_value, g.pga_p50) AS value
+          FROM public.golf_pga_standards g
+         WHERE g.metric_id = c.metric_id AND g.tour = 'pga'
+         ORDER BY g.season DESC
+         LIMIT 1
+      ) pga
+     WHERE pga.value IS NOT NULL
+    ON CONFLICT (player_id, metric_id) DO UPDATE
+      SET player_value = EXCLUDED.player_value, team_avg = EXCLUDED.team_avg, team_n = EXCLUDED.team_n,
+          team_pct = EXCLUDED.team_pct, level_avg = EXCLUDED.level_avg, level_n = EXCLUDED.level_n,
+          level_pct = EXCLUDED.level_pct, pga_value = EXCLUDED.pga_value, pga_delta = EXCLUDED.pga_delta,
+          basis = EXCLUDED.basis, on_green_proximity_feet = EXCLUDED.on_green_proximity_feet,
+          layup_excluded_n = EXCLUDED.layup_excluded_n, rounds_n = EXCLUDED.rounds_n,
+          season_start = EXCLUDED.season_start, computed_at = now()
+    RETURNING s.metric_id
+  )
+  SELECT u.metric_id, COUNT(*)::bigint
+    FROM upserted u
+   GROUP BY u.metric_id
+   ORDER BY u.metric_id;
+
+  -- The chunk's players' rows this run did not rewrite: under a floor now,
+  -- last season's, or a member who is no longer active on any team. now() is
+  -- this transaction's start, so every row written above carries it. A
+  -- player inactive here but active on a team outside the chunk keeps their
+  -- rows (that team's run writes them).
+  DELETE FROM public.golf_player_standing_season s
+   WHERE s.computed_at < now()
+     AND (
+       s.player_id IN (
+         SELECT tm.player_id
+           FROM public.golf_team_members tm
+          WHERE tm.team_id = ANY (p_team_ids)
+            AND tm.status = 'active'::public.team_member_status
+       )
+       OR (
+         s.player_id IN (SELECT tm.player_id FROM public.golf_team_members tm WHERE tm.team_id = ANY (p_team_ids))
+         AND NOT EXISTS (
+           SELECT 1 FROM public.golf_team_members a
+            WHERE a.player_id = s.player_id
+              AND a.status = 'active'::public.team_member_status
+         )
+       )
+     );
+END;
+$$;
+
+ALTER FUNCTION public.refresh_player_standing_season(uuid[]) OWNER TO "postgres";
+
+COMMENT ON FUNCTION public.refresh_player_standing_season(uuid[]) IS 'Clubhouse Standing for this season (owner decision 9, 2026-10-24). For the given team chunk, writes golf_player_standing_season: every Standing metric over the rounds since 1 August in the team''s time zone (golf_season_start), with rounds_n per row, ranked against the team (MIN_TEAM_N=5) and the gender-scoped app-wide cohort (MIN_COHORT_N=8) on the lifetime functions'' rules; then deletes the chunk players'' rows it did not rewrite. Takes a transaction advisory lock (single flight). Returns (metric, rows upserted). SECURITY DEFINER, service_role only. golf_player_standing is not touched.';
+
+CREATE OR REPLACE FUNCTION public.select_dirty_standing_teams(
+  p_limit integer,
+  p_quiet_seconds integer DEFAULT 180,
+  p_max_wait_seconds integer DEFAULT 1800
+)
+  RETURNS TABLE (team_id uuid, marked_at timestamptz)
+  LANGUAGE sql
+  STABLE
+  SECURITY DEFINER
+  SET search_path = pg_catalog, public
+AS $$
+  SELECT q.team_id, q.marked_at
+    FROM public.golf_standing_refresh_queue q
+   WHERE q.marked_at <= now() - make_interval(secs => GREATEST(COALESCE(p_quiet_seconds, 0), 0))
+      OR q.first_marked_at <= now() - make_interval(secs => GREATEST(COALESCE(p_max_wait_seconds, 0), 0))
+   ORDER BY q.first_marked_at ASC, q.team_id ASC
+   LIMIT GREATEST(COALESCE(p_limit, 0), 0);
+$$;
+
+ALTER FUNCTION public.select_dirty_standing_teams(integer, integer, integer) OWNER TO "postgres";
+
+COMMENT ON FUNCTION public.select_dirty_standing_teams(integer, integer, integer) IS 'Read-only. Up to p_limit dirty teams that have been quiet for p_quiet_seconds since their last mark (the debounce), or dirty for longer than p_max_wait_seconds (the cap), oldest mark first, with the marked_at the caller must hand back to clear_dirty_standing_teams. service_role only.';
+
 CREATE OR REPLACE FUNCTION "public"."set_calendar_feed_token"() RETURNS "trigger"
     LANGUAGE "plpgsql" SECURITY DEFINER
     SET "search_path" TO 'public'
@@ -11867,3 +12518,328 @@ end;
 $$;
 
 ALTER FUNCTION "public"."golf_import_player_classes"("p_player_id" "uuid", "p_team_id" "uuid", "p_term" "text", "p_rows" "jsonb") OWNER TO "postgres";
+
+CREATE OR REPLACE FUNCTION "public"."golf_forget_read_marks"() RETURNS "trigger"
+    LANGUAGE "plpgsql" SECURITY DEFINER
+    SET "search_path" TO 'public', 'pg_temp'
+    AS $$
+BEGIN
+  DELETE FROM public.golf_conversation_read_marks r
+  WHERE r.conversation_id = OLD.conversation_id
+    AND r.user_id = OLD.user_id;
+  RETURN OLD;
+END;
+$$;
+
+ALTER FUNCTION "public"."golf_forget_read_marks"() OWNER TO "postgres";
+
+CREATE OR REPLACE FUNCTION "public"."golf_message_seen_times"("p_message_id" "uuid") RETURNS TABLE("user_id" "uuid", "seen_at" timestamp with time zone, "exact" boolean)
+    LANGUAGE "sql" STABLE
+    SET "search_path" TO 'public', 'pg_temp'
+    AS $$
+  SELECT DISTINCT ON (r.user_id)
+    r.user_id, r.read_at AS seen_at, NOT r.is_baseline AS exact
+  FROM public.golf_messages m
+  JOIN public.golf_conversation_read_marks r
+    ON r.conversation_id = m.conversation_id
+   AND r.read_at >= m.created_at
+  WHERE m.id = p_message_id
+    AND r.user_id <> m.sender_id
+    AND m.created_at >= now() - interval '30 days'
+  ORDER BY r.user_id, r.read_at;
+$$;
+
+ALTER FUNCTION "public"."golf_message_seen_times"("p_message_id" "uuid") OWNER TO "postgres";
+
+COMMENT ON FUNCTION "public"."golf_message_seen_times"("p_message_id" "uuid") IS 'When each member first saw this message (the first read mark at or after its created_at), for messages up to 30 days old. Invoker rights: golf_conversation_read_marks RLS decides whose rows return. exact = false: seen before the log began, time unknown. Clubhouse Seen by (P-1).';
+
+CREATE OR REPLACE FUNCTION "public"."golf_read_marks_visible"("p_conversation_id" "uuid", "p_user_id" "uuid") RETURNS boolean
+    LANGUAGE "sql" STABLE SECURITY DEFINER
+    SET "search_path" TO 'public', 'pg_temp'
+    AS $$
+  SELECT
+    p_user_id = (SELECT auth.uid())
+    OR (
+      EXISTS (
+        SELECT 1 FROM public.golf_conversation_participants me
+        WHERE me.conversation_id = p_conversation_id
+          AND me.user_id = (SELECT auth.uid())
+      )
+      AND (
+        (SELECT count(*) FROM public.golf_conversation_participants p
+          WHERE p.conversation_id = p_conversation_id) = 2
+        OR EXISTS (
+          SELECT 1
+          FROM public.golf_conversations c
+          JOIN public.golf_team_coach_staff s ON s.team_id = c.team_id
+          JOIN public.golf_coaches gc ON gc.id = s.coach_id
+          WHERE c.id = p_conversation_id
+            AND c.team_id IS NOT NULL
+            AND gc.user_id = (SELECT auth.uid())
+        )
+      )
+    );
+$$;
+
+ALTER FUNCTION "public"."golf_read_marks_visible"("p_conversation_id" "uuid", "p_user_id" "uuid") OWNER TO "postgres";
+
+COMMENT ON FUNCTION "public"."golf_read_marks_visible"("p_conversation_id" "uuid", "p_user_id" "uuid") IS 'May the CALLER read p_user_id''s read marks in this conversation? Own marks; the other person''s in a two-person thread; everyone''s in a team conversation the caller belongs to and coaches. Reads auth.uid() itself, so it answers only for the caller. Policy helper for golf_conversation_read_marks.';
+
+CREATE OR REPLACE FUNCTION "public"."golf_record_read_mark"() RETURNS "trigger"
+    LANGUAGE "plpgsql" SECURITY DEFINER
+    SET "search_path" TO 'public', 'pg_temp'
+    AS $$
+DECLARE
+  -- A member can write any last_read_at on their own row (golf_participants_update is own-row only), so a forged
+  -- future time is clamped to the database clock before it is stored or compared (changelog P-01).
+  v_at timestamptz := LEAST(NEW.last_read_at, now());
+BEGIN
+  IF EXISTS (
+    SELECT 1 FROM public.golf_messages m
+    WHERE m.conversation_id = NEW.conversation_id
+      AND m.sender_id <> NEW.user_id
+      AND NOT COALESCE(m.is_deleted, false)
+      AND m.created_at <= v_at
+      AND (OLD.last_read_at IS NULL OR m.created_at > OLD.last_read_at)
+  ) THEN
+    INSERT INTO public.golf_conversation_read_marks (conversation_id, user_id, read_at)
+    VALUES (NEW.conversation_id, NEW.user_id, v_at);
+  END IF;
+
+  -- Retention, kept small and index-backed: only this person's marks here.
+  DELETE FROM public.golf_conversation_read_marks r
+  WHERE r.conversation_id = NEW.conversation_id
+    AND r.user_id = NEW.user_id
+    AND r.read_at < now() - interval '120 days';
+
+  RETURN NEW;
+END;
+$$;
+
+ALTER FUNCTION "public"."golf_record_read_mark"() OWNER TO "postgres";
+
+
+CREATE OR REPLACE FUNCTION "public"."golf_events_change_mark"()
+RETURNS trigger
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = ''
+AS $fn$
+DECLARE
+  v_prev       jsonb;
+  v_prior      jsonb;
+  v_base       jsonb;
+  v_old        jsonb;
+  v_new        jsonb;
+  v_sib        jsonb;
+  v_names      jsonb;
+  v_fields     text[];
+  v_uid        uuid := auth.uid();
+  v_coach      uuid;
+  v_name       text;
+  v_id         uuid;
+  v_root       uuid;
+  v_first      text;
+  v_open       boolean;
+  v_quiet      boolean;
+  v_now        text := to_char(now() AT TIME ZONE 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS.MS"Z"');
+  v_cutoff     text := to_char((now() - interval '30 minutes') AT TIME ZONE 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS.MS"Z"');
+  v_sib_cutoff text := to_char((now() - interval '10 minutes') AT TIME ZONE 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS.MS"Z"');
+BEGIN
+  IF NEW.metadata IS NULL THEN
+    NEW.metadata := '{}'::jsonb;
+  END IF;
+  -- Marks live only in an object; any other shape is left exactly as written.
+  IF jsonb_typeof(NEW.metadata) <> 'object' THEN
+    RETURN NEW;
+  END IF;
+
+  IF TG_OP = 'INSERT' THEN
+    NEW.metadata := NEW.metadata - 'change';
+    RETURN NEW;
+  END IF;
+
+  -- A delivery writer records that players were told; it is not a change.
+  IF current_setting('helm.change_mark_writer', true) = 'on' THEN
+    RETURN NEW;
+  END IF;
+
+  -- The stored mark wins over anything a client sent under "change".
+  v_prev := CASE WHEN jsonb_typeof(OLD.metadata) = 'object' THEN OLD.metadata -> 'change' END;
+  IF jsonb_typeof(v_prev) IS DISTINCT FROM 'object' THEN
+    v_prev := NULL;
+  END IF;
+  NEW.metadata := NEW.metadata - 'change';
+  IF v_prev IS NOT NULL THEN
+    NEW.metadata := NEW.metadata || jsonb_build_object('change', v_prev);
+  END IF;
+
+  IF NEW.event_type = 'class' OR OLD.event_type = 'class' THEN
+    RETURN NEW;
+  END IF;
+
+  v_quiet := pg_trigger_depth() > 1 OR COALESCE(current_setting('helm.tournament_write', true), '') = 'rounds';
+
+  v_old := jsonb_build_object(
+    'start_time', to_char(OLD.start_time AT TIME ZONE 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS"Z"'),
+    'end_time',   to_char(OLD.end_time   AT TIME ZONE 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS"Z"'),
+    'all_day',    COALESCE(OLD.all_day, false),
+    'location',   NULLIF(btrim(COALESCE(OLD.location, '')), ''),
+    'title',      OLD.title,
+    'event_type', OLD.event_type,
+    'cancelled',  COALESCE(OLD.status, '') = 'cancelled'
+  );
+  v_new := jsonb_build_object(
+    'start_time', to_char(NEW.start_time AT TIME ZONE 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS"Z"'),
+    'end_time',   to_char(NEW.end_time   AT TIME ZONE 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS"Z"'),
+    'all_day',    COALESCE(NEW.all_day, false),
+    'location',   NULLIF(btrim(COALESCE(NEW.location, '')), ''),
+    'title',      NEW.title,
+    'event_type', NEW.event_type,
+    'cancelled',  COALESCE(NEW.status, '') = 'cancelled'
+  );
+  -- A quiet key's baseline follows the new value.
+  IF v_quiet THEN
+    v_old := v_old || jsonb_build_object('title', NEW.title, 'event_type', NEW.event_type);
+  END IF;
+
+  v_open := v_prev IS NOT NULL
+        AND (v_prev ->> 'v') = '1'
+        AND (v_prev ->> 'settled_at') IS NULL
+        AND (v_prev ->> 'first_at') > v_cutoff;
+
+  v_prior := CASE WHEN v_prev IS NOT NULL AND (v_prev ->> 'v') = '1' THEN v_prev - 'prior' END;
+
+  IF v_old = v_new THEN
+    -- Nothing tracked changed (a notes, reply or course_id edit): the mark is left as it is, except that a quiet write
+    -- rebases an open session's baseline so a title or type it already moved cannot read as a change later.
+    IF v_quiet AND v_open THEN
+      v_base := (v_prev -> 'from') || jsonb_build_object('title', NEW.title, 'event_type', NEW.event_type);
+      IF v_base IS DISTINCT FROM (v_prev -> 'from') THEN
+        SELECT array_agg(t.k ORDER BY t.k) INTO v_fields
+        FROM jsonb_object_keys(v_new) AS t(k)
+        WHERE (v_base -> t.k) IS DISTINCT FROM (v_new -> t.k);
+        IF v_fields IS NULL THEN
+          NEW.metadata := NEW.metadata - 'change';
+          IF v_prev -> 'prior' IS NOT NULL THEN
+            NEW.metadata := NEW.metadata || jsonb_build_object('change', v_prev -> 'prior');
+          END IF;
+        ELSE
+          NEW.metadata := NEW.metadata || jsonb_build_object('change', v_prev || jsonb_build_object('from', v_base, 'fields', to_jsonb(v_fields)));
+        END IF;
+      END IF;
+    END IF;
+    RETURN NEW;
+  END IF;
+
+  NEW.updated_at := now();
+
+  IF v_uid IS NOT NULL THEN
+    SELECT c.id, NULLIF(btrim(c.full_name), '') INTO v_coach, v_name
+    FROM public.golf_coaches c
+    WHERE c.user_id = v_uid
+    ORDER BY c.created_at
+    LIMIT 1;
+  END IF;
+
+  IF v_open THEN
+    -- Open session: keep its baseline, id, first edit, names and prior.
+    v_base  := v_prev -> 'from';
+    v_id    := (v_prev ->> 'id')::uuid;
+    v_first := v_prev ->> 'first_at';
+    v_names := COALESCE(v_prev -> 'by_names', '[]'::jsonb);
+    v_prior := v_prev -> 'prior';
+  ELSE
+    -- New session from what invitees last saw.
+    v_base  := v_old;
+    v_first := v_now;
+    v_names := '[]'::jsonb;
+    -- A series occurrence joins the session a sibling's edit by the same coach opened in the last 10 minutes.
+    IF NEW.parent_event_id IS NOT NULL OR NEW.recurrence_rule IS NOT NULL THEN
+      v_root := COALESCE(NEW.parent_event_id, NEW.id);
+      SELECT e.metadata -> 'change' INTO v_sib
+      FROM public.golf_events e
+      WHERE e.id <> NEW.id
+        AND e.team_id = NEW.team_id
+        AND (e.parent_event_id = v_root OR e.id = v_root)
+        AND jsonb_typeof(e.metadata) = 'object'
+        AND (e.metadata -> 'change' ->> 'at') > v_sib_cutoff
+        AND (e.metadata -> 'change' ->> 'settled_at') IS NULL
+        AND (e.metadata -> 'change' ->> 'v') = '1'
+        AND (e.metadata -> 'change' ->> 'by') IS NOT DISTINCT FROM v_coach::text
+      ORDER BY e.metadata -> 'change' ->> 'at' DESC
+      LIMIT 1;
+      IF v_sib IS NOT NULL THEN
+        v_id    := (v_sib ->> 'id')::uuid;
+        v_first := v_sib ->> 'first_at';
+      END IF;
+    END IF;
+    v_id := COALESCE(v_id, gen_random_uuid());
+  END IF;
+
+  IF v_quiet THEN
+    v_base := v_base || jsonb_build_object('title', NEW.title, 'event_type', NEW.event_type);
+  END IF;
+
+  SELECT array_agg(t.k ORDER BY t.k) INTO v_fields
+  FROM jsonb_object_keys(v_new) AS t(k)
+  WHERE (v_base -> t.k) IS DISTINCT FROM (v_new -> t.k);
+
+  IF v_fields IS NULL THEN
+    -- Back where invitees last saw it: no mark.
+    NEW.metadata := NEW.metadata - 'change';
+    IF v_prior IS NOT NULL THEN
+      NEW.metadata := NEW.metadata || jsonb_build_object('change', v_prior);
+    END IF;
+    RETURN NEW;
+  END IF;
+
+  IF v_name IS NOT NULL AND NOT (v_names @> jsonb_build_array(v_name)) THEN
+    v_names := v_names || jsonb_build_array(v_name);
+    IF jsonb_array_length(v_names) > 3 THEN
+      v_names := v_names - 0;
+    END IF;
+  END IF;
+
+  NEW.metadata := NEW.metadata || jsonb_build_object(
+    'change',
+    jsonb_build_object(
+      'v',        1,
+      'id',       v_id,
+      'first_at', v_first,
+      'at',       v_now,
+      'by',       v_coach,
+      'by_names', v_names,
+      'from',     v_base,
+      'fields',   to_jsonb(v_fields)
+    ) || CASE WHEN v_prior IS NOT NULL THEN jsonb_build_object('prior', v_prior) ELSE '{}'::jsonb END
+  );
+  RETURN NEW;
+END;
+$fn$;
+
+ALTER FUNCTION "public"."golf_events_change_mark"() OWNER TO "postgres";
+
+COMMENT ON FUNCTION "public"."golf_events_change_mark"() IS 'P-14 change marks: owns golf_events.metadata.change (what changed, from what, by whom, when). See build-plans/P-14-change-marks.md.';
+
+CREATE OR REPLACE FUNCTION "public"."golf_change_marks_capability"()
+RETURNS TABLE (marks boolean, pushes boolean)
+LANGUAGE sql
+STABLE
+SECURITY DEFINER
+SET search_path = ''
+AS $fn$
+  SELECT
+    EXISTS (
+      SELECT 1 FROM pg_catalog.pg_trigger t
+      WHERE t.tgrelid = 'public.golf_events'::regclass
+        AND t.tgname = 'golf_events_change_mark'
+        AND NOT t.tgisinternal
+        AND t.tgenabled <> 'D'
+    ),
+    pg_catalog.to_regclass('public.golf_event_change_outbox') IS NOT NULL;
+$fn$;
+
+ALTER FUNCTION "public"."golf_change_marks_capability"() OWNER TO "postgres";
+
+COMMENT ON FUNCTION "public"."golf_change_marks_capability"() IS 'P-14: whether the change-mark trigger is installed (marks) and an outbox sender exists (pushes). Service role only.';

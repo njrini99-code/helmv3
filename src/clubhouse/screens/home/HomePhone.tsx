@@ -38,6 +38,7 @@ import { leaderPeek } from './Leaderboard';
 import { MineBadge } from './CoachAsks';
 import { competitionExtra, DayCard, dayPhase, LaterToday, SinceYouLooked, sunsetExtra } from './DayCard';
 import { useLightPlace } from '../../shell/light';
+import { MarkBadge, markSub, useRowMark } from '../calendar/change-note';
 
 export { CALENDAR, eventHref, whenLabel } from './event-links';
 import { CALENDAR, eventHref, whenLabel } from './event-links';
@@ -156,7 +157,7 @@ function Later({ data, rounds, now, today, quiet, onOpenRound }: DayProps & { da
   return (
     <>
       <LaterToday todays={phone.today} cardId={card?.id ?? null} now={now} extras={[...sunsetExtra(today, now, place, clock), ...competitionExtra(later, clock)]} />
-      {!data.latestRounds.error && <SinceYouLooked rounds={rounds} event={card} onOpenRound={onOpenRound} />}
+      {!data.latestRounds.error && <SinceYouLooked rounds={rounds} event={card} changes={data.changes ?? []} onOpenRound={onOpenRound} />}
     </>
   );
 }
@@ -165,6 +166,10 @@ function Later({ data, rounds, now, today, quiet, onOpenRound }: DayProps & { da
 /** `children`: what closes the card (the player's countdown). `kicker`: the player's "Up next · Qualifier" (the coach's card names the type alone). */
 export function UpNext({ e, now, children, kicker }: { e: ChHomeEvent; now: Date | null; children?: ReactNode; kicker?: string }) {
   const t = useChClockText();
+  const clock = useChClock();
+  // P-14: a changed event wears a badge in the kicker and its old value struck under the range, until Got it.
+  const mark = useRowMark()(e);
+  const was = mark && !mark.change.partial ? markSub(e.location, mark.change, clock, false) : null;
   const when = whenLabel(e, now);
   const people = e.invitees ?? [];
   return (
@@ -173,11 +178,13 @@ export function UpNext({ e, now, children, kicker }: { e: ChHomeEvent; now: Date
         <span className="ch-hm-next__type">
           <Icon icon={TYPE_ICON[e.type]} size={13} />
           {kicker ? `${kicker} · ${TYPE_LABEL[e.type]}` : TYPE_LABEL[e.type]}
+          {mark && <MarkBadge change={mark.change} />}
         </span>
         <span className={'ch-hm-next__when ch-num' + (when.soon ? ' is-soon' : '')}>{t(when.text)}</span>
       </span>
       <h2>{e.title}</h2>
       <p className="ch-num">{[t(e.rangeLabel), e.location].filter(Boolean).join(' · ')}</p>
+      {was && <p className="ch-hm-next__was ch-num">{was}</p>}
       {e.invitees && people.length > 0 && (
         <span className="ch-hm-next__f">
           <span className="ch-hm-stack" aria-hidden="true">

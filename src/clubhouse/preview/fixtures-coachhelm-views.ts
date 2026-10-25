@@ -127,7 +127,14 @@ export const LADDER_READS: ChLadderReads = {
   ],
 };
 
-export const PREVIEW_STANDING: ChStanding = toChStanding(STANDING_ROWS, BASELINE, LADDER_READS);
+/** The same rows as this season's table returns them (owner decision 9): each with the rounds it stands on, from 1 August. */
+export const SEASON_STANDING_ROWS: PlayerStanding[] = STANDING_ROWS.map((r) => ({
+  ...r,
+  rounds_n: r.metric_id.startsWith('sg_') ? 12 : r.metric_id.startsWith('approach_') ? 9 : r.metric_id === 'practice_tournament_delta' ? 8 : 14,
+  season_start: '2026-08-01',
+}));
+
+export const PREVIEW_STANDING: ChStanding = toChStanding(SEASON_STANDING_ROWS, BASELINE, LADDER_READS, undefined, undefined, 'season');
 /**
  * Thin data: four rounds, with strokes gained only for approach and putting (no tee or around-the-green figure yet, said in words),
  * and one thin read behind putting.

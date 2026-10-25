@@ -5,6 +5,7 @@ import { Calendar } from '../screens/calendar/Calendar';
 import { CalendarNoTeam } from '../screens/calendar/CalendarNoTeam';
 import { loadLiveRounds } from '../data/live-rounds';
 import { resolveClubhouseTeam } from './team';
+import { marksHint } from '../lib/phone-hint';
 import '../styles/calendar.css';
 
 /**
@@ -47,6 +48,7 @@ export async function ClubhouseCalendarRoute({
       view: parseView(view),
       date,
       event,
+      marks: await marksHint(),
     }),
     team.role === 'coach' ? loadLiveRounds({ teamId: team.teamId, viewer: { role: 'coach', playerId: null } }) : Promise.resolve(undefined),
   ]);

@@ -110,7 +110,11 @@ Mobile designs are tracked per screen in `PROGRESS.md` (the `phone-spec` and
   dive are views of the same address, `?view=profile|standing|deep-dive`, built
   2026-10-01; Development is Stats' Development tab)
 - [x] **My rounds** `/rounds` — Their round history and each round's detail
-  (with `/rounds/[id]`)
+  (with `/rounds/[id]`), and their history at one course (with
+  `/rounds/course/[key]`: the hole map, how it plays for them, the average round
+  and compare two rounds; `CoursePage`, P-7, 2026-10-25; reached from a round's
+  review, the library's By course headers and round setup; a coach reads one
+  player with `?player=`)
 - [x] **Round entry** `/rounds/new` — Hole-by-hole or shot-by-shot scoring
   during a round (with `/rounds/continue/[id]`, over the round engine,
   2026-09-30; a submit that could not reach the server lands on Round recovery

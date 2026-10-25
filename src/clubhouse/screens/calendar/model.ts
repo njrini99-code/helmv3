@@ -2,6 +2,7 @@ import { sunTimes, type LatLng } from '../../lib/sun';
 import type { ChClock } from '../../lib/clock-cookie';
 import { clockFromHour } from '../../lib/clock-format';
 import type { ChAvailability } from '../../data/availability';
+import type { ChCalChange } from './change-view';
 
 /**
  * Calendar view model. The loader resolves every time into the team's
@@ -65,12 +66,23 @@ export interface ChCalEvent {
   startIso: string;
   /** `golf_events.course_id`: the live rows match an event's course to the players' (P-6). Absent in older fixtures. */
   courseId?: string | null;
+  /** P-14: what a coach changed on this event in the last 72 hours (until it ends): the new value beside the old one struck. */
+  change?: ChCalChange | null;
+  /** A cancelled event with no live mark: when it was cancelled and why ("Cancelled Tue 9:14 PM"), so the detail still says. */
+  cancelNote?: { line: string; reason: string | null } | null;
   /**
    * Multi-day events: the whole span, repeated on each day's entry. A timed one (a tournament from Friday 7 AM to Sunday
    * 4:30 PM, an overnight trip) also carries its first day's start and its last day's end, in decimal hours: each day's
    * entry draws only its part of the run (the start to midnight, the whole day, midnight to the end).
    */
   span: { from: string; to: string; start?: number; end?: number } | null;
+  /**
+   * P-4: `golf_events.updated_at` as read, an opaque token a move sends back so it never overwrites a newer change.
+   * Absent or null for rows that are not team events (classes, busy time).
+   */
+  version?: string | null;
+  /** P-5 (not built yet): set on a tournament round; until then tournament events drag like any event. */
+  round?: { tournamentId: string; roundNo: number; lockedAt: string | null };
 }
 
 export interface ChCalOverlap {

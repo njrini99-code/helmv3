@@ -33,6 +33,7 @@ import {
   TEAMS_PER_CHUNK,
 } from '@/lib/coachhelm/v3/standing/refresh';
 import { recordJobRun } from '@/lib/admin/job-log';
+import { isStandingQueueMissing, untypedRpc } from '@/lib/coachhelm/v3/standing/refresh-queue';
 import { describeError } from '@/lib/utils/describe-error';
 import {
   detectStandingShifts,
@@ -67,6 +68,8 @@ interface RefreshSummary {
   // Active focus areas whose current_value advanced this pass (windowed against
   // rounds since each area started). Optional, same reason as goals_progressed.
   focus_areas_progressed?: number;
+  // Season Standing rows upserted for the chunk (golf_player_standing_season); null when that RPC was skipped or failed.
+  season_rows_upserted?: number | null;
   // W7 pre-sweep: player caches fully refreshed BEFORE the standing RPCs
   // (is_stale flag or recent completed-round activity), so standing never
   // ranks players on stale shot-derived columns.
@@ -291,6 +294,7 @@ async function handle(): Promise<NextResponse> {
   // and owns the per-metric upsert SQL.
   type RpcRow = { metric_id: string; rows_upserted: number };
   let rpcRows: RpcRow[];
+  let seasonRows: number | null = null;
 
   try {
     // refresh_player_standing isn't in the generated Database types
@@ -357,6 +361,31 @@ async function handle(): Promise<NextResponse> {
       for (const r of shotRows) {
         rpcRows.push({ metric_id: r.out_metric_id, rows_upserted: r.out_rows_upserted });
       }
+    }
+
+    // Clubhouse Standing for this season (owner decision 9; golf_player_standing_season, held migration 20261024151000): the same
+    // chunk, every metric from 1 August in the team's zone. Its rows go to their own table, so they are kept out of rpcRows and the
+    // covered-metrics assertion, which describe golf_player_standing. Failure-isolated, and a quiet skip until the migration is
+    // applied; the dirty pass (/api/cron/v3/standing-refresh-dirty) refreshes saved-round teams between nightly runs.
+    // Its own try: a throw here must not take the lifetime refresh's prune, notifications or goal pass down with it.
+    try {
+      const seasonResult = await untypedRpc(supabase)('refresh_player_standing_season', {
+        p_team_ids: teamIds,
+      });
+      if (seasonResult.error) {
+        if (!isStandingQueueMissing(seasonResult.error)) {
+          await logServerError(
+            `standing-refresh season-RPC: ${seasonResult.error.message ?? 'unknown'}`,
+            { action: 'cron.v3.standing-refresh.season-rpc' },
+          );
+        }
+      } else {
+        seasonRows = ((seasonResult.data ?? []) as Array<{ out_rows_upserted: number }>).reduce((n, r) => n + (r.out_rows_upserted ?? 0), 0);
+      }
+    } catch (err) {
+      await logServerError(`standing-refresh season-RPC exception: ${describeError(err)}`, {
+        action: 'cron.v3.standing-refresh.season-rpc',
+      });
     }
   } catch (err) {
     await logServerError(
@@ -491,6 +520,7 @@ async function handle(): Promise<NextResponse> {
     stale_caches_refreshed: staleCachesRefreshed,
     goals_progressed: goalsProgressed,
     focus_areas_progressed: focusAreasProgressed,
+    season_rows_upserted: seasonRows,
     duration_ms: Date.now() - startedAt,
   } satisfies RefreshSummary);
 }
