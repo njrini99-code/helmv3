@@ -105,6 +105,16 @@
   --ch-score-under-bg: #fbe9e6;
   --ch-score-over-bg: #efece4;
   --ch-score-double: #1c1b18;
+  /* P-7 hole map tints (D-42: the red family under par, amber over, plain level). The 1 px ring carries the 3:1, so the
+     tint can stay quiet; tile text is ink-600 and ink-900 on every tint (P-7 7.5). */
+  --ch-hm-under-2: #edd4cd;
+  --ch-hm-under-1: var(--ch-score-under-bg);
+  --ch-hm-level: var(--ch-bg-subtle);
+  --ch-hm-over-1: #ebe3d4;
+  --ch-hm-over-2: #dbccb3;
+  --ch-hm-ring-under: #c46c62;
+  --ch-hm-ring-level: var(--ch-ink-400);
+  --ch-hm-ring-over: #a7844a;
   /* A filled under-par mark under a light numeral; the same red in light. */
   --ch-score-under-fill: #b03a2e;
   /* Eagle or better as a fill (the scoring mix): a deeper red than the birdie's, so the two under-par results read apart. */
@@ -192,6 +202,13 @@
      the surface with depth (owner, 2026-10-06: "more ivory and text depth in the green"). */
   --ch-on-green-ink: #f4eedd;
   --ch-on-green-ink-soft: rgb(240 233 214 / 0.86);
+  /* P-4: a clash line on the dark ink pill (the drag time pill): champagne on ink by day, a deep amber on ivory at night. */
+  --ch-on-ink-warning: var(--ch-champagne-300);
+  /* P-4: a drop target's ring (a month day, a strip day under a dragged card): 2px of green inside its edge. */
+  --ch-ring-drop: inset 0 0 0 2px var(--ch-green-600);
+  /* P-4 4.1: the tournament fill's top sheen, and a class block's ring when a pointer rests on it. */
+  --ch-ev-sheen: inset 0 1px 0 rgb(255 255 255 / 0.08);
+  --ch-ev-class-ring-hover: inset 0 0 0 1px rgb(45 92 119 / 0.28);
   /* 0.8, not 0.72: holds 4.5:1 at the light end of the green gradients too (rendered 4.1:1 before, 2026-10-14). */
   --ch-on-green-ink-muted: rgb(222 214 190 / 0.8);
   --ch-on-green-text-shadow: 0 1px 0 rgb(2 18 10 / 0.45), 0 2px 10px rgb(2 18 10 / 0.25);
@@ -756,6 +773,7 @@
  */
 html[data-fw-theme='dark'] [data-ui='clubhouse'] {
   color-scheme: dark;
+  --ch-on-ink-warning: #8a5a0c;
   --ch-text-placeholder: #8f897c;
   /* The sidebar's selected plate at night (overnight polish, 2026-10-15): the day plate's gradient ran from the night
      ivory to the day's, a white bar with dark ink on the dark frame. A raised green plate under ivory ink instead. */
@@ -823,6 +841,12 @@ html[data-fw-theme='dark'] [data-ui='clubhouse'] {
   --ch-score-under-bg: #3a1c1a;
   --ch-score-over-bg: #272c27;
   --ch-score-double: #ede7d8;
+  --ch-hm-under-2: #5b3e37;
+  --ch-hm-over-1: #3b3624;
+  --ch-hm-over-2: #57492b;
+  --ch-hm-ring-under: #9e5f54;
+  --ch-hm-ring-level: #827d71;
+  --ch-hm-ring-over: #97753c;
   --ch-chart-paper: #171c18;
   --ch-chart-gain: #6bbb8c;
   --ch-chart-loss: #e3a94f;
@@ -1206,6 +1230,10 @@ html[data-fw-theme='dark']:has([data-ui='clubhouse']) body {
     --ch-chart-loss: #6f4706;
     --ch-chart-loss-on-tint: #5f3d05;
     --ch-chart-flag: #922e23;
+    /* P-7: the hole map keeps its tints; the rings step up to the strong border. */
+    --ch-hm-ring-under: var(--ch-border-strong);
+    --ch-hm-ring-level: var(--ch-border-strong);
+    --ch-hm-ring-over: var(--ch-border-strong);
   }
   html[data-fw-theme='dark'] [data-ui='clubhouse'] {
     --ch-border-hairline: rgb(237 231 216 / 0.24);

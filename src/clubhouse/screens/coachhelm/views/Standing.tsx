@@ -99,6 +99,8 @@ function Row({ r, voice = PLAYER_VOICE, readHref = null }: { r: ChStandRow; voic
           {r.vsTour && <span className={'ch-hs-vs is-' + r.vsTour.sense}>{r.vsTour.text}</span>}
           {r.percentile && <span className="ch-hs-pct">{r.percentile}</span>}
           {!r.vsTour && r.vsTeam && <span className={'ch-hs-vs is-' + r.vsTeam.sense}>{r.vsTeam.text}</span>}
+          {/* The rounds this row stands on (season rows carry it; the lifetime table does not, and then nothing is said). */}
+          {r.rounds != null && <span className="ch-hs-n ch-num">{plural(r.rounds, 'round')}</span>}
         </p>
       </div>
       <div className="ch-hs-tr" aria-hidden="true">
@@ -156,7 +158,15 @@ function Row({ r, voice = PLAYER_VOICE, readHref = null }: { r: ChStandRow; voic
 
 function Hero({ s, voice = PLAYER_VOICE }: { s: ChStanding; voice?: ChViewVoice }) {
   const w = wordsFor(voice);
-  const meta = [s.rounds != null ? `${plural(s.rounds, 'round')}` : null, s.scoringAverage ? `Scoring average ${s.scoringAverage}` : null, s.refreshed ? `Refreshed ${s.refreshed.replace(' ', '\u00a0')}` : null].filter(Boolean);
+  // The window first, so every number after it is read as that window's (owner decision 9). The scoring average is a lifetime figure
+  // (the stats cache), so it is named only beside the lifetime rows, never under "This season".
+  const season = s.window.kind === 'season';
+  const meta = [
+    season && s.window.since ? `${s.window.label} from ${s.window.since.replace(' ', '\u00a0')}` : s.window.label,
+    s.rounds != null ? `${plural(s.rounds, 'round')}` : null,
+    !season && s.scoringAverage ? `Scoring average ${s.scoringAverage}` : null,
+    s.refreshed ? `Refreshed ${s.refreshed.replace(' ', '\u00a0')}` : null,
+  ].filter(Boolean);
   const { tour, team } = s.counts;
   const top = s.ladder.top;
   const tourName = s.tour === 'Tour' ? 'the Tour' : 'the LPGA Tour';

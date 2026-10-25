@@ -19,6 +19,13 @@ export function isoDay(at: Date | number | string, timeZone?: string): string {
   return fmt.format(at instanceof Date ? at : new Date(at));
 }
 
+/** The wall-clock day and decimal hour of an instant in `timeZone`, as the calendar loader reads it: a key, not a label. */
+export function zonedWallTime(at: Date | number | string, timeZone: string): { date: string; hour: number } {
+  const p: Record<string, string> = {};
+  for (const x of new Intl.DateTimeFormat('en-US', { timeZone, hourCycle: 'h23', year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' }).formatToParts(at instanceof Date ? at : new Date(at))) p[x.type] = x.value;
+  return { date: `${p.year}-${p.month}-${p.day}`, hour: (Number(p.hour) % 24) + Number(p.minute) / 60 };
+}
+
 /** The one clock: "3:30 PM". */
 export function formatClock(at: Date | number | string, timeZone?: string): string {
   return new Date(at).toLocaleTimeString('en-US', { timeZone, hour: 'numeric', minute: '2-digit' });
