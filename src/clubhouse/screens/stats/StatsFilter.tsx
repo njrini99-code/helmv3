@@ -187,12 +187,13 @@ export function FilterEmpty({ code, onClear, page = false }: { code: string; onC
     return (
       <EmptyState
         size="page"
+        kind="filtered"
         code={code}
         icon={SlidersHorizontal}
         title="No rounds match these filters."
         body="Try a wider time, fewer round types, or clear the filters to see every round again."
         action={
-          <Button variant="primary" leftIcon={X} onClick={onClear}>
+          <Button leftIcon={X} onClick={onClear}>
             Clear filters
           </Button>
         }
@@ -201,12 +202,13 @@ export function FilterEmpty({ code, onClear, page = false }: { code: string; onC
   return (
     <div className="ch-st-card">
       <EmptyState
+        kind="filtered"
         code={code}
         icon={SlidersHorizontal}
         title="No rounds match these filters."
         body="Try a wider time, fewer round types, or clear the filters to see every round again."
         action={
-          <Button size="sm" variant="primary" onClick={onClear}>
+          <Button size="sm" onClick={onClear}>
             Clear filters
           </Button>
         }
@@ -448,6 +450,7 @@ function FilterSheet({
               {pickable.length === 0 ? (
                 <EmptyState
                   compact
+                  kind="filtered"
                   icon={CalendarRange}
                   code={codes.pickEmpty}
                   title="No rounds to pick from."

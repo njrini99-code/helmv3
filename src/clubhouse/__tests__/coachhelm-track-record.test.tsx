@@ -23,6 +23,8 @@ const db = vi.hoisted(() => ({
   corrections: { data: [], error: null } as Answer,
   teamSettings: { data: null, error: null } as Answer,
   calls: [] as string[],
+  rpcArgs: null as unknown,
+  zone: null as string | null,
 }));
 vi.mock('@/lib/supabase/server', () => {
   const chain = (answer: () => Answer) => {
@@ -33,13 +35,15 @@ vi.mock('@/lib/supabase/server', () => {
   };
   return {
     createClient: async () => ({
-      rpc: (fn: string) => {
+      rpc: (fn: string, args: unknown) => {
         db.calls.push(`rpc:${fn}`);
+        db.rpcArgs = args;
         return Promise.resolve(db.rpc);
       },
       from: (table: string) => {
         db.calls.push(`from:${table}`);
-        return chain(() => (table === 'golf_coach_insights' ? db.insights : table === 'golf_team_coachhelm_settings' ? db.teamSettings : db.corrections));
+        // golf_team_settings: the team's zone for the season's turn (owner decision 9); none stored is the default zone.
+        return chain(() => (table === 'golf_coach_insights' ? db.insights : table === 'golf_team_coachhelm_settings' ? db.teamSettings : table === 'golf_team_settings' ? { data: db.zone ? { timezone: db.zone } : null, error: null } : db.corrections));
       },
     }),
   };
@@ -70,6 +74,8 @@ beforeEach(() => {
   logServer.mockClear();
   gate.current = { status: 'on' };
   db.rpc = { data: [], error: null };
+  db.rpcArgs = null;
+  db.zone = null;
   db.insights = { data: [], error: null };
   db.corrections = { data: [], error: null };
   db.teamSettings = { data: null, error: null };
@@ -186,10 +192,19 @@ describe('loadCoachTrackRecord', () => {
     };
     db.corrections = { data: [{ insight_id: 'a', author_user_id: 'c1', author_role: 'coach', kind: 'confirm', created_at: '2026-10-01T00:00:00Z', team_id: 'team' }], error: null };
     const out = await loadCoachTrackRecord({ coachId: 'coach', teamId: 'team', now: new Date('2026-10-21T00:00:00Z') });
-    expect(db.calls).toEqual(['from:golf_team_coachhelm_settings', 'rpc:golf_coachhelm_shown_reads', 'from:golf_coach_insights', 'from:golf_coachhelm_corrections']);
+    expect(db.calls).toEqual(['from:golf_team_coachhelm_settings', 'from:golf_team_settings', 'rpc:golf_coachhelm_shown_reads', 'from:golf_coach_insights', 'from:golf_coachhelm_corrections']);
     if (out.status !== 'ready' || out.data.state !== 'ready') throw new Error('not ready');
     expect(out.data.program).toBe('Since Aug 1 CoachHelm showed 2 reads on this team. 1 held when rechecked, 0 cleared on their own, 0 were contradicted by later rounds. 1 not rechecked yet.');
     expect(out.data.corrections).toBe('Your staff marked 1 good read.');
+  });
+
+  it('asks for the reads shown since midnight on 1 August in the team’s zone, not UTC’s (owner decision 9)', async () => {
+    await loadCoachTrackRecord({ coachId: 'coach', teamId: 'team', now: new Date('2026-10-21T00:00:00Z') });
+    // No zone stored: the product default, New York (EDT, UTC−4 on 1 August).
+    expect(db.rpcArgs).toEqual({ p_team_id: 'team', p_since: '2026-08-01T04:00:00.000Z' });
+    db.zone = 'America/Los_Angeles';
+    await loadCoachTrackRecord({ coachId: 'coach', teamId: 'team', now: new Date('2026-10-21T00:00:00Z') });
+    expect(db.rpcArgs).toEqual({ p_team_id: 'team', p_since: '2026-08-01T07:00:00.000Z' });
   });
 
   it('a missing function is "not available"; a missing corrections table leaves corrections out; neither is logged', async () => {

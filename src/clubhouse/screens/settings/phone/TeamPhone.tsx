@@ -1,7 +1,6 @@
 'use client';
 
 import { useId, useRef, useState } from 'react';
-import { EmptyState } from '../../../ui/States';
 import { haptic } from '../../../lib/haptics';
 import {
   HANDICAP_OPTIONS,
@@ -26,6 +25,7 @@ import { ActionSheet, FormSheet, useSheetDraft } from './sheets';
 import { StaffPhone } from './StaffPhone';
 import { CourseLocationPhone } from '../course-location';
 import { FieldRow, Group, NavRow, PickerRow, Problem, SliderRow, SwitchRow } from './ui';
+import { NoTeam } from '../../../ui/NoTeam';
 
 /**
  * Team on the phone (coach): the team code, team details, scoring and reminders. Text edits open a sheet; choices
@@ -34,7 +34,7 @@ import { FieldRow, Group, NavRow, PickerRow, Problem, SliderRow, SwitchRow } fro
 export function TeamPhone({ data, writes }: { data: ChSettingsData; writes: ChSettingsWrites }) {
   if (!data.teamId) {
     return (
-      <EmptyState code="CH-8301" title="You aren’t on a team yet" body="Team settings appear once your program is set up and you’re on its staff." />
+      <NoTeam code="CH-8301" coach body="Team settings appear once your program is set up and you’re on its staff." action={false} inline />
     );
   }
   return <TeamBody data={data} writes={writes} />;

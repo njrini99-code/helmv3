@@ -422,7 +422,7 @@ describe('Calendar · swap audit §8 attendance', () => {
     await waitFor(() => expect(screen.getAllByText('Unsaved')).toHaveLength(1));
     a.markAttendance.mockClear();
     a.markAttendance.mockImplementation(ok);
-    await user.click(await screen.findByRole('button', { name: 'Retry' }));
+    await user.click(await screen.findByRole('button', { name: 'Try again' }));
     await waitFor(() => expect(a.markAttendance).toHaveBeenCalledTimes(1));
     expect(a.markAttendance.mock.calls[0]![1]).toBe('theo');
   });

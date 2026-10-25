@@ -20,8 +20,8 @@
   align-items: center;
   justify-content: space-between;
   gap: 12px;
-  padding: 12px 20px 10px 24px;
-  border-bottom: 1px solid var(--ch-border-hairline);
+  padding: 12px 20px 8px 24px;
+  border-bottom: var(--ch-hairline-w) solid var(--ch-border-hairline);
 }
 .ch-ask-top .ch-ask-tabs {
   order: 1;
@@ -34,9 +34,10 @@
   height: 36px;
   padding: 0 12px;
   border-radius: var(--ch-radius-md);
-  font: 500 calc(14 * var(--ch-type-k))/1 var(--ch-font-sans);
+  font: var(--ch-type-14-medium);
+  line-height: var(--ch-lead-tight);
   color: var(--ch-text-primary);
-  box-shadow: 0 0 0 1px var(--ch-border-subtle);
+  box-shadow: 0 0 0 var(--ch-hairline-w) var(--ch-border-subtle);
 }
 .ch-ask-team i {
   width: 8px;
@@ -79,7 +80,7 @@
   flex: 1;
   min-width: 0;
   overflow: hidden;
-  font: 500 calc(14 * var(--ch-type-k))/1.2 var(--ch-font-sans);
+  font: var(--ch-type-14-medium);
   color: var(--ch-text-secondary);
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -119,19 +120,19 @@
 }
 .ch-ask-foot {
   margin: 0;
-  font: 400 calc(12 * var(--ch-type-k))/1.4 var(--ch-font-sans);
+  font: var(--ch-type-12);
   color: var(--ch-text-tertiary);
   text-align: center;
 }
 .ch-ask-foot.is-home {
   flex: none;
-  padding: 0 24px 18px;
+  padding: 0 24px 16px;
 }
 .ch-ask-ev {
   min-width: 0;
   min-height: 0;
   overflow-y: auto;
-  border-left: 1px solid var(--ch-border-hairline);
+  border-left: var(--ch-hairline-w) solid var(--ch-border-hairline);
   background: var(--ch-bg-page);
 }
 .ch-ask-plain {
@@ -148,8 +149,8 @@
   flex: none;
   flex-direction: column;
   align-items: center;
-  gap: 10px;
-  padding: 12px 40px 14px;
+  gap: 8px;
+  padding: 12px 40px 16px;
   background: var(--ch-workspace);
 }
 /* The thread fades into the dock as it scrolls under it: a short wash of the canvas above the dock, not a shadow. */
@@ -174,11 +175,11 @@
   gap: 12px;
   min-width: 0;
   min-height: 0;
-  padding: 14px 12px 16px;
+  padding: 16px 12px 16px;
   box-sizing: border-box;
   overflow: hidden;
   background: var(--ch-bg-page);
-  box-shadow: inset -1px 0 0 var(--ch-border-hairline);
+  box-shadow: inset calc(-1 * var(--ch-hairline-w)) 0 0 var(--ch-border-hairline);
 }
 .ch-ask-hist > * {
   min-width: 256px;
@@ -211,7 +212,7 @@
   padding: 0 4px 0 8px;
 }
 .ch-ask-hist__head b {
-  font: 600 calc(15 * var(--ch-type-k))/1.2 var(--ch-font-sans);
+  font: var(--ch-type-15-strong);
   letter-spacing: -0.01em;
 }
 .ch-ask-hist__iconbtn {
@@ -235,18 +236,27 @@
     background: var(--ch-bg-inset);
   }
 }
+.ch-ask-hist__iconbtn[data-ch-pressed] {
+  background: var(--ch-ledger-row-press);
+}
+@media (hover: hover) {
+  .ch-ask-hist__iconbtn:active {
+    background: var(--ch-ledger-row-press);
+  }
+}
 .ch-ask-hist__new {
   display: flex;
   flex: none;
   align-items: center;
-  gap: 10px;
+  gap: 8px;
   height: 42px;
   padding: 0 12px;
   border: 0;
   border-radius: var(--ch-radius-md);
   background: var(--ch-bg-surface);
   box-shadow: var(--ch-shadow-sm);
-  font: 500 calc(14 * var(--ch-type-k))/1 var(--ch-font-sans);
+  font: var(--ch-type-14-medium);
+  line-height: var(--ch-lead-tight);
   color: var(--ch-text-primary);
   cursor: pointer;
 }
@@ -257,6 +267,14 @@
   /* The ledger's row tint over the key's own face, so it stays a key on the rail. */
   .ch-ask-hist__new:hover {
     background: linear-gradient(var(--ch-ledger-row-hover), var(--ch-ledger-row-hover)), var(--ch-bg-surface);
+  }
+}
+.ch-ask-hist__new[data-ch-pressed] {
+  background: linear-gradient(var(--ch-ledger-row-press), var(--ch-ledger-row-press)), var(--ch-bg-surface);
+}
+@media (hover: hover) {
+  .ch-ask-hist__new:active {
+    background: linear-gradient(var(--ch-ledger-row-press), var(--ch-ledger-row-press)), var(--ch-bg-surface);
   }
 }
 .ch-ask-hist__scroll {
@@ -275,18 +293,18 @@
 }
 .ch-ask-hist__group {
   margin: 0;
-  padding: 10px 10px 6px;
-  font: 500 calc(12 * var(--ch-type-k))/1.2 var(--ch-font-sans);
+  padding: 8px 8px 6px;
+  font: var(--ch-type-12-medium);
   color: var(--ch-text-tertiary);
 }
 /* A block, not a flex row: an ellipsis on a flex container cuts a long title mid-letter. The line height centres it. */
 .ch-ask-hist__row {
   display: block;
   height: 36px;
-  padding: 0 10px;
+  padding: 0 8px;
   overflow: hidden;
   border-radius: var(--ch-radius-md);
-  font: 400 calc(14 * var(--ch-type-k))/36px var(--ch-font-sans);
+  font: var(--ch-type-14);
   color: var(--ch-text-primary);
   text-decoration: none;
   text-overflow: ellipsis;
@@ -302,14 +320,23 @@
   background: var(--ch-bg-inset);
   font-weight: 500;
 }
+/* After the open chat's fill, so pressing it shows too. */
+.ch-ask-hist__row[data-ch-pressed] {
+  background: var(--ch-ledger-row-press);
+}
+@media (hover: hover) {
+  .ch-ask-hist__row:active {
+    background: var(--ch-ledger-row-press);
+  }
+}
 /* Inset: the history scroller clips a ring drawn outside the row. */
 .ch-ask-hist__row:focus-visible {
   outline-offset: -2px;
 }
 .ch-ask-hist__nomatch {
   margin: 0;
-  padding: 10px;
-  font: 400 calc(14 * var(--ch-type-k))/1.4 var(--ch-font-sans);
+  padding: 8px;
+  font: var(--ch-type-14);
   color: var(--ch-text-tertiary);
 }
 .ch-ask-hist__empty {
@@ -318,12 +345,13 @@
   align-items: center;
   gap: 8px;
   padding: 48px 20px;
-  font: 400 calc(14 * var(--ch-type-k))/1.45 var(--ch-font-sans);
+  font: var(--ch-type-14);
   color: var(--ch-text-secondary);
   text-align: center;
 }
 .ch-ask-hist__empty b {
-  font: 600 calc(16 * var(--ch-type-k))/1.2 var(--ch-font-sans);
+  font: var(--ch-type-16-strong);
+  letter-spacing: var(--ch-track-16);
   color: var(--ch-text-primary);
 }
 .ch-ask-hist__emptyic {
@@ -343,7 +371,8 @@
   border-radius: 999px;
   background: var(--ch-bg-surface);
   box-shadow: var(--ch-shadow-sm);
-  font: 600 calc(14 * var(--ch-type-k))/1 var(--ch-font-sans);
+  font: var(--ch-type-14-strong);
+  line-height: var(--ch-lead-tight);
   color: var(--ch-green-600);
   cursor: pointer;
 }
@@ -352,7 +381,7 @@
 .ch-ask-home {
   display: flex;
   flex-direction: column;
-  gap: 28px;
+  gap: 32px;
   width: min(720px, 100%);
   margin: 0 auto;
   padding: 72px 0 24px;
@@ -361,7 +390,7 @@
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 14px;
+  gap: 16px;
   text-align: center;
 }
 .ch-ask-greet h2 {
@@ -373,7 +402,8 @@
 }
 .ch-ask-greet p {
   margin: 0;
-  font: 400 calc(15 * var(--ch-type-k))/1.45 var(--ch-font-sans);
+  font: var(--ch-type-15);
+  letter-spacing: var(--ch-track-15);
   color: var(--ch-text-secondary);
 }
 .ch-ask-pills {
@@ -387,12 +417,12 @@
 }
 .ch-ask-pill {
   min-height: 36px;
-  padding: 0 14px;
+  padding: 0 16px;
   border: 0;
   border-radius: 999px;
   background: var(--ch-bg-surface);
   box-shadow: 0 0 0 1px var(--ch-border-subtle);
-  font: 400 calc(14 * var(--ch-type-k))/1.2 var(--ch-font-sans);
+  font: var(--ch-type-14);
   color: var(--ch-text-secondary);
   cursor: pointer;
   transition: color var(--ch-dur-quick) var(--ch-ease), box-shadow var(--ch-dur-quick) var(--ch-ease);
@@ -425,12 +455,13 @@
 .ch-ask-nothing__t {
   display: flex;
   flex-direction: column;
-  gap: 3px;
-  font: 400 calc(14 * var(--ch-type-k))/1.45 var(--ch-font-sans);
+  gap: 4px;
+  font: var(--ch-type-14);
   color: var(--ch-text-secondary);
 }
 .ch-ask-nothing__t b {
-  font: 600 calc(15 * var(--ch-type-k))/1.3 var(--ch-font-sans);
+  font: var(--ch-type-15-strong);
+  letter-spacing: var(--ch-track-15);
   color: var(--ch-text-primary);
 }
 
@@ -459,7 +490,7 @@
 }
 .ch-ask-state__alt {
   margin: 0;
-  font: 400 calc(14 * var(--ch-type-k))/1.4 var(--ch-font-sans);
+  font: var(--ch-type-14);
   color: var(--ch-text-secondary);
   text-align: center;
 }
@@ -483,11 +514,11 @@
   position: relative;
   display: flex;
   flex-direction: column;
-  gap: 14px;
-  padding: 18px 18px 12px;
-  border-radius: 24px;
+  gap: 16px;
+  padding: 16px 16px 12px;
+  border-radius: var(--ch-radius-xl);
   background: var(--ch-bg-surface);
-  box-shadow: var(--ch-elevation-floating);
+  box-shadow: var(--ch-elevation-raised);
   transition: box-shadow var(--ch-dur-quick) var(--ch-ease);
 }
 .ch-ask-cmp__box:focus-within {
@@ -511,7 +542,8 @@
   outline: 0;
   background: none;
   resize: none;
-  font: 400 calc(16 * var(--ch-type-k))/1.5 var(--ch-font-sans);
+  font: var(--ch-type-16);
+  letter-spacing: var(--ch-track-16);
   color: var(--ch-text-primary);
 }
 .ch-ask-cmp__ta::placeholder {
@@ -554,7 +586,8 @@
   border-radius: 999px;
   background: none;
   box-shadow: 0 0 0 1px var(--ch-border-control);
-  font: 500 calc(14 * var(--ch-type-k))/1 var(--ch-font-sans);
+  font: var(--ch-type-14-medium);
+  line-height: var(--ch-lead-tight);
   color: var(--ch-text-secondary);
   cursor: pointer;
 }
@@ -567,6 +600,14 @@
   .ch-ask-cmp__round:hover {
     box-shadow: 0 0 0 1px var(--ch-border-strong);
     color: var(--ch-text-primary);
+  }
+}
+.ch-ask-cmp__chip[data-ch-pressed] {
+  background-image: linear-gradient(var(--ch-ledger-row-press), var(--ch-ledger-row-press));
+}
+@media (hover: hover) {
+  .ch-ask-cmp__chip:active {
+    background-image: linear-gradient(var(--ch-ledger-row-press), var(--ch-ledger-row-press));
   }
 }
 .ch-ask-cmp__send {
@@ -582,6 +623,14 @@
   color: var(--ch-text-on-accent);
   cursor: pointer;
 }
+.ch-ask-cmp__send[data-ch-pressed]:not(:disabled):not(.is-stop) {
+  background: var(--ch-accent-press);
+}
+@media (hover: hover) {
+  .ch-ask-cmp__send:active:not(:disabled):not(.is-stop) {
+    background: var(--ch-accent-press);
+  }
+}
 .ch-ask-cmp__send:disabled {
   background: var(--ch-ivory-300);
   color: var(--ch-bg-surface);
@@ -590,9 +639,17 @@
 .ch-ask-cmp__send.is-stop {
   background: var(--ch-ink-900);
 }
+.ch-ask-cmp__send.is-stop[data-ch-pressed] {
+  background: var(--ch-ink-press);
+}
+@media (hover: hover) {
+  .ch-ask-cmp__send.is-stop:active {
+    background: var(--ch-ink-press);
+  }
+}
 .ch-ask-cmp__note {
   margin: 8px 0 0;
-  font: 400 calc(13 * var(--ch-type-k))/1.4 var(--ch-font-sans);
+  font: var(--ch-type-13);
   color: var(--ch-text-secondary);
   text-align: center;
 }
@@ -602,7 +659,7 @@
   flex-direction: row;
   align-items: center;
   gap: 8px;
-  padding: 10px;
+  padding: 8px;
 }
 .ch-ask-cmp.is-dock .ch-ask-cmp__bar,
 .ch-ask-cmp.is-phone .ch-ask-cmp__bar {
@@ -614,7 +671,7 @@
   flex: 1;
   min-width: 0;
   min-height: 36px;
-  padding: 7px 6px;
+  padding: 8px 6px;
   font-size: calc(16 * var(--ch-type-k));
 }
 .ch-ask-cmp.is-dock .ch-ask-cmp__round:not(.is-quiet),
@@ -647,7 +704,7 @@
   z-index: var(--ch-z-sticky);
   border-radius: var(--ch-radius-xl);
   background: var(--ch-bg-surface);
-  box-shadow: var(--ch-elevation-overlay), 0 0 0 1px var(--ch-border-hairline);
+  box-shadow: var(--ch-elevation-overlay), 0 0 0 var(--ch-hairline-w) var(--ch-border-hairline);
   overflow: hidden;
   transform-origin: 50% 100%;
   animation: ch-ask-pick-in var(--ch-dur-quick) var(--ch-ease);
@@ -684,23 +741,24 @@
 }
 /* Group headings: the quiet word over each kind of row, in sentence case. */
 .ch-ask-pick [cmdk-group-heading] {
-  padding: 10px 10px 4px;
-  font: 500 calc(13 * var(--ch-type-k))/1.2 var(--ch-font-sans);
+  padding: 8px 8px 4px;
+  font: var(--ch-type-13-medium);
   color: var(--ch-text-tertiary);
 }
 .ch-ask-pick [cmdk-group] + [cmdk-group] {
   margin-top: 4px;
   padding-top: 4px;
-  box-shadow: inset 0 1px 0 var(--ch-border-hairline);
+  box-shadow: inset 0 var(--ch-hairline-w) 0 var(--ch-border-hairline);
 }
 .ch-ask-pick__row {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 8px;
   min-height: 44px;
-  padding: 0 10px;
+  padding: 0 8px;
   border-radius: var(--ch-radius-md);
-  font: 400 calc(15 * var(--ch-type-k))/1.25 var(--ch-font-sans);
+  font: var(--ch-type-15);
+  letter-spacing: var(--ch-track-15);
   color: var(--ch-text-primary);
   cursor: pointer;
   user-select: none;
@@ -711,8 +769,13 @@
 .ch-ask-pick__row[data-selected='true'] {
   background: var(--ch-bg-inset);
 }
-.ch-ask-pick__row:active {
+.ch-ask-pick__row[data-ch-pressed] {
   background: var(--ch-ledger-row-press);
+}
+@media (hover: hover) {
+  .ch-ask-pick__row:active {
+    background: var(--ch-ledger-row-press);
+  }
 }
 .ch-ask-pick__name {
   min-width: 0;
@@ -735,8 +798,8 @@
   display: flex;
   align-items: center;
   min-height: 44px;
-  padding: 0 10px;
-  font: 400 calc(14 * var(--ch-type-k))/1.4 var(--ch-font-sans);
+  padding: 0 8px;
+  font: var(--ch-type-14);
   color: var(--ch-text-tertiary);
 }
 
@@ -745,13 +808,13 @@
   display: flex;
   flex-direction: column;
   gap: 16px;
-  padding: 12px 10px;
+  padding: 12px 8px;
 }
 .ch-ask-sk__mid {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 14px;
+  gap: 16px;
   width: min(720px, 100%);
   margin: 80px auto 0;
 }
@@ -825,7 +888,7 @@ body.keyboard-open .ch-ask-hist.is-drawer {
     height: calc(100dvh - var(--ch-phone-topbar-h) - env(safe-area-inset-top) - env(safe-area-inset-bottom) - var(--keyboard-height, 0px));
   }
   .ch-ask-top {
-    padding: 8px 16px;
+    padding: 8px var(--ch-page-x-phone);
   }
   .ch-ask-top .ch-ask-tabs {
     flex: 1;
@@ -845,19 +908,19 @@ body.keyboard-open .ch-ask-hist.is-drawer {
     grid-template-columns: minmax(0, 1fr);
   }
   .ch-ask-scroll {
-    padding: 0 16px 12px;
+    padding: 0 var(--ch-page-x-phone) 12px;
   }
   .ch-ask-scroll.is-home {
     display: flex;
     flex-direction: column;
   }
   .ch-ask-dock {
-    padding: 8px 12px 10px;
+    padding: 8px 12px 8px;
     box-shadow: 0 -1px 0 var(--ch-border-hairline);
     background: var(--ch-phone-composer-bg);
   }
   .ch-ask-cmp__box {
-    border-radius: 24px;
+    border-radius: var(--ch-radius-xl);
   }
   .ch-ask-cmp.is-dock .ch-ask-cmp__box,
   .ch-ask-cmp.is-phone .ch-ask-cmp__box {
@@ -897,14 +960,14 @@ body.keyboard-open .ch-ask-hist.is-drawer {
   .ch-ask-home.is-phone .ch-ask-greet {
     align-items: stretch;
     gap: 8px;
-    padding: 0 0 22px;
+    padding: 0 0 24px;
     text-align: left;
   }
   .ch-ask-greet h2 {
     max-width: 15em;
     font-size: calc(28 * var(--ch-type-k));
     line-height: 1.12;
-    letter-spacing: -0.024em;
+    letter-spacing: var(--ch-track-28);
   }
   .ch-ask-greet p {
     max-width: 34em;
@@ -922,10 +985,10 @@ body.keyboard-open .ch-ask-hist.is-drawer {
     margin: 0 0 6px;
     padding: 0;
     list-style: none;
-    box-shadow: inset 0 1px 0 var(--ch-ledger-rule-soft);
+    box-shadow: inset 0 var(--ch-hairline-w) 0 var(--ch-ledger-rule-soft);
   }
   .ch-ask-cards li + li {
-    box-shadow: inset 0 1px 0 var(--ch-ledger-rule-soft);
+    box-shadow: inset 0 var(--ch-hairline-w) 0 var(--ch-ledger-rule-soft);
   }
   .ch-ask-card {
     display: flex;
@@ -936,7 +999,7 @@ body.keyboard-open .ch-ask-hist.is-drawer {
     width: calc(100% + 24px);
     min-height: 60px;
     margin-inline: -12px;
-    padding: 10px 12px;
+    padding: 8px 12px;
     border: 0;
     border-radius: var(--ch-radius-md);
     background: none;
@@ -945,27 +1008,35 @@ body.keyboard-open .ch-ask-hist.is-drawer {
     cursor: pointer;
     transition: background var(--ch-dur-press) var(--ch-ease);
   }
-  .ch-ask-card:active {
+  .ch-ask-card[data-ch-pressed] {
     background: var(--ch-ledger-row-press);
     transition-delay: var(--ch-dur-press-delay);
+  }
+  @media (hover: hover) {
+    .ch-ask-card:active {
+      background: var(--ch-ledger-row-press);
+      transition-delay: var(--ch-dur-press-delay);
+    }
   }
   .ch-ask-card:focus-visible {
     outline: 2px solid var(--ch-border-focus);
     outline-offset: -2px;
   }
   .ch-ask-card b {
-    font: 600 calc(16 * var(--ch-type-k))/1.25 var(--ch-font-sans);
-    letter-spacing: -0.012em;
+    font: var(--ch-type-16-strong);
+    letter-spacing: var(--ch-track-16);
     color: var(--ch-green-700);
   }
   .ch-ask-card span {
-    font: 400 calc(13 * var(--ch-type-k))/1.35 var(--ch-font-sans);
+    font: var(--ch-type-13);
     color: var(--ch-text-tertiary);
   }
   .ch-ask-ph__title {
     min-width: 0;
     overflow: hidden;
-    font: 600 calc(16 * var(--ch-type-k))/1 var(--ch-font-sans);
+    font: var(--ch-type-16-strong);
+    letter-spacing: var(--ch-track-16);
+    line-height: var(--ch-lead-tight);
     text-overflow: ellipsis;
     white-space: nowrap;
   }
@@ -985,29 +1056,29 @@ body.keyboard-open .ch-ask-hist.is-drawer {
     display: flex;
     flex-direction: column;
     margin-top: auto;
-    padding: 0 20px 10px;
+    padding: 0 20px 8px;
   }
   .ch-ask-sk__phgreet {
     display: flex;
     flex-direction: column;
-    gap: 10px;
-    padding: 0 0 22px;
+    gap: 8px;
+    padding: 0 0 24px;
   }
   .ch-ask-sk__phrows {
     margin: 0 0 12px;
     padding: 0;
     list-style: none;
-    box-shadow: inset 0 1px 0 var(--ch-ledger-rule-soft);
+    box-shadow: inset 0 var(--ch-hairline-w) 0 var(--ch-ledger-rule-soft);
   }
   .ch-ask-sk__phrows li {
     display: flex;
     flex-direction: column;
     justify-content: center;
-    gap: 7px;
+    gap: 8px;
     min-height: 58px;
   }
   .ch-ask-sk__phrows li + li {
-    box-shadow: inset 0 1px 0 var(--ch-ledger-rule-soft);
+    box-shadow: inset 0 var(--ch-hairline-w) 0 var(--ch-ledger-rule-soft);
   }
 }
 
@@ -1027,7 +1098,7 @@ body.keyboard-open .ch-ask-hist.is-drawer {
 }
 
 /* The Mobile clubhouse pass (owner, 2026-10-08: "phone too cardy"). On the phone Ask sits on the parchment (the canvas
-   above) under the green bar like every other page, at its 20px edge; the bar's title takes the bar's ivory (it was dark
+   above) under the green bar like every other page, at the phone gutter; the bar's title takes the bar's ivory (it was dark
    ink on the green); the suggestions are action rows (above), not filled plates; and the note for a roster with no rounds
    is a line under a soft rule, not a box. The thread's bubbles, its evidence, the history drawer and the composer keep
    their material. */
@@ -1036,20 +1107,20 @@ body.keyboard-open .ch-ask-hist.is-drawer {
     color: var(--ch-on-green-ink);
   }
   .ch-ask-top {
-    padding: 8px 20px;
+    padding: 8px var(--ch-page-x-phone);
     border-bottom-color: var(--ch-ledger-rule-soft);
   }
   .ch-ask-scroll {
-    padding: 0 20px 12px;
+    padding: 0 var(--ch-page-x-phone) 12px;
   }
   .ch-ask-plain {
     padding: 16px 20px;
   }
   .ch-ask-nothing {
-    padding: 14px 0 0;
+    padding: 16px 0 0;
     border-radius: 0;
     background: none;
-    box-shadow: inset 0 1px 0 var(--ch-ledger-rule-soft);
+    box-shadow: inset 0 var(--ch-hairline-w) 0 var(--ch-ledger-rule-soft);
   }
   .ch-ask-nothing__ic {
     background: var(--ch-ledger-row-hover);
@@ -1147,7 +1218,7 @@ html:not([data-fw-theme='dark']) .ch-ask {
       inset-inline-end: 0;
       z-index: 2;
       width: min(380px, 92%);
-      box-shadow: var(--ch-elevation-floating);
+      box-shadow: var(--ch-elevation-raised);
     }
   }
 }
@@ -1155,6 +1226,6 @@ html:not([data-fw-theme='dark']) .ch-ask {
 /* Who Ask's answers cover, under the openers (the findings block moved to the Board's header line, D4). */
 .ch-ask-cov {
   max-width: 64ch;
-  font: 400 calc(13 * var(--ch-type-k))/1.45 var(--ch-font-sans);
+  font: var(--ch-type-13);
   color: var(--ch-text-tertiary);
 }

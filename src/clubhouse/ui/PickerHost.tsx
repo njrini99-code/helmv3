@@ -5,8 +5,8 @@ import type { LucideIcon } from 'lucide-react';
 import { useCallback, useEffect, useId, useLayoutEffect, useRef, useState, type KeyboardEvent, type ReactNode } from 'react';
 import { createPortal } from 'react-dom';
 import { haptic } from '../lib/haptics';
-import { CH_POP, chTween } from '../lib/motion';
-import { useChReducedMotion } from '../lib/reduced-motion';
+import { CH_POP, chFade, chTween } from '../lib/motion';
+import { useChMotionMode, useChReducedMotion } from '../lib/reduced-motion';
 import { useChPhone } from '../lib/use-phone';
 import { Icon } from './Icon';
 import { Modal } from './Modal';
@@ -77,6 +77,8 @@ function hostFor(from: HTMLElement | null): HTMLElement {
 export function PickerField(p: PickerFieldProps) {
   const phone = useChPhone();
   const reduced = useChReducedMotion();
+  // Reduce Motion fades the picker over the quick beat (owner decision 2, OQ-15); Animations off is instant.
+  const mode = useChMotionMode();
   const uid = useId();
   const [open, setOpen] = useState(false);
   const grab = useRef(true);
@@ -371,7 +373,7 @@ export function PickerField(p: PickerFieldProps) {
                     initial={reduced ? { opacity: 0 } : CH_POP.initial}
                     animate={reduced ? { opacity: 1 } : CH_POP.animate}
                     exit={reduced ? { opacity: 0 } : CH_POP.exit}
-                    transition={chTween('quick', reduced)}
+                    transition={reduced ? chFade(mode) : chTween('quick')}
                     onKeyDown={onPanelKey}
                   >
                     {body}

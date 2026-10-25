@@ -48,7 +48,7 @@ read what was written, and get back to the list.
 
 ## Visual hierarchy
 
-Desktop: the header (title, the count line, Add prospect), the pipeline of four
+Desktop: the header (title, the count line, New prospect), the pipeline of four
 stages with counts and shares, then the list beside the open prospect's panel.
 The phone: the top bar (back to More, Add), the large title, search, the compact
 pipeline, the count with its sort, then the rows; a prospect is a pushed screen
@@ -236,7 +236,7 @@ the owner (proposed, not recorded in PROGRESS.md by this session):
 2. **Removing a document.** No control is drawn. A 44px trash button on each row, then a question (CH-14502).
 3. **No team.** A page that says so and opens Team Settings (CH-14306), built from Roster's pattern.
 4. **A stage with nobody in it.** The filter says "No prospects in Offered" and offers Show all stages (CH-14302).
-5. **Add prospect on the phone.** The boards' "+" goes to the edit sheet; a new prospect gets one more row, Stage,
+5. **New prospect on the phone.** The boards' "+" goes to the edit sheet; a new prospect gets one more row, Stage,
    and starts at Watched, as the desktop Add board does. The current page's server default for a new prospect is
    Recruiting; the boards' Add dialog shows Watched, and the boards win.
 6. **Film (decided 2026-09-30, Q-95 item 6: film uploads are allowed, as a file drop).** The board's sample

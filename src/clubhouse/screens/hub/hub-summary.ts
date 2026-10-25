@@ -1,5 +1,6 @@
 import type { ChHubAnnouncement, ChHubDay, ChHubLedgerRow, ChHubRsvp, ChHubTask, ChHubTrip, ChRsvp, ChTeamHub } from '../../data/hub';
 import type { ChHubTab } from '../../lib/hub-tabs';
+import { pluralWord } from '../../lib/plural';
 
 /**
  * What Team Hub says about itself in one line under its title, and the rules behind Home's widgets (the player's queue,
@@ -19,7 +20,6 @@ export interface StripItem {
   warn?: boolean;
 }
 
-const plural = (n: number, one: string, many: string) => (n === 1 ? one : many);
 
 export interface StripInput {
   role: ChTeamHub['role'];
@@ -40,24 +40,24 @@ export function hubStrip(i: StripInput): StripItem[] {
   const out: StripItem[] = [];
   const openTasks = i.tasks.filter((t) => !i.isDone(t));
   const overdue = openTasks.filter((t) => t.status === 'overdue').length;
-  const tasksAfter = ` ${plural(openTasks.length, 'task', 'tasks')} open${overdue === 0 ? '' : overdue === openTasks.length ? ', all overdue' : `, ${overdue} overdue`}`;
+  const tasksAfter = ` ${pluralWord(openTasks.length, 'task', 'tasks')} open${overdue === 0 ? '' : overdue === openTasks.length ? ', all overdue' : `, ${overdue} overdue`}`;
   if (coach) {
-    if (i.players > 0) out.push({ key: 'players', n: i.players, after: ` ${plural(i.players, 'player', 'players')}` });
+    if (i.players > 0) out.push({ key: 'players', n: i.players, after: ` ${pluralWord(i.players, 'player', 'players')}` });
     const quiet = i.rsvps.reduce((n, r) => n + (r.counts?.none ?? 0), 0);
-    if (quiet > 0) out.push({ key: 'replies', n: quiet, after: ` ${plural(quiet, 'reply', 'replies')} due this week`, tab: 'home' });
+    if (quiet > 0) out.push({ key: 'replies', n: quiet, after: ` ${pluralWord(quiet, 'reply', 'replies')} due this week`, tab: 'home' });
     const waiting = i.announcements.filter((a) => a.needAck && a.recipients > 0 && a.ackCount < a.recipients).length;
-    if (waiting > 0) out.push({ key: 'acks', n: waiting, after: ` ${plural(waiting, 'post', 'posts')} awaiting acknowledgement`, tab: 'ann' });
-    if (i.nextTrip?.inDays != null) out.push({ key: 'trip', before: 'next trip in ', n: i.nextTrip.inDays, after: plural(i.nextTrip.inDays, ' day', ' days'), tab: 'travel' });
+    if (waiting > 0) out.push({ key: 'acks', n: waiting, after: ` ${pluralWord(waiting, 'post', 'posts')} awaiting acknowledgement`, tab: 'ann' });
+    if (i.nextTrip?.inDays != null) out.push({ key: 'trip', before: 'next trip in ', n: i.nextTrip.inDays, after: pluralWord(i.nextTrip.inDays, ' day', ' days'), tab: 'travel' });
     if (openTasks.length > 0) out.push({ key: 'tasks', n: openTasks.length, after: tasksAfter, tab: 'tasks', warn: overdue > 0 });
     if (i.pulse && i.pulse.players > 0 && i.pulse.active14 === 0) out.push({ key: 'pulse', after: 'no rounds in 14 days' });
     return out;
   }
   const mine = (r: ChHubRsvp) => i.replies.get(r.eventId) ?? r.mine ?? 'pending';
   const due = i.rsvps.filter((r) => mine(r) === 'pending').length;
-  if (due > 0) out.push({ key: 'replies', n: due, after: ` ${plural(due, 'reply', 'replies')} due`, tab: 'home' });
+  if (due > 0) out.push({ key: 'replies', n: due, after: ` ${pluralWord(due, 'reply', 'replies')} due`, tab: 'home' });
   const toAck = i.announcements.filter((a) => a.needAck && !i.isAcked(a)).length;
-  if (toAck > 0) out.push({ key: 'acks', n: toAck, after: ` ${plural(toAck, 'post', 'posts')} to acknowledge`, tab: 'ann' });
-  if (i.nextTrip?.mine && i.nextTrip.inDays != null) out.push({ key: 'trip', before: 'traveling in ', n: i.nextTrip.inDays, after: plural(i.nextTrip.inDays, ' day', ' days'), tab: 'travel' });
+  if (toAck > 0) out.push({ key: 'acks', n: toAck, after: ` ${pluralWord(toAck, 'post', 'posts')} to acknowledge`, tab: 'ann' });
+  if (i.nextTrip?.mine && i.nextTrip.inDays != null) out.push({ key: 'trip', before: 'traveling in ', n: i.nextTrip.inDays, after: pluralWord(i.nextTrip.inDays, ' day', ' days'), tab: 'travel' });
   if (openTasks.length > 0) out.push({ key: 'tasks', n: openTasks.length, after: tasksAfter, tab: 'tasks', warn: overdue > 0 });
   return out;
 }

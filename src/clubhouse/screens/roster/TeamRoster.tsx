@@ -14,13 +14,15 @@ import { SearchField } from '../../ui/SearchField';
 import { SectionBoundary } from '../../ui/SectionBoundary';
 import { Tooltip } from '../../ui/Tooltip';
 import { haptic } from '../../lib/haptics';
-import { NO_DATA } from '../../lib/format';
+import { formatHcp } from '../../lib/format';
+import { NoData } from '../../ui/NoData';
+import { TERMS } from '../../lib/glossary';
 import { useChPhone } from '../../lib/use-phone';
-import { formatHcp } from './format';
 import { TeamRosterPhone } from './TeamRosterPhone';
 import { sortTeammates, teammateLine, type TeamSort } from './team';
 import '../../styles/roster.css';
 import { SideScroll } from '../../ui/SideScroll';
+import { pluralWord } from '../../lib/plural';
 
 type View = 'faces' | 'list';
 // The same key as the coach's roster: the layout is a preference for this screen on this device.
@@ -77,10 +79,10 @@ export function TeamRoster({ data }: { data: ChPlayerRoster }) {
           <span className="ch-rs-team">
             <span className="ch-rs-team__name">{[data.teamName, data.season].filter(Boolean).join(' · ')}</span>
           </span>
-          <h1 className="ch-display">Your team.</h1>
+          <h1 className="ch-display">Roster</h1>
           {!data.playersError && players.length > 0 && (
             <p>
-              <span className="ch-num">{players.length}</span> {players.length === 1 ? 'player' : 'players'} on the roster.
+              <span className="ch-num">{players.length}</span> {pluralWord(players.length, 'player')} on the roster.
             </p>
           )}
         </div>
@@ -92,7 +94,7 @@ export function TeamRoster({ data }: { data: ChPlayerRoster }) {
         <InlineNotice
           code="CH-3210"
           title="The roster didn’t load"
-          body="Your team is safe. Try again; the error has been reported."
+          body="Your team is safe. Try again."
           onRetry={() => router.refresh()}
         />
       ) : players.length === 0 ? (
@@ -143,7 +145,7 @@ export function TeamRoster({ data }: { data: ChPlayerRoster }) {
                 options={[
                   { value: 'name', label: 'Name' },
                   { value: 'class', label: 'Class' },
-                  { value: 'hcp', label: 'Handicap' },
+                  { value: 'hcp', label: TERMS.handicap.long },
                 ]}
               />
             </div>
@@ -174,7 +176,7 @@ function TeamCoaches({ coaches }: { coaches: ChPlayerRoster['coaches'] }) {
         <div key={c.id} role="row" className="ch-rs-row">
           <span role="cell" className="ch-rs-who__cell">
             <span className="ch-rs-who ch-rs-who--static">
-              <Avatar name={c.name} size={40} />
+              <Avatar name={c.name} size="lg" />
               <span>
                 <b>{c.name}</b>
               </span>
@@ -209,7 +211,7 @@ function TeammateList({ rows, view, q, onClearSearch }: { rows: ChTeammate[]; vi
           <li key={p.id} className="ch-rs-face ch-rs-face--static">
             <span className="ch-rs-face__top" />
             <span className="ch-rs-face__av">
-              <Avatar name={p.name} size={76} />
+              <Avatar name={p.name} id={p.id} size={76} />
             </span>
             <span className="ch-rs-face__name">{p.name}</span>
             <span className="ch-rs-face__meta">{teammateLine(p) || ' '}</span>
@@ -236,7 +238,7 @@ function TeammateList({ rows, view, q, onClearSearch }: { rows: ChTeammate[]; vi
         <div key={p.id} role="row" className="ch-rs-row">
           <span role="cell" className="ch-rs-who__cell">
             <span className="ch-rs-who ch-rs-who--static">
-              <Avatar name={p.name} size={40} />
+              <Avatar name={p.name} id={p.id} size="lg" />
               <span>
                 <b>{p.name}</b>
                 {p.isYou && <span className="ch-rs-who__m">You</span>}
@@ -244,7 +246,7 @@ function TeammateList({ rows, view, q, onClearSearch }: { rows: ChTeammate[]; vi
             </span>
           </span>
           <span role="cell" className="ch-rs-num2">
-            {p.classYear ?? NO_DATA}
+            {p.classYear ?? <NoData />}
           </span>
           <span role="cell" className="r ch-num ch-rs-num2">
             {formatHcp(p.handicap)}

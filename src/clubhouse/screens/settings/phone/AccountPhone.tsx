@@ -6,7 +6,7 @@ import { haptic } from '../../../lib/haptics';
 import { chTrail } from '../../../lib/track';
 import { emailProblem, passwordProblem, profileProblem, type ChProfileInput, type ChSettingsData, type ChSettingsWrites } from '../model';
 import { SAVE_COPY, useAvatarUpload, useDeleteAccount } from '../hooks';
-import { ReadFailed, useSaveAction } from '../parts';
+import { focusProblemField, ReadFailed, useSaveAction } from '../parts';
 import { ActionSheet, FormSheet, useSheetDraft } from './sheets';
 import { FieldRow, Group, NavRow, Problem } from './ui';
 
@@ -153,7 +153,7 @@ export function ProfileSheet({
         </span>
         <div className="ch-setm-photo__acts">
           <button type="button" className="ch-setm-link" disabled={uploading} onClick={() => file.current?.click()}>
-            {uploading ? 'Uploading…' : draft.avatarUrl ? 'Replace photo' : 'Change photo'}
+            {uploading ? 'Uploading…' : draft.avatarUrl ? 'Replace photo' : 'Add photo'}
           </button>
           {draft.avatarUrl && !uploading && (
             <button type="button" className="ch-setm-link is-quiet" onClick={() => setDraft((d) => ({ ...d, avatarUrl: null }))}>
@@ -235,7 +235,10 @@ export function EmailSheet({ open, onClose, email, writes, onSent }: { open: boo
       actionDisabled={!next.trim()}
       onAction={() => {
         setTouched(true);
-        if (problem || !next.trim()) return;
+        if (problem || !next.trim()) {
+          focusProblemField(problem);
+          return;
+        }
         void send.run(next.trim());
       }}
       note="We email a link to the new address. Your current email works until you open it."
@@ -277,6 +280,7 @@ export function PasswordSheet({ open, onClose, hasEmail, writes }: { open: boole
   }
   const change = useSaveAction('settings.changePassword', writes.changePassword, SAVE_COPY.password, () => onClose());
   const problem = passwordProblem(cur, next, confirm);
+  const invalidAt = (id: string) => (tried && problem?.field === id ? true : undefined);
   return (
     <FormSheet
       open={open}
@@ -290,6 +294,7 @@ export function PasswordSheet({ open, onClose, hasEmail, writes }: { open: boole
         setTried(true);
         if (problem) {
           haptic('warning');
+          focusProblemField(problem);
           return;
         }
         void change.run(cur, next);
@@ -297,9 +302,10 @@ export function PasswordSheet({ open, onClose, hasEmail, writes }: { open: boole
       note="You’ll confirm your current password first."
     >
       <div className="ch-setm-card">
-        <FieldRow id="set-pw-cur" label="Current password" type="password" autoComplete="current-password" value={cur} onChange={(e) => setCur(e.target.value)} />
-        <FieldRow id="set-pw-new" label="New password" type="password" autoComplete="new-password" help="At least 8 characters." value={next} onChange={(e) => setNext(e.target.value)} />
-        <FieldRow id="set-pw-confirm" label="Confirm new password" type="password" autoComplete="new-password" value={confirm} onChange={(e) => setConfirm(e.target.value)} />
+        {/* The field the problem names is marked invalid; its words are the Problem line under the card. */}
+        <FieldRow id="set-pw-cur" label="Current password" type="password" autoComplete="current-password" aria-invalid={invalidAt('set-pw-cur')} value={cur} onChange={(e) => setCur(e.target.value)} />
+        <FieldRow id="set-pw-new" label="New password" type="password" autoComplete="new-password" help="At least 8 characters." aria-invalid={invalidAt('set-pw-new')} value={next} onChange={(e) => setNext(e.target.value)} />
+        <FieldRow id="set-pw-confirm" label="Confirm new password" type="password" autoComplete="new-password" aria-invalid={invalidAt('set-pw-confirm')} value={confirm} onChange={(e) => setConfirm(e.target.value)} />
       </div>
       {tried && problem && <Problem problem={problem} />}
     </FormSheet>

@@ -158,21 +158,22 @@ function SlotHost() {
   const { setSlot } = usePhoneChromeState();
   return <div ref={setSlot} data-testid="phone-top" />;
 }
+const phoneTree = (d: ChMessagesData) => (
+  <LazyMotion features={domAnimation}>
+    <ToastProvider>
+      <PhoneChromeProvider>
+        <div className="ch-root" data-ui="clubhouse">
+          <SlotHost />
+          <Messages data={d} />
+        </div>
+      </PhoneChromeProvider>
+    </ToastProvider>
+  </LazyMotion>
+);
 function showPhone(d: ChMessagesData = data) {
   layout.phone = true;
   window.matchMedia = ((q: string) => ({ matches: false, media: q, addEventListener: () => {}, removeEventListener: () => {}, addListener: () => {}, removeListener: () => {}, onchange: null, dispatchEvent: () => false })) as never;
-  return render(
-    <LazyMotion features={domAnimation}>
-      <ToastProvider>
-        <PhoneChromeProvider>
-          <div className="ch-root" data-ui="clubhouse">
-            <SlotHost />
-            <Messages data={d} />
-          </div>
-        </PhoneChromeProvider>
-      </ToastProvider>
-    </LazyMotion>,
-  );
+  return render(phoneTree(d));
 }
 type User = ReturnType<typeof userEvent.setup>;
 const newMessage = async (user: User, kind: RegExp) => {
@@ -310,7 +311,7 @@ describe('P007 wiring · deep links (70102)', () => {
     // The address is cleaned; the same link tapped again later is taken again.
     params.current = new URLSearchParams();
     view.rerender(tree(data));
-    await userEvent.setup().click(screen.getAllByRole('button', { name: /Varsity team/ })[0]!);
+    await userEvent.setup().click(screen.getAllByRole('button', { name: /^(?!Actions for ).*Varsity team/ })[0]!);
     await screen.findByRole('textbox', { name: /Message Varsity team/ });
     params.current = new URLSearchParams('conversation=dm');
     view.rerender(tree(data));
@@ -403,7 +404,7 @@ describe('P007 wiring · the group’s creator removes a member (removeGolfGroup
     const user = userEvent.setup();
     a.removeGolfGroupMember.mockResolvedValue({ success: true });
     showPhone();
-    await user.click(await screen.findByRole('button', { name: /Varsity team/ }));
+    await user.click(await screen.findByRole('button', { name: /^(?!Actions for ).*Varsity team/ }));
     const thread = await screen.findByRole('region', { name: /Varsity team/ });
     await user.click(within(thread).getByRole('button', { name: 'Details' }));
     await user.click(await screen.findByRole('button', { name: 'Remove Jonah Okafor' }));
@@ -488,15 +489,38 @@ describe('P007 wiring · the phone’s Schedule invites the direct thread’s pl
     const user = userEvent.setup();
     live.convs.conversations = [team, dm];
     const first = showPhone();
-    await user.click(await screen.findByRole('button', { name: /Jonah Okafor/ }));
+    await user.click(await screen.findByRole('button', { name: /^(?!Actions for ).*Jonah Okafor/ }));
     const thread = await screen.findByRole('region', { name: /Jonah Okafor/ });
     await user.click(within(thread).getByRole('button', { name: 'Details' }));
     expect((await screen.findByRole('link', { name: 'Schedule' })).getAttribute('href')).toBe('/golf/dashboard/calendar?new=1&with=p-jonah');
     first.unmount();
     showPhone();
-    await user.click(await screen.findByRole('button', { name: /Varsity team/ }));
+    await user.click(await screen.findByRole('button', { name: /^(?!Actions for ).*Varsity team/ }));
     const group = await screen.findByRole('region', { name: /Varsity team/ });
     await user.click(within(group).getByRole('button', { name: 'Details' }));
     expect((await screen.findByRole('link', { name: 'Schedule' })).getAttribute('href')).toBe('/golf/dashboard/calendar?new=1');
   });
+});
+
+describe('B7 · a message that arrives opens in place at the end of the thread', () => {
+  const reply = { id: 'm2', conversation_id: 'team', sender_id: 'jonah', content: 'On our way', created_at: '2026-10-14T18:05:00Z', isRead: false };
+  for (const phone of [false, true]) {
+    it(`${phone ? 'phone' : 'desktop'}: the opened thread is drawn in place; a new reply opens in, then hands its height back, and the rest never move`, async () => {
+      const user = userEvent.setup();
+      const view = phone ? showPhone() : show();
+      await user.click(await screen.findByRole('button', { name: /^(?!Actions for ).*Varsity team/ }));
+      await screen.findByRole('region', { name: /Varsity team/ });
+      const had = document.getElementById('ch-ms-message-m1')!;
+      expect(had.style.overflow).toBe('');
+      expect(had.style.height).toBe('');
+      live.msgs.messages = [mine, reply];
+      view.rerender(phone ? phoneTree(data) : tree(data));
+      const arrived = document.getElementById('ch-ms-message-m2')!;
+      expect(arrived.style.overflow).toBe('clip');
+      // No FLIP in a thread: the scroll is use-thread-anchor's, so the message already there takes no transform.
+      expect(had.style.transform).toBe('');
+      await waitFor(() => expect(document.getElementById('ch-ms-message-m2')!.style.height).toBe(''), { timeout: 3000 });
+      expect(document.getElementById('ch-ms-message-m2')!.style.overflow).toBe('');
+    });
+  }
 });

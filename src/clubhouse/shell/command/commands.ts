@@ -1,4 +1,4 @@
-import { BarChart3, Flag, GraduationCap, Megaphone, MessageSquarePlus, CalendarPlus, Sparkles, Trophy, type LucideIcon } from 'lucide-react';
+import { ChartColumn, Flag, GraduationCap, Megaphone, MessageSquarePlus, CalendarPlus, Sparkles, Trophy, type LucideIcon } from 'lucide-react';
 import { activeNavItem, CH_SETTINGS_ITEM, navFor, rebuiltHref, type ChNavItem, type ChRole } from '../nav';
 import { letterFor } from './shortcuts';
 
@@ -98,7 +98,7 @@ export function peopleCommands(role: ChRole, people: readonly ChPerson[]): ChCom
   if (role !== 'coach') return [];
   return people.flatMap((p): ChCommand[] => {
     const href = rebuiltHref(`/golf/dashboard/stats?player=${encodeURIComponent(p.id)}`, role);
-    return href ? [{ id: `person:${p.id}`, group: 'people', label: p.name, href, icon: BarChart3, avatarName: p.name, detail: p.detail ?? 'Stats', keywords: ['player'] }] : [];
+    return href ? [{ id: `person:${p.id}`, group: 'people', label: p.name, href, icon: ChartColumn, avatarName: p.name, detail: p.detail ?? 'Stats', keywords: ['player'] }] : [];
   });
 }
 

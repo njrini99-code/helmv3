@@ -10,7 +10,8 @@ import { Avatar } from '../../../ui/Avatar';
 import { Icon } from '../../../ui/Icon';
 import { playerStatsHref } from './Prose';
 import { afterRailMove } from '../../../lib/rail-fold';
-import { niceTicks } from '../../stats/round-trend';
+import { Line } from '../../../ui/charts/Line';
+import { changeTone } from '../../../lib/format';
 
 /** Who is on the coach's team: a read about anyone else is drawn, never linked. */
 type Roster = ReadonlyArray<{ id: string }>;
@@ -214,15 +215,19 @@ function Legs({ block }: { block: Extract<AskEvidence, { kind: 'legs' }> }) {
   return (
     <div>
       <div className="ch-th-legs" role="list" aria-label={block.title}>
-        {block.rows.map((r) => (
-          <div key={r.label} className="ch-th-leg" role="listitem" data-sign={r.value < 0 ? 'loss' : 'gain'}>
-            <span className="ch-th-leg__label">{r.label}</span>
-            <span className="ch-th-leg__track" aria-hidden="true">
-              <span style={{ width: `${(Math.abs(r.value) / max) * 50}%` }} />
-            </span>
-            <span className="ch-th-leg__val">{r.display}</span>
-          </div>
-        ))}
+        {block.rows.map((r) => {
+          // The side and the tone come from the value as it prints (one decimal): a leg shown as 0.0 draws no bar (A2).
+          const tone = changeTone(r.value, false, 1);
+          return (
+            <div key={r.label} className="ch-th-leg" role="listitem" data-sign={tone === 'is-gain' ? 'gain' : tone === 'is-loss' ? 'loss' : undefined}>
+              <span className="ch-th-leg__label">{r.label}</span>
+              <span className="ch-th-leg__track" aria-hidden="true">
+                {tone && <span style={{ width: `${(Math.abs(r.value) / max) * 50}%` }} />}
+              </span>
+              <span className="ch-th-leg__val">{r.display}</span>
+            </div>
+          );
+        })}
       </div>
       <p className="ch-th-fig__take">{block.takeaway}</p>
     </div>
@@ -232,45 +237,13 @@ function Legs({ block }: { block: Extract<AskEvidence, { kind: 'legs' }> }) {
 /** The width the trend is drawn at before it is measured (and in tests): the phone's column. */
 const W0 = 360;
 const H = 150;
-const PAD = { l: 38, r: 10, t: 16, b: 26 };
-/** The reference label's type: 10.5px on desktop, 12px on the phone (the CSS); its width is estimated from the larger. */
-const REF_CHAR = 6.6;
+/** Where the reference's words go so they never sit on the line (P013 D3); it lives with the one line chart now (B5). */
+export { placeRefLabel } from '../../../ui/charts/Line';
 
 /**
- * Where the reference label goes so it never sits on the line or a point (P013 D3): above the dashed line at the right, else
- * below it, else the same two at the left; when all four would touch the line, `null`, and the label is set as a key under
- * the chart instead. `pts` are the drawn points in viewBox units, `w` the label's estimated width.
- */
-export function placeRefLabel(pts: Array<{ x: number; y: number }>, ry: number, w: number, width: number): { x: number; y: number; anchor: 'start' | 'end' } | null {
-  const R = 5; // a point's radius plus its stroke
-  const lineSpan = (x0: number, x1: number): [number, number] | null => {
-    const ys: number[] = [];
-    pts.forEach((p, i) => {
-      if (p.x >= x0 && p.x <= x1) ys.push(p.y);
-      const q = pts[i + 1];
-      if (!q) return;
-      for (const x of [x0, x1]) {
-        if ((p.x <= x && x <= q.x) || (q.x <= x && x <= p.x)) ys.push(q.x === p.x ? p.y : p.y + ((x - p.x) * (q.y - p.y)) / (q.x - p.x));
-      }
-    });
-    return ys.length ? [Math.min(...ys) - R, Math.max(...ys) + R] : null;
-  };
-  const right = { x0: width - PAD.r - w, x1: width - PAD.r, x: width - PAD.r, anchor: 'end' as const };
-  const left = { x0: PAD.l + 4, x1: PAD.l + 4 + w, x: PAD.l + 4, anchor: 'start' as const };
-  for (const side of [right, left]) {
-    const span = lineSpan(side.x0, side.x1);
-    // The text's box: about 11px above its baseline and 3px below it.
-    for (const base of [ry - 5, ry + 15]) {
-      if (!span || span[1] < base - 11 || span[0] > base + 3) return { x: side.x, y: base, anchor: side.anchor };
-    }
-  }
-  return null;
-}
-
-/**
- * Movement over time, with the reference drawn dashed so a last point reads against something. The text equivalent is the label
- * and the table. Drawn at the width it is given (measured), so its type stays at the token size instead of scaling with the
- * column (P013 D3).
+ * Movement over time, on the one line chart (ui/charts/Line, B5), with the reference drawn dashed so a last point reads
+ * against something; a finger or the arrow keys read each point. The text equivalent is the label and the table. Drawn at
+ * the width it is given (measured), so its type stays at the token size instead of scaling with the column (P013 D3).
  */
 export function Trend({ block }: { block: Extract<AskEvidence, { kind: 'trend' }> }) {
   const box = useRef<HTMLDivElement>(null);
@@ -298,66 +271,35 @@ export function Trend({ block }: { block: Extract<AskEvidence, { kind: 'trend' }
     lo -= 1;
   }
   const pad = block.unit === 'percent' ? 0 : (hi - lo) * 0.12;
-  // Round-number ticks over the data's own span (A8.1), before the breathing room is added around it.
-  const ticks = niceTicks(lo, hi, 3);
-  lo -= pad;
-  hi += pad;
-  const n = block.points.length;
   // A lower-is-better metric (scoring, putts) is drawn with lower values higher, so better is always up (A8.1).
   const down = block.goodDirection === 'down';
-  const x = (i: number) => PAD.l + (n === 1 ? 0 : (i * (W - PAD.l - PAD.r)) / (n - 1));
-  const y = (v: number) => PAD.t + ((down ? v - lo : hi - v) / (hi - lo)) * (H - PAD.t - PAD.b);
-  const last = values[n - 1] as number;
+  const last = values[values.length - 1] as number;
   const ref = block.reference;
   // Amber when the last point is on the wrong side of the reference for a metric whose direction is known; never red.
   const worse = ref && block.goodDirection ? (block.goodDirection === 'up' ? last < ref.value : last > ref.value) : false;
-  const stroke = worse ? 'var(--ch-chart-loss)' : 'var(--ch-green-600)';
-  const showAll = n <= 6;
   const label = `${block.summary}${down ? ' Lower is better.' : ''} ${block.points.map((p) => `${p.label} ${formatValue(p.value, block.unit)}`).join(', ')}.`;
   const refText = ref ? (ref.label.startsWith('Team') ? ref.label : `${ref.label} ${formatValue(ref.value, block.unit)}`) : '';
-  const refAt = ref ? placeRefLabel(values.map((v, i) => ({ x: x(i), y: y(v) })), y(ref.value), refText.length * REF_CHAR, W) : null;
   return (
     <div ref={box} className="ch-th-trendbox">
-      <svg className="ch-th-trend" width={W} height={H} viewBox={`0 0 ${W} ${H}`} role="img" aria-label={label}>
-        {ticks.map((t, i) => (
-          <g key={i}>
-            <line x1={PAD.l} x2={W - PAD.r} y1={y(t)} y2={y(t)} className="ch-th-grid" />
-            <text x={PAD.l - 6} y={y(t) + 4} textAnchor="end" className="ch-th-ax ch-num">
-              {formatValue(t, block.unit)}
-            </text>
-          </g>
-        ))}
-        {ref && (
-          <g>
-            <line x1={PAD.l} x2={W - PAD.r} y1={y(ref.value)} y2={y(ref.value)} className="ch-th-ref" />
-            {refAt && (
-              <text x={refAt.x} y={refAt.y} textAnchor={refAt.anchor} className="ch-th-ref-label">
-                {refText}
-              </text>
-            )}
-          </g>
-        )}
-        {n > 1 && <polyline points={values.map((v, i) => `${x(i)},${y(v)}`).join(' ')} fill="none" stroke={stroke} strokeWidth="2.2" strokeLinejoin="round" />}
-        {values.map((v, i) => (
-          <circle key={i} cx={x(i)} cy={y(v)} r="4" fill={i === n - 1 ? stroke : 'var(--ch-ivory-25)'} stroke={stroke} strokeWidth="2" />
-        ))}
-        {block.points.map((p, i) =>
-          showAll || i === 0 || i === n - 1 || i === Math.floor((n - 1) / 2) ? (
-            <text key={i} x={x(i)} y={H - 8} textAnchor="middle" className="ch-th-ax ch-num">
-              {p.label}
-            </text>
-          ) : null,
-        )}
-      </svg>
+      <Line
+        className={'ch-th-trend' + (worse ? ' is-loss' : '')}
+        label={label}
+        points={block.points.map((p) => ({ x: p.label, y: p.value }))}
+        lowerIsBetter={down}
+        domain={[lo - pad, hi + pad]}
+        baseline={ref ? { value: ref.value, label: refText, dashed: true } : undefined}
+        format={(v) => formatValue(v, block.unit)}
+        marks="trail"
+        ends="spread"
+        readAt="tip"
+        // The block's own "as a table" view is its data table (DataTable).
+        table={false}
+        width={W}
+        height={H}
+      />
       {down && (
         <p className="ch-th-dir" aria-hidden="true">
           Lower is better
-        </p>
-      )}
-      {ref && !refAt && (
-        <p className="ch-th-refkey" aria-hidden="true">
-          <i />
-          {refText}
         </p>
       )}
     </div>

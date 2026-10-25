@@ -2,7 +2,8 @@
 
 import { useId } from 'react';
 import type { ChTeamForm } from '../../data/home';
-import { formatFixed, formatSigned, NO_DATA } from '../../lib/format';
+import { formatFixed, formatSigned } from '../../lib/format';
+import { NoData } from '../../ui/NoData';
 import { deltaTone, deltaWords } from '../../lib/stats-signal';
 import { withPointSpan } from '../../ui/point-span';
 import { formBasis, partOf } from './HomePhone';
@@ -66,12 +67,12 @@ export function TeamForm({ form }: { form: ChTeamForm }) {
         <div><dt>Rounds</dt><dd className="ch-num">{form.roundsThisWeek}</dd><dd>this week</dd></div>
         <div>
           <dt>GIR</dt>
-          <dd className="ch-num">{form.gir.pct != null ? `${Math.round(form.gir.pct)}%` : NO_DATA}</dd>
+          <dd className="ch-num">{form.gir.pct != null ? `${Math.round(form.gir.pct)}%` : (form.gir.needs ?? <NoData />)}</dd>
           <dd className={'ch-num ' + deltaTone(form.gir.delta, form.gir.se, false)}>{form.gir.delta != null ? `${formatSigned(form.gir.delta, 0)} pts` : partOf(form.basis.girRounds, form.basis.rounds)}</dd>
         </div>
         <div>
           <dt>Putts</dt>
-          <dd className="ch-num">{form.putts.avg != null ? formatFixed(form.putts.avg) : NO_DATA}</dd>
+          <dd className="ch-num">{form.putts.avg != null ? formatFixed(form.putts.avg) : <NoData />}</dd>
           <dd className={'ch-num ' + deltaTone(form.putts.delta, form.putts.se, true)}>{form.putts.delta != null ? formatSigned(form.putts.delta) : partOf(form.basis.puttsRounds, form.basis.rounds)}</dd>
         </div>
       </dl>

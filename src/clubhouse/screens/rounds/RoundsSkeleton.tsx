@@ -1,6 +1,7 @@
 import { Skeleton } from '../../ui/States';
 import '../../styles/rounds.css';
 import '../../styles/rounds-recover.css';
+import { LargeTitleSkeleton } from '../../ui/LargeTitle';
 
 /** Route loading for Rounds: the header, the round card beside the season, then a month of rounds, in place. On desktop the header is the framed page head at its loaded height (rounds.css). */
 export function RoundsSkeleton() {
@@ -59,9 +60,7 @@ function PhoneRoundsSkeleton() {
     <div className="ch-rd-sk-phone">
       <header className="ch-rd-sk-h">
         <SkelLine h={24} w={210} sh={11} />
-        <span className="ch-rd-sk-title" data-ch-large-title="">
-          <SkelLine h={33.5} w={168} sh={28} r={8} />
-        </span>
+        <LargeTitleSkeleton width={168} className="ch-rd-sk-title" />
         <span className="ch-rd-sk-new">
           <Skeleton width={117} height={44} radius={11} />
         </span>

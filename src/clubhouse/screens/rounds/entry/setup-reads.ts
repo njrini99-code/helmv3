@@ -7,6 +7,7 @@ import type { NewRoundStartForm, NewRoundStartResult } from '@/lib/golf/round-se
 import { teeColorFor } from '../../../data/rounds-shape';
 import { chReport } from '../../../lib/track';
 import { blankHoles, holesForRound, startPosition, yardageRule, type ChResult, type ChSetupCourse, type ChSetupForm, type ChSetupHole, type ChSetupPorts, type ChSetupQualifier, type ChSetupTee, type ChStartFailure } from '../setup/shape';
+import { plural } from '../../../lib/plural';
 
 /*
  * The reads and the start form behind round setup's ports (docs/clubhouse/ROUNDS_PLAN.md step 3 to 5): the course
@@ -220,7 +221,7 @@ export const QUALIFIER_READ_MS = 6000;
  */
 export function qualifierBlockedReason(next: { error?: string; code?: string }, numRounds: number): string {
   const error = next.error ?? '';
-  if (next.code === 'qualifier_round_limit_reached') return `All ${numRounds} ${numRounds === 1 ? 'round is' : 'rounds are'} in. Ask your coach to add a round if you need another.`;
+  if (next.code === 'qualifier_round_limit_reached') return `All ${plural(numRounds, 'round is', 'rounds are')} in. Ask your coach to add a round if you need another.`;
   if (/more than one saved round/i.test(error)) return 'You have more than one saved round in this qualifier. Continue one from Rounds.';
   if (/not entered in this qualifier/i.test(error)) return 'You’re no longer entered in this qualifier. Ask your coach.';
   if (/qualifier not found/i.test(error)) return 'This qualifier isn’t there any more. Ask your coach.';

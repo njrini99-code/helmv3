@@ -201,7 +201,7 @@ describe('/golf/join/[code]', () => {
     expect(await screen.findByRole('alert')).toHaveAttribute('data-ch-code', 'CH-15032');
     await user.click(screen.getByRole('button', { name: 'Join Varsity Golf' }));
     await waitFor(() => expect(screen.getByRole('alert')).toHaveAttribute('data-ch-code', 'CH-15033'));
-    expect(screen.getByRole('alert')).toHaveTextContent('Network error. Please check your connection and try again.');
+    expect(screen.getByRole('alert')).toHaveTextContent('Couldn’t join the team. Try again.');
     expect(joinFailure(null).message).toBe('Failed to join team. Please try again.');
   });
 

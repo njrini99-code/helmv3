@@ -5,6 +5,7 @@ import { loadInvitedCounts, loadOwnRows } from './attendance-counts';
 import { playerSeesMeeting } from '../screens/calendar/model';
 import { homeClock } from './home';
 import { addDays, termOn, toChClasses, toTeamEvent, weekDates, type ChClassesPage, type ChClassRow, type ChEventRow, type ChTeamEvent } from './classes-shape';
+import { isoDay } from '../lib/dates';
 
 export type * from './classes-shape';
 
@@ -44,7 +45,7 @@ export async function loadClasses(input: { playerId: string; teamId: string }): 
   const supabase = await createClient();
   const now = new Date();
   const clock = await homeClock(supabase, input.teamId, now);
-  const todayIso = new Intl.DateTimeFormat('en-CA', { timeZone: clock.tz, year: 'numeric', month: '2-digit', day: '2-digit' }).format(now);
+  const todayIso = isoDay(now, clock.tz);
   const dates = weekDates(todayIso);
   // A trip that left a few days before Monday still touches the week; rows are placed by their zoned date below.
   const fromIso = `${addDays(dates[0]!, -3)}T00:00:00Z`;

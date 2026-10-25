@@ -121,7 +121,7 @@ function BellStacksView({
   if (failed && !items?.length) {
     return (
       <div className="ch-bst-card ch-bst-card--still">
-        <InlineNotice code="CH-1201" title="Notifications didn’t load" body="Try again; the error has been reported." onRetry={onRetry} />
+        <InlineNotice code="CH-1201" title="Notifications didn’t load" body="Try again." onRetry={onRetry} />
       </div>
     );
   }

@@ -15,6 +15,7 @@ import { chLogServer } from '../lib/track-server';
 import { rsvpOf } from './calendar';
 import { homeClock } from './home-clock';
 import { fullName, loadSeasonRounds } from './season';
+import { isoDay } from '../lib/dates';
 
 /**
  * Team Hub (Clubhouse; docs/clubhouse/phone/team-hub.md). One server read for
@@ -300,7 +301,7 @@ export async function loadTeamHub(input: { role: ChHubRole; teamId: string; user
   const supabase = await createClient();
   const now = new Date();
   const { tz } = await homeClock(supabase, input.teamId, now);
-  const today = new Intl.DateTimeFormat('en-CA', { timeZone: tz, year: 'numeric', month: '2-digit', day: '2-digit' }).format(now);
+  const today = isoDay(now, tz);
   const f = formatters(tz, now);
 
   const [teamRes, rosterRes, docsRes, updatesRes, hidden] = await Promise.all([
@@ -977,7 +978,7 @@ function addDays(date: string, n: number): string {
 
 /** Every label in the team's timezone. */
 export function formatters(tz: string, now: Date) {
-  const ymd = (d: Date) => new Intl.DateTimeFormat('en-CA', { timeZone: tz, year: 'numeric', month: '2-digit', day: '2-digit' }).format(d);
+  const ymd = (d: Date) => isoDay(d, tz);
   const today = ymd(now);
   const utcDay = (date: string) => new Date(`${date.slice(0, 10)}T12:00:00Z`);
   const wdFmt = new Intl.DateTimeFormat('en-US', { timeZone: 'UTC', weekday: 'short' });

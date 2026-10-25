@@ -75,6 +75,25 @@ export function partsSentence(parts: readonly string[]): string {
 }
 
 /**
+ * B10.3: the failure templates. A failure says what didn't happen, that nothing saved was lost, and what to do; it never
+ * says the error was reported (nobody on the page can act on that) and never guesses at a cause. Three shapes cover the
+ * screens: a read that failed (`load`), a part of a page that couldn't be drawn (`shown`) or a whole page (`page`), a save
+ * that failed with the edit still there (`save` on its own, `kept` under a title that already says what didn't save), and
+ * offline (`offline`, the CH-1905 line). Offline is the one cause a line names, because the browser says so.
+ */
+export const FAILURE_COPY = {
+  /** "Your rounds and this week’s schedule didn’t load. Nothing you saved is lost. Try again." */
+  load: (parts: readonly string[]) => `${partsSentence(parts)} didn’t load. Nothing you saved is lost. Try again.`,
+  shown: 'The rest of the page is fine. Try again.',
+  page: 'Nothing you saved is lost. Try again.',
+  /** "Couldn’t save. Your changes are kept. Try again." */
+  save: 'Couldn’t save. Your changes are kept. Try again.',
+  /** Under "Couldn’t save your profile": the edit is still on screen. */
+  kept: 'Your changes are kept. Try again.',
+  offline: OFFLINE_LINE,
+} as const;
+
+/**
  * More than one part of a page could not load (CH-1209): the page says so once, under its head, with one Try again
  * that re-runs the whole page, and each failed part keeps its heading with a covered notice (`covered`) marking the
  * gap, without a button of its own. A single failed part keeps its own notice, so below two parts this renders
@@ -98,7 +117,7 @@ export function PageNotice({
     <InlineNotice
       code={code}
       title="Some of this page didn’t load"
-      body={`${partsSentence(parts)} didn’t load. Everything you saved is safe, and trying again usually clears it.`}
+      body={FAILURE_COPY.load(parts)}
       onRetry={onRetry}
       retrying={retrying}
     />
@@ -118,15 +137,15 @@ const COPY: Record<RouteErrorKind, { title: string; body: string }> = {
   },
   transient: {
     title: 'GolfHelm is slow to respond',
-    body: 'The server is busy for a moment. This usually clears on its own within a few seconds.',
+    body: `GolfHelm didn’t answer in time. ${FAILURE_COPY.page}`,
   },
   load: {
     title: 'This page didn’t finish loading',
-    body: 'The connection dropped before the data arrived. Check your signal and try again.',
+    body: FAILURE_COPY.page,
   },
   unknown: {
     title: 'Something went wrong on this page',
-    body: 'It has been reported automatically, with the details needed to fix it.',
+    body: FAILURE_COPY.page,
   },
 };
 
@@ -217,7 +236,7 @@ export function RouteErrorView({
             <p className="ch-empty-page__note">{retryCount === 1 ? 'Tried again once.' : `Tried again ${retryCount} times.`}</p>
           )}
           <div className="ch-empty-page__a">
-            <Button variant="primary" leftIcon={RotateCw} onClick={onRetry} busy={isRetrying} feel="commit">
+            <Button variant="primary" leftIcon={RotateCw} onClick={onRetry} busy={isRetrying}>
               {isRetrying ? 'Trying again…' : reload ? 'Reload' : 'Try again'}
             </Button>
             {homePath && (

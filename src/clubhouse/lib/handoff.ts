@@ -82,7 +82,7 @@ export function dropHandoffCurtain(): void {
       right: '8px',
       bottom: '8px',
       left: sidebarW,
-      borderRadius: '14px',
+      borderRadius: '16px',
       background: page,
       boxShadow: '0 1px 3px rgb(0 0 0 / 0.25), 0 0 0 1px rgb(0 0 0 / 0.12)',
     });

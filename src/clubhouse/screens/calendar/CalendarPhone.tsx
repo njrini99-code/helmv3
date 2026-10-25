@@ -1,23 +1,28 @@
 'use client';
 
-import { CalendarDays, ChevronLeft, ChevronRight, Plus, Rss, TriangleAlert } from 'lucide-react';
-import { useEffect, useLayoutEffect, useRef, useState, type ReactNode } from 'react';
+import { CalendarCheck, CalendarDays, ChevronLeft, ChevronRight, Ellipsis, Plus, Rss, TriangleAlert } from 'lucide-react';
+import { useRef, useState, type ReactNode } from 'react';
 import type { ChCalendarData } from '../../data/calendar';
 import { Badge } from '../../ui/Badge';
 import { EmptyState } from '../../ui/States';
 import { Icon } from '../../ui/Icon';
 import { Button, IconButton } from '../../ui/Button';
 import { PhoneIconAction } from '../../ui/PhoneBar';
+import { MenuSheet } from '../../ui/ContextMenu';
+import type { MenuItem } from '../../ui/Menu';
 import { SectionBoundary } from '../../ui/SectionBoundary';
+import { ScrollPager } from '../../ui/ScrollPager';
 import { Segmented } from '../../ui/Segmented';
 import { Swap } from '../../ui/Swap';
+import { WeekStrip, type WeekStripDay } from '../../ui/WeekStrip';
 import { haptic } from '../../lib/haptics';
 import { useChClock } from '../../lib/use-clock';
 import { EventPeek } from './peek';
 import { PhoneTop } from '../../shell/phone-chrome';
-import { addDays, dayNum, dowOf, fmtHour, monthName, playerReplyNeeded, rangeLabel, startLabel, weekDates, yearOf, type ChCalEvent, type ChCalPerson, type ChCalView } from './model';
+import { addDays, dayNum, dowOf, fmtHour, monthKey, monthName, playerReplyNeeded, rangeLabel, startLabel, weekDates, yearOf, type ChCalEvent, type ChCalPerson, type ChCalView } from './model';
 import { AgendaView, eventTitle, type ChNow } from './views';
 import { MonthGrid } from './month';
+import { plural, pluralWord } from '../../lib/plural';
 
 /** The phone's three views (board: Day, Month, List); the desktop's week is the phone's Day. */
 export type ChCalPhoneView = 'day' | 'month' | 'list';
@@ -50,6 +55,7 @@ export function CalendarPhone({
   onOpen,
   onNew,
   onSubscribe,
+  more,
 }: {
   data: ChCalendarData;
   events: ChCalEvent[];
@@ -69,12 +75,21 @@ export function CalendarPhone({
   onOpen: (id: string, date: string) => void;
   onNew: (date: string) => void;
   onSubscribe: () => void;
+  /** The coach's More (row 81): desktop's items without Print (Add to calendar app, Add busy time, Overlaps). */
+  more?: MenuItem[];
 }) {
   const coach = data.role === 'coach';
   // A player's own class is titled without their name; their replies still owed are marked (P006, wave 7).
   const viewerId = coach ? null : data.viewerPlayerId;
   const pv = phoneViewOf(view);
   const setPv = (v: ChCalPhoneView) => onView(desktopViewOf(v), anchor);
+  // B10.4: away from today (another day, or another month on Month), a Today key brings the page back, as on desktop.
+  const away = pv === 'month' ? monthKey(anchor) !== monthKey(now.date) : anchor !== now.date;
+  const goToday = () => {
+    haptic('select');
+    onView(view, now.date);
+  };
+  const [moreOpen, setMoreOpen] = useState(false);
 
   return (
     <main className="ch-calm" aria-label="Calendar">
@@ -89,6 +104,12 @@ export function CalendarPhone({
         <span className="ch-intro__eyebrow ch-num">
           {yearOf(anchor)} · {data.zoneLabel}
         </span>
+        {/* On the eyebrow's line at the right, so it takes no room when it comes and goes. */}
+        {away && (
+          <Button size="sm" variant="ghost" className="ch-calm-today" leftIcon={CalendarCheck} onClick={goToday} feel={null}>
+            Today
+          </Button>
+        )}
         <span className="ch-intro__row">
           <h2 className="ch-intro__title ch-calm-title">{monthName(anchor)}</h2>
           <span className="ch-intro__action">
@@ -103,9 +124,12 @@ export function CalendarPhone({
                 { value: 'list', label: 'List' },
               ]}
             />
+            {/* Row 81: the coach's More, beside the view switch; the top bar keeps its one action, New event (B10.1). */}
+            {!!more?.length && <IconButton icon={Ellipsis} label="More" className="ch-calm-more" onClick={() => setMoreOpen(true)} />}
           </span>
         </span>
       </header>
+      {more && <MenuSheet open={moreOpen} title="Calendar" label="More" items={more} onClose={() => setMoreOpen(false)} />}
       {notices}
       {data.eventsError &&
         (pv === 'day' ? (
@@ -172,6 +196,21 @@ function DayView({
   failed?: ReactNode;
 }) {
   const week = weekDates(anchor);
+  const stripDays = (dates: string[]): WeekStripDay[] =>
+    dates.map((d) => {
+      const n = events.filter((e) => e.date === d && e.type !== 'class' && e.type !== 'busy').length;
+      // A player's reply still owed that day: one amber dot beside the day's own (wave 7).
+      const reply = !failed && events.some((e) => e.date === d && playerReplyNeeded(e, viewerId, now));
+      return {
+        date: d,
+        top: dowOf(d).slice(0, 1),
+        num: dayNum(d),
+        isToday: d === now.date,
+        dots: failed ? 0 : n,
+        flag: reply ? 'reply' : undefined,
+        label: `${dowOf(d)} ${dayNum(d)}${d === now.date ? ', today' : ''}${failed ? '' : `, ${plural(n, 'event')}`}${reply ? ', needs your reply' : ''}`,
+      };
+    });
   // The day on show and the way it went: a later day comes in from the right, an earlier one from the left. A swipe has
   // already carried the day into place, so it keeps the slide's key and nothing slides twice (P006-B2).
   const swiped = useRef(false);
@@ -189,45 +228,29 @@ function DayView({
     );
   return (
     <>
-      <ol className="ch-calm-week" aria-label="This week" style={{ ['--ch-calm-at' as string]: Math.max(0, week.indexOf(anchor)) }}>
-        {week.map((d) => {
-          const n = events.filter((e) => e.date === d && e.type !== 'class' && e.type !== 'busy').length;
-          // A player's reply still owed that day: one amber dot beside the day's own (wave 7).
-          const reply = !failed && events.some((e) => e.date === d && playerReplyNeeded(e, viewerId, now));
-          return (
-            <li key={d}>
-              <button
-                type="button"
-                className={'ch-calm-week__d' + (d === anchor ? ' is-on' : '') + (d === now.date ? ' is-today' : '')}
-                aria-pressed={d === anchor}
-                aria-label={`${dowOf(d)} ${dayNum(d)}${d === now.date ? ', today' : ''}${failed ? '' : `, ${n} ${n === 1 ? 'event' : 'events'}`}${reply ? ', needs your reply' : ''}`}
-                onClick={() => {
-                  if (d !== anchor) haptic('select');
-                  swiped.current = false;
-                  onDay(d);
-                }}
-              >
-                <em>{dowOf(d).slice(0, 1)}</em>
-                <b className="ch-num">{dayNum(d)}</b>
-                <i>
-                  {Array.from({ length: Math.min(3, n) }, (_, j) => (
-                    <span key={j} />
-                  ))}
-                  {reply && <span className="is-reply" />}
-                </i>
-              </button>
-            </li>
-          );
-        })}
-      </ol>
+      <WeekStrip
+        label="This week"
+        days={stripDays(week)}
+        selected={anchor}
+        onSelect={(d) => {
+          if (d !== anchor) haptic('select');
+          swiped.current = false;
+          onDay(d);
+        }}
+        onPage={failed ? undefined : (dir) => ((swiped.current = false), onDay(addDays(anchor, 7 * dir)))}
+        around={{ prev: stripDays(weekDates(addDays(anchor, -7))), next: stripDays(weekDates(addDays(anchor, 7))) }}
+      />
       {failed ? (
         <DayPage date={anchor} events={[]} people={people} now={now} flagged={flagged} selId={selId} onOpen={onOpen} coach={coach} viewerId={viewerId} onWeek={(dir) => onDay(addDays(anchor, 7 * dir))} failed={failed} />
       ) : (
-        <DayPager
-          anchor={anchor}
-          onSettle={(d) => {
+        <ScrollPager
+          pageKey={anchor}
+          className="ch-calm-pager"
+          pageClassName="ch-calm-page"
+          label="The day"
+          onSettle={(dir) => {
             swiped.current = true;
-            onDay(d);
+            onDay(addDays(anchor, dir));
           }}
           prev={page(addDays(anchor, -1), false)}
           next={page(addDays(anchor, 1), false)}
@@ -235,7 +258,7 @@ function DayView({
           <Swap swapKey={day.slide} kind="slide" dir={day.dir} className="ch-calm-dayswap">
             {page(anchor, true)}
           </Swap>
-        </DayPager>
+        </ScrollPager>
       )}
     </>
   );
@@ -294,8 +317,8 @@ function DayPage({
         {/* An empty day has no "0 events": the empty state under it says so. */}
         {!failed && list.length > 0 && (
           <span className="ch-num">
-            {team.length} {team.length === 1 ? 'event' : 'events'}
-            {blocks > 0 ? ` · ${blocks} ${coach ? (blocks === 1 ? 'class or busy block' : 'classes or busy blocks') : blocks === 1 ? 'class' : 'classes'}` : ''}
+            {team.length} {pluralWord(team.length, 'event')}
+            {blocks > 0 ? ` · ${blocks} ${coach ? pluralWord(blocks, 'class or busy block', 'classes or busy blocks') : pluralWord(blocks, 'class', 'classes')}` : ''}
           </span>
         )}
         {/* P006 D5, B2: the week before and after without going through Month; the same reach a swipe gives, for
@@ -379,67 +402,5 @@ function DayPage({
         </ol>
       )}
     </>
-  );
-}
-
-/**
- * P006-B2: the day pages left and right with the phone's own momentum (scroll-snap, one day a page), and a selection
- * tick once a page settles. Three pages: the day before, the day, the day after. When a neighbour settles, the page
- * becomes that day and the pager recentres on it, so the swipe never runs out. The neighbours are clipped to the day's
- * height and are inert: only the day on show is read or tapped.
- */
-function DayPager({ anchor, onSettle, prev, next, children }: { anchor: string; onSettle: (date: string) => void; prev: ReactNode; next: ReactNode; children: ReactNode }) {
-  const ref = useRef<HTMLDivElement | null>(null);
-  const mid = useRef<HTMLElement | null>(null);
-  const settle = useRef(onSettle);
-  settle.current = onSettle;
-  // On the day, before paint: a recentre never shows as a jump.
-  useLayoutEffect(() => {
-    const el = ref.current;
-    if (el) el.scrollLeft = el.clientWidth;
-  }, [anchor]);
-  useEffect(() => {
-    const el = ref.current;
-    const m = mid.current;
-    if (!el || !m) return;
-    const fit = new ResizeObserver(() => el.style.setProperty('--ch-calm-page-h', `${m.offsetHeight}px`));
-    fit.observe(m);
-    let timer = 0;
-    const done = () => {
-      window.clearTimeout(timer);
-      const w = el.clientWidth;
-      if (!w) return;
-      const i = Math.round(el.scrollLeft / w);
-      if (i === 1 || Math.abs(el.scrollLeft - i * w) > 2) return;
-      haptic('select');
-      settle.current(addDays(anchorRef.current, i === 0 ? -1 : 1));
-    };
-    // `scrollend` where WebKit has it; else the scroll going quiet.
-    const quiet = () => {
-      window.clearTimeout(timer);
-      timer = window.setTimeout(done, 140);
-    };
-    const hasEnd = 'onscrollend' in window;
-    el.addEventListener(hasEnd ? 'scrollend' : 'scroll', hasEnd ? done : quiet, { passive: true });
-    return () => {
-      fit.disconnect();
-      window.clearTimeout(timer);
-      el.removeEventListener(hasEnd ? 'scrollend' : 'scroll', hasEnd ? done : quiet);
-    };
-  }, []);
-  const anchorRef = useRef(anchor);
-  anchorRef.current = anchor;
-  return (
-    <div className="ch-calm-pager" ref={ref}>
-      <section className="ch-calm-page is-side" inert aria-hidden="true">
-        {prev}
-      </section>
-      <section className="ch-calm-page" ref={mid} aria-label="The day">
-        {children}
-      </section>
-      <section className="ch-calm-page is-side" inert aria-hidden="true">
-        {next}
-      </section>
-    </div>
   );
 }

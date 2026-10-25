@@ -4,6 +4,7 @@ import { useCallback, useMemo, useState } from 'react';
 import { CoursePicker } from '../setup/CoursePicker';
 import type { ChSetupCourse, ChSetupPorts } from '../setup/shape';
 import { AskRow } from '../track/DataPrompts';
+import { Button } from '../../../ui/Button';
 
 /** CH-11962: the course nudge, as the round screen owns it. */
 export interface ChCourseNudgeView {
@@ -89,9 +90,9 @@ export function CourseNudge({ nudge, ports, sheet = false }: { nudge: ChCourseNu
         sheet={sheet}
         line={linkedName === null ? `${courseName.trim() ? `“${courseName.trim()}” isn’t linked to the course library. ` : ''}Linked rounds build your hole history and course plans.` : `It saves ${sheet ? 'when you post the round' : 'with your next shot'}. Your pars and yardages stay as you entered them.`}
       >
-        <button type="button" className="ch-btn ch-btn--secondary ch-btn--sm ch-rt-ask__go" onClick={pick}>
-          <span>{linkedName === null ? 'Pick the course' : 'Change'}</span>
-        </button>
+        <Button size="sm" className="ch-rt-ask__go" onClick={pick}>
+          {linkedName === null ? 'Pick the course' : 'Change'}
+        </Button>
       </AskRow>
       {mounted && (
         <CoursePicker

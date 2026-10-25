@@ -1,3 +1,4 @@
+import { plural } from '../../lib/plural';
 /**
  * The scoring mix as rows (stats-visuals spec 4.4, decision Q11): every scored hole by its result, in the bar's order from
  * left to right. Par sits in the middle; going out from it, birdie then eagle or better to the left (under par), bogey then
@@ -78,7 +79,7 @@ export function mixRows(counts: MixCounts, perRound?: MixPerRound | null): MixRo
  * inside it when they are known and fit ("· 3 triple or worse"); a count that cannot be inside it is left out, never shown.
  */
 export function mixReadout(row: MixRow, holes: number, triple?: number | null): string {
-  const parts = [row.label, `${row.count} of ${holes} ${holes === 1 ? 'hole' : 'holes'}`, row.pctText];
+  const parts = [row.label, `${row.count} of ${plural(holes, 'hole')}`, row.pctText];
   if (row.perRound != null) parts.push(`${perRoundText(row.perRound)} a round`);
   if (row.key === 'double' && triple != null && triple >= 0 && triple <= row.count) parts.push(`${triple} triple or worse`);
   return parts.join(' · ');

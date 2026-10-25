@@ -13,6 +13,7 @@ import { haptic } from '../../lib/haptics';
 import { chTrail } from '../../lib/track';
 import { clock, dayLabel, needsMyAck, railTime, type ChAnnouncement, type ChAnnouncementDetail } from './model';
 import type { ChMessagesApi } from './MessagesView';
+import { pluralWord } from '../../lib/plural';
 
 /**
  * The team's announcements, folded under the conversations (owner, 2026-10-16: messages first, announcements folded).
@@ -27,7 +28,7 @@ export function AnnouncementsSection({ api, q }: { api: ChMessagesApi; q: string
     return (
       <section className="ch-ms-sec is-ann" aria-label="Announcements">
         <div className="ch-ms-sec__l">Announcements</div>
-        <InlineNotice code="CH-7206" title="Announcements didn’t load" body="Try again; the error has been reported." onRetry={api.refetchAnns} />
+        <InlineNotice code="CH-7206" title="Announcements didn’t load" body="Try again." onRetry={api.refetchAnns} />
       </section>
     );
   }
@@ -102,7 +103,7 @@ export function AnnouncementsSection({ api, q }: { api: ChMessagesApi; q: string
           </div>
           {more > 0 && (
             <button type="button" className="ch-ms-more" onClick={() => api.selectAnn(api.announcements[list.length]!.id)}>
-              {more} earlier {more === 1 ? 'announcement' : 'announcements'}
+              {more} earlier {pluralWord(more, 'announcement')}
             </button>
           )}
         </div>
@@ -243,7 +244,7 @@ export function AnnouncementPane({ api, a, onBack }: { api: ChMessagesApi; a: Ch
             <InlineNotice code="CH-7207" title="The details didn’t load" body="The announcement above is complete. Try again for replies, tasks and files." onRetry={() => setAttempt((x) => x + 1)} />
           ) : !detail ? (
             (a.requiresAck || a.taskCount > 0 || a.docCount > 0) && (
-              <div style={{ display: 'grid', gap: 10 }} aria-busy="true" data-ch-code="CH-7406">
+              <div style={{ display: 'grid', gap: 8 }} aria-busy="true" data-ch-code="CH-7406">
                 <Skeleton height={16} width={180} />
                 <Skeleton height={44} />
               </div>

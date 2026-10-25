@@ -17,7 +17,7 @@ import { Icon } from '../../ui/Icon';
 import { InlineNotice } from '../../ui/Notices';
 import { EmptyState } from '../../ui/States';
 import { haptic } from '../../lib/haptics';
-import { formatPct, NO_DATA } from '../../lib/format';
+import { formatFixed, formatPct, NO_DATA } from '../../lib/format';
 import { floorRate, sampleState } from '../../lib/stats-signal';
 import { Compare, CupMiss, FairwayStrip, GreenMiss, Ladder, ParTiles } from './charts';
 import { PuttBands } from './PuttBands';
@@ -26,10 +26,12 @@ import { ScoreMixBar } from './ScoreMixBar';
 import { Empty, More, Panel, Rule, RULE_WINDOW } from './detail';
 import { ApproachMore, PuttingMore, ScoringMore, ShortMore, TeeMore } from './GameMore';
 import { readsLineParts, READS_FAILED } from './reads-line';
+import { plural } from '../../lib/plural';
+import { sgBaseline, type ChSgTour } from '../../lib/sg';
 
 type Tone = 'gain' | 'loss' | undefined;
 const pct = formatPct;
-const num = (v: number | null | undefined, d = 1) => (v == null ? NO_DATA : v.toFixed(d));
+const num = formatFixed;
 /** Green when on the right side of the benchmark, amber when not, no colour without one. */
 const tone = (v: number | null | undefined, ref: number | null | undefined, lowerIsBetter = false): Tone =>
   v == null || ref == null ? undefined : (lowerIsBetter ? v <= ref : v >= ref) ? 'gain' : 'loss';
@@ -183,6 +185,7 @@ export function GameDetail({
   s,
   x,
   bench,
+  tour = null,
   first,
   rounds,
   window: win,
@@ -198,6 +201,8 @@ export function GameDetail({
   x: ChProfileExtra;
   /** The Tour's averages by metric id (the team's own tour). */
   bench: Record<string, number>;
+  /** Whose Tour `bench` is, so its marks name it ("Women's Tour", row 110). */
+  tour?: ChSgTour;
   first: string;
   rounds: number;
   window: ChWindow;
@@ -363,19 +368,19 @@ export function GameDetail({
 
   // Every figure below but the scoring average reads the rounds with their holes scored; a round posted as a total only is a score and nothing else (Q-123).
   const holeCount = x.holeRounds ?? rounds;
-  const sample = `${holeCount} ${holeCount === 1 ? 'round' : 'rounds'} · ${s.totalPutts} putts · ${s.girOpportunities} approaches`;
+  const sample = `${plural(holeCount, 'round')} · ${s.totalPutts} putts · ${s.girOpportunities} approaches`;
   // What every section counts: the window's own rounds, of the lengths the filter chose, the same ones the Rounds table lists.
   const lengths =
     holes === '18'
       ? '18 holes only (9-hole rounds are left out)'
       : `${holes === '9' ? '9-hole rounds' : '18- and 9-hole rounds'}; per-round figures are per 18 holes (a 9-hole round counts as half a round)`;
   const coverage = holeCoverage(holeCount, rounds);
-  const basisLine = `${basis ?? RULE_WINDOW[win]} · ${rounds} ${rounds === 1 ? 'round' : 'rounds'}, ${lengths}${coverage ? `. ${coverage}, the rest posted as a total only` : ''}`;
+  const basisLine = `${basis ?? RULE_WINDOW[win]} · ${plural(rounds, 'round')}, ${lengths}${coverage ? `. ${coverage}, the rest posted as a total only` : ''}`;
   // The phone's one short line: the window, and how many rounds count. "Last 10 rounds" with three behind it says three qualify, not that ten were read (likewise Last 5 and Last 20).
   const lastN = Number(/^Last (\d+) rounds$/.exec(basis ?? RULE_WINDOW[win])?.[1]);
   const fewer = win === 'last10' && lastN > 0 && rounds < lastN;
   const kept = /hole/i.test(basis ?? '') ? null : holes === '18' ? '18 holes only' : holes === '9' ? '9 holes only' : '18 and 9 holes';
-  const shortBasis = `${basis ?? RULE_WINDOW[win]} · ${fewer ? `${rounds} ${rounds === 1 ? 'round qualifies' : 'rounds qualify'}` : `${rounds} ${rounds === 1 ? 'round' : 'rounds'}`}${kept ? `, ${kept}` : ''}`;
+  const shortBasis = `${basis ?? RULE_WINDOW[win]} · ${fewer ? `${plural(rounds, 'round qualifies', 'rounds qualify')}` : `${plural(rounds, 'round')}`}${kept ? `, ${kept}` : ''}`;
   /** The rule under a section's figures: the long line on a screen; on the phone the short line, and the rest behind "How this is measured". */
   const ruleOf = (tail: string) => (phone ? { rule: shortBasis, how: `${basisLine}. ${tail}` } : { rule: `${basisLine}. ${tail}` });
   /** A panel's note: the whole paragraph on a screen; on the phone one short line, and the paragraph behind "How this is measured". */
@@ -412,8 +417,8 @@ export function GameDetail({
         {...ruleOf('Every scored hole of those rounds.')}
         lead={
           s.roundsPlayed
-            ? `${first} ${verb('makes', 'make')} ${dist.birdie.toFixed(1)} birdies and ${dist.double.toFixed(1)} doubles a round.${
-                p5.avg != null ? ` Par 5s ${p5.avg < 5 ? 'are a scoring chance' : 'are giving shots back'}, playing ${p5.avg.toFixed(2)} on average.` : ''
+            ? `${first} ${verb('makes', 'make')} ${formatFixed(dist.birdie)} birdies and ${formatFixed(dist.double)} doubles a round.${
+                p5.avg != null ? ` Par 5s ${p5.avg < 5 ? 'are a scoring chance' : 'are giving shots back'}, playing ${formatFixed(p5.avg, 2)} on average.` : ''
               }`
             : `No hole-by-hole scores in this window yet.`
         }
@@ -438,7 +443,7 @@ export function GameDetail({
           <ScoreMixBar counts={totals} perRound={dist} triple={x.triplePlus} label="Every hole, by result" />
         </Panel>
         <Panel title="Scoring by par" wide>
-          <ParTiles rows={pars} />
+          <ParTiles rows={pars} mark={sgBaseline(tour).mark} />
         </Panel>
       </Sec>
 
@@ -457,7 +462,7 @@ export function GameDetail({
               ? `${s.fairwaysHit} of ${s.fairwayOpportunities} fairways so far: too few rounds to read as a rate yet.`
               : `${first} ${verb('finds', 'find')} ${Math.round(fw)}% of fairways.${
                 left != null && right != null && Math.abs(left - right) >= 1 ? ` When the drive misses it goes ${left > right ? 'left' : 'right'} more often` : ''
-              }${s.penaltiesPerRound ? `, and ${s.penaltiesPerRound.toFixed(1)} penalty strokes a round come from the tee` : ''}.`
+              }${s.penaltiesPerRound ? `, and ${formatFixed(s.penaltiesPerRound)} penalty strokes a round come from the tee` : ''}.`
         }
         figs={[
           floorFig('Fairways hit', 'fraction', fwRounds, fw, s.fairwayOpportunities ? `${s.fairwaysHit} of ${s.fairwayOpportunities} attempts` : null, undefined),
@@ -532,7 +537,7 @@ export function GameDetail({
           )}
         >
           {x.approachError ? (
-            <InlineNotice code="CH-5210" title="Proximity against the Tour didn’t load." body="The rest of Game detail is correct. Try again; the error has been reported." onRetry={onRetry} />
+            <InlineNotice code="CH-5210" title="Proximity against the Tour didn’t load." body="The rest of Game detail is correct. Try again." onRetry={onRetry} />
           ) : tourProx.length ? (
             <>
               <Ladder rows={tourProx.map((b) => ({ band: b.band, value: b.value, bench: b.bench, n: b.n, floor: b.floor }))} unit=" ft" label="Yards to the pin" invert phone={phone} code="CH-5316" />
@@ -544,7 +549,7 @@ export function GameDetail({
                   title="Some distances need more shots."
                   body={tourProx
                     .filter((b) => b.value == null)
-                    .map((b) => `${b.band} yards: ${b.n ? `${b.n} ${b.n === 1 ? 'shot' : 'shots'}, under ${b.floor}` : 'no shots'}`)
+                    .map((b) => `${b.band} yards: ${b.n ? `${plural(b.n, 'shot')}, under ${b.floor}` : 'no shots'}`)
                     .join(' · ')}
                 />
               )}
@@ -603,7 +608,7 @@ export function GameDetail({
           s.scramblingPercentage == null
             ? 'No up-and-down chances are logged in this window.'
             : sampleState('scramble', s.scrambleAttempts) === 'none'
-              ? `Up and down ${s.scramblesMade} of ${s.scrambleAttempts} ${s.scrambleAttempts === 1 ? 'time' : 'times'} so far: too few chances to read as a rate yet.`
+              ? `Up and down ${s.scramblesMade} of ${plural(s.scrambleAttempts, 'time')} so far: too few chances to read as a rate yet.`
               : `${first} ${verb('gets', 'get')} up and down ${Math.round(s.scramblingPercentage)}% of the time.${
                   s.scramblingPctRough != null ? ` From the rough it’s ${Math.round(s.scramblingPctRough)}%` : ''
                 }${s.sandSavePercentage != null && sampleState('scramble', s.sandSaveAttempts) !== 'none' ? `, and sand saves are ${Math.round(s.sandSavePercentage)}%` : ''}.`
@@ -664,7 +669,7 @@ export function GameDetail({
           ['Putts / GIR', num(s.puttsPerGir, 2), null, undefined],
           ['3-putts / round', num(s.threePuttsPerRound), null, undefined],
           ['One-putt rate', pct(onePuttRate), 'Of holes', undefined],
-          ['First putt', s.firstPuttDistanceAvg == null ? NO_DATA : `${s.firstPuttDistanceAvg.toFixed(1)} ft`, 'Average start', undefined],
+          ['First putt', s.firstPuttDistanceAvg == null ? NO_DATA : `${formatFixed(s.firstPuttDistanceAvg)} ft`, 'Average start', undefined],
         ]}
         more={
           <More>
@@ -680,7 +685,7 @@ export function GameDetail({
             'Amber dots are below the Tour. A band grades from 30 putts.',
           )}
         >
-          {x.puttsError && <InlineNotice code="CH-5211" title="Putts past 20 feet didn’t load." body="The curve stops at 20 feet. Try again; the error has been reported." onRetry={onRetry} />}
+          {x.puttsError && <InlineNotice code="CH-5211" title="Putts past 20 feet didn’t load." body="The curve stops at 20 feet. Try again." onRetry={onRetry} />}
           <PuttBands bands={curve} compact={phone} />
         </Panel>
         <Panel title="How putts miss" wide>

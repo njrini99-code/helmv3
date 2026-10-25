@@ -1,7 +1,8 @@
 import type { UIMessage } from 'ai';
 import type { ActionProposal, ActionReceipt } from '@/lib/coachhelm/v3/chat/action-types';
 import type { Measurement, MeasurementSeries, ToolEnvelope } from '@/lib/coachhelm/v3/chat/provenance';
-import { MINUS, NO_DATA } from '../lib/format';
+import { changeTone, formatFixed, formatSG, MINUS, NO_DATA } from '../lib/format';
+import { plural } from '../lib/plural';
 
 /**
  * Ask CoachHelm, the conversation (Clubhouse P013): what a thread of AI SDK message parts means on
@@ -30,11 +31,12 @@ export function formatValue(value: number | null, unit: Measurement['unit']): st
     case 'percent':
       return `${sign(value)}${Math.abs(Math.round(value))}%`;
     case 'strokes':
-      return `${value > 0 ? '+' : sign(value)}${Math.abs(value).toFixed(2)}`;
+      // Strokes gained at one decimal, as every screen prints it (owner decision 11).
+      return formatSG(value);
     case 'score':
     case 'count':
     case 'ratio':
-      return `${sign(value)}${Number.isInteger(value) ? Math.abs(value) : Math.abs(value).toFixed(1)}`;
+      return `${sign(value)}${Number.isInteger(value) ? Math.abs(value) : formatFixed(Math.abs(value), 1)}`;
     case 'yards':
       return `${sign(value)}${Math.abs(Math.round(value))} yds`;
     case 'feet':
@@ -247,9 +249,9 @@ export function describeWork(steps: AskStep[], envelopes: ToolEnvelope[]): strin
   const rounds = maxBy('rounds');
   const players = new Set(ms.filter((m) => m.entity.kind === 'player').map((m) => m.entity.id)).size;
   const bits: string[] = [];
-  if (rounds > 0) bits.push(`${rounds} round${rounds === 1 ? '' : 's'}`);
+  if (rounds > 0) bits.push(plural(rounds, 'round'));
   if (players > 1) bits.push(`${players} players`);
-  if (bits.length === 0) return `Worked through ${steps.length} step${steps.length === 1 ? '' : 's'}`;
+  if (bits.length === 0) return `Worked through ${plural(steps.length, 'step')}`;
   return `Read ${bits.join(' across ')}`;
 }
 
@@ -723,7 +725,7 @@ export function evidenceBlocks(envelope: ToolEnvelope): AskEvidence[] {
         title: `${names.join(' and ')}`,
         ...base,
         table: {
-          caption: `Comparison of ${names.join(' and ')} across ${metricIds.length} metric${metricIds.length === 1 ? '' : 's'}, with sample sizes`,
+          caption: `Comparison of ${names.join(' and ')} across ${plural(metricIds.length, 'metric')}, with sample sizes`,
           columns: ['Metric', ...names],
           rows: metricIds.map((id) => [ms.find((m) => m.metric_id === id)?.metric_label ?? id, ...names.map((n) => { const m = find(n, id); return m ? `${formatValue(m.value, m.unit)}${m.sample_size > 0 ? ` (${sampleWords(m.sample_size, m.sample_unit)})` : ''}` : NO_DATA; })]),
         },
@@ -736,7 +738,8 @@ export function evidenceBlocks(envelope: ToolEnvelope): AskEvidence[] {
         title: entities.size === 1 ? `Strokes gained, ${legs[0]?.entity.label}` : 'Strokes gained',
         ...base,
         rows: legs.map((m) => ({ label: m.metric_label.replace(/^strokes gained[:\s-]*/i, '').trim() || m.metric_label, value: m.value as number, display: formatValue(m.value, m.unit) })),
-        takeaway: (worst.value ?? 0) < 0 ? `Largest loss: ${worst.metric_label} at ${formatValue(worst.value, worst.unit)}.` : 'No leg is below zero.',
+        // A loss that prints as 0.0 is no loss (A2).
+        takeaway: changeTone(worst.value, false, 1) === 'is-loss' ? `Largest loss: ${worst.metric_label} at ${formatValue(worst.value, worst.unit)}.` : 'No leg is below zero.',
         table: measurementTable(legs, 'Strokes gained by leg'),
       });
     } else {

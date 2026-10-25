@@ -1,6 +1,7 @@
 import { act, fireEvent, render, screen } from '@testing-library/react';
 import { describe, expect, it } from 'vitest';
 import { useChartPin } from '../use-chart-pin';
+import { slotPositions } from '../../ui/charts/Line';
 
 function Chart({ count = 3, axis = 'y' as const }: { count?: number; axis?: 'x' | 'y' }) {
   const pin = useChartPin(count, axis);
@@ -105,5 +106,46 @@ describe('useChartPin', () => {
     expect(out()).toBe('2|2');
     act(() => rerender(<Chart count={2} />));
     expect(out()).toBe('-|-');
+  });
+});
+
+describe('useChartPin on a line spaced by time (row 119)', () => {
+  function Area({ positions }: { positions?: number[] }) {
+    const pin = useChartPin(3, 'x', [0, 1], positions);
+    return (
+      <div>
+        <div data-testid="plot" {...pin.area} />
+        <output data-testid="out">{`${pin.active ?? '-'}|${pin.pinned ?? '-'}`}</output>
+      </div>
+    );
+  }
+  const at = (x: number) => {
+    const plot = screen.getByTestId('plot');
+    plot.getBoundingClientRect = () => ({ left: 0, width: 100, top: 0, height: 50, right: 100, bottom: 50, x: 0, y: 0, toJSON: () => ({}) });
+    fireEvent.pointerMove(plot, { pointerType: 'mouse', clientX: x });
+  };
+
+  it('reads the point nearest the pointer, not the slot it falls in', () => {
+    render(<Area positions={[0.1, 0.2, 0.9]} />);
+    at(60);
+    expect(out()).toBe('2|-');
+  });
+
+  it('without positions, the slot', () => {
+    render(<Area />);
+    at(60);
+    expect(out()).toBe('1|-');
+  });
+
+  it('two rounds on one day each have a slot the pointer can reach (slotPositions, review of #2361)', () => {
+    const day = (iso: string) => Date.parse(iso);
+    const slots = slotPositions(3, [day('2026-09-01'), day('2026-09-01'), day('2026-09-22')]);
+    render(<Area positions={slots} />);
+    const seen = new Set<string>();
+    for (let x = 0; x <= 100; x += 1) {
+      at(x);
+      seen.add(out().split('|')[0]!);
+    }
+    expect([...seen].sort()).toEqual(['0', '1', '2']);
   });
 });

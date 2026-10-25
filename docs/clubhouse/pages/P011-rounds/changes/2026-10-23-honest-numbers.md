@@ -23,4 +23,5 @@ Held items: none
 
 ### Verification
 
-- `__tests__/no-raw-sign-tone.test.ts` and `lib/__tests__/change-tone-zero.test.ts`.
+- `__tests__/no-raw-sign-tone.test.ts` and
+  `lib/__tests__/change-tone-zero.test.ts`.
