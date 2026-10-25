@@ -486,6 +486,8 @@ features:
         # glob (Phase 5 registry glob lint) by topic — round lifecycle,
         # course library, and their storage/RLS surface.
         - supabase/migrations/*course_library*.sql
+        # P-7's course history index (held).
+        - supabase/migrations/*course_history*.sql
         - supabase/migrations/*course_image*.sql
         - supabase/migrations/*course_geometry*.sql
         - supabase/migrations/*round_atomic*.sql
@@ -787,6 +789,8 @@ features:
         - supabase/migrations/*scoring*.sql
         - supabase/migrations/*player_standing*.sql
         - supabase/migrations/*standing_global*.sql
+        # Standing's refresh queue (#2363, held).
+        - supabase/migrations/*golf_standing_refresh*.sql
         - supabase/migrations/*cohort*.sql
         - supabase/migrations/*golf_metrics_seed*.sql
         - supabase/migrations/*penalty*.sql
@@ -1134,6 +1138,8 @@ features:
         - src/lib/golf/client-resource-cache.ts
       db:
         - supabase/migrations/*messag*.sql
+        # P-2 polls' held guards (vote guard, payload freeze).
+        - supabase/migrations/*golf_poll*.sql
         - supabase/migrations/*announcement*.sql
         # Reclassified 2026-09-06 off team_access_control's retired blanket
         # glob (Phase 5 registry glob lint).

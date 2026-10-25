@@ -13,7 +13,10 @@ import { Modal } from "../../ui/Modal";
 import { InlineNotice } from "../../ui/Notices";
 import { Skeleton } from "../../ui/States";
 import { railTime, type ChMsg } from "./model";
-import { personOf, type ChMessagesApi } from "./MessagesView";
+import type { ChMessagesApi } from "./MessagesView";
+
+// MessagesView imports this file: its personOf is restated here so the two stay a type-only edge (no runtime cycle).
+const personOf = (api: ChMessagesApi, userId: string) => api.directory.find((p) => p.userId === userId);
 
 /**
  * Seen by (premium features P-1, handoff 4.34.1): the receipt on a group message's time line, "Seen by 9 of 11".

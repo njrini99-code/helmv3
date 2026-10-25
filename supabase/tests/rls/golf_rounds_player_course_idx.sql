@@ -1,4 +1,4 @@
--- pgTAP for the held, conditional 20261025060000_golf_rounds_player_course_completed_idx.sql (P-7 plan 8.7, 8.8).
+-- pgTAP for the held, conditional 20261025060000_golf_course_history_rounds_idx.sql (P-7 plan 8.7, 8.8).
 -- Runs only where that migration was applied (the local stack applies every file); it pins the partial predicate so a
 -- rewrite cannot drop the completed or the is_test filter.
 

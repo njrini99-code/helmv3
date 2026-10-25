@@ -10,7 +10,7 @@ Contract IDs:   none new
 Actions:        none
 Data impact:    reads only; one more read (golf_course_tee_holes, the tee
                 cards of nine-hole rounds) and the team's zone
-Held items:     20261025060000_golf_rounds_player_course_completed_idx.sql
+Held items:     20261025060000_golf_course_history_rounds_idx.sql
                 (HOLD, conditional on measurement)
 ```
 

@@ -1,4 +1,4 @@
--- 20261025060000_golf_rounds_player_course_completed_idx.sql
+-- 20261025060000_golf_course_history_rounds_idx.sql
 -- STATUS: HELD (conditional). Apply only if EXPLAIN on the P-7 course history
 -- read shows a Seq Scan or p95 > 20 ms.
 -- Why: P-7's course page and CT-7's "Your last 5 here" filter one player's
