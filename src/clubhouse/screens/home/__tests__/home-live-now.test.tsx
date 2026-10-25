@@ -39,12 +39,12 @@ describe('Home: Live now', () => {
     expect(screen.getByRole('heading', { name: 'Live now · 5 on the course' })).toBeTruthy();
   });
 
-  it('shows at most four lanes on a phone and six on a wide screen, sorted by to-par, with See all (CH-16601)', () => {
+  it('shows at most four lanes on a phone and six on a wide screen, sorted by to-par, with See all (CH-16606)', () => {
     const seven: LiveSnapshot = { ...PREVIEW_LIVE_MANY, lanes: PREVIEW_LIVE_MANY.lanes.slice(0, 7) };
     const { container } = card(seven);
     expect(container.querySelectorAll('.ch-lv-lane')).toHaveLength(4);
     const more = screen.getByRole('link', { name: 'See all 7' });
-    expect(more.getAttribute('data-ch-code')).toBe('CH-16601');
+    expect(more.getAttribute('data-ch-code')).toBe('CH-16606');
     expect(more.getAttribute('href')).toBe('/golf/dashboard/live');
     const toPars = [...container.querySelectorAll('.ch-lv-lane')].map((l) => l.getAttribute('data-round'));
     expect(toPars).toHaveLength(4);
