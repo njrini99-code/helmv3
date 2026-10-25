@@ -29,6 +29,7 @@ import { SectionBoundary } from '../../ui/SectionBoundary';
 import { EmptyState } from '../../ui/States';
 import { dateOf, TeeSwatch, TYPE_LABEL } from './parts';
 import { approachFinish, costliest, flow, headline, puttSplit, teeMisses, turningStretch } from './round-insights';
+import { RoundSays, saysFigures } from './RoundSays';
 import { Zone, ZoneBig, ZoneBlock, Zones } from '../../ui/Zone';
 import { Tooltip } from '../../ui/Tooltip';
 import { PuttingViz, ScoreFlow, ShotTrail, TeeToGreen } from './RoundZones';
@@ -456,7 +457,17 @@ export function RoundReview({ review, typeEdit = null }: { review: ChRoundReview
   const insight = useMemo(() => headline(r), [r]);
   const points = useMemo(() => flow(r.holes), [r.holes]);
   // P-7: the stretch that turned the round, drawn on the arc and said in its note.
-  const turning = useMemo(() => turningStretch(points), [points]);
+  // In the order the holes were played, so a round started on 10 turns where it really turned.
+  const turning = useMemo(() => {
+    const start = r.startHole ?? null;
+    if (!start) return turningStretch(points);
+    const last = Math.max(...points.map((p) => p.n), 0);
+    return turningStretch([...points].sort((a, b) => ((a.n - start + last) % last) - ((b.n - start + last) % last)));
+  }, [points, r.startHole]);
+  const says = useMemo(
+    () => saysFigures({ holes: r.holes, startHole: r.startHole ?? null, usual: r.history?.usual ?? null, nine: r.holesPlayed === 9, who: coach ? (r.playerName?.split(' ')[0] ?? null) : null }),
+    [r.holes, r.startHole, r.history, r.holesPlayed, r.playerName, coach],
+  );
   const costly = useMemo(() => costliest(r.holes, 3), [r.holes]);
   const putting = useMemo(() => puttSplit(r.holes), [r.holes]);
   const approach = useMemo(() => approachFinish(r.holes), [r.holes]);
@@ -608,6 +619,7 @@ export function RoundReview({ review, typeEdit = null }: { review: ChRoundReview
           ) : (
             <p className="ch-znmiss">The hole-by-hole picture needs holes posted with their scores.</p>
           )}
+          {!r.holesError && <RoundSays figures={says} />}
           {r.holes.length > 0 && !r.holesError && (
             <section className="ch-rv-card" aria-labelledby="ch-rv-dist-h">
               <div className="ch-rv-card__h">
