@@ -2,7 +2,7 @@ import { courseKeyString, groupCourseRounds, parseCourseKey, resolveCourseKey } 
 import { averageArc, holeStats, playsCompared, stretches, type ChHolePlay, type ChHoleStats, type ChStretch } from './course-history-shape';
 import { holeCoverage, isScoreCountable, recordedPutts } from './round-scope';
 import { toLibraryRound, type ChLibraryRound } from './rounds-shape';
-import { formatFixed, formatToPar } from '../lib/format';
+import { formatFixed, formatSigned, formatToPar } from '../lib/format';
 import type { ChPlayHole } from './stats-extra';
 
 /*
@@ -83,6 +83,10 @@ export interface ChCourseHistory {
   holesError: boolean;
   /** Rounds with hole scores in the window. */
   holeRounds: number;
+  /** P-7 4.2.5: how the course plays for the player, in one sentence and the rows past their floors. */
+  howItPlays: { sentence: string; sample: string | null; rows: Array<{ label: string; value: string; hole?: number }> };
+  /** P-7 4.2.6: the overlays on the average arc: the best and the last full round here, as running to par. */
+  arcLines: { best: { cum: number[]; score: number } | null; last: { cum: number[]; score: number } | null };
   /** The All time / This season choice, when the season holds two rounds with holes and differs from all time; else null. */
   windows: { all: number; season: number } | null;
 }
@@ -110,6 +114,59 @@ function teesLine(rows: readonly ChCourseListRow[]): string | null {
   if (!sorted.length) return null;
   if (sorted.length === 1) return `${sorted[0]![0]} tees`;
   return sorted.map(([t, n], i) => (i === 0 ? `${t} tees (${n})` : `${t} (${n})`)).join(' · ');
+}
+
+const isFull = (h: readonly ChPlayHole[] | undefined): boolean => !!h && h.length === 18 && h.every((x) => x.score != null);
+const mean = (xs: readonly number[]) => xs.reduce((a, x) => a + x, 0) / xs.length;
+/** An average to par at one decimal: "+3.0", "−0.4", or "E" when it rounds to level. */
+export const avgToPar = (v: number) => (Math.abs(v) < 0.05 ? 'E' : formatSigned(v, 1));
+const perRound = (v: number) => `${avgToPar(v)} a round`;
+const perHole = (v: number) => `${avgToPar(v)} a hole`;
+const stretchWords = (from: number) => `Holes ${from} to ${from + 2}`;
+
+/** "Finley plays 1.6 shots harder for you than your other courses.", the rows under it, each past its floor (4.1.3). */
+function howItPlays(input: {
+  name: string;
+  who: string | null;
+  here: readonly number[];
+  elsewhere: readonly number[];
+  fullCards: ReadonlyArray<readonly ChPlayHole[]>;
+  withHoles: ReadonlyArray<readonly ChPlayHole[]>;
+  scored: readonly ChCourseListRow[];
+  stretch: ReturnType<typeof stretches>;
+}): ChCourseHistory['howItPlays'] {
+  const c = playsCompared(input.here, input.elsewhere);
+  const you = input.who ?? 'you';
+  const yours = input.who ? `${input.who}’s` : 'your';
+  const sentence =
+    'needs' in c
+      ? c.needs === 'here'
+        ? 'Needs 3 rounds here to compare.'
+        : 'Needs 3 rounds at other courses to compare.'
+      : c.words === 'same'
+        ? `${input.name} plays about the same for ${you} as ${yours} other courses.`
+        : `${input.name} plays ${formatFixed(Math.abs(c.diff), 1)} shots ${c.words} for ${you} than ${yours} other courses.`;
+  const sample =
+    input.here.length && input.elsewhere.length
+      ? `${avgToPar(mean(input.here))} here · ${avgToPar(mean(input.elsewhere))} elsewhere · ${plural(input.here.length, 'round')} here, ${input.elsewhere.length} elsewhere`
+      : null;
+  const rows: ChCourseHistory['howItPlays']['rows'] = [];
+  const nineCards = input.withHoles.filter((h) => h.length === 18 && h.every((x) => x.score != null));
+  if (nineCards.length >= 2) {
+    const nine = (lo: number, hi: number) => mean(nineCards.map((h) => h.filter((x) => x.n >= lo && x.n <= hi).reduce((a, x) => a + (x.score as number) - x.par, 0)));
+    rows.push({ label: 'Front nine', value: perRound(nine(1, 9)) }, { label: 'Back nine', value: perRound(nine(10, 18)) });
+  }
+  for (const par of [3, 4, 5]) {
+    const hs = input.withHoles.flatMap((h) => h.filter((x) => x.par === par && x.score != null));
+    if (hs.length >= 6) rows.push({ label: `Par ${par}s`, value: perHole(mean(hs.map((x) => (x.score as number) - par))) });
+  }
+  if (input.stretch.worst) rows.push({ label: 'Most to gain', value: `${stretchWords(input.stretch.worst.from)} · ${perRound(input.stretch.worst.avg)}`, hole: input.stretch.worst.from });
+  if (input.stretch.best) rows.push({ label: 'Best stretch', value: `${stretchWords(input.stretch.best.from)} · ${perRound(input.stretch.best.avg)}`, hole: input.stretch.best.from });
+  const of = (type: string) => input.scored.filter((r) => r.round_type === type && (r.holes_played ?? 18) === 18 && r.total_score != null).map((r) => r.total_score as number);
+  const q = of('qualifier');
+  const pr = of('practice');
+  if (q.length >= 3 && pr.length >= 3) rows.push({ label: 'Qualifiers here', value: `${formatFixed(mean(q), 1)} · practice ${formatFixed(mean(pr), 1)}` });
+  return { sentence, sample, rows };
 }
 
 export function toCourseHistory(input: {
@@ -236,6 +293,20 @@ export function toCourseHistory(input: {
       arc: averageArc(fullCards),
       holesError: holesById == null,
       holeRounds: withHoles.length,
+      howItPlays: howItPlays({ name, who: input.who, here, elsewhere, fullCards, withHoles: withHoles.map((r) => holesById!.get(r.id)!), scored, stretch: stretches(fullCards) }),
+      arcLines: (() => {
+        const full = withHoles.filter((r) => (r.holes_played ?? 18) === 18 && isFull(holesById!.get(r.id)));
+        const cumOf = (r: ChCourseListRow) => {
+          let c = 0;
+          return [...holesById!.get(r.id)!].sort((a, b) => a.n - b.n).map((h) => (c += (h.score as number) - h.par));
+        };
+        const bestRow = full.filter((r) => r.total_score != null).reduce<ChCourseListRow | null>((a, r) => (!a || (r.total_score as number) < (a.total_score as number) ? r : a), null);
+        const lastRow = full[0] ?? null;
+        return {
+          best: bestRow && full.length >= 2 ? { cum: cumOf(bestRow), score: bestRow.total_score as number } : null,
+          last: lastRow && full.length >= 2 ? { cum: cumOf(lastRow), score: (lastRow.total_score as number) ?? 0 } : null,
+        };
+      })(),
       windows: (() => {
         if (!holesById) return null;
         const has = (r: ChCourseListRow) => (holesById.get(r.id) ?? []).some((h) => h.score != null);

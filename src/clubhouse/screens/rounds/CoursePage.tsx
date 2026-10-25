@@ -2,12 +2,16 @@
 
 import Link from 'next/link';
 import { useState } from 'react';
-import type { ChCourseHistory } from '../../data/course-page-shape';
-import { formatFixed, formatToPar } from '../../lib/format';
+import { avgToPar, type ChCourseHistory } from '../../data/course-page-shape';
+import { formatFixed } from '../../lib/format';
 import { Button } from '../../ui/Button';
 import { NoData } from '../../ui/NoData';
 import { RoundRow } from './parts';
 import { HoleMap, mostToGain } from './HoleMap';
+import { CourseArc } from './CourseArc';
+import { HowItPlays } from './HowItPlays';
+import { chScrollIntoView } from '../../lib/smooth-scroll';
+import { useChReducedMotion } from '../../lib/reduced-motion';
 import { useRouter } from 'next/navigation';
 import { haptic } from '../../lib/haptics';
 import { Segmented } from '../../ui/Segmented';
@@ -25,6 +29,13 @@ export function CoursePage({ history: h, playerName, playerId, initialHole }: { 
   const coach = playerId != null;
   const who = coach ? (playerName ?? 'This player') : null;
   const router = useRouter();
+  const reduced = useChReducedMotion();
+  // A stretch row picks its first hole and brings the map into view (M13).
+  const toHole = (n: number) => {
+    haptic('select');
+    setHole(n);
+    chScrollIntoView(document.getElementById('ch-hmap-h'), reduced);
+  };
   const [hole, setHole] = useState<number>(() => initialHole ?? mostToGain(h.holes) ?? 1);
   // The window is the server's (`?w=season`): the page asks again, keeping the player and the hole.
   const setWindow = (w: 'all' | 'season') => {
@@ -91,6 +102,8 @@ export function CoursePage({ history: h, playerName, playerId, initialHole }: { 
           </div>
         </section>
       )}
+      <HowItPlays data={h.howItPlays} who={who} onHole={toHole} />
+      {h.arc && <CourseArc arc={h.arc} lines={h.arcLines} selected={hole} onSelect={setHole} />}
       <section className="ch-ch-sec" aria-labelledby="ch-ch-rounds-h">
         <div className="ch-ch-sec__h">
           <h2 id="ch-ch-rounds-h">{who ? `${who}’s rounds here` : 'Your rounds here'}</h2>
@@ -119,7 +132,7 @@ function CourseHero({ h, coach }: { h: ChCourseHistory; coach: boolean }) {
           <b className="ch-num">{f.kind === 'average' ? formatFixed(f.value, 1) : f.value}</b>
           <span>
             <em>{f.kind === 'average' ? 'Average' : f.nine ? 'Last nine' : 'Last time'}</em>
-            <span className="ch-num">{f.kind === 'average' ? (f.toPar == null ? '' : `${formatToPar(Math.round(f.toPar * 10) / 10)} to par`) : shortDay(f.date)}</span>
+            <span className="ch-num">{f.kind === 'average' ? (f.toPar == null ? '' : `${avgToPar(f.toPar)} to par`) : shortDay(f.date)}</span>
           </span>
         </div>
         {f.kind === 'average' && f.early != null && <p className="ch-ch-hero__e">Early read · {f.early} rounds</p>}

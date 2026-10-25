@@ -5555,3 +5555,69 @@ a.ch-rd-grp__h.is-link:focus-visible {
   font: var(--ch-type-13);
   color: var(--ch-ink-600);
 }
+
+/* P-7 4.2.5 and 4.2.6: how the course plays, and the average arc on the stage material. */
+.ch-hip__s {
+  margin: 0 0 6px;
+  font: var(--ch-type-16);
+  color: var(--ch-text-primary);
+}
+.ch-hip__rows {
+  margin: 8px 0 0;
+  padding: 0;
+  list-style: none;
+}
+.ch-hip__row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  width: 100%;
+  min-height: 44px;
+  padding: 0;
+  border: 0;
+  border-bottom: var(--ch-hairline-w) solid var(--ch-border-hairline);
+  background: none;
+  font: var(--ch-type-15);
+  color: var(--ch-text-primary);
+  text-align: left;
+}
+.ch-hip__row b {
+  font: var(--ch-type-15);
+  font-variant-numeric: tabular-nums;
+}
+button.ch-hip__row:active {
+  background: var(--ch-bg-subtle);
+}
+button.ch-hip__row:focus-visible,
+.ch-carc__svg:focus-visible {
+  outline: 2px solid var(--ch-border-focus);
+  outline-offset: 2px;
+}
+.ch-carc {
+  padding: 8px 8px 12px;
+  border-radius: var(--ch-radius-lg);
+  background: radial-gradient(120% 120% at 100% 0%, rgb(123 199 154 / 0.16), transparent 60%), var(--ch-green-800);
+}
+.ch-carc__svg {
+  display: block;
+  width: 100%;
+  height: auto;
+  border-radius: var(--ch-radius-lg);
+}
+.ch-carc__cap {
+  margin: 4px 8px 0;
+  font: var(--ch-type-13);
+  color: var(--ch-stage-ink-soft);
+}
+@media (max-width: 600px) {
+  .ch-carc__alt {
+    display: none;
+  }
+}
+.ch-carc__pills {
+  margin-top: 12px;
+}
+.ch-carc__pills .ch-pill {
+  min-height: 44px;
+}

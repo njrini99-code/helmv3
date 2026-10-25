@@ -3532,6 +3532,29 @@
       "fixture": "Contextual module"
     },
     {
+      "file": "src/clubhouse/screens/rounds/CourseArc.tsx",
+      "group": "screens",
+      "exports": [
+        "CourseArc"
+      ],
+      "styles": [
+        "src/clubhouse/styles/base.css",
+        "src/clubhouse/styles/calendar.css",
+        "src/clubhouse/styles/coachhelm.css",
+        "src/clubhouse/styles/controls.css",
+        "src/clubhouse/styles/goals.css",
+        "src/clubhouse/styles/home.css",
+        "src/clubhouse/styles/hub.css",
+        "src/clubhouse/styles/messages.css",
+        "src/clubhouse/styles/qualifiers.css",
+        "src/clubhouse/styles/roster.css",
+        "src/clubhouse/styles/rounds.css",
+        "src/clubhouse/styles/stats.css"
+      ],
+      "examples": [],
+      "fixture": "Contextual module"
+    },
+    {
       "file": "src/clubhouse/screens/rounds/CourseLink.tsx",
       "group": "screens",
       "exports": [
@@ -3582,6 +3605,27 @@
       "group": "screens",
       "exports": [
         "HoleMap"
+      ],
+      "styles": [
+        "src/clubhouse/styles/base.css",
+        "src/clubhouse/styles/calendar.css",
+        "src/clubhouse/styles/coachhelm.css",
+        "src/clubhouse/styles/goals.css",
+        "src/clubhouse/styles/home.css",
+        "src/clubhouse/styles/hub.css",
+        "src/clubhouse/styles/messages.css",
+        "src/clubhouse/styles/qualifiers.css",
+        "src/clubhouse/styles/rounds.css",
+        "src/clubhouse/styles/stats.css"
+      ],
+      "examples": [],
+      "fixture": "Contextual module"
+    },
+    {
+      "file": "src/clubhouse/screens/rounds/HowItPlays.tsx",
+      "group": "screens",
+      "exports": [
+        "HowItPlays"
       ],
       "styles": [
         "src/clubhouse/styles/base.css",
@@ -4746,6 +4790,7 @@
         "src/clubhouse/styles/messages.css",
         "src/clubhouse/styles/qualifiers.css",
         "src/clubhouse/styles/roster.css",
+        "src/clubhouse/styles/rounds.css",
         "src/clubhouse/styles/stats.css"
       ],
       "examples": [],
@@ -12224,6 +12269,11 @@
       "file": "src/clubhouse/styles/rounds.css",
       "classes": [
         "ch-btn",
+        "ch-carc",
+        "ch-carc__alt",
+        "ch-carc__cap",
+        "ch-carc__pills",
+        "ch-carc__svg",
         "ch-ch",
         "ch-ch-fig",
         "ch-ch-fig__c",
@@ -12245,6 +12295,9 @@
         "ch-ch-sec__h",
         "ch-ch-sec__note",
         "ch-ch-win",
+        "ch-hip__row",
+        "ch-hip__rows",
+        "ch-hip__s",
         "ch-hmap",
         "ch-hmap-d",
         "ch-hmap-d__all",
@@ -12268,6 +12321,7 @@
         "ch-lgr__lead",
         "ch-notice",
         "ch-notice--danger",
+        "ch-pill",
         "ch-rcard",
         "ch-rcard-act",
         "ch-rcard-body",
