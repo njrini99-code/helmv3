@@ -15,6 +15,16 @@ describe('Team patterns (Slice 7b)', () => {
     expect(memberValue(null, 'percent')).toBeNull();
   });
 
+  it('a negative member number has a true minus, and its word follows English (CONS-14)', () => {
+    expect(memberValue(-1, 'strokes')).toBe('−1 stroke');
+    expect(memberValue(-2.46, 'strokes')).toBe('−2.5 strokes');
+    expect(memberValue(0.4, 'strokes')).toBe('0.4 strokes');
+    expect(memberValue(2, 'strokes')).toBe('2 strokes');
+    expect(memberValue(-12.3, 'percent')).toBe('−12.3%');
+    expect(memberValue(-4, 'feet')).toBe('−4 ft');
+    expect(memberValue(-0.04, 'strokes')).toBe('0 strokes');
+  });
+
   it('the preview fixture runs the real computation: two patterns, one counted below', () => {
     const d = PREVIEW_TEAM_PATTERNS!;
     expect(d.rows.map((r) => r.title)).toEqual(['Approaches 50–125 yd · finishing short', 'Putts made 5–10 ft']);

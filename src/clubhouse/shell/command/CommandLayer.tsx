@@ -1,43 +1,47 @@
 'use client';
 
 import { useRouter } from 'next/navigation';
-import { useCallback, useEffect, useLayoutEffect, useRef, useState, useSyncExternalStore } from 'react';
+import { isNativeApp } from '@/lib/utils/capacitor';
+import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { chTrail } from '../../lib/track';
-import { haptic } from '../../lib/haptics';
-import type { ChRole } from '../nav';
-import type { ChRecent } from './commands';
-import { setPeopleScope, usePeople } from './people';
-import { Palette } from './Palette';
+import { CH_SETTINGS_ITEM, type ChRole } from '../nav';
+import type { ChPerson, ChRecent } from './commands';
+import { getPalettePeople } from '../../data/palette-people';
+import { clearPeople, seedPeople, setPeopleScope, usePeople } from './people';
+import { CH_PALETTE_EVENT, useCommandDesktop } from './palette-open';
+import { Palette, type ChPeopleState } from './Palette';
 import { noteVisit, readRecent } from './recent';
 import { ShortcutsSheet } from './ShortcutsSheet';
-import { interpretKey, isApple, isInOverlay, isTypingTarget, itemForLetter, modalOpen, navLetters, pageSearchField, SEQUENCE_WINDOW_MS, type ChKeyOutcome } from './shortcuts';
-
-/** The command layer is for a keyboard and a pointer that hovers, on the desktop layout; the phone has none of it. */
-const DESKTOP = '(hover: hover) and (min-width: 821px)';
-
-function useDesktop(): boolean {
-  return useSyncExternalStore(
-    (cb) => {
-      const mql = window.matchMedia(DESKTOP);
-      mql.addEventListener('change', cb);
-      return () => mql.removeEventListener('change', cb);
-    },
-    () => window.matchMedia(DESKTOP).matches,
-    () => false,
-  );
-}
+import { interpretKey, isApple, isInOverlay, isTypingTarget, itemForDigit, itemForLetter, modalOpen, navLetters, pageSearchField, SEQUENCE_WINDOW_MS, type ChKeyOutcome } from './shortcuts';
 
 /**
- * Desktop keyboard layer, mounted once in the frame: Cmd or Ctrl K opens the command palette, G then a letter goes to a
+ * Desktop keyboard layer, mounted once in the frame: Cmd or Ctrl K (or the top bar's search pill, palette-open.ts) opens
+ * the command palette, G then a letter (or, in the app, Cmd or Ctrl and 1 to 9, in sidebar order) goes to a
  * section, `/` focuses the page's search field and `?` shows the shortcuts. Nothing is listened for on a phone.
  *
  * It also remembers the sections the person has been in (the palette's Recent) and hands the roster a place to publish
- * the players it has already loaded (people.ts). Its keys never fire while typing in a field or inside a dialog, a
+ * the players it has already loaded (people.ts), which it empties when it unmounts (sign-out, the idle timeout). Its keys never fire while typing in a field or inside a dialog, a
  * menu or a list (shortcuts.ts); the sidebar's Cmd or Ctrl \ and Home's N keep their own handlers.
  */
-export function CommandLayer({ role, pathname, userId, teamId }: { role: ChRole; pathname: string; userId: string; teamId: string | null }) {
+export function CommandLayer({
+  role,
+  pathname,
+  userId,
+  teamId,
+  loadPeople = getPalettePeople,
+}: {
+  role: ChRole;
+  pathname: string;
+  userId: string;
+  teamId: string | null;
+  /**
+   * A coach's players, names and ids (decision 16), read when the palette first opens rather than with the page, so
+   * they stay in memory (people.ts) and never ride a cached page or a phone's payload. Injected in tests.
+   */
+  loadPeople?: () => Promise<readonly ChPerson[] | null>;
+}) {
   const router = useRouter();
-  const desktop = useDesktop();
+  const desktop = useCommandDesktop();
   const people = usePeople();
   const [palette, setPalette] = useState(false);
   const [opens, setOpens] = useState(0);
@@ -53,8 +57,49 @@ export function CommandLayer({ role, pathname, userId, teamId }: { role: ChRole;
   live.current = { palette, help, role, router };
 
   // A layout effect: every layout effect runs before any passive one, so a team switch empties the old team's names before the
-  // page (the Roster) publishes the new team's in its own effect, never after it.
-  useLayoutEffect(() => setPeopleScope(teamId), [teamId]);
+  // page (the Roster) publishes the new team's in its own effect, never after it. The scope is the person and the team, so a
+  // different account on the same browser never inherits the last one's list.
+  const peopleScope = `${userId}:${teamId ?? ''}`;
+  const seededFor = useRef<string | null>(null);
+  // Whether the coach's names are on their way (the palette's quiet loading line) or didn't come.
+  const [peopleState, setPeopleState] = useState<ChPeopleState>('idle');
+  useLayoutEffect(() => {
+    setPeopleScope(peopleScope);
+    seededFor.current = null;
+    setPeopleState('idle');
+  }, [peopleScope]);
+  // Leaving the signed-in frame drops the names, and any reply still on its way. Sign-out ends in a page load, which
+  // empties memory anyway; the idle timeout's sign-out (useSessionActivity) goes to login as a client navigation, which
+  // would otherwise keep the list in memory until the next sign-in.
+  useEffect(
+    () => () => {
+      seededFor.current = null;
+      clearPeople();
+    },
+    [],
+  );
+  // The coach's names are read once per scope, when the palette first opens (decision 16); a page's own list still takes
+  // precedence (people.ts). A reply for a scope that has since changed is dropped. Only a coach's are ever read.
+  const seedOnOpen = useCallback(() => {
+    if (role !== 'coach' || seededFor.current === peopleScope) return;
+    seededFor.current = peopleScope;
+    const forScope = peopleScope;
+    setPeopleState('loading');
+    // No list (null) or a throw: the next opening asks again.
+    const failed = () => {
+      if (seededFor.current !== forScope) return;
+      seededFor.current = null;
+      setPeopleState('failed');
+    };
+    void loadPeople()
+      .then((list) => {
+        if (seededFor.current !== forScope) return;
+        if (!list) return failed();
+        seedPeople(list);
+        setPeopleState('ready');
+      })
+      .catch(failed);
+  }, [role, peopleScope, loadPeople]);
   useEffect(() => {
     setRecent(noteVisit(userId, role, pathname));
   }, [userId, role, pathname]);
@@ -65,8 +110,9 @@ export function CommandLayer({ role, pathname, userId, teamId }: { role: ChRole;
     setOpens((n) => n + 1);
     setUsed((u) => ({ ...u, palette: true }));
     setPalette(true);
+    seedOnOpen();
     chTrail('command palette open');
-  }, [userId]);
+  }, [userId, seedOnOpen]);
 
   useEffect(() => {
     if (!desktop) return;
@@ -80,7 +126,7 @@ export function CommandLayer({ role, pathname, userId, teamId }: { role: ChRole;
       }
       const result = interpretKey(
         e,
-        { typing: isTypingTarget(e.target), overlay: isInOverlay(e.target) || modalOpen(document) },
+        { typing: isTypingTarget(e.target), overlay: isInOverlay(e.target) || modalOpen(document), digits: isNativeApp() },
         armed.current,
         performance.now(),
       );
@@ -100,6 +146,11 @@ export function CommandLayer({ role, pathname, userId, teamId }: { role: ChRole;
           e.preventDefault();
           openPalette();
           break;
+        case 'settings':
+          e.preventDefault();
+          chTrail('command settings (keyboard)');
+          live.current.router.push(CH_SETTINGS_ITEM.href, { scroll: false });
+          break;
         case 'help':
           e.preventDefault();
           setUsed((u) => ({ ...u, help: true }));
@@ -113,11 +164,21 @@ export function CommandLayer({ role, pathname, userId, teamId }: { role: ChRole;
           field.select();
           break;
         }
+        case 'section': {
+          // Cmd or Ctrl and a digit: the sidebar's sections in order (owner, decision 13).
+          const item = itemForDigit(live.current.role, o.digit);
+          if (!item) break;
+          e.preventDefault();
+          // A jump is navigation, so it is silent (D-70, A14).
+          chTrail('command section (keyboard)', { to: item.id });
+          live.current.router.push(item.href, { scroll: false });
+          break;
+        }
         case 'go': {
           const item = itemForLetter(live.current.role, o.letter);
           if (!item) break;
           e.preventDefault();
-          haptic('select');
+          // A jump is navigation, so it is silent (D-70, A14).
           chTrail('command go (keyboard)', { to: item.id });
           live.current.router.push(item.href, { scroll: false });
           break;
@@ -129,7 +190,15 @@ export function CommandLayer({ role, pathname, userId, teamId }: { role: ChRole;
     // Capture, so the layer sees a key before a page's own handler and a jump it takes is marked used (defaultPrevented): Calendar
     // binds a bare T (today) and skips a key already used, so G then T leaves it alone rather than doing both.
     window.addEventListener('keydown', onKey, true);
-    return () => window.removeEventListener('keydown', onKey, true);
+    // The top bar's search pill opens the same palette; a second press while it is up changes nothing.
+    const onOpen = () => {
+      if (!live.current.palette) openPalette();
+    };
+    window.addEventListener(CH_PALETTE_EVENT, onOpen);
+    return () => {
+      window.removeEventListener('keydown', onKey, true);
+      window.removeEventListener(CH_PALETTE_EVENT, onOpen);
+    };
   }, [desktop, openPalette]);
   useEffect(() => () => window.clearTimeout(waitTimer.current), []);
 
@@ -138,7 +207,7 @@ export function CommandLayer({ role, pathname, userId, teamId }: { role: ChRole;
   return (
     <>
       {waiting && <GoHint role={role} />}
-      {used.palette && <Palette open={palette} onClose={() => setPalette(false)} role={role} pathname={pathname} people={people} recent={recent} keyword={opens} />}
+      {used.palette && <Palette open={palette} onClose={() => setPalette(false)} role={role} pathname={pathname} people={people} peopleState={peopleState} recent={recent} keyword={opens} />}
       {used.help && <ShortcutsSheet open={help} onClose={() => setHelp(false)} role={role} apple={apple} />}
     </>
   );

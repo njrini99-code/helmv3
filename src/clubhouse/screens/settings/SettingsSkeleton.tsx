@@ -1,5 +1,6 @@
 import { Skeleton } from '../../ui/States';
 import '../../styles/settings.css';
+import { LargeTitleSkeleton } from '../../ui/LargeTitle';
 
 /**
  * Route skeleton: the header, the rail and two cards, in the page's own geometry. On a phone, the list's title,
@@ -54,9 +55,7 @@ export function SettingsSkeleton() {
           and the sections on their seams, so nothing moves when the list arrives. */}
       <div className="ch-setm-skel" aria-hidden>
         <div className="ch-setm-page">
-          <div className="ch-setm-title">
-            <Skeleton width={150} height={28} radius={8} />
-          </div>
+          <LargeTitleSkeleton width={150} className="ch-setm-title" />
           <div className="ch-setm-id" style={{ cursor: 'default' }}>
             <Skeleton width={56} height={56} radius={28} />
             <span className="ch-setm-id__b">

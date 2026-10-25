@@ -17,24 +17,32 @@ describe('roster standings (P003 #2, #3)', () => {
     const players = [p('a', 71, 8), p('b', 72, 8), p('c', 73, 8), p('d', 74, 8)];
     const { byId } = rosterStandings(players);
     // Searching for "d" shows one row; it is still 4th of 4, not "Avg".
-    expect(byId.get('d')).toEqual({ place: 4, of: 4 });
+    expect(byId.get('d')).toEqual({ place: 4, of: 4, tied: false });
   });
 
   it('leaves inactive players and early reads out of the ranks', () => {
     const players = [p('a', 71, 8), p('b', 72, 8), p('off', 68, 9, 'inactive'), p('early', 70, 2)];
     const { avgs, byId } = rosterStandings(players);
     expect(avgs).toEqual([71, 72]);
-    expect(byId.get('a')).toEqual({ place: 1, of: 2 });
+    expect(byId.get('a')).toEqual({ place: 1, of: 2, tied: false });
     expect(byId.has('off')).toBe(false);
     expect(byId.has('early')).toBe(false);
     expect(earlyNeed(2)).toBe('Needs 1 more');
     expect(earlyNeed(3)).toBeNull();
   });
 
+  it('B13 places are taken on the average as shown: 74.30 and 74.333 both show 74.3 and share 1st', () => {
+    const { byId } = rosterStandings([p('a', 74.3, 5), p('b', 74.333, 5), p('c', 74.36, 5)]);
+    expect(byId.get('a')).toEqual({ place: 1, of: 3, tied: true });
+    expect(byId.get('b')).toEqual({ place: 1, of: 3, tied: true });
+    // 74.36 shows as 74.4: the next place counts both ahead of it.
+    expect(byId.get('c')).toEqual({ place: 3, of: 3, tied: false });
+  });
+
   it('ties share the better place', () => {
     const { byId } = rosterStandings([p('a', 72, 5), p('b', 72, 5), p('c', 73, 5)]);
-    expect(byId.get('b')).toEqual({ place: 1, of: 3 });
-    expect(byId.get('c')).toEqual({ place: 3, of: 3 });
+    expect(byId.get('b')).toEqual({ place: 1, of: 3, tied: true });
+    expect(byId.get('c')).toEqual({ place: 3, of: 3, tied: false });
   });
 });
 

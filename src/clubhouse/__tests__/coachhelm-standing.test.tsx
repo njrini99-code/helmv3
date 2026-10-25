@@ -567,7 +567,7 @@ describe('the Standing screen', () => {
   it('CH-13370 nothing on file yet: the first-run page with one action, never a table of zeros', () => {
     show(standingLoad(PREVIEW_STANDING_EMPTY));
     expect(code('CH-13370')!.textContent).toMatch(/Standing starts with a few rounds.*You have posted 2 rounds\./);
-    expect(within(code('CH-13370') as HTMLElement).getByRole('link', { name: 'Start a round' }).getAttribute('href')).toBe('/golf/dashboard/rounds/new');
+    expect(within(code('CH-13370') as HTMLElement).getByRole('link', { name: 'New round' }).getAttribute('href')).toBe('/golf/dashboard/rounds/new');
     expect(document.querySelector('.ch-hs-g')).toBeNull();
   });
 

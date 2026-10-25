@@ -8,6 +8,7 @@ import { toChMondayBrief, type ChBriefRow } from './coachhelm-monday-brief-shape
 import { figure, standingLabel } from './coachhelm-standing-shape';
 import { toChTeamPatterns, type ChTeamPatterns } from './coachhelm-team-pattern';
 import { COACH_TRACK_RECORD_HREF, type ChTrackRecord } from './coachhelm-track-record-shape';
+import { plural } from '../lib/plural';
 
 /**
  * The coach's Brief (Clubhouse P013, `?view=brief`, behind `coachhelm_monday_brief_v1`; CoachHelm par-05): the team view that
@@ -145,7 +146,6 @@ export interface CoachBriefInputs {
 
 const WORKING_WORD: Record<string, string> = { active: 'Active', in_progress: 'In progress' };
 const num = (v: unknown): number | null => (typeof v === 'number' && Number.isFinite(v) ? v : null);
-const plural = (n: number, one: string, many = `${one}s`) => `${n} ${n === 1 ? one : many}`;
 const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
 
 function dayOf(iso: string | null | undefined): string | null {

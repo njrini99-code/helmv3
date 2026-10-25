@@ -7,6 +7,7 @@ import { chReport } from '../../lib/track';
 import type { ServerResult } from '../../lib/use-action';
 import { classNameOf, hasTime, importKey, sortDays, type ChClass, type ChClassInput, type ChClassRow, type ChImportRow } from '../../data/classes-shape';
 import { readScheduleLive, type ChReadResult, type ChReadSource } from './import-read';
+import { pluralWord } from '../../lib/plural';
 
 /**
  * Every Classes write and read the page calls. The live set keeps the table,
@@ -230,7 +231,7 @@ export function createLiveClassesWrites(ctx: { playerId: string; teamId: string;
       if (!kept.length && !offCalendar.length) return { success: true, data };
       return {
         success: false,
-        error: kept.length ? `Couldn’t take ${kept.length === 1 ? 'a class' : `${kept.length} classes`} off your calendar. ${kept.length === 1 ? 'It was' : 'They were'} kept so you can try again.` : 'Some classes are off your calendar but still on your schedule. Try again to finish removing them.',
+        error: kept.length ? `Couldn’t take ${pluralWord(kept.length, 'a class', `${kept.length} classes`)} off your calendar. ${pluralWord(kept.length, 'It was', 'They were')} kept so you can try again.` : 'Some classes are off your calendar but still on your schedule. Try again to finish removing them.',
         data,
       };
     },

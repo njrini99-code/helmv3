@@ -1,7 +1,6 @@
 'use client';
 
 import { ChartColumn, ChevronRight, Medal, Users } from 'lucide-react';
-import dynamic from 'next/dynamic';
 import Link from 'next/link';
 import { useMemo, type CSSProperties } from 'react';
 import type { ChFigure, ChLeg, ChTeamStats } from '../../data/stats-team';
@@ -14,31 +13,37 @@ import { StatsTeamFirstRun } from './StatsTeamFirstRun';
 import { Icon } from '../../ui/Icon';
 import { SectionBoundary, SectionGroup, SectionGroupNotice } from '../../ui/SectionBoundary';
 import { Segmented } from '../../ui/Segmented';
-import { deltaTone, deltaWords, halvesChange } from '../../lib/stats-signal';
+import { deltaTone, deltaWords, halvesTone } from '../../lib/stats-signal';
 import { changeInk, changeTone, formatFixed, formatSigned, formatToPar, NO_DATA } from '../../lib/format';
+import { TERMS } from '../../lib/glossary';
 import { haptic } from '../../lib/haptics';
 import { tabListKeys } from '../../lib/tabs';
 import { sgBaseline, sgScale, sgShare } from '../../lib/sg';
 import { gridPeek, teamPlayerHref } from './links';
 import { PlayerPeek } from '../../ui/PlayerPeek';
 import { LinkPending } from '../../shell/LinkPending';
+import { usePressPrefetch } from '../../shell/use-prefetch-tabs';
 import { TeamRank } from './TeamRank';
 import { puttingNote } from './notes';
 import { PhoneWindowSwitch, RetryNotice, ShowSeason, TeamFilter, TeamFilterEmpty } from './StatsTeamIslands';
 import { holeCoverage } from '../../data/round-scope';
 import { nineRoundsInWindow } from '../../data/stats-filter';
 import { EarlyRead, NineHint } from './StatsFilter';
+// The one line chart (B5): light and drawn on the server, so it paints with the page; no chunk of its own.
+import TeamTrendChart from './TeamTrendChart';
 import { hasRange, isFiltered } from '../../data/stats-filter';
 import { useChSessionState } from '../../lib/session-state';
 import { useArrivalPainted } from '../../lib/use-painted';
+import { useGlide } from '../../lib/motion-glide';
+import { pluralWord } from '../../lib/plural';
+import { LargeTitle } from '../../ui/LargeTitle';
+import { TeamInsight } from './StatsInsight';
+import { NoData } from '../../ui/NoData';
 
 type Sort = 'avg' | 'sg';
 /** The leg the strokes gained readout shows and the players' SG sort ranks by: the team total or one of the four legs. */
 export type ChLegPick = 'total' | ChLeg;
 
-// Recharts loads on its own chunk after the page has painted, and never on desktop (this module is imported there too).
-// The page holds the chart's box and its accessible summary, so nothing waits on it or moves when it lands.
-const TeamTrendChart = dynamic(() => import('./TeamTrendChart'), { ssr: false, loading: () => null });
 
 const legIndex = (leg: ChLegPick) => (leg === 'total' ? -1 : LEGS_LIST.indexOf(leg));
 
@@ -70,7 +75,8 @@ export function StatsTeamPhone({ data }: { data: ChTeamStats }) {
     if (data.puttsError) failed.push('team putting');
   }
   const covered = failed.length > 1;
-  // A window or filter change remounts the sections below, so their state starts clean for the new scope.
+  // A window or filter change remounts the players list, so its state starts clean for the new scope. The legs and the rank
+  // stay mounted so their bars and dots glide to the new window (B9); the rank lets go of a pin when its order changes.
   const scope = JSON.stringify(data.filter);
   // The legs, players and putting start below the first screen (the legs at 802px of 852), so a switch to Stats renders
   // them a frame after the page has painted: their peeks and rows were most of the switch's long frame.
@@ -88,9 +94,9 @@ export function StatsTeamPhone({ data }: { data: ChTeamStats }) {
       <div className="ch-stm is-team">
         <header className="ch-stm-head">
           <span className="ch-num">
-            {data.teamName} · {data.roundsError ? '' : `${data.activeCount} active ${data.activeCount === 1 ? 'player' : 'players'} · `}countable rounds only
+            {data.teamName} · {data.roundsError ? '' : `${data.activeCount} active ${pluralWord(data.activeCount, 'player')} · `}countable rounds only
           </span>
-          <h1>Team stats</h1>
+          <LargeTitle>Team stats</LargeTitle>
         </header>
         {/* The window and the filter share one row (F-42): the board has no row of its own for the filter. */}
         {!bare && (
@@ -106,7 +112,7 @@ export function StatsTeamPhone({ data }: { data: ChTeamStats }) {
             tone="danger"
             code="CH-4201"
             title="Team rounds didn’t load"
-            body="Every figure would be incomplete, so none is shown. The error has been reported."
+            body="Every figure would be incomplete, so none is shown."
           />
         )}
         <PageRefreshNotice parts={failed} />
@@ -130,9 +136,13 @@ export function StatsTeamPhone({ data }: { data: ChTeamStats }) {
         ) : (
           !data.roundsError && (
             <>
+              {/* Row 70: what changed, in words, before any figure. */}
+              <SectionBoundary surface="stats.team.insight" label="What changed" code="CH-4204">
+                <TeamInsight figures={data.figures} last={data.last} />
+              </SectionBoundary>
               <SectionBoundary surface="stats.team.figures" label="Team figures" code="CH-4204">
                 {data.cacheError && (
-                  <RetryNotice code="CH-4202" title="Some team figures didn’t load" body="Scoring is correct; greens, putts and scrambling are missing. The error has been reported." covered={covered} />
+                  <RetryNotice code="CH-4202" title="Some team figures didn’t load" body="Scoring is correct; greens, putts and scrambling are missing." covered={covered} />
                 )}
                 <Hero figures={data.figures} />
                 {/* The trend reads the hero, so it sits right under it; it crashes on its own. */}
@@ -144,10 +154,10 @@ export function StatsTeamPhone({ data }: { data: ChTeamStats }) {
               {below && (
                 <>
                   <SectionBoundary surface="stats.team.legs" label="Strokes gained by leg" code="CH-4206">
-                    <Legs key={scope} data={data} leg={leg} onLeg={pickLeg} />
+                    <Legs data={data} leg={leg} onLeg={pickLeg} />
                   </SectionBoundary>
                   <SectionBoundary surface="stats.team.rank" label="Who gains and loses" code="CH-4206">
-                    <TeamRank key={scope} data={data} phone />
+                    <TeamRank data={data} phone />
                   </SectionBoundary>
                   <SectionBoundary surface="stats.team.players" label="Players" code="CH-4206">
                     <Players key={scope} data={data} leg={leg} sort={sort} onSort={setSort} />
@@ -174,7 +184,7 @@ function toneClass(f: ChFigure): string {
   return t === 'is-gain' ? 'ch-gain' : t === 'is-loss' ? 'ch-loss' : '';
 }
 
-const figureValue = (f: ChFigure) => (f.value == null ? NO_DATA : `${f.value.toFixed(f.digits)}${f.unit}`);
+const figureValue = (f: ChFigure) => (f.value == null ? NO_DATA : `${formatFixed(f.value, f.digits)}${f.unit}`);
 
 /**
  * The one hero figure: the scoring average, its change and what the change is against ("vs previous 10"). A window with
@@ -182,7 +192,7 @@ const figureValue = (f: ChFigure) => (f.value == null ? NO_DATA : `${f.value.toF
  */
 /** Finds its own figure, so a malformed list crashes inside the figures' boundary, not the phone page (CH-4204). */
 function Hero({ figures }: { figures: readonly ChFigure[] }) {
-  const f = figures.find((x) => x.label === 'Scoring average');
+  const f = figures.find((x) => x.label === TERMS.scoringAvg.long);
   if (!f) return null;
   const none = f.delta == null;
   // What the average is against par a round (the loader's, per 18 holes), over the change: no bare number (2026-10-07).
@@ -233,23 +243,27 @@ function Trend({ data }: { data: ChTeamStats }) {
         </p>
       </section>
     );
-  // The newer half of the round days against the older half, worded as a change only past its standard error (A1).
-  const change = halvesChange(known.map((d) => d.score), 'score');
+  // The newer half of the round days against the older half, worded as a change only past its standard error (A1), which the
+  // loader takes from the rounds behind each half: a day's mean of six rounds is not read as one round.
+  const change = data.daysHalves;
+  // The line's ink follows the same test as the words: green or amber only for a change past its noise (row 69).
+  const tone = known.length < 3 ? '' : halvesTone(change, true);
   const reading =
-    change == null || deltaTone(change.delta, change.se, true) === ''
+    tone === ''
       ? 'No clear change across the window.'
-      : `${change.delta < 0 ? 'Down' : 'Up'} ${Math.abs(change.delta).toFixed(1)} strokes a round, newer half vs older half.`;
+      : `${change!.delta < 0 ? 'Down' : 'Up'} ${formatFixed(Math.abs(change!.delta))} strokes a round, newer half vs older half.`;
   // The mean of the rounds behind the line, each counted once (A8.10): a day weighs its whole rounds, not one point a day.
   const mean = teamDaysMean(known);
   return (
     <section className="ch-stm-trend" aria-labelledby="ch-stm-trend">
       {head}
-      <div
-        className="ch-stm-plot"
-        role="img"
-        aria-label={`Team scoring average by round day, from ${formatFixed(known[0]!.score)} to ${formatFixed(known[known.length - 1]!.score)}. ${reading} Lower scores sit higher.`}
-      >
-        <TeamTrendChart days={days} mean={mean} />
+      <div className="ch-stm-plot">
+        <TeamTrendChart
+          days={days}
+          mean={mean}
+          tone={tone}
+          label={`Team scoring average by round day, from ${formatFixed(known[0]!.score)} to ${formatFixed(known[known.length - 1]!.score)}. ${reading} Lower scores sit higher.`}
+        />
       </div>
       <p className="ch-stm-note">
         <span>Lower is better. {reading}</span>
@@ -271,7 +285,7 @@ function reference(f: ChFigure): string | null {
 
 /** Greens, putts and scrambling as an inset group: the value, then its change (green better, amber worse; D-42). */
 function RoundFigures({ data }: { data: ChTeamStats }) {
-  const rows = data.figures.filter((f) => !f.signed && f.label !== 'Scoring average').slice(0, 3);
+  const rows = data.figures.filter((f) => !f.signed && f.label !== TERMS.scoringAvg.long).slice(0, 3);
   // Greens, putts and scrambling read the rounds with their holes (Q-123); this says how many, under the group.
   const coverage = data.holeRoundCount == null ? null : holeCoverage(data.holeRoundCount, data.roundCount);
   return (
@@ -313,6 +327,17 @@ function Legs({ data, leg, onLeg }: { data: ChTeamStats; leg: ChLegPick; onLeg: 
   const legs = LEGS_LIST.map((l, i) => ({ l, v: data.legTotals[i] ?? null }));
   const known = legs.filter((x): x is { l: ChLeg; v: number } => x.v != null);
   const losing = known.filter((x) => x.v < -0.05);
+  // The team total is the window's own mean (data.team.sgMean), never the legs added up.
+  const rows: Array<{ key: ChLegPick; label: string; v: number | null; total?: boolean }> = [
+    ...legs.map(({ l, v }) => ({ key: l, label: l as string, v })),
+    { key: 'total', label: 'Team total', v: data.team.sgMean, total: true },
+  ];
+  const scale = sgScale(rows.map((r) => r.v));
+  // Each bar's signed share of its half rail glides to the new window's (B9); the section is not remounted on a window change.
+  const drawn = useGlide(
+    rows.map((r) => (r.v == null ? null : (r.v >= 0 ? 1 : -1) * sgShare(r.v, scale) * 50)),
+    rows.map((r) => r.key).join('|'),
+  );
   const head = (
     <div className="ch-stm-panel__h">
       <h2 id="ch-stm-legs">Strokes gained by leg</h2>
@@ -329,14 +354,8 @@ function Legs({ data, leg, onLeg }: { data: ChTeamStats; leg: ChLegPick; onLeg: 
   const note = !losing.length
     ? `No leg is losing strokes against ${baseline.noun}.`
     : losing.length === 1
-      ? `${losing[0]!.l} is the only leg losing strokes, ${Math.abs(losing[0]!.v).toFixed(1)} a round.`
+      ? `${losing[0]!.l} is the only leg losing strokes, ${formatFixed(Math.abs(losing[0]!.v))} a round.`
       : `${losing.length} legs are losing strokes: ${losing.map((x) => x.l).join(', ')}.`;
-  // The team total is the window's own mean (data.team.sgMean), never the legs added up.
-  const rows: Array<{ key: ChLegPick; label: string; v: number | null; total?: boolean }> = [
-    ...legs.map(({ l, v }) => ({ key: l, label: l as string, v })),
-    { key: 'total', label: 'Team total', v: data.team.sgMean, total: true },
-  ];
-  const scale = sgScale(rows.map((r) => r.v));
   const picked = rows.find((r) => r.key === leg) ?? rows[rows.length - 1]!;
   const legKeys = tabListKeys(
     rows.map((r) => r.key),
@@ -350,15 +369,16 @@ function Legs({ data, leg, onLeg }: { data: ChTeamStats; leg: ChLegPick; onLeg: 
       {head}
       <div className="ch-stm-group">
         <p className="ch-stm-sgfig">
-          <b className={'ch-num ' + changeInk(picked.v)}>{picked.v == null ? NO_DATA : formatSigned(picked.v)}</b>
+          <b className={'ch-num ' + changeInk(picked.v)}>{picked.v == null ? <NoData /> : formatSigned(picked.v)}</b>
           <span>{picked.total ? 'Team total' : picked.label}, a round</span>
         </p>
         {/* Plain tabs, not Base UI's: its list scrolled the chosen tab into view and its indicator measured it as the page
             mounted, two layouts of the whole arriving page inside React's commit (28ms of a switch's 163ms of script at
             4x CPU, Chromium, production build, 2026-10-15). Every row is 44px, so the wash's place is its index. */}
         <div className="ch-stm-legs" role="tablist" aria-label="Strokes gained leg" aria-orientation="vertical">
-          {rows.map(({ key, label, v, total }) => {
+          {rows.map(({ key, label, v, total }, i) => {
             const on = key === picked.key;
+            const bar = drawn[i];
             return (
               <button
                 key={key}
@@ -376,9 +396,9 @@ function Legs({ data, leg, onLeg }: { data: ChTeamStats; leg: ChLegPick; onLeg: 
                 <span>{label}</span>
                 <span className="ch-stm-leg__bar" aria-hidden="true">
                   <i className="ch-stm-leg__z" />
-                  {v != null && <i className={'ch-stm-leg__v ' + changeTone(v, false, 1)} style={{ [v >= 0 ? 'left' : 'right']: '50%', width: `${sgShare(v, scale) * 50}%` }} />}
+                  {v != null && bar != null && <i className={'ch-stm-leg__v ' + changeTone(v, false, 1)} style={bar >= 0 ? { left: '50%', width: `${bar}%` } : { right: '50%', width: `${-bar}%` }} />}
                 </span>
-                <b className={'ch-num ' + changeInk(v)}>{v == null ? NO_DATA : formatSigned(v)}</b>
+                <b className={'ch-num ' + changeInk(v)}>{v == null ? <NoData /> : formatSigned(v)}</b>
               </button>
             );
           })}
@@ -395,6 +415,8 @@ function Players({ data, leg, sort, onSort }: { data: ChTeamStats; leg: ChLegPic
   const i = legIndex(leg);
   // On SG the list ranks by the chosen leg (the team total by default); on Avg it shows each player's total.
   const sgOf = (p: ChTeamStats['grid'][number]) => (sort === 'sg' && i >= 0 ? (p.legs[i] ?? null) : p.total);
+  // A player's stats are fetched whole as a finger lands on the row (A13), as the desktop grid's are.
+  const press = usePressPrefetch();
   const rows = useMemo(
     () =>
       [...data.grid].sort((a, b) => {
@@ -420,8 +442,8 @@ function Players({ data, leg, sort, onSort }: { data: ChTeamStats; leg: ChLegPic
           value={sort}
           onChange={onSort}
           options={[
-            { value: 'avg', label: 'Avg', aria: 'Avg, scoring average' },
-            { value: 'sg', label: 'SG', aria: 'SG, strokes gained' },
+            { value: 'avg', label: 'Avg', aria: `Avg, ${TERMS.scoringAvg.long.toLowerCase()}` },
+            { value: 'sg', label: TERMS.strokesGained.short, aria: `${TERMS.strokesGained.short}, ${TERMS.strokesGained.long.toLowerCase()}` },
           ]}
         />
       </div>
@@ -435,16 +457,16 @@ function Players({ data, leg, sort, onSort }: { data: ChTeamStats; leg: ChLegPic
               <li key={p.id}>
                 {/* P003-C1: a hold peeks at the player; a tap still opens their stats. */}
                 <PlayerPeek player={gridPeek(p)}>
-                  <Link href={teamPlayerHref(p.id, data.filter)} className="ch-stm-row">
-                    <Avatar name={p.name} size={36} />
+                  <Link href={teamPlayerHref(p.id, data.filter)} className="ch-stm-row" {...press(teamPlayerHref(p.id, data.filter))}>
+                    <Avatar name={p.name} id={p.id} size="md" />
                     <span className="ch-stm-row__b">
                       <b>{p.name}</b>
                       <span className="ch-num">
-                        {p.rounds} {p.rounds === 1 ? 'round' : 'rounds'}
+                        {p.rounds} {pluralWord(p.rounds, 'round')}
                       </span>
                     </span>
                     <span className="ch-stm-row__v ch-num">
-                      <b>{p.avg == null ? NO_DATA : formatFixed(p.avg)}</b>
+                      <b>{p.avg == null ? <NoData /> : formatFixed(p.avg)}</b>
                       <span className={changeInk(sg)}>{sg == null ? 'Early read' : `${formatSigned(sg)} SG`}</span>
                     </span>
                     <Icon icon={ChevronRight} size={16} className="ch-stm-row__chev" />
@@ -462,7 +484,7 @@ function Players({ data, leg, sort, onSort }: { data: ChTeamStats; leg: ChLegPic
 
 /** Make rate by distance: a bar per band, the Tour rate as a mark, a band under it in amber. */
 function Putting({ data, covered }: { data: ChTeamStats; covered: boolean }) {
-  if (data.puttsError) return <RetryNotice code="CH-4203" title="Team putting didn’t load" body="Try again; the error has been reported." covered={covered} />;
+  if (data.puttsError) return <RetryNotice code="CH-4203" title="Team putting didn’t load" body="Try again." covered={covered} />;
   if (!data.putting) return <EmptyState compact code="CH-4306" title="No putts logged in this window." body="Putting fills in from rounds posted with putt distances." />;
   const bands = data.putting.bands.slice(0, 5);
   const drawn = bands.reduce((a, b) => a + b.attempts, 0);
@@ -475,7 +497,8 @@ function Putting({ data, covered }: { data: ChTeamStats; covered: boolean }) {
       <div className="ch-stm-putt ch-stm-group">
         {bands.map((b) => {
           const rate = b.attempts ? (b.made / b.attempts) * 100 : null;
-          const low = rate != null && b.bench != null && b.attempts >= 10 && rate < b.bench;
+          // Below the Tour as the two print (whole percents): 69.6 against 70 is level, never amber (A2).
+          const low = rate != null && b.bench != null && b.attempts >= 10 && Math.round(rate) < Math.round(b.bench);
           return (
             <div key={b.label} className="ch-stm-putt__r">
               <span className="ch-num">{b.label}</span>
@@ -483,7 +506,7 @@ function Putting({ data, covered }: { data: ChTeamStats; covered: boolean }) {
                 {rate != null && <i className={low ? 'is-low' : ''} style={{ width: `${rate}%` }} />}
                 {b.bench != null && <em style={{ left: `${b.bench}%` }} />}
               </span>
-              <b className={'ch-num' + (low ? ' ch-loss' : '')}>{rate == null ? NO_DATA : `${Math.round(rate)}%`}</b>
+              <b className={'ch-num' + (low ? ' ch-loss' : '')}>{rate == null ? <NoData /> : `${Math.round(rate)}%`}</b>
             </div>
           );
         })}

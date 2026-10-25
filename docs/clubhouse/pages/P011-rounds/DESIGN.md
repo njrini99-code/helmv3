@@ -137,7 +137,7 @@ chevron, the choice buttons' fade and the spinner). Presses are the shell's
 
 v2 grammar (D-70): selection for opening a round, picking a hole, a course or
 tee, every choice in the shot entry and going to another hole; light (press) for
-Continue, Submit and Start a round; medium once when a shot is recorded (the
+Continue, Submit and New round; medium once when a shot is recorded (the
 button's own tap is replaced); warning before Discard, Undo, Delete shot and
 Leave without it; success when a discard lands or a course is used; error on a
 failure, all from the shell's `useAction` where a write is involved.

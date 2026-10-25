@@ -23,7 +23,8 @@ Held items: none
 
 ### Verification
 
-- `__tests__/no-raw-sign-tone.test.ts` and `lib/__tests__/change-tone-zero.test.ts`.
+- `__tests__/no-raw-sign-tone.test.ts` and
+  `lib/__tests__/change-tone-zero.test.ts`.
 
 ## 2026-10-23 — Team average pooled per round (A3)
 

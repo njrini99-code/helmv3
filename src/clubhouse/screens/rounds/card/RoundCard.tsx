@@ -5,6 +5,7 @@ import { Printer, Share } from 'lucide-react';
 import { useGolfUserOptional } from '@/contexts/golf-user-context';
 import type { ChRoundReview } from '../../../data/round-review-shape';
 import { formatSigned, formatToPar, NO_DATA } from '../../../lib/format';
+import { NoData } from '../../../ui/NoData';
 import { haptic } from '../../../lib/haptics';
 import { chTrail } from '../../../lib/track';
 import { Button } from '../../../ui/Button';
@@ -29,7 +30,9 @@ const ROW_LABEL: Record<RowKey, string> = { par: 'Par', score: 'Score', putts: '
 
 /** A hole's mark, in scorecard notation. Outlines, so they survive a black and white printer; red is for under par only. */
 function CardMarkFigure({ hole }: { hole: CardHole }) {
-  if (hole.score == null) return <span className="ch-rcard-mk is-none">{NO_DATA}</span>;
+  if (hole.score == null) return <span className="ch-rcard-mk is-none">
+      <NoData label="Not played" />
+    </span>;
   return (
     <span className={'ch-rcard-mk' + (hole.mark ? ` is-${hole.mark}` : '')} role="img" aria-label={`${hole.score}${hole.mark ? `, ${MARK_NAME[hole.mark].toLowerCase()}` : ''}`}>
       <b aria-hidden="true">{hole.score}</b>

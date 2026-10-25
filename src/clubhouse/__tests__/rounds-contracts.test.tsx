@@ -177,7 +177,7 @@ describe('110702 writes refuse offline: nothing is sent, the error haptic fires,
     expect(w.discard).not.toHaveBeenCalled();
     expect(screen.getByText('In progress')).toBeTruthy();
     setOnline(true);
-    await user.click(within(code('CH-1903') as HTMLElement).getByRole('button', { name: 'Retry' }));
+    await user.click(within(code('CH-1903') as HTMLElement).getByRole('button', { name: 'Try again' }));
     await waitFor(() => expect(screen.getByText('No round in progress')).toBeTruthy());
     expect(w.discard).toHaveBeenCalledTimes(1);
   });
@@ -193,7 +193,7 @@ describe('110702 writes refuse offline: nothing is sent, the error haptic fires,
     expect(onStarted).not.toHaveBeenCalled();
     expect(dock()).toHaveTextContent('Finley GC · Blue · 18 holes · Par 72');
     setOnline(true);
-    await user.click(within(code('CH-1903') as HTMLElement).getByRole('button', { name: 'Retry' }));
+    await user.click(within(code('CH-1903') as HTMLElement).getByRole('button', { name: 'Try again' }));
     await waitFor(() => expect(onStarted).toHaveBeenCalledWith('r-1'));
     expect(ports.start).toHaveBeenCalledTimes(1);
   });
@@ -319,7 +319,7 @@ describe('111201 a Start that fails keeps the setup as it was, until the round o
     expect(within(screen.getByRole('radiogroup', { name: 'Round type' })).getByRole('radio', { name: 'Qualifier' })).toHaveAttribute('aria-checked', 'true');
     expect(screen.getByText('This counts as round 3 of 3 in Fall qualifier 2.')).toBeInTheDocument();
     expect(dock()).toHaveTextContent('Finley GC · Blue');
-    await user.click(within(code('CH-11007')!).getByRole('button', { name: 'Retry' }));
+    await user.click(within(code('CH-11007')!).getByRole('button', { name: 'Try again' }));
     await waitFor(() => expect(onStarted).toHaveBeenCalledWith('r-3'));
     expect(start.mock.calls[1]![0]).toEqual(start.mock.calls[0]![0]);
     expect(start.mock.calls[0]![0]).toMatchObject({ type: 'qualifier', pick: { teeId: 'finley-blue' } });
@@ -410,7 +410,7 @@ describe('111901 the library and the review are the phone build at phone width',
       expect(within(top).queryByRole('button', { name: /Back/ })).toBeNull();
       expect(within(top).queryByRole('link', { name: /Back/ })).toBeNull();
       expect(document.querySelector('.ch-rd.is-phone')).not.toBeNull();
-      expect(screen.getByRole('heading', { level: 1, name: 'Your rounds' })).toBeTruthy();
+      expect(screen.getByRole('heading', { level: 1, name: 'Rounds' })).toBeTruthy();
     } finally {
       restore();
     }
@@ -425,6 +425,17 @@ describe('111901 the library and the review are the phone build at phone width',
     } finally {
       restore();
     }
+  });
+
+  it('B14 the review\'s greens figure takes no tone: hitting greens has no good or bad without a mark to read it against', () => {
+    inFrame(<RoundReview review={PREVIEW_REVIEW} />);
+    const zone = screen.getByRole('region', { name: /Tee to green/ }).querySelector('.ch-znbig');
+    expect(zone).toBeTruthy();
+    expect(zone!.className).not.toMatch(/\bis-(gain|loss|even)\b/);
+    // The words looked for are the ones ZoneBig paints with (CONS-20): a toned reading on the same review carries one, so
+    // this can still fail (it went vacuous when the words were is-good and is-bad).
+    const toned = [...document.querySelectorAll('.ch-znbig')].filter((z) => /\bis-(gain|loss)\b/.test(z.className));
+    expect(toned.length).toBeGreaterThan(0);
   });
 
   it('111901 the review: the top bar is Round with ‹ Rounds for a player and ‹ Stats for a coach', () => {

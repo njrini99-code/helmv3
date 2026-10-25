@@ -23,6 +23,8 @@ import { CalendarLine, CommitRule, ContactHint, ContactSection, MetaLine, NextSt
 import { Pipeline } from './Pipeline';
 import { NoMatch } from './RecruitingDesktop';
 import { RecPickSheet } from './RecSheet';
+import { plural } from '../../lib/plural';
+import { LargeTitle } from '../../ui/LargeTitle';
 
 /**
  * Recruiting on the phone (owner boards PhoneList, PhoneDetail, PhoneStage and the states; spec
@@ -45,16 +47,16 @@ export function RecruitingPhone({ c }: { c: RecCtx }) {
         title="Recruiting"
         start
         // First run and a failed read have no add button on the boards: the page's own action is the way in.
-        action={!nothing && !c.error ? <PhoneIconAction icon={Plus} label="Add prospect" onClick={c.startAdd} /> : undefined}
+        action={!nothing && !c.error ? <PhoneIconAction icon={Plus} label="New prospect" onClick={c.startAdd} /> : undefined}
       />
       <div className="ch-recm-page" inert={c.open ? true : undefined}>
-        {/* The top bar carries the page's heading; this is the board's large title. */}
-        <p className="ch-recm-title" aria-hidden="true">
+        {/* The top bar carries the page's heading; this is the phone's one large title (owner decision 4). */}
+        <LargeTitle as="p" hidden className="ch-recm-title">
           Recruiting
-        </p>
+        </LargeTitle>
         {!c.error && !nothing && <CalendarLine c={c} phone />}
         {c.error ? (
-          <InlineNotice code="CH-14201" title="Your prospects didn’t load" body="Nothing was lost. Check your connection and try again." onRetry={c.tryAgain} />
+          <InlineNotice code="CH-14201" title="Your prospects didn’t load" body="Nothing was lost. Try again." onRetry={c.tryAgain} />
         ) : nothing ? (
           <EmptyState
             size="page"
@@ -81,7 +83,7 @@ export function RecruitingPhone({ c }: { c: RecCtx }) {
               ) : (
                 <>
                   <div className="ch-recm-count">
-                    <span className="ch-num">{c.rows.length === c.total ? `${c.total} ${c.total === 1 ? 'prospect' : 'prospects'}` : `${c.rows.length} of ${c.total}`}</span>
+                    <span className="ch-num">{c.rows.length === c.total ? `${plural(c.total, 'prospect')}` : `${c.rows.length} of ${c.total}`}</span>
                     <Menu
                       label="Sort prospects"
                       align="end"

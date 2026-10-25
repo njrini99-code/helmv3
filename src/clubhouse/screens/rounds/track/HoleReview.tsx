@@ -7,6 +7,7 @@ import type { DistancePreference } from '@/lib/golf/distance-units';
 import type { RoundHole, ShotRecord } from '@/lib/types/golf';
 import { haptic } from '../../../lib/haptics';
 import { isOffline } from '../../../lib/use-action';
+import { Button } from '../../../ui/Button';
 import { Icon } from '../../../ui/Icon';
 import { Spinner } from '../../../ui/Spinner';
 import { shotLine, shotTitle } from './labels';
@@ -73,9 +74,9 @@ export function HoleReview({
           <span>
             <b>Hole {hole.number} didn&rsquo;t save.</b> Your shots are kept on this device. {isOffline() ? 'Reconnect, then try again.' : 'Try again to move on.'}
           </span>
-          <button
-            type="button"
-            className="ch-btn ch-btn--secondary ch-btn--sm"
+          <Button
+            variant="secondary"
+            size="sm"
             onClick={() => {
               if (isOffline()) {
                 // CH-1905's rule: a retry while offline would fail the same way.
@@ -85,8 +86,8 @@ export function HoleReview({
               onRetryCheckpoint();
             }}
           >
-            <span>Try again</span>
-          </button>
+            Try again
+          </Button>
         </div>
       )}
       <ol className="ch-rt-rs-list">
@@ -107,10 +108,7 @@ export function HoleReview({
       </ol>
       {showUndoConfirm && <UndoConfirm shots={shots} saving={undoSaving} error={undoError} dispatch={dispatch} onUndo={onUndoLastShot} />}
       <div className="ch-rt-review__f">
-        <button type="button" className="ch-btn ch-btn--ghost" disabled={saving || undoSaving} onClick={() => dispatch({ type: 'SHOW_UNDO_CONFIRM' })}>
-          <Icon icon={Undo2} size={15} />
-          <span>Undo last shot</span>
-        </button>
+        <Button variant="ghost" leftIcon={Undo2} disabled={saving || undoSaving} onClick={() => dispatch({ type: 'SHOW_UNDO_CONFIRM' })}>Undo last shot</Button>
         {backTo && (
           <button type="button" className="ch-btn ch-btn--primary ch-btn--lg" disabled={saving} onClick={() => onNavigateToHole(backTo.index)}>
             <span>Back to hole {backTo.number}</span>

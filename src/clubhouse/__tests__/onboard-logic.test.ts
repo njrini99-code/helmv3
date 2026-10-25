@@ -8,7 +8,6 @@ import {
   codeAutoChecks,
   codeCanSubmit,
   codeFromSearch,
-  fmtHcp,
   gradYears,
   hometownProblem,
   needsGuardianConsent,
@@ -21,6 +20,7 @@ import {
   requestProblem,
   slotCount,
 } from '../screens/onboard/logic';
+import { formatHcp, NO_DATA } from '../lib/format';
 import { EMPTY_DRAFT, reduceFlow, type FlowState } from '../screens/onboard/flow';
 
 const FALL_2026 = new Date(2026, 8, 30);
@@ -111,9 +111,9 @@ describe('account', () => {
 
 describe('your game and photo', () => {
   it('shows a plus handicap with a plus and stores it negative', () => {
-    expect(fmtHcp(-1.8)).toBe('+1.8');
-    expect(fmtHcp(4)).toBe('4.0');
-    expect(fmtHcp(null)).toBe('');
+    expect(formatHcp(-1.8)).toBe('+1.8');
+    expect(formatHcp(4)).toBe('4.0');
+    expect(formatHcp(null)).toBe(NO_DATA);
   });
 
   it('keeps the state to two letters and asks for it when a city is given', () => {

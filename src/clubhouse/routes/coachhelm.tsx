@@ -1,7 +1,6 @@
 import 'server-only';
 import { Suspense, type ReactNode } from 'react';
 import { redirect } from 'next/navigation';
-import { Users } from 'lucide-react';
 import { pickGolfDashboardRole } from '@/lib/auth/golf-dashboard-role';
 import { getGolfSessionProfile } from '@/lib/auth/session';
 import { isTrackRecordEnabled } from '@/lib/coachhelm/v3/track-record/flag';
@@ -30,8 +29,8 @@ import { Standing } from '../screens/coachhelm/views/Standing';
 import { TrackRecord } from '../screens/coachhelm/views/TrackRecord';
 import { MondayBrief } from '../screens/coachhelm/views/MondayBrief';
 import { CoachBrief } from '../screens/coachhelm/views/CoachBrief';
-import { EmptyState } from '../ui/States';
 import { resolveClubhouseTeam } from './team';
+import { NoTeam } from '../ui/NoTeam';
 import '../styles/coachhelm.css';
 import '../styles/coachhelm-ask.css';
 import '../styles/coachhelm-views.css';
@@ -176,13 +175,7 @@ export async function ClubhouseCoachHelmRoute({ view, player, c, insight, sectio
     if (!team || team.role !== 'coach') {
       return (
         <main className="ch-hl">
-          <EmptyState
-            size="page"
-            code="CH-13308"
-            icon={Users}
-            title="You aren’t on a team yet"
-            body="Once your team is set up, CoachHelm reads the rounds your players post and shows their signals here."
-          />
+          <NoTeam code="CH-13308" coach body="Once your team is set up, CoachHelm reads the rounds your players post and shows their signals here." />
         </main>
       );
     }

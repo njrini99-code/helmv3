@@ -1,6 +1,7 @@
 import type { ChPlayerProfile, ChProfileRound } from '../../data/stats-player';
 import { formatSigned } from '../../lib/format';
 import { earlyTag, needsText, sampleState, spreadFor, standardError, type FloorKind, type SampleState } from '../../lib/stats-signal';
+import { plural } from '../../lib/plural';
 
 /** One row of the strokes gained bars, with how sure its figure is. */
 export interface SgLegRow {
@@ -108,7 +109,7 @@ export function likelyRange(value: number, se: number): [number, number] {
 export function legReadout(row: Pick<SgLegRow, 'label' | 'value' | 'team' | 'n' | 'se' | 'state' | 'tag'>, teamName?: string | null): string {
   if (row.value == null) return row.tag ? `${row.label} · ${row.tag}` : `${row.label} · No strokes gained yet`;
   const parts = [row.label, `${formatSigned(row.value)} a round`];
-  parts.push(row.state === 'early' && row.tag ? row.tag : `${row.n ?? 0} ${row.n === 1 ? 'round' : 'rounds'}`);
+  parts.push(row.state === 'early' && row.tag ? row.tag : plural(row.n ?? 0, 'round'));
   if (row.se != null) {
     const [lo, hi] = likelyRange(row.value, row.se);
     parts.push(`likely range ${formatSigned(lo)} to ${formatSigned(hi)}`);

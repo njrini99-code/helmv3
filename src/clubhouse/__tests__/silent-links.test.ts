@@ -1,10 +1,14 @@
 import { readdirSync, readFileSync, statSync } from 'node:fs';
 import { join } from 'node:path';
+import ts from 'typescript';
 import { describe, expect, it } from 'vitest';
 
 /**
- * A14 (D-70): navigation is silent, as on iOS. No `<Link>` in Clubhouse ticks `haptic('select')`; a primary action may tick
- * 'press'. Line-based, from each `<Link` to the end of its opening tag, so an `=>` inside a handler does not end the tag early.
+ * A14 (D-70): navigation is silent, as on iOS. No `<Link>` in Clubhouse ticks `haptic('select')`, nor any element that takes
+ * an `href` (a LedgerRow, a Button drawn as a link, a plain `<a>`), nor a handler that ticks and then calls `router.push`; a
+ * primary action may tick 'press'. The `<Link>` scan is line-based, from each `<Link` to the end of its opening tag, so an
+ * `=>` inside a handler does not end the tag early; the href scan reads the syntax tree. The ESLint rule in
+ * eslint.config.mjs's Clubhouse block says the same at the editor.
  */
 
 const ROOT = join(process.cwd(), 'src/clubhouse');
@@ -33,6 +37,25 @@ function linkTags(src: string): Array<{ line: number; text: string }> {
   return out;
 }
 
+/** Every JSX element that takes an `href` and ticks `haptic('select')` in one of its own attributes, as `file:line`. Read
+ * from the syntax tree: a row's attributes run over many lines and hold JSX of their own, which a line scan misreads. */
+function loudHrefElements(file: string): string[] {
+  const src = ts.createSourceFile(file, readFileSync(file, 'utf8'), ts.ScriptTarget.Latest, true, ts.ScriptKind.TSX);
+  const out: string[] = [];
+  const visit = (n: ts.Node) => {
+    if (ts.isJsxOpeningElement(n) || ts.isJsxSelfClosingElement(n)) {
+      const attrs = n.attributes.properties.filter(ts.isJsxAttribute);
+      const href = attrs.some((a) => a.name.getText(src) === 'href');
+      if (href && attrs.some((a) => /haptic\('select'\)/.test(a.initializer?.getText(src) ?? ''))) {
+        out.push(`${file.slice(ROOT.length + 1)}:${src.getLineAndCharacterOfPosition(n.getStart(src)).line + 1}`);
+      }
+    }
+    ts.forEachChild(n, visit);
+  };
+  visit(src);
+  return out;
+}
+
 describe('navigation links are silent (A14)', () => {
   it("no <Link> calls haptic('select')", () => {
     const loud = files(ROOT).flatMap((f) =>
@@ -40,6 +63,20 @@ describe('navigation links are silent (A14)', () => {
         .filter((t) => /haptic\('select'\)/.test(t.text))
         .map((t) => `${f.slice(ROOT.length + 1)}:${t.line}`),
     );
+    expect(loud).toEqual([]);
+  });
+
+  it("no element that takes an href (a row, a Button link, an <a>) calls haptic('select')", () => {
+    expect(files(ROOT).flatMap(loudHrefElements)).toEqual([]);
+  });
+
+  it("no handler ticks haptic('select') and then pushes a route", () => {
+    const loud = files(ROOT).flatMap((f) => {
+      const lines = readFileSync(f, 'utf8').split('\n');
+      return lines.flatMap((l, i) =>
+        /haptic\('select'\)/.test(l) && lines.slice(i, i + 4).some((n) => /\brouter\.push\(/.test(n)) ? [`${f.slice(ROOT.length + 1)}:${i + 1}`] : [],
+      );
+    });
     expect(loud).toEqual([]);
   });
 

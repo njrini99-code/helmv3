@@ -251,10 +251,10 @@ describe('CH-15303 CH-15301 CH-15302 CH-15201 what the welcome shows', () => {
 
   it('words the last visit against the viewer own clock', () => {
     const now = new Date(2025, 9, 14, 10, 0);
-    expect(formatLastHere(new Date(2025, 9, 14, 9, 5).toISOString(), now)).toMatch(/^Today at 9:05 ?am$/);
-    expect(formatLastHere(new Date(2025, 9, 13, 21, 12).toISOString(), now)).toMatch(/^Yesterday at 9:12 ?pm$/);
-    expect(formatLastHere(new Date(2025, 9, 12, 21, 12).toISOString(), now)).toMatch(/^Sunday at 9:12 ?pm$/);
-    expect(formatLastHere(new Date(2025, 8, 30, 21, 12).toISOString(), now)).toMatch(/^Sep 30 at 9:12 ?pm$/);
+    expect(formatLastHere(new Date(2025, 9, 14, 9, 5).toISOString(), now)).toMatch(/^Today at 9:05 AM$/);
+    expect(formatLastHere(new Date(2025, 9, 13, 21, 12).toISOString(), now)).toMatch(/^Yesterday at 9:12 PM$/);
+    expect(formatLastHere(new Date(2025, 9, 12, 21, 12).toISOString(), now)).toMatch(/^Sunday at 9:12 PM$/);
+    expect(formatLastHere(new Date(2025, 8, 30, 21, 12).toISOString(), now)).toMatch(/^Sep 30 at 9:12 PM$/);
     expect(formatLastHere('not a date', now)).toBeNull();
   });
 

@@ -18,7 +18,9 @@ describe('Render must-fixes (A24, A29)', () => {
 
   it('the Hub strip fades over 28px and snaps to a figure; the phone tabs scroll at 16px apart, not packed edge to edge', () => {
     const hub = css('hub.css');
-    expect(hub).toMatch(/\.ch-hb-h > \.ch-hb-strip \{[^}]*--ch-hs-fade: 28px;[^}]*scroll-snap-type: x proximity;/);
+    // The 28px is the phone's edge-fade token since B4.
+    expect(hub).toMatch(/\.ch-hb-h > \.ch-hb-strip \{[^}]*--ch-hs-fade: var\(--ch-edge-fade\);[^}]*scroll-snap-type: x proximity;/);
+    expect(css('tokens.css')).toMatch(/--ch-edge-fade: 28px;/);
     expect(hub).toMatch(/\.ch-hb-tabs \{\s*justify-content: flex-start;\s*gap: calc\(16 \* var\(--ch-type-k\)\);/);
     expect(hub).not.toMatch(/\.ch-hb-tabs \{\s*justify-content: space-between;/);
   });

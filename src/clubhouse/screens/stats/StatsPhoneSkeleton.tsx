@@ -1,6 +1,7 @@
 import type { ReactNode } from 'react';
 import { Skeleton } from '../../ui/States';
 import '../../styles/stats.css';
+import { LargeTitleSkeleton } from '../../ui/LargeTitle';
 
 /**
  * Route loading for Stats on the phone (F-44): the phone page's own shape and classes (StatsTeamPhone,
@@ -64,9 +65,7 @@ export function StatsTeamPhoneSkeleton() {
         <Bar height={19.5}>
           <Skeleton width={230} height={12} />
         </Bar>
-        <Bar height={37.4}>
-          <Skeleton width={170} height={30} radius={8} />
-        </Bar>
+        <LargeTitleSkeleton width={170} />
       </header>
       <div className="ch-stm-controls" aria-hidden="true">
         <Skeleton width="100%" height={44} radius={12} />
@@ -144,13 +143,11 @@ export function StatsTeamPhoneSkeleton() {
 export function StatsPlayerPhoneSkeleton() {
   return (
     <main className="ch-stm" aria-busy="true" aria-label="Loading player stats" data-ch-code="CH-5403">
-      {/* As loaded: the avatar beside the 26px name's line and the caption's, under the double rule. */}
+      {/* As loaded: the avatar beside the name's large-title line and the caption's, under the double rule. */}
       <header className="ch-spm-head" aria-hidden="true">
         <Skeleton width={48} height={48} radius={24} />
         <span className="ch-spm-head__id">
-          <Bar height={28.6}>
-            <Skeleton width={160} height={22} radius={7} />
-          </Bar>
+          <LargeTitleSkeleton width={160} />
           <Bar height={18.2}>
             <Skeleton width={190} height={12} />
           </Bar>

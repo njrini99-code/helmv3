@@ -39,7 +39,8 @@ has no route of its own. Every page inherits its contracts.
 ```text
 Page ID:            P001
 Page Name:          Shell
-Route:              none (wraps every /golf/dashboard route for which isClubhouseFor is true)
+Route:              none (wraps every /golf/dashboard route for which
+                    isClubhouseFor is true)
 Bridge Namespace:   1 (Bridge IDs 1ccii, D-68; catalog codes CH-1xxx)
 Roles:              coach, player
 Implementation Root: src/clubhouse/shell
@@ -102,10 +103,12 @@ Canonical IDs from `memory/registry.yml`:
 ## Design authority
 
 ```text
-Package:          design/handoff/ (v2; VERSIONS.md). v1 files kept where records cite them.
-Desktop reference: design/handoff/sidebar.css, depth.css, gh-nav.js, gh-states.jsx, gh-polish.css
-Phone spec:       docs/clubhouse/phone/foundation.md (approved), from design/handoff/m-shell.jsx,
-                  m.css and mobile/m-shell.jsx
+Package:          design/handoff/ (v2; VERSIONS.md). v1 files kept where records
+                  cite them.
+Desktop reference: design/handoff/sidebar.css, depth.css, gh-nav.js,
+                   gh-states.jsx, gh-polish.css
+Phone spec:       docs/clubhouse/phone/foundation.md (approved), from
+                  design/handoff/m-shell.jsx, m.css and mobile/m-shell.jsx
 Status:           approved
 ```
 
@@ -124,18 +127,24 @@ inside GolfHelm), and Settings.
 
 ```text
 Design:          the owner (Claude Design)
-Implementation:  src/clubhouse/shell, src/clubhouse/ui (toasts, notices), src/clubhouse/lib (useAction, track, motion, haptics)
-Data:            golf_events and golf_event_attendance (next-event card), golf_team_join_requests (Roster
-                 badge), golf_team_settings (timezone), the unified notifications feed
+Implementation:  src/clubhouse/shell, src/clubhouse/ui (toasts, notices),
+                 src/clubhouse/lib (useAction, track, motion, haptics)
+Data:            golf_events and golf_event_attendance (next-event card),
+                 golf_team_join_requests (Roster badge), golf_team_settings
+                 (timezone), golf_team_members and golf_players (a coach's
+                 player names and ids for the palette, decision 16), the unified
+                 notifications feed
 ```
 
 ## Current status
 
 ```text
 Design:         approved
-Implementation: in_progress (desktop and phone built; gates in PROGRESS.md, row "Foundation")
+Implementation: in_progress (desktop and phone built; gates in PROGRESS.md, row
+                "Foundation")
 Contract:       complete (CONTRACT.md: all 25 categories answered)
-Bridge:         reserved (IDs recorded; nothing is sent until the Bridge is wired, D-68)
+Bridge:         reserved (IDs recorded; nothing is sent until the Bridge is
+                wired, D-68)
 Data:           existing
 Verification:   partial (VERIFY.md)
 Docs:           current

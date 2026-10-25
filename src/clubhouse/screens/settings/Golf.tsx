@@ -94,7 +94,7 @@ function MembershipCard({ m, writes }: { m: ChMembership; writes: ChSettingsWrit
               <Button variant="secondary" disabled={leave.pending} onClick={() => setLeaving(false)}>
                 Stay on the team
               </Button>
-              <Button variant="danger" disabled={leave.pending} onClick={() => void leave.run()}>
+              <Button variant="danger" busy={leave.pending} onClick={() => void leave.run()}>
                 {leave.pending ? 'Leaving…' : 'Leave team'}
               </Button>
             </>
