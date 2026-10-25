@@ -357,7 +357,9 @@ export async function notifyEventUpdate(
  * P-4: one Bell row per player for an edit that touched several occurrences of a series ("this and following"), instead
  * of one per occurrence. Players are everyone invited to any touched occurrence that asks for replies (the same rule as
  * notifyEventUpdate). Keyed on the series and its first touched start, so a repeat of the same move dedupes and a new
- * one inserts fresh. P-14 owns the wording and the push.
+ * one inserts fresh. The key stays under 'event_updated:' because golf_calendar_notifications_notification_type_check
+ * only admits the listed types, 'rsvp_response:%' and 'event_updated:%'. P-14 owns the wording and the push.
+ * Throws when the insert fails, so the caller's allSettled logs it instead of the players silently hearing nothing.
  */
 export async function notifyEventSeriesUpdate(rootId: string, eventIds: string[], supabase: SupabaseClient): Promise<void> {
   if (eventIds.length === 0) return;
@@ -385,7 +387,7 @@ export async function notifyEventSeriesUpdate(rootId: string, eventIds: string[]
   const notifications = userIds.map((userId) => ({
     user_id: userId,
     event_id: first.id,
-    notification_type: `event_updated_series:${rootId}:${first.start_time ?? 'tbd'}`,
+    notification_type: `event_updated:series:${rootId}:${first.start_time ?? 'tbd'}`,
     title: `Event updated: ${first.title}`,
     message: `${formatEventDate(first as GolfEvent)}${later > 0 ? ` and ${later} later` : ''}`,
     action_url: `/golf/dashboard/calendar?event=${first.id}`,
@@ -395,7 +397,7 @@ export async function notifyEventSeriesUpdate(rootId: string, eventIds: string[]
   const { error } = await (adminClient as any)
     .from('golf_calendar_notifications')
     .upsert(notifications, { onConflict: 'event_id,user_id,notification_type', ignoreDuplicates: true });
-  if (error) console.error('[notifyEventSeriesUpdate] Failed to insert notifications:', error.message);
+  if (error) throw new Error(`[notifyEventSeriesUpdate] Failed to insert notifications: ${error.message}`);
 }
 
 // ============================================================================
