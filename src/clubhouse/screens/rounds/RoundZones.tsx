@@ -221,9 +221,9 @@ export function ScoreFlow({
         </defs>
         {band && (
           <g className={'ch-rzband' + (band.loss ? ' is-loss' : ' is-gain')}>
-            <rect x={band.x0} y={TOP - 6} width={band.x1 - band.x0} height={colBase - TOP + 6} fill={band.loss ? 'var(--ch-stage-gold)' : 'var(--ch-stage-line)'} fillOpacity={band.loss ? 0.14 : 0.12} />
-            <line x1={band.x0} y1={TOP - 6} x2={band.x0} y2={colBase} stroke={band.loss ? 'var(--ch-stage-gold)' : 'var(--ch-stage-line)'} strokeWidth={1} />
-            <line x1={band.x1} y1={TOP - 6} x2={band.x1} y2={colBase} stroke={band.loss ? 'var(--ch-stage-gold)' : 'var(--ch-stage-line)'} strokeWidth={1} />
+            <rect x={band.x0} y={TOP - 6} width={band.x1 - band.x0} height={colBase - TOP + 6} fill={band.loss ? 'var(--ch-stage-gold)' : 'var(--ch-stage-red)'} fillOpacity={band.loss ? 0.14 : 0.12} />
+            <line x1={band.x0} y1={TOP - 6} x2={band.x0} y2={colBase} stroke={band.loss ? 'var(--ch-stage-gold)' : 'var(--ch-stage-red)'} strokeWidth={1} />
+            <line x1={band.x1} y1={TOP - 6} x2={band.x1} y2={colBase} stroke={band.loss ? 'var(--ch-stage-gold)' : 'var(--ch-stage-red)'} strokeWidth={1} />
           </g>
         )}
         {ticks.map((v) => (

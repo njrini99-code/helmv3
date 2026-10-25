@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { useState } from 'react';
-import { avgToPar, coachDraft, type ChCourseHistory } from '../../data/course-page-shape';
+import { avgToPar, coachDraft, shortDate, type ChCourseHistory } from '../../data/course-page-shape';
 import { MessageSquare } from 'lucide-react';
 import { messagesPrefillHref } from '../messages/prefill';
 import { Icon } from '../../ui/Icon';
@@ -61,7 +61,9 @@ export function CoursePage({ history: h, playerName, playerId, initialHole }: { 
             const body = (
               <>
                 <span className="ch-ch-fig__l">{f.label}</span>
-                <b className="ch-ch-fig__v ch-num">{f.value ?? <NoData label={f.sub} />}</b>
+                <b className="ch-ch-fig__v">
+                  <span className="ch-num">{f.value ?? <NoData label={f.sub} />}</span>
+                </b>
                 <span className={'ch-ch-fig__s ch-num' + toneOf(f.toPar)}>{f.sub}</span>
               </>
             );
@@ -125,10 +127,12 @@ function CourseHero({ h, coach, who, playerId }: { h: ChCourseHistory; coach: bo
       </div>
       <div className="ch-ch-hero__r">
         <div className="ch-ch-hero__f">
-          <b className="ch-num">{f.kind === 'average' ? formatFixed(f.value, 1) : f.value}</b>
+          <b>
+            <span className="ch-num">{f.kind === 'average' ? formatFixed(f.value, 1) : f.value}</span>
+          </b>
           <span>
             <em>{f.kind === 'average' ? 'Average' : f.nine ? 'Last nine' : 'Last time'}</em>
-            <span className="ch-num">{f.kind === 'average' ? (f.toPar == null ? '' : `${avgToPar(f.toPar)} to par`) : shortDay(f.date)}</span>
+            <span className="ch-num">{f.kind === 'average' ? (f.toPar == null ? '' : `${avgToPar(f.toPar)} to par`) : shortDate(f.date)}</span>
           </span>
         </div>
         {f.kind === 'average' && f.early != null && <p className="ch-ch-hero__e">Early read · {f.early} rounds</p>}
@@ -148,8 +152,6 @@ function CourseHero({ h, coach, who, playerId }: { h: ChCourseHistory; coach: bo
   );
 }
 
-const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'June', 'July', 'Aug', 'Sept', 'Oct', 'Nov', 'Dec'];
-const shortDay = (d: string) => `${MONTHS[Number(d.slice(5, 7)) - 1]} ${Number(d.slice(8, 10))}`;
 
 function LastTime({ t, who }: { t: NonNullable<ChCourseHistory['lastTime']>; who: string | null }) {
   return (

@@ -10,12 +10,13 @@ describe('the coach’s view of a course (P-7 4.4, 6.4)', () => {
   it('drafts the message from the first figure that passed its floor, else a plain ask', () => {
     const base = { name: 'Finley', compared: { needs: 'here' as const }, stretch: { worst: null, best: null } };
     expect(coachDraft({ ...base, stretch: { worst: { from: 13, avg: 2.14, se: 0.5 }, best: null } })).toBe(
-      'I was looking at your rounds at Finley. Holes 13 to 15 have cost you about 2.1 shots a round there. Want to go through them at practice?',
+      'I was looking at your rounds at Finley. Holes 13 to 15 have cost you about 2.1 a round over your usual there. Want to go through them at practice?',
     );
     expect(coachDraft({ ...base, compared: { diff: 1.6, se: 1, words: 'harder' } })).toBe(
       'I was looking at your rounds at Finley. It’s played about 1.6 shots harder for you than your other courses. Want to talk through a plan for it?',
     );
     expect(coachDraft({ ...base, compared: { diff: 0.2, se: 1, words: 'same' } })).toBe('I was looking at your rounds at Finley. Want to go through them together?');
+    expect(coachDraft({ ...base, compared: { diff: 0.9, se: 1.4, words: 'unclear' } })).toBe('I was looking at your rounds at Finley. Want to go through them together?');
   });
 
   it('gives the coach Message Lena in place of Start a round here, prefilled and never sent', () => {

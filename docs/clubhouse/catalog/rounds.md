@@ -195,7 +195,7 @@ same the Fairway entry runs, so the hint can never disagree with the button.
 | CH-11411 | A round-type change is in flight | Save reads "Saving…" and can't be pressed again; Cancel, the choices and dismissing wait | `RoundTypeSheet` footer | round-entry-continue.test › CH-11411 |
 | CH-11412 | Team rounds is refreshing (a Try again is running) with the page on screen | The page stays, `aria-busy`, and "Updating…" appears beside the season line, in a status region; nothing blanks | `TeamRounds` (`useRefresh().refreshing`) | preview |
 | CH-11413 | Team rounds is loading | A skeleton in the page's own shape (head, four figures, a search row, grouped rows); `aria-busy` with the label "Loading team rounds" | `TeamRoundsSkeleton`, `rounds/loading.tsx` | preview |
-| CH-11421 | The course page didn't load (P-7) | "Your history here didn’t load" + "Check your connection and try again." (offline: "You’re offline. This page needs a connection.") + Try again | `CourseLoadFailed` | preview |
+| CH-11421 | The course page didn't load (P-7) | "Your history here didn’t load" + "Nothing you saved is lost. Try again." (offline: "You’re offline. Reconnect, then try again.") + Try again | `CourseLoadFailed` | preview |
 
 ## 115xx Confirm
 

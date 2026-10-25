@@ -9,7 +9,6 @@ describe('RecordChips (P-7 4.5.1)', () => {
   it('is a labelled list of at most two plain-text chips, the glyph hidden', () => {
     const { getByRole, container } = render(
       <RecordChips
-        settle={false}
         marks={[
           { id: 'season-low', label: 'Season low', tier: 'filled', tie: false },
           { id: 'course-best', label: 'Best at Finley', tier: 'half', tie: false },
@@ -24,9 +23,9 @@ describe('RecordChips (P-7 4.5.1)', () => {
     expect(list.className).not.toContain('is-just');
   });
 
-  it('draws nothing without a record, and settles only when asked', () => {
-    expect(render(<RecordChips marks={[]} settle />).container.innerHTML).toBe('');
-    const { getByRole } = render(<RecordChips marks={[{ id: 'career-low', label: 'Career low', tier: 'filled', tie: false }]} settle />);
-    expect(getByRole('list').className).toContain('is-just');
+  it('draws nothing without a record, and is static on first paint (owner call 9)', () => {
+    expect(render(<RecordChips marks={[]} />).container.innerHTML).toBe('');
+    const { getByRole } = render(<RecordChips marks={[{ id: 'career-low', label: 'Career low', tier: 'filled', tie: false }]} />);
+    expect(getByRole('list').className).toBe('ch-rv-rec');
   });
 });

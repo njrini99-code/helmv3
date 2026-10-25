@@ -15,7 +15,7 @@ describe('saysFigures (P-7 4.5.3)', () => {
     const f = saysFigures({ holes, startHole: null, usual: { bounce: 'Usually 26% · 20 rounds', ppg: null, closing: null, big: 'Usually 1.4 a round · 20 rounds' }, nine: false, who: null });
     expect(f.map((x) => [x.id, x.value, x.caption])).toEqual([
       ['bounce', '2 of 3', 'Par or better after a bogey · usually 26% · 20 rounds'],
-      ['ppg', '1.67', 'Greens hit in regulation with putts recorded'],
+      ['ppg', '5 on 3 greens', 'Greens hit in regulation with putts recorded'],
       ['closing', '+1', 'Holes 4 to 6'],
       ['big', '1', 'Double bogey or worse · usually 1.4 a round · 20 rounds'],
     ]);
@@ -26,6 +26,18 @@ describe('saysFigures (P-7 4.5.3)', () => {
     expect(f.find((x) => x.id === 'bounce')).toMatchObject({ value: null, caption: 'No bogeys to bounce back from' });
     expect(f.find((x) => x.id === 'ppg')).toMatchObject({ value: null, caption: 'Needs 3 greens hit' });
     expect(saysFigures({ holes: [], startHole: null, usual: null, nine: false, who: null }).map((x) => x.id)).toEqual(['bounce', 'ppg']);
+  });
+
+  it('shows the putts rate from 10 greens, and a nine-hole round keeps the per-round usual', () => {
+    const ten = Array.from({ length: 10 }, (_, i) => hole(i + 1, 0, { gir: true, putts: i < 3 ? 1 : 2 }));
+    expect(saysFigures({ holes: ten, startHole: null, usual: null, nine: false, who: null }).find((x) => x.id === 'ppg')!.value).toBe('1.70');
+    const nine = saysFigures({ holes: holes.slice(0, 4), startHole: null, usual: { bounce: null, ppg: null, closing: null, big: 'Usually 1.4 a round · 20 rounds' }, nine: true, who: null });
+    expect(nine.find((x) => x.id === 'big')!.caption).toBe('Double bogey or worse · usually 1.4 a round · 20 rounds');
+  });
+
+  it('cites no outside figure anywhere (no tour average)', () => {
+    const all = saysFigures({ holes, startHole: null, usual: null, nine: false, who: null });
+    for (const f of all) expect(`${f.caption} ${f.about}`).not.toMatch(/tour|1\.75|estimate/i);
   });
 
   it('names the closing holes in play order, and the coach reads the player by name', () => {

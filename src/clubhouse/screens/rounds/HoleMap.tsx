@@ -3,7 +3,7 @@
 import Link from 'next/link';
 import { useEffect, useRef, useState, type KeyboardEvent, type PointerEvent } from 'react';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
-import { avgToPar, type ChCourseHole } from '../../data/course-page-shape';
+import { avgToPar, shortDate, type ChCourseHole } from '../../data/course-page-shape';
 import { haptic, hapticScrub } from '../../lib/haptics';
 import { formatFixed, formatToPar } from '../../lib/format';
 import { Icon } from '../../ui/Icon';
@@ -13,13 +13,16 @@ import { Segmented } from '../../ui/Segmented';
 /**
  * P-7 4.2.4: the course hole by hole. A map of 18 tiles, Out over In, tinted by the player's average to par there (D-42:
  * the red family under par, amber over, plain level, and level whenever the average is inside its noise), with a detail
- * panel for the picked hole; or the same as a list. On a phone the whole map is one scrub surface (tap or drag) with
- * 44 px steppers under it, because nine 44 px tiles cannot fit across (owner call 2); with a keyboard it is a radio group
- * (arrows a hole, up and down a nine, Home and End the ends).
+ * panel for the picked hole; or the same as a list. With a keyboard the map is a radio group (arrows a hole, up and down
+ * a nine, Home and End the ends). A tile takes colour only from five plays; from two to four it is an early read on the
+ * level fill.
+ *
+ * Phone: the map's tap size is owner call 2, open (nine 44 px tiles can't fit across a phone). Until Nick picks, a phone
+ * shows the List only (`.ch-hmap-sec` in rounds.css); the map and its switch show from 600 px. Where the map shows, it
+ * shows only while a tile fits its widest figure ("+8.8": 2.07 em + 4 px), decided in CSS by a container query so nothing
+ * swaps after paint, and mirrored to the switch by a ResizeObserver.
  */
 
-const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'June', 'July', 'Aug', 'Sept', 'Oct', 'Nov', 'Dec'];
-const shortDay = (d: string) => `${MONTHS[Number(d.slice(5, 7)) - 1]} ${Number(d.slice(8, 10))}`;
 const spoken = (v: number) => (Math.abs(v) < 0.05 ? 'level' : `${v > 0 ? 'plus' : 'minus'} ${formatFixed(Math.abs(v), 1)}`);
 /** "+0.8", "−0.3", or "E" when it rounds to 0.0. */
 export const avgWords = avgToPar;
@@ -37,6 +40,7 @@ export function tileLabel(h: ChCourseHole, gain: boolean): string {
   const par = h.par != null ? `, par ${h.par}` : '';
   if (s.n === 0) return `Hole ${h.n}, not played here`;
   if (s.n === 1) return `Hole ${h.n}${par}, played once, ${spoken(s.avg as number).replace('level', 'level par')}`;
+  if (s.state === 'early') return `Hole ${h.n}${par}, early read, ${spoken(s.avg as number)} average over ${s.n} rounds`;
   const level = s.tint === 'l' ? ', about level' : '';
   return `Hole ${h.n}${par}${level}, ${spoken(s.avg as number)} average over ${s.n} rounds${gain ? ', most to gain' : ''}`;
 }
@@ -61,10 +65,17 @@ function nineCaption(holes: readonly ChCourseHole[], label: string): string {
 
 const PILLS_MAX = 8;
 
+/** The width nine tiles need, per the widest figure a tile holds ("+8.8" is 2.07 em) plus its 4 px of padding, and the gaps. */
+export function mapFits(width: number, fontPx: number, gapPx = 4): boolean {
+  return width >= 9 * (2.07 * fontPx + 4) + 8 * gapPx;
+}
+
 export function HoleMap({ holes, selected, onSelect, coverage, sample }: { holes: ChCourseHole[]; selected: number; onSelect: (n: number) => void; coverage: string | null; sample: number }) {
   const [view, setView] = useState<'map' | 'list'>('map');
+  const [fits, setFits] = useState(true);
   const [allPlays, setAllPlays] = useState(false);
   const group = useRef<HTMLDivElement>(null);
+  const root = useRef<HTMLElement>(null);
   const scrub = useRef<{ active: boolean; last: number; at: number }>({
     active: false,
     last: 0,
@@ -73,14 +84,16 @@ export function HoleMap({ holes, selected, onSelect, coverage, sample }: { holes
   const gain = mostToGain(holes);
   const hole = holes.find((h) => h.n === selected) ?? holes[0]!;
 
-  // Large Text Size: tiles 36 wide can't hold the type, so the list shows (Map stays available).
+  // The CSS container query decides the first paint; this mirrors it to the switch as the width or the text size changes.
   useEffect(() => {
-    try {
-      const k = Number(getComputedStyle(document.documentElement).getPropertyValue('--ch-type-scale')) || 1;
-      if (k > 1.3) setView('list');
-    } catch {
-      /* no computed style (a test DOM): keep the map */
-    }
+    const el = root.current;
+    if (!el || typeof ResizeObserver === 'undefined') return;
+    const ro = new ResizeObserver(() => {
+      const font = parseFloat(getComputedStyle(el).fontSize) || 16;
+      setFits(mapFits(el.clientWidth, font));
+    });
+    ro.observe(el);
+    return () => ro.disconnect();
   }, []);
   useEffect(() => setAllPlays(false), [selected]);
 
@@ -169,7 +182,9 @@ export function HoleMap({ holes, selected, onSelect, coverage, sample }: { holes
         }}
       >
         <span className="ch-hmap-t__n ch-num">{h.n}</span>
-        <b className="ch-num">{s.n === 0 ? '–' : s.n === 1 ? formatToPar(s.avg as number) : avgWords(s.avg as number)}</b>
+        <b>
+          <span className="ch-num">{s.n === 0 ? '–' : s.n === 1 ? formatToPar(s.avg as number) : avgWords(s.avg as number)}</span>
+        </b>
         <span className="ch-hmap-t__p ch-num">{h.par != null ? `P${h.par}` : ''}</span>
       </button>
     );
@@ -180,49 +195,54 @@ export function HoleMap({ holes, selected, onSelect, coverage, sample }: { holes
   const reviewAt = (roundId: string) => `/golf/dashboard/rounds/${roundId}?hole=${hole.n}`;
 
   return (
-    <section className="ch-ch-sec" aria-labelledby="ch-hmap-h">
+    <section ref={root} className="ch-ch-sec ch-hmap-sec" data-view={fits ? view : 'list'} aria-labelledby="ch-hmap-h">
       <div className="ch-ch-sec__h">
         <h2 id="ch-hmap-h">Hole by hole</h2>
-        <Segmented
-          label="Show the holes as"
-          size="sm"
-          value={view}
-          onChange={(v) => {
-            haptic('select');
-            setView(v);
-          }}
-          options={[
-            { value: 'map', label: 'Map' },
-            { value: 'list', label: 'List' },
-          ]}
-        />
+        <div className="ch-hmap-switch">
+          <Segmented
+            label="Show the holes as"
+            size="sm"
+            value={fits ? view : 'list'}
+            onChange={(v) => {
+              haptic('select');
+              setView(v);
+            }}
+            options={[
+              { value: 'map', label: 'Map' },
+              { value: 'list', label: 'List' },
+            ]}
+          />
+        </div>
       </div>
-      <p className="ch-ch-sec__note">{coverage ?? `From ${sample} ${sample === 1 ? 'round' : 'rounds'} with hole scores`}</p>
-      {view === 'map' ? (
-        <>
-          {/* The scrub surface wraps the group: pointer handlers here, the radios' keys on each radio. */}
-          <div className="ch-hmap" onPointerDown={onDown} onPointerMove={onMove} onPointerUp={onUp} onPointerCancel={onUp}>
-            <div ref={group} role="radiogroup" aria-label="Hole by hole, average to par" aria-controls="ch-hmap-detail">
-              <span className="ch-hmap__cap" aria-hidden="true">
-                {nineCaption(holes.slice(0, 9), 'Out')}
-              </span>
-              <div className="ch-hmap__row">{holes.slice(0, 9).map(tile)}</div>
-              <span className="ch-hmap__cap" aria-hidden="true">
-                {nineCaption(holes.slice(9, 18), 'In')}
-              </span>
-              <div className="ch-hmap__row">{holes.slice(9, 18).map(tile)}</div>
-            </div>
+      <p className="ch-ch-sec__note">
+        {coverage ?? `From ${sample} ${sample === 1 ? 'round' : 'rounds'} with hole scores`}
+        {holes.some((h) => h.stats.state === 'early') ? ' · Colour shows from 5 plays of a hole' : ''}
+      </p>
+      {/* Both views render; CSS shows one (data-view, the phone gate, the fit), so the first paint is final. */}
+      <div className="ch-hmap-mapv">
+        {/* The scrub surface wraps the group: pointer handlers here, the radios' keys on each radio. */}
+        <div className="ch-hmap" onPointerDown={onDown} onPointerMove={onMove} onPointerUp={onUp} onPointerCancel={onUp}>
+          <div ref={group} role="radiogroup" aria-label="Hole by hole, average to par" aria-controls="ch-hmap-detail">
+            <span className="ch-hmap__cap" aria-hidden="true">
+              {nineCaption(holes.slice(0, 9), 'Out')}
+            </span>
+            <div className="ch-hmap__row">{holes.slice(0, 9).map(tile)}</div>
+            <span className="ch-hmap__cap" aria-hidden="true">
+              {nineCaption(holes.slice(9, 18), 'In')}
+            </span>
+            <div className="ch-hmap__row">{holes.slice(9, 18).map(tile)}</div>
           </div>
-          <div className="ch-hmap__steps">
-            <button type="button" className="ch-hmap__step" aria-label="Previous hole" onClick={() => step(-1)}>
-              <Icon icon={ChevronLeft} size={20} />
-            </button>
-            <button type="button" className="ch-hmap__step" aria-label="Next hole" onClick={() => step(1)}>
-              <Icon icon={ChevronRight} size={20} />
-            </button>
-          </div>
-        </>
-      ) : (
+        </div>
+        <div className="ch-hmap__steps">
+          <button type="button" className="ch-hmap__step" aria-label="Previous hole" onClick={() => step(-1)}>
+            <Icon icon={ChevronLeft} size={20} />
+          </button>
+          <button type="button" className="ch-hmap__step" aria-label="Next hole" onClick={() => step(1)}>
+            <Icon icon={ChevronRight} size={20} />
+          </button>
+        </div>
+      </div>
+      <div className="ch-hmap-listv">
         <table className="ch-hmap-list">
           <thead>
             <tr>
@@ -233,7 +253,7 @@ export function HoleMap({ holes, selected, onSelect, coverage, sample }: { holes
               <th scope="col">Times</th>
             </tr>
           </thead>
-          <tbody>
+          <tbody className="ch-num">
             {holes.map((h) => (
               <tr key={h.n} className={h.n === selected ? 'is-sel' : undefined} aria-selected={h.n === selected}>
                 <th scope="row">
@@ -252,7 +272,7 @@ export function HoleMap({ holes, selected, onSelect, coverage, sample }: { holes
             ))}
           </tbody>
         </table>
-      )}
+      </div>
       <div id="ch-hmap-detail" className="ch-hmap-d">
         <div className="ch-hmap-d__h">
           <h3>Hole {hole.n}</h3>
@@ -270,9 +290,9 @@ export function HoleMap({ holes, selected, onSelect, coverage, sample }: { holes
         {plays.length > 0 && (
           <div className="ch-hmap-d__plays">
             {plays.map((p) => (
-              <Link key={p.roundId} className="ch-hmap-d__pill" href={reviewAt(p.roundId)} aria-label={`${shortDay(p.date)}: ${p.score} on par ${p.par}. Open the round at this hole`}>
+              <Link key={p.roundId} className="ch-hmap-d__pill" href={reviewAt(p.roundId)} aria-label={`${shortDate(p.date)}: ${p.score} on par ${p.par}. Open the round at this hole`}>
                 <ScoreMark score={p.score} par={p.par} size="sm" />
-                <span className="ch-num">{shortDay(p.date)}</span>
+                <span className="ch-num">{shortDate(p.date)}</span>
               </Link>
             ))}
             {!allPlays && hole.plays.length > PILLS_MAX && (

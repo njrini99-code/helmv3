@@ -20,12 +20,16 @@ export function HowItPlays({ data, who, onHole }: { data: ChCourseHistory['howIt
               {r.hole != null ? (
                 <button type="button" className="ch-hip__row" onClick={() => onHole(r.hole!)}>
                   <span>{r.label}</span>
-                  <b className="ch-num">{r.value}</b>
+                  <b>
+                    <span className="ch-num">{r.value}</span>
+                  </b>
                 </button>
               ) : (
                 <div className="ch-hip__row">
                   <span>{r.label}</span>
-                  <b className="ch-num">{r.value}</b>
+                  <b>
+                    <span className="ch-num">{r.value}</span>
+                  </b>
                 </div>
               )}
             </li>

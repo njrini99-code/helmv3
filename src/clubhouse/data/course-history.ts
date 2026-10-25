@@ -5,7 +5,8 @@ import { chunkIds } from '@/lib/supabase/chunk-ids';
 import { chLogServer } from '../lib/track-server';
 import { toCourseHistory, type ChCourseHistory, type ChCourseListRow, type ChCourseWindow } from './course-page-shape';
 import { groupCourseRounds, parseCourseKey, resolveCourseKey } from './course-key';
-import { seasonStartDate } from './season';
+import { loadTeamZone, SEASON_DEFAULT_TZ, seasonStartDate } from './season';
+import type { ChCardHole } from './course-history-shape';
 import type { ChPlayHole } from './stats-extra';
 
 export type * from './course-page-shape';
@@ -17,7 +18,8 @@ export type * from './course-page-shape';
  * no rounds, are the same "No rounds here": the page never confirms someone else's rounds exist.
  */
 
-export type ChCourseViewer = { role: 'player'; playerId: string } | { role: 'coach'; teamId: string; playerId: string };
+/** `teamId` is the team whose zone turns the season (1 August in the team's zone); a player with no team uses the default. */
+export type ChCourseViewer = { role: 'player'; playerId: string; teamId?: string | null } | { role: 'coach'; teamId: string; playerId: string };
 export type ChCourseHistoryResult =
   | { kind: 'ok'; data: ChCourseHistory; playerName: string | null }
   | { kind: 'redirect'; to: string }
@@ -32,12 +34,13 @@ type HoleRow = { round_id: string; hole_number: number; par: number | null; scor
 
 const log = (what: string, err: unknown) => chLogServer('rounds.course', what, err);
 
-export async function loadCourseHistory(rawKey: string, viewer: ChCourseViewer, opts: { window: ChCourseWindow; tz?: string }): Promise<ChCourseHistoryResult> {
+export async function loadCourseHistory(rawKey: string, viewer: ChCourseViewer, opts: { window: ChCourseWindow }): Promise<ChCourseHistoryResult> {
   const key = parseCourseKey(rawKey);
   if (!key) return { kind: 'notFound' };
   const supabase = await createClient();
   const coach = viewer.role === 'coach';
-  const [listRes, memberRes, playerRes, libraryRes] = await Promise.all([
+  const zoneTeam = viewer.teamId ?? null;
+  const [listRes, memberRes, playerRes, libraryRes, zone] = await Promise.all([
     fetchAllRowsResult<ChCourseListRow>(
       (from, to) => {
         let q = supabase.from('golf_rounds').select(LIST_COLUMNS).eq('player_id', viewer.playerId).eq('is_test', false).eq('status', 'completed');
@@ -52,6 +55,7 @@ export async function loadCourseHistory(rawKey: string, viewer: ChCourseViewer, 
       : Promise.resolve({ data: [{ id: 'self' }], error: null }),
     coach ? supabase.from('golf_players').select('first_name').eq('id', viewer.playerId).maybeSingle() : Promise.resolve({ data: null, error: null }),
     key.kind === 'id' ? supabase.from('golf_courses').select('id, name, city, state').eq('id', key.id).maybeSingle() : Promise.resolve({ data: null, error: null }),
+    zoneTeam ? loadTeamZone(supabase, zoneTeam, 'rounds.course') : Promise.resolve(SEASON_DEFAULT_TZ),
   ]);
   if (memberRes.error) {
     log('membership', memberRes.error);
@@ -96,7 +100,25 @@ export async function loadCourseHistory(rawKey: string, viewer: ChCourseViewer, 
     }
     return holes;
   })();
-  const [holes, noteRes] = await Promise.all([holesRead, supabase.from('golf_round_reviews').select('coach_notes').eq('round_id', ids[0]!).maybeSingle()]);
+  // P-7 (e2): the tee cards of the nine-hole rounds here, so each nine can be placed on its card (`nineOf`). Readable by
+  // every signed-in user; a failed read leaves the nines to the player's own card, logged.
+  const nineTees = [...new Set(group.rounds.filter((r) => r.holes_played === 9 && r.tee_id).map((r) => r.tee_id as string))];
+  const cardsRead = (async (): Promise<Map<string, Map<number, ChCardHole>>> => {
+    const cards = new Map<string, Map<number, ChCardHole>>();
+    if (!nineTees.length) return cards;
+    const res = await supabase.from('golf_course_tee_holes').select('tee_id, hole_number, par, yardage').in('tee_id', nineTees);
+    if (res.error) {
+      log('tee-cards', res.error);
+      return cards;
+    }
+    for (const h of res.data ?? []) {
+      const card = cards.get(h.tee_id) ?? new Map<number, ChCardHole>();
+      card.set(h.hole_number, { par: h.par, yards: h.yardage });
+      cards.set(h.tee_id, card);
+    }
+    return cards;
+  })();
+  const [holes, noteRes, teeCards] = await Promise.all([holesRead, supabase.from('golf_round_reviews').select('coach_notes').eq('round_id', ids[0]!).maybeSingle(), cardsRead]);
   if (noteRes.error) log('coach-note', noteRes.error);
 
   const playerName = playerRes.data?.first_name?.trim() || null;
@@ -104,10 +126,11 @@ export async function loadCourseHistory(rawKey: string, viewer: ChCourseViewer, 
     rawKey,
     list,
     holes,
+    teeCards,
     library,
     coachNote: noteRes.error ? null : (noteRes.data?.coach_notes ?? null),
     window: opts.window,
-    seasonStart: seasonStartDate(new Date(), opts.tz),
+    seasonStart: seasonStartDate(new Date(), zone),
     // A coach's page names the player; a name that didn't load reads as "This player", never an invented name.
     who: coach ? (playerName ?? 'This player') : null,
   });

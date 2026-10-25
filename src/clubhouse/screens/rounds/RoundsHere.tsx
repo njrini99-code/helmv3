@@ -4,6 +4,7 @@ import { useMemo, useState } from 'react';
 import { Check } from 'lucide-react';
 import type { ChCompareCard } from '../../data/compare-rounds';
 import { compareRounds } from '../../data/compare-rounds';
+import { shortDate } from '../../data/course-page-shape';
 import type { ChLibraryRound } from '../../data/rounds-shape';
 import { haptic } from '../../lib/haptics';
 import { Button } from '../../ui/Button';
@@ -17,8 +18,6 @@ import { RoundRow } from './parts';
  * 18-hole rounds with every hole and lays them over each other (CH-11530). A round that can't be compared says why.
  */
 
-const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'June', 'July', 'Aug', 'Sept', 'Oct', 'Nov', 'Dec'];
-const shortDay = (d: string) => `${MONTHS[Number(d.slice(5, 7)) - 1]} ${Number(d.slice(8, 10))}`;
 const reviewHref = (id: string) => `/golf/dashboard/rounds/${id}`;
 
 export function RoundsHere({ rounds, cards, title }: { rounds: ChLibraryRound[]; cards: Record<string, ChCompareCard>; title: string }) {
@@ -61,13 +60,13 @@ export function RoundsHere({ rounds, cards, title }: { rounds: ChLibraryRound[];
                   aria-checked={on}
                   aria-disabled={!ok}
                   className={'ch-cmp-row' + (on ? ' is-on' : '') + (ok ? '' : ' is-off')}
-                  aria-label={ok ? `Compare ${shortDay(r.date)}, ${r.score}` : `${shortDay(r.date)}, ${r.score}. Can’t compare: ${why}`}
+                  aria-label={ok ? `Compare ${shortDate(r.date)}, ${r.score}` : `${shortDate(r.date)}, ${r.score}. Can’t compare: ${why}`}
                   onClick={() => ok && toggle(r.id)}
                 >
                   <span className="ch-cmp-row__c" aria-hidden="true">
                     {on && <Icon icon={Check} size={14} />}
                   </span>
-                  <span className="ch-cmp-row__d ch-num">{shortDay(r.date)}</span>
+                  <span className="ch-cmp-row__d ch-num">{shortDate(r.date)}</span>
                   <span className="ch-cmp-row__t">{r.tee ?? `${r.holes} holes`}</span>
                   <b className="ch-num">{r.score}</b>
                 </button>
@@ -94,7 +93,7 @@ export function RoundsHere({ rounds, cards, title }: { rounds: ChLibraryRound[];
                 setOpen(true);
               }}
             >
-              Compare {shortDay(pair[0].date)} and {shortDay(pair[1].date)}
+              Compare {shortDate(pair[0].date)} and {shortDate(pair[1].date)}
             </Button>
           ) : (
             <span className="ch-cmp-bar__t">Choose two rounds</span>
@@ -115,7 +114,7 @@ function CompareSheet({ open, onClose, a, b }: { open: boolean; onClose: () => v
   const { x, y } = flowGeometry({ x0: 40, x1: 700, top: 16, height: 150, holes: 18, lo, hi });
   const line = (v: number[]) => v.map((p, i) => `${x(i + 1)},${y(p)}`).join(' ');
   return (
-    <Modal open={open} onClose={onClose} title={`${shortDay(a.date)} vs ${shortDay(b.date)}`} width={720} code="CH-11530">
+    <Modal open={open} onClose={onClose} title={`${shortDate(a.date)} vs ${shortDate(b.date)}`} width={720} code="CH-11530">
       <div className="ch-cmp">
         <div className="ch-carc">
           <svg viewBox={`0 0 ${W} 190`} className="ch-carc__svg" role="img" aria-label={c.summary}>
@@ -131,7 +130,7 @@ function CompareSheet({ open, onClose, a, b }: { open: boolean; onClose: () => v
               key={cell.n}
               role="listitem"
               className={'ch-cmp__cell is-' + cell.better}
-              aria-label={`Hole ${cell.n}: ${cell.a} and ${cell.b}${cell.better === 'level' ? ', level' : `, ${shortDay(cell.better === 'a' ? a.date : b.date)} better`}`}
+              aria-label={`Hole ${cell.n}: ${cell.a} and ${cell.b}${cell.better === 'level' ? ', level' : `, ${shortDate(cell.better === 'a' ? a.date : b.date)} better`}`}
             >
               <em className="ch-num">{cell.n}</em>
               <b className="ch-num">
@@ -143,11 +142,11 @@ function CompareSheet({ open, onClose, a, b }: { open: boolean; onClose: () => v
         <ul className="ch-cmp__legend">
           <li>
             <i className="is-a" aria-hidden="true" />
-            {shortDay(a.date)}, {a.score} · better holes tinted red
+            {shortDate(a.date)}, {a.score} · better holes tinted red
           </li>
           <li>
             <i className="is-b" aria-hidden="true" />
-            {shortDay(b.date)}, {b.score} · better holes tinted amber
+            {shortDate(b.date)}, {b.score} · better holes tinted amber
           </li>
         </ul>
       </div>

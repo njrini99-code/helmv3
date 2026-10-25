@@ -44,7 +44,7 @@ describe('toCourseHistory (P-7 4.2)', () => {
     expect(h.figures.map((f) => [f.label, f.value, f.sub])).toEqual([
       ['Best', '70', 'Mar 14 · −2'],
       ['Last time', '76', 'Oct 3 · +4'],
-      ['Rounds', '3', 'Since Sept 2025'],
+      ['Rounds', '3', 'Since Sep 2025'],
       ['Putts', '30.0', 'a round · 3 rounds'],
     ]);
     expect(h.lastTime).toMatchObject({ line: 'Oct 3 · 76 · Blue tees · Practice', note: 'Commit on the 7 tee' });

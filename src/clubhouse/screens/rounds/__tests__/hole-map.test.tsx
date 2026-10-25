@@ -20,7 +20,7 @@ describe('the hole map (P-7 4.2.4, 7.2)', () => {
     expect(tileLabel(HOLES[13]!, true)).toBe('Hole 14, par 4, plus 1.2 average over 6 rounds, most to gain');
     expect(tileLabel(HOLES[2]!, false)).toBe('Hole 3, par 4, played once, level par');
     expect(tileLabel(HOLES[8]!, false)).toBe('Hole 9, not played here');
-    expect(tileLabel(HOLES[0]!, false)).toBe('Hole 1, par 4, about level, level average over 3 rounds');
+    expect(tileLabel(HOLES[0]!, false)).toBe('Hole 1, par 4, early read, level average over 3 rounds');
     expect(avgWords(0.04)).toBe('E');
     expect(avgWords(-0.34)).toBe('−0.3');
   });
@@ -44,7 +44,7 @@ describe('the hole map (P-7 4.2.4, 7.2)', () => {
     expect(getByRole('heading', { name: 'Hole 14' })).toBeTruthy();
     expect(container.querySelector('.ch-hmap-d__h')!.textContent).toContain('par 4 · 412 yards');
     expect(container.querySelector('.ch-hmap-d__tag')!.textContent).toBe('Most to gain');
-    expect(container.querySelector('.ch-ch-sec__note')!.textContent).toBe('Hole stats from 6 of 7 rounds');
+    expect(container.querySelector('.ch-ch-sec__note')!.textContent).toBe('Hole stats from 6 of 7 rounds · Colour shows from 5 plays of a hole');
     const first = container.querySelector('.ch-hmap-d__pill')!;
     expect(first.getAttribute('href')).toBe('/golf/dashboard/rounds/r0?hole=14');
     expect(holeFacts(HOLES[13]!)).toBe('Fairway 6 of 6 · Green 0 of 6 · 2.0 putts');

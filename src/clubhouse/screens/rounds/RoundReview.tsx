@@ -6,6 +6,7 @@ import { useRouter } from 'next/navigation';
 import { ChevronLeft, ChevronRight, Flag } from 'lucide-react';
 import { updateRoundType } from '@/app/golf/actions/round-type';
 import { distribution, type ChReviewHole, type ChReviewTypeEdit, type ChRoundReview } from '../../data/round-review-shape';
+import type { ChReviewHistory } from '../../data/round-history-shape';
 import { useAction } from '../../lib/use-action';
 import { Button } from '../../ui/Button';
 import { roundTypeFailure, savedLine, type ChRoundTypeChoice } from './entry/round-type';
@@ -442,7 +443,32 @@ function RoundDebrief({ debrief: d }: { debrief: ChDebrief }) {
   );
 }
 
-export function RoundReview({ review, typeEdit = null, initialHole = null }: { review: ChRoundReview; typeEdit?: ChReviewTypeEdit | null; /** P-7: `?hole=`, a hole to open on. */ initialHole?: number | null }) {
+export function RoundReview({
+  review: given,
+  history: historyIn,
+  typeEdit = null,
+  initialHole = null,
+}: {
+  review: ChRoundReview;
+  /** P-7 stage 3, streamed by the server after the review (it never rejects); a fixture puts it in `review.history` instead. */
+  history?: PromiseLike<ChReviewHistory | null>;
+  typeEdit?: ChReviewTypeEdit | null;
+  /** P-7: `?hole=`, a hole to open on. */ initialHole?: number | null;
+}) {
+  const [streamed, setStreamed] = useState<{ from: PromiseLike<ChReviewHistory | null>; history: ChReviewHistory | null } | null>(null);
+  useEffect(() => {
+    if (!historyIn) return;
+    let live = true;
+    // A stream cut off in the browser is the same as a failed read: no history, and nothing said about it (P-7 4.8).
+    Promise.resolve(historyIn).then(
+      (history) => live && setStreamed({ from: historyIn, history }),
+      () => live && setStreamed({ from: historyIn, history: null }),
+    );
+    return () => {
+      live = false;
+    };
+  }, [historyIn]);
+  const review = useMemo(() => (streamed && streamed.from === historyIn ? { ...given, history: streamed.history } : given), [given, streamed, historyIn]);
   const phone = useChPhone();
   const reduced = useChReducedMotion();
   const justSubmitted = useJustSubmitted();
@@ -477,13 +503,9 @@ export function RoundReview({ review, typeEdit = null, initialHole = null }: { r
   const insight = useMemo(() => headline(r), [r]);
   const points = useMemo(() => flow(r.holes), [r.holes]);
   // P-7: the stretch that turned the round, drawn on the arc and said in its note.
-  // In the order the holes were played, so a round started on 10 turns where it really turned.
-  const turning = useMemo(() => {
-    const start = r.startHole ?? null;
-    if (!start) return turningStretch(points);
-    const last = Math.max(...points.map((p) => p.n), 0);
-    return turningStretch([...points].sort((a, b) => ((a.n - start + last) % last) - ((b.n - start + last) % last)));
-  }, [points, r.startHole]);
+  // A posted round keeps no start hole, so the holes run in number order. A nine-hole round is stored 1 to 9 whichever nine
+  // was played, so it names no stretch (P-7 4.1.2): its numbers may not be the card's.
+  const turning = useMemo(() => (r.holesPlayed === 9 ? null : turningStretch(points)), [points, r.holesPlayed]);
   // P-7 4.5.2: another round under this one: the average here or the best here, each past its floor; the viewer's choice
   // is kept on this device (`ch.rv.compare`).
   const ghosts = r.history?.ghosts ?? null;
@@ -519,8 +541,8 @@ export function RoundReview({ review, typeEdit = null, initialHole = null }: { r
         ? { cum: ghosts.best.cum, label: `Best here · ${ghosts.best.score}`, spoken: 'best here', legend: `Best here, ${shortDate(ghosts.best.date)}` }
         : null;
   const says = useMemo(
-    () => saysFigures({ holes: r.holes, startHole: r.startHole ?? null, usual: r.history?.usual ?? null, nine: r.holesPlayed === 9, who: coach ? (r.playerName?.split(' ')[0] ?? null) : null }),
-    [r.holes, r.startHole, r.history, r.holesPlayed, r.playerName, coach],
+    () => saysFigures({ holes: r.holes, startHole: null, usual: r.history?.usual ?? null, nine: r.holesPlayed === 9, who: coach ? (r.playerName?.split(' ')[0] ?? null) : null }),
+    [r.holes, r.history, r.holesPlayed, r.playerName, coach],
   );
   const costly = useMemo(() => costliest(r.holes, 3), [r.holes]);
   const putting = useMemo(() => puttSplit(r.holes), [r.holes]);
@@ -580,7 +602,7 @@ export function RoundReview({ review, typeEdit = null, initialHole = null }: { r
           <span className="ch-rv-hero__k">{kicker}</span>
           {/* D11: one h1 per screen, the course; the phone bar's "Round" is plain text (heading={false}). */}
           <h1 id="ch-rv-title">{r.course}</h1>
-          <RecordChips marks={r.history?.records ?? []} settle={justSubmitted && !reduced} />
+          <RecordChips marks={r.history?.records ?? []} />
           {insight && <p className="ch-rv-hero__h">{insight}</p>}
           {(r.tee || r.teeFacts) && (
             <span className="ch-rv-hero__m">

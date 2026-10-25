@@ -64,6 +64,14 @@ describe('the turning band (P-7, 4.5.2)', () => {
     expect(container.querySelector('.ch-sr-only')!.textContent).toBe('Out in 35, minus 1. In in 39, plus 3. Lost 3 on 13 to 14.');
   });
 
+  it('a gain is the red family (D-42), never the stage line green', () => {
+    const { container } = draw({ turning: { from: 3, to: 5, sum: -3, words: 'Got 3 back on 3 to 5' } });
+    const band = container.querySelector('.ch-rzband.is-gain')!;
+    expect(band.querySelector('rect')!.getAttribute('fill')).toBe('var(--ch-stage-red)');
+    expect(band.querySelector('rect')!.getAttribute('fill-opacity')).toBe('0.12');
+    expect([...band.querySelectorAll('line')].map((l) => l.getAttribute('stroke'))).toEqual(['var(--ch-stage-red)', 'var(--ch-stage-red)']);
+  });
+
   it('keeps the worst-hole label when there is no band', () => {
     const { container } = draw({ turning: null });
     expect(container.querySelector('.ch-rzband')).toBeNull();

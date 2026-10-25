@@ -24,7 +24,7 @@ export async function ClubhouseCourseHistoryRoute({ rawKey, player, hole, window
   const team = await resolveClubhouseTeam(session);
   let viewer: ChCourseViewer | null = null;
   if (team?.role === 'coach') viewer = player && isUuid(player as unknown) ? { role: 'coach', teamId: team.teamId, playerId: player } : null;
-  else if (team?.role === 'player') viewer = { role: 'player', playerId: team.playerId };
+  else if (team?.role === 'player') viewer = { role: 'player', playerId: team.playerId, teamId: team.teamId };
   else if (session.player && pickGolfDashboardRole(session) === 'player') viewer = { role: 'player', playerId: session.player.id };
 
   const coach = team?.role === 'coach';

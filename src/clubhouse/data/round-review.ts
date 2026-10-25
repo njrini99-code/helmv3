@@ -6,8 +6,7 @@ import { fullName } from './season';
 import { tourForGender } from './stats-common';
 import { readRoundTypeOptions } from './rounds-type-options';
 import { loadRoundDebrief } from './round-debrief';
-import { loadReviewHistory } from './round-history';
-import { startHoleOf } from './round-history-shape';
+import type { ChReviewHistoryInput } from './round-history';
 import { currentRoundType, toHoles, toReview, type ChHoleRow, type ChReviewRoundRow, type ChReviewTypeEdit, type ChRoundReview, type ChShotRow } from './round-review-shape';
 
 export type * from './round-review-shape';
@@ -31,11 +30,15 @@ export type * from './round-review-shape';
 /** A player's `teamId` names the strokes gained baseline (a women's team is measured on the women's Tour curve); without it no baseline is claimed. */
 export type ChReviewViewer = { role: 'player'; playerId: string; teamId?: string | null } | { role: 'coach'; teamId: string };
 
-/** `typeEdit`: changing the round's type (CH-11522), for the owning player or a coach of the player's team (both are the only viewers who get here). */
-export type ChRoundReviewResult = { kind: 'ok'; review: ChRoundReview; typeEdit: ChReviewTypeEdit } | { kind: 'notFound' } | { kind: 'inProgress' } | { kind: 'error' };
+/**
+ * `typeEdit`: changing the round's type (CH-11522), for the owning player or a coach of the player's team (both are the only viewers who get here).
+ * `historyFrom`: what P-7 stage 3 (`loadReviewHistory`, the round against the player's other rounds) needs, read here and nothing more:
+ * the route streams that history after the review, so the review still paints after its two waves (rounds-reads.test.ts).
+ */
+export type ChRoundReviewResult = { kind: 'ok'; review: ChRoundReview; typeEdit: ChReviewTypeEdit; historyFrom: ChReviewHistoryInput } | { kind: 'notFound' } | { kind: 'inProgress' } | { kind: 'error' };
 
 const ROUND_COLUMNS =
-  'id, player_id, status, course_name, tees_played, tee_id, round_date, round_type, total_score, score_to_par, front_nine, back_nine, holes_played, total_putts, total_fairways_hit, total_fairways, total_gir, total_gir_possible, course_rating, course_slope, ai_recap, notes, is_test, strokes_gained_total, strokes_gained_tee, strokes_gained_approach, strokes_gained_around_green, strokes_gained_putting, team_id, qualifier_id, qualifier_round_number, course_id, start_hole:draft_data->startHole';
+  'id, player_id, status, course_name, tees_played, tee_id, round_date, round_type, total_score, score_to_par, front_nine, back_nine, holes_played, total_putts, total_fairways_hit, total_fairways, total_gir, total_gir_possible, course_rating, course_slope, ai_recap, notes, is_test, strokes_gained_total, strokes_gained_tee, strokes_gained_approach, strokes_gained_around_green, strokes_gained_putting, team_id, qualifier_id, qualifier_round_number, course_id';
 const SHOT_COLUMNS =
   'hole_number, shot_number, shot_type, club_type, result, lie_after, distance_to_hole_before, distance_unit_before, distance_to_hole_after, distance_unit_after, miss_direction, putt_break, putt_slope, is_penalty';
 
@@ -112,33 +115,32 @@ export async function loadRoundReview(roundId: string, viewerIn: ChReviewViewer 
     coachNote: noteRes.error ? null : (noteRes.data?.coach_notes ?? null),
     coachNoteError: !!noteRes.error,
   });
+  // P-7 stage 3 reads the player's other rounds and then their holes (two reads in a row): the route streams it after the review,
+  // from what is known here, so the review does not wait for it.
+  const historyFrom: ChReviewHistoryInput = {
+    playerId: round.player_id,
+    coachTeamId: viewer.role === 'coach' ? viewer.teamId : null,
+    zoneTeamId: viewer.teamId ?? null,
+    round: {
+      id: round.id,
+      course_id: round.course_id ?? null,
+      course_name: round.course_name,
+      tees_played: round.tees_played,
+      tee_id: round.tee_id ?? null,
+      round_date: round.round_date,
+      holes_played: round.holes_played,
+      total_score: review.score,
+      front_nine: round.front_nine,
+      back_nine: round.back_nine,
+      total_putts: round.total_putts,
+    },
+  };
   // CoachHelm chs-30: the player's 30-second debrief (flag `coachhelm_reads_v1_copy`; off, nothing is read and the review is as before).
-  // P-7 stage 3, beside it: the round against the player's other rounds (null on a failure, which the review does not mention).
-  const [debrief, history] = await Promise.all([
-    loadRoundDebrief(supabase, review, viewer),
-    loadReviewHistory(
-      supabase,
-      {
-        id: round.id,
-        course_id: round.course_id ?? null,
-        course_name: round.course_name,
-        tees_played: round.tees_played,
-        tee_id: round.tee_id ?? null,
-        round_date: round.round_date,
-        holes_played: round.holes_played,
-        total_score: review.score,
-        front_nine: round.front_nine,
-        back_nine: round.back_nine,
-        total_putts: round.total_putts,
-        start_hole: round.start_hole,
-      },
-      { playerId: round.player_id, coachTeamId: viewer.role === 'coach' ? viewer.teamId : null },
-    ),
-  ]);
-  const startHole = startHoleOf(round.start_hole, review.holesPlayed);
+  const debrief = await loadRoundDebrief(supabase, review, viewer);
   return {
     kind: 'ok',
     typeEdit: { viewer: viewer.role, current: currentRoundType(row), options: typeOptions },
-    review: { ...review, ...(debrief ? { debrief } : {}), startHole, history },
+    review: debrief ? { ...review, debrief } : review,
+    historyFrom,
   };
 }

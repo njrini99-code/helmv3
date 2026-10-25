@@ -2422,7 +2422,7 @@ html[data-fw-theme='dark'] .ch-rsu-card__h h2 {
 /* P-7 4.6: "Your history here" under the picked course. Flush plate, full hairline, no left rule. */
 .ch-rsu-hist {
   margin: 12px 0 0;
-  padding: 14px 16px 4px;
+  padding: 12px 16px 4px;
   border: var(--ch-hairline-w) solid var(--ch-border-hairline);
   border-radius: var(--ch-radius-lg);
   background: var(--ch-bg-subtle);
@@ -2434,6 +2434,7 @@ html[data-fw-theme='dark'] .ch-rsu-card__h h2 {
 .ch-rsu-hist__l {
   margin: 4px 0 0;
   font: var(--ch-type-15);
+  letter-spacing: var(--ch-track-15);
   color: var(--ch-text-primary);
 }
 .ch-rsu-hist__n {

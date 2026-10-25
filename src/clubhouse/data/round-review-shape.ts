@@ -118,8 +118,6 @@ export interface ChRoundReview {
    * `coachhelm_reads_v1_copy` on and something to say. Absent, the review draws its recap block as before.
    */
   debrief?: ChDebrief | null;
-  /** P-7: the hole the round started on when it was not hole 1 (a shotgun or a start on 10); null or absent, hole-number order. */
-  startHole?: number | null;
   /** P-7: the round against the player's other rounds (`round-history-shape.ts`); null when that read failed, absent in a fixture. */
   history?: ChReviewHistory | null;
 }

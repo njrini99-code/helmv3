@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { recordMarks, sameTees, type ChMarkRound } from '../record-marks';
+import { seasonStartOfDay } from '../../lib/season-start';
 
 const SEASON = '2026-08-01';
 let seq = 0;
@@ -40,6 +41,18 @@ describe('recordMarks (P-7)', () => {
     const now = r(80, { putts: 27, back: 34, front: 46 });
     const history = [r(70, { putts: 31, back: 36, front: 34 }), r(72, { putts: 30, back: 35, front: 37 }), r(74, { putts: 0, back: 37, front: 37 })];
     expect(marks(now, history)).toEqual(['Fewest putts this season · 27', 'Best back nine this season · 34']);
+  });
+
+  it('a nine-hole round holds no nine record; nines compare 18-hole rounds only', () => {
+    const nine = (total: number, over: Partial<ChMarkRound> = {}) => r(total, { holesPlayed: 9, courseGroup: null, front: total, ...over });
+    expect(marks(nine(34), [nine(38), nine(39), nine(40)])).toEqual(['Career low']);
+  });
+
+  it('takes a round’s season from its own date, and a past season’s round gets no season mark', () => {
+    expect(seasonStartOfDay('2026-07-31')).toBe('2025-08-01');
+    expect(seasonStartOfDay('2026-08-01')).toBe('2026-08-01');
+    const old = (total: number) => r(total, { date: '2026-03-01', courseGroup: null });
+    expect(marks(old(72), [r(68), old(75), old(76)])).toEqual([]);
   });
 
   it('a later, lower round takes the chip away (measured against the current history)', () => {

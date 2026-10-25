@@ -43,15 +43,18 @@ describe('how it plays (P-7 4.2.5)', () => {
   const card = (extra: number): ChPlayHole[] => Array.from({ length: 18 }, (_, i) => ({ n: i + 1, par: 4, score: 4 + (i >= 12 && i < 12 + extra ? 1 : 0), putts: null, gir: null, fairway: null }));
 
   it('says the course plays harder past its noise, with the rows past their floors', () => {
-    const here = [row(76), row(76), row(77), row(76)];
-    const away = [row(72, { course_name: 'Marsh' }), row(71, { course_name: 'Marsh' }), row(72, { course_name: 'Marsh' }), row(72, { course_name: 'Marsh' })];
+    // Six rounds here (a stretch needs five), costly on 13 to 15 every time.
+    const here = [row(76), row(76), row(77), row(76), row(75), row(76)];
+    const away = [row(72, { course_name: 'Marsh' }), row(72, { course_name: 'Marsh' }), row(71, { course_name: 'Marsh' }), row(73, { course_name: 'Marsh' })];
     const holes = new Map(here.map((r) => [r.id, card(r.total_score! - 72)] as const));
     const res = toCourseHistory({ rawKey: 'n-finley', list: [...here, ...away], holes, library: null, coachNote: null, window: 'all', seasonStart: '2026-08-01', who: null });
     const h = res.kind === 'ok' ? res.data.howItPlays : null!;
-    expect(h.sentence).toBe('Finley plays 4.5 shots harder for you than your other courses.');
-    expect(h.sample).toBe('+4.3 here · −0.3 elsewhere · 4 rounds here, 4 elsewhere');
-    expect(h.rows.map((r) => r.label)).toEqual(['Front nine', 'Back nine', 'Par 4s', 'Most to gain']);
-    expect(h.rows.find((r) => r.label === 'Most to gain')).toMatchObject({ value: 'Holes 13 to 15 · +3.0 a round', hole: 13 });
+    expect(h.sentence).toBe('Finley plays 4.0 shots harder for you than your other courses.');
+    expect(h.sample).toBe('+4.0 here · E elsewhere · 6 rounds here, 4 elsewhere');
+    // Against the player's own usual, the level opening holes are a best stretch too.
+    expect(h.rows.map((r) => r.label)).toEqual(['Front nine', 'Back nine', 'Par 4s', 'Most to gain', 'Best stretch']);
+    expect(h.rows.find((r) => r.label === 'Best stretch')).toMatchObject({ value: 'Holes 1 to 3 · 0.7 a round under your usual', hole: 1 });
+    expect(h.rows.find((r) => r.label === 'Most to gain')).toMatchObject({ value: 'Holes 13 to 15 · 2.3 a round over your usual', hole: 13 });
   });
 
   it('a stretch row picks its hole; the coach reads the player', () => {

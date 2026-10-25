@@ -1,3 +1,4 @@
+import { seasonStartOfDay } from '../lib/season-start';
 import { recordedPutts } from './round-scope';
 
 /*
@@ -43,7 +44,9 @@ function standing(value: number, others: readonly number[]): { rank: number; tie
 /**
  * The marks this round holds, at most two, in precedence order: career low, season low (never with career low), best at
  * the course, 2nd best this season, then fewest putts and the best nines this season. Each needs a set of at least three
- * comparable rounds (the same hole count), counting this one; 2nd best needs five.
+ * comparable rounds (the same hole count), counting this one; 2nd best needs five. A round's season is its own date's
+ * (`seasonStartOfDay`); the season marks show only when that is the season turning now (`opts.seasonStart`, from the
+ * team's zone). The best nines compare 18-hole rounds only, so a nine-hole round never holds a nine record.
  */
 export function recordMarks(
   round: ChMarkRound,
@@ -51,8 +54,9 @@ export function recordMarks(
   opts: { seasonStart: string; courseName: string | null },
 ): ChRecordMark[] {
   const peers = history.filter((r) => r.id !== round.id && r.holesPlayed === round.holesPlayed);
-  const season = peers.filter((r) => r.date >= opts.seasonStart);
-  const inSeason = round.date >= opts.seasonStart;
+  const own = seasonStartOfDay(round.date);
+  const season = peers.filter((r) => seasonStartOfDay(r.date) === own);
+  const inSeason = own === opts.seasonStart;
   const marks: ChRecordMark[] = [];
 
   const lowest = (set: readonly ChMarkRound[], pick: Pick): { tie: boolean } | null => {
@@ -86,8 +90,10 @@ export function recordMarks(
     const putts: Pick = (r) => recordedPutts(r.putts);
     const p = putts(round);
     add('season-putts', `Fewest putts this season · ${p}`, 'hollow', lowest(season, putts));
-    add('season-back', `Best back nine this season · ${round.back}`, 'hollow', lowest(season, (r) => r.back));
-    add('season-front', `Best front nine this season · ${round.front}`, 'hollow', lowest(season, (r) => r.front));
+    if (round.holesPlayed === 18) {
+      add('season-back', `Best back nine this season · ${round.back}`, 'hollow', lowest(season, (r) => r.back));
+      add('season-front', `Best front nine this season · ${round.front}`, 'hollow', lowest(season, (r) => r.front));
+    }
   }
   return marks;
 }

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { historyHoleIds, startHoleOf, toReviewHistory, type ChHistoryRoundRow } from '../round-history-shape';
+import { historyHoleIds, toReviewHistory, type ChHistoryRoundRow } from '../round-history-shape';
 import type { ChPlayHole } from '../stats-extra';
 
 let seq = 0;
@@ -50,17 +50,14 @@ describe('toReviewHistory (P-7 stage 3)', () => {
     expect(historyHoleIds(round, [later, ...earlier])).not.toContain(later.id);
   });
 
-  it('a nine-hole round gets no usual and no ghosts', () => {
-    const round = row(36, { holes_played: 9 });
-    const h = toReviewHistory({ round, list: [round], holes: new Map(), seasonStart: '2026-08-01' });
-    expect(h.usual).toBeNull();
+  it('a nine-hole round keeps only the per-round big-numbers usual, no ghosts and no here-before', () => {
+    const round = row(36, { holes_played: 9, round_date: '2026-10-01' });
+    const earlier = Array.from({ length: 5 }, (_, i) => row(74, { round_date: `2026-09-0${i + 1}` }));
+    const holes = new Map(earlier.map((r) => [r.id, card(r.total_score!)] as const));
+    const h = toReviewHistory({ round, list: [round, ...earlier], holes, seasonStart: '2026-08-01' });
+    expect(h.usual).toEqual({ bounce: null, ppg: null, closing: null, big: 'Usually 0.0 a round · 5 rounds' });
     expect(h.ghosts).toEqual({ average: null, best: null });
+    expect(h.hereBefore).toEqual({});
   });
 
-  it('reads the start hole, hole 1 being no start at all', () => {
-    expect(startHoleOf(10, 18)).toBe(10);
-    expect(startHoleOf('1', 18)).toBeNull();
-    expect(startHoleOf(null, 18)).toBeNull();
-    expect(startHoleOf(40, 18)).toBeNull();
-  });
 });

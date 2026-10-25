@@ -1,4 +1,3 @@
-import { normalizeStartHole } from '@/lib/golf/round-session/play-order';
 import { averageArc, COMPARE_MIN_ROUNDS } from './course-history-shape';
 import { groupCourseRounds } from './course-key';
 import { recordMarks, sameTees, type ChMarkRound, type ChRecordMark } from './record-marks';
@@ -24,7 +23,6 @@ export interface ChHistoryRoundRow {
   front_nine: number | null;
   back_nine: number | null;
   total_putts: number | null;
-  start_hole?: unknown;
 }
 
 /** The round under review, in the same terms. */
@@ -70,13 +68,6 @@ const mark = (r: ChHistoryRoundRow, group: string | null): ChMarkRound => ({
   courseGroup: group,
 });
 
-/** A round's start hole as the round engine keeps it in draft_data; null when absent (hole-number order). */
-export function startHoleOf(raw: unknown, total: number): number | null {
-  if (raw == null) return null;
-  const n = normalizeStartHole(raw, total);
-  return n === 1 ? null : n;
-}
-
 export function toReviewHistory(input: {
   round: ChHistoryRound;
   /** The player's other completed, non-test rounds (this one may be among them; it is never compared with itself). */
@@ -111,22 +102,25 @@ export function toReviewHistory(input: {
     .filter((r) => (r.holes_played ?? 18) === 18 && countable(r) && before(r, round) && complete(holes.get(r.id)))
     .sort((a, b) => (before(a, b) ? 1 : -1))
     .slice(0, USUAL_WINDOW);
-  const usual =
-    (round.holes_played ?? 18) === 18
-      ? baselineWords(
-          baseline(
-            usualRounds.map((r) => holes.get(r.id)!),
-            usualRounds.map((r) => startHoleOf(r.start_hole, 18)),
-          ),
-        )
-      : null;
+  const words = baselineWords(
+    baseline(
+      usualRounds.map((r) => holes.get(r.id)!),
+      // A posted round keeps no start hole (submit clears draft_data), so play order is hole order.
+      usualRounds.map(() => null),
+    ),
+  );
+  // A nine-hole round keeps only the big-numbers usual, worded per round ("usually 1.4 a round"), never halved (P-7 4.5.3).
+  const usual = (round.holes_played ?? 18) === 18 ? words : { bounce: null, ppg: null, closing: null, big: words.big };
 
   // Here before: earlier plays of each hole at this course.
   const hereBefore: ChReviewHistory['hereBefore'] = {};
   const courseOthers = group ? group.rounds.filter((r) => r.id !== round.id) : [];
   const sums = new Map<number, { sum: number; n: number }>();
-  for (const r of courseOthers) {
-    if (!before(r, round)) continue;
+  // 18-hole rounds only, either side: a posted nine keeps no record of which nine it was (stored 1 to 9), so its holes
+  // can't be matched by number (P-7 4.1.2).
+  const eighteen = (round.holes_played ?? 18) === 18;
+  for (const r of eighteen ? courseOthers : []) {
+    if (!before(r, round) || (r.holes_played ?? 18) !== 18) continue;
     for (const h of holes.get(r.id) ?? []) {
       if (h.score == null) continue;
       const s = sums.get(h.n) ?? { sum: 0, n: 0 };
