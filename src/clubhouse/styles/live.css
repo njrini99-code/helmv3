@@ -983,3 +983,7 @@ button.ch-lv-card__more {
   background: transparent;
   cursor: pointer;
 }
+
+.ch-lv-pillwrap {
+  display: contents;
+}

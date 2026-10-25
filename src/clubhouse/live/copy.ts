@@ -1,5 +1,6 @@
 import { TERMS } from '../lib/glossary';
 import { clockText, type LiveRoundType, type LiveSort } from './model';
+import { LIVE_SHARE_FAILURE_COPY } from '@/lib/golf/live-share-copy';
 
 /**
  * The words of the live surfaces (docs/clubhouse/catalog/tournaments.md, CH-166xx and CH-168xx). Sentence case, no emoji, no
@@ -72,12 +73,8 @@ export const SHARE_COPY = {
   qualifierCaption: 'Qualifier rounds are always shown to coaches.',
   /** CH-16663 */
   helper: 'They see your score and the hole you’re on, not your location.',
-  /** CH-16664 */
-  error: 'Couldn’t change sharing. Try again.',
-  /** CH-16665 */
-  tooMany: 'Sharing was changed too many times on this round.',
-  /** CH-16666 */
-  unavailable: 'Sharing isn’t available yet.',
+  /** CH-16664, CH-16665, CH-16666: written in src/lib/golf/live-share-copy.ts, which the server action also reads. */
+  ...LIVE_SHARE_FAILURE_COPY,
   /** CH-16684 */
   notLiveNote: 'Not live keeps this round off live views. Your team can still open it in Rounds.',
 } as const;

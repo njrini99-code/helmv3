@@ -154,6 +154,7 @@ export function useLiveStandings(qualifierId: string, enabled: boolean, version?
     if (!enabled) return;
     // The cleanup's removeChannel answers CLOSED through this same callback: once torn down, nothing it says is shown.
     let alive = true;
+    const timers = gate.current;
     const seen = new Map<string, RoundMark>();
     dispatch({ type: 'reset' });
     const sb = createClient();
@@ -174,7 +175,7 @@ export function useLiveStandings(qualifierId: string, enabled: boolean, version?
       });
     return () => {
       alive = false;
-      window.clearTimeout(gate.current.timer);
+      window.clearTimeout(timers.timer);
       void sb.removeChannel(channel);
     };
   }, [qualifierId, enabled, router, epoch, scheduleRefresh]);

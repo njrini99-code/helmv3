@@ -79,7 +79,9 @@ export function useLiveView(initial: LiveSnapshot, scope?: LiveScope, frozen = f
   const [scrolling, setScrolling] = useState(false);
   const scrollTimer = useRef<number | undefined>(undefined);
   // A sheet over the list holds updates back; the desktop panel beside it does not.
-  const sheet = useChPhone() || useNarrow();
+  const phoneSheet = useChPhone();
+  const narrow = useNarrow();
+  const sheet = phoneSheet || narrow;
   const live = useLiveRounds({ initial, role: 'coach', scope, hold: pointer || scrolling || (sheet && selectedId != null), frozen });
   const ticking = useNow();
   const now = frozenNow ?? ticking?.getTime() ?? null;

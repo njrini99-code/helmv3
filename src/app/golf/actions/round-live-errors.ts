@@ -1,4 +1,4 @@
-import { SHARE_COPY } from '@/clubhouse/live/copy';
+import { LIVE_SHARE_FAILURE_COPY as SHARE_COPY } from '@/lib/golf/live-share-copy';
 
 /**
  * Live sharing (P-6): what the database's answer to a share change means to the person, in one place. A plain module

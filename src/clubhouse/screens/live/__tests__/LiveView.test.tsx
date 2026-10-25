@@ -22,7 +22,9 @@ beforeEach(() => {
   window.matchMedia ??= ((q: string) => ({ matches: false, media: q, addEventListener: () => {}, removeEventListener: () => {}, addListener: () => {}, removeListener: () => {}, onchange: null, dispatchEvent: () => false })) as never;
   try {
     window.localStorage.clear();
-  } catch {}
+  } catch {
+    // Storage can be blocked; the test then starts from the page's own defaults.
+  }
 });
 afterEach(cleanup);
 
