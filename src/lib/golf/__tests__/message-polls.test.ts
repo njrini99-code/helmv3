@@ -255,3 +255,26 @@ describe('the custom end, on the team clock (P-2 4.4.1)', () => {
     expect(M.POLL_SUGGESTIONS[3]).toMatchObject({ options: ['', ''], placeholders: ['First time', 'Second time'], ends: '1d' });
   });
 });
+
+describe('remind and share result drafts (P-2 4.6, 4.7)', () => {
+  it('names one to six, counts seven or more, and adds the end', () => {
+    expect(M.pollRemindDraft({ firstNames: ['Ava'], endsPhrase: null })).toBe('Ava, can you vote in the poll when you get a chance?');
+    expect(M.pollRemindDraft({ firstNames: ['Ava', 'Ben'], endsPhrase: null })).toBe('Ava and Ben, can you vote in the poll when you get a chance?');
+    expect(M.pollRemindDraft({ firstNames: ['Ava', 'Ben', 'Jordan'], endsPhrase: 'today at 6:00 PM' })).toBe('Ava, Ben and Jordan, can you vote in the poll when you get a chance? It ends today at 6:00 PM.');
+    expect(M.pollRemindDraft({ firstNames: ['A', 'B', 'C', 'D', 'E', 'F'], endsPhrase: null })).toBe('A, B, C, D, E and F, can you vote in the poll when you get a chance?');
+    expect(M.pollRemindDraft({ firstNames: ['A', 'B', 'C', 'D', 'E', 'F', 'G'], endsPhrase: null })).toBe('7 of you haven’t voted yet. Can you vote in the poll when you get a chance?');
+  });
+
+  const tallyOf = (poll: M.Poll, votes: Record<string, string>) =>
+    M.tallyPoll(poll, Object.entries(votes).map(([user_id, choice]) => ({ message_id: 'm', user_id, choice })), 'm', 'me');
+  const single = (labels: string[], multi = false): M.Poll => ({ question: 'Q', options: labels.map((label, i) => ({ id: `o${i + 1}`, label })), multi, closesAt: null, closedAt: null });
+
+  it('says the result out of the people who voted: a leader, a tie, many answers, and fewer', () => {
+    const vans = single(['Van 1', 'Van 2']);
+    expect(M.pollResultDraft(vans, tallyOf(vans, { a: 'o1', b: 'o1', c: 'o1', d: 'o2' }))).toBe('Van 1 has it with 3 of the 4 who voted. Van 2 had 1.');
+    expect(M.pollResultDraft(vans, tallyOf(vans, { a: 'o1', b: 'o2' }))).toBe('It’s a tie: Van 1 and Van 2 have 1 each.');
+    const days = single(['Tue', 'Wed', 'Thu', 'Fri'], true);
+    expect(M.pollResultDraft(days, tallyOf(days, { a: 'o1,o2', b: 'o1,o3', c: 'o1,o4', d: 'o2' }))).toBe('Tue works for 3 of the 4 who voted. Wed for 2. Thu for 1. Others had fewer.');
+    expect(M.pollResultDraft(vans, tallyOf(vans, {}))).toBe('No one voted in the poll.');
+  });
+});

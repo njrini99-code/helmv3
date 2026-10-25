@@ -348,3 +348,40 @@ export function defaultCustomEnd(now: number, zone: string): { date: string; tim
   const day = new Date(Date.UTC(w.y, w.mo - 1, w.d + (w.h < 20 ? 0 : 1)));
   return { date: day.toISOString().slice(0, 10), time: '21:00' };
 }
+
+/** "Ava", "Ava and Ben", "Ava, Ben and Jordan". */
+const listWords = (names: readonly string[]) => (names.length <= 1 ? (names[0] ?? '') : `${names.slice(0, -1).join(', ')} and ${names[names.length - 1]}`);
+
+/**
+ * Remind (P-2 4.6): the reply a coach can edit and send to the ones who haven't voted, by first name (the caller turns
+ * two people with the same first name into "Sam C."); seven or more by count. `endsPhrase` is "today at 6:00 PM".
+ * Prefilled only: the coach presses Send.
+ */
+export function pollRemindDraft(input: { firstNames: readonly string[]; endsPhrase: string | null }): string {
+  const n = input.firstNames.length;
+  const ask = n >= 7 ? `${n} of you haven’t voted yet. Can you vote in the poll when you get a chance?` : `${listWords(input.firstNames)}, can you vote in the poll when you get a chance?`;
+  return input.endsPhrase ? `${ask} It ends ${input.endsPhrase}.` : ask;
+}
+
+/**
+ * Share result (P-2 4.7): the final result as the sender's or the coach's own words, counts out of the people who voted
+ * ("of the 8 who voted"). The top three choices with votes, then "Others had fewer."
+ */
+export function pollResultDraft(poll: Poll, tally: PollTally): string {
+  const voted = tally.voterCount;
+  const ranked = poll.options
+    .map((o, i) => ({ label: o.label, n: tally.counts[o.id] ?? 0, i }))
+    .filter((o) => o.n > 0)
+    .sort((a, b) => b.n - a.n || a.i - b.i);
+  if (!ranked.length) return 'No one voted in the poll.';
+  const more = ranked.length > 3 ? ' Others had fewer.' : '';
+  const top = ranked.slice(0, 3);
+  if (poll.multi) {
+    const [first, ...rest] = top;
+    return `${first!.label} works for ${first!.n} of the ${voted} who voted.${rest.map((o) => ` ${o.label} for ${o.n}.`).join('')}${more}`;
+  }
+  const tied = ranked.filter((o) => o.n === ranked[0]!.n);
+  if (tied.length > 1) return `It’s a tie: ${listWords(tied.map((o) => o.label))} have ${tied[0]!.n} each.${ranked.length > tied.length ? ' Others had fewer.' : ''}`;
+  const [lead, ...rest] = top;
+  return `${lead!.label} has it with ${lead!.n} of the ${voted} who voted.${rest.map((o) => ` ${o.label} had ${o.n}.`).join('')}${more}`;
+}

@@ -37,12 +37,17 @@ import {
   createLucideIcon,
   type LucideIcon,
   ListChecks,
+  Copy,
+  Lock,
+  BellRing,
+  Share,
 } from "lucide-react";
 import {
   useCallback,
   useEffect,
   useLayoutEffect,
   useMemo,
+  useReducer,
   useRef,
   useState,
   type KeyboardEvent,
@@ -58,13 +63,13 @@ import type { ChClock } from "../../lib/clock-cookie";
 import { useThreadAnchor } from "./use-thread-anchor";
 import { useComposerInset } from "./composer-inset";
 import { useFocusMessage } from "./use-focus-message";
-import { PollButton, PollCard, PollSheet, type ChPollsApi } from "./polls";
+import { pollCardActions, PollButton, PollCard, PollSheet, PollThreadContext, type ChPollsApi, type PollThreadActions } from "./polls";
 import { useChReducedMotion } from "../../lib/reduced-motion";
 import { Avatar } from "../../ui/Avatar";
 import { Badge } from "../../ui/Badge";
 import { Button, IconButton } from "../../ui/Button";
 import { Icon } from "../../ui/Icon";
-import { Menu } from "../../ui/Menu";
+import { Menu, type MenuItem } from "../../ui/Menu";
 import { useContextMenu, type ContextMenuBind } from "../../ui/ContextMenu";
 import { SwipeRow } from "../../ui/SwipeRow";
 import { Modal } from "../../ui/Modal";
@@ -1061,6 +1066,40 @@ export function Bubble({
           },
         }
       : {};
+  // D26 (changelog: one menu for every message): own messages keep Edit and Delete; a poll offers See votes, Remind,
+  // Close poll and Share result by role and state, then Reply, Copy poll and Delete; anyone else's text, Reply and Copy.
+  const toast = useToast();
+  const [, refreshMenu] = useReducer((n: number) => n + 1, 0);
+  const copyText = async () => {
+    try {
+      await navigator.clipboard.writeText(m.text);
+      haptic("success");
+      toast({ title: "Copied" });
+    } catch {
+      haptic("error");
+      toast({ tone: "error", title: "Couldn’t copy the message", body: "Try again in a moment.", code: "CH-7020" });
+    }
+  };
+  const pollActs = m.poll ? pollCardActions(m.id) : null;
+  const menuItems: MenuItem[] = m.poll
+    ? [
+        ...(pollActs?.seeVotes ? [{ label: "See votes", icon: ListChecks, onSelect: pollActs.seeVotes }] : []),
+        ...(pollActs?.remind ? [{ label: `Remind ${pollActs.remind.count}`, icon: BellRing, onSelect: pollActs.remind.run }] : []),
+        ...(pollActs?.close ? [{ label: "Close poll", icon: Lock, onSelect: pollActs.close }] : []),
+        ...(pollActs?.share ? [{ label: "Share result", icon: Share, onSelect: pollActs.share }] : []),
+        ...(onReply ? [{ label: "Reply", icon: Reply, onSelect: onReply }] : []),
+        { label: "Copy poll", icon: Copy, onSelect: () => void copyText() },
+        ...(m.mine ? [{ label: "Delete", icon: Trash2, danger: true, onSelect: onDelete }] : []),
+      ]
+    : m.mine
+      ? [
+          // An attachment-only message has no text to edit (as the phone's sheet: wave 5 #8).
+          ...(m.text ? [{ label: "Edit", icon: Pencil, onSelect: onEdit }] : []),
+          { label: "Delete", icon: Trash2, danger: true, onSelect: onDelete },
+        ]
+      : m.text
+        ? [...(onReply ? [{ label: "Reply", icon: Reply, onSelect: onReply }] : []), { label: "Copy", icon: Copy, onSelect: () => void copyText() }]
+        : [];
   const reacts = api.reactions.get(m.id) ?? [];
   const reduced = useChReducedMotion();
   const reactBtn = useRef<HTMLButtonElement | null>(null);
@@ -1189,20 +1228,11 @@ export function Bubble({
                   </button>
                 </Tooltip>
               )}
-              {m.mine && (
+              {menuItems.length > 0 && (
                 <Menu
                   label="Message actions"
                   align={m.mine ? "end" : "start"}
-                  items={[
-                    // An attachment-only message has no text to edit (as the phone's sheet: wave 5 #8).
-                    ...(m.text && !m.poll ? [{ label: "Edit", icon: Pencil, onSelect: onEdit }] : []),
-                    {
-                      label: "Delete",
-                      icon: Trash2,
-                      danger: true,
-                      onSelect: onDelete,
-                    },
-                  ]}
+                  items={menuItems}
                   trigger={(p) => (
                     <Tooltip>
                       <button
@@ -1210,6 +1240,11 @@ export function Bubble({
                         className="ch-ms-tool"
                         aria-label="More message actions"
                         {...p}
+                        onClick={() => {
+                          // A poll's items are its card's live state: read them as the menu opens.
+                          refreshMenu();
+                          p.onClick();
+                        }}
                       >
                         <Icon icon={Ellipsis} size={15} />
                       </button>
@@ -1541,6 +1576,7 @@ export function Composer({
   onClearReply,
   onSendingChange,
   unavailable = false,
+  seed = null,
 }: {
   api: ChMessagesApi;
   conv: ChConv;
@@ -1557,6 +1593,11 @@ export function Composer({
   onSendingChange?: (sending: boolean) => void;
   /** The conversation did not load (CH-7202): there is nothing to reply into, so the composer says so and stays off. */
   unavailable?: boolean;
+  /**
+   * P-2 D30: a reply prefilled by a poll action (Remind, Share result). It fills an empty composer, asks before replacing
+   * a draft, and puts the caret at the end; the person presses Send. A new `nonce` is a new seed.
+   */
+  seed?: { text: string; nonce: number } | null;
 }) {
   const recovery = api.attachmentRecovery?.get(conv.id);
   const [unconfirmed, setUnconfirmed] = useState(!!recovery);
@@ -1584,6 +1625,22 @@ export function Composer({
   const typingTimer = useRef<number | null>(null);
   const ready = (draft.trim() || files.length || resumed) && !sending && !checking && !checkFailed && !unavailable;
   const addFiles = useAddAttachments();
+  const [replacing, setReplacing] = useState<string | null>(null);
+  const applySeed = (text: string) => {
+    setDraft(text);
+    setReplacing(null);
+    requestAnimationFrame(() => {
+      const el = ta.current;
+      if (!el) return;
+      el.focus();
+      el.setSelectionRange(text.length, text.length);
+    });
+  };
+  useEffect(() => {
+    if (!seed) return;
+    if (draft.trim()) setReplacing(seed.text);
+    else applySeed(seed.text);
+  }, [seed?.nonce]); // eslint-disable-line react-hooks/exhaustive-deps
   useAutosize(ta, draft);
   // Toasts sit above this composer, however tall it grows (wave 5 #1).
   useComposerInset(footer);
@@ -1791,6 +1848,23 @@ export function Composer({
       ) : (
         <CharsLeft text={draft} />
       )}
+      <Modal
+        open={replacing != null}
+        onClose={() => setReplacing(null)}
+        title="Replace your draft?"
+        description="Your message so far will be replaced with the reminder."
+        width={400}
+        footer={
+          <>
+            <Button variant="ghost" onClick={() => setReplacing(null)}>
+              Keep my draft
+            </Button>
+            <Button variant="primary" onClick={() => replacing != null && applySeed(replacing)}>
+              Replace
+            </Button>
+          </>
+        }
+      />
     </footer>
   );
 }
@@ -1863,6 +1937,18 @@ function Thread({
     haptic("select");
     setReplying({ convId: conv.id, id: m.id });
   };
+  // D30: Remind and Share result reply to the poll with a prefilled draft.
+  const [seed, setSeed] = useState<{ text: string; nonce: number } | null>(null);
+  const pollThread = useMemo<PollThreadActions>(
+    () => ({
+      replyWith: (messageId, text) => {
+        if (sendingRef.current) return;
+        setReplying({ convId: conv.id, id: messageId });
+        setSeed({ text, nonce: Date.now() });
+      },
+    }),
+    [conv.id],
+  );
   useEffect(() => {
     if (replyToId) section.current?.querySelector<HTMLTextAreaElement>(".ch-ms-comp textarea")?.focus();
   }, [replyToId]);
@@ -1919,6 +2005,7 @@ function Thread({
     : conv.subtitle;
 
   return (
+    <PollThreadContext.Provider value={pollThread}>
     <section
       ref={section}
       className="ch-ms-thread"
@@ -2074,11 +2161,13 @@ function Thread({
         onSendingChange={(sending) => {
           sendingRef.current = sending;
         }}
+        seed={seed}
       />
 
       <EditMessageModal api={api} message={editing} onClose={() => setEditing(null)} />
       <DeleteMessageModal api={api} message={deleting} onClose={() => setDeleting(null)} />
     </section>
+    </PollThreadContext.Provider>
   );
 }
 

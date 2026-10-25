@@ -6460,7 +6460,7 @@
     "item": 15,
     "name": "COPYING_A_MESSAGE_FAILS",
     "chCode": "CH-7020",
-    "meaning": "Copying a message fails (phone, from the long-press sheet)",
+    "meaning": "Copying a message fails (phone, from the long-press sheet; desktop, from the message menu)",
     "status": "implemented",
     "catalog": "docs/clubhouse/catalog/messages.md"
   },

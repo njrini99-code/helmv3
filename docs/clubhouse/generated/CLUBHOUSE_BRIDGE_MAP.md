@@ -720,7 +720,7 @@ Every Bridge ID (D-68: namespace, two-digit category, two-digit item), its catal
 | 70612 | CH-7014 | 06 Server / system error | `POSTING_AN_ANNOUNCEMENT_FAILS` | implemented | Posting an announcement fails |
 | 70613 | CH-7016 | 06 Server / system error | `A_MESSAGE_IS_REFUSED` | implemented | A message is refused |
 | 70614 | CH-7018 | 06 Server / system error | `ADDING_SOMEONE_TO_A_GROUP_FAILS` | implemented | Adding someone to a group fails (the group's creator, desktop or phone Details › Add) |
-| 70615 | CH-7020 | 06 Server / system error | `COPYING_A_MESSAGE_FAILS` | implemented | Copying a message fails (phone, from the long-press sheet) |
+| 70615 | CH-7020 | 06 Server / system error | `COPYING_A_MESSAGE_FAILS` | implemented | Copying a message fails (phone, from the long-press sheet; desktop, from the message menu) |
 | 70616 | CH-7021 | 06 Server / system error | `A_SHARED_FILE_WONT_OPEN` | implemented | A shared file won't open (Details › Files, or an announcement's Files) |
 | 70617 | CH-7201 | 06 Server / system error | `CONVERSATIONS_DONT_LOAD` | implemented | Conversations don't load |
 | 70618 | CH-7202 | 06 Server / system error | `A_CONVERSATIONS_MESSAGES_DONT_LOAD` | implemented | A conversation's messages don't load |

@@ -1920,6 +1920,33 @@ describe('Messages · polls (premium features P-2)', () => {
     expect(screen.queryByText(/Vote in GolfHelm/)).toBeNull();
   });
 
+  it('D30: Remind fills the composer as a reply to the poll, and asks before replacing a draft', async () => {
+    const user = userEvent.setup();
+    show();
+    const card = await screen.findByRole('group', { name: 'Which van?' });
+    const box = (await screen.findByRole('textbox', { name: /Message Varsity team/ })) as HTMLTextAreaElement;
+    await user.click(within(card).getByRole('button', { name: /^Remind \d$/ }));
+    await waitFor(() => expect(box.value).toMatch(/can you vote in the poll when you get a chance\?$/));
+    expect(document.querySelector('.ch-ms-comp__reply')).not.toBeNull();
+    await user.clear(box);
+    await user.type(box, 'My own words');
+    await user.click(within(card).getByRole('button', { name: /^Remind \d$/ }));
+    const ask = await screen.findByRole('dialog', { name: 'Replace your draft?' });
+    await user.click(within(ask).getByRole('button', { name: 'Keep my draft' }));
+    expect(box.value).toBe('My own words');
+  });
+
+  it('D26: the message menu on a poll offers its actions, and anyone else’s text offers Reply and Copy', async () => {
+    const user = userEvent.setup();
+    show();
+    const card = await screen.findByRole('group', { name: 'Which van?' });
+    const msg = card.closest('.ch-ms-msg') as HTMLElement;
+    await user.click(within(msg).getByRole('button', { name: 'More message actions' }));
+    const menu = await screen.findByRole('menu', { name: 'Message actions' });
+    expect(within(menu).getAllByRole('menuitem').map((m) => m.textContent)).toEqual(expect.arrayContaining(['See votes', 'Close poll', 'Copy poll', 'Delete']));
+    expect(within(menu).queryByRole('menuitem', { name: 'Edit' })).toBeNull();
+  });
+
   it('a vote is saved with the option id', async () => {
     const user = userEvent.setup();
     show();
@@ -1977,8 +2004,9 @@ describe('Messages · polls (premium features P-2)', () => {
   it('D21: on a phone a group thread’s "+" opens Photo or file and Poll', async () => {
     const user = userEvent.setup();
     showPhone();
-    await waitFor(() => expect(screen.getAllByRole('button', { name: /Varsity team/ })).toHaveLength(1), { timeout: 5000 });
-    await user.click(screen.getByRole('button', { name: /Varsity team/ }));
+    // Phase2's row carries an "Actions for …" button beside it; pick the row itself.
+    await waitFor(() => expect(screen.getAllByRole('button', { name: /^(?!Actions for ).*Varsity team/ })).toHaveLength(1), { timeout: 5000 });
+    await user.click(screen.getByRole('button', { name: /^(?!Actions for ).*Varsity team/ }));
     const thread = await screen.findByRole('region', { name: /Varsity team/ });
     await user.click(within(thread).getByRole('button', { name: 'Add a file or a poll' }));
     const menu = await screen.findByRole('menu', { name: 'Add to the message' });

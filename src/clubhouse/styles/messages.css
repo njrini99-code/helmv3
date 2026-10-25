@@ -3339,22 +3339,6 @@ html[data-fw-theme='dark'] [data-ui='clubhouse'] .ch-ms-poll {
   min-width: 0;
   overflow-wrap: anywhere;
 }
-.ch-ms-poll__faces {
-  display: inline-flex;
-  flex: none;
-}
-/* Large Text Size and narrow cards drop the faces first (em grows with the type). */
-@container ch-poll (max-width: 19em) {
-  .ch-ms-poll__faces {
-    display: none;
-  }
-}
-.ch-ms-poll__faces .ch-avatar {
-  box-shadow: 0 0 0 1.5px var(--ch-sheet-bg);
-}
-.ch-ms-poll__faces .ch-avatar + .ch-avatar {
-  margin-left: -6px;
-}
 .ch-ms-poll__n {
   flex: none;
   min-width: 2ch;
@@ -3444,21 +3428,43 @@ html[data-fw-theme='dark'] [data-ui='clubhouse'] .ch-ms-poll {
   padding: 0;
   list-style: none;
 }
-.ch-ms-pollv__who li {
+/* A voter: a 44 px row, avatar 28, the name on one line (the full name is its text), "Left the group" after it. */
+.ch-ms-pollv__row {
   display: flex;
   align-items: center;
-  gap: 10px;
-  font: 400 calc(15 * var(--ch-type-k))/1.3 var(--ch-font-sans);
+  gap: var(--ch-space-3);
+  min-height: 44px;
+  min-width: 0;
   color: var(--ch-text-primary);
+  font: var(--ch-type-15);
+  letter-spacing: var(--ch-track-15);
 }
-.ch-ms-pollv__none,
-.ch-ms-pollv__names {
-  margin: 0;
-  font: 400 calc(14 * var(--ch-type-k))/1.45 var(--ch-font-sans);
+.ch-ms-pollv__name {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.ch-ms-pollv__left {
+  flex: none;
   color: var(--ch-text-tertiary);
+  font: var(--ch-type-13);
 }
-.ch-ms-pollv__opt.is-waiting .ch-ms-pollv__names {
+.ch-ms-pollv__none {
+  margin: 0;
+  color: var(--ch-text-tertiary);
+  font: var(--ch-type-14);
+}
+.ch-ms-pollv__final {
+  display: inline-flex;
+  align-items: center;
+  min-height: 24px;
+  padding: 0 var(--ch-space-2);
+  border-radius: 999px;
+  background: var(--ch-bg-subtle);
+  box-shadow: inset 0 0 0 var(--ch-hairline-w) var(--ch-border-hairline);
   color: var(--ch-text-secondary);
+  font: var(--ch-type-12-medium);
 }
 
 /* The poll sheet: numbered choice rows, a spare one appearing as the last fills. */

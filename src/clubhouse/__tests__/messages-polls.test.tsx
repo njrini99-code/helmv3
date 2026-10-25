@@ -1,4 +1,5 @@
 import { act, cleanup, render, screen, within } from '@testing-library/react';
+import type { ReactElement } from 'react';
 import userEvent from '@testing-library/user-event';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
@@ -15,7 +16,7 @@ import { haptic } from '../lib/haptics';
 import { tallyPoll, type Poll, type PollResponseRow } from '@/lib/golf/message-polls';
 import type { ChMessagesApi } from '../screens/messages/MessagesView';
 import type { ChConv } from '../screens/messages/model';
-import { clearPollDrafts, notePollHold, PollButton, PollCard, type ChPollsApi } from '../screens/messages/polls';
+import { clearPollDrafts, notePollHold, PollButton, PollCard, pollCardActions, PollThreadContext, type ChPollsApi } from '../screens/messages/polls';
 
 afterEach(() => {
   clearPollDrafts();
@@ -166,9 +167,23 @@ describe('PollCard', () => {
     await user.click(screen.getByRole('button', { name: 'See votes' }));
     const dialog = await screen.findByRole('dialog');
     const vanA = within(dialog).getByRole('region', { name: 'Van A' });
-    expect(within(vanA).getByText('Ana Ruiz')).toBeTruthy();
-    expect(within(vanA).getByText('You')).toBeTruthy();
-    expect(within(dialog).getByText('Ben, Cal')).toBeTruthy();
+    // D29: no vote times; "You" first, then by name.
+    expect([...vanA.querySelectorAll('.ch-ms-pollv__name')].map((n) => n.textContent)).toEqual(['You', 'Ana Ruiz']);
+    const waiting = within(dialog).getByRole('region', { name: 'Hasn’t voted' });
+    expect([...waiting.querySelectorAll('.ch-ms-pollv__name')].map((n) => n.textContent)).toEqual(['Ben Cho', 'Cal Park']);
+    expect(dialog.textContent).not.toMatch(/\d:\d\d/);
+  });
+
+  it('See votes marks someone who voted and left, and a final poll says Final', async () => {
+    const user = userEvent.setup();
+    const rows = [{ message_id: 'm1', user_id: 'gone', choice: 'o1' }];
+    const a = api(rows) as ChMessagesApi & { directory: Array<{ userId: string; name: string }> };
+    a.directory.push({ userId: 'gone', name: 'Dana Ruiz' });
+    render(<PollCard api={a} messageId="m1" poll={poll({ closedAt: NOW })} mine={false} />);
+    await user.click(screen.getByRole('button', { name: 'See votes' }));
+    const dialog = await screen.findByRole('dialog');
+    expect(within(dialog).getByText('Left the group')).toBeTruthy();
+    expect(within(dialog).getByText('Final')).toBeTruthy();
   });
 
   it('the sender closes it after a confirm', async () => {
@@ -495,5 +510,61 @@ describe('the create sheet (P-2 slice 4)', () => {
     await user.type(within(dialog).getByLabelText('Question'), '!');
     await user.click(within(dialog).getByRole('button', { name: 'Send poll' }));
     expect(send.mock.calls[1]![3]).toBeUndefined();
+  });
+});
+
+
+describe('poll actions (P-2 slice 5)', () => {
+  const coachApi = (rows: PollResponseRow[], over: Partial<ChPollsApi> = {}) => {
+    const a = api(rows, over) as ChMessagesApi & { viewer: { role: string } };
+    a.viewer.role = 'coach';
+    return a;
+  };
+  const withThread = (ui: ReactElement, replyWith = vi.fn()) => ({ replyWith, ui: <PollThreadContext.Provider value={{ replyWith }}>{ui}</PollThreadContext.Provider> });
+
+  it('Remind N prefills a reply naming the ones who haven’t voted, never the coach; hidden for a player', async () => {
+    const user = userEvent.setup();
+    const t = withThread(<PollCard api={coachApi([{ message_id: 'm1', user_id: 'ana', choice: 'o1' }])} messageId="m1" poll={poll()} mine />);
+    render(t.ui);
+    await user.click(screen.getByRole('button', { name: 'Remind 2' }));
+    expect(t.replyWith).toHaveBeenCalledWith('m1', 'Ben and Cal, can you vote in the poll when you get a chance?');
+    cleanup();
+    render(withThread(<PollCard api={api([])} messageId="m1" poll={poll()} mine={false} />).ui);
+    expect(screen.queryByRole('button', { name: /^Remind/ })).toBeNull();
+  });
+
+  it('Remind is hidden when only the viewer is left to vote', () => {
+    const rows = ['ana', 'ben', 'cal'].map((user_id) => ({ message_id: 'm1', user_id, choice: 'o1' }));
+    render(withThread(<PollCard api={coachApi(rows)} messageId="m1" poll={poll()} mine />).ui);
+    expect(screen.queryByRole('button', { name: /^Remind/ })).toBeNull();
+  });
+
+  it('Share result prefills the final result out of the people who voted', async () => {
+    const user = userEvent.setup();
+    const rows = [
+      { message_id: 'm1', user_id: 'ana', choice: 'o1' },
+      { message_id: 'm1', user_id: 'ben', choice: 'o1' },
+      { message_id: 'm1', user_id: 'cal', choice: 'o2' },
+    ];
+    const t = withThread(<PollCard api={api(rows)} messageId="m1" poll={poll({ closedAt: NOW })} mine />);
+    render(t.ui);
+    await user.click(screen.getByRole('button', { name: 'Share result' }));
+    expect(t.replyWith).toHaveBeenCalledWith('m1', 'Van A has it with 2 of the 3 who voted. Van B had 1.');
+  });
+
+  it('registers its live actions for the message menu and the phone sheet', () => {
+    const { unmount } = render(withThread(<PollCard api={coachApi([])} messageId="m1" poll={poll()} mine />).ui);
+    const acts = pollCardActions('m1')!;
+    expect(acts.seeVotes).toBeTypeOf('function');
+    expect(acts.close).toBeTypeOf('function');
+    expect(acts.remind).toMatchObject({ count: 3 });
+    expect(acts.share).toBeNull();
+    unmount();
+    expect(pollCardActions('m1')).toBeNull();
+  });
+
+  it('draws no faces on a row (owner call, default B: the count only)', () => {
+    render(<PollCard api={api([{ message_id: 'm1', user_id: 'ana', choice: 'o1' }])} messageId="m1" poll={poll()} mine={false} />);
+    expect(document.querySelector('.ch-ms-poll__faces')).toBeNull();
   });
 });

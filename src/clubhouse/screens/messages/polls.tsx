@@ -1,7 +1,7 @@
 "use client";
 
 import { Check, ListChecks, Lock, Minus, Plus } from "lucide-react";
-import { useEffect, useId, useRef, useState, type KeyboardEvent } from "react";
+import { createContext, useContext, useEffect, useId, useRef, useState, type KeyboardEvent } from "react";
 import {
   POLL_MAX_OPTIONS,
   POLL_MIN_OPTIONS,
@@ -16,6 +16,8 @@ import {
   pollEligibleCount,
   pollState,
   pollShare,
+  pollRemindDraft,
+  pollResultDraft,
   pollWaiting,
   zonedWallTimeToInstant,
   type Poll,
@@ -122,6 +124,37 @@ function usePollClock(closesAt: string | null, pageNow: string): number {
   return now;
 }
 
+/**
+ * D30: a poll action that reaches people prefills a reply in the thread; the person presses Send. The thread (desktop and
+ * phone) provides this: it sets the reply to the poll and seeds the composer.
+ */
+export interface PollThreadActions {
+  replyWith: (messageId: string, text: string) => void;
+}
+export const PollThreadContext = createContext<PollThreadActions | null>(null);
+
+/** D26: what a poll offers right now, for the desktop menu and the phone's actions sheet (null when not offered). */
+export interface PollCardActions {
+  seeVotes: (() => void) | null;
+  remind: { count: number; run: () => void } | null;
+  close: (() => void) | null;
+  share: (() => void) | null;
+}
+const cardActions = new Map<string, PollCardActions>();
+/** The live actions of a drawn poll card, or null when the card isn't on screen. */
+export const pollCardActions = (messageId: string): PollCardActions | null => cardActions.get(messageId) ?? null;
+
+/** First names, with a last initial when two share one ("Sam C."). */
+function shortNames(ids: readonly string[], nameOf: (id: string) => string): string[] {
+  const full = ids.map(nameOf);
+  const firsts = full.map((n) => firstName(n));
+  return full.map((n, i) => {
+    if (firsts.filter((f) => f === firsts[i]).length < 2) return firsts[i]!;
+    const last = n.trim().split(/\s+/).slice(1).pop();
+    return last ? `${firsts[i]} ${last[0]!.toUpperCase()}.` : firsts[i]!;
+  });
+}
+
 export function PollCard({
   api,
   messageId,
@@ -135,6 +168,7 @@ export function PollCard({
   mine: boolean;
 }) {
   const polls = api.polls;
+  const thread = useContext(PollThreadContext);
   const qid = useId();
   const [votesOpen, setVotesOpen] = useState(false);
   const [closing, setClosing] = useState(false);
@@ -147,6 +181,42 @@ export function PollCard({
   const eligible = conv && tally ? pollEligibleCount(tally, [...conv.memberIds, api.viewer.userId]) : conv ? conv.memberIds.length + 1 : null;
   const busy = polls?.pending.has(messageId) ?? false;
   const mineIds = tally?.mine ?? [];
+  const nameOf = (id: string) => api.directory.find((p) => p.userId === id)?.name ?? "Member";
+  // Remind: a coach, an open poll, the votes in, and someone left. `memberIds` are the others, so the viewer is out of
+  // both the condition and the count, and a coach is never named in their own reminder; never "Remind 0".
+  const waiting = tally && conv ? pollWaiting(tally, conv.memberIds) : [];
+  const coach = api.viewer.role === "coach";
+  const remind =
+    coach && thread && !closed && tally && waiting.length > 0
+      ? {
+          count: waiting.length,
+          run: () => {
+            haptic("select");
+            setVotesOpen(false);
+            const endsPhrase = poll.closesAt ? endsWords(poll.closesAt, api.now, api.timeZone, api.clock ?? "12") : null;
+            thread.replyWith(messageId, pollRemindDraft({ firstNames: shortNames(waiting, nameOf), endsPhrase }));
+          },
+        }
+      : null;
+  // Share result: final, at least one vote, and the sender or a coach.
+  const share =
+    thread && closed && tally && tally.voterCount > 0 && (mine || coach)
+      ? () => {
+          haptic("select");
+          thread.replyWith(messageId, pollResultDraft(poll, tally));
+        }
+      : null;
+  useEffect(() => {
+    cardActions.set(messageId, {
+      seeVotes: tally ? () => setVotesOpen(true) : null,
+      remind,
+      close: mine && !closed && tally ? () => setClosing(true) : null,
+      share,
+    });
+    return () => {
+      cardActions.delete(messageId);
+    };
+  });
 
   const pressAt = useRef(0);
   const pick = (optionId: string, viaKeyboard = false) => {
@@ -204,7 +274,6 @@ export function PollCard({
           const share = tally ? pollShare(tally, o.id) : 0;
           const on = mineIds.includes(o.id);
           const lead = !!tally && tally.leaders.includes(o.id) && tally.voterCount > 0;
-          const faces = tally?.voters[o.id] ?? [];
           return (
             <li key={o.id} role="none">
               <button
@@ -230,13 +299,6 @@ export function PollCard({
                   {on && <Icon icon={Check} size={12} />}
                 </span>
                 <span className="ch-ms-poll__label">{o.label}</span>
-                {faces.length > 0 && (
-                  <span className="ch-ms-poll__faces" aria-hidden="true">
-                    {faces.slice(0, 3).map((id) => (
-                      <Avatar key={id} name={api.directory.find((p) => p.userId === id)?.name ?? "Member"} size={18} />
-                    ))}
-                  </span>
-                )}
                 {lead && closed && <span className="ch-ms-poll__tag">{tied ? "Tied" : "Most votes"}</span>}
                 <span className={"ch-ms-poll__n ch-num" + (tally && n === 0 ? " is-zero" : "")} aria-hidden="true">
                   {/* An honest "0" (tertiary ink) open or final; "—" only while the votes load or failed to. */}
@@ -278,24 +340,40 @@ export function PollCard({
             </button>
           )
         )}
+        {remind && (
+          <button type="button" className="ch-ms-poll__link" onClick={remind.run}>
+            Remind {remind.count}
+          </button>
+        )}
         {mine && !closed && tally && (
           <button type="button" className="ch-ms-poll__link" onClick={() => setClosing(true)}>
             Close poll
           </button>
         )}
+        {share && (
+          <button type="button" className="ch-ms-poll__link" onClick={share}>
+            Share result
+          </button>
+        )}
       </div>
-      <PollVotesModal api={api} conv={conv} poll={poll} tally={tally} open={votesOpen} onClose={() => setVotesOpen(false)} />
+      <PollVotesModal api={api} conv={conv} poll={poll} tally={tally} closed={closed} remind={remind} open={votesOpen} onClose={() => setVotesOpen(false)} />
       <ClosePollModal api={api} messageId={messageId} open={closing} onClose={() => setClosing(false)} />
     </div>
   );
 }
 
-/** Who picked what, and who hasn't answered yet. Votes are visible to everyone in the thread, so this hides nothing. */
+/**
+ * D29: who picked what, and who hasn't answered yet. Votes are visible to everyone in the thread, so this hides nothing.
+ * No vote times in v1 (a vote's time would come from a device clock until the held updated_at trigger is applied):
+ * "You" first, then by name. Someone who voted and has since left reads "Left the group".
+ */
 function PollVotesModal({
   api,
   conv,
   poll,
   tally,
+  closed,
+  remind,
   open,
   onClose,
 }: {
@@ -303,35 +381,50 @@ function PollVotesModal({
   conv: ChConv | null;
   poll: Poll;
   tally: PollTally | null;
+  closed: boolean;
+  remind: PollCardActions["remind"];
   open: boolean;
   onClose: () => void;
 }) {
-  const nameOf = (id: string) =>
-    id === api.viewer.userId ? "You" : (api.directory.find((p) => p.userId === id)?.name ?? "Member");
-  const waiting = tally && conv ? pollWaiting(tally, [api.viewer.userId, ...conv.memberIds]) : [];
+  const me = api.viewer.userId;
+  const nameOf = (id: string) => (id === me ? "You" : (api.directory.find((p) => p.userId === id)?.name ?? "Member"));
+  const members = new Set([me, ...(conv?.memberIds ?? [])]);
+  const order = (ids: readonly string[]) => [...ids].sort((a, b) => (a === me ? -1 : b === me ? 1 : nameOf(a).localeCompare(nameOf(b))));
+  const waiting = tally && conv ? order(pollWaiting(tally, [me, ...conv.memberIds])) : [];
+  const row = (id: string) => (
+    <li key={id} className="ch-ms-pollv__row">
+      <Avatar name={id === me ? api.viewer.name : nameOf(id)} size={28} />
+      <span className="ch-ms-pollv__name">{nameOf(id)}</span>
+      {!members.has(id) && <span className="ch-ms-pollv__left">Left the group</span>}
+    </li>
+  );
   return (
-    <Modal open={open} onClose={onClose} icon={ListChecks} title="Votes" description={poll.question} width={440}>
+    <Modal
+      open={open}
+      onClose={onClose}
+      icon={ListChecks}
+      title="Votes"
+      description={poll.question}
+      width={440}
+      action={closed ? <span className="ch-ms-pollv__final">Final</span> : undefined}
+      footer={
+        remind ? (
+          <Button variant="primary" onClick={remind.run}>
+            Remind {remind.count}
+          </Button>
+        ) : undefined
+      }
+    >
       <div className="ch-ms-pollv">
         {poll.options.map((o) => {
-          const ids = tally?.voters[o.id] ?? [];
+          const ids = order(tally?.voters[o.id] ?? []);
           return (
             <section key={o.id} className="ch-ms-pollv__opt" aria-label={o.label}>
               <h3 className="ch-ms-pollv__h">
                 <span>{o.label}</span>
                 <span className="ch-num">{ids.length}</span>
               </h3>
-              {ids.length ? (
-                <ul className="ch-ms-pollv__who">
-                  {ids.map((id) => (
-                    <li key={id}>
-                      <Avatar name={nameOf(id) === "You" ? api.viewer.name : nameOf(id)} size={24} />
-                      <span>{nameOf(id)}</span>
-                    </li>
-                  ))}
-                </ul>
-              ) : (
-                <p className="ch-ms-pollv__none">No votes yet</p>
-              )}
+              {ids.length ? <ul className="ch-ms-pollv__who">{ids.map(row)}</ul> : <p className="ch-ms-pollv__none">No votes yet</p>}
             </section>
           );
         })}
@@ -341,7 +434,7 @@ function PollVotesModal({
               <span>Hasn’t voted</span>
               <span className="ch-num">{waiting.length}</span>
             </h3>
-            <p className="ch-ms-pollv__names">{waiting.map((id) => firstName(nameOf(id))).join(", ")}</p>
+            <ul className="ch-ms-pollv__who">{waiting.map(row)}</ul>
           </section>
         )}
       </div>
