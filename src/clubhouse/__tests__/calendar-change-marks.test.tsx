@@ -436,7 +436,10 @@ describe('contrast and the banned stripe (P-14 7.3)', () => {
   it('no rule of the feature draws a left border, a left stripe or an inset accent', () => {
     const calendar = readFileSync(join(STYLES, 'calendar.css'), 'utf8');
     const ui = readFileSync(join(STYLES, 'ui.css'), 'utf8');
-    const mine = [calendar.slice(calendar.indexOf('/* P-14 change marks.')), ui.slice(ui.indexOf('/* P-14 change marks:'))].join('\n');
+    // ui.css: P-14's block only, which sits just above the waiting shape (states.test reads that one to the end).
+    const uiAt = ui.indexOf('/* P-14 change marks:');
+    const uiEnd = ui.indexOf('/* The page is waiting, not missing', uiAt);
+    const mine = [calendar.slice(calendar.indexOf('/* P-14 change marks.')), ui.slice(uiAt, uiEnd > uiAt ? uiEnd : undefined)].join('\n');
     expect(mine.length).toBeGreaterThan(500);
     expect(mine).not.toMatch(/border-(left|inline-start)/);
     expect(mine).not.toMatch(/box-shadow:\s*inset\s+-?\d+(\.\d+)?px\s+0\s+0/);
@@ -445,7 +448,10 @@ describe('contrast and the banned stripe (P-14 7.3)', () => {
   it('only transform and opacity animate: no layout property transitions or keyframes in the feature', () => {
     const calendar = readFileSync(join(STYLES, 'calendar.css'), 'utf8');
     const ui = readFileSync(join(STYLES, 'ui.css'), 'utf8');
-    const mine = [calendar.slice(calendar.indexOf('/* P-14 change marks.')), ui.slice(ui.indexOf('/* P-14 change marks:'))].join('\n');
+    // ui.css: P-14's block only, which sits just above the waiting shape (states.test reads that one to the end).
+    const uiAt = ui.indexOf('/* P-14 change marks:');
+    const uiEnd = ui.indexOf('/* The page is waiting, not missing', uiAt);
+    const mine = [calendar.slice(calendar.indexOf('/* P-14 change marks.')), ui.slice(uiAt, uiEnd > uiAt ? uiEnd : undefined)].join('\n');
     expect(mine).not.toMatch(/transition:[^;]*\b(height|width|top|left|margin|padding)\b/);
     for (const kf of mine.matchAll(/@keyframes [\w-]+ \{([\s\S]*?)\n\}/g)) expect(kf[1]).not.toMatch(/\b(height|width|top|left|margin|padding)\b/);
   });

@@ -3,7 +3,6 @@ import { plural } from '../lib/plural';
  * P-7 4.2.7: two rounds at one course, hole by hole. Pure: no Supabase, no React.
  */
 
-import { plural } from '../lib/plural';
 
 export interface ChCompareCard {
   id: string;

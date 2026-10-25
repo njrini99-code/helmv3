@@ -11,7 +11,6 @@ import { bigNumbers, bounceBack, closingThree, holesInPlayOrder, puttsPerGir, RO
 export const RATE_MIN_GREENS = 10;
 import { formatFixed, formatToPar } from '../../lib/format';
 import { NoData } from '../../ui/NoData';
-import { Icon } from '../../ui/Icon';
 import { ZoneBlock } from '../../ui/Zone';
 
 /**

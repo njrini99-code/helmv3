@@ -23,7 +23,6 @@ import { holesForRound, parOf, setupBlocker, startPosition, type ChSetupCourse, 
 import { glanceFor, type ChCourseGlance } from '../../../data/course-glance';
 import { courseHref } from '../../../data/course-key';
 import { formatFixed } from '../../../lib/format';
-import { plural } from '../../../lib/plural';
 import '../../../styles/rounds-setup.css';
 
 const STEPS = ['Course', 'Scorecard', 'Track'] as const;
