@@ -124,6 +124,8 @@ const COMPOSITE = '[role="radiogroup"], [role="tablist"], [role="menu"], [role="
  */
 /** `preview`: the dev preview keeps a move on screen and writes nothing. */
 export type ChMoveOpts = { kind?: ChMoveKind; scope?: ChMoveScope };
+/** P-5: a round's version is its tournament's, so a save of R1 is the version R2's next move must send. */
+const tokenKey = (x: ChCalEvent) => (x.round ? `tour:${x.round.tournamentId}` : x.id);
 function useHeldMoves(timezone: string, events: ChCalEvent[], today: string, onSaved: () => void, preview: boolean, people: Map<string, ChCalPerson>) {
   const toast = useToast();
   const clock = useChClock();
@@ -188,7 +190,7 @@ function useHeldMoves(timezone: string, events: ChCalEvent[], today: string, onS
         return writeMove({ e: base, to, kind, scope, expectedUpdatedAt: version }, timezone)
           .then((res) => {
             if (res.ok) {
-              if (res.updatedAt) tokens.current.set(e.id, res.updatedAt);
+              if (res.updatedAt) tokens.current.set(tokenKey(e), res.updatedAt);
               onSaved();
               return;
             }
@@ -229,12 +231,12 @@ function useHeldMoves(timezone: string, events: ChCalEvent[], today: string, onS
           toast({ title: 'Waiting for a connection to save', body: 'Leaving this page now drops the move.', replace: 'calendar-move' });
           const back = () => {
             window.removeEventListener('online', back);
-            void send(tokens.current.get(e.id) ?? base.version ?? null, false);
+            void send(tokens.current.get(tokenKey(e)) ?? base.version ?? null, false);
           };
           window.addEventListener('online', back);
           return;
         }
-        void send(tokens.current.get(e.id) ?? base.version ?? null, false);
+        void send(tokens.current.get(tokenKey(e)) ?? base.version ?? null, false);
       };
       const undo = () => {
         if (held.current !== entry) {

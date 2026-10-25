@@ -143,6 +143,15 @@ describe('P-5 rounds on the calendar', () => {
     expect(within(menu).queryByRole('menuitem', { name: 'Delete permanently' })).toBeNull();
   });
 
+  it('a round whose ref didn’t load keeps Edit (round mode) but gets no Duplicate, Cancel event or Delete', async () => {
+    wrap(data([roundEv(1), { ...roundEv(2), round: undefined, roundRefFailed: true }, roundEv(3)]), 'rd-2');
+    expect(await screen.findByRole('button', { name: 'Edit event' })).toBeTruthy();
+    fireEvent.click(screen.getByRole('button', { name: 'More actions' }));
+    const menu = await screen.findByRole('menu');
+    expect(within(menu).queryByRole('menuitem', { name: 'Duplicate' })).toBeNull();
+    expect(within(menu).queryByRole('menuitem', { name: 'Cancel event' })).toBeNull();
+  });
+
   it('a player sees only whether the lineup is published, and no Edit round', async () => {
     wrap(data([roundEv(1, { round: ref(1, { lineup: 'none' }) })], { role: 'player' }), 'rd-1');
     await waitFor(() => expect(screen.getByRole('heading', { name: 'Pinehurst Invitational' })).toBeTruthy());

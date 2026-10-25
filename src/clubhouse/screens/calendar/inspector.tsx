@@ -459,6 +459,8 @@ export function EventDetail({ ctx, id, date }: { ctx: InspCtx; id: string; date:
   const coach = ctx.role === 'coach';
   // P-5 4.9: a tracked round reads as its tournament's; it is cancelled, restored and deleted through Tournaments.
   const round = e.round ?? null;
+  // A round whose ref didn't load is still a round: it never gets the plain event's Duplicate, Cancel or Delete.
+  const roundish = !!round || !!e.roundRefFailed;
   const rl = roundLabel(e, e.title);
   const roundOpen = !!round && round.status === 'upcoming' && !round.tournamentCancelled;
   const desk = round ? `/golf/dashboard/tournaments/${round.tournamentId}` : null;
@@ -487,12 +489,12 @@ export function EventDetail({ ctx, id, date }: { ctx: InspCtx; id: string; date:
           label="Event actions"
           items={[
             { label: 'Copy link', icon: Link2, onSelect: () => void copyLink() },
-            ...(coach && ctx.onDuplicate && !round ? [{ label: 'Duplicate', icon: Copy, onSelect: () => ctx.onDuplicate!(e) }] : []),
-            ...(coach && e.canEdit && !e.cancelled && !round
+            ...(coach && ctx.onDuplicate && !roundish ? [{ label: 'Duplicate', icon: Copy, onSelect: () => ctx.onDuplicate!(e) }] : []),
+            ...(coach && e.canEdit && !e.cancelled && !roundish
               ? ([{ kind: 'separator' }, { label: 'Cancel event', icon: CircleX, danger: true, onSelect: () => ctx.onCancel(e) }] as const)
               : []),
-            ...(coach && e.canEdit && e.cancelled && ctx.onRestore && !round ? [{ label: 'Restore event', icon: RotateCcw, onSelect: () => ctx.onRestore!(e) }] : []),
-            ...(coach && e.canEdit && e.cancelled && ctx.onDelete && !round
+            ...(coach && e.canEdit && e.cancelled && ctx.onRestore && !roundish ? [{ label: 'Restore event', icon: RotateCcw, onSelect: () => ctx.onRestore!(e) }] : []),
+            ...(coach && e.canEdit && e.cancelled && ctx.onDelete && !roundish
               ? ([{ kind: 'separator' }, { label: 'Delete permanently', icon: Trash2, danger: true, onSelect: () => ctx.onDelete!(e) }] as const)
               : []),
             ...(coach && e.canEdit && roundOpen && !e.cancelled && ctx.onCancelRound
