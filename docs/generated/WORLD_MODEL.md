@@ -307,8 +307,8 @@ Team Access Control And RLS · active · criticality high · owner platform
 Team Communications · active · criticality high · owner product
 
 - **Relations:** 0 doc/structurally-evidenced, 8 import-graph-only (weak)
-- **Tables:** `golf_message_mentions`, `golf_message_reactions`, `golf_message_responses`
-- **RPCs:** `get_player_hub_announcements`, `mark_golf_messages_read`
+- **Tables:** `golf_conversation_read_marks`, `golf_message_mentions`, `golf_message_reactions`, `golf_message_responses`
+- **RPCs:** `get_player_hub_announcements`, `golf_message_seen_times`, `mark_golf_messages_read`
 - **Test surfaces:** 16
 - **Sentry/admin_events signals:** `announcements`, `messaging`, `notifications`
 
