@@ -18,6 +18,7 @@
  */
 
 import { compareStandings, sameStanding } from '@/lib/coachhelm/v3/qualifying/ranking';
+import { plural, pluralWord } from '../../lib/plural';
 
 export type ChQStatus = 'upcoming' | 'in_progress' | 'completed';
 export type ChQSelectionState = 'open' | 'scoring' | 'closed' | 'selected';
@@ -100,6 +101,11 @@ export interface ChQRow extends ChQEntrant {
   shortRounds: number;
   /** Places gained (positive) or lost (negative) since the previous round; null when there is nothing to compare. */
   move: number | null;
+  /**
+   * A card a round short, once the event is complete (owner decision 10): flagged "Missed a round". During play a short card
+   * still ranks below the complete ones but is not flagged: it may yet play the round (`sampleNote` gives its pace instead).
+   */
+  missed: boolean;
   state: ChQRowState;
   rounds: ChQRound[];
 }
@@ -144,7 +150,13 @@ export function parseSelectionState(s: string | null | undefined): ChQSelectionS
   return s === 'scoring' || s === 'closed' || s === 'selected' ? s : 'open';
 }
 
-/** The scored rows ranked, with positions and ties assigned (states left null), and the unscored rows by name. */
+/** Fewer rounds in than the most anyone on the board has: the group decision 10 ranks below the complete cards. */
+const shortOf = (rows: ReadonlyArray<Pick<ChQRow, 'played'>>) => {
+  const most = rows.reduce((m, r) => Math.max(m, r.played), 0);
+  return (row: Pick<ChQRow, 'played'>) => row.played < most;
+};
+
+/** The scored rows ranked, with positions and ties assigned (states left null; `missed` left false), and the unscored rows by name. */
 function rankRows(entrants: ChQEntrant[], rounds: ChQRound[]): { scored: ChQRow[]; unscored: ChQRow[]; all: ChQRow[] } {
   const byPlayer = new Map<string, ChQRound[]>();
   for (const r of rounds) {
@@ -179,16 +191,21 @@ function rankRows(entrants: ChQEntrant[], rounds: ChQRound[]): { scored: ChQRow[
       avg: full.length ? full.reduce((s, r) => s + (r.total as number), 0) / full.length : null,
       shortRounds: withScore.length - full.length,
       move: null,
+      missed: false,
       state: null,
       rounds,
     };
   });
   const scored = all.filter((r) => r.played > 0);
   const unscored = all.filter((r) => r.played === 0).sort((a, b) => a.name.localeCompare(b.name));
-  scored.sort((a, b) => compareStandings(standingKey(a), standingKey(b)));
+  // Owner decision 10 (B13.3): complete cards rank first, a card with fewer rounds than the most anyone has goes below them,
+  // so a player who skipped a round never stands over one who played it. Ties are only within a group. The flag waits for the
+  // event to end (`buildBoard`).
+  const short = shortOf(scored);
+  scored.sort((a, b) => Number(short(a)) - Number(short(b)) || compareStandings(standingKey(a), standingKey(b)));
   scored.forEach((row, i) => {
     const prev = scored[i - 1];
-    if (prev && sameStanding(standingKey(prev), standingKey(row))) {
+    if (prev && short(prev) === short(row) && sameStanding(standingKey(prev), standingKey(row))) {
       row.position = prev.position;
       row.tied = true;
       prev.tied = true;
@@ -258,9 +275,13 @@ export function buildBoard(input: {
   // Q-114 (owner, 2026-10-01): players level with both the last place on score and the next player share a "Tie at
   // cut" until the coach chooses in Manage selections; name order no longer decides it.
   const cutRow = topScore > 0 ? scored[topScore - 1] : undefined;
-  const tieAtCut = !!cutRow && !!scored[topScore] && sameStanding(standingKey(cutRow), standingKey(scored[topScore]!));
-  const tied = (row: ChQRow) => tieAtCut && sameStanding(standingKey(row), standingKey(cutRow!));
+  const short = shortOf(scored);
+  const level = (a: ChQRow, b: ChQRow) => short(a) === short(b) && sameStanding(standingKey(a), standingKey(b));
+  const tieAtCut = !!cutRow && !!scored[topScore] && level(cutRow, scored[topScore]!);
+  const tied = (row: ChQRow) => tieAtCut && level(row, cutRow!);
   scored.forEach((row, i) => {
+    // "Missed a round" only once the event is complete: during play a short card may still play the round (decision 10).
+    row.missed = input.status === 'completed' && short(row);
     if (confirmed) row.state = confirmed.get(row.playerId) === 'coach_pick' ? 'pick' : confirmed.has(row.playerId) ? 'selected' : null;
     else if (tied(row)) row.state = 'tie';
     else if (input.status === 'completed') row.state = i < topScore ? 'qualified' : null;
@@ -272,19 +293,130 @@ export function buildBoard(input: {
   return { rows: scored, unscored, topScore, squad, submitted: all.reduce((s, r) => s + r.played, 0) };
 }
 
-/** P009-C2, the board's caption: why a player below the line isn't on the Bubble yet, when one round isn't enough to say so. */
+/** One line on the board measured from the viewer's row (row 74, "you vs the line"). */
+export interface ChQLineGap {
+  line: 'score' | 'travel';
+  label: 'Top-score line' | 'Travel cut';
+  /** The viewer is above the line. */
+  inside: boolean;
+  /**
+   * The viewer shares the board's "Tie at cut" at the top-score line (Q-114): level on to par and total strokes with the
+   * last place on score and the next player, so neither side of the line is theirs until the coach chooses.
+   */
+  tie: boolean;
+  /**
+   * Before confirm, the viewer is below the top-score line but above the travel cut: those places are the coach's picks,
+   * not ranked places, so the viewer is neither inside nor outside the travel cut (review of #2361; selectionOutcomeFor).
+   */
+  picks: boolean;
+  /** The row on the far side of the line the viewer is measured against: the first below it, or the last above it. */
+  against: ChQRow;
+  /**
+   * Strokes to par between the two, or null when they have played a different number of rounds: a total over two rounds
+   * set against one over three is not a gap anyone can close or keep (the A1 honesty rule), so it is not given.
+   */
+  strokes: number | null;
+}
+
+/**
+ * Where the squad stands for the card: `open` until the coach confirms, `confirmed` once the selections are in, and
+ * `unknown` when they were confirmed but the selections didn't load (the loader's null), so nothing is said on a guess.
+ */
+export type ChQViewerSelection = 'open' | 'confirmed' | 'unknown';
+
+export function viewerSelection(selectionState: ChQSelectionState, selections: readonly unknown[] | null): ChQViewerSelection {
+  return selectionState !== 'selected' ? 'open' : selections ? 'confirmed' : 'unknown';
+}
+
+/**
+ * After confirm the squad, not the lines, says where the viewer stands, by the rule the player's notice uses
+ * (selectionOutcomeFor, lib/coachhelm/v3/qualifying/player-notify.ts): picked is selected, on score or as the coach's
+ * pick; a ranked player who wasn't picked is not selected. An entrant with no score has no row, so no card (its
+ * `not_scored`). Copied rather than imported: that module sends email and push, and this one ships to the browser.
+ */
+export type ChQViewerOutcome = 'selected' | 'pick' | 'not_selected';
+
+/**
+ * The viewer against the board's lines (row 74): where the top-score line and the travel cut sit relative to their
+ * row, and by how many strokes. Read from the board's own order and the indices it draws its lines at (the phone and
+ * desktop boards draw the top-score line before row `topScore` and the travel cut before row `squad`), never a sort of
+ * its own, so it follows the board's ranking rule wherever that goes (decision 10, row 115). A viewer in the board's
+ * "Tie at cut" is level at the top-score line, not inside or outside it (Q-114).
+ *
+ * Once the squad is confirmed the lines decide nothing: the card gives the outcome instead, and no line, so a picked
+ * player is never "Outside" and an unpicked one never "Inside". Null when the viewer has no ranked row, when the squad
+ * was confirmed but its selections didn't load, or, before confirm, when the board draws no line.
+ */
+export function viewerVsLines(
+  b: Pick<ChQBoard, 'rows' | 'topScore' | 'squad'>,
+  viewerId: string | null | undefined,
+  selection: ChQViewerSelection,
+): { me: ChQRow; gaps: ChQLineGap[]; outcome: ChQViewerOutcome | null } | null {
+  if (!viewerId || selection === 'unknown') return null;
+  const i = b.rows.findIndex((r) => r.playerId === viewerId);
+  const me = b.rows[i];
+  if (!me) return null;
+  if (selection === 'confirmed') {
+    return { me, gaps: [], outcome: me.state === 'pick' ? 'pick' : me.state === 'selected' ? 'selected' : 'not_selected' };
+  }
+  const lines: Array<[ChQLineGap['line'], number, ChQLineGap['label']]> = [['score', b.topScore, 'Top-score line']];
+  if (b.squad !== b.topScore) lines.push(['travel', b.squad, 'Travel cut']);
+  const gaps: ChQLineGap[] = [];
+  for (const [line, cut, label] of lines) {
+    if (cut <= 0 || cut >= b.rows.length) continue;
+    const inside = i < cut;
+    const against = b.rows[inside ? cut : cut - 1]!;
+    const comparable = against.played === me.played && me.toPar != null && against.toPar != null;
+    const picks = line === 'travel' && inside && i >= b.topScore;
+    gaps.push({ line, label, inside: inside && !picks, tie: line === 'score' && me.state === 'tie', picks, against, strokes: comparable ? Math.abs(me.toPar! - against.toPar!) : null });
+  }
+  return gaps.length ? { me, gaps, outcome: null } : null;
+}
+
+/** A line gap in words: "Inside by 3 strokes. Eli is first below it." */
+export function lineGapText(g: ChQLineGap, me: Pick<ChQRow, 'played'>, numRounds: number, first: (name: string) => string): string {
+  const who = first(g.against.name);
+  if (g.tie) return `Tie at cut, level with ${who} on to par and total strokes: your coach decides.`;
+  if (g.picks) return 'In the coach’s pick places: your coach chooses who fills them.';
+  const where = g.inside ? `${who} is first below it` : `${who} holds the last place above it`;
+  if (g.strokes == null) {
+    return `${g.inside ? 'Inside' : 'Outside'}. ${who} has played ${g.against.played} of ${plural(numRounds, 'round')} to your ${me.played}, so the gap isn’t comparable yet.`;
+  }
+  if (g.strokes === 0) return `${g.inside ? 'Inside' : 'Outside'}, level with ${who} on to par: total strokes decide.`;
+  return `${g.inside ? 'Inside' : 'Outside'} by ${plural(g.strokes, 'stroke')}. ${where}.`;
+}
+
+/** The confirmed squad in words, for the card (the player notice's outcome, STATE_LABEL's names). */
+export function viewerOutcomeText(o: ChQViewerOutcome): { label: string; text: string } {
+  if (o === 'not_selected') return { label: 'Not selected', text: 'You were not selected this time.' };
+  return { label: STATE_LABEL[o === 'pick' ? 'pick' : 'selected'].label, text: 'You made the travel squad.' };
+}
+
+/**
+ * The board's order, as `buildBoard` sorts it: complete cards first (owner decision 10), each group by `compareStandings`
+ * (lib/coachhelm/v3/qualifying/ranking.ts). One sentence for desktop and the phone.
+ */
+export const RANK_RULE = 'Complete cards rank first, by total to par, then total strokes, then more rounds played; a card a round short sits below them.';
+
+/** The caption under a board, the same words on desktop and the phone (row 75, CONS-37): the order, who qualifies, the bubble. */
+export function boardCaption(b: Pick<ChQBoard, 'topScore'>, picks: number, numRounds: number, status: ChQStatus): string {
+  return `${RANK_RULE} Top ${b.topScore} qualify on score${picks ? `; ${plural(picks, 'coach’s pick', 'coach’s picks')}` : ''}.${bubbleNote(numRounds, status)}`;
+}
+
 export function bubbleNote(numRounds: number, status: ChQStatus): string {
   const min = bubbleMinRounds(numRounds);
   return status === 'in_progress' && min > 1 ? ` The bubble needs ${min} of ${plural(numRounds, 'round')} in.` : '';
 }
 
 /**
- * The sample-size note (P009-C2): "1 of 3 rounds" on a ranked row with fewer rounds in than the most anyone has, so a
- * total over one round never reads as the same thing as a total over two. Null when the row has kept pace.
+ * The sample-size note (P009-C2): "1 of 3 rounds" on a ranked row with fewer rounds in than the most anyone has, so a total over one
+ * round never reads as the same thing as a total over two; "Missed a round · 1 of 3 rounds" once the event is complete and the row
+ * is flagged (`missed`, owner decision 10). Null when the row has kept pace.
  */
-export function sampleNote(row: Pick<ChQRow, 'played'>, board: Pick<ChQBoard, 'rows'>, numRounds: number): string | null {
-  const most = board.rows.reduce((m, r) => Math.max(m, r.played), 0);
-  return row.played > 0 && row.played < most ? `${row.played} of ${plural(numRounds, 'round')}` : null;
+export function sampleNote(row: Pick<ChQRow, 'played' | 'missed'>, board: Pick<ChQBoard, 'rows'>, numRounds: number): string | null {
+  if (!(row.played > 0 && shortOf(board.rows)(row))) return null;
+  const pace = `${row.played} of ${plural(numRounds, 'round')}`;
+  return row.missed ? `Missed a round · ${pace}` : pace;
 }
 
 /**
@@ -402,7 +534,6 @@ export function yearOf(d: string): string {
   return d.slice(0, 4);
 }
 
-export const plural = (n: number, one: string, many = `${one}s`) => `${n} ${n === 1 ? one : many}`;
 
 /** The form's lede, creating or editing. Its skeleton draws the same sentence, so the lines wrap alike. */
 export const FORM_LEDE = 'Players enter rounds from their app. The leaderboard builds as they sign.';
@@ -430,7 +561,7 @@ export function stageNoteText(
   if (stage === 1) {
     if (nobody) return 'Nobody has a score in and no pick is made yet, so there is no squad to confirm.';
     if (picksReady) return 'Every pick is made. Confirm the squad to tell the players.';
-    const missing = reasons === 1 ? 'the missing reason' : `the ${reasons} missing reasons`;
+    const missing = pluralWord(reasons, 'the missing reason', `the ${reasons} missing reasons`);
     if (!picks) return `Every pick is chosen. Add ${missing}, then confirm the squad.`;
     const what = made ? plural(picks, 'more coach’s pick', 'more coach’s picks') : plural(picks, 'coach’s pick', 'coach’s picks');
     return `Choose ${what}, ${picks === 1 ? 'with a reason' : 'each with a reason'}, to confirm the squad.${reasons ? ` Add ${missing} too.` : ''}`;
@@ -488,3 +619,5 @@ export function validateForm(v: ChQFormValues, opts: { minRounds?: number } = {}
   else if (!wholeIn(v.picks, 0, Number(v.squad))) out.push({ field: 'picks', text: 'Coach’s picks must be a whole number no bigger than the squad.', code: 'CH-09109' });
   return out;
 }
+
+export { plural };

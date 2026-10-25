@@ -1,6 +1,6 @@
 'use client';
 
-import { RefreshCw, TriangleAlert } from 'lucide-react';
+import { RotateCw, TriangleAlert } from 'lucide-react';
 import { useEffect } from 'react';
 import { haptic } from '../../../lib/haptics';
 import { Button } from '../../../ui/Button';
@@ -37,7 +37,7 @@ export function ReloadBanner({ reloading = false, onReload }: { reloading?: bool
   }, []);
   return (
     <div className="ch-rt-note is-warn" role="alert" data-ch-code="CH-11902">
-      <Icon icon={RefreshCw} size={15} />
+      <Icon icon={RotateCw} size={15} />
       <span>
         <b>This round was updated on another device.</b> Saving is paused here so this device can’t overwrite the newer round. Reload to continue.
       </span>

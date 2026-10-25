@@ -4,6 +4,7 @@ import { getValidTimezone } from '@/lib/calendar/timezone';
 import { getCurrentDecimalHourInTz } from '@/lib/utils/timezone';
 import { getGreeting, timeOfDayForHour } from '@/lib/utils/time-of-day';
 import { chLogServer } from '../lib/track-server';
+import { isoDay } from '../lib/dates';
 
 /**
  * The team's clock for Home (and the pages that read the day the way Home does: Team Hub, Classes, Rounds). A leaf
@@ -13,7 +14,7 @@ import { chLogServer } from '../lib/track-server';
 
 /** YYYY-MM-DD for an instant in a timezone. */
 export function ymd(d: Date, tz: string): string {
-  return new Intl.DateTimeFormat('en-CA', { timeZone: tz, year: 'numeric', month: '2-digit', day: '2-digit' }).format(d);
+  return isoDay(d, tz);
 }
 
 /**

@@ -7,6 +7,8 @@ import { playerMine, playerSeesMeeting, replyClosedAt } from '../screens/calenda
 import { CLASS_EVENT_TYPE, isClassEvent } from '@/lib/calendar/class-events';
 import { isCoachHelmEnabledForCoach } from '@/lib/coachhelm/v2/gate';
 import { todayIsoInZone } from '@/lib/golf/timezone';
+import { isoDay } from '../lib/dates';
+import { fullName } from './season';
 
 export interface ChNextEvent {
   id: string;
@@ -49,6 +51,12 @@ export interface ChShellData {
   viewerIsHeadCoach?: boolean;
 }
 
+/** One of the coach's players, as the palette lists them: the id it opens and the name it shows. Nothing more. */
+export interface ChShellPerson {
+  id: string;
+  name: string;
+}
+
 export interface ChRoundInProgress {
   id: string;
   course: string;
@@ -85,6 +93,30 @@ export async function countOverdueTasks(supabase: Awaited<ReturnType<typeof crea
     return null;
   }
   return count ?? 0;
+}
+
+/**
+ * The coach's players, names and ids only, for the palette (owner, decision 16). Active members only: RLS on
+ * golf_players (user_is_coach_of_golf_player) matches active members, so an inactive one would come back empty anyway.
+ * RLS scopes it to the coach's own team; a roster is well under the row cap. Each row is rebuilt as `{ id, name }`, so
+ * no other column can reach the client. Null on failure.
+ *
+ * Read only when the palette first opens (data/palette-people.ts), never with the shell: the shell rides
+ * every page's HTML, which the site's service worker keeps in Cache Storage, and the decision says in memory only.
+ */
+export async function loadPalettePeople(supabase: Awaited<ReturnType<typeof createClient>>, teamId: string): Promise<ChShellPerson[] | null> {
+  const { data, error } = await supabase
+    .from('golf_team_members')
+    .select('player:golf_players(id, first_name, last_name)')
+    .eq('team_id', teamId)
+    .eq('status', 'active')
+    .limit(1000);
+  if (error) {
+    chLogServer('shell', 'palettePeople', error, 'teams');
+    return null;
+  }
+  type P = { id: string; first_name: string | null; last_name: string | null };
+  return ((data ?? []) as Array<{ player: P | null }>).flatMap((m) => (m.player?.id ? [{ id: m.player.id, name: fullName(m.player) }] : []));
 }
 
 export async function loadClubhouseShell(teamId: string | undefined, playerId?: string | null, coachId?: string | null): Promise<ChShellData> {
@@ -225,8 +257,7 @@ export async function loadClubhouseShell(teamId: string | undefined, playerId?: 
 }
 
 function dayNumber(d: Date, timezone: string): number {
-  const [y, m, day] = new Intl.DateTimeFormat('en-CA', { timeZone: timezone, year: 'numeric', month: '2-digit', day: '2-digit' })
-    .format(d)
+  const [y, m, day] = isoDay(d, timezone)
     .split('-')
     .map(Number);
   return Date.UTC(y ?? 1970, (m ?? 1) - 1, day ?? 1) / 86_400_000;

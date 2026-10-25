@@ -1,5 +1,6 @@
 import { Skeleton } from '../../ui/States';
 import '../../styles/recruiting.css';
+import { LargeTitleSkeleton } from '../../ui/LargeTitle';
 
 /** Route loading for Recruiting: the header, the pipeline, the table rows and the panel in their final slots; on a phone, the list's rows (switched in CSS, since this renders on the server). */
 export function RecruitingSkeleton() {
@@ -65,9 +66,7 @@ export function RecruitingSkeleton() {
       {/* The phone page's own classes, so the title, the search, the timeline, the count and each row land where the
           loaded page puts them. */}
       <div className="ch-recm-skel ch-recm-page">
-        <div className="ch-recm-title">
-          <Skeleton width={172} height={33} radius={8} />
-        </div>
+        <LargeTitleSkeleton width={172} className="ch-recm-title" />
         <Skeleton width="100%" height={36} radius={12} />
         <div className="ch-rec-pipe is-compact ch-recm-skel__pipe">
           {Array.from({ length: 4 }, (_, i) => (

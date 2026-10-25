@@ -9,7 +9,9 @@ import type { Transition } from 'motion/react';
  *   2026-10-01, so a page is visible at once under the page crossfade).
  *   Curves: ease-out (.22,1,.36,1), in-out (.65,0,.35,1), spring (.34,1.3,.64,1). Since 2026-10-08, real springs
  *   on the same durations for what moves and can be interrupted or thrown (CH_SPRINGS, below).
- * Banned: count-ups and staggers.
+ * Banned: count-ups and staggers. One exception (owner decision 1, 2026-10-24, OQ-16 / B9): when a chart's figures change
+ * (a new window), its bars, dots and lines glide to their new places over the base beat (useGlide, lib/motion-glide.ts).
+ * Never on first paint, never under reduced motion, and the digits beside them do not roll: they take the new figure at once.
  */
 export const CH_EASE = [0.22, 1, 0.36, 1] as const;
 export const CH_EASE_IO = [0.65, 0, 0.35, 1] as const;
@@ -30,6 +32,17 @@ export const CH_SCROLL_DUR = 0.85;
 export function chTween(duration: keyof typeof CH_DUR = 'base', reduced = false): Transition {
   return { duration: reduced ? 0 : CH_DUR[duration], ease: CH_EASE };
 }
+
+/**
+ * The Reduce Motion fade (owner decision 2, 2026-10-24, OQ-15): under the OS setting a page or a sheet fades in opacity
+ * over the quick beat (180ms) instead of sliding or scaling, as iOS does; with Animations off (`'off'`) it is instant.
+ * Opacity only: the caller drops every transform.
+ */
+export function chFade(mode: 'full' | 'fade' | 'off'): Transition {
+  return { duration: mode === 'off' ? 0 : CH_DUR.quick, ease: CH_EASE };
+}
+/** The same fade in milliseconds, for WAAPI and a view transition (--ch-dur-vt-fade in tokens.css). */
+export const CH_FADE_MS = CH_DUR.quick * 1000;
 
 /**
  * Springs (D-64 extension, 2026-10-08; a lead decision under the owner's full-auto brief, for the owner to confirm).

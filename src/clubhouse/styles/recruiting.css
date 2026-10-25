@@ -4,7 +4,7 @@
   display: flex;
   flex-direction: column;
   gap: 22px;
-  max-width: 1320px;
+  max-width: var(--ch-measure-wide);
   margin: 0 auto;
   padding: var(--ch-page-head-top) var(--ch-page-gutter) 80px;
 }
@@ -25,12 +25,13 @@
   letter-spacing: -0.01em;
 }
 .ch-rec-head p {
-  font: 400 calc(15 * var(--ch-type-k))/1.4 var(--ch-font-sans);
+  font: var(--ch-type-15);
+  letter-spacing: var(--ch-track-15);
   color: var(--ch-text-secondary);
 }
 /* No team (CH-14306): the page state alone, in the page's frame. Not .ch-rec, which is hidden under 820px until the phone view takes over. */
 .ch-rec-none {
-  max-width: 1240px;
+  max-width: var(--ch-measure-page);
   margin: 0 auto;
   padding: var(--ch-page-head-top) var(--ch-page-gutter) 80px;
 }
@@ -39,8 +40,8 @@
 .ch-rec-pipe {
   display: flex;
   flex-direction: column;
-  gap: 18px;
-  padding: 18px 24px 20px;
+  gap: 16px;
+  padding: 16px 24px 20px;
   border-radius: var(--ch-radius-xl);
   background: var(--ch-ivory-25);
   box-shadow: var(--ch-elevation-reading);
@@ -54,13 +55,13 @@
 .ch-rec-pipe__sum {
   display: flex;
   align-items: baseline;
-  gap: 10px;
+  gap: 8px;
 }
 .ch-rec-pipe__sum b {
-  font: 600 calc(14 * var(--ch-type-k))/1.3 var(--ch-font-sans);
+  font: var(--ch-type-14-strong);
 }
 .ch-rec-pipe__sum span {
-  font: 400 calc(13 * var(--ch-type-k))/1.3 var(--ch-font-sans);
+  font: var(--ch-type-13);
   font-variant-numeric: tabular-nums;
   color: var(--ch-text-tertiary);
 }
@@ -69,11 +70,12 @@
   align-items: center;
   gap: 4px;
   height: 32px;
-  padding: 0 10px;
+  padding: 0 8px;
   border: 0;
   border-radius: var(--ch-radius-sm);
   background: none;
-  font: 500 calc(13 * var(--ch-type-k))/1 var(--ch-font-sans);
+  font: var(--ch-type-13-medium);
+  line-height: var(--ch-lead-tight);
   color: var(--ch-green-600);
   cursor: pointer;
 }
@@ -93,7 +95,7 @@
   top: 27px;
   width: calc(25% - 64px);
   height: 3px;
-  border-radius: 2px;
+  border-radius: 999px;
 }
 .ch-rec-pipe__seg.is-1 {
   left: calc(12.5% + 32px);
@@ -173,14 +175,15 @@
 .ch-rec-pipe__txt {
   display: flex;
   flex-direction: column;
-  gap: 3px;
+  gap: 4px;
 }
 .ch-rec-pipe__txt b {
-  font: 600 calc(15 * var(--ch-type-k))/1.3 var(--ch-font-sans);
+  font: var(--ch-type-15-strong);
+  letter-spacing: var(--ch-track-15);
   color: var(--ch-text-primary);
 }
 .ch-rec-pipe__txt span {
-  font: 400 calc(13 * var(--ch-type-k))/1.3 var(--ch-font-sans);
+  font: var(--ch-type-13);
   color: var(--ch-text-tertiary);
 }
 
@@ -205,7 +208,7 @@
   display: flex;
   align-items: center;
   gap: 12px;
-  padding: 14px 16px;
+  padding: 16px 16px;
   box-shadow: 0 1px 0 var(--ch-border-hairline);
 }
 .ch-rec-search {
@@ -215,11 +218,11 @@
 .ch-rec-tb {
   width: 100%;
   border-collapse: collapse;
-  font: 400 14px/1.4 var(--ch-font-sans);
+  font: var(--ch-type-14);
 }
 .ch-rec-tb th[scope='col'] {
-  padding: 10px 12px;
-  font: 500 12px/1.3 var(--ch-font-sans);
+  padding: 8px 12px;
+  font: var(--ch-type-12-medium);
   text-align: left;
   color: var(--ch-text-tertiary);
 }
@@ -285,7 +288,7 @@
 }
 .ch-rec-tb__sub {
   display: none;
-  font: 400 13px/1.3 var(--ch-font-sans);
+  font: var(--ch-type-13);
   color: var(--ch-text-tertiary);
 }
 /* The list is narrower than the table needs once the panel is open: class and hometown move under the name, then the date goes. */
@@ -333,9 +336,10 @@
   flex: none;
   align-items: center;
   height: 24px;
-  padding: 0 9px;
+  padding: 0 8px;
   border-radius: var(--ch-radius-sm);
-  font: 600 calc(13 * var(--ch-type-k))/1 var(--ch-font-sans);
+  font: var(--ch-type-13-strong);
+  line-height: var(--ch-lead-tight);
   white-space: nowrap;
 }
 .ch-rec-chip.is-lg {
@@ -376,29 +380,29 @@
   display: flex;
   flex: none;
   flex-direction: column;
-  gap: 14px;
-  padding: 22px 22px 18px;
+  gap: 16px;
+  padding: 24px 24px 16px;
   box-shadow: 0 1px 0 var(--ch-border-hairline);
 }
 .ch-rec-panel__who {
   display: flex;
   align-items: flex-start;
-  gap: 14px;
+  gap: 16px;
 }
 .ch-rec-panel__id {
   display: flex;
   flex: 1;
   flex-direction: column;
-  gap: 3px;
+  gap: 4px;
   min-width: 0;
 }
 .ch-rec-panel__id h2 {
-  font: 600 20px/1.2 var(--ch-font-sans);
-  letter-spacing: -0.015em;
+  font: var(--ch-type-20-strong);
+  letter-spacing: var(--ch-track-20);
   overflow-wrap: anywhere;
 }
 .ch-rec-panel__id span {
-  font: 400 14px/1.4 var(--ch-font-sans);
+  font: var(--ch-type-14);
   color: var(--ch-text-secondary);
 }
 .ch-rec-stage .ch-seg {
@@ -414,7 +418,7 @@
   flex-direction: column;
   gap: 20px;
   min-height: 0;
-  padding: 18px 22px;
+  padding: 16px 24px;
   overflow: auto;
   overscroll-behavior: contain;
 }
@@ -424,20 +428,21 @@
   align-items: center;
   justify-content: space-between;
   gap: 12px;
-  padding: 12px 22px 16px;
+  padding: 12px 24px 16px;
   box-shadow: 0 -1px 0 var(--ch-border-hairline);
 }
 .ch-rec-meta {
-  font: 400 calc(13 * var(--ch-type-k))/1.4 var(--ch-font-sans);
+  font: var(--ch-type-13);
   color: var(--ch-text-tertiary);
 }
 .ch-rec-danger {
   height: 36px;
-  padding: 0 10px;
+  padding: 0 8px;
   border: 0;
   border-radius: var(--ch-radius-md);
   background: none;
-  font: 500 calc(14 * var(--ch-type-k))/1 var(--ch-font-sans);
+  font: var(--ch-type-14-medium);
+  line-height: var(--ch-lead-tight);
   color: var(--ch-danger-600);
   cursor: pointer;
 }
@@ -485,7 +490,7 @@
 }
 .ch-rec-sec h2,
 .ch-rec-sec h3 {
-  font: 600 calc(13 * var(--ch-type-k))/1.3 var(--ch-font-sans);
+  font: var(--ch-type-13-strong);
   color: var(--ch-text-tertiary);
 }
 .ch-rec-sec__head {
@@ -499,11 +504,12 @@
   align-items: center;
   gap: 6px;
   height: 32px;
-  padding: 0 10px;
+  padding: 0 8px;
   border: 0;
   border-radius: var(--ch-radius-sm);
   background: none;
-  font: 500 calc(13 * var(--ch-type-k))/1 var(--ch-font-sans);
+  font: var(--ch-type-13-medium);
+  line-height: var(--ch-lead-tight);
   color: var(--ch-green-600);
   cursor: pointer;
 }
@@ -515,14 +521,14 @@
 .ch-rec-rows {
   overflow: hidden;
   border-radius: var(--ch-radius-lg);
-  box-shadow: 0 0 0 1px rgb(28 25 18 / 0.08);
+  box-shadow: 0 0 0 var(--ch-hairline-w) var(--ch-border-hairline);
 }
 .ch-rec-row {
   display: flex;
   align-items: center;
   gap: 12px;
   min-height: 48px;
-  padding: 0 14px;
+  padding: 0 16px;
   color: inherit;
   text-decoration: none;
 }
@@ -541,19 +547,20 @@
 .ch-rec-row__v {
   flex: 1;
   min-width: 0;
-  font: 400 calc(14 * var(--ch-type-k))/1.4 var(--ch-font-sans);
+  font: var(--ch-type-14);
   font-variant-numeric: tabular-nums;
   overflow-wrap: anywhere;
 }
 .ch-rec-row__a {
-  font: 500 calc(13 * var(--ch-type-k))/1 var(--ch-font-sans);
+  font: var(--ch-type-13-medium);
+  line-height: var(--ch-lead-tight);
   color: var(--ch-green-600);
 }
 .ch-rec-notes {
-  padding: 12px 14px;
+  padding: 12px 16px;
   border-radius: var(--ch-radius-lg);
   background: var(--ch-ivory-100);
-  font: 400 calc(14 * var(--ch-type-k))/1.55 var(--ch-font-sans);
+  font: var(--ch-type-14);
   overflow-wrap: anywhere;
   white-space: pre-wrap;
 }
@@ -563,7 +570,7 @@
   overflow: hidden;
   list-style: none;
   border-radius: var(--ch-radius-lg);
-  box-shadow: 0 0 0 1px rgb(28 25 18 / 0.08);
+  box-shadow: 0 0 0 var(--ch-hairline-w) var(--ch-border-hairline);
 }
 .ch-rec-doc {
   display: flex;
@@ -576,7 +583,7 @@
 }
 .ch-rec-docs.is-loading .ch-rec-doc {
   justify-content: space-between;
-  padding: 0 14px;
+  padding: 0 16px;
 }
 .ch-rec-doc__open {
   display: flex;
@@ -585,7 +592,7 @@
   gap: 12px;
   min-width: 0;
   min-height: 50px;
-  padding: 0 4px 0 14px;
+  padding: 0 4px 0 16px;
   border: 0;
   background: none;
   font: inherit;
@@ -601,15 +608,15 @@
 .ch-rec-doc__t {
   flex: 1;
   min-width: 0;
-  font: 400 calc(14 * var(--ch-type-k))/1.4 var(--ch-font-sans);
+  font: var(--ch-type-14);
   overflow-wrap: anywhere;
 }
 .ch-rec-tag {
   flex: none;
-  padding: 3px 8px;
+  padding: 4px 8px;
   border-radius: var(--ch-radius-sm);
   background: var(--ch-ivory-150);
-  font: 500 calc(12 * var(--ch-type-k))/1.2 var(--ch-font-sans);
+  font: var(--ch-type-12-medium);
   color: var(--ch-ink-600);
 }
 .ch-rec-doc__x {
@@ -637,7 +644,7 @@
   outline-offset: -2px;
 }
 .ch-rec-note {
-  font: 400 calc(12 * var(--ch-type-k))/1.4 var(--ch-font-sans);
+  font: var(--ch-type-12);
   color: var(--ch-text-tertiary);
 }
 /* The file drop (desktop): the section shows where a file will land while one is over it (CH-14111). */
@@ -655,7 +662,7 @@
   border: 1.5px dashed var(--ch-green-500);
   border-radius: var(--ch-radius-lg);
   background: rgb(238 245 240 / 0.94);
-  font: 500 calc(14 * var(--ch-type-k))/1.3 var(--ch-font-sans);
+  font: var(--ch-type-14-medium);
   color: var(--ch-green-600);
   pointer-events: none;
 }
@@ -686,7 +693,7 @@
   display: flex;
   align-items: center;
   gap: 12px;
-  padding: 14px;
+  padding: 16px;
   border-radius: var(--ch-radius-lg);
   background: var(--ch-ivory-25);
   box-shadow: var(--ch-elevation-reading);
@@ -709,10 +716,10 @@
   min-width: 0;
 }
 .ch-rec-empty__t b {
-  font: 600 calc(14 * var(--ch-type-k))/1.35 var(--ch-font-sans);
+  font: var(--ch-type-14-strong);
 }
 .ch-rec-empty__t span {
-  font: 400 calc(13 * var(--ch-type-k))/1.4 var(--ch-font-sans);
+  font: var(--ch-type-13);
   color: var(--ch-text-tertiary);
 }
 .ch-rec-empty__a {
@@ -722,7 +729,8 @@
   border: 0;
   border-radius: var(--ch-radius-sm);
   background: none;
-  font: 500 calc(14 * var(--ch-type-k))/1 var(--ch-font-sans);
+  font: var(--ch-type-14-medium);
+  line-height: var(--ch-lead-tight);
   color: var(--ch-green-600);
   cursor: pointer;
 }
@@ -741,7 +749,7 @@
 .ch-rec-form__grid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 14px 16px;
+  gap: 16px 16px;
 }
 .ch-rec-form__grp {
   display: contents;
@@ -760,7 +768,7 @@
 .ch-rec-up {
   display: flex;
   flex-direction: column;
-  gap: 14px;
+  gap: 16px;
 }
 
 /* ── Phone (owner boards Phone*; spec docs/clubhouse/phone/recruiting.md). RecruitingPhone renders only under 820px (useChPhone); the rules sit under the same query. ── */
@@ -778,7 +786,7 @@
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 10px;
+  gap: 8px;
 }
 .ch-rec-skel-row {
   display: flex;
@@ -795,16 +803,13 @@
   }
   .ch-rec[aria-busy='true'],
   .ch-rec-none {
-    padding: 26px 20px 32px;
+    padding: var(--ch-page-top-phone) var(--ch-page-x-phone) var(--ch-page-bottom-phone);
   }
   .ch-rec-skel-desk {
     display: none;
   }
   .ch-recm-skel {
     display: flex;
-  }
-  .ch-recm-skel .ch-recm-title {
-    padding-bottom: 0.48px;
   }
   .ch-rec-pipe.is-compact.ch-recm-skel__pipe {
     display: grid;
@@ -814,7 +819,7 @@
     display: flex;
     flex-direction: column;
     align-items: center;
-    gap: 10px;
+    gap: 8px;
     min-height: 64px;
   }
   .ch-recm-skel__list {
@@ -828,8 +833,13 @@
   .ch-recm-row--static {
     cursor: default;
   }
-  .ch-recm-row.ch-recm-row--static:active {
+  .ch-recm-row.ch-recm-row--static[data-ch-pressed] {
     background: none;
+  }
+  @media (hover: hover) {
+    .ch-recm-row.ch-recm-row--static:active {
+      background: none;
+    }
   }
 
   /* The Mobile clubhouse pass (owner, 2026-10-08; the Coach Home board carried to every phone screen): the page opens on
@@ -838,8 +848,8 @@
   .ch-recm {
     display: flex;
     flex-direction: column;
-    gap: 12px;
-    padding: 26px 20px 32px;
+    gap: var(--ch-gap-group);
+    padding: var(--ch-page-top-phone) var(--ch-page-x-phone) var(--ch-page-bottom-phone);
   }
   .ch-recm-page {
     display: flex;
@@ -852,14 +862,10 @@
     flex-direction: column;
     gap: 6px;
   }
+  /* The large title (.ch-large-title, shell.css) under the board's engraved double rule. */
   .ch-recm-title {
-    margin: 0;
-    padding-top: 14px;
+    padding-top: 16px;
     border-top: var(--ch-ledger-rule-double);
-    font: 600 calc(34 * var(--ch-type-k))/1.08 var(--ch-font-sans);
-    letter-spacing: -0.038em;
-    font-variation-settings: 'wdth' 88;
-    color: var(--ch-ledger-ink);
   }
   /* The kit's field (its material kept), 36px drawn and 44px to the finger: the label's reach focuses the input, while
      the input and its clear key sit above it and take their own taps. */
@@ -884,9 +890,9 @@
   /* The compact timeline: between two hairlines, as the board's figures, with no box around it. */
   .ch-rec-pipe.is-compact {
     gap: 0;
-    padding: 14px 0 12px;
-    border-top: 1px solid var(--ch-ledger-rule);
-    border-bottom: 1px solid var(--ch-ledger-rule);
+    padding: 16px 0 12px;
+    border-top: var(--ch-hairline-w) solid var(--ch-ledger-rule);
+    border-bottom: var(--ch-hairline-w) solid var(--ch-ledger-rule);
     border-radius: 0;
     background: none;
     box-shadow: none;
@@ -908,7 +914,7 @@
   }
   .ch-rec-pipe.is-compact .ch-rec-pipe__stage {
     min-height: 64px;
-    gap: 7px;
+    gap: 8px;
     padding: 0;
   }
   .ch-rec-pipe.is-compact .ch-rec-pipe__dot {
@@ -940,8 +946,13 @@
   .ch-rec-pipe.is-compact .ch-rec-pipe__stage.is-committed > .ch-rec-pipe__dot::after {
     background: rgb(2 18 10 / 0.22);
   }
-  .ch-rec-pipe.is-compact .ch-rec-pipe__stage:active:not(:disabled) > .ch-rec-pipe__dot::after {
+  .ch-rec-pipe.is-compact .ch-rec-pipe__stage[data-ch-pressed]:not(:disabled) > .ch-rec-pipe__dot::after {
     opacity: 1;
+  }
+  @media (hover: hover) {
+    .ch-rec-pipe.is-compact .ch-rec-pipe__stage:active:not(:disabled) > .ch-rec-pipe__dot::after {
+      opacity: 1;
+    }
   }
 
   .ch-recm-count {
@@ -950,7 +961,7 @@
     justify-content: space-between;
   }
   .ch-recm-count > span {
-    font: 500 calc(13 * var(--ch-type-k))/1.3 var(--ch-font-sans);
+    font: var(--ch-type-13-medium);
     font-variant-numeric: tabular-nums;
     color: var(--ch-text-tertiary);
   }
@@ -965,31 +976,37 @@
     border: 0;
     border-radius: var(--ch-radius-md);
     background: none;
-    font: 500 calc(14 * var(--ch-type-k))/1 var(--ch-font-sans);
+    font: var(--ch-type-14-medium);
+    line-height: var(--ch-lead-tight);
     color: var(--ch-green-600);
     cursor: pointer;
     touch-action: manipulation;
     transition: background var(--ch-dur-press) var(--ch-ease);
   }
-  .ch-recm-sort:active {
+  .ch-recm-sort[data-ch-pressed] {
     background: var(--ch-ledger-row-press);
+  }
+  @media (hover: hover) {
+    .ch-recm-sort:active {
+      background: var(--ch-ledger-row-press);
+    }
   }
   /* The prospects: rows on seams under a hairline, with no card. */
   .ch-recm-list {
     margin: 0;
     padding: 0;
     list-style: none;
-    box-shadow: inset 0 1px 0 var(--ch-ledger-rule);
+    box-shadow: inset 0 var(--ch-hairline-w) 0 var(--ch-ledger-rule);
   }
   .ch-recm-list > li + li {
-    box-shadow: inset 0 1px 0 var(--ch-ledger-rule-soft);
+    box-shadow: inset 0 var(--ch-hairline-w) 0 var(--ch-ledger-rule-soft);
   }
   /* A row's tint reaches 12px past the text on each side, so the names and chips stay on the page's edge; a press lays
      the row press tint over it for the press beat (CH-14604). */
   .ch-recm-row {
     display: flex;
     align-items: center;
-    gap: 14px;
+    gap: 16px;
     box-sizing: border-box;
     width: calc(100% + 24px);
     min-height: 66px;
@@ -1005,8 +1022,13 @@
     touch-action: manipulation;
     transition: background var(--ch-dur-press) var(--ch-ease);
   }
-  .ch-recm-row:active {
+  .ch-recm-row[data-ch-pressed] {
     background: var(--ch-ledger-row-press);
+  }
+  @media (hover: hover) {
+    .ch-recm-row:active {
+      background: var(--ch-ledger-row-press);
+    }
   }
   .ch-recm-row:focus-visible {
     outline: 2px solid var(--ch-border-focus);
@@ -1016,17 +1038,18 @@
     display: flex;
     flex: 1;
     flex-direction: column;
-    gap: 3px;
+    gap: 4px;
     min-width: 0;
   }
   .ch-recm-row__b b {
-    font: 600 calc(15 * var(--ch-type-k))/1.25 var(--ch-font-sans);
-    letter-spacing: -0.012em;
+    font: var(--ch-type-15-strong);
+    letter-spacing: var(--ch-track-15);
     color: var(--ch-text-primary);
     overflow-wrap: anywhere;
   }
   .ch-recm-row__b span {
-    font: var(--ch-type-caption);
+    font: var(--ch-type-13);
+    line-height: var(--ch-lead-caption);
     color: var(--ch-text-tertiary);
   }
   /* A prospect: a pushed screen with its own scroll, on the same ledger. Who, then Stage with Email and Call as keys
@@ -1035,7 +1058,7 @@
   .ch-recm-scroll {
     flex: 1;
     min-height: 0;
-    padding: 26px 20px calc(32px + env(safe-area-inset-bottom));
+    padding: 24px 20px calc(32px + env(safe-area-inset-bottom));
     overflow: auto;
     overscroll-behavior: contain;
   }
@@ -1046,8 +1069,8 @@
   .ch-recm-hero {
     display: flex;
     align-items: center;
-    gap: 14px;
-    margin-bottom: 22px;
+    gap: 16px;
+    margin-bottom: 24px;
   }
   .ch-recm-hero > span:not(.ch-rec-av) {
     display: flex;
@@ -1056,14 +1079,15 @@
     min-width: 0;
   }
   .ch-recm-hero b {
-    font: 600 calc(28 * var(--ch-type-k))/1.1 var(--ch-font-sans);
-    letter-spacing: -0.035em;
+    font: var(--ch-type-28-strong);
+    line-height: var(--ch-lead-tight);
+    letter-spacing: var(--ch-track-28);
     font-variation-settings: 'wdth' 88;
     color: var(--ch-ledger-ink);
     overflow-wrap: anywhere;
   }
   .ch-recm-hero > span > span {
-    font: 400 calc(14 * var(--ch-type-k))/1.4 var(--ch-font-sans);
+    font: var(--ch-type-14);
     color: var(--ch-text-secondary);
   }
   /* Email and Call: two smaller actions under the Stage row (P014 finding #8), one when only one is known. */
@@ -1085,15 +1109,15 @@
     flex-direction: row;
     align-items: center;
     justify-content: flex-start;
-    gap: 10px;
+    gap: 8px;
     min-width: 0;
     min-height: 56px;
-    padding: 8px 14px;
+    padding: 8px 16px;
     border: 0;
     border-radius: var(--ch-radius-md);
     background: none;
-    box-shadow: inset 0 0 0 1px var(--ch-ledger-rule);
-    font: 600 calc(13 * var(--ch-type-k))/1.2 var(--ch-font-sans);
+    box-shadow: inset 0 0 0 var(--ch-hairline-w) var(--ch-ledger-rule);
+    font: var(--ch-type-13-strong);
     color: var(--ch-green-600);
     text-decoration: none;
     cursor: pointer;
@@ -1110,7 +1134,7 @@
   }
   .ch-recm-tile__v {
     overflow: hidden;
-    font: 400 calc(13 * var(--ch-type-k))/1.25 var(--ch-font-sans);
+    font: var(--ch-type-13);
     color: var(--ch-text-secondary);
     white-space: nowrap;
     text-overflow: ellipsis;
@@ -1125,8 +1149,13 @@
     content: '';
     pointer-events: none;
   }
-  .ch-recm-tile:active::after {
+  .ch-recm-tile[data-ch-pressed]::after {
     opacity: 1;
+  }
+  @media (hover: hover) {
+    .ch-recm-tile:active::after {
+      opacity: 1;
+    }
   }
   .ch-recm-tile:focus-visible {
     outline: 2px solid var(--ch-border-focus);
@@ -1137,7 +1166,7 @@
     position: relative;
     display: flex;
     align-items: center;
-    gap: 10px;
+    gap: 8px;
     box-sizing: border-box;
     width: calc(100% + 24px);
     height: 56px;
@@ -1146,7 +1175,9 @@
     border: 0;
     border-radius: var(--ch-radius-md);
     background: none;
-    font: 500 calc(16 * var(--ch-type-k))/1 var(--ch-font-sans);
+    font: var(--ch-type-16-medium);
+    letter-spacing: var(--ch-track-16);
+    line-height: var(--ch-lead-tight);
     color: var(--ch-text-primary);
     text-align: left;
     cursor: pointer;
@@ -1158,7 +1189,7 @@
     position: absolute;
     right: 12px;
     left: 12px;
-    height: 1px;
+    height: var(--ch-hairline-w);
     background: var(--ch-ledger-rule-soft);
     content: '';
     pointer-events: none;
@@ -1169,8 +1200,13 @@
   .ch-recm-stagerow::after {
     bottom: 0;
   }
-  .ch-recm-stagerow:active {
+  .ch-recm-stagerow[data-ch-pressed] {
     background: var(--ch-ledger-row-press);
+  }
+  @media (hover: hover) {
+    .ch-recm-stagerow:active {
+      background: var(--ch-ledger-row-press);
+    }
   }
   .ch-recm-stagerow:focus-visible {
     outline: 2px solid var(--ch-border-focus);
@@ -1194,8 +1230,8 @@
   }
   .ch-recm-det .ch-rec-sec > h2,
   .ch-recm-det .ch-rec-sec__head h2 {
-    font: 600 calc(20 * var(--ch-type-k))/1.2 var(--ch-font-sans);
-    letter-spacing: -0.025em;
+    font: var(--ch-type-section);
+    letter-spacing: var(--ch-track-section);
     font-variation-settings: 'wdth' 88;
     color: var(--ch-ledger-ink);
   }
@@ -1211,22 +1247,22 @@
   /* A part with nothing in it yet is one row on a seam. Rows that follow the Stage row or each other run on as one
      ledger; the first of a run after anything else opens on a seam of its own. */
   .ch-recm-det > .ch-rec-sec:has(> .ch-rec-empty) {
-    margin-top: 22px;
+    margin-top: 24px;
   }
   .ch-recm-det > .ch-recm-stagerow + .ch-rec-sec:has(> .ch-rec-empty),
   .ch-recm-det > .ch-rec-sec:has(> .ch-rec-empty) + .ch-rec-sec:has(> .ch-rec-empty) {
     margin-top: 0;
   }
   .ch-recm-det .ch-rec-empty {
-    gap: 14px;
-    padding: 14px 0;
+    gap: 16px;
+    padding: 16px 0;
     border-radius: 0;
     background: none;
-    box-shadow: inset 0 -1px 0 var(--ch-ledger-rule-soft);
+    box-shadow: inset 0 calc(-1 * var(--ch-hairline-w)) 0 var(--ch-ledger-rule-soft);
   }
   .ch-recm-det > .ch-recm-tiles + .ch-rec-sec > .ch-rec-empty,
   .ch-recm-det > .ch-rec-sec:not(:has(> .ch-rec-empty)) + .ch-rec-sec > .ch-rec-empty {
-    box-shadow: inset 0 1px 0 var(--ch-ledger-rule-soft), inset 0 -1px 0 var(--ch-ledger-rule-soft);
+    box-shadow: inset 0 var(--ch-hairline-w) 0 var(--ch-ledger-rule-soft), inset 0 calc(-1 * var(--ch-hairline-w)) 0 var(--ch-ledger-rule-soft);
   }
   .ch-recm-det .ch-rec-empty__t b {
     font-size: calc(15 * var(--ch-type-k));
@@ -1238,21 +1274,31 @@
     touch-action: manipulation;
     transition: background var(--ch-dur-press) var(--ch-ease);
   }
-  .ch-recm-det .ch-rec-empty__a:active {
+  .ch-recm-det .ch-rec-empty__a[data-ch-pressed] {
     background: var(--ch-ledger-row-press);
+  }
+  @media (hover: hover) {
+    .ch-recm-det .ch-rec-empty__a:active {
+      background: var(--ch-ledger-row-press);
+    }
   }
   /* 44px tall on the heading's line; it sits above the first row, so its reach is not cut by the row under it. */
   .ch-recm-det .ch-rec-link {
     position: relative;
     z-index: 1;
     height: 44px;
-    margin: -12px -10px -12px 0;
+    margin: -12px -8px -12px 0;
     font-size: calc(14 * var(--ch-type-k));
     touch-action: manipulation;
     transition: background var(--ch-dur-press) var(--ch-ease);
   }
-  .ch-recm-det .ch-rec-link:active {
+  .ch-recm-det .ch-rec-link[data-ch-pressed] {
     background: var(--ch-ledger-row-press);
+  }
+  @media (hover: hover) {
+    .ch-recm-det .ch-rec-link:active {
+      background: var(--ch-ledger-row-press);
+    }
   }
   .ch-recm-det .ch-rec-notes {
     padding: 6px 0 0;
@@ -1272,7 +1318,7 @@
     box-shadow: none;
   }
   .ch-recm-det .ch-rec-doc + .ch-rec-doc {
-    box-shadow: inset 0 1px 0 var(--ch-ledger-rule-soft);
+    box-shadow: inset 0 var(--ch-hairline-w) 0 var(--ch-ledger-rule-soft);
   }
   .ch-recm-det .ch-rec-docs.is-loading .ch-rec-doc {
     padding: 0;
@@ -1287,8 +1333,13 @@
     touch-action: manipulation;
     transition: background var(--ch-dur-press) var(--ch-ease);
   }
-  .ch-recm-det .ch-rec-doc__open:active {
+  .ch-recm-det .ch-rec-doc__open[data-ch-pressed] {
     background: var(--ch-ledger-row-press);
+  }
+  @media (hover: hover) {
+    .ch-recm-det .ch-rec-doc__open:active {
+      background: var(--ch-ledger-row-press);
+    }
   }
   .ch-recm-det .ch-rec-doc__t {
     font-size: calc(15 * var(--ch-type-k));
@@ -1296,149 +1347,28 @@
   .ch-recm-det .ch-rec-doc__x {
     width: 44px;
     height: 44px;
-    margin-right: -10px;
+    margin-right: -8px;
     touch-action: manipulation;
     transition: background var(--ch-dur-press) var(--ch-ease);
   }
-  .ch-recm-det .ch-rec-doc__x:active {
+  .ch-recm-det .ch-rec-doc__x[data-ch-pressed] {
     background: var(--ch-ledger-row-press);
+  }
+  @media (hover: hover) {
+    .ch-recm-det .ch-rec-doc__x:active {
+      background: var(--ch-ledger-row-press);
+    }
   }
   .ch-recm-det .ch-rec-note {
     padding-top: 6px;
     font-size: calc(13 * var(--ch-type-k));
   }
   .ch-recm-det > .ch-rec-meta {
-    margin-top: 18px;
+    margin-top: 16px;
     font-size: calc(13 * var(--ch-type-k));
   }
   .ch-recm-det .ch-rec-row {
     min-height: 52px;
-  }
-
-  /* Sheets on the native <dialog>: a bottom sheet, the stage picker, and the iOS action sheet */
-  .ch-rec-dlg {
-    box-sizing: border-box;
-    width: 100%;
-    max-width: none;
-    max-height: none;
-    margin: auto 0 0;
-    padding: 0;
-    overflow: visible;
-    border: 0;
-    background: transparent;
-    color: var(--ch-text-primary);
-    font-variant-numeric: tabular-nums;
-  }
-  .ch-rec-dlg::backdrop {
-    background: var(--ch-scrim, rgb(20 20 18 / 0.36));
-    /* The dim fades by its own opacity, which the dialog drives (--ch-scrim-a: open, close, drag); never a keyframe (A9). */
-    opacity: var(--ch-scrim-a, 1);
-    transition: opacity var(--ch-scrim-dur, var(--ch-dur-base)) var(--ch-scrim-ease, var(--ch-ease));
-  }
-  body.keyboard-open .ch-rec-dlg {
-    margin-bottom: var(--keyboard-height, 0px);
-  }
-  .ch-rec-sheet {
-    display: flex;
-    flex-direction: column;
-    gap: 14px;
-    box-sizing: border-box;
-    max-height: calc(100dvh - 54px);
-    padding: 8px 16px max(40px, calc(16px + env(safe-area-inset-bottom)));
-    overflow: hidden;
-    border-radius: 24px 24px 0 0;
-    background: var(--ch-bg-page);
-    box-shadow: var(--ch-elevation-sheet);
-    animation: ch-rise var(--ch-dur-spring-smooth) var(--ch-ease-spring-smooth);
-  }
-  .ch-rec-sheet.is-full {
-    height: calc(100dvh - max(54px, env(safe-area-inset-top)));
-    gap: 16px;
-  }
-  body.keyboard-open .ch-rec-sheet {
-    max-height: calc(100dvh - max(54px, env(safe-area-inset-top)) - var(--keyboard-height, 0px));
-  }
-  body.keyboard-open .ch-rec-act {
-    max-height: calc(100dvh - var(--keyboard-height, 0px) - env(safe-area-inset-top) - 8px);
-    overflow-y: auto;
-    overscroll-behavior: contain;
-  }
-  .ch-rec-sheet__body {
-    display: flex;
-    flex: 1 1 auto;
-    flex-direction: column;
-    gap: 16px;
-    min-height: 0;
-    overflow-y: auto;
-    overscroll-behavior: contain;
-  }
-  .ch-rec-sheet__note {
-    overflow-wrap: anywhere;
-    flex: none;
-    margin: 0 8px;
-    font: 400 calc(13 * var(--ch-type-k))/1.4 var(--ch-font-sans);
-    color: var(--ch-text-tertiary);
-  }
-  .ch-rec-grab {
-    position: relative;
-    flex: none;
-    align-self: center;
-    width: 36px;
-    height: 5px;
-    border-radius: 3px;
-    background: var(--ch-ivory-400);
-    touch-action: none;
-  }
-  /* A bigger grip to take hold of. */
-  .ch-rec-grab::after {
-    content: '';
-    position: absolute;
-    inset: -12px -40px;
-  }
-  .ch-rec-bar {
-    display: grid;
-    flex: none;
-    grid-template-columns: minmax(60px, 1fr) minmax(0, auto) minmax(60px, 1fr);
-    align-items: center;
-    touch-action: none;
-  }
-  .ch-rec-bar.is-pick {
-    display: flex;
-    justify-content: space-between;
-    padding: 0 4px 0 8px;
-  }
-  .ch-rec-bar__t,
-  .ch-rec-act__head h2 {
-    outline: none;
-  }
-  .ch-rec-bar__t {
-    margin: 0;
-    min-width: 0;
-    overflow-wrap: anywhere;
-    text-align: center;
-    font: 600 calc(17 * var(--ch-type-k))/1.2 var(--ch-font-sans);
-  }
-  .ch-rec-bar__b {
-    flex: none;
-    justify-self: start;
-    min-width: 44px;
-    height: 44px;
-    padding: 0;
-    border: 0;
-    background: none;
-    font: 400 calc(16 * var(--ch-type-k))/1 var(--ch-font-sans);
-    color: var(--ch-green-600);
-    text-align: left;
-    cursor: pointer;
-  }
-  .ch-rec-bar__b.is-action {
-    justify-self: end;
-    font-weight: 600;
-    text-align: right;
-  }
-  .ch-rec-bar__b:disabled {
-    color: var(--ch-text-disabled);
-    cursor: default;
   }
 
   /* The edit sheet's rows: labels at the left of a grouped card, as on the board */
@@ -1477,7 +1407,8 @@
   .ch-rec-form.is-phone .ch-rec-f .ch-field__label {
     /* The label column grows with Dynamic Type, so "Hometown" stays clear of its field at XXL. */
     width: calc(96 * var(--ch-type-k));
-    font: 400 calc(16 * var(--ch-type-k))/1.3 var(--ch-font-sans);
+    font: var(--ch-type-16);
+    letter-spacing: var(--ch-track-16);
     color: var(--ch-text-secondary);
   }
   .ch-rec-form.is-phone .ch-rec-f .ch-input {
@@ -1505,12 +1436,12 @@
   .ch-rec-form.is-phone .ch-rec-f--notes .ch-field__label {
     width: auto;
     padding: 0 16px;
-    font: 500 calc(13 * var(--ch-type-k))/1.3 var(--ch-font-sans);
+    font: var(--ch-type-13-medium);
     color: var(--ch-text-tertiary);
   }
   .ch-rec-form.is-phone .ch-textarea {
     min-height: 110px;
-    padding: 14px 16px;
+    padding: 16px 16px;
     border-radius: var(--ch-radius-lg);
     background: var(--ch-ivory-25);
     box-shadow: 0 0 0 1px rgb(28 25 18 / 0.07);
@@ -1539,7 +1470,7 @@
     gap: 12px;
     width: 100%;
     min-height: 60px;
-    padding: 0 18px;
+    padding: 0 16px;
     border: 0;
     background: none;
     font: inherit;
@@ -1559,69 +1490,10 @@
   }
   .ch-recm-stages__t > span:last-child {
     padding-left: 2px;
-    font: 400 calc(13 * var(--ch-type-k))/1.3 var(--ch-font-sans);
+    font: var(--ch-type-13);
     color: var(--ch-text-tertiary);
   }
 
-  /* The iOS action sheet: the destructive choice in red, Cancel apart below it */
-  .ch-rec-dlg.is-act {
-    padding: 0 8px max(8px, env(safe-area-inset-bottom));
-  }
-  .ch-rec-act {
-    max-height: calc(100dvh - env(safe-area-inset-top) - 8px);
-    overflow-y: auto;
-    overscroll-behavior: contain;
-    display: flex;
-    flex-direction: column;
-    gap: 8px;
-    animation: ch-rise var(--ch-dur-spring-smooth) var(--ch-ease-spring-smooth);
-  }
-  .ch-rec-act__group {
-    flex: none;
-    overflow: hidden;
-    border-radius: var(--ch-radius-lg);
-    background: rgb(250 248 241 / 0.97);
-  }
-  .ch-rec-act__head {
-    overflow-wrap: anywhere;
-    display: flex;
-    flex-direction: column;
-    gap: 4px;
-    padding: 14px 16px;
-    text-align: center;
-    box-shadow: 0 1px 0 var(--ch-border-hairline);
-  }
-  .ch-rec-act__head h2 {
-    font: 600 calc(13 * var(--ch-type-k))/1.3 var(--ch-font-sans);
-    color: var(--ch-text-secondary);
-  }
-  .ch-rec-act__head p {
-    font: 400 calc(13 * var(--ch-type-k))/1.4 var(--ch-font-sans);
-    color: var(--ch-text-tertiary);
-  }
-  .ch-rec-act__b {
-    flex: none;
-    display: block;
-    width: 100%;
-    height: 56px;
-    border: 0;
-    background: none;
-    font: 400 calc(17 * var(--ch-type-k))/1 var(--ch-font-sans);
-    color: var(--ch-green-600);
-    cursor: pointer;
-  }
-  .ch-rec-act__b.is-danger {
-    color: var(--ch-danger-600);
-  }
-  .ch-rec-act__b.is-cancel {
-    border-radius: var(--ch-radius-lg);
-    background: rgb(250 248 241 / 0.97);
-    font-weight: 600;
-  }
-  .ch-rec-act__b:disabled {
-    color: var(--ch-text-disabled);
-    cursor: default;
-  }
 }
 
 /* Loading in the framed page head (desktop): the recruiting head holds the loaded head's measured height (WebKit 1440 and 1100,
@@ -1645,7 +1517,7 @@
   }
   .ch-rec[data-canopy] .ch-rec-pipe {
     gap: 0;
-    margin-top: 14px;
+    margin-top: 16px;
     padding: 0;
     border-radius: 0;
     background: none;
@@ -1656,24 +1528,25 @@
     align-items: flex-end;
     min-height: 56px;
     padding: 0 0 12px;
-    box-shadow: inset 0 -1px 0 var(--ch-ledger-rule);
+    box-shadow: inset 0 calc(-1 * var(--ch-hairline-w)) 0 var(--ch-ledger-rule);
   }
   .ch-rec[data-canopy] .ch-rec-pipe__sum {
     flex-direction: column;
     align-items: flex-start;
-    gap: 3px;
+    gap: 4px;
   }
   .ch-rec[data-canopy] .ch-rec-pipe__sum b {
-    font: 600 20px/1.2 var(--ch-font-sans);
-    letter-spacing: -0.022em;
+    font: var(--ch-type-20-strong);
+    letter-spacing: var(--ch-track-20);
     color: var(--ch-ledger-ink);
   }
   .ch-rec[data-canopy] .ch-rec-pipe__sum span {
-    font: var(--ch-type-caption);
+    font: var(--ch-type-13);
+    line-height: var(--ch-lead-caption);
     font-variant-numeric: tabular-nums;
   }
   .ch-rec[data-canopy] .ch-rec-pipe__all {
-    margin-right: -10px;
+    margin-right: -8px;
   }
   /* Columns, not a timeline: the hairlines between stages replace the connecting line. */
   .ch-rec[data-canopy] .ch-rec-pipe__seg {
@@ -1703,7 +1576,7 @@
   }
   .ch-rec[data-canopy] .ch-rec-pipe__stage + .ch-rec-pipe__stage,
   .ch-rec[data-canopy] .ch-rec-skel-pipe__s + .ch-rec-skel-pipe__s {
-    box-shadow: inset 1px 0 0 var(--ch-ledger-rule-soft);
+    box-shadow: inset var(--ch-hairline-w) 0 0 var(--ch-ledger-rule-soft);
   }
   .ch-rec[data-canopy] .ch-rec-pipe__stage {
     transition: background var(--ch-dur-quick) var(--ch-ease);
@@ -1722,7 +1595,7 @@
     }
   }
   .ch-rec[data-canopy] .ch-rec-pipe__stage:focus-visible {
-    outline-offset: -3px;
+    outline-offset: -2px;
   }
   .ch-rec[data-canopy] .ch-rec-pipe__dot {
     flex: none;
@@ -1746,7 +1619,7 @@
      the cells. */
   .ch-rec[data-canopy] .ch-rec-body {
     gap: 32px;
-    margin-top: 18px;
+    margin-top: 16px;
   }
   .ch-rec[data-canopy] .ch-rec-list {
     overflow: visible;
@@ -1756,15 +1629,15 @@
   }
   .ch-rec[data-canopy] .ch-rec-list > .ch-rec-bar {
     padding: 0 0 16px;
-    box-shadow: inset 0 -1px 0 var(--ch-ledger-rule);
+    box-shadow: inset 0 calc(-1 * var(--ch-hairline-w)) 0 var(--ch-ledger-rule);
   }
   .ch-rec[data-canopy] .ch-rec-tb {
     width: calc(100% + 24px);
     margin-inline: -12px;
   }
   .ch-rec[data-canopy] .ch-rec-tb th[scope='col'] {
-    padding-block: 14px 10px;
-    box-shadow: inset 0 -1px 0 var(--ch-ledger-rule-soft);
+    padding-block: 16px 8px;
+    box-shadow: inset 0 calc(-1 * var(--ch-hairline-w)) 0 var(--ch-ledger-rule-soft);
   }
   .ch-rec[data-canopy] .ch-rec-tb th[scope='col']:first-child,
   .ch-rec[data-canopy] .ch-rec-tb th[scope='row'] {
@@ -1785,7 +1658,7 @@
     }
   }
   .ch-rec[data-canopy] .ch-rec-tb tbody tr + tr > * {
-    box-shadow: inset 0 1px 0 var(--ch-ledger-rule-soft);
+    box-shadow: inset 0 var(--ch-hairline-w) 0 var(--ch-ledger-rule-soft);
   }
   /* A row's hover and selected tint are drawn once, as one box behind the row's cells (the click target above them
      stays clear): Safari paints a row's own background cell by cell, which leaves hairline gaps at fractional widths. */
@@ -1806,13 +1679,19 @@
     background: color-mix(in oklab, var(--ch-green-600) 8%, transparent);
   }
   /* A press deepens the row's tint over the press beat (the shell's CH-1606: a row never scales). */
-  .ch-rec[data-canopy] .ch-rec-tb tbody tr .ch-rec-tb__name:active::before {
+  .ch-rec[data-canopy] .ch-rec-tb tbody tr .ch-rec-tb__name[data-ch-pressed]::before {
     background: var(--ch-ledger-row-press);
     transition-duration: var(--ch-dur-press);
   }
+  @media (hover: hover) {
+    .ch-rec[data-canopy] .ch-rec-tb tbody tr .ch-rec-tb__name:active::before {
+      background: var(--ch-ledger-row-press);
+      transition-duration: var(--ch-dur-press);
+    }
+  }
   .ch-rec[data-canopy] .ch-rec-skel-row {
     padding: 0;
-    box-shadow: inset 0 1px 0 var(--ch-ledger-rule-soft);
+    box-shadow: inset 0 var(--ch-hairline-w) 0 var(--ch-ledger-rule-soft);
   }
   .ch-rec[data-canopy] .ch-rec-bar + .ch-rec-skel-row {
     box-shadow: none;
@@ -1826,29 +1705,29 @@
     overflow: visible;
     border-radius: 0;
     background: none;
-    box-shadow: inset 1px 0 0 var(--ch-ledger-rule-soft);
+    box-shadow: inset var(--ch-hairline-w) 0 0 var(--ch-ledger-rule-soft);
   }
   .ch-rec[data-canopy] .ch-rec-panel__top {
     padding: 0 0 20px;
-    box-shadow: inset 0 -1px 0 var(--ch-ledger-rule);
+    box-shadow: inset 0 calc(-1 * var(--ch-hairline-w)) 0 var(--ch-ledger-rule);
   }
   /* 4px of room inside the scroller so a focus ring at the column's edge isn't clipped. */
   .ch-rec[data-canopy] .ch-rec-panel__body {
     gap: 24px;
     margin-inline: -4px;
-    padding: 22px 4px;
+    padding: 24px 4px;
   }
   .ch-rec[data-canopy] .ch-rec-panel__foot {
-    padding: 14px 0 0;
-    box-shadow: inset 0 1px 0 var(--ch-ledger-rule-soft);
+    padding: 16px 0 0;
+    box-shadow: inset 0 var(--ch-hairline-w) 0 var(--ch-ledger-rule-soft);
   }
   .ch-rec[data-canopy] .ch-rec-panel__foot .ch-rec-danger,
   .ch-rec[data-canopy] .ch-rec-panel .ch-rec-sec__head .ch-rec-link {
-    margin-right: -10px;
+    margin-right: -8px;
   }
   .ch-rec[data-canopy] .ch-rec-panel .ch-rec-rows,
   .ch-rec[data-canopy] .ch-rec-panel .ch-rec-docs {
-    margin-inline: -10px;
+    margin-inline: -8px;
     overflow: visible;
     border-radius: 0;
     box-shadow: none;
@@ -1864,13 +1743,13 @@
     top: 0;
     right: 10px;
     left: 10px;
-    height: 1px;
-    box-shadow: inset 0 1px 0 var(--ch-ledger-rule-soft);
+    height: var(--ch-hairline-w);
+    box-shadow: inset 0 var(--ch-hairline-w) 0 var(--ch-ledger-rule-soft);
     content: '';
     pointer-events: none;
   }
   .ch-rec[data-canopy] .ch-rec-panel .ch-rec-row {
-    padding: 0 10px;
+    padding: 0 8px;
     border-radius: var(--ch-radius-md);
   }
   @media (hover: hover) {
@@ -1880,14 +1759,14 @@
     }
   }
   .ch-rec[data-canopy] .ch-rec-panel .ch-rec-doc__open {
-    padding-left: 10px;
+    padding-left: 8px;
     border-radius: var(--ch-radius-md);
   }
   .ch-rec[data-canopy] .ch-rec-panel .ch-rec-doc__x {
     margin-right: 1px;
   }
   .ch-rec[data-canopy] .ch-rec-panel .ch-rec-docs.is-loading .ch-rec-doc {
-    padding: 0 10px;
+    padding: 0 8px;
   }
   .ch-rec[data-canopy] .ch-rec-panel .ch-rec-notes {
     padding: 0;
@@ -1910,8 +1789,8 @@
   @container (max-width: 860px) {
     /* The prospect follows the list: its hairline runs across the top instead. */
     .ch-rec[data-canopy] .ch-rec-panel {
-      padding: 28px 0 0;
-      box-shadow: inset 0 1px 0 var(--ch-ledger-rule);
+      padding: 32px 0 0;
+      box-shadow: inset 0 var(--ch-hairline-w) 0 var(--ch-ledger-rule);
     }
   }
 }
@@ -1927,9 +1806,9 @@
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  gap: 4px 10px;
+  gap: 4px 8px;
   margin: 0;
-  font: 400 calc(14 * var(--ch-type-k))/1.4 var(--ch-font-sans);
+  font: var(--ch-type-14);
   color: var(--ch-text-secondary);
 }
 .ch-rec-cal__t {
@@ -1945,7 +1824,8 @@
   border: 0;
   border-radius: var(--ch-radius-md);
   background: none;
-  font: 500 calc(14 * var(--ch-type-k))/1 var(--ch-font-sans);
+  font: var(--ch-type-14-medium);
+  line-height: var(--ch-lead-tight);
   color: var(--ch-green-600);
   cursor: pointer;
   transition: background-color var(--ch-dur-press) var(--ch-ease);
@@ -1956,13 +1836,19 @@
   }
 }
 /* A press tints the pick a beat after the finger lands, as a Ledger row does (CH-1606). */
-.ch-rec-cal__pick:active {
+.ch-rec-cal__pick[data-ch-pressed] {
   background-color: var(--ch-ledger-row-press);
   transition-delay: var(--ch-dur-press-delay);
 }
+@media (hover: hover) {
+  .ch-rec-cal__pick:active {
+    background-color: var(--ch-ledger-row-press);
+    transition-delay: var(--ch-dur-press-delay);
+  }
+}
 .ch-rec-cal__pick:focus-visible {
   outline: 2px solid var(--ch-border-focus);
-  outline-offset: 1px;
+  outline-offset: 2px;
 }
 /* In the framed page head the shell sets every p as the page's sentence; the calendar line stays the quieter caption. */
 @media (min-width: 821px) {
@@ -1970,14 +1856,14 @@
     min-height: 24px;
     max-width: none;
     margin-top: 2px;
-    font: 400 14px/1.4 var(--ch-font-sans);
+    font: var(--ch-type-14);
     color: var(--ch-text-secondary);
   }
 }
 /* A Division I note under Email and Call: never a warning colour, the coach decides. */
 .ch-rec-hint {
   margin: 8px 2px 0;
-  font: 400 calc(13 * var(--ch-type-k))/1.45 var(--ch-font-sans);
+  font: var(--ch-type-13);
   color: var(--ch-text-secondary);
 }
 
@@ -1987,7 +1873,7 @@
 .ch-rec-commit {
   display: block;
   height: 1px;
-  margin-top: 10px;
+  margin-top: 8px;
   background: var(--ch-champagne-500);
 }
 .ch-rec-commit.is-waiting {
@@ -2017,10 +1903,11 @@
   align-self: flex-start;
   height: 20px;
   margin-top: 4px;
-  padding: 0 7px;
+  padding: 0 8px;
   border-radius: var(--ch-radius-sm);
-  box-shadow: inset 0 0 0 1px var(--ch-champagne-rule);
-  font: 500 calc(12 * var(--ch-type-k))/1 var(--ch-font-sans);
+  box-shadow: inset 0 0 0 var(--ch-hairline-w) var(--ch-champagne-rule);
+  font: var(--ch-type-12-medium);
+  line-height: var(--ch-lead-tight);
   font-variant-numeric: tabular-nums;
   color: var(--ch-text-secondary);
   white-space: nowrap;
@@ -2040,7 +1927,7 @@
   gap: 12px;
   min-height: 48px;
   margin: 0;
-  padding: 0 14px;
+  padding: 0 16px;
   cursor: default;
 }
 .ch-rec-next.is-static svg {
@@ -2052,7 +1939,7 @@
   outline-offset: -2px;
 }
 .ch-rec-tb .is-next {
-  font: 400 14px/1.4 var(--ch-font-sans);
+  font: var(--ch-type-14);
   font-variant-numeric: tabular-nums;
   color: var(--ch-text-secondary);
   white-space: nowrap;
@@ -2061,7 +1948,7 @@
 .ch-rec-form > .ch-rec-form__next {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 14px 16px;
+  gap: 16px 16px;
 }
 /* P014 finding #2: the Add form's stage options fill their track instead of ending short of it. */
 .ch-rec-field .ch-seg {
@@ -2107,7 +1994,7 @@
     width: fit-content;
   }
   .ch-rec-tb__name:has(.ch-rec-plate) {
-    padding-block: 10px;
+    padding-block: 8px;
   }
 }
 @media (max-width: 820px) {
@@ -2121,11 +2008,12 @@
     font-size: calc(14 * var(--ch-type-k));
   }
   .ch-recm-row:has(.ch-rec-plate) {
-    padding-block: 10px;
+    padding-block: 8px;
   }
   .ch-recm-row__b .ch-rec-plate {
-    margin-top: 5px;
-    font: 500 calc(12 * var(--ch-type-k))/1 var(--ch-font-sans);
+    margin-top: 4px;
+    font: var(--ch-type-12-medium);
+    line-height: var(--ch-lead-tight);
     font-variant-numeric: tabular-nums;
     color: var(--ch-text-secondary);
   }
@@ -2146,7 +2034,7 @@
     margin: 0;
   }
   .ch-recm-det > .ch-rec-hint {
-    margin-top: 10px;
+    margin-top: 8px;
   }
 }
 
@@ -2183,7 +2071,7 @@
 }
 :where(html[data-fw-theme='dark']) .ch-rec-rows,
 :where(html[data-fw-theme='dark']) .ch-rec-docs {
-  box-shadow: 0 0 0 1px var(--ch-border-subtle);
+  box-shadow: 0 0 0 var(--ch-hairline-w) var(--ch-border-subtle);
 }
 :where(html[data-fw-theme='dark']) .ch-rec-drop {
   background: rgb(21 36 27 / 0.94);
@@ -2191,10 +2079,6 @@
 @media (max-width: 820px) {
   :where(html[data-fw-theme='dark']) .ch-rec-form.is-phone .ch-textarea {
     box-shadow: 0 0 0 1px var(--ch-border-control);
-  }
-  :where(html[data-fw-theme='dark']) .ch-rec-act__group,
-  :where(html[data-fw-theme='dark']) .ch-rec-act__b.is-cancel {
-    background: rgb(36 42 37 / 0.97);
   }
 }
 
@@ -2209,9 +2093,15 @@
     transform: translateY(-2px);
   }
 }
-.ch-rec-pipe__stage:not(:disabled):active > .ch-rec-pipe__dot {
+.ch-rec-pipe__stage:not(:disabled)[data-ch-pressed] > .ch-rec-pipe__dot {
   transform: scale(0.96);
   transition-duration: var(--ch-dur-press);
+}
+@media (hover: hover) {
+  .ch-rec-pipe__stage:not(:disabled):active > .ch-rec-pipe__dot {
+    transform: scale(0.96);
+    transition-duration: var(--ch-dur-press);
+  }
 }
 .ch-rec-pipe__seg {
   transition: background var(--ch-dur-base) var(--ch-ease);

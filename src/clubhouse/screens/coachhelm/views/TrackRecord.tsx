@@ -1,17 +1,16 @@
 'use client';
 
-import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import type { ReactNode } from 'react';
-import { ChevronLeft } from 'lucide-react';
 import { COACH_BOARD_HREF, type ChTrackFamily, type ChTrackRecord, type ChTrackRung } from '../../../data/coachhelm-track-record-shape';
 import type { ChViewLoad } from '../../../data/coachhelm-views-shape';
 import { useChPhone } from '../../../lib/use-phone';
 import { PhoneTop } from '../../../shell/phone-chrome';
-import { Icon } from '../../../ui/Icon';
 import { RefreshNotice } from '../../../ui/RefreshNotice';
 import { EmptyState } from '../../../ui/States';
 import { Surface } from '../../../ui/Surface';
+import { BackLink } from '../../../ui/Section';
+import { LargeTitle } from '../../../ui/LargeTitle';
 
 const LINE = 'How often the reads CoachHelm showed your team held when their players’ next rounds came in.';
 
@@ -27,14 +26,13 @@ function TrackFrame({ children }: { children: ReactNode }) {
       {phone && <PhoneTop back={{ label: 'CoachHelm', onBack: () => router.push(COACH_BOARD_HREF) }} title="Track record" titleId="ch-htr-title" />}
       <header className="ch-hl-h ch-htr-h" data-canopy-head="">
         {!phone && (
-          <Link className="ch-htr-back" href={COACH_BOARD_HREF}>
-            <Icon icon={ChevronLeft} size={15} />
-            CoachHelm
-          </Link>
+          <BackLink href={COACH_BOARD_HREF}>CoachHelm</BackLink>
         )}
         <span className="ch-hl-role">Coach</span>
         {phone ? (
-          <p className="ch-hl-h__t">Track record</p>
+          <LargeTitle as="p" className="ch-hl-h__t">
+            Track record
+          </LargeTitle>
         ) : (
           <h1 id="ch-htr-title" className="ch-hl-h__t">
             Track record

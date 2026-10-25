@@ -17,18 +17,30 @@ counts include wrappers rather than unique popups.
 
 ```text
 Route:                   every /golf/dashboard route
-Layout:                  src/app/golf/(dashboard)/layout.tsx: session, role and team; when isClubhouseFor(role),
-                         loadClubhouseShell(teamId) and <ClubhouseShell>, else the existing shell (10801)
-Gate:                    src/clubhouse/gate.ts isClubhouseFor (coach or player, golf_clubhouse_ui on)
-Providers:               src/clubhouse/shell/ClubhouseShell.tsx (golf user, badges, session activity, swipe-back guard)
-Frame:                   src/clubhouse/shell/ClubhouseFrame.tsx (Sidebar, TopBar, OfflineBanner, RouteFrame, TabBar;
-                         NotRebuilt when isRebuilt(pathname, role) is false, 10401, 10802; the team switch offered to
-                         Sidebar and TabBar from teamSwitchFor(userData), 10803; RouteFrame keyed by pathname and team, 10103)
-Server loader:           src/clubhouse/data/shell.ts loadClubhouseShell (next event, join requests, timezone in parallel,
-                         then, for a player, the invites of any upcoming meetings (D2-8: one nobody is invited to is
-                         skipped), then the event's attendance; each failed read logs through chLogServer('shell', …) and
-                         hides its UI)
-Route errors:            src/components/errors/RouteErrorBoundary.tsx → RouteErrorView inside Clubhouse (10603 to 10607)
+Layout:                  src/app/golf/(dashboard)/layout.tsx: session, role and
+                         team; when isClubhouseFor(role),
+                         loadClubhouseShell(teamId) and <ClubhouseShell>, else
+                         the existing shell (10801)
+Gate:                    src/clubhouse/gate.ts isClubhouseFor (coach or player,
+                         golf_clubhouse_ui on)
+Providers:               src/clubhouse/shell/ClubhouseShell.tsx (golf user,
+                         badges, session activity, swipe-back guard)
+Frame:                   src/clubhouse/shell/ClubhouseFrame.tsx (Sidebar,
+                         TopBar, OfflineBanner, RouteFrame, TabBar; NotRebuilt
+                         when isRebuilt(pathname, role) is false, 10401, 10802;
+                         the team switch offered to Sidebar and TabBar from
+                         teamSwitchFor(userData), 10803; RouteFrame keyed by
+                         pathname and team, 10103)
+Server loader:           src/clubhouse/data/shell.ts loadClubhouseShell (next
+                         event, join requests, timezone in parallel, then, for a
+                         player, the invites of any upcoming meetings (D2-8: one
+                         nobody is invited to is skipped), then the event's
+                         attendance; for a coach, the team's players as id and
+                         name only for the palette's People (decision 16,
+                         loadPalettePeople); each failed read logs through
+                         chLogServer('shell', …) and hides its UI)
+Route errors:            src/components/errors/RouteErrorBoundary.tsx →
+                         RouteErrorView inside Clubhouse (10603 to 10607)
 ```
 
 ## End-to-end graph
@@ -38,19 +50,22 @@ UI (Sidebar, TopBar, Bell, TabBar and More, TeamSwitch, OfflineBanner, RouteErro
 ↓
 Action (Bell's markAll through useAction; openItem; navigation links; useTeamSwitch's pick through useAction)
 ↓
-Client controller: useAction (offline refusal 10703, slow notice 10702, success 10901, error toast with Retry 11402,
-                   chReport 12301, haptics)
+Client controller: useAction (offline refusal 10703, slow notice 10702, success
+                   10901, error toast with Retry 11402, chReport 12301, haptics)
 ↓
-Server actions: src/app/golf/actions/unified-notifications.ts; src/app/golf/actions/team-switcher.ts (setActiveTeam)
+Server actions: src/app/golf/actions/unified-notifications.ts;
+                src/app/golf/actions/team-switcher.ts (setActiveTeam)
 ↓
-Data: the unified notifications feed; golf_events, golf_event_attendance, golf_team_join_requests, golf_team_settings;
-      golf_team_coach_staff and golf_teams (the switch's gate and list), the golf_active_team cookie
+Data: the unified notifications feed; golf_events, golf_event_attendance,
+      golf_team_join_requests, golf_team_settings; golf_team_coach_staff and
+      golf_teams (the switch's gate and list), the golf_active_team cookie
 ↓
 Contract outcomes: CONTRACT.md (Bridge IDs 1ccii, catalog CH-1xxx)
 ↓
 Bridge: recorded, not wired (D-68)
 ↓
-Tests: src/clubhouse/__tests__/shell.test.tsx, team-switch.test.tsx, gate.test.ts, native.test.tsx, motion.test.tsx
+Tests: src/clubhouse/__tests__/shell.test.tsx, team-switch.test.tsx,
+       gate.test.ts, native.test.tsx, motion.test.tsx
 ```
 
 ## Actions
@@ -101,7 +116,7 @@ the whole list is in `docs/clubhouse/generated/CLUBHOUSE_ACTION_MAP.md`.
 | --- | --- | --- | --- |
 | getUnifiedNotifications | actions/unified-notifications.ts | Existing | the bell's list |
 | markNotificationRead, markAllNotificationsRead | actions/unified-notifications.ts | Existing | read state |
-| loadClubhouseShell | src/clubhouse/data/shell.ts | Existing (Clubhouse) | next event and the Roster badge |
+| loadClubhouseShell | src/clubhouse/data/shell.ts | Existing (Clubhouse) | next event, the Roster badge and, for a coach, the palette's player names and ids (decision 16) |
 | setActiveTeam | actions/team-switcher.ts | Existing (shared with Fairway) | the switch: head coach on more than one team only, the team must be one the coach is staffed on; writes the `golf_active_team` cookie and revalidates `/golf/dashboard` |
 
 ## Data resources
@@ -109,13 +124,18 @@ the whole list is in `docs/clubhouse/generated/CLUBHOUSE_ACTION_MAP.md`.
 ### DATA-SHELL
 
 ```text
-Tables:   golf_events, golf_event_attendance, golf_team_join_requests, golf_team_settings
+Tables:   golf_events, golf_event_attendance, golf_team_join_requests,
+          golf_team_settings; for a coach only, golf_team_members with
+          golf_players (id, first_name, last_name), sent to the client as { id,
+          name } and held in memory by shell/command/people.ts, cleared on a
+          team or person change (decision 16)
 RPCs:     none
 Storage:  none
 Realtime: none in the frame (the badge context keeps its own counts)
 Cache:    none; read with each page load
 RLS:      team-scoped reads through the server client
-Read path:  loadClubhouseShell (server, one pass, never throws for a partial read)
+Read path:  loadClubhouseShell (server, one pass, never throws for a partial
+            read)
 Write path: none
 ```
 
@@ -129,15 +149,20 @@ Write path: markNotificationRead, markAllNotificationsRead
 ### DATA-TEAM-SWITCH
 
 ```text
-Tables:   golf_team_coach_staff (the coach's staff rows and roles), golf_teams (id, name, gender)
+Tables:   golf_team_coach_staff (the coach's staff rows and roles), golf_teams
+          (id, name, gender)
 RPCs:     none
 Storage:  none (an httpOnly cookie, golf_active_team, 90 days)
 Realtime: none
-Cache:    revalidatePath('/golf/dashboard', 'layout') in the action, then router.refresh() from the client
+Cache:    revalidatePath('/golf/dashboard', 'layout') in the action, then
+          router.refresh() from the client
 RLS:      the RLS-scoped server client
-Read path:  the layout's getCoachTeamSwitchContext (teams and canSwitch, passed down as userData.coachTeams and canSwitchTeams)
-Write path: setActiveTeam (checks canSwitch and that the team is staffed, then sets the cookie); every page's team comes from
-            resolveCoachActiveTeamIdForRequest, which validates the cookie against the staff rows
+Read path:  the layout's getCoachTeamSwitchContext (teams and canSwitch, passed
+            down as userData.coachTeams and canSwitchTeams)
+Write path: setActiveTeam (checks canSwitch and that the team is staffed, then
+            sets the cookie); every page's team comes from
+            resolveCoachActiveTeamIdForRequest, which validates the cookie
+            against the staff rows
 ```
 
 ## Notification links (checked 2026-10-17)

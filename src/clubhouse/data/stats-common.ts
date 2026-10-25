@@ -40,23 +40,22 @@ export function roundRow(r: ChRound): ChFilterRow {
  * course and time, then the picks, then the newest-ten cut (see stats-filter). Rounds posted as a total only are in (they are scores);
  * the hole-level figures take `holeRounds` of the result (round-scope).
  */
-export function roundsInFilter(rounds: ChRound[], f: ChFilter): ChRound[] {
-  return selectRounds(rounds.filter(hasScore), f, seasonStartDate(), roundRow);
+export function roundsInFilter(rounds: ChRound[], f: ChFilter, start: string = seasonStartDate()): ChRound[] {
+  return selectRounds(rounds.filter(hasScore), f, start, roundRow);
 }
 
 /** The matching rounds before the newest ten, for "vs previous 10", across seasons like the ten; null when the filter has no previous window or there are fewer than three. */
-export function previousInFilter(rounds: ChRound[], f: ChFilter): ChRound[] | null {
-  return previousRounds(rounds.filter(hasScore), f, seasonStartDate(), roundRow);
+export function previousInFilter(rounds: ChRound[], f: ChFilter, start: string = seasonStartDate()): ChRound[] | null {
+  return previousRounds(rounds.filter(hasScore), f, start, roundRow);
 }
 
 /** How many matching rounds come before the newest ten. */
-export function earlierInFilter(rounds: ChRound[], f: ChFilter): number {
-  return earlierCount(rounds.filter(hasScore), f, seasonStartDate(), roundRow);
+export function earlierInFilter(rounds: ChRound[], f: ChFilter, start: string = seasonStartDate()): number {
+  return earlierCount(rounds.filter(hasScore), f, start, roundRow);
 }
 
 /** Rounds from this season only (Last 10 and a custom range can load earlier ones; the season's own figures must not count them). */
-export function seasonOnly(rounds: ChRound[]): ChRound[] {
-  const start = seasonStartDate();
+export function seasonOnly(rounds: ChRound[], start: string = seasonStartDate()): ChRound[] {
   return rounds.filter((r) => r.round_date.slice(0, 10) >= start);
 }
 
@@ -65,16 +64,17 @@ export function seasonOnly(rounds: ChRound[]): ChRound[] {
  * Q-122); Season and Qualifiers read this season; a custom range reads from its own start when that is before the season (no bound when
  * the range has no start). Undefined is `loadSeasonRounds`' own default, the season.
  */
-export function loadSince(f: ChFilter): string | null | undefined {
+export function loadSince(f: ChFilter, start?: string): string | null | undefined {
+  // `start`, the season's first day in the team's zone, stands for the season when given (owner decision 9); else the loader's default.
   if (hasRange(f)) {
     if (!f.from) return null;
-    return f.from < seasonStartDate() ? f.from : undefined;
+    return f.from < (start ?? seasonStartDate()) ? f.from : start;
   }
-  return f.window === 'last10' ? lastTenFloor() : undefined;
+  return f.window === 'last10' ? lastTenFloor() : start;
 }
 
 /** What the sheet can list: the loaded rounds of both lengths (newest first, cut at the list size), and the courses with how many rounds each. */
-export function filterOptions(rounds: ChRound[], names?: Map<string, string>): ChFilterOptions {
+export function filterOptions(rounds: ChRound[], names?: Map<string, string>, start: string = seasonStartDate()): ChFilterOptions {
   const full = rounds.filter(hasScore);
   const counts = new Map<string, number>();
   for (const r of full) if (r.course_name?.trim()) counts.set(r.course_name, (counts.get(r.course_name) ?? 0) + 1);
@@ -82,7 +82,7 @@ export function filterOptions(rounds: ChRound[], names?: Map<string, string>): C
     rounds: full.slice(0, PICK_LIST_MAX).map((r) => ({ ...roundRow(r), score: r.total_score as number, player: names?.get(r.player_id) ?? null })),
     total: full.length,
     courses: [...counts].map(([name, count]) => ({ name, count })).sort((a, b) => b.count - a.count || a.name.localeCompare(b.name)),
-    seasonStart: seasonStartDate(),
+    seasonStart: start,
   };
 }
 

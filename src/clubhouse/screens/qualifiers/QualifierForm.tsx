@@ -26,7 +26,9 @@ import { FIELD_ORDER, FORM_HELP, FORM_LEDE, plural, SQUAD_MAX, validateForm, typ
 import { CoursePicker, type ChQPickedCourse } from './CoursePicker';
 import { isPlainClick } from './return-state';
 import { LIVE_WRITES, type ChQEditPlan, type ChQWrites } from './writes';
+import { pluralWord } from '../../lib/plural';
 import '../../styles/qualifiers.css';
+import { LargeTitle } from '../../ui/LargeTitle';
 
 const LIST = '/golf/dashboard/qualifiers';
 // The limit is said before a save refuses it (wave-6 #16).
@@ -258,8 +260,8 @@ export function QualifierForm({ data, writes = LIVE_WRITES }: { data: ChQFormDat
       </div>
       <header className="ch-qf-head" data-canopy-head="">
         <div>
-          <span className="ch-qf-eyebrow">{editing ? 'Edit qualifier' : 'New qualifier'}</span>
-          <h1>{editing ? data.name : 'Create a qualifier'}</h1>
+          <span className="ch-qf-eyebrow">{editing ? 'Edit qualifier' : 'Qualifiers'}</span>
+          <LargeTitle>{editing ? data.name : 'New qualifier'}</LargeTitle>
           <p>{FORM_LEDE}</p>
         </div>
       </header>
@@ -466,7 +468,7 @@ export function QualifierForm({ data, writes = LIVE_WRITES }: { data: ChQFormDat
                         describedBy={problemOf('playerIds') ? 'qf-players-h' : undefined}
                         onChange={(next) => toggle(p.id, next)}
                       >
-                        <Avatar name={p.name} size={30} />
+                        <Avatar name={p.name} id={p.id} size={30} />
                         <span>
                           <b>{p.name}</b>
                           <small>{p.locked && on ? (p.locked === 'squad' ? 'Has a squad place' : 'Has a round in it') : p.inactive ? 'Not on the active roster' : (p.classYear ?? ' ')}</small>
@@ -523,7 +525,7 @@ export function QualifierForm({ data, writes = LIVE_WRITES }: { data: ChQFormDat
                     <b>{Math.max(0, squad - picks)}</b> qualify on score
                   </span>
                   <span className="ch-qf-seg">
-                    <b>{picks}</b> coach {picks === 1 ? 'pick' : 'picks'}
+                    <b>{picks}</b> coach {pluralWord(picks, 'pick')}
                   </span>
                   <span className="ch-qf-seg">
                     <b>{squad}</b>-player squad

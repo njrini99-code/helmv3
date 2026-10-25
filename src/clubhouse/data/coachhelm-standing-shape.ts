@@ -6,7 +6,7 @@ import { METRIC_IDS, type MetricId } from '@/lib/coachhelm/v3/metrics/registry';
 import { METRIC_RENDER_CONFIG } from '@/lib/coachhelm/v3/standing/metric-config';
 import type { PlayerStanding } from '@/lib/coachhelm/v3/standing/types';
 import { DEFAULT_TIMEZONE } from '@/lib/calendar/timezone';
-import { formatSigned, NO_DATA } from '../lib/format';
+import { formatFixed, formatSigned, NO_DATA } from '../lib/format';
 import { LADDER_METRICS, toChLadder, type ChLadder, type ChLadderReads } from './coachhelm-ladder-shape';
 import { speak, type ChViewer } from './coachhelm-voice';
 
@@ -200,13 +200,13 @@ export function figure(id: string, unit: Unit, v: number): string {
       return `${Math.round(v)}%`;
     case 'strokes':
       // Strokes gained and the deltas to one decimal, as every other screen prints them (A20); a par scoring average keeps two.
-      return signed(id) ? formatSigned(v, 1) : v.toFixed(2);
+      return signed(id) ? formatSigned(v, 1) : formatFixed(v, 2);
     case 'yards':
       return `${Math.round(v)} yd`;
     case 'feet':
       return `${Math.round(v)} ft`;
     case 'count':
-      return v.toFixed(1);
+      return formatFixed(v, 1);
     default:
       return formatValue(v, unit);
   }

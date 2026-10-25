@@ -3,6 +3,7 @@
 import { RouteErrorBoundary } from '@/components/errors';
 import { clubhouseFontVariables } from '../lib/fonts';
 import { ClubhouseMarker, useInClubhouse } from './context';
+import { FAILURE_COPY } from '../ui/Notices';
 import '../styles/tokens.css';
 import '../styles/base.css';
 import '../styles/ui.css';
@@ -36,7 +37,7 @@ export function ClubhouseRouteError({
       route={route}
       component="Clubhouse"
       title="Something went wrong on this page"
-      message="It has been reported automatically."
+      message={FAILURE_COPY.page}
       homePath={homePath}
     />
   );

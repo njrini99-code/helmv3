@@ -73,7 +73,7 @@ for (const size of sizes) {
         await page.keyboard.press('Enter');
         const dialog = page.locator('dialog[open]');
         await expect(dialog).toHaveCount(1);
-        const surface = kind === 'ActionSheet' ? dialog : dialog.locator('.ch-modal__panel, .ch-setm-sheet, .ch-rec-sheet, .ch-rec-act').first();
+        const surface = kind === 'ActionSheet' ? dialog : dialog.locator('.ch-modal__panel, .ch-fsheet').first();
         await bounded(surface, page);
         // Native modal inertness prevents focusing the page beneath it.
         expect(await opener.evaluate((element) => {

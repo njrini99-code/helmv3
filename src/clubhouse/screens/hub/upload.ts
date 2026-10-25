@@ -25,7 +25,7 @@ export async function uploadTeamDocument(io: ChHubUploadIo, input: { teamId: str
     const type = put.status === 415 || /"statusCode"\s*:\s*"?415"?|invalid_?mime_?type|mime type .* is not supported/i.test(put.body);
     if (size) return { success: false, error: `Storage refused ${file.name}: it is over 25 MB.` };
     if (type) return { success: false, error: `Storage refused ${file.name}: it doesn’t take that type of file.` };
-    return { success: false, error: `${file.name} didn’t finish sending. Check your connection and try again.` };
+    return { success: false, error: `${file.name} didn’t finish sending. Try again.` };
   }
   return io.create({
     team_id: teamId,

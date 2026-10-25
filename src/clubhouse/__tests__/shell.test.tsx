@@ -39,7 +39,7 @@ import type { UnifiedNotificationItem } from '@/app/golf/actions/unified-notific
 import { ToastProvider, useToast } from '../ui/Toast';
 import { InlineNotice, RouteErrorView, type RouteErrorKind } from '../ui/Notices';
 import { Bell, BellSourceProvider, type ChBellApi } from '../shell/Bell';
-import { NotRebuilt } from '../shell/NotRebuilt';
+import { CH_ALIAS_WAIT_MS, NotRebuilt } from '../shell/NotRebuilt';
 import { ClubhouseNotFound } from '../shell/NotFound';
 import { OfflineBanner, pendingLine } from '../shell/OfflineBanner';
 import { useOfflineSyncStore } from '@/stores/offline-sync-store';
@@ -142,7 +142,7 @@ describe('Shell · bell', () => {
       const [open, setOpen] = useState(true);
       return (
         <Modal open={open} onClose={() => setOpen(false)} title="Edit">
-          <button type="button" onClick={() => toast({ tone: 'error', title: "Couldn't save", action: { label: 'Retry', run: retry }, code: 'CH-9999' })}>
+          <button type="button" onClick={() => toast({ tone: 'error', title: "Couldn't save", action: { label: 'Try again', run: retry }, code: 'CH-9999' })}>
             Save
           </button>
         </Modal>
@@ -159,7 +159,7 @@ describe('Shell · bell', () => {
     await user.click(screen.getByRole('button', { name: 'Save' }));
     await waitFor(() => expect(dialog.contains(code('CH-9999'))).toBe(true));
     expect(dialog.querySelector('.ch-toasts')!.getAttribute('aria-live')).toBe('polite');
-    await user.click(within(dialog).getByRole('button', { name: 'Retry' }));
+    await user.click(within(dialog).getByRole('button', { name: 'Try again' }));
     expect(retry).toHaveBeenCalledTimes(1);
     await user.click(screen.getByRole('button', { name: 'Save' }));
     await user.click(within(dialog).getByRole('button', { name: 'Close' }));
@@ -278,14 +278,14 @@ describe('Shell · page states', () => {
   });
 
   it.each([
-    ['load', 'CH-1205', '/golf/dashboard/rounds', 'Rounds didn’t load', /connection dropped/],
-    ['unknown', 'CH-1206', '/golf/dashboard/rounds/[id]/review', 'Rounds didn’t load', /reported automatically/],
-    ['unknown', 'CH-1206', '/golf/dashboard/team-hub', 'Team Hub didn’t load', /reported automatically/],
-    ['load', 'CH-1205', '/golf/dashboard/my-development', 'My development didn’t load', /connection dropped/],
-    ['unknown', 'CH-1206', '/golf/dashboard', 'Something went wrong on this page', /reported automatically/],
-    ['unknown', 'CH-1206', '/clubhouse-preview', 'Something went wrong on this page', /reported automatically/],
+    ['load', 'CH-1205', '/golf/dashboard/rounds', 'Rounds didn’t load', /^(?!.*connection).*Nothing you saved is lost\. Try again\./],
+    ['unknown', 'CH-1206', '/golf/dashboard/rounds/[id]/review', 'Rounds didn’t load', /Nothing you saved is lost\. Try again\./],
+    ['unknown', 'CH-1206', '/golf/dashboard/team-hub', 'Team Hub didn’t load', /Nothing you saved is lost\. Try again\./],
+    ['load', 'CH-1205', '/golf/dashboard/my-development', 'My development didn’t load', /^(?!.*connection).*Nothing you saved is lost\. Try again\./],
+    ['unknown', 'CH-1206', '/golf/dashboard', 'Something went wrong on this page', /Nothing you saved is lost\. Try again\./],
+    ['unknown', 'CH-1206', '/clubhouse-preview', 'Something went wrong on this page', /Nothing you saved is lost\. Try again\./],
     ['chunk', 'CH-1202', '/golf/dashboard/rounds', 'A newer version of GolfHelm is ready', /older version/],
-    ['transient', 'CH-1204', '/golf/dashboard/rounds', 'GolfHelm is slow to respond', /busy/],
+    ['transient', 'CH-1204', '/golf/dashboard/rounds', 'GolfHelm is slow to respond', /didn’t answer in time\. Nothing you saved is lost/],
   ] as const)('%s → %s names the page from its route %s', async (kind, c, route, title, body) => {
     wrap(<RouteErrorView kind={kind as RouteErrorKind} isRetrying={false} retryCount={0} onRetry={vi.fn()} homePath="/golf/dashboard" route={route} />);
     await expectCode(c);
@@ -1057,12 +1057,20 @@ describe('Shell · phone chrome', () => {
     expect(title.textContent).toBe('Notifications');
     expect(title.firstElementChild!.className).toBe('ch-sr-only');
     view.unmount();
-    // My qualifiers is the player's: a coach there gets the not-rebuilt notice under the plain bar.
-    render(
-      <ClubhouseFrame userData={coach} shell={shell} pathname="/golf/dashboard/my-qualifiers">
-        <p>My qualifiers body</p>
-      </ClubhouseFrame>,
-    );
+    // My qualifiers is the player's: a coach there gets the not-rebuilt notice under the plain bar, once the alias has had
+    // its CH_ALIAS_WAIT_MS to redirect (A30: an old address on its way somewhere draws a blank canvas first).
+    vi.useFakeTimers();
+    try {
+      render(
+        <ClubhouseFrame userData={coach} shell={shell} pathname="/golf/dashboard/my-qualifiers">
+          <p>My qualifiers body</p>
+        </ClubhouseFrame>,
+      );
+      expect(code('CH-1301')).toBeNull();
+      act(() => vi.advanceTimersByTime(CH_ALIAS_WAIT_MS));
+    } finally {
+      vi.useRealTimers();
+    }
     expect(code('CH-1301')).not.toBeNull();
     expect(code('CH-1402')).toBeNull();
     expect(document.querySelector('.ch-topbar')!.getAttribute('data-phone')).toBe('root');
@@ -1342,7 +1350,7 @@ describe('Shell · behaviour contracts (P001)', () => {
     wrap(<Saver fn={fn} />);
     await user.click(screen.getByRole('button', { name: 'Save' }));
     await expectCode('CH-8001', /Couldn't save your profile/);
-    await user.click(screen.getByRole('button', { name: 'Retry' }));
+    await user.click(screen.getByRole('button', { name: 'Try again' }));
     await screen.findByText('Profile saved');
     expect(fn).toHaveBeenCalledTimes(2);
   });

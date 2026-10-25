@@ -2,11 +2,13 @@ import type { ReactNode } from 'react';
 import type { GolfStats } from '@/lib/utils/golf-stats-calculator-shots';
 import type { ChPuttBand } from '../../data/stats-common';
 import type { ChProfileExtra } from '../../data/stats-player';
-import { changeInk, formatPct, formatSigned, formatToPar, NO_DATA } from '../../lib/format';
+import { changeInk, formatAvg, formatDistance, formatFixed, formatPct, formatSigned, formatToPar, NO_DATA } from '../../lib/format';
 import { InlineNotice } from '../../ui/Notices';
 import { Compare } from './charts';
 import { ScoreMixBar } from './ScoreMixBar';
 import { DataTable, Empty, Panel, RoundLine, SectorGrid, Tiles, type Cell, type Tone } from './detail';
+import { plural } from '../../lib/plural';
+import { NoData } from '../../ui/NoData';
 
 /**
  * Game detail's "More detail": for each section the figures the production
@@ -17,8 +19,8 @@ import { DataTable, Empty, Panel, RoundLine, SectorGrid, Tiles, type Cell, type 
  */
 
 const pct = formatPct;
-const num = (v: number | null | undefined, d = 1) => (v == null ? NO_DATA : v.toFixed(d));
-const ft = (v: number | null | undefined, d = 1) => (v == null ? NO_DATA : `${v.toFixed(d)} ft`);
+const num = formatFixed;
+const ft = (v: number | null | undefined, d = 1) => (v == null ? NO_DATA : `${formatFixed(v, d)} ft`);
 const tone = (v: number | null | undefined, ref: number | null | undefined, lowerIsBetter = false): Tone =>
   v == null || ref == null ? undefined : (lowerIsBetter ? v <= ref : v >= ref) ? 'gain' : 'loss';
 
@@ -33,7 +35,7 @@ function ByRound({ points, unit, digits, label, what, lowerIsBetter = false }: {
 /** A shot read that failed is said, not shown as none logged. */
 function Shots({ error, code, what, onRetry, children }: { error: boolean; code: string; what: string; onRetry?: () => void; children: ReactNode }) {
   if (!error) return <>{children}</>;
-  return <InlineNotice code={code} title={`${what} didn’t load.`} body="The rest of Game detail is correct. Try again; the error has been reported." onRetry={onRetry} />;
+  return <InlineNotice code={code} title={`${what} didn’t load.`} body="The rest of Game detail is correct. Try again." onRetry={onRetry} />;
 }
 
 export function ScoringMore({ s, x, onRetry }: { s: GolfStats; x: ChProfileExtra; onRetry?: () => void }) {
@@ -85,7 +87,7 @@ export function ScoringMore({ s, x, onRetry }: { s: GolfStats; x: ChProfileExtra
               <div key={p} className="ch-gx-pm">
                 <b>Par {p}s</b>
                 <span className="ch-num">
-                  {d.avgToPar == null ? NO_DATA : `${formatSigned(d.avgToPar, 2)} / hole`} · {d.total} holes
+                  {d.avgToPar == null ? <NoData /> : `${formatSigned(d.avgToPar, 2)} / hole`} · {d.total} holes
                 </span>
                 <ScoreMixBar counts={{ eagle: d.eagle, birdie: d.birdie, par: d.par, bogey: d.bogey, double: d.doublePlus }} label={`Par ${p}s`} compact />
               </div>
@@ -98,8 +100,8 @@ export function ScoringMore({ s, x, onRetry }: { s: GolfStats; x: ChProfileExtra
           label="Scoring by round type"
           items={types.map(([l, avg, n]) => ({
             label: l,
-            value: avg == null ? NO_DATA : avg.toFixed(1),
-            sub: n ? `${n} ${n === 1 ? 'round' : 'rounds'}` : 'No rounds',
+            value: formatAvg(avg),
+            sub: n ? `${plural(n, 'round')}` : 'No rounds',
             empty: n === 0,
             code: 'CH-5312',
           }))}
@@ -113,7 +115,7 @@ export function ScoringMore({ s, x, onRetry }: { s: GolfStats; x: ChProfileExtra
             { label: 'Most birdies in a row', value: String(s.mostBirdiesRow) },
             { label: 'Most pars in a row', value: String(s.mostParsRow) },
             { label: 'Longest no-3-putt streak', value: String(s.longestNo3PuttStreak), sub: 'holes' },
-            { label: 'Longest hole-out', value: s.longestHoleOut == null ? NO_DATA : `${s.longestHoleOut.toFixed(0)} yds`, empty: s.longestHoleOut == null, code: NOTHING },
+            { label: 'Longest hole-out', value: formatDistance(s.longestHoleOut), empty: s.longestHoleOut == null, code: NOTHING },
           ]}
         />
       </Panel>

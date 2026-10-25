@@ -148,7 +148,7 @@ drawn from the same stylesheet, with nothing to press. What differs, and why:
   showed, and no scores, because a player is set against the Tour and never
   against teammates (the Home contract, 20803). The coach's figures, form line,
   "Needs a look", hometown, high school and notes are not drawn or loaded.
-- The header reads "Your team." and the count; there is no Invite, Export, join
+- The header reads "Roster" and the count; there is no Invite, Export, join
   requests card or player panel, and the phone top bar has the back link and no
   action. Only active members are listed, so the Active and Inactive pills are
   gone; the sort is Name, Class or Handicap.

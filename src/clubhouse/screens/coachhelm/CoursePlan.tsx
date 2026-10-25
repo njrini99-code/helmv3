@@ -1,13 +1,16 @@
 'use client';
 
 import { useState } from 'react';
-import { Copy, MapPinned } from 'lucide-react';
+import { Copy, MapPinned, Send } from 'lucide-react';
 import type { CoursePlan as Plan, CoursePlanCourse } from '@/lib/coachhelm/course-plan/build-plan';
 import { haptic } from '../../lib/haptics';
 import { Button } from '../../ui/Button';
 import { Surface } from '../../ui/Surface';
 import { useToast } from '../../ui/Toast';
 import type { ChCoursePlanReads } from './writes';
+import { pluralWord } from '../../lib/plural';
+import { rebuiltHref } from '../../shell/nav';
+import { messagesPrefillHref } from '../messages/prefill';
 
 type Step =
   | { at: 'idle' }
@@ -19,7 +22,7 @@ type Step =
  * The coach's "Course plan" for the chosen player (Slice 7c; supercharge 04 Example 10, behind `coachhelm_course_plan_v1`).
  * On request, not on a schedule: no event carries a course yet. The coach picks one of the player's courses with three or
  * more rounds and reads at most three plan lines from the player's own history there, then the player's version, which the
- * coach can copy into a message. Targets, sides and practice only, never a club (players do not record clubs).
+ * coach can send to the player's thread (Messages opens with it written, never sent: D2-7) or copy. Targets, sides and practice only, never a club (players do not record clubs).
  * Nothing is written. Keyed by player by its owner, so another player starts from the button again.
  */
 export function CoursePlan({ playerId, who, reads }: { playerId: string; who: string; reads: ChCoursePlanReads }) {
@@ -69,7 +72,7 @@ export function CoursePlan({ playerId, who, reads }: { playerId: string; who: st
       {step.at === 'failed' && (
         <div className="ch-hl-plan__start" role="status">
           <p className="ch-hl-note">The course plan didn’t load. Nothing was changed.</p>
-          <Button size="sm" variant="ghost" onClick={step.retry}>
+          <Button size="sm" onClick={step.retry}>
             Try again
           </Button>
         </div>
@@ -92,20 +95,22 @@ export function CoursePlan({ playerId, who, reads }: { playerId: string; who: st
             })}
           </div>
         ))}
-      {step.at === 'plan' && <PlanCard plan={step.plan} who={who} onCopy={(text) => void copy(text)} />}
+      {step.at === 'plan' && <PlanCard plan={step.plan} who={who} playerId={playerId} onCopy={(text) => void copy(text)} />}
     </section>
   );
 }
 
-function PlanCard({ plan, who, onCopy }: { plan: Plan; who: string; onCopy: (text: string) => void }) {
+function PlanCard({ plan, who, playerId, onCopy }: { plan: Plan; who: string; playerId: string; onCopy: (text: string) => void }) {
   if (plan.status === 'too_few') {
     return (
       <p className="ch-hl-note" role="status">
-        {who} has {plan.rounds} countable {plan.rounds === 1 ? 'round' : 'rounds'} at {plan.courseName}. A plan needs three.
+        {who} has {plan.rounds} countable {pluralWord(plan.rounds, 'round')} at {plan.courseName}. A plan needs three.
       </p>
     );
   }
   const playerText = [plan.player.title, ...plan.player.lines].join('\n');
+  // Messages opens on the player's thread with the plan in its composer; the coach reads it and presses Send (prefill.ts).
+  const send = plan.player.lines.length ? rebuiltHref(messagesPrefillHref({ players: [playerId], draft: playerText }) ?? '', 'coach') : null;
   return (
     <div aria-live="polite">
       <Surface id="ch-hl-plan-card" title={plan.coach.title} rule>
@@ -128,9 +133,16 @@ function PlanCard({ plan, who, onCopy }: { plan: Plan; who: string; onCopy: (tex
                 <li key={l}>{l}</li>
               ))}
             </ul>
-            <Button size="sm" variant="ghost" leftIcon={Copy} onClick={() => onCopy(playerText)}>
-              Copy for {who}
-            </Button>
+            <div className="ch-hl-plan__send">
+              {send && (
+                <Button size="sm" variant="ghost" leftIcon={Send} href={send}>
+                  Send to {who}
+                </Button>
+              )}
+              <Button size="sm" variant="ghost" leftIcon={Copy} onClick={() => onCopy(playerText)}>
+                Copy for {who}
+              </Button>
+            </div>
           </div>
         )}
       </Surface>

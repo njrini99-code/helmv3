@@ -1,6 +1,7 @@
 import { readdirSync, readFileSync, statSync } from 'node:fs';
 import { join, relative } from 'node:path';
 import { describe, expect, it } from 'vitest';
+import { code, ROOT, walk } from './_scan';
 
 /**
  * A23 (CONS-9): Clubhouse sets its words in Instrument Sans, latin subset (lib/fonts.ts). A character the subset does
@@ -38,25 +39,10 @@ const kept: Record<string, string[]> = {
 
 const allowed = (cp: number) => (cp >= 0x20 && cp <= 0x7e) || (cp >= 0xa0 && cp <= 0xff && !latin1Missing.has(cp)) || extra.has(cp);
 
-function sources(dir: string): string[] {
-  return readdirSync(dir).flatMap((name) => {
-    const path = join(dir, name);
-    if (statSync(path).isDirectory()) return name === '__tests__' ? [] : sources(path);
-    return /\.tsx?$/.test(name) && !/\.test\.tsx?$/.test(name) ? [path] : [];
-  });
-}
-
-const code = (path: string) =>
-  readFileSync(path, 'utf8')
-    .replace(/\/\*[\s\S]*?\*\//g, '')
-    .replace(/\{\/\*[\s\S]*?\*\/\}/g, '')
-    .replace(/^\s*\/\/.*$/gm, '')
-    .replace(/\s\/\/ .*$/gm, '');
-
 describe('Glyph subset (A23)', () => {
   it('every character in Clubhouse source words is one Instrument Sans latin draws, or a named exception', () => {
     const misses: string[] = [];
-    for (const file of sources(root)) {
+    for (const file of walk(ROOT, /\.tsx?$/)) {
       const rel = relative(root, file);
       for (const [i, line] of code(file).split('\n').entries()) {
         for (const ch of line) {

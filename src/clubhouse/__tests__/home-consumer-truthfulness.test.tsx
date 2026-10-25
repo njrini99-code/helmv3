@@ -1,5 +1,7 @@
 import { LazyMotion, domAnimation } from 'motion/react';
 import { cleanup, render, screen, within } from '@testing-library/react';
+import { readFileSync } from 'node:fs';
+import { join } from 'node:path';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
 vi.mock('../lib/track', () => ({ chReport: vi.fn(), chTrail: vi.fn(), chTagSession: vi.fn() }));
@@ -80,6 +82,31 @@ describe('Home scoring distinguishes unknown par', () => {
     showScoring([point('Oct 1', 71, 72), point('Oct 2', 73, 72)]);
     expect(within(underFigure()).getByText('1 of 2')).toBeTruthy();
     expect(within(chart()).getByText('Par 72')).toBeTruthy();
+  });
+});
+
+describe('Home’s Scoring avg mark says what its words say (CONS-20)', () => {
+  const rounds = (scores: number[], from: number) => scores.map((s, i) => point(`R${from + i}`, s, 72));
+  const mark = () => document.querySelector('.ch-ph-viz--avg i.is-now')!;
+  const avgWords = () => within(screen.getByText('Scoring avg').closest('div')!);
+
+  it('equal averages: no gain or loss on the mark, and the words say No clear change', () => {
+    const ten = [70, 74, 72, 76, 71, 73, 75, 69, 72, 74];
+    showScoring([...rounds(ten, 0), ...rounds(ten, 10)]);
+    expect(mark().className).toBe('is-now');
+    expect(avgWords().getByText(/No clear change/)).toBeTruthy();
+  });
+
+  it('a clear drop in the average is a gain on the mark and in the words', () => {
+    showScoring([...rounds([80, 81, 79, 80, 82, 80, 79, 81, 80, 80], 0), ...rounds([71, 72, 70, 71, 72, 71, 70, 72, 71, 71], 10)]);
+    expect(mark().className).toBe('is-now is-gain');
+    expect(avgWords().getByText(/Better than/)).toBeTruthy();
+  });
+
+  it('the neutral mark is painted, apart from the previous window’s', () => {
+    const css = readFileSync(join(process.cwd(), 'src/clubhouse/styles/home.css'), 'utf8');
+    expect(css).toMatch(/\.ch-ph-viz--avg i\.is-now \{[^}]*background: var\(--ch-ink-500\);/);
+    expect(css).toMatch(/\.ch-ph-viz--avg i\.is-was \{\s*background: var\(--ch-ink-300\);/);
   });
 });
 

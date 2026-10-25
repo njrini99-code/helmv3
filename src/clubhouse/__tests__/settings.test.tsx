@@ -324,6 +324,10 @@ describe('Settings · 81xx validation', () => {
     await user.clear(screen.getByLabelText('Full name'));
     await expectCode('CH-8101', /Add your name/);
     expect(within(card('Profile')).getByRole('button', { name: 'Save changes' })).toBeDisabled();
+    // Row 86: Cmd-S from elsewhere in the card saves nothing and puts focus on the field to fix.
+    within(card('Profile')).getByRole('button', { name: 'Discard' }).focus();
+    await user.keyboard('{Meta>}s{/Meta}');
+    expect(document.activeElement).toBe(screen.getByLabelText('Full name'));
   });
 
   it('CH-8102 a player clears their first name', async () => {
@@ -337,6 +341,8 @@ describe('Settings · 81xx validation', () => {
     await user.type(screen.getByLabelText('New email'), 'nope');
     await user.click(screen.getByRole('button', { name: 'Send confirmation' }));
     await expectCode('CH-8103', /valid email/);
+    // Row 86: the refused send puts focus on the field it names.
+    expect(document.activeElement).toBe(screen.getByLabelText('New email'));
     await user.clear(screen.getByLabelText('New email'));
     await user.type(screen.getByLabelText('New email'), 'MAYA.REYES@unc.edu');
     await expectCode('CH-8104', /already your email/);
@@ -344,10 +350,10 @@ describe('Settings · 81xx validation', () => {
   });
 
   it.each([
-    ['CH-8105', '', 'new-password', 'new-password', /current password/],
-    ['CH-8106', 'old', 'short', 'short', /8 characters/],
-    ['CH-8107', 'old', 'new-password', 'other-password', /don’t match/],
-  ])('%s password checks', async (c, cur, next, confirm, text) => {
+    ['CH-8105', '', 'new-password', 'new-password', /current password/, 'Current password'],
+    ['CH-8106', 'old', 'short', 'short', /8 characters/, 'New password'],
+    ['CH-8107', 'old', 'new-password', 'other-password', /don’t match/, 'Confirm new password'],
+  ])('%s password checks; focus goes to the field it names (row 86)', async (c, cur, next, confirm, text, field) => {
     const { user, writes } = setup();
     if (cur) await user.type(screen.getByLabelText('Current password'), cur);
     await user.type(screen.getByLabelText('New password'), next);
@@ -356,6 +362,9 @@ describe('Settings · 81xx validation', () => {
     await expectCode(c, text);
     expect(writes.changePassword).not.toHaveBeenCalled();
     expect(hapticSpy).toHaveBeenCalledWith('warning');
+    const named = screen.getByLabelText(field);
+    expect(document.activeElement).toBe(named);
+    expect(named.getAttribute('aria-invalid')).toBe('true');
   });
 
   it('wave-6 Team on desktop opens on the team code, then Team details', () => {
@@ -875,7 +884,7 @@ describe('Settings · saving', () => {
     expect(name).toHaveValue('Maya R');
     expect(within(card('Profile')).getByRole('button', { name: 'Save changes' })).toBeEnabled();
     expect(await within(card('Profile')).findByText('Unsaved changes')).toBeTruthy();
-    await user.click(within(code('CH-8001') as HTMLElement).getByRole('button', { name: 'Retry' }));
+    await user.click(within(code('CH-8001') as HTMLElement).getByRole('button', { name: 'Try again' }));
     await waitFor(() => expect(saveProfile).toHaveBeenCalledTimes(2));
     expect(saveProfile.mock.calls[1]).toEqual(saveProfile.mock.calls[0]);
     expect(await screen.findByText('Profile saved')).toBeTruthy();
@@ -890,7 +899,7 @@ describe('Settings · saving', () => {
     await user.click(within(card('Profile')).getByRole('button', { name: 'Save changes' }));
     await expectCode('CH-8001');
     await user.type(name, 'eyes');
-    await user.click(within(code('CH-8001') as HTMLElement).getByRole('button', { name: 'Retry' }));
+    await user.click(within(code('CH-8001') as HTMLElement).getByRole('button', { name: 'Try again' }));
     await waitFor(() => expect(saveProfile).toHaveBeenCalledTimes(2));
     expect(saveProfile.mock.calls[1]![0]).toMatchObject({ fullName: 'Maya R' });
     await screen.findByText('Profile saved');
@@ -906,7 +915,7 @@ describe('Settings · saving', () => {
     await user.type(screen.getByLabelText('Full name'), 's');
     await user.click(within(card('Profile')).getByRole('button', { name: 'Save changes' }));
     await expectCode('CH-8001');
-    await user.click(within(code('CH-8001') as HTMLElement).getByRole('button', { name: 'Retry' }));
+    await user.click(within(code('CH-8001') as HTMLElement).getByRole('button', { name: 'Try again' }));
     await waitFor(() => expect(within(card('Profile')).queryByText('Unsaved changes')).toBeNull());
     expect(within(card('Profile')).queryByRole('button', { name: 'Save changes' })).toBeNull();
     expect(writes.refresh).toHaveBeenCalledTimes(1);
@@ -916,7 +925,7 @@ describe('Settings · saving', () => {
     await user.click(within(card('Invite players')).getByRole('button', { name: 'Make a new code' }));
     await user.click(within(code('CH-8503') as HTMLElement).getByRole('button', { name: 'Make a new code' }));
     await expectCode('CH-8012');
-    await user.click(within(code('CH-8012') as HTMLElement).getByRole('button', { name: 'Retry' }));
+    await user.click(within(code('CH-8012') as HTMLElement).getByRole('button', { name: 'Try again' }));
     expect(await within(card('Invite players')).findByText('R4T8W2PL')).toBeTruthy();
     expect(within(card('Invite players')).queryByText('K7M2Q9XA')).toBeNull();
   });
@@ -927,7 +936,7 @@ describe('Settings · saving', () => {
     await user.click(screen.getByRole('switch', { name: 'Tasks by push' }));
     await expectCode('CH-8005');
     expect(screen.getByRole('switch', { name: 'Tasks by push' })).toBeChecked();
-    await user.click(within(code('CH-8005') as HTMLElement).getByRole('button', { name: 'Retry' }));
+    await user.click(within(code('CH-8005') as HTMLElement).getByRole('button', { name: 'Try again' }));
     await waitFor(() => expect(setDelivery).toHaveBeenCalledTimes(2));
     expect(setDelivery.mock.calls[1]).toEqual(setDelivery.mock.calls[0]);
     await waitFor(() => expect(screen.getByRole('switch', { name: 'Tasks by push' })).not.toBeChecked());
@@ -1363,7 +1372,8 @@ describe('Settings · what is reported', () => {
 
 // ── The phone (docs/clubhouse/phone/settings.md, owner-approved 2026-09-30) ──
 
-describe('Settings · a refused save says why; only a save that got no answer says "Check your connection" (VERIFY 2026-10-17)', () => {
+describe('Settings · a refused save says why; a save that got no answer guesses no cause, and a form says its changes are kept (VERIFY 2026-10-17, row 62)', () => {
+  const toastBody = (c: string) => code(c)!.querySelector('.ch-toast__body')!.textContent;
   const RLS = 'new row violates row-level security policy for table "notification_preferences"';
 
   it('CH-8005 a switch the database refuses flips back and says the account has no access, not the connection', async () => {
@@ -1375,14 +1385,16 @@ describe('Settings · a refused save says why; only a save that got no answer sa
     expect(screen.getByRole('switch', { name: 'Messages by email' })).toBeChecked();
   });
 
-  it('CH-8005 a switch whose save never got an answer (a throw, or the browser’s "Load failed") still says to check the connection', async () => {
+  it('CH-8005 a switch whose save never got an answer (a throw, or the browser’s "Load failed") goes back and says to try again, no cause guessed', async () => {
     const first = setup({ section: 'notifications', writes: { setDelivery: vi.fn(() => Promise.reject(new TypeError('Load failed'))) } });
     await first.user.click(screen.getByRole('switch', { name: 'Messages by email' }));
-    await expectCode('CH-8005', /Check your connection and try again\./);
+    await expectCode('CH-8005');
+    expect(toastBody('CH-8005')).toBe('It is back where it was. Try again.');
     first.unmount();
     const second = setup({ section: 'notifications', writes: { setDelivery: vi.fn(() => fail('TypeError: Load failed')) } });
     await second.user.click(screen.getByRole('switch', { name: 'Messages by email' }));
-    await expectCode('CH-8005', /Check your connection and try again\./);
+    await expectCode('CH-8005');
+    expect(toastBody('CH-8005')).toBe('It is back where it was. Try again.');
   });
 
   it('CH-8021 a refusal the server words itself is shown as it is; a technical one is still a refusal, not the connection', async () => {
@@ -1392,21 +1404,23 @@ describe('Settings · a refused save says why; only a save that got no answer sa
     first.unmount();
     const second = setup({ section: 'coachhelm', writes: { setCoachHelmTeam: vi.fn(() => fail('PGRST116: JSON object requested, multiple (or no) rows returned')) } });
     await second.user.click(screen.getByRole('switch', { name: 'CoachHelm for the whole team' }));
-    await expectCode('CH-8021', /The server didn’t accept the change\. The error has been reported\./);
+    await expectCode('CH-8021');
+    expect(toastBody('CH-8021')).toBe('It is back where it was. The server didn’t accept the change.');
     expect(code('CH-8021')!.textContent).not.toMatch(/connection/);
   });
 
-  it('CH-8022 a CoachHelm autosave the database refuses says so; one that threw says to check the connection', async () => {
+  it('CH-8022 a CoachHelm autosave the database refuses says so; one that threw goes back and says to try again, no cause guessed', async () => {
     const first = setup({ section: 'coachhelm', writes: { savePhilosophy: vi.fn(() => Promise.resolve({ success: false, error: RLS })) } });
     await first.user.click(screen.getByRole('switch', { name: 'Performance plateau' }));
     await expectCode('CH-8022', /It’s back where it was\. Your account doesn’t have access to do this\./);
     first.unmount();
     const second = setup({ section: 'coachhelm', writes: { savePhilosophy: vi.fn(() => Promise.reject(new TypeError('Failed to fetch'))) } });
     await second.user.click(screen.getByRole('switch', { name: 'Performance plateau' }));
-    await expectCode('CH-8022', /Check your connection and try again\./);
+    await expectCode('CH-8022');
+    expect(toastBody('CH-8022')).toBe('It’s back where it was. Try again.');
   });
 
-  it('CH-8011 a form save refused by a policy (an error, not zero rows) says the account has no access; one that never reached the server says to check the connection', async () => {
+  it('CH-8011 a form save refused by a policy (an error, not zero rows) says the account has no access; one that never reached the server says the changes are kept', async () => {
     const first = setup({ section: 'team', writes: { saveTeam: vi.fn(() => fail('new row violates row-level security policy for table "golf_teams"')) } });
     await first.user.type(screen.getByLabelText('Team name'), ' A');
     await first.user.click(within(card('Team details')).getByRole('button', { name: 'Save changes' }));
@@ -1417,7 +1431,9 @@ describe('Settings · a refused save says why; only a save that got no answer sa
     const second = setup({ section: 'team', writes: { saveTeam: vi.fn(() => fail('TypeError: Failed to fetch')) } });
     await second.user.type(screen.getByLabelText('Team name'), ' A');
     await second.user.click(within(card('Team details')).getByRole('button', { name: 'Save changes' }));
-    await expectCode('CH-8011', /Check your connection and try again\./);
+    await expectCode('CH-8011');
+    // A form keeps what was typed, so it says so.
+    expect(toastBody('CH-8011')).toBe('Your changes are kept. Try again.');
   });
 
   it('CH-8018 a refusal with no plain reason keeps the card’s own next step', async () => {
@@ -1536,6 +1552,8 @@ describe('Settings · phone (docs/clubhouse/phone/settings.md)', () => {
     expect(screen.getByRole('button', { name: 'Report a problem' })).toBeTruthy();
     expect(screen.getByRole('link', { name: 'Privacy policy' }).getAttribute('href')).toBe('/privacy');
     expect(screen.getByRole('link', { name: 'Terms of service' }).getAttribute('href')).toBe('/terms');
+    // About (row 85): which GolfHelm this is; an unstamped web build says so plainly.
+    expect(screen.getByText('Version').closest('.ch-setm-row')!.textContent).toMatch(/Version\s*Web/);
     // Signing out is not destructive: the standard row ink, never the danger red.
     expect(screen.getByRole('button', { name: 'Sign out' }).className).toBe('ch-setm-signout');
     // Not the desktop page reflowed: no section rail.
@@ -1954,7 +1972,7 @@ describe('Settings · phone (docs/clubhouse/phone/settings.md)', () => {
       await waitFor(() => expect(sheetOf('CH-8509')).toBeNull());
       expect(within(dialog('Profile')).getByLabelText('Full name')).toHaveValue('Maya Reyes Jr');
       // Swiping the sheet down asks too, and puts the sheet back where it was.
-      await dragSheet(sheet.querySelector('.ch-setm-bar') as HTMLElement, 120);
+      await dragSheet(sheet.querySelector('.ch-fsheet-bar') as HTMLElement, 120);
       await waitFor(() => expect(sheetOf('CH-8509')).not.toBeNull());
       expect((sheet.closest('dialog') as HTMLElement).style.translate).toBe('');
       // Discard: closed, nothing sent, and it opens again as saved.
@@ -2032,7 +2050,7 @@ describe('Settings · phone (docs/clubhouse/phone/settings.md)', () => {
       expect(code('CH-8402')).not.toBeNull();
       // Nothing closes it meanwhile: not Cancel, not a swipe (which springs back), and no discard question.
       await user.click(within(sheet).getByRole('button', { name: 'Cancel' }));
-      await dragSheet(sheet.querySelector('.ch-setm-bar') as HTMLElement, 120);
+      await dragSheet(sheet.querySelector('.ch-fsheet-bar') as HTMLElement, 120);
       expect(sheet.hasAttribute('open')).toBe(true);
       expect(sheet.style.translate).toBe('');
       expect(sheetOf('CH-8509')).toBeNull();
@@ -2061,6 +2079,9 @@ describe('Settings · phone (docs/clubhouse/phone/settings.md)', () => {
       const uploadAvatar = vi.fn(() => new Promise<ChResult<{ url: string }>>((r) => (resolve = r)));
       const { user } = phone({ writes: { uploadAvatar } });
       const sheet = await openProfile(user);
+      // B14: the phone names the action as the desktop does: Add photo with none, Replace photo with one.
+      expect(within(sheet).getByRole('button', { name: /^(Add|Replace) photo$/ })).toBeTruthy();
+      expect(within(sheet).queryByRole('button', { name: 'Change photo' })).toBeNull();
       const input = sheet.querySelector('input[type="file"]') as HTMLInputElement;
       await act(async () => {
         fireEvent.change(input, { target: { files: [new File(['x'], 'me.png', { type: 'image/png' })] } });
@@ -2148,6 +2169,9 @@ describe('Settings · phone (docs/clubhouse/phone/settings.md)', () => {
       await user.click(within(sheet).getByRole('button', { name: 'Update' }));
       await expectCode('CH-8107', /don’t match/);
       expect(hapticSpy).toHaveBeenCalledWith('warning');
+      // Row 86: focus goes to the field the problem names, marked invalid.
+      expect(document.activeElement).toBe(within(sheet).getByLabelText('Confirm new password'));
+      expect(within(sheet).getByLabelText('Confirm new password').getAttribute('aria-invalid')).toBe('true');
       expect(writes.changePassword).not.toHaveBeenCalled();
       await user.clear(within(sheet).getByLabelText('Confirm new password'));
       await user.type(within(sheet).getByLabelText('Confirm new password'), 'new-password');
@@ -2791,5 +2815,19 @@ describe('Settings · this file', () => {
     const titles = all.split('\n').filter((l) => /^\s*(it|describe)(\.each\(.*\))?\(/.test(l));
     const unnamed = bridge.filter((r) => r.page === 'P008' && !r.chCode && r.status === 'implemented').filter((r) => !titles.some((l) => l.includes(String(r.id))));
     expect(unnamed.map((r) => r.id)).toEqual([]);
+  });
+});
+
+describe('Settings · keyboard (B11)', () => {
+  it('↓ and ↑ walk the section rail, which is one Tab stop', () => {
+    setup();
+    const items = [...nav().querySelectorAll<HTMLElement>('.ch-set-rail__i')];
+    expect(items.length).toBeGreaterThan(2);
+    expect(items.filter((i) => i.tabIndex === 0)).toHaveLength(1);
+    items[0]!.focus();
+    fireEvent.keyDown(items[0]!, { key: 'ArrowDown' });
+    expect(document.activeElement).toBe(items[1]);
+    fireEvent.keyDown(items[1]!, { key: 'Home' });
+    expect(document.activeElement).toBe(items[0]);
   });
 });
