@@ -567,7 +567,7 @@
     box-shadow: var(--ch-elevation-feature);
   }
   .ch-hg-hero__k {
-    font: 500 calc(12.5 * var(--ch-type-k))/1.3 var(--ch-font-sans);
+    font: 500 calc(13 * var(--ch-type-k))/1.3 var(--ch-font-sans);
     color: var(--ch-hero-mint);
   }
   .ch-hg-hero__k span:last-child {

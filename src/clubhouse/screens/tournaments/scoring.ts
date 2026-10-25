@@ -138,8 +138,8 @@ function finalRound(
   const counted = valid.slice(0, format.counting);
   const extra = valid.slice(format.counting);
   const total = counted.reduce((sum, s) => sum + s.total!, 0);
-  const edge = counted[counted.length - 1].total;
-  const tiedAtBoundary = extra.length > 0 && extra[0].total === edge ? valid.filter((s) => s.total === edge).map((s) => s.playerId) : [];
+  const edge = counted[counted.length - 1]?.total;
+  const tiedAtBoundary = extra.length > 0 && extra[0]?.total === edge ? valid.filter((s) => s.total === edge).map((s) => s.playerId) : [];
   const round: ChTourTeamRound = {
     kind: 'complete',
     total,
