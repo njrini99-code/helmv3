@@ -67,7 +67,7 @@
 .ch-tour-home-feat__alt:hover:not(:disabled) {
   background: rgb(255 255 255 / 0.1);
   color: var(--ch-on-green-ink);
-  box-shadow: none;
+  box-shadow: inset 0 0 0 var(--ch-hairline-w) rgb(255 255 255 / 0.16);
 }
 .ch-tour-home-feat__go:focus-visible,
 .ch-tour-home-feat__alt:focus-visible {
