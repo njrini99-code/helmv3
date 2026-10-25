@@ -144,7 +144,7 @@ export function ClubhouseFrame({
   // The live shell renders the animation features above the frame (ChMotionFeatures, below); a preview renders the frame alone.
   const scoped = useContext(ChMotionScope);
   const frame = (
-    <ClubhouseMarker role={role}>
+    <ClubhouseMarker role={role} classAwareness={shell.classAwareness ?? false}>
       <LightProvider course={shell.course ?? null} timeZone={shell.timezone ?? null} at={lightAt}>
         <PhoneChromeProvider>
           <SectionSwitchProvider pathname={pathname} role={role} shell={shell}>

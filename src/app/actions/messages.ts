@@ -22,6 +22,7 @@ import { describeError } from '@/lib/utils/describe-error';
 import { assertGolfConversationAudience } from '@/lib/golf/conversation-audience';
 import { readGolfPlayerProfiles } from '@/lib/golf/player-profiles';
 import { validateGolfReplyTarget } from '@/lib/golf/message-replies';
+import { isFlagEnabled } from '@/lib/flags/is-enabled';
 
 type Sport = 'baseball' | 'golf';
 
@@ -48,6 +49,13 @@ interface SendMessageOptions {
    * useGolfMessages is an exact match instead of a heuristic guess.
    */
   clientMessageId?: string;
+  /**
+   * P-10 Notify anyway (golf, 1:1 or group, from a coach): the coach chose to interrupt, so this message skips the class hold. Stored in
+   * `golf_messages.notify_anyway`; the database trigger keeps it only for a coach of the conversation's team and resets it otherwise, so the
+   * stored value, read back below, is what the fan-out trusts. Ignored with `class_awareness_v1` off or for another sport: nothing then names
+   * the column, so a send never depends on a migration that is held.
+   */
+  notifyAnyway?: boolean;
   /** Golf's existing same-conversation reply link; omitted for ordinary messages. */
   replyToId?: string | null;
 }
@@ -92,13 +100,14 @@ async function isBaseballMessageNotificationEnabled(conversationId: string): Pro
  * @param createNotifications - Whether to create notifications for other participants (default: true)
  */
 // nosemgrep: helmv3-action-missing-revalidate -- realtime-subscribed messages UI; revalidatePath caused a full reload on every send (see note above the return)
-export async function sendMessage({
+async function sendMessageCore({
   conversationId,
   content,
   sport = 'baseball',
   createNotifications = true,
   clientMessageId,
   replyToId,
+  notifyAnyway,
 }: SendMessageOptions) {
   try {
     const supabase = await createClient();
@@ -155,6 +164,7 @@ export async function sendMessage({
 
     // Insert message
     const messagesTable = sport === 'golf' ? 'golf_messages' : 'baseball_messages';
+    const wantsNotifyAnyway = notifyAnyway === true && sport === 'golf' && isFlagEnabled('class_awareness_v1');
     const { data: insertedMessage, error: messageError } = await supabase
       .from(messagesTable as any)
       .insert({
@@ -164,6 +174,7 @@ export async function sendMessage({
         content: sanitizedContent,
         read: false,
         ...(validatedReplyId ? { reply_to_id: validatedReplyId } : {}),
+        ...(wantsNotifyAnyway ? { notify_anyway: true } : {}),
       })
       .select()
       .single();
@@ -307,10 +318,30 @@ export async function sendMessage({
     // Revalidation was causing unnecessary page reloads on every message send
     // (the nosemgrep suppression for this lives on the function declaration)
 
-    return { success: true };
+    // `message` is what the golf fan-out needs: the stored id and time, and the Notify anyway flag as the database kept it (the trigger resets it for
+    // anyone but a coach of the conversation's team). Absent on the duplicate-key path above, where the row was written by an earlier attempt.
+    const stored = insertedMessage as { id?: string; created_at?: string; notify_anyway?: boolean };
+    return {
+      success: true,
+      ...(sport === 'golf' ? { message: { id: stored.id ?? null, createdAt: stored.created_at ?? null, notifyAnyway: wantsNotifyAnyway && stored.notify_anyway === true } } : {}),
+    };
   } catch (err) {
     return formatSafeErrorResponse(err);
   }
+}
+
+// nosemgrep: helmv3-action-missing-revalidate -- realtime-subscribed messages UI; revalidatePath caused a full reload on every send (see note on sendMessageCore)
+export async function sendMessage(options: SendMessageOptions) {
+  return withoutStoredMessage(await sendMessageCore(options));
+}
+
+/** `message` is for the golf fan-out only; whoever called the action sees the answer it always gave. */
+type WithoutMessage<R> = R extends unknown ? Omit<R, 'message'> : never;
+function withoutStoredMessage<R extends { success: boolean }>(result: R): WithoutMessage<R> {
+  if (!('message' in result)) return result as WithoutMessage<R>;
+  const answer = { ...result } as R & { message?: unknown };
+  delete answer.message;
+  return answer as WithoutMessage<R>;
 }
 
 interface CreateConversationOptions {
@@ -667,8 +698,8 @@ export async function markBaseballMessagesAsRead(conversationId: string) {
 
 // Golf-specific exports (maintain existing function signatures)
 // SEMGREP-ALLOW: realtime-subscribed messages + notifications UI; revalidate would cause reload loop
-async function sendGolfMessageImpl(conversationId: string, content: string, clientMessageId?: string, replyToId?: string | null) {
-  const result = await sendMessage({ conversationId, content, sport: 'golf', createNotifications: false, clientMessageId, replyToId });
+async function sendGolfMessageImpl(conversationId: string, content: string, clientMessageId?: string, replyToId?: string | null, opts?: { notifyAnyway?: boolean }) {
+  const result = await sendMessageCore({ conversationId, content, sport: 'golf', createNotifications: false, clientMessageId, replyToId, notifyAnyway: opts?.notifyAnyway });
 
   if (result.success) {
     const supabase = await createClient();
@@ -676,11 +707,23 @@ async function sendGolfMessageImpl(conversationId: string, content: string, clie
 
     if (user) {
       const preview = content.length > 80 ? content.substring(0, 80) + '…' : content;
-      await notifyGolfMessageRecipients(conversationId, user.id, preview);
+      // The flag as stored (not as asked for): a duplicate-key success carries none, which reads as "not flagged" here, and a push that goes
+      // out normally is the fail-open direction.
+      const stored = 'message' in result ? result.message : undefined;
+      await notifyGolfMessageRecipients(
+        conversationId,
+        user.id,
+        preview,
+        // The message id lets a held push be dropped at release if the player read the message in the app first. Flag off and not flagged:
+        // the call is the three arguments it always was.
+        stored?.notifyAnyway || isFlagEnabled('class_awareness_v1', { skipTelemetry: true })
+          ? { notifyAnyway: stored?.notifyAnyway === true, messageId: stored?.id ?? clientMessageId }
+          : undefined,
+      );
     }
   }
 
-  return result;
+  return withoutStoredMessage(result);
 }
 
 const observedSendGolfMessage = withAdminObserved(
@@ -689,8 +732,8 @@ const observedSendGolfMessage = withAdminObserved(
   sendGolfMessageImpl,
 );
 
-export async function sendGolfMessage(conversationId: string, content: string, clientMessageId?: string, replyToId?: string | null) {
-  return observedSendGolfMessage(conversationId, content, clientMessageId, replyToId);
+export async function sendGolfMessage(conversationId: string, content: string, clientMessageId?: string, replyToId?: string | null, opts?: { notifyAnyway?: boolean }) {
+  return observedSendGolfMessage(conversationId, content, clientMessageId, replyToId, opts);
 }
 
 async function createGolfConversationImpl(participantUserIds: string[], teamId?: string) {

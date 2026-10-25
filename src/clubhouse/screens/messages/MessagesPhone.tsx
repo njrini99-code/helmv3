@@ -42,6 +42,8 @@ import {
 import { Avatar } from "../../ui/Avatar";
 import { EmptyState, Skeleton } from "../../ui/States";
 import { RailEmpty } from "./RailEmpty";
+import { ThreadClassSub } from "./ThreadClassSub";
+import { ThreadClassSection } from "./ThreadClassSection";
 import { Icon } from "../../ui/Icon";
 import { Button } from "../../ui/Button";
 import { InlineNotice } from "../../ui/Notices";
@@ -459,7 +461,9 @@ function PhoneThread({
             {conv.group ? <GroupMark size="sm" /> : <Avatar name={conv.title} id={convAvatarId(api, conv)} size={30} />}
             <span>
               <b>{conv.title}</b>
-              <em>{sub}</em>
+              <em>
+                <ThreadClassSub cls={api.classDay} conv={conv} other={conv.group ? undefined : personOf(api, conv.memberIds[0] ?? "")} sub={sub} where="phone" />
+              </em>
             </span>
           </button>
         }
@@ -750,6 +754,19 @@ function PhoneDetails({ api, conv, onBack }: { api: ChMessagesApi; conv: ChConv;
                 </button>
               </div>
             </section>
+
+            {api.classDay && !conv.group && (
+              <ThreadClassSection
+                cls={api.classDay}
+                conv={conv}
+                other={personOf(api, conv.memberIds[0] ?? "")}
+                wrap={(content) => (
+                  <Panel title="Class status">
+                    <div className="ch-msp-pad">{content}</div>
+                  </Panel>
+                )}
+              />
+            )}
 
             {conv.group ? (
               <Panel

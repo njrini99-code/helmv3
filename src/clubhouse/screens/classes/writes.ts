@@ -2,6 +2,7 @@
 
 import { removeClassFromCalendar, syncClassToCalendar } from '@/app/golf/actions/calendar-sync';
 import { createClient } from '@/lib/supabase/client';
+import { heldTable } from '@/lib/supabase/held-table';
 import { generateClassColor } from '@/lib/utils/schedule-parser';
 import { chReport } from '../../lib/track';
 import type { ServerResult } from '../../lib/use-action';
@@ -141,22 +142,27 @@ async function importAtomically(
   return { success: true, data: { rows: out.inserted, skipped: out.skipped ?? [], known: out.known ?? [] } };
 }
 
-export function createLiveClassesWrites(ctx: { playerId: string; teamId: string; term: string }): ChClassesWrites {
+export function createLiveClassesWrites(ctx: { playerId: string; teamId: string; term: string; /** P-10: `class_awareness_v1` is on: rows carry `status_enabled`, and a new flexible class starts off. */ classAwareness?: boolean }): ChClassesWrites {
   const sb = createClient();
+  const COLS = ctx.classAwareness ? `${COLUMNS}, status_enabled` : COLUMNS;
+  // The column list and `status_enabled` are not in the generated types until the migration is applied (and a list built at runtime is not
+  // a literal the builder can parse), so this table is reached untyped, as the rest of this file's casts already treat its rows.
+  const table = () => heldTable(sb, 'golf_player_classes');
   return {
     async save(input, editing, newId) {
       const values = valuesOf(input, ctx.term);
       const update = async (id: string, set: ReturnType<typeof valuesOf> & { color?: string | null }): Promise<ServerResult<{ row: ChClassRow }>> => {
-        const { data, error } = await sb.from('golf_player_classes').update(set).eq('id', id).eq('player_id', ctx.playerId).select(COLUMNS);
+        const { data, error } = await table().update(set).eq('id', id).eq('player_id', ctx.playerId).select(COLS);
         if (error) return res<{ row: ChClassRow }>(error);
         // An UPDATE a policy hides comes back with no error and no row: say so rather than "saved".
-        return data?.length ? { success: true, data: { row: data[0] as ChClassRow } } : { success: false, error: "Nothing was saved. This class was not found, or you can’t change it." };
+        const rows = data as ChClassRow[] | null;
+        return rows?.length ? { success: true, data: { row: rows[0]! } } : { success: false, error: "Nothing was saved. This class was not found, or you can’t change it." };
       };
       if (editing) return update(editing.id, { ...values, color: editing.color });
-      const { data, error } = await sb
-        .from('golf_player_classes')
-        .insert({ id: newId, player_id: ctx.playerId, team_id: ctx.teamId, ...values, color: generateClassColor() })
-        .select(COLUMNS)
+      const { data, error } = await table()
+        // A flexible class (no days, or no start or end) starts off for class status: it has no set time to be in class at (P-10, 8.9).
+        .insert({ id: newId, player_id: ctx.playerId, team_id: ctx.teamId, ...values, color: generateClassColor(), ...(ctx.classAwareness && (input.days.length === 0 || !input.start || !input.end) ? { status_enabled: false } : {}) })
+        .select(COLS)
         .single();
       if (!error && data) return { success: true, data: { row: data as ChClassRow } };
       if (error?.code !== '23505') return res<{ row: ChClassRow }>(error ?? { message: 'insert failed' });
@@ -176,7 +182,7 @@ export function createLiveClassesWrites(ctx: { playerId: string; teamId: string;
         return { success: false, error: 'The calendar removal did not finish. The class was kept, so you can try again.' };
       }
       if (!removal?.success) return { success: false, error: `Couldn’t take this class off your calendar: ${removal?.error ?? 'unknown error'}. The class was kept so you can try again.` };
-      const { error } = await sb.from('golf_player_classes').delete().eq('id', id).eq('player_id', ctx.playerId);
+      const { error } = await table().delete().eq('id', id).eq('player_id', ctx.playerId);
       if (!error) return { success: true };
       // The calendar part landed; only the row is left. Say so (the toast shows this reason), and mark it, so the page flags the class.
       chReport(new Error(error.message || 'delete failed'), { surface: 'classes.remove', action: 'delete', severity: 'low' });
@@ -204,7 +210,7 @@ export function createLiveClassesWrites(ctx: { playerId: string; teamId: string;
         let gone: string[] = [];
         let failure: unknown = null;
         try {
-          const del = await sb.from('golf_player_classes').delete().in('id', cleared).eq('player_id', ctx.playerId).select('id');
+          const del = await table().delete().in('id', cleared).eq('player_id', ctx.playerId).select('id');
           if (del.error) failure = del.error;
           else gone = ((del.data ?? []) as Array<{ id: string }>).map((r) => r.id);
         } catch (err) {
@@ -218,7 +224,7 @@ export function createLiveClassesWrites(ctx: { playerId: string; teamId: string;
           // not is gone, and one that is (or whose answer can't be read) is not claimed as deleted.
           let left: string[] | null = null;
           try {
-            const read = await sb.from('golf_player_classes').select('id').in('id', missing).eq('player_id', ctx.playerId);
+            const read = await table().select('id').in('id', missing).eq('player_id', ctx.playerId);
             if (!read.error) left = ((read.data ?? []) as Array<{ id: string }>).map((r) => r.id);
           } catch {
             left = null;
@@ -269,7 +275,7 @@ export function createLiveClassesWrites(ctx: { playerId: string; teamId: string;
       // doc-61). While the function is not applied (held migration 20261021110000) the browser does the same check and insert.
       const atomic = await importAtomically(sb, ctx, payloads);
       if (atomic) return atomic;
-      const existing = await sb.from('golf_player_classes').select(COLUMNS).eq('player_id', ctx.playerId);
+      const existing = await table().select(COLS).eq('player_id', ctx.playerId);
       if (existing.error) return { success: false, error: `Couldn’t check for classes you already have: ${existing.error.message}` };
       // A row saved before the term column was filled is in the current term (the page reads it so); every new row carries a term.
       const stored = (existing.data ?? []) as ChClassRow[];
@@ -288,7 +294,7 @@ export function createLiveClassesWrites(ctx: { playerId: string; teamId: string;
       const skippedKeys = new Set(payloads.filter((p) => !fresh.includes(p)).map((p) => importKey(p.class_name, p.semester)));
       const known = stored.filter((r) => skippedKeys.has(importKey(r.class_name, r.semester?.trim() || ctx.term)));
       if (!fresh.length) return { success: true, data: { rows: [], skipped, known } };
-      const { data, error } = await sb.from('golf_player_classes').insert(fresh).select(COLUMNS);
+      const { data, error } = await table().insert(fresh).select(COLS);
       if (error) return res<{ rows: ChClassRow[]; skipped: string[]; known?: ChClassRow[] }>(error);
       return { success: true, data: { rows: (data ?? []) as ChClassRow[], skipped, known } };
     },

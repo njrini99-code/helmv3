@@ -2295,7 +2295,7 @@ a.ch-rs-peek__dev:focus-visible,
     overscroll-behavior: contain;
     border-radius: 0;
     background: none;
-    box-shadow: inset var(--ch-hairline-w) 0 0 var(--ch-ledger-rule-soft), inset 2px 0 0 var(--ch-light-rim-soft);
+    box-shadow: none;
   }
   .ch-rs[data-canopy] .ch-rs-peek > * {
     margin-inline: 0;
@@ -2460,12 +2460,15 @@ html:has([data-ui='clubhouse'])::view-transition-new(.ch-rsm-reorder) {
   container-type: inline-size;
   pointer-events: none;
 }
+/* P-10 (plan 4.0): a 6px champagne dot just above the label, not a left-border stripe. The label names the value. */
 .ch-rs-sp__team i {
   position: absolute;
-  top: 0;
-  bottom: 0;
-  left: 0;
-  border-left: 2px solid var(--ch-champagne-500);
+  bottom: -2px;
+  left: -3px;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--ch-champagne-500);
   translate: calc(var(--ch-sp-x, 0) * 1cqw) 0;
   transition: translate var(--ch-dur-base) var(--ch-ease);
 }
@@ -2751,4 +2754,27 @@ html:has([data-ui='clubhouse'])::view-transition-new(.ch-rsm-reorder) {
 /* The coach-only reason under the availability control: a little air, the same field as the Coach's note. */
 .ch-rs-avail__note {
   margin-top: 8px;
+}
+
+/* Roster: the class line takes the same slots as the availability word, in the ink of the slot it sits in. */
+.ch-rs-face__note .ch-ca-line,
+.ch-rs-who__avail .ch-ca-line,
+.ch-rsm-row__b .ch-ca-line {
+  color: inherit;
+}
+.ch-rsm-row__b .ch-ca-line {
+  vertical-align: bottom;
+}
+.ch-rs-peek__class {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--ch-space-1);
+  color: var(--ch-text-secondary);
+  font: var(--ch-type-13-medium);
+}
+.ch-rs-peek__class small {
+  color: var(--ch-text-tertiary);
+  font: var(--ch-type-12);
+  letter-spacing: var(--ch-track-12);
 }

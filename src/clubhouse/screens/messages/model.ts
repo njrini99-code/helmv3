@@ -54,6 +54,8 @@ export interface ChMsg {
   hasAttachments: boolean;
   /** Persisted parent in this conversation; content is read only from loaded messages. */
   replyToId?: string | null;
+  /** P-10: a coach chose to interrupt (Notify anyway) and a push really went out. The caption keys on this, nothing else. */
+  notifiedAnyway?: boolean;
   /** A poll (kind 'poll' with a payload we can draw); its `text` is then the plain-text copy, never shown in the card. */
   poll?: Poll | null;
   /** Still sending: the server hasn't confirmed it, so it carries no receipt (P-1). */

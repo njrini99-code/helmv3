@@ -674,3 +674,14 @@ ALTER TABLE "public"."golf_tournament_round_lineups" ENABLE ROW LEVEL SECURITY;
 ALTER TABLE "public"."golf_tournament_rounds" ENABLE ROW LEVEL SECURITY;
 
 ALTER TABLE "public"."golf_tournaments" ENABLE ROW LEVEL SECURITY;
+ALTER TABLE "public"."golf_team_terms" ENABLE ROW LEVEL SECURITY;
+
+ALTER TABLE "public"."golf_player_class_settings" ENABLE ROW LEVEL SECURITY;
+
+ALTER TABLE "public"."golf_class_exceptions" ENABLE ROW LEVEL SECURITY;
+
+ALTER TABLE "public"."golf_push_holds" ENABLE ROW LEVEL SECURITY;
+
+ALTER TABLE "public"."golf_push_hold_heartbeat" ENABLE ROW LEVEL SECURITY;
+
+ALTER TABLE "public"."golf_class_hold_dirty" ENABLE ROW LEVEL SECURITY;

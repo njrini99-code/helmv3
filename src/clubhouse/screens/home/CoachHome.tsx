@@ -16,6 +16,7 @@ import { HomeActions } from './HomeActions';
 import { HomePhone, WeekStrip } from './HomePhone';
 import { coachFailedParts } from './model';
 import { CoachQueue } from './CoachQueue';
+import { ClassHomeLine } from './ClassHomeLine';
 import { TeamLegs } from './TeamLegs';
 import { useHomeDayRollover } from './use-day-rollover';
 import { ChangeMarksProvider } from '../../lib/use-change-marks';
@@ -53,6 +54,8 @@ function CoachHomeBody({ data, now }: { data: ChCoachHome; now?: string }) {
         <span className="ch-h-head__date">{data.todayLabel}</span>
         <h1 className="ch-display">{data.greeting}</h1>
         {data.subline && <p className="ch-h-head__sub">{data.subline}</p>}
+        {/* P-10: the class line, after the greeting and before the actions in the tab order. Nothing with the flag off. */}
+        {data.teamId && data.clock && <ClassHomeLine teamId={data.teamId} today={data.clock.day} teamTimeZone={data.clock.tz} variant="desktop" />}
         <HomeActions teamChatId={data.teamChatId} />
       </header>
       <PageRefreshNotice parts={failed} />

@@ -139,6 +139,8 @@ one read fails (10614, `EmptyState size="page" tone="danger"`).
 | 10612 | CH-1209 | `TWO_OR_MORE_PARTS_OF_A_PAGE` | Two or more parts of a page don't load |
 | 10613 | CH-1210 | `TWO_OR_MORE_SECTIONS_OF_A_PAGE` | Two or more sections of a page crash in the browser |
 | 10614 | CH-1211 | `A_PAGES_ONE_READ_DOESNT_LOAD_SO` | A page's one read doesn't load, so nothing can show under its head |
+| 10615 | CH-1270 | `DELIVER_NOW_IN_THE_BELL_IS_REFUSED` | Deliver now in the bell is refused (P-10) |
+| 10616 | CH-1271 | `A_PLAYERS_PUSHES_ARE_HELD_FOR_CLASS` | A player's pushes are held for class (P-10) |
 
 ## 07 — Network / offline
 
@@ -239,7 +241,7 @@ that part is the shared `RouteErrorBoundary`'s and is not tested here.
 
 ## 15 — Data freshness / sync
 
-Status: N/A — the shell keeps no data that can go stale on screen: the bell re-reads on open (10301) and the sidebar reads come with each page. A page built for an older version, or one open across an update, is caught as a route error (10603, 10604).
+Status: N/A — the shell keeps no data that can go stale on screen: the bell re-reads on open (10301) and the sidebar reads come with each page. The one exception is a player's held-pushes row (P-10), which reads the shared class-day cache (refreshed on focus and every five minutes) and re-reads it after Deliver now; a payload older than 15 minutes is not trusted. A page built for an older version, or one open across an update, is caught as a route error (10603, 10604).
 
 The iPhone app's pull to refresh (10705) reads a page again on demand; the
 shell keeps nothing of its own that it refreshes.

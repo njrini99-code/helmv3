@@ -12382,6 +12382,1254 @@ $$;
 
 ALTER FUNCTION "public"."golf_import_player_classes"("p_player_id" "uuid", "p_team_id" "uuid", "p_term" "text", "p_rows" "jsonb") OWNER TO "postgres";
 
+-- P-10 class awareness (held migrations 20261025070000 to 20261025070300), verbatim.
+
+create or replace function public.golf_team_terms_guard()
+returns trigger
+language plpgsql
+security definer
+set search_path = public, pg_temp
+as $$
+begin
+  if not exists (select 1 from pg_timezone_names where name = new.time_zone) then
+    raise exception 'unknown time zone %', new.time_zone using errcode = '22023';
+  end if;
+  perform pg_advisory_xact_lock(hashtext('golf_team_terms:' || new.team_id::text));
+  if exists (
+    select 1 from public.golf_team_terms t
+    where t.team_id = new.team_id
+      and t.id <> new.id
+      and daterange(t.classes_start, t.exams_end, '[]') && daterange(new.classes_start, new.exams_end, '[]')
+  ) then
+    raise exception 'term overlaps another term for this team' using errcode = '23P01';
+  end if;
+  new.label := btrim(new.label);
+  new.updated_at := now();
+  new.confirmed_at := now();
+  new.confirmed_by := coalesce(auth.uid(), new.confirmed_by);
+  return new;
+end $$;
+
+ALTER FUNCTION "public"."golf_team_terms_guard"() OWNER TO "postgres";
+
+create or replace function public.golf_player_shares_class_status(p_team_id uuid, p_player_id uuid)
+returns boolean
+language sql
+stable
+security definer
+set search_path = public, pg_temp
+as $$
+  select case
+    when p_team_id is null or p_player_id is null then false
+    when not (public.is_golf_team_coach(p_team_id)
+              or p_player_id = public.get_current_golf_player_id()) then false
+    else coalesce(
+      (select s.share_status from public.golf_player_class_settings s where s.player_id = p_player_id),
+      true)
+  end
+$$;
+
+ALTER FUNCTION "public"."golf_player_shares_class_status"(uuid, uuid) OWNER TO "postgres";
+
+create or replace function public.golf_class_exceptions_guard()
+returns trigger
+language plpgsql
+security definer
+set search_path = public, pg_temp
+as $$
+begin
+  if new.class_id is not null and not exists (
+    select 1 from public.golf_player_classes c
+    where c.id = new.class_id and c.player_id = new.player_id
+  ) then
+    raise exception 'class does not belong to this player' using errcode = '23514';
+  end if;
+  if new.player_id is not null and not exists (
+    select 1 from public.golf_team_members m
+    where m.player_id = new.player_id and m.team_id = new.team_id and m.status = 'active'
+  ) then
+    raise exception 'player is not an active member of this team' using errcode = '23514';
+  end if;
+  return new;
+end $$;
+
+ALTER FUNCTION "public"."golf_class_exceptions_guard"() OWNER TO "postgres";
+
+create or replace function public.golf_day_token_dow(p_token text)
+returns integer
+language sql
+immutable
+parallel safe
+set search_path = public, pg_temp
+as $$
+  select case lower(btrim(p_token))
+    when 'su' then 7
+    when 'sun' then 7
+    when 'sunday' then 7
+    when 'm' then 1
+    when 'mo' then 1
+    when 'mon' then 1
+    when 'monday' then 1
+    when 't' then 2
+    when 'tu' then 2
+    when 'tue' then 2
+    when 'tues' then 2
+    when 'tuesday' then 2
+    when 'w' then 3
+    when 'we' then 3
+    when 'wed' then 3
+    when 'wednesday' then 3
+    when 'th' then 4
+    when 'thu' then 4
+    when 'thur' then 4
+    when 'thurs' then 4
+    when 'r' then 4
+    when 'thursday' then 4
+    when 'f' then 5
+    when 'fr' then 5
+    when 'fri' then 5
+    when 'friday' then 5
+    when 'sa' then 6
+    when 'sat' then 6
+    when 'saturday' then 6
+    else null
+  end
+$$;
+
+ALTER FUNCTION "public"."golf_day_token_dow"(text) OWNER TO "postgres";
+
+create or replace function public.golf_safe_time_zone(p_zone text)
+returns text
+language sql
+stable
+set search_path = public, pg_temp
+as $$
+  select coalesce(
+    (select n.name from pg_timezone_names n where n.name = btrim(p_zone) limit 1),
+    'America/New_York')
+$$;
+
+ALTER FUNCTION "public"."golf_safe_time_zone"(text) OWNER TO "postgres";
+
+create or replace function public.golf_class_in_term(
+    p_semester text, p_created_at timestamptz, p_term public.golf_team_terms
+)
+returns boolean
+language sql
+stable
+set search_path = public, pg_temp
+as $$
+  select case
+    when p_term.id is null then false
+    when nullif(btrim(p_semester), '') is not null
+      then lower(btrim(p_semester)) = lower(btrim(p_term.label))
+    else p_created_at >= ((p_term.classes_start - 45)::timestamp at time zone p_term.time_zone)
+  end
+$$;
+
+ALTER FUNCTION "public"."golf_class_in_term"(text, timestamptz, public.golf_team_terms) OWNER TO "postgres";
+
+create or replace function public.golf_class_usable(
+    p_class public.golf_player_classes, p_term public.golf_team_terms
+)
+returns boolean
+language sql
+stable
+set search_path = public, pg_temp
+as $$
+  select p_term.id is not null
+    and p_class.status_enabled                                                 -- F1
+    and public.golf_class_in_term(p_class.semester, p_class.created_at, p_term) -- F2
+    and p_class.start_time is not null and p_class.end_time is not null        -- F4
+    and p_class.end_time - p_class.start_time between interval '10 minutes' and interval '4 hours'
+    and coalesce(cardinality(p_class.days), 0) > 0                             -- F5
+    and not exists (select 1 from unnest(p_class.days) d where public.golf_day_token_dow(d) is null)
+$$;
+
+ALTER FUNCTION "public"."golf_class_usable"(public.golf_player_classes, public.golf_team_terms) OWNER TO "postgres";
+
+create or replace function public.golf_class_term_at(p_team_id uuid, p_at timestamptz)
+returns public.golf_team_terms
+language sql
+stable
+security definer
+set search_path = public, pg_temp
+as $$
+  select t.*
+  from public.golf_team_terms t
+  where t.team_id = p_team_id
+    and (p_at at time zone t.time_zone)::date between t.classes_start and t.exams_end
+  order by t.classes_start desc
+  limit 1
+$$;
+
+ALTER FUNCTION "public"."golf_class_term_at"(uuid, timestamptz) OWNER TO "postgres";
+
+create or replace function public.golf_class_player_team(p_player_id uuid)
+returns uuid
+language sql
+stable
+security definer
+set search_path = public, pg_temp
+as $$
+  select m.team_id
+  from public.golf_team_members m
+  where m.player_id = p_player_id and m.status = 'active'
+  order by m.joined_at desc nulls last
+  limit 1
+$$;
+
+ALTER FUNCTION "public"."golf_class_player_team"(uuid) OWNER TO "postgres";
+
+create or replace function public.golf_player_on_course(p_player_id uuid, p_at timestamptz default now())
+returns boolean
+language plpgsql
+stable
+security definer
+set search_path = public, pg_temp
+as $$
+declare
+  v_found boolean;
+begin
+  if to_regclass('public.golf_round_live') is not null then
+    execute 'select exists (select 1 from public.golf_round_live l'
+         || ' where l.player_id = $1 and l.phase in (''on_course'', ''finished'')'
+         || ' and l.heard_at > $2 - interval ''10 minutes'')'
+      into v_found using p_player_id, p_at;
+    return coalesce(v_found, false);
+  end if;
+  return exists (
+    select 1 from public.golf_rounds r
+    where r.player_id = p_player_id
+      and r.status = 'in_progress'
+      and r.updated_at > p_at - interval '10 minutes'
+  );
+end $$;
+
+ALTER FUNCTION "public"."golf_player_on_course"(uuid, timestamptz) OWNER TO "postgres";
+
+create or replace function public.golf_class_blocks_internal(
+    p_team_id uuid,
+    p_on date,
+    p_player_id uuid default null
+)
+returns table (
+    player_id  uuid,
+    class_id   uuid,
+    label      text,
+    kind       text,      -- 'class' | 'exam'
+    source     text,      -- 'pattern' | 'calendar' | 'exam'
+    starts_at  timestamptz,
+    ends_at    timestamptz
+)
+language sql
+stable
+security definer
+set search_path = public, pg_temp
+as $$
+  with term as (
+    select t.*
+    from public.golf_team_terms t
+    where t.team_id = p_team_id
+      and p_on between t.classes_start and t.exams_end
+    order by t.classes_start desc
+    limit 1
+  ),
+  bounds as (
+    select
+      t.time_zone                                           as tz,
+      (p_on::timestamp at time zone t.time_zone)            as day_start,
+      ((p_on + 1)::timestamp at time zone t.time_zone)      as day_end,
+      (t.classes_start::timestamp at time zone t.time_zone) as term_start,
+      ((t.classes_end + 1)::timestamp at time zone t.time_zone) as term_classes_end,
+      p_on <= t.classes_end                                 as in_classes
+    from term t
+  ),
+  members as (
+    select m.player_id
+    from public.golf_team_members m
+    where m.team_id = p_team_id
+      and m.status = 'active'
+      and (p_player_id is null or m.player_id = p_player_id)
+  ),
+  eligible as (                                   -- F1..F6
+    select c.id, c.player_id, c.class_name, c.start_time, c.end_time
+    from public.golf_player_classes c
+    join members m on m.player_id = c.player_id
+    cross join term t
+    cross join bounds b
+    where b.in_classes                                                    -- F3
+      and public.golf_class_usable(c, t)                                  -- F1, F2, F4, F5
+      and exists (select 1 from unnest(c.days) d                          -- F6
+                  where public.golf_day_token_dow(d) = extract(isodow from p_on)::int)
+  ),
+  class_events as (                               -- narrowed to eligible ids before the regex (Should 5)
+    select
+      e.start_time, e.end_time, e.status, e.cancelled_at,
+      (substring(e.description from
+        '\[class:([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12})\]'))::uuid
+        as class_id
+    from public.golf_events e
+    cross join bounds b
+    where e.team_id = p_team_id
+      and e.event_type = 'class'
+      and e.start_time >= b.term_start
+      and e.start_time <  b.term_classes_end
+      and e.description ilike any (select '%[class:' || ec.id::text || ']%' from eligible ec)
+  ),
+  synced as (
+    select distinct ce.class_id from class_events ce
+  ),
+  today_events as (
+    select ce.* from class_events ce cross join bounds b
+    where ce.start_time >= b.day_start and ce.start_time < b.day_end
+  ),
+  pattern as (
+    select
+      c.player_id, c.id as class_id, c.class_name,
+      ((p_on + c.start_time) at time zone b.tz) as starts_at,
+      ((p_on + c.end_time)   at time zone b.tz) as ends_at
+    from eligible c cross join bounds b
+  ),
+  agreed as (                                      -- step 5: agreement with the calendar
+    select p.*, case when s.class_id is null then 'pattern' else 'calendar' end as source
+    from pattern p
+    left join synced s on s.class_id = p.class_id
+    where s.class_id is null
+       or (
+         exists (
+           select 1 from today_events o
+           where o.class_id = p.class_id
+             and coalesce(o.status, 'scheduled') <> 'cancelled'
+             and o.cancelled_at is null
+             and abs(extract(epoch from (o.start_time - p.starts_at))) <= 60
+             and abs(extract(epoch from (coalesce(o.end_time, o.start_time) - p.ends_at))) <= 60
+         )
+         and not exists (
+           select 1 from today_events o
+           where o.class_id = p.class_id
+             and (o.status = 'cancelled' or o.cancelled_at is not null)
+         )
+       )
+  ),
+  unsuppressed as (                                -- S1, S2, S3
+    select a.* from agreed a
+    where not exists (
+        select 1 from public.golf_class_exceptions x
+        where x.team_id = p_team_id
+          and x.kind = 'off'
+          and p_on between x.starts_on and x.ends_on
+          and (
+            x.player_id is null
+            or (x.player_id = a.player_id and (x.class_id is null or x.class_id = a.class_id))
+          )
+      )
+      and not exists (
+        select 1 from public.golf_academic_exclusions ae
+        where ae.player_id = a.player_id
+          and p_on between ae.start_date and coalesce(ae.end_date, ae.start_date)
+      )
+  ),
+  exams as (                                       -- step 6
+    select
+      x.player_id, null::uuid as class_id, coalesce(nullif(btrim(x.label), ''), 'Exam') as class_name,
+      ((p_on + x.start_time) at time zone b.tz) as starts_at,
+      ((p_on + x.end_time)   at time zone b.tz) as ends_at
+    from public.golf_class_exceptions x
+    join members m on m.player_id = x.player_id
+    cross join bounds b
+    where x.team_id = p_team_id and x.kind = 'extra' and x.starts_on = p_on
+  ),
+  all_blocks as (
+    select u.player_id, u.class_id, u.class_name as label, 'class'::text as kind, u.source,
+           u.starts_at, u.ends_at
+    from unsuppressed u
+    union all
+    select e.player_id, e.class_id, e.class_name, 'exam', 'exam', e.starts_at, e.ends_at
+    from exams e
+  )
+  select bl.*
+  from all_blocks bl
+  cross join bounds b
+  where not exists (                               -- S4 travelling
+      select 1
+      from public.golf_travel_itineraries i
+      join public.golf_event_attendance a on a.event_id = i.event_id
+      where i.team_id = p_team_id
+        and i.event_id is not null
+        and a.player_id = bl.player_id
+        and p_on between i.departure_date and coalesce(i.return_date, i.departure_date)
+        and coalesce(a.status, 'pending') not in ('declined', 'not_attending')
+    )
+    and not exists (                               -- S5 accepted events
+      select 1
+      from public.golf_events e
+      join public.golf_event_attendance a on a.event_id = e.id
+      where e.team_id = p_team_id
+        and e.event_type is distinct from 'class'
+        and coalesce(e.status, 'scheduled') <> 'cancelled'
+        and e.cancelled_at is null
+        and a.player_id = bl.player_id
+        and a.status in ('accepted', 'attending')
+        and e.start_time < b.day_end
+        and coalesce(e.end_time, e.start_time) >= b.day_start
+        and (
+          (coalesce(e.all_day, false) = false
+            and tstzrange(e.start_time, coalesce(e.end_time, e.start_time + interval '1 hour'), '[)')
+                && tstzrange(bl.starts_at, bl.ends_at, '[)'))
+          or (coalesce(e.all_day, false) and e.event_type in ('tournament', 'travel', 'qualifier'))
+        )
+    )
+$$;
+
+ALTER FUNCTION "public"."golf_class_blocks_internal"(uuid, date, uuid) OWNER TO "postgres";
+
+create or replace function public.golf_class_holds_live(p_at timestamptz default now())
+returns boolean
+language sql
+stable
+set search_path = public, pg_temp
+as $$
+  select exists (
+    select 1 from public.golf_push_hold_heartbeat hb
+    where hb.id and hb.beat_at >= p_at - interval '3 minutes'
+  )
+$$;
+
+ALTER FUNCTION "public"."golf_class_holds_live"(timestamptz) OWNER TO "postgres";
+
+create or replace function public.golf_class_day_players_internal(
+    p_team_id uuid,
+    p_on date,
+    p_player_id uuid default null,
+    p_at timestamptz default now()
+)
+returns jsonb
+language plpgsql
+stable
+security definer
+set search_path = public, pg_temp
+as $$
+declare
+  v_term    public.golf_team_terms;
+  v_tz      text;
+  v_today   boolean;
+  v_players jsonb;
+begin
+  select * into v_term from public.golf_team_terms t
+  where t.team_id = p_team_id and p_on between t.classes_start and t.exams_end
+  order by t.classes_start desc limit 1;
+
+  v_tz := coalesce(
+    v_term.time_zone,
+    (select public.golf_safe_time_zone(s.timezone) from public.golf_team_settings s
+      where s.team_id = p_team_id limit 1),
+    'America/New_York');
+  v_today := p_on = (p_at at time zone v_tz)::date;
+
+  with members as (
+    select m.player_id, gp.first_name, gp.last_name, gp.avatar_url
+    from public.golf_team_members m
+    join public.golf_players gp on gp.id = m.player_id
+    where m.team_id = p_team_id and m.status = 'active'
+      and (p_player_id is null or m.player_id = p_player_id)
+  ),
+  settings as (
+    select mb.player_id,
+           coalesce(s.share_status, true) as shared,
+           coalesce(s.share_status, true) and coalesce(s.hold_pushes, true) as holds
+    from members mb
+    left join public.golf_player_class_settings s on s.player_id = mb.player_id
+  ),
+  has_usable as (
+    select mb.player_id,
+      v_term.id is not null and (
+        exists (
+          select 1 from public.golf_player_classes c
+          where c.player_id = mb.player_id and public.golf_class_usable(c, v_term)
+        )
+        or exists (
+          select 1 from public.golf_class_exceptions x
+          where x.player_id = mb.player_id and x.kind = 'extra'
+            and x.starts_on between v_term.classes_start and v_term.exams_end
+        )
+      ) as has_usable
+    from members mb
+  ),
+  blocks as (
+    select * from public.golf_class_blocks_internal(p_team_id, p_on, p_player_id)
+  ),
+  away as (
+    select distinct on (a.player_id)
+      a.player_id, i.destination, i.return_date,
+      a.status in ('accepted', 'attending') as confirmed
+    from public.golf_travel_itineraries i
+    join public.golf_event_attendance a on a.event_id = i.event_id
+    where i.team_id = p_team_id and i.event_id is not null
+      and p_on between i.departure_date and coalesce(i.return_date, i.departure_date)
+      and coalesce(a.status, 'pending') not in ('declined', 'not_attending')
+    order by a.player_id, (a.status in ('accepted', 'attending')) desc
+  )
+  select coalesce(jsonb_agg(jsonb_build_object(
+      'player_id',  mb.player_id,
+      'first_name', mb.first_name,
+      'last_name',  mb.last_name,
+      'avatar_url', mb.avatar_url,
+      'tracked',    st.shared and hu.has_usable,
+      'holds',      st.holds and hu.has_usable and public.golf_class_holds_live(p_at),
+      'on_course',  v_today and public.golf_player_on_course(mb.player_id, p_at),
+      'off_today',  st.shared and exists (
+                      select 1 from public.golf_class_exceptions x
+                      where x.team_id = p_team_id and x.kind = 'off'
+                        and p_on between x.starts_on and x.ends_on
+                        and (x.player_id is null or (x.player_id = mb.player_id and x.class_id is null))),
+      'away',       case when aw.player_id is null then null else jsonb_build_object(
+                      'destination', aw.destination, 'return_date', aw.return_date,
+                      'confirmed', aw.confirmed) end,
+      'blocks',     case when st.shared then coalesce((
+                      select jsonb_agg(jsonb_build_object(
+                          'class_id', bl.class_id, 'label', bl.label, 'kind', bl.kind,
+                          'source', bl.source, 'starts_at', bl.starts_at, 'ends_at', bl.ends_at)
+                        order by bl.starts_at)
+                      from blocks bl where bl.player_id = mb.player_id), '[]'::jsonb)
+                    else '[]'::jsonb end
+    ) order by mb.last_name, mb.first_name), '[]'::jsonb)
+  into v_players
+  from members mb
+  join settings st on st.player_id = mb.player_id
+  join has_usable hu on hu.player_id = mb.player_id
+  left join away aw on aw.player_id = mb.player_id;
+
+  return v_players;
+end $$;
+
+ALTER FUNCTION "public"."golf_class_day_players_internal"(uuid, date, uuid, timestamptz) OWNER TO "postgres";
+
+create or replace function public.golf_team_class_day(p_team_id uuid, p_on date default null)
+returns jsonb
+language plpgsql
+stable
+security definer
+set search_path = public, pg_temp
+as $$
+declare
+  v_team_tz text;
+  v_now     public.golf_team_terms;
+  v_zone    text;
+  v_today   date;
+  v_on      date;
+  v_term    public.golf_team_terms;
+  v_next    public.golf_team_terms;
+begin
+  if p_team_id is null or not public.is_golf_team_coach(p_team_id) then
+    raise exception 'not a coach of this team' using errcode = '42501';
+  end if;
+
+  select public.golf_safe_time_zone(s.timezone) into v_team_tz
+  from public.golf_team_settings s where s.team_id = p_team_id limit 1;
+  v_team_tz := coalesce(v_team_tz, 'America/New_York');
+
+  -- "Today" is taken in the zone of the term covering now; the team zone only
+  -- when no term covers now (Must 8).
+  v_now := public.golf_class_term_at(p_team_id, now());
+  v_zone := coalesce(v_now.time_zone, v_team_tz);
+  v_today := (now() at time zone v_zone)::date;
+  v_on := coalesce(p_on, v_today);
+  if v_on < v_today - 7 or v_on > v_today + 14 then
+    raise exception 'date out of range' using errcode = '22023';
+  end if;
+
+  select * into v_term from public.golf_team_terms t
+  where t.team_id = p_team_id and v_on between t.classes_start and t.exams_end
+  order by t.classes_start desc limit 1;
+
+  select * into v_next from public.golf_team_terms t
+  where t.team_id = p_team_id and t.classes_start > v_on
+  order by t.classes_start limit 1;
+
+  return jsonb_build_object(
+    'on', v_on,
+    'team_time_zone', v_team_tz,
+    'class_time_zone', v_zone,
+    'term', case when v_term.id is null then null else jsonb_build_object(
+      'id', v_term.id, 'label', v_term.label,
+      'classes_start', v_term.classes_start, 'classes_end', v_term.classes_end,
+      'exams_end', v_term.exams_end, 'time_zone', v_term.time_zone,
+      'phase', case when v_on <= v_term.classes_end then 'classes' else 'exams' end) end,
+    'next_term', case when v_next.id is null then null else jsonb_build_object(
+      'id', v_next.id, 'label', v_next.label, 'classes_start', v_next.classes_start) end,
+    'players', public.golf_class_day_players_internal(p_team_id, v_on, null, now())
+  );
+end $$;
+
+ALTER FUNCTION "public"."golf_team_class_day"(uuid, date) OWNER TO "postgres";
+
+create or replace function public.golf_my_class_day(p_on date default null)
+returns jsonb
+language plpgsql
+stable
+security definer
+set search_path = public, pg_temp
+as $$
+declare
+  v_player  uuid := public.get_current_golf_player_id();
+  v_team    uuid;
+  v_team_tz text;
+  v_now     public.golf_team_terms;
+  v_zone    text;
+  v_today   date;
+  v_on      date;
+  v_term    public.golf_team_terms;
+  v_share   boolean;
+  v_hold    boolean;
+begin
+  if v_player is null then
+    return jsonb_build_object('player', null);
+  end if;
+
+  v_team := public.golf_class_player_team(v_player);
+  if v_team is null then
+    return jsonb_build_object('player', null);
+  end if;
+
+  select public.golf_safe_time_zone(s.timezone) into v_team_tz
+  from public.golf_team_settings s where s.team_id = v_team limit 1;
+  v_team_tz := coalesce(v_team_tz, 'America/New_York');
+
+  v_now := public.golf_class_term_at(v_team, now());
+  v_zone := coalesce(v_now.time_zone, v_team_tz);
+  v_today := (now() at time zone v_zone)::date;
+  v_on := coalesce(p_on, v_today);
+  if v_on < v_today - 7 or v_on > v_today + 14 then
+    raise exception 'date out of range' using errcode = '22023';
+  end if;
+
+  select * into v_term from public.golf_team_terms t
+  where t.team_id = v_team and v_on between t.classes_start and t.exams_end
+  order by t.classes_start desc limit 1;
+
+  select coalesce(s.share_status, true), coalesce(s.hold_pushes, true)
+  into v_share, v_hold
+  from (select 1) one
+  left join public.golf_player_class_settings s on s.player_id = v_player;
+
+  return jsonb_build_object(
+    'on', v_on,
+    'team_id', v_team,
+    'team_time_zone', v_team_tz,
+    'class_time_zone', v_zone,
+    'term', case when v_term.id is null then null else jsonb_build_object(
+      'id', v_term.id, 'label', v_term.label,
+      'classes_start', v_term.classes_start, 'classes_end', v_term.classes_end,
+      'exams_end', v_term.exams_end, 'time_zone', v_term.time_zone,
+      'phase', case when v_on <= v_term.classes_end then 'classes' else 'exams' end) end,
+    'settings', jsonb_build_object('share_status', v_share, 'hold_pushes', v_hold),
+    'player', (public.golf_class_day_players_internal(v_team, v_on, v_player, now())) -> 0,
+    'blocks', coalesce((
+      select jsonb_agg(jsonb_build_object(
+          'class_id', bl.class_id, 'label', bl.label, 'kind', bl.kind,
+          'source', bl.source, 'starts_at', bl.starts_at, 'ends_at', bl.ends_at)
+        order by bl.starts_at)
+      from public.golf_class_blocks_internal(v_team, v_on, v_player) bl), '[]'::jsonb),
+    'untagged_classes', (
+      select count(*) from public.golf_player_classes c
+      where v_term.id is not null and c.player_id = v_player
+        and nullif(btrim(c.semester), '') is null
+        and not public.golf_class_in_term(c.semester, c.created_at, v_term)),
+    'unusable_classes', coalesce((
+      select jsonb_agg(u.item order by u.sort_name) from (
+        -- Should 11: why a class that is switched on and in this term does not count.
+        select jsonb_build_object('class_id', c.id, 'reason',
+                 case when c.start_time is null or c.end_time is null
+                           or c.end_time - c.start_time not between interval '10 minutes' and interval '4 hours'
+                      then 'times' else 'days' end) as item,
+               c.class_name as sort_name
+        from public.golf_player_classes c
+        where v_term.id is not null and c.player_id = v_player and c.status_enabled
+          and public.golf_class_in_term(c.semester, c.created_at, v_term)
+          and not public.golf_class_usable(c, v_term)
+        union all
+        -- Usable on paper, but the synced calendar rows never match its times.
+        select jsonb_build_object('class_id', c.id, 'reason', 'calendar_mismatch'), c.class_name
+        from public.golf_player_classes c
+        where v_term.id is not null and c.player_id = v_player
+          and public.golf_class_usable(c, v_term)
+          and exists (
+            select 1 from public.golf_events e
+            where e.team_id = v_team and e.event_type = 'class'
+              and e.start_time >= (v_term.classes_start::timestamp at time zone v_term.time_zone)
+              and e.start_time <  ((v_term.classes_end + 1)::timestamp at time zone v_term.time_zone)
+              and e.description ilike '%[class:' || c.id::text || ']%')
+          and not exists (
+            select 1 from public.golf_events e
+            where e.team_id = v_team and e.event_type = 'class'
+              and e.start_time >= (v_term.classes_start::timestamp at time zone v_term.time_zone)
+              and e.start_time <  ((v_term.classes_end + 1)::timestamp at time zone v_term.time_zone)
+              and e.description ilike '%[class:' || c.id::text || ']%'
+              and coalesce(e.status, 'scheduled') <> 'cancelled' and e.cancelled_at is null
+              and abs(extract(epoch from ((e.start_time at time zone v_term.time_zone)::time - c.start_time))) <= 60
+              and abs(extract(epoch from ((coalesce(e.end_time, e.start_time) at time zone v_term.time_zone)::time - c.end_time))) <= 60)
+      ) u), '[]'::jsonb),
+    'held', (
+      select jsonb_build_object('count', count(*), 'release_at', min(h.release_at))
+      from public.golf_push_holds h
+      left join public.golf_messages gm on gm.id = h.message_id
+      left join public.golf_conversation_participants cp
+        on cp.conversation_id = gm.conversation_id and cp.user_id = h.user_id
+      where h.user_id = auth.uid() and h.reason = 'class' and h.released_at is null
+        and (
+          h.message_id is null
+          or (gm.id is not null and coalesce(gm.is_deleted, false) = false
+              and (cp.last_read_at is null or cp.last_read_at < gm.created_at))
+        ))
+  );
+end $$;
+
+ALTER FUNCTION "public"."golf_my_class_day"(date) OWNER TO "postgres";
+
+create or replace function public.golf_class_hold_until(
+    p_user_id uuid,
+    p_at timestamptz default now()
+)
+returns timestamptz
+language plpgsql
+stable
+security definer
+set search_path = public, pg_temp
+as $$
+declare
+  v_player uuid;
+  v_team   uuid;
+  v_term   public.golf_team_terms;
+  v_on     date;
+  v_share  boolean;
+  v_hold   boolean;
+  v_end    timestamptz;
+begin
+  select gp.id into v_player from public.golf_players gp where gp.user_id = p_user_id limit 1;
+  if v_player is null then return null; end if;
+
+  select coalesce(s.share_status, true), coalesce(s.hold_pushes, true)
+  into v_share, v_hold
+  from (select 1) one
+  left join public.golf_player_class_settings s on s.player_id = v_player;
+  if not (v_share and v_hold) then return null; end if;
+
+  v_team := public.golf_class_player_team(v_player);
+  if v_team is null then return null; end if;
+
+  if public.golf_player_on_course(v_player, p_at) then return null; end if;
+
+  v_term := public.golf_class_term_at(v_team, p_at);
+  if v_term.id is null then return null; end if;
+  v_on := (p_at at time zone v_term.time_zone)::date;
+
+  with b as (
+    select starts_at, ends_at
+    from public.golf_class_blocks_internal(v_team, v_on, v_player)
+  ),
+  flagged as (
+    select starts_at, ends_at,
+      case when starts_at <= max(ends_at) over (
+             order by starts_at rows between unbounded preceding and 1 preceding
+           ) + interval '15 minutes'
+           then 0 else 1 end as is_new
+    from b
+  ),
+  numbered as (
+    select starts_at, ends_at, sum(is_new) over (order by starts_at) as island
+    from flagged
+  ),
+  islands as (
+    select min(starts_at) as island_start, max(ends_at) as island_end
+    from numbered group by island
+  )
+  select least(i.island_end, p_at + interval '4 hours') into v_end
+  from islands i
+  where p_at >= i.island_start
+    and p_at <  i.island_end
+  order by i.island_start
+  limit 1;
+
+  return v_end;
+end $$;
+
+ALTER FUNCTION "public"."golf_class_hold_until"(uuid, timestamptz) OWNER TO "postgres";
+
+create or replace function public.golf_class_hold_mark_dirty()
+returns trigger
+language plpgsql
+security definer
+set search_path = public, pg_temp
+as $$
+declare
+  v_row    record;
+  v_json   jsonb;
+  v_team   uuid;
+  v_player uuid;
+begin
+  begin
+    if not exists (
+      select 1 from public.golf_push_holds h where h.released_at is null and h.reason = 'class'
+    ) then
+      return null;
+    end if;
+
+    if tg_op = 'DELETE' then v_row := old; else v_row := new; end if;
+    v_json := to_jsonb(v_row);
+
+    if tg_table_name in ('golf_class_exceptions', 'golf_team_terms') then
+      v_team := (v_json ->> 'team_id')::uuid;
+    else
+      v_player := (v_json ->> 'player_id')::uuid;
+      -- golf_player_classes.team_id is nullable: fall back to the player's class team.
+      if tg_table_name = 'golf_player_classes' then
+        v_team := (v_json ->> 'team_id')::uuid;
+      end if;
+      if v_team is null and v_player is not null then
+        v_team := public.golf_class_player_team(v_player);
+      end if;
+    end if;
+
+    if v_team is not null then
+      insert into public.golf_class_hold_dirty as d (team_id, marked_at)
+      values (v_team, now())
+      on conflict (team_id) do update set marked_at = excluded.marked_at
+        where d.marked_at < excluded.marked_at - interval '20 seconds';
+    end if;
+  exception when others then
+    null;
+  end;
+  return null;
+end $$;
+
+ALTER FUNCTION "public"."golf_class_hold_mark_dirty"() OWNER TO "postgres";
+
+create or replace function public.golf_push_holds_beat(p_source text default null)
+returns timestamptz
+language plpgsql
+volatile
+security definer
+set search_path = public, pg_temp
+as $$
+declare
+  v_at timestamptz := now();
+begin
+  insert into public.golf_push_hold_heartbeat as hb (id, beat_at, source)
+  values (true, v_at, left(p_source, 60))
+  on conflict (id) do update set beat_at = excluded.beat_at, source = excluded.source;
+  return v_at;
+end $$;
+
+ALTER FUNCTION "public"."golf_push_holds_beat"(text) OWNER TO "postgres";
+
+create or replace function public.golf_push_hold_put(
+    p_user_id uuid,
+    p_hold_id uuid,
+    p_notification_type text,
+    p_group_key text,
+    p_dedupe_key text,
+    p_title text,
+    p_body text,
+    p_data jsonb,
+    p_conversation_id uuid,
+    p_message_id uuid,
+    p_expires_at timestamptz,
+    p_reason text default 'class'
+)
+returns jsonb
+language plpgsql
+volatile
+security definer
+set search_path = public, pg_temp
+as $$
+declare
+  v_due       integer;
+  v_beat      timestamptz;
+  v_release   timestamptz;
+  v_conv_team uuid;
+  v_conv_seen boolean;
+  v_player    uuid;
+  v_n         integer;
+  v_id        uuid := coalesce(p_hold_id, gen_random_uuid());
+  v_outcome   text;
+begin
+  select count(*) into v_due
+  from public.golf_push_holds h
+  where h.user_id = p_user_id and h.reason = 'class'
+    and h.released_at is null and h.release_at <= now();
+
+  if p_reason is distinct from 'class' then
+    -- D-89 adds its own decision for 'playing'.
+    return jsonb_build_object('held', false, 'why', 'reason', 'due_waiting', v_due);
+  end if;
+
+  select hb.beat_at into v_beat from public.golf_push_hold_heartbeat hb where hb.id;
+  if v_beat is null or v_beat < now() - interval '3 minutes' then
+    return jsonb_build_object('held', false, 'why', 'job_stale', 'due_waiting', v_due);
+  end if;
+
+  v_release := public.golf_class_hold_until(p_user_id, now());
+  if v_release is null then
+    return jsonb_build_object('held', false, 'why', 'not_in_class', 'due_waiting', v_due);
+  end if;
+
+  if p_conversation_id is not null then
+    select c.team_id, true into v_conv_team, v_conv_seen
+    from public.golf_conversations c where c.id = p_conversation_id;
+    if v_conv_seen is distinct from true then
+      return jsonb_build_object('held', false, 'why', 'no_conversation', 'due_waiting', v_due);
+    end if;
+    if v_conv_team is null then
+      return jsonb_build_object('held', false, 'why', 'no_team', 'due_waiting', v_due);
+    end if;
+    select gp.id into v_player from public.golf_players gp where gp.user_id = p_user_id limit 1;
+    if public.golf_class_player_team(v_player) is distinct from v_conv_team then
+      return jsonb_build_object('held', false, 'why', 'other_team', 'due_waiting', v_due);
+    end if;
+  end if;
+
+  if p_expires_at is not null and p_expires_at <= v_release then
+    return jsonb_build_object('held', false, 'why', 'expires_first', 'due_waiting', v_due);
+  end if;
+
+  insert into public.golf_push_holds (
+    id, user_id, reason, notification_type, group_key, dedupe_key, title, body, data,
+    conversation_id, message_id, expires_at, release_at)
+  values (
+    v_id, p_user_id, 'class', p_notification_type, p_group_key, p_dedupe_key,
+    left(p_title, 200), left(p_body, 1000), coalesce(p_data, '{}'::jsonb),
+    p_conversation_id, p_message_id, p_expires_at, v_release)
+  on conflict do nothing;
+  get diagnostics v_n = row_count;
+
+  if v_n = 0 then
+    select h.outcome into v_outcome from public.golf_push_holds h where h.id = v_id;
+    if v_outcome = 'cancelled' then
+      return jsonb_build_object('held', false, 'why', 'cancelled', 'due_waiting', v_due);
+    end if;
+    -- Otherwise the open dedupe row for this key already holds the push: same hold.
+  end if;
+  return jsonb_build_object('held', true, 'release_at', v_release, 'due_waiting', v_due);
+end $$;
+
+ALTER FUNCTION "public"."golf_push_hold_put"(uuid, uuid, text, text, text, text, text, jsonb, uuid, uuid, timestamptz, text) OWNER TO "postgres";
+
+create or replace function public.golf_push_holds_cancel(p_hold_id uuid, p_user_id uuid)
+returns boolean
+language plpgsql
+volatile
+security definer
+set search_path = public, pg_temp
+as $$
+declare
+  v_n integer;
+begin
+  insert into public.golf_push_holds as h (
+    id, user_id, reason, notification_type, group_key, title, body,
+    held_at, release_at, released_at, outcome)
+  values (
+    p_hold_id, p_user_id, 'class', 'cancelled', 'other', '', '',
+    now(), now() + interval '1 second', now(), 'cancelled')
+  on conflict (id) do update
+    set released_at = now(), outcome = 'cancelled'
+    where h.released_at is null and h.claim_token is null and h.user_id = excluded.user_id;
+  get diagnostics v_n = row_count;
+  return v_n > 0;
+end $$;
+
+ALTER FUNCTION "public"."golf_push_holds_cancel"(uuid, uuid) OWNER TO "postgres";
+
+create or replace function public.golf_push_holds_claim(
+    p_token uuid,
+    p_max_users integer default 200,
+    p_now timestamptz default now(),
+    p_reason text default 'class'
+)
+returns setof public.golf_push_holds
+language sql
+volatile
+security definer
+set search_path = public, pg_temp
+as $$
+  with due_users as (
+    select h.user_id
+    from public.golf_push_holds h
+    where h.released_at is null
+      and h.reason = p_reason
+      and h.release_at <= p_now
+      and h.attempts < 3
+      and (h.claimed_at is null or h.claimed_at < p_now - interval '5 minutes')
+    group by h.user_id
+    order by min(h.release_at)
+    limit greatest(1, least(p_max_users, 1000))
+  ),
+  picked as (
+    select h.id
+    from public.golf_push_holds h
+    join due_users u on u.user_id = h.user_id
+    where h.released_at is null
+      and h.reason = p_reason
+      and h.release_at <= p_now + interval '1 minute'
+      and h.attempts < 3
+      and (h.claimed_at is null or h.claimed_at < p_now - interval '5 minutes')
+    order by h.user_id, h.release_at
+    for update of h skip locked
+  )
+  update public.golf_push_holds h
+     set claimed_at = p_now, claim_token = p_token, attempts = h.attempts + 1
+    from picked
+   where h.id = picked.id
+  returning h.*;
+$$;
+
+ALTER FUNCTION "public"."golf_push_holds_claim"(uuid, integer, timestamptz, text) OWNER TO "postgres";
+
+create or replace function public.golf_push_holds_claim_failed(
+    p_token uuid,
+    p_limit integer default 100,
+    p_now timestamptz default now()
+)
+returns setof public.golf_push_holds
+language sql
+volatile
+security definer
+set search_path = public, pg_temp
+as $$
+  with picked as (
+    select h.id
+    from public.golf_push_holds h
+    where h.released_at is null
+      and h.attempts >= 3
+      and (h.claimed_at is null or h.claimed_at < p_now - interval '5 minutes')
+    order by h.release_at
+    limit greatest(1, least(p_limit, 500))
+    for update of h skip locked
+  )
+  update public.golf_push_holds h
+     set claimed_at = p_now, claim_token = p_token
+    from picked
+   where h.id = picked.id
+  returning h.*;
+$$;
+
+ALTER FUNCTION "public"."golf_push_holds_claim_failed"(uuid, integer, timestamptz) OWNER TO "postgres";
+
+create or replace function public.golf_push_holds_claim_user(
+    p_user_id uuid,
+    p_token uuid,
+    p_reason text default 'class',
+    p_due_only boolean default false
+)
+returns setof public.golf_push_holds
+language sql
+volatile
+security definer
+set search_path = public, pg_temp
+as $$
+  with picked as (
+    select h.id from public.golf_push_holds h
+    where h.user_id = p_user_id
+      and h.reason = p_reason
+      and h.released_at is null
+      and (not p_due_only or h.release_at <= now())
+      and (h.claimed_at is null or h.claimed_at < now() - interval '5 minutes')
+    for update of h skip locked
+  )
+  update public.golf_push_holds h
+     set claimed_at = now(), claim_token = p_token, attempts = h.attempts + 1
+    from picked
+   where h.id = picked.id
+  returning h.*;
+$$;
+
+ALTER FUNCTION "public"."golf_push_holds_claim_user"(uuid, uuid, text, boolean) OWNER TO "postgres";
+
+create or replace function public.golf_push_holds_mark(
+    p_token uuid,
+    p_ids uuid[],
+    p_outcome text
+)
+returns integer
+language plpgsql
+volatile
+security definer
+set search_path = public, pg_temp
+as $$
+declare
+  v_n integer;
+begin
+  if p_outcome not in ('summarized', 'sent_alone', 'read_in_app', 'expired', 'failed', 'cancelled', 'no_device') then
+    raise exception 'unknown outcome %', p_outcome using errcode = '22023';
+  end if;
+  update public.golf_push_holds
+     set released_at = now(), outcome = p_outcome
+   where claim_token = p_token and id = any(p_ids) and released_at is null;
+  get diagnostics v_n = row_count;
+  return v_n;
+end $$;
+
+ALTER FUNCTION "public"."golf_push_holds_mark"(uuid, uuid[], text) OWNER TO "postgres";
+
+create or replace function public.golf_push_holds_unclaim(p_token uuid, p_ids uuid[])
+returns integer
+language plpgsql
+volatile
+security definer
+set search_path = public, pg_temp
+as $$
+declare
+  v_n integer;
+begin
+  update public.golf_push_holds
+     set claimed_at = null, claim_token = null
+   where claim_token = p_token and id = any(p_ids) and released_at is null;
+  get diagnostics v_n = row_count;
+  return v_n;
+end $$;
+
+ALTER FUNCTION "public"."golf_push_holds_unclaim"(uuid, uuid[]) OWNER TO "postgres";
+
+create or replace function public.golf_push_holds_reconcile(
+    p_now timestamptz default now(),
+    p_full boolean default false
+)
+returns jsonb
+language plpgsql
+volatile
+security definer
+set search_path = public, pg_temp
+as $$
+declare
+  r          record;
+  v_until    timestamptz;
+  v_n        integer;
+  v_moved    integer := 0;
+  v_expired  integer := 0;
+  v_overdue  integer := 0;
+  v_checked  integer := 0;
+  v_teams    uuid[];
+begin
+  update public.golf_push_holds
+     set released_at = p_now, outcome = 'expired'
+   where released_at is null and expires_at is not null and expires_at <= p_now
+     and (claimed_at is null or claimed_at < p_now - interval '5 minutes');
+  get diagnostics v_expired = row_count;
+
+  select coalesce(array_agg(d.team_id), '{}'::uuid[]) into v_teams
+  from public.golf_class_hold_dirty d
+  where d.marked_at >= p_now - interval '3 minutes';
+
+  for r in
+    select distinct h.user_id
+    from public.golf_push_holds h
+    where h.released_at is null and h.reason = 'class' and h.release_at > p_now
+  loop
+    if not p_full then
+      continue when not (
+        public.golf_class_player_team(
+          (select gp.id from public.golf_players gp where gp.user_id = r.user_id limit 1)
+        ) = any(v_teams));
+    end if;
+    v_checked := v_checked + 1;
+    v_until := public.golf_class_hold_until(r.user_id, p_now);
+    update public.golf_push_holds h
+       set release_at = greatest(coalesce(v_until, p_now), h.held_at + interval '1 second')
+     where h.user_id = r.user_id and h.reason = 'class' and h.released_at is null
+       and h.release_at > coalesce(v_until, p_now);              -- earlier only, never later
+    get diagnostics v_n = row_count;
+    v_moved := v_moved + v_n;
+  end loop;
+
+  select count(*) into v_overdue from public.golf_push_holds
+  where released_at is null and release_at < p_now - interval '10 minutes';
+
+  return jsonb_build_object('moved', v_moved, 'expired', v_expired, 'overdue', v_overdue,
+                            'checked', v_checked, 'full', p_full);
+end $$;
+
+ALTER FUNCTION "public"."golf_push_holds_reconcile"(timestamptz, boolean) OWNER TO "postgres";
+
+create or replace function public.golf_push_holds_cleanup(p_keep interval default interval '14 days')
+returns integer
+language plpgsql
+volatile
+security definer
+set search_path = public, pg_temp
+as $$
+declare
+  v_n integer;
+begin
+  delete from public.golf_push_holds
+  where released_at is not null and released_at < now() - greatest(p_keep, interval '1 day');
+  get diagnostics v_n = row_count;
+  delete from public.golf_class_hold_dirty where marked_at < now() - interval '1 day';
+  return v_n;
+end $$;
+
+ALTER FUNCTION "public"."golf_push_holds_cleanup"(interval) OWNER TO "postgres";
+
+create or replace function public.golf_push_holds_release_mine()
+returns integer
+language plpgsql
+volatile
+security definer
+set search_path = public, pg_temp
+as $$
+declare
+  v_n integer;
+begin
+  if auth.uid() is null then
+    raise exception 'not signed in' using errcode = '42501';
+  end if;
+  update public.golf_push_holds h
+     set release_at = greatest(now(), h.held_at + interval '1 second')
+   where h.user_id = auth.uid() and h.reason = 'class' and h.released_at is null
+     and h.release_at > now();
+  get diagnostics v_n = row_count;
+  return v_n;
+end $$;
+
+ALTER FUNCTION "public"."golf_push_holds_release_mine"() OWNER TO "postgres";
+
+create or replace function public.golf_messages_notify_anyway_guard()
+returns trigger
+language plpgsql
+security definer
+set search_path = public, pg_temp
+as $$
+declare
+  v_service boolean := coalesce(auth.role(), '') = 'service_role';
+begin
+  if tg_op = 'INSERT' then
+    if new.notify_anyway and not (
+      auth.uid() is not null
+      and new.sender_id = auth.uid()
+      and exists (
+        select 1 from public.golf_conversations c
+        where c.id = new.conversation_id
+          and c.team_id is not null
+          and public.is_golf_team_coach(c.team_id)
+      )
+    ) then
+      new.notify_anyway := false;
+    end if;
+    -- The delivery stamp is the fan-out's alone, and means nothing without the flag.
+    if new.notify_anyway_pushed_at is not null and not (v_service and new.notify_anyway) then
+      new.notify_anyway_pushed_at := null;
+    end if;
+  else
+    new.notify_anyway := old.notify_anyway;
+    if old.notify_anyway_pushed_at is not null          -- set once
+       or not old.notify_anyway                         -- only a flagged message gets a stamp
+       or not v_service then                            -- only the service role stamps
+      new.notify_anyway_pushed_at := old.notify_anyway_pushed_at;
+    end if;
+  end if;
+  return new;
+end $$;
+
+ALTER FUNCTION "public"."golf_messages_notify_anyway_guard"() OWNER TO "postgres";
 CREATE OR REPLACE FUNCTION "public"."golf_forget_read_marks"() RETURNS "trigger"
     LANGUAGE "plpgsql" SECURITY DEFINER
     SET "search_path" TO 'public', 'pg_temp'

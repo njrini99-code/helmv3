@@ -31,6 +31,9 @@ import { recordPush } from '@/lib/observability/metrics';
 import { helmLog } from '@/lib/observability/structured-log';
 import { enqueueJob, isHelmQueueEnabled } from '@/lib/jobs/enqueue';
 import { observeEdgeInvoke } from '@/lib/observability/supabase/observe-edge';
+import { isFlagEnabled } from '@/lib/flags/is-enabled';
+import { CLASS_AWARENESS_FLAG, holdSpecFor } from './class-hold-core';
+import { holdOrPass } from './class-hold';
 
 /**
  * Maps a notification type to the `push_*` preference key that gates it.
@@ -82,7 +85,7 @@ function pushDeliveryKeyFor(type: NotificationType): DeliveryNotificationKey | n
  * users.notification_preferences row `prefs` is read from, even though it
  * isn't part of the `NotificationPreferences` shape) is honoured for push.
  */
-function shouldSendPush(
+export function shouldSendPush(
   type: NotificationType,
   prefs: NotificationPreferences
 ): boolean {
@@ -220,6 +223,13 @@ export function generatePushPayload(
         // The player's plan tab directly, not the /my-development redirect shim.
         data: { url: `${baseUrl}${surfaceHref('tab-plan-player')}`, type },
       };
+    case 'class_summary':
+      // P-10: the one "While you were in class" push a release sends. The composer wrote the text; nothing is added here.
+      return {
+        title: typeof data.title === 'string' && data.title ? data.title : 'While you were in class',
+        body: String(data.body || ''),
+        data: { url: typeof data.link === 'string' && data.link.startsWith(baseUrl) ? data.link : `${baseUrl}/golf/dashboard`, type },
+      };
     default:
       return {
         title: 'Helm Sports',
@@ -290,7 +300,7 @@ export async function sendPushNotification(
   type: NotificationType,
   userId: string,
   data: Record<string, unknown>
-): Promise<{ success: boolean; error?: string }> {
+): Promise<PushResult> {
   if (isHelmQueueEnabled()) {
     const result = await enqueueJob('push_send', { type, userId, data });
     if (result.queued) {
@@ -299,6 +309,35 @@ export async function sendPushNotification(
     // fails open — fall through to the inline send below.
   }
   return sendPushNotificationDirect(type, userId, data);
+}
+
+/**
+ * `delivered` is how many devices a push really reached. It is set only by the path that sent one: an opted-out user, a user with no device
+ * and a push that was only queued all report `success: true` and leave it unset, so a caller that must know a push went out (the "Notified
+ * anyway" stamp) checks `delivered`, never `success`.
+ */
+export type PushResult = { success: boolean; error?: string; delivered?: number };
+
+/** `data` without the P-10 `hold` instruction (the same object when there is none). */
+function stripHold(data: Record<string, unknown>): Record<string, unknown> {
+  if (!('hold' in data)) return data;
+  const rest = { ...data };
+  delete rest.hold;
+  return rest;
+}
+
+/**
+ * P-10: APNs presentation fields a sender may attach to `data` (the release job's summary uses all four). They are forwarded to the edge
+ * function only when present and well formed, so an ordinary push's invoke body is exactly what it was.
+ */
+function pushExtras(data: Record<string, unknown>): Record<string, unknown> {
+  const out: Record<string, unknown> = {};
+  const level = data.interruptionLevel;
+  if (level === 'passive' || level === 'active' || level === 'time-sensitive') out.interruptionLevel = level;
+  if (typeof data.threadId === 'string' && data.threadId) out.threadId = data.threadId;
+  if (typeof data.collapseId === 'string' && data.collapseId) out.collapseId = data.collapseId;
+  if (typeof data.relevanceScore === 'number' && Number.isFinite(data.relevanceScore)) out.relevanceScore = data.relevanceScore;
+  return out;
 }
 
 /**
@@ -311,8 +350,12 @@ export async function sendPushNotification(
 export async function sendPushNotificationDirect(
   type: NotificationType,
   userId: string,
-  data: Record<string, unknown>
-): Promise<{ success: boolean; error?: string }> {
+  rawData: Record<string, unknown>
+): Promise<PushResult> {
+  // P-10: a sender may attach `hold` (a hold instruction for the class gate) to the data it queues. It is an instruction to this function,
+  // never part of the push, so it is removed before a payload is built.
+  const data = stripHold(rawData);
+  const extras = pushExtras(rawData);
   try {
     // Check user preferences
     const prefs = await getUserNotificationPreferences(userId);
@@ -361,6 +404,16 @@ export async function sendPushNotificationDirect(
 
     const payload = generatePushPayload(type, data);
 
+    // P-10 class hold. With the flag off nothing below runs (no read, no RPC). On, a push the class would hold is stored for the release
+    // job and this send ends here; any doubt (an error, a timeout, a missing function) falls through to the send exactly as before.
+    if (isFlagEnabled(CLASS_AWARENESS_FLAG, { skipTelemetry: true })) {
+      const spec = holdSpecFor(type, rawData);
+      if (spec && spec !== 'bypass' && (await holdOrPass(supabase, userId, type, payload, data, spec, { sendPushNotificationDirect, shouldSendPush })) === 'held') {
+        helmLog.info('push.send_held', { feature: 'push_notifications', action: type, result: 'held', runtime: process.env.NEXT_RUNTIME });
+        return { success: true };
+      }
+    }
+
     // Send to each device token via the Edge Function — invoked through the
     // admin client so the service-role auth travels inside the client instead
     // of a raw key in a hand-built header (helmv3-service-role-outside-admin).
@@ -391,6 +444,7 @@ export async function sendPushNotificationDirect(
             title: payload.title,
             body: payload.body,
             data: payload.data,
+            ...extras,
           },
         });
         observeEdgeInvoke({
@@ -560,7 +614,7 @@ export async function sendPushNotificationDirect(
     }
 
     recordPushOutcome(type, 'success');
-    return { success: true };
+    return { success: true, delivered };
   } catch (error) {
     console.error('Failed to send push notification:', describeError(error));
     // Previously console.error-only: this is the outermost catch for the
@@ -592,14 +646,22 @@ export async function sendBulkPushNotification(
   let sent = 0;
   let failed = 0;
 
-  for (const userId of userIds) {
-    const result = await sendPushNotification(type, userId, data);
-    if (result.success) {
-      sent++;
-    } else {
-      failed++;
-    }
+  // P-10: with class awareness on, each send may wait up to 300 ms on the hold gate, so a bulk send runs a pool of 8 (30 recipients take about
+  // 1.2 s, not 9 s). Off, it stays one after another, exactly as before.
+  const pooled = isFlagEnabled(CLASS_AWARENESS_FLAG, { skipTelemetry: true });
+  const count = (result: { success: boolean }) => {
+    if (result.success) sent++;
+    else failed++;
+  };
+  if (!pooled) {
+    for (const userId of userIds) count(await sendPushNotification(type, userId, data));
+    return { sent, failed };
   }
-
+  let next = 0;
+  await Promise.all(
+    Array.from({ length: Math.min(8, userIds.length) }, async () => {
+      while (next < userIds.length) count(await sendPushNotification(type, userIds[next++]!, data));
+    }),
+  );
   return { sent, failed };
 }

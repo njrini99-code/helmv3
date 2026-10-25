@@ -2024,10 +2024,9 @@ html[data-fw-theme='dark'] .ch-cl-ok__ic {
 }
 .ch-cl .ch-cl-card__week > span.is-team,
 .ch-cl-tthead__days > span.is-team {
-  background: color-mix(in oklab, var(--ch-green-500) 11%, transparent);
-  box-shadow:
-    inset 2px 0 0 color-mix(in oklab, var(--ch-green-500) 45%, transparent),
-    inset -2px 0 0 color-mix(in oklab, var(--ch-green-500) 45%, transparent);
+  /* P-10 (plan 4.0): a full hairline ring and a quiet fill, not insets on the two sides (a bracket is still an accent). */
+  background: var(--ch-bg-subtle);
+  box-shadow: 0 0 0 var(--ch-hairline-w) var(--ch-border-subtle);
 }
 .ch-cl-tt__bar {
   display: block;

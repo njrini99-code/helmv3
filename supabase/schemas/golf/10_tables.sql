@@ -1147,6 +1147,8 @@ CREATE TABLE IF NOT EXISTS "public"."golf_messages" (
     "payload" "jsonb",
     "pinned_at" timestamp with time zone,
     "pinned_by" "uuid",
+    "notify_anyway" boolean DEFAULT false NOT NULL,
+    "notify_anyway_pushed_at" timestamp with time zone,
     CONSTRAINT "golf_messages_kind_check" CHECK (("kind" = ANY (ARRAY['text'::"text", 'system'::"text", 'practice'::"text", 'event'::"text", 'rsvp'::"text", 'poll'::"text", 'travel'::"text"]))),
     CONSTRAINT "golf_messages_payload_matches_kind" CHECK (((("kind" = 'text'::"text") AND ("payload" IS NULL)) OR (("kind" <> 'text'::"text") AND ("payload" IS NOT NULL))))
 );
@@ -1270,7 +1272,8 @@ CREATE TABLE IF NOT EXISTS "public"."golf_player_classes" (
     "notes" "text",
     "created_at" timestamp with time zone DEFAULT "now"(),
     "updated_at" timestamp with time zone DEFAULT "now"(),
-    "semester" "text"
+    "semester" "text",
+    "status_enabled" boolean DEFAULT true NOT NULL
 );
 
 ALTER TABLE "public"."golf_player_classes" OWNER TO "postgres";
@@ -2531,3 +2534,84 @@ CREATE TABLE "public"."golf_tournaments" (
 
 
 ALTER TABLE "public"."golf_tournaments" OWNER TO "postgres";
+CREATE TABLE IF NOT EXISTS "public"."golf_team_terms" (
+    "id" "uuid" DEFAULT "gen_random_uuid"() NOT NULL,
+    "team_id" "uuid" NOT NULL,
+    "label" "text" NOT NULL,
+    "classes_start" "date" NOT NULL,
+    "classes_end" "date" NOT NULL,
+    "exams_end" "date" NOT NULL,
+    "time_zone" "text" NOT NULL,
+    "confirmed_by" "uuid",
+    "confirmed_at" timestamp with time zone DEFAULT "now"() NOT NULL,
+    "created_at" timestamp with time zone DEFAULT "now"() NOT NULL,
+    "updated_at" timestamp with time zone DEFAULT "now"() NOT NULL
+);
+
+ALTER TABLE "public"."golf_team_terms" OWNER TO "postgres";
+
+CREATE TABLE IF NOT EXISTS "public"."golf_player_class_settings" (
+    "player_id" "uuid" NOT NULL,
+    "share_status" boolean DEFAULT true NOT NULL,
+    "hold_pushes" boolean DEFAULT true NOT NULL,
+    "updated_at" timestamp with time zone DEFAULT "now"() NOT NULL
+);
+
+ALTER TABLE "public"."golf_player_class_settings" OWNER TO "postgres";
+
+CREATE TABLE IF NOT EXISTS "public"."golf_class_exceptions" (
+    "id" "uuid" DEFAULT "gen_random_uuid"() NOT NULL,
+    "team_id" "uuid" NOT NULL,
+    "player_id" "uuid",
+    "class_id" "uuid",
+    "kind" "text" NOT NULL,
+    "starts_on" "date" NOT NULL,
+    "ends_on" "date" NOT NULL,
+    "start_time" time without time zone,
+    "end_time" time without time zone,
+    "label" "text",
+    "created_by" "uuid" DEFAULT "auth"."uid"(),
+    "created_at" timestamp with time zone DEFAULT "now"() NOT NULL
+);
+
+ALTER TABLE "public"."golf_class_exceptions" OWNER TO "postgres";
+
+CREATE TABLE IF NOT EXISTS "public"."golf_push_holds" (
+    "id" "uuid" DEFAULT "gen_random_uuid"() NOT NULL,
+    "user_id" "uuid" NOT NULL,
+    "reason" "text" NOT NULL,
+    "notification_type" "text" NOT NULL,
+    "group_key" "text" NOT NULL,
+    "dedupe_key" "text",
+    "title" "text" NOT NULL,
+    "body" "text" NOT NULL,
+    "data" "jsonb" DEFAULT '{}'::"jsonb" NOT NULL,
+    "conversation_id" "uuid",
+    "message_id" "uuid",
+    "expires_at" timestamp with time zone,
+    "held_at" timestamp with time zone DEFAULT "now"() NOT NULL,
+    "release_at" timestamp with time zone NOT NULL,
+    "claimed_at" timestamp with time zone,
+    "claim_token" "uuid",
+    "released_at" timestamp with time zone,
+    "outcome" "text",
+    "attempts" smallint DEFAULT 0 NOT NULL
+);
+
+ALTER TABLE "public"."golf_push_holds" OWNER TO "postgres";
+
+CREATE TABLE IF NOT EXISTS "public"."golf_push_hold_heartbeat" (
+    "id" boolean DEFAULT true NOT NULL,
+    "beat_at" timestamp with time zone DEFAULT "now"() NOT NULL,
+    "source" "text",
+    CONSTRAINT "golf_push_hold_heartbeat_one_row" CHECK ("id")
+);
+
+ALTER TABLE "public"."golf_push_hold_heartbeat" OWNER TO "postgres";
+
+CREATE TABLE IF NOT EXISTS "public"."golf_class_hold_dirty" (
+    "team_id" "uuid" NOT NULL,
+    "marked_at" timestamp with time zone DEFAULT "now"() NOT NULL
+);
+
+ALTER TABLE "public"."golf_class_hold_dirty" OWNER TO "postgres";

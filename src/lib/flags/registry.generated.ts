@@ -13,6 +13,23 @@ import type { FlagDefinition } from './types';
 
 export const FLAG_REGISTRY: readonly FlagDefinition[] = [
   {
+    feature_id: "class_awareness_v1",
+    owner: "golf/clubhouse",
+    purpose: "Shows when a player is in class (the thread header, the Home line, Roster, the In class now sheet, the player's Classes panel) and holds non-urgent pushes while the player is in a class the coach's term dates confirm, sending them as one summary when class ends. Off: no class RPC is called, no new column is sent or selected, and the push gate lets every push through.",
+    type: "release",
+    status: "active",
+    created_at: "2026-10-25",
+    expires_at: null,
+    default: false,
+    environment: {
+      production: false,
+      preview: true,
+      development: true,
+    },
+    kill_switch_behavior: null,
+    cleanup_plan: "After one team has run it for a week with no overdue or fail-open signals and every team is on, delete the flag and its checks in their own reviewed change.",
+  },
+  {
     feature_id: "coachhelm_a4_sequence_attribution_surface",
     owner: "golf/coachhelm",
     purpose: "Gates whether the Round Review page renders the new per-hole sequence-attribution rollup (loadSequenceAttribution + computeSequenceAttribution + SequenceAttributionSection) below the existing stat breakdown; default off pending a design/product review of the section's placement, copy, and the observed-strokes-gained wording against a busy round.",

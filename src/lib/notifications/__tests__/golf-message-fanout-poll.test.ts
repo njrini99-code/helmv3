@@ -12,6 +12,8 @@ const inserted: Row[][] = [];
 vi.mock('@/lib/notifications', () => ({ notifyNewMessage: (...a: unknown[]) => notifyNewMessage(...a) }));
 vi.mock('@/lib/notifications/push', () => ({ sendPushNotification: (...a: unknown[]) => sendPushNotification(...a) }));
 vi.mock('@/lib/server-error-logger', () => ({ logServerError: vi.fn(async () => {}) }));
+// This file is about the message kinds' words, not the class gate: with class_awareness_v1 on under vitest the push data would also carry a hold instruction.
+vi.mock('@/lib/flags/is-enabled', () => ({ isFlagEnabled: () => false }));
 
 function client(tables: Record<string, Row[]>) {
   return {

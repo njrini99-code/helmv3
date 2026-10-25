@@ -292,6 +292,28 @@
     "catalog": "docs/clubhouse/catalog/shell.md"
   },
   {
+    "id": 10615,
+    "page": "P001",
+    "category": 6,
+    "item": 15,
+    "name": "DELIVER_NOW_IN_THE_BELL_IS_REFUSED",
+    "chCode": "CH-1270",
+    "meaning": "Deliver now in the bell is refused (P-10)",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/shell.md"
+  },
+  {
+    "id": 10616,
+    "page": "P001",
+    "category": 6,
+    "item": 16,
+    "name": "A_PLAYERS_PUSHES_ARE_HELD_FOR_CLASS",
+    "chCode": "CH-1271",
+    "meaning": "A player's pushes are held for class (P-10)",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/shell.md"
+  },
+  {
     "id": 10701,
     "page": "P001",
     "category": 7,
@@ -1287,6 +1309,17 @@
     "catalog": "docs/clubhouse/catalog/home.md"
   },
   {
+    "id": 20202,
+    "page": "P002",
+    "category": 2,
+    "item": 2,
+    "name": "THE_SHEET_OPENS_BEFORE_THE_CLASS_DAY",
+    "chCode": "CH-2470",
+    "meaning": "The sheet opens before the class day has arrived",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/home.md"
+  },
+  {
     "id": 20301,
     "page": "P002",
     "category": 3,
@@ -1462,6 +1495,105 @@
     "name": "ROUNDS_WITH_HOLE_SCORES_BUT_NO_PLAYER",
     "chCode": "CH-2315",
     "meaning": "Rounds with hole scores, but no player with 3 of them (coach Home, the team's four parts)",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/home.md"
+  },
+  {
+    "id": 20416,
+    "page": "P002",
+    "category": 4,
+    "item": 16,
+    "name": "NOBODY_ON_THE_TEAM_HAS_A_CLASS",
+    "chCode": "CH-2370",
+    "meaning": "Nobody on the team has a class today (the sheet is open)",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/home.md"
+  },
+  {
+    "id": 20501,
+    "page": "P002",
+    "category": 5,
+    "item": 1,
+    "name": "THE_LAST_DAY_OF_CLASSES_IS_NOT",
+    "chCode": "CH-2170",
+    "meaning": "The last day of classes is not after the first",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/home.md"
+  },
+  {
+    "id": 20502,
+    "page": "P002",
+    "category": 5,
+    "item": 2,
+    "name": "A_TERM_SHORTER_THAN_4_WEEKS_OR",
+    "chCode": "CH-2171",
+    "meaning": "A term shorter than 4 weeks or longer than about 6 months",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/home.md"
+  },
+  {
+    "id": 20503,
+    "page": "P002",
+    "category": 5,
+    "item": 3,
+    "name": "EXAMS_END_MORE_THAN_3_WEEKS_AFTER",
+    "chCode": "CH-2172",
+    "meaning": "Exams end more than 3 weeks after the last class",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/home.md"
+  },
+  {
+    "id": 20504,
+    "page": "P002",
+    "category": 5,
+    "item": 4,
+    "name": "EXAMS_END_BEFORE_THE_LAST_DAY_OF",
+    "chCode": "CH-2173",
+    "meaning": "Exams end before the last day of classes",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/home.md"
+  },
+  {
+    "id": 20505,
+    "page": "P002",
+    "category": 5,
+    "item": 5,
+    "name": "THE_TERM_OVERLAPS_ANOTHER_OF_THE_TEAMS",
+    "chCode": "CH-2174",
+    "meaning": "The term overlaps another of the team's terms",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/home.md"
+  },
+  {
+    "id": 20506,
+    "page": "P002",
+    "category": 5,
+    "item": 6,
+    "name": "THE_TERM_HAS_NO_NAME",
+    "chCode": "CH-2175",
+    "meaning": "The term has no name",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/home.md"
+  },
+  {
+    "id": 20507,
+    "page": "P002",
+    "category": 5,
+    "item": 7,
+    "name": "A_NO_CLASS_RANGE_ENDS_BEFORE_IT",
+    "chCode": "CH-2176",
+    "meaning": "A no-class range ends before it starts",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/home.md"
+  },
+  {
+    "id": 20508,
+    "page": "P002",
+    "category": 5,
+    "item": 8,
+    "name": "A_NO_CLASS_RANGE_IS_LONGER_THAN",
+    "chCode": "CH-2177",
+    "meaning": "A no-class range is longer than 21 days",
     "status": "implemented",
     "catalog": "docs/clubhouse/catalog/home.md"
   },
@@ -1710,6 +1842,61 @@
     "catalog": "docs/clubhouse/catalog/home.md"
   },
   {
+    "id": 20623,
+    "page": "P002",
+    "category": 6,
+    "item": 23,
+    "name": "SAVING_THE_TERM_DATES_FAILS",
+    "chCode": "CH-2070",
+    "meaning": "Saving the term dates fails (class status, P-10)",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/home.md"
+  },
+  {
+    "id": 20624,
+    "page": "P002",
+    "category": 6,
+    "item": 24,
+    "name": "SAVING_A_TEAM_NO_CLASS_RANGE_FAILS",
+    "chCode": "CH-2071",
+    "meaning": "Saving a team no-class range fails",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/home.md"
+  },
+  {
+    "id": 20625,
+    "page": "P002",
+    "category": 6,
+    "item": 25,
+    "name": "REMOVING_A_TEAM_NO_CLASS_RANGE_FAILS",
+    "chCode": "CH-2072",
+    "meaning": "Removing a team no-class range fails",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/home.md"
+  },
+  {
+    "id": 20626,
+    "page": "P002",
+    "category": 6,
+    "item": 26,
+    "name": "THE_CLASS_DAY_DIDNT_LOAD_WHEN_THE",
+    "chCode": "CH-2270",
+    "meaning": "The class day didn't load when the In class now sheet is open (the Home line is hidden while the read is in error)",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/home.md"
+  },
+  {
+    "id": 20701,
+    "page": "P002",
+    "category": 7,
+    "item": 1,
+    "name": "THE_SHEET_IS_OPEN_WHILE_OFFLINE",
+    "chCode": "CH-2970",
+    "meaning": "The sheet is open while offline",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/home.md"
+  },
+  {
     "id": 20801,
     "page": "P002",
     "category": 8,
@@ -1789,6 +1976,17 @@
     ]
   },
   {
+    "id": 21101,
+    "page": "P002",
+    "category": 11,
+    "item": 1,
+    "name": "THE_COACH_REMOVES_A_TEAM_NO_CLASS",
+    "chCode": "CH-2570",
+    "meaning": "The coach removes a team no-class range",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/home.md"
+  },
+  {
     "id": 21401,
     "page": "P002",
     "category": 14,
@@ -1831,6 +2029,17 @@
     "name": "HOVERING_OR_PRESSING_A_LEADERBOARD_ROW",
     "chCode": "CH-2602",
     "meaning": "Hovering or pressing a leaderboard row",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/home.md"
+  },
+  {
+    "id": 21603,
+    "page": "P002",
+    "category": 16,
+    "item": 3,
+    "name": "THE_HOME_CLASS_LINE_CHANGES",
+    "chCode": "CH-2670",
+    "meaning": "The Home class line changes (a minute tick, a refetch)",
     "status": "implemented",
     "catalog": "docs/clubhouse/catalog/home.md"
   },
@@ -1948,6 +2157,17 @@
     "tests": [
       "src/clubhouse/__tests__/player-home.test.tsx"
     ]
+  },
+  {
+    "id": 21808,
+    "page": "P002",
+    "category": 18,
+    "item": 8,
+    "name": "THE_HOME_CLASS_LINE",
+    "chCode": "CH-2870",
+    "meaning": "The Home class line",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/home.md"
   },
   {
     "id": 21901,
@@ -6773,6 +6993,17 @@
     "catalog": "docs/clubhouse/catalog/messages.md"
   },
   {
+    "id": 70411,
+    "page": "P007",
+    "category": 4,
+    "item": 11,
+    "name": "NOTIFY_ANYWAY_IS_OFFERED_A_COACH_A",
+    "chCode": "CH-7370",
+    "meaning": "Notify anyway is offered: a coach, a conversation of their own team, a recipient in class with pushes held (P-10)",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/messages.md"
+  },
+  {
     "id": 70501,
     "page": "P007",
     "category": 5,
@@ -7323,6 +7554,50 @@
     "catalog": "docs/clubhouse/catalog/messages.md"
   },
   {
+    "id": 70645,
+    "page": "P007",
+    "category": 6,
+    "item": 45,
+    "name": "A_COACH_IN_A_1_1_WITH",
+    "chCode": "CH-7270",
+    "meaning": "A coach, in a 1:1 with a player who is in a class or an exam right now and whose pushes are held (P-10)",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/messages.md"
+  },
+  {
+    "id": 70646,
+    "page": "P007",
+    "category": 6,
+    "item": 46,
+    "name": "A_MESSAGE_SENT_WITH_NOTIFY_ANYWAY_ONCE",
+    "chCode": "CH-7271",
+    "meaning": "A message sent with Notify anyway, once a push really reached a device (P-10)",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/messages.md"
+  },
+  {
+    "id": 70647,
+    "page": "P007",
+    "category": 6,
+    "item": 47,
+    "name": "A_COACH_IN_A_GROUP_OF_THEIR",
+    "chCode": "CH-7272",
+    "meaning": "A coach, in a group of their own team with at least one player in a class or an exam (P-10)",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/messages.md"
+  },
+  {
+    "id": 70648,
+    "page": "P007",
+    "category": 6,
+    "item": 48,
+    "name": "A_COACH_OPENS_DETAILS_ON_A_1",
+    "chCode": "CH-7273",
+    "meaning": "A coach opens Details on a 1:1 with a player of their team (P-10)",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/messages.md"
+  },
+  {
     "id": 70701,
     "page": "P007",
     "category": 7,
@@ -7656,6 +7931,17 @@
     "catalog": "docs/clubhouse/catalog/messages.md"
   },
   {
+    "id": 71705,
+    "page": "P007",
+    "category": 17,
+    "item": 5,
+    "name": "THE_HOLD_ON_SEND_REACHES_450_MS",
+    "chCode": "CH-7770",
+    "meaning": "The hold on Send reaches 450 ms (phone, Notify anyway offered)",
+    "status": "reserved",
+    "catalog": "docs/clubhouse/catalog/messages.md"
+  },
+  {
     "id": 71801,
     "page": "P007",
     "category": 18,
@@ -7707,6 +7993,17 @@
     "name": "THE_RECEIPTS_ACCESSIBLE_NAME_ON_ONE_STABLE",
     "chCode": "CH-7805",
     "meaning": "The receipt's accessible name (\"Seen by 9 of 11 people. Show who\") sits on one stable node, its fading copies `aria-hidden`, so a count change isn't announced; the open list says moves politely (\"Eli Brandt has seen it.\")",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/messages.md"
+  },
+  {
+    "id": 71806,
+    "page": "P007",
+    "category": 18,
+    "item": 6,
+    "name": "NOTIFY_ANYWAY_WITHOUT_A_LONG_PRESS",
+    "chCode": "CH-7870",
+    "meaning": "Notify anyway without a long press (P-10)",
     "status": "implemented",
     "catalog": "docs/clubhouse/catalog/messages.md"
   },
@@ -8552,6 +8849,28 @@
     "name": "EVERY_READ_FAILS",
     "chCode": "CH-8214",
     "meaning": "Every read fails (phone list)",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/settings.md"
+  },
+  {
+    "id": 80643,
+    "page": "P008",
+    "category": 6,
+    "item": 43,
+    "name": "HOLD_DURING_CLASS_FAILS_TO_SAVE",
+    "chCode": "CH-8030",
+    "meaning": "Hold during class fails to save (P-10)",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/settings.md"
+  },
+  {
+    "id": 80644,
+    "page": "P008",
+    "category": 6,
+    "item": 44,
+    "name": "A_PLAYER_WITH_CLASS_STATUS_ON_OPENS",
+    "chCode": "CH-8216",
+    "meaning": "A player with class status on opens Notifications (P-10)",
     "status": "implemented",
     "catalog": "docs/clubhouse/catalog/settings.md"
   },
@@ -14754,6 +15073,39 @@
     ]
   },
   {
+    "id": 120517,
+    "page": "P012",
+    "category": 5,
+    "item": 17,
+    "name": "AN_EXAM_ENDS_AT_OR_BEFORE_IT",
+    "chCode": "CH-12170",
+    "meaning": "An exam ends at or before it starts",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/classes.md"
+  },
+  {
+    "id": 120518,
+    "page": "P012",
+    "category": 5,
+    "item": 18,
+    "name": "AN_EXAM_IS_LONGER_THAN_4_HOURS",
+    "chCode": "CH-12171",
+    "meaning": "An exam is longer than 4 hours",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/classes.md"
+  },
+  {
+    "id": 120519,
+    "page": "P012",
+    "category": 5,
+    "item": 19,
+    "name": "AN_EXAMS_DATE_IS_OUTSIDE_THE_CONFIRMED",
+    "chCode": "CH-12172",
+    "meaning": "An exam's date is outside the confirmed term (classes start to exams end)",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/classes.md"
+  },
+  {
     "id": 120601,
     "page": "P012",
     "category": 6,
@@ -14886,6 +15238,116 @@
     "name": "DELETE_ALL_CLASSES_STOPPED_HALF_WAY_SOME",
     "chCode": "CH-12006",
     "meaning": "Delete all classes stopped half-way: some classes are gone and some are not",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/classes.md"
+  },
+  {
+    "id": 120613,
+    "page": "P012",
+    "category": 6,
+    "item": 13,
+    "name": "THE_SHARING_SWITCHS_WRITE_IS_REFUSED",
+    "chCode": "CH-12070",
+    "meaning": "The sharing switch's write is refused (class status, P-10)",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/classes.md"
+  },
+  {
+    "id": 120614,
+    "page": "P012",
+    "category": 6,
+    "item": 14,
+    "name": "NO_CLASS_TODAY_IS_REFUSED",
+    "chCode": "CH-12071",
+    "meaning": "\"No class today\" is refused",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/classes.md"
+  },
+  {
+    "id": 120615,
+    "page": "P012",
+    "category": 6,
+    "item": 15,
+    "name": "UNDO_ON_NO_CLASS_TODAY_IS_REFUSED",
+    "chCode": "CH-12072",
+    "meaning": "Undo on \"No class today\" is refused",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/classes.md"
+  },
+  {
+    "id": 120616,
+    "page": "P012",
+    "category": 6,
+    "item": 16,
+    "name": "TAGGING_UNTAGGED_CLASSES_WITH_THE_TERM_IS",
+    "chCode": "CH-12073",
+    "meaning": "Tagging untagged classes with the term is refused",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/classes.md"
+  },
+  {
+    "id": 120617,
+    "page": "P012",
+    "category": 6,
+    "item": 17,
+    "name": "A_CLASSS_USE_FOR_CLASS_STATUS_SWITCH",
+    "chCode": "CH-12074",
+    "meaning": "A class's \"Use for class status\" switch is refused",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/classes.md"
+  },
+  {
+    "id": 120618,
+    "page": "P012",
+    "category": 6,
+    "item": 18,
+    "name": "ADDING_AN_EXAM_IS_REFUSED",
+    "chCode": "CH-12075",
+    "meaning": "Adding an exam is refused",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/classes.md"
+  },
+  {
+    "id": 120619,
+    "page": "P012",
+    "category": 6,
+    "item": 19,
+    "name": "REMOVING_AN_EXAM_IS_REFUSED",
+    "chCode": "CH-12076",
+    "meaning": "Removing an exam is refused",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/classes.md"
+  },
+  {
+    "id": 120620,
+    "page": "P012",
+    "category": 6,
+    "item": 20,
+    "name": "DELIVER_NOW_IS_REFUSED",
+    "chCode": "CH-12077",
+    "meaning": "Deliver now is refused (the panel's Pushes during class row)",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/classes.md"
+  },
+  {
+    "id": 120621,
+    "page": "P012",
+    "category": 6,
+    "item": 21,
+    "name": "THE_PLAYERS_CLASS_DAY_DIDNT_LOAD",
+    "chCode": "CH-12270",
+    "meaning": "The player's class day didn't load",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/classes.md"
+  },
+  {
+    "id": 120622,
+    "page": "P012",
+    "category": 6,
+    "item": 22,
+    "name": "THE_PLAYERS_PUSHES_DURING_CLASS_ROW",
+    "chCode": "CH-12271",
+    "meaning": "The player's Pushes during class row",
     "status": "implemented",
     "catalog": "docs/clubhouse/catalog/classes.md"
   },
@@ -15027,6 +15489,17 @@
     "name": "START_OVER_IN_THE_IMPORT_REVIEW_ONCE",
     "chCode": "CH-12504",
     "meaning": "Start over in the import review, once it holds three or more classes or one came off (an emptied review, or one or two classes as read, starts over at once)",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/classes.md"
+  },
+  {
+    "id": 121105,
+    "page": "P012",
+    "category": 11,
+    "item": 5,
+    "name": "THE_PLAYER_REMOVES_AN_EXAM",
+    "chCode": "CH-12570",
+    "meaning": "The player removes an exam",
     "status": "implemented",
     "catalog": "docs/clubhouse/catalog/classes.md"
   },
@@ -15288,6 +15761,17 @@
     "meaning": "No axe violations on the six preview states (the board's Fall 2026, empty, failed, partial, no team and loading) at 1280px and 390px, run by npm run clubhouse:a11y from the entries in scripts/clubhouse/a11y.mjs. Reserved: it ran clean on 2026-09-30 (12 of 12), but it is a dev-server run, not a test, so no test names it.",
     "status": "reserved",
     "where": "scripts/clubhouse/a11y.mjs (CH_A11Y_PAGES)"
+  },
+  {
+    "id": 121807,
+    "page": "P012",
+    "category": 18,
+    "item": 7,
+    "name": "THE_CLASS_STATUS_PANEL",
+    "chCode": "CH-12870",
+    "meaning": "The Class status panel",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/classes.md"
   },
   {
     "id": 121901,

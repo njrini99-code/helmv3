@@ -108,6 +108,23 @@ CREATE OR REPLACE TRIGGER "update_putt_details_updated_at" BEFORE UPDATE ON "pub
 
 CREATE OR REPLACE TRIGGER "golf_coaches_guard_organization_id" BEFORE INSERT OR UPDATE OF "organization_id" ON "public"."golf_coaches" FOR EACH ROW EXECUTE FUNCTION "public"."guard_coach_organization_id"();
 
+CREATE OR REPLACE TRIGGER "golf_team_terms_guard" BEFORE INSERT OR UPDATE ON "public"."golf_team_terms" FOR EACH ROW EXECUTE FUNCTION "public"."golf_team_terms_guard"();
+
+CREATE OR REPLACE TRIGGER "golf_class_exceptions_guard" BEFORE INSERT ON "public"."golf_class_exceptions" FOR EACH ROW EXECUTE FUNCTION "public"."golf_class_exceptions_guard"();
+
+CREATE OR REPLACE TRIGGER "golf_class_hold_mark_dirty" AFTER INSERT OR DELETE OR UPDATE ON "public"."golf_class_exceptions" FOR EACH ROW EXECUTE FUNCTION "public"."golf_class_hold_mark_dirty"();
+
+CREATE OR REPLACE TRIGGER "golf_class_hold_mark_dirty" AFTER INSERT OR DELETE OR UPDATE ON "public"."golf_team_terms" FOR EACH ROW EXECUTE FUNCTION "public"."golf_class_hold_mark_dirty"();
+
+CREATE OR REPLACE TRIGGER "golf_class_hold_mark_dirty" AFTER INSERT OR DELETE OR UPDATE ON "public"."golf_player_class_settings" FOR EACH ROW EXECUTE FUNCTION "public"."golf_class_hold_mark_dirty"();
+
+CREATE OR REPLACE TRIGGER "golf_class_hold_mark_dirty" AFTER INSERT OR DELETE OR UPDATE ON "public"."golf_player_classes" FOR EACH ROW EXECUTE FUNCTION "public"."golf_class_hold_mark_dirty"();
+
+CREATE OR REPLACE TRIGGER "golf_class_hold_mark_dirty" AFTER INSERT OR DELETE OR UPDATE ON "public"."golf_event_attendance" FOR EACH ROW EXECUTE FUNCTION "public"."golf_class_hold_mark_dirty"();
+
+CREATE OR REPLACE TRIGGER "golf_messages_notify_anyway_insert" BEFORE INSERT ON "public"."golf_messages" FOR EACH ROW WHEN (("new"."notify_anyway" OR ("new"."notify_anyway_pushed_at" IS NOT NULL))) EXECUTE FUNCTION "public"."golf_messages_notify_anyway_guard"();
+
+CREATE OR REPLACE TRIGGER "golf_messages_notify_anyway_update" BEFORE UPDATE OF "notify_anyway", "notify_anyway_pushed_at" ON "public"."golf_messages" FOR EACH ROW WHEN ((("new"."notify_anyway" IS DISTINCT FROM "old"."notify_anyway") OR ("new"."notify_anyway_pushed_at" IS DISTINCT FROM "old"."notify_anyway_pushed_at"))) EXECUTE FUNCTION "public"."golf_messages_notify_anyway_guard"();
 CREATE OR REPLACE TRIGGER "golf_participants_read_mark" AFTER UPDATE OF "last_read_at" ON "public"."golf_conversation_participants" FOR EACH ROW WHEN ((("new"."last_read_at" IS NOT NULL) AND (("old"."last_read_at" IS NULL) OR ("new"."last_read_at" > "old"."last_read_at")))) EXECUTE FUNCTION "public"."golf_record_read_mark"();
 
 CREATE OR REPLACE TRIGGER "golf_participants_read_marks_on_leave" AFTER DELETE ON "public"."golf_conversation_participants" FOR EACH ROW EXECUTE FUNCTION "public"."golf_forget_read_marks"();

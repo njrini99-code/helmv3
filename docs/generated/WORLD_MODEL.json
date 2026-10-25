@@ -3297,6 +3297,18 @@
         ]
       },
       {
+        "id": "golf_class_exceptions",
+        "definedIn": [
+          "supabase/migrations/20261025070000_golf_class_awareness_tables.sql"
+        ]
+      },
+      {
+        "id": "golf_class_hold_dirty",
+        "definedIn": [
+          "supabase/migrations/20261025070200_golf_push_holds.sql"
+        ]
+      },
+      {
         "id": "golf_coachhelm_action_runs",
         "definedIn": [
           "supabase/migrations/20260725170000_coachhelm_action_runs_and_ui_parts.sql"
@@ -3411,9 +3423,27 @@
         ]
       },
       {
+        "id": "golf_player_class_settings",
+        "definedIn": [
+          "supabase/migrations/20261025070000_golf_class_awareness_tables.sql"
+        ]
+      },
+      {
         "id": "golf_player_standing_season",
         "definedIn": [
           "supabase/migrations/20261024151000_golf_player_standing_season.sql"
+        ]
+      },
+      {
+        "id": "golf_push_hold_heartbeat",
+        "definedIn": [
+          "supabase/migrations/20261025070200_golf_push_holds.sql"
+        ]
+      },
+      {
+        "id": "golf_push_holds",
+        "definedIn": [
+          "supabase/migrations/20261025070200_golf_push_holds.sql"
         ]
       },
       {
@@ -3462,6 +3492,12 @@
         "id": "golf_team_saved_courses",
         "definedIn": [
           "supabase/migrations/20260613160000_course_library_phase1.sql"
+        ]
+      },
+      {
+        "id": "golf_team_terms",
+        "definedIn": [
+          "supabase/migrations/20261025070000_golf_class_awareness_tables.sql"
         ]
       },
       {
@@ -3928,6 +3964,50 @@
         "definedIn": "supabase/migrations/20261025080000_golf_events_change_marks.sql"
       },
       {
+        "id": "golf_class_blocks_internal",
+        "definedIn": "supabase/migrations/20261025070100_golf_class_blocks_functions.sql"
+      },
+      {
+        "id": "golf_class_day_players_internal",
+        "definedIn": "supabase/migrations/20261025070100_golf_class_blocks_functions.sql"
+      },
+      {
+        "id": "golf_class_exceptions_guard",
+        "definedIn": "supabase/migrations/20261025070000_golf_class_awareness_tables.sql"
+      },
+      {
+        "id": "golf_class_hold_mark_dirty",
+        "definedIn": "supabase/migrations/20261025070200_golf_push_holds.sql"
+      },
+      {
+        "id": "golf_class_hold_until",
+        "definedIn": "supabase/migrations/20261025070100_golf_class_blocks_functions.sql"
+      },
+      {
+        "id": "golf_class_holds_live",
+        "definedIn": "supabase/migrations/20261025070200_golf_push_holds.sql"
+      },
+      {
+        "id": "golf_class_holds_release_tick",
+        "definedIn": "supabase/migrations/20261025070400_golf_push_holds_pg_cron_variant.sql"
+      },
+      {
+        "id": "golf_class_in_term",
+        "definedIn": "supabase/migrations/20261025070100_golf_class_blocks_functions.sql"
+      },
+      {
+        "id": "golf_class_player_team",
+        "definedIn": "supabase/migrations/20261025070100_golf_class_blocks_functions.sql"
+      },
+      {
+        "id": "golf_class_term_at",
+        "definedIn": "supabase/migrations/20261025070100_golf_class_blocks_functions.sql"
+      },
+      {
+        "id": "golf_class_usable",
+        "definedIn": "supabase/migrations/20261025070100_golf_class_blocks_functions.sql"
+      },
+      {
         "id": "golf_coachhelm_shown_reads",
         "definedIn": "supabase/migrations/20261021090000_golf_coachhelm_shown_reads.sql"
       },
@@ -3950,6 +4030,10 @@
       {
         "id": "golf_courses_set_normalized_name",
         "definedIn": "supabase/migrations/20260613190000_course_library_normalize_unique.sql"
+      },
+      {
+        "id": "golf_day_token_dow",
+        "definedIn": "supabase/migrations/20261025070100_golf_class_blocks_functions.sql"
       },
       {
         "id": "golf_event_attendance_counts",
@@ -3984,8 +4068,16 @@
         "definedIn": "supabase/migrations/20261025010000_golf_conversation_read_marks.sql"
       },
       {
+        "id": "golf_messages_notify_anyway_guard",
+        "definedIn": "supabase/migrations/20261025070300_golf_messages_notify_anyway.sql"
+      },
+      {
         "id": "golf_messages_poll_freeze",
         "definedIn": "supabase/migrations/20261025020200_golf_poll_payload_freeze.sql"
+      },
+      {
+        "id": "golf_my_class_day",
+        "definedIn": "supabase/migrations/20261025070200_golf_push_holds.sql"
       },
       {
         "id": "golf_my_join_requests",
@@ -4004,8 +4096,60 @@
         "definedIn": "supabase/migrations/20261018120000_golf_events_meetings_invitees_only.sql"
       },
       {
+        "id": "golf_player_on_course",
+        "definedIn": "supabase/migrations/20261025070100_golf_class_blocks_functions.sql"
+      },
+      {
         "id": "golf_player_profiles",
         "definedIn": "supabase/migrations/20261017004000_golf_player_profiles_fn.sql"
+      },
+      {
+        "id": "golf_player_shares_class_status",
+        "definedIn": "supabase/migrations/20261025070000_golf_class_awareness_tables.sql"
+      },
+      {
+        "id": "golf_push_hold_put",
+        "definedIn": "supabase/migrations/20261025070200_golf_push_holds.sql"
+      },
+      {
+        "id": "golf_push_holds_beat",
+        "definedIn": "supabase/migrations/20261025070200_golf_push_holds.sql"
+      },
+      {
+        "id": "golf_push_holds_cancel",
+        "definedIn": "supabase/migrations/20261025070200_golf_push_holds.sql"
+      },
+      {
+        "id": "golf_push_holds_claim",
+        "definedIn": "supabase/migrations/20261025070200_golf_push_holds.sql"
+      },
+      {
+        "id": "golf_push_holds_claim_failed",
+        "definedIn": "supabase/migrations/20261025070200_golf_push_holds.sql"
+      },
+      {
+        "id": "golf_push_holds_claim_user",
+        "definedIn": "supabase/migrations/20261025070200_golf_push_holds.sql"
+      },
+      {
+        "id": "golf_push_holds_cleanup",
+        "definedIn": "supabase/migrations/20261025070200_golf_push_holds.sql"
+      },
+      {
+        "id": "golf_push_holds_mark",
+        "definedIn": "supabase/migrations/20261025070200_golf_push_holds.sql"
+      },
+      {
+        "id": "golf_push_holds_reconcile",
+        "definedIn": "supabase/migrations/20261025070200_golf_push_holds.sql"
+      },
+      {
+        "id": "golf_push_holds_release_mine",
+        "definedIn": "supabase/migrations/20261025070200_golf_push_holds.sql"
+      },
+      {
+        "id": "golf_push_holds_unclaim",
+        "definedIn": "supabase/migrations/20261025070200_golf_push_holds.sql"
       },
       {
         "id": "golf_qualifier_selection_reasons",
@@ -4028,6 +4172,10 @@
         "definedIn": "supabase/migrations/20260614020000_recruit_documents.sql"
       },
       {
+        "id": "golf_safe_time_zone",
+        "definedIn": "supabase/migrations/20261025070100_golf_class_blocks_functions.sql"
+      },
+      {
         "id": "golf_season_start",
         "definedIn": "supabase/migrations/20261024151000_golf_player_standing_season.sql"
       },
@@ -4042,6 +4190,14 @@
       {
         "id": "golf_team_by_join_code",
         "definedIn": "supabase/migrations/20260803120200_golf_join_code_requires_proof.sql"
+      },
+      {
+        "id": "golf_team_class_day",
+        "definedIn": "supabase/migrations/20261025070100_golf_class_blocks_functions.sql"
+      },
+      {
+        "id": "golf_team_terms_guard",
+        "definedIn": "supabase/migrations/20261025070000_golf_class_awareness_tables.sql"
       },
       {
         "id": "golf_user_in_conversation_team_audience",
@@ -4478,6 +4634,12 @@
         "kind": "vercel_cron",
         "path": "/api/cron/admin-digest",
         "schedule": "0 11 * * *"
+      },
+      {
+        "id": "vercel_cron:/api/cron/class-holds-release",
+        "kind": "vercel_cron",
+        "path": "/api/cron/class-holds-release",
+        "schedule": "*/1 * * * *"
       },
       {
         "id": "vercel_cron:/api/cron/coachhelm-calibration",
@@ -12944,6 +13106,28 @@
     },
     {
       "source": "clubhouse",
+      "target": "golf_class_exceptions",
+      "kind": "feature_table",
+      "evidence": [
+        {
+          "kind": "migration_schema",
+          "path": "supabase/migrations/20261025070000_golf_class_awareness_tables.sql"
+        }
+      ]
+    },
+    {
+      "source": "clubhouse",
+      "target": "golf_class_hold_dirty",
+      "kind": "feature_table",
+      "evidence": [
+        {
+          "kind": "migration_schema",
+          "path": "supabase/migrations/20261025070200_golf_push_holds.sql"
+        }
+      ]
+    },
+    {
+      "source": "clubhouse",
       "target": "golf_coachhelm_shown_reads",
       "kind": "feature_rpc",
       "evidence": [
@@ -12951,6 +13135,50 @@
           "kind": "rpc_call",
           "path": "src/clubhouse/data/coachhelm-track-record.ts",
           "anchor": "golf_coachhelm_shown_reads"
+        }
+      ]
+    },
+    {
+      "source": "clubhouse",
+      "target": "golf_player_class_settings",
+      "kind": "feature_table",
+      "evidence": [
+        {
+          "kind": "migration_schema",
+          "path": "supabase/migrations/20261025070000_golf_class_awareness_tables.sql"
+        }
+      ]
+    },
+    {
+      "source": "clubhouse",
+      "target": "golf_push_hold_heartbeat",
+      "kind": "feature_table",
+      "evidence": [
+        {
+          "kind": "migration_schema",
+          "path": "supabase/migrations/20261025070200_golf_push_holds.sql"
+        }
+      ]
+    },
+    {
+      "source": "clubhouse",
+      "target": "golf_push_holds",
+      "kind": "feature_table",
+      "evidence": [
+        {
+          "kind": "migration_schema",
+          "path": "supabase/migrations/20261025070200_golf_push_holds.sql"
+        }
+      ]
+    },
+    {
+      "source": "clubhouse",
+      "target": "golf_team_terms",
+      "kind": "feature_table",
+      "evidence": [
+        {
+          "kind": "migration_schema",
+          "path": "supabase/migrations/20261025070000_golf_class_awareness_tables.sql"
         }
       ]
     },
@@ -25106,6 +25334,11 @@
           "kind": "import_graph",
           "path": "src/app/actions/messages.ts",
           "anchor": "src/lib/admin/observed-action"
+        },
+        {
+          "kind": "import_graph",
+          "path": "src/app/actions/messages.ts",
+          "anchor": "src/lib/flags/is-enabled"
         },
         {
           "kind": "import_graph",

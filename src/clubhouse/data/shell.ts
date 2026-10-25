@@ -6,6 +6,7 @@ import { loadAttendanceCounts, loadInvitedCounts, loadOwnRows } from './attendan
 import { playerMine, playerSeesMeeting, replyClosedAt } from '../screens/calendar/model';
 import { CLASS_EVENT_TYPE, isClassEvent } from '@/lib/calendar/class-events';
 import { isCoachHelmEnabledForCoach } from '@/lib/coachhelm/v2/gate';
+import { isFlagEnabled } from '@/lib/flags/is-enabled';
 import { todayIsoInZone } from '@/lib/golf/timezone';
 import { isoDay } from '../lib/dates';
 import { fullName } from './season';
@@ -51,6 +52,11 @@ export interface ChShellData {
   viewerIsHeadCoach?: boolean;
   /** golf_tournaments_v1 is on (P016): the Tournaments nav entry and its routes. Set by the dashboard layout, server side. */
   tournaments?: boolean;
+  /**
+   * P-10: `class_awareness_v1` is on. Read once with the shell and handed to the client by context (useClassAwareness),
+   * because the flag registry is server-only. Off or absent: no class RPC is called anywhere and no column is sent.
+   */
+  classAwareness?: boolean;
 }
 
 /** One of the coach's players, as the palette lists them: the id it opens and the name it shows. Nothing more. */
@@ -252,6 +258,7 @@ export async function loadClubhouseShell(teamId: string | undefined, playerId?: 
     ...(coachId ? { overdueTasks } : {}),
     timezone,
     askAvailable: askOn,
+    classAwareness: isFlagEnabled('class_awareness_v1'),
     course: courseOf(courseRes),
     roundInProgress: round ? { id: round.id, course: round.course_name?.trim() || 'Your round', hole: round.current_hole ?? null } : null,
     viewerIsHeadCoach: !!staffRes && !staffRes.error && (staffRes.data ?? []).some((row) => row.role === 'head_coach'),

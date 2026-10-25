@@ -296,6 +296,7 @@ export const FEATURE_REGISTRY: readonly FeatureDef[] = [
     app: 'golfhelm',
     actions: {
       'src/app/golf/actions/calendar-sync.ts': 'ALL',
+      'src/app/golf/actions/class-status.ts': 'ALL',
       'src/app/golf/actions/recurring-events.ts': [
         'createAcademicExclusion',
         'deleteAcademicExclusion',

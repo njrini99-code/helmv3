@@ -7,7 +7,7 @@ import type { ChRosterPlayer } from '../../data/roster';
 
 /**
  * P003: where the team sits. Every ranked player is a coin on one scoring axis (lower is better, so the best score is on the
- * left), the team average a gold line across it. It holds no data of its own: the players and their averages are the roster's,
+ * left), the team average a gold marker on it. It holds no data of its own: the players and their averages are the roster's,
  * and a player under the early floor is not on it. Coins that would touch take another lane. It is drawn in place at first paint (Q-139: no
  * first-paint draw-ins); coins glide only when the data moves them.
  */

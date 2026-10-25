@@ -672,6 +672,25 @@ CREATE INDEX "idx_standing_computed_at" ON "public"."golf_player_standing" USING
 
 CREATE INDEX "idx_standing_team_metric" ON "public"."golf_player_standing" USING "btree" ("metric_id", "team_pct") INCLUDE ("player_id");
 
+CREATE INDEX "idx_golf_team_terms_team_start" ON "public"."golf_team_terms" USING "btree" ("team_id", "classes_start");
+
+CREATE INDEX "idx_golf_class_exceptions_player_on" ON "public"."golf_class_exceptions" USING "btree" ("player_id", "starts_on") WHERE ("player_id" IS NOT NULL);
+
+CREATE INDEX "idx_golf_class_exceptions_team_on" ON "public"."golf_class_exceptions" USING "btree" ("team_id", "starts_on");
+
+CREATE INDEX "idx_golf_class_exceptions_class" ON "public"."golf_class_exceptions" USING "btree" ("class_id") WHERE ("class_id" IS NOT NULL);
+
+CREATE UNIQUE INDEX "golf_push_holds_open_dedupe" ON "public"."golf_push_holds" USING "btree" ("user_id", "dedupe_key") WHERE (("released_at" IS NULL) AND ("dedupe_key" IS NOT NULL));
+
+CREATE INDEX "idx_golf_push_holds_due" ON "public"."golf_push_holds" USING "btree" ("release_at") WHERE ("released_at" IS NULL);
+
+CREATE INDEX "idx_golf_push_holds_user_open" ON "public"."golf_push_holds" USING "btree" ("user_id", "release_at") WHERE ("released_at" IS NULL);
+
+CREATE INDEX "idx_golf_push_holds_released" ON "public"."golf_push_holds" USING "btree" ("released_at") WHERE ("released_at" IS NOT NULL);
+
+CREATE INDEX "idx_golf_push_holds_message" ON "public"."golf_push_holds" USING "btree" ("message_id") WHERE ("message_id" IS NOT NULL);
+
+CREATE INDEX "idx_golf_push_holds_conversation" ON "public"."golf_push_holds" USING "btree" ("conversation_id") WHERE ("conversation_id" IS NOT NULL);
 CREATE INDEX "idx_golf_player_standing_season_metric" ON "public"."golf_player_standing_season" USING "btree" ("metric_id");
 
 -- P016 Tournaments: held migrations 20261024100000 (tables), 100100 (RLS)

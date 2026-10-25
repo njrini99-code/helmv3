@@ -945,6 +945,36 @@ flags:
       Once the owner has applied the six held Tournaments migrations, turned
       production on and coaches have used it for a season, remove the flag
       checks in src/clubhouse/gate.ts and this entry in one change.
+    cleanup_plan: >-
+      Retire the flag once the owner has enabled Tournaments and verified it
+      for all teams.
+
+  # Clubhouse P-10 class awareness (plan clubhouse-handoff/build-plans/P-10-class-awareness.md). Held
+  # migrations 20261025070000 to 20261025070300 (supabase/migrations/HELD.md) must be applied first; with
+  # the flag on and the migrations absent the reads answer "no class status" and every push goes out
+  # (PGRST202 reads as nothing). On in preview and development (owner, 2026-10-25: every A+ feature is
+  # visible in a preview he deploys); off in production until the owner turns it on. Preview shares the
+  # production database, so every read and write degrades to "no class status" while the migrations are held.
+  - feature_id: class_awareness_v1
+    owner: golf/clubhouse
+    purpose: >-
+      Shows when a player is in class (the thread header, the Home line, Roster, the In class now
+      sheet, the player's Classes panel) and holds non-urgent pushes while the player is in a class
+      the coach's term dates confirm, sending them as one summary when class ends. Off: no class RPC
+      is called, no new column is sent or selected, and the push gate lets every push through.
+    type: release
+    status: active
+    created_at: "2026-10-25"
+    expires_at: null
+    default: false
+    environment:
+      production: false
+      preview: true
+      development: true
+    kill_switch_behavior: null
+    cleanup_plan: >-
+      After one team has run it for a week with no overdue or fail-open signals and every team is on,
+      delete the flag and its checks in their own reviewed change.
 
   # CoachHelm supercharge Slice 1: support and the claim ladder
   # (/mnt/project-files/coachhelm/supercharge/02-accuracy-standard.md §2-§6,

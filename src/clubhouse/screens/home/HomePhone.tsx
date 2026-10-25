@@ -41,6 +41,7 @@ import { MarkBadge, markSub, useRowMark } from '../calendar/change-note';
 export { CALENDAR, eventHref, whenLabel } from './event-links';
 import { CALENDAR, eventHref, whenLabel } from './event-links';
 import { plural } from '../../lib/plural';
+import { ClassHomeLine } from './ClassHomeLine';
 const newEventHref = (type?: ChHomeEvent['type']) => `${CALENDAR}?new=1${type ? `&type=${type}` : ''}`;
 
 /**
@@ -91,6 +92,8 @@ export function HomePhone({ data, now: frozen }: { data: ChCoachHome; now?: stri
       </header>
 
       <div className="ch-hm-body">
+        {/* P-10: the class line, first in the body under the Day card. Nothing with the flag off. */}
+        {data.teamId && data.clock && <ClassHomeLine teamId={data.teamId} today={data.clock.day} teamTimeZone={data.clock.tz} variant="phone" />}
         <SectionBoundary surface="home.today" label="Today" code="CH-2214">
           <Later data={data} rounds={rounds} now={now} today={today} quiet={nothingAhead} onOpenRound={setOpen} />
         </SectionBoundary>

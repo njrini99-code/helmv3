@@ -31,9 +31,12 @@ namespace 1) apply here too and are named where they carry a category.
 `clubhouse:check` holds this file to the registry.
 
 Home is two pages under one address, `/golf/dashboard`: Coach Home and Player
-Home. Where a contract belongs to one of them the note says which. Home only
-reads: it has no saves, no toasts and no forms, which is why eight of the 25
-categories are N/A.
+Home. Where a contract belongs to one of them the note says which. Home reads.
+The one place it writes is the coach's class line (P-10, behind the
+`class_awareness_v1` flag): the Term sheet and the no-class days sheet it opens
+save a term and a team break and delete a break, which is why validation,
+destructive actions and the class day's freshness are defined below. Everything
+else on Home is read only.
 
 Safari review, 2026-10-01: the player's countdown applies to timed events only.
 All-day events show their date and All day without treating midnight as a tee
@@ -90,6 +93,7 @@ by itself after first paint, so there is no skeleton per section. v2 timing
 | Bridge ID | Code | Name | Meaning |
 | --- | --- | --- | --- |
 | 20201 | CH-2401 | `HOME_IS_LOADING` | Home is loading |
+| 20202 | CH-2470 | `THE_SHEET_OPENS_BEFORE_THE_CLASS_DAY` | The sheet opens before the class day has arrived |
 
 ## 03 — Background loading / refresh
 
@@ -150,13 +154,29 @@ the route's decision (20802).
 | 20413 | CH-2313 | `A_PLAYER_ON_NO_ACTIVE_TEAM` | A player on no active team |
 | 20414 | CH-2314 | `NO_ROUND_IN_THE_TEAMS_LAST_10` | No round in the team's last 10 has hole scores (coach Home, the team's four parts) |
 | 20415 | CH-2315 | `ROUNDS_WITH_HOLE_SCORES_BUT_NO_PLAYER` | Rounds with hole scores, but no player with 3 of them (coach Home, the team's four parts) |
+| 20416 | CH-2370 | `NOBODY_ON_THE_TEAM_HAS_A_CLASS` | Nobody on the team has a class today (the sheet is open) |
 
 ## 05 — Validation
 
-Status: N/A — Home takes no input: it has no form, field or free text.
+Status: DEFINED
 
-Its controls are links, the latest-round pager, the Scoring window (a choice of
-three) and the N shortcut, none of which can be invalid.
+Home takes input in one place: the coach's Term sheet (a name, three dates and a
+time zone) and the no-class days sheet (two dates and a name), both opened from
+the class line (P-10). They say what is wrong in a sentence before anything is
+sent, and the database refuses the same limits. Everything else on Home takes no
+input: its controls are links, the latest-round pager, the Scoring window (a
+choice of three) and the N shortcut, none of which can be invalid.
+
+| Bridge ID | Code | Name | Meaning |
+| --- | --- | --- | --- |
+| 20501 | CH-2170 | `THE_LAST_DAY_OF_CLASSES_IS_NOT` | The last day of classes is not after the first |
+| 20502 | CH-2171 | `A_TERM_SHORTER_THAN_4_WEEKS_OR` | A term shorter than 4 weeks or longer than about 6 months |
+| 20503 | CH-2172 | `EXAMS_END_MORE_THAN_3_WEEKS_AFTER` | Exams end more than 3 weeks after the last class |
+| 20504 | CH-2173 | `EXAMS_END_BEFORE_THE_LAST_DAY_OF` | Exams end before the last day of classes |
+| 20505 | CH-2174 | `THE_TERM_OVERLAPS_ANOTHER_OF_THE_TEAMS` | The term overlaps another of the team's terms |
+| 20506 | CH-2175 | `THE_TERM_HAS_NO_NAME` | The term has no name |
+| 20507 | CH-2176 | `A_NO_CLASS_RANGE_ENDS_BEFORE_IT` | A no-class range ends before it starts |
+| 20508 | CH-2177 | `A_NO_CLASS_RANGE_IS_LONGER_THAN` | A no-class range is longer than 21 days |
 
 ## 06 — Server / system error
 
@@ -207,6 +227,10 @@ opens Messages plain (20805).
 | 20620 | CH-2219 | `THE_TOURS_MARKS_DONT_LOAD` | The Tour's marks don't load (coach Home, the team's four parts) |
 | 20621 | CH-2220 | `A_PART_OF_WAITING_ON_YOU_DOESNT` | A part of "Waiting on you" doesn't load (join requests, replies, tasks or posts) |
 | 20622 | CH-2221 | `THE_TEAMS_FOUR_PARTS_CRASH_WHILE_DRAWING` | The team's four parts crash while drawing (coach Home, desktop and phone) |
+| 20623 | CH-2070 | `SAVING_THE_TERM_DATES_FAILS` | Saving the term dates fails (class status, P-10) |
+| 20624 | CH-2071 | `SAVING_A_TEAM_NO_CLASS_RANGE_FAILS` | Saving a team no-class range fails |
+| 20625 | CH-2072 | `REMOVING_A_TEAM_NO_CLASS_RANGE_FAILS` | Removing a team no-class range fails |
+| 20626 | CH-2270 | `THE_CLASS_DAY_DIDNT_LOAD_WHEN_THE` | The class day didn't load when the In class now sheet is open (the Home line is hidden while the read is in error) |
 
 ## 07 — Network / offline
 
@@ -217,6 +241,10 @@ never fire here. What applies is the shell's: the offline banner (10701), and
 Try again on a notice while offline, which says so and asks nothing (10704;
 proved on Home's own notices by the 21402 test). Following a link while offline
 is the browser's, not tested here.
+
+| Bridge ID | Code | Name | Meaning |
+| --- | --- | --- | --- |
+| 20701 | CH-2970 | `THE_SHEET_IS_OPEN_WHILE_OFFLINE` | The sheet is open while offline |
 
 From the shell (P001): 10701 CH-1901, 10702 CH-1902, 10703 CH-1903,
 10704 CH-1905, 10705 CH-1909, 10706 CH-1910.
@@ -296,12 +324,13 @@ From the shell (P001): 10801 CLUBHOUSE_GATE, 10802 ROLE_SCOPED_NAV,
 
 ## 09 — Success
 
-Status: N/A — Home makes no change, so nothing lands: there is no success toast
+Status: N/A — a save from the class sheets closes the sheet with the success
 
-and no success haptic.
+haptic and no toast (`useAction` with an empty `done`); Home has no other change
+and no other success.
 
-The shell's 10901 (a change made through `useAction`) is never triggered from
-Home.
+The shell's 10901 (a change made through `useAction`) is triggered from Home
+only by those two sheets, and only their failures draw a toast (category 06).
 
 ## 10 — Warning
 
@@ -312,11 +341,20 @@ A section that loads in part is a failed read, told in category 06 (for example
 
 ## 11 — Destructive
 
-Status: N/A — nothing on Home deletes, removes or discards anything.
+Status: DEFINED
+
+Removing a team no-class range from the no-class days sheet asks first. Nothing
+else on Home deletes, removes or discards anything.
+
+| Bridge ID | Code | Name | Meaning |
+| --- | --- | --- | --- |
+| 21101 | CH-2570 | `THE_COACH_REMOVES_A_TEAM_NO_CLASS` | The coach removes a team no-class range |
 
 ## 12 — State preservation
 
-Status: N/A — Home holds nothing the person typed.
+Status: N/A — Home holds nothing the person typed, apart from the open class
+
+sheets' own fields, which start again each time a sheet opens.
 
 The latest round's pager position and the Scoring window are view choices, kept
 in the page's memory only: they are not stored, and they start again on each
@@ -349,7 +387,13 @@ From the shell (P001): 11401 ROUTE_TRY_AGAIN, 11402 TOAST_RETRY.
 
 ## 15 — Data freshness / sync
 
-Status: N/A — Home has no cache, polling or realtime to keep in step.
+Status: N/A — apart from the coach's class line, Home has no cache, polling or
+
+realtime to keep in step. The class line reads the team's class day through one
+shared cache (`useTeamClassDay`): it refreshes on focus, every five minutes
+while visible, at the class zone's midnight and when a no-class row changes, and
+a payload older than 15 minutes is not claimed (tested in
+`use-class-day.test.tsx`).
 
 The page is `force-dynamic` and a new visit reads afresh (going back or forward
 may show Next's client cache; not tested); Try again (21402) reads it again, and
@@ -372,6 +416,7 @@ shell's: the page crossfade, the press on keys, sheets and skeletons (11601 to
 | --- | --- | --- | --- |
 | 21601 | CH-2601 | `PAGING_THE_LATEST_ROUND` | Paging the latest round |
 | 21602 | CH-2602 | `HOVERING_OR_PRESSING_A_LEADERBOARD_ROW` | Hovering or pressing a leaderboard row |
+| 21603 | CH-2670 | `THE_HOME_CLASS_LINE_CHANGES` | The Home class line changes (a minute tick, a refetch) |
 
 From the shell (P001): 11601 CH-1601, 11602 CH-1602, 11603 CH-1603,
 11604 CH-1604, 11605 CH-1605, 11606 CH-1606, 11607 CH-1607, 11608 CH-1608,
@@ -433,6 +478,7 @@ CH-1842, 11825 CH-1816.
 | 21805 | CH-2805 | `NO_AXE_VIOLATIONS_IN_ANY_PREVIEW_STATE` | No axe violations in any preview state, 1280px and 390px |
 | 21806 | CH-2806 | `ON_A_PHONE_THE_SCORECARD_SCROLLS_SIDEWAYS` | On a phone the scorecard scrolls sideways; it is a named region that takes focus, so the arrow keys scroll it |
 | 21807 | — | `COUNTDOWN_IS_A_NAMED_TIMER` | The player's countdown is a timer named for a screen reader as Starts in N days, N hours and N minutes (singular at one), and its digits, the ticking seconds included, are hidden from a screen reader, so it is heard once, not every second. |
+| 21808 | CH-2870 | `THE_HOME_CLASS_LINE` | The Home class line |
 
 From the shell (P001): 11801 CH-1801, 11802 CH-1802, 11803 CH-1803,
 11804 CH-1804, 11805 CH-1805, 11806 CH-1806, 11807 CH-1807, 11808 CH-1808,

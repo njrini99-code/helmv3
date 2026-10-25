@@ -623,6 +623,7 @@ src/lib/coachhelm/
 - `src/app/golf/actions/calendar-sync.ts`
 - `src/app/golf/actions/causal-relationships.ts`
 - `src/app/golf/actions/class-detail.ts`
+- `src/app/golf/actions/class-status.ts`
 - `src/app/golf/actions/coach-entry.ts`
 - `src/app/golf/actions/coach-notifications.ts`
 - `src/app/golf/actions/coachhelm-analytics.ts`

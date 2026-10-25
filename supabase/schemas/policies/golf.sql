@@ -1249,6 +1249,25 @@ CREATE POLICY "team_chs_settings_write_team" ON "public"."golf_team_coachhelm_se
 
 COMMENT ON POLICY "team_chs_settings_write_team" ON "public"."golf_team_coachhelm_settings" IS 'Only a head coach of the team may write team-level CoachHelm settings. Head-coach (not primary) so a program head can manage both teams; assistants stay locked out.';
 
+CREATE POLICY "golf_team_terms_select" ON "public"."golf_team_terms" FOR SELECT TO "authenticated" USING (("public"."is_golf_team_coach"("team_id") OR "public"."user_is_golf_team_member"("team_id")));
+
+CREATE POLICY "golf_team_terms_insert_coach" ON "public"."golf_team_terms" FOR INSERT TO "authenticated" WITH CHECK ("public"."is_golf_team_coach"("team_id"));
+
+CREATE POLICY "golf_team_terms_update_coach" ON "public"."golf_team_terms" FOR UPDATE TO "authenticated" USING ("public"."is_golf_team_coach"("team_id")) WITH CHECK ("public"."is_golf_team_coach"("team_id"));
+
+CREATE POLICY "golf_team_terms_delete_coach" ON "public"."golf_team_terms" FOR DELETE TO "authenticated" USING ("public"."is_golf_team_coach"("team_id"));
+
+CREATE POLICY "golf_player_class_settings_own" ON "public"."golf_player_class_settings" TO "authenticated" USING (("player_id" = ( SELECT "public"."get_current_golf_player_id"() AS "get_current_golf_player_id"))) WITH CHECK (("player_id" = ( SELECT "public"."get_current_golf_player_id"() AS "get_current_golf_player_id")));
+
+CREATE POLICY "golf_class_exceptions_select" ON "public"."golf_class_exceptions" FOR SELECT TO "authenticated" USING ((("player_id" = ( SELECT "public"."get_current_golf_player_id"() AS "get_current_golf_player_id")) OR (("player_id" IS NULL) AND "public"."user_is_golf_team_member"("team_id")) OR ("public"."is_golf_team_coach"("team_id") AND (("player_id" IS NULL) OR "public"."golf_player_shares_class_status"("team_id", "player_id")))));
+
+CREATE POLICY "golf_class_exceptions_insert_player" ON "public"."golf_class_exceptions" FOR INSERT TO "authenticated" WITH CHECK ((("player_id" = ( SELECT "public"."get_current_golf_player_id"() AS "get_current_golf_player_id")) AND "public"."user_is_golf_team_member"("team_id")));
+
+CREATE POLICY "golf_class_exceptions_insert_coach" ON "public"."golf_class_exceptions" FOR INSERT TO "authenticated" WITH CHECK ((("player_id" IS NULL) AND "public"."is_golf_team_coach"("team_id")));
+
+CREATE POLICY "golf_class_exceptions_delete" ON "public"."golf_class_exceptions" FOR DELETE TO "authenticated" USING ((("player_id" = ( SELECT "public"."get_current_golf_player_id"() AS "get_current_golf_player_id")) OR (("player_id" IS NULL) AND "public"."is_golf_team_coach"("team_id"))));
+
+CREATE POLICY "golf_push_holds_select_own" ON "public"."golf_push_holds" FOR SELECT TO "authenticated" USING (("user_id" = ( SELECT "auth"."uid"() AS "uid")));
 CREATE POLICY "golf_read_marks_select" ON "public"."golf_conversation_read_marks" FOR SELECT TO "authenticated" USING ("public"."golf_read_marks_visible"("conversation_id", "user_id"));
 
 -- P016 Tournaments: held migrations 20261024100000 (tables), 100100 (RLS)

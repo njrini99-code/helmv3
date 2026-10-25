@@ -27,6 +27,8 @@ import type { AvailabilityControl, NoteSaved } from './RosterPeek';
 import { RosterProfile } from './RosterProfile';
 import { PlayerPeek } from '../../ui/PlayerPeek';
 import { rosterFailedParts, rosterPeek, rowNote } from './format';
+import { classNoteFor, NO_CLASS_LINES, type RosterClassLine, type RosterClassLines } from './class-line';
+import { ClassStatusLine } from '../../ui/ClassStatusLine';
 import { useRosterSort, type PhoneSort } from './sort';
 import { nameList, type ChJoinRequestsState } from './useJoinRequests';
 import { useCopyText } from './useCopyText';
@@ -59,6 +61,8 @@ export function RosterPhone({
   onStatus,
   onNoteSaved,
   availability,
+  classLines = NO_CLASS_LINES,
+  hold,
   onRetry,
   children,
 }: {
@@ -75,6 +79,9 @@ export function RosterPhone({
   onNoteSaved: NoteSaved;
   /** Roster's availability write (the profile's Availability panel). */
   availability: AvailabilityControl;
+  /** P-10: each player's class line, and the handlers that hold the lines still while a pointer is down. */
+  classLines?: RosterClassLines;
+  hold?: { onPointerDownCapture: () => void };
   onRetry: () => void;
   /** The dialogs (invite, remove confirm), shared with desktop. */
   children?: ReactNode;
@@ -245,7 +252,7 @@ export function RosterPhone({
               />
             </div>
             <SectionBoundary surface="roster.list" label="The roster" code="CH-3205">
-              <RosterPhoneList active={active} inactive={inactive} statsError={data.statsError} sort={sortBy} onOpen={onOpen} />
+              <RosterPhoneList active={active} inactive={inactive} statsError={data.statsError} sort={sortBy} onOpen={onOpen} classLines={classLines} hold={hold} />
             </SectionBoundary>
           </>
         )}
@@ -308,12 +315,16 @@ function RosterPhoneList({
   statsError,
   sort,
   onOpen,
+  classLines,
+  hold,
 }: {
   active: ChRosterPlayer[];
   inactive: ChRosterPlayer[];
   statsError: boolean;
   sort: PhoneSort;
   onOpen: (id: string) => void;
+  classLines: RosterClassLines;
+  hold?: { onPointerDownCapture: () => void };
 }) {
   const reduced = useChReducedMotion();
   // The sort last committed to the screen. A ref, not state: recording it must not draw the list again.
@@ -324,7 +335,7 @@ function RosterPhoneList({
   const slide = !reduced && drawn.current !== sort;
   const row = (p: ChRosterPlayer) => (
     <li key={p.id}>
-      <RosterPhoneRow p={p} statsError={statsError} sort={sort} onOpen={onOpen} slide={slide} />
+      <RosterPhoneRow p={p} statsError={statsError} sort={sort} onOpen={onOpen} slide={slide} classLine={classNoteFor(p, classLines.get(p.id))} hold={hold} />
     </li>
   );
   return (
@@ -362,14 +373,19 @@ export function RosterPhoneRow({
   sort = 'avg',
   onOpen,
   slide = false,
+  classLine = null,
+  hold,
 }: {
   p: ChRosterPlayer;
   statsError: boolean;
   sort?: PhoneSort;
   onOpen: (id: string) => void;
   slide?: boolean;
+  /** P-10: the class line that takes the note slot (a trip, or a class when nothing outranks it), or null. */
+  classLine?: RosterClassLine | null;
+  hold?: { onPointerDownCapture: () => void };
 }) {
-  const note = rowNote(p, statsError);
+  const note = classLine ? { text: classLine.text, tone: null } : rowNote(p, statsError);
   const bySg = sort === 'sg';
   const sg = p.sgPerRound;
   const label = [
@@ -388,7 +404,7 @@ export function RosterPhoneRow({
   return (
     <PlayerPeek player={rosterPeek(p)}>
       <ViewTransition name={`ch-rsm-row-${p.id}`} update={slide ? 'ch-rsm-reorder' : 'none'} enter="none" exit="none" share="none" default="none">
-        <button type="button" className="ch-rsm-row" aria-label={label} data-ch-code="CH-3806" onClick={() => onOpen(p.id)}>
+        <button type="button" className="ch-rsm-row" aria-label={label} data-ch-code="CH-3806" onClick={() => onOpen(p.id)} {...hold}>
           <Avatar name={p.name} id={p.id} size="lg" />
           <span className="ch-rsm-row__b">
             <b>{p.name}</b>
@@ -396,7 +412,11 @@ export function RosterPhoneRow({
             <span>
               {p.classYear}
               {p.classYear && note?.text ? ' · ' : null}
-              {note?.text ? <span className={note.tone ? `is-${note.tone}` : undefined}>{note.text}</span> : null}
+              {classLine ? (
+                <ClassStatusLine kind={classLine.kind} text={classLine.text} />
+              ) : note?.text ? (
+                <span className={note.tone ? `is-${note.tone}` : undefined}>{note.text}</span>
+              ) : null}
               {!p.classYear && !note?.text ? ' ' : null}
             </span>
           </span>
