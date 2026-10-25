@@ -12,8 +12,8 @@
  * the row's own unit). Excluded, and counted in `detail.excluded`:
  *   - par-3 tee shots (recorded as approaches with `lie_before='tee'`) — a tee
  *     is neither fairway nor rough, so they are outside this comparison;
- *   - `lie_before='other'` (the SG port treats it as fairway; here it would
- *     pollute the fairway side);
+ *   - `lie_before='other'` (a catch-all lie: trees, pine straw, waste, hazard
+ *     edges; on either side it would blur the fairway/rough comparison);
  *   - 175+ yd approaches on par 5s (mostly lay-ups, the same exclusion the
  *     context narrowing applies).
  *

@@ -555,7 +555,11 @@ BEGIN
 
   WITH normalized AS (
     SELECT gs.shot_type, gs.shot_number, gh.par,
-      CASE WHEN gs.shot_type='putting' THEN 'green' ELSE sg_normalize_lie(gs.lie_before) END AS lie_before_norm,
+      -- the shot after one the player marked blocked (recovery tap) starts on
+      -- Broadie's recovery curve (20261023170000)
+      CASE WHEN gs.shot_type='putting' THEN 'green'
+        WHEN COALESCE(rc.from_blocked, FALSE) AND sg_normalize_lie(gs.lie_before) IN ('rough','other') THEN 'recovery'
+        ELSE sg_normalize_lie(gs.lie_before) END AS lie_before_norm,
       CASE WHEN gs.distance_unit_before='feet' THEN gs.distance_to_hole_before/3.0 ELSE gs.distance_to_hole_before END AS dist_before_yards,
       (gs.putt_made=TRUE OR gs.result IN ('holed','hole')) AS is_holed,
       CASE WHEN gs.putt_made=TRUE OR gs.result IN ('holed','hole') THEN 0
@@ -566,14 +570,23 @@ BEGIN
         ELSE 0 END AS dist_after_yards,
       CASE WHEN gs.putt_made=TRUE OR gs.result IN ('holed','hole') THEN 'green'
         WHEN nx.distance_to_hole_before IS NOT NULL THEN
-          CASE WHEN nx.shot_type='putting' THEN 'green' ELSE sg_normalize_lie(nx.lie_before) END
-        WHEN gs.lie_after IS NOT NULL THEN sg_normalize_lie(gs.lie_after)
+          CASE WHEN nx.shot_type='putting' THEN 'green'
+            WHEN gs.lie_after_recovery IS TRUE AND NOT COALESCE(gs.is_penalty, FALSE)
+                 AND sg_normalize_lie(nx.lie_before) IN ('rough','other')
+                 AND NOT EXISTS (SELECT 1 FROM golf_shots pm WHERE pm.hole_id = gs.hole_id
+                   AND pm.shot_number > gs.shot_number AND pm.shot_number < nx.shot_number
+                   AND COALESCE(pm.is_penalty, FALSE)) THEN 'recovery'
+            ELSE sg_normalize_lie(nx.lie_before) END
+        WHEN gs.lie_after IS NOT NULL THEN
+          CASE WHEN gs.lie_after_recovery IS TRUE AND NOT COALESCE(gs.is_penalty, FALSE)
+               AND sg_normalize_lie(gs.lie_after) IN ('rough','other') THEN 'recovery'
+          ELSE sg_normalize_lie(gs.lie_after) END
         ELSE NULL END AS lie_after_norm,
       COALESCE(gs.is_penalty,FALSE) AS is_penalty,
       org.has_origin AS org_found, org.lie_norm AS org_lie_norm, org.dist_yards AS org_dist_yards
     FROM golf_shots gs JOIN golf_holes gh ON gh.id=gs.hole_id
     LEFT JOIN LATERAL (
-      SELECT n.shot_type, n.lie_before, n.distance_to_hole_before, n.distance_unit_before
+      SELECT n.shot_number, n.shot_type, n.lie_before, n.distance_to_hole_before, n.distance_unit_before
       FROM golf_shots n
       WHERE n.hole_id = gs.hole_id AND n.shot_number > gs.shot_number
         AND NOT COALESCE(n.is_penalty, FALSE)
@@ -582,6 +595,23 @@ BEGIN
       ORDER BY n.shot_number, n.id
       LIMIT 1
     ) nx ON TRUE
+    -- recovery tap: this shot is the next shot (same rule as nx) of a
+    -- non-penalty shot the player marked blocked (golf_shots.lie_after_recovery)
+    LEFT JOIN LATERAL (
+      SELECT TRUE AS from_blocked
+      FROM golf_shots p
+      WHERE NOT COALESCE(gs.is_penalty, FALSE)
+        AND gs.distance_to_hole_before > 0 AND (gs.lie_before IS NOT NULL OR gs.shot_type = 'putting')
+        AND p.hole_id = gs.hole_id AND p.shot_number < gs.shot_number
+        AND p.lie_after_recovery IS TRUE AND NOT COALESCE(p.is_penalty, FALSE)
+        AND NOT EXISTS (
+          SELECT 1 FROM golf_shots m
+          WHERE m.hole_id = gs.hole_id AND m.shot_number > p.shot_number AND m.shot_number < gs.shot_number
+            AND (COALESCE(m.is_penalty, FALSE) OR (
+              m.distance_to_hole_before IS NOT NULL AND m.distance_to_hole_before > 0
+              AND (m.lie_before IS NOT NULL OR m.shot_type = 'putting'))))
+      LIMIT 1
+    ) rc ON TRUE
     LEFT JOIN LATERAL (
       SELECT TRUE AS has_origin,
         CASE WHEN o.shot_type='putting' THEN 'green' ELSE sg_normalize_lie(o.lie_before) END AS lie_norm,
@@ -7850,7 +7880,11 @@ BEGIN
   IF v_shot_count > 0 THEN
     WITH normalized AS (
       SELECT gs.shot_type, gs.shot_number, gh.par,
-        CASE WHEN gs.shot_type='putting' THEN 'green' ELSE sg_normalize_lie(gs.lie_before) END AS lie_before_norm,
+        -- the shot after one the player marked blocked (recovery tap) starts on
+        -- Broadie's recovery curve (20261023170000)
+        CASE WHEN gs.shot_type='putting' THEN 'green'
+          WHEN COALESCE(rc.from_blocked, FALSE) AND sg_normalize_lie(gs.lie_before) IN ('rough','other') THEN 'recovery'
+          ELSE sg_normalize_lie(gs.lie_before) END AS lie_before_norm,
         CASE WHEN gs.distance_unit_before='feet' THEN gs.distance_to_hole_before/3.0 ELSE gs.distance_to_hole_before END AS dist_before_yards,
         (gs.putt_made=TRUE OR gs.result IN ('holed','hole')) AS is_holed,
         -- a shot ends where the next non-penalty shot starts; its own recorded
@@ -7863,14 +7897,23 @@ BEGIN
           ELSE 0 END AS dist_after_yards,
         CASE WHEN gs.putt_made=TRUE OR gs.result IN ('holed','hole') THEN 'green'
           WHEN nx.distance_to_hole_before IS NOT NULL THEN
-            CASE WHEN nx.shot_type='putting' THEN 'green' ELSE sg_normalize_lie(nx.lie_before) END
-          WHEN gs.lie_after IS NOT NULL THEN sg_normalize_lie(gs.lie_after)
+            CASE WHEN nx.shot_type='putting' THEN 'green'
+              WHEN gs.lie_after_recovery IS TRUE AND NOT COALESCE(gs.is_penalty, FALSE)
+                   AND sg_normalize_lie(nx.lie_before) IN ('rough','other')
+                   AND NOT EXISTS (SELECT 1 FROM golf_shots pm WHERE pm.hole_id = gs.hole_id
+                     AND pm.shot_number > gs.shot_number AND pm.shot_number < nx.shot_number
+                     AND COALESCE(pm.is_penalty, FALSE)) THEN 'recovery'
+              ELSE sg_normalize_lie(nx.lie_before) END
+          WHEN gs.lie_after IS NOT NULL THEN
+            CASE WHEN gs.lie_after_recovery IS TRUE AND NOT COALESCE(gs.is_penalty, FALSE)
+                 AND sg_normalize_lie(gs.lie_after) IN ('rough','other') THEN 'recovery'
+            ELSE sg_normalize_lie(gs.lie_after) END
           ELSE NULL END AS lie_after_norm,
         COALESCE(gs.is_penalty,FALSE) AS is_penalty,
         org.has_origin AS org_found, org.lie_norm AS org_lie_norm, org.dist_yards AS org_dist_yards
       FROM golf_shots gs JOIN golf_holes gh ON gh.id=gs.hole_id
       LEFT JOIN LATERAL (
-        SELECT n.shot_type, n.lie_before, n.distance_to_hole_before, n.distance_unit_before
+        SELECT n.shot_number, n.shot_type, n.lie_before, n.distance_to_hole_before, n.distance_unit_before
         FROM golf_shots n
         WHERE n.hole_id = gs.hole_id AND n.shot_number > gs.shot_number
           AND NOT COALESCE(n.is_penalty, FALSE)
@@ -7879,6 +7922,23 @@ BEGIN
         ORDER BY n.shot_number, n.id
         LIMIT 1
       ) nx ON TRUE
+      -- recovery tap: this shot is the next shot (same rule as nx) of a
+      -- non-penalty shot the player marked blocked (golf_shots.lie_after_recovery)
+      LEFT JOIN LATERAL (
+        SELECT TRUE AS from_blocked
+        FROM golf_shots p
+        WHERE NOT COALESCE(gs.is_penalty, FALSE)
+          AND gs.distance_to_hole_before > 0 AND (gs.lie_before IS NOT NULL OR gs.shot_type = 'putting')
+          AND p.hole_id = gs.hole_id AND p.shot_number < gs.shot_number
+          AND p.lie_after_recovery IS TRUE AND NOT COALESCE(p.is_penalty, FALSE)
+          AND NOT EXISTS (
+            SELECT 1 FROM golf_shots m
+            WHERE m.hole_id = gs.hole_id AND m.shot_number > p.shot_number AND m.shot_number < gs.shot_number
+              AND (COALESCE(m.is_penalty, FALSE) OR (
+                m.distance_to_hole_before IS NOT NULL AND m.distance_to_hole_before > 0
+                AND (m.lie_before IS NOT NULL OR m.shot_type = 'putting'))))
+        LIMIT 1
+      ) rc ON TRUE
       -- where a penalty was earned: the nearest preceding non-penalty shot, else
       -- the nearest following one (TS resolvePenaltyOrigin); no row for a shot
       LEFT JOIN LATERAL (
@@ -10535,6 +10595,19 @@ BEGIN
     v_distance  := p_distance_yards;
     v_distances := ARRAY[540,400,300,240,200,100,20]::NUMERIC[];
     v_strokes   := ARRAY[5.36,4.69,4.04,3.84,3.55,3.23,2.53]::NUMERIC[];
+  ELSIF p_lie = 'other' THEN
+    -- 'Other' (catch-all: trees, pine straw, waste, hazard edges): the rough
+    -- curve to 50 yd, halfway between rough and recovery from 100 yd, a
+    -- straight blend between (see 20261023170000).
+    v_distance  := p_distance_yards;
+    v_distances := ARRAY[540,520,500,480,460,440,420,400,380,360,340,320,300,280,260,240,220,200,180,160,140,120,100,90,80,70,60,50,20]::NUMERIC[];
+    v_strokes   := ARRAY[5.19,5.10,5.00,4.91,4.81,4.72,4.62,4.53,4.44,4.35,4.25,4.14,4.05,3.96,3.88,3.81,3.73,3.65,3.58,3.54,3.49,3.44,3.41,3.31,3.19,3.06,2.91,2.751,2.59]::NUMERIC[];
+  ELSIF p_lie = 'recovery' THEN
+    -- Blocked (recovery tap): Broadie's recovery curve, Interfaces 42(2),
+    -- Appendix A, Table 9 (see 20261023170000).
+    v_distance  := p_distance_yards;
+    v_distances := ARRAY[600,580,560,540,520,500,480,460,440,420,400,380,360,340,320,300,280,260,240,220,200,180,160,140,120,100,90,80,70,60,50,40,30,20]::NUMERIC[];
+    v_strokes   := ARRAY[5.70,5.60,5.51,5.41,5.32,5.22,5.13,5.03,4.94,4.84,4.75,4.66,4.56,4.44,4.31,4.20,4.10,4.03,3.97,3.92,3.87,3.82,3.81,3.80,3.78,3.80,3.82,3.84,3.84,3.83,3.79,3.71,3.57,3.51]::NUMERIC[];
   ELSE
     v_distance  := p_distance_yards;
     v_distances := ARRAY[540,400,300,240,200,180,140,100,80,20]::NUMERIC[];
@@ -10587,6 +10660,19 @@ BEGIN
     v_distance  := p_distance_yards;
     v_distances := ARRAY[540,400,300,240,200,100,20]::NUMERIC[];
     v_strokes   := ARRAY[5.36,4.69,4.04,3.84,3.55,3.23,2.53]::NUMERIC[];
+  ELSIF p_lie = 'other' THEN
+    -- 'Other' (catch-all: trees, pine straw, waste, hazard edges): the rough
+    -- curve to 50 yd, halfway between rough and recovery from 100 yd, a
+    -- straight blend between (see 20261023170000).
+    v_distance  := p_distance_yards;
+    v_distances := ARRAY[540,520,500,480,460,440,420,400,380,360,340,320,300,280,260,240,220,200,180,160,140,120,100,90,80,70,60,50,20]::NUMERIC[];
+    v_strokes   := ARRAY[5.19,5.10,5.00,4.91,4.81,4.72,4.62,4.53,4.44,4.35,4.25,4.14,4.05,3.96,3.88,3.81,3.73,3.65,3.58,3.54,3.49,3.44,3.41,3.31,3.19,3.06,2.91,2.751,2.59]::NUMERIC[];
+  ELSIF p_lie = 'recovery' THEN
+    -- Blocked (recovery tap): Broadie's recovery curve, Interfaces 42(2),
+    -- Appendix A, Table 9 (see 20261023170000).
+    v_distance  := p_distance_yards;
+    v_distances := ARRAY[600,580,560,540,520,500,480,460,440,420,400,380,360,340,320,300,280,260,240,220,200,180,160,140,120,100,90,80,70,60,50,40,30,20]::NUMERIC[];
+    v_strokes   := ARRAY[5.70,5.60,5.51,5.41,5.32,5.22,5.13,5.03,4.94,4.84,4.75,4.66,4.56,4.44,4.31,4.20,4.10,4.03,3.97,3.92,3.87,3.82,3.81,3.80,3.78,3.80,3.82,3.84,3.84,3.83,3.79,3.71,3.57,3.51]::NUMERIC[];
   ELSE
     v_distance  := p_distance_yards;
     v_distances := ARRAY[540,400,300,240,200,180,140,100,80,20]::NUMERIC[];
@@ -10626,6 +10712,8 @@ BEGIN
     WHEN 'rough', 'primary_rough'                                  THEN RETURN 'rough';
     WHEN 'sand', 'bunker', 'greenside_bunker', 'fairway_bunker'    THEN RETURN 'sand';
     WHEN 'green', 'fringe'                                         THEN RETURN 'green';
+    WHEN 'other'                                                   THEN RETURN 'other';
+    WHEN 'recovery'                                                THEN RETURN 'recovery';
     ELSE                                                                RETURN 'fairway';
   END CASE;
 END;
