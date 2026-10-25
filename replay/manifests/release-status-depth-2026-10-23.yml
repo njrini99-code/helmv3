@@ -1,0 +1,31 @@
+schema_version: 1
+replay_id: release-status-depth-2026-10-23
+incident_id: RELEASE-STATUS-DEPTH
+feature_id: feature_awareness_system
+title: >-
+  release-status only searched the newest 60 commits of main for the served
+  stamp, so with production 67 commits behind it (and SessionStart's live
+  probe) reported UNKNOWN; it now walks all of main against a set of the
+  stamps found in the served chunks.
+bad_version: f30a6d509980475d4b1ad64627a46196492e630e
+fixed_version: 2c1e4cb1e73a82672efeb4dccb32fd7d0ec82b36
+fixture:
+  - source: release-status.test.ts
+    target: scripts/__tests__/release-status.test.ts
+test_command: "./node_modules/.bin/vitest run --project unit scripts/__tests__/release-status.test.ts"
+expected:
+  bad_version: fail
+  fixed_version: pass
+expected_failure_mode: assertion
+sanitization:
+  reviewed: true
+  contains_production_data: false
+  notes: >-
+    A throwaway git repo of empty commits and a local HTTP server on
+    127.0.0.1; no production URL, rows, PII, tokens or logs.
+source_incident_status: fixed
+created_at: "2026-10-23"
+notes: >-
+  On bad_version "finds a served commit more than 60 commits behind main"
+  fails: the script exits 2 (UNKNOWN) instead of 0 because the stamp sits 70
+  commits behind the tip, past the old 60-commit window.

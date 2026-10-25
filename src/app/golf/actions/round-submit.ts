@@ -26,7 +26,7 @@ import { roundStage } from '@/lib/observability/spans';
 // HTTP self-call + keepalive approach was retired (audit Finding 2/A-NEW-6).
 import { logRoundSubmitted } from '@/lib/admin-logger';
 import { logServerError, logServerException, logServerEvent } from '@/lib/server-error-logger';
-import { findShotChainDiscontinuities } from '@/lib/golf/shot-ledger-continuity';
+import { findShotChainDiscontinuities, summarizeShotChainDiscontinuities } from '@/lib/golf/shot-ledger-continuity';
 import { withAdminObserved } from '@/lib/admin/observed-action';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { updateQualifierEntryStats } from '@/lib/golf/qualifier-standings';
@@ -991,7 +991,12 @@ async function submitGolfRoundComprehensiveImpl(
       void logServerEvent(`Round submit: ${chainBreaks.length} shot-chain discontinuities`, {
         action: 'submitGolfRoundComprehensive.shotChain',
         featureArea: 'shot_tracking',
-        extra: { shotsCount, discontinuities: chainBreaks.slice(0, 20) },
+        extra: {
+          shotsCount,
+          lieBreaks: chainBreaks.filter(b => b.kind === 'lie').length,
+          distanceBreaks: chainBreaks.filter(b => b.kind === 'distance').length,
+          discontinuities: summarizeShotChainDiscontinuities(chainBreaks),
+        },
       });
     }
 
