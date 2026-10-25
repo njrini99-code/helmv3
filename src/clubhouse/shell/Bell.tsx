@@ -30,6 +30,7 @@ import { useChMotionMode, useChReducedMotion } from '../lib/reduced-motion';
 import { useChPhone } from '../lib/use-phone';
 import { useSectionSwitch } from './section-switch';
 import { BellStacks, CH_NOTIFICATION_KIND } from './BellStacks';
+import { BellHeldRow } from './BellHeldRow';
 import { ago, markLocallyRead, notificationKey } from './notification-stacks';
 import { armRelink } from './relink';
 import { chReport, chTrail } from '../lib/track';
@@ -428,6 +429,7 @@ export function Bell() {
   // The desktop popover's list: built only when the popover is open, never on the phone (its drop draws BellStacks).
   const body = () => (
     <div className="ch-bellp__body" ref={listRef}>
+      <BellHeldRow />
       {listFailed ? (
         <InlineNotice code="CH-1201" title="Notifications didn’t load" body="Try again." onRetry={() => setAttempt((x) => x + 1)} />
       ) : items === null ? (
@@ -610,6 +612,7 @@ export function Bell() {
                     if (e.target === e.currentTarget || (e.target as Element).classList?.contains('ch-bst-feed')) close();
                   }}
                 >
+                  <BellHeldRow />
                   <BellStacks items={items} failed={listFailed} onRetry={() => setAttempt((x) => x + 1)} onOpen={openItem} onClear={clearItems} />
                 </div>
                 <div className="ch-bst__drag" aria-hidden="true" onPointerDown={onSheetDrag}>

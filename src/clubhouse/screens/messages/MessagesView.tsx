@@ -2,7 +2,6 @@
 
 import {
   ArrowDown,
-  ArrowUp,
   CalendarPlus,
   ChevronLeft,
   Download,
@@ -75,6 +74,11 @@ import { PlayerPeek } from "../../ui/PlayerPeek";
 import { EmptyState, Skeleton } from "../../ui/States";
 import { RailEmpty } from "./RailEmpty";
 import { ThreadClassSub } from "./ThreadClassSub";
+import { SendCluster } from "./NotifyAnyway";
+import { GroupClassLine } from "./GroupClassLine";
+import { ThreadClassSection } from "./ThreadClassSection";
+import { isNotifyChord, notifyChordLabel, sendNotify } from "./notify-anyway";
+import { useClassText } from "../../ui/ClassStatusLine";
 import type { ChThreadClassDay } from "./class-thread";
 import { useToast } from "../../ui/Toast";
 import { haptic } from "../../lib/haptics";
@@ -1292,7 +1296,7 @@ export function Bubble({
         {/* P-10: "Notified anyway", once a push really went out. A 1:1 shows it to both sides; in a group only a coach sees it (a teammate
             reading it would learn who was in class). */}
         {m.notifiedAnyway && !m.failed && (!group || api.viewer.role === "coach") && (
-          <span className="ch-ms-msg__na">
+          <span className="ch-ms-msg__na" data-ch-code="CH-7271">
             Notified anyway
           </span>
         )}
@@ -1572,7 +1576,7 @@ export function Composer({
     return () => { mounted = false; };
   }, [conv.id, checkAttempt]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  const send = async () => {
+  const send = async (notifyAnyway = false) => {
     if (!ready || sendingRef.current) return;
     sendingRef.current = true;
     const text = draft.trim();
@@ -1591,6 +1595,9 @@ export function Composer({
       ? await (api.retryPendingAttachmentSend?.() ?? Promise.resolve("unknown" as const))
       : pending.length
       ? await (parentId ? api.sendFiles(text, pending, parentId) : api.sendFiles(text, pending))
+      : notifyAnyway
+      // P-10: only a plain text send carries the flag (the attachment path has none), and only when the coach chose it.
+      ? await api.send(text, parentId ?? null, { notifyAnyway: true })
       : await (parentId ? api.send(text, parentId) : api.send(text));
     sendingRef.current = false;
     setSending(false);
@@ -1654,7 +1661,19 @@ export function Composer({
     void send();
     // Keep the handed-over first message until the pending-send check permits it.
   }, [checking, checkFailed, unconfirmed, resumed]); // eslint-disable-line react-hooks/exhaustive-deps
+  // P-10 Notify anyway: offered for a plain text send to a recipient who is in class with pushes held (see sendNotify). Otherwise nothing
+  // below changes: same placeholder, same Send, same hint, and Cmd/Ctrl+Shift+Enter keeps meaning a new line.
+  const classText = useClassText(api.classDay?.day ? { teamTimeZone: api.classDay.day.teamTimeZone, classTimeZone: api.classDay.day.classTimeZone } : null);
+  const notifyRule = sendNotify(api.classDay, conv, (id) => personOf(api, id), classText);
+  const notify = notifyRule && !files.length && !resumed && !unconfirmed && !checking && !checkFailed && !unavailable ? notifyRule : null;
+  const [mac, setMac] = useState(false);
+  useEffect(() => setMac(/mac|iphone|ipad/i.test(navigator.platform || navigator.userAgent)), []);
   const onKey = (e: KeyboardEvent<HTMLTextAreaElement>) => {
+    if (!phone && notify && isNotifyChord(e) && !e.nativeEvent.isComposing) {
+      e.preventDefault();
+      void send(true);
+      return;
+    }
     if (!phone && e.key === "Enter" && !e.shiftKey && !e.nativeEvent.isComposing) {
       e.preventDefault();
       void send();
@@ -1673,6 +1692,7 @@ export function Composer({
       )}
       {resumed && !files.length && <div role="group" className="ch-ms-to" aria-label="Pending attachments">{resumed.filenames.map((name, i) => <span key={`${name}-${i}`} className="ch-ms-to__c"><Icon icon={FileText} size={13} />{name}</span>)}</div>}
       {missingFiles.length > 0 && <div role="status" className="ch-ms-to" aria-label="Attachments to choose again">Choose these files again: {missingFiles.map((name, i) => <span key={`${name}-${i}`} className="ch-ms-to__c">{name}<Tooltip><button type="button" aria-label={`Dismiss ${name}`} onClick={() => setMissingFiles((now) => now.filter((_, j) => j !== i))}><Icon icon={X} size={12} /></button></Tooltip></span>)}</div>}
+      {conv.group && api.classDay && <GroupClassLine cls={api.classDay} conv={conv} personOf={(id) => personOf(api, id)} />}
       <AttachChips
         disabled={unconfirmed || checking || checkFailed || unavailable}
         files={files}
@@ -1689,7 +1709,8 @@ export function Composer({
           rows={1}
           // CH-7802: desktop Enter sends; phone Return adds a line and the Send button sends.
           aria-label={`Message ${label}`}
-          placeholder={unavailable ? "Replies are off until this loads" : `Message ${label}`}
+          placeholder={unavailable ? "Replies are off until this loads" : (notify?.placeholder ?? `Message ${label}`)}
+          data-ch-code={notify?.placeholder ? "CH-7270" : undefined}
           value={draft}
           readOnly={unconfirmed || checking || checkFailed || unavailable}
           onChange={(e) => {
@@ -1705,17 +1726,7 @@ export function Composer({
           maxLength={MESSAGE_MAX}
           enterKeyHint={phone ? "enter" : "send"}
         />
-        <Tooltip>
-          <button
-            type="button"
-            className={"ch-ms-send" + (ready ? " is-ready" : "")}
-            onClick={() => void send()}
-            disabled={!ready}
-            aria-label={unconfirmed ? "Retry send" : "Send"}
-          >
-            <Icon icon={unconfirmed ? RotateCw : ArrowUp} size={17} />
-          </button>
-        </Tooltip>
+        <SendCluster phone={phone} ready={!!ready} unconfirmed={unconfirmed} notify={notify} mac={mac} onSend={(notifyAnyway) => void send(notifyAnyway)} />
       </div>
       {unavailable ? (
         <span className="ch-ms-comp__hint">
@@ -1723,7 +1734,7 @@ export function Composer({
         </span>
       ) : !phone ? (
         <span className="ch-ms-comp__hint">
-          Enter to send · Shift + Enter for a new line
+          Enter to send · Shift + Enter for a new line{notify ? ` · ${notifyChordLabel(mac).hint}` : ""}
           <CharsLeft text={draft} />
         </span>
       ) : (
@@ -2376,6 +2387,21 @@ function Details({
         </span>
       </div>
       <MuteControl api={api} />
+      {api.classDay && !conv.group && (
+        <ThreadClassSection
+          cls={api.classDay}
+          conv={conv}
+          other={other}
+          wrap={(content) => (
+            <div className="ch-ms-det__sec">
+              <div className="ch-ms-det__l">
+                <span>Class status</span>
+              </div>
+              {content}
+            </div>
+          )}
+        />
+      )}
       {!conv.group &&
         other?.role === "player" &&
         other.playerId &&

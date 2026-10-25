@@ -48,14 +48,15 @@ function client(tables: Record<string, Row[]>, updates?: Array<{ table: string; 
   };
 }
 
-async function run(opts: { notifyAnyway?: boolean; messageId?: string | null; pushes?: PushResult[]; pushOff?: boolean; updateError?: { message: string } }) {
+async function run(opts: { flagOn?: boolean; teamId?: string | null; participants?: number; notifyAnyway?: boolean; messageId?: string | null; pushes?: PushResult[]; pushOff?: boolean; updateError?: { message: string } }) {
   const updates: Array<{ table: string; row: Row; filters: Array<[string, unknown]> }> = [];
-  const rls = client({ golf_conversation_participants: [{ user_id: 'p1' }], golf_coaches: [{ full_name: 'Coach Rini' }], golf_players: [], users: [] });
+  const rls = client({ golf_conversations: [{ team_id: opts.teamId === undefined ? null : opts.teamId }], golf_conversation_participants: Array.from({ length: opts.participants ?? 1 }, (_, i) => ({ user_id: `p${i + 1}` })), golf_coaches: [{ full_name: 'Coach Rini' }], golf_players: [], users: [] });
   const admin = client(
     { users: [{ id: 'p1', email: 'p1@example.com', notification_preferences: opts.pushOff ? { push_messages: false } : { push_messages: true } }], golf_calendar_notifications: [] },
     updates,
     opts.updateError,
   );
+  vi.doMock('@/lib/flags/is-enabled', () => ({ isFlagEnabled: () => opts.flagOn === true }));
   vi.doMock('@/lib/supabase/server', () => ({ createClient: async () => rls }));
   vi.doMock('@/lib/supabase/admin', () => ({ createAdminClient: () => admin }));
   if (opts.pushes) for (const p of opts.pushes) sendPushNotificationMock.mockResolvedValueOnce(p);
@@ -124,5 +125,37 @@ describe('Notify anyway in the message fan-out', () => {
     expect(updates).toHaveLength(1);
     expect(logServerErrorMock.mock.calls.some(([m]) => String(m).includes('Notify anyway stamp failed'))).toBe(true);
     expect(notifyNewMessageMock).toHaveBeenCalledTimes(1);
+  });
+});
+
+describe('the class hold instruction in the message fan-out', () => {
+  const TEAM = 'tttttttt-tttt-4ttt-8ttt-tttttttttttt';
+  const holds = () => sendPushNotificationMock.mock.calls.map((c) => (c[2] as Record<string, unknown>).hold);
+
+  it('flag off: no instruction at all, whatever the conversation', async () => {
+    await run({ teamId: TEAM });
+    expect(holds()).toEqual([undefined]);
+    expect(sendPushNotificationMock.mock.calls[0]![2]).not.toHaveProperty('hold');
+  });
+
+  it('flag on: a team 1:1 is a coach DM hold carrying the conversation and the message', async () => {
+    await run({ flagOn: true, teamId: TEAM, messageId: MESSAGE, notifyAnyway: false });
+    expect(holds()).toEqual([{ group: 'coach_dm', conversationId: CONV, messageId: MESSAGE }]);
+  });
+
+  it('flag on: more than one other participant is a group hold', async () => {
+    await run({ flagOn: true, teamId: TEAM, participants: 3 });
+    expect(holds().every((h) => (h as { group: string }).group === 'group')).toBe(true);
+    expect(holds()[0]).not.toHaveProperty('messageId');
+  });
+
+  it('flag on: a conversation with no team is never held (bypass)', async () => {
+    await run({ flagOn: true, teamId: null });
+    expect(holds()).toEqual(['bypass']);
+  });
+
+  it('a Notify anyway message is bypass whatever the conversation', async () => {
+    await run({ flagOn: true, teamId: TEAM, notifyAnyway: true });
+    expect(holds()).toEqual(['bypass']);
   });
 });

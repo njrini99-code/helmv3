@@ -2305,6 +2305,11 @@ features:
       components:
         - src/clubhouse/**
         - src/app/clubhouse-preview/entry/**
+      db:
+        # P-10 class awareness (2026-10-25, held): terms and exceptions, the class-block functions, held pushes.
+        - supabase/migrations/*class_awareness*.sql
+        - supabase/migrations/*class_blocks*.sql
+        - supabase/migrations/*push_holds*.sql
       tests:
         - src/clubhouse/__tests__/**
         - src/app/clubhouse-preview/entry/__tests__/**

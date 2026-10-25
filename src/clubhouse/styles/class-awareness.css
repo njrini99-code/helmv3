@@ -508,3 +508,64 @@
   outline: 2px solid var(--ch-border-focus);
   outline-offset: 2px;
 }
+
+/* The Details panel's Class status block (a coach's 1:1). Plain lines, no card. */
+.ch-ca-thread {
+  display: grid;
+  gap: var(--ch-space-1);
+}
+.ch-ca-thread__primary {
+  margin: 0;
+  color: var(--ch-text-primary);
+  font: var(--ch-type-14);
+}
+.ch-ca-thread__line {
+  margin: 0;
+  color: var(--ch-text-secondary);
+  font: var(--ch-type-13);
+}
+
+/* The player's "Pushes during class" row: the value with Change beside it, and Deliver now under it while pushes wait. */
+.ch-ca-panel__change,
+.ch-ca-panel__value {
+  flex: none;
+  color: var(--ch-ink-500);
+  font: var(--ch-type-13);
+  text-decoration: none;
+}
+.ch-ca-panel__change:focus-visible {
+  outline: 2px solid var(--ch-border-focus);
+  outline-offset: 2px;
+}
+@media (hover: hover) {
+  .ch-ca-panel__change:hover {
+    color: var(--ch-text-primary);
+  }
+}
+/* Deliver now is text in the dark-safe green (Must 4: never --ch-accent for text), 44px tall. */
+.ch-ca-panel__deliver {
+  min-height: 44px;
+  color: var(--ch-green-600);
+}
+
+/* The Bell's held row (a player): 52px, a hairline below, no tint, no stripe. */
+.ch-ca-bell {
+  display: flex;
+  align-items: center;
+  gap: var(--ch-space-2);
+  min-height: 52px;
+  padding: 0 var(--ch-space-4);
+  border-bottom: var(--ch-hairline-w) solid var(--ch-border-hairline);
+  color: var(--ch-text-primary);
+}
+.ch-ca-bell__text {
+  flex: 1;
+  min-width: 0;
+  font: var(--ch-type-14);
+}
+.ch-ca-bell__deliver {
+  flex: none;
+  min-height: 44px;
+  color: var(--ch-green-600);
+  font: var(--ch-type-13);
+}

@@ -5,6 +5,8 @@ import { sendPushNotification } from '@/lib/notifications/push';
 import { logServerError } from '@/lib/server-error-logger';
 import { describeError } from '@/lib/utils/describe-error';
 import { allSettledReported } from '@/lib/settled-failures';
+import { isFlagEnabled } from '@/lib/flags/is-enabled';
+import { CLASS_AWARENESS_FLAG, type HoldSpec } from '@/lib/notifications/class-hold-core';
 import {
   gatedDelivery,
   type DeliveryNotificationPreferences,
@@ -149,6 +151,18 @@ export async function notifyGolfMessageRecipients(
       { action: 'notifications.notifyGolfMessageRecipients', featureArea: 'messaging', label: 'email' },
     );
 
+    // P-10 class hold instruction (flag on only; off, the push data is exactly what it was). A flagged message and a conversation with no team
+    // are never held (the database cannot hold a message with no team, and Notify anyway is the coach's call). Otherwise the message is held
+    // for a recipient in class: a coach DM in a 1:1, a group thread otherwise.
+    let hold: HoldSpec | undefined;
+    if (opts?.notifyAnyway) hold = 'bypass';
+    else if (isFlagEnabled(CLASS_AWARENESS_FLAG, { skipTelemetry: true })) {
+      const { data: conversation } = await supabase.from('golf_conversations').select('team_id').eq('id', conversationId).maybeSingle();
+      hold = conversation?.team_id
+        ? { group: otherParticipants.length > 1 ? 'group' : 'coach_dm', conversationId, ...(opts?.messageId ? { messageId: opts.messageId } : {}) }
+        : 'bypass';
+    }
+
     // Push notifications — carry the conversation id so the push payload
     // deep-links straight to the thread that fired it (P260).
     const pushes = await allSettledReported(
@@ -158,7 +172,7 @@ export async function notifyGolfMessageRecipients(
               senderName,
               preview: previewText,
               conversationId,
-              ...(opts?.notifyAnyway ? { hold: 'bypass' } : {}),
+              ...(hold ? { hold } : {}),
             })
           : Promise.resolve()
       ),

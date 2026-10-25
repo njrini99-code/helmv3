@@ -107,7 +107,7 @@ Calendar And Events · active · criticality high · owner product
 Clubhouse UI (flagged, off in production) · active · criticality medium · owner product
 
 - **Relations:** 0 doc/structurally-evidenced, 4 import-graph-only (weak)
-- **Tables:** none
+- **Tables:** `golf_class_exceptions`, `golf_class_hold_dirty`, `golf_player_class_settings`, `golf_push_hold_heartbeat`, `golf_push_holds`, `golf_team_terms`
 - **RPCs:** `golf_coachhelm_shown_reads`
 - **Test surfaces:** 2
 - **Sentry/admin_events signals:** none
@@ -329,6 +329,7 @@ Team Operations · active · criticality high · owner product
 | Job | Kind | Feature |
 | --- | --- | --- |
 | `vercel_cron:/api/cron/admin-digest` | vercel_cron | _unmapped_ |
+| `vercel_cron:/api/cron/class-holds-release` | vercel_cron | _unmapped_ |
 | `vercel_cron:/api/cron/coachhelm-calibration` | vercel_cron | `coach_intelligence_triage` |
 | `vercel_cron:/api/cron/coachhelm-insight-lifecycle` | vercel_cron | `coach_intelligence_triage` |
 | `vercel_cron:/api/cron/coachhelm-monday-brief` | vercel_cron | _unmapped_ |

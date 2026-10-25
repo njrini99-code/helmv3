@@ -664,7 +664,8 @@ async function createEnrichedAnnouncementImpl(input: {
               const pushResult = await sendBulkPushNotification(
                 'team_announcement',
                 recipientUserIdsForPush,
-                { title: validated.title, content: validated.body },
+                // `urgency` rides along for the class gate (P-10): an urgent announcement is never held for a class.
+                { title: validated.title, content: validated.body, urgency: validated.urgency },
               );
               pushSent = pushResult.sent > 0;
               if (pushResult.failed > 0) {

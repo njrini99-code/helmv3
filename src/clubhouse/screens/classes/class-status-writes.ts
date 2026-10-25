@@ -27,6 +27,10 @@ export interface ChExam {
 export interface ChClassStatusWrites {
   /** The sharing switch: `share_status`. Off also stops holds (the database reads it that way). */
   setShare(shareStatus: boolean): Promise<ServerResult>;
+  /** "Hold during class": `hold_pushes`. Needs sharing on; the database reads a hold as off while sharing is off. */
+  setHold(holdPushes: boolean): Promise<ServerResult>;
+  /** Deliver now: send what was held for this player's class (the server action; best effort when called after a change that releases). */
+  deliverNow(): Promise<ServerResult<{ released: number }>>;
   /** "No class today": one `off` exception for a class, or for all of today (classId null). Returns the new row ids for Undo. */
   markNoClass(input: { on: string; classId: string | null }): Promise<ServerResult<{ ids: string[] }>>;
   undoNoClass(ids: string[]): Promise<ServerResult>;
@@ -43,6 +47,17 @@ type Failure = { message?: string; code?: string } | null;
 const fail = <T = unknown>(error: Failure): ServerResult<T> => ({ success: false, error: error?.message || 'failed' });
 const str = (v: unknown) => (typeof v === 'string' && v ? v : null);
 
+/**
+ * Deliver now: send what was held for the signed-in player's class. A plain function (no team or player needed) so the Bell's row
+ * and the Classes panel share it. Loaded on demand: the action pulls in server code the browser bundle (and a test) should only
+ * meet when it is used.
+ */
+export async function deliverHeldNow(): Promise<ServerResult<{ released: number }>> {
+  const { releaseMyHeldPushes } = await import('@/app/golf/actions/class-status');
+  const r = await releaseMyHeldPushes();
+  return r.success ? { success: true, data: { released: r.data?.released ?? 0 } } : { success: false, error: r.error };
+}
+
 export function createLiveClassStatusWrites(ctx: { playerId: string; teamId: string }): ChClassStatusWrites {
   const sb = createClient();
   return {
@@ -53,6 +68,16 @@ export function createLiveClassStatusWrites(ctx: { playerId: string; teamId: str
       );
       return error ? fail(error) : { success: true };
     },
+
+    async setHold(holdPushes) {
+      const { error } = await fromUntyped(sb, 'golf_player_class_settings').upsert(
+        { player_id: ctx.playerId, hold_pushes: holdPushes, updated_at: new Date().toISOString() },
+        { onConflict: 'player_id' },
+      );
+      return error ? fail(error) : { success: true };
+    },
+
+    deliverNow: deliverHeldNow,
 
     async markNoClass({ on, classId }) {
       const { data, error } = await fromUntyped(sb, 'golf_class_exceptions')

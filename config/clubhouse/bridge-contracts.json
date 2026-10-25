@@ -292,6 +292,28 @@
     "catalog": "docs/clubhouse/catalog/shell.md"
   },
   {
+    "id": 10615,
+    "page": "P001",
+    "category": 6,
+    "item": 15,
+    "name": "DELIVER_NOW_IN_THE_BELL_IS_REFUSED",
+    "chCode": "CH-1270",
+    "meaning": "Deliver now in the bell is refused (P-10)",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/shell.md"
+  },
+  {
+    "id": 10616,
+    "page": "P001",
+    "category": 6,
+    "item": 16,
+    "name": "A_PLAYERS_PUSHES_ARE_HELD_FOR_CLASS",
+    "chCode": "CH-1271",
+    "meaning": "A player's pushes are held for class (P-10)",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/shell.md"
+  },
+  {
     "id": 10701,
     "page": "P001",
     "category": 7,
@@ -6432,6 +6454,17 @@
     "catalog": "docs/clubhouse/catalog/messages.md"
   },
   {
+    "id": 70410,
+    "page": "P007",
+    "category": 4,
+    "item": 10,
+    "name": "NOTIFY_ANYWAY_IS_OFFERED_A_COACH_A",
+    "chCode": "CH-7370",
+    "meaning": "Notify anyway is offered: a coach, a conversation of their own team, a recipient in class with pushes held (P-10)",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/messages.md"
+  },
+  {
     "id": 70501,
     "page": "P007",
     "category": 5,
@@ -6916,6 +6949,50 @@
     "catalog": "docs/clubhouse/catalog/messages.md"
   },
   {
+    "id": 70639,
+    "page": "P007",
+    "category": 6,
+    "item": 39,
+    "name": "A_COACH_IN_A_1_1_WITH",
+    "chCode": "CH-7270",
+    "meaning": "A coach, in a 1:1 with a player who is in a class or an exam right now and whose pushes are held (P-10)",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/messages.md"
+  },
+  {
+    "id": 70640,
+    "page": "P007",
+    "category": 6,
+    "item": 40,
+    "name": "A_MESSAGE_SENT_WITH_NOTIFY_ANYWAY_ONCE",
+    "chCode": "CH-7271",
+    "meaning": "A message sent with Notify anyway, once a push really reached a device (P-10)",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/messages.md"
+  },
+  {
+    "id": 70641,
+    "page": "P007",
+    "category": 6,
+    "item": 41,
+    "name": "A_COACH_IN_A_GROUP_OF_THEIR",
+    "chCode": "CH-7272",
+    "meaning": "A coach, in a group of their own team with at least one player in a class or an exam (P-10)",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/messages.md"
+  },
+  {
+    "id": 70642,
+    "page": "P007",
+    "category": 6,
+    "item": 42,
+    "name": "A_COACH_OPENS_DETAILS_ON_A_1",
+    "chCode": "CH-7273",
+    "meaning": "A coach opens Details on a 1:1 with a player of their team (P-10)",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/messages.md"
+  },
+  {
     "id": 70701,
     "page": "P007",
     "category": 7,
@@ -7227,6 +7304,17 @@
     "catalog": "docs/clubhouse/catalog/messages.md"
   },
   {
+    "id": 71705,
+    "page": "P007",
+    "category": 17,
+    "item": 5,
+    "name": "THE_HOLD_ON_SEND_REACHES_450_MS",
+    "chCode": "CH-7770",
+    "meaning": "The hold on Send reaches 450 ms (phone, Notify anyway offered)",
+    "status": "reserved",
+    "catalog": "docs/clubhouse/catalog/messages.md"
+  },
+  {
     "id": 71801,
     "page": "P007",
     "category": 18,
@@ -7267,6 +7355,17 @@
     "name": "PHONE_A_MESSAGES_ACTIONS_HAVE_A_PATH",
     "chCode": "CH-7804",
     "meaning": "Phone: a message's actions have a path besides the long press (a \"Message actions\" button VoiceOver and keyboards reach, or a right click); each pushed screen is named by its title, and its back link names where it goes (\"Back to Messages\", \"Back to Chat\"). New message opens on its title; a hardware keyboard's Esc is Cancel, and focus returns to New message",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/messages.md"
+  },
+  {
+    "id": 71805,
+    "page": "P007",
+    "category": 18,
+    "item": 5,
+    "name": "NOTIFY_ANYWAY_WITHOUT_A_LONG_PRESS",
+    "chCode": "CH-7870",
+    "meaning": "Notify anyway without a long press (P-10)",
     "status": "implemented",
     "catalog": "docs/clubhouse/catalog/messages.md"
   },
@@ -8112,6 +8211,28 @@
     "name": "EVERY_READ_FAILS",
     "chCode": "CH-8214",
     "meaning": "Every read fails (phone list)",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/settings.md"
+  },
+  {
+    "id": 80643,
+    "page": "P008",
+    "category": 6,
+    "item": 43,
+    "name": "HOLD_DURING_CLASS_FAILS_TO_SAVE",
+    "chCode": "CH-8030",
+    "meaning": "Hold during class fails to save (P-10)",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/settings.md"
+  },
+  {
+    "id": 80644,
+    "page": "P008",
+    "category": 6,
+    "item": 44,
+    "name": "A_PLAYER_WITH_CLASS_STATUS_ON_OPENS",
+    "chCode": "CH-8216",
+    "meaning": "A player with class status on opens Notifications (P-10)",
     "status": "implemented",
     "catalog": "docs/clubhouse/catalog/settings.md"
   },
@@ -14512,6 +14633,28 @@
     "name": "THE_PLAYERS_CLASS_DAY_DIDNT_LOAD",
     "chCode": "CH-12270",
     "meaning": "The player's class day didn't load",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/classes.md"
+  },
+  {
+    "id": 120621,
+    "page": "P012",
+    "category": 6,
+    "item": 21,
+    "name": "DELIVER_NOW_IS_REFUSED",
+    "chCode": "CH-12077",
+    "meaning": "Deliver now is refused (the panel's Pushes during class row)",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/classes.md"
+  },
+  {
+    "id": 120622,
+    "page": "P012",
+    "category": 6,
+    "item": 22,
+    "name": "THE_PLAYERS_PUSHES_DURING_CLASS_ROW",
+    "chCode": "CH-12271",
+    "meaning": "The player's Pushes during class row",
     "status": "implemented",
     "catalog": "docs/clubhouse/catalog/classes.md"
   },

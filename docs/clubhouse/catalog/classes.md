@@ -49,6 +49,7 @@ Every write goes through `useAction`, so these belong to the shell as well: offl
 | CH-12074 | A class's "Use for class status" switch is refused | A toast "Couldn’t change class status for this class" + "Nothing was changed. Try again."; the switch goes back | `ClassDetail` | class-awareness-player.test › CH-12074 |
 | CH-12075 | Adding an exam is refused | A toast "Couldn’t add the exam" + "Nothing was changed. Try again."; the sheet stays open with what was typed | `ClassDetail`, `ExamSheet` | class-awareness-player.test › CH-12075 |
 | CH-12076 | Removing an exam is refused | A toast "Couldn’t remove the exam" + "It is still on your list. Try again." | `ClassDetail` | class-awareness-player.test › CH-12076 |
+| CH-12077 | Deliver now is refused (the panel's Pushes during class row) | A toast "Couldn’t deliver them" + "They will arrive when class ends. Try again."; the button stays | `ClassStatusPanel` | class-awareness-player.test › CH-12077 |
 
 ## 121xx Validation
 
@@ -81,6 +82,7 @@ Every write goes through `useAction`, so these belong to the shell as well: offl
 | CH-12203 | A section crashes while drawing | "The term overview couldn’t be shown." (or "Your classes", "This week’s overlaps") + "The rest of the page is fine. Try again." + Try again | `SectionBoundary classes.term`, `classes.deck`, `classes.side` | classes.test › CH-12203 |
 | CH-12204 | The reader fails or throws | "Reading the schedule didn’t finish" + "Your schedule can still be added with Paste text." + Paste text instead | `ImportSchedule` | classes.test › CH-12204 |
 | CH-12270 | The player's class day didn't load | In the Class status panel: "Class status didn’t load." + Try again. The rest of Classes is untouched | `ClassStatusPanel` | class-awareness-player.test › CH-12270 |
+| CH-12271 | The player's Pushes during class row | "Pushes during class" with "Held · Change" (or "Not held", "Off while sharing is off"); Change opens Settings > Notifications. With pushes waiting it counts them ("3 updates waiting") and offers Deliver now (44 px, the dark-safe green), which sends them, ticks, and reads "Delivered" for 2 seconds | `ClassStatusPanel` | class-awareness-player.test › CH-12271 |
 
 ## 123xx Empty
 

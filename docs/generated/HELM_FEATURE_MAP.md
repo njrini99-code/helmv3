@@ -355,7 +355,7 @@ is a second thing to keep true.
 **Clubhouse UI (flagged, off in production)** · active · criticality medium · owner product
 
 - **Behaviour:** `src/clubhouse/AGENTS.md`
-- **Code:** `src/clubhouse/**`, `src/app/clubhouse-preview/entry/**`, `src/clubhouse/__tests__/**`, `src/app/clubhouse-preview/entry/__tests__/**`
+- **Code:** `src/clubhouse/**`, `src/app/clubhouse-preview/entry/**`, `supabase/migrations/*class_awareness*.sql`, `supabase/migrations/*class_blocks*.sql`, `supabase/migrations/*push_holds*.sql`, `src/clubhouse/__tests__/**` … and 1 more in the registry
 - **Telemetry:** none. Clubhouse is a flagged alternative UI over the golf features it renders. Telemetry attributes to those features, so a Clubhouse key would double-count.
 - **Incidents:** none recorded
 - **Repair units:** none in the queue

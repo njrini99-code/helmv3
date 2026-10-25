@@ -1,6 +1,8 @@
 import type { ChClassDayPlayer, ChMyClassDay } from '../../data/class-day-shape';
 import { classLabel, classStatusFor, classStatusText, minutesOfDay, type ChClassStatus, type ChStatusTextOptions } from '../../data/class-status';
 import { clockFromMinutes } from '../../lib/clock-format';
+import { weekdayShortUtc } from '../../lib/dates';
+import { plural } from '../../lib/plural';
 
 /**
  * P-10 class awareness: what the player's Class status panel says, as pure functions of the player's own payload and
@@ -16,8 +18,6 @@ export type PanelTop = {
   /** The own class in full ("STAT 201 - Probability") for the status that has one; the player's own data. */
   detail: string | null;
 };
-
-const WEEKDAY = new Intl.DateTimeFormat('en-US', { timeZone: 'UTC', weekday: 'short' });
 
 /** The player's own state, from their own blocks whatever the sharing switch says (the switch only decides what coaches see). */
 export function panelTop(day: ChMyClassDay, now: number, o: ChStatusTextOptions): PanelTop {
@@ -46,7 +46,7 @@ export function panelTop(day: ChMyClassDay, now: number, o: ChStatusTextOptions)
     if (next) {
       const at = Date.parse(next.startsAt);
       const min = minutesOfDay(at, zone);
-      const label = [WEEKDAY.format(new Date(at)), min == null ? null : clockFromMinutes(min, o.clock)].filter(Boolean).join(' ');
+      const label = [weekdayShortUtc(at), min == null ? null : clockFromMinutes(min, o.clock)].filter(Boolean).join(' ');
       return { kind: 'exams', text: `Exams · next exam ${label}`, detail: next.label || null };
     }
     return { kind: 'exams', text: 'Exams', detail: null };
@@ -87,3 +87,31 @@ export function panelNotices(day: ChMyClassDay, classes: ReadonlyArray<{ id: str
   return out;
 }
 
+
+/**
+ * The "Pushes during class" row (P-10): whether this player's non-urgent pushes wait during class, and what is waiting now.
+ * With sharing off nothing is held (the database reads a hold as off), so the row says so instead of "Not held".
+ */
+export type PushesRow = {
+  value: 'Held' | 'Not held' | 'Off while sharing is off';
+  /** "3 updates waiting", or null when nothing is held right now. */
+  waiting: string | null;
+};
+
+export function pushesRow(day: ChMyClassDay): PushesRow {
+  const value = !day.settings.shareStatus ? 'Off while sharing is off' : day.settings.holdPushes ? 'Held' : 'Not held';
+  const n = day.held?.count ?? 0;
+  return { value, waiting: n > 0 ? `${plural(n, 'update')} waiting` : null };
+}
+
+/** "3 updates held until 11:50 AM" (the Bell's row), or null when nothing is held. The time is the player's own clock in the class zone. */
+export function heldLine(day: Pick<ChMyClassDay, 'held' | 'classTimeZone' | 'teamTimeZone'>, clock: ChStatusTextOptions['clock']): string | null {
+  const n = day.held?.count ?? 0;
+  if (n <= 0) return null;
+  const what = `${plural(n, 'update')} held`;
+  const at = day.held?.releaseAt ? Date.parse(day.held.releaseAt) : NaN;
+  if (!Number.isFinite(at)) return what;
+  const zone = day.classTimeZone || day.teamTimeZone;
+  const min = minutesOfDay(at, zone);
+  return min == null ? what : `${what} until ${clockFromMinutes(min, clock)}`;
+}

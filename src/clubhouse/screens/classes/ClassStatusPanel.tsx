@@ -1,7 +1,9 @@
 'use client';
 
+import { Icon } from '../../ui/Icon';
 import { BookOpen, ChevronRight } from 'lucide-react';
-import { useMemo, useState } from 'react';
+import Link from 'next/link';
+import { useEffect, useMemo, useState } from 'react';
 import { refetchMyClassDay, useMyClassDay } from '../../lib/use-class-day';
 import { classLabel } from '../../data/class-status';
 import { haptic } from '../../lib/haptics';
@@ -10,10 +12,11 @@ import { useChClock } from '../../lib/use-clock';
 import { Button } from '../../ui/Button';
 import { ClassStatusLine } from '../../ui/ClassStatusLine';
 import { ClassStatusRow } from '../../ui/ClassStatusRow';
+import { rebuiltHref } from '../../shell/nav';
 import { Switch } from '../../ui/Switch';
 import { useToast } from '../../ui/Toast';
 import { NoClassTodaySheet, type NoClassChoice } from './NoClassTodaySheet';
-import { coachesSee, panelNotices, panelTop } from './panel-model';
+import { coachesSee, panelNotices, panelTop, pushesRow } from './panel-model';
 import type { ChClassStatusWrites } from './class-status-writes';
 import '../../styles/class-awareness.css';
 
@@ -63,6 +66,18 @@ export function ClassStatusPanel({
     () => ({ done: '', failed: 'Couldn’t mark no class', hint: 'Nothing was changed. Try again.', code: 'CH-12071' }),
   );
   const undoNoClass = useAction('classes.noClassUndo', (ids: string[]) => writes.undoNoClass(ids), { done: '', failed: 'Couldn’t undo', hint: 'You are still marked as having no class. Try again.', code: 'CH-12072' });
+  const deliver = useAction('classes.deliver', () => writes.deliverNow(), {
+    done: '',
+    failed: 'Couldn’t deliver them',
+    hint: 'They will arrive when class ends. Try again.',
+    code: 'CH-12077',
+  });
+  const [delivered, setDelivered] = useState(false);
+  useEffect(() => {
+    if (!delivered) return;
+    const t = window.setTimeout(() => setDelivered(false), 2000);
+    return () => window.clearTimeout(t);
+  }, [delivered]);
   const tag = useAction('classes.tag', (term: string) => writes.tagUntagged(term), { done: '', failed: 'Couldn’t tag your classes', hint: 'Nothing was changed. Try again.', code: 'CH-12073' });
 
   if (!day || !opts || now == null) {
@@ -84,6 +99,15 @@ export function ClassStatusPanel({
   const see = coachesSee(day, now, opts);
   const shown = override ?? day.settings.shareStatus;
   const notices = panelNotices(day, classes);
+  const pushes = pushesRow(day);
+  const settingsHref = rebuiltHref('/golf/dashboard/settings/notifications', 'player');
+  const sendNow = async () => {
+    const r = await deliver.run();
+    if (!r.success) return;
+    haptic('success');
+    setDelivered(true);
+    await refetchMyClassDay();
+  };
 
   const flip = async (next: boolean) => {
     setOverride(next);
@@ -92,6 +116,8 @@ export function ClassStatusPanel({
       setOverride(null);
       return;
     }
+    // Turning sharing off ends holds (the database reads it that way); what is waiting goes out now.
+    if (!next) void writes.deliverNow();
     await refetchMyClassDay();
     setOverride(null);
     if (!next) {
@@ -116,6 +142,8 @@ export function ClassStatusPanel({
     if (!r.success) return;
     haptic('success');
     setSheet(false);
+    // "Anything waiting arrives now."
+    void writes.deliverNow();
     await refetchMyClassDay();
     const ids = (normalise(r).data as { ids?: string[] } | undefined)?.ids ?? [];
     toast({
@@ -136,7 +164,7 @@ export function ClassStatusPanel({
       <h2 id="ch-ca-panel-h">Class status</h2>
 
       <div className="ch-ca-panel__top">
-        <BookOpen size={14} aria-hidden="true" />
+        <Icon icon={BookOpen} size={14} />
         <div>
           <p>{top.text}</p>
           {top.detail && <span>{top.detail}</span>}
@@ -166,10 +194,31 @@ export function ClassStatusPanel({
         </div>
       </div>
 
+      <div className="ch-ca-panel__sec" data-ch-code="CH-12271">
+        <div className="ch-ca-panel__row">
+          <div>
+            <p>Pushes during class</p>
+            <span aria-live="polite">{delivered ? 'Delivered' : pushes.waiting}</span>
+          </div>
+          {settingsHref ? (
+            <Link className="ch-ca-panel__change" href={settingsHref}>
+              {pushes.value} · Change
+            </Link>
+          ) : (
+            <span className="ch-ca-panel__value">{pushes.value}</span>
+          )}
+        </div>
+        {pushes.waiting && !delivered && (
+          <Button size="sm" variant="ghost" className="ch-ca-panel__deliver" busy={deliver.pending} onClick={() => void sendNow()}>
+            Deliver now
+          </Button>
+        )}
+      </div>
+
       {day.term && (
         <button type="button" className="ch-ca-panel__link" onClick={() => setSheet(true)}>
           <span>No class today</span>
-          <ChevronRight size={14} aria-hidden="true" />
+          <Icon icon={ChevronRight} size={14} />
         </button>
       )}
 

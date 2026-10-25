@@ -1,5 +1,6 @@
 'use client';
 
+import { Icon } from '../../ui/Icon';
 import { Plus, Trash2 } from 'lucide-react';
 import { shortDay, timeRange } from '../../data/classes-shape';
 import { useChClock } from '../../lib/use-clock';
@@ -40,7 +41,7 @@ export function ClassStatusDetail({
       </div>
       <button type="button" className="ch-ca-panel__link" onClick={onAddExam}>
         <span>Add an exam</span>
-        <Plus size={14} aria-hidden="true" />
+        <Icon icon={Plus} size={14} />
       </button>
       {exams.length > 0 && (
         <ul className="ch-ca-breaks" aria-label="Exams">

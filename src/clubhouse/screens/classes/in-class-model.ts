@@ -11,6 +11,7 @@ import {
   type ChStatusTextOptions,
 } from '../../data/class-status';
 import { clockFromMinutes } from '../../lib/clock-format';
+import { weekdayShortUtc } from '../../lib/dates';
 import { plural } from '../../lib/plural';
 import { shortDate } from '../home/home-line';
 
@@ -80,7 +81,7 @@ function islandMeta(island: ChIsland, now: number, o: ChStatusTextOptions): stri
 
 function travelMeta(p: ChClassDayPlayer): string {
   const where = p.away?.destination ?? null;
-  const back = p.away?.returnDate ? `back ${new Intl.DateTimeFormat('en-US', { timeZone: 'UTC', weekday: 'short' }).format(new Date(`${p.away.returnDate}T12:00:00Z`))}` : null;
+  const back = p.away?.returnDate ? `back ${weekdayShortUtc(new Date(`${p.away.returnDate}T12:00:00Z`))}` : null;
   return [where, back].filter(Boolean).join(' · ') || 'Travelling';
 }
 

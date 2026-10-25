@@ -3140,3 +3140,84 @@ html[data-fw-theme='dark'] .ch-ms-sec.is-ann {
   content-visibility: auto;
   contain-intrinsic-size: auto 60px;
 }
+
+/* P-10 Notify anyway: the send cluster. With nothing to offer none of this is drawn. */
+.ch-ms-send {
+  -webkit-touch-callout: none;
+  user-select: none;
+}
+.ch-ms-send-split {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  gap: var(--ch-space-1);
+}
+.ch-ms-send__more {
+  display: grid;
+  flex: none;
+  place-items: center;
+  width: 24px;
+  height: 36px;
+  padding: 0;
+  border: 0;
+  border-left: var(--ch-hairline-w) solid var(--ch-border-hairline);
+  border-radius: var(--ch-radius-md);
+  background: none;
+  color: var(--ch-text-secondary);
+  cursor: pointer;
+}
+.ch-ms-send__more:disabled {
+  color: var(--ch-text-disabled);
+  cursor: default;
+}
+.ch-ms-send__more:focus-visible {
+  outline: 2px solid var(--ch-border-focus);
+  outline-offset: 2px;
+}
+@media (hover: hover) {
+  .ch-ms-send__more:not(:disabled):hover {
+    background: var(--ch-bg-inset);
+  }
+}
+@media (pointer: coarse) {
+  .ch-ms-send__more {
+    width: 44px;
+    height: 44px;
+  }
+}
+
+/* P-10 group threads: "4 in class now" directly above the composer. A quiet row, no fill, no border. */
+.ch-ms-classline-wrap {
+  position: relative;
+  display: flex;
+  align-items: center;
+  min-height: 28px;
+  padding: 0 var(--ch-space-2);
+}
+.ch-ms-classline {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--ch-space-1);
+  min-height: 28px;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--ch-text-secondary);
+  font: var(--ch-type-13);
+  cursor: pointer;
+}
+.ch-ms-classline:focus-visible {
+  outline: 2px solid var(--ch-border-focus);
+  outline-offset: 2px;
+  border-radius: var(--ch-radius-md);
+}
+@media (hover: hover) {
+  .ch-ms-classline:hover {
+    color: var(--ch-text-primary);
+  }
+}
+@media (pointer: coarse) {
+  .ch-ms-classline {
+    min-height: 44px;
+  }
+}

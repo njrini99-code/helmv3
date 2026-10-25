@@ -11,7 +11,19 @@ import { CH_POP, chTween } from '../lib/motion';
 import { useChReducedMotion } from '../lib/reduced-motion';
 
 export type MenuItem =
-  | { kind?: 'item'; label: string; icon?: LucideIcon; onSelect?: () => void; href?: string; danger?: boolean; checked?: boolean }
+  | {
+      kind?: 'item';
+      label: string;
+      icon?: LucideIcon;
+      onSelect?: () => void;
+      href?: string;
+      danger?: boolean;
+      checked?: boolean;
+      /** A second, quieter line under the label (the row grows to fit it). */
+      caption?: string;
+      /** A keyboard shortcut, right-aligned. */
+      shortcut?: string;
+    }
   | { kind: 'separator' };
 
 const W = 232;
@@ -27,15 +39,31 @@ export function Menu({
   items,
   align = 'end',
   label,
+  width = W,
+  open: controlledOpen,
+  onOpenChange,
 }: {
   trigger: (props: { ref: (el: HTMLButtonElement | null) => void; onClick: () => void; 'aria-expanded': boolean; 'aria-haspopup': 'menu'; 'aria-controls': string }) => ReactNode;
   items: MenuItem[];
   align?: 'start' | 'end';
   label: string;
+  /** The list's width in pixels (232 by default). */
+  width?: number;
+  /** Controlled: the caller opens it (a long press) and hears when it closes. Left out, the trigger's click toggles it. */
+  open?: boolean;
+  onOpenChange?: (open: boolean) => void;
 }) {
   const id = useId();
   const reduced = useChReducedMotion();
-  const [open, setOpen] = useState(false);
+  const [innerOpen, setInnerOpen] = useState(false);
+  const open = controlledOpen ?? innerOpen;
+  const setOpen = useCallback(
+    (next: boolean) => {
+      setInnerOpen(next);
+      onOpenChange?.(next);
+    },
+    [onOpenChange],
+  );
   const [pos, setPos] = useState<{ left: number; top: number; maxHeight: number; origin: string } | null>(null);
   const btn = useRef<HTMLButtonElement | null>(null);
   const list = useRef<HTMLDivElement | null>(null);
@@ -43,7 +71,7 @@ export function Menu({
   const close = useCallback((focus = true) => {
     setOpen(false);
     if (focus) btn.current?.focus();
-  }, []);
+  }, [setOpen]);
 
   useLayoutEffect(() => {
     if (!open || !btn.current) return;
@@ -54,8 +82,8 @@ export function Menu({
       const viewport = window.visualViewport;
       const bottom = Math.min(window.innerHeight - keyboard, viewport ? viewport.offsetTop + viewport.height : window.innerHeight);
       const h = list.current?.scrollHeight || list.current?.offsetHeight || 200;
-      let left = align === 'end' ? r.right - W : r.left;
-      left = Math.max(8, Math.min(left, window.innerWidth - W - 8));
+      let left = align === 'end' ? r.right - width : r.left;
+      left = Math.max(8, Math.min(left, window.innerWidth - width - 8));
       const above = Math.max(0, Math.min(r.top, bottom - 8) - 14);
       const below = Math.max(0, bottom - Math.max(8, r.bottom) - 14);
       const up = h > below && above > below;
@@ -85,7 +113,7 @@ export function Menu({
       window.removeEventListener('resize', place);
       document.removeEventListener('scroll', onScroll, true);
     };
-  }, [open, align, close]);
+  }, [open, align, width, close]);
 
   useEffect(() => {
     if (!open) return;
@@ -118,7 +146,7 @@ export function Menu({
         ref: (el) => {
           btn.current = el;
         },
-        onClick: () => setOpen((o) => !o),
+        onClick: () => setOpen(!open),
         'aria-expanded': open,
         'aria-haspopup': 'menu',
         'aria-controls': id,
@@ -134,7 +162,7 @@ export function Menu({
                 aria-label={label}
                 className="ch-menu ch-popover"
                 data-ui="clubhouse"
-                style={{ left: pos?.left ?? -9999, top: pos?.top, maxHeight: pos?.maxHeight, width: W, transformOrigin: pos?.origin }}
+                style={{ left: pos?.left ?? -9999, top: pos?.top, maxHeight: pos?.maxHeight, width, transformOrigin: pos?.origin }}
                 initial={reduced ? { opacity: 0 } : CH_POP.initial}
                 animate={reduced ? { opacity: 1 } : CH_POP.animate}
                 exit={reduced ? { opacity: 0 } : CH_POP.exit}
@@ -182,10 +210,18 @@ export function MenuItems({ items, onClose }: { items: MenuItem[]; onClose: (foc
         const content = (
           <>
             {it.icon && <Icon icon={it.icon} size={15} />}
-            <span>{it.label}</span>
+            {it.caption ? (
+              <span className="ch-menu__text">
+                <span>{it.label}</span>
+                <span className="ch-menu__caption">{it.caption}</span>
+              </span>
+            ) : (
+              <span>{it.label}</span>
+            )}
+            {it.shortcut && <span className="ch-menu__shortcut">{it.shortcut}</span>}
           </>
         );
-        const cls = 'ch-menu__item' + (it.danger ? ' is-danger' : '');
+        const cls = 'ch-menu__item' + (it.danger ? ' is-danger' : '') + (it.caption ? ' has-caption' : '');
         const role = it.checked !== undefined ? 'menuitemradio' : 'menuitem';
         if (it.href) {
           return (

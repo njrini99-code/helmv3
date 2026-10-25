@@ -2,6 +2,7 @@ import type { ChClassDay } from '../../data/class-day-shape';
 import type { ChScheduleCoverage } from '../../data/class-day';
 import { HOME_LINE_FROM_HOUR, HOME_LINE_UNTIL_HOUR, minutesOfDay, statusClock, teamNow, windowRange, type ChStatusTextOptions } from '../../data/class-status';
 import { clockFromMinutes } from '../../lib/clock-format';
+import { weekdayMonthDay } from '../../lib/dates';
 import { plural } from '../../lib/plural';
 
 /**
@@ -22,13 +23,8 @@ export type HomeLine = {
   label: string;
 };
 
-const DATE = new Intl.DateTimeFormat('en-US', { timeZone: 'UTC', weekday: 'short', month: 'short', day: 'numeric' });
-
 /** "Mon, Aug 24" from YYYY-MM-DD. */
-export function shortDate(iso: string): string {
-  const d = new Date(`${iso}T12:00:00Z`);
-  return Number.isNaN(d.getTime()) ? iso : DATE.format(d);
-}
+export const shortDate = weekdayMonthDay;
 
 const isWeekend = (iso: string) => {
   const dow = new Date(`${iso}T12:00:00Z`).getUTCDay();

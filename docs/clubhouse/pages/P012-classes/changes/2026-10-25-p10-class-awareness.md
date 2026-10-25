@@ -3,8 +3,8 @@
 ```text
 Design package: P-10 Class awareness (plan 2026-10-24, changelog 2026-10-25)
 PR/commit: branch claude/clubhouse-class-awareness
-Contract IDs: 120517-120519, 120613-120620, 121105, 121807 (new, CH-12070..12076, 12170..12172, 12270, 12570, 12870)
-Actions: none server-side; the player's own RLS-scoped writes (class-status-writes.ts)
+Contract IDs: new CH-12070..12077, 12170..12172, 12270, 12271, 12570, 12870 (Bridge IDs in CONTRACT.md)
+Actions: releaseMyHeldPushes (Deliver now, a server action); the player's own RLS-scoped writes (class-status-writes.ts)
 Data impact: reads golf_my_class_day; writes golf_player_class_settings, golf_class_exceptions and golf_player_classes.status_enabled / semester. loadClasses selects status_enabled only with class_awareness_v1 on, and repeats the read without it if the column is missing
 Held items: the migrations; with the flag off the page is unchanged
 ```
@@ -19,10 +19,9 @@ Held items: the migrations; with the flag off the page is unchanged
 - With the flag on, the "What your coach sees" note no longer says teammates don't see the classes (they can read them on the team calendar), and the empty state says coaches will see when the player is in class.
 - The `.is-team` week cells no longer use insets on both sides; they take a full hairline ring and a quiet fill (plan 4.0).
 
-### Not here
-
-- "Pushes during class" and Deliver now arrive with the holds (a later slice): the panel has no row for them yet.
+- A "Pushes during class" row (CH-12271): "Held · Change" (or "Not held", "Off while sharing is off"), where Change opens Settings > Notifications. With pushes waiting it counts them and offers Deliver now (44 px, the dark-safe green `--ch-green-600`, never `--ch-accent` for text); it sends them at once, ticks, and reads "Delivered" for 2 seconds. A refusal toasts CH-12077. Turning sharing off, and marking No class today, also send what is waiting now.
 
 ### Verification
 
+- The held-pushes row is in class-awareness-player.test.tsx (CH-12077, CH-12271); the words are in panel-model.test.ts and class-awareness-holds.test.tsx.
 - panel-model.test.ts, exam-form.test.ts, class-awareness-player.test.tsx, class-awareness-writes.test.ts, class-awareness-loader.test.ts.

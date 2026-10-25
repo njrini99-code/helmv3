@@ -1,7 +1,7 @@
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { LazyMotion, domAnimation } from 'motion/react';
-import { act, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
+import { act, cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { PrefsByCategory } from '@/lib/coachhelm/v3/notifications/router';
@@ -20,7 +20,24 @@ vi.mock('@sentry/nextjs', () => ({ getFeedback: () => undefined, addBreadcrumb: 
 const router = vi.hoisted(() => ({ push: vi.fn(), refresh: vi.fn(), back: vi.fn() }));
 vi.mock('next/navigation', () => ({ useRouter: () => router }));
 
+// P-10 Hold during class: the player's class day and its writes are fakes; with no day (the default) the row is not drawn.
+const heldClass = vi.hoisted(() => ({
+  day: null as import('../data/class-day-shape').ChMyClassDay | null,
+  refetchMine: vi.fn(async () => {}),
+  setHold: vi.fn(async () => ({ success: true }) as { success: boolean; error?: string }),
+  deliverNow: vi.fn(async () => ({ success: true, data: { released: 0 } })),
+}));
+vi.mock('../lib/use-class-day', () => ({
+  useMyClassDay: (opts: { enabled?: boolean } = {}) => ({ day: opts.enabled === false ? null : heldClass.day, status: 'ready', now: Date.parse('2026-10-14T14:30:00Z'), refetch: vi.fn() }),
+  refetchMyClassDay: heldClass.refetchMine,
+}));
+vi.mock('../screens/classes/class-status-writes', async (orig) => ({
+  ...(await orig<object>()),
+  createLiveClassStatusWrites: () => heldClass,
+}));
+
 import { ToastProvider } from '../ui/Toast';
+import { ClubhouseMarker } from '../shell/context';
 import { PhoneChromeProvider, usePhoneChromeState } from '../shell/phone-chrome';
 import { SettingsView } from '../screens/settings/SettingsView';
 import { SettingsSkeleton } from '../screens/settings/SettingsSkeleton';
@@ -2831,3 +2848,112 @@ describe('Settings · keyboard (B11)', () => {
     expect(document.activeElement).toBe(items[0]);
   });
 });
+
+// ── P-10 class awareness: a player's one quiet row ──
+
+describe('Settings · P-10 Hold during class (CH-8030, CH-8216)', () => {
+  beforeEach(() => {
+    heldClass.day = day();
+    heldClass.refetchMine.mockClear();
+    heldClass.setHold.mockClear().mockResolvedValue({ success: true });
+    heldClass.deliverNow.mockClear();
+  });
+  afterEach(() => {
+    heldClass.day = null;
+  });
+  function SlotHost() {
+    const { setSlot } = usePhoneChromeState();
+    return <div ref={setSlot} data-testid="phone-top-held" />;
+  }
+  const show = (data: ChSettingsData, aware = true, opened = false) =>
+    render(
+      <LazyMotion features={domAnimation}>
+        <ToastProvider>
+          <PhoneChromeProvider>
+            <ClubhouseMarker role={data.role} classAwareness={aware}>
+              <div className="ch-root" data-ui="clubhouse">
+                <SlotHost />
+                <SettingsView data={data} writes={makeWrites()} device={makeDevice()} initialSection="notifications" opened={opened} onDeleted={vi.fn()} />
+              </div>
+            </ClubhouseMarker>
+          </PhoneChromeProvider>
+        </ToastProvider>
+      </LazyMotion>,
+    );
+  const player = () => ({ ...playerData(true), playerId: 'p1', teamId: 't1' });
+  const day = (over: Partial<import('../data/class-day-shape').ChMyClassDay> = {}): import('../data/class-day-shape').ChMyClassDay => ({
+    on: '2026-10-14', teamId: 't1', teamTimeZone: 'America/New_York', classTimeZone: 'America/New_York',
+    term: { id: 't', label: 'Fall 2026', classesStart: '2026-08-24', classesEnd: '2026-12-11', examsEnd: '2026-12-18', timeZone: 'America/New_York', phase: 'classes' },
+    settings: { shareStatus: true, holdPushes: true }, player: null, blocks: [], untaggedClasses: 0, unusableClasses: [], held: null, fetchedAt: Date.now(), ...over,
+  });
+  const sw = () => screen.getByRole('switch', { name: 'Hold during class' }) as HTMLInputElement;
+
+  it('CH-8216 a player sees one quiet row in its own card, on by default, with the plain help', () => {
+    show(player());
+    expect(code('CH-8216')).not.toBeNull();
+    expect(screen.getByRole('region', { name: 'During class' })).toBeTruthy();
+    expect(sw().checked).toBe(true);
+    expect(code('CH-8216')!.textContent).toContain('Non-urgent pushes wait until class ends, then arrive as one. Urgent ones still come through.');
+  });
+
+  it('is not drawn for a coach, with the flag off, or while the class day is not there', () => {
+    show(coachData());
+    expect(code('CH-8216')).toBeNull();
+    cleanup();
+    show(player(), false);
+    expect(code('CH-8216')).toBeNull();
+    cleanup();
+    heldClass.day = null;
+    show(player());
+    expect(code('CH-8216')).toBeNull();
+  });
+
+  it('turning it off writes hold_pushes, sends what is waiting now, and refreshes the day', async () => {
+    show(player());
+    await userEvent.click(sw());
+    await waitFor(() => expect(heldClass.setHold).toHaveBeenCalledWith(false));
+    await waitFor(() => expect(heldClass.deliverNow).toHaveBeenCalledTimes(1));
+    await waitFor(() => expect(heldClass.refetchMine).toHaveBeenCalled());
+  });
+
+  it('turning it on writes without sending anything', async () => {
+    heldClass.day = day({ settings: { shareStatus: true, holdPushes: false } });
+    show(player());
+    expect(sw().checked).toBe(false);
+    await userEvent.click(sw());
+    await waitFor(() => expect(heldClass.setHold).toHaveBeenCalledWith(true));
+    expect(heldClass.deliverNow).not.toHaveBeenCalled();
+  });
+
+  it('is off and disabled while sharing is off, and says how to turn it back on', () => {
+    heldClass.day = day({ settings: { shareStatus: false, holdPushes: true } });
+    show(player());
+    expect(sw().checked).toBe(false);
+    expect(sw().disabled).toBe(true);
+    expect(code('CH-8216')!.textContent).toContain('Turn on class status sharing in Classes to hold pushes.');
+  });
+
+  it('CH-8030 a refused write puts the switch back and says so', async () => {
+    heldClass.setHold.mockResolvedValue({ success: false, error: 'nope' });
+    show(player());
+    await userEvent.click(sw());
+    await expectCode('CH-8030', /Couldn’t change Hold during class/);
+    await waitFor(() => expect(sw().checked).toBe(true));
+    expect(heldClass.deliverNow).not.toHaveBeenCalled();
+  });
+
+  it('on the phone it is its own group, away from Quiet mode', () => {
+    const real = window.matchMedia;
+    window.matchMedia = ((q: string) => ({ matches: q === '(max-width: 820px)', media: q, addEventListener: () => {}, removeEventListener: () => {}, addListener: () => {}, removeListener: () => {}, onchange: null, dispatchEvent: () => false })) as never;
+    window.history.replaceState(null, '', '/golf/dashboard/settings');
+    show(player(), true, true);
+    const group = code('CH-8216');
+    expect(group).not.toBeNull();
+    expect(within(group as HTMLElement).getByRole('switch', { name: 'Hold during class' })).toBeTruthy();
+    expect(group!.textContent).toContain('During class');
+    expect(group!.textContent).not.toContain('Quiet mode');
+    window.matchMedia = real;
+    window.history.replaceState(null, '', '/');
+  });
+});
+

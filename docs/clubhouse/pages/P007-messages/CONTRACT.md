@@ -94,6 +94,7 @@ the rail version stays until this page's v2 pass.
 | 70407 | CH-7307 | `EVERYONE_ON_THE_TEAM_IS_ALREADY_IN` | Everyone on the team is already in the group (Add) |
 | 70408 | CH-7308 | `SIGNED_IN_WITH_NO_TEAM` | Signed in with no team (coach or player) |
 | 70409 | CH-7309 | `NOTHING_AT_ALL_YET_NO_CONVERSATION_AND` | Nothing at all yet: no conversation and no announcement (D-71) |
+| 70410 | CH-7370 | `NOTIFY_ANYWAY_IS_OFFERED_A_COACH_A` | Notify anyway is offered: a coach, a conversation of their own team, a recipient in class with pushes held (P-10) |
 
 ## 05 — Validation
 
@@ -161,6 +162,10 @@ do; every section that fails to load has its own notice with Try again (70617 to
 | 70636 | CH-7024 | `REMOVING_SOMEONE_FROM_A_GROUP_FAILS` | Removing someone from a group fails (the group's creator, desktop or phone Details › Remove) |
 | 70637 | CH-7025 | `DELETING_A_CONVERSATION_FROM_YOUR_INBOX_FAILS` | Deleting a conversation from your inbox fails |
 | 70638 | CH-7026 | `MARKING_A_CONVERSATION_READ_OR_UNREAD_FROM` | Marking a conversation read or unread from its row (menu or swipe) fails |
+| 70639 | CH-7270 | `A_COACH_IN_A_1_1_WITH` | A coach, in a 1:1 with a player who is in a class or an exam right now and whose pushes are held (P-10) |
+| 70640 | CH-7271 | `A_MESSAGE_SENT_WITH_NOTIFY_ANYWAY_ONCE` | A message sent with Notify anyway, once a push really reached a device (P-10) |
+| 70641 | CH-7272 | `A_COACH_IN_A_GROUP_OF_THEIR` | A coach, in a group of their own team with at least one player in a class or an exam (P-10) |
+| 70642 | CH-7273 | `A_COACH_OPENS_DETAILS_ON_A_1` | A coach opens Details on a 1:1 with a player of their team (P-10) |
 
 ## 07 — Network / offline
 
@@ -333,6 +338,7 @@ CH-1704, 11705 CH-1705, 11706 CH-1706, 11707 CH-1707.
 | 71702 | CH-7702 | `A_CHANGE_LANDS` | A change lands (edited, deleted, muted, group created; acknowledging uses the success pattern) |
 | 71703 | CH-7703 | `PICKING_A_REACTION_A_FILTER_OR_A` | Picking a reaction, a filter or a conversation |
 | 71704 | CH-7704 | `A_LONG_PRESS_ON_A_MESSAGE_2` | A long press on a message (phone) |
+| 71705 | CH-7770 | `THE_HOLD_ON_SEND_REACHES_450_MS` | The hold on Send reaches 450 ms (phone, Notify anyway offered) |
 
 From the shell (P001): 11701 CH-1701, 11702 CH-1702, 11703 CH-1703,
 11704 CH-1704, 11705 CH-1705, 11706 CH-1706, 11707 CH-1707, 11708 CH-1708,
@@ -362,6 +368,7 @@ CH-1842, 11825 CH-1816.
 | 71802 | CH-7802 | `SEARCH_RESULTS_ARE_ANNOUNCED_AS_THEY_ARRIVE` | Search results are announced as they arrive; desktop Enter sends and Shift+Enter adds a line; phone Return adds a line and Send sends. Desktop React: the reaction bar takes focus on its first reaction, ← → Home End move along it, Esc or a pick returns focus to React, Tab moves on |
 | 71803 | CH-7803 | `NO_AXE_VIOLATIONS_IN_ANY_PREVIEW_STATE` | No axe violations in any preview state, 1280px and 390px |
 | 71804 | CH-7804 | `PHONE_A_MESSAGES_ACTIONS_HAVE_A_PATH` | Phone: a message's actions have a path besides the long press (a "Message actions" button VoiceOver and keyboards reach, or a right click); each pushed screen is named by its title, and its back link names where it goes ("Back to Messages", "Back to Chat"). New message opens on its title; a hardware keyboard's Esc is Cancel, and focus returns to New message |
+| 71805 | CH-7870 | `NOTIFY_ANYWAY_WITHOUT_A_LONG_PRESS` | Notify anyway without a long press (P-10) |
 
 From the shell (P001): 11801 CH-1801, 11802 CH-1802, 11803 CH-1803,
 11804 CH-1804, 11805 CH-1805, 11806 CH-1806, 11807 CH-1807, 11808 CH-1808,

@@ -72,16 +72,17 @@ describe('sendGolfMessage with Notify anyway', () => {
     expect(fanout.notify).toHaveBeenCalledWith(CONVERSATION, USER, CONTENT, { notifyAnyway: true, messageId: MESSAGE });
   });
 
-  it('when the trigger reset the flag (not a coach of the conversation’s team) the fan-out is told nothing: the push goes out as it always would', async () => {
+  it('when the trigger reset the flag (not a coach of the conversation’s team) the fan-out is told it was not flagged: the push goes out as it always would', async () => {
     const { inserts } = await send({ notify_anyway: false }, { notifyAnyway: true });
     expect(messageInsert(inserts)).toMatchObject({ notify_anyway: true });
-    expect(fanout.notify).toHaveBeenCalledWith(CONVERSATION, USER, CONTENT, undefined);
+    // With the flag on the fan-out learns the message id (so a held push can be dropped if the player reads it first), never a bypass.
+    expect(fanout.notify).toHaveBeenCalledWith(CONVERSATION, USER, CONTENT, { notifyAnyway: false, messageId: MESSAGE });
   });
 
   it('a send that did not ask never names the column', async () => {
     const { inserts } = await send({});
     expect(messageInsert(inserts)).not.toHaveProperty('notify_anyway');
-    expect(fanout.notify).toHaveBeenCalledWith(CONVERSATION, USER, CONTENT, undefined);
+    expect(fanout.notify).toHaveBeenCalledWith(CONVERSATION, USER, CONTENT, { notifyAnyway: false, messageId: MESSAGE });
   });
 
   it('with the flag off an asked-for flag is ignored, so no send depends on a held migration', async () => {
@@ -95,6 +96,6 @@ describe('sendGolfMessage with Notify anyway', () => {
   it('an idempotent duplicate carries no stored flag: the fan-out runs as a plain message', async () => {
     const { result } = await send('duplicate', { notifyAnyway: true });
     expect(result.success).toBe(true);
-    expect(fanout.notify).toHaveBeenCalledWith(CONVERSATION, USER, CONTENT, undefined);
+    expect(fanout.notify).toHaveBeenCalledWith(CONVERSATION, USER, CONTENT, { notifyAnyway: false, messageId: MESSAGE });
   });
 });

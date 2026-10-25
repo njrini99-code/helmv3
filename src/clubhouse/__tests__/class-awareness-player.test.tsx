@@ -7,7 +7,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
  * Class awareness (P-10), player side: the Class status panel on Classes (what they are doing now, what coaches see,
  * the sharing switch, No class today, the quiet notices) and the class detail's status switch and exams. Every new
  * Classes code in docs/clubhouse/catalog/classes.md (CH-12070 to CH-12076, CH-12170 to CH-12172, CH-12270, CH-12570,
- * CH-12870), found by its number.
+ * CH-12870), found by its number; and the held-pushes row on the panel (CH-12077, CH-12271).
  */
 
 const hapticSpy = vi.hoisted(() => vi.fn());
@@ -88,6 +88,8 @@ function statusWrites(over: Partial<ChClassStatusWrites> = {}) {
   const exams: ChExam[] = [];
   const w = {
     setShare: vi.fn(async () => ({ success: true })),
+    setHold: vi.fn(async () => ({ success: true })),
+    deliverNow: vi.fn(async () => ({ success: true, data: { released: 0 } })),
     markNoClass: vi.fn(async () => ({ success: true, data: { ids: ['x1'] } })),
     undoNoClass: vi.fn(async () => ({ success: true })),
     setClassStatusEnabled: vi.fn(async () => ({ success: true })),
@@ -202,6 +204,8 @@ describe('The sharing switch', () => {
     const { status } = show();
     await userEvent.click(within(panel()!).getByRole('switch', { name: 'Share class status with coaches' }));
     await waitFor(() => expect(status.setShare).toHaveBeenCalledWith(false));
+    // Sharing off ends holds: what is waiting goes out now.
+    await waitFor(() => expect(status.deliverNow).toHaveBeenCalledTimes(1));
     await waitFor(() => expect(live.refetchMine).toHaveBeenCalled());
     expect(await screen.findByText('Coaches no longer see when you’re in class')).toBeTruthy();
     await userEvent.click(screen.getByRole('button', { name: 'Undo' }));
@@ -216,6 +220,49 @@ describe('The sharing switch', () => {
     await waitFor(() => expect(sw.checked).toBe(true));
     expect(status.setShare).toHaveBeenCalledTimes(1);
     expect(screen.queryByText('Coaches no longer see when you’re in class')).toBeNull();
+  });
+});
+
+describe('Pushes during class', () => {
+  const row = () => document.querySelector('[data-ch-code="CH-12271"]') as HTMLElement | null;
+
+  it('CH-12271 says whether pushes are held, and where to change it', () => {
+    show();
+    expect(row()!.textContent).toContain('Pushes during class');
+    const change = within(row()!).getByRole('link', { name: 'Held · Change' });
+    expect(change.getAttribute('href')).toBe('/golf/dashboard/settings/notifications');
+    expect(within(row()!).queryByRole('button', { name: 'Deliver now' })).toBeNull();
+  });
+
+  it('says Not held when the player turned holds off, and Off while sharing is off', () => {
+    live.day = myDay({ settings: { shareStatus: true, holdPushes: false } });
+    show();
+    expect(within(row()!).getByRole('link', { name: 'Not held · Change' })).toBeTruthy();
+    cleanup();
+    live.day = myDay({ settings: { shareStatus: false, holdPushes: true }, player: me({ tracked: false }) });
+    show();
+    expect(within(row()!).getByRole('link', { name: 'Off while sharing is off · Change' })).toBeTruthy();
+  });
+
+  it('with pushes waiting it counts them; Deliver now sends them, ticks, and reads Delivered', async () => {
+    live.day = myDay({ held: { count: 3, releaseAt: z('15:25') } });
+    const { status } = show();
+    expect(row()!.textContent).toContain('3 updates waiting');
+    await userEvent.click(within(row()!).getByRole('button', { name: 'Deliver now' }));
+    await waitFor(() => expect(status.deliverNow).toHaveBeenCalledTimes(1));
+    await waitFor(() => expect(row()!.textContent).toContain('Delivered'));
+    expect(hapticSpy).toHaveBeenCalledWith('success');
+    expect(live.refetchMine).toHaveBeenCalled();
+    expect(within(row()!).queryByRole('button', { name: 'Deliver now' })).toBeNull();
+  });
+
+  it('CH-12077 a refused Deliver now says so and keeps the button', async () => {
+    live.day = myDay({ held: { count: 1, releaseAt: z('15:25') } });
+    show({ status: statusWrites({ deliverNow: vi.fn(async () => ({ success: false, error: 'nope' })) }) });
+    expect(row()!.textContent).toContain('1 update waiting');
+    await userEvent.click(within(row()!).getByRole('button', { name: 'Deliver now' }));
+    await expectCode('CH-12077', /Couldn’t deliver them/);
+    expect(within(row()!).getByRole('button', { name: 'Deliver now' })).toBeTruthy();
   });
 });
 
@@ -240,6 +287,8 @@ describe('No class today', () => {
     await userEvent.click(within(dialog).getByRole('button', { name: 'Mark no class' }));
     await waitFor(() => expect(status.markNoClass).toHaveBeenCalledWith({ on: TODAY, classId: null }));
     expect(hapticSpy).toHaveBeenCalledWith('success');
+    // "Anything waiting arrives now."
+    await waitFor(() => expect(status.deliverNow).toHaveBeenCalledTimes(1));
     expect(await screen.findByText('No classes today')).toBeTruthy();
     await userEvent.click(screen.getByRole('button', { name: 'Undo' }));
     await waitFor(() => expect(status.undoNoClass).toHaveBeenCalledWith(['x1']));

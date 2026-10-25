@@ -1883,7 +1883,7 @@ describe('Messages · wave 5 feedback', () => {
 });
 
 /** P-10 Notify anyway: the "Notified anyway" caption keys on the delivery stamp, never on the coach's request. */
-describe('Messages: Notified anyway caption', () => {
+describe('Messages: CH-7271 Notified anyway caption', () => {
   const dm = { id: 'dm', title: null, participant_ids: ['me', 'jonah'], participant_count: 2, unread_count: 0, other_participant: { id: 'jonah', name: 'Jonah Okafor' }, last_message: null, creator_id: 'me' };
   const stamped = { ...mine, notify_anyway: true, notify_anyway_pushed_at: '2026-10-14T18:00:02Z' };
   const caption = () => document.querySelector('.ch-ms-msg__na');

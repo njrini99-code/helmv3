@@ -17,6 +17,8 @@ import { createClient } from '@/lib/supabase/server';
 import { withAdminObserved } from '@/lib/admin/observed-action';
 import { logServerError } from '@/lib/server-error-logger';
 import { fromUntyped } from '@/lib/supabase/untyped';
+import { createAdminClient } from '@/lib/supabase/admin';
+import { isFlagEnabled } from '@/lib/flags/is-enabled';
 
 type Result<T = undefined> = { success: true; data?: T } | { success: false; error: string };
 
@@ -155,6 +157,39 @@ async function removeTeamBreakImpl(input: { id: string; teamId: string }): Promi
     await logServerError(`removeTeamBreak threw: ${err instanceof Error ? err.message : String(err)}`, { action: 'classes.removeTeamBreak', teamId: parsed.data.teamId });
     return { success: false, error: 'Could not remove it. Try again' };
   }
+}
+
+/**
+ * Deliver now (the player's own): makes every push held for their class due this second, then sends them (one summary, or the single push
+ * as itself) through the same release the minute job runs. The user is the signed-in one, never an argument. `dueOnly` is false on purpose:
+ * `golf_push_holds_release_mine` moves a row's release to now() but never before one second after it was held, so a due-only claim could
+ * miss a row held a moment ago. Nothing held (or the migration not applied) answers `released: 0`, which is not an error.
+ */
+async function releaseMyHeldPushesImpl(): Promise<Result<{ released: number }>> {
+  if (!isFlagEnabled('class_awareness_v1')) return { success: true, data: { released: 0 } };
+  try {
+    const { supabase, user: u } = await user();
+    if (!u) return { success: false, error: 'You must be signed in' };
+    const { error } = await (supabase as unknown as { rpc: (fn: string) => PromiseLike<{ error: { code?: string; message?: string } | null }> }).rpc('golf_push_holds_release_mine');
+    if (error) {
+      if (MISSING.has(String(error.code))) return { success: true, data: { released: 0 } };
+      await logServerError(`releaseMyHeldPushes failed: ${error.message}`, { action: 'classes.releaseMyHeldPushes' });
+      return { success: false, error: 'Could not deliver them. Try again' };
+    }
+    const { releaseHeldForUser } = await import('@/lib/notifications/class-hold');
+    const tally = await releaseHeldForUser(createAdminClient(), u.id, { dueOnly: false });
+    return { success: true, data: { released: tally.rows } };
+  } catch (err) {
+    await logServerError(`releaseMyHeldPushes threw: ${err instanceof Error ? err.message : String(err)}`, { action: 'classes.releaseMyHeldPushes' });
+    return { success: false, error: 'Could not deliver them. Try again' };
+  }
+}
+
+const observedReleaseMyHeldPushes = withAdminObserved('releaseMyHeldPushes', { demoSafe: true, sport: 'golf', feature: 'academics_classes', observeSoftFailures: false }, releaseMyHeldPushesImpl);
+
+/** Deliver now: send what was held for the signed-in player's class. */
+export async function releaseMyHeldPushes(): Promise<Result<{ released: number }>> {
+  return observedReleaseMyHeldPushes();
 }
 
 const observedSaveTeamTerm = withAdminObserved('saveTeamTerm', { demoSafe: true, sport: 'golf', feature: 'academics_classes', observeSoftFailures: false, contextFrom: ([i]) => ({ teamId: i.teamId }) }, saveTeamTermImpl);

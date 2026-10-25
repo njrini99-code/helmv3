@@ -107,18 +107,18 @@ Every Bridge ID (D-68: namespace, two-digit category, two-digit item), its catal
 
 | Page | 01 | 02 | 03 | 04 | 05 | 06 | 07 | 08 | 09 | 10 | 11 | 12 | 13 | 14 | 15 | 16 | 17 | 18 | 19 | 20 | 21 | 22 | 23 | 24 | 25 | Total |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| P001 | 3 | 2 | 1 | 6 |  | 14 | 6 | 4 | 1 |  |  |  | 1 | 2 |  | 22 | 9 | 26 | 1 | 3 | 1 | 3 | 1 | 1 |  | 107 |
+| P001 | 3 | 2 | 1 | 6 |  | 16 | 6 | 4 | 1 |  |  |  | 1 | 2 |  | 22 | 9 | 26 | 1 | 3 | 1 | 3 | 1 | 1 |  | 109 |
 | P002 | 5 | 2 | 1 | 16 | 8 | 26 | 1 | 6 |  |  | 1 |  |  | 2 |  | 3 | 3 | 8 | 1 |  | 1 |  | 1 | 1 |  | 86 |
 | P003 | 2 | 3 | 3 | 9 | 4 | 24 | 2 | 6 | 1 |  | 2 | 3 | 1 | 3 |  | 4 | 4 | 10 | 1 | 1 | 1 |  | 1 | 1 |  | 86 |
 | P004 | 2 | 1 | 1 | 19 | 2 | 12 | 3 | 2 | 1 |  |  | 1 |  | 1 |  | 4 | 4 | 6 | 1 | 1 | 1 |  | 1 | 1 |  | 64 |
 | P005 | 4 | 4 | 2 | 23 | 3 | 25 | 3 | 6 | 1 |  | 1 | 2 |  | 1 | 1 | 4 | 3 | 10 | 1 | 1 | 1 |  | 1 | 1 |  | 98 |
 | P006 | 4 | 5 | 3 | 9 | 4 | 30 | 1 | 8 | 1 | 2 | 5 | 3 | 2 | 2 | 1 | 6 | 3 | 4 | 1 | 1 | 1 |  | 1 | 1 |  | 98 |
-| P007 | 2 | 10 | 1 | 9 | 6 | 38 | 1 | 2 | 2 | 1 | 4 | 2 | 1 | 2 | 1 | 7 | 4 | 4 | 1 | 1 | 1 |  | 2 | 1 |  | 103 |
-| P008 | 2 | 1 | 3 | 6 | 15 | 42 | 3 | 10 | 3 | 3 | 8 | 6 | 2 | 2 | 1 | 9 | 8 | 7 | 1 | 1 | 1 |  | 1 | 1 |  | 136 |
+| P007 | 2 | 10 | 1 | 10 | 6 | 42 | 1 | 2 | 2 | 1 | 4 | 2 | 1 | 2 | 1 | 7 | 5 | 5 | 1 | 1 | 1 |  | 2 | 1 |  | 110 |
+| P008 | 2 | 1 | 3 | 6 | 15 | 44 | 3 | 10 | 3 | 3 | 8 | 6 | 2 | 2 | 1 | 9 | 8 | 7 | 1 | 1 | 1 |  | 1 | 1 |  | 138 |
 | P009 | 7 | 7 | 4 | 13 | 14 | 34 | 7 | 12 | 2 | 1 | 4 | 4 | 1 | 2 | 1 | 3 | 3 | 4 | 4 | 3 | 2 |  | 4 | 1 |  | 137 |
 | P010 | 3 | 10 |  | 16 | 10 | 25 | 1 | 4 | 1 |  | 4 | 1 | 1 | 2 | 1 | 2 | 2 | 2 | 1 | 1 | 1 |  | 1 | 1 |  | 90 |
 | P011 | 16 | 14 |  | 23 | 11 | 44 | 22 | 5 | 2 |  | 23 | 2 | 1 | 4 | 4 | 4 | 11 | 11 | 3 | 1 | 1 |  | 1 | 2 |  | 205 |
-| P012 | 3 | 3 |  | 8 | 19 | 20 | 3 | 3 | 2 |  | 5 | 1 |  | 4 | 4 | 2 | 5 | 7 | 1 | 1 | 1 |  | 1 | 1 |  | 94 |
+| P012 | 3 | 3 |  | 8 | 19 | 22 | 3 | 3 | 2 |  | 5 | 1 |  | 4 | 4 | 2 | 5 | 7 | 1 | 1 | 1 |  | 1 | 1 |  | 96 |
 | P013 | 7 | 15 |  | 36 | 1 | 45 | 71 | 7 | 3 |  |  | 1 |  | 3 | 4 | 4 | 9 | 18 | 1 |  | 1 |  | 1 |  |  | 227 |
 | P014 | 1 | 3 | 4 | 7 | 11 | 10 | 4 | 2 | 4 |  | 2 | 1 | 1 | 1 | 1 | 4 | 3 | 8 | 1 | 1 |  |  |  |  |  | 69 |
 | P015 |  | 7 | 2 | 3 | 12 | 21 | 27 | 2 | 2 |  |  | 3 |  | 1 |  | 17 | 7 | 6 | 2 | 1 | 1 |  | 1 |  |  | 115 |
@@ -153,6 +153,8 @@ Every Bridge ID (D-68: namespace, two-digit category, two-digit item), its catal
 | 10612 | CH-1209 | 06 Server / system error | `TWO_OR_MORE_PARTS_OF_A_PAGE` | implemented | Two or more parts of a page don't load |
 | 10613 | CH-1210 | 06 Server / system error | `TWO_OR_MORE_SECTIONS_OF_A_PAGE` | implemented | Two or more sections of a page crash in the browser |
 | 10614 | CH-1211 | 06 Server / system error | `A_PAGES_ONE_READ_DOESNT_LOAD_SO` | implemented | A page's one read doesn't load, so nothing can show under its head |
+| 10615 | CH-1270 | 06 Server / system error | `DELIVER_NOW_IN_THE_BELL_IS_REFUSED` | implemented | Deliver now in the bell is refused (P-10) |
+| 10616 | CH-1271 | 06 Server / system error | `A_PLAYERS_PUSHES_ARE_HELD_FOR_CLASS` | implemented | A player's pushes are held for class (P-10) |
 | 10701 | CH-1901 | 07 Network / offline | `THE_DEVICE_GOES_OFFLINE` | implemented | The device goes offline |
 | 10702 | CH-1902 | 07 Network / offline | `A_SAVE_TAKES_LONGER_THAN_5_SECONDS` | implemented | A save takes longer than 5 seconds (forms, switches and CoachHelm settings) |
 | 10703 | CH-1903 | 07 Network / offline | `SOMEONE_SAVES_WHILE_OFFLINE` | implemented | Someone saves while offline |
@@ -718,6 +720,7 @@ Every Bridge ID (D-68: namespace, two-digit category, two-digit item), its catal
 | 70407 | CH-7307 | 04 Empty | `EVERYONE_ON_THE_TEAM_IS_ALREADY_IN` | implemented | Everyone on the team is already in the group (Add) |
 | 70408 | CH-7308 | 04 Empty | `SIGNED_IN_WITH_NO_TEAM` | implemented | Signed in with no team (coach or player) |
 | 70409 | CH-7309 | 04 Empty | `NOTHING_AT_ALL_YET_NO_CONVERSATION_AND` | implemented | Nothing at all yet: no conversation and no announcement (D-71) |
+| 70410 | CH-7370 | 04 Empty | `NOTIFY_ANYWAY_IS_OFFERED_A_COACH_A` | implemented | Notify anyway is offered: a coach, a conversation of their own team, a recipient in class with pushes held (P-10) |
 | 70501 | CH-7101 | 05 Validation | `A_FILE_OF_THE_WRONG_TYPE_OR` | implemented | A file of the wrong type or size |
 | 70502 | CH-7102 | 05 Validation | `AN_ANNOUNCEMENT_WITH_NO_TITLE` | implemented | An announcement with no title |
 | 70503 | CH-7103 | 05 Validation | `AN_ANNOUNCEMENT_WITH_NO_BODY` | implemented | An announcement with no body |
@@ -762,6 +765,10 @@ Every Bridge ID (D-68: namespace, two-digit category, two-digit item), its catal
 | 70636 | CH-7024 | 06 Server / system error | `REMOVING_SOMEONE_FROM_A_GROUP_FAILS` | implemented | Removing someone from a group fails (the group's creator, desktop or phone Details › Remove) |
 | 70637 | CH-7025 | 06 Server / system error | `DELETING_A_CONVERSATION_FROM_YOUR_INBOX_FAILS` | implemented | Deleting a conversation from your inbox fails |
 | 70638 | CH-7026 | 06 Server / system error | `MARKING_A_CONVERSATION_READ_OR_UNREAD_FROM` | implemented | Marking a conversation read or unread from its row (menu or swipe) fails |
+| 70639 | CH-7270 | 06 Server / system error | `A_COACH_IN_A_1_1_WITH` | implemented | A coach, in a 1:1 with a player who is in a class or an exam right now and whose pushes are held (P-10) |
+| 70640 | CH-7271 | 06 Server / system error | `A_MESSAGE_SENT_WITH_NOTIFY_ANYWAY_ONCE` | implemented | A message sent with Notify anyway, once a push really reached a device (P-10) |
+| 70641 | CH-7272 | 06 Server / system error | `A_COACH_IN_A_GROUP_OF_THEIR` | implemented | A coach, in a group of their own team with at least one player in a class or an exam (P-10) |
+| 70642 | CH-7273 | 06 Server / system error | `A_COACH_OPENS_DETAILS_ON_A_1` | implemented | A coach opens Details on a 1:1 with a player of their team (P-10) |
 | 70701 | CH-7005 | 07 Network / offline | `THE_NETWORK_DROPS_MID_SEND` | implemented | The network drops mid-send (Safari's "Load failed", Chrome's "Failed to fetch", Firefox's "NetworkError…": the same test the bubble's CH-7017 uses, so the toast and the bubble agree; the browser's text is never shown) |
 | 70801 | CH-7001 | 08 Permission / authorization | `A_LINK_OPENS_A_PLAYER_WHO_ISNT` | implemented | A link opens a player (`?player=`) or a person (`?user=`, a player's Message coach) who isn't on the team |
 | 70802 | CH-7015 | 08 Permission / authorization | `AN_OPEN_CONVERSATION_DISAPPEARS` | implemented | An open conversation disappears (left, or another team's) |
@@ -789,10 +796,12 @@ Every Bridge ID (D-68: namespace, two-digit category, two-digit item), its catal
 | 71702 | CH-7702 | 17 Haptic | `A_CHANGE_LANDS` | implemented | A change lands (edited, deleted, muted, group created; acknowledging uses the success pattern) |
 | 71703 | CH-7703 | 17 Haptic | `PICKING_A_REACTION_A_FILTER_OR_A` | implemented | Picking a reaction, a filter or a conversation |
 | 71704 | CH-7704 | 17 Haptic | `A_LONG_PRESS_ON_A_MESSAGE_2` | implemented | A long press on a message (phone) |
+| 71705 | CH-7770 | 17 Haptic | `THE_HOLD_ON_SEND_REACHES_450_MS` | reserved | The hold on Send reaches 450 ms (phone, Notify anyway offered) |
 | 71801 | CH-7801 | 18 Accessibility | `THE_COMPOSER_IS_NAMED_FOR_THE_CONVERSATION` | reserved | The composer is named for the conversation ("Message Varsity team"); a message that didn't send is an alert |
 | 71802 | CH-7802 | 18 Accessibility | `SEARCH_RESULTS_ARE_ANNOUNCED_AS_THEY_ARRIVE` | implemented | Search results are announced as they arrive; desktop Enter sends and Shift+Enter adds a line; phone Return adds a line and Send sends. Desktop React: the reaction bar takes focus on its first reaction, ← → Home End move along it, Esc or a pick returns focus to React, Tab moves on |
 | 71803 | CH-7803 | 18 Accessibility | `NO_AXE_VIOLATIONS_IN_ANY_PREVIEW_STATE` | reserved | No axe violations in any preview state, 1280px and 390px |
 | 71804 | CH-7804 | 18 Accessibility | `PHONE_A_MESSAGES_ACTIONS_HAVE_A_PATH` | implemented | Phone: a message's actions have a path besides the long press (a "Message actions" button VoiceOver and keyboards reach, or a right click); each pushed screen is named by its title, and its back link names where it goes ("Back to Messages", "Back to Chat"). New message opens on its title; a hardware keyboard's Esc is Cancel, and focus returns to New message |
+| 71805 | CH-7870 | 18 Accessibility | `NOTIFY_ANYWAY_WITHOUT_A_LONG_PRESS` | implemented | Notify anyway without a long press (P-10) |
 | 71901 |  | 19 Responsive layout | `PHONE_STACK` | implemented | At 820px and below Messages is the phone stack: Inbox, Thread, Details and New message push and pop as screens, never a shrunken desktop. |
 | 72001 |  | 20 Keyboard / input | `ENTER_TO_SEND` | implemented | In the composer Enter sends, Shift+Enter adds a line, and Enter while an IME is composing is left to the IME. |
 | 72101 |  | 21 Performance | `ONE_LOAD_PER_THREAD` | implemented | Opening a thread fetches it and subscribes to it exactly once; the server loader reads the directory in one pass and never throws for a partial read. |
@@ -873,6 +882,8 @@ Every Bridge ID (D-68: namespace, two-digit category, two-digit item), its catal
 | 80640 | CH-8213 | 06 Server / system error | `THE_ASSISTANT_COACH_REQUESTS_DONT_LOAD` | implemented | The assistant coach requests don't load (head coach) |
 | 80641 | CH-8029 | 06 Server / system error | `SEND_A_TEST_PUSH_FAILS` | implemented | Send a test push fails (P008-C3, D1-6) |
 | 80642 | CH-8214 | 06 Server / system error | `EVERY_READ_FAILS` | implemented | Every read fails (phone list) |
+| 80643 | CH-8030 | 06 Server / system error | `HOLD_DURING_CLASS_FAILS_TO_SAVE` | implemented | Hold during class fails to save (P-10) |
+| 80644 | CH-8216 | 06 Server / system error | `A_PLAYER_WITH_CLASS_STATUS_ON_OPENS` | implemented | A player with class status on opens Notifications (P-10) |
 | 80701 |  | 07 Network / offline | `INSTANT_SAVE_REFUSED_OFFLINE` | implemented | While the browser is offline a switch, or a CoachHelm autosave, is refused before it changes anything: it stays where it was, nothing is sent, the error haptic fires and an error toast (CH-1903) says nothing was changed. |
 | 80702 | CH-8901 | 07 Network / offline | `CUSTOMER_EMAIL_IS_SWITCHED_OFF_FOR_EVERYONE` | implemented | Customer email is switched off for everyone (`HELM_CUSTOMER_EMAIL_ENABLED` is not `true`, `src/lib/email/outbound-gate.ts`), so no email setting can send anything |
 | 80780 | CH-8980 | 07 Network / offline | `SETTINGS_PREFERENCES_TIME_FORMAT` | implemented | Settings › Preferences › Time format (a device preference, like the distance unit) |
@@ -1445,6 +1456,8 @@ Every Bridge ID (D-68: namespace, two-digit category, two-digit item), its catal
 | 120618 | CH-12075 | 06 Server / system error | `ADDING_AN_EXAM_IS_REFUSED` | implemented | Adding an exam is refused |
 | 120619 | CH-12076 | 06 Server / system error | `REMOVING_AN_EXAM_IS_REFUSED` | implemented | Removing an exam is refused |
 | 120620 | CH-12270 | 06 Server / system error | `THE_PLAYERS_CLASS_DAY_DIDNT_LOAD` | implemented | The player's class day didn't load |
+| 120621 | CH-12077 | 06 Server / system error | `DELIVER_NOW_IS_REFUSED` | implemented | Deliver now is refused (the panel's Pushes during class row) |
+| 120622 | CH-12271 | 06 Server / system error | `THE_PLAYERS_PUSHES_DURING_CLASS_ROW` | implemented | The player's Pushes during class row |
 | 120701 | CH-12901 | 07 Network / offline | `A_SCREENSHOT_IS_CHOSEN_WHILE_OFFLINE` | implemented | A screenshot is chosen while offline |
 | 120702 | CH-12902 | 07 Network / offline | `A_READ_IS_SLOW` | implemented | A read is slow |
 | 120703 |  | 07 Network / offline | `WRITES_REFUSE_OFFLINE` | implemented | Every write on the page (saving a class, removing one, importing a schedule and putting classes on the calendar) is refused while the browser is offline, before anything is sent, with the shell's toast naming what did not happen (CH-1903) and the error haptic; an edit keeps the form as typed, and the toast's Retry sends it once back online. A class saved just as the connection went stays in the list, flagged as not on the calendar (CH-12002). Reading a screenshot offline is CH-12901; pasted text and a TXT file are read on the device. |

@@ -1,5 +1,6 @@
 'use client';
 
+import { Icon } from '../../ui/Icon';
 import { BookOpen, ChevronRight } from 'lucide-react';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { createClient } from '@/lib/supabase/client';
@@ -98,7 +99,7 @@ export function ClassHomeLine({ teamId, today, variant, teamTimeZone }: { teamId
   return (
     <span ref={trigger} className={`ch-ca-home ch-ca-home--${variant}`}>
       <button type="button" className="ch-ca-home__btn" aria-label={line.label} aria-haspopup="dialog" data-ch-code="CH-2870" onClick={open}>
-        <BookOpen size={14} aria-hidden="true" />
+        <Icon icon={BookOpen} size={14} />
         <Swap swapKey={`${line.line1}|${line.line2 ?? ''}`} inline>
           <span className="ch-ca-home__text" data-ch-code="CH-2670">
             <span className="ch-ca-home__l1">{line.line1}</span>
@@ -112,7 +113,7 @@ export function ClassHomeLine({ teamId, today, variant, teamTimeZone }: { teamId
             )}
           </span>
         </Swap>
-        {variant === 'phone' && <ChevronRight size={14} aria-hidden="true" />}
+        {variant === 'phone' && <Icon icon={ChevronRight} size={14} />}
       </button>
       {sheets}
     </span>

@@ -1,5 +1,6 @@
 import type { ChClock } from '../lib/clock-cookie';
 import { clockFromMinutes } from '../lib/clock-format';
+import { zoneShortName, zoneWallParts } from '../lib/dates';
 import { parseClassName } from './classes-shape';
 import type { ChClassBlock, ChClassDay, ChClassDayPlayer } from './class-day-shape';
 
@@ -30,24 +31,7 @@ export const HOME_LINE_UNTIL_HOUR = 19;
 // Zones and wall clocks
 // ---------------------------------------------------------------------------
 
-const WALL = new Map<string, Intl.DateTimeFormat>();
-
-function wallParts(at: number, timeZone: string): { year: number; month: number; day: number; hour: number; minute: number } | null {
-  try {
-    let fmt = WALL.get(timeZone);
-    if (!fmt) {
-      fmt = new Intl.DateTimeFormat('en-US', { timeZone, hourCycle: 'h23', year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' });
-      WALL.set(timeZone, fmt);
-    }
-    const out: Record<string, number> = {};
-    for (const p of fmt.formatToParts(at)) if (p.type !== 'literal') out[p.type] = Number(p.value);
-    const { year, month, day, hour, minute } = out as { year: number; month: number; day: number; hour: number; minute: number };
-    if (![year, month, day, hour, minute].every(Number.isFinite)) return null;
-    return { year, month, day, hour: hour % 24, minute };
-  } catch {
-    return null;
-  }
-}
+const wallParts = zoneWallParts;
 
 /** Minutes after midnight on the wall clock of `timeZone` at `at`; null when the zone does not resolve. */
 export function minutesOfDay(at: number, timeZone: string): number | null {
@@ -80,17 +64,7 @@ export function instantAt(dayIso: string, minutes: number, timeZone: string): nu
 }
 
 /** "CT" for America/Chicago: the generic short zone name, so a daylight change never flips the suffix. */
-export function zoneAbbreviation(timeZone: string, at: number): string | null {
-  try {
-    for (const style of ['shortGeneric', 'short'] as const) {
-      const part = new Intl.DateTimeFormat('en-US', { timeZone, timeZoneName: style }).formatToParts(at).find((p) => p.type === 'timeZoneName');
-      if (part?.value) return part.value;
-    }
-  } catch {
-    /* fall through */
-  }
-  return null;
-}
+export const zoneAbbreviation = (timeZone: string, at: number): string | null => zoneShortName(timeZone, at);
 
 // ---------------------------------------------------------------------------
 // Islands and status

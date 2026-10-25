@@ -1,5 +1,6 @@
 'use client';
 
+import { Icon } from '../../ui/Icon';
 import { ChevronRight, X } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useEffect, useMemo, useRef, useState, useSyncExternalStore, type KeyboardEvent, type RefObject } from 'react';
@@ -9,6 +10,7 @@ import { Button, IconButton } from '../../ui/Button';
 import { ClassStatusRow } from '../../ui/ClassStatusRow';
 import { Modal } from '../../ui/Modal';
 import { Spinner } from '../../ui/Spinner';
+import { pluralWord } from '../../lib/plural';
 import { useChPhone } from '../../lib/use-phone';
 import { usePopoverFit } from '../../lib/use-popover-fit';
 import { rebuiltHref } from '../../shell/nav';
@@ -72,6 +74,12 @@ export type InClassSheetProps = {
   onBreaks: () => void;
   /** Desktop: the popover opens from this element's wrapper and focus returns to it. */
   triggerRef: RefObject<HTMLElement | null>;
+  /**
+   * A group thread's sheet (P-10): the same sheet over a day already cut down to the group's players. It names how many are in the group,
+   * has no "No class status" section (it would list everyone untracked and bury the point; a count closes the sheet instead) and no
+   * term or break rows (those are the team's, edited from Home).
+   */
+  scope?: { kind: 'conversation'; total: number; noStatus: number };
 };
 
 export function InClassSheet(props: InClassSheetProps) {
@@ -79,18 +87,19 @@ export function InClassSheet(props: InClassSheetProps) {
   const { open, onClose } = props;
   const model = useMemo(() => (props.day && props.now != null && props.opts ? sheetModel(props.day, props.now, props.opts) : null), [props.day, props.now, props.opts]);
   const title = model?.title ?? 'In class now';
+  const sub = model && props.scope ? `${model.inClass.length} of ${props.scope.total} in this group · Class names show to coaches only.` : model?.sub;
   if (phone) {
     return (
-      <Modal open={open} onClose={onClose} width={420} title={title} description={model?.sub}>
+      <Modal open={open} onClose={onClose} width={420} title={title} description={sub}>
         <SheetBody {...props} model={model} />
       </Modal>
     );
   }
-  return open ? <Popover {...props} model={model} title={title} /> : null;
+  return open ? <Popover {...props} model={model} title={title} sub={sub} /> : null;
 }
 
-function Popover(props: InClassSheetProps & { model: ReturnType<typeof sheetModel> | null; title: string }) {
-  const { onClose, triggerRef, model, title } = props;
+function Popover(props: InClassSheetProps & { model: ReturnType<typeof sheetModel> | null; title: string; sub?: string }) {
+  const { onClose, triggerRef, model, title, sub } = props;
   const ref = useRef<HTMLDivElement | null>(null);
   const placement = usePopoverFit(ref);
   const close = useRef(onClose);
@@ -137,7 +146,7 @@ function Popover(props: InClassSheetProps & { model: ReturnType<typeof sheetMode
       <header className="ch-ca-pop__head">
         <div>
           <h2 tabIndex={-1}>{title}</h2>
-          {model && <p>{model.sub}</p>}
+          {model && <p>{sub}</p>}
         </div>
         <IconButton icon={X} label="Close" size="sm" onClick={onClose} />
       </header>
@@ -146,7 +155,7 @@ function Popover(props: InClassSheetProps & { model: ReturnType<typeof sheetMode
   );
 }
 
-function SheetBody({ day, status, now, opts, onRetry, onEditTerm, onBreaks, onClose, model }: InClassSheetProps & { model: ReturnType<typeof sheetModel> | null }) {
+function SheetBody({ day, status, now, opts, onRetry, onEditTerm, onBreaks, onClose, model, scope }: InClassSheetProps & { model: ReturnType<typeof sheetModel> | null }) {
   const router = useRouter();
   const offline = useOffline();
   const waited = useAfter(300, !day && status !== 'error');
@@ -207,7 +216,7 @@ function SheetBody({ day, status, now, opts, onRetry, onEditTerm, onBreaks, onCl
       {section('In class', model.inClass)}
       {section('Next today', model.next)}
       {section('Travelling', model.travelling)}
-      {(model.none.length > 0 || lowCoverage) && (
+      {!scope && (model.none.length > 0 || lowCoverage) && (
         <section className="ch-ca-sec" aria-label="No class status">
           <h3>{model.none.length > 0 ? `No class status · ${model.none.length}` : 'No class status'}</h3>
           {lowCoverage && tn && <p className="ch-ca-note">Class schedules shared by {tn.tracked} of {tn.total}.</p>}
@@ -226,6 +235,13 @@ function SheetBody({ day, status, now, opts, onRetry, onEditTerm, onBreaks, onCl
           )}
         </section>
       )}
+      {scope ? (
+        scope.noStatus > 0 && (
+          <footer className="ch-ca-foot">
+            <p className="ch-ca-note">{scope.noStatus} {pluralWord(scope.noStatus, 'here has', 'here have')} no class status</p>
+          </footer>
+        )
+      ) : (
       <footer className="ch-ca-foot">
         <div className="ch-ca-foot__row">
           <span>{term ?? 'No term dates set'}</span>
@@ -235,9 +251,10 @@ function SheetBody({ day, status, now, opts, onRetry, onEditTerm, onBreaks, onCl
         </div>
         <button type="button" className="ch-ca-foot__row is-button" onClick={onBreaks}>
           <span>Mark a day with no classes</span>
-          <ChevronRight size={14} aria-hidden="true" />
+          <Icon icon={ChevronRight} size={14} />
         </button>
       </footer>
+      )}
     </div>
   );
 }

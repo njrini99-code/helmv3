@@ -19,6 +19,50 @@ export function isoDay(at: Date | number | string, timeZone?: string): string {
   return fmt.format(at instanceof Date ? at : new Date(at));
 }
 
+const WALL = new Map<string, Intl.DateTimeFormat>();
+
+/** The wall clock of an instant in a zone (24-hour), as numbers; null when the zone does not resolve. Class status reads this for its day and minute maths. */
+export function zoneWallParts(at: number, timeZone: string): { year: number; month: number; day: number; hour: number; minute: number } | null {
+  try {
+    let fmt = WALL.get(timeZone);
+    if (!fmt) {
+      fmt = new Intl.DateTimeFormat('en-US', { timeZone, hourCycle: 'h23', year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' });
+      WALL.set(timeZone, fmt);
+    }
+    const out: Record<string, number> = {};
+    for (const p of fmt.formatToParts(at)) if (p.type !== 'literal') out[p.type] = Number(p.value);
+    const { year, month, day, hour, minute } = out as { year: number; month: number; day: number; hour: number; minute: number };
+    if (![year, month, day, hour, minute].every(Number.isFinite)) return null;
+    return { year, month, day, hour: hour % 24, minute };
+  } catch {
+    return null;
+  }
+}
+
+/** "CT" for America/Chicago: the generic short zone name (so a daylight change never flips the suffix), else the specific one; null when the zone does not resolve. */
+export function zoneShortName(timeZone: string, at: number): string | null {
+  try {
+    for (const style of ['shortGeneric', 'short'] as const) {
+      const part = new Intl.DateTimeFormat('en-US', { timeZone, timeZoneName: style }).formatToParts(at).find((p) => p.type === 'timeZoneName');
+      if (part?.value) return part.value;
+    }
+  } catch {
+    /* fall through */
+  }
+  return null;
+}
+
+/** "Tue": the short weekday of a calendar day held as an instant, read in UTC (the noon-UTC convention of a YYYY-MM-DD). */
+export function weekdayShortUtc(at: Date | number | string): string {
+  return new Intl.DateTimeFormat('en-US', { timeZone: 'UTC', weekday: 'short' }).format(at instanceof Date ? at : new Date(at));
+}
+
+/** "Mon, Aug 24" from YYYY-MM-DD; the input back when it is not a date. */
+export function weekdayMonthDay(iso: string): string {
+  const d = new Date(`${iso}T12:00:00Z`);
+  return Number.isNaN(d.getTime()) ? iso : new Intl.DateTimeFormat('en-US', { timeZone: 'UTC', weekday: 'short', month: 'short', day: 'numeric' }).format(d);
+}
+
 /** The one clock: "3:30 PM". */
 export function formatClock(at: Date | number | string, timeZone?: string): string {
   return new Date(at).toLocaleTimeString('en-US', { timeZone, hour: 'numeric', minute: '2-digit' });

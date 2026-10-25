@@ -354,6 +354,29 @@
 .ch-menu__item[aria-checked='true'] {
   font-weight: 600;
 }
+/* A row with a second line (Notify anyway): two lines tall, never clipped. */
+.ch-menu__item.has-caption {
+  height: auto;
+  min-height: 56px;
+  padding: var(--ch-space-2) var(--ch-space-2);
+}
+.ch-menu__text {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: var(--ch-space-1);
+  min-width: 0;
+}
+.ch-menu__caption {
+  color: var(--ch-text-secondary);
+  font: var(--ch-type-13);
+}
+.ch-menu__shortcut {
+  flex: none;
+  margin-left: auto;
+  color: var(--ch-text-secondary);
+  font: var(--ch-type-12);
+}
 .ch-menu__sep {
   height: var(--ch-hairline-w);
   margin: 4px 6px;

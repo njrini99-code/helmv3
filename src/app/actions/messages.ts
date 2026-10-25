@@ -714,7 +714,11 @@ async function sendGolfMessageImpl(conversationId: string, content: string, clie
         conversationId,
         user.id,
         preview,
-        stored?.notifyAnyway ? { notifyAnyway: true, messageId: stored.id ?? clientMessageId } : undefined,
+        // The message id lets a held push be dropped at release if the player read the message in the app first. Flag off and not flagged:
+        // the call is the three arguments it always was.
+        stored?.notifyAnyway || isFlagEnabled('class_awareness_v1', { skipTelemetry: true })
+          ? { notifyAnyway: stored?.notifyAnyway === true, messageId: stored?.id ?? clientMessageId }
+          : undefined,
       );
     }
   }
