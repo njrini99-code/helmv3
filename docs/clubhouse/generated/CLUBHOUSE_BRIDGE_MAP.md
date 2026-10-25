@@ -113,7 +113,7 @@ Every Bridge ID (D-68: namespace, two-digit category, two-digit item), its catal
 | P003 | 2 | 3 | 3 | 9 | 4 | 24 | 2 | 6 | 1 |  | 2 | 3 | 1 | 3 |  | 4 | 4 | 10 | 1 | 1 | 1 |  | 1 | 1 |  | 86 |
 | P004 | 2 | 1 | 1 | 19 | 2 | 12 | 3 | 2 | 1 |  |  | 1 |  | 1 |  | 4 | 4 | 6 | 1 | 1 | 1 |  | 1 | 1 |  | 64 |
 | P005 | 4 | 4 | 2 | 23 | 3 | 25 | 3 | 6 | 1 |  | 1 | 2 |  | 1 | 1 | 4 | 3 | 10 | 1 | 1 | 1 |  | 1 | 1 |  | 98 |
-| P006 | 4 | 5 | 3 | 9 | 4 | 36 | 1 | 8 | 1 | 2 | 5 | 3 | 2 | 2 | 1 | 6 | 3 | 6 | 1 | 1 | 1 |  | 1 | 1 |  | 106 |
+| P006 | 4 | 5 | 3 | 10 | 14 | 57 | 1 | 8 | 1 | 2 | 7 | 3 | 2 | 2 | 1 | 7 | 3 | 10 | 1 | 1 | 1 |  | 1 | 1 |  | 145 |
 | P007 | 2 | 11 | 1 | 10 | 6 | 44 | 1 | 2 | 2 | 1 | 4 | 2 | 1 | 2 | 1 | 9 | 4 | 5 | 1 | 1 | 1 |  | 2 | 1 |  | 114 |
 | P008 | 2 | 1 | 3 | 6 | 15 | 42 | 3 | 10 | 3 | 3 | 8 | 6 | 2 | 2 | 1 | 9 | 8 | 7 | 1 | 1 | 1 |  | 1 | 1 |  | 136 |
 | P009 | 7 | 7 | 4 | 13 | 14 | 34 | 7 | 12 | 2 | 1 | 4 | 4 | 1 | 2 | 1 | 3 | 3 | 4 | 4 | 3 | 2 |  | 4 | 1 |  | 137 |
@@ -598,10 +598,21 @@ Every Bridge ID (D-68: namespace, two-digit category, two-digit item), its catal
 | 60407 | CH-6307 | 04 Empty | `SIGNED_IN_WITH_NO_TEAM` | implemented | Signed in with no team (coach or player) |
 | 60408 | CH-6308 | 04 Empty | `A_DAY_WITH_NOTHING_ON_IT` | implemented | A day with nothing on it (phone Day view) |
 | 60409 | CH-6309 | 04 Empty | `A_COACH_WHOSE_TEAM_HAS_NEVER_SCHEDULED` | implemented | A coach whose team has never scheduled anything (D-71) |
+| 60410 | CH-6340 | 04 Empty | `THE_COURSE_PICKER_FINDS_NO_COURSE_FOR` | implemented | The course picker (tournament section) finds no course for the search |
 | 60501 | CH-6101 | 05 Validation | `AN_EVENT_WITH_NO_TITLE` | implemented | An event with no title |
 | 60502 | CH-6102 | 05 Validation | `AN_EVENT_THAT_ENDS_BEFORE_IT_STARTS` | implemented | An event that ends before it starts |
 | 60503 | CH-6103 | 05 Validation | `BUSY_TIME_WITH_NO_NAME` | implemented | Busy time with no name |
 | 60504 | CH-6104 | 05 Validation | `BUSY_TIME_THAT_ENDS_BEFORE_IT_STARTS` | implemented | Busy time that ends before it starts |
+| 60505 | CH-6140 | 05 Validation | `TRACK_ON_NO_COURSE` | implemented | Track on, no course |
+| 60506 | CH-6141 | 05 Validation | `THE_LAST_DAY_IS_BEFORE_THE_FIRST` | implemented | The last day is before the first day |
+| 60507 | CH-6142 | 05 Validation | `MORE_THAN_6_ROUNDS` | implemented | More than 6 rounds (7 days with One round each day) |
+| 60508 | CH-6143 | 05 Validation | `A_ROUND_WOULD_START_BEFORE_THE_ONE` | implemented | A round would start before the one ahead of it (round mode, the RPC, the sync trigger) |
+| 60509 | CH-6144 | 05 Validation | `TRACK_TURNED_ON_FOR_AN_EVENT_THAT` | implemented | Track turned on for an event that was a round of a tournament that was removed |
+| 60510 | CH-6145 | 05 Validation | `CUSTOM_COUNTING_WITH_MORE_COUNTING_THAN_PLAYERS` | implemented | Custom counting with more counting than players |
+| 60511 | CH-6146 | 05 Validation | `A_RESULTS_LINK_THAT_ISNT_HTTPS` | implemented | A results link that isn't https |
+| 60512 | CH-6147 | 05 Validation | `NO_TOURNAMENT_NAME_OR_LONGER_THAN_120` | implemented | No tournament name, or longer than 120 |
+| 60513 | CH-6148 | 05 Validation | `EDITING_A_REPEATING_OCCURRENCE_OF_TYPE_TOURNAMENT` | implemented | Editing a repeating occurrence of type Tournament |
+| 60514 | CH-6149 | 05 Validation | `EDITING_A_CANCELLED_EVENT_OF_TYPE_TOURNAMENT` | implemented | Editing a cancelled event of type Tournament |
 | 60601 | CH-6001 | 06 Server / system error | `PUBLISHING_OR_SAVING_AN_EVENT_FAILS` | implemented | Publishing or saving an event fails |
 | 60602 | CH-6002 | 06 Server / system error | `CANCELLING_AN_EVENT_FAILS` | implemented | Cancelling an event fails |
 | 60603 | CH-6003 | 06 Server / system error | `CREATING_A_CALENDAR_APP_LINK_FAILS` | implemented | Creating a calendar-app link fails |
@@ -638,6 +649,27 @@ Every Bridge ID (D-68: namespace, two-digit category, two-digit item), its catal
 | 60634 | CH-6021 | 06 Server / system error | `THE_SERVER_REFUSES_A_MOVE_BY_ROLE` | implemented | The server refuses a move by role |
 | 60635 | CH-6023 | 06 Server / system error | `A_CHANGE_MARK_CANT_BE_READ_THE` | implemented | A change mark can't be read (P-14): the stored mark is a shape this version doesn't know (an unknown version, a missing baseline) |
 | 60636 | CH-6022 | 06 Server / system error | `THE_EVENT_WAS_CANCELLED_OR_DELETED_WHILE` | implemented | The event was cancelled or deleted while it was being moved |
+| 60637 | CH-6048 | 06 Server / system error | `SETTING_UP_A_TOURNAMENT_FROM_AN_EVENT` | implemented | Setting up a tournament from an event that is already a round (someone else just did) |
+| 60638 | CH-6049 | 06 Server / system error | `THE_EVENT_BEING_SET_UP_WAS_DELETED` | implemented | The event being set up was deleted or moved to another team |
+| 60639 | CH-6050 | 06 Server / system error | `A_ROUND_THAT_IS_UNDER_WAY_SUSPENDED` | implemented | A round that is under way, suspended or final is changed or cancelled from the calendar |
+| 60640 | CH-6051 | 06 Server / system error | `CANCELLING_A_ROUND_OR_STOPPING_TRACKING_WHEN` | implemented | Cancelling a round, or stopping tracking, when scores are entered |
+| 60641 | CH-6052 | 06 Server / system error | `THE_QUALIFIER_TO_LINK_WAS_DELETED_MEANWHILE` | implemented | The qualifier to link was deleted meanwhile |
+| 60642 | CH-6053 | 06 Server / system error | `THE_TRIP_TO_LINK_IS_ALREADY_LINKED` | implemented | The trip to link is already linked to another event |
+| 60643 | CH-6054 | 06 Server / system error | `A_PLAIN_SAVE_TRIES_TO_CHANGE_A` | implemented | A plain save tries to change a round's type, team, series, name, place or course (the round guard) |
+| 60644 | CH-6055 | 06 Server / system error | `THE_COACH_ISNT_STAFFED_ON_THE_TEAM` | implemented | The coach isn't staffed on the team (a permission refusal) |
+| 60645 | CH-6056 | 06 Server / system error | `SETTING_UP_THE_TOURNAMENT_FAILS_FOR_ANY` | implemented | Setting up the tournament fails for any other reason (the transaction never committed) |
+| 60646 | CH-6057 | 06 Server / system error | `THE_QUALIFIER_TO_LINK_ALREADY_COUNTS_TOWARD` | implemented | The qualifier to link already counts toward another event (not stolen) |
+| 60647 | CH-6058 | 06 Server / system error | `RESTORING_A_ROUND_THAT_ANOTHER_ROUND_HAS` | implemented | Restoring a round that another round has moved in front of |
+| 60648 | CH-6059 | 06 Server / system error | `A_LINEUP_IS_SENT_BEFORE_4_33S` | implemented | A lineup is sent before 4.33's set_entries RPC is applied |
+| 60649 | CH-6060 | 06 Server / system error | `SAVING_A_ROUND_FROM_THE_CALENDAR_FAILS` | implemented | Saving a round from the calendar fails for any other reason |
+| 60650 | CH-6061 | 06 Server / system error | `CANCELLING_RESTORING_OR_STOPPING_TRACKING_FAILS_FOR` | implemented | Cancelling, restoring or stopping tracking fails for any other reason |
+| 60651 | CH-6241 | 06 Server / system error | `THE_TOURNAMENT_CHANGED_SINCE_IT_WAS_OPENED` | implemented | The tournament changed since it was opened (a version conflict) |
+| 60652 | CH-6041 | 06 Server / system error | `A_ROUNDS_DAY_OR_TIME_IS_SAVED` | implemented | A round's day or time is saved from round mode (P-5 4.3) |
+| 60653 | CH-6240 | 06 Server / system error | `ROUND_MODE_FOR_A_TOURNAMENT_EVENT_WHOSE` | implemented | Round mode for a tournament event whose round ref didn't load (the calendar's events did) |
+| 60654 | CH-6042 | 06 Server / system error | `A_ROUND_IS_CANCELLED_FROM_THE_CALENDAR` | implemented | A round is cancelled from the calendar (CH-6540 confirmed) |
+| 60655 | CH-6043 | 06 Server / system error | `THE_WHOLE_TOURNAMENT_IS_CANCELLED_FROM_THE` | implemented | The whole tournament is cancelled from the calendar (CH-6541 confirmed) |
+| 60656 | CH-6044 | 06 Server / system error | `A_ROUND_OR_THE_TOURNAMENT_IS_RESTORED` | implemented | A round or the tournament is restored |
+| 60657 | CH-6040 | 06 Server / system error | `A_TOURNAMENT_IS_SET_UP_FROM_THE` | implemented | A tournament is set up from the editor (P-5, `golf_tournaments_v1`) |
 | 60701 |  | 07 Network / offline | `FILE_REMOVAL_REFUSES_OFFLINE` | implemented | Removing a file from an event, and Undo on that, send nothing while the browser is offline: the file stays where it was, the error haptic fires, and the toast says nothing was changed (the shell's CH-1903 wording). |
 | 60801 |  | 08 Permission / authorization | `PLAYER_HAS_NO_PLANNING_TOOLS` | implemented | A player is never given a planning tool: no New event (button, N key or an editor from ?new=1), no Add busy time or Overlaps in More, no people filter, no responses, attendance, Edit event, Cancel event, Attach or Remove file, and no schedule-overlap marks. The same address for a coach has all of them. Hiding them is a courtesy; every write is checked again by its server action (60806). |
 | 60802 |  | 08 Permission / authorization | `PLAYER_READS_ONLY_THEIR_OWN_CLASSES` | implemented | The loader gives a player only their own classes (another player's class, and one whose owner cannot be resolved, are dropped before they reach the browser) and only themselves as a person; a coach gets every rostered player's classes, each with its owner. |
@@ -655,6 +687,8 @@ Every Bridge ID (D-68: namespace, two-digit category, two-digit item), its catal
 | 61103 | CH-6504 | 11 Destructive | `NEW_LINK` | implemented | New link (a calendar-app link) |
 | 61104 | CH-6505 | 11 Destructive | `REMOVE` | implemented | Remove (a calendar-app link) |
 | 61105 | CH-6506 | 11 Destructive | `DELETE_PERMANENTLY` | implemented | Delete permanently (a cancelled event's menu, coach) |
+| 61106 | CH-6540 | 11 Destructive | `CANCEL_ROUND_FROM_THE_INSPECTORS_MENU_OR` | implemented | Cancel round, from the inspector's menu or round mode |
+| 61107 | CH-6541 | 11 Destructive | `CANCEL_THE_WHOLE_TOURNAMENT_INSTEAD_FROM_CH` | implemented | Cancel the whole tournament instead, from CH-6540 |
 | 61201 | CH-6503 | 12 State preservation | `CLOSING_THE_EVENT_EDITOR_WITH_CHANGES` | implemented | Closing the event editor with changes |
 | 61202 |  | 12 State preservation | `FORM_KEPT_ON_FAILURE` | implemented | A publish, save or busy-time add that fails leaves the editor or sheet open with every field as typed; nothing is cleared until the write lands. |
 | 61203 |  | 12 State preservation | `ATTENDANCE_MARKS_KEPT_ON_A_PARTIAL_SAVE` | implemented | Saving attendance saves each changed mark on its own: the marks that saved show as Saved, the ones that did not stay Unsaved, and the button offers to save what is left ("Save attendance · 1"). |
@@ -669,6 +703,7 @@ Every Bridge ID (D-68: namespace, two-digit category, two-digit item), its catal
 | 61604 | CH-6604 | 16 Micro animation | `SWITCHING_BETWEEN_DAY_WEEK_MONTH_AND_AGENDA` | implemented | Switching between Day, Week, Month and Agenda (Day, Month and List on the phone) |
 | 61605 | CH-6605 | 16 Micro animation | `STEPPING_TO_ANOTHER_DAY_WEEK_OR_MONTH` | implemented | Stepping to another day, week or month (the arrows, the arrow keys, Today or a date) |
 | 61606 | CH-6606 | 16 Micro animation | `CHOOSING_ANOTHER_DAY_IN_THE_PHONES_WEEK` | implemented | Choosing another day in the phone's week strip |
+| 61607 | CH-6640 | 16 Micro animation | `TOURNAMENT_CHOSEN_TRACK_TURNED_ON_OR_OFF` | implemented | Tournament chosen (Track on), Track turned on or off, More details opened |
 | 61701 | CH-6701 | 17 Haptic | `OPENING_AN_EVENT_A_DAY_OR_A` | implemented | Opening an event, a day or a panel item; changing view, week or players; each Find a time step |
 | 61702 | CH-6702 | 17 Haptic | `A_FORM_WITH_A_PROBLEM_OR_CLOSING` | implemented | A form with a problem, or closing the editor with changes |
 | 61703 | CH-6703 | 17 Haptic | `A_LINK_IS_COPIED` | implemented | A link is copied |
@@ -678,6 +713,10 @@ Every Bridge ID (D-68: namespace, two-digit category, two-digit item), its catal
 | 61804 | CH-6804 | 18 Accessibility | `NO_AXE_VIOLATIONS_IN_ANY_PREVIEW_VIEW` | reserved | No axe violations in any preview view and state, 1280px and 390px. One known exception, listed in the scan: the 7-day week at 390px squeezes overlapping events under 24px until the phone Calendar is designed |
 | 61805 | CH-6805 | 18 Accessibility | `A_COMPLETED_MOVE_IS_SAID_ONCE_NEVER` | implemented | A completed move is said once, never during a drag: "Practice moved to 4:00 PM, Wednesday 15 October. Undo with Command Z." (Control Z off a Mac; on touch "Undo is in the notice."); a resize "Practice now ends at 6:30 PM."; a clash appended; Undo "Move undone." |
 | 61806 | CH-6806 | 18 Accessibility | `MONTH_DRAG_IS_ANNOUNCED_PICKED_UP_FALL` | implemented | Month drag is announced: "Picked up Fall qualifier R2, Thursday 16 October. Arrow keys choose a day, Space drops, Escape cancels.", "Over Friday 17 October.", "Fall qualifier R2 moved to Friday 17 October at 8:42 AM.", or "Move cancelled. Fall qualifier R2 stays on Thursday 16 October." |
+| 61807 | CH-6840 | 18 Accessibility | `THE_TOURNAMENT_SECTION_IS_SHOWN_OR_HIDDEN` | implemented | The tournament section is shown or hidden (Tournament chosen, Track turned on or off): one polite line: "Tournament details shown. 3 rounds." or "Tournament details hidden." |
+| 61808 | CH-6841 | 18 Accessibility | `THE_ROUNDS_CHANGE_WITH_THE_DAYS_OR` | implemented | The rounds change with the days, or reorder after a day or tee change: one polite line: "3 rounds, Thursday 5 November to Saturday 7 November." or "Rounds reordered. Round 2 is now Friday 6 November at 8:30 AM." |
+| 61809 | CH-6842 | 18 Accessibility | `ESCAPE_WHILE_THE_TOURNAMENT_IS_BEING_CREATED` | implemented | Escape (or the close button) while the tournament is being created: the editor stays open and says "Still creating the tournament." |
+| 61810 | CH-6843 | 18 Accessibility | `A_ROUND_DROPPED_WHERE_IT_WOULD_START` | implemented | A round dropped (or moved with Alt and an arrow) where it would start before the round ahead of it, or after the one behind: it snaps back, felt as an error, nothing asked or written. One polite line: "R2 can’t move before R1. Move R1 first." (or "R2 can’t move after R3. Move R3 first.") |
 | 61901 |  | 19 Responsive layout | `PHONE_LAYOUT` | implemented | At 820px and below Calendar is the phone build, never a shrunken desktop: Day with a week strip, Month and List; an event opens in a sheet and New event is a sheet. State, writes and dialogs are the desktop's. |
 | 62001 |  | 20 Keyboard / input | `KEYBOARD_SHORTCUTS` | implemented | On the desktop N opens New event (coach), T goes to today, the left and right arrows step a day, week or month (not in the agenda), and Esc closes the open panel. None of them fires while typing in a field or with a dialog open. |
 | 62101 |  | 21 Performance | `LOADER_READS_IN_THREE_ROUNDS` | implemented | The server loader reads each table once for the whole screen, in three rounds and never per event or per player: the team's zone, name and roster; then events, class schedules and (for a coach) their busy time together; then every event's replies, one read for each 200 events. A read that fails is flagged and logged, never thrown. |

@@ -168,7 +168,7 @@ describe('what drags', () => {
     expect(draggable(ev({ id: 'a', allDay: true, start: null, end: null }), true)).toBe('bar');
     expect(draggable(ev({ id: 'a', span: { from: D, to: '2026-10-16', start: 7, end: 16.5 } }), true)).toBe('bar');
     expect(draggable(ev({ id: 'a', seriesId: 's1' }), true)).toBe('timed');
-    expect(draggable(ev({ id: 'a', type: 'tournament', round: { tournamentId: 't', roundNo: 1, lockedAt: '2026-10-01T00:00:00Z' } }), true)).toBeNull();
+    expect(draggable(ev({ id: 'a', type: 'tournament', round: { tournamentId: 't', name: 'Fall Classic', roundNo: 1, roundsCount: 3, version: 1, status: 'upcoming', startType: 'tee_times', lockedAt: '2026-10-01T00:00:00Z', lineup: 'locked', tournamentCancelled: false } }), true)).toBeNull();
   });
   it('a series offers both scopes on a time change, only this event on a day change', () => {
     expect(seriesScopes({ seriesId: 's' }, { date: D }, { date: D })).toEqual(['this', 'thisAndFuture']);

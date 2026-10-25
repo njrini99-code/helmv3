@@ -11,6 +11,8 @@ import { buildChangeMarks, type ChMovedAway } from '../screens/calendar/change-v
 import { classYearLabel, fullName } from './season';
 import { parseAvailability } from './availability';
 import { loadAttendanceCounts } from './attendance-counts';
+import { loadRoundRefs } from './calendar-rounds';
+import { isFlagEnabled } from '@/lib/flags/is-enabled';
 import {
   addDays,
   expandBusyDates,
@@ -49,6 +51,10 @@ export interface ChCalendarData {
   membersError?: boolean;
   /** Coach only: their own blocked time failed to load (shown as a notice, never as "free"). */
   busyError: boolean;
+  /** P-5: golf_tournaments_v1 is on, so the editor offers the tournament section and rounds carry refs. */
+  tournamentsEnabled?: boolean;
+  /** P-5: the round refs failed to load: tournament events show their stored titles and can't be moved */
+  roundRefsFailed?: boolean;
   /** Which change marks this device has seen (`s`) or cleared (`g`), from the `ch_marks` cookie, newest first (P-14). */
   marks?: MarkEntries;
   /** Events that left a day of the window for another (live marks only): a quiet row on the old day, linking to the new one. */
@@ -215,7 +221,7 @@ export async function loadCalendar(input: {
     fetchAllRowsResult((from, to) =>
       supabase
         .from('golf_events')
-        .select('id, title, event_type, start_time, end_time, location, description, status, all_day, recurrence_rule, parent_event_id, requires_rsvp, rsvp_deadline, updated_at, cancellation_reason, cancelled_at, change:metadata->change')
+        .select('id, title, event_type, start_time, end_time, location, course_id, description, status, all_day, recurrence_rule, parent_event_id, requires_rsvp, rsvp_deadline, updated_at, cancellation_reason, cancelled_at, change:metadata->change')
         .eq('team_id', input.teamId)
         .lt('start_time', toIso)
         .or(overlapsWindow)
@@ -360,6 +366,8 @@ export async function loadCalendar(input: {
       startIso: r.start_time,
       // P-4: the row's updated_at, an opaque concurrency token a move sends back untouched.
       version: r.updated_at ?? null,
+      // P-5 WP-P5: the library course the event is at, when one was chosen.
+      courseId: r.course_id ?? null,
       change: cls ? null : (changeMarks.get(r.id) ?? null),
       cancelNote:
         !cls && cancelled && !changeMarks.get(r.id) && r.cancelled_at
@@ -444,10 +452,33 @@ export async function loadCalendar(input: {
     }
   }
 
+  // P-5: round refs for the tournament events, only with golf_tournaments_v1 on (off: no tournament table is read).
+  const tournamentsEnabled = isFlagEnabled('golf_tournaments_v1');
+  let roundRefsFailed = false;
+  if (tournamentsEnabled) {
+    const tourIds = [...new Set(events.filter((e) => e.type === 'tournament').map((e) => e.id))];
+    if (tourIds.length) {
+      const { refs, failed, error } = await loadRoundRefs(supabase, tourIds, input.role);
+      if (failed) {
+        chLogServer('calendar', 'roundRefs', error, 'calendar');
+        roundRefsFailed = true;
+      }
+      for (let i = 0; i < events.length; i++) {
+        const e = events[i]!;
+        if (e.type !== 'tournament') continue;
+        const ref = refs.get(e.id);
+        if (ref) events[i] = { ...e, round: ref };
+        else if (failed) events[i] = { ...e, roundRefFailed: true };
+      }
+    }
+  }
+
   return {
     role: input.role,
     teamId: input.teamId,
     busyError,
+    tournamentsEnabled,
+    roundRefsFailed,
     viewerPlayerId: input.viewerPlayerId,
     teamName: teamRes.data?.name ?? null,
     timezone,

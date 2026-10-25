@@ -6,6 +6,9 @@ import { CalendarNoTeam } from '../screens/calendar/CalendarNoTeam';
 import { resolveClubhouseTeam } from './team';
 import { marksHint } from '../lib/phone-hint';
 import '../styles/calendar.css';
+// P-5: the tournament section of the editor, round mode and the round pills (and the course picker it reuses).
+import '../styles/qualifiers.css';
+import '../styles/tournament-fields.css';
 
 /**
  * /golf/dashboard/calendar in Clubhouse. Coaches plan the team schedule;

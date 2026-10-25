@@ -4,12 +4,15 @@
  * move never overwrites a newer change (the server answers stale or gone). Each date gets its own UTC offset, so 4:00 PM
  * stays 4:00 PM across a clock change, and a run's end gets its own.
  *
- * Tournament rounds (P-5, not built yet): when `e.round` is set this is where the write goes to P-5's
- * updateTournamentRound and maps its refusal codes. Until then tournament events move as any event.
+ * Tournament rounds (P-5 6.4): when `e.round` is set the write goes to updateTournamentRound with the round's version,
+ * and its refusals come back as `refused` with their numbered words (stale stays P-4's stale path).
  */
 import { zonedWallTime } from '../../lib/dates';
 import { editRecurringEvent } from '@/app/golf/actions/recurring-events';
 import { updateGolfEvent } from '@/app/golf/actions/calendar-events';
+import { updateTournamentRound } from '@/app/golf/actions/tournaments-calendar';
+import { refusalNotice, type TournamentRefusal } from '../tournaments/fields/refusals';
+import { roundStartAt } from '../tournaments/fields/rounds-model';
 import { offsetMinutesFor } from '@/lib/golf/timezone';
 import type { ChBarTarget, ChMoveTarget } from './drag-model';
 import type { ChCalEvent } from './model';
@@ -27,7 +30,13 @@ export interface HeldMove {
 
 export type WriteMoveResult =
   | { ok: true; updatedAt?: string }
-  | { ok: false; code: 'stale' | 'gone' | 'forbidden' | 'failed'; message?: string; current?: { date: string; start: number | null; end: number | null; allDay: boolean; version: string | null } };
+  | { ok: false; code: 'stale' | 'gone' | 'forbidden' | 'failed'; message?: string; current?: { date: string; start: number | null; end: number | null; allDay: boolean; version: string | null } }
+  /** P-5: a tournament round's move the RPC refused, with the words and number to show. */
+  | { ok: false; code: 'refused'; notice: { code: string; text: string }; message?: string; current?: undefined };
+
+/** A round's version travels in P-4's version slot as `round:<n>`, so a following move uses the newest one. */
+const ROUND_TOKEN = 'round:';
+export const roundToken = (v: number) => `${ROUND_TOKEN}${v}`;
 
 export const toHHMM = (h: number) => {
   const mins = Math.round(h * 60);
@@ -77,7 +86,29 @@ function addDay(date: string): string {
   return d.toISOString().slice(0, 10);
 }
 
+async function writeRoundMove(m: HeldMove, timeZone: string): Promise<WriteMoveResult> {
+  const r = m.e.round!;
+  const token = m.expectedUpdatedAt?.startsWith(ROUND_TOKEN) ? Number(m.expectedUpdatedAt.slice(ROUND_TOKEN.length)) : null;
+  const version = token && Number.isFinite(token) ? token : r.version;
+  const to = m.to;
+  // A bar (an all-day round in the all-day lane or month) changes its day and stays all day; a timed one keeps its length.
+  const patch = isBar(to)
+    ? { startAt: roundStartAt({ date: to.from, tee: null }, timeZone), endAt: null, allDay: true }
+    : {
+        startAt: roundStartAt({ date: to.date, tee: toHHMM(to.start) }, timeZone),
+        endAt: roundStartAt({ date: to.end >= 24 ? addDay(to.date) : to.date, tee: toHHMM(to.end) }, timeZone),
+        allDay: false,
+      };
+  const res = await updateTournamentRound(m.e.id, { ...patch, ...(r.teeSheet ? { shiftTeeSheet: true } : {}) }, version);
+  if (res.success) return { ok: true, updatedAt: roundToken(res.data.version) };
+  if (res.code === 'stale') return { ok: false, code: 'stale', message: res.error };
+  if (res.code === 'not_found') return { ok: false, code: 'gone', message: res.error };
+  const n = refusalNotice((res.code ?? 'failed') as TournamentRefusal, { save: 'round', round: r.roundNo, before: r.roundNo > 1 ? r.roundNo - 1 : null, name: r.name });
+  return { ok: false, code: 'refused', notice: n, message: res.error };
+}
+
 export async function writeMove(m: HeldMove, timeZone: string): Promise<WriteMoveResult> {
+  if (m.e.round) return writeRoundMove(m, timeZone);
   const p = movePayload(m, timeZone);
   const expected = m.expectedUpdatedAt ?? undefined;
   if (m.scope === 'thisAndFuture') {

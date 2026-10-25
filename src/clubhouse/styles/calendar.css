@@ -4210,5 +4210,107 @@ html[data-fw-theme='dark'] .ch-ev--busy::after {
 @media (prefers-reduced-motion: reduce) {
   .ch-oldslot {
     animation: none;
+
+/* P-5 4.9: tracked tournament rounds. The round pill on a block is a darker tab of the block's own green. */
+.ch-ev__round {
+  position: absolute;
+  top: var(--ch-space-1);
+  right: var(--ch-space-1);
+  display: inline-flex;
+  align-items: center;
+  gap: var(--ch-space-0_5);
+  min-height: 16px;
+  padding: 0 var(--ch-space-1);
+  background: color-mix(in oklab, #000 22%, var(--ch-green-fill-700));
+  border-radius: var(--ch-radius-xs);
+  font: var(--ch-type-11-medium);
+  letter-spacing: var(--ch-track-11);
+  color: var(--ch-on-fill-100);
+}
+.ch-ev.has-round .ch-ev__t {
+  padding-inline-end: var(--ch-space-8);
+}
+/* A cancelled round is paper (calendar.css): its pill drops the fill for a hairline ring and leads with Ban. */
+.ch-ev.is-cancelled .ch-ev__round {
+  background: transparent;
+  box-shadow: inset 0 0 0 var(--ch-hairline-w) var(--ch-border-control);
+  color: var(--ch-text-secondary);
+}
+/* Month chips and the week's all-day bars: the name ellipsizes, " R1" after it stays whole. */
+:is(.ch-mo__ev, .ch-mo__ribbon, .ch-ev-bar) .ch-rn {
+  flex: none;
+  overflow: visible;
+  margin-inline-start: var(--ch-space-1);
+}
+.ch-in__setup {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--ch-space-3);
+}
+.ch-ag__round {
+  flex: none;
+  font: var(--ch-type-13);
+  letter-spacing: var(--ch-track-13);
+  color: var(--ch-text-tertiary);
+}
+
+
+/* P-5 4.3: round mode. The banner names the tournament on a pale green tint with a full hairline, never a side bar. */
+.ch-red__banner {
+  display: grid;
+  grid-template-columns: 32px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: var(--ch-space-3);
+  padding: var(--ch-space-3) var(--ch-space-4);
+  background: var(--ch-green-50);
+  border: var(--ch-hairline-w) solid var(--ch-border-hairline);
+  border-radius: var(--ch-radius-lg);
+}
+.ch-red__plate {
+  display: grid;
+  place-items: center;
+  width: 32px;
+  height: 32px;
+  background: var(--ch-bg-surface);
+  border-radius: var(--ch-radius-sm);
+  font: var(--ch-type-13-medium);
+  letter-spacing: var(--ch-track-13);
+  color: var(--ch-green-700);
+}
+.ch-red__l1 {
+  margin: 0;
+  display: -webkit-box;
+  overflow: hidden;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  font: var(--ch-type-14-medium);
+  letter-spacing: var(--ch-track-14);
+  color: var(--ch-text-primary);
+}
+.ch-red__l2 {
+  margin: 0;
+  font: var(--ch-type-13);
+  letter-spacing: var(--ch-track-13);
+  color: var(--ch-text-secondary);
+}
+.ch-red__fields {
+  display: grid;
+  gap: var(--ch-space-4);
+  min-width: 0;
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+.ch-btn.ch-red__danger {
+  color: var(--ch-danger-600);
+}
+@media (max-width: 719px) {
+  .ch-red__banner {
+    grid-template-columns: 32px minmax(0, 1fr);
+  }
+  .ch-red__banner > .ch-btn {
+    grid-column: 1 / -1;
+    min-height: 44px;
   }
 }

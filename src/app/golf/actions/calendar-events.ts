@@ -2,7 +2,6 @@
 
 import { after } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
-import { fromUntyped } from '@/lib/supabase/untyped';
 import { revalidatePath, updateTag } from 'next/cache';
 import { CACHE_TAGS } from '@/lib/cache/tags';
 import { z } from 'zod';
@@ -15,9 +14,9 @@ import { isMeetingEvent } from '@/lib/calendar/meeting-visibility';
 import { loadInvitedMeetingIds } from '@/lib/calendar/meeting-invites';
 import { logServerError, logServerException } from '@/lib/server-error-logger';
 import { withAdminObserved } from '@/lib/admin/observed-action';
-import { createAdminClient } from '@/lib/supabase/admin';
 import { describeError } from '@/lib/utils/describe-error';
 import { rpcAttendanceCounts } from '@/lib/golf/attendance-counts-rpc';
+import { fanOutEventCancelled, fanOutEventInvitation } from '@/lib/calendar/fan-out';
 import { dateString, getCoachTeamId } from './golf-action-shared';
 import type { ActionResult } from './golf-action-shared';
 
@@ -205,6 +204,8 @@ const golfEventSchema = z.object({
   allDay: z.boolean().optional(),
   location: z.string().max(500).optional(),
   courseName: z.string().max(200).optional(),
+  // P-5 WP-P5: the library course (golf_events.course_id). courseName is still accepted and dropped, as before.
+  courseId: z.string().uuid().nullable().optional(),
   description: z.string().max(5000).optional(),
   isMandatory: z.boolean().optional(),
   // RSVP fields
@@ -226,6 +227,8 @@ export interface GolfEventInput {
   allDay?: boolean;
   location?: string;
   courseName?: string;
+  /** The library course (`golf_events.course_id`); null clears it on an update. */
+  courseId?: string | null;
   description?: string;
   isMandatory?: boolean;
   // RSVP fields
@@ -309,6 +312,7 @@ type GolfEventUpdateData = {
   end_time?: string | null;
   all_day?: boolean;
   location?: string | null;
+  course_id?: string | null;
   description?: string | null;
   requires_rsvp?: boolean;
   rsvp_deadline?: string | null;
@@ -378,6 +382,8 @@ async function createGolfEventImpl(data: GolfEventInput): Promise<ActionResult<{
           : validatedData.endDate ? `${validatedData.endDate}T00:00:00+00:00` : null,
       all_day: isAllDay,
       location: validatedData.location || null,
+      // P-5 WP-P5: only when the editor chose a course, so every other create's row is as before.
+      ...(validatedData.courseId ? { course_id: validatedData.courseId } : {}),
       description: validatedData.description || null,
       // RSVP config (audit finding #5): these were silently dropped — every
       // event created with RSVP on landed disarmed. The deadline goes through
@@ -491,148 +497,19 @@ async function createGolfEventImpl(data: GolfEventInput): Promise<ActionResult<{
     // with the three channels parallelized through Promise.allSettled. Reads
     // inside the callback use the admin client — the request-scoped client is
     // not guaranteed usable once the response has flushed.
-    const fanOutEventId: string = event.id;
-    const fanOutTeamId = teamId;
-    const fanOutTitle = validatedData.title;
-    const fanOutStartDate = validatedData.startDate;
-    const fanOutLocation = validatedData.location || '';
     // Q-108 (owner, 2026-10-01): only the invited players are told, as the editor promises ("Attendees will be notified");
     // an event with no invitees notifies nobody. It used to email and push every active player on the team.
     // Owner, 2026-10-08: RSVPs are off unless the coach turns them on, and players get no notification for an event
-    // that doesn't ask for replies.
-    const fanOutInvitees = new Set(validatedData.requiresRsvp ? (validatedData.attendeeIds ?? []) : []);
-    after(async () => {
-      if (fanOutInvitees.size === 0) return;
-      try {
-        const adminClient = createAdminClient();
-        // Fire-and-forget fan-out for a newly created event. Both reads
-        // discarded their error and both `length === 0` guards then `return`,
-        // so a failed roster read meant NOBODY was told about a new team event
-        // — and because this runs inside after(), there is no return value to
-        // carry a failure and nothing surfaced anywhere. Silent in the truest
-        // sense: no error, no user feedback, no record.
-        //
-        // It cannot fail the request (the event was created successfully and
-        // should stay created), so the honest thing is to say so in the log.
-        const { data: teamMembers, error: teamMembersError } = await adminClient
-          .from('golf_team_members')
-          .select('player_id')
-          .eq('team_id', fanOutTeamId)
-          .eq('status', 'active');
-
-        if (teamMembersError) {
-          await logServerError(
-            `[createGolfEvent.fanOut] roster read failed — no one was notified about this event: ${describeError(teamMembersError)}`,
-            { action: 'golf.createEvent.fanOut', featureArea: 'calendar' },
-          );
-          return;
-        }
-
-        const playerIds = (teamMembers ?? [])
-          .map((m) => m.player_id)
-          .filter((id): id is string => Boolean(id) && fanOutInvitees.has(id as string));
-        if (playerIds.length === 0) return;
-
-        const { data: players, error: playersError } = await adminClient
-          .from('golf_players')
-          .select('id, user_id')
-          .in('id', playerIds);
-
-        if (playersError) {
-          await logServerError(
-            `[createGolfEvent.fanOut] player lookup failed — no one was notified about this event: ${describeError(playersError)}`,
-            { action: 'golf.createEvent.fanOut', featureArea: 'calendar' },
-          );
-          return;
-        }
-
-        const userIds = (players ?? [])
-          .map((p) => p.user_id)
-          .filter((id): id is string => Boolean(id));
-        if (userIds.length === 0) return;
-
-        // 1. In-app notifications (golf_calendar_notifications)
-        const inAppPromise = (async () => {
-          const notifications = userIds.map((uid) => ({
-            user_id: uid,
-            event_id: fanOutEventId,
-            notification_type: 'event_invitation',
-            title: `New event: ${fanOutTitle}`,
-            message: `${fanOutStartDate}${fanOutLocation ? ` at ${fanOutLocation}` : ''}`,
-            action_url: `/golf/dashboard/calendar`,
-          }));
-          const { error: notifError } = await fromUntyped(adminClient, 'golf_calendar_notifications')
-            .upsert(notifications, { onConflict: 'event_id,user_id,notification_type', ignoreDuplicates: true });
-          if (notifError) {
-            await logServerError(`createGolfEvent notification insert failed: ${notifError.message}`, {
-              action: 'createGolfEvent.insertNotifications',
-              featureArea: 'events',
-              extra: { errorCode: notifError.code },
-            });
-          }
-        })();
-
-        // 2. Email notifications — parallel per recipient (the bulk helper
-        // loops sequentially; Promise.allSettled keeps one slow Resend call
-        // from serializing the rest).
-        const emailPromise = (async () => {
-          const { sendEmailNotification } = await import('@/lib/notifications/email');
-          const { data: userRows } = await adminClient
-            .from('users')
-            .select('id, email')
-            .in('id', userIds);
-          const recipients = (userRows ?? [])
-            .filter((u) => Boolean(u.email))
-            .map((u) => ({ id: u.id, email: u.email as string }));
-          if (recipients.length === 0) return;
-          const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://helmsportslabs.com';
-          const results = await Promise.allSettled(
-            recipients.map((u) =>
-              sendEmailNotification('event_rsvp_reminder', u.id, u.email, {
-                eventName: fanOutTitle,
-                eventDate: fanOutStartDate,
-                location: fanOutLocation,
-                eventUrl: `${baseUrl}/golf/dashboard/calendar`,
-              })
-            )
-          );
-          const failed = results.filter((r) => r.status === 'rejected').length;
-          if (failed > 0) {
-            await logServerError(`createGolfEvent email notification failed for ${failed}/${recipients.length} recipients`, {
-              action: 'createGolfEvent.emailNotification',
-              featureArea: 'events',
-            });
-          }
-        })();
-
-        // 3. Push notifications
-        const pushPromise = (async () => {
-          const { sendBulkPushNotification } = await import('@/lib/notifications/push');
-          await sendBulkPushNotification('event_rsvp_reminder', userIds, {
-            eventName: fanOutTitle,
-            eventId: fanOutEventId,
-          });
-        })();
-
-        const channelResults = await Promise.allSettled([inAppPromise, emailPromise, pushPromise]);
-        const channelNames = ['inApp', 'email', 'push'] as const;
-        for (let i = 0; i < channelResults.length; i++) {
-          const result = channelResults[i];
-          if (result?.status === 'rejected') {
-            await logServerError(`createGolfEvent ${channelNames[i]} fan-out failed: ${describeError(result.reason)}`, {
-              action: 'createGolfEvent.notificationFanOut',
-              featureArea: 'events',
-              extra: { channel: channelNames[i], eventId: fanOutEventId },
-            });
-          }
-        }
-      } catch (notifErr) {
-        await logServerError(`createGolfEvent notification creation failed: ${describeError(notifErr)}`, {
-          action: 'createGolfEvent.notifications',
-          featureArea: 'events',
-        });
-      }
-    });
+    // that doesn't ask for replies. The fan-out itself is lib/calendar/fan-out.ts (P-5 shares it).
+    const fanOut = {
+      eventId: event.id as string,
+      teamId,
+      title: validatedData.title,
+      dateLabel: validatedData.startDate,
+      location: validatedData.location || '',
+      inviteeIds: new Set(validatedData.requiresRsvp ? (validatedData.attendeeIds ?? []) : []),
+    };
+    after(() => fanOutEventInvitation(fanOut));
 
     revalidatePath('/golf/dashboard');
     revalidatePath('/golf/dashboard/calendar');
@@ -667,6 +544,7 @@ const golfEventUpdateSchema = z.object({
   endTime: timeString.optional(),
   allDay: z.boolean().optional(),
   location: z.string().max(500).optional(),
+  courseId: z.string().uuid().nullable().optional(),
   description: z.string().max(5000).optional(),
   requiresRsvp: z.boolean().optional(),
   rsvpDeadline: z.string().optional(),
@@ -792,6 +670,7 @@ async function updateGolfEventImpl(
     }
     if (validatedData.allDay !== undefined) updateData.all_day = validatedData.allDay;
     if (validatedData.location !== undefined) updateData.location = validatedData.location || null;
+    if (validatedData.courseId !== undefined) updateData.course_id = validatedData.courseId;
     if (validatedData.description !== undefined) updateData.description = validatedData.description || null;
     if (validatedData.requiresRsvp !== undefined) updateData.requires_rsvp = validatedData.requiresRsvp;
     // Deadline goes through the same timezone-offset convention as start_time
@@ -1094,6 +973,11 @@ async function deleteGolfEventImpl(
         .eq('team_id', teamId)
         .select('id');
 
+      // P-5: a tournament round's event can't go on its own (golf_tournament_rounds' deferred foreign key refuses it
+      // at commit, 23503). Its tournament owns it.
+      if (error && (error as { code?: string }).code === '23503') {
+        return { success: false, error: 'This round belongs to a tournament. Manage it in Tournaments.' };
+      }
       if (error) {
         void logServerError(`deleteGolfEvent hard-delete failed: ${describeError(error)}`, {
           action: 'golf.deleteGolfEvent.hardDelete',
@@ -1143,150 +1027,18 @@ async function deleteGolfEventImpl(
       }
 
       // Notify every invited player post-response (same after() pattern as
-      // the create fan-out): in-app 'event_cancelled' rows + email.
-      const cancelTitle = existingEvent.title;
-      const cancelStart = existingEvent.start_time;
-      const cancelLocation = existingEvent.location;
-      const cancelReason = options?.reason ?? '';
-      const cancelNotifies = existingEvent.requires_rsvp === true;
-      after(async () => {
-        // Owner, 2026-10-08: RSVPs are off unless the coach turns them on, and players get no notification for an event
-        // that doesn't ask for replies, including its cancellation.
-        if (!cancelNotifies) return;
-        try {
-          const adminClient = createAdminClient();
-          const { data: attendances } = await adminClient
-            .from('golf_event_attendance')
-            .select('player:golf_players(user_id)')
-            .eq('event_id', eventId);
-
-          const attendanceUserIds = (attendances ?? [])
-            .map((row) => {
-              const playerRef = (row as { player: { user_id: string | null } | Array<{ user_id: string | null }> | null }).player;
-              const playerRow = Array.isArray(playerRef) ? playerRef[0] ?? null : playerRef;
-              return playerRow?.user_id ?? null;
-            })
-            .filter((id): id is string => Boolean(id));
-
-          // Union with the whole active team (2026-07-10 calendar-travel
-          // audit, P1): a coach's CREATE fan-out notifies every active
-          // golf_team_members row unconditionally, regardless of whether
-          // attendeeIds was populated — but this cancel fan-out previously
-          // queried golf_event_attendance ONLY, so a whole-team event
-          // cancelled before anyone RSVP'd (zero attendance rows) silently
-          // notified nobody even though the team was told it was happening.
-          // Same two-query shape as the create fan-out above (team_members →
-          // player_id → golf_players.user_id) rather than an embedded join.
-          const { data: teamMembers } = await adminClient
-            .from('golf_team_members')
-            .select('player_id')
-            .eq('team_id', teamId)
-            .eq('status', 'active');
-          const activePlayerIds = (teamMembers ?? [])
-            .map((m) => m.player_id)
-            .filter((id): id is string => Boolean(id));
-          let teamUserIds: string[] = [];
-          if (activePlayerIds.length > 0) {
-            const { data: activePlayers, error: activePlayersError } = await adminClient
-              .from('golf_players')
-              .select('id, user_id')
-              .in('id', activePlayerIds);
-            // Same fan-out, same silence: a failed lookup here drops the whole
-            // team from the recipient set for an event UPDATE, leaving only
-            // whoever had already RSVP'd.
-            if (activePlayersError) {
-              await logServerError(
-                `[golf event update.fanOut] player lookup failed — the team was dropped from this notification: ${describeError(activePlayersError)}`,
-                { action: 'golf.updateEvent.fanOut', featureArea: 'calendar' },
-              );
-            }
-            teamUserIds = (activePlayers ?? [])
-              .map((p) => p.user_id)
-              .filter((id): id is string => Boolean(id));
-          }
-
-          const userIds = [...new Set([...attendanceUserIds, ...teamUserIds])];
-          if (userIds.length === 0) return;
-
-          const startLabel = cancelStart
-            ? new Date(cancelStart).toLocaleString('en-US', {
-                weekday: 'short',
-                month: 'short',
-                day: 'numeric',
-                hour: 'numeric',
-                minute: '2-digit',
-              })
-            : 'TBD';
-          const detail = `${startLabel}${cancelLocation ? ` at ${cancelLocation}` : ''}${cancelReason ? ` — ${cancelReason}` : ''}`;
-
-          const inAppPromise = (async () => {
-            const notifications = userIds.map((uid) => ({
-              user_id: uid,
-              event_id: eventId,
-              notification_type: 'event_cancelled',
-              title: `Cancelled: ${cancelTitle}`,
-              message: detail,
-              action_url: `/golf/dashboard/calendar?event=${eventId}`,
-            }));
-            const { error: notifError } = await fromUntyped(adminClient, 'golf_calendar_notifications')
-              .upsert(notifications, { onConflict: 'event_id,user_id,notification_type', ignoreDuplicates: false });
-            if (notifError) {
-              await logServerError(`deleteGolfEvent cancellation notification insert failed: ${notifError.message}`, {
-                action: 'deleteGolfEvent.insertNotifications',
-                featureArea: 'events',
-                extra: { eventId },
-              });
-            }
-          })();
-
-          const emailPromise = (async () => {
-            const { sendEmailNotification } = await import('@/lib/notifications/email');
-            const { data: userRows } = await adminClient
-              .from('users')
-              .select('id, email')
-              .in('id', userIds);
-            const recipients = (userRows ?? [])
-              .filter((u) => Boolean(u.email))
-              .map((u) => ({ id: u.id, email: u.email as string }));
-            if (recipients.length === 0) return;
-            const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://helmsportslabs.com';
-            const results = await Promise.allSettled(
-              recipients.map((u) =>
-                sendEmailNotification('team_announcement', u.id, u.email, {
-                  title: `Event cancelled: ${cancelTitle}`,
-                  content: `This event has been cancelled. ${detail}`,
-                  announcementUrl: `${baseUrl}/golf/dashboard/calendar`,
-                })
-              )
-            );
-            const failed = results.filter((r) => r.status === 'rejected').length;
-            if (failed > 0) {
-              await logServerError(`deleteGolfEvent cancellation email failed for ${failed}/${recipients.length} recipients`, {
-                action: 'deleteGolfEvent.emailNotification',
-                featureArea: 'events',
-                extra: { eventId },
-              });
-            }
-          })();
-
-          const channelResults = await Promise.allSettled([inAppPromise, emailPromise]);
-          for (const result of channelResults) {
-            if (result.status === 'rejected') {
-              await logServerError(`deleteGolfEvent cancellation fan-out failed: ${describeError(result.reason)}`, {
-                action: 'deleteGolfEvent.cancellationFanOut',
-                featureArea: 'events',
-                extra: { eventId },
-              });
-            }
-          }
-        } catch (notifErr) {
-          await logServerError(`deleteGolfEvent cancellation notify failed: ${describeError(notifErr)}`, {
-            action: 'deleteGolfEvent.cancellationNotify',
-            featureArea: 'events',
-            extra: { eventId },
-          });
-        }
-      });
+      // the create fan-out): in-app 'event_cancelled' rows + email
+      // (lib/calendar/fan-out.ts, shared with P-5's tournament cancels).
+      const cancelled = {
+        eventId,
+        teamId,
+        title: existingEvent.title,
+        startTime: existingEvent.start_time,
+        location: existingEvent.location,
+        reason: options?.reason ?? '',
+        notifies: existingEvent.requires_rsvp === true,
+      };
+      after(() => fanOutEventCancelled(cancelled));
     }
 
     revalidatePath('/golf/dashboard/calendar');

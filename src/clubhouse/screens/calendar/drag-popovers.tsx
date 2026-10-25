@@ -6,7 +6,7 @@
  * by days would leave the series' rule naming the old weekday (6.4, BYDAY drift). Esc, Cancel or a tap outside puts the
  * card back. Anchored to the dropped block, in the shared menu material, flipping to stay on screen.
  *
- * The tournament round confirm ("Move Pinehurst R1 to Fri 8:42 AM?") is P-5's; it lands here when P-5's rounds exist.
+ * P-5 6.4: the tournament round confirm ("Move Pinehurst Invitational R1 to Fri 6 Nov, 8:42 AM?") is RoundMoveConfirm.
  */
 import { m } from 'motion/react';
 import { useLayoutEffect, useRef, useState } from 'react';
@@ -75,6 +75,72 @@ export function SeriesScopeMenu({ anchorId, dayChanged, onPick, onCancel }: { an
       <div className="ch-menu__sep" role="separator" />
       <button type="button" role="menuitem" className="ch-menu__item ch-dd-scope__cancel" onClick={onCancel}>
         Cancel
+      </button>
+    </m.div>,
+    document.querySelector('.ch-root') ?? document.body,
+  );
+}
+
+/**
+ * P-5 6.4: a tournament round dropped somewhere new asks first, in the same material as the series question: the move
+ * and what happens to the players' tee times, then Cancel (Esc, a tap outside) or Move round, which is focused.
+ */
+export function RoundMoveConfirm({ anchorId, question, teeSheet, onMove, onCancel }: { anchorId: string; question: string; teeSheet: boolean; onMove: () => void; onCancel: () => void }) {
+  const reduced = useChReducedMotion();
+  const box = useRef<HTMLDivElement | null>(null);
+  const [pos, setPos] = useState<{ left: number; top: number } | null>(null);
+  useLayoutEffect(() => {
+    const anchor = document.querySelector<HTMLElement>(`[data-ev-id="${CSS.escape(anchorId)}"]`);
+    const r = anchor?.getBoundingClientRect() ?? { top: window.innerHeight / 2, bottom: window.innerHeight / 2, left: window.innerWidth / 2 - W / 2 };
+    const h = box.current?.offsetHeight || 160;
+    const below = window.innerHeight - r.bottom - 8;
+    const top = below >= h ? r.bottom + 8 : Math.max(8, r.top - h - 8);
+    setPos({ left: Math.max(8, Math.min(r.left, window.innerWidth - W - 8)), top });
+    const frame = requestAnimationFrame(() => box.current?.querySelector<HTMLElement>('[data-primary]')?.focus({ preventScroll: true }));
+    const outside = (e: PointerEvent) => {
+      if (!box.current?.contains(e.target as Node)) onCancel();
+    };
+    document.addEventListener('pointerdown', outside, true);
+    return () => {
+      cancelAnimationFrame(frame);
+      document.removeEventListener('pointerdown', outside, true);
+    };
+  }, [anchorId, onCancel]);
+  if (typeof document === 'undefined') return null;
+  return createPortal(
+    <m.div
+      ref={box}
+      role="dialog"
+      aria-label={question}
+      className="ch-menu ch-popover ch-dd-scope"
+      data-ui="clubhouse"
+      style={{ left: pos?.left ?? -9999, top: pos?.top, width: W }}
+      initial={reduced ? { opacity: 0 } : CH_POP.initial}
+      animate={reduced ? { opacity: 1 } : CH_POP.animate}
+      transition={chTween('quick', reduced)}
+      onKeyDown={(e) => {
+        if (e.key === 'Escape') {
+          e.stopPropagation();
+          onCancel();
+        }
+      }}
+    >
+      <div className="ch-dd-scope__h">{question}</div>
+      <p className="ch-dd-scope__help">{teeSheet ? 'Each player’s tee time moves by the same amount.' : 'Players’ tee times aren’t changed.'}</p>
+      <div className="ch-menu__sep" role="separator" />
+      <button type="button" className="ch-menu__item ch-dd-scope__cancel" onClick={onCancel}>
+        Cancel
+      </button>
+      <button
+        type="button"
+        className="ch-menu__item"
+        data-primary=""
+        onClick={() => {
+          haptic('select');
+          onMove();
+        }}
+      >
+        Move round
       </button>
     </m.div>,
     document.querySelector('.ch-root') ?? document.body,

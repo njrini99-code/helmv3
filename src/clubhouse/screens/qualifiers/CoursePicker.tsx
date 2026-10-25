@@ -1,6 +1,6 @@
 'use client';
 
-import { ChevronLeft, MapPin } from 'lucide-react';
+import { ChevronLeft, Clock, MapPin } from 'lucide-react';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { Button } from '../../ui/Button';
 import { EmptyState } from '../../ui/States';
@@ -9,6 +9,7 @@ import { Modal } from '../../ui/Modal';
 import { SearchField } from '../../ui/SearchField';
 import { Skeleton } from '../../ui/States';
 import { haptic } from '../../lib/haptics';
+import { Icon } from '../../ui/Icon';
 import { chReport } from '../../lib/track';
 import type { ChQCourseOption, ChQTeeOption, ChQWrites } from './writes';
 
@@ -18,6 +19,21 @@ export interface ChQPickedCourse {
   teeId: string;
   teeName: string;
   par: number | null;
+  /** Tee yardage, when the tees step had it ("Blue tees · 7,214 yds"). */
+  yards?: number | null;
+}
+
+/**
+ * P-5: what the picker gives back with its optional steps on. `courseId` null is a name typed by hand (`allowTyped`),
+ * stored as a label, never as a new library row (owner call 5); `teeId` null is "Pick tees later" (`allowNoTee`).
+ */
+export interface ChQPickedLoose {
+  courseId: string | null;
+  courseName: string;
+  teeId: string | null;
+  teeName: string | null;
+  par: number | null;
+  yards?: number | null;
 }
 
 /**
@@ -30,12 +46,27 @@ export function CoursePicker({
   onClose,
   onPick,
   writes,
+  title,
+  allowNoTee = false,
+  allowTyped = false,
+  recentFirst = false,
+  onPickLoose,
 }: {
   /** The round being set, or null when closed. */
   round: number | null;
   onClose: () => void;
   onPick: (round: number, picked: ChQPickedCourse) => void;
   writes: Pick<ChQWrites, 'courses' | 'tees'>;
+  /** The sheet's title in place of "Course for round N". */
+  title?: string;
+  /** P-5: a "Pick tees later" row at the top of the tees step (and on its error), which picks the course with no tee. */
+  allowNoTee?: boolean;
+  /** P-5: with no match, offer the typed words as the course name (CH-6340). */
+  allowTyped?: boolean;
+  /** P-5: with no search, the team's saved courses under "Recent", then "All courses". */
+  recentFirst?: boolean;
+  /** P-5: where a pick with no tee or a typed name goes; required with allowNoTee or allowTyped. */
+  onPickLoose?: (round: number, picked: ChQPickedLoose) => void;
 }) {
   const open = round != null;
   const [q, setQ] = useState('');
@@ -105,7 +136,7 @@ export function CoursePicker({
   };
 
   return (
-    <Modal open={open} onClose={onClose} width={520} icon={MapPin} title={round ? `Course for round ${round}` : 'Course'} description={course ? course.name : 'Choose the course, then its tees.'}>
+    <Modal open={open} onClose={onClose} width={520} icon={MapPin} title={title ?? (round ? `Course for round ${round}` : 'Course')} description={course ? course.name : 'Choose the course, then its tees.'}>
       <div className="ch-qf-picker">
         {!course ? (
           <>
@@ -118,12 +149,32 @@ export function CoursePicker({
                   <Skeleton key={i} width="100%" height={40} radius={9} />
                 ))}
               </div>
+            ) : courses.length === 0 && allowTyped && q.trim() ? (
+              <EmptyState
+                compact
+                kind="filtered"
+                code="CH-6340"
+                title={`No courses match “${q.trim()}”`}
+                body="Use the name as it is. You can swap in the library course later from Tournaments."
+                action={
+                  <Button
+                    variant="secondary"
+                    onClick={() => {
+                      haptic('select');
+                      onPickLoose?.(round as number, { courseId: null, courseName: q.trim().slice(0, 120), teeId: null, teeName: null, par: null });
+                    }}
+                  >
+                    {`Use “${q.trim().slice(0, 120)}” as the course name`}
+                  </Button>
+                }
+              />
             ) : courses.length === 0 ? (
               <EmptyState compact kind={q.trim() ? 'filtered' : undefined} code="CH-09312" title={q.trim() ? `No courses match “${q.trim()}”.` : 'No courses in the library yet.'} body="Courses are added from the course library." />
             ) : (
               <div className="ch-qf-picker__list" role="list" aria-label="Courses">
-                {courses.map((c) => (
+                {(recentFirst && !q.trim() ? withHeads(courses) : courses.map((c) => ({ c, head: null as string | null }))).map(({ c, head }) => (
                   <div key={c.id} role="listitem">
+                    {head && <p className="ch-qf-picker__head">{head}</p>}
                     <button type="button" className="ch-qf-picker__row" onClick={() => chooseCourse(c)}>
                       <span>
                         <b>{c.name}</b>
@@ -152,6 +203,22 @@ export function CoursePicker({
                 All courses
               </Button>
             </div>
+            {allowNoTee && (
+              <button
+                type="button"
+                className="ch-qf-picker__row"
+                onClick={() => {
+                  haptic('select');
+                  onPickLoose?.(round as number, { courseId: course.id, courseName: course.name, teeId: null, teeName: null, par: course.par });
+                }}
+              >
+                <Icon icon={Clock} size={18} />
+                <span>
+                  <b>Pick tees later</b>
+                  <small>You can choose tees on the tournament desk.</small>
+                </span>
+              </button>
+            )}
             {teesFailed ? (
               <InlineNotice code="CH-09210" title="Tees didn’t load" body="Nothing was changed. Try again." onRetry={() => loadTees(course)} />
             ) : tees == null ? (
@@ -171,7 +238,7 @@ export function CoursePicker({
                       className="ch-qf-picker__row"
                       onClick={() => {
                         haptic('select');
-                        onPick(round as number, { courseId: course.id, courseName: course.name, teeId: t.id, teeName: t.name, par: t.par });
+                        onPick(round as number, { courseId: course.id, courseName: course.name, teeId: t.id, teeName: t.name, par: t.par, yards: t.yards });
                       }}
                     >
                       <span>
@@ -188,4 +255,10 @@ export function CoursePicker({
       </div>
     </Modal>
   );
+}
+
+/** "Recent" over the team's saved courses, then "All courses", for a list read with no search (`recentFirst`). */
+function withHeads(list: ChQCourseOption[]): Array<{ c: ChQCourseOption; head: string | null }> {
+  const firstAll = list.findIndex((c) => !c.saved);
+  return list.map((c, i) => ({ c, head: i === 0 && c.saved ? 'Recent' : i === firstAll && firstAll > 0 ? 'All courses' : null }));
 }

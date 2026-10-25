@@ -11,7 +11,17 @@ import { CH_POP, chTween } from '../lib/motion';
 import { useChReducedMotion } from '../lib/reduced-motion';
 
 export type MenuItem =
-  | { kind?: 'item'; label: string; icon?: LucideIcon; onSelect?: () => void; href?: string; danger?: boolean; checked?: boolean }
+  | {
+      kind?: 'item';
+      label: string;
+      icon?: LucideIcon;
+      onSelect?: () => void;
+      href?: string;
+      danger?: boolean;
+      checked?: boolean;
+      /** The haptic a pick fires (D-70): `select` by default; `warning` for a remove that asks nothing first (P-5's Remove R3). */
+      feel?: 'select' | 'warning';
+    }
   | { kind: 'separator' };
 
 const W = 232;
@@ -207,7 +217,7 @@ export function MenuItems({ items, onClose }: { items: MenuItem[]; onClose: (foc
             className={cls}
             tabIndex={i === first ? 0 : -1}
             onClick={() => {
-              haptic('select');
+              haptic(it.feel ?? 'select');
               onClose();
               it.onSelect?.();
             }}

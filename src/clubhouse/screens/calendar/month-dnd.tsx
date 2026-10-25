@@ -41,6 +41,7 @@ import { barSpan, daysBetween, draggable, isBar, laneBars, moveSpan, type ChBarT
 import { addDays, dayNum, dowOf, fmtHour, isMajor, monthCells, monthName, type ChCalEvent } from './model';
 import { TYPE_ICON } from './type-icon';
 import { markGlyph, useRowMark } from './change-note';
+import { roundLabel, RoundTitle } from './round-label';
 import type { ChDragKind } from './use-time-drag';
 
 const DOW_LONG = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'] as const;
@@ -287,7 +288,7 @@ function Chip({ e, tab, canDrag, onPick, lifted, onAltMove }: { e: ChCalEvent; t
       {...listeners}
       tabIndex={tab ? 0 : -1}
       aria-roledescription={canDrag ? 'draggable event' : undefined}
-      aria-label={`${e.title}${e.allDay || e.start == null ? '' : `, ${fmtHour(e.start, true)}`}${e.cancelled ? ', cancelled' : ''}${mk?.aria ?? ''}`}
+      aria-label={`${roundLabel(e, e.title).name}${roundLabel(e, e.title).spoken}${e.allDay || e.start == null ? '' : `, ${fmtHour(e.start, true)}`}${e.cancelled ? ', cancelled' : ''}${mk?.aria ?? ''}`}
       className={'ch-mo__ev' + (isMajor(e.type) ? ` is-major is-${e.type}` : '') + (canDrag ? ' is-draggable' : '') + (lifted ? ' is-held' : '') + (e.cancelled ? ' is-cancelled' : '')}
       onKeyDown={(ev) => {
         if (canDrag && ev.altKey && (ev.key === 'ArrowLeft' || ev.key === 'ArrowRight')) {
@@ -304,7 +305,7 @@ function Chip({ e, tab, canDrag, onPick, lifted, onAltMove }: { e: ChCalEvent; t
       }}
     >
       {isMajor(e.type) ? <Icon icon={TYPE_ICON[e.type]} size={11} /> : <i className={`ch-dot-${e.type}`} />}
-      <span>{e.title}</span>
+      <RoundTitle e={e} title={e.title} />
       {mk && !e.cancelled && <Icon icon={markGlyph(mk.change)} size={10} className="ch-mo__chg" />}
     </button>
   );
@@ -323,7 +324,7 @@ function Ribbon({ r, tab, canDrag, onPick, onGrab, dates, lifted }: { r: ChLaneB
       {...listeners}
       tabIndex={tab ? 0 : -1}
       aria-roledescription={canDrag ? 'draggable event' : undefined}
-      aria-label={`${e.title}, ${dowOf(span.from)} ${dayNum(span.from)} to ${dowOf(span.to)} ${dayNum(span.to)}`}
+      aria-label={`${roundLabel(e, e.title).name}${roundLabel(e, e.title).spoken}, ${dowOf(span.from)} ${dayNum(span.from)} to ${dowOf(span.to)} ${dayNum(span.to)}`}
       className={`ch-mo__ribbon ch-ev--${e.type}${isMajor(e.type) ? ' is-major' : ''}${r.clipStart ? ' is-clip-start' : ''}${r.clipEnd ? ' is-clip-end' : ''}${canDrag ? ' is-draggable' : ''}${lifted ? ' is-held' : ''}`}
       style={{ ['--ch-mo-span' as string]: n, ['--ch-mo-lane' as string]: r.row } as React.CSSProperties}
       onPointerDownCapture={(ev) => {
@@ -337,7 +338,7 @@ function Ribbon({ r, tab, canDrag, onPick, onGrab, dates, lifted }: { r: ChLaneB
       }}
     >
       <Icon icon={TYPE_ICON[e.type]} size={11} />
-      <span>{e.title}</span>
+      <RoundTitle e={e} title={e.title} />
     </button>
   );
 }

@@ -154,6 +154,8 @@ export function durationLabel(hours: number): string {
 export function draggable(e: ChCalEvent, coach: boolean): 'timed' | 'bar' | null {
   if (!coach || !e.canEdit || e.cancelled || e.type === 'class' || e.type === 'busy') return null;
   if (e.round?.lockedAt) return null;
+  // P-5 6.4: a round moves only while upcoming in a live tournament, and never while its ref is unknown.
+  if (e.roundRefFailed || (e.round && (e.round.status !== 'upcoming' || e.round.tournamentCancelled))) return null;
   if (e.allDay || (e.span && e.span.from !== e.span.to)) return 'bar';
   return e.start != null && e.end != null ? 'timed' : null;
 }

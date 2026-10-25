@@ -61,6 +61,7 @@ import {
 } from '@/clubhouse/preview/fixtures-stats';
 import '@/clubhouse/styles/stats.css';
 import '@/clubhouse/styles/calendar.css';
+import '@/clubhouse/styles/tournament-fields.css';
 import '@/clubhouse/styles/messages.css';
 import { PreviewMessages } from '@/clubhouse/preview/PreviewMessages';
 import { PreviewBell } from '@/clubhouse/preview/PreviewBell';
