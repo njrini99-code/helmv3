@@ -69,6 +69,16 @@ rebuilt yet" any more. Tested for each view in `coachhelm-views.test.tsx`: who
 it reads for, the switch, a gate lookup that failed, and that a coach following
 one of those addresses is a coach and reads no player's data.
 
+Standing covers this season (owner decision 9, 2026-10-24): every row is from
+1 August onward, on the team's clock (`golf_team_settings.timezone`). The hero
+names the window first ("This season from Aug 1"), and each row says how many
+rounds it stands on. A row from before this season's 1 August is dropped, never
+labelled as this season's. The lifetime scoring average is not stated under
+"This season". Until the season table's migration (`20261024151000`, held) is
+applied, the page reads the lifetime table, says "All time" and shows no row
+counts. Tested in `coachhelm-standing.test.tsx` and
+`coachhelm-standing-shape.test.ts`.
+
 | Bridge ID | Code | Name | Meaning |
 | --- | --- | --- | --- |
 | 130101 | — | `COACHHELM_OPENS_FOR_THE_ROLE` | One address gives a coach the coach's board and a player the player's, from the session (a coach who also has a player profile is a coach here). A player's page is the header (the Player chip, CoachHelm, one line), one focus card, Also worth knowing (at most two findings, three with the focus), Working (at most one strength), a count of the reads left to the Deep dive ("6 more reads in the Deep dive", a tap that opens it; not drawn when the board shows every read) and a closing note (reads update as rounds are posted, and coaches see the same insights). A coach's page is the header (the Coach chip and the count of players with an open signal), the program pulse (up to six rows), By player, the chosen player's focus with Assign as focus and Dismiss, and a count of players with no insight yet. Everything is read on the server before first paint. |

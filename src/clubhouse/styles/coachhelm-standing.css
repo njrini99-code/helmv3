@@ -139,6 +139,10 @@
   margin: 4px 0 0;
   font: var(--ch-type-13-medium);
 }
+/* A row's own round count: a quiet fact after the comparison, never a verdict colour. */
+.ch-hs-n {
+  color: var(--ch-text-tertiary);
+}
 .ch-hs-vs.is-ahead {
   color: var(--ch-green-700);
 }

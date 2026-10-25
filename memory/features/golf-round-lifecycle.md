@@ -161,6 +161,9 @@ separate `recordWorkflow` calls directly in `golf.ts`.
 - `golf_round_reviews`
 - `golf_player_stats_cache`
 - CoachHelm insight/evidence tables when post-round intelligence runs.
+- The Standing refresh queue from held migration `20261024150000` (one upsert per active team, after the save commits,
+  inside the submit's `after()`; `markTeamStandingDirty` never throws and is a no-op until that migration is applied). The standing
+  refresh itself runs from the cron's dirty pass, never on the submit path (40P01).
 
 Use `memory/context/golfhelm-database.md` for exact columns.
 

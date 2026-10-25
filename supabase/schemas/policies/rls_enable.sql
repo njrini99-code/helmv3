@@ -416,6 +416,10 @@ ALTER TABLE "public"."golf_player_notification_state" ENABLE ROW LEVEL SECURITY;
 
 ALTER TABLE "public"."golf_player_standing" ENABLE ROW LEVEL SECURITY;
 
+ALTER TABLE public.golf_player_standing_season ENABLE ROW LEVEL SECURITY;
+
+ALTER TABLE public.golf_standing_refresh_queue ENABLE ROW LEVEL SECURITY;
+
 ALTER TABLE "public"."golf_player_stats_cache" ENABLE ROW LEVEL SECURITY;
 
 ALTER TABLE "public"."golf_players" ENABLE ROW LEVEL SECURITY;
