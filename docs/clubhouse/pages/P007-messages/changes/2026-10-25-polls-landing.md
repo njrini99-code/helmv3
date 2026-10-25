@@ -1,4 +1,4 @@
-# 2026-10-25 — Messages: polls land at once, and the phone "+" (P-2 follow-up, slice 3)
+# 2026-10-25 — Messages: polls land at once (P-2 follow-up, slice 3)
 
 ## 2026-10-25 — No blank beat after Send, and one "+" on the phone
 
