@@ -20,6 +20,13 @@
  * BYTES THE BROWSER RUNS. We fetch the live page, pull its chunk URLs, and walk main's history
  * backwards looking for the first SHA that appears in one.
  *
+ * The walk covers all of main by default. Until 2026-10-23 it stopped at the
+ * newest 60 commits, so once production fell 61 commits behind (d0f467a73
+ * against a main 67 ahead) this script and the session-start probe both said
+ * UNKNOWN exactly when the gap mattered most. The chunk text is scanned once
+ * for 40-hex runs, so a deep walk is a set lookup per commit, not a scan.
+ * `--depth N` still limits the walk to the newest N commits.
+ *
  * That is deliberately stronger than reading a deployment record: a READY
  * deployment whose alias never moved serves nobody, and metadata cannot tell
  * you that. The bytes can.
@@ -54,7 +61,7 @@ const num = (flag, dflt) => {
 };
 const allow = num('--allow', 0);
 const strict = argv.includes('--strict') || argv.includes('--check');
-const depth = num('--depth', 60);
+const depth = num('--depth', 0);
 const timeoutMs = num('--timeout-ms', 0);
 const json = argv.includes('--json');
 const noFetch = argv.includes('--no-fetch');
@@ -91,7 +98,7 @@ try {
 const chunks = [...new Set([...html.matchAll(/\/_next\/static\/chunks\/[^"']+?\.js/g)].map((m) => m[0]))];
 if (chunks.length === 0) die(2, 'release-status: no JS chunks found in the served page.');
 
-const candidates = (sh('git', ['log', '--format=%H', `-${depth}`, 'origin/main']) ?? '').split('\n').filter(Boolean);
+const candidates = (sh('git', ['rev-list', ...(depth > 0 ? [`--max-count=${depth}`] : []), 'origin/main']) ?? '').split('\n').filter(Boolean);
 if (candidates.length === 0) die(2, 'release-status: could not list main history.');
 
 // Fetch a bounded sample of chunks once, then test every candidate against
@@ -105,14 +112,16 @@ for (const c of chunks.slice(0, 12)) {
   } catch { /* a missing chunk is not fatal; others may carry the stamp */ }
 }
 if (bodies.length === 0) die(2, 'release-status: could not fetch any chunk body.');
-const haystack = bodies.join('\n');
+// Every full-length hex run in the chunks, gathered once. The lookarounds
+// keep a 40-character slice of a longer hex string from passing for a SHA.
+const stamped = new Set(bodies.join('\n').match(/(?<![0-9a-f])[0-9a-f]{40}(?![0-9a-f])/g) ?? []);
 
-const deployed = candidates.find((sha) => haystack.includes(sha));
+const deployed = candidates.find((sha) => stamped.has(sha));
 
 if (!deployed) {
   die(2, [
-    `release-status: no commit from the last ${depth} on main appears in the served bundle.`,
-    '  Either production is older than that window, or it was deployed without',
+    `release-status: no commit ${depth > 0 ? `from the last ${depth} ` : ''}on main appears in the served bundle.`,
+    `  Either production ${depth > 0 ? 'is older than that window' : 'serves a commit that is not on main'}, or it was deployed`,
     '  without the commit stamp (NEXT_PUBLIC_SENTRY_RELEASE=<sha> as a --build-env).',
     '  This is UNKNOWN, not "in sync" — do not read it as healthy.',
   ].join('\n'));
