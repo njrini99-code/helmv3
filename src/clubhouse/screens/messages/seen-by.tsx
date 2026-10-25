@@ -13,7 +13,10 @@ import { Modal } from "../../ui/Modal";
 import { InlineNotice } from "../../ui/Notices";
 import { Skeleton } from "../../ui/States";
 import { railTime, type ChMsg } from "./model";
-import { personOf, type ChMessagesApi } from "./MessagesView";
+import type { ChMessagesApi } from "./MessagesView";
+
+/** The directory lookup MessagesView exports as personOf, kept here so this file only takes types from it (no import cycle). */
+const personOf = (api: ChMessagesApi, userId: string) => api.directory.find((p) => p.userId === userId);
 
 /**
  * Seen by (premium features P-1, handoff 4.34.1): the receipt on a group message's time line, "Seen by 9 of 11".
@@ -188,7 +191,7 @@ function SeenByBody({ api, m, compact }: { api: ChMessagesApi; m: ChMsg; compact
         <ul className="ch-seen-sec__rows">
           {rows.map((x) => (
             <M.li key={x.userId} layout={reduced ? false : "position"} transition={chSpring("smooth", reduced)} className="ch-seen-row" aria-label={x.label}>
-              <Avatar name={x.name} size={compact ? 28 : 36} />
+              {compact ? <Avatar name={x.name} size="sm" /> : <Avatar name={x.name} size="md" />}
               <span className="ch-seen-row__body">
                 <span className="ch-seen-row__name">{x.name}</span>
                 {x.meta && <span className="ch-seen-row__meta">{x.meta}</span>}
