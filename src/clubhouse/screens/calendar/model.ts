@@ -74,6 +74,8 @@ export interface ChCalEvent {
    * Absent or null for rows that are not team events (classes, busy time).
    */
   version?: string | null;
+  /** P-5 WP-P5: `golf_events.course_id`, the library course; absent or null for rows without one. */
+  courseId?: string | null;
   /** P-5 (not built yet): set on a tournament round; until then tournament events drag like any event. */
   round?: { tournamentId: string; roundNo: number; lockedAt: string | null };
 }
