@@ -7,6 +7,7 @@ import { updateRoundType } from '@/app/golf/actions/round-type';
 import { useConnectionStatus } from '@/hooks/golf/use-connection-status';
 import { useContinueRoundSession, type ContinueRoundSessionProps } from '@/lib/golf/round-session/use-continue-round-session';
 import { normalizeStartHole } from '@/lib/golf/round-session/play-order';
+import { browserSharePorts } from '../../../live/share-ports';
 import { useChCourseNudge } from './CourseNudge';
 import { useRoundPorts } from './ports';
 import { useAction } from '../../../lib/use-action';
@@ -177,6 +178,7 @@ export function ContinueRound({ qualifierRoundNumberOptions = [], qualifierRound
         routes={ROUTES}
         errorsHeld={session.recovery.open || engine.showQualifierRoundNumberDialog}
         roundType={{ label: ROUND_TYPE_LABEL[current.type], onChange: () => setTypeOpen(true) }}
+        sharing={{ roundId: props.roundId, type: current.type, ports: browserSharePorts }}
       />
       <RoundTypeSheet
         open={typeOpen}

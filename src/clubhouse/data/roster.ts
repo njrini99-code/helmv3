@@ -85,6 +85,8 @@ export interface ChJoinRequest {
 }
 
 export interface ChRoster {
+  /** The team this roster is for (P-10 class lines read the team's class day). Absent in fixtures. */
+  teamId?: string;
   teamName: string;
   season: string | null;
   joinCode: string | null;
@@ -278,6 +280,7 @@ export async function loadRoster(input: { teamId: string; coachId: string }): Pr
     });
 
   return {
+    teamId: input.teamId,
     teamName: teamRes.data?.name ?? 'Your team',
     season: teamRes.data?.season ?? null,
     joinCode: teamRes.data?.join_code ?? null,

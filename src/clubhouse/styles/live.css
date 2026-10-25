@@ -1,0 +1,989 @@
+/*
+ * Live rounds (P-6, docs/clubhouse/catalog/tournaments.md): the lane, the Home card, the live view and the player's sheet.
+ * Classes are `.ch-lv-*`. Nothing here has a stripe or a border on the left of anything. The live dot is static
+ * (D-33); the to-par takes its value in place and its changed-wash is a layer that fades out (D-100); a lane that has
+ * gone quiet keeps full contrast and says so in words. Only opacity and transform move, never layout.
+ */
+
+/* The dark eagle bead (a requirement, plan 7): the shared eagle fill sits at 3.00:1 and the Stats mix bar prints on it,
+   so this page carries the lighter value (3.28 / 3.40 / 3.08 on surface, subtle and selected). Light uses the shared fill. */
+[data-ui='clubhouse'] {
+  --ch-live-bead-eagle: var(--ch-score-eagle-fill);
+  /* The 40 px figure (above the 11 steps, free by the type rule): the value of --ch-type-figure-l, named as a role. */
+  --ch-type-live-figure: 500 calc(40 * var(--ch-type-k))/1 var(--ch-font-sans);
+  /* The 34 px figure of the player's own card, the value of --ch-type-display-l named as a role. */
+  --ch-type-live-own: 600 calc(34 * var(--ch-type-k))/1.08 var(--ch-font-sans);
+}
+html[data-fw-theme='dark'] [data-ui='clubhouse'] {
+  --ch-live-bead-eagle: #b84d3f;
+}
+
+/* ---- The static live dot ---- */
+.ch-lv-dot {
+  flex: none;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--ch-green-600);
+}
+
+/* ---- A card of lanes (Home, the live view's groups) ---- */
+.ch-lv-card {
+  background: var(--ch-bg-surface);
+  border-radius: var(--ch-radius-card);
+  box-shadow: var(--ch-elevation-reading);
+  overflow: hidden;
+}
+section.ch-lv-card {
+  padding: var(--ch-space-1) 0;
+}
+.ch-lv-card__head {
+  display: flex;
+  align-items: center;
+  gap: var(--ch-space-2);
+  min-height: 44px;
+  padding: 0 var(--ch-space-1) 0 var(--ch-space-4);
+}
+.ch-lv-card__head h2 {
+  margin: 0;
+  flex: 1 1 auto;
+  min-width: 0;
+  font: var(--ch-type-15-strong);
+  letter-spacing: var(--ch-track-15);
+  color: var(--ch-text-primary);
+}
+.ch-lv-card__problem {
+  flex: none;
+  font: var(--ch-type-12);
+  color: var(--ch-warning-600);
+}
+.ch-lv-card__open,
+.ch-lv-card__more {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 44px;
+  min-height: 44px;
+  color: var(--ch-ink-600);
+  text-decoration: none;
+  touch-action: manipulation;
+}
+.ch-lv-card__more {
+  width: 100%;
+  font: var(--ch-type-14-medium);
+  color: var(--ch-green-600);
+}
+.ch-lv-card__open[data-ch-pressed],
+.ch-lv-card__more[data-ch-pressed] {
+  background: var(--ch-bg-subtle);
+}
+@media (hover: hover) {
+  .ch-lv-card__open:active,
+  .ch-lv-card__more:active {
+    background: var(--ch-bg-subtle);
+  }
+}
+.ch-lv-card__open:focus-visible,
+.ch-lv-card__more:focus-visible,
+.ch-lv-eventrow:focus-visible {
+  outline: 2px solid var(--ch-border-focus);
+  outline-offset: -2px;
+  border-radius: var(--ch-radius-md);
+}
+
+/* A tracked tournament's own live view, one row (CH-16685). */
+.ch-lv-eventrow {
+  display: flex;
+  align-items: center;
+  gap: var(--ch-space-2);
+  min-height: 44px;
+  padding: 0 var(--ch-space-3) 0 var(--ch-space-4);
+  font: var(--ch-type-14-medium);
+  color: var(--ch-text-primary);
+  text-decoration: none;
+  touch-action: manipulation;
+}
+.ch-lv-eventrow span:nth-child(2) {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+.ch-lv-eventrow[data-ch-pressed] {
+  background: var(--ch-bg-subtle);
+}
+@media (hover: hover) {
+  .ch-lv-eventrow:active {
+    background: var(--ch-bg-subtle);
+  }
+}
+
+/* ---- The lane ---- */
+.ch-lv-list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  container-type: inline-size;
+  container-name: chlv;
+}
+.ch-lv-lane {
+  position: relative;
+  --ch-lv-bead: 8px;
+  --ch-lv-gap: var(--ch-space-0_5);
+}
+/* A hairline between lanes, from under the name (not the disc) to the right edge. */
+.ch-lv-lane + .ch-lv-lane::before {
+  position: absolute;
+  top: 0;
+  right: var(--ch-space-4);
+  left: 50px;
+  height: var(--ch-hairline-w);
+  background: var(--ch-border-subtle);
+  content: '';
+}
+.ch-lv-hit {
+  display: grid;
+  grid-template-columns: 28px minmax(0, 1fr) auto 44px 52px;
+  grid-template-areas: 'disc id beads par thru';
+  align-items: center;
+  column-gap: var(--ch-space-2);
+  width: 100%;
+  min-height: 48px;
+  margin: 0;
+  padding: var(--ch-space-1) var(--ch-space-3);
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  color: inherit;
+  text-align: left;
+  cursor: pointer;
+  touch-action: manipulation;
+  -webkit-touch-callout: none;
+  -webkit-user-select: none;
+  user-select: none;
+  transition: background var(--ch-dur-quick) var(--ch-ease);
+}
+.ch-lv-hit.is-static {
+  cursor: default;
+}
+.ch-lv-hit[data-ch-pressed] {
+  background: var(--ch-bg-subtle);
+  transition-duration: var(--ch-dur-press);
+}
+@media (hover: hover) {
+  .ch-lv-hit:active {
+    background: var(--ch-bg-subtle);
+    transition-duration: var(--ch-dur-press);
+  }
+  .ch-lv-hit:hover:not(.is-static) {
+    background: var(--ch-bg-subtle);
+  }
+}
+.ch-lv-hit:focus-visible {
+  outline: 2px solid var(--ch-border-focus);
+  outline-offset: -2px;
+  border-radius: var(--ch-radius-md);
+}
+.ch-lv-lane.is-selected .ch-lv-hit {
+  background: var(--ch-bg-selected);
+}
+.ch-lv-lane.is-selected .ch-lv-name {
+  font: var(--ch-type-15-strong);
+  letter-spacing: var(--ch-track-15);
+}
+
+.ch-lv-disc {
+  grid-area: disc;
+  display: inline-grid;
+  place-items: center;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: var(--ch-bg-subtle);
+  color: var(--ch-ink-700);
+  font: var(--ch-type-12-strong);
+}
+.ch-lv-id {
+  grid-area: id;
+  display: grid;
+  min-width: 0;
+}
+.ch-lv-name {
+  overflow: hidden;
+  font: var(--ch-type-15-medium);
+  letter-spacing: var(--ch-track-15);
+  color: var(--ch-text-primary);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.ch-lv-sub {
+  overflow: hidden;
+  font: var(--ch-type-12);
+  color: var(--ch-ink-500);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.ch-lv-sub[data-tone='warn'] {
+  color: var(--ch-warning-600);
+}
+
+/* ---- The beads ---- */
+.ch-lv-beads {
+  grid-area: beads;
+  display: inline-flex;
+  align-items: center;
+  gap: var(--ch-lv-gap);
+  min-width: 0;
+}
+.ch-lv-bead {
+  position: relative;
+  flex: none;
+  box-sizing: border-box;
+  width: var(--ch-lv-bead);
+  height: var(--ch-lv-bead);
+  --ch-lv-ink: var(--ch-ink-500);
+}
+.ch-lv-bead.has-gap {
+  margin-inline-start: var(--ch-space-1_5);
+}
+.ch-lv-bead[data-kind='eagle'] {
+  --ch-lv-ink: var(--ch-live-bead-eagle);
+  border-radius: 50%;
+  background: var(--ch-live-bead-eagle);
+}
+.ch-lv-bead[data-kind='birdie'] {
+  --ch-lv-ink: var(--ch-score-under-fill);
+  border-radius: 50%;
+  background: var(--ch-score-under-fill);
+}
+.ch-lv-bead[data-kind='par']::after,
+.ch-lv-bead[data-kind='unknown']::after {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 3px;
+  height: 3px;
+  margin: -1.5px 0 0 -1.5px;
+  border-radius: 50%;
+  background: var(--ch-ink-500);
+  content: '';
+}
+.ch-lv-bead[data-kind='bogey'] {
+  --ch-lv-ink: var(--ch-ink-700);
+  border: 1.5px solid var(--ch-ink-700);
+  border-radius: var(--ch-radius-mark);
+}
+.ch-lv-bead[data-kind='double'] {
+  --ch-lv-ink: var(--ch-score-double);
+  border-radius: var(--ch-radius-mark);
+  background: var(--ch-score-double);
+}
+.ch-lv-bead[data-kind='unplayed'] {
+  --ch-lv-ink: var(--ch-ink-400);
+  border: 1px solid var(--ch-ink-400);
+  border-radius: 50%;
+}
+/* The hole being played: a hollow green ring, 3:1 on surface in light and dark (--ch-green-600, not the fill). */
+.ch-lv-bead[data-current] {
+  border: 1.5px solid var(--ch-green-600);
+  border-radius: 50%;
+}
+@keyframes ch-lv-bead-in {
+  from {
+    opacity: 0;
+    transform: scale(0.6);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+.ch-lv-bead[data-fresh] {
+  animation: ch-lv-bead-in var(--ch-dur-release) var(--ch-ease) both;
+}
+/* Reduced motion and Animations off: no scale, a ring in the mark's own colour for three seconds (set by the component). */
+.ch-lv-bead[data-ring] {
+  box-shadow:
+    0 0 0 1.5px var(--ch-bg-surface),
+    0 0 0 3px var(--ch-lv-ink);
+}
+
+.ch-lv-momentum {
+  display: none;
+  grid-area: momentum;
+}
+.ch-lv-spark {
+  display: block;
+  width: 56px;
+  height: 20px;
+}
+.ch-lv-spark__zero {
+  stroke: var(--ch-border-subtle);
+  stroke-width: 1;
+  stroke-dasharray: 2 2;
+}
+.ch-lv-spark__seg {
+  fill: none;
+  stroke: var(--ch-ink-500);
+  stroke-width: 1.5;
+  stroke-linecap: round;
+}
+.ch-lv-spark__dot {
+  fill: var(--ch-ink-500);
+}
+.ch-lv-spark.is-under .ch-lv-spark__dot {
+  fill: var(--ch-score-under);
+}
+@keyframes ch-lv-seg-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+.ch-lv-spark__seg[data-new] {
+  animation: ch-lv-seg-in var(--ch-dur-release) var(--ch-ease) both;
+}
+
+/* ---- To par and thru ---- */
+.ch-lv-par {
+  position: relative;
+  grid-area: par;
+  isolation: isolate;
+  justify-self: end;
+  min-width: 44px;
+  padding: 0 var(--ch-space-1);
+  border-radius: var(--ch-radius-sm);
+  color: var(--ch-text-primary);
+  font: var(--ch-type-17-strong);
+  letter-spacing: var(--ch-track-17);
+  text-align: right;
+}
+.ch-lv-par.is-under {
+  color: var(--ch-score-under);
+}
+/* D-100: the figure takes its new value in place. The wash is a layer under it that fades out over the reveal beat. */
+.ch-lv-par::after {
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  border-radius: inherit;
+  background: var(--ch-bg-selected);
+  opacity: 0;
+  pointer-events: none;
+  content: '';
+}
+@keyframes ch-lv-wash {
+  from {
+    opacity: 1;
+  }
+  to {
+    opacity: 0;
+  }
+}
+.ch-lv-par[data-wash]::after {
+  animation: ch-lv-wash var(--ch-dur-reveal) var(--ch-ease) both;
+}
+.ch-lv-par[data-wash='under']::after {
+  background: var(--ch-score-under-bg);
+}
+.ch-lv-par[data-wash='over']::after {
+  background: var(--ch-score-over-bg);
+}
+/* Animations off: no wash, a static ring for three seconds (set by the component). */
+.ch-lv-par[data-ring]::after {
+  background: none;
+  box-shadow: inset 0 0 0 1.5px var(--ch-ink-500);
+  opacity: 1;
+}
+.ch-lv-thru {
+  grid-area: thru;
+  justify-self: end;
+  font: var(--ch-type-13);
+  color: var(--ch-ink-500);
+  white-space: nowrap;
+}
+.ch-lv-thru[data-final] {
+  color: var(--ch-ink-700);
+}
+
+/* Compact lane on a narrow container: the beads move under the name. */
+@container chlv (max-width: 359px) {
+  .ch-lv-lane[data-density='compact'] .ch-lv-hit {
+    grid-template-columns: 28px minmax(0, 1fr) 44px 52px;
+    grid-template-areas:
+      'disc id par thru'
+      'disc beads beads beads';
+    row-gap: var(--ch-space-0_5);
+  }
+}
+
+/* Full lane, phone and any narrow container: two lines. Name and to-par, then the marks and thru. */
+.ch-lv-lane[data-density='full'] .ch-lv-hit {
+  grid-template-columns: 32px minmax(0, 1fr) auto;
+  grid-template-areas:
+    'disc id par'
+    'disc beads thru';
+  min-height: 64px;
+  row-gap: var(--ch-space-0_5);
+}
+.ch-lv-lane[data-density='full'] .ch-lv-disc {
+  width: 32px;
+  height: 32px;
+}
+
+/* Wide container: one line (56 px): disc, name, eighteen marks, the momentum line, to-par, thru. */
+@container chlv (min-width: 640px) {
+  .ch-lv-lane[data-density='full'] {
+    --ch-lv-bead: 6px;
+    --ch-lv-gap: var(--ch-space-1);
+  }
+  .ch-lv-lane[data-density='full'] .ch-lv-hit {
+    grid-template-columns: 32px minmax(160px, 1.2fr) minmax(220px, 2fr) 56px 64px 72px;
+    grid-template-areas: 'disc id beads momentum par thru';
+    min-height: 56px;
+  }
+  .ch-lv-lane[data-density='full'] .ch-lv-momentum {
+    display: block;
+  }
+}
+
+/* ---- The feed chip ---- */
+.ch-lv-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--ch-space-1_5);
+  min-height: 24px;
+  padding: 0 var(--ch-space-2);
+  border-radius: 999px;
+  background: var(--ch-bg-subtle);
+  color: var(--ch-ink-600);
+  font: var(--ch-type-12-medium);
+  white-space: nowrap;
+}
+.ch-lv-chip__retry {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: var(--ch-space-1);
+  min-height: 24px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--ch-green-600);
+  font: var(--ch-type-12-strong);
+  cursor: pointer;
+  touch-action: manipulation;
+}
+/* 24px drawn, 44px to the finger. */
+.ch-lv-chip__retry::before {
+  position: absolute;
+  inset: -10px -8px;
+  content: '';
+}
+.ch-lv-chip__retry[data-ch-pressed] {
+  opacity: 0.7;
+}
+@media (hover: hover) {
+  .ch-lv-chip__retry:active {
+    opacity: 0.7;
+  }
+}
+.ch-lv-chip__retry:focus-visible {
+  outline: 2px solid var(--ch-border-focus);
+  outline-offset: 2px;
+  border-radius: var(--ch-radius-sm);
+}
+
+/* ---- The live view ---- */
+.ch-lv {
+  display: block;
+}
+.ch-lv--phone {
+  padding: var(--ch-space-2) var(--ch-page-x-phone) var(--ch-space-8);
+}
+.ch-lv--desk {
+  max-width: var(--ch-measure-page);
+  margin: 0 auto;
+  padding: var(--ch-space-6) var(--ch-space-6) var(--ch-space-10);
+}
+.ch-lv--denied {
+  padding: var(--ch-space-10) var(--ch-space-4);
+  text-align: center;
+}
+.ch-lv-head {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: var(--ch-space-4);
+  margin-bottom: var(--ch-space-4);
+}
+.ch-lv-eyebrow {
+  display: block;
+  font: var(--ch-type-eyebrow);
+  color: var(--ch-ink-500);
+}
+.ch-lv-tools {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--ch-space-2) var(--ch-space-3);
+  margin-bottom: var(--ch-space-2);
+}
+.ch-lv-tools > [data-ch-code='CH-16611'] {
+  flex: 1 1 240px;
+  max-width: 480px;
+}
+.ch-lv-sort {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--ch-space-1_5);
+  min-height: 44px;
+  padding: 0 var(--ch-space-2);
+  border: 0;
+  border-radius: var(--ch-radius-md);
+  background: transparent;
+  color: var(--ch-ink-600);
+  font: var(--ch-type-13-medium);
+  cursor: pointer;
+  touch-action: manipulation;
+}
+.ch-lv-sort[data-ch-pressed] {
+  background: var(--ch-bg-subtle);
+}
+@media (hover: hover) {
+  .ch-lv-sort:active {
+    background: var(--ch-bg-subtle);
+  }
+}
+.ch-lv-sort:focus-visible {
+  outline: 2px solid var(--ch-border-focus);
+  outline-offset: 2px;
+}
+.ch-lv-pill {
+  min-height: 44px;
+  padding: 0 var(--ch-space-3);
+  border: 0;
+  border-radius: 999px;
+  background: var(--ch-selected-strong);
+  color: var(--ch-text-on-accent);
+  font: var(--ch-type-13-strong);
+  cursor: pointer;
+  touch-action: manipulation;
+}
+.ch-lv-pill[data-ch-pressed] {
+  opacity: 0.85;
+}
+@media (hover: hover) {
+  .ch-lv-pill:active {
+    opacity: 0.85;
+  }
+}
+.ch-lv-pill:focus-visible {
+  outline: 2px solid var(--ch-border-focus);
+  outline-offset: 2px;
+}
+.ch-lv-groups {
+  display: grid;
+  gap: var(--ch-space-4);
+}
+.ch-lv-group__label {
+  display: flex;
+  align-items: center;
+  min-height: 32px;
+  margin: 0;
+  padding: 0 var(--ch-space-1);
+  font: var(--ch-type-13-strong);
+  color: var(--ch-ink-600);
+}
+.ch-lv-empty {
+  padding: var(--ch-space-10) var(--ch-space-4);
+  text-align: center;
+}
+.ch-lv-empty__title {
+  margin: 0;
+  font: var(--ch-type-15);
+  letter-spacing: var(--ch-track-15);
+  color: var(--ch-ink-500);
+}
+.ch-lv-empty__body {
+  margin: var(--ch-space-1) 0 0;
+  font: var(--ch-type-13);
+  color: var(--ch-ink-500);
+}
+/* Wide: the lanes, and a panel beside them (a sheet below 1080 px, drawn by the component). */
+.ch-lv-split {
+  display: grid;
+  grid-template-columns: minmax(560px, 1fr) 360px;
+  gap: var(--ch-space-6);
+  align-items: start;
+}
+.ch-lv-split[data-panel='sheet'] {
+  grid-template-columns: minmax(0, 1fr);
+}
+.ch-lv-panel {
+  position: sticky;
+  top: var(--ch-space-4);
+  max-height: calc(100vh - var(--ch-space-8));
+  padding: var(--ch-space-4);
+  overflow: auto;
+  overscroll-behavior: contain;
+  border-radius: var(--ch-radius-card);
+  background: var(--ch-bg-surface);
+  box-shadow: var(--ch-elevation-reading);
+}
+.ch-lv-panel__title {
+  margin: 0 0 var(--ch-space-3);
+  font: var(--ch-type-15-strong);
+  letter-spacing: var(--ch-track-15);
+  color: var(--ch-text-primary);
+}
+.ch-lv-panel__head {
+  display: flex;
+  align-items: center;
+  gap: var(--ch-space-3);
+  margin-bottom: var(--ch-space-3);
+}
+.ch-lv-panel__head h2 {
+  margin: 0;
+  font: var(--ch-type-20-strong);
+  letter-spacing: var(--ch-track-20);
+  color: var(--ch-text-primary);
+}
+.ch-lv-panel__head p {
+  margin: 0;
+  font: var(--ch-type-13);
+  color: var(--ch-ink-500);
+}
+
+/* ---- A player's round: the sheet and the panel ---- */
+.ch-lv-body {
+  display: grid;
+  gap: var(--ch-space-4);
+}
+.ch-lv-figure {
+  display: flex;
+  align-items: baseline;
+  gap: var(--ch-space-3);
+}
+.ch-lv-figure__par {
+  font: var(--ch-type-live-figure);
+  color: var(--ch-text-primary);
+}
+.ch-lv-figure__par.is-under {
+  color: var(--ch-score-under);
+}
+.ch-lv-figure__side {
+  display: grid;
+  font: var(--ch-type-15);
+  letter-spacing: var(--ch-track-15);
+  color: var(--ch-text-primary);
+}
+.ch-lv-figure__next {
+  font: var(--ch-type-13);
+  color: var(--ch-ink-500);
+}
+.ch-lv-note {
+  margin: 0;
+  font: var(--ch-type-13);
+  color: var(--ch-ink-500);
+}
+.ch-lv-note[data-tone='warn'] {
+  color: var(--ch-warning-600);
+}
+
+.ch-lv-line {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--ch-space-2);
+  font: var(--ch-type-13);
+  color: var(--ch-text-secondary);
+}
+
+/* The course ribbon: two rows of nine, a token on the hole each player plays next. */
+.ch-lv-ribbon {
+  display: grid;
+  gap: var(--ch-space-1);
+}
+.ch-lv-ribbon__row {
+  display: grid;
+  grid-template-columns: repeat(9, minmax(0, 1fr));
+  gap: var(--ch-space-1);
+}
+.ch-lv-ribbon__hole {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--ch-space-0_5);
+  min-height: 40px;
+  padding: var(--ch-space-1) 0;
+  border-radius: var(--ch-radius-sm);
+  background: var(--ch-bg-subtle);
+  color: var(--ch-ink-500);
+  font: var(--ch-type-11);
+  letter-spacing: var(--ch-track-11);
+}
+.ch-lv-ribbon__hole[data-here] {
+  background: var(--ch-bg-selected);
+  color: var(--ch-ink-900);
+}
+.ch-lv-ribbon__token {
+  display: inline-grid;
+  place-items: center;
+  min-width: 22px;
+  height: 22px;
+  border-radius: 999px;
+  background: var(--ch-selected-strong);
+  color: var(--ch-text-on-accent);
+  font: var(--ch-type-11-strong);
+  letter-spacing: var(--ch-track-11);
+}
+
+/* The scorecard: one 11-column grid per nine (a row label, nine holes, Out or In). */
+.ch-lv-scgrid {
+  display: grid;
+  gap: var(--ch-space-3);
+}
+.ch-lv-sc {
+  width: 100%;
+  border-collapse: collapse;
+  table-layout: fixed;
+}
+.ch-lv-sc th,
+.ch-lv-sc td {
+  padding: var(--ch-space-0_5) 0;
+  font: var(--ch-type-11);
+  letter-spacing: var(--ch-track-11);
+  text-align: center;
+  color: var(--ch-ink-500);
+}
+.ch-lv-sc th[scope='row'] {
+  overflow: hidden;
+  text-align: left;
+  white-space: nowrap;
+}
+.ch-lv-sc tbody th,
+.ch-lv-sc td {
+  color: var(--ch-ink-700);
+}
+.ch-lv-sc td:last-child {
+  font: var(--ch-type-12-strong);
+  color: var(--ch-text-primary);
+}
+
+.ch-lv-moments h3 {
+  margin: 0 0 var(--ch-space-1);
+  font: var(--ch-type-13-strong);
+  color: var(--ch-ink-600);
+}
+.ch-lv-moments ol {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.ch-lv-moments li {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--ch-space-3);
+  padding: var(--ch-space-1) 0;
+  font: var(--ch-type-13);
+  color: var(--ch-text-primary);
+}
+.ch-lv-moments time {
+  font: var(--ch-type-12);
+  color: var(--ch-ink-500);
+}
+.ch-lv-read {
+  font: var(--ch-type-13);
+  color: var(--ch-ink-600);
+}
+.ch-lv-read summary {
+  min-height: 44px;
+  display: flex;
+  align-items: center;
+  cursor: pointer;
+}
+.ch-lv-read p {
+  margin: 0 0 var(--ch-space-2);
+  color: var(--ch-ink-500);
+}
+.ch-lv-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--ch-space-2);
+}
+.ch-lv-peek {
+  display: grid;
+  gap: var(--ch-space-0_5);
+  padding: var(--ch-space-3);
+  font: var(--ch-type-13);
+  color: var(--ch-ink-600);
+}
+.ch-lv-peek b {
+  font: var(--ch-type-15-strong);
+  letter-spacing: var(--ch-track-15);
+  color: var(--ch-text-primary);
+}
+
+/* Coach Home on a wide screen: the card sits in the main column, under the head. */
+.ch-lv-deskwrap {
+  max-width: var(--ch-measure-reading);
+  margin-bottom: var(--ch-space-4);
+}
+
+/* The player's own card (4.4): one calm sheet under the hero. No stripe, no border on the left of anything. */
+.ch-lv-own {
+  display: grid;
+  gap: var(--ch-space-3);
+  padding: var(--ch-space-4);
+  border-radius: var(--ch-radius-card);
+  background: var(--ch-bg-surface);
+  box-shadow: var(--ch-elevation-reading);
+}
+.ch-lv-own__title {
+  margin: 0;
+  font: var(--ch-type-13-strong);
+  color: var(--ch-ink-600);
+}
+.ch-lv-own__figure {
+  display: flex;
+  align-items: baseline;
+  gap: var(--ch-space-3);
+}
+.ch-lv-own__par {
+  font: var(--ch-type-live-own);
+  letter-spacing: var(--ch-track-34);
+  color: var(--ch-text-primary);
+}
+.ch-lv-own__par.is-under {
+  color: var(--ch-score-under);
+}
+.ch-lv-own__thru {
+  font: var(--ch-type-15);
+  letter-spacing: var(--ch-track-15);
+  color: var(--ch-text-primary);
+}
+.ch-lv-own__marks {
+  display: flex;
+  gap: var(--ch-space-4);
+}
+.ch-lv-own__mark {
+  display: grid;
+  justify-items: center;
+  gap: var(--ch-space-1);
+  font: var(--ch-type-11);
+  letter-spacing: var(--ch-track-11);
+  color: var(--ch-ink-500);
+}
+.ch-lv-own__next {
+  margin: 0;
+  font: var(--ch-type-14);
+  color: var(--ch-text-primary);
+}
+.ch-lv-own__legs {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--ch-space-2) var(--ch-space-4);
+  margin: 0;
+}
+.ch-lv-own__legs > div {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--ch-space-2);
+}
+.ch-lv-own__legs dt {
+  font: var(--ch-type-13);
+  color: var(--ch-ink-500);
+}
+.ch-lv-own__legs dd {
+  margin: 0;
+  font: var(--ch-type-13-strong);
+  color: var(--ch-text-primary);
+}
+.ch-lv-own__resume {
+  width: 100%;
+  height: 44px;
+}
+
+/* Sharing: the Round setup field and the in-round sheet (4.6). */
+.ch-lv-share__remember {
+  display: flex;
+  align-items: center;
+  min-height: 44px;
+}
+.ch-lv-share .ch-rsu-field__hint.ch-lv-share__error {
+  color: var(--ch-danger-600);
+}
+.ch-lv-sheetshare {
+  display: grid;
+  gap: var(--ch-space-3);
+}
+
+/* ---- Calendar: an event with players on the course (CH-16640, CH-16641) ---- */
+.ch-lv-evrow {
+  display: flex;
+  align-items: center;
+  gap: var(--ch-space-2);
+  min-height: 44px;
+  padding: 0 var(--ch-space-3);
+  border-radius: var(--ch-radius-md);
+  background: var(--ch-bg-subtle);
+  font: var(--ch-type-14-medium);
+  color: var(--ch-text-primary);
+  text-decoration: none;
+  touch-action: manipulation;
+}
+.ch-lv-evrow span:nth-child(2) {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+.ch-lv-evrow[data-ch-pressed] {
+  background: var(--ch-bg-selected);
+}
+@media (hover: hover) {
+  .ch-lv-evrow:active {
+    background: var(--ch-bg-selected);
+  }
+}
+.ch-lv-evdot {
+  position: absolute;
+  top: var(--ch-space-2);
+  right: var(--ch-space-2);
+}
+
+/* ---- Rounds: the share chip on the round in progress (CH-16631) ---- */
+.ch-lv-sharechip {
+  display: inline-flex;
+  align-items: center;
+  align-self: flex-start;
+  gap: var(--ch-space-2);
+  min-height: 44px;
+  padding: 0 var(--ch-space-3);
+  border: 0;
+  border-radius: var(--ch-radius-md);
+  background: var(--ch-bg-subtle);
+  font: var(--ch-type-13);
+  color: var(--ch-text-primary);
+  touch-action: manipulation;
+  cursor: pointer;
+}
+.ch-lv-sharechip[data-ch-pressed] {
+  background: var(--ch-bg-selected);
+}
+@media (hover: hover) {
+  .ch-lv-sharechip:active {
+    background: var(--ch-bg-selected);
+  }
+}
+
+button.ch-lv-card__more {
+  border: 0;
+  background: transparent;
+  cursor: pointer;
+}
+
+.ch-lv-pillwrap {
+  display: contents;
+}

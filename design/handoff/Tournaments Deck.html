@@ -1,0 +1,82 @@
+<!DOCTYPE html><html><head><meta charset="utf-8"><title>Tournaments · Design review</title>
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<link rel="stylesheet" href="_ds/fairway-clubhouse-edition-9c4f4d81-4ed7-4b65-867b-99262bdbf662/tokens/fonts.css">
+<style>
+:root{--type-xl:150px;--type-title:64px;--type-sub:40px;--type-body:32px;--type-small:26px;--pad-top:90px;--pad-x:100px;--pad-bottom:72px;--gap-title:44px;--ink:#1C1B18;--ink2:#55524B;--green:#0B3A25;--green2:#155A39;--ivory:#F7F5EF;--brass:#B09560}
+deck-stage:not(:defined){visibility:hidden}
+a{color:var(--green2)}a:hover{color:var(--green)}
+section.s{background:var(--ivory);color:var(--ink);font-family:"Instrument Sans",system-ui,sans-serif}
+section.g{background:var(--green);color:#F4F1E8}
+.fr{box-sizing:border-box;width:100%;height:100%;padding:var(--pad-top) var(--pad-x) var(--pad-bottom);display:flex;flex-direction:column}
+.hd{display:flex;flex-direction:column;gap:14px;margin-bottom:var(--gap-title)}
+.t{margin:0;font-size:var(--type-title);font-weight:600;letter-spacing:-.03em;line-height:1.05}
+.cap{margin:0;font-size:var(--type-small);color:var(--ink2);line-height:1.35;max-width:1500px}
+.stage{flex:1;display:flex;align-items:flex-start;justify-content:center;min-height:0}
+.shot{display:block;border-radius:20px;background:#FBFAF6;box-shadow:0 0 0 1px rgba(28,25,18,.08),0 30px 60px -30px rgba(11,38,22,.35)}
+.sp{flex-direction:row;gap:80px;align-items:center}
+.sp .col{flex:1;min-width:0;display:flex;flex-direction:column;gap:40px}
+.sp .stage{flex:none;align-items:center}
+.pts{margin:0;padding:0;list-style:none;display:flex;flex-direction:column;gap:28px}
+.pts li{display:flex;gap:18px;font-size:var(--type-body);line-height:1.35;color:var(--ink)}
+.pts li::before{content:"";flex:none;width:12px;height:12px;margin-top:14px;border-radius:3px;background:var(--green2);transform:rotate(45deg)}
+.cov{justify-content:space-between}
+.brand{display:flex;align-items:center;gap:18px;font-size:36px;font-weight:600;letter-spacing:-.02em}
+.brand img{filter:brightness(0) invert(1) sepia(.2)}
+.k{margin:0 0 20px;font-size:var(--type-small);font-weight:500;color:#C9D8CE}
+.xl{margin:0;font-size:var(--type-xl);font-weight:600;letter-spacing:-.045em;line-height:1}
+.xl2{margin:0;font-size:120px;font-weight:600;letter-spacing:-.045em;line-height:1}
+.lead{margin:28px 0 0;font-size:var(--type-sub);color:#E6EDE7;line-height:1.3;max-width:1300px}
+.foot{margin:0;font-size:var(--type-small);color:#A9C0B1}
+.sec{justify-content:center}
+.cards{display:grid;grid-template-columns:repeat(3,1fr);gap:32px;margin-top:20px}
+.card{padding:44px 40px;border-radius:24px;background:#FDFCF8;box-shadow:0 0 0 1px rgba(28,25,18,.08),0 20px 40px -26px rgba(11,38,22,.3);display:flex;flex-direction:column;gap:18px}
+.card .num{font-size:var(--type-small);font-weight:600;color:var(--brass)}
+.card h3{margin:0;font-size:52px;font-weight:600;letter-spacing:-.03em}
+.card p{margin:0;font-size:var(--type-body);line-height:1.4;color:var(--ink2)}
+.rules{display:grid;grid-template-columns:repeat(2,1fr);gap:20px 32px}
+.rr{display:flex;flex-direction:column;gap:10px;padding:28px 32px;border-radius:20px;background:#FDFCF8;box-shadow:0 0 0 1px rgba(28,25,18,.08)}
+.rr b{font-size:34px;font-weight:600;letter-spacing:-.015em}
+.rr span{font-size:var(--type-small);color:var(--ink2);line-height:1.35}
+.pair{display:flex;gap:40px;justify-content:center;align-items:flex-start}
+.pair figure,.phones figure{margin:0;display:flex;flex-direction:column;gap:18px;align-items:center}
+figcaption{font-size:var(--type-small);color:var(--ink2);text-align:center}
+.phones{display:flex;gap:56px;justify-content:center;align-items:flex-start}
+.ph{display:block}
+</style></head><body>
+<deck-stage width="1920" height="1080">
+<section data-label="Cover" class="s g"><div class="fr cov"><div class="brand"><img src="assets/helm-golf-mark.png" alt="" style="width:64px;height:64px"><span>GolfHelm</span></div><div><p class="k">Coach dashboard · new tab</p><h1 class="xl">Tournaments</h1><p class="lead">Design review · October 2026</p></div><p class="foot">Desktop and iPhone · Varsity Golf demo data</p></div></section>
+<section data-label="Overview" class="s"><div class="fr"><div class="hd"><h2 class="t">What the tab covers</h2><p class="cap">Three views, all built from the same round records.</p></div><div class="cards">
+<div class="card"><span class="num">01</span><h3>Events</h3><p>Up next, the season ledger, and an event desk for each tournament.</p></div>
+<div class="card"><span class="num">02</span><h3>Compare</h3><p>Any two samples side by side: players, contexts, events, rounds or date ranges.</p></div>
+<div class="card"><span class="num">03</span><h3>History</h3><p>Team trend across seasons, with actual lineups or returning players only.</p></div>
+</div></div></section>
+<section data-label="Events home" class="s"><div class="fr"><div class="hd"><h2 class="t">Events home</h2><p class="cap">Every event with finish, team total and how much of it has shot data.</p></div><div class="stage"><img class="shot" src="deck/img/ledger2.jpg" alt="" style="width:1458px;height:700px"></div></div></section>
+<section data-label="Who counted" class="s"><div class="fr"><div class="hd"><h2 class="t">Who counted</h2><p class="cap">Lowest four whole-round scores make the team total. NC marks a round that didn’t count.</p></div><div class="stage"><img class="shot" src="deck/img/event-counted.jpg" alt="" style="width:1695px;height:700px"></div></div></section>
+<section data-label="Where the event turned" class="s"><div class="fr"><div class="hd"><h2 class="t">Where the event turned</h2><p class="cap">Three findings per event, each linking to the rounds behind it.</p></div><div class="stage"><img class="shot" src="deck/img/event-findings.jpg" alt="" style="width:1720px;height:652px"></div></div></section>
+<section data-label="Hole analysis" class="s"><div class="fr"><div class="hd"><h2 class="t">Hole analysis</h2><p class="cap">Every player, every hole, by round. The three costliest holes are highlighted.</p></div><div class="stage"><img class="shot" src="deck/img/event-holes.jpg" alt="" style="width:1720px;height:523px"></div></div></section>
+<section data-label="Event review" class="s"><div class="fr sp"><div class="col"><h2 class="t">Event review</h2><ul class="pts"><li><span>Each finding is split into observation, evidence and a possible reason</span></li><li><span>Draft a practice assignment or add to 1:1 notes from any finding</span></li><li><span>Coach notes and player reflections sit alongside</span></li></ul></div><div class="stage"><img class="shot" src="deck/img/event-review.jpg" alt="" style="width:900px;height:812px"></div></div></section>
+<section data-label="Section · Compare" class="s g"><div class="fr sec"><p class="k">Part two</p><h2 class="xl2">Comparison desk</h2><p class="lead">Two independent samples, one aligned grid, every number traceable to its rounds.</p></div></section>
+<section data-label="Two scopes" class="s"><div class="fr"><div class="hd"><h2 class="t">Two independent scopes</h2><p class="cap">A and B each set player, context and period. Presets cover the common questions.</p></div><div class="stage"><img class="shot" src="deck/img/cmp-scopes.jpg" alt="" style="width:1720px;height:454px"></div></div></section>
+<section data-label="Timeline" class="s"><div class="fr"><div class="hd"><h2 class="t">History timeline</h2><p class="cap">Every 18-hole round plotted by date against the course rating. Drag the range or click a tournament.</p></div><div class="stage"><img class="shot" src="deck/img/cmp-timeline.jpg" alt="" style="width:1720px;height:388px"></div></div></section>
+<section data-label="Stat rows" class="s"><div class="fr sp"><div class="col"><h2 class="t">Stat rows</h2><ul class="pts"><li><span>One card per metric, grouped by part of the game</span></li><li><span>Dots are rounds, the bar is the average, the dashed line is the other side</span></li><li><span>Difference reads in plain words: “Tournaments worse than Qualifiers”</span></li></ul></div><div class="stage"><img class="shot" src="deck/img/cmp-stats.jpg" alt="" style="width:1160px;height:755px"></div></div></section>
+<section data-label="Rules" class="s"><div class="fr"><div class="hd"><h2 class="t">How the numbers are computed</h2><p class="cap">Every figure is derived from round records and shows its denominator.</p></div><div class="rules">
+<div class="rr"><b>Team totals</b><span>Lowest whole-round scores each round, never best holes</span></div>
+<div class="rr"><b>Scoring average</b><span>18-hole rounds only; nine-hole rounds listed as excluded</span></div>
+<div class="rr"><b>Strokes gained</b><span>Shot-data rounds only, shown as “8 of 9 rounds”</span></div>
+<div class="rr"><b>Missing data</b><span>Shows “—” with the reason, never a false zero</span></div>
+<div class="rr"><b>Colour</b><span>Green or amber by whether lower or higher is better</span></div>
+<div class="rr"><b>Course differences</b><span>Raw averages labelled observed; a course-rating row added</span></div>
+</div></div></section>
+<section data-label="Evidence drawer" class="s"><div class="fr sp"><div class="col"><h2 class="t">Evidence drawer</h2><ul class="pts"><li><span>Opens from any value on any screen</span></li><li><span>Lists every round used, and any excluded with the reason</span></li><li><span>Click a round for its scorecard</span></li></ul></div><div class="stage"><img class="shot" src="deck/img/evidence-solid.jpg" alt="" style="width:484px;height:820px"></div></div></section>
+<section data-label="Season history" class="s"><div class="fr"><div class="hd"><h2 class="t">Season history</h2><p class="cap">Team scoring against course rating by event. Seasons are separate lines across the summer gap.</p></div><div class="stage"><img class="shot" src="deck/img/history.jpg" alt="" style="width:1720px;height:526px"></div></div></section>
+<section data-label="Incomplete data" class="s"><div class="fr"><div class="hd"><h2 class="t">Incomplete data</h2><p class="cap">Missing or thin data is shown as missing. No difference is drawn against it.</p></div><div class="pair"><figure><img class="shot" src="deck/img/state-bfail.jpg" alt="" style="width:830px;height:565px"><figcaption>B fails to load · A stays usable, Retry on B</figcaption></figure><figure><img class="shot" src="deck/img/state-thin.jpg" alt="" style="width:830px;height:537px"><figcaption>B under three rounds · values greyed, no difference</figcaption></figure></div></div></section>
+<section data-label="iPhone" class="s"><div class="fr"><div class="hd"><h2 class="t">iPhone</h2><p class="cap">Same engine, phone layout. A and B stay visible together in every block.</p></div><div class="phones"><figure><img class="ph" src="deck/img/m-counted.jpg" alt="" style="width:322px;height:700px"><figcaption>Who counted</figcaption></figure><figure><img class="ph" src="deck/img/m-compare.jpg" alt="" style="width:322px;height:700px"><figcaption>Compare</figcaption></figure><figure><img class="ph" src="deck/img/m-evidence.jpg" alt="" style="width:322px;height:700px"><figcaption>Evidence</figcaption></figure><figure><img class="ph" src="deck/img/m-empty.jpg" alt="" style="width:322px;height:700px"><figcaption>Empty state</figcaption></figure></div></div></section>
+<section data-label="Open items" class="s"><div class="fr"><div class="hd"><h2 class="t">Open items</h2><p class="cap">Before implementation.</p></div><div class="rules">
+<div class="rr"><b>Saved comparisons</b><span>Not built; presets only</span></div>
+<div class="rr"><b>Live data loading</b><span>Simulated; stale labels and failures are designed</span></div>
+<div class="rr"><b>Demo data</b><span>Event names, courses, finishes and “Will Harper” are invented</span></div>
+<div class="rr"><b>Benchmarks</b><span>Strokes gained baseline needs confirming</span></div>
+</div></div></section>
+</deck-stage>
+<script src="deck/deck-stage.js"></script>
+</body></html>

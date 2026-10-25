@@ -300,17 +300,18 @@ const without = <T extends { id: string }>(rows: T[], hidden: Set<string>): T[] 
 export async function loadTeamHub(input: { role: ChHubRole; teamId: string; userId: string; playerId: string | null }): Promise<ChTeamHub> {
   const supabase = await createClient();
   const now = new Date();
-  const { tz } = await homeClock(supabase, input.teamId, now);
-  const today = isoDay(now, tz);
-  const f = formatters(tz, now);
-
-  const [teamRes, rosterRes, docsRes, updatesRes, hidden] = await Promise.all([
+  // The team's clock is read in the first wave, beside the reads that don't need it (C2): only what is drawn from them does.
+  const [clock, teamRes, rosterRes, docsRes, updatesRes, hidden] = await Promise.all([
+    homeClock(supabase, input.teamId, now),
     supabase.from('golf_teams').select('name, season').eq('id', input.teamId).maybeSingle(),
     supabase.from('golf_team_members').select('player:golf_players(id, first_name, last_name)').eq('team_id', input.teamId).eq('status', 'active'),
     getDocuments(input.teamId).catch((err: unknown) => ({ data: null, error: err instanceof Error ? err.message : 'failed' })),
     getUnifiedNotifications({ limit: 6 }).catch(() => ({ success: false as const, error: 'failed' })),
     hiddenTestRows(supabase, input.teamId),
   ]);
+  const { tz } = clock;
+  const today = isoDay(now, tz);
+  const f = formatters(tz, now);
   if (teamRes.error) log('team', teamRes.error);
   if (rosterRes.error) log('roster', rosterRes.error);
   if (docsRes.error) log('documents', docsRes.error);

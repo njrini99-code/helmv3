@@ -7,6 +7,7 @@ import { Icon } from '../../ui/Icon';
 import { Modal } from '../../ui/Modal';
 import { golfDetailsProblem, type ChGolfDetails, type ChMembership, type ChSettingsData, type ChSettingsWrites } from './model';
 import { SAVE_COPY, useMembership } from './hooks';
+import { LiveRoundsCard } from './LiveRounds';
 import { Card, Field, failedReads, ReadFailed, ReadsFailed, Row, useDraft, useReportDirty, useSaveAction, useWarnOnOpen } from './parts';
 
 /** Golf profile's reads that failed, for its one section notice (shared with GolfPhone). */
@@ -23,6 +24,7 @@ export function GolfSection({ data, writes }: { data: ChSettingsData; writes: Ch
     <>
       <ReadsFailed parts={failed} onRetry={writes.refresh} />
       {data.golf?.error ? <ReadFailed what="Your golf details" code="CH-8209" onRetry={writes.refresh} title="Golf details" description="Your coaches and teammates see your handicap and class on the roster." covered={covered} /> : data.golf && <DetailsCard details={data.golf.value} writes={writes} />}
+      <LiveRoundsCard />
       {data.membership?.error ? <ReadFailed what="Your team membership" code="CH-8210" onRetry={writes.refresh} title="Team" description="The team you play for on GolfHelm." covered={covered} /> : data.membership && <MembershipCard m={data.membership.value} writes={writes} />}
     </>
   );

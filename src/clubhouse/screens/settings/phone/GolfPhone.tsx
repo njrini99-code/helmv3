@@ -5,6 +5,7 @@ import { golfDetailsProblem, type ChGolfDetails, type ChMembership, type ChSetti
 import { SAVE_COPY, useMembership } from '../hooks';
 import { ReadFailed, ReadsFailed, useSaveAction } from '../parts';
 import { golfReadsFailed } from '../Golf';
+import { LiveRoundsGroup } from '../LiveRounds';
 import { ActionSheet, FormSheet, useSheetDraft } from './sheets';
 import { FieldRow, Group, NavRow, Problem } from './ui';
 
@@ -22,6 +23,7 @@ export function GolfPhone({ data, writes }: { data: ChSettingsData; writes: ChSe
       ) : (
         data.golf && <DetailsPhone details={data.golf.value} writes={writes} />
       )}
+      <LiveRoundsGroup />
       {data.membership?.error ? (
         <Group title="Team">
           <ReadFailed bare what="Your team membership" code="CH-8210" onRetry={writes.refresh} covered={covered} />

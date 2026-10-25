@@ -2,7 +2,8 @@
 
 Popup sizing, native top-layer placement and description association follow the
 [popup audit](../../POPUP_AUDIT.md). Long content remains scrollable within the
-available viewport; source/browser checks do not grant physical-device acceptance.
+available viewport; source/browser checks do not grant physical-device
+acceptance.
 
 <!-- clubhouse:release-audit:start -->
 ## 2026-10-06 — Smoothness repair
@@ -29,7 +30,8 @@ reserve new IDs or mark manual contracts verified.
 
 Every behaviour Settings promises, by the 25 V2 categories (D-69). A contract's
 number is its Bridge ID (D-68: namespace 8, category, item); `Code` is the
-catalog code on the element and in the test (`docs/clubhouse/catalog/settings.md`).
+catalog code on the element and in the test
+(`docs/clubhouse/catalog/settings.md`).
 Rows without a code are behaviours with no single element, recorded in
 `config/clubhouse/bridge-contracts.json` by hand. The shell's contracts (P001,
 namespace 1) apply here too and are named where they carry a category.
@@ -212,6 +214,8 @@ SectionBoundary). The route's own errors are the shell's (10603 to 10607).
 | 80640 | CH-8213 | `THE_ASSISTANT_COACH_REQUESTS_DONT_LOAD` | The assistant coach requests don't load (head coach) |
 | 80641 | CH-8029 | `SEND_A_TEST_PUSH_FAILS` | Send a test push fails (P008-C3, D1-6) |
 | 80642 | CH-8214 | `EVERY_READ_FAILS` | Every read fails (phone list) |
+| 80643 | CH-8030 | `HOLD_DURING_CLASS_FAILS_TO_SAVE` | Hold during class fails to save (P-10) |
+| 80644 | CH-8216 | `A_PLAYER_WITH_CLASS_STATUS_ON_OPENS` | A player with class status on opens Notifications (P-10) |
 
 ## 07 — Network / offline
 
@@ -586,7 +590,10 @@ From the shell (P001): 12401 TESTS_NAME_CONTRACTS.
 
 ## 25 — Helm Bridge action
 
-Status: N/A — the Bridge is wired later (owner, D-68). Every contract above already has its Bridge ID; the commands (open a section, save the open card) are defined when the Bridge is.
+Status: N/A — the Bridge is wired later (owner, D-68). Every contract above
+
+already has its Bridge ID; the commands (open a section, save the open card) are
+defined when the Bridge is.
 
 ## October 6 premium interaction corrections
 

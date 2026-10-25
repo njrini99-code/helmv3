@@ -2,6 +2,7 @@
 
 import { CH_EASE, CH_FADE_MS, chSpringCurve } from './motion';
 import { chMotionModeNow } from './reduced-motion';
+import { markHandPop } from './ua-pop';
 
 /**
  * Which way a phone navigation moves (native-feel audit 2026-10-08, P1-1 and P1-2). Changing tabs swaps the page at
@@ -37,6 +38,7 @@ const LAPSE_MS = 1500;
 /** How long after the commit the kind stays: past the push's 462ms spring. */
 const SETTLE_MS = 700;
 let shownPath = '';
+let shownKey = '';
 let lapse = 0;
 /**
  * A section switch: a tap on the phone's tab bar or on a desktop sidebar item (motion pass 2026-10-22, mot-03). It
@@ -56,6 +58,7 @@ function clear() {
   const root = document.documentElement;
   root.removeAttribute('data-ch-nav');
   root.removeAttribute(TAB);
+  held = null;
 }
 
 function mark(kind: ChNavKind, tab = false) {
@@ -79,11 +82,22 @@ export function chNavKind(): ChNavKind {
   return k === 'push' || k === 'pop' ? k : 'fade';
 }
 
-/** RouteFrame: the page now showing. A change of page lets the kind play out, then clears it. */
-export function chNavShown(path: string): void {
-  const changed = shownPath !== '' && shownPath !== path;
+/**
+ * RouteFrame: the page now showing, and its full key (the team is part of it). A change of page lets the kind play out,
+ * then clears it. A drill-in that held a copy of the page it left slides in over it here (playPush), in the commit,
+ * before the first frame. A team switch on the same page drops every copy kept beneath.
+ */
+export function chNavShown(path: string, key: string = path): void {
+  const before = shownPath;
+  const changed = before !== '' && before !== path;
+  if (!changed && shownKey !== '' && key !== shownKey) dropUnders();
   shownPath = path;
+  shownKey = key;
   if (!changed) return;
+  const copy = held;
+  held = null;
+  if (copy && copy.from === before && chNavKind() === 'push') playPush(before, path, copy.layer);
+  else settleUnders(path);
   window.clearTimeout(lapse);
   lapse = window.setTimeout(clear, SETTLE_MS);
 }
@@ -102,7 +116,9 @@ function onClick(e: MouseEvent) {
   const tabBar = !!a.closest('.ch-strip');
   // A section item that opens the page already showing (a hash, the same route) is no switch: nothing to swap.
   const tab = isSectionLink(a) && url.pathname.replace(/\/$/, '') !== from.replace(/\/$/, '');
-  mark(classifyNav({ from, to: url.pathname, tabRoots: tabRoots(), tabBar }), tab);
+  const kind = classifyNav({ from, to: url.pathname, tabRoots: tabRoots(), tabBar });
+  mark(kind, tab);
+  holdForPush(from);
 }
 
 
@@ -146,44 +162,212 @@ export function cloneInView(el: HTMLElement, viewH: number, depth: number): HTML
  * uncovered slid in from the right as if pushed, under the copy sliding out.
  */
 export function takeRunningPush(): number {
-  if (typeof document === 'undefined' || typeof document.getAnimations !== 'function') return 1;
+  if (typeof document === 'undefined') return 1;
+  // The WAAPI push (playPush): stop it where it stands; the pop carries on from there over its own copy.
+  const run = pushing;
+  if (run) {
+    const share = pushShare(run);
+    pushing = null;
+    for (const a of run.anims) a.cancel();
+    run.page.removeAttribute('data-ch-pushing');
+    if (!run.entry.pinned) run.entry.layer.remove();
+    return share;
+  }
+  if (typeof document.getAnimations !== 'function') return 1;
   const running = document.getAnimations().filter((a) => {
     const pseudo = (a.effect as KeyframeEffect | null)?.pseudoElement ?? '';
     return pseudo.startsWith('::view-transition') && a.playState === 'running';
   });
-  if (!running.length) return 1;
-  const incoming = running.find((a) => (a.effect as KeyframeEffect | null)?.pseudoElement === '::view-transition-new(ch-page)');
-  const pushing = (incoming as CSSAnimation | undefined)?.animationName === 'ch-vt-push-in';
-  const curve = chSpringCurve('smooth');
-  const at = pushing ? Number(incoming?.currentTime ?? curve.ms) : curve.ms;
+  // Any other page transition still running (a crossfade or a pop) is finished: a push is no longer a view transition.
   for (const a of running) a.finish();
-  return curve.ease(Math.min(1, Math.max(0, at / curve.ms)));
+  return 1;
 }
 
-function playPop(from = 1) {
-  const frame = document.getElementById('ch-content');
+/**
+ * A window-sized copy of the page showing now (`#ch-content`), for a layer on <body> outside the tree React is about to
+ * change, with the root's scope (its tokens and fonts): the visible part only, holding the page at its scrolled place,
+ * not the whole page's height. Inert and hidden from assistive tech. Not yet in the document. Null with no page.
+ */
+export function pageLayer(className: string): HTMLElement | null {
+  const frame = typeof document === 'undefined' ? null : document.getElementById('ch-content');
   const root = frame?.closest<HTMLElement>('.ch-root');
-  const mode = chMotionModeNow();
-  if (!frame || !root || document.documentElement.hasAttribute('data-ch-ua-pop') || mode === 'off') return;
+  if (!frame || !root) return null;
   const box = frame.getBoundingClientRect();
   const page = cloneInView(frame, window.innerHeight, 4);
   page.removeAttribute('id');
   for (const el of Array.from(page.querySelectorAll('[id]'))) el.removeAttribute('id');
-  // The visible part only: a window-sized layer holding the page at its scrolled place, not the whole page's height.
+  page.removeAttribute('data-ch-pushing');
+  page.style.translate = '';
+  page.style.transform = '';
   Object.assign(page.style, { position: 'absolute', top: `${box.top}px`, left: '0', width: `${box.width}px`, margin: '0' });
-  // On <body>, outside the tree React is about to change, with the root's scope (its tokens and fonts).
   const copy = document.createElement('div');
-  copy.className = `${root.className} ch-frame-popping`;
+  copy.className = `${root.className} ${className}`;
   copy.setAttribute('data-ui', 'clubhouse');
   if (root.dataset.motion) copy.dataset.motion = root.dataset.motion;
   copy.setAttribute('aria-hidden', 'true');
   copy.inert = true;
   Object.assign(copy.style, { position: 'fixed', top: '0', left: `${box.left}px`, width: `${box.width}px`, height: `${window.innerHeight}px` });
   copy.appendChild(page);
+  return copy;
+}
+
+/** The smooth spring as WAAPI timing (a linear() curve where the engine has one), with a finger's speed in it if thrown. */
+export function chPushTiming(spring?: { velocity?: number; rest?: number; hold?: boolean }): { curve: ReturnType<typeof chSpringCurve>; timing: KeyframeAnimationOptions } {
+  const curve = chSpringCurve('smooth', spring);
+  const linear = typeof CSS !== 'undefined' && CSS.supports?.('transition-timing-function', 'linear(0, 1)');
+  return { curve, timing: { duration: curve.ms, easing: linear ? curve.linear : `cubic-bezier(${CH_EASE.join(', ')})` } };
+}
+
+/** The page beneath a push: how far it draws back (--ch-vt-parallax) and how it dims (--ch-vt-push-dim), from tokens.css. */
+export function chUnderLook(): { parallax: string; dim: string } {
+  const css = getComputedStyle(document.documentElement);
+  return { parallax: css.getPropertyValue('--ch-vt-parallax').trim() || '-30%', dim: css.getPropertyValue('--ch-vt-push-dim').trim() || 'brightness(0.9)' };
+}
+
+/**
+ * The grabbable push (C1, rows 2 and 89). A drill-in on a phone no longer slides by a view transition, whose snapshots
+ * can be neither grabbed nor reversed: the tap holds a copy of the page it leaves (`holdForPush`), the view transition
+ * swaps at once (shell.css), and in the commit that shows the new page that page itself (`#ch-content`, under the bars,
+ * which never move) slides in from the right edge over the copy, which draws back by the parallax share and dims, on
+ * the smooth spring (`--ch-dur-vt-push`, 462ms): the copy-and-slide Back already used. Because the live page is what
+ * moves, a finger can take it at any point (`grabPush`, use-route-swipe.ts) and a Back can reverse it from where it
+ * stands (`takeRunningPush`).
+ *
+ * The copy stays, out of the document, as the page beneath the one pushed (`unders`, at most four deep), so a swipe back
+ * shows what is under the finger. It goes with a Back to its page, with any section switch or crossfade, and with a team
+ * switch. Phone only, with motion full: Reduce Motion keeps the crossfade and Animations off the swap.
+ */
+export interface ChUnder {
+  /** The pushed page this copy is beneath. */
+  over: string;
+  /** The page the copy shows (where Back goes). */
+  under: string;
+  layer: HTMLElement;
+  /** A swipe is still moving the layer: arriving at its page doesn't remove it; the swipe does when it ends. */
+  pinned?: boolean;
+  /** Called once when its page is showing again (a swipe that let go waits for it before it lets the copy go). */
+  onArrive?: () => void;
+}
+const unders: ChUnder[] = [];
+const UNDERS_MAX = 4;
+let held: { layer: HTMLElement; from: string } | null = null;
+let pushing: { page: HTMLElement; anims: Animation[]; entry: ChUnder; curve: ReturnType<typeof chSpringCurve> } | null = null;
+
+function holdForPush(from: string) {
+  held = null;
+  if (document.documentElement.getAttribute('data-ch-nav') !== 'push') return;
+  const layer = pageLayer('ch-frame-under');
+  if (layer) held = { layer, from };
+}
+
+function dropUnders() {
+  for (const u of unders.splice(0)) if (!u.pinned) u.layer.remove();
+}
+
+/** A page shown by anything but a push: Back to the page under the top copy lets that copy go; anything else, all of them. */
+function settleUnders(path: string) {
+  const top = unders[unders.length - 1];
+  if (top && top.under === path) {
+    unders.pop();
+    if (!top.pinned) top.layer.remove();
+    top.onArrive?.();
+    top.onArrive = undefined;
+    return;
+  }
+  if (top && top.over === path) return;
+  dropUnders();
+}
+
+function endPush(run: NonNullable<typeof pushing>) {
+  if (pushing !== run) return;
+  pushing = null;
+  run.page.removeAttribute('data-ch-pushing');
+  if (!run.entry.pinned) run.entry.layer.remove();
+}
+
+function playPush(from: string, to: string, layer: HTMLElement) {
+  const page = document.getElementById('ch-content');
+  if (!page || typeof page.animate !== 'function' || !window.matchMedia?.(PHONE).matches || chMotionModeNow() !== 'full') return;
+  const entry: ChUnder = { over: to, under: from, layer };
+  const top = unders[unders.length - 1];
+  // Pushed from a page that is itself pushed: the copies stack. From anywhere else, this is the first.
+  if (!top || top.over !== from) dropUnders();
+  unders.push(entry);
+  while (unders.length > UNDERS_MAX) unders.shift()?.layer.remove();
+  document.body.appendChild(layer);
+  const { curve, timing } = chPushTiming();
+  const { parallax, dim } = chUnderLook();
+  page.setAttribute('data-ch-pushing', '');
+  const anims = [
+    page.animate([{ transform: 'translateX(100%)' }, { transform: 'none' }], timing),
+    layer.animate([{ transform: 'none', filter: 'none' }, { transform: `translateX(${parallax})`, filter: dim }], { ...timing, fill: 'forwards' }),
+  ];
+  const run = { page, anims, entry, curve };
+  pushing = run;
+  anims[0]?.finished.then(
+    () => endPush(run),
+    () => {},
+  );
+}
+
+/** How far the running push has come, 0 to 1 along its spring, read from its page's animation. */
+function pushShare(run: NonNullable<typeof pushing>): number {
+  const at = Number(run.anims[0]?.currentTime ?? run.curve.ms);
+  return run.curve.ease(Math.min(1, Math.max(0, at / run.curve.ms)));
+}
+
+/** A number for a CSS value (geometry, not a displayed figure: CONS-15), rounded on `Math.round` to `places`. */
+export function cssNum(n: number, places = 2): string {
+  const k = 10 ** places;
+  return String(Math.round(n * k) / k);
+}
+
+/**
+ * A finger takes the push in flight (use-route-swipe.ts): the slide stops where it stands, and the page and the copy
+ * beneath are left there, inline, for the finger to move. Null when no push is running.
+ */
+export function grabPush(): { entry: ChUnder; offset: number; share: number } | null {
+  const run = pushing;
+  if (!run) return null;
+  pushing = null;
+  const share = pushShare(run);
+  const width = run.page.getBoundingClientRect().width || window.innerWidth;
+  const { parallax, dim } = chUnderLook();
+  for (const a of run.anims) a.cancel();
+  run.page.style.translate = `${cssNum((1 - share) * width)}px 0`;
+  run.entry.layer.style.transform = `translateX(calc(${parallax} * ${cssNum(share, 4)}))`;
+  run.entry.layer.style.filter = share > 0.5 ? dim : 'none';
+  return { entry: run.entry, offset: (1 - share) * width, share };
+}
+
+/** The copy beneath the page showing, when it was pushed and a swipe back can uncover it. */
+export function underFor(path: string = shownPath): ChUnder | null {
+  const top = unders[unders.length - 1];
+  return top && top.over === path ? top : null;
+}
+
+/** The page showing, as RouteFrame last reported it. */
+export function chShownPath(): string {
+  return shownPath;
+}
+
+/**
+ * A swipe let go past its mark (use-route-swipe.ts): the Back it is about to press was already drawn by the hand, so
+ * neither the pop below nor the view transition plays it again (lib/ua-pop.ts).
+ */
+export function chHandPop(): void {
+  markHandPop();
+}
+
+function playPop(from = 1) {
+  const frame = document.getElementById('ch-content');
+  const mode = chMotionModeNow();
+  if (!frame || document.documentElement.hasAttribute('data-ch-ua-pop') || mode === 'off') return;
+  const copy = pageLayer('ch-frame-popping');
+  if (!copy) return;
   document.body.appendChild(copy);
-  const curve = chSpringCurve('smooth');
-  const timing: KeyframeAnimationOptions = { duration: curve.ms, easing: CSS.supports?.('transition-timing-function', 'linear(0, 1)') ? curve.linear : `cubic-bezier(${CH_EASE.join(', ')})` };
-  const parallax = getComputedStyle(document.documentElement).getPropertyValue('--ch-vt-parallax').trim() || '-30%';
+  const { timing } = chPushTiming();
+  const { parallax } = chUnderLook();
   // The next frame, once the router's synchronous commit has put the page beneath in place.
   requestAnimationFrame(() => {
     if (mode === 'fade') {

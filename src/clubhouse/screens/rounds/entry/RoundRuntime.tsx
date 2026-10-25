@@ -8,6 +8,9 @@ import { useAction, type ActionResult, type ServerResult } from '../../../lib/us
 import { Button } from '../../../ui/Button';
 import { Icon } from '../../../ui/Icon';
 import { ExitSheet, RoundCompleteSheet, ScorecardSheet, SubmitOverlay } from '../track/round-sheets';
+import { useRoundSharing } from '../track/LiveShareSheet';
+import type { LiveRoundType } from '../../../live/model';
+import type { LiveSharePorts } from '../../../live/share-ports';
 import { RoundTracking } from '../track/RoundTracking';
 import { CourseNudge } from './CourseNudge';
 import { reasonText } from './labels';
@@ -69,6 +72,7 @@ export function RoundRuntime({
   routes,
   errorsHeld = false,
   roundType,
+  sharing,
 }: {
   session: ChRoundSession;
   capture: Capture;
@@ -78,6 +82,11 @@ export function RoundRuntime({
    * sheet (the continue screen owns it, CH-11521). The Exit sheet closes first.
    */
   roundType?: { label: string; onChange: () => void };
+  /**
+   * Live sharing (P-6): the round's id (null until its first save), its type and the ports. The Exit sheet gets a Sharing
+   * row and the sheet it opens, only when sharing is there (the live table exists) and the round can be shared.
+   */
+  sharing?: { roundId: string | null; type: LiveRoundType; ports: LiveSharePorts };
   /** A dialog outside the runtime (the recovery dialog) holds the engine's error line, so no banner says it twice. */
   errorsHeld?: boolean;
 }) {
@@ -95,6 +104,7 @@ export function RoundRuntime({
   const discarding = useRef(false);
   const practicing = useRef(false);
   const course = session.round.course;
+  const share = useRoundSharing(sharing);
 
   const exitOpen = sheet === 'exit' || session.engineExitOpen;
   const closedOpen = session.submitting && session.qualifierClosed && !session.completedRoundId;
@@ -339,7 +349,17 @@ export function RoundRuntime({
             },
           }
         }
+        sharing={
+          share.row && {
+            label: share.row.label,
+            onChange: () => {
+              closeExit();
+              share.row?.onChange();
+            },
+          }
+        }
       />
+      {share.sheet}
       <ScorecardSheet open={sheet === 'card'} onClose={() => setSheet(null)} course={course} tee={session.round.teeLabel} holes={card} current={current} />
       <RoundCompleteSheet
         open={finishOpen}

@@ -66,6 +66,10 @@ Mobile designs are tracked per screen in `PROGRESS.md` (the `phone-spec` and
 - [x] **Recruiting HQ** `/recruiting` — Prospects from watchlist to commitment
 - [x] **Qualifiers** `/qualifiers` — Set up and run team qualifiers that decide
   lineups (with `/new`, `/[id]`, `/[id]/edit`, `/[id]/selection`)
+- [ ] **Tournaments** `/tournaments` — Season home, event desk, review, history,
+  compare and the link inbox (P016; with `/new`, `/compare`, `/history`,
+  `/links`, `/[id]`, `/[id]/edit`, `/[id]/lineup`, `/[id]/live`). Wired behind
+  `golf_tournaments_v1`, off in production; unticked until the flag is on
 - [ ] **Travel** `/travel` — Tournament trips: itineraries and logistics, linked
   from Calendar events
 - [ ] **Tasks** `/tasks` — Assign tasks to players and track completion live
@@ -80,6 +84,9 @@ Mobile designs are tracked per screen in `PROGRESS.md` (the `phone-spec` and
 - [ ] **Team info** `/team` — Team details, settings and roster information
 - [x] **What's New** `/whats-new` — The team's activity over the past 7 days
   (search palette only)
+- [x] **Live** `/live` — Who is on the course right now, hole by hole: groups,
+  a filter and sort, and a player's round in a sheet or panel (opens from Home's
+  Live now card, Calendar, Qualifiers and Rounds; not in the sidebar)
 
 ## Players
 
@@ -128,6 +135,9 @@ Mobile designs are tracked per screen in `PROGRESS.md` (the `phone-spec` and
   where they stand
 - [x] **Qualifiers** `/qualifiers` — Their team's qualifiers, read-only:
   standings with their row marked, and the squad once confirmed (with `/[id]`)
+- [ ] **Tournaments** `/tournaments` — Their team's events and their own line
+  (P016; with `/[id]`). Wired behind `golf_tournaments_v1`, off in production;
+  the player view is a placeholder until held file 4
 - [x] **Roster** `/roster` — Their teammates, read-only: the coach's cards, list
   and phone rows with name, class and handicap, nothing to open (`TeamRoster`,
   2026-10-01; no scores, notes, requests or actions, so a card is not a control)

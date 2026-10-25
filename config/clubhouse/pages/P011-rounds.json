@@ -58,7 +58,9 @@
       "src/clubhouse/__tests__/round-entry-continue.test.tsx",
       "src/clubhouse/__tests__/round-entry-routes.test.tsx",
       "src/lib/golf/__tests__/shot-entry-rules.test.ts",
-      "src/clubhouse/__tests__/team-rounds-shape.test.ts"
+      "src/clubhouse/__tests__/team-rounds-shape.test.ts",
+      "src/clubhouse/__tests__/live-rounds-copy.test.ts",
+      "src/clubhouse/screens/rounds/__tests__/live-surfaces.test.tsx"
     ]
   },
   "catalog": "docs/clubhouse/catalog/rounds.md",
@@ -270,5 +272,8 @@
       ]
     }
   ],
-  "held": []
+  "held": [
+    "docs/clubhouse/held/data/live-rounds.md",
+    "docs/clubhouse/held/data/live-rounds-realtime.md"
+  ]
 }

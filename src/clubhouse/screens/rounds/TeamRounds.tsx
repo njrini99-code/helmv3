@@ -24,6 +24,8 @@ import { monthLabel, shortDay, TeeSwatch, TypePill } from './parts';
 import { noteOpenedFromLibrary } from './return-state';
 import { plural, pluralWord } from '../../lib/plural';
 import { LargeTitle } from '../../ui/LargeTitle';
+import { LiveNowCard } from '../home/LiveNowCard';
+import type { LiveSnapshot } from '../../live/model';
 
 type Group = 'month' | 'player';
 
@@ -104,7 +106,7 @@ function TeamRoundRow({ r, by }: { r: ChTeamRound; by: Group }) {
  * figures on top, then the rounds by month or by player, each opening its review. Search by player or course, or pick a
  * player.
  */
-export function TeamRounds({ data: fresh, teamId }: { data: ChTeamRounds; teamId: string }) {
+export function TeamRounds({ data: fresh, teamId, live, liveNow }: { data: ChTeamRounds; teamId: string; live?: LiveSnapshot; liveNow?: number }) {
   const phone = useChPhone();
   const { refresh, refreshing } = useRefresh();
   // A refresh that fails keeps the list the coach was reading and says it may be out of date; a first load that fails is the error as it came.
@@ -141,6 +143,13 @@ export function TeamRounds({ data: fresh, teamId }: { data: ChTeamRounds; teamId
       </header>
 
       {stale && <InlineNotice code="CH-11219" title="The team’s rounds may be out of date" body="We couldn’t refresh them just now. This is what loaded last time." onRetry={refresh} retrying={refreshing} />}
+
+      {/* "Live now" (P-6, CH-16630): who is out, above the book. It is its own read, so a failed one leaves the band out and the page whole. */}
+      {live && (
+        <SectionBoundary surface="rounds.team.live" label="Live now" code="CH-16630">
+          <LiveNowCard variant="band" initial={live} phone={phone} now={liveNow} frozen={liveNow != null} />
+        </SectionBoundary>
+      )}
 
       {data.rosterError ? (
         <InlineNotice code="CH-11220" title="Your roster didn’t load" body="Nothing is lost. The team’s rounds are still saved; try again in a moment." onRetry={refresh} retrying={refreshing} />

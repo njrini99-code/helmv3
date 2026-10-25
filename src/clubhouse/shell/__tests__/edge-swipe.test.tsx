@@ -154,6 +154,39 @@ describe('the edge swipe state machine', () => {
   });
 });
 
+describe('a push still sliding in, grabbed where it stands (C1)', () => {
+  it('adds the finger’s travel to where the page already is', () => {
+    const m = createEdgeSwipe(W, 200);
+    m.start(10, 400, 0);
+    const f = m.move(10 + CH_EDGE_SLOP_PX + 4, 401, 16);
+    expect(f.claim).toBe(true);
+    expect(f.frame?.offset).toBe(200 + CH_EDGE_SLOP_PX + 4);
+    // Already past the commit mark when taken, so it says so from the start rather than as a crossing.
+    expect(f.frame?.past).toBe(true);
+    expect(f.crossed).toBe(false);
+  });
+
+  it('let go without a flick, it goes the way its place says: past the mark commits, short of it springs home', () => {
+    const far = createEdgeSwipe(W, 200);
+    far.start(10, 400, 0);
+    far.move(10 + CH_EDGE_SLOP_PX + 1, 400, 400);
+    expect(far.end(800)?.outcome).toBe('commit');
+    const near = createEdgeSwipe(W, 40);
+    near.start(10, 400, 0);
+    near.move(10 + CH_EDGE_SLOP_PX + 1, 400, 400);
+    expect(near.end(800)?.outcome).toBe('cancel');
+  });
+
+  it('never starts past the width or before the edge', () => {
+    const m = createEdgeSwipe(W, W + 80);
+    m.start(10, 400, 0);
+    expect(m.move(60, 400, 16).frame?.offset).toBe(W);
+    const n = createEdgeSwipe(W, -30);
+    n.start(10, 400, 0);
+    expect(n.move(10 + CH_EDGE_SLOP_PX + 2, 400, 16).frame?.offset).toBe(CH_EDGE_SLOP_PX + 2);
+  });
+});
+
 describe('when the web gesture may run', () => {
   afterEach(() => {
     delete (window as unknown as { webkit?: unknown }).webkit;

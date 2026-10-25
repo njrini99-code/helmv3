@@ -1,12 +1,96 @@
 {
   "components": [
     {
+      "file": "src/clubhouse/lib/use-change-marks.tsx",
+      "group": "lib",
+      "exports": [
+        "ChangeMarksProvider"
+      ],
+      "styles": [],
+      "examples": [],
+      "fixture": "Contextual module"
+    },
+    {
       "file": "src/clubhouse/lib/use-clock.tsx",
       "group": "lib",
       "exports": [
         "ChClockProvider"
       ],
       "styles": [],
+      "examples": [],
+      "fixture": "Contextual module"
+    },
+    {
+      "file": "src/clubhouse/live/FreshnessChip.tsx",
+      "group": "live",
+      "exports": [
+        "FreshnessChip"
+      ],
+      "styles": [
+        "src/clubhouse/styles/live.css"
+      ],
+      "examples": [],
+      "fixture": "Contextual module"
+    },
+    {
+      "file": "src/clubhouse/live/HoleBeads.tsx",
+      "group": "live",
+      "exports": [
+        "HoleBeads",
+        "RING_MS"
+      ],
+      "styles": [
+        "src/clubhouse/styles/live.css"
+      ],
+      "examples": [],
+      "fixture": "Contextual module"
+    },
+    {
+      "file": "src/clubhouse/live/LiveAnnouncer.tsx",
+      "group": "live",
+      "exports": [
+        "ANNOUNCE_GAP_MS",
+        "LiveAnnouncer"
+      ],
+      "styles": [
+        "src/clubhouse/styles/base.css",
+        "src/clubhouse/styles/shell.css"
+      ],
+      "examples": [],
+      "fixture": "Contextual module"
+    },
+    {
+      "file": "src/clubhouse/live/MomentumLine.tsx",
+      "group": "live",
+      "exports": [
+        "MomentumLine"
+      ],
+      "styles": [
+        "src/clubhouse/styles/live.css"
+      ],
+      "examples": [],
+      "fixture": "Contextual module"
+    },
+    {
+      "file": "src/clubhouse/live/PlayerLane.tsx",
+      "group": "live",
+      "exports": [
+        "PlayerLane"
+      ],
+      "styles": [
+        "src/clubhouse/styles/base.css",
+        "src/clubhouse/styles/calendar.css",
+        "src/clubhouse/styles/class-awareness.css",
+        "src/clubhouse/styles/coachhelm.css",
+        "src/clubhouse/styles/goals.css",
+        "src/clubhouse/styles/home.css",
+        "src/clubhouse/styles/hub.css",
+        "src/clubhouse/styles/live.css",
+        "src/clubhouse/styles/messages.css",
+        "src/clubhouse/styles/qualifiers.css",
+        "src/clubhouse/styles/stats.css",
+        "src/clubhouse/styles/tournaments-desk.css"
+      ],
       "examples": [],
       "fixture": "Contextual module"
     },
@@ -58,6 +142,7 @@
         "src/clubhouse/styles/settings.css",
         "src/clubhouse/styles/shell.css",
         "src/clubhouse/styles/stats.css",
+        "src/clubhouse/styles/tournaments.css",
         "src/clubhouse/styles/ui.css"
       ],
       "examples": [],
@@ -118,6 +203,7 @@
         "src/clubhouse/styles/settings.css",
         "src/clubhouse/styles/shell.css",
         "src/clubhouse/styles/stats.css",
+        "src/clubhouse/styles/tournaments.css",
         "src/clubhouse/styles/ui.css"
       ],
       "examples": [],
@@ -298,6 +384,17 @@
       "fixture": "Contextual module"
     },
     {
+      "file": "src/clubhouse/preview/PreviewTournaments.tsx",
+      "group": "preview",
+      "exports": [
+        "PreviewTournaments",
+        "TOUR_PREVIEW_PATHS"
+      ],
+      "styles": [],
+      "examples": [],
+      "fixture": "Contextual module"
+    },
+    {
       "file": "src/clubhouse/preview/PreviewTracking.tsx",
       "group": "preview",
       "exports": [
@@ -332,7 +429,9 @@
         "ClubhouseCalendarRoute"
       ],
       "styles": [
-        "src/clubhouse/styles/calendar.css"
+        "src/clubhouse/styles/calendar.css",
+        "src/clubhouse/styles/qualifiers.css",
+        "src/clubhouse/styles/tournament-fields.css"
       ],
       "examples": [],
       "fixture": "Contextual module"
@@ -400,6 +499,18 @@
       ],
       "styles": [
         "src/clubhouse/styles/hub.css"
+      ],
+      "examples": [],
+      "fixture": "Contextual module"
+    },
+    {
+      "file": "src/clubhouse/routes/live.tsx",
+      "group": "routes",
+      "exports": [
+        "ClubhouseLiveRoute"
+      ],
+      "styles": [
+        "src/clubhouse/styles/live.css"
       ],
       "examples": [],
       "fixture": "Contextual module"
@@ -557,6 +668,16 @@
       "fixture": "Contextual module"
     },
     {
+      "file": "src/clubhouse/routes/tournaments.tsx",
+      "group": "routes",
+      "exports": [
+        "ClubhouseTournamentsRoute"
+      ],
+      "styles": [],
+      "examples": [],
+      "fixture": "Contextual module"
+    },
+    {
       "file": "src/clubhouse/routes/whats-new.tsx",
       "group": "routes",
       "exports": [
@@ -681,6 +802,7 @@
         "src/clubhouse/styles/settings.css",
         "src/clubhouse/styles/shell.css",
         "src/clubhouse/styles/stats.css",
+        "src/clubhouse/styles/tournaments.css",
         "src/clubhouse/styles/ui.css"
       ],
       "examples": [],
@@ -829,6 +951,7 @@
         "src/clubhouse/styles/settings.css",
         "src/clubhouse/styles/shell.css",
         "src/clubhouse/styles/stats.css",
+        "src/clubhouse/styles/tournaments.css",
         "src/clubhouse/styles/ui.css"
       ],
       "examples": [],
@@ -914,6 +1037,7 @@
         "src/clubhouse/styles/settings.css",
         "src/clubhouse/styles/shell.css",
         "src/clubhouse/styles/stats.css",
+        "src/clubhouse/styles/tournaments.css",
         "src/clubhouse/styles/ui.css"
       ],
       "examples": [],
@@ -971,6 +1095,7 @@
       "styles": [
         "src/clubhouse/styles/base.css",
         "src/clubhouse/styles/calendar.css",
+        "src/clubhouse/styles/class-awareness.css",
         "src/clubhouse/styles/coachhelm.css",
         "src/clubhouse/styles/goals.css",
         "src/clubhouse/styles/home.css",
@@ -978,6 +1103,7 @@
         "src/clubhouse/styles/messages.css",
         "src/clubhouse/styles/qualifiers.css",
         "src/clubhouse/styles/stats.css",
+        "src/clubhouse/styles/tournaments-desk.css",
         "src/clubhouse/styles/ui.css"
       ],
       "examples": [],
@@ -997,6 +1123,50 @@
       "fixture": "Contextual module"
     },
     {
+      "file": "src/clubhouse/screens/calendar/cancel-round.tsx",
+      "group": "screens",
+      "exports": [
+        "CancelRoundDialog"
+      ],
+      "styles": [
+        "src/clubhouse/styles/base.css",
+        "src/clubhouse/styles/controls.css",
+        "src/clubhouse/styles/messages.css",
+        "src/clubhouse/styles/qualifiers.css",
+        "src/clubhouse/styles/recruiting.css",
+        "src/clubhouse/styles/roster.css",
+        "src/clubhouse/styles/settings.css",
+        "src/clubhouse/styles/stats.css"
+      ],
+      "examples": [],
+      "fixture": "Contextual module"
+    },
+    {
+      "file": "src/clubhouse/screens/calendar/change-note.tsx",
+      "group": "screens",
+      "exports": [
+        "ChangeNote",
+        "MarkBadge",
+        "MovedAwayRow",
+        "OldSlotLine"
+      ],
+      "styles": [
+        "src/clubhouse/styles/base.css",
+        "src/clubhouse/styles/calendar.css",
+        "src/clubhouse/styles/class-awareness.css",
+        "src/clubhouse/styles/coachhelm.css",
+        "src/clubhouse/styles/goals.css",
+        "src/clubhouse/styles/home.css",
+        "src/clubhouse/styles/hub.css",
+        "src/clubhouse/styles/messages.css",
+        "src/clubhouse/styles/qualifiers.css",
+        "src/clubhouse/styles/stats.css",
+        "src/clubhouse/styles/tournaments-desk.css"
+      ],
+      "examples": [],
+      "fixture": "Contextual module"
+    },
+    {
       "file": "src/clubhouse/screens/calendar/class-group.tsx",
       "group": "screens",
       "exports": [
@@ -1005,6 +1175,7 @@
       "styles": [
         "src/clubhouse/styles/base.css",
         "src/clubhouse/styles/calendar.css",
+        "src/clubhouse/styles/class-awareness.css",
         "src/clubhouse/styles/coachhelm-ask.css",
         "src/clubhouse/styles/coachhelm.css",
         "src/clubhouse/styles/command.css",
@@ -1019,6 +1190,7 @@
         "src/clubhouse/styles/rounds-track.css",
         "src/clubhouse/styles/shell.css",
         "src/clubhouse/styles/stats.css",
+        "src/clubhouse/styles/tournaments-desk.css",
         "src/clubhouse/styles/ui.css"
       ],
       "examples": [],
@@ -1039,6 +1211,7 @@
       "styles": [
         "src/clubhouse/styles/base.css",
         "src/clubhouse/styles/calendar.css",
+        "src/clubhouse/styles/class-awareness.css",
         "src/clubhouse/styles/coachhelm.css",
         "src/clubhouse/styles/goals.css",
         "src/clubhouse/styles/home.css",
@@ -1046,6 +1219,7 @@
         "src/clubhouse/styles/messages.css",
         "src/clubhouse/styles/qualifiers.css",
         "src/clubhouse/styles/stats.css",
+        "src/clubhouse/styles/tournaments-desk.css",
         "src/clubhouse/styles/ui.css"
       ],
       "examples": [],
@@ -1055,6 +1229,7 @@
       "file": "src/clubhouse/screens/calendar/drag-popovers.tsx",
       "group": "screens",
       "exports": [
+        "RoundMoveConfirm",
         "SeriesScopeMenu"
       ],
       "styles": [
@@ -1076,6 +1251,52 @@
       "fixture": "Contextual module"
     },
     {
+      "file": "src/clubhouse/screens/calendar/editor-round.tsx",
+      "group": "screens",
+      "exports": [
+        "RoundEditor"
+      ],
+      "styles": [
+        "src/clubhouse/styles/base.css",
+        "src/clubhouse/styles/calendar.css",
+        "src/clubhouse/styles/class-awareness.css",
+        "src/clubhouse/styles/coachhelm.css",
+        "src/clubhouse/styles/controls.css",
+        "src/clubhouse/styles/goals.css",
+        "src/clubhouse/styles/home.css",
+        "src/clubhouse/styles/hub.css",
+        "src/clubhouse/styles/messages.css",
+        "src/clubhouse/styles/qualifiers.css",
+        "src/clubhouse/styles/recruiting.css",
+        "src/clubhouse/styles/rounds.css",
+        "src/clubhouse/styles/settings.css",
+        "src/clubhouse/styles/shell.css",
+        "src/clubhouse/styles/stats.css",
+        "src/clubhouse/styles/tournament-fields.css",
+        "src/clubhouse/styles/tournaments-desk.css"
+      ],
+      "examples": [],
+      "fixture": "Contextual module"
+    },
+    {
+      "file": "src/clubhouse/screens/calendar/editor-tournament.tsx",
+      "group": "screens",
+      "exports": [
+        "TRACK_HINT",
+        "TournamentSaveNotice",
+        "TournamentSection"
+      ],
+      "styles": [
+        "src/clubhouse/styles/calendar.css",
+        "src/clubhouse/styles/controls.css",
+        "src/clubhouse/styles/messages.css",
+        "src/clubhouse/styles/settings.css",
+        "src/clubhouse/styles/tournament-fields.css"
+      ],
+      "examples": [],
+      "fixture": "Contextual module"
+    },
+    {
       "file": "src/clubhouse/screens/calendar/editor.tsx",
       "group": "screens",
       "exports": [
@@ -1087,6 +1308,7 @@
       "styles": [
         "src/clubhouse/styles/base.css",
         "src/clubhouse/styles/calendar.css",
+        "src/clubhouse/styles/class-awareness.css",
         "src/clubhouse/styles/coachhelm.css",
         "src/clubhouse/styles/controls.css",
         "src/clubhouse/styles/goals.css",
@@ -1098,7 +1320,10 @@
         "src/clubhouse/styles/roster.css",
         "src/clubhouse/styles/rounds.css",
         "src/clubhouse/styles/settings.css",
-        "src/clubhouse/styles/stats.css"
+        "src/clubhouse/styles/shell.css",
+        "src/clubhouse/styles/stats.css",
+        "src/clubhouse/styles/tournament-fields.css",
+        "src/clubhouse/styles/tournaments-desk.css"
       ],
       "examples": [],
       "fixture": "Contextual module"
@@ -1115,6 +1340,7 @@
       "styles": [
         "src/clubhouse/styles/base.css",
         "src/clubhouse/styles/calendar.css",
+        "src/clubhouse/styles/class-awareness.css",
         "src/clubhouse/styles/coachhelm.css",
         "src/clubhouse/styles/controls.css",
         "src/clubhouse/styles/goals.css",
@@ -1125,7 +1351,8 @@
         "src/clubhouse/styles/recruiting.css",
         "src/clubhouse/styles/roster.css",
         "src/clubhouse/styles/settings.css",
-        "src/clubhouse/styles/stats.css"
+        "src/clubhouse/styles/stats.css",
+        "src/clubhouse/styles/tournaments-desk.css"
       ],
       "examples": [],
       "fixture": "Contextual module"
@@ -1143,13 +1370,29 @@
       "styles": [
         "src/clubhouse/styles/base.css",
         "src/clubhouse/styles/calendar.css",
+        "src/clubhouse/styles/class-awareness.css",
         "src/clubhouse/styles/coachhelm.css",
         "src/clubhouse/styles/goals.css",
         "src/clubhouse/styles/home.css",
         "src/clubhouse/styles/hub.css",
         "src/clubhouse/styles/messages.css",
         "src/clubhouse/styles/qualifiers.css",
-        "src/clubhouse/styles/stats.css"
+        "src/clubhouse/styles/stats.css",
+        "src/clubhouse/styles/tournaments-desk.css"
+      ],
+      "examples": [],
+      "fixture": "Contextual module"
+    },
+    {
+      "file": "src/clubhouse/screens/calendar/live-events.tsx",
+      "group": "screens",
+      "exports": [
+        "CalendarLiveProvider",
+        "EventLiveDot",
+        "EventLiveRow"
+      ],
+      "styles": [
+        "src/clubhouse/styles/live.css"
       ],
       "examples": [],
       "fixture": "Contextual module"
@@ -1164,13 +1407,15 @@
       "styles": [
         "src/clubhouse/styles/base.css",
         "src/clubhouse/styles/calendar.css",
+        "src/clubhouse/styles/class-awareness.css",
         "src/clubhouse/styles/coachhelm.css",
         "src/clubhouse/styles/goals.css",
         "src/clubhouse/styles/home.css",
         "src/clubhouse/styles/hub.css",
         "src/clubhouse/styles/messages.css",
         "src/clubhouse/styles/qualifiers.css",
-        "src/clubhouse/styles/stats.css"
+        "src/clubhouse/styles/stats.css",
+        "src/clubhouse/styles/tournaments-desk.css"
       ],
       "examples": [],
       "fixture": "Contextual module"
@@ -1184,6 +1429,7 @@
       "styles": [
         "src/clubhouse/styles/base.css",
         "src/clubhouse/styles/calendar.css",
+        "src/clubhouse/styles/class-awareness.css",
         "src/clubhouse/styles/coachhelm.css",
         "src/clubhouse/styles/goals.css",
         "src/clubhouse/styles/home.css",
@@ -1191,7 +1437,8 @@
         "src/clubhouse/styles/messages.css",
         "src/clubhouse/styles/qualifiers.css",
         "src/clubhouse/styles/shell.css",
-        "src/clubhouse/styles/stats.css"
+        "src/clubhouse/styles/stats.css",
+        "src/clubhouse/styles/tournaments-desk.css"
       ],
       "examples": [],
       "fixture": "Contextual module"
@@ -1206,13 +1453,38 @@
       "styles": [
         "src/clubhouse/styles/base.css",
         "src/clubhouse/styles/calendar.css",
+        "src/clubhouse/styles/class-awareness.css",
         "src/clubhouse/styles/coachhelm.css",
         "src/clubhouse/styles/goals.css",
         "src/clubhouse/styles/home.css",
         "src/clubhouse/styles/hub.css",
         "src/clubhouse/styles/messages.css",
         "src/clubhouse/styles/qualifiers.css",
-        "src/clubhouse/styles/stats.css"
+        "src/clubhouse/styles/stats.css",
+        "src/clubhouse/styles/tournaments-desk.css"
+      ],
+      "examples": [],
+      "fixture": "Contextual module"
+    },
+    {
+      "file": "src/clubhouse/screens/calendar/round-label.tsx",
+      "group": "screens",
+      "exports": [
+        "ROUND_PILL_MIN_PX",
+        "RoundTitle"
+      ],
+      "styles": [
+        "src/clubhouse/styles/base.css",
+        "src/clubhouse/styles/calendar.css",
+        "src/clubhouse/styles/class-awareness.css",
+        "src/clubhouse/styles/coachhelm.css",
+        "src/clubhouse/styles/goals.css",
+        "src/clubhouse/styles/home.css",
+        "src/clubhouse/styles/hub.css",
+        "src/clubhouse/styles/messages.css",
+        "src/clubhouse/styles/qualifiers.css",
+        "src/clubhouse/styles/stats.css",
+        "src/clubhouse/styles/tournaments-desk.css"
       ],
       "examples": [],
       "fixture": "Contextual module"
@@ -1231,13 +1503,15 @@
       "styles": [
         "src/clubhouse/styles/base.css",
         "src/clubhouse/styles/calendar.css",
+        "src/clubhouse/styles/class-awareness.css",
         "src/clubhouse/styles/coachhelm.css",
         "src/clubhouse/styles/goals.css",
         "src/clubhouse/styles/home.css",
         "src/clubhouse/styles/hub.css",
         "src/clubhouse/styles/messages.css",
         "src/clubhouse/styles/qualifiers.css",
-        "src/clubhouse/styles/stats.css"
+        "src/clubhouse/styles/stats.css",
+        "src/clubhouse/styles/tournaments-desk.css"
       ],
       "examples": [],
       "fixture": "Contextual module"
@@ -1251,6 +1525,7 @@
       "styles": [
         "src/clubhouse/styles/base.css",
         "src/clubhouse/styles/calendar.css",
+        "src/clubhouse/styles/class-awareness.css",
         "src/clubhouse/styles/classes.css",
         "src/clubhouse/styles/coachhelm.css",
         "src/clubhouse/styles/goals.css",
@@ -1258,7 +1533,8 @@
         "src/clubhouse/styles/hub.css",
         "src/clubhouse/styles/messages.css",
         "src/clubhouse/styles/qualifiers.css",
-        "src/clubhouse/styles/stats.css"
+        "src/clubhouse/styles/stats.css",
+        "src/clubhouse/styles/tournaments-desk.css"
       ],
       "examples": [],
       "fixture": "Contextual module"
@@ -1280,6 +1556,40 @@
         "src/clubhouse/styles/rounds.css",
         "src/clubhouse/styles/settings.css",
         "src/clubhouse/styles/stats.css"
+      ],
+      "examples": [],
+      "fixture": "Contextual module"
+    },
+    {
+      "file": "src/clubhouse/screens/classes/ClassStatusDetail.tsx",
+      "group": "screens",
+      "exports": [
+        "ClassStatusDetail"
+      ],
+      "styles": [
+        "src/clubhouse/styles/base.css",
+        "src/clubhouse/styles/calendar.css",
+        "src/clubhouse/styles/class-awareness.css",
+        "src/clubhouse/styles/coachhelm.css",
+        "src/clubhouse/styles/goals.css",
+        "src/clubhouse/styles/home.css",
+        "src/clubhouse/styles/hub.css",
+        "src/clubhouse/styles/messages.css",
+        "src/clubhouse/styles/qualifiers.css",
+        "src/clubhouse/styles/stats.css",
+        "src/clubhouse/styles/tournaments-desk.css"
+      ],
+      "examples": [],
+      "fixture": "Contextual module"
+    },
+    {
+      "file": "src/clubhouse/screens/classes/ClassStatusPanel.tsx",
+      "group": "screens",
+      "exports": [
+        "ClassStatusPanel"
+      ],
+      "styles": [
+        "src/clubhouse/styles/class-awareness.css"
       ],
       "examples": [],
       "fixture": "Contextual module"
@@ -1333,6 +1643,26 @@
       "fixture": "Contextual module"
     },
     {
+      "file": "src/clubhouse/screens/classes/ExamSheet.tsx",
+      "group": "screens",
+      "exports": [
+        "ExamSheet"
+      ],
+      "styles": [
+        "src/clubhouse/styles/base.css",
+        "src/clubhouse/styles/class-awareness.css",
+        "src/clubhouse/styles/controls.css",
+        "src/clubhouse/styles/messages.css",
+        "src/clubhouse/styles/qualifiers.css",
+        "src/clubhouse/styles/recruiting.css",
+        "src/clubhouse/styles/roster.css",
+        "src/clubhouse/styles/settings.css",
+        "src/clubhouse/styles/stats.css"
+      ],
+      "examples": [],
+      "fixture": "Contextual module"
+    },
+    {
       "file": "src/clubhouse/screens/classes/ImportSchedule.tsx",
       "group": "screens",
       "exports": [
@@ -1341,6 +1671,7 @@
       "styles": [
         "src/clubhouse/styles/base.css",
         "src/clubhouse/styles/calendar.css",
+        "src/clubhouse/styles/class-awareness.css",
         "src/clubhouse/styles/classes.css",
         "src/clubhouse/styles/coachhelm.css",
         "src/clubhouse/styles/controls.css",
@@ -1351,7 +1682,105 @@
         "src/clubhouse/styles/qualifiers.css",
         "src/clubhouse/styles/recruiting.css",
         "src/clubhouse/styles/rounds.css",
+        "src/clubhouse/styles/stats.css",
+        "src/clubhouse/styles/tournaments-desk.css"
+      ],
+      "examples": [],
+      "fixture": "Contextual module"
+    },
+    {
+      "file": "src/clubhouse/screens/classes/InClassSheet.tsx",
+      "group": "screens",
+      "exports": [
+        "InClassSheet"
+      ],
+      "styles": [
+        "src/clubhouse/styles/class-awareness.css"
+      ],
+      "examples": [],
+      "fixture": "Contextual module"
+    },
+    {
+      "file": "src/clubhouse/screens/classes/NoClassTodaySheet.tsx",
+      "group": "screens",
+      "exports": [
+        "NoClassTodaySheet"
+      ],
+      "styles": [
+        "src/clubhouse/styles/base.css",
+        "src/clubhouse/styles/calendar.css",
+        "src/clubhouse/styles/class-awareness.css",
+        "src/clubhouse/styles/coachhelm.css",
+        "src/clubhouse/styles/goals.css",
+        "src/clubhouse/styles/home.css",
+        "src/clubhouse/styles/hub.css",
+        "src/clubhouse/styles/messages.css",
+        "src/clubhouse/styles/qualifiers.css",
+        "src/clubhouse/styles/shell.css",
+        "src/clubhouse/styles/stats.css",
+        "src/clubhouse/styles/tournaments-desk.css"
+      ],
+      "examples": [],
+      "fixture": "Contextual module"
+    },
+    {
+      "file": "src/clubhouse/screens/classes/TeamBreakSheet.tsx",
+      "group": "screens",
+      "exports": [
+        "TeamBreakSheet"
+      ],
+      "styles": [
+        "src/clubhouse/styles/base.css",
+        "src/clubhouse/styles/class-awareness.css",
+        "src/clubhouse/styles/controls.css",
+        "src/clubhouse/styles/messages.css",
+        "src/clubhouse/styles/qualifiers.css",
+        "src/clubhouse/styles/recruiting.css",
+        "src/clubhouse/styles/roster.css",
+        "src/clubhouse/styles/settings.css",
         "src/clubhouse/styles/stats.css"
+      ],
+      "examples": [],
+      "fixture": "Contextual module"
+    },
+    {
+      "file": "src/clubhouse/screens/classes/TermSheet.tsx",
+      "group": "screens",
+      "exports": [
+        "TermSheet"
+      ],
+      "styles": [
+        "src/clubhouse/styles/base.css",
+        "src/clubhouse/styles/class-awareness.css",
+        "src/clubhouse/styles/controls.css",
+        "src/clubhouse/styles/messages.css",
+        "src/clubhouse/styles/qualifiers.css",
+        "src/clubhouse/styles/recruiting.css",
+        "src/clubhouse/styles/roster.css",
+        "src/clubhouse/styles/settings.css",
+        "src/clubhouse/styles/stats.css"
+      ],
+      "examples": [],
+      "fixture": "Contextual module"
+    },
+    {
+      "file": "src/clubhouse/screens/classes/TodayStrip.tsx",
+      "group": "screens",
+      "exports": [
+        "TodayStrip"
+      ],
+      "styles": [
+        "src/clubhouse/styles/base.css",
+        "src/clubhouse/styles/calendar.css",
+        "src/clubhouse/styles/class-awareness.css",
+        "src/clubhouse/styles/coachhelm.css",
+        "src/clubhouse/styles/goals.css",
+        "src/clubhouse/styles/home.css",
+        "src/clubhouse/styles/hub.css",
+        "src/clubhouse/styles/messages.css",
+        "src/clubhouse/styles/qualifiers.css",
+        "src/clubhouse/styles/stats.css",
+        "src/clubhouse/styles/tournaments-desk.css"
       ],
       "examples": [],
       "fixture": "Contextual module"
@@ -1372,6 +1801,7 @@
       "styles": [
         "src/clubhouse/styles/base.css",
         "src/clubhouse/styles/calendar.css",
+        "src/clubhouse/styles/class-awareness.css",
         "src/clubhouse/styles/classes.css",
         "src/clubhouse/styles/coachhelm.css",
         "src/clubhouse/styles/goals.css",
@@ -1379,7 +1809,8 @@
         "src/clubhouse/styles/hub.css",
         "src/clubhouse/styles/messages.css",
         "src/clubhouse/styles/qualifiers.css",
-        "src/clubhouse/styles/stats.css"
+        "src/clubhouse/styles/stats.css",
+        "src/clubhouse/styles/tournaments-desk.css"
       ],
       "examples": [],
       "fixture": "Contextual module"
@@ -1393,6 +1824,7 @@
       "styles": [
         "src/clubhouse/styles/base.css",
         "src/clubhouse/styles/calendar.css",
+        "src/clubhouse/styles/class-awareness.css",
         "src/clubhouse/styles/coachhelm-brief.css",
         "src/clubhouse/styles/coachhelm-dive.css",
         "src/clubhouse/styles/coachhelm-track.css",
@@ -1402,7 +1834,8 @@
         "src/clubhouse/styles/hub.css",
         "src/clubhouse/styles/messages.css",
         "src/clubhouse/styles/qualifiers.css",
-        "src/clubhouse/styles/stats.css"
+        "src/clubhouse/styles/stats.css",
+        "src/clubhouse/styles/tournaments-desk.css"
       ],
       "examples": [],
       "fixture": "Contextual module"
@@ -1435,13 +1868,15 @@
       "styles": [
         "src/clubhouse/styles/base.css",
         "src/clubhouse/styles/calendar.css",
+        "src/clubhouse/styles/class-awareness.css",
         "src/clubhouse/styles/coachhelm.css",
         "src/clubhouse/styles/goals.css",
         "src/clubhouse/styles/home.css",
         "src/clubhouse/styles/hub.css",
         "src/clubhouse/styles/messages.css",
         "src/clubhouse/styles/qualifiers.css",
-        "src/clubhouse/styles/stats.css"
+        "src/clubhouse/styles/stats.css",
+        "src/clubhouse/styles/tournaments-desk.css"
       ],
       "examples": [],
       "fixture": "Contextual module"
@@ -1455,13 +1890,15 @@
       "styles": [
         "src/clubhouse/styles/base.css",
         "src/clubhouse/styles/calendar.css",
+        "src/clubhouse/styles/class-awareness.css",
         "src/clubhouse/styles/coachhelm.css",
         "src/clubhouse/styles/goals.css",
         "src/clubhouse/styles/home.css",
         "src/clubhouse/styles/hub.css",
         "src/clubhouse/styles/messages.css",
         "src/clubhouse/styles/qualifiers.css",
-        "src/clubhouse/styles/stats.css"
+        "src/clubhouse/styles/stats.css",
+        "src/clubhouse/styles/tournaments-desk.css"
       ],
       "examples": [],
       "fixture": "Contextual module"
@@ -1477,13 +1914,15 @@
       "styles": [
         "src/clubhouse/styles/base.css",
         "src/clubhouse/styles/calendar.css",
+        "src/clubhouse/styles/class-awareness.css",
         "src/clubhouse/styles/coachhelm.css",
         "src/clubhouse/styles/goals.css",
         "src/clubhouse/styles/home.css",
         "src/clubhouse/styles/hub.css",
         "src/clubhouse/styles/messages.css",
         "src/clubhouse/styles/qualifiers.css",
-        "src/clubhouse/styles/stats.css"
+        "src/clubhouse/styles/stats.css",
+        "src/clubhouse/styles/tournaments-desk.css"
       ],
       "examples": [],
       "fixture": "Contextual module"
@@ -1497,13 +1936,15 @@
       "styles": [
         "src/clubhouse/styles/base.css",
         "src/clubhouse/styles/calendar.css",
+        "src/clubhouse/styles/class-awareness.css",
         "src/clubhouse/styles/coachhelm.css",
         "src/clubhouse/styles/goals.css",
         "src/clubhouse/styles/home.css",
         "src/clubhouse/styles/hub.css",
         "src/clubhouse/styles/messages.css",
         "src/clubhouse/styles/qualifiers.css",
-        "src/clubhouse/styles/stats.css"
+        "src/clubhouse/styles/stats.css",
+        "src/clubhouse/styles/tournaments-desk.css"
       ],
       "examples": [],
       "fixture": "Contextual module"
@@ -1542,13 +1983,15 @@
       "styles": [
         "src/clubhouse/styles/base.css",
         "src/clubhouse/styles/calendar.css",
+        "src/clubhouse/styles/class-awareness.css",
         "src/clubhouse/styles/coachhelm.css",
         "src/clubhouse/styles/goals.css",
         "src/clubhouse/styles/home.css",
         "src/clubhouse/styles/hub.css",
         "src/clubhouse/styles/messages.css",
         "src/clubhouse/styles/qualifiers.css",
-        "src/clubhouse/styles/stats.css"
+        "src/clubhouse/styles/stats.css",
+        "src/clubhouse/styles/tournaments-desk.css"
       ],
       "examples": [],
       "fixture": "Contextual module"
@@ -1562,6 +2005,7 @@
       "styles": [
         "src/clubhouse/styles/base.css",
         "src/clubhouse/styles/calendar.css",
+        "src/clubhouse/styles/class-awareness.css",
         "src/clubhouse/styles/coachhelm-patterns.css",
         "src/clubhouse/styles/coachhelm.css",
         "src/clubhouse/styles/goals.css",
@@ -1569,7 +2013,8 @@
         "src/clubhouse/styles/hub.css",
         "src/clubhouse/styles/messages.css",
         "src/clubhouse/styles/qualifiers.css",
-        "src/clubhouse/styles/stats.css"
+        "src/clubhouse/styles/stats.css",
+        "src/clubhouse/styles/tournaments-desk.css"
       ],
       "examples": [],
       "fixture": "Contextual module"
@@ -1754,6 +2199,7 @@
       "styles": [
         "src/clubhouse/styles/base.css",
         "src/clubhouse/styles/calendar.css",
+        "src/clubhouse/styles/class-awareness.css",
         "src/clubhouse/styles/coachhelm-dive.css",
         "src/clubhouse/styles/coachhelm.css",
         "src/clubhouse/styles/goals.css",
@@ -1762,7 +2208,8 @@
         "src/clubhouse/styles/messages.css",
         "src/clubhouse/styles/qualifiers.css",
         "src/clubhouse/styles/shell.css",
-        "src/clubhouse/styles/stats.css"
+        "src/clubhouse/styles/stats.css",
+        "src/clubhouse/styles/tournaments-desk.css"
       ],
       "examples": [],
       "fixture": "Contextual module"
@@ -1776,6 +2223,7 @@
       "styles": [
         "src/clubhouse/styles/base.css",
         "src/clubhouse/styles/calendar.css",
+        "src/clubhouse/styles/class-awareness.css",
         "src/clubhouse/styles/coachhelm-brief.css",
         "src/clubhouse/styles/coachhelm-dive.css",
         "src/clubhouse/styles/coachhelm.css",
@@ -1785,7 +2233,8 @@
         "src/clubhouse/styles/messages.css",
         "src/clubhouse/styles/qualifiers.css",
         "src/clubhouse/styles/shell.css",
-        "src/clubhouse/styles/stats.css"
+        "src/clubhouse/styles/stats.css",
+        "src/clubhouse/styles/tournaments-desk.css"
       ],
       "examples": [],
       "fixture": "Contextual module"
@@ -1815,6 +2264,7 @@
       "styles": [
         "src/clubhouse/styles/base.css",
         "src/clubhouse/styles/calendar.css",
+        "src/clubhouse/styles/class-awareness.css",
         "src/clubhouse/styles/coachhelm-dive.css",
         "src/clubhouse/styles/coachhelm.css",
         "src/clubhouse/styles/goals.css",
@@ -1822,7 +2272,8 @@
         "src/clubhouse/styles/hub.css",
         "src/clubhouse/styles/messages.css",
         "src/clubhouse/styles/qualifiers.css",
-        "src/clubhouse/styles/stats.css"
+        "src/clubhouse/styles/stats.css",
+        "src/clubhouse/styles/tournaments-desk.css"
       ],
       "examples": [],
       "fixture": "Contextual module"
@@ -1837,6 +2288,7 @@
       "styles": [
         "src/clubhouse/styles/base.css",
         "src/clubhouse/styles/calendar.css",
+        "src/clubhouse/styles/class-awareness.css",
         "src/clubhouse/styles/coachhelm-dive.css",
         "src/clubhouse/styles/coachhelm-standing.css",
         "src/clubhouse/styles/coachhelm-views.css",
@@ -1846,7 +2298,8 @@
         "src/clubhouse/styles/hub.css",
         "src/clubhouse/styles/messages.css",
         "src/clubhouse/styles/qualifiers.css",
-        "src/clubhouse/styles/stats.css"
+        "src/clubhouse/styles/stats.css",
+        "src/clubhouse/styles/tournaments-desk.css"
       ],
       "examples": [],
       "fixture": "Contextual module"
@@ -1861,6 +2314,7 @@
       "styles": [
         "src/clubhouse/styles/base.css",
         "src/clubhouse/styles/calendar.css",
+        "src/clubhouse/styles/class-awareness.css",
         "src/clubhouse/styles/coachhelm-profile.css",
         "src/clubhouse/styles/coachhelm.css",
         "src/clubhouse/styles/goals.css",
@@ -1868,7 +2322,8 @@
         "src/clubhouse/styles/hub.css",
         "src/clubhouse/styles/messages.css",
         "src/clubhouse/styles/qualifiers.css",
-        "src/clubhouse/styles/stats.css"
+        "src/clubhouse/styles/stats.css",
+        "src/clubhouse/styles/tournaments-desk.css"
       ],
       "examples": [],
       "fixture": "Contextual module"
@@ -1896,6 +2351,7 @@
       "styles": [
         "src/clubhouse/styles/base.css",
         "src/clubhouse/styles/calendar.css",
+        "src/clubhouse/styles/class-awareness.css",
         "src/clubhouse/styles/coachhelm-brief.css",
         "src/clubhouse/styles/coachhelm-dive.css",
         "src/clubhouse/styles/coachhelm.css",
@@ -1905,7 +2361,8 @@
         "src/clubhouse/styles/messages.css",
         "src/clubhouse/styles/qualifiers.css",
         "src/clubhouse/styles/shell.css",
-        "src/clubhouse/styles/stats.css"
+        "src/clubhouse/styles/stats.css",
+        "src/clubhouse/styles/tournaments-desk.css"
       ],
       "examples": [],
       "fixture": "Contextual module"
@@ -1952,6 +2409,7 @@
       "styles": [
         "src/clubhouse/styles/base.css",
         "src/clubhouse/styles/calendar.css",
+        "src/clubhouse/styles/class-awareness.css",
         "src/clubhouse/styles/coachhelm-standing.css",
         "src/clubhouse/styles/coachhelm.css",
         "src/clubhouse/styles/goals.css",
@@ -1960,6 +2418,7 @@
         "src/clubhouse/styles/messages.css",
         "src/clubhouse/styles/qualifiers.css",
         "src/clubhouse/styles/stats.css",
+        "src/clubhouse/styles/tournaments-desk.css",
         "src/clubhouse/styles/ui.css"
       ],
       "examples": [],
@@ -1974,6 +2433,7 @@
       "styles": [
         "src/clubhouse/styles/base.css",
         "src/clubhouse/styles/calendar.css",
+        "src/clubhouse/styles/class-awareness.css",
         "src/clubhouse/styles/coachhelm-dive.css",
         "src/clubhouse/styles/coachhelm-track.css",
         "src/clubhouse/styles/coachhelm.css",
@@ -1983,7 +2443,20 @@
         "src/clubhouse/styles/messages.css",
         "src/clubhouse/styles/qualifiers.css",
         "src/clubhouse/styles/shell.css",
-        "src/clubhouse/styles/stats.css"
+        "src/clubhouse/styles/stats.css",
+        "src/clubhouse/styles/tournaments-desk.css"
+      ],
+      "examples": [],
+      "fixture": "Contextual module"
+    },
+    {
+      "file": "src/clubhouse/screens/home/ClassHomeLine.tsx",
+      "group": "screens",
+      "exports": [
+        "ClassHomeLine"
+      ],
+      "styles": [
+        "src/clubhouse/styles/class-awareness.css"
       ],
       "examples": [],
       "fixture": "Contextual module"
@@ -1998,13 +2471,15 @@
       "styles": [
         "src/clubhouse/styles/base.css",
         "src/clubhouse/styles/calendar.css",
+        "src/clubhouse/styles/class-awareness.css",
         "src/clubhouse/styles/coachhelm.css",
         "src/clubhouse/styles/goals.css",
         "src/clubhouse/styles/home.css",
         "src/clubhouse/styles/hub.css",
         "src/clubhouse/styles/messages.css",
         "src/clubhouse/styles/qualifiers.css",
-        "src/clubhouse/styles/stats.css"
+        "src/clubhouse/styles/stats.css",
+        "src/clubhouse/styles/tournaments-desk.css"
       ],
       "examples": [],
       "fixture": "Contextual module"
@@ -2019,6 +2494,7 @@
       "styles": [
         "src/clubhouse/styles/base.css",
         "src/clubhouse/styles/home.css",
+        "src/clubhouse/styles/live.css",
         "src/clubhouse/styles/qualifiers.css",
         "src/clubhouse/styles/shell.css"
       ],
@@ -2034,13 +2510,15 @@
       "styles": [
         "src/clubhouse/styles/base.css",
         "src/clubhouse/styles/calendar.css",
+        "src/clubhouse/styles/class-awareness.css",
         "src/clubhouse/styles/coachhelm.css",
         "src/clubhouse/styles/goals.css",
         "src/clubhouse/styles/home.css",
         "src/clubhouse/styles/hub.css",
         "src/clubhouse/styles/messages.css",
         "src/clubhouse/styles/qualifiers.css",
-        "src/clubhouse/styles/stats.css"
+        "src/clubhouse/styles/stats.css",
+        "src/clubhouse/styles/tournaments-desk.css"
       ],
       "examples": [],
       "fixture": "Contextual module"
@@ -2054,13 +2532,15 @@
       "styles": [
         "src/clubhouse/styles/base.css",
         "src/clubhouse/styles/calendar.css",
+        "src/clubhouse/styles/class-awareness.css",
         "src/clubhouse/styles/coachhelm.css",
         "src/clubhouse/styles/goals.css",
         "src/clubhouse/styles/home.css",
         "src/clubhouse/styles/hub.css",
         "src/clubhouse/styles/messages.css",
         "src/clubhouse/styles/qualifiers.css",
-        "src/clubhouse/styles/stats.css"
+        "src/clubhouse/styles/stats.css",
+        "src/clubhouse/styles/tournaments-desk.css"
       ],
       "examples": [],
       "fixture": "Contextual module"
@@ -2076,6 +2556,7 @@
       "styles": [
         "src/clubhouse/styles/base.css",
         "src/clubhouse/styles/calendar.css",
+        "src/clubhouse/styles/class-awareness.css",
         "src/clubhouse/styles/coachhelm.css",
         "src/clubhouse/styles/controls.css",
         "src/clubhouse/styles/goals.css",
@@ -2084,7 +2565,8 @@
         "src/clubhouse/styles/messages.css",
         "src/clubhouse/styles/qualifiers.css",
         "src/clubhouse/styles/shell.css",
-        "src/clubhouse/styles/stats.css"
+        "src/clubhouse/styles/stats.css",
+        "src/clubhouse/styles/tournaments-desk.css"
       ],
       "examples": [],
       "fixture": "Contextual module"
@@ -2114,6 +2596,7 @@
       "styles": [
         "src/clubhouse/styles/base.css",
         "src/clubhouse/styles/calendar.css",
+        "src/clubhouse/styles/class-awareness.css",
         "src/clubhouse/styles/coachhelm.css",
         "src/clubhouse/styles/controls.css",
         "src/clubhouse/styles/goals.css",
@@ -2122,7 +2605,8 @@
         "src/clubhouse/styles/messages.css",
         "src/clubhouse/styles/qualifiers.css",
         "src/clubhouse/styles/shell.css",
-        "src/clubhouse/styles/stats.css"
+        "src/clubhouse/styles/stats.css",
+        "src/clubhouse/styles/tournaments-desk.css"
       ],
       "examples": [],
       "fixture": "Contextual module"
@@ -2151,6 +2635,7 @@
       "styles": [
         "src/clubhouse/styles/base.css",
         "src/clubhouse/styles/calendar.css",
+        "src/clubhouse/styles/class-awareness.css",
         "src/clubhouse/styles/coachhelm-standing.css",
         "src/clubhouse/styles/coachhelm.css",
         "src/clubhouse/styles/goals.css",
@@ -2160,6 +2645,7 @@
         "src/clubhouse/styles/qualifiers.css",
         "src/clubhouse/styles/shell.css",
         "src/clubhouse/styles/stats.css",
+        "src/clubhouse/styles/tournaments-desk.css",
         "src/clubhouse/styles/ui.css"
       ],
       "examples": [],
@@ -2174,6 +2660,7 @@
       "styles": [
         "src/clubhouse/styles/base.css",
         "src/clubhouse/styles/calendar.css",
+        "src/clubhouse/styles/class-awareness.css",
         "src/clubhouse/styles/coachhelm.css",
         "src/clubhouse/styles/goals.css",
         "src/clubhouse/styles/home.css",
@@ -2181,7 +2668,43 @@
         "src/clubhouse/styles/messages.css",
         "src/clubhouse/styles/qualifiers.css",
         "src/clubhouse/styles/shell.css",
-        "src/clubhouse/styles/stats.css"
+        "src/clubhouse/styles/stats.css",
+        "src/clubhouse/styles/tournaments-desk.css"
+      ],
+      "examples": [],
+      "fixture": "Contextual module"
+    },
+    {
+      "file": "src/clubhouse/screens/home/LiveNowCard.tsx",
+      "group": "screens",
+      "exports": [
+        "LiveNowCard"
+      ],
+      "styles": [
+        "src/clubhouse/styles/live.css"
+      ],
+      "examples": [],
+      "fixture": "Contextual module"
+    },
+    {
+      "file": "src/clubhouse/screens/home/OwnLiveCard.tsx",
+      "group": "screens",
+      "exports": [
+        "OwnLiveCard"
+      ],
+      "styles": [
+        "src/clubhouse/styles/base.css",
+        "src/clubhouse/styles/calendar.css",
+        "src/clubhouse/styles/class-awareness.css",
+        "src/clubhouse/styles/coachhelm.css",
+        "src/clubhouse/styles/goals.css",
+        "src/clubhouse/styles/home.css",
+        "src/clubhouse/styles/hub.css",
+        "src/clubhouse/styles/live.css",
+        "src/clubhouse/styles/messages.css",
+        "src/clubhouse/styles/qualifiers.css",
+        "src/clubhouse/styles/stats.css",
+        "src/clubhouse/styles/tournaments-desk.css"
       ],
       "examples": [],
       "fixture": "Contextual module"
@@ -2195,6 +2718,7 @@
       "styles": [
         "src/clubhouse/styles/base.css",
         "src/clubhouse/styles/calendar.css",
+        "src/clubhouse/styles/class-awareness.css",
         "src/clubhouse/styles/coachhelm.css",
         "src/clubhouse/styles/goals.css",
         "src/clubhouse/styles/home.css",
@@ -2202,7 +2726,8 @@
         "src/clubhouse/styles/messages.css",
         "src/clubhouse/styles/qualifiers.css",
         "src/clubhouse/styles/shell.css",
-        "src/clubhouse/styles/stats.css"
+        "src/clubhouse/styles/stats.css",
+        "src/clubhouse/styles/tournaments-desk.css"
       ],
       "examples": [],
       "fixture": "Contextual module"
@@ -2217,14 +2742,17 @@
       "styles": [
         "src/clubhouse/styles/base.css",
         "src/clubhouse/styles/calendar.css",
+        "src/clubhouse/styles/class-awareness.css",
         "src/clubhouse/styles/coachhelm.css",
         "src/clubhouse/styles/goals.css",
         "src/clubhouse/styles/home.css",
         "src/clubhouse/styles/hub.css",
+        "src/clubhouse/styles/live.css",
         "src/clubhouse/styles/messages.css",
         "src/clubhouse/styles/qualifiers.css",
         "src/clubhouse/styles/shell.css",
-        "src/clubhouse/styles/stats.css"
+        "src/clubhouse/styles/stats.css",
+        "src/clubhouse/styles/tournaments-desk.css"
       ],
       "examples": [],
       "fixture": "Contextual module"
@@ -2239,6 +2767,7 @@
       "styles": [
         "src/clubhouse/styles/base.css",
         "src/clubhouse/styles/calendar.css",
+        "src/clubhouse/styles/class-awareness.css",
         "src/clubhouse/styles/coachhelm-standing.css",
         "src/clubhouse/styles/coachhelm.css",
         "src/clubhouse/styles/controls.css",
@@ -2248,6 +2777,7 @@
         "src/clubhouse/styles/messages.css",
         "src/clubhouse/styles/qualifiers.css",
         "src/clubhouse/styles/stats.css",
+        "src/clubhouse/styles/tournaments-desk.css",
         "src/clubhouse/styles/ui.css"
       ],
       "examples": [],
@@ -2310,13 +2840,15 @@
       "styles": [
         "src/clubhouse/styles/base.css",
         "src/clubhouse/styles/calendar.css",
+        "src/clubhouse/styles/class-awareness.css",
         "src/clubhouse/styles/coachhelm.css",
         "src/clubhouse/styles/goals.css",
         "src/clubhouse/styles/home.css",
         "src/clubhouse/styles/hub.css",
         "src/clubhouse/styles/messages.css",
         "src/clubhouse/styles/qualifiers.css",
-        "src/clubhouse/styles/stats.css"
+        "src/clubhouse/styles/stats.css",
+        "src/clubhouse/styles/tournaments-desk.css"
       ],
       "examples": [],
       "fixture": "Contextual module"
@@ -2331,6 +2863,7 @@
       "styles": [
         "src/clubhouse/styles/base.css",
         "src/clubhouse/styles/calendar.css",
+        "src/clubhouse/styles/class-awareness.css",
         "src/clubhouse/styles/coachhelm.css",
         "src/clubhouse/styles/controls.css",
         "src/clubhouse/styles/goals.css",
@@ -2338,7 +2871,20 @@
         "src/clubhouse/styles/hub.css",
         "src/clubhouse/styles/messages.css",
         "src/clubhouse/styles/qualifiers.css",
-        "src/clubhouse/styles/stats.css"
+        "src/clubhouse/styles/stats.css",
+        "src/clubhouse/styles/tournaments-desk.css"
+      ],
+      "examples": [],
+      "fixture": "Contextual module"
+    },
+    {
+      "file": "src/clubhouse/screens/home/TeammatesLiveCard.tsx",
+      "group": "screens",
+      "exports": [
+        "TeammatesLiveCard"
+      ],
+      "styles": [
+        "src/clubhouse/styles/live.css"
       ],
       "examples": [],
       "fixture": "Contextual module"
@@ -2352,6 +2898,7 @@
       "styles": [
         "src/clubhouse/styles/base.css",
         "src/clubhouse/styles/calendar.css",
+        "src/clubhouse/styles/class-awareness.css",
         "src/clubhouse/styles/coachhelm.css",
         "src/clubhouse/styles/goals.css",
         "src/clubhouse/styles/home.css",
@@ -2359,7 +2906,8 @@
         "src/clubhouse/styles/messages.css",
         "src/clubhouse/styles/qualifiers.css",
         "src/clubhouse/styles/shell.css",
-        "src/clubhouse/styles/stats.css"
+        "src/clubhouse/styles/stats.css",
+        "src/clubhouse/styles/tournaments-desk.css"
       ],
       "examples": [],
       "fixture": "Contextual module"
@@ -2401,6 +2949,7 @@
       "styles": [
         "src/clubhouse/styles/base.css",
         "src/clubhouse/styles/calendar.css",
+        "src/clubhouse/styles/class-awareness.css",
         "src/clubhouse/styles/coachhelm.css",
         "src/clubhouse/styles/goals.css",
         "src/clubhouse/styles/home.css",
@@ -2408,6 +2957,7 @@
         "src/clubhouse/styles/messages.css",
         "src/clubhouse/styles/qualifiers.css",
         "src/clubhouse/styles/stats.css",
+        "src/clubhouse/styles/tournaments-desk.css",
         "src/clubhouse/styles/ui.css"
       ],
       "examples": [],
@@ -2439,6 +2989,7 @@
       "styles": [
         "src/clubhouse/styles/base.css",
         "src/clubhouse/styles/calendar.css",
+        "src/clubhouse/styles/class-awareness.css",
         "src/clubhouse/styles/coachhelm.css",
         "src/clubhouse/styles/goals.css",
         "src/clubhouse/styles/home.css",
@@ -2446,6 +2997,7 @@
         "src/clubhouse/styles/messages.css",
         "src/clubhouse/styles/qualifiers.css",
         "src/clubhouse/styles/stats.css",
+        "src/clubhouse/styles/tournaments-desk.css",
         "src/clubhouse/styles/ui.css"
       ],
       "examples": [],
@@ -2467,6 +3019,7 @@
       "styles": [
         "src/clubhouse/styles/base.css",
         "src/clubhouse/styles/calendar.css",
+        "src/clubhouse/styles/class-awareness.css",
         "src/clubhouse/styles/coachhelm.css",
         "src/clubhouse/styles/goals.css",
         "src/clubhouse/styles/home.css",
@@ -2474,7 +3027,8 @@
         "src/clubhouse/styles/messages.css",
         "src/clubhouse/styles/qualifiers.css",
         "src/clubhouse/styles/shell.css",
-        "src/clubhouse/styles/stats.css"
+        "src/clubhouse/styles/stats.css",
+        "src/clubhouse/styles/tournaments-desk.css"
       ],
       "examples": [],
       "fixture": "Contextual module"
@@ -2493,6 +3047,7 @@
       "styles": [
         "src/clubhouse/styles/base.css",
         "src/clubhouse/styles/calendar.css",
+        "src/clubhouse/styles/class-awareness.css",
         "src/clubhouse/styles/coachhelm.css",
         "src/clubhouse/styles/controls.css",
         "src/clubhouse/styles/goals.css",
@@ -2505,7 +3060,8 @@
         "src/clubhouse/styles/rounds.css",
         "src/clubhouse/styles/settings.css",
         "src/clubhouse/styles/shell.css",
-        "src/clubhouse/styles/stats.css"
+        "src/clubhouse/styles/stats.css",
+        "src/clubhouse/styles/tournaments-desk.css"
       ],
       "examples": [],
       "fixture": "Contextual module"
@@ -2546,6 +3102,7 @@
       "styles": [
         "src/clubhouse/styles/base.css",
         "src/clubhouse/styles/calendar.css",
+        "src/clubhouse/styles/class-awareness.css",
         "src/clubhouse/styles/coachhelm.css",
         "src/clubhouse/styles/goals.css",
         "src/clubhouse/styles/home.css",
@@ -2553,7 +3110,90 @@
         "src/clubhouse/styles/messages.css",
         "src/clubhouse/styles/qualifiers.css",
         "src/clubhouse/styles/shell.css",
-        "src/clubhouse/styles/stats.css"
+        "src/clubhouse/styles/stats.css",
+        "src/clubhouse/styles/tournaments-desk.css"
+      ],
+      "examples": [],
+      "fixture": "Contextual module"
+    },
+    {
+      "file": "src/clubhouse/screens/live/LiveView.tsx",
+      "group": "screens",
+      "exports": [
+        "LiveDenied",
+        "LiveView"
+      ],
+      "styles": [
+        "src/clubhouse/styles/live.css"
+      ],
+      "examples": [],
+      "fixture": "Contextual module"
+    },
+    {
+      "file": "src/clubhouse/screens/live/LiveViewPhone.tsx",
+      "group": "screens",
+      "exports": [
+        "LiveViewPhone"
+      ],
+      "styles": [
+        "src/clubhouse/styles/live.css"
+      ],
+      "examples": [],
+      "fixture": "Contextual module"
+    },
+    {
+      "file": "src/clubhouse/screens/live/PlayerLiveSheet.tsx",
+      "group": "screens",
+      "exports": [
+        "CourseRibbon",
+        "LiveScorecard",
+        "PlayerLiveBody",
+        "PlayerLiveSheet",
+        "PlayerPanelHead"
+      ],
+      "styles": [
+        "src/clubhouse/styles/base.css",
+        "src/clubhouse/styles/calendar.css",
+        "src/clubhouse/styles/class-awareness.css",
+        "src/clubhouse/styles/coachhelm.css",
+        "src/clubhouse/styles/goals.css",
+        "src/clubhouse/styles/home.css",
+        "src/clubhouse/styles/hub.css",
+        "src/clubhouse/styles/live.css",
+        "src/clubhouse/styles/messages.css",
+        "src/clubhouse/styles/qualifiers.css",
+        "src/clubhouse/styles/shell.css",
+        "src/clubhouse/styles/stats.css",
+        "src/clubhouse/styles/tournaments-desk.css"
+      ],
+      "examples": [],
+      "fixture": "Contextual module"
+    },
+    {
+      "file": "src/clubhouse/screens/live/live-parts.tsx",
+      "group": "screens",
+      "exports": [
+        "LiveEmpty",
+        "LiveFilter",
+        "LiveGroupsList",
+        "LiveSortMenu",
+        "UpdatedPill"
+      ],
+      "styles": [
+        "src/clubhouse/styles/live.css"
+      ],
+      "examples": [],
+      "fixture": "Contextual module"
+    },
+    {
+      "file": "src/clubhouse/screens/messages/GroupClassLine.tsx",
+      "group": "screens",
+      "exports": [
+        "GroupClassLine"
+      ],
+      "styles": [
+        "src/clubhouse/styles/class-awareness.css",
+        "src/clubhouse/styles/messages.css"
       ],
       "examples": [],
       "fixture": "Contextual module"
@@ -2600,6 +3240,7 @@
       "styles": [
         "src/clubhouse/styles/base.css",
         "src/clubhouse/styles/calendar.css",
+        "src/clubhouse/styles/class-awareness.css",
         "src/clubhouse/styles/coachhelm.css",
         "src/clubhouse/styles/controls.css",
         "src/clubhouse/styles/goals.css",
@@ -2611,7 +3252,8 @@
         "src/clubhouse/styles/roster.css",
         "src/clubhouse/styles/rounds.css",
         "src/clubhouse/styles/settings.css",
-        "src/clubhouse/styles/stats.css"
+        "src/clubhouse/styles/stats.css",
+        "src/clubhouse/styles/tournaments-desk.css"
       ],
       "examples": [],
       "fixture": "Contextual module"
@@ -2667,6 +3309,7 @@
         "src/clubhouse/styles/auth.css",
         "src/clubhouse/styles/base.css",
         "src/clubhouse/styles/calendar.css",
+        "src/clubhouse/styles/class-awareness.css",
         "src/clubhouse/styles/classes.css",
         "src/clubhouse/styles/coachhelm-ask.css",
         "src/clubhouse/styles/coachhelm-thread.css",
@@ -2688,7 +3331,24 @@
         "src/clubhouse/styles/settings.css",
         "src/clubhouse/styles/shell.css",
         "src/clubhouse/styles/stats.css",
+        "src/clubhouse/styles/tournaments-desk.css",
+        "src/clubhouse/styles/tournaments.css",
         "src/clubhouse/styles/ui.css"
+      ],
+      "examples": [],
+      "fixture": "Contextual module"
+    },
+    {
+      "file": "src/clubhouse/screens/messages/NotifyAnyway.tsx",
+      "group": "screens",
+      "exports": [
+        "SendCluster"
+      ],
+      "styles": [
+        "src/clubhouse/styles/base.css",
+        "src/clubhouse/styles/messages.css",
+        "src/clubhouse/styles/settings.css",
+        "src/clubhouse/styles/shell.css"
       ],
       "examples": [],
       "fixture": "Contextual module"
@@ -2704,6 +3364,28 @@
       "fixture": "Contextual module"
     },
     {
+      "file": "src/clubhouse/screens/messages/ThreadClassSection.tsx",
+      "group": "screens",
+      "exports": [
+        "ThreadClassSection"
+      ],
+      "styles": [
+        "src/clubhouse/styles/class-awareness.css"
+      ],
+      "examples": [],
+      "fixture": "Contextual module"
+    },
+    {
+      "file": "src/clubhouse/screens/messages/ThreadClassSub.tsx",
+      "group": "screens",
+      "exports": [
+        "ThreadClassSub"
+      ],
+      "styles": [],
+      "examples": [],
+      "fixture": "Contextual module"
+    },
+    {
       "file": "src/clubhouse/screens/messages/announcements.tsx",
       "group": "screens",
       "exports": [
@@ -2713,13 +3395,15 @@
       "styles": [
         "src/clubhouse/styles/base.css",
         "src/clubhouse/styles/calendar.css",
+        "src/clubhouse/styles/class-awareness.css",
         "src/clubhouse/styles/coachhelm.css",
         "src/clubhouse/styles/goals.css",
         "src/clubhouse/styles/home.css",
         "src/clubhouse/styles/hub.css",
         "src/clubhouse/styles/messages.css",
         "src/clubhouse/styles/qualifiers.css",
-        "src/clubhouse/styles/stats.css"
+        "src/clubhouse/styles/stats.css",
+        "src/clubhouse/styles/tournaments-desk.css"
       ],
       "examples": [],
       "fixture": "Contextual module"
@@ -2736,6 +3420,7 @@
       "styles": [
         "src/clubhouse/styles/base.css",
         "src/clubhouse/styles/calendar.css",
+        "src/clubhouse/styles/class-awareness.css",
         "src/clubhouse/styles/coachhelm.css",
         "src/clubhouse/styles/controls.css",
         "src/clubhouse/styles/goals.css",
@@ -2746,7 +3431,8 @@
         "src/clubhouse/styles/recruiting.css",
         "src/clubhouse/styles/roster.css",
         "src/clubhouse/styles/settings.css",
-        "src/clubhouse/styles/stats.css"
+        "src/clubhouse/styles/stats.css",
+        "src/clubhouse/styles/tournaments-desk.css"
       ],
       "examples": [],
       "fixture": "Contextual module"
@@ -2762,6 +3448,7 @@
       "styles": [
         "src/clubhouse/styles/base.css",
         "src/clubhouse/styles/calendar.css",
+        "src/clubhouse/styles/class-awareness.css",
         "src/clubhouse/styles/coachhelm-ask.css",
         "src/clubhouse/styles/coachhelm.css",
         "src/clubhouse/styles/command.css",
@@ -2776,6 +3463,7 @@
         "src/clubhouse/styles/rounds-track.css",
         "src/clubhouse/styles/shell.css",
         "src/clubhouse/styles/stats.css",
+        "src/clubhouse/styles/tournaments-desk.css",
         "src/clubhouse/styles/ui.css"
       ],
       "examples": [],
@@ -2891,7 +3579,20 @@
         "CoursePicker"
       ],
       "styles": [
-        "src/clubhouse/styles/qualifiers.css"
+        "src/clubhouse/styles/qualifiers.css",
+        "src/clubhouse/styles/tournament-fields.css"
+      ],
+      "examples": [],
+      "fixture": "Contextual module"
+    },
+    {
+      "file": "src/clubhouse/screens/qualifiers/LiveOnCourse.tsx",
+      "group": "screens",
+      "exports": [
+        "LiveOnCourse"
+      ],
+      "styles": [
+        "src/clubhouse/styles/live.css"
       ],
       "examples": [],
       "fixture": "Contextual module"
@@ -2918,6 +3619,7 @@
       "styles": [
         "src/clubhouse/styles/base.css",
         "src/clubhouse/styles/calendar.css",
+        "src/clubhouse/styles/class-awareness.css",
         "src/clubhouse/styles/coachhelm.css",
         "src/clubhouse/styles/goals.css",
         "src/clubhouse/styles/home.css",
@@ -2925,7 +3627,8 @@
         "src/clubhouse/styles/messages.css",
         "src/clubhouse/styles/qualifiers.css",
         "src/clubhouse/styles/shell.css",
-        "src/clubhouse/styles/stats.css"
+        "src/clubhouse/styles/stats.css",
+        "src/clubhouse/styles/tournaments-desk.css"
       ],
       "examples": [],
       "fixture": "Contextual module"
@@ -2939,6 +3642,7 @@
       "styles": [
         "src/clubhouse/styles/base.css",
         "src/clubhouse/styles/calendar.css",
+        "src/clubhouse/styles/class-awareness.css",
         "src/clubhouse/styles/coachhelm.css",
         "src/clubhouse/styles/goals.css",
         "src/clubhouse/styles/home.css",
@@ -2946,7 +3650,8 @@
         "src/clubhouse/styles/messages.css",
         "src/clubhouse/styles/qualifiers.css",
         "src/clubhouse/styles/shell.css",
-        "src/clubhouse/styles/stats.css"
+        "src/clubhouse/styles/stats.css",
+        "src/clubhouse/styles/tournaments-desk.css"
       ],
       "examples": [],
       "fixture": "Contextual module"
@@ -2960,6 +3665,7 @@
       "styles": [
         "src/clubhouse/styles/base.css",
         "src/clubhouse/styles/calendar.css",
+        "src/clubhouse/styles/class-awareness.css",
         "src/clubhouse/styles/coachhelm.css",
         "src/clubhouse/styles/controls.css",
         "src/clubhouse/styles/goals.css",
@@ -2972,7 +3678,8 @@
         "src/clubhouse/styles/rounds.css",
         "src/clubhouse/styles/settings.css",
         "src/clubhouse/styles/shell.css",
-        "src/clubhouse/styles/stats.css"
+        "src/clubhouse/styles/stats.css",
+        "src/clubhouse/styles/tournaments-desk.css"
       ],
       "examples": [],
       "fixture": "Contextual module"
@@ -2989,13 +3696,15 @@
       "styles": [
         "src/clubhouse/styles/base.css",
         "src/clubhouse/styles/calendar.css",
+        "src/clubhouse/styles/class-awareness.css",
         "src/clubhouse/styles/coachhelm.css",
         "src/clubhouse/styles/goals.css",
         "src/clubhouse/styles/home.css",
         "src/clubhouse/styles/hub.css",
         "src/clubhouse/styles/messages.css",
         "src/clubhouse/styles/qualifiers.css",
-        "src/clubhouse/styles/stats.css"
+        "src/clubhouse/styles/stats.css",
+        "src/clubhouse/styles/tournaments-desk.css"
       ],
       "examples": [],
       "fixture": "Contextual module"
@@ -3009,6 +3718,7 @@
       "styles": [
         "src/clubhouse/styles/base.css",
         "src/clubhouse/styles/calendar.css",
+        "src/clubhouse/styles/class-awareness.css",
         "src/clubhouse/styles/coachhelm.css",
         "src/clubhouse/styles/controls.css",
         "src/clubhouse/styles/goals.css",
@@ -3020,7 +3730,8 @@
         "src/clubhouse/styles/rounds.css",
         "src/clubhouse/styles/settings.css",
         "src/clubhouse/styles/shell.css",
-        "src/clubhouse/styles/stats.css"
+        "src/clubhouse/styles/stats.css",
+        "src/clubhouse/styles/tournaments-desk.css"
       ],
       "examples": [],
       "fixture": "Contextual module"
@@ -3029,20 +3740,24 @@
       "file": "src/clubhouse/screens/qualifiers/QualifiersList.tsx",
       "group": "screens",
       "exports": [
+        "LiveLine",
         "QualifiersList"
       ],
       "styles": [
         "src/clubhouse/styles/base.css",
         "src/clubhouse/styles/calendar.css",
+        "src/clubhouse/styles/class-awareness.css",
         "src/clubhouse/styles/coachhelm-standing.css",
         "src/clubhouse/styles/coachhelm.css",
         "src/clubhouse/styles/goals.css",
         "src/clubhouse/styles/home.css",
         "src/clubhouse/styles/hub.css",
+        "src/clubhouse/styles/live.css",
         "src/clubhouse/styles/messages.css",
         "src/clubhouse/styles/qualifiers.css",
         "src/clubhouse/styles/shell.css",
         "src/clubhouse/styles/stats.css",
+        "src/clubhouse/styles/tournaments-desk.css",
         "src/clubhouse/styles/ui.css"
       ],
       "examples": [],
@@ -3090,6 +3805,7 @@
       "styles": [
         "src/clubhouse/styles/base.css",
         "src/clubhouse/styles/calendar.css",
+        "src/clubhouse/styles/class-awareness.css",
         "src/clubhouse/styles/coachhelm-standing.css",
         "src/clubhouse/styles/coachhelm.css",
         "src/clubhouse/styles/goals.css",
@@ -3098,6 +3814,7 @@
         "src/clubhouse/styles/messages.css",
         "src/clubhouse/styles/qualifiers.css",
         "src/clubhouse/styles/stats.css",
+        "src/clubhouse/styles/tournaments-desk.css",
         "src/clubhouse/styles/ui.css"
       ],
       "examples": [],
@@ -3149,13 +3866,15 @@
       "styles": [
         "src/clubhouse/styles/base.css",
         "src/clubhouse/styles/calendar.css",
+        "src/clubhouse/styles/class-awareness.css",
         "src/clubhouse/styles/coachhelm.css",
         "src/clubhouse/styles/goals.css",
         "src/clubhouse/styles/home.css",
         "src/clubhouse/styles/hub.css",
         "src/clubhouse/styles/messages.css",
         "src/clubhouse/styles/qualifiers.css",
-        "src/clubhouse/styles/stats.css"
+        "src/clubhouse/styles/stats.css",
+        "src/clubhouse/styles/tournaments-desk.css"
       ],
       "examples": [],
       "fixture": "Contextual module"
@@ -3176,6 +3895,7 @@
       "styles": [
         "src/clubhouse/styles/base.css",
         "src/clubhouse/styles/calendar.css",
+        "src/clubhouse/styles/class-awareness.css",
         "src/clubhouse/styles/coachhelm.css",
         "src/clubhouse/styles/goals.css",
         "src/clubhouse/styles/home.css",
@@ -3183,7 +3903,8 @@
         "src/clubhouse/styles/messages.css",
         "src/clubhouse/styles/qualifiers.css",
         "src/clubhouse/styles/shell.css",
-        "src/clubhouse/styles/stats.css"
+        "src/clubhouse/styles/stats.css",
+        "src/clubhouse/styles/tournaments-desk.css"
       ],
       "examples": [],
       "fixture": "Contextual module"
@@ -3235,6 +3956,7 @@
       "styles": [
         "src/clubhouse/styles/base.css",
         "src/clubhouse/styles/calendar.css",
+        "src/clubhouse/styles/class-awareness.css",
         "src/clubhouse/styles/coachhelm.css",
         "src/clubhouse/styles/goals.css",
         "src/clubhouse/styles/home.css",
@@ -3242,7 +3964,8 @@
         "src/clubhouse/styles/messages.css",
         "src/clubhouse/styles/qualifiers.css",
         "src/clubhouse/styles/recruiting.css",
-        "src/clubhouse/styles/stats.css"
+        "src/clubhouse/styles/stats.css",
+        "src/clubhouse/styles/tournaments-desk.css"
       ],
       "examples": [],
       "fixture": "Contextual module"
@@ -3301,6 +4024,7 @@
       "styles": [
         "src/clubhouse/styles/base.css",
         "src/clubhouse/styles/calendar.css",
+        "src/clubhouse/styles/class-awareness.css",
         "src/clubhouse/styles/coachhelm.css",
         "src/clubhouse/styles/goals.css",
         "src/clubhouse/styles/home.css",
@@ -3309,7 +4033,8 @@
         "src/clubhouse/styles/qualifiers.css",
         "src/clubhouse/styles/recruiting.css",
         "src/clubhouse/styles/shell.css",
-        "src/clubhouse/styles/stats.css"
+        "src/clubhouse/styles/stats.css",
+        "src/clubhouse/styles/tournaments-desk.css"
       ],
       "examples": [],
       "fixture": "Contextual module"
@@ -3335,6 +4060,7 @@
       "styles": [
         "src/clubhouse/styles/base.css",
         "src/clubhouse/styles/calendar.css",
+        "src/clubhouse/styles/class-awareness.css",
         "src/clubhouse/styles/coachhelm.css",
         "src/clubhouse/styles/goals.css",
         "src/clubhouse/styles/home.css",
@@ -3343,7 +4069,8 @@
         "src/clubhouse/styles/qualifiers.css",
         "src/clubhouse/styles/recruiting.css",
         "src/clubhouse/styles/shell.css",
-        "src/clubhouse/styles/stats.css"
+        "src/clubhouse/styles/stats.css",
+        "src/clubhouse/styles/tournaments-desk.css"
       ],
       "examples": [],
       "fixture": "Contextual module"
@@ -3395,6 +4122,7 @@
       "styles": [
         "src/clubhouse/styles/base.css",
         "src/clubhouse/styles/calendar.css",
+        "src/clubhouse/styles/class-awareness.css",
         "src/clubhouse/styles/coachhelm.css",
         "src/clubhouse/styles/goals.css",
         "src/clubhouse/styles/home.css",
@@ -3403,7 +4131,8 @@
         "src/clubhouse/styles/qualifiers.css",
         "src/clubhouse/styles/recruiting.css",
         "src/clubhouse/styles/shell.css",
-        "src/clubhouse/styles/stats.css"
+        "src/clubhouse/styles/stats.css",
+        "src/clubhouse/styles/tournaments-desk.css"
       ],
       "examples": [],
       "fixture": "Contextual module"
@@ -3436,6 +4165,7 @@
       "styles": [
         "src/clubhouse/styles/base.css",
         "src/clubhouse/styles/calendar.css",
+        "src/clubhouse/styles/class-awareness.css",
         "src/clubhouse/styles/coachhelm.css",
         "src/clubhouse/styles/controls.css",
         "src/clubhouse/styles/goals.css",
@@ -3447,7 +4177,8 @@
         "src/clubhouse/styles/roster.css",
         "src/clubhouse/styles/settings.css",
         "src/clubhouse/styles/shell.css",
-        "src/clubhouse/styles/stats.css"
+        "src/clubhouse/styles/stats.css",
+        "src/clubhouse/styles/tournaments-desk.css"
       ],
       "examples": [],
       "fixture": "Contextual module"
@@ -3480,6 +4211,7 @@
       "styles": [
         "src/clubhouse/styles/base.css",
         "src/clubhouse/styles/calendar.css",
+        "src/clubhouse/styles/class-awareness.css",
         "src/clubhouse/styles/coachhelm.css",
         "src/clubhouse/styles/controls.css",
         "src/clubhouse/styles/goals.css",
@@ -3490,7 +4222,8 @@
         "src/clubhouse/styles/recruiting.css",
         "src/clubhouse/styles/roster.css",
         "src/clubhouse/styles/rounds.css",
-        "src/clubhouse/styles/stats.css"
+        "src/clubhouse/styles/stats.css",
+        "src/clubhouse/styles/tournaments-desk.css"
       ],
       "examples": [],
       "fixture": "Contextual module"
@@ -3506,6 +4239,7 @@
       "styles": [
         "src/clubhouse/styles/base.css",
         "src/clubhouse/styles/calendar.css",
+        "src/clubhouse/styles/class-awareness.css",
         "src/clubhouse/styles/coachhelm.css",
         "src/clubhouse/styles/goals.css",
         "src/clubhouse/styles/home.css",
@@ -3514,7 +4248,8 @@
         "src/clubhouse/styles/qualifiers.css",
         "src/clubhouse/styles/roster.css",
         "src/clubhouse/styles/shell.css",
-        "src/clubhouse/styles/stats.css"
+        "src/clubhouse/styles/stats.css",
+        "src/clubhouse/styles/tournaments-desk.css"
       ],
       "examples": [],
       "fixture": "Contextual module"
@@ -3528,6 +4263,7 @@
       "styles": [
         "src/clubhouse/styles/base.css",
         "src/clubhouse/styles/calendar.css",
+        "src/clubhouse/styles/class-awareness.css",
         "src/clubhouse/styles/coachhelm.css",
         "src/clubhouse/styles/goals.css",
         "src/clubhouse/styles/home.css",
@@ -3535,7 +4271,8 @@
         "src/clubhouse/styles/messages.css",
         "src/clubhouse/styles/qualifiers.css",
         "src/clubhouse/styles/roster.css",
-        "src/clubhouse/styles/stats.css"
+        "src/clubhouse/styles/stats.css",
+        "src/clubhouse/styles/tournaments-desk.css"
       ],
       "examples": [],
       "fixture": "Contextual module"
@@ -3574,6 +4311,7 @@
       "styles": [
         "src/clubhouse/styles/base.css",
         "src/clubhouse/styles/calendar.css",
+        "src/clubhouse/styles/class-awareness.css",
         "src/clubhouse/styles/coachhelm.css",
         "src/clubhouse/styles/goals.css",
         "src/clubhouse/styles/home.css",
@@ -3581,7 +4319,8 @@
         "src/clubhouse/styles/messages.css",
         "src/clubhouse/styles/qualifiers.css",
         "src/clubhouse/styles/roster.css",
-        "src/clubhouse/styles/stats.css"
+        "src/clubhouse/styles/stats.css",
+        "src/clubhouse/styles/tournaments-desk.css"
       ],
       "examples": [],
       "fixture": "Contextual module"
@@ -3607,6 +4346,7 @@
       "styles": [
         "src/clubhouse/styles/base.css",
         "src/clubhouse/styles/calendar.css",
+        "src/clubhouse/styles/class-awareness.css",
         "src/clubhouse/styles/coachhelm.css",
         "src/clubhouse/styles/goals.css",
         "src/clubhouse/styles/home.css",
@@ -3615,7 +4355,8 @@
         "src/clubhouse/styles/qualifiers.css",
         "src/clubhouse/styles/roster.css",
         "src/clubhouse/styles/shell.css",
-        "src/clubhouse/styles/stats.css"
+        "src/clubhouse/styles/stats.css",
+        "src/clubhouse/styles/tournaments-desk.css"
       ],
       "examples": [],
       "fixture": "Contextual module"
@@ -3629,6 +4370,7 @@
       "styles": [
         "src/clubhouse/styles/base.css",
         "src/clubhouse/styles/calendar.css",
+        "src/clubhouse/styles/class-awareness.css",
         "src/clubhouse/styles/coachhelm.css",
         "src/clubhouse/styles/goals.css",
         "src/clubhouse/styles/home.css",
@@ -3636,7 +4378,8 @@
         "src/clubhouse/styles/messages.css",
         "src/clubhouse/styles/qualifiers.css",
         "src/clubhouse/styles/roster.css",
-        "src/clubhouse/styles/stats.css"
+        "src/clubhouse/styles/stats.css",
+        "src/clubhouse/styles/tournaments-desk.css"
       ],
       "examples": [],
       "fixture": "Contextual module"
@@ -3650,6 +4393,7 @@
       "styles": [
         "src/clubhouse/styles/base.css",
         "src/clubhouse/styles/calendar.css",
+        "src/clubhouse/styles/class-awareness.css",
         "src/clubhouse/styles/coachhelm.css",
         "src/clubhouse/styles/controls.css",
         "src/clubhouse/styles/goals.css",
@@ -3661,7 +4405,8 @@
         "src/clubhouse/styles/rounds.css",
         "src/clubhouse/styles/settings.css",
         "src/clubhouse/styles/shell.css",
-        "src/clubhouse/styles/stats.css"
+        "src/clubhouse/styles/stats.css",
+        "src/clubhouse/styles/tournaments-desk.css"
       ],
       "examples": [],
       "fixture": "Contextual module"
@@ -3675,6 +4420,7 @@
       "styles": [
         "src/clubhouse/styles/base.css",
         "src/clubhouse/styles/calendar.css",
+        "src/clubhouse/styles/class-awareness.css",
         "src/clubhouse/styles/coachhelm.css",
         "src/clubhouse/styles/controls.css",
         "src/clubhouse/styles/goals.css",
@@ -3684,7 +4430,8 @@
         "src/clubhouse/styles/qualifiers.css",
         "src/clubhouse/styles/roster.css",
         "src/clubhouse/styles/rounds.css",
-        "src/clubhouse/styles/stats.css"
+        "src/clubhouse/styles/stats.css",
+        "src/clubhouse/styles/tournaments-desk.css"
       ],
       "examples": [],
       "fixture": "Contextual module"
@@ -3722,6 +4469,7 @@
       "styles": [
         "src/clubhouse/styles/base.css",
         "src/clubhouse/styles/calendar.css",
+        "src/clubhouse/styles/class-awareness.css",
         "src/clubhouse/styles/coachhelm.css",
         "src/clubhouse/styles/goals.css",
         "src/clubhouse/styles/home.css",
@@ -3730,7 +4478,8 @@
         "src/clubhouse/styles/qualifiers.css",
         "src/clubhouse/styles/rounds.css",
         "src/clubhouse/styles/shell.css",
-        "src/clubhouse/styles/stats.css"
+        "src/clubhouse/styles/stats.css",
+        "src/clubhouse/styles/tournaments-desk.css"
       ],
       "examples": [],
       "fixture": "Contextual module"
@@ -3744,6 +4493,7 @@
       "styles": [
         "src/clubhouse/styles/base.css",
         "src/clubhouse/styles/calendar.css",
+        "src/clubhouse/styles/class-awareness.css",
         "src/clubhouse/styles/coachhelm.css",
         "src/clubhouse/styles/goals.css",
         "src/clubhouse/styles/home.css",
@@ -3751,7 +4501,8 @@
         "src/clubhouse/styles/messages.css",
         "src/clubhouse/styles/qualifiers.css",
         "src/clubhouse/styles/rounds.css",
-        "src/clubhouse/styles/stats.css"
+        "src/clubhouse/styles/stats.css",
+        "src/clubhouse/styles/tournaments-desk.css"
       ],
       "examples": [],
       "fixture": "Contextual module"
@@ -3765,6 +4516,7 @@
       "styles": [
         "src/clubhouse/styles/base.css",
         "src/clubhouse/styles/calendar.css",
+        "src/clubhouse/styles/class-awareness.css",
         "src/clubhouse/styles/coachhelm.css",
         "src/clubhouse/styles/goals.css",
         "src/clubhouse/styles/home.css",
@@ -3772,7 +4524,8 @@
         "src/clubhouse/styles/messages.css",
         "src/clubhouse/styles/qualifiers.css",
         "src/clubhouse/styles/rounds.css",
-        "src/clubhouse/styles/stats.css"
+        "src/clubhouse/styles/stats.css",
+        "src/clubhouse/styles/tournaments-desk.css"
       ],
       "examples": [],
       "fixture": "Contextual module"
@@ -3810,6 +4563,7 @@
       "styles": [
         "src/clubhouse/styles/base.css",
         "src/clubhouse/styles/calendar.css",
+        "src/clubhouse/styles/class-awareness.css",
         "src/clubhouse/styles/coachhelm.css",
         "src/clubhouse/styles/goals.css",
         "src/clubhouse/styles/home.css",
@@ -3819,6 +4573,7 @@
         "src/clubhouse/styles/rounds.css",
         "src/clubhouse/styles/shell.css",
         "src/clubhouse/styles/stats.css",
+        "src/clubhouse/styles/tournaments-desk.css",
         "src/clubhouse/styles/ui.css"
       ],
       "examples": [],
@@ -3834,6 +4589,7 @@
       "styles": [
         "src/clubhouse/styles/base.css",
         "src/clubhouse/styles/calendar.css",
+        "src/clubhouse/styles/class-awareness.css",
         "src/clubhouse/styles/coachhelm.css",
         "src/clubhouse/styles/goals.css",
         "src/clubhouse/styles/home.css",
@@ -3841,7 +4597,8 @@
         "src/clubhouse/styles/messages.css",
         "src/clubhouse/styles/qualifiers.css",
         "src/clubhouse/styles/rounds.css",
-        "src/clubhouse/styles/stats.css"
+        "src/clubhouse/styles/stats.css",
+        "src/clubhouse/styles/tournaments-desk.css"
       ],
       "examples": [],
       "fixture": "Contextual module"
@@ -3858,6 +4615,7 @@
       "styles": [
         "src/clubhouse/styles/base.css",
         "src/clubhouse/styles/calendar.css",
+        "src/clubhouse/styles/class-awareness.css",
         "src/clubhouse/styles/coachhelm.css",
         "src/clubhouse/styles/goals.css",
         "src/clubhouse/styles/home.css",
@@ -3867,6 +4625,7 @@
         "src/clubhouse/styles/rounds.css",
         "src/clubhouse/styles/shell.css",
         "src/clubhouse/styles/stats.css",
+        "src/clubhouse/styles/tournaments-desk.css",
         "src/clubhouse/styles/ui.css"
       ],
       "examples": [],
@@ -3881,6 +4640,7 @@
       "styles": [
         "src/clubhouse/styles/base.css",
         "src/clubhouse/styles/calendar.css",
+        "src/clubhouse/styles/class-awareness.css",
         "src/clubhouse/styles/coachhelm.css",
         "src/clubhouse/styles/goals.css",
         "src/clubhouse/styles/home.css",
@@ -3889,7 +4649,8 @@
         "src/clubhouse/styles/qualifiers.css",
         "src/clubhouse/styles/rounds.css",
         "src/clubhouse/styles/shell.css",
-        "src/clubhouse/styles/stats.css"
+        "src/clubhouse/styles/stats.css",
+        "src/clubhouse/styles/tournaments-desk.css"
       ],
       "examples": [],
       "fixture": "Contextual module"
@@ -3903,6 +4664,7 @@
       "styles": [
         "src/clubhouse/styles/base.css",
         "src/clubhouse/styles/calendar.css",
+        "src/clubhouse/styles/class-awareness.css",
         "src/clubhouse/styles/coachhelm.css",
         "src/clubhouse/styles/goals.css",
         "src/clubhouse/styles/home.css",
@@ -3910,7 +4672,8 @@
         "src/clubhouse/styles/messages.css",
         "src/clubhouse/styles/qualifiers.css",
         "src/clubhouse/styles/rounds.css",
-        "src/clubhouse/styles/stats.css"
+        "src/clubhouse/styles/stats.css",
+        "src/clubhouse/styles/tournaments-desk.css"
       ],
       "examples": [],
       "fixture": "Contextual module"
@@ -3953,6 +4716,7 @@
       "styles": [
         "src/clubhouse/styles/base.css",
         "src/clubhouse/styles/calendar.css",
+        "src/clubhouse/styles/class-awareness.css",
         "src/clubhouse/styles/coachhelm.css",
         "src/clubhouse/styles/goals.css",
         "src/clubhouse/styles/home.css",
@@ -3960,7 +4724,8 @@
         "src/clubhouse/styles/messages.css",
         "src/clubhouse/styles/qualifiers.css",
         "src/clubhouse/styles/rounds.css",
-        "src/clubhouse/styles/stats.css"
+        "src/clubhouse/styles/stats.css",
+        "src/clubhouse/styles/tournaments-desk.css"
       ],
       "examples": [],
       "fixture": "Contextual module"
@@ -3986,6 +4751,7 @@
       "styles": [
         "src/clubhouse/styles/base.css",
         "src/clubhouse/styles/calendar.css",
+        "src/clubhouse/styles/class-awareness.css",
         "src/clubhouse/styles/coachhelm.css",
         "src/clubhouse/styles/goals.css",
         "src/clubhouse/styles/home.css",
@@ -3994,8 +4760,19 @@
         "src/clubhouse/styles/qualifiers.css",
         "src/clubhouse/styles/rounds.css",
         "src/clubhouse/styles/shell.css",
-        "src/clubhouse/styles/stats.css"
+        "src/clubhouse/styles/stats.css",
+        "src/clubhouse/styles/tournaments-desk.css"
       ],
+      "examples": [],
+      "fixture": "Contextual module"
+    },
+    {
+      "file": "src/clubhouse/screens/rounds/course-motion.tsx",
+      "group": "screens",
+      "exports": [
+        "FadeNum"
+      ],
+      "styles": [],
       "examples": [],
       "fixture": "Contextual module"
     },
@@ -4151,15 +4928,18 @@
       "styles": [
         "src/clubhouse/styles/base.css",
         "src/clubhouse/styles/calendar.css",
+        "src/clubhouse/styles/class-awareness.css",
         "src/clubhouse/styles/coachhelm.css",
         "src/clubhouse/styles/goals.css",
         "src/clubhouse/styles/home.css",
         "src/clubhouse/styles/hub.css",
+        "src/clubhouse/styles/live.css",
         "src/clubhouse/styles/messages.css",
         "src/clubhouse/styles/qualifiers.css",
         "src/clubhouse/styles/rounds-setup.css",
         "src/clubhouse/styles/rounds.css",
-        "src/clubhouse/styles/stats.css"
+        "src/clubhouse/styles/stats.css",
+        "src/clubhouse/styles/tournaments-desk.css"
       ],
       "examples": [],
       "fixture": "Contextual module"
@@ -4173,6 +4953,7 @@
       "styles": [
         "src/clubhouse/styles/base.css",
         "src/clubhouse/styles/calendar.css",
+        "src/clubhouse/styles/class-awareness.css",
         "src/clubhouse/styles/coachhelm.css",
         "src/clubhouse/styles/goals.css",
         "src/clubhouse/styles/home.css",
@@ -4180,7 +4961,8 @@
         "src/clubhouse/styles/messages.css",
         "src/clubhouse/styles/qualifiers.css",
         "src/clubhouse/styles/rounds-recover.css",
-        "src/clubhouse/styles/stats.css"
+        "src/clubhouse/styles/stats.css",
+        "src/clubhouse/styles/tournaments-desk.css"
       ],
       "examples": [],
       "fixture": "Contextual module"
@@ -4195,6 +4977,7 @@
         "src/clubhouse/styles/auth.css",
         "src/clubhouse/styles/base.css",
         "src/clubhouse/styles/calendar.css",
+        "src/clubhouse/styles/class-awareness.css",
         "src/clubhouse/styles/classes.css",
         "src/clubhouse/styles/coachhelm-thread.css",
         "src/clubhouse/styles/coachhelm-views.css",
@@ -4213,6 +4996,8 @@
         "src/clubhouse/styles/settings.css",
         "src/clubhouse/styles/shell.css",
         "src/clubhouse/styles/stats.css",
+        "src/clubhouse/styles/tournaments-desk.css",
+        "src/clubhouse/styles/tournaments.css",
         "src/clubhouse/styles/ui.css"
       ],
       "examples": [],
@@ -4227,6 +5012,7 @@
       "styles": [
         "src/clubhouse/styles/base.css",
         "src/clubhouse/styles/calendar.css",
+        "src/clubhouse/styles/class-awareness.css",
         "src/clubhouse/styles/coachhelm.css",
         "src/clubhouse/styles/goals.css",
         "src/clubhouse/styles/home.css",
@@ -4234,7 +5020,8 @@
         "src/clubhouse/styles/messages.css",
         "src/clubhouse/styles/qualifiers.css",
         "src/clubhouse/styles/rounds-setup.css",
-        "src/clubhouse/styles/stats.css"
+        "src/clubhouse/styles/stats.css",
+        "src/clubhouse/styles/tournaments-desk.css"
       ],
       "examples": [],
       "fixture": "Contextual module"
@@ -4252,6 +5039,19 @@
       "fixture": "Contextual module"
     },
     {
+      "file": "src/clubhouse/screens/rounds/setup/LiveShareField.tsx",
+      "group": "screens",
+      "exports": [
+        "LiveShareField"
+      ],
+      "styles": [
+        "src/clubhouse/styles/live.css",
+        "src/clubhouse/styles/rounds-setup.css"
+      ],
+      "examples": [],
+      "fixture": "Contextual module"
+    },
+    {
       "file": "src/clubhouse/screens/rounds/setup/RoundSetup.tsx",
       "group": "screens",
       "exports": [
@@ -4261,6 +5061,7 @@
         "src/clubhouse/styles/auth.css",
         "src/clubhouse/styles/base.css",
         "src/clubhouse/styles/calendar.css",
+        "src/clubhouse/styles/class-awareness.css",
         "src/clubhouse/styles/classes.css",
         "src/clubhouse/styles/coachhelm-dive.css",
         "src/clubhouse/styles/coachhelm-standing.css",
@@ -4271,6 +5072,7 @@
         "src/clubhouse/styles/goals.css",
         "src/clubhouse/styles/home.css",
         "src/clubhouse/styles/hub.css",
+        "src/clubhouse/styles/live.css",
         "src/clubhouse/styles/messages.css",
         "src/clubhouse/styles/onboard.css",
         "src/clubhouse/styles/qualifiers.css",
@@ -4281,6 +5083,8 @@
         "src/clubhouse/styles/settings.css",
         "src/clubhouse/styles/shell.css",
         "src/clubhouse/styles/stats.css",
+        "src/clubhouse/styles/tournaments-desk.css",
+        "src/clubhouse/styles/tournaments.css",
         "src/clubhouse/styles/ui.css"
       ],
       "examples": [],
@@ -4328,6 +5132,7 @@
         "src/clubhouse/styles/settings.css",
         "src/clubhouse/styles/shell.css",
         "src/clubhouse/styles/stats.css",
+        "src/clubhouse/styles/tournaments.css",
         "src/clubhouse/styles/ui.css"
       ],
       "examples": [],
@@ -4358,7 +5163,22 @@
         "src/clubhouse/styles/settings.css",
         "src/clubhouse/styles/shell.css",
         "src/clubhouse/styles/stats.css",
+        "src/clubhouse/styles/tournaments.css",
         "src/clubhouse/styles/ui.css"
+      ],
+      "examples": [],
+      "fixture": "Contextual module"
+    },
+    {
+      "file": "src/clubhouse/screens/rounds/track/LiveShareSheet.tsx",
+      "group": "screens",
+      "exports": [
+        "LiveShareSheet"
+      ],
+      "styles": [
+        "src/clubhouse/styles/base.css",
+        "src/clubhouse/styles/live.css",
+        "src/clubhouse/styles/shell.css"
       ],
       "examples": [],
       "fixture": "Contextual module"
@@ -4405,6 +5225,7 @@
         "src/clubhouse/styles/settings.css",
         "src/clubhouse/styles/shell.css",
         "src/clubhouse/styles/stats.css",
+        "src/clubhouse/styles/tournaments.css",
         "src/clubhouse/styles/ui.css"
       ],
       "examples": [],
@@ -4441,6 +5262,7 @@
         "src/clubhouse/styles/auth.css",
         "src/clubhouse/styles/base.css",
         "src/clubhouse/styles/calendar.css",
+        "src/clubhouse/styles/class-awareness.css",
         "src/clubhouse/styles/classes.css",
         "src/clubhouse/styles/coachhelm-thread.css",
         "src/clubhouse/styles/coachhelm-views.css",
@@ -4459,6 +5281,8 @@
         "src/clubhouse/styles/settings.css",
         "src/clubhouse/styles/shell.css",
         "src/clubhouse/styles/stats.css",
+        "src/clubhouse/styles/tournaments-desk.css",
+        "src/clubhouse/styles/tournaments.css",
         "src/clubhouse/styles/ui.css"
       ],
       "examples": [],
@@ -4487,6 +5311,7 @@
       "styles": [
         "src/clubhouse/styles/base.css",
         "src/clubhouse/styles/calendar.css",
+        "src/clubhouse/styles/class-awareness.css",
         "src/clubhouse/styles/coachhelm.css",
         "src/clubhouse/styles/goals.css",
         "src/clubhouse/styles/home.css",
@@ -4494,7 +5319,8 @@
         "src/clubhouse/styles/messages.css",
         "src/clubhouse/styles/qualifiers.css",
         "src/clubhouse/styles/settings.css",
-        "src/clubhouse/styles/stats.css"
+        "src/clubhouse/styles/stats.css",
+        "src/clubhouse/styles/tournaments-desk.css"
       ],
       "examples": [],
       "fixture": "Contextual module"
@@ -4508,6 +5334,7 @@
       "styles": [
         "src/clubhouse/styles/base.css",
         "src/clubhouse/styles/calendar.css",
+        "src/clubhouse/styles/class-awareness.css",
         "src/clubhouse/styles/coachhelm.css",
         "src/clubhouse/styles/goals.css",
         "src/clubhouse/styles/home.css",
@@ -4515,7 +5342,8 @@
         "src/clubhouse/styles/messages.css",
         "src/clubhouse/styles/qualifiers.css",
         "src/clubhouse/styles/settings.css",
-        "src/clubhouse/styles/stats.css"
+        "src/clubhouse/styles/stats.css",
+        "src/clubhouse/styles/tournaments-desk.css"
       ],
       "examples": [],
       "fixture": "Contextual module"
@@ -4527,6 +5355,20 @@
         "GolfSection"
       ],
       "styles": [
+        "src/clubhouse/styles/settings.css"
+      ],
+      "examples": [],
+      "fixture": "Contextual module"
+    },
+    {
+      "file": "src/clubhouse/screens/settings/LiveRounds.tsx",
+      "group": "screens",
+      "exports": [
+        "LiveRoundsCard",
+        "LiveRoundsGroup"
+      ],
+      "styles": [
+        "src/clubhouse/styles/live.css",
         "src/clubhouse/styles/settings.css"
       ],
       "examples": [],
@@ -4602,6 +5444,7 @@
       "styles": [
         "src/clubhouse/styles/base.css",
         "src/clubhouse/styles/calendar.css",
+        "src/clubhouse/styles/class-awareness.css",
         "src/clubhouse/styles/coachhelm.css",
         "src/clubhouse/styles/goals.css",
         "src/clubhouse/styles/home.css",
@@ -4609,7 +5452,8 @@
         "src/clubhouse/styles/messages.css",
         "src/clubhouse/styles/qualifiers.css",
         "src/clubhouse/styles/settings.css",
-        "src/clubhouse/styles/stats.css"
+        "src/clubhouse/styles/stats.css",
+        "src/clubhouse/styles/tournaments-desk.css"
       ],
       "examples": [],
       "fixture": "Contextual module"
@@ -4624,6 +5468,7 @@
       "styles": [
         "src/clubhouse/styles/base.css",
         "src/clubhouse/styles/calendar.css",
+        "src/clubhouse/styles/class-awareness.css",
         "src/clubhouse/styles/coachhelm.css",
         "src/clubhouse/styles/controls.css",
         "src/clubhouse/styles/goals.css",
@@ -4633,6 +5478,7 @@
         "src/clubhouse/styles/qualifiers.css",
         "src/clubhouse/styles/settings.css",
         "src/clubhouse/styles/stats.css",
+        "src/clubhouse/styles/tournaments-desk.css",
         "src/clubhouse/styles/ui.css"
       ],
       "examples": [],
@@ -4650,6 +5496,7 @@
       "styles": [
         "src/clubhouse/styles/base.css",
         "src/clubhouse/styles/calendar.css",
+        "src/clubhouse/styles/class-awareness.css",
         "src/clubhouse/styles/coachhelm.css",
         "src/clubhouse/styles/controls.css",
         "src/clubhouse/styles/goals.css",
@@ -4661,6 +5508,7 @@
         "src/clubhouse/styles/roster.css",
         "src/clubhouse/styles/settings.css",
         "src/clubhouse/styles/stats.css",
+        "src/clubhouse/styles/tournaments-desk.css",
         "src/clubhouse/styles/ui.css"
       ],
       "examples": [],
@@ -4721,6 +5569,7 @@
       "styles": [
         "src/clubhouse/styles/base.css",
         "src/clubhouse/styles/calendar.css",
+        "src/clubhouse/styles/class-awareness.css",
         "src/clubhouse/styles/coachhelm.css",
         "src/clubhouse/styles/goals.css",
         "src/clubhouse/styles/home.css",
@@ -4728,7 +5577,8 @@
         "src/clubhouse/styles/messages.css",
         "src/clubhouse/styles/qualifiers.css",
         "src/clubhouse/styles/settings.css",
-        "src/clubhouse/styles/stats.css"
+        "src/clubhouse/styles/stats.css",
+        "src/clubhouse/styles/tournaments-desk.css"
       ],
       "examples": [],
       "fixture": "Contextual module"
@@ -4776,6 +5626,7 @@
       "styles": [
         "src/clubhouse/styles/base.css",
         "src/clubhouse/styles/calendar.css",
+        "src/clubhouse/styles/class-awareness.css",
         "src/clubhouse/styles/coachhelm-ask.css",
         "src/clubhouse/styles/coachhelm.css",
         "src/clubhouse/styles/command.css",
@@ -4791,6 +5642,7 @@
         "src/clubhouse/styles/settings.css",
         "src/clubhouse/styles/shell.css",
         "src/clubhouse/styles/stats.css",
+        "src/clubhouse/styles/tournaments-desk.css",
         "src/clubhouse/styles/ui.css"
       ],
       "examples": [],
@@ -4805,6 +5657,7 @@
       "styles": [
         "src/clubhouse/styles/base.css",
         "src/clubhouse/styles/calendar.css",
+        "src/clubhouse/styles/class-awareness.css",
         "src/clubhouse/styles/coachhelm.css",
         "src/clubhouse/styles/goals.css",
         "src/clubhouse/styles/home.css",
@@ -4812,7 +5665,8 @@
         "src/clubhouse/styles/messages.css",
         "src/clubhouse/styles/qualifiers.css",
         "src/clubhouse/styles/settings.css",
-        "src/clubhouse/styles/stats.css"
+        "src/clubhouse/styles/stats.css",
+        "src/clubhouse/styles/tournaments-desk.css"
       ],
       "examples": [],
       "fixture": "Contextual module"
@@ -4826,6 +5680,7 @@
       "styles": [
         "src/clubhouse/styles/base.css",
         "src/clubhouse/styles/calendar.css",
+        "src/clubhouse/styles/class-awareness.css",
         "src/clubhouse/styles/coachhelm.css",
         "src/clubhouse/styles/goals.css",
         "src/clubhouse/styles/home.css",
@@ -4833,7 +5688,8 @@
         "src/clubhouse/styles/messages.css",
         "src/clubhouse/styles/qualifiers.css",
         "src/clubhouse/styles/settings.css",
-        "src/clubhouse/styles/stats.css"
+        "src/clubhouse/styles/stats.css",
+        "src/clubhouse/styles/tournaments-desk.css"
       ],
       "examples": [],
       "fixture": "Contextual module"
@@ -4847,6 +5703,7 @@
       "styles": [
         "src/clubhouse/styles/base.css",
         "src/clubhouse/styles/calendar.css",
+        "src/clubhouse/styles/class-awareness.css",
         "src/clubhouse/styles/coachhelm.css",
         "src/clubhouse/styles/goals.css",
         "src/clubhouse/styles/home.css",
@@ -4856,6 +5713,8 @@
         "src/clubhouse/styles/settings.css",
         "src/clubhouse/styles/shell.css",
         "src/clubhouse/styles/stats.css",
+        "src/clubhouse/styles/tournaments-desk.css",
+        "src/clubhouse/styles/tournaments-home.css",
         "src/clubhouse/styles/ui.css"
       ],
       "examples": [],
@@ -4921,13 +5780,15 @@
       "styles": [
         "src/clubhouse/styles/base.css",
         "src/clubhouse/styles/calendar.css",
+        "src/clubhouse/styles/class-awareness.css",
         "src/clubhouse/styles/coachhelm.css",
         "src/clubhouse/styles/goals.css",
         "src/clubhouse/styles/home.css",
         "src/clubhouse/styles/hub.css",
         "src/clubhouse/styles/messages.css",
         "src/clubhouse/styles/qualifiers.css",
-        "src/clubhouse/styles/stats.css"
+        "src/clubhouse/styles/stats.css",
+        "src/clubhouse/styles/tournaments-desk.css"
       ],
       "examples": [],
       "fixture": "Contextual module"
@@ -4941,6 +5802,7 @@
       "styles": [
         "src/clubhouse/styles/base.css",
         "src/clubhouse/styles/calendar.css",
+        "src/clubhouse/styles/class-awareness.css",
         "src/clubhouse/styles/coachhelm.css",
         "src/clubhouse/styles/controls.css",
         "src/clubhouse/styles/goals.css",
@@ -4950,7 +5812,8 @@
         "src/clubhouse/styles/qualifiers.css",
         "src/clubhouse/styles/roster.css",
         "src/clubhouse/styles/rounds.css",
-        "src/clubhouse/styles/stats.css"
+        "src/clubhouse/styles/stats.css",
+        "src/clubhouse/styles/tournaments-desk.css"
       ],
       "examples": [],
       "fixture": "Contextual module"
@@ -4968,13 +5831,15 @@
       "styles": [
         "src/clubhouse/styles/base.css",
         "src/clubhouse/styles/calendar.css",
+        "src/clubhouse/styles/class-awareness.css",
         "src/clubhouse/styles/coachhelm.css",
         "src/clubhouse/styles/goals.css",
         "src/clubhouse/styles/home.css",
         "src/clubhouse/styles/hub.css",
         "src/clubhouse/styles/messages.css",
         "src/clubhouse/styles/qualifiers.css",
-        "src/clubhouse/styles/stats.css"
+        "src/clubhouse/styles/stats.css",
+        "src/clubhouse/styles/tournaments-desk.css"
       ],
       "examples": [],
       "fixture": "Contextual module"
@@ -4988,6 +5853,7 @@
       "styles": [
         "src/clubhouse/styles/base.css",
         "src/clubhouse/styles/calendar.css",
+        "src/clubhouse/styles/class-awareness.css",
         "src/clubhouse/styles/coachhelm.css",
         "src/clubhouse/styles/controls.css",
         "src/clubhouse/styles/goals.css",
@@ -4998,7 +5864,8 @@
         "src/clubhouse/styles/recruiting.css",
         "src/clubhouse/styles/roster.css",
         "src/clubhouse/styles/settings.css",
-        "src/clubhouse/styles/stats.css"
+        "src/clubhouse/styles/stats.css",
+        "src/clubhouse/styles/tournaments-desk.css"
       ],
       "examples": [],
       "fixture": "Contextual module"
@@ -5014,6 +5881,7 @@
       "styles": [
         "src/clubhouse/styles/base.css",
         "src/clubhouse/styles/calendar.css",
+        "src/clubhouse/styles/class-awareness.css",
         "src/clubhouse/styles/coachhelm.css",
         "src/clubhouse/styles/goals.css",
         "src/clubhouse/styles/home.css",
@@ -5021,7 +5889,8 @@
         "src/clubhouse/styles/messages.css",
         "src/clubhouse/styles/qualifiers.css",
         "src/clubhouse/styles/shell.css",
-        "src/clubhouse/styles/stats.css"
+        "src/clubhouse/styles/stats.css",
+        "src/clubhouse/styles/tournaments-desk.css"
       ],
       "examples": [],
       "fixture": "Contextual module"
@@ -5035,6 +5904,7 @@
       "styles": [
         "src/clubhouse/styles/base.css",
         "src/clubhouse/styles/calendar.css",
+        "src/clubhouse/styles/class-awareness.css",
         "src/clubhouse/styles/coachhelm.css",
         "src/clubhouse/styles/goals.css",
         "src/clubhouse/styles/home.css",
@@ -5042,7 +5912,8 @@
         "src/clubhouse/styles/messages.css",
         "src/clubhouse/styles/qualifiers.css",
         "src/clubhouse/styles/shell.css",
-        "src/clubhouse/styles/stats.css"
+        "src/clubhouse/styles/stats.css",
+        "src/clubhouse/styles/tournaments-desk.css"
       ],
       "examples": [],
       "fixture": "Contextual module"
@@ -5057,6 +5928,7 @@
       "styles": [
         "src/clubhouse/styles/base.css",
         "src/clubhouse/styles/calendar.css",
+        "src/clubhouse/styles/class-awareness.css",
         "src/clubhouse/styles/coachhelm.css",
         "src/clubhouse/styles/goals.css",
         "src/clubhouse/styles/home.css",
@@ -5064,6 +5936,7 @@
         "src/clubhouse/styles/messages.css",
         "src/clubhouse/styles/qualifiers.css",
         "src/clubhouse/styles/stats.css",
+        "src/clubhouse/styles/tournaments-desk.css",
         "src/clubhouse/styles/ui.css"
       ],
       "examples": [],
@@ -5078,6 +5951,7 @@
       "styles": [
         "src/clubhouse/styles/base.css",
         "src/clubhouse/styles/calendar.css",
+        "src/clubhouse/styles/class-awareness.css",
         "src/clubhouse/styles/coachhelm.css",
         "src/clubhouse/styles/goals.css",
         "src/clubhouse/styles/home.css",
@@ -5085,7 +5959,8 @@
         "src/clubhouse/styles/messages.css",
         "src/clubhouse/styles/qualifiers.css",
         "src/clubhouse/styles/shell.css",
-        "src/clubhouse/styles/stats.css"
+        "src/clubhouse/styles/stats.css",
+        "src/clubhouse/styles/tournaments-desk.css"
       ],
       "examples": [],
       "fixture": "Contextual module"
@@ -5099,13 +5974,15 @@
       "styles": [
         "src/clubhouse/styles/base.css",
         "src/clubhouse/styles/calendar.css",
+        "src/clubhouse/styles/class-awareness.css",
         "src/clubhouse/styles/coachhelm.css",
         "src/clubhouse/styles/goals.css",
         "src/clubhouse/styles/home.css",
         "src/clubhouse/styles/hub.css",
         "src/clubhouse/styles/messages.css",
         "src/clubhouse/styles/qualifiers.css",
-        "src/clubhouse/styles/stats.css"
+        "src/clubhouse/styles/stats.css",
+        "src/clubhouse/styles/tournaments-desk.css"
       ],
       "examples": [],
       "fixture": "Contextual module"
@@ -5131,6 +6008,7 @@
       "styles": [
         "src/clubhouse/styles/base.css",
         "src/clubhouse/styles/calendar.css",
+        "src/clubhouse/styles/class-awareness.css",
         "src/clubhouse/styles/coachhelm.css",
         "src/clubhouse/styles/goals.css",
         "src/clubhouse/styles/home.css",
@@ -5138,7 +6016,8 @@
         "src/clubhouse/styles/messages.css",
         "src/clubhouse/styles/qualifiers.css",
         "src/clubhouse/styles/shell.css",
-        "src/clubhouse/styles/stats.css"
+        "src/clubhouse/styles/stats.css",
+        "src/clubhouse/styles/tournaments-desk.css"
       ],
       "examples": [],
       "fixture": "Contextual module"
@@ -5152,6 +6031,7 @@
       "styles": [
         "src/clubhouse/styles/base.css",
         "src/clubhouse/styles/calendar.css",
+        "src/clubhouse/styles/class-awareness.css",
         "src/clubhouse/styles/coachhelm.css",
         "src/clubhouse/styles/goals.css",
         "src/clubhouse/styles/home.css",
@@ -5159,7 +6039,8 @@
         "src/clubhouse/styles/messages.css",
         "src/clubhouse/styles/qualifiers.css",
         "src/clubhouse/styles/shell.css",
-        "src/clubhouse/styles/stats.css"
+        "src/clubhouse/styles/stats.css",
+        "src/clubhouse/styles/tournaments-desk.css"
       ],
       "examples": [],
       "fixture": "Contextual module"
@@ -5186,6 +6067,7 @@
       "styles": [
         "src/clubhouse/styles/base.css",
         "src/clubhouse/styles/calendar.css",
+        "src/clubhouse/styles/class-awareness.css",
         "src/clubhouse/styles/coachhelm.css",
         "src/clubhouse/styles/goals.css",
         "src/clubhouse/styles/home.css",
@@ -5193,7 +6075,8 @@
         "src/clubhouse/styles/messages.css",
         "src/clubhouse/styles/qualifiers.css",
         "src/clubhouse/styles/shell.css",
-        "src/clubhouse/styles/stats.css"
+        "src/clubhouse/styles/stats.css",
+        "src/clubhouse/styles/tournaments-desk.css"
       ],
       "examples": [],
       "fixture": "Contextual module"
@@ -5207,6 +6090,7 @@
       "styles": [
         "src/clubhouse/styles/base.css",
         "src/clubhouse/styles/calendar.css",
+        "src/clubhouse/styles/class-awareness.css",
         "src/clubhouse/styles/coachhelm.css",
         "src/clubhouse/styles/goals.css",
         "src/clubhouse/styles/home.css",
@@ -5214,7 +6098,8 @@
         "src/clubhouse/styles/messages.css",
         "src/clubhouse/styles/qualifiers.css",
         "src/clubhouse/styles/shell.css",
-        "src/clubhouse/styles/stats.css"
+        "src/clubhouse/styles/stats.css",
+        "src/clubhouse/styles/tournaments-desk.css"
       ],
       "examples": [],
       "fixture": "Contextual module"
@@ -5232,6 +6117,7 @@
         "src/clubhouse/styles/auth.css",
         "src/clubhouse/styles/base.css",
         "src/clubhouse/styles/calendar.css",
+        "src/clubhouse/styles/class-awareness.css",
         "src/clubhouse/styles/classes.css",
         "src/clubhouse/styles/coachhelm-thread.css",
         "src/clubhouse/styles/coachhelm-views.css",
@@ -5251,6 +6137,8 @@
         "src/clubhouse/styles/settings.css",
         "src/clubhouse/styles/shell.css",
         "src/clubhouse/styles/stats.css",
+        "src/clubhouse/styles/tournaments-desk.css",
+        "src/clubhouse/styles/tournaments.css",
         "src/clubhouse/styles/ui.css"
       ],
       "examples": [],
@@ -5267,13 +6155,15 @@
       "styles": [
         "src/clubhouse/styles/base.css",
         "src/clubhouse/styles/calendar.css",
+        "src/clubhouse/styles/class-awareness.css",
         "src/clubhouse/styles/coachhelm.css",
         "src/clubhouse/styles/goals.css",
         "src/clubhouse/styles/home.css",
         "src/clubhouse/styles/hub.css",
         "src/clubhouse/styles/messages.css",
         "src/clubhouse/styles/qualifiers.css",
-        "src/clubhouse/styles/stats.css"
+        "src/clubhouse/styles/stats.css",
+        "src/clubhouse/styles/tournaments-desk.css"
       ],
       "examples": [],
       "fixture": "Contextual module"
@@ -5302,6 +6192,7 @@
       "styles": [
         "src/clubhouse/styles/base.css",
         "src/clubhouse/styles/calendar.css",
+        "src/clubhouse/styles/class-awareness.css",
         "src/clubhouse/styles/coachhelm.css",
         "src/clubhouse/styles/controls.css",
         "src/clubhouse/styles/goals.css",
@@ -5314,6 +6205,7 @@
         "src/clubhouse/styles/rounds.css",
         "src/clubhouse/styles/settings.css",
         "src/clubhouse/styles/stats.css",
+        "src/clubhouse/styles/tournaments-desk.css",
         "src/clubhouse/styles/ui.css"
       ],
       "examples": [],
@@ -5328,6 +6220,7 @@
       "styles": [
         "src/clubhouse/styles/base.css",
         "src/clubhouse/styles/calendar.css",
+        "src/clubhouse/styles/class-awareness.css",
         "src/clubhouse/styles/coachhelm.css",
         "src/clubhouse/styles/controls.css",
         "src/clubhouse/styles/goals.css",
@@ -5336,7 +6229,8 @@
         "src/clubhouse/styles/messages.css",
         "src/clubhouse/styles/qualifiers.css",
         "src/clubhouse/styles/shell.css",
-        "src/clubhouse/styles/stats.css"
+        "src/clubhouse/styles/stats.css",
+        "src/clubhouse/styles/tournaments-desk.css"
       ],
       "examples": [],
       "fixture": "Contextual module"
@@ -5380,13 +6274,15 @@
       "styles": [
         "src/clubhouse/styles/base.css",
         "src/clubhouse/styles/calendar.css",
+        "src/clubhouse/styles/class-awareness.css",
         "src/clubhouse/styles/coachhelm.css",
         "src/clubhouse/styles/goals.css",
         "src/clubhouse/styles/home.css",
         "src/clubhouse/styles/hub.css",
         "src/clubhouse/styles/messages.css",
         "src/clubhouse/styles/qualifiers.css",
-        "src/clubhouse/styles/stats.css"
+        "src/clubhouse/styles/stats.css",
+        "src/clubhouse/styles/tournaments-desk.css"
       ],
       "examples": [],
       "fixture": "Contextual module"
@@ -5417,6 +6313,7 @@
       "styles": [
         "src/clubhouse/styles/base.css",
         "src/clubhouse/styles/calendar.css",
+        "src/clubhouse/styles/class-awareness.css",
         "src/clubhouse/styles/coachhelm.css",
         "src/clubhouse/styles/controls.css",
         "src/clubhouse/styles/goals.css",
@@ -5424,7 +6321,8 @@
         "src/clubhouse/styles/hub.css",
         "src/clubhouse/styles/messages.css",
         "src/clubhouse/styles/qualifiers.css",
-        "src/clubhouse/styles/stats.css"
+        "src/clubhouse/styles/stats.css",
+        "src/clubhouse/styles/tournaments-desk.css"
       ],
       "examples": [],
       "fixture": "Contextual module"
@@ -5438,6 +6336,7 @@
       "styles": [
         "src/clubhouse/styles/base.css",
         "src/clubhouse/styles/calendar.css",
+        "src/clubhouse/styles/class-awareness.css",
         "src/clubhouse/styles/coachhelm.css",
         "src/clubhouse/styles/goals.css",
         "src/clubhouse/styles/home.css",
@@ -5445,7 +6344,8 @@
         "src/clubhouse/styles/messages.css",
         "src/clubhouse/styles/qualifiers.css",
         "src/clubhouse/styles/shell.css",
-        "src/clubhouse/styles/stats.css"
+        "src/clubhouse/styles/stats.css",
+        "src/clubhouse/styles/tournaments-desk.css"
       ],
       "examples": [],
       "fixture": "Contextual module"
@@ -5459,6 +6359,7 @@
       "styles": [
         "src/clubhouse/styles/base.css",
         "src/clubhouse/styles/calendar.css",
+        "src/clubhouse/styles/class-awareness.css",
         "src/clubhouse/styles/coachhelm.css",
         "src/clubhouse/styles/goals.css",
         "src/clubhouse/styles/home.css",
@@ -5466,7 +6367,8 @@
         "src/clubhouse/styles/messages.css",
         "src/clubhouse/styles/qualifiers.css",
         "src/clubhouse/styles/shell.css",
-        "src/clubhouse/styles/stats.css"
+        "src/clubhouse/styles/stats.css",
+        "src/clubhouse/styles/tournaments-desk.css"
       ],
       "examples": [],
       "fixture": "Contextual module"
@@ -5480,13 +6382,15 @@
       "styles": [
         "src/clubhouse/styles/base.css",
         "src/clubhouse/styles/calendar.css",
+        "src/clubhouse/styles/class-awareness.css",
         "src/clubhouse/styles/coachhelm.css",
         "src/clubhouse/styles/goals.css",
         "src/clubhouse/styles/home.css",
         "src/clubhouse/styles/hub.css",
         "src/clubhouse/styles/messages.css",
         "src/clubhouse/styles/qualifiers.css",
-        "src/clubhouse/styles/stats.css"
+        "src/clubhouse/styles/stats.css",
+        "src/clubhouse/styles/tournaments-desk.css"
       ],
       "examples": [],
       "fixture": "Contextual module"
@@ -5536,13 +6440,16 @@
       "styles": [
         "src/clubhouse/styles/base.css",
         "src/clubhouse/styles/calendar.css",
+        "src/clubhouse/styles/class-awareness.css",
         "src/clubhouse/styles/coachhelm.css",
         "src/clubhouse/styles/goals.css",
         "src/clubhouse/styles/home.css",
         "src/clubhouse/styles/hub.css",
         "src/clubhouse/styles/messages.css",
         "src/clubhouse/styles/qualifiers.css",
-        "src/clubhouse/styles/stats.css"
+        "src/clubhouse/styles/stats.css",
+        "src/clubhouse/styles/tournaments-desk.css",
+        "src/clubhouse/styles/ui.css"
       ],
       "examples": [],
       "fixture": "Contextual module"
@@ -5566,6 +6473,7 @@
       "styles": [
         "src/clubhouse/styles/base.css",
         "src/clubhouse/styles/calendar.css",
+        "src/clubhouse/styles/class-awareness.css",
         "src/clubhouse/styles/coachhelm.css",
         "src/clubhouse/styles/goals.css",
         "src/clubhouse/styles/home.css",
@@ -5573,8 +6481,475 @@
         "src/clubhouse/styles/messages.css",
         "src/clubhouse/styles/qualifiers.css",
         "src/clubhouse/styles/shell.css",
-        "src/clubhouse/styles/stats.css"
+        "src/clubhouse/styles/stats.css",
+        "src/clubhouse/styles/tournaments-desk.css"
       ],
+      "examples": [],
+      "fixture": "Contextual module"
+    },
+    {
+      "file": "src/clubhouse/screens/tournaments/Compare.tsx",
+      "group": "screens",
+      "exports": [
+        "Compare"
+      ],
+      "styles": [
+        "src/clubhouse/styles/tournaments-compare.css",
+        "src/clubhouse/styles/tournaments.css",
+        "src/clubhouse/styles/ui.css"
+      ],
+      "examples": [],
+      "fixture": "Contextual module"
+    },
+    {
+      "file": "src/clubhouse/screens/tournaments/EventDesk.tsx",
+      "group": "screens",
+      "exports": [
+        "EventDesk"
+      ],
+      "styles": [
+        "src/clubhouse/styles/base.css",
+        "src/clubhouse/styles/calendar.css",
+        "src/clubhouse/styles/class-awareness.css",
+        "src/clubhouse/styles/coachhelm.css",
+        "src/clubhouse/styles/goals.css",
+        "src/clubhouse/styles/home.css",
+        "src/clubhouse/styles/hub.css",
+        "src/clubhouse/styles/messages.css",
+        "src/clubhouse/styles/qualifiers.css",
+        "src/clubhouse/styles/stats.css",
+        "src/clubhouse/styles/tournaments-desk.css",
+        "src/clubhouse/styles/tournaments.css",
+        "src/clubhouse/styles/ui.css"
+      ],
+      "examples": [],
+      "fixture": "Contextual module"
+    },
+    {
+      "file": "src/clubhouse/screens/tournaments/EventForm.tsx",
+      "group": "screens",
+      "exports": [
+        "EventForm"
+      ],
+      "styles": [
+        "src/clubhouse/styles/tournaments-lineup.css"
+      ],
+      "examples": [],
+      "fixture": "Contextual module"
+    },
+    {
+      "file": "src/clubhouse/screens/tournaments/EvidenceDrawer.tsx",
+      "group": "screens",
+      "exports": [
+        "EvidenceDrawer"
+      ],
+      "styles": [
+        "src/clubhouse/styles/base.css",
+        "src/clubhouse/styles/calendar.css",
+        "src/clubhouse/styles/class-awareness.css",
+        "src/clubhouse/styles/coachhelm.css",
+        "src/clubhouse/styles/goals.css",
+        "src/clubhouse/styles/home.css",
+        "src/clubhouse/styles/hub.css",
+        "src/clubhouse/styles/messages.css",
+        "src/clubhouse/styles/qualifiers.css",
+        "src/clubhouse/styles/shell.css",
+        "src/clubhouse/styles/stats.css",
+        "src/clubhouse/styles/tournaments-desk.css"
+      ],
+      "examples": [],
+      "fixture": "Contextual module"
+    },
+    {
+      "file": "src/clubhouse/screens/tournaments/History.tsx",
+      "group": "screens",
+      "exports": [
+        "History"
+      ],
+      "styles": [
+        "src/clubhouse/styles/base.css",
+        "src/clubhouse/styles/calendar.css",
+        "src/clubhouse/styles/class-awareness.css",
+        "src/clubhouse/styles/coachhelm.css",
+        "src/clubhouse/styles/goals.css",
+        "src/clubhouse/styles/home.css",
+        "src/clubhouse/styles/hub.css",
+        "src/clubhouse/styles/messages.css",
+        "src/clubhouse/styles/qualifiers.css",
+        "src/clubhouse/styles/stats.css",
+        "src/clubhouse/styles/tournaments-desk.css",
+        "src/clubhouse/styles/tournaments-review.css"
+      ],
+      "examples": [],
+      "fixture": "Contextual module"
+    },
+    {
+      "file": "src/clubhouse/screens/tournaments/HoleGrid.tsx",
+      "group": "screens",
+      "exports": [
+        "HoleGrid"
+      ],
+      "styles": [
+        "src/clubhouse/styles/base.css",
+        "src/clubhouse/styles/calendar.css",
+        "src/clubhouse/styles/class-awareness.css",
+        "src/clubhouse/styles/coachhelm.css",
+        "src/clubhouse/styles/goals.css",
+        "src/clubhouse/styles/home.css",
+        "src/clubhouse/styles/hub.css",
+        "src/clubhouse/styles/messages.css",
+        "src/clubhouse/styles/qualifiers.css",
+        "src/clubhouse/styles/shell.css",
+        "src/clubhouse/styles/stats.css",
+        "src/clubhouse/styles/tournaments-desk.css",
+        "src/clubhouse/styles/tournaments.css"
+      ],
+      "examples": [],
+      "fixture": "Contextual module"
+    },
+    {
+      "file": "src/clubhouse/screens/tournaments/LineupBuilder.tsx",
+      "group": "screens",
+      "exports": [
+        "LineupBuilder"
+      ],
+      "styles": [
+        "src/clubhouse/styles/tournaments-lineup.css"
+      ],
+      "examples": [],
+      "fixture": "Contextual module"
+    },
+    {
+      "file": "src/clubhouse/screens/tournaments/LinkInbox.tsx",
+      "group": "screens",
+      "exports": [
+        "LinkInbox"
+      ],
+      "styles": [
+        "src/clubhouse/styles/tournaments-review.css"
+      ],
+      "examples": [],
+      "fixture": "Contextual module"
+    },
+    {
+      "file": "src/clubhouse/screens/tournaments/LiveRound.tsx",
+      "group": "screens",
+      "exports": [
+        "LiveRound"
+      ],
+      "styles": [
+        "src/clubhouse/styles/tournaments-live.css"
+      ],
+      "examples": [],
+      "fixture": "Contextual module"
+    },
+    {
+      "file": "src/clubhouse/screens/tournaments/PlayerEvent.tsx",
+      "group": "screens",
+      "exports": [
+        "PlayerEvent"
+      ],
+      "styles": [
+        "src/clubhouse/styles/tournaments-player.css"
+      ],
+      "examples": [],
+      "fixture": "Contextual module"
+    },
+    {
+      "file": "src/clubhouse/screens/tournaments/Review.tsx",
+      "group": "screens",
+      "exports": [
+        "Review",
+        "ReviewBody"
+      ],
+      "styles": [
+        "src/clubhouse/styles/tournaments-review.css"
+      ],
+      "examples": [],
+      "fixture": "Contextual module"
+    },
+    {
+      "file": "src/clubhouse/screens/tournaments/RoundCard.tsx",
+      "group": "screens",
+      "exports": [
+        "RoundCard"
+      ],
+      "styles": [
+        "src/clubhouse/styles/base.css",
+        "src/clubhouse/styles/calendar.css",
+        "src/clubhouse/styles/class-awareness.css",
+        "src/clubhouse/styles/coachhelm.css",
+        "src/clubhouse/styles/goals.css",
+        "src/clubhouse/styles/home.css",
+        "src/clubhouse/styles/hub.css",
+        "src/clubhouse/styles/messages.css",
+        "src/clubhouse/styles/qualifiers.css",
+        "src/clubhouse/styles/stats.css",
+        "src/clubhouse/styles/tournament-fields.css",
+        "src/clubhouse/styles/tournaments-desk.css"
+      ],
+      "examples": [],
+      "fixture": "Contextual module"
+    },
+    {
+      "file": "src/clubhouse/screens/tournaments/SeasonLedger.tsx",
+      "group": "screens",
+      "exports": [
+        "SeasonLedger"
+      ],
+      "styles": [
+        "src/clubhouse/styles/base.css",
+        "src/clubhouse/styles/calendar.css",
+        "src/clubhouse/styles/class-awareness.css",
+        "src/clubhouse/styles/coachhelm.css",
+        "src/clubhouse/styles/goals.css",
+        "src/clubhouse/styles/home.css",
+        "src/clubhouse/styles/hub.css",
+        "src/clubhouse/styles/messages.css",
+        "src/clubhouse/styles/qualifiers.css",
+        "src/clubhouse/styles/shell.css",
+        "src/clubhouse/styles/stats.css",
+        "src/clubhouse/styles/tournaments-desk.css",
+        "src/clubhouse/styles/tournaments.css"
+      ],
+      "examples": [],
+      "fixture": "Contextual module"
+    },
+    {
+      "file": "src/clubhouse/screens/tournaments/TourNotice.tsx",
+      "group": "screens",
+      "exports": [
+        "TourNotice"
+      ],
+      "styles": [
+        "src/clubhouse/styles/tournaments.css"
+      ],
+      "examples": [],
+      "fixture": "Contextual module"
+    },
+    {
+      "file": "src/clubhouse/screens/tournaments/TourPlaceholder.tsx",
+      "group": "screens",
+      "exports": [
+        "TourPlaceholder"
+      ],
+      "styles": [
+        "src/clubhouse/styles/base.css",
+        "src/clubhouse/styles/calendar.css",
+        "src/clubhouse/styles/class-awareness.css",
+        "src/clubhouse/styles/coachhelm.css",
+        "src/clubhouse/styles/goals.css",
+        "src/clubhouse/styles/home.css",
+        "src/clubhouse/styles/hub.css",
+        "src/clubhouse/styles/messages.css",
+        "src/clubhouse/styles/qualifiers.css",
+        "src/clubhouse/styles/stats.css",
+        "src/clubhouse/styles/tournaments-desk.css",
+        "src/clubhouse/styles/tournaments.css"
+      ],
+      "examples": [],
+      "fixture": "Contextual module"
+    },
+    {
+      "file": "src/clubhouse/screens/tournaments/TournamentsHome.tsx",
+      "group": "screens",
+      "exports": [
+        "TournamentsHome"
+      ],
+      "styles": [
+        "src/clubhouse/styles/base.css",
+        "src/clubhouse/styles/calendar.css",
+        "src/clubhouse/styles/class-awareness.css",
+        "src/clubhouse/styles/coachhelm.css",
+        "src/clubhouse/styles/goals.css",
+        "src/clubhouse/styles/home.css",
+        "src/clubhouse/styles/hub.css",
+        "src/clubhouse/styles/messages.css",
+        "src/clubhouse/styles/qualifiers.css",
+        "src/clubhouse/styles/stats.css",
+        "src/clubhouse/styles/tournaments-desk.css",
+        "src/clubhouse/styles/tournaments-home.css"
+      ],
+      "examples": [],
+      "fixture": "Contextual module"
+    },
+    {
+      "file": "src/clubhouse/screens/tournaments/TournamentsLoading.tsx",
+      "group": "screens",
+      "exports": [
+        "TournamentsLoading"
+      ],
+      "styles": [],
+      "examples": [],
+      "fixture": "Contextual module"
+    },
+    {
+      "file": "src/clubhouse/screens/tournaments/WhoCounted.tsx",
+      "group": "screens",
+      "exports": [
+        "WhoCounted"
+      ],
+      "styles": [
+        "src/clubhouse/styles/base.css",
+        "src/clubhouse/styles/calendar.css",
+        "src/clubhouse/styles/class-awareness.css",
+        "src/clubhouse/styles/coachhelm.css",
+        "src/clubhouse/styles/goals.css",
+        "src/clubhouse/styles/home.css",
+        "src/clubhouse/styles/hub.css",
+        "src/clubhouse/styles/messages.css",
+        "src/clubhouse/styles/qualifiers.css",
+        "src/clubhouse/styles/stats.css",
+        "src/clubhouse/styles/tournaments-desk.css"
+      ],
+      "examples": [],
+      "fixture": "Contextual module"
+    },
+    {
+      "file": "src/clubhouse/screens/tournaments/compare/CompareGrid.tsx",
+      "group": "screens",
+      "exports": [
+        "CompareBlocks",
+        "CompareGrid"
+      ],
+      "styles": [
+        "src/clubhouse/styles/base.css",
+        "src/clubhouse/styles/calendar.css",
+        "src/clubhouse/styles/class-awareness.css",
+        "src/clubhouse/styles/coachhelm.css",
+        "src/clubhouse/styles/goals.css",
+        "src/clubhouse/styles/home.css",
+        "src/clubhouse/styles/hub.css",
+        "src/clubhouse/styles/messages.css",
+        "src/clubhouse/styles/qualifiers.css",
+        "src/clubhouse/styles/shell.css",
+        "src/clubhouse/styles/stats.css",
+        "src/clubhouse/styles/tournaments-compare.css",
+        "src/clubhouse/styles/tournaments-desk.css"
+      ],
+      "examples": [],
+      "fixture": "Contextual module"
+    },
+    {
+      "file": "src/clubhouse/screens/tournaments/compare/ScopeControls.tsx",
+      "group": "screens",
+      "exports": [
+        "Face",
+        "ScopeControls",
+        "ScopeTitle",
+        "SummaryLine"
+      ],
+      "styles": [
+        "src/clubhouse/styles/base.css",
+        "src/clubhouse/styles/shell.css",
+        "src/clubhouse/styles/tournaments-compare.css"
+      ],
+      "examples": [],
+      "fixture": "Contextual module"
+    },
+    {
+      "file": "src/clubhouse/screens/tournaments/compare/Timeline.tsx",
+      "group": "screens",
+      "exports": [
+        "Timeline"
+      ],
+      "styles": [
+        "src/clubhouse/styles/tournaments-compare.css"
+      ],
+      "examples": [],
+      "fixture": "Contextual module"
+    },
+    {
+      "file": "src/clubhouse/screens/tournaments/fields/RoundRow.tsx",
+      "group": "screens",
+      "exports": [
+        "RoundRow",
+        "START_TYPE_LABEL"
+      ],
+      "styles": [
+        "src/clubhouse/styles/base.css",
+        "src/clubhouse/styles/calendar.css",
+        "src/clubhouse/styles/class-awareness.css",
+        "src/clubhouse/styles/coachhelm.css",
+        "src/clubhouse/styles/goals.css",
+        "src/clubhouse/styles/home.css",
+        "src/clubhouse/styles/hub.css",
+        "src/clubhouse/styles/messages.css",
+        "src/clubhouse/styles/qualifiers.css",
+        "src/clubhouse/styles/stats.css",
+        "src/clubhouse/styles/tournament-fields.css",
+        "src/clubhouse/styles/tournaments-desk.css"
+      ],
+      "examples": [],
+      "fixture": "Contextual module"
+    },
+    {
+      "file": "src/clubhouse/screens/tournaments/fields/TournamentFields.tsx",
+      "group": "screens",
+      "exports": [
+        "TournamentFields"
+      ],
+      "styles": [
+        "src/clubhouse/styles/base.css",
+        "src/clubhouse/styles/calendar.css",
+        "src/clubhouse/styles/class-awareness.css",
+        "src/clubhouse/styles/coachhelm.css",
+        "src/clubhouse/styles/controls.css",
+        "src/clubhouse/styles/goals.css",
+        "src/clubhouse/styles/home.css",
+        "src/clubhouse/styles/hub.css",
+        "src/clubhouse/styles/messages.css",
+        "src/clubhouse/styles/qualifiers.css",
+        "src/clubhouse/styles/recruiting.css",
+        "src/clubhouse/styles/roster.css",
+        "src/clubhouse/styles/settings.css",
+        "src/clubhouse/styles/stats.css",
+        "src/clubhouse/styles/tournament-fields.css",
+        "src/clubhouse/styles/tournaments-desk.css"
+      ],
+      "examples": [],
+      "fixture": "Contextual module"
+    },
+    {
+      "file": "src/clubhouse/screens/tournaments/parts.tsx",
+      "group": "screens",
+      "exports": [
+        "Coverage",
+        "ToPar",
+        "TourChip",
+        "TourCrumb",
+        "TourFailed",
+        "TourHead",
+        "TourLoading",
+        "TourMain",
+        "TourPhoneTop",
+        "TourViewSwitch"
+      ],
+      "styles": [
+        "src/clubhouse/styles/base.css",
+        "src/clubhouse/styles/calendar.css",
+        "src/clubhouse/styles/class-awareness.css",
+        "src/clubhouse/styles/coachhelm.css",
+        "src/clubhouse/styles/goals.css",
+        "src/clubhouse/styles/home.css",
+        "src/clubhouse/styles/hub.css",
+        "src/clubhouse/styles/messages.css",
+        "src/clubhouse/styles/qualifiers.css",
+        "src/clubhouse/styles/stats.css",
+        "src/clubhouse/styles/tournaments-desk.css",
+        "src/clubhouse/styles/tournaments.css"
+      ],
+      "examples": [],
+      "fixture": "Contextual module"
+    },
+    {
+      "file": "src/clubhouse/screens/tournaments/paths.tsx",
+      "group": "screens",
+      "exports": [
+        "TOUR_ROUTES",
+        "TourPathsProvider"
+      ],
+      "styles": [],
       "examples": [],
       "fixture": "Contextual module"
     },
@@ -5587,6 +6962,7 @@
       "styles": [
         "src/clubhouse/styles/base.css",
         "src/clubhouse/styles/calendar.css",
+        "src/clubhouse/styles/class-awareness.css",
         "src/clubhouse/styles/coachhelm.css",
         "src/clubhouse/styles/goals.css",
         "src/clubhouse/styles/home.css",
@@ -5595,6 +6971,7 @@
         "src/clubhouse/styles/qualifiers.css",
         "src/clubhouse/styles/rounds.css",
         "src/clubhouse/styles/stats.css",
+        "src/clubhouse/styles/tournaments-desk.css",
         "src/clubhouse/styles/whats-new.css"
       ],
       "examples": [],
@@ -5663,6 +7040,7 @@
         "src/clubhouse/styles/settings.css",
         "src/clubhouse/styles/shell.css",
         "src/clubhouse/styles/stats.css",
+        "src/clubhouse/styles/tournaments.css",
         "src/clubhouse/styles/ui.css"
       ],
       "examples": [],
@@ -5695,6 +7073,7 @@
         "src/clubhouse/styles/settings.css",
         "src/clubhouse/styles/shell.css",
         "src/clubhouse/styles/stats.css",
+        "src/clubhouse/styles/tournaments.css",
         "src/clubhouse/styles/ui.css"
       ],
       "examples": [],
@@ -5711,6 +7090,7 @@
         "src/clubhouse/styles/auth.css",
         "src/clubhouse/styles/base.css",
         "src/clubhouse/styles/calendar.css",
+        "src/clubhouse/styles/class-awareness.css",
         "src/clubhouse/styles/classes.css",
         "src/clubhouse/styles/coachhelm-ask.css",
         "src/clubhouse/styles/coachhelm-thread.css",
@@ -5731,7 +7111,31 @@
         "src/clubhouse/styles/settings.css",
         "src/clubhouse/styles/shell.css",
         "src/clubhouse/styles/stats.css",
+        "src/clubhouse/styles/tournaments-desk.css",
+        "src/clubhouse/styles/tournaments.css",
         "src/clubhouse/styles/ui.css"
+      ],
+      "examples": [],
+      "fixture": "Contextual module"
+    },
+    {
+      "file": "src/clubhouse/shell/BellHeldRow.tsx",
+      "group": "shell",
+      "exports": [
+        "BellHeldRow"
+      ],
+      "styles": [
+        "src/clubhouse/styles/base.css",
+        "src/clubhouse/styles/calendar.css",
+        "src/clubhouse/styles/class-awareness.css",
+        "src/clubhouse/styles/coachhelm.css",
+        "src/clubhouse/styles/goals.css",
+        "src/clubhouse/styles/home.css",
+        "src/clubhouse/styles/hub.css",
+        "src/clubhouse/styles/messages.css",
+        "src/clubhouse/styles/qualifiers.css",
+        "src/clubhouse/styles/stats.css",
+        "src/clubhouse/styles/tournaments-desk.css"
       ],
       "examples": [],
       "fixture": "Contextual module"
@@ -5746,6 +7150,7 @@
       "styles": [
         "src/clubhouse/styles/base.css",
         "src/clubhouse/styles/calendar.css",
+        "src/clubhouse/styles/class-awareness.css",
         "src/clubhouse/styles/coachhelm.css",
         "src/clubhouse/styles/goals.css",
         "src/clubhouse/styles/home.css",
@@ -5753,7 +7158,8 @@
         "src/clubhouse/styles/messages.css",
         "src/clubhouse/styles/qualifiers.css",
         "src/clubhouse/styles/shell.css",
-        "src/clubhouse/styles/stats.css"
+        "src/clubhouse/styles/stats.css",
+        "src/clubhouse/styles/tournaments-desk.css"
       ],
       "examples": [],
       "fixture": "Contextual module"
@@ -5861,6 +7267,7 @@
       "styles": [
         "src/clubhouse/styles/base.css",
         "src/clubhouse/styles/calendar.css",
+        "src/clubhouse/styles/class-awareness.css",
         "src/clubhouse/styles/coachhelm-ask.css",
         "src/clubhouse/styles/coachhelm.css",
         "src/clubhouse/styles/command.css",
@@ -5875,6 +7282,7 @@
         "src/clubhouse/styles/rounds-track.css",
         "src/clubhouse/styles/shell.css",
         "src/clubhouse/styles/stats.css",
+        "src/clubhouse/styles/tournaments-desk.css",
         "src/clubhouse/styles/ui.css"
       ],
       "examples": [],
@@ -5914,6 +7322,7 @@
       "styles": [
         "src/clubhouse/styles/base.css",
         "src/clubhouse/styles/calendar.css",
+        "src/clubhouse/styles/class-awareness.css",
         "src/clubhouse/styles/coachhelm.css",
         "src/clubhouse/styles/goals.css",
         "src/clubhouse/styles/home.css",
@@ -5921,7 +7330,8 @@
         "src/clubhouse/styles/messages.css",
         "src/clubhouse/styles/qualifiers.css",
         "src/clubhouse/styles/shell.css",
-        "src/clubhouse/styles/stats.css"
+        "src/clubhouse/styles/stats.css",
+        "src/clubhouse/styles/tournaments-desk.css"
       ],
       "examples": [],
       "fixture": "Contextual module"
@@ -6082,6 +7492,7 @@
       "styles": [
         "src/clubhouse/styles/base.css",
         "src/clubhouse/styles/calendar.css",
+        "src/clubhouse/styles/class-awareness.css",
         "src/clubhouse/styles/coachhelm.css",
         "src/clubhouse/styles/goals.css",
         "src/clubhouse/styles/home.css",
@@ -6089,7 +7500,8 @@
         "src/clubhouse/styles/messages.css",
         "src/clubhouse/styles/qualifiers.css",
         "src/clubhouse/styles/shell.css",
-        "src/clubhouse/styles/stats.css"
+        "src/clubhouse/styles/stats.css",
+        "src/clubhouse/styles/tournaments-desk.css"
       ],
       "examples": [],
       "fixture": "Contextual module"
@@ -6127,6 +7539,7 @@
       "styles": [
         "src/clubhouse/styles/base.css",
         "src/clubhouse/styles/calendar.css",
+        "src/clubhouse/styles/class-awareness.css",
         "src/clubhouse/styles/coachhelm.css",
         "src/clubhouse/styles/goals.css",
         "src/clubhouse/styles/home.css",
@@ -6134,7 +7547,8 @@
         "src/clubhouse/styles/messages.css",
         "src/clubhouse/styles/qualifiers.css",
         "src/clubhouse/styles/shell.css",
-        "src/clubhouse/styles/stats.css"
+        "src/clubhouse/styles/stats.css",
+        "src/clubhouse/styles/tournaments-desk.css"
       ],
       "examples": [],
       "fixture": "Contextual module"
@@ -6200,6 +7614,7 @@
         "src/clubhouse/styles/settings.css",
         "src/clubhouse/styles/shell.css",
         "src/clubhouse/styles/stats.css",
+        "src/clubhouse/styles/tournaments.css",
         "src/clubhouse/styles/ui.css"
       ],
       "examples": [],
@@ -6435,6 +7850,7 @@
         "src/clubhouse/styles/settings.css",
         "src/clubhouse/styles/shell.css",
         "src/clubhouse/styles/stats.css",
+        "src/clubhouse/styles/tournaments.css",
         "src/clubhouse/styles/ui.css"
       ],
       "examples": [
@@ -6457,6 +7873,42 @@
         "Checkbox"
       ],
       "fixture": "Shared gallery example"
+    },
+    {
+      "file": "src/clubhouse/ui/ClassStatusLine.tsx",
+      "group": "ui",
+      "exports": [
+        "ClassStatusLine"
+      ],
+      "styles": [
+        "src/clubhouse/styles/class-awareness.css",
+        "src/clubhouse/styles/messages.css",
+        "src/clubhouse/styles/roster.css"
+      ],
+      "examples": [],
+      "fixture": "Contextual module"
+    },
+    {
+      "file": "src/clubhouse/ui/ClassStatusRow.tsx",
+      "group": "ui",
+      "exports": [
+        "ClassStatusRow"
+      ],
+      "styles": [
+        "src/clubhouse/styles/base.css",
+        "src/clubhouse/styles/calendar.css",
+        "src/clubhouse/styles/class-awareness.css",
+        "src/clubhouse/styles/coachhelm.css",
+        "src/clubhouse/styles/goals.css",
+        "src/clubhouse/styles/home.css",
+        "src/clubhouse/styles/hub.css",
+        "src/clubhouse/styles/messages.css",
+        "src/clubhouse/styles/qualifiers.css",
+        "src/clubhouse/styles/stats.css",
+        "src/clubhouse/styles/tournaments-desk.css"
+      ],
+      "examples": [],
+      "fixture": "Contextual module"
     },
     {
       "file": "src/clubhouse/ui/ContextMenu.tsx",
@@ -6493,6 +7945,7 @@
         "src/clubhouse/styles/auth.css",
         "src/clubhouse/styles/base.css",
         "src/clubhouse/styles/calendar.css",
+        "src/clubhouse/styles/class-awareness.css",
         "src/clubhouse/styles/classes.css",
         "src/clubhouse/styles/coachhelm-thread.css",
         "src/clubhouse/styles/coachhelm-views.css",
@@ -6511,6 +7964,32 @@
         "src/clubhouse/styles/settings.css",
         "src/clubhouse/styles/shell.css",
         "src/clubhouse/styles/stats.css",
+        "src/clubhouse/styles/tournaments-desk.css",
+        "src/clubhouse/styles/tournaments.css",
+        "src/clubhouse/styles/ui.css"
+      ],
+      "examples": [],
+      "fixture": "Contextual module"
+    },
+    {
+      "file": "src/clubhouse/ui/DeltaChip.tsx",
+      "group": "ui",
+      "exports": [
+        "DeltaChip"
+      ],
+      "styles": [
+        "src/clubhouse/styles/base.css",
+        "src/clubhouse/styles/calendar.css",
+        "src/clubhouse/styles/class-awareness.css",
+        "src/clubhouse/styles/coachhelm.css",
+        "src/clubhouse/styles/goals.css",
+        "src/clubhouse/styles/home.css",
+        "src/clubhouse/styles/hub.css",
+        "src/clubhouse/styles/messages.css",
+        "src/clubhouse/styles/qualifiers.css",
+        "src/clubhouse/styles/shell.css",
+        "src/clubhouse/styles/stats.css",
+        "src/clubhouse/styles/tournaments-desk.css",
         "src/clubhouse/styles/ui.css"
       ],
       "examples": [],
@@ -6600,6 +8079,7 @@
       "styles": [
         "src/clubhouse/styles/base.css",
         "src/clubhouse/styles/calendar.css",
+        "src/clubhouse/styles/class-awareness.css",
         "src/clubhouse/styles/coachhelm.css",
         "src/clubhouse/styles/goals.css",
         "src/clubhouse/styles/home.css",
@@ -6610,6 +8090,8 @@
         "src/clubhouse/styles/settings.css",
         "src/clubhouse/styles/shell.css",
         "src/clubhouse/styles/stats.css",
+        "src/clubhouse/styles/tournaments-desk.css",
+        "src/clubhouse/styles/tournaments-home.css",
         "src/clubhouse/styles/ui.css",
         "src/clubhouse/styles/whats-new.css"
       ],
@@ -6683,6 +8165,7 @@
         "src/clubhouse/styles/settings.css",
         "src/clubhouse/styles/shell.css",
         "src/clubhouse/styles/stats.css",
+        "src/clubhouse/styles/tournaments.css",
         "src/clubhouse/styles/ui.css"
       ],
       "examples": [
@@ -6699,6 +8182,7 @@
       "styles": [
         "src/clubhouse/styles/base.css",
         "src/clubhouse/styles/calendar.css",
+        "src/clubhouse/styles/class-awareness.css",
         "src/clubhouse/styles/coachhelm.css",
         "src/clubhouse/styles/goals.css",
         "src/clubhouse/styles/home.css",
@@ -6707,6 +8191,7 @@
         "src/clubhouse/styles/qualifiers.css",
         "src/clubhouse/styles/shell.css",
         "src/clubhouse/styles/stats.css",
+        "src/clubhouse/styles/tournaments-desk.css",
         "src/clubhouse/styles/ui.css"
       ],
       "examples": [
@@ -6750,6 +8235,7 @@
       "styles": [
         "src/clubhouse/styles/base.css",
         "src/clubhouse/styles/calendar.css",
+        "src/clubhouse/styles/class-awareness.css",
         "src/clubhouse/styles/coachhelm-ask.css",
         "src/clubhouse/styles/coachhelm.css",
         "src/clubhouse/styles/goals.css",
@@ -6760,7 +8246,8 @@
         "src/clubhouse/styles/rounds-setup.css",
         "src/clubhouse/styles/rounds.css",
         "src/clubhouse/styles/shell.css",
-        "src/clubhouse/styles/stats.css"
+        "src/clubhouse/styles/stats.css",
+        "src/clubhouse/styles/tournaments-desk.css"
       ],
       "examples": [
         "InlineNotice"
@@ -6777,6 +8264,7 @@
       "styles": [
         "src/clubhouse/styles/base.css",
         "src/clubhouse/styles/calendar.css",
+        "src/clubhouse/styles/class-awareness.css",
         "src/clubhouse/styles/coachhelm.css",
         "src/clubhouse/styles/goals.css",
         "src/clubhouse/styles/hero-tones.css",
@@ -6785,7 +8273,8 @@
         "src/clubhouse/styles/messages.css",
         "src/clubhouse/styles/qualifiers.css",
         "src/clubhouse/styles/shell.css",
-        "src/clubhouse/styles/stats.css"
+        "src/clubhouse/styles/stats.css",
+        "src/clubhouse/styles/tournaments-desk.css"
       ],
       "examples": [],
       "fixture": "Contextual module"
@@ -6872,6 +8361,7 @@
       "styles": [
         "src/clubhouse/styles/base.css",
         "src/clubhouse/styles/calendar.css",
+        "src/clubhouse/styles/class-awareness.css",
         "src/clubhouse/styles/coachhelm.css",
         "src/clubhouse/styles/goals.css",
         "src/clubhouse/styles/home.css",
@@ -6879,6 +8369,7 @@
         "src/clubhouse/styles/messages.css",
         "src/clubhouse/styles/qualifiers.css",
         "src/clubhouse/styles/stats.css",
+        "src/clubhouse/styles/tournaments-desk.css",
         "src/clubhouse/styles/ui.css"
       ],
       "examples": [],
@@ -7016,6 +8507,7 @@
       "styles": [
         "src/clubhouse/styles/base.css",
         "src/clubhouse/styles/calendar.css",
+        "src/clubhouse/styles/class-awareness.css",
         "src/clubhouse/styles/coachhelm-ask.css",
         "src/clubhouse/styles/coachhelm.css",
         "src/clubhouse/styles/controls.css",
@@ -7028,7 +8520,8 @@
         "src/clubhouse/styles/roster.css",
         "src/clubhouse/styles/rounds.css",
         "src/clubhouse/styles/settings.css",
-        "src/clubhouse/styles/stats.css"
+        "src/clubhouse/styles/stats.css",
+        "src/clubhouse/styles/tournaments-desk.css"
       ],
       "examples": [
         "PillGroup",
@@ -7088,6 +8581,7 @@
       "styles": [
         "src/clubhouse/styles/base.css",
         "src/clubhouse/styles/calendar.css",
+        "src/clubhouse/styles/class-awareness.css",
         "src/clubhouse/styles/coachhelm.css",
         "src/clubhouse/styles/controls.css",
         "src/clubhouse/styles/goals.css",
@@ -7096,7 +8590,8 @@
         "src/clubhouse/styles/messages.css",
         "src/clubhouse/styles/qualifiers.css",
         "src/clubhouse/styles/settings.css",
-        "src/clubhouse/styles/stats.css"
+        "src/clubhouse/styles/stats.css",
+        "src/clubhouse/styles/tournaments-desk.css"
       ],
       "examples": [
         "Slider"
@@ -7128,6 +8623,7 @@
       "styles": [
         "src/clubhouse/styles/base.css",
         "src/clubhouse/styles/calendar.css",
+        "src/clubhouse/styles/class-awareness.css",
         "src/clubhouse/styles/classes.css",
         "src/clubhouse/styles/coachhelm-ask.css",
         "src/clubhouse/styles/coachhelm-dive.css",
@@ -7144,6 +8640,7 @@
         "src/clubhouse/styles/rounds.css",
         "src/clubhouse/styles/shell.css",
         "src/clubhouse/styles/stats.css",
+        "src/clubhouse/styles/tournaments-desk.css",
         "src/clubhouse/styles/ui.css"
       ],
       "examples": [
@@ -7179,6 +8676,7 @@
       ],
       "styles": [
         "src/clubhouse/styles/calendar.css",
+        "src/clubhouse/styles/class-awareness.css",
         "src/clubhouse/styles/messages.css",
         "src/clubhouse/styles/recruiting.css",
         "src/clubhouse/styles/ui.css"
@@ -7228,6 +8726,7 @@
         "src/clubhouse/styles/auth.css",
         "src/clubhouse/styles/base.css",
         "src/clubhouse/styles/calendar.css",
+        "src/clubhouse/styles/class-awareness.css",
         "src/clubhouse/styles/classes.css",
         "src/clubhouse/styles/coachhelm-thread.css",
         "src/clubhouse/styles/coachhelm-views.css",
@@ -7246,6 +8745,8 @@
         "src/clubhouse/styles/settings.css",
         "src/clubhouse/styles/shell.css",
         "src/clubhouse/styles/stats.css",
+        "src/clubhouse/styles/tournaments-desk.css",
+        "src/clubhouse/styles/tournaments.css",
         "src/clubhouse/styles/ui.css"
       ],
       "examples": [],
@@ -7288,6 +8789,45 @@
       "fixture": "Contextual module"
     },
     {
+      "file": "src/clubhouse/ui/TrustChip.tsx",
+      "group": "ui",
+      "exports": [
+        "TrustChip"
+      ],
+      "styles": [
+        "src/clubhouse/styles/base.css",
+        "src/clubhouse/styles/calendar.css",
+        "src/clubhouse/styles/class-awareness.css",
+        "src/clubhouse/styles/coachhelm.css",
+        "src/clubhouse/styles/goals.css",
+        "src/clubhouse/styles/home.css",
+        "src/clubhouse/styles/hub.css",
+        "src/clubhouse/styles/messages.css",
+        "src/clubhouse/styles/qualifiers.css",
+        "src/clubhouse/styles/stats.css",
+        "src/clubhouse/styles/tournaments-desk.css",
+        "src/clubhouse/styles/ui.css"
+      ],
+      "examples": [],
+      "fixture": "Contextual module"
+    },
+    {
+      "file": "src/clubhouse/ui/WasValue.tsx",
+      "group": "ui",
+      "exports": [
+        "WasValue"
+      ],
+      "styles": [
+        "src/clubhouse/styles/base.css",
+        "src/clubhouse/styles/calendar.css",
+        "src/clubhouse/styles/home.css",
+        "src/clubhouse/styles/shell.css",
+        "src/clubhouse/styles/ui.css"
+      ],
+      "examples": [],
+      "fixture": "Contextual module"
+    },
+    {
       "file": "src/clubhouse/ui/WeekStrip.tsx",
       "group": "ui",
       "exports": [
@@ -7296,6 +8836,7 @@
       "styles": [
         "src/clubhouse/styles/base.css",
         "src/clubhouse/styles/calendar.css",
+        "src/clubhouse/styles/class-awareness.css",
         "src/clubhouse/styles/coachhelm.css",
         "src/clubhouse/styles/goals.css",
         "src/clubhouse/styles/home.css",
@@ -7304,6 +8845,7 @@
         "src/clubhouse/styles/qualifiers.css",
         "src/clubhouse/styles/shell.css",
         "src/clubhouse/styles/stats.css",
+        "src/clubhouse/styles/tournaments-desk.css",
         "src/clubhouse/styles/ui.css"
       ],
       "examples": [],
@@ -7322,6 +8864,7 @@
       "styles": [
         "src/clubhouse/styles/base.css",
         "src/clubhouse/styles/calendar.css",
+        "src/clubhouse/styles/class-awareness.css",
         "src/clubhouse/styles/coachhelm.css",
         "src/clubhouse/styles/goals.css",
         "src/clubhouse/styles/home.css",
@@ -7330,6 +8873,7 @@
         "src/clubhouse/styles/qualifiers.css",
         "src/clubhouse/styles/rounds.css",
         "src/clubhouse/styles/stats.css",
+        "src/clubhouse/styles/tournaments-desk.css",
         "src/clubhouse/styles/ui.css"
       ],
       "examples": [],
@@ -7358,6 +8902,7 @@
       "styles": [
         "src/clubhouse/styles/base.css",
         "src/clubhouse/styles/calendar.css",
+        "src/clubhouse/styles/class-awareness.css",
         "src/clubhouse/styles/coachhelm-dive.css",
         "src/clubhouse/styles/coachhelm-thread.css",
         "src/clubhouse/styles/coachhelm.css",
@@ -7369,6 +8914,7 @@
         "src/clubhouse/styles/roster.css",
         "src/clubhouse/styles/shell.css",
         "src/clubhouse/styles/stats.css",
+        "src/clubhouse/styles/tournaments-desk.css",
         "src/clubhouse/styles/ui.css"
       ],
       "examples": [],
@@ -8179,9 +9725,12 @@
         "ch-ag__dot",
         "ch-ag__list",
         "ch-ag__now",
+        "ch-ag__round",
         "ch-ag__row",
         "ch-ag__t",
         "ch-ag__when",
+        "ch-away-go",
+        "ch-away-ring",
         "ch-badge",
         "ch-btn",
         "ch-cal",
@@ -8215,8 +9764,10 @@
         "ch-calm-dayswap",
         "ch-calm-dayv",
         "ch-calm-ev",
+        "ch-calm-ev--away",
         "ch-calm-ev__b",
         "ch-calm-ev__rail",
+        "ch-calm-ev__sub",
         "ch-calm-ev__t",
         "ch-calm-ev__w",
         "ch-calm-head",
@@ -8250,6 +9801,19 @@
         "ch-cg__time",
         "ch-cg__title",
         "ch-cg__who",
+        "ch-change-note",
+        "ch-change-note__a",
+        "ch-change-note__again",
+        "ch-change-note__by",
+        "ch-change-note__g",
+        "ch-change-note__got",
+        "ch-change-note__h",
+        "ch-change-note__hidden",
+        "ch-change-note__msg",
+        "ch-change-note__reach",
+        "ch-change-note__rows",
+        "ch-change-note__t",
+        "ch-change-note__why",
         "ch-dd-barcard",
         "ch-dd-card",
         "ch-dd-pill",
@@ -8298,14 +9862,18 @@
         "ch-ev-bar--span",
         "ch-ev-bar__grip",
         "ch-ev-bar__t",
+        "ch-ev__chg",
         "ch-ev__g",
         "ch-ev__grip",
         "ch-ev__m",
         "ch-ev__m--fit",
+        "ch-ev__round",
         "ch-ev__t",
         "ch-ev__warn",
+        "ch-ev__was",
         "ch-ev__who",
         "ch-evpeek",
+        "ch-evpeek__chg",
         "ch-evpeek__k",
         "ch-evpeek__m",
         "ch-evpeek__r",
@@ -8339,6 +9907,7 @@
         "ch-in__resp",
         "ch-in__sec",
         "ch-in__sechead",
+        "ch-in__setup",
         "ch-in__title",
         "ch-in__today",
         "ch-in__trip",
@@ -8354,6 +9923,7 @@
         "ch-menu__item",
         "ch-mo",
         "ch-mo__cell",
+        "ch-mo__chg",
         "ch-mo__dow",
         "ch-mo__ev",
         "ch-mo__evs",
@@ -8365,6 +9935,7 @@
         "ch-mo__ribbon",
         "ch-mo__week",
         "ch-num",
+        "ch-oldslot",
         "ch-pp",
         "ch-pp__foot",
         "ch-pp__label",
@@ -8378,6 +9949,13 @@
         "ch-pp__txt",
         "ch-rcpt",
         "ch-rcpt__was",
+        "ch-red__banner",
+        "ch-red__danger",
+        "ch-red__fields",
+        "ch-red__l1",
+        "ch-red__l2",
+        "ch-red__plate",
+        "ch-rn",
         "ch-seg",
         "ch-seg__b",
         "ch-seg__l",
@@ -8392,12 +9970,15 @@
         "ch-tl__bar",
         "ch-tl__card",
         "ch-tl__col",
+        "ch-tl__day",
         "ch-tl__grid",
         "ch-tl__grip",
         "ch-tl__h",
         "ch-tl__slot",
         "ch-verify",
         "ch-verify__ic",
+        "ch-was",
+        "ch-was-pair",
         "ch-wk",
         "ch-wk__allcell",
         "ch-wk__allday",
@@ -8450,6 +10031,74 @@
           "scope": ".ch-in__plate[data-tone='amber']"
         }
       ]
+    },
+    {
+      "file": "src/clubhouse/styles/class-awareness.css",
+      "classes": [
+        "ch-ca-2",
+        "ch-ca-bell",
+        "ch-ca-bell__deliver",
+        "ch-ca-bell__text",
+        "ch-ca-body",
+        "ch-ca-breaks",
+        "ch-ca-detail",
+        "ch-ca-empty",
+        "ch-ca-foot",
+        "ch-ca-foot__row",
+        "ch-ca-form",
+        "ch-ca-home",
+        "ch-ca-home--desktop",
+        "ch-ca-home--phone",
+        "ch-ca-home__btn",
+        "ch-ca-home__l1",
+        "ch-ca-home__l2",
+        "ch-ca-home__text",
+        "ch-ca-line",
+        "ch-ca-names",
+        "ch-ca-note",
+        "ch-ca-panel",
+        "ch-ca-panel__change",
+        "ch-ca-panel__deliver",
+        "ch-ca-panel__link",
+        "ch-ca-panel__none",
+        "ch-ca-panel__notices",
+        "ch-ca-panel__row",
+        "ch-ca-panel__sec",
+        "ch-ca-panel__state",
+        "ch-ca-panel__top",
+        "ch-ca-panel__value",
+        "ch-ca-pop",
+        "ch-ca-pop__head",
+        "ch-ca-radio",
+        "ch-ca-radios",
+        "ch-ca-row",
+        "ch-ca-row__line",
+        "ch-ca-row__meta",
+        "ch-ca-row__name",
+        "ch-ca-row__text",
+        "ch-ca-row__time",
+        "ch-ca-sec",
+        "ch-ca-state",
+        "ch-ca-strip",
+        "ch-ca-strip__axis",
+        "ch-ca-strip__bar",
+        "ch-ca-strip__block",
+        "ch-ca-strip__free",
+        "ch-ca-strip__label",
+        "ch-ca-strip__lane",
+        "ch-ca-strip__legend",
+        "ch-ca-strip__now",
+        "ch-ca-strip__plot",
+        "ch-ca-strip__slot",
+        "ch-ca-strip__tick",
+        "ch-ca-thread",
+        "ch-ca-thread__line",
+        "ch-ca-thread__primary",
+        "ch-ca-updated",
+        "ch-num",
+        "ch-swap"
+      ],
+      "tokens": []
     },
     {
       "file": "src/clubhouse/styles/classes.css",
@@ -9784,8 +11433,11 @@
         "ch-input",
         "ch-inset",
         "ch-menu",
+        "ch-menu__caption",
         "ch-menu__item",
         "ch-menu__sep",
+        "ch-menu__shortcut",
+        "ch-menu__text",
         "ch-modal",
         "ch-modal__action",
         "ch-modal__body",
@@ -10208,6 +11860,7 @@
         "ch-seg__b",
         "ch-seg__pill",
         "ch-sheet",
+        "ch-was",
         "ch-well-soft"
       ],
       "tokens": [
@@ -10457,10 +12110,168 @@
       ]
     },
     {
+      "file": "src/clubhouse/styles/live.css",
+      "classes": [
+        "ch-lv",
+        "ch-lv--denied",
+        "ch-lv--desk",
+        "ch-lv--phone",
+        "ch-lv-actions",
+        "ch-lv-bead",
+        "ch-lv-beads",
+        "ch-lv-body",
+        "ch-lv-card",
+        "ch-lv-card__head",
+        "ch-lv-card__more",
+        "ch-lv-card__open",
+        "ch-lv-card__problem",
+        "ch-lv-chip",
+        "ch-lv-chip__retry",
+        "ch-lv-deskwrap",
+        "ch-lv-disc",
+        "ch-lv-dot",
+        "ch-lv-empty",
+        "ch-lv-empty__body",
+        "ch-lv-empty__title",
+        "ch-lv-evdot",
+        "ch-lv-eventrow",
+        "ch-lv-evrow",
+        "ch-lv-eyebrow",
+        "ch-lv-figure",
+        "ch-lv-figure__next",
+        "ch-lv-figure__par",
+        "ch-lv-figure__side",
+        "ch-lv-group__label",
+        "ch-lv-groups",
+        "ch-lv-head",
+        "ch-lv-hit",
+        "ch-lv-id",
+        "ch-lv-lane",
+        "ch-lv-line",
+        "ch-lv-list",
+        "ch-lv-moments",
+        "ch-lv-momentum",
+        "ch-lv-name",
+        "ch-lv-note",
+        "ch-lv-own",
+        "ch-lv-own__figure",
+        "ch-lv-own__legs",
+        "ch-lv-own__mark",
+        "ch-lv-own__marks",
+        "ch-lv-own__next",
+        "ch-lv-own__par",
+        "ch-lv-own__resume",
+        "ch-lv-own__thru",
+        "ch-lv-own__title",
+        "ch-lv-panel",
+        "ch-lv-panel__head",
+        "ch-lv-panel__title",
+        "ch-lv-par",
+        "ch-lv-peek",
+        "ch-lv-pill",
+        "ch-lv-pillwrap",
+        "ch-lv-read",
+        "ch-lv-ribbon",
+        "ch-lv-ribbon__hole",
+        "ch-lv-ribbon__row",
+        "ch-lv-ribbon__token",
+        "ch-lv-sc",
+        "ch-lv-scgrid",
+        "ch-lv-share",
+        "ch-lv-share__error",
+        "ch-lv-share__remember",
+        "ch-lv-sharechip",
+        "ch-lv-sheetshare",
+        "ch-lv-sort",
+        "ch-lv-spark",
+        "ch-lv-spark__dot",
+        "ch-lv-spark__seg",
+        "ch-lv-spark__zero",
+        "ch-lv-split",
+        "ch-lv-sub",
+        "ch-lv-thru",
+        "ch-lv-tools",
+        "ch-rsu-field__hint"
+      ],
+      "tokens": [
+        {
+          "name": "--ch-live-bead-eagle",
+          "value": "var(--ch-score-eagle-fill)",
+          "scope": "[data-ui='clubhouse']"
+        },
+        {
+          "name": "--ch-type-live-figure",
+          "value": "500 calc(40 * var(--ch-type-k))/1 var(--ch-font-sans)",
+          "scope": "[data-ui='clubhouse']"
+        },
+        {
+          "name": "--ch-type-live-own",
+          "value": "600 calc(34 * var(--ch-type-k))/1.08 var(--ch-font-sans)",
+          "scope": "[data-ui='clubhouse']"
+        },
+        {
+          "name": "--ch-live-bead-eagle",
+          "value": "#b84d3f",
+          "scope": "html[data-fw-theme='dark'] [data-ui='clubhouse']"
+        },
+        {
+          "name": "--ch-lv-bead",
+          "value": "8px",
+          "scope": ".ch-lv-lane"
+        },
+        {
+          "name": "--ch-lv-gap",
+          "value": "var(--ch-space-0_5)",
+          "scope": ".ch-lv-lane"
+        },
+        {
+          "name": "--ch-lv-ink",
+          "value": "var(--ch-ink-500)",
+          "scope": ".ch-lv-bead"
+        },
+        {
+          "name": "--ch-lv-ink",
+          "value": "var(--ch-live-bead-eagle)",
+          "scope": ".ch-lv-bead[data-kind='eagle']"
+        },
+        {
+          "name": "--ch-lv-ink",
+          "value": "var(--ch-score-under-fill)",
+          "scope": ".ch-lv-bead[data-kind='birdie']"
+        },
+        {
+          "name": "--ch-lv-ink",
+          "value": "var(--ch-ink-700)",
+          "scope": ".ch-lv-bead[data-kind='bogey']"
+        },
+        {
+          "name": "--ch-lv-ink",
+          "value": "var(--ch-score-double)",
+          "scope": ".ch-lv-bead[data-kind='double']"
+        },
+        {
+          "name": "--ch-lv-ink",
+          "value": "var(--ch-ink-400)",
+          "scope": ".ch-lv-bead[data-kind='unplayed']"
+        },
+        {
+          "name": "--ch-lv-bead",
+          "value": "6px",
+          "scope": "@container chlv (min-width: 640px) → .ch-lv-lane[data-density='full']"
+        },
+        {
+          "name": "--ch-lv-gap",
+          "value": "var(--ch-space-1)",
+          "scope": "@container chlv (min-width: 640px) → .ch-lv-lane[data-density='full']"
+        }
+      ]
+    },
+    {
       "file": "src/clubhouse/styles/messages.css",
       "classes": [
         "ch-avatar",
         "ch-btn--sm",
+        "ch-ca-line",
         "ch-empty",
         "ch-field__help",
         "ch-iconbtn",
@@ -10482,6 +12293,8 @@
         "ch-ms-below",
         "ch-ms-bub",
         "ch-ms-bub--file",
+        "ch-ms-classline",
+        "ch-ms-classline-wrap",
         "ch-ms-comp",
         "ch-ms-comp__field",
         "ch-ms-comp__hint",
@@ -10514,6 +12327,7 @@
         "ch-ms-msg__col",
         "ch-ms-msg__fail",
         "ch-ms-msg__line",
+        "ch-ms-msg__na",
         "ch-ms-msg__stack",
         "ch-ms-msg__t",
         "ch-ms-msg__tools",
@@ -10542,6 +12356,7 @@
         "ch-ms-poll__q",
         "ch-ms-poll__sub",
         "ch-ms-poll__tag",
+        "ch-ms-poll__x",
         "ch-ms-pollf",
         "ch-ms-pollf__chip",
         "ch-ms-pollf__chips",
@@ -10591,6 +12406,8 @@
         "ch-ms-seen__swap",
         "ch-ms-seen__w",
         "ch-ms-send",
+        "ch-ms-send-split",
+        "ch-ms-send__more",
         "ch-ms-swipe",
         "ch-ms-th",
         "ch-ms-th__act",
@@ -10672,6 +12489,7 @@
         "ch-seen-row__name",
         "ch-seen-sec__h",
         "ch-seen-sec__rows",
+        "ch-seen-swap",
         "ch-seg",
         "ch-seg__b",
         "ch-sr-only--focusable",
@@ -12015,6 +13833,7 @@
         "ch-app",
         "ch-avatar",
         "ch-btn",
+        "ch-ca-line",
         "ch-canvas",
         "ch-input",
         "ch-line__path",
@@ -12070,6 +13889,7 @@
         "ch-rs-peek",
         "ch-rs-peek__av",
         "ch-rs-peek__cap",
+        "ch-rs-peek__class",
         "ch-rs-peek__dev",
         "ch-rs-peek__facts",
         "ch-rs-peek__figs",
@@ -12563,6 +14383,7 @@
         "ch-carc",
         "ch-carc__alt",
         "ch-carc__cap",
+        "ch-carc__ov",
         "ch-carc__pills",
         "ch-carc__svg",
         "ch-ch",
@@ -12579,6 +14400,7 @@
         "ch-ch-hero__p",
         "ch-ch-last__sub",
         "ch-ch-note",
+        "ch-ch-note__b",
         "ch-ch-note__l",
         "ch-ch-note__more",
         "ch-ch-plate",
@@ -12616,6 +14438,7 @@
         "ch-hmap-listv",
         "ch-hmap-mapv",
         "ch-hmap-sec",
+        "ch-hmap-sel",
         "ch-hmap-switch",
         "ch-hmap-t",
         "ch-hmap-t__n",
@@ -13341,6 +15164,7 @@
         "ch-feat",
         "ch-frame-popping",
         "ch-frame-route",
+        "ch-frame-under",
         "ch-grab",
         "ch-h-head__date",
         "ch-hero",
@@ -18365,6 +20189,315 @@
       ]
     },
     {
+      "file": "src/clubhouse/styles/tournament-fields.css",
+      "classes": [
+        "ch-qf-picker__head",
+        "ch-tfx",
+        "ch-tfx-banner",
+        "ch-tfx-banner__t",
+        "ch-tfx-card",
+        "ch-tfx-card__dot",
+        "ch-tfx-card__main",
+        "ch-tfx-card__status",
+        "ch-tfx-card__sub",
+        "ch-tfx-card__text",
+        "ch-tfx-card__title",
+        "ch-tfx-card__top",
+        "ch-tfx-cards",
+        "ch-tfx-note",
+        "ch-tfx-note--error",
+        "ch-tfx-note--info",
+        "ch-tfx-note--warning",
+        "ch-tfx-note__act",
+        "ch-tfx__add",
+        "ch-tfx__body",
+        "ch-tfx__counts",
+        "ch-tfx__course",
+        "ch-tfx__day",
+        "ch-tfx__disclose",
+        "ch-tfx__gap",
+        "ch-tfx__head",
+        "ch-tfx__help",
+        "ch-tfx__hint",
+        "ch-tfx__label36",
+        "ch-tfx__lbl",
+        "ch-tfx__lock",
+        "ch-tfx__more-btn",
+        "ch-tfx__num",
+        "ch-tfx__pair",
+        "ch-tfx__plate",
+        "ch-tfx__receipt",
+        "ch-tfx__round",
+        "ch-tfx__rounds",
+        "ch-tfx__row",
+        "ch-tfx__tee",
+        "ch-tfx__title",
+        "ch-tfx__track"
+      ],
+      "tokens": []
+    },
+    {
+      "file": "src/clubhouse/styles/tournaments-compare.css",
+      "classes": [
+        "ch-tour-cmp",
+        "ch-tour-cmp-block",
+        "ch-tour-cmp-block__ab",
+        "ch-tour-cmp-block__d",
+        "ch-tour-cmp-block__h",
+        "ch-tour-cmp-blocks",
+        "ch-tour-cmp-body",
+        "ch-tour-cmp-ctls",
+        "ch-tour-cmp-ctls__dates",
+        "ch-tour-cmp-ctls__row",
+        "ch-tour-cmp-div",
+        "ch-tour-cmp-div__grip",
+        "ch-tour-cmp-dl",
+        "ch-tour-cmp-dl__none",
+        "ch-tour-cmp-edit",
+        "ch-tour-cmp-edit__k",
+        "ch-tour-cmp-edit__side",
+        "ch-tour-cmp-face",
+        "ch-tour-cmp-face__tag",
+        "ch-tour-cmp-foot",
+        "ch-tour-cmp-gap",
+        "ch-tour-cmp-groups",
+        "ch-tour-cmp-hd",
+        "ch-tour-cmp-hd__ab",
+        "ch-tour-cmp-link",
+        "ch-tour-cmp-m",
+        "ch-tour-cmp-pre",
+        "ch-tour-cmp-pres",
+        "ch-tour-cmp-presets",
+        "ch-tour-cmp-row",
+        "ch-tour-cmp-scope",
+        "ch-tour-cmp-scope__sub",
+        "ch-tour-cmp-scope__top",
+        "ch-tour-cmp-scopes",
+        "ch-tour-cmp-split",
+        "ch-tour-cmp-strip",
+        "ch-tour-cmp-strip__axis",
+        "ch-tour-cmp-strip__dot",
+        "ch-tour-cmp-strip__mean",
+        "ch-tour-cmp-strip__other",
+        "ch-tour-cmp-sum",
+        "ch-tour-cmp-swap",
+        "ch-tour-cmp-tag",
+        "ch-tour-cmp-title",
+        "ch-tour-cmp-title__n",
+        "ch-tour-cmp-title__t",
+        "ch-tour-cmp-tl",
+        "ch-tour-cmp-tl__axis",
+        "ch-tour-cmp-tl__bot",
+        "ch-tour-cmp-tl__col",
+        "ch-tour-cmp-tl__dates",
+        "ch-tour-cmp-tl__dot",
+        "ch-tour-cmp-tl__l",
+        "ch-tour-cmp-tl__lab",
+        "ch-tour-cmp-tl__legend",
+        "ch-tour-cmp-tl__mk",
+        "ch-tour-cmp-tl__plot",
+        "ch-tour-cmp-tl__season",
+        "ch-tour-cmp-tl__sel",
+        "ch-tour-cmp-tl__tag",
+        "ch-tour-cmp-tl__thumb",
+        "ch-tour-cmp-tl__top",
+        "ch-tour-cmp-tl__track",
+        "ch-tour-cmp-tl__yk",
+        "ch-tour-cmp-tl__zero",
+        "ch-tour-cmp-v",
+        "ch-tour-cmp-v__d",
+        "ch-tour-cmp-v__n",
+        "ch-tour-cmp-v__top"
+      ],
+      "tokens": [
+        {
+          "name": "--ch-tour-cmp-mcol",
+          "value": "190px",
+          "scope": ".ch-tour-cmp-body"
+        },
+        {
+          "name": "--ch-tour-cmp-dcol",
+          "value": "200px",
+          "scope": ".ch-tour-cmp-body"
+        },
+        {
+          "name": "--ch-tour-cmp-mcol",
+          "value": "130px",
+          "scope": "@media (max-width: 1100px) → .ch-tour-cmp-body"
+        },
+        {
+          "name": "--ch-tour-cmp-dcol",
+          "value": "150px",
+          "scope": "@media (max-width: 1100px) → .ch-tour-cmp-body"
+        }
+      ]
+    },
+    {
+      "file": "src/clubhouse/styles/tournaments-desk.css",
+      "classes": [
+        "ch-num",
+        "ch-tour-desk",
+        "ch-tour-desk-ct",
+        "ch-tour-desk-ct__c",
+        "ch-tour-desk-ct__cnt",
+        "ch-tour-desk-ct__fin",
+        "ch-tour-desk-ct__n",
+        "ch-tour-desk-ct__row",
+        "ch-tour-desk-ct__s",
+        "ch-tour-desk-ct__scroll",
+        "ch-tour-desk-ct__tot",
+        "ch-tour-desk-ct__w",
+        "ch-tour-desk-ct__who",
+        "ch-tour-desk-dot",
+        "ch-tour-desk-ev",
+        "ch-tour-desk-ev__card",
+        "ch-tour-desk-ev__d",
+        "ch-tour-desk-ev__fig",
+        "ch-tour-desk-ev__list",
+        "ch-tour-desk-ev__nine",
+        "ch-tour-desk-ev__t",
+        "ch-tour-desk-ev__tot",
+        "ch-tour-desk-ev__v",
+        "ch-tour-desk-fc",
+        "ch-tour-desk-fc__a",
+        "ch-tour-desk-find",
+        "ch-tour-desk-heat",
+        "ch-tour-desk-hg",
+        "ch-tour-desk-hg__c",
+        "ch-tour-desk-hg__cell",
+        "ch-tour-desk-hg__group",
+        "ch-tour-desk-hg__nine",
+        "ch-tour-desk-hg__row",
+        "ch-tour-desk-hg__scroll",
+        "ch-tour-desk-hg__tools",
+        "ch-tour-desk-hg__tot",
+        "ch-tour-desk-hg__tp",
+        "ch-tour-desk-hg__who",
+        "ch-tour-desk-key",
+        "ch-tour-desk-line",
+        "ch-tour-desk-link",
+        "ch-tour-desk-links",
+        "ch-tour-desk-meta",
+        "ch-tour-desk-note",
+        "ch-tour-desk-panel",
+        "ch-tour-desk-pill",
+        "ch-tour-desk-pills",
+        "ch-tour-desk-res",
+        "ch-tour-desk-sc",
+        "ch-tour-desk-side",
+        "ch-tour-desk-tabs",
+        "ch-tour-desk-tabs__bar",
+        "ch-tour-desk-tabs__n",
+        "ch-tour-desk-tools",
+        "ch-tour-desk-warn",
+        "ch-tour-desk-warn__t"
+      ],
+      "tokens": [
+        {
+          "name": "--ch-tour-desk-n",
+          "value": "3",
+          "scope": ".ch-tour-desk-ct__scroll"
+        }
+      ]
+    },
+    {
+      "file": "src/clubhouse/styles/tournaments-home.css",
+      "classes": [
+        "ch-feat__foot",
+        "ch-feat__title",
+        "ch-tour-home",
+        "ch-tour-home-date",
+        "ch-tour-home-feat",
+        "ch-tour-home-feat__alt",
+        "ch-tour-home-feat__go",
+        "ch-tour-home-feat__p",
+        "ch-tour-home-feat__ready",
+        "ch-tour-home-feat__t",
+        "ch-tour-home__up"
+      ],
+      "tokens": []
+    },
+    {
+      "file": "src/clubhouse/styles/tournaments-lineup.css",
+      "classes": [],
+      "tokens": []
+    },
+    {
+      "file": "src/clubhouse/styles/tournaments-live.css",
+      "classes": [],
+      "tokens": []
+    },
+    {
+      "file": "src/clubhouse/styles/tournaments-player.css",
+      "classes": [],
+      "tokens": []
+    },
+    {
+      "file": "src/clubhouse/styles/tournaments-review.css",
+      "classes": [
+        "ch-tour-rev",
+        "ch-tour-rev-bar",
+        "ch-tour-rev-bars",
+        "ch-tour-rev-body",
+        "ch-tour-rev-dot",
+        "ch-tour-rev-layer",
+        "ch-tour-rev-layer__ev",
+        "ch-tour-rev-layers",
+        "ch-tour-rev-missing",
+        "ch-tour-rev-note",
+        "ch-tour-rev-note__k",
+        "ch-tour-rev-note__n",
+        "ch-tour-rev-note__w",
+        "ch-tour-rev-notes",
+        "ch-tour-rev-tools",
+        "ch-tour-rev-trend",
+        "ch-tour-rev-trend__div",
+        "ch-tour-rev-trend__key",
+        "ch-tour-rev-trend__labels",
+        "ch-tour-rev-trend__line",
+        "ch-tour-rev-trend__mean",
+        "ch-tour-rev-trend__note",
+        "ch-tour-rev-trend__plot",
+        "ch-tour-rev-trend__s",
+        "ch-tour-rev-trend__t"
+      ],
+      "tokens": []
+    },
+    {
+      "file": "src/clubhouse/styles/tournaments.css",
+      "classes": [
+        "ch-btn",
+        "ch-tour",
+        "ch-tour--skel",
+        "ch-tour-changed",
+        "ch-tour-chip",
+        "ch-tour-cov",
+        "ch-tour-cov__bar",
+        "ch-tour-crumb",
+        "ch-tour-head",
+        "ch-tour-head__a",
+        "ch-tour-head__k",
+        "ch-tour-head__t",
+        "ch-tour-led",
+        "ch-tour-led__fin",
+        "ch-tour-led__go",
+        "ch-tour-led__list",
+        "ch-tour-led__m",
+        "ch-tour-led__mv",
+        "ch-tour-led__name",
+        "ch-tour-led__open",
+        "ch-tour-led__row",
+        "ch-tour-led__season",
+        "ch-tour-led__t2",
+        "ch-tour-ph",
+        "ch-tour-ph__detail",
+        "ch-tour-under",
+        "ch-tour-views",
+        "ch-tour-washable"
+      ],
+      "tokens": []
+    },
+    {
       "file": "src/clubhouse/styles/ui.css",
       "classes": [
         "ch-ask-cmp__send",
@@ -18387,6 +20520,11 @@
         "ch-btn--secondary",
         "ch-btn--sm",
         "ch-btn__kbd",
+        "ch-delta",
+        "ch-delta--gain",
+        "ch-delta--loss",
+        "ch-delta--none",
+        "ch-delta__g",
         "ch-es",
         "ch-es--line",
         "ch-es--page",
@@ -18519,6 +20657,15 @@
         "ch-toast__icon",
         "ch-toasts",
         "ch-toasts--in-dialog",
+        "ch-trust",
+        "ch-trust--live",
+        "ch-trust--official",
+        "ch-trust--suspended",
+        "ch-trust--upcoming",
+        "ch-trust__at",
+        "ch-trust__dot",
+        "ch-trust__src",
+        "ch-was",
         "ch-wks",
         "ch-wks-page",
         "ch-wks-pager",
@@ -18846,6 +20993,10 @@
     {
       "name": "team-rounds",
       "href": "/clubhouse-preview/team-rounds"
+    },
+    {
+      "name": "live",
+      "href": "/clubhouse-preview/live"
     },
     {
       "name": "whats-new",

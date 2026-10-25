@@ -1,6 +1,6 @@
 'use client';
 
-import { ChevronDown, ChevronUp, TriangleAlert } from 'lucide-react';
+import { Ban, ChevronDown, ChevronUp, TriangleAlert } from 'lucide-react';
 import { useEffect, useLayoutEffect, useRef, useState, type CSSProperties, type KeyboardEvent, type PointerEvent, type RefObject } from 'react';
 import { Button } from '../../ui/Button';
 import { Badge } from '../../ui/Badge';
@@ -20,6 +20,7 @@ import { chSpringCurve, CH_EASE } from '../../lib/motion';
 import { chSupportsLinear } from '../../lib/sheet-drag';
 import { useChReducedMotion } from '../../lib/reduced-motion';
 import { EventPeek } from './peek';
+import { EventLiveDot } from './live-events';
 import { MarkBadge, MovedAwayRow, OldSlotLine, agendaSub, markGlyph, useRowMark } from './change-note';
 import type { ChMovedAway } from './change-view';
 import {
@@ -43,6 +44,7 @@ import {
 } from './model';
 
 import { TYPE_ICON } from './type-icon';
+import { roundLabel, RoundTitle, ROUND_PILL_MIN_PX } from './round-label';
 import { pluralWord } from '../../lib/plural';
 export { TYPE_ICON };
 
@@ -149,6 +151,9 @@ export function EventBlock({
   // over a team round it hid the round's title.
   const under = shared && (e.type === 'busy' || e.busyOnly);
   const title = eventTitle(e, people, viewerId);
+  // P-5 4.9: a round shows its tournament's name and a pill; a block too short for the pill keeps "Name · R1".
+  const rl = roundLabel(e, title);
+  const pill = rl.round != null && h >= ROUND_PILL_MIN_PX;
   // The time in parts, each kept whole: the block shows as many as fit on its one line (calendar.css, .ch-ev__m--fit),
   // so a narrow block reads "8:00 AM" and a narrower one "8:00", never a cut "8:00 – 9:…" or a bare start where AM or PM
   // fits. The start carries its half, so a range reads "8:00 AM – 9:30 AM". A short block gives only its start; a day
@@ -174,10 +179,10 @@ export function EventBlock({
       type="button"
       data-print-visible
       // CH-6801: a button named with its title, time and any overlap. CH-6601: it lifts on hover and marks its selection.
-      className={`ch-ev ch-ev--${e.cancelled ? 'other' : e.type}${tier === 'sliver' ? ' ch-ev--sliver' : ''}${e.cancelled ? ' is-cancelled' : ''}${short ? ' ch-ev--short' : ''}${shared ? ' ch-ev--lane' : ''}${under ? ' ch-ev--under' : ''}${lines ? ' ch-ev--wrap' : ''}${sel ? ' is-sel' : ''}${drag ? ' is-draggable' : ''}${state ? ` is-${state}` : ''}${past && !state ? ' is-past' : ''}`}
+      className={`ch-ev ch-ev--${e.cancelled ? 'other' : e.type}${tier === 'sliver' ? ' ch-ev--sliver' : ''}${e.cancelled ? ' is-cancelled' : ''}${short ? ' ch-ev--short' : ''}${shared ? ' ch-ev--lane' : ''}${under ? ' ch-ev--under' : ''}${lines ? ' ch-ev--wrap' : ''}${pill ? ' has-round' : ''}${sel ? ' is-sel' : ''}${drag ? ' is-draggable' : ''}${state ? ` is-${state}` : ''}${past && !state ? ' is-past' : ''}`}
       data-ev-id={state === 'card' ? undefined : e.id}
       style={{ top, height: h, left: `calc(${left}% + 3px)`, width: `calc(${100 - left}% - 6px)`, zIndex: under || state === 'card' ? undefined : shared ? lane + 1 : undefined, ...(lines ? { '--ch-ev-lines': lines } : {}) } as CSSProperties}
-      aria-label={`${title}, ${rangeLabel(e, clock)}${past && !state ? ', ended' : ''}${flagged ? ', schedule overlap' : ''}${e.cancelled ? ', cancelled' : ''}${mark?.aria ?? ''}${drag ? '. Alt and the arrow keys move it; add Shift to change its length' : ''}`}
+      aria-label={`${rl.name}${rl.spoken}, ${rangeLabel(e, clock)}${past && !state ? ', ended' : ''}${flagged ? ', schedule overlap' : ''}${e.cancelled ? ', cancelled' : ''}${mark?.aria ?? ''}${drag ? '. Alt and the arrow keys move it; add Shift to change its length' : ''}`}
       aria-pressed={sel}
       aria-hidden={state === 'card' || undefined}
       tabIndex={state === 'card' ? -1 : undefined}
@@ -196,8 +201,14 @@ export function EventBlock({
     >
       <span className="ch-ev__t">
         {tier !== 'sliver' && <Icon icon={TYPE_ICON[e.type]} size={12} className="ch-ev__g" />}
-        {title}
+        {pill ? rl.name : title}
       </span>
+      {pill && (
+        <span className="ch-ev__round ch-num" aria-hidden="true">
+          {e.cancelled && <Icon icon={Ban} size={12} />}
+          {`R${rl.round}`}
+        </span>
+      )}
       <span className="ch-ev__m ch-ev__m--fit">
         {when.map((part, i) => (
           <span key={i}>{part}</span>
@@ -214,6 +225,7 @@ export function EventBlock({
           </span>
         )}
       </span>
+      <EventLiveDot e={e} />
       {showWarn && (
         <span className="ch-ev__warn" aria-hidden="true">
           <Icon icon={TriangleAlert} size={10} />
@@ -469,7 +481,7 @@ function LaneBar({
       data-ev-id={state === 'card' ? undefined : e.id}
       className={`ch-ev-bar ch-ev-bar--span ch-ev--${e.type}${e.cancelled ? ' is-cancelled' : ''}${sel ? ' is-sel' : ''}${drag ? ' is-draggable' : ''}${state ? ` is-${state}` : ''}${b.clipStart ? ' is-clip-start' : ''}${b.clipEnd ? ' is-clip-end' : ''}`}
       style={state === 'card' ? undefined : { gridColumn: `${b.c0 + 2} / ${b.c1 + 3}`, gridRow: b.row + 1 }}
-      aria-label={`${title}, ${days}${e.cancelled ? ', cancelled' : ''}${drag ? '. Alt and the arrow keys move it a day; add Shift to change its last day' : ''}`}
+      aria-label={`${roundLabel(e, title).name}${roundLabel(e, title).spoken}, ${days}${e.cancelled ? ', cancelled' : ''}${drag ? '. Alt and the arrow keys move it a day; add Shift to change its last day' : ''}`}
       aria-pressed={sel}
       tabIndex={state === 'card' ? -1 : undefined}
       onPointerDown={drag?.onPointerDown}
@@ -482,7 +494,7 @@ function LaneBar({
     >
       <Icon icon={TYPE_ICON[e.type]} size={12} className="ch-ev__g" />
       {run && !b.clipStart && <em className="ch-ev-bar__t ch-num">{fmtHour(e.span!.start!, true, clock)}</em>}
-      <span>{title}</span>
+      <RoundTitle e={e} title={title} />
       {run && !b.clipEnd && <em className="ch-ev-bar__t ch-ev-bar__end ch-num">{fmtHour(e.span!.end!, true, clock)}</em>}
       {drag && !state && (
         <>
@@ -703,6 +715,9 @@ export function AgendaView({
                 <Badge tone="warning">Cancelled</Badge>
               ) : mk ? (
                 <MarkBadge change={mk.change} />
+              ) : e.round ? (
+                // P-5 4.9: the title stays whole; the round is a trailing caption.
+                <span className="ch-ag__round ch-num">{roundLabel(e, e.title).caption}</span>
               ) : (
                 <span />
               )}

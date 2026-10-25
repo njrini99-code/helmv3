@@ -515,5 +515,8 @@
       ]
     }
   ],
-  "held": []
+  "held": [
+    "docs/clubhouse/held/data/tournaments-from-calendar.md",
+    "docs/clubhouse/held/data/tournaments-calendar-sync.md"
+  ]
 }

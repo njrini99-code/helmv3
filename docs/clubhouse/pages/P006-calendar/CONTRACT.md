@@ -1,7 +1,8 @@
 # P006 — Calendar: page contract
 
 Date-jump and people popovers remain beside their anchors, choose available
-viewport space and scroll their long content. See the [popup audit](../../POPUP_AUDIT.md).
+viewport space and scroll their long content. See the [popup
+audit](../../POPUP_AUDIT.md).
 
 <!-- clubhouse:release-audit:start -->
 ## Current contract audit — 2026-10-06
@@ -18,7 +19,8 @@ reserve new IDs or mark manual contracts verified.
 
 Every behaviour Calendar promises, by the 25 V2 categories (D-69). A contract's
 number is its Bridge ID (D-68: namespace 6, category, item); `Code` is the
-catalog code on the element and in the test (`docs/clubhouse/catalog/calendar.md`).
+catalog code on the element and in the test
+(`docs/clubhouse/catalog/calendar.md`).
 Rows without a code are behaviours with no single element, recorded in
 `config/clubhouse/bridge-contracts.json` by hand. The shell's contracts (P001,
 namespace 1) apply here too and are named where they carry a category.
@@ -130,6 +132,7 @@ the bar carries the title (states audit c1, c4, 2026-10-08).
 | 60407 | CH-6307 | `SIGNED_IN_WITH_NO_TEAM` | Signed in with no team (coach or player) |
 | 60408 | CH-6308 | `A_DAY_WITH_NOTHING_ON_IT` | A day with nothing on it (phone Day view) |
 | 60409 | CH-6309 | `A_COACH_WHOSE_TEAM_HAS_NEVER_SCHEDULED` | A coach whose team has never scheduled anything (D-71) |
+| 60410 | CH-6340 | `THE_COURSE_PICKER_FINDS_NO_COURSE_FOR` | The course picker (tournament section) finds no course for the search |
 
 ## 05 — Validation
 
@@ -147,6 +150,16 @@ and invitees are choices, and the title, place and notes have length limits.
 | 60502 | CH-6102 | `AN_EVENT_THAT_ENDS_BEFORE_IT_STARTS` | An event that ends before it starts |
 | 60503 | CH-6103 | `BUSY_TIME_WITH_NO_NAME` | Busy time with no name |
 | 60504 | CH-6104 | `BUSY_TIME_THAT_ENDS_BEFORE_IT_STARTS` | Busy time that ends before it starts |
+| 60505 | CH-6140 | `TRACK_ON_NO_COURSE` | Track on, no course |
+| 60506 | CH-6141 | `THE_LAST_DAY_IS_BEFORE_THE_FIRST` | The last day is before the first day |
+| 60507 | CH-6142 | `MORE_THAN_6_ROUNDS` | More than 6 rounds (7 days with One round each day) |
+| 60508 | CH-6143 | `A_ROUND_WOULD_START_BEFORE_THE_ONE` | A round would start before the one ahead of it (round mode, the RPC, the sync trigger) |
+| 60509 | CH-6144 | `TRACK_TURNED_ON_FOR_AN_EVENT_THAT` | Track turned on for an event that was a round of a tournament that was removed |
+| 60510 | CH-6145 | `CUSTOM_COUNTING_WITH_MORE_COUNTING_THAN_PLAYERS` | Custom counting with more counting than players |
+| 60511 | CH-6146 | `A_RESULTS_LINK_THAT_ISNT_HTTPS` | A results link that isn't https |
+| 60512 | CH-6147 | `NO_TOURNAMENT_NAME_OR_LONGER_THAN_120` | No tournament name, or longer than 120 |
+| 60513 | CH-6148 | `EDITING_A_REPEATING_OCCURRENCE_OF_TYPE_TOURNAMENT` | Editing a repeating occurrence of type Tournament |
+| 60514 | CH-6149 | `EDITING_A_CANCELLED_EVENT_OF_TYPE_TOURNAMENT` | Editing a cancelled event of type Tournament |
 
 ## 06 — Server / system error
 
@@ -213,11 +226,32 @@ that landed (C-17; busy time 2026-10-17).
 | 60634 | CH-6021 | `THE_SERVER_REFUSES_A_MOVE_BY_ROLE` | The server refuses a move by role |
 | 60635 | CH-6023 | `A_CHANGE_MARK_CANT_BE_READ_THE` | A change mark can't be read (P-14): the stored mark is a shape this version doesn't know (an unknown version, a missing baseline) |
 | 60636 | CH-6022 | `THE_EVENT_WAS_CANCELLED_OR_DELETED_WHILE` | The event was cancelled or deleted while it was being moved |
+| 60637 | CH-6048 | `SETTING_UP_A_TOURNAMENT_FROM_AN_EVENT` | Setting up a tournament from an event that is already a round (someone else just did) |
+| 60638 | CH-6049 | `THE_EVENT_BEING_SET_UP_WAS_DELETED` | The event being set up was deleted or moved to another team |
+| 60639 | CH-6050 | `A_ROUND_THAT_IS_UNDER_WAY_SUSPENDED` | A round that is under way, suspended or final is changed or cancelled from the calendar |
+| 60640 | CH-6051 | `CANCELLING_A_ROUND_OR_STOPPING_TRACKING_WHEN` | Cancelling a round, or stopping tracking, when scores are entered |
+| 60641 | CH-6052 | `THE_QUALIFIER_TO_LINK_WAS_DELETED_MEANWHILE` | The qualifier to link was deleted meanwhile |
+| 60642 | CH-6053 | `THE_TRIP_TO_LINK_IS_ALREADY_LINKED` | The trip to link is already linked to another event |
+| 60643 | CH-6054 | `A_PLAIN_SAVE_TRIES_TO_CHANGE_A` | A plain save tries to change a round's type, team, series, name, place or course (the round guard) |
+| 60644 | CH-6055 | `THE_COACH_ISNT_STAFFED_ON_THE_TEAM` | The coach isn't staffed on the team (a permission refusal) |
+| 60645 | CH-6056 | `SETTING_UP_THE_TOURNAMENT_FAILS_FOR_ANY` | Setting up the tournament fails for any other reason (the transaction never committed) |
+| 60646 | CH-6057 | `THE_QUALIFIER_TO_LINK_ALREADY_COUNTS_TOWARD` | The qualifier to link already counts toward another event (not stolen) |
+| 60647 | CH-6058 | `RESTORING_A_ROUND_THAT_ANOTHER_ROUND_HAS` | Restoring a round that another round has moved in front of |
+| 60648 | CH-6059 | `A_LINEUP_IS_SENT_BEFORE_4_33S` | A lineup is sent before 4.33's set_entries RPC is applied |
+| 60649 | CH-6060 | `SAVING_A_ROUND_FROM_THE_CALENDAR_FAILS` | Saving a round from the calendar fails for any other reason |
+| 60650 | CH-6061 | `CANCELLING_RESTORING_OR_STOPPING_TRACKING_FAILS_FOR` | Cancelling, restoring or stopping tracking fails for any other reason |
+| 60651 | CH-6241 | `THE_TOURNAMENT_CHANGED_SINCE_IT_WAS_OPENED` | The tournament changed since it was opened (a version conflict) |
+| 60652 | CH-6041 | `A_ROUNDS_DAY_OR_TIME_IS_SAVED` | A round's day or time is saved from round mode (P-5 4.3) |
+| 60653 | CH-6240 | `ROUND_MODE_FOR_A_TOURNAMENT_EVENT_WHOSE` | Round mode for a tournament event whose round ref didn't load (the calendar's events did) |
+| 60654 | CH-6042 | `A_ROUND_IS_CANCELLED_FROM_THE_CALENDAR` | A round is cancelled from the calendar (CH-6540 confirmed) |
+| 60655 | CH-6043 | `THE_WHOLE_TOURNAMENT_IS_CANCELLED_FROM_THE` | The whole tournament is cancelled from the calendar (CH-6541 confirmed) |
+| 60656 | CH-6044 | `A_ROUND_OR_THE_TOURNAMENT_IS_RESTORED` | A round or the tournament is restored |
+| 60657 | CH-6040 | `A_TOURNAMENT_IS_SET_UP_FROM_THE` | A tournament is set up from the editor (P-5, `golf_tournaments_v1`) |
 
 From the shell (P001): 10601 CH-1001, 10602 CH-1201, 10603 CH-1202,
 10604 CH-1203, 10605 CH-1204, 10606 CH-1205, 10607 CH-1206, 10608 CH-1207,
 10609 CH-1208, 10610 CH-1002, 10611 CH-1003, 10612 CH-1209, 10613 CH-1210,
-10614 CH-1211.
+10614 CH-1211, 10615 CH-1270, 10616 CH-1271.
 
 ## 07 — Network / offline
 
@@ -359,6 +393,8 @@ is lost (61201).
 | 61103 | CH-6504 | `NEW_LINK` | New link (a calendar-app link) |
 | 61104 | CH-6505 | `REMOVE` | Remove (a calendar-app link) |
 | 61105 | CH-6506 | `DELETE_PERMANENTLY` | Delete permanently (a cancelled event's menu, coach) |
+| 61106 | CH-6540 | `CANCEL_ROUND_FROM_THE_INSPECTORS_MENU_OR` | Cancel round, from the inspector's menu or round mode |
+| 61107 | CH-6541 | `CANCEL_THE_WHOLE_TOURNAMENT_INSTEAD_FROM_CH` | Cancel the whole tournament instead, from CH-6540 |
 
 ## 12 — State preservation
 
@@ -466,6 +502,7 @@ WebKit at 390 (instant with reduced motion).
 | 61604 | CH-6604 | `SWITCHING_BETWEEN_DAY_WEEK_MONTH_AND_AGENDA` | Switching between Day, Week, Month and Agenda (Day, Month and List on the phone) |
 | 61605 | CH-6605 | `STEPPING_TO_ANOTHER_DAY_WEEK_OR_MONTH` | Stepping to another day, week or month (the arrows, the arrow keys, Today or a date) |
 | 61606 | CH-6606 | `CHOOSING_ANOTHER_DAY_IN_THE_PHONES_WEEK` | Choosing another day in the phone's week strip |
+| 61607 | CH-6640 | `TOURNAMENT_CHOSEN_TRACK_TURNED_ON_OR_OFF` | Tournament chosen (Track on), Track turned on or off, More details opened |
 
 From the shell (P001): 11601 CH-1601, 11602 CH-1602, 11603 CH-1603,
 11604 CH-1604, 11605 CH-1605, 11606 CH-1606, 11607 CH-1607, 11608 CH-1608,
@@ -518,6 +555,10 @@ CH-1842, 11825 CH-1816.
 | 61804 | CH-6804 | `NO_AXE_VIOLATIONS_IN_ANY_PREVIEW_VIEW` | No axe violations in any preview view and state, 1280px and 390px. One known exception, listed in the scan: the 7-day week at 390px squeezes overlapping events under 24px until the phone Calendar is designed |
 | 61805 | CH-6805 | `A_COMPLETED_MOVE_IS_SAID_ONCE_NEVER` | A completed move is said once, never during a drag: "Practice moved to 4:00 PM, Wednesday 15 October. Undo with Command Z." (Control Z off a Mac; on touch "Undo is in the notice."); a resize "Practice now ends at 6:30 PM."; a clash appended; Undo "Move undone." |
 | 61806 | CH-6806 | `MONTH_DRAG_IS_ANNOUNCED_PICKED_UP_FALL` | Month drag is announced: "Picked up Fall qualifier R2, Thursday 16 October. Arrow keys choose a day, Space drops, Escape cancels.", "Over Friday 17 October.", "Fall qualifier R2 moved to Friday 17 October at 8:42 AM.", or "Move cancelled. Fall qualifier R2 stays on Thursday 16 October." |
+| 61807 | CH-6840 | `THE_TOURNAMENT_SECTION_IS_SHOWN_OR_HIDDEN` | The tournament section is shown or hidden (Tournament chosen, Track turned on or off): one polite line: "Tournament details shown. 3 rounds." or "Tournament details hidden." |
+| 61808 | CH-6841 | `THE_ROUNDS_CHANGE_WITH_THE_DAYS_OR` | The rounds change with the days, or reorder after a day or tee change: one polite line: "3 rounds, Thursday 5 November to Saturday 7 November." or "Rounds reordered. Round 2 is now Friday 6 November at 8:30 AM." |
+| 61809 | CH-6842 | `ESCAPE_WHILE_THE_TOURNAMENT_IS_BEING_CREATED` | Escape (or the close button) while the tournament is being created: the editor stays open and says "Still creating the tournament." |
+| 61810 | CH-6843 | `A_ROUND_DROPPED_WHERE_IT_WOULD_START` | A round dropped (or moved with Alt and an arrow) where it would start before the round ahead of it, or after the one behind: it snaps back, felt as an error, nothing asked or written. One polite line: "R2 can’t move before R1. Move R1 first." (or "R2 can’t move after R3. Move R3 first.") |
 
 From the shell (P001): 11801 CH-1801, 11802 CH-1802, 11803 CH-1803,
 11804 CH-1804, 11805 CH-1805, 11806 CH-1806, 11807 CH-1807, 11808 CH-1808,
@@ -625,4 +666,7 @@ From the shell (P001): 12401 TESTS_NAME_CONTRACTS.
 
 ## 25 — Helm Bridge action
 
-Status: N/A — the Bridge is wired later (owner, D-68). Every contract above already has its Bridge ID; the commands (open New event, go to today, step to the next week, reply to an event) are defined when the Bridge is.
+Status: N/A — the Bridge is wired later (owner, D-68). Every contract above
+
+already has its Bridge ID; the commands (open New event, go to today, step to
+the next week, reply to an event) are defined when the Bridge is.

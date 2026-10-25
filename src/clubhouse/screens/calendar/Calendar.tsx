@@ -27,13 +27,19 @@ import { updateGolfEvent } from '@/app/golf/actions/calendar-events';
 import { clashesAt, clashSummary } from './drag-model';
 import { writeMove, type ChMoveKind, type ChMoveScope } from './move-write';
 import { whoHears, whoHearsLine } from './who-hears';
-import { SeriesScopeMenu } from './drag-popovers';
+import { RoundMoveConfirm, SeriesScopeMenu } from './drag-popovers';
 import { useToast } from '../../ui/Toast';
 import { friendlyReason, isOffline, normalise, useAction } from '../../lib/use-action';
 import { Attendance, EventDetail, Overlap, Summary, type ChInsp, type InspCtx } from './inspector';
-import { CancelEvent, DeleteEvent, EventEditor, SubscribeSheet, type EditorSeed } from './editor';
+import { CancelEvent, DeleteEvent, EventEditor, SubscribeSheet, type ChTournamentSaved, type EditorSeed } from './editor';
+import { roundsOverlay } from './round-overlay';
+import { RoundEditor } from './editor-round';
+import { roundMoveQuestion, roundMoveRefusal } from './round-label';
+import { CancelRoundDialog, useHeldCancel } from './cancel-round';
 import { BusySheet } from './extras';
 import { CalendarPhone } from './CalendarPhone';
+import { CalendarLiveProvider } from './live-events';
+import type { LiveSnapshot } from '../../live/model';
 import { Modal } from '../../ui/Modal';
 import { useChPhone } from '../../lib/use-phone';
 import { useChClock } from '../../lib/use-clock';
@@ -121,6 +127,8 @@ const COMPOSITE = '[role="radiogroup"], [role="tablist"], [role="menu"], [role="
  */
 /** `preview`: the dev preview keeps a move on screen and writes nothing. */
 export type ChMoveOpts = { kind?: ChMoveKind; scope?: ChMoveScope };
+/** P-5: a round's version is its tournament's, so a save of R1 is the version R2's next move must send. */
+const tokenKey = (x: ChCalEvent) => (x.round ? `tour:${x.round.tournamentId}` : x.id);
 function useHeldMoves(timezone: string, events: ChCalEvent[], today: string, onSaved: () => void, preview: boolean, people: Map<string, ChCalPerson>) {
   const toast = useToast();
   const clock = useChClock();
@@ -185,7 +193,7 @@ function useHeldMoves(timezone: string, events: ChCalEvent[], today: string, onS
         return writeMove({ e: base, to, kind, scope, expectedUpdatedAt: version }, timezone)
           .then((res) => {
             if (res.ok) {
-              if (res.updatedAt) tokens.current.set(e.id, res.updatedAt);
+              if (res.updatedAt) tokens.current.set(tokenKey(e), res.updatedAt);
               onSaved();
               return;
             }
@@ -205,6 +213,8 @@ function useHeldMoves(timezone: string, events: ChCalEvent[], today: string, onS
               onSaved();
               return;
             }
+            // P-5 6.4: a round the tournament refused to move (under way, scored, out of order), in its own words.
+            if (res.code === 'refused') return fail(`Couldn’t move ${base.title}`, res.notice.text, res.notice.code);
             if (res.code === 'gone') return fail(`${base.title} was cancelled or deleted`, 'It was changed by someone else while you were moving it.', 'CH-6022');
             if (res.code === 'forbidden') return fail('Only coaches can move team events', 'Nothing was changed.', 'CH-6021');
             const reason = (res.message && friendlyReason(res.message)) || null;
@@ -224,12 +234,12 @@ function useHeldMoves(timezone: string, events: ChCalEvent[], today: string, onS
           toast({ title: 'Waiting for a connection to save', body: 'Leaving this page now drops the move.', replace: 'calendar-move' });
           const back = () => {
             window.removeEventListener('online', back);
-            void send(tokens.current.get(e.id) ?? base.version ?? null, false);
+            void send(tokens.current.get(tokenKey(e)) ?? base.version ?? null, false);
           };
           window.addEventListener('online', back);
           return;
         }
-        void send(tokens.current.get(e.id) ?? base.version ?? null, false);
+        void send(tokens.current.get(tokenKey(e)) ?? base.version ?? null, false);
       };
       const undo = () => {
         if (held.current !== entry) {
@@ -554,14 +564,6 @@ const buildUrl = (view: ChCalView, date: string, today: string, event?: string) 
 };
 
 /** `frozen` pins the clock to the loaded "now" (the dev preview renders a fixed day). */
-export function Calendar(props: ComponentProps<typeof CalendarBody>) {
-  return (
-    <ChangeMarksProvider marks={props.data.marks ?? []}>
-      <CalendarBody {...props} />
-    </ChangeMarksProvider>
-  );
-}
-
 function CalendarBody({
   data,
   initialEvent,
@@ -619,6 +621,7 @@ function CalendarBody({
     if (returnFocus) jumpBtn.current?.focus();
   }, []);
   const phone = useChPhone();
+  const clockPref = useChClock();
   const clock = useNow();
   const now = useMemo<ChNow>(() => (clock && !frozen ? zonedNow(data.timezone, clock) : { date: data.today, hour: data.nowHour }), [clock, frozen, data.timezone, data.today, data.nowHour]);
 
@@ -633,16 +636,34 @@ function CalendarBody({
   }, [data.view, data.anchor]);
 
   const people = useMemo(() => new Map(data.people.map((p) => [p.id, p])), [data.people]);
+  // P-5 4.2: a tournament just made shows its rounds at once, keyed by their real event ids, until the page's re-read
+  // brings the same rows (with their refs) and the overlay steps aside: same ids, so nothing flickers.
+  const [made, setMade] = useState<ChCalEvent[]>([]);
+  useEffect(() => {
+    setMade((m) => (m.length && m.every((o) => data.events.some((e) => e.id === o.id && e.round)) ? [] : m));
+  }, [data.events]);
+  const onTournamentSaved = useCallback((t: ChTournamentSaved) => setMade(roundsOverlay(t)), []);
   const refreshQuiet = useCallback(() => router.refresh(), [router]);
+  // P-5 should 5: a round or tournament cancel strikes through at once and is written when its Undo runs out.
+  const heldCancel = useHeldCancel(data.events, refreshQuiet, preview);
+  const [cancellingRound, setCancellingRound] = useState<ChCalEvent | null>(null);
+  const withMade = useMemo(() => {
+    const base = heldCancel.struck.size ? data.events.map(heldCancel.overlay) : data.events;
+    if (!made.length) return base;
+    const ids = new Set(made.map((e) => e.id));
+    return [...base.filter((e) => !ids.has(e.id)), ...made];
+  }, [data.events, made, heldCancel.struck, heldCancel.overlay]);
   const { moves, move, undoLatest, said, heldScope } = useHeldMoves(data.timezone, data.events, data.today, refreshQuiet, preview, people);
   /** P-4 4.8: a series event dropped somewhere new, held there with its question open. */
-  const [ask, setAsk] = useState<{ e: ChCalEvent; to: ChMoveTarget | ChBarTarget; kind: ChMoveKind } | null>(null);
+  const [ask, setAsk] = useState<{ e: ChCalEvent; to: ChMoveTarget | ChBarTarget; kind: ChMoveKind; round?: boolean } | null>(null);
+  /** CH-6843: a round dropped out of order, said once; it snaps back and nothing is asked or written. */
+  const [orderSaid, setOrderSaid] = useState('');
   const placed = useMemo(() => {
     const over = ask ? new Map(moves).set(ask.e.id, ask.to) : moves;
-    if (!over.size) return data.events;
+    if (!over.size) return withMade;
     const out: ChCalEvent[] = [];
     const spanned = new Set<string>();
-    for (const e of data.events) {
+    for (const e of withMade) {
       const to = over.get(e.id);
       if (!to) out.push(e);
       else if (!('from' in to)) out.push({ ...e, ...to });
@@ -653,9 +674,21 @@ function CalendarBody({
       }
     }
     return out;
-  }, [data.events, moves, ask]);
+  }, [withMade, moves, ask]);
   const onGridMove = useCallback(
     (e: ChCalEvent, to: ChMoveTarget | ChBarTarget, kind: ChMoveKind) => {
+      // P-5 6.4: a round keeps its order (the editor's and the RPC's rule), then asks before it moves.
+      if (e.round) {
+        const refused = roundMoveRefusal(e, to, data.events);
+        if (refused) {
+          haptic('error');
+          setOrderSaid('');
+          requestAnimationFrame(() => setOrderSaid(refused));
+          return;
+        }
+        setAsk({ e, to, kind, round: true });
+        return;
+      }
       const scope = e.seriesId ? heldScope(e.id) : null;
       if (e.seriesId && !scope) {
         setAsk({ e, to, kind });
@@ -663,7 +696,7 @@ function CalendarBody({
       }
       move(e, to, { kind, scope: scope ?? undefined });
     },
-    [move, heldScope],
+    [move, heldScope, data.events],
   );
   const answered = useCallback((id: string) => {
     setAsk(null);
@@ -865,6 +898,11 @@ function CalendarBody({
     onDelete: (e) => setDeleting(e),
     onDuplicate: (e) => setEditor({ event: null, copyOf: e }),
     onFind: (date, invite) => setEditor({ event: null, date, invite }),
+    tournamentsEnabled: !!data.tournamentsEnabled,
+    onSetUp: (e) => setEditor({ event: e, track: true }),
+    onCancelRound: (e) => setCancellingRound(e),
+    onRestoreRound: (e) => heldCancel.restore(e, 'round'),
+    onRestoreTournament: (e) => heldCancel.restore(e, 'tournament'),
     refresh,
   };
 
@@ -909,11 +947,41 @@ function CalendarBody({
 
     </>
   );
+  // P-5 4.3: a tracked round (or one whose ref didn't load) opens round mode, never the event editor.
+  const roundSeed = !!data.tournamentsEnabled && !!editor?.event && !editor.track && (!!editor.event.round || !!editor.event.roundRefFailed);
   const dialogs = (
     <>
       {coach && (
+        <RoundEditor
+          event={roundSeed ? editor!.event : null}
+          onClose={() => setEditor(null)}
+          onSaved={(d) => {
+            setEditor(null);
+            setInsp(null);
+            if (d < data.range.from || d > data.range.to) go(view, d);
+            else refresh();
+          }}
+          people={data.people}
+          peopleError={!!data.membersError}
+          timezone={data.timezone}
+          onCancelRound={(e) => (setEditor(null), setCancellingRound(e))}
+          onRestoreRound={(e) => (setEditor(null), heldCancel.restore(e, 'round'))}
+        />
+      )}
+      {coach && (
+        <CancelRoundDialog
+          event={cancellingRound}
+          onClose={() => setCancellingRound(null)}
+          onConfirm={(scope, reason) => {
+            const e = cancellingRound!;
+            setCancellingRound(null);
+            heldCancel.cancel(e, scope, reason);
+          }}
+        />
+      )}
+      {coach && (
         <EventEditor
-          seed={editor}
+          seed={roundSeed ? null : editor}
           onClose={() => setEditor(null)}
           onSaved={(d) => {
             setEditor(null);
@@ -927,6 +995,9 @@ function CalendarBody({
           timezone={data.timezone}
           today={now.date}
           nowHour={now.hour}
+          tournamentsEnabled={!!data.tournamentsEnabled}
+          teamId={data.teamId}
+          onTournamentSaved={onTournamentSaved}
         />
       )}
       {coach && (
@@ -1024,7 +1095,22 @@ function CalendarBody({
       <span className="ch-sr-only" role="status" aria-live="polite" data-ch-code="CH-6805">
         {said}
       </span>
-      {ask && (
+      <span className="ch-sr-only" role="status" aria-live="polite" data-ch-code="CH-6843">
+        {orderSaid}
+      </span>
+      {ask?.round && (
+        <RoundMoveConfirm
+          anchorId={ask.e.id}
+          question={roundMoveQuestion(ask.e, ask.to, clockPref)}
+          teeSheet={!!ask.e.round?.teeSheet}
+          onMove={() => {
+            move(ask.e, ask.to, { kind: ask.kind });
+            answered(ask.e.id);
+          }}
+          onCancel={() => answered(ask.e.id)}
+        />
+      )}
+      {ask && !ask.round && (
         <SeriesScopeMenu
           anchorId={ask.e.id}
           dayChanged={'from' in ask.to || ask.to.date !== ask.e.date}
@@ -1194,5 +1280,22 @@ function CalendarBody({
       {dialogs}
       <ChangeAnnouncer events={data.events} />
     </main>
+  );
+}
+
+type CalendarProps = ComponentProps<typeof CalendarBody>;
+
+/**
+ * The calendar, with the coach's live rounds around it (P-6, 4.8): `onCourse` is the first-paint snapshot, and an event of a
+ * kind players score on says how many are playing it now. A player's calendar, and any caller that gives none, is unchanged.
+ */
+export function Calendar(props: CalendarProps & { onCourse?: LiveSnapshot; liveNow?: number }) {
+  const { onCourse, liveNow, ...rest } = props;
+  return (
+    <ChangeMarksProvider marks={rest.data.marks ?? []}>
+      <CalendarLiveProvider initial={rest.data.role === 'coach' ? onCourse : undefined} frozen={rest.frozen} now={liveNow}>
+        <CalendarBody {...rest} />
+      </CalendarLiveProvider>
+    </ChangeMarksProvider>
   );
 }

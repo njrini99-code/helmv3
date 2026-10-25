@@ -672,4 +672,137 @@ CREATE INDEX "idx_standing_computed_at" ON "public"."golf_player_standing" USING
 
 CREATE INDEX "idx_standing_team_metric" ON "public"."golf_player_standing" USING "btree" ("metric_id", "team_pct") INCLUDE ("player_id");
 
+CREATE INDEX "idx_golf_team_terms_team_start" ON "public"."golf_team_terms" USING "btree" ("team_id", "classes_start");
+
+CREATE INDEX "idx_golf_class_exceptions_player_on" ON "public"."golf_class_exceptions" USING "btree" ("player_id", "starts_on") WHERE ("player_id" IS NOT NULL);
+
+CREATE INDEX "idx_golf_class_exceptions_team_on" ON "public"."golf_class_exceptions" USING "btree" ("team_id", "starts_on");
+
+CREATE INDEX "idx_golf_class_exceptions_class" ON "public"."golf_class_exceptions" USING "btree" ("class_id") WHERE ("class_id" IS NOT NULL);
+
+CREATE UNIQUE INDEX "golf_push_holds_open_dedupe" ON "public"."golf_push_holds" USING "btree" ("user_id", "dedupe_key") WHERE (("released_at" IS NULL) AND ("dedupe_key" IS NOT NULL));
+
+CREATE INDEX "idx_golf_push_holds_due" ON "public"."golf_push_holds" USING "btree" ("release_at") WHERE ("released_at" IS NULL);
+
+CREATE INDEX "idx_golf_push_holds_user_open" ON "public"."golf_push_holds" USING "btree" ("user_id", "release_at") WHERE ("released_at" IS NULL);
+
+CREATE INDEX "idx_golf_push_holds_released" ON "public"."golf_push_holds" USING "btree" ("released_at") WHERE ("released_at" IS NOT NULL);
+
+CREATE INDEX "idx_golf_push_holds_message" ON "public"."golf_push_holds" USING "btree" ("message_id") WHERE ("message_id" IS NOT NULL);
+
+CREATE INDEX "idx_golf_push_holds_conversation" ON "public"."golf_push_holds" USING "btree" ("conversation_id") WHERE ("conversation_id" IS NOT NULL);
 CREATE INDEX "idx_golf_player_standing_season_metric" ON "public"."golf_player_standing_season" USING "btree" ("metric_id");
+
+-- P016 Tournaments: held migrations 20261024100000 (tables), 100100 (RLS)
+-- and 100200 (RPCs, lineup guard), WRITTEN — HOLD — NOT APPLIED in production.
+-- Generated 2026-10-25 by pg_dump of the three files applied in order to a
+-- scratch Postgres 16 (docs/clubhouse/held/data/tournaments.md).
+
+CREATE INDEX "golf_saved_comparisons_owner_id_idx" ON "public"."golf_saved_comparisons" USING "btree" ("owner_id");
+
+CREATE INDEX "golf_saved_comparisons_owner_idx" ON "public"."golf_saved_comparisons" USING "btree" ("team_id", "owner_id");
+
+CREATE INDEX "golf_tag_parent_idx" ON "public"."golf_tournament_advice_givers" USING "btree" ("tournament_id", "team_id");
+
+CREATE INDEX "golf_tag_team_idx" ON "public"."golf_tournament_advice_givers" USING "btree" ("team_id");
+
+CREATE INDEX "golf_tag_user_idx" ON "public"."golf_tournament_advice_givers" USING "btree" ("user_id");
+
+CREATE INDEX "golf_tcp_coach_idx" ON "public"."golf_tournament_coach_presence" USING "btree" ("coach_user_id");
+
+CREATE INDEX "golf_tcp_round_team_idx" ON "public"."golf_tournament_coach_presence" USING "btree" ("round_event_id", "team_id");
+
+CREATE INDEX "golf_tcp_team_idx" ON "public"."golf_tournament_coach_presence" USING "btree" ("team_id");
+
+CREATE INDEX "golf_tcp_with_player_idx" ON "public"."golf_tournament_coach_presence" USING "btree" ("with_player_id");
+
+CREATE INDEX "golf_ten_parent_idx" ON "public"."golf_tournament_entry_notes" USING "btree" ("tournament_id", "team_id");
+
+CREATE INDEX "golf_ten_player_idx" ON "public"."golf_tournament_entry_notes" USING "btree" ("player_id");
+
+CREATE INDEX "golf_ten_team_idx" ON "public"."golf_tournament_entry_notes" USING "btree" ("team_id");
+
+CREATE INDEX "golf_tfs_field_team_idx" ON "public"."golf_tournament_field_scores" USING "btree" ("field_team_id", "team_id");
+
+CREATE INDEX "golf_tfs_team_idx" ON "public"."golf_tournament_field_scores" USING "btree" ("team_id");
+
+CREATE INDEX "golf_tft_parent_idx" ON "public"."golf_tournament_field_teams" USING "btree" ("tournament_id", "team_id");
+
+CREATE INDEX "golf_tft_team_idx" ON "public"."golf_tournament_field_teams" USING "btree" ("team_id");
+
+CREATE INDEX "golf_tld_dismissed_by_idx" ON "public"."golf_tournament_link_dismissals" USING "btree" ("dismissed_by");
+
+CREATE INDEX "golf_tld_round_idx" ON "public"."golf_tournament_link_dismissals" USING "btree" ("round_id");
+
+CREATE INDEX "golf_tournament_entries_parent_idx" ON "public"."golf_tournament_entries" USING "btree" ("tournament_id", "team_id");
+
+CREATE INDEX "golf_tournament_entries_player_idx" ON "public"."golf_tournament_entries" USING "btree" ("player_id");
+
+CREATE UNIQUE INDEX "golf_tournament_entries_slot_uq" ON "public"."golf_tournament_entries" USING "btree" ("tournament_id", "slot") WHERE ("slot" IS NOT NULL);
+
+CREATE INDEX "golf_tournament_entries_team_idx" ON "public"."golf_tournament_entries" USING "btree" ("team_id");
+
+CREATE UNIQUE INDEX "golf_tournament_field_us_uq" ON "public"."golf_tournament_field_teams" USING "btree" ("tournament_id") WHERE "is_us";
+
+CREATE INDEX "golf_tournament_rounds_course_idx" ON "public"."golf_tournament_rounds" USING "btree" ("course_id");
+
+CREATE INDEX "golf_tournament_rounds_parent_idx" ON "public"."golf_tournament_rounds" USING "btree" ("tournament_id", "team_id");
+
+CREATE INDEX "golf_tournament_rounds_team_idx" ON "public"."golf_tournament_rounds" USING "btree" ("team_id");
+
+CREATE INDEX "golf_tournament_rounds_tee_idx" ON "public"."golf_tournament_rounds" USING "btree" ("tee_id");
+
+CREATE INDEX "golf_tournaments_course_idx" ON "public"."golf_tournaments" USING "btree" ("course_id");
+
+CREATE INDEX "golf_tournaments_created_by_idx" ON "public"."golf_tournaments" USING "btree" ("created_by");
+
+CREATE INDEX "golf_tournaments_team_idx" ON "public"."golf_tournaments" USING "btree" ("team_id", "start_date" DESC);
+
+CREATE INDEX "golf_tpn_parent_idx" ON "public"."golf_tournament_player_notes" USING "btree" ("tournament_id", "team_id");
+
+CREATE INDEX "golf_tpn_player_idx" ON "public"."golf_tournament_player_notes" USING "btree" ("player_id");
+
+CREATE INDEX "golf_tpn_team_idx" ON "public"."golf_tournament_player_notes" USING "btree" ("team_id");
+
+CREATE INDEX "golf_tpr_player_idx" ON "public"."golf_tournament_player_rounds" USING "btree" ("player_id");
+
+CREATE INDEX "golf_tpr_round_team_idx" ON "public"."golf_tournament_player_rounds" USING "btree" ("round_event_id", "team_id");
+
+CREATE INDEX "golf_tpr_team_idx" ON "public"."golf_tournament_player_rounds" USING "btree" ("team_id");
+
+CREATE INDEX "golf_tpr_updated_by_idx" ON "public"."golf_tournament_player_rounds" USING "btree" ("updated_by");
+
+CREATE INDEX "golf_tref_parent_idx" ON "public"."golf_tournament_reflections" USING "btree" ("tournament_id", "team_id");
+
+CREATE INDEX "golf_tref_player_idx" ON "public"."golf_tournament_reflections" USING "btree" ("player_id");
+
+CREATE INDEX "golf_tref_team_idx" ON "public"."golf_tournament_reflections" USING "btree" ("team_id");
+
+CREATE INDEX "golf_trev_parent_idx" ON "public"."golf_tournament_reviews" USING "btree" ("tournament_id", "team_id");
+
+CREATE INDEX "golf_trev_team_idx" ON "public"."golf_tournament_reviews" USING "btree" ("team_id");
+
+CREATE INDEX "golf_trev_updated_by_idx" ON "public"."golf_tournament_reviews" USING "btree" ("updated_by");
+
+CREATE INDEX "golf_trl_player_idx" ON "public"."golf_tournament_round_lineups" USING "btree" ("player_id");
+
+CREATE INDEX "golf_trl_round_team_idx" ON "public"."golf_tournament_round_lineups" USING "btree" ("round_event_id", "team_id");
+
+CREATE INDEX "golf_trl_substituted_for_idx" ON "public"."golf_tournament_round_lineups" USING "btree" ("substituted_for");
+
+CREATE INDEX "golf_trl_team_idx" ON "public"."golf_tournament_round_lineups" USING "btree" ("team_id");
+
+CREATE INDEX "golf_trm_created_by_idx" ON "public"."golf_tournament_result_marks" USING "btree" ("created_by");
+
+CREATE INDEX "golf_trm_parent_idx" ON "public"."golf_tournament_result_marks" USING "btree" ("tournament_id", "team_id");
+
+CREATE INDEX "golf_trm_round_idx" ON "public"."golf_tournament_result_marks" USING "btree" ("round_event_id", "team_id");
+
+CREATE INDEX "golf_trm_team_idx" ON "public"."golf_tournament_result_marks" USING "btree" ("team_id");
+CREATE INDEX "golf_round_live_course_date_idx" ON "public"."golf_round_live" USING "btree" ("course_id", "round_date") WHERE ("course_id" IS NOT NULL);
+
+CREATE INDEX "golf_round_live_player_idx" ON "public"."golf_round_live" USING "btree" ("player_id");
+
+CREATE INDEX "golf_round_live_qualifier_idx" ON "public"."golf_round_live" USING "btree" ("qualifier_id") WHERE ("qualifier_id" IS NOT NULL);
+
+CREATE INDEX "golf_round_live_team_date_idx" ON "public"."golf_round_live" USING "btree" ("team_id", "round_date" DESC);

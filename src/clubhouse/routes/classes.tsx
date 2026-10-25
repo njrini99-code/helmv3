@@ -1,5 +1,6 @@
 import 'server-only';
 import { getGolfSessionProfile } from '@/lib/auth/session';
+import { isFlagEnabled } from '@/lib/flags/is-enabled';
 import { loadClasses } from '../data/classes';
 import { Classes } from '../screens/classes/Classes';
 import { ClassesNoTeam } from '../screens/classes/ClassesNoTeam';
@@ -17,6 +18,6 @@ export async function ClubhouseClassesRoute() {
   if (!session?.player) return null;
   const team = await resolveClubhouseTeam(session);
   if (!team || team.role !== 'player') return <ClassesNoTeam />;
-  const data = await loadClasses({ playerId: session.player.id, teamId: team.teamId });
+  const data = await loadClasses({ playerId: session.player.id, teamId: team.teamId, classAwareness: isFlagEnabled('class_awareness_v1') });
   return <Classes data={data} playerId={session.player.id} teamId={team.teamId} />;
 }

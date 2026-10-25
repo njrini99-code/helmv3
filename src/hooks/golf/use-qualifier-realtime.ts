@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback, useMemo } from 'react';
+import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import { profilesById, readGolfPlayerProfiles } from '@/lib/golf/player-profiles';
 import { observeRealtimeChannel } from '@/lib/observability/supabase/realtime';
@@ -61,12 +61,34 @@ interface UseQualifierRealtimeResult {
   refetch: () => Promise<void>;
 }
 
+/** A burst of changes (a coach correcting several entries) becomes one re-read, as on Clubhouse's board. */
+export const QUALIFIER_REFETCH_COALESCE_MS = 800;
+
+/**
+ * Whether a golf_rounds change can move the leaderboard, which counts only
+ * completed rounds. A round being played writes its row on every auto-save;
+ * those changes leave the standings as they were and re-reading the whole
+ * board for each of them is wasted work for every viewer. golf_rounds has the
+ * default replica identity, so an UPDATE carries no old status: a round that
+ * leaves "completed" (reopened) is caught by its id, from the rounds the last
+ * read counted.
+ */
+export function roundChangeMovesStandings(
+  row: { id?: unknown; status?: unknown } | null | undefined,
+  countedRoundIds: ReadonlySet<string>,
+): boolean {
+  if (!row) return true;
+  if (row.status === 'completed') return true;
+  return typeof row.id === 'string' && countedRoundIds.has(row.id);
+}
+
 /**
  * Hook for real-time qualifier leaderboard updates
  *
  * Subscribes to:
  * - golf_qualifier_entries: For position/score changes
- * - golf_rounds: For new round submissions (where qualifier_id matches)
+ * - golf_rounds: For round submissions and changes to counted rounds (where
+ *   qualifier_id matches); an in-progress round's auto-saves are ignored
  * - golf_qualifiers: For qualifier status changes
  *
  * @param qualifierId - The qualifier ID to subscribe to
@@ -78,6 +100,8 @@ export function useQualifierRealtime(qualifierId: string | null): UseQualifierRe
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const supabase = useMemo(() => createClient(), []);
+  // The completed rounds the last read returned, so a counted round that is reopened still re-reads the board.
+  const countedRoundIdsRef = useRef<ReadonlySet<string>>(new Set());
 
   const fetchQualifierData = useCallback(async () => {
     if (!qualifierId) {
@@ -140,6 +164,7 @@ export function useQualifierRealtime(qualifierId: string | null): UseQualifierRe
         .order('id', { ascending: true });
 
       if (roundsError) throw roundsError;
+      countedRoundIdsRef.current = new Set((roundsData || []).map((round) => round.id));
 
       // Build per-player round aggregates
       const playerRoundAggregates = new Map<string, {
@@ -223,6 +248,18 @@ export function useQualifierRealtime(qualifierId: string | null): UseQualifierRe
 
     if (!qualifierId) return;
 
+    let refetchTimer: ReturnType<typeof setTimeout> | undefined;
+    const scheduleRefetch = () => {
+      clearTimeout(refetchTimer);
+      refetchTimer = setTimeout(() => {
+        void fetchQualifierData();
+      }, QUALIFIER_REFETCH_COALESCE_MS);
+    };
+    const onRoundChange = (payload: { new: unknown }) => {
+      const row = payload.new as { id?: unknown; status?: unknown } | null;
+      if (roundChangeMovesStandings(row, countedRoundIdsRef.current)) scheduleRefetch();
+    };
+
     // Set up real-time subscription for qualifier entries (scores/positions)
     const channel = observeRealtimeChannel(
       supabase
@@ -236,12 +273,10 @@ export function useQualifierRealtime(qualifierId: string | null): UseQualifierRe
           table: 'golf_qualifier_entries',
           filter: `qualifier_id=eq.${qualifierId}`,
         },
-        () => {
-          // Refetch to get updated leaderboard with positions
-          fetchQualifierData();
-        }
+        // Refetch to get updated leaderboard with positions
+        scheduleRefetch
       )
-      // Listen for new rounds submitted for this qualifier
+      // Listen for rounds submitted for this qualifier
       .on(
         'postgres_changes',
         {
@@ -250,12 +285,10 @@ export function useQualifierRealtime(qualifierId: string | null): UseQualifierRe
           table: 'golf_rounds',
           filter: `qualifier_id=eq.${qualifierId}`,
         },
-        () => {
-          // New round submitted - refetch leaderboard
-          fetchQualifierData();
-        }
+        onRoundChange
       )
-      // Listen for round updates (status changes, score corrections)
+      // Listen for round updates (a round signed, a counted round corrected or
+      // reopened); an in-progress round's auto-saves do not move the standings
       .on(
         'postgres_changes',
         {
@@ -264,9 +297,7 @@ export function useQualifierRealtime(qualifierId: string | null): UseQualifierRe
           table: 'golf_rounds',
           filter: `qualifier_id=eq.${qualifierId}`,
         },
-        () => {
-          fetchQualifierData();
-        }
+        onRoundChange
       )
       // Listen for qualifier status changes
       .on(
@@ -287,6 +318,7 @@ export function useQualifierRealtime(qualifierId: string | null): UseQualifierRe
     );
 
     return () => {
+      clearTimeout(refetchTimer);
       supabase.removeChannel(channel);
     };
   }, [qualifierId, fetchQualifierData, supabase]);

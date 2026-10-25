@@ -2,7 +2,7 @@
 
 import { ArrowRight, CircleDot, Crosshair, Flag, FlagTriangleRight, MoveUpRight, type LucideIcon } from 'lucide-react';
 import Link from 'next/link';
-import { useEffect, useState, type ReactNode } from 'react';
+import { Suspense, use, useEffect, useState, type ReactNode } from 'react';
 import { gameSectionFromHash } from './legs';
 import { useChReducedMotion } from '../../lib/reduced-motion';
 import { useChSessionState } from '../../lib/session-state';
@@ -62,7 +62,35 @@ const SECTIONS = [
  * "CoachHelm sees…" under a section's rule (spec D build A): how many current reads in this area are costing strokes and how many
  * are working, and the Deep dive, as one link. Nothing when the reads are off, failed (one line under the chips says so) or none.
  */
-function ReadsLine({ reads, area }: { reads: ChStatsReads | undefined; area: ChReadArea }) {
+/**
+ * What CoachHelm sees, as the page gets it: already read, or (a coach on a player's page, C2) a promise the server streams in
+ * behind the profile, so the figures paint without waiting for the scope check and the reads. It never rejects: a failure is
+ * `{ status: 'failed' }` (routes/stats.tsx).
+ */
+export type ChReadsSource = ChStatsReads | PromiseLike<ChStatsReads> | undefined;
+
+const isPending = (r: ChReadsSource): r is PromiseLike<ChStatsReads> => !!r && typeof (r as PromiseLike<ChStatsReads>).then === 'function';
+
+/** Reads the streamed reads, suspending until they land; only ever rendered inside a Suspense. */
+function Streamed({ source, children }: { source: PromiseLike<ChStatsReads>; children: (r: ChStatsReads) => ReactNode }) {
+  return <>{children(use(source as Promise<ChStatsReads>))}</>;
+}
+
+/** `children` with the reads: at once when they are here, behind their own Suspense (nothing drawn until they land) when streamed. */
+function WithReads({ reads, children }: { reads: ChReadsSource; children: (r: ChStatsReads | undefined) => ReactNode }) {
+  if (!isPending(reads)) return <>{children(reads)}</>;
+  return (
+    <Suspense fallback={null}>
+      <Streamed source={reads}>{children}</Streamed>
+    </Suspense>
+  );
+}
+
+function ReadsLine({ reads, area }: { reads: ChReadsSource; area: ChReadArea }) {
+  return <WithReads reads={reads}>{(r) => <ReadsLineNow reads={r} area={area} />}</WithReads>;
+}
+
+function ReadsLineNow({ reads, area }: { reads: ChStatsReads | undefined; area: ChReadArea }) {
   const r = reads?.status === 'ready' ? reads.byArea[area] : undefined;
   const parts = r ? readsLineParts(area, r) : null;
   if (!r || !parts) return null;
@@ -212,8 +240,8 @@ export function GameDetail({
   holes?: ChHoles;
   /** Make rate by distance from the window's putts in the six bands the Tour grades, for the lead sentence and the Tour table. */
   puttBands?: ChPuttBand[] | null;
-  /** What CoachHelm sees in each section (data/stats-reads.ts); absent or off draws nothing. */
-  reads?: ChStatsReads;
+  /** What CoachHelm sees in each section (data/stats-reads.ts), or its streamed promise; absent or off draws nothing. */
+  reads?: ChReadsSource;
   onRetry?: () => void;
   phone?: boolean;
 }) {
@@ -396,11 +424,15 @@ export function GameDetail({
         ))}
         <span className="ch-gd__src">{sample} logged</span>
       </nav>
-      {reads?.status === 'failed' && (
-        <p className="ch-gx-rule" data-ch-code="CH-5215">
-          {READS_FAILED}
-        </p>
-      )}
+      <WithReads reads={reads}>
+        {(r) =>
+          r?.status === 'failed' && (
+            <p className="ch-gx-rule" data-ch-code="CH-5215">
+              {READS_FAILED}
+            </p>
+          )
+        }
+      </WithReads>
       {x.truncated && (
         <p className="ch-gx-rule" data-ch-code="CH-5319">
           This window has more rounds than the shot-level figures read, so they cover the newest 100.

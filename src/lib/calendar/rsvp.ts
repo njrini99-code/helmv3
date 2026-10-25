@@ -260,29 +260,49 @@ export async function sendEventInvitations(
   // that doesn't ask for replies. The attendance rows above still record who is on the event.
   if (!event.requires_rsvp) return;
 
-  // Create notifications for each player
-  const notifications = players
-    .filter(p => p.user_id)
-    .map(player => ({
-      user_id: player.user_id!,
-      event_id: eventId,
-      notification_type: 'event_invitation',
-      title: `You're invited: ${event.title}`,
-      message: `${formatEventDate(event)} ${event.location ? `at ${event.location}` : ''}`.trim(),
-      action_url: `/golf/dashboard/calendar?event=${eventId}`,
-    }));
+  await writeEventInvitationNotices({
+    eventId,
+    userIds: players.map((p) => p.user_id).filter((id): id is string => Boolean(id)),
+    title: `You're invited: ${event.title}`,
+    message: `${formatEventDate(event)} ${event.location ? `at ${event.location}` : ''}`.trim(),
+  });
+}
 
-  if (notifications.length > 0) {
-    // Use admin client to bypass RLS — inserting notifications for other users
-    const adminClient = createAdminClient();
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const { error: notifError } = await (adminClient as any)
-      .from('golf_calendar_notifications')
-      .upsert(notifications, { onConflict: 'event_id,user_id,notification_type', ignoreDuplicates: true });
+/**
+ * The Bell rows of an invitation (`golf_calendar_notifications`, `event_invitation`), and nothing else: it never
+ * touches attendance. sendEventInvitations writes its rows through it; P-5's tournament made from the calendar calls it
+ * on its own, so a converted R1 keeps every player's reply (sendEventInvitations would upsert them back to pending).
+ *
+ * Without `refresh` an existing row is left as it is (ignoreDuplicates, today's behaviour). With `refresh: true` the
+ * row for this event and person is replaced with the new copy and marked unread, so a convert's R1 reads as the
+ * tournament.
+ */
+export async function writeEventInvitationNotices(input: {
+  eventId: string;
+  userIds: string[];
+  title: string;
+  message: string;
+  refresh?: boolean;
+}): Promise<void> {
+  const notifications = input.userIds.map((userId) => ({
+    user_id: userId,
+    event_id: input.eventId,
+    notification_type: 'event_invitation',
+    title: input.title,
+    message: input.message,
+    action_url: `/golf/dashboard/calendar?event=${input.eventId}`,
+    ...(input.refresh ? { read_at: null, created_at: new Date().toISOString() } : {}),
+  }));
+  if (notifications.length === 0) return;
+  // Use admin client to bypass RLS — inserting notifications for other users
+  const adminClient = createAdminClient();
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { error: notifError } = await (adminClient as any)
+    .from('golf_calendar_notifications')
+    .upsert(notifications, { onConflict: 'event_id,user_id,notification_type', ignoreDuplicates: !input.refresh });
 
-    if (notifError) {
-      console.error('[sendEventInvitations] Failed to insert notifications:', notifError.message);
-    }
+  if (notifError) {
+    console.error('[sendEventInvitations] Failed to insert notifications:', notifError.message);
   }
 }
 

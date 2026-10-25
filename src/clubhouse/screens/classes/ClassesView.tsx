@@ -16,6 +16,8 @@ import { Section } from '../../ui/Section';
 import { SectionBoundary } from '../../ui/SectionBoundary';
 import { EmptyState } from '../../ui/States';
 import { ClassDetail } from './ClassDetail';
+import { ClassStatusPanel } from './ClassStatusPanel';
+import type { ChClassStatusWrites } from './class-status-writes';
 import { ClassForm } from './ClassForm';
 import { ImportSchedule } from './ImportSchedule';
 import { AddTile, ClassCard, CoachNote, OverlapsCard, SyncStatus, TermBar, TimetableHead, timetableDays, TodayClasses } from './parts';
@@ -44,7 +46,7 @@ const label = (c: { code: string; name: string }) => c.code || c.name;
 /** A remove whose calendar part landed and whose row delete did not (writes.remove). */
 const offCalendar = (r: { success?: boolean; data?: unknown }) => !r.success && (r.data as { offCalendar?: boolean } | undefined)?.offCalendar === true;
 
-export function ClassesView({ data, writes }: { data: ChClassesPage; writes: ChClassesWrites }) {
+export function ClassesView({ data, writes, statusWrites }: { data: ChClassesPage; writes: ChClassesWrites; /** P-10: present only with `class_awareness_v1` on; absent draws no Class status panel. */ statusWrites?: ChClassStatusWrites }) {
   const reduced = useChReducedMotion();
   const phone = useChPhone();
   const router = useRouter();
@@ -393,7 +395,11 @@ export function ClassesView({ data, writes }: { data: ChClassesPage; writes: ChC
           code="CH-12301"
           shape="week"
           title="Add your class schedule"
-          body="Import a screenshot of your schedule and we’ll read it so you can check each class. Your coach can see when you’re busy, so practice and travel get planned around class."
+          body={
+            statusWrites
+              ? 'Import a screenshot of your schedule and we’ll read it so you can check each class. Coaches will see when you’re in class, and your pushes wait until class ends.'
+              : 'Import a screenshot of your schedule and we’ll read it so you can check each class. Your coach can see when you’re busy, so practice and travel get planned around class.'
+          }
           action={
             <Button variant="primary" leftIcon={Upload} onClick={startImport}>
               Import schedule
@@ -407,6 +413,23 @@ export function ClassesView({ data, writes }: { data: ChClassesPage; writes: ChC
         />
       ) : (
         <>
+          {statusWrites && (
+            <SectionBoundary surface="classes.status" label="Class status" code="CH-12203">
+              <ClassStatusPanel
+                classes={classes}
+                writes={statusWrites}
+                onTagged={(termLabel) => setClasses((prev) => prev.map((c) => (c.semester ? c : { ...c, semester: termLabel })))}
+                onResync={(id) => {
+                  const k = classes.find((x) => x.id === id);
+                  if (k) void syncClasses([k]);
+                }}
+                onFix={(id) => {
+                  const k = classes.find((x) => x.id === id);
+                  if (k) setForm({ editing: k, id: '' });
+                }}
+              />
+            </SectionBoundary>
+          )}
           <SectionBoundary surface="classes.term" label="The term overview" code="CH-12203">
             <TermBar
               term={term}
@@ -435,7 +458,7 @@ export function ClassesView({ data, writes }: { data: ChClassesPage; writes: ChC
             <SectionBoundary surface="classes.side" label="This week’s overlaps" code="CH-12203">
               <div className="ch-cl-side" id="ch-cl-overlaps">
                 <OverlapsCard groups={groups} error={week.error} onRetry={() => router.refresh()} />
-                <CoachNote />
+                <CoachNote aware={!!statusWrites} />
               </div>
             </SectionBoundary>
           </div>
@@ -456,6 +479,8 @@ export function ClassesView({ data, writes }: { data: ChClassesPage; writes: ChC
         }}
         onRemove={askRemove}
         onRetrySync={(c) => void syncClasses([c])}
+        statusWrites={statusWrites}
+        onStatusEnabled={(id, on) => setClasses((prev) => prev.map((c) => (c.id === id ? { ...c, statusEnabled: on } : c)))}
       />
       <ClassForm
         open={!!form}

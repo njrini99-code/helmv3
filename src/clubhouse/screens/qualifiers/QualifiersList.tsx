@@ -27,6 +27,9 @@ import { SerifText } from '../../ui/SerifText';
 import { usePressPrefetch } from '../../shell/use-prefetch-tabs';
 import { pluralWord } from '../../lib/plural';
 import { LargeTitle } from '../../ui/LargeTitle';
+import { LIVE_COPY } from '../../live/copy';
+import type { ChQLiveLine } from './on-course';
+import '../../styles/live.css';
 
 type Filter = 'all' | 'active' | 'concluded';
 const isActive = (i: ChQListItem) => i.status !== 'completed';
@@ -41,7 +44,7 @@ const opened = (id: string, from: 'hero' | 'card') => (e: MouseEvent) => {
 /** Qualifiers list, coach and player. `mine` is a player's own entries (/my-qualifiers). */
 const ROW_KEYS: readonly ChPageKey[] = [{ label: 'Move between qualifiers', keys: ['Up', 'Down'] }];
 
-export function QualifiersList({ data }: { data: ChQList }) {
+export function QualifiersList({ data, live }: { data: ChQList; live?: Record<string, ChQLiveLine> }) {
   const { refresh, refreshing } = useRefresh();
   usePageKeys('Qualifiers', ROW_KEYS);
   const coach = data.role === 'coach';
@@ -206,7 +209,7 @@ export function QualifiersList({ data }: { data: ChQList }) {
                 {hero && (
                   <section className="ch-qf-sec is-focus" aria-labelledby="ch-qf-now">
                     <h2 id="ch-qf-now">Active</h2>
-                    <Hero item={hero} standingsError={data.standingsError} today={data.today} />
+                    <Hero item={hero} standingsError={data.standingsError} today={data.today} line={live?.[hero.id]} />
                     <PlayNext item={hero} standingsError={data.standingsError} today={data.today} />
                   </section>
                 )}
@@ -216,7 +219,7 @@ export function QualifiersList({ data }: { data: ChQList }) {
                     <h2 id="ch-qf-active">{hero ? 'Also active' : 'Upcoming and live'}</h2>
                     <div className="ch-qf-grid is-ledger">
                       {rest.map((i) => (
-                        <Card key={i.id} item={i} standingsError={data.standingsError} today={data.today} />
+                        <Card key={i.id} item={i} standingsError={data.standingsError} today={data.today} line={live?.[i.id]} />
                       ))}
                     </div>
                   </section>
@@ -227,7 +230,7 @@ export function QualifiersList({ data }: { data: ChQList }) {
                     {concluded.length ? (
                       <div className="ch-qf-grid is-ledger">
                         {concluded.map((i) => (
-                          <Card key={i.id} item={i} standingsError={data.standingsError} today={data.today} />
+                          <Card key={i.id} item={i} standingsError={data.standingsError} today={data.today} line={live?.[i.id]} />
                         ))}
                       </div>
                     ) : (
@@ -253,6 +256,17 @@ const placeOf = (position: string | null) => {
   const n = Number(m[2]);
   return `${m[1] ? 'tied ' : ''}${n}${['th', 'st', 'nd', 'rd'][n % 100 > 10 && n % 100 < 14 ? 0 : n % 10] ?? 'th'}`;
 };
+
+/** "Round 2 live · 3 on the course" (CH-16622): the coach's list says a round is under way before the qualifier is opened. */
+export function LiveLine({ line }: { line?: ChQLiveLine }) {
+  if (!line) return null;
+  return (
+    <span className="ch-qf-live ch-lv-line" data-ch-code="CH-16622">
+      <span className="ch-lv-dot" aria-hidden="true" />
+      {LIVE_COPY.qualifierLine(line.round, line.n)}
+    </span>
+  );
+}
 
 function Mine({ item }: { item: ChQListItem }) {
   if (!item.mine) return null;
@@ -301,7 +315,7 @@ function PlayNext({ item, standingsError, today }: { item: ChQListItem; standing
 const endedOf = (item: ChQListItem, standingsError: boolean, today: string | undefined) =>
   endedLive({ status: item.status, endDate: item.endDate, today, entrants: item.entrants, numRounds: item.numRounds, submitted: standingsError ? null : item.submitted });
 
-function Hero({ item, standingsError, today }: { item: ChQListItem; standingsError: boolean; today?: string }) {
+function Hero({ item, standingsError, today, line }: { item: ChQListItem; standingsError: boolean; today?: string; line?: ChQLiveLine }) {
   const press = usePressPrefetch();
   const live = item.status === 'in_progress' && !standingsError && item.leaders.length > 0;
   const ended = endedOf(item, standingsError, today);
@@ -314,6 +328,7 @@ function Hero({ item, standingsError, today }: { item: ChQListItem; standingsErr
         </h2>
         {item.description && <p>{item.description}</p>}
         <Meta startDate={item.startDate} endDate={item.endDate} squad={item.squad} course={item.course} today={today} />
+        <LiveLine line={line} />
         {!standingsError && <Mine item={item} />}
         <span className="ch-qf-cta">
           {ctaLabel(item.status)}
@@ -356,7 +371,7 @@ function Hero({ item, standingsError, today }: { item: ChQListItem; standingsErr
   );
 }
 
-function Card({ item, standingsError, today }: { item: ChQListItem; standingsError: boolean; today?: string }) {
+function Card({ item, standingsError, today, line }: { item: ChQListItem; standingsError: boolean; today?: string; line?: ChQLiveLine }) {
   const press = usePressPrefetch();
   return (
     <Link href={detailHref(item.id)} className="ch-qf-card" onClick={opened(item.id, 'card')} {...press(detailHref(item.id))}>
@@ -368,6 +383,7 @@ function Card({ item, standingsError, today }: { item: ChQListItem; standingsErr
         <StatusPill status={item.status} ended={endedOf(item, standingsError, today)} />
       </div>
       <Meta startDate={item.startDate} endDate={item.endDate} squad={item.squad} course={item.course} today={today} />
+      <LiveLine line={line} />
       {!standingsError && <Mine item={item} />}
       <span className="ch-qf-cta is-quiet">
         {ctaLabel(item.status)}

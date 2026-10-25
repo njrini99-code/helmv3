@@ -2,6 +2,8 @@
 
 import {
   ArrowRight,
+  ArrowUpRight,
+  Flag,
   CalendarCheck,
   ChevronRight,
   CircleX,
@@ -69,6 +71,8 @@ import { BusyDetail, EventFiles, LinkedTrip } from './extras';
 import { courseParts } from './class-group';
 import { BackLink } from '../../ui/Section';
 import { plural, pluralWord } from '../../lib/plural';
+import { roundLabel } from './round-label';
+import { EventLiveRow } from './live-events';
 
 export type ChInsp =
   | { kind: 'event'; id: string; date: string }
@@ -102,7 +106,29 @@ export interface InspCtx {
   onDuplicate?: (e: ChCalEvent) => void;
   /** Compare schedules (a class, coach): New event on that day with the class's player invited, so Find a time shows them side by side. */
   onFind?: (date: string, invite: string[]) => void;
+  /** P-5: golf_tournaments_v1 is on for this page. */
+  tournamentsEnabled?: boolean;
+  /** P-5 E4: an untracked tournament event's Set up (coach): the editor with Track on. */
+  onSetUp?: (e: ChCalEvent) => void;
+  /** P-5 4.10: Cancel round and Restore round, through the tournament (absent until they are wired). */
+  onCancelRound?: (e: ChCalEvent) => void;
+  onRestoreRound?: (e: ChCalEvent) => void;
+  onRestoreTournament?: (e: ChCalEvent) => void;
   refresh: () => void;
+}
+
+/** P-5 4.9: a round's lineup in a word. A player sees only whether it is published (4.33's revealed-only rule). */
+function lineupWord(lineup: NonNullable<ChCalEvent['round']>['lineup'], coach: boolean): string {
+  if (!coach) return lineup === 'published' || lineup === 'locked' ? 'Published' : 'Not published yet';
+  return lineup === 'none' ? 'Not set' : lineup === 'draft' ? 'Draft' : lineup === 'locked' ? 'Locked' : 'Published';
+}
+
+/** P-5 4.9: how a round starts: "Tee times", "Shotgun at 8:00 AM" or "1 and 10". */
+function startWord(e: ChCalEvent, clock: ChClock): string {
+  const t = e.round!.startType;
+  if (t === 'two_tees') return '1 and 10';
+  if (t === 'shotgun') return e.allDay || e.start == null ? 'Shotgun' : `Shotgun at ${fmtHour(e.start, true, clock)}`;
+  return 'Tee times';
 }
 
 const first = (name: string | undefined) => (name ?? '').split(' ')[0] ?? '';
@@ -433,6 +459,14 @@ export function EventDetail({ ctx, id, date }: { ctx: InspCtx; id: string; date:
   if (e.type === 'busy') return <BusyDetail e={e} now={ctx.now} zoneLabel={ctx.zoneLabel} onBack={() => ctx.go(null)} onDeleted={() => (ctx.go(null), ctx.refresh())} />;
   const overlap = ctx.overlaps.find((o) => o.eventId === e.id);
   const coach = ctx.role === 'coach';
+  // P-5 4.9: a tracked round reads as its tournament's; it is cancelled, restored and deleted through Tournaments.
+  const round = e.round ?? null;
+  // A round whose ref didn't load is still a round: it never gets the plain event's Duplicate, Cancel or Delete.
+  const roundish = !!round || !!e.roundRefFailed;
+  const rl = roundLabel(e, e.title);
+  const roundOpen = !!round && round.status === 'upcoming' && !round.tournamentCancelled;
+  const desk = round ? `/golf/dashboard/tournaments/${round.tournamentId}` : null;
+  const untracked = coach && !!ctx.tournamentsEnabled && !!ctx.onSetUp && e.type === 'tournament' && !round && !e.roundRefFailed && e.canEdit && !e.cancelled && !e.recurring;
   const copyLink = async () => {
     try {
       await navigator.clipboard.writeText(`${window.location.origin}/golf/dashboard/calendar?event=${e.id}&date=${e.date}`);
@@ -451,26 +485,31 @@ export function EventDetail({ ctx, id, date }: { ctx: InspCtx; id: string; date:
       <Back label="Today" onClick={() => ctx.go(null)} />
       <div className="ch-in__plate" data-tone={plateTone(e.type)}>
 <div className="ch-in__kick">
-        <Badge tone={isMajor(e.type) ? 'info' : 'accent'}>{TYPE_LABEL[e.type]}</Badge>
+        <Badge tone={isMajor(e.type) ? 'info' : 'accent'}>{round ? `${TYPE_LABEL[e.type]} · ${rl.caption}` : TYPE_LABEL[e.type]}</Badge>
         {e.cancelled && <Badge tone="warning">Cancelled</Badge>}
         <Menu
           label="Event actions"
           items={[
             { label: 'Copy link', icon: Link2, onSelect: () => void copyLink() },
-            ...(coach && ctx.onDuplicate ? [{ label: 'Duplicate', icon: Copy, onSelect: () => ctx.onDuplicate!(e) }] : []),
-            ...(coach && e.canEdit && !e.cancelled
+            ...(coach && ctx.onDuplicate && !roundish ? [{ label: 'Duplicate', icon: Copy, onSelect: () => ctx.onDuplicate!(e) }] : []),
+            ...(coach && e.canEdit && !e.cancelled && !roundish
               ? ([{ kind: 'separator' }, { label: 'Cancel event', icon: CircleX, danger: true, onSelect: () => ctx.onCancel(e) }] as const)
               : []),
-            ...(coach && e.canEdit && e.cancelled && ctx.onRestore ? [{ label: 'Restore event', icon: RotateCcw, onSelect: () => ctx.onRestore!(e) }] : []),
-            ...(coach && e.canEdit && e.cancelled && ctx.onDelete
+            ...(coach && e.canEdit && e.cancelled && ctx.onRestore && !roundish ? [{ label: 'Restore event', icon: RotateCcw, onSelect: () => ctx.onRestore!(e) }] : []),
+            ...(coach && e.canEdit && e.cancelled && ctx.onDelete && !roundish
               ? ([{ kind: 'separator' }, { label: 'Delete permanently', icon: Trash2, danger: true, onSelect: () => ctx.onDelete!(e) }] as const)
               : []),
+            ...(coach && e.canEdit && roundOpen && !e.cancelled && ctx.onCancelRound
+              ? ([{ kind: 'separator' }, { label: 'Cancel round', icon: CircleX, danger: true, onSelect: () => ctx.onCancelRound!(e) }] as const)
+              : []),
+            ...(coach && e.canEdit && round && e.cancelled && !round.tournamentCancelled && ctx.onRestoreRound ? [{ label: 'Restore round', icon: RotateCcw, onSelect: () => ctx.onRestoreRound!(e) }] : []),
+            ...(coach && e.canEdit && round?.tournamentCancelled && ctx.onRestoreTournament ? [{ label: 'Restore tournament', icon: RotateCcw, onSelect: () => ctx.onRestoreTournament!(e) }] : []),
           ]}
           trigger={(p) => <IconButton icon={Ellipsis} size="sm" label="More actions" menu={p} />}
         />
       </div>
       <h2 className="ch-in__title" tabIndex={-1} style={e.cancelled ? { textDecoration: 'line-through' } : undefined}>
-        {e.title}
+        {rl.name}
       </h2>
       </div>
       {/* P-14: what changed, who and when, between the title and the facts. */}
@@ -483,11 +522,22 @@ export function EventDetail({ ctx, id, date }: { ctx: InspCtx; id: string; date:
           <span className="ch-num">{!e.allDay && e.span?.start != null && e.span.end != null ? `Starts ${fmtHour(e.span.start, true, clock)} · ends ${fmtHour(e.span.end, true, clock)}` : rangeLabel(e, clock)}</span>
           {!e.allDay && ` · ${ctx.zoneLabel}`}
         </Fact>
-        {e.location && <Fact icon={MapPin}>{e.location}</Fact>}
+        {round ? (
+          <>
+            {(round.courseLabel ?? e.location) && <Fact icon={MapPin}>{round.courseLabel ?? e.location}</Fact>}
+            <Fact icon={Flag}>{startWord(e, clock)}</Fact>
+            <Fact icon={Users}>
+              Lineup: {lineupWord(round.lineup, coach)}
+            </Fact>
+          </>
+        ) : (
+          e.location && <Fact icon={MapPin}>{e.location}</Fact>
+        )}
         <LinkedTrip eventId={e.id} preview={ctx.preview} />
         {e.recurring && <Fact icon={Repeat}>{e.recurring}</Fact>}
         {e.notes && <Fact icon={Text}>{e.notes}</Fact>}
       </div>
+      {coach && <EventLiveRow e={e} />}
       {coach && overlap && (
         <Warn
           title="Schedule overlap"
@@ -579,7 +629,33 @@ export function EventDetail({ ctx, id, date }: { ctx: InspCtx; id: string; date:
         </div>
       )}
       <EventFiles eventId={e.id} teamId={ctx.teamId} canEdit={coach && e.canEdit && !e.cancelled} preview={ctx.preview} />
-      {coach && e.canEdit && !e.cancelled && (
+      {/* P-5 E4: an event of type Tournament that isn't tracked yet, for a coach with the flag on. */}
+      {untracked && (
+        <div className="ch-in__sec ch-in__setup">
+          <span className="ch-in__quiet">Not in Tournaments</span>
+          <Button size="sm" variant="ghost" onClick={() => ctx.onSetUp!(e)}>
+            Set up
+          </Button>
+        </div>
+      )}
+      {round && desk && (
+        <div className="ch-in__sec ch-in__foot">
+          <Button variant="primary" rightIcon={ArrowUpRight} href={desk}>
+            Open in Tournaments
+          </Button>
+          {coach && e.canEdit && roundOpen && !e.cancelled && (
+            <Button leftIcon={Pencil} onClick={() => ctx.onEdit(e)}>
+              Edit round
+            </Button>
+          )}
+          {coach && e.people.length > 0 && (
+            <Button leftIcon={ClipboardCheck} onClick={() => ctx.go({ kind: 'attendance', id: e.id, date: e.date })}>
+              Attendance
+            </Button>
+          )}
+        </div>
+      )}
+      {coach && e.canEdit && !e.cancelled && !round && (
         <div className="ch-in__sec ch-in__foot">
           <Button variant="primary" leftIcon={Pencil} onClick={() => ctx.onEdit(e)}>
             Edit event

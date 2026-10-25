@@ -43,10 +43,14 @@ export async function ClubhouseStatsRoute({ player, window, tab, query }: { play
   if (player) {
     // An id that is not shaped like one is not on any team; it never reaches the database (which would answer 22P02).
     if (!isUuid(player)) return <NotOnTeam coach />;
-    // The coach's reads wait for the scope check (this coach's own team, CoachHelm on for both), and run beside the profile.
-    const reads = loadCoachPlayerScope({ coachId: team.coachId, teamId: team.teamId, playerId: player }).then(readsForScope, (): ChStatsReads => ({ status: 'failed' }));
-    const [profile, shown] = await Promise.all([loadPlayerProfile({ viewer: 'coach', teamId: team.teamId, playerId: player, window: win, filter }), reads]);
-    return profile ? <StatsPlayer data={profile} coachId={team.coachId} initialTab={tab} reads={shown} /> : <NotOnTeam coach />;
+    // The coach's reads wait for the scope check (this coach's own team, CoachHelm on for both). They start beside the profile
+    // and stream in behind it (C2): the page paints from the profile, and each "CoachHelm sees" line lands when the reads do.
+    // The promise never rejects: a failed scope check or read is `{ status: 'failed' }`.
+    const reads: Promise<ChStatsReads> = loadCoachPlayerScope({ coachId: team.coachId, teamId: team.teamId, playerId: player })
+      .then(readsForScope)
+      .catch((): ChStatsReads => ({ status: 'failed' }));
+    const profile = await loadPlayerProfile({ viewer: 'coach', teamId: team.teamId, playerId: player, window: win, filter });
+    return profile ? <StatsPlayer data={profile} coachId={team.coachId} initialTab={tab} reads={reads} /> : <NotOnTeam coach />;
   }
   return <StatsTeam data={await loadTeamStats({ teamId: team.teamId, window: win, filter })} />;
 }

@@ -94,15 +94,18 @@ describe('the push and the pop', () => {
     expect(tokens).toContain('--ch-vt-parallax: -30%;');
   });
 
-  it('push: the new page from the right edge over the old drawing back; pop: the reverse, the leaving page on top', () => {
-    expect(shell).toMatch(/@keyframes ch-vt-push-in \{\s*from \{\s*transform: translateX\(100%\);/);
-    expect(shell).toMatch(/@keyframes ch-vt-push-out \{\s*to \{\s*transform: translateX\(var\(--ch-vt-parallax\)\);/);
+  it('push: drawn by the live page over a copy (C1), so the view transition swaps at once; pop: the leaving page on top', () => {
+    expect(shell).not.toContain('@keyframes ch-vt-push-in');
+    expect(shell).toMatch(/html\[data-ch-nav='push'\]:has\(\[data-ui='clubhouse'\]\)::view-transition-new\(ch-page\) \{\s*animation: none;/);
+    // The copy beneath sits under the page that slides over it; both under the bars.
+    expect(shell).toMatch(/\.ch-root\.ch-frame-under \{\s*z-index: calc\(var\(--ch-z-sticky\) - 2\);/);
+    expect(shell).toMatch(/\.ch-frame-route\[data-ch-pushing\] \{\s*position: relative;\s*z-index: calc\(var\(--ch-z-sticky\) - 1\);/);
     expect(shell).toMatch(/@keyframes ch-vt-pop-in \{\s*from \{\s*transform: translateX\(var\(--ch-vt-parallax\)\);/);
     expect(shell).toMatch(/html\[data-ch-nav='pop'\]:has\(\[data-ui='clubhouse'\]\)::view-transition-old\(ch-page\) \{\s*z-index: 1;/);
   });
 
   it('only on a phone, with the iOS-animated Back and reduced motion still instant', () => {
-    const start = shell.indexOf('@keyframes ch-vt-push-in');
+    const start = shell.indexOf('@keyframes ch-vt-pop-in');
     const block = shell.slice(start, shell.indexOf("@media (prefers-reduced-motion: reduce)", start));
     expect(block).toContain('@media (max-width: 820px)');
     expect(shell).toMatch(/html\[data-ch-ua-pop\]:has\(\[data-ui='clubhouse'\]\)::view-transition-old\(\*\)/);
@@ -124,22 +127,6 @@ describe('Back during a push (look-and-feel pass 2026-10-22, mot-04)', () => {
   it('pops from the whole width when no push is moving', () => {
     running([]);
     expect(takeRunningPush()).toBe(1);
-  });
-
-  it('finishes a push in flight and pops from where it stood, on the same spring', () => {
-    const curve = chSpringCurve('smooth');
-    const finish = vi.fn();
-    const at = Math.round(curve.ms * 0.3);
-    running([
-      { effect: { pseudoElement: '::view-transition-new(ch-page)' }, playState: 'running', animationName: 'ch-vt-push-in', currentTime: at, finish },
-      { effect: { pseudoElement: '::view-transition-old(ch-page)' }, playState: 'running', animationName: 'ch-vt-push-out', currentTime: at, finish },
-      { effect: { pseudoElement: '' }, playState: 'running', currentTime: at, finish: vi.fn() },
-    ]);
-    const share = takeRunningPush();
-    expect(finish).toHaveBeenCalledTimes(2);
-    expect(share).toBeCloseTo(curve.ease(at / curve.ms), 5);
-    expect(share).toBeGreaterThan(0);
-    expect(share).toBeLessThan(1);
   });
 
   it('treats a running fade (a pop or a tab switch) as done', () => {

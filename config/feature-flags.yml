@@ -914,6 +914,65 @@ flags:
       retired, delete them, the layout branch that chooses between them, and
       this flag in the same change.
 
+  # Clubhouse Tournaments (P016, docs/clubhouse/pages/P016-tournaments/): the
+  # nine /golf/dashboard/tournaments routes, their Clubhouse nav entry and the
+  # tournament server actions. Requires golf_clubhouse_ui (every route checks
+  # both, src/clubhouse/gate.ts isTournamentsFor). The data is six HELD
+  # migrations (20261024100000 to 100500, docs/clubhouse/held/data/
+  # tournaments.md); until they are applied every route draws the "not set up
+  # yet" state (CH-16302) and every action answers not_set_up, so preview and
+  # development, which read the one production database, stay honest. Off in
+  # production until the owner applies the migrations and turns it on.
+  - feature_id: golf_tournaments_v1
+    owner: golf/clubhouse
+    purpose: >-
+      Draws the Clubhouse Tournaments pages (season home, event desk, review,
+      history, comparison, link inbox, event form, lineup and live round) and
+      their nav entry for coaches and players, and lets the tournament server
+      actions run. Off: the routes answer not found and the nav entry is
+      hidden.
+    type: release
+    status: active
+    created_at: "2026-10-25"
+    expires_at: null
+    default: false
+    environment:
+      production: false
+      preview: true
+      development: true
+    kill_switch_behavior: null
+    cleanup_plan: >-
+      Once the owner has applied the six held Tournaments migrations, turned
+      production on and coaches have used it for a season, remove the flag
+      checks in src/clubhouse/gate.ts and this entry in one change.
+
+  # Clubhouse P-10 class awareness (plan clubhouse-handoff/build-plans/P-10-class-awareness.md). Held
+  # migrations 20261025070000 to 20261025070300 (supabase/migrations/HELD.md) must be applied first; with
+  # the flag on and the migrations absent the reads answer "no class status" and every push goes out
+  # (PGRST202 reads as nothing). On in preview and development (owner, 2026-10-25: every A+ feature is
+  # visible in a preview he deploys); off in production until the owner turns it on. Preview shares the
+  # production database, so every read and write degrades to "no class status" while the migrations are held.
+  - feature_id: class_awareness_v1
+    owner: golf/clubhouse
+    purpose: >-
+      Shows when a player is in class (the thread header, the Home line, Roster, the In class now
+      sheet, the player's Classes panel) and holds non-urgent pushes while the player is in a class
+      the coach's term dates confirm, sending them as one summary when class ends. Off: no class RPC
+      is called, no new column is sent or selected, and the push gate lets every push through.
+    type: release
+    status: active
+    created_at: "2026-10-25"
+    expires_at: null
+    default: false
+    environment:
+      production: false
+      preview: true
+      development: true
+    kill_switch_behavior: null
+    cleanup_plan: >-
+      After one team has run it for a week with no overdue or fail-open signals and every team is on,
+      delete the flag and its checks in their own reviewed change.
+
   # CoachHelm supercharge Slice 1: support and the claim ladder
   # (/mnt/project-files/coachhelm/supercharge/02-accuracy-standard.md §2-§6,
   # 04 §1.1 and §1.5). Off everywhere until the owner applies the held run-log

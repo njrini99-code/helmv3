@@ -4,7 +4,7 @@ import { Info, MessageSquare, Plus, Share } from 'lucide-react';
 import Link from 'next/link';
 import { Fragment, useEffect, useRef, useState, type ReactNode } from 'react';
 import type { ChPlayerProfile } from '../../data/stats-player';
-import type { ChStatsReads } from '../../data/stats-reads';
+import type { ChReadsSource } from './GameDetail';
 import { basisWords, clearFilters, hasRange, isFiltered, rangeOf, type ChFilter, type ChRange } from '../../data/stats-filter';
 import { Avatar } from '../../ui/Avatar';
 import { Button } from '../../ui/Button';
@@ -72,7 +72,7 @@ export function StatsPlayerPhone({
   data: ChPlayerProfile;
   initialTab?: string;
   /** What CoachHelm sees per Game detail section; the line follows the shown section's rule. */
-  reads?: ChStatsReads;
+  reads?: ChReadsSource;
   /** This page's own address (player and window), for Share. */
   playerHref: string;
   messageHref: string | null;

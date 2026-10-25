@@ -307,6 +307,8 @@ features:
         - supabase/migrations/*coachhelm*.sql
         - supabase/migrations/*insight*.sql
         - supabase/migrations/*attribution*.sql
+        # golf_prediction_performance, written by lib/coachhelm/v2/analytics.
+        - supabase/migrations/*prediction_perf*.sql
       tests:
         - src/test/coachhelm/**
         - src/test/api/cron/coachhelm*.test.ts
@@ -500,6 +502,7 @@ features:
         - supabase/migrations/*preserve_started_round*.sql
         - supabase/migrations/*single_flight*.sql
         - supabase/migrations/*submit_round_expected_updated_at*.sql
+        - supabase/migrations/*round_save_one_totals*.sql
         - supabase/migrations/*reclassify*.sql
         - supabase/migrations/*round_stranding*.sql
         - supabase/migrations/*round_recap*.sql
@@ -1541,19 +1544,9 @@ features:
         - src/app/golf/actions/player-hub-data.ts
       services:
         - src/lib/supabase/**
-      db:
-        - supabase/migrations/*task*.sql
-        # Narrowed 2026-09-23 — see calendar_events' db: list for why the
-        # blanket `*event*.sql` was replaced with these (same set, same
-        # reason: it was also matching baseball_core's own migrations).
-        - supabase/migrations/*event_attendance*.sql
-        - supabase/migrations/*notification_type_event*.sql
-        - supabase/migrations/*insight_event*.sql
-        - supabase/migrations/*admin_event*.sql
-        - supabase/migrations/*team_event_reminder*.sql
-        - supabase/migrations/*class_event*.sql
-        - supabase/migrations/*calendar_events*.sql
-        - supabase/migrations/*error_events*.sql
+      # Tasks are owned by team_operations and event/calendar schema by calendar_events.
+      # Player Hub consumes those contracts; it introduces no migrations of its own.
+      db: []
       tests:
         - src/lib/golf/nav-registry.test.ts
     integrations:
@@ -2322,7 +2315,24 @@ features:
     code:
       components:
         - src/clubhouse/**
+        - src/lib/golf/live-tables.ts
+        - src/lib/golf/live-share-copy.ts
+        - src/lib/golf/tournament-refusals.ts
+        - src/lib/golf/tournaments-tables.ts
+        - src/lib/golf/tournaments/**
+        - src/app/golf/actions/tournaments*.ts
+        - src/app/golf/actions/round-live*.ts
+        - src/app/api/cron/class-holds-release/**
         - src/app/clubhouse-preview/entry/**
+        - src/app/golf/(dashboard)/dashboard/live/**
+      db:
+        # P016 Tournaments (held; each round is a golf_events row, D-81).
+        # Plan: docs/clubhouse/held/data/tournaments.md.
+        - supabase/migrations/*golf_tournament*.sql
+        # P-10 class awareness (2026-10-25, held): terms and exceptions, the class-block functions, held pushes.
+        - supabase/migrations/*class_awareness*.sql
+        - supabase/migrations/*class_blocks*.sql
+        - supabase/migrations/*push_holds*.sql
       tests:
         - src/clubhouse/__tests__/**
         - src/app/clubhouse-preview/entry/__tests__/**

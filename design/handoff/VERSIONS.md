@@ -3,6 +3,41 @@
 Which files in `design/handoff/` are the current design, and which are kept
 only because older records cite them.
 
+## v3: Tournaments (received 2026-10-23)
+
+Nine files from the owner's Claude Design project "Coach home dashboard
+redesign" (the download `Coach home dashboard redesign (5)`), copied in
+unchanged for page P016 Tournaments. They are the current design for
+Tournaments; the plan that builds on them is the handoff's section 4.33, and
+decisions D-80 to D-101 are approved (owner, 2026-10-23).
+
+| Screen | Role | Desktop board | Phone board | In Clubhouse today |
+| --- | --- | --- | --- | --- |
+| Tournaments (events, event desk, who counted, holes, review, compare, history) | coach | `Coach - Tournaments.html` | `Coach - Tournaments - Mobile.html` | new: preview stubs only |
+
+| File | What it is |
+| --- | --- |
+| `Coach - Tournaments.html` | Desktop board: the page inside the v2 coach shell |
+| `Coach - Tournaments - Mobile.html` | Phone board: the same views as paired A/B blocks and sheets |
+| `Tournaments Deck.html` | A walkthrough deck of the design (reference only) |
+| `tour.jsx` | Desktop views: home, season ledger, history trend, event desk, who counted, holes, review |
+| `tour-m.jsx` | Phone views |
+| `tour-compare.jsx` | The comparison workspace, its presets and the evidence drawer |
+| `tour-data.js` | The fixture and comparison engine every view reads (round-level records) |
+| `tour.css`, `tour-m.css` | Desktop and phone styles (`tr-*`, `tm-*`) |
+
+What the boards need that is not in this folder or differs from it:
+
+- `gh-nav.js`, `gh-states.jsx` and `sidebar.css` in the download differ from
+  the v2 copies here (the download's `gh-nav.js` adds the Tournaments sidebar
+  item). The v2 copies stay; the boards render with the v2 sidebar, which has
+  no Tournaments item.
+- `gh-bleed.css`, `assets/helm-golf-logo.png`, `assets/helm-golf-mark.png` and
+  the deck's `deck/` images are not in the repo, so those references 404
+  locally. Nothing on the boards depends on them for layout.
+- `Tournaments package/spec/*.md` (named by plan section 15) was not in the
+  download.
+
 ## v2: the full coach and player design (received 2026-09-29)
 
 The owner's Claude Design bundle `Coach home dashboard redesign (2).zip`

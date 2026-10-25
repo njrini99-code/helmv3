@@ -20,6 +20,8 @@ import { CoursePicker } from './CoursePicker';
 import { clearSetupDraft, readSetupDraft, restoreSetupDraft, useSetupDraftKey, writeSetupDraft } from './draft';
 import { HoleConfig } from './HoleConfig';
 import { holesForRound, parOf, setupBlocker, startPosition, type ChSetupCourse, type ChSetupForm, type ChSetupHole, type ChSetupPick, type ChSetupPorts, type ChSetupQualifier, type ChStartFailure, type ChStartResult } from './shape';
+import { LiveShareField } from './LiveShareField';
+import type { LiveSharePorts } from '../../../live/share-ports';
 import { glanceFor, type ChCourseGlance } from '../../../data/course-glance';
 import { courseHref } from '../../../data/course-key';
 import { formatFixed } from '../../../lib/format';
@@ -30,6 +32,8 @@ const TYPES: ChRoundType[] = ['practice', 'tournament', 'qualifier'];
 
 export interface RoundSetupProps {
   ports: ChSetupPorts;
+  /** Live sharing (P-6): the field is drawn only when these are given and the live table exists. Not part of the setup payload. */
+  liveShare?: LiveSharePorts;
   /** The player's open qualifiers, or null when they didn't load (CH-11211). */
   qualifiers: ChSetupQualifier[] | null;
   /** Today in the team's timezone (YYYY-MM-DD), the latest date a round can have. */
@@ -76,7 +80,7 @@ function ScorecardHead() {
  * screen draws; the round screen's ports read the course library and start
  * the round (docs/clubhouse/ROUNDS_PLAN.md).
  */
-export function RoundSetup({ ports, qualifiers, today, backHref, onStarted, preselectQualifierId = null, preselectCourseId = null, glances = null, isOffline, viewerId = null }: RoundSetupProps) {
+export function RoundSetup({ ports, liveShare, qualifiers, today, backHref, onStarted, preselectQualifierId = null, preselectCourseId = null, glances = null, isOffline, viewerId = null }: RoundSetupProps) {
   const [form, setForm] = useState<ChSetupForm>({
     pick: null,
     type: 'practice',
@@ -413,6 +417,7 @@ export function RoundSetup({ ports, qualifiers, today, backHref, onStarted, pres
                   </span>
                 </p>
               )}
+              {liveShare && <LiveShareField type={form.type} ports={liveShare} />}
             </div>
           </section>
 

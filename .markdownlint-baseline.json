@@ -4,7 +4,7 @@
   "MD007/ul-indent": 5,
   "MD009/no-trailing-spaces": 1,
   "MD012/no-multiple-blanks": 5,
-  "MD013/line-length": 21578,
+  "MD013/line-length": 21685,
   "MD018/no-missing-space-atx": 1,
   "MD022/blanks-around-headings": 784,
   "MD024/no-duplicate-heading": 65,
@@ -15,7 +15,7 @@
   "MD029/ol-prefix": 77,
   "MD031/blanks-around-fences": 573,
   "MD032/blanks-around-lists": 821,
-  "MD033/no-inline-html": 1266,
+  "MD033/no-inline-html": 1274,
   "MD034/no-bare-urls": 114,
   "MD036/no-emphasis-as-heading": 307,
   "MD037/no-space-in-emphasis": 21,
@@ -26,7 +26,7 @@
   "MD050/strong-style": 36,
   "MD052/reference-links-images": 1,
   "MD055/table-pipe-style": 4,
-  "MD056/table-column-count": 40,
+  "MD056/table-column-count": 39,
   "MD058/blanks-around-tables": 45,
-  "MD060/table-column-style": 5387
+  "MD060/table-column-style": 5422
 }

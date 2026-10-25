@@ -31,6 +31,13 @@
 
 <!-- schema-drift-absent: golf_recurring_events, golf_availability_polls, golf_poll_responses, golf_calendar_sync_log, golf_calendar_sync_state, golf_external_calendars, golf_event_exclusions, golf_event_status_log, golf_player_availability_blocks, golf_player_attendance_stats -->
 
+## Fan-out read failures (2026-10-25)
+
+The shared calendar fan-out binds attendance, membership and email-recipient
+read errors. Failed reads reach the existing channel or fan-out error logger;
+they do not silently become an empty recipient list. Tournament invitation and
+cancellation notice lookups also log failures independently of the saved event.
+
 ## Current State
 
 Calendar and Events provide team scheduling, RSVP, attendance tracking,

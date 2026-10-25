@@ -1040,6 +1040,7 @@ async function queryDetailedStatsWithClient(
           putt_made,
           is_penalty,
           penalty_type,
+          lie_after_recovery,
           putt_details(miss_tags, break_direction, estimated_break_inches, distance_feet, made),
           approach_miss_details(miss_direction, lie_type, distance_from_green_yards)
         `)
@@ -1116,6 +1117,7 @@ async function queryDetailedStatsWithClient(
         putt_made: s.putt_made,
         is_penalty: s.is_penalty ?? false,
         penalty_type: s.penalty_type,
+        lie_after_recovery: s.lie_after_recovery ?? null,
         putt_miss_tags: puttDetails?.miss_tags ?? null,
         putt_break_direction: puttDetails?.break_direction ?? null,
         putt_estimated_break_inches: puttDetails?.estimated_break_inches ?? null,

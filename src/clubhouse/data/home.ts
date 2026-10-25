@@ -233,6 +233,8 @@ export interface ChHomeClock {
 }
 
 export interface ChCoachHome {
+  /** The team this page is for (P-10: the class line reads its class day). Optional for fixtures. */
+  teamId?: string;
   greeting: string;
   /** The team chat to open from "Message team"; null opens Messages. */
   teamChatId: string | null;
@@ -445,6 +447,7 @@ export async function loadCoachHome(input: {
   const legs = form ? teamLegs({ full, players: roster, cache, bench, tour: teamRes.error || !teamRes.data ? null : tourForGender(teamRes.data.gender) }) : null;
 
   return {
+    teamId: input.teamId,
     greeting: `${greeting}, ${coachFirst}`,
     teamChatId: chatRes.error ? null : (chatRes.data?.[0]?.id ?? null),
     subline: homeSubline(rows, { roundsError, nextCompetition: wk.nextCompetition }),

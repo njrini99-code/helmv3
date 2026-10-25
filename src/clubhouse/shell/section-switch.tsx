@@ -92,9 +92,9 @@ export function SectionSwitchProvider({
   const reducedRef = useRef(reduced);
   reducedRef.current = reduced;
   const badges = useNotificationBadges();
-  const sections = useMemo(() => phoneSectionsFor(role), [role]);
+  const sections = useMemo(() => phoneSectionsFor(role, shell), [role, shell]);
   const path = pathname.replace(/\/$/, '') || '/';
-  const current = phoneSectionFor(path, role);
+  const current = phoneSectionFor(path, role, shell);
   const root = !!current && path === current.href;
   const [pending, setPending] = useState<ChNavItem | null>(null);
   const shown = pending ?? current;
