@@ -1113,3 +1113,96 @@ ALTER TABLE ONLY "public"."golf_travel_itineraries"
 
 ALTER TABLE ONLY "public"."putt_details"
     ADD CONSTRAINT "putt_details_shot_id_fkey" FOREIGN KEY ("shot_id") REFERENCES "public"."golf_shots"("id") ON DELETE CASCADE;
+
+ALTER TABLE ONLY "public"."golf_team_terms"
+    ADD CONSTRAINT "golf_team_terms_pkey" PRIMARY KEY ("id");
+
+ALTER TABLE ONLY "public"."golf_team_terms"
+    ADD CONSTRAINT "golf_team_terms_label_len" CHECK (("char_length"("btrim"("label")) >= 1) AND ("char_length"("btrim"("label")) <= 40));
+
+ALTER TABLE ONLY "public"."golf_team_terms"
+    ADD CONSTRAINT "golf_team_terms_span" CHECK (("classes_end" >= ("classes_start" + 27)) AND ("classes_end" <= ("classes_start" + 200)));
+
+ALTER TABLE ONLY "public"."golf_team_terms"
+    ADD CONSTRAINT "golf_team_terms_exams" CHECK (("exams_end" >= "classes_end") AND ("exams_end" <= ("classes_end" + 21)));
+
+ALTER TABLE ONLY "public"."golf_team_terms"
+    ADD CONSTRAINT "golf_team_terms_team_id_fkey" FOREIGN KEY ("team_id") REFERENCES "public"."golf_teams"("id") ON DELETE CASCADE;
+
+ALTER TABLE ONLY "public"."golf_team_terms"
+    ADD CONSTRAINT "golf_team_terms_confirmed_by_fkey" FOREIGN KEY ("confirmed_by") REFERENCES "auth"."users"("id") ON DELETE SET NULL;
+
+ALTER TABLE ONLY "public"."golf_player_class_settings"
+    ADD CONSTRAINT "golf_player_class_settings_pkey" PRIMARY KEY ("player_id");
+
+ALTER TABLE ONLY "public"."golf_player_class_settings"
+    ADD CONSTRAINT "golf_player_class_settings_player_id_fkey" FOREIGN KEY ("player_id") REFERENCES "public"."golf_players"("id") ON DELETE CASCADE;
+
+ALTER TABLE ONLY "public"."golf_class_exceptions"
+    ADD CONSTRAINT "golf_class_exceptions_pkey" PRIMARY KEY ("id");
+
+ALTER TABLE ONLY "public"."golf_class_exceptions"
+    ADD CONSTRAINT "golf_class_exceptions_kind" CHECK (("kind" = ANY (ARRAY['off'::"text", 'extra'::"text"])));
+
+ALTER TABLE ONLY "public"."golf_class_exceptions"
+    ADD CONSTRAINT "golf_class_exceptions_range" CHECK (("ends_on" >= "starts_on") AND ("ends_on" <= ("starts_on" + 20)));
+
+ALTER TABLE ONLY "public"."golf_class_exceptions"
+    ADD CONSTRAINT "golf_class_exceptions_scope" CHECK (("player_id" IS NOT NULL) OR ("class_id" IS NULL));
+
+ALTER TABLE ONLY "public"."golf_class_exceptions"
+    ADD CONSTRAINT "golf_class_exceptions_off_shape" CHECK (("kind" <> 'off'::"text") OR (("start_time" IS NULL) AND ("end_time" IS NULL)));
+
+ALTER TABLE ONLY "public"."golf_class_exceptions"
+    ADD CONSTRAINT "golf_class_exceptions_extra_shape" CHECK (("kind" <> 'extra'::"text") OR (("player_id" IS NOT NULL) AND ("class_id" IS NULL) AND ("ends_on" = "starts_on") AND ("start_time" IS NOT NULL) AND ("end_time" IS NOT NULL) AND ("end_time" > "start_time") AND (("end_time" - "start_time") <= '04:00:00'::interval)));
+
+ALTER TABLE ONLY "public"."golf_class_exceptions"
+    ADD CONSTRAINT "golf_class_exceptions_label_len" CHECK (("label" IS NULL) OR ("char_length"("label") <= 60));
+
+ALTER TABLE ONLY "public"."golf_class_exceptions"
+    ADD CONSTRAINT "golf_class_exceptions_team_id_fkey" FOREIGN KEY ("team_id") REFERENCES "public"."golf_teams"("id") ON DELETE CASCADE;
+
+ALTER TABLE ONLY "public"."golf_class_exceptions"
+    ADD CONSTRAINT "golf_class_exceptions_player_id_fkey" FOREIGN KEY ("player_id") REFERENCES "public"."golf_players"("id") ON DELETE CASCADE;
+
+ALTER TABLE ONLY "public"."golf_class_exceptions"
+    ADD CONSTRAINT "golf_class_exceptions_class_id_fkey" FOREIGN KEY ("class_id") REFERENCES "public"."golf_player_classes"("id") ON DELETE CASCADE;
+
+ALTER TABLE ONLY "public"."golf_class_exceptions"
+    ADD CONSTRAINT "golf_class_exceptions_created_by_fkey" FOREIGN KEY ("created_by") REFERENCES "auth"."users"("id") ON DELETE SET NULL;
+
+ALTER TABLE ONLY "public"."golf_push_holds"
+    ADD CONSTRAINT "golf_push_holds_pkey" PRIMARY KEY ("id");
+
+ALTER TABLE ONLY "public"."golf_push_holds"
+    ADD CONSTRAINT "golf_push_holds_reason" CHECK (("reason" = ANY (ARRAY['class'::"text", 'playing'::"text"])));
+
+ALTER TABLE ONLY "public"."golf_push_holds"
+    ADD CONSTRAINT "golf_push_holds_group" CHECK (("group_key" = ANY (ARRAY['announcements'::"text", 'events'::"text", 'coach_dm'::"text", 'group'::"text", 'tasks'::"text", 'coachhelm'::"text", 'other'::"text"])));
+
+ALTER TABLE ONLY "public"."golf_push_holds"
+    ADD CONSTRAINT "golf_push_holds_window" CHECK (("release_at" > "held_at") AND ("release_at" <= ("held_at" + CASE "reason" WHEN 'class'::"text" THEN '04:00:00'::interval ELSE '10:00:00'::interval END)));
+
+ALTER TABLE ONLY "public"."golf_push_holds"
+    ADD CONSTRAINT "golf_push_holds_outcome" CHECK ((("released_at" IS NULL) AND ("outcome" IS NULL)) OR (("released_at" IS NOT NULL) AND ("outcome" = ANY (ARRAY['summarized'::"text", 'sent_alone'::"text", 'read_in_app'::"text", 'expired'::"text", 'failed'::"text", 'cancelled'::"text", 'no_device'::"text"]))));
+
+ALTER TABLE ONLY "public"."golf_push_holds"
+    ADD CONSTRAINT "golf_push_holds_text_len" CHECK (("char_length"("title") <= 200) AND ("char_length"("body") <= 1000));
+
+ALTER TABLE ONLY "public"."golf_push_holds"
+    ADD CONSTRAINT "golf_push_holds_user_id_fkey" FOREIGN KEY ("user_id") REFERENCES "auth"."users"("id") ON DELETE CASCADE;
+
+ALTER TABLE ONLY "public"."golf_push_holds"
+    ADD CONSTRAINT "golf_push_holds_conversation_id_fkey" FOREIGN KEY ("conversation_id") REFERENCES "public"."golf_conversations"("id") ON DELETE CASCADE;
+
+ALTER TABLE ONLY "public"."golf_push_holds"
+    ADD CONSTRAINT "golf_push_holds_message_id_fkey" FOREIGN KEY ("message_id") REFERENCES "public"."golf_messages"("id") ON DELETE CASCADE;
+
+ALTER TABLE ONLY "public"."golf_push_hold_heartbeat"
+    ADD CONSTRAINT "golf_push_hold_heartbeat_pkey" PRIMARY KEY ("id");
+
+ALTER TABLE ONLY "public"."golf_class_hold_dirty"
+    ADD CONSTRAINT "golf_class_hold_dirty_pkey" PRIMARY KEY ("team_id");
+
+ALTER TABLE ONLY "public"."golf_class_hold_dirty"
+    ADD CONSTRAINT "golf_class_hold_dirty_team_id_fkey" FOREIGN KEY ("team_id") REFERENCES "public"."golf_teams"("id") ON DELETE CASCADE;

@@ -670,3 +670,19 @@ GRANT ALL ON TABLE "public"."golf_travel_itineraries" TO "service_role";
 GRANT ALL ON TABLE "public"."putt_details" TO "authenticated";
 
 GRANT ALL ON TABLE "public"."putt_details" TO "service_role";
+
+GRANT SELECT,INSERT,DELETE,UPDATE ON TABLE "public"."golf_team_terms" TO "authenticated";
+GRANT ALL ON TABLE "public"."golf_team_terms" TO "service_role";
+
+GRANT SELECT,INSERT,UPDATE ON TABLE "public"."golf_player_class_settings" TO "authenticated";
+GRANT ALL ON TABLE "public"."golf_player_class_settings" TO "service_role";
+
+GRANT SELECT,INSERT,DELETE ON TABLE "public"."golf_class_exceptions" TO "authenticated";
+GRANT ALL ON TABLE "public"."golf_class_exceptions" TO "service_role";
+
+GRANT SELECT ON TABLE "public"."golf_push_holds" TO "authenticated";
+GRANT ALL ON TABLE "public"."golf_push_holds" TO "service_role";
+
+GRANT ALL ON TABLE "public"."golf_push_hold_heartbeat" TO "service_role";
+
+GRANT ALL ON TABLE "public"."golf_class_hold_dirty" TO "service_role";

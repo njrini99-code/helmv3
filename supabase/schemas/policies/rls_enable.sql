@@ -629,3 +629,15 @@ ALTER TABLE "graveyard"."golf_player_baselines" ENABLE ROW LEVEL SECURITY;
 ALTER TABLE "graveyard"."golf_tracer_health_snapshot" ENABLE ROW LEVEL SECURITY;
 
 ALTER TABLE "graveyard"."golf_validations" ENABLE ROW LEVEL SECURITY;
+
+ALTER TABLE "public"."golf_team_terms" ENABLE ROW LEVEL SECURITY;
+
+ALTER TABLE "public"."golf_player_class_settings" ENABLE ROW LEVEL SECURITY;
+
+ALTER TABLE "public"."golf_class_exceptions" ENABLE ROW LEVEL SECURITY;
+
+ALTER TABLE "public"."golf_push_holds" ENABLE ROW LEVEL SECURITY;
+
+ALTER TABLE "public"."golf_push_hold_heartbeat" ENABLE ROW LEVEL SECURITY;
+
+ALTER TABLE "public"."golf_class_hold_dirty" ENABLE ROW LEVEL SECURITY;
