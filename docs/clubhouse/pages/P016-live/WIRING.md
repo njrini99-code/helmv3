@@ -14,6 +14,11 @@ Shared reads:            src/clubhouse/live/live-queries.ts fetchLiveSnapshot, r
                          the browser for the 20 second poll (the viewer's own session and RLS both times)
 Home:                    src/app/golf/(dashboard)/dashboard/page.tsx loads the snapshot beside loadCoachHome (Promise.all);
                          CoachHome and HomePhone mount LiveNowCard
+Player Home:             the same page loads loadPlayerLive beside loadPlayerHome (Promise.all); PlayerHome and PlayerHomePhone
+                         mount OwnLiveCard. Strokes gained by leg (practice only) are computed on the server from the shots so
+                         far (calculateStatsFromShots, the team's sg_scale_for_player): reads only
+Dock:                    data/shell.ts embeds golf_holes(par, score) in the existing in-progress round read for the Resume
+                         accessory's "Hole 12 · −2"; no new read
 ```
 
 ## Data

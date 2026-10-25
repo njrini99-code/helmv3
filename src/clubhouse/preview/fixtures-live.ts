@@ -134,3 +134,25 @@ export const PREVIEW_LIVE_STATES: Record<string, LiveSnapshot> = {
 export function previewLive(state: string | undefined): LiveSnapshot {
   return PREVIEW_LIVE_STATES[state ?? ''] ?? PREVIEW_LIVE;
 }
+
+/** The player whose own card the Player Home preview draws. */
+export const PREVIEW_OWN_PLAYER_ID = uid('pown');
+const OWN_LEGS = { tee: 0.4, approach: -0.3, short: 0.2, putting: 0.6 };
+
+const own = (s: Omit<Spec, 'id' | 'name'>) => lane({ ...s, id: 'own', name: 'Theo Marsh' });
+
+/**
+ * The player's own card (S1): a practice round with strokes gained by leg, a qualifier round without, and one not saved
+ * for a quarter of an hour. `none` is a player with no round in progress (the card is not drawn).
+ */
+export const PREVIEW_OWN_STATES: Record<string, { snapshot: LiveSnapshot; legs: typeof OWN_LEGS | null }> = {
+  practice: { snapshot: snap([own({ type: 'practice', scores: [4, 5, 3, 4, 4, 3, 5, 4, 4], current: 10 })]), legs: OWN_LEGS },
+  qualifier: { snapshot: snap([own({ type: 'qualifier', scores: [4, 5, 4, 3, 4, 4, 5], current: 8 })]), legs: null },
+  stale: { snapshot: snap([own({ type: 'practice', scores: [4, 5, 4, 3, 4, 4], heard: 15, current: 7 })]), legs: OWN_LEGS },
+  none: { snapshot: snap([]), legs: null },
+};
+
+export function previewOwn(state: string | undefined) {
+  const found = PREVIEW_OWN_STATES[state ?? ''];
+  return found ? { live: found, playerId: PREVIEW_OWN_PLAYER_ID } : null;
+}

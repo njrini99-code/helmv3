@@ -11,6 +11,8 @@
   --ch-live-bead-eagle: var(--ch-score-eagle-fill);
   /* The 40 px figure (above the 11 steps, free by the type rule): the value of --ch-type-figure-l, named as a role. */
   --ch-type-live-figure: 500 calc(40 * var(--ch-type-k))/1 var(--ch-font-sans);
+  /* The 34 px figure of the player's own card, the value of --ch-type-display-l named as a role. */
+  --ch-type-live-own: 600 calc(34 * var(--ch-type-k))/1.08 var(--ch-font-sans);
 }
 html[data-fw-theme='dark'] [data-ui='clubhouse'] {
   --ch-live-bead-eagle: #b84d3f;
@@ -820,4 +822,79 @@ section.ch-lv-card {
 .ch-lv-deskwrap {
   max-width: var(--ch-measure-reading);
   margin-bottom: var(--ch-space-4);
+}
+
+/* The player's own card (4.4): one calm sheet under the hero. No stripe, no border on the left of anything. */
+.ch-lv-own {
+  display: grid;
+  gap: var(--ch-space-3);
+  padding: var(--ch-space-4);
+  border-radius: var(--ch-radius-card);
+  background: var(--ch-bg-surface);
+  box-shadow: var(--ch-elevation-reading);
+}
+.ch-lv-own__title {
+  margin: 0;
+  font: var(--ch-type-13-strong);
+  color: var(--ch-ink-600);
+}
+.ch-lv-own__figure {
+  display: flex;
+  align-items: baseline;
+  gap: var(--ch-space-3);
+}
+.ch-lv-own__par {
+  font: var(--ch-type-live-own);
+  letter-spacing: var(--ch-track-34);
+  color: var(--ch-text-primary);
+}
+.ch-lv-own__par.is-under {
+  color: var(--ch-score-under);
+}
+.ch-lv-own__thru {
+  font: var(--ch-type-15);
+  letter-spacing: var(--ch-track-15);
+  color: var(--ch-text-primary);
+}
+.ch-lv-own__marks {
+  display: flex;
+  gap: var(--ch-space-4);
+}
+.ch-lv-own__mark {
+  display: grid;
+  justify-items: center;
+  gap: var(--ch-space-1);
+  font: var(--ch-type-11);
+  letter-spacing: var(--ch-track-11);
+  color: var(--ch-ink-500);
+}
+.ch-lv-own__next {
+  margin: 0;
+  font: var(--ch-type-14);
+  color: var(--ch-text-primary);
+}
+.ch-lv-own__legs {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--ch-space-2) var(--ch-space-4);
+  margin: 0;
+}
+.ch-lv-own__legs > div {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--ch-space-2);
+}
+.ch-lv-own__legs dt {
+  font: var(--ch-type-13);
+  color: var(--ch-ink-500);
+}
+.ch-lv-own__legs dd {
+  margin: 0;
+  font: var(--ch-type-13-strong);
+  color: var(--ch-text-primary);
+}
+.ch-lv-own__resume {
+  width: 100%;
+  height: 44px;
 }

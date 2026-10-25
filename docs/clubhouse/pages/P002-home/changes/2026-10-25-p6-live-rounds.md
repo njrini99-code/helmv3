@@ -28,3 +28,34 @@ Held items:     none
 ### Verification
 
 - `screens/home/__tests__/home-live-now.test.tsx`. No screenshots were captured (no browser was run here).
+
+## 2026-10-25 — Player Home shows the round in progress (slice 1)
+
+```text
+Design package: build plan P-6 section 4.4 (the player's own live card)
+PR/commit:      claude/clubhouse-live-rounds (slice 1)
+Contract IDs:   CH-16680, CH-16681, CH-16683 (docs/clubhouse/catalog/live.md)
+Actions:        none (reads only; shot tracking, the save path and draft_data are untouched)
+Data impact:    Home's page loads loadPlayerLive beside loadPlayerHome, in parallel. It reads the viewer's own
+                in-progress round (any type) and, for a practice round only, golf_shots, golf_holes and
+                sg_scale_for_player for the strokes gained by leg. A failed read hides the card or the grid; Home never fails on it.
+Held items:     none
+```
+
+### Changed
+
+- Player Home gets a "Round in progress" card while the player has a round going, of any type: to-par at 34, thru, the last
+  three holes with their numbers, "Next: 12 · Par 4 · 412 yds", "Last saved n min ago" once the round has been quiet for
+  10 minutes, and a full-width Resume round. A practice round also shows strokes gained by leg (Off the tee, Approach,
+  Around the green, Putting); a qualifier or a tournament round never does. The card is the first section under the hero on the
+  phone and sits under the head on desktop, including on the first-run page.
+- The card refreshes itself every 20 seconds while the page is visible, with the same reads the server made.
+
+### Why
+
+- A glance between holes should say where the round stands and where the next tee is (plan section 4.4).
+
+### Verification
+
+- `screens/home/__tests__/own-live-card.test.tsx`, `data/__tests__/live-rounds.test.ts`. No screenshots were captured
+  (no browser was run here).

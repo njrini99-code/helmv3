@@ -28,7 +28,7 @@ import { getCurrentDecimalHourInTz } from '@/lib/utils/timezone';
 import { getGreeting, timeOfDayForHour } from '@/lib/utils/time-of-day';
 import { isClubhouseFor } from '@/clubhouse/gate';
 import { loadCoachHome } from '@/clubhouse/data/home';
-import { loadLiveRounds } from '@/clubhouse/data/live-rounds';
+import { loadLiveRounds, loadPlayerLive } from '@/clubhouse/data/live-rounds';
 import { CoachHome, CoachHomeNoTeam } from '@/clubhouse/screens/home/CoachHome';
 import { loadPlayerHome } from '@/clubhouse/data/player-home';
 import { PlayerHome, PlayerHomeNoTeam } from '@/clubhouse/screens/home/PlayerHome';
@@ -285,8 +285,11 @@ export default async function GolfDashboardPage({
     if (player && clubhouse) {
         const team = await resolveClubhouseTeam(session);
         if (!team || team.role !== 'player') return <PlayerHomeNoTeam />;
-        const home = await loadPlayerHome({ teamId: team.teamId, playerId: team.playerId, firstName: player.first_name?.trim() || 'there' });
-        return <PlayerHome data={home} />;
+        const [home, live] = await Promise.all([
+            loadPlayerHome({ teamId: team.teamId, playerId: team.playerId, firstName: player.first_name?.trim() || 'there' }),
+            loadPlayerLive({ teamId: team.teamId, playerId: team.playerId }),
+        ]);
+        return <PlayerHome data={home} live={live} playerId={team.playerId} />;
     }
     if (player) {
         // Get team via membership

@@ -36,4 +36,4 @@ that has not been heard from says so in words rather than being dimmed.
 ## Components
 
 `live/PlayerLane`, `HoleBeads`, `MomentumLine`, `FreshnessChip`, `LiveAnnouncer`, `use-live-rounds`; `screens/live/LiveView`
-(desktop), `LiveViewPhone`, `PlayerLiveSheet` (a sheet, and the desktop panel's body); `screens/home/LiveNowCard`.
+(desktop), `LiveViewPhone`, `PlayerLiveSheet` (a sheet, and the desktop panel's body); `screens/home/LiveNowCard`, `screens/home/OwnLiveCard` (the player's own card, Player Home).

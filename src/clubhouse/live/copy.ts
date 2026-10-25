@@ -1,3 +1,4 @@
+import { TERMS } from '../lib/glossary';
 import { clockText, type LiveRoundType, type LiveSort } from './model';
 
 /**
@@ -91,6 +92,10 @@ export const OWN_COPY = {
   teammates: (n: number) => `Teammates on the course · ${n}`,
   /** CH-16683 */
   lastSaved: (minutes: number) => `Last saved ${minutes} min ago`,
+  /** The primary action of the own card. */
+  resume: 'Resume round',
+  /** The strokes gained legs of a practice round (4.4). The plan says "Short game"; the glossary (CONS-18) says Around the green. */
+  legs: { tee: 'Off the tee', approach: 'Approach', short: TERMS.sgArg.long, putting: 'Putting' },
 } as const;
 
 /** CH-16617: Moments, the news in a round. */
