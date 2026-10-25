@@ -1,5 +1,4 @@
 import { createAdminClient } from '@/lib/supabase/admin';
-import { fromUntyped } from '@/lib/supabase/untyped';
 import { logServerError } from '@/lib/server-error-logger';
 import { describeError } from '@/lib/utils/describe-error';
 
@@ -88,7 +87,7 @@ export async function fanOutEventInvitation(p: EventInvitationFanOut): Promise<v
         message: p.inAppMessage ?? `${p.dateLabel}${p.location ? ` at ${p.location}` : ''}`,
         action_url: `/golf/dashboard/calendar`,
       }));
-      const { error: notifError } = await fromUntyped(adminClient, 'golf_calendar_notifications')
+      const { error: notifError } = await adminClient.from('golf_calendar_notifications')
         .upsert(notifications, { onConflict: 'event_id,user_id,notification_type', ignoreDuplicates: true });
       if (notifError) {
         await logServerError(`createGolfEvent notification insert failed: ${notifError.message}`, {
@@ -259,7 +258,7 @@ export async function fanOutEventCancelled(p: EventCancelledFanOut): Promise<voi
         message: detail,
         action_url: `/golf/dashboard/calendar?event=${eventId}`,
       }));
-      const { error: notifError } = await fromUntyped(adminClient, 'golf_calendar_notifications')
+      const { error: notifError } = await adminClient.from('golf_calendar_notifications')
         .upsert(notifications, { onConflict: 'event_id,user_id,notification_type', ignoreDuplicates: false });
       if (notifError) {
         await logServerError(`deleteGolfEvent cancellation notification insert failed: ${notifError.message}`, {

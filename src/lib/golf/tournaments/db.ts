@@ -6,8 +6,7 @@
  * Shapes follow the migrations as written: 4.33's 20261024100000 (tables), and P-5's 20261025040000 (request_id,
  * course_label, golf_team_timezone and the four RPCs, with their jsonb returns).
  */
-import type { SupabaseClient } from '@supabase/supabase-js';
-import { fromUntyped } from '@/lib/supabase/untyped';
+import { tourTable as tourTable433 } from '@/lib/golf/tournaments-tables';
 
 export type TourRoundStatus = 'upcoming' | 'live' | 'suspended_weather' | 'suspended_other' | 'final';
 export type TourStartType = 'tee_times' | 'shotgun' | 'two_tees';
@@ -69,13 +68,12 @@ export interface GolfTournamentEntryRow {
 
 export type TourTable = 'golf_tournaments' | 'golf_tournament_rounds' | 'golf_tournament_entries' | 'golf_tournament_player_rounds';
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-type AnyClient = SupabaseClient<any>;
+/** Any Supabase client: 4.33's one escape hatch onto the held tables decides what it takes. */
+export type TourClient = Parameters<typeof tourTable433>[0];
 
-/** A tournament table that is not in the generated types yet. */
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-export function tourTable(client: AnyClient, table: TourTable): any {
-  return fromUntyped(client, table);
+/** A tournament table that is not in the generated types yet, through 4.33's one escape hatch (tournaments-tables.ts). */
+export function tourTable(client: TourClient, table: TourTable) {
+  return tourTable433(client, table);
 }
 
 /** golf_tournament_create_from_calendar(p jsonb). */
@@ -160,11 +158,11 @@ export interface TourRpcs {
 
 /** Call a P-5 RPC that is not in the generated types yet. */
 export async function tourRpc<K extends keyof TourRpcs>(
-  client: AnyClient,
+  client: TourClient,
   name: K,
   args: TourRpcs[K]['args'],
 ): Promise<{ data: TourRpcs[K]['result'] | null; error: { code?: string; message: string; details?: string | null } | null }> {
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const res = await (client as any).rpc(name, args);
+  const rpc = client.rpc.bind(client) as unknown as (n: string, a: unknown) => PromiseLike<{ data: unknown; error: { code?: string; message: string; details?: string | null } | null } | null>;
+  const res = await rpc(name, args);
   return { data: (res?.data ?? null) as TourRpcs[K]['result'] | null, error: res?.error ?? null };
 }

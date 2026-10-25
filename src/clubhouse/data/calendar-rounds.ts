@@ -1,7 +1,6 @@
 import 'server-only';
-import type { SupabaseClient } from '@supabase/supabase-js';
 import { isTourSchemaMissing } from '@/lib/golf/tournament-refusals';
-import { tourTable } from './tournaments-db';
+import { tourTable, type TourClient } from './tournaments-db';
 import type { ChCalRoundRef } from '../screens/calendar/model';
 
 type RoundRow = {
@@ -21,8 +20,7 @@ type RoundRow = {
  * the lineup is published (4.33's revealed-only rule). Any failure returns `failed`: events load without refs.
  */
 export async function loadRoundRefs(
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  supabase: SupabaseClient<any>,
+  supabase: TourClient,
   eventIds: string[],
   role: 'coach' | 'player',
 ): Promise<{ refs: Map<string, ChCalRoundRef>; failed: boolean; missing?: boolean; error?: unknown }> {
