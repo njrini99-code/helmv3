@@ -17,25 +17,43 @@ implemented/tested behavior from open runtime acceptance; this pass does not
 reserve new IDs or mark manual contracts verified.
 <!-- clubhouse:release-audit:end -->
 
-Every behaviour Recruiting promises, by the 25 V2 categories (D-69). A contract's
-number is its Bridge ID (D-68: namespace 14, category, item); `Code` is the
-catalog code on the element and in the test (`docs/clubhouse/catalog/recruiting.md`).
-Every contract on this page has a catalog code; there are no hand-recorded behaviours without one
-(the category map routes the page's rows to their categories, `config/clubhouse/category-map.json`).
-The shell's contracts (P001, namespace 1) apply here too and are named where they carry a category.
-`clubhouse:check` holds this file to the registry.
+Every behaviour Recruiting promises, by the 25 V2 categories (D-69). A
+contract's number is its Bridge ID (D-68: namespace 14, category, item); `Code`
+is the catalog code on the element and in the test
+(`docs/clubhouse/catalog/recruiting.md`). Every contract on this page has a
+catalog code; there are no hand-recorded behaviours without one (the category
+map routes the page's rows to their categories,
+`config/clubhouse/category-map.json`). The shell's contracts (P001, namespace 1)
+apply here too and are named where they carry a category. `clubhouse:check`
+holds this file to the registry.
 
-One screen on one route: a coach's prospect tracker. A header and Add prospect, a pipeline of four stages
-(Watched, Recruiting, Offered, Committed) that filters the list, a searchable and sortable list, and the open
-prospect's panel with contact, notes and private documents. On a phone it is the owner's phone build: the list, a
-pushed prospect, and sheets for the edit form, the stage and delete. It is coach-only (a player is sent Home), and
-it changes no schema.
+One screen on one route: a coach's prospect tracker. A header and New prospect,
+a pipeline of four stages (Watched, Recruiting, Offered, Committed) that filters
+the list, a searchable and sortable list, and the open prospect's panel with
+contact, notes and private documents. On a phone it is the owner's phone build:
+the list, a pushed prospect, and sheets for the edit form, the stage and delete.
+It is coach-only (a player is sent Home), and it changes no schema.
 
 ## 01 — Default / core UI
 
 Status: DEFINED
 
-Recruiting opens final on first paint, read on the server in one pass: the header with Add prospect and the recruiting calendar line (CH-14808), the pipeline with every stage's count (the share of the list is no longer drawn, P014 finding #4), the list by recently updated, and the first prospect's panel (140101, CH-14904). While the next-step columns exist on golf_recruits (migration 20261008120000, written and not applied on 2026-10-08), the table adds a Next step column, the panel a Next step part (CH-14307), the phone rows a dated plate for a due step (every step while sorted by Next step due, and under the name on a desktop list too narrow for the column; a step whose day has passed reads "Overdue"), the sort "Next step due" (a step with no day after the dated ones), and the pipeline head "n visits this month · n decisions due" (a committed prospect's decision is not counted); until then all of it is hidden and nothing names the columns in a read or a write. On a phone at 820px and below it is the phone build (141901, CH-14914). The route draws the Clubhouse page only for a coach with the Clubhouse on; everyone else keeps the existing page. From the shell, the frame opens on its own (10102).
+Recruiting opens final on first paint, read on the server in one pass: the
+header with New prospect and the recruiting calendar line (CH-14808), the
+pipeline with every stage's count (the share of the list is no longer drawn,
+P014 finding #4), the list by recently updated, and the first prospect's panel
+(140101, CH-14904). While the next-step columns exist on golf_recruits
+(migration 20261008120000, written and not applied on 2026-10-08), the table
+adds a Next step column, the panel a Next step part (CH-14307), the phone rows a
+dated plate for a due step (every step while sorted by Next step due, and under
+the name on a desktop list too narrow for the column; a step whose day has
+passed reads "Overdue"), the sort "Next step due" (a step with no day after the
+dated ones), and the pipeline head "n visits this month · n decisions due" (a
+committed prospect's decision is not counted); until then all of it is hidden
+and nothing names the columns in a read or a write. On a phone at 820px and
+below it is the phone build (141901, CH-14914). The route draws the Clubhouse
+page only for a coach with the Clubhouse on; everyone else keeps the existing
+page. From the shell, the frame opens on its own (10102).
 
 | Bridge ID | Code | Name | Meaning |
 | --- | --- | --- | --- |
@@ -48,7 +66,12 @@ From the shell (P001): 10101 CH-1904, 10102 SHELL_READY,
 
 Status: DEFINED
 
-The route skeleton (140201, CH-14401) draws the header, the pipeline, the table and the panel in their final slots, and on a phone the search, the timeline and seven rows; it is `recruiting/loading.tsx`, through `ClubhouseSwitch`, so it shows only inside the Clubhouse. A prospect's documents have their own two-row skeleton (140202, CH-14402), marked busy. v2 timing: nothing for 150ms, then a fade (the shell's 11609).
+The route skeleton (140201, CH-14401) draws the header, the pipeline, the table
+and the panel in their final slots, and on a phone the search, the timeline and
+seven rows; it is `recruiting/loading.tsx`, through `ClubhouseSwitch`, so it
+shows only inside the Clubhouse. A prospect's documents have their own two-row
+skeleton (140202, CH-14402), marked busy. v2 timing: nothing for 150ms, then a
+fade (the shell's 11609).
 
 | Bridge ID | Code | Name | Meaning |
 | --- | --- | --- | --- |
@@ -62,7 +85,12 @@ From the shell (P001): 10201 CH-1401, 10202 CH-1402.
 
 Status: DEFINED
 
-While a write is in flight its button says so and is off, and nothing closes the dialog or sheet it is in: Saving for an add or a save (140301, CH-14403), Uploading (140302, CH-14404), Removing (140303, CH-14405) and Deleting (140304, CH-14406). A save over 5 seconds says it is still saving, once (the shell's 10702). The list does not poll; a fresh list arrives with a write or Try again (141501).
+While a write is in flight its button says so and is off, and nothing closes the
+dialog or sheet it is in: Saving for an add or a save (140301, CH-14403),
+Uploading (140302, CH-14404), Removing (140303, CH-14405) and Deleting (140304,
+CH-14406). A save over 5 seconds says it is still saving, once (the shell's
+10702). The list does not poll; a fresh list arrives with a write or Try again
+(141501).
 
 | Bridge ID | Code | Name | Meaning |
 | --- | --- | --- | --- |
@@ -107,7 +135,16 @@ From the shell (P001): 10401 CH-1301, 10402 CH-1302, 10403 CH-1303,
 
 Status: DEFINED
 
-The form checks before it sends, with the message beside the field, focus on the first invalid one, and nothing sent: a first name is required (140501, CH-14101); a class year is a four-digit year from 2020 to 2040 (140502, CH-14102); a state is two letters (140503, CH-14103); and a value past the server's limit (names and hometown 120 characters, email 254, phone 40, notes 5,000) says so instead of being cut (140504, CH-14104). The same limits as the server's own check, so the server's answer is never the first time a coach hears of them. A file to upload is screened in the dialog: over 25 MB (140505, CH-14105) and a type the bucket does not take (140506, CH-14106) are refused before anything is sent.
+The form checks before it sends, with the message beside the field, focus on the
+first invalid one, and nothing sent: a first name is required (140501,
+CH-14101); a class year is a four-digit year from 2020 to 2040 (140502,
+CH-14102); a state is two letters (140503, CH-14103); and a value past the
+server's limit (names and hometown 120 characters, email 254, phone 40, notes
+5,000) says so instead of being cut (140504, CH-14104). The same limits as the
+server's own check, so the server's answer is never the first time a coach hears
+of them. A file to upload is screened in the dialog: over 25 MB (140505,
+CH-14105) and a type the bucket does not take (140506, CH-14106) are refused
+before anything is sent.
 
 | Bridge ID | Code | Name | Meaning |
 | --- | --- | --- | --- |
@@ -127,7 +164,18 @@ The form checks before it sends, with the message beside the field, focus on the
 
 Status: DEFINED
 
-Every write goes through `useAction`, which reports it (Sentry, under `recruiting.<action>`), buzzes the error haptic and raises a toast with the reason and a Retry: adding a prospect (140601, CH-14001), saving changes (140602, CH-14002), a stage change (140603, CH-14003), deleting (140604, CH-14004), uploading a document (140605, CH-14005), removing one (140606, CH-14006) and opening one (140607, CH-14007). A refused or thrown write is a sentence in the coach's words, never a status code. The list that does not load is a notice with Try again (140608, CH-14201), never the empty state; a prospect's documents that do not load are a notice inside the Documents section, and the rest of the prospect still works (140609, CH-14202). A section that crashes while drawing is contained and reported with its own Try again (140610, CH-14203). The shell's frame errors apply too (10603 to 10606).
+Every write goes through `useAction`, which reports it (Sentry, under
+`recruiting.<action>`), buzzes the error haptic and raises a toast with the
+reason and a Retry: adding a prospect (140601, CH-14001), saving changes
+(140602, CH-14002), a stage change (140603, CH-14003), deleting (140604,
+CH-14004), uploading a document (140605, CH-14005), removing one (140606,
+CH-14006) and opening one (140607, CH-14007). A refused or thrown write is a
+sentence in the coach's words, never a status code. The list that does not load
+is a notice with Try again (140608, CH-14201), never the empty state; a
+prospect's documents that do not load are a notice inside the Documents section,
+and the rest of the prospect still works (140609, CH-14202). A section that
+crashes while drawing is contained and reported with its own Try again (140610,
+CH-14203). The shell's frame errors apply too (10603 to 10606).
 
 | Bridge ID | Code | Name | Meaning |
 | --- | --- | --- | --- |
@@ -151,7 +199,12 @@ From the shell (P001): 10601 CH-1001, 10602 CH-1201, 10603 CH-1202,
 
 Status: DEFINED
 
-Offline, no write is sent: the shell's toast names what did not happen ("Couldn't move Mason Reilly to Committed: you're offline"), the error haptic fires, and the page stays as it was, so a stage that was not sent has nothing to put back (140701, CH-14901, with the shell's 10703). The banner says the device is offline (10701), a save over 5 seconds says it is still saving (10702), and Try again on a notice while offline says so instead of failing again (10704).
+Offline, no write is sent: the shell's toast names what did not happen
+("Couldn't move Mason Reilly to Committed: you're offline"), the error haptic
+fires, and the page stays as it was, so a stage that was not sent has nothing to
+put back (140701, CH-14901, with the shell's 10703). The banner says the device
+is offline (10701), a save over 5 seconds says it is still saving (10702), and
+Try again on a notice while offline says so instead of failing again (10704).
 
 | Bridge ID | Code | Name | Meaning |
 | --- | --- | --- | --- |
@@ -167,7 +220,16 @@ From the shell (P001): 10701 CH-1901, 10702 CH-1902, 10703 CH-1903,
 
 Status: DEFINED
 
-Recruiting is for coaches. A player who opens it is sent Home before the page draws, as the existing page does, and the Clubhouse route itself draws nothing for a session with no coach (140801, CH-14902). The page's own server actions scope every read and write to the coach's active team, with RLS behind them and no service role; when one refuses a write because the caller is not the team's coach, the server's sentence is the toast's reason (140802, CH-14903). The sidebar lists Recruiting for a coach only (10802), and the Clubhouse gate decides whether a coach gets the new page at all (10801). The documents bucket is private: a file is reached only through a link that expires, made when it is opened.
+Recruiting is for coaches. A player who opens it is sent Home before the page
+draws, as the existing page does, and the Clubhouse route itself draws nothing
+for a session with no coach (140801, CH-14902). The page's own server actions
+scope every read and write to the coach's active team, with RLS behind them and
+no service role; when one refuses a write because the caller is not the team's
+coach, the server's sentence is the toast's reason (140802, CH-14903). The
+sidebar lists Recruiting for a coach only (10802), and the Clubhouse gate
+decides whether a coach gets the new page at all (10801). The documents bucket
+is private: a file is reached only through a link that expires, made when it is
+opened.
 
 | Bridge ID | Code | Name | Meaning |
 | --- | --- | --- | --- |
@@ -181,7 +243,14 @@ From the shell (P001): 10801 CLUBHOUSE_GATE, 10802 ROLE_SCOPED_NAV,
 
 Status: DEFINED
 
-A landed write says so, after the answer: "Ellie Morrow added" and the prospect is in the list and open, even if the search or stage would have hidden them (140901, CH-14905); "Mason Reilly saved", with the row, the panel and the pipeline showing the change (140902, CH-14906); "Mason Reilly deleted", and the next prospect opens (140903, CH-14907); "Fall schedule added" or "Fall schedule.pdf removed", and the list reads again without losing its rows (140904, CH-14908). Each lands with the success haptic (the shell's 11702). A stage change is silent on success beyond the polite announcement (141803).
+A landed write says so, after the answer: "Ellie Morrow added" and the prospect
+is in the list and open, even if the search or stage would have hidden them
+(140901, CH-14905); "Mason Reilly saved", with the row, the panel and the
+pipeline showing the change (140902, CH-14906); "Mason Reilly deleted", and the
+next prospect opens (140903, CH-14907); "Fall schedule added" or "Fall
+schedule.pdf removed", and the list reads again without losing its rows (140904,
+CH-14908). Each lands with the success haptic (the shell's 11702). A stage
+change is silent on success beyond the polite announcement (141803).
 
 | Bridge ID | Code | Name | Meaning |
 | --- | --- | --- | --- |
@@ -200,7 +269,15 @@ Status: N/A — Recruiting warns about nothing before it happens. The one thing 
 
 Status: DEFINED
 
-Deleting a prospect asks first, and says what goes with them: "Delete Mason Reilly?" with "This removes them from your list, with their notes and documents. This can't be undone." On desktop Delete prospect is in the panel's overflow menu beside Edit (P014 finding #3, 2026-10-08) and asks in a dialog with Keep them and Delete prospect; on the phone it is an action sheet with Delete prospect in red and Cancel apart below it (141101, CH-14501). A warning haptic precedes it (141702, CH-14702). Typing the name is not asked. Removing a document asks too (141102, CH-14502). Nothing is deleted optimistically: the question stays open, and the prospect stays, until the server has answered.
+Deleting a prospect asks first, and says what goes with them: "Delete Mason
+Reilly?" with "This removes them from your list, with their notes and documents.
+This can't be undone." On desktop Delete prospect is in the panel's overflow
+menu beside Edit (P014 finding #3, 2026-10-08) and asks in a dialog with Keep
+them and Delete prospect; on the phone it is an action sheet with Delete
+prospect in red and Cancel apart below it (141101, CH-14501). A warning haptic
+precedes it (141702, CH-14702). Typing the name is not asked. Removing a
+document asks too (141102, CH-14502). Nothing is deleted optimistically: the
+question stays open, and the prospect stays, until the server has answered.
 
 | Bridge ID | Code | Name | Meaning |
 | --- | --- | --- | --- |
@@ -211,7 +288,12 @@ Deleting a prospect asks first, and says what goes with them: "Delete Mason Reil
 
 Status: DEFINED
 
-A save that fails leaves the dialog or sheet open with every field as it was typed, so nothing has to be typed again (141201, CH-14910). An upload that fails keeps the title and the category chosen (140605, CH-14005). The stage filter and the sort are remembered in this browser (`localStorage`), as they are on the existing page, and come back when the coach does; the search and the open prospect are not.
+A save that fails leaves the dialog or sheet open with every field as it was
+typed, so nothing has to be typed again (141201, CH-14910). An upload that fails
+keeps the title and the category chosen (140605, CH-14005). The stage filter and
+the sort are remembered in this browser (`localStorage`), as they are on the
+existing page, and come back when the coach does; the search and the open
+prospect are not.
 
 | Bridge ID | Code | Name | Meaning |
 | --- | --- | --- | --- |
@@ -221,7 +303,14 @@ A save that fails leaves the dialog or sheet open with every field as it was typ
 
 Status: DEFINED
 
-A stage is saved the moment it is picked, so the prospect is in the new stage before the server has answered: the row's chip, the panel's control, the pipeline's counts and shares (141301, CH-14909). If the save does not land, the prospect goes back to the stage it was in, the toast says so with a Retry (140603, CH-14003), and Retry moves them again and, if that fails too, puts them back again. The move and its undo are both inside the action, so a thrown error is undone as well. Nothing else on the page is optimistic: an add, an edit, a delete and every document write wait for the server.
+A stage is saved the moment it is picked, so the prospect is in the new stage
+before the server has answered: the row's chip, the panel's control, the
+pipeline's counts and shares (141301, CH-14909). If the save does not land, the
+prospect goes back to the stage it was in, the toast says so with a Retry
+(140603, CH-14003), and Retry moves them again and, if that fails too, puts them
+back again. The move and its undo are both inside the action, so a thrown error
+is undone as well. Nothing else on the page is optimistic: an add, an edit, a
+delete and every document write wait for the server.
 
 | Bridge ID | Code | Name | Meaning |
 | --- | --- | --- | --- |
@@ -231,7 +320,11 @@ A stage is saved the moment it is picked, so the prospect is in the new stage be
 
 Status: DEFINED
 
-Retry on a failure toast runs the same action again with the same arguments, with everything that follows a write (the move, the undo, the list read, the closing of the dialog) inside it, so a retry finishes the whole job (141401, CH-14911). Try again on the list's notice and on the Documents notice read them again (140608, 140609). The shell's Retry and Try again apply (11401, 11402).
+Retry on a failure toast runs the same action again with the same arguments,
+with everything that follows a write (the move, the undo, the list read, the
+closing of the dialog) inside it, so a retry finishes the whole job (141401,
+CH-14911). Try again on the list's notice and on the Documents notice read them
+again (140608, 140609). The shell's Retry and Try again apply (11401, 11402).
 
 | Bridge ID | Code | Name | Meaning |
 | --- | --- | --- | --- |
@@ -243,7 +336,14 @@ From the shell (P001): 11401 ROUTE_TRY_AGAIN, 11402 TOAST_RETRY.
 
 Status: DEFINED
 
-The server's list is the page's source: after a write, or Try again, the server sends a fresh list and it replaces the page's copy, so a retry after a failed read shows the prospects and never "your list starts here" (141501, CH-14912). A prospect's documents are read when it opens, and again after an upload or a removal, keeping their rows on screen while they do (140904). Dates in the list resolve from the server's clock and the UTC calendar until the browser knows its own zone, so there is no mismatch at hydration. There is no live feed: the list belongs to one coach's team and changes when they change it.
+The server's list is the page's source: after a write, or Try again, the server
+sends a fresh list and it replaces the page's copy, so a retry after a failed
+read shows the prospects and never "your list starts here" (141501, CH-14912). A
+prospect's documents are read when it opens, and again after an upload or a
+removal, keeping their rows on screen while they do (140904). Dates in the list
+resolve from the server's clock and the UTC calendar until the browser knows its
+own zone, so there is no mismatch at hydration. There is no live feed: the list
+belongs to one coach's team and changes when they change it.
 
 | Bridge ID | Code | Name | Meaning |
 | --- | --- | --- | --- |
@@ -265,7 +365,10 @@ and an empty part's action take the row press tint for the press beat, never a
 scale (141604, CH-14604). A key presses in about 6px and springs back through
 the shell's press (11606), while a prospect row deepens its tint instead; there
 is no first-paint rise; reduced motion and Animations off remove all of it
-(11608). A landed move to Committed draws a 1px gilt rule under the stage, left to right over the reveal duration, once per commit (CH-14806); it is at rest on every committed prospect and at once with reduced motion. This page's own CSS uses only the v2 tokens (D-64).
+(11608). A landed move to Committed draws a 1px gilt rule under the stage, left
+to right over the reveal duration, once per commit (CH-14806); it is at rest on
+every committed prospect and at once with reduced motion. This page's own CSS
+uses only the v2 tokens (D-64).
 
 | Bridge ID | Code | Name | Meaning |
 | --- | --- | --- | --- |
@@ -284,7 +387,13 @@ From the shell (P001): 11601 CH-1601, 11602 CH-1602, 11603 CH-1603,
 
 Status: DEFINED
 
-v2 grammar (D-70): selection when a stage is picked as the filter or as a prospect's stage, when a row is opened and when a sort is chosen (141701, CH-14701); warning when Delete prospect is tapped, before the question (141702, CH-14702); success for a landed save or send (11702), except a move to Committed, whose success lands as its gilt rule finishes drawing (CH-14806; at once with reduced motion or Animations off); error when a write fails (11703). Every other tap is silent.
+v2 grammar (D-70): selection when a stage is picked as the filter or as a
+prospect's stage, when a row is opened and when a sort is chosen (141701,
+CH-14701); warning when Delete prospect is tapped, before the question (141702,
+CH-14702); success for a landed save or send (11702), except a move to
+Committed, whose success lands as its gilt rule finishes drawing (CH-14806; at
+once with reduced motion or Animations off); error when a write fails (11703).
+Every other tap is silent.
 
 | Bridge ID | Code | Name | Meaning |
 | --- | --- | --- | --- |
@@ -341,7 +450,12 @@ From the shell (P001): 11801 CH-1801, 11802 CH-1802, 11803 CH-1803,
 
 Status: DEFINED
 
-At 820px and below Recruiting is the phone build from the owner's boards, never a shrunken desktop: the top bar reads Recruiting with "‹ More", a prospect is a pushed screen, and the edit form, the stage picker and delete are bottom sheets (141901, CH-14914). The desktop list reflows by its own width (container queries), so a narrow canvas drops columns instead of scrolling the page. The phone chrome (the tab bar, the safe areas, the top bar) is the shell's (11901).
+At 820px and below Recruiting is the phone build from the owner's boards, never
+a shrunken desktop: the top bar reads Recruiting with "‹ More", a prospect is a
+pushed screen, and the edit form, the stage picker and delete are bottom sheets
+(141901, CH-14914). The desktop list reflows by its own width (container
+queries), so a narrow canvas drops columns instead of scrolling the page. The
+phone chrome (the tab bar, the safe areas, the top bar) is the shell's (11901).
 
 | Bridge ID | Code | Name | Meaning |
 | --- | --- | --- | --- |
@@ -353,7 +467,11 @@ From the shell (P001): 11901 PHONE_CHROME.
 
 Status: DEFINED
 
-Enter in a field of the form saves it through the same checks as the button, Esc closes a dialog or clears the search, and arrow keys move the stage (142001, CH-14913). Text fields are 16px on the phone so iOS does not zoom, and every control has a 44px hit area. The shell's edge swipe pops the pushed phone screen (12001).
+Enter in a field of the form saves it through the same checks as the button, Esc
+closes a dialog or clears the search, and arrow keys move the stage (142001,
+CH-14913). Text fields are 16px on the phone so iOS does not zoom, and every
+control has a 44px hit area. The shell's edge swipe pops the pushed phone screen
+(12001).
 
 | Bridge ID | Code | Name | Meaning |
 | --- | --- | --- | --- |
@@ -365,7 +483,11 @@ From the shell (P001): 12001 CH-1906, 12002 CH-1907, 12003 CH-1908.
 
 Status: DEFINED
 
-Recruiting is read once on the server, in one pass, and arrives whole; a prospect's documents are read only when it opens, so the page never waits for a file list it may not show. There are no requests after first paint except a write, Try again and a prospect's documents. A slow click is the shell's (12101).
+Recruiting is read once on the server, in one pass, and arrives whole; a
+prospect's documents are read only when it opens, so the page never waits for a
+file list it may not show. There are no requests after first paint except a
+write, Try again and a prospect's documents. A slow click is the shell's
+(12101).
 
 From the shell (P001): 12101 CH-1954.
 
@@ -373,7 +495,9 @@ From the shell (P001): 12101 CH-1954.
 
 Status: DEFINED
 
-The shell records rage, dead and slow clicks for every page (12201 to 12203). Recruiting adds no events of its own; its breadcrumbs are error context, not analytics.
+The shell records rage, dead and slow clicks for every page (12201 to 12203).
+Recruiting adds no events of its own; its breadcrumbs are error context, not
+analytics.
 
 From the shell (P001): 12201 CH-1951, 12202 CH-1952, 12203 CH-1953.
 
@@ -381,7 +505,14 @@ From the shell (P001): 12201 CH-1951, 12202 CH-1952, 12203 CH-1953.
 
 Status: DEFINED
 
-Failures are reported, server reads logged and intents breadcrumbed. A refused write is reported at low severity and a thrown one at the default, under surface `recruiting` and the write's own name (`recruiting.add`, `.save`, `.stage`, `.delete`, `.upload`, `.removeDocument`, `.openDocument`); a crash is reported high under its section (`recruiting.pipeline`, `.list`, `.panel`). A failed list read logs through `chLogServer('recruiting', 'prospects')`, and each intent leaves a `chTrail` breadcrumb before anything is sent. The shell's failure reporting applies (12301).
+Failures are reported, server reads logged and intents breadcrumbed. A refused
+write is reported at low severity and a thrown one at the default, under surface
+`recruiting` and the write's own name (`recruiting.add`, `.save`, `.stage`,
+`.delete`, `.upload`, `.removeDocument`, `.openDocument`); a crash is reported
+high under its section (`recruiting.pipeline`, `.list`, `.panel`). A failed list
+read logs through `chLogServer('recruiting', 'prospects')`, and each intent
+leaves a `chTrail` breadcrumb before anything is sent. The shell's failure
+reporting applies (12301).
 
 From the shell (P001): 12301 FAILURES_REPORTED.
 
@@ -389,7 +520,12 @@ From the shell (P001): 12301 FAILURES_REPORTED.
 
 Status: DEFINED
 
-`src/clubhouse/__tests__/recruiting.test.tsx` names every catalog code of kinds 0 to 5 that is not marked preview, in a test title, and forces it (motion, CH-14601 and CH-14602, is preview-checked only). The stage save and its rollback, the delete confirmation, search, filter and sort, the role gate and a failed upload each fail when the code they guard is broken (VERIFY.md, mutation checks). The shell's convention applies (12401).
+`src/clubhouse/__tests__/recruiting.test.tsx` names every catalog code of kinds
+0 to 5 that is not marked preview, in a test title, and forces it (motion,
+CH-14601 and CH-14602, is preview-checked only). The stage save and its
+rollback, the delete confirmation, search, filter and sort, the role gate and a
+failed upload each fail when the code they guard is broken (VERIFY.md, mutation
+checks). The shell's convention applies (12401).
 
 From the shell (P001): 12401 TESTS_NAME_CONTRACTS.
 

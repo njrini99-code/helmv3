@@ -19,6 +19,8 @@ import { puttingNote } from './notes';
 import { LinkPending } from '../../shell/LinkPending';
 import { StatsTeamPhone } from './StatsTeamPhone';
 import { RetryNotice, ShowSeason, StatsTeamFrame, TeamCharts, TeamFilter, TeamFilterEmpty, TeamHeadActions } from './StatsTeamIslands';
+import { pluralWord } from '../../lib/plural';
+import { TeamInsight } from './StatsInsight';
 
 /**
  * Team stats. Rendered on the server: the figures, putting and season bests
@@ -70,7 +72,7 @@ export function StatsTeam({ data }: { data: ChTeamStats }) {
             'Countable rounds only'
           ) : (
             <>
-              <span className="ch-num">{data.activeCount}</span> active {data.activeCount === 1 ? 'player' : 'players'} &middot; countable rounds only
+              <span className="ch-num">{data.activeCount}</span> active {pluralWord(data.activeCount, 'player')} &middot; countable rounds only
             </>
           )}
         </PageHero>
@@ -84,7 +86,7 @@ export function StatsTeam({ data }: { data: ChTeamStats }) {
             tone="danger"
             code="CH-4201"
             title="Team rounds didn’t load"
-            body="Every figure would be incomplete, so none is shown. The error has been reported."
+            body="Every figure would be incomplete, so none is shown."
           />
         )}
         <PageRefreshNotice parts={failed} />
@@ -110,6 +112,10 @@ export function StatsTeam({ data }: { data: ChTeamStats }) {
         ) : (
           !data.roundsError && (
             <>
+              {/* Row 70: what changed, in words, before any figure. */}
+              <SectionBoundary surface="stats.team.insight" label="What changed" code="CH-4204">
+                <TeamInsight figures={data.figures} last={data.last} />
+              </SectionBoundary>
               <TeamCharts
                 tape={
                   <SectionBoundary surface="stats.team.figures" label="Team figures" code="CH-4204">
@@ -121,9 +127,11 @@ export function StatsTeam({ data }: { data: ChTeamStats }) {
                   window: data.window,
                   filter: data.filter,
                   weeks: data.weeks,
+                  weekStarts: data.weekStarts,
                   team: data.team,
                   players: data.players,
                   legWeeks: data.legWeeks,
+                  legHalves: data.legHalves,
                   grid: data.grid,
                   legTotals: data.legTotals,
                   tour: data.tour,
@@ -163,7 +171,7 @@ function TeamFigures({ figures, cacheError, covered, against }: { figures: ChTea
         <RetryNotice
           code="CH-4202"
           title="Some team figures didn’t load"
-          body="Scoring is correct; greens, putts and scrambling are missing. The error has been reported."
+          body="Scoring is correct; greens, putts and scrambling are missing."
           covered={covered}
         />
       )}
@@ -198,7 +206,7 @@ function TeamFigures({ figures, cacheError, covered, against }: { figures: ChTea
 }
 
 function TeamPutting({ putting, failed, covered }: { putting: ChTeamStats['putting']; failed: boolean; covered: boolean }) {
-  if (failed) return <RetryNotice code="CH-4203" title="Team putting didn’t load" body="Try again; the error has been reported." covered={covered} />;
+  if (failed) return <RetryNotice code="CH-4203" title="Team putting didn’t load" body="Try again." covered={covered} />;
   if (!putting)
     return (
       <div className="ch-st-card">
@@ -232,7 +240,7 @@ function SeasonBests({ bests, filter, longestError, covered }: { bests: ChTeamSt
           <div key={b.label} className="ch-best__r">
             <span className="ch-best__k">{b.label}</span>
             <Link href={teamPlayerHref(b.playerId, filter)} className="ch-who" style={{ textDecoration: 'none', color: 'inherit' }}>
-              <Avatar name={b.name} size={26} />
+              <Avatar name={b.name} id={b.playerId} size={26} />
               <span>
                 <b>{b.name}</b>
                 <span className="ch-who__m">{b.meta}</span>
@@ -244,7 +252,7 @@ function SeasonBests({ bests, filter, longestError, covered }: { bests: ChTeamSt
         ))
       )}
       {/* A best that could not be read is said so, not left out: the line would read as "nobody holed a long putt" (CH-4211). */}
-      {longestError && <RetryNotice code="CH-4211" title="The longest putt didn’t load" body="The other bests are right. Try again; the error has been reported." covered={covered} />}
+      {longestError && <RetryNotice code="CH-4211" title="The longest putt didn’t load" body="The other bests are right. Try again." covered={covered} />}
     </section>
   );
 }

@@ -169,7 +169,7 @@ const conflict = (over: Partial<Parameters<typeof InProgressConflictDialog>[0]> 
 });
 
 describe('Round already in progress', () => {
-  it('CH-11514 names the round and offers Resume, Start a new round and Discard, each calling back', async () => {
+  it('CH-11514 names the round and offers Resume, New round and Discard, each calling back', async () => {
     const user = userEvent.setup();
     const p = conflict();
     render(<InProgressConflictDialog {...p} />);
@@ -184,7 +184,7 @@ describe('Round already in progress', () => {
     await user.click(button(/^Resume/));
     expect(p.onResume).toHaveBeenCalledTimes(1);
     expect(ticks('press')).toBe(1);
-    await user.click(button(/^Start a new round/));
+    await user.click(button(/^New round/));
     expect(p.onStartSeparate).toHaveBeenCalledTimes(1);
     await user.click(button(/^Discard/));
     expect(p.onDiscard).not.toHaveBeenCalled();
@@ -241,7 +241,7 @@ describe('Round already in progress', () => {
     const user = userEvent.setup();
     const p = conflict({ busy: true });
     const { rerender } = render(<InProgressConflictDialog {...p} />);
-    for (const b of screen.getAllByRole('button', { name: /^(Resume|Start a new round|Discard)/ })) expect(b).toBeDisabled();
+    for (const b of screen.getAllByRole('button', { name: /^(Resume|New round|Discard)/ })) expect(b).toBeDisabled();
     await user.click(button('Close'));
     expect(p.onClose).not.toHaveBeenCalled();
     rerender(<InProgressConflictDialog {...p} busy={false} />);
@@ -463,7 +463,7 @@ describe('Failures with no dialog to hold them', () => {
     expect(code('CH-11010')).toHaveTextContent('Another save for this round is just finishing. Try again in a moment.');
     expect(code('CH-11010')?.textContent).not.toMatch(/\bbusy\./);
     expect(ticks('error')).toBe(1);
-    await user.click(within(code('CH-11010')!).getByRole('button', { name: 'Retry' }));
+    await user.click(within(code('CH-11010')!).getByRole('button', { name: 'Try again' }));
     expect(run).toHaveBeenCalledTimes(1);
   });
 
@@ -473,7 +473,7 @@ describe('Failures with no dialog to hold them', () => {
     await waitFor(() => expect(code('CH-11011')).not.toBeNull());
     expect(code('CH-11011')).toHaveTextContent('Couldn’t discard the round at Finley GC');
     expect(code('CH-11011')).toHaveTextContent('This round can no longer be discarded. It was already finished.');
-    await user.click(within(code('CH-11011')!).getByRole('button', { name: 'Retry' }));
+    await user.click(within(code('CH-11011')!).getByRole('button', { name: 'Try again' }));
     expect(run).toHaveBeenCalledTimes(1);
     await user.click(button('fail discard plainly'));
     await waitFor(() => expect(screen.getAllByText('Couldn’t discard the round').length).toBe(1));
@@ -485,7 +485,7 @@ describe('Failures with no dialog to hold them', () => {
     await user.click(button('fail updated'));
     await waitFor(() => expect(code('CH-11902')).not.toBeNull());
     expect(code('CH-11902')).toHaveTextContent('This round was updated on another device');
-    expect(within(code('CH-11902')!).queryByRole('button', { name: 'Retry' })).toBeNull();
+    expect(within(code('CH-11902')!).queryByRole('button', { name: 'Try again' })).toBeNull();
     await user.click(within(code('CH-11902')!).getByRole('button', { name: 'Reload' }));
     expect(run).toHaveBeenCalledTimes(1);
   });
@@ -493,8 +493,8 @@ describe('Failures with no dialog to hold them', () => {
   it('CH-11010 CH-11011 CH-11902 the toast is useAction’s shape: an error tone, a code and an action', () => {
     const run = vi.fn();
     for (const [kind, c, label] of [
-      ['save-for-later', 'CH-11010', 'Retry'],
-      ['discard-round', 'CH-11011', 'Retry'],
+      ['save-for-later', 'CH-11010', 'Try again'],
+      ['discard-round', 'CH-11011', 'Try again'],
       ['round-updated', 'CH-11902', 'Reload'],
     ] as const) {
       const t = entryFailureToast(kind, { run });

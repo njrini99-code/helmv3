@@ -77,4 +77,18 @@ describe('useConnectionStatus — isConnected reflects reachability, not HTTP st
 
     await waitFor(() => expect(result.current.isConnected).toBe(false));
   });
+
+  it('pings the liveness probe, not the database readiness probe, by default', async () => {
+    const fetchMock = vi.fn(async (_url: RequestInfo | URL, _init?: RequestInit) => new Response(null, { status: 204 }));
+    global.fetch = fetchMock as unknown as typeof fetch;
+
+    const { result } = renderHook(() => useConnectionStatus({ autoCheck: false }));
+    await result.current.checkNow();
+
+    // /api/health spends up to two 2.5s database reads plus the proxy's auth
+    // check, which outran the 5s check timeout whenever Supabase was slow and
+    // told an online player they were offline (src/app/api/ping/route.ts).
+    expect(fetchMock).toHaveBeenCalledWith('/api/ping', expect.objectContaining({ method: 'HEAD', cache: 'no-store' }));
+    await waitFor(() => expect(result.current.isConnected).toBe(true));
+  });
 });

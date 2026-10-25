@@ -10,7 +10,8 @@ import { Icon } from '../../ui/Icon';
 import { Nine } from '../../ui/Nine';
 import { PageRefreshNotice, RefreshNotice } from '../../ui/RefreshNotice';
 import { SectionBoundary } from '../../ui/SectionBoundary';
-import { changeTone, formatSigned, formatToPar, NO_DATA } from '../../lib/format';
+import { changeTone, formatSigned, formatToPar } from '../../lib/format';
+import { NoData } from '../../ui/NoData';
 import { haptic } from '../../lib/haptics';
 import { useNow } from '../../lib/use-now';
 import { usePhoneHero } from '../../shell/phone-chrome';
@@ -18,6 +19,7 @@ import { rebuiltHref } from '../../shell/nav';
 import { CoachAsks } from './CoachAsks';
 import { Countdown } from './Countdown';
 import { Today, UpNext, WeekStrip } from './HomePhone';
+import { SinceYouLooked } from './DayCard';
 import { noRoundsYet, playerFailedParts } from './model';
 import { PlayerGame } from './PlayerGame';
 import { messageCoachHref, MY_STATS, postRoundHref, roundHref } from './player-links';
@@ -53,7 +55,7 @@ export function PlayerHomePhone({ data, now: frozen }: { data: ChPlayerHome; now
         <SectionBoundary surface="home.upNext" label="Up next" code="CH-2213">
           {data.week.error ? (
             // On the sheet, not in the green card: inside it the notice took the card's ivory ink and its words vanished.
-            <RefreshNotice code="CH-2201" title="This week’s schedule didn’t load" body="Your events are safe. This is a display problem, and trying again usually clears it." covered={covered} />
+            <RefreshNotice code="CH-2201" title="This week’s schedule didn’t load" body="Your events are safe. Try again." covered={covered} />
           ) : data.next ? (
             <UpNext e={data.next} now={now} kicker="Up next">
               {!data.next.allDay && <Countdown to={data.next.startIso} frozen={frozen} />}
@@ -86,7 +88,7 @@ export function PlayerHomePhone({ data, now: frozen }: { data: ChPlayerHome; now
           </Button>
           {post && (
             <Button size="lg" variant="primary" leftIcon={Plus} href={post}>
-              Start a round
+              New round
             </Button>
           )}
         </div>
@@ -94,6 +96,8 @@ export function PlayerHomePhone({ data, now: frozen }: { data: ChPlayerHome; now
       </header>
 
       <div className="ch-hm-body">
+        {/* P-14: what the coach changed on the schedule since this device last looked (changes only; a player sees no teammate's rounds here). */}
+        <SinceYouLooked rounds={[]} event={null} changes={data.changes ?? []} onOpenRound={() => {}} />
         {!data.week.error && !nothingAhead ? (
           <SectionBoundary surface="home.week" label="This week" code="CH-2205">
             {/* The board's Today is a small label inside This week, not a section of its own. */}
@@ -181,9 +185,9 @@ function Latest({ data, covered }: { data: ChPlayerHome['latest']; covered: bool
         )}
       </div>
       {data.error ? (
-        <RefreshNotice code="CH-2202" title="Recent rounds didn’t load" body="Posted rounds are safe. Try again; the error has been reported." covered={covered} />
+        <RefreshNotice code="CH-2202" title="Recent rounds didn’t load" body="Posted rounds are safe. Try again." covered={covered} />
       ) : !r ? (
-        <EmptyState compact code="CH-2302" icon={Flag} title="No rounds posted yet this season." body="Your newest 18-hole round appears here, hole by hole, as soon as you post it." />
+        <EmptyState code="CH-2302" shape="rows" shapeCount={2} title="No rounds posted yet this season." body="Your newest 18-hole round appears here, hole by hole, as soon as you post it." />
       ) : (
         <div className="ch-ph-card">
           <div className="ch-ph-rd">
@@ -212,8 +216,8 @@ function Latest({ data, covered }: { data: ChPlayerHome['latest']; covered: bool
           {/* The round's three figures between hairlines (the Ledger's FigureRow), each drawn under its value. */}
           <FigureRow
             items={[
-              { label: 'GIR', value: r.gir ?? NO_DATA, note: <GirViz gir={r.gir} /> },
-              { label: 'Putts', value: r.putts ?? NO_DATA, note: <PuttsViz putts={r.putts} /> },
+              { label: 'GIR', value: r.gir ?? <NoData />, note: <GirViz gir={r.gir} /> },
+              { label: 'Putts', value: r.putts ?? <NoData />, note: <PuttsViz putts={r.putts} /> },
               { label: 'SG', value: formatSigned(r.sg), tone: figureTone(changeTone(r.sg, false)), note: <SgViz sg={r.sg} /> },
             ]}
           />

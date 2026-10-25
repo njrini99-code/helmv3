@@ -4,11 +4,10 @@ import type { UIMessage } from 'ai';
 import { useEffect, useMemo, useRef, type ReactNode } from 'react';
 import { X } from 'lucide-react';
 import { buildEvidencePanel, type EvidenceFocus } from '../../../data/coachhelm-chat-thread';
-import { Icon } from '../../../ui/Icon';
 import { Modal } from '../../../ui/Modal';
-import { Tooltip } from '../../../ui/Tooltip';
 import { DataTable, Tiles, Trend } from './Evidence';
 import '../../../styles/coachhelm-thread.css';
+import { IconButton } from '../../../ui/Button';
 
 /** The figures behind an action card, beside the conversation on desktop and in a sheet on a phone. */
 export function AskEvidencePanel({ focus, messages, phone, onClose, open = true }: { focus: EvidenceFocus; messages: UIMessage[]; phone: boolean; onClose: () => void; open?: boolean }) {
@@ -78,11 +77,7 @@ function DesktopPanel({ subtitle, onClose, children }: { subtitle: string; onClo
           <b>Evidence</b>
           <span>{subtitle}</span>
         </span>
-        <Tooltip>
-          <button type="button" className="ch-btn ch-btn--ghost ch-iconbtn" aria-label="Close evidence" onClick={onClose}>
-            <Icon icon={X} size={16} />
-          </button>
-        </Tooltip>
+        <IconButton icon={X} label="Close evidence" onClick={onClose} />
       </div>
       {children}
     </aside>

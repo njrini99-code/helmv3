@@ -9,11 +9,12 @@ import { haptic } from '../lib/haptics';
 import { chTween } from '../lib/motion';
 import { useChReducedMotion } from '../lib/reduced-motion';
 import { chTrail } from '../lib/track';
+import { plural } from '../lib/plural';
 
 /** The line under the headline when round scoring is waiting on this device (rounds, holes and shots in IndexedDB). */
 export function pendingLine(total: number): string | null {
   if (!(total > 0)) return null;
-  return `${total} ${total === 1 ? 'change' : 'changes'} saved on this device will sync when you reconnect.`;
+  return `${plural(total, 'change')} saved on this device will sync when you reconnect.`;
 }
 
 /**
@@ -61,7 +62,7 @@ export function OfflineBanner() {
         >
           <Icon icon={WifiOff} size={15} />
           <span>
-            You&apos;re offline. You can keep reading and keep scoring a round; other changes need a connection.
+            You’re offline. You can keep reading and keep scoring a round; other changes need a connection.
             {pending && <span data-ch-offline-pending=""> {pending}</span>}
           </span>
         </m.div>

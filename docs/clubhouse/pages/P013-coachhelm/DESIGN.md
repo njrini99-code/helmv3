@@ -88,7 +88,7 @@ style are Stats'), the cards in `parts.tsx` (`FocusCard`, `Evidence` with its
 the server actions are named). The loaders are `data/coachhelm.ts`, with
 `coachhelm-shape.ts` (types, partition, ordering, the pulse rows) and
 `coachhelm-map.ts` (generator output to what is drawn). The player's views add
-`views/Frame`, `PlayerHelmTabs`, `Profile`, `Standing`, `DeepDive`,
+`views/Frame`, `PlayerHelmTabs`, `Standing` (with `HowYouPlay`), `DeepDive`,
 `KeepReading` and `Skeletons`, their loaders (`coachhelm-profile.ts`,
 `coachhelm-standing.ts`, `coachhelm-dive.ts`) with their pure steps
 (`*-shape.ts`) and `coachhelm-views-shape.ts`, and three page stylesheets
@@ -192,9 +192,9 @@ the page's `ch-hl-note` line and `Skeleton`.
   unsent message. It is kept for the tab, not put in the address, so the
   address stays the page's own; a player or read a link names opens first.
 
-## The player's views (Game profile, Standing, Deep dive)
+## The player's views (Standing, Deep dive)
 
-Owner, 2026-10-01: "coachhelm for player you can build but be detailed." Three
+Owner, 2026-10-01: "coachhelm for player you can build but be detailed." Two
 views of the player's own data beside the board, each at `?view=`, each read for
 the signed-in player alone and only once CoachHelm is on for them. Development
 stays Stats' Development tab, linked from the sub-navigation. Sources: the
@@ -202,7 +202,7 @@ Fairway pages' own reads (the genome, the standing rows and the counterfactual,
 the Board's feed with the category reads and goals), re-drawn; no number is
 computed here that the Fairway page does not compute.
 
-**Sub-navigation.** Board, Game profile, Standing and Deep dive are one
+**Sub-navigation.** Board, Standing and Deep dive are one
 radiogroup of views of this page (the coach's Board and Ask strip is its
 pattern), below the header on desktop and a row of chips above it on the phone
 (the current one pressed and brought into view); Development is a link after
@@ -223,8 +223,16 @@ working, amber for behind or worth watching (red stays for under par and the
 flag, D-42), tertiary ink only for a number that is neutral. Hierarchy is one
 big figure per card, then its words, then the proof.
 
-**Game profile.** The shape of the game as a headline from the persona, Strong
-and Worth watching beside it, then the seven measures, each on its own scale (a
+**How you play (once the Game profile).** The Game profile folded into
+Standing as its last section (chs-37, 2026-10-22), so the player has Board,
+Standing and Deep dive; `?view=profile` still works and opens Standing at this
+section, once, with no redirect. It keeps only what Standing does not draw:
+the persona's sentence on the shape of the game, the window it reads, and the
+measures Standing has no row for. Scrambling, par 3s and pressure are
+Standing's own rows, and the Game profile's "What CoachHelm sees" board was the
+Board's reads again (the ladder's Because opens the same reads), so neither is
+repeated. Its read is its own: a failed one says so in the section and the rest
+of Standing stands. Each measure sits on its own scale (a
 gap from "no difference" filled in the stance's colour, a share filled from the
 left): the value, what it means in plain words, the confidence word (Solid,
 Early, Thin, from `lib/coachhelm/confidence-label.ts`) and "How it is
@@ -320,7 +328,7 @@ the stat's own unit (points for a share), never a percent of a percentage.
 **States.** Skeleton at the page's final height (a view's own, drawn by the
 page's one Suspense on a hard load, because `coachhelm/loading.tsx` cannot read
 `?view=`), first run, early or partial read, failed read, off, and the data
-states above. **Switching view** (Board, Ask, Game profile, Standing, Deep dive)
+states above. **Switching view** (Board, Ask, Standing, Deep dive)
 draws no skeleton: the strip moves on the tap, the view on screen stays, dimmed
 and not tappable, and is replaced once by the next one. A coach with players and
 no signal yet sees the pulse and, under it, the players' section with its empty
@@ -341,8 +349,9 @@ motion. `?insight=<id>` opens on a read, checked against the player's own list.
 
 ## A coach's views of one player (spec A, 2026-10-21)
 
-The player's three views, read by their coach, at
-`/golf/dashboard/coachhelm?view=deep-dive|standing|profile&player=<golf_players.id>`.
+The player's two views, read by their coach, at
+`/golf/dashboard/coachhelm?view=deep-dive|standing&player=<golf_players.id>`
+(`view=profile&player=` opens Standing at How Jonah plays).
 Spec: `coach-parity/spec-A-coach-player-pages.md` (decided). It supersedes the
 non-goal below that a coach reads a player only through the Board and Ask.
 
@@ -352,7 +361,10 @@ non-goal below that a coach reads a player only through the Board and Ask.
   Roster's View insights (to the Deep dive; the row menu, and since spec D the
   player panel's and phone profile's CoachHelm block) and Stats' Game detail
   "CoachHelm sees… Deep dive →" line per section (spec D; `&insight=<id>` when
-  the section has exactly one read). No player named is the board. A player's
+  the section has exactly one read). And Ask: an answer that names a
+  player's reads lists them under it, each opening that player's Deep dive on
+  the read (chs-39; only for a player on the coach's team, otherwise no link).
+  No player named is the board. A player's
   own Game detail line opens their own Deep dive the same way.
 - Header. The page's own `.ch-hl-h`: "CoachHelm" as the eyebrow (a link back
   to the board open on the player on desktop), the player's name as the h1
@@ -360,10 +372,10 @@ non-goal below that a coach reads a player only through the Board and Ask.
   tabular figures ("Junior · Last round Oct 5, 16 days ago"; "No rounds posted
   yet"). The top bar's breadcrumb reads CoachHelm › Jonah Okafor. On the phone
   the bar carries the name, with Back to the board open on the player.
-- Strip. Deep dive · Standing · Game profile (desktop radiogroup, phone
-  chips), each address carrying the player; no Board and no Development.
+- Strip. Deep dive · Standing (desktop radiogroup, phone chips), each
+  address carrying the player; no Board and no Development.
 - Voice. The same views, by first name where the player's say "you"
-  (`voice` on Profile, Standing, DeepDive, Frame, Skeletons, KeepReading and
+  (`voice` on HowYouPlay, Standing, DeepDive, Frame, Skeletons, KeepReading and
   the shapers). The player's own copy is unchanged byte for byte; where one
   string cannot serve both, the shaper keeps the player's and takes a coach's
   beside it (a deviation from "write shape strings neutral", so the player's
@@ -377,14 +389,15 @@ non-goal below that a coach reads a player only through the Board and Ask.
   for the player. The read kept for the tab is kept per player.
 - Standing. A stat with an open read on its metric gets "Open the read →" to
   the Deep dive on that read, in the row and in Most to gain; nothing else.
-  Start a round is not drawn.
-- Game profile. One line under the hero, "CoachHelm sees 3 reads costing
-  strokes and 1 working", to the Deep dive; Keep reading is "Also for Jonah".
+  New round is not drawn.
+- How Jonah plays. Standing's last section, as the player's; Keep reading is
+  "Also for Jonah", to the Deep dive. (The Game profile's "CoachHelm sees"
+  line went with it: the Deep dive is one tap away in the strip.)
 - States. Not on the team, not an id or removed: one page for every id
   (CH-13311, UserX, Back to the board). The check failed: CH-13209. CoachHelm
   off for the coach: the board's CH-13305. Off for the player's team: CH-13313
-  by name, with Open CoachHelm settings. Loading: the three skeletons (CH-13460,
-  CH-13470, CH-13480) with the header's shape, labelled with the name once the
+  by name, with Open CoachHelm settings. Loading: the two skeletons (CH-13470,
+  CH-13480) with the header's shape, labelled with the name once the
   page knows it.
 - Visual. No new surface, token or colour; `.ch-*` only. No motion added: the
   view switch's dim, the shell's crossfade and the phone's pushed read are the

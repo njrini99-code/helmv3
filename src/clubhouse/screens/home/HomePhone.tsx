@@ -1,24 +1,27 @@
 'use client';
 
-import { ArrowRight, BarChart3, BrainCircuit, CalendarDays, CalendarPlus, ChevronRight, MessageSquare, Plus, Sun, TriangleAlert } from 'lucide-react';
+import { ArrowRight, ChartColumn, BrainCircuit, CalendarDays, CalendarPlus, ChevronRight, MessageSquare, Plus, Sun, TriangleAlert } from 'lucide-react';
 import Link from 'next/link';
 import { useMemo, useState, type ReactNode } from 'react';
 import type { ChCoachHome, ChHomeEvent, ChLatestRound, ChTeamForm } from '../../data/home';
 import { Avatar } from '../../ui/Avatar';
 import { Button } from '../../ui/Button';
 import { EmptyState } from '../../ui/States';
-import { FormLine } from '../../ui/FormLine';
+import { FormLine, FormRange } from '../../ui/FormLine';
 import { Icon } from '../../ui/Icon';
 import { Modal } from '../../ui/Modal';
 import { PageRefreshNotice, RefreshNotice } from '../../ui/RefreshNotice';
 import { Nine } from '../../ui/Nine';
 import { coachHelmPlayerHref, PlayerPeek, type ChPlayerPeek } from '../../ui/PlayerPeek';
 import { SectionBoundary } from '../../ui/SectionBoundary';
+import { WeekStrip as DayStrip } from '../../ui/WeekStrip';
 import { withPointSpan } from '../../ui/point-span';
-import { formatFixed, formatSigned, formatToPar, NO_DATA } from '../../lib/format';
+import { formatFixed, formatSigned, formatToPar } from '../../lib/format';
+import { NoData } from '../../ui/NoData';
 import { deltaTone, deltaWords } from '../../lib/stats-signal';
 import { haptic } from '../../lib/haptics';
 import { chTrail } from '../../lib/track';
+import { useChClock, useChClockText } from '../../lib/use-clock';
 import { useNow } from '../../lib/use-now';
 import { rebuiltHref } from '../../shell/nav';
 import { LinkPending } from '../../shell/LinkPending';
@@ -33,9 +36,11 @@ import { leaderPeek } from './Leaderboard';
 import { MineBadge } from './CoachAsks';
 import { competitionExtra, DayCard, dayPhase, LaterToday, SinceYouLooked, sunsetExtra } from './DayCard';
 import { useLightPlace } from '../../shell/light';
+import { MarkBadge, markSub, useRowMark } from '../calendar/change-note';
 
 export { CALENDAR, eventHref, whenLabel } from './event-links';
 import { CALENDAR, eventHref, whenLabel } from './event-links';
+import { plural } from '../../lib/plural';
 const newEventHref = (type?: ChHomeEvent['type']) => `${CALENDAR}?new=1${type ? `&type=${type}` : ''}`;
 
 /**
@@ -77,7 +82,7 @@ export function HomePhone({ data, now: frozen }: { data: ChCoachHome; now?: stri
           {data.week.error ? (
             // On the sheet, not in the green card: inside it the notice took the card's ivory ink and its words vanished.
             <FailedSec id="ch-hm-upnext-failed" title="Up next">
-              <RefreshNotice code="CH-2201" title="This week’s schedule didn’t load" body="Your events are safe. This is a display problem, and trying again usually clears it." covered={covered} />
+              <RefreshNotice code="CH-2201" title="This week’s schedule didn’t load" body="Your events are safe. Try again." covered={covered} />
             </FailedSec>
           ) : (
             <Day phone={phone} rounds={rounds} now={now} today={today} onOpenRound={setOpen} />
@@ -96,7 +101,7 @@ export function HomePhone({ data, now: frozen }: { data: ChCoachHome; now?: stri
           </SectionBoundary>
         ) : data.latestRounds.error ? (
           <FailedSec id="ch-hm-form-failed" title="Team scoring">
-            <RefreshNotice code="CH-2211" title="Team scoring didn’t load" body="Posted rounds are safe. Try again; the error has been reported." covered={covered} />
+            <RefreshNotice code="CH-2211" title="Team scoring didn’t load" body="Posted rounds are safe. Try again." covered={covered} />
           </FailedSec>
         ) : null}
 
@@ -137,14 +142,15 @@ function Day({ phone, rounds, now, today, onOpenRound }: DayProps & { phone: ChC
 function Later({ data, rounds, now, today, quiet, onOpenRound }: DayProps & { data: ChCoachHome; quiet: boolean }) {
   const { phone } = data;
   const place = useLightPlace();
+  const clock = useChClock();
   if (data.week.error || !phone.today.length) return <Today list={phone.today} now={now} failed={data.week.error} quiet={quiet} />;
   const phase = dayPhase(phone.next, phone.today, rounds, now, today);
   const card = phase?.kind === 'event' ? phase.e : null;
   const later = data.week.agenda.find((a) => a.when === 'later' && a.id !== card?.id);
   return (
     <>
-      <LaterToday todays={phone.today} cardId={card?.id ?? null} now={now} extras={[...sunsetExtra(today, now, place), ...competitionExtra(later)]} />
-      {!data.latestRounds.error && <SinceYouLooked rounds={rounds} event={card} onOpenRound={onOpenRound} />}
+      <LaterToday todays={phone.today} cardId={card?.id ?? null} now={now} extras={[...sunsetExtra(today, now, place, clock), ...competitionExtra(later, clock)]} />
+      {!data.latestRounds.error && <SinceYouLooked rounds={rounds} event={card} changes={data.changes ?? []} onOpenRound={onOpenRound} />}
     </>
   );
 }
@@ -152,6 +158,11 @@ function Later({ data, rounds, now, today, quiet, onOpenRound }: DayProps & { da
 
 /** `children`: what closes the card (the player's countdown). `kicker`: the player's "Up next · Qualifier" (the coach's card names the type alone). */
 export function UpNext({ e, now, children, kicker }: { e: ChHomeEvent; now: Date | null; children?: ReactNode; kicker?: string }) {
+  const t = useChClockText();
+  const clock = useChClock();
+  // P-14: a changed event wears a badge in the kicker and its old value struck under the range, until Got it.
+  const mark = useRowMark()(e);
+  const was = mark && !mark.change.partial ? markSub(e.location, mark.change, clock, false) : null;
   const when = whenLabel(e, now);
   const people = e.invitees ?? [];
   return (
@@ -160,16 +171,18 @@ export function UpNext({ e, now, children, kicker }: { e: ChHomeEvent; now: Date
         <span className="ch-hm-next__type">
           <Icon icon={TYPE_ICON[e.type]} size={13} />
           {kicker ? `${kicker} · ${TYPE_LABEL[e.type]}` : TYPE_LABEL[e.type]}
+          {mark && <MarkBadge change={mark.change} />}
         </span>
-        <span className={'ch-hm-next__when ch-num' + (when.soon ? ' is-soon' : '')}>{when.text}</span>
+        <span className={'ch-hm-next__when ch-num' + (when.soon ? ' is-soon' : '')}>{t(when.text)}</span>
       </span>
       <h2>{e.title}</h2>
-      <p className="ch-num">{[e.rangeLabel, e.location].filter(Boolean).join(' · ')}</p>
+      <p className="ch-num">{[t(e.rangeLabel), e.location].filter(Boolean).join(' · ')}</p>
+      {was && <p className="ch-hm-next__was ch-num">{was}</p>}
       {e.invitees && people.length > 0 && (
         <span className="ch-hm-next__f">
           <span className="ch-hm-stack" aria-hidden="true">
             {people.slice(0, 5).map((n) => (
-              <Avatar key={n} name={n} size={24} />
+              <Avatar key={n} name={n} size="xs" />
             ))}
           </span>
           <span className="ch-hm-next__rsvp ch-num">
@@ -216,7 +229,7 @@ function NoEvents() {
       </div>
       <div className="ch-hm-none__q">
         {QUICK.map((t) => (
-          <Link key={t} href={newEventHref(t)} className="ch-hm-none__chip" onClick={() => haptic('select')} data-ch-press="">
+          <Link key={t} href={newEventHref(t)} className="ch-hm-none__chip" data-ch-press="">
             <Icon icon={TYPE_ICON[t]} size={13} />
             {TYPE_LABEL[t]}
           </Link>
@@ -238,6 +251,7 @@ function NoEvents() {
  * steps back, so it never looks disabled.
  */
 export function Today({ list, now, failed, quiet, canPlan = true, inline = false }: { list: ChHomeEvent[]; now: Date | null; failed: boolean; quiet: boolean; canPlan?: boolean; inline?: boolean }) {
+  const t12 = useChClockText();
   if (failed) return null;
   const t = now?.getTime();
   const rows = list.map((e) => {
@@ -265,7 +279,7 @@ export function Today({ list, now, failed, quiet, canPlan = true, inline = false
         return (
           <li key={e.id} className={'ch-hm-tl__r' + (past ? ' is-past' : '') + (mark ? ' is-now' : '')}>
             <Link href={eventHref(e)} className="ch-hm-tl__a">
-              <span className="ch-hm-tl__t ch-num">{e.allDay ? 'All day' : e.startLabel.replace(/\s?[AP]M$/, '')}</span>
+              <span className="ch-hm-tl__t ch-num">{e.allDay ? 'All day' : t12(e.startLabel).replace(/\s?[AP]M$/, '')}</span>
               <span className="ch-hm-tl__rail" aria-hidden="true">
                 <i className={`is-${e.type}`} />
               </span>
@@ -318,7 +332,7 @@ const shortDay = (ymd: string) => SHORT_DAY.format(new Date(`${ymd}T12:00:00Z`))
 /** What the average, greens and putts rest on: "3 rounds · Aug 2", "24 rounds · Sep 1 – Sep 28". */
 export function formBasis(b: ChTeamForm['basis']): string {
   const span = b.from === b.to ? shortDay(b.from) : `${shortDay(b.from)} – ${shortDay(b.to)}`;
-  return `${b.rounds} ${b.rounds === 1 ? 'round' : 'rounds'} · ${span}`;
+  return `${plural(b.rounds, 'round')} · ${span}`;
 }
 
 /** "2 of 3 rounds" when a figure rests on fewer rounds than the average; blank when it rests on all of them, or on none (the figure is then —). */
@@ -370,12 +384,12 @@ function Form({ form }: { form: ChTeamForm }) {
         </div>
         <div>
           <dt>GIR</dt>
-          <dd className="ch-num">{form.gir.pct != null ? `${Math.round(form.gir.pct)}%` : NO_DATA}</dd>
+          <dd className="ch-num">{form.gir.pct != null ? `${Math.round(form.gir.pct)}%` : (form.gir.needs ?? <NoData />)}</dd>
           <dd className={'ch-num ' + deltaTone(form.gir.delta, form.gir.se, false)}>{form.gir.delta != null ? `${formatSigned(form.gir.delta, 0)} pts` : partOf(form.basis.girRounds, form.basis.rounds)}</dd>
         </div>
         <div>
           <dt>Putts</dt>
-          <dd className="ch-num">{form.putts.avg != null ? formatFixed(form.putts.avg) : NO_DATA}</dd>
+          <dd className="ch-num">{form.putts.avg != null ? formatFixed(form.putts.avg) : <NoData />}</dd>
           <dd className={'ch-num ' + deltaTone(form.putts.delta, form.putts.se, true)}>{form.putts.delta != null ? formatSigned(form.putts.delta) : partOf(form.basis.puttsRounds, form.basis.rounds)}</dd>
         </div>
       </dl>
@@ -390,24 +404,20 @@ export function WeekStrip({ days, note, children }: { days: ChCoachHome['week'][
       <div className="ch-hm-sec__h">
         <h2 id="ch-hm-week">This week</h2>
       </div>
-      <ol className="ch-hm-week">
-        {days.map((d) => (
-          <li key={d.date} className={(d.isToday ? 'is-today' : '') + (d.hasCompetition ? ' is-major' : '')} aria-current={d.isToday ? 'date' : undefined}>
-            <Link href={`${CALENDAR}?view=day&date=${d.date}`} className="ch-hm-week__d">
-              <em aria-hidden="true">{d.weekday.slice(0, 1)}</em>
-              <b className="ch-num" aria-hidden="true">
-                {d.dayOfMonth}
-              </b>
-              <span aria-hidden="true">{d.hasCompetition ? <Icon icon={TYPE_ICON[d.competitionType ?? 'tournament']} size={11} /> : Array.from({ length: Math.min(3, d.eventCount) }, (_, j) => <i key={j} />)}</span>
-              <span className="ch-sr-only">
-                {d.weekday} {d.dayOfMonth}
-                {d.isToday ? ', today' : ''}
-                {d.hasCompetition ? ', competition' : ''}, {d.eventCount} {d.eventCount === 1 ? 'event' : 'events'}
-              </span>
-            </Link>
-          </li>
-        ))}
-      </ol>
+      <DayStrip
+        label="This week"
+        className="ch-hm-week"
+        days={days.map((d) => ({
+          date: d.date,
+          top: d.weekday.slice(0, 1),
+          num: d.dayOfMonth,
+          isToday: d.isToday,
+          dots: d.eventCount,
+          mark: d.hasCompetition ? TYPE_ICON[d.competitionType ?? 'tournament'] : undefined,
+          label: `${d.weekday} ${d.dayOfMonth}${d.isToday ? ', today' : ''}${d.hasCompetition ? ', competition' : ''}, ${plural(d.eventCount, 'event')}`,
+          href: `${CALENDAR}?view=day&date=${d.date}`,
+        }))}
+      />
       {note && (
         <p className="ch-hm-week__n">
           <b>{note.weekday}</b> {note.title}
@@ -452,43 +462,46 @@ function Rounds({ data, trends, onOpen, covered }: { data: ChCoachHome['latestRo
         )}
       </div>
       {data.error ? (
-        <RefreshNotice code="CH-2202" title="Recent rounds didn’t load" body="Posted rounds are safe. Try again; the error has been reported." covered={covered} />
+        <RefreshNotice code="CH-2202" title="Recent rounds didn’t load" body="Posted rounds are safe. Try again." covered={covered} />
       ) : !data.rounds.length ? (
-        <EmptyState compact code="CH-2302" icon={BarChart3} title="No rounds posted yet this season." body="The newest 18-hole round appears here as soon as a player posts it." />
+        <EmptyState code="CH-2302" shape="rows" shapeCount={2} title="No rounds posted yet this season." body="The newest 18-hole round appears here as soon as a player posts it." />
       ) : (
-        <ul className="ch-hm-list">
-          {data.rounds.map((r) => (
-            <li key={r.id}>
-              {/* P003-C1: a hold on the row peeks at the player, from what Home loaded (the board's row, else this round). */}
-              <PlayerPeek player={roundPeek(r, trends, data.rounds)}>
-                <button
-                  type="button"
-                  className="ch-hm-rd"
-                  onClick={() => {
-                    haptic('select');
-                    chTrail('home open round');
-                    onOpen(r);
-                  }}
-                >
-                  <Avatar name={r.playerName} size={38} />
-                  <span className="ch-hm-rd__b">
-                    <b>{r.playerName}</b>
-                    <RoundMeta meta={r.meta} />
-                  </span>
-                  {(trendOf.get(r.playerId)?.length ?? 0) >= 3 && (
-                    <span className="ch-hm-rd__spark" aria-hidden="true">
-                      <FormLine data={trendOf.get(r.playerId)!} width={64} height={18} earlyBelow={3} bare label={`${r.playerName}, last ${trendOf.get(r.playerId)!.length} rounds: ${trendOf.get(r.playerId)!.join(', ')}`} />
+        // B5: the rows' sparks share one range, so the same height is the same score down the list.
+        <FormRange trends={data.rounds.map((r) => trendOf.get(r.playerId))} earlyBelow={3}>
+          <ul className="ch-hm-list">
+            {data.rounds.map((r) => (
+              <li key={r.id}>
+                {/* P003-C1: a hold on the row peeks at the player, from what Home loaded (the board's row, else this round). */}
+                <PlayerPeek player={roundPeek(r, trends, data.rounds)}>
+                  <button
+                    type="button"
+                    className="ch-hm-rd"
+                    onClick={() => {
+                      haptic('select');
+                      chTrail('home open round');
+                      onOpen(r);
+                    }}
+                  >
+                    <Avatar name={r.playerName} id={r.playerId} size={38} />
+                    <span className="ch-hm-rd__b">
+                      <b>{r.playerName}</b>
+                      <RoundMeta meta={r.meta} />
                     </span>
-                  )}
-                  <span className={'ch-hm-score ch-num' + (r.toPar != null && r.toPar < 0 ? ' is-under' : '')}>
-                    <b>{r.score}</b>
-                    <em>{formatToPar(r.toPar)}</em>
-                  </span>
-                </button>
-              </PlayerPeek>
-            </li>
-          ))}
-        </ul>
+                    {(trendOf.get(r.playerId)?.length ?? 0) >= 3 && (
+                      <span className="ch-hm-rd__spark" aria-hidden="true">
+                        <FormLine data={trendOf.get(r.playerId)!} width={64} height={18} earlyBelow={3} bare label={`${r.playerName}, last ${trendOf.get(r.playerId)!.length} rounds: ${trendOf.get(r.playerId)!.join(', ')}`} />
+                      </span>
+                    )}
+                    <span className={'ch-hm-score ch-num' + (r.toPar != null && r.toPar < 0 ? ' is-under' : '')}>
+                      <b>{r.score}</b>
+                      <em>{formatToPar(r.toPar)}</em>
+                    </span>
+                  </button>
+                </PlayerPeek>
+              </li>
+            ))}
+          </ul>
+        </FormRange>
       )}
     </section>
   );
@@ -543,7 +556,7 @@ function RoundSheet({ round, holesError, onClose }: { round: ChLatestRound | nul
               </Button>
             ) : (
               stats && (
-                <Button variant="primary" leftIcon={BarChart3} href={stats}>
+                <Button variant="primary" leftIcon={ChartColumn} href={stats}>
                   Player stats
                 </Button>
               )
@@ -568,15 +581,15 @@ function RoundSheet({ round, holesError, onClose }: { round: ChLatestRound | nul
             </div>
             <div>
               <dt>GIR</dt>
-              <dd className="ch-num">{round.gir ?? NO_DATA}</dd>
+              <dd className="ch-num">{round.gir ?? <NoData />}</dd>
             </div>
             <div>
               <dt>Putts</dt>
-              <dd className="ch-num">{round.putts ?? NO_DATA}</dd>
+              <dd className="ch-num">{round.putts ?? <NoData />}</dd>
             </div>
             <div>
               <dt>SG</dt>
-              <dd className="ch-num">{round.sg != null ? formatSigned(round.sg) : NO_DATA}</dd>
+              <dd className="ch-num">{round.sg != null ? formatSigned(round.sg) : <NoData />}</dd>
             </div>
           </dl>
           {holesError ? (

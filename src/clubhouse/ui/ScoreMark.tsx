@@ -1,3 +1,5 @@
+import { NO_DATA } from '../lib/format';
+
 type Kind = 'eagle' | 'birdie' | 'bogey' | 'double' | '';
 
 function kindOf(score: number | null, par: number | null): Kind {
@@ -16,8 +18,9 @@ export function ScoreMark({ score, par, size = 'md' }: { score: number | null; p
     .filter(Boolean)
     .join(' ');
   return (
-    <span className={cls} aria-label={score == null ? 'Not played' : `${score}${kind ? ` (${kind})` : ''}`}>
-      {score == null ? '–' : score}
+    // One picture of the hole's score: an image to VoiceOver, which reads a plain span's label unreliably (A19).
+    <span className={cls} role="img" aria-label={score == null ? 'Not played' : `${score}${kind ? ` (${kind})` : ''}`}>
+      {score == null ? NO_DATA : score}
     </span>
   );
 }

@@ -1,8 +1,10 @@
 import type { HoleStats, RoundHole, ShotRecord } from '@/lib/types/golf';
+import type { DataGapAsk } from '@/lib/coachhelm/data-gap/asks';
 import type { EmergencySaveData } from '@/lib/utils/emergency-save';
 import { roundType, teeColorFor } from '../../../data/rounds-shape';
 import type { ChCardHole, ChSummaryHole } from '../track/round-sheets';
 import type { ChTrackingRound } from '../track/RoundTracking';
+import type { ChCourseNudgeView } from './CourseNudge';
 import type { RoundNotices } from './ports';
 
 /*
@@ -77,6 +79,13 @@ export interface ChRoundSession {
   restoreEpoch?: number;
   discardRecovery: () => void;
   closeRecovery: () => void;
+
+  /** CoachHelm Slice 8a: the player's open putt-miss asks (CH-11960); absent with `coachhelm_data_gap_prompt_v1` off. */
+  dataGapAsks?: readonly DataGapAsk[];
+  /** CoachHelm Slice 8b (`coachhelm_data_prompts_v2`): the recovery tap (CH-11961). */
+  recoveryPrompt?: boolean;
+  /** CoachHelm Slice 8b: the course nudge (CH-11962); null with the flag off or a round that has a course. */
+  courseNudge?: ChCourseNudgeView | null;
 }
 
 /** "Oct 14" for a date-only string, or null when it isn't one. */

@@ -7,7 +7,11 @@ import { useAppearancePreferences } from '@/hooks/golf/use-appearance-preference
 import { useDistanceUnits } from '@/hooks/golf/use-distance-units';
 import type { DistancePreference } from '@/lib/golf/distance-units';
 import { areHapticsEnabled, setHapticsEnabled } from '@/lib/utils/haptics-pref';
+import { getNativeAppVersion } from '@/lib/utils/capacitor';
 import { useToast } from '../../ui/Toast';
+import { SIGN_OUT_FAILED } from '../../lib/sign-out-copy';
+import { useChClockPref } from '../../lib/use-clock';
+import type { ChClock } from '../../lib/clock-cookie';
 import { haptic } from '../../lib/haptics';
 import { chReport, chTrail } from '../../lib/track';
 import { useAction } from '../../lib/use-action';
@@ -114,7 +118,7 @@ export function useTestPush(push: ChDevice['push']) {
     } catch (err) {
       haptic('error');
       chReport(err, { surface: 'settings.notifications', action: 'testPush' });
-      toast({ tone: 'error', title: 'Couldn’t send a test', body: 'Check your connection and try again.', code: 'CH-8029' });
+      toast({ tone: 'error', title: 'Couldn’t send a test', body: 'Nothing was sent. Try again.', code: 'CH-8029' });
     } finally {
       setBusy(false);
     }
@@ -414,12 +418,12 @@ export function useAvatarUpload(writes: ChSettingsWrites, onUploaded: (url: stri
       else {
         haptic('error');
         chReport(new Error(r.error || 'avatar upload failed'), { surface: 'settings.profile', action: 'uploadAvatar', severity: 'low' });
-        toast({ tone: 'error', title: "Couldn’t upload that photo", body: r.error && r.error.length < 80 ? r.error : 'Check your connection and try again.', code: 'CH-8002' });
+        toast({ tone: 'error', title: "Couldn’t upload that photo", body: r.error && r.error.length < 80 ? r.error : 'Your photo wasn’t changed. Try again.', code: 'CH-8002' });
       }
     } catch (err) {
       haptic('error');
       chReport(err, { surface: 'settings.profile', action: 'uploadAvatar' });
-      toast({ tone: 'error', title: "Couldn’t upload that photo", body: 'Check your connection and try again.', code: 'CH-8002' });
+      toast({ tone: 'error', title: "Couldn’t upload that photo", body: 'Your photo wasn’t changed. Try again.', code: 'CH-8002' });
     } finally {
       setUploading(false);
     }
@@ -468,7 +472,7 @@ export function useSignOut(writes: ChSettingsWrites) {
     } catch (err) {
       chReport(err, { surface: 'settings.session', action: 'signOut' });
       haptic('error');
-      toast({ tone: 'error', title: "Couldn’t sign you out", body: 'Check your connection and try again.', code: 'CH-8024' });
+      toast({ tone: 'error', title: SIGN_OUT_FAILED.title, body: SIGN_OUT_FAILED.body, code: 'CH-8024', action: { label: SIGN_OUT_FAILED.retry, run: () => void signOut() } });
       setSigningOut(false);
     }
   };
@@ -481,13 +485,14 @@ export function useDeleteAccount(writes: ChSettingsWrites, landed: () => void) {
 }
 
 /**
- * Preferences kept on this device: animations, the distance unit and, in the native app, haptics. The unit is the one
- * Fairway's Settings writes and the shot screen reads (`golf_distance_unit_pref`): a device preference, never a column,
- * so it has no server write to fail.
+ * Preferences kept on this device: animations, the distance unit, the clock and, in the native app, haptics. The unit is
+ * the one Fairway's Settings writes and the shot screen reads (`golf_distance_unit_pref`); the clock is Clubhouse's own
+ * (`ch_clock`, lib/use-clock.tsx). Both are device preferences, never a column, so neither has a server write to fail.
  */
 export function useDevicePrefs() {
   const { showAnimations, updatePreferences } = useAppearancePreferences();
   const { distancePref, setDistancePref } = useDistanceUnits();
+  const { clock, setClock } = useChClockPref();
   // Read after mount: the preference lives in this device's storage.
   const [haptics, setHaptics] = useState(true);
   useEffect(() => setHaptics(areHapticsEnabled()), []);
@@ -502,6 +507,11 @@ export function useDevicePrefs() {
       chTrail(`settings distance ${v}`);
       setDistancePref(v);
     },
+    clock,
+    setClock: (v: ChClock) => {
+      chTrail(`settings clock ${v}`);
+      setClock(v);
+    },
     haptics,
     setHaptics: (v: boolean) => {
       chTrail(`settings haptics ${v ? 'on' : 'off'}`);
@@ -511,4 +521,34 @@ export function useDevicePrefs() {
       if (v) haptic('select');
     },
   };
+}
+
+/** The release the web build was stamped with (the deploy's commit, NEXT_PUBLIC_SENTRY_RELEASE), short; null when unstamped. */
+export function releaseStamp(release: string | undefined = process.env.NEXT_PUBLIC_SENTRY_RELEASE): string | null {
+  const r = release?.trim();
+  return r ? r.slice(0, 7) : null;
+}
+
+/** Settings' Version line: the app's version and build in the iOS app, and the release it runs everywhere. */
+export function versionLine(native: { version: string; build: string } | null, release: string | null): string {
+  const app = native ? `${native.version} (${native.build})` : null;
+  if (app && release) return `${app} · ${release}`;
+  return app ?? (release ? `Build ${release}` : 'Web');
+}
+
+/**
+ * The Version row's words (A+ handoff 0.4, Settings: "an About row with the app version"). The first paint is the web
+ * build's release, which the server knows too, so nothing mismatches on hydration; in the iOS app the version and build
+ * arrive after mount from the native shell (src/lib/utils/capacitor.ts, the one place Capacitor is called).
+ */
+export function useAppVersion(): string {
+  const [native, setNative] = useState<{ version: string; build: string } | null>(null);
+  useEffect(() => {
+    let live = true;
+    void getNativeAppVersion().then((v) => live && setNative(v));
+    return () => {
+      live = false;
+    };
+  }, []);
+  return versionLine(native, releaseStamp());
 }

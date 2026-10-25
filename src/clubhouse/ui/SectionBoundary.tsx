@@ -2,7 +2,7 @@
 
 import { Component, Suspense, createContext, useCallback, useContext, useLayoutEffect, useMemo, useState, type ErrorInfo, type ReactNode } from 'react';
 import { chReport } from '../lib/track';
-import { InlineNotice, partsSentence } from './Notices';
+import { FAILURE_COPY, InlineNotice, partsSentence } from './Notices';
 
 type Props = { surface: string; label: string; children: ReactNode; /** Catalog number of the crash notice. */ code?: string };
 
@@ -78,7 +78,7 @@ class Boundary extends Component<Props & { group: Group | null }, { failed: bool
       <InlineNotice
         code={this.props.code}
         title={`${this.props.label} couldn’t be shown`}
-        body="The rest of the page is fine. This has been reported automatically."
+        body={FAILURE_COPY.shown}
         onRetry={this.reset}
         covered={this.props.group?.covered ?? false}
       />
@@ -131,7 +131,7 @@ export function SectionGroupNotice({ code = 'CH-1210' }: { code?: string }) {
     <InlineNotice
       code={code}
       title="Some of this page couldn’t be shown"
-      body={`${partsSentence(parts.map((p, i) => (i === 0 ? p.label : inSentence(p.label))))} couldn’t be shown. The rest of the page is fine, and this has been reported automatically.`}
+      body={`${partsSentence(parts.map((p, i) => (i === 0 ? p.label : inSentence(p.label))))} couldn’t be shown. ${FAILURE_COPY.shown}`}
       onRetry={() => parts.forEach((p) => p.reset())}
     />
   );

@@ -11,7 +11,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 
 vi.mock('../lib/haptics', () => ({ haptic: vi.fn() }));
 
-import { classifyNav } from '../lib/nav-motion';
+import { classifyNav, takeRunningPush } from '../lib/nav-motion';
 import { chSpringCurve } from '../lib/motion';
 import { prefetchAllowed } from '../shell/use-prefetch-tabs';
 import { RosterPhoneRow } from '../screens/roster/RosterPhone';
@@ -52,6 +52,37 @@ describe('which way a phone navigation moves', () => {
   });
 });
 
+describe('a section switch swaps at once (motion pass 2026-10-22, mot-03)', () => {
+  const shell = css('shell.css');
+
+  function tap(container: string, href: string) {
+    document.body.innerHTML = `<div data-ui="clubhouse"><nav class="${container}"><a href="${href}">Go</a></nav></div>`;
+    const a = document.querySelector('a')!;
+    a.addEventListener('click', (e) => e.preventDefault());
+    a.click();
+  }
+
+  afterEach(() => {
+    document.documentElement.removeAttribute('data-ch-tab');
+    document.body.innerHTML = '';
+  });
+
+  it('a tab bar or sidebar item marks the switch; any other link does not', () => {
+    tap('ch-strip', '/golf/dashboard/calendar');
+    expect(document.documentElement.hasAttribute('data-ch-tab')).toBe(true);
+    tap('ch-nav', '/golf/dashboard/stats');
+    expect(document.documentElement.hasAttribute('data-ch-tab')).toBe(true);
+    tap('ch-page-links', '/golf/dashboard/roster');
+    expect(document.documentElement.hasAttribute('data-ch-tab')).toBe(false);
+  });
+
+  it('drops the fade-through: the new page at once, the old one gone or held whole until the skeleton is due', () => {
+    expect(shell).toMatch(/html\[data-ch-tab\]:has\(\[data-ui='clubhouse'\]\)::view-transition-new\(ch-page\) \{\s*animation: none;/);
+    expect(shell).toMatch(/html\[data-ch-tab\]:has\(\[data-ui='clubhouse'\]\)::view-transition-old\(ch-page\) \{\s*display: none;/);
+    expect(shell).toMatch(/html\[data-ch-tab\]\[data-ch-vt-hold\]:has\(\[data-ui='clubhouse'\]\)::view-transition-old\(ch-page\) \{\s*display: block;\s*animation: calc\(var\(--ch-dur-vt-hold\) \+ var\(--ch-dur-vt-out\)\) step-end both ch-vt-out;/);
+  });
+});
+
 describe('the push and the pop', () => {
   const shell = css('shell.css');
   const tokens = css('tokens.css');
@@ -75,6 +106,47 @@ describe('the push and the pop', () => {
     const block = shell.slice(start, shell.indexOf("@media (prefers-reduced-motion: reduce)", start));
     expect(block).toContain('@media (max-width: 820px)');
     expect(shell).toMatch(/html\[data-ch-ua-pop\]:has\(\[data-ui='clubhouse'\]\)::view-transition-old\(\*\)/);
+  });
+});
+
+describe('Back during a push (look-and-feel pass 2026-10-22, mot-04)', () => {
+  type Fake = { effect: { pseudoElement: string }; playState: string; animationName?: string; currentTime: number; finish: () => void };
+  const real = document.getAnimations;
+
+  function running(list: Fake[]) {
+    Object.defineProperty(document, 'getAnimations', { configurable: true, value: () => list });
+  }
+
+  afterEach(() => {
+    Object.defineProperty(document, 'getAnimations', { configurable: true, value: real });
+  });
+
+  it('pops from the whole width when no push is moving', () => {
+    running([]);
+    expect(takeRunningPush()).toBe(1);
+  });
+
+  it('finishes a push in flight and pops from where it stood, on the same spring', () => {
+    const curve = chSpringCurve('smooth');
+    const finish = vi.fn();
+    const at = Math.round(curve.ms * 0.3);
+    running([
+      { effect: { pseudoElement: '::view-transition-new(ch-page)' }, playState: 'running', animationName: 'ch-vt-push-in', currentTime: at, finish },
+      { effect: { pseudoElement: '::view-transition-old(ch-page)' }, playState: 'running', animationName: 'ch-vt-push-out', currentTime: at, finish },
+      { effect: { pseudoElement: '' }, playState: 'running', currentTime: at, finish: vi.fn() },
+    ]);
+    const share = takeRunningPush();
+    expect(finish).toHaveBeenCalledTimes(2);
+    expect(share).toBeCloseTo(curve.ease(at / curve.ms), 5);
+    expect(share).toBeGreaterThan(0);
+    expect(share).toBeLessThan(1);
+  });
+
+  it('treats a running fade (a pop or a tab switch) as done', () => {
+    const finish = vi.fn();
+    running([{ effect: { pseudoElement: '::view-transition-new(ch-page)' }, playState: 'running', animationName: 'ch-vt-in', currentTime: 40, finish }]);
+    expect(takeRunningPush()).toBe(1);
+    expect(finish).toHaveBeenCalled();
   });
 });
 
@@ -104,7 +176,7 @@ describe('the phone Roster shows the figure it is sorted by (P1-3)', () => {
     expect(v.querySelector('b')!.textContent).toMatch(/^\+\d\.\d$/);
     expect(v.querySelector('b')!.className).toContain('is-gain');
     expect(v.textContent).toContain('SG / rd');
-    expect(v.textContent).not.toContain('hcp');
+    expect(v.textContent).not.toContain('HCP');
     expect(screen.getByRole('button').getAttribute('aria-label')).toMatch(/strokes gained \+\d\.\d a round/);
     unmount();
     const lost = row(loser, 'sg');
@@ -119,7 +191,7 @@ describe('the phone Roster shows the figure it is sorted by (P1-3)', () => {
       const { container, unmount } = row(gainer, sort);
       const v = container.querySelector('.ch-rsm-row__v')!;
       expect(v.querySelector('b')!.textContent).toBe(gainer.avg == null ? '—' : gainer.avg.toFixed(1));
-      expect(v.textContent).toContain('hcp');
+      expect(v.textContent).toContain('HCP');
       unmount();
     }
   });

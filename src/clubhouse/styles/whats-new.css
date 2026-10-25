@@ -3,13 +3,15 @@
   display: grid;
   gap: 4px;
   min-width: 0;
+  /* A row's lines stop at a reading width (B2): on a wide screen they ran to about 130 characters. */
+  max-width: var(--ch-measure-text);
 }
-.ch-wn-what.is-good {
-  color: var(--ch-accent);
+.ch-wn-what.is-gain {
+  color: var(--ch-chart-gain);
 }
 .ch-wn-detail {
   color: var(--ch-text-secondary);
-  font: var(--ch-type-caption);
+  font: var(--ch-type-13);
   line-height: 1.45;
   white-space: normal;
   display: -webkit-box;
@@ -21,6 +23,11 @@
 /* The time is the row's lead: one width for every time ("9:20 AM", "10:05 AM"), so the titles line up, and titles wrap. */
 .ch-wn .ch-lgr__lead {
   min-width: 68px;
+}
+/* B22: on a title that wraps, the time sits on its first line, not in the middle of the row. */
+.ch-wn .ch-lgr__lead,
+.ch-wn .ch-lgr__txt {
+  align-self: baseline;
 }
 .ch-wn .ch-lgr__title {
   overflow: visible;

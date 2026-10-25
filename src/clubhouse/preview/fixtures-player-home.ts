@@ -60,7 +60,7 @@ void _a;
 void _ids;
 
 export const PREVIEW_PLAYER_HOME: ChPlayerHome = {
-  greeting: 'Good afternoon, Theo.',
+  greeting: 'Good afternoon, Theo',
   todayLabel: 'Wednesday 14 October',
   brief: 'Your last three rounds average 69.7. Off the tee is gaining you 0.8 strokes a round.',
   coachUserId: 'coach-maya',

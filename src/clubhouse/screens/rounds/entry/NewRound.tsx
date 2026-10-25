@@ -1,7 +1,8 @@
 'use client';
 
 import { useRouter, useSearchParams } from 'next/navigation';
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import type { DataGapAsk } from '@/lib/coachhelm/data-gap/asks';
 import { localDayIso } from '@/lib/golf/local-day';
 import { useNewRoundSession } from '@/lib/golf/round-session/use-new-round-session';
 import { normalizeStartHole } from '@/lib/golf/round-session/play-order';
@@ -11,6 +12,7 @@ import { RoundEntrySkeleton } from '../RoundsSkeleton';
 import { clearSetupDraft, useSetupDraftKey } from '../setup/draft';
 import { RoundSetup } from '../setup/RoundSetup';
 import type { ChSetupPorts, ChSetupQualifier } from '../setup/shape';
+import { useChCourseNudge } from './CourseNudge';
 import { reasonText } from './labels';
 import { InProgressConflictDialog } from './InProgressConflictDialog';
 import { useRoundPorts } from './ports';
@@ -18,7 +20,8 @@ import { RecoveryHost, RoundRuntime, type RoundRuntimeRoutes } from './RoundRunt
 import { useRoundDoneKey } from './use-done-key';
 import { ENGINE_ROUTES } from './routes';
 import { roundHeading, trackingRound, type ChRoundSession } from './session';
-import { afterSavedCourseStart, loadSetupQualifiers, QUALIFIER_READ_MS, SETUP_READ_PORTS, startRefusal, toStartForm } from './setup-reads';
+import { afterSavedCourseStart, loadSetupQualifiers, QUALIFIER_READ_MS, readCourseGlances, SETUP_READ_PORTS, startRefusal, toStartForm } from './setup-reads';
+import type { ChCourseGlance } from '../../../data/course-glance';
 import { canvasScrollNow } from '../../../lib/smooth-scroll';
 
 const LIBRARY = '/golf/dashboard/rounds';
@@ -33,8 +36,12 @@ const ROUTES: RoundRuntimeRoutes = { library: LIBRARY, review: (roundId) => `${L
  * reach has a Clubhouse state: a saved round found on the device (CH-11512), a round already in progress for this
  * course and date (CH-11514), the refusals of a start (CH-11007, CH-11014 to CH-11016, CH-11907), the round's own
  * sheets and banners, and a closed qualifier (CH-11516). See `RoundRuntime`.
+ *
+ * CoachHelm's one-tap data prompts ride along when the route hands them in (flags off: nothing is passed and the round is
+ * what it was): the putt-miss asks (`dataGapAsks`, CH-11960), and with `dataPromptsV2` the recovery tap (CH-11961) and the
+ * course nudge (CH-11962), whose pick the engine sends as the round's course with its next update.
  */
-export function NewRound({ playerId }: { playerId: string }) {
+export function NewRound({ playerId, dataGapAsks, dataPromptsV2 = false }: { playerId: string; dataGapAsks?: readonly DataGapAsk[]; dataPromptsV2?: boolean }) {
   const router = useRouter();
   const toast = useToast();
   const params = useSearchParams();
@@ -55,6 +62,16 @@ export function NewRound({ playerId }: { playerId: string }) {
   // offers is never one the engine then refuses. It is known after hydration, as the server has no device day.
   const [today, setToday] = useState<string | null>(null);
   useEffect(() => setToday(localDayIso()), []);
+
+  // P-7 4.6: the player's history at each course, beside a picked course; read once, best-effort.
+  const [glances, setGlances] = useState<Record<string, ChCourseGlance> | null>(null);
+  useEffect(() => {
+    let alive = true;
+    void readCourseGlances(playerId).then((g) => alive && setGlances(g));
+    return () => {
+      alive = false;
+    };
+  }, [playerId]);
 
   const [qualifiers, setQualifiers] = useState<ChSetupQualifier[] | null | 'loading'>('loading');
   useEffect(() => {
@@ -139,6 +156,23 @@ export function NewRound({ playerId }: { playerId: string }) {
     window.scrollTo({ top: 0, behavior: 'instant' });
   }, [tracking]);
 
+  // The course nudge (Slice 8b): a pick sets the course the engine sends with every partial and final write (the round RPCs keep
+  // it with COALESCE), as Fairway's does.
+  const { resolvedCourseIdRef } = engine;
+  const linkRoundCourse = useCallback(
+    (courseId: string) => {
+      resolvedCourseIdRef.current = courseId;
+    },
+    [resolvedCourseIdRef],
+  );
+  const courseNudge = useChCourseNudge({
+    enabled: dataPromptsV2,
+    // A course picked or resolved on the device, or one the server linked at the start (a typed name the library matched).
+    hasCourse: resolvedCourseIdRef.current != null || engine.startLinkedCourseId != null,
+    courseName: engine.setupData.courseName,
+    onLink: linkRoundCourse,
+  });
+
   const completed = engine.completedHoleStats[engine.currentHoleIndex];
   const activeHoleShots = completed?.shots ?? engine.inProgressShotsByHole[engine.currentHoleIndex] ?? [];
   const session: ChRoundSession = {
@@ -180,6 +214,9 @@ export function NewRound({ playerId }: { playerId: string }) {
     restoreRecovery: engine.handleRestoreRecovery,
     discardRecovery: engine.handleDiscardRecovery,
     closeRecovery: () => engine.setShowNewRoundRecovery(false),
+    dataGapAsks,
+    recoveryPrompt: dataPromptsV2,
+    courseNudge,
   };
 
   const conflict = engine.inProgressConflict;
@@ -197,6 +234,8 @@ export function NewRound({ playerId }: { playerId: string }) {
           backHref={LIBRARY}
           onStarted={() => undefined}
           preselectQualifierId={params.get('qualifier')}
+          preselectCourseId={params.get('course')}
+          glances={glances}
           isOffline={offline}
           viewerId={playerId}
         />

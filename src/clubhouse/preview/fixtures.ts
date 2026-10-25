@@ -83,7 +83,7 @@ export const PREVIEW_LEGS: ChTeamLegs = {
 };
 
 export const PREVIEW_HOME: ChCoachHome = {
-  greeting: 'Good morning, Maya.',
+  greeting: 'Good morning, Maya',
   teamChatId: 'c-team',
   subline: homeSubline(LEADERS, { roundsError: false, nextCompetition: { title: 'Qualifier · Pinehurst No. 2', when: 'Friday' } }),
   todayLabel: 'Wednesday 14 October',

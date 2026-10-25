@@ -343,7 +343,10 @@ CREATE POLICY "approach_miss_details_delete_own" ON "public"."approach_miss_deta
 
 CREATE POLICY "approach_miss_details_insert_own" ON "public"."approach_miss_details" FOR INSERT TO "authenticated" WITH CHECK ("public"."owns_golf_shot"("shot_id"));
 
-CREATE POLICY "approach_miss_details_select" ON "public"."approach_miss_details" FOR SELECT TO "authenticated" USING ("public"."can_read_golf_shot_detail"("shot_id"));
+CREATE POLICY "approach_miss_details_select" ON "public"."approach_miss_details" FOR SELECT TO "authenticated" USING (((( SELECT "gs"."round_id"
+   FROM ("public"."golf_shots" "gs"
+     JOIN "public"."golf_holes" "gh" ON ((("gh"."id" = "gs"."hole_id") AND ("gh"."round_id" = "gs"."round_id"))))
+  WHERE ("gs"."id" = "approach_miss_details"."shot_id")) IN ( SELECT "public"."golf_shot_detail_round_ids"() AS "golf_shot_detail_round_ids")) OR "public"."can_read_golf_shot_detail"("shot_id")));
 
 CREATE POLICY "approach_miss_details_update_own" ON "public"."approach_miss_details" FOR UPDATE TO "authenticated" USING ("public"."owns_golf_shot"("shot_id")) WITH CHECK ("public"."owns_golf_shot"("shot_id"));
 
@@ -779,7 +782,11 @@ CREATE POLICY "golf_message_responses_select" ON "public"."golf_message_response
    FROM "public"."golf_messages" "m"
   WHERE (("m"."id" = "golf_message_responses"."message_id") AND "public"."golf_conversation_has_me"("m"."conversation_id")))));
 
-CREATE POLICY "golf_message_responses_update" ON "public"."golf_message_responses" FOR UPDATE TO "authenticated" USING (("user_id" = ( SELECT "auth"."uid"() AS "uid"))) WITH CHECK (("user_id" = ( SELECT "auth"."uid"() AS "uid")));
+CREATE POLICY "golf_message_responses_update" ON "public"."golf_message_responses" FOR UPDATE TO "authenticated" USING ((("user_id" = ( SELECT "auth"."uid"() AS "uid")) AND (EXISTS ( SELECT 1
+   FROM "public"."golf_messages" "m"
+  WHERE (("m"."id" = "golf_message_responses"."message_id") AND "public"."golf_conversation_has_me"("m"."conversation_id")))))) WITH CHECK ((("user_id" = ( SELECT "auth"."uid"() AS "uid")) AND (EXISTS ( SELECT 1
+   FROM "public"."golf_messages" "m"
+  WHERE (("m"."id" = "golf_message_responses"."message_id") AND "public"."golf_conversation_has_me"("m"."conversation_id"))))));
 
 CREATE POLICY "golf_messages_delete" ON "public"."golf_messages" FOR DELETE TO "authenticated" USING (("sender_id" = ( SELECT "auth"."uid"() AS "uid")));
 
@@ -1201,7 +1208,10 @@ CREATE POLICY "putt_details_delete_own" ON "public"."putt_details" FOR DELETE TO
 
 CREATE POLICY "putt_details_insert_own" ON "public"."putt_details" FOR INSERT TO "authenticated" WITH CHECK ("public"."owns_golf_shot"("shot_id"));
 
-CREATE POLICY "putt_details_select" ON "public"."putt_details" FOR SELECT TO "authenticated" USING ("public"."can_read_golf_shot_detail"("shot_id"));
+CREATE POLICY "putt_details_select" ON "public"."putt_details" FOR SELECT TO "authenticated" USING (((( SELECT "gs"."round_id"
+   FROM ("public"."golf_shots" "gs"
+     JOIN "public"."golf_holes" "gh" ON ((("gh"."id" = "gs"."hole_id") AND ("gh"."round_id" = "gs"."round_id"))))
+  WHERE ("gs"."id" = "putt_details"."shot_id")) IN ( SELECT "public"."golf_shot_detail_round_ids"() AS "golf_shot_detail_round_ids")) OR "public"."can_read_golf_shot_detail"("shot_id")));
 
 CREATE POLICY "putt_details_update_own" ON "public"."putt_details" FOR UPDATE TO "authenticated" USING ("public"."owns_golf_shot"("shot_id")) WITH CHECK ("public"."owns_golf_shot"("shot_id"));
 
@@ -1238,3 +1248,5 @@ CREATE POLICY "team_chs_settings_select_team" ON "public"."golf_team_coachhelm_s
 CREATE POLICY "team_chs_settings_write_team" ON "public"."golf_team_coachhelm_settings" TO "authenticated" USING ("public"."is_golf_team_head_coach"("team_id")) WITH CHECK ("public"."is_golf_team_head_coach"("team_id"));
 
 COMMENT ON POLICY "team_chs_settings_write_team" ON "public"."golf_team_coachhelm_settings" IS 'Only a head coach of the team may write team-level CoachHelm settings. Head-coach (not primary) so a program head can manage both teams; assistants stay locked out.';
+
+CREATE POLICY "golf_read_marks_select" ON "public"."golf_conversation_read_marks" FOR SELECT TO "authenticated" USING ("public"."golf_read_marks_visible"("conversation_id", "user_id"));

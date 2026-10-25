@@ -418,13 +418,14 @@ describe('Q-123 Total-only rounds in the scores, not the hole figures: the team 
     expect(figure(d, 'Putts per round').context).toBe('3 rounds');
     expect(figure(d, 'Putts per round').note).toBe('Hole stats from 3 of 5 rounds');
     expect(figure(d, 'Greens in regulation').context).toBe('Tour averages 67%');
-    expect(figure(d, 'Greens in regulation').note).toBe('Hole stats from 3 of 5 rounds');
+    // Three rounds of greens are an early read (A7): the tag takes the note, and the coverage line is the one Putts shares.
+    expect(figure(d, 'Greens in regulation').note).toBe('Early read · 3 rounds');
     // The gauges' references come from the data: par over the same five rounds as the scoring average, the Tour's greens mark.
     const par = figure(d, 'Scoring average').gauge;
     expect(par?.kind).toBe('par');
     expect(par?.kind === 'par' ? par.toPar : null).toBeCloseTo(70.2 - 72, 10);
     expect(figure(d, 'Greens in regulation').gauge).toEqual({ kind: 'rate', ref: 67 });
-    expect(figure(d, 'Scrambling').gauge).toEqual({ kind: 'rate', ref: null });
+    expect(figure(d, 'Scrambling').gauge).toEqual({ kind: 'rate', ref: null, refLabel: 'Previous', tone: '' }); // the team's own earlier period, named so (review of #2361)
   });
 
   it('Qualifiers: two rounds and no hole stats; the scoring and the player row are the totals', async () => {

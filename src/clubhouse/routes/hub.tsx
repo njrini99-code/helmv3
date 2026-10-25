@@ -1,14 +1,11 @@
 import 'server-only';
-import { Users } from 'lucide-react';
 import { getGolfSessionProfile } from '@/lib/auth/session';
 import { pickGolfDashboardRole } from '@/lib/auth/golf-dashboard-role';
 import { loadTeamHub } from '../data/hub';
 import { parseHubTab } from '../lib/hub-tabs';
 import { TeamHub } from '../screens/hub/TeamHub';
-import { Button } from '../ui/Button';
-import { EmptyState } from '../ui/States';
-import { rebuiltHref } from '../shell/nav';
 import { resolveClubhouseTeam } from './team';
+import { NoTeam } from '../ui/NoTeam';
 import '../styles/hub.css';
 
 /**
@@ -25,28 +22,13 @@ export async function ClubhouseHubRoute({ tab, task, trip }: { tab?: string; tas
   const team = await resolveClubhouseTeam(session);
   if (!team) {
     const coach = pickGolfDashboardRole(session) === 'coach';
-    // A coach sets up the team in Team; a player joins one from Golf profile (CH-8302).
-    const settings = rebuiltHref(`/golf/dashboard/settings?section=${coach ? 'team' : 'golf'}`, coach ? 'coach' : 'player');
     return (
       <main className="ch-hb">
-        <EmptyState
-          size="page"
-          code="CH-10309"
-          icon={Users}
-          title="You aren’t on a team yet"
-          body={
+        <NoTeam code="CH-10309" coach={coach} body={
             coach
               ? 'Once your team is set up, Team Hub holds its announcements, trips, tasks and files.'
               : "Ask your coach for your team’s code or an invite. Once you join, Team Hub shows your team’s posts, trips and tasks."
-          }
-          action={
-            settings ? (
-              <Button variant="primary" href={settings}>
-                Open team settings
-              </Button>
-            ) : undefined
-          }
-        />
+          } />
       </main>
     );
   }

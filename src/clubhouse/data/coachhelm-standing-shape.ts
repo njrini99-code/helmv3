@@ -1,3 +1,4 @@
+import { formatDateOnlyShort } from '@/lib/golf/date-only';
 import { TEAM_MARKER_MIN_N } from '@/components/golf/coachhelm/v3/StandingBar/types';
 import { fitScale, formatValue, pgaOmissionNote, teamCohortText, toScalePct, valuesDisplayEqual } from '@/components/golf/coachhelm/v3/StandingBar/utils';
 import { computeCounterfactual } from '@/lib/coachhelm/v3/counterfactual/compute';
@@ -5,8 +6,8 @@ import { capByParentSg, parentSgMetric, sgBehindTour } from '@/lib/coachhelm/v3/
 import { METRIC_IDS, type MetricId } from '@/lib/coachhelm/v3/metrics/registry';
 import { METRIC_RENDER_CONFIG } from '@/lib/coachhelm/v3/standing/metric-config';
 import type { PlayerStanding } from '@/lib/coachhelm/v3/standing/types';
-import { fmtShortDate } from '@/components/golf/coachhelm/home/buildPlayerHubViewModel';
-import { formatSigned, NO_DATA } from '../lib/format';
+import { DEFAULT_TIMEZONE } from '@/lib/calendar/timezone';
+import { formatFixed, formatSigned, NO_DATA } from '../lib/format';
 import { LADDER_METRICS, toChLadder, type ChLadder, type ChLadderReads } from './coachhelm-ladder-shape';
 import { speak, type ChViewer } from './coachhelm-voice';
 
@@ -66,6 +67,8 @@ export interface ChStandRow {
   percentile: string | null;
   /** What closing the gap to the Tour is worth; null when the gap is small, there is no baseline, or the Tour is not comparable. */
   projection: ChStandProjection | null;
+  /** The rounds this row's value was built from ("12 rounds"); null on the lifetime table, which does not record it. */
+  rounds: number | null;
 }
 
 export interface ChStandGroup {
@@ -75,10 +78,26 @@ export interface ChStandGroup {
   rows: ChStandRow[];
 }
 
+/** `season`: this season's table (owner decision 9). `all_time`: the lifetime table, read while the season table is not deployed. */
+export type ChStandWindowKind = 'season' | 'all_time';
+
+export interface ChStandWindow {
+  kind: ChStandWindowKind;
+  /** "This season" or "All time": the hero names it, so no number on the page passes for a window it is not. */
+  label: string;
+  /** "Aug 1": the first day the season rows cover; null on the lifetime table and before any season row exists. */
+  since: string | null;
+}
+
 export interface ChStanding {
   /** `empty`: no standing row yet. `early`: rows, but fewer rounds than a projection needs. `ready`: the rest. */
   state: 'empty' | 'early' | 'ready';
-  /** Rounds on file (`golf_player_stats_cache.rounds_played`); null when that row could not be read or has none. */
+  /** The window every row covers. */
+  window: ChStandWindow;
+  /**
+   * The rounds behind the page. This season: the most rounds any row was built from (the season's countable rounds); all time: rounds
+   * on file (`golf_player_stats_cache.rounds_played`). Null when unknown.
+   */
   rounds: number | null;
   /** Their scoring average, the base every projection starts from ("77.2"); null below the projection floor or when unknown. */
   scoringAverage: string | null;
@@ -160,6 +179,9 @@ const COACH_DESCRIPTION: Partial<Record<ChStandGroupId, string>> = {
   pressure: 'Tournament and qualifier scoring against practice over the last 90 days, and what the opening hole costs.',
 };
 
+/** The pressure group's window, in its description: the season rows cover this season, the lifetime table's pressure rows 90 days. */
+const PRESSURE_SEASON = { player: 'Tournament and qualifier scoring against practice this season, and what your opening hole costs.', coach: 'Tournament and qualifier scoring against practice this season, and what the opening hole costs.' };
+
 const GROUPS: ReadonlyArray<{ id: ChStandGroupId; label: string; description: string }> = [
   { id: 'sg', label: 'Strokes gained', description: 'Strokes gained or lost per round, against the Tour.' },
   { id: 'putting', label: 'Putting', description: 'How often putts drop from each distance, and how your misses break.' },
@@ -199,26 +221,27 @@ export function figure(id: string, unit: Unit, v: number): string {
     case 'percent':
       return `${Math.round(v)}%`;
     case 'strokes':
-      return signed(id) ? formatSigned(v, 2) : v.toFixed(2);
+      // Strokes gained and the deltas to one decimal, as every other screen prints them (A20); a par scoring average keeps two.
+      return signed(id) ? formatSigned(v, 1) : formatFixed(v, 2);
     case 'yards':
       return `${Math.round(v)} yd`;
     case 'feet':
       return `${Math.round(v)} ft`;
     case 'count':
-      return v.toFixed(1);
+      return formatFixed(v, 1);
     default:
       return formatValue(v, unit);
   }
 }
 
-/** How far apart two values are, in the metric's unit: "9 pts", "3 ft", "0.42 strokes". */
-function gap(unit: Unit, d: number): string {
+/** How far apart two values are, in the metric's unit: "9 pts", "3 ft", "0.4 strokes" ("0.42 strokes" for a par scoring average). */
+function gap(unit: Unit, d: number, digits: number): string {
   const a = Math.abs(d);
   switch (unit) {
     case 'percent':
       return `${Math.round(a)} pts`;
     case 'strokes':
-      return `${a.toFixed(2)} strokes`;
+      return `${a.toFixed(digits)} strokes`;
     case 'yards':
       return `${Math.round(a)} yd`;
     case 'feet':
@@ -228,16 +251,38 @@ function gap(unit: Unit, d: number): string {
   }
 }
 
-/** The player against one reference, by the metric's own direction. `ref`: how the reference is named ("the Tour", "your team average"). */
-export function versus(you: number, other: number, direction: 'higher_better' | 'lower_better', unit: Unit, ref: string): ChStandVs {
-  if (valuesDisplayEqual(you, other, unit)) return { sense: 'level', text: `Level with ${ref}` };
+/**
+ * The player against one reference, by the metric's own direction. `ref`: how the reference is named ("the Tour", "your team average").
+ * `id` sets the strokes' digits: a signed figure (strokes gained, a delta) is level when both print alike to one decimal (A20).
+ */
+export function versus(you: number, other: number, direction: 'higher_better' | 'lower_better', unit: Unit, ref: string, id = ''): ChStandVs {
+  const digits = unit === 'strokes' && signed(id) ? 1 : 2;
+  const level = unit === 'strokes' ? you.toFixed(digits) === other.toFixed(digits) : valuesDisplayEqual(you, other, unit);
+  if (level) return { sense: 'level', text: `Level with ${ref}` };
   const better = direction === 'higher_better' ? you > other : you < other;
-  const mag = gap(unit, you - other);
+  const mag = gap(unit, you - other, digits);
   if (unit === 'feet') return { sense: better ? 'ahead' : 'behind', text: `${mag} ${better ? 'closer than' : 'farther than'} ${ref}` };
   return { sense: better ? 'ahead' : 'behind', text: `${mag} ${better ? 'ahead of' : 'behind'} ${ref}` };
 }
 
 const oneDecimal = (v: number) => v.toFixed(1);
+
+/** "Aug 1" from an ISO date, read as a calendar day (no zone shifts it). */
+function dayLabel(iso: string | null | undefined): string | null {
+  if (!iso || !/^\d{4}-\d{2}-\d{2}/.test(iso)) return null;
+  return formatDateOnlyShort(iso.slice(0, 10), '') || null;
+}
+
+/** A row's own round count, when the row carries one (season rows). */
+const roundsOf = (s: PlayerStanding): number | null => (typeof s.rounds_n === 'number' && Number.isFinite(s.rounds_n) ? s.rounds_n : null);
+
+/** "Oct 22": the day of the newest refresh in the team's time zone (A20), so an evening refresh in the US is not tomorrow. */
+export function refreshedOn(iso: string | null, timeZone: string): string | null {
+  if (!iso) return null;
+  const d = new Date(iso.length === 10 ? `${iso}T12:00:00Z` : iso);
+  if (Number.isNaN(d.getTime())) return null;
+  return new Intl.DateTimeFormat('en-US', { month: 'short', day: 'numeric', timeZone }).format(d);
+}
 
 /**
  * What closing the gap is worth, when it is worth drawing. Sized by the player's own attempts a round where the cache has them; without
@@ -274,8 +319,8 @@ function toRow(s: PlayerStanding, id: MetricId, baseline: number | null, attempt
     tourNote: !tourShown ? pgaOmissionNote({ pga_omitted: s.pga_omitted, pga_omitted_reason: s.pga_omitted_reason, is_womens: womens }) : null,
     team: teamShown ? { text: figure(id, cfg.unit, s.team_avg as number), pct: toScalePct(s.team_avg as number, scale), n: s.team_n } : null,
     teamNote: teamShown ? null : `Team comparison needs ${TEAM_MARKER_MIN_N} teammates with this stat${s.team_n > 0 ? ` (${s.team_n} so far)` : ''}.`,
-    vsTour: tourShown ? versus(s.player_value, s.pga_value, cfg.direction, cfg.unit, tourRef) : null,
-    vsTeam: teamShown ? versus(s.player_value, s.team_avg as number, cfg.direction, cfg.unit, coach ? 'the team average' : 'your team average') : null,
+    vsTour: tourShown ? versus(s.player_value, s.pga_value, cfg.direction, cfg.unit, tourRef, id) : null,
+    vsTeam: teamShown ? versus(s.player_value, s.team_avg as number, cfg.direction, cfg.unit, coach ? 'the team average' : 'your team average', id) : null,
     percentile: teamShown && s.team_pct != null ? (coach ? speak(teamCohortText(s.team_pct, s.team_n), viewer) : teamCohortText(s.team_pct, s.team_n)) || null : null,
     projection: worth
       ? {
@@ -286,6 +331,7 @@ function toRow(s: PlayerStanding, id: MetricId, baseline: number | null, attempt
           clamped: worth.clamped === true,
         }
       : null,
+    rounds: roundsOf(s),
   };
 }
 
@@ -294,9 +340,17 @@ function toRow(s: PlayerStanding, id: MetricId, baseline: number | null, attempt
  * a metric the registry does not know has no row here. `baseline`: the stats-cache read, whose failure is its own state.
  * `reads`: the player's open reads for the ladder's "Because" (`coachhelm-ladder-shape.ts`); null draws the ladder without them.
  * `viewer`: whose page it is (the player's own by default); a coach's names the team average without "your" and the rank by the
- * player.
+ * player. `windowKind`: which table the rows came from: `season` (`golf_player_standing_season`), or `all_time` (the lifetime table,
+ * the loader's fallback and the default, so rows without a season are never called one).
  */
-export function toChStanding(rows: readonly PlayerStanding[], baseline: ChStandBaselineRead, reads: ChLadderReads | null = null, viewer: ChViewer = { role: 'player' }): ChStanding {
+export function toChStanding(
+  rows: readonly PlayerStanding[],
+  baseline: ChStandBaselineRead,
+  reads: ChLadderReads | null = null,
+  viewer: ChViewer = { role: 'player' },
+  timeZone: string = DEFAULT_TIMEZONE,
+  windowKind: ChStandWindowKind = 'all_time',
+): ChStanding {
   const roundsPlayed = baseline.status === 'ok' ? baseline.roundsPlayed : null;
   const average = baseline.status === 'ok' && roundsPlayed != null && roundsPlayed >= MIN_PROJECTION_ROUNDS ? baseline.scoringAverage : null;
   const byId = new Map(rows.map((r) => [r.metric_id as string, r]));
@@ -310,7 +364,10 @@ export function toChStanding(rows: readonly PlayerStanding[], baseline: ChStandB
   // (design call: no number twice on one screen). Strokes gained: total stays there, and a group left empty is not drawn. They
   // still count among the comparisons the hero states, since the ladder draws them.
   const grouped = drawn.filter((d) => !LADDER_METRICS.has(d.id));
-  const described = (g: (typeof GROUPS)[number]) => (viewer.role === 'coach' ? { ...g, description: COACH_DESCRIPTION[g.id] ?? g.description } : g);
+  const described = (g: (typeof GROUPS)[number]) => {
+    const d = viewer.role === 'coach' ? { ...g, description: COACH_DESCRIPTION[g.id] ?? g.description } : g;
+    return windowKind === 'season' && g.id === 'pressure' ? { ...d, description: viewer.role === 'coach' ? PRESSURE_SEASON.coach : PRESSURE_SEASON.player } : d;
+  };
   const groups: ChStandGroup[] = GROUPS.map((g) => ({ ...described(g), rows: grouped.filter((d) => groupOf(d.id) === g.id).map((d) => d.row) })).filter((g) => g.rows.length > 0);
   const all = drawn.map((d) => d.row);
   const newest = rows.map((r) => r.computed_at).filter((d): d is string => typeof d === 'string').sort().pop() ?? null;
@@ -318,15 +375,18 @@ export function toChStanding(rows: readonly PlayerStanding[], baseline: ChStandB
     rows.filter((r) => Number.isFinite(r.player_value)),
     reads,
   );
+  const counted = rows.map(roundsOf).filter((n): n is number => n != null);
+  const since = windowKind === 'season' ? (rows.map((r) => r.season_start).filter((d): d is string => typeof d === 'string').sort().pop() ?? null) : null;
   const withTour = all.filter((r) => r.vsTour);
   const withTeam = all.filter((r) => r.vsTeam);
   return {
     // A failed scoring-average read is not an early read: it is not known how many rounds there are, and the page says the read failed.
     state: all.length === 0 ? 'empty' : baseline.status === 'ok' && (roundsPlayed == null || roundsPlayed < MIN_PROJECTION_ROUNDS) ? 'early' : 'ready',
-    rounds: roundsPlayed,
+    window: { kind: windowKind, label: windowKind === 'season' ? 'This season' : 'All time', since: dayLabel(since) },
+    rounds: windowKind === 'season' ? (counted.length > 0 ? Math.max(...counted) : null) : roundsPlayed,
     scoringAverage: average != null ? oneDecimal(average) : null,
     baselineFailed: baseline.status === 'failed',
-    refreshed: fmtShortDate(newest),
+    refreshed: refreshedOn(newest, timeZone),
     tour: rows.some((r) => r.is_womens === true) ? 'LPGA Tour' : 'Tour',
     groups,
     counts: {

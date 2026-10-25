@@ -340,7 +340,7 @@ describe('CH-1210 sections that crash together are told once', () => {
     expect(notice.getAttribute('data-ch-code')).toBe('CH-1210');
     expect(notice.querySelector('.ch-notice__title')!.textContent).toBe('Some of this page couldn’t be shown');
     expect(notice.querySelector('.ch-notice__body')!.textContent).toBe(
-      'Team figures, the trend chart and RSVPs couldn’t be shown. The rest of the page is fine, and this has been reported automatically.',
+      'Team figures, the trend chart and RSVPs couldn’t be shown. The rest of the page is fine. Try again.',
     );
     expect([...document.querySelectorAll('.ch-notice--covered')].map((n) => [n.getAttribute('data-ch-code'), n.textContent])).toEqual([
       ['CH-4204', 'Team figures couldn’t be shown'],
@@ -385,7 +385,7 @@ describe('CH-1210 sections that crash together are told once', () => {
     render(<SectionGroup>{page()}</SectionGroup>);
     const notice = screen.getByRole('alert');
     expect(notice.getAttribute('data-ch-code')).toBe('CH-4205');
-    expect(notice.querySelector('.ch-notice__body')!.textContent).toBe('The rest of the page is fine. This has been reported automatically.');
+    expect(notice.querySelector('.ch-notice__body')!.textContent).toBe('The rest of the page is fine. Try again.');
     expect(within(notice).getByRole('button', { name: 'Try again' })).toBeTruthy();
   });
 

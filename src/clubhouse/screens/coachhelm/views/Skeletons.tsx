@@ -2,9 +2,10 @@
 
 import { useChPhone } from '../../../lib/use-phone';
 import { Skeleton } from '../../../ui/States';
+import { LargeTitleSkeleton } from '../../../ui/LargeTitle';
 
 /**
- * Route loading for the player's views, each in its own final shape and height (the Game profile's is CH-13460, Standing's CH-13470, the Deep dive's CH-13480), so nothing jumps
+ * Route loading for the player's views, each in its own final shape and height (Standing's is CH-13470, the Deep dive's CH-13480), so nothing jumps
  * when the read lands. `coachhelm/loading.tsx` cannot see `?view=`, so the route wraps each view in its own Suspense
  * (routes/coachhelm.tsx) and these are the fallbacks.
  *
@@ -21,10 +22,11 @@ const labelFor = (what: string, coach: ChSkeletonCoach | undefined) => `Loading 
 
 function Chrome({ label, code, chained, brief = 2, coach, children }: { label: string; code: string; chained?: boolean; brief?: 2 | 3; coach?: ChSkeletonCoach; children: React.ReactNode }) {
   const phone = useChPhone();
-  // The sub-navigation: a bar the height of the radiogroup (desktop) or the chip row (phone), where the page puts it.
+  // The sub-navigation: a bar the size of the radiogroup (desktop: Board, Standing, Deep dive 249px; a coach's Deep dive
+  // and Standing 183px, measured at 1440) or the chip row (phone), where the page puts it.
   const tabs = (
     <div className="ch-hv-sk-tabs">
-      <Skeleton width={phone ? '100%' : 380} height={phone ? 36 : 38} radius={phone ? 18 : 12} />
+      <Skeleton width={phone ? '100%' : coach ? 183 : 249} height={phone ? 36 : 38} radius={phone ? 18 : 12} />
     </div>
   );
   return (
@@ -33,18 +35,18 @@ function Chrome({ label, code, chained, brief = 2, coach, children }: { label: s
       <h1 className="ch-sr-only">CoachHelm</h1>
       {phone && tabs}
       {coach ? (
-        // The player's header: the eyebrow, the name (the phone's 31px title, desktop's 44px) and the one line.
+        // The player's header: the eyebrow, the name (the phone's large title, desktop's 44px) and the one line.
         <header className={'ch-hl-h' + (phone ? '' : ' has-aside')} data-canopy-head="">
           <Skeleton width={84} height={11} />
-          {phone ? <Line h={33.5} w={176} sh={28} r={8} /> : <Skeleton width={260} height={44} radius={10} />}
+          {phone ? <LargeTitleSkeleton width={176} /> : <Skeleton width={260} height={44} radius={10} />}
           <Skeleton width={phone ? '72%' : 280} height={14} />
           {!phone && <div className="ch-hl-h__aside">{tabs}</div>}
         </header>
       ) : phone ? (
-        // The phone's intro at its loaded line heights (the Mobile clubhouse pass): the 31px title (a player's page has no role eyebrow) and the brief under
+        // The phone's intro at its loaded line heights (the Mobile clubhouse pass): the large title (a player's page has no role eyebrow) and the brief under
         // the double rule, in the lines the view's own brief takes at the phone's width (`brief`: the Deep dive's runs to three).
         <header className="ch-hl-h" data-canopy-head="">
-          <Line h={33.5} w={176} sh={28} r={8} />
+          <LargeTitleSkeleton width={176} />
           <span className="ch-hl-sk__line is-two" style={brief === 3 ? { height: 65.25 } : undefined}>
             <Skeleton width="92%" height={13} />
             {brief === 3 && <Skeleton width="96%" height={13} />}
@@ -79,63 +81,6 @@ function PhoneHead({ w, caption = true }: { w: number; caption?: boolean }) {
       <Line h={22.8} w={w} sh={17} r={6} />
       {caption && <Skeleton width="84%" height={12} />}
     </span>
-  );
-}
-
-function MeasureSkeleton() {
-  return (
-    <div className="ch-hg-sk__m">
-      <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-        <Skeleton width={90} height={11} />
-        <Skeleton width={86} height={22} radius={11} />
-      </div>
-      <Skeleton width="52%" height={16} />
-      <Skeleton width="62%" height={28} radius={8} />
-      <Skeleton width="78%" height={13} />
-      <Skeleton width="100%" height={34} radius={10} />
-      <Skeleton width="94%" height={12} />
-      <Skeleton width="70%" height={12} />
-    </div>
-  );
-}
-
-/** The Game profile: the persona card, then the seven measures (CH-13460). */
-export function ProfileSkeleton({ chained, coach }: { chained?: boolean; coach?: ChSkeletonCoach } = {}) {
-  const phone = useChPhone();
-  if (phone) {
-    // The phone: the shape of the game's feature card, then the measures' section and its rows. The card's height is the
-    // loaded card's at 390; coachhelm-profile.css follows it at other widths.
-    return (
-      <Chrome label={labelFor('game profile', coach)} code="CH-13460" chained={chained} coach={coach}>
-        <div className="ch-hg-sk__hero">
-          <Skeleton width="100%" height={268} radius={14} shape="solid" />
-        </div>
-        <div className="ch-hg-sk__grid">
-          <PhoneHead w={150} />
-          {Array.from({ length: 3 }, (_, i) => (
-            <MeasureSkeleton key={i} />
-          ))}
-        </div>
-      </Chrome>
-    );
-  }
-  return (
-    <Chrome label={labelFor('game profile', coach)} code="CH-13460" chained={chained} coach={coach}>
-      <div className="ch-hg-sk__hero">
-        <Skeleton width={150} height={11} />
-        <Skeleton width="78%" height={32} radius={8} />
-        <Skeleton width="56%" height={32} radius={8} />
-        <div className="ch-hg-sk__stand">
-          <Skeleton width="100%" height={92} radius={14} />
-          <Skeleton width="100%" height={92} radius={14} />
-        </div>
-      </div>
-      <div className="ch-hg-sk__grid">
-        {Array.from({ length: 6 }, (_, i) => (
-          <MeasureSkeleton key={i} />
-        ))}
-      </div>
-    </Chrome>
   );
 }
 

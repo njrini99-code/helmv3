@@ -1,7 +1,8 @@
 import type { UIMessage } from 'ai';
 import type { ActionProposal, ActionReceipt } from '@/lib/coachhelm/v3/chat/action-types';
 import type { Measurement, MeasurementSeries, ToolEnvelope } from '@/lib/coachhelm/v3/chat/provenance';
-import { MINUS, NO_DATA } from '../lib/format';
+import { changeTone, formatFixed, formatSG, MINUS, NO_DATA } from '../lib/format';
+import { plural } from '../lib/plural';
 
 /**
  * Ask CoachHelm, the conversation (Clubhouse P013): what a thread of AI SDK message parts means on
@@ -30,11 +31,12 @@ export function formatValue(value: number | null, unit: Measurement['unit']): st
     case 'percent':
       return `${sign(value)}${Math.abs(Math.round(value))}%`;
     case 'strokes':
-      return `${value > 0 ? '+' : sign(value)}${Math.abs(value).toFixed(2)}`;
+      // Strokes gained at one decimal, as every screen prints it (owner decision 11).
+      return formatSG(value);
     case 'score':
     case 'count':
     case 'ratio':
-      return `${sign(value)}${Number.isInteger(value) ? Math.abs(value) : Math.abs(value).toFixed(1)}`;
+      return `${sign(value)}${Number.isInteger(value) ? Math.abs(value) : formatFixed(Math.abs(value), 1)}`;
     case 'yards':
       return `${sign(value)}${Math.abs(Math.round(value))} yds`;
     case 'feet':
@@ -247,9 +249,9 @@ export function describeWork(steps: AskStep[], envelopes: ToolEnvelope[]): strin
   const rounds = maxBy('rounds');
   const players = new Set(ms.filter((m) => m.entity.kind === 'player').map((m) => m.entity.id)).size;
   const bits: string[] = [];
-  if (rounds > 0) bits.push(`${rounds} round${rounds === 1 ? '' : 's'}`);
+  if (rounds > 0) bits.push(plural(rounds, 'round'));
   if (players > 1) bits.push(`${players} players`);
-  if (bits.length === 0) return `Worked through ${steps.length} step${steps.length === 1 ? '' : 's'}`;
+  if (bits.length === 0) return `Worked through ${plural(steps.length, 'step')}`;
   return `Read ${bits.join(' across ')}`;
 }
 
@@ -504,7 +506,18 @@ export type AskEvidence =
   | (EvBase & { kind: 'compare' })
   | (EvBase & { kind: 'legs'; rows: Array<{ label: string; value: number; display: string }>; takeaway: string })
   | (EvBase & { kind: 'tiles'; tiles: EvidenceTile[] })
+  | (EvBase & { kind: 'reads'; playerId: string; rows: AskRead[] })
   | (EvBase & { kind: 'table' });
+
+/** One read an answer names (the open-signals tool's list): its id, which the coach's Deep dive opens on, and what the row says. */
+export interface AskRead {
+  id: string;
+  title: string;
+  /** The area, as the engine stores it ("putting"). */
+  category: string | null;
+  /** The read's own value ("28%"), when it has one. */
+  value: string | null;
+}
 
 export interface EvidenceTile {
   label: string;
@@ -636,6 +649,31 @@ function measurementTable(ms: Measurement[], caption: string): AskTable {
   };
 }
 
+const textOf = (v: unknown): string | null => (typeof v === 'string' && v.trim() ? v.trim() : null);
+
+/**
+ * The reads a tool names for one player (`get_player_insights`: `detail.player.player_id` and `detail.insights[].insight_id`), or
+ * null when the detail is not that shape. A row with no id or no title is left out: it could not be opened, or said.
+ */
+export function readsOf(detail: unknown): { playerId: string; rows: AskRead[] } | null {
+  if (!detail || typeof detail !== 'object') return null;
+  const d = detail as { player?: unknown; insights?: unknown };
+  const playerId = d.player && typeof d.player === 'object' ? textOf((d.player as { player_id?: unknown }).player_id) : null;
+  if (!playerId || !Array.isArray(d.insights)) return null;
+  const rows: AskRead[] = [];
+  for (const r of d.insights as unknown[]) {
+    if (!r || typeof r !== 'object') continue;
+    const o = r as Record<string, unknown>;
+    const id = textOf(o.insight_id);
+    const title = textOf(o.title);
+    if (id && title) rows.push({ id, title, category: textOf(o.category), value: textOf(o.value_display) });
+  }
+  return rows.length ? { playerId, rows } : null;
+}
+
+/** A read's area in words: "short_game" is "Short game". */
+export const readAreaWord = (c: string | null): string | null => (c ? (c.charAt(0).toUpperCase() + c.slice(1)).replace(/_/g, ' ') : null);
+
 /** One tool's output as the block this screen draws. The choice is made from the SHAPE of the evidence, never from what the model asked for. */
 export function evidenceBlocks(envelope: ToolEnvelope): AskEvidence[] {
   // A failed read is never "no data": it is the honest "could not read this".
@@ -687,7 +725,7 @@ export function evidenceBlocks(envelope: ToolEnvelope): AskEvidence[] {
         title: `${names.join(' and ')}`,
         ...base,
         table: {
-          caption: `Comparison of ${names.join(' and ')} across ${metricIds.length} metric${metricIds.length === 1 ? '' : 's'}, with sample sizes`,
+          caption: `Comparison of ${names.join(' and ')} across ${plural(metricIds.length, 'metric')}, with sample sizes`,
           columns: ['Metric', ...names],
           rows: metricIds.map((id) => [ms.find((m) => m.metric_id === id)?.metric_label ?? id, ...names.map((n) => { const m = find(n, id); return m ? `${formatValue(m.value, m.unit)}${m.sample_size > 0 ? ` (${sampleWords(m.sample_size, m.sample_unit)})` : ''}` : NO_DATA; })]),
         },
@@ -700,7 +738,8 @@ export function evidenceBlocks(envelope: ToolEnvelope): AskEvidence[] {
         title: entities.size === 1 ? `Strokes gained, ${legs[0]?.entity.label}` : 'Strokes gained',
         ...base,
         rows: legs.map((m) => ({ label: m.metric_label.replace(/^strokes gained[:\s-]*/i, '').trim() || m.metric_label, value: m.value as number, display: formatValue(m.value, m.unit) })),
-        takeaway: (worst.value ?? 0) < 0 ? `Largest loss: ${worst.metric_label} at ${formatValue(worst.value, worst.unit)}.` : 'No leg is below zero.',
+        // A loss that prints as 0.0 is no loss (A2).
+        takeaway: changeTone(worst.value, false, 1) === 'is-loss' ? `Largest loss: ${worst.metric_label} at ${formatValue(worst.value, worst.unit)}.` : 'No leg is below zero.',
         table: measurementTable(legs, 'Strokes gained by leg'),
       });
     } else {
@@ -713,6 +752,21 @@ export function evidenceBlocks(envelope: ToolEnvelope): AskEvidence[] {
         table: measurementTable(ms, envelope.summary),
       });
     }
+  }
+
+  // The reads an answer names for one player: each opens that player's Deep dive on it, for a coach whose team the player is on.
+  const reads = blocks.length === 0 ? readsOf(envelope.detail) : null;
+  if (reads) {
+    blocks.push({
+      kind: 'reads',
+      title: envelope.summary,
+      source: null,
+      note: partialNote(envelope),
+      bench: null,
+      playerId: reads.playerId,
+      rows: reads.rows,
+      table: { caption: envelope.summary, columns: ['Read', 'Area', 'Value'], rows: reads.rows.map((r) => [r.title, readAreaWord(r.category) ?? NO_DATA, r.value ?? NO_DATA]) },
+    });
   }
 
   // Nothing above drew it (a tool whose output is a list of records, or a kind added later): its table, never nothing.

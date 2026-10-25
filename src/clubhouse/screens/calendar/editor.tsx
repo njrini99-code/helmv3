@@ -1,6 +1,6 @@
 'use client';
 
-import { CalendarPlus, Check, Copy, Pencil, RefreshCw, Rss, Trash2, TriangleAlert, CircleX } from 'lucide-react';
+import { CalendarPlus, Check, Copy, Pencil, RotateCw, Rss, Trash2, TriangleAlert, CircleX } from 'lucide-react';
 import { useEffect, useMemo, useRef, useState, type KeyboardEvent, type PointerEvent } from 'react';
 import { createGolfEvent, deleteGolfEvent, deleteGolfEventPermanently, updateGolfEvent } from '@/app/golf/actions/calendar-events';
 import { createRecurringEvent, deleteRecurringEvent, editRecurringEvent } from '@/app/golf/actions/recurring-events';
@@ -23,6 +23,8 @@ import { newRequestId } from '../../data/recruiting-shape';
 import { chReport, chTrail } from '../../lib/track';
 import { haptic } from '../../lib/haptics';
 import { useChPhone } from '../../lib/use-phone';
+import { useChClock } from '../../lib/use-clock';
+import { clockAxisLabel } from '../../lib/clock-format';
 import { TYPE_LABEL, addDays, busyFor, dayNum, dowOf, fmtHour, monthName, overlaps, seedWindow, type ChCalEvent, type ChCalPerson, type ChCalType } from './model';
 import { TYPE_ICON } from './views';
 
@@ -88,6 +90,7 @@ function FindTime({
   ignoreId?: string;
   people: Map<string, ChCalPerson>;
 }) {
+  const clock = useChClock();
   const ref = useRef<HTMLDivElement | null>(null);
   const grab = useRef<number | null>(null);
   // The kind of pointer that last pressed a lane. A finger only moves the time once it lifts without scrolling (a click):
@@ -134,8 +137,7 @@ function FindTime({
         <div className="ch-lanes__axis" aria-hidden="true">
           {ticks.map((h) => (
             <span key={h} style={{ left: `${pct(h)}%` }}>
-              {((h + 11) % 12) + 1}
-              {h < 12 ? 'a' : 'p'}
+              {clockAxisLabel(h, clock)}
             </span>
           ))}
         </div>
@@ -180,7 +182,7 @@ function FindTime({
                   aria-valuemin={FROM}
                   aria-valuemax={TO - len}
                   aria-valuenow={win[0]}
-                  aria-valuetext={`${fmtHour(win[0])} to ${fmtHour(win[1])}`}
+                  aria-valuetext={`${fmtHour(win[0], true, clock)} to ${fmtHour(win[1], true, clock)}`}
                   onPointerDown={onDown}
                   // CH-6602: the band follows the finger or pointer as it is dragged.
                   onPointerMove={onMove}
@@ -234,6 +236,7 @@ export function EventEditor({
   const base = seed?.event ?? null;
   const open = seed != null;
   const phone = useChPhone();
+  const clock = useChClock();
   const toast = useToast();
   const [title, setTitle] = useState('');
   const [type, setType] = useState<ChCalType>('practice');
@@ -352,8 +355,8 @@ export function EventEditor({
   const invalidTime = (!allDay && !multiTimed && win[1] <= win[0]) || needsEnd;
   const minutes = Math.round((win[1] - win[0]) * 60);
   const whenLabel = multiTimed
-    ? `${dowOf(date)} ${dayNum(date)} ${monthName(date).slice(0, 3)} ${fmtHour(win[0])} – ${dowOf(endDate)} ${dayNum(endDate)} ${monthName(endDate).slice(0, 3)} ${fmtHour(win[1])}`
-    : `${dowOf(date)} ${dayNum(date)} ${monthName(date).slice(0, 3)} · ${allDay ? 'All day' : `${fmtHour(win[0], false)} – ${fmtHour(win[1])}`}`;
+    ? `${dowOf(date)} ${dayNum(date)} ${monthName(date).slice(0, 3)} ${fmtHour(win[0], true, clock)} – ${dowOf(endDate)} ${dayNum(endDate)} ${monthName(endDate).slice(0, 3)} ${fmtHour(win[1], true, clock)}`
+    : `${dowOf(date)} ${dayNum(date)} ${monthName(date).slice(0, 3)} · ${allDay ? 'All day' : `${fmtHour(win[0], false, clock)} – ${fmtHour(win[1], true, clock)}`}`;
 
   // One request id per opening of the editor and set of contents: the same form with the same contents sends the
   // same id, whether the toast's Retry replays it or Publish is pressed again, so a reply that was lost after the
@@ -707,7 +710,7 @@ export function EventEditor({
           </div>
           {!allDay && !multiTimed && invited.length > 0 && (
             <div>
-              <div className="ch-in__sechead" style={{ marginBottom: 10 }}>
+              <div className="ch-in__sechead" style={{ marginBottom: 8 }}>
                 <span className="ch-ed__lbl" style={{ margin: 0 }}>
                   Find a time · {dowOf(date)} {dayNum(date)}
                 </span>
@@ -740,7 +743,7 @@ export function EventEditor({
             <dt>When</dt>
             <dd className="ch-num">
               {whenLabel}
-              {moved && base && <span className="ch-rcpt__was"> · was {fmtHour(base.start!, false)} – {fmtHour(base.end!)}</span>}
+              {moved && base && <span className="ch-rcpt__was"> · was {fmtHour(base.start!, false, clock)} – {fmtHour(base.end!, true, clock)}</span>}
             </dd>
             <dt>Where</dt>
             <dd>{loc.trim() || '—'}</dd>
@@ -1023,9 +1026,9 @@ export function SubscribeSheet({ open, onClose, role }: { open: boolean; onClose
     { type: 'personal', name: 'My schedule', desc: role === 'coach' ? 'Events you run and your busy time' : 'Events you’re invited to and your classes' },
   ];
   return (
-    <Modal open={open} onClose={onClose} width={560} icon={Rss} title="Add to your calendar app" description="One-way: changes in Helm appear in Apple, Google or Outlook within an hour. Edits made there don’t come back." footer={<Button onClick={onClose}>Done</Button>}>
+    <Modal open={open} onClose={onClose} width={560} icon={Rss} title="Add to your calendar app" description="One-way: changes in Helm appear in Apple, Google or Outlook within an hour. Edits made there don’t come back." footer={<Button variant="primary" onClick={onClose}>Done</Button>}>
       {failed ? (
-        <InlineNotice code="CH-6206" title="Your calendar links didn’t load." body="Try again; the error has been reported." onRetry={() => setAttempt((a) => a + 1)} />
+        <InlineNotice code="CH-6206" title="Your calendar links didn’t load." body="Try again." onRetry={() => setAttempt((a) => a + 1)} />
       ) : !feeds ? (
         <div style={{ display: 'grid', gap: 12 }} aria-busy="true" data-ch-code="CH-6402">
           <Skeleton height={44} />
@@ -1072,7 +1075,7 @@ export function SubscribeSheet({ open, onClose, role }: { open: boolean; onClose
                 ) : (
                   f && (
                     <div className="ch-feed__acts">
-                      <Button size="sm" variant="ghost" leftIcon={RefreshCw} disabled={busy} onClick={() => setAsking({ type: r.type, kind: 'new' })}>
+                      <Button size="sm" variant="ghost" leftIcon={RotateCw} disabled={busy} onClick={() => setAsking({ type: r.type, kind: 'new' })}>
                         New link
                       </Button>
                       <Button size="sm" variant="ghost" leftIcon={Trash2} disabled={busy} onClick={() => setAsking({ type: r.type, kind: 'remove' })}>

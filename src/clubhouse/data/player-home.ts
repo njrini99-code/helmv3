@@ -3,7 +3,10 @@ import { createClient } from '@/lib/supabase/server';
 import { chLogServer } from '../lib/track-server';
 import type { ChSgTour } from '../lib/sg';
 import { homeClock, latestWithHoles, loadHomeWeek, type ChHomeClock, type ChHomeEvent, type ChHomeWeek, type ChLatestRound } from './home';
-import { isFull18, lastTenFloor, loadSeasonRounds, mean, summarizePlayer, type ChRound } from './season';
+import type { MarkEntries } from '../lib/marks-cookie';
+import type { ChHomeChange } from '../screens/home/change-rows';
+import { loadHomeChanges, withChange, withWas } from './home-changes';
+import { isFull18, lastTenFloor, loadSeasonRounds, mean, seasonStartDate, summarizePlayer, type ChRound } from './season';
 import { holeRounds } from './round-scope';
 import { legRows, type ChPlayerLeg } from './leg-rows';
 import { replyClosedAt } from '../screens/calendar/model';
@@ -11,6 +14,7 @@ import { getPlayerHubAnnouncements } from '@/app/golf/actions/player-notificatio
 import { parsePlayerHubEvents } from '@/lib/golf/player-hub-events';
 import { chunkIds } from '@/lib/supabase/chunk-ids';
 import { loadRoundCache, loadTourBenchmarks, seasonOnly, tourForGender, type ChRoundCache } from './stats-common';
+import { formatFixed } from '../lib/format';
 
 export { legRows } from './leg-rows';
 export type { ChLegKey, ChPlayerLeg } from './leg-rows';
@@ -69,6 +73,10 @@ export interface ChPlayerHome {
   legs: { rows: ChPlayerLeg[]; cacheError: boolean; benchError: boolean } | null;
   /** What the coach is waiting on, as Team Hub lists it (`loadPlayerAsks`); null when any of it didn't load (the row hides). */
   asks?: ChPlayerAsks | null;
+  /** P-14: schedule changes the coach made in the last 72 hours, newest first, for "Since you last looked". Optional for fixtures. */
+  changes?: ChHomeChange[];
+  /** Which change marks this device has seen (`s`) or cleared (`g`), from the `ch_marks` cookie. Optional for fixtures. */
+  marks?: MarkEntries;
 }
 
 /**
@@ -91,7 +99,7 @@ function log(read: string, error: unknown) {
 
 const shortDate = new Intl.DateTimeFormat('en-US', { timeZone: 'UTC', month: 'short', day: 'numeric' });
 
-export async function loadPlayerHome(input: { teamId: string; playerId: string; firstName: string }): Promise<ChPlayerHome> {
+export async function loadPlayerHome(input: { teamId: string; playerId: string; firstName: string; /** The device's seen and cleared change marks (phone-hint.ts `marksHint`). */ marks?: MarkEntries }): Promise<ChPlayerHome> {
   const supabase = await createClient();
   const now = new Date();
 
@@ -120,7 +128,14 @@ export async function loadPlayerHome(input: { teamId: string; playerId: string; 
   // Without the team's row its tour is unknown, so no benchmark is claimed (as on Stats, CH-4210).
   const benchRead = teamRead.then((team) => (team.data ? loadTourBenchmarks(supabase, tourForGender(team.data.gender), 'home') : null));
   const coachRead = teamRead.then((team) => coachFor(supabase, team.data ?? null));
-  const [{ greeting, todayLabel, tz, day }, wk, roundsRes, playerRes, teamRes, latest, cache, bench, coachUserId, asks] = await Promise.all([
+  // P-14: the coach's schedule changes, read once the team's zone and the player's week (which meetings are theirs) are known.
+  const changesRead = loadHomeChanges(supabase, {
+    teamId: input.teamId,
+    tz: clockRead.then((c) => c.tz),
+    now,
+    visibleMeetings: weekRead.then((w) => new Set([w.next, ...w.todayEvents].filter((e): e is ChHomeEvent => !!e && e.type === 'meeting').map((e) => e.id))),
+  });
+  const [{ greeting, todayLabel, tz, day }, wk, roundsRes, playerRes, teamRes, latest, cache, bench, coachUserId, asks, changes] = await Promise.all([
     clockRead,
     weekRead,
     roundsRead,
@@ -131,6 +146,7 @@ export async function loadPlayerHome(input: { teamId: string; playerId: string; 
     benchRead,
     coachRead,
     asksRead,
+    changesRead,
   ]);
   if (playerRes.error) log('player', playerRes.error);
   if (teamRes.error) log('team', teamRes.error);
@@ -139,7 +155,8 @@ export async function loadPlayerHome(input: { teamId: string; playerId: string; 
   const window = windowOf(roundsRes);
 
   // Strokes gained is the season's ("Season, per round"; each leg's "this season").
-  const season = summarizePlayer(seasonOnly(full));
+  // The season turns on 1 August in the team's zone (owner decision 9).
+  const season = summarizePlayer(seasonOnly(full, seasonStartDate(now, tz)));
   const legs = roundsRes.error ? null : { rows: legRows(window, cache.byRound, bench, season.sgLegs), cacheError: cache.error, benchError: bench === null || bench.size === 0 };
 
   const points: ChScoringPoint[] = full
@@ -153,16 +170,16 @@ export async function loadPlayerHome(input: { teamId: string; playerId: string; 
     }));
 
   return {
-    greeting: `${greeting}, ${input.firstName}.`,
+    greeting: `${greeting}, ${input.firstName}`,
     todayLabel,
     clock: { tz, day },
     brief: roundsRes.error ? null : briefFor(full, legs?.rows ?? []),
     coachUserId,
-    week: wk.week,
+    week: { ...wk.week, agenda: withWas(wk.week.agenda, changes.byEvent) },
     // Who hasn't replied, and the invitees' ids, are the coach's (Nudge and Message); a player's page never carries them.
     // Which meetings are theirs at all (Decision B, D2-8 when their own replies fail) is decided in loadHomeWeek.
-    next: wk.next ? coachOnlyOut(wk.next) : null,
-    today: wk.todayEvents.map(coachOnlyOut),
+    next: wk.next ? withChange(coachOnlyOut(wk.next), changes.byEvent) : null,
+    today: wk.todayEvents.map((e) => withChange(coachOnlyOut(e), changes.byEvent)),
     weekNote: wk.weekNote,
     latest: { rounds: latest.rounds, error: roundsRes.error, holesError: latest.holesError },
     scoring: { points, error: roundsRes.error },
@@ -171,6 +188,8 @@ export async function loadPlayerHome(input: { teamId: string; playerId: string; 
     handicap: playerRes.data?.handicap_index ?? playerRes.data?.handicap ?? null,
     legs,
     asks,
+    changes: changes.rows,
+    marks: input.marks ?? [],
   };
 }
 
@@ -206,9 +225,9 @@ export function briefFor(full: ChRound[], legs: ChPlayerLeg[]): string | null {
   const withSg = legs.filter((l): l is ChPlayerLeg & { sg: number } => l.sg != null).sort((a, b) => b.sg - a.sg);
   const best = withSg[0];
   if (!best) return first;
-  if (best.sg > 0.05) return `${first} ${best.label} is gaining you ${best.sg.toFixed(1)} strokes a round.`;
+  if (best.sg > 0.05) return `${first} ${best.label} is gaining you ${formatFixed(best.sg, 1)} strokes a round.`;
   const worst = withSg[withSg.length - 1]!;
-  return worst.sg < -0.05 ? `${first} ${worst.label} is costing the most, ${Math.abs(worst.sg).toFixed(1)} strokes a round.` : first;
+  return worst.sg < -0.05 ? `${first} ${worst.label} is costing the most, ${formatFixed(Math.abs(worst.sg), 1)} strokes a round.` : first;
 }
 
 type Client = Awaited<ReturnType<typeof createClient>>;

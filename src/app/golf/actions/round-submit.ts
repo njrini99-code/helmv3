@@ -26,7 +26,7 @@ import { roundStage } from '@/lib/observability/spans';
 // HTTP self-call + keepalive approach was retired (audit Finding 2/A-NEW-6).
 import { logRoundSubmitted } from '@/lib/admin-logger';
 import { logServerError, logServerException, logServerEvent } from '@/lib/server-error-logger';
-import { findShotChainDiscontinuities } from '@/lib/golf/shot-ledger-continuity';
+import { findShotChainDiscontinuities, summarizeShotChainDiscontinuities } from '@/lib/golf/shot-ledger-continuity';
 import { withAdminObserved } from '@/lib/admin/observed-action';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { updateQualifierEntryStats } from '@/lib/golf/qualifier-standings';
@@ -40,6 +40,7 @@ import { assertHolesPlayedMatchesPayload } from '@/lib/golf/holes-played-assert'
 import { validateRoundEntry, validateHolesPlayed } from '@/lib/golf/round-entry-validation';
 import { recordRescuedStepOutcome } from '@/lib/observability/helm-flight-recorder';
 import { describeError } from '@/lib/utils/describe-error';
+import { markTeamStandingDirty } from '@/lib/coachhelm/v3/standing/refresh-queue';
 import { lieAfterRecoveryPayload } from '@/lib/golf/data-prompts/recovery';
 import { comprehensiveShotSchema, createSafeFlightRecorder, derivePuttDistanceFeet, derivePuttMade, getPlayerTeamId, helmTracePayload, humanizeHoleFieldIssue, isRealApproachShot, isTransientAuthCheckFailure, resolveCourseId, toDbLieType } from './golf-action-shared';
 import type { ActionResult, CompletedRoundUpdatePayload, RoundApproachDetailPayload, RoundHolePayload, RoundPuttDetailPayload, RoundShotGroupPayload, RoundSubmissionBackupPayload } from './golf-action-shared';
@@ -990,7 +991,12 @@ async function submitGolfRoundComprehensiveImpl(
       void logServerEvent(`Round submit: ${chainBreaks.length} shot-chain discontinuities`, {
         action: 'submitGolfRoundComprehensive.shotChain',
         featureArea: 'shot_tracking',
-        extra: { shotsCount, discontinuities: chainBreaks.slice(0, 20) },
+        extra: {
+          shotsCount,
+          lieBreaks: chainBreaks.filter(b => b.kind === 'lie').length,
+          distanceBreaks: chainBreaks.filter(b => b.kind === 'distance').length,
+          discontinuities: summarizeShotChainDiscontinuities(chainBreaks),
+        },
       });
     }
 
@@ -1654,6 +1660,12 @@ async function submitGolfRoundComprehensiveImpl(
         );
       }
 
+      // Standing refresh (Clubhouse A+ rows 105/121): mark the player's teams dirty and let the standing-refresh cron's dirty pass
+      // refresh them a few minutes later. Never the refresh RPCs here: three team-wide upserts in after() race the crons into
+      // 40P01 (see the progress-driver note above). One small upsert, after the save has committed; it never throws, and before
+      // the queue migration is applied it is a quiet no-op. Placed before the queue branch below, which returns.
+      await markTeamStandingDirty(backgroundPlayerId);
+
       // 2026-05-17: closes audit Finding 2 + A-NEW-6. Previously this fetched
       // /api/coachhelm/analyze-player with `keepalive: true`. That had three
       // problems: (1) an extra internal HTTP hop with cold-start risk;
@@ -1747,6 +1759,8 @@ async function submitGolfRoundComprehensiveImpl(
       revalidatePath('/golf/dashboard');
       revalidatePath('/golf/dashboard/rounds');
       revalidatePath('/golf/dashboard/stats');
+      // The roster's averages and form read the new round (Clubhouse A+ A21).
+      revalidatePath('/golf/dashboard/roster');
       // Engine-driven screens. LIVE-22: these paths were missing, so players
       // had to hard-reload CoachHelm / My Development to see post-round
       // insights, qualifier progress, or focus-area shifts.

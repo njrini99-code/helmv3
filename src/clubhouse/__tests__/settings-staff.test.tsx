@@ -160,7 +160,7 @@ describe('Settings · Team · CH-8026 CH-8027 approving and declining (D1)', () 
     expect(track.report).toHaveBeenCalledWith(expect.any(Error), expect.objectContaining({ action: 'settings.approveAssistant' }));
 
     // The toast moves into the page's dialog layer once it is up, so the button is found again.
-    await user.click(await screen.findByRole('button', { name: 'Retry' }));
+    await user.click(await screen.findByRole('button', { name: 'Try again' }));
     await waitFor(() => expect(approve).toHaveBeenCalledTimes(2));
     expect(approve).toHaveBeenLastCalledWith('avery');
   });

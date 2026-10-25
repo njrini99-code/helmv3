@@ -2,11 +2,11 @@
 
 import { ArrowRight, ChevronDown, ChevronUp, Plus } from 'lucide-react';
 import Link from 'next/link';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { ladderHeadlineFor, type ChLadderRow } from '../../../data/coachhelm-ladder-shape';
 import type { ChStandRow, ChStanding, ChStandSense } from '../../../data/coachhelm-standing-shape';
-import { diveReadHref, helmViewHref, PLAYER_HELM_HREF, PLAYER_VOICE, type ChViewLoad, type ChViewVoice } from '../../../data/coachhelm-views-shape';
-import { haptic } from '../../../lib/haptics';
+import type { ChGameLoad } from '../../../data/coachhelm-profile-shape';
+import { diveReadHref, helmViewHref, PLAYER_HELM_HREF, PLAYER_VOICE, STANDING_GAME_ID, type ChViewLoad, type ChViewVoice } from '../../../data/coachhelm-views-shape';
 import { useChPhone } from '../../../lib/use-phone';
 import { Button } from '../../../ui/Button';
 import { Icon } from '../../../ui/Icon';
@@ -15,9 +15,24 @@ import { SectionBoundary } from '../../../ui/SectionBoundary';
 import { EmptyState } from '../../../ui/States';
 import { coachHelmLinks } from '../PlayerBoard';
 import { HelmOff, PlayerHelmFrame } from './Frame';
+import { HowYouPlay } from './HowYouPlay';
 import { KeepReading } from './KeepReading';
+import { plural, pluralWord } from '../../../lib/plural';
 
-const LINE = 'Where you stand on every stat CoachHelm tracks, against the Tour and against your team.';
+const LINE = 'Where you stand on every stat CoachHelm tracks, against the Tour and against your team, and how you play.';
+
+/**
+ * `?view=profile` (Game profile's old address) opens Standing at "How you play" (CH-13913): once, as the page opens, with no
+ * animation (a landing, not a move the person made). Only when the section is drawn; nothing happens on any other address.
+ */
+function useLandOnGame(at: 'game' | undefined) {
+  // A passive effect, keyed by the address alone: it runs after the shell's own layout-effect reset to the top (RouteFrame,
+  // CH-1904), so the landing is the last word, and a re-render on the same address never moves the page again.
+  useEffect(() => {
+    if (at !== 'game') return;
+    document.getElementById(STANDING_GAME_ID)?.scrollIntoView?.({ block: 'start' });
+  }, [at]);
+}
 
 /** The page's own words for whose page it is (spec A): the player's, as they always were, or a coach's about the player by first name. */
 function wordsFor(voice: ChViewVoice) {
@@ -35,7 +50,7 @@ function wordsFor(voice: ChViewVoice) {
 export function OpenRead({ href }: { href: string | null }) {
   if (!href) return null;
   return (
-    <Link className="ch-hs-open" href={href} onClick={() => haptic('select')}>
+    <Link className="ch-hs-open" href={href}>
       Open the read
       <Icon icon={ArrowRight} size={14} />
     </Link>
@@ -84,6 +99,8 @@ function Row({ r, voice = PLAYER_VOICE, readHref = null }: { r: ChStandRow; voic
           {r.vsTour && <span className={'ch-hs-vs is-' + r.vsTour.sense}>{r.vsTour.text}</span>}
           {r.percentile && <span className="ch-hs-pct">{r.percentile}</span>}
           {!r.vsTour && r.vsTeam && <span className={'ch-hs-vs is-' + r.vsTeam.sense}>{r.vsTeam.text}</span>}
+          {/* The rounds this row stands on (season rows carry it; the lifetime table does not, and then nothing is said). */}
+          {r.rounds != null && <span className="ch-hs-n ch-num">{plural(r.rounds, 'round')}</span>}
         </p>
       </div>
       <div className="ch-hs-tr" aria-hidden="true">
@@ -125,7 +142,7 @@ function Row({ r, voice = PLAYER_VOICE, readHref = null }: { r: ChStandRow; voic
           <span className="ch-num">
             {r.projection.from} to {r.projection.to}
           </span>
-          , typically in about {r.projection.weeks} {r.projection.weeks === 1 ? 'week' : 'weeks'}
+          , typically in about {r.projection.weeks} {pluralWord(r.projection.weeks, 'week')}
           {r.projection.clamped ? '. The projection is capped, so it is a ceiling, not a forecast' : ''}.
         </p>
       )}
@@ -141,7 +158,15 @@ function Row({ r, voice = PLAYER_VOICE, readHref = null }: { r: ChStandRow; voic
 
 function Hero({ s, voice = PLAYER_VOICE }: { s: ChStanding; voice?: ChViewVoice }) {
   const w = wordsFor(voice);
-  const meta = [s.rounds != null ? `${s.rounds} ${s.rounds === 1 ? 'round' : 'rounds'}` : null, s.scoringAverage ? `Scoring average ${s.scoringAverage}` : null, s.refreshed ? `Refreshed ${s.refreshed.replace(' ', '\u00a0')}` : null].filter(Boolean);
+  // The window first, so every number after it is read as that window's (owner decision 9). The scoring average is a lifetime figure
+  // (the stats cache), so it is named only beside the lifetime rows, never under "This season".
+  const season = s.window.kind === 'season';
+  const meta = [
+    season && s.window.since ? `${s.window.label} from ${s.window.since.replace(' ', '\u00a0')}` : s.window.label,
+    s.rounds != null ? `${plural(s.rounds, 'round')}` : null,
+    !season && s.scoringAverage ? `Scoring average ${s.scoringAverage}` : null,
+    s.refreshed ? `Refreshed ${s.refreshed.replace(' ', '\u00a0')}` : null,
+  ].filter(Boolean);
   const { tour, team } = s.counts;
   const top = s.ladder.top;
   const tourName = s.tour === 'Tour' ? 'the Tour' : 'the LPGA Tour';
@@ -204,7 +229,7 @@ function LadderRow({ r, open, onToggle, readsFailed, voice }: { r: ChLadderRow; 
           <button type="button" className="ch-hs-ld__why" aria-expanded={open} aria-controls={`${id}-b`} onClick={onToggle}>
             <span>Because</span>
             <span className="ch-hs-ld__n ch-num">
-              {r.causes.length} {r.causes.length === 1 ? 'open read' : 'open reads'}
+              {r.causes.length} {pluralWord(r.causes.length, 'open read')}
             </span>
             <Icon icon={open ? ChevronUp : ChevronDown} size={15} />
           </button>
@@ -267,9 +292,13 @@ function Ladder({ s, voice = PLAYER_VOICE }: { s: ChStanding; voice?: ChViewVoic
  *
  * `voice`: a coach's Standing of one player (spec A) is the same page about the player by first name, against "the team average",
  * with no Start a round, and a way from each stat with an open read to that read in the Deep dive.
+ *
+ * `game`: "How you play", the Game profile folded in as Standing's last section (CH-13915), read on its own beside the rows; absent,
+ * the section is not drawn. `at`: `game` when the address was Game profile's (`?view=profile`), which opens the page there.
  */
-export function Standing({ load, voice = PLAYER_VOICE }: { load: ChViewLoad<ChStanding>; voice?: ChViewVoice }) {
+export function Standing({ load, voice = PLAYER_VOICE, game, at }: { load: ChViewLoad<ChStanding>; voice?: ChViewVoice; game?: ChGameLoad; at?: 'game' }) {
   const phone = useChPhone();
+  useLandOnGame(at);
   const coach = voice.role === 'coach' ? voice : null;
   const startHref = coach ? null : coachHelmLinks.startRound();
   const f = coach?.first;
@@ -309,8 +338,8 @@ export function Standing({ load, voice = PLAYER_VOICE }: { load: ChViewLoad<ChSt
             title="Standing starts with a few rounds"
             body={
               f
-                ? `Standing puts ${f}’s stats next to the Tour and the team, and refreshes overnight.${s.rounds ? ` ${f} has posted ${s.rounds} ${s.rounds === 1 ? 'round' : 'rounds'} so far.` : ''} It fills in once ${f}’s first rounds are in.`
-                : `Standing puts your stats next to the Tour and your team. It fills in once your first rounds are in, and refreshes overnight.${s.rounds ? ` You have posted ${s.rounds} ${s.rounds === 1 ? 'round' : 'rounds'}.` : ''}`
+                ? `Standing puts ${f}’s stats next to the Tour and the team, and refreshes overnight.${s.rounds ? ` ${f} has posted ${plural(s.rounds, 'round')} so far.` : ''} It fills in once ${f}’s first rounds are in.`
+                : `Standing puts your stats next to the Tour and your team. It fills in once your first rounds are in, and refreshes overnight.${s.rounds ? ` You have posted ${plural(s.rounds, 'round')}.` : ''}`
             }
             action={
               startHref ? (
@@ -320,6 +349,9 @@ export function Standing({ load, voice = PLAYER_VOICE }: { load: ChViewLoad<ChSt
               ) : undefined
             }
           />
+          {/* With no stats yet the page is its empty state; how they play is drawn under it once a measure has a read, or when its
+              read failed, so a failed read is said (CH-13260) and never shown as nothing to read. */}
+          {game && (game.status === 'failed' || game.data.state !== 'empty') && <HowYouPlay load={game} voice={voice} />}
         </>
       ) : (
         <SectionBoundary surface="coachhelm.standing" label={w.label} code="CH-13204">
@@ -340,7 +372,7 @@ export function Standing({ load, voice = PLAYER_VOICE }: { load: ChViewLoad<ChSt
             ))}
           {s.state === 'early' && (
             <p className="ch-hs-early" role="note" data-ch-code="CH-13371">
-              <b className="ch-num">{s.rounds ?? 0} {s.rounds === 1 ? 'round' : 'rounds'}</b> so far, so this is an early read. Projections start at 5 rounds
+              <b className="ch-num">{s.rounds ?? 0} {pluralWord(s.rounds ?? 0, 'round')}</b> so far, so this is an early read. Projections start at 5 rounds
               {/* The team clause only where a row is short of teammates: rows with team values say otherwise. */}
               {s.groups.some((g) => g.rows.some((r) => r.teamNote)) ? `, and a comparison with ${w.team} needs 5 teammates with the stat` : ''}.
             </p>
@@ -366,24 +398,19 @@ export function Standing({ load, voice = PLAYER_VOICE }: { load: ChViewLoad<ChSt
           <p className="ch-hl-note">
             {f ? 'Ranks come from the team’s overnight refresh and use the teammates who have the stat.' : 'Ranks come from your team’s refresh overnight and use the teammates who have the stat.'} The Tour mark is the Tour’s value for the same stat; where it is not comparable, the row says so and draws none.
           </p>
+          {game && <HowYouPlay load={game} voice={voice} />}
           {f ? (
             <KeepReading
               id="ch-hs-next-t"
               title={`Also for ${f}`}
-              line={`This is where ${f} stands. The next two say how ${f} plays, and what is behind the biggest gaps.`}
-              items={[
-                { href: helmViewHref('profile', voice), title: 'Game profile', note: `How ${f} plays` },
-                { href: helmViewHref('deep-dive', voice), title: 'Deep dive', note: `The insights behind ${f}’s biggest gaps` },
-              ]}
+              line={`This is where ${f} stands and how ${f} plays. The Deep dive says what is behind the biggest gaps.`}
+              items={[{ href: helmViewHref('deep-dive', voice), title: 'Deep dive', note: `The insights behind ${f}’s biggest gaps` }]}
             />
           ) : (
             <KeepReading
               id="ch-hs-next-t"
-              line="This is where you stand. The next two say how you play, and what is behind your biggest gaps."
-              items={[
-                { href: PLAYER_HELM_HREF.profile, title: 'Game profile', note: 'How you play, in your own words' },
-                { href: PLAYER_HELM_HREF['deep-dive'], title: 'Deep dive', note: 'The insights behind your biggest gaps' },
-              ]}
+              line="This is where you stand and how you play. The Deep dive says what is behind your biggest gaps."
+              items={[{ href: PLAYER_HELM_HREF['deep-dive'], title: 'Deep dive', note: 'The insights behind your biggest gaps' }]}
             />
           )}
         </SectionBoundary>

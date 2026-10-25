@@ -20,7 +20,8 @@ vi.mock('@/app/golf/actions/insight-delivery', () => ({
   getThemesForPlayer: delivery.playerThemes,
 }));
 const standingRead = vi.hoisted(() => ({ load: vi.fn() }));
-vi.mock('@/lib/coachhelm/v3/standing/loader', () => ({ loadPlayerStandingMap: standingRead.load }));
+// The season table is held (#2363): its read reports it absent, and Standing falls back to the lifetime map.
+vi.mock('@/lib/coachhelm/v3/standing/loader', () => ({ loadPlayerStandingMap: standingRead.load, loadPlayerSeasonStandingMap: vi.fn(async () => ({ status: 'missing' })) }));
 vi.mock('@/lib/coachhelm/v3/counterfactual/player-cohort-loader', () => ({ loadPlayerCohort: vi.fn(async () => ({ gender: 'mens', level: null })) }));
 vi.mock('@/lib/coachhelm/v3/goals/loader', () => ({ loadActiveGoals: vi.fn(async () => []), loadRecentlyAchievedGoals: vi.fn(async () => []) }));
 const genome = vi.hoisted(() => ({ load: vi.fn() }));
@@ -29,7 +30,7 @@ vi.mock('@/lib/coachhelm/v3/chat/request-cache', () => ({ getCoachProgramPulse: 
 
 import type { PlayerStanding } from '@/lib/coachhelm/v3/standing/types';
 import { PLAYER_FEED_LIMIT } from '../coachhelm';
-import { loadCoachPlayerDeepDive, loadCoachPlayerProfile, loadCoachPlayerScope, loadCoachPlayerStanding, type ChCoachPlayerScope } from '../coachhelm-player';
+import { loadCoachPlayerDeepDive, loadCoachPlayerGame, loadCoachPlayerScope, loadCoachPlayerStanding, type ChCoachPlayerScope } from '../coachhelm-player';
 import { bigNumber, penalties, slope } from '../../preview/fixtures-coachhelm';
 import { STANDING_ROWS } from '../../preview/fixtures-coachhelm-views';
 
@@ -154,13 +155,13 @@ describe('130807 the scope check: on this coach’s team, or nothing is read', (
     void (() => loadCoachPlayerStanding({ scope: fake }));
     // @ts-expect-error nor does the Deep dive take an id
     void (() => loadCoachPlayerDeepDive({ playerId: OTHER }));
-    // @ts-expect-error nor the Game profile
-    void (() => loadCoachPlayerProfile({ scope: { ...fake } }));
+    // @ts-expect-error nor How the player plays (the coach's Game profile, folded into Standing)
+    void (() => loadCoachPlayerGame({ scope: { ...fake } }));
     expect(standingRead.load).not.toHaveBeenCalled();
   });
 });
 
-describe('the three loaders read only the scope’s player', () => {
+describe('the loaders read only the scope’s player', () => {
   const rows = (id: string): PlayerStanding[] => STANDING_ROWS.map((r) => ({ ...r, player_id: id }));
 
   it('Standing: the scope’s player’s rows only, in the coach’s words, with the open read on each metric that has one', async () => {
@@ -205,13 +206,19 @@ describe('the three loaders read only the scope’s player', () => {
     expect(await loadCoachPlayerDeepDive({ scope })).toEqual({ status: 'failed' });
   });
 
-  it('Game profile: the genome of the scope’s player, and what CoachHelm sees in their current reads', async () => {
+  it('How the player plays (Standing’s section, once the Game profile): the genome of the scope’s player, in the coach’s words', async () => {
     const scope = await okScope();
-    tables.current = { ...tables.current, golf_coach_insights: { data: [penalties(PID), slope(PID), bigNumber(OTHER, 'in-other')] } };
-    const out = await loadCoachPlayerProfile({ scope }, NOW);
+    genome.load.mockResolvedValueOnce({ player_id: PID, vector: { back_nine_delta: { value: 0.31, confidence: 0.8, label: 'Fades late' } }, computed_at: '2026-09-30T02:30:00Z', rounds_basis: 7 });
+    const out = await loadCoachPlayerGame({ scope }, NOW);
     expect(genome.load).toHaveBeenCalledWith(expect.anything(), PID);
     if (out.status !== 'ready') throw new Error(out.status);
-    expect(out.data.seen?.error).toBe(false);
-    expect((out.data.seen?.costing ?? 0) + (out.data.seen?.working ?? 0)).toBe(2);
+    expect(out.data).toMatchObject({ state: 'partial', ready: 1, rounds: 7 });
+    expect(out.data.measures.find((m) => m.id === 'back_nine_delta')!.meaning).toBe('Whether scoring holds up over the round.');
+  });
+
+  it('How the player plays: a genome read that throws is the section’s failed state, logged', async () => {
+    const scope = await okScope();
+    genome.load.mockRejectedValueOnce(new Error('boom'));
+    expect(await loadCoachPlayerGame({ scope }, NOW)).toEqual({ status: 'failed' });
   });
 });

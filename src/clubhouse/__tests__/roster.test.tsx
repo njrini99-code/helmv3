@@ -1,5 +1,5 @@
 import { LazyMotion, domAnimation } from 'motion/react';
-import { act, render, renderHook, screen, waitFor, within } from '@testing-library/react';
+import { act, fireEvent, render, renderHook, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { readFileSync } from 'node:fs';
 import { dirname, resolve } from 'node:path';
@@ -54,7 +54,27 @@ import { nameList, useJoinRequests } from '../screens/roster/useJoinRequests';
 import { ToastProvider } from '../ui/Toast';
 import { PhoneChromeProvider, usePhoneChromeState } from '../shell/phone-chrome';
 import { PREVIEW_ROSTER, PREVIEW_ROSTER_AVAILABILITY, PREVIEW_ROSTER_FAILED, PREVIEW_ROSTER_PARTIAL } from '../preview/fixtures-roster';
+import { AppRouterContext } from 'next/dist/shared/lib/app-router-context.shared-runtime';
+import { PrefetchKind } from 'next/dist/client/components/router-reducer/router-reducer-types';
+import type { ContextType, ReactNode } from 'react';
+import { resetPrefetchTabsForTests } from '../shell/use-prefetch-tabs';
+
+/** The app router's context with a prefetch spy, which the press prefetch (A13) reads; outside it a row stays a plain link. */
+function withAppRouter(node: ReactNode) {
+  resetPrefetchTabsForTests();
+  const prefetch = vi.fn();
+  const appRouter = { prefetch, push: vi.fn(), replace: vi.fn(), refresh: vi.fn(), back: vi.fn(), forward: vi.fn() } as unknown as NonNullable<ContextType<typeof AppRouterContext>>;
+  return { prefetch, node: <AppRouterContext.Provider value={appRouter}>{node}</AppRouterContext.Provider> };
+}
+
+/** The team line's figure as loadRoster pools it (A3), from the fixture's own players: each active player's rounds at their average. */
+const POOLED = (() => {
+  const active = PREVIEW_ROSTER.players.filter((p) => p.status === 'active' && p.avg != null);
+  const n = active.reduce((a, p) => a + p.rounds, 0);
+  return (active.reduce((a, p) => a + p.avg! * p.rounds, 0) / n).toFixed(1);
+})();
 import './dialog-polyfill';
+import { unsignedTones } from './_tone-sign';
 
 const code = (c: string) => document.querySelector(`[data-ch-code="${c}"]`);
 async function expectCode(c: string, text?: RegExp) {
@@ -144,7 +164,7 @@ describe('Roster · saves that fail', () => {
 
     actions.accept.mockClear();
     actions.accept.mockResolvedValue({ success: true });
-    await user.click(within(code('CH-3007') as HTMLElement).getByRole('button', { name: 'Retry' }));
+    await user.click(within(code('CH-3007') as HTMLElement).getByRole('button', { name: 'Try again' }));
     await waitFor(() => expect(screen.getByText('2 players added to Varsity')).toBeTruthy());
     expect(actions.accept.mock.calls.map((c) => c[0])).toEqual(['r2', 'r3']);
     expect(result.current.reqs).toEqual([]);
@@ -328,10 +348,22 @@ describe('Roster · reads that fail', () => {
     wrap(roster({ requests: null as never, players: PREVIEW_ROSTER.players.map((p) => (p.id === 'jonah' ? broken : p)) }));
     expect(code('CH-3204')!.textContent).toMatch(/Join requests couldn’t be shown/);
     expect(code('CH-3205')!.textContent).toMatch(/The roster couldn’t be shown/);
-    expect(screen.getByRole('heading', { name: 'Your players' })).toBeTruthy();
+    expect(screen.getByRole('heading', { name: 'Roster' })).toBeTruthy();
     await user.click(within(screen.getByRole('region', { name: 'Needs a look' })).getByRole('button', { name: /Jonah/ }));
     await expectCode('CH-3206', /The player panel couldn’t be shown/);
     quiet.mockRestore();
+  });
+
+  it('A3 team average is pooled per round: two rounds of 70 and ten of 80 make 78.3, not 75.0', async () => {
+    const day = (n: number) => new Date(Date.now() - n * 86_400_000).toISOString().slice(0, 10);
+    const round = (id: string, player: string, score: number, n: number) => ({ id, player_id: player, round_date: day(n), total_score: score, score_to_par: score - 72, front_nine: score / 2, back_nine: score / 2, holes_played: 18, status: 'completed', round_type: 'practice' });
+    tables.current = {
+      golf_team_members: { data: [['pa', 'Ana'], ['pb', 'Ben']].map(([id, first]) => ({ status: 'active', jersey_number: null, joined_at: null, player: { id, first_name: first, last_name: 'M' } })) },
+      golf_rounds: { data: [...[1, 2].map((n) => round(`a${n}`, 'pa', 70, n)), ...Array.from({ length: 10 }, (_, i) => round(`b${i}`, 'pb', 80, i + 1))] },
+    };
+    const data = await loadRoster({ teamId: 't1', coachId: 'c1' });
+    expect(data.players.map((p) => p.avg)).toEqual([70, 80]);
+    expect(data.teamAvg!.toFixed(1)).toBe('78.3');
   });
 
   it('CH-3207 the team row does not load: Invite says the code did not load, not that there is none', async () => {
@@ -474,6 +506,25 @@ describe('Roster · empty', () => {
   });
 });
 
+describe('Roster · keyboard (B11)', () => {
+  it('row 63: ↓ and ↑ walk the desktop table’s players, which is one Tab stop', async () => {
+    const user = userEvent.setup();
+    wrap(roster());
+    await toList(user);
+    const rows = [...document.querySelectorAll<HTMLElement>('.ch-rs-list .ch-rs-who')];
+    expect(rows.length).toBeGreaterThan(2);
+    expect(rows.filter((r) => r.tabIndex === 0)).toHaveLength(1);
+    rows[0]!.focus();
+    fireEvent.keyDown(rows[0]!, { key: 'ArrowDown' });
+    expect(document.activeElement).toBe(rows[1]);
+    fireEvent.keyDown(rows[1]!, { key: 'ArrowUp' });
+    expect(document.activeElement).toBe(rows[0]);
+    fireEvent.keyDown(rows[0]!, { key: 'End' });
+    expect(document.activeElement).toBe(rows.at(-1));
+    expect(rows.filter((r) => r.tabIndex === 0)).toEqual([rows.at(-1)]);
+  });
+});
+
 describe('Roster · loading, haptics, accessibility', () => {
   it('a face (grid) or a name (list) goes to the player’s profile; only a Needs a look chip opens the peek', async () => {
     const user = userEvent.setup();
@@ -490,6 +541,20 @@ describe('Roster · loading, haptics, accessibility', () => {
     await user.click(within(screen.getByRole('region', { name: 'Needs a look' })).getByRole('button', { name: /Jonah/ }));
     expect(await screen.findByRole('complementary', { name: 'Jonah Okafor' })).toBeTruthy();
     expect(router.push).toHaveBeenCalledTimes(2);
+  });
+
+  it('A13 A14 a face or a name fetches the profile whole as the pointer goes down, and going there is silent', async () => {
+    const user = userEvent.setup();
+    profile.rebuilt = true;
+    const { prefetch, node } = withAppRouter(tree(roster()));
+    render(node);
+    const face = screen.getByRole('button', { name: new RegExp(`^${theo.name}.*Open profile`) });
+    fireEvent.pointerDown(face);
+    expect(prefetch).toHaveBeenCalledTimes(1);
+    expect(prefetch).toHaveBeenCalledWith(`/golf/dashboard/stats?player=${theo.id}`, { kind: PrefetchKind.FULL });
+    await user.click(face);
+    expect(router.push).toHaveBeenLastCalledWith(`/golf/dashboard/stats?player=${theo.id}`);
+    expect(hapticSpy).not.toHaveBeenCalledWith('select');
   });
 
   it('CH-3401 the route skeleton is busy', () => {
@@ -535,6 +600,24 @@ describe('Roster · loading, haptics, accessibility', () => {
     const table = screen.getByRole('table', { name: 'Roster' });
     for (const row of table.querySelectorAll('[role="row"]'))
       for (const child of row.children) expect(['cell', 'columnheader']).toContain(child.getAttribute('role'));
+  });
+
+  it('B10.5 a sortable header sorts by its column and says so (aria-sort), the same order as Sort players', async () => {
+    const user = userEvent.setup();
+    wrap(roster());
+    await toList(user);
+    const table = screen.getByRole('table', { name: 'Roster' });
+    const header = (name: string) => within(table).getByRole('columnheader', { name: new RegExp(`^${name}`) });
+    expect(header('Avg').getAttribute('aria-sort')).toBe('ascending');
+    expect(header('HCP').getAttribute('aria-sort')).toBe('none');
+    await user.click(within(header('HCP')).getByRole('button', { name: /HCP/ }));
+    expect(header('HCP').getAttribute('aria-sort')).toBe('ascending');
+    expect(header('Avg').getAttribute('aria-sort')).toBe('none');
+    expect(screen.getByRole('radio', { name: 'Handicap' }).getAttribute('aria-checked')).toBe('true');
+    const byHcp = [...PREVIEW_ROSTER.players].filter((p) => p.status === 'active').sort((a, b) => (a.handicap ?? 99) - (b.handicap ?? 99))[0]!;
+    expect(within(table).getAllByRole('row')[1]!.textContent).toContain(byHcp.name);
+    await user.click(within(header('Rounds')).getByRole('button', { name: /Rounds/ }));
+    expect(header('Rounds').getAttribute('aria-sort')).toBe('descending');
   });
 
   it('CH-3802 a player card reads its status as a word; the dot is decoration, drawn only under All (P003-A3)', async () => {
@@ -664,6 +747,13 @@ describe('Roster · phone (docs/clubhouse/phone/roster.md)', () => {
       .map((b) => b.getAttribute('aria-label')!.split(',')[0]);
   const profileHeading = (name: string) => screen.queryByRole('heading', { level: 2, name });
 
+  it('a toned note or figure on the phone roster carries a sign or a word; scores rising are a loss, a good run a gain (row 48, CONS-20)', () => {
+    phone(roster());
+    expect(unsignedTones()).toEqual([]);
+    expect(document.querySelector('.ch-rsm-row__b .is-loss')?.textContent).toBe('Scoring up 2.1');
+    expect(document.querySelector('.ch-rsm-row__b .is-gain')?.textContent).toBe('4 rounds under average');
+    expect(document.querySelector('.ch-rsm-row__b .is-warning')?.textContent).toBe('No rounds in 9 days');
+  });
   it('the top bar is the section title Roster (no "‹ More") and Invite players, which opens the invite sheet', async () => {
     const user = userEvent.setup();
     phone(roster());
@@ -744,6 +834,30 @@ describe('Roster · phone (docs/clubhouse/phone/roster.md)', () => {
     expect(profileHeading('Mia Thornton')).toBeTruthy();
     expect(screen.getByText('Junior · Class of 2028 · Inactive')).toBeTruthy();
     expect(window.location.search).toBe('');
+  });
+
+  it('A13 View stats in the ⋯ sheet fetches the player’s stats whole as a finger lands on it', async () => {
+    const user = userEvent.setup();
+    window.history.replaceState(null, '', '/golf/dashboard/roster?player=theo');
+    const { prefetch, node } = withAppRouter(
+      <LazyMotion features={domAnimation}>
+        <ToastProvider>
+          <PhoneChromeProvider>
+            <div className="ch-root" data-ui="clubhouse">
+              <SlotHost />
+              <Roster data={roster()} />
+            </div>
+          </PhoneChromeProvider>
+        </ToastProvider>
+      </LazyMotion>,
+    );
+    render(node);
+    await user.click(screen.getByRole('button', { name: 'More actions' }));
+    const sheet = await screen.findByRole('dialog', { name: 'Theo Marchetti' });
+    prefetch.mockClear();
+    fireEvent.pointerDown(within(sheet).getByRole('link', { name: 'View stats' }));
+    expect(prefetch).toHaveBeenCalledTimes(1);
+    expect(prefetch).toHaveBeenCalledWith('/golf/dashboard/stats?player=theo', { kind: PrefetchKind.FULL });
   });
 
   it("CH-3501 ⋯ opens the action sheet; Remove from team asks first, and a removed player's profile closes", async () => {
@@ -891,6 +1005,8 @@ describe('Roster · availability (injured, away)', () => {
   const menuLabels = () => within(screen.getByRole('menu')).getAllByRole('menuitem').map((i) => i.textContent);
   const openMenu = async (user: ReturnType<typeof userEvent.setup>, name: string) => {
     await user.click(screen.getByRole('button', { name: `Actions for ${name}` }));
+    // The menu moves focus to its first item on the next frame, and its keys (Escape) only reach it from there.
+    await waitFor(() => expect(screen.getByRole('menu').contains(document.activeElement)).toBe(true));
     return menuLabels();
   };
   const metaOf = (name: string) => screen.getByRole('button', { name: `${name}. Open profile` }).querySelector('.ch-rs-who__m')!;
@@ -934,7 +1050,7 @@ describe('Roster · availability (injured, away)', () => {
     expect(code('CH-3009')!.textContent).toMatch(/Nothing changed on the roster/);
     expect(metaOf('Jonah Okafor').textContent).toBe('Sophomore · Charlotte, NC');
     expect(hapticSpy).toHaveBeenCalledWith('error');
-    await user.click(within(code('CH-3009') as HTMLElement).getByRole('button', { name: 'Retry' }));
+    await user.click(within(code('CH-3009') as HTMLElement).getByRole('button', { name: 'Try again' }));
     await waitFor(() => expect(metaOf('Jonah Okafor').textContent).toBe('Injured · Sophomore · Charlotte, NC'));
     expect(await screen.findByText('Jonah Okafor marked injured')).toBeTruthy();
     expect(hapticSpy).toHaveBeenCalledWith('success');
@@ -1050,7 +1166,7 @@ describe('Roster · availability (injured, away)', () => {
   it('CH-3809 the head counts injured and away among the active; the list, faces and labels say it in words, never a colour', async () => {
     const user = userEvent.setup();
     wrap(PREVIEW_ROSTER_AVAILABILITY);
-    expect(document.querySelector('.ch-rs-head p')!.textContent).toBe('8 players · 7 active · 1 injured · 1 away. Team average 73.6 over the season.');
+    expect(document.querySelector('.ch-rs-head p')!.textContent).toBe(`8 players · 7 active · 1 injured · 1 away. Team average ${POOLED} over the season.`);
     // Faces: the note slot holds the line in plain ink, and the card's name says the word.
     const face = screen.getByRole('button', { name: /^Ava Lindqvist, scoring average 72\.4, 3 of 6, injured\. Open profile$/ });
     const slot = face.querySelector('.ch-rs-face__note')!;
@@ -1092,7 +1208,7 @@ describe('Roster · availability (injured, away)', () => {
   it('Needs a look leaves out a player who is out, and the row note is the availability word', () => {
     const s = { rounds: 10, avg: 74, sgPerRound: null, trend: [], status: 'slipping', formChange: 2.1, recent: [], lastRoundDate: null } as unknown as Parameters<typeof attentionFor>[0];
     const now = new Date('2026-10-21T12:00:00Z');
-    expect(attentionFor(s, now, true)).toEqual({ tone: 'warning', text: 'Scoring up 2.1' });
+    expect(attentionFor(s, now, true)).toEqual({ tone: 'loss', text: 'Scoring up 2.1' });
     expect(attentionFor(s, now, true, 'injured')).toBeNull();
     expect(attentionFor(s, now, true, 'away')).toBeNull();
     expect(rowNote(ava, false)).toEqual({ text: 'Injured', tone: null });
@@ -1135,21 +1251,22 @@ describe('Roster · availability (injured, away)', () => {
 /** P003 behaviour contracts with no catalog row (config/clubhouse/bridge-contracts.json, D-69). */
 describe('Roster · behaviour contracts (P003, docs/clubhouse/pages/P003-roster/CONTRACT.md)', () => {
   const region = () => screen.getByRole('region', { name: 'Join requests' });
-  const requestNames = () => [...region().querySelectorAll('.ch-rs-req__who b')].map((b) => b.textContent);
+  // A decided request may still be closing up (B7, ui/ListPresence): it is marked leaving and hidden, so it is off the list.
+  const requestNames = () => [...region().querySelectorAll('.ch-rs-req__row:not([data-leaving]) .ch-rs-req__who b')].map((b) => b.textContent);
   const cardNames = () => [...document.querySelectorAll('.ch-rs-face__name')].map((n) => n.textContent);
   const noteField = () => screen.getByRole('textbox', { name: /Coach’s note/ }) as HTMLTextAreaElement;
   const member = (id: string, name: string) => ({ status: 'active', jersey_number: null, joined_at: null, player: { id, first_name: name, last_name: 'M' } });
 
   it('30101 Roster opens on the active players by average, with the team line, Needs a look and the join requests', () => {
     wrap(roster());
-    expect(screen.getByRole('heading', { level: 1, name: 'Your players' })).toBeTruthy();
+    expect(screen.getByRole('heading', { level: 1, name: 'Roster' })).toBeTruthy();
     expect(document.querySelector('.ch-rs-team__name')!.textContent).toBe('Varsity · Fall 2026');
     // The card's team strip has its own class: the header's avatar row (.ch-rs-team) never takes the strip's bar styles.
     expect(document.querySelector('.ch-rs-head .ch-rs-strip')).toBeNull();
     const rosterCss = readFileSync(resolve(process.cwd(), 'src/clubhouse/styles/roster.css'), 'utf8');
     expect(rosterCss).not.toMatch(/\.ch-rs-team,\s*\.ch-rs-sgbar/);
     expect(rosterCss).toMatch(/\.ch-rs-strip,\s*\.ch-rs-sgbar/);
-    expect(document.querySelector('.ch-rs-head p')!.textContent).toBe('8 players · 7 active. Team average 73.6 over the season.');
+    expect(document.querySelector('.ch-rs-head p')!.textContent).toBe(`8 players · 7 active. Team average ${POOLED} over the season.`);
     expect(cardNames()).toEqual(['Theo Marchetti', 'Sofia Alvarez', 'Ava Lindqvist', 'Jonah Okafor', 'Eli Brandt', 'Priya Natarajan', 'Luca Ferraro']);
     expect(screen.getByRole('button', { name: 'Active · 7' }).getAttribute('aria-pressed')).toBe('true');
     const attn = within(screen.getByRole('region', { name: 'Needs a look' }));
@@ -1452,6 +1569,9 @@ describe('Roster · behaviour contracts (P003, docs/clubhouse/pages/P003-roster/
     wrap(roster());
     await user.click(within(region()).getAllByRole('button', { name: 'Approve' })[1]!);
     expect(requestNames()).toEqual(['Grace Liu']);
+    // If it is still closing up, it is already out of reach: hidden from a screen reader and inert.
+    const closing = [...region().querySelectorAll('.ch-rs-req__row')].find((r) => r.textContent?.includes('Owen Park'));
+    if (closing) expect([closing.getAttribute('aria-hidden'), closing.hasAttribute('inert')]).toEqual(['true', true]);
     await act(async () => answer({ success: false, error: 'nope' }));
     await waitFor(() => expect(requestNames()).toEqual(['Grace Liu', 'Owen Park']));
     actions.remove.mockImplementation(() => new Promise(() => {}));
@@ -1468,7 +1588,7 @@ describe('Roster · behaviour contracts (P003, docs/clubhouse/pages/P003-roster/
     await openRemove(user);
     await user.click(screen.getByRole('button', { name: 'Remove player' }));
     await expectCode('CH-3001');
-    await user.click(within(code('CH-3001') as HTMLElement).getByRole('button', { name: 'Retry' }));
+    await user.click(within(code('CH-3001') as HTMLElement).getByRole('button', { name: 'Try again' }));
     await waitFor(() => expect(screen.queryByRole('button', { name: `Actions for ${theo.name}` })).toBeNull());
     expect(actions.remove).toHaveBeenCalledTimes(2);
     expect((code('CH-3501') as HTMLDialogElement).hasAttribute('open')).toBe(false);
@@ -1482,12 +1602,12 @@ describe('Roster · behaviour contracts (P003, docs/clubhouse/pages/P003-roster/
     await user.click(within(region()).getAllByRole('button', { name: 'Approve' })[0]!);
     await expectCode('CH-3002');
     await waitFor(() => expect(requestNames()).toEqual(['Grace Liu', 'Owen Park']));
-    await user.click(within(code('CH-3002') as HTMLElement).getByRole('button', { name: 'Retry' }));
+    await user.click(within(code('CH-3002') as HTMLElement).getByRole('button', { name: 'Try again' }));
     await waitFor(() => expect(requestNames()).toEqual(['Owen Park']));
     await user.click(within(region()).getByRole('button', { name: 'Decline' }));
     await expectCode('CH-3003');
     await waitFor(() => expect(requestNames()).toEqual(['Owen Park']));
-    await user.click(within(code('CH-3003') as HTMLElement).getByRole('button', { name: 'Retry' }));
+    await user.click(within(code('CH-3003') as HTMLElement).getByRole('button', { name: 'Try again' }));
     await waitFor(() => expect(screen.queryByRole('region', { name: 'Join requests' })).toBeNull());
     expect(actions.accept).toHaveBeenCalledTimes(2);
     expect(actions.reject).toHaveBeenCalledTimes(2);
@@ -1501,7 +1621,7 @@ describe('Roster · behaviour contracts (P003, docs/clubhouse/pages/P003-roster/
     await user.type(noteField(), 'Lag putting drills');
     await user.tab();
     await expectCode('CH-3004');
-    await user.click(within(code('CH-3004') as HTMLElement).getByRole('button', { name: 'Retry' }));
+    await user.click(within(code('CH-3004') as HTMLElement).getByRole('button', { name: 'Try again' }));
     expect(await screen.findByText('Note saved for Theo')).toBeTruthy();
     expect(actions.intent).toHaveBeenCalledTimes(2);
     await user.click(noteField());
@@ -1591,8 +1711,8 @@ describe('Roster · behaviour contracts (P003, docs/clubhouse/pages/P003-roster/
   it("32401 this file and the player roster's file name every Roster catalog code they force, in a test title", () => {
     const self = fileURLToPath(import.meta.url);
     const catalog = readFileSync(resolve(dirname(self), '../../../docs/clubhouse/catalog/roster.md'), 'utf8');
-    // The player's roster (CH-3210, CH-3211, CH-3307, CH-3308) is tested in its own file.
-    const titles = [self, resolve(dirname(self), 'roster-player.test.tsx')]
+    // The player's roster (CH-3210, CH-3211, CH-3307, CH-3308) is tested in its own file, and so is inviting by email (CH-3080, CH-3180).
+    const titles = [self, resolve(dirname(self), 'roster-player.test.tsx'), resolve(dirname(self), 'roster-invite-email.test.tsx')]
       .flatMap((file) => readFileSync(file, 'utf8').split('\n'))
       .filter((line) => /^\s*(it|describe)\(/.test(line))
       .join('\n');
@@ -1603,5 +1723,15 @@ describe('Roster · behaviour contracts (P003, docs/clubhouse/pages/P003-roster/
     // A floor, so an unreadable catalog can't pass by finding nothing.
     expect(forced.length).toBeGreaterThanOrEqual(27);
     expect(forced.filter((c) => !titles.includes(c))).toEqual([]);
+  });
+});
+
+describe('Roster tones say which way (row 48, CONS-20)', () => {
+  it('desktop: every toned note and figure carries a sign or a word; a quiet spell is a warning, not a loss', () => {
+    wrap(roster());
+    expect(unsignedTones()).toEqual([]);
+    expect([...document.querySelectorAll('.ch-rs-face__note.is-loss')].map((n) => n.textContent)).toEqual(['Scoring up 2.1']);
+    expect([...document.querySelectorAll('.ch-rs-face__note.is-gain')].map((n) => n.textContent)).toEqual(['4 rounds under average']);
+    expect([...document.querySelectorAll('.ch-rs-face__note.is-warning')].map((n) => n.textContent)).toEqual(['No rounds in 9 days']);
   });
 });

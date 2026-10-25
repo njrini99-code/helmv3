@@ -21,6 +21,7 @@ import {
   type ChTerm,
   type ChWeek,
 } from '../../data/classes-shape';
+import { useChClock } from '../../lib/use-clock';
 import { haptic } from '../../lib/haptics';
 import { useChReducedMotion } from '../../lib/reduced-motion';
 import { CH_SLOW_SAVE_AFTER, isOffline } from '../../lib/use-action';
@@ -31,6 +32,7 @@ import { Segmented } from '../../ui/Segmented';
 import { EmptyState } from '../../ui/States';
 import { Tooltip } from '../../ui/Tooltip';
 import { screenFile, type ChReadFail, type ChReadResult, type ChReadSource } from './import-read';
+import { plural, pluralWord } from '../../lib/plural';
 
 type Step = 'pick' | 'reading' | 'review' | 'error';
 
@@ -89,6 +91,7 @@ export function ImportSchedule({
   term: ChTerm;
   week: ChWeek;
 }) {
+  const hours = useChClock();
   const [was, setWas] = useState(false);
   const [step, setStep] = useState<Step>('pick');
   const [tab, setTab] = useState<Tab>('file');
@@ -239,7 +242,7 @@ export function ImportSchedule({
                 Start over
               </Button>
               <Button variant="primary" leftIcon={Check} busy={importing} disabled={!rows.length} onClick={() => void onImport(rows)}>
-                {importing ? 'Importing…' : `Import ${rows.length} ${rows.length === 1 ? 'class' : 'classes'}`}
+                {importing ? 'Importing…' : `Import ${plural(rows.length, 'class', 'classes')}`}
               </Button>
             </>
           ) : undefined
@@ -329,7 +332,7 @@ export function ImportSchedule({
                 </div>
               )}
               <p className="ch-cl-rv__line ch-num" role="status">
-                {shown < rows.length ? 'Reading' : 'Read'} {Math.min(shown, rows.length)} {Math.min(shown, rows.length) === 1 ? 'class' : 'classes'}
+                {shown < rows.length ? 'Reading' : 'Read'} {Math.min(shown, rows.length)} {pluralWord(Math.min(shown, rows.length), 'class', 'classes')}
                 {rows.slice(0, shown).filter((r) => r.look).length > 0 ? ` · ${rows.slice(0, shown).filter((r) => r.look).length} to check` : ''}
               </p>
               {rows.length === 0 ? (
@@ -338,7 +341,7 @@ export function ImportSchedule({
                 <ul className="ch-cl-rv" aria-label="Classes found">
                   {rows.slice(0, shown).map((r, i) => {
                     const tab = tabParts({ code: r.code, name: r.name });
-                    const meta = [daysLabel(r.days) || 'No days', timeRange(r.start, r.end) ?? 'No time', [r.building, r.room].filter(Boolean).join(' ')].filter(Boolean).join(' · ');
+                    const meta = [daysLabel(r.days) || 'No days', timeRange(r.start, r.end, hours) ?? 'No time', [r.building, r.room].filter(Boolean).join(' ')].filter(Boolean).join(' · ');
                     return (
                       <li key={r.key} className={'ch-cl-rv__r' + (r.look ? ' is-check' : '')}>
                         <span className={`ch-cl-rv__tab ch-cl-t-${CH_TONES[i % CH_TONES.length]}`}>
@@ -472,12 +475,13 @@ export function ImportSchedule({
         icon={TriangleAlert}
         code="CH-12504"
         title="Start over?"
-        description={`The ${rows.length === 1 ? 'class' : `${rows.length} classes`} you reviewed ${rows.length === 1 ? 'is' : 'are'} let go, and nothing is imported.`}
+        description={`The ${pluralWord(rows.length, 'class', `${rows.length} classes`)} you reviewed ${pluralWord(rows.length, 'is', 'are')} let go, and nothing is imported.`}
         footer={
           <>
             <Button variant="ghost" onClick={() => setRestarting(false)}>
               Keep reviewing
             </Button>
+            {/* The warning came with the question (D-70): the yes is silent, and the result answers. */}
             <Button variant="danger" feel={null} onClick={startOver}>
               Start over
             </Button>
@@ -534,7 +538,7 @@ function ImportedView({
         <Icon icon={Check} size={28} />
       </span>
       <b>
-        {n} {n === 1 ? 'class' : 'classes'} imported
+        {n} {pluralWord(n, 'class', 'classes')} imported
       </b>
       <p>
         {syncState === 'syncing'

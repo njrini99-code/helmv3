@@ -160,7 +160,7 @@ describe('Team Hub · Travel · CH-10504 CH-10009 Delete a trip (D2)', () => {
     expect(track.chReport).toHaveBeenCalledWith(expect.any(Error), expect.objectContaining({ action: 'hub.delete' }));
 
     // The toast moves into the open dialog once it is up, so the button is found again.
-    await user.click(await screen.findByRole('button', { name: 'Retry' }));
+    await user.click(await screen.findByRole('button', { name: 'Try again' }));
     await waitFor(() => expect(deleteTrip).toHaveBeenCalledTimes(2));
     expect(deleteTrip).toHaveBeenLastCalledWith('sea');
     await waitFor(() => expect(screen.queryByText(SEA)).toBeNull());
@@ -255,7 +255,7 @@ describe('Team Hub · Travel · CH-10013 CH-10103 CH-10104 CH-10105 CH-10106 Edi
     expect(track.chReport).toHaveBeenCalledWith(expect.any(Error), expect.objectContaining({ action: 'hub.editTrip' }));
     expect(router.refresh).not.toHaveBeenCalled();
 
-    await user.click(await screen.findByRole('button', { name: 'Retry' }));
+    await user.click(await screen.findByRole('button', { name: 'Try again' }));
     await waitFor(() => expect(editTrip).toHaveBeenCalledTimes(2));
     expect(editTrip).toHaveBeenLastCalledWith(expect.objectContaining({ id: 'sea', name: 'Seahawk Classic' }));
     await waitFor(() => expect(screen.queryByRole('dialog', { name: 'Edit trip' })).toBeNull());

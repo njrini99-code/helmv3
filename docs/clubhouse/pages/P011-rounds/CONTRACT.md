@@ -50,7 +50,7 @@ state only, so a reload opens on the first hole over par again. A test covers
 | 110102 | — | `REVIEW_READY` | A round's review at /golf/dashboard/rounds/[id] opens for the player who played it and for a coach of their team: the hero (day, date and type, the course, tee swatch, yards, rating and slope, then the score and its to par), the figures (Front 9, Back 9 on an 18-hole round, Putts, Fairways, Greens), the scorecard as two captioned nines, the hole card with the shots of the picked hole, the scoring distribution, and the round recap and the player's notes when there are any. It opens on the first hole over par, else the first hole. Back goes to Rounds for a player and, for a coach, to that player's rounds on Stats with the player's name (D-53); a coach's kicker names the player and the notes are labelled with the player's first name ("Jonah's notes" in the preview). |
 | 110103 | — | `SETUP_READY` | A new round's setup (at /golf/dashboard/rounds/new, over the new-round engine; also the dev preview) opens on the green band with its steps (Course, Scorecard, Track), the course card ("Choose a course", Browse courses), an open qualifier when there is one, Round details (type, date, holes), the scorecard's place held ("Your scorecard appears here once you pick a course and tees.") and the dock, whose Start round is off and names why ("Choose a course to start"). Picking tees reads that tee's holes and fills the scorecard; a hole changed for this round is counted and marked ("1 hole edited for this round"), edits never leave this round, and the dock then reads "Course · Tee · N holes · Par P". |
 | 110104 | — | `TRACKING_READY` | The shot screen (inside the round screen at /rounds/new and /rounds/continue/[id]) opens on the hole it is given: the top bar with Exit and Scorecard, the hole strip, the hole hero (hole number, par, yards, "Shot N" and the distance to the pin), the hole map and the shot log, and the shot entry, whose Next shot is off with the one thing missing named above it. Every rule and write is useShotTracking, the hook the Fairway screen runs; the round screen around it owns Exit, the scorecard, Round complete and Submit. |
-| 110105 | — | `UNBUILT_TARGETS_ARE_NOT_DRAWN` | A control whose screen is not rebuilt is not drawn, never a dead button (nav.rebuiltHref). New round, Start a round, Continue and Submit lead to /rounds/new and /rounds/continue/[id], which are rebuilt for a player (round entry, over the round engine), so they are drawn; a coach's are not, since a coach does not log rounds. /rounds/recover is rebuilt for a player (swap audit F-02) and is reached from a failed submit, so nothing in the Library links there. Every posted round in the book opens its review. A round whose review cannot be opened is still listed, as one named group. /rounds/[id]/review (CoachHelm's) is not rebuilt for either role, and neither is the coach's Rounds library. |
+| 110105 | — | `UNBUILT_TARGETS_ARE_NOT_DRAWN` | A control whose screen is not rebuilt is not drawn, never a dead button (nav.rebuiltHref). New round, Continue and Submit lead to /rounds/new and /rounds/continue/[id], which are rebuilt for a player (round entry, over the round engine), so they are drawn; a coach's are not, since a coach does not log rounds. /rounds/recover is rebuilt for a player (swap audit F-02) and is reached from a failed submit, so nothing in the Library links there. Every posted round in the book opens its review. A round whose review cannot be opened is still listed, as one named group. /rounds/[id]/review (CoachHelm's) is not rebuilt for either role, and neither is the coach's Rounds library. |
 | 110106 | — | `UNFINISHED_ROUNDS_ARE_LISTED` | The newest unfinished round fills the card; every other one is listed under "N more unfinished rounds" with Discard, Continue or Post. A round whose every hole has a score reads "Ready to post" (the card says "Post round"), unless a completed round already holds that course and day, and never when the hole read failed. The card's strip marks each scored hole against par and rings the next one. |
 | 110107 | — | `NOT_COUNTED_ROUNDS_STILL_LIST` | A posted round that does not count (isScoreCountable: every hole scored, or an 18-hole total posted without its holes, Q-123) is still listed, with a "Not counted" pill, and sets no season figure. A round posted as a total only counts toward the season average, to par and best score, and has no greens or putts to add. A 9-hole round shows its hole count in place of Out and In and sets no season figure either (full 18-hole rounds only, as on Home and Stats). |
 | 110108 | — | `SEARCH_AND_GROUP_THE_BOOK` | The book is searched by course (client side, any part of the name, ignoring case) and grouped by month, newest first, or by course, in the order of each course's newest round; each group shows its round count, its average over its 18-hole rounds and its low. A search with no match says so (CH-11303) and keeps the tools where they are. |
@@ -92,6 +92,7 @@ saving (CH-11402).
 | 110212 | CH-11411 | `A_ROUND_TYPE_CHANGE_IS_IN_FLIGHT` | A round-type change is in flight |
 | 110213 | CH-11412 | `TEAM_ROUNDS_IS_REFRESHING_WITH_THE_PAGE` | Team rounds is refreshing (a Try again is running) with the page on screen |
 | 110214 | CH-11413 | `TEAM_ROUNDS_IS_LOADING` | Team rounds is loading |
+| 110215 | CH-11421 | `THE_COURSE_PAGE_DIDNT_LOAD` | The course page didn't load (P-7) |
 
 ## 03 — Background loading / refresh
 
@@ -105,7 +106,7 @@ refresh of the page (category 07).
 
 Status: DEFINED
 
-First run is the whole-page empty state (CH-11301, with Start a round once entry
+First run is the whole-page empty state (CH-11301, with New round once entry
 is rebuilt); a season with no countable 18-hole round has its own card
 (CH-11302) and the rounds still list; a search that matches nothing says so
 (CH-11303); nothing in progress is the idle card (CH-11304). The review has a
@@ -142,6 +143,9 @@ was empty (110413). A test covers 110413.
 | 110421 | CH-11320 | `TEAM_ROUNDS_NO_ROUND_POSTED_BY_ANYONE` | Team rounds: no round posted by anyone |
 | 110422 | CH-11321 | `TEAM_ROUNDS_THE_SEARCH_OR_PLAYER_FILTER` | Team rounds: the search or player filter matches nothing |
 | 110423 | CH-11322 | `TEAM_ROUNDS_COMPLETED_ROUNDS_WITH_NO_SCORE` | Team rounds: completed rounds with no score at all |
+| 110424 | CH-11330 | `A_COURSE_PAGE_THIS_VIEWER_HAS_NO` | A course page this viewer has no rounds at: an unknown key, or another player's course |
+| 110425 | CH-11331 | `A_COACHS_COURSE_PAGE_FOR_A_PLAYER` | A coach's course page for a player who isn't on their team, or no player named |
+| 110426 | CH-11333 | `THE_COURSE_PAGES_HOLE_BY_HOLE_WITH` | The course page's Hole by hole with no round here entered hole by hole (or the holes didn't load) |
 
 ## 05 — Validation
 
@@ -274,6 +278,9 @@ load, with Try again (CH-11208 to CH-11210).
 | 110717 | CH-11922 | `SAVE_IMAGE_DOWNLOADED_THE_PICTURE` | Save image downloaded the picture |
 | 110718 | CH-11923 | `SHARING_THE_CARD_FAILS` | Sharing the card fails (not closing the share sheet, not a refused share) |
 | 110719 | CH-11924 | `THE_REVIEW_IS_OPENED_STRAIGHT_FROM_POST` | The review is opened straight from Post round (`?just=submitted`) |
+| 110760 | CH-11960 | `COACHHELMS_PUTT_MISS_ASK_THE_HOLES_FIRST` | CoachHelm's putt-miss ask (chs-22, Slice 8a, `coachhelm_data_gap_prompt_v1`): the hole's first putt missed from a distance band one of the player's open reads is waiting on, and it has no miss tag |
+| 110761 | CH-11961 | `THE_RECOVERY_TAP_THE_LAST_SHOT_RECORDED` | The recovery tap (chs-23, Slice 8b, `coachhelm_data_prompts_v2`): the last shot recorded is a tee shot into the rough or an 'other' lie, not yet answered |
+| 110762 | CH-11962 | `THE_COURSE_NUDGE_THE_ROUND_HAS_NO` | The course nudge (chs-23, Slice 8b, `coachhelm_data_prompts_v2`): the round has no library course (a course typed by hand) |
 
 From the shell (P001): 10701 CH-1901, 10702 CH-1902, 10703 CH-1903,
 10704 CH-1905, 10705 CH-1909, 10706 CH-1910.
@@ -407,6 +414,7 @@ unchanged when the flag is off.
 | 111121 | CH-11521 | `CHANGE_ROUND_TYPE` | Change round type (Continue round: the Exit sheet's "Change round type" row, "Practice now. Changes what it counts toward."; a submitted round: its review's Change round type, CH-11522) |
 | 111122 | CH-11522 | `CHANGE_ROUND_TYPE_ON_A_SUBMITTED_ROUNDS` | Change round type on a submitted round's review (the player who played it, or a coach of the player's team; the Fairway round page's `RoundTypeEditor`) |
 | 111123 | CH-11523 | `THE_COACH_NOTE_CARD_ON_A_ROUNDS` | The Coach note card on a round's review |
+| 111124 | CH-11530 | `COMPARE_TWO_ROUNDS_AT_A_COURSE` | Compare two rounds at a course (P-7) |
 
 ## 12 — State preservation
 
@@ -511,7 +519,7 @@ Status: DEFINED
 Rounds' own haptics are on the v2 grammar (D-70): a warning before Discard
 (CH-11701), a selection tick for opening a round, a hole picked in the review
 and going to another hole (CH-11702, CH-11704, CH-11706), light for Continue,
-Submit and Start a round (CH-11703), a medium tap once per recorded shot
+Submit and New round (CH-11703), a medium tap once per recorded shot
 (CH-11705), and a warning for Undo, Delete shot, Discard round and Leave without
 it (CH-11707); success and error come from the shell for every write. Tap in
 (CH-11913) is a medium tap and then success once the hole it holed is saved
@@ -521,7 +529,7 @@ it (CH-11707); success and error come from the shell for every write. Tap in
 | --- | --- | --- | --- |
 | 111701 | CH-11701 | `DISCARD_IS_TAPPED` | Discard is tapped |
 | 111702 | CH-11702 | `A_ROUND_IS_OPENED` | A round is opened |
-| 111703 | CH-11703 | `CONTINUE_SUBMIT_OR_START_A_ROUND_IS` | Continue, Submit or Start a round is tapped |
+| 111703 | CH-11703 | `CONTINUE_SUBMIT_OR_START_A_ROUND_IS` | Continue, Submit or New round is tapped |
 | 111704 | CH-11704 | `A_HOLE_IS_PICKED_ON_THE_REVIEWS` | A hole is picked on the review's card, or stepped with the arrows |
 | 111705 | CH-11705 | `A_SHOT_IS_RECORDED` | A shot is recorded (Next shot or Hole out) |
 | 111706 | CH-11706 | `GOING_TO_ANOTHER_HOLE` | Going to another hole |
@@ -529,6 +537,7 @@ it (CH-11707); success and error come from the shell for every write. Tap in
 | 111708 | CH-11708 | `THE_SECOND_TAP_OF_A_DISCARD_IN` | The second tap of a discard in round entry: the saved shots, the round already in progress, or the closed-qualifier round |
 | 111709 | CH-11709 | `A_FAILURE_APPEARS_IN_ROUND_ENTRY_AN` | A failure appears in round entry: an inline line, a toast or a banner (CH-11008 to CH-11013, CH-11902) |
 | 111710 | CH-11710 | `TAP_IN_IS_TAPPED` | Tap in is tapped (CH-11913) |
+| 111760 | CH-11760 | `A_CHIP_IN_A_DATA_PROMPT_IS` | A chip in a data prompt is tapped: a putt miss side (CH-11960), Clear shot or Blocked or punch out (CH-11961) |
 
 From the shell (P001): 11701 CH-1701, 11702 CH-1702, 11703 CH-1703,
 11704 CH-1704, 11705 CH-1705, 11706 CH-1706, 11707 CH-1707, 11708 CH-1708,

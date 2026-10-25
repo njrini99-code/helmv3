@@ -7,7 +7,8 @@ import type { GolfSessionProfile } from '@/lib/auth/session';
 import { resolved } from './route-view';
 
 /**
- * A coach's views of one player (P013, spec A): `/golf/dashboard/coachhelm?view=deep-dive|standing|profile&player=<id>`. The route's
+ * A coach's views of one player (P013, spec A): `/golf/dashboard/coachhelm?view=deep-dive|standing&player=<id>` (`profile` is Standing at
+ * How Jonah plays, CH-13913). The route's
  * scope check (on this coach's team, or one "isn't on your team" page), the gates, the coach's voice on every view, the action row
  * on the Deep dive, and the links in and out, which all carry the player.
  */
@@ -45,11 +46,13 @@ vi.mock('@/app/golf/actions/insight-delivery', () => ({
   getThemesForCoach: vi.fn(async () => ({ success: false, error: 'none' })),
   getThemesForPlayer: vi.fn(),
 }));
-const standingRead = vi.hoisted(() => ({ load: vi.fn() }));
-vi.mock('@/lib/coachhelm/v3/standing/loader', () => ({ loadPlayerStandingMap: standingRead.load }));
+const standingRead = vi.hoisted(() => ({ season: vi.fn(async (_playerId?: string): Promise<{ status: string; rows?: unknown }> => ({ status: 'missing' })), load: vi.fn() }));
+// The season table (held migration 20261024151000) answers `missing` unless a test says otherwise, so the page reads the lifetime map.
+vi.mock('@/lib/coachhelm/v3/standing/loader', () => ({ loadPlayerStandingMap: standingRead.load, loadPlayerSeasonStandingMap: standingRead.season }));
 vi.mock('@/lib/coachhelm/v3/counterfactual/player-cohort-loader', () => ({ loadPlayerCohort: vi.fn(async () => ({ gender: 'mens', level: null })) }));
 vi.mock('@/lib/coachhelm/v3/goals/loader', () => ({ loadActiveGoals: vi.fn(async () => []), loadRecentlyAchievedGoals: vi.fn(async () => []) }));
-vi.mock('@/lib/coachhelm/v3/genome/loader', () => ({ loadGenome: vi.fn(async () => null) }));
+const genomeRead = vi.hoisted(() => ({ load: vi.fn() }));
+vi.mock('@/lib/coachhelm/v3/genome/loader', () => ({ loadGenome: genomeRead.load }));
 vi.mock('@/lib/coachhelm/v3/chat/request-cache', () => ({ getCoachProgramPulse: vi.fn(), getCoachChatContext: async () => ({ roster: [] }) }));
 vi.mock('../data/coachhelm-chat', () => ({ loadAskCoachHelm: vi.fn() }));
 vi.mock('../data/coachhelm-track-record', () => ({ loadCoachTrackRecord: vi.fn() }));
@@ -66,13 +69,12 @@ import type { ChDeepDive } from '../data/coachhelm-dive-shape';
 import { ClubhouseCoachHelmRoute } from '../routes/coachhelm';
 import { CoachBoard } from '../screens/coachhelm/CoachBoard';
 import { DeepDive } from '../screens/coachhelm/views/DeepDive';
-import { Profile } from '../screens/coachhelm/views/Profile';
 import { Standing } from '../screens/coachhelm/views/Standing';
 import type { ChCoachHelmWrites } from '../screens/coachhelm/writes';
 import { ToastProvider } from '../ui/Toast';
 import { PREVIEW_HELM_COACH } from '../preview/fixtures-coachhelm';
-import { PREVIEW_DIVE, PREVIEW_PROFILE, PREVIEW_STANDING } from '../preview/fixtures-coachhelm-views';
-import { PREVIEW_COACH_DIVE, PREVIEW_COACH_PROFILE, PREVIEW_COACH_STANDING, PREVIEW_COACH_VOICE } from '../preview/fixtures-coachhelm-coach-player';
+import { FULL_VECTOR, gameLoad, genome, PREVIEW_DIVE, PREVIEW_GAME, PREVIEW_STANDING } from '../preview/fixtures-coachhelm-views';
+import { PREVIEW_COACH_DIVE, PREVIEW_COACH_GAME, PREVIEW_COACH_STANDING, PREVIEW_COACH_VOICE } from '../preview/fixtures-coachhelm-coach-player';
 
 const COACH = 'c0000000-0000-4000-8000-000000000001';
 const TEAM = 'a0000000-0000-4000-8000-000000000001';
@@ -112,6 +114,7 @@ beforeEach(() => {
   delivery.coach.mockReset().mockResolvedValue([]);
   delivery.player.mockReset().mockResolvedValue([]);
   standingRead.load.mockReset().mockResolvedValue(new Map());
+  genomeRead.load.mockReset().mockResolvedValue(null);
   session.current = { coach: { id: COACH, organization_id: 'org-1', onboarding_completed: true }, player: null } as unknown as GolfSessionProfile;
   team.current = { role: 'coach', teamId: TEAM, coachId: COACH };
   tables.current = {
@@ -165,6 +168,23 @@ describe('130807 130104 the scope check: on this coach’s team, or one page for
     expect(child.props).toMatchObject({ playerId: 'player-1', drill: 'standing' });
   });
 
+  it('CH-13913 ?view=profile&player= (Game profile’s old address) is the coach’s Standing of the player, opened at How Jonah plays', async () => {
+    genomeRead.load.mockResolvedValue(genome(FULL_VECTOR));
+    const into = vi.fn();
+    const was = Element.prototype.scrollIntoView;
+    Element.prototype.scrollIntoView = into;
+    try {
+      render(wrap(await page({ view: 'profile', player: PID })));
+    } finally {
+      Element.prototype.scrollIntoView = was;
+    }
+    expect(document.querySelector('main')!.getAttribute('data-ch-view')).toBe('standing');
+    const how = screen.getByRole('region', { name: 'How Jonah plays' });
+    expect(genomeRead.load).toHaveBeenCalledWith(expect.anything(), PID);
+    expect(into.mock.instances[0]).toBe(how);
+    expect(screen.getByRole('radio', { name: 'Standing' })).toHaveAttribute('aria-checked', 'true');
+  });
+
   it('a coach’s ?view= with no player is the board', async () => {
     const out = (await ClubhouseCoachHelmRoute({ view: 'standing' })) as ReactElement<{ children: ReactElement }>;
     expect((out.props.children.type as { name: string }).name).toBe('CoachHelmView');
@@ -206,10 +226,9 @@ describe('the coach Deep dive reads the coach feed', () => {
 
 describe('the coach’s voice', () => {
   const views = (): Array<[string, ReactNode]> => [
-    ['profile', <Profile key="p" load={{ status: 'ready', data: PREVIEW_COACH_PROFILE }} voice={voice} />],
-    ['standing', <Standing key="s" load={{ status: 'ready', data: PREVIEW_COACH_STANDING }} voice={voice} />],
+    ['standing', <Standing key="s" load={{ status: 'ready', data: PREVIEW_COACH_STANDING }} game={{ status: 'ready', data: PREVIEW_COACH_GAME }} voice={voice} />],
+    ['how jonah plays failed', <Standing key="sg" load={{ status: 'ready', data: PREVIEW_COACH_STANDING }} game={{ status: 'failed' }} voice={voice} />],
     ...PREVIEW_COACH_DIVE.list.map((i): [string, ReactNode] => [`deep-dive ${i.base.id}`, <DeepDive key={i.base.id} load={{ status: 'ready', data: PREVIEW_COACH_DIVE }} voice={voice} initialId={i.base.id} writes={okWrites()} />]),
-    ['profile failed', <Profile key="pf" load={{ status: 'failed' }} voice={voice} />],
     ['standing failed', <Standing key="sf" load={{ status: 'failed' }} voice={voice} />],
     ['deep dive failed', <DeepDive key="df" load={{ status: 'failed' }} voice={voice} />],
     ['deep dive off', <DeepDive key="do" load={{ status: 'off', reason: 'Paused' }} voice={voice} />],
@@ -231,7 +250,7 @@ describe('the coach’s voice', () => {
     // The page's own figures: not the coach header's line or the coach's "what CoachHelm sees" line, which the player's page has none of.
     // The figures in them, in any order (a read assigned in the coach's fixture sorts differently), not the words around them.
     const out = [...container.querySelectorAll('.ch-num')]
-      .filter((el) => !el.closest('.ch-hl-h, .ch-hv-seen'))
+      .filter((el) => !el.closest('.ch-hl-h'))
       .flatMap((el) => el.textContent?.match(/[−+-]?\d+(?:\.\d+)?%?/g) ?? [])
       .sort();
     unmount();
@@ -240,7 +259,7 @@ describe('the coach’s voice', () => {
 
   it('the numbers are the same for both roles', () => {
     expect(nums(<Standing load={{ status: 'ready', data: PREVIEW_COACH_STANDING }} voice={voice} />)).toEqual(nums(<Standing load={{ status: 'ready', data: PREVIEW_STANDING }} />));
-    expect(nums(<Profile load={{ status: 'ready', data: PREVIEW_COACH_PROFILE }} voice={voice} />)).toEqual(nums(<Profile load={{ status: 'ready', data: PREVIEW_PROFILE }} />));
+    expect(nums(<Standing load={{ status: 'ready', data: PREVIEW_COACH_STANDING }} game={{ status: 'ready', data: PREVIEW_COACH_GAME }} voice={voice} />)).toEqual(nums(<Standing load={{ status: 'ready', data: PREVIEW_STANDING }} game={gameLoad(PREVIEW_GAME)} />));
     const dive = (d: ChDeepDive, v?: ChViewVoice) => nums(<DeepDive load={{ status: 'ready', data: d }} voice={v} initialId="in-pen" writes={okWrites()} />);
     expect(dive(PREVIEW_COACH_DIVE, voice)).toEqual(dive(PREVIEW_DIVE));
   });
@@ -321,12 +340,12 @@ describe('every link in and out carries the player', () => {
     expect(screen.getByRole('link', { name: 'Sam Whitfield' }).getAttribute('href')).toBe('/golf/dashboard/coachhelm?view=standing&player=pl-sam');
   });
 
-  it('the header links back to the board open on the player; the strip moves between his three views', async () => {
+  it('the header links back to the board open on the player; the strip moves between his two views (Game profile folded into Standing)', async () => {
     const u = user();
     render(wrap(<Standing load={{ status: 'ready', data: PREVIEW_COACH_STANDING }} voice={voice} />));
     expect(screen.getByRole('link', { name: 'CoachHelm' }).getAttribute('href')).toBe('/golf/dashboard/coachhelm?player=pl-jonah');
     const strip = screen.getByRole('radiogroup');
-    expect(within(strip).getAllByRole('radio').map((r) => r.textContent)).toEqual(['Deep dive', 'Standing', 'Game profile']);
+    expect(within(strip).getAllByRole('radio').map((r) => r.textContent)).toEqual(['Deep dive', 'Standing']);
     await u.click(within(strip).getByRole('radio', { name: 'Deep dive' }));
     expect(router.push).toHaveBeenCalledWith('/golf/dashboard/coachhelm?view=deep-dive&player=pl-jonah');
   });
@@ -334,15 +353,16 @@ describe('every link in and out carries the player', () => {
   it('the phone’s Back goes to the board open on the player', async () => {
     phoneState.on = true;
     const u = user();
-    render(wrap(<Profile load={{ status: 'ready', data: PREVIEW_COACH_PROFILE }} voice={voice} />));
+    render(wrap(<Standing load={{ status: 'ready', data: PREVIEW_COACH_STANDING }} voice={voice} />));
     await u.click(screen.getByRole('button', { name: 'phone back to CoachHelm' }));
     expect(router.push).toHaveBeenCalledWith('/golf/dashboard/coachhelm?player=pl-jonah');
   });
 
-  it('the Game profile’s line on what CoachHelm sees opens the Deep dive', () => {
-    render(wrap(<Profile load={{ status: 'ready', data: PREVIEW_COACH_PROFILE }} voice={voice} />));
-    const seen = screen.getByRole('link', { name: /CoachHelm sees 3 reads costing strokes and 1 working/ });
-    expect(seen.getAttribute('href')).toBe('/golf/dashboard/coachhelm?view=deep-dive&player=pl-jonah');
+  it('Standing’s Also for Jonah is the Deep dive only: how Jonah plays is on Standing now', () => {
+    render(wrap(<Standing load={{ status: 'ready', data: PREVIEW_COACH_STANDING }} game={{ status: 'ready', data: PREVIEW_COACH_GAME }} voice={voice} />));
+    const next = screen.getByRole('heading', { name: 'Also for Jonah' }).closest('aside') as HTMLElement;
+    expect(within(next).getAllByRole('link').map((a) => a.getAttribute('href'))).toEqual(['/golf/dashboard/coachhelm?view=deep-dive&player=pl-jonah']);
+    expect(screen.getByRole('region', { name: 'How Jonah plays' })).toBeTruthy();
   });
 
   it('an unknown ?insight= is ignored: the Deep dive opens on its first read, and says nothing went missing', () => {

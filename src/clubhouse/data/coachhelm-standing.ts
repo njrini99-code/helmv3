@@ -1,17 +1,20 @@
 import 'server-only';
 import { getInsightsForPlayer, type EvidenceInsight } from '@/app/golf/actions/insight-delivery';
 import { createClient } from '@/lib/supabase/server';
+import { getValidTimezone } from '@/lib/calendar/timezone';
 import { loadPlayerCohort } from '@/lib/coachhelm/v3/counterfactual/player-cohort-loader';
-import { loadPlayerStandingMap } from '@/lib/coachhelm/v3/standing/loader';
+import { loadPlayerSeasonStandingMap, loadPlayerStandingMap } from '@/lib/coachhelm/v3/standing/loader';
+import type { PlayerStanding } from '@/lib/coachhelm/v3/standing/types';
 import type { MetricId } from '@/lib/coachhelm/v3/metrics/registry';
 import { chLogServer } from '../lib/track-server';
 import { earliestStaleFloor, loadPlayerDismissed, loadVisible, newestRounds, PLAYER_FEED_LIMIT, playerTeam } from './coachhelm';
 import { isOpenFinding } from './coachhelm-classify';
 import { readEngineFlags } from './coachhelm-engine';
+import { seasonStartDate } from './season';
 import { shapeReadsLifecycle } from './coachhelm-engine-shape';
 import type { ChLadderReads } from './coachhelm-ladder-shape';
 import { toChInsight } from './coachhelm-map';
-import { toChStanding, type ChStandBaselineRead, type ChStanding } from './coachhelm-standing-shape';
+import { toChStanding, type ChStandBaselineRead, type ChStandWindowKind, type ChStanding } from './coachhelm-standing-shape';
 import type { ChViewLoad } from './coachhelm-views-shape';
 import type { ChViewer } from './coachhelm-voice';
 
@@ -126,9 +129,45 @@ async function readLadderReads(supabase: Supabase, playerId: string, viewer: ChV
 }
 
 /**
+ * The time zone of the player's team (`golf_team_settings.timezone`), the day "Refreshed" names (A20). Eastern, the product default,
+ * when the player has no team, the read fails or the stored value is not a real zone: a date is never worth failing the page.
+ */
+async function readTeamZone(supabase: Supabase, playerId: string): Promise<string> {
+  try {
+    const member = await supabase.from('golf_team_members').select('team_id').eq('player_id', playerId).eq('status', 'active').maybeSingle();
+    if (member.error) log('standing.zone', member.error);
+    const teamId = (member.data as { team_id: string } | null)?.team_id;
+    if (!teamId) return getValidTimezone(null);
+    const settings = await supabase.from('golf_team_settings').select('timezone').eq('team_id', teamId).maybeSingle();
+    if (settings.error) log('standing.zone', settings.error);
+    return getValidTimezone((settings.data as { timezone: string | null } | null)?.timezone);
+  } catch (err) {
+    log('standing.zone', err);
+    return getValidTimezone(null);
+  }
+}
+
+/**
+ * The rows Standing draws, and the window they cover. This season's table first (owner decision 9: from 1 August in the team's time
+ * zone, each row with its own round count); while that table is not deployed (its migration is held), the lifetime table, which the
+ * page labels "All time" rather than call it a season. Only rows that are this player's are kept, whatever a loader returned.
+ */
+async function readRows(playerId: string): Promise<{ ok: true; rows: PlayerStanding[]; window: ChStandWindowKind } | { ok: false }> {
+  try {
+    const season = await loadPlayerSeasonStandingMap(playerId);
+    if (season.status === 'ok') return { ok: true, rows: [...season.rows.values()].filter((r) => r.player_id === playerId), window: 'season' };
+    const lifetime = await loadPlayerStandingMap(playerId);
+    return { ok: true, rows: [...lifetime.values()].filter((r) => r.player_id === playerId), window: 'all_time' };
+  } catch (err) {
+    log('standing.map', err);
+    return { ok: false };
+  }
+}
+
+/**
  * The player's Standing (`?view=standing`), read after the route has checked CoachHelm is on for them. `playerId` is the session's,
- * or a coach's branded scope's (`data/coachhelm-player.ts`, the only other caller, with `viewer` the coach's), never an address's: `loadPlayerStandingMap` reads `golf_player_standing` through the service client (that table is written by
- * the nightly refresh and has no per-player policy to lean on), so the id it is given is the only thing scoping it.
+ * or a coach's branded scope's (`data/coachhelm-player.ts`, the only other caller, with `viewer` the coach's), never an address's: the standing loaders read `golf_player_standing_season` (or `golf_player_standing`) through the service client (both are written
+ * by the refresh, and the season table has no policy at all), so the id it is given is the only thing scoping it.
  *
  * The standing read is the page: when it throws the page says it did not load, never "no standing yet". The scoring-average read
  * is only the projections' base, so its failure is its own flag on the page (`baselineFailed`) and the rows still draw.
@@ -136,21 +175,19 @@ async function readLadderReads(supabase: Supabase, playerId: string, viewer: ChV
 export async function loadPlayerStanding(input: { playerId: string; viewer?: ChViewer; feed?: () => Promise<EvidenceInsight[]> }): Promise<ChViewLoad<ChStanding>> {
   try {
     const supabase = await createClient();
-    const [map, baseline, cohort, reads] = await Promise.all([
-      loadPlayerStandingMap(input.playerId).then(
-        // The map is this player's already; a row that is anyone else's is never drawn, whatever the loader returned.
-        (m) => ({ ok: true as const, rows: [...m.values()].filter((r) => r.player_id === input.playerId) }),
-        (err: unknown) => {
-          log('standing.map', err);
-          return { ok: false as const };
-        },
-      ),
+    const [map, baseline, cohort, reads, zone] = await Promise.all([
+      readRows(input.playerId),
       readBaseline(supabase, input.playerId),
       readCohort(input.playerId),
       readLadderReads(supabase, input.playerId, input.viewer ?? { role: 'player' }, input.feed),
+      readTeamZone(supabase, input.playerId),
     ]);
     if (!map.ok) return { status: 'failed' };
-    return { status: 'ready', data: { ...toChStanding(map.rows, baseline, reads, input.viewer), ...(cohort.failed ? { cohortFailed: true as const } : {}) } };
+    // A season row from before this season's 1 August (on the team's clock) is last season's: the nightly run at 02:20 UTC on
+    // 1 August is still 31 July in every US zone, and a team outside a chunk waits longer. It is dropped, never labelled "This season".
+    const since = seasonStartDate(new Date(), zone);
+    const rows = map.window === 'season' ? map.rows.filter((r) => typeof r.season_start === 'string' && r.season_start.slice(0, 10) >= since) : map.rows;
+    return { status: 'ready', data: { ...toChStanding(rows, baseline, reads, input.viewer, zone, map.window), ...(cohort.failed ? { cohortFailed: true as const } : {}) } };
   } catch (err) {
     log('standing', err);
     return { status: 'failed' };

@@ -1,3 +1,4 @@
+import { plural } from '../lib/plural';
 
 /*
  * Which rounds a Clubhouse figure counts (Q-123).
@@ -42,5 +43,5 @@ export function holeRounds<T extends { total_only?: boolean }>(rounds: readonly 
  */
 export function holeCoverage(holeCount: number, windowCount: number): string | null {
   if (holeCount >= windowCount) return null;
-  return `Hole stats from ${holeCount} of ${windowCount} ${windowCount === 1 ? 'round' : 'rounds'}`;
+  return `Hole stats from ${holeCount} of ${plural(windowCount, 'round')}`;
 }

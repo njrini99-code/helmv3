@@ -2,6 +2,7 @@ import { describe, it, expect } from 'vitest';
 import {
   fingerprintSupabaseAutoCapture,
   isInfrastructurePgCode,
+  isReadinessProbeTimeoutCapture,
   postgresCodeFromHint,
 } from '../supabase-error-grouping';
 
@@ -149,5 +150,44 @@ describe('postgresCodeFromHint', () => {
     expect(postgresCodeFromHint({ originalException: codedError('x', 'ECONNRESET') })).toBeNull();
     expect(postgresCodeFromHint({ originalException: 'string' })).toBeNull();
     expect(postgresCodeFromHint(undefined)).toBeNull();
+  });
+});
+
+describe('isReadinessProbeTimeoutCapture', () => {
+  const TIMEOUT = 'TimeoutError: The operation was aborted due to timeout';
+  const onRoute = (value: string, route: { transaction?: string; request?: { url?: string } }) => ({
+    ...autoCapture(value),
+    ...route,
+  });
+
+  it.each([
+    ['a GET transaction', { transaction: 'GET /api/health' }],
+    ['a HEAD transaction', { transaction: 'HEAD /api/health' }],
+    ['the request URL alone', { request: { url: 'https://helmsportslabs.com/api/health' } }],
+  ])("drops the probe's own timed-out read, recognised by %s", (_label, route) => {
+    expect(isReadinessProbeTimeoutCapture(onRoute(TIMEOUT, route))).toBe(true);
+  });
+
+  it('keeps a timeout on any other route: those are real pages waiting on the database', () => {
+    expect(isReadinessProbeTimeoutCapture(onRoute(TIMEOUT, { transaction: 'GET /golf/dashboard/coachhelm' }))).toBe(false);
+    expect(isReadinessProbeTimeoutCapture(onRoute(TIMEOUT, { request: { url: 'https://helmsportslabs.com/api/healthz' } }))).toBe(false);
+  });
+
+  it('keeps a PostgREST error on the probe: the database answered, and the answer was no', () => {
+    const event = onRoute('permission denied for table users', { transaction: 'GET /api/health' });
+    expect(isReadinessProbeTimeoutCapture(event)).toBe(false);
+  });
+
+  it('keeps an aborted or failed fetch on the probe', () => {
+    expect(isReadinessProbeTimeoutCapture(onRoute('AbortError: This operation was aborted', { transaction: 'GET /api/health' }))).toBe(false);
+    expect(isReadinessProbeTimeoutCapture(onRoute('TypeError: fetch failed', { transaction: 'GET /api/health' }))).toBe(false);
+  });
+
+  it('keeps a timeout on the probe that the integration did not capture', () => {
+    const event = {
+      transaction: 'GET /api/health',
+      exception: { values: [{ value: TIMEOUT, mechanism: { type: 'generic' } }] },
+    };
+    expect(isReadinessProbeTimeoutCapture(event)).toBe(false);
   });
 });

@@ -49,7 +49,8 @@ describe('popup layout and native dialog containment', () => {
   });
   it('announces the recruiting confirmation message', () => {
     const view = render(<RecActionSheet open title="Delete prospect?" message="Private documents will also be removed." actionLabel="Delete" onClose={() => {}} onAction={() => {}} />);
-    expect(view.getByRole('dialog')).toHaveAccessibleDescription('Private documents will also be removed.');
+    // The shared action sheet (ui/FormSheet.tsx) is an alert dialog: it confirms something destructive.
+    expect(view.getByRole('alertdialog')).toHaveAccessibleDescription('Private documents will also be removed.');
   });
   it('reserves the native keyboard space when placing a menu', () => {
     vi.spyOn(window, 'innerHeight', 'get').mockReturnValue(600);

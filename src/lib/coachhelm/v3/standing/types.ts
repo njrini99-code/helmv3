@@ -92,6 +92,15 @@ export interface PlayerStanding {
    */
   layup_excluded_n?: number | null;
 
+  /**
+   * Season rows only (`golf_player_standing_season`, Clubhouse Standing): the rounds this row's value was built from. Not a cohort
+   * size (team_n and level_n are those). Absent on the lifetime `golf_player_standing` rows Fairway reads.
+   */
+  rounds_n?: number | null;
+
+  /** Season rows only: the first day the row covers (1 August in the team's time zone), as an ISO date. */
+  season_start?: string | null;
+
   computed_at: string;
 }
 

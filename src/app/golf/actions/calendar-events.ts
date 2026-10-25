@@ -258,7 +258,24 @@ export type GolfEventUpdateInput = Partial<GolfEventInput> & {
   addAttendeeIds?: string[];
   /** Players to explicitly remove from the event's attendance list. */
   removeAttendeeIds?: string[];
+  /**
+   * P-4 optimistic concurrency: the `updated_at` the caller read, sent back untouched (an opaque token). The update only
+   * lands on that version; otherwise the result is `code: 'stale'` (with the row as it is now) or `code: 'gone'`.
+   */
+  expectedUpdatedAt?: string;
+  /** The end's own UTC offset in minutes, for a run whose end falls across a clock change; defaults to `timezoneOffset`. */
+  endTimezoneOffset?: number;
 };
+/** What updateGolfEvent returns. `code` lets a caller branch without reading copy; old callers ignore it. */
+export type UpdateGolfEventResult =
+  | { success: true; error?: undefined; data?: { invitationsError?: string; updatedAt?: string } }
+  | {
+      success: false;
+      error: string;
+      code?: 'stale' | 'gone' | 'forbidden';
+      current?: { startTime: string; endTime: string | null; allDay: boolean; status: string | null; updatedAt: string };
+      data?: undefined;
+    };
 /** Options for deleteGolfEvent. Default (no options) = soft cancellation. */
 export interface DeleteGolfEventOptions {
   /**
@@ -662,6 +679,9 @@ const golfEventUpdateSchema = z.object({
   // incomplete client list.
   removeAttendeeIds: z.array(z.string().uuid()).optional(),
   timezoneOffset: z.number().int().optional(),
+  endTimezoneOffset: z.number().int().optional(),
+  // An opaque token (the updated_at text the caller read, microseconds and offset as the database gave them).
+  expectedUpdatedAt: z.string().min(1).max(64).optional(),
   // Restore (un-cancel) a soft-cancelled event. Constrained to 'confirmed' so
   // this update path can never be used to silently flip an event to other
   // lifecycle states; cancellation still flows exclusively through
@@ -672,7 +692,7 @@ const golfEventUpdateSchema = z.object({
 async function updateGolfEventImpl(
   eventId: string,
   data: GolfEventUpdateInput
-): Promise<{ success: boolean; error?: string; data?: { invitationsError?: string } }> {
+): Promise<UpdateGolfEventResult> {
   try {
     const supabase = await createClient();
 
@@ -705,7 +725,7 @@ async function updateGolfEventImpl(
 
     // Only coaches can update team events (matches createGolfEvent behavior)
     if (!coach) {
-      return { success: false, error: 'Only coaches can update team events' };
+      return { success: false, error: 'Only coaches can update team events', code: 'forbidden' };
     }
 
     const teamId = await getCoachTeamId(supabase, coach.organization_id, coach.id);
@@ -732,7 +752,7 @@ async function updateGolfEventImpl(
     }
 
     if (!existingEvent) {
-      return { success: false, error: 'Event not found' };
+      return { success: false, error: 'Event not found', ...(data.expectedUpdatedAt ? { code: 'gone' as const } : {}) };
     }
 
     if (existingEvent.team_id !== teamId) {
@@ -763,7 +783,7 @@ async function updateGolfEventImpl(
       if (isAllDay) {
         updateData.end_time = endDate ? `${endDate}T00:00:00+00:00` : null;
       } else if (validatedData.endTime && endDate) {
-        updateData.end_time = buildDateTimeString(endDate, validatedData.endTime, tz);
+        updateData.end_time = buildDateTimeString(endDate, validatedData.endTime, validatedData.endTimezoneOffset ?? tz);
       } else if (endDate && !validatedData.endTime) {
         updateData.end_time = `${endDate}T00:00:00+00:00`;
       } else {
@@ -801,8 +821,11 @@ async function updateGolfEventImpl(
     } else {
       query = query.eq('team_id', teamId);
     }
+    // P-4: only the version the caller read. The token goes back untouched; zero rows then means someone changed it.
+    const expected = validatedData.expectedUpdatedAt;
+    if (expected) query = query.eq('updated_at', expected);
 
-    const { data: updatedRows, error } = await query.select('id');
+    const { data: updatedRows, error } = await query.select('id, updated_at');
 
     if (error) {
       // 23514 = CHECK violation (golf_events_end_after_start). Partial updates
@@ -820,8 +843,10 @@ async function updateGolfEventImpl(
     }
 
     if (!updatedRows || updatedRows.length === 0) {
+      if (expected) return staleOrGone(supabase, eventId);
       return { success: false, error: 'Event could not be updated. You may not have permission to edit this event.' };
     }
+    const updatedAt = (updatedRows[0] as { updated_at?: string } | undefined)?.updated_at;
 
     // Attendee sync — ADDITIVE-ONLY contract (audit finding #4).
     // Previously this diffed golf_event_attendance against the client's
@@ -919,7 +944,8 @@ async function updateGolfEventImpl(
     updateTag(CACHE_TAGS.CALENDAR);
     // Same shape as createGolfEvent's (`data.invitationsError`), the one the Clubhouse
     // action wrapper carries through to the editor.
-    return invitationsError ? { success: true, data: { invitationsError } } : { success: true };
+    // `updatedAt` is the new token, so a following move (or "Move again") has it without a re-read.
+    return invitationsError || updatedAt ? { success: true, data: { ...(invitationsError ? { invitationsError } : {}), ...(updatedAt ? { updatedAt } : {}) } } : { success: true };
 
   } catch (err) {
     if (err instanceof z.ZodError) {
@@ -934,6 +960,21 @@ async function updateGolfEventImpl(
     return { success: false, error: 'An unexpected error occurred' };
   }
 }
+/**
+ * A conditional update matched no row: read it once to say why. Gone (deleted, or cancelled meanwhile) or stale (another
+ * writer changed it), with the row as it stands so the caller can show where it is now.
+ */
+async function staleOrGone(supabase: Awaited<ReturnType<typeof createClient>>, eventId: string): Promise<UpdateGolfEventResult> {
+  const { data: row, error } = await supabase.from('golf_events').select('id, start_time, end_time, all_day, status, updated_at').eq('id', eventId).maybeSingle();
+  if (error) return { success: false, error: 'Failed to update event' };
+  if (!row || row.status === 'cancelled') return { success: false, error: 'This event was cancelled or deleted.', code: 'gone' };
+  return {
+    success: false,
+    error: 'This event changed since you opened it.',
+    code: 'stale',
+    current: { startTime: row.start_time, endTime: row.end_time, allDay: row.all_day === true, status: row.status, updatedAt: row.updated_at ?? '' },
+  };
+}
 const observedUpdateGolfEvent = withAdminObserved(
   'updateGolfEvent',
   { demoSafe: true, sport: 'golf', feature: 'calendar_events' },
@@ -942,7 +983,7 @@ const observedUpdateGolfEvent = withAdminObserved(
 export async function updateGolfEvent(
   eventId: string,
   data: GolfEventUpdateInput
-): Promise<{ success: boolean; error?: string; data?: { invitationsError?: string } }> {
+): Promise<UpdateGolfEventResult> {
   return observedUpdateGolfEvent(eventId, data);
 }
 /**

@@ -21,20 +21,33 @@ Rows without a code are behaviours with no single element, recorded in
 namespace 1) apply here too and are named where they carry a category.
 `clubhouse:check` holds this file to the registry.
 
-The page covers four screens: the list (a coach's "Qualifiers", a player's "My qualifiers"), one
-qualifier (leaderboard, player rounds), the create and edit form, and Manage selections (steps,
-coach's picks, confirm). Coaches and players share the list and the qualifier (D-30); create, edit
-and Manage selections are coach-only.
+The page covers four screens: the list (a coach's "Qualifiers", a player's "My
+qualifiers"), one qualifier (leaderboard, player rounds), the create and edit
+form, and Manage selections (steps, coach's picks, confirm). Coaches and players
+share the list and the qualifier (D-30); create, edit and Manage selections are
+coach-only.
 
 ## 01 — Default / core UI
 
 Status: DEFINED
 
-Every screen opens final on first paint, read on the server in one pass. The list opens on the live qualifier as its hero, with Active and Concluded below it (90101). A qualifier opens on six facts and the leaderboard, with round-by-round scores, selections and the course per round beside it for a coach (90102); its rounds, order, ties and cut are the ones the squad is confirmed from, and the Bubble sits inside the squad (WIRING.md, "Standings parity"). The form opens with the whole active roster ticked and sensible defaults, or prefilled when editing (90103). Manage selections opens on its three steps (90104). Every address renders in place, never as a redirect (90105, D-23). `/my-qualifiers` is the player's own list (90106); a coach is not offered it, and inside the Clubhouse frame the shell shows its not-rebuilt page there (10401). With the Clubhouse off, the selection address sends a coach to the existing CoachHelm workspace (90107).
+Every screen opens final on first paint, read on the server in one pass. The
+list opens on the live qualifier as its hero, with Active and Concluded below it
+(90101). A qualifier opens on six facts and the leaderboard, with round-by-round
+scores, selections and the course per round beside it for a coach (90102); its
+rounds, order, ties and cut are the ones the squad is confirmed from, and the
+Bubble sits inside the squad (WIRING.md, "Standings parity"). The form opens
+with the whole active roster ticked and sensible defaults, or prefilled when
+editing (90103). Manage selections opens on its three steps (90104). Every
+address renders in place, never as a redirect (90105, D-23). `/my-qualifiers` is
+the player's own list (90106); a coach is not offered it, and inside the
+Clubhouse frame the shell shows its not-rebuilt page there (10401). With the
+Clubhouse off, the selection address sends a coach to the existing CoachHelm
+workspace (90107).
 
 | Bridge ID | Code | Name | Meaning |
 | --- | --- | --- | --- |
-| 90101 | — | `LIST_READY` | The list opens with the count of active and concluded qualifiers, the All, Active and Concluded pills with their counts, search, the live qualifier (or, with none live, the active one that starts first) as the hero with its leaders, the other active ones as cards under Active and the concluded ones under Concluded; a coach also gets Create qualifier. |
+| 90101 | — | `LIST_READY` | The list opens with the count of active and concluded qualifiers, the All, Active and Concluded pills with their counts, search, the live qualifier (or, with none live, the active one that starts first) as the hero with its leaders, the other active ones as cards under Active and the concluded ones under Concluded; a coach also gets New qualifier. |
 | 90102 | — | `DETAIL_READY` | A qualifier opens with its status pill and name, five facts (dates, entrants, rounds submitted, course, spots), the leaderboard, and beside it the selections, the course per round and the scoring rules; a coach also gets round-by-round scores, Manage selections, Edit qualifier and Close or Reopen. |
 | 90103 | — | `FORM_READY` | Create opens with the whole active roster ticked, three rounds, a five-player squad and one coach's pick; Edit opens with the qualifier's own values, round courses and entrants. |
 | 90104 | — | `SELECTION_READY` | Manage selections opens with the qualifier's name and squad line, the three steps (Standings, Coach's picks, Squad confirmed) with the current one marked, the places on score now, the rest of the field, the coach's picks with their open slots, and the one primary action for the next step. |
@@ -49,7 +62,16 @@ From the shell (P001): 10101 CH-1904, 10102 SHELL_READY,
 
 Status: DEFINED
 
-Three route skeletons in the page's own shapes: the list (90201: head, tools, hero, cards), one qualifier (90202: head, facts, leaderboard, side cards) and the form (90203). They are the `loading.tsx` files of qualifiers, my-qualifiers, `[id]`, new and `[id]/edit`, and each shows the Clubhouse skeleton inside the Clubhouse and the existing one outside it. Manage selections has no loading file of its own, so while it loads the qualifier's skeleton shows (close in shape, not exact); it has no code of its own for that (open). The course picker shows skeleton rows (90204), and a selection write in flight reads Starting, Saving, Removing or Confirming (90205). v2 timing: nothing for 150ms, then a fade (the shell's 11609).
+Three route skeletons in the page's own shapes: the list (90201: head, tools,
+hero, cards), one qualifier (90202: head, facts, leaderboard, side cards) and
+the form (90203). They are the `loading.tsx` files of qualifiers, my-qualifiers,
+`[id]`, new and `[id]/edit`, and each shows the Clubhouse skeleton inside the
+Clubhouse and the existing one outside it. Manage selections has no loading file
+of its own, so while it loads the qualifier's skeleton shows (close in shape,
+not exact); it has no code of its own for that (open). The course picker shows
+skeleton rows (90204), and a selection write in flight reads Starting, Saving,
+Removing or Confirming (90205). v2 timing: nothing for 150ms, then a fade (the
+shell's 11609).
 
 | Bridge ID | Code | Name | Meaning |
 | --- | --- | --- | --- |
@@ -67,7 +89,12 @@ From the shell (P001): 10201 CH-1401, 10202 CH-1402.
 
 Status: DEFINED
 
-While a write is in flight its button reads Creating, Saving, Closing or Reopening and is disabled (90301 to 90303); the phone's Reopen sits in a sheet that closes as it starts, so there only the toast reports it. A live qualifier listens for signed rounds and, after 800ms of quiet, has the server read the page again once (90304); the leaderboard says "Updates as rounds are signed". There is no pull to refresh (the phone waits for the foundation's design).
+While a write is in flight its button reads Creating, Saving, Closing or
+Reopening and is disabled (90301 to 90303); the phone's Reopen sits in a sheet
+that closes as it starts, so there only the toast reports it. A live qualifier
+listens for signed rounds and, after 800ms of quiet, has the server read the
+page again once (90304); the leaderboard says "Updates as rounds are signed".
+There is no pull to refresh (the phone waits for the foundation's design).
 
 | Bridge ID | Code | Name | Meaning |
 | --- | --- | --- | --- |
@@ -80,7 +107,17 @@ While a write is in flight its button reads Creating, Saving, Closing or Reopeni
 
 Status: DEFINED
 
-First-run and filtered are distinct, and a failed read is never drawn as empty. A team with no qualifiers gets the v2 page empty state, with Create qualifier for a coach and a line about their coach for a player (90401); a search or filter that matches nothing offers Clear filters (90402); Concluded says so when nothing has concluded (90403); a qualifier with no round in says "Awaiting first round" (90404); the form says when the roster has no active players (90405); a player entered in nothing is told so (90406); a round with only a total says so (90407); no team is the page empty state on every address (90408, 90804); a course search that matches nothing, or a course with no tee sets, says so (90409, 90410); Manage selections says when nobody can be a pick or no place on score is filled (90411, 90412). Not found and coach-only are category 08.
+First-run and filtered are distinct, and a failed read is never drawn as empty.
+A team with no qualifiers gets the v2 page empty state, with New qualifier for a
+coach and a line about their coach for a player (90401); a search or filter that
+matches nothing offers Clear filters (90402); Concluded says so when nothing has
+concluded (90403); a qualifier with no round in says "Awaiting first round"
+(90404); the form says when the roster has no active players (90405); a player
+entered in nothing is told so (90406); a round with only a total says so
+(90407); no team is the page empty state on every address (90408, 90804); a
+course search that matches nothing, or a course with no tee sets, says so
+(90409, 90410); Manage selections says when nobody can be a pick or no place on
+score is filled (90411, 90412). Not found and coach-only are category 08.
 
 | Bridge ID | Code | Name | Meaning |
 | --- | --- | --- | --- |
@@ -102,7 +139,17 @@ First-run and filtered are distinct, and a failed read is never drawn as empty. 
 
 Status: DEFINED
 
-Checked in the form before anything is sent. Each problem sits under its field (name, start date, end date, rounds, the one-round confirmation, players, squad size, coach's picks: 90501 to 90509), the top of the form says how many (90510), and focus moves to the first one (92001). Enter submits the form and shows the same problems (92002). The pick dialog needs a player (90512) and a reason (90511). Editing adds two rules the server also holds: a player with a round or a squad place stays entered (90513), and once the squad is confirmed its size is fixed (90514). The form has no entry deadline field: a stored deadline is sent back unchanged while it is on or before the start date, and cleared once a new start date passes it, so 90504 never fires on a field the coach can't see (2026-10-17). Problems are alerts tied to their fields (91804).
+Checked in the form before anything is sent. Each problem sits under its field
+(name, start date, end date, rounds, the one-round confirmation, players, squad
+size, coach's picks: 90501 to 90509), the top of the form says how many (90510),
+and focus moves to the first one (92001). Enter submits the form and shows the
+same problems (92002). The pick dialog needs a player (90512) and a reason
+(90511). Editing adds two rules the server also holds: a player with a round or
+a squad place stays entered (90513), and once the squad is confirmed its size is
+fixed (90514). The form has no entry deadline field: a stored deadline is sent
+back unchanged while it is on or before the start date, and cleared once a new
+start date passes it, so 90504 never fires on a field the coach can't see
+(2026-10-17). Problems are alerts tied to their fields (91804).
 
 | Bridge ID | Code | Name | Meaning |
 | --- | --- | --- | --- |
@@ -180,7 +227,13 @@ page again (91402), and Retry runs the write again (91401).
 
 Status: DEFINED
 
-Offline, no write is sent: the shell's toast names what did not happen, the error haptic fires and the page stays as it was (90702, with the shell's 10703). A save over 5 seconds says it is still saving (10702), the banner says the device is offline (10701), and Try again on a notice while offline says so instead of failing again (10704). The one catalog row here, 90701, is a state, not a network behaviour: a confirmed squad is read-only. It sits in this category only because its kind (network and UX) defaults here.
+Offline, no write is sent: the shell's toast names what did not happen, the
+error haptic fires and the page stays as it was (90702, with the shell's 10703).
+A save over 5 seconds says it is still saving (10702), the banner says the
+device is offline (10701), and Try again on a notice while offline says so
+instead of failing again (10704). The one catalog row here, 90701, is a state,
+not a network behaviour: a confirmed squad is read-only. It sits in this
+category only because its kind (network and UX) defaults here.
 
 | Bridge ID | Code | Name | Meaning |
 | --- | --- | --- | --- |
@@ -190,6 +243,7 @@ Offline, no write is sent: the shell's toast names what did not happen, the erro
 | 90704 | CH-09905 | `RETURNING_TO_THE_LIST_FROM_A_QUALIFIER` | Returning to the list from a qualifier |
 | 90705 | CH-09906 | `PLAYER_A_LIVE_QUALIFIER_WITH_A_ROUND` | Player: a live qualifier with a round still to play, before its last day |
 | 90706 | CH-09907 | `PLAYER_THE_SQUAD_IS_CONFIRMED` | Player: the squad is confirmed |
+| 90707 | CH-09908 | `PLAYER_THEIR_OWN_RANKED_ROW_ON_A` | Player: their own ranked row on a board that draws a line |
 
 From the shell (P001): 10701 CH-1901, 10702 CH-1902, 10703 CH-1903,
 10704 CH-1905, 10705 CH-1909, 10706 CH-1910.
@@ -198,15 +252,57 @@ From the shell (P001): 10701 CH-1901, 10702 CH-1902, 10703 CH-1903,
 
 Status: DEFINED
 
-The route decides who reaches an address and every write is checked again by its server action. Hiding a control from a player is a courtesy and never the gate.
+The route decides who reaches an address and every write is checked again by its
+server action. Hiding a control from a player is a courtesy and never the gate.
 
-Addresses. A signed-in coach or player with a team may open the list and a qualifier of their team. `/new`, `/[id]/edit` and `/[id]/selection` are for coaches: a player who opens one gets the coach-only page with a way back (90802), and nothing is read for them because the route stops before its loaders run (90803). A qualifier on another team, one that does not exist, or a link that is not an id is "not on your team" for a coach and a player alike (90801); the loaders enforce it, so its data reaches no one outside the team (90805). No session reads nothing, and no team gets the no-team page on every address (90804). With the Clubhouse off, the selection address goes to the existing workspace (90107).
+Addresses. A signed-in coach or player with a team may open the list and a
+qualifier of their team. `/new`, `/[id]/edit` and `/[id]/selection` are for
+coaches: a player who opens one gets the coach-only page with a way back
+(90802), and nothing is read for them because the route stops before its loaders
+run (90803). A qualifier on another team, one that does not exist, or a link
+that is not an id is "not on your team" for a coach and a player alike (90801);
+the loaders enforce it, so its data reaches no one outside the team (90805). No
+session reads nothing, and no team gets the no-team page on every address
+(90804). With the Clubhouse off, the selection address goes to the existing
+workspace (90107).
 
-What a player sees. The list and the qualifier, the whole leaderboard with their own row marked, and the squad once it is confirmed. Never a coach control (90808); never a teammate's scorecards, because a player opens only their own and the loader sends their browser no other holes (90806); never a coach's reason for a pick (90807). Coach-only: Create, Edit, Manage selections, Close, Reopen, round-by-round scores and the pick reasoning.
+What a player sees. The list and the qualifier, the whole leaderboard with their
+own row marked, and the squad once it is confirmed. Never a coach control
+(90808); never a teammate's scorecards, because a player opens only their own
+and the loader sends their browser no other holes (90806); never a coach's
+reason for a pick (90807). Coach-only: Create, Edit, Manage selections, Close,
+Reopen, round-by-round scores and the pick reasoning.
 
-The server. Close and Reopen compare the caller's organisation with the qualifier team's (90812). Start selecting, saving or removing a pick and Confirm use the team access check on the qualifier's own team, and a pick must be a player on that team (90810). The two setup actions behind Edit do the same and, while the Clubhouse is off for the caller, refuse before any read (90811, 92302). Row-level security on the qualifier tables is the second gate; the live policies were read on 2026-09-29 (`docs/clubhouse/screens/qualifiers.md`, "Role permissions") and not read again for this page. A player reads selections only once the squad is confirmed. Open, not this page's to fix: the database itself lets an active team player read a teammate's holes (round and hole policies; Q-14 chose the stricter rule in the UI, and tightening the policies would be a separate migration that is not written), and until the held hardening migration is applied (D-35, `docs/clubhouse/held/data/qualifier-db-hardening.md`) it also lets one read a pick's reason. So 90806 and 90807 are what this page guarantees (it never asks for them and never sends them to a player's browser), not what the database enforces. What a refusal says: the selection actions' developer-worded refusals become sentences a coach can act on, such as "Every pick is taken. Remove one first." (90809), and the server's own words go to the breadcrumb trail (92303).
+The server. Close and Reopen compare the caller's organisation with the
+qualifier team's (90812). Start selecting, saving or removing a pick and Confirm
+use the team access check on the qualifier's own team, and a pick must be a
+player on that team (90810). The two setup actions behind Edit do the same and,
+while the Clubhouse is off for the caller, refuse before any read (90811,
+92302). Row-level security on the qualifier tables is the second gate; the live
+policies were read on 2026-09-29 (`docs/clubhouse/screens/qualifiers.md`, "Role
+permissions") and not read again for this page. A player reads selections only
+once the squad is confirmed. Open, not this page's to fix: the database itself
+lets an active team player read a teammate's holes (round and hole policies;
+Q-14 chose the stricter rule in the UI, and tightening the policies would be a
+separate migration that is not written), and until the held hardening migration
+is applied (D-35, `docs/clubhouse/held/data/qualifier-db-hardening.md`) it also
+lets one read a pick's reason. So 90806 and 90807 are what this page guarantees
+(it never asks for them and never sends them to a player's browser), not what
+the database enforces. What a refusal says: the selection actions'
+developer-worded refusals become sentences a coach can act on, such as "Every
+pick is taken. Remove one first." (90809), and the server's own words go to the
+breadcrumb trail (92303).
 
-Not covered by a test here (read in this pass, not run): `createGolfQualifier` signs the caller in as a coach and writes to their organisation's active team; `updateGolfQualifierDetails` compares the coach's organisation with the qualifier team's organisation, as Close does, and RLS is the narrower second gate (a staff row for that team), so a coach elsewhere in the same organisation passes the check and is stopped by the update matching no row, which the action reports as "you may not have edit access to this team"; `setQualifierRoundCourses` checks the caller with the team access check on the qualifier's own team. Their refusals reach the coach as the server wrote them, or as the toast's own hint when the words are technical.
+Not covered by a test here (read in this pass, not run): `createGolfQualifier`
+signs the caller in as a coach and writes to their organisation's active team;
+`updateGolfQualifierDetails` compares the coach's organisation with the
+qualifier team's organisation, as Close does, and RLS is the narrower second
+gate (a staff row for that team), so a coach elsewhere in the same organisation
+passes the check and is stopped by the update matching no row, which the action
+reports as "you may not have edit access to this team";
+`setQualifierRoundCourses` checks the caller with the team access check on the
+qualifier's own team. Their refusals reach the coach as the server wrote them,
+or as the toast's own hint when the words are technical.
 
 | Bridge ID | Code | Name | Meaning |
 | --- | --- | --- | --- |
@@ -217,7 +313,7 @@ Not covered by a test here (read in this pass, not run): `createGolfQualifier` s
 | 90805 | — | `TEAM_OWNERSHIP_IN_THE_LOADERS` | The list reads only the viewer's team and never a test qualifier, and the detail, form and Manage selections loaders answer a qualifier on another team, or none, with not found (CH-09310), so its data reaches no one outside the team. |
 | 90806 | — | `PLAYER_OPENS_OWN_ROUNDS_ONLY` | A player can open scorecards only for their own rounds (the row button on desktop, the rounds sheet on the phone), and the loader sends their browser only their own holes, never a teammate's. |
 | 90807 | — | `PICK_REASONING_IS_COACH_ONLY` | A coach's reason for a pick is read only for a coach and is never in a player's data or on a player's screen: a player sees who was picked, not why. |
-| 90808 | — | `COACH_CONTROLS_HIDDEN_FROM_PLAYERS` | A player is never shown a coach control: not Create qualifier, Manage selections, Edit, Close, Reopen, the phone's Qualifier actions, round-by-round scores or the coach's Selections panel (hiding them is a courtesy; the gates are 90803 and 90810 to 90812). |
+| 90808 | — | `COACH_CONTROLS_HIDDEN_FROM_PLAYERS` | A player is never shown a coach control: not New qualifier, Manage selections, Edit, Close, Reopen, the phone's Qualifier actions, round-by-round scores or the coach's Selections panel (hiding them is a courtesy; the gates are 90803 and 90810 to 90812). |
 | 90809 | — | `SELECTION_REFUSALS_IN_COACH_WORDS` | A refusal from the selection actions (not this team's coach, the squad moved on, picks not open, every pick taken, no reason, player not on the team, roster unchecked, nothing to confirm, qualifier missing) reaches the coach as a sentence saying what to do, and an unrecognised one falls back to the toast's own hint. |
 | 90810 | — | `SELECTION_ACTIONS_RECHECK_THE_COACH` | Start selecting, saving or removing a pick and confirming the squad each check on the server that the caller coaches the qualifier's own team (Unauthorized, Qualifier not found, Not a coach of this team) before the service runs, and a pick must also be a player on that team. |
 | 90811 | — | `SETUP_ACTIONS_RECHECK_THE_COACH` | The squad-size and entrants actions behind Edit check that the caller coaches the qualifier's team before any write, and refuse a signed-out caller and a malformed id. |
@@ -230,7 +326,16 @@ From the shell (P001): 10801 CLUBHOUSE_GATE, 10802 ROLE_SCOPED_NAV,
 
 Status: DEFINED
 
-A write that lands says so in a toast with the success haptic: "Qualifier created · 7 players entered", "Qualifier saved", "Qualifier closed · no new rounds accepted", "Qualifier reopened · players can enter rounds", "Selecting is open · choose your picks", "Eli Brandt picked", "Eli Brandt removed as a pick", "Squad confirmed · 5 players told" (90901). A create opens the new qualifier, and a save or a confirm returns to the qualifier; the others leave the coach where they are (90902). On the confirm toast the count is the squad's size: the server tells each candidate one of three outcomes (selected, not selected, not scored), best effort, and a notification that fails is logged and not shown (open).
+A write that lands says so in a toast with the success haptic: "Qualifier
+created · 7 players entered", "Qualifier saved", "Qualifier closed · no new
+rounds accepted", "Qualifier reopened · players can enter rounds", "Selecting is
+open · choose your picks", "Eli Brandt picked", "Eli Brandt removed as a pick",
+"Squad confirmed · 5 players told" (90901). A create opens the new qualifier,
+and a save or a confirm returns to the qualifier; the others leave the coach
+where they are (90902). On the confirm toast the count is the squad's size: the
+server tells each candidate one of three outcomes (selected, not selected, not
+scored), best effort, and a notification that fails is logged and not shown
+(open).
 
 | Bridge ID | Code | Name | Meaning |
 | --- | --- | --- | --- |
@@ -243,7 +348,10 @@ From the shell (P001): 10901 CHANGE_LANDED.
 
 Status: DEFINED
 
-A closed qualifier is a standing condition, not an error. The coach reads "Closed to new rounds." and the rule, including rounds already started; a player reads that the qualifier is closed (91001). Desktop and phone say the same to the coach.
+A closed qualifier is a standing condition, not an error. The coach reads
+"Closed to new rounds." and the rule, including rounds already started; a player
+reads that the qualifier is closed (91001). Desktop and phone say the same to
+the coach.
 
 | Bridge ID | Code | Name | Meaning |
 | --- | --- | --- | --- |
@@ -253,7 +361,12 @@ A closed qualifier is a standing condition, not an error. The coach reads "Close
 
 Status: DEFINED
 
-Four steps ask first, with the warning haptic before the question: Close qualifier (91101), Start selecting (91102), Remove a coach's pick (91103) and Confirm the squad (91104). Start selecting says it cannot be undone, Confirm says the squad cannot be changed afterwards, and Remove says the reason goes with the pick. The catalog keeps Discard with state preservation (91201). A qualifier itself is never deleted from this page.
+Four steps ask first, with the warning haptic before the question: Close
+qualifier (91101), Start selecting (91102), Remove a coach's pick (91103) and
+Confirm the squad (91104). Start selecting says it cannot be undone, Confirm
+says the squad cannot be changed afterwards, and Remove says the reason goes
+with the pick. The catalog keeps Discard with state preservation (91201). A
+qualifier itself is never deleted from this page.
 
 | Bridge ID | Code | Name | Meaning |
 | --- | --- | --- | --- |
@@ -266,7 +379,12 @@ Four steps ask first, with the warning haptic before the question: Close qualifi
 
 Status: DEFINED
 
-A failed create or save keeps every field as typed (91202), and a save that landed in part keeps saying what saved and what did not until the next save (the note under 90622). A refused pick keeps the dialog with its player and reason (91203). Scorecards a coach has open stay open when the standings are read again (91204). Leaving the form with unsaved changes asks first (91201). The list's search and status filter are local to the open page and are not kept anywhere.
+A failed create or save keeps every field as typed (91202), and a save that
+landed in part keeps saying what saved and what did not until the next save (the
+note under 90622). A refused pick keeps the dialog with its player and reason
+(91203). Scorecards a coach has open stay open when the standings are read again
+(91204). Leaving the form with unsaved changes asks first (91201). The list's
+search and status filter are local to the open page and are not kept anywhere.
 
 | Bridge ID | Code | Name | Meaning |
 | --- | --- | --- | --- |
@@ -279,7 +397,10 @@ A failed create or save keeps every field as typed (91202), and a save that land
 
 Status: DEFINED
 
-None. Every write waits for the server: the status pill, the picks and the steps change only after it says the write landed, and a refused write changes nothing on the page (91301). When it has landed, the page is updated in place and the server reads it again (91501).
+None. Every write waits for the server: the status pill, the picks and the steps
+change only after it says the write landed, and a refused write changes nothing
+on the page (91301). When it has landed, the page is updated in place and the
+server reads it again (91501).
 
 | Bridge ID | Code | Name | Meaning |
 | --- | --- | --- | --- |
@@ -309,7 +430,11 @@ From the shell (P001): 11401 ROUTE_TRY_AGAIN, 11402 TOAST_RETRY.
 
 Status: DEFINED
 
-After a write lands, the server reads the page again so the page shows the server's state (91501). A live qualifier is kept current by the realtime listener (90304). A player's page is as fresh as their last load or that listener; D-31 records that the round-entry function refuses rounds on a closed qualifier, a rule that is not part of this page and was not re-checked here.
+After a write lands, the server reads the page again so the page shows the
+server's state (91501). A live qualifier is kept current by the realtime
+listener (90304). A player's page is as fresh as their last load or that
+listener; D-31 records that the round-entry function refuses rounds on a closed
+qualifier, a rule that is not part of this page and was not re-checked here.
 
 | Bridge ID | Code | Name | Meaning |
 | --- | --- | --- | --- |
@@ -346,7 +471,11 @@ From the shell (P001): 11601 CH-1601, 11602 CH-1602, 11603 CH-1603,
 
 Status: DEFINED
 
-Qualifiers' own haptics (91701 to 91703) on the v2 grammar (D-70): select for a status pill, a leaderboard row, a player checkbox, a course, a tee and a player in the pick dialog; warning before Close, Discard, Start selecting, Confirm and Remove; success when a write lands (90901); error when a write fails or is refused offline (90702).
+Qualifiers' own haptics (91701 to 91703) on the v2 grammar (D-70): select for a
+status pill, a leaderboard row, a player checkbox, a course, a tee and a player
+in the pick dialog; warning before Close, Discard, Start selecting, Confirm and
+Remove; success when a write lands (90901); error when a write fails or is
+refused offline (90702).
 
 | Bridge ID | Code | Name | Meaning |
 | --- | --- | --- | --- |
@@ -362,7 +491,14 @@ From the shell (P001): 11701 CH-1701, 11702 CH-1702, 11703 CH-1703,
 
 Status: DEFINED
 
-The leaderboard and round-by-round are tables (rows, column headers, a row header per player); each row's scorecards open from a button that says whether it is expanded, and each scorecard is a captioned table (91802). A live update to the standings is announced in a polite region (91803). Field problems are alerts tied to their fields (91804). Manage selections' steps are a named list with the current step marked (90104). Dialogs are native and trap focus, and Esc closes them (the shell's). The axe scan (91801) last ran before the phone build and Manage selections, so it needs a rerun.
+The leaderboard and round-by-round are tables (rows, column headers, a row
+header per player); each row's scorecards open from a button that says whether
+it is expanded, and each scorecard is a captioned table (91802). A live update
+to the standings is announced in a polite region (91803). Field problems are
+alerts tied to their fields (91804). Manage selections' steps are a named list
+with the current step marked (90104). Dialogs are native and trap focus, and Esc
+closes them (the shell's). The axe scan (91801) last ran before the phone build
+and Manage selections, so it needs a rerun.
 
 CH-1804, 11805 CH-1805, 11806 CH-1806, 11807 CH-1807, 11808 CH-1808, 11809
 CH-1809, 11810 CH-1810, 11811 CH-1811, 11812 CH-1812, 11813 CH-1813, 11814
@@ -388,7 +524,11 @@ From the shell (P001): 11801 CH-1801, 11802 CH-1802, 11803 CH-1803,
 
 Status: DEFINED
 
-At 820px and below a qualifier is one column with a rounds sheet (91901), the form puts Cancel and Create in the top bar and hides the tab bar (91902), Manage selections has its own top bar and a foot for its primary action (91903), and the list is the desktop list with phone CSS under a "‹ More" top bar (91904). The phone spec is `docs/clubhouse/phone/qualifiers.md` (approved).
+At 820px and below a qualifier is one column with a rounds sheet (91901), the
+form puts Cancel and Create in the top bar and hides the tab bar (91902), Manage
+selections has its own top bar and a foot for its primary action (91903), and
+the list is the desktop list with phone CSS under a "‹ More" top bar (91904).
+The phone spec is `docs/clubhouse/phone/qualifiers.md` (approved).
 
 | Bridge ID | Code | Name | Meaning |
 | --- | --- | --- | --- |
@@ -403,7 +543,10 @@ From the shell (P001): 11901 PHONE_CHROME.
 
 Status: DEFINED
 
-Enter in a form field submits the form (92002), and a problem takes focus at its first field (92001). A leaderboard row's scorecards open from a button that takes Enter and Space, and the row itself is not a tab stop (92003). The shell's edge swipe and browser back pop a pushed phone screen (12001).
+Enter in a form field submits the form (92002), and a problem takes focus at its
+first field (92001). A leaderboard row's scorecards open from a button that
+takes Enter and Space, and the row itself is not a tab stop (92003). The shell's
+edge swipe and browser back pop a pushed phone screen (12001).
 
 | Bridge ID | Code | Name | Meaning |
 | --- | --- | --- | --- |
@@ -417,7 +560,16 @@ From the shell (P001): 12001 CH-1906, 12002 CH-1907, 12003 CH-1908.
 
 Status: DEFINED
 
-Each screen is read once on the server, in one pass, and arrives whole (92101). The list reads the team's qualifiers (newest first, up to 1,000), then entries and rounds together. A qualifier reads its entries, rounds, round courses and (once confirmed) selections together, then the tees, then the scorecards it may open. The form reads the roster and, editing, the qualifier, then its entrants, rounds, squad and courses together. Long reads page and `.in()` lists are chunked. Manage selections reads through the loader the confirm uses, so it reads the qualifier twice: once for ownership, then the workspace. The course picker looks up on demand, when it opens and 250ms after typing stops (92102). Web vitals are the shell's (12101).
+Each screen is read once on the server, in one pass, and arrives whole (92101).
+The list reads the team's qualifiers (newest first, up to 1,000), then entries
+and rounds together. A qualifier reads its entries, rounds, round courses and
+(once confirmed) selections together, then the tees, then the scorecards it may
+open. The form reads the roster and, editing, the qualifier, then its entrants,
+rounds, squad and courses together. Long reads page and `.in()` lists are
+chunked. Manage selections reads through the loader the confirm uses, so it
+reads the qualifier twice: once for ownership, then the workspace. The course
+picker looks up on demand, when it opens and 250ms after typing stops (92102).
+Web vitals are the shell's (12101).
 
 | Bridge ID | Code | Name | Meaning |
 | --- | --- | --- | --- |
@@ -430,7 +582,9 @@ From the shell (P001): 12101 CH-1954.
 
 Status: DEFINED
 
-The shell records rage, dead and slow clicks for every page (12201 to 12203). Qualifiers adds no events of its own; its breadcrumbs (92304) are error context, not analytics.
+The shell records rage, dead and slow clicks for every page (12201 to 12203).
+Qualifiers adds no events of its own; its breadcrumbs (92304) are error context,
+not analytics.
 
 From the shell (P001): 12201 CH-1951, 12202 CH-1952, 12203 CH-1953.
 
@@ -438,7 +592,16 @@ From the shell (P001): 12201 CH-1951, 12202 CH-1952, 12203 CH-1953.
 
 Status: DEFINED
 
-Failures are reported, server reads logged, intents breadcrumbed (92301, 92304). A refused write is reported at low severity and a thrown one at the default, under surface `qualifiers` and the write's own name (`qualifiers.create`, `.save`, `.close`, `.reopen`, `.startSelecting`, `.setPick`, `.removePick`, `.confirmSquad`); a crash is reported high under its section (`qualifiers.list`, `.leaderboard`, `.rounds`, `.selections`, `.courses`, `.form`, `.selection`); the picker reports under `qualifiers.picker` and the live feed under `qualifiers.live`. Server reads log through `chLogServer('qualifiers', <read>)`. The selection actions' own refusal text is kept in the trail (92303), and the held setup actions refuse when the Clubhouse is off (92302).
+Failures are reported, server reads logged, intents breadcrumbed (92301, 92304).
+A refused write is reported at low severity and a thrown one at the default,
+under surface `qualifiers` and the write's own name (`qualifiers.create`,
+`.save`, `.close`, `.reopen`, `.startSelecting`, `.setPick`, `.removePick`,
+`.confirmSquad`); a crash is reported high under its section (`qualifiers.list`,
+`.leaderboard`, `.rounds`, `.selections`, `.courses`, `.form`, `.selection`);
+the picker reports under `qualifiers.picker` and the live feed under
+`qualifiers.live`. Server reads log through `chLogServer('qualifiers', <read>)`.
+The selection actions' own refusal text is kept in the trail (92303), and the
+held setup actions refuse when the Clubhouse is off (92302).
 
 | Bridge ID | Code | Name | Meaning |
 | --- | --- | --- | --- |
@@ -453,7 +616,12 @@ From the shell (P001): 12301 FAILURES_REPORTED.
 
 Status: DEFINED
 
-`src/clubhouse/__tests__/qualifiers.test.tsx` names every catalog code of kinds 0 to 5 that is not marked preview, and every hand contract by its Bridge ID in a test title (92401). The server side has its own files: `qualifying-coach-gate.test.ts` (90810), `qualifier-setup.test.ts` (90811, 92302) and `golf-qualifier-manual-close.test.ts` (90812). Motion (CH-09601, CH-09602) and the axe scan (CH-09801) are preview-checked only.
+`src/clubhouse/__tests__/qualifiers.test.tsx` names every catalog code of kinds
+0 to 5 that is not marked preview, and every hand contract by its Bridge ID in a
+test title (92401). The server side has its own files:
+`qualifying-coach-gate.test.ts` (90810), `qualifier-setup.test.ts`
+(90811, 92302) and `golf-qualifier-manual-close.test.ts` (90812). Motion
+(CH-09601, CH-09602) and the axe scan (CH-09801) are preview-checked only.
 
 | Bridge ID | Code | Name | Meaning |
 | --- | --- | --- | --- |

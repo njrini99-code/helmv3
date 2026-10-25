@@ -90,6 +90,8 @@ helm-vid/
 !public/email/*.png
 # Clubhouse's sign-in and sign-up marks are served from public/clubhouse/ and must ship.
 !public/clubhouse/**/*.png
+# The app's splash images per native canvas palette (A15): scripts/native-canvas.mjs copies one set into Splash.imageset.
+!config/native-canvas/splash/*/*.png
 # QA visual audit packs (labeled screenshots + manifests).
 #
 # This read `!docs/qa/**/*.png` until 2026-08-31 — a blanket re-inclusion of

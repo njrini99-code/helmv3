@@ -1,10 +1,9 @@
 import 'server-only';
-import { Users } from 'lucide-react';
 import { getGolfSessionProfile } from '@/lib/auth/session';
 import { loadTeamRounds } from '../data/team-rounds';
 import { TeamRounds } from '../screens/rounds/TeamRounds';
-import { EmptyState } from '../ui/States';
 import { resolveClubhouseTeam } from './team';
+import { NoTeam } from '../ui/NoTeam';
 import '../styles/rounds.css';
 
 /**
@@ -18,7 +17,7 @@ export async function ClubhouseTeamRoundsRoute() {
   if (team?.role !== 'coach') {
     return (
       <main className="ch-rd">
-        <EmptyState size="page" code="CH-11318" icon={Users} title="You aren’t on a team yet" body="The rounds your players post show up here once your team is set up." />
+        <NoTeam code="CH-11318" coach body="The rounds your players post show up here once your team is set up." />
       </main>
     );
   }

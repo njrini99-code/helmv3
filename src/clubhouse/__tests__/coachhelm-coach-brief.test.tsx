@@ -75,7 +75,7 @@ describe('the coach Brief behind /intelligence (par-05): what it says', () => {
     expect(goals.map((p) => p.name)).toEqual(['Maya Chen', 'Priya Shah', 'Sam Whitaker']);
     expect(goals[0]!.goals.map((g) => [g.title, g.line, g.standing])).toEqual([
       ['Hit 10 greens a round', 'Now 51%, target 56%, by Nov 30', 'Team 54% · Tour 67%'],
-      ['Break even on the greens', 'Now −0.40, target 0.00, by Nov 30', null],
+      ['Break even on the greens', 'Now −0.4, target 0.0, by Nov 30', null],
     ]);
     expect(goals[2]!.goals[0]!.standing).toBe('Tour 58%');
     expect(PREVIEW_COACH_BRIEF.goalsNone).toBe('6 players have no active goal.');

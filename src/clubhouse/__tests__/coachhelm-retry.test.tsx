@@ -23,10 +23,10 @@ import { Ask } from '../screens/coachhelm/chat/Ask';
 import { CoachBoard } from '../screens/coachhelm/CoachBoard';
 import { PlayerBoard } from '../screens/coachhelm/PlayerBoard';
 import { DeepDive } from '../screens/coachhelm/views/DeepDive';
-import { Profile } from '../screens/coachhelm/views/Profile';
 import { Standing } from '../screens/coachhelm/views/Standing';
 import { PREVIEW_ASK_DATA } from '../preview/fixtures-ask';
 import { PREVIEW_HELM_COACH_FAILED, PREVIEW_HELM_COACH_PULSE_FAILED, PREVIEW_HELM_PLAYER_FAILED, PREVIEW_HELM_PLAYER_PROPOSALS_FAILED } from '../preview/fixtures-coachhelm';
+import { PREVIEW_STANDING } from '../preview/fixtures-coachhelm-views';
 import { PhoneChromeProvider } from '../shell/phone-chrome';
 import { ClubhouseMarker } from '../shell/context';
 import { ToastProvider } from '../ui/Toast';
@@ -61,7 +61,7 @@ describe('every Try again on the CoachHelm pages is a refresh that says it is wo
     ['CH-13203 the pulse did not load', () => <CoachBoard data={PREVIEW_HELM_COACH_PULSE_FAILED} />, 'CH-13203'],
     ['CH-13201 the player’s insights did not load', () => <PlayerBoard data={PREVIEW_HELM_PLAYER_FAILED} />, 'CH-13201'],
     ['CH-13205 the proposed focus areas did not load', () => <PlayerBoard data={PREVIEW_HELM_PLAYER_PROPOSALS_FAILED} />, 'CH-13205'],
-    ['CH-13260 the Game profile did not load', () => <Profile load={{ status: 'failed' }} />, 'CH-13260'],
+    ['CH-13260 How you play did not load', () => <Standing load={{ status: 'ready', data: PREVIEW_STANDING }} game={{ status: 'failed' }} />, 'CH-13260'],
     ['CH-13270 the standing did not load', () => <Standing load={{ status: 'failed' }} />, 'CH-13270'],
     ['CH-13280 the Deep dive did not load', () => <DeepDive load={{ status: 'failed' }} />, 'CH-13280'],
     ['CH-13221 the Ask context did not load', () => ask({ status: 'failed' }), 'CH-13221'],

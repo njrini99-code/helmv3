@@ -7,6 +7,8 @@ import { Avatar } from '../../ui/Avatar';
 import { Badge } from '../../ui/Badge';
 import { Icon } from '../../ui/Icon';
 import { InlineNotice } from '../../ui/Notices';
+import type { ChClock } from '../../lib/clock-cookie';
+import { useChClock } from '../../lib/use-clock';
 import { useRefresh } from '../../lib/use-refresh';
 import { plural, type ChQStatus } from './model';
 import type { LiveFeedView } from './live';
@@ -30,9 +32,10 @@ export function StaleStandings() {
 }
 
 const CLOCK = new Intl.DateTimeFormat('en-US', { hour: 'numeric', minute: '2-digit' });
-/** "4:12 PM": when the standings on screen were read, in the reader's own time. */
-export function clockLabel(at: number): string {
-  return CLOCK.format(new Date(at));
+const CLOCK_24 = new Intl.DateTimeFormat('en-US', { hour: '2-digit', minute: '2-digit', hourCycle: 'h23' });
+/** "4:12 PM" (or "16:12"): when the standings on screen were read, in the reader's own time. */
+export function clockLabel(at: number, hours: ChClock = '12'): string {
+  return (hours === '24' ? CLOCK_24 : CLOCK).format(new Date(at));
 }
 
 /**
@@ -43,6 +46,7 @@ export function clockLabel(at: number): string {
  */
 export function LiveChip({ view }: { view: LiveFeedView }) {
   const { feed, version, updatedAt: fixed, refresh: onRefresh, ended } = view;
+  const hours = useChClock();
   const [refreshing, start] = useTransition();
   // When the standings on screen were read: stamped after hydration when a read lands (only this chip draws again).
   const [stamped, setStamped] = useState<number | null>(null);
@@ -50,7 +54,7 @@ export function LiveChip({ view }: { view: LiveFeedView }) {
   const updatedAt = fixed ?? stamped;
   // Past its last day the status pill above already says "Ended · n rounds outstanding" (D3): the board claims no feed.
   if (ended || feed === 'off') return null;
-  const at = updatedAt != null ? clockLabel(updatedAt) : null;
+  const at = updatedAt != null ? clockLabel(updatedAt, hours) : null;
   if (feed === 'paused') {
     return (
       <span className="ch-qf-feed" data-feed="paused" role="status">
@@ -123,7 +127,7 @@ export function Selections({ data, status, topScore }: { data: ChQDetailCore; st
           {squad.map((s, i) => (
             <li key={s.playerId}>
               <span className="ch-qf-list__n">{i + 1}</span>
-              <Avatar name={s.name} size={26} />
+              <Avatar name={s.name} id={s.playerId} size={26} />
               <b>{s.name}</b>
               {s.type === 'coach_pick' && <Badge tone="accent">Pick</Badge>}
             </li>
@@ -158,7 +162,7 @@ export function Selections({ data, status, topScore }: { data: ChQDetailCore; st
             {qualifying.map((r, i) => (
               <li key={r.playerId}>
                 <span className="ch-qf-list__n">{i + 1}</span>
-                <Avatar name={r.name} size={26} />
+                <Avatar name={r.name} id={r.playerId} size={26} />
                 <b>{r.name}</b>
                 <ToPar value={r.toPar} />
               </li>

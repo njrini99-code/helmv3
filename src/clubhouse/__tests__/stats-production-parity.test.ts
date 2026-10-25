@@ -53,6 +53,7 @@ vi.mock('@/lib/coachhelm/v3/standing/loader', () => ({ loadPlayersStandingMap: v
 vi.mock('@/components/golf/stats/team-board/TeamStatsBoard', () => ({ TeamStatsBoard: Object.assign(() => null, { parityBoard: true }) }));
 vi.mock('@/components/fairway', () => ({ ViewHeader: () => null, EmptyState: () => null, Button: () => null }));
 
+import { MIN_SG_ROUNDS } from '../data/season';
 import { filterFor, type ChFilter } from '../data/stats-filter';
 import type { EvalDb, Row } from './supabase-eval-fake';
 import { clubhousePlayer, clubhouseTeam, fairwayDetail, fairwayTeam, holeRoundIds, playerPairs, sameOnScreen, standingPairs, subsetDb, teamPairs, teamWindowRoundIds, type Pair } from './stats-parity-harness';
@@ -217,6 +218,26 @@ function teamFixture(extra: Spec[] = []): EvalDb {
 
 /** Strokes gained needs three whole rounds on Clubhouse (MIN_SG_ROUNDS); production's Team stats row shows any. */
 const sgFloor = (p: Pair) => (/sgPerRound|sg[A-Z]/.test(p.metric) && p.clubhouse == null && p.production != null ? 'MIN_SG_ROUNDS floor' : null);
+/** A rate under its floor has no value on Clubhouse (A7): fairways and greens need two rounds, scrambling and sand saves ten chances; production shows any. */
+const rateFloor = (p: Pair) => (/(fairway|gir|scrambling|sandSave)Pct/.test(p.metric) && p.clubhouse == null && p.production != null ? 'A7 rate floor' : null);
+const floors = (p: Pair) => sgFloor(p) ?? rateFloor(p);
+/**
+ * The team's strokes gained reads only the players with three whole rounds with shots (A4); production's averages every round, so
+ * they differ only in a window where some player has rounds with shots but fewer than three (pB's single round). Everywhere else the
+ * two must agree, so the exemption is held to those windows (`scopes`); the test below checks them against production over the
+ * players at the floor.
+ */
+const teamSgFloor = (scopes: Set<string>) => (p: Pair) => (/^team\.sg/.test(p.metric) && p.clubhouse != null && scopes.has(p.scope) ? 'A4 team strokes gained floor' : null);
+/** Whether the window's rounds (`ids`) hold a player with rounds with shots but under three whole ones (a nine-hole round is half). */
+function subFloorIn(db: EvalDb, ids: string[]): boolean {
+  const inWindow = new Set(ids);
+  const whole = new Map<string, number>();
+  for (const r of db.tables.golf_rounds ?? []) {
+    if (!inWindow.has(r.id as string) || r.strokes_gained_total == null) continue;
+    whole.set(r.player_id as string, (whole.get(r.player_id as string) ?? 0) + (r.holes_played === 9 ? 0.5 : 1));
+  }
+  return [...whole.values()].some((n) => n > 0 && n < MIN_SG_ROUNDS);
+}
 
 describe('Team stats against the Fairway Team stats page, same rounds', () => {
   it('each window and the whole career: scoring, greens, scrambling, putts, birdies, strokes gained and the rounds counted', async () => {
@@ -224,17 +245,31 @@ describe('Team stats against the Fairway Team stats page, same rounds', () => {
     const db = teamFixture();
     const fwAll = await fairwayTeam(db, 't1');
     const pairs: Pair[] = [];
+    const subFloor = new Set<string>();
     pairs.push(...teamPairs(await clubhouseTeam(db, 't1', range(filterFor('last10'), '18')), fwAll, { scope: 'career18', rates: false, scoring: true, sg: false }));
     pairs.push(...teamPairs(await clubhouseTeam(db, 't1', range(filterFor('last10'), 'all')), fwAll, { scope: 'careerAll', rates: true, scoring: false, sg: false }));
     for (const f of [filterFor('last10'), filterFor('season'), filterFor('qualifiers'), { ...filterFor('season'), types: ['practice' as const] }, { ...filterFor('season'), holes: '9' as const }]) {
       const ids = await teamWindowRoundIds(db, 't1', f);
       const fw = await fairwayTeam(subsetDb(db, ids), 't1');
+      const scope = `${f.window}/${f.types.join('+') || 'all'}/${f.holes}`;
+      if (subFloorIn(db, ids)) subFloor.add(scope);
       // Nine-hole only: production's scoring average is of 18-hole rounds, so it has none; the rates and putts pool the same holes.
-      pairs.push(...teamPairs(await clubhouseTeam(db, 't1', f), fw, { scope: `${f.window}/${f.types.join('+') || 'all'}/${f.holes}`, rates: true, scoring: f.holes === '18', sg: f.holes === '18' }));
+      pairs.push(...teamPairs(await clubhouseTeam(db, 't1', f), fw, { scope, rates: true, scoring: f.holes === '18', sg: f.holes === '18' }));
     }
-    expectParity(pairs, sgFloor);
+    const exempt = teamSgFloor(subFloor);
+    expectParity(pairs, (p) => floors(p) ?? exempt(p));
+    // The exemption reaches only the windows with pB's one round: the practice window has every player at the floor, and its team
+    // strokes gained is held to production's.
+    expect(subFloor.has('season/all/18')).toBe(true);
+    expect(subFloor.has('season/practice/18')).toBe(false);
+    expect(pairs.some((p) => p.metric === 'team.sgPerRound' && p.scope === 'season/practice/18' && p.clubhouse != null)).toBe(true);
     // The one-round player and the floor: production shows their strokes gained, Clubhouse waits for three rounds.
     expect(pairs.find((p) => p.metric === 'teamGrid.sgPerRound' && p.scope.endsWith(':pB'))).toMatchObject({ clubhouse: null, production: 1.1 });
+    // A4: the team's strokes gained is production's over the players at the floor, pB's one round left out.
+    const season = filterFor('season');
+    const atFloor = (await teamWindowRoundIds(db, 't1', season)).filter((id) => !id.startsWith('b'));
+    const sgAtFloor = teamPairs(await clubhouseTeam(db, 't1', season), await fairwayTeam(subsetDb(db, atFloor), 't1'), { scope: 'A4', rates: false, scoring: false, sg: true }).find((p) => p.metric === 'team.sgPerRound')!;
+    expect(sameOnScreen(sgAtFloor), `clubhouse ${sgAtFloor.clubhouse} production ${sgAtFloor.production}`).toBe(true);
   });
 
   it('the season starts on 1 August: 31 July is out of This season, 1 August is in, for both', async () => {
@@ -337,7 +372,7 @@ describe('Player stats against the Fairway player page (getDetailedStats), same 
         pairs.push(...(name === 'nine' ? out.filter((p) => !/scoringAvg|toPar|bestRound|birdiesPerRound|parsPerRound|bogeysPerRound/.test(p.metric)) : out));
       }
     }
-    expectParity(pairs, sgFloor);
+    expectParity(pairs, floors);
     expect(new Set(pairs.map((p) => p.scope.split(':')[1]))).toEqual(new Set(['pA', 'pB', 'pC']));
   });
 });

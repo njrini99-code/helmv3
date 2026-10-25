@@ -146,7 +146,7 @@ CRM Outreach (NCAA cold email) · active · criticality medium · owner founder
 
 Outbound Customer Email (kill switch) · active · criticality high · owner founder
 
-- **Relations:** 0 doc/structurally-evidenced, 9 import-graph-only (weak)
+- **Relations:** 0 doc/structurally-evidenced, 10 import-graph-only (weak)
 - **Tables:** none
 - **RPCs:** none
 - **Test surfaces:** 3
@@ -166,7 +166,7 @@ Feature Awareness System · active · criticality high · owner platform
 
 Golf Round Lifecycle · active · criticality high · owner product
 
-- **Relations:** 2 doc/structurally-evidenced, 25 import-graph-only (weak)
+- **Relations:** 2 doc/structurally-evidenced, 26 import-graph-only (weak)
 - **Tables:** `golf_course_edit_history`, `golf_course_tee_edit_history`, `golf_course_tee_holes`, `golf_course_tees`, `golf_demo_sessions`, `golf_round_recap_locks`, `golf_round_recap_provenance`, `golf_team_saved_courses`
 - **RPCs:** `golf_event_attendance_counts`, `golf_player_profiles`, `golf_set_course_image`, `reclassify_golf_round`, `record_round_coachhelm_terminal_state`, `save_partial_round_atomic`, `submit_round_atomic`
 - **Test surfaces:** 3
@@ -287,7 +287,7 @@ Shot Tracking · active · criticality high · owner product
 Stats And Analytics · active · criticality high · owner product
 
 - **Relations:** 0 doc/structurally-evidenced, 9 import-graph-only (weak)
-- **Tables:** `baseball_legacy_backfill_manifest`
+- **Tables:** `baseball_legacy_backfill_manifest`, `golf_player_standing_season`, `golf_standing_refresh_queue`
 - **RPCs:** `recalculate_round_strokes_gained`, `recompute_team_sg`, `refresh_player_stats_cache`, `sg_scale_for_player`
 - **Test surfaces:** 4
 - **Sentry/admin_events signals:** `my_game_profile`, `stats_analytics`
@@ -307,8 +307,8 @@ Team Access Control And RLS · active · criticality high · owner platform
 Team Communications · active · criticality high · owner product
 
 - **Relations:** 0 doc/structurally-evidenced, 8 import-graph-only (weak)
-- **Tables:** `golf_message_mentions`, `golf_message_reactions`, `golf_message_responses`
-- **RPCs:** `get_player_hub_announcements`, `mark_golf_messages_read`
+- **Tables:** `golf_conversation_read_marks`, `golf_message_mentions`, `golf_message_reactions`, `golf_message_responses`
+- **RPCs:** `get_player_hub_announcements`, `golf_message_seen_times`, `mark_golf_messages_read`
 - **Test surfaces:** 16
 - **Sentry/admin_events signals:** `announcements`, `messaging`, `notifications`
 
@@ -353,6 +353,7 @@ Team Operations · active · criticality high · owner product
 | `vercel_cron:/api/cron/v3/goal-suggestions-evaluate` | vercel_cron | `coachhelm_ai` |
 | `vercel_cron:/api/cron/v3/goal-suggestions-write` | vercel_cron | `coachhelm_ai` |
 | `vercel_cron:/api/cron/v3/standing-refresh` | vercel_cron | `coachhelm_ai` |
+| `vercel_cron:/api/cron/v3/standing-refresh-dirty` | vercel_cron | `coachhelm_ai` |
 | `vercel_cron:/api/jobs/consume` | vercel_cron | _unmapped_ |
 
 ---
@@ -438,6 +439,7 @@ Team Operations · active · criticality high · owner product
 | `golf_round_lifecycle` | `clubhouse` | import_graph (weak) |
 | `golf_round_lifecycle` | `coach_intelligence_triage` | import_graph (weak) |
 | `golf_round_lifecycle` | `coachhelm_ai` | import_graph (weak) |
+| `golf_round_lifecycle` | `email_outbound` | import_graph (weak) |
 | `golf_round_lifecycle` | `ios_native_shell` | import_graph (weak) |
 | `golf_round_lifecycle` | `observability_sentry` | import_graph (weak) |
 | `golf_round_lifecycle` | `player_coachhelm_development` | import_graph (weak) |

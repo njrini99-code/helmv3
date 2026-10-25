@@ -241,7 +241,7 @@ describe('Player roster · desktop', () => {
 
   it('is the coach\'s page header with the player\'s words: Your team, the count, no invite, export or requests', () => {
     wrap(TEAM);
-    expect(screen.getByRole('heading', { level: 1, name: 'Your team.' })).toBeTruthy();
+    expect(screen.getByRole('heading', { level: 1, name: 'Roster' })).toBeTruthy();
     expect(screen.getByText('Varsity · Fall 2026')).toBeTruthy();
     expect(document.querySelector('.ch-rs-head p')!.textContent).toBe('4 players on the roster.');
     for (const gone of [/Invite players/, /Export/, /Approve/, /Decline/, /join request/i, /Needs a look/, /Actions for/, /Remove/])
@@ -347,7 +347,7 @@ describe('Player roster · desktop', () => {
     const quiet = vi.spyOn(console, 'error').mockImplementation(() => {});
     wrap({ ...TEAM, players: [mate('x', 'Broken Player', 'Senior', 2027, 'x' as never)] });
     expect(code('CH-3211')!.textContent).toMatch(/The roster couldn’t be shown/);
-    expect(screen.getByRole('heading', { name: 'Your team.' })).toBeTruthy();
+    expect(screen.getByRole('heading', { name: 'Roster' })).toBeTruthy();
     expect(screen.getByRole('searchbox', { name: 'Search players' })).toBeTruthy();
     quiet.mockRestore();
   });
@@ -426,7 +426,7 @@ describe('Player roster · phone', () => {
     expect(rows.map((r) => r.querySelector('.ch-rsm-row__b b')!.textContent)).toEqual(['Luca Ferraro', 'Ava Lindqvist', 'Theo Marchetti', 'Jonah Okafor']);
     const theo = rows[2]!;
     expect(theo.querySelector('.ch-rsm-row__b > span')!.textContent).toBe('You · Senior');
-    expect(theo.querySelector('.ch-rsm-row__v')!.textContent).toBe('+0.8hcp');
+    expect(theo.querySelector('.ch-rsm-row__v')!.textContent).toBe('+0.8HCP');
     expect(list.textContent).not.toMatch(/Avg|SG|form|Improving|Steady|Slipping|Early read/i);
     await user.click(screen.getByText('Ava Lindqvist'));
     expect(screen.queryByRole('region')).toBeNull();

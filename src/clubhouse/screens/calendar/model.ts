@@ -1,5 +1,8 @@
 import { sunTimes, type LatLng } from '../../lib/sun';
+import type { ChClock } from '../../lib/clock-cookie';
+import { clockFromHour } from '../../lib/clock-format';
 import type { ChAvailability } from '../../data/availability';
+import type { ChCalChange } from './change-view';
 
 /**
  * Calendar view model. The loader resolves every time into the team's
@@ -61,12 +64,23 @@ export interface ChCalEvent {
   seriesId: string | null;
   /** The stored start instant (series edits and cancels key on it). */
   startIso: string;
+  /** P-14: what a coach changed on this event in the last 72 hours (until it ends): the new value beside the old one struck. */
+  change?: ChCalChange | null;
+  /** A cancelled event with no live mark: when it was cancelled and why ("Cancelled Tue 9:14 PM"), so the detail still says. */
+  cancelNote?: { line: string; reason: string | null } | null;
   /**
    * Multi-day events: the whole span, repeated on each day's entry. A timed one (a tournament from Friday 7 AM to Sunday
    * 4:30 PM, an overnight trip) also carries its first day's start and its last day's end, in decimal hours: each day's
    * entry draws only its part of the run (the start to midnight, the whole day, midnight to the end).
    */
   span: { from: string; to: string; start?: number; end?: number } | null;
+  /**
+   * P-4: `golf_events.updated_at` as read, an opaque token a move sends back so it never overwrites a newer change.
+   * Absent or null for rows that are not team events (classes, busy time).
+   */
+  version?: string | null;
+  /** P-5 (not built yet): set on a tournament round; until then tournament events drag like any event. */
+  round?: { tournamentId: string; roundNo: number; lockedAt: string | null };
 }
 
 export interface ChCalOverlap {
@@ -244,32 +258,32 @@ export function monthCells(date: string): Array<{ date: string; out: boolean }> 
   return cells;
 }
 
-/** "3:30 PM", or "3:30" without the meridiem. */
-export function fmtHour(h: number, meridiem = true): string {
-  const hh = Math.floor(h);
-  const mm = Math.round((h - hh) * 60);
-  const h12 = ((hh + 11) % 12) + 1;
-  return `${h12}:${String(mm).padStart(2, '0')}${meridiem ? (hh < 12 ? ' AM' : ' PM') : ''}`;
+/**
+ * "3:30 PM", or "3:30" without the meridiem; "15:30" with the device's 24-hour clock (Settings › Time format), which has no
+ * meridiem to leave out. Every caller in a component passes `useChClock()`; the default is the app's 12-hour voice.
+ */
+export function fmtHour(h: number, meridiem = true, clock: ChClock = '12'): string {
+  return clockFromHour(h, clock, meridiem);
 }
 
-export function rangeLabel(e: Pick<ChCalEvent, 'allDay' | 'start' | 'end'> & { date?: string; span?: ChCalEvent['span'] }): string {
+export function rangeLabel(e: Pick<ChCalEvent, 'allDay' | 'start' | 'end'> & { date?: string; span?: ChCalEvent['span'] }, clock: ChClock = '12'): string {
   // One day of a timed run over several days says which part of it this day holds.
   const s = e.span;
   if (!e.allDay && s?.start != null && s.end != null && e.date) {
-    if (e.date === s.from) return `From ${fmtHour(s.start)}`;
-    if (e.date === s.to) return `Until ${fmtHour(s.end)}`;
+    if (e.date === s.from) return `From ${fmtHour(s.start, true, clock)}`;
+    if (e.date === s.to) return `Until ${fmtHour(s.end, true, clock)}`;
     return 'All day';
   }
   if (e.allDay || e.start == null || e.end == null) return 'All day';
   const sameHalf = e.start < 12 === e.end < 12;
-  return `${fmtHour(e.start, !sameHalf)} – ${fmtHour(e.end)}`;
+  return `${fmtHour(e.start, !sameHalf, clock)} – ${fmtHour(e.end, true, clock)}`;
 }
 
 /** A list row's time: the start, or, on a later day of a timed run over several days, "All day" or "Until 4:30 PM". */
-export function startLabel(e: Pick<ChCalEvent, 'allDay' | 'start' | 'end' | 'date' | 'span'>, meridiem = true): string {
+export function startLabel(e: Pick<ChCalEvent, 'allDay' | 'start' | 'end' | 'date' | 'span'>, meridiem = true, clock: ChClock = '12'): string {
   if (e.allDay || e.start == null) return 'All day';
-  if (e.span?.start != null && e.date !== e.span.from) return rangeLabel(e);
-  return fmtHour(e.start, meridiem);
+  if (e.span?.start != null && e.date !== e.span.from) return rangeLabel(e, clock);
+  return fmtHour(e.start, meridiem, clock);
 }
 
 export function dayLabel(date: string, today: string): string {

@@ -1,6 +1,4 @@
-import { rebuiltHref } from '../../shell/nav';
-import { Button } from '../../ui/Button';
-import { EmptyState } from '../../ui/States';
+import { NoTeam } from '../../ui/NoTeam';
 import '../../styles/roster.css';
 
 /**
@@ -8,35 +6,14 @@ import '../../styles/roster.css';
  * Not `.ch-rs`: under 820px that class stays hidden until the phone view takes over, and this page has none.
  */
 export function RosterNoTeam({ viewer = 'coach' }: { viewer?: 'coach' | 'player' }) {
-  // A coach sets up the team in Team; a player joins one from Golf profile (CH-8302).
-  const settings = rebuiltHref(`/golf/dashboard/settings?section=${viewer === 'player' ? 'golf' : 'team'}`, viewer);
-  const action = settings ? (
-    <Button variant="primary" href={settings}>
-      Open team settings
-    </Button>
-  ) : undefined;
   return (
     // The canopy's material, as on Roster itself (P003 #1); the title is the page's h1.
     <main className="ch-rs-none" data-canopy="">
       <h1 className="ch-sr-only">Roster</h1>
       {viewer === 'player' ? (
-        <EmptyState
-          size="page"
-          code="CH-3308"
-          shape="people"
-          title="You aren’t on a team yet"
-          body="Your teammates appear here once your coach approves your request to join."
-          action={action}
-        />
+        <NoTeam code="CH-3308" coach={false} body="Your teammates appear here once your coach approves your request to join." />
       ) : (
-        <EmptyState
-          size="page"
-          code="CH-3306"
-          shape="people"
-          title="You aren’t on a team yet"
-          body="Your players appear here once your team is set up."
-          action={action}
-        />
+        <NoTeam code="CH-3306" coach body="Your players appear here once your team is set up." />
       )}
     </main>
   );
