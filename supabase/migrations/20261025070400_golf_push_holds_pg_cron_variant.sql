@@ -16,8 +16,8 @@
 -- OWNER STEPS BEFORE APPLYING (this file does not do them)
 --   1. Enable pg_cron and pg_net (Dashboard -> Database -> Extensions). pg_cron is
 --      not declared in supabase/schemas/shared/01_extensions.sql, so it is
---      unverified in production; the DO block below raises a clear error if either
---      extension is missing, before anything is created.
+--      unverified in production; the DO block below only raises a NOTICE if either
+--      extension is missing (the function is still created, and fails when called).
 --   2. The Vault secret 'helm_jobs_cron_secret' must hold the current CRON_SECRET
 --      (the same name 20260906141000 reads). Never a literal in this file.
 --   3. Pass the production URL of /api/cron/class-holds-release to the schedule call.
@@ -36,14 +36,16 @@
 
 SET lock_timeout = '3s';
 
--- S-15: fail early and plainly when the extensions are missing.
+-- S-15: say plainly when the extensions are missing, and carry on. Applying this file (CI applies every migration, held ones
+-- included, to a stack with neither extension) must not fail on a missing extension: the function below is only text until it is
+-- called, and it is only called by the owner-run schedule, which needs both extensions.
 do $$
 begin
   if not exists (select 1 from pg_extension where extname = 'pg_cron') then
-    raise exception 'golf_class_holds_release_tick: the pg_cron extension is not enabled; enable it first (see this migration''s header)';
+    raise notice 'golf_class_holds_release_tick: the pg_cron extension is not enabled; the schedule cannot be created until it is (see this migration''s header)';
   end if;
   if not exists (select 1 from pg_extension where extname = 'pg_net') then
-    raise exception 'golf_class_holds_release_tick: the pg_net extension is not enabled; enable it first (see this migration''s header)';
+    raise notice 'golf_class_holds_release_tick: the pg_net extension is not enabled; the function will fail when called until it is (see this migration''s header)';
   end if;
 end $$;
 
