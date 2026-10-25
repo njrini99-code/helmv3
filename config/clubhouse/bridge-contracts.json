@@ -6415,6 +6415,17 @@
     "catalog": "docs/clubhouse/catalog/calendar.md"
   },
   {
+    "id": 61810,
+    "page": "P006",
+    "category": 18,
+    "item": 10,
+    "name": "A_ROUND_DROPPED_WHERE_IT_WOULD_START",
+    "chCode": "CH-6843",
+    "meaning": "A round dropped (or moved with Alt and an arrow) where it would start before the round ahead of it, or after the one behind: it snaps back, felt as an error, nothing asked or written. One polite line: \"R2 can’t move before R1. Move R1 first.\" (or \"R2 can’t move after R3. Move R3 first.\")",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/calendar.md"
+  },
+  {
     "id": 61901,
     "page": "P006",
     "category": 19,

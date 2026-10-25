@@ -434,6 +434,7 @@ CH-1842, 11825 CH-1816.
 | 61807 | CH-6840 | `THE_TOURNAMENT_SECTION_IS_SHOWN_OR_HIDDEN` | The tournament section is shown or hidden (Tournament chosen, Track turned on or off): one polite line: "Tournament details shown. 3 rounds." or "Tournament details hidden." |
 | 61808 | CH-6841 | `THE_ROUNDS_CHANGE_WITH_THE_DAYS_OR` | The rounds change with the days, or reorder after a day or tee change: one polite line: "3 rounds, Thursday 5 November to Saturday 7 November." or "Rounds reordered. Round 2 is now Friday 6 November at 8:30 AM." |
 | 61809 | CH-6842 | `ESCAPE_WHILE_THE_TOURNAMENT_IS_BEING_CREATED` | Escape (or the close button) while the tournament is being created: the editor stays open and says "Still creating the tournament." |
+| 61810 | CH-6843 | `A_ROUND_DROPPED_WHERE_IT_WOULD_START` | A round dropped (or moved with Alt and an arrow) where it would start before the round ahead of it, or after the one behind: it snaps back, felt as an error, nothing asked or written. One polite line: "R2 can’t move before R1. Move R1 first." (or "R2 can’t move after R3. Move R3 first.") |
 
 From the shell (P001): 11801 CH-1801, 11802 CH-1802, 11803 CH-1803,
 11804 CH-1804, 11805 CH-1805, 11806 CH-1806, 11807 CH-1807, 11808 CH-1808,

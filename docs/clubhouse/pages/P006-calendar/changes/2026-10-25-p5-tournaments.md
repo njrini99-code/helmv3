@@ -119,3 +119,28 @@ Held items:     as above
   no Undo; a restore another round moved in front of is refused (CH-6058).
 - The desk's Stop tracking and Cancel tournament dialogs wait for 4.33's
   tournaments page.
+
+## 2026-10-25 — Step 10: moving a round by drag (ties to P-4)
+
+```text
+Design package: P-5 build plan, 6.4; P-4 4.8
+PR/commit:      claude/clubhouse-tournaments-from-calendar
+Contract IDs:   CH-6843 (CH-6018, CH-6050, CH-6143 reused)
+Actions:        updateTournamentRound (from P-4's held move)
+Data impact:    none new
+Held items:     as above
+```
+
+### Changed
+
+- A round dropped where it would break the round order is refused before
+  anything is asked: it snaps back, felt as an error, and CH-6843 says why.
+  The check is the editor's and the RPC's rule; cancelled rounds don't count.
+- Any other drop asks "Move Pinehurst Invitational R2 to Fri 6 Nov, 8:42 AM?"
+  with "Players’ tee times aren’t changed." and Cancel / Move round; then it is
+  held with Undo as any move.
+- The held write goes to `updateTournamentRound` with the round's version (and
+  the newest one after a save); stale is P-4's stale path; a refusal shows its
+  own words. An all-day round moved by its bar stays all day.
+- Rounds that aren't upcoming, of a cancelled tournament, or whose ref didn't
+  load don't drag.

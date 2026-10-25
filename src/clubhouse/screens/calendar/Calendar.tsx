@@ -26,13 +26,14 @@ import { updateGolfEvent } from '@/app/golf/actions/calendar-events';
 import { clashesAt, clashSummary } from './drag-model';
 import { writeMove, type ChMoveKind, type ChMoveScope } from './move-write';
 import { whoHears, whoHearsLine } from './who-hears';
-import { SeriesScopeMenu } from './drag-popovers';
+import { RoundMoveConfirm, SeriesScopeMenu } from './drag-popovers';
 import { useToast } from '../../ui/Toast';
 import { friendlyReason, isOffline, normalise, useAction } from '../../lib/use-action';
 import { Attendance, EventDetail, Overlap, Summary, type ChInsp, type InspCtx } from './inspector';
 import { CancelEvent, DeleteEvent, EventEditor, SubscribeSheet, type ChTournamentSaved, type EditorSeed } from './editor';
 import { roundsOverlay } from './round-overlay';
 import { RoundEditor } from './editor-round';
+import { roundMoveQuestion, roundMoveRefusal } from './round-label';
 import { CancelRoundDialog, useHeldCancel } from './cancel-round';
 import { BusySheet } from './extras';
 import { CalendarPhone } from './CalendarPhone';
@@ -207,6 +208,8 @@ function useHeldMoves(timezone: string, events: ChCalEvent[], today: string, onS
               onSaved();
               return;
             }
+            // P-5 6.4: a round the tournament refused to move (under way, scored, out of order), in its own words.
+            if (res.code === 'refused') return fail(`Couldn’t move ${base.title}`, res.notice.text, res.notice.code);
             if (res.code === 'gone') return fail(`${base.title} was cancelled or deleted`, 'It was changed by someone else while you were moving it.', 'CH-6022');
             if (res.code === 'forbidden') return fail('Only coaches can move team events', 'Nothing was changed.', 'CH-6021');
             const reason = (res.message && friendlyReason(res.message)) || null;
@@ -586,6 +589,7 @@ export function Calendar({
     if (returnFocus) jumpBtn.current?.focus();
   }, []);
   const phone = useChPhone();
+  const clockPref = useChClock();
   const clock = useNow();
   const now = useMemo<ChNow>(() => (clock && !frozen ? zonedNow(data.timezone, clock) : { date: data.today, hour: data.nowHour }), [clock, frozen, data.timezone, data.today, data.nowHour]);
 
@@ -619,7 +623,9 @@ export function Calendar({
   }, [data.events, made, heldCancel.struck, heldCancel.overlay]);
   const { moves, move, undoLatest, said, heldScope } = useHeldMoves(data.timezone, data.events, data.today, refreshQuiet, preview, people);
   /** P-4 4.8: a series event dropped somewhere new, held there with its question open. */
-  const [ask, setAsk] = useState<{ e: ChCalEvent; to: ChMoveTarget | ChBarTarget; kind: ChMoveKind } | null>(null);
+  const [ask, setAsk] = useState<{ e: ChCalEvent; to: ChMoveTarget | ChBarTarget; kind: ChMoveKind; round?: boolean } | null>(null);
+  /** CH-6843: a round dropped out of order, said once; it snaps back and nothing is asked or written. */
+  const [orderSaid, setOrderSaid] = useState('');
   const placed = useMemo(() => {
     const over = ask ? new Map(moves).set(ask.e.id, ask.to) : moves;
     if (!over.size) return withMade;
@@ -639,6 +645,18 @@ export function Calendar({
   }, [withMade, moves, ask]);
   const onGridMove = useCallback(
     (e: ChCalEvent, to: ChMoveTarget | ChBarTarget, kind: ChMoveKind) => {
+      // P-5 6.4: a round keeps its order (the editor's and the RPC's rule), then asks before it moves.
+      if (e.round) {
+        const refused = roundMoveRefusal(e, to, data.events);
+        if (refused) {
+          haptic('error');
+          setOrderSaid('');
+          requestAnimationFrame(() => setOrderSaid(refused));
+          return;
+        }
+        setAsk({ e, to, kind, round: true });
+        return;
+      }
       const scope = e.seriesId ? heldScope(e.id) : null;
       if (e.seriesId && !scope) {
         setAsk({ e, to, kind });
@@ -646,7 +664,7 @@ export function Calendar({
       }
       move(e, to, { kind, scope: scope ?? undefined });
     },
-    [move, heldScope],
+    [move, heldScope, data.events],
   );
   const answered = useCallback((id: string) => {
     setAsk(null);
@@ -1040,7 +1058,22 @@ export function Calendar({
       <span className="ch-sr-only" role="status" aria-live="polite" data-ch-code="CH-6805">
         {said}
       </span>
-      {ask && (
+      <span className="ch-sr-only" role="status" aria-live="polite" data-ch-code="CH-6843">
+        {orderSaid}
+      </span>
+      {ask?.round && (
+        <RoundMoveConfirm
+          anchorId={ask.e.id}
+          question={roundMoveQuestion(ask.e, ask.to, clockPref)}
+          teeSheet={!!ask.e.round?.teeSheet}
+          onMove={() => {
+            move(ask.e, ask.to, { kind: ask.kind });
+            answered(ask.e.id);
+          }}
+          onCancel={() => answered(ask.e.id)}
+        />
+      )}
+      {ask && !ask.round && (
         <SeriesScopeMenu
           anchorId={ask.e.id}
           dayChanged={'from' in ask.to || ask.to.date !== ask.e.date}

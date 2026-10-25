@@ -1,5 +1,6 @@
 import type { ChCalEvent } from './model';
-import { roundTitleParts } from '../tournaments/fields/rounds-model';
+import { roundOrderBreak, roundTitleParts, shortDay, teeText } from '../tournaments/fields/rounds-model';
+import type { ChBarTarget, ChMoveTarget } from './drag-model';
 
 /**
  * P-5 4.9: how a tournament round reads on the calendar. With a round ref the block shows the tournament's name and a
@@ -42,4 +43,39 @@ export function RoundTitle({ e, title }: { e: Pick<ChCalEvent, 'round' | 'cancel
       <span className="ch-rn ch-num">{`R${rl.round}`}</span>
     </>
   );
+}
+
+const hhmm = (h: number) => `${String(Math.floor(h)).padStart(2, '0')}:${String(Math.round((h % 1) * 60)).padStart(2, '0')}`;
+
+/**
+ * P-5 6.4: a round dropped where it would start before the round ahead of it (or after the one behind it) is refused
+ * before anything is asked or written, with the CH-6843 line. The check is roundOrderBreak, the same rule the editor and
+ * the RPC use, on the rounds the calendar has; cancelled rounds don't count. Null when the drop keeps the order.
+ */
+export function roundMoveRefusal(e: ChCalEvent, to: ChMoveTarget | ChBarTarget, events: readonly ChCalEvent[]): string | null {
+  const r = e.round;
+  if (!r) return null;
+  const rounds = events.filter((x) => x.round?.tournamentId === r.tournamentId).sort((a, b) => a.round!.roundNo - b.round!.roundNo);
+  const list = rounds.map((x) =>
+    x.id === e.id
+      ? 'from' in to
+        ? { date: to.from, tee: e.allDay || e.start == null ? null : hhmm(e.start), cancelled: x.cancelled }
+        : { date: to.date, tee: hhmm(to.start), cancelled: x.cancelled }
+      : { date: x.date, tee: x.allDay || x.start == null ? null : hhmm(x.start), cancelled: x.cancelled },
+  );
+  const br = roundOrderBreak(list);
+  if (!br) return null;
+  const n = (i: number) => rounds[i - 1]!.round!.roundNo;
+  const [a, b] = [n(br.before), n(br.after)];
+  if (b === r.roundNo) return `R${b} can’t move before R${a}. Move R${a} first.`;
+  if (a === r.roundNo) return `R${a} can’t move after R${b}. Move R${b} first.`;
+  return null;
+}
+
+/** P-5 6.4 / P-4 4.8: the round confirm's question, "Move Pinehurst Invitational R1 to Fri 6 Nov, 8:42 AM?". */
+export function roundMoveQuestion(e: ChCalEvent, to: ChMoveTarget | ChBarTarget, clock: '12' | '24' = '12'): string {
+  const r = e.round;
+  const what = r ? `${r.name} R${r.roundNo}` : e.title;
+  if ('from' in to) return `Move ${what} to ${shortDay(to.from)}?`;
+  return `Move ${what} to ${shortDay(to.date)}, ${teeText(hhmm(to.start), clock)}?`;
 }
