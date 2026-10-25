@@ -1,13 +1,8 @@
 import type { ChAvailability, ChRoster, ChRosterPlayer } from '../../data/roster';
-import { formatSigned, MINUS, NO_DATA } from '../../lib/format';
+import { formatSigned, MINUS } from '../../lib/format';
 import type { ChPlayerPeek } from '../../ui/PlayerPeek';
-
-/** Handicap index: a plus handicap (better than scratch) is written +0.8. */
-export function formatHcp(v: number | null): string {
-  if (v == null) return NO_DATA;
-  if (v < 0) return `+${Math.abs(v).toFixed(1)}`;
-  return v.toFixed(1);
-}
+import { displayPlaces } from '../../lib/rank';
+import { plural } from '../../lib/plural';
 
 export { MINUS };
 
@@ -53,35 +48,37 @@ const FORM_WORD: Record<ChRosterPlayer['form'], string> = {
 
 /**
  * The note under a player's name: their availability word when they are injured or away ("Injured", plain ink: no
- * colour of its own), else their "needs a look" reason when there is one (amber for a warning, green for a good run),
+ * colour of its own), else their "needs a look" reason when there is one (amber for a quiet spell or scores rising, green for a good run),
  * otherwise their form in a word. The form is left out when season stats didn't load, so a missing read never looks
  * like "no rounds".
  */
-export function rowNote(p: ChRosterPlayer, statsError: boolean): { text: string; tone: 'warning' | 'positive' | null } | null {
+export function rowNote(p: ChRosterPlayer, statsError: boolean): { text: string; tone: NonNullable<ChRosterPlayer['attention']>['tone'] | null } | null {
   const away = availabilityLine(p);
   if (away) return { text: away, tone: null };
   if (p.attention) return { text: p.attention.text, tone: p.attention.tone };
   if (statsError) return null;
   if (p.form !== 'early') return { text: FORM_WORD[p.form], tone: null };
   if (p.rounds === 0) return { text: 'No rounds this season', tone: null };
-  return { text: `Early read · ${p.rounds} ${p.rounds === 1 ? 'round' : 'rounds'}`, tone: null };
+  return { text: `Early read · ${plural(p.rounds, 'round')}`, tone: null };
 }
 
 /** Under this many rounds a player's average is an early read: no place on the team, no strip (P003 #3). */
 export const ROSTER_EARLY_FLOOR = 3;
 
-export type RosterStanding = { place: number; of: number };
+export type RosterStanding = { place: number; of: number; /** Another player shows the same average (B13). */ tied: boolean };
 
 /**
  * Where each player's scoring average sits on the team. Ranked among active players with an average and at least
  * the early floor of rounds, never among the rows a search or filter left on screen (P003 #2): searching "Jo" keeps
- * "4th of 7", and "All" doesn't rank inactive players. Ties share the better place.
+ * "4th of 7", and "All" doesn't rank inactive players. Places are taken on the average as shown, to a tenth, so two
+ * players shown at 74.3 share a place (B13, lib/rank.ts).
  */
 export function rosterStandings(players: ChRosterPlayer[]): { avgs: number[]; byId: Map<string, RosterStanding> } {
   const ranked = players.filter((p) => p.status === 'active' && p.avg != null && p.rounds >= ROSTER_EARLY_FLOOR);
   const avgs = ranked.map((p) => p.avg!);
   const byId = new Map<string, RosterStanding>();
-  for (const p of ranked) byId.set(p.id, { place: avgs.filter((v) => v < p.avg!).length + 1, of: avgs.length });
+  const places = displayPlaces(avgs);
+  ranked.forEach((p, i) => byId.set(p.id, { place: places[i]!.place, of: avgs.length, tied: places[i]!.tied }));
   return { avgs, byId };
 }
 

@@ -21,6 +21,8 @@ import { sunTimes, type LatLng } from '../../lib/sun';
 import { agendaDetail } from './agenda-clock';
 import { CALENDAR, eventHref, whenLabel } from './event-links';
 import { nudgeDraft } from './nudge-draft';
+import { firstName } from '../../lib/names';
+import { pluralWord } from '../../lib/plural';
 
 /**
  * The coach's phone Home as one living card (owner-approved phone concept, board 1 "The day, not a dashboard"): the
@@ -49,7 +51,6 @@ export function dayPhase(next: ChHomeEvent | null, todays: ChHomeEvent[], rounds
 }
 
 const WEEKDAY = new Intl.DateTimeFormat('en-US', { timeZone: 'UTC', weekday: 'long' });
-const firstName = (name: string) => name.split(' ')[0] ?? name;
 
 /** Off-site events only: "Practice green" is not a place a maps app can find. A plain link, no maps API (D1-2). */
 const DIRECTIONS = new Set<ChHomeEvent['type']>(['qualifier', 'tournament', 'travel']);
@@ -90,7 +91,7 @@ function EventCard({ e, live, now, today }: { e: ChHomeEvent; live: boolean; now
         <span className="ch-hm-next__f ch-hm-day__people">
           <span className="ch-hm-stack ch-hm-day__stack" aria-hidden="true">
             {people.slice(0, 4).map((n) => (
-              <Avatar key={n} name={n} size={28} />
+              <Avatar key={n} name={n} size="sm" />
             ))}
           </span>
           <span className="ch-hm-next__rsvp ch-num">
@@ -109,19 +110,19 @@ function EventCard({ e, live, now, today }: { e: ChHomeEvent; live: boolean; now
       {(nudge || message || directions) && (
         <span className="ch-hm-day__acts">
           {nudge && (
-            <Link href={nudge} className="ch-hm-day__act is-primary" data-ch-press="" onClick={() => (haptic('select'), chTrail('home nudge'))}>
+            <Link href={nudge} className="ch-hm-day__act is-primary" data-ch-press="" onClick={() => chTrail('home nudge')}>
               <Icon icon={MessageSquare} size={16} />
               {awaiting.length === 1 ? `Nudge ${firstName(awaiting[0]!.name)}` : `Nudge ${awaiting.length}`}
             </Link>
           )}
           {message && (
-            <Link href={message} className="ch-hm-day__act is-primary" data-ch-press="" onClick={() => (haptic('select'), chTrail('home message invitees'))}>
+            <Link href={message} className="ch-hm-day__act is-primary" data-ch-press="" onClick={() => chTrail('home message invitees')}>
               <Icon icon={MessageSquare} size={16} />
               Message
             </Link>
           )}
           {directions && (
-            <a href={directions} className="ch-hm-day__act" target="_blank" rel="noopener noreferrer" data-ch-press="" onClick={() => haptic('select')}>
+            <a href={directions} className="ch-hm-day__act" target="_blank" rel="noopener noreferrer" data-ch-press="">
               <Icon icon={Navigation} size={16} />
               Directions
             </a>
@@ -317,7 +318,7 @@ export function sinceChips(prev: Seen | null, rounds: ChLatestRound[], event: Ch
     .map((r) => ({ key: `r-${r.id}`, big: String(r.score), toPar: r.toPar != null ? { text: formatToPar(r.toPar), under: r.toPar < 0 } : undefined, label: `${firstName(r.playerName)} posted`, round: r }));
   if (event && event.going != null && prev.event?.id === event.id && event.going > prev.event.going) {
     const more = event.going - prev.event.going;
-    chips.push({ key: `e-${event.id}`, big: `+${more}`, label: `${more === 1 ? 'Reply' : 'Replies'} · ${event.title}`, href: eventHref(event) });
+    chips.push({ key: `e-${event.id}`, big: `+${more}`, label: `${pluralWord(more, 'Reply', 'Replies')} · ${event.title}`, href: eventHref(event) });
   }
   return chips;
 }
@@ -364,7 +365,7 @@ export function SinceYouLooked({ rounds, event, onOpenRound }: { rounds: ChLates
           return c.round ? (
             <LedgerRow key={c.key} className="ch-hm-since__c" lead={lead} title={c.label} meta={c.round.meta.split(' · ').slice(0, 2).join(' · ') || undefined} onClick={() => (haptic('select'), onOpenRound(c.round!))} />
           ) : (
-            <LedgerRow key={c.key} className="ch-hm-since__c" lead={lead} title={c.label} href={c.href ?? CALENDAR} onClick={() => haptic('select')} />
+            <LedgerRow key={c.key} className="ch-hm-since__c" lead={lead} title={c.label} href={c.href ?? CALENDAR} />
           );
         })}
       </LedgerList>

@@ -66,6 +66,7 @@
   --ch-stage-ink: #f4eedd;
   --ch-stage-ink-soft: rgb(244 238 221 / 0.62);
   --ch-stage-rule: rgb(244 238 221 / 0.14);
+  --ch-stage-rule-soft: rgb(244 238 221 / 0.1); /* row 36: a faint light line on the dark green */
   --ch-hero-mint: #9fe0b6;
   --ch-hero-mint-strong: #7bc79a;
   --ch-frame: #0a331f;
@@ -87,6 +88,16 @@
   --ch-warning-100: #faf0dc;
   --ch-danger-600: #b03a2e;
   --ch-danger-100: #fbe9e6;
+  /* CONS-1: the destructive key's fill (white words at 5:1 on the top stop, 4.6:1 on the hover's), its ring, and its
+     hover's top stop. */
+  --ch-danger-fill-top: #c0463a;
+  --ch-danger-fill-bottom: #a5352a;
+  --ch-danger-ring: #8e2c22;
+  --ch-danger-hover: #c84d40;
+  --ch-danger-press: #962f25;
+  --ch-danger-ink: #fff;
+  /* The danger key's ring, top light and red cast (CONS-1). */
+  --ch-danger-elevation: 0 0 0 1px var(--ch-danger-ring), inset 0 1px 0 rgb(255 255 255 / 0.2), 0 4px 10px -4px rgb(142 44 34 / 0.45);
   --ch-info-600: #2d5c77;
   --ch-info-100: #e6eef3;
   /* Scoring. Red means under par, and nothing else. */
@@ -110,6 +121,13 @@
   --ch-chart-loss: #865608;
   /* The loss amber on a tinted cell: darker so it holds 4.5:1 on the heat fills. */
   --ch-chart-loss-on-tint: #744a06;
+  /* CONS-20: the rest of the gain and loss family, so a tone paints only with it (check.mjs). A bar or a mark takes the
+     -fill (a graphic, 3:1); a chip's ground takes the -tint and its words the ink. Aliases declared beside the night
+     values they read, so each follows the theme. A surface the ink can't sit on (a green stage) redefines the pair. */
+  --ch-chart-gain-fill: var(--ch-green-fill-500);
+  --ch-chart-loss-fill: var(--ch-chart-loss);
+  --ch-chart-gain-tint: var(--ch-positive-100);
+  --ch-chart-loss-tint: var(--ch-warning-100);
   --ch-chart-flag: #b03a2e;
   --ch-chart-fairway: #cbddcc;
   --ch-chart-fairway-alt: #bfd5c1;
@@ -124,10 +142,23 @@
   /* No wash: large soft gradients band on 8-bit displays (owner, 2026-10-06: the ivory looked grainy). */
   --ch-canvas-wash: linear-gradient(transparent, transparent);
   --ch-bg-surface: #fcfaf5;
+  /* B4: what floats above the page (sheets, menus, popovers, the palette). In light, the surface itself; dark lifts. */
+  --ch-bg-elevated: #fcfaf5;
+  --ch-bg-elevated-2: #fcfaf5;
   --ch-bg-subtle: #f5f2ea;
   --ch-bg-inset: var(--ch-ivory-150);
   --ch-bg-hover: var(--ch-ivory-50);
   --ch-bg-selected: var(--ch-green-50);
+  /* The selected state (CONS-22): a chosen row, a pressed pill, its ring and its ink. A chosen segment is the seg-on well. */
+  --ch-selected-bg: var(--ch-bg-selected);
+  --ch-selected-pill-bg: #edf4ef;
+  --ch-selected-pill-ring: rgb(21 90 57 / 0.28);
+  --ch-selected-ink: var(--ch-green-700);
+  /* A chosen key drawn as a solid plate (a day, a chip, a filter on the green): the strong selected fill. */
+  --ch-selected-strong: var(--ch-green-800);
+  /* A chosen row on the canopy's glass: a tint of the green, not a plate (CoachHelm's players and Deep dive items). */
+  --ch-selected-tint: color-mix(in oklab, var(--ch-green-600) 7%, transparent);
+  --ch-selected-tint-hover: color-mix(in oklab, var(--ch-green-600) 9%, transparent);
   --ch-text-primary: var(--ch-ink-900);
   --ch-text-secondary: var(--ch-ink-700);
   --ch-text-tertiary: var(--ch-ink-600);
@@ -140,8 +171,10 @@
   --ch-accent: var(--ch-green-600);
   --ch-accent-hover: var(--ch-green-700);
   --ch-accent-press: var(--ch-green-800);
-  --ch-border-hairline: rgb(28 25 18 / 0.07);
-  --ch-border-subtle: rgb(28 25 18 / 0.1);
+  /* Decision 6 (owner, 2026-10-24): a touch darker than 0.07, so a one-device-pixel line still reads (B3). */
+  --ch-border-hairline: rgb(28 25 18 / 0.1);
+  /* Row 36 (T3): a step above the hairline, so the ladder stays ordered once the hairline darkened. */
+  --ch-border-subtle: rgb(28 25 18 / 0.13);
   --ch-border-control: rgb(28 25 18 / 0.14);
   --ch-border-strong: rgb(28 25 18 / 0.24);
   /* A seam between sections of one surface: an ink line with a lit line beside it, so it reads as an engraved join,
@@ -193,12 +226,15 @@
   --ch-score-double-shadow: inset 0 0 0 1px rgb(0 0 0 / 0.5), inset 0 1px 0 rgb(255 255 255 / 0.16), 0 1px 2px rgb(28 25 18 / 0.3);
   /* Green, not ink: the owner rejected the black keyboard outline (F-46). */
   --ch-border-focus: var(--ch-green-600);
+  /* The focus ring on a dark or green surface (CONS-36): the champagne that reads on the hero green and at night. */
+  --ch-border-focus-on-dark: var(--ch-champagne-300);
   /* Green and champagne hairlines (Qualifiers: the pressed pill, the cut line, the one-round note). */
   --ch-green-ring: rgb(21 90 57 / 0.28);
   --ch-green-rule: rgb(21 90 57 / 0.4);
   --ch-ink-rule: rgb(28 25 18 / 0.2);
   --ch-champagne-ring: rgb(110 84 36 / 0.14);
   --ch-champagne-rule: rgb(176 149 96 / 0.25);
+  --ch-champagne-rule-strong: rgb(176 149 96 / 0.4);
   --ch-focus-halo: rgb(21 90 57 / 0.13);
 
   /* Type */
@@ -228,7 +264,100 @@
   --ch-type-figure-l: 500 calc(40 * var(--ch-type-k))/1 var(--ch-font-sans);
   --ch-type-mono: 500 calc(11 * var(--ch-type-k))/1 var(--ch-font-mono);
 
+  /* B1: one role per type step (mot-08's 11 sizes), each a whole `font` with its own leading, a 500 `-medium` and a 600 `-strong` form, and a
+     tracking (the house labels are 500, so moving them onto a role never changes a weight). Instrument Sans has no optical-size axis, so small steps open slightly and large ones close in. A rule
+     sets `font: var(--ch-type-<n>)` and `letter-spacing: var(--ch-track-<n>)`; look-feel-pass-css.test.ts ratchets the
+     raw shorthands left. */
+  --ch-type-11: 400 calc(11 * var(--ch-type-k))/calc(13 * var(--ch-type-k)) var(--ch-font-sans);
+  --ch-type-11-medium: 500 calc(11 * var(--ch-type-k))/calc(13 * var(--ch-type-k)) var(--ch-font-sans);
+  --ch-type-11-strong: 600 calc(11 * var(--ch-type-k))/calc(13 * var(--ch-type-k)) var(--ch-font-sans);
+  --ch-track-11: 0.01em;
+  --ch-type-12: 400 calc(12 * var(--ch-type-k))/calc(16 * var(--ch-type-k)) var(--ch-font-sans);
+  --ch-type-12-medium: 500 calc(12 * var(--ch-type-k))/calc(16 * var(--ch-type-k)) var(--ch-font-sans);
+  --ch-type-12-strong: 600 calc(12 * var(--ch-type-k))/calc(16 * var(--ch-type-k)) var(--ch-font-sans);
+  --ch-track-12: 0;
+  --ch-type-13: 400 calc(13 * var(--ch-type-k))/calc(18 * var(--ch-type-k)) var(--ch-font-sans);
+  --ch-type-13-medium: 500 calc(13 * var(--ch-type-k))/calc(18 * var(--ch-type-k)) var(--ch-font-sans);
+  --ch-type-13-strong: 600 calc(13 * var(--ch-type-k))/calc(18 * var(--ch-type-k)) var(--ch-font-sans);
+  --ch-track-13: 0;
+  --ch-type-14: 400 calc(14 * var(--ch-type-k))/calc(19 * var(--ch-type-k)) var(--ch-font-sans);
+  --ch-type-14-medium: 500 calc(14 * var(--ch-type-k))/calc(19 * var(--ch-type-k)) var(--ch-font-sans);
+  --ch-type-14-strong: 600 calc(14 * var(--ch-type-k))/calc(19 * var(--ch-type-k)) var(--ch-font-sans);
+  --ch-track-14: 0;
+  --ch-type-15: 400 calc(15 * var(--ch-type-k))/calc(20 * var(--ch-type-k)) var(--ch-font-sans);
+  --ch-type-15-medium: 500 calc(15 * var(--ch-type-k))/calc(20 * var(--ch-type-k)) var(--ch-font-sans);
+  --ch-type-15-strong: 600 calc(15 * var(--ch-type-k))/calc(20 * var(--ch-type-k)) var(--ch-font-sans);
+  --ch-track-15: -0.01em;
+  --ch-type-16: 400 calc(16 * var(--ch-type-k))/calc(21 * var(--ch-type-k)) var(--ch-font-sans);
+  --ch-type-16-medium: 500 calc(16 * var(--ch-type-k))/calc(21 * var(--ch-type-k)) var(--ch-font-sans);
+  --ch-type-16-strong: 600 calc(16 * var(--ch-type-k))/calc(21 * var(--ch-type-k)) var(--ch-font-sans);
+  --ch-track-16: -0.01em;
+  --ch-type-17: 400 calc(17 * var(--ch-type-k))/calc(22 * var(--ch-type-k)) var(--ch-font-sans);
+  --ch-type-17-medium: 500 calc(17 * var(--ch-type-k))/calc(22 * var(--ch-type-k)) var(--ch-font-sans);
+  --ch-type-17-strong: 600 calc(17 * var(--ch-type-k))/calc(22 * var(--ch-type-k)) var(--ch-font-sans);
+  --ch-track-17: -0.01em;
+  --ch-type-20: 400 calc(20 * var(--ch-type-k))/calc(25 * var(--ch-type-k)) var(--ch-font-sans);
+  --ch-type-20-medium: 500 calc(20 * var(--ch-type-k))/calc(25 * var(--ch-type-k)) var(--ch-font-sans);
+  --ch-type-20-strong: 600 calc(20 * var(--ch-type-k))/calc(25 * var(--ch-type-k)) var(--ch-font-sans);
+  --ch-track-20: -0.02em;
+  --ch-type-22: 400 calc(22 * var(--ch-type-k))/calc(28 * var(--ch-type-k)) var(--ch-font-sans);
+  --ch-type-22-medium: 500 calc(22 * var(--ch-type-k))/calc(28 * var(--ch-type-k)) var(--ch-font-sans);
+  --ch-type-22-strong: 600 calc(22 * var(--ch-type-k))/calc(28 * var(--ch-type-k)) var(--ch-font-sans);
+  --ch-track-22: -0.02em;
+  --ch-type-28: 400 calc(28 * var(--ch-type-k))/calc(34 * var(--ch-type-k)) var(--ch-font-sans);
+  --ch-type-28-medium: 500 calc(28 * var(--ch-type-k))/calc(34 * var(--ch-type-k)) var(--ch-font-sans);
+  --ch-type-28-strong: 600 calc(28 * var(--ch-type-k))/calc(34 * var(--ch-type-k)) var(--ch-font-sans);
+  --ch-track-28: -0.03em;
+  --ch-type-34: 400 calc(34 * var(--ch-type-k))/calc(41 * var(--ch-type-k)) var(--ch-font-sans);
+  --ch-type-34-medium: 500 calc(34 * var(--ch-type-k))/calc(41 * var(--ch-type-k)) var(--ch-font-sans);
+  --ch-type-34-strong: 600 calc(34 * var(--ch-type-k))/calc(41 * var(--ch-type-k)) var(--ch-font-sans);
+  --ch-track-34: -0.03em;
+  /* A single-line label (a pill, a tab, a figure's caption on one line) takes this leading in place of its step's. */
+  --ch-lead-tight: 1.1;
+  /* The legacy caption and label leadings (1.4, 1.3), kept as tokens so the rules moved off --ch-type-caption, -label and
+     -label-s onto the step roles render exactly as before (S1 item 5). A ratio, so it follows a rule's own font-size. */
+  --ch-lead-caption: 1.4;
+  --ch-lead-label: 1.3;
+  /* Two widths only (B1): 96 for display text, 88 for dense numbers and condensed titles. */
+  --ch-wdth-display: 'wdth' 96;
+  --ch-wdth-dense: 'wdth' 88;
+  /* Named roles. The large title (34, wdth 88, 600); the bar title, pushed and at a tab's root alike (17/600, as iOS);
+     the desktop hero (52, every section including Rounds); the section header; the card title. */
+  --ch-type-large-title: 600 calc(34 * var(--ch-type-k))/calc(41 * var(--ch-type-k)) var(--ch-font-sans);
+  --ch-track-large-title: -0.038em;
+  --ch-type-bar-title: 600 calc(17 * var(--ch-type-k))/calc(22 * var(--ch-type-k)) var(--ch-font-sans);
+  --ch-track-bar-title: var(--ch-track-17);
+  --ch-type-hero: 400 calc(52 * var(--ch-type-k))/1.02 var(--ch-font-sans);
+  --ch-track-hero: -0.01em;
+  --ch-type-section: 600 calc(20 * var(--ch-type-k))/calc(25 * var(--ch-type-k)) var(--ch-font-sans);
+  --ch-track-section: var(--ch-track-20);
+  /* CONS-30: every eyebrow and kicker, one role (13/500, no tracking). */
+  --ch-type-eyebrow: 500 calc(13 * var(--ch-type-k))/calc(18 * var(--ch-type-k)) var(--ch-font-sans);
+  --ch-track-eyebrow: 0;
+  --ch-type-card-title: 600 calc(17 * var(--ch-type-k))/calc(22 * var(--ch-type-k)) var(--ch-font-sans);
+  --ch-track-card-title: var(--ch-track-17);
+
   /* Space and layout */
+  /* B2: the spacing scale (a 4px grid with 2 and 6 for tight pairs). A stylesheet in spacing-scale.test.ts's MIGRATED
+     list uses only these steps; the rest move screen by screen. */
+  --ch-space-0_5: 2px;
+  --ch-space-1: 4px;
+  --ch-space-1_5: 6px;
+  --ch-space-2: 8px;
+  --ch-space-3: 12px;
+  --ch-space-4: 16px;
+  --ch-space-5: 20px;
+  --ch-space-6: 24px;
+  --ch-space-8: 32px;
+  --ch-space-10: 40px;
+  --ch-space-12: 48px;
+  /* Reading widths: running text, a form, a page's content. */
+  --ch-measure-text: 68ch;
+  /* Row 39: three page widths. Reading for one column (a thread, a list, a form), standard for a page, wide for the
+     two data-dense desks (Calendar, Recruiting). Every page main and form takes one. */
+  --ch-measure-reading: 760px;
+  --ch-measure-page: 1200px;
+  --ch-measure-wide: 1360px;
   --ch-gutter: 40px;
   /* The desktop page (wave 3, design #5): every tab's main sets its framed head on one line, so the title holds still
      between tabs. The gutter is each main's side padding (the head's 4px inset puts the title 44px in from the frame);
@@ -236,6 +365,43 @@
      page whose head has no eyebrow line, or a shorter one, adds that room to this top so its title lands level. */
   --ch-page-gutter: var(--ch-gutter);
   --ch-page-head-top: 34px;
+  /* CONS-34: page spacing per meaning. A page root (the list in __tests__/page-spacing.test.ts) takes its padding and
+     gap only from --ch-page-* and --ch-gap-*. Every value here is the one its roots used before (R7 section 13); where
+     two roots differ for one meaning there are two tokens, held at today's values until the owner settles them (OQ-63),
+     so collapsing them is a one-place edit. */
+  /* Desktop tops: the head top plus the room a shorter or missing eyebrow line leaves (see above). */
+  --ch-page-top-no-eyebrow: calc(var(--ch-page-head-top) + 24px); /* Calendar, Settings */
+  --ch-page-top-eyebrow-short-2: calc(var(--ch-page-head-top) + 2px); /* Classes' term line */
+  --ch-page-top-eyebrow-short-4: calc(var(--ch-page-head-top) + 4px); /* CoachHelm's role line, Home's date line */
+  --ch-page-top-eyebrow-low-2: calc(var(--ch-page-head-top) - 2px); /* Stats' eyebrow sits 2px lower */
+  --ch-page-top-coachhelm: 36px;
+  --ch-page-top-home: 52px;
+  --ch-page-top-home-desk: 40px;
+  --ch-page-top-setup: 28px;
+  /* Round recovery and setup keep 40px on the tablet tier, where --ch-page-gutter goes to 28px (shell.css). */
+  --ch-page-gutter-fixed: 40px;
+  --ch-page-bottom: 80px;
+  --ch-page-bottom-short: 64px; /* Calendar */
+  --ch-page-bottom-tall: 96px; /* Settings, Home */
+  --ch-page-bottom-setup: 24px;
+  /* Desktop gaps: cards in a grid, and sections down a page. On the 4pt scale (row 33): 18 -> 16, 28 -> 32. */
+  --ch-gap-grid: var(--ch-space-4);
+  --ch-gap-section: var(--ch-space-8);
+  --ch-gap-section-loose: var(--ch-space-8); /* Classes on the canopy */
+  /* Phone page roots (max-width 820px). Docked: a page with a bar docked at its foot clears it at the bottom. The side
+     edge is the one phone gutter (owner, 2026-10-24, decision 5): 16px as iOS draws it, 20px on a large phone (below);
+     every phone page, its skeleton and its full-bleed pieces take it, so the edge never moves between sections. */
+  --ch-page-x-phone: var(--ch-space-4);
+  --ch-page-top-phone: 26px;
+  --ch-page-bottom-phone: var(--ch-space-8);
+  --ch-page-top-phone-docked: 14px;
+  --ch-page-bottom-phone-docked: 110px;
+  /* Phone gaps between a page's sections (32 on the docked pages, 24 and 16 elsewhere), and within a group; on the 4pt
+     scale (row 33): 28 -> 32, 22 -> 24. */
+  --ch-gap-section-phone: var(--ch-space-8);
+  --ch-gap-section-phone-snug: var(--ch-space-6);
+  --ch-gap-section-phone-tight: var(--ch-space-4);
+  --ch-gap-group: var(--ch-space-3);
   --ch-sidebar-w: 240px;
   /* The sidebar folded to its icon rail (RailToggle): the rows' 16px icons, 20px in from the edge, stay where they are. */
   --ch-rail-w: 56px;
@@ -318,18 +484,41 @@
   --ch-skel-base: #e2dbca;
   --ch-skel-sheen: #ece6d8;
   --ch-topbar-paper: #f7f2e6;
-  /* Radius */
-  --ch-radius-xs: 5px;
-  --ch-radius-sm: 7px;
-  --ch-radius-md: 10px;
-  --ch-radius-lg: 14px;
+  /* Radius (row 35): four steps, 8 / 12 / 16 / 20. xs is the floor for keycaps, badges, checkboxes and the nested rule,
+     not a step. Capsules are 999px, circles 50%. Inner corner = outer step less the padding between, floored at xs:
+     max(var(--ch-radius-xs), calc(var(--ch-radius-<outer>) - var(--ch-space-<pad>))). Buttons sit on sm and md, the
+     owner's 8 and 12 (decision 7). */
+  --ch-radius-xs: 4px;
+  --ch-radius-sm: 8px;
+  --ch-radius-md: 12px;
+  --ch-radius-lg: 16px;
   --ch-radius-xl: 20px;
+  --ch-radius-mark: 2px; /* chart marks, ticks, thin bars */
+  --ch-radius-tail: 6px; /* the Messages bubble tail corner */
+  /* B3: a card's corner (X-4: 16, as .ch-surface already drew it) and a bottom sheet's top corners (X-3: 20). An inner
+     corner is the card's less the padding between them, floored at --ch-radius-xs. */
+  --ch-radius-card: 16px;
+  --ch-radius-sheet: 20px;
+  /* CONS-23: the one sheet grab handle's fill (controls.css .ch-grab). */
+  --ch-grab-bg: var(--ch-ivory-300);
+  /* B4: how far a sideways scroller's clipped edge fades on a phone (ui.css .ch-hscroll), so the edge reads as more. */
+  --ch-edge-fade: 28px;
+  /* Row 41: the scroll edge under (or over) a floating bar, one soft shade in place of a hard hairline: the top bar's
+     once content scrolls under it, a sticky bottom bar's always. */
+  --ch-scroll-edge-h: 14px;
+  --ch-scroll-edge-ink: color-mix(in oklab, var(--ch-frame) 26%, transparent);
+  --ch-scroll-edge-down: linear-gradient(var(--ch-scroll-edge-ink), transparent);
+  --ch-scroll-edge-up: linear-gradient(to top, var(--ch-scroll-edge-ink), transparent);
+  /* B3: the width of a separator. One device pixel on a Retina screen is set further down (min-resolution). */
+  --ch-hairline-w: 1px;
 
   /* Elevation */
   /* The older names, kept for their many uses, now read their role on the depth ladder below. */
   --ch-shadow-sm: var(--ch-elevation-reading);
-  --ch-shadow-md: var(--ch-elevation-floating);
+  --ch-shadow-md: var(--ch-elevation-raised);
   --ch-shadow-lg: var(--ch-elevation-overlay);
+  /* B3: the Surface card's own lift (ui.css .ch-surface): a hairline ring, a contact shadow and a soft fall. */
+  --ch-elevation-card: 0 0 0 1px rgb(28 25 18 / 0.07), 0 1px 2px rgb(28 25 18 / 0.04), 0 8px 20px -10px rgb(28 25 18 / 0.1);
   --ch-glass-bg: rgb(250 248 241 / 0.7);
   /* Glass is for the floating navigation only (top bar, tab bar); 20px reads as frosted without the muddy edge. */
   --ch-glass-blur: 20px;
@@ -355,9 +544,19 @@
     var(--ch-light-drift) 28px 48px -26px rgb(28 25 18 / 0.22);
   --ch-elevation-reading-accent: 0 1px 3px rgb(8 43 28 / 0.08), 0 4px 12px -6px rgb(8 43 28 / 0.12);
   --ch-elevation-control: var(--ch-highlight), var(--ch-light-drift-near) 1px 2px rgb(28 25 18 / 0.06);
-  --ch-elevation-floating: var(--ch-light-drift-near) 2px 6px rgb(28 25 18 / 0.06), var(--ch-light-drift-mid) 8px 20px -8px rgb(28 25 18 / 0.12);
+  /* Row 40: three elevation levels. Reading (a card at rest, above), raised (a menu, a popover, a lifted control) and
+     overlay (a sheet, a dialog, below). Floating was the raised level's old name and folds into it. */
+  --ch-elevation-raised: var(--ch-light-drift-near) 2px 6px rgb(28 25 18 / 0.06), var(--ch-light-drift-mid) 8px 20px -8px rgb(28 25 18 / 0.12);
+  --ch-elevation-floating: var(--ch-elevation-raised);
   --ch-elevation-floating-focus: 0 0 0 1px var(--ch-border-focus), 0 0 0 4px var(--ch-focus-halo),
-    var(--ch-elevation-floating);
+    var(--ch-elevation-raised);
+  /* Row 40: tinted drops. A surface on the green or ink casts its shadow in its own colour (an ink shadow greys on
+     green): three green steps by size (a chip that is on, a pill, a key) and one for an ink pill. One value in both
+     themes; a surface with its own dark lift (cast, control, raised) keeps it. */
+  --ch-drop-green-1: 0 1px 2px rgb(11 58 37 / 0.3);
+  --ch-drop-green-2: 0 4px 12px -4px rgb(11 58 37 / 0.45);
+  --ch-drop-green-3: 0 10px 20px -10px rgb(11 58 37 / 0.8);
+  --ch-drop-ink: 0 0 0 1px rgb(0 0 0 / 0.4), 0 12px 32px -8px rgb(0 0 0 / 0.35);
   /* The phone's floating tab bar: a lit edge, a hairline and a long soft shadow that separates it from the scrolling page. */
   --ch-elevation-tabbar: inset var(--ch-light-rim-x) 1px 0 var(--ch-light-rim-soft), 0 0 0 1px rgb(28 25 18 / 0.07),
     var(--ch-light-drift-near) 2px 6px rgb(28 25 18 / 0.08), var(--ch-light-drift-mid) 14px 32px -12px rgb(28 25 18 / 0.32);
@@ -412,6 +611,9 @@
   --ch-elevation-face-hover: var(--ch-light-drift-near) 3px 6px rgb(28 25 18 / 0.1), var(--ch-light-drift-mid) 22px 36px -12px rgb(28 25 18 / 0.34),
     var(--ch-light-drift) 40px 56px -24px rgb(21 90 57 / 0.3);
   --ch-ledger-row-press: color-mix(in oklab, var(--ch-green-600) 11%, transparent);
+  /* An ink-filled key's pressed tone (Ask's stop key): the ink drawn a step toward the surface, so it reads in both
+     themes (near-black lifts by day, ivory dims at night). */
+  --ch-ink-press: color-mix(in oklab, var(--ch-ink-900) 82%, var(--ch-bg-surface));
   /* A portrait set into the page head: a canvas gap, a fine engraved ring, a soft green drop. */
   --ch-ledger-avatar-ring: 0 0 0 3px var(--ch-workspace), 0 0 0 4px var(--ch-ledger-rule), 0 10px 22px -12px rgb(11 58 37 / 0.4);
   /* Hover depth, tokenised when the hover rules moved behind @media (hover: hover) (2026-10-07). */
@@ -509,6 +711,9 @@
   /* A row's pressed tint waits this long after the finger lands (UIKit delays a cell's highlight the same way), so a
      scroll that starts on a row never flashes it; letting go clears it at once. Kept with reduced motion: it isn't motion. */
   --ch-dur-press-delay: 50ms;
+  /* Stats dims for a window change only after this beat (A11), so a fast answer never flickers; leaving busy clears at
+     once. Kept with reduced motion and Animations off: it is a wait, not motion. */
+  --ch-dur-busy-delay: 150ms;
   /* The smooth spring (D-64 extension, 2026-10-08; lib/motion.ts CH_SPRINGS, base, no bounce) for a one-shot CSS entry
      that moves an anchored part, such as a sheet rising. Where linear() is missing it is the ease-out over base. An
      interruptible state change keeps a curve: a CSS spring would restart from rest when retargeted, so those springs
@@ -527,10 +732,17 @@
   /* 0: a route load on a phone runs past any delay, so a delay only added a blank frame before the skeleton (F-37). */
   --ch-skel-delay: 0ms;
 
-  /* Z */
+  /* Z: the ladder (CONS-35). Values 0 to 5 stay local literals inside one component. */
+  --ch-z-raised: 10;
+  --ch-z-panel: 30;
   --ch-z-sticky: 40;
+  --ch-z-dock: 50;
+  --ch-z-popover: 60;
   --ch-z-overlay: 80;
+  --ch-z-sheet: 90;
   --ch-z-toast: 100;
+  /* The skip link sits above a toast. */
+  --ch-z-skip: 110;
 }
 
 /*
@@ -603,6 +815,8 @@ html[data-fw-theme='dark'] [data-ui='clubhouse'] {
   --ch-warning-100: #2e2414;
   --ch-danger-600: #ef8576;
   --ch-danger-100: #35191a;
+  /* At night the key keeps its red; the ring turns to a light coral so its edge holds on the dark cards. */
+  --ch-danger-ring: rgb(239 133 118 / 0.45);
   --ch-info-600: #86b6d4;
   --ch-info-100: #172632;
   --ch-score-under: #ef8576;
@@ -620,16 +834,24 @@ html[data-fw-theme='dark'] [data-ui='clubhouse'] {
 
   --ch-bg-page: #111512;
   --ch-bg-surface: #1b201c;
+  /* B4: what floats lifts by lightness, as iOS's elevated base does (Gray6 and Gray5, tinted green): a sheet, a menu
+     or a popover sits visibly above the cards. The second step is for a layer on a layer, never under a text field
+     (the placeholder ink falls under 4.5:1 there). */
+  --ch-bg-elevated: #232925;
+  --ch-bg-elevated-2: #2b322d;
+  --ch-grab-bg: rgb(237 231 216 / 0.22);
   --ch-bg-subtle: #181d19;
   --ch-bg-inset: #0e120f;
   --ch-bg-hover: #212722;
   --ch-bg-selected: #16281d;
+  --ch-selected-pill-bg: var(--ch-green-100);
+  --ch-selected-pill-ring: rgb(107 187 140 / 0.3);
   --ch-text-on-accent: #f4eedd;
   --ch-accent: #23704a;
   --ch-accent-hover: #2a7d53;
   --ch-accent-press: #1d613f;
-  --ch-border-hairline: rgb(237 231 216 / 0.08);
-  --ch-border-subtle: rgb(237 231 216 / 0.11);
+  --ch-border-hairline: rgb(237 231 216 / 0.12); /* decision 6, from 0.08 */
+  --ch-border-subtle: rgb(237 231 216 / 0.15); /* row 36 (T4): above the 0.12 hairline */
   --ch-border-control: rgb(237 231 216 / 0.17);
   --ch-border-strong: rgb(237 231 216 / 0.3);
   --ch-seam-ink: rgb(0 0 0 / 0.55);
@@ -652,6 +874,7 @@ html[data-fw-theme='dark'] [data-ui='clubhouse'] {
   --ch-ink-rule: rgb(237 231 216 / 0.22);
   --ch-champagne-ring: rgb(205 187 142 / 0.2);
   --ch-champagne-rule: rgb(205 187 142 / 0.28);
+  --ch-champagne-rule-strong: rgb(205 187 142 / 0.4);
   --ch-focus-halo: rgb(107 187 140 / 0.2);
 
   --ch-glass-bg: rgb(22 27 23 / 0.74);
@@ -692,7 +915,8 @@ html[data-fw-theme='dark'] [data-ui='clubhouse'] {
     var(--ch-light-drift) 28px 48px -26px rgb(0 0 0 / 0.55);
   --ch-elevation-reading-accent: 0 1px 3px rgb(0 0 0 / 0.35), 0 4px 12px -6px rgb(0 0 0 / 0.45);
   --ch-elevation-control: var(--ch-highlight), var(--ch-light-drift-near) 1px 2px rgb(0 0 0 / 0.35);
-  --ch-elevation-floating: 0 0 0 1px rgb(255 255 255 / 0.06), var(--ch-light-drift-near) 2px 6px rgb(0 0 0 / 0.35),
+  --ch-elevation-floating: var(--ch-elevation-raised);
+  --ch-elevation-raised: 0 0 0 1px rgb(255 255 255 / 0.06), var(--ch-light-drift-near) 2px 6px rgb(0 0 0 / 0.35),
     var(--ch-light-drift-mid) 8px 20px -8px rgb(0 0 0 / 0.55);
   --ch-elevation-tabbar: inset var(--ch-light-rim-x) 1px 0 var(--ch-light-rim), 0 0 0 1px rgb(255 255 255 / 0.07),
     var(--ch-light-drift-near) 2px 6px rgb(0 0 0 / 0.4), var(--ch-light-drift-mid) 14px 32px -12px rgb(0 0 0 / 0.7);
@@ -830,14 +1054,18 @@ html[data-fw-theme='dark'] [data-ui='clubhouse'] {
    <html>, so they read these from there: both pages crossfade together. Scoped to a
    document showing Clubhouse. */
 html:has([data-ui='clubhouse']) {
-  /* A fade through, not a crossfade (phone test 2026-10-13): the old page clears quickly, then the new one fades in,
-     so two different pages are never on screen at once (a crossfade of two pages read as a washed-out double image).
-     The new page waits for the whole fade out: a shorter gap leaves both snapshots up for its last frames. */
+  /* On the phone, a fade through, not a crossfade (phone test 2026-10-13): the old page clears quickly, then the new
+     one fades in, so two different pages are never on screen at once (a crossfade of two pages read as a washed-out
+     double image). The new page waits for the whole fade out: a shorter gap leaves both snapshots up for its last
+     frames. The desktop crossfades with no gap (below). */
   --ch-dur-vt-out: 120ms;
   --ch-dur-vt-in: 220ms;
   --ch-dur-vt-gap: var(--ch-dur-vt-out);
   --ch-ease-vt-out: cubic-bezier(0.4, 0, 1, 1);
   --ch-ease-vt-in: cubic-bezier(0.22, 1, 0.36, 1);
+  /* Under the OS Reduce Motion setting a page change is a plain crossfade over the quick beat, old and new together, in
+     opacity only: no push, no pop, no parallax (owner decision 2, 2026-10-24, OQ-15; CH_FADE_MS in lib/motion.ts). */
+  --ch-dur-vt-fade: 180ms;
   /* How long a navigation onto a route skeleton keeps the old page up before the skeleton shows (native-feel audit
      2026-10-08, P0-2): a load that finishes sooner never shows a skeleton. base.css delays the skeleton by the same. */
   --ch-dur-vt-hold: 300ms;
@@ -846,6 +1074,19 @@ html:has([data-ui='clubhouse']) {
   --ch-dur-vt-push: 260ms;
   --ch-ease-vt-push: cubic-bezier(0.22, 1, 0.36, 1);
   --ch-vt-parallax: -30%;
+  /* The dim on the page beneath a push (B16, CH-1618): PhoneScreen's scrim, and the same depth as a filter for a route
+     push, whose page beneath is a view-transition snapshot that cannot take an overlay. */
+  --ch-push-dim: rgb(20 18 12 / 0.1);
+  --ch-vt-push-dim: brightness(0.9);
+}
+/* The desktop drill-in (a player row into a profile) crossfades with no gap: the old page fades out over 120ms while
+   the new one fades in over 180ms, both from the first frame, so there is no blank beat between them (owner decision
+   3, 2026-10-24, OQ-14 / A10). The phone keeps its fade through above. */
+@media (min-width: 821px) {
+  html:has([data-ui='clubhouse']) {
+    --ch-dur-vt-in: 180ms;
+    --ch-dur-vt-gap: 0ms;
+  }
 }
 /* The smooth spring as CSS linear(), as [data-ui='clubhouse'] has it above (motion-physics.test pins the two). */
 @supports (transition-timing-function: linear(0, 1)) {
@@ -857,7 +1098,7 @@ html:has([data-ui='clubhouse']) {
 
 /* The document under Clubhouse (high-fidelity audit F05): the overscroll bounce and the frame before first paint show
    <html> and <body>, which carry Fairway's canvas. Where Clubhouse is on screen they take its own colour: the frame on
-   desktop, the page on a phone. The native launch colour (#F2E6D2, capacitor.config.ts) is Q-140. */
+   desktop, the page on a phone. The native launch colour is config/native-canvas.json (A15, Q-140): the phone page. */
 html:has([data-ui='clubhouse']),
 html:has([data-ui='clubhouse']) body {
   background: #0a331f;
@@ -922,8 +1163,29 @@ html[data-fw-theme='dark']:has([data-ui='clubhouse']) body {
 
 /* Increase Contrast (P001-D7): the engraved rules, hairlines and the champagne eyebrow gain definition, and glass is
    opaque. One block, so every surface on the tokens follows. */
+/* Decision 5: a large phone (Plus and Pro Max, 414pt and wider) keeps the 20px edge, as iOS widens its margins there. */
+@media (min-width: 414px) {
+  [data-ui='clubhouse'] {
+    --ch-page-x-phone: var(--ch-space-5);
+  }
+}
+/* B3: on a Retina screen a separator is one device pixel, as iOS draws it (it was two or three). Increase Contrast
+   keeps the full pixel (below). */
+@media (min-resolution: 2dppx) {
+  [data-ui='clubhouse'] {
+    --ch-hairline-w: 0.5px;
+  }
+}
+/* Row 36: one device pixel on a 3x phone too. Before the contrast block, which still wins with the full pixel. */
+@media (min-resolution: 3dppx) {
+  [data-ui='clubhouse'] {
+    --ch-hairline-w: 0.333px;
+  }
+}
+
 @media (prefers-contrast: more) {
   [data-ui='clubhouse'] {
+    --ch-hairline-w: 1px;
     --ch-border-hairline: rgb(28 25 18 / 0.2);
     --ch-border-subtle: rgb(28 25 18 / 0.28);
     --ch-border-control: rgb(28 25 18 / 0.4);
@@ -939,6 +1201,11 @@ html[data-fw-theme='dark']:has([data-ui='clubhouse']) body {
     --ch-phone-tabbar-bg: var(--ch-phone-tabbar-shelf-bg);
     --ch-light-rim: transparent;
     --ch-light-rim-soft: transparent;
+    /* B15: chart marks and lines step further from the paper (gain 9.8:1, loss 7.7:1, the flag 7.6:1). */
+    --ch-chart-gain: #0e4a2e;
+    --ch-chart-loss: #6f4706;
+    --ch-chart-loss-on-tint: #5f3d05;
+    --ch-chart-flag: #922e23;
   }
   html[data-fw-theme='dark'] [data-ui='clubhouse'] {
     --ch-border-hairline: rgb(237 231 216 / 0.24);
@@ -956,5 +1223,9 @@ html[data-fw-theme='dark']:has([data-ui='clubhouse']) body {
     --ch-phone-tabbar-bg: var(--ch-phone-tabbar-shelf-bg);
     --ch-light-rim: transparent;
     --ch-light-rim-soft: transparent;
+    --ch-chart-gain: #8fd0a8;
+    --ch-chart-loss: #f0bd6a;
+    --ch-chart-loss-on-tint: #f3c77e;
+    --ch-chart-flag: #f6a294;
   }
 }

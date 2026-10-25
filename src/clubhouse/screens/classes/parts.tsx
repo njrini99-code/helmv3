@@ -80,12 +80,13 @@ import { Icon } from '../../ui/Icon';
 import { InlineNotice } from '../../ui/Notices';
 import { Spinner } from '../../ui/Spinner';
 import { EmptyState } from '../../ui/States';
+import { plural, pluralWord } from '../../lib/plural';
 
 /** "3 credits · 5 classes". */
 export function termFigures(classes: readonly ChClass[]): { credits: number; count: number; text: string } {
   const credits = classes.reduce((s, c) => s + (c.credits ?? 0), 0);
   const count = classes.length;
-  const text = [credits ? `${credits} ${credits === 1 ? 'credit' : 'credits'}` : null, `${count} ${count === 1 ? 'class' : 'classes'}`].filter(Boolean).join(' · ');
+  const text = [credits ? `${plural(credits, 'credit')}` : null, `${plural(count, 'class', 'classes')}`].filter(Boolean).join(' · ');
   return { credits, count, text };
 }
 
@@ -118,13 +119,13 @@ export function TermBar({
   const now = pos(todayIso);
   const weekFrom = pos(weekDates[0] ?? todayIso);
   const weekTo = pos(weekDates[6] ?? todayIso);
-  const where = term.week != null ? `week ${term.week} of ${term.weeks}` : `starts in ${term.startsIn} ${term.startsIn === 1 ? 'day' : 'days'}`;
+  const where = term.week != null ? `week ${term.week} of ${term.weeks}` : `starts in ${plural(term.startsIn ?? 0, 'day')}`;
   if (compact) {
     // The owner's iPhone brief (2026-10-01): today and the overlaps lead; the term is context, in one quiet line.
     return (
       <section className="ch-cl-tb is-compact" aria-label={`${term.label}, ${where}, ${fig.text}`}>
         <p className="ch-cl-tb__one ch-num">
-          {term.week != null ? `Week ${term.week} of ${term.weeks}` : `Starts in ${term.startsIn} ${term.startsIn === 1 ? 'day' : 'days'}`} · {mine.length ? fig.text : `No classes in ${term.label}`}
+          {term.week != null ? `Week ${term.week} of ${term.weeks}` : `Starts in ${plural(term.startsIn ?? 0, 'day')}`} · {mine.length ? fig.text : `No classes in ${term.label}`}
         </p>
         {!overlapsError && overlaps > 0 && (
           <button type="button" className="ch-cl-tb__over has-any" onClick={onOverlaps}>
@@ -152,7 +153,7 @@ export function TermBar({
             <>
               <span>Starts in</span>
               <b className="ch-num">{term.startsIn}</b>
-              <em>{term.startsIn === 1 ? 'day' : 'days'}</em>
+              <em>{pluralWord(term.startsIn ?? 0, 'day')}</em>
             </>
           )}
         </div>
@@ -358,7 +359,7 @@ export function OverlapsCard({ groups, error, onRetry }: { groups: readonly ChCo
           <Icon icon={TriangleAlert} size={16} />
         </span>
         <div>
-          <h2 id="ch-cl-over-h">{groups.length === 1 ? 'A team event overlaps your classes' : `${groups.length} team events overlap your classes`}</h2>
+          <h2 id="ch-cl-over-h">{pluralWord(groups.length, 'A team event overlaps your classes', `${groups.length} team events overlap your classes`)}</h2>
           <span>This week. Your coach can see your classes.</span>
         </div>
       </div>

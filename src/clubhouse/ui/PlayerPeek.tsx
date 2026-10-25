@@ -1,8 +1,9 @@
 'use client';
 
-import { BarChart3, BrainCircuit, CalendarPlus, MessageSquare, TriangleAlert } from 'lucide-react';
+import { ChartColumn, BrainCircuit, CalendarPlus, MessageSquare, TriangleAlert } from 'lucide-react';
 import type { ReactNode } from 'react';
-import { formatFixed, formatToPar, NO_DATA } from '../lib/format';
+import { formatFixed, formatToPar } from '../lib/format';
+import { NoData } from './NoData';
 import { rebuiltHref } from '../shell/nav';
 import { Avatar } from './Avatar';
 import { Icon } from './Icon';
@@ -37,7 +38,7 @@ export function playerPeekActions(p: Pick<ChPlayerPeek, 'id'>): PeekAction[] {
   const id = encodeURIComponent(p.id);
   return [
     { label: 'Message', icon: MessageSquare, href: rebuiltHref(`/golf/dashboard/messages?player=${id}`) },
-    { label: 'View stats', icon: BarChart3, href: rebuiltHref(`/golf/dashboard/stats?player=${id}`) },
+    { label: 'View stats', icon: ChartColumn, href: rebuiltHref(`/golf/dashboard/stats?player=${id}`) },
     { label: 'Plan 1:1', icon: CalendarPlus, href: rebuiltHref(`/golf/dashboard/calendar?new=1&with=${id}`) },
     { label: 'CoachHelm', icon: BrainCircuit, href: coachHelmPlayerHref(p.id) },
   ];
@@ -57,7 +58,7 @@ export function PlayerPeekCard({ p }: { p: ChPlayerPeek }) {
   return (
     <div className="ch-ppeek" data-ch-code="CH-1832">
       <div className="ch-ppeek__head">
-        <Avatar name={p.name} size={44} />
+        <Avatar name={p.name} id={p.id} size={44} />
         <div className="ch-ppeek__who">
           <b>{p.name}</b>
           {p.sub && <span>{p.sub}</span>}
@@ -79,14 +80,14 @@ export function PlayerPeekCard({ p }: { p: ChPlayerPeek }) {
                 {last.toPar != null && <small> {formatToPar(last.toPar)}</small>}
               </>
             ) : (
-              NO_DATA
+              <NoData />
             )}
           </dd>
           {last && <span className="ch-ppeek__m">{last.label}</span>}
         </div>
         <div>
           <dt>Average</dt>
-          <dd className="ch-num">{formatFixed(p.avg ?? null)}</dd>
+          <dd className="ch-num">{p.avg == null ? <NoData /> : formatFixed(p.avg)}</dd>
           {p.trend && p.trend.length >= 2 && <TrendLine scores={p.trend} />}
         </div>
       </dl>

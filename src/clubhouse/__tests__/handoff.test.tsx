@@ -28,7 +28,7 @@ describe('the hand-off curtain', () => {
     const canvas = c.firstElementChild as HTMLElement;
     expect(canvas.style.left).toBe('240px');
     expect(canvas.style.top).toBe('8px');
-    expect(canvas.style.borderRadius).toBe('14px');
+    expect(canvas.style.borderRadius).toBe('16px');
   });
 
   it('is one curtain, however often it is dropped', () => {

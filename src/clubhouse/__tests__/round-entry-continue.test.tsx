@@ -199,7 +199,7 @@ describe('Continue round: Save for later and Discard (CH-11010, CH-11006, CH-119
     await waitFor(() => expect(code('CH-11010')).toHaveTextContent('Couldn’t save your round at Finley GC'));
     expect(code('CH-11010')).toHaveTextContent('Something failed for real.');
     expect(toasts()).toHaveLength(1);
-    await user.click(toastAction('CH-11010', 'Retry')!);
+    await user.click(toastAction('CH-11010', 'Try again')!);
     await waitFor(() => expect(mocks.router.push).toHaveBeenCalledWith('/golf/dashboard/rounds'));
     expect(mocks.savePartialRound).toHaveBeenLastCalledWith(expect.anything(), 'round-9');
   });
@@ -212,7 +212,7 @@ describe('Continue round: Save for later and Discard (CH-11010, CH-11006, CH-119
     await user.click(within(code('CH-11506')!).getByRole('button', { name: /Save for later/ }));
     await waitFor(() => expect(document.querySelectorAll('[data-ch-code="CH-11902"]').length).toBeGreaterThanOrEqual(2));
     expect(code('CH-11010')).toBeNull();
-    expect(screen.queryByRole('button', { name: 'Retry' })).toBeNull();
+    expect(screen.queryByRole('button', { name: 'Try again' })).toBeNull();
   });
 
   it('CH-11006 a Discard that fails stays in the Exit sheet’s question with the reason, once, and can be tried again', async () => {

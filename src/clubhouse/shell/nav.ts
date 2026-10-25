@@ -1,6 +1,6 @@
 import { SECTIONS as SETTINGS_SECTIONS } from '../screens/settings/model';
 import {
-  BarChart3,
+  ChartColumn,
   BrainCircuit,
   CalendarDays,
   ClipboardList,
@@ -43,7 +43,7 @@ export const CH_NAV_COACH: readonly ChNavItem[] = [
   // Team Hub sits under Team, with the roster (owner, 2026-10-16).
   { id: 'hub', label: 'Team Hub', href: '/golf/dashboard/team-hub', icon: ClipboardList, badge: 'hub', section: 'Team' },
   { id: 'roster', label: 'Roster', href: '/golf/dashboard/roster', icon: Users, section: 'Team', badge: 'joinRequests' },
-  { id: 'stats', label: 'Stats', href: '/golf/dashboard/stats', icon: BarChart3, section: 'Team' },
+  { id: 'stats', label: 'Stats', href: '/golf/dashboard/stats', icon: ChartColumn, section: 'Team' },
   { id: 'rounds', label: 'Rounds', href: '/golf/dashboard/rounds', icon: Flag, section: 'Team' },
   { id: 'qualifiers', label: 'Qualifiers', href: '/golf/dashboard/qualifiers', icon: Trophy, section: 'Team' },
   { id: 'recruiting', label: 'Recruiting', href: '/golf/dashboard/recruiting', icon: GraduationCap, section: 'Team' },
@@ -67,7 +67,7 @@ export const CH_NAV_PLAYER: readonly ChNavItem[] = [
   { id: 'roster', label: 'Roster', href: '/golf/dashboard/roster', icon: Users, section: 'Team' },
   { id: 'qualifiers', label: 'Qualifiers', href: '/golf/dashboard/qualifiers', icon: Trophy, section: 'Team' },
   { id: 'rounds', label: 'Rounds', href: '/golf/dashboard/rounds', icon: Flag, section: 'My game' },
-  { id: 'stats', label: 'My stats', href: '/golf/dashboard/stats', icon: BarChart3, section: 'My game' },
+  { id: 'stats', label: 'My stats', href: '/golf/dashboard/stats', icon: ChartColumn, section: 'My game' },
   { id: 'classes', label: 'Classes', href: '/golf/dashboard/classes', icon: GraduationCap, section: 'School' },
 ];
 
@@ -200,7 +200,9 @@ const CH_REBUILT_PATTERNS: Record<ChRole, readonly RegExp[]> = {
 export const CH_ALIASED_ROUTES: readonly RegExp[] = [
   /^\/golf\/dashboard\/(tasks|intelligence|courses|announcements|team|documents|travel)$/,
   /^\/golf\/dashboard\/roster\/[^/]+$/,
-  /^\/golf\/dashboard\/players\/[^/]+$/,
+  // A player's old pages and everything under them: next.config sends /players/<id> on to /players/<id>/game, and an old
+  // genome link to /players/<id>/genome, before any layout runs (A30), so those are the addresses that arrive here.
+  /^\/golf\/dashboard\/players\/[^/]+(\/.*)?$/,
   /^\/golf\/dashboard\/coachhelm\/(chat|qualifying\/[^/]+|genome\/compare|genome\/[^/]+)$/,
   /^\/golf\/dashboard\/rounds\/[^/]+\/review$/,
   // Rebuilt for one role and moved for the other (My qualifiers to a coach's Qualifiers, a player's Team stats to their

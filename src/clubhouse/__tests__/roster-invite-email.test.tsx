@@ -141,7 +141,7 @@ describe('Invite by email · sending', () => {
     expect(screen.getByText(/sent a lot of invites/)).toBeTruthy();
     expect(chips()).toEqual(['eli@x.edu']);
     // Waiting is the answer: the toast offers no Retry.
-    expect(screen.queryByRole('button', { name: 'Retry' })).toBeNull();
+    expect(screen.queryByRole('button', { name: 'Try again' })).toBeNull();
   });
 
   it('offers Retry when the failure is the network’s, not a rule', async () => {
@@ -149,8 +149,8 @@ describe('Invite by email · sending', () => {
     const user = show();
     await user.type(box(), 'eli@x.edu ');
     await user.click(send());
-    expect(await screen.findByRole('button', { name: 'Retry' })).toBeTruthy();
-    fireEvent.click(screen.getByRole('button', { name: 'Retry' }));
+    expect(await screen.findByRole('button', { name: 'Try again' })).toBeTruthy();
+    fireEvent.click(screen.getByRole('button', { name: 'Try again' }));
     await waitFor(() => expect(action.email).toHaveBeenCalledTimes(2));
   });
 });

@@ -5,8 +5,11 @@ import { EmptyState } from '../../ui/States';
 import { gappedPath } from '../../lib/chart';
 import { formatSigned } from '../../lib/format';
 import { needsText } from '../../lib/stats-signal';
+import { sgBaseline, type ChSgTour } from '../../lib/sg';
 import { useChartPin } from '../../lib/use-chart-pin';
-import { meanSeries, niceTicks, parLine, readTrendRound, trendNote, trendState, withValue, type TrendKind, type TrendRound } from './round-trend';
+import { slotPositions } from '../../ui/charts/Line';
+import { ChartTable } from '../../ui/charts/ChartTable';
+import { meanSeries, niceTicks, parLine, readTrendRound, tickDigits, trendNote, trendState, withValue, type TrendKind, type TrendRound } from './round-trend';
 
 const PAD = { l: 34, r: 14, t: 14, b: 24 } as const;
 
@@ -22,10 +25,13 @@ export function RoundTrend({
   size = 'phone',
   label,
   openHref,
+  tour = 'pga',
 }: {
   /** Oldest first. */
   rounds: TrendRound[];
   kind: TrendKind;
+  /** Whose Tour strokes gained is measured against, for the zero line's words (A8.3); the men's Tour unless the team says otherwise. */
+  tour?: ChSgTour;
   size?: 'phone' | 'desktop';
   /** What the chart's group is called for a screen reader, before the arrow-key hint. */
   label: string;
@@ -37,11 +43,15 @@ export function RoundTrend({
   const plotW = W - PAD.l - PAD.r;
   const plotH = H - PAD.t - PAD.b;
   const n = rounds.length;
-  const pin = useChartPin(n, 'x', [PAD.l / W, 1 - PAD.r / W]);
+  // Rounds are spaced by their dates (row 119): a three-week break looks like one, not like the day after.
+  const slots = slotPositions(n, rounds.map((r) => r.at));
+  const pin = useChartPin(n, 'x', [PAD.l / W, 1 - PAD.r / W], slots);
 
   const known = withValue(rounds);
   if (known.length === 0 || (kind === 'sg' && known.length < 3)) {
-    return <EmptyState compact code={kind === 'sg' ? 'CH-5309' : 'CH-5302'} title={kind === 'sg' ? 'No strokes gained trend yet.' : 'No rounds in this window.'} body={kind === 'sg' ? `${needsText('sgLong')} with shots. ${known.length} so far.` : undefined} />;
+    // A score trend with no rounds is the window's filtered empty (CH-5302), the same words as the rounds table's.
+    if (kind === 'score') return <EmptyState compact code="CH-5302" kind="filtered" title="No rounds in this window." body="Try This season to see every round posted since August." />;
+    return <EmptyState compact code="CH-5309" title="No strokes gained trend yet." body={`${needsText('sgLong')} with shots. ${known.length} so far.`} />;
   }
   if (known.length === 1 && kind === 'score') {
     const r = known[0]!;
@@ -66,11 +76,13 @@ export function RoundTrend({
   const hi = hi0 + pad;
   // The better value sits higher: a lower score, a higher strokes gained.
   const y = (v: number) => PAD.t + (kind === 'score' ? (v - lo) / (hi - lo) : (hi - v) / (hi - lo)) * plotH;
-  const x = (i: number) => PAD.l + ((i + 0.5) / n) * plotW;
+  const x = (i: number) => PAD.l + slots[i]! * plotW;
   const ticks = niceTicks(lo, hi, 3);
   const state = trendState(kind, rounds);
   const hollow = state === 'early';
-  const fmt = (v: number) => (kind === 'score' ? String(Math.round(v)) : formatSigned(v, 0));
+  // Strokes gained ticks step by half a stroke when the span is small: one decimal then, so no two ticks print alike (A8.2).
+  const digits = tickDigits(ticks);
+  const fmt = (v: number) => (kind === 'score' ? String(Math.round(v)) : formatSigned(v, digits));
   const readout = (i: number | null) => (i == null ? null : readTrendRound(kind, rounds[i]!, means[i] ?? null));
   const shown = readout(pin.active);
   const spoken = readout(pin.pinned);
@@ -112,7 +124,7 @@ export function RoundTrend({
           <g>
             <line x1={PAD.l} x2={W - PAD.r} y1={y(ref)} y2={y(ref)} className="ch-sv-rt__ref" />
             <text x={W - PAD.r} y={y(ref) - 4} textAnchor="end" className="ch-sv-rt__t">
-              {kind === 'score' ? `Par ${Math.round(ref)}` : 'Zero is the Tour'}
+              {kind === 'score' ? `Par ${Math.round(ref)}` : sgBaseline(tour).zero}
             </text>
           </g>
         )}
@@ -141,6 +153,12 @@ export function RoundTrend({
           {rounds[n - 1]!.label}
         </text>
       </svg>
+      {/* The rounds, for a screen reader that asks for them after the summary (AX-17). */}
+      <ChartTable
+        caption={label}
+        columns={['Round', 'Course', kind === 'score' ? 'Score per 18' : 'Strokes gained per 18']}
+        rows={rounds.map((r) => [r.label, r.course ?? '', r.value == null ? 'No figure' : kind === 'score' ? String(Math.round(r.value)) : formatSigned(r.value)])}
+      />
     </div>
   );
 }

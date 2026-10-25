@@ -13,6 +13,7 @@ import {
   getGolfGroupAddCandidates,
   getGolfMessageAttachments,
   leaveGolfGroup,
+  markGolfMessagesAsRead,
   removeGolfGroupMember,
   searchGolfMessages,
 } from '@/app/golf/actions/messages';
@@ -35,6 +36,7 @@ import { haptic } from '../../lib/haptics';
 import type { ChAttachmentRecovery, ChMessagesApi } from './MessagesView';
 import { MessagesView } from './MessagesScreen';
 import { DraftStore } from './drafts';
+import { readMarkedUnread, withMark, writeMarkedUnread } from './marked-unread';
 import { FOUND_FOR_MS } from './use-focus-message';
 import { onRoster, takePrefill } from './prefill';
 import { firstName, groupLacksPlayer, toChAnnouncement, type ChAnnouncement, type ChAnnouncementDetail, type ChConv, type ChFile, type ChMember, type ChMsg, type ChMute, type ChReaction, type ChReactionKey } from './model';
@@ -77,6 +79,17 @@ export function Messages({ data }: { data: ChMessagesData }) {
   const pendingDraft = useRef<string | null>(null);
 
   const people = useMemo(() => new Map(data.directory.map((p) => [p.userId, p])), [data.directory]);
+  /** Conversations the viewer marked unread on this device (marked-unread.ts, owner decision 14). */
+  const [marked, setMarked] = useState<ReadonlySet<string>>(() => readMarkedUnread(data.viewerUserId));
+  const mark = useCallback(
+    (id: string, unread: boolean) =>
+      setMarked((ids) => {
+        const next = withMark(ids, id, unread);
+        if (next !== ids) writeMarkedUnread(data.viewerUserId, next);
+        return next;
+      }),
+    [data.viewerUserId],
+  );
 
   const convs: ChConv[] = useMemo(
     () =>
@@ -92,13 +105,14 @@ export function Messages({ data }: { data: ChMessagesData }) {
           memberIds: group ? (c.participant_ids ?? []).filter((id) => id !== data.viewerUserId) : other ? [other.id] : [],
           memberCount: c.participant_count ?? c.participant_ids?.length ?? 2,
           unread: c.unread_count ?? 0,
+          markedUnread: marked.has(c.id),
           lastAt: c.last_message?.created_at ?? c.updated_at ?? null,
           lastSenderId: c.last_message?.sender_id ?? null,
           lastText: decodeMessageContent(c.last_message?.content ?? ''),
           creatorId: c.creator_id ?? null,
         };
       }),
-    [conversations, people, data.viewerUserId],
+    [conversations, people, data.viewerUserId, marked],
   );
 
   const msgs = useGolfMessages(selectedId ?? '', data.viewerUserId, { deferMarkRead: !!selectedId && selectedId === autoOpened });
@@ -131,7 +145,8 @@ export function Messages({ data }: { data: ChMessagesData }) {
 
   // Deep links: ?conversation=<id>, or ?player=<golf_players.id> or ?user=<auth user id> (a player's
   // "Message coach" on Home) to open (or start) a direct thread.
-  const linkKey = ['conversation', 'player', 'user', 'prefill'].map((k) => params.get(k) ?? '').join('\u0000');
+  // `?compose=1` (the command palette's New message, A16) opens New message with no one chosen.
+  const linkKey = ['conversation', 'player', 'user', 'prefill', 'compose'].map((k) => params.get(k) ?? '').join('\u0000');
   useEffect(() => {
     if (loading || handledParams.current === linkKey) return;
     const first = handledParams.current === null;
@@ -141,6 +156,8 @@ export function Messages({ data }: { data: ChMessagesData }) {
     const user = params.get('user');
     // Read once: the entry is deleted as it is taken, so Back or a reload never brings the draft back.
     const pre = takePrefill(params);
+    const compose = params.get('compose') === '1';
+    // New message opens over the inbox as it is (the newest thread beside the rail on desktop), so it waits for nothing.
     if (first) setParamsDone(!conv && !player && !user && !pre);
     if (params.get('prefill')) router.replace('/golf/dashboard/messages', { scroll: false });
     if (pre) {
@@ -176,6 +193,9 @@ export function Messages({ data }: { data: ChMessagesData }) {
       // opened; one that still isn't there says so (CH-7015, MessagesScreen) rather than opening nothing.
       if (convs.length && !convs.some((c) => c.id === conv)) void refetch().catch(() => undefined).then(() => select(conv));
       else select(conv);
+    } else if (compose) {
+      router.replace('/golf/dashboard/messages', { scroll: false });
+      setPrefill({ to: [], draft: '', title: '' });
     } else if (player || user) {
       const person = data.directory.find((p) => (player ? p.playerId === player : p.userId === user));
       router.replace('/golf/dashboard/messages', { scroll: false });
@@ -200,12 +220,14 @@ export function Messages({ data }: { data: ChMessagesData }) {
         void msgs.markRead();
       } else setAutoOpened(null);
       if (id) setSelectedAnnId(null);
+      // Opening a conversation reads it, so a mark from Mark as unread goes.
+      if (id) mark(id, false);
       // A search hit sets its own target after this (openHit); any other pick leaves the last one behind.
       setFocusMessageId(null);
       setFoundMessageId(null);
       setSelectedId(id);
     },
-    [autoOpened, selectedId, msgs],
+    [autoOpened, selectedId, msgs, mark],
   );
   /** A search hit's message, gone to in the open thread (useFocusMessage), then marked for a moment. */
   const [focusMessageId, setFocusMessageId] = useState<string | null>(null);
@@ -510,6 +532,29 @@ export function Messages({ data }: { data: ChMessagesData }) {
     };
   }, [selectedId, muteAttempt]);
 
+  /** Any conversation's mute, read when a row's Mute sheet opens (owner decision 14). Null when it didn't load. */
+  const muteOf = useCallback(async (id: string): Promise<ChMute | null> => {
+    try {
+      const r = await getGolfConversationMute(id);
+      if (r.success) return r.data;
+      chReport(new Error(r.error), { surface: 'messages.mute', severity: 'low' });
+    } catch (err) {
+      chReport(err, { surface: 'messages.mute' });
+    }
+    return null;
+  }, []);
+
+  /** Mute or unmute a conversation by id: the open one's details and any row's menu. The open one's state follows. */
+  const muteConversation = (id: string, muted: boolean, hours: number | null) =>
+    attempt('mute', { failed: muted ? "Couldn’t mute the conversation" : "Couldn’t turn notifications back on", hint: 'Try again in a moment.', code: 'CH-7011' }, async () => {
+      const r = await setGolfConversationMute(id, muted, hours);
+      if (!r.success) throw new Error(r.error);
+      if (id === selectedId) setMuteState(r.data);
+      haptic('success');
+      // One mute toast at a time: a quick mute, unmute, mute leaves only the last (CH-1910).
+      toast({ title: muted ? 'Conversation muted' : 'Notifications back on', replace: 'mute' });
+    });
+
   // Stable, like loadAttachments: the Add sheet and the Files list key their fetch on them.
   const addCandidates = useCallback(async (): Promise<ChMember[] | null> => {
     if (!selectedId) return null;
@@ -701,18 +746,18 @@ export function Messages({ data }: { data: ChMessagesData }) {
         await refetch();
       });
     },
+    // By id: the open conversation's details and any row's menu or swipe (owner decision 14).
     deleteConversation: canHide
-      ? async () => {
-          if (!selectedId) return false;
-          return attempt('deleteConversation', { failed: "Couldn’t delete the conversation", hint: 'Try again in a moment.', code: 'CH-7025' }, async () => {
-            const res = await hideGolfConversation(selectedId);
+      ? async (id) =>
+          attempt('deleteConversation', { failed: "Couldn’t delete the conversation", hint: 'Try again in a moment.', code: 'CH-7025' }, async () => {
+            const res = await hideGolfConversation(id);
             if (!res.success) throw new Error(res.error);
             haptic('success');
             toast({ title: 'Conversation deleted' });
-            setSelectedId(null);
+            mark(id, false);
+            if (id === selectedId) setSelectedId(null);
             await refetch();
-          });
-        }
+          })
       : null,
     addCandidates,
     addMember: (userId, name) =>
@@ -776,16 +821,30 @@ export function Messages({ data }: { data: ChMessagesData }) {
     mute,
     muteError,
     retryMute: () => setMuteAttempt((n) => n + 1),
-    setMute: async (muted, hours) => {
-      if (!selectedId) return false;
-      return attempt('mute', { failed: muted ? "Couldn’t mute the conversation" : "Couldn’t turn notifications back on", hint: 'Try again in a moment.', code: 'CH-7011' }, async () => {
-        const r = await setGolfConversationMute(selectedId, muted, hours);
-        if (!r.success) throw new Error(r.error);
-        setMuteState(r.data);
+    setMute: async (muted, hours) => (selectedId ? muteConversation(selectedId, muted, hours) : false),
+    muteOf,
+    muteConversation,
+    setRead: async (id, read) => {
+      if (!read) {
+        // Nothing to write: the mark is this device's own (marked-unread.ts).
+        mark(id, true);
         haptic('success');
-        // One mute toast at a time: a quick mute, unmute, mute leaves only the last (CH-1910).
-        toast({ title: muted ? 'Conversation muted' : 'Notifications back on', replace: 'mute' });
+        return true;
+      }
+      const had = convs.find((c) => c.id === id)?.unread ?? 0;
+      if (!had) {
+        mark(id, false);
+        haptic('success');
+        return true;
+      }
+      const ok = await attempt('markRead', { failed: "Couldn’t mark the conversation read", hint: 'It still shows as unread. Try again in a moment.', code: 'CH-7026' }, async () => {
+        const r: unknown = await markGolfMessagesAsRead(id);
+        if ((r as { success?: boolean } | null)?.success !== true) throw new Error('Mark read was not saved');
+        mark(id, false);
+        haptic('success');
+        await refetch();
       });
+      return ok;
     },
 
     announcements: anns,

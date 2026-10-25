@@ -1,5 +1,5 @@
 import { LazyMotion, domAnimation } from 'motion/react';
-import { act, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
+import { act, cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
@@ -1235,8 +1235,19 @@ describe('Classes, on the phone', () => {
     expect(within(top).getByRole('heading', { level: 1, name: 'Classes' })).toBeTruthy();
     expect(within(top).queryByRole('button', { name: 'Back to More' })).toBeNull();
     expect(names()).toHaveLength(5);
-    await user.click(headerButton('Add class'));
+    // B10.1: the create action is the top bar's plus, in the bell's place, and the head no longer repeats it.
+    expect(within(document.querySelector<HTMLElement>('.ch-cl-h')!).queryByRole('button', { name: 'Add class' })).toBeNull();
+    expect(within(document.querySelector<HTMLElement>('.ch-cl-h')!).getByRole('button', { name: 'Import schedule' })).toBeTruthy();
+    await user.click(within(top).getByRole('button', { name: 'Add class' }));
     expect(await screen.findByRole('dialog', { name: 'Add a class' })).toBeTruthy();
+  });
+
+  it('121901 B10.1: a first run has no plus (its empty state carries the add), and a failed read keeps it (CH-12201)', () => {
+    phoneView({ ...PREVIEW_CLASSES, classes: { list: [], error: false } });
+    expect(within(screen.getByTestId('phone-top')).queryByRole('button', { name: 'Add class' })).toBeNull();
+    cleanup();
+    phoneView({ ...PREVIEW_CLASSES, classes: { list: [], error: true } });
+    expect(within(screen.getByTestId('phone-top')).getByRole('button', { name: 'Add class' })).toBeTruthy();
   });
 
   function phoneView(data: ChClassesPage) {
@@ -1486,14 +1497,14 @@ describe('Classes, writes that fail', () => {
     const w = show(PREVIEW_CLASSES, { save });
     await fillGeog(user);
     await submitForm(user);
-    await expectCode('CH-12001', /Couldn’t add GEOG 110.*Nothing was changed\. Check your connection and try again\./);
+    await expectCode('CH-12001', /Couldn’t add GEOG 110.*Nothing was changed\. Try again\./);
     expect(hapticSpy).toHaveBeenCalledWith('error');
     // The toast is in the open sheet, so Retry is where the person is looking.
     expect(sheet().contains(code('CH-12001'))).toBe(true);
     expect(field('Course name').value).toBe('Global Environmental Change');
     expect(names()).toHaveLength(5);
     expect(w.sync).not.toHaveBeenCalled();
-    await user.click(within(code('CH-12001') as HTMLElement).getByRole('button', { name: 'Retry' }));
+    await user.click(within(code('CH-12001') as HTMLElement).getByRole('button', { name: 'Try again' }));
     await waitFor(() => expect(names()).toEqual(ORDER_WITH_GEOG));
     expect(save).toHaveBeenCalledTimes(2);
     expect(save.mock.calls[1]![0]).toEqual(save.mock.calls[0]![0]);
@@ -1507,7 +1518,7 @@ describe('Classes, writes that fail', () => {
     const w = show(PREVIEW_CLASSES, { sync });
     await fillGeog(user);
     await submitForm(user);
-    await expectCode('CH-12002', /GEOG 110 is saved, but not on your calendar.*GEOG 110: Could not determine semester dates\. Retry to try again\./);
+    await expectCode('CH-12002', /GEOG 110 is saved, but not on your calendar.*GEOG 110: Could not determine semester dates\. Try again\./);
     // The save itself worked and says so; only the calendar failed, so there is no "couldn't add" toast.
     expect(screen.getByText('Class added')).toBeTruthy();
     expect(code('CH-12001')).toBeNull();
@@ -1515,7 +1526,7 @@ describe('Classes, writes that fail', () => {
     expect(w.save).toHaveBeenCalledTimes(1);
     expect(within(card(/^GEOG 110/)).getByText('Not on your calendar')).toBeTruthy();
     expect(document.querySelector('.ch-cl-sync.is-failed')!.textContent).toContain('1 class is not on your calendar');
-    await user.click(within(code('CH-12002') as HTMLElement).getByRole('button', { name: 'Retry' }));
+    await user.click(within(code('CH-12002') as HTMLElement).getByRole('button', { name: 'Try again' }));
     await waitFor(() => expect(sync).toHaveBeenCalledTimes(2));
     await waitFor(() => expect(within(card(/^GEOG 110/)).queryByText('Not on your calendar')).toBeNull());
     expect(document.querySelector('.ch-cl-sync')).toBeNull();
@@ -1628,7 +1639,7 @@ describe('Classes, writes that fail', () => {
     expect(hapticSpy).toHaveBeenCalledWith('error');
     expect(names()).toContain('Probability and Statistics');
     expect(screen.getByRole('dialog', { name: 'Remove this class?' })).toBeTruthy();
-    await user.click(within(code('CH-12003') as HTMLElement).getByRole('button', { name: 'Retry' }));
+    await user.click(within(code('CH-12003') as HTMLElement).getByRole('button', { name: 'Try again' }));
     await waitFor(() => expect(names()).not.toContain('Probability and Statistics'));
     expect(remove).toHaveBeenCalledTimes(2);
     expect(screen.queryByRole('dialog')).toBeNull();
@@ -1773,7 +1784,7 @@ describe('Classes, delete all', () => {
     expect(names()).toHaveLength(5);
     expect(question()).toBeTruthy();
     expect(code('CH-12006')).toBeNull();
-    await user.click(within(code('CH-12005') as HTMLElement).getByRole('button', { name: 'Retry' }));
+    await user.click(within(code('CH-12005') as HTMLElement).getByRole('button', { name: 'Try again' }));
     await expectCode('CH-12301');
     expect(removeAll).toHaveBeenCalledTimes(2);
     expect(removeAll.mock.calls[1]![0]).toEqual(removeAll.mock.calls[0]![0]);
@@ -1798,10 +1809,10 @@ describe('Classes, delete all', () => {
     show(PREVIEW_CLASSES, { removeAll });
     await user.click(deleteAll());
     await confirm(user);
-    await expectCode('CH-12005', /Couldn’t delete your classes.*Nothing was deleted\. Check your connection and try again\./);
+    await expectCode('CH-12005', /Couldn’t delete your classes.*Nothing was deleted\. Try again\./);
     expect(report).toHaveBeenCalled();
     expect(names()).toHaveLength(5);
-    await user.click(within(code('CH-12005') as HTMLElement).getByRole('button', { name: 'Retry' }));
+    await user.click(within(code('CH-12005') as HTMLElement).getByRole('button', { name: 'Try again' }));
     await expectCode('CH-12301');
   });
 
@@ -1815,7 +1826,7 @@ describe('Classes, delete all', () => {
     await confirm(user);
     await expectCode(
       'CH-12006',
-      /3 of 5 classes deleted.*ENGL 105 couldn’t be taken off your calendar, so it was kept\. EXSS 188 is off your calendar but still on your schedule\. Retry to finish\./,
+      /3 of 5 classes deleted.*ENGL 105 couldn’t be taken off your calendar, so it was kept\. EXSS 188 is off your calendar but still on your schedule\. Try again to finish\./,
     );
     expect(code('CH-12005')).toBeNull();
     expect(hapticSpy).toHaveBeenCalledWith('error');
@@ -1825,7 +1836,7 @@ describe('Classes, delete all', () => {
     expect(within(card(/^ENGL 105/)).queryByText('Not on your calendar')).toBeNull();
     // The question stays, and counts what is left.
     expect(question().textContent).toContain('All 2 classes come off your schedule and your calendar');
-    await user.click(within(code('CH-12006') as HTMLElement).getByRole('button', { name: 'Retry' }));
+    await user.click(within(code('CH-12006') as HTMLElement).getByRole('button', { name: 'Try again' }));
     await expectCode('CH-12301');
     // The Retry repeats the first attempt's classes: a class already gone is removed again harmlessly.
     expect(removeAll).toHaveBeenCalledTimes(2);
@@ -1840,7 +1851,7 @@ describe('Classes, delete all', () => {
     show(PREVIEW_CLASSES, { removeAll });
     await user.click(deleteAll());
     await confirm(user);
-    await expectCode('CH-12006', /Couldn’t finish deleting your classes.*STAT 201, ECON 310, BUSI 401 and more are off your calendar but still on your schedule\. Retry to finish\./);
+    await expectCode('CH-12006', /Couldn’t finish deleting your classes.*STAT 201, ECON 310, BUSI 401 and more are off your calendar but still on your schedule\. Try again to finish\./);
     expect(names()).toHaveLength(5);
     expect(document.querySelector('.ch-cl-sync.is-failed')!.textContent).toContain('5 classes are not on your calendar');
   });
@@ -2012,12 +2023,12 @@ describe('Classes, import', () => {
     await pasteAndRead(user);
     await reviewArrived();
     await user.click(inSheet().getByRole('button', { name: 'Import 5 classes' }));
-    await expectCode('CH-12004', /Couldn’t import your schedule.*Nothing was saved\. Check your connection and try again\./);
+    await expectCode('CH-12004', /Couldn’t import your schedule.*Nothing was saved\. Try again\./);
     expect(hapticSpy).toHaveBeenCalledWith('error');
     expect(screen.getByRole('dialog', { name: 'Review your schedule' })).toBeTruthy();
     expect(names()).toHaveLength(5);
     expect(w.sync).not.toHaveBeenCalled();
-    await user.click(within(code('CH-12004') as HTMLElement).getByRole('button', { name: 'Retry' }));
+    await user.click(within(code('CH-12004') as HTMLElement).getByRole('button', { name: 'Try again' }));
     expect(await screen.findByRole('dialog', { name: 'Schedule imported' })).toBeTruthy();
     expect(importRows).toHaveBeenCalledTimes(2);
   });
@@ -2067,13 +2078,13 @@ describe('Classes, import', () => {
     await reviewArrived();
     await user.click(inSheet().getByRole('button', { name: 'Remove STAT 201' }));
     await user.click(inSheet().getByRole('button', { name: 'Import 4 classes' }));
-    await expectCode('CH-12002', /1 of 4 classes are saved, but not on your calendar.*MATH 232: Could not determine semester dates\. Retry to try again\./);
+    await expectCode('CH-12002', /1 of 4 classes are saved, but not on your calendar.*MATH 232: Could not determine semester dates\. Try again\./);
     expect(
       await inSheet().findByText("Some didn’t reach your calendar. Use Retry sync on the Classes page. Not on your calendar: PHIL 150 (no meeting days). Open the class to add what’s missing."),
     ).toBeTruthy();
     expect(document.querySelector('.ch-cl-sync.is-failed')!.textContent).toContain('1 class is not on your calendar');
     broken = false;
-    await user.click(within(code('CH-12002') as HTMLElement).getByRole('button', { name: 'Retry' }));
+    await user.click(within(code('CH-12002') as HTMLElement).getByRole('button', { name: 'Try again' }));
     await waitFor(() => expect(document.querySelector('.ch-cl-sync')).toBeNull());
     expect(
       await inSheet().findByText("3 of 4 are on your calendar and repeat weekly until Dec 15. Not on your calendar: PHIL 150 (no meeting days). Open the class to add what’s missing."),
@@ -2168,7 +2179,7 @@ describe('Classes, offline and slow', () => {
     expect(within(sheet()).getByRole('button', { name: 'Save changes' })).toBeTruthy();
     expect(field('Room').value).toBe('121');
     line!.mockReturnValue(true);
-    await user.click(within(code('CH-1903') as HTMLElement).getByRole('button', { name: 'Retry' }));
+    await user.click(within(code('CH-1903') as HTMLElement).getByRole('button', { name: 'Try again' }));
     await waitFor(() => expect(w.save).toHaveBeenCalledTimes(1));
   });
 
@@ -2561,7 +2572,7 @@ describe('Classes, review fixes on screen', () => {
     // Tapped again in the same sheet: the row the first attempt may have stored is the one this reaches.
     await submitForm(user);
     await waitFor(() => expect(save).toHaveBeenCalledTimes(2));
-    await user.click(within(code('CH-12001') as HTMLElement).getByRole('button', { name: 'Retry' }));
+    await user.click(within(code('CH-12001') as HTMLElement).getByRole('button', { name: 'Try again' }));
     await waitFor(() => expect(save).toHaveBeenCalledTimes(3));
     await waitFor(() => expect(names()).toEqual(ORDER_WITH_GEOG));
     const ids = save.mock.calls.map((c) => c[2]);
@@ -2627,7 +2638,7 @@ describe('Classes reader', () => {
     expect(await readScheduleLive({ kind: 'file', file: big })).toMatchObject({ ok: false, kind: 'tooLarge' });
   });
 
-  it('a large photo is not refused for its size on disk: what is sent is measured, against the vision action’s own ceiling', async () => {
+  it('a large photo is not refused for its size on disk: what is sent is measured, against what one request can carry (UP-1)', async () => {
     // jsdom has no image decoder, so each photo is sent as it is: the path a browser takes for a format it cannot open.
     actions.extract.mockReset();
     actions.extract.mockResolvedValue({ success: true, classes: [{ id: 'r1', course_code: 'STAT 201', course_name: 'Statistics', instructor: '', days: ['M'], start_time: '09:00', end_time: '09:50', location: '', building: '', room: '', credits: 3, semester: 'Fall 2026' }], warnings: [] });
@@ -2640,5 +2651,21 @@ describe('Classes reader', () => {
     const huge = new File([new Uint8Array(12.5 * 1024 * 1024)], 'IMG_2042.png', { type: 'image/png' });
     expect(await readScheduleLive({ kind: 'file', file: huge })).toMatchObject({ ok: false, kind: 'tooLarge' });
     expect(actions.extract).not.toHaveBeenCalled();
+    // 3.5 MB sent as it is is 4.7 MB of base64, past the ~4.5 MB a request body may be on Vercel: refused here, in words.
+    const past = new File([new Uint8Array(3.5 * 1024 * 1024)], 'IMG_2043.png', { type: 'image/png' });
+    expect(await readScheduleLive({ kind: 'file', file: past })).toEqual({ ok: false, kind: 'tooLarge', message: 'That image is too large to send. Use a PNG or JPG screenshot, or paste the text.' });
+    expect(actions.extract).not.toHaveBeenCalled();
+  });
+});
+
+describe('Classes · the palette’s Add class (A16)', () => {
+  afterEach(() => window.history.replaceState(null, '', '/'));
+
+  it('?new=1 opens the add form once and cleans the address', async () => {
+    window.history.replaceState(null, '', '/golf/dashboard/classes?new=1');
+    router.replace.mockClear();
+    show();
+    expect(await screen.findByRole('dialog', { name: 'Add a class' })).toBeTruthy();
+    expect(router.replace).toHaveBeenCalledWith('/golf/dashboard/classes', { scroll: false });
   });
 });

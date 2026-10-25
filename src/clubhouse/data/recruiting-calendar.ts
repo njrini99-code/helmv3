@@ -22,6 +22,8 @@
  * sophomore year (13.1.3.1, 13.4.1; golf has no exception), which `remoteContactHint` reads from the class year.
  */
 
+import { formatWallClock } from '../lib/dates';
+
 export const RECRUITING_CALENDAR_AS_OF = '2026-10-08';
 /** The season the dated entries cover, inclusive. A day outside it has no answer. */
 export const RECRUITING_SEASON = { from: '2026-08-01', to: '2027-07-31', label: '2026–27' } as const;
@@ -172,11 +174,7 @@ export function periodAt(periods: readonly ChPeriod[], at: { day: string; minute
 const inSeason = (day: string) => day >= RECRUITING_SEASON.from && day <= RECRUITING_SEASON.to;
 
 const dayLabel = (day: string) => new Intl.DateTimeFormat('en-US', { timeZone: 'UTC', month: 'short', day: 'numeric' }).format(new Date(`${day}T12:00:00Z`));
-const timeLabel = (hhmm: string) => {
-  const h = Number(hhmm.slice(0, 2));
-  const m = hhmm.slice(3, 5);
-  return `${h % 12 || 12}${m === '00' ? '' : `:${m}`} ${h < 12 ? 'a.m.' : 'p.m.'}`;
-};
+const timeLabel = (hhmm: string) => formatWallClock(hhmm.slice(0, 5));
 
 export interface ChCalendarLine {
   kind: ChPeriodKind | 'none';

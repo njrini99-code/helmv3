@@ -92,14 +92,14 @@ beforeEach(() => {
 const stopNavigation = (e: Event) => e.preventDefault();
 
 describe('Player Home · desktop (Player - Home.html)', () => {
-  it('20102 20103 the day, no brief line, Message coach to the coach’s thread; Start a round opens round entry', () => {
+  it('20102 20103 the day, no brief line, Message coach to the coach’s thread; New round opens round entry', () => {
     show();
-    expect(screen.getByRole('heading', { level: 1, name: 'Good afternoon, Theo.' })).toBeTruthy();
+    expect(screen.getByRole('heading', { level: 1, name: 'Good afternoon, Theo' })).toBeTruthy();
     // Owner, 2026-10-06: the CoachHelm brief no longer sits under the greeting.
     expect(screen.queryByText(/Off the tee is gaining you 0\.8 strokes a round/)).toBeNull();
     expect(screen.getByRole('link', { name: 'Message coach' }).getAttribute('href')).toBe('/golf/dashboard/messages?user=coach-maya');
     // Round entry is rebuilt for players (P011), so the button leads there.
-    expect(screen.getByRole('link', { name: 'Start a round' }).getAttribute('href')).toBe('/golf/dashboard/rounds/new');
+    expect(screen.getByRole('link', { name: 'New round' }).getAttribute('href')).toBe('/golf/dashboard/rounds/new');
   });
 
   it('20103 21807 Up next sits in the week with a countdown to the tee time', () => {
@@ -180,6 +180,22 @@ describe('Player Home · desktop (Player - Home.html)', () => {
     expect(legs[3]!.querySelector('.ch-ph-leg__sg')!.textContent).toMatch(/^\+0\.1/);
   });
 
+  it('a leg against the Tour: level as printed is neither, an early read is never toned, and one under its floor says what it needs (A2, A7)', () => {
+    const rows = PREVIEW_PLAYER_HOME.legs!.rows;
+    const with_ = (over: Partial<(typeof rows)[number]>) => home({ legs: { ...PREVIEW_PLAYER_HOME.legs!, rows: rows.map((r) => (r.key === 'approach' ? { ...r, ...over } : r)) } });
+    const bar = () => document.querySelectorAll('.ch-ph-leg')[1]!.querySelector('.ch-ph-bench__t i')!;
+    show(with_({ value: 66.4, bench: 66 }));
+    expect(bar().className).toBe('');
+    cleanup();
+    show(with_({ value: 74, bench: 66, early: 'Early read · 3 rounds' }));
+    expect(bar().className).toBe('');
+    expect(document.querySelectorAll('.ch-ph-leg')[1]!.textContent).toMatch(/Early read · 3 rounds/);
+    cleanup();
+    show(with_({ value: null, needs: 'Needs 2 rounds' }));
+    expect(document.querySelectorAll('.ch-ph-leg')[1]!.textContent).toMatch(/Needs 2 rounds/);
+    expect(document.querySelectorAll('.ch-ph-leg')[1]!.querySelector('.ch-ph-bench')).toBeNull();
+  });
+
   it('CH-2201 CH-2202 CH-2215 reads that fail say so, never zeros or an empty week', () => {
     show(PREVIEW_PLAYER_HOME_FAILED);
     for (const c of ['CH-2201', 'CH-2202', 'CH-2215']) expect(code(c)).not.toBeNull();
@@ -230,7 +246,7 @@ describe('Player Home · desktop (Player - Home.html)', () => {
     const spy = vi.spyOn(console, 'error').mockImplementation(() => {});
     show(home({ scoring: { points: null as never, error: false } }));
     expect(code('CH-2217')).not.toBeNull();
-    expect(screen.getByRole('heading', { level: 1, name: 'Good afternoon, Theo.' })).toBeTruthy();
+    expect(screen.getByRole('heading', { level: 1, name: 'Good afternoon, Theo' })).toBeTruthy();
     spy.mockRestore();
   });
 
@@ -248,8 +264,8 @@ describe('Player Home · desktop (Player - Home.html)', () => {
     expect(welcome.textContent).toMatch(/Welcome to the team/);
     expect(document.querySelector('.ch-ph-next')).not.toBeNull();
     expect(screen.getByRole('heading', { name: 'This week' })).toBeTruthy();
-    // The head carries Start a round, so the welcome keeps only Add classes; no "No rounds posted yet" twice over.
-    expect(screen.getAllByRole('link', { name: 'Start a round' })).toHaveLength(1);
+    // The head carries New round, so the welcome keeps only Add classes; no "No rounds posted yet" twice over.
+    expect(screen.getAllByRole('link', { name: 'New round' })).toHaveLength(1);
     expect(within(welcome).getByRole('link', { name: 'Add classes' })).toBeTruthy();
     for (const c of ['CH-2302', 'CH-2310', 'CH-2311']) expect(code(c)).toBeNull();
   });
@@ -275,7 +291,7 @@ describe('Player Home · phone (Player - Home - Mobile.html)', () => {
     show(PREVIEW_PLAYER_HOME_NO_ROUNDS);
     expect(code('CH-2312')!.closest('.ch-hm-body')).not.toBeNull();
     expect(document.querySelector('.ch-hm-week')).not.toBeNull();
-    expect(screen.getAllByRole('link', { name: 'Start a round' })).toHaveLength(1);
+    expect(screen.getAllByRole('link', { name: 'New round' })).toHaveLength(1);
     for (const c of ['CH-2302', 'CH-2310']) expect(code(c)).toBeNull();
   });
 
@@ -354,7 +370,7 @@ describe('Player Home · the loader', () => {
     expect(roundsQueries[0]).toContainEqual(['in', ['player_id', ['p1']]]);
     expect(data.coachUserId).toBe('u-head');
     expect(data.handicap).toBe(2.1);
-    expect(data.greeting).toMatch(/, Theo\.$/);
+    expect(data.greeting).toMatch(/, Theo$/);
     // Oldest first: r3 (72), r2 (70), r1 (71), r0 (72).
     expect(data.scoring.points.map((p) => p.score)).toEqual([72, 70, 71, 72]);
     expect(data.latest.rounds).toHaveLength(3);

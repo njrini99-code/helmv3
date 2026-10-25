@@ -8,6 +8,9 @@ import { Icon } from '../../ui/Icon';
 import { Modal } from '../../ui/Modal';
 import { SectionBoundary } from '../../ui/SectionBoundary';
 import { haptic } from '../../lib/haptics';
+import { useRovingRows } from '../../lib/roving';
+import { usePageKeys, type ChPageKey } from '../../shell/command/page-keys';
+
 import { CH_ROUTE, chTween } from '../../lib/motion';
 import { useChReducedMotion } from '../../lib/reduced-motion';
 import { useChPhone } from '../../lib/use-phone';
@@ -24,6 +27,8 @@ import { PreferencesSection } from './Preferences';
 import { SettingsPhone } from './phone/SettingsPhone';
 import '../../styles/settings.css';
 import { canvasScrollNow } from '../../lib/smooth-scroll';
+
+const RAIL_KEYS: readonly ChPageKey[] = [{ label: 'Move between sections', keys: ['Up', 'Down'] }];
 
 const ICON: Record<ChSettingsSection, LucideIcon> = {
   account: UserRound,
@@ -88,6 +93,9 @@ export function SettingsView({
   }
   const [ask, setAsk] = useState<ChSettingsSection | null>(null);
   const sectionRail = useRef<HTMLElement>(null);
+  // B11: ↑ and ↓ walk the sections; the rail is one Tab stop.
+  useRovingRows(sectionRail, '.ch-set-rail__i');
+  usePageKeys('Settings', RAIL_KEYS);
   const focusRevealFrame = useRef<number | null>(null);
   useEffect(() => () => {
     if (focusRevealFrame.current !== null) cancelAnimationFrame(focusRevealFrame.current);

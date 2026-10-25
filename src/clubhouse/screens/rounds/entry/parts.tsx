@@ -153,12 +153,8 @@ export function DiscardConfirm({
         variant="danger"
         size="sm"
         busy={busy}
-        feel={null}
-        onClick={() => {
-          // CH-11708: the warning comes before the discard runs.
-          haptic('warning');
-          onDiscard();
-        }}
+        // CH-11708: the warning comes before the discard runs (a danger Button warns as it is pressed).
+        onClick={onDiscard}
       >
         {busy ? 'Discarding…' : discardLabel}
       </Button>

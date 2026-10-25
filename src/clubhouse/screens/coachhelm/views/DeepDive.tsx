@@ -26,8 +26,10 @@ import { coachHelmLinks } from '../PlayerBoard';
 import { useHydrated } from '../use-hydrated';
 import { HelmOff, PlayerHelmFrame } from './Frame';
 import { SerifText } from '../../../ui/SerifText';
+import { Line } from '../../../ui/charts/Line';
 import { EngineState, WhyAudit } from '../EngineState';
 import { CorrectionChips, ReadLater } from '../Corrections';
+import { plural } from '../../../lib/plural';
 
 /** A sentence ends in its stop: a generator's line without one gets a full stop (P013 D6). */
 export const sentence = (t: string): string => (/[.!?…”"’)]$/.test(t.trim()) ? t.trim() : `${t.trim()}.`);
@@ -82,26 +84,29 @@ function wordsFor(voice: ChViewVoice) {
   };
 }
 
-/** To par per 18 holes, oldest to newest: a line that rises as the scores come down. Decoration; the caption and the label say every number. */
+/**
+ * To par per 18 holes, oldest to newest, on the one line chart (ui/charts/Line, B5): a line that rises as the scores come
+ * down, par dashed when the line crosses it, the older rounds hollow and the last filled. Decoration; the caption and the
+ * label say every number.
+ */
 function Strip({ values }: { values: number[] }) {
-  const w = 240;
-  const h = 56;
-  const pad = 7;
   const lo = Math.min(...values);
   const hi = Math.max(...values);
-  const x = (i: number) => pad + (i * (w - pad * 2)) / (values.length - 1);
-  // Lower is better, so a lower score is drawn higher.
-  const y = (v: number) => (hi === lo ? h / 2 : pad + ((v - lo) / (hi - lo)) * (h - pad * 2));
-  const pts = values.map((v, i) => `${x(i).toFixed(1)},${y(v).toFixed(1)}`);
-  const last = values.length - 1;
   return (
-    <svg className="ch-hd-strip__svg" viewBox={`0 0 ${w} ${h}`} aria-hidden="true">
-      {lo <= 0 && hi >= 0 && hi !== lo && <line className="ch-hd-strip__par" x1={pad} x2={w - pad} y1={y(0)} y2={y(0)} />}
-      <polyline className="ch-hd-strip__line" points={pts.join(' ')} />
-      {values.map((v, i) => (
-        <circle key={i} className={'ch-hd-strip__dot' + (i === last ? ' is-last' : '')} cx={x(i)} cy={y(v)} r={i === last ? 4 : 2.6} />
-      ))}
-    </svg>
+    <Line
+      className="ch-hd-strip__chart"
+      interactive={false}
+      label="To par per 18 holes, oldest to newest."
+      points={values.map((y, i) => ({ x: String(i + 1), y }))}
+      lowerIsBetter
+      domain={hi === lo ? [lo - 1, hi + 1] : [lo, hi]}
+      baseline={lo <= 0 && hi >= 0 && hi !== lo ? { value: 0, dashed: true } : undefined}
+      axis={false}
+      ends={false}
+      marks="trail"
+      width={240}
+      height={56}
+    />
   );
 }
 
@@ -182,7 +187,7 @@ function Trend({ i, theme, themesFailed, covered = false, voice = PLAYER_VOICE }
 function Rounds({ i, failed, covered = false, voice = PLAYER_VOICE }: { i: ChDeepInsight; failed: boolean; covered?: boolean; voice?: ChViewVoice }) {
   const w = wordsFor(voice);
   const { total, list } = i.rounds;
-  const aside = total > 0 ? (list.length > 0 && total > list.length ? `Newest ${list.length} of ${total}` : `${total} ${total === 1 ? 'round' : 'rounds'}`) : undefined;
+  const aside = total > 0 ? (list.length > 0 && total > list.length ? `Newest ${list.length} of ${total}` : `${plural(total, 'round')}`) : undefined;
   return (
     <Section id={`${i.base.id}-rounds`} title="The rounds behind it" aside={aside}>
       {failed && total > 0 ? (
@@ -200,7 +205,7 @@ function Rounds({ i, failed, covered = false, voice = PLAYER_VOICE }: { i: ChDee
           title={total > 0 ? 'None of the rounds can be listed' : 'No rounds are named'}
           body={
             total > 0
-              ? `This read was made from ${total} ${total === 1 ? 'round' : 'rounds'}, but none of them can be listed here. ${w.removed}`
+              ? `This read was made from ${plural(total, 'round')}, but none of them can be listed here. ${w.removed}`
               : `This read does not name the rounds it was made from. It uses ${w.stats} over the window above, so there is no list to show.`
           }
         />
@@ -225,7 +230,7 @@ function RoundRow({ r }: { r: ChDiveRound }) {
   return (
     <li>
       {r.href ? (
-        <Link className="ch-hd-r is-link" href={r.href} onClick={() => haptic('select')} aria-label={`Review the round on ${r.date}${r.course ? ` at ${r.course}` : ''}`}>
+        <Link className="ch-hd-r is-link" href={r.href} aria-label={`Review the round on ${r.date}${r.course ? ` at ${r.course}` : ''}`}>
           {body}
           <Icon icon={ChevronRight} size={15} />
         </Link>
@@ -302,7 +307,7 @@ function Where({ id, where }: { id: string; where: ChDiveWhere | null }) {
           return (
             <li key={h.key}>
               {h.href ? (
-                <Link className="ch-hd-where__i is-link" href={h.href} onClick={() => haptic('select')} aria-label={`Review the round on ${h.date}${h.course ? ` at ${h.course}` : ''}, hole ${h.hole}: ${h.what}`}>
+                <Link className="ch-hd-where__i is-link" href={h.href} aria-label={`Review the round on ${h.date}${h.course ? ` at ${h.course}` : ''}, hole ${h.hole}: ${h.what}`}>
                   {body}
                   <Icon icon={ChevronRight} size={15} />
                 </Link>
@@ -403,7 +408,7 @@ function Plan({ i, failed, covered = false, voice = PLAYER_VOICE }: { i: ChDeepI
         {href && <Icon icon={ChevronRight} size={15} />}
       </>
     );
-    return <li key={kind}>{href ? <Link className="ch-hd-plan__i is-link" href={href} onClick={() => haptic('select')}>{body}</Link> : <div className="ch-hd-plan__i">{body}</div>}</li>;
+    return <li key={kind}>{href ? <Link className="ch-hd-plan__i is-link" href={href}>{body}</Link> : <div className="ch-hd-plan__i">{body}</div>}</li>;
   };
   return (
     <Section id={`${i.base.id}-plan`} title="Where this goes">
@@ -493,7 +498,7 @@ function Dossier({ i, d, voice = PLAYER_VOICE, fa }: { i: ChDeepInsight; d: ChDe
           where="dive"
           extra={
             message ? (
-              <Link className="ch-hd-msg" href={message} onClick={() => haptic('select')}>
+              <Link className="ch-hd-msg" href={message}>
                 <Icon icon={MessageSquare} size={15} />
                 Message {coach.first}
               </Link>
@@ -626,7 +631,7 @@ function Ledger({ list, cleared = [], pickedId, onPick, dismissed }: { list: rea
 export function heroLine(d: Pick<ChDeepDive, 'counts' | 'plansFailed'>, first: string | null = null): string {
   const { insights, inPlan } = d.counts;
   const whose = first ? `${first}’s` : 'your';
-  const head = `CoachHelm has ${insights} ${insights === 1 ? 'read' : 'reads'} on ${whose} game`;
+  const head = `CoachHelm has ${plural(insights, 'read')} on ${whose} game`;
   if (d.plansFailed || inPlan === 0) return `${head}.`;
   if (insights === 1) return `${head}, and it is in ${whose} plan.`;
   return `${head}, ${inPlan === insights ? 'all' : inPlan} of them in ${whose} plan.`;
@@ -736,10 +741,10 @@ export function DeepDive({ load, initialId = null, voice = PLAYER_VOICE, writes 
             f
               ? none
                 ? `CoachHelm reads ${f}’s rounds for patterns worth time, and each one lands here with its evidence. The first reads follow ${f}’s first round.`
-                : `CoachHelm writes an insight when a pattern in ${f}’s rounds is clear enough to stand behind. None is yet${d.rounds ? `, from the ${d.rounds} ${d.rounds === 1 ? 'round' : 'rounds'} ${f} has posted` : ''}. It checks again as ${f} posts more.`
+                : `CoachHelm writes an insight when a pattern in ${f}’s rounds is clear enough to stand behind. None is yet${d.rounds ? `, from the ${plural(d.rounds, 'round')} ${f} has posted` : ''}. It checks again as ${f} posts more.`
               : none
                 ? 'CoachHelm reads your rounds for patterns worth your time, and each one lands here with its evidence. Post a round and the first reads follow.'
-                : `CoachHelm writes an insight when a pattern in your rounds is clear enough to stand behind. None is yet${d.rounds ? `, from the ${d.rounds} ${d.rounds === 1 ? 'round' : 'rounds'} you have posted` : ''}. It checks again as you post more.`
+                : `CoachHelm writes an insight when a pattern in your rounds is clear enough to stand behind. None is yet${d.rounds ? `, from the ${plural(d.rounds, 'round')} you have posted` : ''}. It checks again as you post more.`
           }
           action={
             startHref ? (

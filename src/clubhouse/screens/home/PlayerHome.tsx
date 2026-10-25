@@ -26,6 +26,7 @@ import { NoRoundsYet, PlayerHomePhone } from './PlayerHomePhone';
 import { Week } from './Week';
 import { messageCoachHref, postRoundHref } from './player-links';
 import { useHomeDayRollover } from './use-day-rollover';
+import { NoTeam } from '../../ui/NoTeam';
 import '../../styles/home.css';
 
 /**
@@ -99,7 +100,7 @@ function DeskHead({ data, post }: { data: ChPlayerHome; post: string | null }) {
         </Button>
         {post && (
           <Button variant="primary" leftIcon={Plus} href={post}>
-            Start a round
+            New round
           </Button>
         )}
       </div>
@@ -160,7 +161,7 @@ function PlayerFirstRun({ data }: { data: ChPlayerHome }) {
         action={
           start ? (
             <Button variant="primary" leftIcon={Plus} href={start}>
-              Start a round
+              New round
             </Button>
           ) : undefined
         }
@@ -179,23 +180,9 @@ function PlayerFirstRun({ data }: { data: ChPlayerHome }) {
 /** A player on no active team: nothing to show yet, and how that changes. */
 export function PlayerHomeNoTeam() {
   // Joining a team lives in Settings' Golf profile (CH-8302).
-  const settings = rebuiltHref('/golf/dashboard/settings?section=golf', 'player');
   return (
     <main className="ch-h-main">
-      <EmptyState
-        size="page"
-        code="CH-2313"
-        shape="rows"
-        title="You aren’t on a team yet"
-        body="Ask your coach for your team’s code or an invite. Once you join, Home shows your week, your rounds and your stats."
-        action={
-          settings ? (
-            <Button variant="primary" href={settings}>
-              Open team settings
-            </Button>
-          ) : undefined
-        }
-      />
+      <NoTeam code="CH-2313" coach={false} body="Ask your coach for your team’s code or an invite. Once you join, Home shows your week, your rounds and your stats." />
     </main>
   );
 }

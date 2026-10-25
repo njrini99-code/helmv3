@@ -1,5 +1,6 @@
 import type { TravelerClass } from '@/app/golf/actions/travel';
 import type { ChHubTripEvent } from './hub';
+import { firstName } from '../lib/names';
 
 /*
  * Team Hub's trip builder, the parts that are plain functions: the dates a trip covers and the warning about a traveler's
@@ -47,7 +48,6 @@ export function checkKey(teamId: string, playerIds: string[], w: ChTripWindow): 
   return [teamId, [...playerIds].sort().join(','), w.fromDate, w.toDate, w.fromTime ?? '', w.toTime ?? ''].join('|');
 }
 
-const firstName = (name: string) => name.trim().split(/\s+/)[0] || name;
 
 export interface ChClashLine {
   playerId: string;

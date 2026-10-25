@@ -1,22 +1,26 @@
 /**
  * One canvas colour from cold start to first paint.
  *
- * The page canvas is the `--fw-color-canvas` token (src/styles/design-tokens.css,
- * light in :root, dark in the `.dark` block). Places that can't read CSS
- * carry a copy of it:
- *   - the iOS FwColorCanvas colour asset (LaunchScreen.storyboard + the
- *     GolfBridgeViewController view/webView/scrollView background),
- *   - the storyboard's inline namedColor fallback,
- *   - capacitor.config.ts SplashScreen / ios backgroundColor (and the
- *     generated ios/App/App/capacitor.config.json),
+ * The web's page canvas is the `--fw-color-canvas` token (src/styles/design-tokens.css,
+ * light in :root, dark in the `.dark` block). Web places that can't read CSS carry a copy of it:
  *   - the theme-color fallback in src/lib/golf/theme.ts,
  *   - the ThemeScript pre-paint theme-color (src/components/golf/theme/ThemeScript.tsx),
  *   - public/offline.html, which renders with no app CSS.
- * If the token changes and a copy doesn't, the launch shows a visible colour
- * step (a flash in dark mode). This test fails first, naming the stale copy.
- * The splash PNGs in Splash.imageset are binary and are not checked here.
+ *
+ * The native app's canvas is one switch (A15): config/native-canvas.json names the active palette, Fairway's
+ * `--fw-color-canvas` or Clubhouse's phone `--ch-bg-page`, and scripts/native-canvas.mjs writes it into:
+ *   - the iOS AppCanvas colour asset (LaunchScreen.storyboard + the
+ *     GolfBridgeViewController view/webView/scrollView background),
+ *   - the storyboard's inline namedColor fallback,
+ *   - the Splash.imageset images (copied from config/native-canvas/splash/<palette>/),
+ *   - capacitor.config.ts SplashScreen / ios / android backgroundColor (and the
+ *     generated ios/App/App/capacitor.config.json),
+ *   - Android's splash.xml and styles.xml.
+ * Each palette is pinned to its token, and every native copy to the active palette. If a token changes and a copy
+ * doesn't, the launch shows a visible colour step (a flash in dark mode). This test fails first, naming the stale copy.
  */
 import { describe, it, expect } from 'vitest';
+import { execFileSync } from 'node:child_process';
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 
@@ -67,44 +71,79 @@ const lightToken = parseOklch(tokens.match(canvasDecl)![1]!);
 const darkStart = tokens.search(/^\.dark,?\s*$/m);
 const darkToken = parseOklch(tokens.slice(darkStart).match(canvasDecl)![1]!);
 
+/** Clubhouse's page at phone width (the app is always phone width): the light value in the phone block, the dark in the dark theme. */
+const ch = read('src/clubhouse/styles/tokens.css');
+const chPage = /--ch-bg-page:\s*(#[0-9a-fA-F]{6});/;
+const chPhone = ch.slice(ch.search(/@media \(max-width: 820px\) \{\s*\[data-ui='clubhouse'\] \{/));
+const chDark = ch.slice(ch.search(/html\[data-fw-theme='dark'\] \[data-ui='clubhouse'\] \{/));
+const chLightToken = hexToRgb(chPhone.match(chPage)![1]!);
+const chDarkToken = hexToRgb(chDark.match(chPage)![1]!);
+
+const native = JSON.parse(read('config/native-canvas.json')) as { active: string; palettes: Record<string, { light: string; dark: string }> };
+const active = native.palettes[native.active]!;
+const nativeLight = hexToRgb(active.light);
+const nativeDark = hexToRgb(active.dark);
+
+describe('native canvas palettes (config/native-canvas.json) match their tokens', () => {
+  it('fairway is --fw-color-canvas', () => {
+    expectClose(hexToRgb(native.palettes.fairway!.light), lightToken, 'palette fairway light');
+    expectClose(hexToRgb(native.palettes.fairway!.dark), darkToken, 'palette fairway dark');
+  });
+
+  it('clubhouse is the phone --ch-bg-page', () => {
+    expect(chLightToken).toEqual(hexToRgb('#ede9df'));
+    expect(hexToRgb(native.palettes.clubhouse!.light)).toEqual(chLightToken);
+    expect(hexToRgb(native.palettes.clubhouse!.dark)).toEqual(chDarkToken);
+  });
+
+  it('the active palette is one of them, and scripts/native-canvas.mjs --check agrees with every copy', () => {
+    expect(Object.keys(native.palettes)).toContain(native.active);
+    expect(() => execFileSync(process.execPath, [join(root, 'scripts/native-canvas.mjs'), '--check'], { stdio: 'pipe' })).not.toThrow();
+  });
+});
+
 describe('--fw-color-canvas copies stay in sync', () => {
   it('parses both token values', () => {
     expect(darkStart).toBeGreaterThan(0);
   });
 
-  it('iOS FwColorCanvas colour asset (any + dark)', () => {
-    const json = JSON.parse(read('ios/App/App/Assets.xcassets/FwColorCanvas.colorset/Contents.json'));
+  it('iOS AppCanvas colour asset (any + dark) is the active native palette', () => {
+    const json = JSON.parse(read('ios/App/App/Assets.xcassets/AppCanvas.colorset/Contents.json'));
     const toRgb = (c: { components: Record<string, string> }): RGB =>
       (['red', 'green', 'blue'] as const).map((k) => parseInt(c.components[k]!, 16)) as RGB;
     const any = json.colors.find((c: { appearances?: unknown }) => !c.appearances);
     const dark = json.colors.find((c: { appearances?: { value: string }[] }) =>
       c.appearances?.some((a) => a.value === 'dark'),
     );
-    expectClose(toRgb(any.color), lightToken, 'FwColorCanvas (Any)');
-    expectClose(toRgb(dark.color), darkToken, 'FwColorCanvas (Dark)');
+    expectClose(toRgb(any.color), nativeLight, 'AppCanvas (Any)');
+    expectClose(toRgb(dark.color), nativeDark, 'AppCanvas (Dark)');
   });
 
   it('LaunchScreen.storyboard uses the asset, and its inline fallback matches', () => {
     const sb = read('ios/App/App/Base.lproj/LaunchScreen.storyboard');
-    expect(sb).toContain('<color key="backgroundColor" name="FwColorCanvas"/>');
-    const m = sb.match(/<namedColor name="FwColorCanvas">\s*<color red="([\d.]+)" green="([\d.]+)" blue="([\d.]+)"/);
+    expect(sb).toContain('<color key="backgroundColor" name="AppCanvas"/>');
+    const m = sb.match(/<namedColor name="AppCanvas">\s*<color red="([\d.]+)" green="([\d.]+)" blue="([\d.]+)"/);
     expect(m).not.toBeNull();
-    expectClose([1, 2, 3].map((i) => Math.round(Number(m![i]) * 255)) as RGB, lightToken, 'storyboard namedColor');
+    expectClose([1, 2, 3].map((i) => Math.round(Number(m![i]) * 255)) as RGB, nativeLight, 'storyboard namedColor');
   });
 
   it('GolfBridgeViewController reads the asset', () => {
-    expect(read('ios/App/App/GolfBridgeViewController.swift')).toContain('UIColor(named: "FwColorCanvas")');
+    expect(read('ios/App/App/GolfBridgeViewController.swift')).toContain('UIColor(named: "AppCanvas")');
   });
 
-  it('capacitor.config.ts and the generated iOS config use the light canvas', () => {
+  it('capacitor.config.ts, the generated iOS config and Android\'s splash use the active light canvas', () => {
     const ts = read('capacitor.config.ts');
     const json = JSON.parse(read('ios/App/App/capacitor.config.json'));
     const splash = ts.match(/SplashScreen:\s*{[^}]*backgroundColor:\s*'(#[0-9A-Fa-f]{6})'/);
     const ios = ts.match(/ios:\s*{[^}]*backgroundColor:\s*'(#[0-9A-Fa-f]{6})'/);
-    expectClose(hexToRgb(splash![1]!), lightToken, 'capacitor.config.ts SplashScreen');
-    expectClose(hexToRgb(ios![1]!), lightToken, 'capacitor.config.ts ios');
-    expectClose(hexToRgb(json.plugins.SplashScreen.backgroundColor), lightToken, 'capacitor.config.json SplashScreen');
-    expectClose(hexToRgb(json.ios.backgroundColor), lightToken, 'capacitor.config.json ios');
+    const android = ts.match(/android:\s*{[^}]*backgroundColor:\s*'(#[0-9A-Fa-f]{6})'/);
+    expectClose(hexToRgb(splash![1]!), nativeLight, 'capacitor.config.ts SplashScreen');
+    expectClose(hexToRgb(ios![1]!), nativeLight, 'capacitor.config.ts ios');
+    expectClose(hexToRgb(android![1]!), nativeLight, 'capacitor.config.ts android');
+    expectClose(hexToRgb(json.plugins.SplashScreen.backgroundColor), nativeLight, 'capacitor.config.json SplashScreen');
+    expectClose(hexToRgb(json.ios.backgroundColor), nativeLight, 'capacitor.config.json ios');
+    expectClose(hexToRgb(read('android/app/src/main/res/drawable/splash.xml').match(/android:color="(#[0-9A-Fa-f]{6})"/)![1]!), nativeLight, 'android splash.xml');
+    expectClose(hexToRgb(read('android/app/src/main/res/values/styles.xml').match(/windowSplashScreenBackground">(#[0-9A-Fa-f]{6})</)![1]!), nativeLight, 'android styles.xml');
   });
 
   it('theme.ts fallback theme-color', () => {

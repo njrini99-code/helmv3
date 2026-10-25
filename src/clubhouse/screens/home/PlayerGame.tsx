@@ -1,17 +1,17 @@
 'use client';
 
-import { PenLine } from 'lucide-react';
+import { Pencil } from 'lucide-react';
 import { useId, type ReactNode } from 'react';
 import type { ChPlayerHome, ChPlayerLeg, ChScoringPoint } from '../../data/player-home';
 import { EmptyState } from '../../ui/States';
 import { Icon } from '../../ui/Icon';
 import { RefreshNotice } from '../../ui/RefreshNotice';
 import { Segmented } from '../../ui/Segmented';
-import { changeTone, formatFixed, formatSigned, NO_DATA } from '../../lib/format';
-import { changeSe, deltaTone, deltaWords } from '../../lib/stats-signal';
+import { changeTone, formatFixed, formatHcp, formatSigned, NO_DATA } from '../../lib/format';
+import { NoData } from '../../ui/NoData';
+import { changeSe, deltaTone, deltaWords, halvesChange } from '../../lib/stats-signal';
 import { sgBaseline, type ChSgTour } from '../../lib/sg';
 import { monotonePath } from '../../lib/chart';
-import { formatHcp } from '../roster/format';
 import { useChSessionState } from '../../lib/session-state';
 
 type Span = 5 | 10 | 20;
@@ -65,14 +65,16 @@ function Scoring({ data, phone, covered }: { data: ChPlayerHome; phone: boolean;
       mean != null && prevMean != null ? (
         <span className="ch-ph-viz ch-ph-viz--avg" aria-hidden="true">
           <i className="is-was" style={{ left: `${at(prevMean)}%` }} />
-          <i className={'is-now ' + (mean <= prevMean ? 'is-better' : 'is-worse')} style={{ left: `${at(mean)}%` }} />
+          {/* The mark takes the row's own verdict (deltaSignal): toned only when the change clears its standard error, so
+              equal or noisy averages draw a neutral mark beside "No clear change" (CONS-20). */}
+          <i className={('is-now ' + deltaSignal).trim()} style={{ left: `${at(mean)}%` }} />
           <b style={{ left: `${Math.min(at(mean), at(prevMean))}%`, width: `${Math.abs(at(mean) - at(prevMean))}%` }} />
         </span>
       ) : null,
     'Strokes gained':
       sg != null ? (
         <span className="ch-ph-viz ch-ph-viz--sg" aria-hidden="true">
-          <i className={sg >= 0 ? 'is-gain' : 'is-loss'} style={sg >= 0 ? { left: '50%', width: `${Math.min(50, (sg / 3) * 50)}%` } : { right: '50%', width: `${Math.min(50, (-sg / 3) * 50)}%` }} />
+          <i className={changeTone(sg, false, 1)} style={sg >= 0 ? { left: '50%', width: `${Math.min(50, (sg / 3) * 50)}%` } : { right: '50%', width: `${Math.min(50, (-sg / 3) * 50)}%` }} />
         </span>
       ) : null,
     'Under par': withPar.length ? (
@@ -96,7 +98,7 @@ function Scoring({ data, phone, covered }: { data: ChPlayerHome; phone: boolean;
     <Segmented<`${Span}`> redraws size={phone ? 'md' : 'sm'} label="Rounds shown" value={`${n}`} onChange={(v) => setN(Number(v) as Span)} options={options} />
   );
   const body = data.scoring.error ? (
-    <RefreshNotice code="CH-2215" title="Your rounds didn’t load" body="Posted rounds are safe. Try again; the error has been reported." covered={covered} />
+    <RefreshNotice code="CH-2215" title="Your rounds didn’t load" body="Posted rounds are safe. Try again." covered={covered} />
   ) : shown.length < 2 ? (
     <EmptyState
       compact
@@ -124,7 +126,7 @@ function Scoring({ data, phone, covered }: { data: ChPlayerHome; phone: boolean;
   );
   const note = !data.scoring.error && shown.length >= 5 && (
     <p className="ch-ph-note">
-      <Icon icon={PenLine} size={14} />
+      <Icon icon={Pencil} size={14} />
       {scoringNote(shown)}
     </p>
   );
@@ -312,7 +314,7 @@ function ScoreChart({ points, phone }: { points: ChScoringPoint[]; phone: boolea
 
 function Legs({ legs, tour, phone, covered }: { legs: ChPlayerHome['legs']; tour: ChSgTour; phone: boolean; covered: boolean }) {
   if (!legs) return null;
-  const any = legs.rows.some((l) => l.value != null);
+  const any = legs.rows.some((l) => l.value != null || l.needs);
   return (
     <section className={phone ? 'ch-hm-sec ch-ph-legs-sec is-phone' : 'ch-ph-legs-sec'} aria-labelledby="ch-ph-legs">
       {phone ? (
@@ -331,7 +333,7 @@ function Legs({ legs, tour, phone, covered }: { legs: ChPlayerHome['legs']; tour
         </div>
       )}
       {legs.cacheError && (
-        <RefreshNotice code="CH-2216" title="Some of your figures didn’t load" body="Scores, greens and putts are right; scrambling is missing. The error has been reported." covered={covered} />
+        <RefreshNotice code="CH-2216" title="Some of your figures didn’t load" body="Scores, greens and putts are right; scrambling is missing." covered={covered} />
       )}
       {/* Figures that did not load are not "nothing to break down": the notice above is the whole answer then (CH-2216). */}
       {!any ? (
@@ -341,7 +343,7 @@ function Legs({ legs, tour, phone, covered }: { legs: ChPlayerHome['legs']; tour
       ) : (
         <div className="ch-ph-legs">
           {legs.rows.map((g) => (
-            <Leg key={g.key} g={g} />
+            <Leg key={g.key} g={g} tour={tour} />
           ))}
         </div>
       )}
@@ -349,11 +351,12 @@ function Legs({ legs, tour, phone, covered }: { legs: ChPlayerHome['legs']; tour
   );
 }
 
-function Leg({ g }: { g: ChPlayerLeg }) {
+function Leg({ g, tour }: { g: ChPlayerLeg; tour: ChSgTour }) {
   const fmt = (v: number) => (g.unit === '%' ? `${Math.round(v)}%` : v.toFixed(g.digits));
   // The benchmark bar: a share of the scale for percentages, or a putts band (fewer is further right).
   const pos = (v: number) => (g.unit === '%' ? Math.max(0, Math.min(100, v)) : Math.max(0, Math.min(100, ((36 - v) / (36 - 26)) * 100)));
-  const better = g.value != null && g.bench != null ? (g.lowerIsBetter ? g.value <= g.bench : g.value >= g.bench) : null;
+  // Against the Tour as the two figures print (a whole percent, putts to a tenth): level is neither, and an early read is never toned.
+  const against = g.value != null && g.bench != null && !g.early ? changeTone(g.value - g.bench, g.lowerIsBetter, g.unit === '%' ? 0 : g.digits) : '';
   return (
     <article className="ch-ph-leg" aria-labelledby={`ch-ph-leg-${g.key}`}>
       <div className="ch-ph-leg__h">
@@ -366,19 +369,21 @@ function Leg({ g }: { g: ChPlayerLeg }) {
         )}
       </div>
       <div className="ch-ph-leg__v">
-        <span className="ch-num">{g.value == null ? NO_DATA : fmt(g.value)}</span>
-        <em>{g.stat}</em>
+        <span className="ch-num">{g.value == null ? <NoData /> : fmt(g.value)}</span>
+        <em>{g.needs ? `${g.stat} · ${g.needs}` : g.early ? `${g.stat} · ${g.early}` : g.stat}</em>
       </div>
       <Spark data={g.trend} lowerIsBetter={g.lowerIsBetter} label={g.stat} />
       {g.value != null && g.bench != null && (
         <div className="ch-ph-bench">
           <span className="ch-ph-bench__t" aria-hidden="true">
-            <i className={better ? 'is-gain' : 'is-loss'} style={{ width: `${pos(g.value)}%` }} />
+            <i className={against} style={{ width: `${pos(g.value)}%` }} />
             <em style={{ left: `${pos(g.bench)}%` }} />
           </span>
           <span className="ch-ph-bench__k ch-num">
             <span>You {fmt(g.value)}</span>
-            <span>Tour {fmt(g.bench)}</span>
+            <span>
+              {sgBaseline(tour).mark} {fmt(g.bench)}
+            </span>
           </span>
         </div>
       )}
@@ -403,12 +408,11 @@ function Spark({ data, lowerIsBetter, label }: { data: number[]; lowerIsBetter: 
   const hi = Math.max(...data) + span * 0.18;
   const x = (i: number) => (i * w) / (data.length - 1);
   const y = (v: number) => pad + ((lowerIsBetter ? v - lo : hi - v) / (hi - lo)) * (h - pad * 2);
-  const ch = data[data.length - 1]! - data[0]!;
-  const good = lowerIsBetter ? ch < -0.2 : ch > 0.2;
-  const bad = lowerIsBetter ? ch > 0.2 : ch < -0.2;
+  // The newer half of the rounds against the older half, past its standard error (A1): never the first round against the last.
+  const ch = halvesChange(data, null);
   const mean = data.reduce((a, b) => a + b, 0) / data.length;
-  const tone = good ? 'is-gain' : bad ? 'is-loss' : '';
-  const word = good ? 'Improving' : bad ? 'Slipping' : 'Steady';
+  const tone = ch ? deltaTone(ch.delta, ch.se, lowerIsBetter) : '';
+  const word = tone === 'is-gain' ? 'Improving' : tone === 'is-loss' ? 'Slipping' : 'No clear change';
   const pts = data.map((v, i) => [x(i), y(v)] as [number, number]);
   const line = monotonePath(pts);
   const last = pts[pts.length - 1]!;

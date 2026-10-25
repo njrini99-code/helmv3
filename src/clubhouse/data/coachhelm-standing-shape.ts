@@ -5,8 +5,8 @@ import { capByParentSg, parentSgMetric, sgBehindTour } from '@/lib/coachhelm/v3/
 import { METRIC_IDS, type MetricId } from '@/lib/coachhelm/v3/metrics/registry';
 import { METRIC_RENDER_CONFIG } from '@/lib/coachhelm/v3/standing/metric-config';
 import type { PlayerStanding } from '@/lib/coachhelm/v3/standing/types';
-import { fmtShortDate } from '@/components/golf/coachhelm/home/buildPlayerHubViewModel';
-import { formatSigned, NO_DATA } from '../lib/format';
+import { DEFAULT_TIMEZONE } from '@/lib/calendar/timezone';
+import { formatFixed, formatSigned, NO_DATA } from '../lib/format';
 import { LADDER_METRICS, toChLadder, type ChLadder, type ChLadderReads } from './coachhelm-ladder-shape';
 import { speak, type ChViewer } from './coachhelm-voice';
 
@@ -199,26 +199,27 @@ export function figure(id: string, unit: Unit, v: number): string {
     case 'percent':
       return `${Math.round(v)}%`;
     case 'strokes':
-      return signed(id) ? formatSigned(v, 2) : v.toFixed(2);
+      // Strokes gained and the deltas to one decimal, as every other screen prints them (A20); a par scoring average keeps two.
+      return signed(id) ? formatSigned(v, 1) : formatFixed(v, 2);
     case 'yards':
       return `${Math.round(v)} yd`;
     case 'feet':
       return `${Math.round(v)} ft`;
     case 'count':
-      return v.toFixed(1);
+      return formatFixed(v, 1);
     default:
       return formatValue(v, unit);
   }
 }
 
-/** How far apart two values are, in the metric's unit: "9 pts", "3 ft", "0.42 strokes". */
-function gap(unit: Unit, d: number): string {
+/** How far apart two values are, in the metric's unit: "9 pts", "3 ft", "0.4 strokes" ("0.42 strokes" for a par scoring average). */
+function gap(unit: Unit, d: number, digits: number): string {
   const a = Math.abs(d);
   switch (unit) {
     case 'percent':
       return `${Math.round(a)} pts`;
     case 'strokes':
-      return `${a.toFixed(2)} strokes`;
+      return `${a.toFixed(digits)} strokes`;
     case 'yards':
       return `${Math.round(a)} yd`;
     case 'feet':
@@ -228,16 +229,29 @@ function gap(unit: Unit, d: number): string {
   }
 }
 
-/** The player against one reference, by the metric's own direction. `ref`: how the reference is named ("the Tour", "your team average"). */
-export function versus(you: number, other: number, direction: 'higher_better' | 'lower_better', unit: Unit, ref: string): ChStandVs {
-  if (valuesDisplayEqual(you, other, unit)) return { sense: 'level', text: `Level with ${ref}` };
+/**
+ * The player against one reference, by the metric's own direction. `ref`: how the reference is named ("the Tour", "your team average").
+ * `id` sets the strokes' digits: a signed figure (strokes gained, a delta) is level when both print alike to one decimal (A20).
+ */
+export function versus(you: number, other: number, direction: 'higher_better' | 'lower_better', unit: Unit, ref: string, id = ''): ChStandVs {
+  const digits = unit === 'strokes' && signed(id) ? 1 : 2;
+  const level = unit === 'strokes' ? you.toFixed(digits) === other.toFixed(digits) : valuesDisplayEqual(you, other, unit);
+  if (level) return { sense: 'level', text: `Level with ${ref}` };
   const better = direction === 'higher_better' ? you > other : you < other;
-  const mag = gap(unit, you - other);
+  const mag = gap(unit, you - other, digits);
   if (unit === 'feet') return { sense: better ? 'ahead' : 'behind', text: `${mag} ${better ? 'closer than' : 'farther than'} ${ref}` };
   return { sense: better ? 'ahead' : 'behind', text: `${mag} ${better ? 'ahead of' : 'behind'} ${ref}` };
 }
 
 const oneDecimal = (v: number) => v.toFixed(1);
+
+/** "Oct 22": the day of the newest refresh in the team's time zone (A20), so an evening refresh in the US is not tomorrow. */
+export function refreshedOn(iso: string | null, timeZone: string): string | null {
+  if (!iso) return null;
+  const d = new Date(iso.length === 10 ? `${iso}T12:00:00Z` : iso);
+  if (Number.isNaN(d.getTime())) return null;
+  return new Intl.DateTimeFormat('en-US', { month: 'short', day: 'numeric', timeZone }).format(d);
+}
 
 /**
  * What closing the gap is worth, when it is worth drawing. Sized by the player's own attempts a round where the cache has them; without
@@ -274,8 +288,8 @@ function toRow(s: PlayerStanding, id: MetricId, baseline: number | null, attempt
     tourNote: !tourShown ? pgaOmissionNote({ pga_omitted: s.pga_omitted, pga_omitted_reason: s.pga_omitted_reason, is_womens: womens }) : null,
     team: teamShown ? { text: figure(id, cfg.unit, s.team_avg as number), pct: toScalePct(s.team_avg as number, scale), n: s.team_n } : null,
     teamNote: teamShown ? null : `Team comparison needs ${TEAM_MARKER_MIN_N} teammates with this stat${s.team_n > 0 ? ` (${s.team_n} so far)` : ''}.`,
-    vsTour: tourShown ? versus(s.player_value, s.pga_value, cfg.direction, cfg.unit, tourRef) : null,
-    vsTeam: teamShown ? versus(s.player_value, s.team_avg as number, cfg.direction, cfg.unit, coach ? 'the team average' : 'your team average') : null,
+    vsTour: tourShown ? versus(s.player_value, s.pga_value, cfg.direction, cfg.unit, tourRef, id) : null,
+    vsTeam: teamShown ? versus(s.player_value, s.team_avg as number, cfg.direction, cfg.unit, coach ? 'the team average' : 'your team average', id) : null,
     percentile: teamShown && s.team_pct != null ? (coach ? speak(teamCohortText(s.team_pct, s.team_n), viewer) : teamCohortText(s.team_pct, s.team_n)) || null : null,
     projection: worth
       ? {
@@ -296,7 +310,13 @@ function toRow(s: PlayerStanding, id: MetricId, baseline: number | null, attempt
  * `viewer`: whose page it is (the player's own by default); a coach's names the team average without "your" and the rank by the
  * player.
  */
-export function toChStanding(rows: readonly PlayerStanding[], baseline: ChStandBaselineRead, reads: ChLadderReads | null = null, viewer: ChViewer = { role: 'player' }): ChStanding {
+export function toChStanding(
+  rows: readonly PlayerStanding[],
+  baseline: ChStandBaselineRead,
+  reads: ChLadderReads | null = null,
+  viewer: ChViewer = { role: 'player' },
+  timeZone: string = DEFAULT_TIMEZONE,
+): ChStanding {
   const roundsPlayed = baseline.status === 'ok' ? baseline.roundsPlayed : null;
   const average = baseline.status === 'ok' && roundsPlayed != null && roundsPlayed >= MIN_PROJECTION_ROUNDS ? baseline.scoringAverage : null;
   const byId = new Map(rows.map((r) => [r.metric_id as string, r]));
@@ -326,7 +346,7 @@ export function toChStanding(rows: readonly PlayerStanding[], baseline: ChStandB
     rounds: roundsPlayed,
     scoringAverage: average != null ? oneDecimal(average) : null,
     baselineFailed: baseline.status === 'failed',
-    refreshed: fmtShortDate(newest),
+    refreshed: refreshedOn(newest, timeZone),
     tour: rows.some((r) => r.is_womens === true) ? 'LPGA Tour' : 'Tour',
     groups,
     counts: {
