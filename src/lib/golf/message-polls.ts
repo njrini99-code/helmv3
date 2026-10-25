@@ -200,6 +200,20 @@ export function tallyPoll(poll: Poll, rows: readonly PollResponseRow[], messageI
   return { counts, voters, voterCount: people.size, mine, leaders };
 }
 
+/**
+ * No poll timer waits longer than this: a 30-day end can't be one `setTimeout` (browsers cap the delay, and iOS pauses
+ * timers in the background), so the card re-arms in chunks until the end and re-checks when the page is shown again.
+ */
+export const POLL_TIMER_CHUNK_MS = 6 * 60 * 60 * 1000;
+
+/** How long the card waits before checking its end again: to the end (plus a beat), at most a chunk; null once ended. */
+export function nextPollCheckDelay(closesAt: string | null, now: number): number | null {
+  if (!closesAt) return null;
+  const end = Date.parse(closesAt);
+  if (!Number.isFinite(end) || end <= now) return null;
+  return Math.min(end - now + 50, POLL_TIMER_CHUNK_MS);
+}
+
 /** Closed by its sender, or past its end time. */
 export function isPollClosed(poll: Poll, now: number): boolean {
   if (poll.closedAt) return true;
@@ -273,13 +287,3 @@ export function pollHitOnlyInFooter(text: string, query: string): boolean {
   return !body.includes(q);
 }
 
-/** Two payloads that say the same poll: the question, the choices in order, one answer or many, and the end. */
-export function samePollPayload(a: Pick<PollPayload, 'question' | 'options' | 'multi' | 'closes_at'>, b: Pick<PollPayload, 'question' | 'options' | 'multi' | 'closes_at'>): boolean {
-  return (
-    a.question === b.question &&
-    a.multi === b.multi &&
-    (a.closes_at ?? null) === (b.closes_at ?? null) &&
-    a.options.length === b.options.length &&
-    a.options.every((o, i) => o.label === b.options[i]!.label)
-  );
-}

@@ -10,6 +10,7 @@ import {
   buildPollPayload,
   encodeChoice,
   isPollClosed,
+  nextPollCheckDelay,
   pollEligibleCount,
   pollState,
   pollShare,
@@ -82,16 +83,24 @@ function usePollClock(closesAt: string | null, pageNow: string): number {
   useEffect(() => {
     setNow(Number.isFinite(page) ? Math.max(page, Date.now()) : Date.now());
   }, [page]);
+  // D13: never one long timer. Each check re-arms the next (at most six hours), and a page shown again re-checks at once,
+  // because iOS pauses timers in the background.
   useEffect(() => {
-    if (!closesAt) return;
-    const end = Date.parse(closesAt);
-    const left = end - Date.now();
-    if (!Number.isFinite(end) || left <= 0) return;
-    const atEnd = setTimeout(() => setNow(Date.now()), Math.min(left + 50, 2_147_000_000));
+    const delay = nextPollCheckDelay(closesAt, Date.now());
+    if (delay == null) return;
+    const next = setTimeout(() => setNow(Date.now()), delay);
+    const left = Date.parse(closesAt as string) - Date.now();
     const tick = left < 3_600_000 ? setInterval(() => setNow(Date.now()), 15_000) : null;
+    const recheck = () => {
+      if (document.visibilityState === 'visible') setNow(Date.now());
+    };
+    document.addEventListener('visibilitychange', recheck);
+    window.addEventListener('pageshow', recheck);
     return () => {
-      clearTimeout(atEnd);
+      clearTimeout(next);
       if (tick) clearInterval(tick);
+      document.removeEventListener('visibilitychange', recheck);
+      window.removeEventListener('pageshow', recheck);
     };
   }, [closesAt, now]);
   return now;

@@ -220,7 +220,13 @@ describe('follow-up rules (P-2 0.3)', () => {
     expect(M.pollState({ ...poll, closedAt: '2020-01-01T00:00:00Z', closesAt: '2020-01-01T00:00:00Z' }, Date.now())).toBe('closed');
     const tally = M.tallyPoll(poll, [{ message_id: 'm', user_id: 'gone', choice: 'o1' }], 'm', 'me');
     expect(M.pollEligibleCount(tally, ['me', 'ana'])).toBe(3);
-    expect(M.samePollPayload(p, { ...p })).toBe(true);
-    expect(M.samePollPayload(p, { ...p, multi: true })).toBe(false);
+  });
+  it('re-checks the end in chunks of at most six hours (D13)', () => {
+    const now = Date.parse('2026-10-01T12:00:00Z');
+    expect(M.nextPollCheckDelay(null, now)).toBeNull();
+    expect(M.nextPollCheckDelay('2026-10-01T11:00:00Z', now)).toBeNull();
+    expect(M.nextPollCheckDelay('2026-10-01T12:10:00Z', now)).toBe(10 * 60 * 1000 + 50);
+    expect(M.nextPollCheckDelay('2026-10-30T12:00:00Z', now)).toBe(M.POLL_TIMER_CHUNK_MS);
+    expect(M.POLL_TIMER_CHUNK_MS).toBe(6 * 60 * 60 * 1000);
   });
 });

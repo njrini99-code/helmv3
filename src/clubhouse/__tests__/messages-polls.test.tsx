@@ -322,6 +322,24 @@ describe('PollCard, slice 1 of the follow-up plan (P-2 0.2)', () => {
     }
   });
 
+  it('D13: a 30-day poll stays open when drawn, re-arms in six-hour chunks, and re-checks when the page is shown', () => {
+    vi.useFakeTimers({ now: Date.parse(NOW) });
+    const spy = vi.spyOn(globalThis, 'setTimeout');
+    try {
+      const closesAt = new Date(Date.parse(NOW) + 30 * 24 * 3_600_000).toISOString();
+      render(<PollCard api={api([])} messageId="m1" poll={poll({ closesAt })} mine={false} />);
+      expect(screen.queryByText('Voting ended')).toBeNull();
+      expect(Math.max(...spy.mock.calls.map((c) => Number(c[1] ?? 0)))).toBeLessThanOrEqual(6 * 3_600_000);
+      // The device slept past the end (iOS pauses timers): showing the page again turns it final at once.
+      vi.setSystemTime(Date.parse(closesAt) + 1_000);
+      act(() => { window.dispatchEvent(new Event('pageshow')); });
+      expect(screen.getByText('Final')).toBeTruthy();
+    } finally {
+      spy.mockRestore();
+      vi.useRealTimers();
+    }
+  });
+
   it('D14: one tab stop; arrows move focus and never vote; Space votes', async () => {
     const user = userEvent.setup();
     const a = api([]);
