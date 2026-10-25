@@ -3571,8 +3571,8 @@ html[data-fw-theme='dark'] [data-ui='clubhouse'] .ch-ms-poll {
   margin-right: auto;
 }
 .ch-ms-poll__link {
-  min-height: 28px;
-  /* D10: 28 px seen, 44 px to a finger. */
+  /* D10: 28 px seen, 44 px to a finger: the box is 44 tall (border-box) and the -8px margins give back the 16 it adds. */
+  min-height: 44px;
   padding: 8px;
   margin: -8px;
   border: 0;
