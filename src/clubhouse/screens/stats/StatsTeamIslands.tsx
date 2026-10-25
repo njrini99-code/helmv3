@@ -25,8 +25,8 @@ import { haptic } from '../../lib/haptics';
 import { chReport, chTrail } from '../../lib/track';
 import { CH_SLOW_SAVE_AFTER, isOffline } from '../../lib/use-action';
 import { firstValue, gappedPath, lastValue } from '../../lib/chart';
-import { formatSigned, NO_DATA } from '../../lib/format';
-import { deltaTone, deltaWords } from '../../lib/stats-signal';
+import { changeInk, changeTone, formatSigned, NO_DATA } from '../../lib/format';
+import { deltaTone, deltaWords, halvesChange } from '../../lib/stats-signal';
 import { sgBaseline, sgScale } from '../../lib/sg';
 import { changeWords, UpdatingNote, WindowSwitch } from './WindowSwitch';
 import { FilterEmpty, StatsFilter } from './StatsFilter';
@@ -34,6 +34,7 @@ import { gridPeek, legDetailHref, teamPlayerHref } from './links';
 import { PlayerPeek } from '../../ui/PlayerPeek';
 import { LinkPending } from '../../shell/LinkPending';
 import { TeamRank } from './TeamRank';
+import { usePressPrefetch } from '../../shell/use-prefetch-tabs';
 
 /*
  * Team stats' client islands. The page itself (StatsTeam) renders on the
@@ -213,6 +214,7 @@ export function TeamCharts({ data, tape }: { data: ChTeamCharts; tape?: ReactNod
 }
 
 function LegTrends({ legWeeks, legTotals, leg, setLeg }: { legWeeks: ChTeamStats['legWeeks']; legTotals: ChTeamStats['legTotals']; leg: ChLeg; setLeg: (l: ChLeg) => void }) {
+  const scale = legScale(legWeeks);
   return (
     <section className="ch-sgm-row" aria-label="Strokes gained by leg, team">
       {LEGS_LIST.map((l, i) => (
@@ -221,6 +223,7 @@ function LegTrends({ legWeeks, legTotals, leg, setLeg }: { legWeeks: ChTeamStats
           leg={l}
           data={legWeeks[l]}
           mean={legTotals[i] ?? null}
+          scale={scale}
           selected={leg === l}
           onSelect={() => {
             haptic('select');
@@ -287,27 +290,27 @@ function TeamTrend({ data, focus, setFocus }: { data: ChTeamCharts; focus: strin
   const best = known.length ? known.reduce((a, b) => ((isSg ? b.v > a.v : b.v < a.v) ? b : a)) : null;
   const beats = (v: number) => ref != null && (isSg ? v >= ref : v <= ref);
   const ahead = ref != null ? known.filter((t) => beats(t.v)).length : null;
-  const sgChangeNote = (who: string, from: number, to: number, since: string) => {
-    const d = to - from;
-    return Math.abs(d) < 0.15
-      ? `${who} strokes gained are flat since ${since}.`
-      : `${who} strokes gained are ${d > 0 ? 'up' : 'down'} about ${Math.abs(d).toFixed(1)} a round since ${since}, a weekly average from ${formatSigned(from)} to ${formatSigned(to)}.`;
+  // One change rule (A1): the newer half of the weeks against the older half, said as a change only past its standard error.
+  // Two end points are noise as often as not, so the first and last week are never compared.
+  const halvesNote = (subject: string, verb: 'is' | 'are', weeks: Array<number | null>) => {
+    const h = halvesChange(weeks.filter((v): v is number => v != null), isSg ? 'sg' : 'score');
+    if (!h) return null;
+    if (deltaTone(h.delta, h.se, !isSg) === '') return `No clear change in ${subject} across this window.`;
+    const by = `${Math.abs(h.delta).toFixed(1)} ${isSg ? 'a round' : 'strokes a round'}`;
+    return `${subject.charAt(0).toUpperCase() + subject.slice(1)} ${verb} ${h.delta > 0 ? 'up' : 'down'} ${by}, newer half vs older half.`;
   };
   const note = (() => {
     if (sel) {
       const a = firstValue(sel.v);
       const b = lastValue(sel.v);
       if (!a || !b || a.i === b.i) return `${sel.p.first} has one week in this window so far.`;
-      const d = b.v - a.v;
-      return isSg
-        ? sgChangeNote(`${sel.p.first}’s`, a.v, b.v, data.weeks[a.i]!)
-        : `${sel.p.first} is ${d <= 0 ? 'down' : 'up'} ${Math.abs(d).toFixed(1)} strokes across this window, now ${fmtEnd(b.v)}.`;
+      return (
+        halvesNote(isSg ? `${sel.p.first}’s strokes gained` : `${sel.p.first}’s scoring`, isSg ? 'are' : 'is', sel.v) ??
+        `${sel.p.first} has two weeks in this window so far; a change needs three.`
+      );
     }
     if (!tFirst || !tLast || tFirst.i === tLast.i) return 'The trend needs rounds in at least two weeks.';
-    const d = tLast.v - tFirst.v;
-    return isSg
-      ? sgChangeNote('The team’s', tFirst.v, tLast.v, data.weeks[tFirst.i]!)
-      : `Team scoring is ${d <= 0 ? 'down' : 'up'} ${Math.abs(d).toFixed(1)} from ${data.weeks[tFirst.i]} to ${data.weeks[tLast.i]}, now ${tLast.v.toFixed(1)}.`;
+    return halvesNote(isSg ? 'the team’s strokes gained' : 'team scoring', isSg ? 'are' : 'is', team) ?? 'The team has two weeks in this window so far; a change needs three.';
   })();
   const sorted = [...lines].sort((a, b) => {
     const av = a.m ?? (isSg ? -99 : 999);
@@ -356,7 +359,7 @@ function TeamTrend({ data, focus, setFocus }: { data: ChTeamCharts; focus: strin
         <div className="ch-sgt__big">
           <h2 className="ch-sgt__k">{isSg ? 'Team strokes gained per round' : 'Team scoring average'}</h2>
           <span className="ch-sgt__row">
-            <b className={'ch-sgt__n ch-num' + (!isSg || leadValue == null ? '' : leadValue >= 0 ? ' ch-gain' : ' ch-loss')}>
+            <b className={'ch-sgt__n ch-num ' + (isSg ? changeInk(leadValue) : '')}>
               <Swap swapKey={`${lens}${leadText}`} inline>
                 {withPointSpan(leadText)}
               </Swap>
@@ -484,13 +487,13 @@ function TeamTrend({ data, focus, setFocus }: { data: ChTeamCharts; focus: strin
               {ticks.map((t) => (
                 <g key={t}>
                   <line x1={padL} x2={w - padR} y1={y(t)} y2={y(t)} stroke="var(--ch-ivory-200)" strokeOpacity={0.7} />
-                  <text x={padL - 8} y={y(t) + 4} textAnchor="end" className="ch-tick">
+                  <text x={padL - 8} y={y(t) + 4} textAnchor="end" className="ch-tick ch-num">
                     {isSg ? formatSigned(t, Number.isInteger(t) ? 0 : 1) : t}
                   </text>
                 </g>
               ))}
               {data.weeks.map((wk, i) => (
-                <text key={wk + i} x={x(i)} y={h - 8} textAnchor="middle" className="ch-tick">
+                <text key={wk + i} x={x(i)} y={h - 8} textAnchor="middle" className="ch-tick ch-num">
                   {wk}
                 </text>
               ))}
@@ -504,7 +507,7 @@ function TeamTrend({ data, focus, setFocus }: { data: ChTeamCharts; focus: strin
               {yRef != null && (
                 <g aria-hidden="true">
                   <line x1={padL} x2={w - padR} y1={yRef} y2={yRef} stroke="var(--ch-champagne-500)" strokeDasharray="4 4" />
-                  <text x={refLabelLeft ? padL : w - padR} y={yRef - 7} textAnchor={refLabelLeft ? 'start' : 'end'} className="ch-tick ch-sgt__reflab">
+                  <text x={refLabelLeft ? padL : w - padR} y={yRef - 7} textAnchor={refLabelLeft ? 'start' : 'end'} className="ch-tick ch-num ch-sgt__reflab">
                     {isSg ? baseline.noun.charAt(0).toUpperCase() + baseline.noun.slice(1) : 'Par'}
                   </text>
                 </g>
@@ -628,27 +631,49 @@ function niceTicks(lo: number, hi: number): number[] {
   return out;
 }
 
-function LegTrend({ leg, data, mean, selected, onSelect }: { leg: ChLeg; data: Array<number | null>; mean: number | null; selected: boolean; onSelect: () => void }) {
+/** The four leg charts' one scale: the handoff's range (−1.5 to +1), widened only when a week of any leg falls outside it. */
+function legScale(legWeeks: ChTeamStats['legWeeks']): { lo: number; hi: number } {
+  const vals = LEGS_LIST.flatMap((l) => legWeeks[l]).filter((v): v is number => v != null);
+  return { lo: Math.min(-1.5, Math.min(...vals) - 0.2), hi: Math.max(1, Math.max(...vals) + 0.2) };
+}
+
+function LegTrend({
+  leg,
+  data,
+  mean,
+  scale,
+  selected,
+  onSelect,
+}: {
+  leg: ChLeg;
+  data: Array<number | null>;
+  mean: number | null;
+  /** Shared by the four legs, so the same height means the same strokes on every card (A1). */
+  scale: { lo: number; hi: number };
+  selected: boolean;
+  onSelect: () => void;
+}) {
   const w = 260;
   const h = 92;
   const pad = 10;
   const vals = data.filter((v): v is number => v != null);
-  // The handoff's range (−1.5 to +1), widened only when a week falls outside it.
-  const lo = Math.min(-1.5, Math.min(...vals) - 0.2);
-  const hi = Math.max(1, Math.max(...vals) + 0.2);
+  const { lo, hi } = scale;
   const x = (i: number) => (data.length <= 1 ? w / 2 : pad + (i * (w - pad * 2)) / (data.length - 1));
   const y = (v: number) => pad + ((hi - v) / (hi - lo)) * (h - pad * 2);
   const a = firstValue(data);
   const b = lastValue(data);
   // The headline is the window's mean per round, not the latest week's value; the line and its dot still end on the latest week.
-  const tone = mean == null ? 'var(--ch-ink-400)' : mean >= 0 ? 'var(--ch-chart-gain)' : 'var(--ch-chart-loss)';
+  const meanTone = changeTone(mean, false, 1);
+  const tone = meanTone === 'is-gain' ? 'var(--ch-chart-gain)' : meanTone === 'is-loss' ? 'var(--ch-chart-loss)' : 'var(--ch-ink-400)';
   const d = gappedPath(data, x, y);
-  const ch = a && b && a.i !== b.i ? b.v - a.v : null;
+  // The newer half of the weeks against the older half, worded only past its standard error (A1), never first against last.
+  const ch = a && b && a.i !== b.i ? halvesChange(vals, 'sg') : null;
+  const chWords = ch == null ? null : deltaTone(ch.delta, ch.se, false) === '' ? 'No clear change' : `${ch.delta > 0 ? 'Up' : 'Down'} ${Math.abs(ch.delta).toFixed(1)} a round, newer half vs older half`;
   return (
     <button type="button" className="ch-sgm" aria-pressed={selected} onClick={onSelect}>
       <span className="ch-sgm__top">
         <span className="ch-sgm__l">{leg}</span>
-        <span className={`ch-sgm__v ch-num ${mean == null ? '' : mean >= 0 ? 'ch-gain' : 'ch-loss'}`}>{mean != null ? formatSigned(mean) : NO_DATA}</span>
+        <span className={`ch-sgm__v ch-num ${changeInk(mean)}`}>{mean != null ? formatSigned(mean) : NO_DATA}</span>
       </span>
       <svg viewBox={`0 0 ${w} ${h}`} preserveAspectRatio="none" className="ch-sgm__svg" aria-hidden="true">
         <line x1={pad} x2={w - pad} y1={y(0)} y2={y(0)} stroke="var(--ch-champagne-500)" strokeDasharray="3 3" strokeWidth={1} vectorEffect="non-scaling-stroke" />
@@ -657,7 +682,7 @@ function LegTrend({ leg, data, mean, selected, onSelect }: { leg: ChLeg; data: A
         {d && <path d={`${d}`} fill="none" stroke={tone} strokeWidth={1.75} strokeLinecap="round" vectorEffect="non-scaling-stroke" />}
         {b && <circle cx={x(b.i)} cy={y(b.v)} r={3.5} fill="var(--ch-ivory-25)" stroke={tone} strokeWidth={1.75} vectorEffect="non-scaling-stroke" />}
       </svg>
-      <span className="ch-sgm__n">{ch == null ? (b ? 'One week so far' : 'No strokes gained yet') : Math.abs(ch) < 0.15 ? 'Flat across the window' : `${ch > 0 ? 'Up' : 'Down'} ${Math.abs(ch).toFixed(1)} across the window`}</span>
+      <span className="ch-sgm__n">{chWords ?? (!b ? 'No strokes gained yet' : a && a.i !== b.i ? 'Two weeks so far' : 'One week so far')}</span>
     </button>
   );
 }
@@ -696,6 +721,8 @@ function LegGrid({
   focus: string | null;
   setFocus: (id: string | null) => void;
 }) {
+  // A player's stats are fetched whole as a finger lands on the row (A13).
+  const press = usePressPrefetch();
   const playerHref = (id: string) => teamPlayerHref(id, data.filter);
   const li = LEGS_LIST.indexOf(leg);
   const rows = [...data.grid].sort((a, b) => (b.legs[li] ?? -99) - (a.legs[li] ?? -99));
@@ -759,7 +786,7 @@ function LegGrid({
                   <span>
                     {/* P003-C1: resting on the name shows the player's card; the row still opens their stats. */}
                     <PlayerPeek player={gridPeek(g)} within="[role=cell]">
-                      <Link href={playerHref(g.id)} className="ch-lg__a" onFocus={() => setFocus(g.id)} onMouseEnter={() => setFocus(g.id)}>
+                      <Link href={playerHref(g.id)} className="ch-lg__a" onFocus={() => setFocus(g.id)} onMouseEnter={() => setFocus(g.id)} {...press(playerHref(g.id))}>
                         <b>{g.name}</b>
                         <LinkPending />
                       </Link>
@@ -775,9 +802,9 @@ function LegGrid({
                     <span key={i} role="cell" className={'ch-lg__cell' + (i === li ? ' is-col' : '') + (i === worst ? ' is-worst' : '')}>
                       {/* Q12: the figure opens that player's Game detail for this leg; the row's name link still opens the profile. */}
                       {v != null && <Link className="ch-lg__cl" href={legDetailHref(g.id, data.filter, LEGS_LIST[i]!)} aria-label={`${g.name}, ${LEGS_LIST[i]!.toLowerCase()} ${formatSigned(v)}: open game detail`} />}
-                      <span className={'ch-num ' + (v == null ? '' : v >= 0 ? 'ch-gain' : 'ch-loss')}>{v == null ? NO_DATA : formatSigned(v)}</span>
+                      <span className={'ch-num ' + changeInk(v)}>{v == null ? NO_DATA : formatSigned(v)}</span>
                       <span className="ch-lg__track" aria-hidden="true">
-                        {v != null && <i className={'ch-lg__bar ' + (v >= 0 ? 'is-gain' : 'is-loss')} style={bar(v)} />}
+                        {v != null && <i className={'ch-lg__bar ' + changeTone(v, false, 1)} style={bar(v)} />}
                         {med != null && <i className="ch-lg__med" style={{ left: at(med) }} />}
                       </span>
                     </span>
@@ -786,16 +813,21 @@ function LegGrid({
                 <span
                   role="cell"
                   data-ch-code={g.total == null ? 'CH-4308' : undefined}
-                  className={'r ch-num ch-lg__tot ' + (g.total == null ? '' : g.total >= 0 ? 'ch-gain' : 'ch-loss')}
+                  className={'r ch-num ch-lg__tot ' + changeInk(g.total)}
                 >
                   {g.total == null ? 'Early read' : formatSigned(g.total)}
                 </span>
-                <span role="cell" className={'r ch-num ch-lg__ch ' + (g.change == null ? '' : g.change >= 0 ? 'ch-gain' : 'ch-loss')}>
+                {/* Toned, with an arrow, only when the change clears its standard error (A1); otherwise neutral, with the reason on hover. */}
+                <span
+                  role="cell"
+                  className={'r ch-num ch-lg__ch ' + changeInk(deltaTone(g.change, g.changeSe, false) === '' ? null : g.change)}
+                  title={g.change != null && deltaTone(g.change, g.changeSe, false) === '' ? 'No clear change' : undefined}
+                >
                   {g.change == null ? (
                     NO_DATA
                   ) : (
                     <>
-                      <Icon icon={g.change >= 0 ? TrendingUp : TrendingDown} size={14} />
+                      {deltaTone(g.change, g.changeSe, false) === '' ? '\u2002' : <Icon icon={g.change >= 0 ? TrendingUp : TrendingDown} size={14} />}
                       {formatSigned(g.change)}
                     </>
                   )}

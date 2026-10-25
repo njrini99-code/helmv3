@@ -1405,6 +1405,15 @@ describe('Messages · behaviour contracts (P007, docs/clubhouse/pages/P007-messa
     expect(router.replace).toHaveBeenCalledWith('/golf/dashboard/messages', { scroll: false });
   });
 
+  it('A16 a ?compose=1 link (the palette’s New message) opens New message and cleans the address', async () => {
+    live.convs.conversations = [team, dm];
+    params.current = new URLSearchParams('compose=1');
+    router.replace.mockClear();
+    show();
+    expect(await screen.findByRole('dialog', { name: 'New message' })).toBeTruthy();
+    expect(router.replace).toHaveBeenCalledWith('/golf/dashboard/messages', { scroll: false });
+  });
+
   it('70901 72001 Enter sends with the success haptic and no toast; Shift+Enter adds a line instead', async () => {
     const user = userEvent.setup();
     show();

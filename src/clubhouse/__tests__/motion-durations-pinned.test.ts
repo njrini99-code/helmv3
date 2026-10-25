@@ -30,6 +30,13 @@ describe('Clubhouse motion durations (D-64 as built)', () => {
     expect(token('ch-dur-vt-hold')).toBe('300ms');
   });
 
+  it('the Stats busy dim holds off 150ms (A11), named in the rules and the checklist', () => {
+    expect(token('ch-dur-busy-delay')).toBe('150ms');
+    for (const doc of ['.claude/rules/clubhouse.md', 'docs/clubhouse/CHECKLIST_TEMPLATE.md']) {
+      expect(readFileSync(join(process.cwd(), doc), 'utf8'), doc).toMatch(/busy dim holds off 150 ms/);
+    }
+  });
+
   it('skeletons show at once (the wait lives in the transition hold, not a skeleton delay)', () => {
     expect(token('ch-skel-delay')).toBe('0ms');
   });

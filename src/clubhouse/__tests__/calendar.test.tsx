@@ -291,6 +291,20 @@ describe('Calendar · drag to reschedule (P006-B3)', () => {
   });
 });
 
+describe('Calendar · a busy block lies under the events it overlaps (A26)', () => {
+  it('the staff meeting stepped in over the team round sits under it; the round keeps its lane', () => {
+    wrap(cal());
+    const round = screen.getByRole('button', { name: /^Team round, / });
+    const busy = screen.getAllByRole('button', { name: /Staff meeting, / }).find((b) => b.className.includes('ch-ev--lane'))!;
+    expect(busy.className).toContain('ch-ev--under');
+    expect(round.className).not.toContain('ch-ev--under');
+    // Its place is its class (z-index 0 in calendar.css), never inline, so hover can raise it; the round keeps its lane's.
+    expect(busy.style.zIndex).toBe('');
+    expect(Number(round.style.zIndex)).toBeGreaterThan(0);
+    expect(readFileSync(join(__dirname, '..', 'styles', 'calendar.css'), 'utf8')).toMatch(/\.ch-ev--under \{\s*z-index: 0;/);
+  });
+});
+
 describe('Calendar · new event deep link', () => {
   it('60103 ?new=1&type= opens the editor on that type (the phone Home’s quick chips); an unknown type is ignored', async () => {
     wrap(cal(), { initialNew: true, initialType: 'qualifier' });

@@ -376,10 +376,13 @@ describe('nine- and eighteen-hole rounds', () => {
     expect(fig(d, 'Scoring average').value).toBe(76);
     expect(fig(d, 'Putts per round').value).toBe(30);
     expect(fig(d, 'Birdies per round').value).toBe(2);
-    // A nine-hole round's half a stroke is a stroke an 18.
-    expect(fig(d, 'Team SG per round').value).toBe(1);
     expect(fig(d, 'Greens in regulation').value).toBeCloseTo((3 / 9) * 100, 6);
     expect(fig(d, 'Scoring average').context).toBe('3 rounds');
+    // Three nine-hole rounds are one and a half whole rounds with shots: under the team's strokes gained floor (A4).
+    expect(fig(d, 'Team SG per round').value).toBeNull();
+    // Six of them are three whole rounds, and a nine-hole round's half a stroke is a stroke an 18.
+    teamOf([...mixedLengths(), ...[3, 4, 5].map((i) => shortR(`p1S${i}`, 'p1', inSeason(20 + i)))]);
+    expect(fig(await teamLoad(holes('9')), 'Team SG per round').value).toBe(1);
   });
 
   it('the team page on Both: per-round figures are sums over whole rounds, the rates pool every hole', async () => {

@@ -79,6 +79,16 @@ const countLabel = (days: number) => (days <= 0 ? 'Today' : days === 1 ? 'Tomorr
  * a second trip is a page away. With no trip ahead it counts down to the week's next event instead, and with nothing at
  * all it says so and offers a coach the way to plan one.
  */
+/**
+ * A date or a time never breaks inside itself on a phone (A24): "Mon 3 Nov" and "12:00 PM" keep their spaces as
+ * U+00A0, and a line may break only at the " · " or " – " between them.
+ */
+export const keepTokens = (text: string) =>
+  text
+    .split(/( · | – )/)
+    .map((part, i) => (i % 2 ? part : part.replace(/ /g, '\u00a0')))
+    .join('');
+
 export function TripTile({ trips, role, days, error, covered, onEdit, onPlan, onOpenTravel }: {
   /** Trips still to come, soonest first. */
   trips: ChHubTrip[];
@@ -109,9 +119,9 @@ export function TripTile({ trips, role, days, error, covered, onEdit, onPlan, on
   if (t) {
     const word = t.inDays != null ? countLabel(t.inDays) : null;
     const stops = [
-      { k: 'Leaves', v: clk(t.depart ?? t.dates), s: t.from },
+      { k: 'Leaves', v: keepTokens(clk(t.depart ?? t.dates)), s: t.from },
       { k: 'Stays', v: t.hotel ?? 'Hotel not set', s: t.destination },
-      { k: 'Home', v: clk(t.back ?? 'Not set'), s: null },
+      { k: 'Home', v: keepTokens(clk(t.back ?? 'Not set')), s: null },
     ];
     const names = t.travelers ?? [];
     return (
@@ -145,7 +155,8 @@ export function TripTile({ trips, role, days, error, covered, onEdit, onPlan, on
           )}
           <div className="ch-hw-count__t">
             <h3>{t.name}</h3>
-            <p className="ch-num">{[t.destination, t.dates].filter(Boolean).join(' · ')}</p>
+            {t.destination && <p className="ch-hw-count__where">{t.destination}</p>}
+            <p className="ch-hw-count__when ch-num">{keepTokens(t.dates)}</p>
           </div>
         </div>
         <ol className="ch-hw-rail" aria-label="The plan">
@@ -757,7 +768,7 @@ export function TasksTile({ data, figures, isDone, covered, onAssign, onFocus, o
                       <em className={'ch-num' + (t.status === 'overdue' ? ' is-warn' : '')}>{t.status === 'overdue' ? `Overdue · ${t.due}` : (t.due ?? 'No date')}</em>
                     </span>
                     {t.done && (
-                      <span className="ch-hw-mini" aria-label={`${t.done[0]} of ${t.done[1]} done`}>
+                      <span role="img" className="ch-hw-mini" aria-label={`${t.done[0]} of ${t.done[1]} done`}>
                         <b className="ch-num">
                           {t.done[0]}/{t.done[1]}
                         </b>

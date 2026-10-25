@@ -594,6 +594,12 @@ a.ch-th-reads__r:focus-visible {
   width: 16px;
   border-top: 1.2px dashed var(--ch-green-600);
 }
+/* A lower-is-better trend is drawn with lower values higher; this says so under it (A8.1). */
+.ch-th-dir {
+  margin-top: 6px;
+  font: 400 calc(12 * var(--ch-type-k))/1.3 var(--ch-font-sans);
+  color: var(--ch-ink-500);
+}
 
 /* "View as table", and the tables that are already tables */
 .ch-th-sr {

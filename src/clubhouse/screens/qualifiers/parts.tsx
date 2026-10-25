@@ -1,4 +1,4 @@
-import { CalendarDays, Flag, MapPin } from 'lucide-react';
+import { CalendarDays, ChevronDown, ChevronUp, Flag, MapPin } from 'lucide-react';
 import { Badge } from '../../ui/Badge';
 import { Icon } from '../../ui/Icon';
 import { formatToPar } from '../../lib/format';
@@ -72,7 +72,7 @@ export function Pos({ position, tied, move }: { position: number | string | null
       {move ? (
         <span className={'ch-qf-move ' + (move > 0 ? 'is-gain' : 'is-loss')}>
           <span aria-hidden="true">
-            {move > 0 ? '▲' : '▼'}
+            <Icon icon={move > 0 ? ChevronUp : ChevronDown} size={12} />
             {Math.abs(move)}
           </span>
           <span className="ch-sr-only">
@@ -137,7 +137,7 @@ export function ThruDots({ played, total }: { played: number; total: number }) {
   const label = `${played} of ${total} ${total === 1 ? 'round' : 'rounds'}`;
   if (total > 8) {
     return (
-      <span className="ch-num" aria-label={label}>
+      <span role="img" className="ch-num" aria-label={label}>
         {played}/{total}
       </span>
     );

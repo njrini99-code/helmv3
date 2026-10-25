@@ -193,7 +193,7 @@ export function RoundLine({
   return (
     <svg viewBox={`0 0 ${w} ${h}`} className="ch-gx-line" role="img" aria-label={`${label}${lowerIsBetter ? ', lower is better' : ''}: ${points.map((p) => `${p.label} ${f(p.value)}`).join(', ')}`}>
       <line x1={pad} x2={w - pad} y1={y(avg)} y2={y(avg)} stroke="var(--ch-st-mean-rule)" strokeDasharray="2 3" />
-      <text x={mean.x} y={mean.y} textAnchor={mean.anchor} className="ch-ax">
+      <text x={mean.x} y={mean.y} textAnchor={mean.anchor} className="ch-ax ch-num">
         avg {f(avg)}
       </text>
       <path d={points.map((p, i) => `${i ? 'L' : 'M'}${x(i)},${y(p.value)}`).join(' ')} fill="none" stroke="var(--ch-green-700)" strokeWidth={2} strokeLinejoin="round" />
@@ -203,22 +203,22 @@ export function RoundLine({
           <g key={i}>
             <circle cx={x(i)} cy={y(p.value)} r={last ? 4.5 : 3.5} fill={last ? 'var(--ch-green-700)' : 'var(--ch-ivory-25)'} stroke="var(--ch-green-700)" strokeWidth={1.75} />
             {labelled[i]!.shown && (
-              <text x={x(i)} y={y(p.value) - 9} textAnchor="middle" className="ch-ax">
+              <text x={x(i)} y={y(p.value) - 9} textAnchor="middle" className="ch-ax ch-num">
                 {f(p.value)}
               </text>
             )}
           </g>
         );
       })}
-      <text x={pad} y={h - 6} className="ch-ax">
+      <text x={pad} y={h - 6} className="ch-ax ch-num">
         {points[0]!.label}
       </text>
       {lowerIsBetter && (
-        <text x={w / 2} y={h - 6} textAnchor="middle" className="ch-ax">
+        <text x={w / 2} y={h - 6} textAnchor="middle" className="ch-ax ch-num">
           Lower is better
         </text>
       )}
-      <text x={w - pad} y={h - 6} textAnchor="end" className="ch-ax">
+      <text x={w - pad} y={h - 6} textAnchor="end" className="ch-ax ch-num">
         {points[points.length - 1]!.label}
       </text>
     </svg>

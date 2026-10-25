@@ -56,7 +56,7 @@ export function AnnouncementsSection({ api, q }: { api: ChMessagesApi; q: string
           <span>{api.announcements[0]?.title}</span>
         </span>
         {waiting > 0 && (
-          <span className="ch-ms-count ch-num" aria-label={`${waiting} need your acknowledgement`}>
+          <span role="img" className="ch-ms-count ch-num" aria-label={`${waiting} need your acknowledgement`}>
             {waiting}
           </span>
         )}
@@ -93,7 +93,7 @@ export function AnnouncementsSection({ api, q }: { api: ChMessagesApi; q: string
                         {api.viewer.role === 'coach' && a.requiresAck ? <em>{`${a.ackCount} of ${a.total} acknowledged · `}</em> : mine ? <em>Needs your acknowledgement · </em> : null}
                         {a.body}
                       </span>
-                      {mine && <span className="ch-ms-count" aria-label="Needs your acknowledgement">1</span>}
+                      {mine && <span role="img" className="ch-ms-count" aria-label="Needs your acknowledgement">1</span>}
                     </span>
                   </span>
                 </button>

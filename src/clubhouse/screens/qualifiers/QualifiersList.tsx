@@ -22,6 +22,7 @@ import { isPlainClick, noteOpenedFromList } from './return-state';
 import { playRoundHref } from './RoundsShowcase';
 import '../../styles/qualifiers.css';
 import { SerifText } from '../../ui/SerifText';
+import { usePressPrefetch } from '../../shell/use-prefetch-tabs';
 
 type Filter = 'all' | 'active' | 'concluded';
 const isActive = (i: ChQListItem) => i.status !== 'completed';
@@ -290,10 +291,11 @@ const endedOf = (item: ChQListItem, standingsError: boolean, today: string | und
   endedLive({ status: item.status, endDate: item.endDate, today, entrants: item.entrants, numRounds: item.numRounds, submitted: standingsError ? null : item.submitted });
 
 function Hero({ item, standingsError, today }: { item: ChQListItem; standingsError: boolean; today?: string }) {
+  const press = usePressPrefetch();
   const live = item.status === 'in_progress' && !standingsError && item.leaders.length > 0;
   const ended = endedOf(item, standingsError, today);
   return (
-    <Link href={detailHref(item.id)} className="ch-qf-hero" onClick={opened(item.id, 'hero')}>
+    <Link href={detailHref(item.id)} className="ch-qf-hero" onClick={opened(item.id, 'hero')} {...press(detailHref(item.id))}>
       <div className="ch-qf-hero__main">
         <StatusPill status={item.status} ended={ended} />
         <h2>
@@ -344,8 +346,9 @@ function Hero({ item, standingsError, today }: { item: ChQListItem; standingsErr
 }
 
 function Card({ item, standingsError, today }: { item: ChQListItem; standingsError: boolean; today?: string }) {
+  const press = usePressPrefetch();
   return (
-    <Link href={detailHref(item.id)} className="ch-qf-card" onClick={opened(item.id, 'card')}>
+    <Link href={detailHref(item.id)} className="ch-qf-card" onClick={opened(item.id, 'card')} {...press(detailHref(item.id))}>
       <div className="ch-qf-card__h">
         <div>
           <h3>{item.name}</h3>

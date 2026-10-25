@@ -12,7 +12,7 @@ import { roundTypeFailure, savedLine, type ChRoundTypeChoice } from './entry/rou
 import { CoachNote } from './CoachNote';
 import { RoundTypeSheet } from './entry/RoundTypeSheet';
 import { scoreName } from './track/labels';
-import { formatFixed, formatSigned, formatToPar, NO_DATA } from '../../lib/format';
+import { changeTone, changeVerdict, formatFixed, formatSigned, formatToPar, NO_DATA } from '../../lib/format';
 import { haptic } from '../../lib/haptics';
 import { useChPhone } from '../../lib/use-phone';
 import { useChReducedMotion } from '../../lib/reduced-motion';
@@ -39,6 +39,7 @@ import { useRoundRecap } from './use-round-recap';
 import { openedFromLibrary } from './return-state';
 import { SideScroll } from '../../ui/SideScroll';
 import { rebuiltHref } from '../../shell/nav';
+import { invalidatePrefetchTabs } from '../../shell/use-prefetch-tabs';
 import type { ChDebrief } from '../../data/round-debrief-shape';
 
 const LIE_LABEL: Record<string, string> = { fairway: 'Fairway', rough: 'Rough', sand: 'Sand', green: 'Green', hole: 'Holed', penalty: 'Penalty', other: 'Other', tee: 'Tee' };
@@ -85,7 +86,7 @@ function StrokesGained({ review: r, onRetry, retrying }: { review: ChRoundReview
     );
   const baseline = sgBaseline(r.tour);
   const scale = sgScale([sg.total, ...SG_LEGS.map(([k]) => sg[k])]);
-  const tone = (v: number | null) => (v == null ? '' : v >= 0 ? ' is-gain' : ' is-loss');
+  const tone = (v: number | null) => ' ' + changeTone(v, false, 1);
   return (
     <section className="ch-rv-card ch-rv-sg" aria-labelledby="ch-rv-sg-h">
       <div className="ch-rv-card__h">
@@ -322,6 +323,8 @@ function ChangeRoundType({ roundId, edit }: { roundId: string; edit: ChReviewTyp
       const res = await updateRoundType({ roundId, roundType: choice.type, qualifierId: choice.qualifierId, qualifierRoundNumber: choice.roundNumber });
       if (res.success) {
         setOpen(false);
+        // Stats and the qualifier pages held from before count the round under its old type (A21).
+        invalidatePrefetchTabs();
         router.refresh();
       }
       return res;
@@ -558,7 +561,7 @@ export function RoundReview({ review, typeEdit = null }: { review: ChRoundReview
           }
           read={
             <>
-              <ZoneBig value={formatToPar(r.toPar)} tone={r.toPar == null ? undefined : r.toPar <= 0 ? 'good' : 'bad'} />
+              <ZoneBig value={formatToPar(r.toPar)} tone={changeVerdict(r.toPar, true, 0)} />
               <div className="ch-znlines">
                 {r.holesPlayed === 18 && r.front.score != null && r.back.score != null && (
                   <span>
@@ -629,7 +632,7 @@ export function RoundReview({ review, typeEdit = null }: { review: ChRoundReview
           read={
             r.strokesGained?.total != null ? (
               <>
-                <ZoneBig value={formatSigned(r.strokesGained.total)} tone={r.strokesGained.total >= 0 ? 'good' : 'bad'} />
+                <ZoneBig value={formatSigned(r.strokesGained.total)} tone={changeVerdict(r.strokesGained.total)} />
                 <div className="ch-znlines">
                   <span>
                     <b>Total</b> {sgBaseline(r.tour).vs}

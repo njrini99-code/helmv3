@@ -3652,7 +3652,7 @@
     "name": "THE_PHONES_SCORING_LINE_IS_AN_IMAGE",
     "chCode": "CH-4805",
     "meaning": "The phone's scoring line is an image with a written reading (\"Team scoring average by round day, from 74.8 to 73.4. Down 1.4 strokes…\"); a finger on it reads a round day (pointer only, the reading carries it for assistive technology); each player row is one link read as name, rounds, average and strokes gained (\"Early read\" under three rounds)",
-    "status": "implemented",
+    "status": "reserved",
     "catalog": "docs/clubhouse/catalog/stats-team.md"
   },
   {

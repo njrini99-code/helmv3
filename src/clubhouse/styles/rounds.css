@@ -1834,7 +1834,9 @@ a.ch-rd-sc:focus-visible {
     font-weight: 600;
     letter-spacing: -0.035em;
   }
+  /* Putts says the most ("a round · 0.6 under two-putting"): its column is wider, so it takes two lines, not three (A24). */
   .ch-rd.is-phone .ch-rd-season__f {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1.4fr) minmax(0, 1fr);
     padding: 12px 0;
     border-top: 1px solid var(--ch-ledger-rule);
     border-bottom: 1px solid var(--ch-ledger-rule);
@@ -4656,7 +4658,9 @@ html[data-fw-theme='dark'] .ch-rv .ch-rv-yn.is-y {
   .ch-rcard-mk {
     font-size: 12px;
   }
+  /* A label that wraps to two lines keeps its value on the row's baseline: each cell sits on the bottom (A24). */
   .ch-rcard-sg {
+    align-items: end;
     padding: 12px 10px 14px;
     gap: 4px;
   }

@@ -418,7 +418,8 @@ describe('Q-123 Total-only rounds in the scores, not the hole figures: the team 
     expect(figure(d, 'Putts per round').context).toBe('3 rounds');
     expect(figure(d, 'Putts per round').note).toBe('Hole stats from 3 of 5 rounds');
     expect(figure(d, 'Greens in regulation').context).toBe('Tour averages 67%');
-    expect(figure(d, 'Greens in regulation').note).toBe('Hole stats from 3 of 5 rounds');
+    // Three rounds of greens are an early read (A7): the tag takes the note, and the coverage line is the one Putts shares.
+    expect(figure(d, 'Greens in regulation').note).toBe('Early read · 3 rounds');
     // The gauges' references come from the data: par over the same five rounds as the scoring average, the Tour's greens mark.
     const par = figure(d, 'Scoring average').gauge;
     expect(par?.kind).toBe('par');

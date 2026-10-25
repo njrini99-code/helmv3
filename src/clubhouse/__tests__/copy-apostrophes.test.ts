@@ -5,12 +5,15 @@ import { describe, expect, it } from 'vitest';
 /**
  * States audit b8 (2026-10-08): the copy mixed straight apostrophes (didn't, aren't) with curly ones, and a title
  * quoted in a toast sat in straight quotes. A page's own words use the curly marks; comments may say what they like,
- * and words a server sends are shown as it sent them. Calendar, Team Hub, Messages, Settings, Home, Stats, Roster,
- * Recruiting, CoachHelm, Classes and Rounds, with their routes (Home has none of its own; Rounds has its review, new,
- * continue and recover routes as well); the shared state files have their own check (states.test.tsx).
+ * and words a server sends are shown as it sent them. Every page folder under screens/ with its routes (Rounds has its
+ * review, new, continue and recover routes as well), and the shell and ui folders (A23, CONS-8: a list of some pages
+ * missed the More sheet's "Couldn't sign out"); the shared state files have their own check (states.test.tsx).
  */
 const root = join(__dirname, '..');
-const pages = ['calendar', 'hub', 'messages', 'settings', 'home', 'stats', 'roster', 'recruiting', 'coachhelm', 'classes', 'rounds'];
+const pages = readdirSync(join(root, 'screens')).filter((name) => statSync(join(root, 'screens', name)).isDirectory());
+
+/** Folders of shared parts, not pages: their words show on every page. */
+const shared = ['shell', 'ui'];
 
 /** A page's routes besides its own `routes/<page>.tsx`. */
 const moreRoutes: Record<string, string[]> = { rounds: ['round-review', 'round-new', 'round-continue', 'round-recover'] };
@@ -33,9 +36,7 @@ const code = (path: string) =>
     .replace(/\s\/\/ .*$/gm, '');
 
 describe('Page copy', () => {
-  it.each(pages)('%s writes its own copy with curly apostrophes and quotes', (page) => {
-    const routes = [page, ...(moreRoutes[page] ?? [])].map((route) => join(root, 'routes', `${route}.tsx`));
-    const files = [...sources(join(root, 'screens', page)), ...routes].filter((file) => existsSync(file));
+  const check = (files: string[]) => {
     for (const file of files) {
       const src = code(file);
       expect(src.match(/[A-Za-z]'[A-Za-z]/g), file).toBeNull();
@@ -43,5 +44,18 @@ describe('Page copy', () => {
       // A name quoted inside the words ("Posted “Waiver”"), not an attribute value in a selector (="${id}").
       expect(src.split(csvCell).join('').match(/(?<![=\w])"\$\{[^}]*\}"/g), file).toBeNull();
     }
+  };
+
+  it('covers more than the pages a list once named', () => {
+    expect(pages.length).toBeGreaterThan(11);
+  });
+
+  it.each(pages)('%s writes its own copy with curly apostrophes and quotes', (page) => {
+    const routes = [page, ...(moreRoutes[page] ?? [])].map((route) => join(root, 'routes', `${route}.tsx`));
+    check([...sources(join(root, 'screens', page)), ...routes].filter((file) => existsSync(file)));
+  });
+
+  it.each(shared)('%s writes its own copy with curly apostrophes and quotes', (folder) => {
+    check(sources(join(root, folder)).filter((file) => !file.includes('__tests__')));
   });
 });

@@ -143,13 +143,14 @@ export function toChLadder(rows: readonly PlayerStanding[], reads: ChLadderReads
         href: `${PLAYER_HELM_HREF['deep-dive']}&insight=${encodeURIComponent(r.id)}`,
       }));
     if (!('delta' in m)) return { id: a.id, label: a.label, strokes: null, sense: null, pct: 0, missing: m.missing, causes };
-    const shown = formatSigned(m.delta, 2);
-    const sense = Number(m.delta.toFixed(2)) === 0 ? 'level' : m.delta > 0 ? 'gain' : 'loss';
+    // One decimal, as the rest of Standing and every other screen print strokes gained (A20); level when it prints as zero.
+    const shown = formatSigned(m.delta, 1);
+    const sense = Number(m.delta.toFixed(1)) === 0 ? 'level' : m.delta > 0 ? 'gain' : 'loss';
     // A visible sliver for the smallest non-zero figure, so a gain or a loss is never drawn as nothing.
     const pct = sense === 'level' || max === 0 ? 0 : Math.max(4, Math.round((Math.abs(m.delta) / max) * 100));
     return { id: a.id, label: a.label, strokes: shown, sense, pct, missing: null, causes };
   });
-  const losses = measured.filter((x): x is { a: (typeof AREAS)[number]; m: { delta: number } } => 'delta' in x.m && Number(x.m.delta.toFixed(2)) < 0);
+  const losses = measured.filter((x): x is { a: (typeof AREAS)[number]; m: { delta: number } } => 'delta' in x.m && Number(x.m.delta.toFixed(1)) < 0);
   const top = losses.sort((x, y) => x.m.delta - y.m.delta)[0]?.a.id ?? null;
   return { rows: out, top, readsFailed: reads?.status === 'failed' };
 }

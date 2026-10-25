@@ -61,7 +61,7 @@ export function OfflineBanner() {
         >
           <Icon icon={WifiOff} size={15} />
           <span>
-            You&apos;re offline. You can keep reading and keep scoring a round; other changes need a connection.
+            You’re offline. You can keep reading and keep scoring a round; other changes need a connection.
             {pending && <span data-ch-offline-pending=""> {pending}</span>}
           </span>
         </m.div>

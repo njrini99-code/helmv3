@@ -390,15 +390,16 @@ describe('Stats player · phone (v2, Coach - Stats - Mobile.html)', () => {
     // The board's three (m-stats.jsx Player): the trend in words, green when scores come down, amber when they rise (F-54).
     expect([...figs.querySelectorAll('dt')].map((d) => d.textContent)).toEqual(['Scoring avg', 'SG / round', 'Scoring trend']);
     const trend = figs.querySelector('dd.is-words')!;
-    expect(trend.textContent).toMatch(/^\d+\.\d (lower|higher)$|^level$|^—$/);
-    // Green or amber only when the change clears its standard error (stats visuals Q4): the fixture's halves do not, so neutral ink
-    // and "No clear change" ahead of the halves it compares (wave 7, item 7).
+    expect(trend.textContent).toMatch(/^\d+\.\d (lower|higher)$|^No clear change$|^—$/);
+    // Green or amber only when the change clears its standard error (stats visuals Q4): the fixture's halves do not, so neutral ink,
+    // and the headline itself says "No clear change" (A1): never a number and "No clear change" in one cell.
     const signal = deltaTone(PREVIEW_PLAYER.win.formChange, halvesChange(PREVIEW_PLAYER.win.trend)?.se, true);
     expect(signal).toBe('');
     expect(trend.classList.contains('ch-gain') || trend.classList.contains('ch-loss')).toBe(false);
     if (trend.textContent !== '—') {
-      expect(trend.nextElementSibling!.querySelector('.ch-stm-figs__clear')!.textContent).toBe('No clear change');
-      expect(trend.nextElementSibling!.textContent).toMatch(/^No clear changeNewest (\d+ vs first \d+|round vs first)$/);
+      expect(trend.textContent).toBe('No clear change');
+      expect(trend.nextElementSibling!.textContent).toMatch(/^Newest (\d+ vs first \d+|round vs first)$/);
+      expect(figs.textContent).not.toMatch(/(higher|lower)[\s\S]*No clear change|No clear change[\s\S]*(higher|lower)/);
     }
     // Drawn against their references under the figures: scoring from par, strokes gained from the Tour's zero; the trend is words.
     const gauges = document.querySelector('.ch-stm-overview .ch-stm-gauges')!;
