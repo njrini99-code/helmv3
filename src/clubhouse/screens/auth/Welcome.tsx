@@ -18,6 +18,7 @@ import { HANDOFF_MS, WELCOME_PHONE_AUTO_MS, welcomeBody, welcomeCard, welcomeDat
 import { greetingWord, isDarkSky } from './scene-sky';
 import { useLastHereLabel, useLocalDateLabel, useLocalHour, useSkyHour } from './use-hour';
 import { useQueryParam } from './use-query-param';
+import { fullPrefetchAllowed } from '../../lib/prefetch-guard';
 import { useWelcomeStage } from './WelcomeStage';
 
 const CATEGORY_ICON: Record<NotificationCategoryId, LucideIcon> = {
@@ -97,7 +98,8 @@ export function Welcome({ data, navigate }: { data: ChWelcome; /** The preview a
   // boundary, so the dashboard was only asked for when the fold had landed and the empty frame waited a server render
   // (0.7s warm, over 2s cold, in dev). Read in full while the greeting plays, it is ready when Continue is pressed.
   useEffect(() => {
-    if (!navigate) router.prefetch(destination, { kind: PrefetchKind.FULL });
+    // Not CoachHelm, which records what it returns as shown (CH-R1): it loads when it is opened.
+    if (!navigate && fullPrefetchAllowed(destination)) router.prefetch(destination, { kind: PrefetchKind.FULL });
   }, [router, destination, navigate]);
 
   // Nothing starts before hydration has settled what the viewer's motion setting is: the text waits a frame.
@@ -116,8 +118,9 @@ export function Welcome({ data, navigate }: { data: ChWelcome; /** The preview a
   const proceed = useCallback(() => {
     if (started.current) return;
     started.current = true;
-    // CH-15604, CH-15705: Continue (or Return) commits once and folds the course into the canvas.
-    haptic('commit');
+    // CH-15604, CH-15705: Continue (or Return) commits once and folds the course into the canvas; a finish, so it
+    // answers as one (CONS-25: commit is held for a sheet settling, a shot logged and pull-to-refresh).
+    haptic('success');
     // The sidebar's wordmark writes itself in once when the app opens from here (owner, 2026-10-16).
     markBrandWrite();
     setLeaving(true);

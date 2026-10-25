@@ -18,6 +18,7 @@ import { coachFailedParts } from './model';
 import { CoachQueue } from './CoachQueue';
 import { TeamLegs } from './TeamLegs';
 import { useHomeDayRollover } from './use-day-rollover';
+import { NoTeam } from '../../ui/NoTeam';
 import '../../styles/home.css';
 
 /**
@@ -47,12 +48,8 @@ export function CoachHome({ data, now }: { data: ChCoachHome; /** Preview and te
       </header>
       <PageRefreshNotice parts={failed} />
       <CoachQueue queue={data.queue} covered={covered} />
-      {data.phone.form && <TeamForm form={data.phone.form} />}
-      {data.phone.form && data.legs && !noRounds && (
-        <SectionBoundary surface="home.legs" label="The team’s game" code="CH-2221">
-          <TeamLegs legs={data.legs} covered={covered} />
-        </SectionBoundary>
-      )}
+      {/* Row 79: the day comes first. The week, with today's events, and the latest round sit under Waiting on you, above
+          the two cards of figures; the team's game stays under the team's form (20105). */}
       <div className={'ch-h-sheet ch-sheet' + (noRounds ? ' is-solo' : '')}>
         <SectionBoundary surface="home.week" label="This week" code="CH-2205">
           <Week week={data.week} covered={covered} events={data.phone.today} />
@@ -63,6 +60,12 @@ export function CoachHome({ data, now }: { data: ChCoachHome; /** Preview and te
           </SectionBoundary>
         )}
       </div>
+      {data.phone.form && <TeamForm form={data.phone.form} />}
+      {data.phone.form && data.legs && !noRounds && (
+        <SectionBoundary surface="home.legs" label="The team’s game" code="CH-2221">
+          <TeamLegs legs={data.legs} covered={covered} />
+        </SectionBoundary>
+      )}
       <SectionBoundary surface="home.leaderboard" label="The leaderboard" code="CH-2207">
         <Leaderboard data={data.leaderboard} covered={covered} rounds={data.latestRounds.rounds} />
       </SectionBoundary>
@@ -134,23 +137,9 @@ function HomeFirstRun({ data, phone }: { data: ChCoachHome; phone: boolean }) {
 
 /** A coach with no active team: nothing to summarise yet, and one clear next step. */
 export function CoachHomeNoTeam() {
-  const settings = rebuiltHref('/golf/dashboard/settings?section=team', 'coach');
   return (
     <main className="ch-h-main">
-      <EmptyState
-        size="page"
-        code="CH-2307"
-        shape="rows"
-        title="You aren’t on a team yet"
-        body="Once your head coach adds you to the program, or you finish setting up your team, Home shows your week, rounds and leaderboard."
-        action={
-          settings ? (
-            <Button variant="primary" href={settings}>
-              Open team settings
-            </Button>
-          ) : undefined
-        }
-      />
+      <NoTeam code="CH-2307" coach body="Once your head coach adds you to the program, or you finish setting up your team, Home shows your week, rounds and leaderboard." />
     </main>
   );
 }

@@ -3,14 +3,15 @@
 import { useMemo } from 'react';
 import { Flag, Users } from 'lucide-react';
 import type { ChTeamRound, ChTeamRounds } from '../../data/team-rounds-shape';
-import { formatFixed, formatToPar, NO_DATA } from '../../lib/format';
-import { haptic } from '../../lib/haptics';
+import { formatFixed, formatToPar } from '../../lib/format';
+import { NoData } from '../../ui/NoData';
 import { useChSessionState } from '../../lib/session-state';
 import { useLastGood } from '../../lib/use-last-good';
 import { useChPhone } from '../../lib/use-phone';
 import { useRefresh } from '../../lib/use-refresh';
 import { PhoneTop } from '../../shell/phone-chrome';
 import { rebuiltHref } from '../../shell/nav';
+import { usePressPrefetch } from '../../shell/use-prefetch-tabs';
 import { FigureRow, LedgerList, LedgerRow } from '../../ui/Ledger';
 import { InlineNotice } from '../../ui/Notices';
 import { SearchField } from '../../ui/SearchField';
@@ -21,6 +22,8 @@ import { Select } from '../../ui/Select';
 import { EmptyState } from '../../ui/States';
 import { monthLabel, shortDay, TeeSwatch, TypePill } from './parts';
 import { noteOpenedFromLibrary } from './return-state';
+import { plural, pluralWord } from '../../lib/plural';
+import { LargeTitle } from '../../ui/LargeTitle';
 
 type Group = 'month' | 'player';
 
@@ -57,6 +60,8 @@ function dayLead(iso: string) {
 
 function TeamRoundRow({ r, by }: { r: ChTeamRound; by: Group }) {
   const href = teamRoundsLinks.review(r.id);
+  // The review is fetched whole as a finger lands on the row (A13), as the player's library does.
+  const press = usePressPrefetch();
   const under = r.toPar != null && r.toPar < 0;
   const meta = (
     <>
@@ -77,13 +82,14 @@ function TeamRoundRow({ r, by }: { r: ChTeamRound; by: Group }) {
       meta={<span className="ch-trd-meta">{meta}</span>}
       trail={
         <span className={'ch-trd-score' + (under ? ' is-under' : '')}>
-          <b>{r.toPar == null ? NO_DATA : formatToPar(r.toPar)}</b>
+          <b>{r.toPar == null ? <NoData /> : formatToPar(r.toPar)}</b>
           <em>{r.score}</em>
         </span>
       }
       href={href ?? undefined}
+      {...press(href)}
+      // Opening a round is navigation, so it is silent (D-70, A14).
       onClick={href ? (e) => {
-        haptic('select');
         // Only a same-tab open leaves the note (a new-tab click would leave a stale one for a later deep link), as the player library does.
         if (e.button === 0 && !e.metaKey && !e.ctrlKey && !e.shiftKey && !e.altKey) noteOpenedFromLibrary(r.id);
       } : undefined}
@@ -125,12 +131,12 @@ export function TeamRounds({ data: fresh, teamId }: { data: ChTeamRounds; teamId
         <div>
           <span className="ch-rd-k">
             {data.teamName ? `${data.teamName} · ` : ''}
-            {s.rounds ? `Since August 1 · ${s.rounds} counted ${s.rounds === 1 ? 'round' : 'rounds'}` : 'Since August 1'}
+            {s.rounds ? `Since August 1 · ${s.rounds} counted ${pluralWord(s.rounds, 'round')}` : 'Since August 1'}
           </span>
           <span className="ch-rd-upd" role="status" data-ch-code={refreshing ? 'CH-11412' : undefined}>
             {refreshing ? 'Updating…' : ''}
           </span>
-          <h1 id="ch-trd-title">Team rounds</h1>
+          <LargeTitle id="ch-trd-title">Team rounds</LargeTitle>
         </div>
       </header>
 
@@ -151,10 +157,10 @@ export function TeamRounds({ data: fresh, teamId }: { data: ChTeamRounds; teamId
               label="The team this season"
               code="CH-11319"
               items={[
-                { label: 'Rounds', value: s.rounds ? s.rounds : NO_DATA, note: s.players ? `${s.players} ${s.players === 1 ? 'player' : 'players'}` : undefined },
-                { label: 'Average', value: s.avg == null ? NO_DATA : formatFixed(s.avg, 1), note: s.avg == null ? undefined : '18 holes' },
-                { label: 'Under par', value: s.rounds ? s.underPar : NO_DATA, tone: s.underPar ? 'under' : undefined, note: s.rounds ? `of ${s.rounds}` : undefined },
-                { label: 'Low round', value: best ? best.score : NO_DATA, note: best ? `${best.player.split(' ')[0]} · ${best.toPar == null ? shortDay(best.date) : formatToPar(best.toPar)}` : undefined },
+                { label: 'Rounds', value: s.rounds ? s.rounds : <NoData />, note: s.players ? `${plural(s.players, 'player')}` : undefined },
+                { label: 'Average', value: s.avg == null ? <NoData /> : formatFixed(s.avg, 1), note: s.avg == null ? undefined : '18 holes' },
+                { label: 'Under par', value: s.rounds ? s.underPar : <NoData />, tone: s.underPar ? 'under' : undefined, note: s.rounds ? `of ${s.rounds}` : undefined },
+                { label: 'Low round', value: best ? best.score : <NoData />, note: best ? `${best.player.split(' ')[0]} · ${best.toPar == null ? shortDay(best.date) : formatToPar(best.toPar)}` : undefined },
               ]}
             />
           </SectionBoundary>
@@ -188,7 +194,7 @@ export function TeamRounds({ data: fresh, teamId }: { data: ChTeamRounds; teamId
                 const avg = full.length ? full.reduce((a, r) => a + r.score, 0) / full.length : null;
                 const meta = (
                   <span className="ch-num">
-                    {g.rounds.length} {g.rounds.length === 1 ? 'round' : 'rounds'}
+                    {g.rounds.length} {pluralWord(g.rounds.length, 'round')}
                     {avg != null && ` · avg ${formatFixed(avg, 1)}`}
                   </span>
                 );

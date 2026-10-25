@@ -1,4 +1,4 @@
-import { BarChart3, Flag, GraduationCap, Megaphone, MessageSquarePlus, CalendarPlus, Sparkles, Trophy, type LucideIcon } from 'lucide-react';
+import { ChartColumn, Flag, GraduationCap, Megaphone, MessageSquarePlus, CalendarPlus, Sparkles, Trophy, type LucideIcon } from 'lucide-react';
 import { activeNavItem, CH_SETTINGS_ITEM, navFor, rebuiltHref, type ChNavItem, type ChRole } from '../nav';
 import { letterFor } from './shortcuts';
 
@@ -49,8 +49,8 @@ interface ActionSpec {
 }
 
 /**
- * What the palette can start. Each one only routes to the screen that does it (no write happens here), and it is offered to
- * the roles whose screen takes it: a coach creates events, qualifiers and announcements; a player tracks rounds and adds
+ * What the palette can start. Each one only routes to the screen that does it, which opens its form from the address
+ * (`?new=1`, `?compose=1`, A16; no write happens here), and it is offered to the roles whose screen takes it: a coach creates events, qualifiers and announcements; a player tracks rounds and adds
  * classes (Calendar opens its editor from `?new=1` for a coach only, `/qualifiers/new` is the coach's form, and Rounds
  * and Classes are the player's screens). Both write messages. A route that is not rebuilt for the role is dropped
  * (`rebuiltHref`), so nothing here can lead to a notice in place of a screen.
@@ -58,11 +58,11 @@ interface ActionSpec {
 const ACTIONS: readonly ActionSpec[] = [
   { id: 'new-round', label: 'New round', icon: Flag, roles: ['player'], href: '/golf/dashboard/rounds/new', where: 'Rounds', keywords: ['start', 'track', 'play', 'score'] },
   { id: 'new-event', label: 'New event', icon: CalendarPlus, roles: ['coach'], href: '/golf/dashboard/calendar?new=1', where: 'Calendar', keywords: ['schedule', 'practice', 'meeting', 'add'] },
-  { id: 'new-message', label: 'New message', icon: MessageSquarePlus, roles: ['coach', 'player'], href: MESSAGES, where: 'Messages', keywords: ['write', 'chat', 'send', 'dm'] },
-  { id: 'post-announcement', label: 'Post announcement', icon: Megaphone, roles: ['coach'], href: '/golf/dashboard/team-hub?tab=ann', where: 'Team hub', keywords: ['announce', 'tell', 'team', 'new announcement'] },
+  { id: 'new-message', label: 'New message', icon: MessageSquarePlus, roles: ['coach', 'player'], href: `${MESSAGES}?compose=1`, where: 'Messages', keywords: ['write', 'chat', 'send', 'dm'] },
+  { id: 'post-announcement', label: 'Post announcement', icon: Megaphone, roles: ['coach'], href: '/golf/dashboard/team-hub?tab=ann&compose=1', where: 'Team hub', keywords: ['announce', 'tell', 'team', 'new announcement'] },
   { id: 'new-qualifier', label: 'New qualifier', icon: Trophy, roles: ['coach'], href: '/golf/dashboard/qualifiers/new', where: 'Qualifiers', keywords: ['qualifying', 'tournament', 'create'] },
   { id: 'whats-new', label: 'What’s new', icon: Sparkles, roles: ['coach'], href: '/golf/dashboard/whats-new', where: 'CoachHelm', keywords: ['activity', 'updates', 'insights', 'patterns', 'focus areas', 'week', 'recent'] },
-  { id: 'add-class', label: 'Add class', icon: GraduationCap, roles: ['player'], href: '/golf/dashboard/classes', where: 'Classes', keywords: ['course', 'schedule', 'timetable', 'school'] },
+  { id: 'add-class', label: 'Add class', icon: GraduationCap, roles: ['player'], href: '/golf/dashboard/classes?new=1', where: 'Classes', keywords: ['course', 'schedule', 'timetable', 'school'] },
 ];
 
 /** The actions a role is offered, in order. */
@@ -98,7 +98,7 @@ export function peopleCommands(role: ChRole, people: readonly ChPerson[]): ChCom
   if (role !== 'coach') return [];
   return people.flatMap((p): ChCommand[] => {
     const href = rebuiltHref(`/golf/dashboard/stats?player=${encodeURIComponent(p.id)}`, role);
-    return href ? [{ id: `person:${p.id}`, group: 'people', label: p.name, href, icon: BarChart3, avatarName: p.name, detail: p.detail ?? 'Stats', keywords: ['player'] }] : [];
+    return href ? [{ id: `person:${p.id}`, group: 'people', label: p.name, href, icon: ChartColumn, avatarName: p.name, detail: p.detail ?? 'Stats', keywords: ['player'] }] : [];
   });
 }
 

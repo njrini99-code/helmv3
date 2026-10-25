@@ -2,7 +2,7 @@
 
 import { ArrowRight, Check, ChevronDown, ChevronLeft, ChevronRight, Pencil, Plane, Plus } from 'lucide-react';
 import Link from 'next/link';
-import { useRef, useState, type CSSProperties, type KeyboardEvent, type ReactNode } from 'react';
+import { useState, type CSSProperties, type ReactNode } from 'react';
 import type { ChHubAnnouncement, ChHubFile, ChHubLedgerRow, ChHubRsvp, ChHubTask, ChHubTrip, ChRsvp, ChTeamHub } from '../../data/hub';
 import type { ChHubTab } from '../../lib/hub-tabs';
 import { initials } from '../../lib/format';
@@ -13,9 +13,11 @@ import { useChPhone } from '../../lib/use-phone';
 import { Button } from '../../ui/Button';
 import { Icon } from '../../ui/Icon';
 import { RefreshNotice } from '../../ui/RefreshNotice';
+import { WeekStrip } from '../../ui/WeekStrip';
 import { EmptyState } from '../../ui/States';
 import { firstBusyDay, ledgerSorted, owedBy, type LedgerKey, type QueueItem, type TaskFigures } from './hub-summary';
 import { Acknowledgement, ReplyChoices, repliesLine, useTaskSave } from './parts';
+import { plural } from '../../lib/plural';
 
 /*
  * Team Hub's Home, as widgets (owner, 2026-10-21: "don't center around RSVPs … more like widgets or cool interactive
@@ -24,7 +26,6 @@ import { Acknowledgement, ReplyChoices, repliesLine, useTaskSave } from './parts
  * read from what the page already loaded, and a read that failed says so in its tile, never as a zero.
  */
 
-const plural = (n: number, one: string, many = `${one}s`) => `${n} ${n === 1 ? one : many}`;
 
 function Tile({ id, title, aside, span, dark, className, children }: {
   id: string;
@@ -79,6 +80,16 @@ const countLabel = (days: number) => (days <= 0 ? 'Today' : days === 1 ? 'Tomorr
  * a second trip is a page away. With no trip ahead it counts down to the week's next event instead, and with nothing at
  * all it says so and offers a coach the way to plan one.
  */
+/**
+ * A date or a time never breaks inside itself on a phone (A24): "Mon 3 Nov" and "12:00 PM" keep their spaces as
+ * U+00A0, and a line may break only at the " · " or " – " between them.
+ */
+export const keepTokens = (text: string) =>
+  text
+    .split(/( · | – )/)
+    .map((part, i) => (i % 2 ? part : part.replace(/ /g, '\u00a0')))
+    .join('');
+
 export function TripTile({ trips, role, days, error, covered, onEdit, onPlan, onOpenTravel }: {
   /** Trips still to come, soonest first. */
   trips: ChHubTrip[];
@@ -96,7 +107,7 @@ export function TripTile({ trips, role, days, error, covered, onEdit, onPlan, on
   if (error) {
     return (
       <Tile id="ch-hw-trip" title="Next trip" span={7}>
-        <RefreshNotice code="CH-10207" title="Travel didn’t load." body="Trips are safe. Try again; the error has been reported." covered={covered} />
+        <RefreshNotice code="CH-10207" title="Travel didn’t load." body="Trips are safe. Try again." covered={covered} />
       </Tile>
     );
   }
@@ -109,9 +120,9 @@ export function TripTile({ trips, role, days, error, covered, onEdit, onPlan, on
   if (t) {
     const word = t.inDays != null ? countLabel(t.inDays) : null;
     const stops = [
-      { k: 'Leaves', v: clk(t.depart ?? t.dates), s: t.from },
+      { k: 'Leaves', v: keepTokens(clk(t.depart ?? t.dates)), s: t.from },
       { k: 'Stays', v: t.hotel ?? 'Hotel not set', s: t.destination },
-      { k: 'Home', v: clk(t.back ?? 'Not set'), s: null },
+      { k: 'Home', v: keepTokens(clk(t.back ?? 'Not set')), s: null },
     ];
     const names = t.travelers ?? [];
     return (
@@ -145,7 +156,8 @@ export function TripTile({ trips, role, days, error, covered, onEdit, onPlan, on
           )}
           <div className="ch-hw-count__t">
             <h3>{t.name}</h3>
-            <p className="ch-num">{[t.destination, t.dates].filter(Boolean).join(' · ')}</p>
+            {t.destination && <p className="ch-hw-count__where">{t.destination}</p>}
+            <p className="ch-hw-count__when ch-num">{keepTokens(t.dates)}</p>
           </div>
         </div>
         <ol className="ch-hw-rail" aria-label="The plan">
@@ -248,18 +260,10 @@ export function WeekTile({ week, role, rsvps, replies, isPending, onReply, cover
   const coach = role === 'coach';
   const days = week.days;
   const [sel, setSel] = useState(() => firstBusyDay(days));
-  const strip = useRef<HTMLDivElement>(null);
-  const pick = (i: number, focus = false) => {
+  const pick = (i: number) => {
     if (i < 0 || i >= days.length) return;
     if (i !== sel) haptic('select');
     setSel(i);
-    if (focus) strip.current?.querySelectorAll<HTMLButtonElement>('button')[i]?.focus();
-  };
-  const keys = (e: KeyboardEvent) => {
-    const to = e.key === 'ArrowRight' ? sel + 1 : e.key === 'ArrowLeft' ? sel - 1 : e.key === 'Home' ? 0 : e.key === 'End' ? days.length - 1 : null;
-    if (to == null) return;
-    e.preventDefault();
-    pick(Math.max(0, Math.min(days.length - 1, to)), true);
   };
   const quiet = days.every((d) => !d.events.length && !d.trip);
   const day = days[Math.min(sel, days.length - 1)];
@@ -271,7 +275,7 @@ export function WeekTile({ week, role, rsvps, replies, isPending, onReply, cover
   return (
     <Tile id="ch-hw-week" title="This week" span={span} aside={!week.error && <More href="/golf/dashboard/calendar">Calendar</More>}>
       {week.error ? (
-        <RefreshNotice code="CH-10201" title="This week didn’t load." body="Nothing was lost. Try again; the error has been reported." covered={covered} />
+        <RefreshNotice code="CH-10201" title="This week didn’t load." body="Nothing was lost. Try again." covered={covered} />
       ) : quiet || !day ? (
         <EmptyState
           compact
@@ -288,29 +292,20 @@ export function WeekTile({ week, role, rsvps, replies, isPending, onReply, cover
         />
       ) : (
         <>
-          <div ref={strip} className="ch-hw-days" role="group" aria-label="Days this week">
-            {days.map((d, i) => (
-              <button
-                key={d.date}
-                type="button"
-                aria-pressed={i === sel}
-                tabIndex={i === sel ? 0 : -1}
-                className={i === 0 ? 'is-today' : undefined}
-                aria-label={`${i === 0 ? 'Today, ' : ''}${d.weekday} ${d.day}: ${d.events.length ? plural(d.events.length, 'event') : 'nothing on'}${d.trip ? `, on the road (${d.trip})` : ''}`}
-                onClick={() => pick(i)}
-                onKeyDown={keys}
-              >
-                <small>{i === 0 ? 'Today' : d.weekday}</small>
-                <b className="ch-num">{d.day}</b>
-                <span className="ch-hw-days__dots" aria-hidden="true">
-                  {d.events.slice(0, 3).map((e) => (
-                    <i key={e.id} />
-                  ))}
-                  {d.trip && <i className="is-trip" />}
-                </span>
-              </button>
-            ))}
-          </div>
+          <WeekStrip
+            label="Days this week"
+            days={days.map((d, i) => ({
+              date: d.date,
+              top: i === 0 ? 'Today' : d.weekday,
+              num: d.day,
+              isToday: i === 0,
+              dots: d.events.length,
+              flag: d.trip ? 'trip' : undefined,
+              label: `${i === 0 ? 'Today, ' : ''}${d.weekday} ${d.day}: ${d.events.length ? plural(d.events.length, 'event') : 'nothing on'}${d.trip ? `, on the road (${d.trip})` : ''}`,
+            }))}
+            selected={day.date}
+            onSelect={(date) => pick(days.findIndex((d) => d.date === date))}
+          />
           <div className="ch-hw-agenda" aria-live="polite">
             {day.trip && (
               <p className="ch-hw-agenda__trip">
@@ -620,7 +615,7 @@ export function PostTile({ a, role, error, covered, acked, pending, onAck, onOpe
   if (error) {
     return (
       <Tile id="ch-hw-post" title="Latest post" span={span}>
-        <RefreshNotice code="CH-10206" title="Announcements didn’t load." body="Nothing was lost. Try again; the error has been reported." covered={covered} />
+        <RefreshNotice code="CH-10206" title="Announcements didn’t load." body="Nothing was lost. Try again." covered={covered} />
       </Tile>
     );
   }
@@ -709,7 +704,7 @@ export function TasksTile({ data, figures, isDone, covered, onAssign, onFocus, o
   return (
     <Tile id="ch-hw-tasks" title="Tasks" span={5} aside={!data.error && data.rows.length > 0 && <More onClick={onOpenTasks}>All tasks</More>}>
       {data.error ? (
-        <RefreshNotice code="CH-10203" title="Tasks didn’t load." body="Nothing was lost. Try again; the error has been reported." covered={covered} />
+        <RefreshNotice code="CH-10203" title="Tasks didn’t load." body="Nothing was lost. Try again." covered={covered} />
       ) : !data.rows.length ? (
         <EmptyState
           compact
@@ -757,7 +752,7 @@ export function TasksTile({ data, figures, isDone, covered, onAssign, onFocus, o
                       <em className={'ch-num' + (t.status === 'overdue' ? ' is-warn' : '')}>{t.status === 'overdue' ? `Overdue · ${t.due}` : (t.due ?? 'No date')}</em>
                     </span>
                     {t.done && (
-                      <span className="ch-hw-mini" aria-label={`${t.done[0]} of ${t.done[1]} done`}>
+                      <span role="img" className="ch-hw-mini" aria-label={`${t.done[0]} of ${t.done[1]} done`}>
                         <b className="ch-num">
                           {t.done[0]}/{t.done[1]}
                         </b>
@@ -815,8 +810,8 @@ export function QueueTile({ items, left, failed, covered, replies, isPending, on
   const down = failed.replies || failed.tasks;
   return (
     <Tile id="ch-hw-queue" title="Your queue" span={5} aside={!down && items.length > 0 && <span className={'ch-hw__k ch-num' + (left ? ' is-on' : '')}>{left === 0 ? 'All done' : `${left} to do`}</span>}>
-      {failed.replies && <RefreshNotice code="CH-10201" title="Your events didn’t load." body="Nothing was lost. Try again; the error has been reported." covered={covered} />}
-      {failed.tasks && <RefreshNotice code="CH-10203" title="Your tasks didn’t load." body="Nothing was lost. Try again; the error has been reported." covered={covered} />}
+      {failed.replies && <RefreshNotice code="CH-10201" title="Your events didn’t load." body="Nothing was lost. Try again." covered={covered} />}
+      {failed.tasks && <RefreshNotice code="CH-10203" title="Your tasks didn’t load." body="Nothing was lost. Try again." covered={covered} />}
       {!items.length && !down ? (
         <EmptyState compact code="CH-10303" title="Nothing is asked of you" body="Replies, posts to acknowledge and tasks from your coaches land here." />
       ) : items.length > 0 && (
@@ -899,7 +894,7 @@ export function FilesTile({ data, opening, covered, onOpen, onOpenDocs }: {
   return (
     <Tile id="ch-hw-files" title="Files" span={5} aside={!data.error && files.length > 4 && <More onClick={onOpenDocs}>{`All ${files.length}`}</More>}>
       {data.error ? (
-        <RefreshNotice code="CH-10204" title="Documents didn’t load." body="Your files are safe. Try again; the error has been reported." covered={covered} />
+        <RefreshNotice code="CH-10204" title="Documents didn’t load." body="Your files are safe. Try again." covered={covered} />
       ) : !files.length ? (
         <EmptyState compact code="CH-10304" title="No documents yet" body="Files your coaches share show here." />
       ) : (

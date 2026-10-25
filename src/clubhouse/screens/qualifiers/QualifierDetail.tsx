@@ -20,8 +20,8 @@ import { useLastGood } from '../../lib/use-last-good';
 import { useRefresh } from '../../lib/use-refresh';
 import { chTrail } from '../../lib/track';
 import { formatFixed } from '../../lib/format';
-import { bubbleNote, dayLabel, endedLive, plural, positionLabel, sampleNote, shortRange, yearOf, type ChQBoard, type ChQHole, type ChQRound, type ChQRow, type ChQStatus } from './model';
-import { Pos, qualifierPeek, StateBadge, StatusPill, ThruDots, ToPar, ToParPlate } from './parts';
+import { boardCaption, dayLabel, endedLive, plural, positionLabel, sampleNote, shortRange, viewerSelection, yearOf, type ChQBoard, type ChQHole, type ChQRound, type ChQRow, type ChQStatus } from './model';
+import { Pos, qualifierPeek, StateBadge, StatusPill, ThruDots, ToPar, ToParPlate, ViewerLineCard } from './parts';
 import { PlayerPeek } from '../../ui/PlayerPeek';
 import { useLiveStandings, type ChLiveFeed, type LiveFeedView } from './live';
 import { useRankSlide } from './rank-slide';
@@ -146,7 +146,7 @@ export function QualifierDetail({
           </Button>
           <Button
             variant="primary"
-            disabled={close.pending}
+            busy={close.pending}
             feel={null}
             onClick={() => void close.run()}
           >
@@ -222,7 +222,7 @@ export function QualifierDetail({
                 <Button
                   variant="ghost"
                   leftIcon={LockOpen}
-                  disabled={reopen.pending}
+                  busy={reopen.pending}
                   onClick={() => void reopenNow()}
                 >
                   {reopen.pending ? <span data-ch-code="CH-09406">Reopening…</span> : 'Reopen qualifier'}
@@ -382,7 +382,7 @@ function Leaderboard({
     <div className="ch-qf-panel__head">
       <div>
         <h2 id="ch-qf-lb">Leaderboard</h2>
-        {b && <p className="ch-num">Ranked by total to par · {plural(b.submitted, 'round')} submitted</p>}
+        {b && <p className="ch-num">Full cards first, then total to par · {plural(b.submitted, 'round')} submitted</p>}
       </div>
       {status === 'in_progress' && b && <LiveChip view={feed} />}
     </div>
@@ -398,7 +398,7 @@ function Leaderboard({
           <InlineNotice
             code="CH-09204"
             title="Scores didn’t load"
-            body="The field isn’t shown without its scores, so nobody reads a wrong order. The error has been reported."
+            body="The field isn’t shown without its scores, so nobody reads a wrong order."
             onRetry={refresh}
             retrying={refreshing}
           />
@@ -437,6 +437,7 @@ function Leaderboard({
       <p className="ch-sr-only" aria-live="polite" data-ch-code="CH-09803">
         {announce}
       </p>
+      <ViewerLineCard board={b} viewerId={data.viewerPlayerId} numRounds={data.numRounds} selection={viewerSelection(data.selectionState, data.selections)} />
       <StandingsSpread rows={b.rows} topScore={b.topScore} />
       <div className="ch-qf-table" role="table" aria-labelledby="ch-qf-lb">
         <div role="rowgroup">
@@ -487,7 +488,7 @@ function Leaderboard({
                       <Pos position={r.position} tied={r.tied} move={r.move} />
                     </span>
                     <span role="rowheader" className="ch-qf-who">
-                      <Avatar name={r.name} size={38} />
+                      <Avatar name={r.name} id={r.playerId} size={38} />
                       <span>
                         {coach ? (
                           // P003-C1: resting on a name shows the player's card; the row still opens the scorecards.
@@ -565,7 +566,7 @@ function Leaderboard({
                 <Pos position={null} tied={false} move={null} />
               </span>
               <span role="rowheader" className="ch-qf-who">
-                <Avatar name={r.name} size={32} />
+                <Avatar name={r.name} id={r.playerId} size={32} />
                 <span>
                   <b>
                     {r.name}
@@ -593,8 +594,7 @@ function Leaderboard({
         </div>
       </div>
       <p className="ch-qf-cap">
-        Ranked by total to par, then total strokes, then more rounds played. Top {b.topScore} qualify on score
-        {data.picks ? `; ${plural(data.picks, 'coach’s pick', 'coach’s picks')}` : ''}.{bubbleNote(data.numRounds, status)}
+        {boardCaption(b, data.picks, data.numRounds, status)}
         {data.rules ? ` ${data.rules}` : ''}
       </p>
     </section>

@@ -20,12 +20,13 @@ import { shortDay } from '../parts';
 import { LIVE_RECOVER_PORTS, type ChRecoverPorts } from './ports';
 import type { ChDeviceScan, ChRecoverRound } from './scan';
 import '../../../styles/rounds-recover.css';
+import { plural, pluralWord } from '../../../lib/plural';
 
 const ISO_DAY = /^\d{4}-\d{2}-\d{2}/;
 
 /** "Practice · Oct 14 · 9 of 18 holes · 41 strokes": what the saved round holds, skipping what it does not. */
 function factsOf(r: ChRecoverRound): string {
-  const holes = r.holesDone > 0 ? `${r.holesDone}${r.holesTotal ? ` of ${r.holesTotal}` : ''} ${r.holesDone === 1 ? 'hole' : 'holes'}` : 'Shots on a hole in progress';
+  const holes = r.holesDone > 0 ? `${r.holesDone}${r.holesTotal ? ` of ${r.holesTotal}` : ''} ${pluralWord(r.holesDone, 'hole')}` : 'Shots on a hole in progress';
   return [typeLabel(r.type), ISO_DAY.test(r.date) ? shortDay(r.date) : null, holes, r.score != null ? `${r.score} strokes` : null].filter(Boolean).join(' · ');
 }
 
@@ -163,7 +164,7 @@ export function RoundRecover({ playerId, ports = LIVE_RECOVER_PORTS }: { playerI
       if (!result.success) return { ...copy, hint: reasonText(result.error) ?? copy.hint };
       if (result.data?.declined) return { ...copy, done: 'A sync is already running' };
       const synced = result.data?.synced ?? 0;
-      return { ...copy, done: synced > 0 ? `Synced ${synced} ${synced === 1 ? 'round' : 'rounds'}` : 'Nothing was sent this time. Restore a round to send it now' };
+      return { ...copy, done: synced > 0 ? `Synced ${plural(synced, 'round')}` : 'Nothing was sent this time. Restore a round to send it now' };
     },
   );
 
@@ -251,7 +252,7 @@ export function RoundRecover({ playerId, ports = LIVE_RECOVER_PORTS }: { playerI
             </p>
           )}
           <p className="ch-rcv-lede">
-            {list.length} saved {list.length === 1 ? 'round' : 'rounds'} on this device. Nothing is deleted until you discard it.
+            {list.length} saved {pluralWord(list.length, 'round')} on this device. Nothing is deleted until you discard it.
           </p>
           <ul className="ch-rcv-list">
             {list.map((r) => (
@@ -288,6 +289,7 @@ export function RoundRecover({ playerId, ports = LIVE_RECOVER_PORTS }: { playerI
             <Button variant="ghost" onClick={() => setAsking(null)}>
               Keep it
             </Button>
+            {/* The warning came with the question (D-70): the yes is silent, and the result answers. */}
             <Button variant="danger" busy={discard.pending} feel={null} onClick={() => asking && void discard.run(asking)}>
               {discard.pending ? 'Discarding…' : 'Discard round'}
             </Button>

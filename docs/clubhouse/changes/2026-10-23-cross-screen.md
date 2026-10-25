@@ -1,0 +1,745 @@
+# 2026-10-23 — Cross-screen rules (Clubhouse A+ WP-17)
+
+## 2026-10-23 — One failure voice, Today on the phone, sortable headers (B10)
+
+```text
+Design package: none (Clubhouse A+ handoff, B10.3 to B10.5)
+PR/commit: #2361
+Contract IDs: none
+Actions: none
+Data impact: none
+Held items: B10.1 (one place for the create action) and B10.2 (large
+titles) wait on the owner's A25 answer
+```
+
+### Changed
+
+- Failure notices say what didn't happen and what to do: 84 bodies drop
+  "the error has been reported" and keep their own reassurance ("Posted
+  rounds are safe. Try again."), and the week's "display problem" guess
+  goes.
+- The phone calendar has Today whenever it is away from today: another
+  day on Day or List, another month on Month. It sits at the right of
+  the year's line, out of flow, so the header does not move.
+- The desktop roster table's Player, Avg, HCP and Rounds headers sort by
+  their column (the Sort players orders), and the column sorted by says
+  so with `aria-sort` and an arrow. The phone list and the table share
+  one sort module (`screens/roster/sort.ts`).
+
+### Why
+
+- The same thing behaved differently from screen to screen: five ways to
+  say a load failed, Today only on desktop, and sorting that worked one
+  way on the phone and another on desktop.
+
+### Verification
+
+- New `error-copy.test.ts`; a calendar test for the phone's Today; a
+  roster test that a header sorts and carries `aria-sort`.
+- WebKit: Today appears only away from today and takes no room; the
+  roster headers sort, the arrow's room is kept so labels don't move.
+
+## 2026-10-23 — One retry verb, one "not on a team" state (CONS-6, CONS-10)
+
+```text
+Design package: none (Clubhouse A+ handoff, CONS-6, CONS-10)
+PR/commit: #2361
+Contract IDs: none
+Actions: none
+Data impact: none
+Held items: none
+```
+
+### Changed
+
+- A failure's action says "Try again" everywhere: the failure toasts'
+  default, the offline toast, Settings, round entry and a message that
+  did not send, as the notices already did.
+- Fifteen pages say "You aren't on a team yet" through `ui/NoTeam`: a
+  restricted page state with one icon, one title, the page's own body
+  and code, and one way on (Team settings for a coach, Golf profile for
+  a player). Stats, Qualifiers, CoachHelm and team rounds gain that way
+  on; the Team setting itself has none.
+
+### Why
+
+- "Retry" and "Try again" named the same act, and the no-team state was
+  drawn fifteen ways, some with no way forward.
+
+### Verification
+
+- New `retry-verb.test.ts` and `no-team.test.ts`; the tests find the
+  failure key by its new name.
+
+## 2026-10-23 — One spinner, icon weight, one back link (CONS-24, B12, CONS-29)
+
+```text
+Design package: none (Clubhouse A+ handoff, CONS-24, B12, CONS-29)
+PR/commit: #2361
+Contract IDs: none
+Actions: none
+Data impact: none
+Held items: B12's size steps wait on the CONS-4 icon-size answer; Round
+setup's band back, onboarding's back and two pagers wait on a visual
+decision
+```
+
+### Changed
+
+- One spinner: every busy ring was already `ui/Spinner`, so five local
+  spinners and their keyframes go.
+- Icons draw an absolute line: 1.5px up to 17, 1.75px to 22, 2px above,
+  so small icons are no longer hairlines beside 600-weight text.
+- One back link: CoachHelm's Track record, Monday brief and Brief, the
+  calendar panel and the course picker use `BackLink` (ChevronLeft 16,
+  focus offset 2), a link to the parent or a button inside a page.
+
+### Why
+
+- Five spinners, icon lines from 0.8 to 2px, and nine ways to go back.
+
+### Verification
+
+- New `one-spinner.test.ts`, `ui/__tests__/Icon.test.tsx` and
+  `one-back-link.test.ts` (which lists the held backs).
+
+## 2026-10-23 — Desktop keys: Settings, a quiet N, arrow keys in lists (B11)
+
+```text
+Design package: none (Clubhouse A+ handoff, B11, partial)
+PR/commit: #2361
+Contract IDs: none
+Actions: none
+Data impact: none
+Held items: Cmd-1 to 9 waits on OQ-63; the toolbar search, the identity
+menu, a cold People list and page-aware shortcuts follow
+```
+
+### Changed
+
+- Cmd or Ctrl and a comma opens Settings, from a field too but never over
+  a dialog, and the shortcuts sheet lists it.
+- Home's N no longer fires inside a Modal: it checks a field, a dialog or
+  a menu, and any open modal, with the shell's own tests.
+- The Messages rail and the open Bell are one Tab stop each, and the
+  arrow keys walk their rows (Home and End to the ends).
+
+### Why
+
+- A Mac app opens its settings with Cmd-comma, a key typed in a dialog
+  should stay there, and a long list should not take a Tab per row.
+
+### Verification
+
+- `shortcuts.test.ts` (Cmd-comma), `home-new-key.test.tsx` (N over a
+  native dialog and in a field), a Messages test for the arrow keys.
+
+## 2026-10-23 — One rank rule, the season on the team's calendar (B13)
+
+```text
+Design package: none (Clubhouse A+ handoff, B13.2 and B13.4)
+PR/commit: #2361
+Contract IDs: none
+Actions: none
+Data impact: none (figures read the same rows; places and the season
+boundary are computed differently)
+Held items: Standing's window (B13.1) and the qualifier completeness
+rule (B13.3) offer two options each, for the owner; the SQL readers'
+CURRENT_DATE is C10, held
+```
+
+### Changed
+
+- Places are taken on the value as shown, so two players shown at 74.3
+  share a place ("T1"); Roster's standings and Home's leaderboard use
+  the one rule. Stats' TeamRank keeps its "about the same" tie.
+- The season turns on 1 August in the team's zone (New York where the
+  zone isn't to hand), not the server's UTC date.
+
+### Why
+
+- Two players shown with the same average had different places, and an
+  Eastern team's season turned about four hours early.
+
+### Verification
+
+- New `lib/__tests__/rank.test.ts` and `data/__tests__/season.test.ts`;
+  a roster standings test for 74.30 and 74.333.
+
+## 2026-10-23 — One number formatter per metric (CONS-15)
+
+```text
+Design package: none (Clubhouse A+ handoff, CONS-15)
+PR/commit: #2361
+Contract IDs: none
+Actions: none
+Data impact: none (display only)
+Held items: formatSG's precision (two decimals in the spec body, one in
+its table row) waits for the owner before any strokes-gained figure
+moves onto it; the .toFixed ratchet starts at 112, not 0
+```
+
+### Changed
+
+- `lib/format.ts` gains `formatAvg`, `formatSG`, `formatHcp` and
+  `formatDistance`. The roster and onboarding handicap formatters are
+  gone; every handicap reads through `formatHcp`.
+- Team and player averages, penalties and putts on Roster, Stats and
+  Home use the shared formatters. A missing figure is an em dash.
+- TeamRank's two-decimal percent is a dot's position, not a figure, so
+  it stays. `formatPct` keeps its percent scale (61.4 reads 61%).
+
+### Why
+
+- One metric should read at one precision everywhere.
+
+### Verification
+
+- New `display-rounding.test.ts` (`.toFixed(` outside `lib/format.ts`
+  may only fall, 132 to 112 here); `format-number.test.ts` extended;
+  related tests for every changed file (214 files).
+
+## 2026-10-23 — Menu origin and the push dim (B16, partial)
+
+```text
+Design package: none (Clubhouse A+ handoff, B16)
+PR/commit: #2361
+Contract IDs: none
+Actions: none
+Data impact: none
+Held items: the physics springs (smoothPhysics, snappy) wait on OQ-17;
+the sidebar fold stays as it is; device smoothness of the dim is
+unverified
+```
+
+### Changed
+
+- A menu grows from the corner nearest its trigger: from the bottom
+  when it opens upward. The right-click menu does the same.
+- On the phone a drill-in push dims the page beneath as a pushed screen
+  does (`--ch-push-dim`, `--ch-vt-push-dim`), and Back lifts it.
+
+### Why
+
+- A menu that opened upward grew from its top, away from the trigger,
+  and a route push left the page beneath at full brightness.
+
+### Verification
+
+- New `ui/__tests__/menu-origin.test.tsx`; the context menu, popup
+  layout and CSS guard tests (31 files); `clubhouse:css` 0 findings.
+
+## 2026-10-23 — One week strip (B18)
+
+```text
+Design package: none (Clubhouse A+ handoff, B18)
+PR/commit: #2361
+Contract IDs: none (CH-6606's gliding plate and CH-2802's words kept)
+Actions: none
+Data impact: none
+Held items: desktop Home keeps its frosted today key (owner, 2026-10-06);
+device paging at 60Hz is unverified (headless WebKit freezes scroll and
+transitions)
+```
+
+### Changed
+
+- New `ui/WeekStrip`: one look (a flat row, the chosen day on the green
+  plate that glides between days, today ringed, dots, a reply owed
+  amber, a day on the road gold). A day is chosen (buttons, one Tab
+  stop, arrow keys), linked, or only read.
+- New `ui/ScrollPager`: the calendar's day pager, pulled out unchanged.
+  The phone calendar's week strip pages a week with a swipe on it, with
+  the same native momentum and one tick as the day.
+- Used on the phone calendar, the Hub's week and phone Home. Their own
+  strip CSS is gone. Phone Home's today is ringed, not filled, and its
+  competition day keeps its mark but not the raised green key.
+
+### Why
+
+- The week strip had three designs, and the phone calendar's week did
+  not page with a swipe.
+
+### Verification
+
+- New `ui/__tests__/WeekStrip.test.tsx` (chosen and today, arrow keys,
+  a page past either end, `onPage` on a settled swipe, links and read
+  only); calendar, Hub and Home tests; WebKit shots at 390 and 1280
+  (P006, P002, P010 `week-strip`, after).
+
+## 2026-10-23 — Segmented, avatars, tones and the selected state (WP-21)
+
+```text
+Design package: none (Clubhouse A+ handoff, B17, B19, CONS-20, CONS-22)
+PR/commit: #2361
+Contract IDs: none
+Actions: none
+Data impact: none
+Held items: B17's flat restyle (the seg-on well is the owner's "depth
+like the toggles", 2026-10-16); the four hand-rolled segmented controls
+(Hub reply, rounds-track keys, hole par, audience chips) need behaviour
+Segmented lacks; B19's one tint on both platforms (D-43), the Badge's
+info tone and the avatar size set (CONS-33); CONS-31's Menu sort and
+Segmented-to-pills on What's new
+```
+
+### Changed
+
+- `ui/Segmented` is pinned by a test (arrow keys, `aria-checked`, the
+  thumb's slide). The orphaned `.ch-rsu-seg` CSS is gone.
+- An avatar's tone is pinned per person at every size and ring.
+- Stats' deltas, tape, leaders and zones and Home's average mark use
+  `is-gain` and `is-loss` straight from `changeTone`; the older tone
+  words are ratcheted (82 to 54 lines).
+- The selected state is tokens: `--ch-selected-bg`,
+  `--ch-selected-pill-bg`, `--ch-selected-pill-ring`,
+  `--ch-selected-ink`. The pill, the deep dive's item, the people
+  picker and Home's rail use them; Home's rail item is green-50 now, as
+  every selected row is. Other selected paints are ratcheted (75).
+
+### Why
+
+- One control, one tone vocabulary and one selected state read the same
+  on every screen.
+
+### Verification
+
+- New `ui/__tests__/Segmented.test.tsx`, `ui/__tests__/Avatar.test.tsx`,
+  `tone-vocabulary.test.ts` and `selected-state.test.ts`; Stats, Home,
+  CoachHelm and round setup tests; `clubhouse:css` 0 findings.
+
+## 2026-10-23 — Screen gaps (B14, partial)
+
+```text
+Design package: none (Clubhouse A+ handoff, B14)
+PR/commit: #2361
+Contract IDs: none
+Actions: none
+Data impact: none
+Held items: "— SG" (the pinned no-data dash), "No reads yet" (CoachHelm's
+noun), Messages' one-item row menu and the Hub's "Coach view" label
+(both recorded decisions), and the owner calls B14 names
+```
+
+### Changed
+
+- Stats on the phone: a round row opens its review, as the desktop
+  table's do.
+- Stats: "margin of error" replaces "how sure a figure is" on the legs
+  and TeamRank.
+- The round review's greens figure no longer paints green whatever it
+  is: with nothing to read it against it takes no tone.
+- Onboarding drops the name from a question when there is none, rather
+  than say "there".
+- Settings on the phone says Add photo with no photo, as the desktop
+  does, not Change photo.
+
+### Why
+
+- Small per-screen gaps from the screen audits.
+
+### Verification
+
+- New tests in `stats-player.test.tsx`, `rounds-contracts.test.tsx`,
+  `onboard.test.tsx` and `settings.test.tsx`; Stats and round review
+  tests.
+
+## 2026-10-23 — Small mismatches and one name module (B22, CONS-17)
+
+```text
+Design package: none (Clubhouse A+ handoff, B22, CONS-17)
+PR/commit: #2361
+Contract IDs: none
+Actions: none
+Data impact: none
+Held items: the qualifier board's leader weight (its recorded rule:
+"the leader and the cut carried by weight and a rule"); Track's played
+chips, Holed / ace and Messages' section gaps; compound first names
+```
+
+### Changed
+
+- What's new: a row's time sits on its title's first line when the
+  title wraps.
+- `lib/names.ts` (`firstName`, `shortName`, `initials`) replaces nine
+  local helpers; their modules re-export it.
+- The Rounds discard key and Continue already share a height and corner
+  in the current CSS; nothing changed there.
+
+### Why
+
+- A centred time on a wrapped title read as belonging to no line, and
+  nine helpers shortened names three ways.
+
+### Verification
+
+- New `screens/whats-new/__tests__/time-first-line.test.ts` and
+  `lib/__tests__/names.test.ts` (with the guard that names shorten only
+  in `lib/names`); Home, Hub, Messages and CoachHelm tests.
+
+## 2026-10-23 — One plural rule and the golf glossary (CONS-14, CONS-18)
+
+```text
+Design package: none (Clubhouse A+ handoff, CONS-14, CONS-18)
+PR/commit: #2361
+Contract IDs: none
+Actions: none
+Data impact: none
+Held items: "Around green" in tight cells, "Short game" as its own leg,
+and the phone sort's "Avg" (CONS-31) wait on the owner; the inline plural
+ternaries (168) and the off-glossary words are ratcheted
+```
+
+### Changed
+
+- `lib/plural.ts` (`plural`, `pluralWord`, on `Intl.PluralRules`)
+  replaces ten local helpers.
+- `lib/glossary.ts` holds the golf words, long and short. The phone's
+  lowercase "hcp" is "HCP" on Roster, the team roster, the requests and
+  Stats, as the desktop has it, and Roster's "Avg score" sort is
+  "Scoring avg".
+
+### Why
+
+- Ten helpers pluralised the same way three ways, and one word had two
+  spellings between phone and desktop.
+
+### Verification
+
+- New `lib/__tests__/plural.test.ts` and `lib/__tests__/glossary.test.ts`
+  (each with its ratchet); related tests for every changed file.
+
+## 2026-10-23 — Focus ring, icons and create copy (CONS-36, CONS-19, CONS-38)
+
+```text
+Design package: none (Clubhouse A+ handoff, CONS-36, CONS-19, CONS-38)
+PR/commit: #2361
+Contract IDs: none new; the meanings of 110105, 111703 and the CH-11301,
+CH-11304, CH-13301, CH-13370, CH-13380, CH-09201, CH-09301 and CH-14904
+rows name the new controls (registry sync)
+Actions: none
+Data impact: none
+Held items: the hero bar's tight rings and the menu rows' inset
+(ratcheted); chevron and close sizes (with CONS-4); the in-flow commits
+"Create qualifier" and "Start round"
+```
+
+### Changed
+
+- One focus ring: every `:focus-visible` and `:focus-within` rule draws
+  in `--ch-border-focus`, or `--ch-border-focus-on-dark` (champagne-300)
+  on the hero green and dark plates, 2px out or 2px in. Round setup's
+  ink ring is the field focus ring. A guard ratchets what is left (9).
+- One icon per meaning: ChartColumn, RefreshCw, MoreHorizontal,
+  ExternalLink, SquareArrowOutUpRight, Share2 and PenLine become
+  BarChart3, RotateCw, Ellipsis, ArrowUpRight, Share and Pencil, and
+  ESLint keeps the old ones out of `src/clubhouse`.
+- "New" for what is authored: New round (was Start a round, Start a new
+  round, Start your first round), New qualifier (was Create a qualifier
+  on the list and the new form's title), New prospect (was Add prospect;
+  the desktop form commits with Add, as the phone sheet does).
+
+### Why
+
+- Rings in six colours and seven offsets, two icons for one meaning,
+  and three verbs for making a thing.
+
+### Verification
+
+- New `focus-ring.test.ts` and `create-copy.test.ts`; the ESLint rule
+  probed with a restricted import; the CSS tests (46 files), related
+  tests and the copy tests of Rounds, Home, CoachHelm, Onboarding,
+  Qualifiers and Recruiting; `docs:check` and the registry sync clean.
+
+## 2026-10-23 — Page titles are their nav labels (CONS-26, partial)
+
+```text
+Design package: none (Clubhouse A+ handoff, CONS-26)
+PR/commit: #2361
+Contract IDs: none
+Actions: none
+Data impact: none
+Held items: Qualifiers' title against its nav ("Lineups" or
+"Qualifiers"), for the owner
+```
+
+### Changed
+
+- Roster's title is Roster for a coach and a player (was "Your players"
+  and "Your team."); the Rounds library's is Rounds (was "Your
+  rounds").
+- Home's greeting drops its full stop ("Good morning, Maya").
+
+### Why
+
+- A page should be called what the nav calls it.
+
+### Verification
+
+- New `page-titles.test.ts`; Home, Roster and Rounds tests.
+
+## 2026-10-23 — Honest empty states (CONS-11, partial)
+
+```text
+Design package: none (Clubhouse A+ handoff, CONS-11)
+PR/commit: #2361
+Contract IDs: none
+Actions: none
+Data impact: none
+Held items: the other 71 legacy section empties and 30 hand-rolled empty
+class uses, ratcheted
+```
+
+### Changed
+
+- An `EmptyState` names its `kind`, draws a `shape`, or is a page; the
+  legacy section form is ratcheted per file by an AST check.
+- Stats' section filter empties are `kind="filtered"`.
+- On the phone, Home's and the player's "No rounds posted yet this
+  season" are the shaped rows with the Flag, as on the desktop.
+
+### Why
+
+- One state drawn three ways read as three states.
+
+### Verification
+
+- New `empty-honest.test.ts`; Stats filter and Home tests.
+
+## 2026-10-23 — Icon keys, plurals and the spread's axis (CONS-2, CONS-14)
+
+```text
+Design package: none (Clubhouse A+ handoff, CONS-2, CONS-14)
+PR/commit: #2361
+Contract IDs: none
+Actions: none
+Data impact: none
+Held items: the other raw ch-btn sites (ratcheted, now failing on a
+stale entry too); 93 plural ternary lines
+```
+
+### Changed
+
+- `IconButton` opens a menu (it takes ui/Menu's trigger props) and has a
+  secondary variant. Roster's and Recruiting's row menus, Calendar's
+  More and the event panel's More use it.
+- 83 inline `n === 1 ? … : …s` ternaries use `plural()`.
+- Roster's spread leaves out the axis tick under the team pill, which
+  showed through it.
+
+### Why
+
+- Four hand-built icon keys, and plurals spelled out file by file.
+
+### Verification
+
+- `buttons.test.ts` (with the new stale check), calendar, roster and
+  recruiting tests; related tests for the plural files (231 files); a
+  new `roster-spread-axis.test.tsx`; WebKit shots (P002, P003, P008,
+  P009, P011, P013, P014, after).
+
+## 2026-10-23 — More keys on ui/Button (CONS-2)
+
+```text
+Design package: none (Clubhouse A+ handoff, CONS-2)
+PR/commit: #2361
+Contract IDs: none
+Actions: none
+Data impact: none
+Held items: the remaining raw keys (auth submits with refs, the bell,
+the top bar, the Ask sheet, round setup and track keys), ratcheted
+```
+
+### Changed
+
+- `IconButton` can be a link (`href`); Stats' previous and next player
+  use it.
+- `Button` carries `aria` (label, expanded, controls, pressed) and a CH
+  `code`.
+- Home's Full roster, Team stats and Nudge, a calendar file's Remove,
+  the evidence panel's close, the course nudge, the Hub's Attach from
+  Documents and Ask's Evidence are `ui/Button`.
+
+### Why
+
+- Weight, size, icons, busy and the haptic come from one place.
+
+### Verification
+
+- `buttons.test.ts` (lowered allowlist); related tests (185 files).
+
+## 2026-10-23 — Rounding, tones and selected plates, continued
+
+```text
+Design package: none (Clubhouse A+ handoff, CONS-15, CONS-20, CONS-22)
+PR/commit: #2361
+Contract IDs: none
+Actions: none
+Data impact: none
+Held items: the CSV export, CSS geometry and color-mix percentages keep
+.toFixed; tone words left in Stats and CoachHelm, ratcheted
+```
+
+### Changed
+
+- Stats, CoachHelm settings and Ask's elapsed seconds round through
+  `lib/format` (`.toFixed` ratchet 112 → 84). The shown text is unchanged.
+- Twenty selected paints use the selected tokens; a solid chosen plate
+  uses `--ch-selected-strong` (ratchet 75 → 55).
+- The zone's big read, What's new's good line and the putts bar use
+  `is-gain` and `is-loss`.
+
+### Why
+
+- One rounding rule, one tone vocabulary and one selected look.
+
+### Verification
+
+- `display-rounding`, `selected-state`, `tone-vocabulary` and
+  `strokes-gained` tests; related tests (32 files).
+
+## 2026-10-23 — Same words, avatar steps and control guards
+
+```text
+Design package: none (Clubhouse A+ handoff, CONS-31, CONS-33, CONS-37,
+CONS-39)
+PR/commit: #2361
+Contract IDs: none
+Actions: none
+Data impact: none
+Held items: the avatar step scale, the Roster sort keys, What's new's
+filter, chip and tab migrations, the font shorthands that block .ch-num
+```
+
+### Changed
+
+- Phone and desktop take their sort and figure words (handicap, strokes
+  gained, scoring average) from `lib/glossary`; a parity test holds the
+  pairs (CONS-37).
+- `ui/Avatar` takes named steps (`xs` 24, `sm` 28, `md` 36, `lg` 40,
+  `xl` 64). The 29 sizes already on a step use the name, so no pixel
+  moves; 59 numeric sizes and the three own avatar classes are ratcheted
+  (CONS-33).
+- Hand-rolled chips (99), segmented controls (77) and tabs (58) are
+  ratcheted (CONS-31).
+- Local `font-variant-numeric` declarations are ratcheted (498 → 497).
+  Most sit in rules that also set the `font` shorthand, which resets the
+  tabular setting, so they stay until the role tokens change (CONS-39).
+
+### Why
+
+- One source for each word, size and control, and no new copies.
+
+### Verification
+
+- `phone-desktop-words`, `avatar-sizes`, `chips-tabs` and `tabular-nums`
+  tests; related tests (109 files); `tsgo`, eslint, `clubhouse:check`,
+  `clubhouse:css`.
+
+## 2026-10-23 — Dates, page spacing and desktop keys
+
+```text
+Design package: none (Clubhouse A+ handoff, CONS-16, CONS-34, B11)
+PR/commit: #2361
+Contract IDs: none
+Actions: none
+Data impact: none
+Held items: the day locale, round entry's and Roster's relative
+wording, the phone gutter, Cmd-1 to 9; Cmd-N is not available in a
+browser
+```
+
+### Changed
+
+- `lib/dates` holds the day key (`isoDay`), the one clock ("3:30 PM")
+  and relative time in two lengths. The welcome's last visit reads
+  "9:12 PM" and the recruiting dead period "7 AM". Other date
+  formatting is ratcheted (CONS-16).
+- Page roots take their padding and gap from page spacing tokens, each
+  equal to today's value; a guard lists the roots (CONS-34).
+- ↑ and ↓ walk the Recruiting table and the Settings rail. The
+  shortcuts sheet lists the open page's own keys (Home, Calendar,
+  Messages, Recruiting, Settings). CoachHelm's "Since you were last
+  here" opens into What's new (B11).
+
+### Why
+
+- One clock and one day key; spacing by meaning; a Mac keyboard that
+  reaches every list.
+
+### Verification
+
+- `dates`, `page-spacing`, `page-keys`, recruiting, settings and
+  coachhelm tests; related tests; guard suite (287 files); `tsgo`,
+  eslint, `clubhouse:check`, `clubhouse:css`. The spacing tokens were
+  resolved and diffed against the old values (no change).
+
+## 2026-10-23 — Search pill, account menu, filtered empties
+
+```text
+Design package: none (Clubhouse A+ handoff, B11, CONS-11, CONS-22)
+PR/commit: #2361
+Contract IDs: none
+Actions: none
+Data impact: none
+Held items: a catalog code for the desktop sign-out failure; the
+first-run empties; the remaining selected paints
+```
+
+### Changed
+
+- The desktop top bar has a search pill ("Search", the platform's K
+  key) that opens the command palette. It draws only where the palette
+  works (a pointer that hovers, 821px and up).
+- The sidebar's identity block is a menu: the teams to switch to,
+  Settings, Help and Sign out (the existing sign-out, with its retry
+  toast).
+- Five search and filter empties (Rounds library, Qualifiers, What's
+  new, Stats' player window on both form factors) say they are
+  filtered.
+- CoachHelm's and Deep dive's chosen-row tint on the canopy is
+  `--ch-selected-tint`; the selected-state guard no longer counts an
+  unchosen `:not()` state (55 → 40).
+
+### Why
+
+- Search is visible, the account has a menu, and an empty filter reads
+  as a filter.
+
+### Verification
+
+- `search-pill`, `identity-menu`, `command-layer`, `empty-honest` and
+  `selected-state` tests; guard suite (287 files); `tsgo`, eslint,
+  `clubhouse:check`, `clubhouse:css`.
+
+## 2026-10-23 — Plurals, rounding and two more keys
+
+```text
+Design package: none (Clubhouse A+ handoff, CONS-2, CONS-14, CONS-15)
+PR/commit: #2361
+Contract IDs: none
+Actions: none
+Data impact: none
+Held items: plurals that can be negative or sit in empty states;
+rounding where a NaN can reach the text; the auth keys (auth.css)
+```
+
+### Changed
+
+- Inline plural ternaries use `plural()` (93 → 6 lines); display
+  rounding goes through `lib/format` (84 → 69 `.toFixed`). No shown
+  string changed.
+- Round setup's Add a course and the phone's New message are
+  `ui/Button`.
+- The search pill takes focus on press, so Esc returns to it in Safari;
+  the shortcuts sheet spells arrow keys as words.
+
+### Why
+
+- One plural rule and one rounding rule; one key component.
+
+### Verification
+
+- `plural`, `display-rounding`, `buttons` and `search-pill` tests;
+  related tests (180, 118 and 21 files); guard suite (287 files);
+  `tsgo`, eslint.

@@ -7,13 +7,15 @@ import type { Goal } from '@/lib/coachhelm/v3/goals/types';
 import { shortDate } from '@/lib/coachhelm/v3/lifecycle/delivery-shape';
 import { getMetricRenderConfig } from '@/lib/coachhelm/v3/standing/metric-config';
 import type { AssembledThemes, ThemeNode } from '@/lib/coachhelm/v3/themes/types';
-import { formatSigned, formatToPar } from '../lib/format';
+import { formatFixed, formatSG, formatToPar } from '../lib/format';
+import { diffSe, halvesTone, POOLED_LEG_SD, POOLED_SD, standardError } from '../lib/stats-signal';
 import { rebuiltHref } from '../shell/nav';
 import { formatComparison } from './coachhelm-map';
 import { toChRead, type ChRead } from './coachhelm-read-shape';
 import type { ChViewer } from './coachhelm-voice';
 import { stanceOf, type ChBoardMissing, type ChInsight, type ChStance } from './coachhelm-shape';
 import { figure } from './coachhelm-standing-shape';
+import { plural } from '../lib/plural';
 
 /**
  * The player's Deep dive (Clubhouse P013, `?view=deep-dive`): every insight the Board draws, in full. Each one shows what was
@@ -99,7 +101,7 @@ export interface ChDiveTheme {
   state: 'leak' | 'strength' | 'thin';
   /** Strokes gained per round in the category, when known ("−0.42"). */
   sg: string | null;
-  trend: { word: 'Improving' | 'Slipping' | 'Steady'; tone: ChDiveTone; text: string } | null;
+  trend: { word: 'Improving' | 'Slipping' | 'No clear change'; tone: ChDiveTone; text: string } | null;
 }
 
 /**
@@ -292,7 +294,7 @@ function movementChange(from: number, to: number, unit: InsightUnit): string | n
     case 'percent':
       return `${r} pts`;
     case 'strokes':
-      return `${r} ${r === 1 ? 'stroke' : 'strokes'}`;
+      return `${plural(r, 'stroke')}`;
     case 'yards':
       return `${r} yd`;
     case 'feet':
@@ -388,16 +390,29 @@ function closesFor(raw: EvidenceInsight, themes: AssembledThemes | null): ChDeep
   const cause = themes?.themes.flatMap((t) => t.causes).find((c) => c.insight_id === raw.id);
   if (!cause || cause.counterfactualSuppressed || !(cause.strokesSavedPerRound > 0)) return null;
   const team = cause.standingTeamAvgValue != null && cause.standingPlayerValue != null && cause.standingPgaValue != null;
-  return { strokes: cause.strokesSavedPerRound.toFixed(1), anchor: team ? 'team' : 'tour' };
+  return { strokes: formatFixed(cause.strokesSavedPerRound, 1), anchor: team ? 'team' : 'tour' };
 }
+
+/** Each strokes-gained theme's leg spread (`POOLED_LEG_SD`); a theme with no leg of its own falls back to the total's. */
+const LEG_SD: Partial<Record<ThemeNode['category'], number>> = {
+  tee: POOLED_LEG_SD.tee,
+  approach: POOLED_LEG_SD.approach,
+  short_game: POOLED_LEG_SD.around,
+  putting: POOLED_LEG_SD.putting,
+};
 
 function themeRead(t: ThemeNode, role: ChViewer['role'] = 'player'): ChDiveTheme {
   const trend = t.trend;
-  const sg = t.sgPerRound != null ? formatSigned(t.sgPerRound, 2) : null;
+  const sg = t.sgPerRound != null ? formatSG(t.sgPerRound) : null;
   if (!trend) return { label: t.displayLabel, state: t.state, sg, trend: null };
-  const word = trend.direction === 'improving' ? 'Improving' : trend.direction === 'declining' ? 'Slipping' : 'Steady';
-  const span = `strokes gained averaged ${formatSigned(trend.recentAvg, 2)} a round over ${role === 'coach' ? 'the' : 'your'} last ${trend.recentN} rounds, against ${formatSigned(trend.priorAvg, 2)} over the ${trend.priorN} before`;
-  return { label: t.displayLabel, state: t.state, sg, trend: { word, tone: trend.direction === 'improving' ? 'good' : trend.direction === 'declining' ? 'warn' : 'plain', text: `${t.displayLabel}: ${span}` } };
+  // The engine's direction cuts at a fixed 0.15 with no noise test; the page words and tones the change only past its standard
+  // error (A1, the one change rule), each window's rounds at the theme's own leg spread, never the total's (review of #2361).
+  const sd = LEG_SD[t.category] ?? POOLED_SD.sg;
+  const se = diffSe(standardError(sd, trend.recentN), standardError(sd, trend.priorN));
+  const tone = halvesTone({ delta: trend.recentAvg - trend.priorAvg, se }, false, 1);
+  const word = tone === 'is-gain' ? 'Improving' : tone === 'is-loss' ? 'Slipping' : 'No clear change';
+  const span = `strokes gained averaged ${formatSG(trend.recentAvg)} a round over ${role === 'coach' ? 'the' : 'your'} last ${trend.recentN} rounds, against ${formatSG(trend.priorAvg)} over the ${trend.priorN} before`;
+  return { label: t.displayLabel, state: t.state, sg, trend: { word, tone: tone === 'is-gain' ? 'good' : tone === 'is-loss' ? 'warn' : 'plain', text: `${t.displayLabel}: ${span}` } };
 }
 
 /** A read's span: the dates its window covers, or All rounds for a lifetime value. */

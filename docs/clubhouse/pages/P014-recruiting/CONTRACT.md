@@ -25,7 +25,7 @@ Every contract on this page has a catalog code; there are no hand-recorded behav
 The shell's contracts (P001, namespace 1) apply here too and are named where they carry a category.
 `clubhouse:check` holds this file to the registry.
 
-One screen on one route: a coach's prospect tracker. A header and Add prospect, a pipeline of four stages
+One screen on one route: a coach's prospect tracker. A header and New prospect, a pipeline of four stages
 (Watched, Recruiting, Offered, Committed) that filters the list, a searchable and sortable list, and the open
 prospect's panel with contact, notes and private documents. On a phone it is the owner's phone build: the list, a
 pushed prospect, and sheets for the edit form, the stage and delete. It is coach-only (a player is sent Home), and
@@ -35,7 +35,7 @@ it changes no schema.
 
 Status: DEFINED
 
-Recruiting opens final on first paint, read on the server in one pass: the header with Add prospect and the recruiting calendar line (CH-14808), the pipeline with every stage's count (the share of the list is no longer drawn, P014 finding #4), the list by recently updated, and the first prospect's panel (140101, CH-14904). While the next-step columns exist on golf_recruits (migration 20261008120000, written and not applied on 2026-10-08), the table adds a Next step column, the panel a Next step part (CH-14307), the phone rows a dated plate for a due step (every step while sorted by Next step due, and under the name on a desktop list too narrow for the column; a step whose day has passed reads "Overdue"), the sort "Next step due" (a step with no day after the dated ones), and the pipeline head "n visits this month · n decisions due" (a committed prospect's decision is not counted); until then all of it is hidden and nothing names the columns in a read or a write. On a phone at 820px and below it is the phone build (141901, CH-14914). The route draws the Clubhouse page only for a coach with the Clubhouse on; everyone else keeps the existing page. From the shell, the frame opens on its own (10102).
+Recruiting opens final on first paint, read on the server in one pass: the header with New prospect and the recruiting calendar line (CH-14808), the pipeline with every stage's count (the share of the list is no longer drawn, P014 finding #4), the list by recently updated, and the first prospect's panel (140101, CH-14904). While the next-step columns exist on golf_recruits (migration 20261008120000, written and not applied on 2026-10-08), the table adds a Next step column, the panel a Next step part (CH-14307), the phone rows a dated plate for a due step (every step while sorted by Next step due, and under the name on a desktop list too narrow for the column; a step whose day has passed reads "Overdue"), the sort "Next step due" (a step with no day after the dated ones), and the pipeline head "n visits this month · n decisions due" (a committed prospect's decision is not counted); until then all of it is hidden and nothing names the columns in a read or a write. On a phone at 820px and below it is the phone build (141901, CH-14914). The route draws the Clubhouse page only for a coach with the Clubhouse on; everyone else keeps the existing page. From the shell, the frame opens on its own (10102).
 
 | Bridge ID | Code | Name | Meaning |
 | --- | --- | --- | --- |

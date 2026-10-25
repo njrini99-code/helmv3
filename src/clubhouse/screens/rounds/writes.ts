@@ -4,6 +4,7 @@ import { deleteInProgressRound } from '@/app/golf/actions/round-partial';
 import { deleteOfflineRound } from '@/lib/offline/indexed-db';
 import { clearEmergencySave, markRoundDiscarded } from '@/lib/utils/emergency-save';
 import type { ServerResult } from '../../lib/use-action';
+import { invalidatePrefetchTabs } from '../../shell/use-prefetch-tabs';
 
 /**
  * Every Rounds library write, as the page calls it. The live set is the
@@ -24,6 +25,8 @@ export const LIVE_ROUNDS_WRITES: ChRoundsWrites = {
       // for it must not sync it back (swap audit R-4, R-10).
       markRoundDiscarded(roundId, playerId);
       void Promise.resolve().then(() => deleteOfflineRound(roundId)).catch(() => {});
+      // The sections held from before still list the round (A21).
+      invalidatePrefetchTabs();
     }
     return res;
   },

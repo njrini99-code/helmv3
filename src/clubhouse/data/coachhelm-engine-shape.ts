@@ -7,6 +7,7 @@ import { CORRECTION_KINDS, PLAYER_CORRECTION_KINDS, SNOOZE_CHECKPOINTS, type Cor
 import { coachVerdictLine, playerVerdictLine } from '@/lib/coachhelm/v3/verdicts/verdict-copy';
 import type { FocusAreaVerdict, VerdictWord } from '@/lib/coachhelm/v3/verdicts/verdict';
 import type { ChViewer } from './coachhelm-voice';
+import { plural } from '../lib/plural';
 
 /**
  * What the engine now knows about a read, as the Clubhouse coach surfaces draw it (CoachHelm surfaces A; supercharge 04 §3
@@ -174,7 +175,6 @@ const rec = (v: unknown): Record<string, unknown> | null => (v && typeof v === '
 const num = (v: unknown): number | null => (typeof v === 'number' && Number.isFinite(v) ? v : null);
 const str = (v: unknown): string | null => (typeof v === 'string' && v.trim() ? v.trim() : null);
 const isRung = (v: unknown): v is LadderRung => typeof v === 'string' && (LADDER_RUNGS as readonly string[]).includes(v);
-const plural = (n: number, one: string, many = `${one}s`) => `${n} ${n === 1 ? one : many}`;
 
 /** A count unit in words ("tee_shots" is "tee shots"). */
 const SINGULAR: Record<string, string> = {

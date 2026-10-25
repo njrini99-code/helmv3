@@ -58,10 +58,10 @@ function SuggestionRow({ s }: { s: ChGoalSuggestion }) {
         <span className="ch-num">{s.target == null ? `Over ${days} days` : `Aim for ${devValue(s.target, s.metric)} over ${days} days`}</span>
       </div>
       <span className="ch-gs__ans" role="group" aria-label={`Answer ${label}`}>
-        <Button size="sm" variant="primary" disabled={pending} onClick={() => void accept.run()}>
+        <Button size="sm" variant="primary" busy={accept.pending} disabled={pending} onClick={() => void accept.run()}>
           {accept.pending ? <span data-ch-code="CH-5405">Starting…</span> : 'Accept'}
         </Button>
-        <Button size="sm" variant="ghost" disabled={pending} onClick={() => void dismiss.run()}>
+        <Button size="sm" variant="ghost" busy={dismiss.pending} disabled={pending} onClick={() => void dismiss.run()}>
           {dismiss.pending ? <span data-ch-code="CH-5405">Dismissing…</span> : 'Dismiss'}
         </Button>
       </span>
@@ -127,12 +127,12 @@ export function GoalStatus({ id, title, state, coach }: { id: string; title: str
       {(canPause || canResume || canAbandon) && (
         <span className="ch-gl-ctl" role="group" aria-label={`Change ${title}`}>
           {canPause && (
-            <Button size="sm" variant="ghost" disabled={pending} onClick={() => void pause.run()}>
+            <Button size="sm" variant="ghost" busy={pause.pending} disabled={pending} onClick={() => void pause.run()}>
               {pause.pending ? <span data-ch-code="CH-5405">Pausing…</span> : 'Pause'}
             </Button>
           )}
           {canResume && (
-            <Button size="sm" variant="ghost" disabled={pending} onClick={() => void resume.run()}>
+            <Button size="sm" variant="ghost" busy={resume.pending} disabled={pending} onClick={() => void resume.run()}>
               {resume.pending ? <span data-ch-code="CH-5405">Resuming…</span> : 'Resume'}
             </Button>
           )}
@@ -157,7 +157,7 @@ export function GoalStatus({ id, title, state, coach }: { id: string; title: str
               </Button>
               <Button
                 variant="primary"
-                disabled={abandon.pending}
+                busy={abandon.pending}
                 feel={null}
                 onClick={async () => {
                   const res = await abandon.run();

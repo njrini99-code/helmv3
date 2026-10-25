@@ -396,8 +396,8 @@ describe('the sign-in screen', () => {
     expect(css).toContain('@media (max-width: 820px)');
     // Desktop and phone are one structure: a label over its own rounded box on both, the phone's on Sign in's radius
     // (owner 2026-10-13; the grouped-row sheet is retired), not a second form.
-    expect(css).toMatch(/@media \(max-width: 820px\)[\s\S]*\.ch-au-fields\s*{[^}]*gap: 14px/);
-    expect(css).toMatch(/@media \(max-width: 820px\)[\s\S]*\.ch-au-input\s*{[^}]*border-radius: 13px/);
+    expect(css).toMatch(/@media \(max-width: 820px\)[\s\S]*\.ch-au-fields\s*{[^}]*gap: 16px/); // the 4pt scale (row 33)
+    expect(css).toMatch(/@media \(max-width: 820px\)[\s\S]*\.ch-au-input\s*{[^}]*border-radius: var\(--ch-radius-md\)/); // the radius steps (row 35)
     expect(css).not.toMatch(/\.ch-au-field \+ \.ch-au-field::before/);
     // Both "Forgot password?" links are in the markup and CSS shows one.
     render(<SignIn signIn={login} />);
@@ -619,7 +619,7 @@ describe('the sign-in micro-motion', () => {
     render(<SignIn signIn={login} />);
     expect(document.querySelector('.ch-au-back svg')).not.toBeNull();
     expect(css()).toMatch(/@media \(hover: hover\) \{[^@]*\.ch-au-back:hover svg \{\s*transform: translateX\(-2px\);/);
-    expect(css()).toMatch(/\.ch-au-back:active \{\s*background:/);
+    expect(css()).toMatch(/\.ch-au-back\[data-ch-pressed\] \{\s*background:/);
   });
 });
 
@@ -726,7 +726,7 @@ describe('the welcome', () => {
     const { ui } = welcome(PREVIEW_WELCOME_COACH);
     render(ui);
     expect(screen.getByText('Since you last signed in')).toBeInTheDocument();
-    expect(screen.getByText(/^Sunday at 9:12 ?pm$/)).toBeInTheDocument();
+    expect(screen.getByText(/^Sunday at 9:12 PM$/)).toBeInTheDocument();
     expect(screen.getAllByRole('listitem')).toHaveLength(3);
     expect(screen.getByText('4 new messages')).toBeInTheDocument();
     expect(screen.getByText('Sofia, Eli and 2 others')).toBeInTheDocument();
@@ -806,7 +806,7 @@ describe('the welcome', () => {
     fireEvent.click(go);
     fireEvent.click(go);
     fireEvent.keyDown(window, { key: 'Enter' });
-    expect(hapticSpy.mock.calls.filter(([k]) => k === 'commit')).toHaveLength(1);
+    expect(hapticSpy.mock.calls.filter(([k]) => k === 'success')).toHaveLength(1);
     // The fold's look lands a painted frame after the phase (AuthFrame), so the move starts on a calm frame.
     act(() => void vi.advanceTimersByTime(40));
     expect(container.querySelector('.ch-au')?.getAttribute('data-phase')).toBe('leaving');

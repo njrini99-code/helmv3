@@ -216,7 +216,7 @@ the ports.
 | Add a course | `AddCourseSheet` | local until Start: `onDone(pick, holes, count, saveCourse, coursePhoto)`; the course is the round's own (Q-72h). Start (`toStartForm` -> `courseImage`) hands the photo of a saved, hand-typed course to `useNewRoundSession`, which after `contributeCourseFromRound` uploads it (`uploadCourseImage`, straight to the `course-images` bucket) and sets it with `setCourseImageUrl` only when the course has no image, not awaited and best-effort. `setCourseImageUrl` calls the `golf_set_course_image` RPC (migration `20261016220000`, apply after merge), so any golf team member, coach or player, may set it; until the migration is applied it falls back to `updateCourse` (PGRST202 or 42883), so coaches keep uploading and a player gets the coach-only refusal; it pins the storage host and the course's folder and writes only `image_url`, the last-edited columns and one edit-history row | CH-11511 · checks CH-11108 · start form 110110 |
 | Play an open qualifier | `RoundSetup` | `playQualifier` sets the type, the course, the tees and the round; `preselectQualifierId` does the same when the engine names a qualifier round in progress | 110113 · none open CH-11312 · didn't load CH-11211 · closed 110805 |
 | Recovery | `RecoveryHost` (`RecoveryDialog`) | Restore (guarded by an in-flight ref), or Discard shots after a question, through the engine's recovery state | CH-11512 · CH-11513 |
-| A round already in progress | `InProgressConflictDialog` (new round only) | Continue that round, or Start a new round after a discard question (`handleConflictResume`, `handleConfirmDiscard`, `handleStartNewRound`) | CH-11514 · CH-11007 (a failed Start a new round) |
+| A round already in progress | `InProgressConflictDialog` (new round only) | Continue that round, or New round after a discard question (`handleConflictResume`, `handleConfirmDiscard`, `handleStartNewRound`) | CH-11514 · CH-11007 (a failed New round) |
 | Reload | `ReloadBanner` (and the conflict toast) | the engine's conflict message -> CH-11902 with Reload | CH-11902 |
 | Next shot, Hole out | `ShotEntry` | `onNextShot` -> `useShotTracking.handleNextShot`; a holed-out hole calls `onHoleComplete(holeIndex, stats)`, which must resolve true only once the hole is durably saved | hint CH-11101 · warning and block CH-11102, CH-11103 · limit CH-11106 · saving CH-11402 · didn't save CH-11003 · Try again 111403 |
 | Undo last shot | `UndoConfirm` (in `ShotEntry`, `HoleReview`) | `dispatch(SHOW_UNDO_CONFIRM)` -> `handleUndoLastShot` (`useUndoManager`) -> `deleteShot` | CH-11502 · failed CH-11002 |
@@ -344,7 +344,7 @@ a decision the owner has not approved (Q-72f).
   "not here" until they switch.
 - A Clubhouse player can now review, discard, start and continue rounds
   (`/rounds/new` and `/rounds/continue/[id]` are in the shell's rebuilt list for
-  a player, so New round, Start a round, Continue and Submit draw everywhere
+  a player, so New round, Continue and Submit draw everywhere
   they link: the library, Home, CoachHelm). A coach's are still not drawn. Flag
   off, all of it stays Fairway's.
 - `/rounds/recover` is rebuilt for a player (swap audit F-02; it was Fairway's

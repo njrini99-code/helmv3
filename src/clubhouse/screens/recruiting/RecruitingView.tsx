@@ -213,7 +213,7 @@ export function RecruitingView({ data, writes, initial }: { data: ChRecruiting; 
   const add = useAction('recruiting.add', addAction, (input: ChRecruitInput) => ({
     done: '',
     failed: `Couldn’t add ${fullName(input.first_name, input.last_name)}`,
-    hint: 'Nothing was added. Check your connection and try again.',
+    hint: 'Nothing was added. Try again.',
     code: 'CH-14001',
   }));
 
@@ -239,7 +239,7 @@ export function RecruitingView({ data, writes, initial }: { data: ChRecruiting; 
   const save = useAction('recruiting.save', saveAction, (p: ChProspect) => ({
     done: '',
     failed: `Couldn’t save ${p.name}’s changes`,
-    hint: 'Nothing was changed. Check your connection and try again.',
+    hint: 'Nothing was changed. Try again.',
     code: 'CH-14002',
   }));
 
@@ -296,7 +296,7 @@ export function RecruitingView({ data, writes, initial }: { data: ChRecruiting; 
   const del = useAction('recruiting.delete', deleteAction, (p: ChProspect) => ({
     done: '',
     failed: `Couldn’t delete ${p.name}`,
-    hint: 'Nothing was deleted. Check your connection and try again.',
+    hint: 'Nothing was deleted. Try again.',
     code: 'CH-14004',
   }));
 

@@ -25,12 +25,13 @@ import { SectionSwitchProvider, useSectionSwitch } from './section-switch';
 import { RouteFrame } from './RouteFrame';
 import { PullToRefresh } from './PullToRefresh';
 import { teamSwitchFor } from './team-switch';
-import { NotRebuilt } from './NotRebuilt';
+import { AliasWait, NotRebuilt } from './NotRebuilt';
 import { useRelinkEpoch } from './relink';
 import { ClubhouseMarker } from './context';
 import { LightProvider } from './light';
 import { DockProvider, PhoneDock } from './Dock';
 import { PushAsk } from './PushAsk';
+import { useQuietRefresh } from './use-quiet-refresh';
 import { AskSheetProvider } from './AskSheet';
 import { CrumbProvider } from './crumbs';
 import { PhoneChromeProvider, PhoneUnderlay, usePhoneChromeState } from './phone-chrome';
@@ -137,6 +138,8 @@ export function ClubhouseFrame({
   // A stored link to the screen already open, naming another item (the bell's `?conversation=` on Messages): the screen
   // mounts again for it, as it would arriving from elsewhere (relink.ts).
   const relink = useRelinkEpoch(pathname, search);
+  // A17: back after a minute away, or back online, the page fetches again (shell/use-quiet-refresh.ts).
+  useQuietRefresh(pathname);
 
   // The live shell renders the animation features above the frame (ChMotionFeatures, below); a preview renders the frame alone.
   const scoped = useContext(ChMotionScope);
@@ -167,7 +170,12 @@ export function ClubhouseFrame({
                               children
                             ) : (
                               <>
-                                <NotRebuilt label={item?.label ?? routeLabel(pathname) ?? 'This page'} />
+                                {/* An old address on its way somewhere draws a blank canvas, not "not rebuilt" (A30). */}
+                                {isAliased(pathname) ? (
+                                  <AliasWait label={item?.label ?? routeLabel(pathname) ?? 'This page'} />
+                                ) : (
+                                  <NotRebuilt label={item?.label ?? routeLabel(pathname) ?? 'This page'} />
+                                )}
                                 {/* An old address Clubhouse moved redirects from inside its segment, and that redirect fires
                                     only once the segment renders: dropped, the page stood on "not rebuilt" (2026-10-14). */}
                                 {isAliased(pathname) && <div hidden>{children}</div>}

@@ -33,6 +33,7 @@ import {
 } from './model';
 
 import { TYPE_ICON } from './type-icon';
+import { plural, pluralWord } from '../../lib/plural';
 export { TYPE_ICON };
 
 export interface ChNow {
@@ -126,7 +127,8 @@ function EventBlock({
   const start = Math.max(e.start!, from);
   const end = Math.min(e.end!, to);
   const top = (start - from) * CAL_HH;
-  const h = Math.max((end - start) * CAL_HH - 2, 20);
+  // At least one line of title (A26): a 15-minute block was 20px and cut its title's descenders.
+  const h = Math.max((end - start) * CAL_HH - 2, 22);
   const short = h < 40;
   /** Overlapping events cascade, as Apple Calendar does (owner, 2026-10-06: the split lanes crushed titles into
    *  fragments): each later lane steps right and lies over the earlier ones, reaching the column's right edge, so every
@@ -134,6 +136,9 @@ function EventBlock({
   const step = lanes > 1 ? Math.min(46, 70 / (lanes - 1)) : 0;
   const left = step * lane;
   const shared = lanes > 1;
+  // A busy block (someone's time, not a team event) lies under the events it overlaps, whatever its lane (A26): stepped in
+  // over a team round it hid the round's title.
+  const under = shared && (e.type === 'busy' || e.busyOnly);
   const title = eventTitle(e, people, viewerId);
   // The time in parts, each kept whole: the block shows as many as fit on its one line (calendar.css, .ch-ev__m--fit),
   // so a narrow block reads "8:00 AM" and a narrower one "8:00", never a cut "8:00 – 9:…" or a bare start where AM or PM
@@ -153,8 +158,8 @@ function EventBlock({
       type="button"
       data-print-visible
       // CH-6801: a button named with its title, time and any overlap. CH-6601: it lifts on hover and marks its selection.
-      className={`ch-ev ch-ev--${e.type}${short ? ' ch-ev--short' : ''}${shared ? ' ch-ev--lane' : ''}${lines ? ' ch-ev--wrap' : ''}${sel ? ' is-sel' : ''}${drag ? ' is-draggable' : ''}${state ? ` is-${state}` : ''}${past && !state ? ' is-past' : ''}`}
-      style={{ top, height: h, left: `calc(${left}% + 3px)`, width: `calc(${100 - left}% - 6px)`, zIndex: state === 'ghost' ? 6 : shared ? lane + 1 : undefined, ...(lines ? { '--ch-ev-lines': lines } : {}) } as CSSProperties}
+      className={`ch-ev ch-ev--${e.type}${short ? ' ch-ev--short' : ''}${shared ? ' ch-ev--lane' : ''}${under ? ' ch-ev--under' : ''}${lines ? ' ch-ev--wrap' : ''}${sel ? ' is-sel' : ''}${drag ? ' is-draggable' : ''}${state ? ` is-${state}` : ''}${past && !state ? ' is-past' : ''}`}
+      style={{ top, height: h, left: `calc(${left}% + 3px)`, width: `calc(${100 - left}% - 6px)`, zIndex: state === 'ghost' ? 6 : under ? undefined : shared ? lane + 1 : undefined, ...(lines ? { '--ch-ev-lines': lines } : {}) } as CSSProperties}
       aria-label={`${title}, ${rangeLabel(e, clock)}${past && !state ? ', ended' : ''}${flagged ? ', schedule overlap' : ''}${drag ? '. Alt and the arrow keys move it 15 minutes' : ''}`}
       aria-pressed={sel}
       aria-hidden={state === 'ghost' || undefined}
@@ -449,7 +454,7 @@ export function MonthView({
               type="button"
               data-print-visible
               className={'ch-mo__cell' + (out ? ' is-out' : '') + (date === now.date ? ' is-today' : !out && date < now.date ? ' is-past' : '') + (date === selDate ? ' is-sel' : '')}
-              aria-label={`${dowOf(date)} ${dayNum(date)} ${monthName(date)}: ${evs.length ? `${evs.length} ${evs.length === 1 ? 'event' : 'events'}` : 'no events'}`}
+              aria-label={`${dowOf(date)} ${dayNum(date)} ${monthName(date)}: ${evs.length ? `${plural(evs.length, 'event')}` : 'no events'}`}
               aria-pressed={date === selDate}
               onClick={() => {
                 haptic('select');
@@ -504,7 +509,7 @@ export function AgendaView({
       {past.length > 0 && (
         <div>
           <Button size="sm" variant="ghost" leftIcon={early ? ChevronUp : ChevronDown} onClick={() => setEarly(!early)}>
-            {early ? 'Hide earlier days' : `Show ${past.length} earlier ${past.length === 1 ? 'day' : 'days'}`}
+            {early ? 'Hide earlier days' : `Show ${past.length} earlier ${pluralWord(past.length, 'day')}`}
           </Button>
         </div>
       )}

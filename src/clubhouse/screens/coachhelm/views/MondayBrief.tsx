@@ -1,20 +1,19 @@
 'use client';
 
-import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import type { ReactNode } from 'react';
-import { ChevronLeft } from 'lucide-react';
 import { COACH_BOARD_HREF } from '../../../data/coachhelm-track-record-shape';
 import type { ChBriefRow, ChMondayBrief } from '../../../data/coachhelm-monday-brief-shape';
 import type { ChViewLoad } from '../../../data/coachhelm-views-shape';
 import { useChPhone } from '../../../lib/use-phone';
 import { PhoneTop } from '../../../shell/phone-chrome';
 import { Button } from '../../../ui/Button';
-import { Icon } from '../../../ui/Icon';
 import { RefreshNotice } from '../../../ui/RefreshNotice';
 import { EmptyState } from '../../../ui/States';
 import { Surface } from '../../../ui/Surface';
+import { BackLink } from '../../../ui/Section';
 import '../../../styles/coachhelm-brief.css';
+import { LargeTitle } from '../../../ui/LargeTitle';
 
 const LINE = 'Who needs a conversation before practice, and what the team works on this week.';
 
@@ -27,14 +26,13 @@ function BriefFrame({ sub, children }: { sub?: string; children: ReactNode }) {
       {phone && <PhoneTop back={{ label: 'CoachHelm', onBack: () => router.push(COACH_BOARD_HREF) }} title="Monday brief" titleId="ch-hmb-title" />}
       <header className="ch-hl-h ch-hmb-h" data-canopy-head="">
         {!phone && (
-          <Link className="ch-hmb-back" href={COACH_BOARD_HREF}>
-            <Icon icon={ChevronLeft} size={15} />
-            CoachHelm
-          </Link>
+          <BackLink href={COACH_BOARD_HREF}>CoachHelm</BackLink>
         )}
         <span className="ch-hl-role">Coach</span>
         {phone ? (
-          <p className="ch-hl-h__t">Monday brief</p>
+          <LargeTitle as="p" className="ch-hl-h__t">
+            Monday brief
+          </LargeTitle>
         ) : (
           <h1 id="ch-hmb-title" className="ch-hl-h__t">
             Monday brief

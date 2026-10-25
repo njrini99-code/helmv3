@@ -74,6 +74,7 @@ export async function loadMessagesDirectory(input: {
     coaches = res.data ?? [];
   }
 
+  const timeZone = getValidTimezone(settingsRes.data?.timezone ?? null);
   const players = (membersRes.data ?? []).filter((p) => !!p.user_id);
 
   const directory: ChPerson[] = [
@@ -82,7 +83,7 @@ export async function loadMessagesDirectory(input: {
       .map((c) => ({ userId: c.user_id!, name: c.full_name?.trim() || 'Coach', role: 'coach' as const, subtitle: c.title?.trim() || 'Coach', playerId: null })),
     ...players
       .filter((p) => p.user_id !== input.viewerUserId)
-      .map((p) => ({ userId: p.user_id!, name: fullName(p), role: 'player' as const, subtitle: classYearLabel(p.graduation_year) ?? 'Player', playerId: p.id })),
+      .map((p) => ({ userId: p.user_id!, name: fullName(p), role: 'player' as const, subtitle: classYearLabel(p.graduation_year, undefined, timeZone) ?? 'Player', playerId: p.id })),
   ].sort((a, b) => (a.role === b.role ? a.name.localeCompare(b.name) : a.role === 'coach' ? -1 : 1));
 
   return {
@@ -92,7 +93,7 @@ export async function loadMessagesDirectory(input: {
     viewerPlayerId: input.viewerPlayerId,
     teamId: input.teamId,
     teamName: teamRes.data?.name ?? null,
-    timeZone: getValidTimezone(settingsRes.data?.timezone ?? null),
+    timeZone,
     now: new Date().toISOString(),
     directory,
     directoryError: !!membersRes.error || coachesError || !!teamRes.error,

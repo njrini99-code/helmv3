@@ -1,5 +1,6 @@
 import type { ChHomeEvent } from '../../data/home';
 import { getValidTimezone } from '@/lib/calendar/timezone';
+import { isoDay } from '../../lib/dates';
 
 /** Home's event links and when-labels: a leaf module, so HomePhone and DayCard share them without an import cycle. */
 export const CALENDAR = '/golf/dashboard/calendar';
@@ -22,7 +23,7 @@ export function whenLabel(e: ChHomeEvent, now: Date | null): { text: string; soo
 
 /** Whole days on the same team clock that produced the event's calendar date. */
 function dayDiff(date: string, now: Date, timezone?: string): number {
-  const local = new Intl.DateTimeFormat('en-CA', { timeZone: getValidTimezone(timezone), year: 'numeric', month: '2-digit', day: '2-digit' }).format(now);
+  const local = isoDay(now, getValidTimezone(timezone));
   return Math.round((Date.parse(`${date}T12:00:00Z`) - Date.parse(`${local}T12:00:00Z`)) / 86400000);
 }
 const WD = new Intl.DateTimeFormat('en-US', { timeZone: 'UTC', weekday: 'short' });

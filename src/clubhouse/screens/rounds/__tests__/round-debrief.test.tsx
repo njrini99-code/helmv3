@@ -21,6 +21,7 @@ import { PREVIEW_REVIEW, PREVIEW_REVIEW_DEBRIEF, PREVIEW_REVIEW_DEBRIEF_THIN } f
 import { RoundReview } from '../RoundReview';
 import { ToastProvider } from '../../../ui/Toast';
 import '../../../__tests__/dialog-polyfill';
+import { unsignedTones } from '../../../__tests__/_tone-sign';
 
 const show = (r: ChRoundReview) =>
   render(
@@ -67,5 +68,20 @@ describe('CoachHelm 30-second debrief (chs-30)', () => {
     show(PREVIEW_REVIEW);
     expect(screen.queryByRole('region', { name: 'Round debrief' })).toBeNull();
     expect(screen.getByRole('region', { name: 'Round recap' })).toHaveTextContent('Written by CoachHelm');
+  });
+});
+
+describe('the debrief’s toned figures (row 48, CONS-20)', () => {
+  it('the moved number is painted with the gain and loss tones, never the old good and bad words', () => {
+    show(PREVIEW_REVIEW_DEBRIEF);
+    const box = screen.getByRole('region', { name: 'Round debrief' });
+    expect(box.querySelector('.is-good, .is-bad')).toBeNull();
+    expect(box.querySelector('b.ch-num.is-gain')?.textContent).toBe('15 of 18 greens');
+  });
+
+  it('a toned figure in the review carries a sign or a word; the debrief’s moved number is still colour alone (its line gives the average, not the way): may only fall', () => {
+    show(PREVIEW_REVIEW_DEBRIEF);
+    const box = screen.getByRole('region', { name: 'Round debrief' });
+    expect(unsignedTones(box)).toEqual(['b.ch-num is-gain :: 15 of 18 greens']);
   });
 });

@@ -3,7 +3,7 @@ import { createClient } from '@/lib/supabase/server';
 import { chLogServer } from '../lib/track-server';
 import type { ChSgTour } from '../lib/sg';
 import { homeClock, latestWithHoles, loadHomeWeek, type ChHomeClock, type ChHomeEvent, type ChHomeWeek, type ChLatestRound } from './home';
-import { isFull18, lastTenFloor, loadSeasonRounds, mean, summarizePlayer, type ChRound } from './season';
+import { isFull18, lastTenFloor, loadSeasonRounds, mean, seasonStartDate, summarizePlayer, type ChRound } from './season';
 import { holeRounds } from './round-scope';
 import { legRows, type ChPlayerLeg } from './leg-rows';
 import { replyClosedAt } from '../screens/calendar/model';
@@ -11,6 +11,7 @@ import { getPlayerHubAnnouncements } from '@/app/golf/actions/player-notificatio
 import { parsePlayerHubEvents } from '@/lib/golf/player-hub-events';
 import { chunkIds } from '@/lib/supabase/chunk-ids';
 import { loadRoundCache, loadTourBenchmarks, seasonOnly, tourForGender, type ChRoundCache } from './stats-common';
+import { formatFixed } from '../lib/format';
 
 export { legRows } from './leg-rows';
 export type { ChLegKey, ChPlayerLeg } from './leg-rows';
@@ -139,7 +140,8 @@ export async function loadPlayerHome(input: { teamId: string; playerId: string; 
   const window = windowOf(roundsRes);
 
   // Strokes gained is the season's ("Season, per round"; each leg's "this season").
-  const season = summarizePlayer(seasonOnly(full));
+  // The season turns on 1 August in the team's zone (owner decision 9).
+  const season = summarizePlayer(seasonOnly(full, seasonStartDate(now, tz)));
   const legs = roundsRes.error ? null : { rows: legRows(window, cache.byRound, bench, season.sgLegs), cacheError: cache.error, benchError: bench === null || bench.size === 0 };
 
   const points: ChScoringPoint[] = full
@@ -153,7 +155,7 @@ export async function loadPlayerHome(input: { teamId: string; playerId: string; 
     }));
 
   return {
-    greeting: `${greeting}, ${input.firstName}.`,
+    greeting: `${greeting}, ${input.firstName}`,
     todayLabel,
     clock: { tz, day },
     brief: roundsRes.error ? null : briefFor(full, legs?.rows ?? []),
@@ -206,9 +208,9 @@ export function briefFor(full: ChRound[], legs: ChPlayerLeg[]): string | null {
   const withSg = legs.filter((l): l is ChPlayerLeg & { sg: number } => l.sg != null).sort((a, b) => b.sg - a.sg);
   const best = withSg[0];
   if (!best) return first;
-  if (best.sg > 0.05) return `${first} ${best.label} is gaining you ${best.sg.toFixed(1)} strokes a round.`;
+  if (best.sg > 0.05) return `${first} ${best.label} is gaining you ${formatFixed(best.sg, 1)} strokes a round.`;
   const worst = withSg[withSg.length - 1]!;
-  return worst.sg < -0.05 ? `${first} ${worst.label} is costing the most, ${Math.abs(worst.sg).toFixed(1)} strokes a round.` : first;
+  return worst.sg < -0.05 ? `${first} ${worst.label} is costing the most, ${formatFixed(Math.abs(worst.sg), 1)} strokes a round.` : first;
 }
 
 type Client = Awaited<ReturnType<typeof createClient>>;

@@ -68,6 +68,14 @@ const CLUBHOUSE_PATHS = [
   { name: 'framer-motion', importNames: ['useReducedMotion'], message: "Use useChReducedMotion() from '@/clubhouse/lib/reduced-motion'." },
   { name: 'motion/react', importNames: ['useReducedMotion'], message: "Use useChReducedMotion() from '@/clubhouse/lib/reduced-motion'." },
   { name: '@/lib/utils/capacitor', importNames: ['triggerHaptic', 'triggerSelectionHaptic'], message: "Use haptic() from '@/clubhouse/lib/haptics'." },
+  // CONS-19: one icon per meaning (Clubhouse A+ handoff, section 9).
+  {
+    name: 'lucide-react',
+    // BarChart3 and MoreHorizontal are lucide's deprecated aliases of ChartColumn and Ellipsis (the same glyphs): the
+    // canonical names are the ones to use (auditor on #2361).
+    importNames: ['BarChart3', 'RefreshCw', 'MoreHorizontal', 'ExternalLink', 'SquareArrowOutUpRight', 'Share2', 'PenLine'],
+    message: 'Clubhouse icon map (CONS-19): use ChartColumn, RotateCw, Ellipsis, ArrowUpRight, Share or Pencil.',
+  },
 ];
 
 const CLUBHOUSE_FAIRWAY_PATTERN = {

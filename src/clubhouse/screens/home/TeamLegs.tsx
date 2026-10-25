@@ -2,17 +2,17 @@
 
 import Link from 'next/link';
 import { Fragment } from 'react';
-import { ArrowRight, BarChart3 } from 'lucide-react';
+import { ArrowRight, ChartColumn } from 'lucide-react';
 import type { ChLegPeople, ChTeamLeg, ChTeamLegs } from '../../data/home';
 import { filterFor, statsHref } from '../../data/stats-filter';
 import { changeTone, formatFixed, formatPct, formatSigned, NO_DATA } from '../../lib/format';
 import { sgBaseline } from '../../lib/sg';
 import { deltaTone, deltaWords, needsText } from '../../lib/stats-signal';
 import { rebuiltHref } from '../../shell/nav';
-import { Icon } from '../../ui/Icon';
 import { RefreshNotice } from '../../ui/RefreshNotice';
 import { SideScroll } from '../../ui/SideScroll';
 import { EmptyState } from '../../ui/States';
+import { Button } from '../../ui/Button';
 
 /** A player's Game tab on Stats, on the same Last 10 the figures read; null when Stats isn't rebuilt for coaches. */
 export function legPlayerHref(id: string): string | null {
@@ -22,7 +22,9 @@ export function legPlayerHref(id: string): string | null {
 /** "Fairways 61% · Tour 66%", "Putts 30.4 · Tour 29.0"; without a Tour mark, "Fairways 61%". */
 export function legStatText(stat: ChTeamLeg['stat']): string {
   const fmt = (v: number | null) => (stat.unit === '%' ? formatPct(v, 0) : formatFixed(v, stat.digits));
-  return [`${stat.label} ${fmt(stat.value)}`, stat.tour != null ? `Tour ${fmt(stat.tour)}` : null].filter(Boolean).join(' · ');
+  // A rate under its floor says what it needs; an early read says so (A7).
+  if (stat.value == null && stat.needs) return `${stat.label} · ${stat.needs}`;
+  return [`${stat.label} ${fmt(stat.value)}`, stat.early ?? null, stat.tour != null ? `Tour ${fmt(stat.tour)}` : null].filter(Boolean).join(' · ');
 }
 
 /** The change's tone and words: inside its standard error it is "No clear change vs previous 10" in plain ink. */
@@ -76,7 +78,7 @@ function NoHoleRounds() {
     <EmptyState
       compact
       code="CH-2314"
-      icon={BarChart3}
+      icon={ChartColumn}
       title="No hole-by-hole rounds in the last 10 yet."
       body="The four parts fill in once players post rounds with hole scores."
     />
@@ -103,10 +105,9 @@ export function TeamLegs({ legs, covered = false }: { legs: ChTeamLegs; covered?
           </span>
         </div>
         {team && (
-          <Link href={team} className="ch-btn ch-btn--ghost ch-btn--sm">
-            <span>Team stats</span>
-            <Icon icon={ArrowRight} size={14} />
-          </Link>
+          <Button variant="ghost" size="sm" rightIcon={ArrowRight} href={team}>
+            Team stats
+          </Button>
         )}
       </div>
       <Notices legs={legs} covered={covered} />

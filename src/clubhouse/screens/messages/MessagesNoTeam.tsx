@@ -1,6 +1,4 @@
-import { rebuiltHref } from '../../shell/nav';
-import { Button } from '../../ui/Button';
-import { EmptyState } from '../../ui/States';
+import { NoTeam } from '../../ui/NoTeam';
 
 /**
  * The page's framed head over a whole-page empty (states audit c4, c9): on desktop the first-run and no-team pages open
@@ -18,25 +16,10 @@ export function MessagesHead({ brief }: { brief?: string }) {
 
 /** Signed in, but on no team yet: the whole page says so (CH-7308). */
 export function MessagesNoTeam({ coach }: { coach: boolean }) {
-  // A coach sets up the team in Team; a player joins one from Golf profile (CH-8302).
-  const settings = rebuiltHref(`/golf/dashboard/settings?section=${coach ? 'team' : 'golf'}`, coach ? 'coach' : 'player');
   return (
     <main className="ch-ms ch-ms--first" data-canopy="">
       <MessagesHead />
-      <EmptyState
-        size="page"
-        code="CH-7308"
-        shape="people"
-        title="You aren’t on a team yet"
-        body="Messages open once you’re on a team roster, with your coaches and teammates."
-        action={
-          settings ? (
-            <Button variant="primary" href={settings}>
-              Open team settings
-            </Button>
-          ) : undefined
-        }
-      />
+      <NoTeam code="CH-7308" coach={coach} body="Messages open once you’re on a team roster, with your coaches and teammates." />
     </main>
   );
 }

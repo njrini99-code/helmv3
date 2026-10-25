@@ -400,7 +400,7 @@ describe('Home · phone (v2, Coach - Home - Mobile.html)', () => {
 
   it('20101 20103 21901 the hero: date, greeting, brief, and Up next with its countdown and replies, opening the event in Calendar', () => {
     wrap(<CoachHome data={PREVIEW_HOME} now={PREVIEW_HOME_NOW} />);
-    expect(screen.getByRole('heading', { level: 1, name: 'Good morning, Maya.' })).toBeTruthy();
+    expect(screen.getByRole('heading', { level: 1, name: 'Good morning, Maya' })).toBeTruthy();
     // The day card (phone concept board 1): the title opens the event.
     const next = document.querySelector('.ch-hm-day') as HTMLElement;
     expect(within(next).getByRole('link', { name: 'Short-game block' }).getAttribute('href')).toBe('/golf/dashboard/calendar?date=2026-10-14&event=a1');
@@ -752,15 +752,24 @@ describe('Home · the team’s form (teamForm)', () => {
   });
 
   it('§10-1 a figure resting on fewer rounds than the average says how many', () => {
-    const f = teamForm([r(72, 12, 30, { back: 0 }), r(74, null, null, { back: 1 }), r(73, null, 31, { back: 2 })], 0)!;
-    expect(f.basis).toMatchObject({ rounds: 3, girRounds: 1, puttsRounds: 2 });
-    // Greens pool the holes of the one round that has them; putts average the two that do.
-    expect(f.gir.pct).toBeCloseTo((12 / 18) * 100, 10);
+    const f = teamForm([r(72, 12, 30, { back: 0 }), r(74, 10, null, { back: 1 }), r(73, null, 31, { back: 2 }), r(75, null, null, { back: 3 })], 0)!;
+    expect(f.basis).toMatchObject({ rounds: 4, girRounds: 2, puttsRounds: 2 });
+    // Greens pool the holes of the two rounds that have them; putts average the two that do.
+    expect(f.gir.pct).toBeCloseTo((22 / 36) * 100, 10);
     expect(f.putts.avg).toBe(30.5);
     wrap(<CoachHome data={{ ...PREVIEW_HOME, phone: { ...PREVIEW_HOME.phone, form: f } }} now={PREVIEW_HOME_NOW} />);
     const figs = [...document.querySelectorAll('.ch-hm-form__figs > div')].map((d) => d.textContent);
-    expect(figs[1]).toMatch(/1 of 3 rounds/);
-    expect(figs[2]).toMatch(/2 of 3 rounds/);
+    expect(figs[1]).toMatch(/2 of 4 rounds/);
+    expect(figs[2]).toMatch(/2 of 4 rounds/);
+  });
+
+  it('A7 the team’s greens from one round are not a share: they say what they need', () => {
+    const f = teamForm([r(72, 12, 30, { back: 0 }), r(74, null, null, { back: 1 })], 0)!;
+    expect(f.gir).toMatchObject({ pct: null, needs: 'Needs 2 rounds', delta: null });
+    wrap(<CoachHome data={{ ...PREVIEW_HOME, phone: { ...PREVIEW_HOME.phone, form: f } }} now={PREVIEW_HOME_NOW} />);
+    const figs = [...document.querySelectorAll('.ch-hm-form__figs > div')].map((d) => d.textContent);
+    expect(figs[1]).toMatch(/Needs 2 rounds/);
+    expect(figs[1]).not.toMatch(/67%/);
   });
 });
 
@@ -893,7 +902,7 @@ describe('Home · which Home a viewer gets', () => {
     requestCache.coachTeam.mockResolvedValue('t-coach');
     const el = await visit();
     expect(el.type).toBe(CoachHome);
-    expect(el.props.data.greeting).toMatch(/, Maya\.$/);
+    expect(el.props.data.greeting).toMatch(/, Maya$/);
     flag.coach = false;
     const old = await visit();
     expect(old.type).not.toBe(CoachHome);
@@ -905,7 +914,7 @@ describe('Home · which Home a viewer gets', () => {
     requestCache.playerTeam.mockResolvedValue({ data: { team_id: 't-player' }, error: null });
     const el = await visit();
     expect(el.type).toBe(PlayerHome);
-    expect(el.props.data.greeting).toMatch(/, Theo\.$/);
+    expect(el.props.data.greeting).toMatch(/, Theo$/);
     flag.player = false;
     const old = await visit();
     expect(old.type).not.toBe(PlayerHome);
@@ -1167,11 +1176,11 @@ describe('Home · the phone, the page’s own contracts', () => {
     expect(when()).toBe('Happening now');
   });
 
-  it('21703 on the phone a quick event type ticks, Add event gives the light tap, and a round opens with a tick', async () => {
+  it('21703 on the phone a quick event type is silent (a link, A14), Add event gives the light tap, and a round opens with a tick', async () => {
     const user = userEvent.setup();
     const none = wrap(<CoachHome data={PREVIEW_HOME_NO_EVENTS} now={PREVIEW_HOME_NOW} />);
     await user.click(screen.getByRole('link', { name: 'Qualifier' }));
-    expect(hapticSpy.mock.calls).toEqual([['select']]);
+    expect(hapticSpy.mock.calls).toEqual([]);
     hapticSpy.mockClear();
     await user.click(screen.getByRole('link', { name: 'Add event' }));
     expect(hapticSpy.mock.calls).toEqual([['press']]);
@@ -1254,11 +1263,13 @@ describe('Home · the team’s game and what’s waiting on the coach (spec B)',
   });
   const legsTable = () => screen.getByRole('table', { name: 'The team’s game' });
 
-  it('20105 the four parts sit under the team’s form, before the week: each stat with its Tour mark, strokes gained, the change and who gains and loses most', () => {
+  it('20105 the four parts sit under the team’s form, and the week (today’s events) comes before both (row 79): each stat with its Tour mark, strokes gained, the change and who gains and loses most', () => {
     wrap(<CoachHome data={PREVIEW_HOME} now={PREVIEW_HOME_NOW} />);
     const legs = document.querySelector('.ch-h-legs')!;
     expect(legs.previousElementSibling?.className).toMatch(/ch-h-form|ch-hf/);
-    expect(legs.nextElementSibling?.className).toMatch(/ch-h-sheet/);
+    const sheet = document.querySelector('.ch-h-sheet')!;
+    expect(sheet.compareDocumentPosition(legs.previousElementSibling!) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    expect(sheet.previousElementSibling?.className ?? '').not.toMatch(/ch-h-form|ch-hf|ch-h-legs/);
     const rows = within(legsTable()).getAllByRole('row').slice(1);
     expect(rows.map((r) => within(r).getByRole('rowheader').textContent)).toEqual(['Off the tee', 'Approach', 'Around green', 'Putting']);
     expect(rows[0]!.textContent).toContain('Fairways 61% · Tour 66%');
@@ -1317,7 +1328,7 @@ describe('Home · the team’s game and what’s waiting on the coach (spec B)',
     expect(nav.previousElementSibling?.className).toMatch(/ch-h-head/);
     const links = within(nav).getAllByRole('link');
     expect(links.map((a) => [a.textContent, a.getAttribute('href')])).toEqual([
-      ['1 join request', '/golf/dashboard/roster'],
+      ['1 join request', '/golf/dashboard/roster?tab=requests'],
       ['3 replies missing', '/golf/dashboard/calendar'],
       ['2 tasks overdue', '/golf/dashboard/team-hub?tab=tasks'],
       ['1 post awaiting acknowledgement', '/golf/dashboard/team-hub?tab=ann'],
@@ -1343,7 +1354,7 @@ describe('Home · the team’s game and what’s waiting on the coach (spec B)',
   it('CH-2220 CH-2308 the first run shows what is waiting too (join requests above all), on desktop and the phone', () => {
     wrap(<CoachHome data={PREVIEW_HOME_EMPTY} now={PREVIEW_HOME_NOW} />);
     expect(isFirstRun(PREVIEW_HOME_EMPTY)).toBe(true);
-    expect(within(screen.getByRole('navigation', { name: 'Waiting on you' })).getByRole('link', { name: '2 join requests' }).getAttribute('href')).toBe('/golf/dashboard/roster');
+    expect(within(screen.getByRole('navigation', { name: 'Waiting on you' })).getByRole('link', { name: '2 join requests' }).getAttribute('href')).toBe('/golf/dashboard/roster?tab=requests');
     cleanup();
     phoneMedia();
     wrap(<CoachHome data={PREVIEW_HOME_EMPTY} now={PREVIEW_HOME_NOW} />);

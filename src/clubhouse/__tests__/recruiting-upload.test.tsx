@@ -277,7 +277,7 @@ describe('Recruiting · film and file drop · the transfer to Storage', () => {
     const policy = await uploadRecruitFile(io({ put: { status: 403, body: '' } }).io, 'p-mason', film(), meta);
     expect(policy).toEqual({ success: false, error: 'Only this team’s coaches can add recruit documents' });
     const lost = await uploadRecruitFile(io({ put: { status: 0, body: '' } }).io, 'p-mason', film(), meta);
-    expect(lost).toEqual({ success: false, error: 'The file didn’t finish sending. Check your connection and try again.' });
+    expect(lost).toEqual({ success: false, error: 'The file didn’t finish sending. Try again.' });
     const server = await uploadRecruitFile(io({ put: { status: 503, body: '' } }).io, 'p-mason', film(), meta);
     expect(server.success).toBe(false);
     expect(server).not.toHaveProperty('refused');
@@ -552,7 +552,7 @@ describe('Recruiting · film and file drop · the page', () => {
   it('CH-14005 CH-14916 a failure that is not a refusal of the file keeps the Retry toast, and Retry sends the same upload id, so nothing is sent or recorded twice', async () => {
     const user = userEvent.setup();
     const w = fakeWrites();
-    w.documents.upload.mockImplementation(() => fail('The file didn’t finish sending. Check your connection and try again.'));
+    w.documents.upload.mockImplementation(() => fail('The file didn’t finish sending. Try again.'));
     wrap(w);
     await within(panel('Mason Reilly')).findByRole('button', { name: /^Fall tournament schedule\.pdf/ });
     fireEvent.drop(section(), drag([film()]));
@@ -560,7 +560,7 @@ describe('Recruiting · film and file drop · the page', () => {
     await expectCode('CH-14005', /Couldn’t upload Swing, down the line.*The file didn’t finish sending/);
     expect(dlg()).not.toBeNull();
     w.documents.upload.mockImplementation(() => ok({ id: 'd-x' }));
-    await user.click(within(code('CH-14005') as HTMLElement).getByRole('button', { name: 'Retry' }));
+    await user.click(within(code('CH-14005') as HTMLElement).getByRole('button', { name: 'Try again' }));
     await waitFor(() => expect(w.documents.upload).toHaveBeenCalledTimes(2));
     const ids = w.documents.upload.mock.calls.map((c) => (c as unknown as [string, File, unknown, { uploadId: string }])[3].uploadId);
     expect(ids[0]).toMatch(UUID);
@@ -616,10 +616,10 @@ describe('Recruiting · film and file drop · the phone keeps the picker', () =>
 describe('Recruiting · an Add cannot add a prospect twice', () => {
   const sent = (w: Fake) => w.create.mock.calls.map((c) => (c as unknown as [unknown, string])[1]);
   const fillAndAdd = async (user: ReturnType<typeof userEvent.setup>, first: string, hometown?: string) => {
-    await user.click(screen.getByRole('button', { name: 'Add prospect' }));
+    await user.click(screen.getByRole('button', { name: 'New prospect' }));
     await user.type(within(dlg()).getByRole('textbox', { name: 'First name' }), first);
     if (hometown) await user.type(within(dlg()).getByRole('textbox', { name: 'Hometown' }), hometown);
-    await user.click(within(dlg()).getByRole('button', { name: 'Add prospect' }));
+    await user.click(within(dlg()).getByRole('button', { name: 'Add' }));
   };
 
   it('CH-14915 a Retry after a failed or lost Add sends the same request id, and pressing Save again with the same contents does too', async () => {
@@ -629,9 +629,9 @@ describe('Recruiting · an Add cannot add a prospect twice', () => {
     wrap(w);
     await fillAndAdd(user, 'Ellie');
     await expectCode('CH-14001', /Couldn’t add Ellie/);
-    await user.click(within(code('CH-14001') as HTMLElement).getByRole('button', { name: 'Retry' }));
+    await user.click(within(code('CH-14001') as HTMLElement).getByRole('button', { name: 'Try again' }));
     await waitFor(() => expect(w.create).toHaveBeenCalledTimes(2));
-    await user.click(within(dlg()).getByRole('button', { name: 'Add prospect' }));
+    await user.click(within(dlg()).getByRole('button', { name: 'Add' }));
     await waitFor(() => expect(w.create).toHaveBeenCalledTimes(3));
     const ids = sent(w);
     expect(ids[0]).toMatch(UUID);
@@ -648,11 +648,11 @@ describe('Recruiting · an Add cannot add a prospect twice', () => {
     await expectCode('CH-14001');
     // The reply may have been lost after the server stored Ellie: a corrected hometown is still Ellie, under the same id.
     await user.type(within(dlg()).getByRole('textbox', { name: 'Hometown' }), 'Wilmington');
-    await user.click(within(dlg()).getByRole('button', { name: 'Add prospect' }));
+    await user.click(within(dlg()).getByRole('button', { name: 'Add' }));
     await waitFor(() => expect(w.create).toHaveBeenCalledTimes(2));
     // Another name is another prospect.
     await user.type(within(dlg()).getByRole('textbox', { name: 'First name' }), 'ne');
-    await user.click(within(dlg()).getByRole('button', { name: 'Add prospect' }));
+    await user.click(within(dlg()).getByRole('button', { name: 'Add' }));
     await waitFor(() => expect(w.create).toHaveBeenCalledTimes(3));
     await waitFor(() => expect(dlg()).toBeNull());
     // A second Add with exactly the same contents is another prospect, and gets another id.
@@ -678,7 +678,7 @@ describe('Recruiting · an Add cannot add a prospect twice', () => {
     wrap(w);
     await fillAndAdd(user, 'Ellie');
     await expectCode('CH-14001');
-    await user.click(within(code('CH-14001') as HTMLElement).getByRole('button', { name: 'Retry' }));
+    await user.click(within(code('CH-14001') as HTMLElement).getByRole('button', { name: 'Try again' }));
     await waitFor(() => expect(dlg()).toBeNull());
     expect(screen.getAllByRole('row').filter((r) => /Ellie/.test(r.textContent ?? ''))).toHaveLength(1);
     expect(w.create).toHaveBeenCalledTimes(2);

@@ -25,7 +25,8 @@ describe('P013 D3 the trend’s reference label never sits on the line', () => {
   ];
 
   it('goes above the dashed line at the right when that is clear', () => {
-    expect(placeRefLabel([{ x: 38, y: 120 }, { x: 640, y: 120 }], 60, 70, W)).toEqual({ x: 640, y: 55, anchor: 'end' });
+    // At the plot's right edge (Line's right padding, 14), 5 above the dashed line.
+    expect(placeRefLabel([{ x: 38, y: 120 }, { x: 636, y: 120 }], 60, 70, W)).toEqual({ x: 636, y: 55, anchor: 'end' });
   });
   it('moves below, or to the left, when the line passes through the label’s box', () => {
     const at = placeRefLabel(flatAtRight, 84, 70, W);
