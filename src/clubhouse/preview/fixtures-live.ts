@@ -2,7 +2,7 @@ import { EMPTY_SNAPSHOT, beadOrder, thruOf, toParOf, type LiveHole, type LiveLan
 import { initials } from '../lib/names';
 
 /**
- * Live rounds sample data (docs/clubhouse/catalog/live.md): the Sunday afternoon of the 14 October 2026 qualifier,
+ * Live rounds sample data (docs/clubhouse/catalog/tournaments.md): the Sunday afternoon of the 14 October 2026 qualifier,
  * read at 2:40 pm Eastern. Names are made up. Every state of the plan's 4.12 has a fixture: a busy day, one player,
  * thirty, nobody, a failing feed, a lane gone stale and one gone quiet, finished rounds, a late batch.
  */
@@ -150,6 +150,11 @@ export const PREVIEW_OWN_STATES: Record<string, { snapshot: LiveSnapshot; legs: 
   qualifier: { snapshot: snap([own({ type: 'qualifier', scores: [4, 5, 4, 3, 4, 4, 5], current: 8 })]), legs: null },
   stale: { snapshot: snap([own({ type: 'practice', scores: [4, 5, 4, 3, 4, 4], heard: 15, current: 7 })]), legs: OWN_LEGS },
   none: { snapshot: snap([]), legs: null },
+  /** Teammates sharing with the team while this player has no round of their own: six, so "See all 6" shows. */
+  teammates: {
+    snapshot: snap([SOFIA, MATEO, PRIYA, ELLIS, SHOTGUN, NINE].map((l) => ({ ...l, share: 'team' as const, heardAt: ago(3) }))),
+    legs: null,
+  },
 };
 
 export function previewOwn(state: string | undefined) {

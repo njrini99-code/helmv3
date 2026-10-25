@@ -68,6 +68,7 @@ import { BusyDetail, EventFiles, LinkedTrip } from './extras';
 import { courseParts } from './class-group';
 import { BackLink } from '../../ui/Section';
 import { plural, pluralWord } from '../../lib/plural';
+import { EventLiveRow } from './live-events';
 
 export type ChInsp =
   | { kind: 'event'; id: string; date: string }
@@ -485,6 +486,7 @@ export function EventDetail({ ctx, id, date }: { ctx: InspCtx; id: string; date:
         {e.recurring && <Fact icon={Repeat}>{e.recurring}</Fact>}
         {e.notes && <Fact icon={Text}>{e.notes}</Fact>}
       </div>
+      {coach && <EventLiveRow e={e} />}
       {coach && overlap && (
         <Warn
           title="Schedule overlap"

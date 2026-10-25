@@ -206,7 +206,7 @@ export async function loadCalendar(input: {
     fetchAllRowsResult((from, to) =>
       supabase
         .from('golf_events')
-        .select('id, title, event_type, start_time, end_time, location, description, status, all_day, recurrence_rule, parent_event_id, requires_rsvp, rsvp_deadline')
+        .select('id, title, event_type, start_time, end_time, location, description, status, all_day, recurrence_rule, parent_event_id, requires_rsvp, rsvp_deadline, course_id')
         .eq('team_id', input.teamId)
         .lt('start_time', toIso)
         .or(overlapsWindow)
@@ -340,6 +340,7 @@ export async function loadCalendar(input: {
       cancelled,
       seriesId: r.parent_event_id ?? (r.recurrence_rule ? r.id : null),
       startIso: r.start_time,
+      courseId: cls ? null : (r.course_id ?? null),
     };
     if (r.all_day) {
       // All-day rows are stored as UTC-midnight dates: read the date part, never zone it.

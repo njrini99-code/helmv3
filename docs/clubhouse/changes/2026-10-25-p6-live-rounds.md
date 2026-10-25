@@ -5,7 +5,7 @@
 ```text
 Design package: build plan P-6 (handoff 4.34.6)
 PR/commit:      claude/clubhouse-live-rounds (slice 0)
-Contract IDs:   none new here (see docs/clubhouse/catalog/live.md)
+Contract IDs:   none new here (see docs/clubhouse/catalog/tournaments.md)
 Actions:        none
 Data impact:    none
 Held items:     none

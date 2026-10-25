@@ -2,7 +2,7 @@
 
 import { useId, useState, type CSSProperties } from 'react';
 import Link from 'next/link';
-import { ArrowRight, Trash2 } from 'lucide-react';
+import { ArrowRight, Eye, Trash2 } from 'lucide-react';
 import type { ChLibraryRound, ChRoundsSeason, ChRoundType, ChTeeColor, ChUnfinishedRound } from '../../data/rounds-shape';
 import { formatFixed, formatToPar, NO_DATA } from '../../lib/format';
 import { NoData } from '../../ui/NoData';
@@ -83,6 +83,7 @@ export function UnfinishedCard({
   retrying = false,
   onDiscard,
   menu,
+  sharing,
 }: {
   round: ChUnfinishedRound | null;
   error: boolean;
@@ -98,6 +99,8 @@ export function UnfinishedCard({
   onDiscard: (r: ChUnfinishedRound) => void;
   /** The round's right-click menu handlers (ui/ContextMenu.tsx); the round in progress only. */
   menu?: ContextMenuBind;
+  /** The round's live-sharing level and the sheet that changes it (P-6, CH-16631); absent until the level is known or where there is nothing to choose. */
+  sharing?: { label: string; onChange: () => void };
 }) {
   if (error) {
     return (
@@ -153,6 +156,12 @@ export function UnfinishedCard({
       </div>
       <b className="ch-rd-unf__c">{round.course}</b>
       <span className="ch-rd-unf__m">{[round.tee, round.type ? TYPE_LABEL[round.type] : null, `${round.holes} holes`].filter(Boolean).join(' · ')}</span>
+      {sharing && (
+        <button type="button" className="ch-lv-sharechip" data-ch-code="CH-16631" onClick={sharing.onChange} aria-label={`Sharing: ${sharing.label}. Change who sees this round live`}>
+          <Icon icon={Eye} size={14} />
+          {sharing.label}
+        </button>
+      )}
       {round.holesError ? <GhostStrip holes={round.holes} /> : <Strip holes={round.holes} played={round.played} next={round.nextHole} />}
       {round.holesError && <InlineNotice code="CH-11214" title="This round’s scores didn’t load" body="The round is saved. Try again to see how far you are." onRetry={onRetry} retrying={retrying} />}
       {round.submitUnchecked && (

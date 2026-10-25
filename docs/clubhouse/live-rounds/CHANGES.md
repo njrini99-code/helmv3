@@ -7,7 +7,7 @@ Design package: build plan P-6 (handoff 4.34.6) with the 2026-10-25 changelog an
                 applied on top; no owner board (docs/clubhouse/phone/live.md is the draft)
 PR/commit:      claude/clubhouse-live-rounds (slice 0, v0 poll)
 Contract IDs:   CH-16600 to CH-16619, CH-16670 to CH-16677, CH-16685
-                (docs/clubhouse/catalog/live.md); later slices add the rest
+                (docs/clubhouse/catalog/tournaments.md); later slices add the rest
 Actions:        none (reads only)
 Data impact:    reads golf_rounds, golf_holes and, when it exists, golf_round_live;
                 no migration is applied. Shot tracking is not touched: how a shot or a
@@ -62,3 +62,20 @@ Held items:     docs/clubhouse/held/data/live-rounds.md, docs/clubhouse/held/dat
 
 - `supabase/tests/rls/golf_round_live.sql` ran on a scratch Postgres 16 with a stub schema and a pgTAP stand-in (54 of
   54), not on a Supabase stack. The app tests are listed in the page manifest.
+
+## 2026-10-25 — Surfaces on the other pages (slice 4)
+
+```text
+Design package: build plan P-6 (handoff 4.34.6) with the 2026-10-25 changelog and recheck applied; Live rounds has no page of its own (P016 is Tournaments)
+PR/commit:      claude/clubhouse-live-rounds (slice 4)
+Contract IDs:   CH-16620 to CH-16622, CH-16630, CH-16631, CH-16640, CH-16641, CH-16682
+Actions:        none
+Data impact:    see the P009, P006, P011 and P002 notes
+Held items:     none
+```
+
+### Changed
+
+- The live lanes now appear on the qualifier page and list, the calendar peek, inspector and week grid, Team rounds, the
+  player's library and Player Home. `LiveNowCard` takes a `variant` (home, band, qualifier) and a `scope`; `laneMatchesScope`
+  takes a `day`.

@@ -22,6 +22,7 @@ import { Countdown } from './Countdown';
 import { Today, UpNext, WeekStrip } from './HomePhone';
 import { noRoundsYet, playerFailedParts } from './model';
 import { OwnLiveCard } from './OwnLiveCard';
+import { TeammatesLiveCard } from './TeammatesLiveCard';
 import { PlayerGame } from './PlayerGame';
 import { messageCoachHref, MY_STATS, postRoundHref, roundHref } from './player-links';
 import { GirViz, PuttsViz, SgViz } from './RoundViz';
@@ -100,6 +101,7 @@ export function PlayerHomePhone({ data, now: frozen, live, playerId }: { data: C
         {live && playerId && (
           <SectionBoundary surface="home.live" label="Round in progress">
             <OwnLiveCard initial={live.snapshot} playerId={playerId} legs={live.legs} frozen={frozen !== undefined} now={frozen !== undefined ? Date.parse(frozen) : undefined} />
+            <TeammatesLiveCard initial={live.snapshot} playerId={playerId} frozen={frozen !== undefined} now={frozen !== undefined ? Date.parse(frozen) : undefined} />
           </SectionBoundary>
         )}
         {!data.week.error && !nothingAhead ? (

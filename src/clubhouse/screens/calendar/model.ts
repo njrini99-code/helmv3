@@ -63,6 +63,8 @@ export interface ChCalEvent {
   seriesId: string | null;
   /** The stored start instant (series edits and cancels key on it). */
   startIso: string;
+  /** `golf_events.course_id`: the live rows match an event's course to the players' (P-6). Absent in older fixtures. */
+  courseId?: string | null;
   /**
    * Multi-day events: the whole span, repeated on each day's entry. A timed one (a tournament from Friday 7 AM to Sunday
    * 4:30 PM, an overnight trip) also carries its first day's start and its last day's end, in decimal hours: each day's

@@ -9,6 +9,7 @@ import { rebuiltHref } from '../../shell/nav';
 import { messagesPrefillHref } from '../messages/prefill';
 import { dayNum, dowOf, fmtHour, monthName, rangeLabel, TYPE_LABEL, type ChCalEvent, type ChCalPerson } from './model';
 import { TYPE_ICON } from './type-icon';
+import { EventLiveRow } from './live-events';
 
 /**
  * P006-C3: an event peeks where it is listed: a hold on the phone's agenda row, a rest of the pointer on a week block.
@@ -48,6 +49,7 @@ export function EventPeekCard({ e, coach, people }: { e: ChCalEvent; coach: bool
         {dowOf(e.date)} {dayNum(e.date)} {monthName(e.date)} · {rangeLabel(e, clock)}
       </span>
       {e.location && <span className="ch-evpeek__m">{e.location}</span>}
+      {coach && <EventLiveRow e={e} />}
       {coach && e.people.length > 0 && !e.rsvpRequired && (
         // No replies asked for: the card says who is on it, never a reply count.
         <span className="ch-evpeek__r ch-num">

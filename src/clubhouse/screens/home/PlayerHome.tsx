@@ -24,6 +24,7 @@ import { eventHref, whenLabel } from './HomePhone';
 import { LatestRound } from './LatestRound';
 import { noRoundsYet, playerFailedParts } from './model';
 import { OwnLiveCard } from './OwnLiveCard';
+import { TeammatesLiveCard } from './TeammatesLiveCard';
 import { PlayerGame } from './PlayerGame';
 import { NoRoundsYet, PlayerHomePhone } from './PlayerHomePhone';
 import { Week } from './Week';
@@ -48,6 +49,7 @@ export function PlayerHome({ data, now, live, playerId }: { data: ChPlayerHome; 
       <SectionBoundary surface="home.live" label="Round in progress">
         <div className="ch-lv-deskwrap">
           <OwnLiveCard initial={live.snapshot} playerId={playerId} legs={live.legs} frozen={now !== undefined} now={now !== undefined ? Date.parse(now) : undefined} />
+          <TeammatesLiveCard initial={live.snapshot} playerId={playerId} frozen={now !== undefined} now={now !== undefined ? Date.parse(now) : undefined} />
         </div>
       </SectionBoundary>
     ) : null;

@@ -1,4 +1,4 @@
-# P016 — Live rounds: wiring map
+# P-6 — Live rounds: wiring map
 
 ## Entry point
 
@@ -26,6 +26,14 @@ Sharing:                 src/clubhouse/live/share-ports.ts (browser reads of gol
                          LiveShareSheet and the Exit sheet's Sharing row (RoundRuntime, new and continued rounds) and
                          screens/settings/LiveRounds.tsx. Each is drawn only when the live table answers; the setup choice
                          reaches the database through golf_round_live_set_next_share and never through ChSetupForm.
+Qualifier page / list:   routes/qualifiers.tsx loads loadLiveRounds beside the standings (detail: scoped to the qualifier) and, for a
+                         coach, the team's lanes for the list; screens/qualifiers/on-course.ts (isOwnRoundOn, qualifierLiveLines),
+                         LiveOnCourse (the section and the held-back note)
+Calendar:                routes/calendar.tsx loads the coach's snapshot beside loadCalendar; screens/calendar/live-events.tsx
+                         (CalendarLiveProvider, liveLanesForEvent, EventLiveRow, EventLiveDot)
+Team rounds / library:   routes/team-rounds.tsx loads the snapshot beside loadTeamRounds (band); the player's share chip reads the
+                         level in the browser through useRoundSharing, so the library's reads are unchanged
+Teammates:               screens/home/TeammatesLiveCard.tsx on Player Home (team topic, read-only sheet)
 Dock:                    data/shell.ts embeds golf_holes(par, score) in the existing in-progress round read for the Resume
                          accessory's "Hole 12 · −2"; no new read
 ```

@@ -8,7 +8,7 @@ import { PREVIEW_LIVE } from '../preview/fixtures-live';
 import { ROOT } from './_scan';
 
 /**
- * The words of the live surfaces, by their catalog numbers (docs/clubhouse/catalog/live.md). The plan's copy deck is the
+ * The words of the live surfaces, by their catalog numbers (docs/clubhouse/catalog/tournaments.md). The plan's copy deck is the
  * spec; each case below is one code and the exact words it shows. A code that a component draws is also looked for in the
  * source, so a number never drifts from its place.
  */
@@ -116,7 +116,7 @@ describe('the words of the live surfaces', () => {
   });
 
   it('has a case for every row of the catalog, and a row for every case', () => {
-    const catalog = readFileSync(join(ROOT, '../../docs/clubhouse/catalog/live.md'), 'utf8');
+    const catalog = readFileSync(join(ROOT, '../../docs/clubhouse/catalog/tournaments.md'), 'utf8');
     const rows = [...catalog.matchAll(/^\| (CH-\d{5}) \|/gm)].map((m) => m[1]!).sort();
     expect(CASES.map(([c]) => c).sort()).toEqual(rows);
   });

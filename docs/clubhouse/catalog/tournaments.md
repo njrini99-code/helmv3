@@ -1,4 +1,8 @@
-# Live rounds catalog (16xxx)
+# Tournaments catalog (16xxx): the P-6 live rounds rows
+
+> Page 16 is P016 Tournaments (P-5, `config/clubhouse/pages/P016-tournaments.json`). This file holds only the **Live rounds (P-6)** rows,
+> CH-16600 to CH-16677 (CH-16650 to CH-16653 are P-5's) and CH-16680 to CH-16685. P-5 adds its own rows to the same page's catalog;
+> when both branches are in, merge the tables here into one `tournaments.md`. P-6 registers no page of its own.
 
 Route `/golf/dashboard/live` (coaches) · surfaces Coach Home (`LiveNowCard`), the live view, the player's sheet, the player's own card, the Teammates card, Round setup and the in-round sheet, Team rounds, the player's library, Calendar and Qualifiers · code `src/clubhouse/live/` (the lane, beads, feed, queries and model), `src/clubhouse/screens/live/` · loader `src/clubhouse/data/live-rounds.ts` · tests `src/clubhouse/__tests__/live-rounds-copy.test.ts`, `src/clubhouse/live/__tests__/` · preview `/clubhouse-preview/live` (`?state=busy|one|many|finished|starts|event|longnames|empty|failed|denied`) and `/clubhouse-preview/home?live=busy|one|many|finished|event|failed`.
 

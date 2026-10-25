@@ -29,6 +29,8 @@ import { Attendance, EventDetail, Overlap, Summary, type ChInsp, type InspCtx } 
 import { CancelEvent, DeleteEvent, EventEditor, SubscribeSheet, type EditorSeed } from './editor';
 import { BusySheet } from './extras';
 import { CalendarPhone } from './CalendarPhone';
+import { CalendarLiveProvider } from './live-events';
+import type { LiveSnapshot } from '../../live/model';
 import { Modal } from '../../ui/Modal';
 import { useChPhone } from '../../lib/use-phone';
 import { useChClock } from '../../lib/use-clock';
@@ -404,7 +406,7 @@ const buildUrl = (view: ChCalView, date: string, today: string, event?: string) 
 };
 
 /** `frozen` pins the clock to the loaded "now" (the dev preview renders a fixed day). */
-export function Calendar({
+function CalendarScreen({
   data,
   initialEvent,
   initialNew = false,
@@ -973,5 +975,20 @@ export function Calendar({
 
       {dialogs}
     </main>
+  );
+}
+
+type CalendarProps = Parameters<typeof CalendarScreen>[0];
+
+/**
+ * The calendar, with the coach's live rounds around it (P-6, 4.8): `onCourse` is the first-paint snapshot, and an event of a
+ * kind players score on says how many are playing it now. A player's calendar, and any caller that gives none, is unchanged.
+ */
+export function Calendar(props: CalendarProps & { onCourse?: LiveSnapshot; liveNow?: number }) {
+  const { onCourse, liveNow, ...rest } = props;
+  return (
+    <CalendarLiveProvider initial={rest.data.role === 'coach' ? onCourse : undefined} frozen={rest.frozen} now={liveNow}>
+      <CalendarScreen {...rest} />
+    </CalendarLiveProvider>
   );
 }

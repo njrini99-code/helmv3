@@ -29,6 +29,8 @@ import { monthLabel, MonthSpark, RoundRow, SeasonCard, shortDay, UnfinishedCard 
 import { noteOpenedFromLibrary } from './return-state';
 import { LIVE_ROUNDS_WRITES, type ChRoundsWrites } from './writes';
 import { pluralWord } from '../../lib/plural';
+import { browserSharePorts, type LiveSharePorts } from '../../live/share-ports';
+import { useRoundSharing } from './track/LiveShareSheet';
 import { LargeTitle } from '../../ui/LargeTitle';
 
 type Group = 'month' | 'course';
@@ -65,7 +67,7 @@ const ROW_KEYS: readonly ChPageKey[] = [{ label: 'Move between rounds', keys: ['
  * in progress, the season's scoring, then every posted round by month or by
  * course.
  */
-export function RoundsLibrary({ data: fresh, playerId, writes = LIVE_ROUNDS_WRITES }: { data: ChRoundsLibrary; playerId: string; writes?: ChRoundsWrites }) {
+export function RoundsLibrary({ data: fresh, playerId, writes = LIVE_ROUNDS_WRITES, sharePorts = browserSharePorts }: { data: ChRoundsLibrary; playerId: string; writes?: ChRoundsWrites; sharePorts?: LiveSharePorts }) {
   const phone = useChPhone();
   const { refresh, refreshing } = useRefresh();
   usePageKeys('Rounds', phone ? null : ROW_KEYS);
@@ -142,6 +144,8 @@ export function RoundsLibrary({ data: fresh, playerId, writes = LIVE_ROUNDS_WRIT
   const unscored = data.rounds.error ? 0 : (data.rounds.unscored ?? 0);
   const nothing = !data.rounds.error && list.length === 0 && unscored === 0 && unfinished.length === 0 && !data.unfinished.error;
   const [current, ...more] = unfinished;
+  // The share chip (CH-16631) reads the round's level in the browser after the page is up, so it adds nothing to the page's reads.
+  const sharing = useRoundSharing(current && current.type !== 'tournament' ? { roundId: current.id, type: current.type ?? 'practice', ports: sharePorts } : undefined);
 
   return (
     <main className={'ch-rd' + (phone ? ' is-phone' : '')} aria-labelledby="ch-rd-title" aria-busy={refreshing || undefined} data-canopy={phone ? undefined : ''}>
@@ -200,6 +204,7 @@ export function RoundsLibrary({ data: fresh, playerId, writes = LIVE_ROUNDS_WRIT
                 retrying={refreshing}
                 onDiscard={askDiscard}
                 menu={current ? ctx.bind(current) : undefined}
+                sharing={sharing.row}
               />
             </SectionBoundary>
             {data.rounds.error ? (
@@ -330,6 +335,7 @@ export function RoundsLibrary({ data: fresh, playerId, writes = LIVE_ROUNDS_WRIT
           </>
         }
       />
+      {sharing.sheet}
     </main>
   );
 }

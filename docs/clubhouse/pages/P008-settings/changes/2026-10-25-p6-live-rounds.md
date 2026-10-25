@@ -5,7 +5,7 @@
 ```text
 Design package: build plan P-6 section 4.6 (Settings)
 PR/commit:      claude/clubhouse-live-rounds (slice 2)
-Contract IDs:   CH-16661, CH-16662, CH-16664 (docs/clubhouse/catalog/live.md)
+Contract IDs:   CH-16661, CH-16662, CH-16664 (docs/clubhouse/catalog/tournaments.md)
 Actions:        setLivePrefs (src/app/golf/actions/round-live.ts)
 Data impact:    one read of the player's own golf_round_live_prefs row, and an upsert of that row; both only once held
                 migration 20261025050000 is applied. The settings loader and its writes are unchanged.

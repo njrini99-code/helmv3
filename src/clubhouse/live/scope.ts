@@ -8,6 +8,8 @@ export interface LiveScope {
   sessionId?: string;
   playerId?: string;
   type?: LiveRoundType;
+  /** Only rounds dated this day (the qualifier's section lists today's round only). */
+  day?: string | null;
   /** The event's day and course (resolved by the loader): a lane matches when it is that day, and that course when both are set. */
   date?: string | null;
   courseId?: string | null;
@@ -17,6 +19,7 @@ export function laneMatchesScope(lane: LiveLane, scope: LiveScope): boolean {
   if (scope.qualifierId && lane.qualifierId !== scope.qualifierId) return false;
   if (scope.playerId && lane.playerId !== scope.playerId) return false;
   if (scope.type && lane.roundType !== scope.type) return false;
+  if (scope.day && lane.roundDate !== scope.day) return false;
   if (scope.eventId) {
     if (scope.date && lane.roundDate !== scope.date) return false;
     if (scope.courseId && lane.courseId && lane.courseId !== scope.courseId) return false;

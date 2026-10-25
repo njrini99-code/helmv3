@@ -2,7 +2,7 @@ import { TERMS } from '../lib/glossary';
 import { clockText, type LiveRoundType, type LiveSort } from './model';
 
 /**
- * The words of the live surfaces (docs/clubhouse/catalog/live.md, CH-166xx and CH-168xx). Sentence case, no emoji, no
+ * The words of the live surfaces (docs/clubhouse/catalog/tournaments.md, CH-166xx and CH-168xx). Sentence case, no emoji, no
  * exclamation marks. A code is written beside each string so the catalog check and the tests find it where it is used.
  */
 export const LIVE_ROUTE = '/golf/dashboard/live';

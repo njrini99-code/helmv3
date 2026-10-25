@@ -1,5 +1,5 @@
 /*
- * Live rounds (P-6, docs/clubhouse/catalog/live.md): the lane, the Home card, the live view and the player's sheet.
+ * Live rounds (P-6, docs/clubhouse/catalog/tournaments.md): the lane, the Home card, the live view and the player's sheet.
  * Classes are `.ch-lv-*`. Nothing here has a stripe or a border on the left of anything. The live dot is static
  * (D-33); the to-par takes its value in place and its changed-wash is a layer that fades out (D-100); a lane that has
  * gone quiet keeps full contrast and says so in words. Only opacity and transform move, never layout.
@@ -692,6 +692,14 @@ section.ch-lv-card {
   color: var(--ch-warning-600);
 }
 
+.ch-lv-line {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--ch-space-2);
+  font: var(--ch-type-13);
+  color: var(--ch-text-secondary);
+}
+
 /* The course ribbon: two rows of nine, a token on the hole each player plays next. */
 .ch-lv-ribbon {
   display: grid;
@@ -911,4 +919,67 @@ section.ch-lv-card {
 .ch-lv-sheetshare {
   display: grid;
   gap: var(--ch-space-3);
+}
+
+/* ---- Calendar: an event with players on the course (CH-16640, CH-16641) ---- */
+.ch-lv-evrow {
+  display: flex;
+  align-items: center;
+  gap: var(--ch-space-2);
+  min-height: 44px;
+  padding: 0 var(--ch-space-3);
+  border-radius: var(--ch-radius-md);
+  background: var(--ch-bg-subtle);
+  font: var(--ch-type-14-medium);
+  color: var(--ch-text-primary);
+  text-decoration: none;
+  touch-action: manipulation;
+}
+.ch-lv-evrow span:nth-child(2) {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+.ch-lv-evrow[data-ch-pressed] {
+  background: var(--ch-bg-selected);
+}
+@media (hover: hover) {
+  .ch-lv-evrow:active {
+    background: var(--ch-bg-selected);
+  }
+}
+.ch-lv-evdot {
+  position: absolute;
+  top: var(--ch-space-2);
+  right: var(--ch-space-2);
+}
+
+/* ---- Rounds: the share chip on the round in progress (CH-16631) ---- */
+.ch-lv-sharechip {
+  display: inline-flex;
+  align-items: center;
+  align-self: flex-start;
+  gap: var(--ch-space-2);
+  min-height: 44px;
+  padding: 0 var(--ch-space-3);
+  border: 0;
+  border-radius: var(--ch-radius-md);
+  background: var(--ch-bg-subtle);
+  font: var(--ch-type-13);
+  color: var(--ch-text-primary);
+  touch-action: manipulation;
+  cursor: pointer;
+}
+.ch-lv-sharechip[data-ch-pressed] {
+  background: var(--ch-bg-selected);
+}
+@media (hover: hover) {
+  .ch-lv-sharechip:active {
+    background: var(--ch-bg-selected);
+  }
+}
+
+button.ch-lv-card__more {
+  border: 0;
+  background: transparent;
+  cursor: pointer;
 }

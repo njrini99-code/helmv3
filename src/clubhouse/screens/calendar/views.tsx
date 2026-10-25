@@ -10,6 +10,7 @@ import { useChClock } from '../../lib/use-clock';
 import { clockHourLabel, meridiemOfHour } from '../../lib/clock-format';
 import { ClassGroupBlock } from './class-group';
 import { EventPeek } from './peek';
+import { EventLiveDot } from './live-events';
 import {
   CAL_END,
   CAL_HH,
@@ -187,6 +188,7 @@ function EventBlock({
         ))}
         {where && <span>{where}</span>}
       </span>
+      <EventLiveDot e={e} />
       {flagged && !short && (
         <span className="ch-ev__warn" aria-hidden="true">
           <Icon icon={TriangleAlert} size={10} />
