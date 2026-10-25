@@ -33,6 +33,8 @@ const mocks = vi.hoisted(() => ({
   rows: new Map<string, string[]>(),
   /** Every `.in('id', ids)` batch handed to a delete, in order. */
   deleteBatches: [] as Array<{ table: string; ids: string[] }>,
+  /** Every column a victim select filtered (`lt`) or sorted (`order`) on. */
+  ageColumns: [] as Array<{ table: string; op: 'lt' | 'order'; col: string }>,
 }));
 
 /** PostgREST truncates ANY request to 1,000 rows; `.limit(n)` above that is
@@ -49,8 +51,14 @@ vi.mock('@/lib/supabase/admin', () => ({
             if (col === 'severity') bucket = `${table}|${values.join(',')}`;
             return chain;
           },
-          lt: () => chain,
-          order: () => chain,
+          lt: (col: string) => {
+            mocks.ageColumns.push({ table, op: 'lt', col });
+            return chain;
+          },
+          order: (col: string) => {
+            mocks.ageColumns.push({ table, op: 'order', col });
+            return chain;
+          },
           limit: (n: number) => {
             const remaining = mocks.rows.get(bucket) ?? [];
             const served = Math.min(n, POSTGREST_MAX_ROWS);
@@ -135,6 +143,7 @@ describe('GET /api/cron/log-retention', () => {
     vi.stubEnv('CRON_SECRET', 'cron-secret');
     mocks.rows = new Map();
     mocks.deleteBatches = [];
+    mocks.ageColumns = [];
     autoResolveMock.mockReset();
     autoResolveMock.mockResolvedValue({
       resolvedRelease: 0,
@@ -154,6 +163,21 @@ describe('GET /api/cron/log-retention', () => {
     const res = await GET(request('wrong-secret'));
     expect(res.status).toBe(401);
     expect(mocks.deleteBatches).toHaveLength(0);
+  });
+
+  it('ages error_logs out on the indexed created_at column, never "timestamp"', async () => {
+    // "timestamp" has no index, so filtering and sorting on it scanned all of
+    // error_logs on every page (Sentry JAVASCRIPT-NEXTJS-16Y, 2.5 s a page).
+    mocks.rows.set('error_logs|info,warning', ['e-1', 'e-2']);
+
+    const GET = await loadRoute();
+    const res = await GET(request());
+    expect(res.status).toBe(200);
+
+    const errorLogs = mocks.ageColumns.filter((c) => c.table === 'error_logs');
+    expect(errorLogs.some((c) => c.op === 'lt')).toBe(true);
+    expect(errorLogs.some((c) => c.op === 'order')).toBe(true);
+    for (const c of errorLogs) expect(c.col).toBe('created_at');
   });
 
   it('chunks every delete so the request URI can never overflow', async () => {

@@ -6,7 +6,7 @@ import { toChStanding, type ChStanding } from '../data/coachhelm-standing-shape'
 import { coachHeadLine, type ChViewVoice } from '../data/coachhelm-views-shape';
 import { speak, type ChViewer } from '../data/coachhelm-voice';
 import { PREVIEW_TOUR } from './fixtures-coachhelm';
-import { BASELINE, DIVE_BIG, DIVE_THEMES, DIVE_BREAK, DIVE_PENALTIES, DIVE_SLOPE, diveOf, DRILL, FULL_INPUTS, FULL_VECTOR, genome, LADDER_READS, STANDING_ROWS, VIEWS_NOW, type Inputs } from './fixtures-coachhelm-views';
+import { BASELINE, DIVE_BIG, DIVE_THEMES, DIVE_BREAK, DIVE_PENALTIES, DIVE_SLOPE, diveOf, DRILL, FULL_INPUTS, FULL_VECTOR, genome, LADDER_READS, SEASON_STANDING_ROWS, VIEWS_NOW, type Inputs } from './fixtures-coachhelm-views';
 
 /**
  * Sample data for a coach's views of one player (spec A): Jonah Okafor, read by his coach. The same stored shapes as the player's
@@ -23,7 +23,7 @@ export const PREVIEW_COACH_VOICE: ChViewVoice = { role: 'coach', playerId: 'pl-j
 export const PREVIEW_COACH_GAME: ChGame = toChGame(genome(FULL_VECTOR), VIEWS_NOW, VIEWER);
 
 /** Standing with the open reads on two of its stats (the rows that carry "Open the read"). */
-export const PREVIEW_COACH_STANDING: ChStanding = { ...toChStanding(STANDING_ROWS, BASELINE, LADDER_READS, VIEWER), reads: { penalty_rate_per_round: 'in-pen', big_number_rate: 'in-dbl' } };
+export const PREVIEW_COACH_STANDING: ChStanding = { ...toChStanding(SEASON_STANDING_ROWS, BASELINE, LADDER_READS, VIEWER, undefined, 'season'), reads: { penalty_rate_per_round: 'in-pen', big_number_rate: 'in-dbl' } };
 
 const say = (t: string) => speak(t, VIEWER);
 const coachDeep = (raw: EvidenceInsight, inputs: Inputs, extra: Parameters<typeof toChInsight>[1] = {}) => toChDeepInsight(raw, toChInsight(raw, { tour: PREVIEW_TOUR, viewer: VIEWER, ...extra }), inputs, say, 'coach');

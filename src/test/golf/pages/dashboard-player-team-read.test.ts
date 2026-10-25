@@ -28,6 +28,10 @@ vi.mock('@/lib/server-error-logger', () => ({
   logServerException: vi.fn(async () => {}),
   logServerEvent: vi.fn(async () => {}),
 }));
+// The Clubhouse Home reads the change-marks cookie (marksHint) outside a request.
+vi.mock('next/headers', () => ({
+  cookies: async () => ({ get: () => undefined }),
+}));
 vi.mock('next/navigation', () => ({
   redirect: vi.fn(() => { throw new Error('REDIRECT'); }),
   notFound: vi.fn(() => { throw new Error('NOT_FOUND'); }),

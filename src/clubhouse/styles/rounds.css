@@ -3104,6 +3104,12 @@ html[data-fw-theme='dark'] .ch-rv .ch-rv-yn.is-y {
   overflow: visible;
   font-family: inherit;
 }
+/* P-7: the arc is a slider; its focus ring sits on the stage. */
+.ch-rv .ch-rzsvg:focus-visible {
+  outline: 2px solid var(--ch-border-focus);
+  outline-offset: 2px;
+  border-radius: var(--ch-radius-card);
+}
 .ch-rv .ch-rzmeta {
   margin: 16px 0 0;
   font: var(--ch-type-14);
@@ -4867,4 +4873,1061 @@ html[data-fw-theme='dark'] .ch-rv .ch-rv-yn.is-y {
 .ch-rd.is-phone .ch-rd-grp {
   content-visibility: auto;
   contain-intrinsic-size: auto 320px;
+}
+
+/* P-7 4.5.3: "What the round says". Phone: a flush 2 × 2 grid with a hairline cross; desktop: one card, 4 × 1. No colour on
+   the values (owner call 7). */
+.ch-rv .ch-says {
+  display: grid;
+  /* Two columns at the default Text Size; past about 1.3 a tile no longer fits half the width and the grid is one column. */
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, calc(136px * var(--ch-type-k, 1))), 1fr));
+  column-gap: 16px;
+  margin-top: 12px;
+}
+.ch-rv .ch-says__tile {
+  position: relative;
+  margin: 0;
+  min-height: 96px;
+  padding: 12px 48px 12px 0;
+  border-top: var(--ch-hairline-w) solid var(--ch-border-subtle);
+}
+.ch-rv .ch-says__tile figcaption {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.ch-rv .ch-says__label,
+.ch-rv .ch-says__cap {
+  font: var(--ch-type-13);
+  color: var(--ch-text-secondary);
+}
+.ch-rv .ch-says__value {
+  font: var(--ch-type-22-strong);
+  letter-spacing: var(--ch-track-22);
+  color: var(--ch-text-primary);
+}
+.ch-rv .ch-says__info {
+  position: absolute;
+  top: 2px;
+  right: 0;
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--ch-text-secondary);
+  border-radius: var(--ch-radius-lg);
+}
+.ch-rv .ch-says__info:focus-visible {
+  outline: 2px solid var(--ch-border-focus);
+  outline-offset: -2px;
+}
+.ch-rv .ch-says__about {
+  margin: 8px 0 0;
+  padding: 8px 12px;
+  border: var(--ch-hairline-w) solid var(--ch-border-subtle);
+  border-radius: var(--ch-radius-lg);
+  background: var(--ch-bg-surface);
+  font: var(--ch-type-13);
+  color: var(--ch-text-primary);
+}
+.ch-rv .ch-says__about[hidden] {
+  display: none;
+}
+@media (min-width: 1024px) {
+  .ch-rv .ch-says {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    column-gap: 0;
+    border: var(--ch-hairline-w) solid var(--ch-border-subtle);
+    border-radius: var(--ch-radius-lg);
+    background: var(--ch-bg-surface);
+  }
+  .ch-rv .ch-says__tile {
+    padding: 16px 48px 16px 16px;
+    border-top: 0;
+    border-left: var(--ch-hairline-w) solid var(--ch-border-subtle);
+  }
+  .ch-rv .ch-says__tile:first-child {
+    border-left: 0;
+  }
+}
+/* P-7 4.5.1: record chips under the course name. Plain text, not controls (no hover, no hit target); the glyph is the tier. */
+.ch-rv-rec {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 8px 0;
+  padding: 0;
+  list-style: none;
+}
+.ch-rv-rec__chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 28px;
+  padding: 0 12px;
+  border: var(--ch-hairline-w) solid var(--ch-stage-rule);
+  border-radius: 999px;
+  background: rgb(244 238 221 / 0.1);
+  font: var(--ch-type-13-medium);
+  color: var(--ch-stage-ink);
+}
+.ch-rv-rec__g {
+  position: relative;
+  flex: none;
+  width: 10px;
+  height: 10px;
+}
+.ch-rv-rec__g::before {
+  content: '';
+  position: absolute;
+  inset: 1px;
+  border-radius: 50%;
+  border: 1.5px solid var(--ch-stage-gold);
+}
+.ch-rv-rec__g.is-filled::before {
+  background: var(--ch-stage-gold);
+}
+.ch-rv-rec__g.is-half::before {
+  background: linear-gradient(90deg, var(--ch-stage-gold) 50%, transparent 50%);
+}
+/* On the ivory desktop canopy the chips take the page's ink. */
+.ch-rv[data-canopy] .ch-rv-rec__chip {
+  border-color: var(--ch-border-subtle);
+  background: var(--ch-bg-surface);
+  color: var(--ch-text-primary);
+}
+.ch-rv[data-canopy] .ch-rv-rec__g::before {
+  border-color: var(--ch-champagne-500);
+}
+.ch-rv[data-canopy] .ch-rv-rec__g.is-filled::before {
+  background: var(--ch-champagne-500);
+}
+.ch-rv[data-canopy] .ch-rv-rec__g.is-half::before {
+  background: linear-gradient(90deg, var(--ch-champagne-500) 50%, transparent 50%);
+}
+/* P-7 4.2 to 4.4: the course page. One green hero card, then flush sections under the double rule. The phone edge and
+   rhythm are the shell's tokens (--ch-page-x-phone is 16, 20 from 414), 32 on desktop. No left borders. */
+.ch-ch {
+  max-width: var(--ch-measure-page);
+  margin: 0 auto;
+  padding: var(--ch-page-top-phone) var(--ch-page-x-phone) var(--ch-page-bottom-phone);
+  box-sizing: border-box;
+}
+@media (min-width: 1024px) {
+  .ch-ch {
+    padding: 24px 32px 64px;
+  }
+}
+.ch-ch-hero {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  padding: 20px 20px 16px;
+  border-radius: var(--ch-radius-card);
+  color: var(--ch-stage-ink);
+  background: radial-gradient(120% 120% at 100% 0%, rgb(123 199 154 / 0.16), transparent 60%), var(--ch-green-800);
+  box-shadow: 0 0 0 1px var(--ch-green-900);
+}
+.ch-ch-hero__k {
+  font: var(--ch-type-12-medium);
+  letter-spacing: var(--ch-track-12);
+  color: var(--ch-stage-ink-soft);
+}
+.ch-ch-hero h1 {
+  margin: 4px 0 0;
+  font: var(--ch-type-28-strong);
+  line-height: var(--ch-lead-tight);
+  letter-spacing: var(--ch-track-28);
+  color: var(--ch-stage-ink);
+  overflow-wrap: anywhere;
+}
+.ch-ch-hero__p {
+  margin: 6px 0 0;
+  font: var(--ch-type-14);
+  color: var(--ch-stage-ink-soft);
+}
+.ch-ch-hero__f {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.ch-ch-hero__f b {
+  font: var(--ch-type-34-strong);
+  line-height: var(--ch-lead-tight);
+  letter-spacing: var(--ch-track-34);
+}
+.ch-ch-hero__f > span {
+  display: flex;
+  flex-direction: column;
+  font: var(--ch-type-13);
+  color: var(--ch-stage-ink);
+}
+.ch-ch-hero__f em {
+  font-style: normal;
+  color: var(--ch-stage-ink-soft);
+}
+.ch-ch-hero__e {
+  margin: 6px 0 0;
+  font: var(--ch-type-13);
+  color: var(--ch-stage-ink-soft);
+}
+.ch-ch .ch-ch-hero__go {
+  width: 100%;
+  min-height: 44px;
+  margin-top: 16px;
+  border: var(--ch-hairline-w) solid var(--ch-stage-rule);
+  background: rgb(244 238 221 / 0.1);
+  color: var(--ch-stage-ink);
+}
+@media (min-width: 1024px) {
+  .ch-ch-hero {
+    flex-direction: row;
+    align-items: flex-end;
+    justify-content: space-between;
+    padding: 24px 32px;
+  }
+  .ch-ch-hero h1 {
+    font: var(--ch-type-34-strong);
+    line-height: var(--ch-lead-tight);
+    letter-spacing: var(--ch-track-34);
+  }
+  .ch-ch .ch-ch-hero__go {
+    width: auto;
+  }
+}
+.ch-ch-sec {
+  margin-top: var(--ch-gap-section-phone);
+  padding-top: 12px;
+  border-top: var(--ch-ledger-rule-double);
+}
+@media (min-width: 1024px) {
+  .ch-ch-sec {
+    margin-top: 32px;
+  }
+}
+.ch-ch-sec__h {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  min-height: 44px;
+}
+.ch-ch-sec__h h2 {
+  margin: 0;
+  font: var(--ch-type-16-strong);
+  letter-spacing: var(--ch-track-16);
+  color: var(--ch-text-primary);
+}
+.ch-ch-fig {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, calc(150px * var(--ch-type-k, 1))), 1fr));
+}
+@media (min-width: 1024px) {
+  .ch-ch-fig {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+}
+.ch-ch-fig__c {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-height: 72px;
+  padding: 12px;
+  border-bottom: var(--ch-hairline-w) solid var(--ch-border-hairline);
+  color: inherit;
+  text-decoration: none;
+}
+.ch-ch-fig__c.is-link[data-ch-pressed] {
+  background: var(--ch-bg-subtle);
+}
+@media (hover: hover) {
+  .ch-ch-fig__c.is-link:active {
+    background: var(--ch-bg-subtle);
+  }
+}
+.ch-ch-fig__c.is-link:focus-visible {
+  outline: 2px solid var(--ch-border-focus);
+  outline-offset: -2px;
+}
+.ch-ch-fig__l,
+.ch-ch-fig__s {
+  font: var(--ch-type-13);
+  color: var(--ch-text-secondary);
+}
+.ch-ch-fig__s.is-under {
+  color: var(--ch-score-under);
+}
+.ch-ch-fig__s.is-over {
+  color: var(--ch-chart-loss);
+}
+.ch-ch-fig__v {
+  font: var(--ch-type-22-strong);
+  letter-spacing: var(--ch-track-22);
+  color: var(--ch-text-primary);
+}
+.ch-ch-last__sub {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  font: var(--ch-type-13);
+  color: var(--ch-text-secondary);
+}
+.ch-ch-note {
+  margin-top: 8px;
+  padding: 12px 16px;
+  border: var(--ch-hairline-w) solid var(--ch-border-hairline);
+  border-radius: var(--ch-radius-card);
+  background: var(--ch-bg-subtle);
+}
+.ch-ch-note__l {
+  font: var(--ch-type-12-medium);
+  color: var(--ch-text-secondary);
+}
+.ch-ch-note__b {
+  margin-top: 4px;
+}
+.ch-ch-note p {
+  margin: 0;
+  font: var(--ch-type-16);
+  letter-spacing: var(--ch-track-16);
+  color: var(--ch-text-primary);
+  white-space: pre-wrap;
+}
+.ch-ch-note p.is-clamped {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 4;
+  overflow: hidden;
+}
+.ch-ch-note__more {
+  min-height: 44px;
+  padding: 0;
+  border: 0;
+  background: none;
+  font: var(--ch-type-14-strong);
+  color: var(--ch-text-primary);
+}
+
+/* P-7 E1/E2: the review hero's link to the course page; E3: a library course header as a link row. */
+.ch-rv-crs {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  min-height: 44px;
+  margin: 12px 0 0;
+  border-top: var(--ch-hairline-w) solid var(--ch-stage-rule);
+  font: var(--ch-type-14);
+  color: var(--ch-stage-ink);
+  text-decoration: none;
+}
+a.ch-rv-crs[data-ch-pressed] {
+  background: rgb(244 238 221 / 0.06);
+}
+@media (hover: hover) {
+  a.ch-rv-crs:active {
+    background: rgb(244 238 221 / 0.06);
+  }
+}
+a.ch-rv-crs:focus-visible {
+  outline: 2px solid var(--ch-border-focus);
+  outline-offset: 2px;
+}
+.ch-rv-crs.is-first {
+  color: var(--ch-stage-ink-soft);
+}
+.ch-rv-crs__go {
+  flex: none;
+  color: var(--ch-stage-ink-soft);
+}
+.ch-rv[data-canopy] .ch-rv-crs {
+  border-top-color: var(--ch-border-hairline);
+  color: var(--ch-text-primary);
+}
+.ch-rv[data-canopy] .ch-rv-crs.is-first,
+.ch-rv[data-canopy] .ch-rv-crs__go {
+  color: var(--ch-text-secondary);
+}
+a.ch-rd-grp__h.is-link {
+  min-height: 52px;
+  color: inherit;
+  text-decoration: none;
+}
+a.ch-rd-grp__h.is-link[data-ch-pressed] {
+  background: var(--ch-bg-subtle);
+}
+@media (hover: hover) {
+  a.ch-rd-grp__h.is-link:active {
+    background: var(--ch-bg-subtle);
+  }
+}
+a.ch-rd-grp__h.is-link:focus-visible {
+  outline: 2px solid var(--ch-border-focus);
+  outline-offset: 2px;
+}
+.ch-rd-grp__go {
+  flex: none;
+  color: var(--ch-text-secondary);
+}
+
+/* P-7 4.2.4: the hole map. Nine tiles a row (36 × 56 at 390, up to 64 × 72 on desktop), radius 7, the tint and its 1 px
+   ring; the picked tile a 2 px green ring outside it. On a phone the map is one surface: vertical drags scroll the
+   page (touch-action), horizontal ones scrub. */
+.ch-ch-sec__note {
+  margin: 0 0 12px;
+  font: var(--ch-type-13);
+  color: var(--ch-text-secondary);
+}
+.ch-ch-win {
+  margin-top: 24px;
+}
+.ch-ch-plate {
+  padding: 12px 16px;
+  border: var(--ch-hairline-w) solid var(--ch-border-hairline);
+  border-radius: var(--ch-radius-card);
+  background: var(--ch-bg-subtle);
+}
+.ch-ch-plate b {
+  font: var(--ch-type-15-strong);
+  letter-spacing: var(--ch-track-15);
+  color: var(--ch-text-primary);
+}
+.ch-ch-plate p {
+  margin: 4px 0 0;
+  font: var(--ch-type-13);
+  color: var(--ch-text-secondary);
+}
+/* Which view shows is decided here on first paint (HoleMap's data-view, the phone gate, the fit); nothing swaps after.
+   Phone: the map's tap size is owner call 2, open, so under 600 px the List shows alone until Nick picks. Elsewhere the
+   map shows only while nine tiles fit their widest figure ("+8.8" at 2.07 em + 4 px, plus the gaps: about 22.9 em,
+   measured against the section's own font size, so a larger Text Size moves the switch). */
+.ch-hmap-sec {
+  container: ch-hmap / inline-size;
+}
+.ch-hmap-sec[data-view='map'] .ch-hmap-listv,
+.ch-hmap-sec[data-view='list'] .ch-hmap-mapv {
+  display: none;
+}
+/* The phone gate and the fit carry [data-view] so they match the data-view rule's (0,3,0) and, coming after it, win:
+   at 414 px and wider the fit still says 'map', and a (0,2,0) gate lost to it and hid both views. */
+@container ch-hmap (max-width: 22.9em) {
+  .ch-hmap-sec[data-view] .ch-hmap-mapv,
+  .ch-hmap-sec[data-view] .ch-hmap-switch {
+    display: none;
+  }
+  .ch-hmap-sec[data-view] .ch-hmap-listv {
+    display: block;
+  }
+}
+@media (max-width: 599px) {
+  .ch-hmap-sec[data-view] .ch-hmap-mapv,
+  .ch-hmap-sec[data-view] .ch-hmap-switch {
+    display: none;
+  }
+  .ch-hmap-sec[data-view] .ch-hmap-listv {
+    display: block;
+  }
+}
+.ch-hmap {
+  touch-action: pan-y;
+}
+.ch-hmap__cap {
+  display: block;
+  margin: 8px 0 4px;
+  font: var(--ch-type-12-medium);
+  color: var(--ch-text-secondary);
+}
+.ch-hmap__row {
+  display: grid;
+  grid-template-columns: repeat(9, minmax(0, 64px));
+  gap: 4px;
+}
+@media (min-width: 1024px) {
+  .ch-hmap__row {
+    gap: 6px;
+  }
+}
+.ch-hmap-t {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  min-width: 0;
+  height: 56px;
+  padding: 0;
+  border: 1px solid var(--ch-hm-ring-level);
+  border-radius: var(--ch-radius-sm);
+  background: var(--ch-hm-level);
+  color: var(--ch-ink-900);
+  font: var(--ch-type-13);
+  /* M5: a new window re-tints the tiles. */
+  transition:
+    background-color var(--ch-dur-base) var(--ch-ease),
+    border-color var(--ch-dur-base) var(--ch-ease);
+}
+@media (min-width: 414px) {
+  .ch-hmap-t {
+    height: 60px;
+  }
+}
+@media (min-width: 1024px) {
+  .ch-hmap-t {
+    height: 72px;
+  }
+  .ch-hmap-t:hover {
+    border-color: var(--ch-border-strong);
+  }
+}
+.ch-hmap-t.is-u2 {
+  background: var(--ch-hm-under-2);
+  border-color: var(--ch-hm-ring-under);
+}
+.ch-hmap-t.is-u1 {
+  background: var(--ch-hm-under-1);
+  border-color: var(--ch-hm-ring-under);
+}
+.ch-hmap-t.is-o1 {
+  background: var(--ch-hm-over-1);
+  border-color: var(--ch-hm-ring-over);
+}
+.ch-hmap-t.is-o2 {
+  background: var(--ch-hm-over-2);
+  border-color: var(--ch-hm-ring-over);
+}
+.ch-hmap-t b {
+  font: var(--ch-type-15-strong);
+  letter-spacing: var(--ch-track-15);
+}
+@media (min-width: 1024px) {
+  .ch-hmap-t b {
+    font: var(--ch-type-17-strong);
+    letter-spacing: var(--ch-track-17);
+  }
+}
+.ch-hmap-t.is-once b,
+.ch-hmap-t.is-none b,
+.ch-hmap-t__n,
+.ch-hmap-t__p {
+  color: var(--ch-ink-600);
+}
+.ch-hmap-t__n,
+.ch-hmap-t__p {
+  font: var(--ch-type-11-medium);
+  font-family: var(--ch-font-mono);
+  line-height: var(--ch-lead-tight);
+  letter-spacing: var(--ch-track-11);
+}
+/* M1: the ring is a span inside the picked tile; it slides from the tile it left (useSlidePlate in HoleMap). */
+.ch-hmap-sel {
+  position: absolute;
+  inset: -4px;
+  border: 2px solid var(--ch-green-600);
+  border-radius: var(--ch-radius-md);
+  pointer-events: none;
+}
+.ch-hmap-t:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 6px var(--ch-focus-halo);
+}
+/* Most to gain: a 4 px dot top right. */
+.ch-hmap-t.is-gain::before {
+  content: '';
+  position: absolute;
+  top: 4px;
+  right: 4px;
+  width: 4px;
+  height: 4px;
+  border-radius: 50%;
+  background: var(--ch-chart-loss);
+}
+.ch-hmap__steps {
+  display: flex;
+  justify-content: flex-end;
+  gap: 4px;
+  margin-top: 8px;
+}
+.ch-hmap__step {
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  padding: 0;
+  border: var(--ch-hairline-w) solid var(--ch-border-hairline);
+  border-radius: var(--ch-radius-lg);
+  background: none;
+  color: var(--ch-text-primary);
+}
+.ch-hmap__step:focus-visible,
+.ch-hmap-list__go:focus-visible,
+.ch-hmap-d__pill:focus-visible,
+.ch-hmap-d__all:focus-visible {
+  outline: 2px solid var(--ch-border-focus);
+  outline-offset: 2px;
+}
+.ch-hmap-list {
+  width: 100%;
+  border-collapse: collapse;
+  font: var(--ch-type-15);
+  letter-spacing: var(--ch-track-15);
+}
+.ch-hmap-list th,
+.ch-hmap-list td {
+  height: 44px;
+  padding: 0 8px;
+  border-bottom: var(--ch-hairline-w) solid var(--ch-border-hairline);
+  text-align: left;
+}
+.ch-hmap-list thead th {
+  font: var(--ch-type-12-medium);
+  color: var(--ch-text-secondary);
+}
+.ch-hmap-list tr.is-sel {
+  background: var(--ch-bg-subtle);
+}
+.ch-hmap-list__go {
+  min-width: 44px;
+  min-height: 44px;
+  padding: 0;
+  border: 0;
+  background: none;
+  font: var(--ch-type-15-strong);
+  letter-spacing: var(--ch-track-15);
+  color: var(--ch-text-primary);
+  text-align: left;
+}
+.ch-hmap-list__dot {
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  margin-right: 8px;
+  border: 1px solid var(--ch-hm-ring-level);
+  border-radius: 50%;
+  background: var(--ch-hm-level);
+  vertical-align: middle;
+  transition:
+    background-color var(--ch-dur-base) var(--ch-ease),
+    border-color var(--ch-dur-base) var(--ch-ease);
+}
+.ch-hmap-list__dot.is-u1,
+.ch-hmap-list__dot.is-u2 {
+  border-color: var(--ch-hm-ring-under);
+  background: var(--ch-hm-under-2);
+}
+.ch-hmap-list__dot.is-o1,
+.ch-hmap-list__dot.is-o2 {
+  border-color: var(--ch-hm-ring-over);
+  background: var(--ch-hm-over-2);
+}
+/* The detail panel keeps its height, so changing holes never moves the page. */
+.ch-hmap-d {
+  min-height: 168px;
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: var(--ch-hairline-w) solid var(--ch-border-hairline);
+}
+@media (min-width: 1024px) {
+  .ch-hmap-d {
+    min-height: 152px;
+  }
+}
+.ch-hmap-d__h {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.ch-hmap-d__h h3 {
+  margin: 0;
+  font: var(--ch-type-15-strong);
+  letter-spacing: var(--ch-track-15);
+}
+.ch-hmap-d__h > span {
+  font: var(--ch-type-13);
+  color: var(--ch-text-secondary);
+}
+.ch-hmap-d__tag {
+  display: inline-flex;
+  align-items: center;
+  height: 24px;
+  margin-left: auto;
+  padding: 0 8px;
+  border-radius: 999px;
+  background: var(--ch-hm-over-1);
+  font: var(--ch-type-13);
+  color: var(--ch-ink-900);
+}
+.ch-hmap-d__v {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  margin: 6px 0 0;
+}
+.ch-hmap-d__v b {
+  font: var(--ch-type-22-strong);
+  letter-spacing: var(--ch-track-22);
+}
+.ch-hmap-d__v span,
+.ch-hmap-d__s {
+  font: var(--ch-type-13);
+  color: var(--ch-text-secondary);
+}
+.ch-hmap-d__plays {
+  display: flex;
+  gap: 8px;
+  margin-top: 12px;
+  overflow-x: auto;
+  padding-right: 16px;
+  mask-image: linear-gradient(90deg, #000 calc(100% - 16px), transparent);
+  scrollbar-width: none;
+}
+.ch-hmap-d__pill,
+.ch-hmap-d__all {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  gap: 6px;
+  min-height: 44px;
+  padding: 0 12px;
+  border: var(--ch-hairline-w) solid var(--ch-border-hairline);
+  border-radius: 999px;
+  background: none;
+  font: var(--ch-type-13);
+  color: var(--ch-text-primary);
+  text-decoration: none;
+}
+.ch-hmap-d__f {
+  margin: 12px 0 0;
+  font: var(--ch-type-13);
+  color: var(--ch-ink-600);
+}
+
+/* P-7 4.2.5 and 4.2.6: how the course plays, and the average arc on the stage material. */
+.ch-hip__s {
+  margin: 0 0 6px;
+  font: var(--ch-type-16);
+  letter-spacing: var(--ch-track-16);
+  color: var(--ch-text-primary);
+}
+.ch-hip__rows {
+  margin: 8px 0 0;
+  padding: 0;
+  list-style: none;
+}
+.ch-hip__row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  width: 100%;
+  min-height: 44px;
+  padding: 0;
+  border: 0;
+  border-bottom: var(--ch-hairline-w) solid var(--ch-border-hairline);
+  background: none;
+  font: var(--ch-type-15);
+  letter-spacing: var(--ch-track-15);
+  color: var(--ch-text-primary);
+  text-align: left;
+}
+.ch-hip__row b {
+  font: var(--ch-type-15);
+  letter-spacing: var(--ch-track-15);
+}
+button.ch-hip__row[data-ch-pressed] {
+  background: var(--ch-bg-subtle);
+}
+@media (hover: hover) {
+  button.ch-hip__row:active {
+    background: var(--ch-bg-subtle);
+  }
+}
+button.ch-hip__row:focus-visible,
+.ch-carc__svg:focus-visible {
+  outline: 2px solid var(--ch-border-focus);
+  outline-offset: 2px;
+}
+.ch-carc {
+  padding: 8px 8px 12px;
+  border-radius: var(--ch-radius-card);
+  background: radial-gradient(120% 120% at 100% 0%, rgb(123 199 154 / 0.16), transparent 60%), var(--ch-green-800);
+}
+.ch-carc__svg {
+  display: block;
+  width: 100%;
+  height: auto;
+  /* Vertical pans scroll the page natively; horizontal ones scrub (Lenis is off on touch). */
+  touch-action: pan-y;
+  border-radius: var(--ch-radius-card);
+}
+.ch-carc__cap {
+  margin: 4px 8px 0;
+  font: var(--ch-type-13);
+  color: var(--ch-stage-ink-soft);
+}
+@media (max-width: 600px) {
+  .ch-carc__alt {
+    display: none;
+  }
+}
+.ch-carc__pills {
+  margin-top: 12px;
+}
+.ch-carc__pills .ch-pill {
+  min-height: 44px;
+}
+
+/* P-7 4.2.7: compare two rounds here. A checkbox row per round, a bar at the foot with the one action, and the sheet. */
+.ch-ch-textbtn {
+  min-height: 44px;
+  padding: 0 4px;
+  border: 0;
+  background: none;
+  font: var(--ch-type-15-strong);
+  letter-spacing: var(--ch-track-15);
+  color: var(--ch-text-primary);
+}
+.ch-ch-textbtn:focus-visible,
+.ch-cmp-row:focus-visible {
+  outline: 2px solid var(--ch-border-focus);
+  outline-offset: 2px;
+}
+.ch-cmp-list {
+  margin: 0;
+  padding: 0 0 96px;
+  list-style: none;
+}
+.ch-cmp-row {
+  display: grid;
+  grid-template-columns: 22px auto 1fr auto;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  min-height: 60px;
+  padding: 0;
+  border: 0;
+  border-bottom: var(--ch-hairline-w) solid var(--ch-border-hairline);
+  background: none;
+  font: var(--ch-type-15);
+  letter-spacing: var(--ch-track-15);
+  color: var(--ch-text-primary);
+  text-align: left;
+}
+.ch-cmp-row b {
+  font: var(--ch-type-15-strong);
+  letter-spacing: var(--ch-track-15);
+}
+.ch-cmp-row__t {
+  color: var(--ch-text-secondary);
+}
+.ch-cmp-row__c {
+  transition:
+    background-color var(--ch-dur-quick) var(--ch-ease),
+    border-color var(--ch-dur-quick) var(--ch-ease);
+  display: grid;
+  place-items: center;
+  width: 22px;
+  height: 22px;
+  box-sizing: border-box;
+  border: 1.5px solid var(--ch-border-strong);
+  border-radius: 50%;
+  color: var(--ch-on-fill-100);
+}
+.ch-cmp-row.is-on .ch-cmp-row__c {
+  border-color: var(--ch-selected-strong);
+  background: var(--ch-selected-strong);
+}
+.ch-cmp-row.is-off {
+  opacity: 0.5;
+}
+
+/* P-7 5.1 (M4, M8, M9): the course page's CSS fades, all opacity over the quick beat. OS Reduce Motion does not zero the
+   Clubhouse durations (only [data-motion='off'] does), so each has its own override below. */
+@keyframes ch-course-fade {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+/* M4: the view the Map / List switch brings in fades in; set only once the reader has switched (never on first paint). */
+.ch-hmap-sec[data-swapped] .ch-hmap-mapv,
+.ch-hmap-sec[data-swapped] .ch-hmap-listv {
+  animation: ch-course-fade var(--ch-dur-quick) var(--ch-ease);
+}
+/* M9: the compare rows' circles fade in with the list, and a tick as it is chosen. */
+.ch-cmp-row__c,
+.ch-cmp-row__c > svg {
+  animation: ch-course-fade var(--ch-dur-quick) var(--ch-ease);
+}
+/* M8: the best and last overlays fade, they do not pop. */
+.ch-carc__ov {
+  opacity: 1;
+  transition: opacity var(--ch-dur-quick) var(--ch-ease);
+}
+.ch-carc__ov.is-off {
+  opacity: 0;
+  pointer-events: none;
+}
+@media (prefers-reduced-motion: reduce) {
+  .ch-hmap-t,
+  .ch-hmap-list__dot,
+  .ch-cmp-row__c,
+  .ch-carc__ov {
+    transition: none;
+  }
+  .ch-hmap-sec[data-swapped] .ch-hmap-mapv,
+  .ch-hmap-sec[data-swapped] .ch-hmap-listv,
+  .ch-cmp-row__c,
+  .ch-cmp-row__c > svg {
+    animation: none;
+  }
+}
+[data-ui='clubhouse'][data-motion='off'] .ch-hmap-t,
+[data-motion='off'] [data-ui='clubhouse'] .ch-hmap-t,
+[data-ui='clubhouse'][data-motion='off'] .ch-hmap-list__dot,
+[data-motion='off'] [data-ui='clubhouse'] .ch-hmap-list__dot,
+[data-ui='clubhouse'][data-motion='off'] .ch-cmp-row__c,
+[data-motion='off'] [data-ui='clubhouse'] .ch-cmp-row__c,
+[data-ui='clubhouse'][data-motion='off'] .ch-carc__ov,
+[data-motion='off'] [data-ui='clubhouse'] .ch-carc__ov {
+  transition: none;
+}
+[data-ui='clubhouse'][data-motion='off'] .ch-hmap-sec[data-swapped] .ch-hmap-mapv,
+[data-motion='off'] [data-ui='clubhouse'] .ch-hmap-sec[data-swapped] .ch-hmap-mapv,
+[data-ui='clubhouse'][data-motion='off'] .ch-hmap-sec[data-swapped] .ch-hmap-listv,
+[data-motion='off'] [data-ui='clubhouse'] .ch-hmap-sec[data-swapped] .ch-hmap-listv,
+[data-ui='clubhouse'][data-motion='off'] .ch-cmp-row__c,
+[data-motion='off'] [data-ui='clubhouse'] .ch-cmp-row__c,
+[data-ui='clubhouse'][data-motion='off'] .ch-cmp-row__c > svg,
+[data-motion='off'] [data-ui='clubhouse'] .ch-cmp-row__c > svg {
+  animation: none;
+}
+.ch-cmp-bar {
+  position: fixed;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  z-index: calc(var(--ch-z-dock) + 1);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 64px;
+  padding: 8px 16px calc(8px + env(safe-area-inset-bottom));
+  box-sizing: border-box;
+  border-top: var(--ch-hairline-w) solid var(--ch-border-hairline);
+  border-radius: var(--ch-radius-xl) var(--ch-radius-xl) 0 0;
+  background: var(--ch-bg-surface);
+}
+.ch-cmp-bar__t {
+  font: var(--ch-type-15);
+  letter-spacing: var(--ch-track-15);
+  color: var(--ch-text-secondary);
+}
+.ch-cmp__sum {
+  margin: 12px 0;
+  font: var(--ch-type-15);
+  letter-spacing: var(--ch-track-15);
+  color: var(--ch-text-primary);
+}
+.ch-cmp__strip {
+  display: grid;
+  grid-template-columns: repeat(9, minmax(0, 1fr));
+  gap: 4px;
+}
+.ch-cmp__cell {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 44px;
+  border: 1px solid var(--ch-hm-ring-level);
+  border-radius: var(--ch-radius-sm);
+  background: var(--ch-hm-level);
+}
+.ch-cmp__cell.is-a {
+  border-color: var(--ch-hm-ring-under);
+  background: var(--ch-hm-under-1);
+}
+.ch-cmp__cell.is-b {
+  border-color: var(--ch-hm-ring-over);
+  background: var(--ch-hm-over-1);
+}
+.ch-cmp__cell em {
+  font: var(--ch-type-11-medium);
+  font-family: var(--ch-font-mono);
+  font-style: normal;
+  line-height: var(--ch-lead-tight);
+  letter-spacing: var(--ch-track-11);
+  color: var(--ch-ink-600);
+}
+.ch-cmp__cell b {
+  font: var(--ch-type-12-medium);
+  color: var(--ch-ink-900);
+}
+.ch-cmp__legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 16px;
+  margin: 12px 0 0;
+  padding: 0;
+  list-style: none;
+  font: var(--ch-type-13);
+  color: var(--ch-text-secondary);
+}
+.ch-cmp__legend i {
+  display: inline-block;
+  width: 10px;
+  height: 10px;
+  margin-right: 6px;
+  border-radius: 50%;
+  vertical-align: middle;
+}
+.ch-cmp__legend i.is-a {
+  border: 1px solid var(--ch-hm-ring-under);
+  background: var(--ch-hm-under-1);
+}
+.ch-cmp__legend i.is-b {
+  border: 1px solid var(--ch-hm-ring-over);
+  background: var(--ch-hm-over-1);
+}
+
+/* P-7 4.5.4: "Here before" in the hole card; 4.5.2: the compare control under the arc. */
+.ch-rv .ch-rv-before {
+  margin: 8px 0 4px;
+}
+.ch-rv .ch-rv-before p {
+  margin: 0;
+  font: var(--ch-type-13);
+  color: var(--ch-ink-600);
+}
+.ch-rv .ch-rv-before__go {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  font: var(--ch-type-14-strong);
+  color: var(--ch-text-primary);
+}
+.ch-rv .ch-rv-before__go:focus-visible {
+  outline: 2px solid var(--ch-border-focus);
+  outline-offset: 2px;
+}
+.ch-rv .ch-rv-ghost {
+  margin: 12px 0 4px;
+}
+.ch-rv .ch-rv-ghost__l {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 8px 0 0;
+  font: var(--ch-type-13);
+  color: var(--ch-text-secondary);
+}
+.ch-rv .ch-rv-ghost__l i {
+  width: 18px;
+  border-top: 1.5px dashed var(--ch-text-secondary);
 }

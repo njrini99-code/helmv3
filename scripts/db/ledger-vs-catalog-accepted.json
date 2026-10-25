@@ -1,0 +1,187 @@
+{
+  "$comment": [
+    "Objects an applied migration file CREATEs that are knowingly absent from the live catalog.",
+    "check-ledger-vs-catalog.mjs reports these as ACCEPTED instead of FAIL, and WARNs when an entry no longer matches a missing object so the list cannot rot.",
+    "Why these exist: the ledger rows 20260624000050..450 carry no statements. The baseball SQL was applied under other ledger versions with different policy names, so the files and the catalog mostly disagree on names, not on protection. The not-needed entries are where the live protection differs.",
+    "Classes: superseded = an equivalent object is live under another name; retired = the table moved to the graveyard schema; not-needed = absent with no live replacement; the reason says what that leaves out.",
+    "Add an entry only after checking production read-only. Never add one to silence a real missing object."
+  ],
+  "entries": [
+    {
+      "version": "20260624000050",
+      "kind": "policy",
+      "name": "baseball_stat_uploads_delete",
+      "class": "not-needed",
+      "reason": "No DELETE policy on baseball_stat_uploads, so client deletes are denied. No code path deletes stat uploads.",
+      "verified": "2026-10-23"
+    },
+    {
+      "version": "20260624000050",
+      "kind": "policy",
+      "name": "baseball_player_timeline_events_select",
+      "class": "superseded",
+      "reason": "Live as baseball_timeline_select on baseball_player_timeline_events.",
+      "verified": "2026-10-23"
+    },
+    {
+      "version": "20260624000050",
+      "kind": "policy",
+      "name": "baseball_player_timeline_events_insert",
+      "class": "superseded",
+      "reason": "Live as baseball_timeline_insert on baseball_player_timeline_events.",
+      "verified": "2026-10-23"
+    },
+    {
+      "version": "20260624000050",
+      "kind": "policy",
+      "name": "baseball_player_timeline_events_update",
+      "class": "superseded",
+      "reason": "Live as baseball_timeline_update on baseball_player_timeline_events.",
+      "verified": "2026-10-23"
+    },
+    {
+      "version": "20260624000050",
+      "kind": "policy",
+      "name": "baseball_player_timeline_events_delete",
+      "class": "superseded",
+      "reason": "Live as baseball_timeline_delete on baseball_player_timeline_events.",
+      "verified": "2026-10-23"
+    },
+    {
+      "version": "20260624000081",
+      "kind": "function",
+      "name": "baseball_log_staff_change",
+      "class": "not-needed",
+      "reason": "Staff-change audit trigger was never attached; no code reads the rows it would write. Restore with a forward migration if staff audit is wanted.",
+      "verified": "2026-10-23"
+    },
+    {
+      "version": "20260624000081",
+      "kind": "policy",
+      "name": "baseball_staff_audit_events_select",
+      "class": "superseded",
+      "reason": "Live as baseball_staff_audit_select on baseball_staff_audit_events.",
+      "verified": "2026-10-23"
+    },
+    {
+      "version": "20260624000083",
+      "kind": "function",
+      "name": "baseball_stat_visual_views_touch",
+      "class": "not-needed",
+      "reason": "No updated_at trigger on baseball_stat_visual_views; src/app/baseball/actions/stat-visual-views.ts sets updated_at on every write.",
+      "verified": "2026-10-23"
+    },
+    {
+      "version": "20260624000094",
+      "kind": "policy",
+      "name": "bpbo_staff_manage",
+      "class": "superseded",
+      "reason": "Live as baseball_practice_block_objectives_{select,insert,update,delete}.",
+      "verified": "2026-10-23"
+    },
+    {
+      "version": "20260624000094",
+      "kind": "policy",
+      "name": "bpbo_player_read_published",
+      "class": "not-needed",
+      "reason": "No player read today: the live baseball_practice_block_objectives_select is staff-only, so players cannot see published-practice objectives. Stricter, not a leak; whether players should read them is an open owner call. The file version also filters on a practice_id column the live table does not have.",
+      "verified": "2026-10-23"
+    },
+    {
+      "version": "20260624000094",
+      "kind": "policy",
+      "name": "bpe_staff_read",
+      "class": "superseded",
+      "reason": "Live as baseball_practice_effectiveness_reviews_select.",
+      "verified": "2026-10-23"
+    },
+    {
+      "version": "20260624000094",
+      "kind": "policy",
+      "name": "bpe_staff_write",
+      "class": "superseded",
+      "reason": "Live as baseball_practice_effectiveness_reviews_{insert,update,delete}.",
+      "verified": "2026-10-23"
+    },
+    {
+      "version": "20260624000094",
+      "kind": "policy",
+      "name": "bpe_player_read_visible",
+      "class": "not-needed",
+      "reason": "No player read today: the live baseball_practice_effectiveness_reviews_select is staff-only, so the player_visible toggle reaches no player. Stricter, not a leak; whether players should read these reviews is an open owner call.",
+      "verified": "2026-10-23"
+    },
+    {
+      "version": "20260624000310",
+      "kind": "policy",
+      "name": "baseball_decision_log_delete",
+      "class": "not-needed",
+      "reason": "No DELETE policy on baseball_decision_log, so client deletes are denied. No code path deletes decision log rows.",
+      "verified": "2026-10-23"
+    },
+    {
+      "version": "20260624000420",
+      "kind": "policy",
+      "name": "baseball_passport_share_token_select",
+      "class": "superseded",
+      "reason": "Live as baseball_passport_share_tokens_select on baseball_player_passport_share_tokens.",
+      "verified": "2026-10-23"
+    },
+    {
+      "version": "20260624000420",
+      "kind": "policy",
+      "name": "baseball_passport_share_token_insert",
+      "class": "superseded",
+      "reason": "Live as baseball_passport_share_tokens_insert on baseball_player_passport_share_tokens.",
+      "verified": "2026-10-23"
+    },
+    {
+      "version": "20260624000420",
+      "kind": "policy",
+      "name": "baseball_passport_share_token_update",
+      "class": "superseded",
+      "reason": "Live as baseball_passport_share_tokens_update on baseball_player_passport_share_tokens.",
+      "verified": "2026-10-23"
+    },
+    {
+      "version": "20260624000420",
+      "kind": "policy",
+      "name": "baseball_passport_share_token_delete",
+      "class": "superseded",
+      "reason": "Live as baseball_passport_share_tokens_delete on baseball_player_passport_share_tokens.",
+      "verified": "2026-10-23"
+    },
+    {
+      "version": "20260624000430",
+      "kind": "policy",
+      "name": "baseball_timeline_acks_select",
+      "class": "superseded",
+      "reason": "Live as baseball_timeline_event_acks_select on baseball_timeline_event_acks.",
+      "verified": "2026-10-23"
+    },
+    {
+      "version": "20260624000440",
+      "kind": "policy",
+      "name": "bsga_select",
+      "class": "retired",
+      "reason": "Table moved to graveyard.baseball_strength_group_audit, where it is live as baseball_strength_group_audit_select.",
+      "verified": "2026-10-23"
+    },
+    {
+      "version": "20260624000440",
+      "kind": "policy",
+      "name": "bsga_insert",
+      "class": "retired",
+      "reason": "Table moved to graveyard.baseball_strength_group_audit, where it is live as baseball_strength_group_audit_insert.",
+      "verified": "2026-10-23"
+    },
+    {
+      "version": "20260624000450",
+      "kind": "policy",
+      "name": "baseball_ai_audit_delete",
+      "class": "not-needed",
+      "reason": "No DELETE policy on baseball_ai_audit, so client deletes are denied. No code path deletes AI audit rows.",
+      "verified": "2026-10-23"
+    }
+  ]
+}

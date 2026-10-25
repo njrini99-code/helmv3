@@ -611,3 +611,19 @@ items:
       - src/app/golf/actions/__tests__/round-recap-style-fallback-call-log.test.ts
     queued_for_release: false
     first_seen: '2026-10-18T14:32:00Z'
+  - id: calibration-in-chunk-2026-10-24
+    feature_id: coachhelm_ai
+    root_cause: >-
+      The calibration cron fetched golf_predictions with one .in() over every
+      90-day validation id; at 633 ids the URL exceeded what PostgREST accepts
+      and it returned 400 Bad Request, failing the nightly run (Bridge 07cd1dea,
+      05dde3b3).
+    incident_id: memory/incidents/coachhelm_ai/INC-2026-10-24-calibration-in-filter-url-400.md
+    status: verified
+    risk: R1
+    sha: 14f8a808aea7e72d2e009a6eeb97f4a87d5676e0
+    pr: 2360
+    regression_tests:
+      - src/test/api/cron/coachhelm-calibration.test.ts
+    queued_for_release: false
+    first_seen: '2026-10-24T03:40:43Z'
