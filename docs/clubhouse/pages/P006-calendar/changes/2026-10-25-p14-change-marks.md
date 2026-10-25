@@ -69,3 +69,10 @@ the coach sends.
 - The save, cancel, restore and drag toasts are unchanged. Each already says only what happened (and, for a cancel of an event
   that asks for replies, "attendees notified", which the existing notice does), and none promised a push; the 2026-10-08
   rule that an event without replies notifies no one still holds.
+
+### The subscribed calendar
+
+- The iCal team feed (`/api/calendar/feeds/[token]`) reads `change:metadata->change` with each event and, while the mark is
+  live, leads the event's DESCRIPTION with one line ("Moved from 1:00 PM by Coach Okafor on Wed 14 October."), ahead of the
+  coach's own notes. Each occurrence of a series says its own change. An event with no mark, an old one or one this version
+  cannot read is exactly what it was (`src/lib/calendar/change-feed.ts`, feed-change-line.test).
