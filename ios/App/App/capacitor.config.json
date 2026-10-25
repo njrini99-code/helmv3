@@ -19,13 +19,13 @@
 		"preferredContentMode": "mobile",
 		"contentInset": "never",
 		"appendUserAgent": "HelmSportsLabsApp",
-		"backgroundColor": "#EDE9DF"
+		"backgroundColor": "#F2E6D2"
 	},
 	"android": {
 		"appendUserAgent": "HelmSportsLabsApp",
 		"allowMixedContent": false,
 		"webContentsDebuggingEnabled": false,
-		"backgroundColor": "#EDE9DF"
+		"backgroundColor": "#F2E6D2"
 	},
 	"plugins": {
 		"Keyboard": {
@@ -44,7 +44,7 @@
 		"SplashScreen": {
 			"launchAutoHide": true,
 			"launchShowDuration": 10000,
-			"backgroundColor": "#EDE9DF",
+			"backgroundColor": "#F2E6D2",
 			"showSpinner": false
 		},
 		"StatusBar": {

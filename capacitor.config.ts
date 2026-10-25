@@ -59,7 +59,7 @@ const config: CapacitorConfig = {
     // (light + dark), which this static config cannot express. Every colour
     // here is the active palette of config/native-canvas.json, written by
     // scripts/native-canvas.mjs (A15); don't edit them by hand.
-    backgroundColor: '#EDE9DF',
+    backgroundColor: '#F2E6D2',
   },
   android: {
     // Mirrors the iOS block. Every value here has a reason — do not drop one
@@ -80,7 +80,7 @@ const config: CapacitorConfig = {
     webContentsDebuggingEnabled: false,
     // The native canvas (config/native-canvas.json) matches the splash and the app's canvas, so the window
     // behind the WebView never flashes white during navigation or rotation.
-    backgroundColor: '#EDE9DF',
+    backgroundColor: '#F2E6D2',
   },
   plugins: {
     Keyboard: {
@@ -108,7 +108,7 @@ const config: CapacitorConfig = {
     SplashScreen: {
       launchAutoHide: true,
       launchShowDuration: 10000,
-      backgroundColor: '#EDE9DF',
+      backgroundColor: '#F2E6D2',
       showSpinner: false,
     },
     StatusBar: { style: 'LIGHT' },
