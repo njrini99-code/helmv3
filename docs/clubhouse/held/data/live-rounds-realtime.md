@@ -2,7 +2,7 @@
 
 ```text
 Plan ID: HD-live-rounds-realtime
-Status: HELD
+Status: RELEASED
 Pages: Live rounds (P016): the live view, Home's Live now card, the qualifier page
 Feature: golf_round_lifecycle (memory/registry.yml)
 Migration: supabase/migrations/20261025050100_golf_round_live_realtime.sql
