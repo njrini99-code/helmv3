@@ -1,7 +1,7 @@
 'use client';
 
 import { CalendarCheck, CalendarDays, ChevronLeft, ChevronRight, Ellipsis, Plus, Rss, TriangleAlert, X } from 'lucide-react';
-import { useEffect, useRef, useState, type ReactNode } from 'react';
+import { useEffect, useLayoutEffect, useRef, useState, type ReactNode } from 'react';
 import type { ChCalendarData } from '../../data/calendar';
 import { Badge } from '../../ui/Badge';
 import { EmptyState } from '../../ui/States';
@@ -20,7 +20,7 @@ import { useChClock } from '../../lib/use-clock';
 import { useChReducedMotion } from '../../lib/reduced-motion';
 import { claimTouch } from '../../lib/touch-claim';
 import type { PeekLift } from '../../ui/Peek';
-import { DayTimeline, usePhoneDayDrag } from './day-timeline';
+import { DayTimeline, flipFrom, rectsOf, usePhoneDayDrag } from './day-timeline';
 import type { ChMoveTarget } from './drag-model';
 import { EventPeek } from './peek';
 import { PhoneTop } from '../../shell/phone-chrome';
@@ -370,6 +370,26 @@ function DayPage({
   const clock = useChClock();
   const anchor = date;
   const list = events.filter((e) => e.date === anchor).sort(byStart);
+  // P-4 M12, M13 (CH-6612): Undo, a refused or stale write, or another coach's move puts a row somewhere else in the
+  // day; it glides there on smooth from where it stood. Measured against the list, so a scroll in between moves nothing.
+  const reduced = useChReducedMotion();
+  const agenda = useRef<HTMLOListElement | null>(null);
+  const order = useRef('');
+  const rowsAt = useRef<Map<string, DOMRect>>(new Map());
+  useLayoutEffect(() => {
+    const el = agenda.current;
+    const key = list.map((e) => `${e.id}@${e.start}`).join(',');
+    const was = order.current;
+    order.current = key;
+    if (!el) return void (rowsAt.current = new Map());
+    const box = el.getBoundingClientRect();
+    const before = rowsAt.current;
+    const now = new Map([...rectsOf(el, ':scope > li[data-ev-id]')].map(([id, r]) => [id, new DOMRect(r.left - box.left, r.top - box.top, r.width, r.height)]));
+    rowsAt.current = now;
+    if (reduced || liftedId || !was || was === key) return;
+    const from = new Map([...before].map(([id, r]) => [id, new DOMRect(r.left + box.left, r.top + box.top, r.width, r.height)]));
+    flipFrom(el.querySelectorAll<HTMLElement>(':scope > li[data-ev-id]'), from, false);
+  });
   const team = list.filter((e) => e.type !== 'class' && e.type !== 'busy');
   const blocks = list.length - team.length;
   const isToday = anchor === now.date;
@@ -427,7 +447,7 @@ function DayPage({
           }
         />
       ) : (
-        <ol className="ch-calm-agenda">
+        <ol ref={agenda} className="ch-calm-agenda">
           {list.map((e, i) => {
             const past = isToday && !e.allDay && (e.end ?? 0) <= now.hour;
             const live = isToday && !e.allDay && (e.start ?? 0) <= now.hour && (e.end ?? 0) > now.hour;

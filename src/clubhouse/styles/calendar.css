@@ -3833,12 +3833,26 @@ html[data-fw-theme='dark'] .ch-ev--busy::after {
   .ch-wks-pager[data-frozen] {
     overflow-x: hidden;
   }
+  /* P-4 M6: the list fades out where it stood (the engine sets the top) under the timeline's blocks, which spring from
+     its rows; it fades back in at the fold. */
+  .ch-calm-dayv > .ch-calm-pager {
+    transition: opacity var(--ch-dur-press) linear;
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .ch-calm-dayv > .ch-calm-pager {
+      transition: none;
+    }
+  }
+  [data-motion='off'] .ch-calm-dayv > .ch-calm-pager {
+    transition: none;
+  }
   .ch-calm-dayv.is-unfolded > .ch-calm-pager {
     position: absolute;
     inset-inline: 0;
-    top: 0;
-    z-index: -1;
+    top: var(--ch-tl-pager-top, 0);
+    z-index: 0;
     opacity: 0;
+    pointer-events: none;
   }
   .ch-wks__d.is-drop {
     background-color: var(--ch-green-50);
@@ -3846,8 +3860,14 @@ html[data-fw-theme='dark'] .ch-ev--busy::after {
   }
 
   .ch-tl {
+    position: relative;
+    z-index: 1;
     display: flex;
     flex-direction: column;
+  }
+  .ch-tl__day {
+    position: absolute;
+    inset: 0;
   }
   .ch-tl__grid {
     position: relative;
@@ -3887,7 +3907,6 @@ html[data-fw-theme='dark'] .ch-ev--busy::after {
     border-radius: var(--ch-radius-md);
     top: 0;
     pointer-events: none;
-    transition: transform var(--ch-dur-quick) var(--ch-ease);
   }
   .ch-tl__card {
     top: 0;
