@@ -94,7 +94,7 @@ export function HoleMap({ holes, selected, onSelect, coverage, sample }: { holes
   const gain = mostToGain(holes);
   const hole = holes.find((h) => h.n === selected) ?? holes[0]!;
   // M1: the 2 px selection ring settles from the tile it left to the one picked, on the compositor (lib/slide-plate.ts, which replaced layoutId here and elsewhere).
-  useSlidePlate(group, '[data-hole][aria-checked="true"] > .ch-hmap-sel', selected, { reduced, still: () => !group.current?.offsetWidth });
+  useSlidePlate(group, '[data-hole][aria-checked="true"] > .ch-hmap-sel', String(selected), { reduced, still: () => !group.current?.offsetWidth });
   const panelFade = useFadeOnChange(scrubFrom ?? hole.n, reduced);
 
   // The CSS container query decides the first paint; this mirrors it to the switch as the width or the text size changes.
