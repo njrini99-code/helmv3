@@ -4,14 +4,14 @@
   container-name: chhl;
   display: flex;
   flex-direction: column;
-  gap: 28px;
-  max-width: 1180px;
+  gap: var(--ch-gap-section);
+  max-width: var(--ch-measure-page);
   margin: 0 auto;
-  padding: 36px var(--ch-page-gutter) 80px;
+  padding: var(--ch-page-top-coachhelm) var(--ch-page-gutter) var(--ch-page-bottom);
   color: var(--ch-text-primary);
 }
 .ch-hl.is-phone {
-  padding: 14px 16px 110px;
+  padding: 14px var(--ch-page-x-phone) 110px;
   gap: 18px;
 }
 
@@ -37,26 +37,29 @@
 }
 .ch-hl-role {
   justify-self: start;
-  font: 600 calc(12.5 * var(--ch-type-k))/1 var(--ch-font-sans);
+  font: var(--ch-type-13-strong);
+  line-height: var(--ch-lead-tight);
   letter-spacing: 0.01em;
   color: var(--ch-green-600);
 }
 /* The role line is 4px shorter than the page head's eyebrow (tokens.css), so the top adds it. */
 .ch-hl[data-canopy] {
-  padding-top: calc(var(--ch-page-head-top) + 4px);
+  padding-top: var(--ch-page-top-eyebrow-short-4);
 }
 .ch-hl[data-canopy] > .ch-hl-h {
   padding-top: 6px;
   row-gap: 4px;
 }
 
-.ch-hl-h .ch-hl-h__t {
+/* Desktop's title; on the phone the title is the one large title (.ch-large-title, shell.css), never this serif. */
+.ch-hl-h .ch-hl-h__t:not(.ch-large-title) {
   font: 400 calc(52 * var(--ch-type-k))/1.02 var(--ch-font-serif);
   letter-spacing: -0.01em;
 }
 .ch-hl-h p {
   max-width: 56ch;
-  font: 400 calc(15 * var(--ch-type-k))/1.5 var(--ch-font-sans);
+  font: var(--ch-type-15);
+  letter-spacing: var(--ch-track-15);
   color: var(--ch-text-secondary);
 }
 
@@ -70,8 +73,8 @@
 .ch-hl-focus {
   display: flex;
   flex-direction: column;
-  gap: 18px;
-  padding: 32px 34px;
+  gap: 16px;
+  padding: 32px 32px;
   border-radius: var(--ch-radius-xl);
   background: var(--ch-ivory-25);
   box-shadow: var(--ch-elevation-reading);
@@ -80,8 +83,9 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 10px;
-  font: 600 calc(12 * var(--ch-type-k))/1 var(--ch-font-sans);
+  gap: 8px;
+  font: var(--ch-type-12-strong);
+  line-height: var(--ch-lead-tight);
   color: var(--ch-green-700);
 }
 .ch-hl-focus h2 {
@@ -91,7 +95,8 @@
 }
 .ch-hl-lede {
   max-width: 58ch;
-  font: 400 calc(17 * var(--ch-type-k))/1.55 var(--ch-font-sans);
+  font: var(--ch-type-17);
+  letter-spacing: var(--ch-track-17);
   color: var(--ch-ink-700);
   text-wrap: pretty;
 }
@@ -99,10 +104,10 @@
 /* A read from before the newest round: plain and next to the claim, so it is not mistaken for current (CH-13903). */
 .ch-hl-stale {
   max-width: 58ch;
-  padding: 10px 14px;
+  padding: 8px 16px;
   border-radius: var(--ch-radius-lg);
   background: var(--ch-ivory-150);
-  font: 500 calc(13 * var(--ch-type-k))/1.45 var(--ch-font-sans);
+  font: var(--ch-type-13-medium);
   color: var(--ch-text-secondary);
 }
 
@@ -110,22 +115,22 @@
 .ch-hl-ev {
   display: flex;
   flex-direction: column;
-  gap: 14px;
-  padding: 20px 22px;
+  gap: 16px;
+  padding: 20px 24px;
   border-radius: var(--ch-radius-lg);
   background: var(--ch-ivory-50);
-  box-shadow: inset 0 0 0 1px rgb(28 25 18 / 0.05);
+  box-shadow: inset 0 0 0 var(--ch-hairline-w) var(--ch-border-hairline);
 }
 /* A metric label can run to two lines on a phone ("Downhill penalty vs level putts (distance-controlled)", 286px wide at
    390px); at line-height 1 the lines touched, so it takes the caption leading. Aesthetic audit CH-1. */
 .ch-hl-ev__l {
-  font: 500 calc(12.5 * var(--ch-type-k))/1.3 var(--ch-font-sans);
+  font: var(--ch-type-13-medium);
   color: var(--ch-text-tertiary);
 }
 .ch-hl-bars {
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: 8px;
   margin: 0;
   padding: 0;
   list-style: none;
@@ -135,11 +140,12 @@
   grid-template-columns: 78px minmax(0, 1fr) 44px;
   gap: 12px;
   align-items: center;
-  font: 500 calc(13.5 * var(--ch-type-k))/1 var(--ch-font-sans);
+  font: var(--ch-type-14-medium);
+  line-height: var(--ch-lead-tight);
 }
 .ch-hl-bars__t {
   height: 10px;
-  border-radius: 5px;
+  border-radius: var(--ch-radius-xs);
   background: rgb(28 25 18 / 0.07);
   overflow: hidden;
 }
@@ -153,7 +159,9 @@
   background: var(--ch-chart-loss);
 }
 .ch-hl-bars b {
-  font: 600 15px/1 var(--ch-font-sans);
+  font: var(--ch-type-15-strong);
+  letter-spacing: var(--ch-track-15);
+  line-height: var(--ch-lead-tight);
   text-align: right;
   font-variant-numeric: tabular-nums;
 }
@@ -163,8 +171,9 @@
   align-items: center;
   gap: 16px;
   padding-top: 12px;
-  border-top: 1px solid rgb(28 25 18 / 0.07);
-  font: 400 calc(12 * var(--ch-type-k))/1 var(--ch-font-sans);
+  border-top: var(--ch-hairline-w) solid var(--ch-border-hairline);
+  font: var(--ch-type-12);
+  line-height: var(--ch-lead-tight);
   color: var(--ch-text-tertiary);
 }
 
@@ -176,7 +185,7 @@
   max-width: 62ch;
 }
 .ch-hl-path__l {
-  font: 400 calc(13.5 * var(--ch-type-k))/1.45 var(--ch-font-sans);
+  font: var(--ch-type-14);
   color: var(--ch-text-secondary);
   text-wrap: pretty;
 }
@@ -192,7 +201,7 @@
   flex-wrap: wrap;
   align-items: center;
   gap: 6px 8px;
-  font: 500 calc(12 * var(--ch-type-k))/1.3 var(--ch-font-sans);
+  font: var(--ch-type-12-medium);
   color: var(--ch-text-tertiary);
 }
 .ch-hl-path__chips {
@@ -208,7 +217,7 @@
   color: var(--ch-text-secondary);
 }
 .ch-hl-path__step {
-  padding: 3px 8px;
+  padding: 4px 8px;
   border-radius: 999px;
   background: rgb(28 25 18 / 0.06);
 }
@@ -232,15 +241,15 @@
   margin: 0;
   padding: 0;
   list-style: none;
-  font: 500 calc(13.5 * var(--ch-type-k))/1.35 var(--ch-font-sans);
+  font: var(--ch-type-14-medium);
   color: var(--ch-text-secondary);
 }
 .ch-hl-ledger li {
   display: flex;
   justify-content: space-between;
   gap: 12px;
-  padding: 7px 0;
-  border-top: 1px solid rgb(28 25 18 / 0.07);
+  padding: 8px 0;
+  border-top: var(--ch-hairline-w) solid var(--ch-border-hairline);
 }
 .ch-hl-ledger li:first-child {
   border-top: 0;
@@ -248,7 +257,8 @@
   color: var(--ch-text-primary);
 }
 .ch-hl-ledger b {
-  font: 600 15px/1.2 var(--ch-font-sans);
+  font: var(--ch-type-15-strong);
+  letter-spacing: var(--ch-track-15);
   font-variant-numeric: tabular-nums;
 }
 
@@ -258,11 +268,11 @@
   flex-direction: column;
   gap: 4px;
   max-width: 62ch;
-  font: 400 calc(14 * var(--ch-type-k))/1.5 var(--ch-font-sans);
+  font: var(--ch-type-14);
   color: var(--ch-ink-700);
 }
 .ch-hl-week__k {
-  font: 600 calc(12 * var(--ch-type-k))/1.5 var(--ch-font-sans);
+  font: var(--ch-type-12-strong);
   color: var(--ch-green-600);
 }
 .ch-hl-week__t em {
@@ -272,7 +282,7 @@
 
 /* "Since you were last here" (D4): the program pulse as one collapsed line in the header. */
 .ch-hl-since {
-  font: 400 calc(13.5 * var(--ch-type-k))/1.45 var(--ch-font-sans);
+  font: var(--ch-type-14);
   color: var(--ch-text-secondary);
 }
 .ch-hl-since.is-loading {
@@ -307,7 +317,7 @@
 .ch-hl-since__l li {
   max-width: 64ch;
   padding: 6px 0;
-  border-top: 1px solid rgb(28 25 18 / 0.07);
+  border-top: var(--ch-hairline-w) solid var(--ch-border-hairline);
 }
 .ch-hl-since__l li b {
   font-weight: 600;
@@ -334,10 +344,14 @@
   padding-top: 6px;
   color: var(--ch-text-tertiary);
 }
+.ch-hl-since__all {
+  display: inline-block;
+  margin-top: 6px;
+}
 
 /* CH-13942: reads rated Not enough yet, one collapsed line under the board that opens in place (round 2C). */
 .ch-hl-ney {
-  font: 400 calc(13.5 * var(--ch-type-k))/1.45 var(--ch-font-sans);
+  font: var(--ch-type-14);
   color: var(--ch-text-secondary);
 }
 .ch-hl-ney__b {
@@ -373,7 +387,7 @@
 .ch-hl-ney__l li {
   max-width: 64ch;
   padding: 8px 0;
-  border-top: 1px solid var(--ch-border-subtle);
+  border-top: var(--ch-hairline-w) solid var(--ch-border-subtle);
 }
 .ch-hl-ney__l li b {
   font-weight: 600;
@@ -390,12 +404,12 @@
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  gap: 8px 14px;
+  gap: 8px 16px;
 }
 .ch-hl-rck__s {
   flex: 1 1 260px;
   margin: 0;
-  font: 400 calc(13.5 * var(--ch-type-k))/1.45 var(--ch-font-sans);
+  font: var(--ch-type-14);
   color: var(--ch-text-tertiary);
 }
 .ch-hl-rck__s:not(:empty) {
@@ -431,7 +445,8 @@
   height: 34px;
   border-radius: 50%;
   background: rgb(28 25 18 / 0.06);
-  font: 600 calc(12 * var(--ch-type-k))/1 var(--ch-font-sans);
+  font: var(--ch-type-12-strong);
+  line-height: var(--ch-lead-tight);
   color: var(--ch-text-tertiary);
 }
 .ch-hl.is-phone .ch-hl-pl__more {
@@ -451,9 +466,10 @@
   align-items: center;
   justify-content: space-between;
   min-height: 44px;
-  padding-top: 14px;
-  border-top: 1px solid rgb(28 25 18 / 0.07);
-  font: 600 calc(13.5 * var(--ch-type-k))/1 var(--ch-font-sans);
+  padding-top: 16px;
+  border-top: var(--ch-hairline-w) solid var(--ch-border-hairline);
+  font: var(--ch-type-14-strong);
+  line-height: var(--ch-lead-tight);
   color: var(--ch-text-primary);
 }
 .ch-hl-why svg {
@@ -461,13 +477,14 @@
 }
 .ch-hl-why:focus-visible {
   outline: 2px solid var(--ch-border-focus);
-  outline-offset: 4px;
-  border-radius: 4px;
+  outline-offset: 2px;
+  border-radius: var(--ch-radius-xs);
 }
 .ch-hl-why__b {
   margin: -4px 0 0;
   max-width: 62ch;
-  font: 400 calc(14.5 * var(--ch-type-k))/1.6 var(--ch-font-sans);
+  font: var(--ch-type-15);
+  letter-spacing: var(--ch-track-15);
   color: var(--ch-text-secondary);
   text-wrap: pretty;
 }
@@ -479,7 +496,7 @@
 .ch-hl-side {
   display: flex;
   flex-direction: column;
-  gap: 28px;
+  gap: 32px;
   padding-top: 6px;
 }
 .ch-hl-sec {
@@ -489,8 +506,9 @@
 .ch-hl-sec > h2,
 .ch-hl-prop > h2,
 .ch-hl-plist > h2 {
-  margin: 0 0 10px;
-  font: 600 calc(12 * var(--ch-type-k))/1 var(--ch-font-sans);
+  margin: 0 0 8px;
+  font: var(--ch-type-12-strong);
+  line-height: var(--ch-lead-tight);
   letter-spacing: 0.02em;
   color: var(--ch-text-tertiary);
 }
@@ -502,8 +520,8 @@
   grid-template-columns: 8px minmax(0, 1fr) auto 16px;
   gap: 12px;
   align-items: center;
-  padding: 14px 4px;
-  border-top: 1px solid rgb(28 25 18 / 0.08);
+  padding: 16px 4px;
+  border-top: var(--ch-hairline-w) solid var(--ch-border-hairline);
   transition: background var(--ch-dur-quick) var(--ch-ease);
 }
 /* CH-13602: hovering a row or a player tints it (quick). */
@@ -540,31 +558,34 @@
   min-width: 0;
 }
 .ch-hl-row__b em {
-  font: 500 calc(11.5 * var(--ch-type-k))/1 var(--ch-font-sans);
+  font: var(--ch-type-12-medium);
+  line-height: var(--ch-lead-tight);
   font-style: normal;
   color: var(--ch-text-tertiary);
 }
 .ch-hl-row__b b {
-  font: 500 calc(14 * var(--ch-type-k))/1.3 var(--ch-font-sans);
+  font: var(--ch-type-14-medium);
   text-wrap: pretty;
 }
 .ch-hl-row__v {
-  font: 600 15px/1 var(--ch-font-sans);
+  font: var(--ch-type-15-strong);
+  letter-spacing: var(--ch-track-15);
+  line-height: var(--ch-lead-tight);
   font-variant-numeric: tabular-nums;
   text-align: right;
 }
 /* What the number counts ("gap", "a round"), under it, so the column keeps its width. */
 .ch-hl-row__v small {
   display: block;
-  margin-top: 3px;
-  font: 500 calc(11.5 * var(--ch-type-k))/1.2 var(--ch-font-sans);
+  margin-top: 4px;
+  font: var(--ch-type-12-medium);
   color: var(--ch-text-tertiary);
 }
 .ch-hl-row svg {
   color: var(--ch-text-tertiary);
 }
 .ch-hl-note {
-  font: 400 calc(12.5 * var(--ch-type-k))/1.5 var(--ch-font-sans);
+  font: var(--ch-type-13);
   color: var(--ch-text-tertiary);
 }
 /* Player: the reads the Board leaves to the Deep dive (NEEDS_MAX, WORKING_MAX), a button on its own width, not the column's. */
@@ -589,7 +610,7 @@
 }
 .ch-hl-prop ul {
   list-style: none;
-  margin: 10px 0 0;
+  margin: 8px 0 0;
   padding: 0;
 }
 .ch-hl-prop__r {
@@ -597,8 +618,8 @@
   align-items: center;
   justify-content: space-between;
   gap: 16px;
-  padding: 14px 0;
-  border-top: 1px solid rgb(28 25 18 / 0.07);
+  padding: 16px 0;
+  border-top: var(--ch-hairline-w) solid var(--ch-border-hairline);
 }
 .ch-hl-prop__t {
   display: flex;
@@ -607,11 +628,12 @@
   min-width: 0;
 }
 .ch-hl-prop__t b {
-  font: 600 calc(15 * var(--ch-type-k))/1.3 var(--ch-font-sans);
+  font: var(--ch-type-15-strong);
+  letter-spacing: var(--ch-track-15);
   text-wrap: pretty;
 }
 .ch-hl-prop__t em {
-  font: 400 calc(12.5 * var(--ch-type-k))/1.4 var(--ch-font-sans);
+  font: var(--ch-type-13);
   font-style: normal;
   color: var(--ch-text-tertiary);
 }
@@ -625,7 +647,7 @@
 .ch-hl-cgrid {
   display: grid;
   grid-template-columns: 290px minmax(0, 1fr);
-  gap: 28px;
+  gap: 32px;
   align-items: start;
 }
 .ch-hl-plist {
@@ -662,10 +684,10 @@
   min-width: 0;
 }
 .ch-hl-pl b {
-  font: 600 calc(14 * var(--ch-type-k))/1.2 var(--ch-font-sans);
+  font: var(--ch-type-14-strong);
 }
 .ch-hl-pl em {
-  font: 400 calc(12 * var(--ch-type-k))/1.3 var(--ch-font-sans);
+  font: var(--ch-type-12);
   font-style: normal;
   color: var(--ch-text-tertiary);
   white-space: nowrap;
@@ -678,19 +700,19 @@
   border-radius: var(--ch-radius-md);
   display: grid;
   place-items: center;
-  font: 600 11.5px/1 var(--ch-font-sans);
+  font: 600 12px/1 var(--ch-font-sans);
   font-variant-numeric: tabular-nums;
   background: var(--ch-ivory-150);
   color: var(--ch-text-secondary);
 }
 .ch-hl-pl.is-on .ch-hl-pl__c {
-  background: var(--ch-green-800);
+  background: var(--ch-selected-strong);
   color: var(--ch-on-fill-100);
 }
 .ch-hl-cmain {
   display: flex;
   flex-direction: column;
-  gap: 14px;
+  gap: 16px;
   min-width: 0;
 }
 .ch-hl-cact {
@@ -701,7 +723,7 @@
 }
 .ch-hl-cact__m {
   flex-basis: 100%;
-  font: 400 calc(12.5 * var(--ch-type-k))/1.4 var(--ch-font-sans);
+  font: var(--ch-type-13);
   color: var(--ch-text-tertiary);
 }
 /* The focus status that could not be checked (CH-13207) takes the row, with Dismiss under it. */
@@ -711,25 +733,26 @@
 .ch-hl-done {
   display: inline-flex;
   align-items: center;
-  gap: 7px;
+  gap: 8px;
   height: 40px;
-  padding: 0 14px;
+  padding: 0 16px;
   border-radius: var(--ch-radius-md);
   background: var(--ch-positive-100);
   color: var(--ch-green-700);
-  font: 600 calc(13.5 * var(--ch-type-k))/1 var(--ch-font-sans);
+  font: var(--ch-type-14-strong);
+  line-height: var(--ch-lead-tight);
   animation: ch-hl-rise var(--ch-dur-base) var(--ch-ease);
 }
 .ch-hl-dis {
   display: flex;
   align-items: center;
   gap: 12px;
-  padding: 18px 20px;
+  padding: 16px 20px;
   border-radius: var(--ch-radius-xl);
   background: var(--ch-ivory-25);
   box-shadow: var(--ch-elevation-reading);
   color: var(--ch-text-secondary);
-  font: 400 calc(14 * var(--ch-type-k))/1.45 var(--ch-font-sans);
+  font: var(--ch-type-14);
   animation: ch-hl-rise var(--ch-dur-base) var(--ch-ease);
 }
 .ch-hl-dis > span {
@@ -766,13 +789,13 @@
 }
 .ch-hl-sk--coach {
   grid-template-columns: 290px minmax(0, 1fr);
-  gap: 28px;
+  gap: 32px;
 }
 .ch-hl-sk__card {
   display: flex;
   flex-direction: column;
   gap: 16px;
-  padding: 32px 34px;
+  padding: 32px 32px;
   border-radius: var(--ch-radius-xl);
   background: var(--ch-ivory-25);
   box-shadow: var(--ch-elevation-reading);
@@ -784,7 +807,7 @@
 .ch-hl-sk__col {
   display: flex;
   flex-direction: column;
-  gap: 18px;
+  gap: 16px;
   padding-top: 6px;
 }
 
@@ -821,8 +844,8 @@
     padding-bottom: 16px;
     gap: 8px;
   }
-  .ch-hl-h .ch-hl-h__t {
-    font-size: calc(32 * var(--ch-type-k));
+  .ch-hl-h .ch-hl-h__t:not(.ch-large-title) {
+    font-size: calc(34 * var(--ch-type-k));
   }
   .ch-hl-h p {
     font-size: calc(14 * var(--ch-type-k));
@@ -830,15 +853,15 @@
   .ch-hl-focus,
   .ch-hl-sk__card {
     padding: 20px;
-    gap: 14px;
+    gap: 16px;
     border-radius: var(--ch-radius-xl);
     background: var(--ch-sheet-bg);
   }
   .ch-hl-focus h2 {
-    font-size: calc(30 * var(--ch-type-k));
+    font-size: calc(28 * var(--ch-type-k));
   }
   .ch-hl-lede {
-    font-size: calc(15.5 * var(--ch-type-k));
+    font-size: calc(16 * var(--ch-type-k));
   }
   .ch-hl-ev {
     padding: 16px;
@@ -848,7 +871,7 @@
   }
   .ch-hl-ev__f {
     flex-wrap: wrap;
-    gap: 10px;
+    gap: 8px;
   }
 
   .ch-hl-plist {
@@ -871,7 +894,7 @@
     flex: none;
     grid-template-columns: 28px auto auto;
     gap: 8px;
-    padding: 5px 10px 5px 5px;
+    padding: 4px 8px 4px 4px;
     border-radius: 999px;
     background: var(--ch-ivory-25);
     box-shadow: var(--ch-elevation-reading);
@@ -880,7 +903,7 @@
     display: none;
   }
   .ch-hl-pl.is-on {
-    background: var(--ch-green-800);
+    background: var(--ch-selected-strong);
     box-shadow: var(--ch-elevation-reading-hover);
   }
   .ch-hl-pl.is-on b {
@@ -977,13 +1000,13 @@
   .ch-hl[data-canopy] :is(.ch-hl-prop > .ch-hl-note) {
     margin: 0;
     padding: 0 0 12px;
-    box-shadow: inset 0 -1px 0 var(--ch-ledger-rule);
+    box-shadow: inset 0 calc(-1 * var(--ch-hairline-w)) 0 var(--ch-ledger-rule);
   }
 
   /* A column's head: a short label (By player, Also worth knowing, Working) or the focus's category and stance, each on
      the engraved rule at one height, so the two columns' rules meet on one line. */
   .ch-hl[data-canopy] :is(.ch-hl-cgrid, .ch-hl-grid, .ch-hl-sk--coach, .ch-hl-sk--player) {
-    gap: 44px;
+    gap: 48px;
   }
   .ch-hl[data-canopy] :is(.ch-hl-plist, .ch-hl-side) {
     padding-top: 0;
@@ -994,7 +1017,7 @@
     min-height: 34px;
     margin: 0;
     padding-bottom: 12px;
-    box-shadow: inset 0 -1px 0 var(--ch-ledger-rule);
+    box-shadow: inset 0 calc(-1 * var(--ch-hairline-w)) 0 var(--ch-ledger-rule);
   }
   .ch-hl[data-canopy] .ch-hl-plist > h2 {
     margin-bottom: 8px;
@@ -1011,22 +1034,34 @@
     }
   }
   .ch-hl[data-canopy] .ch-hl-pl.is-on {
-    background: color-mix(in oklab, var(--ch-green-600) 7%, transparent);
+    background: var(--ch-selected-tint);
     box-shadow: none;
   }
   @media (hover: hover) {
     .ch-hl[data-canopy] .ch-hl-pl.is-on:hover {
-      background: color-mix(in oklab, var(--ch-green-600) 9%, transparent);
+      background: var(--ch-selected-tint-hover);
     }
   }
   /* CH-13602: a press deepens the tint over the press beat, as every flush row does (the shell's CH-1606). */
-  .ch-hl[data-canopy] .ch-hl-pl:active {
+  .ch-hl[data-canopy] .ch-hl-pl[data-ch-pressed] {
     background: var(--ch-ledger-row-press);
     transition-duration: var(--ch-dur-press);
   }
-  .ch-hl[data-canopy] .ch-hl-row:active {
+  @media (hover: hover) {
+    .ch-hl[data-canopy] .ch-hl-pl:active {
+      background: var(--ch-ledger-row-press);
+      transition-duration: var(--ch-dur-press);
+    }
+  }
+  .ch-hl[data-canopy] .ch-hl-row[data-ch-pressed] {
     background: var(--ch-ledger-row-press);
     transition-duration: var(--ch-dur-press);
+  }
+  @media (hover: hover) {
+    .ch-hl[data-canopy] .ch-hl-row:active {
+      background: var(--ch-ledger-row-press);
+      transition-duration: var(--ch-dur-press);
+    }
   }
   .ch-hl[data-canopy] .ch-hl-row {
     border-top-color: var(--ch-ledger-rule-soft);
@@ -1040,17 +1075,17 @@
     padding: 0 0 12px;
     border-radius: 0;
     background: none;
-    box-shadow: inset 0 -1px 0 var(--ch-ledger-rule);
+    box-shadow: inset 0 calc(-1 * var(--ch-hairline-w)) 0 var(--ch-ledger-rule);
   }
   .ch-hl[data-canopy] .ch-hl-dis .ch-btn {
-    margin-block: -5px;
+    margin-block: -4px;
   }
 
   /* The focus: the claim, then its evidence set off by one soft rule, with its count and read under the figures (no rule
      of their own); the week's drill keeps its well. */
   .ch-hl[data-canopy] .ch-hl-ev {
-    padding-top: 18px;
-    box-shadow: inset 0 1px 0 var(--ch-ledger-rule-soft);
+    padding-top: 16px;
+    box-shadow: inset 0 var(--ch-hairline-w) 0 var(--ch-ledger-rule-soft);
   }
   .ch-hl[data-canopy] .ch-hl-ev__f {
     padding-top: 0;
@@ -1074,23 +1109,24 @@
     margin: 6px 0 16px;
   }
   .ch-hl[data-canopy] .ch-hl-sk--coach > .ch-hl-sk__col {
-    gap: 28px;
+    gap: 32px;
     padding-top: 56px;
   }
   .ch-hl[data-canopy] .ch-hl-sk__card {
-    gap: 18px;
+    gap: 16px;
   }
   .ch-hl[data-canopy] .ch-hl-sk__card > :first-child {
     align-items: center;
     min-height: 34px;
     padding-bottom: 12px;
-    box-shadow: inset 0 -1px 0 var(--ch-ledger-rule);
+    box-shadow: inset 0 calc(-1 * var(--ch-hairline-w)) 0 var(--ch-ledger-rule);
   }
 
   /* Proposed for you: a section whose caption carries the rule; its first answer sits on it. */
   .ch-hl[data-canopy] .ch-hl-prop > h2 {
     margin: 0 0 4px;
-    font: 600 19px/1.2 var(--ch-font-sans);
+    font: var(--ch-type-20-strong);
+    letter-spacing: var(--ch-track-20);
   }
   .ch-hl[data-canopy] .ch-hl-prop ul {
     margin-top: 0;
@@ -1113,7 +1149,7 @@
   display: flex;
   flex-direction: column;
   gap: 8px;
-  padding: 18px;
+  padding: 16px;
   border-radius: var(--ch-radius-lg);
   background: var(--ch-feature-bg);
   /* P013-A3: the green card is where the light lands, and nothing else on the page gains depth. A 1px rim of the
@@ -1128,16 +1164,17 @@
 }
 :is(.ch-hl.is-phone, .ch-hl[data-canopy]) .ch-hl-focus__k {
   margin-bottom: 4px;
-  font: 500 calc(12.5 * var(--ch-type-k))/1.2 var(--ch-font-sans);
+  font: var(--ch-type-13-medium);
   color: var(--ch-on-green-ink-muted);
 }
 :is(.ch-hl.is-phone, .ch-hl[data-canopy]) .ch-hl-focus h2 {
-  font: 600 calc(23 * var(--ch-type-k))/1.15 var(--ch-font-sans);
+  font: var(--ch-type-22-strong);
+  line-height: var(--ch-lead-tight);
   letter-spacing: -0.03em;
   color: var(--ch-on-green-ink);
 }
 :is(.ch-hl.is-phone, .ch-hl[data-canopy]) .ch-hl-focus__head .ch-hl-lede {
-  font: 400 calc(14 * var(--ch-type-k))/1.5 var(--ch-font-sans);
+  font: var(--ch-type-14);
   color: var(--ch-on-green-ink-soft);
 }
 
@@ -1149,31 +1186,26 @@
    material: the view switch, the player chips, the bars and the gauge, the pills, the buttons and the notices. */
 @media (max-width: 820px) {
   .ch-hl.is-phone {
-    gap: 28px;
-    padding: 14px 20px 110px;
+    gap: var(--ch-gap-section-phone);
+    padding: var(--ch-page-top-phone-docked) var(--ch-page-x-phone) var(--ch-page-bottom-phone-docked);
   }
   .ch-hl.is-phone > .ch-hl-h {
     display: flex;
     flex-direction: column;
     align-items: flex-start;
-    gap: 10px;
-    padding: 14px 0 0;
+    gap: 8px;
+    padding: 16px 0 0;
     border-top: var(--ch-ledger-rule-double);
   }
   .ch-hl.is-phone .ch-hl-role {
-    font: 500 calc(12 * var(--ch-type-k))/1.2 var(--ch-font-sans);
+    font: var(--ch-type-12-medium);
     letter-spacing: 0.01em;
     color: var(--ch-ledger-eyebrow);
   }
-  .ch-hl.is-phone > .ch-hl-h .ch-hl-h__t {
-    font: 600 calc(31 * var(--ch-type-k))/1.08 var(--ch-font-sans);
-    letter-spacing: -0.038em;
-    font-variation-settings: 'wdth' 88;
-    color: var(--ch-ledger-ink);
-  }
-  .ch-hl.is-phone > .ch-hl-h p {
+  .ch-hl.is-phone > .ch-hl-h p:not(.ch-large-title) {
     max-width: 60ch;
-    font: 400 calc(14.5 * var(--ch-type-k))/1.5 var(--ch-font-sans);
+    font: var(--ch-type-15);
+    letter-spacing: var(--ch-track-15);
     color: var(--ch-text-secondary);
   }
 
@@ -1184,32 +1216,37 @@
     margin: 0 0 4px;
     padding: 12px 0 0;
     border-top: var(--ch-ledger-rule-double);
-    font: 600 calc(19 * var(--ch-type-k))/1.2 var(--ch-font-sans);
-    letter-spacing: -0.025em;
+    font: var(--ch-type-section);
+    letter-spacing: var(--ch-track-section);
     font-variation-settings: 'wdth' 88;
     color: var(--ch-ledger-ink);
   }
 
   /* The coach's players: chips drawn with a hairline, not lifted plates; the chosen one is the green. */
   .ch-hl.is-phone .ch-hl-cgrid {
-    gap: 18px;
+    gap: 16px;
   }
   .ch-hl.is-phone .ch-hl-plist {
-    margin: 0 -20px;
-    padding: 2px 20px;
+    margin: 0 calc(-1 * var(--ch-page-x-phone));
+    padding: 2px var(--ch-page-x-phone);
   }
   .ch-hl.is-phone .ch-hl-pl {
     background: none;
-    box-shadow: inset 0 0 0 1px var(--ch-ledger-rule);
+    box-shadow: inset 0 0 0 var(--ch-hairline-w) var(--ch-ledger-rule);
   }
-  .ch-hl.is-phone .ch-hl-pl:active {
+  .ch-hl.is-phone .ch-hl-pl[data-ch-pressed] {
     background: var(--ch-ledger-row-press);
+  }
+  @media (hover: hover) {
+    .ch-hl.is-phone .ch-hl-pl:active {
+      background: var(--ch-ledger-row-press);
+    }
   }
   .ch-hl.is-phone .ch-hl-pl__c {
     background: var(--ch-ledger-row-hover);
   }
   .ch-hl.is-phone .ch-hl-pl.is-on {
-    background: var(--ch-green-800);
+    background: var(--ch-selected-strong);
     box-shadow: none;
   }
   .ch-hl.is-phone .ch-hl-pl.is-on .ch-hl-pl__c {
@@ -1218,7 +1255,7 @@
 
   /* The focus: the claim is the feature card; what proves it follows on the parchment. */
   .ch-hl.is-phone .ch-hl-focus {
-    gap: 18px;
+    gap: 16px;
     padding: 0;
     border-radius: 0;
     background: none;
@@ -1230,7 +1267,7 @@
     background: none;
   }
   .ch-hl.is-phone .ch-hl-ev {
-    gap: 14px;
+    gap: 16px;
     padding: 0;
     border-radius: 0;
     background: none;
@@ -1243,18 +1280,23 @@
   .ch-hl.is-phone .ch-hl-why {
     border-top-color: var(--ch-ledger-rule-soft);
   }
-  .ch-hl.is-phone .ch-hl-why:active {
+  .ch-hl.is-phone .ch-hl-why[data-ch-pressed] {
     background: var(--ch-ledger-row-press);
+  }
+  @media (hover: hover) {
+    .ch-hl.is-phone .ch-hl-why:active {
+      background: var(--ch-ledger-row-press);
+    }
   }
 
   /* What the coach did with a card: the dismissed note is a row between rules, not a card. */
   .ch-hl.is-phone .ch-hl-dis {
-    padding: 14px 0;
+    padding: 16px 0;
     border-radius: 0;
     background: none;
     box-shadow:
-      inset 0 1px 0 var(--ch-ledger-rule),
-      inset 0 -1px 0 var(--ch-ledger-rule);
+      inset 0 var(--ch-hairline-w) 0 var(--ch-ledger-rule),
+      inset 0 calc(-1 * var(--ch-hairline-w)) 0 var(--ch-ledger-rule);
   }
 
   /* Proposed for you: a section; its line is the caption, its first answer sits under it. */
@@ -1276,7 +1318,7 @@
 
   /* Also worth knowing, Working: rows between soft seams; the first sits on the section's head. */
   .ch-hl.is-phone .ch-hl-side {
-    gap: 30px;
+    gap: 32px;
   }
   .ch-hl.is-phone .ch-hl-row {
     border-top-color: var(--ch-ledger-rule-soft);
@@ -1284,8 +1326,13 @@
   .ch-hl.is-phone .ch-hl-sec > h2 + .ch-hl-row {
     border-top-color: transparent;
   }
-  .ch-hl.is-phone .ch-hl-row:active {
+  .ch-hl.is-phone .ch-hl-row[data-ch-pressed] {
     background: var(--ch-ledger-row-press);
+  }
+  @media (hover: hover) {
+    .ch-hl.is-phone .ch-hl-row:active {
+      background: var(--ch-ledger-row-press);
+    }
   }
 
   /* Loading (CH-13401, CH-13402) in the same shapes: the intro's lines at their loaded heights, the pulse's head and its
@@ -1299,12 +1346,12 @@
     flex-direction: column;
     align-items: flex-start;
     justify-content: center;
-    gap: 9px;
+    gap: 8px;
     height: 43.5px;
   }
 
   .ch-hl.is-phone .ch-hl-sk--coach {
-    gap: 18px;
+    gap: 16px;
   }
   .ch-hl.is-phone .ch-hl-sk__chips {
     display: flex;
@@ -1313,14 +1360,14 @@
     padding: 2px 0;
   }
   .ch-hl.is-phone .ch-hl-sk__card {
-    gap: 14px;
+    gap: 16px;
     padding: 0;
     border-radius: 0;
     background: none;
     box-shadow: none;
   }
   .ch-hl.is-phone .ch-hl-sk__rule {
-    height: 1px;
+    height: var(--ch-hairline-w);
     background: var(--ch-ledger-rule);
   }
   .ch-hl.is-phone .ch-hl-sk--player > .ch-hl-sk__col {
@@ -1341,7 +1388,7 @@
     gap: 8px;
   }
   .ch-hl.is-phone .ch-hl-sk__row + .ch-hl-sk__row {
-    box-shadow: inset 0 1px 0 var(--ch-ledger-rule-soft);
+    box-shadow: inset 0 var(--ch-hairline-w) 0 var(--ch-ledger-rule-soft);
   }
 }
 
@@ -1352,11 +1399,11 @@
    things: the bars, the figure, the badge. Phone keeps its approved boards. */
 @media (min-width: 821px) {
   .ch-hl[data-canopy] .ch-hl-focus {
-    gap: 22px;
+    gap: 24px;
   }
   .ch-hl[data-canopy] .ch-hl-focus__head {
-    gap: 10px;
-    padding: 24px 30px 30px;
+    gap: 8px;
+    padding: 24px 32px 32px;
     border-radius: var(--ch-radius-xl);
   }
   /* The category and stance are the plate's own first line: no column rule under them, which sat on the canvas. */
@@ -1366,10 +1413,11 @@
     margin: 0 0 6px;
     padding: 0;
     box-shadow: none;
-    font: 500 13px/1.2 var(--ch-font-sans);
+    font: var(--ch-type-13-medium);
   }
   .ch-hl[data-canopy] .ch-hl-focus__head h2 {
-    font: 600 36px/1.1 var(--ch-font-sans);
+    font: var(--ch-type-34-strong);
+    line-height: var(--ch-lead-tight);
     letter-spacing: -0.03em;
     text-wrap: balance;
   }
@@ -1378,14 +1426,15 @@
     display: block;
     width: 36px;
     height: 3px;
-    margin-top: 14px;
-    border-radius: 2px;
+    margin-top: 16px;
+    border-radius: 999px;
     background: linear-gradient(90deg, var(--ch-stage-gold), rgb(231 184 102 / 0));
     content: '';
   }
   .ch-hl[data-canopy] .ch-hl-focus__head .ch-hl-lede {
     max-width: 60ch;
-    font: 400 16.5px/1.55 var(--ch-font-sans);
+    font: var(--ch-type-17);
+    letter-spacing: var(--ch-track-17);
   }
 
   /* The evidence sits straight under the plate: no soft rule between them, the plate is the divider. */
@@ -1395,13 +1444,13 @@
     box-shadow: none;
   }
   .ch-hl[data-canopy] .ch-hl-ev__l {
-    font: 600 14px/1.3 var(--ch-font-sans);
+    font: var(--ch-type-14-strong);
     color: var(--ch-text-primary);
   }
 
   .ch-hl[data-canopy] .ch-hl-bars__t {
     height: 12px;
-    border-radius: 6px;
+    border-radius: 999px;
     box-shadow: inset 0 1px 2px rgb(28 25 18 / 0.14);
   }
 
@@ -1413,7 +1462,7 @@
     font-size: calc(14 * var(--ch-type-k));
   }
   .ch-hl[data-canopy] .ch-hl-bars b {
-    font-size: calc(18 * var(--ch-type-k));
+    font-size: calc(17 * var(--ch-type-k));
     letter-spacing: -0.02em;
   }
   .ch-hl[data-canopy] .ch-hl-bars__t i {
@@ -1430,7 +1479,8 @@
   }
   .ch-hl[data-canopy] .ch-hl-plist > h2,
   .ch-hl[data-canopy] .ch-hl-sec > h2 {
-    font: 600 13px/1 var(--ch-font-sans);
+    font: var(--ch-type-13-strong);
+    line-height: var(--ch-lead-tight);
     letter-spacing: 0;
     color: var(--ch-green-700);
   }
@@ -1461,7 +1511,7 @@
 
   /* Loading holds the claim's plate where the loaded page draws it (the skeleton's own first block). */
   .ch-hl[data-canopy] .ch-hl-sk__card {
-    gap: 22px;
+    gap: 24px;
   }
   .ch-hl[data-canopy] .ch-hl-sk__card > .ch-hl-sk__claim {
     display: flex;
@@ -1469,7 +1519,7 @@
     gap: 12px;
     align-items: stretch;
     min-height: 0;
-    padding: 24px 30px 30px;
+    padding: 24px 32px 32px;
     border-radius: var(--ch-radius-xl);
     background: var(--ch-bg-inset);
     box-shadow: none;
@@ -1493,7 +1543,7 @@
 }
 
 :where(html[data-fw-theme='dark']) .ch-hl-ev {
-  box-shadow: inset 0 0 0 1px var(--ch-border-hairline);
+  box-shadow: inset 0 0 0 var(--ch-hairline-w) var(--ch-border-hairline);
 }
 :where(html[data-fw-theme='dark']) .ch-hl-bars__t {
   background: rgb(237 231 216 / 0.09);
@@ -1552,10 +1602,10 @@ html:not([data-fw-theme='dark']) .ch-hl {
     margin-bottom: 24px;
     /* The sheet's 12px inset comes off the page's top, so the title lands where every page sets it. */
     padding-top: calc(var(--ch-page-head-top) + 4px - 12px);
-    border-radius: 24px;
+    border-radius: var(--ch-radius-xl);
     background: var(--ch-bg-surface);
     box-shadow:
-      inset 0 0 0 1px rgb(28 25 18 / 0.12),
+      inset 0 0 0 var(--ch-hairline-w) var(--ch-border-subtle),
       var(--ch-elevation-cast);
   }
 }
@@ -1602,12 +1652,12 @@ html:not([data-fw-theme='dark']) .ch-hl {
   display: grid;
   grid-template-columns: 84px minmax(0, 1fr);
   gap: 12px;
-  padding: 10px 0;
-  border-top: 1px solid var(--ch-border-hairline);
+  padding: 8px 0;
+  border-top: var(--ch-hairline-w) solid var(--ch-border-hairline);
 }
 .ch-hl-eng dt {
   padding-top: 4px;
-  font: 600 calc(12.5 * var(--ch-type-k))/1.4 var(--ch-font-sans);
+  font: var(--ch-type-13-strong);
   color: var(--ch-text-secondary);
 }
 .ch-hl-eng dd {
@@ -1619,9 +1669,10 @@ html:not([data-fw-theme='dark']) .ch-hl {
   min-width: 0;
 }
 .ch-hl-eng__w {
-  padding: 5px 10px;
+  padding: 4px 8px;
   border-radius: 999px;
-  font: 600 calc(12 * var(--ch-type-k))/1 var(--ch-font-sans);
+  font: var(--ch-type-12-strong);
+  line-height: var(--ch-lead-tight);
   background: var(--ch-ivory-150);
   color: var(--ch-text-secondary);
 }
@@ -1639,7 +1690,8 @@ html:not([data-fw-theme='dark']) .ch-hl {
 }
 .ch-hl-eng__l {
   max-width: 62ch;
-  font: 400 calc(14.5 * var(--ch-type-k))/1.55 var(--ch-font-sans);
+  font: var(--ch-type-15);
+  letter-spacing: var(--ch-track-15);
   color: var(--ch-text-primary);
   text-wrap: pretty;
 }
@@ -1661,16 +1713,16 @@ html:not([data-fw-theme='dark']) .ch-hl {
   grid-template-columns: 112px minmax(0, 1fr);
   gap: 12px;
   padding: 8px 0;
-  border-top: 1px solid var(--ch-border-hairline);
+  border-top: var(--ch-hairline-w) solid var(--ch-border-hairline);
 }
 .ch-hl-audit__l dt {
-  font: 600 calc(12.5 * var(--ch-type-k))/1.5 var(--ch-font-sans);
+  font: var(--ch-type-13-strong);
   color: var(--ch-text-secondary);
 }
 .ch-hl-audit__l dd {
   margin: 0;
   max-width: 62ch;
-  font: 400 calc(14 * var(--ch-type-k))/1.55 var(--ch-font-sans);
+  font: var(--ch-type-14);
   color: var(--ch-text-primary);
   text-wrap: pretty;
 }
@@ -1681,11 +1733,11 @@ html:not([data-fw-theme='dark']) .ch-hl {
   flex-direction: column;
   gap: 8px;
   padding-top: 12px;
-  border-top: 1px solid var(--ch-border-hairline);
+  border-top: var(--ch-hairline-w) solid var(--ch-border-hairline);
 }
 .ch-hl-cx__k {
   margin: 0;
-  font: 600 calc(12.5 * var(--ch-type-k))/1.4 var(--ch-font-sans);
+  font: var(--ch-type-13-strong);
   color: var(--ch-text-secondary);
 }
 .ch-hl-cx__chips,
@@ -1698,8 +1750,8 @@ html:not([data-fw-theme='dark']) .ch-hl {
   display: none;
 }
 .ch-hl-cx__why {
-  padding: 10px;
-  border-radius: 12px;
+  padding: 8px;
+  border-radius: var(--ch-radius-md);
   background: var(--ch-bg-subtle);
 }
 .ch-hl-cx__c {
@@ -1709,11 +1761,12 @@ html:not([data-fw-theme='dark']) .ch-hl {
   display: inline-flex;
   align-items: center;
   min-height: 36px;
-  padding: 0 14px;
+  padding: 0 16px;
   border: 1px solid var(--ch-border-control);
   border-radius: 999px;
   background: var(--ch-bg-surface);
-  font: 600 calc(13 * var(--ch-type-k))/1 var(--ch-font-sans);
+  font: var(--ch-type-13-strong);
+  line-height: var(--ch-lead-tight);
   color: var(--ch-text-primary);
   transition: background-color var(--ch-dur-quick) var(--ch-ease), border-color var(--ch-dur-quick) var(--ch-ease);
 }
@@ -1721,8 +1774,13 @@ html:not([data-fw-theme='dark']) .ch-hl {
   border-color: var(--ch-border-strong);
   background: var(--ch-bg-selected);
 }
-.ch-hl-cx__c:active {
+.ch-hl-cx__c[data-ch-pressed] {
   background: var(--ch-bg-hover);
+}
+@media (hover: hover) {
+  .ch-hl-cx__c:active {
+    background: var(--ch-bg-hover);
+  }
 }
 .ch-hl-cx__c:disabled {
   cursor: default;
@@ -1740,7 +1798,7 @@ html:not([data-fw-theme='dark']) .ch-hl {
 }
 .ch-hl-cx__done {
   margin: 0;
-  font: 400 calc(14 * var(--ch-type-k))/1.5 var(--ch-font-sans);
+  font: var(--ch-type-14);
   color: var(--ch-text-secondary);
 }
 .ch-hl-cx__chg {
@@ -1752,8 +1810,9 @@ html:not([data-fw-theme='dark']) .ch-hl {
   align-items: center;
   min-height: 36px;
   padding: 0 4px;
-  border-radius: 6px;
-  font: 600 calc(13 * var(--ch-type-k))/1 var(--ch-font-sans);
+  border-radius: var(--ch-radius-sm);
+  font: var(--ch-type-13-strong);
+  line-height: var(--ch-lead-tight);
   color: var(--ch-text-primary);
   text-decoration: underline;
   text-underline-offset: 3px;
@@ -1769,14 +1828,15 @@ html:not([data-fw-theme='dark']) .ch-hl {
 }
 .ch-hl-cx__err {
   margin: 0;
-  font: 500 calc(13.5 * var(--ch-type-k))/1.5 var(--ch-font-sans);
+  font: var(--ch-type-14-medium);
   color: var(--ch-warning-600);
 }
 .ch-hl-later {
   margin: 0;
   padding: 12px 0 0;
-  border-top: 1px solid var(--ch-border-hairline);
-  font: 400 calc(14.5 * var(--ch-type-k))/1.55 var(--ch-font-sans);
+  border-top: var(--ch-hairline-w) solid var(--ch-border-hairline);
+  font: var(--ch-type-15);
+  letter-spacing: var(--ch-track-15);
   color: var(--ch-text-secondary);
 }
 @media (hover: hover) {
@@ -1798,7 +1858,8 @@ html:not([data-fw-theme='dark']) .ch-hl {
 .ch-hl-cleared h3 {
   display: flex;
   justify-content: space-between;
-  font: 600 calc(15 * var(--ch-type-k))/1.3 var(--ch-font-sans);
+  font: var(--ch-type-15-strong);
+  letter-spacing: var(--ch-track-15);
   color: var(--ch-text-primary);
 }
 .ch-hl-cleared h3 span {
@@ -1812,9 +1873,9 @@ html:not([data-fw-theme='dark']) .ch-hl {
   list-style: none;
 }
 .ch-hl-cleared li {
-  padding: 10px 0;
-  border-top: 1px solid var(--ch-border-hairline);
-  font: 400 calc(14 * var(--ch-type-k))/1.55 var(--ch-font-sans);
+  padding: 8px 0;
+  border-top: var(--ch-hairline-w) solid var(--ch-border-hairline);
+  font: var(--ch-type-14);
   color: var(--ch-text-primary);
 }
 @media (max-width: 820px) {
@@ -1834,11 +1895,11 @@ html:not([data-fw-theme='dark']) .ch-hl {
 .ch-hl-plan {
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: 8px;
   min-width: 0;
 }
 .ch-hl-plan__h {
-  font: 600 calc(14 * var(--ch-type-k))/1.3 var(--ch-font-sans);
+  font: var(--ch-type-14-strong);
   color: var(--ch-text-primary);
 }
 .ch-hl-plan__start {
@@ -1861,7 +1922,7 @@ html:not([data-fw-theme='dark']) .ch-hl {
   align-items: flex-start;
   gap: 2px;
   min-height: 44px;
-  padding: 7px 12px;
+  padding: 8px 12px;
   border: 1px solid var(--ch-border-control);
   border-radius: var(--ch-radius-md);
   background: var(--ch-bg-surface);
@@ -1871,10 +1932,10 @@ html:not([data-fw-theme='dark']) .ch-hl {
   transition: background var(--ch-dur-quick) var(--ch-ease);
 }
 .ch-hl-plan__c b {
-  font: 600 calc(13.5 * var(--ch-type-k))/1.25 var(--ch-font-sans);
+  font: var(--ch-type-14-strong);
 }
 .ch-hl-plan__c em {
-  font: 500 calc(11.5 * var(--ch-type-k))/1.2 var(--ch-font-sans);
+  font: var(--ch-type-12-medium);
   font-style: normal;
   color: var(--ch-text-tertiary);
 }
@@ -1890,13 +1951,13 @@ html:not([data-fw-theme='dark']) .ch-hl {
   flex-direction: column;
   gap: 8px;
   margin: 0;
-  padding-inline-start: 18px;
-  font: 400 calc(13.5 * var(--ch-type-k))/1.45 var(--ch-font-sans);
+  padding-inline-start: 16px;
+  font: var(--ch-type-14);
   color: var(--ch-text-primary);
 }
 .ch-hl-plan__thin {
-  margin-top: 10px;
-  font: 400 calc(12.5 * var(--ch-type-k))/1.45 var(--ch-font-sans);
+  margin-top: 8px;
+  font: var(--ch-type-13);
   color: var(--ch-text-tertiary);
 }
 .ch-hl-plan__player {
@@ -1904,17 +1965,23 @@ html:not([data-fw-theme='dark']) .ch-hl {
   flex-direction: column;
   align-items: flex-start;
   gap: 6px;
-  margin-top: 14px;
+  margin-top: 16px;
   padding-top: 12px;
-  border-top: 1px solid var(--ch-border-subtle);
+  border-top: var(--ch-hairline-w) solid var(--ch-border-subtle);
 }
 .ch-hl-plan__player h4 {
-  font: 600 calc(12.5 * var(--ch-type-k))/1.3 var(--ch-font-sans);
+  font: var(--ch-type-13-strong);
   color: var(--ch-text-secondary);
 }
 .ch-hl-plan__pt {
-  font: 600 calc(13.5 * var(--ch-type-k))/1.3 var(--ch-font-sans);
+  font: var(--ch-type-14-strong);
   color: var(--ch-text-primary);
+}
+/* The player's version goes on: Send to (Messages, written but not sent) and Copy, side by side. */
+.ch-hl-plan__send {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--ch-space-2);
 }
 @media (pointer: coarse) {
   .ch-hl-plan .ch-btn {

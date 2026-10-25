@@ -1780,7 +1780,7 @@
     "category": 8,
     "item": 6,
     "name": "CONTROLS_STAY_WITH_THEIR_ROLE",
-    "meaning": "Home draws its own role's controls only: Player Home has no Message team, New event or N shortcut, no Plan, Add event or quick event types, no leaderboard and no link to another player's stats or thread, and Coach Home has no Message coach, Start a round or countdown.",
+    "meaning": "Home draws its own role's controls only: Player Home has no Message team, New event or N shortcut, no Plan, Add event or quick event types, no leaderboard and no link to another player's stats or thread, and Coach Home has no Message coach, New round or countdown.",
     "status": "implemented",
     "where": "src/clubhouse/screens/home/PlayerHome.tsx#PlayerHome; src/clubhouse/screens/home/PlayerHomePhone.tsx#PlayerHomePhone; src/clubhouse/screens/home/CoachHome.tsx#CoachHome",
     "tests": [
@@ -2234,6 +2234,17 @@
     "catalog": "docs/clubhouse/catalog/roster.md"
   },
   {
+    "id": 30580,
+    "page": "P003",
+    "category": 5,
+    "item": 80,
+    "name": "AN_ADDRESS_TYPED_OR_PASTED_IN_EMAIL",
+    "chCode": "CH-3180",
+    "meaning": "An address typed or pasted in Email them can’t be read as an email address",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/roster.md"
+  },
+  {
     "id": 30601,
     "page": "P003",
     "category": 6,
@@ -2487,6 +2498,17 @@
     "catalog": "docs/clubhouse/catalog/roster.md"
   },
   {
+    "id": 30680,
+    "page": "P003",
+    "category": 6,
+    "item": 80,
+    "name": "EMAILING_THE_INVITE_TO_PLAYERS_FAILS_THE",
+    "chCode": "CH-3080",
+    "meaning": "Emailing the invite to players fails (Invite players › Email them): the request fails, the coach has sent a lot of invites this hour, email is paused, or the team has no code",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/roster.md"
+  },
+  {
     "id": 30701,
     "page": "P003",
     "category": 7,
@@ -2498,6 +2520,17 @@
     "tests": [
       "src/clubhouse/__tests__/roster.test.tsx"
     ]
+  },
+  {
+    "id": 30780,
+    "page": "P003",
+    "category": 7,
+    "item": 80,
+    "name": "CUSTOMER_EMAIL_IS_SWITCHED_OFF_FOR_EVERYONE",
+    "chCode": "CH-3980",
+    "meaning": "Customer email is switched off for everyone (`HELM_CUSTOMER_EMAIL_ENABLED` is not `true`, `src/lib/email/outbound-gate.ts`) or no mail transport is configured, so Invite players cannot email anyone",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/roster.md"
   },
   {
     "id": 30801,
@@ -2889,6 +2922,17 @@
     "name": "AVAILABILITY_IS_SAID_IN_WORDS_NEVER_A",
     "chCode": "CH-3809",
     "meaning": "Availability is said in words, never a colour: \"Injured\" or \"Away\" (the word only, no note) in the list's line under the name, a face's note slot and the phone row, in plain ink (red is under par, amber a slide, green a gain). A face's name and a phone row's name append \"injured\" or \"away\"; the Availability control is a radio group named for the player; the head counts \"· 1 injured · 1 away\" among the active",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/roster.md"
+  },
+  {
+    "id": 31880,
+    "page": "P003",
+    "category": 18,
+    "item": 80,
+    "name": "EMAIL_THEM_IS_ONE_LABELLED_FIELD_EACH",
+    "chCode": "CH-3880",
+    "meaning": "Email them is one labelled field (\"Or email them\"). Each address is a chip with its own `Remove eli@school.edu` button, an unreadable one adds \", can’t be read as an email address\" and one that did not send \", didn’t send\"; Backspace in the empty field removes the last chip; the count and the result are read politely, and an unreadable address is announced as an alert",
     "status": "implemented",
     "catalog": "docs/clubhouse/catalog/roster.md"
   },
@@ -3608,7 +3652,7 @@
     "name": "THE_PHONES_SCORING_LINE_IS_AN_IMAGE",
     "chCode": "CH-4805",
     "meaning": "The phone's scoring line is an image with a written reading (\"Team scoring average by round day, from 74.8 to 73.4. Down 1.4 strokes…\"); a finger on it reads a round day (pointer only, the reading carries it for assistive technology); each player row is one link read as name, rounds, average and strokes gained (\"Early read\" under three rounds)",
-    "status": "implemented",
+    "status": "reserved",
     "catalog": "docs/clubhouse/catalog/stats-team.md"
   },
   {
@@ -6663,6 +6707,17 @@
     "catalog": "docs/clubhouse/catalog/messages.md"
   },
   {
+    "id": 70638,
+    "page": "P007",
+    "category": 6,
+    "item": 38,
+    "name": "MARKING_A_CONVERSATION_READ_OR_UNREAD_FROM",
+    "chCode": "CH-7026",
+    "meaning": "Marking a conversation read or unread from its row (menu or swipe) fails",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/messages.md"
+  },
+  {
     "id": 70701,
     "page": "P007",
     "category": 7,
@@ -6915,6 +6970,17 @@
     "name": "CHANGING_THE_INBOX_FILTER_ON_THE_PHONE",
     "chCode": "CH-7606",
     "meaning": "Changing the inbox filter on the phone (All, Unread, Groups)",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/messages.md"
+  },
+  {
+    "id": 71607,
+    "page": "P007",
+    "category": 16,
+    "item": 7,
+    "name": "MUTING_A_CONVERSATION_FROM_ITS_ROW",
+    "chCode": "CH-7607",
+    "meaning": "Muting a conversation from its row (owner decision 14)",
     "status": "implemented",
     "catalog": "docs/clubhouse/catalog/messages.md"
   },
@@ -7876,6 +7942,17 @@
     "catalog": "docs/clubhouse/catalog/settings.md"
   },
   {
+    "id": 80780,
+    "page": "P008",
+    "category": 7,
+    "item": 80,
+    "name": "SETTINGS_PREFERENCES_TIME_FORMAT",
+    "chCode": "CH-8980",
+    "meaning": "Settings › Preferences › Time format (a device preference, like the distance unit)",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/settings.md"
+  },
+  {
     "id": 80801,
     "page": "P008",
     "category": 8,
@@ -8640,7 +8717,7 @@
     "category": 1,
     "item": 1,
     "name": "LIST_READY",
-    "meaning": "The list opens with the count of active and concluded qualifiers, the All, Active and Concluded pills with their counts, search, the live qualifier (or, with none live, the active one that starts first) as the hero with its leaders, the other active ones as cards under Active and the concluded ones under Concluded; a coach also gets Create qualifier.",
+    "meaning": "The list opens with the count of active and concluded qualifiers, the All, Active and Concluded pills with their counts, search, the live qualifier (or, with none live, the active one that starts first) as the hero with its leaders, the other active ones as cards under Active and the concluded ones under Concluded; a coach also gets New qualifier.",
     "status": "implemented",
     "where": "src/clubhouse/screens/qualifiers/QualifiersList.tsx#QualifiersList",
     "tests": [
@@ -9592,6 +9669,17 @@
     "catalog": "docs/clubhouse/catalog/qualifiers.md"
   },
   {
+    "id": 90707,
+    "page": "P009",
+    "category": 7,
+    "item": 7,
+    "name": "PLAYER_THEIR_OWN_RANKED_ROW_ON_A",
+    "chCode": "CH-09908",
+    "meaning": "Player: their own ranked row on a board that draws a line",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/qualifiers.md"
+  },
+  {
     "id": 90801,
     "page": "P009",
     "category": 8,
@@ -9684,7 +9772,7 @@
     "category": 8,
     "item": 8,
     "name": "COACH_CONTROLS_HIDDEN_FROM_PLAYERS",
-    "meaning": "A player is never shown a coach control: not Create qualifier, Manage selections, Edit, Close, Reopen, the phone's Qualifier actions, round-by-round scores or the coach's Selections panel (hiding them is a courtesy; the gates are 90803 and 90810 to 90812).",
+    "meaning": "A player is never shown a coach control: not New qualifier, Manage selections, Edit, Close, Reopen, the phone's Qualifier actions, round-by-round scores or the coach's Selections panel (hiding them is a courtesy; the gates are 90803 and 90810 to 90812).",
     "status": "implemented",
     "where": "src/clubhouse/screens/qualifiers/QualifiersList.tsx; QualifierDetail.tsx; QualifierDetailPhone.tsx; QualifierSections.tsx#Selections",
     "tests": [
@@ -11309,7 +11397,7 @@
     "category": 1,
     "item": 5,
     "name": "UNBUILT_TARGETS_ARE_NOT_DRAWN",
-    "meaning": "A control whose screen is not rebuilt is not drawn, never a dead button (nav.rebuiltHref). New round, Start a round, Continue and Submit lead to /rounds/new and /rounds/continue/[id], which are rebuilt for a player (round entry, over the round engine), so they are drawn; a coach's are not, since a coach does not log rounds. /rounds/recover is rebuilt for a player (swap audit F-02) and is reached from a failed submit, so nothing in the Library links there. Every posted round in the book opens its review. A round whose review cannot be opened is still listed, as one named group. /rounds/[id]/review (CoachHelm's) is not rebuilt for either role, and neither is the coach's Rounds library.",
+    "meaning": "A control whose screen is not rebuilt is not drawn, never a dead button (nav.rebuiltHref). New round, Continue and Submit lead to /rounds/new and /rounds/continue/[id], which are rebuilt for a player (round entry, over the round engine), so they are drawn; a coach's are not, since a coach does not log rounds. /rounds/recover is rebuilt for a player (swap audit F-02) and is reached from a failed submit, so nothing in the Library links there. Every posted round in the book opens its review. A round whose review cannot be opened is still listed, as one named group. /rounds/[id]/review (CoachHelm's) is not rebuilt for either role, and neither is the coach's Rounds library.",
     "status": "implemented",
     "where": "src/clubhouse/screens/rounds/RoundsLibrary.tsx#roundsLinks; src/clubhouse/shell/nav.ts#rebuiltHref; src/clubhouse/shell/nav.ts#CH_REBUILT_PATTERNS; src/clubhouse/shell/nav.ts#CH_REBUILT_ROUTES",
     "tests": [
@@ -12700,6 +12788,39 @@
     "catalog": "docs/clubhouse/catalog/rounds.md"
   },
   {
+    "id": 110760,
+    "page": "P011",
+    "category": 7,
+    "item": 60,
+    "name": "COACHHELMS_PUTT_MISS_ASK_THE_HOLES_FIRST",
+    "chCode": "CH-11960",
+    "meaning": "CoachHelm's putt-miss ask (chs-22, Slice 8a, `coachhelm_data_gap_prompt_v1`): the hole's first putt missed from a distance band one of the player's open reads is waiting on, and it has no miss tag",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/rounds.md"
+  },
+  {
+    "id": 110761,
+    "page": "P011",
+    "category": 7,
+    "item": 61,
+    "name": "THE_RECOVERY_TAP_THE_LAST_SHOT_RECORDED",
+    "chCode": "CH-11961",
+    "meaning": "The recovery tap (chs-23, Slice 8b, `coachhelm_data_prompts_v2`): the last shot recorded is a tee shot into the rough or an 'other' lie, not yet answered",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/rounds.md"
+  },
+  {
+    "id": 110762,
+    "page": "P011",
+    "category": 7,
+    "item": 62,
+    "name": "THE_COURSE_NUDGE_THE_ROUND_HAS_NO",
+    "chCode": "CH-11962",
+    "meaning": "The course nudge (chs-23, Slice 8b, `coachhelm_data_prompts_v2`): the round has no library course (a course typed by hand)",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/rounds.md"
+  },
+  {
     "id": 110801,
     "page": "P011",
     "category": 8,
@@ -13268,7 +13389,7 @@
     "item": 3,
     "name": "CONTINUE_SUBMIT_OR_START_A_ROUND_IS",
     "chCode": "CH-11703",
-    "meaning": "Continue, Submit or Start a round is tapped",
+    "meaning": "Continue, Submit or New round is tapped",
     "status": "implemented",
     "catalog": "docs/clubhouse/catalog/rounds.md"
   },
@@ -13347,6 +13468,17 @@
     "chCode": "CH-11710",
     "meaning": "Tap in is tapped (CH-11913)",
     "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/rounds.md"
+  },
+  {
+    "id": 111760,
+    "page": "P011",
+    "category": 17,
+    "item": 60,
+    "name": "A_CHIP_IN_A_DATA_PROMPT_IS",
+    "chCode": "CH-11760",
+    "meaning": "A chip in a data prompt is tapped: a putt miss side (CH-11960), Clear shot or Blocked or punch out (CH-11961)",
+    "status": "reserved",
     "catalog": "docs/clubhouse/catalog/rounds.md"
   },
   {
@@ -14711,8 +14843,8 @@
     "item": 9,
     "name": "PROFILE_THE_GAME_PROFILE_IS_ON_ITS",
     "chCode": "CH-13460",
-    "meaning": "Profile: the Game profile is on its way",
-    "status": "implemented",
+    "meaning": "(retired with the Game profile, chs-37) Profile: the Game profile is on its way",
+    "status": "deprecated",
     "catalog": "docs/clubhouse/catalog/coachhelm.md"
   },
   {
@@ -14821,7 +14953,7 @@
     "item": 4,
     "name": "PLAYER_COACHHELM_IS_OFF_FOR_THEM",
     "chCode": "CH-13304",
-    "meaning": "Player: CoachHelm is off for them (the board, and Game profile, Standing and Deep dive, which say the same, answered at once and with no sub-navigation)",
+    "meaning": "Player: CoachHelm is off for them (the board, and Standing and Deep dive, which say the same, answered at once and with no sub-navigation)",
     "status": "implemented",
     "catalog": "docs/clubhouse/catalog/coachhelm.md"
   },
@@ -14988,7 +15120,7 @@
     "item": 19,
     "name": "PROFILE_NO_MEASURE_HAS_ENOUGH_ROUNDS_YET",
     "chCode": "CH-13360",
-    "meaning": "Profile: no measure has enough rounds yet (no genome row, or one with nothing computed)",
+    "meaning": "Standing: How you play has no measure with enough rounds yet (no genome row, or one with nothing computed)",
     "status": "implemented",
     "catalog": "docs/clubhouse/catalog/coachhelm.md"
   },
@@ -14999,7 +15131,7 @@
     "item": 20,
     "name": "PROFILE_SOME_MEASURES_HAVE_ENOUGH_ROUNDS_AND",
     "chCode": "CH-13361",
-    "meaning": "Profile: some measures have enough rounds and some do not (an early read)",
+    "meaning": "Standing: How you play is an early read (some measures have enough rounds, some do not)",
     "status": "implemented",
     "catalog": "docs/clubhouse/catalog/coachhelm.md"
   },
@@ -15165,6 +15297,17 @@
     "name": "STANDING_A_PART_OF_THE_ROUND_ON",
     "chCode": "CH-13374",
     "meaning": "Standing: a part of the round on Where strokes go has no figure (no strokes-gained row for it, or no Tour figure to compare with)",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/coachhelm.md"
+  },
+  {
+    "id": 130460,
+    "page": "P013",
+    "category": 4,
+    "item": 60,
+    "name": "PLAYER_NO_COURSE_HAS_THREE_OF_THEIR",
+    "chCode": "CH-13333",
+    "meaning": "Player: no course has three of their countable rounds yet, or the course picked has fewer than three (chs-21)",
     "status": "implemented",
     "catalog": "docs/clubhouse/catalog/coachhelm.md"
   },
@@ -15452,7 +15595,7 @@
     "item": 25,
     "name": "PROFILE_THE_GAME_PROFILE_DOESNT_LOAD",
     "chCode": "CH-13260",
-    "meaning": "Profile: the Game profile doesn't load (the genome read fails or throws)",
+    "meaning": "Standing: How you play doesn't load (the genome read fails or throws)",
     "status": "implemented",
     "catalog": "docs/clubhouse/catalog/coachhelm.md"
   },
@@ -15584,8 +15727,8 @@
     "item": 37,
     "name": "PROFILE_WHAT_COACHHELM_SEES_DOESNT_LOAD",
     "chCode": "CH-13261",
-    "meaning": "Profile: what CoachHelm sees doesn't load (the player's insight read fails)",
-    "status": "implemented",
+    "meaning": "(retired with the Game profile, chs-37) Profile: what CoachHelm sees doesn't load",
+    "status": "deprecated",
     "catalog": "docs/clubhouse/catalog/coachhelm.md"
   },
   {
@@ -15662,6 +15805,17 @@
     "name": "RECHECK_FAILS",
     "chCode": "CH-13006",
     "meaning": "Re-check fails or is offline",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/coachhelm.md"
+  },
+  {
+    "id": 130660,
+    "page": "P013",
+    "category": 6,
+    "item": 60,
+    "name": "PLAYER_THEIR_OWN_COURSE_PLAN_DOESNT_LOAD",
+    "chCode": "CH-13233",
+    "meaning": "Player: their own course plan (chs-21) doesn't load: the courses or the plan read fails or throws",
     "status": "implemented",
     "catalog": "docs/clubhouse/catalog/coachhelm.md"
   },
@@ -16284,6 +16438,61 @@
     "catalog": "docs/clubhouse/catalog/coachhelm.md"
   },
   {
+    "id": 130760,
+    "page": "P013",
+    "category": 7,
+    "item": 60,
+    "name": "PLAYER_COACH_GAME_PROFILES_OLD_ADDRESS",
+    "chCode": "CH-13913",
+    "meaning": "Player, coach: Game profile's old address (`?view=profile`, and `view=profile&player=` for a coach; chs-37)",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/coachhelm.md"
+  },
+  {
+    "id": 130761,
+    "page": "P013",
+    "category": 7,
+    "item": 61,
+    "name": "ASK_AN_ANSWER_NAMES_A_PLAYERS_READS",
+    "chCode": "CH-13914",
+    "meaning": "Ask (coach): an answer names a player's reads (chs-39)",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/coachhelm.md"
+  },
+  {
+    "id": 130762,
+    "page": "P013",
+    "category": 7,
+    "item": 62,
+    "name": "STANDING_HOW_YOU_PLAY",
+    "chCode": "CH-13915",
+    "meaning": "Standing: How you play (chs-37)",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/coachhelm.md"
+  },
+  {
+    "id": 130763,
+    "page": "P013",
+    "category": 7,
+    "item": 63,
+    "name": "PLAYER_THEIR_OWN_COURSE_PLAN_OFFERED_BY",
+    "chCode": "CH-13916",
+    "meaning": "Player: their own Course plan (chs-21 / par-14, `coachhelm_course_plan_v1`), offered by the loader while the flag is on",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/coachhelm.md"
+  },
+  {
+    "id": 130764,
+    "page": "P013",
+    "category": 7,
+    "item": 64,
+    "name": "PLAYER_THE_PLAN_FOR_THE_COURSE_THEY",
+    "chCode": "CH-13917",
+    "meaning": "Player: the plan for the course they picked",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/coachhelm.md"
+  },
+  {
     "id": 130780,
     "page": "P013",
     "category": 7,
@@ -16755,6 +16964,17 @@
     "catalog": "docs/clubhouse/catalog/coachhelm.md"
   },
   {
+    "id": 131760,
+    "page": "P013",
+    "category": 17,
+    "item": 60,
+    "name": "PLAYER_A_COURSE_IS_PICKED_IN_THEIR",
+    "chCode": "CH-13733",
+    "meaning": "Player: a course is picked in their Course plan (chs-21)",
+    "status": "reserved",
+    "catalog": "docs/clubhouse/catalog/coachhelm.md"
+  },
+  {
     "id": 131801,
     "page": "P013",
     "category": 18,
@@ -16925,7 +17145,7 @@
     "item": 16,
     "name": "PROFILE_A_SCREEN_READER_MOVES_THROUGH_THE",
     "chCode": "CH-13860",
-    "meaning": "Profile: a screen reader moves through the page",
+    "meaning": "Standing: a screen reader moves through How you play",
     "status": "reserved",
     "catalog": "docs/clubhouse/catalog/coachhelm.md"
   },

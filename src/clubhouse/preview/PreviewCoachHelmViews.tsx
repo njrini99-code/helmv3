@@ -2,8 +2,7 @@
 
 import type { ChViewLoad } from '../data/coachhelm-views-shape';
 import { DeepDive } from '../screens/coachhelm/views/DeepDive';
-import { Profile } from '../screens/coachhelm/views/Profile';
-import { DiveSkeleton, ProfileSkeleton, StandingSkeleton } from '../screens/coachhelm/views/Skeletons';
+import { DiveSkeleton, StandingSkeleton } from '../screens/coachhelm/views/Skeletons';
 import { Standing } from '../screens/coachhelm/views/Standing';
 import {
   diveLoad,
@@ -15,10 +14,11 @@ import {
   PREVIEW_DIVE_PARTS_FAILED,
   PREVIEW_DIVE_TEAM_POOL,
   PREVIEW_DIVE_YOUNG,
-  PREVIEW_PROFILE,
-  PREVIEW_PROFILE_EDGE,
-  PREVIEW_PROFILE_EMPTY,
-  PREVIEW_PROFILE_PARTIAL,
+  gameLoad,
+  PREVIEW_GAME,
+  PREVIEW_GAME_EDGE,
+  PREVIEW_GAME_EMPTY,
+  PREVIEW_GAME_PARTIAL,
   PREVIEW_STANDING,
   PREVIEW_STANDING_EARLY,
   PREVIEW_STANDING_EMPTY,
@@ -26,7 +26,6 @@ import {
   PREVIEW_STANDING_READSFAILED,
   PREVIEW_STANDING_THIN,
   PREVIEW_STANDING_WOMENS,
-  profileLoad,
   standingLoad,
 } from './fixtures-coachhelm-views';
 import { PREVIEW_DIVE_CLEARED, PREVIEW_DIVE_CORRECTIONS, PREVIEW_DIVE_CORRECTIONS_GOOD, PREVIEW_DIVE_ENGINE, PREVIEW_DIVE_MANY_CLEARED, previewCorrectionWrites } from './fixtures-coachhelm-engine';
@@ -35,24 +34,20 @@ import { CorrectionWritesProvider } from '../screens/coachhelm/Corrections';
 const OFF = { status: 'off', reason: 'We are pausing AI insights until after the spring qualifier' } as const;
 
 /**
- * The player's CoachHelm drills for the dev preview: `?view=profile|standing|deep-dive`, and `?state=` for the read's answer
- * (each view lists its own in the preview route's docblock: the profile's are `partial`, `empty`, `edge`; Standing's `early`, `empty`, `womens`, `nobaseline`, `thin`, `readsfailed`; the Deep dive's `engine` (every engine flag on), `corrections` and `corrections-good` (the player's own chips), `cleared`, `manycleared`, `holes` (with `&insight=in-pen`), `young`, `partsfailed`, `teampool`, `empty`, `norounds`, with `&insight=` for the read it opens on; every view's `failed`, `off`, `loading`).
+ * The player's CoachHelm drills for the dev preview: `?view=standing|deep-dive` (and `profile`, Game profile's old address: Standing
+ * opened at How you play), and `?state=` for the read's answer (each view lists its own in the preview route's docblock: Standing's
+ * `early`, `empty`, `womens`, `nobaseline`, `thin`, `readsfailed`, and How you play's `gamepartial`, `gameempty`, `gameedge`,
+ * `gamefailed`; the Deep dive's `engine` (every engine flag on), `corrections` and `corrections-good` (the player's own chips), `cleared`, `manycleared`, `holes` (with `&insight=in-pen`), `young`, `partsfailed`, `teampool`, `empty`, `norounds`, with `&insight=` for the read it opens on; every view's `failed`, `off`, `loading`).
  */
 export function PreviewCoachHelmViews({ view, state, insight }: { view?: string; state?: string; insight?: string }) {
   const failed: ChViewLoad<never> = { status: 'failed' };
-  if (view === 'profile' || view == null) {
-    if (state === 'loading') return <ProfileSkeleton />;
-    if (state === 'failed') return <Profile load={failed} />;
-    if (state === 'off') return <Profile load={OFF} />;
-    const data = { partial: PREVIEW_PROFILE_PARTIAL, empty: PREVIEW_PROFILE_EMPTY, edge: PREVIEW_PROFILE_EDGE }[state ?? ''] ?? PREVIEW_PROFILE;
-    return <Profile load={profileLoad(data)} />;
-  }
-  if (view === 'standing') {
+  if (view === 'standing' || view === 'profile' || view == null) {
     if (state === 'loading') return <StandingSkeleton />;
     if (state === 'failed') return <Standing load={failed} />;
     if (state === 'off') return <Standing load={OFF} />;
     const data = { early: PREVIEW_STANDING_EARLY, empty: PREVIEW_STANDING_EMPTY, womens: PREVIEW_STANDING_WOMENS, nobaseline: PREVIEW_STANDING_NOBASELINE, thin: PREVIEW_STANDING_THIN, readsfailed: PREVIEW_STANDING_READSFAILED }[state ?? ''] ?? PREVIEW_STANDING;
-    return <Standing load={standingLoad(data)} />;
+    const game = state === 'gamefailed' ? failed : gameLoad({ gamepartial: PREVIEW_GAME_PARTIAL, gameempty: PREVIEW_GAME_EMPTY, gameedge: PREVIEW_GAME_EDGE }[state ?? ''] ?? PREVIEW_GAME);
+    return <Standing load={standingLoad(data)} game={game} at={view === 'profile' ? 'game' : undefined} />;
   }
   if (view === 'deep-dive') {
     if (state === 'loading') return <DiveSkeleton />;

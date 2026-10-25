@@ -1,8 +1,8 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 /**
- * `countReads` (spec D): the one count of what CoachHelm sees, which the coach's Game profile line, Game detail's line per section
- * and the roster's CoachHelm block all use. The Game profile line is checked against it on one fixture, so the three never disagree.
+ * `countReads` (spec D): the one count of what CoachHelm sees, which Game detail's line per section and the roster's CoachHelm block
+ * both use, so the two never disagree. (The coach's Game profile line counted with it too, until the Game profile folded into Standing.)
  */
 
 vi.mock('../../lib/track-server', () => ({ chLogServer: vi.fn() }));
@@ -17,11 +17,8 @@ vi.mock('@/lib/coachhelm/v3/genome/loader', () => ({ loadGenome: vi.fn(async () 
 vi.mock('@/lib/coachhelm/v3/chat/request-cache', () => ({ getCoachProgramPulse: vi.fn(), getCoachChatContext: async () => ({ roster: [] }) }));
 
 import { countReads, readAreaOf } from '../coachhelm-classify';
-import { loadCoachPlayerProfile, loadCoachPlayerScope } from '../coachhelm-player';
 import { bigNumber, MANY_STALE, parType, penalties, PREVIEW_TOUR, slope, teeInconclusive } from '../../preview/fixtures-coachhelm';
 
-const COACH = 'c0000000-0000-4000-8000-000000000001';
-const TEAM = 'a0000000-0000-4000-8000-000000000001';
 const PID = '11111111-1111-4111-8111-111111111111';
 const NEWEST = '2026-10-14';
 
@@ -47,15 +44,6 @@ describe('countReads', () => {
     // Before the newest round the stale read is current again, and costs strokes.
     expect(countReads(rows(), PREVIEW_TOUR, null)).toEqual({ costing: 3, working: 1 });
     expect(countReads([], PREVIEW_TOUR, NEWEST)).toEqual({ costing: 0, working: 0 });
-  });
-
-  it('equals the coach’s Game profile line on the same reads (readSeen counts with it)', async () => {
-    const scope = await loadCoachPlayerScope({ coachId: COACH, teamId: TEAM, playerId: PID });
-    if (scope.status !== 'ok') throw new Error(scope.status);
-    const profile = await loadCoachPlayerProfile({ scope: scope.scope });
-    if (profile.status !== 'ready') throw new Error(profile.status);
-    expect(profile.data.seen).toEqual({ ...countReads(rows(), PREVIEW_TOUR, scope.scope.lastRound), error: false });
-    expect(profile.data.seen).toEqual({ costing: 2, working: 1, error: false });
   });
 });
 

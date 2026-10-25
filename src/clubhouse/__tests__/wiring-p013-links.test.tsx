@@ -10,7 +10,8 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
  * - Ask's receipt chips and pulse findings carry the chat engine's own (Fairway) addresses. Production links them; Clubhouse
  *   drew a moved address (/tasks, /announcements, /intelligence) as plain text. They now open the Clubhouse screen the
  *   address's own alias redirect opens.
- * - The Game profile's "What CoachHelm sees" rows were a plain anchor (a full reload of the app); they are a client link.
+ * - The Game profile's "What CoachHelm sees" rows were a plain anchor (a full reload of the app); they were made a client link,
+ *   and went with the Game profile when it folded into Standing (its How you play section draws no such rows).
  */
 
 vi.mock('../lib/haptics', () => ({ haptic: vi.fn() }));
@@ -28,8 +29,6 @@ vi.mock('next/link', () => ({
 
 import { askLinkHref } from '../data/coachhelm-chat-links';
 import { AskReceiptCard } from '../screens/coachhelm/chat/ActionCard';
-import { Profile } from '../screens/coachhelm/views/Profile';
-import { PREVIEW_PROFILE_PARTIAL, profileLoad } from '../preview/fixtures-coachhelm-views';
 
 afterEach(cleanup);
 
@@ -99,17 +98,5 @@ describe('Ask’s receipt chips', () => {
     ]);
     // No address, no link: the count is text.
     expect(within(card).getByText('2 notes').tagName).toBe('SPAN');
-  });
-});
-
-describe('the Game profile’s "What CoachHelm sees" rows', () => {
-  it('open Deep dive with a client navigation, as every other link between the views does, not a full reload', () => {
-    const ins = (id: string, title: string, strength: boolean) =>
-      ({ id, title, strength, stale: null, category: 'Putting', value: '28%', lede: `${title} lede.`, evidence: { sample: '83 putts', window: '132 days', asOf: 'As of Oct 1' } }) as never;
-    render(wrap(<Profile load={profileLoad({ ...PREVIEW_PROFILE_PARTIAL, sees: { list: [ins('a', 'Short putts: 28%', false), ins('b', 'Approach: 84%', true)], error: false } })} />));
-    const board = screen.getByRole('region', { name: 'Short putts: 28%' });
-    const row = within(within(board).getByRole('region', { name: 'Costing you' })).getByRole('link');
-    expect(row.getAttribute('href')).toBe('/golf/dashboard/coachhelm?view=deep-dive&insight=a');
-    expect(row.hasAttribute('data-next-link')).toBe(true);
   });
 });

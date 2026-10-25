@@ -4,6 +4,7 @@ import { SkeletonCoachActions } from './SkeletonCoachActions';
 import { SkeletonLede, SkeletonListAction, SkeletonMine } from './SkeletonListParts';
 import { FORM_HELP, FORM_LEDE, stageNoteText } from './model';
 import '../../styles/qualifiers.css';
+import { LargeTitleSkeleton } from '../../ui/LargeTitle';
 
 /**
  * Route loading for the Qualifiers list: head, tools, the hero and a row of cards in their final slots; on a phone, the
@@ -15,7 +16,10 @@ export function QualifiersSkeleton({ mode = 'all' }: { mode?: 'all' | 'mine' }) 
       <header className="ch-qf-head" data-canopy-head="">
         <div>
           <Skeleton width={200} height={11} />
-          <Skeleton width={300} height={38} radius={10} />
+          <span className="ch-qf-skel-desk">
+            <Skeleton width={300} height={38} radius={10} />
+          </span>
+          <LargeTitleSkeleton width={230} />
           <Skeleton width={380} height={16} />
           {/* The phone draws the lede as the reader's own sentence instead of the bar above (qualifiers.css). */}
           <SkeletonLede mode={mode} />
@@ -272,9 +276,12 @@ export function QualifierSelectionSkeleton() {
           <Held className="ch-qf-held--eyebrow">
             <Skeleton width={140} height={14} />
           </Held>
-          <Held className="ch-qf-held--title">
-            <Skeleton width={320} height={34} radius={10} />
-          </Held>
+          <span className="ch-qf-skel-desk">
+            <Held className="ch-qf-held--title">
+              <Skeleton width={320} height={34} radius={10} />
+            </Held>
+          </span>
+          <LargeTitleSkeleton width={230} />
           <Held className="ch-qf-held--line">
             <Skeleton width={380} height={16} />
           </Held>
@@ -383,9 +390,12 @@ export function QualifierFormSkeleton() {
           <Held className="ch-qf-held--eyebrow">
             <Skeleton width={120} height={14} />
           </Held>
-          <Held className="ch-qf-held--title">
-            <Skeleton width={300} height={34} radius={10} />
-          </Held>
+          <span className="ch-qf-skel-desk">
+            <Held className="ch-qf-held--title">
+              <Skeleton width={300} height={34} radius={10} />
+            </Held>
+          </span>
+          <LargeTitleSkeleton width={200} />
           <Held className="ch-qf-held--line">
             <Skeleton width={420} height={16} />
           </Held>

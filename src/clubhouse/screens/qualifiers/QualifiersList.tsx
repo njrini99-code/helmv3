@@ -13,6 +13,8 @@ import { SectionBoundary } from '../../ui/SectionBoundary';
 import { haptic } from '../../lib/haptics';
 import { useChSessionState } from '../../lib/session-state';
 import { useRefresh } from '../../lib/use-refresh';
+import { RovingRows } from '../../ui/RovingRows';
+import { usePageKeys, type ChPageKey } from '../../shell/command/page-keys';
 import { chTrail } from '../../lib/track';
 import { formatToPar } from '../../lib/format';
 import { PhoneTop } from '../../shell/phone-chrome';
@@ -22,6 +24,9 @@ import { isPlainClick, noteOpenedFromList } from './return-state';
 import { playRoundHref } from './RoundsShowcase';
 import '../../styles/qualifiers.css';
 import { SerifText } from '../../ui/SerifText';
+import { usePressPrefetch } from '../../shell/use-prefetch-tabs';
+import { pluralWord } from '../../lib/plural';
+import { LargeTitle } from '../../ui/LargeTitle';
 
 type Filter = 'all' | 'active' | 'concluded';
 const isActive = (i: ChQListItem) => i.status !== 'completed';
@@ -34,8 +39,11 @@ const opened = (id: string, from: 'hero' | 'card') => (e: MouseEvent) => {
 };
 
 /** Qualifiers list, coach and player. `mine` is a player's own entries (/my-qualifiers). */
+const ROW_KEYS: readonly ChPageKey[] = [{ label: 'Move between qualifiers', keys: ['Up', 'Down'] }];
+
 export function QualifiersList({ data }: { data: ChQList }) {
   const { refresh, refreshing } = useRefresh();
+  usePageKeys('Qualifiers', ROW_KEYS);
   const coach = data.role === 'coach';
   // A player's own list is only as good as the entries read: without it nothing says who they are entered in.
   const mineUnknown = data.mode === 'mine' && !!data.entriesError;
@@ -78,14 +86,14 @@ export function QualifiersList({ data }: { data: ChQList }) {
           <span className="ch-qf-eyebrow ch-num is-bare">
             <span className="ch-qf-eyebrow__k">{data.mode === 'mine' ? 'My qualifiers' : 'Qualifiers'}</span>
           </span>
-          <h1>{title}</h1>
+          <LargeTitle>{title}</LargeTitle>
           <p>{lede}</p>
         </div>
         {/* One primary per screen: with no qualifiers the page empty state (CH-09301) carries Create qualifier. */}
         {coach && (data.listError || data.items.length > 0) && (
           <div className="ch-qf-head__act">
             <Button variant="primary" leftIcon={Plus} href={`${LIST}/new`}>
-              Create qualifier
+              New qualifier
             </Button>
           </div>
         )}
@@ -95,7 +103,7 @@ export function QualifiersList({ data }: { data: ChQList }) {
         <InlineNotice
           code="CH-09201"
           title="The qualifiers didn’t load"
-          body="Nothing has changed. Try again; the error has been reported."
+          body="Nothing has changed. Try again."
           onRetry={refresh}
           retrying={refreshing}
         />
@@ -127,7 +135,7 @@ export function QualifiersList({ data }: { data: ChQList }) {
             action={
               coach ? (
                 <Button variant="primary" leftIcon={Plus} href={`${LIST}/new`}>
-                  Create qualifier
+                  New qualifier
                 </Button>
               ) : undefined
             }
@@ -167,9 +175,13 @@ export function QualifiersList({ data }: { data: ChQList }) {
           )}
 
           <SectionBoundary surface="qualifiers.list" label="The qualifiers" code="CH-09211">
+            {/* B11: Up and Down walk the qualifiers (the hero, then the cards, in reading order), Home and End go to the
+                ends; the list is one Tab stop. */}
+            <RovingRows selector=".ch-qf-hero, .ch-qf-card" within=".ch-qf--list" />
             {!active.length && !concluded.length ? (
               <div className="ch-qf-empty ch-sheet">
                 <EmptyState
+                  kind="filtered"
                   compact
                   code="CH-09302"
                   icon={Search}
@@ -263,7 +275,7 @@ function Mine({ item }: { item: ChQListItem }) {
   }
   return (
     <span className="ch-qf-mine">
-      You’re {placeOf(item.mine.position)} · {formatToPar(item.mine.toPar)} · {item.mine.played} of {item.numRounds} {item.numRounds === 1 ? 'round' : 'rounds'}
+      You’re {placeOf(item.mine.position)} · {formatToPar(item.mine.toPar)} · {item.mine.played} of {item.numRounds} {pluralWord(item.numRounds, 'round')}
     </span>
   );
 }
@@ -290,10 +302,11 @@ const endedOf = (item: ChQListItem, standingsError: boolean, today: string | und
   endedLive({ status: item.status, endDate: item.endDate, today, entrants: item.entrants, numRounds: item.numRounds, submitted: standingsError ? null : item.submitted });
 
 function Hero({ item, standingsError, today }: { item: ChQListItem; standingsError: boolean; today?: string }) {
+  const press = usePressPrefetch();
   const live = item.status === 'in_progress' && !standingsError && item.leaders.length > 0;
   const ended = endedOf(item, standingsError, today);
   return (
-    <Link href={detailHref(item.id)} className="ch-qf-hero" onClick={opened(item.id, 'hero')}>
+    <Link href={detailHref(item.id)} className="ch-qf-hero" onClick={opened(item.id, 'hero')} {...press(detailHref(item.id))}>
       <div className="ch-qf-hero__main">
         <StatusPill status={item.status} ended={ended} />
         <h2>
@@ -344,8 +357,9 @@ function Hero({ item, standingsError, today }: { item: ChQListItem; standingsErr
 }
 
 function Card({ item, standingsError, today }: { item: ChQListItem; standingsError: boolean; today?: string }) {
+  const press = usePressPrefetch();
   return (
-    <Link href={detailHref(item.id)} className="ch-qf-card" onClick={opened(item.id, 'card')}>
+    <Link href={detailHref(item.id)} className="ch-qf-card" onClick={opened(item.id, 'card')} {...press(detailHref(item.id))}>
       <div className="ch-qf-card__h">
         <div>
           <h3>{item.name}</h3>

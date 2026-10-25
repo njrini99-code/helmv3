@@ -66,7 +66,7 @@ describe('Home reads: how deep', () => {
       ['golf_event_attendance', 'golf_event_attendance', 'golf_pga_standards', 'golf_rounds'],
       ['golf_holes', 'golf_round_stats_cache'],
     ]);
-    expect(result.greeting).toMatch(/Dana\.$/);
+    expect(result.greeting).toMatch(/Dana$/);
     expect(result.week.agenda.length).toBe(1);
     expect(result.leaderboard.rows).toHaveLength(2);
   });

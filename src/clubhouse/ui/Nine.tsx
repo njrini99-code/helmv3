@@ -1,4 +1,4 @@
-import { NO_DATA } from '../lib/format';
+import { NoData } from './NoData';
 import { ScoreMark } from './ScoreMark';
 
 export interface ChNineHole {
@@ -33,9 +33,9 @@ export function Nine({ label, holes, caption }: { label: 'Out' | 'In'; holes: Ch
         <tr className="is-par">
           <th scope="row">Par</th>
           {holes.map((h) => (
-            <td key={h.n}>{h.par ?? NO_DATA}</td>
+            <td key={h.n}>{h.par ?? <NoData />}</td>
           ))}
-          <td>{sum('par') ?? NO_DATA}</td>
+          <td>{sum('par') ?? <NoData />}</td>
         </tr>
         <tr>
           <th scope="row">Score</th>
@@ -45,7 +45,7 @@ export function Nine({ label, holes, caption }: { label: 'Out' | 'In'; holes: Ch
             </td>
           ))}
           <td>
-            <b>{sum('score') ?? NO_DATA}</b>
+            <b>{sum('score') ?? <NoData />}</b>
           </td>
         </tr>
       </tbody>

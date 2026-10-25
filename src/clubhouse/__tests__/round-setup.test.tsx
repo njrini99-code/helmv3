@@ -253,7 +253,7 @@ describe('Round setup: details and starting', () => {
     await waitFor(() => expect(code('CH-11007')).toHaveTextContent("Couldn’t start your round at Finley GC"));
     expect(onStarted).not.toHaveBeenCalled();
     expect(start.mock.calls[0]![0]).toMatchObject({ pick: { teeId: 'finley-blue' }, count: 18, type: 'practice', date: PREVIEW_SETUP_TODAY });
-    await user.click(within(code('CH-11007')!).getByRole('button', { name: 'Retry' }));
+    await user.click(within(code('CH-11007')!).getByRole('button', { name: 'Try again' }));
     await waitFor(() => expect(onStarted).toHaveBeenCalledWith('r-2'));
   });
 

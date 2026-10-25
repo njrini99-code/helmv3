@@ -14,6 +14,14 @@ function isConfigError(error: unknown): boolean {
   return error instanceof Error && /NEXT_PUBLIC_SUPABASE_(URL|ANON_KEY)/.test(error.message);
 }
 
+/**
+ * The liveness probe (src/app/api/ping/route.ts) only asks whether a request
+ * reaches the server. It carries no session work, so it skips updateSession and
+ * its GoTrue round trip: a ping that waits on the auth server cannot tell a
+ * slow Supabase from an offline phone.
+ */
+const LIVENESS_PATH = '/api/ping';
+
 const NATIVE_UA_MARKER = 'HelmSportsLabsApp';
 
 // Routes that belong to the app itself. Anything outside of these on a native
@@ -72,6 +80,10 @@ function isMarketingRoute(pathname: string): boolean {
  * Use proper authentication even in development.
  */
 export async function proxy(request: NextRequest) {
+  if (request.nextUrl.pathname === LIVENESS_PATH) {
+    return NextResponse.next();
+  }
+
   // App Store Guideline 3.1.1: block marketing routes for native iOS requests.
   if (isNativeUserAgent(request) && isMarketingRoute(request.nextUrl.pathname)) {
     return NextResponse.redirect(new URL('/golf/login', request.url));

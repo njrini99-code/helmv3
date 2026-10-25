@@ -4,13 +4,18 @@ import { LazyMotion, domAnimation } from 'motion/react';
 import { afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
 import '../../../__tests__/dialog-polyfill';
 import { CommandLayer } from '../CommandLayer';
-import { clearPeople, publishPeople } from '../people';
+import { clearPeople, publishPeople, usePeople } from '../people';
 import { resetRecent } from '../recent';
 
 const push = vi.fn();
 vi.mock('next/navigation', () => ({ useRouter: () => ({ push, replace: vi.fn(), prefetch: vi.fn(), back: vi.fn(), refresh: vi.fn() }), usePathname: () => '/golf/dashboard' }));
 vi.mock('../../../lib/haptics', () => ({ haptic: vi.fn() }));
 vi.mock('@/hooks/golf/use-appearance-preferences', () => ({ useAppearancePreferences: () => ({ showAnimations: false }) }));
+// The real loader is a server action; each test hands CommandLayer its own (loadPeople).
+vi.mock('../../../data/palette-people', () => ({ getPalettePeople: vi.fn(async () => null) }));
+// The iOS app or a browser: Cmd or Ctrl and 1 to 9 are bound only in the app (decision 13).
+const native = { on: false };
+vi.mock('@/lib/utils/capacitor', async (importOriginal) => ({ ...(await importOriginal<typeof import('@/lib/utils/capacitor')>()), isNativeApp: () => native.on }));
 
 let desktop = true;
 beforeAll(() => {
@@ -25,6 +30,7 @@ beforeAll(() => {
 
 beforeEach(() => {
   desktop = true;
+  native.on = false;
   push.mockClear();
   window.sessionStorage.clear();
   resetRecent();
@@ -39,12 +45,17 @@ afterEach(() => {
   cleanup();
 });
 
-function mount(role: 'coach' | 'player' = 'coach', extra: React.ReactNode = null) {
+/** A palette People loader that answers with `list` (the server action's stand-in). */
+const loaderOf = (list: { id: string; name: string }[] | null) => vi.fn(async () => list);
+/** Lets the palette's People load settle after it opens. */
+const settle = () => act(async () => {});
+
+function mount(role: 'coach' | 'player' = 'coach', extra: React.ReactNode = null, loadPeople = loaderOf([])) {
   return render(
     <LazyMotion features={domAnimation}>
       <div className="ch-root" data-ui="clubhouse">
         <main id="ch-canvas">{extra}</main>
-        <CommandLayer role={role} pathname="/golf/dashboard" userId="u1" teamId="t1" />
+        <CommandLayer role={role} pathname="/golf/dashboard" userId="u1" teamId="t1" loadPeople={loadPeople} />
       </div>
     </LazyMotion>,
   );
@@ -125,15 +136,68 @@ describe('the palette (Cmd or Ctrl K)', () => {
     expect(push).toHaveBeenCalledWith('/golf/dashboard/roster', { scroll: false });
   });
 
-  it('says nothing matched and offers the nearest section, which Enter takes', () => {
+  it('says nothing matched and offers the nearest section, which Enter takes', async () => {
     mount('coach');
     key('k', { metaKey: true });
+    await settle();
     search('rostr');
     expect(options()[0]).toBe('Roster');
     search('zzzqxw');
     expect(within(palette()).getByRole('status').textContent).toMatch(/Nothing matches/);
-    expect(within(palette()).getByRole('status').textContent).toMatch(/Players appear here once you have opened the Roster/);
+    // Players were read as it opened (decision 16), so it no longer sends the coach to the Roster first.
+    expect(within(palette()).getByRole('status').textContent).not.toMatch(/Roster|your players/i);
     expect(within(palette()).queryAllByRole('option')).toHaveLength(0);
+  });
+
+  it('while a coach\'s players are on their way, a search says so quietly, under results or in the no-match line, and stops once they land', async () => {
+    let answer: (list: { id: string; name: string }[]) => void = () => {};
+    mount('coach', null, vi.fn(() => new Promise<{ id: string; name: string }[]>((done) => (answer = done))));
+    key('k', { metaKey: true });
+    // Nothing typed: the launcher shows no People, so nothing waits.
+    expect(within(palette()).queryByText('Looking up your players…')).toBeNull();
+    search('rost');
+    expect(options()).toContain('Roster');
+    expect(within(palette()).getByRole('status').textContent).toBe('Looking up your players…');
+    search('zzzqxw');
+    expect(within(palette()).getByRole('status').textContent).toMatch(/Nothing matches.*Looking up your players…/);
+    await act(async () => answer([{ id: 'p1', name: 'Mae Lindqvist' }]));
+    expect(within(palette()).queryByText('Looking up your players…')).toBeNull();
+    search('mae');
+    expect(options()).toContain('Mae Lindqvist');
+    expect(within(palette()).queryByRole('status')).toBeNull();
+  });
+
+  it('players that didn\'t load are said in a search, and the next opening asks again', async () => {
+    const load = vi.fn<() => Promise<{ id: string; name: string }[] | null>>().mockResolvedValueOnce(null).mockResolvedValueOnce([{ id: 'p1', name: 'Mae Lindqvist' }]);
+    mount('coach', null, load);
+    key('k', { metaKey: true });
+    await settle();
+    search('mae');
+    expect(within(palette()).getByRole('status').textContent).toMatch(/Your players didn’t load\. Close this and open it again to try again\./);
+    key('k', { metaKey: true });
+    key('k', { metaKey: true });
+    await settle();
+    expect(load).toHaveBeenCalledTimes(2);
+    search('mae');
+    expect(options()).toContain('Mae Lindqvist');
+    expect(within(palette()).queryByText(/didn’t load/)).toBeNull();
+  });
+
+  it('a failed read says nothing once the Roster has published players to search', async () => {
+    publishPeople([{ id: 'r1', name: 'Mae Lindqvist', detail: 'Junior' }]);
+    mount('coach', null, vi.fn(async () => null));
+    key('k', { metaKey: true });
+    await settle();
+    search('mae');
+    expect(options()).toContain('Mae Lindqvist');
+    expect(within(palette()).queryByText(/didn’t load/)).toBeNull();
+  });
+
+  it('a player\'s search never waits on players', () => {
+    mount('player');
+    key('k', { metaKey: true });
+    search('zzzqxw');
+    expect(within(palette()).getByRole('status').textContent).not.toMatch(/your players/i);
   });
 
   it('draws the new-event key only where it works, on Home', () => {
@@ -145,6 +209,59 @@ describe('the palette (Cmd or Ctrl K)', () => {
   });
 });
 
+describe('people read when the palette opens, before Roster opens (owner, decision 16)', () => {
+  const SHELL = [{ id: 's1', name: 'Mae Lindqvist' }, { id: 's2', name: 'Theo Barros' }];
+
+  it('a coach finds a player cold, from the names read on opening, and opens their stats', async () => {
+    const load = loaderOf(SHELL);
+    mount('coach', null, load);
+    expect(load).not.toHaveBeenCalled();
+    key('k', { metaKey: true });
+    await settle();
+    expect(load).toHaveBeenCalledTimes(1);
+    search('lindqvist');
+    expect(options()).toEqual(['Mae Lindqvist']);
+    fireEvent.click(within(palette()).getByRole('option', { name: /Mae Lindqvist/ }));
+    expect(push).toHaveBeenCalledWith('/golf/dashboard/stats?player=s1', { scroll: false });
+  });
+
+  it('a player never reads them', async () => {
+    let seen: readonly unknown[] = ['unset'];
+    function Probe() {
+      seen = usePeople();
+      return null;
+    }
+    const load = loaderOf(SHELL);
+    mount('player', <Probe />, load);
+    expect(seen).toEqual([]);
+    key('k', { metaKey: true });
+    await settle();
+    expect(load).not.toHaveBeenCalled();
+    search('mae');
+    expect(options()).not.toContain('Mae Lindqvist');
+  });
+
+  it('a page\'s own list wins over the seed, whether it publishes before or after', async () => {
+    publishPeople([{ id: 'r1', name: 'Mae Lindqvist', detail: 'Junior' }]);
+    mount('coach', null, loaderOf(SHELL));
+    key('k', { metaKey: true });
+    await settle();
+    search('theo');
+    expect(options()).not.toContain('Theo Barros');
+    cleanup();
+    clearPeople();
+
+    mount('coach', null, loaderOf(SHELL));
+    act(() => publishPeople([{ id: 'r1', name: 'Mae Lindqvist', detail: 'Junior' }]));
+    key('k', { metaKey: true });
+    await settle();
+    search('theo');
+    expect(options()).not.toContain('Theo Barros');
+    search('mae');
+    expect(within(palette()).getByRole('option', { name: /Mae Lindqvist/ })).toHaveTextContent('Junior');
+  });
+});
+
 const COACH = 'coach' as const;
 describe('people across a team switch', () => {
   /** A page that publishes the players it loaded, in an effect, as the Roster does. */
@@ -152,11 +269,11 @@ describe('people across a team switch', () => {
     useEffect(() => publishPeople(names.map((n, i) => ({ id: `p${i}`, name: n }))), [names]);
     return null;
   }
-  const tree = (teamId: string, names: string[]) => (
+  const tree = (teamId: string, names: string[], loadPeople = loaderOf(null), userId = 'u1') => (
     <LazyMotion features={domAnimation}>
       <div className="ch-root" data-ui="clubhouse">
-        <Page names={names} />
-        <CommandLayer role={COACH} pathname="/golf/dashboard/roster" userId="u1" teamId={teamId} />
+        {names.length > 0 && <Page names={names} />}
+        <CommandLayer role={COACH} pathname="/golf/dashboard/roster" userId={userId} teamId={teamId} loadPeople={loadPeople} />
       </div>
     </LazyMotion>
   );
@@ -169,6 +286,63 @@ describe('people across a team switch', () => {
     key('k', { metaKey: true });
     search('pri');
     expect(options()).toContain('Priya Natarajan');
+    search('jon');
+    expect(options()).not.toContain('Jonah Okafor');
+  });
+
+  it('a team switch drops the old team\'s names, and a Roster list published on the old team, for the new team\'s', async () => {
+    const { rerender } = render(tree('t1', ['Jonah Okafor'], loaderOf([{ id: 'a', name: 'Jonah Okafor' }])));
+    key('k', { metaKey: true });
+    await settle();
+    // Cmd K again closes it (the one chord that works over the palette).
+    key('k', { metaKey: true });
+    rerender(tree('t2', [], loaderOf([{ id: 'b', name: 'Priya Natarajan' }])));
+    key('k', { metaKey: true });
+    await settle();
+    search('pri');
+    expect(options()).toContain('Priya Natarajan');
+    search('jon');
+    expect(options()).not.toContain('Jonah Okafor');
+  });
+
+  it('leaving the frame (the idle timeout\'s sign-out goes to login without a page load) empties the list', () => {
+    let seen: readonly unknown[] = ['unset'];
+    function Probe() {
+      seen = usePeople();
+      return null;
+    }
+    const probe = render(<Probe />);
+    const { unmount } = render(tree('t1', ['Jonah Okafor']));
+    expect(seen).toHaveLength(1);
+    unmount();
+    probe.rerender(<Probe />);
+    expect(seen).toEqual([]);
+    probe.unmount();
+  });
+
+  it('a People reply that lands after the frame has gone never refills the list', async () => {
+    let seen: readonly unknown[] = ['unset'];
+    function Probe() {
+      seen = usePeople();
+      return null;
+    }
+    let answer: (list: { id: string; name: string }[]) => void = () => {};
+    const late = vi.fn(() => new Promise<{ id: string; name: string }[]>((done) => (answer = done)));
+    const probe = render(<Probe />);
+    const { unmount } = render(tree('t1', [], late));
+    key('k', { metaKey: true });
+    expect(late).toHaveBeenCalledTimes(1);
+    unmount();
+    await act(async () => answer([{ id: 'a', name: 'Jonah Okafor' }]));
+    probe.rerender(<Probe />);
+    expect(seen).toEqual([]);
+    probe.unmount();
+  });
+
+  it('another person signing in on the same team never sees the last one\'s list', () => {
+    const { rerender } = render(tree('t1', ['Jonah Okafor']));
+    rerender(tree('t1', [], loaderOf(null), 'u2'));
+    key('k', { metaKey: true });
     search('jon');
     expect(options()).not.toContain('Jonah Okafor');
   });
@@ -285,6 +459,56 @@ describe('G then a letter, / and ?', () => {
     expect(within(sheet).getByText('Rounds')).toBeInTheDocument();
     expect(within(sheet).queryByText('Recruiting')).toBeNull();
     expect(within(sheet).queryByText('New event')).toBeNull();
+  });
+
+  it('in a browser, Cmd or Ctrl and a digit are left to it (its tabs): nothing is prevented or pushed, and the sheet offers none', () => {
+    mount('coach');
+    let notPrevented = true;
+    act(() => {
+      notPrevented = fireEvent.keyDown(window, { key: '2', metaKey: true });
+    });
+    expect(notPrevented).toBe(true);
+    act(() => {
+      notPrevented = fireEvent.keyDown(window, { key: '6', ctrlKey: true });
+    });
+    expect(notPrevented).toBe(true);
+    // Cmd N is never bound either: a browser's new window.
+    act(() => {
+      notPrevented = fireEvent.keyDown(window, { key: 'n', metaKey: true });
+    });
+    expect(notPrevented).toBe(true);
+    expect(push).not.toHaveBeenCalled();
+    key('?', { shiftKey: true });
+    const sheet = screen.getByRole('dialog', { name: 'Keyboard shortcuts' });
+    const home = within(sheet).getByText('Home', { selector: 'dt' }).closest('.ch-cmd-row') as HTMLElement;
+    expect(Array.from(home.querySelectorAll('kbd')).map((k) => k.textContent)).toEqual(['G', 'H']);
+  });
+
+  it('in the app, Cmd or Ctrl and a digit goes to that sidebar section, from a field too, and not while a dialog is open', () => {
+    native.on = true;
+    mount('coach', <input aria-label="Notes" />);
+    key('2', { metaKey: true });
+    expect(push).toHaveBeenLastCalledWith('/golf/dashboard/coachhelm', { scroll: false });
+    const field = screen.getByLabelText('Notes');
+    field.focus();
+    key('6', { ctrlKey: true }, field);
+    expect(push).toHaveBeenLastCalledWith('/golf/dashboard/roster', { scroll: false });
+    push.mockClear();
+    key('?', { shiftKey: true });
+    key('1', { metaKey: true }, screen.getByRole('dialog', { name: 'Keyboard shortcuts' }));
+    expect(push).not.toHaveBeenCalled();
+  });
+
+  it('in the app, the shortcuts sheet draws each section\'s digit beside its letter, and none for the tenth', () => {
+    native.on = true;
+    mount('coach');
+    key('?', { shiftKey: true });
+    const sheet = screen.getByRole('dialog', { name: 'Keyboard shortcuts' });
+    const row = (label: string) => within(sheet).getByText(label, { selector: 'dt' }).closest('.ch-cmd-row') as HTMLElement;
+    const caps = (label: string) => Array.from(row(label).querySelectorAll('kbd')).map((k) => k.textContent);
+    expect(caps('Home')).toEqual(['G', 'H', 'Ctrl', '1']);
+    expect(caps('Qualifiers')).toEqual(['G', 'Q', 'Ctrl', '9']);
+    expect(caps('Recruiting')).toEqual(['G', 'E']);
   });
 
   it('does nothing on a phone', () => {

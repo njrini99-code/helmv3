@@ -1,4 +1,5 @@
 import type { WhatsNewItem, WhatsNewType } from '@/app/golf/actions/whats-new';
+import { isoDay } from '../lib/dates';
 
 /**
  * What's new for a coach: the team's CoachHelm activity of the past seven days (insights detected, matured and resolved,
@@ -74,7 +75,7 @@ function validZone(zone: string | null | undefined): string {
   }
 }
 
-const dayKey = (ms: number, zone: string) => new Intl.DateTimeFormat('en-CA', { timeZone: zone, year: 'numeric', month: '2-digit', day: '2-digit' }).format(new Date(ms));
+const dayKey = (ms: number, zone: string) => isoDay(ms, zone);
 
 /** One calendar day before `key`, by date arithmetic alone. */
 function previousDay(key: string): string {

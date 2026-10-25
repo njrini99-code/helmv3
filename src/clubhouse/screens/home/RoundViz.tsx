@@ -3,6 +3,7 @@
  * gives: greens hit out of the greens played, putts against two on every green (36), and strokes gained from zero.
  * Decorative; the figure beside each says it in words.
  */
+import { changeTone } from '../../lib/format';
 
 /** "14/18": that many greens, lit out of the round's greens. */
 export function GirViz({ gir }: { gir: string | null }) {
@@ -20,12 +21,15 @@ export function GirViz({ gir }: { gir: string | null }) {
   );
 }
 
-/** Putts on a track to 40, ticked at 36 (two putts on every green). */
+/**
+ * Putts on a track to 40, ticked at 36 (two putts on every green). At or under the tick is the good side, over it the
+ * other; the tone is the vocabulary's (CONS-20: is-gain or is-loss). Whether exactly 36 is even waits on the owner.
+ */
 export function PuttsViz({ putts }: { putts: number | null }) {
   if (putts == null) return null;
   return (
     <span className="ch-rviz ch-rviz--putts" aria-hidden="true">
-      <i className={putts <= 36 ? 'is-good' : 'is-over'} style={{ width: `${Math.min(100, (putts / 40) * 100)}%` }} />
+      <i className={putts <= 36 ? 'is-gain' : 'is-loss'} style={{ width: `${Math.min(100, (putts / 40) * 100)}%` }} />
       <b style={{ left: '90%' }} />
     </span>
   );
@@ -37,7 +41,7 @@ export function SgViz({ sg }: { sg: number | null }) {
   const w = Math.min(50, (Math.abs(sg) / 3) * 50);
   return (
     <span className="ch-rviz ch-rviz--sg" aria-hidden="true">
-      <i className={sg >= 0 ? 'is-gain' : 'is-loss'} style={sg >= 0 ? { left: '50%', width: `${w}%` } : { right: '50%', width: `${w}%` }} />
+      <i className={changeTone(sg, false, 1)} style={sg >= 0 ? { left: '50%', width: `${w}%` } : { right: '50%', width: `${w}%` }} />
     </span>
   );
 }

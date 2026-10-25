@@ -10,6 +10,7 @@ import { PageRefreshNotice } from '../../ui/RefreshNotice';
 import { Icon } from '../../ui/Icon';
 import { SectionBoundary } from '../../ui/SectionBoundary';
 import { useChPhone } from '../../lib/use-phone';
+import { useChClockText } from '../../lib/use-clock';
 import { useNow } from '../../lib/use-now';
 import { rebuiltHref } from '../../shell/nav';
 import { LinkPending } from '../../shell/LinkPending';
@@ -25,6 +26,7 @@ import { NoRoundsYet, PlayerHomePhone } from './PlayerHomePhone';
 import { Week } from './Week';
 import { messageCoachHref, postRoundHref } from './player-links';
 import { useHomeDayRollover } from './use-day-rollover';
+import { NoTeam } from '../../ui/NoTeam';
 import '../../styles/home.css';
 
 /**
@@ -98,7 +100,7 @@ function DeskHead({ data, post }: { data: ChPlayerHome; post: string | null }) {
         </Button>
         {post && (
           <Button variant="primary" leftIcon={Plus} href={post}>
-            Start a round
+            New round
           </Button>
         )}
       </div>
@@ -108,6 +110,7 @@ function DeskHead({ data, post }: { data: ChPlayerHome; post: string | null }) {
 
 /** Up next inside the week (Player - Home.html `pv-next`): type, when, where, and the countdown. */
 function DeskNext({ e, frozen }: { e: ChHomeEvent; frozen?: string }) {
+  const t = useChClockText();
   const ticking = useNow();
   const now = frozen ? new Date(frozen) : ticking;
   const when = whenLabel(e, now);
@@ -118,10 +121,10 @@ function DeskNext({ e, frozen }: { e: ChHomeEvent; frozen?: string }) {
           <Icon icon={TYPE_ICON[e.type]} size={13} />
           Up next · {TYPE_LABEL[e.type]}
         </span>
-        <span className={'ch-num' + (when.soon ? ' is-soon' : '')}>{when.text}</span>
+        <span className={'ch-num' + (when.soon ? ' is-soon' : '')}>{t(when.text)}</span>
       </span>
       <span className="ch-ph-next__t">{e.title}</span>
-      <span className="ch-ph-next__m ch-num">{[e.rangeLabel, e.location].filter(Boolean).join(' · ')}</span>
+      <span className="ch-ph-next__m ch-num">{[t(e.rangeLabel), e.location].filter(Boolean).join(' · ')}</span>
       <MineBadge mine={e.mine} />
       {!e.allDay && <Countdown to={e.startIso} frozen={frozen} />}
       <LinkPending />
@@ -158,7 +161,7 @@ function PlayerFirstRun({ data }: { data: ChPlayerHome }) {
         action={
           start ? (
             <Button variant="primary" leftIcon={Plus} href={start}>
-              Start a round
+              New round
             </Button>
           ) : undefined
         }
@@ -177,23 +180,9 @@ function PlayerFirstRun({ data }: { data: ChPlayerHome }) {
 /** A player on no active team: nothing to show yet, and how that changes. */
 export function PlayerHomeNoTeam() {
   // Joining a team lives in Settings' Golf profile (CH-8302).
-  const settings = rebuiltHref('/golf/dashboard/settings?section=golf', 'player');
   return (
     <main className="ch-h-main">
-      <EmptyState
-        size="page"
-        code="CH-2313"
-        shape="rows"
-        title="You aren’t on a team yet"
-        body="Ask your coach for your team’s code or an invite. Once you join, Home shows your week, your rounds and your stats."
-        action={
-          settings ? (
-            <Button variant="primary" href={settings}>
-              Open team settings
-            </Button>
-          ) : undefined
-        }
-      />
+      <NoTeam code="CH-2313" coach={false} body="Ask your coach for your team’s code or an invite. Once you join, Home shows your week, your rounds and your stats." />
     </main>
   );
 }

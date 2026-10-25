@@ -6,6 +6,7 @@
  */
 
 import type { GolfAnnouncementMeta } from '@/lib/types/golf';
+import type { ChClock } from '../../lib/clock-cookie';
 
 export interface ChPerson {
   userId: string;
@@ -25,6 +26,11 @@ export interface ChConv {
   memberIds: string[];
   memberCount: number;
   unread: number;
+  /**
+   * Marked unread from the row menu or a swipe (owner decision 14). The database has no per-person unread flag, so the
+   * mark is this device's own (marked-unread.ts) and opening or marking the conversation read clears it.
+   */
+  markedUnread?: boolean;
   lastAt: string | null;
   lastSenderId: string | null;
   lastText: string;
@@ -80,15 +86,15 @@ function parts(iso: string, timeZone: string) {
 }
 const dayDiff = (a: string, b: string) => Math.round((Date.parse(`${a}T12:00:00Z`) - Date.parse(`${b}T12:00:00Z`)) / 86400000);
 
-export function clock(iso: string, timeZone: string): string {
-  return new Intl.DateTimeFormat('en-US', { timeZone, hour: 'numeric', minute: '2-digit' }).format(new Date(iso));
+export function clock(iso: string, timeZone: string, hours: ChClock = '12'): string {
+  return new Intl.DateTimeFormat('en-US', { timeZone, hour: hours === '24' ? '2-digit' : 'numeric', minute: '2-digit', ...(hours === '24' ? { hourCycle: 'h23' as const } : {}) }).format(new Date(iso));
 }
 
 /** Rail time: "2:31 PM", "Yesterday", "Sat", "Oct 8". */
-export function railTime(iso: string | null, now: string, timeZone: string): string {
+export function railTime(iso: string | null, now: string, timeZone: string, hours: ChClock = '12'): string {
   if (!iso) return '';
   const d = dayDiff(parts(now, timeZone), parts(iso, timeZone));
-  if (d <= 0) return clock(iso, timeZone);
+  if (d <= 0) return clock(iso, timeZone, hours);
   if (d === 1) return 'Yesterday';
   if (d < 7) return new Intl.DateTimeFormat('en-US', { timeZone, weekday: 'short' }).format(new Date(iso));
   return new Intl.DateTimeFormat('en-US', { timeZone, month: 'short', day: 'numeric' }).format(new Date(iso));
@@ -143,12 +149,17 @@ export function threadItems(msgs: ChMsg[], now: string, timeZone: string): ChThr
   return out;
 }
 
-export function filterConvs(convs: ChConv[], filter: ChConvFilter, q: string): ChConv[] {
-  const s = q.trim().toLowerCase();
-  return convs.filter((c) => (filter === 'unread' ? c.unread > 0 : filter === 'groups' ? c.group : true) && (!s || c.title.toLowerCase().includes(s) || c.lastText.toLowerCase().includes(s)));
+/** Whether a conversation reads as unread: something new in it, or marked unread by the viewer. */
+export function isUnread(c: Pick<ChConv, 'unread' | 'markedUnread'>): boolean {
+  return c.unread > 0 || !!c.markedUnread;
 }
 
-export const firstName = (name: string) => name.split(/\s+/)[0] ?? name;
+export function filterConvs(convs: ChConv[], filter: ChConvFilter, q: string): ChConv[] {
+  const s = q.trim().toLowerCase();
+  return convs.filter((c) => (filter === 'unread' ? isUnread(c) : filter === 'groups' ? c.group : true) && (!s || c.title.toLowerCase().includes(s) || c.lastText.toLowerCase().includes(s)));
+}
+
+export { firstName } from '../../lib/names';
 
 /**
  * Where the "New" divider goes when a thread opens: the earliest of the last `unread` messages someone else sent. Null

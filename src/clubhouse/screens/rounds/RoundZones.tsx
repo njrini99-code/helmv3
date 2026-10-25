@@ -3,8 +3,11 @@
 import { useId, useLayoutEffect, useRef, useState, type CSSProperties } from 'react';
 import type { ChReviewHole } from '../../data/round-review-shape';
 import { formatSigned, formatToPar, NO_DATA } from '../../lib/format';
+import { NoData } from '../../ui/NoData';
 import { ZoneBlock } from '../../ui/Zone';
 import { costliest, flow, puttBands, puttSplit, trail, type HoleResult } from './round-insights';
+import { afterRailMove } from '../../lib/rail-fold';
+import { plural, pluralWord } from '../../lib/plural';
 
 /**
  * P011: the pictures of a round's review. A zone is a band under a gold rule: what the area is and one reading on the left,
@@ -123,7 +126,7 @@ export function ScoreFlow({
         {ticks.map((v) => (
           <g key={v}>
             <line x1={X0 - 8} y1={y(v)} x2={X1 + 10} y2={y(v)} stroke={v === 0 ? 'var(--ch-stage-ink-soft)' : 'var(--ch-stage-rule)'} strokeWidth={v === 0 ? 1.5 : 1} />
-            <text className={tickAlt(v) ? 'ch-rzsvg__alt' : undefined} x={X0 - 14} y={y(v) + 4} textAnchor="end" fontSize={12} fontWeight={v === 0 ? 700 : 500} fill="var(--ch-stage-ink-soft)">
+            <text className={tickAlt(v) ? 'ch-rzsvg__alt ch-num' : 'ch-num'} x={X0 - 14} y={y(v) + 4} textAnchor="end" fontSize={12} fontWeight={v === 0 ? 700 : 500} fill="var(--ch-stage-ink-soft)">
               {label(v)}
             </text>
           </g>
@@ -258,7 +261,7 @@ export function PuttingViz({ holes }: { holes: ChReviewHole[] }) {
         <div className="ch-rzpt" role="img" aria-label={`Putts by hole: ${holes.map((h) => `${h.n} ${h.putts ?? 'none'}`).join(', ')}`}>
           {holes.map((h) => (
             <span key={h.n} className="ch-rzpt__c">
-              <b className="ch-num">{h.putts ?? NO_DATA}</b>
+              <b className="ch-num">{h.putts ?? <NoData />}</b>
               <i className={h.putts == null ? '' : h.putts <= 1 ? 'is-one' : h.putts === 2 ? 'is-two' : 'is-three'} style={{ '--ch-rz-p': h.putts == null ? 0 : h.putts / max } as CSSProperties} />
               <em>{h.n}</em>
             </span>
@@ -272,7 +275,7 @@ export function PuttingViz({ holes }: { holes: ChReviewHole[] }) {
             <b className="ch-num">{split.two}</b>two-putt holes
           </span>
           <span className={split.three ? 'is-warn' : undefined}>
-            <b className="ch-num">{split.three}</b>three-putt {split.three === 1 ? 'hole' : 'holes'}
+            <b className="ch-num">{split.three}</b>three-putt {pluralWord(split.three, 'hole')}
           </span>
         </div>
       </ZoneBlock>
@@ -285,7 +288,7 @@ export function PuttingViz({ holes }: { holes: ChReviewHole[] }) {
                 <div className="ch-rzrow__t" aria-hidden="true">
                   {b.attempts > 0 && <i style={{ '--ch-rz-p': b.made / b.attempts } as CSSProperties} />}
                 </div>
-                <b className="ch-num">{b.attempts > 0 ? `${b.made} of ${b.attempts}` : NO_DATA}</b>
+                <b className="ch-num">{b.attempts > 0 ? `${b.made} of ${b.attempts}` : <NoData />}</b>
               </div>
             ))}
           </div>
@@ -320,7 +323,8 @@ function useLabelSize(fallback: number) {
     };
     read();
     if (typeof ResizeObserver === 'undefined') return;
-    const ro = new ResizeObserver(read);
+    // Once the sidebar's fold has settled, not on every frame of it (lib/rail-fold.ts).
+    const ro = new ResizeObserver(() => afterRailMove(read));
     ro.observe(svg);
     return () => ro.disconnect();
   }, [fallback]);
@@ -345,7 +349,7 @@ export function ShotTrail({ hole }: { hole: ChReviewHole }) {
   const width = (text: string) => text.length * fs * 0.46;
   const GAP = fs * 0.6;
   const teeText = hole.yards ? `Tee · ${hole.yards} yds` : 'Tee';
-  const puttText = t.putts > 0 ? `${t.putts} ${t.putts === 1 ? 'putt' : 'putts'}${t.firstPutt != null ? ` · from ${t.firstPutt} ft` : ''}` : null;
+  const puttText = t.putts > 0 ? `${plural(t.putts, 'putt')}${t.firstPutt != null ? ` · from ${t.firstPutt} ft` : ''}` : null;
   const puttLeft = puttText ? RIGHT - width(puttText) : Infinity;
   let edge = X0 - 8 + width(teeText);
   const shown = new Set<number>();
@@ -357,7 +361,7 @@ export function ShotTrail({ hole }: { hole: ChReviewHole }) {
     shown.add(st.n);
     edge = b + w / 2;
   }
-  const label = `Hole ${hole.n} shots along the hole: ${t.steps.map((s) => `${s.kind}${s.penalty ? ' penalty' : ''}${s.left ? ` to ${s.left}` : ''}`).join(', ')}${t.putts ? `, then ${t.putts} ${t.putts === 1 ? 'putt' : 'putts'}` : ''}`;
+  const label = `Hole ${hole.n} shots along the hole: ${t.steps.map((s) => `${s.kind}${s.penalty ? ' penalty' : ''}${s.left ? ` to ${s.left}` : ''}`).join(', ')}${t.putts ? `, then ${plural(t.putts, 'putt')}` : ''}`;
   return (
     <div className="ch-rzplate">
       <svg ref={svgRef} className="ch-rzsvg ch-rztrail" viewBox="0 0 740 150" role="img" aria-label={label}>

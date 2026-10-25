@@ -30,8 +30,8 @@ import { CancelEvent, DeleteEvent, EventEditor, SubscribeSheet, type EditorSeed 
 import { BusySheet } from './extras';
 import { CalendarPhone } from './CalendarPhone';
 import { Modal } from '../../ui/Modal';
-import { Tooltip } from '../../ui/Tooltip';
 import { useChPhone } from '../../lib/use-phone';
+import { useChClock } from '../../lib/use-clock';
 import { useChReducedMotion } from '../../lib/reduced-motion';
 import { CH_POP, chTween } from '../../lib/motion';
 import { useLightPlace } from '../../shell/light';
@@ -40,6 +40,8 @@ import { usePopoverFit } from '../../lib/use-popover-fit';
 import { CalendarFirstRun } from './CalendarFirstRun';
 import { useCalendarLive } from './live';
 import { chFocusQuietly } from '../../lib/focus-quietly';
+import { usePageKeys, type ChPageKey } from '../../shell/command/page-keys';
+import { plural, pluralWord } from '../../lib/plural';
 
 function zonedNow(timeZone: string, d: Date): ChNow {
   const p: Record<string, string> = {};
@@ -97,6 +99,13 @@ function useOpenOnNow(tick: number, first: string, on: boolean, hour: number | n
 }
 
 /** Widgets whose arrow keys move their own selection or focus, and the page's popovers (A-09). */
+/** B11: the calendar's own keys, as the shortcuts sheet lists them. */
+const CAL_KEYS: readonly ChPageKey[] = [
+  { label: 'Go to today', keys: ['T'] },
+  { label: 'Previous or next', keys: ['Left', 'Right'] },
+];
+const CAL_COACH_KEYS: readonly ChPageKey[] = [{ label: 'New event', keys: ['N'] }, ...CAL_KEYS];
+
 const COMPOSITE = '[role="radiogroup"], [role="tablist"], [role="menu"], [role="menubar"], [role="listbox"], [role="grid"], [role="tree"], [role="slider"], [role="dialog"]';
 const toHHMM = (h: number) => `${String(Math.floor(h)).padStart(2, '0')}:${String(Math.round((h % 1) * 60)).padStart(2, '0')}`;
 
@@ -109,6 +118,7 @@ const toHHMM = (h: number) => `${String(Math.floor(h)).padStart(2, '0')}:${Strin
 /** `preview`: the dev preview keeps a move on screen and writes nothing. */
 function useHeldMoves(timezone: string, events: ChCalEvent[], today: string, onSaved: () => void, preview: boolean) {
   const toast = useToast();
+  const clock = useChClock();
   const [moves, setMoves] = useState<Map<string, ChMoveTarget>>(() => new Map());
   /** The move waiting on its Undo; each move is its own record, so a stale toast never acts on a newer move. */
   const held = useRef<{ id: string; write: () => void } | null>(null);
@@ -165,7 +175,7 @@ function useHeldMoves(timezone: string, events: ChCalEvent[], today: string, onS
       held.current = entry;
       const day = to.date === e.date ? '' : ` ${to.date === today ? 'today' : `on ${dowOf(to.date)} ${dayNum(to.date)}`}`;
       toast({
-        title: `Moved to ${fmtHour(to.start)}${day}`,
+        title: `Moved to ${fmtHour(to.start, true, clock)}${day}`,
         action: {
           label: 'Undo',
           run: () => {
@@ -184,7 +194,7 @@ function useHeldMoves(timezone: string, events: ChCalEvent[], today: string, onS
         },
       });
     },
-    [flush, drop, toast, timezone, today, onSaved, preview],
+    [flush, drop, toast, timezone, today, onSaved, preview, clock],
   );
   return { moves, move };
 }
@@ -314,7 +324,7 @@ function PeoplePicker({ people, sel, setSel }: { people: ChCalendarData['people'
   const stack = (chosen.length ? chosen : people).slice(0, 4);
   const count = chosen.length || people.length;
   const label = !chosen.length ? 'Everyone' : chosen.length === 1 ? chosen[0]!.name : `${chosen.length} players`;
-  const detail = !chosen.length ? `Team schedule · ${people.length} ${people.length === 1 ? 'player' : 'players'}` : chosen.length === 1 ? 'Their events and classes' : chosen.map((p) => p.name.split(' ')[0]).join(', ');
+  const detail = !chosen.length ? `Team schedule · ${plural(people.length, 'player')}` : chosen.length === 1 ? 'Their events and classes' : chosen.map((p) => p.name.split(' ')[0]).join(', ');
   const list = people.filter((p) => p.name.toLowerCase().includes(q.trim().toLowerCase()));
   const tog = (id: string) => {
     haptic('select');
@@ -325,7 +335,7 @@ function PeoplePicker({ people, sel, setSel }: { people: ChCalendarData['people'
       <button ref={trigger} type="button" className={'ch-pp__trigger' + (chosen.length ? ' is-on' : '')} onClick={() => setOpen(!open)} aria-haspopup="dialog" aria-expanded={open} aria-label={`People: ${label}`}>
         <span className="ch-pp__stack">
           {stack.map((p) => (
-            <Avatar key={p.id} name={p.name} size={26} />
+            <Avatar key={p.id} name={p.name} id={p.id} size={26} />
           ))}
           {count > 4 && <span className="ch-pp__more">+{count - 4}</span>}
         </span>
@@ -360,7 +370,7 @@ function PeoplePicker({ people, sel, setSel }: { people: ChCalendarData['people'
               const on = sel.includes(p.id);
               return (
                 <button key={p.id} type="button" className="ch-pp__row" aria-pressed={on} onClick={() => tog(p.id)}>
-                  <Avatar name={p.name} size={28} />
+                  <Avatar name={p.name} id={p.id} size="sm" />
                   <span className="ch-pp__name">
                     <b>{p.name}</b>
                     <span>{p.year ?? 'Player'}</span>
@@ -546,6 +556,7 @@ export function Calendar({
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
   }, [coach, editor, cancelling, deleting, subs, busyOpen, view, anchor, insp, goToday, step]);
+  usePageKeys('Calendar', coach ? CAL_COACH_KEYS : CAL_KEYS);
 
   const dates = view === 'day' ? [anchor] : weekDates(anchor);
   // P006-A1: the global light's sun at the team's place, on the team's clock; one read per day shown.
@@ -671,7 +682,7 @@ export function Calendar({
         <InlineNotice
           code="CH-6212"
           title="Your team’s timezone didn’t load."
-          body={`Times are shown in ${data.zoneLabel} until it does. Try again; the error has been reported.`}
+          body={`Times are shown in ${data.zoneLabel} until it does. Try again.`}
           onRetry={refresh}
         />
       )}
@@ -679,18 +690,18 @@ export function Calendar({
         <InlineNotice
           code="CH-6213"
           title="The roster didn’t load."
-          body="Events are complete, but players can’t be invited or picked until it does. Try again; the error has been reported."
+          body="Events are complete, but players can’t be invited or picked until it does. Try again."
           onRetry={refresh}
         />
       )}
       {data.busyError && !covered && (
-        <InlineNotice code="CH-6202" title="Your busy time didn’t load." body="Team events are complete, but your own blocks aren’t shown. Try again; the error has been reported." onRetry={refresh} />
+        <InlineNotice code="CH-6202" title="Your busy time didn’t load." body="Team events are complete, but your own blocks aren’t shown. Try again." onRetry={refresh} />
       )}
       {data.classesError && !covered && (
         <InlineNotice
           code="CH-6203"
           title={coach ? "Class schedules didn’t load." : "Your classes didn’t load."}
-          body={coach ? 'Team events are complete, but class overlaps may be missing. Try again; the error has been reported.' : 'Team events are complete. Try again; the error has been reported.'}
+          body={coach ? 'Team events are complete, but class overlaps may be missing. Try again.' : 'Team events are complete. Try again.'}
           onRetry={refresh}
         />
       )}
@@ -777,12 +788,13 @@ export function Calendar({
           flagged={flagged}
           selId={selId}
           notices={notices}
-          eventsNotice={data.eventsError ? <InlineNotice code="CH-6201" title="The calendar didn’t load." body="Nothing was changed. Try again; the error has been reported." onRetry={refresh} covered={covered} /> : null}
+          eventsNotice={data.eventsError ? <InlineNotice code="CH-6201" title="The calendar didn’t load." body="Nothing was changed. Try again." onRetry={refresh} covered={covered} /> : null}
           onView={go}
           onStep={step}
           onOpen={open}
           onNew={(d) => setEditor({ event: null, date: d })}
           onSubscribe={() => setSubs(true)}
+          more={coach ? moreItems.filter((i) => i.icon !== Printer) : undefined}
         />
         {/* The desktop's detail panel, as a sheet (board: event detail). */}
         <Modal
@@ -813,7 +825,7 @@ export function Calendar({
             <Icon icon={ChevronDown} size={16} />
           </button>
           <div className="ch-cal-sub">
-            {data.eventsError ? "Events didn’t load" : `${count} team ${count === 1 ? 'event' : 'events'}${view === 'week' ? ' this week' : view === 'day' ? '' : ' this month'}`} · {data.zoneLabel}
+            {data.eventsError ? "Events didn’t load" : `${count} team ${pluralWord(count, 'event')}${view === 'week' ? ' this week' : view === 'day' ? '' : ' this month'}`} · {data.zoneLabel}
           </div>
           <AnimatePresence>
             {jump && (
@@ -841,13 +853,7 @@ export function Calendar({
           <Menu
             label="More calendar actions"
             items={moreItems}
-            trigger={(p) => (
-              <Tooltip>
-                <button type="button" className="ch-btn ch-btn--secondary ch-iconbtn" aria-label="More" {...p}>
-                  <Icon icon={Ellipsis} size={16} />
-                </button>
-              </Tooltip>
-            )}
+            trigger={(p) => <IconButton icon={Ellipsis} variant="secondary" label="More" menu={p} />}
           />
           {coach && (
             <Button variant="primary" leftIcon={Plus} kbd="N" onClick={() => setEditor({ event: null, date: view === 'day' ? anchor : undefined })}>
@@ -902,7 +908,7 @@ export function Calendar({
       {notices}
       {data.eventsError ? (
         <div className="ch-cal-surface">
-          <InlineNotice code="CH-6201" title="The calendar didn’t load." body="Nothing was changed. Try again; the error has been reported." onRetry={refresh} covered={covered} />
+          <InlineNotice code="CH-6201" title="The calendar didn’t load." body="Nothing was changed. Try again." onRetry={refresh} covered={covered} />
         </div>
       ) : (
         <div className="ch-cal-body">
@@ -961,7 +967,7 @@ export function Calendar({
       {sel.length > 0 && (
         <span className="ch-sr-only" role="status">
           {/* CH-6803 */}
-          Showing {sel.length} {sel.length === 1 ? 'player' : 'players'}
+          Showing {sel.length} {pluralWord(sel.length, 'player')}
         </span>
       )}
 

@@ -5,6 +5,7 @@ import { DayButton as RdpDayButton, DayPicker, type ClassNames, type CustomCompo
 import { haptic } from '../../lib/haptics';
 import { addMonths, dayNum, dowOf, isMajor, monthName, type ChCalEvent } from './model';
 import type { ChNow } from './views';
+import { plural } from '../../lib/plural';
 
 /**
  * The phone's Month (board: Coach - Calendar - Mobile.html, m-cal.jsx) on react-day-picker: the library keeps the
@@ -103,7 +104,7 @@ function MonthDay({ day, modifiers, className, children, ...rest }: DayButtonPro
       day={day}
       modifiers={modifiers}
       className={cls}
-      aria-label={`${dowOf(date)} ${dayNum(date)} ${monthName(date)}${modifiers.today ? ', today' : ''}: ${n ? `${n} ${n === 1 ? 'event' : 'events'}${marks?.major ? ', competition' : ''}` : 'no events'}`}
+      aria-label={`${dowOf(date)} ${dayNum(date)} ${monthName(date)}${modifiers.today ? ', today' : ''}: ${n ? `${plural(n, 'event')}${marks?.major ? ', competition' : ''}` : 'no events'}`}
     >
       <b className="ch-num">{children}</b>
       {marks?.major ? <i className="is-major" /> : n ? <i /> : null}

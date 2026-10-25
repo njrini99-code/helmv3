@@ -3,7 +3,6 @@
 import {
   ArrowRight,
   CalendarCheck,
-  ChevronLeft,
   ChevronRight,
   CircleX,
   ClipboardCheck,
@@ -33,17 +32,19 @@ import { Avatar } from '../../ui/Avatar';
 import { AVAILABILITY_WORD } from '../roster/format';
 import { PlayerPeek } from '../../ui/PlayerPeek';
 import { Badge, type BadgeTone } from '../../ui/Badge';
-import { Button } from '../../ui/Button';
+import { Button, IconButton } from '../../ui/Button';
 import { Icon } from '../../ui/Icon';
 import { Menu } from '../../ui/Menu';
 import { InlineNotice } from '../../ui/Notices';
 import { PillGroup, Segmented, type SegOption } from '../../ui/Segmented';
 import { Skeleton } from '../../ui/States';
 import { useToast } from '../../ui/Toast';
-import { Tooltip } from '../../ui/Tooltip';
 import { normalise, useAction } from '../../lib/use-action';
 import { chReport, chTrail } from '../../lib/track';
 import { haptic } from '../../lib/haptics';
+import { useChClock } from '../../lib/use-clock';
+import { restyleClock } from '../../lib/clock-format';
+import type { ChClock } from '../../lib/clock-cookie';
 import {
   TYPE_LABEL,
   dayLabel,
@@ -65,6 +66,8 @@ import type { ChNow } from './views';
 import { messageCoachHref } from '../home/player-links';
 import { BusyDetail, EventFiles, LinkedTrip } from './extras';
 import { courseParts } from './class-group';
+import { BackLink } from '../../ui/Section';
+import { plural, pluralWord } from '../../lib/plural';
 
 export type ChInsp =
   | { kind: 'event'; id: string; date: string }
@@ -117,9 +120,9 @@ const plateTone = (t: ChCalType) => (t === 'practice' ? 'green' : isMajor(t) ? '
 
 function Back({ label, onClick }: { label: string; onClick: () => void }) {
   return (
-    <Button className="ch-in__back" size="sm" variant="ghost" leftIcon={ChevronLeft} onClick={onClick}>
+    <BackLink className="ch-in__up" onClick={onClick}>
       {label}
-    </Button>
+    </BackLink>
   );
 }
 
@@ -139,15 +142,16 @@ function Warn({ title, children, action }: { title: string; children: ReactNode;
 const find = (events: ChCalEvent[], id: string, date?: string) => events.find((e) => e.id === id && (!date || e.date === date)) ?? events.find((e) => e.id === id);
 
 /** A player's own clash, in their words: "Overlaps your ECON 101 class 3:00–4:00 PM" (or another event they're on). */
-function playerOverlapLine(events: ChCalEvent[], o: ChCalOverlap): string {
+function playerOverlapLine(events: ChCalEvent[], o: ChCalOverlap, clock: ChClock): string {
   const w = find(events, o.withId);
   const what = !w ? 'another of your events' : w.type === 'class' ? `your ${w.title} class` : w.title;
-  return `Overlaps ${what} ${fmtHour(o.from, false)}–${fmtHour(o.to)}`;
+  return `Overlaps ${what} ${fmtHour(o.from, false, clock)}–${fmtHour(o.to, true, clock)}`;
 }
 
 /* Nothing selected: today, what needs attention, where the data comes from. */
 export function Summary({ ctx }: { ctx: InspCtx }) {
   const { now, events, overlaps, people, role } = ctx;
+  const clock = useChClock();
   const today = events.filter((e) => e.date === now.date && e.type !== 'class' && e.type !== 'busy' && !e.cancelled).sort((a, b) => (a.start ?? -1) - (b.start ?? -1));
   const next = today.find((e) => !e.allDay && (e.start ?? 0) > now.hour);
   const mins = next ? Math.round(((next.start ?? 0) - now.hour) * 60) : 0;
@@ -178,10 +182,10 @@ export function Summary({ ctx }: { ctx: InspCtx }) {
           <span>
             Today · {dowOf(now.date)} {dayNum(now.date)}
           </span>
-          <span className="ch-num">{fmtHour(now.hour)}</span>
+          <span className="ch-num">{fmtHour(now.hour, true, clock)}</span>
         </div>
         <h2 className="ch-in__title">
-        {today.length === 0 ? <span data-ch-code="CH-6302">Nothing on the team calendar today</span> : `${today.length} team ${today.length === 1 ? 'event' : 'events'} today`}
+        {today.length === 0 ? <span data-ch-code="CH-6302">Nothing on the team calendar today</span> : `${today.length} team ${pluralWord(today.length, 'event')} today`}
       </h2>
       {next && (
         <button
@@ -192,7 +196,7 @@ export function Summary({ ctx }: { ctx: InspCtx }) {
             ctx.go({ kind: 'event', id: next.id, date: next.date });
           }}
         >
-          <span className="ch-in__at">{fmtHour(next.start!, false)}</span>
+          <span className="ch-in__at">{fmtHour(next.start!, false, clock)}</span>
           <span style={{ minWidth: 0 }}>
             <span className="ch-in__na">{next.title}</span>
             <span className="ch-in__nb">
@@ -230,7 +234,7 @@ export function Summary({ ctx }: { ctx: InspCtx }) {
                     <span style={{ minWidth: 0 }}>
                       <b>{e.title}</b>
                       <span>
-                        {first(people.get(o.who)?.name)} overlaps · {dowOf(e.date)} {fmtHour(o.from, false)}–{fmtHour(o.to)}
+                        {first(people.get(o.who)?.name)} overlaps · {dowOf(e.date)} {fmtHour(o.from, false, clock)}–{fmtHour(o.to, true, clock)}
                       </span>
                     </span>
                     <Icon icon={ChevronRight} size={14} />
@@ -249,7 +253,7 @@ export function Summary({ ctx }: { ctx: InspCtx }) {
                     <span style={{ minWidth: 0 }}>
                       <b>{e.title}</b>
                       <span>
-                        {playerOverlapLine(events, o)} · {dowOf(e.date)}
+                        {playerOverlapLine(events, o, clock)} · {dowOf(e.date)}
                       </span>
                     </span>
                     <Icon icon={ChevronRight} size={14} />
@@ -262,9 +266,9 @@ export function Summary({ ctx }: { ctx: InspCtx }) {
                   <Icon icon={MailQuestion} size={14} />
                 </span>
                 <span style={{ minWidth: 0 }}>
-                  <b>{role === 'coach' ? `${pending.length} ${pending.length === 1 ? 'reply' : 'replies'} pending` : e.title}</b>
+                  <b>{role === 'coach' ? `${plural(pending.length, 'reply', 'replies')} pending` : e.title}</b>
                   <span>
-                    {role === 'coach' ? `${e.title} · ${pending.length <= 2 ? pending.map((p) => first(people.get(p)?.name)).join(', ') : `${dowOf(e.date)} ${dayNum(e.date)}`}` : `${dowOf(e.date)} ${dayNum(e.date)} · ${rangeLabel(e)}`}
+                    {role === 'coach' ? `${e.title} · ${pending.length <= 2 ? pending.map((p) => first(people.get(p)?.name)).join(', ') : `${dowOf(e.date)} ${dayNum(e.date)}`}` : `${dowOf(e.date)} ${dayNum(e.date)} · ${rangeLabel(e, clock)}`}
                   </span>
                 </span>
                 <Icon icon={ChevronRight} size={14} />
@@ -282,14 +286,14 @@ export function Summary({ ctx }: { ctx: InspCtx }) {
       <div className="ch-in__sec">
         <div className="ch-in__sechead">
           <b>Sources</b>
-          <span className="ch-num">Checked {fmtHour(ctx.loadedHour)}</span>
+          <span className="ch-num">Checked {fmtHour(ctx.loadedHour, true, clock)}</span>
         </div>
         <div className="ch-in__facts">
           <Fact icon={CalendarCheck} tone="team">Team events from Helm</Fact>
           {role === 'coach' ? (
             <>
               <Fact icon={BookOpen} tone="class">
-                Class schedules for {classOwners.size} {classOwners.size === 1 ? 'player' : 'players'}
+                Class schedules for {classOwners.size} {pluralWord(classOwners.size, 'player')}
               </Fact>
               <Fact icon={Lock} tone="own">Your busy time · only you see it</Fact>
             </>
@@ -413,6 +417,7 @@ function PlayerReply({ e, playerId, now, onDone }: { e: ChCalEvent; playerId: st
 export function EventDetail({ ctx, id, date }: { ctx: InspCtx; id: string; date: string }) {
   const e = find(ctx.events, id, date);
   const toast = useToast();
+  const clock = useChClock();
   if (!e) {
     return (
       <div className="ch-in">
@@ -460,13 +465,7 @@ export function EventDetail({ ctx, id, date }: { ctx: InspCtx; id: string; date:
               ? ([{ kind: 'separator' }, { label: 'Delete permanently', icon: Trash2, danger: true, onSelect: () => ctx.onDelete!(e) }] as const)
               : []),
           ]}
-          trigger={(p) => (
-            <Tooltip>
-              <button type="button" className="ch-btn ch-btn--ghost ch-iconbtn ch-btn--sm" aria-label="More actions" {...p}>
-                <Icon icon={Ellipsis} size={15} />
-              </button>
-            </Tooltip>
-          )}
+          trigger={(p) => <IconButton icon={Ellipsis} size="sm" label="More actions" menu={p} />}
         />
       </div>
       <h2 className="ch-in__title" tabIndex={-1} style={e.cancelled ? { textDecoration: 'line-through' } : undefined}>
@@ -478,7 +477,7 @@ export function EventDetail({ ctx, id, date }: { ctx: InspCtx; id: string; date:
           {e.span ? `${dowOf(e.span.from)} ${dayNum(e.span.from)} – ${dowOf(e.span.to)} ${dayNum(e.span.to)}` : dayLabel(e.date, ctx.now.date)}
           <br />
           {/* A timed run over several days: when it starts on its first day and ends on its last, not this day's part of it. */}
-          <span className="ch-num">{!e.allDay && e.span?.start != null && e.span.end != null ? `Starts ${fmtHour(e.span.start)} · ends ${fmtHour(e.span.end)}` : rangeLabel(e)}</span>
+          <span className="ch-num">{!e.allDay && e.span?.start != null && e.span.end != null ? `Starts ${fmtHour(e.span.start, true, clock)} · ends ${fmtHour(e.span.end, true, clock)}` : rangeLabel(e, clock)}</span>
           {!e.allDay && ` · ${ctx.zoneLabel}`}
         </Fact>
         {e.location && <Fact icon={MapPin}>{e.location}</Fact>}
@@ -495,7 +494,7 @@ export function EventDetail({ ctx, id, date }: { ctx: InspCtx; id: string; date:
             </Button>
           }
         >
-          {first(ctx.people.get(overlap.who)?.name)} is busy {fmtHour(overlap.from, false)}–{fmtHour(overlap.to)}.
+          {first(ctx.people.get(overlap.who)?.name)} is busy {fmtHour(overlap.from, false, clock)}–{fmtHour(overlap.to, true, clock)}.
         </Warn>
       )}
       {/* A player's own clash: told plainly, with the way to raise it. Moving or keeping the event is the coach's. */}
@@ -508,7 +507,7 @@ export function EventDetail({ ctx, id, date }: { ctx: InspCtx; id: string; date:
             </Button>
           }
         >
-          {playerOverlapLine(ctx.events, overlap)}.
+          {playerOverlapLine(ctx.events, overlap, clock)}.
         </Warn>
       )}
       {/* Owner, 2026-10-08: a player answers only an event that asks for replies; any other shows no reply control. */}
@@ -518,7 +517,7 @@ export function EventDetail({ ctx, id, date }: { ctx: InspCtx; id: string; date:
           <div className="ch-in__sechead">
             {/* Replies are counted only when the coach asked for them; otherwise this is the invite list (owner, 2026-10-08). */}
             <b>{e.rsvpRequired ? 'Responses' : 'Invited'}</b>
-            <span>{e.rsvpRequired ? `${e.people.length} invited` : `${e.people.length} ${e.people.length === 1 ? 'player' : 'players'}`}</span>
+            <span>{e.rsvpRequired ? `${e.people.length} invited` : `${plural(e.people.length, 'player')}`}</span>
           </div>
           {ctx.rsvpError ? (
             <InlineNotice
@@ -594,6 +593,7 @@ export function EventDetail({ ctx, id, date }: { ctx: InspCtx; id: string; date:
 }
 
 function ClassDetail({ ctx, e }: { ctx: InspCtx; e: ChCalEvent }) {
+  const clock = useChClock();
   const owner = e.owner ? ctx.people.get(e.owner) : undefined;
   const mine = ctx.role === 'player';
   const [code, course] = courseParts(e.title);
@@ -621,7 +621,7 @@ function ClassDetail({ ctx, e }: { ctx: InspCtx; e: ChCalEvent }) {
         <Fact icon={Clock} tone="class">
           {dayLabel(e.date, ctx.now.date)}
           <br />
-          <span className="ch-num">{rangeLabel(e)}</span> · {ctx.zoneLabel}
+          <span className="ch-num">{rangeLabel(e, clock)}</span> · {ctx.zoneLabel}
         </Fact>
         {e.location && (
           <Fact icon={MapPin} tone="team">
@@ -660,6 +660,7 @@ const MARKS: Array<SegOption<AttendanceMark | 'none'>> = [
 
 export function Attendance({ ctx, id, date }: { ctx: InspCtx; id: string; date: string }) {
   const e = find(ctx.events, id, date);
+  const clock = useChClock();
   const [saved, setSaved] = useState<Record<string, AttendanceMark | null> | null>(null);
   const [loadError, setLoadError] = useState(false);
   const [marks, setMarks] = useState<Record<string, AttendanceMark>>({});
@@ -712,7 +713,7 @@ export function Attendance({ ctx, id, date }: { ctx: InspCtx; id: string; date: 
       return failed.length ? { success: false, error: failed.length === results.length ? failed[0]?.error : `${failed.length} of ${results.length} marks didn’t save` } : { success: true };
     },
     () => ({
-      done: `${unsaved.current.length} attendance ${unsaved.current.length === 1 ? 'mark' : 'marks'} saved`,
+      done: `${unsaved.current.length} attendance ${pluralWord(unsaved.current.length, 'mark')} saved`,
       failed: "Couldn’t save attendance",
       hint: 'The marks that saved are kept. Try again for the rest.',
       code: 'CH-6011',
@@ -728,11 +729,11 @@ export function Attendance({ ctx, id, date }: { ctx: InspCtx; id: string; date: 
       <div>
         <h2 className="ch-in__title" tabIndex={-1}>Attendance</h2>
         <div className="ch-cal-sub">
-          {dowOf(e.date)} {dayNum(e.date)} · {rangeLabel(e)}
+          {dowOf(e.date)} {dayNum(e.date)} · {rangeLabel(e, clock)}
         </div>
       </div>
       {loadError ? (
-        <InlineNotice code="CH-6209" title="Attendance didn’t load." body="Marks already saved are safe. Try again; the error has been reported." onRetry={() => setAttempt((a) => a + 1)} />
+        <InlineNotice code="CH-6209" title="Attendance didn’t load." body="Marks already saved are safe. Try again." onRetry={() => setAttempt((a) => a + 1)} />
       ) : !saved ? (
         <div className="ch-in__facts" aria-busy="true" data-ch-code="CH-6405">
           {e.people.slice(0, 5).map((p) => (
@@ -833,6 +834,7 @@ export function Lanes({ rows, from, to, prop }: { rows: Array<{ who: string; blo
 
 export function Overlap({ ctx, id }: { ctx: InspCtx; id: string }) {
   const toast = useToast();
+  const clock = useChClock();
   const o = ctx.overlaps.find((x) => x.id === id);
   const e = o ? find(ctx.events, o.eventId) : undefined;
   const w = o ? find(ctx.events, o.withId) : undefined;
@@ -863,11 +865,11 @@ export function Overlap({ ctx, id }: { ctx: InspCtx; id: string }) {
         </div>
         <h2 className="ch-in__title" tabIndex={-1}>{e.title}</h2>
         <div className="ch-cal-sub">
-          {dowOf(e.date)} {dayNum(e.date)} · {rangeLabel(e)}
+          {dowOf(e.date)} {dayNum(e.date)} · {rangeLabel(e, clock)}
         </div>
       </div>
       <p className="ch-in__note">
-        {who} {w.type === 'class' ? `has ${w.title} until ${fmtHour(w.end!)}` : `is invited to ${w.title}, which runs until ${fmtHour(w.end!)}`}.{' '}
+        {who} {w.type === 'class' ? `has ${w.title} until ${fmtHour(w.end!, true, clock)}` : `is invited to ${w.title}, which runs until ${fmtHour(w.end!, true, clock)}`}.{' '}
         {who} would miss {Math.round((o.to - o.from) * 60)} minutes.
       </p>
       <div className="ch-in__sec">
@@ -895,10 +897,10 @@ export function Overlap({ ctx, id }: { ctx: InspCtx; id: string }) {
             label="Open times"
             value={String(pick)}
             onChange={(v) => setPick(Number(v))}
-            options={sugg.map((s, i) => ({ value: String(i), label: rangeLabel({ allDay: false, start: s[0], end: s[1] }) }))}
+            options={sugg.map((s, i) => ({ value: String(i), label: rangeLabel({ allDay: false, start: s[0], end: s[1] }, clock) }))}
           />
         ) : (
-          <p className="ch-in__quiet">No open window of the same length between 7 AM and 8 PM. Try another day in the editor.</p>
+          <p className="ch-in__quiet">{restyleClock('No open window of the same length between 7 AM and 8 PM. Try another day in the editor.', clock)}</p>
         )}
       </div>
       <div className="ch-in__sec ch-in__foot">

@@ -1,5 +1,6 @@
 import { Skeleton } from '../../ui/States';
 import '../../styles/messages.css';
+import { LargeTitleSkeleton } from '../../ui/LargeTitle';
 
 /**
  * Route loading for Messages: the rail's head and rows, and an empty thread column, in place. On the phone it is the
@@ -20,7 +21,7 @@ export function MessagesSkeleton() {
             {Array.from({ length: 6 }, (_, i) => (
               <div key={i} className="ch-ms-row" style={{ cursor: 'default' }}>
                 <Skeleton width={36} height={36} radius={18} />
-                <span style={{ display: 'grid', gap: 7 }}>
+                <span style={{ display: 'grid', gap: 8 }}>
                   <Skeleton width="60%" height={13} />
                   <Skeleton width="85%" height={12} />
                 </span>
@@ -36,6 +37,7 @@ export function MessagesSkeleton() {
       </section>
       <div className="ch-msp-skel" aria-hidden="true">
         <div className="ch-msp-skel__tools">
+          <LargeTitleSkeleton width={170} />
           <Skeleton width="100%" height={36} radius={10} />
           <span className="ch-msp-skel__chips">
             <Skeleton width={46} height={36} radius={18} />

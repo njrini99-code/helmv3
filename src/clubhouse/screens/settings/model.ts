@@ -1,5 +1,7 @@
 import type { CoachPhilosophy } from '@/lib/coachhelm/types';
 import type { ChannelPref, NotificationCategory, PrefsByCategory } from '@/lib/coachhelm/v3/notifications/router';
+import type { ChClock } from '../../lib/clock-cookie';
+import { plural } from '../../lib/plural';
 
 /**
  * Settings (Clubhouse): one page with a section rail. Every section carries
@@ -160,6 +162,12 @@ export const DISTANCE_OPTIONS = [
   { value: 'meters', label: 'Meters' },
 ] as const;
 
+/** How every time reads (the `ch_clock` cookie, lib/use-clock.tsx). Display only: times are stored in 24 hours, in the team's zone. */
+export const CLOCK_OPTIONS = [
+  { value: '12', label: '12-hour' },
+  { value: '24', label: '24-hour' },
+] as const satisfies ReadonlyArray<{ value: ChClock; label: string }>;
+
 export const TIMEZONE_OPTIONS = [
   { value: 'America/New_York', label: 'Eastern (ET)' },
   { value: 'America/Chicago', label: 'Central (CT)' },
@@ -178,7 +186,7 @@ export function remindersValid(r: ChReminders): boolean {
 
 export function hoursLabel(h: number): string {
   if (h % 24 === 0) return `${h / 24} ${h === 24 ? 'day' : 'days'} before`;
-  return `${h} ${h === 1 ? 'hour' : 'hours'} before`;
+  return `${plural(h, 'hour')} before`;
 }
 
 export function minutesLabel(m: number): string {
@@ -197,21 +205,21 @@ export interface ChProblem {
 const problem = (code: string, text: string, field?: string): ChProblem => (field ? { code, text, field } : { code, text });
 
 export function profileProblem(role: 'coach' | 'player', p: { fullName: string; firstName: string; lastName: string }): ChProblem | null {
-  if (role === 'coach') return p.fullName.trim() ? null : problem('CH-8101', 'Add your name.');
-  return p.firstName.trim() && p.lastName.trim() ? null : problem('CH-8102', 'Add your first and last name.');
+  if (role === 'coach') return p.fullName.trim() ? null : problem('CH-8101', 'Add your name.', 'set-fullname');
+  return p.firstName.trim() && p.lastName.trim() ? null : problem('CH-8102', 'Add your first and last name.', p.firstName.trim() ? 'set-last' : 'set-first');
 }
 
 export function passwordProblem(current: string, next: string, confirm: string): ChProblem | null {
-  if (!current) return problem('CH-8105', 'Enter your current password.');
-  if (next.length < 8) return problem('CH-8106', 'Use at least 8 characters.');
-  if (next !== confirm) return problem('CH-8107', "The new passwords don’t match.");
+  if (!current) return problem('CH-8105', 'Enter your current password.', 'set-pw-cur');
+  if (next.length < 8) return problem('CH-8106', 'Use at least 8 characters.', 'set-pw-new');
+  if (next !== confirm) return problem('CH-8107', "The new passwords don’t match.", 'set-pw-confirm');
   return null;
 }
 
 export function emailProblem(next: string, current: string | null): ChProblem | null {
   const v = next.trim();
-  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v)) return problem('CH-8103', 'Enter a valid email address.');
-  if (current && v.toLowerCase() === current.toLowerCase()) return problem('CH-8104', 'That is already your email.');
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v)) return problem('CH-8103', 'Enter a valid email address.', 'set-newemail');
+  if (current && v.toLowerCase() === current.toLowerCase()) return problem('CH-8104', 'That is already your email.', 'set-newemail');
   return null;
 }
 

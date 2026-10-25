@@ -75,7 +75,7 @@ export function Modal({
     >
       {retainContent(open && (
         <div className="ch-modal__panel">
-          <div className="ch-modal__grab" aria-hidden="true" onPointerDown={drag.onPointerDown} />
+          <div className="ch-grab" aria-hidden="true" onPointerDown={drag.onPointerDown} />
           {/* A header, so the phone's chrome rules (no text selection under a drag) apply, but no second banner landmark. */}
           <header className="ch-modal__head" role="none" onPointerDown={drag.onPointerDown}>
             {icon && (

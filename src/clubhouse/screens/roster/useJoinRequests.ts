@@ -5,6 +5,7 @@ import { acceptJoinRequest, rejectJoinRequest } from '@/app/golf/actions/teams';
 import type { ChJoinRequest } from '../../data/roster';
 import { normalise, useAction, type ActionCopy, type ActionResult, type ServerResult } from '../../lib/use-action';
 import { chReport } from '../../lib/track';
+import { pluralWord } from '../../lib/plural';
 
 /** "Grace Liu", "Grace Liu and Owen Park", "Grace Liu, Owen Park and Sam Reyes". */
 export function nameList(names: string[]): string {
@@ -130,7 +131,7 @@ export function useJoinRequests(teamName: string, initial: ChJoinRequest[]) {
       return {
         ...c,
         failed: `Couldn’t approve ${nameList(out.failed.map((r) => r.name))}`,
-        hint: `${n === 0 ? `None of the ${tried} were added.` : `${n} of ${tried} added to ${teamName}.`} ${out.failed.length === 1 ? 'That request' : 'Those requests'} may have been withdrawn. Try again, or refresh to see the latest.`,
+        hint: `${n === 0 ? `None of the ${tried} were added.` : `${n} of ${tried} added to ${teamName}.`} ${pluralWord(out.failed.length, 'That request', 'Those requests')} may have been withdrawn. Try again, or refresh to see the latest.`,
       };
     },
   );

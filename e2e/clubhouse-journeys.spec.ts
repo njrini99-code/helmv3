@@ -164,8 +164,9 @@ test('Team Hub: a player acknowledges the announcement', async ({ page }) => {
   const headline = `Journey bus times ${tag}`;
   await signIn(page, player());
   await open(page, '/golf/dashboard/team-hub');
-  const post = page.getByRole('article', { name: headline }).first();
-  await expect(post.getByText('Needs your acknowledgement')).toBeVisible();
+  // Since the Team Hub redesign (#2287) Home leads with the post waiting on the player as the Latest post tile, with Got it.
+  const post = page.getByRole('region', { name: 'Latest post', exact: true });
+  await expect(post.getByText(headline, { exact: true })).toBeVisible();
   await post.getByRole('button', { name: 'Got it', exact: true }).click();
   await expect(post.getByText('Acknowledged', { exact: true })).toBeVisible({ timeout: 60_000 });
   await expect

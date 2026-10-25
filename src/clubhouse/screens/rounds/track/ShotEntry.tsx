@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useRef, useState, type Dispatch, type RefObject } from 'react';
+import { useEffect, useRef, useState, type Dispatch, type ReactNode, type RefObject } from 'react';
 import { ArrowRight, Check, FlagTriangleRight, TriangleAlert, Undo2 } from 'lucide-react';
 import type { ShotAction } from '@/hooks/golf/use-shot-state-machine';
 import { displayToFeet, displayToYards, yardsToDisplay, type DistancePreference } from '@/lib/golf/distance-units';
@@ -21,6 +21,7 @@ import { calculateShotDistanceWithDirection } from '@/lib/utils/shot-helpers';
 import { haptic } from '../../../lib/haptics';
 import { roving } from '../../../ui/use-roving';
 import { useChReducedMotion } from '../../../lib/reduced-motion';
+import { Button } from '../../../ui/Button';
 import { Icon } from '../../../ui/Icon';
 import { APPROACH_GRID, BREAK_OPTIONS, cleanDistance, isDistanceText, PUTT_TAGS, quickPicks, RESULT_LABEL, SLOPE_OPTIONS, shotTitle } from './labels';
 import { Sec, Seg } from './parts';
@@ -59,6 +60,11 @@ export interface ShotEntryProps {
   tapIn?: TapInPlan | null;
   /** Resolves true once the tap in's hole is saved. */
   onTapIn?: () => Promise<boolean>;
+  /**
+   * The one-tap data prompts (CH-11960 to CH-11962), drawn first in the card: the round screen owns them, so a tap
+   * survives the entry being re-keyed for the next shot. Absent, the card is what it was.
+   */
+  prompts?: ReactNode;
 }
 
 const DIST_ID = 'ch-rt-dist';
@@ -139,9 +145,7 @@ export function ShotEntry(p: ShotEntryProps) {
       <div className="ch-rt-note is-warn" data-ch-code="CH-11102">
         <Icon icon={TriangleAlert} size={15} />
         <span>{issue.message}</span>
-        <button type="button" className="ch-btn ch-btn--secondary ch-btn--sm" onClick={() => setConfirmedKey(key)}>
-          <span>Confirm</span>
-        </button>
+        <Button variant="secondary" size="sm" onClick={() => setConfirmedKey(key)}>Confirm</Button>
       </div>
     )
   ) : null;
@@ -152,6 +156,7 @@ export function ShotEntry(p: ShotEntryProps) {
     <section className="ch-rt-panel" aria-label={`Shot ${p.currentShot}`}>
       {/* Board 3: the entry is one ivory card; the bar under it sits on the green (phone). */}
       <div className="ch-rt-card">
+        {p.prompts}
         {p.isTeeShot && p.currentHole.par !== 3 && (
           <Sec label="Club off tee">
             <Seg
@@ -203,8 +208,8 @@ export function ShotEntry(p: ShotEntryProps) {
               value={p.missDirection as 'left' | 'right' | null}
               onChange={(v) => p.dispatch({ type: 'SET_MISS_DIRECTION', payload: v })}
               options={[
-                { value: 'left', label: '← Left' },
-                { value: 'right', label: 'Right →' },
+                { value: 'left', label: 'Left' },
+                { value: 'right', label: 'Right' },
               ]}
             />
           </Sec>
@@ -414,21 +419,11 @@ export function UndoConfirm({ shots, saving, error, dispatch, onUndo }: { shots:
           </span>
         )}
       </div>
-      <button type="button" className="ch-btn ch-btn--ghost" onClick={() => dispatch({ type: 'HIDE_UNDO_CONFIRM' })}>
-        <span>Keep it</span>
-      </button>
-      <button
-        type="button"
-        className="ch-btn ch-btn--danger"
-        disabled={saving}
-        onClick={() => {
-          // CH-11707: removing a shot is a warning.
-          haptic('warning');
-          onUndo();
-        }}
-      >
-        <span>{saving ? 'Undoing…' : 'Undo'}</span>
-      </button>
+      <Button variant="ghost" onClick={() => dispatch({ type: 'HIDE_UNDO_CONFIRM' })}>Keep it</Button>
+      {/* CH-11707: removing a shot is a warning (a danger Button warns as it is pressed). */}
+      <Button variant="danger" busy={saving} onClick={onUndo}>
+        {saving ? 'Undoing…' : 'Undo'}
+      </Button>
     </div>
   );
 }

@@ -3,8 +3,8 @@
 import { useMemo } from 'react';
 import { Sparkles } from 'lucide-react';
 import type { ChWhatsNew, ChWhatsNewDay, ChWhatsNewItem, ChWhatsNewKind } from '../../data/whats-new-shape';
-import { haptic } from '../../lib/haptics';
 import { useChSessionState } from '../../lib/session-state';
+import { useChClockText } from '../../lib/use-clock';
 import { useLastGood } from '../../lib/use-last-good';
 import { useChPhone } from '../../lib/use-phone';
 import { useRefresh } from '../../lib/use-refresh';
@@ -18,6 +18,8 @@ import { Segmented } from '../../ui/Segmented';
 import { EmptyState } from '../../ui/States';
 import '../../styles/rounds.css';
 import '../../styles/whats-new.css';
+import { plural, pluralWord } from '../../lib/plural';
+import { LargeTitle } from '../../ui/LargeTitle';
 
 type Filter = 'all' | ChWhatsNewKind;
 
@@ -30,21 +32,21 @@ export const whatsNewLink = (it: Pick<ChWhatsNewItem, 'playerId' | 'kind'>) =>
 
 function WhatsNewRow({ it }: { it: ChWhatsNewItem }) {
   const href = whatsNewLink(it);
+  const time = useChClockText()(it.time);
   return (
     <LedgerRow
-      lead={it.time}
+      lead={time}
       title={it.title}
       meta={
         <span className="ch-wn-meta">
           <span>
-            {it.player} · <span className={it.good ? 'ch-wn-what is-good' : 'ch-wn-what'}>{it.what}</span>
+            {it.player} · <span className={it.good ? 'ch-wn-what is-gain' : 'ch-wn-what'}>{it.what}</span>
           </span>
           {it.detail && <span className="ch-wn-detail">{it.detail}</span>}
         </span>
       }
       href={href ?? undefined}
-      onClick={href ? () => haptic('select') : undefined}
-      label={`${it.what}: ${it.title}, ${it.player}, ${it.time}`}
+      label={`${it.what}: ${it.title}, ${it.player}, ${time}`}
     />
   );
 }
@@ -54,7 +56,7 @@ function Days({ days }: { days: ChWhatsNewDay[] }) {
   return (
     <>
       {days.map((d) => (
-        <Section key={d.key} id={`ch-wn-${d.key}`} title={d.label} meta={<span className="ch-num">{d.items.length} {d.items.length === 1 ? 'update' : 'updates'}</span>}>
+        <Section key={d.key} id={`ch-wn-${d.key}`} title={d.label} meta={<span className="ch-num">{d.items.length} {pluralWord(d.items.length, 'update')}</span>}>
           <LedgerList label={`${d.label}, ${d.items.length} updates`}>
             {d.items.map((it) => (
               <WhatsNewRow key={it.key} it={it} />
@@ -91,11 +93,11 @@ export function WhatsNew({ data: fresh }: { data: ChWhatsNew }) {
       {phone && <PhoneTop start heading={false} title="What’s new" />}
       <header className="ch-rd-h" data-canopy-head={phone ? undefined : ''}>
         <div>
-          <span className="ch-rd-k">{data.total ? `Past 7 days · ${data.total} ${data.total === 1 ? 'update' : 'updates'}` : 'Past 7 days'}</span>
+          <span className="ch-rd-k">{data.total ? `Past 7 days · ${plural(data.total, 'update')}` : 'Past 7 days'}</span>
           <span className="ch-rd-upd" role="status" data-ch-code={refreshing ? 'CH-13431' : undefined}>
             {refreshing ? 'Updating…' : ''}
           </span>
-          <h1 id="ch-wn-title">What’s new</h1>
+          <LargeTitle id="ch-wn-title">What’s new</LargeTitle>
         </div>
       </header>
 
@@ -123,7 +125,7 @@ export function WhatsNew({ data: fresh }: { data: ChWhatsNew }) {
             />
           </div>
           {days.length === 0 ? (
-            <EmptyState code="CH-13331" compact title="Nothing of this kind this week" body="Pick All to see the rest of the week." />
+            <EmptyState code="CH-13331" kind="filtered" compact title="Nothing of this kind this week" body="Pick All to see the rest of the week." />
           ) : (
             <Days days={days} />
           )}

@@ -149,7 +149,19 @@ Use `memory/context/golfhelm-database.md` for exact columns and `memory/glossary
   asked in Fairway shot entry after a missed first putt from that band, with
   a counter toward `target_count`; one tap writes the miss tag through the
   round's autosave. Contract: the evidence contract's Slice 8a section;
-  entry side: `memory/features/shot-tracking.md`.
+  entry side: `memory/features/shot-tracking.md`. Clubhouse shot entry asks
+  it too (CH-11960, 2026-10-22).
+- Course plan (supercharge Slice 7c, behind `coachhelm_course_plan_v1`,
+  OFF; `src/lib/coachhelm/course-plan/build-plan.ts`, actions in
+  `src/app/golf/actions/coachhelm-course-plan.ts`): the coach reads a plan
+  for a player they coach (`listCoursePlanCourses`, `getCoursePlan`). The
+  player reads their own (2026-10-22, CH-13916 on their Clubhouse Board)
+  through `listMyCoursePlanCourses` and `getMyCoursePlan`, which take no
+  player id: the player is the `golf_players` row whose `user_id` is the
+  session user; no row answers forbidden, a lookup error answers failed
+  (logged). Only the player copy comes back (title, at most three lines,
+  the thin-history line below six rounds, or the line that says nothing
+  stands out); never the coach copy, never a club.
 - `upsertInsightV3` throws `InsightOwnershipLookupError` when the team or
   staff lookup keeps failing, instead of writing the row with no owner.
 - Every read that decides "is there already a row?" fails closed
@@ -252,6 +264,10 @@ Use `memory/context/golfhelm-database.md` for exact columns and `memory/glossary
     green-hit by band has no LPGA figure, so a women's approach read stays
     absent and a women's standing omits the marker. Never PGA numbers.
 
+- Genome `scoring_trend` (2026-10-24): the result carries an optional `se`,
+  the change's Welch standard error from both windows' own spreads.
+  Clubhouse's Momentum says Improving/Regressing only past it; rows stored
+  before have no `se` and read "No clear change" until the nightly run.
 - Wave 6 (2026-10-18):
   - Persona (`v3/genome/persona.ts`): `driver_usage` and `miss_side_bias` are
     style dims, never strengths or watch-outs; they only feed the course

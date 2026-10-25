@@ -5,13 +5,13 @@ import { derivePersona } from '@/lib/coachhelm/v3/genome/persona';
 import { GENOME_DIMENSIONS } from '@/lib/coachhelm/v3/genome/registry';
 import { GENOME_WINDOW_DAYS, type DimensionResult } from '@/lib/coachhelm/v3/genome/types';
 import { formatSigned } from '../lib/format';
-import type { ChInsight } from './coachhelm-shape';
+import { diffSe, halvesTone, POOLED_SD, standardError } from '../lib/stats-signal';
 import { speak, type ChViewer } from './coachhelm-voice';
 
 /**
- * The player's Game profile (Clubhouse P013, `?view=profile`): the genome the Fairway page's profile drill reads
- * (`loadGenome`, `derivePersona`, `GENOME_DIMENSIONS`), shaped for the screen. Pure, so the loader, the preview and the tests
- * run this one function.
+ * The genome the Fairway page's profile drill reads (`loadGenome`, `derivePersona`, `GENOME_DIMENSIONS`), shaped for the screen:
+ * the whole profile (`toChProfile`), and the part of it Standing's "How you play" draws (`toChGame`). Game profile was its own
+ * view (Clubhouse P013, `?view=profile`) until it folded into Standing. Pure, so the loader, the preview and the tests run these.
  *
  * Doctrine carried over from Fairway's own retirement of the radar (`PlayerGenomeProfile`): the radar-normalised 0 to 100 score
  * is never printed. It was a score with no baseline behind it, and read as a grade it is not. Every measure here shows its real
@@ -94,16 +94,49 @@ export interface ChProfile {
   measures: ChMeasure[];
   /** How many are ready. */
   ready: number;
-  /**
-   * What CoachHelm's insights say about this player, ranked as the Board ranks them (owner, 2026-10-16: the profile reads the
-   * actual CoachHelm output, not only the genome). `error`: the read failed, never "nothing to say"; absent when not read.
-   */
-  sees?: { list: ChInsight[]; error: boolean };
-  /**
-   * A coach's one line under the hero (spec A): how many of the player's current reads are costing strokes and how many are
-   * working, counted from the visible reads with no exposure recorded. `error`: that read failed. Absent on the player's own page.
-   */
-  seen?: { costing: number; working: number; error: boolean };
+}
+
+/**
+ * The genome measures Standing's own rows already draw from the stats cache, against the Tour and the team: scrambling (Short
+ * game), par 3 scoring (Scoring) and tournament against practice scoring (Pressure). "How you play" leaves them out, so a stat is
+ * never drawn twice on one page with two different numbers.
+ */
+export const STANDING_DRAWS: ReadonlySet<string> = new Set(['scrambling_rate', 'par3_proficiency', 'pressure_delta']);
+
+/**
+ * Standing's "How you play" (CH-13915): what the Game profile showed that Standing does not, folded into it (design call, Nav and
+ * Standing). The persona's sentence on the shape of the game, and the measures Standing has no row for (miss side, the back nine,
+ * the recent trend, how often driver comes out), each on its own scale with its word, its read and how it is measured. A measure
+ * the persona calls a strength or a watch-out carries that tag on its card; there is no second list of them. `state` and `ready`
+ * count only these measures.
+ */
+export interface ChGame {
+  state: ChProfile['state'];
+  windowDays: number;
+  rounds: number | null;
+  refreshed: string | null;
+  courseProfile: string | null;
+  measures: ChMeasure[];
+  ready: number;
+}
+
+/** The section's read: `failed` is a genome read that did not come back, never "nothing yet" (CH-13260). */
+export type ChGameLoad = { status: 'ready'; data: ChGame } | { status: 'failed' };
+
+/** "How you play" from the genome row: `toChProfile`, without what Standing's own rows draw. */
+export function toChGame(genome: LoadedGenome | null, now: Date = new Date(), viewer: ChViewer = { role: 'player' }): ChGame {
+  const p = toChProfile(genome, now, viewer);
+  const measures = p.measures.filter((m) => !STANDING_DRAWS.has(m.id));
+  const ready = measures.filter((m) => !m.locked).length;
+  return {
+    state: ready === 0 ? 'empty' : ready < measures.length ? 'partial' : 'full',
+    windowDays: p.windowDays,
+    rounds: p.rounds,
+    refreshed: p.refreshed,
+    courseProfile: p.courseProfile,
+    measures,
+    ready,
+  };
 }
 
 interface MeasureCopy {
@@ -243,6 +276,26 @@ const clamp100 = (v: number) => Math.min(100, Math.max(0, v));
  * One measure from the registry and what the row stores for it. Exported for the tests, which draw a measure the registry has no copy
  * for. `role`: whose page it is on; a coach's reads the measure's words in no one's voice (`COACH_WORDS`).
  */
+/**
+ * Momentum's word, through the one change rule (A1, row 93) instead of the dimension's fixed 0.3 cut: the change in score to par
+ * (last 30 days against the 60 before, lower is better) said only past its standard error. The stored result carries no round
+ * counts, only its confidence, so a row stored before the engine kept the change's own standard error (`se`) takes each window
+ * at the smaller window's count, at most six, at the pooled score spread: a conservative error. A row with `se` uses it.
+ * "No clear change" otherwise, in plain ink; the persona's call still colours it.
+ */
+const CHANGE_WORDS: Readonly<Record<string, { gain: string; loss: string }>> = { scoring_trend: { gain: 'Improving', loss: 'Regressing' } };
+
+function testedChange(id: string, value: number, confidence: number | null, storedSe?: number): { word: string; tone: ChMeasureTone } | null {
+  const words = CHANGE_WORDS[id];
+  if (!words) return null;
+  const n = Math.max(1, Math.round(Math.min(1, Math.max(0, confidence ?? 0)) * 6));
+  // The engine's own error from both windows' rounds when the row has it (review of #2361: the fallback, capped at six rounds
+  // at the pooled spread, is never below 2.08 strokes, so a change clamped to ±2 could never be said).
+  const se = storedSe != null && Number.isFinite(storedSe) && storedSe > 0 ? storedSe : diffSe(standardError(POOLED_SD.score, n), standardError(POOLED_SD.score, n));
+  const tone = halvesTone({ delta: value, se }, true, 2);
+  return tone === 'is-gain' ? { word: words.gain, tone: 'good' } : tone === 'is-loss' ? { word: words.loss, tone: 'warn' } : { word: 'No clear change', tone: 'plain' };
+}
+
 export function toMeasure(id: string, label: string, r: DimensionResult | undefined, stance: ChMeasureStance | null, role: ChViewer['role'] = 'player'): ChMeasure {
   const copy = COPY[id];
   const words = role === 'coach' ? COACH_WORDS[id] : undefined;
@@ -252,15 +305,16 @@ export function toMeasure(id: string, label: string, r: DimensionResult | undefi
   // A measure with no copy has no unit to put a number in, so it shows the word it gave and nothing else.
   const shown = copy?.figure(value) ?? null;
   const atEdge = copy?.clamp != null && Math.abs(value) >= copy.clamp;
+  const change = testedChange(id, value, r?.confidence ?? null, r?.se);
   return {
     ...base,
     locked: false,
-    headline: r?.label?.trim() || null,
+    headline: change?.word ?? (r?.label?.trim() || null),
     figure: shown?.figure ?? null,
     figureNote: shown?.note || null,
     bound: atEdge ? 'This is the edge of the scale, so the real gap may be larger.' : null,
     stance,
-    tone: stance === 'strength' ? 'good' : stance === 'watch' ? 'warn' : (r?.label ? LABEL_TONE[r.label.trim()] : undefined) ?? 'plain',
+    tone: stance === 'strength' ? 'good' : stance === 'watch' ? 'warn' : (change ? change.tone : r?.label ? LABEL_TONE[r.label.trim()] : undefined) ?? 'plain',
     pos: copy ? clamp100(((value - copy.scale.min) / (copy.scale.max - copy.scale.min)) * 100) : null,
     read: readOf(r?.confidence ?? null),
   };

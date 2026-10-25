@@ -1,5 +1,6 @@
 import { NO_DATA } from '../../lib/format';
 import { needsText, sampleState, wilson, type SampleState } from '../../lib/stats-signal';
+import { plural } from '../../lib/plural';
 
 /**
  * A band of putts as the loaders count them: its label ("5–10 ft"), the putts holed of those tried, and the Tour's make rate
@@ -49,7 +50,7 @@ const pct = (v: number) => `${Math.round(v)}%`;
 
 /** The count under a band: "20/51" (made/tried), or "33 putts" where only the count was kept. */
 export function puttCount(b: Pick<PuttBandInput, 'made' | 'attempts'>): string {
-  return b.made == null ? `${b.attempts} ${b.attempts === 1 ? 'putt' : 'putts'}` : `${b.made}/${b.attempts}`;
+  return b.made == null ? `${plural(b.attempts, 'putt')}` : `${b.made}/${b.attempts}`;
 }
 
 /** The count in words: "20 of 51 made", or "33 putts" where only the count was kept. */

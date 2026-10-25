@@ -5,13 +5,15 @@ import { useRouter } from 'next/navigation';
 import { useEffect, type CSSProperties, type KeyboardEvent } from 'react';
 import type { ChTeamStats } from '../../data/stats-team';
 import { basisWords, type ChFilter } from '../../data/stats-filter';
-import { NO_DATA } from '../../lib/format';
+import { changeInk, changeTone } from '../../lib/format';
+import { useGlide } from '../../lib/motion-glide';
 import { useChSessionState } from '../../lib/session-state';
 import { useChartPin } from '../../lib/use-chart-pin';
 import { EmptyState } from '../../ui/States';
 import { Select } from '../../ui/Select';
 import { teamPlayerHref } from './links';
 import { formatRankValue, metricDef, rankLabel, rankReadout, rankScale, rankSummary, teamMeanFor, teamRankRows, TEAM_RANK_METRICS, type TeamRankMetric } from './team-rank';
+import { NoData } from '../../ui/NoData';
 
 export type TeamRankData = Pick<ChTeamStats, 'grid' | 'team' | 'legTotals' | 'filter'>;
 
@@ -38,8 +40,9 @@ export function TeamRank({ data, phone = false }: { data: TeamRankData; phone?: 
   const mean = teamMeanFor(metric, data.team, data.legTotals);
   const scale = rankScale(rows, mean, metric, phone ? 3 : 5);
   const pin = useChartPin(rows.length, 'y');
-  // The pin is a row index, so a new order (another figure, a new window) must let go of it or it would point at someone else.
-  const order = rows.map((r) => r.id).join('|');
+  // The pin is a row index, so a new order (another figure) must let go of it or it would point at someone else; so does a new
+  // window or filter, since the chart stays mounted through one so its dots glide (B9).
+  const order = rows.map((r) => r.id).join('|') + '|' + JSON.stringify(data.filter);
   const { clear } = pin;
   useEffect(() => clear(), [order, clear]);
   const ranked = rows.filter((r) => r.rank != null).length;
@@ -50,14 +53,26 @@ export function TeamRank({ data, phone = false }: { data: TeamRankData; phone?: 
   const early = rows.filter((r) => r.state === 'early');
   const sg = !def.lowerIsBetter;
   const fmt = (v: number) => formatRankValue(metric, v);
-  const tone = (v: number) => (sg ? (v >= 0 ? ' is-gain' : ' is-loss') : '');
+  const tone = (v: number) => (sg ? ' ' + changeTone(v, false, 1) : '');
+  // Each player's whisker and dot glide sideways on a new window (B9), followed by player, not by place: a re-ranked row
+  // moves to its new place at once, and its dot glides along the track.
+  const players = rows.map((r) => r.id).sort();
+  const slot = new Map(players.map((id, k) => [id, k]));
+  const drawn = useGlide(
+    players.flatMap((id) => {
+      const r = rows.find((x) => x.id === id)!;
+      const known = r.value != null && r.se != null;
+      return [known ? scale.at(r.value! - r.se!) : null, known ? scale.at(r.value! + r.se!) : null, r.value == null ? null : scale.at(r.value)];
+    }),
+    `${metric}|${players.join('|')}`,
+  );
 
   const row = (r: (typeof rows)[number], i: number) => {
     const item = pin.item(i);
     // A second tap on the pinned player opens them; the first pins (the row is aria-hidden: the group's keys and the grid's links reach the same).
     const press = { ...item, onClick: () => (pin.pinned === i ? router.push(href(i)) : item.onClick()) };
-    const lo = r.value != null && r.se != null ? scale.at(r.value - r.se) : null;
-    const hi = r.value != null && r.se != null ? scale.at(r.value + r.se) : null;
+    const k = slot.get(r.id)! * 3;
+    const [lo, hi, dot] = drawn.slice(k, k + 3);
     return (
       <div
         key={r.id}
@@ -68,10 +83,10 @@ export function TeamRank({ data, phone = false }: { data: TeamRankData; phone?: 
         <span className="ch-sv-tr__who">{phone ? r.short : r.name}</span>
         <span className="ch-sv-tr__track">
           {lo != null && hi != null && <i className="ch-sv-whisk" style={{ left: pct(Math.min(lo, hi)), width: pct(Math.abs(hi - lo)) }} />}
-          {r.value != null && <b className={'ch-sv-tr__dot' + (r.state === 'early' ? '' : tone(r.value))} style={{ left: pct(scale.at(r.value)) }} />}
+          {r.value != null && dot != null && <b className={'ch-sv-tr__dot' + (r.state === 'early' ? '' : tone(r.value))} style={{ left: pct(dot) }} />}
           {r.value == null && <span className="ch-sv-tr__needs">{r.tag}</span>}
         </span>
-        <span className={'ch-sv-tr__v ch-num' + (r.value == null || r.state === 'early' ? '' : sg ? (r.value >= 0 ? ' ch-gain' : ' ch-loss') : '')}>{r.value == null ? NO_DATA : fmt(r.value)}</span>
+        <span className={'ch-sv-tr__v ch-num ' + (r.state === 'early' || !sg ? '' : changeInk(r.value))}>{r.value == null ? <NoData /> : fmt(r.value)}</span>
       </div>
     );
   };
@@ -108,7 +123,7 @@ export function TeamRank({ data, phone = false }: { data: TeamRankData; phone?: 
       >
         <div className="ch-sv-tr__top">
           <p className={'ch-sv-read' + (shown ? ' is-on' : '')} aria-hidden="true">
-            {shown ?? (phone ? 'Tap a player to read them; tap again to open.' : 'Select a player to read how sure their figure is; select again to open them.')}
+            {shown ?? (phone ? 'Tap a player to see their likely range; tap again to open them.' : 'Select a player to see their likely range; select again to open them.')}
           </p>
           {pin.pinned != null && (
             <Link href={href(pin.pinned)} className="ch-sv-open" data-ch-press="">
