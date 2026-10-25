@@ -3,8 +3,38 @@ import type { ShotRecord, HoleStats, RoundHole } from '@/lib/types/golf';
 import { updateShot, deleteShot, type ShotUpdateData } from '@/app/golf/actions/shot-actions';
 import { type ActionResult } from '@/app/golf/actions/golf-action-shared';
 import { deriveLieAfter, calculateShotDistanceWithDirection } from '@/lib/utils/shot-helpers';
+import { relinkAfterDelete, relinkAfterEdit } from '@/lib/golf/shot-chain-relink';
 import { recordHelmBreadcrumb } from '@/lib/observability/client-breadcrumbs';
 import type { ShotTrackingState, ShotAction, EditFormData } from './use-shot-state-machine';
+
+/** The position fields a relink can change, as a point update. */
+function relinkUpdateData(shot: ShotRecord): ShotUpdateData {
+  const data: ShotUpdateData = {
+    lie_before: shot.lieBefore,
+    distance_to_hole_before: shot.distanceToHoleBefore,
+    distance_unit_before: shot.distanceUnitBefore,
+    result: shot.result,
+    lie_after: deriveLieAfter(shot),
+    distance_to_hole_after: shot.distanceToHoleAfter,
+    distance_unit_after: shot.distanceUnitAfter,
+    shot_distance: shot.shotDistance,
+  };
+  if (shot.shotType === 'putting') data.putt_distance_feet = shot.puttDistanceFeet ?? null;
+  if (shot.approachMissDirection) {
+    data.approach_miss_direction = shot.approachMissDirection;
+    data.approach_miss_lie_type = shot.approachMissLieType ?? null;
+  }
+  return data;
+}
+
+function persistRelinkedShots(history: readonly ShotRecord[], changed: readonly number[]): Promise<Array<ActionResult<void>>> {
+  return Promise.all(
+    changed.flatMap(i => {
+      const shot = history[i];
+      return shot?.id ? [updateShot(shot.id, relinkUpdateData(shot))] : [];
+    }),
+  );
+}
 
 interface UseEditShotModalParams {
   state: ShotTrackingState;
@@ -162,59 +192,33 @@ export function useEditShotModal({
         }
       }
 
-      // Build updated history with cascade (read latest from ref to avoid stale closure)
-      let updatedHistory = stateRef.current.shotHistory.map(s =>
+      // Apply the edit to the latest history (read from ref to avoid a stale
+      // closure), then relink the neighbouring rows so the hole still chains:
+      // the next shot starts where this one now ends, and a moved start moves
+      // the previous shot's end (shot-chain-relink.ts).
+      const editedHistory = stateRef.current.shotHistory.map(s =>
         (editingShot.id ? s.id === editingShot.id : s.shotNumber === editingShot.shotNumber)
           ? updatedShot : s
       );
-
-      // Cascade distance changes to downstream shots
-      const editedIdx = updatedHistory.findIndex(s =>
+      const editedIdx = editedHistory.findIndex(s =>
         editingShot.id ? s.id === editingShot.id : s.shotNumber === editingShot.shotNumber
       );
-      if (editedIdx >= 0 && editedIdx < updatedHistory.length - 1) {
-        updatedHistory = [...updatedHistory];
-        const cascadeUpdates: Array<Promise<ActionResult<void>>> = [];
+      const relinked = editedIdx >= 0
+        ? relinkAfterEdit(editedHistory, editedIdx, editingShot)
+        : { history: editedHistory, changed: [] };
+      const updatedHistory = relinked.history;
 
-        // Walk through all downstream shots and cascade distanceToHoleBefore
-        // Each shot's distanceToHoleBefore should match the previous shot's distanceToHoleAfter
-        for (let i = editedIdx + 1; i < updatedHistory.length; i++) {
-          const prevShot = updatedHistory[i - 1]!;
-          const currentShot = updatedHistory[i]!;
-          const expectedBefore = prevShot.distanceToHoleAfter;
-          const expectedUnit = prevShot.distanceUnitAfter;
-
-          if (currentShot.distanceToHoleBefore !== expectedBefore || currentShot.distanceUnitBefore !== expectedUnit) {
-            updatedHistory[i] = {
-              ...currentShot,
-              distanceToHoleBefore: expectedBefore,
-              distanceUnitBefore: expectedUnit,
-            };
-
-            // Persist every cascade before releasing the shared mutation gate.
-            // A later Undo must not delete a shot while one of these writes is
-            // still targeting it.
-            if (currentShot.id) {
-              cascadeUpdates.push(updateShot(currentShot.id, {
-                distance_to_hole_before: expectedBefore,
-                distance_unit_before: expectedUnit,
-              }));
-            }
-          } else {
-            // Once we find a shot that already matches, downstream shots are consistent
-            break;
-          }
-        }
-
-        const cascadeResults = await Promise.all(cascadeUpdates);
-        // Same stale-id/RLS reasoning as the primary update above: a cascade
-        // write that cannot find its row by id is not a reason to abandon the
-        // whole edit, because the full snapshot save below carries every
-        // shot's corrected distances regardless of point-update outcome.
-        if (cascadeResults.some((result) => !result.success && result.code !== 'shot_not_found')) {
-          dispatch({ type: 'EDIT_SAVE_ERROR', payload: 'Could not save all shot distance updates. Please try again.' });
-          return;
-        }
+      // Persist every relinked row before releasing the shared mutation gate.
+      // A later Undo must not delete a shot while one of these writes is
+      // still targeting it.
+      const relinkResults = await persistRelinkedShots(updatedHistory, relinked.changed);
+      // Same stale-id/RLS reasoning as the primary update above: a relink
+      // write that cannot find its row by id is not a reason to abandon the
+      // whole edit, because the full snapshot save below carries every
+      // shot's corrected position regardless of point-update outcome.
+      if (relinkResults.some((result) => !result.success && result.code !== 'shot_not_found')) {
+        dispatch({ type: 'EDIT_SAVE_ERROR', payload: 'Could not save all shot distance updates. Please try again.' });
+        return;
       }
 
       dispatch({ type: 'EDIT_SAVE_COMPLETE', payload: { updatedHistory } });
@@ -275,9 +279,19 @@ export function useEditShotModal({
       }
 
       // Read latest shotHistory from ref after async operation
-      const newHistory = stateRef.current.shotHistory
+      const latestHistory = stateRef.current.shotHistory;
+      const removedIdx = latestHistory.findIndex(s =>
+        editingShot.id ? s.id === editingShot.id : s.shotNumber === editingShot.shotNumber
+      );
+      const remaining = latestHistory
         .filter(s => editingShot.id ? s.id !== editingShot.id : s.shotNumber !== editingShot.shotNumber)
         .map((s, idx) => ({ ...s, shotNumber: idx + 1 }));
+      // The shot after the deleted one now starts where the shot before it
+      // ended. Best effort: the snapshot save below carries the relinked rows
+      // even when a point update cannot find its row.
+      const relinked = removedIdx >= 0 ? relinkAfterDelete(remaining, removedIdx) : { history: remaining, changed: [] };
+      const newHistory = relinked.history;
+      await persistRelinkedShots(newHistory, relinked.changed);
 
       dispatch({ type: 'DELETE_COMPLETE', payload: { newHistory } });
 
