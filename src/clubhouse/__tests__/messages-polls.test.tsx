@@ -91,7 +91,8 @@ describe('PollCard', () => {
     // The count is plain text: a live region per card would announce every poll in the thread on each vote.
     expect(document.querySelector('.ch-ms-poll__count')!.textContent).toBe('1 of 4 voted');
     expect(screen.queryByRole('status')).toBeNull();
-    expect(screen.getByText('Choose one')).toBeTruthy();
+    // One answer, no end: the head is just "Poll" (P-2 4.1).
+    expect(document.querySelector('.ch-ms-poll__head')!.textContent).toBe('Poll');
   });
 
   it('a tap votes, a second tap on the same choice takes it back', async () => {
@@ -117,7 +118,7 @@ describe('PollCard', () => {
     const a = api([{ message_id: 'm1', user_id: 'me', choice: 'o3' }]);
     render(<PollCard api={a} messageId="m1" poll={p} mine={false} />);
     expect(screen.getAllByRole('checkbox')).toHaveLength(3);
-    expect(screen.getByText('Choose any')).toBeTruthy();
+    expect(screen.getByText('Choose any that work')).toBeTruthy();
     await user.click(screen.getByRole('checkbox', { name: /Tue/ }));
     expect(a.polls!.vote).toHaveBeenLastCalledWith('m1', expect.anything(), ['o1', 'o3']);
   });
@@ -136,7 +137,7 @@ describe('PollCard', () => {
 
   it('a poll past its end time is closed too', () => {
     render(<PollCard api={api([])} messageId="m1" poll={poll({ closesAt: '2026-10-24T14:59:00Z' })} mine />);
-    expect(screen.getByText('Poll closed')).toBeTruthy();
+    expect(screen.getByText('Voting ended')).toBeTruthy();
   });
 
   it('says when an open poll ends, in the viewer’s clock', () => {
@@ -348,5 +349,44 @@ describe('PollCard, slice 1 of the follow-up plan (P-2 0.2)', () => {
       row.dispatchEvent(new MouseEvent('click', { bubbles: true, detail: 1 }));
     });
     expect(a.polls!.vote).not.toHaveBeenCalled();
+  });
+});
+
+describe('PollCard, slice 2: the visual spec and its states (P-2 4.1, 4.2)', () => {
+  const n = (label: RegExp) => screen.getByRole('radio', { name: label }).querySelector('.ch-ms-poll__n')!.textContent;
+
+  it('open: blank at zero, a level line under every fill, no leader marked, "No votes yet"', () => {
+    render(<PollCard api={api([])} messageId="m1" poll={poll()} mine={false} />);
+    expect(n(/Van A/)).toBe('');
+    expect(document.querySelectorAll('.ch-ms-poll__level')).toHaveLength(2);
+    expect(document.querySelector('.ch-ms-poll__tag')).toBeNull();
+    expect(document.querySelector('.ch-ms-poll__count')!.textContent).toBe('No votes yet');
+  });
+
+  it('closed by its sender: "Poll closed · Final", zeros shown, the leader tagged', () => {
+    render(<PollCard api={api([{ message_id: 'm1', user_id: 'ana', choice: 'o2' }])} messageId="m1" poll={poll({ closedAt: '2026-10-24T14:00:00Z' })} mine />);
+    expect(document.querySelector('.ch-ms-poll__head')!.textContent).toBe('Poll closed·Final');
+    expect(n(/Van A/)).toBe('0');
+    expect(screen.getByRole('radio', { name: /Van B/ }).querySelector('.ch-ms-poll__tag')!.textContent).toBe('Most votes');
+  });
+
+  it('ended on time, two leaders tied, and a final poll nobody voted on', () => {
+    const rows = [
+      { message_id: 'm1', user_id: 'ana', choice: 'o1' },
+      { message_id: 'm1', user_id: 'ben', choice: 'o2' },
+    ];
+    render(<PollCard api={api(rows)} messageId="m1" poll={poll({ closesAt: '2026-10-24T14:59:00Z' })} mine={false} />);
+    expect(document.querySelector('.ch-ms-poll__head')!.textContent).toBe('Voting ended·Final');
+    expect([...document.querySelectorAll('.ch-ms-poll__tag')].map((t) => t.textContent)).toEqual(['Tied', 'Tied']);
+    cleanup();
+    render(<PollCard api={api([])} messageId="m1" poll={poll({ closesAt: '2026-10-24T14:59:00Z' })} mine={false} />);
+    expect(document.querySelector('.ch-ms-poll__count')!.textContent).toBe('No one voted');
+  });
+
+  it('a multi-answer poll says so under its question while open; a failed read says so', () => {
+    render(<PollCard api={api(null, { error: 'Votes could not be loaded. Tap to retry.' })} messageId="m1" poll={poll({ multi: true })} mine={false} />);
+    expect(screen.getByText('Choose any that work')).toBeTruthy();
+    expect(document.querySelector('.ch-ms-poll__count')!.textContent).toBe('Votes didn’t load');
+    expect(screen.getByRole('button', { name: 'Retry' })).toBeTruthy();
   });
 });

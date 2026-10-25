@@ -36,6 +36,7 @@ import {
   UserPlus,
   createLucideIcon,
   type LucideIcon,
+  ListChecks,
 } from "lucide-react";
 import {
   useCallback,
@@ -579,7 +580,15 @@ function ConvRowButton({ api, c, avatarSize, onOpen, bind, plain = false }: { ap
                       :{" "}
                     </em>
                   )}
-                {c.lastText}
+                {/* D25: a poll reads as its glyph and question, not "Poll: …". */}
+                {c.lastIsPoll ? (
+                  <>
+                    <Icon icon={ListChecks} size={13} className="ch-ms-row__poll" />
+                    {c.lastText.replace(/^Poll: /, "")}
+                  </>
+                ) : (
+                  c.lastText
+                )}
               </>
             ) : (
               "No messages yet"
@@ -1335,7 +1344,20 @@ export function ReplyQuote({ api, replyToId }: { api: ChMessagesApi; replyToId: 
         behavior: reduced ? "instant" : "smooth",
       })}>
       <b>{name}</b>
-      <span>{!parent ? "Original message unavailable" : parent.deleted ? "Message deleted" : parent.text || (parent.hasAttachments ? "Attachment" : "Message")}</span>
+      <span>
+        {!parent ? (
+          "Original message unavailable"
+        ) : parent.deleted ? (
+          "Message deleted"
+        ) : parent.poll ? (
+          <>
+            <Icon icon={ListChecks} size={13} className="ch-ms-row__poll" />
+            {parent.poll.question}
+          </>
+        ) : (
+          parent.text || (parent.hasAttachments ? "Attachment" : "Message")
+        )}
+      </span>
     </button>
   );
 }

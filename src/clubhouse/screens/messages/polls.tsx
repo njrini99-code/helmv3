@@ -11,6 +11,7 @@ import {
   encodeChoice,
   isPollClosed,
   pollEligibleCount,
+  pollState,
   pollShare,
   pollWaiting,
   type Poll,
@@ -51,10 +52,10 @@ export interface ChPollsApi {
   close: (messageId: string) => Promise<boolean>;
 }
 
+/** The head's second part: "Final", the end ("Ends tomorrow at 6:00 PM", the last hour counting down), or nothing. */
 function endsLabel(poll: Poll, closed: boolean, now: string, timeZone: string, hours: "12" | "24", nowMs: number) {
-  if (poll.closedAt) return "Final";
-  if (!poll.closesAt) return poll.multi ? "Choose any" : "Choose one";
   if (closed) return "Final";
+  if (!poll.closesAt) return null;
   // The last hour counts down, so a tap just before the end never looks like it landed after it.
   const left = Date.parse(poll.closesAt) - nowMs;
   if (left < 60_000) return "Ends in under a minute";
@@ -136,6 +137,9 @@ export function PollCard({
   };
 
   const ends = endsLabel(poll, closed, api.now, api.timeZone, api.clock ?? "12", nowMs);
+  const state = pollState(poll, nowMs);
+  const soon = !closed && !!poll.closesAt && Date.parse(poll.closesAt) - nowMs < 3_600_000;
+  const tied = !!tally && tally.leaders.length > 1;
   // Single answer: one tab stop on the picked choice (or the first); arrows move focus only, never a vote, and Space or
   // Enter votes. Several answers: each checkbox is its own stop.
   const stop = poll.multi ? null : (mineIds[0] ?? poll.options[0]!.id);
@@ -154,15 +158,21 @@ export function PollCard({
     <div className={"ch-ms-poll" + (closed ? " is-closed" : "")} role="group" aria-labelledby={qid} aria-busy={busy || undefined}>
       <div className="ch-ms-poll__head">
         <Icon icon={closed ? Lock : ListChecks} size={14} />
-        <span>{closed ? "Poll closed" : "Poll"}</span>
-        <span className="ch-ms-poll__dot" aria-hidden="true">
-          ·
-        </span>
-        <span className="ch-ms-poll__ends">{ends}</span>
+        {/* D12: says what happened: the sender closed it, or its time ran out. */}
+        <span>{state === "closed" ? "Poll closed" : state === "ended" ? "Voting ended" : "Poll"}</span>
+        {ends && (
+          <>
+            <span className="ch-ms-poll__dot" aria-hidden="true">
+              ·
+            </span>
+            <span className={"ch-ms-poll__ends" + (soon ? " is-soon" : "")}>{ends}</span>
+          </>
+        )}
       </div>
       <p id={qid} className="ch-ms-poll__q">
         {poll.question}
       </p>
+      {poll.multi && !closed && <p className="ch-ms-poll__sub">Choose any that work</p>}
       <ul className="ch-ms-poll__opts" role={poll.multi ? "group" : "radiogroup"} aria-labelledby={qid}>
         {poll.options.map((o) => {
           const n = tally?.counts[o.id] ?? 0;
@@ -190,6 +200,7 @@ export function PollCard({
                 onClick={(e) => pick(o.id, e.detail === 0)}
               >
                 <span className="ch-ms-poll__fill" aria-hidden="true" />
+                <span className="ch-ms-poll__level" aria-hidden="true" />
                 <span className="ch-ms-poll__mark" aria-hidden="true">
                   {on && <Icon icon={Check} size={12} />}
                 </span>
@@ -201,8 +212,10 @@ export function PollCard({
                     ))}
                   </span>
                 )}
+                {lead && closed && <span className="ch-ms-poll__tag">{tied ? "Tied" : "Most votes"}</span>}
                 <span className="ch-ms-poll__n ch-num" aria-hidden="true">
-                  {tally ? n : "—"}
+                  {/* Blank at zero while open (a column of zeros reads as a result); "0" once final. */}
+                  {!tally ? "—" : n === 0 && !closed ? "" : n}
                 </span>
               </button>
             </li>
@@ -215,8 +228,12 @@ export function PollCard({
         <span className="ch-ms-poll__count ch-num">
           {!tally
             ? polls?.error
-              ? polls.error
+              ? "Votes didn’t load"
               : "Loading votes…"
+            : tally.voterCount === 0
+              ? closed
+                ? "No one voted"
+                : "No votes yet"
             : eligible
               ? tally.voterCount >= eligible
                 ? "Everyone voted"

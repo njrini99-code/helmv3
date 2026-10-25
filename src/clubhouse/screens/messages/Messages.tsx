@@ -120,6 +120,7 @@ export function Messages({ data }: { data: ChMessagesData }) {
           lastAt: c.last_message?.created_at ?? c.updated_at ?? null,
           lastSenderId: c.last_message?.sender_id ?? null,
           lastText: railText(decodeMessageContent(c.last_message?.content ?? '')),
+          lastIsPoll: isPollFallbackText(decodeMessageContent(c.last_message?.content ?? '')),
           creatorId: c.creator_id ?? null,
         };
       }),

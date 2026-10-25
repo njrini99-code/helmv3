@@ -35,6 +35,8 @@ export interface ChConv {
   lastAt: string | null;
   lastSenderId: string | null;
   lastText: string;
+  /** The last message is a poll's plain-text copy (`isPollFallbackText`): the row shows its glyph and question. */
+  lastIsPoll?: boolean;
   creatorId: string | null;
 }
 
