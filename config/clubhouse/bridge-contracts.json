@@ -11907,6 +11907,17 @@
     "catalog": "docs/clubhouse/catalog/rounds.md"
   },
   {
+    "id": 110215,
+    "page": "P011",
+    "category": 2,
+    "item": 15,
+    "name": "THE_COURSE_PAGE_DIDNT_LOAD",
+    "chCode": "CH-11421",
+    "meaning": "The course page didn't load (P-7)",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/rounds.md"
+  },
+  {
     "id": 110401,
     "page": "P011",
     "category": 4,
@@ -12158,6 +12169,39 @@
     "name": "TEAM_ROUNDS_COMPLETED_ROUNDS_WITH_NO_SCORE",
     "chCode": "CH-11322",
     "meaning": "Team rounds: completed rounds with no score at all",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/rounds.md"
+  },
+  {
+    "id": 110424,
+    "page": "P011",
+    "category": 4,
+    "item": 24,
+    "name": "A_COURSE_PAGE_THIS_VIEWER_HAS_NO",
+    "chCode": "CH-11330",
+    "meaning": "A course page this viewer has no rounds at: an unknown key, or another player's course",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/rounds.md"
+  },
+  {
+    "id": 110425,
+    "page": "P011",
+    "category": 4,
+    "item": 25,
+    "name": "A_COACHS_COURSE_PAGE_FOR_A_PLAYER",
+    "chCode": "CH-11331",
+    "meaning": "A coach's course page for a player who isn't on their team, or no player named",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/rounds.md"
+  },
+  {
+    "id": 110426,
+    "page": "P011",
+    "category": 4,
+    "item": 26,
+    "name": "THE_COURSE_PAGES_HOLE_BY_HOLE_WITH",
+    "chCode": "CH-11333",
+    "meaning": "The course page's Hole by hole with no round here entered hole by hole (or the holes didn't load)",
     "status": "implemented",
     "catalog": "docs/clubhouse/catalog/rounds.md"
   },
@@ -13361,6 +13405,17 @@
     "name": "THE_COACH_NOTE_CARD_ON_A_ROUNDS",
     "chCode": "CH-11523",
     "meaning": "The Coach note card on a round's review",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/rounds.md"
+  },
+  {
+    "id": 111124,
+    "page": "P011",
+    "category": 11,
+    "item": 24,
+    "name": "COMPARE_TWO_ROUNDS_AT_A_COURSE",
+    "chCode": "CH-11530",
+    "meaning": "Compare two rounds at a course (P-7)",
     "status": "implemented",
     "catalog": "docs/clubhouse/catalog/rounds.md"
   },

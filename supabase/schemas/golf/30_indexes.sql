@@ -508,6 +508,10 @@ CREATE INDEX "idx_golf_rounds_player_completed_scored" ON "public"."golf_rounds"
 
 COMMENT ON INDEX "public"."idx_golf_rounds_player_completed_scored" IS 'Partial index for the most common query pattern: completed rounds with scores, sorted by date';
 
+CREATE INDEX "idx_golf_rounds_player_course_completed" ON "public"."golf_rounds" USING "btree" ("player_id", "course_id", "round_date" DESC) WHERE (("status" = 'completed'::"text") AND ("course_id" IS NOT NULL) AND ("is_test" = false));
+
+COMMENT ON INDEX "public"."idx_golf_rounds_player_course_completed" IS 'P-7 course history and CT-7 last-5-here: one player''s completed non-test rounds at one course, newest first.';
+
 CREATE INDEX "idx_golf_rounds_player_course" ON "public"."golf_rounds" USING "btree" ("player_id", "course_name") WHERE (("status" = 'completed'::"text") AND ("course_name" IS NOT NULL));
 
 COMMENT ON INDEX "public"."idx_golf_rounds_player_course" IS 'Optimizes course breakdown and filter options queries that group by player + course';

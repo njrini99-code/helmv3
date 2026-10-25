@@ -105,6 +105,16 @@
   --ch-score-under-bg: #fbe9e6;
   --ch-score-over-bg: #efece4;
   --ch-score-double: #1c1b18;
+  /* P-7 hole map tints (D-42: the red family under par, amber over, plain level). The 1 px ring carries the 3:1, so the
+     tint can stay quiet; tile text is ink-600 and ink-900 on every tint (P-7 7.5). */
+  --ch-hm-under-2: #edd4cd;
+  --ch-hm-under-1: var(--ch-score-under-bg);
+  --ch-hm-level: var(--ch-bg-subtle);
+  --ch-hm-over-1: #ebe3d4;
+  --ch-hm-over-2: #dbccb3;
+  --ch-hm-ring-under: #c46c62;
+  --ch-hm-ring-level: var(--ch-ink-400);
+  --ch-hm-ring-over: #a7844a;
   /* A filled under-par mark under a light numeral; the same red in light. */
   --ch-score-under-fill: #b03a2e;
   /* Eagle or better as a fill (the scoring mix): a deeper red than the birdie's, so the two under-par results read apart. */
@@ -831,6 +841,12 @@ html[data-fw-theme='dark'] [data-ui='clubhouse'] {
   --ch-score-under-bg: #3a1c1a;
   --ch-score-over-bg: #272c27;
   --ch-score-double: #ede7d8;
+  --ch-hm-under-2: #5b3e37;
+  --ch-hm-over-1: #3b3624;
+  --ch-hm-over-2: #57492b;
+  --ch-hm-ring-under: #9e5f54;
+  --ch-hm-ring-level: #827d71;
+  --ch-hm-ring-over: #97753c;
   --ch-chart-paper: #171c18;
   --ch-chart-gain: #6bbb8c;
   --ch-chart-loss: #e3a94f;
@@ -1214,6 +1230,10 @@ html[data-fw-theme='dark']:has([data-ui='clubhouse']) body {
     --ch-chart-loss: #6f4706;
     --ch-chart-loss-on-tint: #5f3d05;
     --ch-chart-flag: #922e23;
+    /* P-7: the hole map keeps its tints; the rings step up to the strong border. */
+    --ch-hm-ring-under: var(--ch-border-strong);
+    --ch-hm-ring-level: var(--ch-border-strong);
+    --ch-hm-ring-over: var(--ch-border-strong);
   }
   html[data-fw-theme='dark'] [data-ui='clubhouse'] {
     --ch-border-hairline: rgb(237 231 216 / 0.24);

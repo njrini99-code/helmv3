@@ -87,8 +87,10 @@ interface RoundWithDetails {
 
 export default async function RoundDetailPage({
   params,
+  searchParams,
 }: {
   params: Promise<{ id: string }>;
+  searchParams?: Promise<Record<string, string | string[] | undefined>>;
 }) {
   const { id } = await params;
   if (!isUuid(id)) notFound();
@@ -97,7 +99,12 @@ export default async function RoundDetailPage({
 
   const { coach, player } = session;
   // Clubhouse round review (golf_clubhouse_ui), for the player and their coaches.
-  if (await isClubhouseFor(await getGolfDashboardRole())) return <ClubhouseRoundReviewRoute id={id} />;
+  if (await isClubhouseFor(await getGolfDashboardRole())) {
+    // P-7: `?hole=` opens the review on that hole (the course page's plays link here).
+    const raw = (await searchParams)?.hole;
+    const hole = Number(Array.isArray(raw) ? raw[0] : raw);
+    return <ClubhouseRoundReviewRoute id={id} hole={Number.isInteger(hole) && hole >= 1 && hole <= 18 ? hole : null} />;
+  }
   const supabase = await createClient();
 
   // Fetch round with player avatar
