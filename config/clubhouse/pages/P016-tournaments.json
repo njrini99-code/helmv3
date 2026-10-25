@@ -28,7 +28,7 @@
     "implementation": "in_progress",
     "contract": "partial",
     "bridge": "reserved",
-    "data": "plan_required",
+    "data": "held",
     "verification": "not_started",
     "docs": "current"
   },
@@ -76,5 +76,9 @@
   },
   "catalog": "docs/clubhouse/catalog/tournaments.md",
   "actions": [],
-  "held": []
+  "held": [
+    "docs/clubhouse/held/data/tournaments.md",
+    "docs/clubhouse/held/data/tournaments-rls.md",
+    "docs/clubhouse/held/data/tournaments-rpcs.md"
+  ]
 }

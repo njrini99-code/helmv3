@@ -13,3 +13,6 @@ Held features and data plans (D-61), by page. Nothing here is applied or active 
 | P009 Qualifiers | `docs/clubhouse/held/data/qualifier-db-hardening.md` | RELEASED | supabase/migrations/20260929200000_golf_qualifier_db_hardening.sql |
 | P010 Team Hub | `docs/clubhouse/held/data/document-policy-scoping.md` | RELEASED | supabase/migrations/20260930160000_golf_document_policy_scoping.sql |
 | P014 Recruiting | `docs/clubhouse/held/data/recruit-documents-film.md` | RELEASED | supabase/migrations/20260930140000_recruit_documents_film.sql |
+| P016 Tournaments | `docs/clubhouse/held/data/tournaments.md` | HELD | supabase/migrations/20261024100000_golf_tournaments.sql |
+| P016 Tournaments | `docs/clubhouse/held/data/tournaments-rls.md` | HELD | supabase/migrations/20261024100100_golf_tournaments_rls.sql |
+| P016 Tournaments | `docs/clubhouse/held/data/tournaments-rpcs.md` | HELD | supabase/migrations/20261024100200_golf_tournaments_rpcs.sql |
