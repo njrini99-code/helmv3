@@ -2956,4 +2956,3 @@ describe('Settings · P-10 Hold during class (CH-8030, CH-8216)', () => {
     window.history.replaceState(null, '', '/');
   });
 });
-
