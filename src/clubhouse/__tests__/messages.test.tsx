@@ -45,7 +45,7 @@ const live = vi.hoisted(() => ({
 vi.mock('@/hooks/golf/use-golf-messages', () => ({ useGolfConversations: () => live.convs, useGolfMessages: () => live.msgs }));
 vi.mock('@/hooks/golf/use-message-reactions', async (orig) => ({ ...(await orig<object>()), useMessageReactions: () => live.reactions }));
 const polls = vi.hoisted(() => ({
-  responses: { rows: [] as unknown[], error: null as string | null, ready: true, pending: new Set<string>() as ReadonlySet<string>, refresh: vi.fn(async () => {}), vote: vi.fn(async (_messageId: string, _choice: string | null): Promise<{ ok: true } | { ok: false; reason: 'closed' | 'member' | 'session' | 'failed' }> => ({ ok: true })) },
+  responses: { rows: [] as unknown[], error: null as string | null, ready: true, pending: new Set<string>() as ReadonlySet<string>, refresh: vi.fn(async () => {}), vote: vi.fn(async (_messageId: string, _choice: string | null): Promise<{ ok: true } | { ok: false; reason: 'closed' | 'deleted' | 'member' | 'session' | 'failed' }> => ({ ok: true })) },
   sendGolfPoll: vi.fn(async () => ({ success: true as const, id: 'poll-1' })),
   closeGolfPoll: vi.fn(async () => ({ success: true as const, id: 'poll-1' })),
 }));
@@ -1968,6 +1968,17 @@ describe('Messages · polls (premium features P-2)', () => {
     show();
     await user.click(await screen.findByRole('radio', { name: /Van A/ }));
     await expectCode('CH-7030', /Voting has ended/);
+  });
+
+  it('CH-7030 a vote on a poll deleted meanwhile says so; a former member’s refusal is the CH-7029 toast', async () => {
+    const user = userEvent.setup();
+    polls.responses.vote.mockResolvedValueOnce({ ok: false, reason: 'deleted' });
+    show();
+    await user.click(await screen.findByRole('radio', { name: /Van A/ }));
+    await expectCode('CH-7030', /This poll was deleted/);
+    polls.responses.vote.mockResolvedValueOnce({ ok: false, reason: 'member' });
+    await user.click(await screen.findByRole('radio', { name: /Van B/ }));
+    await expectCode('CH-7029', /Your vote wasn’t saved/);
   });
 
   it('CH-7027 closing a poll that fails says so and keeps the confirm open', async () => {

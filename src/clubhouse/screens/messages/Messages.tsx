@@ -764,10 +764,11 @@ export function Messages({ data }: { data: ChMessagesData }) {
         void attempt('vote', { failed: 'Your vote wasn’t saved', hint: 'Try again in a moment.', code: 'CH-7029' }, async () => {
           const res = await responses.vote(messageId, choice);
           if (res.ok) return;
-          if (res.reason === 'closed') {
-            // CH-7030: the poll ended between the tap and the write; the vote is put back and the result is final.
+          if (res.reason === 'closed' || res.reason === 'deleted') {
+            // CH-7030: the poll ended (or its sender deleted it) between the tap and the write; the vote is put back.
+            // A former member's 42501 is `member`, which throws below to the CH-7029 toast.
             haptic('error');
-            toast({ tone: 'error', title: 'Voting has ended', body: 'Your vote wasn’t counted. The result is final.', code: 'CH-7030' });
+            toast({ tone: 'error', title: 'Voting has ended', body: res.reason === 'deleted' ? 'This poll was deleted.' : 'Your vote wasn’t counted. The result is final.', code: 'CH-7030' });
             return false;
           }
           throw new Error(res.reason === 'session' ? 'Sign in again to vote' : 'Vote was not saved');
