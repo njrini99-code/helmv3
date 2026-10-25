@@ -7,6 +7,7 @@
  * Tournament rounds (P-5, not built yet): when `e.round` is set this is where the write goes to P-5's
  * updateTournamentRound and maps its refusal codes. Until then tournament events move as any event.
  */
+import { zonedWallTime } from '../../lib/dates';
 import { editRecurringEvent } from '@/app/golf/actions/recurring-events';
 import { updateGolfEvent } from '@/app/golf/actions/calendar-events';
 import { offsetMinutesFor } from '@/lib/golf/timezone';
@@ -33,12 +34,7 @@ export const toHHMM = (h: number) => {
   return `${String(Math.floor(mins / 60) % 24).padStart(2, '0')}:${String(mins % 60).padStart(2, '0')}`;
 };
 
-/** Wall-clock date and decimal hour of an instant in a zone (as the loader reads it). */
-function zonedAt(iso: string, timeZone: string): { date: string; hour: number } {
-  const p: Record<string, string> = {};
-  for (const x of new Intl.DateTimeFormat('en-US', { timeZone, hourCycle: 'h23', year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' }).formatToParts(new Date(iso))) p[x.type] = x.value;
-  return { date: `${p.year}-${p.month}-${p.day}`, hour: (Number(p.hour) % 24) + Number(p.minute) / 60 };
-}
+const zonedAt = (iso: string, timeZone: string) => zonedWallTime(iso, timeZone);
 
 const isBar = (to: ChMoveTarget | ChBarTarget): to is ChBarTarget => 'from' in to;
 
