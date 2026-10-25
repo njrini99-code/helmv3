@@ -82,6 +82,15 @@ describe('fetchLiveSnapshot', () => {
     expect(snap.events).toEqual([]);
   });
 
+  it('reports failed tournament reads instead of claiming no tournament is live', async () => {
+    const timeout = { error: { code: '57014', message: 'timeout' } };
+    const snap = await fetchLiveSnapshot(await client({ golf_round_live: { data: [] }, golf_tournament_rounds: timeout }), args);
+    expect(snap.error).toBe(true);
+    const tracked = await fetchLiveSnapshot(await client({ golf_round_live: absent, golf_rounds: { data: [{ ...pollRound, round_type: 'tournament' }] }, golf_tournament_player_rounds: timeout }), args);
+    expect(tracked.error).toBe(true);
+    expect(tracked.lanes).toEqual([]);
+  });
+
   it('a name the roster already holds costs no read', async () => {
     const snap = await fetchLiveSnapshot(await client({ golf_round_live: absent, golf_rounds: { data: [pollRound] }, golf_tournament_player_rounds: absent, golf_tournament_rounds: absent }), { ...args, roster: { p1: 'Sofia Reyes' } });
     expect(snap.lanes[0]!.name).toBe('Sofia Reyes');

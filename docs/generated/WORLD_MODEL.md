@@ -97,7 +97,7 @@ BaseballHelm (recruiting + team management + Lift Lab) · active · criticality 
 Calendar And Events · active · criticality high · owner product
 
 - **Relations:** 0 doc/structurally-evidenced, 6 import-graph-only (weak)
-- **Tables:** `golf_insight_action`, `golf_insight_exposure`, `golf_insight_outcome`, `golf_saved_comparisons`, `golf_team_seasons`, `golf_tournament_advice_givers`, `golf_tournament_coach_presence`, `golf_tournament_entries`, `golf_tournament_entry_notes`, `golf_tournament_field_scores`, `golf_tournament_field_teams`, `golf_tournament_link_dismissals`, `golf_tournament_player_notes`, `golf_tournament_player_rounds`, `golf_tournament_reflections`, `golf_tournament_result_marks`, `golf_tournament_reviews`, `golf_tournament_round_lineups`, `golf_tournament_rounds`, `golf_tournaments`, `helm_debug`
+- **Tables:** `golf_insight_action`, `golf_insight_exposure`, `golf_insight_outcome`, `helm_debug`
 - **RPCs:** `golf_import_player_classes`
 - **Test surfaces:** 3
 - **Sentry/admin_events signals:** `academics_classes`, `calendar_events`
@@ -107,7 +107,7 @@ Calendar And Events · active · criticality high · owner product
 Clubhouse UI (flagged, off in production) · active · criticality medium · owner product
 
 - **Relations:** 0 doc/structurally-evidenced, 9 import-graph-only (weak)
-- **Tables:** `golf_class_exceptions`, `golf_class_hold_dirty`, `golf_player_class_settings`, `golf_push_hold_heartbeat`, `golf_push_holds`, `golf_team_terms`
+- **Tables:** `golf_class_exceptions`, `golf_class_hold_dirty`, `golf_player_class_settings`, `golf_push_hold_heartbeat`, `golf_push_holds`, `golf_saved_comparisons`, `golf_team_seasons`, `golf_team_terms`, `golf_tournament_advice_givers`, `golf_tournament_coach_presence`, `golf_tournament_entries`, `golf_tournament_entry_notes`, `golf_tournament_field_scores`, `golf_tournament_field_teams`, `golf_tournament_link_dismissals`, `golf_tournament_player_notes`, `golf_tournament_player_rounds`, `golf_tournament_reflections`, `golf_tournament_result_marks`, `golf_tournament_reviews`, `golf_tournament_round_lineups`, `golf_tournament_rounds`, `golf_tournaments`
 - **RPCs:** `golf_coachhelm_shown_reads`, `golf_tournament_link_candidates`, `sg_scale_for_player`
 - **Test surfaces:** 2
 - **Sentry/admin_events signals:** none
@@ -227,7 +227,7 @@ Player CoachHelm And Development · active · criticality high · owner product
 Player Hub · active · criticality high · owner product
 
 - **Relations:** 0 doc/structurally-evidenced, 7 import-graph-only (weak)
-- **Tables:** `golf_insight_action`, `golf_insight_exposure`, `golf_insight_outcome`, `helm_debug`
+- **Tables:** none
 - **RPCs:** `get_coach_today_schedule`, `get_player_hub_events`
 - **Test surfaces:** 1
 - **Sentry/admin_events signals:** `player_hub`

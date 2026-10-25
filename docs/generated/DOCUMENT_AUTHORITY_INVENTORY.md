@@ -852,6 +852,7 @@ them would bury everything above.
 | `docs/clubhouse/changes/2026-10-24-stats-nodata.md` | current | - | - | - | - |
 | `docs/clubhouse/changes/2026-10-24-tinted-drops.md` | current | - | - | - | - |
 | `docs/clubhouse/changes/2026-10-24-tone-words-and-sign-guard.md` | current | - | - | - | - |
+| `docs/clubhouse/changes/2026-10-25-merge-train.md` | current | - | - | - | - |
 | `docs/clubhouse/changes/2026-10-25-p10-class-awareness.md` | current | - | - | - | - |
 | `docs/clubhouse/changes/2026-10-25-p5-menu-and-fields.md` | current | - | - | - | - |
 | `docs/clubhouse/changes/2026-10-25-p6-live-rounds.md` | current | - | - | - | - |
@@ -1002,6 +1003,7 @@ them would bury everything above.
 | `docs/clubhouse/pages/P004-stats-team/changes/2026-10-24-player-list-arrow-keys.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P004-stats-team/changes/2026-10-24-scrambling-gauge.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P004-stats-team/changes/2026-10-24-what-changed-card.md` | current | - | - | - | - |
+| `docs/clubhouse/pages/P004-stats-team/changes/2026-10-25-reads-stream.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P005-stats-player/CHANGELOG.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P005-stats-player/CONTRACT.md` | current | - | - | yes | - |
 | `docs/clubhouse/pages/P005-stats-player/DESIGN.md` | current | - | - | - | - |
@@ -1126,6 +1128,7 @@ them would bury everything above.
 | `docs/clubhouse/pages/P010-hub/changes/2026-10-23-type-roles.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P010-hub/changes/2026-10-23-type-scale.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P010-hub/changes/2026-10-24-top-bar-plus.md` | current | - | - | - | - |
+| `docs/clubhouse/pages/P010-hub/changes/2026-10-25-first-wave-reads.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P011-rounds/CHANGELOG.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P011-rounds/CONTRACT.md` | current | - | - | yes | - |
 | `docs/clubhouse/pages/P011-rounds/DESIGN.md` | current | - | - | - | - |

@@ -154,7 +154,9 @@ create table if not exists public.golf_tournaments (
     created_by uuid references auth.users (id) on delete set null,
     created_at timestamptz not null default now(),
     updated_at timestamptz not null default now(),
-    version bigint not null default 1,
+    -- Bounded optimistic-lock counter; matches the integer RPC version contract.
+    -- squawk-ignore prefer-bigint-over-int
+    version integer not null default 1,
     constraint golf_tournaments_counting_le_players
     check (counting <= players_per_team),
     constraint golf_tournaments_dates check (end_date >= start_date),

@@ -216,7 +216,8 @@ async function createTournamentFromCalendarImpl(input: CreateFromCalendarInput):
   if (!out.replayed && v.requiresRsvp && r1) {
     const dates = v.rounds.map((r) => r.date).sort();
     const range = rangeText(dates[0]!, dates[dates.length - 1]!);
-    const { data: r1Row } = await g.supabase.from('golf_events').select('location').eq('id', r1).maybeSingle();
+    const { data: r1Row, error: r1Error } = await g.supabase.from('golf_events').select('location').eq('id', r1).maybeSingle();
+    if (r1Error) await logServerError(`Tournament invitation location read failed: ${describeError(r1Error)}`, { action: 'golf.createTournamentFromCalendar.notices', featureArea: 'calendar' }, 'warning');
     const where = r1Row?.location ?? v.courseLabel ?? null;
     const message = `${range}${where ? ` at ${where}` : ''}. Reply for each round.`;
     try {
@@ -279,7 +280,8 @@ async function updateTournamentRoundImpl(roundEventId: string, patch: Tournament
       // A day or time change tells players as a plain move does (notifyEventUpdate returns early unless RSVP is on).
       if (moved) await rsvp.notifyEventUpdate(id.data, g.supabase);
       if (added.length) {
-        const { data: ev } = await g.supabase.from('golf_events').select('title, requires_rsvp').eq('id', id.data).maybeSingle();
+        const { data: ev, error: eventReadError } = await g.supabase.from('golf_events').select('title, requires_rsvp').eq('id', id.data).maybeSingle();
+        if (eventReadError) throw eventReadError;
         if (ev?.requires_rsvp) await rsvp.writeEventInvitationNotices({ eventId: id.data, userIds: await eventUserIds(g.supabase, id.data, added), title: `You’re invited: ${ev.title}`, message: 'Reply for each round.' });
       }
     } catch (err) {
@@ -322,7 +324,8 @@ async function setTournamentCancelledImpl(tournamentId: string, roundEventId: st
   // for rounds that actually changed. A restore notifies nobody.
   if (cancelled && changed.length) {
     const noticeOn = rid?.data && changed.includes(rid.data) ? rid.data : changed[0]!;
-    const { data: ev } = await g.supabase.from('golf_events').select('title, start_time, location, requires_rsvp').eq('id', noticeOn).maybeSingle();
+    const { data: ev, error: eventReadError } = await g.supabase.from('golf_events').select('title, start_time, location, requires_rsvp').eq('id', noticeOn).maybeSingle();
+    if (eventReadError) await logServerError(`Tournament cancellation notice read failed: ${describeError(eventReadError)}`, { action: 'golf.setTournamentCancelled.notices', featureArea: 'calendar' }, 'warning');
     if (ev) {
       const notice = { eventId: noticeOn, teamId: t.team_id, title: rid ? ev.title : t.name, startTime: ev.start_time, location: ev.location, reason: why.data ?? '', notifies: ev.requires_rsvp === true };
       after(() => fanOutEventCancelled(notice));

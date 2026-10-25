@@ -104,10 +104,11 @@ export async function fanOutEventInvitation(p: EventInvitationFanOut): Promise<v
     // from serializing the rest).
     const emailPromise = (async () => {
       const { sendEmailNotification } = await import('@/lib/notifications/email');
-      const { data: userRows } = await adminClient
+      const { data: userRows, error: userRowsError } = await adminClient
         .from('users')
         .select('id, email')
         .in('id', userIds);
+      if (userRowsError) throw userRowsError;
       const recipients = (userRows ?? [])
         .filter((u) => Boolean(u.email))
         .map((u) => ({ id: u.id, email: u.email as string }));
@@ -185,11 +186,12 @@ export async function fanOutEventCancelled(p: EventCancelledFanOut): Promise<voi
   const eventId = p.eventId;
   try {
     const adminClient = createAdminClient();
-    const { data: attendances } = await adminClient
+    const { data: attendances, error: attendancesError } = await adminClient
       .from('golf_event_attendance')
       .select('player:golf_players(user_id)')
       .eq('event_id', eventId);
 
+    if (attendancesError) throw attendancesError;
     const attendanceUserIds = (attendances ?? [])
       .map((row) => {
         const playerRef = (row as { player: { user_id: string | null } | Array<{ user_id: string | null }> | null }).player;
@@ -207,11 +209,12 @@ export async function fanOutEventCancelled(p: EventCancelledFanOut): Promise<voi
     // notified nobody even though the team was told it was happening.
     // Same two-query shape as the create fan-out above (team_members →
     // player_id → golf_players.user_id) rather than an embedded join.
-    const { data: teamMembers } = await adminClient
+    const { data: teamMembers, error: teamMembersError } = await adminClient
       .from('golf_team_members')
       .select('player_id')
       .eq('team_id', p.teamId)
       .eq('status', 'active');
+    if (teamMembersError) throw teamMembersError;
     const activePlayerIds = (teamMembers ?? [])
       .map((m) => m.player_id)
       .filter((id): id is string => Boolean(id));
@@ -272,10 +275,11 @@ export async function fanOutEventCancelled(p: EventCancelledFanOut): Promise<voi
 
     const emailPromise = (async () => {
       const { sendEmailNotification } = await import('@/lib/notifications/email');
-      const { data: userRows } = await adminClient
+      const { data: userRows, error: userRowsError } = await adminClient
         .from('users')
         .select('id, email')
         .in('id', userIds);
+      if (userRowsError) throw userRowsError;
       const recipients = (userRows ?? [])
         .filter((u) => Boolean(u.email))
         .map((u) => ({ id: u.id, email: u.email as string }));

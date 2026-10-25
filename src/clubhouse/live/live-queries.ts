@@ -78,21 +78,21 @@ export async function readOwnPollRounds(supabase: LiveClient, a: { playerId: str
  * Rounds that a tournament already tracks (open call b): the tournament's own live view shows them. The link table comes
  * with the tournaments migration, so "not there" means nothing is tracked.
  */
-export async function readTrackedRoundIds(supabase: LiveClient, roundIds: readonly string[]): Promise<Set<string>> {
+export async function readTrackedRoundIds(supabase: LiveClient, roundIds: readonly string[]): Promise<Set<string> | null> {
   if (!roundIds.length) return new Set();
   const { data, error } = await tourTable(supabase, 'golf_tournament_player_rounds').select('round_id').in('round_id', [...roundIds]);
-  if (error) return new Set();
+  if (error && !isMissing(error)) return null;
   return new Set(((data ?? []) as Array<{ round_id: string | null }>).flatMap((r) => (r.round_id ? [r.round_id] : [])));
 }
 
 /** One row per tournament with a round live right now; the Home card links each to the tournament's live view. */
-export async function readLiveEvents(supabase: LiveClient, teamId: string): Promise<LiveEventRow[]> {
+export async function readLiveEvents(supabase: LiveClient, teamId: string): Promise<LiveEventRow[] | null> {
   const rounds = await tourTable(supabase, 'golf_tournament_rounds').select('tournament_id').eq('team_id', teamId).eq('status', 'live');
-  if (rounds.error) return [];
+  if (rounds.error && !isMissing(rounds.error)) return null;
   const ids = [...new Set(((rounds.data ?? []) as Array<{ tournament_id: string | null }>).flatMap((r) => (r.tournament_id ? [r.tournament_id] : [])))];
   if (!ids.length) return [];
   const names = await tourTable(supabase, 'golf_tournaments').select('id, name').in('id', ids);
-  if (names.error) return [];
+  if (names.error) return null;
   return ((names.data ?? []) as Array<{ id: string; name: string | null }>).map((t) => ({ tournamentId: t.id, name: (t.name ?? '').trim() || 'Tournament' }));
 }
 
@@ -155,6 +155,7 @@ export async function fetchLiveSnapshot(supabase: LiveClient, a: SnapshotArgs): 
     if (read.error) return { ...base, roster, source, error: true };
     // Tournament rounds a tournament tracks are shown by its own live view (open call b).
     const tracked = await readTrackedRoundIds(supabase, read.rows.filter((r) => r.round_type === 'tournament').map((r) => r.id));
+    if (tracked === null) return { ...base, roster, source, error: true };
     const rows = read.rows.filter((r) => !tracked.has(r.id));
     const names = await readRoster(supabase, rows.map((r) => r.player_id), roster);
     roster = names.roster;
@@ -168,5 +169,5 @@ export async function fetchLiveSnapshot(supabase: LiveClient, a: SnapshotArgs): 
   const own = a.playerId ? lanes.find((l) => l.playerId === a.playerId) : undefined;
   const viewerOnCourse = a.role === 'player' && viewerWithheld(own, a.now.getTime());
   const events = a.role === 'coach' ? await readLiveEvents(supabase, a.teamId) : [];
-  return { teamId: a.teamId, lanes, events, roster, zone: a.zone, fetchedAt: nowIso, source, viewerOnCourse, error: failed };
+  return { teamId: a.teamId, lanes, events: events ?? [], roster, zone: a.zone, fetchedAt: nowIso, source, viewerOnCourse, error: failed || events === null };
 }

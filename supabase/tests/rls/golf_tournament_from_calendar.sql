@@ -211,6 +211,9 @@ SELECT throws_ok(
 -- ============================================================================
 -- Guard (6)
 -- ============================================================================
+-- The create and update RPCs leave helm.tournament_write = 'rounds' set for their transaction on purpose (the adopt
+-- UPDATE carries it). A coach's plain save is a separate request, so clear it before testing the guard.
+SELECT set_config('helm.tournament_write', '', true);
 SELECT throws_ok($$UPDATE public.golf_events SET event_type = 'practice' WHERE id = (SELECT id FROM r2)$$, 'P0001', 'round_type_locked', '31: a round''s type is locked');
 SELECT throws_ok($$UPDATE public.golf_events SET recurring = true WHERE id = (SELECT id FROM r2)$$, 'P0001', 'round_series_locked', '32: a round cannot become a series');
 SELECT throws_ok($$UPDATE public.golf_events SET title = 'Renamed' WHERE id = (SELECT id FROM r2)$$, 'P0001', 'round_fields_locked', '33: a plain save cannot rewrite a round''s title');
@@ -227,7 +230,7 @@ SET CONSTRAINTS ALL IMMEDIATE;
 SELECT is((SELECT first_tee_at FROM public.golf_tournament_rounds WHERE round_event_id = (SELECT id FROM r2)), '2026-11-06T15:00:00Z'::timestamptz, '35: a plain move mirrors into first_tee_at');
 SELECT is((SELECT version FROM public.golf_tournaments), (SELECT version FROM v2) + 1, '35: and bumps the version once');
 SELECT throws_ok(
-  $$DO $d$ BEGIN UPDATE public.golf_events SET start_time = '2026-11-04T12:00:00Z' WHERE id = (SELECT id FROM r2); SET CONSTRAINTS ALL IMMEDIATE; END $d$$$,
+  $t$DO $d$ BEGIN UPDATE public.golf_events SET start_time = '2026-11-04T12:00:00Z' WHERE id = (SELECT id FROM r2); SET CONSTRAINTS ALL IMMEDIATE; END $d$$t$,
   'P0001', 'round_order', '36: a plain move of R2 before R1 is refused at commit');
 UPDATE public.golf_tournaments SET name = 'Pinehurst Open';
 SELECT is((SELECT string_agg(title, ',' ORDER BY title) FROM public.golf_events WHERE title LIKE 'Pinehurst Open%'), 'Pinehurst Open · R1,Pinehurst Open · R2,Pinehurst Open · R3', '38: renaming the tournament rewrites the three titles');
@@ -246,9 +249,10 @@ SELECT ok((SELECT status = 'cancelled' AND cancelled_at IS NOT NULL AND cancella
 SELECT lives_ok($$SELECT public.golf_tournament_update_round((SELECT id FROM r2), jsonb_build_object('start_at', '2026-11-08T09:00:00-05:00'), (SELECT version FROM public.golf_tournaments))$$, 'a cancelled R3 does not block moving R2 past its day');
 SELECT throws_ok($$SELECT public.golf_tournament_set_cancelled((SELECT id FROM tid), (SELECT id FROM r3), false, NULL, (SELECT version FROM public.golf_tournaments))$$, 'P0001', 'round_order', '27a: restoring R3 where R2 now sits raises round_order');
 SELECT lives_ok($$SELECT public.golf_tournament_update_round((SELECT id FROM r2), jsonb_build_object('start_at', '2026-11-06T09:00:00-05:00'), (SELECT version FROM public.golf_tournaments))$$, 'R2 moves back');
+-- One call, then read: a volatile function in a WHERE clause runs once per joined row and the later calls see a stale version.
+DO $d$ BEGIN PERFORM public.golf_tournament_set_cancelled((SELECT id FROM tid), NULL, false, NULL, (SELECT version FROM public.golf_tournaments)); END $d$;
 SELECT is(
-  (SELECT string_agg(e.status, ',' ORDER BY r.round_number) FROM public.golf_tournament_rounds r JOIN public.golf_events e ON e.id = r.round_event_id
-    WHERE public.golf_tournament_set_cancelled((SELECT id FROM tid), NULL, false, NULL, (SELECT version FROM public.golf_tournaments)) IS NOT NULL),
+  (SELECT string_agg(e.status, ',' ORDER BY r.round_number) FROM public.golf_tournament_rounds r JOIN public.golf_events e ON e.id = r.round_event_id),
   'confirmed,confirmed,confirmed', '27: restoring the tournament confirms every round');
 
 -- ============================================================================

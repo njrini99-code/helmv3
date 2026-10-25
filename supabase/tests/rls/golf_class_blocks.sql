@@ -195,6 +195,14 @@ BEGIN
   INSERT INTO public.golf_rounds (player_id, round_date, status, updated_at)
   VALUES (public.p10_id('p:live'), '2026-10-26', 'in_progress', '2026-10-26 13:55:00+00');
 
+  -- P6 is installed in the combined stack. Seed its derived heartbeat at the
+  -- fixed test instant; golf_rounds.updated_at is only the pre-P6 fallback.
+  INSERT INTO public.golf_round_live
+    (round_id, team_id, player_id, round_type, round_date, share, heard_at)
+  SELECT id, t_team, player_id, 'practice', round_date, 'off', updated_at
+  FROM public.golf_rounds WHERE player_id = public.p10_id('p:live')
+  ON CONFLICT (round_id) DO UPDATE SET heard_at = excluded.heard_at;
+
   -- West team: a Monday 21:00 to 22:00 class in the Pacific term.
   PERFORM public.p10_mkplayer('pacific', public.p10_id('west'));
   PERFORM public.p10_mkclass('pacific', p_days => '{M}', p_start => '21:00', p_end => '22:00');
@@ -433,6 +441,17 @@ BEGIN
   INSERT INTO public.golf_rounds (player_id, round_date, status, updated_at) VALUES
     (public.p10_id('p:g6'), current_date, 'in_progress', now() - interval '5 minutes'),
     (public.p10_id('p:g7'), current_date, 'in_progress', now() - interval '45 minutes');
+
+  INSERT INTO public.golf_round_live
+    (round_id, team_id, player_id, round_type, round_date, share, heard_at)
+  SELECT id, t, player_id, 'practice', round_date, 'off', updated_at
+  FROM public.golf_rounds
+  WHERE player_id IN (public.p10_id('p:g6'), public.p10_id('p:g7'))
+  ON CONFLICT (round_id) DO UPDATE SET heard_at = excluded.heard_at;
+
+  -- A healthy release worker is required for the coach's holds promise.
+  INSERT INTO public.golf_push_hold_heartbeat (id, beat_at) VALUES (true, now())
+  ON CONFLICT (id) DO UPDATE SET beat_at = excluded.beat_at;
 
   -- g1 also has: a class with no end time ('times'), a bad day token ('days'), a blank-term
   -- class created long ago (untagged), and a synced class whose calendar rows never match

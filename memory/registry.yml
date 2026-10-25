@@ -912,9 +912,6 @@ features:
         # golf_events table policies (2026-10-18: meetings visible to their
         # invitees only).
         - supabase/migrations/*golf_events_*.sql
-        # P016 Tournaments (held; each round is a golf_events row, D-81).
-        # Plan: docs/clubhouse/held/data/tournaments.md.
-        - supabase/migrations/*golf_tournament*.sql
       tests:
         - src/test/lib/calendar/**
         - src/test/api/calendar/**
@@ -1547,19 +1544,9 @@ features:
         - src/app/golf/actions/player-hub-data.ts
       services:
         - src/lib/supabase/**
-      db:
-        - supabase/migrations/*task*.sql
-        # Narrowed 2026-09-23 — see calendar_events' db: list for why the
-        # blanket `*event*.sql` was replaced with these (same set, same
-        # reason: it was also matching baseball_core's own migrations).
-        - supabase/migrations/*event_attendance*.sql
-        - supabase/migrations/*notification_type_event*.sql
-        - supabase/migrations/*insight_event*.sql
-        - supabase/migrations/*admin_event*.sql
-        - supabase/migrations/*team_event_reminder*.sql
-        - supabase/migrations/*class_event*.sql
-        - supabase/migrations/*calendar_events*.sql
-        - supabase/migrations/*error_events*.sql
+      # Tasks are owned by team_operations and event/calendar schema by calendar_events.
+      # Player Hub consumes those contracts; it introduces no migrations of its own.
+      db: []
       tests:
         - src/lib/golf/nav-registry.test.ts
     integrations:
@@ -2337,7 +2324,11 @@ features:
         - src/app/golf/actions/round-live*.ts
         - src/app/api/cron/class-holds-release/**
         - src/app/clubhouse-preview/entry/**
+        - src/app/golf/(dashboard)/dashboard/live/**
       db:
+        # P016 Tournaments (held; each round is a golf_events row, D-81).
+        # Plan: docs/clubhouse/held/data/tournaments.md.
+        - supabase/migrations/*golf_tournament*.sql
         # P-10 class awareness (2026-10-25, held): terms and exceptions, the class-block functions, held pushes.
         - supabase/migrations/*class_awareness*.sql
         - supabase/migrations/*class_blocks*.sql

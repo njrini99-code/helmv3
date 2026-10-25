@@ -135,7 +135,7 @@ is a second thing to keep true.
 **Calendar And Events** · active · criticality high · owner product
 
 - **Behaviour:** `memory/features/calendar-events.md`
-- **Code:** `src/app/golf/(dashboard)/dashboard/calendar/**`, `src/app/golf/(dashboard)/dashboard/classes/**`, `src/clubhouse/routes/classes.tsx`, `src/components/golf/calendar/**`, `src/clubhouse/screens/classes/**`, `src/clubhouse/data/classes.ts` … and 31 more in the registry
+- **Code:** `src/app/golf/(dashboard)/dashboard/calendar/**`, `src/app/golf/(dashboard)/dashboard/classes/**`, `src/clubhouse/routes/classes.tsx`, `src/components/golf/calendar/**`, `src/clubhouse/screens/classes/**`, `src/clubhouse/data/classes.ts` … and 30 more in the registry
 - **Telemetry:** `calendar_events` (golfhelm, high), `academics_classes` (golfhelm, low)
 - **Incidents:** `memory/incidents/calendar_events/INC-2026-09-23-coach-invitees-deny-conflict-check.md`
 - **Repair units:** none in the queue
@@ -234,7 +234,7 @@ is a second thing to keep true.
 **Player Hub** · active · criticality high · owner product
 
 - **Behaviour:** `memory/features/player-hub.md`
-- **Code:** `src/components/fairway/pages/hub/**`, `src/app/golf/actions/dashboard-data.ts`, `src/app/golf/actions/travel.ts`, `src/app/golf/actions/tasks.ts`, `src/app/golf/actions/attendance.ts`, `src/app/golf/actions/player-hub-data.ts` … and 11 more in the registry
+- **Code:** `src/components/fairway/pages/hub/**`, `src/app/golf/actions/dashboard-data.ts`, `src/app/golf/actions/travel.ts`, `src/app/golf/actions/tasks.ts`, `src/app/golf/actions/attendance.ts`, `src/app/golf/actions/player-hub-data.ts` … and 2 more in the registry
 - **Telemetry:** `player_hub` (golfhelm, high)
 - **Incidents:** none recorded
 - **Repair units:** none in the queue
@@ -355,7 +355,7 @@ is a second thing to keep true.
 **Clubhouse UI (flagged, off in production)** · active · criticality medium · owner product
 
 - **Behaviour:** `src/clubhouse/AGENTS.md`
-- **Code:** `src/clubhouse/**`, `src/app/clubhouse-preview/entry/**`, `supabase/migrations/*class_awareness*.sql`, `supabase/migrations/*class_blocks*.sql`, `supabase/migrations/*push_holds*.sql`, `src/clubhouse/__tests__/**` … and 1 more in the registry
+- **Code:** `src/clubhouse/**`, `src/lib/golf/live-tables.ts`, `src/lib/golf/live-share-copy.ts`, `src/lib/golf/tournament-refusals.ts`, `src/lib/golf/tournaments-tables.ts`, `src/lib/golf/tournaments/**` … and 11 more in the registry
 - **Telemetry:** none. Clubhouse is a flagged alternative UI over the golf features it renders. Telemetry attributes to those features, so a Clubhouse key would double-count.
 - **Incidents:** none recorded
 - **Repair units:** none in the queue

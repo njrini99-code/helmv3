@@ -157,7 +157,7 @@ describe('inbox copy', () => {
     const [s] = suggestLinks([cand({ playerName: 'Theo', score: 72, date: '2026-10-18' })], OAKMONT);
     expect(s && linkRowParts(s)).toEqual({ round: 'Theo · 72 · Oct 18 · Oakmont North', target: 'Oakmont Invitational R3' });
     const bare = linkRowParts({ round: cand({ playerName: null, score: null, courseName: null, date: '2026-10-05' }), match: null });
-    expect(bare).toEqual({ round: '— · Oct 5', target: null });
+    expect(bare).toEqual({ round: 'no score · Oct 5', target: null });
     for (const text of [linkRowParts(s!).round, linkRowParts(s!).target ?? '']) expect(text).not.toMatch(/[←→!]/);
   });
 

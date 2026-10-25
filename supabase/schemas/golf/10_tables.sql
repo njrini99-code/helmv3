@@ -2576,7 +2576,7 @@ CREATE TABLE "public"."golf_tournaments" (
     "created_by" "uuid",
     "created_at" timestamp with time zone DEFAULT "now"() NOT NULL,
     "updated_at" timestamp with time zone DEFAULT "now"() NOT NULL,
-    "version" bigint DEFAULT 1 NOT NULL,
+    "version" integer DEFAULT 1 NOT NULL,
     CONSTRAINT "golf_tournaments_counting_check" CHECK ((("counting" >= 1) AND ("counting" <= 9))),
     CONSTRAINT "golf_tournaments_counting_le_players" CHECK (("counting" <= "players_per_team")),
     CONSTRAINT "golf_tournaments_dates" CHECK (("end_date" >= "start_date")),

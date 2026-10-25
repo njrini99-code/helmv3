@@ -2,7 +2,7 @@
 
 import { createClient } from '@/lib/supabase/client';
 import { setLiveShare, setLivePrefs, setNextLiveShare, type LivePrefsResult, type LiveShareResult } from '@/app/golf/actions/round-live';
-import { fromUntyped } from '@/lib/supabase/untyped';
+import { liveTable } from '@/lib/golf/live-tables';
 import { chReport } from '../lib/track';
 import { isMissing, type LiveClient } from './live-queries';
 import type { LiveRoundType, LiveShare } from './model';
@@ -28,7 +28,7 @@ export interface LiveSharePorts {
 
 /** The player's own preference row, through their own session (RLS shows only theirs). */
 export async function readPracticeShare(client: LiveClient): Promise<{ practiceShare: LiveShare } | null> {
-  const { data, error } = await fromUntyped(client, 'golf_round_live_prefs').select('practice_share').limit(1).maybeSingle();
+  const { data, error } = await liveTable(client, 'golf_round_live_prefs').select('practice_share').limit(1).maybeSingle();
   if (error) {
     if (!isMissing(error)) chReport(error, { surface: 'live.prefs', severity: 'low' });
     return null;
@@ -39,7 +39,7 @@ export async function readPracticeShare(client: LiveClient): Promise<{ practiceS
 
 /** The round's own live row, or (before its first save has made one) the level it will start at. */
 export async function readRoundShare(client: LiveClient, roundId: string, type: LiveRoundType): Promise<LiveShare | null> {
-  const { data, error } = await fromUntyped(client, 'golf_round_live').select('share').eq('round_id', roundId).maybeSingle();
+  const { data, error } = await liveTable(client, 'golf_round_live').select('share').eq('round_id', roundId).maybeSingle();
   if (error) {
     if (!isMissing(error)) chReport(error, { surface: 'live.roundShare', severity: 'low' });
     return null;
