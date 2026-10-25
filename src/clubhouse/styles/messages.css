@@ -3462,8 +3462,10 @@ html[data-fw-theme='dark'] [data-ui='clubhouse'] .ch-ms-poll {
   left: 0;
   transform: scaleX(var(--ch-poll-share, 0));
   transform-origin: left center;
-  /* D3: interruptible (it moves on every vote), so a curve, not a CSS spring that would restart from rest. */
-  transition: transform var(--ch-dur-release) var(--ch-ease);
+  /* D3: interruptible (it moves on every vote), so a curve, not a CSS spring that would restart from rest. The bar
+     keeps the release beat (P-2 changelog, pinned in messages-polls-css.test.ts); M8: when the poll closes the fill
+     recolours on the base beat. */
+  transition: transform var(--ch-dur-release) var(--ch-ease), background-color var(--ch-dur-base) var(--ch-ease);
 }
 .ch-ms-poll__fill {
   inset: 0;
@@ -3530,12 +3532,19 @@ html[data-fw-theme='dark'] [data-ui='clubhouse'] .ch-ms-poll {
   background: var(--ch-selected-strong);
   box-shadow: none;
 }
-.ch-ms-poll__opt.is-on .ch-ms-poll__mark svg {
+/* M3: only a tap that checks the row plays it (data-pop, set from the tap): a card that loads already voted, or a
+   realtime change, shows the glyph at rest. */
+.ch-ms-poll__mark[data-pop] svg {
   animation: ch-ms-poll-check var(--ch-dur-release) var(--ch-ease-spring);
 }
 @keyframes ch-ms-poll-check {
   from {
     transform: scale(0.6);
+    opacity: 0;
+  }
+}
+@keyframes ch-ms-poll-check-fade {
+  from {
     opacity: 0;
   }
 }
@@ -3589,6 +3598,23 @@ html[data-fw-theme='dark'] [data-ui='clubhouse'] .ch-ms-poll {
   outline-offset: 2px;
   border-radius: var(--ch-radius-xs);
 }
+/* The crossfades (counts, footer, head) and the sheet's rows and chips are JS (CrossfadeCopy, ListPresence): they read
+   useChReducedMotion. Their copies stack in one grid cell so a fade happens in place. */
+.ch-ms-poll__x {
+  display: inline-grid;
+}
+.ch-ms-poll__x > * {
+  grid-area: 1 / 1;
+  min-width: 0;
+}
+.ch-ms-poll__n .ch-ms-poll__x {
+  justify-items: end;
+}
+.ch-ms-poll__head .ch-ms-poll__x > * {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
 @media (prefers-reduced-motion: reduce) {
   .ch-ms-poll__fill,
   .ch-ms-poll__level,
@@ -3596,8 +3622,9 @@ html[data-fw-theme='dark'] [data-ui='clubhouse'] .ch-ms-poll {
   .ch-ms-poll__mark {
     transition: none;
   }
-  .ch-ms-poll__opt.is-on .ch-ms-poll__mark svg {
-    animation: none;
+  /* M3: opacity only on the quick beat. */
+  .ch-ms-poll__mark[data-pop] svg {
+    animation: ch-ms-poll-check-fade var(--ch-dur-quick) var(--ch-ease);
   }
 }
 [data-motion='off'] .ch-ms-poll__fill,
@@ -3606,7 +3633,7 @@ html[data-fw-theme='dark'] [data-ui='clubhouse'] .ch-ms-poll {
 [data-motion='off'] .ch-ms-poll__mark {
   transition: none;
 }
-[data-motion='off'] .ch-ms-poll__opt.is-on .ch-ms-poll__mark svg {
+[data-motion='off'] .ch-ms-poll__mark[data-pop] svg {
   animation: none;
 }
 
@@ -3694,7 +3721,6 @@ html[data-fw-theme='dark'] [data-ui='clubhouse'] .ch-ms-poll {
 .ch-ms-pollf__opts {
   display: flex;
   flex-direction: column;
-  gap: 8px;
   margin: 0;
   padding: 0;
   list-style: none;
@@ -3788,7 +3814,10 @@ html[data-fw-theme='dark'] [data-ui='clubhouse'] .ch-ms-poll {
   display: grid;
   grid-template-rows: 0fr;
 }
-/* The row opens at once (0fr to 1fr, no height animation); only its fields fade in. */
+/* M12: the rows open 0fr to 1fr on the base beat while the fields fade in. */
+.ch-ms-pollf__custom {
+  transition: grid-template-rows var(--ch-dur-base) var(--ch-ease);
+}
 .ch-ms-pollf__custom.is-open {
   grid-template-rows: 1fr;
 }
@@ -3806,6 +3835,19 @@ html[data-fw-theme='dark'] [data-ui='clubhouse'] .ch-ms-poll {
 }
 .ch-ms-pollf__custom.is-open .ch-ms-pollf__customin {
   padding-top: var(--ch-space-2);
+}
+@media (prefers-reduced-motion: reduce) {
+  .ch-ms-pollf__custom,
+  .ch-ms-pollf__customin {
+    transition: none;
+  }
+}
+[data-motion='off'] .ch-ms-pollf__custom,
+[data-motion='off'] .ch-ms-pollf__customin {
+  transition: none;
+}
+.ch-ms-pollf__opt + .ch-ms-pollf__opt {
+  margin-top: 8px;
 }
 .ch-ms-pollf__earlier {
   display: flex;
