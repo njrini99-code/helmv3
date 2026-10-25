@@ -400,7 +400,7 @@ export async function loadCoachHome(input: { teamId: string; coachName: string; 
     rows.push({
       playerId: p.id,
       name: nameOf(p),
-      classYear: classYearLabel(p.graduation_year, now),
+      classYear: classYearLabel(p.graduation_year, now, tz),
       rounds: season.rounds,
       avg: season.avg ?? 0,
       toPar: season.toPar,

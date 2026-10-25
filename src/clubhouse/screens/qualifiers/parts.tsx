@@ -3,7 +3,7 @@ import { Badge } from '../../ui/Badge';
 import { Icon } from '../../ui/Icon';
 import { formatToPar } from '../../lib/format';
 import type { ChPlayerPeek } from '../../ui/PlayerPeek';
-import { endedLabel, lineGapText, positionLabel, rangeLabel, shortRange, viewerVsLines, yearOf, STATE_LABEL, STATUS_LABEL, type ChQBoard, type ChQRow, type ChQRowState, type ChQStatus } from './model';
+import { endedLabel, lineGapText, positionLabel, rangeLabel, shortRange, viewerOutcomeText, viewerVsLines, yearOf, STATE_LABEL, STATUS_LABEL, type ChQBoard, type ChQRow, type ChQRowState, type ChQStatus, type ChQViewerSelection } from './model';
 import { firstName } from '../../lib/names';
 import { plural, pluralWord } from '../../lib/plural';
 
@@ -155,26 +155,43 @@ export function ThruDots({ played, total }: { played: number; total: number }) {
 
 /**
  * "You vs the line" (row 74): the viewer's own row (place, to par, rounds in) kept at the top of the board, so it is in
- * view however long the field, and how far it sits from the top-score line and the travel cut. Nothing for a coach (no
- * row of their own) or when the board draws no line.
+ * view however long the field, and how far it sits from the top-score line and the travel cut; once the squad is
+ * confirmed, the outcome instead (viewerVsLines). Nothing for a coach (no row of their own) or when the board draws no line.
  */
-export function ViewerLineCard({ board, viewerId, numRounds }: { board: Pick<ChQBoard, 'rows' | 'topScore' | 'squad'>; viewerId: string | null | undefined; numRounds: number }) {
-  const v = viewerVsLines(board, viewerId);
+export function ViewerLineCard({
+  board,
+  viewerId,
+  numRounds,
+  selection,
+}: {
+  board: Pick<ChQBoard, 'rows' | 'topScore' | 'squad'>;
+  viewerId: string | null | undefined;
+  numRounds: number;
+  selection: ChQViewerSelection;
+}) {
+  const v = viewerVsLines(board, viewerId, selection);
   if (!v) return null;
-  const { me, gaps } = v;
+  const { me, gaps, outcome } = v;
+  const said = outcome ? viewerOutcomeText(outcome) : null;
   return (
     <section className="ch-qf-you-line" aria-labelledby="ch-qf-you-line-h" data-ch-code="CH-09908">
       <h3 id="ch-qf-you-line-h">You vs the line</h3>
       <p className="ch-qf-you-line__me ch-num">
-        <b>{positionLabel(me)}</b>
+        {/* The place is named, as the board's Pos column names it, so the line never opens on a bare number (Round 3). */}
+        <b>Place {positionLabel(me)}</b>
         <ToParPlate value={me.toPar} size="card" />
         <span>
           {me.played} of {plural(numRounds, 'round')}
         </span>
       </p>
       <ul>
+        {said && (
+          <li className={outcome === 'not_selected' ? 'is-outside' : 'is-inside'}>
+            <b>{said.label}</b> {said.text}
+          </li>
+        )}
         {gaps.map((g) => (
-          <li key={g.line} className={g.inside ? 'is-inside' : 'is-outside'}>
+          <li key={g.line} className={g.tie || g.picks ? 'is-tie' : g.inside ? 'is-inside' : 'is-outside'}>
             <b>{g.label}</b> {lineGapText(g, me, numRounds, firstName)}
           </li>
         ))}

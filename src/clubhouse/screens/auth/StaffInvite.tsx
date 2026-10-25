@@ -206,7 +206,7 @@ function Accept({ preview, program, email, token, writes, returnTo, focusOnMount
       onJoined();
     } catch {
       haptic('error');
-      setFailure('Network error. Please check your connection and try again.');
+      setFailure('Couldn’t join the team. Try again.');
       inFlight.current = false;
       setBusy(false);
     }
@@ -307,7 +307,7 @@ function Create({ preview, program, token, writes, returnTo, focusOnMount, probl
     } catch {
       inFlight.current = false;
       setBusy(false);
-      refuse({ field: null, message: 'Network error. Please check your connection and try again.', code: 'CH-15034' }, 'error');
+      refuse({ field: null, message: 'Couldn’t join the team. Try again.', code: 'CH-15034' }, 'error');
     }
   }
 

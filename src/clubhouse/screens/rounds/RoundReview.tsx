@@ -13,6 +13,7 @@ import { CoachNote } from './CoachNote';
 import { RoundTypeSheet } from './entry/RoundTypeSheet';
 import { scoreName } from './track/labels';
 import { changeTone, changeVerdict, formatFixed, formatSigned, formatToPar, NO_DATA } from '../../lib/format';
+import { NoData } from '../../ui/NoData';
 import { haptic } from '../../lib/haptics';
 import { useChPhone } from '../../lib/use-phone';
 import { useChReducedMotion } from '../../lib/reduced-motion';
@@ -172,9 +173,9 @@ function ReviewNine({ label, holes, sel, onPick }: { label: 'Out' | 'In'; holes:
         <tr className="is-par">
           <th scope="row">Par</th>
           {holes.map((h) => (
-            <td key={h.n}>{h.par ?? NO_DATA}</td>
+            <td key={h.n}>{h.par ?? <NoData />}</td>
           ))}
-          <td>{sum('par') ?? NO_DATA}</td>
+          <td>{sum('par') ?? <NoData />}</td>
         </tr>
         <tr className="is-score">
           <th scope="row">Score</th>
@@ -186,17 +187,17 @@ function ReviewNine({ label, holes, sel, onPick }: { label: 'Out' | 'In'; holes:
             </td>
           ))}
           <td>
-            <b>{sum('score') ?? NO_DATA}</b>
+            <b>{sum('score') ?? <NoData />}</b>
           </td>
         </tr>
         <tr>
           <th scope="row">Putts</th>
           {holes.map((h) => (
             <td key={h.n} className={h.putts != null && h.putts >= 3 ? 'is-warn' : undefined}>
-              {h.putts ?? NO_DATA}
+              {h.putts ?? <NoData />}
             </td>
           ))}
-          <td>{sum('putts') ?? NO_DATA}</td>
+          <td>{sum('putts') ?? <NoData />}</td>
         </tr>
         <tr className="is-marks">
           <th scope="row">FIR</th>

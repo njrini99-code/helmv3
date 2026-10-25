@@ -468,7 +468,7 @@ export function QualifierForm({ data, writes = LIVE_WRITES }: { data: ChQFormDat
                         describedBy={problemOf('playerIds') ? 'qf-players-h' : undefined}
                         onChange={(next) => toggle(p.id, next)}
                       >
-                        <Avatar name={p.name} size={30} />
+                        <Avatar name={p.name} id={p.id} size={30} />
                         <span>
                           <b>{p.name}</b>
                           <small>{p.locked && on ? (p.locked === 'squad' ? 'Has a squad place' : 'Has a round in it') : p.inactive ? 'Not on the active roster' : (p.classYear ?? ' ')}</small>

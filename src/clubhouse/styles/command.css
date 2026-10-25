@@ -11,7 +11,8 @@
   padding: 4px 8px;
   border-radius: var(--ch-radius-sm);
   color: var(--ch-text-primary);
-  font: var(--ch-type-label-s);
+  font: var(--ch-type-13-medium);
+  line-height: var(--ch-lead-label);
   white-space: nowrap;
   pointer-events: none;
   animation: ch-fade var(--ch-dur-press) var(--ch-ease);
@@ -73,7 +74,8 @@
   padding: 8px 16px;
   transform: translateX(-50%);
   color: var(--ch-text-primary);
-  font: var(--ch-type-label-s);
+  font: var(--ch-type-13-medium);
+  line-height: var(--ch-lead-label);
   pointer-events: none;
   animation: ch-fade var(--ch-dur-press) var(--ch-ease);
 }
@@ -184,7 +186,8 @@
 .ch-cmd-detail {
   flex: none;
   color: var(--ch-text-secondary);
-  font: var(--ch-type-caption);
+  font: var(--ch-type-13);
+  line-height: var(--ch-lead-caption);
 }
 .ch-cmd-foot {
   display: flex;
@@ -193,7 +196,8 @@
   padding: 8px 16px;
   border-top: var(--ch-hairline-w) solid var(--ch-border-subtle);
   color: var(--ch-text-secondary);
-  font: var(--ch-type-caption);
+  font: var(--ch-type-13);
+  line-height: var(--ch-lead-caption);
 }
 .ch-cmd-foot > span {
   display: inline-flex;
@@ -261,5 +265,6 @@
 .ch-cmd-then {
   margin: 0 4px;
   color: var(--ch-text-secondary);
-  font: var(--ch-type-caption);
+  font: var(--ch-type-13);
+  line-height: var(--ch-lead-caption);
 }

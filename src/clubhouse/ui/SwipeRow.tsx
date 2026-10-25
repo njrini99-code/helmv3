@@ -117,7 +117,13 @@ export function SwipeRow({
       data-side={showing ?? undefined}
       onPointerDown={(e) => {
         if (e.pointerType === 'mouse' && e.button !== 0) return;
-        if (!e.isPrimary || (e.target instanceof Element && e.target.closest('.ch-swipe__act'))) return;
+        // A press on a revealed action is a fresh tap. The drag that opened the row may have ended with no click to
+        // swallow (a touch that moved fires none), so its swallow must not eat this tap.
+        if (e.target instanceof Element && e.target.closest('.ch-swipe__act')) {
+          swallow.current = false;
+          return;
+        }
+        if (!e.isPrimary) return;
         swallow.current = false;
         const el = content.current;
         // A row caught mid-spring is taken from where it is.

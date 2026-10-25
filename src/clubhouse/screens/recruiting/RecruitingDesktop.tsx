@@ -45,7 +45,7 @@ export function RecruitingDesktop({ c }: { c: RecCtx }) {
         <InlineNotice
           code="CH-14201"
           title="Your prospects didn’t load"
-          body="Nothing was lost; this page just couldn’t reach them. Check your connection and try again."
+          body="Nothing was lost. Try again."
           onRetry={c.tryAgain}
         />
       ) : (

@@ -103,8 +103,32 @@ export function watchLargeTitle(bar: HTMLElement, canvas: HTMLElement): () => vo
 }
 
 /**
- * `watchLargeTitle` for the shell's top bar, on the phone only (desktop never runs it; a resize across 820px starts or
- * stops it). The fade is CSS on the D-64 quick duration; reduced motion and Animations off swap at once.
+ * Row 41: the desktop bar's scroll edge. The canvas is the desktop scroller (Lenis eases its own scrollTop, so its
+ * scroll events still fire), so the canvas's scroll, not the window's, marks the bar `data-scrolled` once content has
+ * gone under it. One passive listener, read once a frame. Returns the teardown, which leaves the bar as it found it.
+ */
+export function watchCanvasScroll(bar: HTMLElement, canvas: HTMLElement): () => void {
+  let frame = 0;
+  const edgeNow = () => {
+    frame = 0;
+    bar.toggleAttribute('data-scrolled', canvas.scrollTop > 0);
+  };
+  const onScroll = () => {
+    if (!frame) frame = requestAnimationFrame(edgeNow);
+  };
+  canvas.addEventListener('scroll', onScroll, { passive: true });
+  edgeNow();
+  return () => {
+    canvas.removeEventListener('scroll', onScroll);
+    if (frame) cancelAnimationFrame(frame);
+    bar.removeAttribute('data-scrolled');
+  };
+}
+
+/**
+ * `watchLargeTitle` for the shell's top bar on the phone, and `watchCanvasScroll` (the scroll edge only) on desktop; a
+ * resize across 820px swaps them. The fade is CSS on the D-64 quick duration; reduced motion and Animations off swap at
+ * once.
  */
 export function usePhoneLargeTitle(bar: RefObject<HTMLElement | null>): void {
   useEffect(() => {
@@ -115,7 +139,7 @@ export function usePhoneLargeTitle(bar: RefObject<HTMLElement | null>): void {
       stop = () => {};
       const el = bar.current;
       const canvas = document.getElementById('ch-canvas');
-      if (mql.matches && el && canvas) stop = watchLargeTitle(el, canvas);
+      if (el && canvas) stop = mql.matches ? watchLargeTitle(el, canvas) : watchCanvasScroll(el, canvas);
     };
     start();
     mql.addEventListener('change', start);

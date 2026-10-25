@@ -12,8 +12,8 @@ const ALLOW_TONE_WORDS: Record<string, number> = {
   'styles/coachhelm-dive.css': 2,
   'styles/coachhelm-profile.css': 6,
   'styles/coachhelm.css': 1,
-  'styles/roster.css': 3,
-  'styles/rounds.css': 3,
+  // The Rounds ribbon's is-down is the bar's geometry (it hangs below the line), not a verdict.
+  'styles/rounds.css': 1,
   // The focus loop's verdict word (is-good) is CoachHelm's good/warn vocabulary, an open owner question.
   'styles/stats.css': 1,
 };

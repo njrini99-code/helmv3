@@ -1,6 +1,7 @@
 import { act, fireEvent, render, screen } from '@testing-library/react';
 import { describe, expect, it } from 'vitest';
 import { useChartPin } from '../use-chart-pin';
+import { slotPositions } from '../../ui/charts/Line';
 
 function Chart({ count = 3, axis = 'y' as const }: { count?: number; axis?: 'x' | 'y' }) {
   const pin = useChartPin(count, axis);
@@ -134,5 +135,17 @@ describe('useChartPin on a line spaced by time (row 119)', () => {
     render(<Area />);
     at(60);
     expect(out()).toBe('1|-');
+  });
+
+  it('two rounds on one day each have a slot the pointer can reach (slotPositions, review of #2361)', () => {
+    const day = (iso: string) => Date.parse(iso);
+    const slots = slotPositions(3, [day('2026-09-01'), day('2026-09-01'), day('2026-09-22')]);
+    render(<Area positions={slots} />);
+    const seen = new Set<string>();
+    for (let x = 0; x <= 100; x += 1) {
+      at(x);
+      seen.add(out().split('|')[0]!);
+    }
+    expect([...seen].sort()).toEqual(['0', '1', '2']);
   });
 });

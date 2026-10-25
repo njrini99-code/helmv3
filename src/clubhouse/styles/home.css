@@ -152,7 +152,8 @@
 }
 .ch-h-pager > span {
   margin: 0 6px 0 8px;
-  font: var(--ch-type-caption);
+  font: var(--ch-type-13);
+  line-height: var(--ch-lead-caption);
   font-variant-numeric: tabular-nums;
   color: var(--ch-text-tertiary);
 }
@@ -230,7 +231,8 @@
 }
 .ch-h-agenda__label {
   padding: 0 0 6px;
-  font: var(--ch-type-label-s);
+  font: var(--ch-type-13-medium);
+  line-height: var(--ch-lead-label);
   color: var(--ch-text-tertiary);
 }
 .ch-h-agenda__label--later {
@@ -258,7 +260,8 @@
 }
 .ch-h-agenda__b {
   margin-top: 2px;
-  font: var(--ch-type-caption);
+  font: var(--ch-type-13);
+  line-height: var(--ch-lead-caption);
   color: var(--ch-text-tertiary);
 }
 .ch-h-agenda__row.is-event .ch-h-agenda__a {
@@ -327,7 +330,8 @@
   white-space: nowrap;
 }
 .ch-h-round__meta {
-  font: var(--ch-type-caption);
+  font: var(--ch-type-13);
+  line-height: var(--ch-lead-caption);
   color: var(--ch-text-tertiary);
 }
 .ch-h-round__score {
@@ -440,7 +444,8 @@
   color: var(--ch-text-primary);
 }
 .ch-h-round__stats em {
-  font: var(--ch-type-caption);
+  font: var(--ch-type-13);
+  line-height: var(--ch-lead-caption);
   font-style: normal;
   color: var(--ch-text-tertiary);
 }
@@ -467,7 +472,8 @@
   box-shadow: var(--ch-seam-x);
 }
 .ch-h-rail__title {
-  font: var(--ch-type-label-s);
+  font: var(--ch-type-13-medium);
+  line-height: var(--ch-lead-label);
   color: var(--ch-text-tertiary);
 }
 .ch-h-rail ul {
@@ -529,7 +535,8 @@
 }
 .ch-h-rail__meta {
   overflow: hidden;
-  font: var(--ch-type-caption);
+  font: var(--ch-type-13);
+  line-height: var(--ch-lead-caption);
   color: var(--ch-text-tertiary);
   white-space: nowrap;
   text-overflow: ellipsis;
@@ -611,7 +618,8 @@
 .ch-h-lb__head {
   padding-top: 12px;
   padding-bottom: 8px;
-  font: var(--ch-type-label-s);
+  font: var(--ch-type-13-medium);
+  line-height: var(--ch-lead-label);
   color: var(--ch-text-tertiary);
 }
 .ch-h-lb__row.is-link {
@@ -731,7 +739,8 @@
 .ch-h-lb__meta {
   display: block;
   margin-top: 2px;
-  font: var(--ch-type-caption);
+  font: var(--ch-type-13);
+  line-height: var(--ch-lead-caption);
   color: var(--ch-text-tertiary);
 }
 /* The form word carries a small state dot, so the column scans by colour before it reads. */
@@ -1631,7 +1640,8 @@
     color: var(--ch-text-tertiary);
   }
   .ch-hm-muted {
-    font: var(--ch-type-caption);
+    font: var(--ch-type-13);
+    line-height: var(--ch-lead-caption);
     color: var(--ch-text-tertiary);
   }
 }
@@ -1753,7 +1763,8 @@
 }
 /* The caption under the title only: the window picker's own labels are spans too, and took this grey. */
 .ch-ph-game__h > div > span {
-  font: var(--ch-type-caption);
+  font: var(--ch-type-13);
+  line-height: var(--ch-lead-caption);
   font-variant-numeric: tabular-nums;
   color: var(--ch-text-tertiary);
 }
@@ -4212,7 +4223,8 @@ html[data-fw-theme='dark'] .ch-h-form__bar {
 .ch-h-legs__t thead th {
   padding-top: 8px;
   padding-bottom: 8px;
-  font: var(--ch-type-label-s);
+  font: var(--ch-type-13-medium);
+  line-height: var(--ch-lead-label);
   color: var(--ch-text-tertiary);
 }
 .ch-h-legs__t tbody tr {
@@ -4281,7 +4293,8 @@ html[data-fw-theme='dark'] .ch-h-form__bar {
 }
 .ch-h-agenda__rsvp {
   margin-top: 2px;
-  font: var(--ch-type-caption);
+  font: var(--ch-type-13);
+  line-height: var(--ch-lead-caption);
   font-variant-numeric: tabular-nums;
   color: var(--ch-text-tertiary);
 }

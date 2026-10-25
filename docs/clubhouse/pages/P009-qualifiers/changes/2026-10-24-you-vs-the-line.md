@@ -1,14 +1,17 @@
 # 2026-10-24 — Qualifiers: you vs the line
 
-## 2026-10-24 — A player's board opens on their own row and its distance to the lines
+## 2026-10-24 — A player's board opens on their row and its gap to the lines
 
 ```text
-Design package: none (Clubhouse A+ handoff, section 0.4 Qualifiers: "add a 'you vs the line' card with your own row kept in view")
+Design package: none (Clubhouse A+ handoff, section 0.4 Qualifiers: "add a 'you
+                vs the line' card with your own row kept in view")
 PR/commit:      agent/aplus-lane-d
 Contract IDs:   CH-09908
 Actions:        none
 Data impact:    none
-Held items:     decision 10 (row 115) changes the board's order; the card follows it as built. A sticky row in the list itself is not built (see Why)
+Held items:     decision 10 (row 115) changes the board's order; the card
+                follows it as built. A sticky row in the list itself is not
+                built (see Why)
 ```
 
 ### Changed
@@ -33,6 +36,6 @@ Held items:     decision 10 (row 115) changes the board's order; the card follow
 
 ### Verification
 
-- qualifiers.test › CH-09908 (the lines from the board's order, Outside and level
-  wording, no strokes across different rounds, nothing for a coach, drawn on
-  desktop and phone). Wants an iPhone and desktop look.
+- qualifiers.test › CH-09908 (the lines from the board's order, Outside and
+  level wording, no strokes across different rounds, nothing for a coach, drawn
+  on desktop and phone). Wants an iPhone and desktop look.

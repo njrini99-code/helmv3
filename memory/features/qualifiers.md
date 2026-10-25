@@ -314,9 +314,11 @@ in `docs/clubhouse/catalog/qualifiers.md` (CH-09xxx).
   only.
 - Complete cards first (owner decision 10, 2026-10-24, B13.3): on the
   Clubhouse board a player with fewer counted rounds than the most anyone has
-  ranks below every complete card, whatever the total, and carries "Missed a
-  round · n of N rounds" (`missed` on the row, `sampleNote`); ties are only
-  within a group. `screens/qualifiers/model.ts` `rankRows`; tests:
+  ranks below every complete card, whatever the total; ties are only within a
+  group. The flag waits for the event to end: during play such a card shows
+  its pace, "n of N rounds", and once the qualifier is completed it carries
+  "Missed a round · n of N rounds" (`missed` on the row, set by `buildBoard`
+  only when the status is completed; `sampleNote`). `screens/qualifiers/model.ts` `rankRows`; tests:
   `qualifiers.test.tsx` › "owner decision 10", `qualifiers-premium.test.tsx`.
   Not yet in the shared order: the selection workspace and confirm still rank
   by `rankCandidates` (`compareStandings`), so the two can disagree across the

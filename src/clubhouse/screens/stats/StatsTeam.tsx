@@ -20,6 +20,7 @@ import { LinkPending } from '../../shell/LinkPending';
 import { StatsTeamPhone } from './StatsTeamPhone';
 import { RetryNotice, ShowSeason, StatsTeamFrame, TeamCharts, TeamFilter, TeamFilterEmpty, TeamHeadActions } from './StatsTeamIslands';
 import { pluralWord } from '../../lib/plural';
+import { TeamInsight } from './StatsInsight';
 
 /**
  * Team stats. Rendered on the server: the figures, putting and season bests
@@ -111,6 +112,10 @@ export function StatsTeam({ data }: { data: ChTeamStats }) {
         ) : (
           !data.roundsError && (
             <>
+              {/* Row 70: what changed, in words, before any figure. */}
+              <SectionBoundary surface="stats.team.insight" label="What changed" code="CH-4204">
+                <TeamInsight figures={data.figures} last={data.last} />
+              </SectionBoundary>
               <TeamCharts
                 tape={
                   <SectionBoundary surface="stats.team.figures" label="Team figures" code="CH-4204">
@@ -235,7 +240,7 @@ function SeasonBests({ bests, filter, longestError, covered }: { bests: ChTeamSt
           <div key={b.label} className="ch-best__r">
             <span className="ch-best__k">{b.label}</span>
             <Link href={teamPlayerHref(b.playerId, filter)} className="ch-who" style={{ textDecoration: 'none', color: 'inherit' }}>
-              <Avatar name={b.name} size={26} />
+              <Avatar name={b.name} id={b.playerId} size={26} />
               <span>
                 <b>{b.name}</b>
                 <span className="ch-who__m">{b.meta}</span>

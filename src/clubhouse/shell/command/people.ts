@@ -6,7 +6,8 @@ import type { ChPerson } from './commands';
  * data, so People works before Roster has been opened (owner, decision 16: `seedPeople`). A screen that has loaded the
  * team itself (the coach's Roster) hands its fuller rows (`publishPeople`), which take precedence over the seed. Either
  * way it is only what that coach already sees. Held in memory only, and dropped when the team or the signed-in person
- * changes (`setPeopleScope`): names are never written to storage, which sign-out does not clear.
+ * changes (`setPeopleScope`) and when the frame unmounts, as the idle timeout's sign-out navigates to login
+ * (CommandLayer, `clearPeople`): names are never written to storage, which sign-out does not clear.
  */
 let scope: string | null = null;
 /** The shell's names and ids. */

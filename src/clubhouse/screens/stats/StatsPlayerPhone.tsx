@@ -16,7 +16,7 @@ import { SectionBoundary } from '../../ui/SectionBoundary';
 import { useToast } from '../../ui/Toast';
 import { haptic } from '../../lib/haptics';
 import { chTrail } from '../../lib/track';
-import { changeInk, formatAvg, formatFixed, formatHcp, formatSigned, formatToPar, NO_DATA } from '../../lib/format';
+import { changeInk, formatAvg, formatFixed, formatHcp, formatSigned, formatToPar } from '../../lib/format';
 import { sgBaseline } from '../../lib/sg';
 import { deltaTone, halvesChange, halvesTone } from '../../lib/stats-signal';
 import { rebuiltHref } from '../../shell/nav';
@@ -42,6 +42,8 @@ import { useArrivalPainted } from '../../lib/use-painted';
 import { TERMS } from '../../lib/glossary';
 import { plural, pluralWord } from '../../lib/plural';
 import { LargeTitle } from '../../ui/LargeTitle';
+import { PlayerInsight } from './StatsInsight';
+import { NoData } from '../../ui/NoData';
 
 /** Rounds the list shows before "All N rounds". */
 const ROUNDS_SHOWN = 5;
@@ -150,7 +152,7 @@ export function StatsPlayerPhone({
       )}
 
       <header className="ch-spm-head">
-        <Avatar name={data.name} size={48} />
+        <Avatar name={data.name} id={data.id} size={48} />
         <span className="ch-spm-head__id">
           <LargeTitle>{data.name}</LargeTitle>
           <p className="ch-num">
@@ -203,6 +205,10 @@ export function StatsPlayerPhone({
 
       {!emptyFilter && !failed && (
         <>
+      {/* Row 70: what changed, in words, before any figure. */}
+      <SectionBoundary surface="stats.player.insight" label="What changed" code="CH-5204">
+        <PlayerInsight data={data} />
+      </SectionBoundary>
       <SectionBoundary surface="stats.player.overview" label="The overview" code="CH-5204">
         {data.cacheError && <InlineNotice code="CH-5213" title={CACHE_ERROR.title} body={CACHE_ERROR.body} onRetry={onRetry} />}
         <Figures data={data} readCaveat={readCaveat} />
@@ -280,7 +286,7 @@ function Figures({ data, readCaveat }: { data: ChPlayerProfile; readCaveat: Reac
         </div>
         <div>
           <dt>SG / round</dt>
-          <dd className={'ch-num' + sgTone}>{w.sgPerRound == null ? NO_DATA : formatSigned(w.sgPerRound)}</dd>
+          <dd className={'ch-num' + sgTone}>{w.sgPerRound == null ? <NoData /> : formatSigned(w.sgPerRound)}</dd>
           {/* The baseline is always named (ST-16); the change chip only when there is a change. "No earlier rounds" was filler. */}
           <dd className="ch-stm-sgsub">
             {w.sgPerRound == null ? 'After three rounds' : sgBaseline(data.tour).vs}
@@ -291,7 +297,7 @@ function Figures({ data, readCaveat }: { data: ChPlayerProfile; readCaveat: Reac
           {/* Scores, so "higher" is worse (amber) and "lower" better; the sub-line names the halves compared (summarizeWindow). */}
           {/* A change inside its standard error is no change (A1): the headline says so instead of "2.1 higher", and the sub-line
               names the halves it compared, so the cell never says a number and "No clear change" at once. */}
-          <dd className={'ch-num is-words' + formTone}>{form == null ? NO_DATA : formSignal === '' ? 'No clear change' : `${formatFixed(Math.abs(form))} ${form < 0 ? 'lower' : 'higher'}`}</dd>
+          <dd className={'ch-num is-words' + formTone}>{form == null ? <NoData /> : formSignal === '' ? 'No clear change' : `${formatFixed(Math.abs(form))} ${form < 0 ? 'lower' : 'higher'}`}</dd>
           <dd>
             {form == null ? 'After three rounds' : halves}
           </dd>
@@ -310,7 +316,7 @@ function Figures({ data, readCaveat }: { data: ChPlayerProfile; readCaveat: Reac
             <span className="ch-num">{countWords(w.rounds, w.effRounds)} in this window.</span>
             {/* P005-D6: the chip names what it measures, since it sits away from the SG figure. */}
             {w.sgPerRound != null && d != null && (
-              <SgChangeChip change={data.sgChange} subject="SG a round" code="CH-5310" />
+              <SgChangeChip change={data.sgChange} subject="Change in SG a round" code="CH-5310" />
             )}
           </>
         )}

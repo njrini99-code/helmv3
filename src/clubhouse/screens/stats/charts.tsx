@@ -8,6 +8,7 @@ import { changeTone, formatFixed, formatSigned, NO_DATA } from '../../lib/format
 import { sgBaseline, sgScale } from '../../lib/sg';
 import { deltaTone, deltaWords, type DeltaTone } from '../../lib/stats-signal';
 import { plural } from '../../lib/plural';
+import { NoData } from '../../ui/NoData';
 
 /**
  * The yardage book: charts drawn the way a caddie's book reads, numbers where
@@ -88,7 +89,7 @@ export function FigureGauge({ gauge, n }: { gauge: ChGauge; n: number }) {
   return (
     <span className="ch-fg__gauge" aria-hidden="true">
       <span className="ch-fg__track">
-        <i className={gauge.ref == null ? 'is-neutral' : n >= gauge.ref ? 'is-gain' : 'is-loss'} style={{ left: 0, width: pct(n) }} />
+        <i className={gauge.ref == null || gauge.tone === '' ? 'is-neutral' : gauge.tone ?? (n >= gauge.ref ? 'is-gain' : 'is-loss')} style={{ left: 0, width: pct(n) }} />
         {gauge.ref != null && <b style={{ left: pct(gauge.ref) }} />}
       </span>
       {gauge.ref != null && <em style={{ left: pct(gauge.ref) }}>{gauge.refLabel ?? 'Tour'}</em>}
@@ -175,7 +176,7 @@ export function PuttingRings({ bands }: { bands: Array<{ label: string; made: nu
               {b.label}
             </text>
             <text x={W} y={ly} dy=".34em" textAnchor="end" className={`ch-pg-pct${below ? ' is-below' : ''}`}>
-              {pct == null ? NO_DATA : `${pct}%`}
+              {pct == null ? <NoData /> : `${pct}%`}
             </text>
           </g>
         );
@@ -260,7 +261,7 @@ export function Compare({ rows, unit = '', max }: { rows: Array<{ label: string;
             {r.value != null && <span style={{ width: `${Math.min(100, (r.value / m) * 100)}%` }} />}
           </span>
           {/* Percentages are whole numbers everywhere else in Stats ("55.6%" beside "50%" read as noise, F-54). */}
-          <b className="ch-num">{r.value == null ? NO_DATA : `${unit === '%' ? Math.round(r.value) : Math.round(r.value * 10) / 10}${unit}`}</b>
+          <b className="ch-num">{r.value == null ? <NoData /> : `${unit === '%' ? Math.round(r.value) : Math.round(r.value * 10) / 10}${unit}`}</b>
         </div>
       ))}
     </div>
@@ -342,7 +343,7 @@ export function Ladder({
         return (
           <div key={r.band} className="ch-lad__c">
             <span className={`ch-lad__v ch-num ${tone === 'is-gain' ? 'ch-gain' : tone === 'is-loss' ? 'ch-loss' : ''}`}>
-              {r.value == null ? NO_DATA : `${Math.round(r.value)}${unit}`}
+              {r.value == null ? <NoData /> : `${Math.round(r.value)}${unit}`}
             </span>
             <span className="ch-lad__col">
               {r.value != null && <span className={`ch-lad__fill ${tone}`} style={{ height: `${(r.value / max) * 100}%` }} />}
@@ -380,7 +381,7 @@ export function GreenMiss({ m }: { m: Record<'ll' | 'lg' | 'lr' | 'l' | 'r' | 's
           </span>
         ) : (
           <span key={l} className="ch-gmiss__c" style={{ background: `color-mix(in srgb, var(--ch-st-miss-heat) ${(5 + ((v ?? 0) / max) * 32).toFixed(1)}%, transparent)` }}>
-            <b className="ch-num">{v == null ? NO_DATA : `${Math.round(v)}%`}</b>
+            <b className="ch-num">{v == null ? <NoData /> : `${Math.round(v)}%`}</b>
             <em>{l}</em>
           </span>
         ),

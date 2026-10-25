@@ -617,7 +617,8 @@
   color: var(--ch-text-primary);
 }
 .ch-qf-panel__head p {
-  font: var(--ch-type-caption);
+  font: var(--ch-type-13);
+  line-height: var(--ch-lead-caption);
   font-variant-numeric: tabular-nums;
   color: var(--ch-text-tertiary);
 }
@@ -647,7 +648,8 @@
   border-bottom: 0;
   background: var(--ch-bg-subtle);
   color: var(--ch-text-tertiary);
-  font: var(--ch-type-label-s);
+  font: var(--ch-type-13-medium);
+  line-height: var(--ch-lead-label);
 }
 .ch-qf-row--flat {
   min-height: 44px;
@@ -740,7 +742,8 @@
 }
 .ch-qf-who small {
   display: block;
-  font: var(--ch-type-caption);
+  font: var(--ch-type-13);
+  line-height: var(--ch-lead-caption);
   color: var(--ch-text-tertiary);
 }
 .ch-qf-you {
@@ -781,7 +784,8 @@
 .ch-qf-cap {
   padding: 16px 20px 16px;
   border-top: var(--ch-hairline-w) solid var(--ch-border-hairline);
-  font: var(--ch-type-caption);
+  font: var(--ch-type-13);
+  line-height: var(--ch-lead-caption);
   color: var(--ch-text-tertiary);
   text-wrap: pretty;
 }
@@ -808,7 +812,8 @@
   }
 }
 .ch-qf-tray__avg {
-  font: var(--ch-type-caption);
+  font: var(--ch-type-13);
+  line-height: var(--ch-lead-caption);
   color: var(--ch-text-secondary);
   font-variant-numeric: tabular-nums;
 }
@@ -830,12 +835,14 @@
   line-height: var(--ch-lead-tight);
 }
 .ch-qf-sc__h span {
-  font: var(--ch-type-caption);
+  font: var(--ch-type-13);
+  line-height: var(--ch-lead-caption);
   font-variant-numeric: tabular-nums;
   color: var(--ch-text-tertiary);
 }
 .ch-qf-sc__none {
-  font: var(--ch-type-caption);
+  font: var(--ch-type-13);
+  line-height: var(--ch-lead-caption);
   color: var(--ch-text-tertiary);
 }
 .ch-qf-strip {
@@ -914,7 +921,8 @@
   font-variant-numeric: tabular-nums;
 }
 .ch-qf-list__m {
-  font: var(--ch-type-caption);
+  font: var(--ch-type-13);
+  line-height: var(--ch-lead-caption);
   color: var(--ch-text-tertiary);
   font-variant-numeric: tabular-nums;
 }
@@ -1003,7 +1011,8 @@
   color: var(--ch-text-primary);
 }
 .ch-qf-fs__h p {
-  font: var(--ch-type-caption);
+  font: var(--ch-type-13);
+  line-height: var(--ch-lead-caption);
   font-variant-numeric: tabular-nums;
   color: var(--ch-text-tertiary);
 }
@@ -1050,7 +1059,8 @@
 }
 .ch-qf-prow small {
   display: block;
-  font: var(--ch-type-caption);
+  font: var(--ch-type-13);
+  line-height: var(--ch-lead-caption);
   color: var(--ch-text-tertiary);
 }
 .ch-qf-readout {
@@ -1105,7 +1115,8 @@
 }
 .ch-qf-rc small {
   display: block;
-  font: var(--ch-type-caption);
+  font: var(--ch-type-13);
+  line-height: var(--ch-lead-caption);
   color: var(--ch-text-tertiary);
 }
 .ch-qf-rc__act {
@@ -1156,7 +1167,8 @@
 }
 .ch-qf-picker__row small {
   display: block;
-  font: var(--ch-type-caption);
+  font: var(--ch-type-13);
+  line-height: var(--ch-lead-caption);
   color: var(--ch-text-tertiary);
   font-variant-numeric: tabular-nums;
 }
@@ -1332,7 +1344,8 @@
   color: var(--ch-text-tertiary);
 }
 .ch-qfs-pick__who small {
-  font: var(--ch-type-caption);
+  font: var(--ch-type-13);
+  line-height: var(--ch-lead-caption);
   font-variant-numeric: tabular-nums;
   color: var(--ch-text-tertiary);
 }
@@ -1931,7 +1944,8 @@
     margin-top: 6px;
     padding: 0 0 6px;
     box-shadow: inset 0 calc(-1 * var(--ch-hairline-w)) 0 var(--ch-ledger-rule-soft);
-    font: var(--ch-type-label-s);
+    font: var(--ch-type-13-medium);
+    line-height: var(--ch-lead-label);
     color: var(--ch-text-tertiary);
   }
   .ch-qfm-lbhead > :nth-child(n + 3) {
@@ -2010,7 +2024,8 @@
     flex-wrap: wrap;
     align-items: center;
     gap: 6px;
-    font: var(--ch-type-caption);
+    font: var(--ch-type-13);
+    line-height: var(--ch-lead-caption);
     color: var(--ch-text-tertiary);
   }
   /* The state on the name's second line, compact, so the row holds at 56pt. */
@@ -2036,7 +2051,8 @@
     justify-self: end;
   }
   .ch-qfm-lb__tot {
-    font: var(--ch-type-caption);
+    font: var(--ch-type-13);
+    line-height: var(--ch-lead-caption);
     font-style: normal;
     color: var(--ch-text-tertiary);
   }
@@ -2141,7 +2157,8 @@
     display: flex;
     align-items: center;
     justify-content: space-between;
-    font: var(--ch-type-caption);
+    font: var(--ch-type-13);
+    line-height: var(--ch-lead-caption);
     font-variant-numeric: tabular-nums;
     color: var(--ch-text-tertiary);
   }
@@ -2152,7 +2169,8 @@
     color: var(--ch-text-primary);
   }
   .ch-qfm-muted {
-    font: var(--ch-type-caption);
+    font: var(--ch-type-13);
+    line-height: var(--ch-lead-caption);
     font-variant-numeric: tabular-nums;
     color: var(--ch-text-tertiary);
   }

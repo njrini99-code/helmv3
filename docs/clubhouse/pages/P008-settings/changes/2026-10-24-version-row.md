@@ -3,7 +3,8 @@
 ## 2026-10-24 — Help and legal says which GolfHelm this is
 
 ```text
-Design package: none (Clubhouse A+ handoff, section 0.4 Settings: "an About row with the app version")
+Design package: none (Clubhouse A+ handoff, section 0.4 Settings: "an About row
+                with the app version")
 PR/commit:      agent/aplus-lane-d
 Contract IDs:   81901
 Actions:        none

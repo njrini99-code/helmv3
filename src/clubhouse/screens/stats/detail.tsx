@@ -3,6 +3,7 @@ import type { ChWindow } from '../../data/stats-common';
 import type { ChSprayGroup } from '../../data/stats-detail';
 import { formatFixed, NO_DATA } from '../../lib/format';
 import { ScrollRegion } from '../../ui/ScrollRegion';
+import { NoData } from '../../ui/NoData';
 
 /**
  * The parts Game detail's "More detail" and the Rounds tab are built from
@@ -292,7 +293,7 @@ export function SectorGrid({ g, unit }: { g: ChSprayGroup; unit: string }) {
           return (
             <span key={k} className={'ch-gx-sec__c' + (b && b.count ? '' : ' is-zero') + (top1 ? ' is-top' : '')}>
               <b className="ch-num">{b?.count ?? 0}</b>
-              <i className="ch-num">{b && g.shots ? `${Math.round(b.pct)}%` : NO_DATA}</i>
+              <i className="ch-num">{b && g.shots ? `${Math.round(b.pct)}%` : <NoData />}</i>
               <em>{l}</em>
             </span>
           );

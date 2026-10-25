@@ -3,7 +3,7 @@ import { join } from 'node:path';
 import { renderHook } from '@testing-library/react';
 import { useRef } from 'react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { CH_LARGE_TITLES, findLargeTitle, isTucked, usePhoneLargeTitle, watchLargeTitle } from '../shell/large-title';
+import { CH_LARGE_TITLES, findLargeTitle, isTucked, usePhoneLargeTitle, watchCanvasScroll, watchLargeTitle } from '../shell/large-title';
 
 /**
  * Phone large titles (owner 2026-10-08, the cardless phone pass): the bar's title waits while the page's own large
@@ -136,6 +136,36 @@ describe('watchLargeTitle', () => {
   });
 });
 
+describe('watchCanvasScroll (row 41, desktop)', () => {
+  it("marks the bar scrolled from the canvas's own scroll, not the window's, and tears down clean", () => {
+    const { bar, canvas } = mount('<p>Roster</p>');
+    const raf = vi.spyOn(window, 'requestAnimationFrame').mockImplementation((cb) => {
+      // Runs the frame at once; 0 so the next scroll asks for a frame again.
+      cb(0);
+      return 0;
+    });
+    const stop = watchCanvasScroll(bar, canvas);
+    expect(bar.hasAttribute('data-scrolled')).toBe(false);
+    Object.defineProperty(window, 'scrollY', { value: 40, configurable: true });
+    window.dispatchEvent(new Event('scroll'));
+    expect(bar.hasAttribute('data-scrolled')).toBe(false);
+    Object.defineProperty(canvas, 'scrollTop', { value: 40, configurable: true });
+    canvas.dispatchEvent(new Event('scroll'));
+    expect(bar.hasAttribute('data-scrolled')).toBe(true);
+    Object.defineProperty(canvas, 'scrollTop', { value: 0, configurable: true });
+    canvas.dispatchEvent(new Event('scroll'));
+    expect(bar.hasAttribute('data-scrolled')).toBe(false);
+    Object.defineProperty(canvas, 'scrollTop', { value: 40, configurable: true });
+    canvas.dispatchEvent(new Event('scroll'));
+    stop();
+    expect(bar.hasAttribute('data-scrolled')).toBe(false);
+    canvas.dispatchEvent(new Event('scroll'));
+    expect(bar.hasAttribute('data-scrolled')).toBe(false);
+    Object.defineProperty(window, 'scrollY', { value: 0, configurable: true });
+    raf.mockRestore();
+  });
+});
+
 describe('usePhoneLargeTitle', () => {
   const media = (matches: boolean) =>
     vi.stubGlobal('matchMedia', (q: string) => ({ matches, media: q, addEventListener: vi.fn(), removeEventListener: vi.fn() }));
@@ -151,14 +181,25 @@ describe('usePhoneLargeTitle', () => {
     unmount();
     expect(live()).toHaveLength(0);
   });
-  it('never runs on desktop', () => {
-    mount('<p class="ch-large-title">Roster</p>');
+  it('never watches the large title on desktop, only the canvas scroll edge', () => {
+    const { bar, canvas } = mount('<p class="ch-large-title">Roster</p>');
     media(false);
-    renderHook(() => {
+    const raf = vi.spyOn(window, 'requestAnimationFrame').mockImplementation((cb) => {
+      // Runs the frame at once; 0 so the next scroll asks for a frame again.
+      cb(0);
+      return 0;
+    });
+    const { unmount } = renderHook(() => {
       const ref = useRef<HTMLElement | null>(document.querySelector<HTMLElement>('.ch-topbar'));
       usePhoneLargeTitle(ref);
     });
     expect(observers).toHaveLength(0);
+    Object.defineProperty(canvas, 'scrollTop', { value: 30, configurable: true });
+    canvas.dispatchEvent(new Event('scroll'));
+    expect(bar.hasAttribute('data-scrolled')).toBe(true);
+    unmount();
+    expect(bar.hasAttribute('data-scrolled')).toBe(false);
+    raf.mockRestore();
   });
 });
 

@@ -1,6 +1,6 @@
 # 2026-10-24 — Arrow keys in the remaining lists (B11)
 
-## 2026-10-24 — Roster, Rounds and Qualifiers walk with the arrow keys; skeleton rows never take the Tab stop
+## 2026-10-24 — Arrow keys on Roster, Rounds, Qualifiers; skeletons skip Tab
 
 ```text
 Design package: none (Clubhouse A+ handoff, B11)
@@ -20,10 +20,10 @@ Held items:     the Stats player list (lane C's files); Cmd N (see Why)
   rounds and the Qualifiers list (the hero, then the cards); Home and End go to
   the ends; each list is one Tab stop. Each registers its keys with the
   shortcuts sheet ("Move between players", "rounds", "qualifiers").
-- `RovingRows` (ui/RovingRows.tsx, drawing nothing) runs the walk from inside a list's own
-  SectionBoundary, so its tab stops land after that boundary hydrates; set from
-  the page's outer element they hit server HTML still hydrating, and React
-  reported a mismatch (qualifiers-hydration.test).
+- `RovingRows` (ui/RovingRows.tsx, drawing nothing) runs the walk from inside a
+  list's own SectionBoundary, so its tab stops land after that boundary
+  hydrates; set from the page's outer element they hit server HTML still
+  hydrating, and React reported a mismatch (qualifiers-hydration.test).
 
 ### Why
 

@@ -264,6 +264,10 @@ Use `memory/context/golfhelm-database.md` for exact columns and `memory/glossary
     green-hit by band has no LPGA figure, so a women's approach read stays
     absent and a women's standing omits the marker. Never PGA numbers.
 
+- Genome `scoring_trend` (2026-10-24): the result carries an optional `se`,
+  the change's Welch standard error from both windows' own spreads.
+  Clubhouse's Momentum says Improving/Regressing only past it; rows stored
+  before have no `se` and read "No clear change" until the nightly run.
 - Wave 6 (2026-10-18):
   - Persona (`v3/genome/persona.ts`): `driver_usage` and `miss_side_bias` are
     style dims, never strengths or watch-outs; they only feed the course

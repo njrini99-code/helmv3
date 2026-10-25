@@ -2280,7 +2280,7 @@ export function AddMembersModal({ api, conv, open, onClose }: { api: ChMessagesA
             const done = added.includes(p.userId);
             return (
               <div key={p.userId} className="ch-pp__row">
-                <Avatar name={p.name} size="sm" />
+                <Avatar name={p.name} id={personOf(api, p.userId)?.playerId ?? p.userId} size="sm" />
                 <span className="ch-pp__name">
                   <b>{p.name}</b>
                   <span>{p.subtitle}</span>
@@ -2806,7 +2806,7 @@ function NewMessage({
                   const p = personOf(api, id);
                   return (
                     <span key={id} className="ch-ms-to__c">
-                      <Avatar name={p?.name ?? "Member"} size={20} />
+                      <Avatar name={p?.name ?? "Member"} id={p?.playerId ?? id} size={20} />
                       {firstName(p?.name ?? "Member")}
                       <Tooltip>
                         <button
@@ -2847,7 +2847,7 @@ function NewMessage({
                       className="ch-pp__row"
                       onClick={() => toggle(p.userId)}
                     >
-                      <Avatar name={p.name} size="sm" />
+                      <Avatar name={p.name} id={p.playerId ?? p.userId} size="sm" />
                       <span className="ch-pp__name">
                         <b>{p.name}</b>
                         <span>{p.subtitle}</span>

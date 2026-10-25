@@ -39,7 +39,8 @@
   border-radius: var(--ch-radius-md);
   background: var(--ch-bg-surface);
   color: var(--ch-text-primary);
-  font: var(--ch-type-label);
+  font: var(--ch-type-14-medium);
+  line-height: var(--ch-lead-label);
   transform: translateY(-200%);
 }
 .ch-au-skip:focus {

@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { ArrowRight, Trash2 } from 'lucide-react';
 import type { ChLibraryRound, ChRoundsSeason, ChRoundType, ChTeeColor, ChUnfinishedRound } from '../../data/rounds-shape';
 import { formatFixed, formatToPar, NO_DATA } from '../../lib/format';
+import { NoData } from '../../ui/NoData';
 import { haptic } from '../../lib/haptics';
 import { InlineNotice } from '../../ui/Notices';
 import { withPointSpan } from '../../ui/point-span';
@@ -339,7 +340,7 @@ function SeasonFigures({ season }: { season: ChRoundsSeason }) {
     <dl className="ch-rd-season__f">
       <div className="ch-rd-fig">
         <dt>Best</dt>
-        <dd className="ch-num ch-rd-fig__v">{season.best ? String(season.best.score) : NO_DATA}</dd>
+        <dd className="ch-num ch-rd-fig__v">{season.best ? String(season.best.score) : <NoData />}</dd>
         {lo != null && hi != null && hi > lo && (
           <dd className="ch-rd-fig__viz" aria-hidden="true">
             <span className="ch-rd-range">
@@ -389,7 +390,7 @@ function SeasonFigures({ season }: { season: ChRoundsSeason }) {
       </div>
       <div className="ch-rd-fig">
         <dt>GIR</dt>
-        <dd className="ch-num ch-rd-fig__v">{season.girPct == null ? NO_DATA : `${Math.round(season.girPct)}%`}</dd>
+        <dd className="ch-num ch-rd-fig__v">{season.girPct == null ? <NoData /> : `${Math.round(season.girPct)}%`}</dd>
         {season.girPer18 != null && (
           <dd className="ch-rd-fig__viz" aria-hidden="true">
             <span className="ch-rd-greens">
@@ -545,11 +546,11 @@ export function RoundRow({ r, href, onOpen, bind }: { r: ChLibraryRound; href: s
           <>
             <span>
               <em>Out</em>
-              <b className="ch-num">{r.out ?? NO_DATA}</b>
+              <b className="ch-num">{r.out ?? <NoData />}</b>
             </span>
             <span>
               <em>In</em>
-              <b className="ch-num">{r.inn ?? NO_DATA}</b>
+              <b className="ch-num">{r.inn ?? <NoData />}</b>
             </span>
           </>
         ) : (

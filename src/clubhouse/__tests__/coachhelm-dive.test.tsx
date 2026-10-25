@@ -286,7 +286,7 @@ describe('the deep dive as the page draws it', () => {
       label: 'Putting',
       state: 'leak',
       sg: '−0.4',
-      // +0.3 over five rounds against five is well inside its standard error (about 2.4 at the pooled spread): no clear change (A1).
+      // +0.3 over five rounds against five is well inside its standard error (about 1.3 at putting's spread): no clear change (A1).
       trend: { word: 'No clear change', tone: 'plain', text: 'Putting: strokes gained averaged −0.3 a round over your last 5 rounds, against −0.6 over the 5 before' },
     });
     expect(t.course_management?.trend).toBeNull();
@@ -300,6 +300,14 @@ describe('the deep dive as the page draws it', () => {
     expect(word(node('improving', 1.5, -1.5))).toMatchObject({ word: 'Improving', tone: 'good' });
     expect(word(node('declining', -1.5, 1.5))).toMatchObject({ word: 'Slipping', tone: 'warn' });
     expect(word(node('steady', 0.1, 0.05))).toMatchObject({ word: 'No clear change', tone: 'plain' });
+    // Each leg is judged against its own spread, not the total's (review of #2361): +1.5 on putting clears putting's error (about
+    // 1.3), where against the total's (about 2.4) it would not.
+    expect(word(node('improving', 0.5, -1.0))).toMatchObject({ word: 'Improving', tone: 'good' });
+    const tee = (recentAvg: number, priorAvg: number) =>
+      themesByCategory({ ...DIVE_THEMES, themes: [{ ...node('improving', recentAvg, priorAvg), category: 'tee' }] }).tee!.trend;
+    // Off the tee the spread is narrower still (1.3, an error of about 0.8): −1.0 is slipping, −0.5 is not yet.
+    expect(tee(-0.5, 0.5)).toMatchObject({ word: 'Slipping', tone: 'warn' });
+    expect(tee(0, 0.5)).toMatchObject({ word: 'No clear change', tone: 'plain' });
     expect(themesByCategory(null)).toEqual({});
   });
 

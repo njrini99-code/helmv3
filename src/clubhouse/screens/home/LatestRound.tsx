@@ -15,7 +15,8 @@ import { EmptyState } from '../../ui/States';
 import { ScrollRegion } from '../../ui/ScrollRegion';
 import { chSwap } from '../../lib/motion';
 import { useChReducedMotion } from '../../lib/reduced-motion';
-import { changeTone, formatSigned, formatToPar, NO_DATA } from '../../lib/format';
+import { changeTone, formatSigned, formatToPar } from '../../lib/format';
+import { NoData } from '../../ui/NoData';
 import { RefreshNotice } from '../../ui/RefreshNotice';
 import { GirViz, PuttsViz, SgViz } from './RoundViz';
 
@@ -34,9 +35,9 @@ function Nine({ label, holes }: { label: string; holes: ChHoleScore[] }) {
       <div className="ch-h-nine__row ch-h-nine__par" role="row">
         <span role="rowheader">Par</span>
         {holes.map((h) => (
-          <span key={h.n} role="cell">{h.par ?? NO_DATA}</span>
+          <span key={h.n} role="cell">{h.par ?? <NoData />}</span>
         ))}
-        <span role="cell">{par ?? NO_DATA}</span>
+        <span role="cell">{par ?? <NoData />}</span>
       </div>
       <div className="ch-h-nine__row" role="row">
         <span role="rowheader">
@@ -47,7 +48,7 @@ function Nine({ label, holes }: { label: string; holes: ChHoleScore[] }) {
             <ScoreMark score={h.score} par={h.par} size="sm" />
           </span>
         ))}
-        <span role="cell" className="ch-h-nine__tot ch-num">{tot ?? NO_DATA}</span>
+        <span role="cell" className="ch-h-nine__tot ch-num">{tot ?? <NoData />}</span>
       </div>
     </div>
   );
@@ -155,12 +156,12 @@ export function LatestRound({ data, mine = false, lead, covered = false }: { dat
                 <div className="ch-h-round__stats">
                   <span>
                     <em>GIR</em>
-                    {r.gir ?? NO_DATA}
+                    {r.gir ?? <NoData />}
                     <GirViz gir={r.gir} />
                   </span>
                   <span>
                     <em>Putts</em>
-                    {r.putts ?? NO_DATA}
+                    {r.putts ?? <NoData />}
                     <PuttsViz putts={r.putts} />
                   </span>
                   <span>

@@ -4937,6 +4937,28 @@
       "fixture": "Contextual module"
     },
     {
+      "file": "src/clubhouse/screens/stats/StatsInsight.tsx",
+      "group": "screens",
+      "exports": [
+        "PlayerInsight",
+        "StatsInsight",
+        "TeamInsight"
+      ],
+      "styles": [
+        "src/clubhouse/styles/base.css",
+        "src/clubhouse/styles/calendar.css",
+        "src/clubhouse/styles/coachhelm.css",
+        "src/clubhouse/styles/goals.css",
+        "src/clubhouse/styles/home.css",
+        "src/clubhouse/styles/hub.css",
+        "src/clubhouse/styles/messages.css",
+        "src/clubhouse/styles/qualifiers.css",
+        "src/clubhouse/styles/stats.css"
+      ],
+      "examples": [],
+      "fixture": "Contextual module"
+    },
+    {
       "file": "src/clubhouse/screens/stats/StatsPhoneSkeleton.tsx",
       "group": "screens",
       "exports": [
@@ -7009,7 +7031,8 @@
       "file": "src/clubhouse/ui/charts/Line.tsx",
       "group": "ui",
       "exports": [
-        "Line"
+        "Line",
+        "MIN_SLOT_GAP"
       ],
       "styles": [
         "src/clubhouse/styles/base.css",
@@ -15057,6 +15080,16 @@
           "scope": "[data-ui='clubhouse']"
         },
         {
+          "name": "--ch-lead-caption",
+          "value": "1.4",
+          "scope": "[data-ui='clubhouse']"
+        },
+        {
+          "name": "--ch-lead-label",
+          "value": "1.3",
+          "scope": "[data-ui='clubhouse']"
+        },
+        {
           "name": "--ch-wdth-display",
           "value": "'wdth' 96",
           "scope": "[data-ui='clubhouse']"
@@ -15639,6 +15672,26 @@
         {
           "name": "--ch-elevation-floating-focus",
           "value": "0 0 0 1px var(--ch-border-focus), 0 0 0 4px var(--ch-focus-halo),\n    var(--ch-elevation-raised)",
+          "scope": "[data-ui='clubhouse']"
+        },
+        {
+          "name": "--ch-drop-green-1",
+          "value": "0 1px 2px rgb(11 58 37 / 0.3)",
+          "scope": "[data-ui='clubhouse']"
+        },
+        {
+          "name": "--ch-drop-green-2",
+          "value": "0 4px 12px -4px rgb(11 58 37 / 0.45)",
+          "scope": "[data-ui='clubhouse']"
+        },
+        {
+          "name": "--ch-drop-green-3",
+          "value": "0 10px 20px -10px rgb(11 58 37 / 0.8)",
+          "scope": "[data-ui='clubhouse']"
+        },
+        {
+          "name": "--ch-drop-ink",
+          "value": "0 0 0 1px rgb(0 0 0 / 0.4), 0 12px 32px -8px rgb(0 0 0 / 0.35)",
           "scope": "[data-ui='clubhouse']"
         },
         {

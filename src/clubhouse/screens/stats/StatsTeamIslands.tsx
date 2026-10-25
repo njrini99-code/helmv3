@@ -17,6 +17,8 @@ import { Icon } from '../../ui/Icon';
 import { Segmented } from '../../ui/Segmented';
 import { Swap } from '../../ui/Swap';
 import { SectionBoundary } from '../../ui/SectionBoundary';
+import { RovingRows } from '../../ui/RovingRows';
+import { usePageKeys, type ChPageKey } from '../../shell/command/page-keys';
 import { useDelayedToast, useToast } from '../../ui/Toast';
 import { useChPhone } from '../../lib/use-phone';
 import { usePrinting } from './PrintHead';
@@ -38,6 +40,7 @@ import { Line } from '../../ui/charts/Line';
 import { useIdleFetchAhead, usePressPrefetch } from '../../shell/use-prefetch-tabs';
 import { windowsAhead } from './window-ahead';
 import { plural, pluralWord } from '../../lib/plural';
+import { NoData } from '../../ui/NoData';
 
 /*
  * Team stats' client islands. The page itself (StatsTeam) renders on the
@@ -608,7 +611,7 @@ function TeamTrend({ data, focus, setFocus }: { data: ChTeamCharts; focus: strin
             <div className="ch-sgt__ends">
               <div className="ch-sgt__team">
                 <span>Team</span>
-                <b className="ch-num">{tMean != null ? fmt(tMean) : NO_DATA}</b>
+                <b className="ch-num">{tMean != null ? fmt(tMean) : <NoData />}</b>
               </div>
               {sorted.map(({ p, m }) => {
                 return (
@@ -636,7 +639,7 @@ function TeamTrend({ data, focus, setFocus }: { data: ChTeamCharts; focus: strin
                       style={{ ['--ch-bar' as string]: `${widest > 0 ? (Math.abs(gapOf(m) ?? 0) / widest) * 100 : 0}%` }}
                       aria-hidden="true"
                     />
-                    <b className={`ch-num ${m == null ? '' : endTone(m) === 'is-gain' ? 'ch-gain' : endTone(m) === 'is-loss' ? 'ch-loss' : ''}`}>{m != null ? fmtEnd(m) : NO_DATA}</b>
+                    <b className={`ch-num ${m == null ? '' : endTone(m) === 'is-gain' ? 'ch-gain' : endTone(m) === 'is-loss' ? 'ch-loss' : ''}`}>{m != null ? fmtEnd(m) : <NoData />}</b>
                   </button>
                 );
               })}
@@ -712,7 +715,7 @@ function LegTrend({
     <button type="button" className="ch-sgm" aria-pressed={selected} onClick={onSelect}>
       <span className="ch-sgm__top">
         <span className="ch-sgm__l">{leg}</span>
-        <span className={`ch-sgm__v ch-num ${changeInk(mean)}`}>{mean != null ? formatSigned(mean) : NO_DATA}</span>
+        <span className={`ch-sgm__v ch-num ${changeInk(mean)}`}>{mean != null ? formatSigned(mean) : <NoData />}</span>
       </span>
       {/* The one line chart (B5), inside the card's button: the four legs share `scale`, the wash runs to zero. */}
       <Line
@@ -757,6 +760,8 @@ function gridBasis(filter: ChFilter): string {
   return b.charAt(0).toLowerCase() + b.slice(1);
 }
 
+const ROW_KEYS: readonly ChPageKey[] = [{ label: 'Move between players', keys: ['Up', 'Down'] }];
+
 function LegGrid({
   data,
   leg,
@@ -770,6 +775,7 @@ function LegGrid({
 }) {
   // A player's stats are fetched whole as a finger lands on the row (A13).
   const press = usePressPrefetch();
+  usePageKeys('Stats', useChPhone() ? null : ROW_KEYS);
   const playerHref = (id: string) => teamPlayerHref(id, data.filter);
   const li = LEGS_LIST.indexOf(leg);
   const rows = [...data.grid].sort((a, b) => (b.legs[li] ?? -99) - (a.legs[li] ?? -99));
@@ -786,6 +792,10 @@ function LegGrid({
   };
   return (
     <section className="ch-lg">
+      {/* B11 (row 63): Up and Down walk the players (their name links), Home and End go to the ends, and the list is one
+          Tab stop. Inside the stats.team.legs boundary, so it runs once that has hydrated; walked within the section, which
+          stays put when a leg change swaps the table. */}
+      <RovingRows selector=".ch-lg__tbl .ch-lg__a" within=".ch-lg" />
       <div className="ch-sgt__head">
         <div>
           <h2>Where each player gains and loses</h2>
@@ -849,7 +859,7 @@ function LegGrid({
                     <span key={i} role="cell" className={'ch-lg__cell' + (i === li ? ' is-col' : '') + (i === worst ? ' is-worst' : '')}>
                       {/* Q12: the figure opens that player's Game detail for this leg; the row's name link still opens the profile. */}
                       {v != null && <Link className="ch-lg__cl" href={legDetailHref(g.id, data.filter, LEGS_LIST[i]!)} aria-label={`${g.name}, ${LEGS_LIST[i]!.toLowerCase()} ${formatSigned(v)}: open game detail`} />}
-                      <span className={'ch-num ' + changeInk(v)}>{v == null ? NO_DATA : formatSigned(v)}</span>
+                      <span className={'ch-num ' + changeInk(v)}>{v == null ? <NoData /> : formatSigned(v)}</span>
                       <span className="ch-lg__track" aria-hidden="true">
                         {v != null && <i className={'ch-lg__bar ' + changeTone(v, false, 1)} style={bar(v)} />}
                         {med != null && <i className="ch-lg__med" style={{ left: at(med) }} />}
@@ -871,7 +881,7 @@ function LegGrid({
                   title={g.change != null && deltaTone(g.change, g.changeSe, false) === '' ? 'No clear change' : undefined}
                 >
                   {g.change == null ? (
-                    NO_DATA
+                    <NoData />
                   ) : (
                     <>
                       {deltaTone(g.change, g.changeSe, false) === '' ? '\u2002' : <Icon icon={g.change >= 0 ? TrendingUp : TrendingDown} size={14} />}

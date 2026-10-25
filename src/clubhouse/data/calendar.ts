@@ -177,7 +177,7 @@ export async function loadCalendar(input: {
     .map((m) => ({
       id: m.player.id,
       name: fullName(m.player),
-      year: classYearLabel(m.player.graduation_year),
+      year: classYearLabel(m.player.graduation_year, undefined, timezone),
       ...(input.role === 'coach' ? { availability: parseAvailability(m.availability) } : {}),
     }))
     .sort((a, b) => a.name.localeCompare(b.name));

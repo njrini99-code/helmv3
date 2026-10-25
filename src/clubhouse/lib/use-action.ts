@@ -111,7 +111,7 @@ export function useAction<A extends unknown[], T>(
         toast({
           tone: 'error',
           title: c.failed,
-          body: (refine ? c.hint : undefined) ?? friendlyReason(result.error) ?? c.hint ?? 'Check your connection and try again.',
+          body: (refine ? c.hint : undefined) ?? friendlyReason(result.error) ?? c.hint ?? 'Try again.',
           action: c.retry === false ? undefined : { label: c.retry ?? 'Try again', run: () => void run(...args) },
           code: c.code,
         });

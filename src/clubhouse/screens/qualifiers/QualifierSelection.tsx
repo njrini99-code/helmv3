@@ -319,7 +319,7 @@ export function QualifierSelection({ data, writes = LIVE_SELECTION_WRITES }: { d
                   {unranked.map((c) => (
                     <li key={c.playerId} className="is-open">
                       <span className="ch-qf-list__n">—</span>
-                      <Avatar name={c.name} size={26} />
+                      <Avatar name={c.name} id={c.playerId} size={26} />
                       <b>{c.name}</b>
                       <span className="ch-qf-list__m">No round yet</span>
                     </li>
@@ -344,7 +344,7 @@ export function QualifierSelection({ data, writes = LIVE_SELECTION_WRITES }: { d
                   {picks.map((c) => (
                     <li key={c.playerId} className="ch-qfs-pick">
                       <div className="ch-qfs-pick__who">
-                        <Avatar name={c.name} size={30} />
+                        <Avatar name={c.name} id={c.playerId} size={30} />
                         <span>
                           <b>{c.name}</b>
                           <small className="ch-num">
@@ -513,7 +513,7 @@ function TieRow({ c, stage, full, choose }: { c: ChQCandidate; stage: 0 | 1 | 2;
   return (
     <li aria-busy={act.pending || undefined}>
       <span className="ch-qf-list__n ch-num">{c.rank ?? '—'}</span>
-      <Avatar name={c.name} size={26} />
+      <Avatar name={c.name} id={c.playerId} size={26} />
       <b>{c.name}</b>
       <Badge tone={c.onScore ? 'positive' : 'warning'}>{c.onScore ? 'Given the place' : 'Tie at cut'}</Badge>
       <span className="ch-qf-list__m ch-num">{plural(c.rounds, 'round')}</span>
@@ -531,7 +531,7 @@ function Row({ c, onPick }: { c: ChQCandidate; onPick?: () => void }) {
   return (
     <li>
       <span className="ch-qf-list__n ch-num">{c.rank ?? '—'}</span>
-      <Avatar name={c.name} size={26} />
+      <Avatar name={c.name} id={c.playerId} size={26} />
       <b>{c.name}</b>
       {c.pick && <Badge tone="accent">Pick</Badge>}
       <span className="ch-qf-list__m ch-num">{plural(c.rounds, 'round')}</span>
@@ -666,7 +666,7 @@ function PickDialog({
                   }}
                 />
                 <span className="ch-qf-list__n ch-num">{c.rank}</span>
-                <Avatar name={c.name} size={26} />
+                <Avatar name={c.name} id={c.playerId} size={26} />
                 <b>{c.name}</b>
                 <span className="ch-qf-list__m ch-num">{plural(c.rounds, 'round')}</span>
                 <ToPar value={c.toPar} />
