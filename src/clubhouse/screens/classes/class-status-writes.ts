@@ -1,14 +1,15 @@
 'use client';
 
 import { createClient } from '@/lib/supabase/client';
-import { fromUntyped } from '@/lib/supabase/untyped';
+import { heldTable } from '@/lib/supabase/held-table';
+import { emptyOrUnread } from '../../data/class-day';
 import type { ServerResult } from '../../lib/use-action';
 
 /**
  * P-10 class awareness: the player's own writes (the sharing switch, "No class today", a class's status switch, tagging
  * untagged classes and exams). Browser client, RLS-scoped, exactly like the rest of Classes' writes
  * (screens/classes/writes.ts): the policies in 20261025070000 decide, these only shape the calls. The generated types do
- * not list the new tables and column until the migration is applied, so the tables are reached through `fromUntyped`.
+ * not list the new tables and column until the migration is applied, so the tables are reached through `heldTable`.
  *
  * A table or column that is not there yet (the migration is held) answers as a failure the caller words; nothing here is
  * reachable with `class_awareness_v1` off.
@@ -38,7 +39,8 @@ export interface ChClassStatusWrites {
   setClassStatusEnabled(classId: string, enabled: boolean): Promise<ServerResult>;
   /** Give the classes with no term this one. */
   tagUntagged(term: string): Promise<ServerResult>;
-  loadExams(fromDay: string): Promise<ChExam[]>;
+  /** The player's exams from `fromDay`; null when the read failed (the caller keeps what it has). */
+  loadExams(fromDay: string): Promise<ChExam[] | null>;
   addExam(input: { on: string; start: string; end: string; label: string }): Promise<ServerResult<{ id: string }>>;
   removeExam(id: string): Promise<ServerResult>;
 }
@@ -62,7 +64,7 @@ export function createLiveClassStatusWrites(ctx: { playerId: string; teamId: str
   const sb = createClient();
   return {
     async setShare(shareStatus) {
-      const { error } = await fromUntyped(sb, 'golf_player_class_settings').upsert(
+      const { error } = await heldTable(sb, 'golf_player_class_settings').upsert(
         { player_id: ctx.playerId, share_status: shareStatus, updated_at: new Date().toISOString() },
         { onConflict: 'player_id' },
       );
@@ -70,7 +72,7 @@ export function createLiveClassStatusWrites(ctx: { playerId: string; teamId: str
     },
 
     async setHold(holdPushes) {
-      const { error } = await fromUntyped(sb, 'golf_player_class_settings').upsert(
+      const { error } = await heldTable(sb, 'golf_player_class_settings').upsert(
         { player_id: ctx.playerId, hold_pushes: holdPushes, updated_at: new Date().toISOString() },
         { onConflict: 'player_id' },
       );
@@ -80,7 +82,7 @@ export function createLiveClassStatusWrites(ctx: { playerId: string; teamId: str
     deliverNow: deliverHeldNow,
 
     async markNoClass({ on, classId }) {
-      const { data, error } = await fromUntyped(sb, 'golf_class_exceptions')
+      const { data, error } = await heldTable(sb, 'golf_class_exceptions')
         .insert({ team_id: ctx.teamId, player_id: ctx.playerId, class_id: classId, kind: 'off', starts_on: on, ends_on: on })
         .select('id');
       if (error) return fail(error);
@@ -90,29 +92,30 @@ export function createLiveClassStatusWrites(ctx: { playerId: string; teamId: str
 
     async undoNoClass(ids) {
       if (!ids.length) return { success: true };
-      const { error } = await fromUntyped(sb, 'golf_class_exceptions').delete().in('id', ids).eq('player_id', ctx.playerId);
+      const { error } = await heldTable(sb, 'golf_class_exceptions').delete().in('id', ids).eq('player_id', ctx.playerId);
       return error ? fail(error) : { success: true };
     },
 
     async setClassStatusEnabled(classId, enabled) {
-      const { error } = await fromUntyped(sb, 'golf_player_classes').update({ status_enabled: enabled }).eq('id', classId).eq('player_id', ctx.playerId);
+      const { error } = await heldTable(sb, 'golf_player_classes').update({ status_enabled: enabled }).eq('id', classId).eq('player_id', ctx.playerId);
       return error ? fail(error) : { success: true };
     },
 
     async tagUntagged(term) {
       // Only classes with no term at all: a class tagged with another term is not touched.
-      const { error } = await fromUntyped(sb, 'golf_player_classes').update({ semester: term }).eq('player_id', ctx.playerId).eq('team_id', ctx.teamId).is('semester', null);
+      const { error } = await heldTable(sb, 'golf_player_classes').update({ semester: term }).eq('player_id', ctx.playerId).eq('team_id', ctx.teamId).is('semester', null);
       return error ? fail(error) : { success: true };
     },
 
     async loadExams(fromDay) {
-      const { data, error } = await fromUntyped(sb, 'golf_class_exceptions')
+      const { data, error } = await heldTable(sb, 'golf_class_exceptions')
         .select('id, starts_on, start_time, end_time, label')
         .eq('player_id', ctx.playerId)
         .eq('kind', 'extra')
         .gte('starts_on', fromDay)
         .order('starts_on', { ascending: true });
-      if (error || !Array.isArray(data)) return [];
+      if (error) return emptyOrUnread<ChExam>(error);
+      if (!Array.isArray(data)) return null;
       const out: ChExam[] = [];
       for (const r of data as Array<Record<string, unknown>>) {
         const id = str(r.id);
@@ -125,7 +128,7 @@ export function createLiveClassStatusWrites(ctx: { playerId: string; teamId: str
     },
 
     async addExam({ on, start, end, label }) {
-      const { data, error } = await fromUntyped(sb, 'golf_class_exceptions')
+      const { data, error } = await heldTable(sb, 'golf_class_exceptions')
         .insert({ team_id: ctx.teamId, player_id: ctx.playerId, class_id: null, kind: 'extra', starts_on: on, ends_on: on, start_time: start, end_time: end, label: label.slice(0, 60) })
         .select('id');
       if (error) return fail(error);
@@ -134,7 +137,7 @@ export function createLiveClassStatusWrites(ctx: { playerId: string; teamId: str
     },
 
     async removeExam(id) {
-      const { error } = await fromUntyped(sb, 'golf_class_exceptions').delete().in('id', [id]).eq('player_id', ctx.playerId);
+      const { error } = await heldTable(sb, 'golf_class_exceptions').delete().in('id', [id]).eq('player_id', ctx.playerId);
       return error ? fail(error) : { success: true };
     },
   };

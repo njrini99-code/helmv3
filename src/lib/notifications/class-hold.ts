@@ -194,18 +194,26 @@ async function releaseClaimed(admin: SupabaseClient, userId: string, rows: HoldR
   const conversationIds = [...new Set(rows.map((r) => r.conversation_id).filter((id): id is string => !!id))];
   const messages = new Map<string, { content: string; created_at: string; is_deleted: boolean }>();
   const participation = new Map<string, { last_read_at: string | null; notification_level: string | null; muted_until: string | null }>();
+  // A failed read is not "nothing found": it would cancel rows for messages that exist. The rows go back for the next tick instead.
+  const unread = async (what: string, error: { message?: string; code?: string }) => {
+    await logServerError(`class hold release could not read ${what}: ${error.message ?? error.code}`, { action: 'pushes.class_hold.read', featureArea: 'notifications' });
+    await unclaim(admin, token, rows.map((r) => r.id));
+    tally.failed += rows.length;
+  };
   if (messageIds.length > 0) {
-    const { data } = await admin.from('golf_messages').select('id, content, created_at, is_deleted').in('id', messageIds);
+    const { data, error } = await admin.from('golf_messages').select('id, content, created_at, is_deleted').in('id', messageIds);
+    if (error) return unread('messages', error);
     for (const m of (data ?? []) as { id: string; content: string; created_at: string; is_deleted: boolean | null }[]) {
       messages.set(m.id, { content: m.content, created_at: m.created_at, is_deleted: !!m.is_deleted });
     }
   }
   if (conversationIds.length > 0) {
-    const { data } = await admin
+    const { data, error } = await admin
       .from('golf_conversation_participants')
       .select('conversation_id, last_read_at, notification_level, muted_until')
       .eq('user_id', userId)
       .in('conversation_id', conversationIds);
+    if (error) return unread('participation', error);
     for (const p of (data ?? []) as { conversation_id: string; last_read_at: string | null; notification_level: string | null; muted_until: string | null }[]) {
       participation.set(p.conversation_id, p);
     }
@@ -265,8 +273,9 @@ async function releaseClaimed(admin: SupabaseClient, userId: string, rows: HoldR
     const titles: Record<string, string> = {};
     const groupIds = [...new Set(keep.filter((r) => r.group_key === 'group' && r.conversation_id).map((r) => r.conversation_id!))];
     if (groupIds.length > 0) {
-      const { data } = await admin.from('golf_conversations').select('id, title').in('id', groupIds);
-      for (const c of (data ?? []) as { id: string; title: string | null }[]) if (c.title) titles[c.id] = c.title;
+      // Titles only name the groups in the summary: without them it still reads correctly ("3 messages"), so a failed read degrades to no titles.
+      const { data, error } = await admin.from('golf_conversations').select('id, title').in('id', groupIds);
+      if (!error) for (const c of (data ?? []) as { id: string; title: string | null }[]) if (c.title) titles[c.id] = c.title;
     }
     const summary = composeClassSummary(keep, { baseUrl, titles, collapseId: summaryCollapseId(now) });
     result = await sendPushNotificationDirect('class_summary', userId, {

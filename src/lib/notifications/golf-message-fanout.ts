@@ -161,8 +161,9 @@ export async function notifyGolfMessageRecipients(
     let hold: HoldSpec | undefined;
     if (opts?.notifyAnyway) hold = 'bypass';
     else if (isFlagEnabled(CLASS_AWARENESS_FLAG, { skipTelemetry: true })) {
-      const { data: conversation } = await supabase.from('golf_conversations').select('team_id').eq('id', conversationId).maybeSingle();
-      hold = conversation?.team_id
+      const { data: conversation, error: conversationError } = await supabase.from('golf_conversations').select('team_id').eq('id', conversationId).maybeSingle();
+      // A failed read must not become "no team" by accident, but it must never silence a message either: with the answer unknown the push goes now.
+      hold = !conversationError && conversation?.team_id
         ? { group: otherParticipants.length > 1 ? 'group' : 'coach_dm', conversationId, ...(opts?.messageId ? { messageId: opts.messageId } : {}) }
         : 'bypass';
     }

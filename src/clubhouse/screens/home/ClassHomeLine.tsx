@@ -56,7 +56,7 @@ export function ClassHomeLine({ teamId, today, variant, teamTimeZone }: { teamId
   useEffect(() => {
     if (sheet !== 'term' || !enabled) return;
     let live = true;
-    void loadTeamTerms(createClient(), teamId).then((t) => live && setTerms(t));
+    void loadTeamTerms(createClient(), teamId).then((t) => live && t && setTerms(t));
     return () => {
       live = false;
     };

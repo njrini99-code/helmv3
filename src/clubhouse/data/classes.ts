@@ -1,6 +1,6 @@
 import 'server-only';
 import { createClient } from '@/lib/supabase/server';
-import { fromUntyped } from '@/lib/supabase/untyped';
+import { heldTable } from '@/lib/supabase/held-table';
 import { chLogServer } from '../lib/track-server';
 import { loadInvitedCounts, loadOwnRows } from './attendance-counts';
 import { playerSeesMeeting } from '../screens/calendar/model';
@@ -54,7 +54,7 @@ export async function loadClasses(input: { playerId: string; teamId: string; /**
 
   // With class awareness on the rows carry `status_enabled`. If the column is not there yet (the migration is held) the read
   // is repeated without it, so the page never loses its classes to a column that has not arrived.
-  const readClasses = async (columns: string) => fromUntyped(supabase, 'golf_player_classes').select(columns).eq('player_id', input.playerId).order('created_at', { ascending: true }).order('id', { ascending: true }).limit(500);
+  const readClasses = async (columns: string) => heldTable(supabase, 'golf_player_classes').select(columns).eq('player_id', input.playerId).order('created_at', { ascending: true }).order('id', { ascending: true }).limit(500);
   const readClassesAware = async () => {
     const first = await readClasses(`${CLASS_COLUMNS}, status_enabled`);
     return first.error?.code === '42703' ? readClasses(CLASS_COLUMNS) : first;

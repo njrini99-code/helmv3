@@ -127,6 +127,9 @@ describe('the player’s class status writes', () => {
     expect(call(last(), 'eq')).toEqual(['player_id', 'p1']);
     client.answer = () => ({ data: null, error: { code: '42P01', message: 'no table' } });
     expect(await w().loadExams('2026-10-14')).toEqual([]);
+    // Any other failure is "could not read", not "no exams": the caller keeps what it had.
+    client.answer = () => ({ data: null, error: { code: '57014', message: 'statement timeout' } });
+    expect(await w().loadExams('2026-10-14')).toBeNull();
   });
 
   it('removing an exam deletes that row for this player', async () => {

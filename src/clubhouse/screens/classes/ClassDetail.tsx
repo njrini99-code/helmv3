@@ -77,7 +77,9 @@ export function ClassDetail({
   const [enabledOverride, setEnabledOverride] = useState<boolean | null>(null);
   const classId = c?.id ?? null;
   const reloadExams = useCallback(async () => {
-    if (statusWrites && aware) setExams(await statusWrites.loadExams(todayIso));
+    if (!statusWrites || !aware) return;
+    const next = await statusWrites.loadExams(todayIso);
+    if (next) setExams(next);
   }, [statusWrites, aware, todayIso]);
   useEffect(() => {
     setEnabledOverride(null);

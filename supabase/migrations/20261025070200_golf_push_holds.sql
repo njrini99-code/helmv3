@@ -73,7 +73,8 @@ create table if not exists public.golf_push_holds (
     claim_token       uuid,
     released_at       timestamptz,
     outcome           text,
-    -- squawk-ignore prefer-bigint-over-smallint: a retry counter capped at 3 by the claim functions
+    -- A retry counter capped at 3 by the claim functions, so smallint is plenty.
+    -- squawk-ignore prefer-bigint-over-smallint
     attempts          smallint not null default 0
 );
 

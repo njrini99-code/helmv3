@@ -2,7 +2,7 @@
 
 import { removeClassFromCalendar, syncClassToCalendar } from '@/app/golf/actions/calendar-sync';
 import { createClient } from '@/lib/supabase/client';
-import { fromUntyped } from '@/lib/supabase/untyped';
+import { heldTable } from '@/lib/supabase/held-table';
 import { generateClassColor } from '@/lib/utils/schedule-parser';
 import { chReport } from '../../lib/track';
 import type { ServerResult } from '../../lib/use-action';
@@ -147,7 +147,7 @@ export function createLiveClassesWrites(ctx: { playerId: string; teamId: string;
   const COLS = ctx.classAwareness ? `${COLUMNS}, status_enabled` : COLUMNS;
   // The column list and `status_enabled` are not in the generated types until the migration is applied (and a list built at runtime is not
   // a literal the builder can parse), so this table is reached untyped, as the rest of this file's casts already treat its rows.
-  const table = () => fromUntyped(sb, 'golf_player_classes');
+  const table = () => heldTable(sb, 'golf_player_classes');
   return {
     async save(input, editing, newId) {
       const values = valuesOf(input, ctx.term);
@@ -155,7 +155,8 @@ export function createLiveClassesWrites(ctx: { playerId: string; teamId: string;
         const { data, error } = await table().update(set).eq('id', id).eq('player_id', ctx.playerId).select(COLS);
         if (error) return res<{ row: ChClassRow }>(error);
         // An UPDATE a policy hides comes back with no error and no row: say so rather than "saved".
-        return data?.length ? { success: true, data: { row: data[0] as ChClassRow } } : { success: false, error: "Nothing was saved. This class was not found, or you can’t change it." };
+        const rows = data as ChClassRow[] | null;
+        return rows?.length ? { success: true, data: { row: rows[0]! } } : { success: false, error: "Nothing was saved. This class was not found, or you can’t change it." };
       };
       if (editing) return update(editing.id, { ...values, color: editing.color });
       const { data, error } = await table()

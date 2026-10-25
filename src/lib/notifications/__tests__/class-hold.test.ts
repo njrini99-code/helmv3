@@ -25,6 +25,7 @@ type Reply = { data: unknown; error: { code?: string; message?: string } | null 
 const rpcLog: { fn: string; args: Row }[] = [];
 const replies: Record<string, Reply | ((args: Row) => Reply | Promise<Reply>)> = {};
 let tables: Record<string, Row[]> = {};
+let tableErrors: Record<string, { code: string; message: string }> = {};
 let putDelayMs = 0;
 
 function fakeAdmin() {
@@ -48,7 +49,7 @@ function fakeAdmin() {
       const rows = tables[table] ?? [];
       const b: Record<string, unknown> = {};
       for (const m of ['select', 'eq', 'in']) b[m] = () => b;
-      b.then = (a: (v: unknown) => unknown, r?: (e: unknown) => unknown) => Promise.resolve({ data: rows, error: null }).then(a, r);
+      b.then = (a: (v: unknown) => unknown, r?: (e: unknown) => unknown) => Promise.resolve(tableErrors[table] ? { data: null, error: tableErrors[table] } : { data: rows, error: null }).then(a, r);
       return b;
     },
   };
@@ -68,6 +69,7 @@ import { holdOrPass, releaseHeldForUser, runClassHoldRelease } from '../class-ho
 
 beforeEach(() => {
   rpcLog.length = 0;
+  tableErrors = {};
   for (const k of Object.keys(replies)) delete replies[k];
   tables = {};
   putDelayMs = 0;
@@ -210,6 +212,41 @@ describe('releaseHeldForUser', () => {
     // What is left goes out as itself with the message as it reads now (an edit made during class).
     expect(sent.calls).toHaveLength(1);
     expect(sent.calls[0]![2]).toMatchObject({ senderName: 'Coach Rivera', preview: 'edited during class', hold: 'bypass' });
+  });
+
+  it('a failed read of the messages gives the rows back for the next tick: nothing is cancelled, nothing is sent', async () => {
+    const row = held({ notification_type: 'new_message', group_key: 'coach_dm', message_id: 'm-keep', conversation_id: CONV, data: {} });
+    tableErrors.golf_messages = { code: '57014', message: 'statement timeout' };
+    replies.golf_push_holds_claim_user = { data: [row], error: null };
+    replies.golf_push_holds_unclaim = { data: 1, error: null };
+    const tally = await releaseHeldForUser(admin(), USER, { push });
+    expect(sent.calls).toHaveLength(0);
+    expect(rpcLog.some((c) => c.fn === 'golf_push_holds_mark')).toBe(false);
+    expect(rpcLog.find((c) => c.fn === 'golf_push_holds_unclaim')!.args.p_ids).toEqual([row.id]);
+    expect(tally.failed).toBe(1);
+  });
+
+  it('a failed read of the participation does the same', async () => {
+    const row = held({ notification_type: 'new_message', group_key: 'coach_dm', message_id: 'm-keep', conversation_id: CONV, data: {} });
+    tables.golf_messages = [{ id: 'm-keep', content: 'x', created_at: '2026-10-26T15:30:00Z', is_deleted: false }];
+    tableErrors.golf_conversation_participants = { code: '57014', message: 'statement timeout' };
+    replies.golf_push_holds_claim_user = { data: [row], error: null };
+    replies.golf_push_holds_unclaim = { data: 1, error: null };
+    await releaseHeldForUser(admin(), USER, { push });
+    expect(sent.calls).toHaveLength(0);
+    expect(rpcLog.some((c) => c.fn === 'golf_push_holds_mark')).toBe(false);
+    expect(rpcLog.find((c) => c.fn === 'golf_push_holds_unclaim')!.args.p_ids).toEqual([row.id]);
+  });
+
+  it('a failed read of the group titles still sends the summary, without titles', async () => {
+    const a = held({ notification_type: 'new_message', group_key: 'group', conversation_id: CONV, data: { senderName: 'Coach Rivera', preview: 'a' } });
+    const b = held({ notification_type: 'new_message', group_key: 'group', conversation_id: CONV, data: { senderName: 'Coach Rivera', preview: 'b' } });
+    tableErrors.golf_conversations = { code: '57014', message: 'statement timeout' };
+    replies.golf_push_holds_claim_user = { data: [a, b], error: null };
+    replies.golf_push_holds_mark = { data: 2, error: null };
+    await releaseHeldForUser(admin(), USER, { push });
+    expect(sent.calls).toHaveLength(1);
+    expect(sent.calls[0]![0]).toBe('class_summary');
   });
 
   it('drops a type the player turned off since, and a row that expired', async () => {

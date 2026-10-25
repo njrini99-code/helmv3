@@ -28,7 +28,10 @@ export function TeamBreakSheet({ open, onClose, teamId, today }: { open: boolean
   const [shown, setShown] = useState(false);
   const [removing, setRemoving] = useState<ChTeamBreak | null>(null);
 
-  const reload = useCallback(async () => setRows(await loadTeamBreaks(createClient(), teamId, today)), [teamId, today]);
+  const reload = useCallback(async () => {
+    const next = await loadTeamBreaks(createClient(), teamId, today);
+    if (next) setRows(next);
+  }, [teamId, today]);
   useEffect(() => {
     if (!open) return;
     setStartsOn('');

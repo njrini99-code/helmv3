@@ -332,8 +332,9 @@ alter table public.golf_player_classes
 do $$
 declare
   t text;
+  wanted text[] := ARRAY['golf_class_exceptions'];
 begin
-  foreach t in array array['golf_class_exceptions'] loop
+  foreach t in array wanted loop
     if not exists (
       select 1 from pg_class c join pg_namespace n on n.oid = c.relnamespace
       where n.nspname = 'public' and c.relname = t and c.relkind = 'r'

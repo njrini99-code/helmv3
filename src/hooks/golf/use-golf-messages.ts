@@ -10,7 +10,7 @@ import { isClientDeadlineAbort } from '@/lib/client-deadline-abort';
 import { describeError, postgrestErrorContext, toPostgrestError } from '@/lib/utils/describe-error';
 import { observeRealtimeChannel } from '@/lib/observability/supabase/realtime';
 import { fetchAllRowsResult } from '@/lib/supabase/fetch-all-rows';
-import { fromUntyped } from '@/lib/supabase/untyped';
+import { heldTable } from '@/lib/supabase/held-table';
 import { readGolfPlayerProfiles } from '@/lib/golf/player-profiles';
 import { isGroupConversation } from '@/components/fairway/pages/messages/conversation-kind';
 import {
@@ -753,7 +753,7 @@ export function useGolfMessages(
     // P-10: with class awareness on, the caption's two columns ride along (untyped: the migration is held, so the generated types lack them).
     // A load that fails only because they are not there yet (42703) repeats as the ordinary read; any other failure is the answer. Off, no read names them.
     const captioned = classAwarenessRef.current
-      ? await fromUntyped(supabase, 'golf_messages')
+      ? await heldTable(supabase, 'golf_messages')
           .select('id, conversation_id, sender_id, content, read, has_attachments, created_at, is_deleted, edited_at, reply_to_id, kind, payload, notify_anyway, notify_anyway_pushed_at')
           .eq('conversation_id', conversationId)
           .eq('is_deleted', false)

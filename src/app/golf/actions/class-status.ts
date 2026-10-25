@@ -16,7 +16,7 @@ import { z } from 'zod';
 import { createClient } from '@/lib/supabase/server';
 import { withAdminObserved } from '@/lib/admin/observed-action';
 import { logServerError } from '@/lib/server-error-logger';
-import { fromUntyped } from '@/lib/supabase/untyped';
+import { heldTable } from '@/lib/supabase/held-table';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { isFlagEnabled } from '@/lib/flags/is-enabled';
 
@@ -80,7 +80,7 @@ async function saveTeamTermImpl(input: z.input<typeof termSchema>): Promise<Resu
   try {
     const { supabase, user: u } = await user();
     if (!u) return { success: false, error: 'You must be signed in' };
-    const table = fromUntyped(supabase, 'golf_team_terms');
+    const table = heldTable(supabase, 'golf_team_terms');
     const row = { team_id: t.teamId, label: t.label, classes_start: t.classesStart, classes_end: t.classesEnd, exams_end: t.examsEnd, time_zone: t.timeZone };
     const { data, error } = t.id
       ? await table.update(row).eq('id', t.id).eq('team_id', t.teamId).select('id').maybeSingle()
@@ -94,7 +94,7 @@ async function saveTeamTermImpl(input: z.input<typeof termSchema>): Promise<Resu
     }
     if (!data) return { success: false, error: 'Only a coach of this team can do that' };
     revalidatePath('/golf/dashboard');
-    return { success: true, data: { id: String(data.id) } };
+    return { success: true, data: { id: String((data as { id: unknown }).id) } };
   } catch (err) {
     await logServerError(`saveTeamTerm threw: ${err instanceof Error ? err.message : String(err)}`, { action: 'classes.saveTeamTerm', teamId: t.teamId });
     return { success: false, error: 'Could not save. Try again' };
@@ -111,7 +111,7 @@ async function addTeamBreakImpl(input: z.input<typeof breakSchema>): Promise<Res
   try {
     const { supabase, user: u } = await user();
     if (!u) return { success: false, error: 'You must be signed in' };
-    const { data, error } = await fromUntyped(supabase, 'golf_class_exceptions')
+    const { data, error } = await heldTable(supabase, 'golf_class_exceptions')
       .insert({ team_id: b.teamId, player_id: null, kind: 'off', starts_on: b.startsOn, ends_on: b.endsOn, label: b.label || null })
       .select('id')
       .single();
@@ -123,7 +123,7 @@ async function addTeamBreakImpl(input: z.input<typeof breakSchema>): Promise<Res
       return { success: false, error: said };
     }
     revalidatePath('/golf/dashboard');
-    return { success: true, data: { id: String(data?.id) } };
+    return { success: true, data: { id: String((data as { id?: unknown } | null)?.id) } };
   } catch (err) {
     await logServerError(`addTeamBreak threw: ${err instanceof Error ? err.message : String(err)}`, { action: 'classes.addTeamBreak', teamId: b.teamId });
     return { success: false, error: 'Could not save. Try again' };
@@ -137,7 +137,7 @@ async function removeTeamBreakImpl(input: { id: string; teamId: string }): Promi
     const { supabase, user: u } = await user();
     if (!u) return { success: false, error: 'You must be signed in' };
     // Team-wide rows only: a player's own "No class today" is theirs to undo, never a coach's to delete.
-    const { data, error } = await fromUntyped(supabase, 'golf_class_exceptions')
+    const { data, error } = await heldTable(supabase, 'golf_class_exceptions')
       .delete()
       .eq('id', parsed.data.id)
       .eq('team_id', parsed.data.teamId)

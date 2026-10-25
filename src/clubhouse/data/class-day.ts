@@ -62,8 +62,13 @@ export async function loadMyClassDay(sb: SupabaseClient, on?: string): Promise<C
 
 const str = (v: unknown) => (typeof v === 'string' && v ? v : null);
 
-/** The team's terms, newest first. Empty when the table is not applied, the read failed, or none is saved. */
-export async function loadTeamTerms(sb: SupabaseClient, teamId: string): Promise<ChClassTerm[]> {
+/** The table or function is not there yet (its migration is held): the answer is "none saved", not a failed read. */
+const NOT_APPLIED = new Set(['42P01', 'PGRST205', 'PGRST202', '42883']);
+/** What a failed read of a held table answers: an empty list when the table is not applied yet, otherwise null ("could not read"), so a caller keeps what it had. */
+export const emptyOrUnread = <T>(error: { code?: string } | null): T[] | null => (error?.code && NOT_APPLIED.has(error.code) ? [] : null);
+
+/** The team's terms, newest first. Empty when the table is not applied or none is saved; null when the read failed. */
+export async function loadTeamTerms(sb: SupabaseClient, teamId: string): Promise<ChClassTerm[] | null> {
   try {
     const query = (sb as unknown as { from: (t: string) => { select: (c: string) => { eq: (c: string, v: string) => { order: (c: string, o: { ascending: boolean }) => RowsQuery } } } })
       .from('golf_team_terms')
@@ -71,7 +76,8 @@ export async function loadTeamTerms(sb: SupabaseClient, teamId: string): Promise
       .eq('team_id', teamId)
       .order('classes_start', { ascending: false });
     const { data, error } = await query;
-    if (error || !Array.isArray(data)) return [];
+    if (error) return emptyOrUnread<ChClassTerm>(error);
+    if (!Array.isArray(data)) return null;
     const out: ChClassTerm[] = [];
     for (const r of data as Record<string, unknown>[]) {
       const id = str(r.id);
@@ -84,14 +90,14 @@ export async function loadTeamTerms(sb: SupabaseClient, teamId: string): Promise
     }
     return out;
   } catch {
-    return [];
+    return null;
   }
 }
 
 export type ChTeamBreak = { id: string; startsOn: string; endsOn: string; label: string | null };
 
-/** The team's no-class ranges that have not ended (`fromDay` onward), soonest first. Empty when the table is not applied or the read failed. */
-export async function loadTeamBreaks(sb: SupabaseClient, teamId: string, fromDay: string): Promise<ChTeamBreak[]> {
+/** The team's no-class ranges that have not ended (`fromDay` onward), soonest first. Empty when the table is not applied; null when the read failed. */
+export async function loadTeamBreaks(sb: SupabaseClient, teamId: string, fromDay: string): Promise<ChTeamBreak[] | null> {
   try {
     const query = (sb as unknown as { from: (t: string) => { select: (c: string) => { eq: (c: string, v: string) => { is: (c: string, v: null) => { eq: (c: string, v: string) => { gte: (c: string, v: string) => { order: (c: string, o: { ascending: boolean }) => RowsQuery } } } } } } })
       .from('golf_class_exceptions')
@@ -102,7 +108,8 @@ export async function loadTeamBreaks(sb: SupabaseClient, teamId: string, fromDay
       .gte('ends_on', fromDay)
       .order('starts_on', { ascending: true });
     const { data, error } = await query;
-    if (error || !Array.isArray(data)) return [];
+    if (error) return emptyOrUnread<ChTeamBreak>(error);
+    if (!Array.isArray(data)) return null;
     const out: ChTeamBreak[] = [];
     for (const r of data as Record<string, unknown>[]) {
       const id = str(r.id);
@@ -112,7 +119,7 @@ export async function loadTeamBreaks(sb: SupabaseClient, teamId: string, fromDay
     }
     return out;
   } catch {
-    return [];
+    return null;
   }
 }
 
