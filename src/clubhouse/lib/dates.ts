@@ -63,6 +63,7 @@ export function weekdayMonthDay(iso: string): string {
   return Number.isNaN(d.getTime()) ? iso : new Intl.DateTimeFormat('en-US', { timeZone: 'UTC', weekday: 'short', month: 'short', day: 'numeric' }).format(d);
 }
 
+||||||| f30a6d509
 /** The one clock: "3:30 PM". */
 export function formatClock(at: Date | number | string, timeZone?: string): string {
   return new Date(at).toLocaleTimeString('en-US', { timeZone, hour: 'numeric', minute: '2-digit' });

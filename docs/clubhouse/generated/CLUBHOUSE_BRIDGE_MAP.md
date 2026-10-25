@@ -1455,8 +1455,8 @@ Every Bridge ID (D-68: namespace, two-digit category, two-digit item), its catal
 | 120617 | CH-12074 | 06 Server / system error | `A_CLASSS_USE_FOR_CLASS_STATUS_SWITCH` | implemented | A class's "Use for class status" switch is refused |
 | 120618 | CH-12075 | 06 Server / system error | `ADDING_AN_EXAM_IS_REFUSED` | implemented | Adding an exam is refused |
 | 120619 | CH-12076 | 06 Server / system error | `REMOVING_AN_EXAM_IS_REFUSED` | implemented | Removing an exam is refused |
-| 120620 | CH-12270 | 06 Server / system error | `THE_PLAYERS_CLASS_DAY_DIDNT_LOAD` | implemented | The player's class day didn't load |
-| 120621 | CH-12077 | 06 Server / system error | `DELIVER_NOW_IS_REFUSED` | implemented | Deliver now is refused (the panel's Pushes during class row) |
+| 120620 | CH-12077 | 06 Server / system error | `DELIVER_NOW_IS_REFUSED` | implemented | Deliver now is refused (the panel's Pushes during class row) |
+| 120621 | CH-12270 | 06 Server / system error | `THE_PLAYERS_CLASS_DAY_DIDNT_LOAD` | implemented | The player's class day didn't load |
 | 120622 | CH-12271 | 06 Server / system error | `THE_PLAYERS_PUSHES_DURING_CLASS_ROW` | implemented | The player's Pushes during class row |
 | 120701 | CH-12901 | 07 Network / offline | `A_SCREENSHOT_IS_CHOSEN_WHILE_OFFLINE` | implemented | A screenshot is chosen while offline |
 | 120702 | CH-12902 | 07 Network / offline | `A_READ_IS_SLOW` | implemented | A read is slow |

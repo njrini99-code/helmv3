@@ -63,6 +63,12 @@ export interface ChShellPerson {
   name: string;
 }
 
+/** One of the coach's players, as the palette lists them: the id it opens and the name it shows. Nothing more. */
+export interface ChShellPerson {
+  id: string;
+  name: string;
+}
+
 export interface ChRoundInProgress {
   id: string;
   course: string;

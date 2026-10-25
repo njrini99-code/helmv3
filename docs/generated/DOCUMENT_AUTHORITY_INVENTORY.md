@@ -574,6 +574,7 @@ document and run `git rev-list --count <sha>..HEAD -- <path>`.
 | `memory/incidents/coachhelm_ai/INC-2026-09-30-best-effort-budget-abort-triage-loop.md` | current | - | - | - | - |
 | `memory/incidents/coachhelm_ai/INC-2026-10-13-recap-style-fallback-logged-as-llm.md` | current | - | - | - | - |
 | `memory/incidents/coachhelm_ai/INC-2026-10-15-ask-suggestion-function-prop.md` | current | - | - | - | - |
+| `memory/incidents/coachhelm_ai/INC-2026-10-24-calibration-in-filter-url-400.md` | current | - | - | - | - |
 | `memory/incidents/feature_awareness_system/INC-2026-08-16-parallel-agents-shared-tree.md` | current | yes | - | yes | 1 |
 | `memory/incidents/feature_awareness_system/INC-2026-08-18-worktrees-inside-repo-duplicate-tree.md` | current | yes | - | - | 1 |
 | `memory/incidents/feature_awareness_system/INC-2026-08-19-codeql-matrix-rename-phantom-checks.md` | current | yes | - | - | - |
@@ -914,6 +915,7 @@ them would bury everything above.
 | `docs/clubhouse/pages/P001-shell/changes/2026-10-23-type-roles.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P001-shell/changes/2026-10-23-type-scale.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P001-shell/changes/2026-10-24-screen-gaps.md` | current | - | - | - | - |
+| `docs/clubhouse/pages/P001-shell/changes/2026-10-25-p10-class-awareness.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P002-home/CHANGELOG.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P002-home/CONTRACT.md` | current | - | - | yes | - |
 | `docs/clubhouse/pages/P002-home/DESIGN.md` | current | - | - | - | - |
@@ -1041,6 +1043,7 @@ them would bury everything above.
 | `docs/clubhouse/pages/P008-settings/changes/2026-10-23-type-scale.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P008-settings/changes/2026-10-24-focus-invalid-field.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P008-settings/changes/2026-10-24-version-row.md` | current | - | - | - | - |
+| `docs/clubhouse/pages/P008-settings/changes/2026-10-25-p10-class-awareness.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P009-qualifiers/CHANGELOG.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P009-qualifiers/CONTRACT.md` | current | - | - | yes | - |
 | `docs/clubhouse/pages/P009-qualifiers/DESIGN.md` | current | - | - | - | 1 |

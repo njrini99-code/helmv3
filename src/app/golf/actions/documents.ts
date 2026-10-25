@@ -1444,12 +1444,13 @@ async function createGolfDocumentImpl(data: {
     // The object path comes back from the browser (uploadGolfDocument and prepareGolfDocumentUpload both build it on
     // the server, as `golf-documents/{team}/{name}`): it must still name an object in this team's own folder, so a
     // coach staffed on two teams can't attach one team's file to the other's documents (UP-1 review).
-    if (data.storage_path !== undefined) {
-      const prefix = `golf-documents/${data.team_id}/`;
-      const name = data.storage_path.startsWith(prefix) ? data.storage_path.slice(prefix.length) : '';
-      if (!name || name.includes('/') || name.includes('..')) {
-        return { success: false, error: 'That file isn’t in this team’s documents' };
-      }
+    // Checked on every call: without storage_path the path comes from the client's file_url, which must name this
+    // team's folder just the same.
+    const storagePath = data.storage_path ?? deriveStoragePathFromPublicUrl(data.file_url);
+    const prefix = `golf-documents/${data.team_id}/`;
+    const name = storagePath.startsWith(prefix) ? storagePath.slice(prefix.length) : '';
+    if (!name || name.includes('/') || name.includes('..')) {
+      return { success: false, error: 'That file isn’t in this team’s documents' };
     }
 
     // Create document record
@@ -1479,8 +1480,6 @@ async function createGolfDocumentImpl(data: {
     // the bucket name ('documents'), which preserves the 'golf-documents/' prefix.
     // The old `slice(-2)` dropped that prefix, so createSignedUrl(storage_path)
     // later resolved to a non-existent object and preview/download silently failed.
-    const storagePath = data.storage_path ?? deriveStoragePathFromPublicUrl(data.file_url);
-
     // Create initial version record
     const { error: versionError } = await supabase
       .from('golf_document_versions' as any)

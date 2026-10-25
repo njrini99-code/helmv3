@@ -40,7 +40,7 @@
     <resources>
         <image name="Splash" width="2732" height="2732"/>
         <namedColor name="AppCanvas">
-            <color red="0.9294117647058824" green="0.9137254901960784" blue="0.8745098039215686" alpha="1" colorSpace="custom" customColorSpace="sRGB"/>
+            <color red="0.9490196078431372" green="0.9019607843137255" blue="0.8235294117647058" alpha="1" colorSpace="custom" customColorSpace="sRGB"/>
         </namedColor>
         <systemColor name="systemBackgroundColor">
             <color white="1" alpha="1" colorSpace="custom" customColorSpace="genericGamma22GrayColorSpace"/>

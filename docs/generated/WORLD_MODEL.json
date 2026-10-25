@@ -3958,6 +3958,10 @@
         "definedIn": "supabase/migrations/20261025070100_golf_class_blocks_functions.sql"
       },
       {
+        "id": "golf_class_holds_live",
+        "definedIn": "supabase/migrations/20261025070200_golf_push_holds.sql"
+      },
+      {
         "id": "golf_class_holds_release_tick",
         "definedIn": "supabase/migrations/20261025070400_golf_push_holds_pg_cron_variant.sql"
       },

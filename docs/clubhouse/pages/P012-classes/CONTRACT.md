@@ -132,8 +132,8 @@ Every write has its own toast naming what failed and what to do, with Retry (CH-
 | 120617 | CH-12074 | `A_CLASSS_USE_FOR_CLASS_STATUS_SWITCH` | A class's "Use for class status" switch is refused |
 | 120618 | CH-12075 | `ADDING_AN_EXAM_IS_REFUSED` | Adding an exam is refused |
 | 120619 | CH-12076 | `REMOVING_AN_EXAM_IS_REFUSED` | Removing an exam is refused |
-| 120620 | CH-12270 | `THE_PLAYERS_CLASS_DAY_DIDNT_LOAD` | The player's class day didn't load |
-| 120621 | CH-12077 | `DELIVER_NOW_IS_REFUSED` | Deliver now is refused (the panel's Pushes during class row) |
+| 120620 | CH-12077 | `DELIVER_NOW_IS_REFUSED` | Deliver now is refused (the panel's Pushes during class row) |
+| 120621 | CH-12270 | `THE_PLAYERS_CLASS_DAY_DIDNT_LOAD` | The player's class day didn't load |
 | 120622 | CH-12271 | `THE_PLAYERS_PUSHES_DURING_CLASS_ROW` | The player's Pushes during class row |
 
 ## 07 — Network / offline
