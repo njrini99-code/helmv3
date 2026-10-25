@@ -363,19 +363,21 @@ export async function notifyEventUpdate(
  */
 export async function notifyEventSeriesUpdate(rootId: string, eventIds: string[], supabase: SupabaseClient): Promise<void> {
   if (eventIds.length === 0) return;
-  const { data: events } = await supabase
+  const { data: events, error: eventsError } = await supabase
     .from('golf_events')
     .select('id, title, start_time, end_time, all_day, location, requires_rsvp')
     .in('id', eventIds)
     .order('start_time', { ascending: true });
+  if (eventsError) throw new Error(`[notifyEventSeriesUpdate] Failed to read events: ${eventsError.message}`);
   const asking = (events ?? []).filter((e) => e.requires_rsvp);
   const first = asking[0];
   if (!first) return;
 
-  const { data: attendances } = await supabase
+  const { data: attendances, error: attendanceError } = await supabase
     .from('golf_event_attendance')
     .select('player:golf_players(user_id)')
     .in('event_id', asking.map((e) => e.id));
+  if (attendanceError) throw new Error(`[notifyEventSeriesUpdate] Failed to read attendance: ${attendanceError.message}`);
   const userIds = [
     ...new Set(
       ((attendances || []) as unknown as AttendanceWithUser[]).map((a) => firstOrNull(a.player)?.user_id).filter((id): id is string => Boolean(id)),

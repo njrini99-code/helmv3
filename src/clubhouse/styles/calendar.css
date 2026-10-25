@@ -3858,7 +3858,7 @@ html[data-fw-theme='dark'] .ch-ev--busy::after {
     left: 0;
     right: 0;
     height: 0;
-    border-top: 1px solid var(--ch-ledger-rule-soft);
+    border-top: var(--ch-hairline-w) solid var(--ch-ledger-rule-soft);
   }
   .ch-tl__h em {
     position: absolute;
