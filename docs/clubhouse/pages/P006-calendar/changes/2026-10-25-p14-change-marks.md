@@ -28,6 +28,20 @@ the coach sends.
 - The strike draws once, the first time this device sees it: a CSS one-shot animation on a pending mark (transform only, so
   it ends struck with no script); one shared observer only records that it was seen. A seen or cleared mark paints that way
   on the first frame. Reduced motion and Animations off show it struck at once.
+- Desktop. A tall week or day block carries the old value struck as the last part of its time line ("3:30 – 5:00 PM ·
+  Finley GC ~~3:00 PM~~"; a changed place reads the new one with the old struck after it); a short or cascaded block wears a
+  small glyph in the top-right slot the overlap mark uses (overlap keeps the slot). Hovering, focusing or selecting a changed
+  block draws a hairline across its column at the old start, labelled "Was 3:00 PM". The agenda row strikes the old time before
+  the type and shows the badge; the month cell shows a small glyph after the title and counts it in the cell's name ("1
+  changed"). The peek card adds "Moved from 3:00 PM · Coach Reyes".
+- Cancelled events are struck everywhere: the week and day block (with "Cancelled" in its time line and ", cancelled" in its
+  name; before, only the detail and the phone struck it), the all-day bar, the agenda row, the month title. No dimming.
+- The day an event left keeps a quiet row at its old time ("~~3:00~~ Recovery nine · Moved to Sat at 3:30 PM", a hollow ring on
+  the rail) on the phone Day and List and the desktop agenda. It opens the event on its new day (a full load when that day is
+  outside the loaded weeks), is not counted in the day's total, never takes part in an overlap check, and is not made for a
+  cancellation.
+- A change that arrives while the page is open (the realtime refresh) is said once in a polite live region ("Recovery nine
+  moved to 3:30 PM. It was 3:00 PM."); what was there at load, the reader's own change and a repeat are not.
 - The loader (`data/calendar.ts`) reads `change:metadata->change` with the event, builds every string with the shared copy
   engine (`src/lib/calendar/change-mark.ts`) and reports a mark it cannot read once per load (CH-6023), showing a bare
   Changed badge.

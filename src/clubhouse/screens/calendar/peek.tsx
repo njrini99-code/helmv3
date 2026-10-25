@@ -4,11 +4,13 @@ import { CalendarDays, MessageSquare, Navigation } from 'lucide-react';
 import type { ReactNode } from 'react';
 import { Icon } from '../../ui/Icon';
 import { useChClock } from '../../lib/use-clock';
+import { restyleClock } from '../../lib/clock-format';
 import { PeekTarget, type PeekAction } from '../../ui/Peek';
 import { rebuiltHref } from '../../shell/nav';
 import { messagesPrefillHref } from '../messages/prefill';
 import { dayNum, dowOf, fmtHour, monthName, rangeLabel, TYPE_LABEL, type ChCalEvent, type ChCalPerson } from './model';
 import { TYPE_ICON } from './type-icon';
+import { useRowMark } from './change-note';
 
 /**
  * P006-C3: an event peeks where it is listed: a hold on the phone's agenda row, a rest of the pointer on a week block.
@@ -37,6 +39,7 @@ export function EventPeekCard({ e, coach, people }: { e: ChCalEvent; coach: bool
   const counts = { accepted: 0, maybe: 0, declined: 0, pending: 0 };
   for (const p of e.people) counts[(e.rsvp[p] ?? 'pending') as keyof typeof counts] += 1;
   const waiting = e.people.filter((p) => (e.rsvp[p] ?? 'pending') === 'pending').map((p) => people.get(p)?.name.split(' ')[0]).filter(Boolean);
+  const mark = useRowMark()(e);
   return (
     <div className="ch-evpeek">
       <span className="ch-evpeek__k">
@@ -48,6 +51,13 @@ export function EventPeekCard({ e, coach, people }: { e: ChCalEvent; coach: bool
         {dowOf(e.date)} {dayNum(e.date)} {monthName(e.date)} · {rangeLabel(e, clock)}
       </span>
       {e.location && <span className="ch-evpeek__m">{e.location}</span>}
+      {/* P-14: what changed, in one quiet line (the strike is static here; nothing animates in a peek). */}
+      {mark && (
+        <span className="ch-evpeek__chg">
+          {restyleClock(mark.change.panelLine1, clock)}
+          {mark.change.byLabel && mark.change.byLabel !== 'you' ? ` · ${mark.change.byLabel}` : ''}
+        </span>
+      )}
       {coach && e.people.length > 0 && !e.rsvpRequired && (
         // No replies asked for: the card says who is on it, never a reply count.
         <span className="ch-evpeek__r ch-num">

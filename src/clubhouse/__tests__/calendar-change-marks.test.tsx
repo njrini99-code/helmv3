@@ -1,5 +1,5 @@
 import { LazyMotion, domAnimation } from 'motion/react';
-import { cleanup, render, screen, waitFor, within } from '@testing-library/react';
+import { act, cleanup, render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
@@ -39,6 +39,7 @@ vi.mock('@/app/golf/actions/travel', () => ({ getItineraryForEvent: () => Promis
 import type { ChCalendarData } from '../data/calendar';
 import type { MarkEntries } from '../lib/marks-cookie';
 import { Calendar } from '../screens/calendar/Calendar';
+import { EventPeekCard } from '../screens/calendar/peek';
 import { buildChangeMarks, type ChangeRow } from '../screens/calendar/change-view';
 import type { ChCalEvent } from '../screens/calendar/model';
 import { ToastProvider } from '../ui/Toast';
@@ -70,10 +71,11 @@ const built = (rows: ChangeRow[], coachId: string | null = 'c1') => buildChangeM
 
 /** The preview week with the marks the loader would build for these rows, and the event fields the rows changed (`patch`). */
 function withMarks(rows: ChangeRow[], data: Partial<ChCalendarData> = {}, marks: MarkEntries = [], patch: Partial<ChCalEvent> = {}): ChCalendarData {
-  const { marks: byId } = built(rows);
+  const { marks: byId, movedAway } = buildChangeMarks(rows, { timeZone: TZ, nowMs: NOW, coachId: 'c1', range: PREVIEW_CALENDAR.range });
   return {
     ...PREVIEW_CALENDAR,
     anchor: '2026-10-15',
+    movedAway,
     events: PREVIEW_CALENDAR.events.map((e): ChCalEvent => (byId.has(e.id) ? { ...e, ...patch, change: byId.get(e.id)!, cancelled: rows.find((r) => r.id === e.id)?.status === 'cancelled' } : e)),
     marks,
     ...data,
@@ -98,16 +100,17 @@ function stubObserver() {
   return { callbacks, watched };
 }
 
+const tree = (data: ChCalendarData, props: { initialEvent?: string } = {}) => (
+  <LazyMotion features={domAnimation}>
+    <ToastProvider>
+      <div className="ch-root" data-ui="clubhouse">
+        <Calendar data={data} {...props} />
+      </div>
+    </ToastProvider>
+  </LazyMotion>
+);
 function wrap(data: ChCalendarData, props: { initialEvent?: string } = {}) {
-  return render(
-    <LazyMotion features={domAnimation}>
-      <ToastProvider>
-        <div className="ch-root" data-ui="clubhouse">
-          <Calendar data={data} {...props} />
-        </div>
-      </ToastProvider>
-    </LazyMotion>,
-  );
+  return render(tree(data, props));
 }
 
 const clearCookie = () => {
@@ -401,5 +404,200 @@ describe('contrast and the banned stripe (P-14 7.3)', () => {
     const mine = [calendar.slice(calendar.indexOf('/* P-14 change marks.')), ui.slice(ui.indexOf('/* P-14 change marks:'))].join('\n');
     expect(mine).not.toMatch(/transition:[^;]*\b(height|width|top|left|margin|padding)\b/);
     for (const kf of mine.matchAll(/@keyframes [\w-]+ \{([\s\S]*?)\n\}/g)) expect(kf[1]).not.toMatch(/\b(height|width|top|left|margin|padding)\b/);
+  });
+});
+
+/** Recovery nine on Sat 17 October, 3:30 to 5:00 PM at Finley GC (a tall block); the coach moved it 30 minutes later from 3:00 PM. */
+const rec = {
+  id: 'e14',
+  title: 'Recovery nine',
+  event_type: 'practice',
+  location: 'Finley GC',
+  start_time: '2026-10-17T19:30:00Z',
+  end_time: '2026-10-17T21:00:00Z',
+};
+const recFrom = { ...base, title: 'Recovery nine', event_type: 'practice', location: 'Finley GC', start_time: '2026-10-17T19:00:00Z', end_time: '2026-10-17T20:30:00Z' };
+const recRow = (over: Partial<ChangeRow> = {}): ChangeRow => ({ ...rec, all_day: false, status: 'confirmed', change: stored({ from: recFrom }), ...over });
+
+describe('on the desktop', () => {
+  const block = () => screen.getByRole('button', { name: /^Recovery nine, 3:30 – 5:00 PM/ });
+
+  it('a tall block carries the old time struck as the last part of its time line, and says so in its name', () => {
+    wrap(withMarks([recRow()], { anchor: '2026-10-14' }));
+    const b = block();
+    expect(b.getAttribute('aria-label')).toMatch(/, moved, was 3:00 PM\. Alt and the arrow keys/);
+    const line = b.querySelector('.ch-ev__m')!;
+    const last = line.lastElementChild!;
+    expect(last.className).toBe('ch-ev__was');
+    expect(last.textContent).toBe('was 3:00 PM');
+    expect(line.textContent).toContain('Finley GC');
+  });
+
+  it('a short block, which has no room for text, wears a glyph in the top-right slot', () => {
+    wrap(withMarks([row()], { anchor: '2026-10-14' }));
+    const b = screen.getByRole('button', { name: /^Travel briefing, 1:30 – 2:15 PM/ });
+    expect(b.querySelector('.ch-ev__chg')).not.toBeNull();
+    expect(b.querySelector('s.ch-was')).toBeNull();
+  });
+
+  it('a place changed on a tall block reads the new place with the old struck after it', () => {
+    wrap(withMarks([recRow({ location: 'Practice range', change: stored({ from: { ...recFrom, start_time: rec.start_time, end_time: rec.end_time }, fields: ['location'] }) })], { anchor: '2026-10-14' }, [], { location: 'Practice range' }));
+    const b = screen.getByRole('button', { name: /^Recovery nine, 3:30 – 5:00 PM/ });
+    expect(b.querySelector('.ch-ev__m')!.textContent).toMatch(/Practice range.*was Finley GC$/);
+  });
+
+  it('where it was: a hairline and "Was 3:00 PM" at the old start, while the block is hovered or focused, gone when it is not', async () => {
+    const user = userEvent.setup();
+    wrap(withMarks([recRow()], { anchor: '2026-10-14' }));
+    expect(document.querySelector('.ch-oldslot')).toBeNull();
+    await user.hover(block());
+    const line = document.querySelector<HTMLElement>('.ch-oldslot')!;
+    expect(line.textContent).toBe('Was 3:00 PM');
+    expect(line.getAttribute('aria-hidden')).toBe('true');
+    // The grid opens at 6 AM, 52px an hour: 3 PM is nine hours down.
+    expect(line.style.top).toBe('468px');
+    await user.unhover(block());
+    expect(document.querySelector('.ch-oldslot')).toBeNull();
+    act(() => block().focus());
+    expect(document.querySelector('.ch-oldslot')).not.toBeNull();
+    act(() => block().blur());
+    expect(document.querySelector('.ch-oldslot')).toBeNull();
+  });
+
+  it('a block that was selected keeps the line, and Got it takes it away with the mark', async () => {
+    const user = userEvent.setup();
+    wrap(withMarks([recRow()], { anchor: '2026-10-14' }));
+    await user.click(block());
+    expect(document.querySelector('.ch-oldslot')).not.toBeNull();
+    const note = await screen.findByRole('note', { name: 'What changed' });
+    await user.click(within(note).getByRole('button', { name: 'Got it. Hide this change on this device.' }));
+    await waitFor(() => expect(document.querySelector('.ch-oldslot')).toBeNull());
+    expect(block().querySelector('s.ch-was')).toBeNull();
+  });
+
+  it('a cancelled block has its title struck, says cancelled, and does not dim', () => {
+    wrap(withMarks([recRow({ status: 'cancelled', change: stored({ fields: ['cancelled'], from: { ...recFrom, start_time: rec.start_time, end_time: rec.end_time } }) })], { anchor: '2026-10-14' }));
+    const b = screen.getByRole('button', { name: /^Recovery nine, 3:30 – 5:00 PM.*, cancelled/ });
+    expect(b.className).toContain('is-cancelled');
+    expect(b.querySelector('.ch-ev__m')!.textContent).toContain('Cancelled');
+    expect(b.querySelector('s.ch-was')).toBeNull();
+  });
+
+  it('the month shows a small glyph after a changed title and counts it in the cell’s name', () => {
+    wrap(withMarks([recRow()], { anchor: '2026-10-17', view: 'month' }));
+    const cell = screen.getByRole('button', { name: /^Sat 17 October: .*, 1 changed$/ });
+    expect(cell.querySelector('.ch-mo__chg')).not.toBeNull();
+    expect(cell.textContent).not.toContain('3:00');
+  });
+
+  it('the agenda row strikes the old time before the type and shows the badge; a cancelled row says Cancelled', () => {
+    wrap(withMarks([recRow(), row({ status: 'cancelled', change: stored({ id: 'aaaaaaaa-aaaa-4bbb-8ccc-000000000002', fields: ['cancelled'], from: { ...base, start_time: row().start_time, end_time: row().end_time } }) })], { anchor: '2026-10-14', view: 'agenda' }));
+    const r = screen.getByText('Recovery nine').closest('.ch-ag__row')!;
+    expect(r.querySelector('.ch-ag__b')!.textContent).toBe('was 3:00 PM · Practice · Finley GC');
+    expect(within(r as HTMLElement).getByText('Moved')).toBeTruthy();
+    const c = screen.getByText('Travel briefing').closest('.ch-ag__row')!;
+    expect(c.className).toContain('is-cancelled');
+    expect(within(c as HTMLElement).getByText('Cancelled')).toBeTruthy();
+  });
+
+  it('the day an event left keeps a quiet row that opens it on its new day, and not in the day’s count', async () => {
+    const user = userEvent.setup();
+    const moved = recRow({ start_time: '2026-10-17T19:30:00Z', end_time: '2026-10-17T21:00:00Z', change: stored({ from: { ...recFrom, start_time: '2026-10-16T19:00:00Z', end_time: '2026-10-16T20:30:00Z' } }) });
+    wrap(withMarks([moved], { anchor: '2026-10-14', view: 'agenda' }));
+    const away = screen.getByRole('button', { name: 'Recovery nine, moved to Saturday 17 October at 3:30 PM. Was 3:00 PM on Fri.' });
+    expect(away.closest('section')!.getAttribute('aria-label')).toBe('Fri 16');
+    expect(away.textContent).toContain('Moved to Sat at 3:30 PM');
+    expect(away.querySelector('s.ch-was')!.textContent).toBe('was 3:00 PM');
+    await user.click(away);
+    expect(await screen.findByRole('note', { name: 'What changed' })).toBeTruthy();
+    expect(screen.getByText('Moved from Fri 16 October at 3:00 PM')).toBeTruthy();
+  });
+
+  it('a cancelled event stays on its day: no moved-away row is made for it', () => {
+    const moved = recRow({ status: 'cancelled', start_time: '2026-10-17T19:30:00Z', end_time: '2026-10-17T21:00:00Z', change: stored({ fields: ['cancelled'], from: { ...recFrom, start_time: '2026-10-17T19:30:00Z', end_time: '2026-10-17T21:00:00Z' } }) });
+    expect(withMarks([moved]).movedAway).toEqual([]);
+  });
+
+  it('the peek card says what changed and who changed it, with no animation', () => {
+    const data = withMarks([recRow()], {});
+    const e = data.events.find((x) => x.id === 'e14')!;
+    const other = buildChangeMarks([recRow()], { timeZone: TZ, nowMs: NOW, coachId: 'someone' }).marks.get('e14')!;
+    render(
+      <div className="ch-root" data-ui="clubhouse">
+        <EventPeekCard e={{ ...e, change: other }} coach people={new Map()} />
+      </div>,
+    );
+    expect(screen.getByText('Moved from 3:00 PM · Coach Reyes')).toBeTruthy();
+  });
+
+  it('a change that arrives while the page is open is said once, politely; what was there already and a coach’s own change are not', async () => {
+    const before = withMarks([row()], { anchor: '2026-10-14' });
+    const { rerender } = render(tree(before));
+    const status = () => [...document.querySelectorAll('[role="status"]')].map((n) => n.textContent).join('|');
+    expect(status()).toBe('');
+    const other = buildChangeMarks([recRow({ change: stored({ id: '77777777-aaaa-4bbb-8ccc-000000000009', by: 'c9', from: recFrom }) })], { timeZone: TZ, nowMs: NOW, coachId: 'c1' }).marks.get('e14')!;
+    const after = { ...before, events: before.events.map((e) => (e.id === 'e14' ? { ...e, change: other } : e)) };
+    rerender(tree(after));
+    await waitFor(() => expect(status()).toBe('Recovery nine moved to 3:30 PM. It was 3:00 PM.'));
+    // The same change again says nothing new; the reader's own change is silent.
+    rerender(tree({ ...after, events: after.events.slice() }));
+    expect(status()).toBe('Recovery nine moved to 3:30 PM. It was 3:00 PM.');
+    const own = withMarks([recRow({ change: stored({ id: '88888888-aaaa-4bbb-8ccc-000000000009', by: 'c1', from: recFrom }) })], { anchor: '2026-10-14' });
+    rerender(tree({ ...own, events: own.events.map((e) => (e.id === 'e14' ? { ...e, change: { ...e.change!, liveText: 'own' } } : e)) }));
+    expect(status()).not.toContain('own');
+  });
+});
+
+describe('the feature’s contrast on the surfaces it sits on, from the tokens (P-14 7.3)', () => {
+  const STYLES = join(process.cwd(), 'src/clubhouse/styles');
+  const tokens = readFileSync(join(STYLES, 'tokens.css'), 'utf8');
+  type RGBA = [number, number, number, number];
+  const parse = (v: string, theme: 'light' | 'dark', depth = 0): RGBA => {
+    const hex = /^#([0-9a-f]{6})$/i.exec(v.trim());
+    if (hex) return [0, 2, 4].map((i) => parseInt(hex[1]!.slice(i, i + 2), 16)).concat(1) as RGBA;
+    const rgb = /^rgb\((\d+) (\d+) (\d+)(?: \/ ([\d.]+))?\)$/.exec(v.trim());
+    if (rgb) return [Number(rgb[1]), Number(rgb[2]), Number(rgb[3]), rgb[4] ? Number(rgb[4]) : 1];
+    const ref = /^var\(--([\w-]+)\)$/.exec(v.trim());
+    if (ref && depth < 4) return tokenOf(ref[1]!, theme, depth + 1);
+    throw new Error(`cannot read ${v}`);
+  };
+  function tokenOf(name: string, theme: 'light' | 'dark', depth = 0): RGBA {
+    const dark = tokens.indexOf("[data-fw-theme='dark']");
+    const re = new RegExp(`--${name}:\\s*([^;]+);`);
+    const found = (theme === 'dark' ? re.exec(tokens.slice(dark)) : null) ?? re.exec(tokens);
+    if (!found) throw new Error(`--${name} not found`);
+    return parse(found[1]!, theme, depth);
+  }
+  const lum = ([r, g, b]: RGBA) => {
+    const [x, y, z] = [r, g, b].map((v) => {
+      const c = v / 255;
+      return c <= 0.03928 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4;
+    });
+    return 0.2126 * x! + 0.7152 * y! + 0.0722 * z!;
+  };
+  const over = (fg: RGBA, bg: RGBA): RGBA => [0, 1, 2].map((i) => fg[i]! * fg[3] + bg[i]! * (1 - fg[3])).concat(1) as RGBA;
+  const ratio = (fg: RGBA, bg: RGBA) => {
+    const a = lum(over(fg, bg));
+    const b = lum(bg);
+    return (Math.max(a, b) + 0.05) / (Math.min(a, b) + 0.05);
+  };
+
+  it.each(['light', 'dark'] as const)('the struck value reads 4.5:1 on every block type, and the soft ivory on the filled competition (%s)', (theme) => {
+    const t = (n: string) => tokenOf(n, theme);
+    const page = t('ch-bg-page');
+    const travel: RGBA = over(theme === 'light' ? [255, 255, 255, 0.5] : [255, 255, 255, 0.03], page);
+    const fill = over(t('ch-green-fill-700'), page);
+    expect(ratio(t('ch-ink-500'), t('ch-green-50')), 'practice').toBeGreaterThanOrEqual(4.5);
+    expect(ratio(t('ch-ink-500'), t('ch-bg-surface')), 'meeting and other').toBeGreaterThanOrEqual(4.5);
+    expect(ratio(t('ch-ink-500'), travel), 'travel').toBeGreaterThanOrEqual(4.5);
+    expect(ratio(t('ch-on-green-ink-soft'), fill), 'tournament and qualifier').toBeGreaterThanOrEqual(4.5);
+  });
+
+  it.each(['light', 'dark'] as const)('the old-slot label and the moved-away ring are legible (%s)', (theme) => {
+    const t = (n: string) => tokenOf(n, theme);
+    expect(ratio(t('ch-ink-500'), t('ch-bg-surface')), 'label').toBeGreaterThanOrEqual(4.5);
+    expect(ratio(t('ch-ink-500'), t('ch-workspace')), 'ring on the workspace').toBeGreaterThanOrEqual(3);
+    // The phone page, which the moved-away ring sits on in light (tokens.css, the phone page ground).
+    if (theme === 'light') expect(ratio(t('ch-ink-500'), [237, 233, 223, 1]), 'ring on the phone page').toBeGreaterThanOrEqual(3);
   });
 });

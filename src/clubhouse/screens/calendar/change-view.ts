@@ -1,9 +1,14 @@
 import {
+  byLabel,
+  clockLabel,
   composeChangeCopy,
   markIsLive,
   markKind,
+  movedAwayAria,
+  movedToPhrase,
   parseStoredChange,
   readPartialChange,
+  slotOf,
   snapshotOf,
   whenPhrase,
   withinRowHorizon,
@@ -39,6 +44,10 @@ export interface ChCalChange {
   count: number;
   /** The cancellation's reason, when one was given. */
   reason: string | null;
+  /** Where the event started before the change, for the old-slot line on the week grid; null when it started all day. */
+  fromSlot: { date: string; start: number | null; label: string | null };
+  /** "Coach Reyes", "you", or null: who made it, for the peek. */
+  byLabel: string | null;
   /** The sentence for what changed; the Message players draft opens with it. */
   title: string;
   body: string;
@@ -46,6 +55,21 @@ export interface ChCalChange {
   panelRows: ChangePanelRow[];
   panelLine2: string;
   liveText: string;
+}
+
+/** A row on the day an event left: "~~3:00~~ Practice · Moved to Thu at 4:00 PM", linking to the event on its new day. */
+export interface ChMovedAway {
+  id: string;
+  title: string;
+  type: string;
+  changeId: string;
+  fromDate: string;
+  fromStart: number | null;
+  /** The old start as the time column writes it ("3:00 PM"), null for an all-day event. */
+  fromLabel: string | null;
+  toDate: string;
+  sub: string;
+  aria: string;
 }
 
 /** The columns of an event row the marks are read from. */
@@ -72,11 +96,19 @@ const hasContent = (raw: unknown): boolean => raw !== null && raw !== undefined 
  */
 export function buildChangeMarks(
   rows: ChangeRow[],
-  ctx: { timeZone: string; nowMs: number; /** The viewer's `golf_coaches.id`, for "By you". */ coachId: string | null },
-): { marks: Map<string, ChCalChange>; unreadable: string[] } {
+  ctx: {
+    timeZone: string;
+    nowMs: number;
+    /** The viewer's `golf_coaches.id`, for "By you". */
+    coachId: string | null;
+    /** The dates the page has loaded: a moved-away row is made only for an old day inside it. */
+    range?: { from: string; to: string };
+  },
+): { marks: Map<string, ChCalChange>; unreadable: string[]; movedAway: ChMovedAway[] } {
   const nowIso = new Date(ctx.nowMs).toISOString();
   const marks = new Map<string, ChCalChange>();
   const unreadable: string[] = [];
+  const movedAway: ChMovedAway[] = [];
   const parsed: Array<{ row: ChangeRow; change: StoredChange }> = [];
 
   for (const row of rows) {
@@ -98,6 +130,8 @@ export function buildChangeMarks(
         rowMark: withinRowHorizon(row.start_time, ctx.nowMs),
         count: 1,
         reason: null,
+        fromSlot: { date: '', start: null, label: null },
+        byLabel: null,
         title: 'Changed',
         body: '',
         panelLine1: 'Changed',
@@ -127,6 +161,7 @@ export function buildChangeMarks(
       at: first.change.at,
     });
     for (const { row, change } of group) {
+      const fromSlot = slotOf(change.from, ctx.timeZone);
       const own = group.length > 1 ? copy : composeChangeCopy({ items: [{ before: change.from, after: snapshotOf(row) }], timeZone: ctx.timeZone, nowIso, byNames: change.by_names, byMe: !!ctx.coachId && change.by === ctx.coachId, reason: row.cancellation_reason ?? null, at: change.at });
       marks.set(row.id, {
         id: change.id,
@@ -139,6 +174,8 @@ export function buildChangeMarks(
         rowMark: withinRowHorizon(row.start_time, ctx.nowMs),
         count: group.length,
         reason: row.cancellation_reason?.trim() || null,
+        fromSlot: { date: fromSlot.date, start: fromSlot.hour, label: clockLabel(change.from, ctx.timeZone) },
+        byLabel: byLabel(change.by_names, !!ctx.coachId && change.by === ctx.coachId),
         title: own.title,
         body: own.body,
         panelLine1: own.panelLine1,
@@ -146,7 +183,25 @@ export function buildChangeMarks(
         panelLine2: own.panelLine2,
         liveText: own.liveText,
       });
+      // The day the event left shows a quiet row, so nobody hunts for it (a cancellation stays on its day, struck).
+      const after = snapshotOf(row);
+      const from = fromSlot;
+      const to = slotOf(after, ctx.timeZone);
+      if (!after.cancelled && from.date !== to.date && (!ctx.range || (from.date >= ctx.range.from && from.date <= ctx.range.to))) {
+        movedAway.push({
+          id: row.id,
+          title: row.title,
+          type: row.event_type,
+          changeId: change.id,
+          fromDate: from.date,
+          fromStart: from.hour,
+          fromLabel: clockLabel(change.from, ctx.timeZone),
+          toDate: to.date,
+          sub: movedToPhrase(after, ctx.timeZone, nowIso),
+          aria: movedAwayAria(change.from, after, ctx.timeZone, nowIso),
+        });
+      }
     }
   }
-  return { marks, unreadable };
+  return { marks, unreadable, movedAway };
 }

@@ -5,11 +5,16 @@ import { useRef, useState, type CSSProperties, type PointerEvent } from 'react';
 import { Button } from '../../ui/Button';
 import { Badge } from '../../ui/Badge';
 import { Icon } from '../../ui/Icon';
+import { WasValue } from '../../ui/WasValue';
 import { haptic } from '../../lib/haptics';
+import { restyleClock } from '../../lib/clock-format';
+import { useMarkReader } from '../../lib/use-change-marks';
 import { useChClock } from '../../lib/use-clock';
 import { clockHourLabel, meridiemOfHour } from '../../lib/clock-format';
 import { ClassGroupBlock } from './class-group';
 import { EventPeek } from './peek';
+import { MarkBadge, MovedAwayRow, OldSlotLine, agendaSub, markGlyph, useRowMark } from './change-note';
+import type { ChMovedAway } from './change-view';
 import {
   CAL_END,
   CAL_HH,
@@ -103,6 +108,7 @@ function EventBlock({
   drag,
   state,
   past = false,
+  onSlot,
 }: {
   e: ChCalEvent;
   lane: number;
@@ -122,8 +128,12 @@ function EventBlock({
   state?: 'held' | 'ghost' | 'clash';
   /** It has ended: it steps back so what is still to come reads first (it comes forward on hover, focus and selection). */
   past?: boolean;
+  /** P-14: a changed block shows where it was while the pointer rests on it or it has focus. */
+  onSlot?: (on: boolean) => void;
 }) {
   const clock = useChClock();
+  const rowMark = useRowMark();
+  const mark = state === 'ghost' ? null : rowMark(e);
   const start = Math.max(e.start!, from);
   const end = Math.min(e.end!, to);
   const top = (start - from) * CAL_HH;
@@ -148,6 +158,13 @@ function EventBlock({
   // On the 24-hour clock there is no half to carry: "08:00" and "08:00 – 09:30".
   const when = timed ? [fmtHour(e.start!, false, clock), meridiemOfHour(e.start!, clock), ...(short ? [] : [` – ${fmtHour(e.end!, true, clock)}`])].filter(Boolean) : [rangeLabel(e, clock)];
   const where = !shared && h > 70 && e.location && !e.busyOnly ? ` · ${e.location}` : null;
+  // P-14: a changed block that is tall enough carries the old value in its time line, struck, as the last part (the fit hides
+  // a part with every part after it, so it goes first); a short or cascaded one carries a glyph instead. A cancelled one is struck.
+  const wide = !short && !shared;
+  const wasTime = wide && mark?.change.was.time ? mark.change.was.time : null;
+  const wasPlace = wide && where && mark?.change.was.place ? mark.change.was.place : null;
+  const showWarn = flagged && !short;
+  const showChg = !showWarn && !!mark && !e.cancelled && (short || shared);
   // P006 D2: a block on its own wraps its title to the lines its height leaves above the time (padding 12, gap 2, time 15;
   // a title line is 15.6), at most three, so "Bus to Pinehurst" isn't cut to "Bus to Pine…" in a block with room.
   // One line keeps the plain cut-off, which shows more of the title than a word-wrapped clamp.
@@ -158,13 +175,17 @@ function EventBlock({
       type="button"
       data-print-visible
       // CH-6801: a button named with its title, time and any overlap. CH-6601: it lifts on hover and marks its selection.
-      className={`ch-ev ch-ev--${e.type}${short ? ' ch-ev--short' : ''}${shared ? ' ch-ev--lane' : ''}${under ? ' ch-ev--under' : ''}${lines ? ' ch-ev--wrap' : ''}${sel ? ' is-sel' : ''}${drag ? ' is-draggable' : ''}${state ? ` is-${state}` : ''}${past && !state ? ' is-past' : ''}`}
+      className={`ch-ev ch-ev--${e.type}${short ? ' ch-ev--short' : ''}${shared ? ' ch-ev--lane' : ''}${under ? ' ch-ev--under' : ''}${lines ? ' ch-ev--wrap' : ''}${sel ? ' is-sel' : ''}${drag ? ' is-draggable' : ''}${state ? ` is-${state}` : ''}${past && !state ? ' is-past' : ''}${e.cancelled ? ' is-cancelled' : ''}`}
       style={{ top, height: h, left: `calc(${left}% + 3px)`, width: `calc(${100 - left}% - 6px)`, zIndex: state === 'ghost' ? 6 : under ? undefined : shared ? lane + 1 : undefined, ...(lines ? { '--ch-ev-lines': lines } : {}) } as CSSProperties}
-      aria-label={`${title}, ${rangeLabel(e, clock)}${past && !state ? ', ended' : ''}${flagged ? ', schedule overlap' : ''}${drag ? '. Alt and the arrow keys move it 15 minutes' : ''}`}
+      aria-label={`${title}, ${rangeLabel(e, clock)}${past && !state ? ', ended' : ''}${flagged ? ', schedule overlap' : ''}${e.cancelled ? ', cancelled' : ''}${mark?.aria ?? ''}${drag ? '. Alt and the arrow keys move it 15 minutes' : ''}`}
       aria-pressed={sel}
       aria-hidden={state === 'ghost' || undefined}
       tabIndex={state === 'ghost' ? -1 : undefined}
       onPointerDown={drag?.onPointerDown}
+      onPointerEnter={mark ? () => onSlot?.(true) : undefined}
+      onPointerLeave={mark ? () => onSlot?.(false) : undefined}
+      onFocus={mark ? () => onSlot?.(true) : undefined}
+      onBlur={mark ? () => onSlot?.(false) : undefined}
       onKeyDown={
         drag &&
         ((ev) => {
@@ -186,10 +207,26 @@ function EventBlock({
           <span key={i}>{part}</span>
         ))}
         {where && <span>{where}</span>}
+        {e.cancelled && wide && <span>{' · Cancelled'}</span>}
+        {wasPlace && (
+          <span className="ch-ev__was">
+            <WasValue changeId={mark!.change.id}>{wasPlace}</WasValue>
+          </span>
+        )}
+        {wasTime && (
+          <span className="ch-ev__was">
+            <WasValue changeId={mark!.change.id}>{restyleClock(wasTime, clock)}</WasValue>
+          </span>
+        )}
       </span>
-      {flagged && !short && (
+      {showWarn && (
         <span className="ch-ev__warn" aria-hidden="true">
           <Icon icon={TriangleAlert} size={10} />
+        </span>
+      )}
+      {showChg && (
+        <span className="ch-ev__chg" aria-hidden="true">
+          <Icon icon={markGlyph(mark!.change)} size={12} />
         </span>
       )}
     </button>
@@ -238,6 +275,11 @@ export function TimeGrid({
   const nowVisible = now.hour >= from && now.hour <= to;
   const grid = useRef<HTMLDivElement | null>(null);
   const [drag, setDrag] = useState<{ e: ChCalEvent; to: ChMoveTarget } | null>(null);
+  // P-14: a changed block shows where it was while it is hovered, focused or selected.
+  const [rested, setRested] = useState<string | null>(null);
+  const rowMark = useRowMark();
+  const slotEvent = drag ? undefined : events.find((x) => x.id === (rested ?? selId) && x.change && dates.includes(x.date));
+  const slot = slotEvent ? rowMark(slotEvent)?.change.fromSlot : undefined;
   const moved = useRef(false);
   const target = (e: ChCalEvent, x: number, y: number, y0: number): ChMoveTarget => {
     const rect = grid.current!.getBoundingClientRect();
@@ -329,7 +371,7 @@ export function TimeGrid({
                     key={e.id}
                     type="button"
                     data-print-visible
-                    className={`ch-ev-bar ch-ev--${e.type}${selId === e.id ? ' is-sel' : ''}`}
+                    className={`ch-ev-bar ch-ev--${e.type}${selId === e.id ? ' is-sel' : ''}${e.cancelled ? ' is-cancelled' : ''}`}
                     aria-pressed={selId === e.id}
                     onClick={() => {
                       haptic('select');
@@ -381,10 +423,14 @@ export function TimeGrid({
                     drag={dragFor(g)}
                     state={drag?.e.id === g.id ? 'held' : clashes?.has(g.id) ? 'clash' : undefined}
                     past={isPastEvent(g, now)}
+                    onSlot={(on) => setRested((cur) => (on ? g.id : cur === g.id ? null : cur))}
                   />
                 </EventPeek>
                 );
               })}
+              {slot && slot.date === d && slot.start != null && slot.label && slot.start >= from && slot.start <= to && (
+                <OldSlotLine top={(slot.start - from) * CAL_HH} label={restyleClock(`Was ${slot.label}`, clock)} />
+              )}
               {drag && drag.to.date === d && (
                 <EventBlock e={{ ...drag.e, date: d, start: drag.to.start, end: drag.to.end }} lane={0} lanes={1} sel={false} flagged={false} people={people} viewerId={viewerId} onSelect={() => {}} from={from} to={to} state="ghost" />
               )}
@@ -437,6 +483,7 @@ export function MonthView({
   onPick: (date: string) => void;
 }) {
   const cells = monthCells(anchor);
+  const rowMark = useRowMark();
   return (
     <div className="ch-mo ch-cal-surface">
       <div className="ch-mo__dow" aria-hidden="true">
@@ -448,13 +495,15 @@ export function MonthView({
         {cells.map(({ date, out }) => {
           const evs = events.filter((e) => e.date === date && e.type !== 'class' && e.type !== 'busy').sort(byStart);
           const shown = evs.slice(0, 3);
+          // P-14: a changed event wears a small glyph after its title (month cells are too small to read a struck value).
+          const changed = evs.filter((e) => rowMark(e)).length;
           return (
             <button
               key={date}
               type="button"
               data-print-visible
               className={'ch-mo__cell' + (out ? ' is-out' : '') + (date === now.date ? ' is-today' : !out && date < now.date ? ' is-past' : '') + (date === selDate ? ' is-sel' : '')}
-              aria-label={`${dowOf(date)} ${dayNum(date)} ${monthName(date)}: ${evs.length ? `${plural(evs.length, 'event')}` : 'no events'}`}
+              aria-label={`${dowOf(date)} ${dayNum(date)} ${monthName(date)}: ${evs.length ? `${plural(evs.length, 'event')}` : 'no events'}${changed ? `, ${changed} changed` : ''}`}
               aria-pressed={date === selDate}
               onClick={() => {
                 haptic('select');
@@ -462,12 +511,16 @@ export function MonthView({
               }}
             >
               <span className="ch-mo__n">{dayNum(date)}</span>
-              {shown.map((e) => (
-                <span key={e.id} className={'ch-mo__ev' + (isMajor(e.type) ? ' is-major' : '')}>
-                  <i className={`ch-dot-${e.type}`} />
-                  <span>{e.title}</span>
-                </span>
-              ))}
+              {shown.map((e) => {
+                const mk = rowMark(e);
+                return (
+                  <span key={e.id} className={'ch-mo__ev' + (isMajor(e.type) ? ' is-major' : '') + (e.cancelled ? ' is-cancelled' : '')}>
+                    <i className={`ch-dot-${e.type}`} />
+                    <span>{e.title}</span>
+                    {mk && !e.cancelled && <Icon icon={markGlyph(mk.change)} size={10} className="ch-mo__chg" />}
+                  </span>
+                );
+              })}
               {evs.length > 3 && <span className="ch-mo__more">{evs.length - 3} more</span>}
             </button>
           );
@@ -485,6 +538,8 @@ export function AgendaView({
   flagged,
   onSelect,
   viewerId,
+  movedAway,
+  onOpenAt,
 }: {
   events: ChCalEvent[];
   people: Map<string, ChCalPerson>;
@@ -494,10 +549,17 @@ export function AgendaView({
   onSelect: (id: string) => void;
   /** The signed-in player: their own class is titled without their name. */
   viewerId?: string | null;
+  /** P-14: events that left a day for another; each is a quiet row on the day it left. */
+  movedAway?: ChMovedAway[];
+  /** Opens an event on a given day (a moved-away row opens it on its new day); absent, a plain select. */
+  onOpenAt?: (id: string, date: string) => void;
 }) {
   const clock = useChClock();
+  const rowMark = useRowMark();
+  const read = useMarkReader();
+  const away = (movedAway ?? []).filter((m) => !read(m.changeId).got);
   const [early, setEarly] = useState(false);
-  const days = [...new Set(events.map((e) => e.date))].sort();
+  const days = [...new Set([...events.map((e) => e.date), ...away.map((m) => m.fromDate)])].sort();
   const past = days.filter((d) => d < now.date);
   const list = early ? days : days.filter((d) => d >= now.date);
   const tomorrow = addDays(now.date, 1);
@@ -516,8 +578,20 @@ export function AgendaView({
       {list.map((d) => {
         const evs = events.filter((e) => e.date === d).sort(byStart);
         const rows: React.ReactNode[] = [];
-        evs.forEach((e, i) => {
-          const prev = evs[i - 1];
+        // The day's rows in time order, with the rows of events that left this day among them (P-14).
+        type Entry = { at: number; e?: ChCalEvent; g?: ChMovedAway };
+        const entries: Entry[] = [
+          ...evs.map((e): Entry => ({ at: e.allDay ? -1 : (e.start ?? 0), e })),
+          ...away.filter((m) => m.fromDate === d).map((g): Entry => ({ at: g.fromStart ?? -1, g })),
+        ].sort((x, y) => x.at - y.at);
+        let prev: ChCalEvent | undefined;
+        entries.forEach(({ e, g }) => {
+          if (g) {
+            rows.push(<MovedAwayRow key={`away-${g.id}`} g={g} variant="agenda" onOpen={() => (haptic('select'), onOpenAt ? onOpenAt(g.id, g.toDate) : onSelect(g.id))} />);
+            return;
+          }
+          if (!e) return;
+          const mk = rowMark(e);
           if (d === now.date && !e.allDay && e.start! > now.hour && (!prev || prev.allDay || prev.start! <= now.hour)) {
             rows.push(
               <div key="now" className="ch-ag__now" role="separator" aria-label={`Now, ${fmtHour(now.hour, true, clock)}`}>
@@ -525,12 +599,13 @@ export function AgendaView({
               </div>,
             );
           }
+          prev = e;
           rows.push(
             <button
               key={e.id}
               type="button"
               data-print-visible
-              className={'ch-ag__row' + (selId === e.id ? ' is-sel' : '') + (e.type === 'class' || e.type === 'busy' ? ' is-class' : '')}
+              className={'ch-ag__row' + (selId === e.id ? ' is-sel' : '') + (e.type === 'class' || e.type === 'busy' ? ' is-class' : '') + (e.cancelled ? ' is-cancelled' : '')}
               aria-pressed={selId === e.id}
               onClick={() => {
                 haptic('select');
@@ -545,8 +620,14 @@ export function AgendaView({
               <span style={{ minWidth: 0 }}>
                 <span className="ch-ag__a">{e.type === 'class' && e.owner && e.owner !== viewerId && people.get(e.owner) ? `${people.get(e.owner)!.name} · ${e.title}` : e.type === 'busy' ? e.title : eventTitle(e, people, viewerId)}</span>
                 <span className="ch-ag__b">
-                  {e.type === 'busy' ? 'Your busy time · only you see it' : TYPE_LABEL[e.type]}
-                  {e.location && !e.busyOnly ? ` · ${e.location}` : ''}
+                  {mk && !mk.change.partial && e.type !== 'busy' ? (
+                    agendaSub(e.busyOnly ? null : e.location, mk.change, TYPE_LABEL[e.type], clock)
+                  ) : (
+                    <>
+                      {e.type === 'busy' ? 'Your busy time · only you see it' : TYPE_LABEL[e.type]}
+                      {e.location && !e.busyOnly ? ` · ${e.location}` : ''}
+                    </>
+                  )}
                 </span>
               </span>
               {flagged.has(e.id) ? (
@@ -554,6 +635,10 @@ export function AgendaView({
                   <Icon icon={TriangleAlert} size={11} />
                   Overlap
                 </Badge>
+              ) : e.cancelled ? (
+                <Badge tone="warning">Cancelled</Badge>
+              ) : mk ? (
+                <MarkBadge change={mk.change} />
               ) : (
                 <span />
               )}

@@ -1,7 +1,7 @@
 'use client';
 
 import { CalendarCheck, CalendarDays, ChevronLeft, ChevronRight, Ellipsis, Plus, Rss, TriangleAlert } from 'lucide-react';
-import { useRef, useState, type ReactNode } from 'react';
+import { Fragment, useRef, useState, type ReactNode } from 'react';
 import type { ChCalendarData } from '../../data/calendar';
 import { Badge } from '../../ui/Badge';
 import { EmptyState } from '../../ui/States';
@@ -18,7 +18,9 @@ import { WeekStrip, type WeekStripDay } from '../../ui/WeekStrip';
 import { haptic } from '../../lib/haptics';
 import { useChClock } from '../../lib/use-clock';
 import { EventPeek } from './peek';
-import { MarkBadge, useRowMark } from './change-note';
+import { MarkBadge, MovedAwayRow, useRowMark } from './change-note';
+import type { ChMovedAway } from './change-view';
+import { useMarkReader } from '../../lib/use-change-marks';
 import { PhoneTop } from '../../shell/phone-chrome';
 import { addDays, dayNum, dowOf, fmtHour, monthKey, monthName, playerReplyNeeded, rangeLabel, startLabel, weekDates, yearOf, type ChCalEvent, type ChCalPerson, type ChCalView } from './model';
 import { AgendaView, eventTitle, type ChNow } from './views';
@@ -142,11 +144,11 @@ export function CalendarPhone({
         <SectionBoundary surface={`calendar.phone.${pv}`} label="The calendar" code="CH-6210">
           {/* CH-6604: Day, Month and List settle in as the switch moves (base in, quick out); instant with reduced motion. */}
           <Swap swapKey={pv}>
-            {pv === 'day' && <DayView anchor={anchor} events={events} people={people} now={now} flagged={flagged} selId={selId} onDay={(d) => onView('day', d)} onOpen={onOpen} coach={coach} viewerId={viewerId} range={data.range} onNew={onNew} />}
+            {pv === 'day' && <DayView anchor={anchor} events={events} people={people} now={now} flagged={flagged} selId={selId} onDay={(d) => onView('day', d)} onOpen={onOpen} coach={coach} viewerId={viewerId} range={data.range} onNew={onNew} movedAway={data.movedAway} />}
             {pv === 'month' && <MonthGrid anchor={anchor} events={events} now={now} onPick={(d) => onView('day', d)} onStep={onStep} onMonth={(d) => onView('month', d)} />}
             {pv === 'list' &&
               (events.some((e) => e.date >= now.date) ? (
-                <AgendaView events={events} people={people} now={now} selId={selId} flagged={flagged} onSelect={(id) => onOpen(id, events.find((e) => e.id === id)?.date ?? anchor)} viewerId={viewerId} />
+                <AgendaView events={events} people={people} now={now} selId={selId} flagged={flagged} onSelect={(id) => onOpen(id, events.find((e) => e.id === id)?.date ?? anchor)} viewerId={viewerId} movedAway={data.movedAway} onOpenAt={onOpen} />
               ) : (
                 <EmptyState code="CH-6301" icon={CalendarDays} title="Nothing on the calendar in this range" body={coach ? 'Events you publish show here, with any overlaps and replies.' : 'Events your coach invites you to show here.'} />
               ))}
@@ -176,6 +178,7 @@ function DayView({
   range,
   failed,
   onNew,
+  movedAway,
 }: {
   anchor: string;
   events: ChCalEvent[];
@@ -195,6 +198,8 @@ function DayView({
   /** The events didn't load (CH-6201): the strip and the week arrows still move the page, with no counts and no swipe,
    * and this notice stands where the day's list goes. */
   failed?: ReactNode;
+  /** P-14: events that left a day for another; each is a quiet row on the day it left. */
+  movedAway?: ChMovedAway[];
 }) {
   const week = weekDates(anchor);
   const stripDays = (dates: string[]): WeekStripDay[] =>
@@ -225,7 +230,7 @@ function DayView({
         </h3>
       </div>
     ) : (
-      <DayPage date={date} events={events} people={people} now={now} flagged={flagged} selId={selId} onOpen={onOpen} coach={coach} viewerId={viewerId} onWeek={live ? (dir) => ((swiped.current = false), onDay(addDays(anchor, 7 * dir))) : undefined} onNew={live ? onNew : undefined} />
+      <DayPage date={date} events={events} people={people} now={now} flagged={flagged} selId={selId} onOpen={onOpen} coach={coach} viewerId={viewerId} onWeek={live ? (dir) => ((swiped.current = false), onDay(addDays(anchor, 7 * dir))) : undefined} onNew={live ? onNew : undefined} movedAway={movedAway} />
     );
   return (
     <>
@@ -279,6 +284,7 @@ function DayPage({
   onWeek,
   failed,
   onNew,
+  movedAway,
 }: {
   date: string;
   events: ChCalEvent[];
@@ -294,11 +300,16 @@ function DayPage({
   failed?: ReactNode;
   /** The day on show's New event (coach); the neighbouring days drawn beside it for a swipe have none. */
   onNew?: (date: string) => void;
+  /** P-14: events that left a day for another; each is a quiet row on the day it left. */
+  movedAway?: ChMovedAway[];
 }) {
   const clock = useChClock();
   const rowMark = useRowMark();
+  const read = useMarkReader();
   const anchor = date;
   const list = events.filter((e) => e.date === anchor).sort(byStart);
+  // The rows of events that left this day, at the time they started; not counted in the day's total, not part of the now line.
+  const gone = (movedAway ?? []).filter((m) => m.fromDate === anchor && !read(m.changeId).got);
   const team = list.filter((e) => e.type !== 'class' && e.type !== 'busy');
   const blocks = list.length - team.length;
   const isToday = anchor === now.date;
@@ -334,7 +345,7 @@ function DayPage({
       </div>
       {failed ? (
         failed
-      ) : !list.length ? (
+      ) : !list.length && !gone.length ? (
         <EmptyState
           compact
           code="CH-6308"
@@ -352,6 +363,8 @@ function DayPage({
       ) : (
         <ol className="ch-calm-agenda">
           {list.map((e, i) => {
+            // The rows of events that left this day come before the first event that starts after them.
+            const before = gone.filter((g) => (g.fromStart ?? -1) <= (e.allDay ? -1 : (e.start ?? 0)) && !list.slice(0, i).some((x) => (g.fromStart ?? -1) <= (x.allDay ? -1 : (x.start ?? 0))));
             const past = isToday && !e.allDay && (e.end ?? 0) <= now.hour;
             const live = isToday && !e.allDay && (e.start ?? 0) <= now.hour && (e.end ?? 0) > now.hour;
             const block = e.type === 'class' || e.type === 'busy';
@@ -360,7 +373,13 @@ function DayPage({
             const title = eventTitle(e, people, viewerId);
             const mark = rowMark(e);
             return (
-              <li key={`${e.id}${e.date}`}>
+              <Fragment key={`${e.id}${e.date}`}>
+                {before.map((g) => (
+                  <li key={`away-${g.id}`}>
+                    <MovedAwayRow g={g} variant="phone" onOpen={() => (haptic('select'), onOpen(g.id, g.toDate))} />
+                  </li>
+                ))}
+              <li>
                 {i === nowAt && nowLine}
                 {/* P006-C3: a hold lifts the event's card with its actions; the row keeps its tap. */}
                 <EventPeek e={e} coach={coach} people={people} onOpen={() => onOpen(e.id, e.date)}>
@@ -405,8 +424,16 @@ function DayPage({
                 </EventPeek>
                 {nowLast && i === list.length - 1 && nowLine}
               </li>
+              </Fragment>
             );
           })}
+          {gone
+            .filter((g) => !list.some((x) => (g.fromStart ?? -1) <= (x.allDay ? -1 : (x.start ?? 0))))
+            .map((g) => (
+              <li key={`away-${g.id}`}>
+                <MovedAwayRow g={g} variant="phone" onOpen={() => (haptic('select'), onOpen(g.id, g.toDate))} />
+              </li>
+            ))}
         </ol>
       )}
     </>

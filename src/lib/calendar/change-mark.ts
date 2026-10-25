@@ -136,6 +136,7 @@ interface Zoned {
 }
 
 const DOW = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'] as const;
+const DOW_LONG = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'] as const;
 const MONTH = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'] as const;
 
 const formatters = new Map<string, Intl.DateTimeFormat>();
@@ -368,6 +369,41 @@ export interface ChangeCopy {
   feedLine: string;
   /** The old values, for the struck chunks beside the new ones. */
   was: { time?: string; place?: string; title?: string };
+}
+
+/** Where a snapshot's start sits on the calendar: its date in the team's zone and its decimal hour (null for an all-day event). */
+export function slotOf(s: Pick<ChangeSnapshot, 'start_time' | 'all_day'>, timeZone: string): { date: string; hour: number | null } {
+  const z = startOf(s, timeZone);
+  return { date: z.date, hour: s.all_day ? null : z.hour + z.minute / 60 };
+}
+
+/** "3:00 PM", or null for an all-day event. */
+export function clockLabel(s: Pick<ChangeSnapshot, 'start_time' | 'all_day'>, timeZone: string): string | null {
+  return s.all_day ? null : clockText(startOf(s, timeZone));
+}
+
+/** On the day an event left: "Moved to Thu at 4:00 PM" ("Moved to tomorrow", "Moved to Thu 23 April at 4:00 PM"). */
+export function movedToPhrase(after: ChangeSnapshot, timeZone: string, nowIso: string): string {
+  const today = zonedParts(Date.parse(nowIso), timeZone).date;
+  const z = startOf(after, timeZone);
+  const day = dayPhrase(z.date, today);
+  return after.all_day ? `Moved to ${day}` : `Moved to ${day} at ${clockText(z)}`;
+}
+
+/** What a reader hears for the row on the day an event left: "Practice, moved to Thursday 16 April at 4:00 PM. Was 3:00 PM today." */
+export function movedAwayAria(before: ChangeSnapshot, after: ChangeSnapshot, timeZone: string, nowIso: string): string {
+  const today = zonedParts(Date.parse(nowIso), timeZone).date;
+  const to = startOf(after, timeZone);
+  const from = startOf(before, timeZone);
+  const [, m, d] = to.date.split('-').map(Number);
+  const when = `${DOW_LONG[to.dow]} ${d} ${MONTH[m! - 1]}${after.all_day ? '' : ` at ${clockText(to)}`}`;
+  const was = before.all_day ? 'All day' : clockText(from);
+  return `${eventName(before.title)}, moved to ${when}. Was ${was} ${whenOn(from.date, today, null)}.`;
+}
+
+/** "Coach Reyes", "Coach Reyes and Coach Ito", "you", or null when no name is known. */
+export function byLabel(names: string[], byMe?: boolean): string | null {
+  return byPhrase(names, byMe).who;
 }
 
 /** "Maya Reyes" is "Coach Reyes"; a name that is only the title is unknown. Long names end in an ellipsis at 24 characters. */

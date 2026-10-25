@@ -3437,3 +3437,121 @@ html[data-fw-theme='dark'] .ch-ev--busy::after {
     animation: none;
   }
 }
+
+/* P-14, desktop. On a block the old value is the last part of its time line (the fit hides a part with every part after
+   it, so it goes first), in the quiet ink on a tint or outline and the soft ivory on a filled competition. A changed block's
+   time line keeps full strength so the struck value stays readable. A short or cascaded block wears a glyph in the top-right
+   slot the overlap mark uses (overlap wins it). A cancelled event has its title struck everywhere, with no dimming. */
+.ch-ev .ch-was {
+  color: var(--ch-ink-500);
+}
+.ch-ev--tournament .ch-was,
+.ch-ev--qualifier .ch-was {
+  color: var(--ch-on-green-ink-soft);
+}
+.ch-ev__m--fit:has(.ch-was) {
+  opacity: 1;
+}
+.ch-ev__was {
+  margin-inline-start: var(--ch-space-1);
+  font: var(--ch-type-11);
+  letter-spacing: var(--ch-track-11);
+}
+.ch-ev__chg {
+  position: absolute;
+  top: var(--ch-space-1);
+  right: var(--ch-space-1_5);
+  display: grid;
+  place-items: center;
+  color: var(--ch-ink-500);
+}
+.ch-ev--tournament .ch-ev__chg,
+.ch-ev--qualifier .ch-ev__chg {
+  color: var(--ch-on-green-ink-soft);
+}
+.ch-ev.is-cancelled .ch-ev__t,
+.ch-ev-bar.is-cancelled span,
+.ch-mo__ev.is-cancelled > span,
+.ch-ag__row.is-cancelled .ch-ag__a {
+  text-decoration: line-through;
+  text-decoration-thickness: 1.5px;
+}
+.ch-mo__chg {
+  flex-shrink: 0;
+  margin-inline-start: calc(var(--ch-space-1) * -1);
+  color: var(--ch-ink-500);
+}
+.ch-mo__ev.is-major .ch-mo__chg {
+  color: var(--ch-on-green-ink-soft);
+}
+.ch-was-pair {
+  display: inline;
+}
+/* Where a hovered, focused or selected changed block started: a hairline across its column, a dot at its left end, and the
+   words "Was 3:00 PM" cutting the hour rules. It fades in over the quick beat (instant with reduced motion and Animations off). */
+.ch-oldslot {
+  position: absolute;
+  inset-inline: var(--ch-space-0_5);
+  z-index: 2;
+  height: 0;
+  border-top: var(--ch-hairline-w) solid var(--ch-ink-500);
+  pointer-events: none;
+  animation: ch-change-note-in var(--ch-dur-quick) var(--ch-ease) both;
+}
+.ch-oldslot::before {
+  position: absolute;
+  top: -2.5px;
+  left: 0;
+  width: 4px;
+  height: 4px;
+  border-radius: 50%;
+  background: var(--ch-ink-500);
+  content: '';
+}
+.ch-oldslot em {
+  position: absolute;
+  bottom: var(--ch-space-0_5);
+  left: var(--ch-space-1_5);
+  padding-inline: var(--ch-space-0_5);
+  background: var(--ch-bg-surface);
+  font: var(--ch-type-11-medium);
+  letter-spacing: var(--ch-track-11);
+  font-style: normal;
+  color: var(--ch-ink-500);
+  white-space: nowrap;
+}
+/* The row on the day an event left: its old time struck, a hollow ring on the rail, the title in the quiet ink. */
+.ch-calm-ev--away .ch-calm-ev__b b,
+.ch-ag__row.is-away .ch-ag__a {
+  font: var(--ch-type-15-medium);
+  letter-spacing: var(--ch-track-15);
+  color: var(--ch-text-secondary);
+}
+.ch-calm-ev--away .ch-calm-ev__b span,
+.ch-ag__row.is-away .ch-ag__b {
+  color: var(--ch-ink-500);
+}
+.ch-away-ring {
+  position: relative;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--ch-workspace);
+  box-shadow: inset 0 0 0 1.5px var(--ch-ink-500), 0 0 0 3px var(--ch-workspace);
+}
+.ch-ag__dot.is-away {
+  background: var(--ch-bg-surface);
+  box-shadow: inset 0 0 0 1.5px var(--ch-ink-500);
+}
+.ch-away-go {
+  color: var(--ch-ink-500);
+}
+.ch-evpeek__chg {
+  font: var(--ch-type-13);
+  color: var(--ch-ink-600);
+}
+@media (prefers-reduced-motion: reduce) {
+  .ch-oldslot {
+    animation: none;
+  }
+}

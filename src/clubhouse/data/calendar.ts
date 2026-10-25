@@ -7,7 +7,7 @@ import { describeRecurrenceRule, parseRecurrenceRule } from '@/lib/golf/recurren
 import { chLogServer } from '../lib/track-server';
 import type { MarkEntries } from '../lib/marks-cookie';
 import { whenPhrase } from '@/lib/calendar/change-mark';
-import { buildChangeMarks } from '../screens/calendar/change-view';
+import { buildChangeMarks, type ChMovedAway } from '../screens/calendar/change-view';
 import { classYearLabel, fullName } from './season';
 import { parseAvailability } from './availability';
 import { loadAttendanceCounts } from './attendance-counts';
@@ -51,6 +51,8 @@ export interface ChCalendarData {
   busyError: boolean;
   /** Which change marks this device has seen (`s`) or cleared (`g`), from the `ch_marks` cookie, newest first (P-14). */
   marks?: MarkEntries;
+  /** Events that left a day of the window for another (live marks only): a quiet row on the old day, linking to the new one. */
+  movedAway?: ChMovedAway[];
 }
 
 type ClassRow = { id: string; player_id: string; instructor: string | null; days: string[] | null; semester: string | null; building: string | null; room: string | null };
@@ -296,9 +298,9 @@ export async function loadCalendar(input: {
   // P-14: the change marks that are still live, read against each event as it is now. A mark that is there but unreadable is
   // reported once (CH-6023) and shows as a bare "Changed" badge.
   const nowMs = Date.now();
-  const { marks: changeMarks, unreadable } = buildChangeMarks(
+  const { marks: changeMarks, unreadable, movedAway } = buildChangeMarks(
     rows.map((r) => ({ ...r, change: r.change as unknown })),
-    { timeZone: timezone, nowMs, coachId: input.role === 'coach' ? (input.coachId ?? null) : null },
+    { timeZone: timezone, nowMs, coachId: input.role === 'coach' ? (input.coachId ?? null) : null, range },
   );
   if (unreadable.length) chLogServer('calendar', 'changeMark', new Error(`CH-6023: ${unreadable.length} change mark(s) could not be read (first: ${unreadable[0]})`), 'calendar');
 
@@ -462,5 +464,7 @@ export async function loadCalendar(input: {
     settingsError: !!settingsRes.error,
     membersError: !!membersRes.error,
     marks: input.marks ?? [],
+    // Only for rows the viewer is shown (a meeting a player is not on is dropped from `events` above).
+    movedAway: movedAway.filter((m) => events.some((e) => e.id === m.id)),
   };
 }

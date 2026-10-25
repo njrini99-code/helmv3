@@ -1,6 +1,6 @@
 'use client';
 
-import { CircleX, History, MapPin, PenLine, RotateCcw, type LucideIcon } from 'lucide-react';
+import { ChevronRight, CircleX, History, MapPin, PenLine, RotateCcw, type LucideIcon } from 'lucide-react';
 import { useRef, type ReactNode } from 'react';
 import { flushSync } from 'react-dom';
 import { Badge } from '../../ui/Badge';
@@ -14,7 +14,7 @@ import { CH_DUR, CH_EASE } from '../../lib/motion';
 import { useChReducedMotion } from '../../lib/reduced-motion';
 import { useMark, useMarkReader } from '../../lib/use-change-marks';
 import { useChClock } from '../../lib/use-clock';
-import type { ChCalChange } from './change-view';
+import type { ChCalChange, ChMovedAway } from './change-view';
 import type { ChCalEvent } from './model';
 
 /**
@@ -219,5 +219,74 @@ export function ChangeNote({ e }: { e: Pick<ChCalEvent, 'change' | 'cancelled' |
         </div>
       )}
     </div>
+  );
+}
+
+/** The agenda row's sub line ("Practice · Finley GC"), with the old values struck in it: the old time and name before the type, the old place after the new. */
+export function agendaSub(location: string | null, change: ChCalChange, typeLabel: string, clock: ChClock): ReactNode {
+  const { was } = change;
+  const old = (text: string, key: string) => (
+    <WasValue key={key} changeId={change.id}>
+      {rs(text, clock)}
+    </WasValue>
+  );
+  const parts: ReactNode[] = [];
+  if (was.time) parts.push(old(was.time, 'time'));
+  if (was.title) parts.push(old(was.title, 'title'));
+  parts.push(typeLabel);
+  if (was.place) {
+    parts.push(
+      <span key="place" className="ch-was-pair">
+        {location ?? 'No place'} {old(was.place, 'place')}
+      </span>,
+    );
+  } else if (location) {
+    parts.push(location);
+  }
+  return parts.flatMap((p, i) => (i ? [' · ', p] : [p]));
+}
+
+/** On the week grid, where a hovered, focused or selected changed block started: a hairline across its column and "Was 3:00 PM". */
+export function OldSlotLine({ top, label }: { top: number; label: string }) {
+  return (
+    <span className="ch-oldslot" style={{ top }} aria-hidden="true">
+      <em>{label}</em>
+    </span>
+  );
+}
+
+/**
+ * The row on the day an event left ("~~3:00~~ Practice · Moved to Thu at 4:00 PM"), so nobody hunts for it. It opens the event
+ * on its new day. Not counted in a day's total, never part of an overlap check, never shown for a cancellation.
+ */
+export function MovedAwayRow({ g, variant, onOpen }: { g: ChMovedAway; variant: 'phone' | 'agenda'; onOpen: () => void }) {
+  const clock = useChClock();
+  const label = g.fromLabel ? rs(g.fromLabel, clock) : 'All day';
+  const struck = (text: string) => <WasValue changeId={g.changeId}>{text}</WasValue>;
+  if (variant === 'agenda') {
+    return (
+      <button type="button" data-print-visible className="ch-ag__row is-away" aria-label={g.aria} onClick={onOpen}>
+        <span className="ch-ag__t">{struck(label)}</span>
+        <span className="ch-ag__dot is-away" aria-hidden="true" />
+        <span style={{ minWidth: 0 }}>
+          <span className="ch-ag__a">{g.title}</span>
+          <span className="ch-ag__b">{rs(g.sub, clock)}</span>
+        </span>
+        <Icon icon={ChevronRight} size={15} className="ch-away-go" />
+      </button>
+    );
+  }
+  return (
+    <button type="button" className="ch-calm-ev ch-calm-ev--away" aria-label={g.aria} onClick={onOpen}>
+      <span className="ch-calm-ev__t ch-num">{struck(g.fromLabel ? rs(g.fromLabel, clock).replace(/ [AP]M$/, '') : 'All day')}</span>
+      <span className="ch-calm-ev__rail" aria-hidden="true">
+        <i className="ch-away-ring" />
+      </span>
+      <span className="ch-calm-ev__b">
+        <b>{g.title}</b>
+        <span>{rs(g.sub, clock)}</span>
+      </span>
+      <Icon icon={ChevronRight} size={15} className="ch-away-go" />
+    </button>
   );
 }
