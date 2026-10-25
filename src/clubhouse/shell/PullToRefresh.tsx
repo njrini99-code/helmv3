@@ -6,6 +6,7 @@ import { haptic } from '../lib/haptics';
 import { CH_DUR, chSpringAt } from '../lib/motion';
 import { useChReducedMotion } from '../lib/reduced-motion';
 import { useRefresh } from '../lib/use-refresh';
+import { touchClaim } from '../lib/touch-claim';
 
 /** How far the page comes down before it refreshes, where it rests while the refresh runs, and the most green drawn. */
 const PULL_TRIGGER = 64;
@@ -184,6 +185,14 @@ export function PullToRefresh({ pathname }: { pathname: string }) {
       const dy = t.clientY - s.y;
       if (s.mode === 'maybe') {
         if (dx === 0 && dy === 0) return;
+        // P-4: a calendar row's hold may still lift (wait, the page stays put); once it has, or the drag took the move,
+        // the touch is the row's and this pull stays off.
+        const claim = touchClaim();
+        if (claim === 'pending') return;
+        if (claim === 'lifted' || e.defaultPrevented) {
+          s.mode = 'off';
+          return;
+        }
         // A scroll down the page, a sideways swipe, or a move iOS is already scrolling stays native.
         if (dy <= 0 || Math.abs(dx) > dy || !e.cancelable || window.scrollY > 0) {
           s.mode = 'off';

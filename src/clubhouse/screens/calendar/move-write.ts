@@ -1,0 +1,113 @@
+/**
+ * P-4: one write per held move, after its Undo window. A single event (or one occurrence, "This event") goes through
+ * updateGolfEvent; "This and following" through editRecurringEvent. Every write carries the version the drag read, so a
+ * move never overwrites a newer change (the server answers stale or gone). Each date gets its own UTC offset, so 4:00 PM
+ * stays 4:00 PM across a clock change, and a run's end gets its own.
+ *
+ * Tournament rounds (P-5, not built yet): when `e.round` is set this is where the write goes to P-5's
+ * updateTournamentRound and maps its refusal codes. Until then tournament events move as any event.
+ */
+import { editRecurringEvent } from '@/app/golf/actions/recurring-events';
+import { updateGolfEvent } from '@/app/golf/actions/calendar-events';
+import { offsetMinutesFor } from '@/lib/golf/timezone';
+import type { ChBarTarget, ChMoveTarget } from './drag-model';
+import type { ChCalEvent } from './model';
+
+export type ChMoveScope = 'single' | 'this' | 'thisAndFuture';
+export type ChMoveKind = 'move' | 'resize' | 'bar';
+
+export interface HeldMove {
+  e: ChCalEvent;
+  to: ChMoveTarget | ChBarTarget;
+  kind: ChMoveKind;
+  scope: ChMoveScope;
+  expectedUpdatedAt: string | null;
+}
+
+export type WriteMoveResult =
+  | { ok: true; updatedAt?: string }
+  | { ok: false; code: 'stale' | 'gone' | 'forbidden' | 'failed'; message?: string; current?: { date: string; start: number | null; end: number | null; allDay: boolean; version: string | null } };
+
+export const toHHMM = (h: number) => {
+  const mins = Math.round(h * 60);
+  return `${String(Math.floor(mins / 60) % 24).padStart(2, '0')}:${String(mins % 60).padStart(2, '0')}`;
+};
+
+/** Wall-clock date and decimal hour of an instant in a zone (as the loader reads it). */
+function zonedAt(iso: string, timeZone: string): { date: string; hour: number } {
+  const p: Record<string, string> = {};
+  for (const x of new Intl.DateTimeFormat('en-US', { timeZone, hourCycle: 'h23', year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' }).formatToParts(new Date(iso))) p[x.type] = x.value;
+  return { date: `${p.year}-${p.month}-${p.day}`, hour: (Number(p.hour) % 24) + Number(p.minute) / 60 };
+}
+
+const isBar = (to: ChMoveTarget | ChBarTarget): to is ChBarTarget => 'from' in to;
+
+/** The update fields a held move writes: dates, times, all-day, and each end's own offset. */
+export function movePayload(m: HeldMove, timeZone: string) {
+  const { e, to } = m;
+  if (isBar(to)) {
+    if (e.allDay) return { startDate: to.from, endDate: to.to, allDay: true };
+    // A timed run keeps its first day's start and last day's end.
+    const startTime = toHHMM(e.span?.start ?? e.start ?? 0);
+    const endTime = toHHMM(e.span?.end ?? e.end ?? 0);
+    return {
+      startDate: to.from,
+      endDate: to.to,
+      startTime,
+      endTime,
+      allDay: false,
+      timezoneOffset: offsetMinutesFor(to.from, startTime, timeZone) ?? undefined,
+      endTimezoneOffset: offsetMinutesFor(to.to, endTime, timeZone) ?? undefined,
+    };
+  }
+  const startTime = toHHMM(to.start);
+  // 24:00 is the next day's midnight.
+  const endDate = to.end >= 24 ? addDay(to.date) : to.date;
+  const endTime = toHHMM(to.end);
+  return {
+    startDate: to.date,
+    endDate,
+    startTime,
+    endTime,
+    allDay: false,
+    timezoneOffset: offsetMinutesFor(to.date, startTime, timeZone) ?? undefined,
+    endTimezoneOffset: offsetMinutesFor(endDate, endTime, timeZone) ?? undefined,
+  };
+}
+
+function addDay(date: string): string {
+  const d = new Date(`${date}T12:00:00Z`);
+  d.setUTCDate(d.getUTCDate() + 1);
+  return d.toISOString().slice(0, 10);
+}
+
+export async function writeMove(m: HeldMove, timeZone: string): Promise<WriteMoveResult> {
+  const p = movePayload(m, timeZone);
+  const expected = m.expectedUpdatedAt ?? undefined;
+  if (m.scope === 'thisAndFuture') {
+    const res = await editRecurringEvent({
+      eventId: m.e.id,
+      originalStartDate: m.e.startIso,
+      scope: 'thisAndFuture',
+      timezoneOffset: p.timezoneOffset,
+      timeZone,
+      expectedUpdatedAt: expected,
+      updates: { startDate: p.startDate, startTime: p.startTime, endDate: p.endDate, endTime: p.endTime },
+    });
+    if (res?.success) return { ok: true };
+    return { ok: false, code: res?.code === 'stale' ? 'stale' : 'failed', message: res?.error };
+  }
+  const res = await updateGolfEvent(m.e.id, { ...p, expectedUpdatedAt: expected });
+  if (res?.success) return { ok: true, updatedAt: res.data?.updatedAt };
+  const code = res?.code ?? (res?.error === 'Only coaches can update team events' ? 'forbidden' : 'failed');
+  const c = res?.current;
+  const current = c
+    ? (() => {
+        if (c.allDay) return { date: c.startTime.slice(0, 10), start: null, end: null, allDay: true, version: c.updatedAt || null };
+        const a = zonedAt(c.startTime, timeZone);
+        const b = c.endTime ? zonedAt(c.endTime, timeZone) : null;
+        return { date: a.date, start: a.hour, end: b ? (b.date > a.date ? 24 : b.hour) : null, allDay: false, version: c.updatedAt || null };
+      })()
+    : undefined;
+  return { ok: false, code, message: res?.error, current };
+}

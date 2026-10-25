@@ -353,6 +353,51 @@ export async function notifyEventUpdate(
   }
 }
 
+/**
+ * P-4: one Bell row per player for an edit that touched several occurrences of a series ("this and following"), instead
+ * of one per occurrence. Players are everyone invited to any touched occurrence that asks for replies (the same rule as
+ * notifyEventUpdate). Keyed on the series and its first touched start, so a repeat of the same move dedupes and a new
+ * one inserts fresh. P-14 owns the wording and the push.
+ */
+export async function notifyEventSeriesUpdate(rootId: string, eventIds: string[], supabase: SupabaseClient): Promise<void> {
+  if (eventIds.length === 0) return;
+  const { data: events } = await supabase
+    .from('golf_events')
+    .select('id, title, start_time, end_time, all_day, location, requires_rsvp')
+    .in('id', eventIds)
+    .order('start_time', { ascending: true });
+  const asking = (events ?? []).filter((e) => e.requires_rsvp);
+  const first = asking[0];
+  if (!first) return;
+
+  const { data: attendances } = await supabase
+    .from('golf_event_attendance')
+    .select('player:golf_players(user_id)')
+    .in('event_id', asking.map((e) => e.id));
+  const userIds = [
+    ...new Set(
+      ((attendances || []) as unknown as AttendanceWithUser[]).map((a) => firstOrNull(a.player)?.user_id).filter((id): id is string => Boolean(id)),
+    ),
+  ];
+  if (userIds.length === 0) return;
+
+  const later = asking.length - 1;
+  const notifications = userIds.map((userId) => ({
+    user_id: userId,
+    event_id: first.id,
+    notification_type: `event_updated_series:${rootId}:${first.start_time ?? 'tbd'}`,
+    title: `Event updated: ${first.title}`,
+    message: `${formatEventDate(first as GolfEvent)}${later > 0 ? ` and ${later} later` : ''}`,
+    action_url: `/golf/dashboard/calendar?event=${first.id}`,
+  }));
+  const adminClient = createAdminClient();
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { error } = await (adminClient as any)
+    .from('golf_calendar_notifications')
+    .upsert(notifications, { onConflict: 'event_id,user_id,notification_type', ignoreDuplicates: true });
+  if (error) console.error('[notifyEventSeriesUpdate] Failed to insert notifications:', error.message);
+}
+
 // ============================================================================
 // RSVP RESPONSES
 // ============================================================================
