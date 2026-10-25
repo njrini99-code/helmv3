@@ -168,7 +168,7 @@ is a second thing to keep true.
 **Team Communications** · active · criticality high · owner product
 
 - **Behaviour:** `memory/features/team-communications.md`
-- **Code:** `src/app/golf/(dashboard)/dashboard/messages/**`, `src/app/golf/(dashboard)/dashboard/announcements/**`, `src/components/golf/messages/**`, `src/clubhouse/screens/messages/**`, `src/clubhouse/styles/messages.css`, `src/components/golf/announcements/**` … and 47 more in the registry
+- **Code:** `src/app/golf/(dashboard)/dashboard/messages/**`, `src/app/golf/(dashboard)/dashboard/announcements/**`, `src/components/golf/messages/**`, `src/clubhouse/screens/messages/**`, `src/clubhouse/styles/messages.css`, `src/components/golf/announcements/**` … and 48 more in the registry
 - **Telemetry:** `messaging` (golfhelm, high), `announcements` (golfhelm, med), `notifications` (golfhelm, med)
 - **Incidents:** `memory/incidents/team_communications/INC-2026-09-27-reactions-anon-42501-after-session-drop.md`, `memory/incidents/team_communications/INC-2026-09-28-reactions-client-deadline-abort.md`, `memory/incidents/team_communications/INC-2026-10-07-conversation-rail-deadline-abort.md`
 - **Repair units:** `reactions-anon-42501-after-session-drop-2026-09-27` (verified), `reactions-client-deadline-abort-2026-09-28` (verified), `reactions-save-deadline-abort-2026-10-05` (verified), `conversation-rail-deadline-abort-2026-10-07` (verified), `last-read-deadline-abort-2026-10-13` (released)
