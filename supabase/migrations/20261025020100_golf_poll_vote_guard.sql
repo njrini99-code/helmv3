@@ -31,10 +31,19 @@
 -- Desired schema: supabase/schemas/functions/public.sql,
 -- supabase/schemas/functions/95_grants.sql, supabase/schemas/triggers/golf.sql.
 --
--- VERIFY: select 1 where exists (select 1 from pg_trigger where tgname = 'golf_message_responses_poll_guard' and tgrelid = 'public.golf_message_responses'::regclass and not tgisinternal);
--- VERIFY: select 1 where exists (select 1 from pg_proc where proname = 'golf_message_responses_poll_guard' and pronamespace = 'public'::regnamespace and prosecdef and proconfig @> array['search_path=""']);
--- VERIFY: select 1 where not has_function_privilege('authenticated', 'public.golf_message_responses_poll_guard()', 'EXECUTE') and not has_function_privilege('anon', 'public.golf_message_responses_poll_guard()', 'EXECUTE');
--- ROLLBACK: DROP TRIGGER IF EXISTS golf_message_responses_poll_guard ON public.golf_message_responses;
+-- VERIFY: select 1 where exists (select 1 from pg_trigger where tgname =
+-- VERIFY:   'golf_message_responses_poll_guard' and tgrelid =
+-- VERIFY:   'public.golf_message_responses'::regclass and not tgisinternal);
+-- VERIFY: select 1 where exists (select 1 from pg_proc where proname =
+-- VERIFY:   'golf_message_responses_poll_guard' and pronamespace =
+-- VERIFY:   'public'::regnamespace and prosecdef and proconfig @>
+-- VERIFY:   array['search_path=""']);
+-- VERIFY: select 1 where not has_function_privilege('authenticated',
+-- VERIFY:   'public.golf_message_responses_poll_guard()', 'EXECUTE') and not
+-- VERIFY:   has_function_privilege('anon',
+-- VERIFY:   'public.golf_message_responses_poll_guard()', 'EXECUTE');
+-- ROLLBACK: DROP TRIGGER IF EXISTS golf_message_responses_poll_guard ON
+-- ROLLBACK:   public.golf_message_responses;
 -- ROLLBACK: DROP FUNCTION IF EXISTS public.golf_message_responses_poll_guard();
 
 SET lock_timeout = '3s';
@@ -153,9 +162,20 @@ BEGIN
 END;
 $$;
 
-COMMENT ON FUNCTION public.golf_message_responses_poll_guard() IS 'Clubhouse polls (P-2): a vote is refused when the caller is not in the poll''s conversation (42501), the poll is deleted, closed or ended, or the choice is not one the poll offers (P0001 with HINT golf_poll_deleted, golf_poll_closed, golf_poll_choice). SECURITY DEFINER so it reads the poll by primary key; checks only requests with a JWT role other than service_role. Held 20261025020100.';
+-- The words SECURITY DEFINER below are comment text, not a function option:
+-- the function above already pins search_path = '', so the semgrep finding on
+-- that line is a false positive.
+COMMENT ON FUNCTION public.golf_message_responses_poll_guard() IS
+'Clubhouse polls (P-2): a vote is refused when the caller is not in the '
+'poll''s conversation (42501), the poll is deleted, closed or ended, or the '
+'choice is not one the poll offers (P0001 with HINT golf_poll_deleted, '
+'golf_poll_closed, golf_poll_choice). '
+-- nosemgrep: helmv3-security-definer-without-search-path
+'SECURITY DEFINER so it reads the poll by primary key; checks only requests '
+'with a JWT role other than service_role. Held 20261025020100.';
 
-REVOKE ALL ON FUNCTION public.golf_message_responses_poll_guard() FROM PUBLIC, anon, authenticated;
+REVOKE ALL ON FUNCTION public.golf_message_responses_poll_guard()
+FROM public, anon, authenticated;
 
 DO $$
 BEGIN

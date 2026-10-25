@@ -44,42 +44,68 @@
 -- The mark sets lock_timeout 2s on itself: it runs after the save has
 -- committed, so a wait can delay only background work, never the save.
 --
--- ROLLBACK: DROP FUNCTION IF EXISTS public.clear_dirty_standing_teams(uuid[], timestamptz[]);
--- ROLLBACK: DROP FUNCTION IF EXISTS public.select_dirty_standing_teams(integer, integer, integer);
+-- ROLLBACK: DROP FUNCTION IF EXISTS public.clear_dirty_standing_teams(uuid[],
+-- ROLLBACK:   timestamptz[]);
+-- ROLLBACK: DROP FUNCTION IF EXISTS public.select_dirty_standing_teams(integer,
+-- ROLLBACK:   integer, integer);
 -- ROLLBACK: DROP FUNCTION IF EXISTS public.mark_team_standing_dirty(uuid);
 -- ROLLBACK: DROP TABLE IF EXISTS public.golf_standing_refresh_queue;
--- ROLLBACK: (the app treats a missing function as "not applied" and skips the mark and the dirty pass quietly).
+-- ROLLBACK: (the app treats a missing function as "not applied" and skips the
+-- ROLLBACK:   mark and the dirty pass quietly).
 --
--- VERIFY: select 1 from pg_class c join pg_namespace n on n.oid = c.relnamespace where n.nspname = 'public' and c.relname = 'golf_standing_refresh_queue' and c.relrowsecurity
--- VERIFY: select 1 where not has_table_privilege('authenticated', 'public.golf_standing_refresh_queue', 'select') and not has_table_privilege('anon', 'public.golf_standing_refresh_queue', 'select')
--- VERIFY: select 1 where has_function_privilege('service_role', 'public.mark_team_standing_dirty(uuid)', 'execute') and not has_function_privilege('authenticated', 'public.mark_team_standing_dirty(uuid)', 'execute')
--- VERIFY: select 1 where has_function_privilege('service_role', 'public.select_dirty_standing_teams(integer, integer, integer)', 'execute') and not has_function_privilege('anon', 'public.select_dirty_standing_teams(integer, integer, integer)', 'execute')
--- VERIFY: select 1 where has_function_privilege('service_role', 'public.clear_dirty_standing_teams(uuid[], timestamptz[])', 'execute') and not has_function_privilege('authenticated', 'public.clear_dirty_standing_teams(uuid[], timestamptz[])', 'execute')
+-- VERIFY: select 1 from pg_class c join pg_namespace n on n.oid =
+-- VERIFY:   c.relnamespace where n.nspname = 'public' and c.relname =
+-- VERIFY:   'golf_standing_refresh_queue' and c.relrowsecurity
+-- VERIFY: select 1 where not has_table_privilege('authenticated',
+-- VERIFY:   'public.golf_standing_refresh_queue', 'select') and not
+-- VERIFY:   has_table_privilege('anon', 'public.golf_standing_refresh_queue',
+-- VERIFY:   'select')
+-- VERIFY: select 1 where has_function_privilege('service_role',
+-- VERIFY:   'public.mark_team_standing_dirty(uuid)', 'execute') and not
+-- VERIFY:   has_function_privilege('authenticated',
+-- VERIFY:   'public.mark_team_standing_dirty(uuid)', 'execute')
+-- VERIFY: select 1 where has_function_privilege('service_role',
+-- VERIFY:   'public.select_dirty_standing_teams(integer, integer, integer)',
+-- VERIFY:   'execute') and not has_function_privilege('anon',
+-- VERIFY:   'public.select_dirty_standing_teams(integer, integer, integer)',
+-- VERIFY:   'execute')
+-- VERIFY: select 1 where has_function_privilege('service_role',
+-- VERIFY:   'public.clear_dirty_standing_teams(uuid[], timestamptz[])',
+-- VERIFY:   'execute') and not has_function_privilege('authenticated',
+-- VERIFY:   'public.clear_dirty_standing_teams(uuid[], timestamptz[])',
+-- VERIFY:   'execute')
 
 -- The team_id foreign key takes a SHARE ROW EXCLUSIVE lock on golf_teams for
 -- this transaction; cap the wait so team writes are never queued behind it.
-set lock_timeout = '3s';
+SET lock_timeout = '3s';
 
 CREATE TABLE IF NOT EXISTS public.golf_standing_refresh_queue (
-  team_id uuid PRIMARY KEY REFERENCES public.golf_teams (id) ON DELETE CASCADE,
-  first_marked_at timestamptz NOT NULL DEFAULT now(),
-  marked_at timestamptz NOT NULL DEFAULT now(),
-  marks integer NOT NULL DEFAULT 1
+    team_id uuid PRIMARY KEY
+    REFERENCES public.golf_teams (id) ON DELETE CASCADE,
+    first_marked_at timestamptz NOT NULL DEFAULT now(),
+    marked_at timestamptz NOT NULL DEFAULT now(),
+    marks integer NOT NULL DEFAULT 1
 );
 
 ALTER TABLE public.golf_standing_refresh_queue ENABLE ROW LEVEL SECURITY;
 
-REVOKE ALL ON TABLE public.golf_standing_refresh_queue FROM PUBLIC, anon, authenticated;
+REVOKE ALL ON TABLE public.golf_standing_refresh_queue
+FROM public, anon, authenticated;
 GRANT ALL ON TABLE public.golf_standing_refresh_queue TO service_role;
 
-COMMENT ON TABLE public.golf_standing_refresh_queue IS 'Teams whose Standing needs a refresh because a player saved a round (Clubhouse A+ rows 105/121, 2026-10-24). Written by mark_team_standing_dirty, read by select_dirty_standing_teams, cleared by clear_dirty_standing_teams; all three service_role only. marked_at is the debounce clock (moves on every mark), first_marked_at the cap.';
+COMMENT ON TABLE public.golf_standing_refresh_queue IS
+'Teams whose Standing needs a refresh because a player saved a round '
+'(Clubhouse A+ rows 105/121, 2026-10-24). Written by mark_team_standing_dirty, '
+'read by select_dirty_standing_teams, cleared by clear_dirty_standing_teams; '
+'all three service_role only. marked_at is the debounce clock (moves on every '
+'mark), first_marked_at the cap.';
 
 CREATE OR REPLACE FUNCTION public.mark_team_standing_dirty(p_player_id uuid)
-  RETURNS integer
-  LANGUAGE sql
-  SECURITY DEFINER
-  SET search_path = pg_catalog, public
-  SET lock_timeout = '2s'
+RETURNS integer
+LANGUAGE sql
+SECURITY DEFINER
+SET search_path = pg_catalog, public
+SET lock_timeout = '2s'
 AS $$
   -- Team order is fixed so two marks on overlapping teams lock rows in the
   -- same order.
@@ -99,18 +125,21 @@ AS $$
   SELECT count(*)::integer FROM marked;
 $$;
 
-COMMENT ON FUNCTION public.mark_team_standing_dirty(uuid) IS 'Marks every team the player is active on as needing a Standing refresh; returns how many teams were marked. Called after a round save through the service client (never inside the save). service_role only.';
+COMMENT ON FUNCTION public.mark_team_standing_dirty(uuid) IS
+'Marks every team the player is active on as needing a Standing refresh; '
+'returns how many teams were marked. Called after a round save through the '
+'service client (never inside the save). service_role only.';
 
 CREATE OR REPLACE FUNCTION public.select_dirty_standing_teams(
-  p_limit integer,
-  p_quiet_seconds integer DEFAULT 180,
-  p_max_wait_seconds integer DEFAULT 1800
+    p_limit integer,
+    p_quiet_seconds integer DEFAULT 180,
+    p_max_wait_seconds integer DEFAULT 1800
 )
-  RETURNS TABLE (team_id uuid, marked_at timestamptz)
-  LANGUAGE sql
-  STABLE
-  SECURITY DEFINER
-  SET search_path = pg_catalog, public
+RETURNS TABLE (team_id uuid, marked_at timestamptz)
+LANGUAGE sql
+STABLE
+SECURITY DEFINER
+SET search_path = pg_catalog, public
 AS $$
   SELECT q.team_id, q.marked_at
     FROM public.golf_standing_refresh_queue q
@@ -120,13 +149,22 @@ AS $$
    LIMIT GREATEST(COALESCE(p_limit, 0), 0);
 $$;
 
-COMMENT ON FUNCTION public.select_dirty_standing_teams(integer, integer, integer) IS 'Read-only. Up to p_limit dirty teams that have been quiet for p_quiet_seconds since their last mark (the debounce), or dirty for longer than p_max_wait_seconds (the cap), oldest mark first, with the marked_at the caller must hand back to clear_dirty_standing_teams. service_role only.';
+COMMENT ON FUNCTION public.select_dirty_standing_teams(
+    integer, integer, integer
+) IS
+'Read-only. Up to p_limit dirty teams that have been quiet for p_quiet_seconds '
+'since their last mark (the debounce), or dirty for longer than '
+'p_max_wait_seconds (the cap), oldest mark first, with the marked_at the '
+'caller must hand back to clear_dirty_standing_teams. service_role only.';
 
-CREATE OR REPLACE FUNCTION public.clear_dirty_standing_teams(p_team_ids uuid[], p_marked_ats timestamptz[])
-  RETURNS integer
-  LANGUAGE plpgsql
-  SECURITY DEFINER
-  SET search_path = pg_catalog, public
+CREATE OR REPLACE FUNCTION public.clear_dirty_standing_teams(
+    p_team_ids uuid[],
+    p_marked_ats timestamptz[]
+)
+RETURNS integer
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = pg_catalog, public
 AS $$
 DECLARE
   v_cleared integer;
@@ -149,11 +187,26 @@ BEGIN
 END;
 $$;
 
-COMMENT ON FUNCTION public.clear_dirty_standing_teams(uuid[], timestamptz[]) IS 'Clears the marks a refresh run has covered: a team''s row goes only if its marked_at is not later than the value the run read, so a round saved during the refresh keeps its team dirty. Returns the rows removed. service_role only.';
+COMMENT ON FUNCTION public.clear_dirty_standing_teams(uuid[], timestamptz[]) IS
+'Clears the marks a refresh run has covered: a team''s row goes only if its '
+'marked_at is not later than the value the run read, so a round saved during '
+'the refresh keeps its team dirty. Returns the rows removed. service_role '
+'only.';
 
-REVOKE ALL ON FUNCTION public.mark_team_standing_dirty(uuid) FROM PUBLIC, anon, authenticated;
-REVOKE ALL ON FUNCTION public.select_dirty_standing_teams(integer, integer, integer) FROM PUBLIC, anon, authenticated;
-REVOKE ALL ON FUNCTION public.clear_dirty_standing_teams(uuid[], timestamptz[]) FROM PUBLIC, anon, authenticated;
+REVOKE ALL ON FUNCTION public.mark_team_standing_dirty(uuid)
+FROM public, anon, authenticated;
+REVOKE ALL ON FUNCTION public.select_dirty_standing_teams(
+    integer, integer, integer
+)
+FROM public, anon, authenticated;
+REVOKE ALL ON FUNCTION public.clear_dirty_standing_teams(uuid[], timestamptz[])
+FROM public, anon, authenticated;
 GRANT EXECUTE ON FUNCTION public.mark_team_standing_dirty(uuid) TO service_role;
-GRANT EXECUTE ON FUNCTION public.select_dirty_standing_teams(integer, integer, integer) TO service_role;
-GRANT EXECUTE ON FUNCTION public.clear_dirty_standing_teams(uuid[], timestamptz[]) TO service_role;
+GRANT EXECUTE ON FUNCTION public.select_dirty_standing_teams(
+    integer, integer, integer
+)
+TO service_role;
+GRANT EXECUTE ON FUNCTION public.clear_dirty_standing_teams(
+    uuid[], timestamptz[]
+)
+TO service_role;

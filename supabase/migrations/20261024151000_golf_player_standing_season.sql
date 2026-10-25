@@ -181,10 +181,10 @@ COMMENT ON COLUMN public.golf_player_standing_season.rounds_n IS 'Rounds this ro
 COMMENT ON COLUMN public.golf_player_standing_season.season_start IS 'The first day this row covers: 1 August of the current season in the player''s team''s time zone (the earlier start when the player is on two teams).';
 
 CREATE OR REPLACE FUNCTION public.refresh_player_standing_season(p_team_ids uuid[])
-  RETURNS TABLE (out_metric_id text, out_rows_upserted bigint)
-  LANGUAGE plpgsql
-  SECURITY DEFINER
-  SET search_path = pg_catalog, public
+RETURNS TABLE (out_metric_id text, out_rows_upserted bigint)
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = pg_catalog, public
 AS $$
 DECLARE
   v_min_rounds constant int := 5;         -- cache-metric gate (cache.rounds_played >= 5)
@@ -516,6 +516,10 @@ BEGIN
 END;
 $$;
 
+-- The words SECURITY DEFINER in this comment are text, not a function option:
+-- the function above already pins search_path = pg_catalog, public, so the
+-- semgrep finding on this line is a false positive.
+-- nosemgrep: helmv3-security-definer-without-search-path
 COMMENT ON FUNCTION public.refresh_player_standing_season(uuid[]) IS 'Clubhouse Standing for this season (owner decision 9, 2026-10-24). For the given team chunk, writes golf_player_standing_season: every Standing metric over the rounds since 1 August in the team''s time zone (golf_season_start), with rounds_n per row, ranked against the team (MIN_TEAM_N=5) and the gender-scoped app-wide cohort (MIN_COHORT_N=8) on the lifetime functions'' rules; then deletes the chunk players'' rows it did not rewrite. Takes a transaction advisory lock (single flight). Returns (metric, rows upserted). SECURITY DEFINER, service_role only. golf_player_standing is not touched.';
 
 REVOKE ALL ON FUNCTION public.golf_season_start(text, timestamptz) FROM PUBLIC, anon, authenticated;

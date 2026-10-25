@@ -30,10 +30,19 @@
 -- Desired schema: supabase/schemas/functions/public.sql,
 -- supabase/schemas/functions/95_grants.sql, supabase/schemas/triggers/golf.sql.
 --
--- VERIFY: select 1 where exists (select 1 from pg_trigger where tgname = 'golf_messages_poll_freeze' and tgrelid = 'public.golf_messages'::regclass and not tgisinternal);
--- VERIFY: select 1 where exists (select 1 from pg_proc where proname = 'golf_messages_poll_freeze' and pronamespace = 'public'::regnamespace and not prosecdef and proconfig @> array['search_path=""']);
--- VERIFY: select 1 where not has_function_privilege('authenticated', 'public.golf_messages_poll_freeze()', 'EXECUTE') and not has_function_privilege('anon', 'public.golf_messages_poll_freeze()', 'EXECUTE');
--- ROLLBACK: DROP TRIGGER IF EXISTS golf_messages_poll_freeze ON public.golf_messages;
+-- VERIFY: select 1 where exists (select 1 from pg_trigger where tgname =
+-- VERIFY:   'golf_messages_poll_freeze' and tgrelid =
+-- VERIFY:   'public.golf_messages'::regclass and not tgisinternal);
+-- VERIFY: select 1 where exists (select 1 from pg_proc where proname =
+-- VERIFY:   'golf_messages_poll_freeze' and pronamespace =
+-- VERIFY:   'public'::regnamespace and not prosecdef and proconfig @>
+-- VERIFY:   array['search_path=""']);
+-- VERIFY: select 1 where not has_function_privilege('authenticated',
+-- VERIFY:   'public.golf_messages_poll_freeze()', 'EXECUTE') and not
+-- VERIFY:   has_function_privilege('anon',
+-- VERIFY:   'public.golf_messages_poll_freeze()', 'EXECUTE');
+-- ROLLBACK: DROP TRIGGER IF EXISTS golf_messages_poll_freeze ON
+-- ROLLBACK:   public.golf_messages;
 -- ROLLBACK: DROP FUNCTION IF EXISTS public.golf_messages_poll_freeze();
 
 SET lock_timeout = '3s';
@@ -122,9 +131,15 @@ BEGIN
 END;
 $$;
 
-COMMENT ON FUNCTION public.golf_messages_poll_freeze() IS 'Clubhouse polls (P-2): a poll is inserted only in payload v1 shape and never changes after it is sent, except closed_at set once and the app''s soft delete (content and payload kept or cleared). Refusals are P0001 with HINT golf_poll_shape or golf_poll_frozen. Checks only requests with a JWT role other than service_role. Held 20261025020200.';
+COMMENT ON FUNCTION public.golf_messages_poll_freeze() IS
+'Clubhouse polls (P-2): a poll is inserted only in payload v1 shape and never '
+'changes after it is sent, except closed_at set once and the app''s soft '
+'delete (content and payload kept or cleared). Refusals are P0001 with HINT '
+'golf_poll_shape or golf_poll_frozen. Checks only requests with a JWT role '
+'other than service_role. Held 20261025020200.';
 
-REVOKE ALL ON FUNCTION public.golf_messages_poll_freeze() FROM PUBLIC, anon, authenticated;
+REVOKE ALL ON FUNCTION public.golf_messages_poll_freeze()
+FROM public, anon, authenticated;
 
 DO $$
 BEGIN

@@ -25,27 +25,54 @@
 -- never read teammates' marks in a group. Nobody writes marks directly:
 -- authenticated has SELECT only; the triggers write with definer rights.
 --
--- VERIFY: SELECT 1 FROM pg_class WHERE oid = 'public.golf_conversation_read_marks'::regclass AND relrowsecurity;
--- VERIFY: SELECT 1 FROM pg_policies WHERE schemaname = 'public' AND tablename = 'golf_conversation_read_marks' AND policyname = 'golf_read_marks_select' HAVING count(*) = 1;
--- VERIFY: SELECT 1 WHERE has_table_privilege('authenticated', 'public.golf_conversation_read_marks', 'SELECT') AND NOT has_table_privilege('authenticated', 'public.golf_conversation_read_marks', 'INSERT') AND NOT has_table_privilege('anon', 'public.golf_conversation_read_marks', 'SELECT');
--- VERIFY: SELECT 1 FROM pg_trigger WHERE tgname = 'golf_participants_read_mark' AND tgrelid = 'public.golf_conversation_participants'::regclass AND NOT tgisinternal;
--- VERIFY: SELECT 1 FROM pg_trigger WHERE tgname = 'golf_participants_read_marks_on_leave' AND tgrelid = 'public.golf_conversation_participants'::regclass AND NOT tgisinternal;
--- VERIFY: SELECT 1 FROM pg_proc WHERE oid = 'public.golf_read_marks_visible(uuid, uuid)'::regprocedure AND prosecdef AND NOT has_function_privilege('anon', oid, 'EXECUTE');
--- VERIFY: SELECT 1 FROM pg_proc WHERE oid = 'public.golf_message_seen_times(uuid)'::regprocedure AND NOT prosecdef AND has_function_privilege('authenticated', oid, 'EXECUTE') AND NOT has_function_privilege('anon', oid, 'EXECUTE');
--- ROLLBACK: DROP TRIGGER IF EXISTS golf_participants_read_mark ON public.golf_conversation_participants; DROP TRIGGER IF EXISTS golf_participants_read_marks_on_leave ON public.golf_conversation_participants; DROP FUNCTION IF EXISTS public.golf_message_seen_times(uuid); DROP FUNCTION IF EXISTS public.golf_record_read_mark(); DROP FUNCTION IF EXISTS public.golf_forget_read_marks(); DROP TABLE IF EXISTS public.golf_conversation_read_marks; DROP FUNCTION IF EXISTS public.golf_read_marks_visible(uuid, uuid);
--- After apply: npm run db:types (adds the table and the function to src/lib/types/database.ts).
+-- VERIFY: SELECT 1 FROM pg_class WHERE oid =
+-- VERIFY:   'public.golf_conversation_read_marks'::regclass AND relrowsecurity;
+-- VERIFY: SELECT 1 FROM pg_policies WHERE schemaname = 'public' AND tablename =
+-- VERIFY:   'golf_conversation_read_marks' AND policyname =
+-- VERIFY:   'golf_read_marks_select' HAVING count(*) = 1;
+-- VERIFY: SELECT 1 WHERE has_table_privilege('authenticated',
+-- VERIFY:   'public.golf_conversation_read_marks', 'SELECT') AND NOT
+-- VERIFY:   has_table_privilege('authenticated',
+-- VERIFY:   'public.golf_conversation_read_marks', 'INSERT') AND NOT
+-- VERIFY:   has_table_privilege('anon', 'public.golf_conversation_read_marks',
+-- VERIFY:   'SELECT');
+-- VERIFY: SELECT 1 FROM pg_trigger WHERE tgname = 'golf_participants_read_mark'
+-- VERIFY:   AND tgrelid = 'public.golf_conversation_participants'::regclass AND
+-- VERIFY:   NOT tgisinternal;
+-- VERIFY: SELECT 1 FROM pg_trigger WHERE tgname =
+-- VERIFY:   'golf_participants_read_marks_on_leave' AND tgrelid =
+-- VERIFY:   'public.golf_conversation_participants'::regclass AND NOT
+-- VERIFY:   tgisinternal;
+-- VERIFY: SELECT 1 FROM pg_proc WHERE oid =
+-- VERIFY:   'public.golf_read_marks_visible(uuid, uuid)'::regprocedure AND
+-- VERIFY:   prosecdef AND NOT has_function_privilege('anon', oid, 'EXECUTE');
+-- VERIFY: SELECT 1 FROM pg_proc WHERE oid =
+-- VERIFY:   'public.golf_message_seen_times(uuid)'::regprocedure AND NOT
+-- VERIFY:   prosecdef AND has_function_privilege('authenticated', oid,
+-- VERIFY:   'EXECUTE') AND NOT has_function_privilege('anon', oid, 'EXECUTE');
+-- ROLLBACK: DROP TRIGGER IF EXISTS golf_participants_read_mark ON
+-- ROLLBACK:   public.golf_conversation_participants; DROP TRIGGER IF EXISTS
+-- ROLLBACK:   golf_participants_read_marks_on_leave ON
+-- ROLLBACK:   public.golf_conversation_participants; DROP FUNCTION IF EXISTS
+-- ROLLBACK:   public.golf_message_seen_times(uuid); DROP FUNCTION IF EXISTS
+-- ROLLBACK:   public.golf_record_read_mark(); DROP FUNCTION IF EXISTS
+-- ROLLBACK:   public.golf_forget_read_marks(); DROP TABLE IF EXISTS
+-- ROLLBACK:   public.golf_conversation_read_marks; DROP FUNCTION IF EXISTS
+-- ROLLBACK:   public.golf_read_marks_visible(uuid, uuid);
+-- After apply: npm run db:types (adds the table and the function to
+-- src/lib/types/database.ts).
 
 SET lock_timeout = '3s';
 
 -- 1. The log.
 CREATE TABLE IF NOT EXISTS public.golf_conversation_read_marks (
-  id bigint GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
-  conversation_id uuid NOT NULL
+    id bigint GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    conversation_id uuid NOT NULL
     REFERENCES public.golf_conversations (id) ON DELETE CASCADE,
-  user_id uuid NOT NULL
+    user_id uuid NOT NULL
     REFERENCES public.users (id) ON DELETE CASCADE,
-  read_at timestamptz NOT NULL,
-  is_baseline boolean NOT NULL DEFAULT false
+    read_at timestamptz NOT NULL,
+    is_baseline boolean NOT NULL DEFAULT FALSE
 );
 
 COMMENT ON TABLE public.golf_conversation_read_marks IS
@@ -55,25 +82,26 @@ COMMENT ON TABLE public.golf_conversation_read_marks IS
 'message''s created_at is when that person first saw it (Clubhouse Seen by, '
 'P-1). Kept 120 days. Written only by triggers; members read through RLS.';
 
--- The table is created empty in this migration, so a plain build takes no time; CONCURRENTLY cannot run inside
--- the migration transaction.
+-- The table is created empty in this migration, so a plain build takes no time;
+-- CONCURRENTLY cannot run inside the migration transaction.
 -- Reader range scan (golf_message_seen_times) and the per-user prune.
 -- squawk-ignore require-concurrent-index-creation
 CREATE INDEX IF NOT EXISTS idx_golf_read_marks_conv_read_at
-  ON public.golf_conversation_read_marks (conversation_id, read_at)
-  INCLUDE (user_id, is_baseline);
+ON public.golf_conversation_read_marks (conversation_id, read_at)
+INCLUDE (user_id, is_baseline);
 -- Covers the user_id foreign key (cascade on user delete; advisor rule).
 -- squawk-ignore require-concurrent-index-creation
 CREATE INDEX IF NOT EXISTS idx_golf_read_marks_user_id
-  ON public.golf_conversation_read_marks (user_id);
+ON public.golf_conversation_read_marks (user_id);
 -- At most one baseline per participant: makes the baseline insert idempotent.
 -- squawk-ignore require-concurrent-index-creation
 CREATE UNIQUE INDEX IF NOT EXISTS uq_golf_read_marks_baseline
-  ON public.golf_conversation_read_marks (conversation_id, user_id)
-  WHERE is_baseline;
+ON public.golf_conversation_read_marks (conversation_id, user_id)
+WHERE is_baseline;
 
 ALTER TABLE public.golf_conversation_read_marks ENABLE ROW LEVEL SECURITY;
-REVOKE ALL ON public.golf_conversation_read_marks FROM PUBLIC, anon, authenticated;
+REVOKE ALL ON public.golf_conversation_read_marks
+FROM public, anon, authenticated;
 GRANT SELECT ON public.golf_conversation_read_marks TO authenticated;
 GRANT ALL ON public.golf_conversation_read_marks TO service_role;
 
@@ -82,8 +110,8 @@ GRANT ALL ON public.golf_conversation_read_marks TO service_role;
 -- membership migration documents), and so the staff check can read
 -- golf_team_coach_staff and golf_coaches regardless of the caller's grants.
 CREATE OR REPLACE FUNCTION public.golf_read_marks_visible(
-  p_conversation_id uuid,
-  p_user_id uuid
+    p_conversation_id uuid,
+    p_user_id uuid
 ) RETURNS boolean
 LANGUAGE sql
 STABLE
@@ -118,10 +146,13 @@ COMMENT ON FUNCTION public.golf_read_marks_visible(uuid, uuid) IS
 'May the CALLER read p_user_id''s read marks in this conversation? Own marks; '
 'the other person''s in a two-person thread; everyone''s in a team '
 'conversation the caller belongs to and coaches. Reads auth.uid() itself, so '
-'it answers only for the caller. Policy helper for golf_conversation_read_marks.';
+'it answers only for the caller. Policy helper for '
+'golf_conversation_read_marks.';
 
-REVOKE EXECUTE ON FUNCTION public.golf_read_marks_visible(uuid, uuid) FROM PUBLIC, anon;
-GRANT EXECUTE ON FUNCTION public.golf_read_marks_visible(uuid, uuid) TO authenticated, service_role;
+REVOKE EXECUTE ON FUNCTION public.golf_read_marks_visible(uuid, uuid)
+FROM public, anon;
+GRANT EXECUTE ON FUNCTION public.golf_read_marks_visible(uuid, uuid)
+TO authenticated, service_role;
 
 DO $$
 BEGIN
@@ -174,14 +205,17 @@ BEGIN
 END;
 $$;
 
-REVOKE EXECUTE ON FUNCTION public.golf_record_read_mark() FROM PUBLIC, anon, authenticated;
+REVOKE EXECUTE ON FUNCTION public.golf_record_read_mark()
+FROM public, anon, authenticated;
 
 CREATE OR REPLACE TRIGGER golf_participants_read_mark
-  AFTER UPDATE OF last_read_at ON public.golf_conversation_participants
-  FOR EACH ROW
-  WHEN (NEW.last_read_at IS NOT NULL
-        AND (OLD.last_read_at IS NULL OR NEW.last_read_at > OLD.last_read_at))
-  EXECUTE FUNCTION public.golf_record_read_mark();
+AFTER UPDATE OF last_read_at ON public.golf_conversation_participants
+FOR EACH ROW
+WHEN (
+    new.last_read_at IS NOT NULL
+    AND (old.last_read_at IS NULL OR new.last_read_at > old.last_read_at)
+)
+EXECUTE FUNCTION public.golf_record_read_mark();
 
 -- 4. Leaving a conversation takes your marks with you.
 CREATE OR REPLACE FUNCTION public.golf_forget_read_marks()
@@ -198,12 +232,13 @@ BEGIN
 END;
 $$;
 
-REVOKE EXECUTE ON FUNCTION public.golf_forget_read_marks() FROM PUBLIC, anon, authenticated;
+REVOKE EXECUTE ON FUNCTION public.golf_forget_read_marks()
+FROM public, anon, authenticated;
 
 CREATE OR REPLACE TRIGGER golf_participants_read_marks_on_leave
-  AFTER DELETE ON public.golf_conversation_participants
-  FOR EACH ROW
-  EXECUTE FUNCTION public.golf_forget_read_marks();
+AFTER DELETE ON public.golf_conversation_participants
+FOR EACH ROW
+EXECUTE FUNCTION public.golf_forget_read_marks();
 
 -- 5. The reader: when each member first saw one message. Invoker rights, so
 -- the marks' RLS decides whose rows come back (a player gets their own; a
@@ -235,16 +270,23 @@ COMMENT ON FUNCTION public.golf_message_seen_times(uuid) IS
 'golf_conversation_read_marks RLS decides whose rows return. exact = false: '
 'seen before the log began, time unknown. Clubhouse Seen by (P-1).';
 
-REVOKE EXECUTE ON FUNCTION public.golf_message_seen_times(uuid) FROM PUBLIC, anon;
-GRANT EXECUTE ON FUNCTION public.golf_message_seen_times(uuid) TO authenticated, service_role;
+REVOKE EXECUTE ON FUNCTION public.golf_message_seen_times(uuid)
+FROM public, anon;
+GRANT EXECUTE ON FUNCTION public.golf_message_seen_times(uuid)
+TO authenticated, service_role;
 
 -- 6. Baseline: what each participant had already seen when the log started.
 -- Only recent readers matter (the reader answers for 30 days). Idempotent
 -- through uq_golf_read_marks_baseline.
 INSERT INTO public.golf_conversation_read_marks
-  (conversation_id, user_id, read_at, is_baseline)
-SELECT p.conversation_id, p.user_id, LEAST(p.last_read_at, now()), true
+(conversation_id, user_id, read_at, is_baseline)
+SELECT
+    p.conversation_id,
+    p.user_id,
+    LEAST(p.last_read_at, NOW()) AS read_at,
+    TRUE AS is_baseline
 FROM public.golf_conversation_participants p
-WHERE p.last_read_at IS NOT NULL
-  AND p.last_read_at >= now() - interval '30 days'
+WHERE
+    p.last_read_at IS NOT NULL
+    AND p.last_read_at >= NOW() - interval '30 days'
 ON CONFLICT (conversation_id, user_id) WHERE is_baseline DO NOTHING;

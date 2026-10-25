@@ -25,10 +25,18 @@
 -- App side: works before and after apply. Before apply the concurrency check
 -- still covers moves made through updateGolfEvent.
 --
--- VERIFY: SELECT 1 FROM pg_trigger WHERE tgrelid = 'public.golf_events'::regclass AND tgname = 'golf_events_touch_updated_at' AND NOT tgisinternal AND tgenabled = 'O';
--- VERIFY: SELECT 1 FROM pg_trigger WHERE tgrelid = 'public.golf_events'::regclass AND tgname = 'golf_events_touch_updated_at' AND pg_get_triggerdef(oid) LIKE '%helm.change_mark_writer%';
--- VERIFY: SELECT 1 FROM pg_proc WHERE proname = 'touch_updated_at' AND pronamespace = 'public'::regnamespace;
--- ROLLBACK: DROP TRIGGER IF EXISTS golf_events_touch_updated_at ON public.golf_events;
+-- VERIFY: SELECT 1 FROM pg_trigger WHERE tgrelid =
+-- VERIFY:   'public.golf_events'::regclass AND tgname =
+-- VERIFY:   'golf_events_touch_updated_at' AND NOT tgisinternal AND tgenabled =
+-- VERIFY:   'O';
+-- VERIFY: SELECT 1 FROM pg_trigger WHERE tgrelid =
+-- VERIFY:   'public.golf_events'::regclass AND tgname =
+-- VERIFY:   'golf_events_touch_updated_at' AND pg_get_triggerdef(oid) LIKE
+-- VERIFY:   '%helm.change_mark_writer%';
+-- VERIFY: SELECT 1 FROM pg_proc WHERE proname = 'touch_updated_at' AND
+-- VERIFY:   pronamespace = 'public'::regnamespace;
+-- ROLLBACK: DROP TRIGGER IF EXISTS golf_events_touch_updated_at ON
+-- ROLLBACK:   public.golf_events;
 
 SET lock_timeout = '3s';
 
@@ -40,10 +48,15 @@ BEGIN
 END $$;
 
 CREATE OR REPLACE TRIGGER golf_events_touch_updated_at
-  BEFORE UPDATE ON public.golf_events
-  FOR EACH ROW
-  WHEN (OLD.* IS DISTINCT FROM NEW.* AND current_setting('helm.change_mark_writer', true) IS DISTINCT FROM 'on')
-  EXECUTE FUNCTION public.touch_updated_at();
+BEFORE UPDATE ON public.golf_events
+FOR EACH ROW
+WHEN (
+    old.* IS DISTINCT FROM new.*
+    AND current_setting('helm.change_mark_writer', true) IS DISTINCT FROM 'on'
+)
+EXECUTE FUNCTION public.touch_updated_at();
 
 COMMENT ON TRIGGER golf_events_touch_updated_at ON public.golf_events IS
-  'Keeps updated_at true for every writer: the concurrency token Clubhouse calendar moves compare (P-4). Skips no-op updates and the P-14 change marks settle write.';
+'Keeps updated_at true for every writer: the concurrency token Clubhouse '
+'calendar moves compare (P-4). Skips no-op updates and the P-14 change marks '
+'settle write.';

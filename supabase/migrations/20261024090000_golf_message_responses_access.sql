@@ -31,9 +31,13 @@
 -- gets the stricter body); held 20261025020000 brings that body to
 -- production, where this file leaves the existing policy alone.
 --
--- VERIFY: SELECT 1 FROM pg_policies WHERE schemaname = 'public' AND tablename = 'golf_message_responses' HAVING count(*) = 4;
--- VERIFY: SELECT 1 FROM pg_constraint WHERE conname = 'golf_message_responses_unique';
--- VERIFY: SELECT 1 FROM pg_publication_tables WHERE pubname = 'supabase_realtime' AND schemaname = 'public' AND tablename = 'golf_message_responses';
+-- VERIFY: SELECT 1 FROM pg_policies WHERE schemaname = 'public' AND tablename =
+-- VERIFY:   'golf_message_responses' HAVING count(*) = 4;
+-- VERIFY: SELECT 1 FROM pg_constraint WHERE conname =
+-- VERIFY:   'golf_message_responses_unique';
+-- VERIFY: SELECT 1 FROM pg_publication_tables WHERE pubname =
+-- VERIFY:   'supabase_realtime' AND schemaname = 'public' AND tablename =
+-- VERIFY:   'golf_message_responses';
 -- ROLLBACK: none on production, where nothing changes. Do not drop the
 -- already-live access contract to undo this reconciliation; locally, reset
 -- the stack.

@@ -15,8 +15,12 @@
 -- has it); on production either order. Independent of 20261025020100.
 -- Desired schema: supabase/schemas/triggers/golf.sql.
 --
--- VERIFY: select 1 where exists (select 1 from pg_trigger where tgname = 'golf_message_responses_touch' and tgrelid = 'public.golf_message_responses'::regclass and tgfoid = 'public.touch_updated_at()'::regprocedure and not tgisinternal);
--- ROLLBACK: DROP TRIGGER IF EXISTS golf_message_responses_touch ON public.golf_message_responses;
+-- VERIFY: select 1 where exists (select 1 from pg_trigger where tgname =
+-- VERIFY:   'golf_message_responses_touch' and tgrelid =
+-- VERIFY:   'public.golf_message_responses'::regclass and tgfoid =
+-- VERIFY:   'public.touch_updated_at()'::regprocedure and not tgisinternal);
+-- ROLLBACK: DROP TRIGGER IF EXISTS golf_message_responses_touch ON
+-- ROLLBACK:   public.golf_message_responses;
 
 SET lock_timeout = '3s';
 
