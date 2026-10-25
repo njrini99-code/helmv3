@@ -1105,6 +1105,7 @@ them would bury everything above.
 | `docs/clubhouse/pages/P011-rounds/changes/2026-10-25-p7-compare.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P011-rounds/changes/2026-10-25-p7-course-math.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P011-rounds/changes/2026-10-25-p7-course-page.md` | current | - | - | - | - |
+| `docs/clubhouse/pages/P011-rounds/changes/2026-10-25-p7-here-before.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P011-rounds/changes/2026-10-25-p7-hole-map.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P011-rounds/changes/2026-10-25-p7-how-it-plays.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P011-rounds/changes/2026-10-25-p7-record-chips.md` | current | - | - | - | - |

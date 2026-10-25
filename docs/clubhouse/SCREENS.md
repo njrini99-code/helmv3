@@ -115,6 +115,10 @@ Mobile designs are tracked per screen in `PROGRESS.md` (the `phone-spec` and
 - [x] **Round recovery** `/rounds/recover` — The rounds this device holds that
   the server may not: restore, sync again or discard (`RoundRecover`, swap audit
   F-02; Fairway's recovery ported, no board; phone `phone/rounds.md`)
+- [x] **Course history** `/rounds/course/[key]` — Their history at one course:
+  the hole map, how it plays for them, the average round and compare two rounds
+  (`CoursePage`, P-7, 2026-10-25; reached from a round's review, the library's
+  By course headers and round setup; a coach reads one player with `?player=`)
 - [ ] **Round review** `/rounds/[id]/review` — AI analysis of a round they
   played
 - [x] **Team Hub** `/team-hub` — Their team at a glance: RSVPs, announcements to
