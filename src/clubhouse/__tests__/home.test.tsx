@@ -1167,11 +1167,11 @@ describe('Home · the phone, the page’s own contracts', () => {
     expect(when()).toBe('Happening now');
   });
 
-  it('21703 on the phone a quick event type ticks, Add event gives the light tap, and a round opens with a tick', async () => {
+  it('21703 on the phone a quick event type is silent (a link, A14), Add event gives the light tap, and a round opens with a tick', async () => {
     const user = userEvent.setup();
     const none = wrap(<CoachHome data={PREVIEW_HOME_NO_EVENTS} now={PREVIEW_HOME_NOW} />);
     await user.click(screen.getByRole('link', { name: 'Qualifier' }));
-    expect(hapticSpy.mock.calls).toEqual([['select']]);
+    expect(hapticSpy.mock.calls).toEqual([]);
     hapticSpy.mockClear();
     await user.click(screen.getByRole('link', { name: 'Add event' }));
     expect(hapticSpy.mock.calls).toEqual([['press']]);
@@ -1317,7 +1317,7 @@ describe('Home · the team’s game and what’s waiting on the coach (spec B)',
     expect(nav.previousElementSibling?.className).toMatch(/ch-h-head/);
     const links = within(nav).getAllByRole('link');
     expect(links.map((a) => [a.textContent, a.getAttribute('href')])).toEqual([
-      ['1 join request', '/golf/dashboard/roster'],
+      ['1 join request', '/golf/dashboard/roster?tab=requests'],
       ['3 replies missing', '/golf/dashboard/calendar'],
       ['2 tasks overdue', '/golf/dashboard/team-hub?tab=tasks'],
       ['1 post awaiting acknowledgement', '/golf/dashboard/team-hub?tab=ann'],
@@ -1343,7 +1343,7 @@ describe('Home · the team’s game and what’s waiting on the coach (spec B)',
   it('CH-2220 CH-2308 the first run shows what is waiting too (join requests above all), on desktop and the phone', () => {
     wrap(<CoachHome data={PREVIEW_HOME_EMPTY} now={PREVIEW_HOME_NOW} />);
     expect(isFirstRun(PREVIEW_HOME_EMPTY)).toBe(true);
-    expect(within(screen.getByRole('navigation', { name: 'Waiting on you' })).getByRole('link', { name: '2 join requests' }).getAttribute('href')).toBe('/golf/dashboard/roster');
+    expect(within(screen.getByRole('navigation', { name: 'Waiting on you' })).getByRole('link', { name: '2 join requests' }).getAttribute('href')).toBe('/golf/dashboard/roster?tab=requests');
     cleanup();
     phoneMedia();
     wrap(<CoachHome data={PREVIEW_HOME_EMPTY} now={PREVIEW_HOME_NOW} />);

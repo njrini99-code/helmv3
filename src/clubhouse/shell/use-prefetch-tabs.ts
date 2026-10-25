@@ -2,7 +2,9 @@
 
 import { useRouter } from 'next/navigation';
 import { PrefetchKind } from 'next/dist/client/components/router-reducer/router-reducer-types';
-import { useEffect, useRef } from 'react';
+import { useContext, useEffect, useRef } from 'react';
+import { AppRouterContext } from 'next/dist/shared/lib/app-router-context.shared-runtime';
+import { fullPrefetchAllowed } from '../lib/prefetch-guard';
 import { chReturning } from '../lib/pop-mark';
 
 /** Whether the device asked to save data or is offline: then nothing is fetched ahead of a tap. */
@@ -46,6 +48,8 @@ export function needsRefresh(at: number | null | undefined, shown: number | unde
 type Router = ReturnType<typeof useRouter>;
 
 export function fetchAhead(router: Router, href: string, now: number): void {
+  // CoachHelm records what it returns as shown: never fetched ahead (CH-R1, lib/prefetch-guard.ts).
+  if (!fullPrefetchAllowed(href)) return;
   // Not held (never fetched, dropped by a refresh, or past Next's hold): this call fetches it now.
   if (!held(fetchedAt.get(href), shownAt.get(href), now)) fetchedAt.set(href, now);
   router.prefetch?.(href, { kind: PrefetchKind.FULL });
@@ -216,6 +220,41 @@ function rememberVisit(href: string): void {
   if (at >= 0) visited.splice(at, 1);
   visited.unshift(href);
   visited.splice(CH_VISITED_KEPT);
+}
+
+/**
+ * A write that changes what the section pages show (a round submitted, discarded, or its type changed): forget what was
+ * fetched ahead and shown, so the next tab tap fetches the page again instead of serving one held from before the write
+ * for up to 300s (A21). Next's own copies go with the server's revalidate or the caller's refresh.
+ */
+export function invalidatePrefetchTabs(): void {
+  fetchedAt.clear();
+  shownAt.clear();
+}
+
+/** Whether Next still holds `href` from a fetch ahead or a visit in the last 300s, as far as this tab knows. */
+export function heldPage(href: string, now: number): boolean {
+  return held(fetchedAt.get(href), shownAt.get(href), now);
+}
+
+/**
+ * A row's push target, fetched whole the moment a finger lands on the row (A13), so the page it opens is there by the time
+ * the tap ends instead of its skeleton. Not again within the fresh window (Next answers from what it holds), nor when the
+ * device saves data or is offline. One full prefetch per press.
+ */
+export function prefetchOnPress(router: Router, href: string, now: number): void {
+  if (!prefetchAllowed(typeof navigator === 'undefined' ? undefined : navigator)) return;
+  const at = fetchedAt.get(href);
+  if (at != null && heldPage(href, now) && now - at <= CH_TAB_FRESH_MS) return;
+  fetchAhead(router, href, now);
+}
+
+/** `onPointerDown` for a row link that pushes `href`: fetches the page ahead as the press starts (A13). */
+export function usePressPrefetch(): (href: string | null | undefined) => { onPointerDown?: () => void } {
+  // Outside the app router (a preview harness, a test rendering one row) there is nothing to fetch with: rows stay plain.
+  // The context, not useRouter, which throws there.
+  const router = useContext(AppRouterContext) as Router | null;
+  return (href) => (href && router ? { onPointerDown: () => prefetchOnPress(router, href, Date.now()) } : {});
 }
 
 /** Tests only: forget what was fetched. */

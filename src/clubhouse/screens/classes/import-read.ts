@@ -23,10 +23,13 @@ export type ChReadResult = { ok: true; rows: ChImportRow[]; warnings: string[] }
 /** The largest PDF or TXT file the reader takes. */
 export const MAX_SCHEDULE_BYTES = 12 * 1024 * 1024;
 /**
- * The vision action's own ceiling (`MAX_TOTAL_BASE64_CHARS` in schedule-image.ts, about 12 MB of image data). It applies to
- * what is sent: a photo is downscaled first, so a large phone photo is taken, as the current importer takes it.
+ * The most image data one read sends. It applies to what is sent: a photo is downscaled first, so a large phone photo is
+ * taken, as the current importer takes it. The images ride in a server action's body, and Vercel refuses a request body
+ * over about 4.5 MB before the action runs (UP-1), so the ceiling sits under that, not at the vision action's own
+ * `MAX_TOTAL_BASE64_CHARS` (about 12 MB): an image the browser could not downscale is refused here, in words, instead
+ * of failing on the platform with no answer.
  */
-export const MAX_IMAGE_BASE64_CHARS = 16 * 1024 * 1024;
+export const MAX_IMAGE_BASE64_CHARS = 4_200_000;
 
 const IMAGE_TYPES = new Set(['image/png', 'image/jpeg', 'image/webp', 'image/gif']);
 
@@ -246,7 +249,7 @@ export async function readScheduleLive(source: ChReadSource): Promise<ChReadResu
     if (screened.kind === 'pdf') return fromText(await extractTextFromPdf(source.file));
     const images = await prepareScheduleImages(source.file);
     // Only an image the browser could not downscale (sent as it is) can still be past the action's ceiling.
-    if (images.reduce((n, i) => n + i.base64.length, 0) > MAX_IMAGE_BASE64_CHARS) return { ok: false, kind: 'tooLarge', message: 'Use an image under 12 MB.' };
+    if (images.reduce((n, i) => n + i.base64.length, 0) > MAX_IMAGE_BASE64_CHARS) return { ok: false, kind: 'tooLarge', message: 'That image is too large to send. Use a PNG or JPG screenshot, or paste the text.' };
     const result = await extractClassesFromScheduleImage(images);
     if (!result.success || !result.classes?.length) {
       const kind = classifyReadError(result.error);

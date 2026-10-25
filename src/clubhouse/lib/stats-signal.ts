@@ -47,6 +47,17 @@ export function sampleState(kind: FloorKind, n: number | null | undefined): Samp
   return n < f.early ? 'early' : 'steady';
 }
 
+/**
+ * A rate held to its floor (A7): no value under `show`, with what it needs; between `show` and `early` the value with its
+ * early-read tag; from `early` the value alone. "100% sand saves" from one bunker shot never reads as a rate.
+ */
+export function floorRate(kind: FloorKind, n: number, value: number | null): { value: number | null; state: SampleState; needs?: string; early?: string } {
+  const state = sampleState(kind, n);
+  if (value == null) return { value: null, state };
+  if (state === 'none') return { value: null, state, needs: needsText(kind) };
+  return state === 'early' ? { value, state, early: earlyTag(n, FLOORS[kind].unit) } : { value, state };
+}
+
 const plural = (n: number, unit: string) => `${n} ${unit}${n === 1 ? '' : 's'}`;
 
 /** The tag on a muted value: "Early read · 6 rounds", or in the stat's own unit ("Early read · 24 holes"). */
@@ -122,15 +133,16 @@ export function changeSe(
 /**
  * A short run of scores (oldest first) split in half: the newer half's mean less the older half's, and that change's standard
  * error. The split is the form line's and `summarizeWindow`'s own (`formChange`): with an odd count the middle score is in
- * neither half. Null under three scores.
+ * neither half. Null under three scores. `kind` names the pooled spread a short half falls back on (score by default; null for a
+ * figure with none, whose change then has a standard error only once each half has five values).
  */
-export function halvesChange(trend: number[]): { delta: number; se: number | null } | null {
+export function halvesChange(trend: number[], kind: SpreadKind | null = 'score'): { delta: number; se: number | null } | null {
   if (trend.length < 3) return null;
   const half = Math.floor(trend.length / 2);
   const newer = trend.slice(trend.length - half);
   const older = trend.slice(0, half);
   const m = (xs: number[]) => xs.reduce((a, b) => a + b, 0) / xs.length;
-  return { delta: m(newer) - m(older), se: changeSe(newer, older, 'score') };
+  return { delta: m(newer) - m(older), se: changeSe(newer, older, kind) };
 }
 
 export type DeltaTone = '' | 'is-gain' | 'is-loss';

@@ -4,8 +4,8 @@ import type { ChSgChange } from '../../data/stats-common';
 import type { ChGauge } from '../../data/stats-team';
 import { Icon } from '../../ui/Icon';
 import { SerifText } from '../../ui/SerifText';
-import { formatSigned, NO_DATA } from '../../lib/format';
-import { sgScale } from '../../lib/sg';
+import { changeTone, formatSigned, NO_DATA } from '../../lib/format';
+import { sgBaseline, sgScale } from '../../lib/sg';
 import { deltaTone, deltaWords, type DeltaTone } from '../../lib/stats-signal';
 
 /**
@@ -54,17 +54,22 @@ export function FigureGauge({ gauge, n }: { gauge: ChGauge; n: number }) {
     const v = gauge.kind === 'sg' ? n : gauge.toPar;
     if (v == null) return null;
     const end = gauge.kind === 'sg' ? sgScale([v]) : 6;
-    const w = pct((Math.abs(v) / end) * 50);
-    // Strokes gained above zero is good; a score above par is not.
-    const good = gauge.kind === 'sg' ? v >= 0 : v <= 0;
+    // The bar fills at most its own half (A8.4): a value past the end stops at it, and the end label says so (">+3",
+    // "<−3"; ASCII, because the font has no "≥", A23).
+    const clipped = Math.abs(v) > end;
+    const w = pct((Math.min(Math.abs(v), end) / end) * 50);
+    // Strokes gained above zero is good; a score above par is not; a value that shows as zero is neither.
+    const tone = changeTone(v, gauge.kind !== 'sg', 1);
     const right = gauge.kind === 'sg' ? v >= 0 : v > 0;
+    const endLabel = `${clipped ? (right ? '>' : '<') : ''}${formatSigned(right ? end : -end, 0)}`;
     return (
       <span className="ch-fg__gauge" aria-hidden="true">
         <span className="ch-fg__track">
-          <i className={good ? 'is-gain' : 'is-loss'} style={right ? { left: '50%', width: w } : { right: '50%', width: w }} />
+          <i className={tone} style={right ? { left: '50%', width: w } : { right: '50%', width: w }} />
           <b style={{ left: '50%' }} />
         </span>
-        <em style={{ left: '50%' }}>{gauge.kind === 'sg' ? 'Tour' : 'Par'}</em>
+        <em style={{ left: '50%' }}>{gauge.kind === 'sg' ? sgBaseline(gauge.tour === undefined ? 'pga' : gauge.tour).mark : 'Par'}</em>
+        <em className={`ch-fg__end ch-num ${right ? 'is-right' : 'is-left'}`}>{endLabel}</em>
       </span>
     );
   }
@@ -119,6 +124,13 @@ export function SgChangeChip({ change, code, subject }: { change: ChSgChange; co
   );
 }
 
+/** A ring's fill (A8.8): the make rate from 10 putts, a fixed low "early" fill under them, and full for a band with none. */
+export const RING_EARLY_OPACITY = 0.12;
+export function ringOpacity(attempts: number, rate: number | null): number {
+  if (rate == null) return 1;
+  return attempts < 10 ? RING_EARLY_OPACITY : 0.1 + rate * 0.85;
+}
+
 /** Putting read off rings around the cup: make rate by distance band, with the Tour rate beside it. */
 export function PuttingRings({ bands }: { bands: Array<{ label: string; made: number; attempts: number; bench: number | null }> }) {
   // Geometry from the design system's PuttingGreen (charts/geom.jsx `green`): rings by
@@ -137,8 +149,9 @@ export function PuttingRings({ bands }: { bands: Array<{ label: string; made: nu
         .map(({ b, r, p }) => (
           <g key={b.label}>
             <circle cx={cx} cy={cy} r={r} fill="var(--ch-chart-paper)" />
-            {/* A band with no putts stays neutral, never a pale 0%. */}
-            <circle cx={cx} cy={cy} r={r} fill={p == null ? 'var(--ch-ivory-200)' : 'var(--ch-green-500)'} fillOpacity={p == null ? 1 : 0.1 + p * 0.85} className="ch-pg-ring" />
+            {/* A band with no putts stays neutral, never a pale 0%; one under 10 putts keeps the early look, a fixed low fill
+                that reads no rate (A8.8), as its label does. */}
+            <circle cx={cx} cy={cy} r={r} fill={p == null ? 'var(--ch-ivory-200)' : 'var(--ch-green-500)'} fillOpacity={ringOpacity(b.attempts, p)} className="ch-pg-ring" />
           </g>
         ))}
       <circle cx={cx} cy={cy} r={4} fill="var(--ch-ink-900)" />

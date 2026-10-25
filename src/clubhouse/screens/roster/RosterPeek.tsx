@@ -20,6 +20,7 @@ import { useChReducedMotion } from '../../lib/reduced-motion';
 import { formatFixed, formatSigned, formatToPar, NO_DATA } from '../../lib/format';
 import { rebuiltHref } from '../../shell/nav';
 import { AVAILABILITY_WORD, formatHcp, legsCaption, relativeAgo } from './format';
+import { usePressPrefetch } from '../../shell/use-prefetch-tabs';
 
 const FORM_NOTE: Record<ChRosterPlayer['form'], string> = {
   improving: 'Scoring is coming down.',
@@ -283,6 +284,7 @@ const insightsHref = (p: ChRosterPlayer) => rebuiltHref(coachPlayerHref('deep-di
  * working, counted as the Board counts them, and View insights. Off for the coach: not drawn.
  */
 function HelmBlock({ p, helm }: { p: ChRosterPlayer; helm: ChRosterHelm }) {
+  const press = usePressPrefetch();
   if (helm.status === 'off') return null;
   const href = insightsHref(p);
   return (
@@ -294,8 +296,8 @@ function HelmBlock({ p, helm }: { p: ChRosterPlayer; helm: ChRosterHelm }) {
       <div className="ch-rs-peek__dev" data-ch-code={helm.status === 'failed' ? 'CH-3212' : undefined}>
         <HelmCounts p={p} helm={helm} />
         {href && (
-          <Link className="ch-rs-peek__go" href={href}>
-            View insights <span aria-hidden="true">→</span>
+          <Link className="ch-rs-peek__go" href={href} {...press(href)}>
+            View insights <Icon icon={ArrowRight} size={14} />
           </Link>
         )}
       </div>
@@ -306,6 +308,7 @@ function HelmBlock({ p, helm }: { p: ChRosterPlayer; helm: ChRosterHelm }) {
 
 /** The same counts as a panel on the phone profile, after Recent rounds; View insights is the panel's 44px link. */
 export function HelmPanel({ p, helm }: { p: ChRosterPlayer; helm: ChRosterHelm }) {
+  const press = usePressPrefetch();
   if (helm.status === 'off') return null;
   const href = insightsHref(p);
   return (
@@ -313,8 +316,8 @@ export function HelmPanel({ p, helm }: { p: ChRosterPlayer; helm: ChRosterHelm }
       <div className="ch-rsm-panel__h">
         <b id={`helm-${p.id}`}>CoachHelm</b>
         {href && (
-          <Link href={href} className="ch-rsm-panel__link">
-            View insights <span aria-hidden="true">→</span>
+          <Link href={href} className="ch-rsm-panel__link" {...press(href)}>
+            View insights <Icon icon={ArrowRight} size={14} />
           </Link>
         )}
       </div>

@@ -18,7 +18,6 @@ import { PhoneBar, PhoneIconAction } from '../../ui/PhoneBar';
 import { Segmented } from '../../ui/Segmented';
 import { SectionBoundary } from '../../ui/SectionBoundary';
 import { changeTone, formatFixed, formatSigned, NO_DATA } from '../../lib/format';
-import { haptic } from '../../lib/haptics';
 import { useChReducedMotion } from '../../lib/reduced-motion';
 import { rebuiltHref } from '../../shell/nav';
 import { PhoneScreen } from '../../shell/PhoneScreen';
@@ -548,7 +547,7 @@ function PlayerActions({
       {p && (
         <div className="ch-rsm-panel ch-rsm-acts">
           {statsHref && (
-            <Link href={statsHref} className="ch-rsm-act" onClick={() => haptic('select')}>
+            <Link href={statsHref} className="ch-rsm-act">
               <span className="ch-rsm-act__ic" aria-hidden="true">
                 <Icon icon={BarChart3} size={16} />
               </span>

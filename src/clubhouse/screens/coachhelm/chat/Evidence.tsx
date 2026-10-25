@@ -10,6 +10,7 @@ import { Avatar } from '../../../ui/Avatar';
 import { Icon } from '../../../ui/Icon';
 import { playerStatsHref } from './Prose';
 import { afterRailMove } from '../../../lib/rail-fold';
+import { niceTicks } from '../../stats/round-trend';
 
 /** Who is on the coach's team: a read about anyone else is drawn, never linked. */
 type Roster = ReadonlyArray<{ id: string }>;
@@ -297,19 +298,22 @@ export function Trend({ block }: { block: Extract<AskEvidence, { kind: 'trend' }
     lo -= 1;
   }
   const pad = block.unit === 'percent' ? 0 : (hi - lo) * 0.12;
+  // Round-number ticks over the data's own span (A8.1), before the breathing room is added around it.
+  const ticks = niceTicks(lo, hi, 3);
   lo -= pad;
   hi += pad;
   const n = block.points.length;
+  // A lower-is-better metric (scoring, putts) is drawn with lower values higher, so better is always up (A8.1).
+  const down = block.goodDirection === 'down';
   const x = (i: number) => PAD.l + (n === 1 ? 0 : (i * (W - PAD.l - PAD.r)) / (n - 1));
-  const y = (v: number) => PAD.t + ((hi - v) / (hi - lo)) * (H - PAD.t - PAD.b);
+  const y = (v: number) => PAD.t + ((down ? v - lo : hi - v) / (hi - lo)) * (H - PAD.t - PAD.b);
   const last = values[n - 1] as number;
   const ref = block.reference;
   // Amber when the last point is on the wrong side of the reference for a metric whose direction is known; never red.
   const worse = ref && block.goodDirection ? (block.goodDirection === 'up' ? last < ref.value : last > ref.value) : false;
   const stroke = worse ? 'var(--ch-chart-loss)' : 'var(--ch-green-600)';
-  const ticks = [hi - pad, (hi + lo) / 2, lo + pad];
   const showAll = n <= 6;
-  const label = `${block.summary} ${block.points.map((p) => `${p.label} ${formatValue(p.value, block.unit)}`).join(', ')}.`;
+  const label = `${block.summary}${down ? ' Lower is better.' : ''} ${block.points.map((p) => `${p.label} ${formatValue(p.value, block.unit)}`).join(', ')}.`;
   const refText = ref ? (ref.label.startsWith('Team') ? ref.label : `${ref.label} ${formatValue(ref.value, block.unit)}`) : '';
   const refAt = ref ? placeRefLabel(values.map((v, i) => ({ x: x(i), y: y(v) })), y(ref.value), refText.length * REF_CHAR, W) : null;
   return (
@@ -318,8 +322,8 @@ export function Trend({ block }: { block: Extract<AskEvidence, { kind: 'trend' }
         {ticks.map((t, i) => (
           <g key={i}>
             <line x1={PAD.l} x2={W - PAD.r} y1={y(t)} y2={y(t)} className="ch-th-grid" />
-            <text x={PAD.l - 6} y={y(t) + 4} textAnchor="end" className="ch-th-ax">
-              {formatValue(Math.round(t * 10) / 10, block.unit)}
+            <text x={PAD.l - 6} y={y(t) + 4} textAnchor="end" className="ch-th-ax ch-num">
+              {formatValue(t, block.unit)}
             </text>
           </g>
         ))}
@@ -339,12 +343,17 @@ export function Trend({ block }: { block: Extract<AskEvidence, { kind: 'trend' }
         ))}
         {block.points.map((p, i) =>
           showAll || i === 0 || i === n - 1 || i === Math.floor((n - 1) / 2) ? (
-            <text key={i} x={x(i)} y={H - 8} textAnchor="middle" className="ch-th-ax">
+            <text key={i} x={x(i)} y={H - 8} textAnchor="middle" className="ch-th-ax ch-num">
               {p.label}
             </text>
           ) : null,
         )}
       </svg>
+      {down && (
+        <p className="ch-th-dir" aria-hidden="true">
+          Lower is better
+        </p>
+      )}
       {ref && !refAt && (
         <p className="ch-th-refkey" aria-hidden="true">
           <i />

@@ -24,7 +24,7 @@ export function cardFileName(m: CardModel, date: string): string {
   const course = m.course
     .toLowerCase()
     .normalize('NFKD')
-    .replace(/[̀-ͯ]/g, '')
+    .replace(/[\u0300-\u036f]/g, '')
     .replace(/[^a-z0-9]+/g, '-')
     .replace(/^-+|-+$/g, '');
   return [course || 'round', date.slice(0, 10), m.total.score].filter((p) => p != null && p !== '').join('-') + '.png';

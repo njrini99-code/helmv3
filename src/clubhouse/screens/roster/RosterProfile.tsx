@@ -8,7 +8,7 @@ import { Button } from '../../ui/Button';
 import { FormLine } from '../../ui/FormLine';
 import { Icon } from '../../ui/Icon';
 import { InlineNotice } from '../../ui/Notices';
-import { formatFixed, formatSigned, formatToPar, NO_DATA } from '../../lib/format';
+import { changeTone, formatFixed, formatSigned, formatToPar, NO_DATA } from '../../lib/format';
 import { rebuiltHref } from '../../shell/nav';
 import { AvailabilityPanel, CoachNote, HelmPanel, LegsCaption, type AvailabilityControl, type NoteSaved } from './RosterPeek';
 import { AVAILABILITY_WORD, formatHcp, rowNote } from './format';
@@ -92,7 +92,7 @@ export function RosterProfile({
         </div>
         <div>
           <dt>SG / round</dt>
-          <dd className={'ch-num' + (sg == null ? '' : sg >= 0 ? ' is-gain' : ' is-loss')}>{sg == null ? NO_DATA : formatSigned(sg)}</dd>
+          <dd className={'ch-num ' + changeTone(sg, false, 1)}>{sg == null ? NO_DATA : formatSigned(sg)}</dd>
         </div>
       </dl>
       <LegsCaption p={p} />

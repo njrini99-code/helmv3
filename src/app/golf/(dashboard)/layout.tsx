@@ -13,6 +13,7 @@ import { describeError } from '@/lib/utils/describe-error';
 import { resolveGolfCoachEntry } from '@/lib/golf/coach-entry-path';
 import { isClubhouseFor } from '@/clubhouse/gate';
 import { ClubhouseShell } from '@/clubhouse/shell/ClubhouseShell';
+import { SplashHide } from '@/clubhouse/shell/SplashHide';
 import { loadClubhouseShell } from '@/clubhouse/data/shell';
 import { clockHint, phoneHint, railHint } from '@/clubhouse/lib/phone-hint';
 
@@ -295,9 +296,13 @@ export default async function GolfDashboardLayout({
   if ((await isClubhouseFor(userData.role))) {
     const [shell, phone, folded, clock] = await Promise.all([loadClubhouseShell(userData.teamId, userData.role === 'player' ? userData.playerId : null, userData.role === 'coach' ? userData.coachId : null), phoneHint(), railHint(), clockHint()]);
     return (
-      <ClubhouseShell userData={userData} shell={shell} phone={phone} folded={folded} clock={clock}>
-        {children}
-      </ClubhouseShell>
+      <>
+        {/* A15: the app's splash comes down on the first painted frame, not after hydration. */}
+        <SplashHide />
+        <ClubhouseShell userData={userData} shell={shell} phone={phone} folded={folded} clock={clock}>
+          {children}
+        </ClubhouseShell>
+      </>
     );
   }
 

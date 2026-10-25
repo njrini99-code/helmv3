@@ -127,7 +127,7 @@ function BellStacksView({
   }
   if (items === null) {
     return (
-      <div className="ch-bst-skel" aria-busy="true" aria-label="Loading notifications" data-ch-code="CH-1401">
+      <div role="status" className="ch-bst-skel" aria-busy="true" aria-label="Loading notifications" data-ch-code="CH-1401">
         {[0, 1].map((k) => (
           <div key={k} className="ch-bst-pile ch-bst-pile--skel">
             <div className="ch-bst-card ch-bst-card--still">

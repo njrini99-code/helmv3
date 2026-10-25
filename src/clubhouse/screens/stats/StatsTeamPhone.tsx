@@ -14,8 +14,8 @@ import { StatsTeamFirstRun } from './StatsTeamFirstRun';
 import { Icon } from '../../ui/Icon';
 import { SectionBoundary, SectionGroup, SectionGroupNotice } from '../../ui/SectionBoundary';
 import { Segmented } from '../../ui/Segmented';
-import { deltaTone, deltaWords } from '../../lib/stats-signal';
-import { formatFixed, formatSigned, formatToPar, NO_DATA } from '../../lib/format';
+import { deltaTone, deltaWords, halvesChange } from '../../lib/stats-signal';
+import { changeInk, changeTone, formatFixed, formatSigned, formatToPar, NO_DATA } from '../../lib/format';
 import { haptic } from '../../lib/haptics';
 import { tabListKeys } from '../../lib/tabs';
 import { sgBaseline, sgScale, sgShare } from '../../lib/sg';
@@ -203,6 +203,12 @@ function Hero({ figures }: { figures: readonly ChFigure[] }) {
   );
 }
 
+/** The rounds' own mean over the round days drawn (A8.10): each day's average weighted by its whole rounds (one when not given). */
+export function teamDaysMean(days: Array<{ score: number; n?: number }>): number {
+  const w = days.reduce((a, d) => a + (d.n ?? 1), 0);
+  return days.reduce((a, d) => a + d.score * (d.n ?? 1), 0) / w;
+}
+
 /** The team's average on each of its last ten round days against their mean (dashed), with a one-line reading. */
 function Trend({ data }: { data: ChTeamStats }) {
   const days = data.days ?? [];
@@ -227,9 +233,14 @@ function Trend({ data }: { data: ChTeamStats }) {
         </p>
       </section>
     );
-  const change = known[known.length - 1]!.score - known[0]!.score;
-  const reading = Math.abs(change) < 0.2 ? 'Flat across the window.' : `${change < 0 ? 'Down' : 'Up'} ${Math.abs(change).toFixed(1)} strokes since ${known[0]!.label}.`;
-  const mean = known.reduce((a, d) => a + d.score, 0) / known.length;
+  // The newer half of the round days against the older half, worded as a change only past its standard error (A1).
+  const change = halvesChange(known.map((d) => d.score), 'score');
+  const reading =
+    change == null || deltaTone(change.delta, change.se, true) === ''
+      ? 'No clear change across the window.'
+      : `${change.delta < 0 ? 'Down' : 'Up'} ${Math.abs(change.delta).toFixed(1)} strokes a round, newer half vs older half.`;
+  // The mean of the rounds behind the line, each counted once (A8.10): a day weighs its whole rounds, not one point a day.
+  const mean = teamDaysMean(known);
   return (
     <section className="ch-stm-trend" aria-labelledby="ch-stm-trend">
       {head}
@@ -339,7 +350,7 @@ function Legs({ data, leg, onLeg }: { data: ChTeamStats; leg: ChLegPick; onLeg: 
       {head}
       <div className="ch-stm-group">
         <p className="ch-stm-sgfig">
-          <b className={'ch-num ' + (picked.v == null ? '' : picked.v >= 0 ? 'ch-gain' : 'ch-loss')}>{picked.v == null ? NO_DATA : formatSigned(picked.v)}</b>
+          <b className={'ch-num ' + changeInk(picked.v)}>{picked.v == null ? NO_DATA : formatSigned(picked.v)}</b>
           <span>{picked.total ? 'Team total' : picked.label}, a round</span>
         </p>
         {/* Plain tabs, not Base UI's: its list scrolled the chosen tab into view and its indicator measured it as the page
@@ -365,9 +376,9 @@ function Legs({ data, leg, onLeg }: { data: ChTeamStats; leg: ChLegPick; onLeg: 
                 <span>{label}</span>
                 <span className="ch-stm-leg__bar" aria-hidden="true">
                   <i className="ch-stm-leg__z" />
-                  {v != null && <i className={'ch-stm-leg__v ' + (v >= 0 ? 'is-gain' : 'is-loss')} style={{ [v >= 0 ? 'left' : 'right']: '50%', width: `${sgShare(v, scale) * 50}%` }} />}
+                  {v != null && <i className={'ch-stm-leg__v ' + changeTone(v, false, 1)} style={{ [v >= 0 ? 'left' : 'right']: '50%', width: `${sgShare(v, scale) * 50}%` }} />}
                 </span>
-                <b className={'ch-num ' + (v == null ? '' : v >= 0 ? 'ch-gain' : 'ch-loss')}>{v == null ? NO_DATA : formatSigned(v)}</b>
+                <b className={'ch-num ' + changeInk(v)}>{v == null ? NO_DATA : formatSigned(v)}</b>
               </button>
             );
           })}
@@ -434,7 +445,7 @@ function Players({ data, leg, sort, onSort }: { data: ChTeamStats; leg: ChLegPic
                     </span>
                     <span className="ch-stm-row__v ch-num">
                       <b>{p.avg == null ? NO_DATA : formatFixed(p.avg)}</b>
-                      <span className={sg == null ? '' : sg >= 0 ? 'ch-gain' : 'ch-loss'}>{sg == null ? 'Early read' : `${formatSigned(sg)} SG`}</span>
+                      <span className={changeInk(sg)}>{sg == null ? 'Early read' : `${formatSigned(sg)} SG`}</span>
                     </span>
                     <Icon icon={ChevronRight} size={16} className="ch-stm-row__chev" />
                     <LinkPending />
@@ -479,76 +490,5 @@ function Putting({ data, covered }: { data: ChTeamStats; covered: boolean }) {
       </div>
       <p className="ch-stm-note">{puttingNote(data.putting.bands)} The mark is the Tour make rate.</p>
     </section>
-  );
-}
-
-/**
- * The phone's scoring line (m-stats.jsx `Trend`; CH-4805): scores oldest to newest,
- * gaps skipped, the mean dashed, the newest point larger. Lower scores sit
- * higher, so a line that climbs is a player getting better, and the axis says
- * so: "Lower is better", the one scoring-axis convention (P004-D1). A player's stats on the phone draw it; Team stats
- * draws its own interactive line (TeamTrendChart).
- */
-export function ScoreLine({ values, from, to, label }: { values: Array<number | null>; from: string; to: string; label: string }) {
-  const pts = values.map((v, i) => ({ v, i })).filter((p): p is { v: number; i: number } => p.v != null);
-  if (pts.length < 2) return null;
-  const W = 340;
-  const H = 120;
-  const pad = 14;
-  const vals = pts.map((p) => p.v);
-  const mean = vals.reduce((a, b) => a + b, 0) / vals.length;
-  const lo = Math.min(...vals) - 0.4;
-  const hi = Math.max(...vals) + 0.4;
-  const x = (i: number) => pad + (i * (W - pad * 2)) / Math.max(1, values.length - 1);
-  const y = (v: number) => pad + ((v - lo) / (hi - lo)) * (H - pad * 2 - 12);
-  const d = pts.map((p, k) => `${k ? 'L' : 'M'}${x(p.i).toFixed(1)},${y(p.v).toFixed(1)}`).join(' ');
-  const last = pts[pts.length - 1]!;
-  // The mean's label goes in the corner the line keeps clear of (right or left end, above or below the dashed line),
-  // so it never sits on the data; the first clear corner wins, the right above first.
-  const lineAt = (px: number) => {
-    for (let k = 1; k < pts.length; k++) {
-      const a = pts[k - 1]!;
-      const b = pts[k]!;
-      if (px >= x(a.i) && px <= x(b.i)) return y(a.v) + ((px - x(a.i)) / Math.max(1e-6, x(b.i) - x(a.i))) * (y(b.v) - y(a.v));
-    }
-    return px < x(pts[0]!.i) ? y(pts[0]!.v) : y(last.v);
-  };
-  const labelW = 64;
-  const corners = [
-    { end: true, above: true },
-    { end: true, above: false },
-    { end: false, above: true },
-    { end: false, above: false },
-  ].map((c) => {
-    const ty = c.above ? y(mean) - 5 : y(mean) + 14;
-    const x0 = c.end ? W - pad - labelW : pad;
-    let clear = Infinity;
-    for (let px = x0; px <= x0 + labelW; px += 4) {
-      const ly = lineAt(px);
-      clear = Math.min(clear, ly < ty - 11 ? ty - 11 - ly : ly > ty + 3 ? ly - ty - 3 : 0);
-    }
-    return { ...c, ty, clear };
-  });
-  const spot = corners.find((c) => c.clear >= 4) ?? [...corners].sort((a, b) => b.clear - a.clear)[0]!;
-  return (
-    <svg viewBox={`0 0 ${W} ${H}`} className="ch-stm-chart" role="img" aria-label={`${label} Lower scores sit higher.`}>
-      <line x1={pad} x2={W - pad} y1={y(mean)} y2={y(mean)} className="ch-stm-chart__mean" />
-      <text x={spot.end ? W - pad : pad} y={spot.ty} textAnchor={spot.end ? 'end' : 'start'} className="ch-stm-chart__t">
-        Mean {formatFixed(mean)}
-      </text>
-      <path d={d} className="ch-stm-chart__line" />
-      {pts.map((p) => (
-        <circle key={p.i} cx={x(p.i)} cy={y(p.v)} r={p === last ? 4 : 2.4} className={p === last ? 'ch-stm-chart__dot is-last' : 'ch-stm-chart__dot'} />
-      ))}
-      <text x={pad} y={H - 2} className="ch-stm-chart__t">
-        {from}
-      </text>
-      <text x={W / 2} y={H - 2} textAnchor="middle" className="ch-stm-chart__t">
-        ↑ Lower is better
-      </text>
-      <text x={W - pad} y={H - 2} textAnchor="end" className="ch-stm-chart__t">
-        {to}
-      </text>
-    </svg>
   );
 }
