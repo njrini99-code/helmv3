@@ -844,6 +844,7 @@ them would bury everything above.
 | `docs/clubhouse/changes/2026-10-24-stats-nodata.md` | current | - | - | - | - |
 | `docs/clubhouse/changes/2026-10-24-tinted-drops.md` | current | - | - | - | - |
 | `docs/clubhouse/changes/2026-10-24-tone-words-and-sign-guard.md` | current | - | - | - | - |
+| `docs/clubhouse/changes/2026-10-25-train-shared-pieces.md` | current | - | - | - | - |
 | `docs/clubhouse/drafts/auth-onboarding-ground-truth.md` | current | - | - | - | - |
 | `docs/clubhouse/drafts/intelligence.md` | current | - | - | - | - |
 | `docs/clubhouse/foundation-v2/02_AUTHORITY_MODEL.md` | current | - | - | yes | - |
@@ -914,6 +915,7 @@ them would bury everything above.
 | `docs/clubhouse/pages/P001-shell/changes/2026-10-23-type-roles.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P001-shell/changes/2026-10-23-type-scale.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P001-shell/changes/2026-10-24-screen-gaps.md` | current | - | - | - | - |
+| `docs/clubhouse/pages/P001-shell/changes/2026-10-25-train-shell-touch-and-course-back.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P002-home/CHANGELOG.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P002-home/CONTRACT.md` | current | - | - | yes | - |
 | `docs/clubhouse/pages/P002-home/DESIGN.md` | current | - | - | - | - |

@@ -16,7 +16,7 @@
  */
 import { useCallback, useEffect, useLayoutEffect, useRef, useState, type CSSProperties, type PointerEvent as ReactPointerEvent, type RefObject } from 'react';
 import { haptic, hapticScrub } from '../../lib/haptics';
-import { chSpringCurve, CH_EASE } from '../../lib/motion';
+import { chSpringCurve, CH_DUR, CH_EASE } from '../../lib/motion';
 import { chSupportsLinear } from '../../lib/sheet-drag';
 import { claimTouch, releaseTouch } from '../../lib/touch-claim';
 import { isOffline } from '../../lib/use-action';
@@ -47,6 +47,41 @@ const GROW_MS = 400;
 const SIDE_GIVE_PX = 12;
 
 const sideGive = (dx: number) => Math.sign(dx) * SIDE_GIVE_PX * (1 - 1 / (Math.abs(dx) / 40 + 1));
+
+const easingOf = (curve: { linear: string }) => (chSupportsLinear() ? curve.linear : `cubic-bezier(${CH_EASE.join(',')})`);
+
+/** Each `[data-ev-id]` element's rect under `root`, by event id (the first one wins). */
+export function rectsOf(root: ParentNode | null | undefined, selector: string): Map<string, DOMRect> {
+  const out = new Map<string, DOMRect>();
+  root?.querySelectorAll<HTMLElement>(selector).forEach((el) => {
+    const id = el.dataset.evId;
+    if (id && !out.has(id)) out.set(id, el.getBoundingClientRect());
+  });
+  return out;
+}
+
+/**
+ * P-4 M6, M11 (CH-6609): a local FLIP until GES-16's `lib/use-flip.ts` lands. Each element starts at the rect its event
+ * had (`from`) and springs on smooth to where it now lays out; `fade` crossfades its contents in over the first 110ms.
+ */
+export function flipFrom(els: Iterable<HTMLElement>, from: Map<string, DOMRect>, fade: boolean): Animation[] {
+  const curve = chSpringCurve('smooth');
+  const out: Animation[] = [];
+  for (const el of els) {
+    const a = from.get(el.dataset.evId ?? '');
+    if (!a || typeof el.animate !== 'function') continue;
+    const b = el.getBoundingClientRect();
+    if (!b.width || !b.height) continue;
+    const dx = a.left - b.left;
+    const dy = a.top - b.top;
+    const sx = a.width / b.width;
+    const sy = a.height / b.height;
+    if (Math.abs(dx) < 0.5 && Math.abs(dy) < 0.5 && Math.abs(sx - 1) < 0.01 && Math.abs(sy - 1) < 0.01) continue;
+    out.push(el.animate([{ transformOrigin: '0 0', transform: `translate(${dx}px, ${dy}px) scale(${sx}, ${sy})` }, { transformOrigin: '0 0', transform: 'none' }], { duration: curve.ms, easing: easingOf(curve) }));
+    if (fade) out.push(el.animate([{ opacity: 0 }, { opacity: 1 }], { duration: CH_DUR.press * 1000, easing: 'linear' }));
+  }
+  return out;
+}
 
 export interface ChPhoneDrag {
   e: ChCalEvent;
@@ -105,8 +140,18 @@ export function usePhoneDayDrag(opts: {
     edge: { dir: -1 | 1; timer: number } | null;
     grow: { edge: 'before' | 'after'; since: number } | null;
     align: boolean;
+    /** The finger's vertical speed in px/s (M8: the drop settles with it). */
+    vy: number;
+    mt: number;
   } | null>(null);
   const fold = useRef(0);
+  /** Block rects taken just before the fold (M11), for the list rows to spring from; and the FLIPs in flight. */
+  const foldFrom = useRef<Map<string, DOMRect> | null>(null);
+  const flips = useRef<Animation[]>([]);
+  const stopFlips = () => {
+    for (const a of flips.current) a.cancel();
+    flips.current = [];
+  };
   const dragRef = useRef(drag);
   dragRef.current = drag;
   const extraRef = useRef(extra);
@@ -251,9 +296,11 @@ export function usePhoneDayDrag(opts: {
       if (el && gridEl && !live.current.reduced && typeof el.animate === 'function') {
         const slot = (to.start - boundsRef.current.from) * PHONE_HH;
         const now = el.style.transform;
+        // M8 (CH-6610): the settle starts at the finger's speed, as a share of the distance left per second.
+        const dist = slot - (s.y - s.grabPx - gridEl.getBoundingClientRect().top);
         el.style.transform = `translate3d(0, ${slot}px, 0)`;
-        const curve = chSpringCurve('settle');
-        el.animate([{ transform: now }, { transform: el.style.transform }], { duration: curve.ms, easing: chSupportsLinear() ? curve.linear : `cubic-bezier(${CH_EASE.join(',')})` });
+        const curve = chSpringCurve('settle', { velocity: Math.abs(dist) > 1 ? s.vy / dist : 0 });
+        el.animate([{ transform: now }, { transform: el.style.transform }], { duration: curve.ms, easing: easingOf(curve) });
       }
       live.current.onDrop(e, to, 'move');
       live.current.onLanded?.();
@@ -261,6 +308,7 @@ export function usePhoneDayDrag(opts: {
       window.clearTimeout(fold.current);
       fold.current = window.setTimeout(() => {
         const date = to.date;
+        foldFrom.current = live.current.reduced ? null : rectsOf(grid.current, '.ch-tl__col [data-ev-id]');
         reset();
         if (date !== live.current.anchor) live.current.onDay(date);
       }, FOLD_MS);
@@ -279,6 +327,9 @@ export function usePhoneDayDrag(opts: {
       if (ev.cancelable) ev.preventDefault();
       const t = ev.touches[0];
       if (!t || !s.started) return;
+      const at = performance.now();
+      if (s.mt) s.vy = 0.8 * (((t.clientY - s.y) / Math.max(1, at - s.mt)) * 1000) + 0.2 * s.vy;
+      s.mt = at;
       s.x = t.clientX;
       s.y = t.clientY;
       place();
@@ -307,6 +358,20 @@ export function usePhoneDayDrag(opts: {
     const want = s.y - s.grabPx;
     if (Math.abs(slot - want) > 0.5) window.scrollBy(0, slot - want);
     place();
+    // M6: the day's other rows spring from their list rects to their blocks, the list fading out beneath (CSS).
+    if (live.current.reduced) return;
+    const rows = rectsOf(live.current.root.current, '.ch-calm-page:not(.is-side) li[data-ev-id]');
+    stopFlips();
+    flips.current = flipFrom(el.querySelectorAll<HTMLElement>('.ch-tl__col [data-ev-id]'), rows, true);
+  });
+
+  // M11: after the fold, the list's rows spring from the blocks they were; a new hold stops it.
+  useLayoutEffect(() => {
+    const from = foldFrom.current;
+    if (!from || drag) return;
+    foldFrom.current = null;
+    stopFlips();
+    flips.current = flipFrom(live.current.root.current?.querySelectorAll<HTMLElement>('.ch-calm-page:not(.is-side) li[data-ev-id]') ?? [], from, false);
   });
 
   const liftFor = useCallback(
@@ -317,10 +382,12 @@ export function usePhoneDayDrag(opts: {
           // The edge swipe's zone is the edge swipe's; offline, the peek opens as before (nothing could be written).
           if (at.x < EDGE_PX || at.x > window.innerWidth - EDGE_PX || isOffline()) return false;
           window.clearTimeout(fold.current);
+          foldFrom.current = null;
+          stopFlips();
           const row = live.current.root.current?.querySelector(`[data-ev-id="${CSS.escape(e.id)}"] .ch-calm-ev__b`);
           const rootLeft = live.current.root.current?.getBoundingClientRect().left ?? 0;
           if (row) setRail(Math.round(row.getBoundingClientRect().left - rootLeft));
-          g.current = { e, grabPx: Math.max(0, at.y - rect.top), x0: at.x, x: at.x, y: at.y, to: { date: e.date, start: e.start!, end: e.end! }, day: e.date, started: false, tick: -Infinity, raf: 0, last: 0, strip: null, edge: null, grow: null, align: false };
+          g.current = { e, grabPx: Math.max(0, at.y - rect.top), x0: at.x, x: at.x, y: at.y, to: { date: e.date, start: e.start!, end: e.end! }, day: e.date, started: false, tick: -Infinity, raf: 0, last: 0, strip: null, edge: null, grow: null, align: false, vy: 0, mt: 0 };
           claimTouch('lifted');
           hapticScrub('start');
           setLifted(e);
@@ -333,6 +400,10 @@ export function usePhoneDayDrag(opts: {
           s.x = at.x;
           s.y = at.y;
           s.align = true;
+          // The list stays where it stood while it fades under the timeline (calendar.css `.is-unfolded`).
+          const root = live.current.root.current;
+          const pager = root?.querySelector<HTMLElement>(':scope > .ch-calm-pager');
+          if (root && pager) root.style.setProperty('--ch-tl-pager-top', `${pager.offsetTop}px`);
           setDay(s.day);
           setDrag({ e, to: s.to, mode: 'drag', kind: 'move', clashes: clashesAt(e, s.to, live.current.events) });
           s.raf = requestAnimationFrame(loop);
@@ -409,7 +480,7 @@ export function usePhoneDayDrag(opts: {
     reset();
   }, [reset]);
 
-  return { lifted, drag, day: shownDay, over, bounds, rail, grid, card, liftFor, adjust, adjustPointer, done, cancel: reset, unfolded: !!drag };
+  return { lifted, drag, day: shownDay, over, bounds, rail, grid, card, liftFor, adjust, adjustPointer, done, cancel: reset, unfolded: !!drag, reduced: opts.reduced };
 }
 
 /**
@@ -433,7 +504,20 @@ export function DayTimeline({
   range: { from: string; to: string };
 }) {
   const clock = useChClock();
-  const { drag, day, bounds, rail } = engine;
+  const { drag, day, bounds, rail, reduced } = engine;
+  // M7 (CH-6606): another day's blocks come in 12px the way the day went, as the pager's slide does.
+  const dayEl = useRef<HTMLDivElement | null>(null);
+  const shownDay = useRef(day);
+  useLayoutEffect(() => {
+    const was = shownDay.current;
+    shownDay.current = day;
+    const el = dayEl.current;
+    if (!el || was === day || reduced || typeof el.animate !== 'function') return;
+    const dir = day > was ? 1 : -1;
+    el.animate([{ transform: `translateX(${12 * dir}px)`, opacity: 0 }, { transform: 'none', opacity: 1 }], { duration: CH_DUR.base * 1000, easing: `cubic-bezier(${CH_EASE.join(',')})` });
+  }, [day, reduced]);
+  // M4 (CH-6608): the landing slot springs to each new quarter on settle; a CSS transition retargets from where it is.
+  const slotCurve = drag && !reduced ? chSpringCurve('settle') : null;
   if (!drag) return null;
   const { from, to } = bounds;
   const { e } = drag;
@@ -460,11 +544,13 @@ export function DayTimeline({
           </span>
         ))}
         <div className="ch-tl__col">
+          <div ref={dayEl} className="ch-tl__day">
           {laid.map((l) => (
             <EventBlock key={`${l.e.id}${l.e.date}`} e={l.e} lane={l.lane} lanes={l.lanes} sel={false} flagged={false} people={people} viewerId={viewerId} onSelect={() => {}} from={from} to={to} hh={PHONE_HH} state={drag.clashes.has(l.e.id) ? 'clash' : undefined} past={isPastEvent(l.e, now)} />
           ))}
           {e.date === day && <EventBlock e={e} lane={0} lanes={1} sel={false} flagged={false} people={people} viewerId={viewerId} onSelect={() => {}} from={from} to={to} hh={PHONE_HH} state="held" />}
-          {!adjusting && <span className="ch-tl__slot" aria-hidden="true" style={{ transform: `translateY(${slotTop}px)`, height: slotH }} />}
+          </div>
+          {!adjusting && <span className="ch-tl__slot" aria-hidden="true" style={{ transform: `translateY(${slotTop}px)`, height: slotH, transition: slotCurve ? `transform ${slotCurve.ms}ms ${easingOf(slotCurve)}` : 'none' }} />}
           {nowVisible && <div className="ch-wk__now" role="separator" aria-label={`Now, ${fmtHour(now.hour, true, clock)}`} style={{ top: (now.hour - from) * PHONE_HH }} />}
           <div
             ref={engine.card}

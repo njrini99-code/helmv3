@@ -3,6 +3,8 @@
  * back untouched), its result codes (stale, gone, forbidden), the new token on success, and the end's own offset.
  * Harness as in golf-events.test.ts.
  */
+import { readFileSync } from 'node:fs';
+import { join } from 'node:path';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { createFakeSupabase, type FakeSupabase } from '@/test/fixtures/fake-supabase';
 
@@ -93,6 +95,21 @@ interface SeedTables extends Record<string, Row[]> {
 }
 
 const FUTURE_START = '2099-07-01T14:00:00+00:00';
+
+/**
+ * The fake client enforces no CHECK, so read golf_calendar_notifications_notification_type_check from the declarative
+ * schema and test a notification_type against it: the listed values, or one of its LIKE prefixes.
+ */
+function notificationTypeAllowed(type: string): boolean {
+  const sql = readFileSync(join(process.cwd(), 'supabase/schemas/golf/10_tables.sql'), 'utf8');
+  const line = sql.split('\n').find((l) => l.includes('golf_calendar_notifications_notification_type_check'));
+  if (!line) throw new Error('notification_type CHECK not found in supabase/schemas/golf/10_tables.sql');
+  const listed = [...(line.match(/ARRAY\[(.*?)\]/)?.[1] ?? '').matchAll(/'([^']+)'/g)].map((m) => m[1]!);
+  const prefixes = [...line.matchAll(/~~ '([^'%]+)%'/g)].map((m) => m[1]!);
+  expect(listed.length).toBeGreaterThan(0);
+  expect(prefixes.length).toBeGreaterThan(0);
+  return listed.includes(type) || prefixes.some((p) => type.startsWith(p));
+}
 
 function baseTables(): SeedTables {
   return {
@@ -228,5 +245,33 @@ describe('series moves (P-4 6.4, 8.7)', () => {
     expect(tables.golf_calendar_notifications).toHaveLength(2);
     expect(tables.golf_calendar_notifications[0]).toMatchObject({ event_id: 'occ-0', title: 'Event updated: Lift' });
     expect(String(tables.golf_calendar_notifications[0]!.message)).toMatch(/and 11 later$/);
+    // The row must pass the table's notification_type CHECK, or the upsert fails with 23514 in production.
+    for (const row of tables.golf_calendar_notifications) {
+      expect(notificationTypeAllowed(String(row.notification_type))).toBe(true);
+    }
+    expect(tables.golf_calendar_notifications[0]!.notification_type).toBe('event_updated:series:occ-0:2099-07-01T14:00:00+00:00');
+  });
+
+  it('the CHECK helper rejects the old series key', () => {
+    expect(notificationTypeAllowed('event_updated_series:occ-0:2099-07-01T14:00:00+00:00')).toBe(false);
+    expect(notificationTypeAllowed('event_updated:2099-07-01T14:00:00+00:00|')).toBe(true);
+  });
+
+  it('notifyEventSeriesUpdate throws when the insert is refused, so the caller logs it', async () => {
+    const { notifyEventSeriesUpdate } = await import('@/lib/calendar/rsvp');
+    const tables = baseTables();
+    tables.golf_events.push({ id: 'occ-0', team_id: 'team-1', title: 'Lift', event_type: 'practice', start_time: FUTURE_START, end_time: null, all_day: false, location: null, requires_rsvp: true });
+    tables.golf_event_attendance.push({ id: 'a1', event_id: 'occ-0', player_id: 'player-1', status: 'accepted', player: { user_id: 'u-p1' } });
+    seedAs('u-coach', tables);
+    const reads = adminFake;
+    adminFake = {
+      ...reads,
+      from: (table: string) =>
+        table === 'golf_calendar_notifications'
+          ? { upsert: async () => ({ data: null, error: { code: '23514', message: 'violates check constraint' } }) }
+          : reads.from(table),
+    } as unknown as FakeSupabase;
+    await expect(notifyEventSeriesUpdate('occ-0', ['occ-0'], reads as never)).rejects.toThrow(/violates check constraint/);
+    expect(tables.golf_calendar_notifications).toHaveLength(0);
   });
 });

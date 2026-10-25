@@ -1025,6 +1025,57 @@
       "fixture": "Contextual module"
     },
     {
+      "file": "src/clubhouse/screens/calendar/day-timeline.tsx",
+      "group": "screens",
+      "exports": [
+        "DayTimeline",
+        "EDGE_PX",
+        "EDGE_TURN_MS",
+        "FOLD_MS",
+        "PHONE_HH",
+        "PHONE_ZONE_PX",
+        "STRIP_SPRING_MS"
+      ],
+      "styles": [
+        "src/clubhouse/styles/base.css",
+        "src/clubhouse/styles/calendar.css",
+        "src/clubhouse/styles/coachhelm.css",
+        "src/clubhouse/styles/goals.css",
+        "src/clubhouse/styles/home.css",
+        "src/clubhouse/styles/hub.css",
+        "src/clubhouse/styles/messages.css",
+        "src/clubhouse/styles/qualifiers.css",
+        "src/clubhouse/styles/stats.css",
+        "src/clubhouse/styles/ui.css"
+      ],
+      "examples": [],
+      "fixture": "Contextual module"
+    },
+    {
+      "file": "src/clubhouse/screens/calendar/drag-popovers.tsx",
+      "group": "screens",
+      "exports": [
+        "SeriesScopeMenu"
+      ],
+      "styles": [
+        "src/clubhouse/styles/base.css",
+        "src/clubhouse/styles/calendar.css",
+        "src/clubhouse/styles/coachhelm-ask.css",
+        "src/clubhouse/styles/command.css",
+        "src/clubhouse/styles/controls.css",
+        "src/clubhouse/styles/home.css",
+        "src/clubhouse/styles/qualifiers.css",
+        "src/clubhouse/styles/roster.css",
+        "src/clubhouse/styles/rounds-setup.css",
+        "src/clubhouse/styles/rounds-track.css",
+        "src/clubhouse/styles/shell.css",
+        "src/clubhouse/styles/stats.css",
+        "src/clubhouse/styles/ui.css"
+      ],
+      "examples": [],
+      "fixture": "Contextual module"
+    },
+    {
       "file": "src/clubhouse/screens/calendar/editor.tsx",
       "group": "screens",
       "exports": [
@@ -1104,6 +1155,27 @@
       "fixture": "Contextual module"
     },
     {
+      "file": "src/clubhouse/screens/calendar/month-dnd.tsx",
+      "group": "screens",
+      "exports": [
+        "DndMonth",
+        "MONTH_LANE_PX"
+      ],
+      "styles": [
+        "src/clubhouse/styles/base.css",
+        "src/clubhouse/styles/calendar.css",
+        "src/clubhouse/styles/coachhelm.css",
+        "src/clubhouse/styles/goals.css",
+        "src/clubhouse/styles/home.css",
+        "src/clubhouse/styles/hub.css",
+        "src/clubhouse/styles/messages.css",
+        "src/clubhouse/styles/qualifiers.css",
+        "src/clubhouse/styles/stats.css"
+      ],
+      "examples": [],
+      "fixture": "Contextual module"
+    },
+    {
       "file": "src/clubhouse/screens/calendar/month.tsx",
       "group": "screens",
       "exports": [
@@ -1150,6 +1222,8 @@
       "group": "screens",
       "exports": [
         "AgendaView",
+        "ChMoveTarget",
+        "EventBlock",
         "MonthView",
         "TYPE_ICON",
         "TimeGrid"
@@ -6561,6 +6635,7 @@
       ],
       "styles": [
         "src/clubhouse/styles/base.css",
+        "src/clubhouse/styles/calendar.css",
         "src/clubhouse/styles/coachhelm-ask.css",
         "src/clubhouse/styles/command.css",
         "src/clubhouse/styles/controls.css",
@@ -8137,12 +8212,15 @@
         "ch-calm-agenda",
         "ch-calm-dayk",
         "ch-calm-dayswap",
+        "ch-calm-dayv",
         "ch-calm-ev",
         "ch-calm-ev__b",
         "ch-calm-ev__rail",
         "ch-calm-ev__t",
         "ch-calm-ev__w",
         "ch-calm-head",
+        "ch-calm-hint",
+        "ch-calm-hint__x",
         "ch-calm-month",
         "ch-calm-month__c",
         "ch-calm-month__d",
@@ -8171,6 +8249,14 @@
         "ch-cg__time",
         "ch-cg__title",
         "ch-cg__who",
+        "ch-dd-barcard",
+        "ch-dd-card",
+        "ch-dd-pill",
+        "ch-dd-pill__clash",
+        "ch-dd-scope",
+        "ch-dd-scope__cancel",
+        "ch-dd-scope__h",
+        "ch-dd-scope__help",
         "ch-dot-busy",
         "ch-dot-class",
         "ch-dot-meeting",
@@ -8201,12 +8287,18 @@
         "ch-ev--practice",
         "ch-ev--qualifier",
         "ch-ev--short",
+        "ch-ev--sliver",
         "ch-ev--tournament",
         "ch-ev--travel",
         "ch-ev--under",
         "ch-ev--workout",
         "ch-ev--wrap",
         "ch-ev-bar",
+        "ch-ev-bar--span",
+        "ch-ev-bar__grip",
+        "ch-ev-bar__t",
+        "ch-ev__g",
+        "ch-ev__grip",
         "ch-ev__m",
         "ch-ev__m--fit",
         "ch-ev__t",
@@ -8258,13 +8350,19 @@
         "ch-lanes",
         "ch-lanes__axis",
         "ch-lanes__who",
+        "ch-menu__item",
         "ch-mo",
         "ch-mo__cell",
         "ch-mo__dow",
         "ch-mo__ev",
+        "ch-mo__evs",
+        "ch-mo__gc",
         "ch-mo__grid",
+        "ch-mo__lift",
         "ch-mo__more",
         "ch-mo__n",
+        "ch-mo__ribbon",
+        "ch-mo__week",
         "ch-num",
         "ch-pp",
         "ch-pp__foot",
@@ -8289,6 +8387,14 @@
         "ch-swap__item",
         "ch-switch",
         "ch-switch__t",
+        "ch-tl",
+        "ch-tl__bar",
+        "ch-tl__card",
+        "ch-tl__col",
+        "ch-tl__grid",
+        "ch-tl__grip",
+        "ch-tl__h",
+        "ch-tl__slot",
         "ch-verify",
         "ch-verify__ic",
         "ch-wk",
@@ -8306,7 +8412,10 @@
         "ch-wk__rail",
         "ch-wk__sky",
         "ch-wk__sunset",
-        "ch-wk__top"
+        "ch-wk__top",
+        "ch-wks",
+        "ch-wks-pager",
+        "ch-wks__d"
       ],
       "tokens": [
         {
@@ -15084,6 +15193,26 @@
           "scope": "[data-ui='clubhouse']"
         },
         {
+          "name": "--ch-on-ink-warning",
+          "value": "var(--ch-champagne-300)",
+          "scope": "[data-ui='clubhouse']"
+        },
+        {
+          "name": "--ch-ring-drop",
+          "value": "inset 0 0 0 2px var(--ch-green-600)",
+          "scope": "[data-ui='clubhouse']"
+        },
+        {
+          "name": "--ch-ev-sheen",
+          "value": "inset 0 1px 0 rgb(255 255 255 / 0.08)",
+          "scope": "[data-ui='clubhouse']"
+        },
+        {
+          "name": "--ch-ev-class-ring-hover",
+          "value": "inset 0 0 0 1px rgb(45 92 119 / 0.28)",
+          "scope": "[data-ui='clubhouse']"
+        },
+        {
           "name": "--ch-on-green-ink-muted",
           "value": "rgb(222 214 190 / 0.8)",
           "scope": "[data-ui='clubhouse']"
@@ -16692,6 +16821,11 @@
           "name": "--ch-z-skip",
           "value": "110",
           "scope": "[data-ui='clubhouse']"
+        },
+        {
+          "name": "--ch-on-ink-warning",
+          "value": "#8a5a0c",
+          "scope": "html[data-fw-theme='dark'] [data-ui='clubhouse']"
         },
         {
           "name": "--ch-text-placeholder",
