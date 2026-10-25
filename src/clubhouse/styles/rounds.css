@@ -5762,3 +5762,39 @@ button.ch-hip__row:focus-visible,
   border: 1px solid var(--ch-hm-ring-over);
   background: var(--ch-hm-over-1);
 }
+
+/* P-7 4.5.4: "Here before" in the hole card; 4.5.2: the compare control under the arc. */
+.ch-rv .ch-rv-before {
+  margin: 8px 0 4px;
+}
+.ch-rv .ch-rv-before p {
+  margin: 0;
+  font: var(--ch-type-13);
+  color: var(--ch-ink-600);
+}
+.ch-rv .ch-rv-before__go {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  font: var(--ch-type-14-strong);
+  color: var(--ch-text-primary);
+}
+.ch-rv .ch-rv-before__go:focus-visible {
+  outline: 2px solid var(--ch-border-focus);
+  outline-offset: 2px;
+}
+.ch-rv .ch-rv-ghost {
+  margin: 12px 0 4px;
+}
+.ch-rv .ch-rv-ghost__l {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 8px 0 0;
+  font: var(--ch-type-13);
+  color: var(--ch-text-secondary);
+}
+.ch-rv .ch-rv-ghost__l i {
+  width: 18px;
+  border-top: 1.5px dashed var(--ch-text-secondary);
+}

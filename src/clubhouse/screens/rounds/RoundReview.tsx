@@ -32,6 +32,9 @@ import { approachFinish, costliest, flow, headline, puttSplit, teeMisses, turnin
 import { RoundSays, saysFigures } from './RoundSays';
 import { RecordChips } from './RecordChips';
 import { CourseLink } from './CourseLink';
+import { courseHref } from '../../data/course-key';
+import { shortDate } from '../../data/course-page-shape';
+import { Segmented } from '../../ui/Segmented';
 import { Zone, ZoneBig, ZoneBlock, Zones } from '../../ui/Zone';
 import { Tooltip } from '../../ui/Tooltip';
 import { PuttingViz, ScoreFlow, ShotTrail, TeeToGreen } from './RoundZones';
@@ -233,9 +236,12 @@ function HoleCard({
   onRetry,
   retrying,
   dir,
+  before = null,
 }: {
   hole: ChReviewHole;
   dir: 1 | -1;
+  /** P-7 4.5.4: earlier plays of this hole at this course, and where its history is; null under two plays. */
+  before?: { avg: number; n: number; href: string | null; course: string; who: string | null } | null;
   count: number;
   shotsError: boolean;
   onStep: (d: -1 | 1) => void;
@@ -273,6 +279,18 @@ function HoleCard({
           </Tooltip>
         </div>
       </div>
+      {before && hole.par != null && (
+        <div className="ch-rv-before">
+          <p>
+            {before.who ? `${before.who} here before` : 'Here before'}: {formatFixed(hole.par + before.avg, 1)} average · {before.n} times
+          </p>
+          {before.href && (
+            <Link className="ch-rv-before__go" href={before.href}>
+              Hole {hole.n} at {before.course}
+            </Link>
+          )}
+        </div>
+      )}
       {/* The shots slide in the direction of travel (CH-11604). */}
       {/* The trail is not slid with the list: its shots draw themselves in order, so the hole changes under a still frame. */}
       {!shotsError && <ShotTrail key={hole.n} hole={hole} />}
@@ -466,6 +484,40 @@ export function RoundReview({ review, typeEdit = null, initialHole = null }: { r
     const last = Math.max(...points.map((p) => p.n), 0);
     return turningStretch([...points].sort((a, b) => ((a.n - start + last) % last) - ((b.n - start + last) % last)));
   }, [points, r.startHole]);
+  // P-7 4.5.2: another round under this one: the average here or the best here, each past its floor; the viewer's choice
+  // is kept on this device (`ch.rv.compare`).
+  const ghosts = r.history?.ghosts ?? null;
+  const ghostOptions = useMemo(() => {
+    const out: Array<{ value: 'none' | 'average' | 'best'; label: string }> = [{ value: 'none', label: 'None' }];
+    if (ghosts?.average) out.push({ value: 'average', label: 'Average here' });
+    if (ghosts?.best) out.push({ value: 'best', label: `Best here · ${ghosts.best.score}` });
+    return out;
+  }, [ghosts]);
+  const [ghostPref, setGhostPref] = useState<'none' | 'average' | 'best'>('none');
+  useEffect(() => {
+    try {
+      const v = window.localStorage.getItem('ch.rv.compare');
+      if (v === 'average' || v === 'best') setGhostPref(v);
+    } catch {
+      /* no storage: None */
+    }
+  }, []);
+  const ghostChoice = ghostOptions.some((o) => o.value === ghostPref) ? ghostPref : 'none';
+  const chooseGhost = (v: 'none' | 'average' | 'best') => {
+    haptic('select');
+    setGhostPref(v);
+    try {
+      window.localStorage.setItem('ch.rv.compare', v);
+    } catch {
+      /* the choice holds for this visit */
+    }
+  };
+  const ghostLine =
+    ghostChoice === 'average' && ghosts?.average
+      ? { cum: ghosts.average, label: 'Average here', spoken: 'average here', legend: 'Average here' }
+      : ghostChoice === 'best' && ghosts?.best
+        ? { cum: ghosts.best.cum, label: `Best here · ${ghosts.best.score}`, spoken: 'best here', legend: `Best here, ${shortDate(ghosts.best.date)}` }
+        : null;
   const says = useMemo(
     () => saysFigures({ holes: r.holes, startHole: r.startHole ?? null, usual: r.history?.usual ?? null, nine: r.holesPlayed === 9, who: coach ? (r.playerName?.split(' ')[0] ?? null) : null }),
     [r.holes, r.startHole, r.history, r.holesPlayed, r.playerName, coach],
@@ -611,6 +663,7 @@ export function RoundReview({ review, typeEdit = null, initialHole = null }: { r
                 inToPar={r.back.toPar}
                 selected={sel}
                 turning={turning}
+                ghost={ghostLine}
                 onPick={(n, via) => {
                   pick(n);
                   // From the keyboard the slider keeps focus and the page stays put; the card below follows the value.
@@ -622,6 +675,17 @@ export function RoundReview({ review, typeEdit = null, initialHole = null }: { r
             </ZoneBlock>
           ) : (
             <p className="ch-znmiss">The hole-by-hole picture needs holes posted with their scores.</p>
+          )}
+          {ghostOptions.length > 1 && (
+            <div className="ch-rv-ghost">
+              <Segmented label="Draw under this round" value={ghostChoice} onChange={chooseGhost} options={ghostOptions} />
+              {ghostLine && (
+                <p className="ch-rv-ghost__l">
+                  <i aria-hidden="true" />
+                  {ghostLine.legend}
+                </p>
+              )}
+            </div>
           )}
           {!r.holesError && <RoundSays figures={says} />}
           {r.holes.length > 0 && !r.holesError && (
@@ -844,7 +908,23 @@ export function RoundReview({ review, typeEdit = null, initialHole = null }: { r
                 </section>
               </SectionBoundary>
               <SectionBoundary surface="rounds.review.hole" label="This hole" code="CH-11203">
-                {hole && <HoleCard hole={hole} dir={holeDir} count={r.holes[r.holes.length - 1]?.n ?? 18} shotsError={r.shotsError} onStep={step} onRetry={refresh} retrying={refreshing} />}
+                {hole && (
+                  <HoleCard
+                    hole={hole}
+                    dir={holeDir}
+                    count={r.holes[r.holes.length - 1]?.n ?? 18}
+                    shotsError={r.shotsError}
+                    onStep={step}
+                    onRetry={refresh}
+                    retrying={refreshing}
+                    before={(() => {
+                      const b = r.history?.hereBefore[hole.n];
+                      const c = r.history?.course;
+                      if (!b || !c) return null;
+                      return { ...b, course: c.name, who: coach ? (r.playerName?.split(' ')[0] ?? null) : null, href: rebuiltHref(courseHref(c.key, { hole: hole.n, ...(coach ? { player: r.playerId } : {}) }), coach ? 'coach' : 'player') };
+                    })()}
+                  />
+                )}
               </SectionBoundary>
             </Zone>
 

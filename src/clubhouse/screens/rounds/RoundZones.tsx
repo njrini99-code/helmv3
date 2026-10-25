@@ -2,7 +2,7 @@
 
 import { useId, useLayoutEffect, useRef, useState, type CSSProperties, type KeyboardEvent } from 'react';
 import type { ChReviewHole } from '../../data/round-review-shape';
-import { formatSigned, formatToPar, NO_DATA } from '../../lib/format';
+import { formatFixed, formatSigned, formatToPar, NO_DATA } from '../../lib/format';
 import { NoData } from '../../ui/NoData';
 import { ZoneBlock } from '../../ui/Zone';
 import { costliest, flow, puttBands, puttSplit, trail, type FlowPoint, type HoleResult, type turningStretch } from './round-insights';
@@ -43,7 +43,11 @@ export function flowGeometry({ x0, x1, top, height, holes, lo, hi }: { x0: numbe
 }
 
 /** "plus 3", "minus 2", "level par": a to-par figure as it is spoken. */
-const spokenToPar = (v: number) => (v === 0 ? 'level par' : v > 0 ? `plus ${v}` : `minus ${-v}`);
+const spokenToPar = (v: number) => {
+  const r = Math.round(v * 10) / 10;
+  const mag = Number.isInteger(r) ? String(Math.abs(r)) : formatFixed(Math.abs(r), 1);
+  return r === 0 ? 'level par' : r > 0 ? `plus ${mag}` : `minus ${mag}`;
+};
 
 /** What the arc's slider says for a hole: "Hole 14, par 4, made 6, plus 3 through 14". */
 export function flowValueText(p: FlowPoint): string {
@@ -87,6 +91,7 @@ export function ScoreFlow({
   inToPar,
   selected = null,
   turning = null,
+  ghost = null,
   onPick,
 }: {
   holes: ChReviewHole[];
@@ -97,6 +102,8 @@ export function ScoreFlow({
   /** The hole picked on the scorecard; the slider's value. */
   selected?: number | null;
   turning?: FlowTurning;
+  /** P-7: another round drawn under this one: its running score to par by hole number (1..18) and what it is. */
+  ghost?: { cum: readonly number[]; label: string; spoken: string } | null;
   /** `via` is 'key' when the pick came from the keyboard, so the caller can keep focus where it is. */
   onPick?: (n: number, via: 'pointer' | 'key') => void;
 }) {
@@ -113,8 +120,9 @@ export function ScoreFlow({
   const X0 = 52;
   const X1 = 690;
   // The plot runs from just under the best the round got to just over its worst, always with par inside it; up is better.
-  const lo = Math.min(0, ...pts.map((p) => p.cum)) - 1;
-  const hi = Math.max(0, ...pts.map((p) => p.cum)) + 1;
+  const ghostVals = ghost ? ghost.cum.slice(0, n) : [];
+  const lo = Math.floor(Math.min(0, ...pts.map((p) => p.cum), ...ghostVals)) - 1;
+  const hi = Math.ceil(Math.max(0, ...pts.map((p) => p.cum), ...ghostVals)) + 1;
   const TOP = 44;
   const H = 150;
   const { x, y, split } = flowGeometry({ x0: X0, x1: X1, top: TOP, height: H, holes: n, lo, hi });
@@ -176,7 +184,7 @@ export function ScoreFlow({
         aria-valuemin={firstN}
         aria-valuemax={lastN}
         aria-valuenow={value.n}
-        aria-valuetext={flowValueText(value)}
+        aria-valuetext={flowValueText(value) + (ghost && ghost.cum[value.n - 1] != null ? `, ${ghost.spoken} ${spokenToPar(ghost.cum[value.n - 1]!)} through ${value.n}` : '')}
         onKeyDown={onKey}
         onFocus={() => setFocused(true)}
         onBlur={() => setFocused(false)}
@@ -252,6 +260,14 @@ export function ScoreFlow({
           <polygon points={area} fill={`url(#${id}-gu)`} clipPath={`url(#${id}-up)`} />
           <polygon points={area} fill={`url(#${id}-gd)`} clipPath={`url(#${id}-down)`} />
         </g>
+        {ghost && ghostVals.length > 1 && (
+          <g className="ch-rzghost">
+            <polyline points={ghostVals.map((v, i) => `${x(i + 1)},${y(v)}`).join(' ')} fill="none" stroke="var(--ch-stage-ink)" strokeOpacity={0.55} strokeWidth={1.5} strokeDasharray="4 3" />
+            <text x={X1 + 10} y={y(ghostVals[ghostVals.length - 1]!) - 8} textAnchor="end" fontSize={11} fill="var(--ch-stage-ink-soft)" className="ch-num">
+              {ghost.label}
+            </text>
+          </g>
+        )}
         <polyline className="ch-rzline" pathLength={1} points={line} fill="none" stroke="var(--ch-stage-line)" strokeWidth={3.5} strokeLinejoin="round" strokeLinecap="round" filter={`url(#${id}-glow)`} />
         {cur && (
           <g>
