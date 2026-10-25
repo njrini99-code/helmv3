@@ -33,7 +33,7 @@ import {
   TEAMS_PER_CHUNK,
 } from '@/lib/coachhelm/v3/standing/refresh';
 import { recordJobRun } from '@/lib/admin/job-log';
-import { isStandingQueueMissing } from '@/lib/coachhelm/v3/standing/refresh-queue';
+import { isStandingQueueMissing, untypedRpc } from '@/lib/coachhelm/v3/standing/refresh-queue';
 import { describeError } from '@/lib/utils/describe-error';
 import {
   detectStandingShifts,
@@ -369,8 +369,7 @@ async function handle(): Promise<NextResponse> {
     // applied; the dirty pass (/api/cron/v3/standing-refresh-dirty) refreshes saved-round teams between nightly runs.
     // Its own try: a throw here must not take the lifetime refresh's prune, notifications or goal pass down with it.
     try {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const seasonResult = await (supabase as any).rpc('refresh_player_standing_season', {
+      const seasonResult = await untypedRpc(supabase)('refresh_player_standing_season', {
         p_team_ids: teamIds,
       });
       if (seasonResult.error) {

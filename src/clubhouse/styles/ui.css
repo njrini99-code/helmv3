@@ -1988,6 +1988,43 @@ html[data-fw-theme='dark'] .ch-scoreboard .ch-score--double {
   }
 }
 
+/* P-14 change marks: the old value of a changed event, struck. The line is a pseudo-element so it can draw. A mark this
+   device has not seen is `pending` and draws once with a CSS animation, so it ends struck with no script; a seen one is
+   `done` from the first frame and never moves. Only transform animates, and the colour is the quiet ink from the first
+   frame. With Animations off the durations are zero, so it is struck at once. */
+.ch-was {
+  position: relative;
+  text-decoration: none;
+  white-space: nowrap;
+  color: var(--ch-ink-500);
+}
+.ch-was::after {
+  position: absolute;
+  inset-inline: -1px;
+  top: 54%;
+  height: 1.5px;
+  border-radius: var(--ch-radius-mark);
+  background: currentColor;
+  transform-origin: left center;
+  content: '';
+}
+.ch-was[data-draw='pending']::after {
+  animation: ch-was-strike var(--ch-dur-release) var(--ch-ease) var(--ch-dur-quick) both;
+}
+@keyframes ch-was-strike {
+  from {
+    transform: scaleX(0);
+  }
+  to {
+    transform: scaleX(1);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .ch-was[data-draw='pending']::after {
+    animation: none;
+  }
+}
+
 /* The page is waiting, not missing (EmptyState with a `shape` or `kind`; ui/EmptyShape.tsx). The sentence takes the place
    of the first row, flush on the Ledger like the rows that will follow it, and under it the layout's own rules, rings and
    baseline are drawn empty. Hairlines only: no bars, no sheen (those are the loading skeleton's) and no motion, so there
@@ -2294,42 +2331,5 @@ html[data-fw-theme='dark'] .ch-scoreboard .ch-score--double {
   .ch-toast__action::before,
   .ch-toast__close::before {
     width: 100%;
-  }
-}
-
-/* P-14 change marks: the old value of a changed event, struck. The line is a pseudo-element so it can draw. A mark this
-   device has not seen is `pending` and draws once with a CSS animation, so it ends struck with no script; a seen one is
-   `done` from the first frame and never moves. Only transform animates, and the colour is the quiet ink from the first
-   frame. With Animations off the durations are zero, so it is struck at once. */
-.ch-was {
-  position: relative;
-  text-decoration: none;
-  white-space: nowrap;
-  color: var(--ch-ink-500);
-}
-.ch-was::after {
-  position: absolute;
-  inset-inline: -1px;
-  top: 54%;
-  height: 1.5px;
-  border-radius: var(--ch-radius-mark);
-  background: currentColor;
-  transform-origin: left center;
-  content: '';
-}
-.ch-was[data-draw='pending']::after {
-  animation: ch-was-strike var(--ch-dur-release) var(--ch-ease) var(--ch-dur-quick) both;
-}
-@keyframes ch-was-strike {
-  from {
-    transform: scaleX(0);
-  }
-  to {
-    transform: scaleX(1);
-  }
-}
-@media (prefers-reduced-motion: reduce) {
-  .ch-was[data-draw='pending']::after {
-    animation: none;
   }
 }

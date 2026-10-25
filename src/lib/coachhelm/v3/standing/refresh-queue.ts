@@ -12,6 +12,17 @@ import { createAdminClient } from '@/lib/supabase/admin';
 import { logServerError } from '@/lib/server-error-logger';
 import { describeError } from '@/lib/utils/describe-error';
 
+type UntypedRpcResult = { data: unknown; error: { message?: string | null; code?: string | null } | null };
+
+/**
+ * `rpc` for a function the held migrations add and the generated types do not know yet. Typed to the PostgREST result shape
+ * rather than `any`, so the caller still has to read `error`. Drop it for the typed client once `db:types` covers the RPC.
+ */
+export function untypedRpc(client: object): (fn: string, args?: Record<string, unknown>) => PromiseLike<UntypedRpcResult> {
+  const rpc = (client as unknown as { rpc: (fn: string, args?: Record<string, unknown>) => PromiseLike<UntypedRpcResult> }).rpc;
+  return (fn, args) => rpc.call(client, fn, args);
+}
+
 /** A team must be quiet this long after its last mark before the dirty pass refreshes it (one refresh per burst of saves). */
 export const STANDING_DIRTY_QUIET_SECONDS = 180;
 /** …but never waits longer than this from its first mark, so a team saving every few minutes still refreshes. */
@@ -40,8 +51,7 @@ export type MarkStandingDirtyResult = { status: 'marked'; teams: number } | { st
 export async function markTeamStandingDirty(playerId: string): Promise<MarkStandingDirtyResult> {
   try {
     const supabase = createAdminClient();
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- the held migration's RPC is not in the generated types yet
-    const { data, error } = await (supabase as any).rpc('mark_team_standing_dirty', { p_player_id: playerId });
+    const { data, error } = await untypedRpc(supabase)('mark_team_standing_dirty', { p_player_id: playerId });
     if (error) {
       if (isStandingQueueMissing(error)) return { status: 'not_applied' };
       await logServerError(

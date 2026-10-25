@@ -40,7 +40,7 @@ BEGIN
   INSERT INTO public.golf_players (id, user_id) VALUES (p_1, u_p1), (p_2, u_p2), (p_3, u_p3) ON CONFLICT DO NOTHING;
   INSERT INTO public.golf_teams (id, name, join_code, organization_id, gender) VALUES (t_x, 'pgtap-rm-team', 'PGRMX1', v_org, 'mens') ON CONFLICT DO NOTHING;
   INSERT INTO public.golf_team_coach_staff (team_id, coach_id, role, is_primary) VALUES (t_x, c_coach, 'head_coach', true) ON CONFLICT DO NOTHING;
-  INSERT INTO public.golf_conversations (id, team_id, is_team_chat) VALUES (conv_t, t_x, true), (conv_d, t_x, false) ON CONFLICT DO NOTHING;
+  INSERT INTO public.golf_conversations (id, created_by, team_id, is_team_chat) VALUES (conv_t, u_coach, t_x, true), (conv_d, u_coach, t_x, false) ON CONFLICT DO NOTHING;
   INSERT INTO public.golf_conversation_participants (conversation_id, user_id, last_read_at) VALUES
     (conv_t, u_coach, now() - interval '2 days'), (conv_t, u_coach2, now() - interval '2 days'),
     (conv_t, u_p1, now() - interval '2 days'), (conv_t, u_p2, now() - interval '2 days'), (conv_t, u_p3, now() - interval '2 days'),

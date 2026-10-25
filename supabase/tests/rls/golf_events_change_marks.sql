@@ -384,6 +384,16 @@ SELECT ok(
   'a quiet rewrite of a marked title moves the open baseline with it, so no stale "Renamed" is left'
 );
 
+-- The player's move attempt below runs in a function: a data-modifying WITH is only allowed at the top level of a
+-- statement, so it cannot sit inside the SELECT is(...) subquery. Created while the role is still the owner.
+CREATE FUNCTION pg_temp.marks_try_move(p_id uuid) RETURNS int LANGUAGE plpgsql AS $f$
+DECLARE n int;
+BEGIN
+  UPDATE public.golf_events SET start_time = start_time + interval '1 hour' WHERE id = p_id;
+  GET DIAGNOSTICS n = ROW_COUNT;
+  RETURN n;
+END $f$;
+
 -- A series edited in one statement is one session across its rows.
 SET LOCAL role TO authenticated;
 UPDATE public.golf_events SET start_time = start_time + interval '1 hour', end_time = end_time + interval '1 hour'
@@ -416,7 +426,7 @@ SELECT is(
   'a player does not read a meeting they are not invited to, so its mark stays hidden too'
 );
 SELECT is(
-  (WITH u AS (UPDATE public.golf_events SET start_time = start_time + interval '1 hour' WHERE id = '00000000-0000-0000-0000-000000801601' RETURNING 1) SELECT count(*)::int FROM u),
+  pg_temp.marks_try_move('00000000-0000-0000-0000-000000801601'),
   0,
   'a player cannot move an event, so cannot make a mark'
 );

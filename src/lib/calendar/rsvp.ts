@@ -361,19 +361,27 @@ export async function notifyEventUpdate(
  */
 export async function notifyEventSeriesUpdate(rootId: string, eventIds: string[], supabase: SupabaseClient): Promise<void> {
   if (eventIds.length === 0) return;
-  const { data: events } = await supabase
+  const { data: events, error: eventsError } = await supabase
     .from('golf_events')
     .select('id, title, start_time, end_time, all_day, location, requires_rsvp')
     .in('id', eventIds)
     .order('start_time', { ascending: true });
+  if (eventsError) {
+    console.error('[notifyEventSeriesUpdate] Failed to read events:', eventsError.message);
+    return;
+  }
   const asking = (events ?? []).filter((e) => e.requires_rsvp);
   const first = asking[0];
   if (!first) return;
 
-  const { data: attendances } = await supabase
+  const { data: attendances, error: attendanceError } = await supabase
     .from('golf_event_attendance')
     .select('player:golf_players(user_id)')
     .in('event_id', asking.map((e) => e.id));
+  if (attendanceError) {
+    console.error('[notifyEventSeriesUpdate] Failed to read attendance:', attendanceError.message);
+    return;
+  }
   const userIds = [
     ...new Set(
       ((attendances || []) as unknown as AttendanceWithUser[]).map((a) => firstOrNull(a.player)?.user_id).filter((id): id is string => Boolean(id)),
@@ -391,8 +399,7 @@ export async function notifyEventSeriesUpdate(rootId: string, eventIds: string[]
     action_url: `/golf/dashboard/calendar?event=${first.id}`,
   }));
   const adminClient = createAdminClient();
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const { error } = await (adminClient as any)
+  const { error } = await adminClient
     .from('golf_calendar_notifications')
     .upsert(notifications, { onConflict: 'event_id,user_id,notification_type', ignoreDuplicates: true });
   if (error) console.error('[notifyEventSeriesUpdate] Failed to insert notifications:', error.message);

@@ -80,7 +80,10 @@ BEGIN
   INSERT INTO public.golf_holes (round_id, hole_number, par, score) VALUES (r_round, 1, 4, 5) ON CONFLICT DO NOTHING;
   PERFORM set_config('request.jwt.claims', '', true);
 
+  -- Completing a round is the protected submit's job; the test stands in for it with the same transaction capability.
+  PERFORM set_config('helm.golf_lifecycle_write', 'atomic', true);
   UPDATE public.golf_rounds SET status = 'completed' WHERE id = r_round;
+  PERFORM set_config('helm.golf_lifecycle_write', '', true);
   INSERT INTO public.golf_round_reviews (round_id, player_id, coach_notes) VALUES (r_round, p_player, 'pgtap-p7 note')
   ON CONFLICT DO NOTHING;
 END $$;
