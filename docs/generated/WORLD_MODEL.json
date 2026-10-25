@@ -3321,6 +3321,12 @@
         ]
       },
       {
+        "id": "golf_conversation_read_marks",
+        "definedIn": [
+          "supabase/migrations/20261025010000_golf_conversation_read_marks.sql"
+        ]
+      },
+      {
         "id": "golf_course_edit_history",
         "definedIn": [
           "supabase/migrations/20260613160000_course_library_phase1.sql"
@@ -3934,6 +3940,10 @@
         "definedIn": "supabase/migrations/20261020120000_golf_focus_area_prescription.sql"
       },
       {
+        "id": "golf_forget_read_marks",
+        "definedIn": "supabase/migrations/20261025010000_golf_conversation_read_marks.sql"
+      },
+      {
         "id": "golf_import_player_classes",
         "definedIn": "supabase/migrations/20261021110000_golf_import_player_classes.sql"
       },
@@ -3944,6 +3954,10 @@
       {
         "id": "golf_message_responses_poll_guard",
         "definedIn": "supabase/migrations/20261025020100_golf_poll_vote_guard.sql"
+      },
+      {
+        "id": "golf_message_seen_times",
+        "definedIn": "supabase/migrations/20261025010000_golf_conversation_read_marks.sql"
       },
       {
         "id": "golf_messages_poll_freeze",
@@ -3972,6 +3986,14 @@
       {
         "id": "golf_qualifier_selection_reasons",
         "definedIn": "supabase/migrations/20260929200000_golf_qualifier_db_hardening.sql"
+      },
+      {
+        "id": "golf_read_marks_visible",
+        "definedIn": "supabase/migrations/20261025010000_golf_conversation_read_marks.sql"
+      },
+      {
+        "id": "golf_record_read_mark",
+        "definedIn": "supabase/migrations/20261025010000_golf_conversation_read_marks.sql"
       },
       {
         "id": "golf_recruit_documents_assert_same_team",
@@ -25281,6 +25303,17 @@
     },
     {
       "source": "team_communications",
+      "target": "golf_conversation_read_marks",
+      "kind": "feature_table",
+      "evidence": [
+        {
+          "kind": "migration_schema",
+          "path": "supabase/migrations/20261025010000_golf_conversation_read_marks.sql"
+        }
+      ]
+    },
+    {
+      "source": "team_communications",
       "target": "golf_message_mentions",
       "kind": "feature_table",
       "evidence": [
@@ -25309,6 +25342,18 @@
         {
           "kind": "migration_schema",
           "path": "supabase/migrations/20260904160000_golf_messaging_structured.sql"
+        }
+      ]
+    },
+    {
+      "source": "team_communications",
+      "target": "golf_message_seen_times",
+      "kind": "feature_rpc",
+      "evidence": [
+        {
+          "kind": "rpc_call",
+          "path": "src/hooks/golf/use-golf-messages.ts",
+          "anchor": "golf_message_seen_times"
         }
       ]
     },
