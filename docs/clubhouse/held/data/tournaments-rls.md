@@ -2,7 +2,7 @@
 
 ```text
 Plan ID: HD-tournaments-rls
-Status: HELD
+Status: RELEASED
 Pages: Tournaments (P016)
 Feature: calendar_events
 Migration: supabase/migrations/20261024100100_golf_tournaments_rls.sql

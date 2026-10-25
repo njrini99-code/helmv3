@@ -1,13 +1,16 @@
 /**
- * Hand-written types for 4.33's held tournament tables and P-5's held RPCs, until they are applied and
- * `npm run db:types` puts them in src/lib/types/database.ts (then delete this file in the same change). Every read and
- * write goes through `tourTable` / `tourRpc`, so the escape from the generated types stays in one place.
+ * Narrowed types for the tournament tables and P-5's RPCs. The tables and functions are applied in production and are in
+ * src/lib/types/database.ts; this file stays as the layer that gives check-constrained text columns their real unions
+ * (format, role, status) and the RPCs' jsonb returns their shapes, which the generated types cannot express. Every read and
+ * write goes through `tourTable` / `tourRpc`, so that narrowing stays in one place. The assertions below fail the build if
+ * a column named here is removed or renamed in the database.
  *
- * Shapes follow the migrations as written: 4.33's 20261024100000 (tables), and P-5's 20261025040000 (request_id,
- * course_label, golf_team_timezone and the four RPCs, with their jsonb returns).
+ * Shapes follow 4.33's 20261024100000 (tables) and P-5's 20261025040000 (request_id, course_label, golf_team_timezone and
+ * the four RPCs, with their jsonb returns).
  */
 import type { SupabaseClient } from '@supabase/supabase-js';
 import type { TourPlayerRoundRow } from '@/lib/golf/tournaments-tables';
+import type { Database } from '@/lib/types/database';
 
 export type TourRoundStatus = 'upcoming' | 'live' | 'suspended_weather' | 'suspended_other' | 'final';
 export type TourStartType = 'tee_times' | 'shotgun' | 'two_tees';
@@ -83,7 +86,15 @@ type CalendarTourDatabase = {
   };
 };
 
-/** The held columns above, on the request's unchanged RLS client. */
+type GeneratedTables = Database['public']['Tables'];
+// Every column the narrowed rows name must exist on the generated row (a rename or drop in the database breaks the build here).
+type ColumnsExist<Narrow, Gen> = { [K in keyof Narrow]: K extends keyof Gen ? true : never };
+const _tournamentColumns: ColumnsExist<GolfTournamentRow, GeneratedTables['golf_tournaments']['Row']> | null = null;
+const _roundColumns: ColumnsExist<GolfTournamentRoundRow, GeneratedTables['golf_tournament_rounds']['Row']> | null = null;
+const _entryColumns: ColumnsExist<GolfTournamentEntryRow, GeneratedTables['golf_tournament_entries']['Row']> | null = null;
+void [_tournamentColumns, _roundColumns, _entryColumns];
+
+/** The narrowed columns above, on the request's unchanged RLS client. */
 export function tourTable<T extends TourTable>(client: object, table: T) {
   return (client as SupabaseClient<CalendarTourDatabase>).from(table);
 }

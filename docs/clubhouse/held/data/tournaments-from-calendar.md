@@ -2,7 +2,7 @@
 
 ```text
 Plan ID: HD-tournaments-from-calendar
-Status: HELD
+Status: RELEASED
 Pages: Calendar (P006); Tournaments (P016) reads the rows
 Feature: calendar_events
 Migration: supabase/migrations/20261025040000_golf_tournament_from_calendar.sql

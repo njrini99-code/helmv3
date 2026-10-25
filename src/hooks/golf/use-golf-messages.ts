@@ -160,7 +160,7 @@ export interface GolfConversationWithMeta {
 }
 
 // Extended message type with read receipt info
-export interface GolfMessage extends GolfMessageRow {
+export interface GolfMessage extends Omit<GolfMessageRow, 'notify_anyway' | 'notify_anyway_pushed_at'> {
   isRead?: boolean; // Whether the other participant has read this message
   /**
    * P-10 Notify anyway. Present only when the read asked for them (`classAwareness`) or on a realtime payload / an optimistic row: `notify_anyway`

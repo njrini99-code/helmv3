@@ -2,7 +2,7 @@
 
 ```text
 Plan ID: HD-tournaments-calendar-sync
-Status: HELD
+Status: RELEASED
 Pages: Calendar (P006); Tournaments (P016) reads the dates
 Feature: calendar_events
 Migration: supabase/migrations/20261025040100_golf_tournament_calendar_sync.sql

@@ -1,6 +1,6 @@
 /**
- * The hand types for 4.33's held tournament tables and P-5's held RPCs live in src/lib/golf/tournaments/db.ts, so the
- * server actions (outside src/clubhouse) and the Clubhouse loaders share one copy. Delete both after `npm run
- * db:types` once the migrations are applied.
+ * The narrowed types for the tournament tables and P-5's RPCs live in src/lib/golf/tournaments/db.ts, so the
+ * server actions (outside src/clubhouse) and the Clubhouse loaders share one copy. The migrations are applied and the
+ * generated types cover them; the file keeps the unions and jsonb shapes the generated types cannot express.
  */
 export * from '@/lib/golf/tournaments/db';

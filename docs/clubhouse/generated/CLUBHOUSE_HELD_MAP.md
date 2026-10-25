@@ -7,16 +7,16 @@ Held features and data plans (D-61), by page. Nothing here is applied or active 
 | Page | Plan | Status | Migration |
 | --- | --- | --- | --- |
 | P003 Roster | `docs/clubhouse/held/data/roster-availability.md` | RELEASED | supabase/migrations/20260929120000_golf_team_members_availability.sql |
-| P006 Calendar | `docs/clubhouse/held/data/tournaments-from-calendar.md` | HELD | supabase/migrations/20261025040000_golf_tournament_from_calendar.sql |
-| P006 Calendar | `docs/clubhouse/held/data/tournaments-calendar-sync.md` | HELD | supabase/migrations/20261025040100_golf_tournament_calendar_sync.sql |
+| P006 Calendar | `docs/clubhouse/held/data/tournaments-from-calendar.md` | RELEASED | supabase/migrations/20261025040000_golf_tournament_from_calendar.sql |
+| P006 Calendar | `docs/clubhouse/held/data/tournaments-calendar-sync.md` | RELEASED | supabase/migrations/20261025040100_golf_tournament_calendar_sync.sql |
 | P007 Messages | `docs/clubhouse/held/features/conversation-files.md` | HELD | — |
 | P007 Messages | `docs/clubhouse/held/data/message-attachments-hardening.md` | RELEASED | supabase/migrations/20261001130000_golf_attachments_revoke_anon_hide_deleted.sql |
 | P009 Qualifiers | `docs/clubhouse/held/features/qualifier-squad-and-entrants.md` | HELD | — |
 | P009 Qualifiers | `docs/clubhouse/held/data/qualifier-db-hardening.md` | RELEASED | supabase/migrations/20260929200000_golf_qualifier_db_hardening.sql |
 | P010 Team Hub | `docs/clubhouse/held/data/document-policy-scoping.md` | RELEASED | supabase/migrations/20260930160000_golf_document_policy_scoping.sql |
 | P011 Rounds | `docs/clubhouse/held/data/live-rounds.md` | RELEASED | supabase/migrations/20261025050000_golf_round_live.sql |
-| P011 Rounds | `docs/clubhouse/held/data/live-rounds-realtime.md` | HELD | supabase/migrations/20261025050100_golf_round_live_realtime.sql |
+| P011 Rounds | `docs/clubhouse/held/data/live-rounds-realtime.md` | RELEASED | supabase/migrations/20261025050100_golf_round_live_realtime.sql |
 | P014 Recruiting | `docs/clubhouse/held/data/recruit-documents-film.md` | RELEASED | supabase/migrations/20260930140000_recruit_documents_film.sql |
-| P016 Tournaments | `docs/clubhouse/held/data/tournaments.md` | HELD | supabase/migrations/20261024100000_golf_tournaments.sql |
-| P016 Tournaments | `docs/clubhouse/held/data/tournaments-rls.md` | HELD | supabase/migrations/20261024100100_golf_tournaments_rls.sql |
-| P016 Tournaments | `docs/clubhouse/held/data/tournaments-rpcs.md` | HELD | supabase/migrations/20261024100200_golf_tournaments_rpcs.sql |
+| P016 Tournaments | `docs/clubhouse/held/data/tournaments.md` | RELEASED | supabase/migrations/20261024100000_golf_tournaments.sql |
+| P016 Tournaments | `docs/clubhouse/held/data/tournaments-rls.md` | RELEASED | supabase/migrations/20261024100100_golf_tournaments_rls.sql |
+| P016 Tournaments | `docs/clubhouse/held/data/tournaments-rpcs.md` | RELEASED | supabase/migrations/20261024100200_golf_tournaments_rpcs.sql |

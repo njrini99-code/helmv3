@@ -2,7 +2,7 @@
 
 ```text
 Plan ID: HD-tournaments
-Status: HELD
+Status: RELEASED
 Pages: Tournaments (P016): season home, event desk, lineup, live, compare,
   player event view (all behind golf_tournaments_v1, off)
 Feature: calendar_events (memory/registry.yml owns *golf_tournament*.sql)
