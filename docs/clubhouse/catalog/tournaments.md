@@ -127,7 +127,7 @@ Where things live:
 | # | When | They see | How | Test |
 | --- | --- | --- | --- | --- |
 | CH-16600 | Coach Home, someone is on the course | "Live now · {n} on the course" with a static green dot, a chevron to open the live view on the phone, "Open live view" on a wide screen. Up to four lanes on a phone, six on a wide screen | `LiveNowCard` (`screens/home`), `LIVE_COPY.homeTitle` | live-rounds-copy.test › CH-16600 |
-| CH-16601 | More lanes than the card shows | "See all {n}", a 44px key to the live view | `LiveNowCard` | live-rounds-copy.test › CH-16601 |
+| CH-16606 | More lanes than the card shows | "See all {n}", a 44px key to the live view | `LiveNowCard` | live-rounds-copy.test › CH-16601 |
 | CH-16602 | Coach Home, only finished lanes remain (each stays 30 minutes after it posted) | "Finished today · {n}" as the title, without the dot | `LiveNowCard` | live-rounds-copy.test › CH-16602 |
 | CH-16603 | The head of the card | "Open live view": the chevron's VoiceOver name on a phone, a text button on a wide screen | `LiveNowCard` | live-rounds-copy.test › CH-16603 |
 | CH-16604 | A live read failed or the feed dropped | "Can’t refresh right now" in the card head in place of the dot, with the lanes it has. In the live view, before any lane has loaded, a notice with the same title, "Nothing you saved is lost. Try again." and Try again; the feed chip reads "No signal" with Retry | `feedProblem`, `FreshnessChip`, `InlineNotice`, `FAILURE_COPY.page` | live-rounds-copy.test › CH-16604 |

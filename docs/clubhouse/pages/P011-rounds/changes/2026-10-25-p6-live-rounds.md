@@ -57,7 +57,7 @@ Held items:     none
 ## 2026-10-25 — Where the rest of P-6 is written down
 
 P-6 (Live rounds) registers no page of its own: namespace 16 is P016 Tournaments (P-5). Its CH-16600 to CH-16677 (minus
-CH-16650 to CH-16653, P-5's) and CH-16680 to CH-16685 rows are in `docs/clubhouse/catalog/tournaments.md` for now and
-move into P016's catalog when #2369 lands. Its held plans are claimed by this page's manifest. The wiring map, the full
+CH-16650 to CH-16653, P-5's) and CH-16680 to CH-16685 rows are in `docs/clubhouse/catalog/tournaments.md` (P016's catalog, under "Live rounds (P-6)"; the P-6 "See all" code moved from
+CH-16601 to CH-16606 because the tournaments page uses CH-16601). Its held plans are claimed by this page's manifest. The wiring map, the full
 slice-by-slice change notes and the hand-offs (Lock Screen / Live Activity contract; what 4.33 must expose, the tournament
 id behind `/golf/dashboard/tournaments/<id>/live`) are in `docs/clubhouse/live-rounds/`.

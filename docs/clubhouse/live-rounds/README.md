@@ -1,7 +1,7 @@
 # Live rounds (P-6)
 
 Build plan P-6 (handoff 4.34.6) with the 2026-10-25 changelog and recheck applied. P-6 has no page of its own: its words are
-CH-16600 to CH-16677 (minus CH-16650 to CH-16653, P-5's) and CH-16680 to CH-16685 in `docs/clubhouse/catalog/tournaments.md`.
+CH-16600 to CH-16677 (CH-16601 is the tournaments page's, P-6's "See all" is CH-16606; minus CH-16650 to CH-16653, P-5's) and CH-16680 to CH-16685 in `docs/clubhouse/catalog/tournaments.md`.
 
 | File | What |
 | --- | --- |

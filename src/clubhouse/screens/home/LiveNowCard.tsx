@@ -118,7 +118,7 @@ export function LiveNowCard({
         </ul>
       )}
       {more > limit && (
-        <Link href={href} className="ch-lv-card__more" data-ch-code="CH-16601">
+        <Link href={href} className="ch-lv-card__more" data-ch-code="CH-16606">
           {LIVE_COPY.seeAll(more)}
         </Link>
       )}

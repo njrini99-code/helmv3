@@ -55,7 +55,7 @@ export function TeammatesLiveCard({ initial, playerId, frozen = false, now: froz
         ))}
       </ul>
       {mates.length > LIMIT && !all && (
-        <button type="button" className="ch-lv-card__more" data-ch-code="CH-16601" onClick={() => setAll(true)}>
+        <button type="button" className="ch-lv-card__more" data-ch-code="CH-16606" onClick={() => setAll(true)}>
           {LIVE_COPY.seeAll(mates.length)}
         </button>
       )}

@@ -121,7 +121,7 @@
     "CH-15921": { "category": 9, "why": "A positive confirmation: the reset link was asked for." },
     "CH-15922": { "category": 12, "why": "Back to sign in brings the typed address back and pops the reset form's history entry rather than stacking one." },
     "CH-16600": { "category": 1, "why": "P-6 copy deck, numbered by the plan (CH-166xx) rather than by the catalog kinds: the category the words belong to." },
-    "CH-16601": { "category": 1, "why": "P-6 copy deck, numbered by the plan (CH-166xx) rather than by the catalog kinds: the category the words belong to." },
+    "CH-16606": { "category": 1, "why": "P-6 copy deck, numbered by the plan (CH-166xx) rather than by the catalog kinds: the category the words belong to." },
     "CH-16602": { "category": 1, "why": "P-6 copy deck, numbered by the plan (CH-166xx) rather than by the catalog kinds: the category the words belong to." },
     "CH-16603": { "category": 1, "why": "P-6 copy deck, numbered by the plan (CH-166xx) rather than by the catalog kinds: the category the words belong to." },
     "CH-16604": { "category": 3, "why": "P-6 copy deck, numbered by the plan (CH-166xx) rather than by the catalog kinds: the category the words belong to." },

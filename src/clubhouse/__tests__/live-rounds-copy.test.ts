@@ -15,7 +15,7 @@ import { ROOT } from './_scan';
 const sofia = PREVIEW_LIVE.lanes.find((l) => l.name === 'Sofia Reyes') as LiveLane;
 const CASES: Array<[code: string, words: string]> = [
   ['CH-16600', LIVE_COPY.homeTitle(4)],
-  ['CH-16601', LIVE_COPY.seeAll(7)],
+  ['CH-16606', LIVE_COPY.seeAll(7)],
   ['CH-16602', LIVE_COPY.finishedTitle(2)],
   ['CH-16603', LIVE_COPY.openLive],
   ['CH-16604', feedProblem('paused')!.text],
@@ -63,7 +63,7 @@ const CASES: Array<[code: string, words: string]> = [
 
 const EXPECTED: Record<string, string> = {
   'CH-16600': 'Live now · 4 on the course',
-  'CH-16601': 'See all 7',
+  'CH-16606': 'See all 7',
   'CH-16602': 'Finished today · 2',
   'CH-16603': 'Open live view',
   'CH-16604': 'Can’t refresh right now',

@@ -11,7 +11,7 @@ export const LIVE_ROUTE = '/golf/dashboard/live';
 export const LIVE_COPY = {
   /** CH-16600: Home card title. */
   homeTitle: (n: number) => `Live now · ${n} on the course`,
-  /** CH-16601 */
+  /** CH-16606 (P-6 moved it from CH-16601, which the tournaments page uses) */
   seeAll: (n: number) => `See all ${n}`,
   /** CH-16602, CH-16613 */
   finishedTitle: (n: number) => `Finished today · ${n}`,

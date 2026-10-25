@@ -13,7 +13,41 @@ in the catalog.
 
 ## 01 — Default / core UI
 
-Status: N/A — not defined yet: no view is built (each renders the base's placeholder) and nothing is wired. The lane that builds the view defines this category with its catalog rows (screens/tournaments/README.md).
+Status: DEFINED
+
+| Bridge ID | Code | Name | Meaning |
+| --- | --- | --- | --- |
+| 160101 | CH-16600 | `COACH_HOME_SOMEONE_IS_ON_THE_COURSE` | Coach Home, someone is on the course |
+| 160102 | CH-16602 | `COACH_HOME_ONLY_FINISHED_LANES_REMAIN` | Coach Home, only finished lanes remain (each stays 30 minutes after it posted) |
+| 160103 | CH-16603 | `THE_HEAD_OF_THE_CARD` | The head of the card |
+| 160104 | CH-16606 | `MORE_LANES_THAN_THE_CARD_SHOWS` | More lanes than the card shows |
+| 160105 | CH-16610 | `THE_LIVE_VIEW` | The live view |
+| 160106 | CH-16611 | `TWO_OR_MORE_ROUND_TYPES_HAVE_LANES` | Two or more round types have lanes |
+| 160107 | CH-16612 | `LANES_ON_THE_COURSE` | Lanes on the course |
+| 160108 | CH-16613 | `LANES_THAT_POSTED_OR_STOPPED_TODAY` | Lanes that posted or stopped today |
+| 160109 | CH-16615 | `THE_SORT_CONTROL` | The sort control |
+| 160110 | CH-16616 | `A_PLAYERS_SHEET_THE_HOLE_THEY_PLAY` | A player's sheet, the hole they play next |
+| 160111 | CH-16617 | `A_PLAYERS_SHEET_MOMENTS` | A player's sheet, Moments |
+| 160112 | CH-16618 | `WIDE_LIVE_VIEW_NOBODY_SELECTED` | Wide live view, nobody selected |
+| 160113 | CH-16620 | `QUALIFIER_DETAIL` | Qualifier detail (built in slice 4) |
+| 160114 | CH-16622 | `THE_QUALIFIER_LIST` | The qualifier list (slice 4) |
+| 160115 | CH-16630 | `THE_TEAM_ROUNDS_BAND_HOME_WHEN_ONLY` | The Team rounds band (slice 4); Home when only tournaments are live |
+| 160116 | CH-16631 | `THE_SHARE_CHIP_ON_AN_IN_PROGRESS` | The share chip on an in-progress round in the player's library (slice 4) |
+| 160117 | CH-16640 | `CALENDAR_PEEK_AND_INSPECTOR_AN_EVENT_WITH` | Calendar peek and inspector, an event with lanes linked to it (slice 4) |
+| 160118 | CH-16660 | `ROUND_SETUP` | Round setup (slice 2) |
+| 160119 | CH-16661 | `ROUND_SETUP_2` | Round setup (slice 2) |
+| 160120 | CH-16662 | `A_QUALIFIER_ROUND_IN_SETUP` | A qualifier round in setup (slice 2) |
+| 160121 | CH-16663 | `ROUND_SETUP_3` | Round setup (slice 2) |
+| 160122 | CH-16670 | `A_QUALIFIER_LANES_SECOND_LINE` | A qualifier lane's second line |
+| 160123 | CH-16671 | `A_PRACTICE_OR_TOURNAMENT_LANES_SECOND_LINE` | A practice or tournament lane's second line |
+| 160124 | CH-16674 | `A_ROUND_THE_PLAYER_STOPPED` | A round the player stopped |
+| 160125 | CH-16675 | `ALL_HOLES_SCORED_NOT_POSTED` | All holes scored, not posted |
+| 160126 | CH-16676 | `A_ROUND_WAS_POSTED` | A round was posted |
+| 160127 | CH-16680 | `THE_PLAYERS_OWN_LIVE_CARD` | The player's own live card (slice 1) |
+| 160128 | CH-16681 | `THE_PLAYERS_OWN_LIVE_CARD_2` | The player's own live card (slice 1) |
+| 160129 | CH-16682 | `THE_PLAYERS_TEAMMATES_CARD` | The player's Teammates card (slice 4) |
+| 160130 | CH-16684 | `ROUND_SETUP_OPEN_CALL_VERSION_2` | Round setup, open call (a) version 2 (slice 2) |
+| 160131 | CH-16685 | `COACH_HOME_A_TOURNAMENT_TRACKS_A_LIVE` | Coach Home, a tournament tracks a live round |
 
 ## 02 — Initial loading / skeleton
 
@@ -32,7 +66,11 @@ From the shell (P001): 10201 CH-1401, 10202 CH-1402.
 
 ## 03 — Background loading / refresh
 
-Status: N/A — not defined yet: no view is built (each renders the base's placeholder) and nothing is wired. The lane that builds the view defines this category with its catalog rows (screens/tournaments/README.md).
+Status: DEFINED
+
+| Bridge ID | Code | Name | Meaning |
+| --- | --- | --- | --- |
+| 160301 | CH-16604 | `A_LIVE_READ_FAILED_OR_THE_FEED` | A live read failed or the feed dropped |
 
 ## 04 — Empty
 
@@ -60,6 +98,7 @@ no rounds to link, and so on) are its lane's rows.
 | 160414 | CH-16303 | `A_TOURNAMENTS_ROUTE_SIGNED_IN_BUT_ON` | A Tournaments route, signed in but on no team |
 | 160415 | CH-16304 | `AN_EVENT_ADDRESS_THAT_IS_NOT_THIS` | An event address that is not this team's (deleted, another team's, not an id) |
 | 160416 | CH-16305 | `A_PLAYER_ON_A_COACHS_TOURNAMENTS_PAGE` | A player on a coach's Tournaments page (new or edit event, lineup, live, compare, history, link rounds) |
+| 160417 | CH-16619 | `NOBODY_IS_ON_THE_COURSE` | Nobody is on the course |
 
 ## 05 — Validation
 
@@ -85,6 +124,8 @@ flags and its lane's rows.
 | 160608 | CH-16250 | `COMPARE_THE_ROUNDS_READ_FAILS` | Compare: the rounds read fails (`errors.rounds`) |
 | 160609 | CH-16251 | `COMPARE_THE_FIELD_READ_FAILS` | Compare: the field read fails (`errors.field`) |
 | 160610 | CH-16252 | `COMPARE_THE_HOLE_FIGURES_READ_FAILS` | Compare: the hole figures read fails (`errors.holes`) |
+| 160611 | CH-16664 | `CHANGING_THE_SHARE_LEVEL_FAILS` | Changing the share level fails (slice 2) |
+| 160612 | CH-16666 | `THE_SHARE_FUNCTION_IS_NOT_IN_THE` | The share function is not in the database yet (slice 2) |
 
 ## 07 — Network / offline
 
@@ -92,6 +133,10 @@ Status: DEFINED
 
 No Tournaments route is served yet, so the shell's offline contracts are the
 whole of it today; the live round's outbox (5L.8.5) adds its own.
+
+| Bridge ID | Code | Name | Meaning |
+| --- | --- | --- | --- |
+| 160701 | CH-16605 | `THE_DEVICE_IS_OFFLINE_WHILE_THE_CARD` | The device is offline while the card or the live view is open |
 
 From the shell (P001): 10701 CH-1901, 10702 CH-1902, 10703 CH-1903,
 10704 CH-1905, 10705 CH-1909, 10706 CH-1910.
@@ -103,6 +148,10 @@ Status: DEFINED
 Coach-only views (new, edit, lineup, compare, history, links, review) and the
 player's own view are decided by the route (plan 14.2, Phase 7); until then the
 shell's gate is the only one, and Tournaments is reachable in the preview only.
+
+| Bridge ID | Code | Name | Meaning |
+| --- | --- | --- | --- |
+| 160801 | CH-16609 | `THE_COACH_HAS_NO_TEAM_OR_LOST` | The coach has no team, or lost access to it |
 
 From the shell (P001): 10801 CLUBHOUSE_GATE, 10802 ROLE_SCOPED_NAV,
 10803 TEAM_SWITCH_IS_A_HEAD_COACHS, 10804 CH-1911.
@@ -121,6 +170,7 @@ scorecard (CH-16920): shown with both numbers, never silently picked (D-82).
 | Bridge ID | Code | Name | Meaning |
 | --- | --- | --- | --- |
 | 161001 | CH-16920 | `EVENT_DESK_THE_HOSTS_PUBLISHED_NUMBER_DIFFERS` | Event desk: the host's published number differs from our scorecard (`officialTotal` set and unequal) |
+| 161002 | CH-16665 | `A_ROUNDS_SHARING_WAS_CHANGED_30_TIMES` | A round's sharing was changed 30 times (slice 2) |
 
 ## 11 — Destructive
 
@@ -128,7 +178,11 @@ Status: N/A — not defined yet: no view is built (each renders the base's place
 
 ## 12 — State preservation
 
-Status: N/A — not defined yet: no view is built (each renders the base's placeholder) and nothing is wired. The lane that builds the view defines this category with its catalog rows (screens/tournaments/README.md).
+Status: DEFINED
+
+| Bridge ID | Code | Name | Meaning |
+| --- | --- | --- | --- |
+| 161201 | CH-16621 | `A_PLAYER_WITH_THEIR_OWN_ROUND_ON` | A player with their own round on this qualifier (slice 4) |
 
 ## 13 — Optimistic UI
 
@@ -140,7 +194,15 @@ Status: N/A — not defined yet: no view is built (each renders the base's place
 
 ## 15 — Data freshness / sync
 
-Status: N/A — not defined yet: no view is built (each renders the base's placeholder) and nothing is wired. The lane that builds the view defines this category with its catalog rows (screens/tournaments/README.md).
+Status: DEFINED
+
+| Bridge ID | Code | Name | Meaning |
+| --- | --- | --- | --- |
+| 161501 | CH-16614 | `LANES_WITH_NO_WORD_FOR_90_MINUTES` | Lanes with no word for 90 minutes |
+| 161502 | CH-16672 | `A_LANE_SILENT_FOR_10_MINUTES_WITH` | A lane silent for 10 minutes with the last hole at least as old |
+| 161503 | CH-16673 | `A_LANE_SILENT_FOR_90_MINUTES` | A lane silent for 90 minutes |
+| 161504 | CH-16677 | `TWO_OR_MORE_HOLES_LAND_IN_ONE` | Two or more holes land in one read (a phone that reconnected) |
+| 161505 | CH-16683 | `THE_PLAYERS_OWN_LIVE_CARD_NOT_SAVED` | The player's own live card, not saved for 10 minutes (slice 1) |
 
 ## 16 — Micro animation
 
@@ -174,6 +236,7 @@ DeltaChip and TrustChip speak their meaning in words and never rest on hue alone
 | Bridge ID | Code | Name | Meaning |
 | --- | --- | --- | --- |
 | 161801 | CH-16801 | `A_SIGNED_DIFFERENCE_OR_A_TRUST_STATE` | A signed difference or a trust state is read |
+| 161802 | CH-16641 | `CALENDAR_GRID_BLOCK` | Calendar grid block (slice 4) |
 
 From the shell (P001): 11801 CH-1801, 11802 CH-1802, 11803 CH-1803,
 11804 CH-1804, 11805 CH-1805, 11806 CH-1806, 11807 CH-1807, 11808 CH-1808,
