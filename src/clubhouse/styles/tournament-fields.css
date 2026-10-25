@@ -418,6 +418,12 @@
   background: var(--ch-bg-subtle);
   color: var(--ch-text-tertiary);
 }
+.ch-tfx-card__text {
+  display: grid;
+  flex: 1;
+  gap: var(--ch-space-0_5);
+  min-width: 0;
+}
 .ch-tfx-card__title {
   overflow: hidden;
   font: var(--ch-type-15-strong);
