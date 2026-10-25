@@ -22,6 +22,7 @@ import { holesForRound, parOf, setupBlocker, startPosition, type ChSetupCourse, 
 import { glanceFor, type ChCourseGlance } from '../../../data/course-glance';
 import { courseHref } from '../../../data/course-key';
 import { formatFixed } from '../../../lib/format';
+import { plural } from '../../../lib/plural';
 import '../../../styles/rounds-setup.css';
 
 const STEPS = ['Course', 'Scorecard', 'Track'] as const;
@@ -546,7 +547,7 @@ function HistoryHere({ glance: g }: { glance: ChCourseGlance | null }) {
   const line = g.average != null ? [`Average ${formatFixed(g.average, 1)}`, g.best != null ? `Best ${g.best}` : null, last].filter(Boolean).join(' · ') : last;
   return (
     <div className="ch-rsu-hist">
-      <span className="ch-rsu-hist__k">Your history here · {g.rounds === 1 ? '1 round' : `${g.rounds} rounds`}</span>
+      <span className="ch-rsu-hist__k">Your history here · {plural(g.rounds, 'round')}</span>
       {line && <p className="ch-rsu-hist__l ch-num">{line}</p>}
       {g.last?.note && <p className="ch-rsu-hist__n">Your note: {g.last.note}</p>}
       <Link className="ch-rsu-hist__go" href={courseHref(g.key)}>

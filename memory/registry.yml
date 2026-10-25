@@ -699,7 +699,16 @@ features:
         # follow it here.
         - src/lib/golf/round-session/**
       db:
-        - supabase/migrations/*golf_round*.sql
+        # Narrowed 2026-10-25 from *golf_round*.sql, which also swept up
+        # golf_round_lifecycle's own golf_rounds migrations (a course-history
+        # index tipped the overlap past the 40% glob lint). These name the
+        # round-write migrations shot tracking reviews, file for file.
+        - supabase/migrations/*golf_rounds_authenticated*.sql
+        - supabase/migrations/*golf_rounds_update*.sql
+        - supabase/migrations/*golf_rounds_team_write*.sql
+        - supabase/migrations/*sync_golf_rounds*.sql
+        - supabase/migrations/*golf_round_lifecycle*.sql
+        - supabase/migrations/*golf_round_totals*.sql
         - supabase/migrations/*golf_shot*.sql
         - supabase/migrations/*helm_flight_recorder*.sql
         - supabase/migrations/*helm_debug_retention.sql
