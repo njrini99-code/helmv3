@@ -5,7 +5,7 @@
 .ch-tour-desk-panel {
   display: flex;
   flex-direction: column;
-  gap: 28px;
+  gap: 32px;
   min-width: 0;
 }
 .ch-tour-desk.is-phone .ch-tour-desk-panel {
@@ -37,16 +37,18 @@
 .ch-tour-desk-res {
   display: flex;
   align-items: baseline;
-  gap: 10px;
+  gap: 8px;
   margin: 0;
 }
 .ch-tour-desk-res b {
-  font: 500 40px/1 var(--ch-font-sans);
-  letter-spacing: -0.045em;
+  font: var(--ch-type-figure-l);
+  letter-spacing: -0.038em;
   color: var(--ch-text-primary);
 }
 .ch-tour-desk-res > .ch-num:not(b) {
-  font: 600 calc(16 * var(--ch-type-k))/1 var(--ch-font-sans);
+  font: var(--ch-type-16-strong);
+  letter-spacing: var(--ch-track-16);
+  line-height: var(--ch-lead-tight);
 }
 .ch-tour-desk-res em {
   font: var(--ch-type-caption);
@@ -54,7 +56,9 @@
   color: var(--ch-text-secondary);
 }
 .ch-tour-desk.is-phone .ch-tour-desk-res b {
-  font-size: calc(34 * var(--ch-type-k));
+  font: var(--ch-type-34-medium);
+  line-height: var(--ch-lead-tight);
+  letter-spacing: var(--ch-track-34);
 }
 
 /* Provisional (CH-16920): the host's number differs from our card. The words say so; the amber only backs them up. */
@@ -77,7 +81,7 @@
 /* The sections (Hub's tab strip: an underline under the selected one, the row scrolls on a phone). */
 .ch-tour-desk-tabs {
   display: flex;
-  gap: 22px;
+  gap: 24px;
   max-width: calc(100% + 8px);
   margin: -8px -4px -4px;
   padding: 4px;
@@ -94,7 +98,8 @@
   padding: 0;
   border: 0;
   background: none;
-  font: 500 calc(14 * var(--ch-type-k))/1 var(--ch-font-sans);
+  font: var(--ch-type-14-medium);
+  line-height: var(--ch-lead-tight);
   color: var(--ch-text-secondary);
   white-space: nowrap;
   cursor: pointer;
@@ -119,7 +124,7 @@
   bottom: 0;
   left: 0;
   height: 2px;
-  border-radius: 1px;
+  border-radius: 999px;
   background: var(--ch-forest-800);
 }
 .ch-tour-desk-tabs__n {
@@ -127,11 +132,13 @@
   place-items: center;
   min-width: 18px;
   height: 18px;
-  margin-left: 7px;
-  padding: 0 5px;
-  border-radius: 9px;
+  margin-left: 8px;
+  padding: 0 4px;
+  border-radius: 999px;
   background: var(--ch-bg-selected);
-  font: 600 calc(11 * var(--ch-type-k))/1 var(--ch-font-sans);
+  font: var(--ch-type-11-strong);
+  letter-spacing: var(--ch-track-11);
+  line-height: var(--ch-lead-tight);
   color: var(--ch-green-700);
   vertical-align: 1px;
 }
@@ -148,10 +155,10 @@
 .ch-tour-desk-links {
   display: flex;
   flex-wrap: wrap;
-  gap: 10px;
+  gap: 8px;
 }
 .ch-tour-desk-note {
-  margin: 10px 0 0;
+  margin: 8px 0 0;
   max-width: 80ch;
   font: var(--ch-type-body-s);
   color: var(--ch-text-secondary);
@@ -161,7 +168,7 @@
 .ch-tour-desk-tools {
   display: flex;
   flex-wrap: wrap;
-  gap: 10px 18px;
+  gap: 8px 16px;
   margin-bottom: 12px;
 }
 .ch-tour-desk-pills {
@@ -177,8 +184,9 @@
   border: 0;
   border-radius: 999px;
   background: var(--ch-bg-subtle);
-  box-shadow: inset 0 0 0 1px var(--ch-border-hairline);
-  font: 500 calc(13 * var(--ch-type-k))/1 var(--ch-font-sans);
+  box-shadow: inset 0 0 0 var(--ch-hairline-w) var(--ch-border-hairline);
+  font: var(--ch-type-13-medium);
+  line-height: var(--ch-lead-tight);
   color: var(--ch-text-secondary);
   cursor: pointer;
 }
@@ -205,22 +213,22 @@
 .ch-tour-desk-ct__row {
   display: grid;
   grid-template-columns: minmax(200px, 1fr) repeat(var(--ch-tour-desk-n), 78px) 88px 120px;
-  gap: 10px;
+  gap: 8px;
   align-items: center;
   min-width: 640px;
-  padding: 10px 8px;
+  padding: 8px 8px;
   border-radius: var(--ch-radius-md);
 }
 .ch-tour-desk-ct__scroll.is-single .ch-tour-desk-ct__row {
   grid-template-columns: minmax(200px, 1fr) 78px minmax(200px, 1.2fr);
 }
 .ch-tour-desk-ct__row + .ch-tour-desk-ct__row {
-  box-shadow: inset 0 1px 0 var(--ch-ledger-rule-soft);
+  box-shadow: inset 0 var(--ch-hairline-w) 0 var(--ch-ledger-rule-soft);
 }
 .ch-tour-desk-ct__row.is-head {
   font: var(--ch-type-label-s);
   color: var(--ch-text-secondary);
-  box-shadow: inset 0 -1px 0 var(--ch-ledger-rule);
+  box-shadow: inset 0 calc(-1 * var(--ch-hairline-w)) 0 var(--ch-ledger-rule);
 }
 .ch-tour-desk-ct__row.is-team {
   margin-top: 4px;
@@ -234,20 +242,22 @@
 .ch-tour-desk-ct__who {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 8px;
   min-width: 0;
 }
 .ch-tour-desk-ct__n {
   display: block;
-  font: 600 calc(15 * var(--ch-type-k))/1.25 var(--ch-font-sans);
+  font: var(--ch-type-15-strong);
+  letter-spacing: var(--ch-track-15);
   color: var(--ch-text-primary);
 }
 .ch-tour-desk-ct__row.is-team > .ch-tour-desk-ct__n {
-  font-weight: 700;
+  font: var(--ch-type-15-strong);
+  letter-spacing: var(--ch-track-15);
 }
 .ch-tour-desk-ct__s {
   display: block;
-  margin-top: 3px;
+  margin-top: 4px;
   font: var(--ch-type-caption);
   color: var(--ch-text-secondary);
 }
@@ -257,7 +267,9 @@
 }
 .ch-tour-desk-ct__tot,
 .ch-tour-desk-ct__fin {
-  font: 600 calc(15 * var(--ch-type-k))/1 var(--ch-font-sans);
+  font: var(--ch-type-15-strong);
+  letter-spacing: var(--ch-track-15);
+  line-height: var(--ch-lead-tight);
   color: var(--ch-text-primary);
 }
 .ch-tour-desk-ct__cnt,
@@ -266,7 +278,7 @@
   color: var(--ch-text-secondary);
 }
 .ch-tour-desk-ct__row.is-team .ch-tour-desk-ct__fin {
-  padding-right: 10px;
+  padding-right: 8px;
 }
 
 /* A score is a key to its evidence: the number, NC where it did not count, a dot for shot data (green) or a ring for
@@ -275,14 +287,16 @@
   display: inline-flex;
   align-items: center;
   justify-content: flex-end;
-  gap: 5px;
+  gap: 4px;
   min-width: 64px;
   height: 34px;
-  padding: 0 10px;
+  padding: 0 8px;
   border: 0;
-  border-radius: 9px;
+  border-radius: var(--ch-radius-sm);
   background: none;
-  font: 500 calc(15 * var(--ch-type-k))/1 var(--ch-font-sans);
+  font: var(--ch-type-15-medium);
+  letter-spacing: var(--ch-track-15);
+  line-height: var(--ch-lead-tight);
   color: var(--ch-text-primary);
 }
 button.ch-tour-desk-sc {
@@ -295,14 +309,16 @@ button.ch-tour-desk-sc {
 }
 button.ch-tour-desk-sc:focus-visible {
   outline: 2px solid var(--ch-border-focus);
-  outline-offset: 1px;
+  outline-offset: 2px;
 }
 .ch-tour-desk-sc.is-nc {
   background: var(--ch-bg-inset);
   color: var(--ch-text-secondary);
 }
 .ch-tour-desk-sc em {
-  font: 600 calc(11 * var(--ch-type-k))/1 var(--ch-font-sans);
+  font: var(--ch-type-11-strong);
+  letter-spacing: var(--ch-track-11);
+  line-height: var(--ch-lead-tight);
   font-style: normal;
   color: var(--ch-text-secondary);
 }
@@ -330,7 +346,7 @@ button.ch-tour-desk-sc:focus-visible {
   flex-wrap: wrap;
   gap: 8px 16px;
   margin: 0;
-  padding: 10px 8px 0;
+  padding: 8px 8px 0;
   font: var(--ch-type-body-s);
   color: var(--ch-text-secondary);
 }
@@ -343,13 +359,14 @@ button.ch-tour-desk-sc:focus-visible {
   min-width: 0;
   height: 22px;
   padding: 0 6px;
-  font-size: calc(12 * var(--ch-type-k));
+  font: var(--ch-type-12-medium);
+  line-height: var(--ch-lead-tight);
 }
 
 /* The phone's Who counted (board .tm-ct): a card, first names, three narrow columns. */
 .ch-tour-desk-ct.is-phone .ch-tour-desk-ct__scroll {
   padding: 4px;
-  border-radius: var(--ch-tour-r-card);
+  border-radius: var(--ch-radius-card);
   background: var(--ch-bg-surface);
   box-shadow: var(--ch-elevation-reading);
 }
@@ -358,7 +375,7 @@ button.ch-tour-desk-sc:focus-visible {
   gap: 4px;
   min-width: 0;
   min-height: 52px;
-  padding: 8px 10px;
+  padding: 8px 8px;
 }
 .ch-tour-desk-ct.is-phone .ch-tour-desk-ct__scroll.is-single .ch-tour-desk-ct__row {
   grid-template-columns: minmax(0, 1fr) 48px minmax(0, 1.2fr);
@@ -367,7 +384,7 @@ button.ch-tour-desk-sc:focus-visible {
   flex-direction: column;
   align-items: flex-end;
   justify-content: center;
-  gap: 3px;
+  gap: 4px;
   min-width: 44px;
   height: 44px;
   padding: 0 6px;
@@ -376,10 +393,11 @@ button.ch-tour-desk-sc:focus-visible {
   display: none;
 }
 .ch-tour-desk-ct.is-phone .ch-tour-desk-ct__n {
-  font-size: calc(14 * var(--ch-type-k));
+  font: var(--ch-type-14-strong);
+  letter-spacing: var(--ch-track-14);
 }
 .ch-tour-desk-ct.is-phone .ch-tour-desk-ct__s {
-  font-size: calc(12 * var(--ch-type-k));
+  font: var(--ch-type-12);
 }
 
 /* Where the event turned (board .tr-find): three findings side by side, one column on the phone. */
@@ -397,9 +415,9 @@ button.ch-tour-desk-sc:focus-visible {
   display: flex;
   flex-direction: column;
   align-items: flex-start;
-  gap: 10px;
-  padding: 16px 18px;
-  border-radius: var(--ch-tour-r-card);
+  gap: 8px;
+  padding: 16px 16px;
+  border-radius: var(--ch-radius-card);
   background: var(--ch-bg-surface);
   box-shadow: var(--ch-elevation-reading);
 }
@@ -423,12 +441,13 @@ button.ch-tour-desk-sc:focus-visible {
 .ch-tour-desk-link {
   display: inline-flex;
   align-items: center;
-  gap: 5px;
+  gap: 4px;
   min-height: 32px;
   padding: 0;
   border: 0;
   background: none;
-  font: 500 calc(14 * var(--ch-type-k))/1 var(--ch-font-sans);
+  font: var(--ch-type-14-medium);
+  line-height: var(--ch-lead-tight);
   color: var(--ch-accent);
   cursor: pointer;
 }
@@ -448,7 +467,7 @@ button.ch-tour-desk-sc:focus-visible {
 .ch-tour-desk-hg__tools {
   display: flex;
   flex-wrap: wrap;
-  gap: 10px;
+  gap: 8px;
   margin-bottom: 12px;
 }
 .ch-tour-desk-hg__scroll {
@@ -458,7 +477,7 @@ button.ch-tour-desk-sc:focus-visible {
 }
 .ch-tour-desk-hg.is-phone .ch-tour-desk-hg__scroll {
   padding: 6px;
-  border-radius: var(--ch-tour-r-card);
+  border-radius: var(--ch-radius-card);
   background: var(--ch-bg-surface);
   box-shadow: var(--ch-elevation-reading);
 }
@@ -467,7 +486,7 @@ button.ch-tour-desk-sc:focus-visible {
   gap: 2px;
   align-items: center;
   min-width: 960px;
-  padding: 4px 10px;
+  padding: 4px 8px;
 }
 .ch-tour-desk-hg.is-phone .ch-tour-desk-hg__row {
   min-width: 720px;
@@ -481,14 +500,15 @@ button.ch-tour-desk-sc:focus-visible {
   display: grid;
   place-items: center;
   height: 32px;
-  font: 500 calc(13 * var(--ch-type-k))/1 var(--ch-font-sans);
+  font: var(--ch-type-13-medium);
+  line-height: var(--ch-lead-tight);
 }
 .ch-tour-desk-hg__row > .ch-tour-desk-hg__who {
   display: flex;
   align-items: center;
   gap: 8px;
   min-width: 0;
-  font-weight: 600;
+  font: var(--ch-type-13-strong);
   color: var(--ch-text-primary);
 }
 .ch-tour-desk-hg.is-phone .ch-tour-desk-hg__row > :first-child {
@@ -504,20 +524,21 @@ button.ch-tour-desk-sc:focus-visible {
 .ch-tour-desk-hg__row.is-par > span,
 .ch-tour-desk-hg__row.is-par .ch-tour-desk-hg__nine > span {
   height: 22px;
-  font-size: calc(12 * var(--ch-type-k));
+  font: var(--ch-type-12-medium);
+  line-height: var(--ch-lead-tight);
   color: var(--ch-text-secondary);
 }
 .ch-tour-desk-hg__row.is-par {
-  box-shadow: inset 0 -1px 0 var(--ch-border-hairline);
+  box-shadow: inset 0 calc(-1 * var(--ch-hairline-w)) 0 var(--ch-border-hairline);
 }
 .ch-tour-desk-hg__row.is-cost {
   margin-top: 4px;
   padding-top: 8px;
-  box-shadow: inset 0 1px 0 var(--ch-border-hairline);
+  box-shadow: inset 0 var(--ch-hairline-w) 0 var(--ch-border-hairline);
 }
 .ch-tour-desk-hg__group {
-  padding: 10px 10px 2px;
-  font: 600 calc(13 * var(--ch-type-k))/1.2 var(--ch-font-sans);
+  padding: 8px 8px 2px;
+  font: var(--ch-type-13-strong);
   color: var(--ch-text-secondary);
 }
 .ch-tour-desk-hg__cell {
@@ -527,7 +548,7 @@ button.ch-tour-desk-sc:focus-visible {
   height: 32px;
   padding: 0;
   border: 0;
-  border-radius: 7px;
+  border-radius: var(--ch-radius-sm);
   background: none;
   cursor: pointer;
 }
@@ -541,14 +562,15 @@ button.ch-tour-desk-sc:focus-visible {
   outline-offset: -2px;
 }
 .ch-tour-desk-hg__tp {
-  font: 500 calc(13 * var(--ch-type-k))/1 var(--ch-font-sans);
+  font: var(--ch-type-13-medium);
+  line-height: var(--ch-lead-tight);
   color: var(--ch-text-primary);
 }
 .ch-tour-desk-hg__c.is-disputed .ch-tour-desk-hg__cell {
   box-shadow: inset 0 0 0 1.5px var(--ch-champagne-500);
 }
 .ch-tour-desk-hg__row .ch-tour-desk-hg__tot {
-  font-weight: 600;
+  font: var(--ch-type-13-strong);
   color: var(--ch-text-primary);
 }
 .ch-tour-desk-heat {
@@ -556,8 +578,10 @@ button.ch-tour-desk-sc:focus-visible {
   place-items: center;
   width: 30px;
   height: 22px;
-  border-radius: 6px;
-  font: 600 calc(11 * var(--ch-type-k))/1 var(--ch-font-sans);
+  border-radius: var(--ch-radius-sm);
+  font: var(--ch-type-11-strong);
+  letter-spacing: var(--ch-track-11);
+  line-height: var(--ch-lead-tight);
   font-style: normal;
   color: var(--ch-text-secondary);
 }
@@ -578,7 +602,7 @@ button.ch-tour-desk-sc:focus-visible {
 .ch-tour-desk-ev {
   display: flex;
   flex-direction: column;
-  gap: 14px;
+  gap: 16px;
 }
 .ch-tour-desk-ev__fig {
   display: grid;
@@ -590,15 +614,17 @@ button.ch-tour-desk-sc:focus-visible {
   padding: 12px;
   border-radius: var(--ch-radius-lg);
   background: var(--ch-bg-subtle);
-  box-shadow: inset 0 0 0 1px var(--ch-border-hairline);
+  box-shadow: inset 0 0 0 var(--ch-hairline-w) var(--ch-border-hairline);
 }
 .ch-tour-desk-ev__fig dt {
-  font: 500 calc(12 * var(--ch-type-k))/1 var(--ch-font-sans);
+  font: var(--ch-type-12-medium);
+  line-height: var(--ch-lead-tight);
   color: var(--ch-text-secondary);
 }
 .ch-tour-desk-ev__fig dd {
   margin: 6px 0 0;
-  font: 500 calc(20 * var(--ch-type-k))/1.15 var(--ch-font-sans);
+  font: var(--ch-type-20-medium);
+  line-height: var(--ch-lead-tight);
   letter-spacing: -0.03em;
   color: var(--ch-text-primary);
 }
@@ -615,35 +641,37 @@ button.ch-tour-desk-sc:focus-visible {
   grid-template-columns: 52px minmax(0, 1fr) auto;
   gap: 12px;
   align-items: center;
-  padding: 10px;
+  padding: 8px;
 }
 .ch-tour-desk-ev__list li + li {
-  box-shadow: inset 0 1px 0 var(--ch-border-hairline);
+  box-shadow: inset 0 var(--ch-hairline-w) 0 var(--ch-border-hairline);
 }
 .ch-tour-desk-ev__d {
-  font: 500 calc(12 * var(--ch-type-k))/1.2 var(--ch-font-sans);
+  font: var(--ch-type-12-medium);
   color: var(--ch-text-secondary);
 }
 .ch-tour-desk-ev__t {
-  font: 600 calc(14 * var(--ch-type-k))/1.25 var(--ch-font-sans);
+  font: var(--ch-type-14-strong);
   color: var(--ch-text-primary);
 }
 .ch-tour-desk-ev__t em {
   display: block;
-  margin-top: 3px;
+  margin-top: 4px;
   font: var(--ch-type-caption);
   font-style: normal;
   color: var(--ch-text-secondary);
 }
 .ch-tour-desk-ev__v {
-  font: 600 calc(15 * var(--ch-type-k))/1 var(--ch-font-sans);
+  font: var(--ch-type-15-strong);
+  letter-spacing: var(--ch-track-15);
+  line-height: var(--ch-lead-tight);
   color: var(--ch-text-primary);
 }
 .ch-tour-desk-ev__card {
-  padding: 14px;
+  padding: 16px;
   border-radius: var(--ch-radius-lg);
   background: var(--ch-bg-subtle);
-  box-shadow: inset 0 0 0 1px var(--ch-border-hairline);
+  box-shadow: inset 0 0 0 var(--ch-hairline-w) var(--ch-border-hairline);
   overflow-x: auto;
 }
 .ch-tour-desk-ev__card h3 {
@@ -653,7 +681,7 @@ button.ch-tour-desk-sc:focus-visible {
 }
 .ch-tour-desk-ev__card h3 span {
   display: block;
-  margin-top: 3px;
+  margin-top: 4px;
   font: var(--ch-type-caption);
   color: var(--ch-text-secondary);
 }
@@ -672,7 +700,8 @@ button.ch-tour-desk-sc:focus-visible {
   grid-template-columns: 40px repeat(9, minmax(22px, 1fr)) 34px;
   align-items: center;
   justify-items: center;
-  font: 500 calc(12 * var(--ch-type-k))/1 var(--ch-font-sans);
+  font: var(--ch-type-12-medium);
+  line-height: var(--ch-lead-tight);
   color: var(--ch-text-secondary);
 }
 .ch-tour-desk-ev__nine > [role='row'] > span {
@@ -687,6 +716,6 @@ button.ch-tour-desk-sc:focus-visible {
   margin-bottom: 8px;
 }
 .ch-tour-desk-ev__tot {
-  font-weight: 700;
+  font: var(--ch-type-12-strong);
   color: var(--ch-text-primary);
 }

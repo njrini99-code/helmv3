@@ -13,13 +13,17 @@ Held items:     none
 
 ### Added
 
-- `ui/DeltaChip.tsx`: a signed difference against a baseline, toned green or amber only past one standard error
-  (`deltaTone`), otherwise "Level". It always draws a 6 px triangle that points up for better and down for worse,
-  whatever the sign, so the meaning never rests on hue (gain and loss are 1.31:1 apart in light).
-- `ui/TrustChip.tsx`: Upcoming, Live, Suspended, Final or Official (D-84), with a quieter source label (Card, Coach,
-  Estimate, Pasted) that never changes the tone. Live breathes on the live loop and stills under reduced motion.
+- `ui/DeltaChip.tsx`: a signed difference against a baseline, toned green or
+  amber only past one standard error (`deltaTone`), otherwise "Level". It always
+  draws a 6 px triangle that points up for better and down for worse, whatever
+  the sign, so the meaning never rests on hue (gain and loss are 1.31:1 apart in
+  light).
+- `ui/TrustChip.tsx`: Upcoming, Live, Suspended, Final or Official (D-84), with
+  a quieter source label (Card, Coach, Estimate, Pasted) that never changes the
+  tone. Live breathes on the live loop and stills under reduced motion.
 - Their styles in `styles/ui.css` (`.ch-delta`, `.ch-trust`).
 
 ### Why
 
-- Tournaments shows deltas and trust on every view; Stats and Qualifiers can adopt them later.
+- Tournaments shows deltas and trust on every view; Stats and Qualifiers can
+  adopt them later.

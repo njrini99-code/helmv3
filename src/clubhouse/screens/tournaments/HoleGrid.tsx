@@ -87,7 +87,7 @@ export function HoleGrid({
   const line = (r: HoleCardRow) => (
     <div key={`${r.playerId}-${r.card.roundNumber}`} className={'ch-tour-desk-hg__row' + (r.count === 'individual' ? ' is-ind' : '')} role="row" style={{ gridTemplateColumns: cols }}>
       <span role="rowheader" className="ch-tour-desk-hg__who">
-        {!phone && <Avatar name={name(r.playerId)?.name ?? '—'} size={22} />}
+        {!phone && <Avatar name={name(r.playerId)?.name ?? '—'} size="xs" />}
         <span>{label(r)}</span>
       </span>
       {nines.map((n, k) => (

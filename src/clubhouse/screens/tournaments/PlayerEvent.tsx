@@ -1,5 +1,6 @@
 'use client';
 
+import { plural } from '../../lib/plural';
 import { TourPlaceholder } from './TourPlaceholder';
 import type { PlayerEventProps } from './types';
 import '../../styles/tournaments-player.css';
@@ -17,7 +18,7 @@ export function PlayerEvent({ data, load, phone }: PlayerEventProps) {
       eyebrow={data.team.label}
       title={data.event ? data.event.event.name : 'Tournaments'}
       name={data.event ? 'The player’s event' : 'The player’s Tournaments'}
-      detail={data.event ? `${data.me.name} · ${data.event.reveal ? data.event.reveal.status.replace('_', ' ') : 'lineup not published yet'}` : `${data.me.name} · ${n} ${n === 1 ? 'event' : 'events'}`}
+      detail={data.event ? `${data.me.name} · ${data.event.reveal ? data.event.reveal.status.replace('_', ' ') : 'lineup not published yet'}` : `${data.me.name} · ${plural(n, 'event')}`}
       load={load}
       phone={phone}
     />

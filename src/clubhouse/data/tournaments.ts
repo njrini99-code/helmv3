@@ -6,6 +6,7 @@ import { readGolfPlayerProfiles } from '@/lib/golf/player-profiles';
 import { todayIsoInZone } from '@/lib/golf/timezone';
 import { logServerEvent } from '@/lib/server-error-logger';
 import { isTourSchemaMissing } from '@/lib/golf/tournament-refusals';
+import { isoDay } from '../lib/dates';
 import { chLogServer } from '../lib/track-server';
 import { suggestLinks, type LinkCandidateRound, type LinkEventRound } from '../screens/tournaments/links';
 import {
@@ -161,7 +162,6 @@ async function section<T>(surface: string, read: string, body: () => Promise<T>)
   }
 }
 
-const dayIn = (iso: string, tz: string) => new Intl.DateTimeFormat('en-CA', { timeZone: tz, year: 'numeric', month: '2-digit', day: '2-digit' }).format(new Date(iso));
 
 // ── Context ─────────────────────────────────────────────────────────────────────────────────────────────────────
 
@@ -326,7 +326,7 @@ async function readEvents(ctx: TourCtx, tz: string, opts: { ids?: string[]; own?
       rounds: mine.map((r): TourRawRound => {
         const start = startById.get(r.round_event_id);
         const courseId = r.course_id ?? t.course_id;
-        return { ...r, date: start ? dayIn(start, tz) : t.start_date, par: (r.tee_id ? tees.get(r.tee_id)?.par : null) ?? (courseId ? (courses[courseId]?.par ?? null) : null) };
+        return { ...r, date: start ? isoDay(start, tz) : t.start_date, par: (r.tee_id ? tees.get(r.tee_id)?.par : null) ?? (courseId ? (courses[courseId]?.par ?? null) : null) };
       }),
       entries: entries.filter((e) => e.tournament_id === t.id),
       roundLineups: lineups.filter((l) => ids.has(l.round_event_id)),

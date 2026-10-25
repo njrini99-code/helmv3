@@ -9,25 +9,17 @@
      tournaments-player.css  .ch-tour-pl-*       the player's event view
    A class is anchored by one sheet only (clubhouse:check, css-owners.mjs). Tokens only, no literal durations. */
 
-/* A view's root. The desktop page is the same frame the other Ledger pages use (the gutter and the head's top come from
-   tokens.css); the phone keeps the owner's 16px gutter, 20px from 414px up, under the name --ch-page-x-phone (the token
-   is declared here: tokens.css has no phone gutter). Radius 16 is the cards' and menus', the sheets take --ch-radius-xl
-   (20): tokens.css has no 16, so it is held once here. */
+/* A view's root. The desktop page is the same frame the other Ledger pages use (the gutter, the head's top and the
+   page width come from tokens.css); the phone takes the shared --ch-page-x-phone gutter. Cards and menus take
+   --ch-radius-card, the sheets --ch-radius-xl. */
 .ch-tour {
-  --ch-page-x-phone: 16px;
-  --ch-tour-r-card: 16px;
   display: flex;
   flex-direction: column;
-  gap: 28px;
+  gap: 24px;
   min-width: 0;
-  max-width: 1240px;
+  max-width: var(--ch-measure-page);
   margin: 0 auto;
   padding: var(--ch-page-head-top) var(--ch-page-gutter) 80px;
-}
-@media (min-width: 414px) {
-  .ch-tour {
-    --ch-page-x-phone: 20px;
-  }
 }
 .ch-tour.is-phone {
   gap: 16px;
@@ -61,7 +53,7 @@
 .ch-tour-head__t {
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: 8px;
   min-width: 0;
 }
 .ch-tour-head__k {
@@ -82,7 +74,7 @@
   display: flex;
   align-items: center;
   flex-wrap: wrap;
-  gap: 10px;
+  gap: 8px;
 }
 .ch-tour.is-phone .ch-tour-head h1 {
   font: var(--ch-type-display-s);
@@ -138,13 +130,14 @@
   align-items: center;
   gap: 6px;
   height: 24px;
-  padding: 0 9px;
+  padding: 0 8px;
   border-radius: 999px;
-  font: 500 calc(12 * var(--ch-type-k))/1 var(--ch-font-sans);
+  font: var(--ch-type-12-medium);
+  line-height: var(--ch-lead-tight);
   white-space: nowrap;
   color: var(--ch-text-secondary);
   background: var(--ch-bg-subtle);
-  box-shadow: inset 0 0 0 1px var(--ch-border-hairline);
+  box-shadow: inset 0 0 0 var(--ch-hairline-w) var(--ch-border-hairline);
 }
 .ch-tour-chip i {
   width: 6px;
@@ -176,21 +169,22 @@
   display: flex;
   align-items: center;
   gap: 8px;
-  font: 400 calc(12 * var(--ch-type-k))/1 var(--ch-font-sans);
+  font: var(--ch-type-12);
+  line-height: var(--ch-lead-tight);
   color: var(--ch-text-secondary);
 }
 .ch-tour-cov__bar {
   flex: 1;
   max-width: 70px;
   height: 5px;
-  border-radius: 3px;
+  border-radius: 999px;
   background: var(--ch-ivory-200);
   overflow: hidden;
 }
 .ch-tour-cov__bar i {
   display: block;
   height: 100%;
-  border-radius: 3px;
+  border-radius: var(--ch-radius-mark);
   background: var(--ch-green-600);
 }
 
@@ -212,14 +206,14 @@
   border-radius: var(--ch-radius-md);
 }
 [role='rowgroup'] > .ch-tour-led__row {
-  box-shadow: inset 0 1px 0 var(--ch-ledger-rule-soft);
+  box-shadow: inset 0 var(--ch-hairline-w) 0 var(--ch-ledger-rule-soft);
 }
 .ch-tour-led__row.is-head {
-  padding-top: 10px;
-  padding-bottom: 10px;
+  padding-top: 8px;
+  padding-bottom: 8px;
   font: var(--ch-type-label-s);
   color: var(--ch-text-secondary);
-  box-shadow: inset 0 -1px 0 var(--ch-ledger-rule);
+  box-shadow: inset 0 calc(-1 * var(--ch-hairline-w)) 0 var(--ch-ledger-rule);
 }
 .ch-tour-led__row > .is-r {
   justify-self: end;
@@ -227,18 +221,19 @@
 }
 .ch-tour-led__season {
   min-width: 800px;
-  padding: 18px 8px 6px;
-  font: 600 calc(13 * var(--ch-type-k))/1.2 var(--ch-font-sans);
+  padding: 16px 8px 6px;
+  font: var(--ch-type-13-strong);
   color: var(--ch-text-secondary);
 }
 .ch-tour-led__name {
   display: flex;
   flex-direction: column;
-  gap: 3px;
+  gap: 4px;
   min-width: 0;
 }
 .ch-tour-led__open {
-  font: 600 calc(15 * var(--ch-type-k))/1.25 var(--ch-font-sans);
+  font: var(--ch-type-15-strong);
+  letter-spacing: var(--ch-track-15);
   color: var(--ch-text-primary);
   text-decoration: none;
 }
@@ -263,13 +258,14 @@
   color: var(--ch-text-secondary);
 }
 .ch-tour-led__fin {
-  font: 600 calc(15 * var(--ch-type-k))/1 var(--ch-font-sans);
+  font: var(--ch-type-15-strong);
+  letter-spacing: var(--ch-track-15);
+  line-height: var(--ch-lead-tight);
   color: var(--ch-text-primary);
 }
 .ch-tour-led__fin em {
   font-style: normal;
-  font-weight: 400;
-  font-size: calc(13 * var(--ch-type-k));
+  font: var(--ch-type-13);
   color: var(--ch-text-secondary);
 }
 .ch-tour-led__go {
@@ -277,7 +273,7 @@
   color: var(--ch-text-secondary);
 }
 .ch-tour-led.is-phone {
-  gap: 14px;
+  gap: 16px;
 }
 .ch-tour-led.is-phone .ch-tour-led__season {
   min-width: 0;
@@ -288,23 +284,23 @@
   margin: 0;
   padding: 4px;
   list-style: none;
-  border-radius: var(--ch-tour-r-card);
+  border-radius: var(--ch-radius-card);
   background: var(--ch-bg-surface);
   box-shadow: var(--ch-elevation-reading);
 }
 .ch-tour-led__m {
   display: grid;
   grid-template-columns: minmax(0, 1fr) auto 16px;
-  gap: 10px;
+  gap: 8px;
   align-items: center;
   min-height: 60px;
-  padding: 10px 12px;
+  padding: 8px 12px;
   border-radius: var(--ch-radius-lg);
   color: var(--ch-text-secondary);
   text-decoration: none;
 }
 .ch-tour-led__list li + li .ch-tour-led__m {
-  box-shadow: inset 0 1px 0 var(--ch-border-hairline);
+  box-shadow: inset 0 var(--ch-hairline-w) 0 var(--ch-border-hairline);
 }
 .ch-tour-led__m:active {
   background: var(--ch-press-well);
@@ -318,17 +314,17 @@
   display: block;
 }
 .ch-tour-led__m b {
-  font: 600 calc(15 * var(--ch-type-k))/1.2 var(--ch-font-sans);
+  font: var(--ch-type-15-strong);
+  letter-spacing: var(--ch-track-15);
   color: var(--ch-text-primary);
 }
 .ch-tour-led__m small {
-  font-weight: 400;
-  font-size: calc(12 * var(--ch-type-k));
+  font: var(--ch-type-12);
   color: var(--ch-text-secondary);
 }
 .ch-tour-led__m em {
-  margin-top: 3px;
-  font: 400 calc(13 * var(--ch-type-k))/1.2 var(--ch-font-sans);
+  margin-top: 4px;
+  font: var(--ch-type-13);
   font-style: normal;
   color: var(--ch-text-secondary);
 }
@@ -341,7 +337,7 @@
 .ch-tour-ph .ch-tour-head {
   flex-direction: column;
   align-items: flex-start;
-  gap: 10px;
+  gap: 8px;
 }
 .ch-tour-ph__detail {
   color: var(--ch-text-primary);

@@ -12,7 +12,7 @@ Date:      2026-10-25
 ## Automated tests
 
 | Test | Contract | Result |
-|---|---|---|
+| --- | --- | --- |
 | `screens/tournaments/__tests__/views.test.tsx` | CH-16201, CH-16301, CH-16401 | pass |
 | `screens/tournaments/__tests__/use-changed-wash.test.tsx` | CH-16601 | pass |
 | `preview/__tests__/fixtures-tournaments.test.ts` | Oakmont 287, 286, 285 (858, −6); e32 6 count 5 | pass |
@@ -25,13 +25,19 @@ Date:      2026-10-25
 
 ## Screenshots
 
-Evidence log. The images stay in `.helm/screenshots/clubhouse/` (never committed) and travel in the PR description; this table is the committed record of them. One row per file; the label is the file's basename, named by `npm run clubhouse:shots -- name` (convention: `.claude/rules/clubhouse.md`). Phase is before, after, baseline or evidence.
+Evidence log. The images stay in `.helm/screenshots/clubhouse/` (never
+committed) and travel in the PR description; this table is the committed record
+of them. One row per file; the label is the file's basename, named by
+`npm run clubhouse:shots -- name` (convention: `.claude/rules/clubhouse.md`).
+Phase is before, after, baseline or evidence.
 
 | Label | Phase | Commit | What it shows |
 | --- | --- | --- | --- |
 
 ## Open verification gaps
 
-- No screenshots yet: the base renders placeholders; each lane shoots its views (the integrator runs the shots).
-- The routes have not been opened in a browser (no browser runs in the wiring pass), and nothing has run against
-  real tournament tables: the migrations are held.
+- No screenshots yet: the base renders placeholders; each lane shoots its views
+  (the integrator runs the shots).
+- The routes have not been opened in a browser (no browser runs in the wiring
+  pass), and nothing has run against real tournament tables: the migrations are
+  held.

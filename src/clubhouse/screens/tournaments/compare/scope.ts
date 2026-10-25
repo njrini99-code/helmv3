@@ -210,7 +210,7 @@ export function sideLabel(a: ChTourScope, b: ChTourScope, n: ScopeNames, shortDa
   if (a.context.kind === 'event') {
     const id = a.context.id;
     if (b.context.kind !== 'event' || id !== b.context.id) return n.events.find((e) => e.id === id)?.short ?? 'Event';
-    return a.context.rounds?.length === 1 ? `Round ${a.context.rounds[0]}` : 'All rounds';
+    return a.context.rounds?.length !== 1 ? 'All rounds' : `Round ${a.context.rounds[0]}`;
   }
   if (a.context.kind !== b.context.kind || (a.context.kind === 'course' && b.context.kind === 'course' && a.context.id !== b.context.id)) return a.context.kind === 'course' ? (n.courses[a.context.id]?.name ?? 'Course') : CTX_WORD[a.context.kind as keyof typeof CTX_WORD];
   return periodWords(a.period, shortDay);
