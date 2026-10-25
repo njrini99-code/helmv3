@@ -20,7 +20,8 @@ vi.mock('@/app/golf/actions/insight-delivery', () => ({
   getThemesForPlayer: delivery.playerThemes,
 }));
 const standingRead = vi.hoisted(() => ({ load: vi.fn() }));
-vi.mock('@/lib/coachhelm/v3/standing/loader', () => ({ loadPlayerStandingMap: standingRead.load }));
+// The season table is held (#2363): its read reports it absent, and Standing falls back to the lifetime map.
+vi.mock('@/lib/coachhelm/v3/standing/loader', () => ({ loadPlayerStandingMap: standingRead.load, loadPlayerSeasonStandingMap: vi.fn(async () => ({ status: 'missing' })) }));
 vi.mock('@/lib/coachhelm/v3/counterfactual/player-cohort-loader', () => ({ loadPlayerCohort: vi.fn(async () => ({ gender: 'mens', level: null })) }));
 vi.mock('@/lib/coachhelm/v3/goals/loader', () => ({ loadActiveGoals: vi.fn(async () => []), loadRecentlyAchievedGoals: vi.fn(async () => []) }));
 const genome = vi.hoisted(() => ({ load: vi.fn() }));

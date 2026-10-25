@@ -6,6 +6,7 @@ import { useRouter } from 'next/navigation';
 import { ChevronLeft, ChevronRight, Flag } from 'lucide-react';
 import { updateRoundType } from '@/app/golf/actions/round-type';
 import { distribution, type ChReviewHole, type ChReviewTypeEdit, type ChRoundReview } from '../../data/round-review-shape';
+import type { ChReviewHistory } from '../../data/round-history-shape';
 import { useAction } from '../../lib/use-action';
 import { Button } from '../../ui/Button';
 import { roundTypeFailure, savedLine, type ChRoundTypeChoice } from './entry/round-type';
@@ -28,7 +29,13 @@ import { Swap } from '../../ui/Swap';
 import { SectionBoundary } from '../../ui/SectionBoundary';
 import { EmptyState } from '../../ui/States';
 import { dateOf, TeeSwatch, TYPE_LABEL } from './parts';
-import { approachFinish, costliest, flow, headline, puttSplit, teeMisses } from './round-insights';
+import { approachFinish, costliest, flow, headline, puttSplit, teeMisses, turningStretch } from './round-insights';
+import { RoundSays, saysFigures } from './RoundSays';
+import { RecordChips } from './RecordChips';
+import { CourseLink } from './CourseLink';
+import { courseHref } from '../../data/course-key';
+import { shortDate } from '../../data/course-page-shape';
+import { Segmented } from '../../ui/Segmented';
 import { Zone, ZoneBig, ZoneBlock, Zones } from '../../ui/Zone';
 import { Tooltip } from '../../ui/Tooltip';
 import { PuttingViz, ScoreFlow, ShotTrail, TeeToGreen } from './RoundZones';
@@ -230,9 +237,12 @@ function HoleCard({
   onRetry,
   retrying,
   dir,
+  before = null,
 }: {
   hole: ChReviewHole;
   dir: 1 | -1;
+  /** P-7 4.5.4: earlier plays of this hole at this course, and where its history is; null under two plays. */
+  before?: { avg: number; n: number; href: string | null; course: string; who: string | null } | null;
   count: number;
   shotsError: boolean;
   onStep: (d: -1 | 1) => void;
@@ -270,6 +280,18 @@ function HoleCard({
           </Tooltip>
         </div>
       </div>
+      {before && hole.par != null && (
+        <div className="ch-rv-before">
+          <p>
+            {before.who ? `${before.who} here before` : 'Here before'}: {formatFixed(hole.par + before.avg, 1)} average · {before.n} times
+          </p>
+          {before.href && (
+            <Link className="ch-rv-before__go" href={before.href}>
+              Hole {hole.n} at {before.course}
+            </Link>
+          )}
+        </div>
+      )}
       {/* The shots slide in the direction of travel (CH-11604). */}
       {/* The trail is not slid with the list: its shots draw themselves in order, so the hole changes under a still frame. */}
       {!shotsError && <ShotTrail key={hole.n} hole={hole} />}
@@ -421,7 +443,32 @@ function RoundDebrief({ debrief: d }: { debrief: ChDebrief }) {
   );
 }
 
-export function RoundReview({ review, typeEdit = null }: { review: ChRoundReview; typeEdit?: ChReviewTypeEdit | null }) {
+export function RoundReview({
+  review: given,
+  history: historyIn,
+  typeEdit = null,
+  initialHole = null,
+}: {
+  review: ChRoundReview;
+  /** P-7 stage 3, streamed by the server after the review (it never rejects); a fixture puts it in `review.history` instead. */
+  history?: PromiseLike<ChReviewHistory | null>;
+  typeEdit?: ChReviewTypeEdit | null;
+  /** P-7: `?hole=`, a hole to open on. */ initialHole?: number | null;
+}) {
+  const [streamed, setStreamed] = useState<{ from: PromiseLike<ChReviewHistory | null>; history: ChReviewHistory | null } | null>(null);
+  useEffect(() => {
+    if (!historyIn) return;
+    let live = true;
+    // A stream cut off in the browser is the same as a failed read: no history, and nothing said about it (P-7 4.8).
+    Promise.resolve(historyIn).then(
+      (history) => live && setStreamed({ from: historyIn, history }),
+      () => live && setStreamed({ from: historyIn, history: null }),
+    );
+    return () => {
+      live = false;
+    };
+  }, [historyIn]);
+  const review = useMemo(() => (streamed && streamed.from === historyIn ? { ...given, history: streamed.history } : given), [given, streamed, historyIn]);
   const phone = useChPhone();
   const reduced = useChReducedMotion();
   const justSubmitted = useJustSubmitted();
@@ -430,7 +477,7 @@ export function RoundReview({ review, typeEdit = null }: { review: ChRoundReview
   const r = review;
   // Only a hole the player picked is kept; until then the review opens on the first hole over par of what it has. A card that
   // arrives after a retry therefore opens there, not on the hole 1 an empty card defaulted to.
-  const [picked, setPicked] = useState<number | null>(null);
+  const [picked, setPicked] = useState<number | null>(() => (initialHole != null && review.holes.some((h) => h.n === initialHole) ? initialHole : null));
   // Which way the last move went, so the hole's shots slide in from that side.
   const [holeDir, setHoleDir] = useState<1 | -1>(1);
   const sel = picked ?? firstHole(r.holes);
@@ -455,6 +502,48 @@ export function RoundReview({ review, typeEdit = null }: { review: ChRoundReview
   const back = coach && fromList ? { label: 'Rounds', href: '/golf/dashboard/rounds' } : reviewBack(r);
   const insight = useMemo(() => headline(r), [r]);
   const points = useMemo(() => flow(r.holes), [r.holes]);
+  // P-7: the stretch that turned the round, drawn on the arc and said in its note.
+  // A posted round keeps no start hole, so the holes run in number order. A nine-hole round is stored 1 to 9 whichever nine
+  // was played, so it names no stretch (P-7 4.1.2): its numbers may not be the card's.
+  const turning = useMemo(() => (r.holesPlayed === 9 ? null : turningStretch(points)), [points, r.holesPlayed]);
+  // P-7 4.5.2: another round under this one: the average here or the best here, each past its floor; the viewer's choice
+  // is kept on this device (`ch.rv.compare`).
+  const ghosts = r.history?.ghosts ?? null;
+  const ghostOptions = useMemo(() => {
+    const out: Array<{ value: 'none' | 'average' | 'best'; label: string }> = [{ value: 'none', label: 'None' }];
+    if (ghosts?.average) out.push({ value: 'average', label: 'Average here' });
+    if (ghosts?.best) out.push({ value: 'best', label: `Best here · ${ghosts.best.score}` });
+    return out;
+  }, [ghosts]);
+  const [ghostPref, setGhostPref] = useState<'none' | 'average' | 'best'>('none');
+  useEffect(() => {
+    try {
+      const v = window.localStorage.getItem('ch.rv.compare');
+      if (v === 'average' || v === 'best') setGhostPref(v);
+    } catch {
+      /* no storage: None */
+    }
+  }, []);
+  const ghostChoice = ghostOptions.some((o) => o.value === ghostPref) ? ghostPref : 'none';
+  const chooseGhost = (v: 'none' | 'average' | 'best') => {
+    haptic('select');
+    setGhostPref(v);
+    try {
+      window.localStorage.setItem('ch.rv.compare', v);
+    } catch {
+      /* the choice holds for this visit */
+    }
+  };
+  const ghostLine =
+    ghostChoice === 'average' && ghosts?.average
+      ? { cum: ghosts.average, label: 'Average here', spoken: 'average here', legend: 'Average here' }
+      : ghostChoice === 'best' && ghosts?.best
+        ? { cum: ghosts.best.cum, label: `Best here · ${ghosts.best.score}`, spoken: 'best here', legend: `Best here, ${shortDate(ghosts.best.date)}` }
+        : null;
+  const says = useMemo(
+    () => saysFigures({ holes: r.holes, startHole: null, usual: r.history?.usual ?? null, nine: r.holesPlayed === 9, who: coach ? (r.playerName?.split(' ')[0] ?? null) : null }),
+    [r.holes, r.history, r.holesPlayed, r.playerName, coach],
+  );
   const costly = useMemo(() => costliest(r.holes, 3), [r.holes]);
   const putting = useMemo(() => puttSplit(r.holes), [r.holes]);
   const approach = useMemo(() => approachFinish(r.holes), [r.holes]);
@@ -513,6 +602,7 @@ export function RoundReview({ review, typeEdit = null }: { review: ChRoundReview
           <span className="ch-rv-hero__k">{kicker}</span>
           {/* D11: one h1 per screen, the course; the phone bar's "Round" is plain text (heading={false}). */}
           <h1 id="ch-rv-title">{r.course}</h1>
+          <RecordChips marks={r.history?.records ?? []} />
           {insight && <p className="ch-rv-hero__h">{insight}</p>}
           {(r.tee || r.teeFacts) && (
             <span className="ch-rv-hero__m">
@@ -520,6 +610,7 @@ export function RoundReview({ review, typeEdit = null }: { review: ChRoundReview
               <span>{[r.tee, r.teeFacts].filter(Boolean).join(' · ')}</span>
             </span>
           )}
+          <CourseLink review={r} coach={coach} />
         </div>
         <div className="ch-rv-hero__s">
           <b className="ch-num">{r.score ?? NO_DATA}</b>
@@ -582,16 +673,24 @@ export function RoundReview({ review, typeEdit = null }: { review: ChRoundReview
           }
         >
           {points.length >= 2 ? (
-            <ZoneBlock title="Running score to par" note="One dot a hole; the columns under it are each hole’s strokes against par. Pick a hole to read it and see its shots.">
+            <ZoneBlock
+              title="Running score to par"
+              note={`${turning ? `${turning.words}. ` : ''}One dot a hole; the columns under it are each hole’s strokes against par. Pick a hole to read it and see its shots.`}
+            >
               <ScoreFlow
                 holes={r.holes}
                 outScore={r.front.score}
                 outToPar={r.front.toPar}
                 inScore={r.back.score}
                 inToPar={r.back.toPar}
-                onPick={(n) => {
-                  haptic('select');
+                selected={sel}
+                turning={turning}
+                ghost={ghostLine}
+                onPick={(n, via) => {
                   pick(n);
+                  // From the keyboard the slider keeps focus and the page stays put; the card below follows the value.
+                  if (via === 'key') return;
+                  haptic('select');
                   chScrollIntoView(document.getElementById('ch-rz-card'), reduced); // A-11: instant when motion is off
                 }}
               />
@@ -599,6 +698,18 @@ export function RoundReview({ review, typeEdit = null }: { review: ChRoundReview
           ) : (
             <p className="ch-znmiss">The hole-by-hole picture needs holes posted with their scores.</p>
           )}
+          {ghostOptions.length > 1 && (
+            <div className="ch-rv-ghost">
+              <Segmented label="Draw under this round" value={ghostChoice} onChange={chooseGhost} options={ghostOptions} />
+              {ghostLine && (
+                <p className="ch-rv-ghost__l">
+                  <i aria-hidden="true" />
+                  {ghostLine.legend}
+                </p>
+              )}
+            </div>
+          )}
+          {!r.holesError && <RoundSays figures={says} />}
           {r.holes.length > 0 && !r.holesError && (
             <section className="ch-rv-card" aria-labelledby="ch-rv-dist-h">
               <div className="ch-rv-card__h">
@@ -819,7 +930,23 @@ export function RoundReview({ review, typeEdit = null }: { review: ChRoundReview
                 </section>
               </SectionBoundary>
               <SectionBoundary surface="rounds.review.hole" label="This hole" code="CH-11203">
-                {hole && <HoleCard hole={hole} dir={holeDir} count={r.holes[r.holes.length - 1]?.n ?? 18} shotsError={r.shotsError} onStep={step} onRetry={refresh} retrying={refreshing} />}
+                {hole && (
+                  <HoleCard
+                    hole={hole}
+                    dir={holeDir}
+                    count={r.holes[r.holes.length - 1]?.n ?? 18}
+                    shotsError={r.shotsError}
+                    onStep={step}
+                    onRetry={refresh}
+                    retrying={refreshing}
+                    before={(() => {
+                      const b = r.history?.hereBefore[hole.n];
+                      const c = r.history?.course;
+                      if (!b || !c) return null;
+                      return { ...b, course: c.name, who: coach ? (r.playerName?.split(' ')[0] ?? null) : null, href: rebuiltHref(courseHref(c.key, { hole: hole.n, ...(coach ? { player: r.playerId } : {}) }), coach ? 'coach' : 'player') };
+                    })()}
+                  />
+                )}
               </SectionBoundary>
             </Zone>
 

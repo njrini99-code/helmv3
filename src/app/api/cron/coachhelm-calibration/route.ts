@@ -19,6 +19,7 @@ import {
 import { logServerError } from '@/lib/server-error-logger';
 import { requireCronAuth } from '@/lib/cron/auth';
 import { recordJobRun } from '@/lib/admin/job-log';
+import { chunkIds } from '@/lib/supabase/chunk-ids';
 
 export const runtime = 'nodejs';
 export const maxDuration = 300;
@@ -28,9 +29,9 @@ const LOOKBACK_DAYS = 90;
 /**
  * PostgREST caps every response at 1000 rows, so 5000 here was a number that
  * lied — it returned 1000. Calibration is a statistical aggregate, so a
- * truncated, unordered sample would skew the curve silently. 29 validations
- * exist in total (12 in the last 30 days), so this bound has never bitten; if
- * it ever could, paginate with fetchAllRowsResult rather than raising it.
+ * truncated, unordered sample would skew the curve silently. 661 validations
+ * existed on 2026-10-24 (633 in the 90-day window), so this bound is close:
+ * if it can bite, paginate with fetchAllRowsResult rather than raising it.
  */
 const BATCH_LIMIT = 1000;
 
@@ -78,10 +79,22 @@ async function handleCalibration(): Promise<NextResponse> {
 
   let predictionsById = new Map<string, { confidence: number; metric: string }>();
   if (predictionIds.length > 0) {
-    const { data: predictions, error: pErr } = await supabase
-      .from('golf_predictions')
-      .select('id, confidence, metric')
-      .in('id', predictionIds);
+    // Chunked: one `.in()` over every id serialises them all into the URL.
+    // On 2026-10-24 633 ids (~24 KB) drew a PostgREST 400 "Bad Request" and
+    // failed the cron (07cd1dea). chunkIds keeps each request URL-safe.
+    const predictions: Array<{ id: string; confidence: number | null; metric: string | null }> = [];
+    let pErr: { message: string; code?: string | null } | null = null;
+    for (const idChunk of chunkIds(predictionIds)) {
+      const { data, error } = await supabase
+        .from('golf_predictions')
+        .select('id, confidence, metric')
+        .in('id', idChunk);
+      if (error) {
+        pErr = error;
+        break;
+      }
+      predictions.push(...(data ?? []));
+    }
 
     if (pErr) {
       await logServerError(
@@ -100,8 +113,11 @@ async function handleCalibration(): Promise<NextResponse> {
     }
 
     predictionsById = new Map(
-      (predictions ?? [])
-        .filter((p) => p.confidence !== null && p.metric !== null)
+      predictions
+        .filter(
+          (p): p is { id: string; confidence: number; metric: string } =>
+            p.confidence !== null && p.metric !== null,
+        )
         .map((p) => [p.id, { confidence: Number(p.confidence), metric: p.metric }]),
     );
   }

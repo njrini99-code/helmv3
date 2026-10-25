@@ -231,7 +231,9 @@ describe('invitation failures are not swallowed (C-17)', () => {
     const t = install('u-coach', tables());
     t.golf_events!.push({ id: 'event-1', team_id: 'team-1', created_by: 'coach-1', title: 'Practice', start_time: '2099-07-01T14:00:00+00:00', status: 'confirmed' });
     const r = await updateGolfEvent('event-1', { title: 'Renamed', addAttendeeIds: [P1] });
-    expect(r).toEqual({ success: true });
+    // P-4: a save also returns the row's new version (`data.updatedAt`) for the next held move's compare.
+    expect(r).toMatchObject({ success: true });
+    expect(r).not.toHaveProperty('invitationsError');
   });
 });
 

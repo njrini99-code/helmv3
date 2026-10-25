@@ -50,6 +50,8 @@ COMMENT ON COLUMN "public"."golf_coachhelm_settings"."llm_budget_usd_per_day" IS
 
 COMMENT ON COLUMN "public"."golf_conversation_participants"."notification_level" IS 'YOUR delivery preference for this conversation: all | mentions | muted. Per-participant, never per-conversation. With muted_until set, the level lapses back to all once that timestamp passes — evaluated on read, so a stalled job can never leave somebody permanently silent.';
 
+COMMENT ON TABLE "public"."golf_conversation_read_marks" IS 'One row per time a participant''s last_read_at advanced past at least one new message from someone else (golf_record_read_mark), plus one baseline row per participant from when the log started. The first mark at or after a message''s created_at is when that person first saw it (Clubhouse Seen by, P-1). Kept 120 days. Written only by triggers; members read through RLS.';
+
 COMMENT ON TABLE "public"."golf_course_tees" IS 'Cloud tee sets for a course (Championship/Blue/White/Women''s/custom). Open-contribution + last-edited metadata + soft-delete. Rounds reference a tee via golf_rounds.tee_id but still snapshot par/yards into golf_holes.';
 
 COMMENT ON COLUMN "public"."golf_demo_sessions"."traffic_quality" IS 'Verdict on whether this gate entry was a human or a security scanner: automated | likely_human | unknown. Classified at write time from send-to-entry latency and IP fan-out.';
@@ -148,6 +150,14 @@ COMMENT ON COLUMN "public"."golf_player_focus_areas"."evidence_revision" IS 'A8 
 COMMENT ON TABLE "public"."golf_player_genome" IS 'v3 W33 per-player 80-dim genome vector. jsonb keyed by dimension_id. Computed nightly. rounds_basis lets the UI show "8 of 10 dims unlocked" progress states.';
 
 COMMENT ON TABLE "public"."golf_player_standing" IS 'v3 standing snapshots — one row per (player_id, metric_id). Computed nightly by /api/cron/v3/standing-refresh. Powers every StandingBar render plus W17 counterfactuals. pga_value NOT NULL — metric must have a PGA baseline to land here.';
+
+COMMENT ON TABLE public.golf_player_standing_season IS 'Clubhouse Standing for this season (owner decision 9, 2026-10-24): one row per (player_id, metric_id), every metric over the rounds since 1 August in the team''s time zone. Same shape as golf_player_standing plus rounds_n and season_start. Written by refresh_player_standing_season (nightly standing-refresh cron and its dirty pass). service_role only. golf_player_standing (lifetime, Fairway) is unchanged.';
+
+COMMENT ON COLUMN public.golf_player_standing_season.rounds_n IS 'Rounds this row''s value was built from (not a cohort size: team_n and level_n are those).';
+
+COMMENT ON COLUMN public.golf_player_standing_season.season_start IS 'The first day this row covers: 1 August of the current season in the player''s team''s time zone (the earlier start when the player is on two teams).';
+
+COMMENT ON TABLE public.golf_standing_refresh_queue IS 'Teams whose Standing needs a refresh because a player saved a round (Clubhouse A+ rows 105/121, 2026-10-24). Written by mark_team_standing_dirty, read by select_dirty_standing_teams, cleared by clear_dirty_standing_teams; all three service_role only. marked_at is the debounce clock (moves on every mark), first_marked_at the cap.';
 
 COMMENT ON COLUMN "public"."golf_player_standing"."team_n" IS 'Number of teammates contributing to team_avg / team_pct. When < 5, StandingBar omits the team marker (cold-start rule per master plan Part VII.3). Row still writes for the player vs PGA comparison.';
 
