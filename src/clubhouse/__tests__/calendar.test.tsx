@@ -2406,3 +2406,116 @@ describe('Calendar · a player’s own week (wave 7)', () => {
     });
   });
 });
+
+/**
+ * P-5 (tournaments from the calendar): every calendar code the tournament section, the four tournament actions and the
+ * round guard can show. Each refusal the RPCs raise maps to one catalog number and one string; the section's own states
+ * are rendered. The editor flow end to end (save, toast, focus) is calendar-tournament-section.test.tsx.
+ */
+describe('P-5 tournaments from the calendar', () => {
+  const p5 = async () => ({
+    refusals: await import('../screens/tournaments/fields/refusals'),
+    model: await import('../screens/tournaments/fields/rounds-model'),
+    section: await import('../screens/calendar/editor-tournament'),
+    fields: await import('../screens/tournaments/fields/TournamentFields'),
+  });
+  const course = { id: '00000000-0000-4000-8000-0000000000c1', label: 'Pinehurst No. 2', teeId: null, teeLine: null };
+  const noWrites = { courses: vi.fn(async () => []), tees: vi.fn(async () => []) } as never;
+  const inMotion = (ui: ReactElement) => render(<LazyMotion features={domAnimation}>{ui}</LazyMotion>);
+
+  it('CH-6040: a tournament set up from the editor toasts its name with Open to the desk, and no Undo', async () => {
+    const { section } = await p5();
+    expect(section.tournamentSavedToast('Pinehurst Invitational', 'tour-1')).toEqual({ code: 'CH-6040', title: 'Pinehurst Invitational is set up in Tournaments', action: 'Open', href: '/golf/dashboard/tournaments/tour-1' });
+  });
+
+  it.each([
+    ['already_tracked', {}, 'CH-6048', 'This event is already set up in Tournaments.'],
+    ['event_not_found', {}, 'CH-6049', 'This event was deleted or moved to another team.'],
+    ['round_started', { round: 2 }, 'CH-6050', 'R2 is under way, so it can’t be changed here. Change it from Tournaments.'],
+    ['round_has_scores', { round: 2 }, 'CH-6051', 'R2 has scores, so it can’t be cancelled. Change it from Tournaments.'],
+    ['qualifier_not_found', {}, 'CH-6052', 'That qualifier was deleted. Pick another or choose None.'],
+    ['trip_not_found', {}, 'CH-6053', 'That trip is already linked to another event. Pick another or choose None.'],
+    ['round_fields_locked', { name: 'Pinehurst Invitational' }, 'CH-6054', 'This event is part of Pinehurst Invitational. Its type, name and course are changed in Tournaments.'],
+    ['not_coach', {}, 'CH-6055', 'Only coaches on this team can set up tournaments.'],
+    ['failed', { save: 'create' }, 'CH-6056', 'Couldn’t set up the tournament. Nothing was saved.'],
+    ['qualifier_linked', {}, 'CH-6057', 'That qualifier already counts toward another event. Pick another or choose None.'],
+    ['round_order', { round: 2, after: 3, save: 'cancel' }, 'CH-6058', 'R2 can’t come back where it was: R3 is now before it. Move R3 first, then restore R2.'],
+    ['entries_unavailable', {}, 'CH-6059', 'The lineup can’t be saved from here yet. Save without it and set it in Tournaments.'],
+    ['failed', { round: 2, save: 'round' }, 'CH-6060', 'Couldn’t save R2. Nothing was changed.'],
+    ['failed', { name: 'Pinehurst Invitational', save: 'cancel' }, 'CH-6061', 'Couldn’t change Pinehurst Invitational. Nothing was changed.'],
+    ['round_count', {}, 'CH-6142', 'A tournament has up to 6 rounds.'],
+    ['round_order', { round: 2, before: 1 }, 'CH-6143', 'Rounds go in order. R2 can’t start before R1.'],
+    ['bad_name', {}, 'CH-6147', 'Add a name for the tournament, up to 120 characters.'],
+    ['event_is_series', {}, 'CH-6148', 'A repeating event can’t become a tournament. Make a new event for it.'],
+    ['event_cancelled', {}, 'CH-6149', 'A cancelled event can’t become a tournament. Restore it first.'],
+    ['stale', {}, 'CH-6241', 'This tournament changed since you opened it. Reload to see the latest.'],
+  ] as const)('refusal %s %o is %s', async (refusal, ctx, code, text) => {
+    const { refusals } = await p5();
+    expect(refusals.refusalNotice(refusal, ctx)).toEqual({ code, text });
+  });
+
+  it('every refusal the actions can return has a catalogued code', async () => {
+    const { refusals } = await p5();
+    const catalog = readFileSync(join(process.cwd(), 'docs/clubhouse/catalog/calendar.md'), 'utf8');
+    for (const code of Object.values(refusals.REFUSAL_CODE).filter((c) => c.startsWith('CH-6'))) expect(catalog).toContain(`| ${code} |`);
+  });
+
+  it('CH-6140, CH-6141, CH-6142, CH-6145, CH-6146, CH-6147: the section validates before it saves', async () => {
+    const { model } = await p5();
+    const s = (over: Partial<import('../screens/tournaments/fields/rounds-model').ChTourState> = {}) => ({ ...model.initialTourState('2026-11-05', '2026-11-07'), name: 'Pinehurst Invitational', course, ...over });
+    expect(model.validate(s())).toEqual({});
+    expect(model.validate(s({ course: null })).course?.code).toBe('CH-6140');
+    expect(model.validate(s({ lastDay: '2026-11-04' })).days?.code).toBe('CH-6141');
+    expect(model.validate({ ...model.initialTourState('2026-11-01', '2026-11-07'), name: 'Long', course }).rounds?.code).toBe('CH-6142');
+    expect(model.validate(s({ counting: 'custom', play: 3, count: 4 })).counting?.code).toBe('CH-6145');
+    expect(model.validate(s({ resultsUrl: 'http://golfstat.com' })).resultsUrl?.code).toBe('CH-6146');
+    expect(model.validate(s({ name: ' ' })).name?.code).toBe('CH-6147');
+  });
+
+  it('CH-6148, CH-6149: a repeating or cancelled tournament event cannot turn Track on, and says why', async () => {
+    const { model, section } = await p5();
+    const props = { track: false, onTrack: vi.fn(), legacy: true, state: model.initialTourState('2026-11-05'), onChange: vi.fn(), errors: {}, showErrors: false, timezone: 'America/New_York', courseWrites: noWrites, announce: vi.fn() };
+    const { rerender } = inMotion(<section.TournamentSection {...props} block="series" />);
+    expect(screen.getByRole('switch', { name: 'Track in Tournaments' })).toHaveProperty('disabled', true);
+    expect(document.querySelector('[data-ch-code="CH-6148"]')?.textContent).toBe(section.TRACK_HINT.series);
+    rerender(
+      <LazyMotion features={domAnimation}>
+        <section.TournamentSection {...props} block="cancelled" />
+      </LazyMotion>,
+    );
+    expect(document.querySelector('[data-ch-code="CH-6149"]')?.textContent).toBe(section.TRACK_HINT.cancelled);
+    expect(document.querySelector('[data-ch-code="CH-6640"]')).not.toBeNull();
+  });
+
+  it('CH-6144: Track on for a round of a removed tournament points to Set up from calendar', async () => {
+    const { model, section } = await p5();
+    inMotion(<section.TournamentSection track onTrack={vi.fn()} legacy={false} block={null} state={{ ...model.initialTourState('2026-11-05'), course }} onChange={vi.fn()} errors={{}} showErrors={false} timezone="America/New_York" courseWrites={noWrites} announce={vi.fn()} orphan={{ round: 2 }} />);
+    const note = document.querySelector('[data-ch-code="CH-6144"]');
+    expect(note?.textContent).toMatch(/^This was R2 of a tournament that was removed\./);
+    expect(within(note as HTMLElement).getByRole('link', { name: 'Open Set up from calendar' }).getAttribute('href')).toBe('/golf/dashboard/tournaments');
+  });
+
+  it('CH-6340: the course picker with no match offers the typed words as the course name', async () => {
+    const { CoursePicker } = await import('../screens/qualifiers/CoursePicker');
+    const onPickLoose = vi.fn();
+    const writes = { courses: vi.fn(async () => []), tees: vi.fn(async () => []) } as never;
+    inMotion(<CoursePicker round={1} title="Course" onClose={vi.fn()} onPick={vi.fn()} writes={writes} allowTyped onPickLoose={onPickLoose} />);
+    const picker = await screen.findByRole('dialog', { name: 'Course' });
+    fireEvent.change(within(picker).getByRole('searchbox', { name: 'Search courses' }), { target: { value: 'Southern Pines' } });
+    await waitFor(() => expect(picker.querySelector('[data-ch-code="CH-6340"]')).not.toBeNull(), { timeout: 2000 });
+    fireEvent.click(within(picker).getByRole('button', { name: 'Use “Southern Pines” as the course name' }));
+    expect(onPickLoose).toHaveBeenCalledWith(1, expect.objectContaining({ courseId: null, courseName: 'Southern Pines' }));
+  });
+
+  it('CH-6841: a longer range says the new round count once, politely', async () => {
+    const { model, fields } = await p5();
+    const announce = vi.fn();
+    const onChange = vi.fn();
+    inMotion(<fields.TournamentFields state={{ ...model.initialTourState('2026-11-05', '2026-11-06'), course }} onChange={onChange} errors={{}} showErrors={false} timezone="America/New_York" courseWrites={noWrites} announce={announce} />);
+    const last = screen.getByRole('combobox', { name: 'Last day' });
+    fireEvent.change(last, { target: { value: '2026-11-07' } });
+    fireEvent.blur(last);
+    await waitFor(() => expect(announce).toHaveBeenCalledWith('3 rounds, Thursday 5 November to Saturday 7 November.'));
+    expect(onChange.mock.calls.at(-1)?.[0].rounds).toHaveLength(3);
+  });
+});

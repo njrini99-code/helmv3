@@ -107,6 +107,7 @@ the bar carries the title (states audit c1, c4, 2026-10-08).
 | 60407 | CH-6307 | `SIGNED_IN_WITH_NO_TEAM` | Signed in with no team (coach or player) |
 | 60408 | CH-6308 | `A_DAY_WITH_NOTHING_ON_IT` | A day with nothing on it (phone Day view) |
 | 60409 | CH-6309 | `A_COACH_WHOSE_TEAM_HAS_NEVER_SCHEDULED` | A coach whose team has never scheduled anything (D-71) |
+| 60410 | CH-6340 | `THE_COURSE_PICKER_FINDS_NO_COURSE_FOR` | The course picker (tournament section) finds no course for the search |
 
 ## 05 — Validation
 
@@ -120,6 +121,16 @@ Checked before anything is sent, with the warning haptic. An event needs a title
 | 60502 | CH-6102 | `AN_EVENT_THAT_ENDS_BEFORE_IT_STARTS` | An event that ends before it starts |
 | 60503 | CH-6103 | `BUSY_TIME_WITH_NO_NAME` | Busy time with no name |
 | 60504 | CH-6104 | `BUSY_TIME_THAT_ENDS_BEFORE_IT_STARTS` | Busy time that ends before it starts |
+| 60505 | CH-6140 | `TRACK_ON_NO_COURSE` | Track on, no course |
+| 60506 | CH-6141 | `THE_LAST_DAY_IS_BEFORE_THE_FIRST` | The last day is before the first day |
+| 60507 | CH-6142 | `MORE_THAN_6_ROUNDS` | More than 6 rounds (7 days with One round each day) |
+| 60508 | CH-6143 | `A_ROUND_WOULD_START_BEFORE_THE_ONE` | A round would start before the one ahead of it (round mode, the RPC, the sync trigger) |
+| 60509 | CH-6144 | `TRACK_TURNED_ON_FOR_AN_EVENT_THAT` | Track turned on for an event that was a round of a tournament that was removed |
+| 60510 | CH-6145 | `CUSTOM_COUNTING_WITH_MORE_COUNTING_THAN_PLAYERS` | Custom counting with more counting than players |
+| 60511 | CH-6146 | `A_RESULTS_LINK_THAT_ISNT_HTTPS` | A results link that isn't https |
+| 60512 | CH-6147 | `NO_TOURNAMENT_NAME_OR_LONGER_THAN_120` | No tournament name, or longer than 120 |
+| 60513 | CH-6148 | `EDITING_A_REPEATING_OCCURRENCE_OF_TYPE_TOURNAMENT` | Editing a repeating occurrence of type Tournament |
+| 60514 | CH-6149 | `EDITING_A_CANCELLED_EVENT_OF_TYPE_TOURNAMENT` | Editing a cancelled event of type Tournament |
 
 ## 06 — Server / system error
 
@@ -185,6 +196,22 @@ request id that becomes the row's key, and a repeat returns the row that landed
 | 60633 | CH-6020 | `CHANGING_AN_EVENTS_LENGTH_FAILS` | Changing an event's length (a grip or Alt+Shift+arrow) fails |
 | 60634 | CH-6021 | `THE_SERVER_REFUSES_A_MOVE_BY_ROLE` | The server refuses a move by role |
 | 60635 | CH-6022 | `THE_EVENT_WAS_CANCELLED_OR_DELETED_WHILE` | The event was cancelled or deleted while it was being moved |
+| 60636 | CH-6040 | `A_TOURNAMENT_IS_SET_UP_FROM_THE` | A tournament is set up from the editor (P-5, `golf_tournaments_v1`) |
+| 60637 | CH-6048 | `SETTING_UP_A_TOURNAMENT_FROM_AN_EVENT` | Setting up a tournament from an event that is already a round (someone else just did) |
+| 60638 | CH-6049 | `THE_EVENT_BEING_SET_UP_WAS_DELETED` | The event being set up was deleted or moved to another team |
+| 60639 | CH-6050 | `A_ROUND_THAT_IS_UNDER_WAY_SUSPENDED` | A round that is under way, suspended or final is changed or cancelled from the calendar |
+| 60640 | CH-6051 | `CANCELLING_A_ROUND_OR_STOPPING_TRACKING_WHEN` | Cancelling a round, or stopping tracking, when scores are entered |
+| 60641 | CH-6052 | `THE_QUALIFIER_TO_LINK_WAS_DELETED_MEANWHILE` | The qualifier to link was deleted meanwhile |
+| 60642 | CH-6053 | `THE_TRIP_TO_LINK_IS_ALREADY_LINKED` | The trip to link is already linked to another event |
+| 60643 | CH-6054 | `A_PLAIN_SAVE_TRIES_TO_CHANGE_A` | A plain save tries to change a round's type, team, series, name, place or course (the round guard) |
+| 60644 | CH-6055 | `THE_COACH_ISNT_STAFFED_ON_THE_TEAM` | The coach isn't staffed on the team (a permission refusal) |
+| 60645 | CH-6056 | `SETTING_UP_THE_TOURNAMENT_FAILS_FOR_ANY` | Setting up the tournament fails for any other reason (the transaction never committed) |
+| 60646 | CH-6057 | `THE_QUALIFIER_TO_LINK_ALREADY_COUNTS_TOWARD` | The qualifier to link already counts toward another event (not stolen) |
+| 60647 | CH-6058 | `RESTORING_A_ROUND_THAT_ANOTHER_ROUND_HAS` | Restoring a round that another round has moved in front of |
+| 60648 | CH-6059 | `A_LINEUP_IS_SENT_BEFORE_4_33S` | A lineup is sent before 4.33's set_entries RPC is applied |
+| 60649 | CH-6060 | `SAVING_A_ROUND_FROM_THE_CALENDAR_FAILS` | Saving a round from the calendar fails for any other reason |
+| 60650 | CH-6061 | `CANCELLING_RESTORING_OR_STOPPING_TRACKING_FAILS_FOR` | Cancelling, restoring or stopping tracking fails for any other reason |
+| 60651 | CH-6241 | `THE_TOURNAMENT_CHANGED_SINCE_IT_WAS_OPENED` | The tournament changed since it was opened (a version conflict) |
 
 From the shell (P001): 10601 CH-1001, 10602 CH-1201, 10603 CH-1202,
 10604 CH-1203, 10605 CH-1204, 10606 CH-1205, 10607 CH-1206, 10608 CH-1207,
@@ -353,6 +380,7 @@ WebKit at 390 (instant with reduced motion).
 | 61604 | CH-6604 | `SWITCHING_BETWEEN_DAY_WEEK_MONTH_AND_AGENDA` | Switching between Day, Week, Month and Agenda (Day, Month and List on the phone) |
 | 61605 | CH-6605 | `STEPPING_TO_ANOTHER_DAY_WEEK_OR_MONTH` | Stepping to another day, week or month (the arrows, the arrow keys, Today or a date) |
 | 61606 | CH-6606 | `CHOOSING_ANOTHER_DAY_IN_THE_PHONES_WEEK` | Choosing another day in the phone's week strip |
+| 61607 | CH-6640 | `TOURNAMENT_CHOSEN_TRACK_TURNED_ON_OR_OFF` | Tournament chosen (Track on), Track turned on or off, More details opened |
 
 From the shell (P001): 11601 CH-1601, 11602 CH-1602, 11603 CH-1603,
 11604 CH-1604, 11605 CH-1605, 11606 CH-1606, 11607 CH-1607, 11608 CH-1608,
@@ -396,6 +424,9 @@ CH-1842, 11825 CH-1816.
 | 61804 | CH-6804 | `NO_AXE_VIOLATIONS_IN_ANY_PREVIEW_VIEW` | No axe violations in any preview view and state, 1280px and 390px. One known exception, listed in the scan: the 7-day week at 390px squeezes overlapping events under 24px until the phone Calendar is designed |
 | 61805 | CH-6805 | `A_COMPLETED_MOVE_IS_SAID_ONCE_NEVER` | A completed move is said once, never during a drag: "Practice moved to 4:00 PM, Wednesday 15 October. Undo with Command Z." (Control Z off a Mac; on touch "Undo is in the notice."); a resize "Practice now ends at 6:30 PM."; a clash appended; Undo "Move undone." |
 | 61806 | CH-6806 | `MONTH_DRAG_IS_ANNOUNCED_PICKED_UP_FALL` | Month drag is announced: "Picked up Fall qualifier R2, Thursday 16 October. Arrow keys choose a day, Space drops, Escape cancels.", "Over Friday 17 October.", "Fall qualifier R2 moved to Friday 17 October at 8:42 AM.", or "Move cancelled. Fall qualifier R2 stays on Thursday 16 October." |
+| 61807 | CH-6840 | `THE_TOURNAMENT_SECTION_IS_SHOWN_OR_HIDDEN` | The tournament section is shown or hidden (Tournament chosen, Track turned on or off): one polite line: "Tournament details shown. 3 rounds." or "Tournament details hidden." |
+| 61808 | CH-6841 | `THE_ROUNDS_CHANGE_WITH_THE_DAYS_OR` | The rounds change with the days, or reorder after a day or tee change: one polite line: "3 rounds, Thursday 5 November to Saturday 7 November." or "Rounds reordered. Round 2 is now Friday 6 November at 8:30 AM." |
+| 61809 | CH-6842 | `ESCAPE_WHILE_THE_TOURNAMENT_IS_BEING_CREATED` | Escape (or the close button) while the tournament is being created: the editor stays open and says "Still creating the tournament." |
 
 From the shell (P001): 11801 CH-1801, 11802 CH-1802, 11803 CH-1803,
 11804 CH-1804, 11805 CH-1805, 11806 CH-1806, 11807 CH-1807, 11808 CH-1808,

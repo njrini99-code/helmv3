@@ -38,6 +38,8 @@ export interface ChQCourseOption {
   name: string;
   place: string | null;
   par: number | null;
+  /** One of the team's saved courses (P-5's course picker lists them under "Recent"). */
+  saved?: boolean;
 }
 export interface ChQTeeOption {
   id: string;
@@ -110,10 +112,11 @@ export const LIVE_WRITES: ChQWrites = {
     const [library, saved] = await Promise.all([listCoursesStrict({ query: q || undefined, limit: 50 }), q ? Promise.resolve([]) : getTeamSavedCourses()]);
     const seen = new Set<string>();
     const out: ChQCourseOption[] = [];
+    const savedIds = new Set(saved.map((s) => s.course?.id).filter(Boolean));
     for (const c of [...saved.map((s) => s.course), ...library]) {
       if (!c || seen.has(c.id)) continue;
       seen.add(c.id);
-      out.push({ id: c.id, name: c.name, place: [c.city, c.state].filter(Boolean).join(', ') || null, par: c.total_par });
+      out.push({ id: c.id, name: c.name, place: [c.city, c.state].filter(Boolean).join(', ') || null, par: c.total_par, ...(savedIds.has(c.id) ? { saved: true } : {}) });
     }
     return out;
   },

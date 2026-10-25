@@ -5092,6 +5092,17 @@
     "catalog": "docs/clubhouse/catalog/calendar.md"
   },
   {
+    "id": 60410,
+    "page": "P006",
+    "category": 4,
+    "item": 10,
+    "name": "THE_COURSE_PICKER_FINDS_NO_COURSE_FOR",
+    "chCode": "CH-6340",
+    "meaning": "The course picker (tournament section) finds no course for the search",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/calendar.md"
+  },
+  {
     "id": 60501,
     "page": "P006",
     "category": 5,
@@ -5132,6 +5143,116 @@
     "name": "BUSY_TIME_THAT_ENDS_BEFORE_IT_STARTS",
     "chCode": "CH-6104",
     "meaning": "Busy time that ends before it starts",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/calendar.md"
+  },
+  {
+    "id": 60505,
+    "page": "P006",
+    "category": 5,
+    "item": 5,
+    "name": "TRACK_ON_NO_COURSE",
+    "chCode": "CH-6140",
+    "meaning": "Track on, no course",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/calendar.md"
+  },
+  {
+    "id": 60506,
+    "page": "P006",
+    "category": 5,
+    "item": 6,
+    "name": "THE_LAST_DAY_IS_BEFORE_THE_FIRST",
+    "chCode": "CH-6141",
+    "meaning": "The last day is before the first day",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/calendar.md"
+  },
+  {
+    "id": 60507,
+    "page": "P006",
+    "category": 5,
+    "item": 7,
+    "name": "MORE_THAN_6_ROUNDS",
+    "chCode": "CH-6142",
+    "meaning": "More than 6 rounds (7 days with One round each day)",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/calendar.md"
+  },
+  {
+    "id": 60508,
+    "page": "P006",
+    "category": 5,
+    "item": 8,
+    "name": "A_ROUND_WOULD_START_BEFORE_THE_ONE",
+    "chCode": "CH-6143",
+    "meaning": "A round would start before the one ahead of it (round mode, the RPC, the sync trigger)",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/calendar.md"
+  },
+  {
+    "id": 60509,
+    "page": "P006",
+    "category": 5,
+    "item": 9,
+    "name": "TRACK_TURNED_ON_FOR_AN_EVENT_THAT",
+    "chCode": "CH-6144",
+    "meaning": "Track turned on for an event that was a round of a tournament that was removed",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/calendar.md"
+  },
+  {
+    "id": 60510,
+    "page": "P006",
+    "category": 5,
+    "item": 10,
+    "name": "CUSTOM_COUNTING_WITH_MORE_COUNTING_THAN_PLAYERS",
+    "chCode": "CH-6145",
+    "meaning": "Custom counting with more counting than players",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/calendar.md"
+  },
+  {
+    "id": 60511,
+    "page": "P006",
+    "category": 5,
+    "item": 11,
+    "name": "A_RESULTS_LINK_THAT_ISNT_HTTPS",
+    "chCode": "CH-6146",
+    "meaning": "A results link that isn't https",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/calendar.md"
+  },
+  {
+    "id": 60512,
+    "page": "P006",
+    "category": 5,
+    "item": 12,
+    "name": "NO_TOURNAMENT_NAME_OR_LONGER_THAN_120",
+    "chCode": "CH-6147",
+    "meaning": "No tournament name, or longer than 120",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/calendar.md"
+  },
+  {
+    "id": 60513,
+    "page": "P006",
+    "category": 5,
+    "item": 13,
+    "name": "EDITING_A_REPEATING_OCCURRENCE_OF_TYPE_TOURNAMENT",
+    "chCode": "CH-6148",
+    "meaning": "Editing a repeating occurrence of type Tournament",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/calendar.md"
+  },
+  {
+    "id": 60514,
+    "page": "P006",
+    "category": 5,
+    "item": 14,
+    "name": "EDITING_A_CANCELLED_EVENT_OF_TYPE_TOURNAMENT",
+    "chCode": "CH-6149",
+    "meaning": "Editing a cancelled event of type Tournament",
     "status": "implemented",
     "catalog": "docs/clubhouse/catalog/calendar.md"
   },
@@ -5521,6 +5642,182 @@
     "catalog": "docs/clubhouse/catalog/calendar.md"
   },
   {
+    "id": 60636,
+    "page": "P006",
+    "category": 6,
+    "item": 36,
+    "name": "A_TOURNAMENT_IS_SET_UP_FROM_THE",
+    "chCode": "CH-6040",
+    "meaning": "A tournament is set up from the editor (P-5, `golf_tournaments_v1`)",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/calendar.md"
+  },
+  {
+    "id": 60637,
+    "page": "P006",
+    "category": 6,
+    "item": 37,
+    "name": "SETTING_UP_A_TOURNAMENT_FROM_AN_EVENT",
+    "chCode": "CH-6048",
+    "meaning": "Setting up a tournament from an event that is already a round (someone else just did)",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/calendar.md"
+  },
+  {
+    "id": 60638,
+    "page": "P006",
+    "category": 6,
+    "item": 38,
+    "name": "THE_EVENT_BEING_SET_UP_WAS_DELETED",
+    "chCode": "CH-6049",
+    "meaning": "The event being set up was deleted or moved to another team",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/calendar.md"
+  },
+  {
+    "id": 60639,
+    "page": "P006",
+    "category": 6,
+    "item": 39,
+    "name": "A_ROUND_THAT_IS_UNDER_WAY_SUSPENDED",
+    "chCode": "CH-6050",
+    "meaning": "A round that is under way, suspended or final is changed or cancelled from the calendar",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/calendar.md"
+  },
+  {
+    "id": 60640,
+    "page": "P006",
+    "category": 6,
+    "item": 40,
+    "name": "CANCELLING_A_ROUND_OR_STOPPING_TRACKING_WHEN",
+    "chCode": "CH-6051",
+    "meaning": "Cancelling a round, or stopping tracking, when scores are entered",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/calendar.md"
+  },
+  {
+    "id": 60641,
+    "page": "P006",
+    "category": 6,
+    "item": 41,
+    "name": "THE_QUALIFIER_TO_LINK_WAS_DELETED_MEANWHILE",
+    "chCode": "CH-6052",
+    "meaning": "The qualifier to link was deleted meanwhile",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/calendar.md"
+  },
+  {
+    "id": 60642,
+    "page": "P006",
+    "category": 6,
+    "item": 42,
+    "name": "THE_TRIP_TO_LINK_IS_ALREADY_LINKED",
+    "chCode": "CH-6053",
+    "meaning": "The trip to link is already linked to another event",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/calendar.md"
+  },
+  {
+    "id": 60643,
+    "page": "P006",
+    "category": 6,
+    "item": 43,
+    "name": "A_PLAIN_SAVE_TRIES_TO_CHANGE_A",
+    "chCode": "CH-6054",
+    "meaning": "A plain save tries to change a round's type, team, series, name, place or course (the round guard)",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/calendar.md"
+  },
+  {
+    "id": 60644,
+    "page": "P006",
+    "category": 6,
+    "item": 44,
+    "name": "THE_COACH_ISNT_STAFFED_ON_THE_TEAM",
+    "chCode": "CH-6055",
+    "meaning": "The coach isn't staffed on the team (a permission refusal)",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/calendar.md"
+  },
+  {
+    "id": 60645,
+    "page": "P006",
+    "category": 6,
+    "item": 45,
+    "name": "SETTING_UP_THE_TOURNAMENT_FAILS_FOR_ANY",
+    "chCode": "CH-6056",
+    "meaning": "Setting up the tournament fails for any other reason (the transaction never committed)",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/calendar.md"
+  },
+  {
+    "id": 60646,
+    "page": "P006",
+    "category": 6,
+    "item": 46,
+    "name": "THE_QUALIFIER_TO_LINK_ALREADY_COUNTS_TOWARD",
+    "chCode": "CH-6057",
+    "meaning": "The qualifier to link already counts toward another event (not stolen)",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/calendar.md"
+  },
+  {
+    "id": 60647,
+    "page": "P006",
+    "category": 6,
+    "item": 47,
+    "name": "RESTORING_A_ROUND_THAT_ANOTHER_ROUND_HAS",
+    "chCode": "CH-6058",
+    "meaning": "Restoring a round that another round has moved in front of",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/calendar.md"
+  },
+  {
+    "id": 60648,
+    "page": "P006",
+    "category": 6,
+    "item": 48,
+    "name": "A_LINEUP_IS_SENT_BEFORE_4_33S",
+    "chCode": "CH-6059",
+    "meaning": "A lineup is sent before 4.33's set_entries RPC is applied",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/calendar.md"
+  },
+  {
+    "id": 60649,
+    "page": "P006",
+    "category": 6,
+    "item": 49,
+    "name": "SAVING_A_ROUND_FROM_THE_CALENDAR_FAILS",
+    "chCode": "CH-6060",
+    "meaning": "Saving a round from the calendar fails for any other reason",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/calendar.md"
+  },
+  {
+    "id": 60650,
+    "page": "P006",
+    "category": 6,
+    "item": 50,
+    "name": "CANCELLING_RESTORING_OR_STOPPING_TRACKING_FAILS_FOR",
+    "chCode": "CH-6061",
+    "meaning": "Cancelling, restoring or stopping tracking fails for any other reason",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/calendar.md"
+  },
+  {
+    "id": 60651,
+    "page": "P006",
+    "category": 6,
+    "item": 51,
+    "name": "THE_TOURNAMENT_CHANGED_SINCE_IT_WAS_OPENED",
+    "chCode": "CH-6241",
+    "meaning": "The tournament changed since it was opened (a version conflict)",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/calendar.md"
+  },
+  {
     "id": 60701,
     "page": "P006",
     "category": 7,
@@ -5898,6 +6195,17 @@
     "catalog": "docs/clubhouse/catalog/calendar.md"
   },
   {
+    "id": 61607,
+    "page": "P006",
+    "category": 16,
+    "item": 7,
+    "name": "TOURNAMENT_CHOSEN_TRACK_TURNED_ON_OR_OFF",
+    "chCode": "CH-6640",
+    "meaning": "Tournament chosen (Track on), Track turned on or off, More details opened",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/calendar.md"
+  },
+  {
     "id": 61701,
     "page": "P006",
     "category": 17,
@@ -5993,6 +6301,39 @@
     "name": "MONTH_DRAG_IS_ANNOUNCED_PICKED_UP_FALL",
     "chCode": "CH-6806",
     "meaning": "Month drag is announced: \"Picked up Fall qualifier R2, Thursday 16 October. Arrow keys choose a day, Space drops, Escape cancels.\", \"Over Friday 17 October.\", \"Fall qualifier R2 moved to Friday 17 October at 8:42 AM.\", or \"Move cancelled. Fall qualifier R2 stays on Thursday 16 October.\"",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/calendar.md"
+  },
+  {
+    "id": 61807,
+    "page": "P006",
+    "category": 18,
+    "item": 7,
+    "name": "THE_TOURNAMENT_SECTION_IS_SHOWN_OR_HIDDEN",
+    "chCode": "CH-6840",
+    "meaning": "The tournament section is shown or hidden (Tournament chosen, Track turned on or off): one polite line: \"Tournament details shown. 3 rounds.\" or \"Tournament details hidden.\"",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/calendar.md"
+  },
+  {
+    "id": 61808,
+    "page": "P006",
+    "category": 18,
+    "item": 8,
+    "name": "THE_ROUNDS_CHANGE_WITH_THE_DAYS_OR",
+    "chCode": "CH-6841",
+    "meaning": "The rounds change with the days, or reorder after a day or tee change: one polite line: \"3 rounds, Thursday 5 November to Saturday 7 November.\" or \"Rounds reordered. Round 2 is now Friday 6 November at 8:30 AM.\"",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/calendar.md"
+  },
+  {
+    "id": 61809,
+    "page": "P006",
+    "category": 18,
+    "item": 9,
+    "name": "ESCAPE_WHILE_THE_TOURNAMENT_IS_BEING_CREATED",
+    "chCode": "CH-6842",
+    "meaning": "Escape (or the close button) while the tournament is being created: the editor stays open and says \"Still creating the tournament.\"",
     "status": "implemented",
     "catalog": "docs/clubhouse/catalog/calendar.md"
   },

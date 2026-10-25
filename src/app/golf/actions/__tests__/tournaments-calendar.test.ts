@@ -44,7 +44,7 @@ vi.mock('@/lib/supabase/server', () => ({
   }),
 }));
 
-import { createTournamentFromCalendar, setTournamentCancelled, untrackTournament, updateTournamentRound } from '../tournaments';
+import { createTournamentFromCalendar, setTournamentCancelled, untrackTournament, updateTournamentRound } from '../tournaments-calendar';
 
 const TEAM = '00000000-0000-4000-8000-0000000000aa';
 const REQ = '00000000-0000-4000-8000-0000000000a1';

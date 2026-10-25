@@ -7,6 +7,8 @@ Held features and data plans (D-61), by page. Nothing here is applied or active 
 | Page | Plan | Status | Migration |
 | --- | --- | --- | --- |
 | P003 Roster | `docs/clubhouse/held/data/roster-availability.md` | RELEASED | supabase/migrations/20260929120000_golf_team_members_availability.sql |
+| P006 Calendar | `docs/clubhouse/held/data/tournaments-from-calendar.md` | HELD | supabase/migrations/20261025040000_golf_tournament_from_calendar.sql |
+| P006 Calendar | `docs/clubhouse/held/data/tournaments-calendar-sync.md` | HELD | supabase/migrations/20261025040100_golf_tournament_calendar_sync.sql |
 | P007 Messages | `docs/clubhouse/held/features/conversation-files.md` | HELD | — |
 | P007 Messages | `docs/clubhouse/held/data/message-attachments-hardening.md` | RELEASED | supabase/migrations/20261001130000_golf_attachments_revoke_anon_hide_deleted.sql |
 | P009 Qualifiers | `docs/clubhouse/held/features/qualifier-squad-and-entrants.md` | HELD | — |

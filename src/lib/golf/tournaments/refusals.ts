@@ -1,6 +1,6 @@
 /**
  * P-5: what each refusal the tournament RPCs and the round guard raise says. The four tournament actions
- * (app/golf/actions/tournaments.ts) return the refusal as `code` beside this copy, so a caller (P-4's move-write.ts,
+ * (app/golf/actions/tournaments-calendar.ts) return the refusal as `code` beside this copy, so a caller (P-4's move-write.ts,
  * round mode, the cancel dialogs) branches on the code and never on the words. The Clubhouse gives each string its
  * catalog number (screens/tournaments/fields/refusals.ts): one code per string (changelog should 16).
  */

@@ -1,4 +1,4 @@
--- STATUS: WRITTEN, NOT APPLIED (HOLD, see HELD.md).
+-- STATUS: WRITTEN — HOLD — NOT APPLIED
 -- P-5 Tournaments from the calendar: keep a round's golf_events row and its tournament in step from any write path
 -- (owner call 1 in the plan; held separately so the owner can apply 20261025040000 without it).
 -- Apply: npm run db:apply -- supabase/migrations/20261025040100_golf_tournament_calendar_sync.sql

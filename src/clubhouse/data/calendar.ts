@@ -8,6 +8,8 @@ import { chLogServer } from '../lib/track-server';
 import { classYearLabel, fullName } from './season';
 import { parseAvailability } from './availability';
 import { loadAttendanceCounts } from './attendance-counts';
+import { loadRoundRefs } from './calendar-rounds';
+import { isFlagEnabled } from '@/lib/flags/is-enabled';
 import {
   addDays,
   expandBusyDates,
@@ -46,6 +48,10 @@ export interface ChCalendarData {
   membersError?: boolean;
   /** Coach only: their own blocked time failed to load (shown as a notice, never as "free"). */
   busyError: boolean;
+  /** P-5: golf_tournaments_v1 is on, so the editor offers the tournament section and rounds carry refs. */
+  tournamentsEnabled?: boolean;
+  /** P-5: the round refs failed to load: tournament events show their stored titles and can't be moved */
+  roundRefsFailed?: boolean;
 }
 
 type ClassRow = { id: string; player_id: string; instructor: string | null; days: string[] | null; semester: string | null; building: string | null; room: string | null };
@@ -423,10 +429,33 @@ export async function loadCalendar(input: {
     }
   }
 
+  // P-5: round refs for the tournament events, only with golf_tournaments_v1 on (off: no tournament table is read).
+  const tournamentsEnabled = isFlagEnabled('golf_tournaments_v1');
+  let roundRefsFailed = false;
+  if (tournamentsEnabled) {
+    const tourIds = [...new Set(events.filter((e) => e.type === 'tournament').map((e) => e.id))];
+    if (tourIds.length) {
+      const { refs, failed, error } = await loadRoundRefs(supabase, tourIds, input.role);
+      if (failed) {
+        chLogServer('calendar', 'roundRefs', error, 'calendar');
+        roundRefsFailed = true;
+      }
+      for (let i = 0; i < events.length; i++) {
+        const e = events[i]!;
+        if (e.type !== 'tournament') continue;
+        const ref = refs.get(e.id);
+        if (ref) events[i] = { ...e, round: ref };
+        else if (failed) events[i] = { ...e, roundRefFailed: true };
+      }
+    }
+  }
+
   return {
     role: input.role,
     teamId: input.teamId,
     busyError,
+    tournamentsEnabled,
+    roundRefsFailed,
     viewerPlayerId: input.viewerPlayerId,
     teamName: teamRes.data?.name ?? null,
     timezone,

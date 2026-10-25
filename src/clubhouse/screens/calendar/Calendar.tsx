@@ -30,7 +30,8 @@ import { SeriesScopeMenu } from './drag-popovers';
 import { useToast } from '../../ui/Toast';
 import { friendlyReason, isOffline, normalise, useAction } from '../../lib/use-action';
 import { Attendance, EventDetail, Overlap, Summary, type ChInsp, type InspCtx } from './inspector';
-import { CancelEvent, DeleteEvent, EventEditor, SubscribeSheet, type EditorSeed } from './editor';
+import { CancelEvent, DeleteEvent, EventEditor, SubscribeSheet, type ChTournamentSaved, type EditorSeed } from './editor';
+import { roundsOverlay } from './round-overlay';
 import { BusySheet } from './extras';
 import { CalendarPhone } from './CalendarPhone';
 import { Modal } from '../../ui/Modal';
@@ -597,16 +598,28 @@ export function Calendar({
   }, [data.view, data.anchor]);
 
   const people = useMemo(() => new Map(data.people.map((p) => [p.id, p])), [data.people]);
+  // P-5 4.2: a tournament just made shows its rounds at once, keyed by their real event ids, until the page's re-read
+  // brings the same rows (with their refs) and the overlay steps aside: same ids, so nothing flickers.
+  const [made, setMade] = useState<ChCalEvent[]>([]);
+  useEffect(() => {
+    setMade((m) => (m.length && m.every((o) => data.events.some((e) => e.id === o.id && e.round)) ? [] : m));
+  }, [data.events]);
+  const onTournamentSaved = useCallback((t: ChTournamentSaved) => setMade(roundsOverlay(t)), []);
+  const withMade = useMemo(() => {
+    if (!made.length) return data.events;
+    const ids = new Set(made.map((e) => e.id));
+    return [...data.events.filter((e) => !ids.has(e.id)), ...made];
+  }, [data.events, made]);
   const refreshQuiet = useCallback(() => router.refresh(), [router]);
   const { moves, move, undoLatest, said, heldScope } = useHeldMoves(data.timezone, data.events, data.today, refreshQuiet, preview, people);
   /** P-4 4.8: a series event dropped somewhere new, held there with its question open. */
   const [ask, setAsk] = useState<{ e: ChCalEvent; to: ChMoveTarget | ChBarTarget; kind: ChMoveKind } | null>(null);
   const placed = useMemo(() => {
     const over = ask ? new Map(moves).set(ask.e.id, ask.to) : moves;
-    if (!over.size) return data.events;
+    if (!over.size) return withMade;
     const out: ChCalEvent[] = [];
     const spanned = new Set<string>();
-    for (const e of data.events) {
+    for (const e of withMade) {
       const to = over.get(e.id);
       if (!to) out.push(e);
       else if (!('from' in to)) out.push({ ...e, ...to });
@@ -617,7 +630,7 @@ export function Calendar({
       }
     }
     return out;
-  }, [data.events, moves, ask]);
+  }, [withMade, moves, ask]);
   const onGridMove = useCallback(
     (e: ChCalEvent, to: ChMoveTarget | ChBarTarget, kind: ChMoveKind) => {
       const scope = e.seriesId ? heldScope(e.id) : null;
@@ -887,6 +900,9 @@ export function Calendar({
           timezone={data.timezone}
           today={now.date}
           nowHour={now.hour}
+          tournamentsEnabled={!!data.tournamentsEnabled}
+          teamId={data.teamId}
+          onTournamentSaved={onTournamentSaved}
         />
       )}
       {coach && (

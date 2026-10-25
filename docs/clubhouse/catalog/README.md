@@ -32,7 +32,8 @@ free number when its catalog is started, added here and in `CATALOG_PAGE`
 | 13 | CoachHelm (coach and player) |
 | 14 | Recruiting (coach) |
 | 15 | Auth: sign in, welcome, sign up and onboarding (signed out, then new to the team) |
-| 16, 17, … | Pages after these, in the order their catalogs are started |
+| 16 | Tournaments (P016: season home, event desk, review, history, link inbox, compare, event form, lineup, live round; coach and player) |
+| 17, 18, … | Pages after these, in the order their catalogs are started |
 
 | Second digit | Kind | What it means |
 | --- | --- | --- |

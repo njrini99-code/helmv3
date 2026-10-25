@@ -76,8 +76,35 @@ export interface ChCalEvent {
   version?: string | null;
   /** P-5 WP-P5: `golf_events.course_id`, the library course; absent or null for rows without one. */
   courseId?: string | null;
-  /** P-5 (not built yet): set on a tournament round; until then tournament events drag like any event. */
-  round?: { tournamentId: string; roundNo: number; lockedAt: string | null };
+  /**
+   * P-5: set on a tracked tournament round (the loader reads golf_tournament_rounds when golf_tournaments_v1 is on).
+   * Untracked tournament events, and every event with the flag off, carry none.
+   */
+  round?: ChCalRoundRef;
+  /** P-5: a tournament event whose round ref couldn't be read: it can't be moved until it is. */
+  roundRefFailed?: boolean;
+}
+
+/** P-5 8.10: what the calendar knows of a round's tournament. `roundNo` and `lockedAt` are P-4's field names. */
+export interface ChCalRoundRef {
+  tournamentId: string;
+  /** golf_tournaments.name */
+  name: string;
+  roundNo: number;
+  roundsCount: number;
+  /** golf_tournaments.version, for compare-and-set. */
+  version: number;
+  status: 'upcoming' | 'live' | 'suspended_weather' | 'suspended_other' | 'final';
+  startType: 'tee_times' | 'shotgun' | 'two_tees';
+  /** golf_tournaments.lineup_locked_at */
+  lockedAt: string | null;
+  lineup: 'none' | 'draft' | 'published' | 'locked';
+  /** Every round event of the tournament is cancelled. */
+  tournamentCancelled: boolean;
+  /** A course typed by hand (golf_tournament_rounds.course_label). */
+  courseLabel?: string | null;
+  /** The round has per-player tee times (4.33's tee sheet, 100300): a move may shift them (owner call 2). */
+  teeSheet?: boolean;
 }
 
 export interface ChCalOverlap {

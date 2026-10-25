@@ -1,4 +1,4 @@
--- STATUS: WRITTEN, NOT APPLIED (HOLD, see HELD.md).
+-- STATUS: WRITTEN — HOLD — NOT APPLIED
 -- P-5 Tournaments created from the calendar (handoff 4.34.5; build plan
 -- P-05-tournaments-from-calendar, with the 2026-10-25 changelog applied).
 -- Apply: npm run db:apply -- supabase/migrations/20261025040000_golf_tournament_from_calendar.sql
