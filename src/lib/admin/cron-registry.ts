@@ -34,6 +34,9 @@ export const CRON_REGISTRY: readonly CronRegistryEntry[] = [
   // not applied; its heartbeat is what lets the push gate hold anything (Must 1).
   { jobType: 'class-holds-release', path: '/api/cron/class-holds-release', cadenceMinutes: 1, schedule: '*/1 * * * *' },
   { jobType: 'v3-standing-refresh', path: '/api/cron/v3/standing-refresh', cadenceMinutes: DAILY, schedule: '20 2 * * *' },
+  // Clubhouse A+ rows 105/121: refreshes the season Standing of teams a saved round marked dirty. An idle tick is one read; a 200
+  // no-op until 20261024150000 / 20261024151000 (held) are applied.
+  { jobType: 'v3-standing-refresh-dirty', path: '/api/cron/v3/standing-refresh-dirty', cadenceMinutes: 5, schedule: '*/5 * * * *' },
   { jobType: 'v3-genome-nightly', path: '/api/cron/v3/genome-nightly', cadenceMinutes: DAILY, schedule: '40 2 * * *' },
   { jobType: 'v3-causality-attribute', path: '/api/cron/v3/causality-attribute', cadenceMinutes: DAILY, schedule: '0 3 * * *' },
   { jobType: 'v3-goal-suggestions-write', path: '/api/cron/v3/goal-suggestions-write', cadenceMinutes: DAILY, schedule: '20 3 * * *' },

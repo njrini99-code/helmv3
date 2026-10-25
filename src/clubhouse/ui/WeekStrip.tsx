@@ -47,6 +47,8 @@ export function WeekStrip({
   around,
   maxDots = 3,
   className,
+  frozen = false,
+  dropDate = null,
 }: {
   days: WeekStripDay[];
   label: string;
@@ -56,6 +58,10 @@ export function WeekStrip({
   around?: { prev: WeekStripDay[]; next: WeekStripDay[] };
   maxDots?: number;
   className?: string;
+  /** P-4: a drag holds the strip still. */
+  frozen?: boolean;
+  /** P-4 4.7.4: the day a dragged card is over (a drop target). */
+  dropDate?: string | null;
 }) {
   const list = useRef<HTMLOListElement | null>(null);
   const at = selected == null ? -1 : days.findIndex((d) => d.date === selected);
@@ -93,7 +99,7 @@ export function WeekStrip({
       data-chosen={live && at >= 0 ? '' : undefined}
     >
       {ds.map((d, i) => {
-        const cls = 'ch-wks__d' + (live && i === at ? ' is-on' : '') + (d.isToday ? ' is-today' : '');
+        const cls = 'ch-wks__d' + (live && i === at ? ' is-on' : '') + (d.isToday ? ' is-today' : '') + (live && d.date === dropDate ? ' is-drop' : '');
         const face = (
           <>
             <em aria-hidden="true">{d.top}</em>
@@ -118,6 +124,7 @@ export function WeekStrip({
                 className={cls}
                 aria-pressed={live && i === at}
                 aria-label={d.label}
+                data-date={live ? d.date : undefined}
                 tabIndex={!live ? -1 : i === (at >= 0 ? at : 0) ? 0 : -1}
                 onClick={() => onSelect(d.date)}
                 onKeyDown={(e) => keys(e, i)}
@@ -141,7 +148,7 @@ export function WeekStrip({
     </ol>
   );
   return onPage && around ? (
-      <ScrollPager pageKey={days[0]?.date ?? ''} onSettle={onPage} prev={row(around.prev, false)} next={row(around.next, false)} className="ch-wks-pager" pageClassName="ch-wks-page">
+      <ScrollPager pageKey={days[0]?.date ?? ''} onSettle={onPage} prev={row(around.prev, false)} next={row(around.next, false)} className="ch-wks-pager" pageClassName="ch-wks-page" frozen={frozen}>
         {row(days, true)}
       </ScrollPager>
   ) : (

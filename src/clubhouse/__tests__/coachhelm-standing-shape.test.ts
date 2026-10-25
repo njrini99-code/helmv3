@@ -43,3 +43,41 @@ describe('Standing, honest dates and figures (A20)', () => {
     expect(s.counts.tour).toEqual({ of: 1, ahead: 0 });
   });
 });
+
+describe('Standing names its window and each row its own round count (owner decision 9, rows 104/105)', () => {
+  const seasonRow = (metric_id: string, rounds_n: number, team_n = 6) =>
+    ({ ...row(metric_id, 58, 66, 52), team_n, rounds_n, season_start: '2026-08-01' }) as unknown as PlayerStanding;
+  const pressureOf = (s: ReturnType<typeof toChStanding>) => s.groups.find((g) => g.id === 'pressure')!.description;
+
+  it('season rows: "This season" from 1 August, each row with its own count, and the page with the most any row stands on', () => {
+    const s = toChStanding([seasonRow('gir_pct', 12), seasonRow('scoring_par_4', 14), seasonRow('practice_tournament_delta', 8)], ok, null, { role: 'player' }, 'UTC', 'season');
+    expect(s.window).toEqual({ kind: 'season', label: 'This season', since: 'Aug 1' });
+    const rows = s.groups.flatMap((g) => g.rows);
+    expect(rows.find((r) => r.id === 'gir_pct')!.rounds).toBe(12);
+    expect(rows.find((r) => r.id === 'practice_tournament_delta')!.rounds).toBe(8);
+    // Not the stats cache's lifetime 14: the season's own figure, from the rows.
+    expect(s.rounds).toBe(14);
+    expect(pressureOf(s)).toMatch(/this season/);
+    expect(pressureOf(s)).not.toMatch(/90 days/);
+  });
+
+  it('a coach reads the same season window in the coach’s words', () => {
+    const s = toChStanding([seasonRow('opening_hole_delta', 9)], ok, null, { role: 'coach', first: 'Jonah' } as never, 'UTC', 'season');
+    expect(pressureOf(s)).toBe('Tournament and qualifier scoring against practice this season, and what the opening hole costs.');
+  });
+
+  it('the season count is the rows’ own: a lifetime baseline never stands in for it', () => {
+    const s = toChStanding([row('gir_pct', 58, 66, null)], { status: 'ok', roundsPlayed: 40, scoringAverage: 76 }, null, { role: 'player' }, 'UTC', 'season');
+    expect(s.rounds).toBeNull();
+    expect(s.window.since).toBeNull();
+    expect(toChStanding([], ok, null, { role: 'player' }, 'UTC', 'season').rounds).toBeNull();
+  });
+
+  it('the lifetime table (the default, and the loader’s fallback) is "All time": rounds on file, no row counts, the 90-day pressure note', () => {
+    const s = toChStanding([row('gir_pct', 58, 66, null), row('opening_hole_delta', 0.3, 0, null)], ok);
+    expect(s.window).toEqual({ kind: 'all_time', label: 'All time', since: null });
+    expect(s.rounds).toBe(14);
+    expect(s.groups.flatMap((g) => g.rows).every((r) => r.rounds === null)).toBe(true);
+    expect(pressureOf(s)).toMatch(/last 90 days/);
+  });
+});

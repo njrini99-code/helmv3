@@ -107,8 +107,8 @@ flags:
     default: false
     environment:
       production: false
-      preview: false
-      development: false
+      preview: true
+      development: true
     kill_switch_behavior: null
     cleanup_plan: >-
       Flip on once golf_coachhelm_coach_weights has accumulated enough
@@ -148,8 +148,8 @@ flags:
     default: false
     environment:
       production: false
-      preview: false
-      development: false
+      preview: true
+      development: true
     kill_switch_behavior: null
     cleanup_plan: >-
       Either promote to a permanent `release` flag once shadow-log data
@@ -227,8 +227,8 @@ flags:
     default: false
     environment:
       production: false
-      preview: false
-      development: false
+      preview: true
+      development: true
     kill_switch_behavior: null
     cleanup_plan: >-
       Either promote to a permanent `release` flag once shadow data (the
@@ -346,8 +346,8 @@ flags:
     default: false
     environment:
       production: false
-      preview: false
-      development: false
+      preview: true
+      development: true
     kill_switch_behavior: null
     cleanup_plan: >-
       Flip on (development, then preview, then production) only after the
@@ -399,8 +399,8 @@ flags:
     default: false
     environment:
       production: false
-      preview: false
-      development: false
+      preview: true
+      development: true
     kill_switch_behavior: null
     cleanup_plan: >-
       A9 slice 2 extends metric coverage, adds confounding detection (the
@@ -441,8 +441,8 @@ flags:
     default: false
     environment:
       production: false
-      preview: false
-      development: false
+      preview: true
+      development: true
     kill_switch_behavior: null
     cleanup_plan: >-
       Either promote to a permanent `release` flag once shadow-log data (the
@@ -476,8 +476,8 @@ flags:
     default: false
     environment:
       production: false
-      preview: false
-      development: false
+      preview: true
+      development: true
     kill_switch_behavior: null
     cleanup_plan: >-
       Once 20260923110000_golf_focus_area_practice_log.sql is applied in
@@ -507,8 +507,8 @@ flags:
     default: false
     environment:
       production: false
-      preview: false
-      development: false
+      preview: true
+      development: true
     kill_switch_behavior: null
     cleanup_plan: >-
       Either promote to a permanent `release` flag once the section has
@@ -539,8 +539,8 @@ flags:
     default: false
     environment:
       production: false
-      preview: false
-      development: false
+      preview: true
+      development: true
     kill_switch_behavior: null
     cleanup_plan: >-
       Either promote to a permanent `release` flag once the section has
@@ -610,8 +610,8 @@ flags:
     default: false
     environment:
       production: false
-      preview: false
-      development: false
+      preview: true
+      development: true
     kill_switch_behavior: null
     cleanup_plan: >-
       Either promote to a permanent `release` flag once the section has
@@ -1041,8 +1041,8 @@ flags:
     default: false
     environment:
       production: false
-      preview: false
-      development: false
+      preview: true
+      development: true
     kill_switch_behavior: null
     cleanup_plan: >-
       Turn on after the owner reviews the idle-player count in the PR. Once

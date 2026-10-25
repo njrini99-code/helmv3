@@ -23,6 +23,10 @@ import { playerMine, playerSeesMeeting, replyClosedAt, type ChRsvp } from '../sc
 import { loadAttendanceCounts, loadInvitedCounts, type ChAttendanceCounts } from './attendance-counts';
 import { confirmedLine, daysBetween, homeSubline, inviteDetail } from '../screens/home/model';
 import { firstName } from '../lib/names';
+import type { MarkEntries } from '../lib/marks-cookie';
+import type { ChCalChange } from '../screens/calendar/change-view';
+import type { ChHomeChange } from '../screens/home/change-rows';
+import { loadHomeChanges, withChange, withWas } from './home-changes';
 
 export { classYearLabel, formStatus } from './season';
 export { homeClock } from './home-clock';
@@ -62,6 +66,8 @@ export interface ChAgendaRow {
   isCompetition: boolean;
   /** Today's rows, then competitions later this week. */
   when: 'today' | 'later';
+  /** P-14: the old value of a changed event (a live mark), struck at the head of the detail line. */
+  was?: { text: string; changeId: string } | null;
 }
 
 export interface ChHoleScore {
@@ -121,6 +127,8 @@ export interface ChHomeEvent {
   /** "3:30 – 5:30 PM", or "All day" */
   rangeLabel: string;
   location: string | null;
+  /** P-14: what a coach changed on this event in the last 72 hours (a live mark), for Up next. */
+  change?: ChCalChange | null;
   /** Invitees' names, in roster order; null when replies didn't load (CH-2209). */
   invitees: string[] | null;
   /**
@@ -256,6 +264,10 @@ export interface ChCoachHome {
   legs?: ChTeamLegs | null;
   /** What is waiting on the coach (desktop and phone, first run too); each part null when it didn't load. Optional for fixtures. */
   queue?: ChCoachQueue;
+  /** P-14: schedule changes other people made in the last 72 hours, newest first, for "Since you last looked". Optional for fixtures. */
+  changes?: ChHomeChange[];
+  /** Which change marks this device has seen (`s`) or cleared (`g`), from the `ch_marks` cookie. Optional for fixtures. */
+  marks?: MarkEntries;
 }
 
 const COMPETITION_TYPES = new Set(['tournament', 'qualifier']);
@@ -297,7 +309,16 @@ export function wideEventWindow(now: Date): { from: string; to: string } {
 
 const WEEKDAYS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
 
-export async function loadCoachHome(input: { teamId: string; coachName: string; /** For Team Hub's announcements read (the queue); it reads the session itself. */ userId?: string }): Promise<ChCoachHome> {
+export async function loadCoachHome(input: {
+  teamId: string;
+  coachName: string;
+  /** For Team Hub's announcements read (the queue); it reads the session itself. */
+  userId?: string;
+  /** The coach's own `golf_coaches.id`: their own schedule changes are never news to them (P-14). */
+  coachId?: string | null;
+  /** The device's seen and cleared change marks (phone-hint.ts `marksHint`). */
+  marks?: MarkEntries;
+}): Promise<ChCoachHome> {
   const supabase = await createClient();
   const now = new Date();
 
@@ -354,7 +375,9 @@ export async function loadCoachHome(input: { teamId: string; coachName: string; 
     tz: clockRead.then((c) => c.tz),
     names: rosterRead.then((res) => (res.error ? null : new Map(rosterOf(res).map((p) => [p.id, nameOf(p)])))),
   });
-  const [{ greeting, todayLabel, tz, day }, rosterRes, chatRes, wk, seasonRead, latest, teamRes, bench, cache, queue] = await Promise.all([
+  // P-14: the schedule changes, read beside the rest once the team's zone is known.
+  const changesRead = loadHomeChanges(supabase, { teamId: input.teamId, tz: clockRead.then((c) => c.tz), now, coachId: input.coachId ?? null });
+  const [{ greeting, todayLabel, tz, day }, rosterRes, chatRes, wk, seasonRead, latest, teamRes, bench, cache, queue, changes] = await Promise.all([
     clockRead,
     rosterRead,
     chatRead,
@@ -365,6 +388,7 @@ export async function loadCoachHome(input: { teamId: string; coachName: string; 
     benchRead,
     cacheRead,
     queueRead,
+    changesRead,
   ]);
   if (teamRes.error) log('team', teamRes.error);
   // CH-2208: without the team chat, Message team opens Messages instead.
@@ -429,12 +453,14 @@ export async function loadCoachHome(input: { teamId: string; coachName: string; 
     subline: homeSubline(rows, { roundsError, nextCompetition: wk.nextCompetition }),
     todayLabel,
     clock: { tz, day },
-    week: wk.week,
+    week: { ...wk.week, agenda: withWas(wk.week.agenda, changes.byEvent) },
     latestRounds: { rounds: latestRounds, error: roundsError, holesError },
     leaderboard: { rows, scorecards: seasonFull.length, rosterSize: roster.length, error: roundsError },
-    phone: { next: wk.next, today: wk.todayEvents, form, weekNote: wk.weekNote },
+    phone: { next: withChange(wk.next, changes.byEvent), today: wk.todayEvents.map((e) => withChange(e, changes.byEvent)), form, weekNote: wk.weekNote },
     legs,
     queue,
+    changes: changes.rows,
+    marks: input.marks ?? [],
   };
 }
 

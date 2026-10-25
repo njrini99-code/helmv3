@@ -24,6 +24,7 @@ const redirectSpy = vi.hoisted(() =>
 vi.mock('next/navigation', () => ({ useRouter: () => router, redirect: redirectSpy, usePathname: () => '/golf/dashboard' }));
 const logServer = vi.hoisted(() => vi.fn());
 vi.mock('../lib/track-server', () => ({ chLogServer: logServer }));
+vi.mock('../lib/phone-hint', () => ({ marksHint: () => Promise.resolve([]) }));
 const tables = vi.hoisted(() => ({ current: {} as import('./supabase-fake').ChFakeTables }));
 vi.mock('@/lib/supabase/server', async () => (await import('./supabase-fake')).fakeServer(tables));
 

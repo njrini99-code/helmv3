@@ -30,6 +30,32 @@ export function canvasScrollNow(top: number): void {
   else document.getElementById('ch-canvas')?.scrollTo({ top, behavior: 'instant' });
 }
 
+/**
+ * P-4: what a calendar drag scrolls. On desktop the canvas; on a phone the canvas is `overflow: visible` and Lenis is
+ * off, so the document scrolls (a `#ch-canvas.scrollTo` there does nothing).
+ */
+export function chDragScroller(): HTMLElement {
+  const c = document.getElementById('ch-canvas');
+  if (c && getComputedStyle(c).overflowY !== 'visible' && c.scrollHeight > c.clientHeight + 1) return c;
+  return (document.scrollingElement as HTMLElement | null) ?? document.documentElement;
+}
+
+/**
+ * P-4: move a drag's scroller by `dy` without fighting Lenis. canvasScrollNow resets Lenis (an immediate jump that
+ * stops its easing), so drag code never calls it: while Lenis glides the step adds to its target, at rest it moves at
+ * once in step with Lenis (`programmatic: false` keeps it from reading as a programmatic scroll), and with no Lenis the
+ * scroller moves itself.
+ */
+export function chDragScrollBy(dy: number, { immediate = false }: { immediate?: boolean } = {}): void {
+  if (!dy) return;
+  if (current) {
+    if (current.isScrolling === 'smooth' && !immediate) current.scrollTo(current.targetScroll + dy, { programmatic: false });
+    else current.scrollTo(current.animatedScroll + dy, { immediate: true, force: true, programmatic: false });
+    return;
+  }
+  chDragScroller().scrollBy({ top: dy, behavior: 'instant' });
+}
+
 /** Scroll an element into view, eased unless motion is off. Goes through the canvas scroller when one runs. */
 export function chScrollIntoView(el: Element | null | undefined, reduced: boolean, block: ScrollLogicalPosition = 'start'): void {
   if (!el) return;

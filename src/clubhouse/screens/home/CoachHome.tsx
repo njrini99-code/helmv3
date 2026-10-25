@@ -19,6 +19,7 @@ import { CoachQueue } from './CoachQueue';
 import { ClassHomeLine } from './ClassHomeLine';
 import { TeamLegs } from './TeamLegs';
 import { useHomeDayRollover } from './use-day-rollover';
+import { ChangeMarksProvider } from '../../lib/use-change-marks';
 import { NoTeam } from '../../ui/NoTeam';
 import '../../styles/home.css';
 
@@ -27,7 +28,15 @@ import '../../styles/home.css';
  * and the latest round in one lit sheet, then the season leaderboard. Calm
  * and not card-heavy (the owner rejected card grids and imagery).
  */
-export function CoachHome({ data, now }: { data: ChCoachHome; /** Preview and tests: a frozen clock (ISO) for the phone's countdown. */ now?: string }) {
+export function CoachHome(props: { data: ChCoachHome; /** Preview and tests: a frozen clock (ISO) for the phone's countdown. */ now?: string }) {
+  return (
+    <ChangeMarksProvider marks={props.data.marks ?? []}>
+      <CoachHomeBody {...props} />
+    </ChangeMarksProvider>
+  );
+}
+
+function CoachHomeBody({ data, now }: { data: ChCoachHome; now?: string }) {
   const phone = useChPhone();
   // A page left open past the team's midnight reads itself again, so "today" is today (desktop and phone).
   useHomeDayRollover(data.clock, now !== undefined);

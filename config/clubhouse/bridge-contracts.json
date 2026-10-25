@@ -5113,7 +5113,7 @@
     "category": 1,
     "item": 4,
     "name": "TIMES_ARE_THE_TEAMS_ZONE",
-    "meaning": "The loader reads every event that overlaps its window (it starts before the window ends and ends on or after its start), not only those that start in it, so a trip that began before the window fills the window's first days. Every time is resolved on the server in the team's timezone (Eastern time until the team sets one, and the page says so): a timed event is filed under its local day and hour; one that runs past midnight is on every day it covers, as production's calendar places it (its start to midnight, whole days, midnight to its end; one that ends at midnight exactly holds nothing of the next day), each day naming its part (From 7:00 AM, All day, Until 4:30 PM) and the panel the run's start and end; editing, Duplicate and a series edit from any of its days send the run's first day, start, last day and end, and it never drags; an all-day event keeps its stored dates, one entry for each day of a span.",
+    "meaning": "The loader reads every event that overlaps its window (it starts before the window ends and ends on or after its start), not only those that start in it, so a trip that began before the window fills the window's first days. Every time is resolved on the server in the team's timezone (Eastern time until the team sets one, and the page says so): a timed event is filed under its local day and hour; one that runs past midnight is on every day it covers, as production's calendar places it (its start to midnight, whole days, midnight to its end; one that ends at midnight exactly holds nothing of the next day), each day naming its part (From 7:00 AM, All day, Until 4:30 PM) and the panel the run's start and end; editing, Duplicate and a series edit from any of its days send the run's first day, start, last day and end, and in the week it is one bar in the all-day lane that drags by whole days with its times kept (P-4 4.5); an all-day event keeps its stored dates, one entry for each day of a span.",
     "status": "implemented",
     "where": "src/clubhouse/data/calendar.ts#loadCalendar, zoned",
     "tests": [
@@ -5686,6 +5686,72 @@
     "catalog": "docs/clubhouse/catalog/calendar.md"
   },
   {
+    "id": 60631,
+    "page": "P006",
+    "category": 6,
+    "item": 31,
+    "name": "SOMEONE_ELSE_CHANGED_THE_EVENT_WHILE_IT",
+    "chCode": "CH-6018",
+    "meaning": "Someone else changed the event while it was being moved (P-4 6.5)",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/calendar.md"
+  },
+  {
+    "id": 60632,
+    "page": "P006",
+    "category": 6,
+    "item": 32,
+    "name": "A_THIS_AND_FOLLOWING_SERIES_MOVE_FAILS",
+    "chCode": "CH-6019",
+    "meaning": "A \"This and following\" series move fails",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/calendar.md"
+  },
+  {
+    "id": 60633,
+    "page": "P006",
+    "category": 6,
+    "item": 33,
+    "name": "CHANGING_AN_EVENTS_LENGTH_FAILS",
+    "chCode": "CH-6020",
+    "meaning": "Changing an event's length (a grip or Alt+Shift+arrow) fails",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/calendar.md"
+  },
+  {
+    "id": 60634,
+    "page": "P006",
+    "category": 6,
+    "item": 34,
+    "name": "THE_SERVER_REFUSES_A_MOVE_BY_ROLE",
+    "chCode": "CH-6021",
+    "meaning": "The server refuses a move by role",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/calendar.md"
+  },
+  {
+    "id": 60635,
+    "page": "P006",
+    "category": 6,
+    "item": 35,
+    "name": "A_CHANGE_MARK_CANT_BE_READ_THE",
+    "chCode": "CH-6023",
+    "meaning": "A change mark can't be read (P-14): the stored mark is a shape this version doesn't know (an unknown version, a missing baseline)",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/calendar.md"
+  },
+  {
+    "id": 60636,
+    "page": "P006",
+    "category": 6,
+    "item": 36,
+    "name": "THE_EVENT_WAS_CANCELLED_OR_DELETED_WHILE",
+    "chCode": "CH-6022",
+    "meaning": "The event was cancelled or deleted while it was being moved",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/calendar.md"
+  },
+  {
     "id": 60701,
     "page": "P006",
     "category": 7,
@@ -6140,6 +6206,28 @@
     "catalog": "docs/clubhouse/catalog/calendar.md"
   },
   {
+    "id": 61805,
+    "page": "P006",
+    "category": 18,
+    "item": 5,
+    "name": "A_COMPLETED_MOVE_IS_SAID_ONCE_NEVER",
+    "chCode": "CH-6805",
+    "meaning": "A completed move is said once, never during a drag: \"Practice moved to 4:00 PM, Wednesday 15 October. Undo with Command Z.\" (Control Z off a Mac; on touch \"Undo is in the notice.\"); a resize \"Practice now ends at 6:30 PM.\"; a clash appended; Undo \"Move undone.\"",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/calendar.md"
+  },
+  {
+    "id": 61806,
+    "page": "P006",
+    "category": 18,
+    "item": 6,
+    "name": "MONTH_DRAG_IS_ANNOUNCED_PICKED_UP_FALL",
+    "chCode": "CH-6806",
+    "meaning": "Month drag is announced: \"Picked up Fall qualifier R2, Thursday 16 October. Arrow keys choose a day, Space drops, Escape cancels.\", \"Over Friday 17 October.\", \"Fall qualifier R2 moved to Friday 17 October at 8:42 AM.\", or \"Move cancelled. Fall qualifier R2 stays on Thursday 16 October.\"",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/calendar.md"
+  },
+  {
     "id": 61901,
     "page": "P006",
     "category": 19,
@@ -6342,6 +6430,17 @@
     "catalog": "docs/clubhouse/catalog/messages.md"
   },
   {
+    "id": 70211,
+    "page": "P007",
+    "category": 2,
+    "item": 11,
+    "name": "THE_SEEN_BY_LIST_IS_LOADING",
+    "chCode": "CH-7411",
+    "meaning": "The Seen by list is loading",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/messages.md"
+  },
+  {
     "id": 70301,
     "page": "P007",
     "category": 3,
@@ -6458,6 +6557,17 @@
     "page": "P007",
     "category": 4,
     "item": 10,
+    "name": "NOBODY_HAS_SEEN_A_GROUP_MESSAGE_YET",
+    "chCode": "CH-7310",
+    "meaning": "Nobody has seen a group message yet (the Seen by list)",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/messages.md"
+  },
+  {
+    "id": 70411,
+    "page": "P007",
+    "category": 4,
+    "item": 11,
     "name": "NOTIFY_ANYWAY_IS_OFFERED_A_COACH_A",
     "chCode": "CH-7370",
     "meaning": "Notify anyway is offered: a coach, a conversation of their own team, a recipient in class with pushes held (P-10)",
@@ -6691,7 +6801,7 @@
     "item": 15,
     "name": "COPYING_A_MESSAGE_FAILS",
     "chCode": "CH-7020",
-    "meaning": "Copying a message fails (phone, from the long-press sheet)",
+    "meaning": "Copying a message fails (phone, from the long-press sheet; desktop, from the message menu)",
     "status": "implemented",
     "catalog": "docs/clubhouse/catalog/messages.md"
   },
@@ -6953,9 +7063,9 @@
     "page": "P007",
     "category": 6,
     "item": 39,
-    "name": "A_COACH_IN_A_1_1_WITH",
-    "chCode": "CH-7270",
-    "meaning": "A coach, in a 1:1 with a player who is in a class or an exam right now and whose pushes are held (P-10)",
+    "name": "CLOSING_A_POLL_FAILS",
+    "chCode": "CH-7027",
+    "meaning": "Closing a poll fails (the sender's Close poll, after the confirm)",
     "status": "implemented",
     "catalog": "docs/clubhouse/catalog/messages.md"
   },
@@ -6964,9 +7074,9 @@
     "page": "P007",
     "category": 6,
     "item": 40,
-    "name": "A_MESSAGE_SENT_WITH_NOTIFY_ANYWAY_ONCE",
-    "chCode": "CH-7271",
-    "meaning": "A message sent with Notify anyway, once a push really reached a device (P-10)",
+    "name": "SENDING_A_POLL_FAILS",
+    "chCode": "CH-7028",
+    "meaning": "Sending a poll fails (New poll › Send poll)",
     "status": "implemented",
     "catalog": "docs/clubhouse/catalog/messages.md"
   },
@@ -6975,9 +7085,9 @@
     "page": "P007",
     "category": 6,
     "item": 41,
-    "name": "A_COACH_IN_A_GROUP_OF_THEIR",
-    "chCode": "CH-7272",
-    "meaning": "A coach, in a group of their own team with at least one player in a class or an exam (P-10)",
+    "name": "A_VOTE_IS_REFUSED_BECAUSE_THE_POLL",
+    "chCode": "CH-7030",
+    "meaning": "A vote is refused because the poll ended between the tap and the write (only with the held vote guard, OQ-68)",
     "status": "implemented",
     "catalog": "docs/clubhouse/catalog/messages.md"
   },
@@ -6986,6 +7096,72 @@
     "page": "P007",
     "category": 6,
     "item": 42,
+    "name": "A_VOTE_ON_A_POLL_ISNT_SAVED",
+    "chCode": "CH-7029",
+    "meaning": "A vote on a poll isn't saved (tap a choice in a poll card)",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/messages.md"
+  },
+  {
+    "id": 70643,
+    "page": "P007",
+    "category": 6,
+    "item": 43,
+    "name": "AN_EDITED_POLL_IS_SENT_AFTER_A",
+    "chCode": "CH-7031",
+    "meaning": "An edited poll is sent after a send that threw, and the earlier copy had landed after all",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/messages.md"
+  },
+  {
+    "id": 70644,
+    "page": "P007",
+    "category": 6,
+    "item": 44,
+    "name": "THE_SEEN_BY_LIST_COULDNT_LOAD",
+    "chCode": "CH-7218",
+    "meaning": "The Seen by list couldn't load (P-1)",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/messages.md"
+  },
+  {
+    "id": 70645,
+    "page": "P007",
+    "category": 6,
+    "item": 45,
+    "name": "A_COACH_IN_A_1_1_WITH",
+    "chCode": "CH-7270",
+    "meaning": "A coach, in a 1:1 with a player who is in a class or an exam right now and whose pushes are held (P-10)",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/messages.md"
+  },
+  {
+    "id": 70646,
+    "page": "P007",
+    "category": 6,
+    "item": 46,
+    "name": "A_MESSAGE_SENT_WITH_NOTIFY_ANYWAY_ONCE",
+    "chCode": "CH-7271",
+    "meaning": "A message sent with Notify anyway, once a push really reached a device (P-10)",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/messages.md"
+  },
+  {
+    "id": 70647,
+    "page": "P007",
+    "category": 6,
+    "item": 47,
+    "name": "A_COACH_IN_A_GROUP_OF_THEIR",
+    "chCode": "CH-7272",
+    "meaning": "A coach, in a group of their own team with at least one player in a class or an exam (P-10)",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/messages.md"
+  },
+  {
+    "id": 70648,
+    "page": "P007",
+    "category": 6,
+    "item": 48,
     "name": "A_COACH_OPENS_DETAILS_ON_A_1",
     "chCode": "CH-7273",
     "meaning": "A coach opens Details on a 1:1 with a player of their team (P-10)",
@@ -7260,6 +7436,28 @@
     "catalog": "docs/clubhouse/catalog/messages.md"
   },
   {
+    "id": 71608,
+    "page": "P007",
+    "category": 16,
+    "item": 8,
+    "name": "A_GROUP_MESSAGES_RECEIPT_CHANGES",
+    "chCode": "CH-7608",
+    "meaning": "A group message's receipt changes (\"Sent\" → \"Seen by 4 of 11\" → \"Seen by everyone\")",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/messages.md"
+  },
+  {
+    "id": 71609,
+    "page": "P007",
+    "category": 16,
+    "item": 9,
+    "name": "THE_SEEN_BY_SHEET_OR_POPOVER_OPENS",
+    "chCode": "CH-7609",
+    "meaning": "The Seen by sheet (phone) or popover (desktop) opens and updates live",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/messages.md"
+  },
+  {
     "id": 71701,
     "page": "P007",
     "category": 17,
@@ -7363,6 +7561,17 @@
     "page": "P007",
     "category": 18,
     "item": 5,
+    "name": "THE_RECEIPTS_ACCESSIBLE_NAME_ON_ONE_STABLE",
+    "chCode": "CH-7805",
+    "meaning": "The receipt's accessible name (\"Seen by 9 of 11 people. Show who\") sits on one stable node, its fading copies `aria-hidden`, so a count change isn't announced; the open list says moves politely (\"Eli Brandt has seen it.\")",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/messages.md"
+  },
+  {
+    "id": 71806,
+    "page": "P007",
+    "category": 18,
+    "item": 6,
     "name": "NOTIFY_ANYWAY_WITHOUT_A_LONG_PRESS",
     "chCode": "CH-7870",
     "meaning": "Notify anyway without a long press (P-10)",
@@ -12028,6 +12237,17 @@
     "catalog": "docs/clubhouse/catalog/rounds.md"
   },
   {
+    "id": 110215,
+    "page": "P011",
+    "category": 2,
+    "item": 15,
+    "name": "THE_COURSE_PAGE_DIDNT_LOAD",
+    "chCode": "CH-11421",
+    "meaning": "The course page didn't load (P-7)",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/rounds.md"
+  },
+  {
     "id": 110401,
     "page": "P011",
     "category": 4,
@@ -12279,6 +12499,39 @@
     "name": "TEAM_ROUNDS_COMPLETED_ROUNDS_WITH_NO_SCORE",
     "chCode": "CH-11322",
     "meaning": "Team rounds: completed rounds with no score at all",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/rounds.md"
+  },
+  {
+    "id": 110424,
+    "page": "P011",
+    "category": 4,
+    "item": 24,
+    "name": "A_COURSE_PAGE_THIS_VIEWER_HAS_NO",
+    "chCode": "CH-11330",
+    "meaning": "A course page this viewer has no rounds at: an unknown key, or another player's course",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/rounds.md"
+  },
+  {
+    "id": 110425,
+    "page": "P011",
+    "category": 4,
+    "item": 25,
+    "name": "A_COACHS_COURSE_PAGE_FOR_A_PLAYER",
+    "chCode": "CH-11331",
+    "meaning": "A coach's course page for a player who isn't on their team, or no player named",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/rounds.md"
+  },
+  {
+    "id": 110426,
+    "page": "P011",
+    "category": 4,
+    "item": 26,
+    "name": "THE_COURSE_PAGES_HOLE_BY_HOLE_WITH",
+    "chCode": "CH-11333",
+    "meaning": "The course page's Hole by hole with no round here entered hole by hole (or the holes didn't load)",
     "status": "implemented",
     "catalog": "docs/clubhouse/catalog/rounds.md"
   },
@@ -13482,6 +13735,17 @@
     "name": "THE_COACH_NOTE_CARD_ON_A_ROUNDS",
     "chCode": "CH-11523",
     "meaning": "The Coach note card on a round's review",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/rounds.md"
+  },
+  {
+    "id": 111124,
+    "page": "P011",
+    "category": 11,
+    "item": 24,
+    "name": "COMPARE_TWO_ROUNDS_AT_A_COURSE",
+    "chCode": "CH-11530",
+    "meaning": "Compare two rounds at a course (P-7)",
     "status": "implemented",
     "catalog": "docs/clubhouse/catalog/rounds.md"
   },

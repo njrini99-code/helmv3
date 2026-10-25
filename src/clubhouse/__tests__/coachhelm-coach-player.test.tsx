@@ -46,8 +46,9 @@ vi.mock('@/app/golf/actions/insight-delivery', () => ({
   getThemesForCoach: vi.fn(async () => ({ success: false, error: 'none' })),
   getThemesForPlayer: vi.fn(),
 }));
-const standingRead = vi.hoisted(() => ({ load: vi.fn() }));
-vi.mock('@/lib/coachhelm/v3/standing/loader', () => ({ loadPlayerStandingMap: standingRead.load }));
+const standingRead = vi.hoisted(() => ({ season: vi.fn(async (_playerId?: string): Promise<{ status: string; rows?: unknown }> => ({ status: 'missing' })), load: vi.fn() }));
+// The season table (held migration 20261024151000) answers `missing` unless a test says otherwise, so the page reads the lifetime map.
+vi.mock('@/lib/coachhelm/v3/standing/loader', () => ({ loadPlayerStandingMap: standingRead.load, loadPlayerSeasonStandingMap: standingRead.season }));
 vi.mock('@/lib/coachhelm/v3/counterfactual/player-cohort-loader', () => ({ loadPlayerCohort: vi.fn(async () => ({ gender: 'mens', level: null })) }));
 vi.mock('@/lib/coachhelm/v3/goals/loader', () => ({ loadActiveGoals: vi.fn(async () => []), loadRecentlyAchievedGoals: vi.fn(async () => []) }));
 const genomeRead = vi.hoisted(() => ({ load: vi.fn() }));

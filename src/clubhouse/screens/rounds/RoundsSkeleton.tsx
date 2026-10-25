@@ -215,3 +215,30 @@ function SkelLine({ h, w, sh, r }: { h: number; w: number | string; sh: number; 
     </span>
   );
 }
+
+/** P-7: the course page on its way, at its final geometry: the hero card, the figures, the hole tiles and three rows. */
+export function CourseHistorySkeleton() {
+  return (
+    <main className="ch-ch" aria-busy="true" aria-label="Loading your history here">
+      <Skeleton width="100%" height={196} radius={16} shape="solid" />
+      <div className="ch-ch-sec" aria-hidden="true">
+        <div className="ch-ch-fig">
+          {[0, 1, 2, 3].map((i) => (
+            <div key={i} className="ch-ch-fig__c">
+              <Skeleton width={56} height={12} />
+              <Skeleton width={44} height={22} />
+            </div>
+          ))}
+        </div>
+      </div>
+      <div className="ch-ch-sec" aria-hidden="true">
+        <Skeleton width="100%" height={160} radius={16} shape="solid" />
+      </div>
+      <div className="ch-ch-sec" aria-hidden="true">
+        {[0, 1, 2].map((i) => (
+          <Skeleton key={i} width="100%" height={60} radius={0} shape="block" />
+        ))}
+      </div>
+    </main>
+  );
+}

@@ -164,6 +164,12 @@ GRANT ALL ON TABLE "public"."golf_conversation_participants" TO "authenticated";
 
 GRANT ALL ON TABLE "public"."golf_conversation_participants" TO "service_role";
 
+GRANT SELECT ON TABLE "public"."golf_conversation_read_marks" TO "authenticated";
+
+GRANT ALL ON TABLE "public"."golf_conversation_read_marks" TO "service_role";
+
+GRANT ALL ON SEQUENCE "public"."golf_conversation_read_marks_id_seq" TO "service_role";
+
 GRANT ALL ON TABLE "public"."golf_conversations" TO "anon";
 
 GRANT ALL ON TABLE "public"."golf_conversations" TO "authenticated";
@@ -415,6 +421,10 @@ GRANT ALL ON TABLE "public"."golf_player_standing" TO "anon";
 GRANT ALL ON TABLE "public"."golf_player_standing" TO "authenticated";
 
 GRANT ALL ON TABLE "public"."golf_player_standing" TO "service_role";
+
+GRANT ALL ON TABLE public.golf_player_standing_season TO "service_role";
+
+GRANT ALL ON TABLE public.golf_standing_refresh_queue TO "service_role";
 
 GRANT ALL ON TABLE "public"."golf_player_stats_cache" TO "authenticated";
 

@@ -35,12 +35,19 @@ import {
   UserPlus,
   createLucideIcon,
   type LucideIcon,
+  ListChecks,
+  CheckCheck,
+  Copy,
+  Lock,
+  BellRing,
+  Share,
 } from "lucide-react";
 import {
   useCallback,
   useEffect,
   useLayoutEffect,
   useMemo,
+  useReducer,
   useRef,
   useState,
   type KeyboardEvent,
@@ -56,12 +63,13 @@ import type { ChClock } from "../../lib/clock-cookie";
 import { useThreadAnchor } from "./use-thread-anchor";
 import { useComposerInset } from "./composer-inset";
 import { useFocusMessage } from "./use-focus-message";
+import { pollCardActions, PollButton, PollCard, PollSheet, PollThreadContext, type ChPollsApi, type PollThreadActions } from "./polls";
 import { useChReducedMotion } from "../../lib/reduced-motion";
 import { Avatar } from "../../ui/Avatar";
 import { Badge } from "../../ui/Badge";
 import { Button, IconButton } from "../../ui/Button";
 import { Icon } from "../../ui/Icon";
-import { Menu } from "../../ui/Menu";
+import { Menu, type MenuItem } from "../../ui/Menu";
 import { useContextMenu, type ContextMenuBind } from "../../ui/ContextMenu";
 import { SwipeRow } from "../../ui/SwipeRow";
 import { Modal } from "../../ui/Modal";
@@ -113,7 +121,10 @@ import {
   type ChAnnouncement,
   type ChAnnouncementDetail,
   type ChFile,
+  type ChReceipts,
 } from "./model";
+import { SeenByReceipt, useSeenBy, useSeenByList } from "./seen-by";
+import { receiptCarrierId, SEEN_BY_VISIBILITY } from "@/lib/golf/message-receipts";
 import { AnnouncementPane, AnnouncementsSection } from "./announcements";
 import { fileMeta, fileSize, useConversationFiles } from "./files";
 // Re-exported: MessagesPhone and older callers read it from here.
@@ -296,6 +307,10 @@ export interface ChMessagesApi {
     urgent: boolean;
     ack: boolean;
   }) => Promise<boolean>;
+  /** Polls in group threads (P-2): the votes, voting, sending and closing. Absent where polls aren't offered. */
+  polls?: ChPollsApi;
+  /** Seen by (P-1): the open conversation's read map. Absent in a fixture or where receipts aren't drawn. */
+  receipts?: ChReceipts;
 }
 
 export const personOf = (api: ChMessagesApi, userId: string) =>
@@ -589,7 +604,15 @@ function ConvRowButton({ api, c, avatarSize, onOpen, bind, plain = false }: { ap
                       :{" "}
                     </em>
                   )}
-                {c.lastText}
+                {/* D25: a poll reads as its glyph and question, not "Poll: …". */}
+                {c.lastIsPoll ? (
+                  <>
+                    <Icon icon={ListChecks} size={13} className="ch-ms-row__poll" />
+                    {c.lastText.replace(/^Poll: /, "")}
+                  </>
+                ) : (
+                  c.lastText
+                )}
               </>
             ) : (
               "No messages yet"
@@ -1032,12 +1055,18 @@ export function Bubble({
   onDelete,
   onActions,
   onReply,
+  carrier = false,
+  onSeenBy,
 }: {
   api: ChMessagesApi;
   m: ChMsg;
   first: boolean;
   last: boolean;
   group: boolean;
+  /** P-1: this is the message that carries the thread's receipt (the viewer's newest confirmed one). */
+  carrier?: boolean;
+  /** P-1: open the Seen by list for this message (coaches), anchored to the element that asked. */
+  onSeenBy?: (m: ChMsg, anchor: HTMLElement | null) => void;
   picking: boolean;
   setPicking: (v: boolean) => void;
   onEdit: () => void;
@@ -1062,6 +1091,46 @@ export function Bubble({
           },
         }
       : {};
+  // D26 (changelog: one menu for every message): own messages keep Edit and Delete; a poll offers See votes, Remind,
+  // Close poll and Share result by role and state, then Reply, Copy poll and Delete; anyone else's text, Reply and Copy.
+  const toast = useToast();
+  const [, refreshMenu] = useReducer((n: number) => n + 1, 0);
+  const copyText = async () => {
+    try {
+      await navigator.clipboard.writeText(m.text);
+      haptic("success");
+      toast({ title: "Copied" });
+    } catch {
+      haptic("error");
+      toast({ tone: "error", title: "Couldn’t copy the message", body: "Try again in a moment.", code: "CH-7020" });
+    }
+  };
+  const pollActs = m.poll ? pollCardActions(m.id) : null;
+  // P-1 slice 6: "Seen by" for a coach on any message in a group (theirs or anyone's).
+  const actionsBtn = useRef<HTMLButtonElement | null>(null);
+  const seenInfo = useSeenBy(api, m);
+  const seenItem: MenuItem[] = group && onSeenBy && seenInfo?.canOpen ? [{ label: "Seen by", icon: CheckCheck, onSelect: () => onSeenBy(m, actionsBtn.current) }] : [];
+  const menuItems: MenuItem[] = m.poll
+    ? [
+        ...(pollActs?.seeVotes ? [{ label: "See votes", icon: ListChecks, onSelect: pollActs.seeVotes }] : []),
+        ...(pollActs?.remind ? [{ label: `Remind ${pollActs.remind.count}`, icon: BellRing, onSelect: pollActs.remind.run }] : []),
+        ...(pollActs?.close ? [{ label: "Close poll", icon: Lock, onSelect: pollActs.close }] : []),
+        ...(pollActs?.share ? [{ label: "Share result", icon: Share, onSelect: pollActs.share }] : []),
+        ...seenItem,
+        ...(onReply ? [{ label: "Reply", icon: Reply, onSelect: onReply }] : []),
+        { label: "Copy poll", icon: Copy, onSelect: () => void copyText() },
+        ...(m.mine ? [{ label: "Delete", icon: Trash2, danger: true, onSelect: onDelete }] : []),
+      ]
+    : m.mine
+      ? [
+          // An attachment-only message has no text to edit (as the phone's sheet: wave 5 #8).
+          ...(m.text ? [{ label: "Edit", icon: Pencil, onSelect: onEdit }] : []),
+          ...seenItem,
+          { label: "Delete", icon: Trash2, danger: true, onSelect: onDelete },
+        ]
+      : m.text
+        ? [...seenItem, ...(onReply ? [{ label: "Reply", icon: Reply, onSelect: onReply }] : []), { label: "Copy", icon: Copy, onSelect: () => void copyText() }]
+        : seenItem;
   const reacts = api.reactions.get(m.id) ?? [];
   const reduced = useChReducedMotion();
   const reactBtn = useRef<HTMLButtonElement | null>(null);
@@ -1145,10 +1214,14 @@ export function Bubble({
         <div className="ch-ms-msg__line">
           <div className="ch-ms-msg__stack" {...press} {...rightClick}>
             {m.replyToId && <ReplyQuote api={api} replyToId={m.replyToId} />}
-            {m.text && (
-              <div className="ch-ms-bub">
-                <MessageText text={m.text} />
-              </div>
+            {m.poll ? (
+              <PollCard api={api} messageId={m.id} poll={m.poll} mine={m.mine} />
+            ) : (
+              m.text && (
+                <div className="ch-ms-bub">
+                  <MessageText text={m.text} />
+                </div>
+              )
             )}
             {m.hasAttachments && (
               <Attachments load={api.attachments} id={m.id} mine={m.mine} />
@@ -1186,20 +1259,11 @@ export function Bubble({
                   </button>
                 </Tooltip>
               )}
-              {m.mine && (
+              {menuItems.length > 0 && (
                 <Menu
                   label="Message actions"
                   align={m.mine ? "end" : "start"}
-                  items={[
-                    // An attachment-only message has no text to edit (as the phone's sheet: wave 5 #8).
-                    ...(m.text ? [{ label: "Edit", icon: Pencil, onSelect: onEdit }] : []),
-                    {
-                      label: "Delete",
-                      icon: Trash2,
-                      danger: true,
-                      onSelect: onDelete,
-                    },
-                  ]}
+                  items={menuItems}
                   trigger={(p) => (
                     <Tooltip>
                       <button
@@ -1207,6 +1271,15 @@ export function Bubble({
                         className="ch-ms-tool"
                         aria-label="More message actions"
                         {...p}
+                        ref={(el) => {
+                          actionsBtn.current = el;
+                          p.ref(el);
+                        }}
+                        onClick={() => {
+                          // A poll's items are its card's live state: read them as the menu opens.
+                          refreshMenu();
+                          p.onClick();
+                        }}
                       >
                         <Icon icon={Ellipsis} size={15} />
                       </button>
@@ -1289,7 +1362,16 @@ export function Bubble({
             <span className="ch-ms-msg__t ch-num">
               {clock(m.at, api.timeZone, api.clock)}
               {m.edited ? " · Edited" : ""}
-              {m.mine && !group && m.seen ? " · Seen" : ""}
+              {/* OC-3: a direct thread's "Seen" sits on the carrier only (or a time revealed by a swipe), not every run-end. */}
+              {m.mine && !group && m.seen && (carrier || showTime) ? " · Seen" : ""}
+              {/* P-1 M3: when the receipt moves to a newer message, the old one fades out on quick (instant when reduced). */}
+              <AnimatePresence initial={false}>
+                {group && (carrier || showTime) && (
+                  <M.span key="seen" className="ch-ms-seen-slot" exit={reduced ? undefined : { opacity: 0 }} transition={chTween("quick", reduced)}>
+                    <SeenByReceipt api={api} m={m} onOpen={onSeenBy ? (el) => onSeenBy(m, el) : undefined} />
+                  </M.span>
+                )}
+              </AnimatePresence>
             </span>
           )
         )}
@@ -1348,7 +1430,20 @@ export function ReplyQuote({ api, replyToId }: { api: ChMessagesApi; replyToId: 
         behavior: reduced ? "instant" : "smooth",
       })}>
       <b>{name}</b>
-      <span>{!parent ? "Original message unavailable" : parent.deleted ? "Message deleted" : parent.text || (parent.hasAttachments ? "Attachment" : "Message")}</span>
+      <span>
+        {!parent ? (
+          "Original message unavailable"
+        ) : parent.deleted ? (
+          "Message deleted"
+        ) : parent.poll ? (
+          <>
+            <Icon icon={ListChecks} size={13} className="ch-ms-row__poll" />
+            {parent.poll.question}
+          </>
+        ) : (
+          parent.text || (parent.hasAttachments ? "Attachment" : "Message")
+        )}
+      </span>
     </button>
   );
 }
@@ -1454,6 +1549,38 @@ export function AttachButton({
   );
 }
 
+/** The phone composer's "+" in a group thread: a menu with Photo or file and Poll (P-2 4.5). */
+export function ComposerPlus({ api, conv, disabled, onPick }: { api: ChMessagesApi; conv: ChConv; disabled?: boolean; onPick: (picked: File[]) => void }) {
+  const input = useRef<HTMLInputElement | null>(null);
+  const [polling, setPolling] = useState(false);
+  return (
+    <>
+      <Menu
+        label="Add to the message"
+        align="start"
+        items={[
+          { label: "Photo or file", icon: Paperclip, onSelect: () => input.current?.click() },
+          { label: "Poll", icon: ListChecks, onSelect: () => setPolling(true) },
+        ]}
+        trigger={(p) => <IconButton icon={Plus} size="sm" label="Add a file or a poll" disabled={disabled} menu={p} />}
+      />
+      <input
+        ref={input}
+        type="file"
+        disabled={disabled}
+        multiple
+        hidden
+        onChange={(e) => {
+          const picked = Array.from(e.target.files ?? []);
+          if (picked.length) onPick(picked);
+          e.target.value = "";
+        }}
+      />
+      <PollSheet key={conv.id} api={api} conv={conv} open={polling} onClose={() => setPolling(false)} />
+    </>
+  );
+}
+
 /** A composer's textarea grows with what is written, up to its CSS max-height (132px when it has none). */
 export function useAutosize(ta: RefObject<HTMLTextAreaElement | null>, value: string) {
   useLayoutEffect(() => {
@@ -1496,6 +1623,7 @@ export function Composer({
   onClearReply,
   onSendingChange,
   unavailable = false,
+  seed = null,
 }: {
   api: ChMessagesApi;
   conv: ChConv;
@@ -1512,6 +1640,11 @@ export function Composer({
   onSendingChange?: (sending: boolean) => void;
   /** The conversation did not load (CH-7202): there is nothing to reply into, so the composer says so and stays off. */
   unavailable?: boolean;
+  /**
+   * P-2 D30: a reply prefilled by a poll action (Remind, Share result). It fills an empty composer, asks before replacing
+   * a draft, and puts the caret at the end; the person presses Send. A new `nonce` is a new seed.
+   */
+  seed?: { text: string; nonce: number } | null;
 }) {
   const recovery = api.attachmentRecovery?.get(conv.id);
   const [unconfirmed, setUnconfirmed] = useState(!!recovery);
@@ -1539,6 +1672,22 @@ export function Composer({
   const typingTimer = useRef<number | null>(null);
   const ready = (draft.trim() || files.length || resumed) && !sending && !checking && !checkFailed && !unavailable;
   const addFiles = useAddAttachments();
+  const [replacing, setReplacing] = useState<string | null>(null);
+  const applySeed = (text: string) => {
+    setDraft(text);
+    setReplacing(null);
+    requestAnimationFrame(() => {
+      const el = ta.current;
+      if (!el) return;
+      el.focus();
+      el.setSelectionRange(text.length, text.length);
+    });
+  };
+  useEffect(() => {
+    if (!seed) return;
+    if (draft.trim()) setReplacing(seed.text);
+    else applySeed(seed.text);
+  }, [seed?.nonce]); // eslint-disable-line react-hooks/exhaustive-deps
   useAutosize(ta, draft);
   // Toasts sit above this composer, however tall it grows (wave 5 #1).
   useComposerInset(footer);
@@ -1699,11 +1848,24 @@ export function Composer({
         onRemove={(i) => setFiles((s) => s.filter((_, j) => j !== i))}
       />
       <div className="ch-ms-comp__field">
-        <AttachButton
-          phone={phone}
-          disabled={unconfirmed || checking || checkFailed || unavailable}
-          onPick={(picked) => { setFiles(addFiles(filesRef.current, picked)); setMissingFiles((names) => names.filter((name) => !picked.some((file) => file.name === name))); }}
-        />
+        {phone && conv.group && api.polls ? (
+          // D21: on a phone, one "+" with a menu (Photo or file, Poll), as iMessage's; a direct thread keeps the plain "+".
+          <ComposerPlus
+            api={api}
+            conv={conv}
+            disabled={unconfirmed || checking || checkFailed || unavailable}
+            onPick={(picked) => { setFiles(addFiles(filesRef.current, picked)); setMissingFiles((names) => names.filter((name) => !picked.some((file) => file.name === name))); }}
+          />
+        ) : (
+          <>
+            <AttachButton
+              phone={phone}
+              disabled={unconfirmed || checking || checkFailed || unavailable}
+              onPick={(picked) => { setFiles(addFiles(filesRef.current, picked)); setMissingFiles((names) => names.filter((name) => !picked.some((file) => file.name === name))); }}
+            />
+            <PollButton api={api} conv={conv} disabled={unconfirmed || checking || checkFailed || unavailable} />
+          </>
+        )}
         <textarea
           ref={ta}
           rows={1}
@@ -1740,6 +1902,23 @@ export function Composer({
       ) : (
         <CharsLeft text={draft} />
       )}
+      <Modal
+        open={replacing != null}
+        onClose={() => setReplacing(null)}
+        title="Replace your draft?"
+        description="Your message so far will be replaced with the reminder."
+        width={400}
+        footer={
+          <>
+            <Button variant="ghost" onClick={() => setReplacing(null)}>
+              Keep my draft
+            </Button>
+            <Button variant="primary" onClick={() => replacing != null && applySeed(replacing)}>
+              Replace
+            </Button>
+          </>
+        }
+      />
     </footer>
   );
 }
@@ -1812,6 +1991,24 @@ function Thread({
     haptic("select");
     setReplying({ convId: conv.id, id: m.id });
   };
+  // D30: Remind and Share result reply to the poll with a prefilled draft.
+  const [seed, setSeed] = useState<{ text: string; nonce: number } | null>(null);
+  // P-1: the message that carries the receipt, and the Seen by popover.
+  const carrierId = useMemo(
+    () => receiptCarrierId(api.msgs, { viewerId: api.viewer.userId, scope: conv.group && SEEN_BY_VISIBILITY === "everyone" ? "thread" : "mine" }),
+    [api.msgs, api.viewer.userId, conv.group],
+  );
+  const seenList = useSeenByList();
+  const pollThread = useMemo<PollThreadActions>(
+    () => ({
+      replyWith: (messageId, text) => {
+        if (sendingRef.current) return;
+        setReplying({ convId: conv.id, id: messageId });
+        setSeed({ text, nonce: Date.now() });
+      },
+    }),
+    [conv.id],
+  );
   useEffect(() => {
     if (replyToId) section.current?.querySelector<HTMLTextAreaElement>(".ch-ms-comp textarea")?.focus();
   }, [replyToId]);
@@ -1868,6 +2065,7 @@ function Thread({
     : conv.subtitle;
 
   return (
+    <PollThreadContext.Provider value={pollThread}>
     <section
       ref={section}
       className="ch-ms-thread"
@@ -1989,6 +2187,8 @@ function Thread({
                         onEdit={() => setEditing(it.m)}
                         onDelete={() => setDeleting(it.m)}
                         onReply={() => reply(it.m)}
+                        carrier={it.m.id === carrierId}
+                        onSeenBy={conv.group ? (m, el) => seenList.open(m, el) : undefined}
                       />,
                     ],
               )}
@@ -2025,11 +2225,14 @@ function Thread({
         onSendingChange={(sending) => {
           sendingRef.current = sending;
         }}
+        seed={seed}
       />
 
       <EditMessageModal api={api} message={editing} onClose={() => setEditing(null)} />
       <DeleteMessageModal api={api} message={deleting} onClose={() => setDeleting(null)} />
+      {seenList.render(api, false)}
     </section>
+    </PollThreadContext.Provider>
   );
 }
 

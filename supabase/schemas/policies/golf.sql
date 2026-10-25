@@ -782,7 +782,11 @@ CREATE POLICY "golf_message_responses_select" ON "public"."golf_message_response
    FROM "public"."golf_messages" "m"
   WHERE (("m"."id" = "golf_message_responses"."message_id") AND "public"."golf_conversation_has_me"("m"."conversation_id")))));
 
-CREATE POLICY "golf_message_responses_update" ON "public"."golf_message_responses" FOR UPDATE TO "authenticated" USING (("user_id" = ( SELECT "auth"."uid"() AS "uid"))) WITH CHECK (("user_id" = ( SELECT "auth"."uid"() AS "uid")));
+CREATE POLICY "golf_message_responses_update" ON "public"."golf_message_responses" FOR UPDATE TO "authenticated" USING ((("user_id" = ( SELECT "auth"."uid"() AS "uid")) AND (EXISTS ( SELECT 1
+   FROM "public"."golf_messages" "m"
+  WHERE (("m"."id" = "golf_message_responses"."message_id") AND "public"."golf_conversation_has_me"("m"."conversation_id")))))) WITH CHECK ((("user_id" = ( SELECT "auth"."uid"() AS "uid")) AND (EXISTS ( SELECT 1
+   FROM "public"."golf_messages" "m"
+  WHERE (("m"."id" = "golf_message_responses"."message_id") AND "public"."golf_conversation_has_me"("m"."conversation_id"))))));
 
 CREATE POLICY "golf_messages_delete" ON "public"."golf_messages" FOR DELETE TO "authenticated" USING (("sender_id" = ( SELECT "auth"."uid"() AS "uid")));
 
@@ -1264,3 +1268,4 @@ CREATE POLICY "golf_class_exceptions_insert_coach" ON "public"."golf_class_excep
 CREATE POLICY "golf_class_exceptions_delete" ON "public"."golf_class_exceptions" FOR DELETE TO "authenticated" USING ((("player_id" = ( SELECT "public"."get_current_golf_player_id"() AS "get_current_golf_player_id")) OR (("player_id" IS NULL) AND "public"."is_golf_team_coach"("team_id"))));
 
 CREATE POLICY "golf_push_holds_select_own" ON "public"."golf_push_holds" FOR SELECT TO "authenticated" USING (("user_id" = ( SELECT "auth"."uid"() AS "uid")));
+CREATE POLICY "golf_read_marks_select" ON "public"."golf_conversation_read_marks" FOR SELECT TO "authenticated" USING ("public"."golf_read_marks_visible"("conversation_id", "user_id"));

@@ -65,6 +65,10 @@
       "schedule": "20 2 * * *"
     },
     {
+      "path": "/api/cron/v3/standing-refresh-dirty",
+      "schedule": "*/5 * * * *"
+    },
+    {
       "path": "/api/cron/v3/genome-nightly",
       "schedule": "40 2 * * *"
     },

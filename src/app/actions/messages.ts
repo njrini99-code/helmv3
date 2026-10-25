@@ -1249,18 +1249,18 @@ export async function deleteMessage({
 
     const messagesTable = sport === 'golf' ? 'golf_messages' : 'baseball_messages';
 
-    // Verify user owns this message
+    // Verify user owns this message. Golf also reads `kind`: a deleted poll's payload is cleared with its text (P-2).
     const { data: existingMessage, error: fetchError } = await supabase
       .from(messagesTable as any)
-      .select('id, sender_id, conversation_id')
+      .select(sport === 'golf' ? 'id, sender_id, conversation_id, kind' : 'id, sender_id, conversation_id')
       .eq('id', messageId)
-      .single() as { data: { id: string; sender_id: string; conversation_id: string } | null; error: SupabaseError | null };
+      .single() as { data: { id: string; sender_id: string; conversation_id: string; kind?: string | null } | null; error: SupabaseError | null };
 
     if (fetchError || !existingMessage) {
       throw new Error('Message not found');
     }
 
-    const msg = existingMessage as { id: string; sender_id: string; conversation_id: string };
+    const msg = existingMessage as { id: string; sender_id: string; conversation_id: string; kind?: string | null };
     if (msg.sender_id !== user.id) {
       console.warn('[Security] Unauthorized message delete attempt:', {
         userId: user.id,
@@ -1278,12 +1278,14 @@ export async function deleteMessage({
       metadata: { messageId },
     });
 
-    // Soft-delete the message
+    // Soft-delete the message. A golf poll's question and choices live in `payload`, so it is cleared as well; held
+    // 20261025020200_golf_poll_payload_freeze allows exactly this write on a poll.
     const { error: deleteError } = await supabase
       .from(messagesTable as any)
       .update({
         is_deleted: true,
         content: '', // Clear content on delete for privacy
+        ...(sport === 'golf' && msg.kind === 'poll' ? { payload: null } : {}),
       })
       .eq('id', messageId)
       .eq('sender_id', user.id); // Extra safety check

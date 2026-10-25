@@ -107,7 +107,7 @@ describe('createGolfDocument: the object it records is in the team’s own folde
   it('with no storage_path, the path read from file_url is checked the same way', async () => {
     world();
     const other = 'https://p.supabase.co/storage/v1/object/public/documents/golf-documents/33333333-3333-4333-8333-333333333333/x.pdf';
-    for (const file_url of [other, 'https://x']) {
+    for (const file_url of [other, 'https://x', 'https://p.supabase.co/storage/v1/object/public/documents/golf-documents/%E0%A4%A/x.pdf']) {
       const res = await createGolfDocument({ team_id: TEAM, title: 'x', file_url, file_type: 'application/pdf', file_size: 1, player_visible: true });
       expect(res, file_url).toEqual({ success: false, error: 'That file isn’t in this team’s documents' });
     }

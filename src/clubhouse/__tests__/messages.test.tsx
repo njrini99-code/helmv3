@@ -34,6 +34,7 @@ const live = vi.hoisted(() => ({
     markRead: vi.fn(async () => {}),
     isOtherTyping: false,
     sendTypingStatus: vi.fn(),
+    insertConfirmed: vi.fn(),
   },
   reactions: { rows: [] as unknown[], setReaction: vi.fn(async () => {}) },
   files: {
@@ -43,6 +44,13 @@ const live = vi.hoisted(() => ({
 }));
 vi.mock('@/hooks/golf/use-golf-messages', () => ({ useGolfConversations: () => live.convs, useGolfMessages: () => live.msgs }));
 vi.mock('@/hooks/golf/use-message-reactions', async (orig) => ({ ...(await orig<object>()), useMessageReactions: () => live.reactions }));
+const polls = vi.hoisted(() => ({
+  responses: { rows: [] as unknown[], error: null as string | null, ready: true, pending: new Set<string>() as ReadonlySet<string>, refresh: vi.fn(async () => {}), vote: vi.fn(async (_messageId: string, _choice: string | null): Promise<{ ok: true } | { ok: false; reason: 'closed' | 'deleted' | 'member' | 'session' | 'failed' }> => ({ ok: true })) },
+  sendGolfPoll: vi.fn(async () => ({ success: true as const, id: 'poll-1' })),
+  closeGolfPoll: vi.fn(async () => ({ success: true as const, id: 'poll-1' })),
+}));
+vi.mock('@/hooks/golf/use-message-responses', () => ({ useMessageResponses: () => polls.responses }));
+vi.mock('@/app/golf/actions/message-polls', () => ({ sendGolfPoll: polls.sendGolfPoll, closeGolfPoll: polls.closeGolfPoll }));
 vi.mock('@/hooks/golf/use-message-attachments', () => ({ useMessageAttachments: () => live.files }));
 const a = vi.hoisted(() => ({
   markGolfMessagesAsRead: vi.fn(),
@@ -1058,7 +1066,7 @@ describe('Messages · phone', () => {
     expect(box.readOnly).toBe(true);
     expect((within(thread).getByRole('button', { name: 'Cancel reply' }) as HTMLButtonElement).disabled).toBe(true);
     expect((within(thread).getByRole('button', { name: 'Remove plan.pdf' }) as HTMLButtonElement).disabled).toBe(true);
-    expect((within(thread).getByRole('button', { name: 'Attach a file' }) as HTMLButtonElement).disabled).toBe(true);
+    expect((within(thread).getByRole('button', { name: /^(Attach a file|Add a file or a poll)$/ }) as HTMLButtonElement).disabled).toBe(true);
     expect(hapticSpy).not.toHaveBeenCalledWith('success');
     await user.type(box, 'Changed');
     expect(box.value).toBe('Original text');
@@ -1924,5 +1932,157 @@ describe('Messages: CH-7271 Notified anyway caption', () => {
     show({ ...data, role: 'player', viewerUserId: 'me', viewerPlayerId: 'p-me' });
     await waitFor(() => expect(screen.getAllByText('Bus at 6:15').length).toBeGreaterThan(0));
     expect(caption()).toBeNull();
+  });
+});
+
+describe('Messages · polls (premium features P-2)', () => {
+  const poll = {
+    id: 'p1',
+    conversation_id: 'team',
+    sender_id: 'me',
+    content: 'Poll: Which van?\n1. Van A\n2. Van B\nVote in GolfHelm.',
+    created_at: '2026-10-14T18:10:00Z',
+    isRead: true,
+    kind: 'poll',
+    payload: { v: 1, question: 'Which van?', options: [{ id: 'o1', label: 'Van A' }, { id: 'o2', label: 'Van B' }], multi: false, closes_at: null, closed_at: null },
+  };
+  beforeEach(() => {
+    live.msgs.messages = [mine, poll];
+    polls.responses.rows = [{ message_id: 'p1', user_id: 'eli', choice: 'o2' }];
+    polls.responses.error = null;
+    polls.responses.ready = true;
+    polls.responses.pending = new Set<string>();
+    polls.responses.vote.mockReset().mockResolvedValue({ ok: true });
+    polls.sendGolfPoll.mockReset().mockResolvedValue({ success: true, id: 'p2' });
+    polls.closeGolfPoll.mockReset().mockResolvedValue({ success: true, id: 'p1' });
+  });
+
+  it('a poll message draws as its card, never as its plain-text copy, with the thread’s count', async () => {
+    show();
+    const card = await screen.findByRole('group', { name: 'Which van?' });
+    expect(within(card).getByRole('radio', { name: 'Van B, 1 vote' })).toBeTruthy();
+    expect(card.querySelector('.ch-ms-poll__count')!.textContent).toBe('1 of 3 voted');
+    expect(screen.queryByText(/Vote in GolfHelm/)).toBeNull();
+  });
+
+  it('D30: Remind fills the composer as a reply to the poll, and asks before replacing a draft', async () => {
+    const user = userEvent.setup();
+    show();
+    const card = await screen.findByRole('group', { name: 'Which van?' });
+    const box = (await screen.findByRole('textbox', { name: /Message Varsity team/ })) as HTMLTextAreaElement;
+    await user.click(within(card).getByRole('button', { name: /^Remind \d$/ }));
+    await waitFor(() => expect(box.value).toMatch(/can you vote in the poll when you get a chance\?$/));
+    expect(document.querySelector('.ch-ms-comp__reply')).not.toBeNull();
+    await user.clear(box);
+    await user.type(box, 'My own words');
+    await user.click(within(card).getByRole('button', { name: /^Remind \d$/ }));
+    const ask = await screen.findByRole('dialog', { name: 'Replace your draft?' });
+    await user.click(within(ask).getByRole('button', { name: 'Keep my draft' }));
+    expect(box.value).toBe('My own words');
+  });
+
+  it('D26: the message menu on a poll offers its actions, and anyone else’s text offers Reply and Copy', async () => {
+    const user = userEvent.setup();
+    show();
+    const card = await screen.findByRole('group', { name: 'Which van?' });
+    const msg = card.closest('.ch-ms-msg') as HTMLElement;
+    await user.click(within(msg).getByRole('button', { name: 'More message actions' }));
+    const menu = await screen.findByRole('menu', { name: 'Message actions' });
+    expect(within(menu).getAllByRole('menuitem').map((m) => m.textContent)).toEqual(expect.arrayContaining(['See votes', 'Close poll', 'Copy poll', 'Delete']));
+    expect(within(menu).queryByRole('menuitem', { name: 'Edit' })).toBeNull();
+  });
+
+  it('a vote is saved with the option id', async () => {
+    const user = userEvent.setup();
+    show();
+    await user.click(await screen.findByRole('radio', { name: /Van A/ }));
+    await waitFor(() => expect(polls.responses.vote).toHaveBeenCalledWith('p1', 'o1'));
+  });
+
+  it('CH-7029 a vote that isn’t saved says so', async () => {
+    const user = userEvent.setup();
+    polls.responses.vote.mockResolvedValue({ ok: false, reason: 'failed' });
+    show();
+    await user.click(await screen.findByRole('radio', { name: /Van A/ }));
+    await expectCode('CH-7029', /Your vote wasn’t saved/);
+  });
+
+  it('CH-7030 a vote refused because the poll ended says the result is final', async () => {
+    const user = userEvent.setup();
+    polls.responses.vote.mockResolvedValue({ ok: false, reason: 'closed' });
+    show();
+    await user.click(await screen.findByRole('radio', { name: /Van A/ }));
+    await expectCode('CH-7030', /Voting has ended/);
+  });
+
+  it('CH-7030 a vote on a poll deleted meanwhile says so; a former member’s refusal is the CH-7029 toast', async () => {
+    const user = userEvent.setup();
+    polls.responses.vote.mockResolvedValueOnce({ ok: false, reason: 'deleted' });
+    show();
+    await user.click(await screen.findByRole('radio', { name: /Van A/ }));
+    await expectCode('CH-7030', /This poll was deleted/);
+    polls.responses.vote.mockResolvedValueOnce({ ok: false, reason: 'member' });
+    await user.click(await screen.findByRole('radio', { name: /Van B/ }));
+    await expectCode('CH-7029', /Your vote wasn’t saved/);
+  });
+
+  it('CH-7027 closing a poll that fails says so and keeps the confirm open', async () => {
+    const user = userEvent.setup();
+    polls.closeGolfPoll.mockResolvedValue({ success: false, error: 'nope' } as never);
+    show();
+    await user.click(await screen.findByRole('button', { name: 'Close poll' }));
+    const dialog = await screen.findByRole('dialog', { name: 'Close this poll?' });
+    await user.click(within(dialog).getByRole('button', { name: 'Close poll' }));
+    await expectCode('CH-7027', /Couldn’t close the poll/);
+    expect(polls.closeGolfPoll).toHaveBeenCalledWith('p1');
+    expect(screen.getByRole('dialog', { name: 'Close this poll?' })).toBeTruthy();
+  });
+
+  it('CH-7028 a poll that throws on send says so; a refusal shows its reason in the sheet', async () => {
+    const user = userEvent.setup();
+    polls.sendGolfPoll.mockRejectedValueOnce(new Error('network'));
+    show();
+    await user.click(await screen.findByRole('button', { name: 'New poll' }));
+    const dialog = await screen.findByRole('dialog', { name: 'New poll' });
+    await user.type(within(dialog).getByLabelText('Question'), 'Dinner?');
+    await user.type(within(dialog).getByRole('textbox', { name: 'Choice 1' }), 'Tacos');
+    await user.type(within(dialog).getByRole('textbox', { name: 'Choice 2' }), 'Pasta');
+    await user.click(within(dialog).getByRole('button', { name: 'Send poll' }));
+    await expectCode('CH-7028', /Couldn’t send the poll/);
+
+    polls.sendGolfPoll.mockResolvedValueOnce({ success: false, error: 'You are not in this conversation' } as never);
+    await user.click(within(dialog).getByRole('button', { name: 'Send poll' }));
+    expect(await within(dialog).findByText('You are not in this conversation')).toBeTruthy();
+    const ids = polls.sendGolfPoll.mock.calls.map((c) => (c as unknown[])[2]);
+    expect(ids[1]).toBe(ids[0]);
+  });
+
+  it('D21: on a phone a group thread’s "+" opens Photo or file and Poll', async () => {
+    const user = userEvent.setup();
+    showPhone();
+    // Phase2's row carries an "Actions for …" button beside it; pick the row itself.
+    await waitFor(() => expect(screen.getAllByRole('button', { name: /^(?!Actions for ).*Varsity team/ })).toHaveLength(1), { timeout: 5000 });
+    await user.click(screen.getByRole('button', { name: /^(?!Actions for ).*Varsity team/ }));
+    const thread = await screen.findByRole('region', { name: /Varsity team/ });
+    await user.click(within(thread).getByRole('button', { name: 'Add a file or a poll' }));
+    const menu = await screen.findByRole('menu', { name: 'Add to the message' });
+    expect(within(menu).getAllByRole('menuitem').map((m) => m.textContent)).toEqual(['Photo or file', 'Poll']);
+    await user.click(within(menu).getByRole('menuitem', { name: 'Poll' }));
+    expect(await screen.findByRole('dialog', { name: 'New poll' })).toBeTruthy();
+  });
+
+  it('D27: a sent poll lands in the thread at once from its saved row', async () => {
+    const user = userEvent.setup();
+    const row = { id: 'poll-9', conversation_id: 'g1', sender_id: 'me', kind: 'poll', content: 'Poll: Dinner?', created_at: '2026-10-24T15:00:00Z' };
+    polls.sendGolfPoll.mockResolvedValueOnce({ success: true, id: 'poll-9', row } as never);
+    live.msgs.insertConfirmed.mockClear();
+    show();
+    await user.click(await screen.findByRole('button', { name: 'New poll' }));
+    const dialog = await screen.findByRole('dialog', { name: 'New poll' });
+    await user.type(within(dialog).getByLabelText('Question'), 'Dinner?');
+    await user.type(within(dialog).getByRole('textbox', { name: 'Choice 1' }), 'Tacos');
+    await user.type(within(dialog).getByRole('textbox', { name: 'Choice 2' }), 'Pasta');
+    await user.click(within(dialog).getByRole('button', { name: 'Send poll' }));
+    await waitFor(() => expect(live.msgs.insertConfirmed).toHaveBeenCalledWith(row));
   });
 });

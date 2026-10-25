@@ -2,6 +2,8 @@ CREATE OR REPLACE TRIGGER "approach_miss_details_reject_completed_round_mutation
 
 CREATE OR REPLACE TRIGGER "golf_event_documents_team_consistency" BEFORE INSERT OR UPDATE ON "public"."golf_event_documents" FOR EACH ROW EXECUTE FUNCTION "public"."golf_event_documents_assert_same_team"();
 
+CREATE OR REPLACE TRIGGER "golf_events_touch_updated_at" BEFORE UPDATE ON "public"."golf_events" FOR EACH ROW WHEN (((old.* IS DISTINCT FROM new.*) AND (current_setting('helm.change_mark_writer'::text, true) IS DISTINCT FROM 'on'::text))) EXECUTE FUNCTION "public"."touch_updated_at"();
+
 CREATE OR REPLACE TRIGGER "golf_global_patterns_touch" BEFORE UPDATE ON "public"."golf_global_patterns" FOR EACH ROW EXECUTE FUNCTION "public"."touch_updated_at"();
 
 CREATE OR REPLACE TRIGGER "golf_holes_recompute_round_totals" AFTER INSERT OR DELETE OR UPDATE ON "public"."golf_holes" FOR EACH ROW EXECUTE FUNCTION "public"."golf_holes_recompute_round_totals_fn"();
@@ -9,6 +11,12 @@ CREATE OR REPLACE TRIGGER "golf_holes_recompute_round_totals" AFTER INSERT OR DE
 CREATE OR REPLACE TRIGGER "golf_holes_reject_completed_round_mutation" BEFORE INSERT OR DELETE OR UPDATE ON "public"."golf_holes" FOR EACH ROW EXECUTE FUNCTION "helm_private"."reject_completed_round_child_mutation"();
 
 CREATE OR REPLACE TRIGGER "golf_holes_set_gir" BEFORE INSERT OR UPDATE OF "par", "score", "putts" ON "public"."golf_holes" FOR EACH ROW EXECUTE FUNCTION "public"."golf_holes_set_gir_fn"();
+
+CREATE OR REPLACE TRIGGER "golf_message_responses_poll_guard" BEFORE INSERT OR DELETE OR UPDATE ON "public"."golf_message_responses" FOR EACH ROW EXECUTE FUNCTION "public"."golf_message_responses_poll_guard"();
+
+CREATE OR REPLACE TRIGGER "golf_message_responses_touch" BEFORE INSERT OR UPDATE ON "public"."golf_message_responses" FOR EACH ROW EXECUTE FUNCTION "public"."touch_updated_at"();
+
+CREATE OR REPLACE TRIGGER "golf_messages_poll_freeze" BEFORE INSERT OR UPDATE ON "public"."golf_messages" FOR EACH ROW EXECUTE FUNCTION "public"."golf_messages_poll_freeze"();
 
 CREATE OR REPLACE TRIGGER "golf_players_anonymize_on_unlink" BEFORE UPDATE OF "user_id" ON "public"."golf_players" FOR EACH ROW EXECUTE FUNCTION "public"."golf_player_anonymize_on_unlink"();
 
@@ -117,3 +125,8 @@ CREATE OR REPLACE TRIGGER "golf_class_hold_mark_dirty" AFTER INSERT OR DELETE OR
 CREATE OR REPLACE TRIGGER "golf_messages_notify_anyway_insert" BEFORE INSERT ON "public"."golf_messages" FOR EACH ROW WHEN (("new"."notify_anyway" OR ("new"."notify_anyway_pushed_at" IS NOT NULL))) EXECUTE FUNCTION "public"."golf_messages_notify_anyway_guard"();
 
 CREATE OR REPLACE TRIGGER "golf_messages_notify_anyway_update" BEFORE UPDATE OF "notify_anyway", "notify_anyway_pushed_at" ON "public"."golf_messages" FOR EACH ROW WHEN ((("new"."notify_anyway" IS DISTINCT FROM "old"."notify_anyway") OR ("new"."notify_anyway_pushed_at" IS DISTINCT FROM "old"."notify_anyway_pushed_at"))) EXECUTE FUNCTION "public"."golf_messages_notify_anyway_guard"();
+CREATE OR REPLACE TRIGGER "golf_participants_read_mark" AFTER UPDATE OF "last_read_at" ON "public"."golf_conversation_participants" FOR EACH ROW WHEN ((("new"."last_read_at" IS NOT NULL) AND (("old"."last_read_at" IS NULL) OR ("new"."last_read_at" > "old"."last_read_at")))) EXECUTE FUNCTION "public"."golf_record_read_mark"();
+
+CREATE OR REPLACE TRIGGER "golf_participants_read_marks_on_leave" AFTER DELETE ON "public"."golf_conversation_participants" FOR EACH ROW EXECUTE FUNCTION "public"."golf_forget_read_marks"();
+
+CREATE OR REPLACE TRIGGER "golf_events_change_mark" BEFORE INSERT OR UPDATE ON "public"."golf_events" FOR EACH ROW EXECUTE FUNCTION "public"."golf_events_change_mark"();

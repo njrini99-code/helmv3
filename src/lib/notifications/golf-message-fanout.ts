@@ -36,11 +36,15 @@ export async function notifyGolfMessageRecipients(
   senderId: string,
   previewText: string,
   /**
+   * P-2 D22: a message kind with its own words. `previewText` stays the email preview ("Poll: …"); `pushBody` is the
+   * push preview and the Bell message; `titleFor(senderName)` is the Bell title and the push title ("Poll from Coach
+   * Reyes"). The sender's name is resolved here, once.
+   *
    * P-10 Notify anyway: this message was stored with `notify_anyway` (the database kept the coach's flag). Its pushes are never held for class, and
    * once one has gone out the message is stamped `notify_anyway_pushed_at`, which is what the thread's "Notified anyway" caption keys on: the claim
    * is made only after a push was actually dispatched, never because the coach asked for one.
    */
-  opts?: { notifyAnyway?: boolean; messageId?: string | null },
+  opts?: { titleFor?: (senderName: string) => string; pushBody?: string; notifyAnyway?: boolean; messageId?: string | null },
 ): Promise<void> {
   try {
     const supabase = await createClient();
@@ -170,9 +174,10 @@ export async function notifyGolfMessageRecipients(
         gatedDelivery(prefsFor(r), 'push_messages')
           ? sendPushNotification('new_message', r.id, {
               senderName,
-              preview: previewText,
+              preview: opts?.pushBody ?? previewText,
               conversationId,
               ...(hold ? { hold } : {}),
+              ...(opts?.titleFor ? { title: opts.titleFor(senderName) } : {}),
             })
           : Promise.resolve()
       ),
@@ -203,8 +208,8 @@ export async function notifyGolfMessageRecipients(
     const inAppNotifs = recipientProfiles.map(r => ({
       user_id: r.id,
       notification_type: 'message',
-      title: `Message from ${senderName}`,
-      message: previewText,
+      title: opts?.titleFor ? opts.titleFor(senderName) : `Message from ${senderName}`,
+      message: opts?.pushBody ?? previewText,
       action_url: `/golf/dashboard/messages?conversation=${conversationId}`,
     }));
     // Reuses the admin client created above — inserting bell rows for OTHER

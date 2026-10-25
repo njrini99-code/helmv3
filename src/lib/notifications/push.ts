@@ -116,8 +116,10 @@ export function generatePushPayload(
       const messagesUrl = data.conversationId
         ? `${baseUrl}/golf/dashboard/messages?conversation=${data.conversationId}`
         : `${baseUrl}/golf/dashboard/messages`;
+      // A message kind with its own title (P-2: "Poll from Coach Reyes") passes `title`; plain messages don't.
+      const ownTitle = typeof data.title === 'string' && data.title.trim() ? data.title : null;
       return {
-        title: `Message from ${data.senderName || 'Someone'}`,
+        title: ownTitle ?? `Message from ${data.senderName || 'Someone'}`,
         body: String(data.preview || '').slice(0, 100),
         data: { url: messagesUrl, type },
       };
