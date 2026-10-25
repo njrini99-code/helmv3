@@ -10,6 +10,8 @@ export interface TrendRound {
   label: string;
   course?: string;
   value: number | null;
+  /** When it was played (epoch ms), so the chart spaces rounds by real time; absent, by index. */
+  at?: number;
   /** To par per 18, for the score trend's par line and readout. */
   toPar?: number | null;
   holes: number;
@@ -87,6 +89,7 @@ export function trendRounds(rounds: ChProfileRound[], kind: TrendKind): TrendRou
     id: r.id,
     label: r.date,
     course: r.course,
+    ...(r.iso ? { at: Date.parse(r.iso) } : {}),
     value: kind === 'score' ? per18(r.score, r.holes) : r.sg == null ? null : per18(r.sg, r.holes),
     toPar: r.toPar == null ? null : per18(r.toPar, r.holes),
     holes: r.holes,

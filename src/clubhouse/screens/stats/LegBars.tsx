@@ -1,9 +1,12 @@
 'use client';
 
-import { changeInk, changeTone, formatSigned, NO_DATA } from '../../lib/format';
+import { changeInk, changeTone, formatSigned } from '../../lib/format';
+import { useGlide } from '../../lib/motion-glide';
 import { sgScale, sgShare } from '../../lib/sg';
 import { useChartPin } from '../../lib/use-chart-pin';
 import { legReadout, type SgLegRow } from './leg-rows';
+import { ChartTable } from '../../ui/charts/ChartTable';
+import { NoData } from '../../ui/NoData';
 
 export type LegBarRow = Pick<SgLegRow, 'label' | 'value'> & Partial<Pick<SgLegRow, 'team' | 'n' | 'se' | 'state' | 'tag'>> & { means: string };
 
@@ -29,6 +32,16 @@ export function LegBars({ rows, baseline, teamName, onOpen }: { rows: LegBarRow[
   const shown = readout(pin.active);
   const spoken = readout(pin.pinned);
   const pinnedRow = pin.pinned != null ? rows[pin.pinned] : null;
+  // Per leg: the bar's signed half-rail share, its whisker's ends and the team mark, gliding together on a new window (B9).
+  const drawn = useGlide(
+    rows.flatMap((r) => [
+      r.value == null ? null : (r.value >= 0 ? 1 : -1) * sgShare(r.value, scale) * 50,
+      r.value != null && r.se != null ? at(r.value - r.se) : null,
+      r.value != null && r.se != null ? at(r.value + r.se) : null,
+      r.team == null ? null : at(r.team),
+    ]),
+    rows.map((r) => r.label).join('|'),
+  );
   return (
     <div
       className="ch-lb"
@@ -39,7 +52,7 @@ export function LegBars({ rows, baseline, teamName, onOpen }: { rows: LegBarRow[
       {...pin.container}
     >
       <p className={'ch-sv-read' + (shown ? ' is-on' : '')} aria-hidden="true">
-        {shown ?? 'Select a leg to see how sure its figure is.'}
+        {shown ?? 'Select a leg to see its likely range.'}
       </p>
       <p className="ch-sr-only" aria-live="polite">
         {spoken}
@@ -51,8 +64,7 @@ export function LegBars({ rows, baseline, teamName, onOpen }: { rows: LegBarRow[
       </div>
       {rows.map((r, i) => {
         const muted = r.state === 'early';
-        const lo = r.value != null && r.se != null ? at(r.value - r.se) : null;
-        const hi = r.value != null && r.se != null ? at(r.value + r.se) : null;
+        const [bar, lo, hi, team] = drawn.slice(i * 4, i * 4 + 4);
         return (
           <div key={r.label} className={'ch-lb__r ch-sv-row' + (muted ? ' is-early' : '')} aria-hidden="true" {...pin.item(i)}>
             <div className="ch-lb__who">
@@ -60,12 +72,12 @@ export function LegBars({ rows, baseline, teamName, onOpen }: { rows: LegBarRow[
               <span>{r.means}</span>
             </div>
             <div className="ch-lb__rail">
-              {r.value != null && <i className={'ch-lb__bar ' + tone(r.value)} style={r.value >= 0 ? { left: '50%', width: `${sgShare(r.value, scale) * 50}%` } : { right: '50%', width: `${sgShare(r.value, scale) * 50}%` }} />}
+              {r.value != null && bar != null && <i className={'ch-lb__bar ' + tone(r.value)} style={bar >= 0 ? { left: '50%', width: `${bar}%` } : { right: '50%', width: `${-bar}%` }} />}
               {lo != null && hi != null && <i className={'ch-sv-whisk' + (lo <= 0 ? ' is-clip-l' : '') + (hi >= 100 ? ' is-clip-r' : '')} style={{ left: `${lo}%`, width: `${hi - lo}%` }} />}
-              {r.team != null && <u className="ch-lb__team" style={{ left: `${at(r.team)}%` }} title={`${teamName ?? 'Team'} ${formatSigned(r.team)}`} />}
+              {r.team != null && team != null && <u className="ch-lb__team" style={{ left: `${team}%` }} title={`${teamName ?? 'Team'} ${formatSigned(r.team)}`} />}
               {r.value == null && r.tag && <span className="ch-sv-needs">{r.tag}</span>}
             </div>
-            <span className={'ch-lb__v ch-num ' + (muted ? '' : changeInk(r.value))}>{r.value == null ? NO_DATA : formatSigned(r.value)}</span>
+            <span className={'ch-lb__v ch-num ' + (muted ? '' : changeInk(r.value))}>{r.value == null ? <NoData /> : formatSigned(r.value)}</span>
           </div>
         );
       })}
@@ -85,6 +97,17 @@ export function LegBars({ rows, baseline, teamName, onOpen }: { rows: LegBarRow[
           See {pinnedRow.label.toLowerCase()} in game detail
         </button>
       )}
+      {/* The legs, for a screen reader that asks for them after the summary (AX-17). */}
+      <ChartTable
+        caption="Strokes gained per round by leg"
+        columns={['Leg', 'Strokes gained', 'Likely range', ...(rows.some((r) => r.team != null) ? [`${teamName ?? 'Team'} average`] : [])]}
+        rows={rows.map((r) => [
+          r.label,
+          r.value == null ? (r.tag ?? 'No data') : formatSigned(r.value) + (r.state === 'early' && r.tag ? ` (${r.tag})` : ''),
+          r.value != null && r.se != null ? `${formatSigned(r.value - r.se)} to ${formatSigned(r.value + r.se)}` : '',
+          ...(rows.some((x) => x.team != null) ? [r.team == null ? '' : formatSigned(r.team)] : []),
+        ])}
+      />
     </div>
   );
 }

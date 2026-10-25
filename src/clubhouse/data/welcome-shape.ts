@@ -2,6 +2,7 @@ import type { NotificationCategoryId, UnifiedNotificationItem } from '@/app/golf
 import { resolveAdminPostLoginPath } from '@/lib/golf/admin-redirect';
 import { extractFirstName, extractLastName } from '@/lib/utils/names';
 import { isSafeInternalPath } from '@/lib/utils/safe-redirect';
+import { formatClock } from '../lib/dates';
 
 /**
  * What the welcome shows, and the rules that decide it. Pure: the loader reads
@@ -87,11 +88,11 @@ export const isDashboardDestination = (path: string): boolean => path === '/golf
 
 const dayStart = (d: Date) => new Date(d.getFullYear(), d.getMonth(), d.getDate()).getTime();
 
-/** "Today at 9:12 pm", "Yesterday at …", "Sunday at …" within the week, "Oct 3 at …" after. In the viewer's own timezone. */
+/** "Today at 9:12 PM", "Yesterday at …", "Sunday at …" within the week, "Oct 3 at …" after. In the viewer's own timezone. */
 export function formatLastHere(iso: string, now: Date): string | null {
   const at = new Date(iso);
   if (Number.isNaN(at.getTime())) return null;
-  const time = at.toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit' }).replace(/\s*([AP])M\b/i, (_, ap: string) => ` ${ap.toLowerCase()}m`);
+  const time = formatClock(at);
   const days = Math.round((dayStart(now) - dayStart(at)) / 86_400_000);
   if (days <= 0) return `Today at ${time}`;
   if (days === 1) return `Yesterday at ${time}`;

@@ -32,7 +32,10 @@ describe('the dim is driven, not a keyframe (A9)', () => {
 
   it('every ::backdrop that fades does it on var(--ch-scrim-a)', () => {
     const fading = backdrops.filter((b) => /transition\s*:/.test(b.body) && !b.selector.includes('*::backdrop'));
-    expect(fading.length).toBeGreaterThanOrEqual(7);
+    // Named, not counted: Settings' and Recruiting's sheets share one rule since CONS-23 (ui/FormSheet.tsx).
+    const named = new Set(fading.flatMap((b) => b.selector.match(/\.ch-[\w-]+(?=::backdrop)/g) ?? []));
+    for (const d of ['.ch-modal', '.ch-fsheet-dlg', '.ch-fsheet-act', '.ch-peek']) expect(named.has(d), d).toBe(true);
+    expect(fading.length).toBeGreaterThanOrEqual(6);
     for (const b of fading) expect(b.body, `${b.file} ${b.selector}`).toMatch(/opacity:\s*var\(--ch-scrim-a/);
   });
 

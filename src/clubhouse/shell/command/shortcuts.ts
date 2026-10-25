@@ -1,4 +1,4 @@
-import { CH_SETTINGS_ITEM, navFor, type ChNavItem, type ChRole } from '../nav';
+import { CH_NAV_SECTIONS, CH_SETTINGS_ITEM, navFor, type ChNavItem, type ChRole } from '../nav';
 
 /** After G, the next key must land within this long, or it is just a key (the sequence lapses). */
 export const SEQUENCE_WINDOW_MS = 1000;
@@ -91,6 +91,30 @@ export function itemForLetter(role: ChRole, letter: string): ChNavItem | undefin
   return navLetters(role).find((l) => l.letter === letter.toLowerCase())?.item;
 }
 
+/**
+ * The sections in the order the sidebar draws them: grouped under its headings (CH_NAV_SECTIONS), as Sidebar.tsx groups
+ * them. Settings is not among them (it lives in the top bar's gear and has Cmd or Ctrl comma).
+ */
+export function sidebarOrder(role: ChRole): ChNavItem[] {
+  const nav = navFor(role);
+  return CH_NAV_SECTIONS.flatMap((section) => nav.filter((i) => i.section === section));
+}
+
+/** Cmd or Ctrl and 1 to 9 reach the first nine sidebar sections (owner, decision 13); a tenth has only its G letter. */
+export const DIGIT_SECTIONS = 9;
+
+/** The section Cmd or Ctrl and a digit (1 to 9) reaches, in sidebar order. */
+export function itemForDigit(role: ChRole, digit: number): ChNavItem | undefined {
+  if (!Number.isInteger(digit) || digit < 1 || digit > DIGIT_SECTIONS) return undefined;
+  return sidebarOrder(role)[digit - 1];
+}
+
+/** The digit that reaches a section with Cmd or Ctrl, if it is among the first nine. */
+export function digitFor(role: ChRole, id: string): number | undefined {
+  const at = sidebarOrder(role).findIndex((i) => i.id === id);
+  return at >= 0 && at < DIGIT_SECTIONS ? at + 1 : undefined;
+}
+
 export interface ChKeyInput {
   key: string;
   metaKey: boolean;
@@ -106,6 +130,11 @@ export interface ChKeyContext {
   typing: boolean;
   /** The key went into a dialog, menu or listbox, or a modal is open (anything but the palette). */
   overlay: boolean;
+  /**
+   * Cmd or Ctrl and 1 to 9 are free here: the iOS app (isNativeApp), which has no tabs. A browser keeps them for its own
+   * tabs, so there they are left to it (decision 13).
+   */
+  digits: boolean;
 }
 
 export type ChKeyOutcome =
@@ -114,6 +143,10 @@ export type ChKeyOutcome =
   | { kind: 'arm' }
   | { kind: 'go'; letter: string }
   | { kind: 'palette' }
+  /** Cmd or Ctrl and comma: Settings, as in every Mac app (B11). */
+  | { kind: 'settings' }
+  /** Cmd or Ctrl and 1 to 9: the sidebar's sections in order (owner, decision 13), only where the keys are free (`digits`). */
+  | { kind: 'section'; digit: number }
   | { kind: 'search' }
   | { kind: 'help' };
 
@@ -121,7 +154,9 @@ export type ChKeyOutcome =
  * What a key does, given whether G is armed. Pure, so the timing and the suppression are tested without a DOM: `armedAt`
  * is when G was pressed (null when it was not), `now` the key's time, and the result says what to do and the new `armedAt`.
  *
- * Cmd or Ctrl with K opens the palette even from a field (the only shortcut that does), but not over another dialog. Every
+ * Cmd or Ctrl with K opens the palette, with a comma Settings and with 1 to 9 a sidebar section, even from a field (none of
+ * them types anything), but not over another dialog. The digits only in the app: a browser's Cmd 1 to 9 switch its tabs,
+ * so there the key is not ours and nothing is prevented. Cmd N is never bound (a browser's new window). Every
  * other shortcut is a bare key: typed into a field or a dialog, with a modifier held, held down (repeat) or mid-composition
  * (an IME), it is just a key, and it also ends a pending G.
  */
@@ -132,6 +167,12 @@ export function interpretKey(k: ChKeyInput, ctx: ChKeyContext, armedAt: number |
   if (k.key === 'Shift' || k.key === 'CapsLock') return { outcome: { kind: 'none' }, armedAt };
   if ((k.metaKey || k.ctrlKey) && !k.altKey && !k.shiftKey && k.key.toLowerCase() === 'k') {
     return ctx.overlay ? none : { outcome: { kind: 'palette' }, armedAt: null };
+  }
+  if ((k.metaKey || k.ctrlKey) && !k.altKey && !k.shiftKey && k.key === ',') {
+    return ctx.overlay ? none : { outcome: { kind: 'settings' }, armedAt: null };
+  }
+  if ((k.metaKey || k.ctrlKey) && !k.altKey && !k.shiftKey && /^[1-9]$/.test(k.key)) {
+    return !ctx.digits || ctx.overlay || k.repeat ? none : { outcome: { kind: 'section', digit: Number(k.key) }, armedAt: null };
   }
   if (k.metaKey || k.ctrlKey || k.altKey) return none;
   if (ctx.typing || ctx.overlay) return none;

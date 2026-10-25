@@ -3,7 +3,8 @@ import { DEFAULT_MIN_PLAYS, rankHoleAnalyses } from '@/lib/golf/worst-hole-ranki
 import type { HoleAnalysis } from '@/app/golf/actions/stats-data-types';
 import { shortDate, type ChRound } from './season';
 import { hasHoleScores, holeRounds } from './round-scope';
-import { effectiveCount, hasScore, per18, weightedMean } from './stats-weight';
+import { effectiveCount, hasScore, per18, weightedMean, windowChangeSe } from './stats-weight';
+import { changeSe } from '../lib/stats-signal';
 
 /**
  * The figures on the production player stats page that come from a player's
@@ -109,6 +110,8 @@ export interface ChCompareRow {
   unit: '' | '%';
   digits: number;
   lowerIsBetter: boolean;
+  /** The change's standard error (decision Q4): it is toned only past it; null when the windows can't measure their spread. */
+  se: number | null;
 }
 export interface ChCompare {
   lastRounds: number;
@@ -150,16 +153,21 @@ export function windowCompare(last: ChRound[], previous: ChRound[] | null): ChCo
   if (!previous) return null;
   const a = periodFigures(last);
   const b = periodFigures(previous);
+  const lastScored = last.filter(hasScore);
+  const prevScored = previous.filter(hasScore);
+  // A rate's spread is its per-round rates' (a nine-hole round's 50% is 50%, never doubled), measured from five rounds.
+  const rates = (rounds: ChRound[], pick: (r: ChRound) => number | null) => holeRounds(rounds).flatMap((r) => (pick(r) == null ? [] : [pick(r)!]));
+  const rateSe = (pick: (r: ChRound) => number | null) => changeSe(rates(lastScored, pick), rates(prevScored, pick), null);
   return {
     lastRounds: last.filter(hasScore).length,
     previousRounds: previous.filter(hasScore).length,
     lastHoleRounds: holeRounds(last.filter(hasScore)).length,
     previousHoleRounds: holeRounds(previous.filter(hasScore)).length,
     rows: [
-      { label: 'Scoring avg', last: a.avg, previous: b.avg, unit: '', digits: 1, lowerIsBetter: true },
-      { label: 'Greens in regulation', last: a.gir, previous: b.gir, unit: '%', digits: 1, lowerIsBetter: false },
-      { label: 'Fairways hit', last: a.fairways, previous: b.fairways, unit: '%', digits: 1, lowerIsBetter: false },
-      { label: 'Putts per round', last: a.putts, previous: b.putts, unit: '', digits: 1, lowerIsBetter: true },
+      { label: 'Scoring avg', last: a.avg, previous: b.avg, unit: '', digits: 1, lowerIsBetter: true, se: windowChangeSe(lastScored, prevScored, (r) => r.total_score, 'score') },
+      { label: 'Greens in regulation', last: a.gir, previous: b.gir, unit: '%', digits: 1, lowerIsBetter: false, se: rateSe(girPct) },
+      { label: 'Fairways hit', last: a.fairways, previous: b.fairways, unit: '%', digits: 1, lowerIsBetter: false, se: rateSe(fairwayPct) },
+      { label: 'Putts per round', last: a.putts, previous: b.putts, unit: '', digits: 1, lowerIsBetter: true, se: windowChangeSe(holeRounds(lastScored), holeRounds(prevScored), puttsOf, null) },
     ],
   };
 }

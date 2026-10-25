@@ -264,7 +264,7 @@ describe('130702 writes refuse offline, before anything is sent', () => {
     expect(w.assign).not.toHaveBeenCalled();
     expect(code('CH-13601')).toBeNull();
     setOnline(true);
-    await u.click(within(code('CH-1903') as HTMLElement).getByRole('button', { name: 'Retry' }));
+    await u.click(within(code('CH-1903') as HTMLElement).getByRole('button', { name: 'Try again' }));
     await expectCode('CH-13601', /Assigned as Jonah’s focus/);
     expect(w.assign).toHaveBeenCalledTimes(1);
   });
@@ -294,7 +294,7 @@ describe('130702 writes refuse offline, before anything is sent', () => {
     expect(w.undo).not.toHaveBeenCalled();
     expect(code('CH-13901')).not.toBeNull();
     setOnline(true);
-    await u.click(within(code('CH-1903') as HTMLElement).getByRole('button', { name: 'Retry' }));
+    await u.click(within(code('CH-1903') as HTMLElement).getByRole('button', { name: 'Try again' }));
     await waitFor(() => expect(code('CH-13901')).toBeNull());
     expect(w.undo).toHaveBeenCalledTimes(1);
   });

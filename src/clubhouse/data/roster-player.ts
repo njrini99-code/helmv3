@@ -2,7 +2,7 @@ import 'server-only';
 import { createClient } from '@/lib/supabase/server';
 import { readGolfPlayerProfiles } from '@/lib/golf/player-profiles';
 import { chLogServer } from '../lib/track-server';
-import { classYearLabel, displayHandicap, fullName } from './season';
+import { classYearLabel, displayHandicap, fullName, loadTeamZone } from './season';
 
 /**
  * The player's Roster (Clubhouse): their own team, read-only. It is a separate loader from the coach's on purpose
@@ -50,7 +50,7 @@ export async function loadPlayerRoster(input: { teamId: string; playerId: string
   const supabase = await createClient();
   const now = new Date();
 
-  const [teamRes, membersRes, staffRes] = await Promise.all([
+  const [teamRes, membersRes, staffRes, tz] = await Promise.all([
     supabase.from('golf_teams').select('name, season').eq('id', input.teamId).maybeSingle(),
     // Teammates' display columns through golf_player_profiles: a player may no longer read a teammate's golf_players
     // row (security review S4).
@@ -66,6 +66,8 @@ export async function loadPlayerRoster(input: { teamId: string; playerId: string
     })(),
     // The staff rows are readable by the team's players (golf_team_coach_staff_select); a coach's name and title by anyone signed in.
     supabase.from('golf_team_coach_staff').select('role, is_primary, coach:golf_coaches(id, full_name, title)').eq('team_id', input.teamId).limit(50),
+    // The class year turns on 1 August in the team's zone (decision 9), as the coach's Roster reads it.
+    loadTeamZone(supabase, input.teamId, 'roster'),
   ]);
 
   if (teamRes.error) chLogServer('roster', 'playerTeam', teamRes.error, 'teams');
@@ -76,7 +78,7 @@ export async function loadPlayerRoster(input: { teamId: string; playerId: string
     .map((p) => ({
       id: p.id,
       name: fullName(p),
-      classYear: classYearLabel(p.graduation_year, now),
+      classYear: classYearLabel(p.graduation_year, now, tz),
       gradYear: p.graduation_year,
       handicap: displayHandicap(p),
       isYou: p.id === input.playerId,

@@ -36,7 +36,7 @@ export function Menu({
   const id = useId();
   const reduced = useChReducedMotion();
   const [open, setOpen] = useState(false);
-  const [pos, setPos] = useState<{ left: number; top: number; maxHeight: number } | null>(null);
+  const [pos, setPos] = useState<{ left: number; top: number; maxHeight: number; origin: string } | null>(null);
   const btn = useRef<HTMLButtonElement | null>(null);
   const list = useRef<HTMLDivElement | null>(null);
 
@@ -61,7 +61,8 @@ export function Menu({
       const up = h > below && above > below;
       const maxHeight = up ? above : below;
       const top = Math.max(8, Math.min(up ? r.top - Math.min(h, maxHeight) - 6 : r.bottom + 6, bottom - 8 - Math.min(h, maxHeight)));
-      setPos({ left, top, maxHeight });
+      // B16: it grows out of its trigger, so from the corner nearest it: the bottom when it opened upward.
+      setPos({ left, top, maxHeight, origin: `${up ? 'bottom' : 'top'} ${align === 'end' ? 'right' : 'left'}` });
     };
     place();
     const onScroll = (e: Event) => {
@@ -133,7 +134,7 @@ export function Menu({
                 aria-label={label}
                 className="ch-menu ch-popover"
                 data-ui="clubhouse"
-                style={{ left: pos?.left ?? -9999, top: pos?.top, maxHeight: pos?.maxHeight, width: W }}
+                style={{ left: pos?.left ?? -9999, top: pos?.top, maxHeight: pos?.maxHeight, width: W, transformOrigin: pos?.origin }}
                 initial={reduced ? { opacity: 0 } : CH_POP.initial}
                 animate={reduced ? { opacity: 1 } : CH_POP.animate}
                 exit={reduced ? { opacity: 0 } : CH_POP.exit}

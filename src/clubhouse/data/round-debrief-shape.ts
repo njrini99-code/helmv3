@@ -46,7 +46,7 @@ export interface ChDebriefInputs {
 
 export interface ChDebrief {
   /** "30 putts" and "Your average over your last 12 rounds: 32.1." Null when nothing moved by a full spread of the player's own. */
-  moved: { value: string; line: string; tone: 'good' | 'bad' } | null;
+  moved: { value: string; line: string; tone: 'gain' | 'loss' } | null;
   /** The top open read and what this round did to it; `change` is null when the round cannot speak to the read's measure. */
   read: { id: string; title: string; change: string | null } | null;
   /** "Two doubles or worse (holes 7 and 14); both came after a tee shot right into the rough." */
@@ -136,7 +136,7 @@ export function movedNumber(r: ChRoundReview, history: readonly ChDebriefHistory
   }
   if (!best) return null;
   const better = best.c.lowerIsBetter ? best.c.x < best.mean : best.c.x > best.mean;
-  return { value: best.c.value, line: over(best.n) + best.c.said(best.mean), tone: better ? 'good' : 'bad' };
+  return { value: best.c.value, line: over(best.n) + best.c.said(best.mean), tone: better ? 'gain' : 'loss' };
 }
 
 const LIE_SAID: Record<string, string> = { rough: 'into the rough', sand: 'into a bunker', penalty: 'into a penalty area' };

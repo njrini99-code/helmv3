@@ -17,10 +17,12 @@ import { Segmented } from '../../ui/Segmented';
 import { useAction, type ActionCopy } from '../../lib/use-action';
 import { chTween } from '../../lib/motion';
 import { useChReducedMotion } from '../../lib/reduced-motion';
-import { formatFixed, formatSigned, formatToPar, NO_DATA } from '../../lib/format';
+import { formatFixed, formatHcp, formatSigned, formatToPar, NO_DATA } from '../../lib/format';
+import { NoData } from '../../ui/NoData';
 import { rebuiltHref } from '../../shell/nav';
-import { AVAILABILITY_WORD, formatHcp, legsCaption, relativeAgo } from './format';
+import { AVAILABILITY_WORD, legsCaption, relativeAgo } from './format';
 import { usePressPrefetch } from '../../shell/use-prefetch-tabs';
+import { plural, pluralWord } from '../../lib/plural';
 
 const FORM_NOTE: Record<ChRosterPlayer['form'], string> = {
   improving: 'Scoring is coming down.',
@@ -120,10 +122,10 @@ function PeekBody({
   const devCounts = (
     <>
       <span>
-        <b className="ch-num">{p.focusAreas ?? NO_DATA}</b> focus {p.focusAreas === 1 ? 'area' : 'areas'}
+        <b className="ch-num">{p.focusAreas ?? <NoData />}</b> focus {pluralWord(p.focusAreas ?? 0, 'area')}
       </span>
       <span>
-        <b className="ch-num">{p.goals ?? NO_DATA}</b> {p.goals === 1 ? 'goal' : 'goals'}
+        <b className="ch-num">{p.goals ?? <NoData />}</b> {pluralWord(p.goals ?? 0, 'goal')}
       </span>
     </>
   );
@@ -139,7 +141,7 @@ function PeekBody({
       </div>
       <div className="ch-rs-peek__hero">
         <span className="ch-rs-peek__av">
-          <Avatar name={p.name} size={96} />
+          <Avatar name={p.name} id={p.id} size={96} />
         </span>
         <h2 className="ch-display">{p.name}</h2>
         <span className="ch-rs-peek__sub">
@@ -393,7 +395,7 @@ export function CoachNote({ p, locked, onSaved }: { p: ChRosterPlayer; locked: b
       ) : (
         left <= NOTE_WARN && (
           <span id={helpId} className="ch-field__help ch-num" data-ch-code="CH-3101" aria-live="polite">
-            {left === 0 ? 'That’s the limit: 2,000 characters.' : `${left} ${left === 1 ? 'character' : 'characters'} left`}
+            {left === 0 ? 'That’s the limit: 2,000 characters.' : `${plural(left, 'character')} left`}
           </span>
         )
       )}
@@ -517,7 +519,7 @@ function AvailabilityNote({ p, onSaved }: { p: ChRosterPlayer; onSaved: (id: str
       />
       {left <= NOTE_WARN && (
         <span id={helpId} className="ch-field__help ch-num" aria-live="polite">
-          {left === 0 ? `That’s the limit: ${AVAILABILITY_NOTE_MAX} characters.` : `${left} ${left === 1 ? 'character' : 'characters'} left`}
+          {left === 0 ? `That’s the limit: ${AVAILABILITY_NOTE_MAX} characters.` : `${plural(left, 'character')} left`}
         </span>
       )}
     </div>

@@ -9,8 +9,9 @@ import { askLinkHref } from '../../../data/coachhelm-chat-links';
 import { Button } from '../../../ui/Button';
 import { Icon } from '../../../ui/Icon';
 import { playerStatsHref } from './Prose';
+import { firstName } from '../../../lib/names';
+import { plural } from '../../../lib/plural';
 
-const firstName = (full: string) => full.trim().split(/\s+/)[0] ?? full;
 
 /**
  * The proposal a coach approves: what will be written, who is told, and what is not set, stated
@@ -58,10 +59,9 @@ export function AskActionCard({
   const pills = proposal.affects.filter((a) => !proposal.facts.some((f) => f.value.includes(a.label)));
 
   const evidenceControl = !focus ? null : hasEvidence ? (
-    <button type="button" className="ch-btn ch-btn--secondary ch-btn--sm ch-th-act__ev" aria-pressed={evidenceOpen} data-ch-code="CH-13851" onClick={() => onOpenEvidence(focus)}>
-      <span>{phone ? `See ${firstName(who?.label ?? '')}’s numbers` : 'Evidence'}</span>
-      {phone && <Icon icon={ArrowRight} size={14} />}
-    </button>
+    <Button size="sm" className="ch-th-act__ev" rightIcon={phone ? ArrowRight : undefined} aria={{ pressed: evidenceOpen }} code="CH-13851" onClick={() => onOpenEvidence(focus)}>
+      {phone ? `See ${firstName(who?.label ?? '')}’s numbers` : 'Evidence'}
+    </Button>
   ) : statsHref ? (
     <Button variant="secondary" size="sm" href={statsHref} className="ch-th-act__ev">
       {`See ${firstName(who?.label ?? '')}’s stats`}
@@ -170,7 +170,7 @@ export function AskReceiptCard({ receipt, onAskAgain }: { receipt: ActionReceipt
       {receipt.created.length > 0 && (
         <ul className="ch-th-receipt__chips">
           {receipt.created.map((c, i) => {
-            const text = `${c.count} ${c.kind}${c.count === 1 ? '' : 's'}`;
+            const text = plural(c.count, c.kind);
             // A chip is a link only when the screen it opens is rebuilt; a moved Fairway address opens its Clubhouse screen.
             const href = c.href ? askLinkHref(c.href) : null;
             return (

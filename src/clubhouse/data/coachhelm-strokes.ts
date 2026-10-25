@@ -1,4 +1,5 @@
 import type { InsightEvidence } from '@/lib/coachhelm/v2/insights/types';
+import { formatFixed } from '../lib/format';
 
 /**
  * What a read is worth in strokes a round, and when to say nothing (Clubhouse P013). Pure, over the evidence alone.
@@ -32,7 +33,7 @@ function shown(ev: Pick<InsightEvidence, 'strokes_impact'> | null | undefined): 
 export function strokesAtStake(ev: Pick<InsightEvidence, 'strokes_impact' | 'strokes_impact_method'> | null | undefined): string | null {
   if (!ev || !ESTIMATED.has(ev.strokes_impact_method)) return null;
   const v = shown(ev);
-  return v != null && v > 0 ? v.toFixed(1) : null;
+  return v != null && v > 0 ? formatFixed(v, 1) : null;
 }
 
 /**

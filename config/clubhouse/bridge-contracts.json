@@ -1780,7 +1780,7 @@
     "category": 8,
     "item": 6,
     "name": "CONTROLS_STAY_WITH_THEIR_ROLE",
-    "meaning": "Home draws its own role's controls only: Player Home has no Message team, New event or N shortcut, no Plan, Add event or quick event types, no leaderboard and no link to another player's stats or thread, and Coach Home has no Message coach, Start a round or countdown.",
+    "meaning": "Home draws its own role's controls only: Player Home has no Message team, New event or N shortcut, no Plan, Add event or quick event types, no leaderboard and no link to another player's stats or thread, and Coach Home has no Message coach, New round or countdown.",
     "status": "implemented",
     "where": "src/clubhouse/screens/home/PlayerHome.tsx#PlayerHome; src/clubhouse/screens/home/PlayerHomePhone.tsx#PlayerHomePhone; src/clubhouse/screens/home/CoachHome.tsx#CoachHome",
     "tests": [
@@ -6707,6 +6707,17 @@
     "catalog": "docs/clubhouse/catalog/messages.md"
   },
   {
+    "id": 70638,
+    "page": "P007",
+    "category": 6,
+    "item": 38,
+    "name": "MARKING_A_CONVERSATION_READ_OR_UNREAD_FROM",
+    "chCode": "CH-7026",
+    "meaning": "Marking a conversation read or unread from its row (menu or swipe) fails",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/messages.md"
+  },
+  {
     "id": 70701,
     "page": "P007",
     "category": 7,
@@ -6959,6 +6970,17 @@
     "name": "CHANGING_THE_INBOX_FILTER_ON_THE_PHONE",
     "chCode": "CH-7606",
     "meaning": "Changing the inbox filter on the phone (All, Unread, Groups)",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/messages.md"
+  },
+  {
+    "id": 71607,
+    "page": "P007",
+    "category": 16,
+    "item": 7,
+    "name": "MUTING_A_CONVERSATION_FROM_ITS_ROW",
+    "chCode": "CH-7607",
+    "meaning": "Muting a conversation from its row (owner decision 14)",
     "status": "implemented",
     "catalog": "docs/clubhouse/catalog/messages.md"
   },
@@ -8695,7 +8717,7 @@
     "category": 1,
     "item": 1,
     "name": "LIST_READY",
-    "meaning": "The list opens with the count of active and concluded qualifiers, the All, Active and Concluded pills with their counts, search, the live qualifier (or, with none live, the active one that starts first) as the hero with its leaders, the other active ones as cards under Active and the concluded ones under Concluded; a coach also gets Create qualifier.",
+    "meaning": "The list opens with the count of active and concluded qualifiers, the All, Active and Concluded pills with their counts, search, the live qualifier (or, with none live, the active one that starts first) as the hero with its leaders, the other active ones as cards under Active and the concluded ones under Concluded; a coach also gets New qualifier.",
     "status": "implemented",
     "where": "src/clubhouse/screens/qualifiers/QualifiersList.tsx#QualifiersList",
     "tests": [
@@ -9647,6 +9669,17 @@
     "catalog": "docs/clubhouse/catalog/qualifiers.md"
   },
   {
+    "id": 90707,
+    "page": "P009",
+    "category": 7,
+    "item": 7,
+    "name": "PLAYER_THEIR_OWN_RANKED_ROW_ON_A",
+    "chCode": "CH-09908",
+    "meaning": "Player: their own ranked row on a board that draws a line",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/qualifiers.md"
+  },
+  {
     "id": 90801,
     "page": "P009",
     "category": 8,
@@ -9739,7 +9772,7 @@
     "category": 8,
     "item": 8,
     "name": "COACH_CONTROLS_HIDDEN_FROM_PLAYERS",
-    "meaning": "A player is never shown a coach control: not Create qualifier, Manage selections, Edit, Close, Reopen, the phone's Qualifier actions, round-by-round scores or the coach's Selections panel (hiding them is a courtesy; the gates are 90803 and 90810 to 90812).",
+    "meaning": "A player is never shown a coach control: not New qualifier, Manage selections, Edit, Close, Reopen, the phone's Qualifier actions, round-by-round scores or the coach's Selections panel (hiding them is a courtesy; the gates are 90803 and 90810 to 90812).",
     "status": "implemented",
     "where": "src/clubhouse/screens/qualifiers/QualifiersList.tsx; QualifierDetail.tsx; QualifierDetailPhone.tsx; QualifierSections.tsx#Selections",
     "tests": [
@@ -11364,7 +11397,7 @@
     "category": 1,
     "item": 5,
     "name": "UNBUILT_TARGETS_ARE_NOT_DRAWN",
-    "meaning": "A control whose screen is not rebuilt is not drawn, never a dead button (nav.rebuiltHref). New round, Start a round, Continue and Submit lead to /rounds/new and /rounds/continue/[id], which are rebuilt for a player (round entry, over the round engine), so they are drawn; a coach's are not, since a coach does not log rounds. /rounds/recover is rebuilt for a player (swap audit F-02) and is reached from a failed submit, so nothing in the Library links there. Every posted round in the book opens its review. A round whose review cannot be opened is still listed, as one named group. /rounds/[id]/review (CoachHelm's) is not rebuilt for either role, and neither is the coach's Rounds library.",
+    "meaning": "A control whose screen is not rebuilt is not drawn, never a dead button (nav.rebuiltHref). New round, Continue and Submit lead to /rounds/new and /rounds/continue/[id], which are rebuilt for a player (round entry, over the round engine), so they are drawn; a coach's are not, since a coach does not log rounds. /rounds/recover is rebuilt for a player (swap audit F-02) and is reached from a failed submit, so nothing in the Library links there. Every posted round in the book opens its review. A round whose review cannot be opened is still listed, as one named group. /rounds/[id]/review (CoachHelm's) is not rebuilt for either role, and neither is the coach's Rounds library.",
     "status": "implemented",
     "where": "src/clubhouse/screens/rounds/RoundsLibrary.tsx#roundsLinks; src/clubhouse/shell/nav.ts#rebuiltHref; src/clubhouse/shell/nav.ts#CH_REBUILT_PATTERNS; src/clubhouse/shell/nav.ts#CH_REBUILT_ROUTES",
     "tests": [
@@ -13356,7 +13389,7 @@
     "item": 3,
     "name": "CONTINUE_SUBMIT_OR_START_A_ROUND_IS",
     "chCode": "CH-11703",
-    "meaning": "Continue, Submit or Start a round is tapped",
+    "meaning": "Continue, Submit or New round is tapped",
     "status": "implemented",
     "catalog": "docs/clubhouse/catalog/rounds.md"
   },

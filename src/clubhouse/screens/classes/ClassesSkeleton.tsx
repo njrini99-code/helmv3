@@ -1,5 +1,6 @@
 import { SkelLine, Skeleton } from '../../ui/States';
 import '../../styles/classes.css';
+import { LargeTitleSkeleton } from '../../ui/LargeTitle';
 
 /** Route loading for Classes: the header, the term overview, then the deck of classes beside the week's side card, in place. On desktop the header is the framed page head at its loaded height and the deck's placeholders are rows (classes.css). */
 export function ClassesSkeleton() {
@@ -57,9 +58,12 @@ export function ClassesSkeleton() {
           the shape for the width, so the server needs no width to draw it. */}
       <div className="ch-cl-sk-phone">
         <header className="ch-cl-sk-h">
-          <span className="ch-cl-sk-line">
-            <Skeleton width={190} height={11} />
-          </span>
+          <div>
+            <span className="ch-cl-sk-line">
+              <Skeleton width={190} height={11} />
+            </span>
+            <LargeTitleSkeleton width={130} className="ch-cl-title" />
+          </div>
           <span className="ch-cl-sk-acts">
             <Skeleton width="100%" height={44} radius={11} />
             <Skeleton width="100%" height={44} radius={11} />

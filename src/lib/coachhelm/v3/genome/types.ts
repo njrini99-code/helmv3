@@ -49,6 +49,11 @@ export interface DimensionResult {
   confidence: number | null;
   /** Optional human label for tooltips (e.g. "Left bias", "Steady"). */
   label?: string;
+  /**
+   * Optional standard error of `value`, in its own unit, for a dimension that is a change between two windows
+   * (scoring_trend). Lets a reader say the change only when it clears its noise. Absent on rows stored before it.
+   */
+  se?: number;
 }
 
 /**

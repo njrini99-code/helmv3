@@ -4,9 +4,11 @@ import type { ChSgChange } from '../../data/stats-common';
 import type { ChGauge } from '../../data/stats-team';
 import { Icon } from '../../ui/Icon';
 import { SerifText } from '../../ui/SerifText';
-import { changeTone, formatSigned, NO_DATA } from '../../lib/format';
+import { changeTone, formatFixed, formatSigned, NO_DATA } from '../../lib/format';
 import { sgBaseline, sgScale } from '../../lib/sg';
 import { deltaTone, deltaWords, type DeltaTone } from '../../lib/stats-signal';
+import { plural } from '../../lib/plural';
+import { NoData } from '../../ui/NoData';
 
 /**
  * The yardage book: charts drawn the way a caddie's book reads, numbers where
@@ -87,7 +89,7 @@ export function FigureGauge({ gauge, n }: { gauge: ChGauge; n: number }) {
   return (
     <span className="ch-fg__gauge" aria-hidden="true">
       <span className="ch-fg__track">
-        <i className={gauge.ref == null ? 'is-neutral' : n >= gauge.ref ? 'is-gain' : 'is-loss'} style={{ left: 0, width: pct(n) }} />
+        <i className={gauge.ref == null || gauge.tone === '' ? 'is-neutral' : gauge.tone ?? (n >= gauge.ref ? 'is-gain' : 'is-loss')} style={{ left: 0, width: pct(n) }} />
         {gauge.ref != null && <b style={{ left: pct(gauge.ref) }} />}
       </span>
       {gauge.ref != null && <em style={{ left: pct(gauge.ref) }}>{gauge.refLabel ?? 'Tour'}</em>}
@@ -96,8 +98,8 @@ export function FigureGauge({ gauge, n }: { gauge: ChGauge; n: number }) {
 }
 
 /** The chip class for a change's tone (stats-signal `deltaTone`): green better, amber worse, neutral ink when it is no clear change. */
-export function deltaClass(tone: DeltaTone): 'is-good' | 'is-bad' | 'is-flat' {
-  return tone === 'is-gain' ? 'is-good' : tone === 'is-loss' ? 'is-bad' : 'is-flat';
+export function deltaClass(tone: DeltaTone): 'is-gain' | 'is-loss' | 'is-flat' {
+  return tone === 'is-gain' ? 'is-gain' : tone === 'is-loss' ? 'is-loss' : 'is-flat';
 }
 
 /**
@@ -174,7 +176,7 @@ export function PuttingRings({ bands }: { bands: Array<{ label: string; made: nu
               {b.label}
             </text>
             <text x={W} y={ly} dy=".34em" textAnchor="end" className={`ch-pg-pct${below ? ' is-below' : ''}`}>
-              {pct == null ? NO_DATA : `${pct}%`}
+              {pct == null ? <NoData /> : `${pct}%`}
             </text>
           </g>
         );
@@ -183,18 +185,21 @@ export function PuttingRings({ bands }: { bands: Array<{ label: string; made: nu
   );
 }
 
-export function ParTiles({ rows }: { rows: Array<{ par: number; avg: number | null; bench: number | null }> }) {
+/** `mark`: the bench's name, the team's own Tour ("Women's Tour" for a women's team, row 110). */
+export function ParTiles({ rows, mark = 'Tour' }: { rows: Array<{ par: number; avg: number | null; bench: number | null }>; mark?: string }) {
   return (
     <div className="ch-par3">
       {rows.map((r) => (
         <div key={r.par} className="ch-par3__t">
           <span className="ch-par3__l">Par {r.par}s</span>
-          <span className="ch-par3__v ch-num">{r.avg == null ? NO_DATA : r.avg.toFixed(2)}</span>
+          <span className="ch-par3__v ch-num">{formatFixed(r.avg, 2)}</span>
           {/* Against the Tour's average for the par when there is one (lower is better), so the colour says how it compares (F-54). */}
           <span className={'ch-par3__to ch-num' + (r.avg == null || r.bench == null || Math.abs(r.avg - r.bench) < 0.005 ? '' : r.avg < r.bench ? ' ch-gain' : ' ch-loss')}>
             {r.avg == null ? 'No holes' : `${formatSigned(r.avg - r.par, 2)} to par`}
           </span>
-          {r.bench != null && <span className="ch-par3__d ch-num">Tour {r.bench.toFixed(2)}</span>}
+          {r.bench != null && <span className="ch-par3__d ch-num">
+              {mark} {formatFixed(r.bench, 2)}
+            </span>}
         </div>
       ))}
     </div>
@@ -236,7 +241,7 @@ export function FairwayStrip({ opportunities, hit, left: leftN, right: rightN }:
       </div>
       <div className="ch-fws__cap">
         <span>Miss bias</span>
-        <b>{Math.abs(bias) < 1 ? 'Even' : `${bias > 0 ? 'Left' : 'Right'} by ${Math.round(Math.abs(bias))} ${Math.round(Math.abs(bias)) === 1 ? 'pt' : 'pts'}`}</b>
+        <b>{Math.abs(bias) < 1 ? 'Even' : `${bias > 0 ? 'Left' : 'Right'} by ${plural(Math.round(Math.abs(bias)), 'pt')}`}</b>
       </div>
     </div>
   );
@@ -256,7 +261,7 @@ export function Compare({ rows, unit = '', max }: { rows: Array<{ label: string;
             {r.value != null && <span style={{ width: `${Math.min(100, (r.value / m) * 100)}%` }} />}
           </span>
           {/* Percentages are whole numbers everywhere else in Stats ("55.6%" beside "50%" read as noise, F-54). */}
-          <b className="ch-num">{r.value == null ? NO_DATA : `${unit === '%' ? Math.round(r.value) : Math.round(r.value * 10) / 10}${unit}`}</b>
+          <b className="ch-num">{r.value == null ? <NoData /> : `${unit === '%' ? Math.round(r.value) : Math.round(r.value * 10) / 10}${unit}`}</b>
         </div>
       ))}
     </div>
@@ -299,7 +304,7 @@ export function BandRows({ rows, unit, label, invert = false, none = 'No shots',
                 ) : (
                   <b className={'ch-num' + (tone === ' is-loss' ? ' ch-loss' : tone === ' is-gain' ? ' ch-gain' : '')}>{`${Math.round(r.value)}${unit}`}</b>
                 )}
-                {r.n != null && r.n > 0 && <small className="ch-num">{`${r.n} ${r.n === 1 ? 'shot' : 'shots'}`}</small>}
+                {r.n != null && r.n > 0 && <small className="ch-num">{`${plural(r.n, 'shot')}`}</small>}
               </span>
             </li>
           );
@@ -338,7 +343,7 @@ export function Ladder({
         return (
           <div key={r.band} className="ch-lad__c">
             <span className={`ch-lad__v ch-num ${tone === 'is-gain' ? 'ch-gain' : tone === 'is-loss' ? 'ch-loss' : ''}`}>
-              {r.value == null ? NO_DATA : `${Math.round(r.value)}${unit}`}
+              {r.value == null ? <NoData /> : `${Math.round(r.value)}${unit}`}
             </span>
             <span className="ch-lad__col">
               {r.value != null && <span className={`ch-lad__fill ${tone}`} style={{ height: `${(r.value / max) * 100}%` }} />}
@@ -376,7 +381,7 @@ export function GreenMiss({ m }: { m: Record<'ll' | 'lg' | 'lr' | 'l' | 'r' | 's
           </span>
         ) : (
           <span key={l} className="ch-gmiss__c" style={{ background: `color-mix(in srgb, var(--ch-st-miss-heat) ${(5 + ((v ?? 0) / max) * 32).toFixed(1)}%, transparent)` }}>
-            <b className="ch-num">{v == null ? NO_DATA : `${Math.round(v)}%`}</b>
+            <b className="ch-num">{v == null ? <NoData /> : `${Math.round(v)}%`}</b>
             <em>{l}</em>
           </span>
         ),

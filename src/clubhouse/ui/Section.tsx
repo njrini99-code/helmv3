@@ -46,11 +46,22 @@ export function Section({
 }
 
 /** The way back from a sub-screen, above its page head: a quiet link with the parent's name. */
-export function BackLink({ href, children }: { href: string; children: ReactNode }) {
-  return (
-    <Link href={href} className="ch-backlink">
-      <Icon icon={ChevronLeft} size={15} />
+export function BackLink({ href, onClick, className, children }: { href?: string; onClick?: () => void; className?: string; children: ReactNode }) {
+  // CONS-29: the one desktop back: a link to the parent page, or a button that steps back inside one (a picker, a panel).
+  const cls = 'ch-backlink' + (className ? ` ${className}` : '');
+  const body = (
+    <>
+      <Icon icon={ChevronLeft} size={16} />
       {children}
+    </>
+  );
+  return href ? (
+    <Link href={href} className={cls}>
+      {body}
     </Link>
+  ) : (
+    <button type="button" className={cls} onClick={onClick}>
+      {body}
+    </button>
   );
 }

@@ -1,5 +1,5 @@
 import 'server-only';
-import { UserX, Users } from 'lucide-react';
+import { UserX } from 'lucide-react';
 import { getGolfSessionProfile } from '@/lib/auth/session';
 import { isUuid } from '@/lib/utils/uuid';
 import { loadTeamStats } from '../data/stats-team';
@@ -12,6 +12,7 @@ import { StatsPlayer } from '../screens/stats/StatsPlayer';
 import { EmptyState } from '../ui/States';
 import { Button } from '../ui/Button';
 import { resolveClubhouseTeam } from './team';
+import { NoTeam } from '../ui/NoTeam';
 import '../styles/stats.css';
 
 /**
@@ -53,13 +54,7 @@ export async function ClubhouseStatsRoute({ player, window, tab, query }: { play
 export function StatsNoTeam({ coach }: { coach: boolean }) {
   return (
     <main className="ch-st">
-      <EmptyState
-        size="page"
-        code="CH-4309"
-        icon={Users}
-        title="You aren’t on a team yet"
-        body={coach ? 'Stats fill in once your team is set up and players post rounds.' : 'Your stats show here once a coach adds you to a team roster.'}
-      />
+      <NoTeam code="CH-4309" coach={coach} body={coach ? 'Stats fill in once your team is set up and players post rounds.' : 'Your stats show here once a coach adds you to a team roster.'} />
     </main>
   );
 }

@@ -92,7 +92,8 @@ describe('Stats player reads: how deep', () => {
     expect(depth).toEqual([
       // golf_team_coach_staff: the personal-best card's attesting coach (P005-C2), beside the rest (its golf_coaches read
       // follows only when the team has staff, which this fixture doesn't).
-      ['auth:verifyAccess', 'golf_goal_suggestions', 'golf_goals', 'golf_player_focus_areas', 'golf_players', 'golf_rounds', 'golf_team_coach_staff', 'golf_team_members', 'golf_teams'],
+      // golf_team_settings: the team's zone for the season's turn (owner decision 9), beside the rest; the rounds don't wait for it.
+      ['auth:verifyAccess', 'golf_goal_suggestions', 'golf_goals', 'golf_player_focus_areas', 'golf_players', 'golf_rounds', 'golf_team_coach_staff', 'golf_team_members', 'golf_team_settings', 'golf_teams'],
       ['action:getDetailedStats', 'action:getSprayChartData', 'golf_holes', 'golf_pga_standards', 'golf_round_stats_cache', 'golf_shots', 'golf_shots'],
     ]);
     expect(result!.rounds.length).toBeGreaterThan(0);
@@ -103,7 +104,7 @@ describe('Stats player reads: how deep', () => {
   it('coach: the same, with the team list in the first and the teammates’ rounds in the second; only their round figures (the comparison column) come third, beside nothing the page waits on', async () => {
     const { result, waves: depth } = await depthOf('coach');
     expect(depth).toEqual([
-      ['auth:verifyAccess', 'golf_goals', 'golf_player_focus_areas', 'golf_players', 'golf_rounds', 'golf_team_coach_staff', 'golf_team_members', 'golf_team_members', 'golf_teams'],
+      ['auth:verifyAccess', 'golf_goals', 'golf_player_focus_areas', 'golf_players', 'golf_rounds', 'golf_team_coach_staff', 'golf_team_members', 'golf_team_members', 'golf_team_settings', 'golf_teams'],
       ['action:getDetailedStats', 'action:getSprayChartData', 'golf_holes', 'golf_pga_standards', 'golf_round_stats_cache', 'golf_rounds', 'golf_shots', 'golf_shots'],
       ['golf_round_stats_cache'],
     ]);

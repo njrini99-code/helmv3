@@ -203,3 +203,16 @@ describe('RoundTrend', () => {
     expect(document.body.textContent).toContain('One round so far: 74 on Sep 1. The trend draws from the second.');
   });
 });
+
+describe('RoundTrend with no rounds (CH-5302, CH-5309)', () => {
+  it('a score trend with no rounds is the window’s filtered empty with its body; strokes gained keeps its own empty', () => {
+    const { unmount } = render(<RoundTrend rounds={[]} kind="score" label="Scores." />);
+    const e = document.querySelector('[data-ch-code="CH-5302"]')!;
+    expect(e.getAttribute('data-ch-state')).toBe('filtered');
+    expect(e.textContent).toMatch(/No rounds in this window.*Try This season to see every round posted since August\./);
+    unmount();
+    render(<RoundTrend rounds={[]} kind="sg" label="Strokes gained." />);
+    expect(document.querySelector('[data-ch-code="CH-5302"]')).toBeNull();
+    expect(document.querySelector('[data-ch-code="CH-5309"]')!.textContent).toMatch(/^No strokes gained trend yet/);
+  });
+});
