@@ -328,3 +328,18 @@ export function toCourseHistory(input: {
     },
   };
 }
+
+/**
+ * P-7 6.4: the coach's Message draft, from figures that passed their floors, the first that applies: the costly stretch,
+ * then how the course plays, then a plain ask. Only the player's own figures go in. Nothing is sent from the page.
+ */
+export function coachDraft(h: Pick<ChCourseHistory, 'name' | 'stretch' | 'compared'>): string {
+  const lead = `I was looking at your rounds at ${h.name}.`;
+  const w = h.stretch.worst;
+  if (w) return `${lead} Holes ${w.from} to ${w.from + 2} have cost you about ${formatFixed(w.avg, 1)} shots a round there. Want to go through them at practice?`;
+  const c = h.compared;
+  if (!('needs' in c) && c.words !== 'same') {
+    return `${lead} It’s played about ${formatFixed(Math.abs(c.diff), 1)} shots ${c.words} for you than your other courses. Want to talk through a plan for it?`;
+  }
+  return `${lead} Want to go through them together?`;
+}

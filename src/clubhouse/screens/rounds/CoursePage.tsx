@@ -2,7 +2,10 @@
 
 import Link from 'next/link';
 import { useState } from 'react';
-import { avgToPar, type ChCourseHistory } from '../../data/course-page-shape';
+import { avgToPar, coachDraft, type ChCourseHistory } from '../../data/course-page-shape';
+import { MessageSquare } from 'lucide-react';
+import { messagesPrefillHref } from '../messages/prefill';
+import { Icon } from '../../ui/Icon';
 import { formatFixed } from '../../lib/format';
 import { Button } from '../../ui/Button';
 import { NoData } from '../../ui/NoData';
@@ -48,7 +51,7 @@ export function CoursePage({ history: h, playerName, playerId, initialHole }: { 
   };
   return (
     <main className="ch-ch" aria-labelledby="ch-ch-title">
-      <CourseHero h={h} coach={coach} />
+      <CourseHero h={h} coach={coach} who={who} playerId={playerId} />
       <section className="ch-ch-sec" aria-labelledby="ch-ch-fig-h">
         <h2 id="ch-ch-fig-h" className="ch-sr-only">
           Figures
@@ -109,7 +112,9 @@ export function CoursePage({ history: h, playerName, playerId, initialHole }: { 
   );
 }
 
-function CourseHero({ h, coach }: { h: ChCourseHistory; coach: boolean }) {
+function CourseHero({ h, coach, who, playerId }: { h: ChCourseHistory; coach: boolean; who: string | null; playerId: string | null }) {
+  // P-7 6.4: the coach's way to the player, a prefilled message they send from Messages.
+  const message = coach && playerId ? messagesPrefillHref({ players: [playerId], draft: coachDraft(h), title: h.name }) : null;
   const f = h.hero.figure;
   return (
     <header className="ch-ch-hero">
@@ -127,6 +132,12 @@ function CourseHero({ h, coach }: { h: ChCourseHistory; coach: boolean }) {
           </span>
         </div>
         {f.kind === 'average' && f.early != null && <p className="ch-ch-hero__e">Early read · {f.early} rounds</p>}
+        {message && (
+          <Button variant="secondary" className="ch-ch-hero__go" href={message}>
+            <Icon icon={MessageSquare} size={16} />
+            Message {who}
+          </Button>
+        )}
         {!coach && h.courseId && (
           <Button variant="secondary" className="ch-ch-hero__go" href={`/golf/dashboard/rounds/new?course=${h.courseId}`}>
             Start a round here
