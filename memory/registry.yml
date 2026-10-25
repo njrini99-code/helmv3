@@ -896,6 +896,9 @@ features:
         # golf_events table policies (2026-10-18: meetings visible to their
         # invitees only).
         - supabase/migrations/*golf_events_*.sql
+        # P016 Tournaments (held; each round is a golf_events row, D-81).
+        # Plan: docs/clubhouse/held/data/tournaments.md.
+        - supabase/migrations/*golf_tournament*.sql
       tests:
         - src/test/lib/calendar/**
         - src/test/api/calendar/**
