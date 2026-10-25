@@ -78,7 +78,7 @@ export function isPastEvent(e: ChCalEvent, now: ChNow): boolean {
   return e.date === now.date && !e.allDay && e.end != null && e.end <= now.hour;
 }
 
-function EventBlock({
+export function EventBlock({
   e,
   lane,
   lanes,
@@ -89,6 +89,7 @@ function EventBlock({
   onSelect,
   from,
   to,
+  hh = CAL_HH,
   drag,
   state,
   past = false,
@@ -105,6 +106,8 @@ function EventBlock({
   /** The grid's first and last hour. */
   from: number;
   to: number;
+  /** An hour's height in px: the desktop grid's 52 unless set (the phone's unfolded day is 64, P-4 4.7.2). */
+  hh?: number;
   /** P006-B3 / P-4: a coach's block can be picked up, stretched by its grips, or nudged with Alt and the arrows. */
   drag?: {
     onPointerDown: (ev: PointerEvent<HTMLElement>) => void;
@@ -120,9 +123,9 @@ function EventBlock({
   const clock = useChClock();
   const start = Math.max(e.start!, from);
   const end = Math.min(e.end!, to);
-  const top = (start - from) * CAL_HH;
+  const top = (start - from) * hh;
   // At least one line of title (A26): a 15-minute block was 20px and cut its title's descenders.
-  const h = Math.max((end - start) * CAL_HH - 2, 22);
+  const h = Math.max((end - start) * hh - 2, 22);
   const short = h < 40;
   // P-4 4.1 tiers: a sliver (under 24px) is one 12px row with no glyph; from 24px the type's glyph leads the title.
   const tier = blockTier(h);

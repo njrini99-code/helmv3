@@ -632,7 +632,7 @@
   background: var(--ch-text-primary);
   color: var(--ch-bg-surface);
   font: var(--ch-type-12-strong);
-  box-shadow: var(--ch-elevation-floating);
+  box-shadow: var(--ch-elevation-raised);
   white-space: nowrap;
 }
 .ch-dd-pill.is-below {
@@ -1220,7 +1220,7 @@ html[data-fw-theme='dark'] .ch-ev-bar.is-held {
 .ch-ev--tournament {
   background: var(--ch-green-fill-700);
   color: var(--ch-on-fill-100);
-  box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.08);
+  box-shadow: var(--ch-ev-sheen);
 }
 .ch-ev--tournament .ch-ev__m {
   color: var(--ch-on-green-ink-soft);
@@ -1252,7 +1252,7 @@ html[data-fw-theme='dark'] .ch-ev-bar.is-held {
 }
 @media (hover: hover) {
   .ch-ev--class:hover {
-    box-shadow: inset 0 0 0 1px rgb(45 92 119 / 0.28);
+    box-shadow: var(--ch-ev-class-ring-hover);
   }
 }
 .ch-ev--class .ch-ev__g {
@@ -1365,7 +1365,7 @@ html[data-fw-theme='dark'] .ch-ev-bar.is-held {
 }
 .ch-mo__cell.is-target {
   background: var(--ch-green-50);
-  box-shadow: inset 0 0 0 2px var(--ch-green-600);
+  box-shadow: var(--ch-ring-drop);
 }
 .ch-mo__evs {
   display: flex;
@@ -3790,5 +3790,169 @@ html[data-fw-theme='dark'] .ch-ev--busy::after {
   }
   .ch-in__today .ch-in__next:hover {
     background: rgb(255 255 255 / 0.16);
+  }
+}
+
+/* P-4 4.7: the phone Day's drag. The row in hand lifts in place; the day unfolds into hours under it (64px an hour,
+   blocks from the list's title column, measured into --ch-tl-rail); the strip stays in reach, sticky under the top bar;
+   both pagers hold still. The list stays in the document under the timeline (the touch's row must not unmount). */
+@media (max-width: 820px) {
+  .ch-calm-dayv {
+    position: relative;
+    isolation: isolate;
+    display: flex;
+    flex-direction: column;
+    gap: var(--ch-gap-section-phone-snug);
+  }
+  /* iOS's text loupe and link callout would answer a hold before the lift does. */
+  .ch-calm-ev.is-movable {
+    -webkit-touch-callout: none;
+    -webkit-user-select: none;
+    user-select: none;
+  }
+  .ch-calm-ev.is-lifted {
+    scale: 1.02;
+    border-radius: var(--ch-radius-md);
+    background-color: var(--ch-bg-surface);
+    box-shadow: var(--ch-elevation-overlay);
+    transition:
+      scale var(--ch-dur-press) var(--ch-ease),
+      box-shadow var(--ch-dur-press) var(--ch-ease);
+  }
+  .ch-calm-ev.is-lifted .ch-calm-ev__rail {
+    opacity: 0;
+  }
+  .ch-calm-dayv.is-held > .ch-wks-pager,
+  .ch-calm-dayv.is-held > .ch-wks {
+    position: sticky;
+    top: calc(var(--ch-phone-topbar-h) + env(safe-area-inset-top));
+    z-index: calc(var(--ch-z-raised) + 5);
+    background: var(--ch-bg-page);
+  }
+  .ch-calm-pager[data-frozen],
+  .ch-wks-pager[data-frozen] {
+    overflow-x: hidden;
+  }
+  .ch-calm-dayv.is-unfolded > .ch-calm-pager {
+    position: absolute;
+    inset-inline: 0;
+    top: 0;
+    z-index: -1;
+    opacity: 0;
+  }
+  .ch-wks__d.is-drop {
+    background-color: var(--ch-green-50);
+    box-shadow: var(--ch-ring-drop);
+  }
+
+  .ch-tl {
+    display: flex;
+    flex-direction: column;
+  }
+  .ch-tl__grid {
+    position: relative;
+    margin-top: 16px;
+  }
+  .ch-tl__h {
+    position: absolute;
+    left: 0;
+    right: 0;
+    height: 0;
+    border-top: 1px solid var(--ch-ledger-rule-soft);
+  }
+  .ch-tl__h em {
+    position: absolute;
+    left: 0;
+    width: 44px;
+    padding-right: 6px;
+    transform: translateY(-50%);
+    text-align: right;
+    font: var(--ch-type-11-medium);
+    font-style: normal;
+    letter-spacing: var(--ch-track-11);
+    color: var(--ch-text-tertiary);
+  }
+  .ch-tl__col {
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    left: var(--ch-tl-rail, 92px);
+    right: 0;
+  }
+  .ch-tl__slot {
+    position: absolute;
+    left: 3px;
+    right: 3px;
+    border: 1.5px dashed var(--ch-green-600);
+    border-radius: var(--ch-radius-md);
+    top: 0;
+    pointer-events: none;
+    transition: transform var(--ch-dur-quick) var(--ch-ease);
+  }
+  .ch-tl__card {
+    top: 0;
+    left: 0;
+    right: 0;
+    will-change: transform;
+  }
+  .ch-tl.is-adjust .ch-tl__card {
+    pointer-events: auto;
+    touch-action: none;
+  }
+  .ch-tl__card .ch-dd-pill {
+    bottom: calc(100% + 6px);
+  }
+  /* Adjust time's grips: a 28 by 5 pill 4px inside each edge, its 44 by 44 hit area centred on it. */
+  .ch-tl__grip {
+    position: absolute;
+    left: 50%;
+    z-index: 1;
+    display: grid;
+    place-items: center;
+    width: 44px;
+    height: 44px;
+    translate: -50% 0;
+    touch-action: none;
+  }
+  .ch-tl__grip.is-top {
+    top: -15px;
+  }
+  .ch-tl__grip.is-bottom {
+    bottom: -15px;
+  }
+  .ch-tl__grip i {
+    width: 28px;
+    height: 5px;
+    border-radius: var(--ch-radius-xs);
+    background: currentColor;
+  }
+  .ch-tl__bar {
+    position: sticky;
+    bottom: calc(12px + env(safe-area-inset-bottom));
+    z-index: calc(var(--ch-z-raised) + 5);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    height: 56px;
+    margin-top: 16px;
+    padding: 0 6px;
+    border-radius: var(--ch-radius-sheet);
+    background: var(--ch-sheet-bg);
+    box-shadow: var(--ch-elevation-overlay);
+  }
+  /* 4.7.7: the first-run hint, one quiet line under the day's heading with a 44px close. */
+  .ch-calm-hint {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    margin: 4px 0 0;
+    font: var(--ch-type-13);
+    letter-spacing: var(--ch-track-13);
+    color: var(--ch-text-tertiary);
+  }
+  .ch-calm-hint__x {
+    min-width: 44px;
+    min-height: 44px;
   }
 }

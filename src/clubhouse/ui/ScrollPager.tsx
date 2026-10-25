@@ -19,6 +19,7 @@ export function ScrollPager({
   className,
   pageClassName,
   label,
+  frozen = false,
 }: {
   pageKey: string;
   onSettle: (dir: -1 | 1) => void;
@@ -28,11 +29,15 @@ export function ScrollPager({
   className: string;
   pageClassName: string;
   label?: string;
+  /** P-4: a drag holds the page still (no paging under a lifted card); `data-frozen` turns the scroll off. */
+  frozen?: boolean;
 }) {
   const ref = useRef<HTMLDivElement | null>(null);
   const mid = useRef<HTMLElement | null>(null);
   const settle = useRef(onSettle);
   settle.current = onSettle;
+  const still = useRef(frozen);
+  still.current = frozen;
   // On the page, before paint: a recentre never shows as a jump.
   useLayoutEffect(() => {
     const el = ref.current;
@@ -48,7 +53,7 @@ export function ScrollPager({
     const done = () => {
       window.clearTimeout(timer);
       const w = el.clientWidth;
-      if (!w) return;
+      if (!w || still.current) return;
       const i = Math.round(el.scrollLeft / w);
       if (i === 1 || Math.abs(el.scrollLeft - i * w) > 2) return;
       haptic('select');
@@ -68,7 +73,7 @@ export function ScrollPager({
     };
   }, []);
   return (
-    <div className={className} ref={ref}>
+    <div className={className} ref={ref} data-frozen={frozen ? '' : undefined}>
       <section className={`${pageClassName} is-side`} inert aria-hidden="true">
         {prev}
       </section>
