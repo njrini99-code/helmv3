@@ -56,6 +56,15 @@ export interface ChMsg {
   replyToId?: string | null;
   /** A poll (kind 'poll' with a payload we can draw); its `text` is then the plain-text copy, never shown in the card. */
   poll?: Poll | null;
+  /** Still sending: the server hasn't confirmed it, so it carries no receipt (P-1). */
+  pending?: boolean;
+}
+
+/** P-1 Seen by: every member's last_read_at in the open conversation, from the messages hook. */
+export interface ChReceipts {
+  status: 'loading' | 'ready' | 'error';
+  marks: ReadonlyMap<string, string | null>;
+  retry: () => void;
 }
 
 export interface ChAttachment {

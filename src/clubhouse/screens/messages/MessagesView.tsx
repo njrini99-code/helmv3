@@ -37,6 +37,7 @@ import {
   createLucideIcon,
   type LucideIcon,
   ListChecks,
+  CheckCheck,
   Copy,
   Lock,
   BellRing,
@@ -114,7 +115,10 @@ import {
   type ChAnnouncement,
   type ChAnnouncementDetail,
   type ChFile,
+  type ChReceipts,
 } from "./model";
+import { SeenByReceipt, useSeenBy, useSeenByList } from "./seen-by";
+import { receiptCarrierId, SEEN_BY_VISIBILITY } from "@/lib/golf/message-receipts";
 import { AnnouncementPane, AnnouncementsSection } from "./announcements";
 import { fileMeta, fileSize, useConversationFiles } from "./files";
 // Re-exported: MessagesPhone and older callers read it from here.
@@ -292,6 +296,8 @@ export interface ChMessagesApi {
   }) => Promise<boolean>;
   /** Polls in group threads (P-2): the votes, voting, sending and closing. Absent where polls aren't offered. */
   polls?: ChPollsApi;
+  /** Seen by (P-1): the open conversation's read map. Absent in a fixture or where receipts aren't drawn. */
+  receipts?: ChReceipts;
 }
 
 export const personOf = (api: ChMessagesApi, userId: string) =>
@@ -1036,12 +1042,18 @@ export function Bubble({
   onDelete,
   onActions,
   onReply,
+  carrier = false,
+  onSeenBy,
 }: {
   api: ChMessagesApi;
   m: ChMsg;
   first: boolean;
   last: boolean;
   group: boolean;
+  /** P-1: this is the message that carries the thread's receipt (the viewer's newest confirmed one). */
+  carrier?: boolean;
+  /** P-1: open the Seen by list for this message (coaches), anchored to the element that asked. */
+  onSeenBy?: (m: ChMsg, anchor: HTMLElement | null) => void;
   picking: boolean;
   setPicking: (v: boolean) => void;
   onEdit: () => void;
@@ -1081,12 +1093,17 @@ export function Bubble({
     }
   };
   const pollActs = m.poll ? pollCardActions(m.id) : null;
+  // P-1 slice 6: "Seen by" for a coach on any message in a group (theirs or anyone's).
+  const actionsBtn = useRef<HTMLButtonElement | null>(null);
+  const seenInfo = useSeenBy(api, m);
+  const seenItem: MenuItem[] = group && onSeenBy && seenInfo?.canOpen ? [{ label: "Seen by", icon: CheckCheck, onSelect: () => onSeenBy(m, actionsBtn.current) }] : [];
   const menuItems: MenuItem[] = m.poll
     ? [
         ...(pollActs?.seeVotes ? [{ label: "See votes", icon: ListChecks, onSelect: pollActs.seeVotes }] : []),
         ...(pollActs?.remind ? [{ label: `Remind ${pollActs.remind.count}`, icon: BellRing, onSelect: pollActs.remind.run }] : []),
         ...(pollActs?.close ? [{ label: "Close poll", icon: Lock, onSelect: pollActs.close }] : []),
         ...(pollActs?.share ? [{ label: "Share result", icon: Share, onSelect: pollActs.share }] : []),
+        ...seenItem,
         ...(onReply ? [{ label: "Reply", icon: Reply, onSelect: onReply }] : []),
         { label: "Copy poll", icon: Copy, onSelect: () => void copyText() },
         ...(m.mine ? [{ label: "Delete", icon: Trash2, danger: true, onSelect: onDelete }] : []),
@@ -1095,11 +1112,12 @@ export function Bubble({
       ? [
           // An attachment-only message has no text to edit (as the phone's sheet: wave 5 #8).
           ...(m.text ? [{ label: "Edit", icon: Pencil, onSelect: onEdit }] : []),
+          ...seenItem,
           { label: "Delete", icon: Trash2, danger: true, onSelect: onDelete },
         ]
       : m.text
-        ? [...(onReply ? [{ label: "Reply", icon: Reply, onSelect: onReply }] : []), { label: "Copy", icon: Copy, onSelect: () => void copyText() }]
-        : [];
+        ? [...seenItem, ...(onReply ? [{ label: "Reply", icon: Reply, onSelect: onReply }] : []), { label: "Copy", icon: Copy, onSelect: () => void copyText() }]
+        : seenItem;
   const reacts = api.reactions.get(m.id) ?? [];
   const reduced = useChReducedMotion();
   const reactBtn = useRef<HTMLButtonElement | null>(null);
@@ -1240,6 +1258,10 @@ export function Bubble({
                         className="ch-ms-tool"
                         aria-label="More message actions"
                         {...p}
+                        ref={(el) => {
+                          actionsBtn.current = el;
+                          p.ref(el);
+                        }}
                         onClick={() => {
                           // A poll's items are its card's live state: read them as the menu opens.
                           refreshMenu();
@@ -1327,7 +1349,9 @@ export function Bubble({
             <span className="ch-ms-msg__t ch-num">
               {clock(m.at, api.timeZone, api.clock)}
               {m.edited ? " · Edited" : ""}
-              {m.mine && !group && m.seen ? " · Seen" : ""}
+              {/* OC-3: a direct thread's "Seen" sits on the carrier only (or a time revealed by a swipe), not every run-end. */}
+              {m.mine && !group && m.seen && (carrier || showTime) ? " · Seen" : ""}
+              {group && (carrier || showTime) && <SeenByReceipt api={api} m={m} onOpen={onSeenBy ? (el) => onSeenBy(m, el) : undefined} />}
             </span>
           )
         )}
@@ -1939,6 +1963,12 @@ function Thread({
   };
   // D30: Remind and Share result reply to the poll with a prefilled draft.
   const [seed, setSeed] = useState<{ text: string; nonce: number } | null>(null);
+  // P-1: the message that carries the receipt, and the Seen by popover.
+  const carrierId = useMemo(
+    () => receiptCarrierId(api.msgs, { viewerId: api.viewer.userId, scope: conv.group && SEEN_BY_VISIBILITY === "everyone" ? "thread" : "mine" }),
+    [api.msgs, api.viewer.userId, conv.group],
+  );
+  const seenList = useSeenByList();
   const pollThread = useMemo<PollThreadActions>(
     () => ({
       replyWith: (messageId, text) => {
@@ -2125,6 +2155,8 @@ function Thread({
                         onEdit={() => setEditing(it.m)}
                         onDelete={() => setDeleting(it.m)}
                         onReply={() => reply(it.m)}
+                        carrier={it.m.id === carrierId}
+                        onSeenBy={conv.group ? (m, el) => seenList.open(m, el) : undefined}
                       />,
                     ],
               )}
@@ -2166,6 +2198,7 @@ function Thread({
 
       <EditMessageModal api={api} message={editing} onClose={() => setEditing(null)} />
       <DeleteMessageModal api={api} message={deleting} onClose={() => setDeleting(null)} />
+      {seenList.render(api, false)}
     </section>
     </PollThreadContext.Provider>
   );
