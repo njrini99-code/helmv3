@@ -1,14 +1,17 @@
 'use client';
 
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { ChevronLeft, Flag, Plus, Search } from 'lucide-react';
+import { Flag, Plus, Search } from 'lucide-react';
 import { haptic } from '../../../lib/haptics';
 import { useChPhone } from '../../../lib/use-phone';
 import { Icon } from '../../../ui/Icon';
+import { Button } from '../../../ui/Button';
 import { InlineNotice } from '../../../ui/Notices';
 import { Modal } from '../../../ui/Modal';
 import { TeeSwatch } from '../parts';
 import { groupCourses, type ChResult, type ChSetupCourse, type ChSetupPorts, type ChSetupTee } from './shape';
+import { BackLink } from '../../../ui/Section';
+import { plural } from '../../../lib/plural';
 
 type Load<T> = { state: 'loading' } | { state: 'ok'; data: T } | { state: 'failed'; error: string };
 
@@ -90,10 +93,9 @@ export function CoursePicker({
       action={
         course || !onAddCourse ? undefined : (
           // The phone head says "Add" so the title stays on one line at 390; the name stays whole.
-          <button type="button" className="ch-btn ch-btn--secondary ch-btn--sm" aria-label="Add a course" onClick={onAddCourse}>
-            <Icon icon={Plus} size={14} />
-            <span>{phone ? 'Add' : 'Add a course'}</span>
-          </button>
+          <Button size="sm" leftIcon={Plus} aria={{ label: 'Add a course' }} onClick={onAddCourse}>
+            {phone ? 'Add' : 'Add a course'}
+          </Button>
         )
       }
     >
@@ -179,7 +181,7 @@ function CourseList({
                         {c.place && <span>{c.place}</span>}
                       </span>
                       <span className="ch-cpk__meta ch-num">
-                        {[c.lastPlayed, c.par ? `Par ${c.par}` : null, c.teeCount ? `${c.teeCount} tee${c.teeCount === 1 ? '' : 's'}` : null].filter(Boolean).join(' · ')}
+                        {[c.lastPlayed, c.par ? `Par ${c.par}` : null, c.teeCount ? plural(c.teeCount, 'tee') : null].filter(Boolean).join(' · ')}
                       </span>
                     </span>
                   </span>
@@ -206,10 +208,7 @@ function TeeList({ course, listTees, onBack, onPick, canAdd }: { course: ChSetup
   const longest = Math.max(1, ...tees.map((t) => t.yards ?? 0));
   return (
     <div className="ch-rsu-pick">
-      <button type="button" className="ch-rsu-back" onClick={onBack}>
-        <Icon icon={ChevronLeft} size={16} />
-        Courses
-      </button>
+      <BackLink onClick={onBack}>Courses</BackLink>
       <h4 className="ch-rsu-teek">Choose your tees</h4>
       {load.state === 'loading' && (
         // The tees on their way: a quiet space the height of a tee, no shimmer (owner, 2026-10-16). Usually never seen,

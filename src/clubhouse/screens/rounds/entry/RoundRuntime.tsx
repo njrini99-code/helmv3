@@ -134,7 +134,7 @@ export function RoundRuntime({
         saving.current = false;
       }
     },
-    () => ({ done: '', failed: `Couldn’t save your round at ${course}`, hint: 'Your shots are still on this device. Check your connection, then try again.', code: 'CH-11010', offline: () => s.current.offline() }),
+    () => ({ done: '', failed: `Couldn’t save your round at ${course}`, hint: 'Your shots are still on this device. Try again.', code: 'CH-11010', offline: () => s.current.offline() }),
     (result, c) => (errorOf(result) === 'busy' || errorOf(result) === 'conflict' ? { ...c, quiet: true } : { ...c, hint: reasonText(errorOf(result)) ?? c.hint }),
   );
 

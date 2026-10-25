@@ -1,6 +1,6 @@
 'use client';
 
-import { ChevronDown, ChevronUp, Eye, SquareArrowOutUpRight, X } from 'lucide-react';
+import { ChevronDown, ChevronUp, Eye, ArrowUpRight, X } from 'lucide-react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useEffect, useId, useState, useSyncExternalStore } from 'react';
@@ -95,12 +95,12 @@ export default function AskSheetBody({
             {phone && (
               <button
                 type="button"
-                className="ch-asks__grab"
+                className="ch-asks__drag"
                 aria-label={full ? 'Make the sheet smaller' : 'Make the sheet full height'}
                 onPointerDown={drag.onPointerDown}
                 onClick={() => setFull((f) => !f)}
               >
-                <i aria-hidden="true" />
+                <i className="ch-grab" aria-hidden="true" />
               </button>
             )}
             <header className="ch-asks__head" onPointerDown={phone ? drag.onPointerDown : undefined}>
@@ -169,7 +169,7 @@ export default function AskSheetBody({
               </SectionBoundary>
               <Link className="ch-asks__open" href={chat.conversationId ? conversationHref(chat.conversationId) : COACHHELM_HREF.ask} onClick={onClose}>
                 Open in CoachHelm
-                <Icon icon={SquareArrowOutUpRight} size={13} />
+                <Icon icon={ArrowUpRight} size={13} />
               </Link>
             </div>
           </div>

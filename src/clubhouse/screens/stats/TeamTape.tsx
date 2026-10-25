@@ -74,9 +74,9 @@ function TapeCell({ it, against }: { it: TapeItem; against: string }) {
   const path = vals.length > 1 ? gappedPath(it.series, x, y) : '';
   const end = lastValue(it.series);
   const first = it.series.findIndex((v) => v != null);
-  const tone = signal === 'is-gain' ? 'is-good' : signal === 'is-loss' ? 'is-bad' : 'is-flat';
+  const tone = signal === 'is-gain' ? 'is-gain' : signal === 'is-loss' ? 'is-loss' : 'is-flat';
   const gid = useId().replace(/:/g, '');
-  const ink = tone === 'is-good' ? 'var(--ch-chart-gain)' : tone === 'is-bad' ? 'var(--ch-chart-loss)' : 'var(--ch-text-tertiary)';
+  const ink = tone === 'is-gain' ? 'var(--ch-chart-gain)' : tone === 'is-loss' ? 'var(--ch-chart-loss)' : 'var(--ch-text-tertiary)';
   return (
     <li className={`ch-tp__c ${tone}`} data-ch-code={it.code}>
       <Dial it={it} tone={tone} />
@@ -127,7 +127,7 @@ function Dial({ it, tone }: { it: TapeItem; tone: string }) {
     // The tone and the E use one zero test: a par average that prints as E is neither good nor bad.
     const par = changeTone(g.toPar, true, 1);
     return (
-      <span className={`ch-tp__par ch-num ${par === 'is-gain' ? 'is-good' : par === 'is-loss' ? 'is-bad' : ''}`} aria-hidden="true">
+      <span className={`ch-tp__par ch-num ${par === 'is-gain' || par === 'is-loss' ? par : ''}`} aria-hidden="true">
         {par === '' ? 'E' : formatSigned(g.toPar, 1)}
         <em>to par</em>
       </span>

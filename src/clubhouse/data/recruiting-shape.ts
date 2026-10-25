@@ -11,6 +11,9 @@ import {
 } from '@/app/golf/actions/recruit-documents-limits';
 import type { ChDivision, ChProgramGender } from './recruiting-calendar';
 import { RECRUIT_FILM_ENABLED } from './recruiting-film';
+import { plural } from '../lib/plural';
+import { isoDay } from '../lib/dates';
+import { formatFixed } from '../lib/format';
 
 /**
  * Recruiting (P014): the coach's prospect list, in the shapes the screen draws. Client-safe (only types come from
@@ -177,7 +180,7 @@ export function visibleProspects(list: readonly ChProspect[], opts: { stage: ChS
 
 // ── Labels ─────────────────────────────────────────────────────────────────
 
-const dayKey = (d: Date, tz?: string) => new Intl.DateTimeFormat('en-CA', { timeZone: tz, year: 'numeric', month: '2-digit', day: '2-digit' }).format(d);
+const dayKey = (d: Date, tz?: string) => isoDay(d, tz);
 
 /** "Sep 21", or "Sep 21, 2025" in another year. */
 export function dateLabel(iso: string, now: Date, tz?: string): string {
@@ -373,8 +376,8 @@ export function nextStepSummary(list: readonly ChProspect[], now: Date, tz?: str
     if (kind === 'decision' && p.stage !== 'committed' && p.nextStepDate.slice(0, 7) <= month) decisions += 1;
   }
   const parts = [
-    visits ? `${visits} ${visits === 1 ? 'visit' : 'visits'} this month` : null,
-    decisions ? `${decisions} ${decisions === 1 ? 'decision' : 'decisions'} due` : null,
+    visits ? `${plural(visits, 'visit')} this month` : null,
+    decisions ? `${plural(decisions, 'decision')} due` : null,
   ].filter(Boolean);
   return parts.length ? parts.join(' · ') : null;
 }
@@ -500,7 +503,7 @@ export function sizeLabel(bytes: number | null): string {
   if (!bytes || bytes <= 0) return '';
   if (bytes < 1024) return `${bytes} B`;
   if (bytes < 1024 * 1024) return `${Math.round(bytes / 1024)} KB`;
-  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+  return `${formatFixed(bytes / (1024 * 1024), 1)} MB`;
 }
 
 export const stripExtension = (name: string) => {

@@ -10,6 +10,7 @@ import { Icon } from '../../../ui/Icon';
 import { Tooltip } from '../../../ui/Tooltip';
 import { distanceText, RESULT_LABEL, shotKind, shotTitle } from './labels';
 import { HoleMap } from './parts';
+import { pluralWord } from '../../../lib/plural';
 
 /** "to the fairway", "holed", "+1 stroke". */
 function whereTo(shot: ShotRecord): string {
@@ -147,12 +148,12 @@ export function CourseView({
               </div>
             </header>
             <section className="ch-rtcv__sheet" aria-labelledby="ch-rtcv-h">
-              <span className="ch-rtcv__grab" aria-hidden="true" />
+              <span className="ch-grab" aria-hidden="true" />
               <div className="ch-rtcv__sh">
                 <h3 id="ch-rtcv-h">{isCurrent ? 'This hole' : `Hole ${hole.number}`}</h3>
                 {!isCurrent && hole.score != null && (
                   <span>
-                    {hole.score} stroke{hole.score === 1 ? '' : 's'}
+                    {hole.score} {pluralWord(hole.score, 'stroke')}
                   </span>
                 )}
                 {!isCurrent && index > current && hole.score == null && <span>Not played yet</span>}

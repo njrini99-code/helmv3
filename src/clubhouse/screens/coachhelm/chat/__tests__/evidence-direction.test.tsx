@@ -28,7 +28,7 @@ const block = (goodDirection: TrendBlock['goodDirection'], values: number[]): Tr
 
 const dotsY = () => [...document.querySelectorAll('.ch-th-trend circle')].map((c) => Number(c.getAttribute('cy')));
 /** The y axis's tick labels (end-anchored at the left); the x labels name the rounds. */
-const ticks = () => [...document.querySelectorAll('.ch-th-trend text.ch-th-ax.ch-num[text-anchor="end"]')].map((t) => t.textContent);
+const ticks = () => [...document.querySelectorAll('.ch-th-trend text.ch-line__t[text-anchor="end"]:not(.ch-line__ref-t)')].map((t) => t.textContent);
 
 describe('the Ask trend draws better as up (A8.1)', () => {
   it('lower is better: the latest, lower score is higher on screen, and the chart says so', () => {
@@ -52,5 +52,30 @@ describe('the Ask trend draws better as up (A8.1)', () => {
     expect(t.length).toBeGreaterThanOrEqual(2);
     expect(new Set(t).size).toBe(t.length);
     for (const label of t) expect(Number(label)).toSatisfy((v: number) => Number.isInteger(v * 2));
+  });
+
+  it('the reference’s words never sit on a drawn point (P013 D3), placed from the points as Line draws them', () => {
+    // The last rounds run along the reference at the right, where its words would go first.
+    const b = { ...block('down', [70, 76, 74, 74, 74]), reference: { label: 'Team', value: 74 } } as TrendBlock;
+    render(<Trend block={b} />);
+    const t = document.querySelector('.ch-th-trend .ch-line__ref-t');
+    const circles = [...document.querySelectorAll('.ch-th-trend circle')].map((c) => ({ x: Number(c.getAttribute('cx')), y: Number(c.getAttribute('cy')) }));
+    expect(circles).toHaveLength(5);
+    if (!t) {
+      // No clear place: the words are a key under the chart.
+      expect(document.querySelector('.ch-th-trend .ch-line__key')?.textContent).toBe('Team');
+      return;
+    }
+    const x = Number(t.getAttribute('x'));
+    const y = Number(t.getAttribute('y'));
+    const w = 'Team'.length * 6.6;
+    const x0 = t.getAttribute('text-anchor') === 'end' ? x - w : x;
+    for (const p of circles) if (p.x >= x0 && p.x <= x0 + w) expect(p.y + 5 < y - 11 || p.y - 5 > y + 3).toBe(true);
+  });
+
+  it('the older points are hollow and the last is filled', () => {
+    render(<Trend block={block('up', [50, 55, 60])} />);
+    const dots = [...document.querySelectorAll('.ch-th-trend circle')];
+    expect(dots.map((d) => d.classList.contains('is-hollow'))).toEqual([true, true, false]);
   });
 });

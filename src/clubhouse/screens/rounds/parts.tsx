@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { ArrowRight, Trash2 } from 'lucide-react';
 import type { ChLibraryRound, ChRoundsSeason, ChRoundType, ChTeeColor, ChUnfinishedRound } from '../../data/rounds-shape';
 import { formatFixed, formatToPar, NO_DATA } from '../../lib/format';
+import { NoData } from '../../ui/NoData';
 import { haptic } from '../../lib/haptics';
 import { InlineNotice } from '../../ui/Notices';
 import { withPointSpan } from '../../ui/point-span';
@@ -130,7 +131,7 @@ export function UnfinishedCard({
           {startHref && (
             // CH-11703: Start a round, Continue and Post round are primary taps (light).
             <Link href={startHref} className="ch-rd-unf__cta" onClick={() => haptic('press')}>
-              Start a round
+              New round
               <Icon icon={ArrowRight} size={15} />
             </Link>
           )}
@@ -239,7 +240,7 @@ export function Ribbon({ rounds, avg, compact = false }: { rounds: ChRoundsSeaso
         {ticks.map((v) => (
           <g key={v}>
             <line x1={L} x2={W - R} y1={y(v)} y2={y(v)} className={v === 0 ? 'is-par' : undefined} />
-            <text x={L - 8} y={y(v) + 4} textAnchor="end" className={'ch-rd-rib__t' + (v === 0 ? ' is-par' : '')}>
+            <text x={L - 8} y={y(v) + 4} textAnchor="end" className={'ch-rd-rib__t ch-num' + (v === 0 ? ' is-par' : '')}>
               {v === 0 ? 'Par' : formatToPar(v)}
             </text>
           </g>
@@ -247,7 +248,7 @@ export function Ribbon({ rounds, avg, compact = false }: { rounds: ChRoundsSeaso
         <line x1={L} x2={W - R} y1={y(avg)} y2={y(avg)} className="ch-rd-rib__avg" />
         <g transform={`translate(${W - R + 8},${y(avg)})`}>
           <rect x="0" y="-11" width={compact ? 64 : 90} height="22" rx="11" className="ch-rd-rib__chip" />
-          <text x={compact ? 32 : 45} y="4.5" textAnchor="middle" className="ch-rd-rib__t is-avg">
+          <text x={compact ? 32 : 45} y="4.5" textAnchor="middle" className="ch-rd-rib__t ch-num is-avg">
             {compact ? 'Avg' : 'Your avg'} {formatToPar(avg, 1)}
           </text>
         </g>
@@ -286,7 +287,7 @@ export function Ribbon({ rounds, avg, compact = false }: { rounds: ChRoundsSeaso
               {/* A day is labelled once, under the first of its rounds: "2 Aug 2 Aug 2 Aug" said nothing (F-57). */}
               {(i === 0 || rounds[i - 1]!.date.slice(0, 10) !== x.date.slice(0, 10)) && (
                 <>
-                  <text x={cx} y={H - 18} textAnchor="middle" className="ch-rd-rib__d">
+                  <text x={cx} y={H - 18} textAnchor="middle" className="ch-rd-rib__d ch-num">
                     {dateOf(x.date).getUTCDate()}
                   </text>
                   <text x={cx} y={H - 5} textAnchor="middle" className="ch-rd-rib__t">
@@ -339,7 +340,7 @@ function SeasonFigures({ season }: { season: ChRoundsSeason }) {
     <dl className="ch-rd-season__f">
       <div className="ch-rd-fig">
         <dt>Best</dt>
-        <dd className="ch-num ch-rd-fig__v">{season.best ? String(season.best.score) : NO_DATA}</dd>
+        <dd className="ch-num ch-rd-fig__v">{season.best ? String(season.best.score) : <NoData />}</dd>
         {lo != null && hi != null && hi > lo && (
           <dd className="ch-rd-fig__viz" aria-hidden="true">
             <span className="ch-rd-range">
@@ -389,7 +390,7 @@ function SeasonFigures({ season }: { season: ChRoundsSeason }) {
       </div>
       <div className="ch-rd-fig">
         <dt>GIR</dt>
-        <dd className="ch-num ch-rd-fig__v">{season.girPct == null ? NO_DATA : `${Math.round(season.girPct)}%`}</dd>
+        <dd className="ch-num ch-rd-fig__v">{season.girPct == null ? <NoData /> : `${Math.round(season.girPct)}%`}</dd>
         {season.girPer18 != null && (
           <dd className="ch-rd-fig__viz" aria-hidden="true">
             <span className="ch-rd-greens">
@@ -545,11 +546,11 @@ export function RoundRow({ r, href, onOpen, bind }: { r: ChLibraryRound; href: s
           <>
             <span>
               <em>Out</em>
-              <b className="ch-num">{r.out ?? NO_DATA}</b>
+              <b className="ch-num">{r.out ?? <NoData />}</b>
             </span>
             <span>
               <em>In</em>
-              <b className="ch-num">{r.inn ?? NO_DATA}</b>
+              <b className="ch-num">{r.inn ?? <NoData />}</b>
             </span>
           </>
         ) : (

@@ -160,6 +160,26 @@ describe('Player Home truthful brief', () => {
   });
 });
 
+describe('Player Home legs hold to the rate floors (A7)', () => {
+  const none = { tee: null, approach: null, around: null, putting: null };
+  it('one bunker-free round of scrambling is not "100%": under ten chances it says what it needs; one round of greens needs two', () => {
+    const window = [{ id: 'r1', total_gir: 9, total_gir_possible: 18, total_fairways_hit: 7, total_fairways: 14 }] as ChRound[];
+    const cache = new Map([['r1', { round_id: 'r1', scrambles_converted: 1, scramble_attempts: 1 } as ChRoundCache]]);
+    const by = Object.fromEntries(legRows(window, cache, null, none).map((l) => [l.key, l]));
+    expect(by.short).toMatchObject({ value: null, needs: 'Needs 10 chances' });
+    expect(by.approach).toMatchObject({ value: null, needs: 'Needs 2 rounds' });
+    expect(by.tee).toMatchObject({ value: null, needs: 'Needs 2 rounds' });
+    // The counts stay: "1 of 1" is a fact, not a rate.
+    expect(by.short!.note).toBe('Up and down 1 of 1');
+  });
+
+  it('between the floors a rate is an early read', () => {
+    const window = ['a', 'b', 'c'].map((id) => ({ id, total_gir: 9, total_gir_possible: 18 })) as ChRound[];
+    const approach = legRows(window, new Map(), null, none).find((l) => l.key === 'approach')!;
+    expect(approach).toMatchObject({ value: 50, early: 'Early read · 3 rounds' });
+  });
+});
+
 describe('Coach Home · 20105 the team’s four parts (spec B §1)', () => {
   let seq = 0;
   const round = (o: { player?: string; back?: number; tee?: number | null; totalOnly?: boolean; fairways?: number } = {}): ChRound => {

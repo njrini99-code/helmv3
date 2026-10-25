@@ -247,9 +247,19 @@ describe('evidenceBlocks: the shape decides the drawing, and nothing is dropped'
     const [b] = evidenceBlocks(sg);
     expect(b?.kind).toBe('legs');
     if (b?.kind === 'legs') {
-      expect(b.rows.map((r) => [r.label, r.display])).toEqual([['putting', '−1.90'], ['approach', '+0.30']]);
-      expect(b.takeaway).toBe('Largest loss: Strokes gained: putting at −1.90.');
+      expect(b.rows.map((r) => [r.label, r.display])).toEqual([['putting', '−1.9'], ['approach', '+0.3']]);
+      expect(b.takeaway).toBe('Largest loss: Strokes gained: putting at −1.9.');
     }
+  });
+  it('a leg that prints as 0.0 is no loss: the takeaway does not name it (A2)', () => {
+    const sg = { ...ASK_EV_PARTIAL, coverage: 'complete' as const, coverage_note: null, measurements: [
+      { ...ASK_EV_PARTIAL.measurements[0]!, metric_id: 'sg_putting', metric_label: 'Strokes gained: putting', unit: 'strokes' as const, value: -0.04 },
+      { ...ASK_EV_PARTIAL.measurements[0]!, metric_id: 'sg_approach', metric_label: 'Strokes gained: approach', unit: 'strokes' as const, value: 0.3 },
+    ] };
+    const [b] = evidenceBlocks(sg);
+    if (b?.kind !== 'legs') throw new Error('expected legs');
+    expect(b.rows[0]?.display).toBe('0.0');
+    expect(b.takeaway).toBe('No leg is below zero.');
   });
   it('a single team figure is a tile; a partial read keeps its note', () => {
     const [b] = evidenceBlocks(ASK_EV_PARTIAL);
@@ -281,7 +291,8 @@ describe('evidenceBlocks: the shape decides the drawing, and nothing is dropped'
   });
   it('values use a true minus and an em dash for none', () => {
     expect(formatValue(-3, 'score')).toBe('−3');
-    expect(formatValue(-0.5, 'strokes')).toBe('−0.50');
+    expect(formatValue(-0.5, 'strokes')).toBe('−0.5');
+    expect(formatValue(0.42, 'strokes')).toBe('+0.4');
     expect(formatValue(58.4, 'percent')).toBe('58%');
     expect(formatValue(null, 'percent')).toBe('—');
     expect(formatValue(12, 'feet')).toBe('12 ft');

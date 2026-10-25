@@ -23,7 +23,8 @@ Held items: none
 
 ### Verification
 
-- `__tests__/no-raw-sign-tone.test.ts` and `lib/__tests__/change-tone-zero.test.ts`.
+- `__tests__/no-raw-sign-tone.test.ts` and
+  `lib/__tests__/change-tone-zero.test.ts`.
 
 ## 2026-10-23 — One change-signal rule (A1)
 
@@ -98,4 +99,5 @@ Held items: none
 
 ### Verification
 
-- `stats-team.test.tsx`, `strokes-gained.test.tsx`, `stats-filter-data.test.tsx`.
+- `stats-team.test.tsx`, `strokes-gained.test.tsx`,
+  `stats-filter-data.test.tsx`.

@@ -18,6 +18,7 @@ import {
   type ChRoundTypeOptions,
   type ChRoundTypeViewer,
 } from './round-type';
+import { plural } from '../../../lib/plural';
 
 /**
  * The line under a qualifier's name. A live round (Continue) is only counted once it is submitted, and a closed
@@ -27,7 +28,7 @@ import {
  * enters them (`updateRoundType`).
  */
 export function qualifierHint(q: ChQualifierOption, live: boolean): string {
-  const rounds = `${q.numRounds} ${q.numRounds === 1 ? 'round' : 'rounds'}`;
+  const rounds = `${plural(q.numRounds, 'round')}`;
   const finished = q.isCompleted ? (live ? 'Closed. It has to be reopened before this round can be submitted.' : 'Finished. Adding this round changes its final standings.') : null;
   const entry = q.playerEntered === false ? 'Not entered yet. Saving enters the player in it.' : null;
   return [finished, entry].filter(Boolean).join(' ') || rounds;

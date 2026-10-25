@@ -4,6 +4,7 @@ import { haptic } from '../../../lib/haptics';
 import { Segmented } from '../../../ui/Segmented';
 import { roving } from '../../../ui/use-roving';
 import { editedCount, holesForRound, MAX_HOLE_YARDS, parOf, PARS, yardsOf, type ChSetupHole } from './shape';
+import { plural } from '../../../lib/plural';
 
 /**
  * The round's scorecard (board `HoleConfig`): par and yardage per hole, from
@@ -50,7 +51,7 @@ export function HoleConfig({
           <h2>Scorecard</h2>
           <span>
             {edited
-              ? `${edited} hole${edited === 1 ? '' : 's'} edited for this round`
+              ? `${plural(edited, 'hole')} edited for this round`
               : baseline
                 ? 'From the tee you picked · edits apply to this round only'
                 : 'Enter each hole’s par and yardage from the scorecard'}

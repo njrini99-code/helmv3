@@ -120,7 +120,7 @@ export type ChResult<T> = { ok: true; data: T } | { ok: false; error: string };
  *  - `handled`: another surface owns the outcome (the round already in progress asks what to do, or the qualifier's
  *    round in progress opened), so setup says nothing;
  *  - `final`: trying again can't change the answer, so the toast has no Retry.
- * `code` and `retry` name a failure toast that isn't CH-11007's, and what its action says instead of "Retry".
+ * `code` and `retry` name a failure toast that isn't CH-11007's, and what its action says instead of "Try again".
  */
 export interface ChStartFailure {
   ok: false;

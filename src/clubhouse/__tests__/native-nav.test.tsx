@@ -176,7 +176,7 @@ describe('the phone Roster shows the figure it is sorted by (P1-3)', () => {
     expect(v.querySelector('b')!.textContent).toMatch(/^\+\d\.\d$/);
     expect(v.querySelector('b')!.className).toContain('is-gain');
     expect(v.textContent).toContain('SG / rd');
-    expect(v.textContent).not.toContain('hcp');
+    expect(v.textContent).not.toContain('HCP');
     expect(screen.getByRole('button').getAttribute('aria-label')).toMatch(/strokes gained \+\d\.\d a round/);
     unmount();
     const lost = row(loser, 'sg');
@@ -191,7 +191,7 @@ describe('the phone Roster shows the figure it is sorted by (P1-3)', () => {
       const { container, unmount } = row(gainer, sort);
       const v = container.querySelector('.ch-rsm-row__v')!;
       expect(v.querySelector('b')!.textContent).toBe(gainer.avg == null ? '—' : gainer.avg.toFixed(1));
-      expect(v.textContent).toContain('hcp');
+      expect(v.textContent).toContain('HCP');
       unmount();
     }
   });

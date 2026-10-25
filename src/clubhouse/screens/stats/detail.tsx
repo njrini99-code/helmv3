@@ -1,8 +1,9 @@
 import type { ReactNode } from 'react';
 import type { ChWindow } from '../../data/stats-common';
 import type { ChSprayGroup } from '../../data/stats-detail';
-import { NO_DATA } from '../../lib/format';
+import { formatFixed, NO_DATA } from '../../lib/format';
 import { ScrollRegion } from '../../ui/ScrollRegion';
+import { NoData } from '../../ui/NoData';
 
 /**
  * The parts Game detail's "More detail" and the Rounds tab are built from
@@ -186,7 +187,7 @@ export function RoundLine({
   const x = (i: number) => pad + (i * (w - pad * 2)) / Math.max(1, points.length - 1);
   const y = (v: number) => 30 + ((lowerIsBetter ? v - lo : hi - v) / span) * (h - 62);
   const avg = vals.reduce((a, b) => a + b, 0) / vals.length;
-  const f = (v: number) => `${v.toFixed(digits)}${unit}`;
+  const f = (v: number) => `${formatFixed(v, digits)}${unit}`;
   const all = points.length <= 12;
   const labelled = points.map((p, i) => ({ x: x(i), y: y(p.value), text: f(p.value), shown: all || i === 0 || i === points.length - 1 }));
   const mean = meanLabelSpot(labelled, y(avg), `avg ${f(avg)}`, w, pad);
@@ -292,7 +293,7 @@ export function SectorGrid({ g, unit }: { g: ChSprayGroup; unit: string }) {
           return (
             <span key={k} className={'ch-gx-sec__c' + (b && b.count ? '' : ' is-zero') + (top1 ? ' is-top' : '')}>
               <b className="ch-num">{b?.count ?? 0}</b>
-              <i className="ch-num">{b && g.shots ? `${Math.round(b.pct)}%` : NO_DATA}</i>
+              <i className="ch-num">{b && g.shots ? `${Math.round(b.pct)}%` : <NoData />}</i>
               <em>{l}</em>
             </span>
           );

@@ -1,3 +1,4 @@
+import { plural } from './plural';
 /**
  * How sure a stat is, said once for every chart. Pure functions, no React: floors, standard errors, the tone of a change,
  * the Wilson interval of a make rate, a trailing mean, and a ranking that ties players who can't be told apart.
@@ -9,6 +10,13 @@
 
 /** Production's within-player standard deviation of a round (players with five or more rounds): the fallback while a player has too few rounds to measure their own. */
 export const POOLED_SD = { sg: 3.8, score: 3.6 } as const;
+
+/**
+ * The same within-player spread for each strokes-gained leg (production, 2026-10-24, test rows, players and teams left out: 51 players with five or more rounds, 743
+ * rounds per 18 holes; the total read 4.0 on the same rounds). A leg moves far less than the total, so a leg's change judged
+ * against the total's spread would almost never be called (the Deep dive, review of #2361).
+ */
+export const POOLED_LEG_SD = { tee: 1.3, approach: 2.5, around: 1.4, putting: 2.0 } as const;
 
 /** The figures with a pooled spread to fall back on. */
 export type SpreadKind = keyof typeof POOLED_SD;
@@ -58,7 +66,6 @@ export function floorRate(kind: FloorKind, n: number, value: number | null): { v
   return state === 'early' ? { value, state, early: earlyTag(n, FLOORS[kind].unit) } : { value, state };
 }
 
-const plural = (n: number, unit: string) => `${n} ${unit}${n === 1 ? '' : 's'}`;
 
 /** The tag on a muted value: "Early read · 6 rounds", or in the stat's own unit ("Early read · 24 holes"). */
 export function earlyTag(n: number, unit: string = 'round'): string {
@@ -156,6 +163,16 @@ export function deltaTone(delta: number | null | undefined, se: number | null | 
   if (delta == null || Number.isNaN(delta) || se == null || !(se > 0)) return '';
   if (Math.abs(delta) < se) return '';
   return delta < 0 === lowerIsBetter ? 'is-gain' : 'is-loss';
+}
+
+/**
+ * A trend's halves (A1: the newer half against the older half, with the standard error of the rounds behind them) as a tone: signed
+ * only when the change clears its standard error and still prints at `digits`, else '' and the words are "No clear change".
+ * Unmeasured halves (null or absent) are never a change.
+ */
+export function halvesTone(h: { delta: number; se: number | null } | null | undefined, lowerIsBetter: boolean, digits = 1): DeltaTone {
+  if (!h || Math.abs(h.delta) < 0.5 * 10 ** -digits) return '';
+  return deltaTone(h.delta, h.se, lowerIsBetter);
 }
 
 /** The words for a change, which never claim more than the tone does. */

@@ -160,6 +160,7 @@ do; every section that fails to load has its own notice with Try again (70617 to
 | 70635 | CH-7217 | `PENDING_ATTACHMENT_RECOVERY_CANNOT_BE_CHECKED` | Pending attachment recovery cannot be checked |
 | 70636 | CH-7024 | `REMOVING_SOMEONE_FROM_A_GROUP_FAILS` | Removing someone from a group fails (the group's creator, desktop or phone Details › Remove) |
 | 70637 | CH-7025 | `DELETING_A_CONVERSATION_FROM_YOUR_INBOX_FAILS` | Deleting a conversation from your inbox fails |
+| 70638 | CH-7026 | `MARKING_A_CONVERSATION_READ_OR_UNREAD_FROM` | Marking a conversation read or unread from its row (menu or swipe) fails |
 
 ## 07 — Network / offline
 
@@ -309,6 +310,7 @@ rise. Reduced motion and Animations off make every swap instant.
 | 71604 | CH-7604 | `A_LONG_PRESS_ON_A_MESSAGE` | A long press on a message (phone) |
 | 71605 | CH-7605 | `OPENING_ANOTHER_CONVERSATION_OR_ANNOUNCEMENT` | Opening another conversation or announcement (desktop) |
 | 71606 | CH-7606 | `CHANGING_THE_INBOX_FILTER_ON_THE_PHONE` | Changing the inbox filter on the phone (All, Unread, Groups) |
+| 71607 | CH-7607 | `MUTING_A_CONVERSATION_FROM_ITS_ROW` | Muting a conversation from its row (owner decision 14) |
 
 From the shell (P001): 11601 CH-1601, 11602 CH-1602, 11603 CH-1603,
 11604 CH-1604, 11605 CH-1605, 11606 CH-1606, 11607 CH-1607, 11608 CH-1608,

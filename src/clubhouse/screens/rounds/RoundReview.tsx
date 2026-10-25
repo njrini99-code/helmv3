@@ -13,6 +13,7 @@ import { CoachNote } from './CoachNote';
 import { RoundTypeSheet } from './entry/RoundTypeSheet';
 import { scoreName } from './track/labels';
 import { changeTone, changeVerdict, formatFixed, formatSigned, formatToPar, NO_DATA } from '../../lib/format';
+import { NoData } from '../../ui/NoData';
 import { haptic } from '../../lib/haptics';
 import { useChPhone } from '../../lib/use-phone';
 import { useChReducedMotion } from '../../lib/reduced-motion';
@@ -41,6 +42,7 @@ import { SideScroll } from '../../ui/SideScroll';
 import { rebuiltHref } from '../../shell/nav';
 import { invalidatePrefetchTabs } from '../../shell/use-prefetch-tabs';
 import type { ChDebrief } from '../../data/round-debrief-shape';
+import { plural, pluralWord } from '../../lib/plural';
 
 const LIE_LABEL: Record<string, string> = { fairway: 'Fairway', rough: 'Rough', sand: 'Sand', green: 'Green', hole: 'Holed', penalty: 'Penalty', other: 'Other', tee: 'Tee' };
 const fmt = (o: Intl.DateTimeFormatOptions) => new Intl.DateTimeFormat('en-US', { timeZone: 'UTC', ...o });
@@ -171,9 +173,9 @@ function ReviewNine({ label, holes, sel, onPick }: { label: 'Out' | 'In'; holes:
         <tr className="is-par">
           <th scope="row">Par</th>
           {holes.map((h) => (
-            <td key={h.n}>{h.par ?? NO_DATA}</td>
+            <td key={h.n}>{h.par ?? <NoData />}</td>
           ))}
-          <td>{sum('par') ?? NO_DATA}</td>
+          <td>{sum('par') ?? <NoData />}</td>
         </tr>
         <tr className="is-score">
           <th scope="row">Score</th>
@@ -185,17 +187,17 @@ function ReviewNine({ label, holes, sel, onPick }: { label: 'Out' | 'In'; holes:
             </td>
           ))}
           <td>
-            <b>{sum('score') ?? NO_DATA}</b>
+            <b>{sum('score') ?? <NoData />}</b>
           </td>
         </tr>
         <tr>
           <th scope="row">Putts</th>
           {holes.map((h) => (
             <td key={h.n} className={h.putts != null && h.putts >= 3 ? 'is-warn' : undefined}>
-              {h.putts ?? NO_DATA}
+              {h.putts ?? <NoData />}
             </td>
           ))}
-          <td>{sum('putts') ?? NO_DATA}</td>
+          <td>{sum('putts') ?? <NoData />}</td>
         </tr>
         <tr className="is-marks">
           <th scope="row">FIR</th>
@@ -246,8 +248,8 @@ function HoleCard({
           <h3 id="ch-rv-hole-h">{title}</h3>
           <span>
             {[
-              strokes ? `${strokes} ${strokes === 1 ? 'shot' : 'shots'}` : null,
-              hole.putts != null ? `${hole.putts} ${hole.putts === 1 ? 'putt' : 'putts'}` : null,
+              strokes ? `${plural(strokes, 'shot')}` : null,
+              hole.putts != null ? `${plural(hole.putts, 'putt')}` : null,
               hole.penalties ? `${hole.penalties} penalty` : null,
             ]
               .filter(Boolean)
@@ -694,7 +696,7 @@ export function RoundReview({ review, typeEdit = null }: { review: ChRoundReview
               read={
                 r.greens ? (
                   <>
-                    <ZoneBig value={pct(r.greens.hit, r.greens.of)} unit="" tone="good" />
+                    <ZoneBig value={pct(r.greens.hit, r.greens.of)} unit="" />
                     <div className="ch-znlines">
                       <span>
                         <b>
@@ -724,7 +726,7 @@ export function RoundReview({ review, typeEdit = null }: { review: ChRoundReview
                 )}
               </ZoneBlock>
               {approach && (
-                <ZoneBlock title="How close approaches finished" note={`${approach.n} approach ${approach.n === 1 ? 'shot' : 'shots'} that found the green.`}>
+                <ZoneBlock title="How close approaches finished" note={`${approach.n} approach ${pluralWord(approach.n, 'shot')} that found the green.`}>
                   <div className="ch-rzpair">
                     <div>
                       <b className="ch-num">{Math.round(approach.avg)}</b>
@@ -789,7 +791,7 @@ export function RoundReview({ review, typeEdit = null }: { review: ChRoundReview
                       </span>
                       {hole.putts != null && (
                         <span>
-                          <b>{hole.putts}</b> {hole.putts === 1 ? 'putt' : 'putts'}
+                          <b>{hole.putts}</b> {pluralWord(hole.putts, 'putt')}
                         </span>
                       )}
                     </div>
@@ -839,7 +841,7 @@ export function RoundReview({ review, typeEdit = null }: { review: ChRoundReview
                     </h3>
                     <p>{recap}</p>
                     <span className="ch-rv-recap__by">
-                      Written by CoachHelm from {holesScored} hole{holesScored === 1 ? '' : 's'}
+                      Written by CoachHelm from {holesScored} {pluralWord(holesScored, 'hole')}
                     </span>
                   </section>
                   )

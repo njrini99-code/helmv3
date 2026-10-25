@@ -132,7 +132,10 @@
   margin: 0;
 }
 
-.ch-num {
+/* `svg .ch-num`: chart text sets its font shorthand in its screen's sheet, which loads later and would reset the figures
+   to proportional at the same weight; the extra element keeps them even there (row 113). */
+.ch-num,
+svg .ch-num {
   font-variant-numeric: tabular-nums;
   font-feature-settings: 'tnum';
 }
@@ -313,6 +316,11 @@ html[data-ch-vt-hold] [data-ui='clubhouse'] main[aria-busy='true'][aria-label^='
   .ch-root *::backdrop {
     transition-duration: 1ms !important;
     animation-duration: 1ms !important;
+  }
+  /* Except a sheet's dim (owner decision 2, 2026-10-24, OQ-15): Reduce Motion fades a sheet in and out over the quick
+     beat, in opacity only (lib/dialog-lifetime.ts), and its scrim fades with it. Animations off zeroes the quick beat. */
+  .ch-root dialog::backdrop {
+    transition-duration: var(--ch-scrim-dur, var(--ch-dur-quick)) !important;
   }
 }
 

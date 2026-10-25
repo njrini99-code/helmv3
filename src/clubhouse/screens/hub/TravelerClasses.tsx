@@ -9,6 +9,7 @@ import { Icon } from '../../ui/Icon';
 import { chReport } from '../../lib/track';
 import { isOffline, normalise } from '../../lib/use-action';
 import type { ChHubWrites } from './writes';
+import { pluralWord } from '../../lib/plural';
 
 /*
  * Plan a trip, Travelers step (and the Itinerary summary): which of the chosen travelers have a class during the trip.
@@ -81,7 +82,6 @@ export function useClassCheck(read: ChHubWrites['travelerClasses'], teamId: stri
   return { check, retry: useCallback(() => setAgain((n) => n + 1), []) };
 }
 
-const plural = (n: number, one: string, many: string) => (n === 1 ? one : many);
 
 /**
  * The board's clash row ("Eli has CHEM 102 lab Mon 3:00–4:15. They'd miss it to travel."), a line for each traveler with a
@@ -107,12 +107,12 @@ export function ClassClashes({ check, names, onRetry }: { check: ChClassCheck; n
             {clashes.lines.map((l) => (
               <p key={l.playerId}>
                 <b>{l.who}</b> {clk(l.when)}
-                {l.more > 0 ? ` and ${l.more} more ${plural(l.more, 'class', 'classes')}` : ''}.
+                {l.more > 0 ? ` and ${l.more} more ${pluralWord(l.more, 'class', 'classes')}` : ''}.
               </p>
             ))}
             {clashes.moreTravelers > 0 && (
               <p>
-                {clashes.moreTravelers} more {plural(clashes.moreTravelers, 'traveler also has', 'travelers also have')} a class during the trip.
+                {clashes.moreTravelers} more {pluralWord(clashes.moreTravelers, 'traveler also has', 'travelers also have')} a class during the trip.
               </p>
             )}
             <p>{clashes.total === 1 ? 'They’d miss it to travel.' : 'They’d miss these to travel.'}</p>
