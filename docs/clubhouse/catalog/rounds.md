@@ -174,6 +174,8 @@ same the Fairway entry runs, so the hint can never disagree with the button.
 | CH-11320 | Team rounds: no round posted by anyone | Page empty state "No rounds yet" + "Every round your players post shows up here, newest first." | `TeamRounds` | preview |
 | CH-11321 | Team rounds: the search or player filter matches nothing | "No rounds for “name”" + "Check the spelling, or search part of a name or course." (a player with none: "No rounds for this player" + "They haven’t posted a round yet.") | `TeamRounds` (`groupTeamRounds`) | preview |
 | CH-11322 | Team rounds: completed rounds with no score at all | One line under the list: "1 posted round has no score recorded, so it isn’t listed here." (or "N posted rounds have no score recorded, so they aren’t listed here.") | `TeamRounds`, `toTeamRounds` (`unscored`) | team-rounds-shape.test › CH-11322 |
+| CH-11330 | A course page this viewer has no rounds at: an unknown key, or another player's course | "No rounds here" + "There are no rounds at this course to show." + Go to your rounds (a coach: Go to Stats). It never confirms that someone else's rounds exist (P-7) | `ClubhouseCourseHistoryRoute`, `toCourseHistory` | course-history-states.test › CH-11330 |
+| CH-11331 | A coach's course page for a player who isn't on their team, or no player named | "This player isn’t on your team" + "Their history at this course isn’t yours to see." + Go to Stats (P-7) | `ClubhouseCourseHistoryRoute` | preview |
 
 ## 114xx Loading
 
@@ -192,6 +194,7 @@ same the Fairway entry runs, so the hint can never disagree with the button.
 | CH-11411 | A round-type change is in flight | Save reads "Saving…" and can't be pressed again; Cancel, the choices and dismissing wait | `RoundTypeSheet` footer | round-entry-continue.test › CH-11411 |
 | CH-11412 | Team rounds is refreshing (a Try again is running) with the page on screen | The page stays, `aria-busy`, and "Updating…" appears beside the season line, in a status region; nothing blanks | `TeamRounds` (`useRefresh().refreshing`) | preview |
 | CH-11413 | Team rounds is loading | A skeleton in the page's own shape (head, four figures, a search row, grouped rows); `aria-busy` with the label "Loading team rounds" | `TeamRoundsSkeleton`, `rounds/loading.tsx` | preview |
+| CH-11421 | The course page didn't load (P-7) | "Your history here didn’t load" + "Check your connection and try again." (offline: "You’re offline. This page needs a connection.") + Try again | `CourseLoadFailed` | preview |
 
 ## 115xx Confirm
 

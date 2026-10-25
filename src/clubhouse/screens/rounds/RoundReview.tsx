@@ -31,6 +31,7 @@ import { dateOf, TeeSwatch, TYPE_LABEL } from './parts';
 import { approachFinish, costliest, flow, headline, puttSplit, teeMisses, turningStretch } from './round-insights';
 import { RoundSays, saysFigures } from './RoundSays';
 import { RecordChips } from './RecordChips';
+import { CourseLink } from './CourseLink';
 import { Zone, ZoneBig, ZoneBlock, Zones } from '../../ui/Zone';
 import { Tooltip } from '../../ui/Tooltip';
 import { PuttingViz, ScoreFlow, ShotTrail, TeeToGreen } from './RoundZones';
@@ -535,6 +536,7 @@ export function RoundReview({ review, typeEdit = null }: { review: ChRoundReview
               <span>{[r.tee, r.teeFacts].filter(Boolean).join(' · ')}</span>
             </span>
           )}
+          <CourseLink review={r} coach={coach} />
         </div>
         <div className="ch-rv-hero__s">
           <b className="ch-num">{r.score ?? NO_DATA}</b>

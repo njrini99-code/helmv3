@@ -92,6 +92,7 @@ saving (CH-11402).
 | 110212 | CH-11411 | `A_ROUND_TYPE_CHANGE_IS_IN_FLIGHT` | A round-type change is in flight |
 | 110213 | CH-11412 | `TEAM_ROUNDS_IS_REFRESHING_WITH_THE_PAGE` | Team rounds is refreshing (a Try again is running) with the page on screen |
 | 110214 | CH-11413 | `TEAM_ROUNDS_IS_LOADING` | Team rounds is loading |
+| 110215 | CH-11421 | `THE_COURSE_PAGE_DIDNT_LOAD` | The course page didn't load (P-7) |
 
 ## 03 — Background loading / refresh
 
@@ -142,6 +143,8 @@ was empty (110413). A test covers 110413.
 | 110421 | CH-11320 | `TEAM_ROUNDS_NO_ROUND_POSTED_BY_ANYONE` | Team rounds: no round posted by anyone |
 | 110422 | CH-11321 | `TEAM_ROUNDS_THE_SEARCH_OR_PLAYER_FILTER` | Team rounds: the search or player filter matches nothing |
 | 110423 | CH-11322 | `TEAM_ROUNDS_COMPLETED_ROUNDS_WITH_NO_SCORE` | Team rounds: completed rounds with no score at all |
+| 110424 | CH-11330 | `A_COURSE_PAGE_THIS_VIEWER_HAS_NO` | A course page this viewer has no rounds at: an unknown key, or another player's course |
+| 110425 | CH-11331 | `A_COACHS_COURSE_PAGE_FOR_A_PLAYER` | A coach's course page for a player who isn't on their team, or no player named |
 
 ## 05 — Validation
 

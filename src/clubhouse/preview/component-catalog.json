@@ -369,6 +369,20 @@
       "fixture": "Contextual module"
     },
     {
+      "file": "src/clubhouse/routes/course-history.tsx",
+      "group": "routes",
+      "exports": [
+        "ClubhouseCourseHistoryRoute"
+      ],
+      "styles": [
+        "src/clubhouse/styles/base.css",
+        "src/clubhouse/styles/rounds.css",
+        "src/clubhouse/styles/shell.css"
+      ],
+      "examples": [],
+      "fixture": "Contextual module"
+    },
+    {
       "file": "src/clubhouse/routes/front-door.tsx",
       "group": "routes",
       "exports": [
@@ -3518,6 +3532,64 @@
       "fixture": "Contextual module"
     },
     {
+      "file": "src/clubhouse/screens/rounds/CourseLink.tsx",
+      "group": "screens",
+      "exports": [
+        "CourseLink"
+      ],
+      "styles": [
+        "src/clubhouse/styles/rounds.css"
+      ],
+      "examples": [],
+      "fixture": "Contextual module"
+    },
+    {
+      "file": "src/clubhouse/screens/rounds/CourseLoadFailed.tsx",
+      "group": "screens",
+      "exports": [
+        "CourseLoadFailed"
+      ],
+      "styles": [
+        "src/clubhouse/styles/rounds.css"
+      ],
+      "examples": [],
+      "fixture": "Contextual module"
+    },
+    {
+      "file": "src/clubhouse/screens/rounds/CoursePage.tsx",
+      "group": "screens",
+      "exports": [
+        "CoursePage"
+      ],
+      "styles": [
+        "src/clubhouse/styles/base.css",
+        "src/clubhouse/styles/calendar.css",
+        "src/clubhouse/styles/coachhelm.css",
+        "src/clubhouse/styles/goals.css",
+        "src/clubhouse/styles/home.css",
+        "src/clubhouse/styles/hub.css",
+        "src/clubhouse/styles/messages.css",
+        "src/clubhouse/styles/qualifiers.css",
+        "src/clubhouse/styles/rounds.css",
+        "src/clubhouse/styles/shell.css",
+        "src/clubhouse/styles/stats.css"
+      ],
+      "examples": [],
+      "fixture": "Contextual module"
+    },
+    {
+      "file": "src/clubhouse/screens/rounds/RecordChips.tsx",
+      "group": "screens",
+      "exports": [
+        "RecordChips"
+      ],
+      "styles": [
+        "src/clubhouse/styles/rounds.css"
+      ],
+      "examples": [],
+      "fixture": "Contextual module"
+    },
+    {
       "file": "src/clubhouse/screens/rounds/ReviewLoadFailed.tsx",
       "group": "screens",
       "exports": [
@@ -3553,6 +3625,27 @@
       "fixture": "Contextual module"
     },
     {
+      "file": "src/clubhouse/screens/rounds/RoundSays.tsx",
+      "group": "screens",
+      "exports": [
+        "RoundSays"
+      ],
+      "styles": [
+        "src/clubhouse/styles/base.css",
+        "src/clubhouse/styles/calendar.css",
+        "src/clubhouse/styles/coachhelm.css",
+        "src/clubhouse/styles/goals.css",
+        "src/clubhouse/styles/home.css",
+        "src/clubhouse/styles/hub.css",
+        "src/clubhouse/styles/messages.css",
+        "src/clubhouse/styles/qualifiers.css",
+        "src/clubhouse/styles/rounds.css",
+        "src/clubhouse/styles/stats.css"
+      ],
+      "examples": [],
+      "fixture": "Contextual module"
+    },
+    {
       "file": "src/clubhouse/screens/rounds/RoundZones.tsx",
       "group": "screens",
       "exports": [
@@ -3571,6 +3664,7 @@
         "src/clubhouse/styles/messages.css",
         "src/clubhouse/styles/qualifiers.css",
         "src/clubhouse/styles/rounds.css",
+        "src/clubhouse/styles/shell.css",
         "src/clubhouse/styles/stats.css",
         "src/clubhouse/styles/ui.css"
       ],
@@ -3602,6 +3696,7 @@
       "file": "src/clubhouse/screens/rounds/RoundsSkeleton.tsx",
       "group": "screens",
       "exports": [
+        "CourseHistorySkeleton",
         "RoundEntrySkeleton",
         "RoundRecoverSkeleton",
         "RoundReviewSkeleton",
@@ -12108,6 +12203,24 @@
       "file": "src/clubhouse/styles/rounds.css",
       "classes": [
         "ch-btn",
+        "ch-ch",
+        "ch-ch-fig",
+        "ch-ch-fig__c",
+        "ch-ch-fig__l",
+        "ch-ch-fig__s",
+        "ch-ch-fig__v",
+        "ch-ch-hero",
+        "ch-ch-hero__e",
+        "ch-ch-hero__f",
+        "ch-ch-hero__go",
+        "ch-ch-hero__k",
+        "ch-ch-hero__p",
+        "ch-ch-last__sub",
+        "ch-ch-note",
+        "ch-ch-note__l",
+        "ch-ch-note__more",
+        "ch-ch-sec",
+        "ch-ch-sec__h",
         "ch-lgr__lead",
         "ch-notice",
         "ch-notice--danger",
@@ -12148,6 +12261,7 @@
         "ch-rd-fig__viz",
         "ch-rd-greens",
         "ch-rd-grp",
+        "ch-rd-grp__go",
         "ch-rd-grp__h",
         "ch-rd-grp__rule",
         "ch-rd-grp__spark",
@@ -12238,6 +12352,8 @@
         "ch-rv-cn__form",
         "ch-rv-cn__none",
         "ch-rv-cols",
+        "ch-rv-crs",
+        "ch-rv-crs__go",
         "ch-rv-debrief__l",
         "ch-rv-debrief__why",
         "ch-rv-dist",
@@ -12256,6 +12372,9 @@
         "ch-rv-none",
         "ch-rv-nosg",
         "ch-rv-notes",
+        "ch-rv-rec",
+        "ch-rv-rec__chip",
+        "ch-rv-rec__g",
         "ch-rv-recap",
         "ch-rv-recap__by",
         "ch-rv-recap__k",
@@ -12307,6 +12426,13 @@
         "ch-rzsvg__in",
         "ch-rzth",
         "ch-rztrail",
+        "ch-says",
+        "ch-says__about",
+        "ch-says__cap",
+        "ch-says__info",
+        "ch-says__label",
+        "ch-says__tile",
+        "ch-says__value",
         "ch-score",
         "ch-search",
         "ch-seg",
