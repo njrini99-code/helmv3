@@ -13,6 +13,7 @@ import { HoleMap, mostToGain } from './HoleMap';
 import { CourseArc } from './CourseArc';
 import { HowItPlays } from './HowItPlays';
 import { RoundsHere } from './RoundsHere';
+import { FadeNum, useExpandHeight } from './course-motion';
 import { chScrollIntoView } from '../../lib/smooth-scroll';
 import { useChReducedMotion } from '../../lib/reduced-motion';
 import { useRouter } from 'next/navigation';
@@ -62,7 +63,7 @@ export function CoursePage({ history: h, playerName, playerId, initialHole }: { 
               <>
                 <span className="ch-ch-fig__l">{f.label}</span>
                 <b className="ch-ch-fig__v">
-                  <span className="ch-num">{f.value ?? <NoData label={f.sub} />}</span>
+                  {f.value != null ? <FadeNum className="ch-num" text={f.value} /> : <span className="ch-num"><NoData label={f.sub} /></span>}
                 </b>
                 <span className={'ch-ch-fig__s ch-num' + toneOf(f.toPar)}>{f.sub}</span>
               </>
@@ -171,10 +172,14 @@ function LastTime({ t, who }: { t: NonNullable<ChCourseHistory['lastTime']>; who
 function NotePlate({ label, text }: { label: string; text: string }) {
   const [all, setAll] = useState(false);
   const long = text.length > 220;
+  // M12: "Show all" eases the text's height open on the smooth spring (a line clamp can't animate itself).
+  const body = useExpandHeight(all);
   return (
     <div className="ch-ch-note">
       <span className="ch-ch-note__l">{label}</span>
-      <p className={long && !all ? 'is-clamped' : undefined}>{text}</p>
+      <div ref={body} className="ch-ch-note__b">
+        <p className={long && !all ? 'is-clamped' : undefined}>{text}</p>
+      </div>
       {long && (
         <button type="button" className="ch-ch-note__more" aria-expanded={all} onClick={() => setAll((v) => !v)}>
           {all ? 'Show less' : 'Show all'}
