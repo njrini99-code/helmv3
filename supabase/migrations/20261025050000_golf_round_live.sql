@@ -55,6 +55,7 @@ CREATE TABLE IF NOT EXISTS public.golf_round_live_prefs (
   CONSTRAINT golf_round_live_prefs_practice_share_chk CHECK (practice_share IN ('off', 'coaches', 'team')),
   CONSTRAINT golf_round_live_prefs_next_share_chk CHECK (next_share IS NULL OR next_share IN ('off', 'coaches', 'team'))
 );
+ALTER TABLE public.golf_round_live_prefs ENABLE ROW LEVEL SECURITY;
 COMMENT ON TABLE public.golf_round_live_prefs IS
   'P-6: a player''s default live sharing for practice rounds (OQ-72: off unless they choose), and the one-round choice made in round setup. Qualifier and tournament rounds are always shared with coaches.';
 
@@ -107,6 +108,7 @@ CREATE TABLE IF NOT EXISTS public.golf_round_live (
   CONSTRAINT golf_round_live_holes_chk      CHECK (jsonb_typeof(holes) = 'array' AND jsonb_array_length(holes) <= 18),
   CONSTRAINT golf_round_live_thru_chk       CHECK (thru BETWEEN 0 AND 18)
 );
+ALTER TABLE public.golf_round_live ENABLE ROW LEVEL SECURITY;
 COMMENT ON TABLE public.golf_round_live IS
   'P-6: live state of an in-progress team round, refreshed in place at commit (helm_private.golf_round_live_refresh). Never written by clients; sharing changes go through golf_round_live_set_share. Swept by golf-round-live-sweep.';
 
@@ -147,7 +149,9 @@ END $$;
 
 -- No-op until 20261025050100 replaces it with realtime.send. Kept separate so polling can ship first.
 CREATE OR REPLACE FUNCTION helm_private.golf_live_broadcast(p_topic text, p_event text, p_payload jsonb)
-RETURNS void LANGUAGE plpgsql SECURITY DEFINER SET search_path = public, pg_temp AS $$
+RETURNS void LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public, pg_temp AS $$
 BEGIN
   RETURN;
 END $$;
@@ -159,7 +163,9 @@ CREATE OR REPLACE FUNCTION helm_private.golf_round_live_emit(
   p_old_share text,
   p_changed jsonb,
   p_late boolean
-) RETURNS void LANGUAGE plpgsql SECURITY DEFINER SET search_path = public, pg_temp AS $$
+) RETURNS void LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public, pg_temp AS $$
 DECLARE
   v_coach_now boolean := p_new.share IN ('coaches', 'team');
   v_team_now  boolean := p_new.share = 'team' AND p_new.round_type = 'practice';
@@ -211,7 +217,9 @@ END $$;
 -- lock_timeout 200 ms: any lock this function waits for (other than the live row, taken NOWAIT) gives up fast, so the
 -- commit-time refresh can never stall a save. The touch handler below turns the resulting 55P03 into a WARNING.
 CREATE OR REPLACE FUNCTION helm_private.golf_round_live_refresh(p_round_id uuid, p_quiet boolean DEFAULT false)
-RETURNS void LANGUAGE plpgsql SECURITY DEFINER SET search_path = public, pg_temp SET lock_timeout = '200ms' AS $$
+RETURNS void LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public, pg_temp SET lock_timeout = '200ms' AS $$
 DECLARE
   r          public.golf_rounds%ROWTYPE;
   v_prev     public.golf_round_live%ROWTYPE;
@@ -423,7 +431,9 @@ END $$;
 
 -- 4. Touch (dedupe per round per commit; never fails the caller) -----------------------------------------------------
 CREATE OR REPLACE FUNCTION helm_private.golf_round_live_touch(p_round_id uuid)
-RETURNS void LANGUAGE plpgsql SECURITY DEFINER SET search_path = public, pg_temp AS $$
+RETURNS void LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public, pg_temp AS $$
 DECLARE
   v_key  text;
   v_done text;
@@ -450,7 +460,9 @@ BEGIN
 END $$;
 
 CREATE OR REPLACE FUNCTION helm_private.golf_holes_round_live()
-RETURNS trigger LANGUAGE plpgsql SECURITY DEFINER SET search_path = public, pg_temp AS $$
+RETURNS trigger LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public, pg_temp AS $$
 BEGIN
   IF TG_OP = 'DELETE' THEN
     PERFORM helm_private.golf_round_live_touch(OLD.round_id);
@@ -461,14 +473,18 @@ BEGIN
 END $$;
 
 CREATE OR REPLACE FUNCTION helm_private.golf_rounds_round_live()
-RETURNS trigger LANGUAGE plpgsql SECURITY DEFINER SET search_path = public, pg_temp AS $$
+RETURNS trigger LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public, pg_temp AS $$
 BEGIN
   PERFORM helm_private.golf_round_live_touch(NEW.id);
   RETURN NULL;
 END $$;
 
 CREATE OR REPLACE FUNCTION helm_private.golf_rounds_round_live_gone()
-RETURNS trigger LANGUAGE plpgsql SECURITY DEFINER SET search_path = public, pg_temp AS $$
+RETURNS trigger LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public, pg_temp AS $$
 DECLARE
   l public.golf_round_live%ROWTYPE;
   v_msg jsonb;
@@ -545,7 +561,9 @@ END $$;
 -- Locks the round first (FOR KEY SHARE, the same lock order as a save, so the two cannot deadlock), then the live row.
 -- Either lock giving up within 2 s returns 'busy'; the client retries once after a second.
 CREATE OR REPLACE FUNCTION public.golf_round_live_set_share(p_round_id uuid, p_share text, p_remember boolean DEFAULT true)
-RETURNS jsonb LANGUAGE plpgsql SECURITY DEFINER SET search_path = public, pg_temp SET lock_timeout = '2s' AS $$
+RETURNS jsonb LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public, pg_temp SET lock_timeout = '2s' AS $$
 DECLARE
   r      public.golf_rounds%ROWTYPE;
   v_prev public.golf_round_live%ROWTYPE;
@@ -610,7 +628,9 @@ END $$;
 -- field calls this when it first appears and on every change, and the refresh adopts the value when it creates that
 -- round's row (within 30 minutes) and clears it. p_remember also sets the practice default.
 CREATE OR REPLACE FUNCTION public.golf_round_live_set_next_share(p_share text, p_remember boolean DEFAULT false)
-RETURNS jsonb LANGUAGE plpgsql SECURITY DEFINER SET search_path = public, pg_temp AS $$
+RETURNS jsonb LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public, pg_temp AS $$
 DECLARE
   v_player uuid;
 BEGIN
@@ -638,7 +658,9 @@ END $$;
 -- must not open teammates' practice lanes after ten minutes. The 10-minute "on the course" rule other plans read is
 -- laneFreshness / isOnCourse in src/clubhouse/live/model.ts; do not reuse this helper for it.
 CREATE OR REPLACE FUNCTION public.golf_live_viewer_on_course(p_team uuid)
-RETURNS boolean LANGUAGE sql STABLE SECURITY DEFINER SET search_path = public, pg_temp AS $$
+RETURNS boolean LANGUAGE sql STABLE
+SECURITY DEFINER
+SET search_path = public, pg_temp AS $$
   SELECT EXISTS (
     SELECT 1
       FROM public.golf_round_live l
@@ -651,8 +673,6 @@ RETURNS boolean LANGUAGE sql STABLE SECURITY DEFINER SET search_path = public, p
 $$;
 
 -- 8. RLS --------------------------------------------------------------------------------------------------------------
-ALTER TABLE public.golf_round_live ENABLE ROW LEVEL SECURITY;
-ALTER TABLE public.golf_round_live_prefs ENABLE ROW LEVEL SECURITY;
 
 DROP POLICY IF EXISTS golf_round_live_select_own ON public.golf_round_live;
 CREATE POLICY golf_round_live_select_own ON public.golf_round_live
