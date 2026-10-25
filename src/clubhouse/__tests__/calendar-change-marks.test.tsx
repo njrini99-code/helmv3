@@ -39,6 +39,7 @@ vi.mock('@/app/golf/actions/travel', () => ({ getItineraryForEvent: () => Promis
 import type { ChCalendarData } from '../data/calendar';
 import type { MarkEntries } from '../lib/marks-cookie';
 import { Calendar } from '../screens/calendar/Calendar';
+import { takePrefill } from '../screens/messages/prefill';
 import { EventPeekCard } from '../screens/calendar/peek';
 import { buildChangeMarks, type ChangeRow } from '../screens/calendar/change-view';
 import type { ChCalEvent } from '../screens/calendar/model';
@@ -314,6 +315,49 @@ describe('on the phone', () => {
     const note = await screen.findByRole('note', { name: 'What changed' });
     expect(within(note).getByText('Cancelled Mon 7:02 PM')).toBeTruthy();
     expect(within(note).getByText('Rain')).toBeTruthy();
+  });
+
+  it('a coach who can edit gets Message players: Messages opens with the invitees and the change as the draft, and nothing is sent from here', async () => {
+    const user = userEvent.setup();
+    const data = withMarks([row()]);
+    const invited = data.events.find((e) => e.id === 'e9')!.people;
+    expect(invited.length).toBeGreaterThan(0);
+    wrap(data);
+    await user.click(rowButton());
+    const note = await screen.findByRole('note', { name: 'What changed' });
+    const link = within(note).getByRole('link', { name: 'Message players about this change' });
+    const href = link.getAttribute('href')!;
+    expect(href.startsWith('/golf/dashboard/messages?prefill=')).toBe(true);
+    // The draft and the people stay out of the URL.
+    expect(href).not.toMatch(/briefing|moved/i);
+    const pre = takePrefill(new URL(href, 'https://x').searchParams)!;
+    expect(pre.players).toEqual(invited);
+    expect(pre.draft).toBe('Travel briefing moved to 1:30 PM (was 1:00 PM). See Calendar for details.');
+    expect(within(note).getByText('Invited players see this on their calendar.')).toBeTruthy();
+    hapticSpy.mockClear();
+    await user.click(link);
+    expect(hapticSpy).not.toHaveBeenCalled();
+    expect(a.ok).not.toHaveBeenCalled();
+  });
+
+  it('a cancellation still offers Message players, with no Got it', async () => {
+    const user = userEvent.setup();
+    wrap(withMarks([row({ status: 'cancelled', change: stored({ fields: ['cancelled'], from: { ...base, start_time: '2026-10-15T17:30:00Z', end_time: '2026-10-15T18:15:00Z' } }) })]));
+    await user.click(screen.getByRole('button', { name: /^Travel briefing, 1:30 PM to 2:15 PM/ }));
+    const note = await screen.findByRole('note', { name: 'What changed' });
+    expect(within(note).getByRole('link', { name: 'Message players about this change' })).toBeTruthy();
+    expect(within(note).queryByRole('button', { name: /Got it/ })).toBeNull();
+  });
+
+  it('a player never sees Message players or the line about who sees it', async () => {
+    const user = userEvent.setup();
+    const data = withMarks([row({ change: stored({ by: 'c2' }) })]);
+    wrap({ ...data, role: 'player', viewerPlayerId: 'jonah', events: data.events.map((e) => ({ ...e, canEdit: false })) });
+    await user.click(rowButton());
+    const note = await screen.findByRole('note', { name: 'What changed' });
+    expect(within(note).queryByRole('link', { name: /Message players/ })).toBeNull();
+    expect(within(note).queryByText(/Invited players see this/)).toBeNull();
+    expect(within(note).getByRole('button', { name: /Got it/ })).toBeTruthy();
   });
 
   it('with no changes the day is exactly as it was: no note, no badge, no struck value', async () => {

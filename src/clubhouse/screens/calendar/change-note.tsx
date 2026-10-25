@@ -1,6 +1,6 @@
 'use client';
 
-import { ChevronRight, CircleX, History, MapPin, PenLine, RotateCcw, type LucideIcon } from 'lucide-react';
+import { ChevronRight, CircleX, History, MapPin, MessageSquare, PenLine, RotateCcw, type LucideIcon } from 'lucide-react';
 import { useRef, type ReactNode } from 'react';
 import { flushSync } from 'react-dom';
 import { Badge } from '../../ui/Badge';
@@ -14,6 +14,8 @@ import { CH_DUR, CH_EASE } from '../../lib/motion';
 import { useChReducedMotion } from '../../lib/reduced-motion';
 import { useMark, useMarkReader } from '../../lib/use-change-marks';
 import { useChClock } from '../../lib/use-clock';
+import { rebuiltHref } from '../../shell/nav';
+import { messagesPrefillHref } from '../messages/prefill';
 import type { ChCalChange, ChMovedAway } from './change-view';
 import type { ChCalEvent } from './model';
 
@@ -140,8 +142,12 @@ function after(el: Element): HTMLElement[] {
  * The panel at the top of an event's detail: what changed, who and when. Got it removes it and leaves one quiet line with
  * Show it again; what sits below glides up by a transform (FLIP), never by animating a height. A cancelled event with no live
  * mark still says when it was cancelled and why.
+ *
+ * A coach who can edit the event also gets Message players: Messages opens with the invitees chosen and the change written
+ * as the draft, and the coach presses Send. Nothing about a change is ever pushed to a player on its own (owner decision,
+ * 2026-10-25, version B), so this is the one way a change reaches players beyond the mark on their calendar.
  */
-export function ChangeNote({ e }: { e: Pick<ChCalEvent, 'change' | 'cancelled' | 'cancelNote'> }) {
+export function ChangeNote({ e, coach = false }: { e: Pick<ChCalEvent, 'change' | 'cancelled' | 'cancelNote' | 'people' | 'title'>; coach?: boolean }) {
   const clock = useChClock();
   const reduced = useChReducedMotion();
   const change = e.change ?? null;
@@ -165,6 +171,8 @@ export function ChangeNote({ e }: { e: Pick<ChCalEvent, 'change' | 'cancelled' |
 
   const cancel = change.kind === 'cancel';
   const hidden = mark.got && !cancel;
+  const reach = coach && e.people.length > 0;
+  const message = reach ? rebuiltHref(messagesPrefillHref({ players: e.people, draft: `${change.title}. See Calendar for details.`, title: e.title }) ?? '') : null;
 
   const hide = () => {
     const el = slot.current;
@@ -208,12 +216,21 @@ export function ChangeNote({ e }: { e: Pick<ChCalEvent, 'change' | 'cancelled' |
             )}
             <span className="ch-change-note__by">{rs(change.panelLine2, clock)}</span>
             {cancel && change.reason && <q className="ch-change-note__why">{change.reason}</q>}
+            {reach && <span className="ch-change-note__reach">Invited players see this on their calendar.</span>}
           </div>
-          {!cancel && (
+          {(!cancel || message) && (
             <div className="ch-change-note__a">
-              <Button variant="ghost" size="sm" feel={null} className="ch-change-note__got" aria={{ label: 'Got it. Hide this change on this device.' }} onClick={hide}>
-                Got it
-              </Button>
+              {message && (
+                <Button variant="ghost" size="sm" feel={null} href={message} className="ch-change-note__msg" aria={{ label: 'Message players about this change' }}>
+                  <Icon icon={MessageSquare} size={14} />
+                  Message players
+                </Button>
+              )}
+              {!cancel && (
+                <Button variant="ghost" size="sm" feel={null} className="ch-change-note__got" aria={{ label: 'Got it. Hide this change on this device.' }} onClick={hide}>
+                  Got it
+                </Button>
+              )}
             </div>
           )}
         </div>

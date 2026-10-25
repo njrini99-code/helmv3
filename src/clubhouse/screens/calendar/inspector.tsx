@@ -474,7 +474,7 @@ export function EventDetail({ ctx, id, date }: { ctx: InspCtx; id: string; date:
       </h2>
       </div>
       {/* P-14: what changed, who and when, between the title and the facts. */}
-      <ChangeNote e={e} />
+      <ChangeNote e={e} coach={coach && e.canEdit} />
       <div className="ch-in__facts">
         <Fact icon={Clock}>
           {e.span ? `${dowOf(e.span.from)} ${dayNum(e.span.from)} – ${dowOf(e.span.to)} ${dayNum(e.span.to)}` : dayLabel(e.date, ctx.now.date)}

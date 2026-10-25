@@ -56,3 +56,16 @@ the coach sends.
 - calendar-change-marks.test (the loader's marks, the phone row, the strike states, Got it and Show it again, the panel,
   contrast from the tokens, no left stripe), calendar.test › CH-6023, marks-cookie.test, change-mark.test (every string).
   Wants an iPhone look at 390px and a dark pair; the migration is held, so nothing shows until it is applied.
+
+### Coach side (version B)
+
+- A coach who can edit the event gets **Message players** in the change panel, beside Got it (a cancellation has it alone,
+  since it never hides). It opens Messages with the invited players chosen and the change written as the draft ("Travel
+  briefing moved to 1:30 PM (was 1:00 PM). See Calendar for details."); the coach reads it and presses Send. It opens no
+  thread and sends nothing from the Calendar, and it has no haptic. The draft and the people stay out of the URL (the
+  prefill key, as on Home).
+- The same panel tells the coach "Invited players see this on their calendar." when the event has invitees. It makes no
+  claim about a notification: nothing about a change is pushed on its own.
+- The save, cancel, restore and drag toasts are unchanged. Each already says only what happened (and, for a cancel of an event
+  that asks for replies, "attendees notified", which the existing notice does), and none promised a push; the 2026-10-08
+  rule that an event without replies notifies no one still holds.

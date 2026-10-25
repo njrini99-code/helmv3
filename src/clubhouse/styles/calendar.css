@@ -3393,14 +3393,23 @@ html[data-fw-theme='dark'] .ch-ev--busy::after {
 }
 .ch-change-note__a {
   display: flex;
+  flex-wrap: wrap;
   gap: var(--ch-space-2);
+}
+.ch-change-note__reach {
+  display: block;
+  margin-top: var(--ch-space-1);
+  font: var(--ch-type-13);
+  color: var(--ch-ink-600);
 }
 /* The hit area reaches 44px though the key is 32px tall. */
 .ch-change-note__got,
+.ch-change-note__msg,
 .ch-change-note__again {
   position: relative;
 }
 .ch-change-note__got::before,
+.ch-change-note__msg::before,
 .ch-change-note__again::before {
   position: absolute;
   inset-block: -6px;
