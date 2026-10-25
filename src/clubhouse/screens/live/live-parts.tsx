@@ -103,9 +103,11 @@ export function LiveSortMenu({ v }: { v: LiveViewState }) {
 export function UpdatedPill({ v }: { v: LiveViewState }) {
   if (v.live.pending <= 0) return null;
   return (
-    <button type="button" className="ch-lv-pill" onClick={v.live.applyPending} role="status">
-      {plural(v.live.pending, 'update')}
-    </button>
+    <span className="ch-lv-pillwrap" role="status">
+      <button type="button" className="ch-lv-pill" onClick={v.live.applyPending}>
+        {plural(v.live.pending, 'update')}
+      </button>
+    </span>
   );
 }
 

@@ -138,7 +138,7 @@ export async function fetchLiveSnapshot(supabase: LiveClient, a: SnapshotArgs): 
   let lanes: LiveLane[];
   let source: 'live' | 'poll';
   let roster: LiveRoster = a.roster ?? {};
-  let failed = false;
+  let failed: boolean;
   if (!live.absent) {
     source = 'live';
     const names = await readRoster(supabase, live.rows.map((r) => r.player_id), roster);
