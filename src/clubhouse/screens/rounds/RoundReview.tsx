@@ -28,7 +28,7 @@ import { Swap } from '../../ui/Swap';
 import { SectionBoundary } from '../../ui/SectionBoundary';
 import { EmptyState } from '../../ui/States';
 import { dateOf, TeeSwatch, TYPE_LABEL } from './parts';
-import { approachFinish, costliest, flow, headline, puttSplit, teeMisses } from './round-insights';
+import { approachFinish, costliest, flow, headline, puttSplit, teeMisses, turningStretch } from './round-insights';
 import { Zone, ZoneBig, ZoneBlock, Zones } from '../../ui/Zone';
 import { Tooltip } from '../../ui/Tooltip';
 import { PuttingViz, ScoreFlow, ShotTrail, TeeToGreen } from './RoundZones';
@@ -455,6 +455,8 @@ export function RoundReview({ review, typeEdit = null }: { review: ChRoundReview
   const back = coach && fromList ? { label: 'Rounds', href: '/golf/dashboard/rounds' } : reviewBack(r);
   const insight = useMemo(() => headline(r), [r]);
   const points = useMemo(() => flow(r.holes), [r.holes]);
+  // P-7: the stretch that turned the round, drawn on the arc and said in its note.
+  const turning = useMemo(() => turningStretch(points), [points]);
   const costly = useMemo(() => costliest(r.holes, 3), [r.holes]);
   const putting = useMemo(() => puttSplit(r.holes), [r.holes]);
   const approach = useMemo(() => approachFinish(r.holes), [r.holes]);
@@ -582,16 +584,23 @@ export function RoundReview({ review, typeEdit = null }: { review: ChRoundReview
           }
         >
           {points.length >= 2 ? (
-            <ZoneBlock title="Running score to par" note="One dot a hole; the columns under it are each hole’s strokes against par. Pick a hole to read it and see its shots.">
+            <ZoneBlock
+              title="Running score to par"
+              note={`${turning ? `${turning.words}. ` : ''}One dot a hole; the columns under it are each hole’s strokes against par. Pick a hole to read it and see its shots.`}
+            >
               <ScoreFlow
                 holes={r.holes}
                 outScore={r.front.score}
                 outToPar={r.front.toPar}
                 inScore={r.back.score}
                 inToPar={r.back.toPar}
-                onPick={(n) => {
-                  haptic('select');
+                selected={sel}
+                turning={turning}
+                onPick={(n, via) => {
                   pick(n);
+                  // From the keyboard the slider keeps focus and the page stays put; the card below follows the value.
+                  if (via === 'key') return;
+                  haptic('select');
                   chScrollIntoView(document.getElementById('ch-rz-card'), reduced); // A-11: instant when motion is off
                 }}
               />

@@ -1,11 +1,11 @@
 'use client';
 
-import { useId, useLayoutEffect, useRef, useState, type CSSProperties } from 'react';
+import { useId, useLayoutEffect, useRef, useState, type CSSProperties, type KeyboardEvent } from 'react';
 import type { ChReviewHole } from '../../data/round-review-shape';
 import { formatSigned, formatToPar, NO_DATA } from '../../lib/format';
 import { NoData } from '../../ui/NoData';
 import { ZoneBlock } from '../../ui/Zone';
-import { costliest, flow, puttBands, puttSplit, trail, type HoleResult } from './round-insights';
+import { costliest, flow, puttBands, puttSplit, trail, type FlowPoint, type HoleResult, type turningStretch } from './round-insights';
 import { afterRailMove } from '../../lib/rail-fold';
 import { plural, pluralWord } from '../../lib/plural';
 
@@ -27,9 +27,57 @@ const WORD: Record<HoleResult, string> = { eagle: 'Eagle', birdie: 'Birdie', par
 
 const pos = (v: number, lo: number, hi: number) => Math.max(0, Math.min(1, (v - lo) / (hi - lo)));
 
+/** Where the stretch that turned the round sits (`turningStretch`); null when no run moved the score by 2. */
+export type FlowTurning = ReturnType<typeof turningStretch>;
+
+/**
+ * P-7: the arc's scales, shared by the review's ScoreFlow and the course page's average arc so the two line up exactly.
+ * Holes run left to right from `x0` to `x1`; to par runs from `lo` at the top to `hi` at the foot (better is up). `split` is
+ * the x between holes 9 and 10 on a round longer than nine.
+ */
+export function flowGeometry({ x0, x1, top, height, holes, lo, hi }: { x0: number; x1: number; top: number; height: number; holes: number; lo: number; hi: number }) {
+  const x = (hole: number) => x0 + ((hole - 1) / Math.max(1, holes - 1)) * (x1 - x0);
+  const y = (v: number) => top + ((v - lo) / (hi - lo)) * height;
+  const split = holes > 9 ? x(9) + (x(10) - x(9)) / 2 : null;
+  return { x, y, split };
+}
+
+/** "plus 3", "minus 2", "level par": a to-par figure as it is spoken. */
+const spokenToPar = (v: number) => (v === 0 ? 'level par' : v > 0 ? `plus ${v}` : `minus ${-v}`);
+
+/** What the arc's slider says for a hole: "Hole 14, par 4, made 6, plus 3 through 14". */
+export function flowValueText(p: FlowPoint): string {
+  return `Hole ${p.n}, par ${p.par}, made ${p.score}, ${spokenToPar(p.cum)} through ${p.n}`;
+}
+
+/** The hole a key moves the slider to, or null for a key the slider does not take: arrows a hole, Page keys three, Home and End the ends. */
+export function flowKeyStep(key: string, at: number, count: number): number | null {
+  const to = (i: number) => Math.max(0, Math.min(count - 1, i));
+  switch (key) {
+    case 'ArrowRight':
+    case 'ArrowUp':
+      return to(at + 1);
+    case 'ArrowLeft':
+    case 'ArrowDown':
+      return to(at - 1);
+    case 'PageUp':
+      return to(at + 3);
+    case 'PageDown':
+      return to(at - 3);
+    case 'Home':
+      return 0;
+    case 'End':
+      return count - 1;
+    default:
+      return null;
+  }
+}
+
 /**
  * The round as a running score to par on a deep-green stage: a line that rises when the player is gaining on par and falls
  * when strokes go back, the holes below as columns. Move across it to read a hole; a click picks the hole on the scorecard.
+ * P-7: it is a slider over the holes (arrows, Page keys, Home and End pick a hole; `selected` is the picked one), and the
+ * stretch that turned the round is drawn as a band behind the line with its sentence at the top.
  */
 export function ScoreFlow({
   holes,
@@ -37,6 +85,8 @@ export function ScoreFlow({
   outToPar,
   inScore,
   inToPar,
+  selected = null,
+  turning = null,
   onPick,
 }: {
   holes: ChReviewHole[];
@@ -44,10 +94,16 @@ export function ScoreFlow({
   outToPar: number | null;
   inScore: number | null;
   inToPar: number | null;
-  onPick?: (n: number) => void;
+  /** The hole picked on the scorecard; the slider's value. */
+  selected?: number | null;
+  turning?: FlowTurning;
+  /** `via` is 'key' when the pick came from the keyboard, so the caller can keep focus where it is. */
+  onPick?: (n: number, via: 'pointer' | 'key') => void;
 }) {
   const id = useId();
   const [hover, setHover] = useState<number | null>(null);
+  // While the slider has keyboard focus the picked hole is read like a hovered one.
+  const [focused, setFocused] = useState(false);
   // The card keeps the last hole it read while it fades out, so it never empties before it is gone.
   const [last, setLast] = useState<number | null>(null);
   const pts = flow(holes);
@@ -56,13 +112,12 @@ export function ScoreFlow({
   const W = 720;
   const X0 = 52;
   const X1 = 690;
-  const x = (hole: number) => X0 + ((hole - 1) / Math.max(1, n - 1)) * (X1 - X0);
   // The plot runs from just under the best the round got to just over its worst, always with par inside it; up is better.
   const lo = Math.min(0, ...pts.map((p) => p.cum)) - 1;
   const hi = Math.max(0, ...pts.map((p) => p.cum)) + 1;
   const TOP = 44;
   const H = 150;
-  const y = (v: number) => TOP + ((v - lo) / (hi - lo)) * H;
+  const { x, y, split } = flowGeometry({ x0: X0, x1: X1, top: TOP, height: H, holes: n, lo, hi });
   const Y0 = y(0);
   const line = pts.map((p) => `${x(p.n)},${y(p.cum)}`).join(' ');
   const area = `${x(pts[0]!.n)},${Y0} ${line} ${x(pts[pts.length - 1]!.n)},${Y0}`;
@@ -76,10 +131,35 @@ export function ScoreFlow({
   const colBase = TOP + H + 44;
   const height = colBase + 52;
   const label = (v: number) => (v === 0 ? 'E' : v > 0 ? `+${v}` : `−${Math.abs(v)}`);
-  const summary = pts.map((p) => `Hole ${p.n} ${formatToPar(p.cum)}`).join(', ');
-  const split = n > 9 ? x(9) + (x(10) - x(9)) / 2 : null;
-  const cur = hover == null ? null : (pts.find((p) => p.n === hover) ?? null);
-  const shown = pts.find((p) => p.n === (hover ?? last)) ?? null;
+  const active = hover ?? (focused ? selected : null);
+  const cur = active == null ? null : (pts.find((p) => p.n === active) ?? null);
+  const shown = pts.find((p) => p.n === (active ?? last)) ?? null;
+  const valueAt = Math.max(0, pts.findIndex((p) => p.n === selected));
+  const value = pts[valueAt]!;
+  const firstN = pts[0]!.n;
+  const lastN = pts[pts.length - 1]!.n;
+  // The turning band covers its holes' columns; a run that wraps past the last hole is told in words only.
+  const half = (X1 - X0) / Math.max(1, n - 1) / 2;
+  const band = turning && turning.to >= turning.from ? { x0: x(turning.from) - half, x1: x(turning.to) + half, loss: turning.sum > 0 } : null;
+  const bandMid = band ? (band.x0 + band.x1) / 2 : 0;
+  const bandAnchor = !band ? 'middle' : bandMid < X0 + 90 ? 'start' : bandMid > X1 - 90 ? 'end' : 'middle';
+  const bandLx = !band ? 0 : bandAnchor === 'start' ? Math.max(X0 - 8, band.x0 + 4) : bandAnchor === 'end' ? Math.min(X1 + 10, band.x1 - 4) : bandMid;
+  // The band's label sits on the hint row; the right-hand hint gives way when the label reaches it.
+  const hintClear = !band || (bandAnchor === 'end' ? false : bandAnchor === 'middle' ? bandMid + 80 < X1 - 100 : true);
+  const worstInBand = !!(band && worst && worst.n >= turning!.from && worst.n <= turning!.to);
+  const spoken = [
+    split != null && outScore != null && outToPar != null ? `Out in ${outScore}, ${spokenToPar(outToPar)}.` : null,
+    split != null && inScore != null && inToPar != null ? `In in ${inScore}, ${spokenToPar(inToPar)}.` : null,
+    turning ? `${turning.words}.` : null,
+  ]
+    .filter(Boolean)
+    .join(' ');
+  const onKey = (e: KeyboardEvent<SVGSVGElement>) => {
+    const to = flowKeyStep(e.key, valueAt, pts.length);
+    if (to == null) return;
+    e.preventDefault();
+    if (pts[to]!.n !== selected) onPick?.(pts[to]!.n, 'key');
+  };
   const near = (clientX: number, el: SVGSVGElement) => {
     const r = el.getBoundingClientRect();
     const vx = ((clientX - r.left) / r.width) * W;
@@ -90,15 +170,23 @@ export function ScoreFlow({
       <svg
         className="ch-rzsvg"
         viewBox={`0 0 ${W} ${height}`}
-        role="img"
-        aria-label={`Running score to par: ${summary}`}
+        role="slider"
+        tabIndex={0}
+        aria-label="Running score to par"
+        aria-valuemin={firstN}
+        aria-valuemax={lastN}
+        aria-valuenow={value.n}
+        aria-valuetext={flowValueText(value)}
+        onKeyDown={onKey}
+        onFocus={() => setFocused(true)}
+        onBlur={() => setFocused(false)}
         onPointerMove={(e) => {
           const h = near(e.clientX, e.currentTarget);
           setHover(h);
           setLast(h);
         }}
         onPointerLeave={() => setHover(null)}
-        onClick={(e) => onPick?.(near(e.clientX, e.currentTarget))}
+        onClick={(e) => onPick?.(near(e.clientX, e.currentTarget), 'pointer')}
       >
         <defs>
           <clipPath id={`${id}-up`}>
@@ -123,6 +211,13 @@ export function ScoreFlow({
             </feMerge>
           </filter>
         </defs>
+        {band && (
+          <g className={'ch-rzband' + (band.loss ? ' is-loss' : ' is-gain')}>
+            <rect x={band.x0} y={TOP - 6} width={band.x1 - band.x0} height={colBase - TOP + 6} fill={band.loss ? 'var(--ch-stage-gold)' : 'var(--ch-stage-line)'} fillOpacity={band.loss ? 0.14 : 0.12} />
+            <line x1={band.x0} y1={TOP - 6} x2={band.x0} y2={colBase} stroke={band.loss ? 'var(--ch-stage-gold)' : 'var(--ch-stage-line)'} strokeWidth={1} />
+            <line x1={band.x1} y1={TOP - 6} x2={band.x1} y2={colBase} stroke={band.loss ? 'var(--ch-stage-gold)' : 'var(--ch-stage-line)'} strokeWidth={1} />
+          </g>
+        )}
         {ticks.map((v) => (
           <g key={v}>
             <line x1={X0 - 8} y1={y(v)} x2={X1 + 10} y2={y(v)} stroke={v === 0 ? 'var(--ch-stage-ink-soft)' : 'var(--ch-stage-rule)'} strokeWidth={v === 0 ? 1.5 : 1} />
@@ -131,7 +226,16 @@ export function ScoreFlow({
             </text>
           </g>
         ))}
-        <text className="ch-rzsvg__hint" x={X1 + 10} y={TOP - 14} textAnchor="end" fontSize={11} fill="var(--ch-stage-ink-soft)">Better than par</text>
+        {hintClear && (
+          <text className="ch-rzsvg__hint" x={X1 + 10} y={TOP - 14} textAnchor="end" fontSize={11} fill="var(--ch-stage-ink-soft)">
+            Better than par
+          </text>
+        )}
+        {band && (
+          <text className="ch-rzband__label" x={bandLx} y={TOP - 14} textAnchor={bandAnchor} fontSize={13} fontWeight={600} fill="var(--ch-stage-ink)">
+            {turning!.words}
+          </text>
+        )}
         <text className="ch-rzsvg__hint" x={X1 + 10} y={TOP + H + 22} textAnchor="end" fontSize={11} fill="var(--ch-stage-ink-soft)">Worse than par</text>
         {split != null && (
           <g>
@@ -162,7 +266,7 @@ export function ScoreFlow({
             </g>
           ))}
         </g>
-        {worst && !cur && <WorstLabel at={x(worst.n)} dotY={y(worst.cum)} n={worst.n} delta={worst.delta} x0={X0} x1={X1} foot={TOP + H + 10} />}
+        {worst && !cur && !worstInBand && <WorstLabel at={x(worst.n)} dotY={y(worst.cum)} n={worst.n} delta={worst.delta} x0={X0} x1={X1} foot={TOP + H + 10} />}
         <line x1={X0 - 8} y1={colBase} x2={X1 + 10} y2={colBase} stroke="var(--ch-stage-rule)" />
         {pts.map((p) => (
           <rect
@@ -200,6 +304,7 @@ export function ScoreFlow({
           </div>
         </div>
       )}
+      {spoken && <p className="ch-sr-only">{spoken}</p>}
     </div>
   );
 }

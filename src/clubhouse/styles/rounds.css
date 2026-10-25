@@ -3104,6 +3104,12 @@ html[data-fw-theme='dark'] .ch-rv .ch-rv-yn.is-y {
   overflow: visible;
   font-family: inherit;
 }
+/* P-7: the arc is a slider; its focus ring sits on the stage. */
+.ch-rv .ch-rzsvg:focus-visible {
+  outline: 2px solid var(--ch-border-focus);
+  outline-offset: 4px;
+  border-radius: 16px;
+}
 .ch-rv .ch-rzmeta {
   margin: 16px 0 0;
   font: var(--ch-type-14);
