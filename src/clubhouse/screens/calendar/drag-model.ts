@@ -179,3 +179,72 @@ export function barPill(to: ChBarTarget): string {
   const a = `${dowOf(to.from)} ${dayNum(to.from)}`;
   return to.from === to.to ? a : `${a} – ${dowOf(to.to)} ${dayNum(to.to)}`;
 }
+
+/** Whole days from `a` to `b` (calendar dates). */
+export function daysBetween(a: string, b: string): number {
+  return Math.round((Date.parse(`${b}T12:00:00Z`) - Date.parse(`${a}T12:00:00Z`)) / 86400000);
+}
+
+/** An all-day event or a timed run over several days: what drags as a bar (P-4 4.5). */
+export function isBar(e: Pick<ChCalEvent, 'allDay' | 'span'>): boolean {
+  return e.allDay || (!!e.span && e.span.from !== e.span.to);
+}
+
+/** A bar's whole span as it stands: its first and last day. */
+export function barSpan(e: Pick<ChCalEvent, 'date' | 'span'>): ChBarTarget {
+  return e.span ? { from: e.span.from, to: e.span.to } : { from: e.date, to: e.date };
+}
+
+/**
+ * The day entries of an event moved or stretched to `to`, the way the loader lays them out: an all-day event is one
+ * entry a day; a timed run keeps its first day's start and last day's end (its start to midnight, whole days, midnight
+ * to its end), and a run that now fits one day is one timed entry.
+ */
+export function respan(tpl: ChCalEvent, to: ChBarTarget): ChCalEvent[] {
+  const n = daysBetween(to.from, to.to);
+  const out: ChCalEvent[] = [];
+  if (tpl.allDay) {
+    const span = n === 0 ? null : { from: to.from, to: to.to };
+    for (let i = 0; i <= n; i++) out.push({ ...tpl, date: addDays(to.from, i), start: null, end: null, allDay: true, span });
+    return out;
+  }
+  const s = tpl.span?.start ?? tpl.start ?? 0;
+  const e = tpl.span?.end ?? tpl.end ?? 24;
+  if (n === 0) return [{ ...tpl, date: to.from, start: s, end: Math.max(e, s + MIN_LEN_H), allDay: false, span: null }];
+  const span = { from: to.from, to: to.to, start: s, end: e };
+  for (let i = 0; i <= n; i++) {
+    const d = addDays(to.from, i);
+    out.push({ ...tpl, date: d, start: i === 0 ? s : 0, end: i === n ? e : 24, allDay: false, span });
+  }
+  return out;
+}
+
+/** The week lane's bars: one per event over the days shown, clipped at the week's edges, stacked longest first. */
+export interface ChLaneBar {
+  e: ChCalEvent;
+  span: ChBarTarget;
+  c0: number;
+  c1: number;
+  row: number;
+  clipStart: boolean;
+  clipEnd: boolean;
+}
+export function laneBars(events: ChCalEvent[], dates: string[]): ChLaneBar[] {
+  if (dates.length === 0) return [];
+  const first = dates[0]!;
+  const last = dates[dates.length - 1]!;
+  const seen = new Map<string, ChCalEvent>();
+  for (const e of events) if (isBar(e) && !seen.has(e.id)) seen.set(e.id, e);
+  const items = [...seen.values()]
+    .map((e) => ({ e, span: barSpan(e) }))
+    .filter(({ span }) => span.to >= first && span.from <= last)
+    .map(({ e, span }) => ({ e, span, c0: Math.max(0, daysBetween(first, span.from)), c1: Math.min(dates.length - 1, daysBetween(first, span.to)), clipStart: span.from < first, clipEnd: span.to > last }))
+    .sort((a, b) => a.c0 - b.c0 || b.c1 - b.c0 - (a.c1 - a.c0) || a.e.title.localeCompare(b.e.title));
+  const rows: number[] = [];
+  return items.map((it) => {
+    let row = rows.findIndex((end) => end < it.c0);
+    if (row < 0) row = rows.length;
+    rows[row] = it.c1;
+    return { ...it, row };
+  });
+}

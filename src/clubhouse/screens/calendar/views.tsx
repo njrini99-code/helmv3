@@ -9,7 +9,8 @@ import { haptic } from '../../lib/haptics';
 import { useChClock } from '../../lib/use-clock';
 import { clockHourLabel, meridiemOfHour } from '../../lib/clock-format';
 import { ClassGroupBlock } from './class-group';
-import { clashSummary, draggable, movePill, resizePill, type ChMoveTarget } from './drag-model';
+import { barPill, clashSummary, daysBetween, draggable, isBar, laneBars, movePill, resizePill, type ChBarTarget, type ChLaneBar, type ChMoveTarget } from './drag-model';
+import { useBarDrag } from './use-bar-drag';
 import { useTimeDrag, type ChDragKind, type ChTimeDrag } from './use-time-drag';
 import { chSpringCurve, CH_EASE } from '../../lib/motion';
 import { chSupportsLinear } from '../../lib/sheet-drag';
@@ -206,6 +207,7 @@ export function TimeGrid({
   onSelect,
   onDay,
   onMove,
+  onBarMove,
   daylight,
   coach = false,
   viewerId,
@@ -222,6 +224,8 @@ export function TimeGrid({
   onDay: (date: string) => void;
   /** P006-B3 / P-4, the coach's desktop: an event dropped at a new day and time (decimal hours). Absent, nothing drags. */
   onMove?: (e: ChCalEvent, to: ChMoveTarget, kind: ChDragKind) => void;
+  /** P-4 4.5: an all-day event or a run over several days dropped on new days (times kept). Absent, bars don't drag. */
+  onBarMove?: (e: ChCalEvent, to: ChBarTarget) => void;
   /** P006-A1: a day's sunrise, golden hour and sunset on the team's clock (the global light's sun); absent, no daylight. */
   daylight?: (date: string) => ChDaylight;
   /** P006-C3: the hover card's Nudge is the coach's. */
@@ -229,7 +233,8 @@ export function TimeGrid({
 }) {
   // 6 AM to 9 PM, widened to the hour around anything earlier or later on the days shown, so a 5 AM bus or a 9:30 PM
   // meeting is on the grid instead of dropped from it (CAL-07).
-  const timed = events.filter((e) => !e.allDay && e.start != null && e.end != null && dates.includes(e.date));
+  // A run over several days is a bar in the all-day lane now (P-4 4.5, OC-3); its hours still count for clashes.
+  const timed = events.filter((e) => !isBar(e) && e.start != null && e.end != null && dates.includes(e.date));
   // P-4 4.3: a drag at the grid's edge grows it an hour at a time; the extra hours go when the drag does.
   const [grow, setGrow] = useState({ before: 0, after: 0 });
   const from = Math.max(0, Math.min(CAL_START, ...timed.map((e) => Math.floor(e.start!))) - grow.before);
@@ -260,6 +265,11 @@ export function TimeGrid({
     },
   });
   const drag = engine.state;
+  const lane = useRef<HTMLDivElement | null>(null);
+  const bars = laneBars(events, dates);
+  const barEngine = useBarDrag({ lane, dates, rail: RAIL_PX, coach: !!onBarMove, onDrop: (e, to) => onBarMove?.(e, to) });
+  const bd = barEngine.state;
+  const rows = Math.max(1, ...bars.map((b) => b.row + 1));
   useEffect(() => {
     if (!drag && (grow.before || grow.after)) setGrow({ before: 0, after: 0 });
   }, [drag, grow.before, grow.after]);
@@ -300,30 +310,28 @@ export function TimeGrid({
             </button>
           ))}
         </div>
-        <div className="ch-wk__allday">
-          <span>All day</span>
-          {dates.map((d) => (
-            <div key={d} className="ch-wk__allcell">
-              {events
-                .filter((e) => e.allDay && e.date === d)
-                .map((e) => (
-                  <button
-                    key={e.id}
-                    type="button"
-                    data-print-visible
-                    className={`ch-ev-bar ch-ev--${e.type}${selId === e.id ? ' is-sel' : ''}`}
-                    aria-pressed={selId === e.id}
-                    onClick={() => {
-                      haptic('select');
-                      onSelect(e.id);
-                    }}
-                  >
-                    <Icon icon={TYPE_ICON[e.type]} size={12} className="ch-ev__g" />
-                    <span>{eventTitle(e, people, viewerId)}</span>
-                  </button>
-                ))}
-            </div>
+        <div className="ch-wk__allday" ref={lane} style={{ gridTemplateRows: `repeat(${rows}, 26px)` }}>
+          <span style={{ gridRow: `1 / span ${rows}` }}>All day</span>
+          {bars.map((b) => (
+            <LaneBar key={b.e.id} b={b} people={people} viewerId={viewerId} sel={selId === b.e.id} onSelect={onSelect} drag={barEngine.bind(b.e)} state={bd?.e.id === b.e.id ? 'held' : undefined} />
           ))}
+          {bd &&
+            (() => {
+              const first = dates[0]!;
+              const c0 = Math.max(0, daysBetween(first, bd.to.from));
+              const c1 = Math.min(dates.length - 1, daysBetween(first, bd.to.to));
+              const row = bars.find((x) => x.e.id === bd.e.id)?.row ?? 0;
+              if (c1 < 0 || c0 > dates.length - 1) return null;
+              const pill = bd.edge === 'to' ? `Now ends ${barPill({ from: bd.to.to, to: bd.to.to })}` : bd.edge === 'from' ? `Now starts ${barPill({ from: bd.to.from, to: bd.to.from })}` : barPill(bd.to);
+              return (
+                <div className="ch-dd-barcard" aria-hidden="true" style={{ gridColumn: `${c0 + 2} / ${c1 + 3}`, gridRow: row + 1 }}>
+                  <LaneBar b={{ e: bd.e, span: bd.to, c0, c1, row, clipStart: bd.to.from < first, clipEnd: bd.to.to > dates[dates.length - 1]! }} people={people} viewerId={viewerId} sel={false} onSelect={() => {}} state="card" />
+                  <span className="ch-dd-pill ch-num">
+                    <span>{pill}</span>
+                  </span>
+                </div>
+              );
+            })()}
         </div>
       </div>
       <div className={'ch-wk__grid' + (drag ? ' is-dragging' : '')} data-first={dates[0]} data-from={from} ref={grid}>
@@ -338,7 +346,7 @@ export function TimeGrid({
           )}
         </div>
         {dates.map((d) => {
-          const laid = layoutLanes(groupClasses(events.filter((e) => !e.allDay && e.date === d && e.start != null && e.end != null)));
+          const laid = layoutLanes(groupClasses(events.filter((e) => !isBar(e) && e.date === d && e.start != null && e.end != null)));
           return (
             <div key={d} className={'ch-wk__col' + (d === now.date ? ' is-today' : d < now.date ? ' is-past' : '') + (drag?.kind === 'move' && drag.to.date === d ? ' is-target' : '')}>
               {daylight && <Daylight dl={daylight(d)} from={from} to={to} label={d === dates[dates.length - 1]} />}
@@ -378,6 +386,64 @@ export function TimeGrid({
         {drag && <DragCard drag={drag} dates={dates} from={from} people={people} viewerId={viewerId} events={events} grid={grid} />}
       </div>
     </div>
+  );
+}
+
+/**
+ * P-4 4.5: one bar across the days an all-day event or a run covers, in the week's all-day lane. A run prints its start
+ * at the left end and its end at the right; an end that runs past the week is cut in a chevron and has no grip here.
+ */
+function LaneBar({
+  b,
+  people,
+  viewerId,
+  sel,
+  onSelect,
+  drag,
+  state,
+}: {
+  b: ChLaneBar;
+  people: Map<string, ChCalPerson>;
+  viewerId?: string | null;
+  sel: boolean;
+  onSelect: (id: string) => void;
+  drag?: { moved: () => boolean; onPointerDown: (ev: PointerEvent<HTMLElement>) => void; onKeyDown: (ev: KeyboardEvent<HTMLElement>) => void; grip: (edge: 'from' | 'to') => (ev: PointerEvent<HTMLElement>) => void };
+  state?: 'held' | 'card';
+}) {
+  const clock = useChClock();
+  const { e, span } = b;
+  const title = eventTitle(e, people, viewerId);
+  const run = !e.allDay && e.span?.start != null && e.span.end != null;
+  const days = span.from === span.to ? `${dowOf(span.from)} ${dayNum(span.from)}` : `${dowOf(span.from)} ${dayNum(span.from)} to ${dowOf(span.to)} ${dayNum(span.to)}`;
+  return (
+    <button
+      type="button"
+      data-print-visible
+      data-ev-id={state === 'card' ? undefined : e.id}
+      className={`ch-ev-bar ch-ev-bar--span ch-ev--${e.type}${sel ? ' is-sel' : ''}${drag ? ' is-draggable' : ''}${state ? ` is-${state}` : ''}${b.clipStart ? ' is-clip-start' : ''}${b.clipEnd ? ' is-clip-end' : ''}`}
+      style={state === 'card' ? undefined : { gridColumn: `${b.c0 + 2} / ${b.c1 + 3}`, gridRow: b.row + 1 }}
+      aria-label={`${title}, ${days}${drag ? '. Alt and the arrow keys move it a day; add Shift to change its last day' : ''}`}
+      aria-pressed={sel}
+      tabIndex={state === 'card' ? -1 : undefined}
+      onPointerDown={drag?.onPointerDown}
+      onKeyDown={drag?.onKeyDown}
+      onClick={() => {
+        if (drag?.moved()) return;
+        haptic('select');
+        onSelect(e.id);
+      }}
+    >
+      <Icon icon={TYPE_ICON[e.type]} size={12} className="ch-ev__g" />
+      {run && !b.clipStart && <em className="ch-ev-bar__t ch-num">{fmtHour(e.span!.start!, true, clock)}</em>}
+      <span>{title}</span>
+      {run && !b.clipEnd && <em className="ch-ev-bar__t ch-ev-bar__end ch-num">{fmtHour(e.span!.end!, true, clock)}</em>}
+      {drag && !state && (
+        <>
+          {!b.clipStart && <span className="ch-ev-bar__grip is-from" aria-hidden="true" onPointerDown={drag.grip('from')} onClick={(ev) => ev.stopPropagation()} />}
+          {!b.clipEnd && <span className="ch-ev-bar__grip is-to" aria-hidden="true" onPointerDown={drag.grip('to')} onClick={(ev) => ev.stopPropagation()} />}
+        </>
+      )}
+    </button>
   );
 }
 

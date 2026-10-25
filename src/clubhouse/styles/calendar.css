@@ -726,6 +726,105 @@
   color: var(--ch-text-secondary);
 }
 
+/* P-4 4.5, the week lane's bars: one bar across the days it covers, stacked in 26px rows 4px apart. A run prints its
+   start at the left end and its end at the right; an end cut by the week takes a chevron, never a side bar. */
+.ch-wk__allday {
+  row-gap: var(--ch-space-1);
+}
+.ch-ev-bar--span {
+  position: relative;
+  max-width: none;
+  min-width: 0;
+  height: 26px;
+}
+.ch-ev-bar--span > span {
+  flex: 1;
+  min-width: 0;
+}
+.ch-ev-bar__t {
+  flex: none;
+  font: var(--ch-type-12-medium);
+  font-style: normal;
+}
+.ch-ev-bar--span.is-clip-start {
+  clip-path: polygon(6px 0, 100% 0, 100% 100%, 6px 100%, 0 50%);
+  padding-left: var(--ch-space-3);
+}
+.ch-ev-bar--span.is-clip-end {
+  clip-path: polygon(0 0, calc(100% - 6px) 0, 100% 50%, calc(100% - 6px) 100%, 0 100%);
+  padding-right: var(--ch-space-3);
+}
+.ch-ev-bar--span.is-clip-start.is-clip-end {
+  clip-path: polygon(6px 0, calc(100% - 6px) 0, 100% 50%, calc(100% - 6px) 100%, 6px 100%, 0 50%);
+}
+.ch-ev-bar.is-draggable {
+  cursor: grab;
+}
+.ch-ev-bar.is-held {
+  background: transparent;
+  box-shadow: none;
+  color: var(--ch-ink-500);
+  outline: 1.5px dashed var(--ch-ink-500);
+  outline-offset: -1.5px;
+}
+.ch-ev-bar.is-held > :not(span:not([class])) {
+  visibility: hidden;
+}
+.ch-dd-barcard {
+  position: relative;
+  z-index: calc(var(--ch-z-raised) + 4);
+  display: flex;
+  pointer-events: none;
+}
+.ch-dd-barcard .ch-ev-bar {
+  flex: 1;
+  scale: 1.02;
+  box-shadow: var(--ch-elevation-overlay);
+}
+.ch-ev-bar__grip {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 9px;
+  cursor: ew-resize;
+}
+.ch-ev-bar__grip.is-from {
+  left: 0;
+}
+.ch-ev-bar__grip.is-to {
+  right: 0;
+}
+.ch-ev-bar__grip::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  width: 4px;
+  height: 14px;
+  translate: 0 -50%;
+  border-radius: var(--ch-radius-mark);
+  background: currentColor;
+  opacity: 0;
+  transition: opacity var(--ch-dur-quick) var(--ch-ease);
+}
+.ch-ev-bar__grip.is-from::after {
+  left: 3px;
+}
+.ch-ev-bar__grip.is-to::after {
+  right: 3px;
+}
+@media (hover: hover) {
+  .ch-ev-bar.is-draggable:hover .ch-ev-bar__grip::after {
+    opacity: 0.7;
+  }
+}
+.ch-ev-bar.is-draggable.is-sel .ch-ev-bar__grip::after {
+  opacity: 0.7;
+}
+html[data-fw-theme='dark'] .ch-ev-bar.is-held {
+  color: var(--ch-ink-400);
+  outline-color: var(--ch-ink-400);
+}
+
 /* Event blocks */
 .ch-ev {
   position: absolute;

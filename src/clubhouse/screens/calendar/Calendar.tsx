@@ -21,6 +21,7 @@ import { haptic } from '../../lib/haptics';
 import { chReport, chTrail } from '../../lib/track';
 import { addDays, addMonths, CAL_HH, daylightOn, dayNum, dowOf, fmtHour, type ChDaylight, findOverlaps, focusHour, monthCells, monthKey, monthName, viewTitle, weekDates, yearOf, type ChCalEvent, type ChCalPerson, type ChCalType, type ChCalView } from './model';
 import { AgendaView, MonthView, TimeGrid, type ChMoveTarget, type ChNow } from './views';
+import { barPill, barSpan, daysBetween, respan, type ChBarTarget } from './drag-model';
 import { updateGolfEvent } from '@/app/golf/actions/calendar-events';
 import { clashesAt, clashSummary } from './drag-model';
 import { writeMove, type ChMoveKind, type ChMoveScope } from './move-write';
@@ -122,7 +123,7 @@ export type ChMoveOpts = { kind?: ChMoveKind; scope?: ChMoveScope };
 function useHeldMoves(timezone: string, events: ChCalEvent[], today: string, onSaved: () => void, preview: boolean, people: Map<string, ChCalPerson>) {
   const toast = useToast();
   const clock = useChClock();
-  const [moves, setMoves] = useState<Map<string, ChMoveTarget>>(() => new Map());
+  const [moves, setMoves] = useState<Map<string, ChMoveTarget | ChBarTarget>>(() => new Map());
   /** CH-6805: one polite line per completed move, never during a drag. */
   const [said, setSaid] = useState('');
   /**
@@ -159,8 +160,8 @@ function useHeldMoves(timezone: string, events: ChCalEvent[], today: string, onS
   }, [flush]);
 
   const move = useCallback(
-    (e: ChCalEvent, to: ChMoveTarget, opts: ChMoveOpts = {}) => {
-      const kind = opts.kind ?? 'move';
+    (e: ChCalEvent, to: ChMoveTarget | ChBarTarget, opts: ChMoveOpts = {}) => {
+      const kind = 'from' in to ? 'bar' : (opts.kind ?? 'move');
       const scope = opts.scope ?? (e.seriesId ? 'this' : 'single');
       const prior = held.current && held.current.id === e.id && !held.current.written ? held.current : null;
       if (!prior) flush();
@@ -245,6 +246,23 @@ function useHeldMoves(timezone: string, events: ChCalEvent[], today: string, onS
       held.current = entry;
 
       const { events: evs, people: ppl } = live.current;
+      if ('from' in to) {
+        // P-4 4.9: a bar moves by days with its times kept, or one end changes.
+        const was = barSpan(base);
+        const same = daysBetween(was.from, was.to) === daysBetween(to.from, to.to);
+        const label = same ? `Moved to ${barPill(to)}` : to.from === was.from ? `Now ends ${barPill({ from: to.to, to: to.to })}` : `Now starts ${barPill({ from: to.from, to: to.from })}`;
+        toast({
+          title: label,
+          body: whoHearsLine(whoHears(base, ppl)) ?? undefined,
+          replace: 'calendar-move',
+          action: { label: 'Undo', run: undo },
+          onExpire: () => {
+            if (held.current === entry) flush();
+          },
+        });
+        setSaid(`${base.title} ${same ? `moved to ${dowLong(to.from)} ${dayNum(to.from)} ${monthName(to.from)}` : label.toLowerCase()}. ${undoHint()}`);
+        return;
+      }
       const day = to.date === base.date ? '' : ` ${to.date === today ? 'today' : `on ${dowOf(to.date)} ${dayNum(to.date)}`}`;
       const at = fmtHour(to.start, true, clock);
       const title =
@@ -582,13 +600,26 @@ export function Calendar({
   const refreshQuiet = useCallback(() => router.refresh(), [router]);
   const { moves, move, undoLatest, said, heldScope } = useHeldMoves(data.timezone, data.events, data.today, refreshQuiet, preview, people);
   /** P-4 4.8: a series event dropped somewhere new, held there with its question open. */
-  const [ask, setAsk] = useState<{ e: ChCalEvent; to: ChMoveTarget; kind: ChMoveKind } | null>(null);
+  const [ask, setAsk] = useState<{ e: ChCalEvent; to: ChMoveTarget | ChBarTarget; kind: ChMoveKind } | null>(null);
   const placed = useMemo(() => {
     const over = ask ? new Map(moves).set(ask.e.id, ask.to) : moves;
-    return over.size ? data.events.map((e) => (over.has(e.id) ? { ...e, ...over.get(e.id)! } : e)) : data.events;
+    if (!over.size) return data.events;
+    const out: ChCalEvent[] = [];
+    const spanned = new Set<string>();
+    for (const e of data.events) {
+      const to = over.get(e.id);
+      if (!to) out.push(e);
+      else if (!('from' in to)) out.push({ ...e, ...to });
+      else if (!spanned.has(e.id)) {
+        // A bar's day entries are laid out again for its new days, as the loader would.
+        spanned.add(e.id);
+        out.push(...respan(e, to));
+      }
+    }
+    return out;
   }, [data.events, moves, ask]);
   const onGridMove = useCallback(
-    (e: ChCalEvent, to: ChMoveTarget, kind: ChMoveKind) => {
+    (e: ChCalEvent, to: ChMoveTarget | ChBarTarget, kind: ChMoveKind) => {
       const scope = e.seriesId ? heldScope(e.id) : null;
       if (e.seriesId && !scope) {
         setAsk({ e, to, kind });
@@ -954,7 +985,7 @@ export function Calendar({
       {ask && (
         <SeriesScopeMenu
           anchorId={ask.e.id}
-          dayChanged={ask.to.date !== ask.e.date}
+          dayChanged={'from' in ask.to || ask.to.date !== ask.e.date}
           onPick={(scope) => {
             move(ask.e, ask.to, { kind: ask.kind, scope });
             answered(ask.e.id);
@@ -1064,7 +1095,7 @@ export function Calendar({
               <Swap swapKey={view}>
                 <Swap swapKey={period.key} kind="slide" dir={period.dir}>
                   {(view === 'week' || view === 'day') && (
-                    <TimeGrid dates={dates} events={events} people={people} now={now} selId={selId} flagged={flagged} onSelect={open} onDay={(d) => go('day', d)} onMove={coach ? onGridMove : undefined} daylight={daylight} coach={coach} viewerId={data.viewerPlayerId} />
+                    <TimeGrid dates={dates} events={events} people={people} now={now} selId={selId} flagged={flagged} onSelect={open} onDay={(d) => go('day', d)} onMove={coach ? onGridMove : undefined} onBarMove={coach ? (e, to) => onGridMove(e, to, 'bar') : undefined} daylight={daylight} coach={coach} viewerId={data.viewerPlayerId} />
                   )}
                   {view === 'month' && (
                     <MonthView
