@@ -3865,6 +3865,16 @@
       "fixture": "Contextual module"
     },
     {
+      "file": "src/clubhouse/screens/rounds/course-motion.tsx",
+      "group": "screens",
+      "exports": [
+        "FadeNum"
+      ],
+      "styles": [],
+      "examples": [],
+      "fixture": "Contextual module"
+    },
+    {
       "file": "src/clubhouse/screens/rounds/entry/ContinueRound.tsx",
       "group": "screens",
       "exports": [
@@ -12301,6 +12311,7 @@
         "ch-carc",
         "ch-carc__alt",
         "ch-carc__cap",
+        "ch-carc__ov",
         "ch-carc__pills",
         "ch-carc__svg",
         "ch-ch",
@@ -12317,6 +12328,7 @@
         "ch-ch-hero__p",
         "ch-ch-last__sub",
         "ch-ch-note",
+        "ch-ch-note__b",
         "ch-ch-note__l",
         "ch-ch-note__more",
         "ch-ch-plate",
@@ -12354,6 +12366,7 @@
         "ch-hmap-listv",
         "ch-hmap-mapv",
         "ch-hmap-sec",
+        "ch-hmap-sel",
         "ch-hmap-switch",
         "ch-hmap-t",
         "ch-hmap-t__n",
