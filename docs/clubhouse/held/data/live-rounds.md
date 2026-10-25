@@ -2,7 +2,7 @@
 
 ```text
 Plan ID: HD-live-rounds
-Status: HELD
+Status: RELEASED
 Pages: Live rounds (P016): Home's Live now card, the live view, the player's sheet; Player Home's own card; Round setup, the in-round sheet and Settings (sharing)
 Feature: golf_round_lifecycle, team_operations (memory/registry.yml)
 Migration: supabase/migrations/20261025050000_golf_round_live.sql
