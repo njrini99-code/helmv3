@@ -145,21 +145,26 @@ $$;
 
 COMMENT ON FUNCTION public.golf_season_start(text, timestamptz) IS 'Owner decision 9 (2026-10-24): the golf season starts 1 August on the team''s wall clock. Returns that date for the season p_at falls in, read in p_tz; a zone Postgres does not know reads America/New_York, the product default. SQL twin of seasonStartDate (src/clubhouse/data/season.ts).';
 
+-- the _n columns count one player's rounds and shots in a season; they never near 2^31.
 CREATE TABLE IF NOT EXISTS public.golf_player_standing_season (
   player_id uuid NOT NULL REFERENCES public.golf_players (id) ON DELETE CASCADE,
   metric_id text NOT NULL REFERENCES public.golf_metrics (metric_id) ON DELETE RESTRICT,
   player_value numeric NOT NULL,
   team_avg numeric,
+  -- squawk-ignore prefer-bigint-over-int
   team_n integer NOT NULL DEFAULT 0,
   team_pct numeric,
   level_avg numeric,
+  -- squawk-ignore prefer-bigint-over-int
   level_n integer NOT NULL DEFAULT 0,
   level_pct numeric,
   pga_value numeric NOT NULL,
   pga_delta numeric,
   basis text,
   on_green_proximity_feet numeric,
+  -- squawk-ignore prefer-bigint-over-int
   layup_excluded_n integer,
+  -- squawk-ignore prefer-bigint-over-int
   rounds_n integer NOT NULL,
   season_start date NOT NULL,
   computed_at timestamptz NOT NULL DEFAULT now(),

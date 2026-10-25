@@ -128,7 +128,7 @@ CoachHelm AI · active · criticality high · owner product
 
 - **Relations:** 5 doc/structurally-evidenced, 12 import-graph-only (weak)
 - **Tables:** `golf_coachhelm_action_runs`, `golf_coachhelm_corrections`, `golf_coachhelm_player_state`, `golf_coachhelm_run_log`, `golf_insight_action`, `golf_insight_exposure`, `golf_insight_outcome`
-- **RPCs:** `claim_round_recap_lock`, `prune_stale_player_standing`, `refresh_player_standing`, `refresh_player_stats_cache`, `release_round_recap_lock`
+- **RPCs:** `claim_round_recap_lock`, `clear_dirty_standing_teams`, `prune_stale_player_standing`, `refresh_player_standing`, `refresh_player_standing_season`, `refresh_player_stats_cache`, `release_round_recap_lock`, `select_dirty_standing_teams`
 - **Test surfaces:** 3
 - **Sentry/admin_events signals:** `coachhelm_ai_engine`, `coachhelm_analytics`, `insights_management`, `round_review_ai`
 
@@ -218,7 +218,7 @@ Player CoachHelm And Development · active · criticality high · owner product
 
 - **Relations:** 1 doc/structurally-evidenced, 19 import-graph-only (weak)
 - **Tables:** `golf_focus_area_criteria`, `golf_focus_area_practice_sessions`
-- **RPCs:** `ingest_external_round_atomic`, `sg_scale_for_player`
+- **RPCs:** `ingest_external_round_atomic`, `mark_team_standing_dirty`, `sg_scale_for_player`
 - **Test surfaces:** 3
 - **Sentry/admin_events signals:** `coachhelm_v3_goals`, `development_plans_coach`, `drills_practice_rx`, `my_development`, `player_coachhelm_dashboard`
 
@@ -287,7 +287,7 @@ Shot Tracking · active · criticality high · owner product
 Stats And Analytics · active · criticality high · owner product
 
 - **Relations:** 0 doc/structurally-evidenced, 9 import-graph-only (weak)
-- **Tables:** `baseball_legacy_backfill_manifest`
+- **Tables:** `baseball_legacy_backfill_manifest`, `golf_player_standing_season`, `golf_standing_refresh_queue`
 - **RPCs:** `recalculate_round_strokes_gained`, `recompute_team_sg`, `refresh_player_stats_cache`, `sg_scale_for_player`
 - **Test surfaces:** 4
 - **Sentry/admin_events signals:** `my_game_profile`, `stats_analytics`
@@ -307,8 +307,8 @@ Team Access Control And RLS · active · criticality high · owner platform
 Team Communications · active · criticality high · owner product
 
 - **Relations:** 0 doc/structurally-evidenced, 8 import-graph-only (weak)
-- **Tables:** `golf_message_mentions`, `golf_message_reactions`, `golf_message_responses`
-- **RPCs:** `get_player_hub_announcements`, `mark_golf_messages_read`
+- **Tables:** `golf_conversation_read_marks`, `golf_message_mentions`, `golf_message_reactions`, `golf_message_responses`
+- **RPCs:** `get_player_hub_announcements`, `golf_message_seen_times`, `mark_golf_messages_read`
 - **Test surfaces:** 16
 - **Sentry/admin_events signals:** `announcements`, `messaging`, `notifications`
 
@@ -353,6 +353,7 @@ Team Operations · active · criticality high · owner product
 | `vercel_cron:/api/cron/v3/goal-suggestions-evaluate` | vercel_cron | `coachhelm_ai` |
 | `vercel_cron:/api/cron/v3/goal-suggestions-write` | vercel_cron | `coachhelm_ai` |
 | `vercel_cron:/api/cron/v3/standing-refresh` | vercel_cron | `coachhelm_ai` |
+| `vercel_cron:/api/cron/v3/standing-refresh-dirty` | vercel_cron | `coachhelm_ai` |
 | `vercel_cron:/api/jobs/consume` | vercel_cron | _unmapped_ |
 
 ---
