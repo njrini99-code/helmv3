@@ -23,6 +23,8 @@ import { rebuiltHref } from '../../shell/nav';
 import { AVAILABILITY_WORD, legsCaption, relativeAgo } from './format';
 import { usePressPrefetch } from '../../shell/use-prefetch-tabs';
 import { plural, pluralWord } from '../../lib/plural';
+import { ClassStatusLine } from '../../ui/ClassStatusLine';
+import type { RosterClassLine } from './class-line';
 
 const FORM_NOTE: Record<ChRosterPlayer['form'], string> = {
   improving: 'Scoring is coming down.',
@@ -39,6 +41,7 @@ export function RosterPeek({
   onNoteSaved,
   availability,
   helm,
+  classLine,
 }: {
   p: ChRosterPlayer | undefined;
   notesLocked: boolean;
@@ -48,6 +51,8 @@ export function RosterPeek({
   availability: AvailabilityControl;
   /** What CoachHelm reads in each player's rounds (loadRoster); off draws no block. */
   helm: ChRosterHelm;
+  /** P-10: the class line for the open player, or null/absent. */
+  classLine?: RosterClassLine | null;
 }) {
   const reduced = useChReducedMotion();
   const panel = useRef<HTMLElement>(null);
@@ -78,7 +83,7 @@ export function RosterPeek({
           exit={reduced ? { opacity: 0 } : { opacity: 0, transform: 'translateX(12px)' }}
           transition={chTween('base', reduced)}
         >
-          <PeekBody p={p} notesLocked={notesLocked} onClose={onClose} onNoteSaved={onNoteSaved} availability={availability} helm={helm} />
+          <PeekBody p={p} notesLocked={notesLocked} onClose={onClose} onNoteSaved={onNoteSaved} availability={availability} helm={helm} classLine={classLine} />
         </m.aside>
       )}
     </AnimatePresence>
@@ -92,6 +97,7 @@ function PeekBody({
   onNoteSaved,
   availability,
   helm,
+  classLine,
 }: {
   p: ChRosterPlayer;
   notesLocked: boolean;
@@ -99,6 +105,8 @@ function PeekBody({
   onNoteSaved: NoteSaved;
   availability: AvailabilityControl;
   helm: ChRosterHelm;
+  /** P-10: the class line for this player (a trip, or a class when nothing outranks it), with its source. */
+  classLine?: RosterClassLine | null;
 }) {
   const figs: Array<[string, string]> = [
     ['Scoring avg', formatFixed(p.avg)],
@@ -148,6 +156,12 @@ function PeekBody({
           {[p.classYear, p.gradYear ? `Class of ${p.gradYear}` : null, p.availability !== 'available' ? AVAILABILITY_WORD[p.availability] : null].filter(Boolean).join(' · ') ||
             'Player'}
         </span>
+        {classLine && (
+          <span className="ch-rs-peek__class">
+            <ClassStatusLine kind={classLine.kind} text={classLine.text} />
+            {classLine.source && <small>{classLine.source}</small>}
+          </span>
+        )}
         {(messageHref || planHref) && (
           <div className="ch-rs-peek__quick">
             {messageHref && (

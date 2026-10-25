@@ -25,6 +25,9 @@ import { acknowledgeAnnouncement } from '@/app/golf/actions/communication';
 import { getPreviewUrl } from '@/app/golf/actions/documents';
 import { validateFile, type PendingAttachment } from '@/lib/storage/attachments';
 import { useChClock } from '../../lib/use-clock';
+import { useClassAwareness } from '../../shell/context';
+import { useTeamClassDay } from '../../lib/use-class-day';
+import { useConversationTeam } from '../../lib/use-conversation-team';
 import { isTransientNetworkErrorMessage } from '@/lib/transient-network-error';
 import { decodeMessageContent } from '@/lib/utils/decode-message-content';
 import type { ChMessagesData } from '../../data/messages';
@@ -63,6 +66,10 @@ export function Messages({ data }: { data: ChMessagesData }) {
   const now = clock ? clock.toISOString() : data.now;
   const { conversations, loading, error, refetch } = useGolfConversations(data.viewerUserId, data.teamId);
   const [selectedId, setSelectedId] = useState<string | null>(null);
+  // P-10: class awareness is a coach's line. Off (the flag, a player, the migrations unapplied) it reads nothing.
+  const classOn = useClassAwareness() && data.role === 'coach';
+  const teamClass = useTeamClassDay(data.teamId, { enabled: classOn });
+  const convTeamId = useConversationTeam(selectedId, classOn);
   const [autoOpened, setAutoOpened] = useState<string | null>(null);
   /**
    * The deep link last taken (null before the first read). A new one arriving while Messages is already open (a bell
@@ -602,6 +609,7 @@ export function Messages({ data }: { data: ChMessagesData }) {
     refetchConvs: () => void refetch(),
     drafts,
     attachmentRecovery,
+    classDay: classOn ? { day: teamClass.day, now: teamClass.now, teamId: data.teamId, convTeamId } : null,
     selectedId,
     select,
     msgs: chMsgs,

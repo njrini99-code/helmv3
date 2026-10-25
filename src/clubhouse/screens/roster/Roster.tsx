@@ -45,6 +45,9 @@ import { Tooltip } from '../../ui/Tooltip';
 import { RosterSpread } from './RosterSpread';
 import { AVAILABILITY_WORD, availabilityLine, earlyNeed, rosterFailedParts, rosterPeek, rosterStandings, teamInSentence, type RosterStanding } from './format';
 import { StatusConfirm, statusCopy } from './RosterStatus';
+import { classNoteFor, type RosterClassLines } from './class-line';
+import { useRosterClassLines } from './useClassLines';
+import { ClassStatusLine } from '../../ui/ClassStatusLine';
 import '../../styles/roster.css';
 import { SideScroll } from '../../ui/SideScroll';
 import { ROSTER_SORT_DIRECTION, sortRoster, type RosterSort } from './sort';
@@ -149,6 +152,8 @@ export function Roster({ data }: { data: ChRoster }) {
   const teamRef = teamInSentence(data);
   const jr = useJoinRequests(teamRef, data.requests);
   const phone = useChPhone();
+  // P-10: the team's class lines (flag off: nothing is fetched and the map is empty). `hold` keeps them still under a finger.
+  const { lines: classLines, press: hold } = useRosterClassLines(data.teamId, players);
   usePageKeys('Roster', phone ? null : ROW_KEYS);
   useEffect(() => {
     if (!focusRequests || phone) return;
@@ -449,6 +454,8 @@ export function Roster({ data }: { data: ChRoster }) {
         onStatus={setRestatus}
         onNoteSaved={noteSaved}
         availability={availability}
+        classLines={classLines}
+        hold={hold}
         onRetry={() => router.refresh()}
       >
         {dialogs}
@@ -641,6 +648,8 @@ export function Roster({ data }: { data: ChRoster }) {
                   sortBy={sortBy}
                   onSort={setSort}
                   sortableAvg={!data.statsError}
+                  classLines={classLines}
+                  hold={hold}
                   onShowEveryone={() => {
                     setQ('');
                     setShow('all');
@@ -649,7 +658,7 @@ export function Roster({ data }: { data: ChRoster }) {
               </Swap>
             </SectionBoundary>
             <SectionBoundary surface="roster.peek" label="The player panel" code="CH-3206">
-              <RosterPeek p={cur} notesLocked={data.notesError} onClose={() => setSel(null)} onNoteSaved={noteSaved} availability={availability} helm={data.helm} />
+              <RosterPeek p={cur} notesLocked={data.notesError} onClose={() => setSel(null)} onNoteSaved={noteSaved} availability={availability} helm={data.helm} classLine={classNoteFor(cur ?? { availability: 'available' }, cur ? classLines.get(cur.id) : undefined)} />
             </SectionBoundary>
           </div>
         </>
@@ -684,6 +693,8 @@ function RosterList({
   sortBy,
   onSort,
   sortableAvg,
+  classLines,
+  hold,
 }: {
   rows: ChRosterPlayer[];
   standings: ReturnType<typeof rosterStandings>;
@@ -700,6 +711,9 @@ function RosterList({
   onSort: (s: Sort) => void;
   /** Avg sorts nothing while season stats are missing (P003 #7), so its header is plain then. */
   sortableAvg: boolean;
+  /** P-10: each player's class line, and the handlers that hold the lines still while a pointer is down. */
+  classLines: RosterClassLines;
+  hold: { onPointerDownCapture: () => void };
 }) {
   // The profile is fetched whole as the pointer goes down on a face or a name (A13).
   const press = usePressPrefetch();
@@ -721,10 +735,11 @@ function RosterList({
                 key={p.id}
                 type="button"
                 className={'ch-rs-face' + (sel === p.id ? ' is-sel' : '') + (p.status === 'inactive' ? ' is-off' : '')}
-                aria-label={`${faceLabel(p, standings.byId.get(p.id))}. Open profile`}
+                aria-label={`${faceLabel(p, standings.byId.get(p.id))}${classNoteFor(p, classLines.get(p.id)) ? `, ${classNoteFor(p, classLines.get(p.id))!.text}` : ''}. Open profile`}
                 onClick={() => openProfile(p.id)}
                 {...press(profileHref(p.id))}
                 {...bind(p)}
+                {...hold}
               >
                 <span className="ch-rs-face__top">
                   <span />
@@ -743,8 +758,13 @@ function RosterList({
                   <FormLine data={p.trend} width={150} height={30} earlyBelow={3} label={`${p.name} form`} />
                 </span>
                 <FaceFigures p={p} avgs={standings.avgs} standing={standings.byId.get(p.id)} />
-                {/* Injured or away takes the note slot in plain ink, in place of a Needs a look reason (CH-3809: a word). */}
-                {availabilityLine(p) ? (
+                {/* A trip, then injured or away, then a class, take the note slot in plain ink, in place of a Needs a look
+                    reason (CH-3809: a word). A class line never hides an injury (class-line.ts). */}
+                {classNoteFor(p, classLines.get(p.id)) ? (
+                  <span className="ch-rs-face__note is-availability is-class" title={classNoteFor(p, classLines.get(p.id))!.text}>
+                    <ClassStatusLine kind={classNoteFor(p, classLines.get(p.id))!.kind} text={classNoteFor(p, classLines.get(p.id))!.text} />
+                  </span>
+                ) : availabilityLine(p) ? (
                   <span className="ch-rs-face__note is-availability" title={availabilityLine(p)!}>
                     {availabilityLine(p)}
                   </span>
@@ -793,6 +813,7 @@ function RosterList({
                 role="row"
                 className={'ch-rs-row' + (sel === p.id ? ' is-sel' : '') + (p.status === 'inactive' ? ' is-off' : '')}
                 {...bind(p)}
+                {...hold}
               >
                 <span role="cell" className="ch-rs-who__cell">
                   <button
@@ -805,7 +826,7 @@ function RosterList({
                     <Avatar name={p.name} id={p.id} size="lg" />
                     <span>
                       <b>{p.name}</b>
-                      <RowMeta p={p} />
+                      <RowMeta p={p} line={classNoteFor(p, classLines.get(p.id))} />
                     </span>
                   </button>
                 </span>
@@ -999,9 +1020,21 @@ function faceLabel(p: ChRosterPlayer, standing: RosterStanding | undefined): str
  * The list row's line under the name: availability first when they are injured or away ("Injured · Sophomore · Charlotte,
  * NC"), the word in secondary ink and the rest tertiary, on one line with the whole of it in the title.
  */
-function RowMeta({ p }: { p: ChRosterPlayer }) {
+function RowMeta({ p, line: classLine }: { p: ChRosterPlayer; line?: ReturnType<typeof classNoteFor> }) {
   const line = availabilityLine(p);
   const rest = [p.classYear, p.hometown].filter(Boolean).join(' · ');
+  // P-10: a trip or a class leads the line, as the availability word does ("In class until 11:50 AM · Sophomore · Charlotte, NC").
+  if (classLine) {
+    const all = [classLine.text, rest || null].filter(Boolean).join(' · ');
+    return (
+      <span className="ch-rs-who__m" title={all}>
+        <span className="ch-rs-who__avail">
+          <ClassStatusLine kind={classLine.kind} text={classLine.text} />
+        </span>
+        {rest ? ` · ${rest}` : ''}
+      </span>
+    );
+  }
   const full = [line, rest || null].filter(Boolean).join(' · ');
   return (
     <span className="ch-rs-who__m" title={line ? full : undefined}>

@@ -1287,6 +1287,17 @@
     "catalog": "docs/clubhouse/catalog/home.md"
   },
   {
+    "id": 20202,
+    "page": "P002",
+    "category": 2,
+    "item": 2,
+    "name": "THE_SHEET_OPENS_BEFORE_THE_CLASS_DAY",
+    "chCode": "CH-2470",
+    "meaning": "The sheet opens before the class day has arrived",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/home.md"
+  },
+  {
     "id": 20301,
     "page": "P002",
     "category": 3,
@@ -1462,6 +1473,105 @@
     "name": "ROUNDS_WITH_HOLE_SCORES_BUT_NO_PLAYER",
     "chCode": "CH-2315",
     "meaning": "Rounds with hole scores, but no player with 3 of them (coach Home, the team's four parts)",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/home.md"
+  },
+  {
+    "id": 20416,
+    "page": "P002",
+    "category": 4,
+    "item": 16,
+    "name": "NOBODY_ON_THE_TEAM_HAS_A_CLASS",
+    "chCode": "CH-2370",
+    "meaning": "Nobody on the team has a class today (the sheet is open)",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/home.md"
+  },
+  {
+    "id": 20501,
+    "page": "P002",
+    "category": 5,
+    "item": 1,
+    "name": "THE_LAST_DAY_OF_CLASSES_IS_NOT",
+    "chCode": "CH-2170",
+    "meaning": "The last day of classes is not after the first",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/home.md"
+  },
+  {
+    "id": 20502,
+    "page": "P002",
+    "category": 5,
+    "item": 2,
+    "name": "A_TERM_SHORTER_THAN_4_WEEKS_OR",
+    "chCode": "CH-2171",
+    "meaning": "A term shorter than 4 weeks or longer than about 6 months",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/home.md"
+  },
+  {
+    "id": 20503,
+    "page": "P002",
+    "category": 5,
+    "item": 3,
+    "name": "EXAMS_END_MORE_THAN_3_WEEKS_AFTER",
+    "chCode": "CH-2172",
+    "meaning": "Exams end more than 3 weeks after the last class",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/home.md"
+  },
+  {
+    "id": 20504,
+    "page": "P002",
+    "category": 5,
+    "item": 4,
+    "name": "EXAMS_END_BEFORE_THE_LAST_DAY_OF",
+    "chCode": "CH-2173",
+    "meaning": "Exams end before the last day of classes",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/home.md"
+  },
+  {
+    "id": 20505,
+    "page": "P002",
+    "category": 5,
+    "item": 5,
+    "name": "THE_TERM_OVERLAPS_ANOTHER_OF_THE_TEAMS",
+    "chCode": "CH-2174",
+    "meaning": "The term overlaps another of the team's terms",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/home.md"
+  },
+  {
+    "id": 20506,
+    "page": "P002",
+    "category": 5,
+    "item": 6,
+    "name": "THE_TERM_HAS_NO_NAME",
+    "chCode": "CH-2175",
+    "meaning": "The term has no name",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/home.md"
+  },
+  {
+    "id": 20507,
+    "page": "P002",
+    "category": 5,
+    "item": 7,
+    "name": "A_NO_CLASS_RANGE_ENDS_BEFORE_IT",
+    "chCode": "CH-2176",
+    "meaning": "A no-class range ends before it starts",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/home.md"
+  },
+  {
+    "id": 20508,
+    "page": "P002",
+    "category": 5,
+    "item": 8,
+    "name": "A_NO_CLASS_RANGE_IS_LONGER_THAN",
+    "chCode": "CH-2177",
+    "meaning": "A no-class range is longer than 21 days",
     "status": "implemented",
     "catalog": "docs/clubhouse/catalog/home.md"
   },
@@ -1710,6 +1820,61 @@
     "catalog": "docs/clubhouse/catalog/home.md"
   },
   {
+    "id": 20623,
+    "page": "P002",
+    "category": 6,
+    "item": 23,
+    "name": "SAVING_THE_TERM_DATES_FAILS",
+    "chCode": "CH-2070",
+    "meaning": "Saving the term dates fails (class status, P-10)",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/home.md"
+  },
+  {
+    "id": 20624,
+    "page": "P002",
+    "category": 6,
+    "item": 24,
+    "name": "SAVING_A_TEAM_NO_CLASS_RANGE_FAILS",
+    "chCode": "CH-2071",
+    "meaning": "Saving a team no-class range fails",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/home.md"
+  },
+  {
+    "id": 20625,
+    "page": "P002",
+    "category": 6,
+    "item": 25,
+    "name": "REMOVING_A_TEAM_NO_CLASS_RANGE_FAILS",
+    "chCode": "CH-2072",
+    "meaning": "Removing a team no-class range fails",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/home.md"
+  },
+  {
+    "id": 20626,
+    "page": "P002",
+    "category": 6,
+    "item": 26,
+    "name": "THE_CLASS_DAY_DIDNT_LOAD_WHEN_THE",
+    "chCode": "CH-2270",
+    "meaning": "The class day didn't load when the In class now sheet is open (the Home line is hidden while the read is in error)",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/home.md"
+  },
+  {
+    "id": 20701,
+    "page": "P002",
+    "category": 7,
+    "item": 1,
+    "name": "THE_SHEET_IS_OPEN_WHILE_OFFLINE",
+    "chCode": "CH-2970",
+    "meaning": "The sheet is open while offline",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/home.md"
+  },
+  {
     "id": 20801,
     "page": "P002",
     "category": 8,
@@ -1789,6 +1954,17 @@
     ]
   },
   {
+    "id": 21101,
+    "page": "P002",
+    "category": 11,
+    "item": 1,
+    "name": "THE_COACH_REMOVES_A_TEAM_NO_CLASS",
+    "chCode": "CH-2570",
+    "meaning": "The coach removes a team no-class range",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/home.md"
+  },
+  {
     "id": 21401,
     "page": "P002",
     "category": 14,
@@ -1831,6 +2007,17 @@
     "name": "HOVERING_OR_PRESSING_A_LEADERBOARD_ROW",
     "chCode": "CH-2602",
     "meaning": "Hovering or pressing a leaderboard row",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/home.md"
+  },
+  {
+    "id": 21603,
+    "page": "P002",
+    "category": 16,
+    "item": 3,
+    "name": "THE_HOME_CLASS_LINE_CHANGES",
+    "chCode": "CH-2670",
+    "meaning": "The Home class line changes (a minute tick, a refetch)",
     "status": "implemented",
     "catalog": "docs/clubhouse/catalog/home.md"
   },
@@ -1948,6 +2135,17 @@
     "tests": [
       "src/clubhouse/__tests__/player-home.test.tsx"
     ]
+  },
+  {
+    "id": 21808,
+    "page": "P002",
+    "category": 18,
+    "item": 8,
+    "name": "THE_HOME_CLASS_LINE",
+    "chCode": "CH-2870",
+    "meaning": "The Home class line",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/home.md"
   },
   {
     "id": 21901,

@@ -7,7 +7,7 @@ import type { ChRosterPlayer } from '../../data/roster';
 
 /**
  * P003: where the team sits. Every ranked player is a coin on one scoring axis (lower is better, so the best score is on the
- * left), the team average a gold line across it. It holds no data of its own: the players and their averages are the roster's,
+ * left), the team average a gold marker on it. It holds no data of its own: the players and their averages are the roster's,
  * and a player under the early floor is not on it. Coins that would touch take another lane. It is drawn in place at first paint (Q-139: no
  * first-paint draw-ins); coins glide only when the data moves them.
  */
@@ -44,7 +44,7 @@ export function RosterSpread({ players, teamAvg, onOpen }: { players: ChRosterPl
     <section className="ch-rs-sp" aria-labelledby="ch-rs-sp-h">
       <div className="ch-rs-sp__h">
         <h2 id="ch-rs-sp-h">Where the team sits</h2>
-        <p>Season scoring average, lower is better. Each coin is a player; the gold line is the team average{teamAvg != null ? `, ${formatAvg(teamAvg)}` : ''}.</p>
+        <p>Season scoring average, lower is better. Each coin is a player; the gold marker is the team average{teamAvg != null ? `, ${formatAvg(teamAvg)}` : ''}.</p>
       </div>
       <div className="ch-rs-sp__plot" style={{ height: height + 34 }}>
         {team != null && (

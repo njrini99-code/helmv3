@@ -1,0 +1,367 @@
+/* P-10 class awareness: the pieces several pages share. Everything here is .ch-ca-*. Pages add their own classes in
+   their own stylesheets; a card is --ch-radius-card, a sheet --ch-radius-sheet, a menu or popover --ch-radius-lg, a chip
+   and a hover state --ch-radius-md, a lane --ch-radius-mark. The accent text is --ch-green-600 (7.88:1 light, 7.17:1
+   dark on the surface), never --ch-accent, whose dark value is 2.75:1. Nothing here draws a left border or stripe. */
+
+/* The status line. */
+.ch-ca-line {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--ch-space-1);
+  min-width: 0;
+  max-width: 100%;
+  color: var(--ch-ink-500);
+}
+.ch-ca-line > svg {
+  flex: none;
+}
+.ch-ca-line > span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* A player row: the sheet's lists and the player's "Coaches see". */
+.ch-ca-row {
+  display: flex;
+  align-items: center;
+  gap: var(--ch-space-3);
+  min-height: 52px;
+  width: 100%;
+  padding: var(--ch-space-1) 0;
+  border-radius: var(--ch-radius-md);
+  color: var(--ch-text-primary);
+  text-align: start;
+}
+.ch-ca-row.is-button {
+  padding-inline: var(--ch-space-2);
+  margin-inline: calc(var(--ch-space-2) * -1);
+  width: calc(100% + var(--ch-space-4));
+  cursor: pointer;
+}
+.ch-ca-row__text {
+  display: grid;
+  flex: 1;
+  min-width: 0;
+}
+.ch-ca-row__name {
+  overflow: hidden;
+  font: var(--ch-type-15);
+  letter-spacing: var(--ch-track-15);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.ch-ca-row__line,
+.ch-ca-row__meta {
+  min-width: 0;
+  overflow: hidden;
+  color: var(--ch-ink-500);
+  font: var(--ch-type-13);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.ch-ca-row__time {
+  flex: none;
+  color: var(--ch-ink-600);
+  font: var(--ch-type-14);
+}
+@media (hover: hover) {
+  .ch-ca-row.is-button:hover {
+    background: var(--ch-bg-hover);
+  }
+}
+.ch-ca-row.is-button[data-ch-pressed] {
+  background: var(--ch-bg-hover);
+}
+@media (hover: hover) {
+  .ch-ca-row.is-button:active {
+    background: var(--ch-bg-hover);
+  }
+}
+.ch-ca-row.is-button:focus-visible {
+  outline: 2px solid var(--ch-border-focus);
+  outline-offset: 2px;
+}
+
+/* Coach Home's line. A line, not a card: no border, no fill, no left edge. */
+.ch-ca-home {
+  position: relative;
+  display: block;
+}
+.ch-ca-home__btn {
+  display: flex;
+  align-items: center;
+  gap: var(--ch-space-3);
+  width: 100%;
+  min-width: 0;
+  color: var(--ch-text-primary);
+  text-align: start;
+  cursor: pointer;
+}
+.ch-ca-home__btn > svg {
+  flex: none;
+  color: var(--ch-ink-500);
+}
+.ch-ca-home__btn > .ch-swap {
+  flex: 1;
+  min-width: 0;
+}
+.ch-ca-home__text {
+  display: grid;
+  min-width: 0;
+}
+.ch-ca-home__l1 {
+  font: var(--ch-type-15-medium);
+  letter-spacing: var(--ch-track-15);
+  overflow-wrap: anywhere;
+}
+.ch-ca-home__l2 {
+  color: var(--ch-ink-500);
+  font: var(--ch-type-13);
+  overflow-wrap: anywhere;
+}
+.ch-ca-home--phone {
+  border-bottom: var(--ch-hairline-w) solid var(--ch-border-hairline);
+}
+.ch-ca-home--phone .ch-ca-home__btn {
+  min-height: 56px;
+  padding-block: var(--ch-space-2);
+}
+.ch-ca-home--phone .ch-ca-home__btn > svg:last-child {
+  color: var(--ch-ink-400);
+}
+.ch-ca-home--desktop {
+  display: inline-block;
+  margin-top: var(--ch-space-2);
+}
+.ch-ca-home--desktop .ch-ca-home__btn {
+  width: auto;
+  gap: var(--ch-space-2);
+  padding: var(--ch-space-1) var(--ch-space-2);
+  margin-inline: calc(var(--ch-space-2) * -1);
+  border-radius: var(--ch-radius-lg);
+  color: var(--ch-ink-600);
+}
+.ch-ca-home--desktop .ch-ca-home__text {
+  display: block;
+}
+.ch-ca-home--desktop .ch-ca-home__l1,
+.ch-ca-home--desktop .ch-ca-home__l2 {
+  font: var(--ch-type-14);
+  color: inherit;
+}
+@media (hover: hover) {
+  .ch-ca-home--desktop .ch-ca-home__btn:hover {
+    background: var(--ch-bg-hover);
+  }
+}
+.ch-ca-home--desktop .ch-ca-home__btn[data-ch-pressed] {
+  background: var(--ch-bg-hover);
+}
+@media (hover: hover) {
+  .ch-ca-home--desktop .ch-ca-home__btn:active {
+    background: var(--ch-bg-hover);
+  }
+}
+
+/* The sheet's popover (desktop): anchored to the line, 380 wide, its own scroll. */
+.ch-ca-pop {
+  position: absolute;
+  z-index: var(--ch-z-popover);
+  width: 380px;
+  max-width: calc(100vw - 16px);
+  max-height: 520px;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding: var(--ch-space-4);
+  border-radius: var(--ch-radius-lg);
+  background: var(--ch-bg-surface);
+  box-shadow: var(--ch-elevation-overlay);
+  animation: ch-ca-in var(--ch-dur-quick) var(--ch-ease);
+}
+@keyframes ch-ca-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+.ch-ca-pop__head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--ch-space-3);
+  margin-bottom: var(--ch-space-3);
+}
+.ch-ca-pop__head h2 {
+  font: var(--ch-type-17-strong);
+  letter-spacing: var(--ch-track-17);
+}
+.ch-ca-pop__head h2:focus-visible {
+  outline: 2px solid var(--ch-border-focus);
+  outline-offset: 2px;
+}
+.ch-ca-pop__head p {
+  margin-top: var(--ch-space-1);
+  color: var(--ch-ink-500);
+  font: var(--ch-type-13);
+}
+
+/* The sheet's body. */
+.ch-ca-body {
+  display: grid;
+  gap: var(--ch-space-4);
+}
+.ch-ca-sec h3 {
+  margin-bottom: var(--ch-space-1);
+  color: var(--ch-ink-600);
+  font: var(--ch-type-13-strong);
+}
+.ch-ca-note,
+.ch-ca-names,
+.ch-ca-empty,
+.ch-ca-updated {
+  color: var(--ch-ink-500);
+  font: var(--ch-type-13);
+}
+.ch-ca-names {
+  font: var(--ch-type-14);
+  color: var(--ch-ink-600);
+  overflow-wrap: anywhere;
+}
+.ch-ca-state {
+  display: flex;
+  align-items: center;
+  gap: var(--ch-space-3);
+  min-height: 120px;
+  color: var(--ch-ink-600);
+  font: var(--ch-type-14);
+}
+.ch-ca-state.is-loading {
+  justify-content: center;
+  color: var(--ch-ink-500);
+  font: var(--ch-type-13);
+}
+.ch-ca-foot {
+  border-top: var(--ch-hairline-w) solid var(--ch-border-hairline);
+}
+.ch-ca-foot__row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--ch-space-3);
+  width: 100%;
+  min-height: 44px;
+  color: var(--ch-ink-600);
+  font: var(--ch-type-13);
+  text-align: start;
+}
+.ch-ca-foot__row.is-button {
+  cursor: pointer;
+}
+.ch-ca-foot__row.is-button > svg {
+  color: var(--ch-ink-400);
+}
+
+/* The today strip. Fills are --ch-ink-400 (3:1 on the surface); an exam adds a ring, a free window a green band. */
+.ch-ca-strip {
+  position: relative;
+}
+.ch-ca-strip__plot {
+  position: relative;
+  display: grid;
+  gap: var(--ch-space-1);
+  padding-block: var(--ch-space-1);
+}
+.ch-ca-strip__lane,
+.ch-ca-strip__bar {
+  position: relative;
+  height: 6px;
+}
+.ch-ca-strip__bar {
+  height: 12px;
+}
+.ch-ca-strip__block,
+.ch-ca-strip__slot {
+  position: absolute;
+  top: 0;
+  height: 100%;
+  border-radius: var(--ch-radius-mark);
+  background: var(--ch-ink-400);
+}
+.ch-ca-strip__slot {
+  top: auto;
+  bottom: 0;
+  border-radius: var(--ch-radius-xs) var(--ch-radius-xs) 0 0;
+}
+.ch-ca-strip__block.is-exam {
+  box-shadow: 0 0 0 var(--ch-hairline-w) var(--ch-ink-600);
+}
+.ch-ca-strip__tick {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: var(--ch-hairline-w);
+  background: var(--ch-border-hairline);
+}
+.ch-ca-strip__free {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  background: var(--ch-green-50);
+}
+.ch-ca-strip__now {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: var(--ch-hairline-w);
+  background: var(--ch-accent);
+}
+.ch-ca-strip__axis {
+  position: relative;
+  height: 16px;
+  color: var(--ch-ink-500);
+  font: var(--ch-type-11);
+  letter-spacing: var(--ch-track-11);
+}
+.ch-ca-strip__axis > span {
+  position: absolute;
+  top: 0;
+  transform: translateX(-50%);
+}
+.ch-ca-strip__legend {
+  display: flex;
+  justify-content: space-between;
+  color: var(--ch-ink-500);
+  font: var(--ch-type-11);
+  letter-spacing: var(--ch-track-11);
+}
+.ch-ca-strip__label {
+  margin-top: var(--ch-space-1);
+  color: var(--ch-green-600);
+  font: var(--ch-type-11-medium);
+  letter-spacing: var(--ch-track-11);
+}
+
+/* The Term and no-class-day sheets. */
+.ch-ca-form {
+  display: grid;
+  gap: var(--ch-space-4);
+}
+.ch-ca-breaks {
+  display: grid;
+  gap: var(--ch-space-1);
+  margin-top: var(--ch-space-4);
+  padding-top: var(--ch-space-3);
+  border-top: var(--ch-hairline-w) solid var(--ch-border-hairline);
+}
+.ch-ca-breaks li {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--ch-space-3);
+  min-height: 44px;
+  color: var(--ch-ink-600);
+  font: var(--ch-type-14);
+}

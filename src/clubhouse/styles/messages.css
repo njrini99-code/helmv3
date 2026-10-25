@@ -1945,6 +1945,10 @@
     white-space: nowrap;
     text-overflow: ellipsis;
   }
+  /* P-10: the class line takes the bar's own muted ink on the green, not the page's. */
+  .ch-msp-who em .ch-ca-line {
+    color: inherit;
+  }
   .ch-msp-who em {
     overflow: hidden;
     font: var(--ch-type-12);

@@ -108,7 +108,7 @@ Every Bridge ID (D-68: namespace, two-digit category, two-digit item), its catal
 | Page | 01 | 02 | 03 | 04 | 05 | 06 | 07 | 08 | 09 | 10 | 11 | 12 | 13 | 14 | 15 | 16 | 17 | 18 | 19 | 20 | 21 | 22 | 23 | 24 | 25 | Total |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
 | P001 | 3 | 2 | 1 | 6 |  | 14 | 6 | 4 | 1 |  |  |  | 1 | 2 |  | 22 | 9 | 26 | 1 | 3 | 1 | 3 | 1 | 1 |  | 107 |
-| P002 | 5 | 1 | 1 | 15 |  | 22 |  | 6 |  |  |  |  |  | 2 |  | 2 | 3 | 7 | 1 |  | 1 |  | 1 | 1 |  | 68 |
+| P002 | 5 | 2 | 1 | 16 | 8 | 26 | 1 | 6 |  |  | 1 |  |  | 2 |  | 3 | 3 | 8 | 1 |  | 1 |  | 1 | 1 |  | 86 |
 | P003 | 2 | 3 | 3 | 9 | 4 | 24 | 2 | 6 | 1 |  | 2 | 3 | 1 | 3 |  | 4 | 4 | 10 | 1 | 1 | 1 |  | 1 | 1 |  | 86 |
 | P004 | 2 | 1 | 1 | 19 | 2 | 12 | 3 | 2 | 1 |  |  | 1 |  | 1 |  | 4 | 4 | 6 | 1 | 1 | 1 |  | 1 | 1 |  | 64 |
 | P005 | 4 | 4 | 2 | 23 | 3 | 25 | 3 | 6 | 1 |  | 1 | 2 |  | 1 | 1 | 4 | 3 | 10 | 1 | 1 | 1 |  | 1 | 1 |  | 98 |
@@ -245,6 +245,7 @@ Every Bridge ID (D-68: namespace, two-digit category, two-digit item), its catal
 | 20104 |  | 01 Default / core UI | `COACH_QUEUE_COUNTS_AS_ITS_SCREEN` | implemented | Coach Home's "Waiting on you" (under the head on desktop, in the phone's hero, and on the first run) counts each part with the read and rule of the screen that holds it, so the two show one number: pending join requests as the sidebar's Roster badge counts them, replies missing on this week's events that still take one as Team Hub's RSVPs count "no reply" (rsvpQueue), overdue tasks as Team Hub's Tasks (taskStatus, overdueTaskCount) and posts awaiting an acknowledgement as its Announcements (unackedPostCount). Only parts above zero are drawn, in that order; with nothing waiting the row is not drawn. Each part reads on its own: one that fails is null, logged and left out, never 0 (CH-2220). |
 | 20105 |  | 01 Default / core UI | `TEAM_PARTS_ON_THE_FORMS_LAST_10` | implemented | Coach Home's four parts (The team's game; under the team's form on desktop, after Team scoring on the phone) read the form's own Last 10 rounds of the active roster, hole-level only (Q-123): strokes gained per round in each part from 3 rounds with hole scores (else none), its change against the same players' previous ten (Q-112) coloured only when it clears its standard error, the part's plain stat (Fairways, Greens, Up and down, Putts) with the Tour's mark from the team's tour, and who gains and loses most from Team Stats' ranking (ties share a place and are named together; one ranked player, or everyone in one place, loses nothing). No other player's round reaches the figures. |
 | 20201 | CH-2401 | 02 Initial loading / skeleton | `HOME_IS_LOADING` | implemented | Home is loading |
+| 20202 | CH-2470 | 02 Initial loading / skeleton | `THE_SHEET_OPENS_BEFORE_THE_CLASS_DAY` | implemented | The sheet opens before the class day has arrived |
 | 20301 |  | 03 Background loading / refresh | `CLOCK_KEEPS_TIME` | implemented | The phone's Up next line (In 50 min, Happening now) is recomputed from the device clock every minute and the player's countdown every second, so neither needs a reload. |
 | 20401 | CH-2301 | 04 Empty | `NOTHING_IS_ON_THE_CALENDAR_TODAY` | implemented | Nothing is on the calendar today |
 | 20402 | CH-2302 | 04 Empty | `NO_ROUNDS_THIS_SEASON` | implemented | No rounds this season |
@@ -261,6 +262,15 @@ Every Bridge ID (D-68: namespace, two-digit category, two-digit item), its catal
 | 20413 | CH-2313 | 04 Empty | `A_PLAYER_ON_NO_ACTIVE_TEAM` | implemented | A player on no active team |
 | 20414 | CH-2314 | 04 Empty | `NO_ROUND_IN_THE_TEAMS_LAST_10` | implemented | No round in the team's last 10 has hole scores (coach Home, the team's four parts) |
 | 20415 | CH-2315 | 04 Empty | `ROUNDS_WITH_HOLE_SCORES_BUT_NO_PLAYER` | implemented | Rounds with hole scores, but no player with 3 of them (coach Home, the team's four parts) |
+| 20416 | CH-2370 | 04 Empty | `NOBODY_ON_THE_TEAM_HAS_A_CLASS` | implemented | Nobody on the team has a class today (the sheet is open) |
+| 20501 | CH-2170 | 05 Validation | `THE_LAST_DAY_OF_CLASSES_IS_NOT` | implemented | The last day of classes is not after the first |
+| 20502 | CH-2171 | 05 Validation | `A_TERM_SHORTER_THAN_4_WEEKS_OR` | implemented | A term shorter than 4 weeks or longer than about 6 months |
+| 20503 | CH-2172 | 05 Validation | `EXAMS_END_MORE_THAN_3_WEEKS_AFTER` | implemented | Exams end more than 3 weeks after the last class |
+| 20504 | CH-2173 | 05 Validation | `EXAMS_END_BEFORE_THE_LAST_DAY_OF` | implemented | Exams end before the last day of classes |
+| 20505 | CH-2174 | 05 Validation | `THE_TERM_OVERLAPS_ANOTHER_OF_THE_TEAMS` | implemented | The term overlaps another of the team's terms |
+| 20506 | CH-2175 | 05 Validation | `THE_TERM_HAS_NO_NAME` | implemented | The term has no name |
+| 20507 | CH-2176 | 05 Validation | `A_NO_CLASS_RANGE_ENDS_BEFORE_IT` | implemented | A no-class range ends before it starts |
+| 20508 | CH-2177 | 05 Validation | `A_NO_CLASS_RANGE_IS_LONGER_THAN` | implemented | A no-class range is longer than 21 days |
 | 20601 | CH-2201 | 06 Server / system error | `THE_WEEKS_EVENTS_DONT_LOAD` | implemented | The week's events don't load |
 | 20602 | CH-2202 | 06 Server / system error | `SEASON_ROUNDS_DONT_LOAD` | implemented | Season rounds (or the roster behind them) don't load |
 | 20603 | CH-2203 | 06 Server / system error | `A_ROUND_LOADS_BUT_ITS_HOLE_BY` | implemented | A round loads but its hole-by-hole scores don't |
@@ -283,16 +293,23 @@ Every Bridge ID (D-68: namespace, two-digit category, two-digit item), its catal
 | 20620 | CH-2219 | 06 Server / system error | `THE_TOURS_MARKS_DONT_LOAD` | implemented | The Tour's marks don't load (coach Home, the team's four parts) |
 | 20621 | CH-2220 | 06 Server / system error | `A_PART_OF_WAITING_ON_YOU_DOESNT` | implemented | A part of "Waiting on you" doesn't load (join requests, replies, tasks or posts) |
 | 20622 | CH-2221 | 06 Server / system error | `THE_TEAMS_FOUR_PARTS_CRASH_WHILE_DRAWING` | implemented | The team's four parts crash while drawing (coach Home, desktop and phone) |
+| 20623 | CH-2070 | 06 Server / system error | `SAVING_THE_TERM_DATES_FAILS` | implemented | Saving the term dates fails (class status, P-10) |
+| 20624 | CH-2071 | 06 Server / system error | `SAVING_A_TEAM_NO_CLASS_RANGE_FAILS` | implemented | Saving a team no-class range fails |
+| 20625 | CH-2072 | 06 Server / system error | `REMOVING_A_TEAM_NO_CLASS_RANGE_FAILS` | implemented | Removing a team no-class range fails |
+| 20626 | CH-2270 | 06 Server / system error | `THE_CLASS_DAY_DIDNT_LOAD_WHEN_THE` | implemented | The class day didn't load when the In class now sheet is open (the Home line is hidden while the read is in error) |
+| 20701 | CH-2970 | 07 Network / offline | `THE_SHEET_IS_OPEN_WHILE_OFFLINE` | implemented | The sheet is open while offline |
 | 20801 |  | 08 Permission / authorization | `ROLE_PICKS_THE_HOME` | implemented | /golf/dashboard hands a coach with the Clubhouse flag on Coach Home and a player with it on Player Home, and everyone else the existing GolfHelm dashboard; a session holding both profiles is treated as a coach, no session is sent to sign in, and a session with neither profile to sign up. |
 | 20802 |  | 08 Permission / authorization | `TEAM_COMES_FROM_THE_SESSION` | implemented | The team Home reads is the coach's active team or the player's own active membership, taken from the session and never from the address; with no team nothing is read and the no-team page shows (CH-2307, CH-2313), and a player membership read that fails is the error page with Try again, never the no-team page. |
 | 20803 |  | 08 Permission / authorization | `PLAYER_READS_ONLY_OWN_ROUNDS` | implemented | Player Home asks only for the signed-in player's own rounds (golf_rounds filtered to their player id) and their own player row, reads no roster or teammate's figures, and sets the player against D1 benchmarks, never against teammates. |
 | 20804 |  | 08 Permission / authorization | `PLAYER_WEEK_NAMES_NO_ONE` | implemented | A player's week never names another player: loadHomeWeek is given no names, so an event reads at most a count (Green 2 · 2 players, First tee 8:42 · 1 of 2 going), and no teammate's name or id is in what the page receives. |
 | 20805 |  | 08 Permission / authorization | `MESSAGE_COACH_FINDS_THE_TEAMS_COACH` | implemented | Message coach opens Messages on ?user=<the coach's user id>: the coach who created the team (golf_teams.created_by is a golf_coaches.id) if they have an account, else a coach of the organisation who has one (the query sets no order, so which one is not fixed), else plain Messages; Messages itself opens the thread only for someone in the team directory (CH-7001, 70801). |
 | 20806 |  | 08 Permission / authorization | `CONTROLS_STAY_WITH_THEIR_ROLE` | implemented | Home draws its own role's controls only: Player Home has no Message team, New event or N shortcut, no Plan, Add event or quick event types, no leaderboard and no link to another player's stats or thread, and Coach Home has no Message coach, New round or countdown. |
+| 21101 | CH-2570 | 11 Destructive | `THE_COACH_REMOVES_A_TEAM_NO_CLASS` | implemented | The coach removes a team no-class range |
 | 21401 | CH-2402 | 14 Retry / recovery | `TRY_AGAIN_WAS_PRESSED_ON_A_SECTION` | reserved | Try again was pressed on a section |
 | 21402 |  | 14 Retry / recovery | `TRY_AGAIN_ASKS_THE_SERVER_AGAIN` | implemented | Try again on a section that did not load asks the server for the whole page again (router.refresh) and, offline, says so and asks nothing; a section that crashed only draws itself again and does not ask the server. |
 | 21601 | CH-2601 | 16 Micro animation | `PAGING_THE_LATEST_ROUND` | implemented | Paging the latest round |
 | 21602 | CH-2602 | 16 Micro animation | `HOVERING_OR_PRESSING_A_LEADERBOARD_ROW` | implemented | Hovering or pressing a leaderboard row |
+| 21603 | CH-2670 | 16 Micro animation | `THE_HOME_CLASS_LINE_CHANGES` | implemented | The Home class line changes (a minute tick, a refetch) |
 | 21701 | CH-2701 | 17 Haptic | `PAGING_THE_LATEST_ROUND_2` | reserved | Paging the latest round |
 | 21702 | CH-2702 | 17 Haptic | `NEW_EVENT` | reserved | New event (button or the N key) |
 | 21703 |  | 17 Haptic | `TAPS_FOLLOW_THE_GRAMMAR` | implemented | Home's taps follow the haptic grammar: a selection tick for paging the latest round, opening a round's card, choosing a quick event type and choosing the Scoring window, the light tap for New event (button or N), Add event and, on the phone, Message coach, and nothing for Message team; Home makes no change, so none of its own controls fires a success or error haptic. |
@@ -303,6 +320,7 @@ Every Bridge ID (D-68: namespace, two-digit category, two-digit item), its catal
 | 21805 | CH-2805 | 18 Accessibility | `NO_AXE_VIOLATIONS_IN_ANY_PREVIEW_STATE` | reserved | No axe violations in any preview state, 1280px and 390px |
 | 21806 | CH-2806 | 18 Accessibility | `ON_A_PHONE_THE_SCORECARD_SCROLLS_SIDEWAYS` | reserved | On a phone the scorecard scrolls sideways; it is a named region that takes focus, so the arrow keys scroll it |
 | 21807 |  | 18 Accessibility | `COUNTDOWN_IS_A_NAMED_TIMER` | implemented | The player's countdown is a timer named for a screen reader as Starts in N days, N hours and N minutes (singular at one), and its digits, the ticking seconds included, are hidden from a screen reader, so it is heard once, not every second. |
+| 21808 | CH-2870 | 18 Accessibility | `THE_HOME_CLASS_LINE` | implemented | The Home class line |
 | 21901 |  | 19 Responsive layout | `PHONE_HOME` | implemented | At 820px and below both roles get the phone Home, never the desktop page shrunk: a hero with Up next, then for a coach Today, the team's scoring form, This week and Latest rounds, and for a player This week, Today, Your latest round, Scoring and the parts of the game; wider canvases get the desktop Home. |
 | 22101 |  | 21 Performance | `LOADERS_NEVER_THROW` | implemented | Each Home is read on the server before its first paint, and a failed read is logged through chLogServer('home', {read}) and flagged on its own section instead of throwing, so one failed read never takes the page down. |
 | 22301 |  | 23 Logging / observability | `FAILURES_REPORTED` | implemented | A section that crashes while drawing is reported through chReport with surface home.<section> (week, latestRound, leaderboard, upNext, today, form, game, legs) at high severity, a failed server read is logged through chLogServer('home', {read}), and the N shortcut and opening Up next or a round leave chTrail breadcrumbs (home new event (keyboard), home open next event, home open round). |

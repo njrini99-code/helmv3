@@ -74,6 +74,8 @@ import { Swap } from "../../ui/Swap";
 import { PlayerPeek } from "../../ui/PlayerPeek";
 import { EmptyState, Skeleton } from "../../ui/States";
 import { RailEmpty } from "./RailEmpty";
+import { ThreadClassSub } from "./ThreadClassSub";
+import type { ChThreadClassDay } from "./class-thread";
 import { useToast } from "../../ui/Toast";
 import { haptic } from "../../lib/haptics";
 import { isNativeApp, openExternalUrl } from "@/lib/utils/capacitor";
@@ -229,6 +231,12 @@ export interface ChMessagesApi {
   removeMember?: (userId: string, name: string) => Promise<boolean>;
   /** The open conversation's shared files, newest first (D-48). */
   files: (conversationId: string) => Promise<ChFile[] | null>;
+
+  /**
+   * P-10 class awareness, a coach only: the team's class day for the thread's class line. Absent (or null) when the
+   * flag is off, the viewer is a player, or the migrations are not applied: the header is then exactly as before.
+   */
+  classDay?: ChThreadClassDay | null;
 
   directory: ChPerson[];
   directoryError: boolean;
@@ -1864,7 +1872,9 @@ function Thread({
           )}
           <div style={{ minWidth: 0 }}>
             <b>{conv.title}</b>
-            <span>{sub}</span>
+            <span>
+              <ThreadClassSub cls={api.classDay} conv={conv} other={other} sub={sub} where="desktop" />
+            </span>
           </div>
         </div>
         <div className="ch-ms-th__act">

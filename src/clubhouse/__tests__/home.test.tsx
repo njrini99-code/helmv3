@@ -1211,7 +1211,8 @@ describe('Home · the phone, the page’s own contracts', () => {
 describe('Home · this file', () => {
   it('22401 the tests name every Home catalog code of kinds 0 to 5 that is not preview, and every Bridge ID this page proves', () => {
     const root = process.cwd();
-    const all = ['home.test.tsx', 'player-home.test.tsx'].map((f) => readFileSync(join(root, 'src/clubhouse/__tests__', f), 'utf8')).join('\n');
+    // class-awareness.test.tsx names the class line's codes (P-10: Term sheet, no-class days, In class now).
+    const all = ['home.test.tsx', 'player-home.test.tsx', 'class-awareness.test.tsx'].map((f) => readFileSync(join(root, 'src/clubhouse/__tests__', f), 'utf8')).join('\n');
     const titles = all.split('\n').filter((l) => /^\s*(it|describe)(\.each\(.*\))?\(/.test(l));
     const catalog = readFileSync(join(root, 'docs/clubhouse/catalog/home.md'), 'utf8');
     const forced = [...catalog.matchAll(/^\|\s*(CH-2[0-5]\d\d)\s*\|.*$/gm)].filter((m) => !/\|\s*preview\s*\|\s*$/.test(m[0].trim())).map((m) => m[1]!);
