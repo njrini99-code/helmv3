@@ -222,10 +222,31 @@ async function publishTournamentLineupImpl(id: string, at: string | null = null)
 
 // ── Plain writes the 100100 policies allow a coach ──────────────────────────────────────────────────────────────
 
+/**
+ * A score belongs to a player who plays the round: in the round's lineup snapshot once it is locked, else in the
+ * entries (lineup or individual, never the alternate). The event's team math reads exactly that set, so a row for
+ * anyone else would be saved and never shown: refused as not_in_lineup instead.
+ */
+async function playsRound(c: Coach, action: string, roundEventId: string, playerId: string): Promise<ActionResult<null> | null> {
+  const round = await tourTable(c.supabase, 'golf_tournament_rounds').select('tournament_id').eq('round_event_id', roundEventId).maybeSingle();
+  if (round.error) return refused(action, round.error);
+  if (!round.data) return refuse('not_found');
+  const [snap, entries] = await Promise.all([
+    tourTable(c.supabase, 'golf_tournament_round_lineups').select('player_id, role').eq('round_event_id', roundEventId),
+    tourTable(c.supabase, 'golf_tournament_entries').select('player_id, role').eq('tournament_id', (round.data as { tournament_id: string }).tournament_id),
+  ]);
+  if (snap.error) return refused(action, snap.error);
+  if (entries.error) return refused(action, entries.error);
+  const rows = ((snap.data as Array<{ player_id: string; role: string }> | null)?.length ? snap.data : entries.data) as Array<{ player_id: string; role: string }> | null;
+  return (rows ?? []).some((r) => r.player_id === playerId && r.role !== 'alternate') ? null : refuse('not_in_lineup');
+}
+
 /** Links a player's GolfHelm round to a tournament round (the golf_rounds row itself is never changed, D-82). */
 async function linkTournamentRoundImpl(roundEventId: string, playerId: string, roundId: string): Promise<ActionResult<null>> {
   if (![roundEventId, playerId, roundId].every((x) => uuid.safeParse(x).success)) return refuse('invalid');
   return asCoach(async (c) => {
+    const plays = await playsRound(c, 'linkTournamentRound', roundEventId, playerId);
+    if (plays) return plays;
     const { error } = await tourTable(c.supabase, 'golf_tournament_player_rounds').upsert(
       { round_event_id: roundEventId, team_id: c.teamId, player_id: playerId, round_id: roundId, entered_total: null, entered_front: null, entered_back: null, link_source: 'coach' },
       { onConflict: 'round_event_id,player_id' },
@@ -252,6 +273,8 @@ async function enterTournamentScoreImpl(roundEventId: string, playerId: string, 
   if (![roundEventId, playerId].every((x) => uuid.safeParse(x).success) || !parsed.success) return refuse('invalid');
   const s = parsed.data;
   return asCoach(async (c) => {
+    const plays = await playsRound(c, 'enterTournamentScore', roundEventId, playerId);
+    if (plays) return plays;
     const {
       data: { user },
     } = await c.supabase.auth.getUser();

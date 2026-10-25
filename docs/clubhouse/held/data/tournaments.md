@@ -267,8 +267,9 @@ Nothing until `golf_tournaments_v1` is on. The flag is planned in
 Tournaments loader and action checks it before any read, so with the flag off
 no code queries a missing table. The preview route renders from fixtures and
 needs no table. Until `npm run db:types` runs after the apply, the tables are
-typed by hand in one Clubhouse data module (handoff 11.7); that module goes in
-the same PR that regenerates the types.
+typed by hand in one module, `src/lib/golf/tournaments-tables.ts` (handoff
+11.7; in `src/lib` so the server actions may import it too); that module is
+deleted in the same PR that regenerates the types.
 
 ## Privacy / sensitive data
 
@@ -380,11 +381,17 @@ Recommended defaults are what the next agent should build to.
   those columns is measured.
 - **Q-168 (itinerary RLS)** stays out of these six files; a separate held
   migration if the owner wants it.
-- **Registry claim.** The Clubhouse registry lets a plan claim one migration
-  (its first `Migration:` line), and only plans listed in a page manifest's
-  `held` count. Default: list this plan in the P016 manifest's `held` and set
-  its data status to `held`; add one short plan per remaining file (or teach
-  the registry to read several `Migration:` lines) when each file is written.
+- **Registry claim (settled 2026-10-25).** The registry claims one migration
+  per plan, so files 2 and 3 have short plans of their own
+  ([tournaments-rls.md](tournaments-rls.md),
+  [tournaments-rpcs.md](tournaments-rpcs.md)), all three are listed in the
+  P016 manifest's `held`, and its data status is `held`. Files 4 to 6 get one
+  each when written.
+- **Turning it on.** File 2 without file 4 lets a player read a lineup the
+  coach is still drafting, through PostgREST, whatever the loader does.
+  Default: production's `golf_tournaments_v1` stays off until file 4 is
+  written and applied, unless the owner accepts that exposure for a
+  coach-only start in writing.
 
 ## SQL preparation status
 

@@ -7,6 +7,7 @@ const state = vi.hoisted(() => ({
   role: 'coach' as 'coach' | 'player' | null,
   rpc: { data: null as unknown, error: null as null | { code: string; message: string } },
   upsert: { error: null as null | { code: string; message: string } },
+  lineup: [{ player_id: '00000000-0000-0000-0000-000000000002', role: 'lineup' }] as Array<{ player_id: string; role: string }>,
   calls: [] as string[],
 }));
 vi.mock('@/lib/flags', () => ({ isFlagEnabled: () => state.on }));
@@ -22,12 +23,21 @@ vi.mock('@/lib/supabase/server', () => ({
       state.calls.push(`${fn} ${JSON.stringify(args)}`);
       return state.rpc;
     },
-    from: (t: string) => ({
-      upsert: async (row: unknown) => {
-        state.calls.push(`${t} ${JSON.stringify(row)}`);
-        return state.upsert;
-      },
-    }),
+    from: (t: string) => {
+      const read: Record<string, unknown> = {
+        select: () => read,
+        eq: () => read,
+        maybeSingle: async () => ({ data: { tournament_id: 't1' }, error: null }),
+        then: (ok: (v: unknown) => void) => ok(t === 'golf_tournament_round_lineups' ? { data: [], error: null } : { data: state.lineup, error: null }),
+      };
+      return {
+        ...read,
+        upsert: async (row: unknown) => {
+          state.calls.push(`${t} ${JSON.stringify(row)}`);
+          return state.upsert;
+        },
+      };
+    },
   }),
 }));
 
@@ -43,6 +53,7 @@ beforeEach(() => {
   state.rpc = { data: null, error: null };
   state.upsert = { error: null };
   state.calls = [];
+  state.lineup = [{ player_id: ID2, role: 'lineup' }];
 });
 
 describe('tournament actions: the gate', () => {
@@ -99,6 +110,12 @@ describe('tournament actions: the payloads', () => {
       { date: '2026-10-05', course_id: null, tee_id: null, start_type: 'tee_times', first_tee_at: null },
       { date: '2026-10-06', course_id: null, tee_id: null, start_type: 'tee_times', first_tee_at: '2026-10-06T08:10:00-04:00' },
     ]);
+  });
+
+  it('a score for a player who is not in the round (an alternate, or not entered) is refused, not saved unseen', async () => {
+    state.lineup = [{ player_id: ID2, role: 'alternate' }];
+    await expect(enterTournamentScore(ID, ID2, { total: 72 })).resolves.toMatchObject({ success: false, code: 'not_in_lineup' });
+    expect(state.calls).toEqual([]);
   });
 
   it('an entered score clears any link (one source, D-82)', async () => {

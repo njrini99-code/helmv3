@@ -90,24 +90,29 @@ END $$;
 -- Structural
 -- ============================================================================
 SELECT is(
-  (SELECT count(*)::int FROM pg_proc p
-    WHERE p.pronamespace = 'public'::regnamespace
-      AND p.proname LIKE 'golf\_tournament\_%'
-      AND p.proname <> 'golf_tournament_round_is_final'
-      AND NOT p.prosecdef
-      AND p.proconfig = ARRAY['search_path=""']),
+  (SELECT count(*)::int FROM unnest(ARRAY[
+      'public.golf_tournament_create(jsonb)',
+      'public.golf_tournament_update(uuid, jsonb, integer)',
+      'public.golf_tournament_delete(uuid, boolean)',
+      'public.golf_tournament_set_entries(uuid, jsonb, integer)',
+      'public.golf_tournament_lock_lineup(uuid)',
+      'public.golf_tournament_substitute(uuid, uuid, uuid)',
+      'public.golf_tournament_set_round_status(uuid, text, text)',
+      'public.golf_tournament_mark(uuid, text, text)',
+      'public.golf_tournament_publish(uuid, timestamptz)',
+      'public.golf_tournament_link_candidates(uuid)']) AS f(sig)
+    JOIN pg_proc p ON p.oid = to_regprocedure(f.sig)
+    WHERE NOT p.prosecdef AND p.proconfig = ARRAY['search_path=""']
+      AND NOT has_function_privilege('anon', p.oid, 'EXECUTE')
+      AND NOT has_function_privilege('public', p.oid, 'EXECUTE')
+      AND has_function_privilege('authenticated', p.oid, 'EXECUTE')),
   10,
-  'the ten tournament RPCs are SECURITY INVOKER with search_path = ""'
+  'the ten RPCs exist, are SECURITY INVOKER with search_path = "", and only authenticated (not anon or PUBLIC) executes them'
 );
-SELECT is(
-  (SELECT count(*)::int FROM pg_proc p
-    WHERE p.pronamespace = 'public'::regnamespace
-      AND p.proname LIKE 'golf\_tournament\_%'
-      AND p.proname <> 'golf_tournament_round_is_final'
-      AND (has_function_privilege('anon', p.oid, 'EXECUTE')
-        OR NOT has_function_privilege('authenticated', p.oid, 'EXECUTE'))),
-  0,
-  'no tournament RPC is executable by anon, and authenticated executes every one'
+SELECT ok(
+  (SELECT p.prosecdef FROM pg_proc p WHERE p.oid = to_regprocedure('helm_private.guard_tournament_lineup()'))
+  AND NOT has_function_privilege('authenticated', 'helm_private.guard_tournament_lineup()', 'EXECUTE'),
+  'the lineup guard is SECURITY DEFINER and not callable by authenticated'
 );
 SELECT ok(
   EXISTS (SELECT 1 FROM pg_trigger WHERE tgname = 'golf_tournament_entries_lineup_guard')
@@ -141,18 +146,17 @@ SET LOCAL request.jwt.claims TO
   '{"sub": "00000000-0000-0000-0000-000000216001", "role": "authenticated"}';
 DO $$
 BEGIN
-  CREATE TEMP TABLE tour_ids ON COMMIT DROP AS
-  SELECT public.golf_tournament_create('{"team_id": "00000000-0000-0000-0000-000000216301", "name": "Oakmont Fall Classic", "start_date": "2026-11-02", "end_date": "2026-11-03", "substitutions": true, "rounds": [{"date": "2026-11-02"}, {"date": "2026-11-03"}]}'::jsonb) AS id;
+  PERFORM set_config('tour.id', public.golf_tournament_create('{"team_id": "00000000-0000-0000-0000-000000216301", "name": "Oakmont Fall Classic", "start_date": "2026-11-02", "end_date": "2026-11-03", "substitutions": true, "rounds": [{"date": "2026-11-02"}, {"date": "2026-11-03"}]}'::jsonb)::text, true);
 END $$;
 
 SELECT throws_ok(
-  $$SELECT public.golf_tournament_update((SELECT id FROM tour_ids), '{"name": "Renamed"}'::jsonb, 0)$$,
+  $$SELECT public.golf_tournament_update(current_setting('tour.id')::uuid, '{"name": "Renamed"}'::jsonb, 0)$$,
   'P0001', 'stale',
   'an edit made on an old version is refused as stale'
 );
 SELECT is(
-  public.golf_tournament_update((SELECT id FROM tour_ids), '{"name": "Oakmont Classic"}'::jsonb,
-    (SELECT version FROM public.golf_tournaments WHERE id = (SELECT id FROM tour_ids))),
+  public.golf_tournament_update(current_setting('tour.id')::uuid, '{"name": "Oakmont Classic"}'::jsonb,
+    (SELECT version FROM public.golf_tournaments WHERE id = current_setting('tour.id')::uuid)),
   2,
   'an edit on the current version passes and moves the version'
 );
@@ -162,39 +166,39 @@ SELECT is(
 -- ============================================================================
 DO $$
 BEGIN
-  PERFORM public.golf_tournament_set_entries((SELECT id FROM tour_ids), '[
+  PERFORM public.golf_tournament_set_entries(current_setting('tour.id')::uuid, '[
   {"player_id": "00000000-0000-0000-0000-000000216502", "role": "lineup", "slot": 1},
   {"player_id": "00000000-0000-0000-0000-000000216503", "role": "lineup", "slot": 2},
   {"player_id": "00000000-0000-0000-0000-000000216504", "role": "lineup", "slot": 3},
   {"player_id": "00000000-0000-0000-0000-000000216505", "role": "lineup", "slot": 4},
   {"player_id": "00000000-0000-0000-0000-000000216507", "role": "lineup", "slot": 5},
   {"player_id": "00000000-0000-0000-0000-000000216506", "role": "alternate"}]'::jsonb, NULL);
-  PERFORM public.golf_tournament_lock_lineup((SELECT id FROM tour_ids));
+  PERFORM public.golf_tournament_lock_lineup(current_setting('tour.id')::uuid);
 END $$;
 
 SELECT throws_ok(
   $$UPDATE public.golf_tournament_entries SET slot = 6
-    WHERE tournament_id = (SELECT id FROM tour_ids) AND player_id = '00000000-0000-0000-0000-000000216507'$$,
+    WHERE tournament_id = current_setting('tour.id')::uuid AND player_id = '00000000-0000-0000-0000-000000216507'$$,
   'P0001', 'locked',
   'after lock an entry cannot be changed directly'
 );
 SELECT throws_ok(
   $$DELETE FROM public.golf_tournament_round_lineups
     WHERE player_id = '00000000-0000-0000-0000-000000216503'
-      AND round_event_id IN (SELECT round_event_id FROM public.golf_tournament_rounds WHERE tournament_id = (SELECT id FROM tour_ids))$$,
+      AND round_event_id IN (SELECT round_event_id FROM public.golf_tournament_rounds WHERE tournament_id = current_setting('tour.id')::uuid)$$,
   'P0001', 'locked',
   'after lock the round snapshot cannot be changed directly'
 );
 SELECT lives_ok(
   $$SELECT public.golf_tournament_substitute(
-      (SELECT round_event_id FROM public.golf_tournament_rounds WHERE tournament_id = (SELECT id FROM tour_ids) AND round_number = 1),
+      (SELECT round_event_id FROM public.golf_tournament_rounds WHERE tournament_id = current_setting('tour.id')::uuid AND round_number = 1),
       '00000000-0000-0000-0000-000000216507', '00000000-0000-0000-0000-000000216506')$$,
   'a substitution passes the guard'
 );
 SELECT is(
   (SELECT count(*)::int FROM public.golf_tournament_round_lineups rl
     JOIN public.golf_tournament_rounds r ON r.round_event_id = rl.round_event_id
-    WHERE r.tournament_id = (SELECT id FROM tour_ids)
+    WHERE r.tournament_id = current_setting('tour.id')::uuid
       AND rl.player_id = '00000000-0000-0000-0000-000000216506'
       AND rl.role = 'lineup' AND rl.slot = 5
       AND rl.substituted_for = '00000000-0000-0000-0000-000000216507'),
@@ -207,7 +211,7 @@ SELECT is(
 -- ============================================================================
 SELECT throws_ok(
   $$SELECT public.golf_tournament_set_round_status(
-      (SELECT round_event_id FROM public.golf_tournament_rounds WHERE tournament_id = (SELECT id FROM tour_ids) AND round_number = 2),
+      (SELECT round_event_id FROM public.golf_tournament_rounds WHERE tournament_id = current_setting('tour.id')::uuid AND round_number = 2),
       'live', NULL)$$,
   'P0001', 'round_order',
   'round 2 cannot start while round 1 is upcoming'
@@ -222,22 +226,21 @@ BEGIN
   SELECT r.round_event_id, r.team_id, '00000000-0000-0000-0000-000000216502',
     '00000000-0000-0000-0000-000000216701', 'coach'
   FROM public.golf_tournament_rounds r
-  WHERE r.tournament_id = (SELECT id FROM tour_ids) AND r.round_number = 1;
-  CREATE TEMP TABLE tour_events ON COMMIT DROP AS
-  SELECT round_event_id FROM public.golf_tournament_rounds WHERE tournament_id = (SELECT id FROM tour_ids);
+  WHERE r.tournament_id = current_setting('tour.id')::uuid AND r.round_number = 1;
+  PERFORM set_config('tour.events', (SELECT string_agg(round_event_id::text, ',') FROM public.golf_tournament_rounds WHERE tournament_id = current_setting('tour.id')::uuid), true);
 END $$;
 
 SELECT throws_ok(
-  $$SELECT public.golf_tournament_delete((SELECT id FROM tour_ids), false)$$,
+  $$SELECT public.golf_tournament_delete(current_setting('tour.id')::uuid, false)$$,
   'P0001', 'rounds_linked',
   'a tournament with a linked round is not deleted unless told to unlink'
 );
 SELECT lives_ok(
-  $$SELECT public.golf_tournament_delete((SELECT id FROM tour_ids), true)$$,
+  $$SELECT public.golf_tournament_delete(current_setting('tour.id')::uuid, true)$$,
   'told to unlink, the delete passes (the locked lineup does not block its own cascade)'
 );
 SELECT is(
-  (SELECT count(*)::int FROM public.golf_events WHERE id IN (SELECT round_event_id FROM tour_events)),
+  (SELECT count(*)::int FROM public.golf_events WHERE id = ANY (string_to_array(current_setting('tour.events'), ',')::uuid[])),
   0,
   'the round-day events the tournament owned are deleted with it'
 );

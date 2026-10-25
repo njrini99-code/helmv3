@@ -182,9 +182,13 @@ interface TeamInfo {
 }
 
 async function readTeam(ctx: TourCtx): Promise<TeamInfo> {
-  const { data, error } = await ctx.supabase.from('golf_teams').select('id, name, timezone, gender').eq('id', ctx.teamId).maybeSingle();
+  const [{ data, error }, settings] = await Promise.all([
+    ctx.supabase.from('golf_teams').select('id, name, timezone, gender').eq('id', ctx.teamId).maybeSingle(),
+    ctx.supabase.from('golf_team_settings').select('timezone').eq('team_id', ctx.teamId).maybeSingle(),
+  ]);
   if (error || !data) throw new ReadFailed('team', error ?? { message: 'team not found' });
-  const tz = data.timezone || 'America/New_York';
+  // The team's clock as Calendar reads it (golf_team_settings), then the team row's; a round day is a date on it.
+  const tz = (!settings.error && settings.data?.timezone) || data.timezone || 'America/New_York';
   const today = todayIsoInZone(tz, new Date(ctx.now));
   const season = seasonIdOf(today);
   const label = `${data.name} · ${season.slice(0, 4)}–${season.slice(5)}`;
