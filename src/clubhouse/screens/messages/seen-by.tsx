@@ -1,12 +1,12 @@
 "use client";
 
 import { CheckCheck } from "lucide-react";
-import { AnimatePresence, m as M } from "motion/react";
+import { AnimatePresence, LayoutGroup, m as M } from "motion/react";
 import { useEffect, useLayoutEffect, useRef, useState, type ReactNode } from "react";
 import { createPortal } from "react-dom";
 import { orderReceiptRows, seenBy, seenByAccess, seenByAccessibleName, seenByLabel, SEEN_BY_VISIBILITY, type ReceiptRowInput, type SeenBy } from "@/lib/golf/message-receipts";
 import { chSpring, chTween } from "../../lib/motion";
-import { useChReducedMotion } from "../../lib/reduced-motion";
+import { useChMotionMode, useChReducedMotion } from "../../lib/reduced-motion";
 import { Avatar } from "../../ui/Avatar";
 import { Icon } from "../../ui/Icon";
 import { Modal } from "../../ui/Modal";
@@ -182,30 +182,53 @@ function SeenByBody({ api, m, compact }: { api: ChMessagesApi; m: ChMsg; compact
   const notYet = orderReceiptRows(s.notYet.map((id) => row(id, "notYet")), "notYet");
   const seen = orderReceiptRows(s.seen.map((id) => row(id, "seen")), "seen");
   const offline = typeof navigator !== "undefined" && navigator.onLine === false;
-  const section = (title: string, rows: Row[]) =>
+  // M6: a person moving from Not yet to Seen glides to their new place (one layout id across both sections, on smooth,
+  // which keeps its velocity when retargeted); the meta and the section counts cross-fade on quick (M1's swap); a section
+  // left empty folds its height away on the same spring. All instant under reduced motion and Animations off.
+  const fade = (key: string, text: string) => (
+    <span className="ch-seen-swap">
+      <AnimatePresence initial={false} mode="popLayout">
+        <M.span key={key} initial={reduced ? false : { opacity: 0 }} animate={{ opacity: 1 }} exit={reduced ? undefined : { opacity: 0 }} transition={chTween("quick", reduced)}>
+          {text}
+        </M.span>
+      </AnimatePresence>
+    </span>
+  );
+  const section = (id: string, title: string, rows: Row[]) =>
     rows.length > 0 && (
-      <section className="ch-seen-sec" aria-label={`${title}, ${rows.length} ${rows.length === 1 ? "person" : "people"}`}>
+      <M.section
+        key={id}
+        className="ch-seen-sec"
+        aria-label={`${title}, ${rows.length} ${rows.length === 1 ? "person" : "people"}`}
+        style={{ overflow: "hidden" }}
+        exit={reduced ? undefined : { height: 0, opacity: 0 }}
+        transition={chSpring("smooth", reduced)}
+      >
         <h3 className="ch-seen-sec__h ch-num">
-          {title} · {rows.length}
+          {title} · {fade(String(rows.length), String(rows.length))}
         </h3>
         <ul className="ch-seen-sec__rows">
           {rows.map((x) => (
-            <M.li key={x.userId} layout={reduced ? false : "position"} transition={chSpring("smooth", reduced)} className="ch-seen-row" aria-label={x.label}>
+            <M.li key={x.userId} layoutId={reduced ? undefined : `ch-seen-${x.userId}`} layout={reduced ? false : "position"} transition={chSpring("smooth", reduced)} className="ch-seen-row" aria-label={x.label}>
               {compact ? <Avatar name={x.name} size="sm" /> : <Avatar name={x.name} size="md" />}
               <span className="ch-seen-row__body">
                 <span className="ch-seen-row__name">{x.name}</span>
-                {x.meta && <span className="ch-seen-row__meta">{x.meta}</span>}
+                {x.meta && <span className="ch-seen-row__meta">{fade(x.meta, x.meta)}</span>}
               </span>
             </M.li>
           ))}
         </ul>
-      </section>
+      </M.section>
     );
   return (
     <div className="ch-seen-list" data-ch-code={s.seen.length === 0 ? "CH-7310" : undefined}>
       {offline && <p className="ch-seen-note">You’re offline. This may be out of date.</p>}
-      {section("Not yet", notYet)}
-      {section("Seen", seen)}
+      <LayoutGroup id={`ch-seen-${m.id}`}>
+        <AnimatePresence initial={false}>
+          {section("notYet", "Not yet", notYet)}
+          {section("seen", "Seen", seen)}
+        </AnimatePresence>
+      </LayoutGroup>
       <p className="ch-seen-note">
         Seen means they opened this chat after it was sent.
         {m.poll ? " Voting is in See votes." : ""}
@@ -235,9 +258,11 @@ export function SeenBySheet({ api, m, onClose }: { api: ChMessagesApi; m: ChMsg 
  * anchor leaving the thread, or the conversation changing. `role="dialog"`, so the thread's Lenis lets it scroll.
  */
 export function SeenByPopover({ api, m, anchor, onClose }: { api: ChMessagesApi; m: ChMsg | null; anchor: HTMLElement | null; onClose: () => void }) {
-  const reduced = useChReducedMotion();
+  // M4: Reduce Motion keeps the fade and drops the lift; Animations off is instant.
+  const mode = useChMotionMode();
+  const reduced = mode !== "full";
   const box = useRef<HTMLDivElement | null>(null);
-  const [pos, setPos] = useState<{ top: number; left: number } | null>(null);
+  const [pos, setPos] = useState<{ top: number; left: number; above: boolean } | null>(null);
   const r = api.receipts;
   const s = m && r && r.marks.size ? seenBy(m.at, m.senderId, r.marks) : null;
   const all = !!s && s.total > 0 && s.seen.length >= s.total;
@@ -250,7 +275,7 @@ export function SeenByPopover({ api, m, anchor, onClose }: { api: ChMessagesApi;
     const above = a.top - 8 - h;
     const top = above >= 8 ? above : Math.min(a.bottom + 8, window.innerHeight - h - 8);
     const left = Math.max(8, Math.min(a.right - w, window.innerWidth - w - 8));
-    setPos({ top, left });
+    setPos({ top, left, above: above >= 8 });
     const scroller = anchor.closest(".ch-ms-thread__scroll, [data-lenis-prevent], .ch-ms-thread");
     if (scroller) {
       const sr = scroller.getBoundingClientRect();
@@ -304,11 +329,11 @@ export function SeenByPopover({ api, m, anchor, onClose }: { api: ChMessagesApi;
           aria-describedby="ch-seen-pop-quote"
           className="ch-seen-pop"
           data-ch-code="CH-7609"
-          style={{ top: pos?.top ?? -9999, left: pos?.left ?? -9999 }}
+          style={{ top: pos?.top ?? -9999, left: pos?.left ?? -9999, transformOrigin: pos?.above === false ? "right top" : "right bottom" }}
           initial={reduced ? { opacity: 0 } : { opacity: 0, y: 4, scale: 0.98 }}
           animate={{ opacity: 1, y: 0, scale: 1 }}
           exit={reduced ? { opacity: 0 } : { opacity: 0, y: 2 }}
-          transition={chTween("quick", reduced)}
+          transition={chTween("quick", mode === "off")}
         >
           <div className="ch-seen-pop__head">
             <h2 id="ch-seen-pop-title" className="ch-seen-pop__title" tabIndex={-1}>

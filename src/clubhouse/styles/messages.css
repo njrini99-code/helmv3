@@ -2827,10 +2827,12 @@
   align-items: baseline;
   gap: var(--ch-space-1);
 }
-.ch-ms-seen__swap {
+.ch-ms-seen__swap,
+.ch-seen-swap {
   display: inline-grid;
 }
-.ch-ms-seen__swap > * {
+.ch-ms-seen__swap > *,
+.ch-seen-swap > * {
   grid-area: 1 / 1;
 }
 .ch-ms-seen__all {
