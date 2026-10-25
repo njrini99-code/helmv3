@@ -214,6 +214,9 @@ request id that becomes the row's key, and a repeat returns the row that landed
 | 60651 | CH-6241 | `THE_TOURNAMENT_CHANGED_SINCE_IT_WAS_OPENED` | The tournament changed since it was opened (a version conflict) |
 | 60652 | CH-6041 | `A_ROUNDS_DAY_OR_TIME_IS_SAVED` | A round's day or time is saved from round mode (P-5 4.3) |
 | 60653 | CH-6240 | `ROUND_MODE_FOR_A_TOURNAMENT_EVENT_WHOSE` | Round mode for a tournament event whose round ref didn't load (the calendar's events did) |
+| 60654 | CH-6042 | `A_ROUND_IS_CANCELLED_FROM_THE_CALENDAR` | A round is cancelled from the calendar (CH-6540 confirmed) |
+| 60655 | CH-6043 | `THE_WHOLE_TOURNAMENT_IS_CANCELLED_FROM_THE` | The whole tournament is cancelled from the calendar (CH-6541 confirmed) |
+| 60656 | CH-6044 | `A_ROUND_OR_THE_TOURNAMENT_IS_RESTORED` | A round or the tournament is restored |
 
 From the shell (P001): 10601 CH-1001, 10602 CH-1201, 10603 CH-1202,
 10604 CH-1203, 10605 CH-1204, 10606 CH-1205, 10607 CH-1206, 10608 CH-1207,
@@ -299,6 +302,8 @@ Cancelling an event asks first (61101) and says what happens. One event is a sof
 | 61103 | CH-6504 | `NEW_LINK` | New link (a calendar-app link) |
 | 61104 | CH-6505 | `REMOVE` | Remove (a calendar-app link) |
 | 61105 | CH-6506 | `DELETE_PERMANENTLY` | Delete permanently (a cancelled event's menu, coach) |
+| 61106 | CH-6540 | `CANCEL_ROUND_FROM_THE_INSPECTORS_MENU_OR` | Cancel round, from the inspector's menu or round mode |
+| 61107 | CH-6541 | `CANCEL_THE_WHOLE_TOURNAMENT_INSTEAD_FROM_CH` | Cancel the whole tournament instead, from CH-6540 |
 
 ## 12 — State preservation
 

@@ -111,6 +111,7 @@ export interface InspCtx {
   /** P-5 4.10: Cancel round and Restore round, through the tournament (absent until they are wired). */
   onCancelRound?: (e: ChCalEvent) => void;
   onRestoreRound?: (e: ChCalEvent) => void;
+  onRestoreTournament?: (e: ChCalEvent) => void;
   refresh: () => void;
 }
 
@@ -498,6 +499,7 @@ export function EventDetail({ ctx, id, date }: { ctx: InspCtx; id: string; date:
               ? ([{ kind: 'separator' }, { label: 'Cancel round', icon: CircleX, danger: true, onSelect: () => ctx.onCancelRound!(e) }] as const)
               : []),
             ...(coach && e.canEdit && round && e.cancelled && !round.tournamentCancelled && ctx.onRestoreRound ? [{ label: 'Restore round', icon: RotateCcw, onSelect: () => ctx.onRestoreRound!(e) }] : []),
+            ...(coach && e.canEdit && round?.tournamentCancelled && ctx.onRestoreTournament ? [{ label: 'Restore tournament', icon: RotateCcw, onSelect: () => ctx.onRestoreTournament!(e) }] : []),
           ]}
           trigger={(p) => <IconButton icon={Ellipsis} size="sm" label="More actions" menu={p} />}
         />

@@ -94,3 +94,28 @@ Held items:     as above
 - A round under way, final, or in a cancelled tournament opens read-only with
   only Close. A round whose ref didn't load shows CH-6240 and changes only its
   day and times, through the calendar's own save.
+
+## 2026-10-25 — Step 8 (calendar side): cancel and restore
+
+```text
+Design package: P-5 build plan, 4.10; changelog should 5
+PR/commit:      claude/clubhouse-tournaments-from-calendar
+Contract IDs:   CH-6042 to CH-6044, CH-6540, CH-6541
+                (CH-6050, CH-6051, CH-6058 reused)
+Actions:        setTournamentCancelled
+Data impact:    none new
+Held items:     as above
+```
+
+### Changed
+
+- Cancel round (the inspector's menu, round mode) asks CH-6540, with an
+  optional reason and "Cancel the whole tournament instead" (CH-6541).
+- Confirming strikes the rounds through at once and toasts with Undo; the
+  write waits until the toast goes (or the page is left), so Undo sends nothing
+  and players hear only of a cancel that stands. A refusal that comes back then
+  (scores entered meanwhile) un-strikes the rounds and says why.
+- Restore round and Restore tournament write at once, toast CH-6044 and offer
+  no Undo; a restore another round moved in front of is refused (CH-6058).
+- The desk's Stop tracking and Cancel tournament dialogs wait for 4.33's
+  tournaments page.

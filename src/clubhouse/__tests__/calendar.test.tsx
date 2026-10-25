@@ -2526,6 +2526,29 @@ describe('P-5 tournaments from the calendar', () => {
     expect(within(dlg).queryByRole('radiogroup', { name: 'Start' })).toBeNull();
   });
 
+  it('CH-6042, CH-6043, CH-6044: cancelling a round or the tournament toasts with Undo; restoring says it is back', async () => {
+    const { cancelToast } = await import('../screens/calendar/cancel-round');
+    const r = { roundNo: 2, name: 'Pinehurst Invitational' };
+    expect(cancelToast('round', r, false)).toEqual({ code: 'CH-6042', title: 'R2 is cancelled' });
+    expect(cancelToast('tournament', r, false)).toEqual({ code: 'CH-6043', title: 'Pinehurst Invitational is cancelled' });
+    expect(cancelToast('round', r, true)).toEqual({ code: 'CH-6044', title: 'R2 is back on the calendar' });
+  });
+
+  it('CH-6540, CH-6541: the cancel confirm asks about the round, and switches to the whole tournament', async () => {
+    const { CancelRoundDialog } = await import('../screens/calendar/cancel-round');
+    const base = PREVIEW_CALENDAR.events.find((e) => e.type === 'tournament' && !e.allDay)!;
+    const round = { tournamentId: 't1', name: 'Pinehurst Invitational', roundNo: 2, roundsCount: 3, version: 4, status: 'upcoming' as const, startType: 'tee_times' as const, lockedAt: null, lineup: 'none' as const, tournamentCancelled: false };
+    const onConfirm = vi.fn();
+    inMotion(<CancelRoundDialog event={{ ...base, round }} onClose={vi.fn()} onConfirm={onConfirm} />);
+    const dlg = await screen.findByRole('dialog', { name: 'Cancel R2 of Pinehurst Invitational?' });
+    expect(dlg.getAttribute('data-ch-code') ?? dlg.querySelector('[data-ch-code]')?.getAttribute('data-ch-code')).toBe('CH-6540');
+    fireEvent.click(within(dlg).getByRole('button', { name: 'Cancel the whole tournament instead' }));
+    const t2 = await screen.findByRole('dialog', { name: 'Cancel Pinehurst Invitational?' });
+    expect(document.querySelector('[data-ch-code="CH-6541"]')).not.toBeNull();
+    fireEvent.click(within(t2).getByRole('button', { name: 'Cancel tournament' }));
+    expect(onConfirm).toHaveBeenCalledWith('tournament', null);
+  });
+
   it('CH-6841: a longer range says the new round count once, politely', async () => {
     const { model, fields } = await p5();
     const announce = vi.fn();

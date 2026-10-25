@@ -33,6 +33,7 @@ import { Attendance, EventDetail, Overlap, Summary, type ChInsp, type InspCtx } 
 import { CancelEvent, DeleteEvent, EventEditor, SubscribeSheet, type ChTournamentSaved, type EditorSeed } from './editor';
 import { roundsOverlay } from './round-overlay';
 import { RoundEditor } from './editor-round';
+import { CancelRoundDialog, useHeldCancel } from './cancel-round';
 import { BusySheet } from './extras';
 import { CalendarPhone } from './CalendarPhone';
 import { Modal } from '../../ui/Modal';
@@ -606,12 +607,16 @@ export function Calendar({
     setMade((m) => (m.length && m.every((o) => data.events.some((e) => e.id === o.id && e.round)) ? [] : m));
   }, [data.events]);
   const onTournamentSaved = useCallback((t: ChTournamentSaved) => setMade(roundsOverlay(t)), []);
-  const withMade = useMemo(() => {
-    if (!made.length) return data.events;
-    const ids = new Set(made.map((e) => e.id));
-    return [...data.events.filter((e) => !ids.has(e.id)), ...made];
-  }, [data.events, made]);
   const refreshQuiet = useCallback(() => router.refresh(), [router]);
+  // P-5 should 5: a round or tournament cancel strikes through at once and is written when its Undo runs out.
+  const heldCancel = useHeldCancel(data.events, refreshQuiet, preview);
+  const [cancellingRound, setCancellingRound] = useState<ChCalEvent | null>(null);
+  const withMade = useMemo(() => {
+    const base = heldCancel.struck.size ? data.events.map(heldCancel.overlay) : data.events;
+    if (!made.length) return base;
+    const ids = new Set(made.map((e) => e.id));
+    return [...base.filter((e) => !ids.has(e.id)), ...made];
+  }, [data.events, made, heldCancel.struck, heldCancel.overlay]);
   const { moves, move, undoLatest, said, heldScope } = useHeldMoves(data.timezone, data.events, data.today, refreshQuiet, preview, people);
   /** P-4 4.8: a series event dropped somewhere new, held there with its question open. */
   const [ask, setAsk] = useState<{ e: ChCalEvent; to: ChMoveTarget | ChBarTarget; kind: ChMoveKind } | null>(null);
@@ -841,6 +846,9 @@ export function Calendar({
     onFind: (date, invite) => setEditor({ event: null, date, invite }),
     tournamentsEnabled: !!data.tournamentsEnabled,
     onSetUp: (e) => setEditor({ event: e, track: true }),
+    onCancelRound: (e) => setCancellingRound(e),
+    onRestoreRound: (e) => heldCancel.restore(e, 'round'),
+    onRestoreTournament: (e) => heldCancel.restore(e, 'tournament'),
     refresh,
   };
 
@@ -902,6 +910,19 @@ export function Calendar({
           people={data.people}
           peopleError={!!data.membersError}
           timezone={data.timezone}
+          onCancelRound={(e) => (setEditor(null), setCancellingRound(e))}
+          onRestoreRound={(e) => (setEditor(null), heldCancel.restore(e, 'round'))}
+        />
+      )}
+      {coach && (
+        <CancelRoundDialog
+          event={cancellingRound}
+          onClose={() => setCancellingRound(null)}
+          onConfirm={(scope, reason) => {
+            const e = cancellingRound!;
+            setCancellingRound(null);
+            heldCancel.cancel(e, scope, reason);
+          }}
         />
       )}
       {coach && (

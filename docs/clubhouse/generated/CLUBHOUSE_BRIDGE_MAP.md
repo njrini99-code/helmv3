@@ -112,7 +112,7 @@ Every Bridge ID (D-68: namespace, two-digit category, two-digit item), its catal
 | P003 | 2 | 3 | 3 | 9 | 4 | 24 | 2 | 6 | 1 |  | 2 | 3 | 1 | 3 |  | 4 | 4 | 10 | 1 | 1 | 1 |  | 1 | 1 |  | 86 |
 | P004 | 2 | 1 | 1 | 19 | 2 | 12 | 3 | 2 | 1 |  |  | 1 |  | 1 |  | 4 | 4 | 6 | 1 | 1 | 1 |  | 1 | 1 |  | 64 |
 | P005 | 4 | 4 | 2 | 23 | 3 | 25 | 3 | 6 | 1 |  | 1 | 2 |  | 1 | 1 | 4 | 3 | 10 | 1 | 1 | 1 |  | 1 | 1 |  | 98 |
-| P006 | 4 | 5 | 3 | 10 | 14 | 53 | 1 | 8 | 1 | 2 | 5 | 3 | 2 | 2 | 1 | 7 | 3 | 9 | 1 | 1 | 1 |  | 1 | 1 |  | 138 |
+| P006 | 4 | 5 | 3 | 10 | 14 | 56 | 1 | 8 | 1 | 2 | 7 | 3 | 2 | 2 | 1 | 7 | 3 | 9 | 1 | 1 | 1 |  | 1 | 1 |  | 143 |
 | P007 | 2 | 10 | 1 | 9 | 6 | 38 | 1 | 2 | 2 | 1 | 4 | 2 | 1 | 2 | 1 | 7 | 4 | 4 | 1 | 1 | 1 |  | 2 | 1 |  | 103 |
 | P008 | 2 | 1 | 3 | 6 | 15 | 42 | 3 | 10 | 3 | 3 | 8 | 6 | 2 | 2 | 1 | 9 | 8 | 7 | 1 | 1 | 1 |  | 1 | 1 |  | 136 |
 | P009 | 7 | 7 | 4 | 13 | 14 | 34 | 7 | 12 | 2 | 1 | 4 | 4 | 1 | 2 | 1 | 3 | 3 | 4 | 4 | 3 | 2 |  | 4 | 1 |  | 137 |
@@ -664,6 +664,9 @@ Every Bridge ID (D-68: namespace, two-digit category, two-digit item), its catal
 | 60651 | CH-6241 | 06 Server / system error | `THE_TOURNAMENT_CHANGED_SINCE_IT_WAS_OPENED` | implemented | The tournament changed since it was opened (a version conflict) |
 | 60652 | CH-6041 | 06 Server / system error | `A_ROUNDS_DAY_OR_TIME_IS_SAVED` | implemented | A round's day or time is saved from round mode (P-5 4.3) |
 | 60653 | CH-6240 | 06 Server / system error | `ROUND_MODE_FOR_A_TOURNAMENT_EVENT_WHOSE` | implemented | Round mode for a tournament event whose round ref didn't load (the calendar's events did) |
+| 60654 | CH-6042 | 06 Server / system error | `A_ROUND_IS_CANCELLED_FROM_THE_CALENDAR` | implemented | A round is cancelled from the calendar (CH-6540 confirmed) |
+| 60655 | CH-6043 | 06 Server / system error | `THE_WHOLE_TOURNAMENT_IS_CANCELLED_FROM_THE` | implemented | The whole tournament is cancelled from the calendar (CH-6541 confirmed) |
+| 60656 | CH-6044 | 06 Server / system error | `A_ROUND_OR_THE_TOURNAMENT_IS_RESTORED` | implemented | A round or the tournament is restored |
 | 60701 |  | 07 Network / offline | `FILE_REMOVAL_REFUSES_OFFLINE` | implemented | Removing a file from an event, and Undo on that, send nothing while the browser is offline: the file stays where it was, the error haptic fires, and the toast says nothing was changed (the shell's CH-1903 wording). |
 | 60801 |  | 08 Permission / authorization | `PLAYER_HAS_NO_PLANNING_TOOLS` | implemented | A player is never given a planning tool: no New event (button, N key or an editor from ?new=1), no Add busy time or Overlaps in More, no people filter, no responses, attendance, Edit event, Cancel event, Attach or Remove file, and no schedule-overlap marks. The same address for a coach has all of them. Hiding them is a courtesy; every write is checked again by its server action (60806). |
 | 60802 |  | 08 Permission / authorization | `PLAYER_READS_ONLY_THEIR_OWN_CLASSES` | implemented | The loader gives a player only their own classes (another player's class, and one whose owner cannot be resolved, are dropped before they reach the browser) and only themselves as a person; a coach gets every rostered player's classes, each with its owner. |
@@ -681,6 +684,8 @@ Every Bridge ID (D-68: namespace, two-digit category, two-digit item), its catal
 | 61103 | CH-6504 | 11 Destructive | `NEW_LINK` | implemented | New link (a calendar-app link) |
 | 61104 | CH-6505 | 11 Destructive | `REMOVE` | implemented | Remove (a calendar-app link) |
 | 61105 | CH-6506 | 11 Destructive | `DELETE_PERMANENTLY` | implemented | Delete permanently (a cancelled event's menu, coach) |
+| 61106 | CH-6540 | 11 Destructive | `CANCEL_ROUND_FROM_THE_INSPECTORS_MENU_OR` | implemented | Cancel round, from the inspector's menu or round mode |
+| 61107 | CH-6541 | 11 Destructive | `CANCEL_THE_WHOLE_TOURNAMENT_INSTEAD_FROM_CH` | implemented | Cancel the whole tournament instead, from CH-6540 |
 | 61201 | CH-6503 | 12 State preservation | `CLOSING_THE_EVENT_EDITOR_WITH_CHANGES` | implemented | Closing the event editor with changes |
 | 61202 |  | 12 State preservation | `FORM_KEPT_ON_FAILURE` | implemented | A publish, save or busy-time add that fails leaves the editor or sheet open with every field as typed; nothing is cleared until the write lands. |
 | 61203 |  | 12 State preservation | `ATTENDANCE_MARKS_KEPT_ON_A_PARTIAL_SAVE` | implemented | Saving attendance saves each changed mark on its own: the marks that saved show as Saved, the ones that did not stay Unsaved, and the button offers to save what is left ("Save attendance · 1"). |

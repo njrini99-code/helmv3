@@ -5840,6 +5840,39 @@
     "catalog": "docs/clubhouse/catalog/calendar.md"
   },
   {
+    "id": 60654,
+    "page": "P006",
+    "category": 6,
+    "item": 54,
+    "name": "A_ROUND_IS_CANCELLED_FROM_THE_CALENDAR",
+    "chCode": "CH-6042",
+    "meaning": "A round is cancelled from the calendar (CH-6540 confirmed)",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/calendar.md"
+  },
+  {
+    "id": 60655,
+    "page": "P006",
+    "category": 6,
+    "item": 55,
+    "name": "THE_WHOLE_TOURNAMENT_IS_CANCELLED_FROM_THE",
+    "chCode": "CH-6043",
+    "meaning": "The whole tournament is cancelled from the calendar (CH-6541 confirmed)",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/calendar.md"
+  },
+  {
+    "id": 60656,
+    "page": "P006",
+    "category": 6,
+    "item": 56,
+    "name": "A_ROUND_OR_THE_TOURNAMENT_IS_RESTORED",
+    "chCode": "CH-6044",
+    "meaning": "A round or the tournament is restored",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/calendar.md"
+  },
+  {
     "id": 60701,
     "page": "P006",
     "category": 7,
@@ -6045,6 +6078,28 @@
     "name": "DELETE_PERMANENTLY",
     "chCode": "CH-6506",
     "meaning": "Delete permanently (a cancelled event's menu, coach)",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/calendar.md"
+  },
+  {
+    "id": 61106,
+    "page": "P006",
+    "category": 11,
+    "item": 6,
+    "name": "CANCEL_ROUND_FROM_THE_INSPECTORS_MENU_OR",
+    "chCode": "CH-6540",
+    "meaning": "Cancel round, from the inspector's menu or round mode",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/calendar.md"
+  },
+  {
+    "id": 61107,
+    "page": "P006",
+    "category": 11,
+    "item": 7,
+    "name": "CANCEL_THE_WHOLE_TOURNAMENT_INSTEAD_FROM_CH",
+    "chCode": "CH-6541",
+    "meaning": "Cancel the whole tournament instead, from CH-6540",
     "status": "implemented",
     "catalog": "docs/clubhouse/catalog/calendar.md"
   },
