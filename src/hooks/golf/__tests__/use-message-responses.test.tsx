@@ -120,7 +120,7 @@ describe('useMessageResponses', () => {
   it('a vote is an upsert on the voter’s own row; changing it replaces the row; null takes it back', async () => {
     const { result } = renderHook(() => useMessageResponses('conv-1', IDS, 'me'));
     await waitFor(() => expect(result.current.ready).toBe(true));
-    await act(async () => { expect(await result.current.vote('poll-1', 'o1')).toBe(true); });
+    await act(async () => { expect(await result.current.vote('poll-1', 'o1')).toEqual({ ok: true }); });
     expect(state.upserts[0]).toEqual({ value: expect.objectContaining({ message_id: 'poll-1', user_id: 'me', choice: 'o1' }), options: { onConflict: 'message_id,user_id' } });
     expect(result.current.rows).toEqual([expect.objectContaining({ user_id: 'me', choice: 'o1' })]);
     await act(async () => { await result.current.vote('poll-1', 'o2'); });
@@ -135,7 +135,7 @@ describe('useMessageResponses', () => {
     const { result } = renderHook(() => useMessageResponses('conv-1', IDS, 'me'));
     await waitFor(() => expect(result.current.rows).toHaveLength(1));
     state.saveError = { message: 'denied', code: '42501' };
-    await act(async () => { expect(await result.current.vote('poll-1', 'o2')).toBe(false); });
+    await act(async () => { expect(await result.current.vote('poll-1', 'o2')).toEqual({ ok: false, reason: 'member' }); });
     expect(result.current.rows).toEqual([expect.objectContaining({ user_id: 'me', choice: 'o1' })]);
     expect(result.current.error).toBe('Your vote wasn’t saved. Try again.');
     expect(console.error).toHaveBeenCalledWith('Message poll vote failed to save:', expect.stringContaining('denied'));
@@ -145,7 +145,7 @@ describe('useMessageResponses', () => {
     const { result } = renderHook(() => useMessageResponses('conv-1', IDS, 'me'));
     await waitFor(() => expect(result.current.ready).toBe(true));
     state.session = null;
-    await act(async () => { expect(await result.current.vote('poll-1', 'o1')).toBe(false); });
+    await act(async () => { expect(await result.current.vote('poll-1', 'o1')).toEqual({ ok: false, reason: 'session' }); });
     expect(state.upserts).toEqual([]);
     expect(result.current.rows).toEqual([]);
     expect(result.current.error).toBe('Sign in again to vote.');
@@ -154,7 +154,7 @@ describe('useMessageResponses', () => {
   it('ignores a vote on a message that isn’t one of this thread’s polls', async () => {
     const { result } = renderHook(() => useMessageResponses('conv-1', IDS, 'me'));
     await waitFor(() => expect(result.current.ready).toBe(true));
-    await act(async () => { expect(await result.current.vote('elsewhere', 'o1')).toBe(false); });
+    await act(async () => { expect(await result.current.vote('elsewhere', 'o1')).toEqual({ ok: false, reason: 'failed' }); });
     expect(state.upserts).toEqual([]);
   });
 
@@ -163,5 +163,52 @@ describe('useMessageResponses', () => {
     const { result } = renderHook(() => useMessageResponses('conv-1', IDS, 'me'));
     await waitFor(() => expect(result.current.error).toBe('Votes could not be loaded. Tap to retry.'));
     expect(result.current.ready).toBe(false);
+  });
+
+  it('a refused vote puts back only the viewer’s own row, keeping a vote that landed meanwhile (D16)', async () => {
+    state.rows = [{ message_id: 'poll-1', user_id: 'me', choice: 'o1' }];
+    const { result } = renderHook(() => useMessageResponses('conv-1', IDS, 'me'));
+    await waitFor(() => expect(result.current.rows).toHaveLength(1));
+    // Ana's vote arrives on screen while ours is out; the server then refuses ours.
+    state.rows.push({ message_id: 'poll-1', user_id: 'ana', choice: 'o2' });
+    await act(async () => { await result.current.refresh(); });
+    state.saveError = { message: 'denied' };
+    await act(async () => { await result.current.vote('poll-1', 'o2'); });
+    expect(result.current.rows).toEqual(expect.arrayContaining([expect.objectContaining({ user_id: 'me', choice: 'o1' }), expect.objectContaining({ user_id: 'ana', choice: 'o2' })]));
+  });
+
+  it('the closed-poll guard reads as closed (OQ-68)', async () => {
+    const { result } = renderHook(() => useMessageResponses('conv-1', IDS, 'me'));
+    await waitFor(() => expect(result.current.ready).toBe(true));
+    state.saveError = { message: 'new row violates check', code: 'P0001', hint: 'golf_poll_closed' } as { message: string; code: string };
+    await act(async () => { expect(await result.current.vote('poll-1', 'o1')).toEqual({ ok: false, reason: 'closed' }); });
+    expect(result.current.error).toBe('Voting has ended.');
+  });
+
+  it('a second tap while the first is saving is not dropped: the latest one is written (D15)', async () => {
+    const { result } = renderHook(() => useMessageResponses('conv-1', ['poll-1', 'poll-2'], 'me'));
+    await waitFor(() => expect(result.current.ready).toBe(true));
+    await act(async () => {
+      const first = result.current.vote('poll-1', 'o1');
+      const second = result.current.vote('poll-1', 'o2');
+      const other = result.current.vote('poll-2', 'o1');
+      await Promise.all([first, second, other]);
+    });
+    // The tap on poll 2 is written beside poll 1's; poll 1's last write is the latest tap.
+    const written = state.upserts.map((u) => [u.value.message_id, u.value.choice]);
+    expect(written.filter(([m]) => m === 'poll-1').at(-1)).toEqual(['poll-1', 'o2']);
+    expect(written).toContainEqual(['poll-2', 'o1']);
+    expect(result.current.rows.filter((r) => r.user_id === 'me').map((r) => [r.message_id, r.choice]).sort()).toEqual([['poll-1', 'o2'], ['poll-2', 'o1']]);
+    expect(result.current.pending.size).toBe(0);
+  });
+
+  it('a burst of realtime changes reads once (D17)', async () => {
+    const { result } = renderHook(() => useMessageResponses('conv-1', IDS, 'me'));
+    await waitFor(() => expect(result.current.ready).toBe(true));
+    const before = state.reads;
+    act(() => { for (let i = 0; i < 12; i++) state.events[0]!({ eventType: 'INSERT', new: { message_id: 'poll-1' } }); });
+    await waitFor(() => expect(state.reads).toBe(before + 1));
+    await new Promise((r) => setTimeout(r, 400));
+    expect(state.reads).toBe(before + 1);
   });
 });

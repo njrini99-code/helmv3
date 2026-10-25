@@ -6718,6 +6718,17 @@
     "catalog": "docs/clubhouse/catalog/messages.md"
   },
   {
+    "id": 70641,
+    "page": "P007",
+    "category": 6,
+    "item": 41,
+    "name": "A_VOTE_IS_REFUSED_BECAUSE_THE_POLL",
+    "chCode": "CH-7030",
+    "meaning": "A vote is refused because the poll ended between the tap and the write (only with the held vote guard, OQ-68)",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/messages.md"
+  },
+  {
     "id": 70701,
     "page": "P007",
     "category": 7,

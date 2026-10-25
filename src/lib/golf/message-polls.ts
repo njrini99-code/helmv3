@@ -93,7 +93,7 @@ export interface PollDraft {
   closesAt: string | null;
 }
 
-export type PollDraftProblem = 'question' | 'options' | 'duplicate' | 'closes';
+export type PollDraftProblem = 'question' | 'options' | 'duplicate' | 'closes' | 'closes_far';
 
 /**
  * The draft as a payload, or what's wrong with it. Empty option rows are dropped first (the sheet always keeps a
@@ -113,6 +113,7 @@ export function buildPollPayload(
   if (draft.closesAt) {
     const t = Date.parse(draft.closesAt);
     if (!Number.isFinite(t) || t <= now) return { ok: false, problem: 'closes' };
+    if (t > now + POLL_MAX_DAYS * 86_400_000) return { ok: false, problem: 'closes_far' };
     closes = new Date(t).toISOString();
   }
   return {
@@ -221,4 +222,64 @@ export function pollWaiting(tally: PollTally, memberIds: readonly string[]): str
 /** Everyone who answered, from the tally, without repeats. */
 export function pollVoterIds(tally: PollTally): string[] {
   return [...new Set(Object.values(tally.voters).flat())];
+}
+
+/** The latest a poll can end: thirty days after it is sent. */
+export const POLL_MAX_DAYS = 30;
+
+/**
+ * Who can be counted as able to vote: the people in the thread now, and anyone who voted and has since left. So the
+ * footer never reads "9 of 8".
+ */
+export function pollEligibleCount(tally: PollTally, memberIds: readonly string[]): number {
+  return new Set([...memberIds, ...pollVoterIds(tally)]).size;
+}
+
+/** Open, closed by its sender, or ended because its time ran out. */
+export function pollState(poll: Poll, now: number): 'open' | 'closed' | 'ended' {
+  if (poll.closedAt) return 'closed';
+  return poll.closesAt && Date.parse(poll.closesAt) <= now ? 'ended' : 'open';
+}
+
+const FALLBACK_FOOTER = 'Vote in GolfHelm.';
+
+/**
+ * Whether a message's text is a poll's plain-text copy (`pollFallbackText`): "Poll: " on the first line, the numbered
+ * choices, and exactly "Vote in GolfHelm." last, 4 to 8 lines. A typed message that merely starts "Poll: " is not one.
+ */
+export function isPollFallbackText(text: string | null | undefined): boolean {
+  if (!text) return false;
+  const lines = text.split('\n');
+  if (lines.length < 2 + POLL_MIN_OPTIONS || lines.length > 2 + POLL_MAX_OPTIONS) return false;
+  if (!lines[0]!.startsWith('Poll: ') || lines[lines.length - 1] !== FALLBACK_FOOTER) return false;
+  return lines.slice(1, -1).every((l, i) => l.startsWith(`${i + 1}. `));
+}
+
+/** A poll's copy as one search line: "Poll: Which van? · Van A, Van B, Van C", more than three ending "and 2 more". */
+export function pollSearchSnippet(text: string): string {
+  const lines = text.split('\n');
+  const question = lines[0]!.slice('Poll: '.length);
+  const choices = lines.slice(1, -1).map((l) => l.replace(/^\d+\.\s/, ''));
+  const shown = choices.slice(0, 3).join(', ');
+  const more = choices.length > 3 ? ` and ${choices.length - 3} more` : '';
+  return `Poll: ${question} · ${shown}${more}`;
+}
+
+/** A search hit on a poll's copy that matched only its footer ("vote", "golfhelm") is no hit at all. */
+export function pollHitOnlyInFooter(text: string, query: string): boolean {
+  const q = query.trim().toLowerCase();
+  if (!q) return false;
+  const body = text.split('\n').slice(0, -1).join('\n').toLowerCase();
+  return !body.includes(q);
+}
+
+/** Two payloads that say the same poll: the question, the choices in order, one answer or many, and the end. */
+export function samePollPayload(a: Pick<PollPayload, 'question' | 'options' | 'multi' | 'closes_at'>, b: Pick<PollPayload, 'question' | 'options' | 'multi' | 'closes_at'>): boolean {
+  return (
+    a.question === b.question &&
+    a.multi === b.multi &&
+    (a.closes_at ?? null) === (b.closes_at ?? null) &&
+    a.options.length === b.options.length &&
+    a.options.every((o, i) => o.label === b.options[i]!.label)
+  );
 }

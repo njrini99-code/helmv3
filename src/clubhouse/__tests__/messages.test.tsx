@@ -44,7 +44,7 @@ const live = vi.hoisted(() => ({
 vi.mock('@/hooks/golf/use-golf-messages', () => ({ useGolfConversations: () => live.convs, useGolfMessages: () => live.msgs }));
 vi.mock('@/hooks/golf/use-message-reactions', async (orig) => ({ ...(await orig<object>()), useMessageReactions: () => live.reactions }));
 const polls = vi.hoisted(() => ({
-  responses: { rows: [] as unknown[], error: null as string | null, ready: true, pending: null as string | null, refresh: vi.fn(async () => {}), vote: vi.fn(async (_messageId: string, _choice: string | null) => true) },
+  responses: { rows: [] as unknown[], error: null as string | null, ready: true, pending: new Set<string>() as ReadonlySet<string>, refresh: vi.fn(async () => {}), vote: vi.fn(async (_messageId: string, _choice: string | null): Promise<{ ok: true } | { ok: false; reason: 'closed' | 'member' | 'session' | 'failed' }> => ({ ok: true })) },
   sendGolfPoll: vi.fn(async () => ({ success: true as const, id: 'poll-1' })),
   closeGolfPoll: vi.fn(async () => ({ success: true as const, id: 'poll-1' })),
 }));
@@ -1905,8 +1905,8 @@ describe('Messages · polls (premium features P-2)', () => {
     polls.responses.rows = [{ message_id: 'p1', user_id: 'eli', choice: 'o2' }];
     polls.responses.error = null;
     polls.responses.ready = true;
-    polls.responses.pending = null;
-    polls.responses.vote.mockReset().mockResolvedValue(true);
+    polls.responses.pending = new Set<string>();
+    polls.responses.vote.mockReset().mockResolvedValue({ ok: true });
     polls.sendGolfPoll.mockReset().mockResolvedValue({ success: true, id: 'p2' });
     polls.closeGolfPoll.mockReset().mockResolvedValue({ success: true, id: 'p1' });
   });
@@ -1928,10 +1928,18 @@ describe('Messages · polls (premium features P-2)', () => {
 
   it('CH-7026 a vote that isn’t saved says so', async () => {
     const user = userEvent.setup();
-    polls.responses.vote.mockResolvedValue(false);
+    polls.responses.vote.mockResolvedValue({ ok: false, reason: 'failed' });
     show();
     await user.click(await screen.findByRole('radio', { name: /Van A/ }));
     await expectCode('CH-7026', /Your vote wasn’t saved/);
+  });
+
+  it('CH-7030 a vote refused because the poll ended says the result is final', async () => {
+    const user = userEvent.setup();
+    polls.responses.vote.mockResolvedValue({ ok: false, reason: 'closed' });
+    show();
+    await user.click(await screen.findByRole('radio', { name: /Van A/ }));
+    await expectCode('CH-7030', /Voting has ended/);
   });
 
   it('CH-7027 closing a poll that fails says so and keeps the confirm open', async () => {

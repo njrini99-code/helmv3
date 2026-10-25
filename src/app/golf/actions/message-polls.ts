@@ -32,6 +32,7 @@ const PROBLEM_COPY = {
   options: 'Add 2 to 6 choices of up to 60 characters each.',
   duplicate: 'Two choices say the same thing.',
   closes: 'Pick an end time that hasn’t passed.',
+  closes_far: 'Pick an end time within 30 days.',
 } as const;
 
 async function sendGolfPollImpl(conversationId: string, draft: PollDraft, clientMessageId?: string): Promise<PollResult> {

@@ -257,7 +257,7 @@ export function PreviewMessages({ state, role = 'coach' }: { state?: string; rol
         const choice = optionIds.length ? encodeChoice(poll, optionIds) : null;
         setVotes((v) => [...v.filter((r) => !(r.message_id === messageId && r.user_id === 'me')), ...(choice ? [{ message_id: messageId, user_id: 'me', choice }] : [])]);
       },
-      pending: null,
+      pending: new Set<string>(),
       error: null,
       retry: () => undefined,
       send: async (conversationId, draft) => {

@@ -15,7 +15,7 @@ import { haptic } from '../lib/haptics';
 import { tallyPoll, type Poll, type PollResponseRow } from '@/lib/golf/message-polls';
 import type { ChMessagesApi } from '../screens/messages/MessagesView';
 import type { ChConv } from '../screens/messages/model';
-import { PollButton, PollCard, type ChPollsApi } from '../screens/messages/polls';
+import { notePollHold, PollButton, PollCard, type ChPollsApi } from '../screens/messages/polls';
 
 afterEach(() => {
   cleanup();
@@ -55,7 +55,7 @@ function api(rows: PollResponseRow[] | null, over: Partial<ChPollsApi> = {}, con
   const polls: ChPollsApi = {
     tally: (messageId, p) => (rows ? tallyPoll(p, rows, messageId, 'me') : null),
     vote: vi.fn(),
-    pending: null,
+    pending: new Set<string>(),
     error: null,
     retry: vi.fn(),
     send: vi.fn(async () => ({ ok: true as const })),
@@ -288,5 +288,65 @@ describe('PollButton and the New poll sheet', () => {
       now.mockRestore();
     }
     expect(a.polls!.send).toHaveBeenCalledWith('c1', expect.objectContaining({ closesAt: '2026-10-24T16:20:00.000Z' }), expect.any(String));
+  });
+});
+
+describe('PollCard, slice 1 of the follow-up plan (P-2 0.2)', () => {
+  it('D11: counts a voter who has left, so it never reads more voted than could; all in reads "Everyone voted"', () => {
+    const rows = [
+      { message_id: 'm1', user_id: 'gone', choice: 'o1' },
+      { message_id: 'm1', user_id: 'ana', choice: 'o1' },
+    ];
+    render(<PollCard api={api(rows, {}, { memberIds: ['ana'] })} messageId="m1" poll={poll()} mine={false} />);
+    expect(document.querySelector('.ch-ms-poll__count')!.textContent).toBe('2 of 3 voted');
+    cleanup();
+    const all = [...rows, { message_id: 'm1', user_id: 'me', choice: 'o2' }];
+    render(<PollCard api={api(all, {}, { memberIds: ['ana'] })} messageId="m1" poll={poll()} mine={false} />);
+    expect(document.querySelector('.ch-ms-poll__count')!.textContent).toBe('Everyone voted');
+  });
+
+  it('D13: counts down the last hour and turns final at its exact end', () => {
+    vi.useFakeTimers({ now: Date.parse(NOW) });
+    try {
+      const closesAt = new Date(Date.parse(NOW) + 42 * 60_000).toISOString();
+      render(<PollCard api={api([])} messageId="m1" poll={poll({ closesAt })} mine={false} />);
+      expect(screen.getByText('Ends in 42 min')).toBeTruthy();
+      act(() => { vi.advanceTimersByTime(41 * 60_000 + 30_000); });
+      expect(screen.getByText('Ends in under a minute')).toBeTruthy();
+      act(() => { vi.advanceTimersByTime(31_000); });
+      expect(screen.getByText('Final')).toBeTruthy();
+      expect(screen.getByRole('radio', { name: /Van A/ }).getAttribute('aria-disabled')).toBe('true');
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it('D14: one tab stop; arrows move focus and never vote; Space votes', async () => {
+    const user = userEvent.setup();
+    const a = api([]);
+    render(<PollCard api={a} messageId="m1" poll={poll()} mine={false} />);
+    const [first, second] = screen.getAllByRole('radio');
+    expect([first!.tabIndex, second!.tabIndex]).toEqual([0, -1]);
+    first!.focus();
+    await user.keyboard('{ArrowDown}');
+    expect(document.activeElement).toBe(second);
+    expect(a.polls!.vote).not.toHaveBeenCalled();
+    await user.keyboard(' ');
+    expect(a.polls!.vote).toHaveBeenLastCalledWith('m1', expect.anything(), ['o2']);
+  });
+
+  it('D28: the release of a long press that opened the actions is not a vote', async () => {
+    const a = api([]);
+    render(<PollCard api={a} messageId="m1" poll={poll()} mine={false} />);
+    const row = screen.getByRole('radio', { name: /Van A/ });
+    act(() => {
+      row.dispatchEvent(new PointerEvent('pointerdown', { bubbles: true }));
+    });
+    await new Promise((r) => setTimeout(r, 5));
+    notePollHold();
+    act(() => {
+      row.dispatchEvent(new MouseEvent('click', { bubbles: true, detail: 1 }));
+    });
+    expect(a.polls!.vote).not.toHaveBeenCalled();
   });
 });

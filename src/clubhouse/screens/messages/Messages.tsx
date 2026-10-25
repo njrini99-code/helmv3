@@ -6,7 +6,7 @@ import { useGolfConversations, useGolfMessages, type GolfConversationWithMeta } 
 import { MESSAGE_REACTIONS, summarizeReactions, useMessageReactions } from '@/hooks/golf/use-message-reactions';
 import { useMessageAttachments } from '@/hooks/golf/use-message-attachments';
 import { useMessageResponses } from '@/hooks/golf/use-message-responses';
-import { encodeChoice, parsePollPayload, tallyPoll } from '@/lib/golf/message-polls';
+import { encodeChoice, isPollFallbackText, parsePollPayload, pollHitOnlyInFooter, pollSearchSnippet, tallyPoll } from '@/lib/golf/message-polls';
 import { closeGolfPoll, sendGolfPoll } from '@/app/golf/actions/message-polls';
 import {
   addGolfGroupMember,
@@ -61,8 +61,8 @@ const KEY_BY_EMOJI = Object.fromEntries(MESSAGE_REACTIONS.map((r) => [r.emoji, r
  * has no message kind, so a poll is known by its whole fallback shape, not its first word: an ordinary message that
  * starts "Poll: " keeps its text.
  */
-const railText = (text: string) =>
-  text.startsWith('Poll: ') && text.includes('\n') && text.trimEnd().endsWith('\nVote in GolfHelm.') ? text.split('\n')[0]! : text;
+// A poll's plain-text copy shows as its question; a typed message that merely starts "Poll: " keeps all its lines (D23).
+const railText = (text: string) => (isPollFallbackText(text) ? text.split('\n')[0]! : text);
 
 export function Messages({ data }: { data: ChMessagesData }) {
   const hours = useChClock();
@@ -510,14 +510,19 @@ export function Messages({ data }: { data: ChMessagesData }) {
         chReport(new Error(res.error), { surface: 'messages.search', severity: 'low' });
         return null;
       }
-      return res.results.map((r) => ({
-        messageId: r.messageId,
-        conversationId: r.conversationId,
-        conversationName: r.conversationName,
-        senderName: r.senderName,
-        text: decodeMessageContent(r.content),
-        at: r.createdAt,
-      }));
+      // A poll's hit reads as one line ("Poll: Q · A, B"), and one that matched only its "Vote in GolfHelm." footer is
+      // dropped, so "vote" doesn't find every poll (D24).
+      return res.results
+        .map((r) => ({ r, text: decodeMessageContent(r.content) }))
+        .filter(({ text }) => !(isPollFallbackText(text) && pollHitOnlyInFooter(text, q)))
+        .map(({ r, text }) => ({
+          messageId: r.messageId,
+          conversationId: r.conversationId,
+          conversationName: r.conversationName,
+          senderName: r.senderName,
+          text: isPollFallbackText(text) ? pollSearchSnippet(text) : text,
+          at: r.createdAt,
+        }));
     },
     [data.teamId],
   );
@@ -752,11 +757,19 @@ export function Messages({ data }: { data: ChMessagesData }) {
     polls: {
       tally: (messageId, poll) => (responses.ready ? tallyPoll(poll, responses.rows, messageId, data.viewerUserId) : null),
       vote: (messageId, poll, optionIds) => {
-        if (responses.pending) return;
+        // A tap while this poll's vote is saving is not dropped: the hook writes the latest one when the first lands.
         const choice = optionIds.length ? encodeChoice(poll, optionIds) : null;
         if (optionIds.length && !choice) return;
         void attempt('vote', { failed: 'Your vote wasn’t saved', hint: 'Try again in a moment.', code: 'CH-7026' }, async () => {
-          if ((await responses.vote(messageId, choice)) === false) throw new Error('Vote was not saved');
+          const res = await responses.vote(messageId, choice);
+          if (res.ok) return;
+          if (res.reason === 'closed') {
+            // CH-7030: the poll ended between the tap and the write; the vote is put back and the result is final.
+            haptic('error');
+            toast({ tone: 'error', title: 'Voting has ended', body: 'Your vote wasn’t counted. The result is final.', code: 'CH-7030' });
+            return false;
+          }
+          throw new Error(res.reason === 'session' ? 'Sign in again to vote' : 'Vote was not saved');
         });
       },
       pending: responses.pending,

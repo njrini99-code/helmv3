@@ -70,6 +70,7 @@ import {
 import { AnnouncementPane, AnnouncementsSection } from "./announcements";
 import { isMessagesFirstRun, MessagesFirstRun } from "./MessagesFirstRun";
 import { fileMeta, useConversationFiles } from "./files";
+import { notePollHold } from "./polls";
 import {
   AddMembersModal,
   AttachButton,
@@ -486,7 +487,7 @@ function PhoneThread({
                           setPicking={() => {}}
                           onEdit={() => setEditing(it.m)}
                           onDelete={() => setDeleting(it.m)}
-                          onActions={it.m.deleted ? undefined : () => setActing(it.m)}
+                          onActions={it.m.deleted ? undefined : () => (notePollHold(), setActing(it.m))}
                           onReply={() => reply(it.m)}
                         />,
                       ],

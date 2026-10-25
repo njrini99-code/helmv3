@@ -1,7 +1,7 @@
 "use client";
 
 import { Check, ListChecks, Lock, Minus, Plus } from "lucide-react";
-import { useId, useRef, useState } from "react";
+import { useEffect, useId, useRef, useState, type KeyboardEvent } from "react";
 import {
   POLL_MAX_OPTIONS,
   POLL_MIN_OPTIONS,
@@ -10,6 +10,7 @@ import {
   buildPollPayload,
   encodeChoice,
   isPollClosed,
+  pollEligibleCount,
   pollShare,
   pollWaiting,
   type Poll,
@@ -41,8 +42,8 @@ export interface ChPollsApi {
   tally: (messageId: string, poll: Poll) => PollTally | null;
   /** Option ids picked, or none to take the vote back. */
   vote: (messageId: string, poll: Poll, optionIds: string[]) => void;
-  /** The poll message a vote is being saved on, so its card doesn't take a second tap mid-write. */
-  pending: string | null;
+  /** The polls with a vote being saved. A card stays tappable: the latest tap is the one written. */
+  pending: ReadonlySet<string>;
   error: string | null;
   retry: () => void;
   /** `clientId` stays the same for one draft, so a Send retried after a lost answer can't post the poll twice. */
@@ -50,12 +51,49 @@ export interface ChPollsApi {
   close: (messageId: string) => Promise<boolean>;
 }
 
-function endsLabel(poll: Poll, closed: boolean, now: string, timeZone: string, hours: "12" | "24") {
+function endsLabel(poll: Poll, closed: boolean, now: string, timeZone: string, hours: "12" | "24", nowMs: number) {
   if (poll.closedAt) return "Final";
   if (!poll.closesAt) return poll.multi ? "Choose any" : "Choose one";
   if (closed) return "Final";
+  // The last hour counts down, so a tap just before the end never looks like it landed after it.
+  const left = Date.parse(poll.closesAt) - nowMs;
+  if (left < 60_000) return "Ends in under a minute";
+  if (left < 3_600_000) return `Ends in ${Math.ceil(left / 60_000)} min`;
   const day = untilLabel(poll.closesAt, now, timeZone);
   return `Ends ${day === "today" ? "" : day === "tomorrow" ? "tomorrow " : `${day} `}at ${clock(poll.closesAt, timeZone, hours)}`;
+}
+
+/** When a long press last opened a message's actions (MessagesPhone), so the release that ends it isn't a vote. */
+let lastHold = 0;
+export const notePollHold = () => {
+  lastHold = Date.now();
+};
+/** The press that started at `pressAt` turned into a hold that opened the actions sheet. */
+const heldSince = (pressAt: number) => pressAt > 0 && lastHold >= pressAt;
+
+/**
+ * The poll's own clock: the page's minute clock, plus a timer set to the exact end so the card turns final on time, and
+ * a 15-second tick in the last hour while it counts down.
+ */
+function usePollClock(closesAt: string | null, pageNow: string): number {
+  const page = Date.parse(pageNow);
+  const [now, setNow] = useState(() => (Number.isFinite(page) ? page : Date.now()));
+  useEffect(() => {
+    setNow(Number.isFinite(page) ? Math.max(page, Date.now()) : Date.now());
+  }, [page]);
+  useEffect(() => {
+    if (!closesAt) return;
+    const end = Date.parse(closesAt);
+    const left = end - Date.now();
+    if (!Number.isFinite(end) || left <= 0) return;
+    const atEnd = setTimeout(() => setNow(Date.now()), Math.min(left + 50, 2_147_000_000));
+    const tick = left < 3_600_000 ? setInterval(() => setNow(Date.now()), 15_000) : null;
+    return () => {
+      clearTimeout(atEnd);
+      if (tick) clearInterval(tick);
+    };
+  }, [closesAt, now]);
+  return now;
 }
 
 export function PollCard({
@@ -75,16 +113,19 @@ export function PollCard({
   const [votesOpen, setVotesOpen] = useState(false);
   const [closing, setClosing] = useState(false);
   const tally = polls?.tally(messageId, poll) ?? null;
-  const now = Date.parse(api.now);
-  const closed = isPollClosed(poll, Number.isFinite(now) ? now : Date.now());
+  const nowMs = usePollClock(poll.closesAt, api.now);
+  const closed = isPollClosed(poll, nowMs);
   const conv = api.convs.find((c) => c.id === api.selectedId) ?? null;
-  // Everyone in the thread can vote, the sender too: memberIds are the others, so the viewer is added.
-  const eligible = conv ? conv.memberIds.length + 1 : null;
-  const busy = polls?.pending === messageId;
+  // Everyone in the thread can vote, the sender too (memberIds are the others), and anyone who voted and then left
+  // still counts, so the footer never reads "9 of 8".
+  const eligible = conv && tally ? pollEligibleCount(tally, [...conv.memberIds, api.viewer.userId]) : conv ? conv.memberIds.length + 1 : null;
+  const busy = polls?.pending.has(messageId) ?? false;
   const mineIds = tally?.mine ?? [];
 
-  const pick = (optionId: string) => {
-    if (!polls || closed || busy || !tally) return;
+  const pressAt = useRef(0);
+  const pick = (optionId: string, viaKeyboard = false) => {
+    // A long press that opened the message's actions isn't also a vote (a key press never is one).
+    if (!polls || closed || !tally || (!viaKeyboard && heldSince(pressAt.current))) return;
     let next: string[];
     if (poll.multi) next = mineIds.includes(optionId) ? mineIds.filter((id) => id !== optionId) : [...mineIds, optionId];
     else next = mineIds.includes(optionId) ? [] : [optionId];
@@ -94,7 +135,21 @@ export function PollCard({
     polls.vote(messageId, poll, ordered);
   };
 
-  const ends = endsLabel(poll, closed, api.now, api.timeZone, api.clock ?? "12");
+  const ends = endsLabel(poll, closed, api.now, api.timeZone, api.clock ?? "12", nowMs);
+  // Single answer: one tab stop on the picked choice (or the first); arrows move focus only, never a vote, and Space or
+  // Enter votes. Several answers: each checkbox is its own stop.
+  const stop = poll.multi ? null : (mineIds[0] ?? poll.options[0]!.id);
+  const onKey = (e: KeyboardEvent<HTMLButtonElement>) => {
+    if (poll.multi) return;
+    const keys: Record<string, number> = { ArrowDown: 1, ArrowRight: 1, ArrowUp: -1, ArrowLeft: -1 };
+    const d = keys[e.key];
+    if (d == null && e.key !== "Home" && e.key !== "End") return;
+    e.preventDefault();
+    const all = Array.from(e.currentTarget.closest("ul")?.querySelectorAll<HTMLButtonElement>("button[role=radio]") ?? []);
+    const at = all.indexOf(e.currentTarget);
+    const to = e.key === "Home" ? 0 : e.key === "End" ? all.length - 1 : (at + d! + all.length) % all.length;
+    all[to]?.focus();
+  };
   return (
     <div className={"ch-ms-poll" + (closed ? " is-closed" : "")} role="group" aria-labelledby={qid} aria-busy={busy || undefined}>
       <div className="ch-ms-poll__head">
@@ -121,13 +176,18 @@ export function PollCard({
                 type="button"
                 role={poll.multi ? "checkbox" : "radio"}
                 aria-checked={on}
+                tabIndex={stop == null || stop === o.id ? 0 : -1}
+                onKeyDown={onKey}
                 aria-disabled={closed || !tally || undefined}
                 aria-label={`${o.label}, ${n === 1 ? "1 vote" : `${n} votes`}${on ? ", your vote" : ""}${lead && closed ? ", most votes" : ""}`}
                 className={
                   "ch-ms-poll__opt" + (on ? " is-on" : "") + (lead ? " is-lead" : "") + (poll.multi ? " is-multi" : "")
                 }
                 style={{ ["--ch-poll-share" as string]: String(share) }}
-                onClick={() => pick(o.id)}
+                onPointerDown={() => {
+                  pressAt.current = Date.now();
+                }}
+                onClick={(e) => pick(o.id, e.detail === 0)}
               >
                 <span className="ch-ms-poll__fill" aria-hidden="true" />
                 <span className="ch-ms-poll__mark" aria-hidden="true">
@@ -158,7 +218,9 @@ export function PollCard({
               ? polls.error
               : "Loading votes…"
             : eligible
-              ? `${tally.voterCount} of ${eligible} voted`
+              ? tally.voterCount >= eligible
+                ? "Everyone voted"
+                : `${tally.voterCount} of ${eligible} voted`
               : tally.voterCount === 1
                 ? "1 vote"
                 : `${tally.voterCount} voted`}
@@ -296,6 +358,7 @@ const PROBLEM: Record<string, string> = {
   options: `Add ${POLL_MIN_OPTIONS} to ${POLL_MAX_OPTIONS} choices.`,
   duplicate: "Two choices say the same thing.",
   closes: "Pick an end time that hasn’t passed.",
+  closes_far: "Pick an end time within 30 days.",
 };
 
 /** The composer's poll button: group threads only, where "9 of 12 voted" means something. */

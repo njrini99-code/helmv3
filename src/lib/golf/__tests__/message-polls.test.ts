@@ -12,6 +12,7 @@ import {
   tallyPoll,
   type Poll,
 } from '@/lib/golf/message-polls';
+import * as M from '@/lib/golf/message-polls';
 
 const NOW = Date.parse('2026-10-24T12:00:00Z');
 
@@ -191,5 +192,35 @@ describe('isPollClosed', () => {
     expect(isPollClosed(poll({ closedAt: '2026-10-24T11:00:00Z' }), NOW)).toBe(true);
     expect(isPollClosed(poll({ closesAt: '2026-10-24T12:00:00Z' }), NOW)).toBe(true);
     expect(isPollClosed(poll({ closesAt: '2026-10-24T12:00:01Z' }), NOW)).toBe(false);
+  });
+});
+
+describe('follow-up rules (P-2 0.3)', () => {
+  const p = { v: 1 as const, question: 'Which van?', options: [{ id: 'o1', label: 'Van A' }, { id: 'o2', label: 'Van B' }], multi: false, closes_at: null, closed_at: null };
+  it('caps the end at thirty days', () => {
+    const now = Date.parse('2026-10-24T15:00:00Z');
+    expect(M.buildPollPayload({ question: 'Q?', options: ['A', 'B'], multi: false, closesAt: new Date(now + 31 * 86_400_000).toISOString() }, now)).toEqual({ ok: false, problem: 'closes_far' });
+    expect(M.buildPollPayload({ question: 'Q?', options: ['A', 'B'], multi: false, closesAt: new Date(now + 29 * 86_400_000).toISOString() }, now).ok).toBe(true);
+  });
+  it('tells a poll copy from a typed message that starts "Poll: "', () => {
+    expect(M.isPollFallbackText(M.pollFallbackText(p))).toBe(true);
+    expect(M.isPollFallbackText('Poll: who is driving?\nI can take four')).toBe(false);
+    expect(M.isPollFallbackText('Poll: Q\n1. A\nVote in GolfHelm.')).toBe(false);
+  });
+  it('reads a poll hit as one line, and drops a hit only in the footer', () => {
+    const many = M.pollFallbackText({ question: 'Dinner?', options: ['Tacos', 'Pizza', 'Sushi', 'Thai', 'BBQ'].map((label, i) => ({ id: `o${i + 1}`, label })) });
+    expect(M.pollSearchSnippet(many)).toBe('Poll: Dinner? · Tacos, Pizza, Sushi and 2 more');
+    expect(M.pollHitOnlyInFooter(many, 'golfhelm')).toBe(true);
+    expect(M.pollHitOnlyInFooter(many, 'pizza')).toBe(false);
+  });
+  it('states and the eligible count', () => {
+    const poll = M.parsePollPayload(p)!;
+    expect(M.pollState(poll, Date.now())).toBe('open');
+    expect(M.pollState({ ...poll, closesAt: '2020-01-01T00:00:00Z' }, Date.now())).toBe('ended');
+    expect(M.pollState({ ...poll, closedAt: '2020-01-01T00:00:00Z', closesAt: '2020-01-01T00:00:00Z' }, Date.now())).toBe('closed');
+    const tally = M.tallyPoll(poll, [{ message_id: 'm', user_id: 'gone', choice: 'o1' }], 'm', 'me');
+    expect(M.pollEligibleCount(tally, ['me', 'ana'])).toBe(3);
+    expect(M.samePollPayload(p, { ...p })).toBe(true);
+    expect(M.samePollPayload(p, { ...p, multi: true })).toBe(false);
   });
 });
