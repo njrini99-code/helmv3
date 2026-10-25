@@ -90,6 +90,8 @@ export interface EditorSeed {
   invite?: string[];
   /** Duplicate (the event's More menu): a new event with this one's title, type, day, time, place, notes and invitees. */
   copyOf?: ChCalEvent;
+  /** P-5 E4: the inspector's Set up on an untracked tournament event opens the editor with Track already on. */
+  track?: boolean;
 }
 
 function FindTime({
@@ -374,7 +376,7 @@ export function EventEditor({
     const nextTour = initialTourState(first, addDays(first, run?.extra ?? spanDays(e ?? c)));
     setTour(nextTour);
     setTourBaseline(JSON.stringify(nextTour));
-    setTrackPref(null);
+    setTrackPref(seed.track ?? null);
     setTourNote(null);
     setSaid('');
   }, [seed]);

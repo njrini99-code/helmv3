@@ -345,29 +345,6 @@
   color: var(--ch-text-secondary);
 }
 
-/* The round pill on a tournament block: a darker tab of the block's own green. */
-.ch-ev__round {
-  position: absolute;
-  top: var(--ch-space-1);
-  right: var(--ch-space-1);
-  display: inline-flex;
-  align-items: center;
-  gap: var(--ch-space-0_5);
-  min-height: 16px;
-  padding: 0 var(--ch-space-1);
-  background: color-mix(in oklab, #000 22%, var(--ch-green-fill-700));
-  border-radius: var(--ch-radius-xs);
-  font: var(--ch-type-11-medium);
-  letter-spacing: var(--ch-track-11);
-  color: var(--ch-on-fill-100);
-}
-.ch-ag__round {
-  flex: none;
-  font: var(--ch-type-13);
-  letter-spacing: var(--ch-track-13);
-  color: var(--ch-text-tertiary);
-}
-
 /* Round cards on the desk and the season home: a top label, a plate, a full hairline. */
 .ch-tfx-cards {
   display: grid;

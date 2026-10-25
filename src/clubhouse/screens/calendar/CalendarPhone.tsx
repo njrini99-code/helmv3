@@ -26,6 +26,7 @@ import { EventPeek } from './peek';
 import { PhoneTop } from '../../shell/phone-chrome';
 import { addDays, dayNum, dowOf, fmtHour, monthKey, monthName, playerReplyNeeded, rangeLabel, startLabel, weekDates, yearOf, type ChCalEvent, type ChCalPerson, type ChCalView } from './model';
 import { AgendaView, eventTitle, type ChNow } from './views';
+import { roundLabel } from './round-label';
 import { MonthGrid } from './month';
 import { plural, pluralWord } from '../../lib/plural';
 
@@ -446,7 +447,7 @@ function DayPage({
                     type="button"
                     className={`ch-calm-ev is-${e.type}` + (past ? ' is-past' : '') + (live ? ' is-live' : '') + (selId === e.id ? ' is-sel' : '') + (e.cancelled ? ' is-cancelled' : '') + (lift ? ' is-movable' : '') + (liftedId === e.id ? ' is-lifted' : '')}
                     onTouchStart={lift ? () => claimTouch('pending') : undefined}
-                    aria-label={`${title}, ${e.allDay ? 'all day' : e.span?.start != null ? rangeLabel(e, clock) : `${fmtHour(e.start!, true, clock)} to ${fmtHour(e.end!, true, clock)}`}${past ? ', ended' : ''}${flagged.has(e.id) ? ', schedule overlap' : ''}${reply ? ', needs your reply' : ''}${e.cancelled ? ', cancelled' : ''}`}
+                    aria-label={`${roundLabel(e, title).name}${roundLabel(e, title).spokenRound}, ${e.allDay ? 'all day' : e.span?.start != null ? rangeLabel(e, clock) : `${fmtHour(e.start!, true, clock)} to ${fmtHour(e.end!, true, clock)}`}${past ? ', ended' : ''}${flagged.has(e.id) ? ', schedule overlap' : ''}${reply ? ', needs your reply' : ''}${e.cancelled ? ', cancelled' : ''}`}
                     onClick={() => {
                       haptic('select');
                       onOpen(e.id, e.date);
@@ -463,7 +464,7 @@ function DayPage({
                     <span className="ch-calm-ev__b">
                       <b>{title}</b>
                       {/* A class's code is already in its title ("Priya · STAT 201"), so its line names only the room. */}
-                      <span>{block && e.busyOnly ? 'Busy' : e.type === 'busy' ? 'Your busy time' : (e.location ?? '')}</span>
+                      <span>{block && e.busyOnly ? 'Busy' : e.type === 'busy' ? 'Your busy time' : [roundLabel(e, title).caption, e.location].filter(Boolean).join(' · ')}</span>
                     </span>
                     {reply ? (
                       // The reply is the action on this row; an overlap still reads in its label and on the event.

@@ -838,6 +838,8 @@ export function Calendar({
     onDelete: (e) => setDeleting(e),
     onDuplicate: (e) => setEditor({ event: null, copyOf: e }),
     onFind: (date, invite) => setEditor({ event: null, date, invite }),
+    tournamentsEnabled: !!data.tournamentsEnabled,
+    onSetUp: (e) => setEditor({ event: e, track: true }),
     refresh,
   };
 

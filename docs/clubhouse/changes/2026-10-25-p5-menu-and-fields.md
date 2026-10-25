@@ -14,6 +14,6 @@ Held items:     none
 - `Menu` items take `feel` (`select`, the default, or `warning`), the haptic a
   choice plays; Remove the last round uses `warning`.
 - `styles/tournament-fields.css`: the tournament section's rows, rounds list,
-  notices and the round pill, loaded by the calendar route and the preview. No
+  notices and round cards, loaded by the calendar route and the preview. No
   left accent borders; hairlines, type roles, radius, spacing and focus come
   from the Clubhouse tokens.
