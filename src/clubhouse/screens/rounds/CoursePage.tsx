@@ -6,10 +6,10 @@ import { avgToPar, type ChCourseHistory } from '../../data/course-page-shape';
 import { formatFixed } from '../../lib/format';
 import { Button } from '../../ui/Button';
 import { NoData } from '../../ui/NoData';
-import { RoundRow } from './parts';
 import { HoleMap, mostToGain } from './HoleMap';
 import { CourseArc } from './CourseArc';
 import { HowItPlays } from './HowItPlays';
+import { RoundsHere } from './RoundsHere';
 import { chScrollIntoView } from '../../lib/smooth-scroll';
 import { useChReducedMotion } from '../../lib/reduced-motion';
 import { useRouter } from 'next/navigation';
@@ -104,16 +104,7 @@ export function CoursePage({ history: h, playerName, playerId, initialHole }: { 
       )}
       <HowItPlays data={h.howItPlays} who={who} onHole={toHole} />
       {h.arc && <CourseArc arc={h.arc} lines={h.arcLines} selected={hole} onSelect={setHole} />}
-      <section className="ch-ch-sec" aria-labelledby="ch-ch-rounds-h">
-        <div className="ch-ch-sec__h">
-          <h2 id="ch-ch-rounds-h">{who ? `${who}’s rounds here` : 'Your rounds here'}</h2>
-        </div>
-        <div className="ch-rd-book">
-          {h.rounds.map((r) => (
-            <RoundRow key={r.id} r={r} href={reviewHref(r.id)} />
-          ))}
-        </div>
-      </section>
+      <RoundsHere rounds={h.rounds} cards={h.cards} title={who ? `${who}’s rounds here` : 'Your rounds here'} />
     </main>
   );
 }

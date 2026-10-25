@@ -13211,6 +13211,17 @@
     "catalog": "docs/clubhouse/catalog/rounds.md"
   },
   {
+    "id": 111124,
+    "page": "P011",
+    "category": 11,
+    "item": 24,
+    "name": "COMPARE_TWO_ROUNDS_AT_A_COURSE",
+    "chCode": "CH-11530",
+    "meaning": "Compare two rounds at a course (P-7)",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/rounds.md"
+  },
+  {
     "id": 111201,
     "page": "P011",
     "category": 12,

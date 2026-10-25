@@ -5621,3 +5621,144 @@ button.ch-hip__row:focus-visible,
 .ch-carc__pills .ch-pill {
   min-height: 44px;
 }
+
+/* P-7 4.2.7: compare two rounds here. A checkbox row per round, a bar at the foot with the one action, and the sheet. */
+.ch-ch-textbtn {
+  min-height: 44px;
+  padding: 0 4px;
+  border: 0;
+  background: none;
+  font: var(--ch-type-15-strong);
+  color: var(--ch-text-primary);
+}
+.ch-ch-textbtn:focus-visible,
+.ch-cmp-row:focus-visible {
+  outline: 2px solid var(--ch-border-focus);
+  outline-offset: 2px;
+}
+.ch-cmp-list {
+  margin: 0;
+  padding: 0 0 96px;
+  list-style: none;
+}
+.ch-cmp-row {
+  display: grid;
+  grid-template-columns: 22px auto 1fr auto;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  min-height: 60px;
+  padding: 0;
+  border: 0;
+  border-bottom: var(--ch-hairline-w) solid var(--ch-border-hairline);
+  background: none;
+  font: var(--ch-type-15);
+  color: var(--ch-text-primary);
+  text-align: left;
+}
+.ch-cmp-row b {
+  font: var(--ch-type-15-strong);
+}
+.ch-cmp-row__t {
+  color: var(--ch-text-secondary);
+}
+.ch-cmp-row__c {
+  display: grid;
+  place-items: center;
+  width: 22px;
+  height: 22px;
+  box-sizing: border-box;
+  border: 1.5px solid var(--ch-border-strong);
+  border-radius: 50%;
+  color: var(--ch-on-fill-100);
+}
+.ch-cmp-row.is-on .ch-cmp-row__c {
+  border-color: var(--ch-green-600);
+  background: var(--ch-green-600);
+}
+.ch-cmp-row.is-off {
+  opacity: 0.5;
+}
+.ch-cmp-bar {
+  position: fixed;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  z-index: calc(var(--ch-z-dock) + 1);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 64px;
+  padding: 10px 16px calc(10px + env(safe-area-inset-bottom));
+  box-sizing: border-box;
+  border-top: var(--ch-hairline-w) solid var(--ch-border-hairline);
+  border-radius: var(--ch-radius-xl) var(--ch-radius-xl) 0 0;
+  background: var(--ch-bg-surface);
+}
+.ch-cmp-bar__t {
+  font: var(--ch-type-15);
+  color: var(--ch-text-secondary);
+}
+.ch-cmp__sum {
+  margin: 12px 0;
+  font: var(--ch-type-15);
+  color: var(--ch-text-primary);
+}
+.ch-cmp__strip {
+  display: grid;
+  grid-template-columns: repeat(9, minmax(0, 1fr));
+  gap: 4px;
+}
+.ch-cmp__cell {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 44px;
+  border: 1px solid var(--ch-hm-ring-level);
+  border-radius: var(--ch-radius-sm);
+  background: var(--ch-hm-level);
+}
+.ch-cmp__cell.is-a {
+  border-color: var(--ch-hm-ring-under);
+  background: var(--ch-hm-under-1);
+}
+.ch-cmp__cell.is-b {
+  border-color: var(--ch-hm-ring-over);
+  background: var(--ch-hm-over-1);
+}
+.ch-cmp__cell em {
+  font: var(--ch-type-mono);
+  font-style: normal;
+  color: var(--ch-ink-600);
+}
+.ch-cmp__cell b {
+  font: var(--ch-type-12-medium);
+  color: var(--ch-ink-900);
+}
+.ch-cmp__legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 16px;
+  margin: 12px 0 0;
+  padding: 0;
+  list-style: none;
+  font: var(--ch-type-13);
+  color: var(--ch-text-secondary);
+}
+.ch-cmp__legend i {
+  display: inline-block;
+  width: 10px;
+  height: 10px;
+  margin-right: 6px;
+  border-radius: 50%;
+  vertical-align: middle;
+}
+.ch-cmp__legend i.is-a {
+  border: 1px solid var(--ch-hm-ring-under);
+  background: var(--ch-hm-under-1);
+}
+.ch-cmp__legend i.is-b {
+  border: 1px solid var(--ch-hm-ring-over);
+  background: var(--ch-hm-over-1);
+}

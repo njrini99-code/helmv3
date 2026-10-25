@@ -4,6 +4,7 @@ import { holeCoverage, isScoreCountable, recordedPutts } from './round-scope';
 import { toLibraryRound, type ChLibraryRound } from './rounds-shape';
 import { formatFixed, formatSigned, formatToPar } from '../lib/format';
 import type { ChPlayHole } from './stats-extra';
+import type { ChCompareCard } from './compare-rounds';
 
 /*
  * P-7: one player's history at one course (the course page), from their light list of rounds, the holes of the rounds
@@ -85,6 +86,8 @@ export interface ChCourseHistory {
   holeRounds: number;
   /** P-7 4.2.5: how the course plays for the player, in one sentence and the rows past their floors. */
   howItPlays: { sentence: string; sample: string | null; rows: Array<{ label: string; value: string; hole?: number }> };
+  /** P-7 4.2.7: the 18-hole rounds here with every hole, which can be compared; keyed by round id. */
+  cards: Record<string, ChCompareCard>;
   /** P-7 4.2.6: the overlays on the average arc: the best and the last full round here, as running to par. */
   arcLines: { best: { cum: number[]; score: number } | null; last: { cum: number[]; score: number } | null };
   /** The All time / This season choice, when the season holds two rounds with holes and differs from all time; else null. */
@@ -294,6 +297,14 @@ export function toCourseHistory(input: {
       holesError: holesById == null,
       holeRounds: withHoles.length,
       howItPlays: howItPlays({ name, who: input.who, here, elsewhere, fullCards, withHoles: withHoles.map((r) => holesById!.get(r.id)!), scored, stretch: stretches(fullCards) }),
+      cards: Object.fromEntries(
+        withHoles
+          .filter((r) => (r.holes_played ?? 18) === 18 && r.total_score != null && isFull(holesById!.get(r.id)))
+          .map((r) => {
+            const hs = [...holesById!.get(r.id)!].sort((a, b) => a.n - b.n);
+            return [r.id, { id: r.id, date: r.round_date.slice(0, 10), score: r.total_score as number, scores: hs.map((h) => h.score as number), pars: hs.map((h) => h.par) }];
+          }),
+      ),
       arcLines: (() => {
         const full = withHoles.filter((r) => (r.holes_played ?? 18) === 18 && isFull(holesById!.get(r.id)));
         const cumOf = (r: ChCourseListRow) => {

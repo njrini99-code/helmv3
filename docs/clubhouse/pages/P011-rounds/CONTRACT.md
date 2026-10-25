@@ -414,6 +414,7 @@ unchanged when the flag is off.
 | 111121 | CH-11521 | `CHANGE_ROUND_TYPE` | Change round type (Continue round: the Exit sheet's "Change round type" row, "Practice now. Changes what it counts toward."; a submitted round: its review's Change round type, CH-11522) |
 | 111122 | CH-11522 | `CHANGE_ROUND_TYPE_ON_A_SUBMITTED_ROUNDS` | Change round type on a submitted round's review (the player who played it, or a coach of the player's team; the Fairway round page's `RoundTypeEditor`) |
 | 111123 | CH-11523 | `THE_COACH_NOTE_CARD_ON_A_ROUNDS` | The Coach note card on a round's review |
+| 111124 | CH-11530 | `COMPARE_TWO_ROUNDS_AT_A_COURSE` | Compare two rounds at a course (P-7) |
 
 ## 12 — State preservation
 
