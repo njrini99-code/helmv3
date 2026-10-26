@@ -18349,6 +18349,17 @@
     "catalog": "docs/clubhouse/catalog/coachhelm.md"
   },
   {
+    "id": 131819,
+    "page": "P013",
+    "category": 18,
+    "item": 19,
+    "name": "ASK_A_VALIDATED_VISUAL",
+    "chCode": "CH-13853",
+    "meaning": "Ask: A validated visual (strokes gained anatomy)",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/coachhelm.md"
+  },
+  {
     "id": 131901,
     "page": "P013",
     "category": 19,
@@ -20781,7 +20792,7 @@
     "item": 1,
     "name": "A_VIEW_ITS_LANE_HASNT_BUILT_YET",
     "chCode": "CH-16301",
-    "meaning": "A view its lane hasn't built yet (the event form, lineup builder, link inbox, live round and player view; their routes are wired and draw it with real data)",
+    "meaning": "A view its lane hasn't built yet (the edit-event form, lineup builder, link inbox, live round and player view; their routes are wired and draw it with real data)",
     "status": "implemented",
     "catalog": "docs/clubhouse/catalog/tournaments.md"
   },

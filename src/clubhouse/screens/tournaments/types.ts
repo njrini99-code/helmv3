@@ -730,6 +730,11 @@ export interface ChTourEventDraft {
 
 export interface ChTourFormData {
   now: string;
+  /** The team the event is saved to, and its clock: a round's first tee is a wall-clock time in this zone. */
+  teamId: string;
+  timezone: string;
+  /** Today in the team's zone (the new event's first day). */
+  today: string;
   mode: 'new' | 'edit';
   /** The event being edited; null for a new one. */
   eventId: string | null;

@@ -38,13 +38,16 @@
   animation: ch-th-in var(--ch-dur-base) var(--ch-ease) backwards;
 }
 
-/* The coach's line: right-aligned, in a soft well */
+/* The coach's line: the same green bubble Messages uses for your own, tail at the lower right */
 .ch-th-user {
   align-self: flex-end;
   max-width: 520px;
-  padding: 12px 16px;
+  padding: 8px 16px;
   border-radius: var(--ch-radius-xl);
-  background: var(--ch-ivory-150);
+  border-bottom-right-radius: var(--ch-radius-tail);
+  background: var(--ch-bubble-mine-bg);
+  box-shadow: var(--ch-elevation-bubble-mine);
+  color: #f7fbf8;
   font: var(--ch-type-16);
   letter-spacing: var(--ch-track-16);
   overflow-wrap: anywhere;
@@ -57,41 +60,122 @@
 }
 .ch-th-at {
   font-weight: 600;
-  color: var(--ch-green-700);
+  color: var(--ch-hero-mint);
 }
 
-/* An answer: flat text on the page, the mark at its side, no bubble */
+/* An answer: CoachHelm's name over a raised card (Messages' incoming bubble, widened for figures), the wheel at its side */
 .ch-th-ans {
   display: flex;
-  gap: 16px;
+  align-items: flex-start;
+  gap: 12px;
 }
 .ch-th-mark {
   flex: none;
-  width: 30px;
-  height: 30px;
-  border-radius: var(--ch-radius-md);
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
   display: grid;
   place-items: center;
-  background: var(--ch-green-800);
-  color: var(--ch-hero-mint);
+  background: var(--ch-sheet-bg);
+  box-shadow: 0 0 0 var(--ch-hairline-w) var(--ch-border-hairline), var(--ch-elevation-bubble);
+}
+.ch-th-mk {
+  display: block;
+}
+.ch-th-mk-helm {
+  stroke: var(--ch-green-800);
+}
+.ch-th-mk-ball {
+  fill: var(--ch-green-800);
+}
+.ch-th-mk-face {
+  fill: var(--ch-brand-ivory);
+}
+.ch-th-mk-dimples {
+  fill: var(--ch-green-500);
+}
+/* Working: a soft ring breathes out from the wheel on the live pulse. Nothing else moves. */
+@keyframes ch-th-breathe {
+  0% {
+    box-shadow: 0 0 0 var(--ch-hairline-w) var(--ch-border-hairline), 0 0 0 0 var(--ch-green-ring);
+  }
+  70%,
+  100% {
+    box-shadow: 0 0 0 var(--ch-hairline-w) var(--ch-border-hairline), 0 0 0 9px rgb(21 90 57 / 0);
+  }
+}
+.ch-th-mark.is-working {
+  animation: ch-th-breathe var(--ch-dur-live) var(--ch-ease) infinite;
+}
+.ch-th-who {
+  font: var(--ch-type-13-strong);
+  color: var(--ch-text-secondary);
+}
+.ch-th-card {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  min-width: 0;
+  padding: 16px 20px;
+  border-radius: var(--ch-radius-xl);
+  border-top-left-radius: var(--ch-radius-tail);
+  background: var(--ch-sheet-bg);
+  box-shadow: 0 0 0 var(--ch-hairline-w) var(--ch-border-hairline), var(--ch-elevation-raised);
+}
+.ch-th--phone .ch-th-card {
+  padding: 12px 16px;
+}
+.ch-th-card .ch-th-fig {
+  background: var(--ch-bg-subtle);
+  box-shadow: 0 0 0 var(--ch-hairline-w) var(--ch-border-hairline);
 }
 .ch-th--phone .ch-th-ans {
   gap: 12px;
-}
-.ch-th--phone .ch-th-ans:not([aria-busy='true']) > .ch-th-mark {
-  display: none;
 }
 .ch-th-ans__body {
   flex: 1 1 auto;
   min-width: 0;
   display: flex;
   flex-direction: column;
-  gap: 16px;
+  gap: 8px;
 }
 .ch-th-think {
-  align-self: center;
-  font: var(--ch-type-14);
+  font: var(--ch-type-15);
+  letter-spacing: var(--ch-track-15);
   color: var(--ch-text-secondary);
+}
+/* The live words: a band of full ink travels across them on the shared shimmer (1.9 s). The text is always readable. */
+@keyframes ch-th-shine {
+  from {
+    background-position: 130% 0;
+  }
+  to {
+    background-position: -30% 0;
+  }
+}
+.ch-th-shine {
+  background: linear-gradient(100deg, var(--ch-text-tertiary) 30%, var(--ch-text-primary) 50%, var(--ch-text-tertiary) 70%) 130% 0 / 250% 100%;
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  animation: ch-th-shine var(--ch-dur-shimmer) linear infinite;
+}
+.ch-th-dot {
+  flex: none;
+  width: 8px;
+  height: 8px;
+  margin: 4px;
+  border-radius: 50%;
+  background: var(--ch-green-600);
+  animation: ch-th-dot var(--ch-dur-live) var(--ch-ease) infinite;
+}
+@keyframes ch-th-dot {
+  50% {
+    opacity: 0.35;
+  }
+}
+.ch-th-steps li.is-in {
+  animation: ch-th-in var(--ch-dur-quick) var(--ch-ease) backwards;
 }
 .ch-th-note {
   max-width: 68ch;
@@ -162,7 +246,7 @@
   background: none;
   cursor: pointer;
   font: var(--ch-type-13);
-  color: var(--ch-text-tertiary);
+  color: var(--ch-text-secondary);
 }
 /* A 44px reach around the 30px line (P013 D9). */
 .ch-th-work__btn::after {
@@ -698,6 +782,8 @@ a.ch-th-reads__r:focus-visible {
 @media (hover: hover) {
   .ch-th-pill:hover {
     background: var(--ch-ivory-50);
+    box-shadow: 0 0 0 var(--ch-hairline-w) var(--ch-green-600);
+    color: var(--ch-green-700);
   }
 }
 .ch-th-work__btn:focus-visible,

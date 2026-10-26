@@ -3,12 +3,16 @@
 ## 2026-10-24 — Standing's window and row counts (Clubhouse A+ rows 104, 105, 121)
 
 ```text
-Design package: none (Clubhouse A+ lane notes, rows 104, 105 and 121; owner decision 9)
+Design package: none (Clubhouse A+ lane notes, rows 104, 105 and 121; owner
+                decision 9)
 PR/commit: agent/aplus-standing (draft PR opened by the lead)
-Contract IDs: none (no new state; the hero and the rows carry the window and the count)
+Contract IDs: none (no new state; the hero and the rows carry the window and the
+              count)
 Actions: none
-Data impact: reads golf_player_standing_season (held migration 20261024151000); falls back to golf_player_standing until it is applied
-Held items: 20261024150000 (refresh queue), 20261024151000 (season table); owner applies
+Data impact: reads golf_player_standing_season (held migration 20261024151000);
+             falls back to golf_player_standing until it is applied
+Held items: 20261024150000 (refresh queue), 20261024151000 (season table); owner
+            applies
 ```
 
 ### Changed

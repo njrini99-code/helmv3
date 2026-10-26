@@ -268,6 +268,7 @@ in place.
 | CH-13850 | Ask: CoachHelm is working on an answer | What it is doing is announced politely (a live region), step by step | `Thread` | coachhelm-thread-ui.test › CH-13850 |
 | CH-13851 | Ask: The evidence control | A button that opens the evidence as a labelled dialog | `Evidence`, `EvidencePanel` | coachhelm-thread-ui.test › CH-13851 |
 | CH-13852 | Ask: Evidence drawn as a chart | View as table shows the same numbers as a table | `Evidence` | coachhelm-thread-ui.test › CH-13852 |
+| CH-13853 | Ask: A validated visual (strokes gained anatomy) | Each part of the game is a button that opens its sample; arrow keys move between them; View as table shows the same figures; a note carries no figure of its own. Drawn from the figures stored in the message, so a reload draws the same chart | `CoachVisualArtifact` | coachhelm-visual-artifact.test › CH-13853 |
 
 ## 139xx Network and UX
 

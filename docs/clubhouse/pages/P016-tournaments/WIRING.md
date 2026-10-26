@@ -18,8 +18,10 @@ Coach and player, by route (`/golf/dashboard/tournaments` and below):
 - `/history` — coach: history (`?mode=`, `adjust`).
 - `/compare` — coach: compare (`?a=`, `b`, `m`, `bench`, `split`, `event`).
 - `/links` — coach: the link inbox (placeholder).
-- `/new` and `/[id]/edit` — coach: the event form (placeholder; `?from=`
-  adopts a calendar event as round 1).
+- `/new` — coach: the new-event form (name, the calendar's shared tournament
+  fields, an optional qualifier; saves through `createTournamentFromCalendar`
+  and opens the desk; `?from=` prefills the name only).
+- `/[id]/edit` — coach: the edit form (placeholder).
 - `/[id]/lineup` — coach: the lineup builder (placeholder).
 - `/[id]/live` — coach: the live round (placeholder; held file 6).
 
