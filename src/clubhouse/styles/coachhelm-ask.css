@@ -429,8 +429,8 @@
 }
 @media (hover: hover) {
   .ch-ask-pill:hover {
-    color: var(--ch-text-primary);
-    box-shadow: 0 0 0 1px var(--ch-border-strong);
+    color: var(--ch-green-700);
+    box-shadow: 0 0 0 var(--ch-hairline-w) var(--ch-green-600);
   }
 }
 
@@ -518,11 +518,11 @@
   padding: 16px 16px 12px;
   border-radius: var(--ch-radius-xl);
   background: var(--ch-sheet-bg);
-  box-shadow: 0 0 0 1px var(--ch-border-control), var(--ch-elevation-raised);
+  box-shadow: 0 0 0 var(--ch-hairline-w) var(--ch-border-control), var(--ch-elevation-raised);
   transition: box-shadow var(--ch-dur-quick) var(--ch-ease);
 }
 .ch-ask-cmp__box:focus-within {
-  box-shadow: 0 0 0 1px var(--ch-green-ring), var(--ch-elevation-raised);
+  box-shadow: var(--ch-elevation-floating-focus);
 }
 /* The box draws the one focus ring; the field inside it must not draw a second. */
 .ch-ask-cmp__ta:focus-visible {
@@ -1240,7 +1240,7 @@ html:not([data-fw-theme='dark']) .ch-ask {
   grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: 12px;
   width: 100%;
-  max-width: 880px;
+  max-width: var(--ch-measure-reading);
   margin: 8px 0 0;
   padding: 0;
   list-style: none;
@@ -1256,7 +1256,7 @@ html:not([data-fw-theme='dark']) .ch-ask {
   border: 0;
   border-radius: var(--ch-radius-xl);
   background: var(--ch-sheet-bg);
-  box-shadow: 0 0 0 1px var(--ch-border-control), var(--ch-elevation-bubble);
+  box-shadow: 0 0 0 var(--ch-hairline-w) var(--ch-border-control), var(--ch-elevation-bubble);
   text-align: left;
   color: var(--ch-text-primary);
   cursor: pointer;
@@ -1283,7 +1283,7 @@ html:not([data-fw-theme='dark']) .ch-ask {
 }
 @media (hover: hover) {
   .ch-ask-cap:hover {
-    box-shadow: 0 0 0 1px var(--ch-border-strong), var(--ch-elevation-raised);
+    box-shadow: 0 0 0 var(--ch-hairline-w) var(--ch-border-strong), var(--ch-elevation-raised);
   }
 }
 .ch-ask-cap:focus-visible {
@@ -1302,7 +1302,7 @@ html:not([data-fw-theme='dark']) .ch-ask {
    hairline on hover. */
 .ch-ask-hist__new {
   background: var(--ch-accent);
-  box-shadow: 0 1px 2px rgb(11 58 37 / 0.2);
+  box-shadow: var(--ch-shadow-sm);
   color: var(--ch-text-on-accent);
 }
 .ch-ask-hist__new svg {
@@ -1328,9 +1328,8 @@ html:not([data-fw-theme='dark']) .ch-ask {
 }
 @media (hover: hover) {
   .ch-ask-cmp__chip:not(.is-set):hover,
-  .ch-ask-cmp__round:hover,
-  .ch-ask-pill:hover {
-    box-shadow: 0 0 0 1px var(--ch-green-600);
+  .ch-ask-cmp__round:hover {
+    box-shadow: 0 0 0 var(--ch-hairline-w) var(--ch-green-600);
     color: var(--ch-green-700);
   }
 }
@@ -1340,6 +1339,6 @@ html:not([data-fw-theme='dark']) .ch-ask {
 }
 @media (hover: hover) {
   .ch-ask-cap:hover {
-    box-shadow: 0 0 0 1px var(--ch-green-600), var(--ch-elevation-raised);
+    box-shadow: 0 0 0 var(--ch-hairline-w) var(--ch-green-600), var(--ch-elevation-raised);
   }
 }

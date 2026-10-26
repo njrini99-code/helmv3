@@ -4,7 +4,7 @@ import { useRef, useState, type KeyboardEvent } from 'react';
 import { Table2 } from 'lucide-react';
 import type { ValidatedVisualArtifact } from '@/lib/coachhelm/v3/chat/visuals/schema';
 import { sourceLine, type AskTable } from '../../../../data/coachhelm-chat-thread';
-import { changeTone, formatSG } from '../../../../lib/format';
+import { changeTone, formatFixed, formatSG } from '../../../../lib/format';
 import { haptic } from '../../../../lib/haptics';
 import { Icon } from '../../../../ui/Icon';
 import { DataTable } from '../Evidence';
@@ -14,7 +14,7 @@ const ANNOTATION_WORD = { measured: 'Measured', association: 'Pattern', hypothes
 /** "loses 0.9 strokes a round", for a screen reader: the sign said in words, the minus sign never read as a hyphen. */
 function spoken(value: number): string {
   const tone = changeTone(value, false, 1);
-  const n = Math.abs(value).toFixed(1);
+  const n = formatFixed(Math.abs(value), 1);
   return tone === 'is-gain' ? `gains ${n} strokes a round` : tone === 'is-loss' ? `loses ${n} strokes a round` : 'is even with the baseline';
 }
 
