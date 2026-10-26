@@ -1118,6 +1118,9 @@ export function tourFixture(state: ChTourPreviewState): ChTourFixture {
   };
   const formBase = {
     now,
+    teamId: 'team-preview',
+    timezone: 'America/New_York',
+    today: now.slice(0, 10),
     courses: Object.values(COURSES).map((c) => ({ id: c.id, name: c.name, tees: [c.tees] })),
     qualifiers: [
       { id: 'q-pinehurst', name: 'Pinehurst qualifier', status: 'closed' as const },

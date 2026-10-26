@@ -9,9 +9,9 @@ the live round and the player's own view.
 Where it stands: **wired behind `golf_tournaments_v1`** (off in production). The
 nine routes, the loaders, the server actions and the nav entry are in
 (WIRING.md); held migration 3 (the RPCs and the lineup guard) is written. Built
-views: the season home, the event desk with its review, history and compare; the
-event form, lineup builder, link inbox, live round and player's view still draw
-their placeholders, now with real data. Until the owner applies the held
+views: the season home, the event desk with its review, history and compare, and
+the new-event form; the edit-event form, lineup builder, link inbox, live round
+and player's view still draw their placeholders, now with real data. Until the owner applies the held
 migrations, every route says "Tournaments aren't set up yet" (CH-16302). The
 preview keeps every state at `/clubhouse-preview/tournaments` and
 `/clubhouse-preview/tournament-*`.
