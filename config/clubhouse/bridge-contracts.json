@@ -20792,7 +20792,7 @@
     "item": 1,
     "name": "A_VIEW_ITS_LANE_HASNT_BUILT_YET",
     "chCode": "CH-16301",
-    "meaning": "A view its lane hasn't built yet (the event form, lineup builder, link inbox, live round and player view; their routes are wired and draw it with real data)",
+    "meaning": "A view its lane hasn't built yet (the edit-event form, lineup builder, link inbox, live round and player view; their routes are wired and draw it with real data)",
     "status": "implemented",
     "catalog": "docs/clubhouse/catalog/tournaments.md"
   },

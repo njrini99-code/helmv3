@@ -881,6 +881,9 @@ export async function loadTournamentForm(ctx: TourCtx, eventId: string | null, f
       kind: 'ready',
       data: {
         now: ctx.now,
+        teamId: ctx.teamId,
+        timezone: info.team.timezone,
+        today: info.today,
         mode: eventId ? 'edit' : 'new',
         eventId,
         initial: draftOf(idx >= 0 ? read.events[idx]! : null, idx >= 0 ? read.raws[idx]!.t : null, givers),

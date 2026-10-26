@@ -1,3 +1,46 @@
 /* P016 Tournaments, event form and lineup builder (EventForm, LineupBuilder, FifthSpot, FormStrip).
    Owned by the lineup area (src/clubhouse/screens/tournaments/README.md). Every class here starts .ch-tour-lu-; shared
    pieces (the view root .ch-tour, the changed-wash) live in tournaments.css. Tokens only. */
+
+/* New event: the name, the shared tournament fields (.ch-tfx, tournament-fields.css), the qualifier, the receipt sentence
+   and the two actions. A single column on the page's measure; the phone stacks the actions, Create first. */
+.ch-tour-lu-form__body {
+  display: flex;
+  flex-direction: column;
+  gap: var(--ch-space-4);
+  max-width: 720px;
+}
+.ch-tour-lu-form__name,
+.ch-tour-lu-form__qual {
+  display: flex;
+  flex-direction: column;
+  gap: var(--ch-space-2);
+}
+.ch-tour-lu-form__lbl {
+  font: var(--ch-type-13-medium);
+  letter-spacing: var(--ch-track-13);
+  color: var(--ch-text-secondary);
+}
+.ch-tour-lu-form__input {
+  width: 100%;
+  height: 44px;
+}
+.ch-tour-lu-form__body .ch-tfx {
+  margin-top: 0;
+}
+.ch-tour-lu-form__receipt {
+  margin: 0;
+  font: var(--ch-type-14);
+  color: var(--ch-text-secondary);
+}
+.ch-tour-lu-form__actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: var(--ch-space-2);
+}
+.ch-tour-lu-form.is-phone .ch-tour-lu-form__actions {
+  flex-direction: column-reverse;
+}
+.ch-tour-lu-form.is-phone .ch-tour-lu-form__actions .ch-btn {
+  width: 100%;
+}
