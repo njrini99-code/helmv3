@@ -62,6 +62,10 @@ import {
   getPlayerWeakestAreas,
   getPuttingDistanceProfile,
   getRecentRounds,
+  getTeamRounds,
+  getTournaments,
+  getQualifiers,
+  TEAM_ROUND_TYPES,
   getTeamMetricRanking,
   getTeamOverview,
   getUpcomingEvents,
@@ -511,6 +515,31 @@ export function buildCoachTools({ sb, ctx, conversationId, writer, collect }: Bu
         last_n: z.number().int().min(1).max(20).default(5),
       }),
       execute: read('get_recent_rounds', (input) => getRecentRounds(sb, ctx, input)),
+    }),
+
+    get_team_rounds: tool({
+      description:
+        'Every active player\'s completed rounds in a window, optionally only practice, qualifier or tournament rounds (or one qualifier). Returns per-player round counts and average score, to par and putts, already computed, plus the most recent rounds. Use for any team-wide question about rounds, qualifier or tournament scoring, or practice results.',
+      inputSchema: z.object({
+        round_type: z.enum(TEAM_ROUND_TYPES).optional(),
+        qualifier_id: z.string().uuid().optional(),
+        since_days: z.number().int().min(1).max(365).default(60),
+      }),
+      execute: read('get_team_rounds', (input) => getTeamRounds(sb, ctx, input)),
+    }),
+
+    get_tournaments: tool({
+      description:
+        'The team\'s tournaments, most recent first: dates, status, lineup state, where the team finished, and each player\'s round totals.',
+      inputSchema: z.object({ limit: z.number().int().min(1).max(12).default(6) }),
+      execute: read('get_tournaments', (input) => getTournaments(sb, ctx, input)),
+    }),
+
+    get_qualifiers: tool({
+      description:
+        'The team\'s qualifiers, most recent first: dates, status, spots, and each player\'s standing (rounds, average score, average to par).',
+      inputSchema: z.object({ limit: z.number().int().min(1).max(8).default(5) }),
+      execute: read('get_qualifiers', (input) => getQualifiers(sb, ctx, input)),
     }),
 
     get_player_insights: tool({

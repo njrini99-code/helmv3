@@ -1156,6 +1156,212 @@ export async function getOpenTasks(sb: Sb, ctx: CoachChatContext): Promise<ToolE
   };
 }
 
+// ===========================================================================
+// Team-wide rounds, tournaments and qualifiers
+// ===========================================================================
+
+export const TEAM_ROUND_TYPES = ['practice', 'qualifier', 'tournament'] as const;
+export type TeamRoundType = (typeof TEAM_ROUND_TYPES)[number];
+
+const dayOffset = (iso: string, days: number): string => {
+  const d = new Date(`${iso}T12:00:00Z`);
+  d.setUTCDate(d.getUTCDate() + days);
+  return d.toISOString().slice(0, 10);
+};
+const mean = (xs: number[]): number | null =>
+  xs.length === 0 ? null : Math.round((xs.reduce((a, b) => a + b, 0) / xs.length) * 10) / 10;
+
+/**
+ * Every active player's completed rounds, filtered by type and window. `get_recent_rounds` answers for ONE player;
+ * "who played best in the qualifier" or "how did practice rounds go this month" needs the whole roster at once, with
+ * the averages computed here so the answer never has to do arithmetic the audit cannot trace.
+ */
+export async function getTeamRounds(
+  sb: Sb,
+  ctx: CoachChatContext,
+  input: { round_type?: TeamRoundType; qualifier_id?: string; since_days: number },
+): Promise<ToolEnvelope> {
+  const since = dayOffset(todayIsoInZone(ctx.timezone), -Math.min(Math.max(input.since_days, 1), 365));
+  let q = sb
+    .from('golf_rounds')
+    .select('id, player_id, round_date, course_name, round_type, qualifier_id, qualifier_round_number, total_score, score_to_par, total_putts')
+    .eq('team_id', ctx.team_id)
+    .eq('is_test', false)
+    .eq('status', 'completed')
+    .gte('round_date', since);
+  if (input.round_type) q = q.eq('round_type', input.round_type);
+  if (input.qualifier_id) q = q.eq('qualifier_id', input.qualifier_id);
+  const { data, error } = await q.order('round_date', { ascending: false }).limit(600);
+  if (error) return unavailableEnvelope('Could not read the team’s rounds.', 'The rounds query failed.');
+
+  const names = new Map(ctx.roster.map((p) => [p.id, p.name]));
+  const rounds = (data ?? []).filter((r) => names.has(r.player_id));
+  const byPlayer = new Map<string, typeof rounds>();
+  for (const r of rounds) byPlayer.set(r.player_id, [...(byPlayer.get(r.player_id) ?? []), r]);
+  const label = input.round_type ?? 'all';
+  return {
+    summary: `${rounds.length} completed ${label === 'all' ? '' : `${label} `}round${rounds.length === 1 ? '' : 's'} by ${byPlayer.size} player${byPlayer.size === 1 ? '' : 's'} since ${since}.`,
+    measurements: [],
+    series: [],
+    detail: {
+      since,
+      round_type: input.round_type ?? null,
+      round_count: rounds.length,
+      players: [...byPlayer.entries()]
+        .map(([id, rs]) => ({
+          player_id: id,
+          name: names.get(id),
+          rounds: rs.length,
+          avg_score: mean(rs.map((r) => num(r.total_score)).filter((n): n is number => n !== null)),
+          avg_to_par: mean(rs.map((r) => num(r.score_to_par)).filter((n): n is number => n !== null)),
+          avg_putts: mean(rs.map((r) => num(r.total_putts)).filter((n): n is number => n !== null)),
+        }))
+        .sort((a, b) => (a.avg_to_par ?? 99) - (b.avg_to_par ?? 99)),
+      recent_rounds: rounds.slice(0, 60).map((r) => ({
+        round_id: r.id,
+        player: names.get(r.player_id),
+        date: r.round_date,
+        course: r.course_name,
+        round_type: r.round_type,
+        qualifier_round: r.qualifier_round_number,
+        total_score: r.total_score,
+        to_par: r.score_to_par,
+        putts: r.total_putts,
+      })),
+    },
+    coverage: rounds.length === 0 ? 'empty' : rounds.length >= 600 ? 'partial' : 'complete',
+    coverage_note: rounds.length >= 600 ? 'Only the 600 most recent rounds were read; narrow the window for an exact answer.' : null,
+    as_of: nowIso(),
+  };
+}
+
+/** The team's tournaments: dates, status, where the team finished, and each lineup player's round totals. */
+export async function getTournaments(sb: Sb, ctx: CoachChatContext, input: { limit: number }): Promise<ToolEnvelope> {
+  const limit = Math.min(Math.max(input.limit, 1), 12);
+  const { data, error } = await sb
+    .from('golf_tournaments')
+    .select('id, name, start_date, end_date, event_kind, format, field_size, lineup_locked_at, lineup_published_at, official_at')
+    .eq('team_id', ctx.team_id)
+    .order('start_date', { ascending: false })
+    .limit(limit);
+  if (error) return unavailableEnvelope('Could not read the team’s tournaments.', 'The tournaments query failed.');
+  const events = data ?? [];
+  if (events.length === 0) {
+    return { summary: 'No tournaments are set up yet.', measurements: [], series: [], detail: { tournaments: [] }, coverage: 'empty', coverage_note: null, as_of: nowIso() };
+  }
+  const ids = events.map((e) => e.id);
+  const [field, rds] = await Promise.all([
+    sb.from('golf_tournament_field_teams').select('tournament_id, final_place, final_total').in('tournament_id', ids).eq('is_us', true),
+    sb.from('golf_tournament_rounds').select('tournament_id, round_number, round_event_id, status').in('tournament_id', ids),
+  ]);
+  if (field.error || rds.error) return unavailableEnvelope('Could not read the tournaments’ results.', 'The results query failed.');
+  const roundIds = (rds.data ?? []).map((r) => r.round_event_id);
+  const scores = roundIds.length
+    ? await sb.from('golf_tournament_player_rounds').select('round_event_id, player_id, entered_total, status').in('round_event_id', roundIds)
+    : { data: [], error: null };
+  if (scores.error) return unavailableEnvelope('Could not read the tournaments’ scores.', 'The scores query failed.');
+
+  const names = new Map(ctx.roster.map((p) => [p.id, p.name]));
+  const today = todayIsoInZone(ctx.timezone);
+  const roundOf = new Map((rds.data ?? []).map((r) => [r.round_event_id, r]));
+  return {
+    summary: `${events.length} tournament${events.length === 1 ? '' : 's'}, most recent first.`,
+    measurements: [],
+    series: [],
+    detail: {
+      tournaments: events.map((e) => {
+        const us = (field.data ?? []).find((f) => f.tournament_id === e.id);
+        const mine = (scores.data ?? []).filter((s) => roundOf.get(s.round_event_id)?.tournament_id === e.id);
+        return {
+          tournament_id: e.id,
+          name: e.name,
+          start_date: e.start_date,
+          end_date: e.end_date,
+          kind: e.event_kind,
+          format: e.format,
+          field_size: e.field_size,
+          status: e.official_at ? 'official' : e.end_date < today ? 'finished' : e.start_date <= today ? 'in progress' : 'upcoming',
+          lineup: e.lineup_published_at ? 'published' : e.lineup_locked_at ? 'locked' : 'draft',
+          team_place: us?.final_place ?? null,
+          team_total: us?.final_total ?? null,
+          rounds: (rds.data ?? []).filter((r) => r.tournament_id === e.id).sort((a, b) => a.round_number - b.round_number).map((r) => ({ round: r.round_number, status: r.status })),
+          player_rounds: mine
+            .map((s) => ({ player: names.get(s.player_id) ?? 'Former player', round: roundOf.get(s.round_event_id)?.round_number ?? null, total: s.entered_total, status: s.status }))
+            .sort((a, b) => String(a.player).localeCompare(String(b.player)) || (a.round ?? 0) - (b.round ?? 0)),
+        };
+      }),
+    },
+    coverage: 'complete',
+    coverage_note: null,
+    as_of: nowIso(),
+  };
+}
+
+/** The team's qualifiers with each player's rounds in them, ranked by scoring to par. */
+export async function getQualifiers(sb: Sb, ctx: CoachChatContext, input: { limit: number }): Promise<ToolEnvelope> {
+  const limit = Math.min(Math.max(input.limit, 1), 8);
+  const { data, error } = await sb
+    .from('golf_qualifiers')
+    .select('id, name, status, start_date, end_date, num_rounds, course_name, spots_available, selection_state')
+    .eq('team_id', ctx.team_id)
+    .eq('is_test', false)
+    .order('start_date', { ascending: false })
+    .limit(limit);
+  if (error) return unavailableEnvelope('Could not read the team’s qualifiers.', 'The qualifiers query failed.');
+  const quals = data ?? [];
+  if (quals.length === 0) {
+    return { summary: 'No qualifiers on record.', measurements: [], series: [], detail: { qualifiers: [] }, coverage: 'empty', coverage_note: null, as_of: nowIso() };
+  }
+  const { data: rows, error: roundsError } = await sb
+    .from('golf_rounds')
+    .select('qualifier_id, player_id, total_score, score_to_par, qualifier_round_number')
+    .in('qualifier_id', quals.map((x) => x.id))
+    .eq('is_test', false)
+    .eq('status', 'completed')
+    .limit(900);
+  if (roundsError) return unavailableEnvelope('Could not read the qualifiers’ rounds.', 'The rounds query failed.');
+
+  const names = new Map(ctx.roster.map((p) => [p.id, p.name]));
+  return {
+    summary: `${quals.length} qualifier${quals.length === 1 ? '' : 's'}, most recent first.`,
+    measurements: [],
+    series: [],
+    detail: {
+      qualifiers: quals.map((x) => {
+        const mine = (rows ?? []).filter((r) => r.qualifier_id === x.id && names.has(r.player_id));
+        const ids = [...new Set(mine.map((r) => r.player_id))];
+        return {
+          qualifier_id: x.id,
+          name: x.name,
+          status: x.status,
+          start_date: x.start_date,
+          end_date: x.end_date,
+          rounds_planned: x.num_rounds,
+          course: x.course_name,
+          spots: x.spots_available,
+          selection: x.selection_state,
+          standings: ids
+            .map((id) => {
+              const rs = mine.filter((r) => r.player_id === id);
+              const scoreList = rs.map((r) => num(r.total_score)).filter((n): n is number => n !== null);
+              return {
+                player: names.get(id),
+                rounds: rs.length,
+                total_strokes: scoreList.reduce((a, b) => a + b, 0),
+                avg_score: mean(scoreList),
+                avg_to_par: mean(rs.map((r) => num(r.score_to_par)).filter((n): n is number => n !== null)),
+              };
+            })
+            .sort((a, b) => (a.avg_to_par ?? 99) - (b.avg_to_par ?? 99)),
+        };
+      }),
+    },
+    coverage: 'complete',
+    coverage_note: null,
+    as_of: nowIso(),
+  };
+}
+
 /** Name → roster player, for plain-typed references. Never leaves the server. */
 export function resolvePlayerReference(
   ctx: CoachChatContext,
