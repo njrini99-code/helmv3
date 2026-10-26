@@ -539,6 +539,7 @@ CH-1842, 11825 CH-1816.
 | 131816 | CH-13860 | `PROFILE_A_SCREEN_READER_MOVES_THROUGH_THE` | Standing: a screen reader moves through How you play |
 | 131817 | CH-13880 | `STANDING_A_SCREEN_READER_MOVES_THROUGH_THE` | Standing: a screen reader moves through the page |
 | 131818 | CH-13890 | `DEEP_DIVE_A_SCREEN_READER_MOVES_THROUGH` | Deep dive: a screen reader moves through the page |
+| 131819 | CH-13853 | `ASK_A_VALIDATED_VISUAL` | Ask: A validated visual (strokes gained anatomy) |
 
 From the shell (P001): 11801 CH-1801, 11802 CH-1802, 11803 CH-1803,
 11804 CH-1804, 11805 CH-1805, 11806 CH-1806, 11807 CH-1807, 11808 CH-1808,

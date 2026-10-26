@@ -24,6 +24,7 @@ import { Tooltip } from '../../../ui/Tooltip';
 import { HelmMark } from '../../../shell/BrandWord';
 import { AskActionCard, AskReceiptCard } from './ActionCard';
 import { AskEvidenceView } from './Evidence';
+import { CoachVisualArtifact } from './visual/CoachVisualArtifact';
 import { AskProse, AskUserText } from './Prose';
 import '../../../styles/coachhelm-thread.css';
 
@@ -205,6 +206,7 @@ export function AskThread({ messages, busy, error, offline, phone, players, onAp
                 {turn.blocks.map((b) => {
                   if (b.kind === 'text') return <AskProse key={b.key} text={b.text} lead={b.lead} playersByName={playersByName} />;
                   if (b.kind === 'evidence') return <AskEvidenceView key={b.key} envelope={b.envelope} roster={players} />;
+                  if (b.kind === 'visual') return <CoachVisualArtifact key={b.key} artifact={b.artifact} />;
                   if (b.kind === 'receipt') return <AskReceiptCard key={b.key} receipt={b.receipt} onAskAgain={onSend} />;
                   const focus = focusForProposal(turn.id, b.view);
                   return (

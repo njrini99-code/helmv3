@@ -46,6 +46,8 @@ import { tool } from 'ai';
 import type { ToolSet, UIMessageStreamWriter } from 'ai';
 import { z } from 'zod';
 import { isFlagEnabled } from '@/lib/flags/is-enabled';
+import { compileVisual } from './visuals/compile';
+import { VisualSpec, type ValidatedVisualArtifact } from './visuals/schema';
 import type { SupabaseClient } from '@supabase/supabase-js';
 import type { Database } from '@/lib/types/database';
 import type { CoachChatContext } from './context';
@@ -129,6 +131,8 @@ export interface CoachChatDataParts extends Record<string, unknown> {
    * appears in this live connection instead of only on the next reload.
    */
   'grounding-flag': { note: string };
+  /** A validated, hashed scene the Ask thread draws (visuals/schema.ts). Written by show_visual, kept in the message. */
+  'visual-artifact': ValidatedVisualArtifact;
 }
 
 /** Coach-readable progress copy. Raw tool names never reach the interface. */
@@ -145,6 +149,7 @@ const PROGRESS_LABEL: Record<string, (input: Record<string, unknown>) => string>
   get_focus_areas: () => 'Checking active focus areas',
   get_upcoming_events: () => 'Checking the schedule and RSVPs',
   get_open_tasks: () => 'Checking outstanding tasks',
+  show_visual: () => 'Building the visual',
   find_player: () => 'Finding that player on your roster',
   create_recurring_practice: () => 'Preparing the practice dates',
   create_focus_area: () => 'Drafting a focus area',
@@ -225,11 +230,13 @@ export function buildCoachTools({ sb, ctx, conversationId, writer, collect }: Bu
     });
   };
 
-  const evidence = (toolName: string, envelope: ToolEnvelope) => {
+  /** Every read this turn, by the `evidence_ref` the model is handed, for show_visual to resolve. Server memory only. */
+  const evidenceByRef = new Map<string, ToolEnvelope>();
+  const evidence = (toolName: string, envelope: ToolEnvelope, ref?: string) => {
     writer.write({
       type: 'data-evidence',
       id: `evidence-${toolName}-${(progressId += 1)}`,
-      data: { tool: toolName, envelope },
+      data: { tool: toolName, envelope, ...(ref ? { ref } : {}) },
     });
   };
 
@@ -241,8 +248,11 @@ export function buildCoachTools({ sb, ctx, conversationId, writer, collect }: Bu
       // HELM_COACHHELM_TEAMS canary: every roster player is on ctx.team_id, so
       // the chat's team is the scope (no read).
       const envelope = await guarded(() => runWithCoachHelmTeams([ctx.team_id], () => run(input)), collect, name, ctx);
-      evidence(name, envelope);
-      return envelope;
+      const ref = `e${evidenceByRef.size + 1}`;
+      evidenceByRef.set(ref, envelope);
+      evidence(name, envelope, ref);
+      // The ref rides on what the model reads, so it can name this read to show_visual. It is not part of `detail`.
+      return { ...envelope, evidence_ref: ref };
     };
 
   /**
@@ -517,6 +527,28 @@ export function buildCoachTools({ sb, ctx, conversationId, writer, collect }: Bu
       }),
       execute: read('get_recent_rounds', (input) => getRecentRounds(sb, ctx, input)),
     }),
+
+    // Visual artifacts (docs/architecture/coachhelm-agentic-visuals.md): the model names a scene and the reads behind it;
+    // trusted code draws the figures. Not registered while coachhelm_visual_artifacts_v1 is off.
+    ...(isFlagEnabled('coachhelm_visual_artifacts_v1')
+      ? {
+          show_visual: tool({
+            description:
+              'Show the coach one interactive visual built from reads you already made in this answer. Use kind "sg_anatomy" after reading a single player\'s strokes gained legs (get_player_metrics with sg_tee, sg_approach, sg_around_green and sg_putting, and sg_total if you like), passing the evidence_ref of each read. You supply only the scene, a short title, those refs, and optionally which leg to open first and a few words about a leg; the figures are drawn from the reads and a note may not contain a number. If it is refused, say what you found in words instead.',
+            inputSchema: VisualSpec,
+            execute: async (input) => {
+              progress('show_visual', {});
+              const result = compileVisual(input, evidenceByRef);
+              if (!result.ok) return { status: 'refused', reason: result.reason, message: result.message };
+              writer.write({ type: 'data-visual-artifact', id: `visual-${result.artifact.artifactId}`, data: result.artifact });
+              return {
+                status: 'shown',
+                message: `Shown to the coach: ${result.artifact.title}. It plots ${result.artifact.legs.map((l) => l.label).join(', ')} for ${result.artifact.entity.label} from the reads you named. Do not repeat its figures in a table; add the one thing it does not say.`,
+              };
+            },
+          }),
+        }
+      : {}),
 
     get_team_rounds: tool({
       description:

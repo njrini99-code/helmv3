@@ -232,6 +232,7 @@ document and run `git rev-list --count <sha>..HEAD -- <path>`.
 | Path | Lifecycle | Routed | AUTOGEN | Authority? | Dead |
 | --- | --- | --- | --- | --- | --- |
 | `docs/architecture/USER_ROLE_DATA_OWNERSHIP.md` | current | yes | - | - | - |
+| `docs/architecture/coachhelm-agentic-visuals.md` | current | - | - | - | - |
 | `docs/architecture/system-maps/helm-bug-risk-register.md` | current | - | - | yes | - |
 | `docs/architecture/system-maps/helm-database-map.md` | current | - | - | - | - |
 | `docs/business/00-business-context.md` | current | - | - | yes | - |
@@ -1207,6 +1208,7 @@ them would bury everything above.
 | `docs/clubhouse/pages/P013-coachhelm/changes/2026-10-24-momentum-own-error.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P013-coachhelm/changes/2026-10-24-standing-season-window.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P013-coachhelm/changes/2026-10-25-ask-thread-redesign.md` | current | - | - | - | - |
+| `docs/clubhouse/pages/P013-coachhelm/changes/2026-10-25-visual-artifact.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P014-recruiting/CHANGELOG.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P014-recruiting/CONTRACT.md` | current | - | - | yes | - |
 | `docs/clubhouse/pages/P014-recruiting/DESIGN.md` | current | - | - | - | - |

@@ -174,7 +174,7 @@ W26 only deletes v2 **code files** (`v2/reasoning/*`, `v2/nlg/*`, the 9 v2 gener
 
 ### AI / LLM
 - Claude writes prose at **exactly 3 surfaces**: round-review summary + key takeaway, hero insight on player dashboard, coach chat.
-- **Coach chat scope**: Q&A + can create goals from chat (with confirmation).
+- **Coach chat scope**: Q&A with grounded interactive visuals, plus goals, focus areas, tasks, team announcements and recurring practices created from chat, each only after the coach confirms. Widened 2026-10-25 by the owner (`docs/architecture/coachhelm-agentic-visuals.md`); every new visual and write ships behind a flag.
 - **Player chat deferred to v2.**
 - Weekly recap: **deterministic templates, no AI opener.**
 

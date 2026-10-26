@@ -203,6 +203,42 @@ export const ASK_MSGS_ANSWER: UIMessage[] = [
   ]),
 ];
 
+/** A validated strokes gained anatomy (visuals/schema.ts): the figures are stored in the message, the legs add to the total. */
+const SG_LEG = { sampleSize: 8, sampleUnit: 'rounds', coverage: 'complete', coverageNote: null, source: 'stats cache', method: 'sg v1', asOf: '2026-10-21T00:00:00.000Z' } as const;
+export const ASK_VISUAL_SG = {
+  artifactId: 'va-preview0001',
+  schemaVersion: 1,
+  kind: 'sg_anatomy',
+  title: 'Where Jonah gains and loses strokes',
+  intent: 'explain',
+  entity: { id: 'p-jonah', label: 'Jonah Okafor' },
+  window: { start: '2026-09-01', end: '2026-10-20' },
+  sourceAsOf: '2026-10-21T00:00:00.000Z',
+  coverage: 'complete',
+  legs: [
+    { ...SG_LEG, metricId: 'sg_tee', label: 'Off the tee', value: 0.2 },
+    { ...SG_LEG, metricId: 'sg_approach', label: 'Approach', value: -0.9 },
+    { ...SG_LEG, metricId: 'sg_around_green', label: 'Around the green', value: 0.1 },
+    { ...SG_LEG, metricId: 'sg_putting', label: 'Putting', value: -0.3 },
+  ],
+  total: { value: -0.9, sampleSize: 8, reconciles: true },
+  highlightedMetricId: 'sg_approach',
+  annotations: [{ metricId: 'sg_approach', kind: 'hypothesis', label: 'Worth testing against his approach distances before changing anything' }],
+  evidenceRefs: ['e1'],
+  dataHash: 'preview',
+  createdAt: '2026-10-25T12:00:00.000Z',
+};
+export const ASK_MSGS_VISUAL: UIMessage[] = [
+  user('u1', 'Where is Jonah losing strokes?'),
+  assistant('a1', [
+    step(1, 'Reading recorded statistics', 'get_player_metrics'),
+    step(2, 'Building the visual'),
+    text("Jonah's biggest recorded loss is on approach. Putting is the other leg below the baseline."),
+    { type: 'data-visual-artifact', id: 'visual-va-preview0001', data: ASK_VISUAL_SG },
+    text('The approach figure is the one to check against his distances first.'),
+  ]),
+];
+
 /** Working: two steps announced, nothing answered yet. */
 export const ASK_MSGS_WORKING: UIMessage[] = [user('u1', Q1), assistant('a1', [step(1, 'Reading your roster'), step(2, 'Reading the last 38 recorded rounds', 'get_recent_rounds'), step(3, 'Comparing putting by distance', 'get_putting_distance_profile')])];
 
@@ -296,6 +332,7 @@ export const ASK_ERRORS = {
 /** A thread by preview state name (`?state=`). */
 export const ASK_THREAD_STATES: Record<string, { messages: UIMessage[]; busy?: boolean; error?: keyof typeof ASK_ERRORS; focus?: EvidenceFocus }> = {
   answer: { messages: ASK_MSGS_ANSWER },
+  visual: { messages: ASK_MSGS_VISUAL },
   thinking: { messages: ASK_MSGS_THINKING, busy: true },
   working: { messages: ASK_MSGS_WORKING, busy: true },
   action: { messages: ASK_MSGS_ACTION, focus: ASK_FOCUS_JONAH },

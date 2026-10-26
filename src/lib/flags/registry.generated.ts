@@ -506,6 +506,23 @@ export const FLAG_REGISTRY: readonly FlagDefinition[] = [
     cleanup_plan: "Turn on only after the owner applies 20261020120000_golf_focus_area_prescription.sql (HELD.md row; the code treats the missing columns as not available, so the order is not a correctness issue) and runs npm run test:rls. Remove the flag and its checks once the Layout 5 verdict view ships and the verdict job has run stably for a month.",
   },
   {
+    feature_id: "coachhelm_visual_artifacts_v1",
+    owner: "golf/coachhelm",
+    purpose: "Registers coach chat's show_visual tool. On, an answer about a player's strokes gained can carry one validated, interactive strokes-gained anatomy (every plotted value traced to a read this turn, kept in the message so a reload shows the same figures). Off: no tool, no artifact part; the generic evidence blocks draw as before.",
+    type: "release",
+    status: "active",
+    created_at: "2026-10-25",
+    expires_at: "2027-03-31",
+    default: false,
+    environment: {
+      production: false,
+      preview: true,
+      development: true,
+    },
+    kill_switch_behavior: null,
+    cleanup_plan: "The owner turns it on after reviewing the phase 1 report. Turning it off stops new artifacts; stored ones stay in their messages and a restored thread still draws them (restore.ts replays the part whatever the flag says).",
+  },
+  {
     feature_id: "golf_clubhouse_front_door",
     owner: "golf/clubhouse",
     purpose: "Draws the Clubhouse entrance pages (the first page a visitor sees, the greeting after it, and the pages that bring a new person in) in place of the current ones. Presentation only: the same server actions and redirects sit behind both.",

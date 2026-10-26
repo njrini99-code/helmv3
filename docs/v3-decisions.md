@@ -32,7 +32,7 @@
 | Decision | Status |
 |---|---|
 | Claude writes prose at **exactly 3 surfaces**: round-review summary + key takeaway, hero insight on player dashboard, coach chat. | ✅ locked |
-| Coach chat scope: Q&A + can create goals from chat (with confirmation). | ✅ locked |
+| Coach chat scope: Q&A with grounded interactive visuals, and it creates goals, focus areas, tasks, team announcements and recurring practices from chat, each only after the coach confirms. Widened 2026-10-25 by the owner (see `docs/architecture/coachhelm-agentic-visuals.md`); every new visual and write ships behind a flag. | ✅ locked |
 | Player chat **deferred to v2**. | ✅ locked |
 | Weekly recap: deterministic templates with one LLM-composed paragraph. No AI opener on player surfaces. | ✅ locked |
 | Existing round reviews NOT auto-rewritten by v3 LLM. Refresh requires explicit user action. | ✅ locked |

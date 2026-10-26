@@ -18349,6 +18349,17 @@
     "catalog": "docs/clubhouse/catalog/coachhelm.md"
   },
   {
+    "id": 131819,
+    "page": "P013",
+    "category": 18,
+    "item": 19,
+    "name": "ASK_A_VALIDATED_VISUAL",
+    "chCode": "CH-13853",
+    "meaning": "Ask: A validated visual (strokes gained anatomy)",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/coachhelm.md"
+  },
+  {
     "id": 131901,
     "page": "P013",
     "category": 19,

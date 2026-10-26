@@ -1284,3 +1284,159 @@ a.ch-th-reads__r:focus-visible {
     color: var(--ch-green-700);
   }
 }
+
+/* A validated visual (visuals/schema.ts): strokes gained anatomy. Final geometry on first paint; only a selection moves
+   anything, and it moves opacity alone on the base beat. Gains green, losses amber, the zero line a hairline. */
+.ch-th-va {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin: 0;
+  padding: 16px 20px;
+  border-radius: var(--ch-radius-xl);
+  background: var(--ch-bg-subtle);
+  box-shadow: 0 0 0 var(--ch-hairline-w) var(--ch-border-hairline);
+}
+.ch-th--phone .ch-th-va {
+  padding: 12px 16px;
+  border-radius: var(--ch-radius-lg);
+}
+.ch-th-va__head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+.ch-th-va__title {
+  font: var(--ch-type-16-strong);
+  letter-spacing: var(--ch-track-16);
+  color: var(--ch-text-primary);
+}
+.ch-th-va__sub {
+  margin: 2px 0 0;
+  font: var(--ch-type-13);
+  letter-spacing: var(--ch-track-13);
+  color: var(--ch-text-secondary);
+}
+.ch-th-va__chip {
+  margin-left: 8px;
+  padding: 1px 8px;
+  border-radius: 999px;
+  background: var(--ch-bg-surface);
+  box-shadow: 0 0 0 1px var(--ch-border-control);
+  font: var(--ch-type-12-medium);
+  color: var(--ch-text-primary);
+}
+.ch-th-va__chart {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.ch-th-va__row {
+  display: grid;
+  grid-template-columns: 132px minmax(0, 1fr) 52px;
+  align-items: center;
+  gap: 12px;
+  min-height: 44px;
+  padding: 0 8px;
+  border: 0;
+  border-radius: var(--ch-radius-md);
+  background: none;
+  text-align: left;
+  color: var(--ch-text-primary);
+  cursor: pointer;
+}
+.ch-th--phone .ch-th-va__row {
+  grid-template-columns: 88px minmax(0, 1fr) 44px;
+  gap: 8px;
+}
+.ch-th-va__row.is-on {
+  background: var(--ch-ledger-row-hover);
+}
+@media (hover: hover) {
+  .ch-th-va__row:hover {
+    background: var(--ch-ledger-row-hover);
+  }
+}
+.ch-th-va__row:focus-visible {
+  outline: 2px solid var(--ch-border-focus);
+  outline-offset: 1px;
+}
+.ch-th-va__label {
+  font: var(--ch-type-14);
+  letter-spacing: var(--ch-track-14);
+}
+.ch-th-va__row.is-on .ch-th-va__label {
+  font: var(--ch-type-14-strong);
+}
+.ch-th-va__track {
+  position: relative;
+  height: 16px;
+  border-radius: var(--ch-radius-sm);
+  background: var(--ch-ivory-150);
+}
+.ch-th-va__track::after {
+  content: '';
+  position: absolute;
+  inset: 0 auto 0 50%;
+  width: 1px;
+  background: var(--ch-ink-rule);
+}
+.ch-th-va__bar {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  border-radius: var(--ch-radius-sm);
+  transition: opacity var(--ch-dur-base) var(--ch-ease);
+}
+.ch-th-va__row[data-sign='gain'] .ch-th-va__bar {
+  left: 50%;
+  background: var(--ch-chart-gain);
+}
+.ch-th-va__row[data-sign='loss'] .ch-th-va__bar {
+  right: 50%;
+  background: var(--ch-chart-loss);
+}
+.ch-th-va__row.is-quiet .ch-th-va__bar {
+  opacity: 0.45;
+}
+.ch-th-va__val {
+  text-align: right;
+  font: var(--ch-type-14-strong);
+}
+.ch-th-va__detail,
+.ch-th-va__hint,
+.ch-th-va__total {
+  margin: 0;
+  font: var(--ch-type-14);
+  letter-spacing: var(--ch-track-14);
+  color: var(--ch-text-primary);
+}
+.ch-th-va__hint {
+  color: var(--ch-text-secondary);
+}
+.ch-th-va__total {
+  color: var(--ch-text-secondary);
+}
+.ch-th-va__detail {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.ch-th-va__note {
+  margin: 0;
+  color: var(--ch-text-secondary);
+}
+.ch-th-va__note[data-kind='hypothesis'] {
+  font-style: italic;
+}
+.ch-th-va__kind {
+  margin-right: 4px;
+  padding: 1px 8px;
+  border-radius: 999px;
+  background: var(--ch-bg-surface);
+  box-shadow: 0 0 0 1px var(--ch-border-control);
+  font: var(--ch-type-12-medium);
+  font-style: normal;
+  color: var(--ch-text-primary);
+}

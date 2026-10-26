@@ -28,6 +28,9 @@ import type { CoachChatContext } from './context';
 
 const READ_ONLY_PREFIXES = ['find_', 'get_', 'compare_'] as const;
 const MUTATION_PREFIXES = ['create_', 'update_', 'delete_', 'remove_', 'send_'] as const;
+// A `show_` tool only puts something on the coach's screen (a validated visual drawn from reads already made). It writes
+// to the stream, never to the domain, so it is neither gated nor allowed to look like a mutation.
+const DISPLAY_ONLY_PREFIXES = ['show_'] as const;
 
 function ctx(): CoachChatContext {
   return {
@@ -68,7 +71,7 @@ describe('CoachChat tool confirmation gate', () => {
   });
 
   it('never gates a read tool, which would make the agent ask permission to look something up', () => {
-    const reads = toolNames().filter((n) => READ_ONLY_PREFIXES.some((p) => n.startsWith(p)));
+    const reads = toolNames().filter((n) => [...READ_ONLY_PREFIXES, ...DISPLAY_ONLY_PREFIXES].some((p) => n.startsWith(p)));
     const gated = reads.filter((n) => isConfirmRequired(n));
     expect(gated, `read tools should not require confirmation: ${gated.join(', ')}`).toEqual([]);
   });
@@ -91,6 +94,7 @@ describe('CoachChat tool confirmation gate', () => {
     const unclassified = toolNames().filter(
       (n) =>
         !READ_ONLY_PREFIXES.some((p) => n.startsWith(p)) &&
+        !DISPLAY_ONLY_PREFIXES.some((p) => n.startsWith(p)) &&
         !MUTATION_PREFIXES.some((p) => n.startsWith(p)),
     );
     expect(

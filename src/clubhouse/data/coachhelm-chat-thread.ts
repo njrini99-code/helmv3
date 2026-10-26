@@ -1,6 +1,7 @@
 import type { UIMessage } from 'ai';
 import type { ActionProposal, ActionReceipt } from '@/lib/coachhelm/v3/chat/action-types';
 import type { Measurement, MeasurementSeries, ToolEnvelope } from '@/lib/coachhelm/v3/chat/provenance';
+import { ValidatedVisualArtifact } from '@/lib/coachhelm/v3/chat/visuals/schema';
 import { changeTone, formatFixed, formatSG, MINUS, NO_DATA } from '../lib/format';
 import { plural } from '../lib/plural';
 
@@ -102,7 +103,8 @@ export type AskBlock =
   | { kind: 'text'; key: string; text: string; lead: boolean }
   | { kind: 'evidence'; key: string; envelope: ToolEnvelope }
   | { kind: 'proposal'; key: string; view: AskProposalView }
-  | { kind: 'receipt'; key: string; receipt: ActionReceipt };
+  | { kind: 'receipt'; key: string; receipt: ActionReceipt }
+  | { kind: 'visual'; key: string; artifact: ValidatedVisualArtifact };
 
 export interface AskUserTurn {
   role: 'user';
@@ -295,6 +297,14 @@ export function buildAssistantTurn(message: UIMessage, ctx: { isLast: boolean; b
     .filter((e): e is ToolEnvelope => Boolean(e));
   const paired = pairProposals(parts, ctx);
   const active = ctx.isLast && ctx.busy;
+  // A validated visual stands in for the generic blocks of the reads it was built from: the same figures drawn twice is noise.
+  const artifacts = new Map<string, ValidatedVisualArtifact>();
+  parts.forEach((p, i) => {
+    if (p.type !== 'data-visual-artifact') return;
+    const parsed = ValidatedVisualArtifact.safeParse(dataOf<unknown>(p));
+    if (parsed.success) artifacts.set(String(p.id ?? `v-${i}`), parsed.data);
+  });
+  const coveredRefs = new Set([...artifacts.values()].flatMap((a) => a.evidenceRefs));
 
   const actionBlocks = (): AskBlock[] => {
     const out: AskBlock[] = [];
@@ -328,8 +338,11 @@ export function buildAssistantTurn(message: UIMessage, ctx: { isLast: boolean; b
       lead = false;
       texts.push(plainText(text));
     } else if (p.type === 'data-evidence') {
-      const envelope = dataOf<{ envelope?: ToolEnvelope }>(p)?.envelope;
-      if (envelope) blocks.push({ kind: 'evidence', key: `e-${String(p.id ?? i)}`, envelope });
+      const data = dataOf<{ envelope?: ToolEnvelope; ref?: string }>(p);
+      if (data?.envelope && !(data.ref && coveredRefs.has(data.ref))) blocks.push({ kind: 'evidence', key: `e-${String(p.id ?? i)}`, envelope: data.envelope });
+    } else if (p.type === 'data-visual-artifact') {
+      const artifact = artifacts.get(String(p.id ?? `v-${i}`));
+      if (artifact) blocks.push({ kind: 'visual', key: `v-${artifact.artifactId}`, artifact });
     } else if (p.type === 'data-action-proposal') {
       const view = paired.get(i);
       if (view) blocks.push({ kind: 'proposal', key: `p-${view.key}`, view });

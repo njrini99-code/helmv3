@@ -31,6 +31,8 @@ const REPLAYABLE = new Set([
   'text',
   'step-start',
   'data-evidence',
+  // A validated visual artifact carries its own figures and hash, so a reload draws the same chart.
+  'data-visual-artifact',
   'data-action-proposal',
   'data-action-receipt',
   // The live grounding flag (route.ts's `execute`, N15) is written into the
