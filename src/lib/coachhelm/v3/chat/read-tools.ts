@@ -20,6 +20,7 @@ import type { SupabaseClient } from '@supabase/supabase-js';
 import type { Database } from '@/lib/types/database';
 import { applyInsightVisibility } from '@/lib/coachhelm/v3/insight-visibility';
 import { fetchAllRowsResult } from '@/lib/supabase/fetch-all-rows';
+import { chunkIds } from '@/lib/supabase/chunk-ids';
 import {
   mapRowToRankable,
   rankEvidenceInsights,
@@ -1168,6 +1169,19 @@ const dayOffset = (iso: string, days: number): string => {
   d.setUTCDate(d.getUTCDate() + days);
   return d.toISOString().slice(0, 10);
 };
+/** One `.in()` read per chunk of ids, merged: PostgREST filters travel in the URL, so a long id list must not go in one. */
+async function readIn<T>(
+  ids: readonly string[],
+  read: (chunk: string[]) => PromiseLike<{ data: T[] | null; error: unknown }>,
+): Promise<{ data: T[]; error: unknown }> {
+  const out: T[] = [];
+  for (const chunk of chunkIds(ids)) {
+    const { data, error } = await read(chunk);
+    if (error) return { data: [], error };
+    out.push(...(data ?? []));
+  }
+  return { data: out, error: null };
+}
 const mean = (xs: number[]): number | null =>
   xs.length === 0 ? null : Math.round((xs.reduce((a, b) => a + b, 0) / xs.length) * 10) / 10;
 
@@ -1182,20 +1196,24 @@ export async function getTeamRounds(
   input: { round_type?: TeamRoundType; qualifier_id?: string; since_days: number },
 ): Promise<ToolEnvelope> {
   const since = dayOffset(todayIsoInZone(ctx.timezone), -Math.min(Math.max(input.since_days, 1), 365));
-  let q = sb
-    .from('golf_rounds')
-    .select('id, player_id, round_date, course_name, round_type, qualifier_id, qualifier_round_number, total_score, score_to_par, total_putts')
-    .eq('team_id', ctx.team_id)
-    .eq('is_test', false)
-    .eq('status', 'completed')
-    .gte('round_date', since);
-  if (input.round_type) q = q.eq('round_type', input.round_type);
-  if (input.qualifier_id) q = q.eq('qualifier_id', input.qualifier_id);
-  const { data, error } = await q.order('round_date', { ascending: false }).limit(600);
+  // Scoped by the roster's player ids, like get_recent_rounds: a round's own team_id also counts a former player's
+  // rounds and misses a player's rounds logged under another team, so the two tools would disagree.
+  const { data, error } = await readIn(ctx.roster.map((p) => p.id), (ids) => {
+    let q = sb
+      .from('golf_rounds')
+      .select('id, player_id, round_date, course_name, round_type, qualifier_id, qualifier_round_number, total_score, score_to_par, total_putts')
+      .in('player_id', ids)
+      .eq('is_test', false)
+      .eq('status', 'completed')
+      .gte('round_date', since);
+    if (input.round_type) q = q.eq('round_type', input.round_type);
+    if (input.qualifier_id) q = q.eq('qualifier_id', input.qualifier_id);
+    return q.order('round_date', { ascending: false }).limit(600);
+  });
   if (error) return unavailableEnvelope('Could not read the team’s rounds.', 'The rounds query failed.');
 
   const names = new Map(ctx.roster.map((p) => [p.id, p.name]));
-  const rounds = (data ?? []).filter((r) => names.has(r.player_id));
+  const rounds = data.sort((a, b) => String(b.round_date).localeCompare(String(a.round_date))).slice(0, 600);
   const byPlayer = new Map<string, typeof rounds>();
   for (const r of rounds) byPlayer.set(r.player_id, [...(byPlayer.get(r.player_id) ?? []), r]);
   const label = input.round_type ?? 'all';
@@ -1251,14 +1269,12 @@ export async function getTournaments(sb: Sb, ctx: CoachChatContext, input: { lim
   }
   const ids = events.map((e) => e.id);
   const [field, rds] = await Promise.all([
-    sb.from('golf_tournament_field_teams').select('tournament_id, final_place, final_total').in('tournament_id', ids).eq('is_us', true),
-    sb.from('golf_tournament_rounds').select('tournament_id, round_number, round_event_id, status').in('tournament_id', ids),
+    readIn(ids, (c) => sb.from('golf_tournament_field_teams').select('tournament_id, final_place, final_total').in('tournament_id', c).eq('is_us', true)),
+    readIn(ids, (c) => sb.from('golf_tournament_rounds').select('tournament_id, round_number, round_event_id, status').in('tournament_id', c)),
   ]);
   if (field.error || rds.error) return unavailableEnvelope('Could not read the tournaments’ results.', 'The results query failed.');
   const roundIds = (rds.data ?? []).map((r) => r.round_event_id);
-  const scores = roundIds.length
-    ? await sb.from('golf_tournament_player_rounds').select('round_event_id, player_id, entered_total, status').in('round_event_id', roundIds)
-    : { data: [], error: null };
+  const scores = await readIn(roundIds, (c) => sb.from('golf_tournament_player_rounds').select('round_event_id, player_id, entered_total, status').in('round_event_id', c));
   if (scores.error) return unavailableEnvelope('Could not read the tournaments’ scores.', 'The scores query failed.');
 
   const names = new Map(ctx.roster.map((p) => [p.id, p.name]));
@@ -1312,13 +1328,10 @@ export async function getQualifiers(sb: Sb, ctx: CoachChatContext, input: { limi
   if (quals.length === 0) {
     return { summary: 'No qualifiers on record.', measurements: [], series: [], detail: { qualifiers: [] }, coverage: 'empty', coverage_note: null, as_of: nowIso() };
   }
-  const { data: rows, error: roundsError } = await sb
-    .from('golf_rounds')
-    .select('qualifier_id, player_id, total_score, score_to_par, qualifier_round_number')
-    .in('qualifier_id', quals.map((x) => x.id))
-    .eq('is_test', false)
-    .eq('status', 'completed')
-    .limit(900);
+  const { data: rows, error: roundsError } = await readIn(
+    quals.map((x) => x.id),
+    (c) => sb.from('golf_rounds').select('qualifier_id, player_id, total_score, score_to_par, qualifier_round_number').in('qualifier_id', c).eq('is_test', false).eq('status', 'completed').limit(900),
+  );
   if (roundsError) return unavailableEnvelope('Could not read the qualifiers’ rounds.', 'The rounds query failed.');
 
   const names = new Map(ctx.roster.map((p) => [p.id, p.name]));
@@ -1328,7 +1341,7 @@ export async function getQualifiers(sb: Sb, ctx: CoachChatContext, input: { limi
     series: [],
     detail: {
       qualifiers: quals.map((x) => {
-        const mine = (rows ?? []).filter((r) => r.qualifier_id === x.id && names.has(r.player_id));
+        const mine = rows.filter((r) => r.qualifier_id === x.id && names.has(r.player_id));
         const ids = [...new Set(mine.map((r) => r.player_id))];
         return {
           qualifier_id: x.id,

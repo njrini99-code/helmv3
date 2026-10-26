@@ -1,6 +1,8 @@
 import { describe, expect, it, vi } from 'vitest';
 import type { CoachChatContext } from '../context';
 import { getQualifiers, getTeamRounds, getTournaments } from '../read-tools';
+import { collectScopedNumbers } from '../provenance';
+import { computeTurnVerdict } from '../verdict';
 
 type Result = { data?: unknown; error?: unknown };
 
@@ -30,10 +32,10 @@ const ctx: CoachChatContext = {
 };
 
 describe('team-wide CoachHelm read tools', () => {
-  it('get_team_rounds averages each player, ranks by to par and drops players off the roster', async () => {
+  it('get_team_rounds averages each player and ranks by to par', async () => {
     const round = (player_id: string, to: number, score: number) => ({ id: `${player_id}${score}`, player_id, round_date: '2026-10-10', course_name: 'Oak', round_type: 'qualifier', qualifier_id: 'q1', qualifier_round_number: 1, total_score: score, score_to_par: to, total_putts: 30 });
     const env = await getTeamRounds(
-      sbWith({ golf_rounds: [{ data: [round('p1', 4, 76), round('p1', 2, 74), round('p2', 1, 73), round('gone', -5, 67)] }] }),
+      sbWith({ golf_rounds: [{ data: [round('p1', 4, 76), round('p1', 2, 74), round('p2', 1, 73)] }] }),
       ctx,
       { round_type: 'qualifier', since_days: 30 },
     );
@@ -79,5 +81,35 @@ describe('team-wide CoachHelm read tools', () => {
     );
     const q = (env.detail as { qualifiers: Array<{ standings: Array<{ player: string; avg_to_par: number }> }> }).qualifiers[0]!;
     expect(q.standings.map((s) => s.player)).toEqual(['Blake', 'Avery']);
+  });
+
+  it('an answer written from these envelopes passes the numeric audit', async () => {
+    const round = (player_id: string, to: number, score: number) => ({ id: `${player_id}${score}`, player_id, round_date: '2026-10-10', course_name: 'Oak', round_type: 'qualifier', qualifier_id: 'q1', qualifier_round_number: 1, total_score: score, score_to_par: to, total_putts: 30 });
+    const env = await getTeamRounds(sbWith({ golf_rounds: [{ data: [round('p1', 4, 76), round('p1', 2, 74), round('p2', 1, 73)] }] }), ctx, { round_type: 'qualifier', since_days: 30 });
+    const verdict = computeTurnVerdict({
+      streamComplete: true,
+      text: 'Blake averaged 73 over 1 qualifier round, 1 over par. Avery averaged 75 over 2 rounds, 3 over par.',
+      measurements: env.measurements,
+      series: env.series,
+      detailNumbers: collectScopedNumbers(env.detail),
+      players: ctx.roster,
+      timezone: ctx.timezone,
+    });
+    expect(verdict).toEqual({ outcome: 'accepted' });
+  });
+
+  it('a made-up figure about the same players is still rejected', async () => {
+    const round = (player_id: string, to: number, score: number) => ({ id: `${player_id}${score}`, player_id, round_date: '2026-10-10', course_name: 'Oak', round_type: 'qualifier', qualifier_id: 'q1', qualifier_round_number: 1, total_score: score, score_to_par: to, total_putts: 30 });
+    const env = await getTeamRounds(sbWith({ golf_rounds: [{ data: [round('p2', 1, 73)] }] }), ctx, { since_days: 30 });
+    const verdict = computeTurnVerdict({
+      streamComplete: true,
+      text: 'Blake averaged 68 in the qualifier.',
+      measurements: env.measurements,
+      series: env.series,
+      detailNumbers: collectScopedNumbers(env.detail),
+      players: ctx.roster,
+      timezone: ctx.timezone,
+    });
+    expect(verdict.outcome).toBe('rejected');
   });
 });

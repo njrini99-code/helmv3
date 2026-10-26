@@ -45,6 +45,7 @@
 import { tool } from 'ai';
 import type { ToolSet, UIMessageStreamWriter } from 'ai';
 import { z } from 'zod';
+import { isFlagEnabled } from '@/lib/flags/is-enabled';
 import type { SupabaseClient } from '@supabase/supabase-js';
 import type { Database } from '@/lib/types/database';
 import type { CoachChatContext } from './context';
@@ -528,12 +529,17 @@ export function buildCoachTools({ sb, ctx, conversationId, writer, collect }: Bu
       execute: read('get_team_rounds', (input) => getTeamRounds(sb, ctx, input)),
     }),
 
-    get_tournaments: tool({
-      description:
-        'The team\'s tournaments, most recent first: dates, status, lineup state, where the team finished, and each player\'s round totals.',
-      inputSchema: z.object({ limit: z.number().int().min(1).max(12).default(6) }),
-      execute: read('get_tournaments', (input) => getTournaments(sb, ctx, input)),
-    }),
+    // Tournaments are behind golf_tournaments_v1: the chat must not read an unreleased feature's tables.
+    ...(isFlagEnabled('golf_tournaments_v1')
+      ? {
+        get_tournaments: tool({
+          description:
+            'The team\'s tournaments, most recent first: dates, status, lineup state, where the team finished, and each player\'s round totals.',
+          inputSchema: z.object({ limit: z.number().int().min(1).max(12).default(6) }),
+          execute: read('get_tournaments', (input) => getTournaments(sb, ctx, input)),
+        }),
+        }
+      : {}),
 
     get_qualifiers: tool({
       description:
