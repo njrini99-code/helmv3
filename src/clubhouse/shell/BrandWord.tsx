@@ -79,33 +79,43 @@ const SHINE: readonly [number, number, number, number, number][] = [
   [197.2, 175.3, 8.3, 4.2, 119.6], [99.6, 180.2, 8.3, 4.8, 57.9], [210.5, 155.4, 7, 3.9, 96.5],
 ];
 
-function HelmMark({ write }: { write: boolean }) {
+/**
+ * `variant="ink"` is the same wheel and ball for a light surface (the Ask thread's avatar), without the dimples and
+ * highlights, which turn to mud at 28px. Its parts carry `ch-th-mk-*` classes, coloured in the thread's own sheet, so
+ * nothing here depends on the sidebar's green.
+ */
+export function HelmMark({ write = false, variant = 'brand', size = 34 }: { write?: boolean; variant?: 'brand' | 'ink'; size?: number }) {
   const clip = useId();
+  const k = variant === 'ink' ? 'ch-th-mk' : 'ch-brand__mark';
   return (
-    <svg className={'ch-brand__mark' + (write ? ' is-write' : '')} viewBox="4 4 292 292" width={34} height={34} aria-hidden="true" focusable="false">
+    <svg className={variant === 'ink' ? 'ch-th-mk' : 'ch-brand__mark' + (write ? ' is-write' : '')} viewBox="4 4 292 292" width={size} height={size} aria-hidden="true" focusable="false">
       <defs>
         <clipPath id={clip}>
           <circle cx="143.16" cy="119.16" r="60.35" />
         </clipPath>
       </defs>
-      <g className="ch-brand__mark-helm">
+      <g className={`${k}-helm`}>
         <circle cx="150" cy="150" r="95.3" fill="none" strokeWidth="20.8" />
         {SPOKES.map((a) => (
           <line key={a} x1="150" y1="49" x2="150" y2="15.5" strokeWidth="23" strokeLinecap="round" transform={`rotate(${a} 150 150)`} />
         ))}
       </g>
-      <circle className="ch-brand__mark-ball" cx="150.14" cy="148.54" r="71.6" />
-      <circle className="ch-brand__mark-face" cx="149.41" cy="145.14" r="62.25" clipPath={`url(#${clip})`} />
-      <g className="ch-brand__mark-dimples">
-        {DIMPLES.map(([x, y, r]) => (
-          <circle key={`${x},${y}`} cx={x} cy={y} r={r} />
-        ))}
-      </g>
-      <g className="ch-brand__mark-face">
-        {SHINE.map(([x, y, a, b, deg]) => (
-          <ellipse key={`${x},${y}`} cx={x} cy={y} rx={a} ry={b} transform={`rotate(${deg} ${x} ${y})`} />
-        ))}
-      </g>
+      <circle className={`${k}-ball`} cx="150.14" cy="148.54" r="71.6" />
+      <circle className={`${k}-face`} cx="149.41" cy="145.14" r="62.25" clipPath={`url(#${clip})`} />
+      {variant !== 'ink' && (
+        <>
+          <g className={`${k}-dimples`}>
+            {DIMPLES.map(([x, y, r]) => (
+              <circle key={`${x},${y}`} cx={x} cy={y} r={r} />
+            ))}
+          </g>
+          <g className={`${k}-face`}>
+            {SHINE.map(([x, y, a, b, deg]) => (
+              <ellipse key={`${x},${y}`} cx={x} cy={y} rx={a} ry={b} transform={`rotate(${deg} ${x} ${y})`} />
+            ))}
+          </g>
+        </>
+      )}
     </svg>
   );
 }

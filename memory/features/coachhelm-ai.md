@@ -616,6 +616,16 @@ Use `memory/context/golfhelm-database.md` for exact columns and `memory/glossary
   get it on their next re-analyze. Contract:
   `docs/architecture/coachhelm-evidence-contract.md` "Coach voice".
 
+### Coach chat read tools: whole-team reads (2026-10-25)
+
+`get_team_rounds`, `get_tournaments` and `get_qualifiers` (`src/lib/coachhelm/v3/chat/read-tools.ts`) read the active
+roster at once, so "who played best in the qualifier" no longer falls back to one player at a time. Rules they keep:
+rounds are scoped by the roster's player ids (not `golf_rounds.team_id`, which counts former players and misses rounds
+logged under another team), every `.in()` goes through `chunkIds`, and `get_tournaments` is registered only while
+`golf_tournaments_v1` is on. `get_team_rounds` returns one `Measurement` per player (three or more draw as a ranking) and
+a weekly team `MeasurementSeries` (drawn as a trend), so the Ask thread charts it from the evidence's shape; averages are
+computed server-side so the numeric audit can trace them.
+
 ## UI Contract
 
 - Coach views need fast triage: new, acknowledged, dismissed, resolved, and priority states must be visible.

@@ -395,8 +395,8 @@
 }
 .ch-ask-greet h2 {
   margin: 0;
-  font: var(--ch-type-serif-l);
-  letter-spacing: -0.008em;
+  font: var(--ch-type-34-medium);
+  letter-spacing: -0.012em;
   color: var(--ch-text-primary);
   text-wrap: balance;
 }
@@ -517,12 +517,16 @@
   gap: 16px;
   padding: 16px 16px 12px;
   border-radius: var(--ch-radius-xl);
-  background: var(--ch-bg-surface);
-  box-shadow: var(--ch-elevation-raised);
+  background: var(--ch-sheet-bg);
+  box-shadow: 0 0 0 1px var(--ch-border-control), var(--ch-elevation-raised);
   transition: box-shadow var(--ch-dur-quick) var(--ch-ease);
 }
 .ch-ask-cmp__box:focus-within {
-  box-shadow: var(--ch-elevation-floating-focus);
+  box-shadow: 0 0 0 1px var(--ch-green-ring), var(--ch-elevation-raised);
+}
+/* The box draws the one focus ring; the field inside it must not draw a second. */
+.ch-ask-cmp__ta:focus-visible {
+  outline: none;
 }
 .ch-ask-cmp__label {
   position: absolute;
@@ -1228,4 +1232,134 @@ html:not([data-fw-theme='dark']) .ch-ask {
   max-width: 64ch;
   font: var(--ch-type-13);
   color: var(--ch-text-tertiary);
+}
+
+/* What the chat can do: four cards under the starter questions. Hairline and lift, no stripes. */
+.ch-ask-caps {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 12px;
+  width: 100%;
+  max-width: 880px;
+  margin: 8px 0 0;
+  padding: 0;
+  list-style: none;
+}
+.ch-ask-cap {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 6px;
+  width: 100%;
+  height: 100%;
+  padding: 16px;
+  border: 0;
+  border-radius: var(--ch-radius-xl);
+  background: var(--ch-sheet-bg);
+  box-shadow: 0 0 0 1px var(--ch-border-control), var(--ch-elevation-bubble);
+  text-align: left;
+  color: var(--ch-text-primary);
+  cursor: pointer;
+  transition: box-shadow var(--ch-dur-quick) var(--ch-ease);
+}
+.ch-ask-cap b {
+  font: var(--ch-type-15-strong);
+  letter-spacing: var(--ch-track-15);
+}
+.ch-ask-cap span:not(.ch-ask-cap__ic) {
+  font: var(--ch-type-13);
+  letter-spacing: var(--ch-track-13);
+  color: var(--ch-text-secondary);
+}
+.ch-ask-cap__ic {
+  display: grid;
+  place-items: center;
+  width: 34px;
+  height: 34px;
+  margin-bottom: 4px;
+  border-radius: 50%;
+  background: var(--ch-green-50, var(--ch-bg-subtle));
+  color: var(--ch-green-700);
+}
+@media (hover: hover) {
+  .ch-ask-cap:hover {
+    box-shadow: 0 0 0 1px var(--ch-border-strong), var(--ch-elevation-raised);
+  }
+}
+.ch-ask-cap:focus-visible {
+  outline: 2px solid var(--ch-border-focus);
+  outline-offset: 2px;
+}
+@media (max-width: 1100px) {
+  .ch-ask-caps {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+/* Green where the coach acts (owner, 2026-10-25: "make some of the buttons green"): New chat and Send are solid, the
+   starter questions, chips and the plus are a green wash with a green hairline. Text on them is full green ink (7:1+). */
+.ch-ask-hist__new {
+  background: var(--ch-accent);
+  box-shadow: 0 1px 2px rgb(11 58 37 / 0.2);
+  color: var(--ch-text-on-accent);
+}
+.ch-ask-hist__new svg {
+  color: var(--ch-text-on-accent);
+}
+@media (hover: hover) {
+  .ch-ask-hist__new:hover {
+    background: var(--ch-accent-hover);
+  }
+}
+.ch-ask-hist__new[data-ch-pressed] {
+  background: var(--ch-accent-press);
+}
+@media (hover: hover) {
+  .ch-ask-hist__new:active {
+    background: var(--ch-accent-press);
+  }
+}
+.ch-ask-cmp__send:disabled {
+  background: var(--ch-green-100);
+  color: var(--ch-green-500);
+}
+.ch-ask-cmp__round,
+.ch-ask-cmp__chip:not(.is-set) {
+  background: var(--ch-green-50);
+  box-shadow: 0 0 0 1px var(--ch-green-200);
+  color: var(--ch-green-700);
+}
+.ch-ask-cmp__round.is-quiet {
+  background: none;
+  box-shadow: none;
+  color: var(--ch-green-700);
+}
+@media (hover: hover) {
+  .ch-ask-cmp__chip:not(.is-set):hover,
+  .ch-ask-cmp__round:not(.is-quiet):hover {
+    background: var(--ch-green-100);
+    box-shadow: 0 0 0 1px var(--ch-green-400);
+    color: var(--ch-green-800);
+  }
+}
+.ch-ask-pill {
+  background: var(--ch-green-50);
+  box-shadow: 0 0 0 1px var(--ch-green-200);
+  color: var(--ch-green-700);
+}
+@media (hover: hover) {
+  .ch-ask-pill:hover {
+    background: var(--ch-green-100);
+    box-shadow: 0 0 0 1px var(--ch-green-400);
+    color: var(--ch-green-800);
+  }
+}
+.ch-ask-cap__ic {
+  background: var(--ch-accent);
+  color: var(--ch-text-on-accent);
+}
+@media (hover: hover) {
+  .ch-ask-cap:hover {
+    box-shadow: 0 0 0 1px var(--ch-green-400), var(--ch-elevation-raised);
+  }
 }

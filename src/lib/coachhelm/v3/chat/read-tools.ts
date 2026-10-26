@@ -1217,10 +1217,66 @@ export async function getTeamRounds(
   const byPlayer = new Map<string, typeof rounds>();
   for (const r of rounds) byPlayer.set(r.player_id, [...(byPlayer.get(r.player_id) ?? []), r]);
   const label = input.round_type ?? 'all';
+  const today = todayIsoInZone(ctx.timezone);
+  const asOf = nowIso();
+  const toPar = (rs: typeof rounds) => rs.map((r) => num(r.score_to_par)).filter((n): n is number => n !== null);
+  const metricLabel = input.round_type ? `Average score to par, ${input.round_type} rounds` : 'Average score to par';
+  // The chartable part: one measurement per player (three or more draw as a ranking) and the team's week-by-week line.
+  const measurements: Measurement[] = [...byPlayer.entries()].flatMap(([id, rs]): Measurement[] => {
+    const value = mean(toPar(rs));
+    if (value === null) return [];
+    return [{
+      metric_id: 'team_rounds_avg_to_par',
+      metric_label: metricLabel,
+      unit: 'score',
+      value,
+      entity: { kind: 'player', id, label: names.get(id) ?? 'Player' },
+      window_start: since,
+      window_end: today,
+      sample_size: toPar(rs).length,
+      sample_unit: 'rounds',
+      as_of: asOf,
+      coverage: 'complete',
+      coverage_note: null,
+      source: 'rounds',
+      method: 'mean of completed rounds',
+      denominator: null,
+      benchmark: null,
+      direction: 'lower_better',
+    }];
+  }).sort((a, b) => (a.value ?? 99) - (b.value ?? 99));
+  const weeks = new Map<string, number[]>();
+  for (const r of rounds) {
+    const v = num(r.score_to_par);
+    if (v === null) continue;
+    const d = new Date(`${String(r.round_date).slice(0, 10)}T12:00:00Z`);
+    d.setUTCDate(d.getUTCDate() - ((d.getUTCDay() + 6) % 7));
+    const key = d.toISOString().slice(0, 10);
+    weeks.set(key, [...(weeks.get(key) ?? []), v]);
+  }
+  const points = [...weeks.entries()].sort(([x], [y]) => x.localeCompare(y)).map(([at, vs]) => ({ at, value: mean(vs) as number, bucket: null, sample_size: vs.length }));
+  const series: MeasurementSeries[] = points.length >= 2
+    ? [{
+        metric_id: 'team_rounds_avg_to_par_weekly',
+        metric_label: `${metricLabel}, by week`,
+        unit: 'score',
+        entity: { kind: 'team', id: ctx.team_id, label: ctx.team_name },
+        points,
+        window_start: since,
+        window_end: today,
+        as_of: asOf,
+        coverage: 'complete',
+        coverage_note: null,
+        source: 'rounds',
+        method: 'weekly mean of completed rounds',
+        benchmark: null,
+        direction: 'lower_better',
+      }]
+    : [];
   return {
     summary: `${rounds.length} completed ${label === 'all' ? '' : `${label} `}round${rounds.length === 1 ? '' : 's'} by ${byPlayer.size} player${byPlayer.size === 1 ? '' : 's'} since ${since}.`,
-    measurements: [],
-    series: [],
+    measurements,
+    series,
     detail: {
       since,
       round_type: input.round_type ?? null,

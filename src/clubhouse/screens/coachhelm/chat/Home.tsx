@@ -1,6 +1,6 @@
 'use client';
 
-import { Users } from 'lucide-react';
+import { CalendarPlus, ChartLine, Target, Trophy, Users, type LucideIcon } from 'lucide-react';
 import type { ReactNode } from 'react';
 import { askSuggestionSub, type ChAskData, type ChAskSuggestion } from '../../../data/coachhelm-chat-shape';
 import { haptic } from '../../../lib/haptics';
@@ -32,6 +32,39 @@ function NothingYet({ phone }: { phone: boolean }) {
         <span>No player has a recorded round yet. You can still ask about your roster and schedule.</span>
       </span>
     </div>
+  );
+}
+
+/** What the chat does besides answer: each opens a real conversation with that tool, so the card is never a promise the chat can't keep. */
+const CAPABILITIES: Array<{ icon: LucideIcon; title: string; body: string; ask: string }> = [
+  { icon: ChartLine, title: 'Chart it', body: 'Scoring, putting and strokes gained over time, by player or team.', ask: 'Chart our team scoring to par by week this season' },
+  { icon: Trophy, title: 'Rank and compare', body: 'Who is ahead on any stat, in a qualifier or at a tournament.', ask: 'Rank my players by scoring average in the last qualifier' },
+  { icon: Target, title: 'Set a focus', body: 'Turn a weakness into a focus area with criteria for one player.', ask: 'Who needs a focus area right now, and on what?' },
+  { icon: CalendarPlus, title: 'Plan practice', body: 'Build a practice around what the data says the team is losing.', ask: 'Plan this week’s practice around where we are losing the most strokes' },
+];
+
+function Capabilities({ onAsk }: { onAsk: (text: string) => void }) {
+  return (
+    <ul className="ch-ask-caps" aria-label="What CoachHelm can do">
+      {CAPABILITIES.map((c) => (
+        <li key={c.title}>
+          <button
+            type="button"
+            className="ch-ask-cap"
+            onClick={() => {
+              haptic('select');
+              onAsk(c.ask);
+            }}
+          >
+            <span className="ch-ask-cap__ic" aria-hidden="true">
+              <Icon icon={c.icon} size={18} />
+            </span>
+            <b>{c.title}</b>
+            <span>{c.body}</span>
+          </button>
+        </li>
+      ))}
+    </ul>
   );
 }
 
@@ -103,6 +136,7 @@ export function AskHome({ data, phone, heroComposer, onAsk }: { data: ChAskData;
       <Greeting team={data.teamName} phone={false} />
       {heroComposer}
       <Pills suggestions={data.suggestions} onAsk={onAsk} />
+      <Capabilities onAsk={onAsk} />
       {/* Who the answers cover: a caveat on Ask's own answers, kept when the findings left. */}
       {data.pulse?.coverage && (
         <p className="ch-ask-cov">

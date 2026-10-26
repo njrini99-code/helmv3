@@ -2,7 +2,7 @@
 
 import type { UIMessage } from 'ai';
 import { useEffect, useId, useMemo, useRef, useState } from 'react';
-import { Check, ChevronDown, CircleAlert, Copy, RotateCw, Sparkles } from 'lucide-react';
+import { Check, ChevronDown, CircleAlert, Copy, RotateCw } from 'lucide-react';
 import type { ChatErrorNotice } from '../../../data/coachhelm-chat-error';
 import {
   buildTurns,
@@ -19,9 +19,9 @@ import { useChReducedMotion } from '../../../lib/reduced-motion';
 import { Button } from '../../../ui/Button';
 import { Icon } from '../../../ui/Icon';
 import { OFFLINE_LINE } from '../../../ui/Retry';
-import { Spinner } from '../../../ui/Spinner';
 import { useToast } from '../../../ui/Toast';
 import { Tooltip } from '../../../ui/Tooltip';
+import { HelmMark } from '../../../shell/BrandWord';
 import { AskActionCard, AskReceiptCard } from './ActionCard';
 import { AskEvidenceView } from './Evidence';
 import { AskProse, AskUserText } from './Prose';
@@ -45,6 +45,15 @@ export interface AskThreadProps {
   onNewChat: () => void;
   evidenceFocus: EvidenceFocus | null;
   onOpenEvidence: (focus: EvidenceFocus) => void;
+}
+
+/** CoachHelm's avatar: the GolfHelm wheel and ball. While it works it breathes on the live pulse (2.8 s); at rest it is still. */
+function Mark({ working = false }: { working?: boolean }) {
+  return (
+    <span className={'ch-th-mark' + (working ? ' is-working' : '')} aria-hidden="true">
+      <HelmMark variant="ink" size={28} />
+    </span>
+  );
 }
 
 /** The nearest ancestor that scrolls, or null when the page itself does. */
@@ -182,11 +191,12 @@ export function AskThread({ messages, busy, error, offline, phone, players, onAp
           const showFollowUps = turn.id === lastAssistantId && !busy && !pending && !error && turn.followUps.length > 0;
           return (
             <article key={turn.id} className={'ch-th-turn ch-th-ans' + (fresh ? ' is-new' : '')} aria-label="CoachHelm answer" aria-busy={turn.active || undefined}>
-              <span className="ch-th-mark" aria-hidden="true">
-                <Icon icon={Sparkles} size={16} />
-              </span>
+              <Mark working={turn.active} />
               <div className="ch-th-ans__body">
+                <span className="ch-th-who">CoachHelm</span>
                 <Work turn={turn} onStop={phone ? undefined : onStop} />
+                {(turn.note || turn.blocks.length > 0) && (
+                  <div className="ch-th-card">
                 {turn.note && (
                   <p className="ch-th-note" data-ch-code="CH-13252">
                     {turn.note}
@@ -211,6 +221,8 @@ export function AskThread({ messages, busy, error, offline, phone, players, onAp
                     />
                   );
                 })}
+                  </div>
+                )}
                 {turn.answerText && !turn.active && !turn.note && (
                   <div className="ch-th-tools">
                     <Tooltip>
@@ -245,12 +257,13 @@ export function AskThread({ messages, busy, error, offline, phone, players, onAp
         })}
         {awaiting && (
           <div className="ch-th-turn ch-th-ans is-new" aria-busy="true">
-            <span className="ch-th-mark" aria-hidden="true">
-              <Icon icon={Sparkles} size={16} />
-            </span>
-            <p className="ch-th-think" aria-live="polite">
-              Reading your program
-            </p>
+            <Mark working />
+            <div className="ch-th-ans__body">
+              <span className="ch-th-who">CoachHelm</span>
+              <p className="ch-th-think" aria-live="polite">
+                <span className="ch-th-shine">Reading your program</span>
+              </p>
+            </div>
           </div>
         )}
         {error && <AskError notice={error} offline={offline} changed={failedAnswerChangedNothing(messages)} onRetry={onRetry} onNewChat={onNewChat} />}
@@ -265,20 +278,22 @@ function Work({ turn, onStop }: { turn: AskAssistantTurn; onStop?: () => void })
   const elapsed = useElapsed(turn.active);
   const [open, setOpen] = useState(false);
   const listId = useId();
-  if (turn.steps.length === 0) return null;
+  if (turn.steps.length === 0) {
+    return turn.active && turn.blocks.length === 0 ? (
+      <p className="ch-th-think" aria-live="polite">
+        <span className="ch-th-shine">Thinking</span>
+      </p>
+    ) : null;
+  }
   const secs = elapsed === null ? '' : ` · ${formatFixed(elapsed)}s`;
   const list = (live: boolean) => (
     <ol id={live ? undefined : listId} className="ch-th-steps" aria-label="What CoachHelm is doing" aria-live={live ? 'polite' : undefined} aria-relevant={live ? 'additions text' : undefined}>
       {turn.steps.map((s, i) => {
         const current = live && i === turn.steps.length - 1;
         return (
-          <li key={s.id} aria-current={current ? 'step' : undefined}>
-            {current ? (
-              <Spinner />
-            ) : (
-              <Icon icon={Check} size={14} className="ch-th-steps__ok" />
-            )}
-            {s.label}
+          <li key={s.id} className={live ? 'is-in' : undefined} aria-current={current ? 'step' : undefined}>
+            {current ? <span className="ch-th-dot" aria-hidden="true" /> : <Icon icon={Check} size={14} className="ch-th-steps__ok" />}
+            {current ? <span className="ch-th-shine">{s.label}</span> : s.label}
           </li>
         );
       })}
