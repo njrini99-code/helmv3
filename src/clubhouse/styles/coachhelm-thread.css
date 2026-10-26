@@ -1277,16 +1277,10 @@ a.ch-th-reads__r:focus-visible {
   }
 }
 
-/* The follow-up questions under an answer: green like the starters, so the next step reads as an action. */
-.ch-th-pill {
-  background: var(--ch-green-50);
-  box-shadow: 0 0 0 1px var(--ch-green-200);
-  color: var(--ch-green-700);
-}
+/* The follow-up questions under an answer take the same green hairline on hover as the starters. */
 @media (hover: hover) {
   .ch-th-pill:hover {
-    background: var(--ch-green-100);
-    box-shadow: 0 0 0 1px var(--ch-green-400);
-    color: var(--ch-green-800);
+    box-shadow: 0 0 0 1px var(--ch-green-600);
+    color: var(--ch-green-700);
   }
 }

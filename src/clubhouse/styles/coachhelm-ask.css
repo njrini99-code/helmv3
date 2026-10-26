@@ -1296,8 +1296,10 @@ html:not([data-fw-theme='dark']) .ch-ask {
   }
 }
 
-/* Green where the coach acts (owner, 2026-10-25: "make some of the buttons green"): New chat and Send are solid, the
-   starter questions, chips and the plus are a green wash with a green hairline. Text on them is full green ink (7:1+). */
+/* Dark green where the coach acts, the way the Board and Ask toggle and the app's primary keys are (owner, 2026-10-25:
+   "do dark green, follow my app's UI/UX"): New chat and Send are the accent, a disabled Send is the accent dimmed, not
+   grey, and the capability marks are solid. Chips and starter questions stay the app's quiet keys and take a green
+   hairline on hover. */
 .ch-ask-hist__new {
   background: var(--ch-accent);
   box-shadow: 0 1px 2px rgb(11 58 37 / 0.2);
@@ -1320,46 +1322,24 @@ html:not([data-fw-theme='dark']) .ch-ask {
   }
 }
 .ch-ask-cmp__send:disabled {
-  background: var(--ch-green-100);
-  color: var(--ch-green-500);
-}
-.ch-ask-cmp__round,
-.ch-ask-cmp__chip:not(.is-set) {
-  background: var(--ch-green-50);
-  box-shadow: 0 0 0 1px var(--ch-green-200);
-  color: var(--ch-green-700);
-}
-.ch-ask-cmp__round.is-quiet {
-  background: none;
-  box-shadow: none;
-  color: var(--ch-green-700);
+  background: var(--ch-accent);
+  color: var(--ch-text-on-accent);
+  opacity: 0.38;
 }
 @media (hover: hover) {
   .ch-ask-cmp__chip:not(.is-set):hover,
-  .ch-ask-cmp__round:not(.is-quiet):hover {
-    background: var(--ch-green-100);
-    box-shadow: 0 0 0 1px var(--ch-green-400);
-    color: var(--ch-green-800);
-  }
-}
-.ch-ask-pill {
-  background: var(--ch-green-50);
-  box-shadow: 0 0 0 1px var(--ch-green-200);
-  color: var(--ch-green-700);
-}
-@media (hover: hover) {
+  .ch-ask-cmp__round:hover,
   .ch-ask-pill:hover {
-    background: var(--ch-green-100);
-    box-shadow: 0 0 0 1px var(--ch-green-400);
-    color: var(--ch-green-800);
+    box-shadow: 0 0 0 1px var(--ch-green-600);
+    color: var(--ch-green-700);
   }
 }
 .ch-ask-cap__ic {
-  background: var(--ch-accent);
+  background: var(--ch-green-700);
   color: var(--ch-text-on-accent);
 }
 @media (hover: hover) {
   .ch-ask-cap:hover {
-    box-shadow: 0 0 0 1px var(--ch-green-400), var(--ch-elevation-raised);
+    box-shadow: 0 0 0 1px var(--ch-green-600), var(--ch-elevation-raised);
   }
 }
