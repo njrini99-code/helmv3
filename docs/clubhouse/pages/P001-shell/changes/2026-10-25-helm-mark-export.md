@@ -13,6 +13,8 @@ Held items:     none
 
 ### Changed
 
-- `HelmMark` (`src/clubhouse/shell/BrandWord.tsx`) is exported. `variant="ink"` draws the same wheel and ball without the
-  dimples and highlights (they turn to mud under about 30px) and with `ch-th-mk-*` part classes, so a page colours it
-  on its own surface. The sidebar's mark is unchanged (`variant="brand"` is the default).
+- `HelmMark` (`src/clubhouse/shell/BrandWord.tsx`) is exported. `variant="ink"`
+  draws the same wheel and ball without the dimples and highlights (they turn to
+  mud under about 30px) and with `ch-th-mk-*` part classes, so a page colours it
+  on its own surface. The sidebar's mark is unchanged (`variant="brand"` is the
+  default).

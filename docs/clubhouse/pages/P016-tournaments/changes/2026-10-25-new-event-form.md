@@ -20,11 +20,11 @@ Held items:     none
   more details), an optional qualifier, the receipt sentence and Create
   tournament. Create saves through the calendar's own write, so a tournament
   made here and one made from the calendar are the same thing, then opens the
-  event desk with the "is set up in Tournaments" toast. A refused save stays
-  on the page with the reason.
+  event desk with the "is set up in Tournaments" toast. A refused save stays on
+  the page with the reason.
 - The form's data now carries `teamId`, `timezone` and `today`, read from the
-  team by `loadTournamentForm` (the first tee is a wall-clock time in the
-  team's zone).
+  team by `loadTournamentForm` (the first tee is a wall-clock time in the team's
+  zone).
 - `?from=` prefills the name only; nothing links to it yet.
 - Not in this change: editing an event (`/[id]/edit` still draws the
   placeholder), advice givers and field teams (the create RPC takes neither).

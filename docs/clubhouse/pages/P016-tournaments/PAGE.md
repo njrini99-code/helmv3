@@ -6,15 +6,15 @@ Clubhouse handoff's section 4.33; decisions D-80 to D-101, approved by the owner
 result, review), a season home, the comparison workspace, the lineup builder,
 the live round and the player's own view.
 
-Where it stands: **wired behind `golf_tournaments_v1`** (off in production). The
-nine routes, the loaders, the server actions and the nav entry are in
+Where it stands: **wired behind `golf_tournaments_v1`** (off in production).
+The nine routes, the loaders, the server actions and the nav entry are in
 (WIRING.md); held migration 3 (the RPCs and the lineup guard) is written. Built
-views: the season home, the event desk with its review, history and compare, and
-the new-event form; the edit-event form, lineup builder, link inbox, live round
-and player's view still draw their placeholders, now with real data. Until the owner applies the held
-migrations, every route says "Tournaments aren't set up yet" (CH-16302). The
-preview keeps every state at `/clubhouse-preview/tournaments` and
-`/clubhouse-preview/tournament-*`.
+views: the season home, the event desk with its review, history and compare,
+and the new-event form; the edit-event form, lineup builder, link inbox, live
+round and player's view still draw their placeholders, now with real data.
+Until the owner applies the held migrations, every route says "Tournaments
+aren't set up yet" (CH-16302). The preview keeps every state at
+`/clubhouse-preview/tournaments` and `/clubhouse-preview/tournament-*`.
 
 Where it lives once wired (D-80): coach sidebar, Team group, after Qualifiers; a
 phone More row below Qualifiers; for players, the sidebar Team group, a More row

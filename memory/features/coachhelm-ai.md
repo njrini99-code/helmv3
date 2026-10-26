@@ -618,12 +618,25 @@ Use `memory/context/golfhelm-database.md` for exact columns and `memory/glossary
 
 ### Coach chat read tools: whole-team reads (2026-10-25)
 
-`get_team_rounds`, `get_tournaments` and `get_qualifiers` (`src/lib/coachhelm/v3/chat/read-tools.ts`) read the active
-roster at once, so "who played best in the qualifier" no longer falls back to one player at a time. Rules they keep:
-rounds are scoped by the roster's player ids (not `golf_rounds.team_id`, which counts former players and misses rounds
-logged under another team), every `.in()` goes through `chunkIds`, and `get_tournaments` is registered only while the tournaments release flag is on. `get_team_rounds` returns one `Measurement` per player (three or more draw as a ranking) and
-a weekly team `MeasurementSeries` (drawn as a trend), so the Ask thread charts it from the evidence's shape; averages are
-computed server-side so the numeric audit can trace them.
+`get_team_rounds`, `get_tournaments` and `get_qualifiers`
+(`src/lib/coachhelm/v3/chat/read-tools.ts`) read the active roster at once, so
+"who played best in the qualifier" no longer falls back to one player at a
+time. Rules they keep: rounds are scoped by the roster's player ids (not
+`golf_rounds.team_id`, which counts former players and misses rounds logged
+under another team), every `.in()` goes through `chunkIds`, and
+`get_tournaments` is registered only while the tournaments release flag is on.
+`get_team_rounds` returns one `Measurement` per player (three or more draw as
+a ranking) and a weekly team `MeasurementSeries` (drawn as a trend), so the
+Ask thread charts it from the evidence's shape; averages are computed
+server-side so the numeric audit can trace them.
+
+### Coach chat visuals (2026-10-25)
+
+`show_visual` (flag `coachhelm_visual_artifacts_v1`) takes a scene and the
+`evidence_ref`s the read tools returned this turn. `chat/visuals/compile.ts`
+resolves them, refuses what cannot be drawn honestly and returns a hashed
+`ValidatedVisualArtifact`; the message keeps it as `data-visual-artifact`, so a
+reload draws the same chart. See `docs/architecture/coachhelm-agentic-visuals.md`.
 
 ## UI Contract
 
