@@ -1062,6 +1062,7 @@ them would bury everything above.
 | `docs/clubhouse/pages/P007-messages/changes/2026-10-24-desktop-seams.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P007-messages/changes/2026-10-24-polls.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P007-messages/changes/2026-10-25-p10-class-awareness.md` | current | - | - | - | - |
+| `docs/clubhouse/pages/P007-messages/changes/2026-10-25-poll-card-width.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P007-messages/changes/2026-10-25-polls-actions.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P007-messages/changes/2026-10-25-polls-correctness.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P007-messages/changes/2026-10-25-polls-create-sheet.md` | current | - | - | - | - |
