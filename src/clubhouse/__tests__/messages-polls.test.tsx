@@ -143,8 +143,15 @@ describe('PollCard', () => {
   });
 
   it('says when an open poll ends, in the viewer’s clock', () => {
-    render(<PollCard api={api([])} messageId="m1" poll={poll({ closesAt: '2026-10-25T23:00:00Z' })} mine={false} />);
-    expect(screen.getByText('Ends tomorrow at 6:00 PM')).toBeTruthy();
+    // "tomorrow" is read against the clock, so pin it: the day before the poll closes.
+    vi.useFakeTimers({ toFake: ['Date'] });
+    vi.setSystemTime(new Date('2026-10-24T15:00:00Z'));
+    try {
+      render(<PollCard api={api([])} messageId="m1" poll={poll({ closesAt: '2026-10-25T23:00:00Z' })} mine={false} />);
+      expect(screen.getByText('Ends tomorrow at 6:00 PM')).toBeTruthy();
+    } finally {
+      vi.useRealTimers();
+    }
   });
 
   it('waits for votes before it takes a tap, and offers Retry when they fail', async () => {
