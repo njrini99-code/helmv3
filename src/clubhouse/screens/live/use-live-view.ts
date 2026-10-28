@@ -39,30 +39,26 @@ export const PANEL_MIN_PX = 1080;
 export const SPLIT_MIN_PX = 944;
 const NARROW_QUERY = `(max-width: ${PANEL_MIN_PX - 1}px)`;
 
-// The desk's own content width, measured by the desk (reportDeskWidth). A wide window with the sidebar open can leave
-// the split less room than it needs, so the panel turns into a sheet on the room the desk has, not on the viewport.
-let deskWidth: number | null = null;
-const deskWidthListeners = new Set<() => void>();
-export function reportDeskWidth(width: number | null): void {
-  if (width === deskWidth) return;
-  deskWidth = width;
-  for (const listener of deskWidthListeners) listener();
-}
-
-export function useNarrow(): boolean {
+function useViewportNarrow(): boolean {
   return useSyncExternalStore(
     (cb) => {
       const m = window.matchMedia(NARROW_QUERY);
       m.addEventListener('change', cb);
-      deskWidthListeners.add(cb);
-      return () => {
-        m.removeEventListener('change', cb);
-        deskWidthListeners.delete(cb);
-      };
+      return () => m.removeEventListener('change', cb);
     },
-    () => window.matchMedia(NARROW_QUERY).matches || (deskWidth != null && deskWidth < SPLIT_MIN_PX),
+    () => window.matchMedia(NARROW_QUERY).matches,
     () => false,
   );
+}
+
+/**
+ * Whether the panel is a sheet: below 1080 px of viewport, or whenever the desk's own content width (measured by the
+ * desk, null until it is) is under what the split needs. A wide window with the sidebar open can leave the split less
+ * room than it needs, so the room the desk has decides, not only the viewport.
+ */
+export function useNarrow(deskWidth: number | null = null): boolean {
+  const viewport = useViewportNarrow();
+  return viewport || (deskWidth != null && deskWidth < SPLIT_MIN_PX);
 }
 
 export interface LiveViewState {

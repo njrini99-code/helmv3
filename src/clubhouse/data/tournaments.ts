@@ -655,6 +655,16 @@ const outStatus = (status: ChTourEvent['playerRounds'][number]['status']): Pick<
   status === 'wd' ? { status: 'wd' } : status === 'dq' || status === 'dq_pending' ? { status: 'dq' } : {};
 
 /** Every round a comparison can draw on: the team's completed GolfHelm rounds this season and last, and entered tournament scores. */
+/**
+ * A pool round's par. The holes' own pars are exact, also for a nine whose halves differ (a 35/37 layout); without a full
+ * card, half the course par for a nine, then the par the round saved, then a standard 36 or 72.
+ */
+export function poolRoundPar(own: readonly Pick<PoolHole, 'par'>[], holesPlayed: 9 | 18, coursePar: number | null, savedPar: number | null): number {
+  if (own.length === holesPlayed) return own.reduce((s, h) => s + h.par, 0);
+  if (coursePar != null) return holesPlayed === 9 ? Math.round(coursePar / 2) : coursePar;
+  return savedPar ?? (holesPlayed === 9 ? 36 : 72);
+}
+
 async function readPool(ctx: TourCtx, read: EventsRead, playerIds: readonly string[], today: string): Promise<ChTourCompareRound[]> {
   const since = `${Number(seasonIdOf(today).slice(0, 4)) - 1}-08-01`;
   const rounds = await allIn<PoolRound>('poolRounds', playerIds, (chunk, from, to) =>
@@ -694,9 +704,9 @@ async function readPool(ctx: TourCtx, read: EventsRead, playerIds: readonly stri
     if (r.total_score == null) continue;
     const holesPlayed: 9 | 18 = (r.holes_played ?? 18) <= 9 ? 9 : 18;
     const course = r.course_id ? read.courses[r.course_id] : undefined;
-    const par = course ? (holesPlayed === 9 ? Math.round(course.par / 2) : course.par) : r.score_to_par != null ? r.total_score - r.score_to_par : holesPlayed === 9 ? 36 : 72;
-    const rating = course?.rating != null ? (holesPlayed === 9 ? course.rating / 2 : course.rating) : null;
     const own = byRound.get(r.id) ?? [];
+    const par = poolRoundPar(own, holesPlayed, course?.par ?? null, r.score_to_par != null ? r.total_score - r.score_to_par : null);
+    const rating = course?.rating != null ? (holesPlayed === 9 ? course.rating / 2 : course.rating) : null;
     const link = linkedTo.get(r.id);
     const sg = r.strokes_gained_tee != null && r.strokes_gained_approach != null && r.strokes_gained_around_green != null && r.strokes_gained_putting != null ? { ott: r.strokes_gained_tee, app: r.strokes_gained_approach, arg: r.strokes_gained_around_green, putt: r.strokes_gained_putting } : null;
     const fpr = link ? fieldPerRound(link.e, link.pr.roundNumber) : null;

@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useLayoutEffect, useRef } from 'react';
+import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { LIVE_COPY } from '../../live/copy';
 import { FreshnessChip } from '../../live/FreshnessChip';
 import { LiveAnnouncer } from '../../live/LiveAnnouncer';
@@ -13,7 +13,7 @@ import { LargeTitle } from '../../ui/LargeTitle';
 import { CourseRibbon, PlayerLiveBody, PlayerLiveSheet, PlayerPanelHead } from './PlayerLiveSheet';
 import { LiveViewPhone } from './LiveViewPhone';
 import { LiveEmpty, LiveFilter, LiveGroupsList, LiveSortMenu, UpdatedPill } from './live-parts';
-import { reportDeskWidth, useLiveView, useNarrow, type LiveViewState } from './use-live-view';
+import { useLiveView, useNarrow, type LiveViewState } from './use-live-view';
 import '../../styles/live.css';
 
 /**
@@ -41,7 +41,10 @@ export function LiveDenied() {
 }
 
 function LiveViewDesk({ v }: { v: LiveViewState }) {
-  const narrow = useNarrow();
+  // The desk's own content width, set from a layout effect: a state update there re-renders before the browser paints,
+  // so a desk too narrow for the split never draws the panel and then folds it.
+  const [deskWidth, setDeskWidth] = useState<number | null>(null);
+  const narrow = useNarrow(deskWidth);
   const root = useRef<HTMLElement>(null);
   useRovingRows(root, '.ch-lv-hit');
   const total = v.groups.onCourse.length + v.groups.finished.length + v.groups.quiet.length;
@@ -50,18 +53,16 @@ function LiveViewDesk({ v }: { v: LiveViewState }) {
   // The split needs SPLIT_MIN_PX of the desk's own width; measured before paint so the panel never draws and then folds.
   useLayoutEffect(() => {
     const el = root.current;
-    if (!el || typeof ResizeObserver === 'undefined') return;
+    if (!el) return;
     // A desk that is not laid out (hidden, or a test DOM) measures 0: it reports nothing, so the viewport decides.
-    const report = (width: number) => reportDeskWidth(width > 0 ? width : null);
+    const report = (width: number) => setDeskWidth(width > 0 ? width : null);
     report(el.clientWidth - paddingX(el));
+    if (typeof ResizeObserver === 'undefined') return;
     const ro = new ResizeObserver(([entry]) => {
       if (entry) report(entry.contentRect.width);
     });
     ro.observe(el);
-    return () => {
-      ro.disconnect();
-      reportDeskWidth(null);
-    };
+    return () => ro.disconnect();
   }, []);
 
   // Escape clears the selection and hands focus back to the lane; R reads now when no field has focus (6).

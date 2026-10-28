@@ -1,26 +1,62 @@
 // @vitest-environment jsdom
-import { act, renderHook } from '@testing-library/react';
+import { cleanup, render, renderHook } from '@testing-library/react';
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
-import { afterEach, beforeEach, describe, expect, it } from 'vitest';
-import { reportDeskWidth, SPLIT_MIN_PX, useNarrow } from '../use-live-view';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+
+vi.mock('next/navigation', () => ({ useRouter: () => ({ push: vi.fn(), refresh: vi.fn(), back: vi.fn() }), usePathname: () => '/golf/dashboard/live' }));
+vi.mock('../../../lib/haptics', () => ({ haptic: vi.fn() }));
+vi.mock('../../../lib/track', () => ({ chReport: vi.fn(), chTrail: vi.fn(), chTagSession: vi.fn() }));
+vi.mock('../../../lib/use-phone', () => ({ useChPhone: () => false }));
+
+import '../../../__tests__/dialog-polyfill';
+import { PREVIEW_LIVE, PREVIEW_LIVE_NOW } from '../../../preview/fixtures-live';
+import { LiveView } from '../LiveView';
+import { SPLIT_MIN_PX, useNarrow } from '../use-live-view';
 
 const css = readFileSync(join(process.cwd(), 'src/clubhouse/styles/live.css'), 'utf8');
+
+let deskPx = 0;
 
 beforeEach(() => {
   // A wide window: the viewport query alone would keep the panel beside the lanes.
   window.matchMedia = ((q: string) => ({ matches: false, media: q, addEventListener: () => {}, removeEventListener: () => {}, addListener: () => {}, removeListener: () => {}, onchange: null, dispatchEvent: () => false })) as never;
+  // jsdom lays nothing out: the desk reports the width a test gives it, every other element 0.
+  Object.defineProperty(HTMLElement.prototype, 'clientWidth', {
+    configurable: true,
+    get(this: HTMLElement) {
+      return this.classList.contains('ch-lv--desk') ? deskPx : 0;
+    },
+  });
 });
-afterEach(() => reportDeskWidth(null));
+afterEach(() => {
+  cleanup();
+  delete (HTMLElement.prototype as { clientWidth?: number }).clientWidth;
+  deskPx = 0;
+});
 
 describe('the live desk split', () => {
   it('turns the panel into a sheet on the desk’s own width, not only the viewport’s', () => {
-    const { result } = renderHook(() => useNarrow());
+    const { result, rerender } = renderHook(({ w }: { w: number | null }) => useNarrow(w), { initialProps: { w: null as number | null } });
     expect(result.current).toBe(false);
-    act(() => reportDeskWidth(SPLIT_MIN_PX - 1));
+    rerender({ w: SPLIT_MIN_PX - 1 });
     expect(result.current).toBe(true);
-    act(() => reportDeskWidth(SPLIT_MIN_PX));
+    rerender({ w: SPLIT_MIN_PX });
     expect(result.current).toBe(false);
+  });
+
+  it('a desk 900 px wide in a wide window draws the sheet, never the side panel', () => {
+    deskPx = 900;
+    const { container } = render(<LiveView initial={PREVIEW_LIVE} frozen now={PREVIEW_LIVE_NOW} />);
+    expect(container.querySelector('.ch-lv-split')?.getAttribute('data-panel')).toBe('sheet');
+    expect(container.querySelector('.ch-lv-panel')).toBeNull();
+  });
+
+  it('a desk with room for the split keeps the panel beside the lanes', () => {
+    deskPx = 1200;
+    const { container } = render(<LiveView initial={PREVIEW_LIVE} frozen now={PREVIEW_LIVE_NOW} />);
+    expect(container.querySelector('.ch-lv-split')?.getAttribute('data-panel')).toBe('side');
+    expect(container.querySelector('.ch-lv-panel')).not.toBeNull();
   });
 
   it('needs the room its own columns take: 560 px of lanes, a 360 px panel and the gap', () => {

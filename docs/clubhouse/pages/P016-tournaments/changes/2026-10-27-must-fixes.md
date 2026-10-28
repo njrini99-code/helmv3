@@ -16,7 +16,9 @@ Held items:     20261027100000 (the rename/course-change fix) is its own PR
 - The event desk's owner order (`desk-model.ts` `byTotal`) ranks a card a
   round short below every full card, however low its total, as Nick ruled
   on Oct 24. Before, a card missing a round sorted to the top on its smaller
-  total.
+  total. Only an ok round counts as played: a WD, DQ or pending DQ that
+  carries strokes ranks as a round short, and its strokes stay out of the
+  player's total.
 - The desk's Team vs par row draws under par in `--ch-score-under` on
   `--ch-score-under-bg` (D-42), not the chart gain green.
 - A nine-hole event round plays half the eighteen-hole par stored on the tee
@@ -24,7 +26,11 @@ Held items:     20261027100000 (the rename/course-change fix) is its own PR
   34 under.
 - The comparison pool counts GIR only on holes that were marked (`girOf`),
   gives no putt total when a scored hole has no putt count, and lists WD and
-  DQ event rounds out of every figure with the reason.
+  DQ event rounds out of every figure with the reason. The scope's sample
+  counts and the timeline's dots leave those rounds out too.
+- A pool round with a full card takes the sum of its holes' pars, so a nine
+  whose halves differ (a 35/37 layout) is exact; half the course par is the
+  fallback.
 
 ### Why
 
