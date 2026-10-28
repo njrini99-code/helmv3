@@ -29,9 +29,17 @@
 -- ROLLBACK: re-run the two CREATE OR REPLACE FUNCTION statements for
 -- ROLLBACK:   golf_tournament_create and golf_tournament_update from
 -- ROLLBACK:   20261024100200_golf_tournaments_rpcs.sql (sections 2 and 3).
--- VERIFY: SELECT 1 WHERE pg_get_functiondef('public.golf_tournament_update(uuid, jsonb, integer)'::regprocedure) LIKE '%helm.tournament_write%';
--- VERIFY: SELECT 1 WHERE pg_get_functiondef('public.golf_tournament_create(jsonb)'::regprocedure) NOT LIKE '%· Round%';
--- VERIFY: SELECT 1 WHERE NOT has_function_privilege('anon', 'public.golf_tournament_update(uuid, jsonb, integer)', 'EXECUTE');
+-- VERIFY: SELECT 1 WHERE pg_get_functiondef(
+-- VERIFY:   'public.golf_tournament_update(uuid, jsonb, integer)'::regprocedure
+-- VERIFY: ) LIKE '%helm.tournament_write%';
+-- VERIFY: SELECT 1 WHERE pg_get_functiondef(
+-- VERIFY:   'public.golf_tournament_create(jsonb)'::regprocedure
+-- VERIFY: ) NOT LIKE '%· Round%';
+-- VERIFY: SELECT 1 WHERE NOT has_function_privilege(
+-- VERIFY:   'anon',
+-- VERIFY:   'public.golf_tournament_update(uuid, jsonb, integer)',
+-- VERIFY:   'EXECUTE'
+-- VERIFY: );
 
 create or replace function public.golf_tournament_create(p_payload jsonb)
 returns uuid
@@ -257,7 +265,11 @@ BEGIN
       v_i := v_i + 1;
       v_date := (v_round->>'date')::date;
       v_tee := nullif(v_round->>'first_tee_at', '')::timestamptz;
-      v_course := coalesce(nullif(v_round->>'course_id', '')::uuid, nullif(p_payload->>'course_id', '')::uuid, v_t.course_id);
+      v_course := coalesce(
+        nullif(v_round->>'course_id', '')::uuid,
+        nullif(p_payload->>'course_id', '')::uuid,
+        v_t.course_id
+      );
       SELECT r.round_event_id INTO v_event
       FROM public.golf_tournament_rounds r
       WHERE r.tournament_id = p_id AND r.round_number = v_i;
