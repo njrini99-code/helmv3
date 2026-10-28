@@ -1,6 +1,6 @@
 # 2026-10-28 — Calendar: visual pass (contrast at night, block line fit)
 
-## 2026-10-28 — The panel's plates and full class slots read at night; a block never pushes its time out
+## 2026-10-28 — Panel plates and class slots read at night; times stay in view
 
 ```text
 Design package: none (Clubhouse visual pass 2026-10-28, area D; RUBRIC H8, H10,

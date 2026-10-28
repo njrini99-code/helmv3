@@ -1,6 +1,6 @@
 # 2026-10-28 — Team Hub visual pass
 
-## 2026-10-28 — No rail on any post, cards at 16, one plus on every tab, the chosen tab in view
+## 2026-10-28 — No rail on posts, cards at 16, one plus per tab, chosen tab in view
 
 ```text
 Design package: none (Clubhouse visual pass 2026-10-28, area E; RUBRIC H6, H10,
