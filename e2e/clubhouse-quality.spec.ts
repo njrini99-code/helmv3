@@ -159,7 +159,8 @@ test('keyboard alternatives reveal without covering their message or priority la
   await page.setViewportSize({ width: 390, height: 844 });
   await page.goto('/clubhouse-preview/messages');
   // The phone board opens on the conversation list; open the first thread.
-  await page.locator('.ch-msp-list .ch-ms-sec.is-date button').first().click();
+  // The row itself: since the swipe rows (#2361) each row also holds its hidden swipe and keyboard action buttons.
+  await page.locator('.ch-msp-list .ch-ms-sec.is-date button.ch-ms-row').first().click();
   const thread = page.locator('.ch-msp-thread');
   await expect(thread).toBeInViewport();
   await expect.poll(() => thread.evaluate(element => Math.round(element.getBoundingClientRect().left))).toBe(0);
