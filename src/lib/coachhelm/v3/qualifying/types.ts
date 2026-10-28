@@ -19,6 +19,18 @@ export type QualifierSelectionState = (typeof QUALIFIER_SELECTION_STATES)[number
 
 export type QualifierSelectionType = 'top_score' | 'coach_pick';
 
+/**
+ * How the workspace ranks its candidates, and so who the places on score go to.
+ * 'score': the plain standings order (ranking.ts compareStandings), what Fairway's
+ * leaderboard and workspace show. 'board': the Clubhouse board's order
+ * (ranking.ts boardOrder: a card a round short below every full card), which
+ * Clubhouse's Manage selections and Confirm squad use (owner decision A).
+ */
+export type QualifyingOrder = 'score' | 'board';
+
+/** A caller-supplied order, read safely: anything but 'board' is the plain order. */
+export const asQualifyingOrder = (order: unknown): QualifyingOrder => (order === 'board' ? 'board' : 'score');
+
 export interface QualifierSelection {
   qualifier_id: string;
   player_id: string;

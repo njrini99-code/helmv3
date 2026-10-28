@@ -17,7 +17,7 @@ import {
   pickableCount,
 } from './state-machine';
 import { loadQualifyingWorkspace } from './loader';
-import type { QualifierSelectionState } from './types';
+import type { QualifierSelectionState, QualifyingOrder } from './types';
 import { composeTravelBrief } from './travel-brief';
 import { pushTravelBriefToChat } from './chat-push';
 import { notifyPlayersOfSelectionOutcome } from './player-notify';
@@ -210,9 +210,9 @@ export async function setCoachPick(
  */
 export async function chooseTiePlace(
   supabase: Sb,
-  args: { qualifier_id: string; player_id: string; user_id: string; give: boolean },
+  args: { qualifier_id: string; player_id: string; user_id: string; give: boolean; order?: QualifyingOrder },
 ): Promise<ServiceResult> {
-  const workspace = await loadQualifyingWorkspace(supabase, args.qualifier_id);
+  const workspace = await loadQualifyingWorkspace(supabase, args.qualifier_id, { order: args.order });
   if (!workspace) return { ok: false, error: 'workspace not loadable' };
   if (workspace.selection_state !== 'closed') {
     return { ok: false, error: `places at the cut locked in state ${workspace.selection_state}` };
@@ -282,13 +282,17 @@ export async function removeCoachPick(
  * service-role client, having already verified the caller staffs the
  * qualifier's team. It is a factory so a missing service key fails inside the
  * best-effort block below, never the confirmation.
+ *
+ * `args.order` is the order the places on score go by (loader.ts): Fairway's
+ * workspace leaves it out ('score'); Clubhouse passes 'board', so the squad
+ * is the one its board and Manage selections showed above the line.
  */
 export async function confirmSelection(
   supabase: Sb,
-  args: { qualifier_id: string; user_id: string },
+  args: { qualifier_id: string; user_id: string; order?: QualifyingOrder },
   opts: { briefClient?: () => Sb } = {},
 ): Promise<ServiceResult<{ notified: boolean }>> {
-  const workspace = await loadQualifyingWorkspace(supabase, args.qualifier_id);
+  const workspace = await loadQualifyingWorkspace(supabase, args.qualifier_id, { order: args.order });
   if (!workspace) return { ok: false, error: 'workspace not loadable' };
 
   const coachPickSelections = workspace.candidates
@@ -363,7 +367,7 @@ export async function confirmSelection(
   // carries no top_score rows yet, so a brief composed from it listed no
   // auto-qualified players on every first confirmation. Falls back to the
   // snapshot if the re-read fails (the brief is best-effort either way).
-  const committed = (await loadQualifyingWorkspace(supabase, args.qualifier_id).catch(() => null)) ?? workspace;
+  const committed = (await loadQualifyingWorkspace(supabase, args.qualifier_id, { order: args.order }).catch(() => null)) ?? workspace;
 
   // W32: push travel brief to coach chat (best-effort — never blocks selection).
   try {

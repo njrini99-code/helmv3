@@ -1206,7 +1206,9 @@ export async function getTeamRounds(
       .eq('is_test', false)
       .eq('status', 'completed')
       .gte('round_date', since);
-    if (input.round_type) q = q.eq('round_type', input.round_type);
+    // Older qualifier rounds are stored as 'qualifying' (round-type-utils.ts); asking for qualifier rounds counts both.
+    if (input.round_type === 'qualifier') q = q.in('round_type', ['qualifier', 'qualifying']);
+    else if (input.round_type) q = q.eq('round_type', input.round_type);
     if (input.qualifier_id) q = q.eq('qualifier_id', input.qualifier_id);
     return q.order('round_date', { ascending: false }).limit(600);
   });
