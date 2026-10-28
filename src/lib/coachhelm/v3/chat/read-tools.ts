@@ -1217,6 +1217,9 @@ export async function getTeamRounds(
 
   const names = new Map(ctx.roster.map((p) => [p.id, p.name]));
   const rounds = data.sort((a, b) => String(b.round_date).localeCompare(String(a.round_date))).slice(0, 600);
+  // At the cap the oldest rounds in the window were never read: every figure below is partial, never "complete".
+  const capped = data.length >= 600;
+  const capNote = capped ? 'Only the 600 most recent rounds were read; narrow the window for an exact answer.' : null;
   const byPlayer = new Map<string, typeof rounds>();
   for (const r of rounds) byPlayer.set(r.player_id, [...(byPlayer.get(r.player_id) ?? []), r]);
   const label = input.round_type ?? 'all';
@@ -1239,8 +1242,8 @@ export async function getTeamRounds(
       sample_size: toPar(rs).length,
       sample_unit: 'rounds',
       as_of: asOf,
-      coverage: 'complete',
-      coverage_note: null,
+      coverage: capped ? 'partial' : 'complete',
+      coverage_note: capNote,
       source: 'rounds',
       method: 'mean of completed rounds',
       denominator: null,
@@ -1268,8 +1271,8 @@ export async function getTeamRounds(
         window_start: since,
         window_end: today,
         as_of: asOf,
-        coverage: 'complete',
-        coverage_note: null,
+        coverage: capped ? 'partial' : 'complete',
+        coverage_note: capNote,
         source: 'rounds',
         method: 'weekly mean of completed rounds',
         benchmark: null,
@@ -1299,15 +1302,16 @@ export async function getTeamRounds(
         player: names.get(r.player_id),
         date: r.round_date,
         course: r.course_name,
-        round_type: r.round_type,
+        // One name for qualifier rounds, whichever spelling the row was stored under.
+        round_type: r.round_type === 'qualifying' ? 'qualifier' : r.round_type,
         qualifier_round: r.qualifier_round_number,
         total_score: r.total_score,
         to_par: r.score_to_par,
         putts: r.total_putts,
       })),
     },
-    coverage: rounds.length === 0 ? 'empty' : rounds.length >= 600 ? 'partial' : 'complete',
-    coverage_note: rounds.length >= 600 ? 'Only the 600 most recent rounds were read; narrow the window for an exact answer.' : null,
+    coverage: rounds.length === 0 ? 'empty' : capped ? 'partial' : 'complete',
+    coverage_note: capNote,
     as_of: nowIso(),
   };
 }
@@ -1420,8 +1424,9 @@ export async function getQualifiers(sb: Sb, ctx: CoachChatContext, input: { limi
         };
       }),
     },
-    coverage: 'complete',
-    coverage_note: null,
+    // The rounds read stops at 900: past it some standings are short of rounds, so the list is never called complete.
+    coverage: rows.length >= 900 ? 'partial' : 'complete',
+    coverage_note: rows.length >= 900 ? 'Only 900 qualifier rounds were read; ask about fewer qualifiers for exact standings.' : null,
     as_of: nowIso(),
   };
 }

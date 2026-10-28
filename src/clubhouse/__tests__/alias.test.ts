@@ -184,3 +184,41 @@ describe('an old address keeps its query when it moves (the proxy hands layouts 
     await expect(CompareLayout({ children: null })).rejects.toThrow(new RegExp('REDIRECT /golf/dashboard/stats/team$'));
   });
 });
+
+describe('an old /coachhelm/chat link keeps its conversation and question (2026-10-28)', () => {
+  const CID = '6f1e2d3c-4b5a-4968-8776-5a4b3c2d1e0f';
+  const ASK = '/golf/dashboard/coachhelm?view=ask';
+  const lands = async (q: string) => {
+    const { default: ChatLayout } = await import('@/app/golf/(dashboard)/dashboard/coachhelm/chat/layout');
+    search = q;
+    redirect.mockClear();
+    await ChatLayout({ children: null }).catch(() => {});
+    return redirect.mock.calls[0]?.[0];
+  };
+
+  it('keeps ?c= and ?q=, encoded, on the Ask sub-tab', async () => {
+    expect(await lands(`?c=${CID}`)).toBe(`${ASK}&c=${CID}`);
+    const href = await lands(`?c=${CID}&q=${encodeURIComponent('Who putts best from 6 feet & in?')}`);
+    expect(href).toBe(`${ASK}&c=${CID}&q=Who+putts+best+from+6+feet+%26+in%3F`);
+    expect(new URL(href!, 'https://x.test').searchParams.get('q')).toBe('Who putts best from 6 feet & in?');
+  });
+
+  it('drops every other key, a conversation that is not an id, and a question with control characters or past 1000 characters', async () => {
+    expect(await lands('?other=1&view=brief')).toBe(ASK);
+    expect(await lands('?c=' + encodeURIComponent('x"><script>'))).toBe(ASK);
+    expect(await lands('?q=' + encodeURIComponent('line\nbreak'))).toBe(ASK);
+    expect(await lands('?q=' + 'a'.repeat(1001))).toBe(ASK);
+    // A question can't smuggle another key or path: it stays one encoded value.
+    const href = await lands('?q=' + encodeURIComponent('x&view=brief#/admin'));
+    const url = new URL(href!, 'https://x.test');
+    expect(url.pathname).toBe('/golf/dashboard/coachhelm');
+    expect([...url.searchParams.keys()]).toEqual(['view', 'q']);
+    expect(url.searchParams.get('view')).toBe('ask');
+    expect(url.searchParams.get('q')).toBe('x&view=brief#/admin');
+  });
+
+  it("a player's old chat link still opens their CoachHelm, with nothing carried", async () => {
+    session = { player: {} };
+    expect(await lands(`?c=${CID}&q=hi`)).toBe('/golf/dashboard/coachhelm');
+  });
+});

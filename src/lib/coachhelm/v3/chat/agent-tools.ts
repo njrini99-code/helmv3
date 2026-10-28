@@ -145,6 +145,9 @@ const PROGRESS_LABEL: Record<string, (input: Record<string, unknown>) => string>
   get_team_metric_ranking: () => 'Ranking the team',
   get_player_weakest_areas: () => 'Looking for where the gap is largest',
   get_recent_rounds: () => 'Reading recent rounds',
+  get_team_rounds: () => 'Reading the team’s rounds',
+  get_qualifiers: () => 'Reading qualifier standings',
+  get_tournaments: () => 'Reading tournament results',
   get_player_insights: () => 'Reading open signals',
   get_focus_areas: () => 'Checking active focus areas',
   get_upcoming_events: () => 'Checking the schedule and RSVPs',
@@ -165,6 +168,12 @@ export interface BuildToolsArgs {
   writer: UIMessageStreamWriter;
   /** Collects every envelope this turn produced, for the claim audit. */
   collect: (envelope: ToolEnvelope) => void;
+  /**
+   * Whether Clubhouse is on for this coach's team (`isClubhouseForTeam` in src/clubhouse/gate.ts: the
+   * golf_clubhouse_ui flag, then the HELM_CLUBHOUSE_TEAMS allowlist). The route decides it, since code outside
+   * src/clubhouse may not import the gate. Left out, the whole-team tools stay off.
+   */
+  teamTools?: boolean;
 }
 
 /**
@@ -219,7 +228,7 @@ interface GatedAction<TInput, TPlan> {
   run: (plan: TPlan) => Promise<ActionReceipt>;
 }
 
-export function buildCoachTools({ sb, ctx, conversationId, writer, collect }: BuildToolsArgs): ToolSet {
+export function buildCoachTools({ sb, ctx, conversationId, writer, collect, teamTools = false }: BuildToolsArgs): ToolSet {
   let progressId = 0;
   const progress = (toolName: string, input: Record<string, unknown>) => {
     const label = PROGRESS_LABEL[toolName]?.(input) ?? 'Working';
@@ -550,16 +559,23 @@ export function buildCoachTools({ sb, ctx, conversationId, writer, collect }: Bu
         }
       : {}),
 
-    get_team_rounds: tool({
-      description:
-        'Every active player\'s completed rounds in a window, optionally only practice, qualifier or tournament rounds (or one qualifier). Returns per-player round counts and average score, to par and putts, already computed, plus the most recent rounds. Use for any team-wide question about rounds, qualifier or tournament scoring, or practice results.',
-      inputSchema: z.object({
-        round_type: z.enum(TEAM_ROUND_TYPES).optional(),
-        qualifier_id: z.string().uuid().optional(),
-        since_days: z.number().int().min(1).max(365).default(60),
-      }),
-      execute: read('get_team_rounds', (input) => getTeamRounds(sb, ctx, input)),
-    }),
+    // Whole-team reads, built for Clubhouse's Ask. This engine also serves Fairway's chat, so they are registered only
+    // while Clubhouse is on for this coach's team (golf_clubhouse_ui, then the HELM_CLUBHOUSE_TEAMS allowlist). Left
+    // out of the tool set, the model is never offered them and a call to either is refused as an unknown tool.
+    ...(teamTools
+      ? {
+        get_team_rounds: tool({
+          description:
+            'Every active player\'s completed rounds in a window, optionally only practice, qualifier or tournament rounds (or one qualifier). Returns per-player round counts and average score, to par and putts, already computed, plus the most recent rounds. Use for any team-wide question about rounds, qualifier or tournament scoring, or practice results.',
+          inputSchema: z.object({
+            round_type: z.enum(TEAM_ROUND_TYPES).optional(),
+            qualifier_id: z.string().uuid().optional(),
+            since_days: z.number().int().min(1).max(365).default(60),
+          }),
+          execute: read('get_team_rounds', (input) => getTeamRounds(sb, ctx, input)),
+        }),
+        }
+      : {}),
 
     // Tournaments are behind golf_tournaments_v1: the chat must not read an unreleased feature's tables.
     ...(isFlagEnabled('golf_tournaments_v1')
@@ -573,12 +589,17 @@ export function buildCoachTools({ sb, ctx, conversationId, writer, collect }: Bu
         }
       : {}),
 
-    get_qualifiers: tool({
-      description:
-        'The team\'s qualifiers, most recent first: dates, status, spots, and each player\'s standing in the qualifier board\'s order (position with T for a tie, rounds, total and average to par, average score; a card a round short ranks below every full card).',
-      inputSchema: z.object({ limit: z.number().int().min(1).max(8).default(5) }),
-      execute: read('get_qualifiers', (input) => getQualifiers(sb, ctx, input)),
-    }),
+    // Same Clubhouse gate as get_team_rounds above.
+    ...(teamTools
+      ? {
+        get_qualifiers: tool({
+          description:
+            'The team\'s qualifiers, most recent first: dates, status, spots, and each player\'s standing in the qualifier board\'s order (position with T for a tie, rounds, total and average to par, average score; a card a round short ranks below every full card).',
+          inputSchema: z.object({ limit: z.number().int().min(1).max(8).default(5) }),
+          execute: read('get_qualifiers', (input) => getQualifiers(sb, ctx, input)),
+        }),
+        }
+      : {}),
 
     get_player_insights: tool({
       description: 'Open CoachHelm signals for one player, with their supporting evidence.',

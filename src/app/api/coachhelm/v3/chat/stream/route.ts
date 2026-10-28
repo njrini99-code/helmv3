@@ -83,6 +83,7 @@ import {
 import { extractAndValidateChatClaims } from '@/lib/coachhelm/v3/chat/claims-packet';
 import { CLAIMS_OPEN, CLAIMS_CLOSE, extractAndValidateClaimsSafe } from '@/lib/coachhelm/v3/llm/claims-block';
 import { isFlagEnabled } from '@/lib/flags';
+import { isClubhouseForTeam } from '@/clubhouse/gate';
 import { isCoachHelmEnabledForCoach } from '@/lib/coachhelm/v2/gate';
 import type { ChatMessage } from '@/lib/coachhelm/v3/chat/types';
 import {
@@ -554,7 +555,15 @@ export async function POST(req: NextRequest) {
 
   const stream = createUIMessageStream({
     execute: async ({ writer }) => {
-      const tools = buildCoachTools({ sb: supabase, ctx, conversationId: convId, writer, collect });
+      const tools = buildCoachTools({
+        sb: supabase,
+        ctx,
+        conversationId: convId,
+        writer,
+        collect,
+        // Ask's whole-team tools follow Clubhouse for this team (flag, then allowlist).
+        teamTools: isClubhouseForTeam(ctx.team_id),
+      });
 
       const result = streamText({
         model,

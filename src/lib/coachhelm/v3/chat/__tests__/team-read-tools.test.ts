@@ -54,6 +54,19 @@ describe('team-wide CoachHelm read tools', () => {
     expect(chain.eq).not.toHaveBeenCalledWith('round_type', expect.anything());
   });
 
+  it('get_team_rounds counts an older “qualifying” round as a qualifier round and reports it as one', async () => {
+    const row = (id: string, round_type: string) => ({ id, player_id: 'p1', round_date: '2026-10-10', course_name: 'Oak', round_type, qualifier_id: 'q1', qualifier_round_number: 1, total_score: 74, score_to_par: 2, total_putts: 30 });
+    const env = await getTeamRounds(
+      sbWith({ golf_rounds: [{ data: [row('r1', 'qualifying'), row('r2', 'qualifier')] }] }),
+      ctx,
+      { round_type: 'qualifier', since_days: 30 },
+    );
+    const d = env.detail as { round_count: number; players: Array<{ rounds: number }>; recent_rounds: Array<{ round_type: string }> };
+    expect(d.round_count).toBe(2);
+    expect(d.players[0]).toMatchObject({ rounds: 2 });
+    expect(d.recent_rounds.map((r) => r.round_type)).toEqual(['qualifier', 'qualifier']);
+  });
+
   it('get_team_rounds says unavailable, not empty, when the read fails', async () => {
     const env = await getTeamRounds(sbWith({ golf_rounds: [{ error: { message: 'boom' } }] }), ctx, { since_days: 30 });
     expect(env.coverage).toBe('unavailable');
@@ -150,5 +163,48 @@ describe('team-wide CoachHelm read tools', () => {
       timezone: ctx.timezone,
     });
     expect(verdict.outcome).toBe('rejected');
+  });
+});
+
+describe('a capped team read is never called complete (2026-10-28)', () => {
+  const qualifier = { id: 'q1', name: 'Fall Qualifier', status: 'completed', start_date: '2026-09-20', end_date: '2026-09-21', num_rounds: 2, course_name: 'Oak', spots_available: 5, selection_state: 'set' };
+  const qRound = (i: number) => ({ qualifier_id: 'q1', player_id: i % 2 ? 'p1' : 'p2', total_score: 72 + (i % 5), score_to_par: i % 5, qualifier_round_number: 1 });
+  const teamRound = (i: number) => ({ id: `r${i}`, player_id: i % 2 ? 'p1' : 'p2', round_date: '2026-10-10', course_name: 'Oak', round_type: 'practice', qualifier_id: null, qualifier_round_number: null, total_score: 72 + (i % 5), score_to_par: i % 5, total_putts: 30 });
+
+  it('get_qualifiers at its 900-round cap is partial and says why', async () => {
+    const env = await getQualifiers(
+      sbWith({ golf_qualifiers: [{ data: [qualifier] }], golf_rounds: [{ data: Array.from({ length: 900 }, (_, i) => qRound(i)) }] }),
+      ctx,
+      { limit: 5 },
+    );
+    expect(env.coverage).toBe('partial');
+    expect(env.coverage_note).toMatch(/900/);
+  });
+
+  it('get_qualifiers under the cap stays complete', async () => {
+    const env = await getQualifiers(
+      sbWith({ golf_qualifiers: [{ data: [qualifier] }], golf_rounds: [{ data: Array.from({ length: 12 }, (_, i) => qRound(i)) }] }),
+      ctx,
+      { limit: 5 },
+    );
+    expect(env.coverage).toBe('complete');
+    expect(env.coverage_note).toBeNull();
+  });
+
+  it('get_team_rounds at its 600-round cap marks every per-player figure and the weekly line partial, not only the envelope', async () => {
+    const env = await getTeamRounds(sbWith({ golf_rounds: [{ data: Array.from({ length: 600 }, (_, i) => teamRound(i)) }] }), ctx, { since_days: 60 });
+    expect(env.coverage).toBe('partial');
+    expect(env.measurements.length).toBe(2);
+    for (const m of env.measurements) {
+      expect(m.coverage).toBe('partial');
+      expect(m.coverage_note).toMatch(/600/);
+    }
+    for (const s of env.series) expect(s.coverage).toBe('partial');
+  });
+
+  it('get_team_rounds under the cap keeps its per-player figures complete', async () => {
+    const env = await getTeamRounds(sbWith({ golf_rounds: [{ data: Array.from({ length: 20 }, (_, i) => teamRound(i)) }] }), ctx, { since_days: 60 });
+    expect(env.coverage).toBe('complete');
+    expect(env.measurements.every((m) => m.coverage === 'complete' && m.coverage_note === null)).toBe(true);
   });
 });
