@@ -63,7 +63,7 @@ that the screen does not show.
 
 | # | When | They see | How | Test |
 | --- | --- | --- | --- | --- |
-| CH-1301 | A page that hasn't been rebuilt in Clubhouse | The page empty's anatomy, as the route error draws it, with no card: an hourglass medallion, "Rounds hasn’t been rebuilt yet", one sentence, and Back to Home | `NotRebuilt` | shell.test › CH-1301 |
+| CH-1301 | A page that hasn't been rebuilt in Clubhouse | The page empty's anatomy, as the route error draws it, with no card: an hourglass medallion, "Rounds hasn’t been rebuilt yet", one sentence, and Back to Home. A player on a page rebuilt for coaches only (Recruiting, What's new): a lock, "Only coaches use Recruiting", "Your rounds, stats and team are on Home." and Back to Home | `NotRebuilt` (`coachOnly`) | shell.test › CH-1301 |
 | CH-1302 | The bell has nothing | The shared section empty at the rows' inset: "You’re all caught up" + what shows up here | `EmptyState` in `Bell` | shell.test › CH-1302 |
 | CH-1271 | A player's pushes are held for class (P-10) | The bell's first row, above the list: a clock, "3 updates held until 11:50 AM" and Deliver now (52 px row, a hairline below, no tint). After Deliver now it reads "Delivered" for 2 seconds and goes. The held items are already in the list, so the row lists nothing twice. Not drawn for a coach or with nothing held | `BellHeldRow` | class-awareness-holds.test › CH-1271 |
 | CH-1303 | The bell's filter has nothing | The shared section empty: "Nothing of this kind" + Show all | `EmptyState` in `Bell` | shell.test › CH-1303 |

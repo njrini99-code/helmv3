@@ -3,7 +3,8 @@
 ## 2026-10-27 — "Better than", no flat glyph, captions wrap
 
 ```text
-Design package: none (production polish pass before launch; doctrine in .claude/rules/clubhouse.md)
+Design package: none (production polish pass;
+                doctrine in .claude/rules/clubhouse.md)
 PR/commit:      agent/clubhouse-polish
 Contract IDs:   none changed
 Actions:        none
@@ -39,4 +40,5 @@ Held items:     none
 ### Verification
 
 - `data/__tests__/stats-insight.test.ts`, `__tests__/stats-team.test.tsx`,
-  `__tests__/stats-player.test.tsx` (269 Stats tests pass). WebKit at 375, 390 and 1280.
+  `__tests__/stats-player.test.tsx` (269 Stats tests pass). WebKit at 375, 390
+  and 1280.

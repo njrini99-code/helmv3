@@ -3,7 +3,8 @@
 ## 2026-10-27 — The Standing hero's method line says "measured against"
 
 ```text
-Design package: none (production polish pass before launch; doctrine in .claude/rules/clubhouse.md)
+Design package: none (production polish pass;
+                doctrine in .claude/rules/clubhouse.md)
 PR/commit:      agent/clubhouse-polish
 Contract IDs:   none changed
 Actions:        none

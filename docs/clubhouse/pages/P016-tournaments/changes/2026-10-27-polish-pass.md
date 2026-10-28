@@ -3,12 +3,14 @@
 ## 2026-10-27 — One back on the phone; History's head and chart lines
 
 ```text
-Design package: none (production polish pass before launch); phone board design/handoff/tour-m.jsx
+Design package: none (production polish pass);
+                phone board design/handoff/tour-m.jsx
 PR/commit:      agent/clubhouse-polish
 Contract IDs:   none changed
 Actions:        none
 Data impact:    none
-Held items:     none (golf_tournaments_v1 stays off in production; see below)
+Held items:     none (golf_tournaments_v1 stays off in production;
+                see below)
 ```
 
 ### Changed
@@ -32,7 +34,8 @@ Held items:     none (golf_tournaments_v1 stays off in production; see below)
 
 ### Why
 
-- One back per screen; nothing runs off the phone; a reference line says what it is.
+- One back per screen; nothing runs off the phone; a reference line says what
+  it is.
 
 ### Verification
 

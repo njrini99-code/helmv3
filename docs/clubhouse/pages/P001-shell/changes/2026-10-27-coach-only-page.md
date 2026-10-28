@@ -3,9 +3,11 @@
 ## 2026-10-27 — Not-rebuilt page: "Only coaches use Recruiting" for players
 
 ```text
-Design package: none (production polish pass before launch); copy follows Qualifiers' CH-09311 coach-only state
+Design package: none (production polish pass); copy follows
+                Qualifiers' CH-09311 coach-only state
 PR/commit:      agent/clubhouse-polish
-Contract IDs:   CH-1301 (same state, coach-only wording)
+Contract IDs:   CH-1301 (same state, coach-only wording; catalog row
+                updated), 10802
 Actions:        none
 Data impact:    none
 Held items:     none
@@ -29,6 +31,8 @@ Held items:     none
 
 ### Verification
 
-- `__tests__/shell.test.tsx` (new case). The frame tests and the alias tests pass
-  (260). Signed-in on the local stack, a player at `/golf/dashboard/recruiting`
-  and at `/golf/dashboard/whats-new` showed the old wording before the change.
+- `__tests__/shell.test.tsx`: the page's coach-only wording, and the frame
+  drawing it for a player on Recruiting while a coach on an unbuilt address
+  keeps the plain notice (contract 10802). The frame and alias tests pass.
+  Signed in on the local stack, a player at `/golf/dashboard/recruiting` and at
+  `/golf/dashboard/whats-new` showed the old wording before the change.

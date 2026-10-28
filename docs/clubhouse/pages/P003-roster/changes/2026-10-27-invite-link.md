@@ -3,7 +3,8 @@
 ## 2026-10-27 — The invite link reads in order, and the sheet hydrates cleanly
 
 ```text
-Design package: none (production polish pass before launch; doctrine in .claude/rules/clubhouse.md)
+Design package: none (production polish pass;
+                doctrine in .claude/rules/clubhouse.md)
 PR/commit:      agent/clubhouse-polish
 Contract IDs:   none changed
 Actions:        none
@@ -19,8 +20,8 @@ Held items:     none
   again, and it opens scrolled to its end so the code shows (`styles/roster.css`,
   `screens/roster/Roster.tsx` scrollToEnd).
 - The sheet read `window.location` and `navigator.share` while rendering, so a
-  sheet open on first paint (`?invite=1`) did not match the server's HTML. Both are
-  read after mount, as Settings' invite already does.
+  sheet open on first paint (`?invite=1`) did not match the server's HTML.
+  Both are read after mount, as Settings' invite already does.
 
 ### Why
 

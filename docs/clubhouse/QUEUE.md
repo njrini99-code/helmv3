@@ -1,6 +1,7 @@
 # Clubhouse work queue: what is left and who has it
 
-Updated 2026-10-27 (the A+ rows from #2356 marked done); before that 2026-10-22, after the merge trains landed. This is the single list
+Updated 2026-10-27 (the A+ rows from #2356 marked done); before that
+2026-10-22, after the merge trains landed. This is the single list
 of open Clubhouse and CoachHelm work. Read it with [STATUS.md](STATUS.md)
 (current state, rollout, rollback) before you start anything.
 
@@ -360,6 +361,8 @@ its rows together and does not map them one to one.
 | aplus-cons26 | Page titles are their nav labels (CONS-26, partial) | Clubhouse A+ | in progress | #2361 | agent/clubhouse-aplus-phase2 (Clubhouse A+ handoff, WP-17); Qualifiers' name held for the owner; no Bridge IDs or CH codes needed |
 | aplus-cons11 | Honest empty states, with an AST ratchet (CONS-11, partial) | Clubhouse A+ | in progress | #2361 | agent/clubhouse-aplus-phase2 (Clubhouse A+ handoff, WP-17); 71 legacy empties ratcheted; no Bridge IDs or CH codes needed |
 | aplus-cons2-14b | IconButton for menu keys; 83 plurals onto plural(); the spread's axis under the team pill (CONS-2, CONS-14) | Clubhouse A+ | in progress | #2361 | agent/clubhouse-aplus-phase2 (Clubhouse A+ handoff); ratchets lowered; no Bridge IDs or CH codes needed |
+| polish-1027 | Production polish pass before launch: every page on the phone (390, 375) and desktop (1280), light and dark; fixes, page docs, P016 phone spec | Clubhouse polish | in progress | (this PR) | agent/clubhouse-polish |
+| polish-margin-reset | `.ch-root p` and `.ch-root h1..h3 { margin: 0 }` (styles/base.css) outrank every one-class rule: about 105 page rules that give a `p` or a heading a margin never apply. Lower the reset's specificity and review every page with before and after shots | Clubhouse polish | open | — | unclaimed (found by polish-1027; STATUS.md 2026-10-27) |
 
 <!-- markdownlint-enable MD013 -->
 

@@ -3,7 +3,8 @@
 ## 2026-10-27 — usePressPrefetch draws data-ch-ahead with or without a router
 
 ```text
-Design package: none (production polish pass before launch; doctrine in .claude/rules/clubhouse.md)
+Design package: none (production polish pass;
+                doctrine in .claude/rules/clubhouse.md)
 PR/commit:      agent/clubhouse-polish
 Contract IDs:   none changed
 Actions:        none

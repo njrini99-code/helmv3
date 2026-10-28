@@ -3,7 +3,8 @@
 ## 2026-10-27 — Travelers' initials stay readable
 
 ```text
-Design package: none (production polish pass before launch; doctrine in .claude/rules/clubhouse.md)
+Design package: none (production polish pass;
+                doctrine in .claude/rules/clubhouse.md)
 PR/commit:      agent/clubhouse-polish
 Contract IDs:   none changed
 Actions:        none
@@ -14,8 +15,8 @@ Held items:     none
 ### Changed
 
 - The trip card's travelers overlapped 8px, which covered the second letter of
-  each coin ("TM" read "TN", "EB" read "EE"). They overlap 2px, so the rings just touch
-  (`styles/hub.css` `.ch-hw-stack i`).
+  each coin ("TM" read "TN", "EB" read "EE"). They overlap 2px, so the rings
+  just touch (`styles/hub.css` `.ch-hw-stack i`).
 
 ### Why
 
