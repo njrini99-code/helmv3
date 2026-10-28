@@ -3,7 +3,8 @@
 ## 2026-10-28 — Pre-deploy visual pass, area H
 
 ```text
-Design package: none (visual-pass-2026-10-28 RUBRIC.md H2, H8, H13; recheck-2026-10-24
+Design package: none (visual-pass-2026-10-28 RUBRIC.md H2, H8, H13;
+                recheck-2026-10-24
                 G3 findings 1, 5, 9 and 14)
 PR/commit:      visual-pass-2026-10-28
 Contract IDs:   none (presentation only)
