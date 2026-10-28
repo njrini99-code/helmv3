@@ -861,6 +861,7 @@ them would bury everything above.
 | `docs/clubhouse/changes/2026-10-27-class-holds-drain.md` | current | - | - | - | - |
 | `docs/clubhouse/changes/2026-10-27-live-split.md` | current | - | - | - | - |
 | `docs/clubhouse/changes/2026-10-28-design-picks.md` | current | - | - | - | - |
+| `docs/clubhouse/changes/2026-10-28-line-spread-labels.md` | current | - | - | - | - |
 | `docs/clubhouse/changes/2026-10-28-visual-pass-system.md` | current | - | - | - | - |
 | `docs/clubhouse/changes/2026-10-28-visual-pass-whats-new.md` | current | - | - | - | - |
 | `docs/clubhouse/drafts/auth-onboarding-ground-truth.md` | current | - | - | - | - |
@@ -952,6 +953,7 @@ them would bury everything above.
 | `docs/clubhouse/pages/P001-shell/changes/2026-10-25-train-shell-touch-and-course-back.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P001-shell/changes/2026-10-27-coach-only-page.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P001-shell/changes/2026-10-27-press-prefetch-mark.md` | current | - | - | - | - |
+| `docs/clubhouse/pages/P001-shell/changes/2026-10-28-chat-alias-query.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P001-shell/changes/2026-10-28-visual-pass.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P002-home/CHANGELOG.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P002-home/CONTRACT.md` | current | - | - | yes | - |
@@ -1247,6 +1249,7 @@ them would bury everything above.
 | `docs/clubhouse/pages/P013-coachhelm/changes/2026-10-25-visual-artifact.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P013-coachhelm/changes/2026-10-27-standing-method-line.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P013-coachhelm/changes/2026-10-27-visual-artifact-must-fixes.md` | current | - | - | - | - |
+| `docs/clubhouse/pages/P013-coachhelm/changes/2026-10-28-ask-polish.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P013-coachhelm/changes/2026-10-28-visual-pass-whats-new.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P013-coachhelm/changes/2026-10-28-visual-pass.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P014-recruiting/CHANGELOG.md` | current | - | - | - | - |

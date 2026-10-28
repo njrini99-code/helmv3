@@ -154,6 +154,29 @@
   -webkit-text-fill-color: transparent;
   animation: ch-th-shine var(--ch-dur-shimmer) linear infinite;
 }
+/* Reduced motion and Settings > Animations off: the band stops and the words hold still in the line's own ink (the
+   secondary), not frozen mid-gradient. Increase Contrast and forced colours: solid ink, never a gradient (2026-10-28). */
+@media (prefers-reduced-motion: reduce) {
+  .ch-th-shine {
+    animation: none;
+    background: none;
+    -webkit-text-fill-color: currentColor;
+  }
+}
+[data-ui='clubhouse'][data-motion='off'] .ch-th-shine,
+[data-motion='off'] [data-ui='clubhouse'] .ch-th-shine {
+  animation: none;
+  background: none;
+  -webkit-text-fill-color: currentColor;
+}
+@media (prefers-contrast: more), (forced-colors: active) {
+  .ch-th-shine {
+    animation: none;
+    background: none;
+    color: var(--ch-text-primary);
+    -webkit-text-fill-color: currentColor;
+  }
+}
 .ch-th-dot {
   flex: none;
   width: 8px;
@@ -1243,6 +1266,19 @@ a.ch-th-reads__r:focus-visible {
 :where(html[data-fw-theme='dark']) .ch-th-act[data-status='cancelled'] .ch-th-act__icon,
 :where(html[data-fw-theme='dark']) .ch-th-act[data-status='abandoned'] .ch-th-act__icon {
   background: var(--ch-ivory-400);
+}
+/* The avatar's wheel and ball: the day's deep green all but vanished on the night sheet (about 1.4:1); the night's
+   light green holds well over 3:1 there (2026-10-28). Light is unchanged. */
+:where(html[data-fw-theme='dark']) .ch-th-mk-helm {
+  stroke: var(--ch-green-600);
+}
+:where(html[data-fw-theme='dark']) .ch-th-mk-ball {
+  fill: var(--ch-green-600);
+}
+/* A chosen visual row: at night its fill sits within a shade of the card (about 1.01:1), so the selected ink rings it,
+   well over 3:1 (2026-10-28). The bold label stays the second cue; light is unchanged. */
+:where(html[data-fw-theme='dark']) .ch-th-va__row.is-on {
+  box-shadow: inset 0 0 0 1px var(--ch-selected-ink);
 }
 
 /* Phone: touch areas reach 44 x 44 without changing how they are drawn (W4b, 2026-10-19). */
