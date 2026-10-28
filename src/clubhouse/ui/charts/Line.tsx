@@ -116,6 +116,41 @@ export function linePath(values: Array<number | null>, x: (i: number) => number,
 
 /** A baseline label's width per character, estimated from the larger (12px phone) tick type. */
 const REF_CHAR = 6.6;
+/** The least room between two point names under the plot. */
+const LABEL_GAP = 8;
+
+/**
+ * Which point names a `'spread'` line writes under its plot, and where, so no two ever touch: every name up to six points
+ * (else first, middle and last) when they fit, else every second, third… of them, always ending on the newest, else the
+ * first and last, else the newest alone. Each name is centred on its point but kept inside the plot's width. `xs` are the
+ * points' x in viewBox units (a pixel, since the chart is drawn at its measured width); widths are estimated from the
+ * phone's 12px tick type, so a desktop's 11px names only gain room.
+ */
+export function spreadLabels(xs: number[], labels: string[], width: number): Array<{ i: number; x: number }> {
+  const n = xs.length;
+  if (n === 0) return [];
+  const w = (i: number) => labels[i]!.length * REF_CHAR;
+  const at = (i: number) => {
+    const half = w(i) / 2;
+    return half * 2 >= width ? width / 2 : Math.min(Math.max(xs[i]!, half), width - half);
+  };
+  const fits = (picked: number[]) =>
+    picked.every((i, k) => k === 0 || at(i) - w(i) / 2 - (at(picked[k - 1]!) + w(picked[k - 1]!) / 2) >= LABEL_GAP);
+  const base = n <= 6 ? xs.map((_, i) => i) : [...new Set([0, Math.floor((n - 1) / 2), n - 1])];
+  const tries: number[][] = [];
+  for (let step = 1; step < base.length; step += 1) {
+    const picked = base.filter((_, k) => k % step === 0);
+    // Always end on the newest: it replaces the last picked name when that one sits too close to it.
+    if (picked[picked.length - 1] !== n - 1) {
+      if (picked.length > 1 && !fits([picked[picked.length - 1]!, n - 1])) picked.pop();
+      picked.push(n - 1);
+    }
+    tries.push(picked);
+  }
+  tries.push(n > 1 ? [0, n - 1] : [0], [n - 1]);
+  const chosen = tries.find(fits) ?? [n - 1];
+  return chosen.map((i) => ({ i, x: at(i) }));
+}
 
 /**
  * Where a baseline's label goes so it never sits on the line or a point (P013 D3): above the baseline at the right, else
@@ -200,7 +235,10 @@ export function Line({
   wash?: boolean | 'baseline';
   /** Where a point reads: a line above the plot, or a tip over its top corner (where the page has no room for a line). */
   readAt?: 'line' | 'tip';
-  /** The first and last points' names under the plot; with `'spread'`, every name up to six points, else first, middle and last. */
+  /**
+   * The first and last points' names under the plot; with `'spread'`, every name up to six points, else first, middle and
+   * last, thinned to what fits the width without touching (`spreadLabels`).
+   */
   ends?: boolean | 'spread';
   /** Off where the chart sits inside a control (a leg card is a button): no readout, no focus, hidden from a screen reader. */
   interactive?: boolean;
@@ -306,13 +344,15 @@ export function Line({
         ),
       )}
       {ends === 'spread' &&
-        points.map((p, i) =>
-          n <= 6 || i === 0 || i === n - 1 || i === Math.floor((n - 1) / 2) ? (
-            <text key={`x-${i}`} x={x(i)} y={H - 6} textAnchor="middle" className="ch-line__t">
-              {p.x}
-            </text>
-          ) : null,
-        )}
+        spreadLabels(
+          points.map((_, i) => x(i)),
+          points.map((p) => p.x),
+          W,
+        ).map(({ i, x: at }) => (
+          <text key={`x-${i}`} x={at} y={H - 6} textAnchor="middle" className="ch-line__t">
+            {points[i]!.x}
+          </text>
+        ))}
       {ends === true && n > 0 && (
         <>
           <text x={PAD.l} y={H - 6} className="ch-line__t">
