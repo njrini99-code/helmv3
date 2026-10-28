@@ -236,7 +236,16 @@ export async function compose(
       `compose() discarded unverified LLM text for task=${req.task}: ` +
         `unmatched=${attempt.verification.unmatched_tokens.join(',')}` +
         (attempt.claims ? ` claims=${claimReasonSummary || (attempt.claims.malformed ? 'malformed' : 'none')}` : ''),
-      { action: 'v3.llm.compose' },
+      {
+        action: 'v3.llm.compose',
+        // One Bridge incident per task, not per discard. The unmatched tokens
+        // stay in the message for a human, but they are short numbers that
+        // the incident-signature normaliser keeps, so hashing the message
+        // minted a new fingerprint for every discard (2b05f489, 3105fdfb,
+        // c044533e on 2026-10-26..28 were one cause). The tokens are also on
+        // the call log row (citations.unmatched_tokens) for diagnosis.
+        dbFingerprint: `llm-compose-discard:${req.task}`,
+      },
       'warning',
     );
     // Prefer the typed-gate reason when it's the one that failed — it is
