@@ -23,10 +23,13 @@ was catalog-only. Nothing was written to production.
 - **Production holds hand-made changes that no migration carries.** Eight
   files in this PR capture them, so a replayed database (staging, a branch, a
   preview) gets what production has. Each one finds its objects already in
-  place on production. Policies and constraints are created only when
-  missing, so applying a file there leaves the definitions as they are. The
-  grant files re-issue the same grants.
-- **Two places where the repo is right and production is behind.** These are
+  place on production. Every schema change is guarded: policies,
+  constraints, indexes, the view and the role are created only when missing,
+  the `crm_coaches.conference` NOT NULL is dropped only while it is set, and
+  a delete rule is rebuilt only when it differs. So applying a file there
+  redefines nothing and takes no table lock beyond what a GRANT or REVOKE
+  needs. The grant files re-issue the same grants.
+- **Three places where the repo is right and production is behind.** These are
   listed below as forward fixes. They are not captured, because capturing
   them would copy the weaker version into the replay.
 
@@ -44,7 +47,7 @@ was catalog-only. Nothing was written to production.
 | `20261028140700_capture_helm_bridge_feedback_bucket.sql` | The private `helm-bridge-feedback` bucket (8 MB, png, jpeg, webp, gif). No storage policy; service role only. |
 
 All eight are marked **HOLD — CAPTURE** in `HELD.md`. They wait only on the
-owner's freeze. On staging they were applied and verified (see "Replay check").
+owner's freeze. They are not on staging yet (see "Replay check").
 
 ## Not captured: the repo is right and production is behind
 
@@ -141,3 +144,9 @@ Supabase confirm prompt that got no answer; a read on 2026-10-28 showed no
 ledger row, role or bucket from them. CI's RLS job replays every migration
 from empty, which covers the replay itself. A direct apply on staging, then a
 re-read against production, is the step left.
+
+Staging was copied with data, so check one thing before applying
+`20261028140000` there: the `golf_messages_payload_matches_kind` CHECK is
+added with validation, and it fails if any existing row has a text message
+with a payload or a non-text message without one. On a replay from empty
+there are no rows, so it cannot fail.
