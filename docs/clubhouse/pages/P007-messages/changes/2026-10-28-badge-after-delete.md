@@ -6,7 +6,7 @@
 Design package: none (wiring review 2026-10-27, item 3)
 PR/commit:      fix/clubhouse-badge-and-confirm-order
 Contract IDs:   none
-Actions:        getCoachNotificationCounts, getPlayerNotificationCounts (reads only)
+Actions:        none (the two badge counters, reads only)
 Data impact:    reads only (the viewer's own hidden_at, already readable)
 Held items:     none
 ```

@@ -3,11 +3,11 @@
 ## 2026-10-28 — Manage selections and Confirm squad rank as the board does
 
 ```text
-Design package: none (wiring review 2026-10-27, item 2; owner decision A: "Match the board")
+Design package: none (wiring review 2026-10-27 item 2; owner decision A)
 PR/commit:      fix/clubhouse-badge-and-confirm-order
 Contract IDs:   none
 Actions:        ACT-P009-CONFIRM-SQUAD; the tie choice (chooseQualifierTiePlace)
-Data impact:    which players confirm writes as top_score, when cards differ in length
+Data impact:    who confirm writes as top_score when cards differ in length
 Held items:     none
 ```
 
@@ -26,6 +26,7 @@ Held items:     none
 
 ### Why
 
+- Owner decision A: "Match the board".
 - The board and "You vs the line" put a short card below the full cards
   (owner decision 10). Manage selections and Confirm ranked by score alone,
   so Confirm could give a place to a player the board showed outside the
