@@ -117,7 +117,8 @@ feedback, 80902). Turning Haptics back on gives one selection tick.
 
 ## Desktop
 
-The rail and one section side by side on a canvas up to 1016px plus the page gutters. Unsaved changes
+The rail and one section side by side on a canvas up to 1016px plus the page
+gutters. Unsaved changes
 on any card are guarded: switching section asks (CH-8507), following a link asks
 (CH-8506), closing the tab asks (CH-8508).
 

@@ -77,7 +77,8 @@ Boards: `tour.jsx` (`EventDesk`, `Contribution`, `Holes`), `tour-compare.jsx`
 
 Matched:
 
-- The head: crumb to the season (desktop only; on the phone the bar's Back is the one way back), date, course
+- The head: crumb to the season (desktop only; on the phone the bar's Back is
+  the one way back), date, course
   and tees, the name, the chips
   (holes and play, the count, completed, the trust state, scorecards with
   shot data, amber where some have none), the result with the finish, and
