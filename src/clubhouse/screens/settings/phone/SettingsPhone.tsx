@@ -11,7 +11,7 @@ import { useChReducedMotion } from '../../../lib/reduced-motion';
 import { initials } from '../../../lib/format';
 import { chTrail } from '../../../lib/track';
 import { PhoneTop, usePhoneStackHistory } from '../../../shell/phone-chrome';
-import { SECTIONS, type ChDevice, type ChSettingsData, type ChSettingsSection, type ChSettingsWrites } from '../model';
+import { SECTIONS, shownHandicapIndex, type ChDevice, type ChSettingsData, type ChSettingsSection, type ChSettingsWrites } from '../model';
 import { useAppVersion, useReportProblem, useSignOut } from '../hooks';
 import { AccountPhone, EmailSheet, PasswordSheet, ProfileSheet } from './AccountPhone';
 import { CoachHelmPhone } from './CoachHelmPhone';
@@ -273,8 +273,8 @@ function Root({ data, writes, onOpen, onProfile }: { data: ChSettingsData; write
   const [broken, setBroken] = useState<string | null>(null);
   const photo = profile?.avatarUrl && profile.avatarUrl !== broken ? profile.avatarUrl : null;
   const head = data.coachhelm && !data.coachhelm.error ? !!data.coachhelm.value.team?.isHeadCoach : false;
-  // The handicap the roster shows (data/season.ts displayHandicap): the index when set, else the handicap.
-  const hcp = data.golf && !data.golf.error ? data.golf.value.handicapIndex.trim() || data.golf.value.handicap.trim() : '';
+  // The handicap Home and the roster show (data/season.ts displayHandicap): the index when set, else the handicap.
+  const hcp = data.golf && !data.golf.error ? shownHandicapIndex(data.golf.value) : '';
   const line = coach
     ? [head ? 'Head coach' : 'Coach', data.teamName].filter(Boolean).join(' · ')
     : ['Player', data.teamName, hcp ? `HCP ${hcp}` : null].filter(Boolean).join(' · ');
