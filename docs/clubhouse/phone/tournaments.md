@@ -38,10 +38,10 @@ top bar says ("‹ More").
   event to Tournaments, Review to its event), so the body crumb would repeat
   it: on the phone no view draws the crumb (2026-10-27).
 - **History toggles.** The board has no toggles on the phone trend. The built
-  page keeps the desktop's two (lineup mode, measured against) as full-width
-  rows under "Across seasons" (2026-10-27).
-- **The trend's dotted line** is the mean of the points shown, as on the board;
-  the key says so.
+  page keeps the desktop's two (lineup mode, measured against); on the phone the
+  section head wraps and they take their own row under "Across seasons"
+  (visual pass, 2026-10-28).
+- **The trend's dashed line** is the mean of the points shown, as on the board.
 
 ## Checks
 

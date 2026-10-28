@@ -376,9 +376,6 @@ before, after, baseline or evidence.
 | `P005__scoring-mix-by-par__coach__1440__default__before__2b3c6f5.png` | before | 2b3c6f5 | Game detail More detail, Outcomes by par, 1440px, before; /clubhouse-preview/player; synthetic preview, captured in the cloud container (Chromium) |
 | `P005__scoring-mix-by-par__coach__1440__default__after__2b3c6f5.png` | after | 2b3c6f5 | Outcomes by par, 1440px, after (compact ScoreMixBar, eagle split from birdie); /clubhouse-preview/player; synthetic preview, captured in the cloud container (Chromium) |
 | `P005__scoring-mix-by-par__coach__1440__eagle-pinned__after__2b3c6f5.png` | after | 2b3c6f5 | Outcomes by par, 1440px, Par 5s eagle pinned (1 of 34 holes); /clubhouse-preview/player; synthetic preview, captured in the cloud container (Chromium) |
-| `P005__stats-player__coach__390x844__light-figure-strip__after__2faf3cf.png` | after | 2faf3cf | stats-player (coach), 390x844px, light-figure-strip |
-| `P005__player__coach__390x844__light-r031-s0__before__a9d2b19.png` | before | a9d2b19 | player (coach), 390x844px, light-r031-s0; /clubhouse-preview/player; synthetic preview |
-| `P005__stats-player__coach__375x844__light-figure-strip__after__2faf3cf.png` | after | 2faf3cf | stats-player (coach), 375x844px, light-figure-strip |
 
 ## 2026-10-02 — Mobile design fidelity verification
 

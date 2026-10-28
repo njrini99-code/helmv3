@@ -47,7 +47,7 @@ describe('History, desktop', () => {
     expect(oak).toHaveAttribute('href', '/golf/dashboard/tournaments/e33');
     const conf = within(c as HTMLElement).getByRole('link', { name: /^Conference Championship: .* a round, scorecards only$/ });
     expect(conf).toHaveClass('is-cards');
-    expect(plain(c.querySelector('.ch-tour-rev-trend__key'))).toBe('A point opens its event. A grey ring means scorecards only. The dotted line is the average of the points shown.');
+    expect(plain(c.querySelector('.ch-tour-rev-trend__key'))).toBe('A point opens its event. A grey ring means scorecards only.');
   });
 
   it('explains the gain without pretending it is the same players, from the data', () => {

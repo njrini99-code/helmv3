@@ -99,11 +99,6 @@
   flex-wrap: wrap;
   gap: 8px;
 }
-/* Phone: the toggles sit under the heading, one full-width row each, above the chart. */
-.ch-tour-rev-hist.is-phone .ch-tour-rev-tools {
-  display: grid;
-  margin-bottom: 12px;
-}
 .ch-tour-rev-trend {
   padding: 16px 20px 16px;
   border-radius: var(--ch-radius-card);

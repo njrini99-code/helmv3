@@ -4378,7 +4378,6 @@ html[data-fw-theme='dark'] .ch-h-form__bar {
   .ch-hm-queue__v {
     display: contents;
   }
-  /* The parts wrap as a list of links: a dot would dangle at a line's end or open the next line. */
   .ch-hm-queue__sep {
     display: none;
   }

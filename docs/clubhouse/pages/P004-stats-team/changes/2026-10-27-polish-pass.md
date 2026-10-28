@@ -21,13 +21,12 @@ Held items:     none
   glyph before a value with no clear change, so "– −1.3" read as a double minus.
   No glyph without a clear change (`screens/stats/charts.tsx` SgChangeChip,
   `TeamTape.tsx`, `StatsTeamIslands.tsx`).
-- Desktop KPI tape captions were cut off ("No clear change vs previ…"); the words
-  wrap under the figure (`styles/stats.css` `.ch-tp__d`).
 
 ### Why
 
-- One phrasing across the app; a sign must mean a sign; a caption that ends in an
-  ellipsis hides the comparison it names.
+- One phrasing across the app; a sign must mean a sign. The "No clear change"
+  caption and figure strip fixes this pass first carried are dropped: the visual
+  pass (#2391) fixed the same spots.
 
 ### Verification
 

@@ -29,12 +29,11 @@ export function CoachAsks({ asks }: { asks: ChPlayerAsks | null | undefined }) {
   return (
     <Link href={hub} className="ch-ph-asks">
       <span className="ch-ph-asks__k">From your coach</span>
-      {/* Each part keeps to one line, so a wrap never strands its figure ("· 2" / "tasks due"),
-          and a no-break space ahead of each dot keeps a dot from opening a line. */}
+      {/* Each part keeps to one line, so a wrap never strands its figure ("· 2" / "tasks due"). */}
       <span className="ch-ph-asks__v ch-num">
         {parts.map((p, i) => (
           <Fragment key={p}>
-            {i > 0 && '\u00a0· '}
+            {i > 0 && ' · '}
             <span className="ch-ph-asks__p">{p}</span>
           </Fragment>
         ))}

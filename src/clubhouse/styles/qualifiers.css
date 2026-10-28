@@ -2507,12 +2507,9 @@
   line-height: var(--ch-lead-tight);
   font-variant-numeric: tabular-nums;
 }
-/* The up or down mark is an icon, not "▲"/"▼", which the font does not have (A23). Mark and count sit centred as one
-   unit, so "3 ⌃2" never reads as a raised caret beside the rank (a 32 at a glance). */
-.ch-qf-move > span[aria-hidden] {
-  display: inline-flex;
-  align-items: center;
-  gap: 1px;
+/* The up or down mark is an icon, not "▲"/"▼", which the font does not have (A23). */
+.ch-qf-move svg {
+  vertical-align: -0.1em;
 }
 .ch-qf-move.is-gain {
   color: var(--ch-chart-gain);
@@ -2523,8 +2520,8 @@
 /* The live card's leaders: position and movement on one line, in the board's own inks. */
 .ch-qf-lead__r .ch-qf-pos {
   flex-direction: row;
-  align-items: center;
-  gap: 8px;
+  align-items: baseline;
+  gap: 4px;
 }
 .ch-scoreboard .ch-qf-pos__n {
   color: var(--ch-on-green-ink);
