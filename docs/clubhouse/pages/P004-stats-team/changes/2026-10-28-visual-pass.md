@@ -8,7 +8,9 @@ PR/commit: visual-pass-2026-10-28
 Contract IDs: 41604 (meaning narrowed: the headline figure no longer animates)
 Actions: none
 Data impact: none
-Held items: the trend stage's gold for a loss and mint for a gain need a look on an iPhone in sunlight; Safari/WebKit not checked (Chromium only)
+Held items:     the trend stage's gold for a loss and mint for a gain need a
+                look on an iPhone in sunlight; Safari/WebKit not checked
+                (Chromium only)
 ```
 
 ### Changed

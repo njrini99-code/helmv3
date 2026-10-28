@@ -1,14 +1,17 @@
-# 2026-10-28 — Home: visual pass (contrast, Waiting on you on the phone, skeleton order)
+# 2026-10-28 — Home: visual pass
 
 ## 2026-10-28 — Pre-deploy visual and premium-polish pass, area B (Home, both roles)
 
 ```text
 Design package: none (visual pass 2026-10-28, RUBRIC.md section 3 "Home (P002)")
 PR/commit:      visual-pass-2026-10-28
-Contract IDs:   20104 (Waiting on you, drawing only), CH-2220 (its note, phone drawing), CH-2401 (route skeleton order)
-Actions:        none added or removed; ACT-P002-QUEUE-* and ACT-P002-OPEN-LEG-PLAYER keep their links, with larger targets
+Contract IDs:   20104 (Waiting on you, drawing only), CH-2220 (its note, phone
+                drawing), CH-2401 (route skeleton order)
+Actions:        none added or removed; ACT-P002-QUEUE-* and
+                ACT-P002-OPEN-LEG-PLAYER keep their links, with larger targets
 Data impact:    none (no read, write or copy meaning changed)
-Held items:     iPhone/Safari check of the phone capsules, color-mix() tints and the 12px coin initials (see Verification)
+Held items:     iPhone/Safari check of the phone capsules, color-mix() tints and
+                the 12px coin initials (see Verification)
 ```
 
 ### Changed
