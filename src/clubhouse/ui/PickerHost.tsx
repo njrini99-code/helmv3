@@ -89,7 +89,7 @@ export function PickerField(p: PickerFieldProps) {
   const trigger = useRef<HTMLButtonElement | null>(null);
   const panel = useRef<HTMLDivElement | null>(null);
   const host = useRef<HTMLElement | null>(null);
-  const [pos, setPos] = useState<{ left: number; top: number; maxHeight: number } | null>(null);
+  const [pos, setPos] = useState<{ left: number; top: number; maxHeight: number; origin: string } | null>(null);
   const panelId = `${uid}-panel`;
   const errId = `${uid}-err`;
 
@@ -174,7 +174,8 @@ export function PickerField(p: PickerFieldProps) {
       const up = h > below && above > below;
       const maxHeight = up ? above : below;
       const top = Math.max(8, Math.min(up ? r.top - Math.min(h, maxHeight) - 6 : r.bottom + 6, bottom - 8 - Math.min(h, maxHeight)));
-      setPos({ left, top, maxHeight });
+      // It grows from the field it hangs off: its top left under the field, its bottom left when it flips up (as Menu).
+      setPos({ left, top, maxHeight, origin: up ? 'bottom left' : 'top left' });
     };
     place();
     const onScroll = (e: Event) => {
@@ -369,7 +370,7 @@ export function PickerField(p: PickerFieldProps) {
                     aria-label={`Pick ${p.label.toLowerCase()}`}
                     className="ch-df-pop ch-popover"
                     data-ui="clubhouse"
-                    style={{ left: pos?.left ?? -9999, top: pos?.top, maxHeight: pos?.maxHeight, width: p.panelWidth }}
+                    style={{ left: pos?.left ?? -9999, top: pos?.top, maxHeight: pos?.maxHeight, width: p.panelWidth, transformOrigin: pos?.origin }}
                     initial={reduced ? { opacity: 0 } : CH_POP.initial}
                     animate={reduced ? { opacity: 1 } : CH_POP.animate}
                     exit={reduced ? { opacity: 0 } : CH_POP.exit}

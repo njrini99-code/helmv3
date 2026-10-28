@@ -59,7 +59,9 @@ export function PhoneBarParts({ back, title, lead = false, start = false, action
         </div>
       ) : (
         <Title className={'ch-pbar__title' + (start ? ' is-start' : '')} id={titleId} tabIndex={heading ? -1 : undefined}>
-          {title}
+          {/* Plain words sit in their own box so a long name ends in an ellipsis: a bare text run in the flex title was
+              cut off at the edge (H1). */}
+          {typeof title === 'string' ? <span className="ch-pbar__tt">{title}</span> : title}
         </Title>
       )}
       <span className="ch-pbar__right">{action}</span>

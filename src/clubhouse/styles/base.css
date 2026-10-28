@@ -227,10 +227,11 @@ svg .ch-num {
   box-shadow: var(--ch-raised-shadow);
   border-radius: var(--ch-radius-md);
 }
+/* A reading sheet is a card on the page, so it takes the card's 16 (H17); 20 belongs to a bottom sheet's top corners. */
 .ch-sheet {
   background: var(--ch-sheet-bg);
   box-shadow: var(--ch-sheet-shadow);
-  border-radius: var(--ch-radius-xl);
+  border-radius: var(--ch-radius-card);
 }
 /* System contrast modes suppress shadows; retain a visible surface boundary there. */
 @media (forced-colors: active) {
@@ -310,6 +311,13 @@ html[data-ch-vt-hold] [data-ui='clubhouse'] main[aria-busy='true'][aria-label^='
     animation-duration: 1ms !important;
     /* A looping animation at 1ms would strobe: run it once and stop. */
     animation-iteration-count: 1 !important;
+  }
+  /* Except the one spinner (OQ-18, rubric H19): it keeps turning, as iOS's activity indicator does under Reduce Motion. A
+     ring turning in place moves nothing across the screen, and a still ring reads as stuck. Animations off still stops
+     it (--ch-dur-sweep is 0 there). */
+  .ch-root .ch-spinner {
+    animation-duration: var(--ch-dur-sweep) !important;
+    animation-iteration-count: infinite !important;
   }
   /* A dialog's scrim is its own pseudo-element in the top layer and kept its fade (audit A-12). Its own rule, so a
      browser that can't parse ::backdrop drops only this one, not the floor above. */

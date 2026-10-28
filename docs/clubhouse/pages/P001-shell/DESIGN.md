@@ -121,10 +121,16 @@ popover under its button.
 
 The team switcher (owner, 2026-10-01, Q-130): the board's team chip (the team
 under GolfHelm, with up-down chevrons) is the whole brand block as a button for
-a head coach on two or more teams. It opens an ivory popover under the block
-with a "Switch team" label and a listbox: each team a row with a coin and the
-current one bold, ticked and `aria-selected`. For everyone else the team stays
-a plain label.
+a head coach on two or more teams. It opens an opaque ivory popover under the
+block, growing from the block's left edge, with a "Switch team" label and a
+listbox: each team a row with a coin and the current one bold, ticked and
+`aria-selected`. For everyone else the team stays a plain label.
+
+The bar's edge: the desktop bar sits flush at rest and shows the scroll-edge
+shade once the canvas has scrolled under it; Increase Contrast keeps its
+hairline. Glass belongs to the desktop bar alone: every popover, menu and
+picker is opaque, and grows from the corner that touches its trigger (a picker
+that flips above its field grows from its bottom edge).
 
 ## Phone
 
@@ -135,7 +141,10 @@ modal sheet, and pushed screens with the edge swipe.
 
 A pushed page's bar is drawn from its address until the page's own arrives
 (CH-1402): the loading state and the server's first paint already show the back
-link and the title where the page puts them. Every key reaches 44 by 44
+link and the title where the page puts them. A pushed title too long for its
+centred slot ends in an ellipsis (`.ch-pbar__tt`). Popovers and menus on the
+phone are opaque: the sheet's ivory by day, the raised surface at night (H16,
+2026-10-28). Every key reaches 44 by 44
 (CH-1815): the bar's back link and text action in a 44px row, the hero bell's
 40px disc in a 44px key, a sheet's Close, and the 36px search field. A choice
 answers a press with the Ledger's tint, never a scale (CH-1617).
@@ -162,9 +171,11 @@ blocks in `styles/shell.css`) now draws one family:
   ledger ink on every screen.
 - **Notice** (`InlineNotice`, `RefreshNotice`): flush, sitting between the
   section's own engraved rules with no fill, no ring and no stripe, its icon on
-  the heading's edge. The icon and title are in the danger ink and the body in
-  the secondary ink. Try again sits beside the words in a full-width notice, and
-  under them in anything narrower than 640px (a container query: a rail, a half
+  the heading's edge. The icon is in the danger ink, the title in the page's
+  ink (red is for under par and destructive actions) and the body in the
+  secondary ink. In a full-width notice the words keep a 30rem measure and Try
+  again is pinned to the row's end, centred on them (visual pass 2026-10-28); it
+  sits under them in anything narrower than 640px (a container query: a rail, a half
   column) and on the phone, so notices side by side read alike. The inks and
   fill are local properties (`--ch-notice-ink`, `--ch-notice-body`,
   `--ch-notice-fill`), so a notice on a dark or floating surface is restyled in
