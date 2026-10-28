@@ -557,7 +557,8 @@
 }
 .ch-ms-bub {
   padding: 8px 16px;
-  border-radius: var(--ch-radius-xl);
+  /* Radius 16 with a 6 tail (P007 checklist): at 20 a one-line bubble read as a pill. */
+  border-radius: var(--ch-radius-lg);
   background: var(--ch-sheet-bg);
   box-shadow: var(--ch-elevation-bubble);
   font: var(--ch-type-15);
@@ -775,13 +776,20 @@
     transform: translateY(-1px);
   }
 }
-/* The reaction glyphs (owner, 2026-10-08: "more contrast ... ivory lines and clear inside"): outline only, heavier than
-   the page's stroke, in the full ink of their chip: pure ivory lines on a green chip or head, deep green on ivory. */
+/* The reaction glyphs (owner, 2026-10-08: "more contrast ... ivory lines and clear inside"): outline only, in the full ink
+   of their chip: pure ivory lines on a green chip or head, deep green on ivory. The line is the icon set's 1.6px at every
+   size (visual pass 2026-10-28): the old 2.3 was in the 24-unit drawing, so it drew 1.15px at 12px and 1.44px at 15px,
+   lighter and less even than the house stroke. */
 .ch-ms-react svg,
 .ch-rx__glyph svg,
 .ch-ms-reactbar__b svg {
   fill: none;
-  stroke-width: 2.3;
+  stroke-width: 1.6;
+}
+.ch-ms-react svg *,
+.ch-rx__glyph svg *,
+.ch-ms-reactbar__b svg * {
+  vector-effect: non-scaling-stroke;
 }
 .ch-ms-reacts.on-mine .ch-ms-react {
   color: var(--ch-forest-900);
@@ -933,7 +941,7 @@
   align-self: flex-start;
   gap: 4px;
   padding: 12px 16px;
-  border-radius: var(--ch-radius-xl);
+  border-radius: var(--ch-radius-lg);
   border-bottom-left-radius: var(--ch-radius-tail);
   background: var(--ch-bg-surface);
   box-shadow: var(--ch-elevation-bubble);
@@ -1370,7 +1378,7 @@
   max-width: 680px;
   margin: 12px auto 24px;
   padding: 24px 32px;
-  border-radius: var(--ch-radius-xl);
+  border-radius: var(--ch-radius-card);
   background: var(--ch-sheet-bg);
   box-shadow: var(--ch-sheet-shadow);
 }
@@ -2054,7 +2062,7 @@
     color: #fff;
   }
   /* The outer corners start a run; close corners join messages from the same sender. */
-  .ch-msp-thread .ch-ms-bub { position: relative; border-radius: var(--ch-radius-xl); }
+  .ch-msp-thread .ch-ms-bub { position: relative; border-radius: var(--ch-radius-lg); }
   .ch-msp-thread .ch-ms-msg:not(.is-mine):not(.is-first) .ch-ms-bub { border-top-left-radius: var(--ch-radius-tail); }
   .ch-msp-thread .ch-ms-msg:not(.is-mine):not(.is-last) .ch-ms-bub { border-bottom-left-radius: var(--ch-radius-tail); }
   .ch-msp-thread .ch-ms-msg:not(.is-mine).is-last .ch-ms-bub { border-bottom-left-radius: var(--ch-radius-tail); }
@@ -3087,7 +3095,7 @@
 .ch-ms-comp .ch-ms-to__c button { flex: none; }
 .ch-msp-acts__preview {
   padding: 12px 16px;
-  border-radius: var(--ch-radius-xl);
+  border-radius: var(--ch-radius-lg);
   background: var(--ch-sheet-bg);
   box-shadow: var(--ch-elevation-bubble);
 }
@@ -3235,7 +3243,7 @@ html[data-fw-theme='dark'] .ch-msp-thread .ch-ms-msg.is-mine.is-failed .ch-ms-bu
 .ch-ms-sec.is-ann {
   margin: 8px -4px 4px;
   padding: 4px;
-  border-radius: var(--ch-radius-xl);
+  border-radius: var(--ch-radius-card);
   background: color-mix(in srgb, var(--ch-green-100) 55%, var(--ch-bg-surface));
   box-shadow:
     inset 0 0 0 1px color-mix(in srgb, var(--ch-green-fill-600) 22%, transparent),

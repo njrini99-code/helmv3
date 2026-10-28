@@ -139,7 +139,7 @@
   flex-direction: column;
   gap: 24px;
   padding: 20px 24px 16px;
-  border-radius: var(--ch-radius-xl);
+  border-radius: var(--ch-radius-card);
   color: var(--ch-on-green-ink);
   background: var(--ch-field-green);
   box-shadow: inset 0 1px 0 rgb(210 244 221 / 0.12), var(--ch-elevation-cast);
@@ -344,7 +344,7 @@
   min-height: 236px;
   padding: 16px;
   border: 0;
-  border-radius: var(--ch-radius-xl);
+  border-radius: var(--ch-radius-card);
   background: var(--ch-cl-t);
   color: var(--ch-cl-tf);
   font: inherit;
@@ -492,7 +492,7 @@
   min-height: 236px;
   padding: 16px;
   border: 2px dashed rgb(28 25 18 / 0.18);
-  border-radius: var(--ch-radius-xl);
+  border-radius: var(--ch-radius-card);
   background: transparent;
   color: var(--ch-ink-600);
   font: inherit;
@@ -539,7 +539,7 @@
 
 /* The side column */
 .ch-cl-card2 {
-  border-radius: var(--ch-radius-xl);
+  border-radius: var(--ch-radius-card);
   background: var(--ch-bg-surface);
   box-shadow: var(--ch-elevation-reading);
 }
@@ -568,7 +568,7 @@
 }
 .ch-cl-over {
   padding: 16px;
-  border-radius: var(--ch-radius-xl);
+  border-radius: var(--ch-radius-card);
   background: var(--ch-bg-surface);
   box-shadow: var(--ch-elevation-reading);
 }
@@ -861,7 +861,7 @@
   gap: 8px;
   padding: 32px 20px 16px;
   border: 2px dashed rgb(21 90 57 / 0.3);
-  border-radius: var(--ch-radius-xl);
+  border-radius: var(--ch-radius-card);
   background: radial-gradient(60% 80% at 50% 0%, #edf4ef, transparent 70%), var(--ch-ivory-25);
   color: inherit;
   font: inherit;
@@ -1299,7 +1299,7 @@
   .ch-cl-tb {
     padding: 16px;
     gap: 16px;
-    border-radius: var(--ch-radius-xl);
+    border-radius: var(--ch-radius-card);
   }
   .ch-cl-tb__top {
     grid-template-columns: auto minmax(0, 1fr);
@@ -1366,7 +1366,7 @@
   display: grid;
   gap: 8px;
   padding: 16px 16px;
-  border-radius: var(--ch-radius-xl);
+  border-radius: var(--ch-radius-card);
 }
 /* On the green card: ivory, never the page's secondary ink. */
 .ch-cl-tb__one {
@@ -2022,6 +2022,12 @@ html[data-fw-theme='dark'] .ch-cl-ok__ic {
   background: color-mix(in oklab, var(--ch-champagne-300) 24%, transparent);
   box-shadow: none;
 }
+/* At night champagne-300 at 24% laid a heavy olive slab down the list; a tenth keeps today a soft band, as in light.
+   A team day that is also today keeps its team fill below, as it does by day. */
+html[data-fw-theme='dark'] .ch-cl .ch-cl-card__week > span.is-today:not(.is-team),
+html[data-fw-theme='dark'] .ch-cl-tthead__days > span.is-today:not(.is-team) {
+  background: color-mix(in oklab, var(--ch-champagne-300) 10%, transparent);
+}
 .ch-cl .ch-cl-card__week > span.is-team,
 .ch-cl-tthead__days > span.is-team {
   /* P-10 (plan 4.0): a full hairline ring and a quiet fill, not insets on the two sides (a bracket is still an accent). */
@@ -2126,6 +2132,14 @@ html[data-fw-theme='dark'] .ch-cl-ok__ic {
   }
   .ch-cl[data-canopy] .ch-cl-deck > .ch-cl-card {
     grid-template-columns: var(--ch-cl-codew) minmax(0, 1fr);
+    /* The days go under the name, in the column the header's days sit in. The areas kept the wide row's third column,
+       so at 1280 a class's days fell into an implicit column at the right edge, out of line with the header's
+       (visual pass 2026-10-28). */
+    grid-template-areas:
+      'top name'
+      'top prof'
+      'top foot'
+      'top week';
   }
   .ch-cl[data-canopy] .ch-cl-card .ch-cl-card__week {
     margin-block: 8px 0;

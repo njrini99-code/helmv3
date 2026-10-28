@@ -2081,6 +2081,9 @@ describe('Team Hub · phone', () => {
     const top = screen.getByTestId('phone-top');
     await user.click(screen.getByRole('tab', { name: /^Travel/ }));
     expect(within(top).getByRole('button', { name: 'Plan a trip' })).toBeTruthy();
+    // Visual pass 2026-10-28: Documents keeps the bar's plus too; it opens the drop zone's file chooser.
+    await user.click(screen.getByRole('tab', { name: /^Documents/ }));
+    expect(within(top).getByRole('button', { name: 'Upload a document' })).toBeTruthy();
     await user.click(screen.getByRole('tab', { name: /^Tasks/ }));
     await user.click(within(top).getByRole('button', { name: 'Assign a task' }));
     expect(await screen.findByRole('dialog', { name: 'Assign a task' })).toBeTruthy();

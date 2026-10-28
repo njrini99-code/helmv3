@@ -203,9 +203,13 @@ describe('Team Hub · the trip card at phone width (A24)', () => {
     show(PREVIEW_HUB_PLAYER);
     const card = screen.getByRole('region', { name: 'Next trip' });
     expect(card.querySelector('.ch-hw-count__where')?.textContent).toBe('Pine Needles · Southern Pines, NC');
-    expect(card.querySelector('.ch-hw-count__when')?.textContent).toBe('Mon\u00a03 – Wed\u00a05\u00a0Nov');
+    // Visual pass 2026-10-28: the space before a separator is U+00A0 as well, so a wrapped line breaks after "·" or "–",
+    // never opening on one.
+    expect(card.querySelector('.ch-hw-count__when')?.textContent).toBe('Mon\u00a03\u00a0– Wed\u00a05\u00a0Nov');
     const leaves = [...card.querySelectorAll('.ch-hw-rail li')].find((li) => li.querySelector('span')?.textContent === 'Leaves');
-    expect(leaves?.querySelector('b')?.textContent).toBe('Mon · 12:00\u00a0PM');
+    expect(leaves?.querySelector('b')?.textContent).toBe('Mon\u00a0· 12:00\u00a0PM');
+    const stays = [...card.querySelectorAll('.ch-hw-rail li')].find((li) => li.querySelector('span')?.textContent === 'Stays');
+    expect(stays?.querySelector('em')?.textContent).toBe('Pine Needles\u00a0· Southern Pines, NC');
   });
 });
 
