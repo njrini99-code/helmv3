@@ -1150,7 +1150,7 @@ CREATE TABLE IF NOT EXISTS "public"."golf_messages" (
     "notify_anyway" boolean DEFAULT false NOT NULL,
     "notify_anyway_pushed_at" timestamp with time zone,
     CONSTRAINT "golf_messages_kind_check" CHECK (("kind" = ANY (ARRAY['text'::"text", 'system'::"text", 'practice'::"text", 'event'::"text", 'rsvp'::"text", 'poll'::"text", 'travel'::"text"]))),
-    CONSTRAINT "golf_messages_payload_matches_kind" CHECK (((("kind" = 'text'::"text") AND ("payload" IS NULL)) OR (("kind" <> 'text'::"text") AND ("payload" IS NOT NULL))))
+    CONSTRAINT "golf_messages_payload_matches_kind" CHECK (((("kind" = 'text'::"text") AND ("payload" IS NULL)) OR (("kind" <> 'text'::"text") AND (("payload" IS NOT NULL) OR ("is_deleted" IS TRUE)))))
 );
 
 ALTER TABLE "public"."golf_messages" OWNER TO "postgres";

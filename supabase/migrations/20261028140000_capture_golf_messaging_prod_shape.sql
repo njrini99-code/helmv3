@@ -2,8 +2,9 @@
 -- object below (verified read-only 2026-10-28), so applying it there changes
 -- nothing. See HELD.md (row 20261028140000) and
 -- docs/operations/2026-10-28-prod-drift-capture.md.
--- Risk: LOW on production (every step is guarded and finds its object already
--- in place, so it takes no lock beyond the catalog reads). On a fresh replay or
+-- Risk: LOW on production (every DDL step is guarded and finds its object
+-- already in place, so no table is locked beyond what the anon REVOKE
+-- needs). On a fresh replay or
 -- the staging project it adds two RLS policies, two CHECKs, six FK delete
 -- rules, five indexes and renames three CHECKs.
 --
@@ -15,7 +16,8 @@
 -- policy, so @mentions fail), a target CHECK, cascade deletes and two indexes;
 -- golf_messages has the payload/kind CHECK, SET NULL on pinned_by and
 -- reply_to_id, and the pinned and reply-to indexes; reactions and responses
--- name their length CHECKs *_emoji_len and *_choice_len and cascade on delete.
+-- name their length CHECKs *_emoji_len and *_choice_len, and reactions cascade
+-- on delete (responses already cascade, from 20261024090000).
 -- Every definition below is copied from production's catalog, which is also
 -- what supabase/schemas/golf/** and supabase/schemas/policies/golf.sql hold.
 --
@@ -138,30 +140,37 @@ BEGIN
 END
 $capture$;
 
--- 3. Indexes production has (the tables are small; on production every one
--- already exists, so nothing is built).
--- squawk-ignore require-concurrent-index-creation
-CREATE INDEX IF NOT EXISTS golf_message_mentions_message_idx
-ON public.golf_message_mentions USING btree (message_id);
-
--- squawk-ignore require-concurrent-index-creation
-CREATE INDEX IF NOT EXISTS golf_message_mentions_user_idx
-ON public.golf_message_mentions USING btree (mentioned_user_id)
-WHERE (mentioned_user_id IS NOT NULL);
-
--- squawk-ignore require-concurrent-index-creation
-CREATE INDEX IF NOT EXISTS golf_message_responses_message_idx
-ON public.golf_message_responses USING btree (message_id);
-
--- squawk-ignore require-concurrent-index-creation
-CREATE INDEX IF NOT EXISTS golf_messages_pinned_idx
-ON public.golf_messages USING btree (conversation_id, pinned_at DESC)
-WHERE (pinned_at IS NOT NULL);
-
--- squawk-ignore require-concurrent-index-creation
-CREATE INDEX IF NOT EXISTS golf_messages_reply_to_idx
-ON public.golf_messages USING btree (reply_to_id)
-WHERE (reply_to_id IS NOT NULL);
+-- 3. Indexes production has. CREATE INDEX IF NOT EXISTS would take a
+-- ShareLock on the table before it checks the name, so each index is built
+-- only when to_regclass finds no relation of that name. On production every
+-- one exists, so no table is locked; on a replay the tables are small or empty.
+DO $capture$
+DECLARE
+  ix record;
+BEGIN
+  FOR ix IN
+    SELECT * FROM (VALUES
+      ('golf_message_mentions_message_idx',
+       'ON public.golf_message_mentions USING btree (message_id)'),
+      ('golf_message_mentions_user_idx',
+       'ON public.golf_message_mentions USING btree (mentioned_user_id) '
+       'WHERE (mentioned_user_id IS NOT NULL)'),
+      ('golf_message_responses_message_idx',
+       'ON public.golf_message_responses USING btree (message_id)'),
+      ('golf_messages_pinned_idx',
+       'ON public.golf_messages USING btree (conversation_id, pinned_at DESC) '
+       'WHERE (pinned_at IS NOT NULL)'),
+      ('golf_messages_reply_to_idx',
+       'ON public.golf_messages USING btree (reply_to_id) '
+       'WHERE (reply_to_id IS NOT NULL)')
+    ) AS v(name, def)
+  LOOP
+    IF to_regclass('public.' || ix.name) IS NULL THEN
+      EXECUTE format('CREATE INDEX %I %s', ix.name, ix.def);
+    END IF;
+  END LOOP;
+END
+$capture$;
 
 -- 4. Mention policies: a sender records mentions on their own message, and a
 -- conversation member reads the mentions on messages they can see. Created

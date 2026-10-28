@@ -23,10 +23,13 @@ was catalog-only. Nothing was written to production.
 - **Production holds hand-made changes that no migration carries.** Eight
   files in this PR capture them, so a replayed database (staging, a branch, a
   preview) gets what production has. Each one finds its objects already in
-  place on production. Policies and constraints are created only when
-  missing, so applying a file there leaves the definitions as they are. The
-  grant files re-issue the same grants.
-- **Two places where the repo is right and production is behind.** These are
+  place on production. Every schema change is guarded: policies,
+  constraints, indexes, the view and the role are created only when missing,
+  the `crm_coaches.conference` NOT NULL is dropped only while it is set, and
+  a delete rule is rebuilt only when it differs. So applying a file there
+  redefines nothing and takes no table lock beyond what a GRANT or REVOKE
+  needs. The grant files re-issue the same grants.
+- **Three places where the repo is right and production is behind.** These are
   listed below as forward fixes. They are not captured, because capturing
   them would copy the weaker version into the replay.
 
@@ -44,7 +47,29 @@ was catalog-only. Nothing was written to production.
 | `20261028140700_capture_helm_bridge_feedback_bucket.sql` | The private `helm-bridge-feedback` bucket (8 MB, png, jpeg, webp, gif). No storage policy; service role only. |
 
 All eight are marked **HOLD — CAPTURE** in `HELD.md`. They wait only on the
-owner's freeze. On staging they were applied and verified (see "Replay check").
+owner's freeze. They are not on staging yet (see "Replay check").
+
+## What the from-empty replay found (2026-10-28)
+
+With the captures in place, the pgTAP suite runs against production's shape
+for the first time. Two tests failed, and both point at real differences:
+
+1. **Deleting a poll fails against production's CHECK.** The app's
+   `deleteMessage` clears a golf poll's payload, and the applied
+   `20261025020200` poll freeze allows that write. Production's
+   `golf_messages_payload_matches_kind` refuses a non-text row with no
+   payload, so the delete errors and the coach sees "Failed to delete
+   message". `20261028140800_golf_messages_deleted_poll_payload_check.sql`
+   (HOLD) widens the CHECK to allow a NULL payload on a deleted row. Apply it
+   before Clubhouse polls are used on production. The other way is to keep
+   the payload on delete in the app, which needs no database change but
+   keeps a deleted poll's question stored.
+2. **`coach_insights_player_update.sql` expected two columns.** It encoded
+   the OBSOLETE `20260528011000`, which left `authenticated` UPDATE on
+   `acknowledged_at` and `dismissed_at` only. The app's acknowledge, dismiss
+   and reactivate writes also set `status`, `dismissed`, `lifecycle_state`
+   and the rest of production's seven, so the test now checks those seven.
+   Content, evidence and `coach_id` stay out of reach, as before.
 
 ## Not captured: the repo is right and production is behind
 
@@ -141,3 +166,9 @@ Supabase confirm prompt that got no answer; a read on 2026-10-28 showed no
 ledger row, role or bucket from them. CI's RLS job replays every migration
 from empty, which covers the replay itself. A direct apply on staging, then a
 re-read against production, is the step left.
+
+Staging was copied with data, so check one thing before applying
+`20261028140000` there: the `golf_messages_payload_matches_kind` CHECK is
+added with validation, and it fails if any existing row has a text message
+with a payload or a non-text message without one. On a replay from empty
+there are no rows, so it cannot fail.
