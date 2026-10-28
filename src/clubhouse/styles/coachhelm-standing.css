@@ -40,7 +40,7 @@
   max-width: 30ch;
   font: var(--ch-type-serif-l);
   letter-spacing: -0.008em;
-  color: var(--ch-field-green);
+  color: var(--ch-forest-800); /* visual pass: field-green is 1.36:1 on the dark page; forest-800 flips to #cfe6d7 */
   text-wrap: balance;
 }
 .ch-hs-count {

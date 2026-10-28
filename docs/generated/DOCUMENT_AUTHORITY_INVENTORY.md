@@ -1234,6 +1234,7 @@ them would bury everything above.
 | `docs/clubhouse/pages/P013-coachhelm/changes/2026-10-25-visual-artifact.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P013-coachhelm/changes/2026-10-27-visual-artifact-must-fixes.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P013-coachhelm/changes/2026-10-28-visual-pass-whats-new.md` | current | - | - | - | - |
+| `docs/clubhouse/pages/P013-coachhelm/changes/2026-10-28-visual-pass.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P014-recruiting/CHANGELOG.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P014-recruiting/CONTRACT.md` | current | - | - | yes | - |
 | `docs/clubhouse/pages/P014-recruiting/DESIGN.md` | current | - | - | - | - |
@@ -1258,6 +1259,7 @@ them would bury everything above.
 | `docs/clubhouse/pages/P015-auth/changes/2026-10-23-press-and-keys.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P015-auth/changes/2026-10-23-radii-elevation.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P015-auth/changes/2026-10-23-type-scale.md` | current | - | - | - | - |
+| `docs/clubhouse/pages/P015-auth/changes/2026-10-28-visual-pass.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P016-tournaments/CHANGELOG.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P016-tournaments/CONTRACT.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P016-tournaments/DESIGN.md` | current | - | - | - | - |

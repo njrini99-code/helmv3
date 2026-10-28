@@ -28,13 +28,19 @@
   height: 1px;
 }
 
-/* A new turn arrives with the base fade; the ones a thread opened with do not. Streamed text never animates. */
+/* A new turn arrives with the base fade; the ones a thread opened with do not. Streamed paragraphs fade in (coachhelm-ask.css). */
 @keyframes ch-th-in {
   from {
     opacity: 0;
   }
 }
 .ch-th-turn.is-new {
+  animation: ch-th-in var(--ch-dur-base) var(--ch-ease) backwards;
+}
+/* While an answer streams, AskProse marks its block `data-streaming`; each paragraph or list fades in as it mounts, on the
+   base beat, opacity only, so it never moves the text being read. A finished or reloaded answer carries no mark and draws
+   still. Animations off zeroes the beat (visual pass 2026-10-28, rubric P013 checklist). */
+.ch-th-prose[data-streaming] > * {
   animation: ch-th-in var(--ch-dur-base) var(--ch-ease) backwards;
 }
 
@@ -94,19 +100,7 @@
 .ch-th-mk-dimples {
   fill: var(--ch-green-500);
 }
-/* Working: a soft ring breathes out from the wheel on the live pulse. Nothing else moves. */
-@keyframes ch-th-breathe {
-  0% {
-    box-shadow: 0 0 0 var(--ch-hairline-w) var(--ch-border-hairline), 0 0 0 0 var(--ch-green-ring);
-  }
-  70%,
-  100% {
-    box-shadow: 0 0 0 var(--ch-hairline-w) var(--ch-border-hairline), 0 0 0 9px rgb(21 90 57 / 0);
-  }
-}
-.ch-th-mark.is-working {
-  animation: ch-th-breathe var(--ch-dur-live) var(--ch-ease) infinite;
-}
+/* Working: the wheel stays still; the shimmering current step is the status (visual pass 2026-10-28). */
 .ch-th-who {
   font: var(--ch-type-13-strong);
   color: var(--ch-text-secondary);
@@ -1278,6 +1272,26 @@ a.ch-th-reads__r:focus-visible {
   .ch-th-work__btn:hover {
     color: var(--ch-text-primary);
   }
+}
+/* A finger's press (lib/press.ts sets data-ch-pressed while held): the hover looks, so touch shows a press too (visual pass 2026-10-28). */
+.ch-th-icobtn[data-ch-pressed] {
+  background: var(--ch-ivory-150);
+  color: var(--ch-text-primary);
+}
+.ch-th-follow button[data-ch-pressed] {
+  background: var(--ch-ivory-50);
+  box-shadow: 0 0 0 var(--ch-hairline-w) var(--ch-green-600);
+  color: var(--ch-green-700);
+}
+.ch-th-receipt__chips a[data-ch-pressed] {
+  box-shadow: 0 0 0 1px var(--ch-green-ring);
+}
+/* A chosen toggle keeps its selected fill under a finger. */
+.ch-th-toggle[data-ch-pressed]:not([aria-pressed='true']) {
+  background: var(--ch-bg-hover);
+}
+.ch-th-work__btn[data-ch-pressed] {
+  color: var(--ch-text-primary);
 }
 
 /* A validated visual (visuals/schema.ts, CoachVisualArtifact): strokes gained anatomy. Restored after the token pass
