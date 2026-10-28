@@ -160,6 +160,13 @@ describe('P-5 rounds on the calendar', () => {
     expect(screen.getByRole('link', { name: 'Open in Tournaments' })).toBeTruthy();
   });
 
+  it('a player never reads a lock as Published: a locked ref still says Not published yet', async () => {
+    wrap(data([roundEv(1, { round: ref(1, { lineup: 'locked', lockedAt: '2026-10-01T12:00:00Z' }) })], { role: 'player' }), 'rd-1');
+    await waitFor(() => expect(screen.getByRole('heading', { name: 'Pinehurst Invitational' })).toBeTruthy());
+    expect(screen.getByText('Lineup: Not published yet')).toBeTruthy();
+    expect(screen.queryByText('Lineup: Published')).toBeNull();
+  });
+
   it('a round under way keeps Open in Tournaments but drops Edit round', async () => {
     wrap(data([roundEv(1, { round: ref(1, { status: 'live' }) })]), 'rd-1');
     await waitFor(() => expect(screen.getByRole('link', { name: 'Open in Tournaments' })).toBeTruthy());

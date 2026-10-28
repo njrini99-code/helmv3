@@ -3,8 +3,12 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 /**
  * P-14: while an event's change mark is live, the iCal feed leads its DESCRIPTION with what changed ("Moved from 1:00 PM by
  * Coach Okafor on Wed 14 October."). A mark that is old, unreadable or on an event that has ended adds nothing, and an
- * event without one is exactly what it was.
+ * event without one is exactly what it was. The line is a Clubhouse feature: with golf_clubhouse_ui off (or the team outside
+ * HELM_CLUBHOUSE_TEAMS) the feed is exactly what it was before change marks existed.
  */
+
+const flag = vi.hoisted(() => ({ on: true }));
+vi.mock('@/lib/flags/is-enabled', () => ({ isFlagEnabled: (id: string) => id === 'golf_clubhouse_ui' && flag.on }));
 
 vi.mock('@/lib/server-error-logger', () => ({
   logServerError: vi.fn(async () => {}),
@@ -60,11 +64,18 @@ async function feedText(): Promise<string> {
 }
 const vevent = (ics: string, id: string): string => ics.split('BEGIN:VEVENT').find((b) => b.includes(`UID:${id}@helm-golf`)) ?? '';
 
+const ORIGINAL = EVENTS.map((e) => ({ ...e }));
 beforeEach(() => {
+  flag.on = true;
+  vi.stubEnv('HELM_CLUBHOUSE_TEAMS', '');
+  EVENTS.splice(0, EVENTS.length, ...ORIGINAL.map((e) => ({ ...e })));
   vi.useFakeTimers({ toFake: ['Date'] });
   vi.setSystemTime(new Date(NOW));
 });
-afterEach(() => vi.useRealTimers());
+afterEach(() => {
+  vi.useRealTimers();
+  vi.unstubAllEnvs();
+});
 
 describe('iCal feed: the change line', () => {
   it('leads the description of an event with a live mark, ahead of the coach’s own notes', async () => {
@@ -82,5 +93,33 @@ describe('iCal feed: the change line', () => {
   it('leaves an event with no mark, an old mark and a mark it cannot read exactly as it was', async () => {
     const ics = await feedText();
     for (const id of ['plain', 'old', 'garbled']) expect(vevent(ics, id)).not.toContain('DESCRIPTION');
+  });
+});
+
+describe('iCal feed: the change line rides the Clubhouse release flag', () => {
+  it('with golf_clubhouse_ui off, no event carries a change line and the coach’s notes stand alone', async () => {
+    flag.on = false;
+    const ics = await feedText();
+    expect(ics).not.toContain('Moved from');
+    expect(vevent(ics, 'moved')).toContain('DESCRIPTION:Bring rain gear\\; arrive early\r\n');
+  });
+
+  it('with the flag off the feed is exactly the feed of the same events with no marks at all', async () => {
+    flag.on = false;
+    const off = await feedText();
+    EVENTS.splice(0, EVENTS.length, ...ORIGINAL.map((e) => ({ ...e, change: null })));
+    flag.on = true;
+    const unmarked = await feedText();
+    expect(off).toBe(unmarked);
+  });
+
+  it('with the flag on but the team outside the Clubhouse allowlist, the feed carries no change line', async () => {
+    vi.stubEnv('HELM_CLUBHOUSE_TEAMS', 'another-team');
+    expect(await feedText()).not.toContain('Moved from');
+  });
+
+  it('with the flag on and the team on the allowlist, the change line leads the description', async () => {
+    vi.stubEnv('HELM_CLUBHOUSE_TEAMS', 'team-1');
+    expect(vevent(await feedText(), 'moved')).toContain('DESCRIPTION:Moved from 1:00 PM by Coach Okafor on Wed 14 October.');
   });
 });

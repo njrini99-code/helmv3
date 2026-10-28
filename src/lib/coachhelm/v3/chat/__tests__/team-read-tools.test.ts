@@ -46,6 +46,14 @@ describe('team-wide CoachHelm read tools', () => {
     expect(env.coverage).toBe('complete');
   });
 
+  it('get_team_rounds asks for qualifier rounds under both spellings, so older “qualifying” rounds count', async () => {
+    const sb = sbWith({ golf_rounds: [{ data: [] }] }) as unknown as { from: ReturnType<typeof vi.fn> };
+    await getTeamRounds(sb as never, ctx, { round_type: 'qualifier', since_days: 30 });
+    const chain = sb.from.mock.results[0]!.value as Record<string, ReturnType<typeof vi.fn>>;
+    expect(chain.in).toHaveBeenCalledWith('round_type', ['qualifier', 'qualifying']);
+    expect(chain.eq).not.toHaveBeenCalledWith('round_type', expect.anything());
+  });
+
   it('get_team_rounds says unavailable, not empty, when the read fails', async () => {
     const env = await getTeamRounds(sbWith({ golf_rounds: [{ error: { message: 'boom' } }] }), ctx, { since_days: 30 });
     expect(env.coverage).toBe('unavailable');

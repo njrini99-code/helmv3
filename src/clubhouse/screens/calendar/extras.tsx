@@ -6,7 +6,7 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { getItineraryForEvent } from '@/app/golf/actions/travel';
 import { addCoachBlockedTime, deleteCoachBlockedTime } from '@/app/golf/actions/calendar-blocked-time';
 import { attachDocumentToEvent, detachDocumentFromEvent, getEventDocuments } from '@/app/golf/actions/event-documents';
-import { getDocuments } from '@/app/golf/actions/documents';
+import { getDocuments, getPreviewUrl } from '@/app/golf/actions/documents';
 import { serializeRecurrenceRule } from '@/lib/golf/recurrence';
 import { Badge } from '../../ui/Badge';
 import { Button, IconButton } from '../../ui/Button';
@@ -19,7 +19,7 @@ import { SearchField } from '../../ui/SearchField';
 import { Segmented } from '../../ui/Segmented';
 import { Skeleton } from '../../ui/States';
 import { useToast } from '../../ui/Toast';
-import { isOffline, normalise, useAction } from '../../lib/use-action';
+import { isOffline, normalise, useAction, type ServerResult } from '../../lib/use-action';
 import { chReport } from '../../lib/track';
 import { newRequestId } from '../../data/recruiting-shape';
 import { haptic } from '../../lib/haptics';
@@ -306,7 +306,8 @@ export function BusySheet({ open, onClose, onSaved, today }: { open: boolean; on
 
 /* Files on an event */
 
-type EventFile = { id: string; title: string; url: string; size: number | null; note: string | null };
+/** No stored address: the documents bucket is private, so a file opens through a short-lived signed link per tap (#1259). */
+type EventFile = { id: string; title: string; size: number | null; note: string | null };
 
 export function EventFiles({ eventId, teamId, canEdit, preview }: { eventId: string; teamId: string; canEdit: boolean; preview?: boolean }) {
   const toast = useToast();
@@ -319,7 +320,7 @@ export function EventFiles({ eventId, teamId, canEdit, preview }: { eventId: str
     let live = true;
     setFailed(false);
     if (preview) {
-      setFiles(eventId === 'e11' ? [{ id: 'd1', title: 'Pairings and tee times', url: '#', size: 84 * 1024, note: null }, { id: 'd2', title: 'Local rules', url: '#', size: 212 * 1024, note: null }] : []);
+      setFiles(eventId === 'e11' ? [{ id: 'd1', title: 'Pairings and tee times', size: 84 * 1024, note: null }, { id: 'd2', title: 'Local rules', size: 212 * 1024, note: null }] : []);
       return;
     }
     getEventDocuments(eventId)
@@ -330,7 +331,7 @@ export function EventFiles({ eventId, teamId, canEdit, preview }: { eventId: str
           setFailed(true);
           return;
         }
-        setFiles((r.data ?? []).map((d) => ({ id: d.document.id, title: d.document.title, url: d.document.file_url, size: d.document.file_size, note: d.note })));
+        setFiles((r.data ?? []).map((d) => ({ id: d.document.id, title: d.document.title, size: d.document.file_size, note: d.note })));
       })
       .catch((err) => {
         chReport(err, { surface: 'calendar.files' });
@@ -340,6 +341,39 @@ export function EventFiles({ eventId, teamId, canEdit, preview }: { eventId: str
       live = false;
     };
   }, [eventId, attempt, preview]);
+
+  // Opening a file signs a fresh link, as Team Hub and Fairway's event drawer do (getPreviewUrl): the stored file_url is
+  // a public address on a private bucket and 404s. The tab opens inside the tap or Safari blocks it, so it opens first
+  // and the signed link fills it in; useAction calls this straight from the tap before its first await, and offline it
+  // never gets here, so no blank tab flashes.
+  const [opening, setOpening] = useState<string | null>(null);
+  const open = useAction(
+    'calendar.openFile',
+    async (f: EventFile): Promise<ServerResult<{ url: string }>> => {
+      if (preview) return { success: true };
+      const win = typeof window !== 'undefined' ? window.open('', '_blank') : null;
+      // The blank tab is ours until the link lands; cut its way back to this page before it leaves for storage.
+      if (win) win.opener = null;
+      setOpening(f.id);
+      try {
+        const res = await getPreviewUrl(f.id);
+        const url = res.data?.url;
+        if (!url) {
+          win?.close();
+          return { success: false, error: res.noContent ? 'This file has no stored copy to open.' : (res.error ?? undefined) };
+        }
+        if (win) win.location.href = url;
+        else window.location.assign(url);
+        return { success: true, data: { url } };
+      } catch (err) {
+        win?.close();
+        throw err;
+      } finally {
+        setOpening(null);
+      }
+    },
+    (f) => ({ done: '', failed: `Couldn’t open ${f.title}`, hint: 'The file may have been removed. Try again, or attach it again from Documents.', code: 'CH-6024' }),
+  );
 
   const detach = async (f: EventFile) => {
     // Same rule as every save (CH-1903): offline, nothing is sent and nothing changes.
@@ -419,10 +453,17 @@ export function EventFiles({ eventId, teamId, canEdit, preview }: { eventId: str
               <span className="ch-in__file-ic">
                 <Icon icon={FileText} size={14} />
               </span>
-              <a href={f.url} target="_blank" rel="noreferrer" style={{ minWidth: 0 }}>
+              <button
+                type="button"
+                className="ch-in__file-open"
+                onClick={() => void open.run(f)}
+                disabled={opening === f.id}
+                aria-busy={opening === f.id || undefined}
+                aria-label={`Open ${f.title}`}
+              >
                 <b>{f.title}</b>
-                <span>{[fileSize(f.size), f.note].filter(Boolean).join(' · ')}</span>
-              </a>
+                <span>{opening === f.id ? 'Opening…' : [fileSize(f.size), f.note].filter(Boolean).join(' · ')}</span>
+              </button>
               {canEdit ? (
                 <IconButton icon={X} size="sm" label={`Remove ${f.title}`} onClick={() => void detach(f)} />
               ) : (
