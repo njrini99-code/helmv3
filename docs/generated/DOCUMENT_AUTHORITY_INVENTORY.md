@@ -889,6 +889,7 @@ them would bury everything above.
 | `docs/clubhouse/held/data/tournaments-calendar-sync.md` | current | - | - | - | - |
 | `docs/clubhouse/held/data/tournaments-from-calendar.md` | current | - | - | - | - |
 | `docs/clubhouse/held/data/tournaments-rls.md` | current | - | - | - | - |
+| `docs/clubhouse/held/data/tournaments-round-write.md` | current | - | - | - | - |
 | `docs/clubhouse/held/data/tournaments-rpcs.md` | current | - | - | - | - |
 | `docs/clubhouse/held/data/tournaments.md` | current | - | - | - | - |
 | `docs/clubhouse/held/features/conversation-files.md` | current | - | - | - | - |
@@ -1210,6 +1211,7 @@ them would bury everything above.
 | `docs/clubhouse/pages/P013-coachhelm/changes/2026-10-24-standing-season-window.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P013-coachhelm/changes/2026-10-25-ask-thread-redesign.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P013-coachhelm/changes/2026-10-25-visual-artifact.md` | current | - | - | - | - |
+| `docs/clubhouse/pages/P013-coachhelm/changes/2026-10-27-visual-artifact-must-fixes.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P014-recruiting/CHANGELOG.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P014-recruiting/CONTRACT.md` | current | - | - | yes | - |
 | `docs/clubhouse/pages/P014-recruiting/DESIGN.md` | current | - | - | - | - |
@@ -1245,6 +1247,7 @@ them would bury everything above.
 | `docs/clubhouse/pages/P016-tournaments/changes/2026-10-24-review-history.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P016-tournaments/changes/2026-10-25-new-event-form.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P016-tournaments/changes/2026-10-25-wired.md` | current | - | - | - | - |
+| `docs/clubhouse/pages/P016-tournaments/changes/2026-10-27-new-event-thrown-save.md` | current | - | - | - | - |
 | `docs/clubhouse/phone/auth.md` | current | - | - | - | - |
 | `docs/clubhouse/phone/calendar.md` | current | - | - | - | - |
 | `docs/clubhouse/phone/classes.md` | current | - | - | - | - |
