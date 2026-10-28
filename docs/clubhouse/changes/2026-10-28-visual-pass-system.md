@@ -55,7 +55,8 @@ Held items:     Reduce Motion spinner and the phone overscroll colour need a
 
 - `g3-contrast.py` (dicts updated to the new values): every placeholder pair
   passes; 155 pairs below threshold of 1058, down from 177.
-- vitest: states (notice), avatar-sizes, contrast-tokens, look-feel-pass-css (shell.css letter-spacing
+- vitest: states (notice), avatar-sizes, contrast-tokens, look-feel-pass-css
+  (shell.css letter-spacing
   holdouts ratchet 5 → 4), one-spinner, motion-durations-pinned,
   canvas-color-sync, menu-origin, large-title, audit-a11y-motion, SwipeRow,
   controls-consistency, shell, native, team-switch.
@@ -66,6 +67,9 @@ Held items:     Reduce Motion spinner and the phone overscroll colour need a
 ### Lead follow-ups (same pass)
 
 - Ledger row chevron (`.ch-lgr__go`) reads ink-500 (was ink-400, 2.75:1).
-- Week strip: the selected day's letter (`.ch-wks__d.is-on em`) reads the full on-green ink (was the muted ink, 4.23:1 light and 3.22:1 dark).
-- The type-role ratchet counts `font: var(--ch-tab-font)` as a role, so tab rows can share the tab token.
-- Framed page title (canopy h1, shell.css) scales with the reader's text size: `calc(44 * var(--ch-type-k))` instead of a raw 44px.
+- Week strip: the selected day's letter (`.ch-wks__d.is-on em`) reads the full
+  on-green ink (was the muted ink, 4.23:1 light and 3.22:1 dark).
+- The type-role ratchet counts `font: var(--ch-tab-font)` as a role, so tab rows
+  can share the tab token.
+- Framed page title (canopy h1, shell.css) scales with the reader's text size:
+  `calc(44 * var(--ch-type-k))` instead of a raw 44px.
