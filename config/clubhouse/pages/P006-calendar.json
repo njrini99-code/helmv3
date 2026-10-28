@@ -44,6 +44,10 @@
     "styles": "src/clubhouse/styles/calendar.css",
     "tests": [
       "src/clubhouse/__tests__/calendar.test.tsx"
+    ],
+    "also": [
+      "src/clubhouse/data/attendance-counts.ts",
+      "src/clubhouse/data/calendar-rounds.ts"
     ]
   },
   "catalog": "docs/clubhouse/catalog/calendar.md",

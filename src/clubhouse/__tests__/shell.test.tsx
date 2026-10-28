@@ -304,6 +304,14 @@ describe('Shell · page states', () => {
     expect(home.className).toContain('ch-btn--primary');
   });
 
+  it('CH-1301 a player on a coach-only page is told it is a coach\u2019s page, not that it is coming', async () => {
+    wrap(<NotRebuilt label="Recruiting" coachOnly />);
+    await expectCode('CH-1301', /Only coaches use Recruiting/);
+    expect(screen.getByRole('heading', { level: 1 }).textContent).toBe('Only coaches use Recruiting');
+    expect(code('CH-1301')!.textContent).not.toMatch(/rebuilt|on the list/);
+    expect(screen.getByRole('link', { name: 'Back to Home' }).getAttribute('href')).toBe('/golf/dashboard');
+  });
+
   it('CH-1301 a page that is not rebuilt', async () => {
     wrap(<NotRebuilt label="Rounds" />);
     await expectCode('CH-1301', /Rounds hasn.t been rebuilt yet/);
@@ -1270,6 +1278,24 @@ describe('Shell · behaviour contracts (P001)', () => {
     );
     expect(screen.queryByText('Lineups body')).toBeNull();
     expect(code('CH-1301')).not.toBeNull();
+  });
+
+  it('10802 a player on a page rebuilt for coaches only is told it is a coach\u2019s page; on an unbuilt one, that it is coming', () => {
+    const { unmount } = render(
+      <ClubhouseFrame userData={player} shell={shell} pathname="/golf/dashboard/recruiting">
+        <p>Recruiting body</p>
+      </ClubhouseFrame>,
+    );
+    expect(screen.queryByText('Recruiting body')).toBeNull();
+    expect(screen.getByRole('heading', { level: 1 }).textContent).toBe('Only coaches use Recruiting');
+    unmount();
+    // A coach on an unbuilt address still reads the plain notice.
+    render(
+      <ClubhouseFrame userData={coach} shell={shell} pathname="/golf/dashboard/lineups">
+        <p>Lineups body</p>
+      </ClubhouseFrame>,
+    );
+    expect(screen.getByRole('heading', { level: 1 }).textContent).toMatch(/hasn.t been rebuilt yet$/);
   });
 
   it('10301 the bell reads its list again every time it opens', async () => {

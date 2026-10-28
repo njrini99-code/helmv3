@@ -51,7 +51,8 @@
       "src/clubhouse/routes/onboard.tsx",
       "src/clubhouse/routes/front-door.tsx",
       "src/clubhouse/styles/onboard.css",
-      "src/clubhouse/styles/onboard-tokens.css"
+      "src/clubhouse/styles/onboard-tokens.css",
+      "src/clubhouse/data/welcome-shape.ts"
     ],
     "tests": [
       "src/clubhouse/__tests__/auth.test.tsx",

@@ -1,7 +1,7 @@
 'use client';
 
 import { ArrowDown, ArrowUp, Bandage, ChartColumn, CircleCheck, Copy, Download, Ellipsis, LayoutGrid, List, MessageSquare, Plane, Share, Sparkles, UserCheck, UserMinus, UserPlus, UserX } from 'lucide-react';
-import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { useChSessionState } from '../../lib/session-state';
 import { useRouter } from 'next/navigation';
 import { removePlayerFromTeam } from '@/app/golf/actions/roster';
@@ -887,7 +887,23 @@ function InviteModal({
   onRetry: () => void;
 }) {
   const copy = useCopyText();
-  const link = code && typeof window !== 'undefined' ? `${window.location.origin}/golf/join/${encodeURIComponent(code)}` : null;
+  // Read in an effect so render stays free of window and navigator. The sheet never renders on the server (it starts
+  // closed, and Modal draws its content only while open), so this is tidiness, not a hydration fix.
+  const [origin, setOrigin] = useState<string | null>(null);
+  const [canShare, setCanShare] = useState(false);
+  useEffect(() => {
+    setOrigin(window.location.origin);
+    setCanShare(typeof navigator.share === 'function');
+  }, []);
+  const link = code && origin ? `${origin}/golf/join/${encodeURIComponent(code)}` : null;
+  // A long link opens scrolled to its end, so the team code stays in view. A layout effect, not a callback ref: the ref
+  // would run before Modal's own layout effect calls showModal(), while the dialog is still display: none and the field
+  // has no scroll width. This effect runs after Modal's (a parent's layout effects follow its children's).
+  const linkField = useRef<HTMLInputElement>(null);
+  useLayoutEffect(() => {
+    const el = linkField.current;
+    if (open && el) el.scrollLeft = el.scrollWidth;
+  }, [open, link]);
   const share = async () => {
     if (!link) return;
     try {
@@ -919,9 +935,16 @@ function InviteModal({
             <div className="ch-field">
               <span className="ch-field__label">Or send the invite link</span>
               <div className="ch-rs-inv__link">
-                {/* The scheme is left off and the field clips from the start (roster.css), so the code at the end stays in view; Copy and Share send the full URL. */}
-                <input className="ch-input" readOnly value={link.replace(/^https?:\/\//, '')} aria-label="Invite link" onFocus={(e) => e.currentTarget.select()} />
-                {typeof navigator !== 'undefined' && 'share' in navigator ? (
+                {/* The scheme is left off and the field opens scrolled to its end, so the code stays in view; Copy and Share send the full URL. */}
+                <input
+                  className="ch-input"
+                  readOnly
+                  value={link.replace(/^https?:\/\//, '')}
+                  aria-label="Invite link"
+                  ref={linkField}
+                  onFocus={(e) => e.currentTarget.select()}
+                />
+                {canShare ? (
                   <Button variant="primary" leftIcon={Share} onClick={() => void share()}>
                     Share
                   </Button>

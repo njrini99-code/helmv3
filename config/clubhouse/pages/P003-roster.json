@@ -45,6 +45,9 @@
     "tests": [
       "src/clubhouse/__tests__/roster.test.tsx",
       "src/clubhouse/__tests__/roster-player.test.tsx"
+    ],
+    "also": [
+      "src/clubhouse/data/roster-player.ts"
     ]
   },
   "catalog": "docs/clubhouse/catalog/roster.md",

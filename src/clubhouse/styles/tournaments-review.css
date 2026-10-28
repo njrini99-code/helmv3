@@ -126,7 +126,8 @@
   letter-spacing: var(--ch-track-15);
   color: var(--ch-text-primary);
 }
-.ch-tour-rev-trend__s {
+/* Two classes: `.ch-root p` (base.css) would otherwise zero these lines' margins. */
+.ch-tour-rev-trend .ch-tour-rev-trend__s {
   margin: 4px 0 0;
   font: var(--ch-type-13);
   line-height: var(--ch-lead-caption);
@@ -200,15 +201,15 @@
   color: var(--ch-text-primary);
 }
 /* Visual pass 2026-10-28: the key is a footnote, not another label row, so it stands clear of the event labels and
-   reads in the caption ink. */
-.ch-tour-rev-trend__key {
+   reads in the caption ink. Two classes, as the subtitle and note: `.ch-root p` outranks one. */
+.ch-tour-rev-trend .ch-tour-rev-trend__key {
   margin: 16px 0 0;
   font: var(--ch-type-13);
   line-height: var(--ch-lead-caption);
   color: var(--ch-text-tertiary);
 }
-.ch-tour-rev-trend__note {
-  margin: 8px 0 0;
+.ch-tour-rev-trend .ch-tour-rev-trend__note {
+  margin: 12px 0 0;
   max-width: 80ch;
   font: var(--ch-type-14);
   color: var(--ch-text-secondary);

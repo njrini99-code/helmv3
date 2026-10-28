@@ -9,6 +9,40 @@ wins; the stale ones found by this audit are listed at the end. `PROGRESS.md`
 keeps the full history (gates, decisions, questions, data gaps, verification
 log). What is left, and who has it: [QUEUE.md](QUEUE.md).
 
+## Production polish pass (2026-10-27)
+
+A page-by-page pass over all 16 pages, phone (390, 375 where it mattered) and
+desktop (1280), light and dark, in WebKit: about 470 preview states, the
+front door's 22 states, and the signed-in routes on the local stack. Fixes and
+evidence are in each page's `changes/2026-10-27-*.md` (branch
+`agent/clubhouse-polish`). State on 2026-10-27:
+
+- **Production** serves `d0f467a73` (2026-10-21); `origin/main` has moved on
+  since (`npm run release:status` gives the current gap). Nothing was deployed
+  by this pass.
+- **Visual pass.** The visual pass (#2389 to #2396, 2026-10-28) landed first.
+  Where both touched the same spot, its version stands and this pass's copy
+  was dropped.
+- **Migrations:** the integration pass's "all held" is out of date. #2375 and
+  #2376 applied 21 Clubhouse migrations to production on 2026-10-25/26; the
+  ledger's newest row is `20261025080000`. About 25 repo migrations are still
+  unapplied (`supabase/migrations/HELD.md` is the list), among them
+  `20261001000000` (Q-120), `20261017102000` (attendance), `20261023152000`
+  (round save) and `20261024151000` (standing); #2381 adds one more. The code
+  reads around each missing one.
+- **Flags:** `golf_clubhouse_ui` and `golf_tournaments_v1` are off in
+  production. Turning Clubhouse on is the owner's call.
+- **Tournaments is not ready to turn on.** Five of its views are still the
+  base's placeholders ("… isn't built yet"): Lineup, Link rounds, Live round,
+  Edit event and the player's view, and "Build lineup", "Edit lineup" and
+  "Follow live" lead to them. Keep `golf_tournaments_v1` off in production
+  until they are built.
+- **Found, not changed (follow-up):** `.ch-root p` and `.ch-root h1..h3`
+  (`styles/base.css`) outrank every one-class rule, so about 100 page rules
+  that give a `p` or a heading a margin never apply. Pages were reviewed as
+  they render today; turning those margins on is its own change with its own
+  before and after shots.
+
 ## Integration pass (2026-10-25)
 
 The integration branch batches Tournaments (#2369), calendar tournaments

@@ -198,7 +198,7 @@ function Hero({ s, voice = PLAYER_VOICE }: { s: ChStanding; voice?: ChViewVoice 
         </h2>
         <p className="ch-hs-hero__sub">
           {top && tour.of > 0 ? `Ahead of ${tourName} on ${tour.ahead} of ${tour.of} stats. ` : top && team.of > 0 ? `Ahead of ${w.team} on ${team.ahead} of ${team.of} stats. ` : ''}
-          Every stat, strokes gained included, is against {tourName}.
+          Every stat, strokes gained included, is measured against {tourName}.
         </p>
       </div>
     </section>

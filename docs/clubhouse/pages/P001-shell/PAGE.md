@@ -24,7 +24,7 @@ earlier observations below retain their original date and scope.
 | Checklist | [screens/foundation.md](../../screens/foundation.md) |
 | Phone spec | [phone/foundation.md](../../phone/foundation.md) |
 | Design boards | [sidebar.css](../../../../design/handoff/sidebar.css) · [depth.css](../../../../design/handoff/depth.css) · [gh-nav.js](../../../../design/handoff/gh-nav.js) · [gh-states.jsx](../../../../design/handoff/gh-states.jsx) · [gh-polish.css](../../../../design/handoff/gh-polish.css) · [m-shell.jsx](../../../../design/handoff/m-shell.jsx) · [m.css](../../../../design/handoff/m.css) · [m-shell.jsx](../../../../design/handoff/mobile/m-shell.jsx) |
-| Code | [shell](../../../../src/clubhouse/shell) · [shell.ts](../../../../src/clubhouse/data/shell.ts) · [shell.css](../../../../src/clubhouse/styles/shell.css) |
+| Code | [shell](../../../../src/clubhouse/shell) · [shell.ts](../../../../src/clubhouse/data/shell.ts) · [shell.css](../../../../src/clubhouse/styles/shell.css) · [alias.ts](../../../../src/clubhouse/routes/alias.ts) · [whats-new.tsx](../../../../src/clubhouse/routes/whats-new.tsx) · [whats-new](../../../../src/clubhouse/screens/whats-new) · [whats-new.ts](../../../../src/clubhouse/data/whats-new.ts) · [whats-new-shape.ts](../../../../src/clubhouse/data/whats-new-shape.ts) · [whats-new.css](../../../../src/clubhouse/styles/whats-new.css) · [palette-people.ts](../../../../src/clubhouse/data/palette-people.ts) · [command.css](../../../../src/clubhouse/styles/command.css) |
 | Audits | [all audits](../../AUDITS.md) |
 | Tracker | [PROGRESS.md](../../PROGRESS.md), row "Foundation" |
 | Screenshot log | [VERIFY.md, Screenshots](VERIFY.md#screenshots) |

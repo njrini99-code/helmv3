@@ -48,10 +48,20 @@ describe('prefetch on press (A13)', () => {
     expect(prefetch).toHaveBeenCalledTimes(1);
   });
 
-  it('outside the app router a row stays a plain link', () => {
+  it('outside the app router a press fetches nothing', () => {
     render(<Link href="/golf/dashboard/roster/theo" />);
     fireEvent.pointerDown(screen.getByText('Theo'));
     expect(prefetch).not.toHaveBeenCalled();
+  });
+
+  it('marks the row the same with or without a router, so the server render and the hydrated client agree', () => {
+    // The server renders client components without the app router: a mark drawn only with one was a hydration mismatch
+    // React never patched, so the idle look (useIdleRowsAhead) found no rows.
+    const { unmount } = render(<Link href="/golf/dashboard/roster/theo" />);
+    expect(screen.getByText('Theo').getAttribute('data-ch-ahead')).toBe('/golf/dashboard/roster/theo');
+    unmount();
+    render(<Row href="/golf/dashboard/roster/theo" />);
+    expect(screen.getByText('Theo').getAttribute('data-ch-ahead')).toBe('/golf/dashboard/roster/theo');
   });
 
   it('past the fresh window a press fetches it again', () => {

@@ -14,8 +14,8 @@ describe('row 70: the insight-first card states only the changes that pass the o
     expect(out).toEqual({
       state: 'changes',
       lines: [
-        { subject: 'Putts per round', figure: '+1.5', tone: 'is-loss', words: 'Putts per round, worse vs previous 10' },
-        { subject: 'Scoring avg', figure: '−1.2', tone: 'is-gain', words: 'Scoring avg, better vs previous 10' },
+        { subject: 'Putts per round', figure: '+1.5', tone: 'is-loss', words: 'Putts per round, worse than previous 10' },
+        { subject: 'Scoring avg', figure: '−1.2', tone: 'is-gain', words: 'Scoring avg, better than previous 10' },
       ],
     });
   });
@@ -36,7 +36,7 @@ describe('row 70: the insight-first card states only the changes that pass the o
 
   it('team: from the figures the page draws with a change; a figure with no previous window is left out', () => {
     const fig = (label: string, delta: number | null, se: number | null, lowerIsBetter: boolean) => ({ label, delta, se, lowerIsBetter, digits: 1, unit: '' as const });
-    expect(teamInsight([fig('Scoring avg', -1.5, 0.5, true), fig('Putts per round', null, null, true)], 'vs previous 20')).toMatchObject({ state: 'changes', lines: [{ subject: 'Scoring avg', tone: 'is-gain', words: 'Scoring avg, better vs previous 20' }] });
+    expect(teamInsight([fig('Scoring avg', -1.5, 0.5, true), fig('Putts per round', null, null, true)], 'vs previous 20')).toMatchObject({ state: 'changes', lines: [{ subject: 'Scoring avg', tone: 'is-gain', words: 'Scoring avg, better than previous 20' }] });
     expect(teamInsight([fig('Scoring avg', null, null, true)], 'vs previous 10')).toBeNull();
   });
 
@@ -46,7 +46,7 @@ describe('row 70: the insight-first card states only the changes that pass the o
       extra: { compare: { lastRounds: 10, previousRounds: 10, lastHoleRounds: 10, previousHoleRounds: 10, rows: [{ label: 'Scoring avg', last: 74, previous: 74.2, unit: '', digits: 1, lowerIsBetter: true, se: 1.1 }] } },
       filter: { last: 10 },
     });
-    expect(out).toEqual({ state: 'changes', lines: [{ subject: 'Strokes gained a round', figure: '+1.6', tone: 'is-gain', words: 'Strokes gained a round, better vs previous 10' }] });
+    expect(out).toEqual({ state: 'changes', lines: [{ subject: 'Strokes gained a round', figure: '+1.6', tone: 'is-gain', words: 'Strokes gained a round, better than previous 10' }] });
     expect(playerInsight({ sgChange: { delta: null, context: '' }, extra: { compare: null }, filter: { last: 10 } })).toBeNull();
   });
 });

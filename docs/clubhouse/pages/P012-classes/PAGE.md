@@ -23,7 +23,7 @@ earlier observations below retain their original date and scope.
 | Checklist | [screens/classes.md](../../screens/classes.md) |
 | Phone spec | [phone/classes.md](../../phone/classes.md) |
 | Design boards | [Player - Classes.html](../../../../design/handoff/Player%20-%20Classes.html) · [classes.jsx](../../../../design/handoff/classes.jsx) · [classes.css](../../../../design/handoff/classes.css) · [gh-states.jsx](../../../../design/handoff/gh-states.jsx) · [Player - Classes - Mobile.html](../../../../design/handoff/Player%20-%20Classes%20-%20Mobile.html) · [classes.jsx](../../../../design/handoff/classes.jsx) |
-| Code | [classes](../../../../src/clubhouse/screens/classes) · [classes.ts](../../../../src/clubhouse/data/classes.ts) · [classes.tsx](../../../../src/clubhouse/routes/classes.tsx) · [classes.css](../../../../src/clubhouse/styles/classes.css) |
+| Code | [classes](../../../../src/clubhouse/screens/classes) · [classes.ts](../../../../src/clubhouse/data/classes.ts) · [classes.tsx](../../../../src/clubhouse/routes/classes.tsx) · [classes.css](../../../../src/clubhouse/styles/classes.css) · [class-day.ts](../../../../src/clubhouse/data/class-day.ts) · [class-day-shape.ts](../../../../src/clubhouse/data/class-day-shape.ts) · [classes-shape.ts](../../../../src/clubhouse/data/classes-shape.ts) |
 | Audits | [all audits](../../AUDITS.md) |
 | Tracker | [PROGRESS.md](../../PROGRESS.md), row "Classes" |
 | Screenshot log | [VERIFY.md, Screenshots](VERIFY.md#screenshots) |

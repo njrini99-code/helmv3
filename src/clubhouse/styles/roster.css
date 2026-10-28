@@ -986,12 +986,10 @@ a.ch-rs-peek__dev:focus-visible,
   display: flex;
   gap: 8px;
 }
-/* A long link clips at its start, not its end, so the team code stays in view (wave 10). The link is one
-   left-to-right run, so it still reads in order. */
+/* A long link opens scrolled to its end (Roster.tsx InviteModal), so the team code stays in view (wave 10). Not
+   direction: rtl: a right-to-left field reorders a URL's digits, dots and slashes ("…in/FINLEY-26/127.0.0.1:3100"). */
 .ch-rs-inv__link .ch-input {
-  direction: rtl;
-  text-align: left;
-  text-overflow: ellipsis;
+  text-overflow: clip;
 }
 /* Invite by email (QUEUE doc-60): the box is the field, its chips and its text share one focus ring. */
 .ch-rs-em {
