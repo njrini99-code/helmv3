@@ -94,8 +94,8 @@ All 25 (CONTRACT.md).
 Changing the window dims the page to 60% for the quick step (180ms) and marks it busy until the new
 window lands (CH-4402); focusing a player brings their line forward in green while the others fade
 back (CH-4601), and choosing a leg takes the green ring and highlights its grid column (CH-4602).
-Nothing counts up and nothing staggers except the shell's first-paint reveal. All from the v2 tokens
-(D-64).
+The trend's headline figure changes at once, with no fade or rise (visual pass 2026-10-28). Nothing counts up
+and nothing staggers except the shell's first-paint reveal. All from the v2 tokens (D-64).
 
 ## Haptic intent
 

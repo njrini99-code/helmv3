@@ -108,7 +108,9 @@ The tab underline slides to the new tab in the base step, 260ms (CH-5601) and
 the focus-area sheet rises and fades in (CH-5602); a window change or paging to
 another player dims the page and marks it busy (CH-5402). Nothing counts up and
 nothing staggers except the shell's first-paint reveal. All from the v2 tokens
-(D-64).
+(D-64). The SG legs and putting bands glide to new values by transform only
+(each mark laid out at its final place, mapped from where it was drawn), never
+by animating `left`/`width`/`top` (visual pass 2026-10-28).
 
 ## Haptic intent
 
@@ -152,7 +154,8 @@ The sections are real tabs with selected state and their panels, a coach reads
 "Stats › name" in the top bar, the strokes gained route is an image with every
 leg in words, the hero figures are a definition list, the focus-area field is
 named "What to work on" with its help or error as its description, and the
-rounds table is a named region that takes focus so the arrow keys scroll it. Axe
+rounds table is a named region that takes focus so the arrow keys scroll it, and each phone round row is named with
+its course, date, score, score to par and strokes gained (visual pass 2026-10-28). Axe
 runs at 1280 and 390 (`clubhouse:a11y`).
 
 ## Data assumptions
