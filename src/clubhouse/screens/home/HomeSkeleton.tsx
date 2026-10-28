@@ -1,6 +1,6 @@
 import type { ReactNode } from 'react';
 import { Skeleton } from '../../ui/States';
-import { SkeletonDeskHead } from './SkeletonDeskHead';
+import { SkeletonDeskForm, SkeletonDeskHead } from './SkeletonDeskHead';
 import { SkeletonHeroBar } from './SkeletonHeroBar';
 import { SkeletonPhoneHero } from './SkeletonPhoneHero';
 import '../../styles/home.css';
@@ -33,8 +33,9 @@ export function HomeSkeleton() {
           ))}
         </div>
       </div>
-      {/* Desktop head in the reader's shape: the coach's brief and scoring form, or the player's plain head. */}
+      {/* Desktop head in the reader's shape: the coach's brief, or the player's plain head. */}
       <SkeletonDeskHead />
+      {/* Row 79, as CoachHome draws it: the week's sheet first, then (the coach's) scoring form and four parts. */}
       <div className="ch-h-sheet ch-sheet">
         {[0, 1].map((k) => (
           <div key={k} className="ch-h-pane" style={{ minHeight: 623 }}>
@@ -45,6 +46,7 @@ export function HomeSkeleton() {
           </div>
         ))}
       </div>
+      <SkeletonDeskForm />
       {/* The leaderboard's heading: the title, its line of small print, and the Roster button (the loaded heading is 63px: a block of two lines and a 30px button). */}
       <div className="ch-h-sec">
         <div>

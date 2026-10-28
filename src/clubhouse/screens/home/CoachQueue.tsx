@@ -71,7 +71,8 @@ export function CoachQueue({ queue, covered = false, phone = false }: { queue: C
         ))}
         {note && (
           <span className={`${base}__fail`} data-ch-code="CH-2220">
-            {parts.length ? '· ' : ''}some items didn’t load
+            {/* On the phone the parts are capsules (home.css), so the note needs no dot to set it apart. */}
+            {parts.length && !phone ? '· ' : ''}some items didn’t load
           </span>
         )}
       </span>

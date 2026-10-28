@@ -85,7 +85,9 @@ from Roster's (`roster/format`).
 Coach: `CoachHome` (with `HomeFirstRun` and `CoachHomeNoTeam`), `HomeActions`,
 `Week`, `LatestRound`, `Leaderboard`, `HomeSkeleton` (shared by both roles; its
 phone hero is `SkeletonPhoneHero`, drawn in the reader's own shape from the
-shell's role), and the phone's `HomePhone` with `UpNext`, `NoEvents`, `Today`,
+shell's role; on the desktop `SkeletonDeskHead` draws the head and, after the
+week's sheet as the loaded page orders it, `SkeletonDeskForm` the coach's form
+and four parts), and the phone's `HomePhone` with `UpNext`, `NoEvents`, `Today`,
 `Form`, `WeekStrip`, `Rounds` and `RoundSheet`. Player: `PlayerHome` (with
 `DeskNext`, `PlayerFirstRun` and `PlayerHomeNoTeam`), `PlayerHomePhone` (with
 its paged `Latest`), `PlayerGame` (`Scoring`, `ScoreChart`, `Legs`, `Leg`,

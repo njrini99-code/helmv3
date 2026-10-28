@@ -240,11 +240,11 @@ describe('Skeletons draw the loaded page\'s lines', () => {
     expect(head.querySelector('.ch-h-head__actions')!.children).toHaveLength(2);
   });
 
-  it('Home: a coach\'s head is followed by the scoring form\'s band, then the team\'s four parts (spec B), and its Up next card has invitees and an action; a player\'s has neither, nor the brief (review 2026-10-18)', () => {
+  it('Home: a coach\'s head is followed by the week\'s sheet, then the scoring form\'s band and the team\'s four parts, as the loaded page draws them (visual pass 2026-10-28), and its Up next card has invitees and an action; a player\'s has neither, nor the brief (review 2026-10-18)', () => {
     const coach = render(<HomeSkeleton />);
     const main = coach.container.querySelector('main')!;
     const order = [...main.children].map((c) => c.className.split(' ')[0]);
-    expect(order.slice(order.indexOf('ch-h-head'), order.indexOf('ch-h-head') + 4)).toEqual(['ch-h-head', 'ch-h-form', 'ch-h-legs', 'ch-h-sheet']);
+    expect(order.slice(order.indexOf('ch-h-head'), order.indexOf('ch-h-head') + 4)).toEqual(['ch-h-head', 'ch-h-sheet', 'ch-h-form', 'ch-h-legs']);
     expect(main.querySelectorAll('.ch-h-form .ch-h-form__figs > div')).toHaveLength(3);
     // Shapes only: the plot's box is there, with no line drawn in it.
     expect(main.querySelector('.ch-h-form__plot')!.children).toHaveLength(0);
