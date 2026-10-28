@@ -521,10 +521,13 @@ describe('Stats player · phone (v2, Coach - Stats - Mobile.html)', () => {
     const id = '5b0c6a1e-2f4d-4c8e-9a7b-1d2e3f4a5b6c';
     const [first, second] = PREVIEW_PLAYER.rounds;
     phone(player({ rounds: [{ ...first!, id }, { ...second!, id: 'not-a-uuid' }] }));
-    const link = screen.getByRole('link', { name: `${first!.course}, ${first!.date}: open the round` });
+    // Visual pass 2026-10-28: the row's name carries the score too (the label used to hide it), then "Open the round".
+    const named = (r: typeof first) => new RegExp(`^${r!.course}, ${r!.date}: ${r!.score}\\b.*\\. Open the round$`);
+    const link = screen.getByRole('link', { name: named(first) });
     expect(link).toHaveAttribute('href', `/golf/dashboard/rounds/${id}`);
     expect(link.className).toContain('ch-spm-round');
-    expect(screen.queryByRole('link', { name: `${second!.course}, ${second!.date}: open the round` })).toBeNull();
+    expect(link.querySelector('.ch-stm-row__chev')).not.toBeNull();
+    expect(screen.queryByRole('link', { name: named(second) })).toBeNull();
     expect(document.querySelectorAll('.ch-spm-round')).toHaveLength(2);
   });
 

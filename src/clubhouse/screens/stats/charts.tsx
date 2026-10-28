@@ -117,7 +117,7 @@ export function SgChangeChip({ change, code, subject }: { change: ChSgChange; co
     <span className="ch-sgchg">
       {d != null && (
         <span className={`ch-delta ch-num ${deltaClass(tone)}`}>
-          {/* No arrow without a clear change: a minus glyph beside "−1.3" read as a double minus. */}
+          {/* No glyph for no clear change: a dash beside a signed number read as "— −1.3"; the words say it. */}
           {tone !== '' && <Icon icon={d > 0 ? ArrowUpRight : ArrowDownRight} size={12} />}
           {formatSigned(d)}
         </span>

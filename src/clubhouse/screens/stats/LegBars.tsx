@@ -5,6 +5,7 @@ import { useGlide } from '../../lib/motion-glide';
 import { sgScale, sgShare } from '../../lib/sg';
 import { useChartPin } from '../../lib/use-chart-pin';
 import { legReadout, type SgLegRow } from './leg-rows';
+import { shiftTransform, spanTransform } from './glide-transform';
 import { ChartTable } from '../../ui/charts/ChartTable';
 import { NoData } from '../../ui/NoData';
 
@@ -33,15 +34,14 @@ export function LegBars({ rows, baseline, teamName, onOpen }: { rows: LegBarRow[
   const spoken = readout(pin.pinned);
   const pinnedRow = pin.pinned != null ? rows[pin.pinned] : null;
   // Per leg: the bar's signed half-rail share, its whisker's ends and the team mark, gliding together on a new window (B9).
-  const drawn = useGlide(
-    rows.flatMap((r) => [
-      r.value == null ? null : (r.value >= 0 ? 1 : -1) * sgShare(r.value, scale) * 50,
-      r.value != null && r.se != null ? at(r.value - r.se) : null,
-      r.value != null && r.se != null ? at(r.value + r.se) : null,
-      r.team == null ? null : at(r.team),
-    ]),
-    rows.map((r) => r.label).join('|'),
-  );
+  // Each mark is laid out at its new place at once and glides there by transform (glide-transform.ts), never by width.
+  const target = rows.flatMap((r) => [
+    r.value == null ? null : (r.value >= 0 ? 1 : -1) * sgShare(r.value, scale) * 50,
+    r.value != null && r.se != null ? at(r.value - r.se) : null,
+    r.value != null && r.se != null ? at(r.value + r.se) : null,
+    r.team == null ? null : at(r.team),
+  ]);
+  const drawn = useGlide(target, rows.map((r) => r.label).join('|'));
   return (
     <div
       className="ch-lb"
@@ -64,7 +64,8 @@ export function LegBars({ rows, baseline, teamName, onOpen }: { rows: LegBarRow[
       </div>
       {rows.map((r, i) => {
         const muted = r.state === 'early';
-        const [bar, lo, hi, team] = drawn.slice(i * 4, i * 4 + 4);
+        const [bar, lo, hi, team] = target.slice(i * 4, i * 4 + 4);
+        const [nBar, nLo, nHi, nTeam] = drawn.slice(i * 4, i * 4 + 4);
         return (
           <div key={r.label} className={'ch-lb__r ch-sv-row' + (muted ? ' is-early' : '')} aria-hidden="true" {...pin.item(i)}>
             <div className="ch-lb__who">
@@ -72,9 +73,26 @@ export function LegBars({ rows, baseline, teamName, onOpen }: { rows: LegBarRow[
               <span>{r.means}</span>
             </div>
             <div className="ch-lb__rail">
-              {r.value != null && bar != null && <i className={'ch-lb__bar ' + tone(r.value)} style={bar >= 0 ? { left: '50%', width: `${bar}%` } : { right: '50%', width: `${-bar}%` }} />}
-              {lo != null && hi != null && <i className={'ch-sv-whisk' + (lo <= 0 ? ' is-clip-l' : '') + (hi >= 100 ? ' is-clip-r' : '')} style={{ left: `${lo}%`, width: `${hi - lo}%` }} />}
-              {r.team != null && team != null && <u className="ch-lb__team" style={{ left: `${team}%` }} title={`${teamName ?? 'Team'} ${formatSigned(r.team)}`} />}
+              {r.value != null && bar != null && (
+                <i
+                  className={'ch-lb__bar ' + tone(r.value)}
+                  style={{
+                    ...(bar >= 0 ? { left: '50%', width: `${bar}%` } : { right: '50%', width: `${-bar}%` }),
+                    transform: nBar == null ? undefined : spanTransform('x', [50, 50 + bar], [50, 50 + nBar]),
+                  }}
+                />
+              )}
+              {lo != null && hi != null && (
+                <i
+                  className={'ch-sv-whisk' + (lo <= 0 ? ' is-clip-l' : '') + (hi >= 100 ? ' is-clip-r' : '')}
+                  style={{ left: `${lo}%`, width: `${hi - lo}%`, transform: nLo == null || nHi == null ? undefined : spanTransform('x', [lo, hi], [nLo, nHi]) }}
+                />
+              )}
+              {r.team != null && team != null && (
+                <span className="ch-lb__slot" style={{ transform: nTeam == null ? undefined : shiftTransform('x', team, nTeam) }}>
+                  <u className="ch-lb__team" style={{ left: `${team}%` }} title={`${teamName ?? 'Team'} ${formatSigned(r.team)}`} />
+                </span>
+              )}
               {r.value == null && r.tag && <span className="ch-sv-needs">{r.tag}</span>}
             </div>
             <span className={'ch-lb__v ch-num ' + (muted ? '' : changeInk(r.value))}>{r.value == null ? <NoData /> : formatSigned(r.value)}</span>

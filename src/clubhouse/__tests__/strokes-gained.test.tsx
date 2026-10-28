@@ -229,14 +229,19 @@ describe('bar scale', () => {
     const win = (approach: number) => ({ ...PREVIEW_PLAYER.win, sgLegs: { tee: 0.3, approach, around: 0.1, putting: -1.9 } });
     const view = showPlayer(player({ win: win(-2.6) }));
     const bar = () => document.querySelectorAll<HTMLElement>('.ch-lb__bar')[1]!;
+    // Visual pass 2026-10-28 (H2, R7): the bar is laid out at its new width at once and glides by transform, so the drawn
+    // length is the laid-out width times the transform's scale; no frame animates width.
+    const drawnWidth = (el: HTMLElement) => parseFloat(el.style.width) * Math.abs(parseFloat(/scaleX\(([^)]+)\)/.exec(el.style.transform)?.[1] ?? '1'));
     const before = bar();
-    const was = parseFloat(before.style.width);
+    const was = drawnWidth(before);
     view.rerender(shell(<StatsPlayer data={player({ win: win(-1.0) })} coachId="c1" />));
     // The page kept the chart (no remount on a window change), so the bar starts where it was; it ends on the new scale (2).
     expect(bar()).toBe(before);
-    expect(parseFloat(bar().style.width)).toBeCloseTo(was, 5);
+    expect(parseFloat(bar().style.width)).toBeCloseTo((1.0 / 2) * 50, 1);
+    expect(drawnWidth(bar())).toBeCloseTo(was, 5);
     expect(document.querySelectorAll('.ch-lb__v')[1]!.textContent).toBe('−1.0');
-    await waitFor(() => expect(parseFloat(bar().style.width)).toBeCloseTo((1.0 / 2) * 50, 1), { timeout: 2000 });
+    await waitFor(() => expect(bar().style.transform).toBe(''), { timeout: 2000 });
+    expect(drawnWidth(bar())).toBeCloseTo((1.0 / 2) * 50, 1);
   });
 
   it('desktop player: the leg bars draw a −2.6 leg at 2.6 of 3 on one scale from the zero line, not clamped at 1.4', () => {

@@ -88,7 +88,6 @@ function TapeCell({ it, against }: { it: TapeItem; against: string }) {
       <span className={`ch-tp__d ch-num ${tone}`}>
         {d != null ? (
           <>
-            {/* No arrow without a clear change: a flat glyph beside a signed figure read as a second sign. */}
             {signal !== '' && <Icon icon={d > 0 ? ArrowUpRight : ArrowDownRight} size={13} />}
             {formatSigned(d, it.deltaDigits)}
           </>

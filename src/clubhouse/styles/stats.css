@@ -437,7 +437,8 @@
   height: 22px;
   padding: 0 8px;
   border-radius: var(--ch-radius-sm);
-  font: 600 12px/1 var(--ch-font-sans);
+  font: var(--ch-type-12-strong);
+  line-height: var(--ch-lead-tight);
   font-variant-numeric: tabular-nums;
 }
 /* Gain and loss weigh the same (CONS-20): a tint under the ink, each with its own hairline. */
@@ -454,6 +455,8 @@
 .ch-delta.is-flat {
   background: var(--ch-ivory-150);
   color: var(--ch-text-secondary);
+  /* On the light canvas the ivory fill alone all but vanished (1.04:1), leaving the number floating 8px in. */
+  box-shadow: inset 0 0 0 var(--ch-hairline-w) var(--ch-border-subtle);
 }
 
 /* Trend card */
@@ -1170,12 +1173,14 @@
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  height: 22px;
-  padding: 0 8px;
+  /* Grows with Text Size instead of clipping its word (visual pass 2026-10-28). */
+  min-height: 22px;
+  padding: 2px 8px;
   border-radius: 999px;
   background: rgb(253 252 248 / 0.85);
   box-shadow: 0 0 0 1px rgb(21 90 57 / 0.16);
-  font: 500 12px/1 var(--ch-font-sans);
+  font: var(--ch-type-12-medium);
+  line-height: var(--ch-lead-tight);
   color: var(--ch-green-800);
 }
 .ch-pf-tag i {
@@ -1188,8 +1193,10 @@
   background: var(--ch-ink-400);
 }
 .ch-pf-hero__id h1 {
-  font: 400 46px/1.04 var(--ch-font-serif);
-  letter-spacing: -0.01em;
+  /* The house large title (34/600, Text Size), as every other page title; the framed desktop head sets its own 44/600. */
+  font: var(--ch-type-34-strong);
+  line-height: var(--ch-lead-tight);
+  letter-spacing: var(--ch-track-34);
 }
 .ch-pf-hero__id p {
   font: var(--ch-type-body-s);
@@ -1240,6 +1247,9 @@
 .ch-pf-hero__figs .ch-pf-hero__sub {
   font: var(--ch-type-13);
   line-height: var(--ch-lead-caption);
+  /* The caption keeps the text face: the figure's narrow width and tight tracking drew "Team 72.8" as "Team 728". */
+  letter-spacing: normal;
+  font-variation-settings: normal;
   color: var(--ch-text-tertiary);
 }
 /* Q-77: the player's answer to a proposed focus area, under its line. */
@@ -1265,7 +1275,8 @@
 }
 .ch-tabs {
   display: flex;
-  gap: 4px;
+  /* The shared tab rhythm (--ch-tab-gap, 24 between labels, as the Team Hub's): each tab's 12px side padding makes it. */
+  gap: calc(var(--ch-tab-gap) - 24px);
 }
 .ch-tab-t {
   position: relative;
@@ -1276,18 +1287,24 @@
   padding: 0 12px;
   border: 0;
   background: none;
-  color: var(--ch-text-tertiary);
-  font: 500 14px/1 var(--ch-font-sans);
+  color: var(--ch-tab-ink);
+  /* The shared tab role at Text Size (--ch-tab-font, 14 medium, as the Team Hub's tabs). */
+  font: var(--ch-tab-font);
+  line-height: var(--ch-lead-tight);
+  white-space: nowrap;
   cursor: pointer;
   transition: color var(--ch-dur-quick) var(--ch-ease);
 }
+.ch-tab-t[data-ch-pressed] {
+  color: var(--ch-tab-ink-hover);
+}
 @media (hover: hover) {
   .ch-tab-t:hover {
-    color: var(--ch-text-primary);
+    color: var(--ch-tab-ink-hover);
   }
 }
 .ch-tab-t[aria-selected='true'] {
-  color: var(--ch-forest-800);
+  color: var(--ch-tab-ink-selected);
   font-weight: 600;
 }
 .ch-tab-t__bar {
@@ -1295,9 +1312,10 @@
   right: 8px;
   bottom: -1px;
   left: 8px;
-  height: 2px;
+  height: var(--ch-tab-bar-h);
   border-radius: 999px;
-  background: var(--ch-green-fill-600);
+  /* --ch-tab-bar: green-600 at night (7.8:1 on the workspace); the fill green it used was 2.99:1 (H9). */
+  background: var(--ch-tab-bar);
 }
 /* Design system .fw-tab__count: a pressed-in pill, green on the selected tab. */
 .ch-tab-t__n {
@@ -3809,10 +3827,19 @@
     font-variant-numeric: tabular-nums;
     letter-spacing: -0.03em;
   }
+  /* Words, not a figure: they wrap inside their column ("No clear change" ran 11px past the 16px page edge at 375 and
+     393, visual pass 2026-10-28), balanced so a two-word line never strands one word. */
   .ch-stm .ch-stm-figs.is-three dd.is-words {
     font: var(--ch-type-16-strong);
     font-variant-numeric: tabular-nums;
     letter-spacing: var(--ch-track-16);
+    white-space: normal;
+    text-wrap: balance;
+    overflow-wrap: anywhere;
+  }
+  /* The trend has no drawing, so its gauge cell draws no seam down to nothing. */
+  .ch-stm .ch-stm-gauges > span:empty {
+    box-shadow: none;
   }
   /* The hole-coverage caption belongs to the figures: it sits just under their rule, its line held when empty, and
      that held line stands in for part of the gap to the first section. */
@@ -3924,8 +3951,10 @@
     font-variant-numeric: tabular-nums;
     letter-spacing: -0.02em;
   }
+  /* The settings chevron ink (ink-500): ink-400 was 2.8:1 on the phone page, under the 3:1 an icon needs. */
   .ch-stm .ch-stm-row__chev {
-    color: var(--ch-ink-400);
+    flex: none;
+    color: var(--ch-ink-500);
   }
   .ch-stm .ch-spm-round {
     gap: 16px;
@@ -4194,7 +4223,6 @@ html[data-fw-theme='dark'] [data-ui='clubhouse'] {
 :where(html[data-fw-theme='dark']) .ch-sgt__end.is-sel,
 :where(html[data-fw-theme='dark']) .ch-sgm[aria-pressed='true'],
 :where(html[data-fw-theme='dark']) .ch-pf-tag,
-:where(html[data-fw-theme='dark']) .ch-tab-t[aria-selected='true'],
 :where(html[data-fw-theme='dark']) .ch-tab-t[aria-selected='true'] .ch-tab-t__n,
 :where(html[data-fw-theme='dark']) .ch-fws__z.is-fw,
 :where(html[data-fw-theme='dark']) .ch-cup__lbl {
@@ -4337,12 +4365,9 @@ html[data-fw-theme='dark'] [data-ui='clubhouse'] {
     gap: 16px;
     padding: 18px var(--ch-page-x-phone) 40px;
   }
-  .ch-stm.is-team > .ch-stm-head,
-.ch-stm.is-team > .ch-stm-controls,
-.ch-stm.is-team > .ch-stm-hero,
-.ch-stm.is-team > .ch-stm-trend {
-    padding-inline: 4px;
-  }
+  /* The head, the window switch, the hero and the trend start on the page edge with the cards (H5, visual pass
+     2026-10-28): a 4px inset put their first glyphs and the switch's edge at 20 beside cards at 16, and off the player
+     page's edge. */
   /* The large title: the team and its sample on one quiet line, then the title (the shell's bar takes it once tucked). */
   .ch-stm.is-team .ch-stm-head {
     gap: 2px;
@@ -4836,6 +4861,9 @@ html[data-fw-theme='dark'] [data-ui='clubhouse'] {
   color: var(--ch-ledger-ink);
 }
 .ch-st[data-canopy] .ch-sgt__chg {
+  /* The stage redefines the gain and loss pair on itself (CONS-20) rather than painting another colour. */
+  --ch-chart-gain: var(--ch-stage-up);
+  --ch-chart-loss: var(--ch-stage-down);
   display: inline-flex;
   align-items: center;
   gap: 4px;
@@ -5078,11 +5106,14 @@ html[data-fw-theme='dark'] .ch-st .ch-sgt {
   color: var(--ch-on-fill-25);
   text-shadow: 0 2px 24px rgb(0 0 0 / 0.25);
 }
+/* On the deep green the figure and its change take the stage's own mint and gold, as the players' end labels and bars
+   do, in both themes: the page's chart inks are drawn for ivory, and the day's loss amber read 1.6:1 here (visual pass
+   2026-10-28). The sign carries the direction, the words carry whether it is a real change. */
 .ch-st[data-canopy] .ch-sgt__n.ch-gain {
-  color: var(--ch-chart-gain);
+  color: var(--ch-stage-up);
 }
 .ch-st[data-canopy] .ch-sgt__n.ch-loss {
-  color: var(--ch-chart-loss);
+  color: var(--ch-stage-down);
 }
 .ch-st[data-canopy] .ch-sgt__chg {
   padding: 4px 8px 4px 8px;
@@ -5372,6 +5403,7 @@ html[data-fw-theme='dark'] .ch-st .ch-sgt {
   pointer-events: none;
 }
 .ch-st[data-canopy] .ch-sgt__callout {
+  /* SVG chart text (a Text Size pin); tabular through .ch-num on the element, so its digits line up with the axis's. */
   font: 700 15px var(--ch-font-sans);
   fill: var(--ch-ivory-25);
   paint-order: stroke;
@@ -5532,6 +5564,20 @@ html[data-fw-theme='dark'] .ch-st .ch-sgt {
   .ch-st:is(.is-desk, [aria-busy='true'])[data-canopy] .ch-pf-hero__figs dd:not(.ch-pf-hero__sub,
 .ch-pf-hero__chg) {
     font-size: 22px;
+  }
+  /* The SG change's words wrap under their chip here instead of holding one line: on one line they made the SG column
+     about 265px against the others' 90, which squeezed the name column until its four actions stood in three rows
+     (visual pass 2026-10-28). Capped, the column is about 175px and the actions take two rows. */
+  .ch-st:is(.is-desk, [aria-busy='true'])[data-canopy] .ch-pf-hero__figs .ch-pf-hero__chg {
+    max-width: 13.5em;
+  }
+  .ch-st:is(.is-desk, [aria-busy='true'])[data-canopy] .ch-pf-hero__figs .ch-sgchg {
+    align-items: flex-start;
+  }
+  .ch-st:is(.is-desk, [aria-busy='true'])[data-canopy] .ch-pf-hero__figs .ch-sgchg > span:last-child {
+    overflow: visible;
+    white-space: normal;
+    text-wrap: balance;
   }
 }
 /* The stage's own colours as tokens (the team page's deep green). */
@@ -5820,6 +5866,23 @@ html[data-fw-theme='dark'] .ch-st .ch-sgt {
 }
 .ch-st[data-canopy] .ch-lb__bar.is-loss {
   background: var(--ch-chart-loss-fill);
+}
+/* A glide moves marks by transform (glide-transform.ts): bars and whiskers scale from their start, point marks ride a slot
+   as big as the rail (visual pass 2026-10-28, R7). */
+.ch-lb__bar,
+.ch-sv-whisk,
+.ch-sv-pb__whisk {
+  transform-origin: 0 0;
+}
+.ch-lb__slot,
+.ch-sv-pb__slot {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+.ch-lb__slot > *,
+.ch-sv-pb__slot > * {
+  pointer-events: auto;
 }
 .ch-st[data-canopy] .ch-lb__team {
   position: absolute;
@@ -6563,7 +6626,9 @@ html[data-fw-theme='dark'] .ch-st .ch-sgt {
   position: absolute;
   top: -28px;
   transform: translateX(-50%);
-  font: 700 15px/1 var(--ch-font-sans);
+  font: var(--ch-type-15-strong);
+  line-height: var(--ch-lead-tight);
+  letter-spacing: var(--ch-track-15);
   font-variant-numeric: tabular-nums;
   white-space: nowrap;
   color: var(--ch-green-700);

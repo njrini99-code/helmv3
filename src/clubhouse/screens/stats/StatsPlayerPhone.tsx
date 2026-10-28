@@ -1,6 +1,6 @@
 'use client';
 
-import { Info, MessageSquare, Plus, Share } from 'lucide-react';
+import { ChevronRight, Info, MessageSquare, Plus, Share } from 'lucide-react';
 import Link from 'next/link';
 import { Fragment, useEffect, useRef, useState, type ReactNode } from 'react';
 import type { ChPlayerProfile } from '../../data/stats-player';
@@ -445,8 +445,15 @@ function Rounds({ rounds, open, role }: { rounds: ChPlayerProfile['rounds']; ope
               return (
                 <li key={r.id} className={href ? undefined : 'ch-spm-round'}>
                   {href ? (
-                    <Link href={href} className="ch-spm-round is-link" aria-label={`${r.course}, ${r.date}: open the round`}>
+                    // The name says the score as well as the course and date (the label used to hide it), and the row
+                    // carries the list's chevron, as the team page's player rows do (visual pass 2026-10-28).
+                    <Link
+                      href={href}
+                      className="ch-spm-round is-link"
+                      aria-label={`${r.course}, ${r.date}: ${[r.score, r.toPar != null ? `${formatToPar(r.toPar)} to par` : null, r.sg != null ? `${formatSigned(r.sg)} strokes gained` : null].filter((x) => x != null).join(', ')}. Open the round`}
+                    >
                       {row}
+                      <Icon icon={ChevronRight} size={16} className="ch-stm-row__chev" />
                     </Link>
                   ) : (
                     row
