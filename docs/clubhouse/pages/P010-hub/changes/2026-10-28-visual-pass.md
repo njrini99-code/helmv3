@@ -28,13 +28,15 @@ Held items:     an iPhone look at the tab strip's glide to an off-screen tab, th
   a document", which opens the drop zone's own file chooser. Desktop keeps the
   drop zone as Documents' primary (D6) and its labelled buttons.
 - The chosen tab is scrolled into view in the phone's sideways tab strip. Tasks,
-  opened from the strip's "tasks open" figure or a link, sat past the edge with a
+  opened from the strip's "tasks open" figure or a link, sat past the edge with
+  a
   sliver of its underline showing. The first paint jumps; a later change glides.
 - The tab bar speaks the shared tab tokens (tokens.css, Area A): gap
   `--ch-tab-gap`, the chosen label in `--ch-tab-ink-selected` (forest, as on the
   player profile; was primary ink), hover `--ch-tab-ink-hover`, the bar
   `--ch-tab-bar` at `--ch-tab-bar-h` (light green-600, 7.2:1 on the workspace;
-  dark green-600, 7.8:1), and the dark-only bar override is gone. Unselected tabs
+  dark green-600, 7.8:1), and the dark-only bar override is gone. Unselected
+  tabs
   keep the secondary ink, a step above `--ch-tab-ink`, as the Hub chose for five
   tabs that carry counts. The font stays written as the 14 medium role, which is
   the token's value, so the type-role ratchet reads it.
@@ -46,7 +48,8 @@ Held items:     an iPhone look at the tab strip's glide to an off-screen tab, th
 - The trip tile's facepile overlaps by 4px, not 8, so each coin's initials are
   whole ("TM" read "T|").
 - A separator never opens a wrapped line: the space before " · " and " – " in a
-  trip's date, time and the Stays line is U+00A0 ("Pine Needles / · Southern" now
+  trip's date, time and the Stays line is U+00A0 ("Pine Needles / · Southern"
+  now
   wraps after the dot).
 
 ### Verification
