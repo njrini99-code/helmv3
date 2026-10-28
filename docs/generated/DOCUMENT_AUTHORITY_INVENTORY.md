@@ -883,6 +883,7 @@ them would bury everything above.
 | `docs/clubhouse/foundation-v2/templates/PAGE.md` | current | - | - | yes | - |
 | `docs/clubhouse/foundation-v2/templates/VERIFY.md` | current | - | - | - | - |
 | `docs/clubhouse/foundation-v2/templates/WIRING.md` | current | - | - | - | - |
+| `docs/clubhouse/held/data/baseball-practice-reviews-player-read.md` | current | - | - | - | - |
 | `docs/clubhouse/held/data/document-policy-scoping.md` | current | - | - | - | - |
 | `docs/clubhouse/held/data/live-rounds-realtime.md` | current | - | - | - | - |
 | `docs/clubhouse/held/data/live-rounds.md` | current | - | - | - | - |

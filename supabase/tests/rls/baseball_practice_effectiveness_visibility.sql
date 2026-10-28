@@ -19,6 +19,11 @@
 --      on can_manage_practice (a coach WITHOUT it sees zero rows / cannot write).
 --   5. A PLAYER may read a review ONLY when visibility='player_visible' (mixed
 --      official/scrimmage/practice scopes + confounders are never leaked).
+--      Since held migration 20261028120000 the player policy is
+--      baseball_practice_effectiveness_reviews_select_player, which also binds
+--      the reader to the review's player_ids (behavior in
+--      baseball_practice_reviews_player_read.sql); the team-wide
+--      bpe_player_read_visible is dropped there.
 --
 -- Schema-light: asserts the contract over pg_class / pg_policies / pg_constraint
 -- without seeding integration data (matches the deferral note in _helpers.sql
@@ -177,9 +182,9 @@ SELECT ok(
       JOIN pg_class c ON c.oid = p.polrelid
       JOIN pg_namespace n ON n.oid = c.relnamespace
       WHERE n.nspname = 'public' AND c.relname = 'baseball_practice_effectiveness_reviews'
-        AND p.polname = 'bpe_player_read_visible'
+        AND p.polname = 'baseball_practice_effectiveness_reviews_select_player'
   ), '') ~ 'visibility[^)]*=[^)]*''player_visible''',
-  'bpe_player_read_visible gates the player branch on visibility = player_visible'
+  'the player read policy gates on visibility = player_visible'
 );
 -- ...and that the player read branch does NOT leak via can_manage_practice
 -- (it is the player path, not the staff path).
@@ -190,9 +195,9 @@ SELECT ok(
       JOIN pg_class c ON c.oid = p.polrelid
       JOIN pg_namespace n ON n.oid = c.relnamespace
       WHERE n.nspname = 'public' AND c.relname = 'baseball_practice_effectiveness_reviews'
-        AND p.polname = 'bpe_player_read_visible'
+        AND p.polname = 'baseball_practice_effectiveness_reviews_select_player'
   ), '') ~ 'is_baseball_team_member',
-  'bpe_player_read_visible ties player readers to team membership'
+  'the player read policy ties readers to team membership'
 );
 -- The player read branch is SELECT-only (players never write reviews).
 SELECT is(
@@ -201,9 +206,9 @@ SELECT is(
      JOIN pg_class c ON c.oid = p.polrelid
      JOIN pg_namespace n ON n.oid = c.relnamespace
      WHERE n.nspname = 'public' AND c.relname = 'baseball_practice_effectiveness_reviews'
-       AND p.polname = 'bpe_player_read_visible'),
+       AND p.polname = 'baseball_practice_effectiveness_reviews_select_player'),
   'r',
-  'bpe_player_read_visible is SELECT-only (players cannot write reviews)'
+  'the player read policy is SELECT-only (players cannot write reviews)'
 );
 -- The visibility CHECK constraint exists so default staff_only cannot be spoofed
 -- to an out-of-contract value to widen the player read.
