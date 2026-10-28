@@ -1,5 +1,5 @@
 // @vitest-environment jsdom
-import { cleanup, render, renderHook } from '@testing-library/react';
+import { cleanup, fireEvent, render, renderHook } from '@testing-library/react';
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
@@ -8,6 +8,18 @@ vi.mock('next/navigation', () => ({ useRouter: () => ({ push: vi.fn(), refresh: 
 vi.mock('../../../lib/haptics', () => ({ haptic: vi.fn() }));
 vi.mock('../../../lib/track', () => ({ chReport: vi.fn(), chTrail: vi.fn(), chTagSession: vi.fn() }));
 vi.mock('../../../lib/use-phone', () => ({ useChPhone: () => false }));
+// The live feed itself runs, but each render's hold is recorded, so a test can read whether updates are held.
+const holds: boolean[] = [];
+vi.mock('../../../live/use-live-rounds', async (importOriginal) => {
+  const real = await importOriginal<typeof import('../../../live/use-live-rounds')>();
+  return {
+    ...real,
+    useLiveRounds: (opts: Parameters<typeof real.useLiveRounds>[0]) => {
+      holds.push(Boolean(opts.hold));
+      return real.useLiveRounds(opts);
+    },
+  };
+});
 
 import '../../../__tests__/dialog-polyfill';
 import { PREVIEW_LIVE, PREVIEW_LIVE_NOW } from '../../../preview/fixtures-live';
@@ -33,7 +45,14 @@ afterEach(() => {
   cleanup();
   delete (HTMLElement.prototype as { clientWidth?: number }).clientWidth;
   deskPx = 0;
+  holds.length = 0;
 });
+
+const openFirstLane = (container: HTMLElement) => {
+  const hit = container.querySelector<HTMLElement>('.ch-lv-hit');
+  expect(hit).not.toBeNull();
+  fireEvent.click(hit!);
+};
 
 describe('the live desk split', () => {
   it('turns the panel into a sheet on the desk’s own width, not only the viewport’s', () => {
@@ -57,6 +76,23 @@ describe('the live desk split', () => {
     const { container } = render(<LiveView initial={PREVIEW_LIVE} frozen now={PREVIEW_LIVE_NOW} />);
     expect(container.querySelector('.ch-lv-split')?.getAttribute('data-panel')).toBe('side');
     expect(container.querySelector('.ch-lv-panel')).not.toBeNull();
+  });
+
+  it('holds live updates while the sheet a 900 px desk draws is open, as the layout says', () => {
+    deskPx = 900;
+    const { container } = render(<LiveView initial={PREVIEW_LIVE} frozen now={PREVIEW_LIVE_NOW} />);
+    expect(holds.at(-1)).toBe(false);
+    openFirstLane(container);
+    expect(container.querySelector('.ch-lv-split')?.getAttribute('data-panel')).toBe('sheet');
+    expect(holds.at(-1)).toBe(true);
+  });
+
+  it('keeps updates flowing when the panel sits beside the lanes', () => {
+    deskPx = 1200;
+    const { container } = render(<LiveView initial={PREVIEW_LIVE} frozen now={PREVIEW_LIVE_NOW} />);
+    openFirstLane(container);
+    expect(container.querySelector('.ch-lv-panel')).not.toBeNull();
+    expect(holds.at(-1)).toBe(false);
   });
 
   it('needs the room its own columns take: 560 px of lanes, a 360 px panel and the gap', () => {

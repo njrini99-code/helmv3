@@ -654,7 +654,6 @@ export function holeStats(holes: readonly PoolHole[], round: Pick<PoolRound, 'to
 const outStatus = (status: ChTourEvent['playerRounds'][number]['status']): Pick<ChTourCompareRound, 'status'> =>
   status === 'wd' ? { status: 'wd' } : status === 'dq' || status === 'dq_pending' ? { status: 'dq' } : {};
 
-/** Every round a comparison can draw on: the team's completed GolfHelm rounds this season and last, and entered tournament scores. */
 /**
  * A pool round's par. The holes' own pars are exact, also for a nine whose halves differ (a 35/37 layout); without a full
  * card, half the course par for a nine, then the par the round saved, then a standard 36 or 72.
@@ -665,6 +664,7 @@ export function poolRoundPar(own: readonly Pick<PoolHole, 'par'>[], holesPlayed:
   return savedPar ?? (holesPlayed === 9 ? 36 : 72);
 }
 
+/** Every round a comparison can draw on: the team's completed GolfHelm rounds this season and last, and entered tournament scores. */
 async function readPool(ctx: TourCtx, read: EventsRead, playerIds: readonly string[], today: string): Promise<ChTourCompareRound[]> {
   const since = `${Number(seasonIdOf(today).slice(0, 4)) - 1}-08-01`;
   const rounds = await allIn<PoolRound>('poolRounds', playerIds, (chunk, from, to) =>
