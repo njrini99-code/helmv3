@@ -154,8 +154,10 @@ The sections are real tabs with selected state and their panels, a coach reads
 "Stats › name" in the top bar, the strokes gained route is an image with every
 leg in words, the hero figures are a definition list, the focus-area field is
 named "What to work on" with its help or error as its description, and the
-rounds table is a named region that takes focus so the arrow keys scroll it, and each phone round row is named with
-its course, date, score, score to par and strokes gained (visual pass 2026-10-28). Axe
+rounds table is a named region that takes focus so the arrow keys scroll it, and
+each phone round row is named with
+its course, date, score, score to par and strokes gained (visual pass
+2026-10-28). Axe
 runs at 1280 and 390 (`clubhouse:a11y`).
 
 ## Data assumptions
