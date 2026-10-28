@@ -54,6 +54,19 @@ describe('team-wide CoachHelm read tools', () => {
     expect(chain.eq).not.toHaveBeenCalledWith('round_type', expect.anything());
   });
 
+  it('get_team_rounds counts an older “qualifying” round as a qualifier round and reports it as one', async () => {
+    const row = (id: string, round_type: string) => ({ id, player_id: 'p1', round_date: '2026-10-10', course_name: 'Oak', round_type, qualifier_id: 'q1', qualifier_round_number: 1, total_score: 74, score_to_par: 2, total_putts: 30 });
+    const env = await getTeamRounds(
+      sbWith({ golf_rounds: [{ data: [row('r1', 'qualifying'), row('r2', 'qualifier')] }] }),
+      ctx,
+      { round_type: 'qualifier', since_days: 30 },
+    );
+    const d = env.detail as { round_count: number; players: Array<{ rounds: number }>; recent_rounds: Array<{ round_type: string }> };
+    expect(d.round_count).toBe(2);
+    expect(d.players[0]).toMatchObject({ rounds: 2 });
+    expect(d.recent_rounds.map((r) => r.round_type)).toEqual(['qualifier', 'qualifier']);
+  });
+
   it('get_team_rounds says unavailable, not empty, when the read fails', async () => {
     const env = await getTeamRounds(sbWith({ golf_rounds: [{ error: { message: 'boom' } }] }), ctx, { since_days: 30 });
     expect(env.coverage).toBe('unavailable');
