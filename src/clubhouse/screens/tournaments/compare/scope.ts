@@ -149,7 +149,9 @@ export interface ScopeSummary {
   events: number;
 }
 
-export function summarize(rs: readonly ChTourCompareRound[]): ScopeSummary {
+export function summarize(all: readonly ChTourCompareRound[]): ScopeSummary {
+  // A WD or DQ round is listed out of every figure, so it is not part of the sample the scope says it holds either.
+  const rs = all.filter((r) => r.status == null);
   const dates = rs.map((r) => r.date).sort();
   const full = rs.filter((r) => r.holes === 18);
   return {

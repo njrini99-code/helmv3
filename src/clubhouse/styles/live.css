@@ -432,8 +432,9 @@ section.ch-lv-card {
   height: 32px;
 }
 
-/* Wide container: one line (56 px): disc, name, eighteen marks, the momentum line, to-par, thru. */
-@container chlv (min-width: 640px) {
+/* Wide container: one line (56 px): disc, name, eighteen marks, the momentum line, to-par, thru. The line needs 668 px:
+   604 px of columns, five 8 px gaps and 12 px of padding each side. */
+@container chlv (min-width: 668px) {
   .ch-lv-lane[data-density='full'] {
     --ch-lv-bead: 6px;
     --ch-lv-gap: var(--ch-space-1);
@@ -611,7 +612,8 @@ section.ch-lv-card {
   font: var(--ch-type-13);
   color: var(--ch-ink-500);
 }
-/* Wide: the lanes, and a panel beside them (a sheet below 1080 px, drawn by the component). */
+/* Wide: the lanes, and a panel beside them (a sheet below 1080 px, or when the desk is under 944 px; drawn by the
+   component). */
 .ch-lv-split {
   display: grid;
   grid-template-columns: minmax(560px, 1fr) 360px;
