@@ -861,6 +861,7 @@ them would bury everything above.
 | `docs/clubhouse/changes/2026-10-27-class-holds-drain.md` | current | - | - | - | - |
 | `docs/clubhouse/changes/2026-10-27-live-split.md` | current | - | - | - | - |
 | `docs/clubhouse/changes/2026-10-28-visual-pass-system.md` | current | - | - | - | - |
+| `docs/clubhouse/changes/2026-10-28-visual-pass-whats-new.md` | current | - | - | - | - |
 | `docs/clubhouse/drafts/auth-onboarding-ground-truth.md` | current | - | - | - | - |
 | `docs/clubhouse/drafts/intelligence.md` | current | - | - | - | - |
 | `docs/clubhouse/foundation-v2/02_AUTHORITY_MODEL.md` | current | - | - | yes | - |
