@@ -63,6 +63,22 @@ describe('Ledger kit', () => {
     expect(dl.getAttribute('aria-label')).toBe('Season figures');
   });
 
+  it('an under par count keeps its figure ink; its cell carries the key disc (design picks, 2026-10-28)', () => {
+    const { container } = render(
+      <FigureRow
+        items={[
+          { label: 'Under par', value: 3, tone: 'under' },
+          { label: 'Change', value: '+0.4', tone: 'gain' },
+        ]}
+      />,
+    );
+    const [under, gain] = [...container.querySelectorAll('.ch-fgr__c')];
+    expect(under!.className).toBe('ch-fgr__c is-under');
+    expect(under!.querySelector('dd')!.className).toBe('ch-num');
+    expect(gain!.className).toBe('ch-fgr__c');
+    expect(gain!.querySelector('dd')!.className).toBe('ch-num is-gain');
+  });
+
   it('the feature card acts as a button with onClick, is a link with href, and a named group when plain', async () => {
     const open = vi.fn();
     const { rerender } = render(<FeatureCard kicker="Up next" title="Spring qualifier" line="Round 2 today" onClick={open} code="T-6" className="x-feat" />);
