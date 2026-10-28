@@ -21305,6 +21305,11 @@
           "kind": "import_graph",
           "path": "src/app/golf/actions/development.ts",
           "anchor": "src/clubhouse/gate"
+        },
+        {
+          "kind": "import_graph",
+          "path": "src/lib/coachhelm/v3/chat/visuals/__tests__/compile.test.ts",
+          "anchor": "src/clubhouse/data/coachhelm-chat-thread"
         }
       ]
     },
