@@ -25,6 +25,7 @@ export const AnnotationKind = z.enum(['measured', 'association', 'hypothesis']);
 /** The tool's input: small and structured, nothing derived. */
 export const VisualSpec = z.object({
   kind: VisualSceneKind,
+  /** Drawn as written, so it may not contain a digit either: `compile.ts` refuses one that does (`figure_in_text`). */
   title: z.string().trim().min(1).max(90),
   intent: z.enum(['compare', 'trend', 'explain', 'locate', 'simulate', 'act']).default('explain'),
   /** Ids the read tools returned as `evidence_ref` this turn. Anything else is refused. */
@@ -71,6 +72,7 @@ export const ValidatedVisualArtifact = z.object({
   total: z.object({ value: z.number(), sampleSize: z.number().int().nonnegative(), reconciles: z.boolean().nullable() }).nullable(),
   highlightedMetricId: z.string().nullable(),
   annotations: z.array(z.object({ metricId: z.string(), kind: AnnotationKind, label: z.string() })),
+  /** The reads this artifact draws in full. The thread hides their generic evidence blocks, and only theirs. */
   evidenceRefs: z.array(z.string()),
   dataHash: z.string(),
   createdAt: z.string(),
@@ -84,4 +86,5 @@ export type VisualRefusal =
   | 'mixed_players'
   | 'mixed_windows'
   | 'conflicting_values'
+  | 'figure_in_text'
   | 'unavailable';
