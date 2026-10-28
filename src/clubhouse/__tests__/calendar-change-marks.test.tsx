@@ -642,7 +642,35 @@ describe('the feature’s contrast on the surfaces it sits on, from the tokens (
     expect(ratio(t('ch-ink-500'), t('ch-green-50')), 'practice').toBeGreaterThanOrEqual(4.5);
     expect(ratio(t('ch-ink-500'), t('ch-bg-surface')), 'meeting and other').toBeGreaterThanOrEqual(4.5);
     expect(ratio(t('ch-ink-500'), travel), 'travel').toBeGreaterThanOrEqual(4.5);
-    expect(ratio(t('ch-on-green-ink-soft'), fill), 'tournament and qualifier').toBeGreaterThanOrEqual(4.5);
+    expect(ratio(t('ch-on-green-ink-soft'), fill), 'tournament').toBeGreaterThanOrEqual(4.5);
+  });
+
+  // A qualifier is an outlined chip on paper (.ch-ev--qualifier and .ch-mo__ev.is-qualifier take --ch-bg-surface), so its
+  // change glyph is measured against paper with the colour the stylesheet actually gives it, never the ivory meant for green.
+  const calendarCss = readFileSync(join(STYLES, 'calendar.css'), 'utf8');
+  const colourOf = (selector: string) => {
+    const esc = selector.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    const rules = [...calendarCss.matchAll(new RegExp(`(?:^|\\n|,)\\s*${esc}\\s*(?:,[^{]*)?\\{([^}]*)\\}`, 'g'))];
+    const decl = rules.map((r) => /(?:^|;|\s)color:\s*var\(--([\w-]+)\)/.exec(r[1]!)).filter(Boolean).at(-1);
+    if (!decl) throw new Error(`no colour for ${selector} in calendar.css`);
+    return decl[1]!;
+  };
+
+  it('the qualifier glyph is not given the on-green ink, on the week block or the month chip', () => {
+    expect(colourOf('.ch-ev--qualifier .ch-ev__chg')).not.toMatch(/on-green/);
+    expect(colourOf('.ch-mo__chg')).not.toMatch(/on-green/);
+    // The month's on-green rule must leave the outlined qualifier chip out.
+    expect(calendarCss).toMatch(/\.ch-mo__ev\.is-major:not\(\.is-qualifier\) \.ch-mo__chg\s*\{/);
+    expect(calendarCss).not.toMatch(/\.ch-mo__ev\.is-major \.ch-mo__chg\s*\{/);
+  });
+
+  it.each(['light', 'dark'] as const)('the qualifier change glyph reads 3:1 or more on paper, week and month (%s)', (theme) => {
+    const t = (n: string) => tokenOf(n, theme);
+    const paper = t('ch-bg-surface');
+    expect(ratio(t(colourOf('.ch-ev--qualifier .ch-ev__chg')), paper), 'week qualifier glyph').toBeGreaterThanOrEqual(3);
+    expect(ratio(t(colourOf('.ch-mo__chg')), paper), 'month qualifier glyph').toBeGreaterThanOrEqual(3);
+    // The ivory it used to wear is what this guards against: it all but vanishes on paper in light.
+    if (theme === 'light') expect(ratio(t('ch-on-green-ink-soft'), paper)).toBeLessThan(3);
   });
 
   it.each(['light', 'dark'] as const)('the old-slot label and the moved-away ring are legible (%s)', (theme) => {

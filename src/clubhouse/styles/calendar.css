@@ -4121,9 +4121,12 @@ html[data-fw-theme='dark'] .ch-ev--busy::after {
   place-items: center;
   color: var(--ch-ink-500);
 }
-.ch-ev--tournament .ch-ev__chg,
-.ch-ev--qualifier .ch-ev__chg {
+/* Only the filled competition sits on green; a qualifier is an outline on paper, so its glyph keeps the quiet ink. */
+.ch-ev--tournament .ch-ev__chg {
   color: var(--ch-on-green-ink-soft);
+}
+.ch-ev--qualifier .ch-ev__chg {
+  color: var(--ch-ink-500);
 }
 .ch-ev.is-cancelled .ch-ev__t,
 .ch-ev-bar.is-cancelled span,
@@ -4137,7 +4140,7 @@ html[data-fw-theme='dark'] .ch-ev--busy::after {
   margin-inline-start: calc(var(--ch-space-1) * -1);
   color: var(--ch-ink-500);
 }
-.ch-mo__ev.is-major .ch-mo__chg {
+.ch-mo__ev.is-major:not(.is-qualifier) .ch-mo__chg {
   color: var(--ch-on-green-ink-soft);
 }
 .ch-was-pair {
