@@ -1287,6 +1287,7 @@ them would bury everything above.
 | `docs/clubhouse/pages/P016-tournaments/changes/2026-10-27-must-fixes.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P016-tournaments/changes/2026-10-27-new-event-thrown-save.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P016-tournaments/changes/2026-10-27-polish-pass.md` | current | - | - | - | - |
+| `docs/clubhouse/pages/P016-tournaments/changes/2026-10-28-dq-team-score.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P016-tournaments/changes/2026-10-28-visual-pass.md` | current | - | - | - | 1 |
 | `docs/clubhouse/phone/auth.md` | current | - | - | - | - |
 | `docs/clubhouse/phone/calendar.md` | current | - | - | - | - |
