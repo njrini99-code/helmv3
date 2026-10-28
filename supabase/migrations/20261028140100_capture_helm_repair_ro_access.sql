@@ -40,22 +40,40 @@ GRANT SELECT ON TABLE public.admin_error_resolutions TO helm_repair_ro;
 GRANT SELECT ON TABLE public.admin_events TO helm_repair_ro;
 GRANT SELECT, INSERT ON TABLE public.background_job_logs TO helm_repair_ro;
 
-DROP POLICY IF EXISTS helm_repair_ro_insert_own_heartbeat ON public.background_job_logs;
-CREATE POLICY helm_repair_ro_insert_own_heartbeat ON public.background_job_logs
-  FOR INSERT TO helm_repair_ro
-  WITH CHECK (job_type = 'selfheal-repair'::text);
+-- Policies are created only when missing, so production (which has all four)
+-- is not locked.
+DO $capture$
+BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE schemaname = 'public'
+                   AND tablename = 'background_job_logs'
+                   AND policyname = 'helm_repair_ro_insert_own_heartbeat') THEN
+    CREATE POLICY helm_repair_ro_insert_own_heartbeat ON public.background_job_logs
+      FOR INSERT TO helm_repair_ro
+      WITH CHECK (job_type = 'selfheal-repair'::text);
+  END IF;
 
-DROP POLICY IF EXISTS helm_repair_ro_select_admin_error_resolutions ON public.admin_error_resolutions;
-CREATE POLICY helm_repair_ro_select_admin_error_resolutions ON public.admin_error_resolutions
-  FOR SELECT TO helm_repair_ro
-  USING (true);
+  IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE schemaname = 'public'
+                   AND tablename = 'admin_error_resolutions'
+                   AND policyname = 'helm_repair_ro_select_admin_error_resolutions') THEN
+    CREATE POLICY helm_repair_ro_select_admin_error_resolutions ON public.admin_error_resolutions
+      FOR SELECT TO helm_repair_ro
+      USING (true);
+  END IF;
 
-DROP POLICY IF EXISTS helm_repair_ro_select_admin_events ON public.admin_events;
-CREATE POLICY helm_repair_ro_select_admin_events ON public.admin_events
-  FOR SELECT TO helm_repair_ro
-  USING (true);
+  IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE schemaname = 'public'
+                   AND tablename = 'admin_events'
+                   AND policyname = 'helm_repair_ro_select_admin_events') THEN
+    CREATE POLICY helm_repair_ro_select_admin_events ON public.admin_events
+      FOR SELECT TO helm_repair_ro
+      USING (true);
+  END IF;
 
-DROP POLICY IF EXISTS helm_repair_ro_select_background_job_logs ON public.background_job_logs;
-CREATE POLICY helm_repair_ro_select_background_job_logs ON public.background_job_logs
-  FOR SELECT TO helm_repair_ro
-  USING (true);
+  IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE schemaname = 'public'
+                   AND tablename = 'background_job_logs'
+                   AND policyname = 'helm_repair_ro_select_background_job_logs') THEN
+    CREATE POLICY helm_repair_ro_select_background_job_logs ON public.background_job_logs
+      FOR SELECT TO helm_repair_ro
+      USING (true);
+  END IF;
+END
+$capture$;

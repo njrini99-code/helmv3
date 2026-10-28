@@ -24,12 +24,23 @@
 
 SET LOCAL lock_timeout = '5s';
 
-DROP POLICY IF EXISTS admin_allowlist_no_client_access ON public.admin_allowlist;
-CREATE POLICY admin_allowlist_no_client_access ON public.admin_allowlist
-  AS RESTRICTIVE FOR ALL TO anon, authenticated
-  USING (false) WITH CHECK (false);
+-- Created only when missing, so production (which has both) is not locked.
+DO $capture$
+BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE schemaname = 'public'
+                   AND tablename = 'admin_allowlist'
+                   AND policyname = 'admin_allowlist_no_client_access') THEN
+    CREATE POLICY admin_allowlist_no_client_access ON public.admin_allowlist
+      AS RESTRICTIVE FOR ALL TO anon, authenticated
+      USING (false) WITH CHECK (false);
+  END IF;
 
-DROP POLICY IF EXISTS auth_rate_limits_no_client_access ON public.auth_rate_limits;
-CREATE POLICY auth_rate_limits_no_client_access ON public.auth_rate_limits
-  AS RESTRICTIVE FOR ALL TO anon, authenticated
-  USING (false) WITH CHECK (false);
+  IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE schemaname = 'public'
+                   AND tablename = 'auth_rate_limits'
+                   AND policyname = 'auth_rate_limits_no_client_access') THEN
+    CREATE POLICY auth_rate_limits_no_client_access ON public.auth_rate_limits
+      AS RESTRICTIVE FOR ALL TO anon, authenticated
+      USING (false) WITH CHECK (false);
+  END IF;
+END
+$capture$;

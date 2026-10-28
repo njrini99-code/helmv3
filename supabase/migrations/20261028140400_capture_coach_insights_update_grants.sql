@@ -8,16 +8,17 @@
 -- Why: in production, authenticated has no table-wide UPDATE on
 -- golf_coach_insights, only column UPDATE on status, acknowledged_at,
 -- dismissed, dismissed_at, resolved_at, metadata and lifecycle_state. A
--- replayed database keeps the table-wide UPDATE, so a preview would accept
--- writes production refuses with 42501. This is not
--- 20260528011000_harden_coach_insights_update_grants.sql (OBSOLETE in
--- HELD.md): that file also revokes status, dismissed, resolved_at, metadata
--- and lifecycle_state, which would break dismissInsight. This file keeps all
--- seven column grants, matching what runs today.
+-- replay gets this wrong in one of two ways. The staging project, built
+-- without the OBSOLETE files, has table-wide UPDATE for authenticated (read
+-- 2026-10-28), so it accepts writes production refuses with 42501. A strict
+-- replay that also runs 20260528011000_harden_coach_insights_update_grants.sql
+-- (OBSOLETE in HELD.md) is left with only acknowledged_at and dismissed_at,
+-- so dismissInsight fails there. This file ends both at production's seven
+-- column grants.
 --
--- ROLLBACK: grant update on table public.golf_coach_insights to authenticated
--- ROLLBACK: (only on a replayed database; production never had it after the
--- ROLLBACK: hand-applied revoke).
+-- ROLLBACK: none on production (it already has exactly these grants). On a
+-- ROLLBACK: replayed database the earlier state was wrong either way; restore
+-- ROLLBACK: it only to reproduce a bug.
 --
 -- VERIFY: select 1 where not has_table_privilege('authenticated',
 -- VERIFY: 'public.golf_coach_insights', 'UPDATE');

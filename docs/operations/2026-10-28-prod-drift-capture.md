@@ -8,11 +8,12 @@ was catalog-only. Nothing was written to production.
 
 ## Bottom line
 
-- **Golf logic matches.** All 40 functions whose source differs are the same
-  once comments and whitespace are removed, except one `trace_checkpoint`
-  line in `submit_round_atomic` that sits in a different place (it only
-  traces). The Clubhouse round, shot, message and tournament code paths behave
-  the same on both.
+- **Golf logic matches.** 40 functions differ in source text. 33 are the same
+  once comments and whitespace are removed. One is `submit_round_atomic`,
+  where a single `trace_checkpoint` line sits in a different place (it only
+  traces). The other 6 are baseball and lifting functions (listed under
+  Owner calls). The Clubhouse round, shot, message and tournament code paths
+  behave the same on both.
 - **The release plan is not affected.** The anchors that the held
   anchor-patching migrations look for are present in production exactly once:
   `20261001000000` (step-1 anchor in `submit_round_atomic`) and
@@ -22,7 +23,9 @@ was catalog-only. Nothing was written to production.
 - **Production holds hand-made changes that no migration carries.** Eight
   files in this PR capture them, so a replayed database (staging, a branch, a
   preview) gets what production has. Each one finds its objects already in
-  place on production and changes nothing there.
+  place on production. Policies and constraints are created only when
+  missing, so applying a file there leaves the definitions as they are. The
+  grant files re-issue the same grants.
 - **Two places where the repo is right and production is behind.** These are
   listed below as forward fixes. They are not captured, because capturing
   them would copy the weaker version into the replay.
@@ -35,7 +38,7 @@ was catalog-only. Nothing was written to production.
 | `20261028140100_capture_helm_repair_ro_access.sql` | The `helm_repair_ro` NOLOGIN role used by `selfheal-repair.yml`, with its grants and four policies. `supabase/roles.sql` makes it only for a local stack. |
 | `20261028140200_capture_internal_tables_deny_policies.sql` | RESTRICTIVE deny-all on `admin_allowlist` and `auth_rate_limits` (production ledger row `20260703212357`, no repo file). |
 | `20261028140300_capture_crm_coaches_prod_shape.sql` | `crm_coaches.conference` nullable (ledger row `20260617023948`), the anon revoke, and the `v_crm_coaches_by_school` view (security_invoker; the body matches production's). |
-| `20261028140400_capture_coach_insights_update_grants.sql` | Column-only UPDATE for authenticated on `golf_coach_insights` (the seven columns production allows). This is not the OBSOLETE `20260528011000`. |
+| `20261028140400_capture_coach_insights_update_grants.sql` | Column-only UPDATE for authenticated on `golf_coach_insights` (the seven columns production allows). The staging build has table-wide UPDATE instead, and a strict replay that runs the OBSOLETE `20260528011000` keeps only two columns. This file ends both at production's seven. |
 | `20261028140500_capture_get_user_last_active_revoke.sql` | `get_user_last_active()` is SECURITY DEFINER and returns every user's last activity time. Only postgres and service_role may run it. A replay still lets any signed-in user run it. |
 | `20261028140600_capture_realtime_email_tables.sql` | `public.emails` and `public.email_clicks` in `supabase_realtime`. |
 | `20261028140700_capture_helm_bridge_feedback_bucket.sql` | The private `helm-bridge-feedback` bucket (8 MB, png, jpeg, webp, gif). No storage policy; service role only. |
@@ -59,7 +62,13 @@ owner's freeze. On staging they were applied and verified (see "Replay check").
    is idempotent (DROP IF EXISTS, then CREATE). App reads and writes stay
    compatible: player actions only select and update suggestions, and the
    writer runs as service role. `HELD.md` now carries a correction on both rows.
-2. **`20261023110000_golf_shot_detail_select_set_based.sql`**: the set-based
+2. **anon on `golf_coach_insights`.** Production (and staging) grant anon
+   full privileges on the table. RLS still decides which rows anyone sees, so
+   anon reads nothing today. The only file that revokes it is the OBSOLETE
+   `20260528011000`. **Fix:** a one-line `REVOKE ALL ... FROM anon` forward
+   migration when the freeze allows. Not written here because it changes
+   production.
+3. **`20261023110000_golf_shot_detail_select_set_based.sql`**: the set-based
    fast path for putt and approach-miss detail reads (5.9 s to about 0.2 s per
    coach page). It has no ledger row in production and no
    `golf_shot_detail_round_ids()` function. Earlier `HELD.md` notes calling it
@@ -67,8 +76,9 @@ owner's freeze. On staging they were applied and verified (see "Replay check").
 
 ## Harmless differences (no action)
 
-- 32 functions differ only in comments. The three `admin_*_error_fingerprint`
-  functions also differ only in comments.
+- 33 of the 40 functions differ only in comments and whitespace. The three
+  `admin_*_error_fingerprint` functions (found separately) also differ only in
+  comments.
 - `helm_debug`, `helm_jobs` and `private` schemas: production shows a NULL ACL
   where staging shows an explicit postgres ACL. Both mean the same.
 - The `demo_requests` grant lists the same roles in a different order.
@@ -83,8 +93,10 @@ owner's freeze. On staging they were applied and verified (see "Replay check").
   This is the drift already documented in
   `2026-08-26-migration-history-drift.md` and `SUPABASE_DRIFT_GUARD.md`.
 - The changes captured above were made in production with no ledger row:
-  the messaging extras, `helm_repair_ro`, the `golf_coach_insights` revoke and
-  the `get_user_last_active` revoke.
+  the messaging extras, `helm_repair_ro`, the `get_user_last_active` revoke,
+  the two Realtime tables and the dashboard-made bucket. The
+  `golf_coach_insights` grants came from the baseline; replays diverge from
+  them because of how the OBSOLETE file is handled.
 
 ## Owner calls
 
@@ -114,7 +126,8 @@ owner's freeze. On staging they were applied and verified (see "Replay check").
    - `has_baseball_staff_capability`
    - `is_baseball_primary_coach`
 
-   Production also has `can_manage_baseball_lift_group(team, group)`. This is
+   `is_baseball_team_member` also differs in its settings. Production also
+   has `can_manage_baseball_lift_group(team, group)`. This is
    left as a list, not a capture, because Helm is golf-first right now and
    baseball is seed data. A capture would mean one file per area, generated
    from the production catalog.
@@ -123,6 +136,8 @@ owner's freeze. On staging they were applied and verified (see "Replay check").
 
 ## Replay check
 
-The eight capture files were applied to staging in order, after this note was
-written. They were then re-read against production. The results are in the PR
-description.
+Staging has none of the eight files yet. Applying them there was stopped by a
+Supabase confirm prompt that got no answer; a read on 2026-10-28 showed no
+ledger row, role or bucket from them. CI's RLS job replays every migration
+from empty, which covers the replay itself. A direct apply on staging, then a
+re-read against production, is the step left.

@@ -3,8 +3,9 @@
 -- nothing. See HELD.md (row 20261028140000) and
 -- docs/operations/2026-10-28-prod-drift-capture.md.
 -- Risk: LOW on production (every step is guarded and finds its object already
--- in place). On a fresh replay or the staging project it adds two RLS policies,
--- two CHECKs, four FK delete rules, four indexes and renames three CHECKs.
+-- in place, so it takes no lock beyond the catalog reads). On a fresh replay or
+-- the staging project it adds two RLS policies, two CHECKs, six FK delete
+-- rules, five indexes and renames three CHECKs.
 --
 -- Why: the messaging tables were reconstructed in
 -- 20260904103000_golf_message_reactions.sql and
@@ -20,7 +21,7 @@
 --
 -- ROLLBACK: none needed on production (nothing changes there). On a replayed
 -- ROLLBACK: database: drop policy golf_message_mentions_insert and
--- ROLLBACK: golf_message_mentions_select, drop the four indexes named below,
+-- ROLLBACK: golf_message_mentions_select, drop the five indexes named below,
 -- ROLLBACK: drop golf_messages_payload_matches_kind and
 -- ROLLBACK: golf_message_mentions_target_check. The renames and delete rules
 -- ROLLBACK: need no undo.
@@ -163,24 +164,37 @@ CREATE INDEX IF NOT EXISTS golf_messages_reply_to_idx
   WHERE (reply_to_id IS NOT NULL);
 
 -- 4. Mention policies: a sender records mentions on their own message, and a
--- conversation member reads the mentions on messages they can see.
-DROP POLICY IF EXISTS golf_message_mentions_insert ON public.golf_message_mentions;
-CREATE POLICY golf_message_mentions_insert ON public.golf_message_mentions
-  FOR INSERT TO authenticated
-  WITH CHECK (EXISTS (
-    SELECT 1 FROM public.golf_messages m
-    WHERE m.id = golf_message_mentions.message_id
-      AND m.sender_id = (SELECT auth.uid() AS uid)
-  ));
+-- conversation member reads the mentions on messages they can see. Created
+-- only when missing, so production (which has both) is not locked.
+DO $capture$
+BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pg_policies
+                 WHERE schemaname = 'public'
+                   AND tablename = 'golf_message_mentions'
+                   AND policyname = 'golf_message_mentions_insert') THEN
+    CREATE POLICY golf_message_mentions_insert ON public.golf_message_mentions
+      FOR INSERT TO authenticated
+      WITH CHECK (EXISTS (
+        SELECT 1 FROM public.golf_messages m
+        WHERE m.id = golf_message_mentions.message_id
+          AND m.sender_id = (SELECT auth.uid() AS uid)
+      ));
+  END IF;
 
-DROP POLICY IF EXISTS golf_message_mentions_select ON public.golf_message_mentions;
-CREATE POLICY golf_message_mentions_select ON public.golf_message_mentions
-  FOR SELECT TO authenticated
-  USING (EXISTS (
-    SELECT 1 FROM public.golf_messages m
-    WHERE m.id = golf_message_mentions.message_id
-      AND public.golf_conversation_has_me(m.conversation_id)
-  ));
+  IF NOT EXISTS (SELECT 1 FROM pg_policies
+                 WHERE schemaname = 'public'
+                   AND tablename = 'golf_message_mentions'
+                   AND policyname = 'golf_message_mentions_select') THEN
+    CREATE POLICY golf_message_mentions_select ON public.golf_message_mentions
+      FOR SELECT TO authenticated
+      USING (EXISTS (
+        SELECT 1 FROM public.golf_messages m
+        WHERE m.id = golf_message_mentions.message_id
+          AND public.golf_conversation_has_me(m.conversation_id)
+      ));
+  END IF;
+END
+$capture$;
 
 -- 5. Production gives anon nothing on this table.
 REVOKE ALL ON TABLE public.golf_message_mentions FROM anon;
