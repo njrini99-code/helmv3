@@ -14,7 +14,8 @@
  *   advanceSelectionState · confirmQualifierSelection ·
  *   setQualifierCoachPick · removeQualifierCoachPick
  * and the state-machine helper `nextState`. Data comes from
- * loadQualifyingWorkspace (server) as a QualifyingWorkspace, unchanged.
+ * loadQualifyingWorkspace (server) as a QualifyingWorkspace, unchanged, in
+ * the one order the server decides (drawn as given, never re-sorted).
  *
  * The slot vocabulary matches the player-facing leaderboard cut lines:
  *   • top-score slots (total − coachPick) → "Locked" (accent, earned on merit)
@@ -26,7 +27,7 @@
  * Tokens / primitives ONLY. No glass / warm-* / blur.
  * ========================================================================== */
 
-import { useMemo, useState, useTransition } from 'react';
+import { useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { Flag } from 'lucide-react';
@@ -96,16 +97,10 @@ export function FairwayQualifyingWorkspace({ workspace }: FairwayQualifyingWorks
   const topScoreSlots = selection_slots_total - selection_slots_coach_pick;
   const pickLabel = selection_slots_coach_pick === 1 ? 'pick' : 'picks';
 
-  const ranked = useMemo(
-    () =>
-      [...candidates].sort((a, b) => {
-        if (a.leaderboard_rank === null && b.leaderboard_rank === null) return 0;
-        if (a.leaderboard_rank === null) return 1;
-        if (b.leaderboard_rank === null) return -1;
-        return a.leaderboard_rank - b.leaderboard_rank;
-      }),
-    [candidates],
-  );
+  // The server's order, as given (ranking.ts rankStandings via the loader): ranked
+  // candidates first with their rank, then the unscored. Never re-sorted here, so
+  // this list, Clubhouse's Manage selections and the confirm all agree.
+  const ranked = candidates;
 
   return (
     <div className="mx-auto w-full max-w-[960px] px-4 py-6 md:px-6 md:py-8 pb-24">

@@ -1,5 +1,21 @@
 # P009 — Qualifiers: changelog
 
+## 2026-10-28 — The server decides tie order once
+
+```text
+Design package: none (owner decision 2026-10-28)
+PR/commit:      fix/qualifier-tie-order-server
+Contract IDs:   none
+Actions:        ACT-P009-CONFIRM-SQUAD; chooseQualifierTiePlace
+Data impact:    Fairway's confirm writes the board's squad
+Held items:     none
+```
+
+One function, `rankStandings` (ranking.ts), places every qualifier
+field in the board's order. The loader, the Clubhouse board, Fairway's
+leaderboard and workspace, and Ask's `get_qualifiers` all use it. No
+caller passes an order. See `changes/2026-10-28-server-tie-order.md`.
+
 ## 2026-10-21 — Text boxes read the event before the state updater
 
 ```text

@@ -575,7 +575,7 @@ export function buildCoachTools({ sb, ctx, conversationId, writer, collect }: Bu
 
     get_qualifiers: tool({
       description:
-        'The team\'s qualifiers, most recent first: dates, status, spots, and each player\'s standing (rounds, average score, average to par).',
+        'The team\'s qualifiers, most recent first: dates, status, spots, and each player\'s standing in the qualifier board\'s order (position with T for a tie, rounds, total and average to par, average score; a card a round short ranks below every full card).',
       inputSchema: z.object({ limit: z.number().int().min(1).max(8).default(5) }),
       execute: read('get_qualifiers', (input) => getQualifiers(sb, ctx, input)),
     }),

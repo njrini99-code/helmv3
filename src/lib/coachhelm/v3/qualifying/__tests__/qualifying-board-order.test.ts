@@ -3,9 +3,11 @@
  *
  * The Clubhouse qualifier board and "You vs the line" rank a card a round short below every full card (owner decision
  * 10, src/clubhouse/screens/qualifiers/model.ts). Manage selections and Confirm squad ranked by score alone
- * (loader.ts rankCandidates), so Confirm could hand a place to a player the board showed outside the line. Clubhouse now
- * reads the workspace in the board's order (`order: 'board'`), ranked by the same function the board sorts with
- * (ranking.ts boardOrder). Fairway's workspace keeps the plain order (no `order`).
+ * (loader.ts rankCandidates), so Confirm could hand a place to a player the board showed outside the line.
+ *
+ * 2026-10-28 (owner: "the server decides qualifier tie order once, and both Clubhouse and Fairway use it"): there is
+ * no caller-chosen order any more. The workspace always ranks in the board's order (ranking.ts rankStandings), so
+ * Clubhouse's and Fairway's Confirm write the same squad.
  */
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { createFakeSupabase } from '@/test/fixtures/fake-supabase';
@@ -55,9 +57,7 @@ vi.mock('@/lib/coachhelm/v3/qualifying/loader', async (orig) => {
   return {
     ...real,
     // The real loader, reading the fixture; confirm's writes go to the client the test passes.
-    loadQualifyingWorkspace: vi.fn((_sb: unknown, id: string, opts?: Parameters<typeof real.loadQualifyingWorkspace>[2]) =>
-      real.loadQualifyingWorkspace(readClient(), id, opts),
-    ),
+    loadQualifyingWorkspace: vi.fn((_sb: unknown, id: string) => real.loadQualifyingWorkspace(readClient(), id)),
   };
 });
 
@@ -102,32 +102,47 @@ const SHORT_LEADS: Card[] = [
   { id: 'd', rounds: [[75, 3], [75, 3]] },
 ];
 
-describe('rankCandidates / assignScoreSlots in the board’s order', () => {
+describe('rankCandidates / assignScoreSlots: the one order is the board’s', () => {
   it('a short card with a lower total ranks below every full card, and is outside the places on score', () => {
-    const ranked = rankCandidates(rankInput(SHORT_LEADS), 'board');
+    const ranked = rankCandidates(rankInput(SHORT_LEADS));
     expect(scoredIds(ranked)).toEqual(['a', 'c', 'd', 'b']);
     expect(ranked.find((r) => r.player_id === 'b')?.leaderboard_rank).toBe(4);
-    const slots = assignScoreSlots(ranked, new Map(), 2, 'board');
+    const slots = assignScoreSlots(ranked, new Map(), 2);
     expect(slots.filter((c) => c.is_top_score_slot).map((c) => c.player_id)).toEqual(['a', 'c']);
   });
 
-  it('without an order (Fairway) the plain order is unchanged: the short card leads on score', () => {
-    const ranked = rankCandidates(rankInput(SHORT_LEADS));
-    expect(scoredIds(ranked)).toEqual(['b', 'a', 'c', 'd']);
-    expect(assignScoreSlots(ranked, new Map(), 2).filter((c) => c.is_top_score_slot).map((c) => c.player_id)).toEqual(['b', 'a']);
-  });
-
-  it('a full and a short card level on to par and strokes at the line are not a tie in the board’s order (they are in the plain one)', () => {
+  it('a full and a short card level on to par and strokes at the line are not a tie (different groups)', () => {
     const cards: Card[] = [
       { id: 'a', rounds: [[72, 0], [72, 0]] },
       { id: 'b', rounds: [[148, 4]] },
       { id: 'c', rounds: [[74, 2], [74, 2]] },
     ];
-    const board = assignScoreSlots(rankCandidates(rankInput(cards), 'board'), new Map(), 2, 'board');
+    const ranked = rankCandidates(rankInput(cards));
+    expect(ranked.map((r) => [r.player_id, r.leaderboard_position, r.leaderboard_tied])).toEqual([
+      ['a', 1, false],
+      ['c', 2, false],
+      ['b', 3, false],
+    ]);
+    const board = assignScoreSlots(ranked, new Map(), 2);
     expect(board.some((c) => c.tied_at_cut)).toBe(false);
     expect(board.filter((c) => c.is_top_score_slot).map((c) => c.player_id)).toEqual(['a', 'c']);
-    const plain = assignScoreSlots(rankCandidates(rankInput(cards)), new Map(), 2);
-    expect(plain.filter((c) => c.tied_at_cut).map((c) => c.player_id).sort()).toEqual(['b', 'c']);
+  });
+
+  it('two full cards level at the line share a position and wait for the coach; name order never decides', () => {
+    const cards: Card[] = [
+      { id: 'zed', rounds: [[72, 0], [72, 0]] },
+      { id: 'amy', rounds: [[73, 1], [73, 1]] },
+      { id: 'bo', rounds: [[73, 1], [73, 1]] },
+    ];
+    const ranked = rankCandidates(rankInput(cards));
+    expect(ranked.map((r) => [r.player_id, r.leaderboard_rank, r.leaderboard_position, r.leaderboard_tied])).toEqual([
+      ['zed', 1, 1, false],
+      ['amy', 2, 2, true],
+      ['bo', 3, 2, true],
+    ]);
+    const slots = assignScoreSlots(ranked, new Map(), 2);
+    expect(slots.filter((c) => c.is_top_score_slot).map((c) => c.player_id)).toEqual(['zed']);
+    expect(slots.filter((c) => c.tied_at_cut).map((c) => c.player_id)).toEqual(['amy', 'bo']);
   });
 
   /** A small deterministic generator: many boards with short cards, ties inside and across the groups, and the cut. */
@@ -154,9 +169,9 @@ describe('rankCandidates / assignScoreSlots in the board’s order', () => {
     let shortCardsSeen = 0;
     for (const { cards, squad, numRounds } of boards()) {
       const board = boardOf(cards, squad, numRounds);
-      const ranked = rankCandidates(rankInput(cards), 'board');
+      const ranked = rankCandidates(rankInput(cards));
       expect(scoredIds(ranked)).toEqual(board.rows.map((r) => r.playerId));
-      const slots = assignScoreSlots(ranked, new Map(), board.topScore, 'board');
+      const slots = assignScoreSlots(ranked, new Map(), board.topScore);
       const byId = new Map(slots.map((c) => [c.player_id, c]));
       for (const row of board.rows) {
         const c = byId.get(row.playerId)!;
@@ -170,7 +185,7 @@ describe('rankCandidates / assignScoreSlots in the board’s order', () => {
   });
 });
 
-describe('Manage selections and Confirm squad in the board’s order', () => {
+describe('Manage selections and Confirm squad: one order, whichever surface confirms', () => {
   beforeEach(() => {
     vi.mocked(loadQualifyingWorkspace).mockClear();
     reads.slotsTotal = 2;
@@ -191,34 +206,27 @@ describe('Manage selections and Confirm squad in the board’s order', () => {
 
   it('writes the squad the board showed above the line: the short card with the lower total is left out', async () => {
     const sb = writeClient();
-    const r = await confirmSelection(sb as never, { qualifier_id: 'q1', user_id: 'coach-user', order: 'board' });
+    const r = await confirmSelection(sb as never, { qualifier_id: 'q1', user_id: 'coach-user' });
     expect(r.ok).toBe(true);
     const { data: written, error: readError } = await sb.from('golf_qualifier_selections').select('player_id, selection_type');
     expect(readError).toBeNull();
     expect((written as Array<{ player_id: string }>).map((s) => s.player_id).sort()).toEqual(['a', 'c']);
     // The board, from the same rounds, puts the same two above the line.
     expect(boardOf(SHORT_LEADS, 2, 2).rows.filter((x) => x.state === 'qualified').map((x) => x.playerId)).toEqual(['a', 'c']);
-    // Every read in the confirm (the squad and the re-read for the brief) used the board's order.
-    expect(vi.mocked(loadQualifyingWorkspace).mock.calls.map((c) => c[2])).toEqual([{ order: 'board' }, { order: 'board' }]);
+    // No read in the confirm (the squad and the re-read for the brief) passes an order: the loader decides it.
+    expect(vi.mocked(loadQualifyingWorkspace).mock.calls.map((c) => c.length)).toEqual([2, 2]);
   });
 
-  it('Manage selections ranks as the board does: the short card last, and outside the places on score', async () => {
+  it('Manage selections ranks as the board does, in the order given: the short card last, and outside the places on score', async () => {
     const load = await loadQualifierSelection({ teamId: 't1', qualifierId: 'q1' });
     if (load.kind !== 'ok') throw new Error(`Manage selections did not load: ${load.kind}`);
-    const ranked = load.data.candidates.filter((c) => c.rank != null).sort((x, y) => x.rank! - y.rank!);
+    const ranked = load.data.candidates.filter((c) => c.rank != null);
     const board = boardOf(SHORT_LEADS, 2, 2);
+    // As given, never re-sorted: the candidates arrive in rank order.
+    expect(ranked.map((c) => c.rank)).toEqual([1, 2, 3, 4]);
     expect(ranked.map((c) => c.playerId)).toEqual(board.rows.map((r) => r.playerId));
     expect(ranked.map((c) => c.playerId)).toEqual(['a', 'c', 'd', 'b']);
     expect(load.data.candidates.filter((c) => c.onScore).map((c) => c.playerId)).toEqual(['a', 'c']);
-    expect(vi.mocked(loadQualifyingWorkspace).mock.calls.map((c) => c[2])).toEqual([{ order: 'board' }]);
-  });
-
-  it('without an order (Fairway’s workspace) confirm still writes score order, as before', async () => {
-    const sb = writeClient();
-    const r = await confirmSelection(sb as never, { qualifier_id: 'q1', user_id: 'coach-user' });
-    expect(r.ok).toBe(true);
-    const { data: written, error: readError } = await sb.from('golf_qualifier_selections').select('player_id, selection_type');
-    expect(readError).toBeNull();
-    expect((written as Array<{ player_id: string }>).map((s) => s.player_id).sort()).toEqual(['a', 'b']);
+    expect(vi.mocked(loadQualifyingWorkspace).mock.calls.map((c) => c.length)).toEqual([2]);
   });
 });

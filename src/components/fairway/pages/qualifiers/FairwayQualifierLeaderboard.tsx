@@ -20,11 +20,13 @@
  * and the lines, and, for a coach, their scoring average over the rest of the
  * season (computed on the server, never sent to a player).
  *
- * The order is the shared standings order (`compareStandings` in
- * src/lib/coachhelm/v3/qualifying/ranking.ts: to par, strokes, more rounds,
- * name), the order the selection workspace confirms from; see
- * `deriveStandings`. Players level across the last place on score are a
- * "Tie at cut" (Q-114), never put in or out by row order
+ * The order is the one order (`rankStandings` in
+ * src/lib/coachhelm/v3/qualifying/ranking.ts: a card a round short below
+ * every full card, then to par, strokes, more rounds, name), the order the
+ * selection workspace confirms from and Clubhouse's board draws; see
+ * `deriveStandings`. Rows are drawn as placed, with the positions given.
+ * Players level across the last place on score are a "Tie at cut" (Q-114),
+ * never put in or out by row order
  * (docs/clubhouse/pages/P009-qualifiers/WIRING.md, "Standings parity").
  *
  * Honest states (unchanged): "Awaiting first round" before anyone scores; a
@@ -43,7 +45,6 @@ import { Surface, EmptyState, InlineNotice, StatusPill, Skeleton, Avatar, IconBu
 import type { FwStatusTone } from '@/components/fairway/controls';
 import { formatToPar } from '@/lib/golf/format-to-par';
 import { formatMetricText } from '@/lib/golf/metrics/display-registry';
-import { sameStanding } from '@/lib/coachhelm/v3/qualifying/ranking';
 import { cn } from '@/lib/utils';
 import { createClient } from '@/lib/supabase/client';
 
@@ -353,15 +354,13 @@ function StandingsBoard({
   const drawTopScoreLine = topScoreLine > 0 && coachPicks > 0 && scored.length > topScoreLine;
   const drawTravelLine = travelLine > 0 && scored.length > travelLine;
 
-  // Q-114: players level (to par and strokes) with both the last place on
-  // score and the next player share a "Tie at cut" until the coach chooses in
-  // Manage selections; stored row order never decides it. The same rule as
-  // the selection workspace and Clubhouse's board.
-  const level = (a: Standing, b: Standing) =>
-    sameStanding(
-      { toPar: a.totalToPar as number, total: a.totalScore as number },
-      { toPar: b.totalToPar as number, total: b.totalScore as number },
-    );
+  // Q-114: players level with both the last place on score and the next
+  // player share a "Tie at cut" until the coach chooses in Manage selections;
+  // stored row order never decides it. Level is what the one order says: the
+  // same position (given only inside a group, so a full card and a card a
+  // round short are never level). The same rule as the selection workspace
+  // and Clubhouse's board.
+  const level = (a: Standing, b: Standing) => a.position === b.position;
   const cutRow = topScoreLine > 0 ? scored[topScoreLine - 1] : undefined;
   const nextRow = scored[topScoreLine];
   const tieAtCut = !!cutRow && !!nextRow && level(cutRow, nextRow);

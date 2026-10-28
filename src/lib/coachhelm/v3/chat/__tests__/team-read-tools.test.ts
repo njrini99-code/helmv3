@@ -75,7 +75,7 @@ describe('team-wide CoachHelm read tools', () => {
     expect(t.player_rounds).toEqual([{ player: 'Avery', round: 1, total: 72, status: 'ok' }]);
   });
 
-  it('get_qualifiers ranks players by average to par', async () => {
+  it('get_qualifiers ranks players by total to par in the board’s order, with positions', async () => {
     const env = await getQualifiers(
       sbWith({
         golf_qualifiers: [{ data: [{ id: 'q1', name: 'Fall Qualifier', status: 'completed', start_date: '2026-09-20', end_date: '2026-09-21', num_rounds: 2, course_name: 'Oak', spots_available: 5, selection_state: 'set' }] }],
@@ -87,8 +87,39 @@ describe('team-wide CoachHelm read tools', () => {
       ctx,
       { limit: 5 },
     );
-    const q = (env.detail as { qualifiers: Array<{ standings: Array<{ player: string; avg_to_par: number }> }> }).qualifiers[0]!;
-    expect(q.standings.map((s) => s.player)).toEqual(['Blake', 'Avery']);
+    const q = (env.detail as { qualifiers: Array<{ standings: Array<{ player: string; position: string; rank: number }> }> }).qualifiers[0]!;
+    expect(q.standings.map((s) => [s.player, s.rank, s.position])).toEqual([
+      ['Blake', 1, '1'],
+      ['Avery', 2, '2'],
+    ]);
+  });
+
+  it('get_qualifiers uses the board’s order: a card a round short below a full card with a worse average, ties shared', async () => {
+    const roster = [person('p1', 'Avery'), person('p2', 'Blake'), person('p3', 'Casey'), person('p4', 'Drew')];
+    const r = (player_id: string, n: number | null, total: number | null, toPar: number | null) => ({ qualifier_id: 'q1', player_id, total_score: total, score_to_par: toPar, qualifier_round_number: n });
+    const env = await getQualifiers(
+      sbWith({
+        golf_qualifiers: [{ data: [{ id: 'q1', name: 'Fall Qualifier', status: 'completed', start_date: '2026-09-20', end_date: '2026-09-21', num_rounds: 2, course_name: 'Oak', spots_available: 2, selection_state: 'closed' }] }],
+        golf_rounds: [{ data: [
+          // Avery: one round of two, the best to par: short, so below every full card.
+          r('p1', 1, 70, -2),
+          // Blake and Casey: both rounds, level on to par and strokes: tied.
+          r('p2', 1, 73, 1), r('p2', 2, 73, 1),
+          r('p3', 1, 74, 2), r('p3', 2, 72, 0),
+          // Drew: both rounds, plus a second card in round 2 that counts once, and a round with no total.
+          r('p4', 1, 72, 0), r('p4', 2, 72, 0), r('p4', 2, 60, -12), r('p4', null, null, null),
+        ] }],
+      }),
+      { ...ctx, roster },
+      { limit: 5 },
+    );
+    const q = (env.detail as { qualifiers: Array<{ standings: Array<{ player: string; position: string; rounds: number; total_to_par: number; short_card: boolean }> }> }).qualifiers[0]!;
+    expect(q.standings.map((s) => [s.player, s.position, s.rounds, s.total_to_par, s.short_card])).toEqual([
+      ['Drew', '1', 2, 0, false],
+      ['Blake', 'T2', 2, 2, false],
+      ['Casey', 'T2', 2, 2, false],
+      ['Avery', '4', 1, -2, true],
+    ]);
   });
 
   it('an answer written from these envelopes passes the numeric audit', async () => {

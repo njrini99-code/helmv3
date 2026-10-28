@@ -102,16 +102,17 @@ export function QualifierSelection({ data, writes = LIVE_SELECTION_WRITES }: { d
   const topN = Math.max(0, data.squad - data.picks);
   const stage = STAGE[state];
   // Once confirmed, the squad is what was committed; before, the places on score are the standings' top places.
-  // A pick is never also counted on score.
-  const onScore = cands.filter((c) => !c.pick && (stage === 2 ? c.selected : c.onScore)).sort(byRank);
+  // A pick is never also counted on score. The candidates come in the server's order (ranking.ts rankStandings), so
+  // every list here keeps it as given: nothing is re-sorted on this side.
+  const onScore = cands.filter((c) => !c.pick && (stage === 2 ? c.selected : c.onScore));
   const picks = cands.filter((c) => c.pick);
   // Q-114: players level at the last place on score. The coach gives the places left; name order never does.
-  const tied = stage < 2 ? cands.filter((c) => c.tiedAtCut && !c.pick).sort(byRank) : [];
+  const tied = stage < 2 ? cands.filter((c) => c.tiedAtCut && !c.pick) : [];
   const tiePlaces = data.tie?.places ?? 0;
   const tieChosen = tied.filter((c) => c.onScore).length;
   const tieFull = tieChosen + giving.size >= tiePlaces;
   const tieReady = tied.length === 0 || tieChosen === tiePlaces;
-  const eligible = cands.filter((c) => c.rank != null && !c.onScore && !c.pick && !(stage < 2 && c.tiedAtCut)).sort(byRank);
+  const eligible = cands.filter((c) => c.rank != null && !c.onScore && !c.pick && !(stage < 2 && c.tiedAtCut));
   const unranked = cands.filter((c) => c.rank == null && !c.pick);
   // A field smaller than the squad has fewer players to pick than pick places; the server needs only those
   // (canConfirmSelection), so the empty places don't hold up the confirmation.
@@ -495,8 +496,6 @@ export function QualifierSelection({ data, writes = LIVE_SELECTION_WRITES }: { d
 type CandEdit = Partial<Pick<ChQCandidate, 'onScore' | 'pick'>>;
 const agrees = (c: ChQCandidate, e: CandEdit) =>
   (e.onScore === undefined || c.onScore === e.onScore) && (e.pick === undefined || (e.pick === null ? c.pick === null : c.pick !== null && c.pick.reasoning === e.pick.reasoning));
-
-const byRank = (a: ChQCandidate, b: ChQCandidate) => (a.rank ?? 999) - (b.rank ?? 999) || a.name.localeCompare(b.name);
 
 /** A player level at the cut, with the one button that gives or takes back their place. The row owns its write, so only it waits. */
 function TieRow({ c, stage, full, choose }: { c: ChQCandidate; stage: 0 | 1 | 2; full: boolean; choose: (c: ChQCandidate, give: boolean) => Promise<ServerResult> }) {

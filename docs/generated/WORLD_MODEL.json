@@ -22056,6 +22056,18 @@
     },
     {
       "source": "player_coachhelm_development",
+      "target": "qualifiers",
+      "kind": "feature_relation",
+      "evidence": [
+        {
+          "kind": "import_graph",
+          "path": "src/lib/coachhelm/v3/chat/read-tools.ts",
+          "anchor": "src/lib/coachhelm/v3/qualifying/ranking"
+        }
+      ]
+    },
+    {
+      "source": "player_coachhelm_development",
       "target": "routes:src/app/golf/(dashboard)/dashboard/coachhelm/**",
       "kind": "feature_route",
       "evidence": [
