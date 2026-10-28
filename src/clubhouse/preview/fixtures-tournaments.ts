@@ -449,6 +449,7 @@ function poolRound(
         : null,
     stats: {
       gir,
+      girOf: holes,
       fw,
       fwOf,
       putts,

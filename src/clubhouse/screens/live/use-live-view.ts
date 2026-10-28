@@ -33,10 +33,13 @@ function writeStore(key: string, value: string): void {
   }
 }
 
-/** The desktop panel gives way to a sheet below this width (4.3). */
+/** The desktop panel gives way to a sheet below this viewport width (4.3). */
 export const PANEL_MIN_PX = 1080;
+/** The room the split itself needs: the lanes' 560 px floor, the 360 px panel and the 24 px gap between them. */
+export const SPLIT_MIN_PX = 944;
 const NARROW_QUERY = `(max-width: ${PANEL_MIN_PX - 1}px)`;
-export function useNarrow(): boolean {
+
+function useViewportNarrow(): boolean {
   return useSyncExternalStore(
     (cb) => {
       const m = window.matchMedia(NARROW_QUERY);
@@ -46,6 +49,16 @@ export function useNarrow(): boolean {
     () => window.matchMedia(NARROW_QUERY).matches,
     () => false,
   );
+}
+
+/**
+ * Whether the panel is a sheet: below 1080 px of viewport, or whenever the desk's own content width (measured by the
+ * desk, null until it is) is under what the split needs. A wide window with the sidebar open can leave the split less
+ * room than it needs, so the room the desk has decides, not only the viewport.
+ */
+export function useNarrow(deskWidth: number | null = null): boolean {
+  const viewport = useViewportNarrow();
+  return viewport || (deskWidth != null && deskWidth < SPLIT_MIN_PX);
 }
 
 export interface LiveViewState {
@@ -66,6 +79,10 @@ export interface LiveViewState {
   selectedId: string | null;
   selected: LiveLane | null;
   select: (id: string | null) => void;
+  /** Whether the desk draws the panel as a sheet: one value for the layout and the hold, so they never disagree. */
+  narrow: boolean;
+  /** The desk reports its own content width here (null when it is not laid out); the phone never does. */
+  setDeskWidth: (width: number | null) => void;
   /** Handlers for the list's container: the pointer and scrolling hold updates back. */
   holdProps: { onPointerEnter: (e: React.PointerEvent) => void; onPointerLeave: () => void; onScrollCapture: () => void };
 }
@@ -78,9 +95,11 @@ export function useLiveView(initial: LiveSnapshot, scope?: LiveScope, frozen = f
   const [pointer, setPointer] = useState(false);
   const [scrolling, setScrolling] = useState(false);
   const scrollTimer = useRef<number | undefined>(undefined);
-  // A sheet over the list holds updates back; the desktop panel beside it does not.
+  // A sheet over the list holds updates back; the desktop panel beside it does not. The desk sets its width here, so a
+  // wide window with the sidebar open, where the desk draws the sheet, holds updates too.
+  const [deskWidth, setDeskWidth] = useState<number | null>(null);
   const phoneSheet = useChPhone();
-  const narrow = useNarrow();
+  const narrow = useNarrow(deskWidth);
   const sheet = phoneSheet || narrow;
   const live = useLiveRounds({ initial, role: 'coach', scope, hold: pointer || scrolling || (sheet && selectedId != null), frozen });
   const ticking = useNow();
@@ -128,6 +147,8 @@ export function useLiveView(initial: LiveSnapshot, scope?: LiveScope, frozen = f
     selectedId,
     selected,
     select: setSelectedId,
+    narrow,
+    setDeskWidth,
     holdProps: {
       // A mouse resting on the list holds updates back; a finger does not (it scrolls instead, below).
       onPointerEnter: (e) => setPointer(e.pointerType === 'mouse'),

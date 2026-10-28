@@ -11,7 +11,8 @@ Route: `/golf/dashboard/live` (coach)   Surface tag: `live` (Sentry
 
 ## desktop
 
-- [ ] Matches the plan at 1080px and wider (the panel beside the list)
+- [ ] Matches the plan at 1080px and wider (the panel beside the list, when the
+  desk itself has the 944px the split needs; otherwise the panel is a sheet)
 - [ ] Only Clubhouse tokens and classes are used (`.ch-lv-*` over `--ch-*`), and
   `clubhouse:check` is clean
 
