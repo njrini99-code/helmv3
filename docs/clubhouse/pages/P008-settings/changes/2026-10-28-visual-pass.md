@@ -1,12 +1,16 @@
 # 2026-10-28 — Visual pass: a 760 reading column and readable chevrons
 
+## 2026-10-28 — Visual pass: a 760 reading column and readable chevrons
+
 ```text
-Design package: visual-pass-2026-10-28 (RUBRIC.md, premium-research/components-shell.md)
+Design package: visual-pass-2026-10-28 (RUBRIC.md,
+                premium-research/components-shell.md)
 PR/commit:      visual-pass-2026-10-28
 Contract IDs:   none new
 Actions:        none
 Data impact:    none
-Held items:     switch off-track contrast lives in the shared Switch (worker A); check the 760 column at iPad widths
+Held items:     switch off-track contrast lives in the shared Switch (worker A);
+                check the 760 column at iPad widths
 ```
 
 ### Changed

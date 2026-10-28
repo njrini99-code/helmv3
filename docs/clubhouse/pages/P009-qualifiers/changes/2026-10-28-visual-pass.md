@@ -1,12 +1,16 @@
 # 2026-10-28 — Visual pass: the board's lines, the move mark and one rank rule
 
+## 2026-10-28 — Visual pass: the board's lines, the move mark and one rank rule
+
 ```text
-Design package: visual-pass-2026-10-28 (RUBRIC.md, premium-research/team-tabs.md, components-shell.md)
+Design package: visual-pass-2026-10-28 (RUBRIC.md,
+                premium-research/team-tabs.md, components-shell.md)
 PR/commit:      visual-pass-2026-10-28
 Contract IDs:   none new
 Actions:        none
 Data impact:    none (CSS and one header string)
-Held items:     the inline move mark and the color-mix() dashes want a look in Safari on an iPhone
+Held items:     the inline move mark and the color-mix() dashes want a look in
+                Safari on an iPhone
 ```
 
 ### Changed
