@@ -95,7 +95,8 @@ All 25 (CONTRACT.md).
 The player panel slides in 16px and fades in 260ms, and switching players
 cross-fades (CH-3601). On desktop the faces are raised tiles (owner, 2026-10-08:
 "players
-need depth and contrast"): 16px apart, the 16px card radius, a lit white-to-ivory
+need depth and contrast"): 16px apart, the 16px card radius, a lit
+white-to-ivory
 gradient, a gold hairline ring and a
 gold inset frame 7px inside the edge, layered shadows, a hover lift of 8px with
 a stronger gold ring, and the open

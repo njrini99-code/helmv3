@@ -14022,6 +14022,7 @@
         "ch-rs-face__meta",
         "ch-rs-face__name",
         "ch-rs-face__note",
+        "ch-rs-face__st",
         "ch-rs-face__top",
         "ch-rs-faces",
         "ch-rs-faces--team",
@@ -14128,6 +14129,7 @@
         "ch-rsm-row",
         "ch-rsm-row--static",
         "ch-rsm-row__b",
+        "ch-rsm-row__chev",
         "ch-rsm-row__spark",
         "ch-rsm-row__v",
         "ch-rsm-rq",
@@ -14853,7 +14855,7 @@
         },
         {
           "name": "--ch-rd-under-b",
-          "value": "#d0574a",
+          "value": "#c4493b",
           "scope": ".ch-rd .ch-rd-stage"
         },
         {
