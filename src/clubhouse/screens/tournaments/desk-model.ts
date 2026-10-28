@@ -41,9 +41,20 @@ export function deskRows(event: ChTourEvent, players: readonly ChTourPlayer[]): 
   });
 }
 
-/** Flat, by the player's own total, lowest first: the Players view of Who counted. Nobody without a score sorts first. */
+/** Rounds with a stroke total entered: a WD, a DQ or a blank cell is not a round played for ranking. */
+const roundsScored = (row: DeskRow) => row.cells.filter((c) => c?.total != null).length;
+
+/**
+ * Flat, the Players view of Who counted: more rounds scored first, then the player's own total, lowest first (owner
+ * rule 2026-10-24: a card a round short ranks below every full one, however low its total). Nobody without a score
+ * sorts first.
+ */
 export function byTotal(rows: readonly DeskRow[]): DeskRow[] {
-  return [...rows].sort((a, b) => (a.total ?? Number.POSITIVE_INFINITY) - (b.total ?? Number.POSITIVE_INFINITY));
+  return [...rows].sort(
+    (a, b) =>
+      roundsScored(b) - roundsScored(a) ||
+      (a.total ?? Number.POSITIVE_INFINITY) - (b.total ?? Number.POSITIVE_INFINITY),
+  );
 }
 
 /** The words a score cell shows: the stroke total, or why there is none. */

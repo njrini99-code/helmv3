@@ -33,17 +33,34 @@ function writeStore(key: string, value: string): void {
   }
 }
 
-/** The desktop panel gives way to a sheet below this width (4.3). */
+/** The desktop panel gives way to a sheet below this viewport width (4.3). */
 export const PANEL_MIN_PX = 1080;
+/** The room the split itself needs: the lanes' 560 px floor, the 360 px panel and the 24 px gap between them. */
+export const SPLIT_MIN_PX = 944;
 const NARROW_QUERY = `(max-width: ${PANEL_MIN_PX - 1}px)`;
+
+// The desk's own content width, measured by the desk (reportDeskWidth). A wide window with the sidebar open can leave
+// the split less room than it needs, so the panel turns into a sheet on the room the desk has, not on the viewport.
+let deskWidth: number | null = null;
+const deskWidthListeners = new Set<() => void>();
+export function reportDeskWidth(width: number | null): void {
+  if (width === deskWidth) return;
+  deskWidth = width;
+  for (const listener of deskWidthListeners) listener();
+}
+
 export function useNarrow(): boolean {
   return useSyncExternalStore(
     (cb) => {
       const m = window.matchMedia(NARROW_QUERY);
       m.addEventListener('change', cb);
-      return () => m.removeEventListener('change', cb);
+      deskWidthListeners.add(cb);
+      return () => {
+        m.removeEventListener('change', cb);
+        deskWidthListeners.delete(cb);
+      };
     },
-    () => window.matchMedia(NARROW_QUERY).matches,
+    () => window.matchMedia(NARROW_QUERY).matches || (deskWidth != null && deskWidth < SPLIT_MIN_PX),
     () => false,
   );
 }

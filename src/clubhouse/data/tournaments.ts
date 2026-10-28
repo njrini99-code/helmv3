@@ -11,6 +11,7 @@ import { chLogServer } from '../lib/track-server';
 import { suggestLinks, type LinkCandidateRound, type LinkEventRound } from '../screens/tournaments/links';
 import {
   courseOf,
+  eventRoundPar,
   playerOf,
   seasonIdOf,
   seasonsFor,
@@ -326,7 +327,8 @@ async function readEvents(ctx: TourCtx, tz: string, opts: { ids?: string[]; own?
       rounds: mine.map((r): TourRawRound => {
         const start = startById.get(r.round_event_id);
         const courseId = r.course_id ?? t.course_id;
-        return { ...r, date: start ? isoDay(start, tz) : t.start_date, par: (r.tee_id ? tees.get(r.tee_id)?.par : null) ?? (courseId ? (courses[courseId]?.par ?? null) : null) };
+        const par18 = (r.tee_id ? tees.get(r.tee_id)?.par : null) ?? (courseId ? (courses[courseId]?.par ?? null) : null);
+        return { ...r, date: start ? isoDay(start, tz) : t.start_date, par: eventRoundPar(par18, t.holes_per_round) };
       }),
       entries: entries.filter((e) => e.tournament_id === t.id),
       roundLineups: lineups.filter((l) => ids.has(l.round_event_id)),
@@ -629,11 +631,15 @@ interface PoolHole {
 export function holeStats(holes: readonly PoolHole[], round: Pick<PoolRound, 'total_putts' | 'total_penalties'>): ChTourCompareRound['stats'] {
   const played = holes.filter((h) => h.score != null);
   const missed = played.filter((h) => h.gir === false);
+  // A hole with no GIR mark is not a miss, and a hole with no putt count is not zero putts: GIR counts only marked
+  // holes, and the putt total stands only when every scored hole has one (else the round's own total, else none).
+  const puttsKnown = played.length > 0 && played.every((h) => h.putts != null);
   return {
     gir: played.filter((h) => h.gir === true).length,
+    girOf: played.filter((h) => h.gir != null).length,
     fw: played.filter((h) => h.par > 3 && h.fairway_hit === true).length,
     fwOf: played.filter((h) => h.par > 3 && h.fairway_hit != null).length,
-    putts: played.length ? played.reduce((a, h) => a + (h.putts ?? 0), 0) : (round.total_putts ?? 0),
+    putts: puttsKnown ? played.reduce((a, h) => a + (h.putts as number), 0) : played.length ? null : (round.total_putts ?? null),
     threePutts: played.filter((h) => (h.putts ?? 0) >= 3).length,
     scrMade: missed.filter((h) => h.score! <= h.par).length,
     scrOf: missed.length,
@@ -643,6 +649,10 @@ export function holeStats(holes: readonly PoolHole[], round: Pick<PoolRound, 'to
     proximityFt: null,
   };
 }
+
+/** A WD or DQ event round stays in the pool so its evidence can say why, but every figure leaves it out (10.3). */
+const outStatus = (status: ChTourEvent['playerRounds'][number]['status']): Pick<ChTourCompareRound, 'status'> =>
+  status === 'wd' ? { status: 'wd' } : status === 'dq' || status === 'dq_pending' ? { status: 'dq' } : {};
 
 /** Every round a comparison can draw on: the team's completed GolfHelm rounds this season and last, and entered tournament scores. */
 async function readPool(ctx: TourCtx, read: EventsRead, playerIds: readonly string[], today: string): Promise<ChTourCompareRound[]> {
@@ -711,6 +721,7 @@ async function readPool(ctx: TourCtx, read: EventsRead, playerIds: readonly stri
       sg,
       stats: holeStats(own, r),
       trust: link ? link.pr.trust : 'practice',
+      ...(link ? outStatus(link.pr.status) : {}),
     });
   }
   // Entered tournament scores (no GolfHelm round): event rounds with totals only.
@@ -741,6 +752,7 @@ async function readPool(ctx: TourCtx, read: EventsRead, playerIds: readonly stri
         sg: null,
         stats: holeStats([], { total_putts: null, total_penalties: null }),
         trust: pr.trust,
+        ...outStatus(pr.status),
       });
     }
   }
