@@ -12,20 +12,23 @@
  *     contrasting green ink, even par quiet, over par plain ink. Over par is
  *     never amber: most rows in a college field are over par, and a board of
  *     amber reads as a board of warnings.
- *   • `deriveStandings` — golf standings off the live feed, in the shared
- *     standings order (`compareStandings`: to par, strokes, more rounds,
- *     name). Players level on to par AND strokes share the position and every
- *     tied row reads "T"; the next position skips (1, T2, T2, 4). `rank` is
- *     the physical order among scored players, which is what the cut lines
- *     count. A player with no counted round (none completed, or no total)
- *     never gets a position, an "E", or a zero.
+ *   • `deriveStandings` — golf standings off the live feed, placed by the
+ *     one order (`rankStandings` in lib/coachhelm/v3/qualifying/ranking.ts,
+ *     the function the server's workspace, confirm and the Clubhouse board
+ *     use): a card a round short below every full card, then to par,
+ *     strokes, more rounds, name. Players level on to par AND strokes in the
+ *     same group share the position and every tied row reads "T"; the next
+ *     position skips (1, T2, T2, 4). `rank` is the physical order among
+ *     scored players, which is what the cut lines count. Nothing here sorts
+ *     on its own rule. A player with no counted round (none completed, or no
+ *     total) never gets a position, an "E", or a zero.
  *   • `fieldProgress` — how far through its rounds the field is, from the
  *     same feed: the round up next or in play, scorecards in, per-round fill.
  *
  * Local to this folder on purpose (the `qualifier-status.ts` convention).
  * ========================================================================== */
 
-import { compareStandings, sameStanding, type StandingKey } from '@/lib/coachhelm/v3/qualifying/ranking';
+import { rankStandings, type StandingKey } from '@/lib/coachhelm/v3/qualifying/ranking';
 
 /** Splits the title at a spaced em or en dash; "Pre-Season" keeps its hyphen. */
 const TITLE_SUFFIX = /\s+[—–]\s+/;
@@ -85,30 +88,23 @@ const keyOf = (e: StandingsFeedEntry): StandingKey => ({
 });
 
 export function deriveStandings(entries: ReadonlyArray<StandingsFeedEntry>): Standing[] {
-  // The shared standings order (src/lib/coachhelm/v3/qualifying/ranking.ts):
-  // to par, strokes, more rounds, name. It is the order the selection
-  // workspace confirms from and Clubhouse's board draws.
-  const scored = entries.filter(isScored).sort((a, b) => compareStandings(keyOf(a), keyOf(b)));
+  // The one order (src/lib/coachhelm/v3/qualifying/ranking.ts rankStandings): the order the selection workspace
+  // confirms from and Clubhouse's board draws, with its rank, position and ties taken as given.
+  const placed = rankStandings(entries.filter(isScored), keyOf);
   const waiting = entries.filter((e) => !isScored(e)).sort(byName);
 
-  const rows: Standing[] = scored.map((entry, index) => {
-    const key = keyOf(entry);
-    // Level on to par AND strokes shares the position; to par alone does not.
-    const firstAtKey = scored.findIndex((e) => sameStanding(keyOf(e), key));
-    const sharing = scored.reduce((n, e) => (sameStanding(keyOf(e), key) ? n + 1 : n), 0);
-    return {
-      playerId: entry.player_id,
-      playerName: entry.player_name,
-      roundsCompleted: entry.rounds_completed,
-      totalScore: key.total,
-      totalToPar: key.toPar,
-      averageScore: key.total / entry.rounds_completed,
-      hasScore: true,
-      position: firstAtKey + 1,
-      tied: sharing > 1,
-      rank: index + 1,
-    };
-  });
+  const rows: Standing[] = placed.map(({ item: entry, rank, position, tied }) => ({
+    playerId: entry.player_id,
+    playerName: entry.player_name,
+    roundsCompleted: entry.rounds_completed,
+    totalScore: entry.total_score as number,
+    totalToPar: entry.total_to_par as number,
+    averageScore: (entry.total_score as number) / entry.rounds_completed,
+    hasScore: true,
+    position,
+    tied,
+    rank,
+  }));
 
   for (const entry of waiting) {
     rows.push({
@@ -148,8 +144,12 @@ export function leaderSummary(standings: ReadonlyArray<Standing>): LeaderSummary
   const leaders = scored.filter((s) => s.position === 1);
   if (leaders.length > 1) return { leaders, margin: null };
   const next = scored[1];
+  // Only a gap between cards with the same rounds in is a lead: the next row may be a card a round short, which the
+  // one order puts below every full card whatever its to par (the A1 honesty rule Clubhouse's line gaps follow).
   const margin =
-    next && first.totalToPar !== null && next.totalToPar !== null ? next.totalToPar - first.totalToPar : null;
+    next && next.roundsCompleted === first.roundsCompleted && first.totalToPar !== null && next.totalToPar !== null
+      ? next.totalToPar - first.totalToPar
+      : null;
   return { leaders, margin };
 }
 

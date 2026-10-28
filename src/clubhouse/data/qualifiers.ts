@@ -723,7 +723,7 @@ export async function loadQualifierForm(input: { teamId: string; qualifierId: st
 export interface ChQCandidate {
   playerId: string;
   name: string;
-  /** The server's standing (to par, then total strokes); null with no score in. */
+  /** The server's rank in the one order (ranking.ts rankStandings); null with no score in. Candidates arrive in it. */
   rank: number | null;
   toPar: number | null;
   total: number | null;
@@ -758,9 +758,10 @@ export type ChQSelectionLoad = { kind: 'ok'; data: ChQSelectionData } | { kind: 
  * (`loadQualifyingWorkspace`), so the squad shown is the squad committed. A
  * failed read is told apart from a qualifier that isn't on the team.
  *
- * In the board's order (owner decision A: "Match the board"): a card a round
- * short ranks below every full card, as on the board and "You vs the line".
- * Clubhouse's tie choice and Confirm squad pass the same order (writes.ts).
+ * In the one order the server decides (ranking.ts rankStandings, the board's;
+ * owner decision A: "Match the board"): a card a round short ranks below every
+ * full card, as on the board and "You vs the line". The candidates come in
+ * that order with their rank; the screen draws them as given.
  */
 export async function loadQualifierSelection(input: { teamId: string; qualifierId: string }): Promise<ChQSelectionLoad> {
   const supabase = await createClient();
@@ -772,7 +773,7 @@ export async function loadQualifierSelection(input: { teamId: string; qualifierI
   if (!own.data || own.data.team_id !== input.teamId) return { kind: 'missing' };
   let ws: QualifyingWorkspace | null;
   try {
-    ws = await loadQualifyingWorkspace(supabase, input.qualifierId, { order: 'board' });
+    ws = await loadQualifyingWorkspace(supabase, input.qualifierId);
   } catch (err) {
     chLogServer('qualifiers', 'selection', err, 'qualifiers');
     return { kind: 'error' };

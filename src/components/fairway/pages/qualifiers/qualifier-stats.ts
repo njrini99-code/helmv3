@@ -41,9 +41,16 @@ export interface FieldTotals {
   averageScore: number | null;
   /** To par per round across the field. */
   averageToPar: number | null;
-  /** First and last to-par on the board, and the shots between them. */
-  spread: { best: number; worst: number; shots: number } | null;
-  /** The last to-par inside the travel cut, the first outside, the gap. */
+  /**
+   * First and last to-par among the leader's group (cards with the leader's rounds in), and the shots between them.
+   * `partial` when cards a round short were left out: the one order ranks them below, and their to par is over fewer
+   * rounds, so it is no point on the same spread.
+   */
+  spread: { best: number; worst: number; shots: number; partial: boolean } | null;
+  /**
+   * The last to-par inside the travel cut, the first outside, the gap. Null when the two have different rounds in: a
+   * card a round short ranks below the full cards whatever its to par, so there is no stroke gap to give.
+   */
   travelCut: { lastIn: number; firstOut: number; shots: number } | null;
 }
 
@@ -56,17 +63,24 @@ export function fieldTotals(standings: ReadonlyArray<Standing>, travelLine: numb
 
   const scoreRounds = rounds(withScore);
   const toParRounds = rounds(withToPar);
-  const first = scored[0]?.totalToPar ?? null;
-  const last = scored[scored.length - 1]?.totalToPar ?? null;
-  const lastIn = travelLine > 0 ? (scored[travelLine - 1]?.totalToPar ?? null) : null;
-  const firstOut = travelLine > 0 ? (scored[travelLine]?.totalToPar ?? null) : null;
+  const group = scored.filter((s) => s.roundsCompleted === scored[0]?.roundsCompleted);
+  const first = group[0]?.totalToPar ?? null;
+  const last = group[group.length - 1]?.totalToPar ?? null;
+  const inRow = travelLine > 0 ? scored[travelLine - 1] : undefined;
+  const outRow = travelLine > 0 ? scored[travelLine] : undefined;
+  const comparableAtCut = !!inRow && !!outRow && inRow.roundsCompleted === outRow.roundsCompleted;
+  const lastIn = comparableAtCut ? (inRow.totalToPar ?? null) : null;
+  const firstOut = comparableAtCut ? (outRow.totalToPar ?? null) : null;
 
   return {
     players: scored.length,
     cards: rounds(scored),
     averageScore: scoreRounds > 0 ? sum(withScore, (s) => s.totalScore) / scoreRounds : null,
     averageToPar: toParRounds > 0 ? sum(withToPar, (s) => s.totalToPar) / toParRounds : null,
-    spread: scored.length >= 2 && first !== null && last !== null ? { best: first, worst: last, shots: last - first } : null,
+    spread:
+      group.length >= 2 && first !== null && last !== null
+        ? { best: first, worst: last, shots: last - first, partial: group.length < scored.length }
+        : null,
     travelCut:
       lastIn !== null && firstOut !== null ? { lastIn, firstOut, shots: firstOut - lastIn } : null,
   };

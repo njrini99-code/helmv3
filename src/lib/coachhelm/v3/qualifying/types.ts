@@ -19,18 +19,6 @@ export type QualifierSelectionState = (typeof QUALIFIER_SELECTION_STATES)[number
 
 export type QualifierSelectionType = 'top_score' | 'coach_pick';
 
-/**
- * How the workspace ranks its candidates, and so who the places on score go to.
- * 'score': the plain standings order (ranking.ts compareStandings), what Fairway's
- * leaderboard and workspace show. 'board': the Clubhouse board's order
- * (ranking.ts boardOrder: a card a round short below every full card), which
- * Clubhouse's Manage selections and Confirm squad use (owner decision A).
- */
-export type QualifyingOrder = 'score' | 'board';
-
-/** A caller-supplied order, read safely: anything but 'board' is the plain order. */
-export const asQualifyingOrder = (order: unknown): QualifyingOrder => (order === 'board' ? 'board' : 'score');
-
 export interface QualifierSelection {
   qualifier_id: string;
   player_id: string;
@@ -44,7 +32,9 @@ export interface QualifierSelection {
  * One row in the workspace candidate table — combines the qualifier
  * entry, the player, the player's total score, and any existing selection.
  *
- * leaderboard_rank is 1-based; null when no scoring rounds yet.
+ * leaderboard_rank is 1-based, in the one order the server decides
+ * (ranking.ts rankStandings); null when no scoring rounds yet. The
+ * loader returns candidates in that order: render them as given.
  */
 export interface SelectionCandidate {
   player_id: string;
@@ -54,6 +44,13 @@ export interface SelectionCandidate {
   total_score: number | null;
   total_to_par: number | null;
   leaderboard_rank: number | null;
+  /**
+   * Golf position from the one order (ranking.ts rankStandings): level players share it, the next one skips. Null
+   * when unscored. Always set by the loader; optional only for hand-built fixtures.
+   */
+  leaderboard_position?: number | null;
+  /** Shares `leaderboard_position` with another player. */
+  leaderboard_tied?: boolean;
   /** Pre-existing selection if any. null = unselected. */
   selection: QualifierSelection | null;
   /** True when the candidate would be auto-locked under the current

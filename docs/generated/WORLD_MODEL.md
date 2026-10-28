@@ -216,7 +216,7 @@ Supabase Database Observability — Zero-Cost Error/Health Control Plane · acti
 
 Player CoachHelm And Development · active · criticality high · owner product
 
-- **Relations:** 1 doc/structurally-evidenced, 20 import-graph-only (weak)
+- **Relations:** 1 doc/structurally-evidenced, 21 import-graph-only (weak)
 - **Tables:** `golf_focus_area_criteria`, `golf_focus_area_practice_sessions`
 - **RPCs:** `ingest_external_round_atomic`, `sg_scale_for_player`
 - **Test surfaces:** 3
@@ -236,7 +236,7 @@ Player Hub · active · criticality high · owner product
 
 Qualifiers · active · criticality high · owner product
 
-- **Relations:** 1 doc/structurally-evidenced, 7 import-graph-only (weak)
+- **Relations:** 1 doc/structurally-evidenced, 8 import-graph-only (weak)
 - **Tables:** `golf_qualifier_round_courses`
 - **RPCs:** `golf_qualifier_selection_reasons`
 - **Test surfaces:** 5
@@ -473,6 +473,7 @@ Team Operations · active · criticality high · owner product
 | `player_coachhelm_development` | `email_outbound` | import_graph (weak) |
 | `player_coachhelm_development` | `golf_round_lifecycle` | import_graph (weak) |
 | `player_coachhelm_development` | `observability_sentry` | import_graph (weak) |
+| `player_coachhelm_development` | `qualifiers` | import_graph (weak) |
 | `player_coachhelm_development` | `settings_preferences` | import_graph (weak) |
 | `player_coachhelm_development` | `stats_analytics` | import_graph (weak) |
 | `player_hub` | `admin_platform` | import_graph (weak) |

@@ -21,7 +21,7 @@ import {
   confirmSelection,
   chooseTiePlace,
 } from '@/lib/coachhelm/v3/qualifying/service';
-import { asQualifyingOrder, type QualifierSelectionState, type QualifyingOrder } from '@/lib/coachhelm/v3/qualifying/types';
+import type { QualifierSelectionState } from '@/lib/coachhelm/v3/qualifying/types';
 import { describeError } from '@/lib/utils/describe-error';
 
 export interface QualifyingActionResult {
@@ -188,7 +188,6 @@ export async function removeQualifierCoachPick(
 
 async function confirmQualifierSelectionImpl(
   qualifier_id: string,
-  order?: QualifyingOrder,
 ): Promise<QualifyingActionResult> {
   try {
     const ctx = await getAuthedCoachContext(qualifier_id);
@@ -204,7 +203,7 @@ async function confirmQualifierSelectionImpl(
     // runs under the caller's session and RLS.
     const r = await confirmSelection(
       ctx.supabase,
-      { qualifier_id, user_id: ctx.user.id, order: asQualifyingOrder(order) },
+      { qualifier_id, user_id: ctx.user.id },
       { briefClient: () => createAdminClient() },
     );
     if (!r.ok) return r;
@@ -228,7 +227,6 @@ async function chooseQualifierTiePlaceImpl(
   qualifier_id: string,
   player_id: string,
   give: boolean,
-  order?: QualifyingOrder,
 ): Promise<QualifyingActionResult> {
   try {
     const ctx = await getAuthedCoachContext(qualifier_id);
@@ -242,7 +240,7 @@ async function chooseQualifierTiePlaceImpl(
           : 'That player is not on this team',
       };
     }
-    const r = await chooseTiePlace(ctx.supabase, { qualifier_id, player_id, user_id: ctx.user.id, give, order: asQualifyingOrder(order) });
+    const r = await chooseTiePlace(ctx.supabase, { qualifier_id, player_id, user_id: ctx.user.id, give });
     if (!r.ok) return r;
     pathsToRevalidate(qualifier_id).forEach((p) => revalidatePath(p));
     return { ok: true };
@@ -259,17 +257,15 @@ const observedChooseQualifierTiePlace = withAdminObserved(
 );
 
 /**
- * `order` is the board the caller showed: Clubhouse passes 'board' (its board
- * ranks a card a round short below the full cards), Fairway leaves it out.
- * Read with asQualifyingOrder: anything but 'board' is the plain order.
+ * Which players are level at the cut is the server's call (the one order,
+ * ranking.ts rankStandings); the caller only says who gets the place.
  */
 export async function chooseQualifierTiePlace(
   qualifier_id: string,
   player_id: string,
   give: boolean,
-  order?: QualifyingOrder,
 ): Promise<QualifyingActionResult> {
-  return observedChooseQualifierTiePlace(qualifier_id, player_id, give, order);
+  return observedChooseQualifierTiePlace(qualifier_id, player_id, give);
 }
 
 const observedConfirmQualifierSelection = withAdminObserved(
@@ -278,10 +274,9 @@ const observedConfirmQualifierSelection = withAdminObserved(
   confirmQualifierSelectionImpl,
 );
 
-/** `order`: as chooseQualifierTiePlace. The squad written is the one that order puts above the line. */
+/** The squad written is the one the server's order puts above the line, whichever surface confirms. */
 export async function confirmQualifierSelection(
   qualifier_id: string,
-  order?: QualifyingOrder,
 ): Promise<QualifyingActionResult> {
-  return observedConfirmQualifierSelection(qualifier_id, order);
+  return observedConfirmQualifierSelection(qualifier_id);
 }

@@ -33,6 +33,7 @@ import { loadPinnedReadIds } from '@/lib/coachhelm/delivery/pinned-reads';
 import { isCoachHelmFlagEnabled } from '@/lib/coachhelm/canary';
 import { loadCoachWeightsForPlayer } from '@/lib/coachhelm/v3/ranking/score';
 import { loadActiveGoals } from '@/lib/coachhelm/v3/goals/loader';
+import { rankStandings } from '@/lib/coachhelm/v3/qualifying/ranking';
 import {
   type CoachChatContext,
   requireRosterPlayer,
@@ -1375,7 +1376,12 @@ export async function getTournaments(sb: Sb, ctx: CoachChatContext, input: { lim
   };
 }
 
-/** The team's qualifiers with each player's rounds in them, ranked by scoring to par. */
+/**
+ * The team's qualifiers with each player's standing, in the one order the qualifier board, the selection workspace
+ * and Fairway use (ranking.ts rankStandings: a card a round short below every full card, then total to par, then
+ * strokes). The rounds counted are the board's: completed, not a test, with a total and a to par, one per numbered
+ * qualifier round. Players with no counted round follow, unranked.
+ */
 export async function getQualifiers(sb: Sb, ctx: CoachChatContext, input: { limit: number }): Promise<ToolEnvelope> {
   const limit = Math.min(Math.max(input.limit, 1), 8);
   const { data, error } = await sb
@@ -1404,7 +1410,6 @@ export async function getQualifiers(sb: Sb, ctx: CoachChatContext, input: { limi
     detail: {
       qualifiers: quals.map((x) => {
         const mine = rows.filter((r) => r.qualifier_id === x.id && names.has(r.player_id));
-        const ids = [...new Set(mine.map((r) => r.player_id))];
         return {
           qualifier_id: x.id,
           name: x.name,
@@ -1415,19 +1420,7 @@ export async function getQualifiers(sb: Sb, ctx: CoachChatContext, input: { limi
           course: x.course_name,
           spots: x.spots_available,
           selection: x.selection_state,
-          standings: ids
-            .map((id) => {
-              const rs = mine.filter((r) => r.player_id === id);
-              const scoreList = rs.map((r) => num(r.total_score)).filter((n): n is number => n !== null);
-              return {
-                player: names.get(id),
-                rounds: rs.length,
-                total_strokes: scoreList.reduce((a, b) => a + b, 0),
-                avg_score: mean(scoreList),
-                avg_to_par: mean(rs.map((r) => num(r.score_to_par)).filter((n): n is number => n !== null)),
-              };
-            })
-            .sort((a, b) => (a.avg_to_par ?? 99) - (b.avg_to_par ?? 99)),
+          standings: qualifierStandings(mine, names),
         };
       }),
     },
@@ -1436,6 +1429,51 @@ export async function getQualifiers(sb: Sb, ctx: CoachChatContext, input: { limi
     coverage_note: rows.length >= 900 ? 'Only 900 qualifier rounds were read; ask about fewer qualifiers for exact standings.' : null,
     as_of: nowIso(),
   };
+}
+
+/** One qualifier's standings for Ask, placed by the one order (ranking.ts rankStandings), never sorted here. */
+function qualifierStandings(
+  rounds: ReadonlyArray<{ player_id: string; total_score: unknown; score_to_par: unknown; qualifier_round_number: number | null }>,
+  names: ReadonlyMap<string, string>,
+) {
+  // The board's counting rule (screens/qualifiers/model.ts rankRows, loader.ts): a round needs a total and a to par,
+  // and a second round in one numbered qualifier round counts once.
+  const byPlayer = new Map<string, { totals: number[]; toPars: number[]; slots: Set<number> }>();
+  for (const r of rounds) {
+    const agg = byPlayer.get(r.player_id) ?? { totals: [], toPars: [], slots: new Set<number>() };
+    byPlayer.set(r.player_id, agg);
+    const total = num(r.total_score);
+    const toPar = num(r.score_to_par);
+    if (total === null || toPar === null) continue;
+    if (r.qualifier_round_number != null) {
+      if (agg.slots.has(r.qualifier_round_number)) continue;
+      agg.slots.add(r.qualifier_round_number);
+    }
+    agg.totals.push(total);
+    agg.toPars.push(toPar);
+  }
+  const players = [...byPlayer].map(([id, a]) => ({ id, name: names.get(id) ?? 'Former player', ...a }));
+  const sum = (xs: number[]) => xs.reduce((s, x) => s + x, 0);
+  const placed = rankStandings(
+    players.filter((p) => p.totals.length > 0),
+    (p) => ({ toPar: sum(p.toPars), total: sum(p.totals), played: p.totals.length, name: p.name }),
+  );
+  return [
+    ...placed.map(({ item: p, rank, position, tied, short }) => ({
+      player: p.name,
+      rank,
+      position: `${tied ? 'T' : ''}${position}`,
+      rounds: p.totals.length,
+      total_strokes: sum(p.totals),
+      total_to_par: sum(p.toPars),
+      avg_score: mean(p.totals),
+      avg_to_par: mean(p.toPars),
+      short_card: short,
+    })),
+    ...players
+      .filter((p) => p.totals.length === 0)
+      .map((p) => ({ player: p.name, rank: null, position: null, rounds: 0, total_strokes: null, total_to_par: null, avg_score: null, avg_to_par: null, short_card: false })),
+  ];
 }
 
 /** Name → roster player, for plain-typed references. Never leaves the server. */
