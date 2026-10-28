@@ -9,6 +9,61 @@ wins; the stale ones found by this audit are listed at the end. `PROGRESS.md`
 keeps the full history (gates, decisions, questions, data gaps, verification
 log). What is left, and who has it: [QUEUE.md](QUEUE.md).
 
+## Release plan: owner decisions (2026-10-28)
+
+The owner settled the open release calls on 2026-10-28 ("Go with your
+calls"). Plan only: nothing is deployed, no migration is applied and no flag
+is flipped until the owner says so. This section replaces the cut and order
+calls in the 2026-10-23 plan below.
+
+- **Where things stand.** Production serves `d0f467a73` (Vercel
+  `dpl_CeADrBdMKv2MkZMhfJRxRv6CBYAc`, 2026-10-21), flag off. `main`
+  (`fced1c07e`, after the must-fixes #2381 to #2386, the visual pass #2389
+  to #2396 and the polish pass #2388) is 100 commits ahead. The production
+  ledger's newest row is `20261025080000` (21 Clubhouse migrations applied
+  2026-10-25/26 by #2375 and #2376; the Oct 21 app never calls them). The
+  two flag-gated bugs found in the #2368 review (Seen by kept the last
+  chat's read marks; the qualifier's crossed-out time was ivory on paper)
+  are fixed on `main`.
+- **1. First deploy: all of `main`, Clubhouse off.** It becomes the
+  rollback point; the Oct 21 deployment stays a rollback candidate too.
+  Before it goes out, `main` must be green on CI and Ask's two whole-team
+  tools go behind `golf_clubhouse_ui` (owner decision; today they are not
+  behind any flag). Changes every team gets with the flag off: shot-chain
+  relinking after round edits (#2346), the calendar feed's change lines
+  (fixed in #2386), the `error_logs` retention query (#2349), the
+  release-status check (#2360), the 5-minute `standing-refresh-dirty` cron
+  (#2368), and preview links that write to the production database (from
+  the 2026-10-27 wiring review). Watch round edits and the calendar feeds
+  for a day after it ships.
+- **2. Canary allowlist.** `HELM_CLUBHOUSE_TEAMS` holds Demo University
+  Golf's id alone (`6ecdd1a6-63fe-4beb-b094-00118f334163`, no trailing
+  comma: a value with no id means every team) for the owner's iPhone and
+  Mac pass. Then the owner's real team for a full weekday, then everyone.
+  The real team's id is the owner's to give on the day.
+- **3. Held migrations, one at a time, after the first deploy.** First
+  `20261027100000` (tournament rename and round course change pass the
+  round guard; the bug is in functions already applied and goes live with
+  this deploy). Then `20261001000000` (Q-120), then `20261017102000`
+  (attendance privacy, with its app change: remove the Sentry ignore and
+  `src/lib/golf/attendance-counts-rpc.ts`, then `db:types`), then
+  `20261023130000` (anon surface grants). The rest of HELD.md's Tier 1
+  follows in its order. On a separate day after the flip, the ones that move
+  numbers: `20261017110000` (null putts), `20260930150000` and
+  `20261023170000` (strokes gained), the OD-01 chain, then
+  `20261024151000` (Standing by season). `20261025060000` (course page
+  index) only if that read measures slow; `20261025070400` (pg_cron
+  variant) is not applied. HELD.md stays the authority for prerequisites.
+- **Scoring and data rules (owner, 2026-10-28).** A provisional DQ is
+  dropped from the team score as well as the desk. The server decides
+  qualifier tie order once, so both apps and Confirm agree. Settings shows
+  Handicap index only, matching Home. Players see practice reviews a coach
+  marks visible to them. The 20 old round titles are not backfilled (the
+  next rename fixes each). CoachHelm keeps its strict evidence rule. The
+  course page's phone hole map is three rows of six with 56 px taps.
+- **Then the flip.** Refresh #2343 onto `main` on the day and merge it
+  only on the owner's word.
+
 ## Production polish pass (2026-10-27)
 
 A page-by-page pass over all 16 pages, phone (390, 375 where it mattered) and
@@ -62,7 +117,7 @@ pass, not a production release. The canary PR #2343 stays held for the
 owner’s release sequence. Device, native build, production migration and
 release evidence remains separate from local and CI verification.
 
-## Release plan (2026-10-23, refreshed 2026-10-25)
+## Release plan (2026-10-23, refreshed 2026-10-25; superseded 2026-10-28)
 
 Read-only check on 2026-10-23, refreshed after the 10-23 overnight merges
 and again on 2026-10-25 after the 10-24/25 merges. Nothing below has been

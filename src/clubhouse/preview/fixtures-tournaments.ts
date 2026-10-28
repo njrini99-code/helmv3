@@ -4,8 +4,8 @@
  * fixed fixture with the design's numbers (team 287, 286, 285, total 858, −6); e32 is 6 count 5; e34 and e35 are
  * upcoming; e33 has a field of 14 teams; the live variant puts e34's first round on the course.
  *
- * Team math arrives precomputed, as it will from the engine: `countRound` below marks each round's lowest whole-round
- * scores as counting once, when the module loads (fixture data only, not the engine: a view reads `count` and the team
+ * Team math arrives precomputed, from the same engine the loaders use (`scoring.ts` through `tournaments-shape.ts`),
+ * once, when the module loads, so the preview can never count by a second rule (a view reads `count` and the team
  * rounds and never recomputes them). Qualifier and practice rounds for the comparison pool come from a seeded generator,
  * so every visit draws the same numbers. Everything returned is plain JSON.
  *
@@ -49,6 +49,8 @@ import type {
   TeamEventResult,
   TourFormat,
 } from '../screens/tournaments/types';
+import { teamEvent, teamRound, type ChTourTeamRound as EngineTeamRound } from '../screens/tournaments/scoring';
+import { teamRoundView } from '../data/tournaments-shape';
 
 // ── Preview states ───────────────────────────────────────────────────────────────────────────────────────────────
 
@@ -188,16 +190,6 @@ const EVENT_DEFS: EventDef[] = [
   { id: 'e35', season: '2026-27', name: 'Holly Ridge Classic', short: 'Holly Ridge', course: 'hol', rounds: ['2026-11-02', '2026-11-03'], format: F5C4, lineup: [], note: 'Qualifier opens Oct 24' },
 ];
 
-/** Fixture-only: a round's lowest `counting` whole-round lineup scores count; a tie at the line counts the lower slot. */
-function countRound(scores: Array<{ playerId: string; slot: number; total: number }>, format: TourFormat) {
-  const sorted = [...scores].sort((a, b) => a.total - b.total || a.slot - b.slot);
-  const counting = sorted.slice(0, format.counting);
-  const dropped = sorted.slice(format.counting);
-  const line = counting[counting.length - 1]?.total;
-  const tied = line != null && dropped.some((d) => d.total === line) ? sorted.filter((s) => s.total === line).map((s) => s.playerId) : [];
-  return { counting: counting.map((s) => s.playerId), dropped: dropped.map((s) => s.playerId), tied, total: sum(counting.map((s) => s.total)) };
-}
-
 const OPPONENTS = ['Harbor State', 'Pine Valley', 'Northfield', 'Coastal Tech', 'Ridgeway', 'Lakeshore', 'Summit', 'Eastbrook', 'Westmont', 'Bayside College', 'Granite Falls', 'Cedar Point', 'Riverbend', 'Highland', 'Fairhaven'];
 
 /** Oakmont's field of 14 (us third), with one tie and one team outside our division. */
@@ -312,26 +304,17 @@ function buildEvent(def: EventDef, trust: ChTourTrust = 'official'): ChTourEvent
   ];
   const playerRounds: ChTourPlayerRound[] = [];
   const teamRounds: ChTourTeamRound[] = [];
+  const engineRounds: EngineTeamRound[] = [];
   const r = rng(def.id.length * 97 + Number(def.id.slice(1)));
   if (def.scores) {
     rounds.forEach((rd, i) => {
-      const lineup = def.lineup.map((playerId, s) => ({ playerId, slot: s + 1, total: def.scores![playerId]![i]! }));
-      const k = countRound(lineup, def.format);
-      teamRounds.push({
-        kind: 'complete',
-        total: k.total,
-        toPar: k.total - c.par * def.format.counting,
-        counting: k.counting,
-        dropped: k.dropped,
-        tiedAtBoundary: k.tied,
-        dqSwapPreview: null,
-        roundNumber: rd.number,
-        roundEventId: rd.roundEventId,
-        par: c.par * def.format.counting,
-      });
+      const lineup = def.lineup.map((playerId, s) => ({ playerId, role: 'lineup' as const, slot: s + 1, total: def.scores![playerId]![i]!, status: 'ok' as const }));
+      const k = teamRound(lineup, def.format, c.par);
+      engineRounds.push(k);
+      teamRounds.push(teamRoundView(k, rd.number, rd.roundEventId, c.par * def.format.counting));
       for (const e of entries) {
         const total = def.scores![e.playerId]![i]!;
-        const count = e.role === 'individual' ? 'individual' : k.tied.includes(e.playerId) && k.dropped.includes(e.playerId) ? 'tie' : k.counting.includes(e.playerId) ? 'counted' : 'dropped';
+        const count = e.role === 'individual' ? 'individual' : k.counting.includes(e.playerId) ? 'counted' : k.tiedAtBoundary.includes(e.playerId) ? 'tie' : 'dropped';
         playerRounds.push({
           eventId: def.id,
           roundEventId: rd.roundEventId,
@@ -355,15 +338,8 @@ function buildEvent(def: EventDef, trust: ChTourTrust = 'official'): ChTourEvent
     });
   }
   const done = teamRounds.length > 0;
-  const result: TeamEventResult | null = done
-    ? {
-        kind: 'complete',
-        total: sum(teamRounds.map((t) => t.total ?? 0)),
-        toPar: sum(teamRounds.map((t) => t.toPar ?? 0)),
-        rounds: teamRounds,
-        droppedTotal: sum(playerRounds.filter((p) => p.count === 'dropped' || p.count === 'tie').map((p) => p.total ?? 0)),
-      }
-    : null;
+  const ev = done ? teamEvent(engineRounds) : null;
+  const result: TeamEventResult | null = ev && ev.kind !== 'none' ? { kind: ev.kind, total: ev.total, toPar: ev.toPar, rounds: teamRounds, droppedTotal: ev.droppedTotal } : null;
   const field = done && def.finish ? buildField(def, teamRounds.map((t) => t.total ?? 0), c.par * def.format.counting * rounds.length) : null;
   const team = playerRounds.filter((p) => p.role !== 'individual');
   return {
@@ -820,7 +796,7 @@ function liveSnapshot(e34: ChTourEvent): ChTourLiveSnapshot {
     players: PLAYERS,
     course: c,
     lanes,
-    team: { kind: 'live', total: null, toPar: -1, counting: ['theo', 'ava', 'sofia', 'jonah'], dropped: ['eli'], tiedAtBoundary: [], dqSwapPreview: null, short: 0 },
+    team: { kind: 'live', total: null, toPar: -1, counting: ['theo', 'ava', 'sofia', 'jonah'], dropped: ['eli'], tiedAtBoundary: [], short: 0 },
     field: { size: 15, entered: 9, teams, line: null, asOf: '2026-10-20T13:28:00-04:00' },
     presence: [
       { coachId: 'coach-maya', name: 'Maya Reyes', withPlayerId: 'ava' },

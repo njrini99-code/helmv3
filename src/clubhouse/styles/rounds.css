@@ -5327,10 +5327,11 @@ a.ch-rd-grp__h.is-link:focus-visible {
   font: var(--ch-type-13);
   color: var(--ch-text-secondary);
 }
-/* Which view shows is decided here on first paint (HoleMap's data-view, the phone gate, the fit); nothing swaps after.
-   Phone: the map's tap size is owner call 2, open, so under 600 px the List shows alone until Nick picks. Elsewhere the
-   map shows only while nine tiles fit their widest figure ("+8.8" at 2.07 em + 4 px, plus the gaps: about 22.9 em,
-   measured against the section's own font size, so a larger Text Size moves the switch). */
+/* Which view shows is decided here on first paint (HoleMap's data-view and the fit); nothing swaps after. Phone (owner
+   call 2, settled as version (b)): under 600 px the map is three rows of six. The map shows only while its tiles fit
+   their widest figure ("+8.8" at 2.07 em + 4 px, plus the gaps), measured against the section's own font size so a
+   larger Text Size moves the switch: six across needs about 15.2 em (12.42 em + 44 px), nine across about 22.9 em
+   (18.63 em + 68 px). Past that the List shows alone, with the switch hidden. */
 .ch-hmap-sec {
   container: ch-hmap / inline-size;
 }
@@ -5338,9 +5339,9 @@ a.ch-rd-grp__h.is-link:focus-visible {
 .ch-hmap-sec[data-view='list'] .ch-hmap-mapv {
   display: none;
 }
-/* The phone gate and the fit carry [data-view] so they match the data-view rule's (0,3,0) and, coming after it, win:
-   at 414 px and wider the fit still says 'map', and a (0,2,0) gate lost to it and hid both views. */
-@container ch-hmap (max-width: 22.9em) {
+/* The fit carries [data-view] so it matches the data-view rule's (0,3,0) and, coming after it, wins: a (0,2,0) gate
+   lost to it and hid both views. */
+@container ch-hmap (max-width: 15.2em) {
   .ch-hmap-sec[data-view] .ch-hmap-mapv,
   .ch-hmap-sec[data-view] .ch-hmap-switch {
     display: none;
@@ -5349,13 +5350,15 @@ a.ch-rd-grp__h.is-link:focus-visible {
     display: block;
   }
 }
-@media (max-width: 599px) {
-  .ch-hmap-sec[data-view] .ch-hmap-mapv,
-  .ch-hmap-sec[data-view] .ch-hmap-switch {
-    display: none;
-  }
-  .ch-hmap-sec[data-view] .ch-hmap-listv {
-    display: block;
+@media (min-width: 600px) {
+  @container ch-hmap (max-width: 22.9em) {
+    .ch-hmap-sec[data-view] .ch-hmap-mapv,
+    .ch-hmap-sec[data-view] .ch-hmap-switch {
+      display: none;
+    }
+    .ch-hmap-sec[data-view] .ch-hmap-listv {
+      display: block;
+    }
   }
 }
 .ch-hmap {
@@ -5495,6 +5498,62 @@ a.ch-rd-grp__h.is-link:focus-visible {
 .ch-hmap-d__all:focus-visible {
   outline: 2px solid var(--ch-border-focus);
   outline-offset: 2px;
+}
+/* The Out and In line for six across; hidden from 600 px, where each nine has its own caption. */
+.ch-hmap__sum {
+  display: none;
+}
+/* Phone (owner call 2, version (b)): three rows of six, each tile its own tap target, 56 tall (60 from 414) and about
+   54 to 62 wide at 375 to 430 (content less the page edge, less five 4 px gaps, over six). The rows dissolve into one
+   six-column grid, so 1 to 6, 7 to 12 and 13 to 18 (6 and 3 on a nine-hole course). Out and In share one line above
+   it and a hairline seam in the gap before 10 marks the turn. No scrub (every tile is a full target) and no steppers. */
+@media (max-width: 599px) {
+  .ch-hmap {
+    touch-action: manipulation;
+  }
+  .ch-hmap__grid {
+    display: grid;
+    grid-template-columns: repeat(6, minmax(0, 1fr));
+    gap: var(--ch-space-1);
+  }
+  .ch-hmap__grid > .ch-hmap__row {
+    display: contents;
+  }
+  .ch-hmap__grid > .ch-hmap__cap {
+    display: none;
+  }
+  .ch-hmap__sum {
+    grid-column: 1 / -1;
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: space-between;
+    gap: var(--ch-space-1) var(--ch-space-4);
+    margin: var(--ch-space-2) 0 var(--ch-space-1);
+    font: var(--ch-type-12-medium);
+    color: var(--ch-text-secondary);
+  }
+  .ch-hmap-t {
+    height: auto;
+    min-height: 56px;
+  }
+  .ch-hmap-t[data-hole='10']::after {
+    content: '';
+    position: absolute;
+    top: var(--ch-space-2);
+    bottom: var(--ch-space-2);
+    left: calc(-1 * var(--ch-space-1) / 2 - 1px - var(--ch-hairline-w) / 2);
+    width: var(--ch-hairline-w);
+    background: var(--ch-border-strong);
+    pointer-events: none;
+  }
+  .ch-hmap__steps {
+    display: none;
+  }
+}
+@media (min-width: 414px) and (max-width: 599px) {
+  .ch-hmap-t {
+    min-height: 60px;
+  }
 }
 .ch-hmap-list {
   width: 100%;

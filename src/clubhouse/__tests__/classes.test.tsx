@@ -1015,6 +1015,8 @@ describe('Classes, on screen', () => {
     expect(heads[0]!.getAttribute('aria-hidden')).toBe('true');
     expect([...heads[0]!.querySelectorAll('.ch-cl-tthead__days em')].map((e) => e.textContent)).toEqual(['Mon', 'Tue', 'Wed', 'Thu', 'Fri']);
     expect(heads[0]!.querySelector('.is-team i')!.textContent).toBe('Pinehurst qualifier');
+    // The phone names it on its own line under the days, its day first (design picks, 2026-10-28).
+    expect([...heads[0]!.querySelectorAll('.ch-cl-tthead__evs > span')].map((e) => e.textContent)).toEqual(['Thu Pinehurst qualifier']);
     expect([...document.querySelectorAll('.ch-cl-over .ch-cl-key')].map((k) => k.textContent)).toEqual(['STAT', 'BUSI']);
     expect([...document.querySelectorAll('.ch-cl-tb__bar b')].map((b) => b.textContent)).not.toContain('E');
   });
