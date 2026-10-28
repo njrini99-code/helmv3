@@ -151,7 +151,7 @@ before, after, baseline or evidence.
 | `P010__page__player__1280x948__default__after__77e553a.png` | after | 77e553a | page (player), 1280x948px, default |
 | `P010__page__player__390x792__default__after__77e553a.png` | after | 77e553a | page (player), 390x792px, default |
 | `P010__hub__coach__390x844__light-r109-s0__before__a9d2b19.png` | before | a9d2b19 | hub (coach), 390x844px, light-r109-s0; /clubhouse-preview/hub; synthetic preview |
-| `P010__hub__coach__390x844__light-travelers-stack__after__2faf3cf.png` | after | 2faf3cf | hub (coach), 390x844px, light-travelers-stack; /clubhouse-preview/hub; travelers coin stack, 3px overlap |
+| `P010__hub__coach__390x844__light-travelers-stack__after__926311a.png` | after | 926311a | hub (coach), 390x844px, light-travelers-stack |
 
 ## 2026-10-02 — Mobile design fidelity verification
 

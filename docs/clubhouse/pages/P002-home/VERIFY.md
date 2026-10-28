@@ -221,7 +221,7 @@ before, after, baseline or evidence.
 | `P002__team-form__coach__390__default__before__2b3c6f5.png` | before | 2b3c6f5 | team-form (coach), 390px, default, before: phone team form change tones and words; /clubhouse-preview/home; synthetic preview, captured in the cloud container (Chromium) |
 | `P002__team-form__coach__390__default__after__2b3c6f5.png` | after | 2b3c6f5 | team-form (coach), 390px, default, after: phone team form change tones and words; /clubhouse-preview/home; synthetic preview, captured in the cloud container (Chromium) |
 | `P002__player-scoring__player__390__default__after__2b3c6f5.png` | after | 2b3c6f5 | player-scoring (player), 390px, default, after: player home scoring caption; /clubhouse-preview/home-player; synthetic preview, captured in the cloud container (Chromium) |
-| `P002__home__coach__390x844__light-queue__after__2faf3cf.png` | after | 2faf3cf | home (coach), 390x844px, light-queue |
+| `P002__home__coach__390x844__light-queue__after__926311a.png` | after | 926311a | home (coach), 390x844px, light-queue |
 | `P002__home-player__player__390x844__light-from-coach__after__2faf3cf.png` | after | 2faf3cf | home-player (player), 390x844px, light-from-coach |
 | `P002__home-player__player__390x844__light-r194-s0__before__a9d2b19.png` | before | a9d2b19 | home-player (player), 390x844px, light-r194-s0; /clubhouse-preview/home-player; synthetic preview |
 | `P002__home__coach__390x844__light-r005-s0__before__a9d2b19.png` | before | a9d2b19 | home (coach), 390x844px, light-r005-s0; /clubhouse-preview/home; synthetic preview |
