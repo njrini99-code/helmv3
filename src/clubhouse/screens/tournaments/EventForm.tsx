@@ -75,6 +75,9 @@ function NewEvent({ data, phone }: { data: ChTourFormData; phone: boolean }) {
   const [note, setNote] = useState<{ code: string; text: string } | null>(null);
   // One request id per distinct payload: a second tap or a Retry after a lost reply replays the same save.
   const attempt = useRef<{ sig: string; id: string } | null>(null);
+  // Set once this save has drawn its own outcome. A save that throws never gets there, so useAction's error toast and
+  // haptic speak for it instead of the coach hearing nothing.
+  const surfaced = useRef(false);
 
   const errors = errorsFor(state);
   const qualifier = data.qualifiers.find((q) => q.id === qualifierId) ?? null;
@@ -88,6 +91,7 @@ function NewEvent({ data, phone }: { data: ChTourFormData; phone: boolean }) {
   const save = useAction<[], unknown>(
     'tournaments.create',
     async () => {
+      surfaced.current = false;
       const payload = toCreatePayload(state, data.timezone, {
         teamId: data.teamId,
         requestId: '',
@@ -110,11 +114,13 @@ function NewEvent({ data, phone }: { data: ChTourFormData; phone: boolean }) {
         setNote({ code: n.code, text: n.text });
         requestAnimationFrame(() => document.getElementById('ch-tour-form-error')?.focus());
       }
+      surfaced.current = true;
       return res;
     },
     { done: '', failed: `Couldn’t set up ${state.name.trim() || 'the event'}`, hint: 'Your changes are still on this page. Try again in a moment.', code: 'CH-6001' },
-    // The page draws the outcome itself (the toast with Open, or the notice at the top), so the action stays quiet.
-    (_result, c) => ({ ...c, quiet: true }),
+    // The page draws the outcome it got back itself (the toast with Open, or the notice at the top), so the action stays
+    // quiet for those. A thrown or rejected save has nothing on the page: the standard failure toast and haptic stand.
+    (_result, c) => ({ ...c, quiet: surfaced.current }),
   );
 
   const submit = async () => {

@@ -16,6 +16,10 @@ vi.mock('../screens/tournaments/fields/TournamentFields', () => ({
 }));
 const toast = vi.hoisted(() => vi.fn());
 vi.mock('../ui/Toast', async (orig) => ({ ...(await orig<typeof import('../ui/Toast')>()), useToast: () => toast }));
+const haptic = vi.hoisted(() => vi.fn());
+vi.mock('../lib/haptics', () => ({ haptic }));
+const report = vi.hoisted(() => vi.fn());
+vi.mock('../lib/track', () => ({ chReport: report, chTrail: vi.fn(), chTagSession: vi.fn() }));
 
 import { EventForm } from '../screens/tournaments/EventForm';
 import { tourFixture } from '../preview/fixtures-tournaments';
@@ -29,7 +33,15 @@ beforeEach(() => {
   create.mockReset();
   nav.push.mockReset();
   toast.mockReset();
+  haptic.mockReset();
+  report.mockReset();
 });
+
+const fillAndSubmit = () => {
+  fireEvent.change(screen.getByLabelText('Name'), { target: { value: 'Test Invitational' } });
+  fireEvent.click(screen.getByRole('button', { name: 'Pick Pinehurst' }));
+  submit();
+};
 
 describe('New event (Tournaments page)', () => {
   it('is the real form, not the placeholder', () => {
@@ -71,6 +83,35 @@ describe('New event (Tournaments page)', () => {
     submit();
     const alert = await screen.findByRole('alert');
     expect(alert.textContent).toContain('Nothing was saved');
+    expect(nav.push).not.toHaveBeenCalled();
+  });
+
+  it('a refused save is said once, by the page: no second toast or haptic from the action', async () => {
+    create.mockResolvedValue({ success: false, error: 'No', code: 'failed' });
+    draw();
+    fillAndSubmit();
+    await screen.findByRole('alert');
+    expect(toast).not.toHaveBeenCalled();
+    expect(haptic.mock.calls.filter(([k]) => k === 'error')).toHaveLength(1);
+  });
+
+  it('CH-6001: a save that throws (a rejected promise) gets the standard error toast with Try again and the error haptic', async () => {
+    create.mockRejectedValue(new Error('network down'));
+    draw();
+    fillAndSubmit();
+    await waitFor(() => expect(toast).toHaveBeenCalledTimes(1));
+    expect(toast).toHaveBeenCalledWith(
+      expect.objectContaining({
+        tone: 'error',
+        title: 'Couldn’t set up Test Invitational',
+        body: 'Your changes are still on this page. Try again in a moment.',
+        code: 'CH-6001',
+        action: expect.objectContaining({ label: 'Try again' }),
+      }),
+    );
+    expect(haptic).toHaveBeenCalledWith('error');
+    expect(report).toHaveBeenCalledWith(expect.any(Error), expect.objectContaining({ action: 'tournaments.create' }));
+    expect(screen.queryByRole('alert')).toBeNull();
     expect(nav.push).not.toHaveBeenCalled();
   });
 
