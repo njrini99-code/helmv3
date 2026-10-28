@@ -1,6 +1,8 @@
 import { cleanup, fireEvent, render, within } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { tourFixture } from '../preview/fixtures-tournaments';
+import { shapeEvent } from '../data/tournaments-shape';
+import { rowsOf } from './tournament-rows';
 import { EventDesk } from '../screens/tournaments/EventDesk';
 import type { ChTourDeskData, ChTourDeskSearch, ChTourLoad } from '../screens/tournaments/types';
 import './dialog-polyfill';
@@ -226,6 +228,26 @@ describe('Event desk, holes', () => {
     fireEvent.click(cell);
     expect(text(dialog()?.querySelector('h2'))).toBe('Jonah Okafor · round 3');
   });
+});
+
+describe('Event desk, a disqualification under review (owner rule 2026-10-28)', () => {
+  /** Oakmont through the loaders' shaper, with Theo's round-1 70 (a counting score) marked "DQ?". */
+  const raw = rowsOf(oak.event);
+  raw.playerRounds = raw.playerRounds.map((p) => (p.player_id === 'theo' && p.round_event_id === 'e33-r1' ? { ...p, status: 'dq_pending' as const } : p));
+  const pending: ChTourDeskData = { ...oak, event: shapeEvent(raw, '2026-10-14T16:00:00.000Z') };
+
+  for (const phone of [false, true]) {
+    it(`leaves the provisional DQ out of the team score and keeps it marked DQ? (${phone ? 'phone' : 'desktop'})`, () => {
+      const c = draw(pending, tab('overview'), { phone });
+      const table = c.querySelector('[role="table"][aria-label="Who counted"]') as HTMLElement;
+      // The team total is what it is if the DQ stands: Jonah's 75 counts in Theo's place (287 to 292, 858 to 863).
+      expect(text(rowOf(table, 'Team'))).toContain('292');
+      expect(text(rowOf(table, 'Team'))).toContain('863 −1');
+      expect(text(c.querySelector('.ch-tour-desk-res'))).toContain('863 −1');
+      expect(text(rowOf(table, 'Theo')).split(' ')).toContain('DQ?');
+      within(c as HTMLElement).getByRole('button', { name: /Theo \S+ round 1: DQ\?, disqualification pending, not counted/ });
+    });
+  }
 });
 
 describe('Event desk, phone', () => {

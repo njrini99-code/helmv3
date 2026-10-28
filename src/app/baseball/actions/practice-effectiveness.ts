@@ -22,8 +22,10 @@ import { fromUntyped } from '@/lib/supabase/untyped';
 //       requiredCapability: 'can_manage_practice' }. Auth + active team +
 //       capability are resolved + enforced SERVER-SIDE; the wrapper sanitizes
 //       thrown errors so raw DB internals never reach the client.
-//   * Reads are RLS-governed (reviews are staff_only by default; the 0090 policy
-//     set lets players read ONLY explicitly player_visible reviews).
+//   * Reads are RLS-governed (reviews are staff_only by default). Players read
+//     only player_visible reviews that name them, once the held migration
+//     20261028120000_baseball_practice_reviews_player_read.sql is applied;
+//     until then production lets no player read any review.
 //   * NO destructive writes. Objectives stage-then-swap; reviews UPSERT on
 //     (team_id, dedupe_key); disposition is an in-place UPDATE.
 //   * team_id = ctx.targetTeamId is stamped on every insert so a row can never be

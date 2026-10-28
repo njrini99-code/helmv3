@@ -4521,7 +4521,10 @@
       "file": "src/clubhouse/screens/rounds/HoleMap.tsx",
       "group": "screens",
       "exports": [
-        "HoleMap"
+        "HMAP_PHONE_QUERY",
+        "HoleMap",
+        "PHONE_COLS",
+        "WIDE_COLS"
       ],
       "styles": [
         "src/clubhouse/styles/base.css",
@@ -10303,6 +10306,7 @@
         "ch-cl-tt__bar",
         "ch-cl-tthead",
         "ch-cl-tthead__days",
+        "ch-cl-tthead__evs",
         "ch-cl-tthead__lead",
         "ch-skel"
       ],
@@ -14602,9 +14606,11 @@
         "ch-hmap-t__n",
         "ch-hmap-t__p",
         "ch-hmap__cap",
+        "ch-hmap__grid",
         "ch-hmap__row",
         "ch-hmap__step",
         "ch-hmap__steps",
+        "ch-hmap__sum",
         "ch-lgr__lead",
         "ch-notice",
         "ch-notice--danger",
