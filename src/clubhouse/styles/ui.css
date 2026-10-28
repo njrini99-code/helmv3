@@ -892,8 +892,21 @@
 .ch-fgr dd.is-loss {
   color: var(--ch-chart-loss);
 }
-.ch-fgr dd.is-under {
-  color: var(--ch-score-under);
+/* Under par here counts rounds; it is not a score. A red tally read as an alert in a row of plain figures, so the
+   figure stays ink and the label carries the scoreboard's under-par disc as its key (design picks, 2026-10-28). Red
+   stays on scores, the discs and the pin. */
+.ch-fgr__c.is-under dt {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.ch-fgr__c.is-under dt::before {
+  flex: none;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--ch-score-under-fill);
+  content: '';
 }
 .ch-fgr .ch-fgr__note {
   font: var(--ch-type-13);
