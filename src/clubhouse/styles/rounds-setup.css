@@ -22,7 +22,7 @@
   position: relative;
   overflow: hidden;
   padding: 24px 32px;
-  border-radius: var(--ch-radius-xl);
+  border-radius: var(--ch-radius-card);
   color: var(--ch-on-fill-100);
   background: radial-gradient(70% 120% at 100% 0%, rgb(123 199 154 / 0.16), transparent 60%), var(--ch-green-800);
   box-shadow:
@@ -130,7 +130,7 @@
   min-width: 0;
 }
 .ch-rsu-card {
-  border-radius: var(--ch-radius-xl);
+  border-radius: var(--ch-radius-card);
   background: var(--ch-bg-surface);
   box-shadow:
     0 0 0 var(--ch-hairline-w) var(--ch-border-hairline),
@@ -290,6 +290,10 @@
   color: var(--ch-text-secondary);
 }
 .ch-rsu-qual__cta {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  justify-content: center;
   height: 30px;
   padding: 0 16px;
   border-radius: 999px;
@@ -1434,7 +1438,7 @@ html[data-fw-theme='dark'] .ch-acs-sum > div:last-child {
 @container chrs (max-width: 640px) {
   .ch-rsu-band {
     padding: 16px 16px;
-    border-radius: var(--ch-radius-xl);
+    border-radius: var(--ch-radius-card);
   }
   .ch-rsu-band h1 {
     font-size: calc(22 * var(--ch-type-k));

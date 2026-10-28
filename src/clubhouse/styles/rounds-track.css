@@ -237,7 +237,7 @@ button.ch-rt-strip__h {
   gap: 16px;
   min-width: 0;
   padding: 24px;
-  border-radius: var(--ch-radius-xl);
+  border-radius: var(--ch-radius-card);
   background: radial-gradient(90% 70% at 100% 0%, rgb(123 199 154 / 0.1), transparent 60%), var(--ch-bg-surface);
   box-shadow:
     0 0 0 var(--ch-hairline-w) var(--ch-champagne-rule),
@@ -676,7 +676,7 @@ button.ch-rt-strip__h {
   display: flex;
   flex-direction: column;
   min-width: 0;
-  border-radius: var(--ch-radius-xl);
+  border-radius: var(--ch-radius-card);
   background: var(--ch-bg-surface);
   box-shadow:
     0 0 0 1px rgb(21 90 57 / 0.18),
@@ -1503,17 +1503,23 @@ button.ch-rt-strip__h {
   background: linear-gradient(90deg, transparent, var(--ch-ivory-0));
   pointer-events: none;
 }
+/* The pinned corner cells take the table's own corner (lg), so their ivory meets its edge with no notch (it was md). */
 .ch-rt-mc thead tr > :first-child {
-  border-top-left-radius: var(--ch-radius-md);
+  border-top-left-radius: var(--ch-radius-lg);
 }
 .ch-rt-mc thead tr > :last-child {
-  border-top-right-radius: var(--ch-radius-md);
+  border-top-right-radius: var(--ch-radius-lg);
+}
+/* The pinned header cells cover the table's top highlight, so they carry it themselves; the top edge reads as one line. */
+.ch-rt-mc thead tr > :first-child,
+.ch-rt-mc thead tr > :last-child {
+  box-shadow: var(--ch-highlight);
 }
 .ch-rt-mc tbody tr:last-child > :first-child {
-  border-bottom-left-radius: var(--ch-radius-md);
+  border-bottom-left-radius: var(--ch-radius-lg);
 }
 .ch-rt-mc tbody tr:last-child > :last-child {
-  border-bottom-right-radius: var(--ch-radius-md);
+  border-bottom-right-radius: var(--ch-radius-lg);
 }
 .ch-rt-mc b {
   font: 700 14px/1 var(--ch-font-sans);
@@ -1576,8 +1582,10 @@ button.ch-rt-strip__h {
   letter-spacing: -0.03em;
   font-variant-numeric: tabular-nums;
 }
-.ch-rt-sum__n {
-  margin: 12px 0 0;
+/* 16 above the note, the sheet's own section step, so it stops reading as the table's caption row. Scoped under
+   .ch-root because the reset `.ch-root p { margin: 0 }` outranks a bare class and was zeroing it (it sat 0 below). */
+.ch-root .ch-rt-sum__n {
+  margin: 16px 0 0;
   font: var(--ch-type-13);
   line-height: var(--ch-lead-caption);
   color: var(--ch-text-tertiary);

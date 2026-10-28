@@ -63,15 +63,16 @@ export function RosterSkeleton() {
           {Array.from({ length: 7 }, (_, i) => (
             <li key={i}>
               <div className="ch-rsm-row ch-rsm-row--static">
-                <Skeleton width={40} height={40} radius={20} />
+                <Skeleton width={36} height={36} radius={18} />
                 <span className="ch-rsm-row__b">
-                  <Skeleton width={130} height={15} />
+                  <Skeleton width={130} height={16} />
                   <Skeleton width={110} height={12} />
                 </span>
                 <span className="ch-rsm-row__v">
                   <Skeleton width={38} height={17} />
                   <Skeleton width={48} height={12} />
                 </span>
+                <span className="ch-rsm-row__chev" />
               </div>
             </li>
           ))}

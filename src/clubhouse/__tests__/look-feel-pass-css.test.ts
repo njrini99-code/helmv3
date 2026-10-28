@@ -203,7 +203,7 @@ const RAW_FONT: Record<string, number> = {
   'styles/onboard.css': 12,
   'styles/qualifiers.css': 16,
   'styles/recruiting.css': 9,
-  'styles/roster.css': 13,
+  'styles/roster.css': 12,
   'styles/rounds-setup.css': 6,
   'styles/rounds-track.css': 20,
   'styles/rounds.css': 23,
