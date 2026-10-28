@@ -1,9 +1,10 @@
-# 2026-10-28 — Classes: visual pass (timetable alignment, card radius, today band at night)
+# 2026-10-28 — Classes: visual pass
 
 ## 2026-10-28 — A class's days sit under the header's days on a 1000px page; cards on 16
 
 ```text
-Design package: none (Clubhouse visual pass 2026-10-28, area D; RUBRIC H11, H17, 4.8)
+Design package: none (Clubhouse visual pass 2026-10-28, area D; RUBRIC H11, H17,
+                4.8)
 PR/commit:      visual-pass-2026-10-28
 Contract IDs:   none (visual only)
 Actions:        none
