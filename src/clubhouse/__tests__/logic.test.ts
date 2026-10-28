@@ -5,7 +5,7 @@ vi.mock('@/lib/supabase/server', () => ({ createClient: vi.fn() }));
 vi.mock('@/lib/server-error-logger', () => ({ logServerError: vi.fn() }));
 vi.mock('@/lib/error-logging', () => ({ logError: vi.fn() }));
 
-import { formatSigned, formatToPar, formatFixed, initials, MINUS, NO_DATA } from '../lib/format';
+import { formatHcp, formatSigned, formatToPar, formatFixed, initials, MINUS, NO_DATA } from '../lib/format';
 import { classYearLabel, formStatus } from '../data/home';
 import { friendlyReason } from '../lib/use-action';
 import { activeNavItem, isRebuilt, rebuiltHref } from '../shell/nav';
@@ -380,6 +380,38 @@ describe('settings model', () => {
     expect(SM.golfDetailsProblem({ ...d, handicap: '60' })?.text).toMatch(/Handicap/);
     expect(SM.golfDetailsProblem({ ...d, graduationYear: '27' })?.text).toMatch(/year/);
     expect(SM.golfDetailsProblem({ ...d, state: 'North' })?.text).toMatch(/two-letter/);
+  });
+  it('reads a typed handicap: blank is null, "+1.2" is a plus handicap stored negative', () => {
+    expect(SM.parseHcp('')).toBeNull();
+    expect(SM.parseHcp(' 4.8 ')).toBe(4.8);
+    expect(SM.parseHcp('+1.2')).toBe(-1.2);
+    expect(SM.parseHcp('-1.2')).toBe(-1.2);
+    expect(SM.parseHcp('+')).toBeNaN();
+    expect(SM.parseHcp('abc')).toBeNaN();
+  });
+  it('shows the one handicap Home shows: handicap_index ?? handicap (data/player-home.ts), in formatHcp', () => {
+    const cases: Array<[number | null, number | null]> = [[2.1, 2.4], [null, 2.4], [-1.2, null], [5, null], [0, 3], [null, null], [5.25, null]];
+    for (const [index, handicap] of cases) {
+      const str = (v: number | null) => (v == null ? '' : String(v));
+      const home = index ?? handicap;
+      expect(SM.shownHandicapIndex({ handicap: str(handicap), handicapIndex: str(index) })).toBe(home == null ? '' : formatHcp(home));
+    }
+  });
+  it('saves the one handicap without touching what the player left alone', () => {
+    const loaded = { handicap: '2.4', handicapIndex: '', graduationYear: '', hometown: 'Charlotte', state: 'NC', phone: '' };
+    const shown = SM.golfDetailsShown(loaded);
+    expect(shown.handicapIndex).toBe('2.4');
+    // Untouched (or retyped as the same number): both columns go back as loaded.
+    expect(SM.golfDetailsToSave({ ...shown, phone: '555' }, loaded)).toMatchObject({ handicap: '2.4', handicapIndex: '', phone: '555' });
+    expect(SM.golfDetailsToSave({ ...shown, handicapIndex: '2.40' }, loaded)).toMatchObject({ handicap: '2.4', handicapIndex: '' });
+    // A new number goes to the index; cleared, both go blank.
+    expect(SM.golfDetailsToSave({ ...shown, handicapIndex: '3.1' }, loaded)).toMatchObject({ handicap: '2.4', handicapIndex: '3.1' });
+    expect(SM.golfDetailsToSave({ ...shown, handicapIndex: ' ' }, loaded)).toMatchObject({ handicap: '', handicapIndex: '' });
+    // A rounded index (5.25 shows as 5.3) keeps its stored digits when left alone.
+    const fine = { ...loaded, handicapIndex: '5.25' };
+    expect(SM.golfDetailsToSave(SM.golfDetailsShown(fine), fine)).toMatchObject({ handicap: '2.4', handicapIndex: '5.25' });
+    expect(SM.golfDetailsProblem({ ...shown, handicapIndex: '+1.2' })).toBeNull();
+    expect(SM.golfDetailsProblem({ ...shown, handicapIndex: '+' })?.code).toBe('CH-8113');
   });
   it('requires the first reminder before the final one', () => {
     expect(SM.remindersValid({ enabled: true, earlyHours: 1, lateMinutes: 60 })).toBe(false);

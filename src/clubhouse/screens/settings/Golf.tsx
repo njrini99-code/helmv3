@@ -5,7 +5,7 @@ import { useState } from 'react';
 import { Button } from '../../ui/Button';
 import { Icon } from '../../ui/Icon';
 import { Modal } from '../../ui/Modal';
-import { golfDetailsProblem, type ChGolfDetails, type ChMembership, type ChSettingsData, type ChSettingsWrites } from './model';
+import { golfDetailsProblem, golfDetailsShown, golfDetailsToSave, type ChGolfDetails, type ChMembership, type ChSettingsData, type ChSettingsWrites } from './model';
 import { SAVE_COPY, useMembership } from './hooks';
 import { LiveRoundsCard } from './LiveRounds';
 import { Card, Field, failedReads, ReadFailed, ReadsFailed, Row, useDraft, useReportDirty, useSaveAction, useWarnOnOpen } from './parts';
@@ -31,9 +31,10 @@ export function GolfSection({ data, writes }: { data: ChSettingsData; writes: Ch
 }
 
 function DetailsCard({ details, writes }: { details: ChGolfDetails; writes: ChSettingsWrites }) {
-  const f = useDraft(details);
+  // One handicap, "Handicap index", holding the number Home shows (model shownHandicapIndex).
+  const f = useDraft(golfDetailsShown(details));
   useReportDirty('golf', f.dirty);
-  const save = useSaveAction('settings.saveGolf', writes.saveGolf, SAVE_COPY.golf, (_r, saved) => f.commit(saved));
+  const save = useSaveAction('settings.saveGolf', (d: ChGolfDetails) => writes.saveGolf(golfDetailsToSave(d, details)), SAVE_COPY.golf, (_r, saved) => f.commit(saved));
   const set = (k: keyof ChGolfDetails) => (e: React.ChangeEvent<HTMLInputElement>) => { const value = e.target.value; f.setDraft((d) => ({ ...d, [k]: value })); };
   return (
     <Card
@@ -43,7 +44,6 @@ function DetailsCard({ details, writes }: { details: ChGolfDetails; writes: ChSe
       save={{ dirty: f.dirty, pending: save.pending, invalid: golfDetailsProblem(f.draft), savedAt: f.savedAt, onReset: f.reset, onSave: () => void save.run(f.draft) }}
     >
       <div className="ch-set-grid">
-        <Field id="set-hcp-v" label="Handicap" inputMode="decimal" placeholder="5.2" value={f.draft.handicap} onChange={set('handicap')} />
         <Field id="set-hcp-i" label="Handicap index" inputMode="decimal" placeholder="4.8" value={f.draft.handicapIndex} onChange={set('handicapIndex')} />
         <Field id="set-grad" label="Graduation year" inputMode="numeric" placeholder="2028" value={f.draft.graduationYear} onChange={set('graduationYear')} />
         <Field id="set-phone" label="Phone" type="tel" autoComplete="tel" value={f.draft.phone} onChange={set('phone')} />

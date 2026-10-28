@@ -1111,6 +1111,7 @@ them would bury everything above.
 | `docs/clubhouse/pages/P008-settings/changes/2026-10-24-version-row.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P008-settings/changes/2026-10-25-p10-class-awareness.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P008-settings/changes/2026-10-25-p6-live-rounds.md` | current | - | - | - | - |
+| `docs/clubhouse/pages/P008-settings/changes/2026-10-28-one-handicap.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P008-settings/changes/2026-10-28-visual-pass.md` | current | - | - | - | 1 |
 | `docs/clubhouse/pages/P009-qualifiers/CHANGELOG.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P009-qualifiers/CONTRACT.md` | current | - | - | yes | - |

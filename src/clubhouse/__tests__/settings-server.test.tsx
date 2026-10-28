@@ -606,6 +606,13 @@ describe('Settings · the live writes', () => {
     expect(update![1][0]).toMatchObject({ handicap: 2.4, handicap_index: null, graduation_year: 2029, hometown: 'Charlotte', state: 'NC', phone: null });
   });
 
+  it('80806 a plus handicap typed as "+1.2" is stored negative, as onboarding stores it', async () => {
+    clientTables.current = { golf_players: record('golf_players') };
+    await playerWrites().saveGolf({ handicap: '-0.8', handicapIndex: '+1.2', graduationYear: '', hometown: '', state: '', phone: '' });
+    const [update] = called('golf_players')[0]!;
+    expect(update![1][0]).toMatchObject({ handicap: -0.8, handicap_index: -1.2 });
+  });
+
   it('80806 leaving deletes the player’s own membership of that team, and a delete that removed nothing is a failure', async () => {
     clientTables.current = { golf_team_members: record('golf_team_members', { count: 1 }) };
     expect(await playerWrites().leaveTeam()).toEqual({ success: true });
