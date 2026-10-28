@@ -12,7 +12,9 @@ import type { ChTourEvent, ChTourPlayerRound } from './types';
 export function countWords(pr: ChTourPlayerRound | null): string {
   if (!pr) return 'No score';
   if (pr.status === 'wd') return 'Withdrew';
-  if (pr.status === 'dq' || pr.status === 'dq_pending') return 'Disqualified';
+  if (pr.status === 'dq') return 'Disqualified';
+  // Out of the team score as a confirmed DQ is (scoring.ts); the words keep it provisional, since it can still change.
+  if (pr.status === 'dq_pending') return 'Disqualification pending, not counted';
   switch (pr.count) {
     case 'counted':
       return 'Counted';
