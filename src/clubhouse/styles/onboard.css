@@ -34,6 +34,14 @@
     text-decoration: underline;
   }
 }
+/* A link inside a sentence (the legal line, "Already a member? Sign in") is underlined at rest, so it is never told
+   apart by colour alone (visual pass 2026-10-28, rubric H13; G3 finding 5). */
+.ch-ox :is(.ch-ox-legal, .ch-ox-signin-m) a:where(:not(.ch-btn)) {
+  text-decoration: underline;
+  text-decoration-thickness: 1px;
+  text-underline-offset: 3px;
+  text-decoration-color: var(--ch-green-rule);
+}
 
 .ch-ox-canvas {
   position: absolute;
@@ -107,7 +115,7 @@
   padding: 0 12px;
   border-radius: 999px;
   font: 500 13px/1 var(--ch-font-sans);
-  color: #6b6860;
+  color: var(--ch-text-tertiary);
   white-space: nowrap;
   transition: color var(--ch-ox-t-quick) var(--ch-ox-out);
 }
@@ -372,7 +380,7 @@
   border-radius: var(--ch-radius-md);
   font: var(--ch-type-14-medium);
   line-height: var(--ch-lead-tight);
-  color: #55524b;
+  color: var(--ch-text-secondary);
 }
 @media (hover: hover) {
   .ch-ox-back:hover:not(:disabled) {
@@ -453,7 +461,7 @@
   gap: 6px;
   font: var(--ch-type-13);
   line-height: var(--ch-lead-tight);
-  color: #55524b;
+  color: var(--ch-text-secondary);
 }
 .ch-ox-enter kbd {
   padding: 4px 6px;
@@ -502,16 +510,16 @@
 .ch-ox-legal {
   margin: 16px 0 0;
   font: var(--ch-type-13);
-  color: #55524b;
+  color: var(--ch-text-secondary);
 }
 .ch-ox-lbl {
   margin-bottom: 8px;
   font: var(--ch-type-13-medium);
   line-height: var(--ch-lead-tight);
-  color: #55524b;
+  color: var(--ch-text-secondary);
 }
 .ch-ox-opt {
-  color: #6b6860;
+  color: var(--ch-text-tertiary);
 }
 
 /* ── Choice cards (Intro, Request access) ────────────────────────────────── */
@@ -729,7 +737,7 @@
 }
 .ch-ox-hint {
   font: var(--ch-type-13);
-  color: #55524b;
+  color: var(--ch-text-secondary);
 }
 .ch-ox-check {
   display: flex;
@@ -807,7 +815,7 @@
 .ch-ox-big > span {
   font: var(--ch-type-13-medium);
   line-height: var(--ch-lead-tight);
-  color: #55524b;
+  color: var(--ch-text-secondary);
 }
 .ch-ox-big input {
   all: unset;
@@ -908,7 +916,7 @@
 .ch-ox-consent {
   margin: 0;
   font: var(--ch-type-13);
-  color: #55524b;
+  color: var(--ch-text-secondary);
 }
 
 /* ── Account ─────────────────────────────────────────────────────────────── */
@@ -996,7 +1004,7 @@
 }
 .ch-ox-help {
   font: var(--ch-type-13);
-  color: #55524b;
+  color: var(--ch-text-secondary);
 }
 .ch-ox-error {
   font: var(--ch-type-13-medium);
@@ -1038,7 +1046,7 @@
   gap: 4px;
   font: var(--ch-type-13);
   line-height: var(--ch-lead-tight);
-  color: #6b6860;
+  color: var(--ch-text-tertiary);
   transition: color var(--ch-ox-t-quick);
 }
 .ch-ox-rules li[data-ok] {
@@ -1086,7 +1094,7 @@
   color: var(--ch-forest-800);
 }
 .ch-ox-hcp__val[data-none] {
-  color: #cfc9ba;
+  color: var(--ch-text-tertiary);
 }
 .ch-ox-hcp__desc {
   font: var(--ch-type-14);
@@ -1559,7 +1567,7 @@
   display: grid;
   place-items: center;
   background: #ede4cc;
-  color: rgb(11 58 37 / 0.5);
+  color: rgb(11 58 37 / 0.62);
 }
 .ch-ox-mc__name {
   min-width: 0;
@@ -1572,7 +1580,7 @@
   font-variation-settings: 'wdth' 96;
 }
 .ch-ox-mc__name[data-blank] {
-  color: rgb(11 58 37 / 0.32);
+  color: rgb(11 58 37 / 0.62);
 }
 .ch-ox-mc__f {
   position: relative;
@@ -1598,7 +1606,7 @@
   font: var(--ch-type-12-medium);
   line-height: var(--ch-lead-tight);
   font-variant-numeric: tabular-nums;
-  color: #7a6a47;
+  color: #6a5a38;
 }
 .ch-ox-mc__f b {
   overflow: hidden;
@@ -1610,7 +1618,7 @@
   font-variant-numeric: tabular-nums;
 }
 .ch-ox-mc__f b[data-blank] {
-  color: rgb(11 58 37 / 0.28);
+  color: rgb(11 58 37 / 0.72);
 }
 .ch-ox-mc__band {
   position: relative;
@@ -2284,7 +2292,7 @@ html[data-fw-theme='dark'] .ch-ox-hcp__val[data-plus] {
   color: var(--ch-green-700);
 }
 html[data-fw-theme='dark'] .ch-ox-hcp__val[data-none] {
-  color: var(--ch-ink-300);
+  color: var(--ch-text-tertiary);
 }
 html[data-fw-theme='dark'] .ch-ox-range::-webkit-slider-thumb {
   box-shadow: var(--ch-raised-shadow), 0 0 0 var(--ch-hairline-w) var(--ch-border-hairline);

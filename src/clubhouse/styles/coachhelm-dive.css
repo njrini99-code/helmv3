@@ -8,7 +8,7 @@
   max-width: 40ch;
   font: var(--ch-type-22-strong);
   letter-spacing: -0.02em;
-  color: var(--ch-field-green);
+  color: var(--ch-forest-800); /* visual pass: field-green is 1.36:1 on the dark page; forest-800 flips to #cfe6d7 */
   text-wrap: balance;
 }
 
@@ -154,14 +154,13 @@
   color: var(--ch-text-tertiary);
 }
 /* Its stance word, then how firm it is (the claim ladder's word for a coach, else the confidence word). An out-of-date
-   read keeps its row; its firmness word greys (design call, States). */
+   read keeps its row (design call, States). */
 .ch-hd-it__b em .ch-hd-it__f {
   font-weight: 500;
   color: var(--ch-text-tertiary);
 }
-.ch-hd-it.is-stale .ch-hd-it__b em .ch-hd-it__f {
-  color: var(--ch-text-disabled);
-}
+/* An out-of-date read: its stance word already says "Out of date", so its firmness word keeps the tertiary ink above.
+   The disabled ink it took here was 2.1:1 on a live row (visual pass 2026-10-28, G3 finding 8). */
 
 /* A cleared read, kept in its area (D6): a hollow green dot, its label, "Cleared Oct 12" and the recheck's numbers. Not a
    control: it has no dossier. */
@@ -343,7 +342,7 @@
   gap: 4px 16px;
 }
 .ch-hd-meas__v b {
-  font: 600 44px/1 var(--ch-font-sans);
+  font: 600 calc(44 * var(--ch-type-k))/1 var(--ch-font-sans);
   letter-spacing: -0.026em;
   color: var(--ch-hd-fig);
 }
@@ -569,7 +568,8 @@
   height: 26px;
   border-radius: var(--ch-radius-sm);
   background: var(--ch-ivory-150);
-  font: 600 13px/1 var(--ch-font-sans);
+  font: var(--ch-type-13-strong);
+  line-height: var(--ch-lead-tight);
   color: var(--ch-text-tertiary);
 }
 .ch-hd-r__p.is-under {

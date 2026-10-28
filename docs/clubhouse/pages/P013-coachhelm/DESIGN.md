@@ -162,8 +162,13 @@ first run) is the page's empty state, centred on the parchment like the Board's;
 an empty part of a view stays a line. Ask sits on the same parchment; its bar's
 title is ivory on the green, its suggestions are hairline chips, and a failed
 answer is a flush notice (the danger rule, the message in the danger ink, no
-fill). Kept as material: the view switch, the chips, the bars and the gauge, the
-pills, the buttons, the thread, the composer and the notices.
+fill). While CoachHelm works, the shimmering current step is the status: the
+wheel stays still and no clock ticks; the finished line says the time once.
+Streamed text settles in, each new paragraph or list fading in on the base beat
+while the answer streams, and a finished or reloaded answer draws still
+(visual pass, 2026-10-28). Kept as material: the view switch, the chips, the
+bars and the gauge, the pills, the buttons, the thread, the composer and the
+notices.
 
 ## Owner rules (2026-10-01)
 
@@ -268,7 +273,8 @@ order a hole is played (Off the tee, Approach, Around the green, Putting,
 Course and scoring), each read in CoachHelm's own order within its area, each
 row with its stance word and its firmness word (the claim ladder's word for a
 coach with the support pass on, else the confidence word; an out-of-date read's
-greys). A read the recheck cleared stays in its area as a line ("Cleared Oct
+stance word says "Out of date", and its firmness word keeps the tertiary ink). A
+read the recheck cleared stays in its area as a line ("Cleared Oct
 12" and its numbers); the newest three show, then "N more cleared". Desktop is
 the ledger beside the read; the phone is the ledger, and a read is a pushed
 screen. A read opens with **the Read**, four lines under its title

@@ -508,7 +508,8 @@
   padding: 0 8px;
   border-radius: 999px;
   background: var(--ch-green-fill-600);
-  font: 700 12px/1 var(--ch-font-sans);
+  font: var(--ch-type-12-strong);
+  line-height: var(--ch-lead-tight);
   font-variant-numeric: tabular-nums;
   color: var(--ch-on-fill-50);
 }

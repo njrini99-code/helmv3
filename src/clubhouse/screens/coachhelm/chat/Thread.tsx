@@ -48,10 +48,13 @@ export interface AskThreadProps {
   onOpenEvidence: (focus: EvidenceFocus) => void;
 }
 
-/** CoachHelm's avatar: the GolfHelm wheel and ball. While it works it breathes on the live pulse (2.8 s); at rest it is still. */
-function Mark({ working = false }: { working?: boolean }) {
+/**
+ * CoachHelm's avatar: the GolfHelm wheel and ball, always still. Visual pass 2026-10-28 (rubric P013 checklist): the work is
+ * shown by one shimmering status label beside it, not by a ring breathing out of the wheel.
+ */
+function Mark() {
   return (
-    <span className={'ch-th-mark' + (working ? ' is-working' : '')} aria-hidden="true">
+    <span className="ch-th-mark" aria-hidden="true">
       <HelmMark variant="ink" size={28} />
     </span>
   );
@@ -84,10 +87,8 @@ function useElapsed(active: boolean): number | null {
       }
       return;
     }
+    // Nothing ticks while it works (the live line shows no clock); the duration is taken once, when the turn ends.
     if (start.current === null) start.current = performance.now();
-    setSecs(0);
-    const t = window.setInterval(() => setSecs((performance.now() - (start.current ?? performance.now())) / 1000), 200);
-    return () => window.clearInterval(t);
   }, [active]);
   return secs;
 }
@@ -192,7 +193,7 @@ export function AskThread({ messages, busy, error, offline, phone, players, onAp
           const showFollowUps = turn.id === lastAssistantId && !busy && !pending && !error && turn.followUps.length > 0;
           return (
             <article key={turn.id} className={'ch-th-turn ch-th-ans' + (fresh ? ' is-new' : '')} aria-label="CoachHelm answer" aria-busy={turn.active || undefined}>
-              <Mark working={turn.active} />
+              <Mark />
               <div className="ch-th-ans__body">
                 <span className="ch-th-who">CoachHelm</span>
                 <Work turn={turn} onStop={phone ? undefined : onStop} />
@@ -204,7 +205,7 @@ export function AskThread({ messages, busy, error, offline, phone, players, onAp
                   </p>
                 )}
                 {turn.blocks.map((b) => {
-                  if (b.kind === 'text') return <AskProse key={b.key} text={b.text} lead={b.lead} playersByName={playersByName} />;
+                  if (b.kind === 'text') return <AskProse key={b.key} text={b.text} lead={b.lead} playersByName={playersByName} streaming={turn.active} />;
                   if (b.kind === 'evidence') return <AskEvidenceView key={b.key} envelope={b.envelope} roster={players} />;
                   if (b.kind === 'visual') return <CoachVisualArtifact key={b.key} artifact={b.artifact} />;
                   if (b.kind === 'receipt') return <AskReceiptCard key={b.key} receipt={b.receipt} onAskAgain={onSend} />;
@@ -259,7 +260,7 @@ export function AskThread({ messages, busy, error, offline, phone, players, onAp
         })}
         {awaiting && (
           <div className="ch-th-turn ch-th-ans is-new" aria-busy="true">
-            <Mark working />
+            <Mark />
             <div className="ch-th-ans__body">
               <span className="ch-th-who">CoachHelm</span>
               <p className="ch-th-think" aria-live="polite">
@@ -302,17 +303,18 @@ function Work({ turn, onStop }: { turn: AskAssistantTurn; onStop?: () => void })
     </ol>
   );
   if (turn.active) {
+    // The shimmering step label is the status (rubric P013): no ticking "Working 12s" beside it. The time it took is still
+    // said once, on the finished line below, as the Claude and ChatGPT apps do.
     return (
       <div className="ch-th-work ch-th-work--live" data-ch-code="CH-13850">
         {list(true)}
-        <span className="ch-th-work__time">
-          Working{secs}
-          {onStop && (
+        {onStop && (
+          <span className="ch-th-work__time">
             <button type="button" className="ch-th-link" onClick={onStop}>
               Stop
             </button>
-          )}
-        </span>
+          </span>
+        )}
       </div>
     );
   }

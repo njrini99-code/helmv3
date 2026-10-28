@@ -52,6 +52,24 @@ export function PathLine({ path }: { path: ChPathLine | null }) {
   );
 }
 
+/** "Tour 0.3": a comparison that ends in its figure, split so the figure sits in the ledger's figure column like the read's own. */
+const LEDGER_FIGURE = /^(.+?)\s+([+\u2212]?\d[\d.,]*(?:%| yd| ft)?)$/;
+
+/**
+ * A comparison row of the ledger. A label and a figure line up as the first row does (visual pass 2026-10-28: "Tour 0.3" sat
+ * as one left-aligned string under "Eli 1.1"); a comparison in other words stays one line. The space between them is kept, so
+ * the row still reads "Tour 0.3".
+ */
+function LedgerLine({ text }: { text: string }) {
+  const m = LEDGER_FIGURE.exec(text);
+  if (!m) return <li className="ch-num">{text}</li>;
+  return (
+    <li>
+      <span>{m[1]}</span> <span className="ch-num">{m[2]}</span>
+    </li>
+  );
+}
+
 /**
  * The evidence ledger (design call D8): the read's number and its comparison as flush rows with tabular figures, then the sample,
  * the window, the confidence word and the day. `who`: the first name the read's own row is labelled with on a coach's board; the
@@ -82,8 +100,8 @@ export function Evidence({ ev, who }: { ev: ChHelmEvidence; who?: string }) {
               <span>{who ?? 'You'}</span>
               <b className="ch-num">{ev.gauge.you}</b>
             </li>
-            <li className="ch-num">{ev.gauge.cmp}</li>
-            {ev.gauge.sec && <li className="ch-num">{ev.gauge.sec}</li>}
+            <LedgerLine text={ev.gauge.cmp} />
+            {ev.gauge.sec && <LedgerLine text={ev.gauge.sec} />}
           </ul>
         )
       )}
