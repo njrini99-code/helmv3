@@ -364,21 +364,34 @@ export type ClassHoldRelease = {
   unavailable: boolean;
 };
 
+/** PostgREST's "no such function" and Postgres's: the migrations are not applied. */
+const MISSING_FUNCTION = new Set(['PGRST202', '42883']);
+
 /**
  * One tick: beat (so the gate knows the job is alive), reconcile, claim users with due rows and release them, send what failed three
  * times as itself, and clean up once an hour. A missing function (the migrations are held) returns `unavailable` and does nothing.
+ *
+ * `beat: false` is the drain the job runs while class_awareness_v1 is off: everything above except the heartbeat. Rows held before the
+ * flag went off still go out, but the heartbeat stays stale, so the database never reads holding as live (golf_push_hold_put answers
+ * `job_stale`, golf_class_holds_live answers false) while the app holds nothing. Unavailability is then read from the reconcile.
  */
-export async function runClassHoldRelease(admin: SupabaseClient, push: PushDeps, now: Date = new Date()): Promise<ClassHoldRelease> {
+export async function runClassHoldRelease(admin: SupabaseClient, push: PushDeps, now: Date = new Date(), opts: { beat?: boolean } = {}): Promise<ClassHoldRelease> {
   const rpc = rpcOf(admin);
   const out: ClassHoldRelease = { moved: 0, expired: 0, overdue: 0, tally: emptyTally(), safetyNet: 0, unavailable: false };
 
-  const beat = await rpc('golf_push_holds_beat', { p_source: 'vercel-cron' });
-  if (beat.error) {
-    out.unavailable = true;
-    return out;
+  if (opts.beat !== false) {
+    const beat = await rpc('golf_push_holds_beat', { p_source: 'vercel-cron' });
+    if (beat.error) {
+      out.unavailable = true;
+      return out;
+    }
   }
 
   const reconcile = await rpc('golf_push_holds_reconcile', { p_now: now.toISOString(), p_full: now.getUTCMinutes() % 15 === 0 });
+  if (opts.beat === false && reconcile.error && MISSING_FUNCTION.has(String(reconcile.error.code))) {
+    out.unavailable = true;
+    return out;
+  }
   if (!reconcile.error && typeof reconcile.data === 'object' && reconcile.data !== null) {
     const r = reconcile.data as Record<string, unknown>;
     out.moved = numberOr0(r.moved);
