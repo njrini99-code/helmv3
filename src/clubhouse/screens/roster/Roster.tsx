@@ -1,7 +1,7 @@
 'use client';
 
 import { ArrowDown, ArrowUp, Bandage, ChartColumn, CircleCheck, Copy, Download, Ellipsis, LayoutGrid, List, MessageSquare, Plane, Share, Sparkles, UserCheck, UserMinus, UserPlus, UserX } from 'lucide-react';
-import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { useChSessionState } from '../../lib/session-state';
 import { useRouter } from 'next/navigation';
 import { removePlayerFromTeam } from '@/app/golf/actions/roster';
@@ -861,11 +861,6 @@ function RosterList({
   );
 }
 
-/** A read-only field that shows its end (an invite link's team code) when it is wider than its box. */
-function scrollToEnd(el: HTMLInputElement | null) {
-  if (el) el.scrollLeft = el.scrollWidth;
-}
-
 function InviteModal({
   open,
   onClose,
@@ -885,8 +880,8 @@ function InviteModal({
   onRetry: () => void;
 }) {
   const copy = useCopyText();
-  // Read after mount, never in render: the server has no window or navigator, so a sheet open on first paint
-  // (`?invite=1`) would hydrate a different link row and button than it was served with.
+  // Read in an effect so render stays free of window and navigator. The sheet never renders on the server (it starts
+  // closed, and Modal draws its content only while open), so this is tidiness, not a hydration fix.
   const [origin, setOrigin] = useState<string | null>(null);
   const [canShare, setCanShare] = useState(false);
   useEffect(() => {
@@ -894,6 +889,14 @@ function InviteModal({
     setCanShare(typeof navigator.share === 'function');
   }, []);
   const link = code && origin ? `${origin}/golf/join/${encodeURIComponent(code)}` : null;
+  // A long link opens scrolled to its end, so the team code stays in view. A layout effect, not a callback ref: the ref
+  // would run before Modal's own layout effect calls showModal(), while the dialog is still display: none and the field
+  // has no scroll width. This effect runs after Modal's (a parent's layout effects follow its children's).
+  const linkField = useRef<HTMLInputElement>(null);
+  useLayoutEffect(() => {
+    const el = linkField.current;
+    if (open && el) el.scrollLeft = el.scrollWidth;
+  }, [open, link]);
   const share = async () => {
     if (!link) return;
     try {
@@ -931,7 +934,7 @@ function InviteModal({
                   readOnly
                   value={link.replace(/^https?:\/\//, '')}
                   aria-label="Invite link"
-                  ref={scrollToEnd}
+                  ref={linkField}
                   onFocus={(e) => e.currentTarget.select()}
                 />
                 {canShare ? (

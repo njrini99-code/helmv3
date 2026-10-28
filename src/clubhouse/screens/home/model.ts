@@ -97,7 +97,7 @@ export function homeSubline(allRows: ChSublineRow[], opts: { roundsError: boolea
     out.push(`${flagged.length} players need a look: ${list(flagged.map((r) => firstName(r.name)))}.`);
   }
   // A no-break space ahead of a title's dot keeps "· Pinehurst No. 2" from opening a line.
-  if (opts.nextCompetition) out.push(`${opts.nextCompetition.title.replace(/ · /g, ' · ')} is ${opts.nextCompetition.when}.`);
+  if (opts.nextCompetition) out.push(`${opts.nextCompetition.title.replace(/ · /g, '\u00a0· ')} is ${opts.nextCompetition.when}.`);
   if (flagged.length > 0 && onTrack.length > 0) out.push(early.length ? 'The others with enough rounds are on track.' : 'The rest of the team is on track.');
   return out.length ? out.join(' ') : null;
 }

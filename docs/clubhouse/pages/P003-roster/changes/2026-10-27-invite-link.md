@@ -1,6 +1,6 @@
 # 2026-10-27 — Polish pass: Roster invite link
 
-## 2026-10-27 — The invite link reads in order, and the sheet hydrates cleanly
+## 2026-10-27 — The invite link reads in order and opens on the team code
 
 ```text
 Design package: none (production polish pass;
@@ -18,10 +18,13 @@ Held items:     none
   link. Bidi reordering moved the host after the path ("…in/FINLEY-26/127.0.0.1:3100");
   production links would have scrambled the same way. The field is left to right
   again, and it opens scrolled to its end so the code shows (`styles/roster.css`,
-  `screens/roster/Roster.tsx` scrollToEnd).
-- The sheet read `window.location` and `navigator.share` while rendering, so a
-  sheet open on first paint (`?invite=1`) did not match the server's HTML.
-  Both are read after mount, as Settings' invite already does.
+  `screens/roster/Roster.tsx`, a layout effect keyed on the sheet opening). A
+  callback ref could not do it: it ran before Modal called `showModal()`, while
+  the dialog was still hidden and the field had no scroll width.
+- The sheet now reads `window.location` and `navigator.share` in an effect, as
+  Settings' invite already does. This is tidiness, not a hydration fix: the sheet
+  starts closed and Modal draws its content only while open, so the server never
+  rendered it.
 
 ### Why
 
@@ -29,4 +32,5 @@ Held items:     none
 
 ### Verification
 
-- Roster tests (104 pass). WebKit at 390: the field reads "0.0.1:3100/golf/join/FINLEY-26".
+- Roster tests. WebKit at 390, opened by tapping Invite players: the field ends on
+  the team code.

@@ -255,8 +255,7 @@ export function prefetchOnPress(router: Router, href: string, now: number): void
  */
 export function usePressPrefetch(): (href: string | null | undefined) => { onPointerDown?: () => void; 'data-ch-ahead'?: string } {
   // The context, not useRouter, which throws outside the app router (a preview harness, a test rendering one row): there
-  // the press fetches nothing. The mark never depends on it: the server renders without a router, so a mark drawn only
-  // with one disagreed with the hydrated client, React kept the server's markless rows, and useIdleRowsAhead found none.
+  // the press fetches nothing. The mark never depends on it, so a row reads the same wherever it renders.
   const router = useContext(AppRouterContext) as Router | null;
   return (href) => {
     if (!href) return {};

@@ -123,7 +123,9 @@ export function ClubhouseFrame({
   const item = activeNavItem(pathname, role, shell);
   const rebuilt = forceRebuilt || isRebuilt(pathname, role, shell);
   // A player on a page rebuilt for coaches only (Recruiting, What's new): the not-rebuilt page says it is a coach's page.
-  const coachOnly = !rebuilt && role === 'player' && isRebuilt(pathname, 'coach', shell);
+  // Not on an aliased address: there the label is the player's own nav item (stats/team reads "My stats"), so a late
+  // fallback saying only coaches use it would be false.
+  const coachOnly = !rebuilt && role === 'player' && !isAliased(pathname) && isRebuilt(pathname, 'coach', shell);
   // A pushed page's bar, drawn by the shell until the page's own arrives (CH-1402); a page not rebuilt keeps the plain bar.
   // A full-screen flow hides the tab bar from its first frame, as its page will.
   const pushed = rebuilt ? phonePushedTop(pathname, role, search ? new URLSearchParams(search) : null) : null;

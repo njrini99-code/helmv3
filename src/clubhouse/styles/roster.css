@@ -975,7 +975,7 @@ a.ch-rs-peek__dev:focus-visible,
   display: flex;
   gap: 8px;
 }
-/* A long link opens scrolled to its end (Roster.tsx scrollToEnd), so the team code stays in view (wave 10). Not
+/* A long link opens scrolled to its end (Roster.tsx InviteModal), so the team code stays in view (wave 10). Not
    direction: rtl: a right-to-left field reorders a URL's digits, dots and slashes ("…in/FINLEY-26/127.0.0.1:3100"). */
 .ch-rs-inv__link .ch-input {
   text-overflow: clip;
