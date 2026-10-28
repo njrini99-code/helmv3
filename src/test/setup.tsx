@@ -28,7 +28,32 @@ import type { ComponentProps } from 'react';
 afterEach(async () => {
   cleanup();
   await new Promise((resolve) => setTimeout(resolve, 0));
+  forgetEnvironmentSpyCalls();
 });
+
+/**
+ * The spies this file hands to every test (the matchMedia mock, each MediaQueryList's listener spies, each observer's
+ * methods) forget their calls after every test. Their implementations, including a test's own mockImplementation,
+ * are kept, and a test still reads them freely while it runs.
+ *
+ * Why: vitest holds every mock that has been called and not cleared in a module-level Set (`DIRTY_MOCK_STATES` in
+ * @vitest/spy), and `clearMocks` is off here. A MediaQueryList's `addEventListener` spy keeps the listener a
+ * component passed it, and an observer's `observe` keeps the element, so every tree a test rendered stayed reachable
+ * after unmount. A file that renders a large screen many times grew by about 20 MB per test and ran out of heap
+ * (src/clubhouse/__tests__/calendar.test.tsx, out of memory at its 86th test, 2026-10-27).
+ */
+const environmentSpies = new Set<{ mockClear: () => unknown }>();
+function track<T extends { mockClear: () => unknown }>(spy: T): T {
+  environmentSpies.add(spy);
+  return spy;
+}
+function forgetEnvironmentSpyCalls() {
+  for (const spy of environmentSpies) spy.mockClear();
+  environmentSpies.clear();
+  if (typeof window === 'undefined') return;
+  const mm = window.matchMedia as unknown as { mockClear?: () => void } | undefined;
+  mm?.mockClear?.();
+}
 
 // Mock Next.js router
 vi.mock('next/navigation', () => ({
@@ -127,11 +152,11 @@ if (typeof window !== 'undefined') {
       matches: false,
       media: query,
       onchange: null,
-      addListener: vi.fn(),
-      removeListener: vi.fn(),
-      addEventListener: vi.fn(),
-      removeEventListener: vi.fn(),
-      dispatchEvent: vi.fn(),
+      addListener: track(vi.fn()),
+      removeListener: track(vi.fn()),
+      addEventListener: track(vi.fn()),
+      removeEventListener: track(vi.fn()),
+      dispatchEvent: track(vi.fn()),
     })),
   });
 }
@@ -143,17 +168,17 @@ if (typeof window !== 'undefined') {
 // use-scroll-fade since #829) throws "is not a constructor" under the old
 // shape. Methods stay vi.fn() spies per instance.
 class MockResizeObserver {
-  observe = vi.fn();
-  unobserve = vi.fn();
-  disconnect = vi.fn();
+  observe = track(vi.fn());
+  unobserve = track(vi.fn());
+  disconnect = track(vi.fn());
 }
 global.ResizeObserver = MockResizeObserver as unknown as typeof ResizeObserver;
 
 class MockIntersectionObserver {
-  observe = vi.fn();
-  unobserve = vi.fn();
-  disconnect = vi.fn();
-  takeRecords = vi.fn(() => []);
+  observe = track(vi.fn());
+  unobserve = track(vi.fn());
+  disconnect = track(vi.fn());
+  takeRecords = track(vi.fn(() => []));
   root = null;
   rootMargin = '';
   thresholds = [];
