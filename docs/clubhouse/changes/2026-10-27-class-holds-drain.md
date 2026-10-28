@@ -7,7 +7,7 @@ Design package: review handoff of 2026-10-27 (must-fix item 4a); no new design
 PR/commit:      fix/clubhouse-cal-must-fixes
 Contract IDs:   none new
 Actions:        releaseMyHeldPushes (Deliver now) runs with the flag off too
-Data impact:    with the flag off the minute job reconciles, claims and releases rows already held; it writes no heartbeat
+Data impact:    flag off: the minute job releases rows already held, no beat
 Held items:     none
 ```
 
