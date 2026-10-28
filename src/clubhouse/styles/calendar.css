@@ -2637,9 +2637,19 @@ html[data-fw-theme='dark'] .ch-mo__ribbon.is-held {
   align-items: center;
   padding: 8px 0;
 }
-.ch-in__file a {
+.ch-in__file-open {
+  display: block;
+  min-width: 0;
+  padding: 0;
+  border: 0;
+  background: none;
   color: inherit;
-  text-decoration: none;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+.ch-in__file-open:disabled {
+  cursor: progress;
 }
 .ch-in__file b {
   display: block;
@@ -2650,12 +2660,12 @@ html[data-fw-theme='dark'] .ch-mo__ribbon.is-held {
   text-overflow: ellipsis;
 }
 @media (hover: hover) {
-  .ch-in__file a:hover b {
+  .ch-in__file-open:hover b {
     color: var(--ch-green-700);
   }
 }
 .ch-in__file span span,
-.ch-in__file a span {
+.ch-in__file-open span {
   font: var(--ch-type-13);
   line-height: var(--ch-lead-caption);
   color: var(--ch-text-tertiary);
