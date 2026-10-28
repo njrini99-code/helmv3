@@ -31,6 +31,12 @@ change fails and rolls back.
   clears it after. Round titles are written as `name || ' · R' || n`, the
   040100 form.
 - `golf_tournament_create` writes new round titles in the same form.
+- A round event's `end_time` now moves with its `start_time` and keeps the
+  event's own length. A round made from the calendar as all-day stores
+  end = start at T00:00Z, so moving only the start to noon broke
+  `golf_events_end_after_start`: every desk save that sent a rounds list for a
+  tournament made from the calendar failed. 100200 has the same bug; this
+  file's pgTAP case found it.
 - No table, policy, grant or data change. `CREATE OR REPLACE` keeps both
   functions' grants and comments.
 

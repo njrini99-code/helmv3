@@ -298,7 +298,7 @@ document and run `git rev-list --count <sha>..HEAD -- <path>`.
 | `docs/clubhouse/AUDITS.md` | generated | - | - | - | - |
 | `docs/clubhouse/generated/CLUBHOUSE_ACTION_MAP.md` | generated | - | - | - | - |
 | `docs/clubhouse/generated/CLUBHOUSE_BRIDGE_MAP.md` | generated | - | - | yes | - |
-| `docs/clubhouse/generated/CLUBHOUSE_HELD_MAP.md` | generated | - | - | - | 1 |
+| `docs/clubhouse/generated/CLUBHOUSE_HELD_MAP.md` | generated | - | - | - | - |
 | `docs/clubhouse/generated/CLUBHOUSE_PAGE_MAP.md` | generated | - | - | - | - |
 | `docs/clubhouse/generated/CLUBHOUSE_STATUS.md` | generated | - | - | - | - |
 | `docs/clubhouse/pages/P001-shell/PAGE.md` | generated | - | - | yes | - |
@@ -889,6 +889,7 @@ them would bury everything above.
 | `docs/clubhouse/held/data/tournaments-calendar-sync.md` | current | - | - | - | - |
 | `docs/clubhouse/held/data/tournaments-from-calendar.md` | current | - | - | - | - |
 | `docs/clubhouse/held/data/tournaments-rls.md` | current | - | - | - | - |
+| `docs/clubhouse/held/data/tournaments-round-write.md` | current | - | - | - | - |
 | `docs/clubhouse/held/data/tournaments-rpcs.md` | current | - | - | - | - |
 | `docs/clubhouse/held/data/tournaments.md` | current | - | - | - | - |
 | `docs/clubhouse/held/features/conversation-files.md` | current | - | - | - | - |

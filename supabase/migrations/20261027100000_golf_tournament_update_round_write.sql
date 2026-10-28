@@ -21,6 +21,11 @@
 --     it after; round titles are written as name || ' · R' || n, the 040100
 --     form, so the desk and the sync triggers agree.
 --   * golf_tournament_create writes new round titles in the same form.
+--   * a round event's end_time moves with its start_time and keeps the
+--     event's own length. A calendar-made all-day round stores end = start
+--     at T00:00Z, so moving only the start to noon broke
+--     golf_events_end_after_start and failed every desk save of a tournament
+--     made from the calendar (also a 100200 bug, found by this file's test).
 -- Existing titles are not rewritten by this file. Production's round events
 -- titled "Name · Round n" move to "Name · Rn" at the next desk save that sends
 -- a rounds list (any save from the desk, not only a rename), quietly, under
@@ -287,8 +292,13 @@ BEGIN
           start_type = coalesce(nullif(v_round->>'start_type', ''), r.start_type),
           first_tee_at = v_tee
         WHERE r.round_event_id = v_event;
+        -- end_time moves with start_time and keeps the event's own length, so a calendar-made all-day
+        -- round (end = start at T00:00Z) never ends before its new noon start (golf_events_end_after_start).
         UPDATE public.golf_events e SET
           start_time = coalesce(v_tee, (v_date + time '12:00') AT TIME ZONE coalesce(v_tz, 'America/New_York')),
+          end_time = CASE WHEN e.end_time IS NULL THEN NULL
+                          ELSE coalesce(v_tee, (v_date + time '12:00') AT TIME ZONE coalesce(v_tz, 'America/New_York'))
+                               + greatest(e.end_time - e.start_time, interval '0') END,
           all_day = v_tee IS NULL,
           course_id = v_course,
           title = CASE WHEN e.event_type = 'tournament' THEN v_name || ' · R' || v_i ELSE e.title END

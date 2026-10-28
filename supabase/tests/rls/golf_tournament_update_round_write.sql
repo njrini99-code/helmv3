@@ -21,7 +21,7 @@
 BEGIN;
 \ir _helpers.sql
 
-SELECT plan(16);
+SELECT plan(17);
 
 -- ============================================================================
 -- Seed. Ids use the 0000...0271xxx range.
@@ -197,7 +197,7 @@ SELECT is(
 );
 
 -- ============================================================================
--- A tournament made from the calendar: rename and round course change (4)
+-- A tournament made from the calendar: rename and round course change (5)
 -- ============================================================================
 SELECT set_config('tw.cal', (public.golf_tournament_create_from_calendar(jsonb_build_object(
   'team_id', '00000000-0000-0000-0000-000000271301',
@@ -231,6 +231,14 @@ SELECT is(
     WHERE r.tournament_id = current_setting('tw.cal')::uuid AND r.round_number = 2),
   '00000000-0000-0000-0000-000000271601'::uuid,
   'its round 2 calendar event moves to the new course'
+);
+SELECT is(
+  (SELECT count(*)::int FROM public.golf_events e
+     JOIN public.golf_tournament_rounds r ON r.round_event_id = e.id
+    WHERE r.tournament_id = current_setting('tw.cal')::uuid
+      AND (e.end_time IS NULL OR e.end_time <> e.start_time)),
+  0,
+  'its all-day round events keep their own length: each ends when it starts, at the new start'
 );
 SELECT is(
   COALESCE(current_setting('helm.tournament_write', true), ''),
