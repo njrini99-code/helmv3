@@ -304,6 +304,14 @@ describe('Shell · page states', () => {
     expect(home.className).toContain('ch-btn--primary');
   });
 
+  it('CH-1301 a player on a coach-only page is told it is a coach\u2019s page, not that it is coming', async () => {
+    wrap(<NotRebuilt label="Recruiting" coachOnly />);
+    await expectCode('CH-1301', /Only coaches use Recruiting/);
+    expect(screen.getByRole('heading', { level: 1 }).textContent).toBe('Only coaches use Recruiting');
+    expect(code('CH-1301')!.textContent).not.toMatch(/rebuilt|on the list/);
+    expect(screen.getByRole('link', { name: 'Back to Home' }).getAttribute('href')).toBe('/golf/dashboard');
+  });
+
   it('CH-1301 a page that is not rebuilt', async () => {
     wrap(<NotRebuilt label="Rounds" />);
     await expectCode('CH-1301', /Rounds hasn.t been rebuilt yet/);
