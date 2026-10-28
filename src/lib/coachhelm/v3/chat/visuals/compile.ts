@@ -13,7 +13,7 @@ const SG_LEGS = ['sg_tee', 'sg_approach', 'sg_around_green', 'sg_putting'] as co
 const RECONCILE_TOLERANCE = 0.1;
 
 /** A figure written into a label must come from the data, so a label with a digit in it is not accepted. */
-const hasDigit = (s: string) => /\d/.test(s);
+const hasDigit = (s: string) => /\p{N}/u.test(s);
 
 const canonical = (value: unknown): string => JSON.stringify(value, (_k, v) => (v && typeof v === 'object' && !Array.isArray(v) ? Object.fromEntries(Object.entries(v).sort(([a], [b]) => a.localeCompare(b))) : v));
 
@@ -22,6 +22,8 @@ const canonical = (value: unknown): string => JSON.stringify(value, (_k, v) => (
  * behind each. Refuses, rather than drawing, anything that would imply more than the reads say.
  */
 export function compileSgAnatomy(spec: VisualSpec, evidence: ReadonlyMap<string, ToolEnvelope>, now: Date = new Date()): CompileResult {
+  // The title is drawn as written, so it may not carry a figure: every number on screen comes from the reads.
+  if (hasDigit(spec.title)) return refuse('figure_in_text', 'The title may not contain a number; every figure comes from the reads. Write the title in words.');
   const envelopes: ToolEnvelope[] = [];
   for (const ref of spec.evidenceRefs) {
     const e = evidence.get(ref);
@@ -64,6 +66,16 @@ export function compileSgAnatomy(spec: VisualSpec, evidence: ReadonlyMap<string,
     asOf: m.as_of,
   }));
   const legIds = new Set(outLegs.map((l) => l.metricId));
+  // The thread folds a read's own evidence block into the artifact (coachhelm-chat-thread.ts), so name only the reads
+  // the artifact draws in full: at least one figure, every figure in it plotted (a leg, or the total), and no series or
+  // detail beside them. A read named alongside (a team rounds read, a metric it does not plot) keeps its block.
+  const plotted = new Set<string>([...legIds, ...(total ? ['sg_total'] : [])]);
+  const drawnIn = (e: ToolEnvelope) =>
+    e.measurements.length > 0 &&
+    e.series.length === 0 &&
+    e.detail == null &&
+    e.measurements.every((m) => plotted.has(m.metric_id) && m.unit === 'strokes' && m.value !== null && m.entity.id === entity.id);
+  const evidenceRefs = [...new Set(spec.evidenceRefs)].filter((ref) => drawnIn(evidence.get(ref) as ToolEnvelope));
   const coverage = reads.some((m) => m.coverage === 'partial' || m.coverage === 'empty') ? 'partial' : 'complete';
   const body = {
     kind: spec.kind,
@@ -85,7 +97,7 @@ export function compileSgAnatomy(spec: VisualSpec, evidence: ReadonlyMap<string,
       coverage,
       highlightedMetricId: spec.highlightedMetricId && legIds.has(spec.highlightedMetricId) ? spec.highlightedMetricId : null,
       annotations: (spec.annotations ?? []).filter((a) => legIds.has(a.metricId) && !hasDigit(a.label)),
-      evidenceRefs: spec.evidenceRefs,
+      evidenceRefs,
       dataHash,
       createdAt: now.toISOString(),
     },
