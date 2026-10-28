@@ -22,10 +22,12 @@ import { FadeNum, useFadeOnChange } from './course-motion';
  * a nine, Home and End the ends). A tile takes colour only from five plays; from two to four it is an early read on the
  * level fill.
  *
- * Phone: the map's tap size is owner call 2, open (nine 44 px tiles can't fit across a phone). Until Nick picks, a phone
- * shows the List only (`.ch-hmap-sec` in rounds.css); the map and its switch show from 600 px. Where the map shows, it
- * shows only while a tile fits its widest figure ("+8.8": 2.07 em + 4 px), decided in CSS by a container query so nothing
- * swaps after paint, and mirrored to the switch by a ResizeObserver.
+ * Phone (owner call 2, settled as version (b)): under 600 px the map is three rows of six tiles, each its own tap target
+ * of 56 px or more (`.ch-hmap__grid` in rounds.css). Out and In ride on one summary line above the grid and a seam marks
+ * the turn between 9 and 10; there is no scrub and no stepper there, since every tile is a full target. From 600 px it is
+ * Out over In, nine across, as before. Either way the map shows only while a tile fits its widest figure ("+8.8":
+ * 2.07 em + 4 px), decided in CSS by a container query so nothing swaps after paint, and mirrored to the switch by a
+ * ResizeObserver; past that (a large Text Size) the List shows alone.
  */
 
 const spoken = (v: number) => (Math.abs(v) < 0.05 ? 'level' : `${v > 0 ? 'plus' : 'minus'} ${formatFixed(Math.abs(v), 1)}`);
@@ -70,12 +72,37 @@ function nineCaption(holes: readonly ChCourseHole[], label: string): string {
 
 const PILLS_MAX = 8;
 
-/** The width nine tiles need, per the widest figure a tile holds ("+8.8" is 2.07 em) plus its 4 px of padding, and the gaps. */
-export function mapFits(width: number, fontPx: number, gapPx = 4): boolean {
-  return width >= 9 * (2.07 * fontPx + 4) + 8 * gapPx;
+/** Tiles across on a phone (owner call 2, version (b)) and from 600 px. */
+export const PHONE_COLS = 6;
+export const WIDE_COLS = 9;
+/** Where the map goes six across: the same width as the `max-width: 599px` block for `.ch-hmap__grid` in rounds.css. */
+export const HMAP_PHONE_QUERY = '(max-width: 599px)';
+/** Tiles across right now, read when it is needed (a key, a resize) so the first paint stays CSS's alone. */
+export function hmapCols(): number {
+  return typeof window !== 'undefined' && window.matchMedia?.(HMAP_PHONE_QUERY).matches ? PHONE_COLS : WIDE_COLS;
 }
 
-export function HoleMap({ holes, selected, onSelect, coverage, sample }: { holes: ChCourseHole[]; selected: number; onSelect: (n: number) => void; coverage: string | null; sample: number }) {
+/** The width `cols` tiles need, per the widest figure a tile holds ("+8.8" is 2.07 em) plus its 4 px of padding, and the gaps. */
+export function mapFits(width: number, fontPx: number, cols = WIDE_COLS, gapPx = 4): boolean {
+  return width >= cols * (2.07 * fontPx + 4) + (cols - 1) * gapPx;
+}
+
+/** The hole a vertical arrow lands on in a grid `cols` wide: the next row down or up in the same column, wrapping. */
+export function rowStep(i: number, count: number, cols: number, dir: 1 | -1): number {
+  const col = i % cols;
+  if (dir === 1) return i + cols < count ? i + cols : col;
+  if (i - cols >= 0) return i - cols;
+  return col + cols * Math.floor((count - 1 - col) / cols);
+}
+
+/** A nine-hole course: holes 10 to 18 have no par and no play here, so only the front nine is drawn. */
+export function shownHoles(holes: ChCourseHole[]): ChCourseHole[] {
+  return holes.length > 9 && holes.slice(9).every((h) => h.par == null && h.stats.n === 0) ? holes.slice(0, 9) : holes;
+}
+
+export function HoleMap({ holes: all, selected: asked, onSelect, coverage, sample }: { holes: ChCourseHole[]; selected: number; onSelect: (n: number) => void; coverage: string | null; sample: number }) {
+  const holes = shownHoles(all);
+  const count = holes.length;
   const [view, setView] = useState<'map' | 'list'>('map');
   const [fits, setFits] = useState(true);
   const [allPlays, setAllPlays] = useState(false);
@@ -92,7 +119,11 @@ export function HoleMap({ holes, selected, onSelect, coverage, sample }: { holes
     at: 0,
   });
   const gain = mostToGain(holes);
-  const hole = holes.find((h) => h.n === selected) ?? holes[0]!;
+  // The picked hole, always one that is drawn: a back-nine hole asked of a nine-hole map (?hole=14, or a window whose
+  // cards hold only the front nine) falls back to the first, so one tile is checked and in the tab order, and the
+  // detail, the keys and the page all use the same hole.
+  const hole = holes.find((h) => h.n === asked) ?? holes[0]!;
+  const selected = hole.n;
   // M1: the 2 px selection ring settles from the tile it left to the one picked, on the compositor (lib/slide-plate.ts, which replaced layoutId here and elsewhere).
   useSlidePlate(group, '[data-hole][aria-checked="true"] > .ch-hmap-sel', String(selected), { reduced, still: () => !group.current?.offsetWidth });
   const panelFade = useFadeOnChange(scrubFrom ?? hole.n, reduced);
@@ -103,31 +134,36 @@ export function HoleMap({ holes, selected, onSelect, coverage, sample }: { holes
     if (!el || typeof ResizeObserver === 'undefined') return;
     const ro = new ResizeObserver(() => {
       const font = parseFloat(getComputedStyle(el).fontSize) || 16;
-      setFits(mapFits(el.clientWidth, font));
+      setFits(mapFits(el.clientWidth, font, hmapCols()));
     });
     ro.observe(el);
     return () => ro.disconnect();
   }, []);
   useEffect(() => setAllPlays(false), [selected]);
+  // Tell the page when the hole it asked for isn't drawn, so the arc and the address follow the hole shown.
+  useEffect(() => {
+    if (asked !== selected) onSelect(selected);
+  }, [asked, selected, onSelect]);
 
   const pick = (n: number) => {
     if (n !== selected) onSelect(n);
   };
   const onKey = (e: KeyboardEvent<HTMLButtonElement>) => {
     const i = selected - 1;
+    // Up and down move one row: six on a phone, nine (a nine) from 600 px.
     const to =
       e.key === 'ArrowRight'
-        ? (i + 1) % 18
+        ? (i + 1) % count
         : e.key === 'ArrowLeft'
-          ? (i + 17) % 18
+          ? (i + count - 1) % count
           : e.key === 'ArrowDown'
-            ? (i + 9) % 18
+            ? rowStep(i, count, hmapCols(), 1)
             : e.key === 'ArrowUp'
-              ? (i + 9) % 18
+              ? rowStep(i, count, hmapCols(), -1)
               : e.key === 'Home'
                 ? 0
                 : e.key === 'End'
-                  ? 17
+                  ? count - 1
                   : null;
     if (to == null) return;
     e.preventDefault();
@@ -147,7 +183,8 @@ export function HoleMap({ holes, selected, onSelect, coverage, sample }: { holes
     return best?.n ?? null;
   };
   const onDown = (e: PointerEvent<HTMLDivElement>) => {
-    if (e.pointerType !== 'touch') return;
+    // Six across, every tile is a 56 px target of its own: a tap picks it (onClick), and a pan over the map only scrolls.
+    if (e.pointerType !== 'touch' || hmapCols() === PHONE_COLS) return;
     const n = nearest(e);
     if (n == null) return;
     scrub.current = { active: true, last: n, at: e.timeStamp };
@@ -174,7 +211,7 @@ export function HoleMap({ holes, selected, onSelect, coverage, sample }: { holes
   };
   const step = (d: 1 | -1) => {
     haptic('select');
-    pick(((selected - 1 + d + 18) % 18) + 1);
+    pick(((selected - 1 + d + count) % count) + 1);
   };
 
   const tile = (h: ChCourseHole) => {
@@ -206,6 +243,8 @@ export function HoleMap({ holes, selected, onSelect, coverage, sample }: { holes
     );
   };
 
+  const front = holes.slice(0, 9);
+  const back = holes.slice(9, 18);
   const plays = hole.plays.slice(0, allPlays ? undefined : PILLS_MAX);
   const facts = holeFacts(hole);
   const reviewAt = (roundId: string) => `/golf/dashboard/rounds/${roundId}?hole=${hole.n}`;
@@ -239,15 +278,24 @@ export function HoleMap({ holes, selected, onSelect, coverage, sample }: { holes
       <div className="ch-hmap-mapv">
         {/* The scrub surface wraps the group: pointer handlers here, the radios' keys on each radio. */}
         <div className="ch-hmap" onPointerDown={onDown} onPointerMove={onMove} onPointerUp={onUp} onPointerCancel={onUp}>
-          <div ref={group} role="radiogroup" aria-label="Hole by hole, average to par" aria-controls="ch-hmap-detail">
-            <span className="ch-hmap__cap" aria-hidden="true">
-              {nineCaption(holes.slice(0, 9), 'Out')}
+          <div ref={group} role="radiogroup" className="ch-hmap__grid" data-phone-cols={PHONE_COLS} aria-label="Hole by hole, average to par" aria-controls="ch-hmap-detail">
+            {/* Phone only: six across, the turn lands mid row two, so Out and In share one line above the grid. */}
+            <span className="ch-hmap__sum" aria-hidden="true">
+              <span>{nineCaption(front, 'Out')}</span>
+              {back.length > 0 && <span>{nineCaption(back, 'In')}</span>}
             </span>
-            <div className="ch-hmap__row">{holes.slice(0, 9).map(tile)}</div>
             <span className="ch-hmap__cap" aria-hidden="true">
-              {nineCaption(holes.slice(9, 18), 'In')}
+              {nineCaption(front, 'Out')}
             </span>
-            <div className="ch-hmap__row">{holes.slice(9, 18).map(tile)}</div>
+            <div className="ch-hmap__row">{front.map(tile)}</div>
+            {back.length > 0 && (
+              <>
+                <span className="ch-hmap__cap" aria-hidden="true">
+                  {nineCaption(back, 'In')}
+                </span>
+                <div className="ch-hmap__row">{back.map(tile)}</div>
+              </>
+            )}
           </div>
         </div>
         <div className="ch-hmap__steps">
