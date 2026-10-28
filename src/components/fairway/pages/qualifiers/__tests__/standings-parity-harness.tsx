@@ -25,6 +25,7 @@ import { cleanup, render, waitFor } from '@testing-library/react';
 
 import { FairwayQualifierLeaderboard } from '../FairwayQualifierLeaderboard';
 import { loadQualifyingWorkspace } from '@/lib/coachhelm/v3/qualifying/loader';
+import type { QualifyingOrder } from '@/lib/coachhelm/v3/qualifying/types';
 import { loadQualifierDetail } from '@/clubhouse/data/qualifiers';
 
 import { parityClient, seed, type ParityCut, type ParityFixture, type Standing } from './standings-parity-db';
@@ -83,10 +84,13 @@ export async function runFairway(fx: ParityFixture): Promise<Standing[]> {
   }
 }
 
-/** The selection workspace production confirms from. It draws no position labels and no Bubble. */
-export async function runWorkspace(fx: ParityFixture): Promise<Standing[] | null> {
+/**
+ * The selection workspace production confirms from. It draws no position labels and no Bubble. Fairway reads it in the
+ * plain order (the default); Clubhouse's Manage selections and Confirm squad read it in the board's (`order: 'board'`).
+ */
+export async function runWorkspace(fx: ParityFixture, opts: { order?: QualifyingOrder } = {}): Promise<Standing[] | null> {
   seed(fx);
-  const ws = await loadQualifyingWorkspace(parityClient() as never, fx.qualifier.id);
+  const ws = await loadQualifyingWorkspace(parityClient() as never, fx.qualifier.id, opts);
   if (!ws) return null;
   const confirmed = ws.selection_state === 'selected';
   return ws.candidates.map((c) => {

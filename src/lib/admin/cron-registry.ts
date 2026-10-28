@@ -30,8 +30,9 @@ export const CRON_REGISTRY: readonly CronRegistryEntry[] = [
   // Moved off "0 * * * *" 2026-09-06 (cron consolidation) — it fired the same
   // minute as event-reminders, which owns the top of the hour.
   { jobType: 'task-reminders', path: '/api/cron/task-reminders', cadenceMinutes: 60, schedule: '5 * * * *' },
-  // P-10 held pushes: the minute release job. It returns 200 and does nothing while class_awareness_v1 is off or the held migrations are
-  // not applied; its heartbeat is what lets the push gate hold anything (Must 1).
+  // P-10 held pushes: the minute release job. With class_awareness_v1 off it still drains pushes already held, with no heartbeat, so
+  // no new push is held; it returns 200 and does nothing while the held migrations are not applied. Its heartbeat is what lets the
+  // push gate hold anything (Must 1).
   { jobType: 'class-holds-release', path: '/api/cron/class-holds-release', cadenceMinutes: 1, schedule: '*/1 * * * *' },
   { jobType: 'v3-standing-refresh', path: '/api/cron/v3/standing-refresh', cadenceMinutes: DAILY, schedule: '20 2 * * *' },
   // Clubhouse A+ rows 105/121: refreshes the season Standing of teams a saved round marked dirty. An idle tick is one read; a 200

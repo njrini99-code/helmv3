@@ -321,7 +321,7 @@ describe('Round review loader', () => {
     tables.current = { ...full(), golf_rounds: { error: { message: 'boom' } } };
     expect((await loadRoundReview('x', { role: 'player', playerId: 'p1' })).kind).toBe('error');
     tables.current = full({ status: 'in_progress' });
-    expect((await loadRoundReview('x', { role: 'player', playerId: 'p1' })).kind).toBe('inProgress');
+    expect(await loadRoundReview('x', { role: 'player', playerId: 'p1' })).toEqual({ kind: 'inProgress', playerId: 'p1' });
   });
 
   it('110619 failed hole or shot reads each flag only their part', async () => {
@@ -533,6 +533,21 @@ describe('Round review route', () => {
     teamOf.current = null;
     tables.current = { golf_rounds: { data: { ...PREVIEW_REVIEW_ROUND, player_id: 'p1', status: 'in_progress', is_test: false } } };
     await expect(ClubhouseRoundReviewRoute({ id: 'r-live' })).rejects.toThrow('NEXT_REDIRECT /golf/dashboard/rounds/continue/r-live');
+  });
+
+  it('110109 a coach on a teammate’s round still being played follows it on Live, never the player’s continue page', async () => {
+    session.current = { userId: 'u1', coach: { id: 'c1' }, player: null };
+    teamOf.current = { role: 'coach', teamId: 'team1', coachId: 'c1' };
+    tables.current = { golf_rounds: { data: { ...PREVIEW_REVIEW_ROUND, player_id: 'p1', status: 'in_progress', is_test: false } }, golf_team_members: { data: [{ id: 'm1' }] } };
+    await expect(ClubhouseRoundReviewRoute({ id: 'r-live' })).rejects.toThrow('NEXT_REDIRECT /golf/dashboard/live?player=p1');
+  });
+
+  it('110109 a coach off the player’s team still gets "not found" for a round being played, not Live', async () => {
+    session.current = { userId: 'u1', coach: { id: 'c1' }, player: null };
+    teamOf.current = { role: 'coach', teamId: 'team2', coachId: 'c1' };
+    tables.current = { golf_rounds: { data: { ...PREVIEW_REVIEW_ROUND, player_id: 'p1', status: 'in_progress', is_test: false } }, golf_team_members: { data: [] } };
+    wrap(await ClubhouseRoundReviewRoute({ id: 'r-live' }));
+    await expectCode('CH-11307', /This round isn’t here/);
   });
 
   it('110801 110105 the review and the Rounds list are rebuilt for both roles (a coach’s is Team rounds)', () => {

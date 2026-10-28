@@ -119,7 +119,8 @@ export interface InspCtx {
 
 /** P-5 4.9: a round's lineup in a word. A player sees only whether it is published (4.33's revealed-only rule). */
 function lineupWord(lineup: NonNullable<ChCalEvent['round']>['lineup'], coach: boolean): string {
-  if (!coach) return lineup === 'published' || lineup === 'locked' ? 'Published' : 'Not published yet';
+  // A lock is not a publish: only `published` reads as Published to a player (the loader never sends a player `locked`).
+  if (!coach) return lineup === 'published' ? 'Published' : 'Not published yet';
   return lineup === 'none' ? 'Not set' : lineup === 'draft' ? 'Draft' : lineup === 'locked' ? 'Locked' : 'Published';
 }
 
