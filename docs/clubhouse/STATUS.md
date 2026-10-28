@@ -17,9 +17,12 @@ front door's 22 states, and the signed-in routes on the local stack. Fixes and
 evidence are in each page's `changes/2026-10-27-*.md` (branch
 `agent/clubhouse-polish`). State on 2026-10-27:
 
-- **Production** serves `d0f467a73` (2026-10-21); `origin/main` is
-  `c4e9ca5a0`, 87 commits ahead (`npm run release:status`). Nothing was
-  deployed by this pass.
+- **Production** serves `d0f467a73` (2026-10-21); `origin/main` has moved on
+  since (`npm run release:status` gives the current gap). Nothing was deployed
+  by this pass.
+- **Visual pass.** The visual pass (#2389 to #2396, 2026-10-28) landed first.
+  Where both touched the same spot, its version stands and this pass's copy
+  was dropped.
 - **Migrations:** the integration pass's "all held" is out of date. #2375 and
   #2376 applied 21 Clubhouse migrations to production on 2026-10-25/26; the
   ledger's newest row is `20261025080000`. About 25 repo migrations are still
