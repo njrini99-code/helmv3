@@ -10,7 +10,7 @@ vi.mock('../../lib/haptics', () => ({ haptic: vi.fn() }));
 vi.mock('../../lib/track', () => ({ chReport: vi.fn(), chTrail: vi.fn(), chTagSession: vi.fn() }));
 
 import { HoleBeads, RING_MS } from '../HoleBeads';
-import { PlayerLane } from '../PlayerLane';
+import { PlayerLane, peekActions } from '../PlayerLane';
 import { PREVIEW_LIVE, PREVIEW_LIVE_NOW, PREVIEW_LIVE_STARTS } from '../../preview/fixtures-live';
 import type { LiveLane } from '../model';
 
@@ -85,6 +85,25 @@ describe('PlayerLane', () => {
     );
     expect(container.querySelector('.ch-lv-par')!.getAttribute('data-wash')).toBeNull();
     expect(container.querySelector('.ch-lv-par')!.getAttribute('data-ring')).toBe('');
+  });
+});
+
+describe('a lane’s peek actions', () => {
+  const label = (lane: LiveLane) => peekActions(lane).map((a) => [a.label, a.href]);
+
+  it('open a posted round’s review', () => {
+    const posted = byName('Ada Lin');
+    expect(posted.phase).toBe('posted');
+    expect(label(posted)).toContainEqual(['Open round', `/golf/dashboard/rounds/${posted.roundId}`]);
+  });
+
+  it('follow a round still being played on Live, narrowed to the player, never its review (a coach would be bounced Home)', () => {
+    const live = [...PREVIEW_LIVE.lanes, ...PREVIEW_LIVE_STARTS.lanes].filter((l) => l.phase !== 'posted');
+    expect(live.length).toBeGreaterThan(0);
+    for (const lane of live) {
+      expect(label(lane).map(([l]) => l)).not.toContain('Open round');
+      expect(label(lane)).toContainEqual(['Follow on Live', `/golf/dashboard/live?player=${lane.playerId}`]);
+    }
   });
 });
 
