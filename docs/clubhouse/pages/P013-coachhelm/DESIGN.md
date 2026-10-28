@@ -273,7 +273,8 @@ order a hole is played (Off the tee, Approach, Around the green, Putting,
 Course and scoring), each read in CoachHelm's own order within its area, each
 row with its stance word and its firmness word (the claim ladder's word for a
 coach with the support pass on, else the confidence word; an out-of-date read's
-stance word says "Out of date", and its firmness word keeps the tertiary ink). A read the recheck cleared stays in its area as a line ("Cleared Oct
+stance word says "Out of date", and its firmness word keeps the tertiary ink). A
+read the recheck cleared stays in its area as a line ("Cleared Oct
 12" and its numbers); the newest three show, then "N more cleared". Desktop is
 the ledger beside the read; the phone is the ledger, and a read is a pushed
 screen. A read opens with **the Read**, four lines under its title

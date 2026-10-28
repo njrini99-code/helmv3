@@ -46,7 +46,9 @@ Held items:     thread controls' touch press and the unused breathing-ring rule
   count pill moved off raw px onto the 12 and 13 step roles (they follow iPhone
   Text Size now); the Deep dive's 44px figure scales with `--ch-type-k`.
 
-- Ask thread: every hover-only control (icon buttons, follow-up pills, chips, the toggle, the steps button) now shows the same look while a finger holds it. The unused breathing ring on the wheel is removed.
+- Ask thread: every hover-only control (icon buttons, follow-up pills, chips,
+  the toggle, the steps button) now shows the same look while a finger holds it.
+  The unused breathing ring on the wheel is removed.
 
 ### Verification
 
