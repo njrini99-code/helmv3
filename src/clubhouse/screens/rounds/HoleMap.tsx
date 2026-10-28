@@ -100,7 +100,7 @@ export function shownHoles(holes: ChCourseHole[]): ChCourseHole[] {
   return holes.length > 9 && holes.slice(9).every((h) => h.par == null && h.stats.n === 0) ? holes.slice(0, 9) : holes;
 }
 
-export function HoleMap({ holes: all, selected, onSelect, coverage, sample }: { holes: ChCourseHole[]; selected: number; onSelect: (n: number) => void; coverage: string | null; sample: number }) {
+export function HoleMap({ holes: all, selected: asked, onSelect, coverage, sample }: { holes: ChCourseHole[]; selected: number; onSelect: (n: number) => void; coverage: string | null; sample: number }) {
   const holes = shownHoles(all);
   const count = holes.length;
   const [view, setView] = useState<'map' | 'list'>('map');
@@ -119,7 +119,11 @@ export function HoleMap({ holes: all, selected, onSelect, coverage, sample }: { 
     at: 0,
   });
   const gain = mostToGain(holes);
-  const hole = holes.find((h) => h.n === selected) ?? holes[0]!;
+  // The picked hole, always one that is drawn: a back-nine hole asked of a nine-hole map (?hole=14, or a window whose
+  // cards hold only the front nine) falls back to the first, so one tile is checked and in the tab order, and the
+  // detail, the keys and the page all use the same hole.
+  const hole = holes.find((h) => h.n === asked) ?? holes[0]!;
+  const selected = hole.n;
   // M1: the 2 px selection ring settles from the tile it left to the one picked, on the compositor (lib/slide-plate.ts, which replaced layoutId here and elsewhere).
   useSlidePlate(group, '[data-hole][aria-checked="true"] > .ch-hmap-sel', String(selected), { reduced, still: () => !group.current?.offsetWidth });
   const panelFade = useFadeOnChange(scrubFrom ?? hole.n, reduced);
@@ -136,6 +140,10 @@ export function HoleMap({ holes: all, selected, onSelect, coverage, sample }: { 
     return () => ro.disconnect();
   }, []);
   useEffect(() => setAllPlays(false), [selected]);
+  // Tell the page when the hole it asked for isn't drawn, so the arc and the address follow the hole shown.
+  useEffect(() => {
+    if (asked !== selected) onSelect(selected);
+  }, [asked, selected, onSelect]);
 
   const pick = (n: number) => {
     if (n !== selected) onSelect(n);

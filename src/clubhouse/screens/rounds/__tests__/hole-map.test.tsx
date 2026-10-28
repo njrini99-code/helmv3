@@ -156,5 +156,17 @@ describe('the hole map (P-7 4.2.4, 7.2)', () => {
       expect(onSelect.mock.calls.map((c) => c[0])).toEqual([1, 8, 3, 1]);
       expect(container.querySelectorAll('.ch-hmap-list tbody tr')).toHaveLength(9);
     });
+
+    it('a back-nine hole asked of a nine-hole map falls back to hole 1: checked, in the tab order, in the detail, and told to the page', () => {
+      const onSelect = vi.fn();
+      const { getByRole } = render(<HoleMap holes={NINE} selected={14} onSelect={onSelect} coverage={null} sample={3} />);
+      const tiles = [...getByRole('radiogroup', { name: 'Hole by hole, average to par' }).querySelectorAll<HTMLElement>('[role="radio"]')];
+      expect(tiles.filter((t) => t.getAttribute('aria-checked') === 'true').map((t) => t.dataset.hole)).toEqual(['1']);
+      expect(tiles.filter((t) => t.getAttribute('tabindex') === '0').map((t) => t.dataset.hole)).toEqual(['1']);
+      expect(getByRole('heading', { name: 'Hole 1' })).toBeTruthy();
+      expect(onSelect).toHaveBeenCalledWith(1);
+      fireEvent.keyDown(tiles[0]!, { key: 'ArrowRight' });
+      expect(onSelect).toHaveBeenLastCalledWith(2);
+    });
   });
 });
