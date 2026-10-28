@@ -46,6 +46,7 @@ import { tool } from 'ai';
 import type { ToolSet, UIMessageStreamWriter } from 'ai';
 import { z } from 'zod';
 import { isFlagEnabled } from '@/lib/flags/is-enabled';
+import { isClubhouseForTeam } from '@/clubhouse/gate';
 import { compileVisual } from './visuals/compile';
 import { VisualSpec, type ValidatedVisualArtifact } from './visuals/schema';
 import type { SupabaseClient } from '@supabase/supabase-js';
@@ -550,16 +551,23 @@ export function buildCoachTools({ sb, ctx, conversationId, writer, collect }: Bu
         }
       : {}),
 
-    get_team_rounds: tool({
-      description:
-        'Every active player\'s completed rounds in a window, optionally only practice, qualifier or tournament rounds (or one qualifier). Returns per-player round counts and average score, to par and putts, already computed, plus the most recent rounds. Use for any team-wide question about rounds, qualifier or tournament scoring, or practice results.',
-      inputSchema: z.object({
-        round_type: z.enum(TEAM_ROUND_TYPES).optional(),
-        qualifier_id: z.string().uuid().optional(),
-        since_days: z.number().int().min(1).max(365).default(60),
-      }),
-      execute: read('get_team_rounds', (input) => getTeamRounds(sb, ctx, input)),
-    }),
+    // Whole-team reads, built for Clubhouse's Ask. This engine also serves Fairway's chat, so they are registered only
+    // while Clubhouse is on for this coach's team (golf_clubhouse_ui, then the HELM_CLUBHOUSE_TEAMS allowlist). Left
+    // out of the tool set, the model is never offered them and a call to either is refused as an unknown tool.
+    ...(isClubhouseForTeam(ctx.team_id)
+      ? {
+        get_team_rounds: tool({
+          description:
+            'Every active player\'s completed rounds in a window, optionally only practice, qualifier or tournament rounds (or one qualifier). Returns per-player round counts and average score, to par and putts, already computed, plus the most recent rounds. Use for any team-wide question about rounds, qualifier or tournament scoring, or practice results.',
+          inputSchema: z.object({
+            round_type: z.enum(TEAM_ROUND_TYPES).optional(),
+            qualifier_id: z.string().uuid().optional(),
+            since_days: z.number().int().min(1).max(365).default(60),
+          }),
+          execute: read('get_team_rounds', (input) => getTeamRounds(sb, ctx, input)),
+        }),
+        }
+      : {}),
 
     // Tournaments are behind golf_tournaments_v1: the chat must not read an unreleased feature's tables.
     ...(isFlagEnabled('golf_tournaments_v1')
@@ -573,12 +581,17 @@ export function buildCoachTools({ sb, ctx, conversationId, writer, collect }: Bu
         }
       : {}),
 
-    get_qualifiers: tool({
-      description:
-        'The team\'s qualifiers, most recent first: dates, status, spots, and each player\'s standing (rounds, average score, average to par).',
-      inputSchema: z.object({ limit: z.number().int().min(1).max(8).default(5) }),
-      execute: read('get_qualifiers', (input) => getQualifiers(sb, ctx, input)),
-    }),
+    // Same Clubhouse gate as get_team_rounds above.
+    ...(isClubhouseForTeam(ctx.team_id)
+      ? {
+        get_qualifiers: tool({
+          description:
+            'The team\'s qualifiers, most recent first: dates, status, spots, and each player\'s standing (rounds, average score, average to par).',
+          inputSchema: z.object({ limit: z.number().int().min(1).max(8).default(5) }),
+          execute: read('get_qualifiers', (input) => getQualifiers(sb, ctx, input)),
+        }),
+        }
+      : {}),
 
     get_player_insights: tool({
       description: 'Open CoachHelm signals for one player, with their supporting evidence.',

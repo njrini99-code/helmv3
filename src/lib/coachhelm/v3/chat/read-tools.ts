@@ -1298,7 +1298,8 @@ export async function getTeamRounds(
         player: names.get(r.player_id),
         date: r.round_date,
         course: r.course_name,
-        round_type: r.round_type,
+        // One name for qualifier rounds, whichever spelling the row was stored under.
+        round_type: r.round_type === 'qualifying' ? 'qualifier' : r.round_type,
         qualifier_round: r.qualifier_round_number,
         total_score: r.total_score,
         to_par: r.score_to_par,

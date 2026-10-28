@@ -625,6 +625,9 @@ time. Rules they keep: rounds are scoped by the roster's player ids (not
 `golf_rounds.team_id`, which counts former players and misses rounds logged
 under another team), every `.in()` goes through `chunkIds`, and
 `get_tournaments` is registered only while the tournaments release flag is on.
+`get_team_rounds` and `get_qualifiers` are registered only while Clubhouse is
+on for the coach's team (`isClubhouseForTeam`, 2026-10-28): the engine is
+shared with Fairway's chat, and these were built for Clubhouse's Ask.
 `get_team_rounds` returns one `Measurement` per player (three or more draw as
 a ranking) and a weekly team `MeasurementSeries` (drawn as a trend), so the
 Ask thread charts it from the evidence's shape; averages are computed
