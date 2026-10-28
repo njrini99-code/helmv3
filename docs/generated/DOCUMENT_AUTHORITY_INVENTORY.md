@@ -1048,6 +1048,7 @@ them would bury everything above.
 | `docs/clubhouse/pages/P006-calendar/changes/2026-10-25-p5-tournaments.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P006-calendar/changes/2026-10-25-p6-live-rounds.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P006-calendar/changes/2026-10-27-review-must-fixes.md` | current | - | - | - | - |
+| `docs/clubhouse/pages/P006-calendar/changes/2026-10-28-event-files-signed-links.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P007-messages/CHANGELOG.md` | current | - | - | yes | 1 |
 | `docs/clubhouse/pages/P007-messages/CONTRACT.md` | current | - | - | yes | - |
 | `docs/clubhouse/pages/P007-messages/DESIGN.md` | current | - | - | yes | - |

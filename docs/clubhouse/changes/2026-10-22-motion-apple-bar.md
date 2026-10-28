@@ -20,19 +20,19 @@ Held items: none
   frame. The brand panel drops its frost for those frames.
 - mot-02: the desktop dialog backdrop (`.ch-modal`) and the peek backdrop
   (`.ch-peek`) are solid washes, a shade deeper, with no blur.
-- mot-03: a tap on the phone's tab bar or a desktop sidebar item swaps the page at
-  once (`data-ch-tab`, `lib/nav-motion.ts`, shell.css). Onto a route skeleton the
-  old page still holds through the 300ms hold. Pushes, pops and every other link
-  keep their motion; no duration token changed.
+- mot-03: a tap on the phone's tab bar or a desktop sidebar item swaps the page
+  at once (`data-ch-tab`, `lib/nav-motion.ts`, shell.css). Onto a route skeleton
+  the old page still holds through the 300ms hold. Pushes, pops and every other
+  link keep their motion; no duration token changed.
 
 ### Why
 
-- Each was a frame-time cost or a visible dip on a path a coach takes many times a
-  day: the fold re-rendered size readers on every frame of the spring; a blur under
-  a fading backdrop re-blurs the page on every frame (the phone lost it on
+- Each was a frame-time cost or a visible dip on a path a coach takes many times
+  a day: the fold re-rendered size readers on every frame of the spring; a blur
+  under a fading backdrop re-blurs the page on every frame (the phone lost it on
   2026-10-12 for the same reason); and the fade-through left a beat with neither
-  page on screen on every section change. iOS tab bars and macOS sidebars swap at
-  once.
+  page on screen on every section change. iOS tab bars and macOS sidebars swap
+  at once.
 
 ### Verification
 
