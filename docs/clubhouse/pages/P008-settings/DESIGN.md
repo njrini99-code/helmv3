@@ -54,8 +54,9 @@ Change one thing, see that it took, and leave.
 
 ## Visual hierarchy
 
-Header (Settings; role, team and email), the rail (232px, sticky), then one
-section of cards at up to 720px. A card is the design system's Surface: 15px
+Header (Settings; role, team and email), the rail (208px, sticky), a 48px gap,
+then one section at up to 760px, the reading measure (`--ch-measure-reading`;
+visual pass 2026-10-28, it was 640). A card is the design system's Surface: 15px
 title, caption, actions on the right, a 16/20 body, and the ivory footer (status
 on the left, Save on the right). The open section is a flat green tint in the
 rail. Below an 860px canvas the rail becomes a scrolling strip above the
@@ -116,7 +117,7 @@ feedback, 80902). Turning Haptics back on gives one selection tick.
 
 ## Desktop
 
-The rail and one section side by side on a canvas up to 1080px. Unsaved changes
+The rail and one section side by side on a canvas up to 1016px plus the page gutters. Unsaved changes
 on any card are guarded: switching section asks (CH-8507), following a link asks
 (CH-8506), closing the tab asks (CH-8508).
 
@@ -159,7 +160,8 @@ rail page: a different screen over the same data, writes and catalog numbers
   destructive row (Delete account, Leave team) is a red label at the section's
   edge. An action or link row (Create invite, Report a problem, Privacy policy,
   Terms of service, Try again) has no value or chevron, so its label takes the
-  green of a value that opens something.
+  green of a value that opens something. Row chevrons and the reorder handle are
+  ink-500 (3:1 and more as icons; ink-400 was 2.8:1 on the phone page).
 - **Notifications.** This device (push on this device, the weekly team email);
   Email and push (one row per kind, each showing "Email, push" and opening a
   sheet of Email and Push switches, then Quiet mode); for a player, CoachHelm

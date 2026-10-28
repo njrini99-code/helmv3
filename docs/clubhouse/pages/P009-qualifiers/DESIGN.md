@@ -110,7 +110,10 @@ The list: head, tools, hero and cards. A qualifier: back link, head with its act
 columns (the leaderboard and, for a coach, round-by-round scores; the selections, the course per round and the
 rules). The form: two columns, with the travel squad and the actions on a sticky right column. Manage
 selections: head, steps strip, note, then two columns (on score now and the rest of the field; the coach's
-picks). The leaderboard draws the top-score line and the travel cut between rows.
+picks). The leaderboard draws the top-score line and the travel cut between rows: the top-score line is
+champagne (a brass label over a brass dash; champagne on the green live card), the travel cut a quiet ink rule.
+The board's header and its caption state the same rule ("Complete cards first, then total to par"). Status pills
+are the shared pill's size, 30 on the desktop and 36 on the phone.
 
 ## Phone
 

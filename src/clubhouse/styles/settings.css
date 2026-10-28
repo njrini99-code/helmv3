@@ -3,8 +3,9 @@
    larger root size as the shared --ch-type-* tokens do, and looks the same at the default. */
 
 .ch-set {
-  /* A form page reads at a measure: the rail, a gap and the 640px column, centred in the canvas under the page head. */
-  max-width: calc(208px + 48px + 640px + 2 * var(--ch-page-gutter));
+  /* A form page reads at a measure: the rail, a gap and the reading column (760, --ch-measure-reading; it was 640, which
+     left the fields narrower than every other reading page), centred in the canvas under the page head. */
+  max-width: calc(208px + 48px + var(--ch-measure-reading) + 2 * var(--ch-page-gutter));
   margin: 0 auto;
   /* No eyebrow line over the title: its 24px is added to the head's top (tokens.css). */
   padding: var(--ch-page-top-no-eyebrow) var(--ch-page-gutter) var(--ch-page-bottom-tall);
@@ -606,7 +607,7 @@
   width: 26px;
   height: 26px;
   border-radius: var(--ch-radius-sm);
-  background: #e3ede5;
+  background: var(--ch-green-100);
   box-shadow: inset 0 0 0 1px rgb(21 90 57 / 0.14);
   font: var(--ch-type-13-strong);
   line-height: var(--ch-lead-tight);
@@ -1022,9 +1023,10 @@
     font-weight: 500;
     color: var(--ch-green-600);
   }
+  /* Row chevrons in ink-500: 3:1 and more as an icon on the phone page and the grouped plate (ink-400 was 2.8:1). */
   .ch-setm-chev {
     flex: none;
-    color: var(--ch-ink-400);
+    color: var(--ch-ink-500);
   }
   .ch-setm-tile {
     display: grid;
@@ -1101,7 +1103,7 @@
     width: 51px;
     height: 31px;
     background: var(--ch-ivory-300);
-    box-shadow: none;
+    box-shadow: var(--ch-switch-track-shadow);
   }
   .ch-setm-row.is-sw .ch-switch__thumb {
     top: 2px;
@@ -1112,7 +1114,7 @@
     box-shadow: 0 2px 4px rgb(0 0 0 / 0.2);
   }
   .ch-setm-row.is-sw .ch-switch input:checked + .ch-switch__track {
-    background: var(--ch-green-fill-600);
+    background: var(--ch-switch-on-bg);
     box-shadow: none;
   }
   .ch-setm-row.is-sw .ch-switch input:checked + .ch-switch__track .ch-switch__thumb {
@@ -1461,7 +1463,7 @@
     border: 0;
     border-radius: var(--ch-radius-md);
     background: none;
-    color: var(--ch-ink-400);
+    color: var(--ch-ink-500);
     cursor: grab;
     touch-action: none;
   }
