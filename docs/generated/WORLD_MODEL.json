@@ -4384,7 +4384,7 @@
       },
       {
         "id": "golf_tournament_create",
-        "definedIn": "supabase/migrations/20261024100200_golf_tournaments_rpcs.sql"
+        "definedIn": "supabase/migrations/20261027100000_golf_tournament_update_round_write.sql"
       },
       {
         "id": "golf_tournament_create_from_calendar",
@@ -4436,7 +4436,7 @@
       },
       {
         "id": "golf_tournament_update",
-        "definedIn": "supabase/migrations/20261024100200_golf_tournaments_rpcs.sql"
+        "definedIn": "supabase/migrations/20261027100000_golf_tournament_update_round_write.sql"
       },
       {
         "id": "golf_tournament_update_round",

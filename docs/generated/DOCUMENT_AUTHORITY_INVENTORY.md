@@ -889,6 +889,7 @@ them would bury everything above.
 | `docs/clubhouse/held/data/tournaments-calendar-sync.md` | current | - | - | - | - |
 | `docs/clubhouse/held/data/tournaments-from-calendar.md` | current | - | - | - | - |
 | `docs/clubhouse/held/data/tournaments-rls.md` | current | - | - | - | - |
+| `docs/clubhouse/held/data/tournaments-round-write.md` | current | - | - | - | - |
 | `docs/clubhouse/held/data/tournaments-rpcs.md` | current | - | - | - | - |
 | `docs/clubhouse/held/data/tournaments.md` | current | - | - | - | - |
 | `docs/clubhouse/held/features/conversation-files.md` | current | - | - | - | - |

@@ -20,3 +20,4 @@ Held features and data plans (D-61), by page. Nothing here is applied or active 
 | P016 Tournaments | `docs/clubhouse/held/data/tournaments.md` | RELEASED | supabase/migrations/20261024100000_golf_tournaments.sql |
 | P016 Tournaments | `docs/clubhouse/held/data/tournaments-rls.md` | RELEASED | supabase/migrations/20261024100100_golf_tournaments_rls.sql |
 | P016 Tournaments | `docs/clubhouse/held/data/tournaments-rpcs.md` | RELEASED | supabase/migrations/20261024100200_golf_tournaments_rpcs.sql |
+| P016 Tournaments | `docs/clubhouse/held/data/tournaments-round-write.md` | HELD | supabase/migrations/20261027100000_golf_tournament_update_round_write.sql |
