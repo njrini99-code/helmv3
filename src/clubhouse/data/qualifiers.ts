@@ -757,6 +757,10 @@ export type ChQSelectionLoad = { kind: 'ok'; data: ChQSelectionData } | { kind: 
  * loader the server actions use when they confirm the squad
  * (`loadQualifyingWorkspace`), so the squad shown is the squad committed. A
  * failed read is told apart from a qualifier that isn't on the team.
+ *
+ * In the board's order (owner decision A: "Match the board"): a card a round
+ * short ranks below every full card, as on the board and "You vs the line".
+ * Clubhouse's tie choice and Confirm squad pass the same order (writes.ts).
  */
 export async function loadQualifierSelection(input: { teamId: string; qualifierId: string }): Promise<ChQSelectionLoad> {
   const supabase = await createClient();
@@ -768,7 +772,7 @@ export async function loadQualifierSelection(input: { teamId: string; qualifierI
   if (!own.data || own.data.team_id !== input.teamId) return { kind: 'missing' };
   let ws: QualifyingWorkspace | null;
   try {
-    ws = await loadQualifyingWorkspace(supabase, input.qualifierId);
+    ws = await loadQualifyingWorkspace(supabase, input.qualifierId, { order: 'board' });
   } catch (err) {
     chLogServer('qualifiers', 'selection', err, 'qualifiers');
     return { kind: 'error' };
