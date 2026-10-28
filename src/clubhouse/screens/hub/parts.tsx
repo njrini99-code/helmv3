@@ -658,6 +658,7 @@ export function Documents({
   onUpload,
   onDelete,
   covered = false,
+  picker,
 }: {
   role: ChTeamHub['role'];
   data: ChTeamHub['documents'];
@@ -668,9 +669,20 @@ export function Documents({
   onDelete: (f: ChHubFile) => void;
   /** The page's notice carries the one Try again (CH-1209): this section keeps only its title. */
   covered?: boolean;
+  /** Filled with "open the file chooser" while a coach's Documents is shown, for the phone top bar's plus. */
+  picker?: { current: (() => void) | null };
 }) {
   const coach = role === 'coach';
   const input = useRef<HTMLInputElement>(null);
+  useEffect(() => {
+    if (!picker || !coach) return;
+    picker.current = () => {
+      if (!uploading) input.current?.click();
+    };
+    return () => {
+      picker.current = null;
+    };
+  }, [picker, coach, uploading]);
   const [over, setOver] = useState(false);
   const drop = (e: DragEvent) => {
     e.preventDefault();

@@ -1063,6 +1063,7 @@ them would bury everything above.
 | `docs/clubhouse/pages/P006-calendar/changes/2026-10-25-p6-live-rounds.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P006-calendar/changes/2026-10-27-review-must-fixes.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P006-calendar/changes/2026-10-28-event-files-signed-links.md` | current | - | - | - | - |
+| `docs/clubhouse/pages/P006-calendar/changes/2026-10-28-visual-pass.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P007-messages/CHANGELOG.md` | current | - | - | yes | 1 |
 | `docs/clubhouse/pages/P007-messages/CONTRACT.md` | current | - | - | yes | - |
 | `docs/clubhouse/pages/P007-messages/DESIGN.md` | current | - | - | yes | - |
@@ -1089,6 +1090,7 @@ them would bury everything above.
 | `docs/clubhouse/pages/P007-messages/changes/2026-10-25-seen-by.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P007-messages/changes/2026-10-27-seen-target.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P007-messages/changes/2026-10-28-badge-after-delete.md` | current | - | - | - | - |
+| `docs/clubhouse/pages/P007-messages/changes/2026-10-28-visual-pass.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P008-settings/CHANGELOG.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P008-settings/CONTRACT.md` | current | - | - | yes | - |
 | `docs/clubhouse/pages/P008-settings/DESIGN.md` | current | - | - | - | - |
@@ -1154,6 +1156,7 @@ them would bury everything above.
 | `docs/clubhouse/pages/P010-hub/changes/2026-10-24-top-bar-plus.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P010-hub/changes/2026-10-25-first-wave-reads.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P010-hub/changes/2026-10-27-trip-stack.md` | current | - | - | - | - |
+| `docs/clubhouse/pages/P010-hub/changes/2026-10-28-visual-pass.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P011-rounds/CHANGELOG.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P011-rounds/CONTRACT.md` | current | - | - | yes | - |
 | `docs/clubhouse/pages/P011-rounds/DESIGN.md` | current | - | - | - | - |
@@ -1206,6 +1209,7 @@ them would bury everything above.
 | `docs/clubhouse/pages/P012-classes/changes/2026-10-24-screen-gaps.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P012-classes/changes/2026-10-24-top-bar-plus.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P012-classes/changes/2026-10-25-p10-class-awareness.md` | current | - | - | - | - |
+| `docs/clubhouse/pages/P012-classes/changes/2026-10-28-visual-pass.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P013-coachhelm/CHANGELOG.md` | current | - | - | yes | - |
 | `docs/clubhouse/pages/P013-coachhelm/CONTRACT.md` | current | - | - | yes | - |
 | `docs/clubhouse/pages/P013-coachhelm/DESIGN.md` | current | - | - | - | - |

@@ -122,6 +122,15 @@ Ledger's tint and never scale. Tab empties sit flush at the panel's edge with no
 card; with more than one read failed, the page says so once under its head with
 one Try again (the shell's CH-1209) and each section keeps only its title.
 
+A coach's create action is the top bar's plus on every tab (visual pass
+2026-10-28): New announcement on Home and Announcements, Plan a trip on Travel,
+Upload a document on Documents (the drop zone's file chooser) and Assign a task
+on Tasks; none on a tab whose read failed. The chosen tab is always scrolled
+into
+view in the strip. No post, card or notice carries an accent rail; cards that
+keep
+their material are on the 16 radius.
+
 ## Accessibility
 
 A real tablist with each tab controlling its panel; a reply is a radio group

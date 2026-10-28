@@ -44,6 +44,7 @@ import {
 } from './model';
 
 import { TYPE_ICON } from './type-icon';
+import { useChTypeK } from './type-k';
 import { roundLabel, RoundTitle, ROUND_PILL_MIN_PX } from './round-label';
 import { pluralWord } from '../../lib/plural';
 export { TYPE_ICON };
@@ -132,13 +133,18 @@ export function EventBlock({
 }) {
   const clock = useChClock();
   const rowMark = useRowMark();
+  const k = useChTypeK();
   const mark = state === 'card' ? null : rowMark(e);
   const start = Math.max(e.start!, from);
   const end = Math.min(e.end!, to);
   const top = (start - from) * hh;
   // At least one line of title (A26): a 15-minute block was 20px and cut its title's descenders.
   const h = Math.max((end - start) * hh - 2, 22);
-  const short = h < 40;
+  // The block's lines, as the CSS draws them at the reader's text size (calendar.css .ch-ev): the title 13/18, the time
+  // 12/16, 6px of padding and a gap of 2. A block too short for both on two lines is one row (40px at the default size).
+  const titleLine = 18 * k;
+  const timeLine = 16 * k;
+  const short = h < 6 + titleLine + timeLine;
   // P-4 4.1 tiers: a sliver (under 24px) is one 12px row with no glyph; from 24px the type's glyph leads the title.
   const tier = blockTier(h);
   /** Overlapping events cascade, as Apple Calendar does (owner, 2026-10-06: the split lanes crushed titles into
@@ -169,10 +175,12 @@ export function EventBlock({
   const wasPlace = wide && where && mark?.change.was.place ? mark.change.was.place : null;
   const showWarn = (flagged || state === 'clash') && !short;
   const showChg = !showWarn && !!mark && !e.cancelled && (short || shared);
-  // P006 D2: a block on its own wraps its title to the lines its height leaves above the time (padding 12, gap 2, time 15;
-  // a title line is 15.6), at most three, so "Bus to Pinehurst" isn't cut to "Bus to Pine…" in a block with room.
+  // P006 D2: a block on its own wraps its title to the lines its height leaves above the time (6 above, a gap of 2, the
+  // time's line), at most three, so "Bus to Pinehurst" isn't cut to "Bus to Pine…" in a block with room. The count uses
+  // the lines the CSS really draws (18 and 16 at the default size, more at a larger Text Size): it assumed 15.6, so a
+  // 90-minute block took a third line and pushed its time out of the bottom (visual pass 2026-10-28).
   // One line keeps the plain cut-off, which shows more of the title than a word-wrapped clamp.
-  const fit = Math.min(3, Math.floor((h - 29) / 15.6));
+  const fit = Math.min(3, Math.floor((h - 8 - timeLine + 0.5) / titleLine));
   const lines = short || shared || fit < 2 ? undefined : fit;
   return (
     <button
