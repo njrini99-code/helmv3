@@ -2637,9 +2637,19 @@ html[data-fw-theme='dark'] .ch-mo__ribbon.is-held {
   align-items: center;
   padding: 8px 0;
 }
-.ch-in__file a {
+.ch-in__file-open {
+  display: block;
+  min-width: 0;
+  padding: 0;
+  border: 0;
+  background: none;
   color: inherit;
-  text-decoration: none;
+  font-family: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+.ch-in__file-open:disabled {
+  cursor: progress;
 }
 .ch-in__file b {
   display: block;
@@ -2650,12 +2660,12 @@ html[data-fw-theme='dark'] .ch-mo__ribbon.is-held {
   text-overflow: ellipsis;
 }
 @media (hover: hover) {
-  .ch-in__file a:hover b {
+  .ch-in__file-open:hover b {
     color: var(--ch-green-700);
   }
 }
 .ch-in__file span span,
-.ch-in__file a span {
+.ch-in__file-open span {
   font: var(--ch-type-13);
   line-height: var(--ch-lead-caption);
   color: var(--ch-text-tertiary);
@@ -4121,9 +4131,12 @@ html[data-fw-theme='dark'] .ch-ev--busy::after {
   place-items: center;
   color: var(--ch-ink-500);
 }
-.ch-ev--tournament .ch-ev__chg,
-.ch-ev--qualifier .ch-ev__chg {
+/* Only the filled competition sits on green; a qualifier is an outline on paper, so its glyph keeps the quiet ink. */
+.ch-ev--tournament .ch-ev__chg {
   color: var(--ch-on-green-ink-soft);
+}
+.ch-ev--qualifier .ch-ev__chg {
+  color: var(--ch-ink-500);
 }
 .ch-ev.is-cancelled .ch-ev__t,
 .ch-ev-bar.is-cancelled span,
@@ -4137,7 +4150,7 @@ html[data-fw-theme='dark'] .ch-ev--busy::after {
   margin-inline-start: calc(var(--ch-space-1) * -1);
   color: var(--ch-ink-500);
 }
-.ch-mo__ev.is-major .ch-mo__chg {
+.ch-mo__ev.is-major:not(.is-qualifier) .ch-mo__chg {
   color: var(--ch-on-green-ink-soft);
 }
 .ch-was-pair {

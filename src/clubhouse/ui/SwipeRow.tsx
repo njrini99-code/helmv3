@@ -52,6 +52,8 @@ export function SwipeRow({
   const [showing, setShowing] = useState<SwipeSide | null>(null);
   const drag = useRef<{ id: number; x0: number; y0: number; base: number; axis: 'x' | 'y' | null; offset: number; armed: boolean; samples: Array<[number, number]> } | null>(null);
   const offsetNow = useRef(0);
+  /** The timer that drops the action layer once a shutting row has slid home. */
+  const hideAfter = useRef(0);
   /** The tap a drag ends in (or one that shuts an open row) never lands on the row. */
   const swallow = useRef(false);
   const sides = { leading: !!leading, trailing: !!trailing };
@@ -68,19 +70,34 @@ export function SwipeRow({
     (to: number, speed = 0) => {
       const el = content.current;
       if (!el) return;
+      window.clearTimeout(hideAfter.current);
       const from = offsetNow.current;
       const distance = Math.abs(to - from);
+      let ms = 0;
       if (reduced || distance < 0.5) el.style.transition = 'none';
       else if (chSupportsLinear()) {
         const toward = Math.sign(to - from) === Math.sign(speed) ? Math.abs(speed) : 0;
         const curve = chSpringCurve('smooth', { velocity: (toward * 1000) / distance, rest: 0.5 / distance });
         el.style.transition = `translate ${curve.ms}ms ${curve.linear}`;
-      } else el.style.transition = `translate ${CH_DUR.base * 1000}ms cubic-bezier(${CH_EASE.join(', ')})`;
+        ms = curve.ms;
+      } else {
+        el.style.transition = `translate ${CH_DUR.base * 1000}ms cubic-bezier(${CH_EASE.join(', ')})`;
+        ms = CH_DUR.base * 1000;
+      }
       paint(to);
-      setShowing(to > 0 ? 'leading' : to < 0 ? 'trailing' : null);
+      if (to !== 0 || ms === 0) {
+        setShowing(to > 0 ? 'leading' : to < 0 ? 'trailing' : null);
+        return;
+      }
+      // Shutting: the action stays behind the row until the row has slid back over it, or the strip it leaves on the way
+      // shows blank (SwipeRow audit, CH-C8). It goes once the spring has settled, unless a new drag took the row first.
+      hideAfter.current = window.setTimeout(() => {
+        if (!drag.current && offsetNow.current === 0) setShowing(null);
+      }, ms + 32);
     },
     [paint, reduced],
   );
+  useEffect(() => () => window.clearTimeout(hideAfter.current), []);
 
   const shut = useCallback(() => {
     setOpen(null);

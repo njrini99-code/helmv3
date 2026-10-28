@@ -163,8 +163,10 @@
   overscroll-behavior: contain;
   position: fixed;
   z-index: var(--ch-z-overlay);
-  /* Over the green sidebar the glass would turn the ivory to grey-green: nearly opaque keeps it the board's ivory. */
-  background: rgb(250 248 242 / 0.97);
+  /* Over the green sidebar the glass would turn the ivory to grey-green: opaque, the popover's own ivory, as every
+     overlay but the desktop bar is (H16; it was 0.97, a faint green cast at the edges). */
+  background: #faf8f2;
+  /* It hangs off the team button's left edge, so it grows from there. */
   transform-origin: top left;
 }
 .ch-tsw__opt {
@@ -772,8 +774,7 @@
 }
 .ch-notice__in {
   display: grid;
-  grid-template-columns: 16px minmax(0, 30rem) auto;
-  justify-content: start;
+  grid-template-columns: 16px minmax(0, 1fr) auto;
   align-items: start;
   gap: 8px 12px;
 }
@@ -786,6 +787,7 @@
   flex-direction: column;
   gap: 4px;
   min-width: 0;
+  max-width: 30rem;
 }
 .ch-notice .ch-notice__title {
   margin: 0;
@@ -800,9 +802,12 @@
   color: var(--ch-notice-body);
   text-wrap: pretty;
 }
-/* Beside the words (a full-width notice), Try again sits at the end of their measure, centred on them. */
+/* Beside the words (a full-width notice), Try again is pinned to the row's end, centred on the words, as an inline
+   alert's trailing button; the words keep their 30rem measure. It used to follow the measure, so at 1280 it floated
+   mid-row (visual pass 2026-10-28, G request). */
 .ch-notice__act {
   align-self: center;
+  justify-self: end;
 }
 /* A rail or a half column (a notice under 640px) and the phone: Try again goes under the words, at their edge, so
    notices side by side read alike and a narrow one never squeezes its words beside a button. */
@@ -813,6 +818,7 @@
   .ch-notice__act {
     grid-column: 2;
     align-self: start;
+    justify-self: start;
     margin-top: 4px;
   }
 }
@@ -823,6 +829,7 @@
   .ch-notice__act {
     grid-column: 2;
     align-self: start;
+    justify-self: start;
     margin-top: 4px;
   }
   .ch-notice .ch-notice__title {
@@ -1474,6 +1481,12 @@ button.ch-more__row[disabled] {
   /* The title takes focus when a screen is pushed (for VoiceOver): it is a destination, not a control, so no ring. */
   .ch-pbar__title:focus {
     outline: none;
+  }
+  /* A title in plain words (ui/PhoneBar.tsx): a long name ends in an ellipsis inside the title's 52%, never cut. */
+  .ch-pbar__tt {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
   }
   .ch-pbar__title.is-start {
     position: static;
@@ -2151,7 +2164,7 @@ html[data-ch-ua-pop] .ch-pscreen::after {
   }
   [data-ui='clubhouse'] main[data-canopy] [data-canopy-head] h1 {
     margin: 0;
-    font: 600 44px/1.08 var(--ch-font-sans);
+    font: 600 calc(44 * var(--ch-type-k))/1.08 var(--ch-font-sans);
     letter-spacing: -0.036em;
     font-variation-settings: 'wdth' 88;
     color: var(--ch-ledger-ink);
@@ -2200,9 +2213,14 @@ html[data-ch-ua-pop] .ch-pscreen::after {
     --ch-type-serif-m: 600 22px/1.15 var(--ch-font-sans);
     --ch-type-serif-s: 600 20px/1.2 var(--ch-font-sans);
   }
-  [data-ui='clubhouse'] main[data-canopy] h2,
-  [data-ui='clubhouse'] main[data-canopy] h3 {
-    letter-spacing: -0.022em;
+  /* Only a default for a heading that sets no tracking of its own: at no weight, so a heading's role tracking (its
+     --ch-track-<n> beside its --ch-type-<n>) wins. It was a (0,2,2) -0.022em that overrode every role (visual pass
+     2026-10-28, rubric §4.5). */
+  :where([data-ui='clubhouse'] main[data-canopy]) :where(h2) {
+    letter-spacing: var(--ch-track-section);
+  }
+  :where([data-ui='clubhouse'] main[data-canopy]) :where(h3) {
+    letter-spacing: var(--ch-track-card-title);
   }
   [data-ui='clubhouse'] main[data-canopy] h2 {
     color: var(--ch-ledger-ink);

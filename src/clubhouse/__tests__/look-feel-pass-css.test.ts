@@ -80,7 +80,8 @@ describe('the phone player name', () => {
  */
 describe('type roles (B1)', () => {
   const css = walk(join(ROOT, 'styles'), /\.css$/);
-  const role = /^font:\s*var\(--ch-type-(?!k\))[a-z0-9-]+\);$/;
+  // `--ch-tab-font` is itself a role (tokens.css: the 14 medium step), shared by every underline tab row.
+  const role = /^font:\s*var\(--ch-(?:type-(?!k\))[a-z0-9-]+|tab-font)\);$/;
   const trackOk = /^letter-spacing:\s*(var\(--ch-track-[a-z0-9-]+\)|0|normal|0\.01em|-0\.01em|-0\.02em|-0\.03em|-0\.038em);$/;
 
   it('every step has a regular role, a strong one and a tracking', () => {
@@ -290,7 +291,8 @@ const OFF_TRACK: Record<string, number> = {
   'styles/rounds-track.css': 4,
   'styles/rounds.css': 7,
   'styles/settings.css': 1,
-  'styles/shell.css': 5,
+  // 4: the Ledger's h2/h3 -0.022em override is now a zero-weight default on the role tracking (visual pass 2026-10-28).
+  'styles/shell.css': 4,
   'styles/stats.css': 8,
   'styles/ui.css': 4,
 };
