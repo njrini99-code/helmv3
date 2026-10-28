@@ -2830,6 +2830,7 @@
       "file": "src/clubhouse/screens/home/SkeletonDeskHead.tsx",
       "group": "screens",
       "exports": [
+        "SkeletonDeskForm",
         "SkeletonDeskHead"
       ],
       "styles": [
@@ -11827,6 +11828,7 @@
         "ch-hm-delta",
         "ch-hm-empty",
         "ch-hm-form",
+        "ch-hm-form__basis",
         "ch-hm-form__dot",
         "ch-hm-form__figs",
         "ch-hm-form__fill",
@@ -11917,6 +11919,7 @@
         "ch-ph-acts",
         "ch-ph-asks",
         "ch-ph-asks__k",
+        "ch-ph-asks__p",
         "ch-ph-asks__v",
         "ch-ph-bench",
         "ch-ph-bench__k",
@@ -21132,6 +21135,7 @@
     {
       "file": "src/clubhouse/styles/whats-new.css",
       "classes": [
+        "ch-lgr__go",
         "ch-lgr__lead",
         "ch-lgr__title",
         "ch-lgr__txt",
