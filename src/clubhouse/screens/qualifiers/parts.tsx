@@ -55,7 +55,8 @@ export function ToParPlate({ value, size = 'board' }: { value: number | null; si
 
 /**
  * A board position: "T3" for a tie, its T set small and raised; under it, the quiet movement since the previous round
- * ("▲2" gained in green, "▼1" lost in amber). The words are read, the glyph is not. Nothing here animates.
+ * (an up chevron and "2" gained in green, a down chevron and "1" lost in amber; SVG, never a triangle glyph). The
+ * words are read, the glyph is not. Nothing here animates.
  */
 export function Pos({ position, tied, move }: { position: number | string | null; tied: boolean; move: number | null }) {
   const n = typeof position === 'string' ? position.replace(/^T/, '') : position;

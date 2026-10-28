@@ -99,6 +99,18 @@
   flex-wrap: wrap;
   gap: 8px;
 }
+/* Visual pass 2026-10-28: on the phone the two filters can't share a row with "Across seasons" (the shared head keeps
+   its actions from shrinking, so they ran over the title and off the edge); the head wraps and the filters take their
+   own row under the title. */
+.ch-tour-rev-hist.is-phone .ch-sec__head {
+  flex-wrap: wrap;
+  align-items: flex-start;
+  row-gap: 12px;
+}
+.ch-tour-rev-hist.is-phone .ch-sec__actions {
+  flex: 1 1 100%;
+  min-width: 0;
+}
 .ch-tour-rev-trend {
   padding: 16px 20px 16px;
   border-radius: var(--ch-radius-card);
@@ -137,7 +149,8 @@
   stroke-width: 2.2;
 }
 .ch-tour-rev-trend__mean {
-  stroke: var(--ch-ink-300);
+  /* The reference line reads at 3:1 as a graphic (ink-300 was 2.1:1). */
+  stroke: var(--ch-ink-400);
   stroke-width: 1;
   stroke-dasharray: 3 5;
 }
@@ -186,17 +199,23 @@
   font: var(--ch-type-13-strong);
   color: var(--ch-text-primary);
 }
+/* Visual pass 2026-10-28: the key is a footnote, not another label row, so it stands clear of the event labels and
+   reads in the caption ink. */
 .ch-tour-rev-trend__key {
-  margin: 8px 0 0;
+  margin: 16px 0 0;
   font: var(--ch-type-13);
   line-height: var(--ch-lead-caption);
-  color: var(--ch-text-secondary);
+  color: var(--ch-text-tertiary);
 }
 .ch-tour-rev-trend__note {
   margin: 8px 0 0;
   max-width: 80ch;
   font: var(--ch-type-14);
   color: var(--ch-text-secondary);
+}
+/* The phone's note stands clear of the bars' event labels. */
+.ch-tour-rev-trend.is-phone .ch-tour-rev-trend__note {
+  margin-top: 16px;
 }
 .ch-tour-rev-bars {
   display: grid;
@@ -230,9 +249,9 @@
 .ch-tour-rev-bar.is-now i {
   background: var(--ch-green-600);
 }
+/* The phone's bars: figure and event at 12, the phone's text floor (Q-141); the event name ellipsizes in its column. */
 .ch-tour-rev-bar b {
-  font: var(--ch-type-11-strong);
-  letter-spacing: var(--ch-track-11);
+  font: var(--ch-type-12-strong);
   line-height: var(--ch-lead-tight);
   color: var(--ch-text-primary);
 }
@@ -241,8 +260,7 @@
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-  font: var(--ch-type-11);
-  letter-spacing: var(--ch-track-11);
+  font: var(--ch-type-12);
   line-height: var(--ch-lead-tight);
   color: var(--ch-text-secondary);
 }

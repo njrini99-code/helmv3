@@ -1215,8 +1215,9 @@
   .ch-recm-stagerow > span:first-child {
     flex: 1;
   }
+  /* A row's chevron in ink-500 (3:1 and more as an icon on the phone page; ink-400 was 2.8:1). */
   .ch-recm-stagerow > svg {
-    color: var(--ch-ink-400);
+    color: var(--ch-ink-500);
   }
   /* A part with something in it opens under the double rule with its heading, as the board's sections. */
   .ch-recm-det > .ch-rec-sec {
@@ -1455,6 +1456,13 @@
      second row instead of running off the well. */
   .ch-rec-form.is-phone .ch-rec-field .ch-seg {
     grid-template-columns: repeat(auto-fit, minmax(calc(80 * var(--ch-type-k)), 1fr));
+  }
+  /* Visual pass 2026-10-28: the Stage label reads as the Notes label does, a quiet group header inset to the
+     fields' text, so the form's two headers share one edge and one voice. */
+  .ch-rec-form.is-phone .ch-rec-field > .ch-field__label {
+    padding: 0 16px;
+    font: var(--ch-type-13-medium);
+    color: var(--ch-text-tertiary);
   }
 
   /* The stage picker */
