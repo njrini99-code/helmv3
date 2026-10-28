@@ -321,6 +321,29 @@ describe('runClassHoldRelease', () => {
     expect(rpcLog.find((c) => c.fn === 'golf_push_holds_reconcile')!.args.p_full).toBe(false);
   });
 
+  it('the drain (flag off) writes no heartbeat but still reconciles, releases and runs the safety net', async () => {
+    replies.golf_push_holds_beat = { data: NOW.toISOString(), error: null };
+    replies.golf_push_holds_reconcile = { data: { moved: 0, expired: 0, overdue: 0 }, error: null };
+    replies.golf_push_holds_claim = { data: [held()], error: null };
+    replies.golf_push_holds_claim_failed = { data: [held({ attempts: 3 })], error: null };
+    replies.golf_push_holds_mark = { data: 1, error: null };
+    replies.golf_push_holds_cleanup = { data: 0, error: null };
+    const out = await runClassHoldRelease(admin(), push, NOW, { beat: false });
+    expect(names()).not.toContain('golf_push_holds_beat');
+    expect(names().filter((f) => f !== 'golf_push_holds_mark')).toEqual([
+      'golf_push_holds_reconcile', 'golf_push_holds_claim', 'golf_push_holds_claim_failed', 'golf_push_holds_cleanup',
+    ]);
+    expect(out).toMatchObject({ unavailable: false, safetyNet: 1 });
+    expect(out.tally.users).toBe(1);
+    expect(sent.calls).toHaveLength(2);
+  });
+
+  it('the drain reads a missing reconcile function as unavailable and touches nothing else', async () => {
+    const out = await runClassHoldRelease(admin(), push, NOW, { beat: false });
+    expect(out.unavailable).toBe(true);
+    expect(names()).toEqual(['golf_push_holds_reconcile']);
+  });
+
   it('the safety net marks failed when even the direct send fails', async () => {
     replies.golf_push_holds_beat = { data: null, error: null };
     replies.golf_push_holds_claim_failed = { data: [held({ attempts: 3 })], error: null };
