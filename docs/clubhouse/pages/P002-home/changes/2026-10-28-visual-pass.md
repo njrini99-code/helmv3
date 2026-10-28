@@ -55,7 +55,8 @@ Held items:     iPhone/Safari check of the phone capsules, color-mix() tints and
 
 ### Verification
 
-- Before/after captures: `/home/claude/vp/before/…`, `/home/claude/vp/before-states-B/…`,
+- Before/after captures: `/home/claude/vp/before/…`,
+  `/home/claude/vp/before-states-B/…`,
   `/home/claude/vp/after-B/…` (home, home-player, whats-new, home--loading,
   home--queuefailed at 393 and 1280, light and dark).
 - `look-feel-pass-css.test.ts`: home.css stays at its pins (raw longhands 47);

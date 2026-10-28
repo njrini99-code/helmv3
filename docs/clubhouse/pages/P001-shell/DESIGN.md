@@ -175,9 +175,9 @@ blocks in `styles/shell.css`) now draws one family:
   ink (red is for under par and destructive actions) and the body in the
   secondary ink. In a full-width notice the words keep a 30rem measure and Try
   again is pinned to the row's end, centred on them (visual pass 2026-10-28); it
-  sits under them in anything narrower than 640px (a container query: a rail, a half
-  column) and on the phone, so notices side by side read alike. The inks and
-  fill are local properties (`--ch-notice-ink`, `--ch-notice-body`,
+  sits under them in anything narrower than 640px (a container query: a rail, a
+  half column) and on the phone, so notices side by side read alike. The inks
+  and fill are local properties (`--ch-notice-ink`, `--ch-notice-body`,
   `--ch-notice-fill`), so a notice on a dark or floating surface is restyled in
   one rule; `--ch-notice-rule` stays declared as a hook but is no longer drawn.
   On the green (the FeatureCard, a board card) a context sets the notice's inks
