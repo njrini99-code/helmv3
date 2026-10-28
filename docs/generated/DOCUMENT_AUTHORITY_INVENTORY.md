@@ -859,6 +859,7 @@ them would bury everything above.
 | `docs/clubhouse/changes/2026-10-25-p6-live-rounds.md` | current | - | - | - | - |
 | `docs/clubhouse/changes/2026-10-25-train-shared-pieces.md` | current | - | - | - | - |
 | `docs/clubhouse/changes/2026-10-27-live-split.md` | current | - | - | - | - |
+| `docs/clubhouse/changes/2026-10-28-visual-pass-system.md` | current | - | - | - | - |
 | `docs/clubhouse/drafts/auth-onboarding-ground-truth.md` | current | - | - | - | - |
 | `docs/clubhouse/drafts/intelligence.md` | current | - | - | - | - |
 | `docs/clubhouse/foundation-v2/02_AUTHORITY_MODEL.md` | current | - | - | yes | - |
@@ -945,6 +946,7 @@ them would bury everything above.
 | `docs/clubhouse/pages/P001-shell/changes/2026-10-25-p10-class-awareness.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P001-shell/changes/2026-10-25-p6-live-rounds.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P001-shell/changes/2026-10-25-train-shell-touch-and-course-back.md` | current | - | - | - | - |
+| `docs/clubhouse/pages/P001-shell/changes/2026-10-28-visual-pass.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P002-home/CHANGELOG.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P002-home/CONTRACT.md` | current | - | - | yes | - |
 | `docs/clubhouse/pages/P002-home/DESIGN.md` | current | - | - | - | - |
