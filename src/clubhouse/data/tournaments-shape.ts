@@ -188,6 +188,15 @@ export interface TourRawEvent {
 
 const parOf = (r: TourRawRound, holes: 9 | 18) => r.par ?? (holes === 9 ? 36 : 72);
 
+/**
+ * One player's par for an event round from the tee's or course's par, which is stored for eighteen holes. A nine-hole
+ * event plays half of it (rounded, as the comparison pool does); a par that is already a nine's (under 45) stays.
+ */
+export function eventRoundPar(par18: number | null | undefined, holesPerRound: number | null | undefined): number | null {
+  if (par18 == null) return null;
+  return holesPerRound === 9 && par18 >= 45 ? Math.round(par18 / 2) : par18;
+}
+
 /** The engine's team round in the views' shape (`reason` and the DQ preview are stricter there). */
 export function teamRoundView(r: EngineTeamRound, roundNumber: number, roundEventId: string, par: number): ChTourTeamRound {
   const p = r.dqSwapPreview;
