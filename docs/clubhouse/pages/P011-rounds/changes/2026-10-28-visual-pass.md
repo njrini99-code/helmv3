@@ -33,8 +33,10 @@ Held items:     iPhone check of the back label on a review opened from Team
   setup's band and cards, the shot screen's hero and entry panel).
 - Phone text floor: numerals in fixed cells that later rules drew at 11px (the
   in-progress strip's hole numbers, the fairway, green and putt cells, the
-  hole map and compare cells) take the floor's 12px; the floor's pins moved to
-  one block at the end of rounds.css so later rules can't undercut them.
+  hole map and compare cells) take 12px at the default size and still grow
+  with iPhone Text Size, so they are never smaller than before. The floor's
+  pins moved to one block at the end of rounds.css so later rules can't
+  undercut them.
 - The phone scorecard table follows Text Size (it was a raw 12px).
 - The hole map and compare cells draw their numbers in Instrument Sans, not
   JetBrains Mono (mono is for key hints only).
