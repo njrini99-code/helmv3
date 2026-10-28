@@ -5,7 +5,7 @@
 -- Registered in supabase/migrations/HELD.md; the owner applies it.
 -- Apply (one line):
 --   npm run db:apply --
---   supabase/migrations/20261028120000_baseball_practice_reviews_player_read.sql
+-- supabase/migrations/20261028120000_baseball_practice_reviews_player_read.sql
 -- Risk: LOW. One SELECT policy added, one never-live policy dropped if
 -- present. No table, column, grant or data change. The table has 0 rows in
 -- production (read-only check 2026-10-28).
@@ -49,7 +49,8 @@
 --
 -- VERIFY: select 1 from pg_policies where schemaname = 'public'
 -- VERIFY: and tablename = 'baseball_practice_effectiveness_reviews'
--- VERIFY: and policyname = 'baseball_practice_effectiveness_reviews_select_player'
+-- VERIFY: and policyname =
+-- VERIFY: 'baseball_practice_effectiveness_reviews_select_player'
 -- VERIFY: and cmd = 'SELECT';
 -- VERIFY: select 1 where not exists (select 1 from pg_policies
 -- VERIFY: where schemaname = 'public'
@@ -69,6 +70,6 @@ ON "public"."baseball_practice_effectiveness_reviews"
 FOR SELECT TO "authenticated"
 USING (
     "visibility" = 'player_visible'
-    AND (SELECT "public"."get_my_baseball_player_id"()) = ANY ("player_ids")
+    AND (SELECT "public"."get_my_baseball_player_id"()) = ANY("player_ids")
     AND "public"."is_baseball_team_member"("team_id")
 );

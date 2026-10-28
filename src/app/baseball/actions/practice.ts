@@ -36,6 +36,7 @@ import { withBaseballAction } from '@/lib/baseball/with-baseball-action';
 import { validatePracticeForPublish } from '@/lib/baseball/practice-validation';
 import { attachPracticeToCalendar } from '@/app/baseball/actions/calendar';
 import { getActiveBaseballContext } from '@/lib/baseball/active-context';
+import { logServerError } from '@/lib/server-error-logger';
 import {
   groupPlayerPracticeReviews,
   PLAYER_PRACTICE_REVIEW_COLUMNS,
@@ -637,15 +638,16 @@ function isoToDate(iso: string | null): string | null {
  * The practice reviews this player may see, keyed by practice id. Read through
  * the player's own session, so RLS decides first: until the held player-read
  * policy is applied the read returns no rows and this returns an empty map.
- * A failed read also returns an empty map, so the practice list never breaks
- * over a review section. Coaches (no player id) get nothing here; their
- * reviews live on the Practice Effectiveness page.
+ * A FAILED read returns null (logged), never an empty map, so "could not
+ * read" stays distinct from "none shared"; the caller then shows no review
+ * section, which hides reviews rather than showing more. Coaches (no player
+ * id) get nothing here; their reviews live on the Practice Effectiveness page.
  */
 async function loadPlayerPracticeReviews(
   supabase: Awaited<ReturnType<typeof createClient>>,
   practiceIds: string[],
   playerId: string | null,
-): Promise<Map<string, PlayerPracticeReviewView[]>> {
+): Promise<Map<string, PlayerPracticeReviewView[]> | null> {
   if (!playerId || practiceIds.length === 0) return new Map();
   const { data, error } = await fromUntyped(supabase, 'baseball_practice_effectiveness_reviews')
     .select(PLAYER_PRACTICE_REVIEW_COLUMNS)
@@ -653,7 +655,14 @@ async function loadPlayerPracticeReviews(
     .eq('visibility', 'player_visible')
     .contains('player_ids', [playerId])
     .order('generated_at', { ascending: false });
-  if (error) return new Map();
+  if (error) {
+    await logServerError(
+      'getPlayerPractices: practice review read failed',
+      { action: 'getPlayerPractices', featureArea: 'baseball-practice', feature: 'baseball_practice' },
+      'warning',
+    );
+    return null;
+  }
   return groupPlayerPracticeReviews(data as PlayerPracticeReviewRow[] | null, playerId);
 }
 
@@ -857,7 +866,7 @@ async function getPlayerPracticesImpl(): Promise<
       totalMinutes,
       blocks,
       myAttendanceStatus: myAtt?.status ?? null,
-      coachReviews: reviewsByPractice.get(p.id) ?? [],
+      coachReviews: reviewsByPractice?.get(p.id) ?? [],
     };
   });
 
