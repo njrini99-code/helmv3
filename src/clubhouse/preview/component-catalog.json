@@ -142,6 +142,7 @@
         "src/clubhouse/styles/settings.css",
         "src/clubhouse/styles/shell.css",
         "src/clubhouse/styles/stats.css",
+        "src/clubhouse/styles/tournaments-lineup.css",
         "src/clubhouse/styles/tournaments.css",
         "src/clubhouse/styles/ui.css"
       ],
@@ -203,6 +204,7 @@
         "src/clubhouse/styles/settings.css",
         "src/clubhouse/styles/shell.css",
         "src/clubhouse/styles/stats.css",
+        "src/clubhouse/styles/tournaments-lineup.css",
         "src/clubhouse/styles/tournaments.css",
         "src/clubhouse/styles/ui.css"
       ],
@@ -802,6 +804,7 @@
         "src/clubhouse/styles/settings.css",
         "src/clubhouse/styles/shell.css",
         "src/clubhouse/styles/stats.css",
+        "src/clubhouse/styles/tournaments-lineup.css",
         "src/clubhouse/styles/tournaments.css",
         "src/clubhouse/styles/ui.css"
       ],
@@ -951,6 +954,7 @@
         "src/clubhouse/styles/settings.css",
         "src/clubhouse/styles/shell.css",
         "src/clubhouse/styles/stats.css",
+        "src/clubhouse/styles/tournaments-lineup.css",
         "src/clubhouse/styles/tournaments.css",
         "src/clubhouse/styles/ui.css"
       ],
@@ -1037,6 +1041,7 @@
         "src/clubhouse/styles/settings.css",
         "src/clubhouse/styles/shell.css",
         "src/clubhouse/styles/stats.css",
+        "src/clubhouse/styles/tournaments-lineup.css",
         "src/clubhouse/styles/tournaments.css",
         "src/clubhouse/styles/ui.css"
       ],
@@ -1291,7 +1296,8 @@
         "src/clubhouse/styles/controls.css",
         "src/clubhouse/styles/messages.css",
         "src/clubhouse/styles/settings.css",
-        "src/clubhouse/styles/tournament-fields.css"
+        "src/clubhouse/styles/tournament-fields.css",
+        "src/clubhouse/styles/tournaments-lineup.css"
       ],
       "examples": [],
       "fixture": "Contextual module"
@@ -2180,6 +2186,29 @@
       ],
       "styles": [
         "src/clubhouse/styles/coachhelm-thread.css"
+      ],
+      "examples": [],
+      "fixture": "Contextual module"
+    },
+    {
+      "file": "src/clubhouse/screens/coachhelm/chat/visual/CoachVisualArtifact.tsx",
+      "group": "screens",
+      "exports": [
+        "CoachVisualArtifact"
+      ],
+      "styles": [
+        "src/clubhouse/styles/base.css",
+        "src/clubhouse/styles/calendar.css",
+        "src/clubhouse/styles/class-awareness.css",
+        "src/clubhouse/styles/coachhelm-thread.css",
+        "src/clubhouse/styles/coachhelm.css",
+        "src/clubhouse/styles/goals.css",
+        "src/clubhouse/styles/home.css",
+        "src/clubhouse/styles/hub.css",
+        "src/clubhouse/styles/messages.css",
+        "src/clubhouse/styles/qualifiers.css",
+        "src/clubhouse/styles/stats.css",
+        "src/clubhouse/styles/tournaments-desk.css"
       ],
       "examples": [],
       "fixture": "Contextual module"
@@ -3332,6 +3361,7 @@
         "src/clubhouse/styles/shell.css",
         "src/clubhouse/styles/stats.css",
         "src/clubhouse/styles/tournaments-desk.css",
+        "src/clubhouse/styles/tournaments-lineup.css",
         "src/clubhouse/styles/tournaments.css",
         "src/clubhouse/styles/ui.css"
       ],
@@ -4997,6 +5027,7 @@
         "src/clubhouse/styles/shell.css",
         "src/clubhouse/styles/stats.css",
         "src/clubhouse/styles/tournaments-desk.css",
+        "src/clubhouse/styles/tournaments-lineup.css",
         "src/clubhouse/styles/tournaments.css",
         "src/clubhouse/styles/ui.css"
       ],
@@ -5084,6 +5115,7 @@
         "src/clubhouse/styles/shell.css",
         "src/clubhouse/styles/stats.css",
         "src/clubhouse/styles/tournaments-desk.css",
+        "src/clubhouse/styles/tournaments-lineup.css",
         "src/clubhouse/styles/tournaments.css",
         "src/clubhouse/styles/ui.css"
       ],
@@ -5132,6 +5164,7 @@
         "src/clubhouse/styles/settings.css",
         "src/clubhouse/styles/shell.css",
         "src/clubhouse/styles/stats.css",
+        "src/clubhouse/styles/tournaments-lineup.css",
         "src/clubhouse/styles/tournaments.css",
         "src/clubhouse/styles/ui.css"
       ],
@@ -5163,6 +5196,7 @@
         "src/clubhouse/styles/settings.css",
         "src/clubhouse/styles/shell.css",
         "src/clubhouse/styles/stats.css",
+        "src/clubhouse/styles/tournaments-lineup.css",
         "src/clubhouse/styles/tournaments.css",
         "src/clubhouse/styles/ui.css"
       ],
@@ -5225,6 +5259,7 @@
         "src/clubhouse/styles/settings.css",
         "src/clubhouse/styles/shell.css",
         "src/clubhouse/styles/stats.css",
+        "src/clubhouse/styles/tournaments-lineup.css",
         "src/clubhouse/styles/tournaments.css",
         "src/clubhouse/styles/ui.css"
       ],
@@ -5282,6 +5317,7 @@
         "src/clubhouse/styles/shell.css",
         "src/clubhouse/styles/stats.css",
         "src/clubhouse/styles/tournaments-desk.css",
+        "src/clubhouse/styles/tournaments-lineup.css",
         "src/clubhouse/styles/tournaments.css",
         "src/clubhouse/styles/ui.css"
       ],
@@ -6138,6 +6174,7 @@
         "src/clubhouse/styles/shell.css",
         "src/clubhouse/styles/stats.css",
         "src/clubhouse/styles/tournaments-desk.css",
+        "src/clubhouse/styles/tournaments-lineup.css",
         "src/clubhouse/styles/tournaments.css",
         "src/clubhouse/styles/ui.css"
       ],
@@ -6532,6 +6569,15 @@
         "EventForm"
       ],
       "styles": [
+        "src/clubhouse/styles/base.css",
+        "src/clubhouse/styles/controls.css",
+        "src/clubhouse/styles/messages.css",
+        "src/clubhouse/styles/qualifiers.css",
+        "src/clubhouse/styles/recruiting.css",
+        "src/clubhouse/styles/roster.css",
+        "src/clubhouse/styles/shell.css",
+        "src/clubhouse/styles/stats.css",
+        "src/clubhouse/styles/tournament-fields.css",
         "src/clubhouse/styles/tournaments-lineup.css"
       ],
       "examples": [],
@@ -6905,7 +6951,8 @@
         "src/clubhouse/styles/settings.css",
         "src/clubhouse/styles/stats.css",
         "src/clubhouse/styles/tournament-fields.css",
-        "src/clubhouse/styles/tournaments-desk.css"
+        "src/clubhouse/styles/tournaments-desk.css",
+        "src/clubhouse/styles/tournaments-lineup.css"
       ],
       "examples": [],
       "fixture": "Contextual module"
@@ -7040,6 +7087,7 @@
         "src/clubhouse/styles/settings.css",
         "src/clubhouse/styles/shell.css",
         "src/clubhouse/styles/stats.css",
+        "src/clubhouse/styles/tournaments-lineup.css",
         "src/clubhouse/styles/tournaments.css",
         "src/clubhouse/styles/ui.css"
       ],
@@ -7073,6 +7121,7 @@
         "src/clubhouse/styles/settings.css",
         "src/clubhouse/styles/shell.css",
         "src/clubhouse/styles/stats.css",
+        "src/clubhouse/styles/tournaments-lineup.css",
         "src/clubhouse/styles/tournaments.css",
         "src/clubhouse/styles/ui.css"
       ],
@@ -7112,6 +7161,7 @@
         "src/clubhouse/styles/shell.css",
         "src/clubhouse/styles/stats.css",
         "src/clubhouse/styles/tournaments-desk.css",
+        "src/clubhouse/styles/tournaments-lineup.css",
         "src/clubhouse/styles/tournaments.css",
         "src/clubhouse/styles/ui.css"
       ],
@@ -7168,9 +7218,11 @@
       "file": "src/clubhouse/shell/BrandWord.tsx",
       "group": "shell",
       "exports": [
-        "BrandLine"
+        "BrandLine",
+        "HelmMark"
       ],
       "styles": [
+        "src/clubhouse/styles/coachhelm-thread.css",
         "src/clubhouse/styles/shell.css"
       ],
       "examples": [],
@@ -7614,6 +7666,7 @@
         "src/clubhouse/styles/settings.css",
         "src/clubhouse/styles/shell.css",
         "src/clubhouse/styles/stats.css",
+        "src/clubhouse/styles/tournaments-lineup.css",
         "src/clubhouse/styles/tournaments.css",
         "src/clubhouse/styles/ui.css"
       ],
@@ -7850,6 +7903,7 @@
         "src/clubhouse/styles/settings.css",
         "src/clubhouse/styles/shell.css",
         "src/clubhouse/styles/stats.css",
+        "src/clubhouse/styles/tournaments-lineup.css",
         "src/clubhouse/styles/tournaments.css",
         "src/clubhouse/styles/ui.css"
       ],
@@ -7965,6 +8019,7 @@
         "src/clubhouse/styles/shell.css",
         "src/clubhouse/styles/stats.css",
         "src/clubhouse/styles/tournaments-desk.css",
+        "src/clubhouse/styles/tournaments-lineup.css",
         "src/clubhouse/styles/tournaments.css",
         "src/clubhouse/styles/ui.css"
       ],
@@ -8165,6 +8220,7 @@
         "src/clubhouse/styles/settings.css",
         "src/clubhouse/styles/shell.css",
         "src/clubhouse/styles/stats.css",
+        "src/clubhouse/styles/tournaments-lineup.css",
         "src/clubhouse/styles/tournaments.css",
         "src/clubhouse/styles/ui.css"
       ],
@@ -8746,6 +8802,7 @@
         "src/clubhouse/styles/shell.css",
         "src/clubhouse/styles/stats.css",
         "src/clubhouse/styles/tournaments-desk.css",
+        "src/clubhouse/styles/tournaments-lineup.css",
         "src/clubhouse/styles/tournaments.css",
         "src/clubhouse/styles/ui.css"
       ],
@@ -10379,6 +10436,9 @@
       "classes": [
         "ch-ask",
         "ch-ask-body",
+        "ch-ask-cap",
+        "ch-ask-cap__ic",
+        "ch-ask-caps",
         "ch-ask-card",
         "ch-ask-cards",
         "ch-ask-cmp",
@@ -10969,9 +11029,11 @@
         "ch-th-bar__track",
         "ch-th-bar__val",
         "ch-th-bars",
+        "ch-th-card",
         "ch-th-chip",
         "ch-th-col",
         "ch-th-dir",
+        "ch-th-dot",
         "ch-th-end",
         "ch-th-error",
         "ch-th-error__body",
@@ -11002,6 +11064,11 @@
         "ch-th-list",
         "ch-th-mark",
         "ch-th-mention",
+        "ch-th-mk",
+        "ch-th-mk-ball",
+        "ch-th-mk-dimples",
+        "ch-th-mk-face",
+        "ch-th-mk-helm",
         "ch-th-note",
         "ch-th-p",
         "ch-th-p--lead",
@@ -11027,6 +11094,7 @@
         "ch-th-receipt__head",
         "ch-th-receipt__meta",
         "ch-th-receipt__title",
+        "ch-th-shine",
         "ch-th-sr",
         "ch-th-steps",
         "ch-th-steps__ok",
@@ -11044,6 +11112,7 @@
         "ch-th-trendbox",
         "ch-th-turn",
         "ch-th-user",
+        "ch-th-who",
         "ch-th-work",
         "ch-th-work__btn",
         "ch-th-work__time"
@@ -12257,12 +12326,12 @@
         {
           "name": "--ch-lv-bead",
           "value": "6px",
-          "scope": "@container chlv (min-width: 640px) → .ch-lv-lane[data-density='full']"
+          "scope": "@container chlv (min-width: 668px) → .ch-lv-lane[data-density='full']"
         },
         {
           "name": "--ch-lv-gap",
           "value": "var(--ch-space-1)",
-          "scope": "@container chlv (min-width: 640px) → .ch-lv-lane[data-density='full']"
+          "scope": "@container chlv (min-width: 668px) → .ch-lv-lane[data-density='full']"
         }
       ]
     },
@@ -20419,7 +20488,18 @@
     },
     {
       "file": "src/clubhouse/styles/tournaments-lineup.css",
-      "classes": [],
+      "classes": [
+        "ch-btn",
+        "ch-tfx",
+        "ch-tour-lu-form",
+        "ch-tour-lu-form__actions",
+        "ch-tour-lu-form__body",
+        "ch-tour-lu-form__input",
+        "ch-tour-lu-form__lbl",
+        "ch-tour-lu-form__name",
+        "ch-tour-lu-form__qual",
+        "ch-tour-lu-form__receipt"
+      ],
       "tokens": []
     },
     {
