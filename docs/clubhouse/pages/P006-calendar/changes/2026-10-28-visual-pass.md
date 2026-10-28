@@ -3,14 +3,18 @@
 ## 2026-10-28 — The panel's plates and full class slots read at night; a block never pushes its time out
 
 ```text
-Design package: none (Clubhouse visual pass 2026-10-28, area D; RUBRIC H8, H10, A+ handoff 4.15 F1, F1a, F1b, F1d, F5, F5a, F23)
+Design package: none (Clubhouse visual pass 2026-10-28, area D; RUBRIC H8, H10,
+                A+ handoff 4.15 F1, F1a, F1b, F1d, F5, F5a, F23)
 PR/commit:      visual-pass-2026-10-28
 Contract IDs:   none (visual only)
 Actions:        none
 Data impact:    none
-Held items:     an iPhone look at the largest Text Size on the phone's unfolded day and the desktop week in Safari;
-                the week strip's selected-day letter (ui.css, requested from the shared-UI owner);
-                a popover flipped above its trigger still grows from top left (its placement is set in Calendar.tsx)
+Held items:     an iPhone look at the largest Text Size on the phone's unfolded
+                day and the desktop week in Safari;
+                the week strip's selected-day letter (ui.css, requested from the
+                shared-UI owner);
+                a popover flipped above its trigger still grows from top left
+                (its placement is set in Calendar.tsx)
 ```
 
 ### Changed

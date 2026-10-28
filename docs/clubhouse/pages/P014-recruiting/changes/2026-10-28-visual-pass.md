@@ -1,7 +1,10 @@
 # 2026-10-28 — Visual pass: the add form's labels line up
 
+## 2026-10-28 — Visual pass: the add form's labels line up
+
 ```text
-Design package: visual-pass-2026-10-28 (RUBRIC.md, premium-research/team-tabs.md)
+Design package: visual-pass-2026-10-28 (RUBRIC.md,
+                premium-research/team-tabs.md)
 PR/commit:      visual-pass-2026-10-28
 Contract IDs:   none new
 Actions:        none

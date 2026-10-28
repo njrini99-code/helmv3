@@ -3,13 +3,16 @@
 ## 2026-10-28 — No rail on any post, cards at 16, one plus on every tab, the chosen tab in view
 
 ```text
-Design package: none (Clubhouse visual pass 2026-10-28, area E; RUBRIC H6, H10, H17, H4,
+Design package: none (Clubhouse visual pass 2026-10-28, area E; RUBRIC H6, H10,
+                H17, H4,
                 Team Hub checklist)
 PR/commit:      visual-pass-2026-10-28
 Contract IDs:   101901
-Actions:        ACT-P010-UPLOAD-FILE (a second way in on the phone: the top bar's plus)
+Actions:        ACT-P010-UPLOAD-FILE (a second way in on the phone: the top
+                bar's plus)
 Data impact:    none
-Held items:     an iPhone look at the tab strip's glide to an off-screen tab, the 44pt
+Held items:     an iPhone look at the tab strip's glide to an off-screen tab,
+                the 44pt
                 trip pager and the 4px facepile overlap; Safari's handling of
                 vector-effect on the reaction glyphs is P007's
 ```
