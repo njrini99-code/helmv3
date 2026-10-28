@@ -674,11 +674,16 @@ export interface ChTourCompareRound {
   counting: { counted: boolean; tie: boolean; drop: number | null; lineupSize: number } | null;
   individual: boolean;
   sg: { ott: number; app: number; arg: number; putt: number } | null;
+  /** The event round was a WD, or a DQ (pending or final): every figure lists it out. */
+  status?: 'wd' | 'dq';
   stats: {
     gir: number;
+    /** Holes with a GIR mark: a hole with none is not a miss. */
+    girOf: number;
     fw: number;
     fwOf: number;
-    putts: number;
+    /** Null when a scored hole has no putt count (a missing count is not zero). */
+    putts: number | null;
     threePutts: number;
     scrMade: number;
     scrOf: number;
