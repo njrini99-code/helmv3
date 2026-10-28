@@ -1,5 +1,6 @@
 import { ChevronRight } from 'lucide-react';
 import Link from 'next/link';
+import { Fragment } from 'react';
 import type { ChPlayerAsks } from '../../data/player-home';
 import { Badge } from '../../ui/Badge';
 import { Icon } from '../../ui/Icon';
@@ -28,9 +29,17 @@ export function CoachAsks({ asks }: { asks: ChPlayerAsks | null | undefined }) {
   return (
     <Link href={hub} className="ch-ph-asks">
       <span className="ch-ph-asks__k">From your coach</span>
-      {/* Each part holds together ("2 tasks due" never splits after its number); lines break only after a dot. */}
-      <span className="ch-ph-asks__v ch-num">{parts.map((p) => p.replace(/ /g, ' ')).join(' · ')}</span>
-      <Icon icon={ChevronRight} size={15} />
+      {/* Each part keeps to one line, so a wrap never strands its figure ("· 2" / "tasks due"),
+          and a no-break space ahead of each dot keeps a dot from opening a line. */}
+      <span className="ch-ph-asks__v ch-num">
+        {parts.map((p, i) => (
+          <Fragment key={p}>
+            {i > 0 && '\u00a0· '}
+            <span className="ch-ph-asks__p">{p}</span>
+          </Fragment>
+        ))}
+      </span>
+      <Icon icon={ChevronRight} size={16} />
       <LinkPending />
     </Link>
   );

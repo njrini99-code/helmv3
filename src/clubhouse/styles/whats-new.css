@@ -34,3 +34,9 @@
   text-overflow: clip;
   white-space: normal;
 }
+
+/* Visual pass 2026-10-28: the row's chevron is its only sign that it opens; ink-400 drew it at 2.75:1 on the phone page
+   and 3.0 on the desktop canvas. ink-500 holds 5.4:1 or more in both themes (ui.css .ch-lgr__go, requested there too). */
+.ch-wn .ch-lgr__go {
+  color: var(--ch-ink-500);
+}
