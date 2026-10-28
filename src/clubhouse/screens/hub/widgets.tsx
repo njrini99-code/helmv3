@@ -82,12 +82,14 @@ const countLabel = (days: number) => (days <= 0 ? 'Today' : days === 1 ? 'Tomorr
  */
 /**
  * A date or a time never breaks inside itself on a phone (A24): "Mon 3 Nov" and "12:00 PM" keep their spaces as
- * U+00A0, and a line may break only at the " · " or " – " between them.
+ * U+00A0, and a line may break only after the " · " or " – " between them (the space before a separator is U+00A0 too,
+ * so a wrapped line never opens on one).
  */
 export const keepTokens = (text: string) =>
   text
     .split(/( · | – )/)
-    .map((part, i) => (i % 2 ? part : part.replace(/ /g, '\u00a0')))
+    // A separator stays with the words before it, so a wrapped line never opens on "·" or "–".
+    .map((part, i) => (i % 2 ? '\u00a0' + part.slice(1) : part.replace(/ /g, '\u00a0')))
     .join('');
 
 export function TripTile({ trips, role, days, error, covered, onEdit, onPlan, onOpenTravel }: {
@@ -121,7 +123,7 @@ export function TripTile({ trips, role, days, error, covered, onEdit, onPlan, on
     const word = t.inDays != null ? countLabel(t.inDays) : null;
     const stops = [
       { k: 'Leaves', v: keepTokens(clk(t.depart ?? t.dates)), s: t.from },
-      { k: 'Stays', v: t.hotel ?? 'Hotel not set', s: t.destination },
+      { k: 'Stays', v: t.hotel ?? 'Hotel not set', s: t.destination ? t.destination.replace(/ · /g, '\u00a0· ') : null },
       { k: 'Home', v: keepTokens(clk(t.back ?? 'Not set')), s: null },
     ];
     const names = t.travelers ?? [];

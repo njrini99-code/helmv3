@@ -154,6 +154,21 @@ export function TeamHub({
   const tabsEdges = useHScroll<HTMLDivElement>(tabsRef);
   const reduced = useChReducedMotion();
   useSlidePlate(tabsRef, '[aria-selected="true"] > .ch-hb-tabs__bar', tab, { reduced, kind: 'smooth' });
+  // The chosen tab is always in view in the phone's sideways strip: Tasks, opened from the strip or a link, sat past the
+  // screen's edge with only a sliver of its underline showing. The first paint jumps there; a later change glides.
+  const tabsShown = useRef(false);
+  useEffect(() => {
+    const strip = tabsRef.current;
+    const on = strip?.querySelector<HTMLElement>('[aria-selected="true"]');
+    const first = !tabsShown.current;
+    tabsShown.current = true;
+    if (!strip || !on || strip.scrollWidth <= strip.clientWidth) return;
+    const s = strip.getBoundingClientRect();
+    const b = on.getBoundingClientRect();
+    const edge = 16;
+    const by = b.left < s.left + edge ? b.left - s.left - edge : b.right > s.right - edge ? b.right - s.right + edge : 0;
+    if (by) strip.scrollTo({ left: strip.scrollLeft + by, behavior: first || reduced ? 'auto' : 'smooth' });
+  }, [tab, reduced]);
   const [replies, setReplies] = useState(() => new Map<string, ChRsvp>());
   const [acked, setAcked] = useState(() => new Set<string>());
   const [pendingWrites, setPendingWrites] = useState(() => new Set<string>());
@@ -482,6 +497,7 @@ export function TeamHub({
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
   // P010 D6: the head's one primary follows the tab (Documents' own drop zone is its primary), and a tab whose read
   // failed offers none.
+  const docsPicker = useRef<(() => void) | null>(null);
   const primary = !coach
     ? null
     : (tab === 'home' || tab === 'ann') && !data.announcements.error
@@ -490,7 +506,11 @@ export function TeamHub({
         ? { label: 'Plan a trip', icon: Plane, run: () => setTripOpen(true) }
         : tab === 'tasks' && !data.tasks.error
           ? { label: 'Assign a task', icon: Plus, run: () => setAssign(true) }
-          : null;
+          : // The phone's bar keeps one plus on every tab (visual pass 2026-10-28): on Documents it opens the file
+            // chooser the drop zone opens. Desktop's head keeps the drop zone as Documents' primary (D6).
+            tab === 'docs' && phone && !data.documents.error
+            ? { label: 'Upload a document', icon: Plus, run: () => docsPicker.current?.() }
+            : null;
 
   const planTrip = () => {
     setTab('travel');
@@ -531,9 +551,10 @@ export function TeamHub({
     <main className={'ch-hb' + (phone ? ' is-phone' : '')} aria-labelledby="ch-hb-title" data-canopy={phone ? undefined : ''}>
       {phone && !coach && <PhoneTop start title="Team Hub" heading={false} />}
       {/* B10.1: a coach's create action is the top bar's plus, following the tab as the desktop head's primary does
-          (a post, a trip, a task; none on Documents or a tab whose read failed). */}
+          (a post, a trip, a task, a document; none on a tab whose read failed). The glyph is the plus on every tab
+          (visual pass 2026-10-28); the label names what it makes. */}
       {phone && coach && (
-        <PhoneTop title="Team Hub" start heading={false} action={primary ? <PhoneIconAction icon={primary.icon} label={primary.label} onClick={primary.run} /> : undefined} />
+        <PhoneTop title="Team Hub" start heading={false} action={primary ? <PhoneIconAction icon={Plus} label={primary.label} onClick={primary.run} /> : undefined} />
       )}
       <header className="ch-hb-h" data-canopy-head="">
         <div>
@@ -722,7 +743,7 @@ export function TeamHub({
 
           {shownTab === 'docs' && (
             <SectionBoundary surface="hub.documents" label="Documents" code="CH-10205">
-              <Documents role={data.role} data={docs} opening={opening} uploading={uploading || upload.pending} onOpen={onOpen} onUpload={onUpload} onDelete={(f) => askDelete({ kind: 'file', f })} covered={covered} />
+              <Documents role={data.role} data={docs} opening={opening} uploading={uploading || upload.pending} onOpen={onOpen} onUpload={onUpload} onDelete={(f) => askDelete({ kind: 'file', f })} covered={covered} picker={docsPicker} />
             </SectionBoundary>
           )}
 

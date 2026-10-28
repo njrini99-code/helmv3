@@ -40,6 +40,10 @@ notices keep their truthful status color and recovery actions with the same
 softer edge; focus indicators remain visible.
 The selected conversation is the one filled green row in the list, in ivory ink,
 without a green edge stripe (owner, 2026-10-08).
+Bubbles and the typing bubble are on the 16 radius with the 6 tail corner where a
+run joins or ends (visual pass 2026-10-28); announcement cards and the folded
+Announcements card are on the 16 card radius. Reaction glyphs draw the icon set's
+1.6px line at every size.
 
 ## Package
 
