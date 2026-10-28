@@ -4338,7 +4338,7 @@ html[data-fw-theme='dark'] .ch-h-form__bar {
   .ch-hm-queue__a {
     display: inline-flex;
     min-height: 44px;
-    margin-right: 14px;
+    margin-right: 12px;
     vertical-align: middle;
   }
   .ch-hm-queue__fail {

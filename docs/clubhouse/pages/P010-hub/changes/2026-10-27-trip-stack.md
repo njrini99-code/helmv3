@@ -14,7 +14,7 @@ Held items:     none
 ### Changed
 
 - The trip card's travelers overlapped 8px, which covered the second letter of
-  each coin ("TM" read "TN", "EB" read "EE"). They overlap 3px
+  each coin ("TM" read "TN", "EB" read "EE"). They overlap 2px, so the rings just touch
   (`styles/hub.css` `.ch-hw-stack i`).
 
 ### Why
