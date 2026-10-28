@@ -196,6 +196,7 @@ vi.mock('@/lib/server-error-logger', () => ({
 }));
 
 import { GET } from '@/app/api/cron/event-reminders/route';
+import { logServerEvent } from '@/lib/server-error-logger';
 
 // ---- Fixtures ---------------------------------------------------------------
 
@@ -510,6 +511,56 @@ describe('event-reminders cron route', () => {
 
     const marked = upsertsForKind('event_reminder_24h');
     expect(marked.map((r) => r.user_id)).toEqual(['U1']);
+  });
+
+  it('the run summary groups under one Bridge fingerprint per severity, whatever the counts', async () => {
+    // Production 2026-10-26/27: "24h sent=9 ... 1h sent=0" and
+    // "24h sent=0 ... 1h sent=9" were two incidents (c6641939, 6da1400f).
+    // The counts are short numbers the incident-signature normaliser keeps,
+    // so every distinct tally minted a new fingerprint.
+    const summaryCalls = () =>
+      vi
+        .mocked(logServerEvent)
+        .mock.calls.filter(([, ctx]) => (ctx as { action?: string }).action === 'cron.eventReminders.summary');
+
+    currentClient = makeClient({
+      events: [eventAt('E1', 2 * HOUR), eventAt('E2', 30 * MIN)],
+      attendance: [
+        { event_id: 'E1', player_id: 'P1', status: 'accepted' },
+        { event_id: 'E2', player_id: 'P1', status: 'accepted' },
+      ],
+      players: [{ id: 'P1', user_id: 'U1' }],
+      users: [{ id: 'U1', email: 'u1@x.test' }],
+    });
+    await GET(authed());
+
+    currentClient = makeClient({
+      events: [eventAt('E3', 20 * HOUR)],
+      attendance: [{ event_id: 'E3', player_id: 'P1', status: 'accepted' }],
+      players: [{ id: 'P1', user_id: 'U1' }],
+      users: [{ id: 'U1', email: 'u1@x.test' }],
+    });
+    await GET(authed());
+
+    const [first, second] = summaryCalls();
+    expect(summaryCalls()).toHaveLength(2);
+    expect(first?.[0]).not.toBe(second?.[0]);
+    expect((first?.[1] as { dbFingerprint?: string } | undefined)?.dbFingerprint).toBe('cron-event-reminders-summary:info');
+    expect((second?.[1] as { dbFingerprint?: string } | undefined)?.dbFingerprint).toBe('cron-event-reminders-summary:info');
+
+    // A run with a failure is a different signal and keeps its own key.
+    currentClient = makeClient({
+      events: [eventAt('E4', 20 * HOUR)],
+      attendance: [{ event_id: 'E4', player_id: 'P2', status: 'accepted' }],
+      players: [{ id: 'P2', user_id: 'U2' }],
+      users: [{ id: 'U2', email: 'u2@x.test' }],
+    });
+    sendPushMock.mockResolvedValue({ success: false });
+    sendEmailMock.mockResolvedValue({ success: false });
+    await GET(authed());
+    const failed = summaryCalls()[2];
+    expect(failed?.[2]).toBe('warning');
+    expect((failed?.[1] as { dbFingerprint?: string } | undefined)?.dbFingerprint).toBe('cron-event-reminders-summary:warning');
   });
 
   it('a REJECTED send (thrown, not {success:false}) is also unmarked — Promise.allSettled path', async () => {

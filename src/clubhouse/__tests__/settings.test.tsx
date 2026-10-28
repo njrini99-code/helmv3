@@ -41,8 +41,10 @@ import { ClubhouseMarker } from '../shell/context';
 import { PhoneChromeProvider, usePhoneChromeState } from '../shell/phone-chrome';
 import { SettingsView } from '../screens/settings/SettingsView';
 import { SettingsSkeleton } from '../screens/settings/SettingsSkeleton';
-import { parseSection, PRIORITY_LABEL, SECTIONS, type ChCoachHelmSettings, type ChDevice, type ChResult, type ChSettingsData, type ChSettingsSection, type ChSettingsWrites, type ChStaffWrites } from '../screens/settings/model';
+import { parseSection, PRIORITY_LABEL, SECTIONS, type ChCoachHelmSettings, type ChDevice, type ChGolfDetails, type ChResult, type ChSettingsData, type ChSettingsSection, type ChSettingsWrites, type ChStaffWrites } from '../screens/settings/model';
 import { coachData, failedRead, playerData, PREVIEW_STAFF } from '../preview/fixtures-settings';
+import { PREVIEW_PLAYER_HOME } from '../preview/fixtures-player-home';
+import { PlayerGame } from '../screens/home/PlayerGame';
 import './dialog-polyfill';
 
 beforeEach(() => {
@@ -50,6 +52,10 @@ beforeEach(() => {
   track.report.mockClear();
   track.trail.mockClear();
 });
+
+/** A player on a team, with golf details as data/settings.ts reads them (the fixture's, then `over`). */
+const GOLF: ChGolfDetails = { handicap: '2.4', handicapIndex: '2.1', graduationYear: '2029', hometown: 'Charlotte', state: 'NC', phone: '' };
+const withGolf = (over: Partial<ChGolfDetails>): ChSettingsData => ({ ...playerData(true), golf: { value: { ...GOLF, ...over }, error: false } });
 
 const fail = (error = 'nope'): Promise<ChResult> => Promise.resolve({ success: false, error });
 const okw = (): Promise<ChResult> => Promise.resolve({ success: true });
@@ -262,7 +268,7 @@ describe('Settings · 80xx error toasts', () => {
 
   it('CH-8016 golf details save fails (player)', async () => {
     const { user } = setup({ data: playerData(true), section: 'golf', writes: { saveGolf: vi.fn(() => fail()) } });
-    const h = screen.getByLabelText('Handicap');
+    const h = screen.getByLabelText('Handicap index');
     await user.clear(h);
     await user.type(h, '3.1');
     await user.click(within(card('Golf details')).getByRole('button', { name: 'Save changes' }));
@@ -420,8 +426,14 @@ describe('Settings · 81xx validation', () => {
     await expectCode('CH-8111', /before the final one/);
   });
 
+  it('CH-8112 a stored handicap out of range still keeps the save off (no field: Settings shows the one index)', async () => {
+    const { user } = setup({ data: withGolf({ handicap: '60' }), section: 'golf' });
+    expect(screen.queryByLabelText('Handicap')).toBeNull();
+    await user.type(screen.getByLabelText('Hometown'), 'x');
+    await expectCode('CH-8112', /Handicap must be/);
+  });
+
   it.each([
-    ['CH-8112', 'Handicap', '60', /Handicap must be/],
     ['CH-8113', 'Handicap index', '-20', /Handicap index must be/],
     ['CH-8114', 'Graduation year', '27', /Graduation year/],
     ['CH-8115', 'State', 'N', /two-letter/],
@@ -1034,6 +1046,78 @@ describe('Settings · saving', () => {
     const join = setup({ data: playerData(false, false), section: 'golf' });
     await join.user.type(screen.getByLabelText('Team code'), 'abc123{Enter}');
     await waitFor(() => expect(join.writes.requestJoin).toHaveBeenCalledWith('ABC123', ''));
+  });
+});
+
+describe('Settings · Golf profile shows one handicap, "Handicap index", the number Home shows', () => {
+  /** A player's golf details as data/settings.ts reads them (str of each column). */
+  const withHcp = (handicap: string, handicapIndex: string) => withGolf({ handicap, handicapIndex });
+  /** The Handicap figure on Home, for the value data/player-home.ts derives (handicap_index ?? handicap). */
+  function homeHandicap(handicap: number | null) {
+    const view = render(
+      <LazyMotion features={domAnimation}>
+        <ToastProvider>
+          <div className="ch-root" data-ui="clubhouse">
+            <PlayerGame data={{ ...PREVIEW_PLAYER_HOME, handicap }} />
+          </div>
+        </ToastProvider>
+      </LazyMotion>,
+    );
+    const fig = [...document.querySelectorAll('.ch-ph-figs > div')].find((d) => d.querySelector('dt')?.textContent === 'Handicap');
+    const text = fig?.querySelector('dd')?.textContent ?? null;
+    view.unmount();
+    return text;
+  }
+
+  it('the desktop Golf details card has one handicap field, labelled Handicap index', () => {
+    setup({ data: playerData(true), section: 'golf' });
+    expect(within(card('Golf details')).getAllByLabelText(/handicap/i)).toHaveLength(1);
+    expect(screen.getByLabelText('Handicap index')).toHaveValue('2.1');
+    expect(screen.queryByLabelText('Handicap')).toBeNull();
+    expect(document.getElementById('set-hcp-v')).toBeNull();
+  });
+
+  it.each([
+    ['index set: the index wins, as on Home', '2.4', '2.1', 2.1],
+    ['no index: the handicap, as on Home', '2.4', '', 2.4],
+    ['a plus handicap reads +1.2, as on Home', '', '-1.2', -1.2],
+    ['a whole number reads 5.0, as on Home', '', '5', 5],
+  ])('%s', (_name, handicap, handicapIndex, home) => {
+    const shownOnHome = homeHandicap(home);
+    setup({ data: withHcp(handicap, handicapIndex), section: 'golf' });
+    expect(screen.getByLabelText('Handicap index')).toHaveValue(shownOnHome);
+  });
+
+  it('with no handicap at all the field is empty and Home shows no number', () => {
+    expect(homeHandicap(null)).toBe('—');
+    setup({ data: withHcp('', ''), section: 'golf' });
+    expect(screen.getByLabelText('Handicap index')).toHaveValue('');
+  });
+
+  it('saving another field leaves both stored handicap columns as they were', async () => {
+    const { user, writes } = setup({ data: withHcp('2.4', ''), section: 'golf' });
+    expect(screen.getByLabelText('Handicap index')).toHaveValue('2.4');
+    await user.type(screen.getByLabelText('Hometown'), 'x');
+    await user.click(within(card('Golf details')).getByRole('button', { name: 'Save changes' }));
+    await waitFor(() => expect(writes.saveGolf).toHaveBeenCalledWith(expect.objectContaining({ handicap: '2.4', handicapIndex: '', hometown: 'Charlottex' })));
+  });
+
+  it('a new number is written to the index; the card is clean after the save', async () => {
+    const { user, writes } = setup({ data: withHcp('2.4', ''), section: 'golf' });
+    const f = screen.getByLabelText('Handicap index');
+    await user.clear(f);
+    await user.type(f, '+1.2');
+    await user.click(within(card('Golf details')).getByRole('button', { name: 'Save changes' }));
+    await waitFor(() => expect(writes.saveGolf).toHaveBeenCalledWith(expect.objectContaining({ handicap: '2.4', handicapIndex: '+1.2' })));
+    await waitFor(() => expect(within(card('Golf details')).queryByRole('button', { name: 'Save changes' })).toBeNull());
+    expect(f).toHaveValue('+1.2');
+  });
+
+  it('clearing the one field clears both columns, so Home shows no handicap either', async () => {
+    const { user, writes } = setup({ data: withHcp('2.4', '2.1'), section: 'golf' });
+    await user.clear(screen.getByLabelText('Handicap index'));
+    await user.click(within(card('Golf details')).getByRole('button', { name: 'Save changes' }));
+    await waitFor(() => expect(writes.saveGolf).toHaveBeenCalledWith(expect.objectContaining({ handicap: '', handicapIndex: '' })));
   });
 });
 
@@ -2197,22 +2281,23 @@ describe('Settings · phone (docs/clubhouse/phone/settings.md)', () => {
       expect(writes.changePassword).toHaveBeenCalledWith('old-pass', 'new-password');
     });
 
-    it('81901 CH-8016 CH-8112 golf details open in a sheet from any row, and a handicap out of range keeps Save off (player)', async () => {
+    it('81901 CH-8016 CH-8113 golf details open in a sheet from any row, and a handicap out of range keeps Save off (player)', async () => {
       const { user, writes } = phone({ data: playerData(true) });
       await openRow(user, /^Golf profile/);
       const group = await screen.findByRole('region', { name: 'Golf details' });
-      expect(within(group).getByRole('button', { name: /^Handicap 2\.4/ })).toBeTruthy();
+      expect(within(group).getByRole('button', { name: /^Handicap index 2\.1/ })).toBeTruthy();
       expect(within(group).getByRole('button', { name: /^Phone Not set/ })).toBeTruthy();
       await user.click(within(group).getByRole('button', { name: /^Hometown/ }));
       const sheet = dialog('Golf details');
-      await user.clear(within(sheet).getByLabelText('Handicap'));
-      await user.type(within(sheet).getByLabelText('Handicap'), '99');
-      await expectCode('CH-8112', /between −10 and 54/);
+      await user.clear(within(sheet).getByLabelText('Handicap index'));
+      await user.type(within(sheet).getByLabelText('Handicap index'), '99');
+      await expectCode('CH-8113', /between −10 and 54/);
       expect(within(sheet).getByRole('button', { name: 'Save' })).toBeDisabled();
-      await user.clear(within(sheet).getByLabelText('Handicap'));
-      await user.type(within(sheet).getByLabelText('Handicap'), '3.1');
+      await user.clear(within(sheet).getByLabelText('Handicap index'));
+      await user.type(within(sheet).getByLabelText('Handicap index'), '3.1');
       await user.click(within(sheet).getByRole('button', { name: 'Save' }));
-      await waitFor(() => expect(writes.saveGolf).toHaveBeenCalledWith(expect.objectContaining({ handicap: '3.1', hometown: 'Charlotte' })));
+      // The new number goes to the index (what Home reads first); the stored handicap goes back as it was.
+      await waitFor(() => expect(writes.saveGolf).toHaveBeenCalledWith(expect.objectContaining({ handicapIndex: '3.1', handicap: '2.4', hometown: 'Charlotte' })));
       await waitFor(() => expect(screen.queryByRole('dialog', { name: 'Golf details' })).toBeNull());
     });
   });
@@ -2789,6 +2874,25 @@ describe('Settings · phone (docs/clubhouse/phone/settings.md)', () => {
     const { user } = phone({ device: nativeDevice('denied', { openSettings: undefined }) });
     await openRow(user, /^Notifications/);
     expect(within(code('CH-8903') as HTMLElement).queryByRole('button', { name: 'Open iOS Settings' })).toBeNull();
+  });
+
+  it('81901 Golf profile on the phone shows one handicap, "Handicap index", with Home\'s number, and the sheet edits only that one', async () => {
+    // No index stored: Home shows the handicap (data/player-home.ts), so Settings does too.
+    const { user, writes } = phone({ data: withGolf({ handicap: '-0.8', handicapIndex: '' }) });
+    expect(screen.getByRole('button', { name: 'Jonah Okafor Player · Varsity · HCP +0.8' })).toBeTruthy();
+    await openRow(user, /^Golf profile/);
+    const group = await screen.findByRole('region', { name: 'Golf details' });
+    const hcpRows = within(group).getAllByRole('button').filter((b) => /^Handicap/.test(b.getAttribute('aria-label') ?? b.textContent ?? ''));
+    expect(hcpRows).toHaveLength(1);
+    expect(within(group).getByRole('button', { name: /^Handicap index \+0\.8/ })).toBeTruthy();
+    await user.click(hcpRows[0]!);
+    const sheet = dialog('Golf details');
+    expect(within(sheet).queryByLabelText('Handicap')).toBeNull();
+    expect(within(sheet).getByLabelText('Handicap index')).toHaveValue('+0.8');
+    await user.type(within(sheet).getByLabelText('Phone'), '5550100');
+    await user.click(within(sheet).getByRole('button', { name: 'Save' }));
+    // Left as shown, the index stays blank: saving the phone never copies the handicap into it.
+    await waitFor(() => expect(writes.saveGolf).toHaveBeenCalledWith(expect.objectContaining({ handicap: '-0.8', handicapIndex: '', phone: '5550100' })));
   });
 });
 

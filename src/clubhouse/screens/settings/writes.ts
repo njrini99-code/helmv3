@@ -20,7 +20,7 @@ import { tsToDb } from '@/lib/coachhelm/philosophy-map';
 import { isNativeApp } from '@/lib/utils/capacitor';
 import { fromUntyped } from '@/lib/supabase/untyped';
 import { chEndSession, chSignOut } from '../../lib/sign-out';
-import type { ChResult, ChSettingsWrites, ChStaffWrites } from './model';
+import { parseHcp, type ChResult, type ChSettingsWrites, type ChStaffWrites } from './model';
 
 /**
  * The live writes. Each keeps the table, columns and server action the
@@ -177,8 +177,9 @@ export function createLiveWrites(ctx: {
         .from('golf_players')
         .update(
           {
-            handicap: num(d.handicap),
-            handicap_index: num(d.handicapIndex),
+            // Plus handicaps ("+1.2") are stored negative (model parseHcp).
+            handicap: parseHcp(d.handicap),
+            handicap_index: parseHcp(d.handicapIndex),
             graduation_year: num(d.graduationYear),
             hometown: d.hometown.trim() || null,
             state: d.state.trim().toUpperCase() || null,

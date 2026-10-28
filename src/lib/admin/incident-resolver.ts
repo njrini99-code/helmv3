@@ -167,7 +167,7 @@ export interface KnownIncidentHygieneResult {
   buckets: Array<{ label: string; archived: number }>;
 }
 
-const KNOWN_NON_ACTIONABLE_INCIDENTS: ReadonlyArray<ResolveCriteria & { label: string }> = [
+export const KNOWN_NON_ACTIONABLE_INCIDENTS: ReadonlyArray<ResolveCriteria & { label: string }> = [
   {
     label: 'next_dynamic_server_usage',
     messageMatch: '%Dynamic server usage:%',
@@ -182,7 +182,10 @@ const KNOWN_NON_ACTIONABLE_INCIDENTS: ReadonlyArray<ResolveCriteria & { label: s
   },
   {
     label: 'coachhelm_philosophy_gate_counts',
-    messageMatch: '%philosophy gate filtered%tier-1 insight(s)%',
+    // Matches both "…tier-1 insight(s)" (older, count-bearing) and the current
+    // "…tier-1 insights" emitted by insights-coachhelm.ts. A literal "(s)"
+    // never matched the current text, so fingerprint c55b9c6f kept reopening.
+    messageMatch: '%philosophy gate filtered%tier-1 insight%',
     resolution:
       'Auto-resolved: expected CoachHelm philosophy-gate telemetry, not a user-impacting incident.',
   },
