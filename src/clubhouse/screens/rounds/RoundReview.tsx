@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useMemo, useState, type CSSProperties } from 'react';
+import { useEffect, useMemo, useState, useSyncExternalStore, type CSSProperties } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { ChevronLeft, ChevronRight, Flag } from 'lucide-react';
@@ -385,6 +385,9 @@ function ChangeRoundType({ roundId, edit }: { roundId: string; edit: ChReviewTyp
   );
 }
 
+/** Session storage sends no change events within a tab; the note is read once per render. */
+const noSubscribe = () => () => {};
+
 /** Where "Why?" goes: the read on the player's own Deep dive, when the Deep dive is rebuilt for them. */
 export function debriefWhyHref(readId: string): string | null {
   return rebuiltHref(`/golf/dashboard/coachhelm?view=deep-dive&insight=${encodeURIComponent(readId)}`, 'player');
@@ -407,7 +410,12 @@ function RoundDebrief({ debrief: d }: { debrief: ChDebrief }) {
           <div>
             <dt>Moved</dt>
             <dd>
-              <b className={'ch-num is-' + d.moved.tone}>{d.moved.value}</b> {d.moved.line}
+              {/* H13: the tone is never the only signal; a word says which way it moved. */}
+              <b className={'ch-num is-' + d.moved.tone}>
+                {d.moved.value}
+                <span className="ch-rv-debrief__dir">{d.moved.tone === 'gain' ? ', better than usual.' : ', worse than usual.'}</span>
+              </b>{' '}
+              {d.moved.line}
             </dd>
           </div>
         )}
@@ -495,10 +503,15 @@ export function RoundReview({
   const recap = useMemo(() => checkedRecap({ ...r, recap: recapText }), [r, recapText]);
   const holesScored = r.holes.filter((h) => h.score != null).length || r.holesPlayed;
   const maxD = Math.max(1, ...dist.map((d) => d.count));
-  // A coach who opened this round from Team rounds goes back there, as a player goes back to the library: the note is
-  // read after mount (session storage), so the first paint is the server's.
-  const [fromList, setFromList] = useState(false);
-  useEffect(() => setFromList(openedFromLibrary(r.id)), [r.id]);
+  // A coach who opened this round from Team rounds goes back there, as a player goes back to the library. The note is in
+  // session storage: read during render on the client (an in-app open, the only way a note exists), so the back label is
+  // right before the first paint (visual pass 2026-10-28; it was set after mount and swapped "Stats" for "Rounds" in
+  // view). A server render reads no note, and a hydrating page takes the client's answer straight after.
+  const fromList = useSyncExternalStore(
+    noSubscribe,
+    () => openedFromLibrary(r.id),
+    () => false,
+  );
   const back = coach && fromList ? { label: 'Rounds', href: '/golf/dashboard/rounds' } : reviewBack(r);
   const insight = useMemo(() => headline(r), [r]);
   const points = useMemo(() => flow(r.holes), [r.holes]);
