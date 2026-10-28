@@ -87,7 +87,7 @@ describe('CH-13850 what CoachHelm is doing', () => {
     // Visual pass 2026-10-28 (rubric P013): the shimmering current step is the status; no ticking "Working 12s" line, no ring.
     expect(screen.queryByText(/^Working/)).toBeNull();
     expect(document.querySelector('.ch-th-mark.is-working')).toBeNull();
-    expect(items[2].querySelector('.ch-th-shine')?.textContent).toBe('Comparing putting by distance');
+    expect(items[2]?.querySelector('.ch-th-shine')?.textContent).toBe('Comparing putting by distance');
     await userEvent.click(screen.getByRole('button', { name: 'Stop' }));
     expect(p.onStop).toHaveBeenCalledTimes(1);
   });
