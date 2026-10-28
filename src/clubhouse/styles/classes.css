@@ -2022,9 +2022,10 @@ html[data-fw-theme='dark'] .ch-cl-ok__ic {
   background: color-mix(in oklab, var(--ch-champagne-300) 24%, transparent);
   box-shadow: none;
 }
-/* At night champagne-300 at 24% laid a heavy olive slab down the list; a tenth keeps today a soft band, as in light. */
-html[data-fw-theme='dark'] .ch-cl .ch-cl-card__week > span.is-today,
-html[data-fw-theme='dark'] .ch-cl-tthead__days > span.is-today {
+/* At night champagne-300 at 24% laid a heavy olive slab down the list; a tenth keeps today a soft band, as in light.
+   A team day that is also today keeps its team fill below, as it does by day. */
+html[data-fw-theme='dark'] .ch-cl .ch-cl-card__week > span.is-today:not(.is-team),
+html[data-fw-theme='dark'] .ch-cl-tthead__days > span.is-today:not(.is-team) {
   background: color-mix(in oklab, var(--ch-champagne-300) 10%, transparent);
 }
 .ch-cl .ch-cl-card__week > span.is-team,
