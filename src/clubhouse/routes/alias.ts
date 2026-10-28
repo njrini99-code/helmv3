@@ -20,6 +20,16 @@ export function aliasId(params: URLSearchParams, key: string): string | null {
   return v && /^[\w-]{1,64}$/.test(v) ? v : null;
 }
 
+/**
+ * A free-text query value (a question typed elsewhere), or null: trimmed, no control characters, at most `max` long. It
+ * only ever goes back into an address through URLSearchParams, which encodes it; never spliced in raw.
+ */
+export function aliasText(params: URLSearchParams, key: string, max = 1000): string | null {
+  const v = params.get(key)?.trim();
+  // eslint-disable-next-line no-control-regex -- the point is to refuse control characters
+  return v && v.length <= max && !/[\u0000-\u001f\u007f]/.test(v) ? v : null;
+}
+
 /** A target address, or one built from the old address's query (only from keys it reads through `aliasId`). */
 export type AliasTarget = string | ((params: URLSearchParams) => string);
 
