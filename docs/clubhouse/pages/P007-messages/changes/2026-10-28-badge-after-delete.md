@@ -22,6 +22,9 @@ Held items:     none
   (`src/app/golf/actions/unread-message-count.ts`). On a database without
   the `hidden_at` column it reads the rows again without it, and counts
   every conversation as before.
+- The inbox rail's second read, which adds team and group chats the inbox
+  function left out, now skips one the viewer deleted. Before, a deleted
+  group chat came straight back in the inbox.
 
 ### Why
 
@@ -38,3 +41,5 @@ Held items:     none
   back with the inbox row's count; a deleted message does not; the
   missing-column fallback. The drop-off and fallback cases fail without the
   fix.
+- `use-golf-messages.rail-hidden-team-chat.test.ts`: a deleted group chat
+  stays off the rail while another stays on; it fails without the fix.
