@@ -9,6 +9,7 @@ import { RoundReview } from '../screens/rounds/RoundReview';
 import { ReviewLoadFailed } from '../screens/rounds/ReviewLoadFailed';
 import { Button } from '../ui/Button';
 import { EmptyState } from '../ui/States';
+import { LIVE_ROUTE } from '../live/copy';
 import { resolveClubhouseTeam } from './team';
 import '../styles/rounds.css';
 
@@ -33,7 +34,12 @@ export async function ClubhouseRoundReviewRoute({ id, hole = null }: { id: strin
   });
   const [viewer, result] = await Promise.all([viewerRead, loadRoundReview(id, viewerRead)]);
 
-  if (result.kind === 'inProgress') redirect(`/golf/dashboard/rounds/continue/${id}`);
+  if (result.kind === 'inProgress') {
+    // Continuing a round is the player's own page; a coach would be bounced Home from it. A coach follows it on Live,
+    // narrowed to that player (the loader has already checked the player is on the coach's team).
+    if (viewer?.role === 'coach') redirect(`${LIVE_ROUTE}?player=${encodeURIComponent(result.playerId)}`);
+    redirect(`/golf/dashboard/rounds/continue/${id}`);
+  }
   if (result.kind === 'error') return <ReviewLoadFailed />;
   if (result.kind === 'notFound') {
     const coach = viewer?.role === 'coach';
