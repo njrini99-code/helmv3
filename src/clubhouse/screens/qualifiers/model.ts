@@ -8,16 +8,19 @@
  * player must be entered. This is the round set production commits the squad
  * from (`loadQualifyingWorkspace`), so the board shows what confirm writes.
  *
- * Ranking (D-33): players with a scored round first, then the shared order
- * in src/lib/coachhelm/v3/qualifying/ranking.ts (to par, strokes, more
- * rounds, name), the same order the selection workspace and the squad
- * confirmation use. Two scored players tie only when to par and total
- * strokes both match; ties share a position shown with a T. Fairway's live
- * leaderboard uses the same round set and order since 2026-10-17
+ * Ranking (D-33): players with a scored round first, then the board order
+ * in src/lib/coachhelm/v3/qualifying/ranking.ts (`boardOrder`: a card a
+ * round short below every full card, owner decision 10; then to par,
+ * strokes, more rounds, name). Clubhouse's Manage selections and Confirm
+ * squad rank with the same function (owner decision A: "Match the board").
+ * Two scored players tie only when to par and total strokes both match and
+ * neither card is short of the other; ties share a position shown with a T.
+ * Fairway's live leaderboard and its workspace use the same round set and
+ * the plain order, without the short-card rule
  * (docs/clubhouse/pages/P009-qualifiers/WIRING.md, "Standings parity").
  */
 
-import { compareStandings, sameStanding } from '@/lib/coachhelm/v3/qualifying/ranking';
+import { boardOrder } from '@/lib/coachhelm/v3/qualifying/ranking';
 import { plural, pluralWord } from '../../lib/plural';
 
 export type ChQStatus = 'upcoming' | 'in_progress' | 'completed';
@@ -151,10 +154,7 @@ export function parseSelectionState(s: string | null | undefined): ChQSelectionS
 }
 
 /** Fewer rounds in than the most anyone on the board has: the group decision 10 ranks below the complete cards. */
-const shortOf = (rows: ReadonlyArray<Pick<ChQRow, 'played'>>) => {
-  const most = rows.reduce((m, r) => Math.max(m, r.played), 0);
-  return (row: Pick<ChQRow, 'played'>) => row.played < most;
-};
+const shortOf = (rows: ReadonlyArray<Pick<ChQRow, 'played'>>) => boardOrder(rows).short;
 
 /** The scored rows ranked, with positions and ties assigned (states left null; `missed` left false), and the unscored rows by name. */
 function rankRows(entrants: ChQEntrant[], rounds: ChQRound[]): { scored: ChQRow[]; unscored: ChQRow[]; all: ChQRow[] } {
@@ -201,11 +201,12 @@ function rankRows(entrants: ChQEntrant[], rounds: ChQRound[]): { scored: ChQRow[
   // Owner decision 10 (B13.3): complete cards rank first, a card with fewer rounds than the most anyone has goes below them,
   // so a player who skipped a round never stands over one who played it. Ties are only within a group. The flag waits for the
   // event to end (`buildBoard`).
-  const short = shortOf(scored);
-  scored.sort((a, b) => Number(short(a)) - Number(short(b)) || compareStandings(standingKey(a), standingKey(b)));
+  // The order itself is shared (ranking.ts boardOrder): Clubhouse's Manage selections and Confirm squad rank with it too.
+  const order = boardOrder(scored);
+  scored.sort((a, b) => order.compare(standingKey(a), standingKey(b)));
   scored.forEach((row, i) => {
     const prev = scored[i - 1];
-    if (prev && short(prev) === short(row) && sameStanding(standingKey(prev), standingKey(row))) {
+    if (prev && order.level(standingKey(prev), standingKey(row))) {
       row.position = prev.position;
       row.tied = true;
       prev.tied = true;
@@ -275,8 +276,9 @@ export function buildBoard(input: {
   // Q-114 (owner, 2026-10-01): players level with both the last place on score and the next player share a "Tie at
   // cut" until the coach chooses in Manage selections; name order no longer decides it.
   const cutRow = topScore > 0 ? scored[topScore - 1] : undefined;
-  const short = shortOf(scored);
-  const level = (a: ChQRow, b: ChQRow) => short(a) === short(b) && sameStanding(standingKey(a), standingKey(b));
+  const order = boardOrder(scored);
+  const short = order.short;
+  const level = (a: ChQRow, b: ChQRow) => order.level(standingKey(a), standingKey(b));
   const tieAtCut = !!cutRow && !!scored[topScore] && level(cutRow, scored[topScore]!);
   const tied = (row: ChQRow) => tieAtCut && level(row, cutRow!);
   scored.forEach((row, i) => {
@@ -393,8 +395,8 @@ export function viewerOutcomeText(o: ChQViewerOutcome): { label: string; text: s
 }
 
 /**
- * The board's order, as `buildBoard` sorts it: complete cards first (owner decision 10), each group by `compareStandings`
- * (lib/coachhelm/v3/qualifying/ranking.ts). One sentence for desktop and the phone.
+ * The board's order, as `buildBoard` sorts it (`boardOrder` in lib/coachhelm/v3/qualifying/ranking.ts): complete cards first
+ * (owner decision 10), each group by `compareStandings`. One sentence for desktop and the phone.
  */
 export const RANK_RULE = 'Complete cards rank first, by total to par, then total strokes, then more rounds played; a card a round short sits below them.';
 

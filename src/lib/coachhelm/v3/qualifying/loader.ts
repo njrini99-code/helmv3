@@ -5,9 +5,16 @@
  * project into the SelectionCandidate shape the workspace UI renders.
  *
  * Leaderboard ranking is computed in-process with the shared standings
- * order (ranking.ts: to par, strokes, more rounds, name), the same order
- * the Clubhouse leaderboard uses, so the rank survives a mid-tournament
- * re-load even before all rounds are posted.
+ * order (ranking.ts: to par, strokes, more rounds, name), so the rank
+ * survives a mid-tournament re-load even before all rounds are posted.
+ *
+ * Two orders (types.ts QualifyingOrder). The default, 'score', is the plain
+ * order Fairway's leaderboard shows; Fairway's workspace and its confirm use
+ * it. 'board' is the Clubhouse board's order (ranking.ts boardOrder: a card a
+ * round short below every full card, ties only inside a group); Clubhouse's
+ * Manage selections, its tie choice and its Confirm squad pass it, so the
+ * squad confirmed is the one the board showed above the line (owner
+ * decision A: "Match the board").
  */
 
 import type { SupabaseClient } from '@supabase/supabase-js';
@@ -15,12 +22,13 @@ import type { Database } from '@/lib/types/database';
 import {
   type QualifierSelection,
   type QualifierSelectionState,
+  type QualifyingOrder,
   type QualifyingWorkspace,
   type SelectionCandidate,
   type TieAtCut,
 } from './types';
 import { canConfirmSelection, pickableCount } from './state-machine';
-import { compareStandings, sameStanding } from './ranking';
+import { boardOrder, compareStandings, sameStanding } from './ranking';
 import { readQualifierSelectionReasons } from '@/lib/golf/qualifier-selection-reasons';
 import { fetchAllRowsResult } from '@/lib/supabase/fetch-all-rows';
 
@@ -35,7 +43,9 @@ type Sb = SupabaseClient<Database>;
 export async function loadQualifyingWorkspace(
   supabase: Sb,
   qualifier_id: string,
+  opts: { order?: QualifyingOrder } = {},
 ): Promise<QualifyingWorkspace | null> {
+  const order = opts.order ?? 'score';
   const { data: q, error: qErr } = await supabase
     .from('golf_qualifiers')
     .select(`
@@ -125,11 +135,11 @@ export async function loadQualifyingWorkspace(
       };
     });
 
-  // Rank with the shared order. Unposted (no scored round) → rank null.
-  const ranked = rankCandidates(rawCandidates);
+  // Rank with the shared order (or the board's, for Clubhouse). Unposted (no scored round) → rank null.
+  const ranked = rankCandidates(rawCandidates, order);
 
   const top_n = Math.max(0, q.selection_slots_total - q.selection_slots_coach_pick);
-  const candidates = assignScoreSlots(ranked, selByPlayer, top_n);
+  const candidates = assignScoreSlots(ranked, selByPlayer, top_n, order);
   const tie_at_cut = tieAtCut(candidates, top_n);
 
   const coachPickSelections = Array.from(selByPlayer.values()).filter(
@@ -173,19 +183,27 @@ export async function loadQualifyingWorkspace(
  * with them is `tied_at_cut`; the players clearly above keep their places, and
  * the places left go only to tied players the coach has chosen (a top_score
  * selection written before confirm, see service.ts chooseTiePlace).
+ *
+ * `ranked` must be in `order` (rankCandidates with the same order). With
+ * 'board', players are level only inside one group (full cards, or short
+ * ones), as the board's tie at the cut is.
  */
 export function assignScoreSlots(
   ranked: RankOutput[],
   selByPlayer: Map<string, QualifierSelection>,
   top_n: number,
+  order: QualifyingOrder = 'score',
 ): SelectionCandidate[] {
-  const keyOf = (r: RankOutput) => ({ toPar: r.total_to_par as number, total: r.total_score as number });
-  const eligible = ranked.filter((r) => r.leaderboard_rank !== null && selByPlayer.get(r.player_id)?.selection_type !== 'coach_pick');
+  const keyOf = (r: RankOutput) => ({ toPar: r.total_to_par as number, total: r.total_score as number, played: r.rounds_completed });
+  const scored = ranked.filter((r) => r.leaderboard_rank !== null);
+  const board = order === 'board' ? boardOrder(scored.map(keyOf)) : null;
+  const level = (a: RankOutput, b: RankOutput) => (board ? board.level(keyOf(a), keyOf(b)) : sameStanding(keyOf(a), keyOf(b)));
+  const eligible = scored.filter((r) => selByPlayer.get(r.player_id)?.selection_type !== 'coach_pick');
   const tied = new Set<string>();
   let tiePlaces = 0;
-  if (top_n > 0 && eligible.length > top_n && sameStanding(keyOf(eligible[top_n - 1]!), keyOf(eligible[top_n]!))) {
-    const cutKey = keyOf(eligible[top_n - 1]!);
-    for (const r of eligible) if (sameStanding(keyOf(r), cutKey)) tied.add(r.player_id);
+  if (top_n > 0 && eligible.length > top_n && level(eligible[top_n - 1]!, eligible[top_n]!)) {
+    const cut = eligible[top_n - 1]!;
+    for (const r of eligible) if (level(r, cut)) tied.add(r.player_id);
     tiePlaces = top_n - eligible.slice(0, top_n).filter((r) => !tied.has(r.player_id)).length;
   }
   let onScore = 0;
@@ -228,9 +246,11 @@ interface RankOutput extends RankInput {
 /**
  * Exported for tests. A player is ranked only with a scored round: a
  * stored aggregate of 0 rounds (written as 0/0/0 by older code) is no
- * score, not an even-par round.
+ * score, not an even-par round. With 'board', the Clubhouse board's order:
+ * a card with fewer rounds than the most any ranked player has goes below
+ * every full card (ranking.ts boardOrder, the function the board sorts with).
  */
-export function rankCandidates(input: RankInput[]): RankOutput[] {
+export function rankCandidates(input: RankInput[], order: QualifyingOrder = 'score'): RankOutput[] {
   const scored = (c: RankInput) => c.rounds_completed > 0 && c.total_to_par !== null && c.total_score !== null;
   const withScore = input.filter(scored);
   const noScore = input.filter((c) => !scored(c));
@@ -240,7 +260,8 @@ export function rankCandidates(input: RankInput[]): RankOutput[] {
     played: c.rounds_completed,
     name: `${c.player_first_name ?? ''} ${c.player_last_name ?? ''}`.trim(),
   });
-  withScore.sort((a, b) => compareStandings(key(a), key(b)));
+  const compare = order === 'board' ? boardOrder(withScore.map(key)).compare : compareStandings;
+  withScore.sort((a, b) => compare(key(a), key(b)));
 
   const ranked: RankOutput[] = withScore.map((c, i) => ({
     ...c,
