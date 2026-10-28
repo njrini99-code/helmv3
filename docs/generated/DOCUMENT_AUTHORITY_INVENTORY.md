@@ -883,6 +883,7 @@ them would bury everything above.
 | `docs/clubhouse/foundation-v2/templates/PAGE.md` | current | - | - | yes | - |
 | `docs/clubhouse/foundation-v2/templates/VERIFY.md` | current | - | - | - | - |
 | `docs/clubhouse/foundation-v2/templates/WIRING.md` | current | - | - | - | - |
+| `docs/clubhouse/held/data/baseball-practice-reviews-player-read.md` | current | - | - | - | - |
 | `docs/clubhouse/held/data/document-policy-scoping.md` | current | - | - | - | - |
 | `docs/clubhouse/held/data/live-rounds-realtime.md` | current | - | - | - | - |
 | `docs/clubhouse/held/data/live-rounds.md` | current | - | - | - | - |
@@ -1410,7 +1411,7 @@ them would bury everything above.
 | `src/app/golf/actions/ACTIONS.md` | current | - | - | - | - |
 | `src/clubhouse/AGENTS.md` | current | yes | - | - | - |
 | `src/test/SKIPPED.md` | current | - | - | yes | 6 |
-| `supabase/migrations/HELD.md` | current | - | - | yes | 3 |
+| `supabase/migrations/HELD.md` | current | - | - | yes | 2 |
 | `tests/golf/qualifier-hell/.momentic-mcp/step-authoring-guide-1787628324409-30568958-fbbd-4cb0-8f55-b90fd56cc3d7.md` | current | - | - | - | - |
 | `tools/INTEGRATION_GUIDE.md` | current | - | - | - | - |
 | `tools/MULTI_PLATFORM_GUIDE.md` | current | - | - | - | 1 |
