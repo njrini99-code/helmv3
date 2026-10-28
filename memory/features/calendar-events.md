@@ -281,9 +281,11 @@ legacy `is_recurring` flag in sync for older consumers.
 
 - Month, week, day, agenda, and mobile views should render from the same event truth.
 - Mobile calendar must use compact event cards/sheets and clear RSVP actions.
-- Event detail needs visible status, attendee/RSVP state, documents, and conflict warnings where relevant.
+- Event detail needs visible status, attendee/RSVP state, documents, and
+  conflict warnings where relevant.
 - Empty states should distinguish no events from filtered-out events.
-- The header should avoid stacking multiple utility rows; lower-priority controls should move into sheets/menus.
+- The header should avoid stacking multiple utility rows; lower-priority
+  controls should move into sheets/menus.
 - The Agenda anchors "Today" into view only when earlier buckets are visible
   above it and the range genuinely changes; on a fresh load past buckets are
   collapsed, "Today" already heads the list, and nothing scrolls — the old
