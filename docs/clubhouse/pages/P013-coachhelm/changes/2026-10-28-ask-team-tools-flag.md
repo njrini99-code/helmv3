@@ -19,6 +19,9 @@ Held items:     none
   The chat engine is shared with Fairway, so before this every coach's
   chat had them. Left out, the model is never offered them and cannot
   call them. `get_tournaments` keeps its own `golf_tournaments_v1` gate.
+- The chat route makes that decision and passes it to `buildCoachTools`
+  as `teamTools` (off when left out), because code outside src/clubhouse
+  may not import the Clubhouse gate.
 - `get_team_rounds` already asked for both `qualifier` and the older
   `qualifying` type; its round list now reports both as `qualifier`, so
   one qualifier never reads as two kinds of round.

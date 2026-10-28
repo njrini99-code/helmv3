@@ -46,7 +46,6 @@ import { tool } from 'ai';
 import type { ToolSet, UIMessageStreamWriter } from 'ai';
 import { z } from 'zod';
 import { isFlagEnabled } from '@/lib/flags/is-enabled';
-import { isClubhouseForTeam } from '@/clubhouse/gate';
 import { compileVisual } from './visuals/compile';
 import { VisualSpec, type ValidatedVisualArtifact } from './visuals/schema';
 import type { SupabaseClient } from '@supabase/supabase-js';
@@ -166,6 +165,12 @@ export interface BuildToolsArgs {
   writer: UIMessageStreamWriter;
   /** Collects every envelope this turn produced, for the claim audit. */
   collect: (envelope: ToolEnvelope) => void;
+  /**
+   * Whether Clubhouse is on for this coach's team (`isClubhouseForTeam` in src/clubhouse/gate.ts: the
+   * golf_clubhouse_ui flag, then the HELM_CLUBHOUSE_TEAMS allowlist). The route decides it, since code outside
+   * src/clubhouse may not import the gate. Left out, the whole-team tools stay off.
+   */
+  teamTools?: boolean;
 }
 
 /**
@@ -220,7 +225,7 @@ interface GatedAction<TInput, TPlan> {
   run: (plan: TPlan) => Promise<ActionReceipt>;
 }
 
-export function buildCoachTools({ sb, ctx, conversationId, writer, collect }: BuildToolsArgs): ToolSet {
+export function buildCoachTools({ sb, ctx, conversationId, writer, collect, teamTools = false }: BuildToolsArgs): ToolSet {
   let progressId = 0;
   const progress = (toolName: string, input: Record<string, unknown>) => {
     const label = PROGRESS_LABEL[toolName]?.(input) ?? 'Working';
@@ -554,7 +559,7 @@ export function buildCoachTools({ sb, ctx, conversationId, writer, collect }: Bu
     // Whole-team reads, built for Clubhouse's Ask. This engine also serves Fairway's chat, so they are registered only
     // while Clubhouse is on for this coach's team (golf_clubhouse_ui, then the HELM_CLUBHOUSE_TEAMS allowlist). Left
     // out of the tool set, the model is never offered them and a call to either is refused as an unknown tool.
-    ...(isClubhouseForTeam(ctx.team_id)
+    ...(teamTools
       ? {
         get_team_rounds: tool({
           description:
@@ -582,7 +587,7 @@ export function buildCoachTools({ sb, ctx, conversationId, writer, collect }: Bu
       : {}),
 
     // Same Clubhouse gate as get_team_rounds above.
-    ...(isClubhouseForTeam(ctx.team_id)
+    ...(teamTools
       ? {
         get_qualifiers: tool({
           description:
