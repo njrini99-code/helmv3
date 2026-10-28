@@ -443,8 +443,10 @@
 .ch-th-bar[data-tone='loss'] .ch-th-bar__track > span {
   background: var(--ch-chart-loss);
 }
-.ch-th-bar__val {
+.ch-th-bar__val,
+.ch-th-va__val {
   font: var(--ch-type-14-strong);
+  font-variant-numeric: tabular-nums;
 }
 .ch-th-bar__val > span,
 .ch-th-rank__val > span {
@@ -549,6 +551,7 @@ a.ch-th-reads__r:focus-visible {
 }
 .ch-th-reads__v {
   font: var(--ch-type-14-strong);
+  font-variant-numeric: tabular-nums;
 }
 
 /* Metric tiles */
@@ -1391,6 +1394,13 @@ a.ch-th-reads__r:focus-visible {
 .ch-th-va__row.is-on .ch-th-va__label {
   font: var(--ch-type-14-strong);
 }
+/* The phone column is narrow, and a leg's name grows with iPhone Text Size: it wraps rather than clipping. */
+.ch-th--phone .ch-th-va__label {
+  overflow: visible;
+  text-overflow: clip;
+  white-space: normal;
+  overflow-wrap: anywhere;
+}
 .ch-th-va__track {
   position: relative;
   height: 16px;
@@ -1413,11 +1423,26 @@ a.ch-th-reads__r:focus-visible {
   background: var(--ch-chart-loss);
 }
 .ch-th-va__row.is-quiet .ch-th-va__bar {
-  opacity: 0.45;
+  opacity: 0.75;
 }
 .ch-th-va__val {
   text-align: right;
-  font: var(--ch-type-14-strong);
+}
+@media (forced-colors: active) {
+  .ch-th-va {
+    border: 1px solid CanvasText;
+  }
+  .ch-th-va__track {
+    border: 1px solid CanvasText;
+  }
+  .ch-th-va__row[data-sign] .ch-th-va__bar {
+    background: CanvasText;
+    forced-color-adjust: none;
+  }
+  .ch-th-va__row.is-on {
+    outline: 2px solid Highlight;
+    outline-offset: -2px;
+  }
 }
 .ch-th-va__detail,
 .ch-th-va__hint,

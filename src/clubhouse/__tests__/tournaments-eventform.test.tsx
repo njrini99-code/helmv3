@@ -73,6 +73,7 @@ describe('New event (Tournaments page)', () => {
     expect(sent.rounds[0].date).toBe(f.form.create.today);
     await waitFor(() => expect(nav.push).toHaveBeenCalledWith('/golf/dashboard/tournaments/tour-9'));
     expect(toast).toHaveBeenCalledWith(expect.objectContaining({ code: 'CH-6040', title: 'Test Invitational is set up in Tournaments' }));
+    expect(haptic.mock.calls.filter(([k]) => k === 'success')).toHaveLength(1);
   });
 
   it('a refused save stays on the page and says why', async () => {
@@ -113,6 +114,16 @@ describe('New event (Tournaments page)', () => {
     expect(report).toHaveBeenCalledWith(expect.any(Error), expect.objectContaining({ action: 'tournaments.create' }));
     expect(screen.queryByRole('alert')).toBeNull();
     expect(nav.push).not.toHaveBeenCalled();
+  });
+
+  it('a throw after a refusal clears the old notice, so only the toast speaks', async () => {
+    create.mockResolvedValueOnce({ success: false, error: 'No', code: 'failed' }).mockRejectedValueOnce(new Error('network down'));
+    draw();
+    fillAndSubmit();
+    await screen.findByRole('alert');
+    submit();
+    await waitFor(() => expect(toast).toHaveBeenCalledTimes(1));
+    expect(screen.queryByRole('alert')).toBeNull();
   });
 
   it('editing an event is still the placeholder', () => {

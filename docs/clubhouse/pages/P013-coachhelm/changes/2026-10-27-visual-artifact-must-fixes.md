@@ -28,6 +28,15 @@ Held items:     none
   and nothing else in the read). A read named alongside, such as a team rounds
   read, keeps its evidence block in the answer instead of being hidden behind a
   chart that never drew it.
+- The evidence values (`.ch-th-bar__val`, `.ch-th-reads__v`) and the visual's
+  value (`.ch-th-va__val`) keep tabular figures. Each rule sets the `font`
+  shorthand, which resets the numeric variant, so the line stays with it.
+- Dimmed bars sit at 0.75 opacity, which keeps every ink at 3:1 on the track.
+- On a phone a long leg name wraps instead of clipping. With forced colours on,
+  the plate, the tracks, the bars and the selected row stay drawn.
+- A digit in any script (`\p{N}`, such as a full-width digit or a fraction)
+  counts as a figure. A refused title may be retried once in words; any other
+  refusal is answered in words.
 
 ### Why
 

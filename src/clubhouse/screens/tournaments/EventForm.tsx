@@ -92,6 +92,7 @@ function NewEvent({ data, phone }: { data: ChTourFormData; phone: boolean }) {
     'tournaments.create',
     async () => {
       surfaced.current = false;
+      setNote(null);
       const payload = toCreatePayload(state, data.timezone, {
         teamId: data.teamId,
         requestId: '',

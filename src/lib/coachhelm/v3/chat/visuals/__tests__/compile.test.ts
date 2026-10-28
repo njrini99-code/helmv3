@@ -94,7 +94,7 @@ describe('compileVisual · sg_anatomy', () => {
   });
 
   it('refuses a title that carries a figure: every number on screen comes from the reads', () => {
-    for (const title of ['Approach costs 0.9 a round', 'Last 8 rounds', 'Top 3 losses']) {
+    for (const title of ['Approach costs 0.9 a round', 'Last 8 rounds', 'Top 3 losses', 'Last １８ holes', 'Gains ½ a shot']) {
       expect(compileVisual(spec({ title }), withE1(four), NOW)).toMatchObject({ ok: false, reason: 'figure_in_text' });
     }
     const words = compileVisual(spec({ title: 'Where Jonah gains and loses' }), withE1(four), NOW);

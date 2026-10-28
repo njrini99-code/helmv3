@@ -20,6 +20,8 @@ Held items:     none
   the form drew itself (the toast with Open, or the notice at the top); a
   thrown or rejected save gets the standard CH-6001 error toast with Try again
   and the error haptic.
+- Each save clears the page's old notice first, so a throw after a refusal
+  is said only by the toast.
 
 ### Why
 
@@ -29,4 +31,5 @@ Held items:     none
 
 - `tournaments-eventform.test.tsx`: a rejected save shows the CH-6001 toast,
   plays the error haptic and reports it; a refused save is still said once, by
-  the page.
+  the page. A throw after a refusal leaves no stale notice. A good save plays
+  one success haptic.

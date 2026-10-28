@@ -38,7 +38,7 @@ describe('CH-13853: the visual artifact is styled', () => {
     const bar = rule('.ch-th-va__bar');
     expect(bar).toMatch(/transition: opacity var\(--ch-dur-base\) var\(--ch-ease\);/);
     expect(bar).not.toMatch(/width|transform|animation/);
-    expect(rule('.ch-th-va__row.is-quiet .ch-th-va__bar')).toMatch(/opacity: 0\.45;/);
+    expect(rule('.ch-th-va__row.is-quiet .ch-th-va__bar')).toMatch(/opacity: 0\.75;/);
   });
 
   it('the rows are 44px targets on the selected token with the shared focus ring, and the zero line is a hairline', () => {
@@ -50,6 +50,22 @@ describe('CH-13853: the visual artifact is styled', () => {
     // The tracks are positioned, so the line needs its own layer to stay unbroken through them, kept inside the chart.
     expect(rule('.ch-th-va__axis')).toMatch(/z-index: 1;/);
     expect(rule('.ch-th-va__chart')).toMatch(/isolation: isolate;/);
+  });
+
+  it('keeps every figure on tabular numbers: each value rule sets the font shorthand, which resets the numeric variant', () => {
+    for (const sel of ['.ch-th-va__val', '.ch-th-bar__val', '.ch-th-reads__v']) {
+      const r = rule(sel);
+      expect(r, sel).toMatch(/font: var\(--ch-type-14-strong\);\s*font-variant-numeric: tabular-nums;/);
+    }
+    // Nothing later in the sheet sets the shorthand on the visual's value again.
+    const own = [...css.matchAll(/([^{}]*)\{([^{}]*)\}/g)].filter((m) => m[1]!.trim() === '.ch-th-va__val');
+    expect(own.length).toBeGreaterThan(0);
+    expect(own.every((m) => !/font:/.test(m[2]!))).toBe(true);
+  });
+
+  it('wraps a long leg name on a phone instead of clipping it, and stays drawn with forced colours on', () => {
+    expect(rule('.ch-th--phone .ch-th-va__label')).toMatch(/white-space: normal;/);
+    expect(css).toMatch(/@media \(forced-colors: active\) \{[\s\S]*?\.ch-th-va__row\[data-sign\] \.ch-th-va__bar \{\s*background: CanvasText;/);
   });
 
   it('uses Clubhouse tokens only: every custom property it reads is a --ch-* one', () => {

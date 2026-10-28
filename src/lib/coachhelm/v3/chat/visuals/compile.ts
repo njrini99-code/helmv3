@@ -13,7 +13,7 @@ const SG_LEGS = ['sg_tee', 'sg_approach', 'sg_around_green', 'sg_putting'] as co
 const RECONCILE_TOLERANCE = 0.1;
 
 /** A figure written into a label must come from the data, so a label with a digit in it is not accepted. */
-const hasDigit = (s: string) => /\d/.test(s);
+const hasDigit = (s: string) => /\p{N}/u.test(s);
 
 const canonical = (value: unknown): string => JSON.stringify(value, (_k, v) => (v && typeof v === 'object' && !Array.isArray(v) ? Object.fromEntries(Object.entries(v).sort(([a], [b]) => a.localeCompare(b))) : v));
 
