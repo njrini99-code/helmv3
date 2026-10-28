@@ -1,4 +1,4 @@
--- STATUS: WRITTEN — HOLD — NOT APPLIED
+-- STATUS: WRITTEN — HOLD — NOT APPLIED. BaseballHelm, not a Clubhouse page.
 -- Written 2026-10-28 for BaseballHelm practice reviews (owner call from the
 -- PR 2351 follow-up: "should players see player_visible reviews?" Answer:
 -- yes, the reviews a coach marks visible, only their own).

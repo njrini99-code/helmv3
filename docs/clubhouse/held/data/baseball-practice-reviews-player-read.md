@@ -84,6 +84,10 @@ Players read nothing again. Staff paths are untouched.
 WRITTEN — HOLD — NOT APPLIED
 ```
 
+The first line starts with that header and adds "BaseballHelm, not a
+Clubhouse page.": `clubhouse:check` treats a first line that is exactly the
+header as a Clubhouse page's held migration and needs a page to claim it.
+
 pgTAP: `supabase/tests/rls/baseball_practice_reviews_player_read.sql`
 (behavioral, seeded) and the updated
 `supabase/tests/rls/baseball_practice_effectiveness_visibility.sql`. CI replays
