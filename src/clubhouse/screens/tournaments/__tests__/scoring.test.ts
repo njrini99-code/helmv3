@@ -120,15 +120,50 @@ describe('teamRound, 5 count 4', () => {
     expect(r.dropped).toEqual(['b']);
   });
 
-  it('previews a pending disqualification without changing the total', () => {
-    const r = teamRound([lp('a', 1, 70), lp('b', 2, 71, 'dq_pending'), lp('c', 3, 72), lp('d', 4, 73), lp('e', 5, 75)], F54, PAR);
-    expect(r.total).toBe(286);
-    expect(r.dqSwapPreview).toEqual({ ifDq: 'b', nowCounts: 'e', total: 290, toPar: 2 });
+});
+
+describe('teamRound, disqualifications (owner rule 2026-10-28)', () => {
+  const round = (status: ChTourPlayerScore['status']) => [lp('a', 1, 70), lp('b', 2, 71, status), lp('c', 3, 72), lp('d', 4, 73), lp('e', 5, 75)];
+
+  it('no DQ: the lowest four count', () => {
+    expect(teamRound(round('ok'), F54, PAR)).toMatchObject({ kind: 'complete', total: 286, toPar: -2, counting: ['a', 'b', 'c', 'd'], dropped: ['e'], droppedTotal: 75 });
   });
 
-  it('previews a pending disqualification that would leave no team score', () => {
-    const r = teamRound([lp('a', 1, 70), lp('b', 2, 71, 'dq_pending'), lp('c', 3, 72), lp('d', 4, 73), lp('e', 5, null, 'wd')], F54, PAR);
-    expect(r.dqSwapPreview).toEqual({ ifDq: 'b', nowCounts: null, total: null, toPar: null });
+  it('confirmed DQ: the dropped score counts in its place', () => {
+    expect(teamRound(round('dq'), F54, PAR)).toMatchObject({ kind: 'complete', total: 290, toPar: 2, counting: ['a', 'c', 'd', 'e'], dropped: ['b'], droppedTotal: null });
+  });
+
+  it('provisional DQ: out of the team score exactly as a confirmed DQ, so the total is what it is if the DQ stands', () => {
+    const pending = teamRound(round('dq_pending'), F54, PAR);
+    expect(pending).toEqual(teamRound(round('dq'), F54, PAR));
+    expect(pending.total).toBe(290);
+  });
+
+  it('provisional DQ that leaves too few scores: no team score, as a confirmed DQ', () => {
+    const scores = [lp('a', 1, 70), lp('b', 2, 71, 'dq_pending'), lp('c', 3, 72), lp('d', 4, 73), lp('e', 5, null, 'wd')];
+    const r = teamRound(scores, F54, PAR);
+    expect(r).toMatchObject({ kind: 'incomplete', total: null, reason: 'too_few_scores', missing: ['b', 'e'] });
+    expect(r).toEqual(teamRound(scores.map((s) => (s.status === 'dq_pending' ? { ...s, status: 'dq' as const } : s)), F54, PAR));
+  });
+
+  it('provisional DQ while the round is played: out of the live count too', () => {
+    const live = (status: ChTourPlayerScore['status']) => [
+      { ...lp('a', 1, null), live: { thru: 9, toPar: -1 } },
+      { ...lp('b', 2, null, status), live: { thru: 9, toPar: -3 } },
+      { ...lp('c', 3, null), live: { thru: 9, toPar: 0 } },
+      { ...lp('d', 4, null), live: { thru: 9, toPar: 1 } },
+      { ...lp('e', 5, null), live: { thru: 9, toPar: 2 } },
+    ];
+    const pending = teamRound(live('dq_pending'), F54, PAR);
+    expect(pending).toMatchObject({ kind: 'live', toPar: 2, counting: ['a', 'c', 'd', 'e'] });
+    expect(pending).toEqual(teamRound(live('dq'), F54, PAR));
+  });
+
+  it('a provisional DQ is not a counting round for the player', () => {
+    const scores = round('dq_pending');
+    const rounds = [{ scores, result: teamRound(scores, F54, PAR) }];
+    expect(countingRate('b', rounds)).toEqual({ counted: 0, played: 1, rate: 0 });
+    expect(gapToDrop('b', rounds)).toEqual({ value: null, n: 0 });
   });
 });
 

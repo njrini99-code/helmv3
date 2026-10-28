@@ -96,7 +96,11 @@ export function LedgerRow({
   );
 }
 
-/** A screen's key figures between two hairlines, divided by soft rules. Two to four figures. */
+/**
+ * A screen's key figures between two hairlines, divided by soft rules. Two to four figures. A gain or loss tints its
+ * figure; `under` is a count of rounds under par, not a score, so its figure stays ink and its label carries the
+ * scoreboard's red under-par disc as the key (design picks, 2026-10-28).
+ */
 export function FigureRow({
   items,
   className,
@@ -106,9 +110,9 @@ export function FigureRow({
   return (
     <dl className={cx('ch-fgr', className)} style={{ ['--ch-fgr-n' as string]: items.length }} data-ch-code={code} aria-label={label}>
       {items.map((it, i) => (
-        <div key={i} className="ch-fgr__c">
+        <div key={i} className={'ch-fgr__c' + (it.tone === 'under' ? ' is-under' : '')}>
           <dt>{it.label}</dt>
-          <dd className={'ch-num' + (it.tone ? ` is-${it.tone}` : '')}>{it.value}</dd>
+          <dd className={'ch-num' + (it.tone && it.tone !== 'under' ? ` is-${it.tone}` : '')}>{it.value}</dd>
           {it.note != null && <dd className="ch-fgr__note">{it.note}</dd>}
         </div>
       ))}

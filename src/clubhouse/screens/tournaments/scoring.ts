@@ -7,7 +7,9 @@
  * scores among that round's lineup players (5 count 4 by default), and the event total is the sum of the round
  * totals. Individuals and alternates never count. A round with fewer valid scores than the format counts has no
  * team score at all ("incomplete"), never a smaller sum. A withdrawal or disqualification costs that player that
- * round only; the dropped score then counts in their place.
+ * round only; the dropped score then counts in their place. A disqualification still under review (`dq_pending`) is
+ * out of the team score exactly as a confirmed one (owner rule 2026-10-28), so the total is what it will be if the DQ
+ * stands; the views mark it provisional ("DQ?") because it can still change. This module is the one rule for that.
  */
 
 export type ChTourFormatKind = '5c4' | '6c5' | '6c4' | 'custom' | 'match' | 'medal_match' | 'individual';
@@ -40,7 +42,10 @@ export function hasTeamScore(format: ChTourFormat): boolean {
 }
 
 export type ChTourRole = 'lineup' | 'alternate' | 'individual';
-/** `dq_pending`: a disqualification being looked at; the score still counts until it is confirmed. */
+/**
+ * `dq_pending`: a disqualification being looked at. Its score is out of the team score, as a confirmed DQ's is; only
+ * the label says it is provisional.
+ */
 export type ChTourScoreStatus = 'ok' | 'wd' | 'dq' | 'dq_pending';
 
 export interface ChTourPlayerScore {
@@ -73,18 +78,8 @@ export interface ChTourTeamRound {
   /** Lineup players without a valid score, when that is why the round is incomplete. */
   missing: string[];
   reason: 'too_few_scores' | null;
-  /** The sum of the dropped valid scores (WD and DQ have none): the NCAA's first team tiebreaker. */
+  /** The sum of the dropped valid scores (WD and DQ, pending or not, have none): the NCAA's first team tiebreaker. */
   droppedTotal: number | null;
-  /** The first counting score under review, and what the round would be if it were a DQ. */
-  dqSwapPreview: ChTourDqPreview | null;
-}
-
-export interface ChTourDqPreview {
-  ifDq: string;
-  /** The player whose score would count instead; null when the round would be left without a team score. */
-  nowCounts: string | null;
-  total: number | null;
-  toPar: number | null;
 }
 
 const NONE: ChTourTeamRound = {
@@ -97,11 +92,12 @@ const NONE: ChTourTeamRound = {
   missing: [],
   reason: null,
   droppedTotal: null,
-  dqSwapPreview: null,
 };
 
-const hasScore = (s: ChTourPlayerScore): boolean => (s.status === 'ok' || s.status === 'dq_pending') && s.total != null;
-const isPlaying = (s: ChTourPlayerScore): boolean => (s.status === 'ok' || s.status === 'dq_pending') && s.live != null;
+/** Only an ok score can count: WD, DQ and a DQ under review (`dq_pending`) are all out of the team score. */
+const counts = (s: ChTourPlayerScore): boolean => s.status === 'ok';
+const hasScore = (s: ChTourPlayerScore): boolean => counts(s) && s.total != null;
+const isPlaying = (s: ChTourPlayerScore): boolean => counts(s) && s.live != null;
 const slotOrder = (s: ChTourPlayerScore): number => s.slot ?? Number.MAX_SAFE_INTEGER;
 
 /**
@@ -114,15 +110,10 @@ export function teamRound(scores: readonly ChTourPlayerScore[], format: ChTourFo
   if (!hasTeamScore(format)) return NONE;
   const lineup = scores.filter((s) => s.role === 'lineup');
   if (lineup.some(isPlaying)) return liveRound(lineup, format, par);
-  return finalRound(lineup, format, par, true);
+  return finalRound(lineup, format, par);
 }
 
-function finalRound(
-  lineup: readonly ChTourPlayerScore[],
-  format: ChTourFormat,
-  par: number,
-  withPreview: boolean,
-): ChTourTeamRound {
+function finalRound(lineup: readonly ChTourPlayerScore[], format: ChTourFormat, par: number): ChTourTeamRound {
   // Lowest strokes first; on equal strokes the lower slot number counts, so the answer never depends on input order.
   const valid = lineup.filter(hasScore).sort((a, b) => a.total! - b.total! || slotOrder(a) - slotOrder(b));
   const invalid = lineup.filter((s) => !hasScore(s)).sort((a, b) => slotOrder(a) - slotOrder(b));
@@ -140,7 +131,7 @@ function finalRound(
   const total = counted.reduce((sum, s) => sum + s.total!, 0);
   const edge = counted[counted.length - 1]!.total;
   const tiedAtBoundary = extra.length > 0 && extra[0]!.total === edge ? valid.filter((s) => s.total === edge).map((s) => s.playerId) : [];
-  const round: ChTourTeamRound = {
+  return {
     kind: 'complete',
     total,
     toPar: total - par * format.counting,
@@ -150,26 +141,14 @@ function finalRound(
     missing: [],
     reason: null,
     droppedTotal: extra.length > 0 ? extra.reduce((sum, s) => sum + s.total!, 0) : null,
-    dqSwapPreview: null,
   };
-  if (!withPreview) return round;
-  const pending = counted.find((s) => s.status === 'dq_pending');
-  if (!pending) return round;
-  const ifDq = finalRound(
-    lineup.map((s) => (s.playerId === pending.playerId ? { ...s, status: 'dq' as const } : s)),
-    format,
-    par,
-    false,
-  );
-  const nowCounts = ifDq.counting.find((id) => !round.counting.includes(id)) ?? null;
-  return { ...round, dqSwapPreview: { ifDq: pending.playerId, nowCounts, total: ifDq.total, toPar: ifDq.toPar } };
 }
 
 /** While the round is being played: count the best to-par scores so far among players who have started or finished. */
 function liveRound(lineup: readonly ChTourPlayerScore[], format: ChTourFormat, par: number): ChTourTeamRound {
   const toParOf = (s: ChTourPlayerScore): number | null => (s.live != null ? s.live.toPar : s.total != null ? s.total - par : null);
   const going = lineup
-    .filter((s) => (s.status === 'ok' || s.status === 'dq_pending') && toParOf(s) != null)
+    .filter((s) => counts(s) && toParOf(s) != null)
     .sort((a, b) => toParOf(a)! - toParOf(b)! || slotOrder(a) - slotOrder(b));
   const counted = going.slice(0, format.counting);
   const counting = counted.map((s) => s.playerId);
