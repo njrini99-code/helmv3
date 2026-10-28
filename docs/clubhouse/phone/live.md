@@ -13,7 +13,7 @@ chevron to the live view, up to four
   compact lanes (48 px: initials, name and where they are, the last six marks,
 to-par, thru), and "See all 7" when there
   are more. No card at all when nobody is out. A lane opens a sheet; a long
-press (450 ms) opens Message, Open round (a posted round) or Follow on
+press (450 ms) opens Message, Open round (a posted or stopped round) or Follow on
   Live (one still being played), and Open qualifier.
 - **The live view** (`/golf/dashboard/live`), a pushed screen. The top bar has
   Back to Home, the title and the feed chip.

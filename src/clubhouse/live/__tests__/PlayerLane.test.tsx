@@ -98,12 +98,18 @@ describe('a lane’s peek actions', () => {
   });
 
   it('follow a round still being played on Live, narrowed to the player, never its review (a coach would be bounced Home)', () => {
-    const live = [...PREVIEW_LIVE.lanes, ...PREVIEW_LIVE_STARTS.lanes].filter((l) => l.phase !== 'posted');
+    const live = [...PREVIEW_LIVE.lanes, ...PREVIEW_LIVE_STARTS.lanes].filter((l) => l.phase === 'on_course' || l.phase === 'finished');
     expect(live.length).toBeGreaterThan(0);
     for (const lane of live) {
       expect(label(lane).map(([l]) => l)).not.toContain('Open round');
       expect(label(lane)).toContainEqual(['Follow on Live', `/golf/dashboard/live?player=${lane.playerId}`]);
     }
+  });
+
+  it('keeps its review: an abandoned round is not in progress, so Open round still opens it', () => {
+    const stopped = { ...byName('Sofia Reyes'), phase: 'stopped' as const, thru: 9 };
+    expect(label(stopped)).toContainEqual(['Open round', `/golf/dashboard/rounds/${stopped.roundId}`]);
+    expect(label(stopped).map(([l]) => l)).not.toContain('Follow on Live');
   });
 });
 

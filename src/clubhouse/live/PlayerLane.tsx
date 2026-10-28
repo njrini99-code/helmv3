@@ -125,9 +125,10 @@ export function peekActions(lane: LiveLane): PeekAction[] {
   const out: PeekAction[] = [];
   const msg = messagesPrefillHref({ players: [lane.playerId], draft: '', title: lane.name });
   if (msg) out.push({ label: `Message ${firstName(lane.name)}`, icon: MessageSquare, href: rebuiltHref(msg, 'coach') });
-  // A posted round has a review; one still being played is followed on Live (the review would only send the coach there).
-  if (lane.phase === 'posted') out.push({ label: 'Open round', icon: ChartColumn, href: rebuiltHref(`/golf/dashboard/rounds/${lane.roundId}`, 'coach') });
-  else out.push({ label: 'Follow on Live', icon: Radio, href: `${LIVE_ROUTE}?player=${encodeURIComponent(lane.playerId)}` });
+  // A round still in progress (out, or in and not posted) is followed on Live: its review would only send the coach there.
+  // A posted round, and one the player stopped, has a review that opens.
+  if (lane.phase === 'on_course' || lane.phase === 'finished') out.push({ label: 'Follow on Live', icon: Radio, href: `${LIVE_ROUTE}?player=${encodeURIComponent(lane.playerId)}` });
+  else out.push({ label: 'Open round', icon: ChartColumn, href: rebuiltHref(`/golf/dashboard/rounds/${lane.roundId}`, 'coach') });
   if (lane.roundType === 'qualifier' && lane.qualifierId) out.push({ label: 'Open qualifier', icon: Flag, href: rebuiltHref(`/golf/dashboard/qualifiers/${lane.qualifierId}`, 'coach') });
   return out;
 }

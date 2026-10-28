@@ -18,9 +18,10 @@ Held items:     none
   narrowed to that player (`/golf/dashboard/live?player=`). The continue page
   is player-only, and before this it bounced a coach to sign-in and Home. A
   coach off the team still gets "This round isn't here" (CH-11307).
-- A live lane's long press offers Open round only for a posted round. A round
-  still being played offers Follow on Live instead. This covers Live, Home's
-  Live now card, Team rounds and a qualifier's On the course list.
+- A live lane's long press offers Follow on Live for a round still in
+  progress (on the course, or in and not posted). A posted round, and one the
+  player stopped, keeps Open round, since its review opens. This covers Live,
+  Home's Live now card, Team rounds and a qualifier's On the course list.
 
 ### Why
 
