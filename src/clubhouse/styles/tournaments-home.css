@@ -82,6 +82,15 @@
   line-height: var(--ch-lead-tight);
   letter-spacing: var(--ch-track-22);
 }
+/* The card's title is its link to the desk: 27px drawn, 44px to the finger on the phone. */
+.ch-tour-home.is-phone .ch-tour-home-feat__t {
+  position: relative;
+}
+.ch-tour-home.is-phone .ch-tour-home-feat__t::after {
+  position: absolute;
+  inset: min(0px, calc(50% - 22px)) 0;
+  content: '';
+}
 .ch-tour-home.is-phone .ch-tour-home-feat__go {
   min-height: 44px;
   flex: 1 1 auto;
@@ -106,10 +115,10 @@
   line-height: var(--ch-lead-tight);
   color: var(--ch-text-primary);
 }
+/* The month at 12, the phone's text floor (Q-141); 11 read as fine print under the day. */
 .ch-tour-home-date span {
   margin-top: 4px;
-  font: var(--ch-type-11-medium);
-  letter-spacing: var(--ch-track-11);
+  font: var(--ch-type-12-medium);
   line-height: var(--ch-lead-tight);
   color: var(--ch-text-secondary);
 }

@@ -24,10 +24,15 @@ Held items:     none (golf_tournaments_v1 stays off in production;
 - Phone History: the "Across seasons" toggles (lineup mode, measured against) sat
   in the section head beside the title, overran it and ran off the right edge. On
   the phone they take two full-width rows under the heading (`History.tsx`,
-  `styles/tournaments-review.css`).
+  `styles/tournaments-review.css`). #2395 fixed the same overrun in CSS, by
+  wrapping the section head; on merge this markup stands (the filters render in
+  the body on the phone, so the head has no actions to wrap) and those head
+  rules were dropped.
 - The trend's subtitle, key and note had their margins zeroed by `.ch-root p`
   (base.css outranks a one-class rule), so the note touched the bar labels and the
-  key touched the axis. The rules now carry two classes.
+  key touched the axis. The rules now carry two classes. #2395 set the key's
+  gap to 16px on a one-class rule that the reset still zeroed; on merge the key
+  keeps two classes with #2395's 16px.
 - The key names the dotted line: "The dotted line is the average of the points
   shown." In a chart titled "against course rating" it otherwise read as the
   rating (0), but it sits at the mean.

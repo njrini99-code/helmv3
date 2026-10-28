@@ -79,7 +79,8 @@
   display: inline-flex;
   align-items: center;
   gap: 8px;
-  height: 32px;
+  /* The shared pill's height (.ch-pill, controls.css): 30 on the desktop, 36 on the phone below. */
+  height: 30px;
   padding: 0 12px 0 16px;
   border: 0;
   border-radius: 999px;
@@ -406,7 +407,7 @@
   color: var(--ch-score-under);
 }
 .ch-qf-tp.is-big {
-  font-size: 16px;
+  font-size: calc(16 * var(--ch-type-k));
   font-weight: 600;
 }
 .ch-qf-num {
@@ -2507,12 +2508,16 @@
   line-height: var(--ch-lead-tight);
   font-variant-numeric: tabular-nums;
 }
-/* The up or down mark is an icon, not "▲"/"▼", which the font does not have (A23). Mark and count sit centred as one
-   unit, so "3 ⌃2" never reads as a raised caret beside the rank (a 32 at a glance). */
-.ch-qf-move > span[aria-hidden] {
+/* The up or down mark is an icon, not a triangle glyph, which the font does not have (A23). The chevron and its count
+   are one unit on one line ("⌃2"): an inline svg let the count wrap under the chevron in a narrow position column. */
+.ch-qf-move > [aria-hidden] {
   display: inline-flex;
   align-items: center;
   gap: 1px;
+  white-space: nowrap;
+}
+.ch-qf-move svg {
+  flex: none;
 }
 .ch-qf-move.is-gain {
   color: var(--ch-chart-gain);
@@ -2675,13 +2680,14 @@ html:has([data-ui='clubhouse'])::view-transition-new(.ch-rank) {
   }
 }
 
-/* The top-score line on the scoreboard: mint, so it reads on the green. */
+/* The top-score line on the scoreboard: champagne on the green (8:1), as the board's line is brass on the sheet; mint
+   stays the climb's colour. */
 .ch-scoreboard .ch-qf-line {
-  color: var(--ch-hero-mint);
+  color: var(--ch-champagne-300);
 }
 .ch-scoreboard .ch-qf-line::before,
 .ch-scoreboard .ch-qf-line::after {
-  border-top-color: rgb(159 224 182 / 0.45);
+  border-top-color: color-mix(in srgb, var(--ch-champagne-300) 55%, transparent);
 }
 
 /* Loading in the framed page head (desktop): the list's head holds the loaded head's measured height (WebKit 1440 and
@@ -3221,7 +3227,7 @@ html:has([data-ui='clubhouse'])::view-transition-new(.ch-rank) {
   min-height: 66px;
 }
 .ch-qf-board .ch-qf-pos__n {
-  font-size: 22px;
+  font-size: calc(22 * var(--ch-type-k));
   font-weight: 500;
   color: var(--ch-ink-500);
 }
@@ -3230,7 +3236,7 @@ html:has([data-ui='clubhouse'])::view-transition-new(.ch-rank) {
   color: var(--ch-ink-950);
 }
 .ch-qf-board .ch-qf-who b {
-  font-size: 17px;
+  font-size: calc(17 * var(--ch-type-k));
   font-weight: 600;
   letter-spacing: var(--ch-track-17);
 }
@@ -3245,7 +3251,7 @@ html:has([data-ui='clubhouse'])::view-transition-new(.ch-rank) {
   color: var(--ch-ink-500);
 }
 .ch-qf-board .ch-qf-num {
-  font-size: 15px;
+  font-size: calc(15 * var(--ch-type-k));
   color: var(--ch-ink-500);
 }
 .ch-qf-board .ch-qf-plate {
@@ -3254,13 +3260,13 @@ html:has([data-ui='clubhouse'])::view-transition-new(.ch-rank) {
   justify-content: end;
   background: none;
   box-shadow: none;
-  font-size: 28px;
+  font-size: calc(28 * var(--ch-type-k));
   font-weight: 600;
   letter-spacing: -0.02em;
 }
 .ch-qf-board .ch-qf-plate.is-none {
   box-shadow: none;
-  font-size: 17px;
+  font-size: calc(17 * var(--ch-type-k));
   color: var(--ch-text-tertiary);
 }
 /* the status: a word in its own ink, no box */
@@ -3285,8 +3291,10 @@ html[data-fw-theme='dark'] .ch-qf-board .ch-badge {
   background: none;
   box-shadow: none;
 }
+/* The top-score line is champagne (P009 checklist): a brass label (--ch-ledger-eyebrow, 5.9:1 light, 7.1:1 dark) over a
+   champagne dash, the same warm family as the Bubble word under it. The travel cut stays a quiet ink rule. */
 .ch-qf-board .ch-qf-line {
-  color: var(--ch-green-700);
+  color: var(--ch-ledger-eyebrow);
   font-weight: 600;
 }
 .ch-qf-board .ch-qf-line--muted {
@@ -3295,6 +3303,11 @@ html[data-fw-theme='dark'] .ch-qf-board .ch-badge {
 }
 .ch-qf-board .ch-qf-line::before,
 .ch-qf-board .ch-qf-line::after {
+  /* The brass at three quarters: 3:1 and more on the sheet in both themes (champagne-500 itself was 2.4:1 on ivory). */
+  border-top-color: color-mix(in srgb, var(--ch-ledger-eyebrow) 75%, transparent);
+}
+.ch-qf-board .ch-qf-line--muted::before,
+.ch-qf-board .ch-qf-line--muted::after {
   border-top-color: var(--ch-ink-400);
 }
 .ch-qf-board .ch-qf-you {
@@ -3319,7 +3332,7 @@ html[data-fw-theme='dark'] .ch-qf-board .ch-badge {
   color: var(--ch-ink-600);
 }
 .ch-qfm .ch-qf-board .ch-qf-plate {
-  font-size: 22px;
+  font-size: calc(22 * var(--ch-type-k));
 }
 .ch-qfm .ch-qf-board .ch-qfm-lb__sub .ch-badge {
   font-size: calc(13 * var(--ch-type-k));
@@ -3436,7 +3449,7 @@ html[data-fw-theme='dark'] .ch-qf-board .ch-badge {
     margin-top: 32px;
   }
   .ch-qf--list[data-canopy] .ch-qf-sec.is-done > h2 {
-    font-size: 16px;
+    font-size: calc(16 * var(--ch-type-k));
     color: var(--ch-text-secondary);
   }
   .ch-qf--list[data-canopy] .ch-qf-sec.is-done .ch-qf-grid.is-ledger {
@@ -3450,7 +3463,7 @@ html[data-fw-theme='dark'] .ch-qf-board .ch-badge {
     box-shadow: inset 0 0 0 var(--ch-hairline-w) var(--ch-border-subtle);
   }
   .ch-qf--list[data-canopy] .ch-qf-sec.is-done .ch-qf-card h3 {
-    font-size: 15px;
+    font-size: calc(15 * var(--ch-type-k));
   }
 }
 
@@ -3693,7 +3706,7 @@ html[data-fw-theme='dark'] .ch-qf-dots i {
   color: var(--ch-text-secondary);
 }
 .ch-qf-prounds__s {
-  font: 700 22px/1 var(--ch-font-sans);
+  font: 700 calc(22 * var(--ch-type-k))/1 var(--ch-font-sans);
   font-variant-numeric: tabular-nums;
   letter-spacing: -0.02em;
   color: var(--ch-text-primary);
@@ -3740,6 +3753,7 @@ a.ch-qf-prounds__r.is-play:focus-visible {
 /* The list's way to the same round, under the live qualifier's card. */
 .ch-qf-play {
   display: flex;
+  margin-top: 4px;
 }
 /* You on the live leaders: the board's mint on your name's tag, and the row a shade lighter. */
 .ch-scoreboard .ch-qf-lead__r.is-me {
@@ -3861,7 +3875,7 @@ button.ch-qf-prounds__r.is-open {
   justify-items: end;
   gap: 4px;
   min-width: 34px;
-  font: 700 17px/1 var(--ch-font-sans);
+  font: 700 calc(17 * var(--ch-type-k))/1 var(--ch-font-sans);
   font-variant-numeric: tabular-nums;
   color: var(--ch-text-primary);
 }
@@ -3934,7 +3948,7 @@ button.ch-qf-prounds__r.is-open {
   gap: 8px;
 }
 .ch-qf-rv__fieldhead b {
-  font: 700 22px/1 var(--ch-font-sans);
+  font: 700 calc(22 * var(--ch-type-k))/1 var(--ch-font-sans);
   font-variant-numeric: tabular-nums;
   color: var(--ch-text-primary);
 }
