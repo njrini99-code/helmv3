@@ -975,8 +975,14 @@
   .ch-inset {
     background: var(--ch-bg-inset);
   }
+  /* Opaque, as every phone overlay is (H16; owner 2026-10-01: glass only on the desktop bar). The glass token here let
+     the page's rows read through a menu or the bell's list with no blur behind it. Day: the sheet's ivory; night keeps
+     the raised surface (ui.css). */
   .ch-popover {
-    background: var(--ch-glass-bg);
+    background: var(--ch-sheet-bg);
+  }
+  :where(html[data-fw-theme='dark']) .ch-popover {
+    background: var(--ch-bg-elevated);
   }
 }
 
@@ -1314,7 +1320,8 @@
 
 /* The one spinner (ui/Spinner.tsx): a ring whose lit quarter turns once per sweep token. Every wait in Clubhouse draws this,
    in a Button or alone, so the loop reads the same on every page. The duration is --ch-dur-sweep until tokens.css carries a
-   --ch-dur-spin of its own; it is 0 under reduced motion and Animations off, which leaves the ring still. */
+   --ch-dur-spin of its own. It keeps turning under Reduce Motion (OQ-18; base.css exempts it from the reduced-motion
+   floor); Animations off sets the token to 0, which leaves the ring still. */
 .ch-spinner {
   display: inline-block;
   flex: none;
