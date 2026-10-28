@@ -42,7 +42,7 @@
 }
 .ch-hb-tabs {
   display: flex;
-  gap: 24px;
+  gap: var(--ch-tab-gap);
   /* Room inside the scroller for the focus ring, taken back by the margins so the row doesn't move. */
   max-width: calc(100% + 8px);
   margin: -16px -4px -4px;
@@ -60,31 +60,33 @@
   padding: 0;
   border: 0;
   background: none;
+  /* = --ch-tab-font; written as the role so the type-role ratchet (look-feel-pass-css B1) reads it. */
   font: var(--ch-type-14-medium);
   line-height: var(--ch-lead-tight);
-  color: var(--ch-text-tertiary);
+  color: var(--ch-tab-ink);
   white-space: nowrap;
   cursor: pointer;
 }
 .ch-hb-tabs button[aria-selected='true'] {
-  color: var(--ch-text-primary);
+  color: var(--ch-tab-ink-selected);
 }
-/* The underline is one bar that slides to the chosen tab (CH-10602); it sits where the old inset rule was. */
+/* The underline is one bar that slides to the chosen tab (CH-10602); it sits where the old inset rule was. The shared tab
+   tokens (tokens.css) carry its colour in both themes: 7.2:1 light, 7.8:1 dark on the workspace. */
 .ch-hb-tabs__bar {
   position: absolute;
   right: 0;
   bottom: 0;
   left: 0;
-  height: 2px;
+  height: var(--ch-tab-bar-h);
   border-radius: 999px;
-  background: var(--ch-green-800);
+  background: var(--ch-tab-bar);
 }
 .ch-hb-tabs button {
   transition: color var(--ch-dur-quick) var(--ch-ease);
 }
 @media (hover: hover) {
   .ch-hb-tabs button:not([aria-selected='true']):hover {
-    color: var(--ch-text-primary);
+    color: var(--ch-tab-ink-hover);
   }
 }
 .ch-hb-tabs button[data-ch-pressed] {
@@ -101,7 +103,7 @@
   border-radius: var(--ch-radius-xs);
 }
 .ch-hb-card {
-  border-radius: var(--ch-radius-xl);
+  border-radius: var(--ch-radius-card);
   background: var(--ch-sheet-bg);
   box-shadow: var(--ch-sheet-shadow);
 }
@@ -315,7 +317,7 @@
   flex-direction: column;
   gap: 12px;
   padding: 24px 32px;
-  border-radius: var(--ch-radius-xl);
+  border-radius: var(--ch-radius-card);
   background: var(--ch-sheet-bg);
   box-shadow: var(--ch-sheet-shadow);
 }
@@ -576,7 +578,7 @@
   display: grid;
   grid-template-columns: minmax(0, 1fr);
   overflow: hidden;
-  border-radius: var(--ch-radius-xl);
+  border-radius: var(--ch-radius-card);
   background: var(--ch-sheet-bg);
   box-shadow: var(--ch-sheet-shadow);
 }
@@ -1964,22 +1966,15 @@
     box-shadow: inset var(--ch-hairline-w) 0 0 var(--ch-ledger-rule-soft);
   }
 
-  /* Announcements: entries on the canvas, ruled apart; the featured one hangs a gilt rule in the gutter so its
-     headline keeps the section edge. A title's figures (SerifText's spans) take the title's own sans. */
+  /* Announcements: entries on the canvas, ruled apart. A title's figures (SerifText's spans) take the title's own sans.
+     No accent rail on any post (owner, 2026-10-02; visual pass 2026-10-28): the lead is marked by its green plate and its
+     34px headline below, never by a gilt rule in the gutter. */
   .ch-hb[data-canopy] .ch-hb-ann {
     padding: 0;
   }
   .ch-hb[data-canopy] .ch-hb-ann h3 {
     font-size: calc(28 * var(--ch-type-k));
     color: var(--ch-ledger-ink);
-  }
-  .ch-hb[data-canopy] .ch-hb-ann.is-featured {
-    margin-left: -24px;
-    padding: 2px 0 2px 24px;
-    box-shadow: inset 2px 0 0 var(--ch-champagne-500);
-  }
-  .ch-hb[data-canopy] .ch-hb-ann.is-featured h3 {
-    font-size: calc(28 * var(--ch-type-k));
   }
   .ch-hb[data-canopy] .ch-hb-ann h3 > span,
   .ch-hb[data-canopy] .ch-hb-pass__main > b > span {
@@ -2127,9 +2122,6 @@
    announcement is already a green card with its own inks and stays as it is. */
 html[data-fw-theme='dark'] .ch-hb-role {
   box-shadow: inset 0 0 0 1px rgb(107 187 140 / 0.35);
-}
-html[data-fw-theme='dark'] .ch-hb-tabs__bar {
-  background: var(--ch-green-600);
 }
 html[data-fw-theme='dark'] .ch-hb-rsvp__list li,
 html[data-fw-theme='dark'] .ch-hb-plan li,
@@ -2567,24 +2559,26 @@ html[data-fw-theme='dark'] .ch-hb-chip {
   color: var(--ch-warning-600);
 }
 
-/* The tabs: an unselected tab reads as a tab (secondary ink, not tertiary), and a tab that is asking for something carries
-   the figure. */
+/* The tabs: an unselected tab reads as a tab (secondary ink, a step above the shared --ch-tab-ink: the Hub's five tabs
+   carry counts and sit on the open workspace), the chosen one in the shared selected ink, and a tab that is asking for
+   something carries the figure. */
 .ch-hb-tabs button {
   color: var(--ch-text-secondary);
 }
 .ch-hb-tabs button[aria-selected='true'] {
-  color: var(--ch-text-primary);
+  color: var(--ch-tab-ink-selected);
 }
 .ch-hb-tabs__n {
   display: inline-grid;
   place-items: center;
-  min-width: 18px;
-  height: 18px;
+  /* The count follows Text Size with its label (no raw px text, H4); the pill grows round it. */
+  min-width: calc(18 * var(--ch-type-k));
+  height: calc(18 * var(--ch-type-k));
   margin-left: 8px;
   padding: 0 4px;
   border-radius: 999px;
   background: var(--ch-green-50);
-  font: 600 11px/1 var(--ch-font-sans);
+  font: 600 calc(11 * var(--ch-type-k))/1 var(--ch-font-sans);
   font-variant-numeric: tabular-nums;
   color: var(--ch-green-700);
   vertical-align: 1px;
@@ -2888,9 +2882,11 @@ html[data-fw-theme='dark'] .ch-hb-prog i::after {
     display: none;
   }
   .ch-hb-tabs__n {
+    min-width: max(20px, calc(20 * var(--ch-type-k)));
+    height: max(20px, calc(20 * var(--ch-type-k)));
     margin-left: 0;
-    margin-inline-start: 4px;
-    font-size: 12px;
+    margin-inline-start: 6px;
+    font-size: max(12px, calc(12 * var(--ch-type-k)));
   }
   .ch-hb-strip button::after {
     position: absolute;
@@ -2967,6 +2963,18 @@ html[data-fw-theme='dark'] .ch-hb-prog i::after {
   .ch-hw-more:hover {
     text-decoration: underline;
     text-underline-offset: 3px;
+  }
+}
+/* A 44pt target under a finger for the 18px-tall link ("Itinerary"), grown only on the short side, as `.ch-btn::after`
+   does in ui.css. */
+@media (pointer: coarse) {
+  .ch-hw-more {
+    position: relative;
+  }
+  .ch-hw-more::after {
+    position: absolute;
+    inset: min(0px, calc(50% - 22px));
+    content: '';
   }
 }
 .ch-hw :focus-visible {
@@ -3188,7 +3196,8 @@ html[data-fw-theme='dark'] .ch-hb-prog i::after {
   place-items: center;
   width: 28px;
   height: 28px;
-  margin-left: -8px;
+  /* A 4px overlap (with the 2px ring) leaves each coin's initials whole; at 8 the next coin cut them ("TM" read "T"). */
+  margin-left: -4px;
   border-radius: 50%;
   background: var(--ch-on-dark-raised-bg);
   box-shadow: 0 0 0 2px var(--ch-green-800);
@@ -3987,8 +3996,11 @@ html[data-fw-theme='dark'] .ch-hw--dark {
     font-size: 12px;
     letter-spacing: 0;
   }
+  /* The trip pager is a 44pt key on the phone (H10), drawn as before at the same rounded square. */
   .ch-hw-pager button {
-    min-height: 44px;
+    width: 44px;
+    height: 44px;
+    border-radius: var(--ch-radius-md);
   }
   .ch-hw-discs button {
     width: 44px;

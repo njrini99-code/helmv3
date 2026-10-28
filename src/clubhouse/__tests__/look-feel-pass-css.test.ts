@@ -256,7 +256,7 @@ const RAW_LONGHAND: Record<string, number> = {
   'styles/controls.css': 18,
   'styles/hero-tones.css': 2,
   'styles/home.css': 47,
-  'styles/hub.css': 47,
+  'styles/hub.css': 46,
   'styles/messages.css': 12,
   'styles/onboard.css': 23,
   'styles/qualifiers.css': 52,
