@@ -1,4 +1,5 @@
--- STATUS: WRITTEN, NOT APPLIED (HOLD, see HELD.md).
+-- STATUS: WRITTEN — HOLD — NOT APPLIED
+-- Plan: docs/clubhouse/held/data/tournaments-round-write.md (HELD.md row).
 -- Apply: npm run db:apply --
 -- supabase/migrations/20261027100000_golf_tournament_update_round_write.sql
 -- Risk: LOW. Replaces two function bodies (golf_tournament_create and
@@ -20,9 +21,10 @@
 --     it after; round titles are written as name || ' · R' || n, the 040100
 --     form, so the desk and the sync triggers agree.
 --   * golf_tournament_create writes new round titles in the same form.
--- Existing titles are not rewritten here: production's round events keep
--- "Name · Round n" until the tournament is next renamed, when 040100 moves
--- them to "Name · Rn".
+-- Existing titles are not rewritten by this file. Production's round events
+-- titled "Name · Round n" move to "Name · Rn" at the next desk save that sends
+-- a rounds list (any save from the desk, not only a rename), quietly, under
+-- the same mark; a calendar rename moves them through 040100's sync.
 --
 -- Tests: supabase/tests/rls/golf_tournament_update_round_write.sql.
 --
@@ -35,11 +37,16 @@
 -- VERIFY: SELECT 1 WHERE pg_get_functiondef(
 -- VERIFY:   'public.golf_tournament_create(jsonb)'::regprocedure
 -- VERIFY: ) NOT LIKE '%· Round%';
+-- VERIFY: SELECT 1 WHERE pg_get_functiondef(
+-- VERIFY:   'public.golf_tournament_update(uuid, jsonb, integer)'::regprocedure
+-- VERIFY: ) NOT LIKE '%· Round%';
 -- VERIFY: SELECT 1 WHERE NOT has_function_privilege(
 -- VERIFY:   'anon',
 -- VERIFY:   'public.golf_tournament_update(uuid, jsonb, integer)',
 -- VERIFY:   'EXECUTE'
 -- VERIFY: );
+
+set local lock_timeout = '3s';
 
 create or replace function public.golf_tournament_create(p_payload jsonb)
 returns uuid
