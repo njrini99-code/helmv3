@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { Copy, MapPinned, Send } from 'lucide-react';
+import { Copy, MapPinned, MessageSquare } from 'lucide-react';
 import type { CoursePlan as Plan, CoursePlanCourse } from '@/lib/coachhelm/course-plan/build-plan';
 import { haptic } from '../../lib/haptics';
 import { Button } from '../../ui/Button';
@@ -135,8 +135,9 @@ function PlanCard({ plan, who, playerId, onCopy }: { plan: Plan; who: string; pl
             </ul>
             <div className="ch-hl-plan__send">
               {send && (
-                <Button size="sm" variant="ghost" leftIcon={Send} href={send}>
-                  Send to {who}
+                // It opens Messages with the plan written in; the coach presses Send there (D2-7), so it says Message, not Send (H1).
+                <Button size="sm" variant="ghost" leftIcon={MessageSquare} href={send}>
+                  Message {who}
                 </Button>
               )}
               <Button size="sm" variant="ghost" leftIcon={Copy} onClick={() => onCopy(playerText)}>

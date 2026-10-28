@@ -77,11 +77,12 @@ describe('course plan on the coach board', () => {
     expect(await screen.findByText(/has no course with three rounds on it yet/)).toBeTruthy();
   });
 
-  it('Send to hands the player’s version to their thread in Messages, written and not sent (row 77)', async () => {
+  it('Message {who} hands the player’s version to their thread in Messages, written and not sent (row 77)', async () => {
     render(wrap(<CoursePlan playerId="p-ava" who="Ava" reads={reads()} />));
     await userEvent.click(screen.getByRole('button', { name: 'Course plan' }));
     await userEvent.click(await screen.findByRole('button', { name: /Pine Hollow/ }));
-    const send = await screen.findByRole('link', { name: 'Send to Ava' });
+    // Visual pass 2026-10-28: was "Send to Ava"; the link only drafts, so it reads Message (rubric H1, G4 row 77).
+    const send = await screen.findByRole('link', { name: 'Message Ava' });
     const href = send.getAttribute('href')!;
     expect(href).toMatch(/^\/golf\/dashboard\/messages\?prefill=[a-z0-9]+$/);
     // The address carries only the key; the draft waits in this tab, addressed to Ava alone.

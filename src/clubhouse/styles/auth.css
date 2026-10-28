@@ -124,11 +124,14 @@
 /* The foreground pine and the overhanging bough: the camera moves out past them. */
 .ch-au-pine {
   position: absolute;
-  left: var(--ch-au-inl, 0px);
+  left: 0;
   bottom: 0;
   height: 100%;
   aspect-ratio: 560 / 1000;
-  transition: transform var(--ch-au-t-pine) var(--ch-au-cam-ease), opacity var(--ch-au-t-pine-fade) linear, left var(--ch-au-t-photo) var(--ch-au-ease);
+  /* The inset slides by `translate`, which composes ahead of the camera's transform, so the path and the timing are the
+     documented ones; it no longer animates `left` (visual pass 2026-10-28, rubric H2). */
+  translate: var(--ch-au-inl, 0px) 0;
+  transition: transform var(--ch-au-t-pine) var(--ch-au-cam-ease), opacity var(--ch-au-t-pine-fade) linear, translate var(--ch-au-t-photo) var(--ch-au-ease);
 }
 .ch-au-pine > svg {
   inset: 0;
@@ -137,11 +140,12 @@
 }
 .ch-au-bough {
   position: absolute;
-  right: var(--ch-au-inr, 0px);
+  right: 0;
   top: 0;
   width: min(46%, 520px);
   aspect-ratio: 520 / 300;
-  transition: transform var(--ch-au-t-pine) var(--ch-au-cam-ease), opacity var(--ch-au-t-pine-fade) linear, right var(--ch-au-t-photo) var(--ch-au-ease);
+  translate: calc(-1 * var(--ch-au-inr, 0px)) 0;
+  transition: transform var(--ch-au-t-pine) var(--ch-au-cam-ease), opacity var(--ch-au-t-pine-fade) linear, translate var(--ch-au-t-photo) var(--ch-au-ease);
 }
 .ch-au-bough > svg {
   inset: 0;
@@ -1714,6 +1718,13 @@ html[data-fw-theme='dark'] .ch-au-wl:not([data-dark]) h1 {
 .ch-au-ghost .ch-au-input {
   background: var(--ch-bg-subtle);
   box-shadow: 0 0 0 1px var(--ch-border-hairline);
+}
+/* "New here? Create an account": a link inside a sentence is underlined at rest (visual pass 2026-10-28, rubric H13). */
+.ch-au-foot > span:not(.ch-au-legal) a:where(:not(.ch-btn)) {
+  text-decoration: underline;
+  text-decoration-thickness: 1px;
+  text-underline-offset: 3px;
+  text-decoration-color: var(--ch-green-rule);
 }
 .ch-au-ghost .ch-au-label {
   min-height: 17px;

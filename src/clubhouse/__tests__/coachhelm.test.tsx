@@ -504,7 +504,9 @@ describe('CoachHelm for the player, on screen', () => {
     // D8: no track; the ledger says every number in words.
     expect(document.querySelector('.ch-hl-g__t')).toBeNull();
     expect(card.getByText('You').parentElement!.textContent).toBe('You1.1');
-    expect(card.getByText('Tour 0.3')).toBeTruthy();
+    // Visual pass 2026-10-28: the comparison's figure sits in the ledger's figure column, as the read's own does.
+    expect(card.getByText('Tour').parentElement!.textContent).toBe('Tour 0.3');
+    expect(card.getByText('0.3').className).toBe('ch-num');
     // Q-88: the college cohort is not drawn, not in the legend and not in the reasoning beneath it.
     expect(card.queryByText(/College cohort/)).toBeNull();
     expect(card.queryByText(/PGA Tour avg/)).toBeNull();
@@ -1215,7 +1217,9 @@ describe('CoachHelm for the coach, on screen', () => {
 
   it('CH-13309 nothing flagged in the pulse says so, and does not claim all is well', () => {
     showCoach(PREVIEW_HELM_COACH_QUIET);
-    expect(code('CH-13309')!.textContent).toBe('Nothing new since you were last here.');
+    // Visual pass 2026-10-28 (G4 row 88): the quiet line now carries the way into What's new.
+    expect(code('CH-13309')!.textContent).toBe('Nothing new since you were last here. What’s new');
+    expect(within(code('CH-13309') as HTMLElement).getByRole('link', { name: 'What’s new' }).getAttribute('href')).toBe('/golf/dashboard/whats-new');
   });
 
   it('CH-13305 CoachHelm turned off for the team: said, with a way to Settings; a global switch has none', () => {

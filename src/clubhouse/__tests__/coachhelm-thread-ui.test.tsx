@@ -84,7 +84,10 @@ describe('CH-13850 what CoachHelm is doing', () => {
     const items = within(list).getAllByRole('listitem');
     expect(items.map((i) => i.textContent)).toEqual(['Reading your roster', 'Reading the last 38 recorded rounds', 'Comparing putting by distance']);
     expect(items.map((i) => i.getAttribute('aria-current'))).toEqual([null, null, 'step']);
-    expect(screen.getByText(/^Working/)).toBeTruthy();
+    // Visual pass 2026-10-28 (rubric P013): the shimmering current step is the status; no ticking "Working 12s" line, no ring.
+    expect(screen.queryByText(/^Working/)).toBeNull();
+    expect(document.querySelector('.ch-th-mark.is-working')).toBeNull();
+    expect(items[2].querySelector('.ch-th-shine')?.textContent).toBe('Comparing putting by distance');
     await userEvent.click(screen.getByRole('button', { name: 'Stop' }));
     expect(p.onStop).toHaveBeenCalledTimes(1);
   });
@@ -101,6 +104,9 @@ describe('CH-13850 what CoachHelm is doing', () => {
     show();
     const button = screen.getByRole('button', { name: /Read 3 players/ });
     expect(button.getAttribute('aria-expanded')).toBe('false');
+    // A finished answer draws still: only a streaming answer's blocks settle in (coachhelm-thread.css).
+    expect(document.querySelector('.ch-th-prose')).toBeTruthy();
+    expect(document.querySelector('.ch-th-prose[data-streaming]')).toBeNull();
     await userEvent.click(button);
     expect(button.getAttribute('aria-expanded')).toBe('true');
     expect(screen.getByRole('list', { name: 'What CoachHelm is doing' }).children).toHaveLength(4);

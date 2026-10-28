@@ -30,6 +30,7 @@ import { useEffect, useId, useRef, useState, type FormEvent, type ReactNode } fr
 import { Avatar } from '../../ui/Avatar';
 import { Button } from '../../ui/Button';
 import { Icon } from '../../ui/Icon';
+import { NoData } from '../../ui/NoData';
 import { Spinner } from '../../ui/Spinner';
 import { Tooltip } from '../../ui/Tooltip';
 import { formatHcp } from '../../lib/format';
@@ -735,7 +736,8 @@ export function Game({ d, up, next, path, back, dir, phone }: StepProps) {
           </div>
           <div className="ch-ox-hcp__row">
             <span className="ch-ox-hcp__val" data-none={none ? '' : undefined} data-plus={!none && n < 0 ? '' : undefined} aria-live="polite">
-              {none ? '—' : formatHcp(n)}
+              {/* No handicap: the dash is seen, "No handicap yet" is heard, so the live region never reads a dash (G3 finding 9). */}
+              {none ? <NoData label="No handicap yet" /> : formatHcp(n)}
             </span>
             <span className="ch-ox-hcp__desc">{hcpWords(none ? null : n)}</span>
             {!none && (

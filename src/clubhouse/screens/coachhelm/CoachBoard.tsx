@@ -342,7 +342,11 @@ function SinceLine({ pulse }: { pulse: ChPulse }) {
   if (n === 0 && !gaps) {
     return (
       <div className="ch-hl-since is-quiet" data-ch-code="CH-13309">
-        Nothing new since you were last here.
+        Nothing new since you were last here.{' '}
+        {/* G4 row 88: the quiet line is the commonest state, and it had no way into What's new but the palette. */}
+        <Link className="ch-hl-note__a" href="/golf/dashboard/whats-new">
+          What’s new
+        </Link>
       </div>
     );
   }
@@ -350,7 +354,10 @@ function SinceLine({ pulse }: { pulse: ChPulse }) {
   if (n === 0 && gaps && pulse.missing) {
     return (
       <div className="ch-hl-since is-quiet" role="status" data-ch-code="CH-13206">
-        Since you were last here: {gaps.charAt(0).toLowerCase() + gaps.slice(1)} didn’t load, so what is new was not checked.
+        Since you were last here: {gaps.charAt(0).toLowerCase() + gaps.slice(1)} didn’t load, so what is new was not checked.{' '}
+        <Link className="ch-hl-note__a" href="/golf/dashboard/whats-new">
+          What’s new
+        </Link>
       </div>
     );
   }

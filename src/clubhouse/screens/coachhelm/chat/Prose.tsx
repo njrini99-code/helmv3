@@ -11,8 +11,10 @@ export const playerStatsHref = (id: string) => rebuiltHref(`/golf/dashboard/stat
 /**
  * An answer's text: paragraphs, lists, **bold** and roster names. Editorial, not a bubble. The
  * match is against the real roster passed in, so "Wake Forest" is never a link to nowhere.
+ * While the answer streams, each paragraph or list settles in as it arrives (an opacity fade on the base beat,
+ * coachhelm-thread.css); a finished or reloaded answer draws still.
  */
-export function AskProse({ text, lead = false, playersByName }: { text: string; lead?: boolean; playersByName: Record<string, string> }) {
+export function AskProse({ text, lead = false, playersByName, streaming = false }: { text: string; lead?: boolean; playersByName: Record<string, string>; streaming?: boolean }) {
   const names = useMemo(() => Object.keys(playersByName), [playersByName]);
   const blocks = useMemo(() => parseProse(text), [text]);
   const inline = (s: string) =>
@@ -29,7 +31,7 @@ export function AskProse({ text, lead = false, playersByName }: { text: string; 
       return seg.bold ? <strong key={i}>{body}</strong> : <Fragment key={i}>{body}</Fragment>;
     });
   return (
-    <div className="ch-th-prose">
+    <div className="ch-th-prose" data-streaming={streaming ? '' : undefined}>
       {blocks.map((b, i) =>
         b.kind === 'list' ? (
           <ul key={i} className="ch-th-list">
