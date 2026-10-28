@@ -6104,6 +6104,17 @@
     "catalog": "docs/clubhouse/catalog/calendar.md"
   },
   {
+    "id": 60658,
+    "page": "P006",
+    "category": 6,
+    "item": 58,
+    "name": "OPENING_A_FILE_ATTACHED_TO_AN_EVENT",
+    "chCode": "CH-6024",
+    "meaning": "Opening a file attached to an event fails (the signed link can't be made, or the file has no stored copy)",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/calendar.md"
+  },
+  {
     "id": 60701,
     "page": "P006",
     "category": 7,

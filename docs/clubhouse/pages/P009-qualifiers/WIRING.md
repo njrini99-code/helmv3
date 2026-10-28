@@ -180,9 +180,13 @@ The board's rounds are `golf_rounds` linked by `qualifier_id` (never by date),
 entered players only; a second round in one numbered slot counts once (the first
 by id), a round with no number always counts. `model.ts` `countsOnBoard` and
 `roundOfRow` hold the rule; `readRounds` filters the query on it and again after
-it. Order is `ranking.ts` (to par, strokes, more rounds, name); ties on to par
-and strokes share a T position; players level across the last place on score are
-"Tie at cut" (Q-114); the Bubble is the places below the line on score down to
+it. Order is `ranking.ts` `boardOrder`: a card a round short below every full
+card (owner decision 10), then to par, strokes, more rounds, name; ties on to par
+and strokes share a T position, inside one group only; players level across the
+last place on score are "Tie at cut" (Q-114); Manage selections, the tie choice
+and Confirm squad read the workspace in the same order (`order: 'board'`, owner
+decision A: "Match the board"), so the squad confirmed is the one shown above the
+line; the Bubble is the places below the line on score down to
 the squad size, with at least ⌈rounds ÷ 2⌉ rounds in (P009-C2). Status is the
 stored column; only the first round moves upcoming to live, and only the coach
 closes.
@@ -196,9 +200,9 @@ runs all three; Fairway's live leaderboard follows the rule since 2026-10-17):
 | Rounds counted | completed, not test, total and to-par | as the workspace | as the workspace |
 | No completed round | unscored | unscored | unscored |
 | Same slot twice / no number | first by id / counts | as the workspace | as the workspace |
-| Order | to par, strokes, rounds, name | to par, strokes, rounds, name | as the workspace |
+| Order | to par, strokes, rounds, name (Fairway); Clubhouse reads it in the board's order | to par, strokes, rounds, name | full cards first, then to par, strokes, rounds, name |
 | Tie label | none (rank 1..n) | T2, T2 on to par and strokes | T2, T2 on to par and strokes |
-| Level at the cut | tie, the coach gives the place | tie | tie |
+| Level at the cut | tie, the coach gives the place (in the board's order, only inside one group) | tie | tie, only inside one group |
 | Bubble | none | below the line, inside the squad | below the line, inside the squad, ⌈rounds ÷ 2⌉ rounds in |
 | Average | none | every round | 18-hole rounds only |
 | A pick saved before confirm | the pick leaves the places on score; the next player takes one | not read until confirm | not read until confirm (a player cannot read selections before it) |

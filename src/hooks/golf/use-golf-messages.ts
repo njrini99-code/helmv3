@@ -1506,6 +1506,7 @@ export async function loadGolfConversationRail(
   const { data: groupConvs, error: groupConvsError } = await supabase
     .from('golf_conversation_participants')
     .select(`
+      hidden_at,
       conversation:golf_conversations!inner(
         id,
         created_at,
@@ -1567,9 +1568,14 @@ export async function loadGolfConversationRail(
         created_by: string | null;
       } | null;
 
+      // A chat the viewer deleted stays hidden here too. The RPC already shows it again once a newer message
+      // arrives, so a hidden row it left out is one the viewer has not been brought back to.
+      const hidden = (gc as { hidden_at?: string | null }).hidden_at != null;
+
       if (
         conv &&
         conv.is_team_chat &&
+        !hidden &&
         !existingIds.has(conv.id) &&
         (!teamAllow || teamAllow.has(conv.id))
       ) {

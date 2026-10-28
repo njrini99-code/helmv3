@@ -858,6 +858,7 @@ them would bury everything above.
 | `docs/clubhouse/changes/2026-10-25-p5-menu-and-fields.md` | current | - | - | - | - |
 | `docs/clubhouse/changes/2026-10-25-p6-live-rounds.md` | current | - | - | - | - |
 | `docs/clubhouse/changes/2026-10-25-train-shared-pieces.md` | current | - | - | - | - |
+| `docs/clubhouse/changes/2026-10-27-class-holds-drain.md` | current | - | - | - | - |
 | `docs/clubhouse/changes/2026-10-27-live-split.md` | current | - | - | - | - |
 | `docs/clubhouse/changes/2026-10-28-visual-pass-system.md` | current | - | - | - | - |
 | `docs/clubhouse/drafts/auth-onboarding-ground-truth.md` | current | - | - | - | - |
@@ -1054,6 +1055,8 @@ them would bury everything above.
 | `docs/clubhouse/pages/P006-calendar/changes/2026-10-25-p4-drag.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P006-calendar/changes/2026-10-25-p5-tournaments.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P006-calendar/changes/2026-10-25-p6-live-rounds.md` | current | - | - | - | - |
+| `docs/clubhouse/pages/P006-calendar/changes/2026-10-27-review-must-fixes.md` | current | - | - | - | - |
+| `docs/clubhouse/pages/P006-calendar/changes/2026-10-28-event-files-signed-links.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P006-calendar/changes/2026-10-28-visual-pass.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P007-messages/CHANGELOG.md` | current | - | - | yes | 1 |
 | `docs/clubhouse/pages/P007-messages/CONTRACT.md` | current | - | - | yes | - |
@@ -1079,6 +1082,7 @@ them would bury everything above.
 | `docs/clubhouse/pages/P007-messages/changes/2026-10-25-polls-landing.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P007-messages/changes/2026-10-25-polls-visual.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P007-messages/changes/2026-10-25-seen-by.md` | current | - | - | - | - |
+| `docs/clubhouse/pages/P007-messages/changes/2026-10-28-badge-after-delete.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P007-messages/changes/2026-10-28-visual-pass.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P008-settings/CHANGELOG.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P008-settings/CONTRACT.md` | current | - | - | yes | - |
@@ -1125,6 +1129,7 @@ them would bury everything above.
 | `docs/clubhouse/pages/P009-qualifiers/changes/2026-10-24-you-vs-the-line.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P009-qualifiers/changes/2026-10-25-p5-course-picker.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P009-qualifiers/changes/2026-10-25-p6-live-rounds.md` | current | - | - | - | - |
+| `docs/clubhouse/pages/P009-qualifiers/changes/2026-10-28-confirm-follows-board.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P009-qualifiers/changes/2026-10-28-visual-pass.md` | current | - | - | - | 1 |
 | `docs/clubhouse/pages/P010-hub/CHANGELOG.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P010-hub/CONTRACT.md` | current | - | - | yes | - |
@@ -1182,6 +1187,7 @@ them would bury everything above.
 | `docs/clubhouse/pages/P011-rounds/changes/2026-10-25-p7-review-fixes.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P011-rounds/changes/2026-10-25-p7-round-says.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P011-rounds/changes/2026-10-25-p7-setup-history.md` | current | - | - | - | - |
+| `docs/clubhouse/pages/P011-rounds/changes/2026-10-27-coach-open-live-round.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P011-rounds/changes/2026-10-28-visual-pass.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P012-classes/CHANGELOG.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P012-classes/CONTRACT.md` | current | - | - | yes | - |

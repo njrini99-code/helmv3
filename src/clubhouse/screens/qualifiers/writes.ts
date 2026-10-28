@@ -207,9 +207,11 @@ export const LIVE_SELECTION_WRITES: ChQSelectionWrites = {
   advance: async (id, to) => asResult(await advanceSelectionState(id, to)),
   setPick: async (id, playerId, reasoning) => asResult(await setQualifierCoachPick(id, playerId, reasoning)),
   removePick: async (id, playerId) => asResult(await removeQualifierCoachPick(id, playerId)),
-  chooseTie: async (id, playerId, give) => asResult(await chooseQualifierTiePlace(id, playerId, give)),
+  // The board's order (owner decision A: "Match the board"): a card a round short ranks below the full cards here too,
+  // so the tie and the squad confirmed are the ones the board and Manage selections show.
+  chooseTie: async (id, playerId, give) => asResult(await chooseQualifierTiePlace(id, playerId, give, 'board')),
   confirm: async (id) => {
-    const r = await confirmQualifierSelection(id);
+    const r = await confirmQualifierSelection(id, 'board');
     if (r.ok) return { success: true, data: { notified: r.notified !== false } };
     const refused = asResult(r);
     return { success: false, error: refused.error };

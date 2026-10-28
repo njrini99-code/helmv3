@@ -32,7 +32,8 @@ Held items:     none
 
 ### Changed (calendar.css)
 
-- The week grid, rail, month and lane cells keep a fixed 12px (their phone block says so); the remaining fixed label moves to the text size.
+- The week grid, rail, month and lane cells keep a fixed 12px (their phone
+  block says so); the remaining fixed label moves to the text size.
 - Radii on the 5, 7, 10, 14, 20 scale (pills and circles stay).
 - The busy block and the next-event bar take the hover the other events have; the title year, the kicker and the day headers use tabular numerals.
 
@@ -57,7 +58,8 @@ Held items:     none
 
 ### Changed
 
-- Save event, Attach, Save attendance and a feed link's confirm are busy while they run instead of disabled.
+- Save event, Attach, Save attendance and a feed link's confirm are busy
+  while they run instead of disabled.
 - More, More actions and Remove file show their name on hover and focus.
 - A player's attendance marks (Present, Late, No-show) are the shared `Segmented`: the same markup and tones, now with the sliding chip and arrow keys.
 

@@ -18,7 +18,6 @@ import { withAdminObserved } from '@/lib/admin/observed-action';
 import { logServerError } from '@/lib/server-error-logger';
 import { heldTable } from '@/lib/supabase/held-table';
 import { createAdminClient } from '@/lib/supabase/admin';
-import { isFlagEnabled } from '@/lib/flags/is-enabled';
 
 type Result<T = undefined> = { success: true; data?: T } | { success: false; error: string };
 
@@ -164,9 +163,9 @@ async function removeTeamBreakImpl(input: { id: string; teamId: string }): Promi
  * as itself) through the same release the minute job runs. The user is the signed-in one, never an argument. `dueOnly` is false on purpose:
  * `golf_push_holds_release_mine` moves a row's release to now() but never before one second after it was held, so a due-only claim could
  * miss a row held a moment ago. Nothing held (or the migration not applied) answers `released: 0`, which is not an error.
+ * It runs whatever class_awareness_v1 says: the flag gates only new holds, so a push held before the flag went off can still be delivered.
  */
 async function releaseMyHeldPushesImpl(): Promise<Result<{ released: number }>> {
-  if (!isFlagEnabled('class_awareness_v1')) return { success: true, data: { released: 0 } };
   try {
     const { supabase, user: u } = await user();
     if (!u) return { success: false, error: 'You must be signed in' };

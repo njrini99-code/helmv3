@@ -12,6 +12,7 @@
 
 import { createClient } from '@/lib/supabase/server';
 import { calendarUnreadCutoffIso } from './unified-notifications-model';
+import { countUnreadMessages, readViewerParticipants } from '@/lib/golf/unread-message-count';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { revalidatePath } from 'next/cache';
 import { logServerError } from '@/lib/server-error-logger';
@@ -165,11 +166,8 @@ async function getPlayerNotificationCountsImpl(
         .eq('player_id' as 'id', playerId)
         .eq('status' as 'id', 'pending')) as unknown as Promise<{ count: number | null; error: unknown }>,
 
-      // 5. Get unread messages count
-      supabase
-        .from('golf_conversation_participants')
-        .select('conversation_id, last_read_at')
-        .eq('user_id', userId),
+      // 5. Get unread messages count: the player's conversations, with their read and hide marks
+      readViewerParticipants(supabase, userId),
 
       // 6. Get unread calendar notifications count
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -289,23 +287,11 @@ async function getPlayerNotificationCountsImpl(
 
     if (participantsError) {
       unreadMessages = null;
-    } else if (participants.length > 0) {
-      // Parallel queries instead of sequential N+1 loop
-      // Each conversation has different last_read_at, so we parallelize the individual queries
-      const counts = await Promise.all(
-        participants.map(async (p) => {
-          const { count, error } = await supabase
-            .from('golf_messages')
-            .select('*', { count: 'exact', head: true })
-            .eq('conversation_id', p.conversation_id)
-            .neq('sender_id', userId)
-            .gt('created_at', p.last_read_at || '1970-01-01');
-          return error ? null : (count ?? 0);
-        })
-      );
-      unreadMessages = counts.some((c) => c === null)
-        ? null
-        : counts.reduce((sum: number, c) => sum + (c ?? 0), 0);
+    } else {
+      // Parallel per-conversation counts (each has its own last_read_at); a
+      // deleted (hidden) conversation is skipped until a new message brings it
+      // back, as the inbox does (src/lib/golf/unread-message-count.ts).
+      unreadMessages = await countUnreadMessages(supabase, userId, participants);
     }
 
     // Count unseen travel itineraries
