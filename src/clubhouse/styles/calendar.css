@@ -90,6 +90,8 @@
   width: 288px;
   padding: 12px;
   border-radius: var(--ch-radius-lg);
+  /* It pops from the trigger's corner (it opens under the trigger's left edge). */
+  transform-origin: top left;
   background: var(--ch-sheet-bg);
   box-shadow: var(--ch-shadow-lg);
 }
@@ -258,9 +260,11 @@
   box-shadow: 0 0 0 2px var(--ch-bg-surface);
   border-radius: 50%;
 }
-/* 26px coins whose 9px initials run to 20px: an 8px overlap put the last stroke under the next coin (aesthetic audit C-2). */
+/* 26px coins whose initials run nearly to their edge: an 8px overlap put the last stroke under the next coin (aesthetic
+   audit C-2), and 4px still cut the M of "TM" at 1280 (visual pass 2026-10-28). The coins now meet only at their 2px
+   surface rings, so every pair of initials reads whole. */
 .ch-pp__stack > * + * {
-  margin-left: -4px;
+  margin-left: -2px;
 }
 .ch-pp__more {
   display: grid;
@@ -310,6 +314,8 @@
   width: 320px;
   padding: 6px;
   border-radius: var(--ch-radius-lg);
+  /* It pops from the trigger's corner (it opens under the field's left edge). */
+  transform-origin: top left;
   background: var(--ch-sheet-bg);
   box-shadow: var(--ch-shadow-lg);
 }
@@ -1000,6 +1006,12 @@ html[data-fw-theme='dark'] .ch-ev-bar.is-held {
 }
 .ch-ev--class.ch-ev--fill-3 .ch-ev__who {
   color: color-mix(in oklab, var(--ch-on-fill-50) 82%, transparent);
+}
+/* At night info-600 turns pale (#86b6d4) and the ivory words on a full slot or the class card's band fell to 1.9:1 (A+ 4.15
+   F5, F5a): the slate is drawn deep from the night tokens instead (6.9:1 for the title, 5.3:1 for who). */
+html[data-fw-theme='dark'] .ch-ev--class.ch-ev--fill-3,
+html[data-fw-theme='dark'] .ch-cg__head {
+  background: color-mix(in oklab, var(--ch-info-600) 35%, var(--ch-info-100));
 }
 /* The class card (P006): a slate band naming the slot, then a row a player. Colour from the class slate, not ivory. */
 .ch-cg {
@@ -2073,13 +2085,37 @@ html[data-fw-theme='dark'] .ch-mo__ribbon.is-held {
 .ch-in__plate[data-tone='amber'] {
   --ch-plate: color-mix(in oklab, var(--ch-warning-600) 80%, var(--ch-ink-900));
 }
+/* At night the plate's inks (ink-700, info-600, and the mixes with ink-900) turn light, and the ivory title on them fell to
+   1.3 to 1.9:1 (A+ 4.15 F1, F1a, F1b). Each plate stays the colour of its block, drawn deep from the night tokens:
+   ink 8.8:1, slate 6.8:1, champagne 6.5:1, amber 6.4:1 under the ivory title (visual pass 2026-10-28). */
+html[data-fw-theme='dark'] .ch-in__plate {
+  --ch-plate: color-mix(in oklab, var(--ch-ink-700) 22%, var(--ch-bg-surface));
+}
+html[data-fw-theme='dark'] .ch-in__plate[data-tone='green'] {
+  --ch-plate: var(--ch-green-fill-600);
+}
+html[data-fw-theme='dark'] .ch-in__plate[data-tone='forest'] {
+  --ch-plate: var(--ch-green-800);
+}
+html[data-fw-theme='dark'] .ch-in__plate[data-tone='slate'] {
+  --ch-plate: color-mix(in oklab, var(--ch-info-600) 35%, var(--ch-info-100));
+}
+html[data-fw-theme='dark'] .ch-in__plate[data-tone='champagne'] {
+  --ch-plate: color-mix(in oklab, var(--ch-champagne-500) 40%, var(--ch-bg-surface));
+}
+html[data-fw-theme='dark'] .ch-in__plate[data-tone='amber'] {
+  --ch-plate: color-mix(in oklab, var(--ch-warning-600) 40%, var(--ch-bg-surface));
+}
 .ch-in__plate .ch-in__kick {
   justify-content: flex-start;
   gap: 8px;
-  color: rgb(255 255 255 / 0.8);
+  /* 0.88, not 0.8: the dark green plate held 4.50:1 at 0.8 before the sky lit it (visual pass 2026-10-28). */
+  color: rgb(255 255 255 / 0.88);
 }
+/* The kind badge sits in a well darker than its plate, not a lighter one: at white/0.18 the champagne plate's badge was
+   3.75:1 and the green's 4.48:1; at black/0.22 every plate holds 7.3:1 or more, in both themes (A+ 4.15 F1d). */
 .ch-in__plate .ch-in__kick .ch-badge {
-  background: rgb(255 255 255 / 0.18);
+  background: rgb(0 0 0 / 0.22);
   color: var(--ch-stage-ink);
   box-shadow: none;
 }
@@ -2096,7 +2132,7 @@ html[data-fw-theme='dark'] .ch-mo__ribbon.is-held {
 .ch-in__chip {
   padding: 4px 8px;
   border-radius: 999px;
-  background: rgb(255 255 255 / 0.18);
+  background: rgb(0 0 0 / 0.22);
   font: var(--ch-type-12-strong);
   color: var(--ch-stage-ink);
 }
@@ -2107,10 +2143,14 @@ html[data-fw-theme='dark'] .ch-mo__ribbon.is-held {
   font: var(--ch-type-13-medium);
   color: rgb(255 255 255 / 0.84);
 }
+/* The course code is one key: it never breaks across lines ("STAT" over "201" in a broken box), and it sits in the
+   same darker well as the plate's badge (visual pass 2026-10-28). */
 .ch-in__by b {
+  display: inline-block;
   padding: 2px 8px;
   border-radius: var(--ch-radius-sm);
-  background: rgb(255 255 255 / 0.16);
+  background: rgb(0 0 0 / 0.22);
+  white-space: nowrap;
   font-weight: 600;
   color: var(--ch-on-fill-50);
 }
@@ -2395,8 +2435,9 @@ html[data-fw-theme='dark'] .ch-mo__ribbon.is-held {
   width: 40px;
   height: 24px;
   border-radius: 999px;
-  background: var(--ch-bg-inset);
-  box-shadow: inset 0 1px 2px rgb(28 25 18 / 0.14), inset 0 0 0 1px rgb(28 25 18 / 0.08);
+  /* The shared switch's track (controls.css), so its edge holds 3:1 in both themes. */
+  background: var(--ch-switch-track-bg);
+  box-shadow: var(--ch-switch-track-shadow);
   transition: background var(--ch-dur-quick) var(--ch-ease);
 }
 .ch-switch__t::after {
@@ -2407,12 +2448,13 @@ html[data-fw-theme='dark'] .ch-mo__ribbon.is-held {
   width: 20px;
   height: 20px;
   border-radius: 50%;
-  background: var(--ch-raised-bg);
-  box-shadow: var(--ch-raised-shadow);
+  background: var(--ch-switch-thumb-bg);
+  box-shadow: var(--ch-switch-thumb-shadow);
   transition: transform var(--ch-dur-base) var(--ch-ease);
 }
 .ch-switch input:checked + .ch-switch__t {
-  background: var(--ch-green-fill-600);
+  background: var(--ch-switch-on-bg);
+  box-shadow: var(--ch-switch-on-shadow);
 }
 .ch-switch input:checked + .ch-switch__t::after {
   transform: translateX(16px);
@@ -2852,6 +2894,27 @@ html[data-fw-theme='dark'] .ch-mo__ribbon.is-held {
     gap: 2px;
     margin-left: auto;
     align-self: center;
+  }
+  /* The 30pt chevrons keep where they were drawn; each reaches 44 by 44 past its box, outward only so the two never
+     overlap, and the row is no taller (visual pass 2026-10-28; RUBRIC H10). The shared centred touch box on every
+     .ch-btn (ui.css, pointer: coarse) is off here: two centred boxes 2px apart overlap by 12px, so a tap on the right
+     edge of Previous went to Next. Each ::before is 44 by 44 on its own. */
+  .ch-calm-weekstep > .ch-iconbtn {
+    position: relative;
+  }
+  .ch-calm-weekstep > .ch-iconbtn::before {
+    content: '';
+    position: absolute;
+    inset: min(0px, calc(50% - 22px)) -1px;
+  }
+  .ch-calm-weekstep > .ch-iconbtn:first-child::before {
+    inset-inline-start: -13px;
+  }
+  .ch-calm-weekstep > .ch-iconbtn:last-child::before {
+    inset-inline-end: -13px;
+  }
+  .ch-calm-weekstep > .ch-iconbtn::after {
+    content: none;
   }
   .ch-calm-dayk:has(.ch-calm-weekstep) {
     flex-wrap: wrap;
@@ -3656,9 +3719,6 @@ html[data-fw-theme='dark'] .ch-lane__b.is-clash {
 html[data-fw-theme='dark'] .ch-lane__b.is-prop {
   background: rgb(120 200 150 / 0.08);
 }
-html[data-fw-theme='dark'] .ch-switch__t {
-  box-shadow: inset 0 1px 2px rgb(0 0 0 / 0.4), inset 0 0 0 1px rgb(255 255 255 / 0.06);
-}
 html[data-fw-theme='dark'] .ch-cal-warn {
   box-shadow: inset 0 0 0 1px rgb(227 169 79 / 0.24);
 }
@@ -3800,6 +3860,10 @@ html[data-fw-theme='dark'] .ch-ev--busy::after {
   }
   .ch-in__today .ch-in__next:hover {
     background: rgb(255 255 255 / 0.16);
+  }
+  /* At night fill-600 is the lighter green, and the row's ivory fell to 4.0:1 on it (A+ 4.15 F23): hover deepens instead. */
+  html[data-fw-theme='dark'] .ch-in__next:not(.ch-in__today .ch-in__next):hover {
+    background: color-mix(in oklab, var(--ch-green-fill-700) 80%, var(--ch-green-800));
   }
 }
 

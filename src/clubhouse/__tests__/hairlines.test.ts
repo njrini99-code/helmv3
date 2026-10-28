@@ -16,7 +16,7 @@ const sheets = walk(join(ROOT, 'styles'), /\.css$/).filter((f) => !f.endsWith('t
 // shell.css counts lane A's sidebar foot, which the codemod skipped.
 const ALLOW_LINES: Record<string, number> = {
   'styles/auth.css': 3,
-  'styles/calendar.css': 5,
+  'styles/calendar.css': 4,
   'styles/classes.css': 2,
   'styles/coachhelm-ask.css': 1,
   'styles/coachhelm-thread.css': 1,
