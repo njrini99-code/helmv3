@@ -11112,6 +11112,23 @@
         "ch-th-trendbox",
         "ch-th-turn",
         "ch-th-user",
+        "ch-th-va",
+        "ch-th-va__axis",
+        "ch-th-va__bar",
+        "ch-th-va__chart",
+        "ch-th-va__chip",
+        "ch-th-va__detail",
+        "ch-th-va__head",
+        "ch-th-va__hint",
+        "ch-th-va__kind",
+        "ch-th-va__label",
+        "ch-th-va__note",
+        "ch-th-va__row",
+        "ch-th-va__sub",
+        "ch-th-va__title",
+        "ch-th-va__total",
+        "ch-th-va__track",
+        "ch-th-va__val",
         "ch-th-who",
         "ch-th-work",
         "ch-th-work__btn",
@@ -11127,6 +11144,36 @@
           "name": "--ch-line-ink",
           "value": "var(--ch-chart-loss)",
           "scope": ".ch-th-trend.is-loss"
+        },
+        {
+          "name": "--ch-th-va-label",
+          "value": "132px",
+          "scope": ".ch-th-va"
+        },
+        {
+          "name": "--ch-th-va-value",
+          "value": "52px",
+          "scope": ".ch-th-va"
+        },
+        {
+          "name": "--ch-th-va-gap",
+          "value": "12px",
+          "scope": ".ch-th-va"
+        },
+        {
+          "name": "--ch-th-va-label",
+          "value": "88px",
+          "scope": ".ch-th--phone .ch-th-va"
+        },
+        {
+          "name": "--ch-th-va-value",
+          "value": "44px",
+          "scope": ".ch-th--phone .ch-th-va"
+        },
+        {
+          "name": "--ch-th-va-gap",
+          "value": "8px",
+          "scope": ".ch-th--phone .ch-th-va"
         }
       ]
     },
