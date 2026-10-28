@@ -12373,12 +12373,12 @@
         {
           "name": "--ch-lv-bead",
           "value": "6px",
-          "scope": "@container chlv (min-width: 640px) → .ch-lv-lane[data-density='full']"
+          "scope": "@container chlv (min-width: 668px) → .ch-lv-lane[data-density='full']"
         },
         {
           "name": "--ch-lv-gap",
           "value": "var(--ch-space-1)",
-          "scope": "@container chlv (min-width: 640px) → .ch-lv-lane[data-density='full']"
+          "scope": "@container chlv (min-width: 668px) → .ch-lv-lane[data-density='full']"
         }
       ]
     },

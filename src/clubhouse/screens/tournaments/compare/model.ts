@@ -41,8 +41,9 @@ export function toMetricRound(r: ChTourCompareRound, events: readonly ChTourEven
     vsField: failed.field ? null : r.vsField,
     counting: r.counting ? { counted: r.counting.counted, tie: r.counting.tie, line: null, drop: r.counting.drop, lineupSize: r.counting.lineupSize } : null,
     sg: r.sg ? { total: r.sg.ott + r.sg.app + r.sg.arg + r.sg.putt, ott: r.sg.ott, app: r.sg.app, arg: r.sg.arg, putt: r.sg.putt } : null,
-    cache: failed.holes ? null : { gir: r.stats.gir, girOf: r.holes, fw: r.stats.fw, fwOf: r.stats.fwOf, putts: r.stats.putts, birdiesPlus: r.stats.birdiesPlus },
+    cache: failed.holes ? null : { gir: r.stats.gir, girOf: r.stats.girOf, fw: r.stats.fw, fwOf: r.stats.fwOf, putts: r.stats.putts, birdiesPlus: r.stats.birdiesPlus },
     role: r.individual ? 'individual' : r.eventId ? 'lineup' : null,
+    ...(r.status ? { status: r.status } : {}),
     squad: 'a',
   };
 }

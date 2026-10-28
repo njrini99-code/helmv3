@@ -61,8 +61,8 @@ export function Timeline({
     onChange(target, { ...tsc, context: tsc.context.kind === 'event' ? { kind: 'events' } : tsc.context, period: { kind: 'range', from: r[0], to: r[1] } });
   };
 
-  // Every 18-hole round of the target's subject, a dot a day and kind: its mean against the course rating.
-  const all = selectRounds({ ...tsc, context: { kind: 'all' }, period: FOREVER, refine: [] }, env).filter((r) => r.holes === 18 && r.vsRating != null);
+  // Every finished 18-hole round of the target's subject (no WD or DQ), a dot a day and kind: its mean against the course rating.
+  const all = selectRounds({ ...tsc, context: { kind: 'all' }, period: FOREVER, refine: [] }, env).filter((r) => r.holes === 18 && r.vsRating != null && r.status == null);
   const byDay = new Map<string, { d: string; ctx: ChTourCompareRound['context']; v: number[] }>();
   for (const r of all) {
     const k = `${r.date}|${r.context}`;
