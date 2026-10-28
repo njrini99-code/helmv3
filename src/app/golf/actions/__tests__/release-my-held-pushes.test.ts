@@ -1,6 +1,9 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
-/** Deliver now: the signed-in player's own held pushes, released through the same path the minute job uses. */
+/**
+ * Deliver now: the signed-in player's own held pushes, released through the same path the minute job uses. class_awareness_v1 gates only
+ * new holds, so Deliver now works with it off too: a push held before the flag went off is never stranded.
+ */
 
 const flag = vi.hoisted(() => ({ on: true }));
 vi.mock('@/lib/flags/is-enabled', () => ({ isFlagEnabled: () => flag.on }));
@@ -33,13 +36,20 @@ describe('releaseMyHeldPushes', () => {
     expect(release.run).toHaveBeenCalledWith({ admin: true }, 'player-user', expect.objectContaining({ dueOnly: false, push: expect.anything() }));
   });
 
-  it('does nothing while the flag is off, and nothing for a signed-out caller', async () => {
+  it('with the flag off it still delivers what was held before the flag went off', async () => {
     flag.on = false;
-    expect(await releaseMyHeldPushes()).toEqual({ success: true, data: { released: 0 } });
-    expect(session.rpc).not.toHaveBeenCalled();
-    flag.on = true;
+    expect(await releaseMyHeldPushes()).toEqual({ success: true, data: { released: 3 } });
+    expect(session.rpc).toHaveBeenCalledWith('golf_push_holds_release_mine');
+    expect(release.run).toHaveBeenCalledWith({ admin: true }, 'player-user', expect.objectContaining({ dueOnly: false }));
+  });
+
+  it('does nothing for a signed-out caller, flag on or off', async () => {
     session.user = null;
-    expect((await releaseMyHeldPushes()).success).toBe(false);
+    for (const on of [true, false]) {
+      flag.on = on;
+      expect((await releaseMyHeldPushes()).success).toBe(false);
+    }
+    expect(session.rpc).not.toHaveBeenCalled();
     expect(release.run).not.toHaveBeenCalled();
   });
 

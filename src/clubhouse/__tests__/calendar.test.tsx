@@ -52,6 +52,7 @@ const a = vi.hoisted(() => ({
   attachDocumentToEvent: vi.fn(),
   detachDocumentFromEvent: vi.fn(),
   getDocuments: vi.fn(),
+  getPreviewUrl: vi.fn(),
   getAttendanceReport: vi.fn(),
   markAttendance: vi.fn(),
 }));
@@ -69,7 +70,7 @@ vi.mock('@/app/golf/actions/calendar-blocked-time', () => ({
 vi.mock('@/app/golf/actions/recurring-events', () => ({ createRecurringEvent: a.createRecurringEvent, deleteRecurringEvent: a.deleteRecurringEvent, editRecurringEvent: a.editRecurringEvent }));
 vi.mock('@/app/golf/actions/calendar-feeds', () => ({ getCalendarFeeds: a.getCalendarFeeds, createCalendarFeed: a.createCalendarFeed, regenerateCalendarFeed: a.regenerateCalendarFeed, deleteCalendarFeed: a.deleteCalendarFeed }));
 vi.mock('@/app/golf/actions/event-documents', () => ({ getEventDocuments: a.getEventDocuments, attachDocumentToEvent: a.attachDocumentToEvent, detachDocumentFromEvent: a.detachDocumentFromEvent }));
-vi.mock('@/app/golf/actions/documents', () => ({ getDocuments: a.getDocuments }));
+vi.mock('@/app/golf/actions/documents', () => ({ getDocuments: a.getDocuments, getPreviewUrl: a.getPreviewUrl }));
 vi.mock('@/app/golf/actions/attendance', () => ({ getAttendanceReport: a.getAttendanceReport, markAttendance: a.markAttendance }));
 // The linked trip on an open event (LinkedTrip): none, unless a case says otherwise.
 vi.mock('@/app/golf/actions/travel', () => ({ getItineraryForEvent: () => Promise.resolve({ success: true, data: null }) }));
@@ -792,6 +793,23 @@ describe('Calendar · saves that fail', () => {
     await user.click(await screen.findByRole('button', { name: 'Remove Local rules' }));
     await user.click(await screen.findByRole('button', { name: 'Undo' }));
     await expectCode('CH-6009', /Couldn’t put Local rules back/);
+  });
+
+  it('CH-6024 a file that won’t open (no signed link) says so and closes the tab it opened', async () => {
+    const user = userEvent.setup();
+    const win = { location: { href: '' }, close: vi.fn() };
+    const open = vi.spyOn(window, 'open').mockReturnValue(win as unknown as Window);
+    try {
+      a.getEventDocuments.mockResolvedValue({ success: true, data: [{ document: { id: 'd1', title: 'Local rules', file_url: '#', file_size: 1000 }, note: null }] });
+      a.getPreviewUrl.mockResolvedValue({ data: null, error: 'Document not found' });
+      wrap(cal(), { initialEvent: 'e9' });
+      await user.click(await screen.findByRole('button', { name: 'Open Local rules' }));
+      await expectCode('CH-6024', /Couldn’t open Local rules/);
+      expect(a.getPreviewUrl).toHaveBeenCalledWith('d1');
+      expect(win.close).toHaveBeenCalled();
+    } finally {
+      open.mockRestore();
+    }
   });
 
   it('CH-6007 CH-6208 CH-6404 CH-6304 attaching: loading, failing, empty, and a failed attach', async () => {
