@@ -26,8 +26,8 @@ Held items:     none
   class, the side cards, the overlaps
   card and the import drop zone (RUBRIC 4.8, `classes.css:339`).
 - At night today's band down the timetable is champagne at 10% (was 24%, which
-  laid a heavy olive slab down the list);
-  light is unchanged.
+  laid a heavy olive slab down the list); light is unchanged. A team day that
+  is also today keeps its team fill and ring at night, as it does by day.
 
 ### Why
 
