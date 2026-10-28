@@ -36,6 +36,12 @@ import { withBaseballAction } from '@/lib/baseball/with-baseball-action';
 import { validatePracticeForPublish } from '@/lib/baseball/practice-validation';
 import { attachPracticeToCalendar } from '@/app/baseball/actions/calendar';
 import { getActiveBaseballContext } from '@/lib/baseball/active-context';
+import {
+  groupPlayerPracticeReviews,
+  PLAYER_PRACTICE_REVIEW_COLUMNS,
+  type PlayerPracticeReviewRow,
+  type PlayerPracticeReviewView,
+} from '@/lib/baseball/read-models/player-practice-reviews';
 import type {
   BaseballPracticeRow,
   BaseballPracticeStatus,
@@ -596,6 +602,13 @@ export interface PlayerPracticeView {
   totalMinutes: number;
   blocks: PlayerPracticeBlockView[];
   myAttendanceStatus: string | null;
+  /**
+   * Reviews of this practice that a coach marked visible to players and that
+   * name this player. Empty when there are none, when the viewer is not a
+   * player, or while the held player-read policy
+   * (20261028120000_baseball_practice_reviews_player_read.sql) is unapplied.
+   */
+  coachReviews: PlayerPracticeReviewView[];
 }
 
 /** Format an ISO timestamptz (e.g. baseball_events.start_time) to a local
@@ -618,6 +631,30 @@ function isoToDate(iso: string | null): string | null {
   const m = String(d.getMonth() + 1).padStart(2, '0');
   const day = String(d.getDate()).padStart(2, '0');
   return `${y}-${m}-${day}`;
+}
+
+/**
+ * The practice reviews this player may see, keyed by practice id. Read through
+ * the player's own session, so RLS decides first: until the held player-read
+ * policy is applied the read returns no rows and this returns an empty map.
+ * A failed read also returns an empty map, so the practice list never breaks
+ * over a review section. Coaches (no player id) get nothing here; their
+ * reviews live on the Practice Effectiveness page.
+ */
+async function loadPlayerPracticeReviews(
+  supabase: Awaited<ReturnType<typeof createClient>>,
+  practiceIds: string[],
+  playerId: string | null,
+): Promise<Map<string, PlayerPracticeReviewView[]>> {
+  if (!playerId || practiceIds.length === 0) return new Map();
+  const { data, error } = await fromUntyped(supabase, 'baseball_practice_effectiveness_reviews')
+    .select(PLAYER_PRACTICE_REVIEW_COLUMNS)
+    .in('practice_id', practiceIds)
+    .eq('visibility', 'player_visible')
+    .contains('player_ids', [playerId])
+    .order('generated_at', { ascending: false });
+  if (error) return new Map();
+  return groupPlayerPracticeReviews(data as PlayerPracticeReviewRow[] | null, playerId);
 }
 
 /**
@@ -742,6 +779,13 @@ async function getPlayerPracticesImpl(): Promise<
     return { hasConflict: conflicting.length > 0, names: conflicting };
   }
 
+  const reviewsByPractice = await loadPlayerPracticeReviews(
+    supabase,
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    (practices ?? []).map((p: any) => p.id as string),
+    playerId,
+  );
+
   // Shape the response.
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const views: PlayerPracticeView[] = (practices ?? []).map((p: any) => {
@@ -813,6 +857,7 @@ async function getPlayerPracticesImpl(): Promise<
       totalMinutes,
       blocks,
       myAttendanceStatus: myAtt?.status ?? null,
+      coachReviews: reviewsByPractice.get(p.id) ?? [],
     };
   });
 
