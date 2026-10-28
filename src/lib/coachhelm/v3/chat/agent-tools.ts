@@ -534,7 +534,7 @@ export function buildCoachTools({ sb, ctx, conversationId, writer, collect }: Bu
       ? {
           show_visual: tool({
             description:
-              'Show the coach one interactive visual built from reads you already made in this answer. Use kind "sg_anatomy" after reading a single player\'s strokes gained legs (get_player_metrics with sg_tee, sg_approach, sg_around_green and sg_putting, and sg_total if you like), passing the evidence_ref of each read. You supply only the scene, a short title, those refs, and optionally which leg to open first and a few words about a leg; the figures are drawn from the reads and a note may not contain a number. If it is refused, say what you found in words instead.',
+              'Show the coach one interactive visual built from reads you already made in this answer. Use kind "sg_anatomy" after reading a single player\'s strokes gained legs (get_player_metrics with sg_tee, sg_approach, sg_around_green and sg_putting, and sg_total if you like), passing the evidence_ref of each read. You supply only the scene, a short title, those refs, and optionally which leg to open first and a few words about a leg; the figures are drawn from the reads, so neither the title nor a note may contain a number. If it is refused because the title has a number, call it once more with the title in words; if it is refused for any other reason, say what you found in words instead.',
             inputSchema: VisualSpec,
             execute: async (input) => {
               progress('show_visual', {});
