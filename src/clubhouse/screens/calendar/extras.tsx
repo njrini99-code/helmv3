@@ -352,6 +352,8 @@ export function EventFiles({ eventId, teamId, canEdit, preview }: { eventId: str
     async (f: EventFile): Promise<ServerResult<{ url: string }>> => {
       if (preview) return { success: true };
       const win = typeof window !== 'undefined' ? window.open('', '_blank') : null;
+      // The blank tab is ours until the link lands; cut its way back to this page before it leaves for storage.
+      if (win) win.opener = null;
       setOpening(f.id);
       try {
         const res = await getPreviewUrl(f.id);
