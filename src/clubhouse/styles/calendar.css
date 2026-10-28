@@ -2644,7 +2644,7 @@ html[data-fw-theme='dark'] .ch-mo__ribbon.is-held {
   border: 0;
   background: none;
   color: inherit;
-  font: inherit;
+  font-family: inherit;
   text-align: left;
   cursor: pointer;
 }

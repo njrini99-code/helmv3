@@ -1,4 +1,5 @@
 # Feature: Calendar And Events
+<!-- schema-drift-absent: golf_clubhouse_ui -->
 
 <!-- schema-drift-banner: hand-written above/below; do not auto-band this file -->
 

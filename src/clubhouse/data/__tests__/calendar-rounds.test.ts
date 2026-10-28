@@ -69,6 +69,12 @@ describe('loadRoundRefs', () => {
     expect(sb.reads).not.toContain('golf_tournament_entries');
   });
 
+  it('a player’s ref never carries the lock time; a coach’s does', async () => {
+    const t = tournament({ lineup_locked_at: PAST, lineup_published_at: PAST });
+    expect((await loadRoundRefs(client(t), ['e1'], 'player', NOW)).refs.get('e1')?.lockedAt).toBeNull();
+    expect((await loadRoundRefs(client(t), ['e1'], 'coach', NOW)).refs.get('e1')?.lockedAt).toBe(PAST);
+  });
+
   it('a player’s ref for a published lineup says published', async () => {
     const { refs } = await loadRoundRefs(client(tournament({ lineup_locked_at: PAST, lineup_published_at: PAST })), ['e1'], 'player', NOW);
     expect(refs.get('e1')?.lineup).toBe('published');

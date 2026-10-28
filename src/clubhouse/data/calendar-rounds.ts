@@ -59,7 +59,8 @@ export async function loadRoundRefs(
       version: t.version,
       status: r.status,
       startType: r.start_type,
-      lockedAt: t.lineup_locked_at,
+      // Lock state is the coach's: a player's ref never carries it (only coach drag code reads it).
+      lockedAt: role === 'coach' ? t.lineup_locked_at : null,
       lineup,
       tournamentCancelled: !live.get(t.id),
       courseLabel: r.course_label,

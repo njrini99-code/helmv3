@@ -214,6 +214,19 @@ describe('P-4 held moves', () => {
       expect(a.updateGolfEvent).not.toHaveBeenCalled();
     });
 
+    it('a move waiting for a connection is dropped on pagehide too: a page restored from the back-forward cache writes nothing on reconnect', async () => {
+      wrap(cal());
+      nudge();
+      line.mockReturnValue(false);
+      await expire();
+      expect(screen.getByText('Waiting for a connection to save')).toBeTruthy();
+      act(() => {
+        window.dispatchEvent(new Event('pagehide'));
+      });
+      await reconnect();
+      expect(a.updateGolfEvent).not.toHaveBeenCalled();
+    });
+
     it('a move still in its Undo window when the coach leaves offline is dropped, not queued', async () => {
       const page = wrap(cal());
       nudge();
