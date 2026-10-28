@@ -1,6 +1,6 @@
 # 2026-10-28 — Classes: visual pass
 
-## 2026-10-28 — A class's days sit under the header's days on a 1000px page; cards on 16
+## 2026-10-28 — Class days sit under the header's days; cards on 16
 
 ```text
 Design package: none (Clubhouse visual pass 2026-10-28, area D; RUBRIC H11, H17,
