@@ -2,6 +2,8 @@ import { describe, expect, it, vi } from 'vitest';
 
 vi.mock('server-only', () => ({}));
 
+import type { UIMessage } from 'ai';
+import { buildAssistantTurn } from '@/clubhouse/data/coachhelm-chat-thread';
 import type { Measurement, ToolEnvelope } from '../../provenance';
 import { compileVisual } from '../compile';
 import { ValidatedVisualArtifact, VisualSpec } from '../schema';
@@ -89,5 +91,52 @@ describe('compileVisual · sg_anatomy', () => {
       NOW,
     );
     expect(r.ok && r.artifact.annotations).toEqual([{ metricId: 'sg_approach', kind: 'hypothesis', label: 'Worth testing from the rough' }]);
+  });
+
+  it('refuses a title that carries a figure: every number on screen comes from the reads', () => {
+    for (const title of ['Approach costs 0.9 a round', 'Last 8 rounds', 'Top 3 losses']) {
+      expect(compileVisual(spec({ title }), withE1(four), NOW)).toMatchObject({ ok: false, reason: 'figure_in_text' });
+    }
+    const words = compileVisual(spec({ title: 'Where Jonah gains and loses' }), withE1(four), NOW);
+    expect(words.ok && words.artifact.title).toBe('Where Jonah gains and loses');
+  });
+});
+
+describe('compileVisual · the reads an artifact stands in for', () => {
+  const teamRounds = env([
+    { ...sg('avg_score', 74.2), metric_label: 'Average score', unit: 'strokes', entity: { kind: 'team', id: 't1', label: 'Team' } } as Measurement,
+  ]);
+
+  it('names only the reads it plotted, so a read named alongside keeps its evidence block', () => {
+    const r = compileVisual(spec({ evidenceRefs: ['e1', 'e2'] }), new Map([['e1', env(four)], ['e2', teamRounds]]), NOW);
+    expect(r.ok && r.artifact.evidenceRefs).toEqual(['e1']);
+  });
+
+  it('keeps a read that holds anything the chart does not draw: another metric, a missing leg, a series', () => {
+    const extra = compileVisual(spec(), withE1([...four, { ...sg('gir_pct', 61), unit: 'percent' }]), NOW);
+    expect(extra.ok && extra.artifact.evidenceRefs).toEqual([]);
+    const missing = compileVisual(spec(), withE1([sg('sg_tee', 0.2), sg('sg_approach', null), sg('sg_putting', -0.3)]), NOW);
+    expect(missing.ok && missing.artifact.evidenceRefs).toEqual([]);
+    const series = compileVisual(spec(), new Map([['e1', { ...env(four), series: [{} as ToolEnvelope['series'][number]] }]]), NOW);
+    expect(series.ok && series.artifact.evidenceRefs).toEqual([]);
+  });
+
+  it('a read the total came from counts as drawn, and a ref named twice is named once', () => {
+    const r = compileVisual(spec({ evidenceRefs: ['e1', 'e2', 'e1'] }), new Map([['e1', env(four.slice(0, 4))], ['e2', env([sg('sg_total', -0.9)])]]), NOW);
+    expect(r.ok && r.artifact.evidenceRefs).toEqual(['e1', 'e2']);
+  });
+
+  it('in the thread, the team rounds read named alongside stays on screen beside the visual', () => {
+    const r = compileVisual(spec({ evidenceRefs: ['e1', 'e2'] }), new Map([['e1', env(four)], ['e2', teamRounds]]), NOW);
+    if (!r.ok) throw new Error('compiled artifact expected');
+    const part = (id: string, ref: string, envelope: ToolEnvelope) => ({ type: 'data-evidence', id, data: { tool: 'get_player_metrics', envelope, ref } });
+    const message = {
+      id: 'a1',
+      role: 'assistant',
+      parts: [part('x1', 'e1', env(four)), part('x2', 'e2', teamRounds), { type: 'data-visual-artifact', id: 'visual-1', data: r.artifact }],
+    } as unknown as UIMessage;
+    const turn = buildAssistantTurn(message, { isLast: false, busy: false });
+    if (turn.role !== 'assistant') throw new Error('assistant turn expected');
+    expect(turn.blocks.map((b) => (b.kind === 'evidence' ? `evidence:${b.envelope.measurements[0]?.metric_id}` : b.kind))).toEqual(['evidence:avg_score', 'visual']);
   });
 });

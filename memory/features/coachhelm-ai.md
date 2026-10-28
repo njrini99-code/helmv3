@@ -637,6 +637,11 @@ server-side so the numeric audit can trace them.
 resolves them, refuses what cannot be drawn honestly and returns a hashed
 `ValidatedVisualArtifact`; the message keeps it as `data-visual-artifact`, so a
 reload draws the same chart. See `docs/architecture/coachhelm-agentic-visuals.md`.
+No model text puts a figure on screen: a title or a note with a digit is
+refused or dropped (`figure_in_text`). The artifact's `evidenceRefs` name only
+the reads it draws in full (a leg or the total and nothing else), and the
+thread hides only those reads' evidence blocks, so a read named alongside
+stays visible (2026-10-27).
 
 ## UI Contract
 
