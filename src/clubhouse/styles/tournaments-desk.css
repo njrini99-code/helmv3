@@ -456,7 +456,8 @@ button.ch-tour-desk-sc:focus-visible {
   background: none;
   font: var(--ch-type-14-medium);
   line-height: var(--ch-lead-tight);
-  color: var(--ch-accent);
+  /* Text takes the dark-safe green, never --ch-accent (2.74:1 on the dark canvas; visual pass 2026-10-28). */
+  color: var(--ch-green-600);
   cursor: pointer;
 }
 .ch-tour-desk-link:hover {
@@ -469,6 +470,12 @@ button.ch-tour-desk-sc:focus-visible {
 }
 .ch-tour-desk.is-phone .ch-tour-desk-link {
   min-height: 44px;
+}
+/* The phone's floor is 12: tab counts and the NC / round marks step up from 11 (visual pass 2026-10-28). */
+.ch-tour-desk.is-phone .ch-tour-desk-tabs__n,
+.ch-tour-desk.is-phone .ch-tour-desk-sc em {
+  font: var(--ch-type-12-strong);
+  letter-spacing: var(--ch-track-12);
 }
 
 /* Hole analysis (board .tr-hg; phone .tm-hg): a round's holes, scores or to par, and the team's average against par. */

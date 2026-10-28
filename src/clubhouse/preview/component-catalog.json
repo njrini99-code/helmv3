@@ -1630,6 +1630,7 @@
       ],
       "styles": [
         "src/clubhouse/styles/classes.css",
+        "src/clubhouse/styles/tournaments-review.css",
         "src/clubhouse/styles/ui.css"
       ],
       "examples": [],
@@ -8536,6 +8537,7 @@
         "Section"
       ],
       "styles": [
+        "src/clubhouse/styles/tournaments-review.css",
         "src/clubhouse/styles/ui.css"
       ],
       "examples": [],
@@ -20663,11 +20665,14 @@
     {
       "file": "src/clubhouse/styles/tournaments-review.css",
       "classes": [
+        "ch-sec__actions",
+        "ch-sec__head",
         "ch-tour-rev",
         "ch-tour-rev-bar",
         "ch-tour-rev-bars",
         "ch-tour-rev-body",
         "ch-tour-rev-dot",
+        "ch-tour-rev-hist",
         "ch-tour-rev-layer",
         "ch-tour-rev-layer__ev",
         "ch-tour-rev-layers",

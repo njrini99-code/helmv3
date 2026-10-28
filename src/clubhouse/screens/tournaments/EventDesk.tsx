@@ -186,7 +186,8 @@ function DeskReady({ data, search, phone }: { data: ChTourDeskData; search: ChTo
       <TourHead
         id={TITLE_ID}
         phone={phone}
-        crumb={<TourCrumb href={paths.home()} />}
+        // The phone bar carries Back (TourPhoneTop); a second crumb under it said the same thing twice.
+        crumb={phone ? undefined : <TourCrumb href={paths.home()} />}
         eyebrow={`${tourRange(e.startDate, e.endDate)}${phone ? '' : `, ${e.startDate.slice(0, 4)}`}${course ? ` · ${course.name}` : ''}${course && !phone ? ` · ${course.tees}` : ''}`}
         title={e.name}
         meta={meta}
