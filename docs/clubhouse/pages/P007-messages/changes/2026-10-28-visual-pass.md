@@ -3,7 +3,8 @@
 ## 2026-10-28 — Bubbles on 16 with a 6 tail, cards on 16, reaction glyphs at the house stroke
 
 ```text
-Design package: none (Clubhouse visual pass 2026-10-28, area E; RUBRIC H17 and the
+Design package: none (Clubhouse visual pass 2026-10-28, area E; RUBRIC H17 and
+                the
                 Messages checklist: "bubbles radius 16 with a 6 tail", "reaction
                 glyph stroke 1.6, not 2.3")
 PR/commit:      visual-pass-2026-10-28
