@@ -263,7 +263,8 @@ export function StatsPlayer({ data, coachId, initialTab, reads }: { data: ChPlay
               </span>
             </div>
             <h1 className="ch-display">{coach ? data.name : 'Your stats'}</h1>
-            <p>{[coach ? null : data.name, data.classYear, data.gradYear ? `Class of ${data.gradYear}` : null, data.hometown].filter(Boolean).join(' · ')}</p>
+            {/* A no-break space ahead of each dot: a wrapped line never starts with "· Charlotte, NC". */}
+            <p>{[coach ? null : data.name, data.classYear, data.gradYear ? `Class of ${data.gradYear}` : null, data.hometown].filter(Boolean).join('\u00a0· ')}</p>
             {coach && (messageHref || planHref || insightsHref || coachId) && (
               <div className="ch-pf-hero__act">
                 {messageHref && (

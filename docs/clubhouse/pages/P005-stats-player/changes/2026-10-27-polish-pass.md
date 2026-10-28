@@ -28,6 +28,8 @@ Held items:     none
   the screen's edge at 375. The strip now gives the words 1.2 parts to the
   figures' 0.9 each, and the words wrap at a larger Text Size
   (`styles/stats.css` `.ch-stm-overview .ch-stm-figs.is-three`).
+- Desktop player head: a no-break space ahead of each dot, so a wrapped line never
+  starts with "· Charlotte, NC" (`screens/stats/StatsPlayer.tsx`).
 
 ### Why
 
