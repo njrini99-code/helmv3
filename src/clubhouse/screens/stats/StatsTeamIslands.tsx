@@ -2,7 +2,7 @@
 
 import { useHeroTone } from '../../ui/PageHero';
 import { withPointSpan } from '../../ui/point-span';
-import { ArrowDownRight, ArrowUpRight, CalendarRange, Download, Minus, TrendingDown, TrendingUp } from 'lucide-react';
+import { ArrowDownRight, ArrowUpRight, CalendarRange, Download, TrendingDown, TrendingUp } from 'lucide-react';
 import Link from 'next/link';
 import { createContext, useContext, useEffect, useId, useMemo, useState, useTransition, type PointerEvent as ReactPointerEvent, type ReactNode } from 'react';
 import { useRouter } from 'next/navigation';
@@ -397,11 +397,8 @@ function TeamTrend({ data, focus, setFocus }: { data: ChTeamCharts; focus: strin
         <div className="ch-sgt__big">
           <h2 className="ch-sgt__k">{isSg ? 'Team strokes gained per round' : 'Team scoring average'}</h2>
           <span className="ch-sgt__row">
-            <b className={'ch-sgt__n ch-num ' + (isSg ? changeInk(leadValue) : '')}>
-              <Swap swapKey={`${lens}${leadText}`} inline>
-                {withPointSpan(leadText)}
-              </Swap>
-            </b>
+            {/* The headline changes at once on a window or lens change, as Stocks' price does: no fade-and-rise under the reader. */}
+            <b className={'ch-sgt__n ch-num ' + (isSg ? changeInk(leadValue) : '')}>{withPointSpan(leadText)}</b>
             {lead?.delta == null && lead?.context && (
               <span className="ch-sgt__chg is-flat">
                 <em>{lead.context}</em>
@@ -409,7 +406,8 @@ function TeamTrend({ data, focus, setFocus }: { data: ChTeamCharts; focus: strin
             )}
             {lead?.delta != null && (
               <span className={`ch-sgt__chg ch-num ${leadTone === 'is-gain' || leadTone === 'is-loss' ? leadTone : 'is-flat'}`}>
-                <Icon icon={leadTone === '' ? Minus : lead.delta > 0 ? ArrowUpRight : ArrowDownRight} size={16} />
+                {/* No glyph for no clear change: a dash beside a signed number read as "— −0.4". */}
+                {leadTone !== '' && <Icon icon={lead.delta > 0 ? ArrowUpRight : ArrowDownRight} size={16} />}
                 {formatSigned(lead.delta, lead.digits)}
                 <em>{deltaWords(lead.delta, leadTone, lead.context || 'vs previous 10')}</em>
               </span>
@@ -571,7 +569,7 @@ function TeamTrend({ data, focus, setFocus }: { data: ChTeamCharts; focus: strin
               {teamPath && <path d={teamPath} className="ch-sgt__team" fill="none" stroke="var(--ch-st-team-line)" strokeWidth={3} strokeLinecap="round" />}
               {tLast && <circle className="ch-sgt__tdot" cx={x(tLast.i)} cy={y(tLast.v)} r={4.5} fill="var(--ch-ivory-25)" stroke="var(--ch-st-team-line)" strokeWidth={2.5} />}
               {scrub == null && tLast && (
-                <text x={x(tLast.i) - 12} y={y(tLast.v) - 13} textAnchor="end" className="ch-sgt__callout">
+                <text x={x(tLast.i) - 12} y={y(tLast.v) - 13} textAnchor="end" className="ch-sgt__callout ch-num">
                   {fmt(tLast.v)}
                 </text>
               )}

@@ -209,7 +209,7 @@ const RAW_FONT: Record<string, number> = {
   'styles/rounds.css': 23,
   'styles/settings.css': 3,
   'styles/shell.css': 10,
-  'styles/stats.css': 38,
+  'styles/stats.css': 33,
   'styles/ui.css': 5,
 };
 

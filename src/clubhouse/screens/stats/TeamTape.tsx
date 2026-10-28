@@ -1,5 +1,5 @@
 import { useId } from 'react';
-import { ArrowDownRight, ArrowUpRight, Minus } from 'lucide-react';
+import { ArrowDownRight, ArrowUpRight } from 'lucide-react';
 import { Icon } from '../../ui/Icon';
 import type { ChGauge } from '../../data/stats-team';
 import { gappedPath, lastValue } from '../../lib/chart';
@@ -88,7 +88,7 @@ function TapeCell({ it, against }: { it: TapeItem; against: string }) {
       <span className={`ch-tp__d ch-num ${tone}`}>
         {d != null ? (
           <>
-            <Icon icon={signal === '' ? Minus : d > 0 ? ArrowUpRight : ArrowDownRight} size={13} />
+            {signal !== '' && <Icon icon={d > 0 ? ArrowUpRight : ArrowDownRight} size={13} />}
             {formatSigned(d, it.deltaDigits)}
           </>
         ) : null}
