@@ -860,6 +860,7 @@ them would bury everything above.
 | `docs/clubhouse/changes/2026-10-25-train-shared-pieces.md` | current | - | - | - | - |
 | `docs/clubhouse/changes/2026-10-27-class-holds-drain.md` | current | - | - | - | - |
 | `docs/clubhouse/changes/2026-10-27-live-split.md` | current | - | - | - | - |
+| `docs/clubhouse/changes/2026-10-28-design-picks.md` | current | - | - | - | - |
 | `docs/clubhouse/changes/2026-10-28-visual-pass-system.md` | current | - | - | - | - |
 | `docs/clubhouse/changes/2026-10-28-visual-pass-whats-new.md` | current | - | - | - | - |
 | `docs/clubhouse/drafts/auth-onboarding-ground-truth.md` | current | - | - | - | - |
@@ -1196,6 +1197,7 @@ them would bury everything above.
 | `docs/clubhouse/pages/P011-rounds/changes/2026-10-25-p7-round-says.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P011-rounds/changes/2026-10-25-p7-setup-history.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P011-rounds/changes/2026-10-27-coach-open-live-round.md` | current | - | - | - | - |
+| `docs/clubhouse/pages/P011-rounds/changes/2026-10-28-design-picks.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P011-rounds/changes/2026-10-28-visual-pass.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P012-classes/CHANGELOG.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P012-classes/CONTRACT.md` | current | - | - | yes | - |
@@ -1211,6 +1213,7 @@ them would bury everything above.
 | `docs/clubhouse/pages/P012-classes/changes/2026-10-24-screen-gaps.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P012-classes/changes/2026-10-24-top-bar-plus.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P012-classes/changes/2026-10-25-p10-class-awareness.md` | current | - | - | - | - |
+| `docs/clubhouse/pages/P012-classes/changes/2026-10-28-design-picks.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P012-classes/changes/2026-10-28-visual-pass.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P013-coachhelm/CHANGELOG.md` | current | - | - | yes | - |
 | `docs/clubhouse/pages/P013-coachhelm/CONTRACT.md` | current | - | - | yes | - |
