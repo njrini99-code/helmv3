@@ -37,8 +37,9 @@ Held items:     none
 
 - Review must-fixes: an ivory glyph on paper all but vanished in light (1.14:1;
   the quiet ink reads 6.39:1 in light and 6.44:1 in dark); the feed would
-  have changed for every subscriber on the next deploy with Clubhouse off; a player could read a lock as a published lineup; an
-  offline move could write after the coach had left.
+  have changed for every subscriber on the next deploy with Clubhouse off;
+  a player could read a lock as a published lineup; an offline move could
+  write after the coach had left.
 
 ### Verification
 
