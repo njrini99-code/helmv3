@@ -23,7 +23,7 @@ earlier observations below retain their original date and scope.
 | Checklist | [screens/team-hub.md](../../screens/team-hub.md) |
 | Phone spec | [phone/team-hub.md](../../phone/team-hub.md) |
 | Design boards | [Coach - Team Hub.html](../../../../design/handoff/Coach%20-%20Team%20Hub.html) · [Player - Team Hub.html](../../../../design/handoff/Player%20-%20Team%20Hub.html) · [hub.jsx](../../../../design/handoff/hub.jsx) · [hub.css](../../../../design/handoff/hub.css) · [hub-data.js](../../../../design/handoff/hub-data.js) · [Coach and Player - Team Hub - Mobile.html](../../../../design/handoff/Coach%20and%20Player%20-%20Team%20Hub%20-%20Mobile.html) · [hub.jsx](../../../../design/handoff/hub.jsx) |
-| Code | [hub](../../../../src/clubhouse/screens/hub) · [hub.ts](../../../../src/clubhouse/data/hub.ts) · [hub.tsx](../../../../src/clubhouse/routes/hub.tsx) · [hub.css](../../../../src/clubhouse/styles/hub.css) |
+| Code | [hub](../../../../src/clubhouse/screens/hub) · [hub.ts](../../../../src/clubhouse/data/hub.ts) · [hub.tsx](../../../../src/clubhouse/routes/hub.tsx) · [hub.css](../../../../src/clubhouse/styles/hub.css) · [hub-shape.ts](../../../../src/clubhouse/data/hub-shape.ts) |
 | Held plans | [document-policy-scoping.md](../../held/data/document-policy-scoping.md) |
 | Audits | [INTUITIVE_SECONDARY_AUDIT](../../INTUITIVE_SECONDARY_AUDIT.md) · [all audits](../../AUDITS.md) |
 | Tracker | [PROGRESS.md](../../PROGRESS.md), row "Team Hub" |

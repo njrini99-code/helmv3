@@ -97,7 +97,8 @@
   align-self: stretch;
 }
 
-/* "‹ Tournaments": back to the season from an event's own pages (the boards' .tr-crumb). 44px to press on the phone. */
+/* "‹ Tournaments": back to the season from an event's own pages (the boards' .tr-crumb), on the desktop. The phone's top bar
+   carries the back, so a view draws no crumb there (a second "‹ Tournaments" under the bar's own). */
 .ch-tour-crumb {
   display: inline-flex;
   align-items: center;
@@ -116,9 +117,6 @@
   outline: 2px solid var(--ch-border-focus);
   outline-offset: 2px;
   border-radius: var(--ch-radius-xs);
-}
-.ch-tour.is-phone .ch-tour-crumb {
-  min-height: 44px;
 }
 
 /* A loading view keeps the head's geometry (CH-16401): the placeholders stand where the eyebrow and title will. */

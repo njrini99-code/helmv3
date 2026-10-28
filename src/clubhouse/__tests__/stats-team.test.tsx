@@ -1332,7 +1332,7 @@ describe('Stats team · what changed (row 70)', () => {
       // Greens +3% (1.25 errors) and the scoring average −0.9 (1.18); strokes gained, putts, scrambling and birdies are inside theirs.
       const box = await waitFor(() => card()!);
       expect(within(box).getByRole('heading').textContent).toBe('What changed');
-      expect([...box.querySelectorAll('p')].map((p) => p.textContent)).toEqual(['+3 pts Greens in regulation, better vs previous 10', '−0.9 Scoring average, better vs previous 10']);
+      expect([...box.querySelectorAll('p')].map((p) => p.textContent)).toEqual(['+3 pts Greens in regulation, better than previous 10', '−0.9 Scoring average, better than previous 10']);
       expect(unsignedTones(box)).toEqual([]);
       agreesWithPage(box);
     });

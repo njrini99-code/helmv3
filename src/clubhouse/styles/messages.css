@@ -2874,15 +2874,16 @@
   border-radius: var(--ch-radius-xs);
 }
 /* Phone: a 44 px tap box that grows 2 px up into the column gap and down into the reserve below, never over the
-   bubble (whose press handlers sit on a sibling). 2 + 13.2 + 30 = 45.2 px at the phone time line's 1.1 leading. */
+   bubble (whose press handlers sit on a sibling). 2 + 13.2 + 30 = 45.2 px at the phone time line's 1.1 leading; 10 px
+   each side makes the shortest word, "Sent" (about 26 px), 46 px wide. */
 .ch-msp-thread .ch-ms-seen.is-open::after,
 .ch-ms-seen.is-open::after {
   content: '';
   position: absolute;
   top: -2px;
-  right: -8px;
+  right: -10px;
   bottom: -30px;
-  left: -8px;
+  left: -10px;
 }
 .ch-msp-thread.is-seen-list .ch-ms-msg.is-group.is-mine.is-last {
   margin-bottom: var(--ch-space-6);

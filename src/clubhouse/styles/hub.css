@@ -3183,12 +3183,13 @@ html[data-fw-theme='dark'] .ch-hb-prog i::after {
   display: inline-flex;
   align-items: center;
 }
+/* Initials, not photos: a deeper overlap hid each face's second letter ("TM" read "TN", "EB" read "EE"). */
 .ch-hw-stack i {
   display: grid;
   place-items: center;
   width: 28px;
   height: 28px;
-  margin-left: -8px;
+  margin-left: -3px;
   border-radius: 50%;
   background: var(--ch-on-dark-raised-bg);
   box-shadow: 0 0 0 2px var(--ch-green-800);

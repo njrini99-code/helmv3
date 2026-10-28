@@ -77,6 +77,12 @@ function HistoryReady({ data, search, phone }: { data: ChTourHistoryData; search
   const courseName = (id: string | undefined) => (id ? (data.courses[id]?.name ?? null) : null);
   const points = trendPoints(data, state);
   const note = trendNote(data, state);
+  const tools = (
+    <div className="ch-tour-rev-tools">
+      <Segmented size="sm" block={phone} label="Lineup mode" value={state.adjust === 'field' ? 'actual' : state.mode} onChange={(v) => move({ mode: v })} options={[{ value: 'actual', label: 'Actual lineups' }, { value: 'matched', label: 'Returning players', disabled: state.adjust === 'field' }]} />
+      <Segmented size="sm" block={phone} label="Measured against" value={state.adjust} onChange={(v) => move({ adjust: v })} options={[{ value: 'raw', label: 'Course rating' }, { value: 'field', label: 'The field' }]} />
+    </div>
+  );
 
   return (
     <TourMain view="history" phone={phone} labelledBy={TITLE_ID} className="ch-tour-rev-hist">
@@ -113,16 +119,9 @@ function HistoryReady({ data, search, phone }: { data: ChTourHistoryData; search
         />
       ) : (
         <>
-          <Section
-            id="ch-tour-hist-across"
-            title="Across seasons"
-            actions={
-              <div className="ch-tour-rev-tools">
-                <Segmented size="sm" label="Lineup mode" value={state.adjust === 'field' ? 'actual' : state.mode} onChange={(v) => move({ mode: v })} options={[{ value: 'actual', label: 'Actual lineups' }, { value: 'matched', label: 'Returning players', disabled: state.adjust === 'field' }]} />
-                <Segmented size="sm" label="Measured against" value={state.adjust} onChange={(v) => move({ adjust: v })} options={[{ value: 'raw', label: 'Course rating' }, { value: 'field', label: 'The field' }]} />
-              </div>
-            }
-          >
+          <Section id="ch-tour-hist-across" title="Across seasons" actions={phone ? undefined : tools}>
+            {/* The two toggles are wider than a phone beside the heading: there they take the rows under it. */}
+            {phone && tools}
             {data.errors.trend ? (
               <InlineNotice code="CH-16236" title="The trend didn’t load" body="The events below are unaffected. Try again." onRetry={refresh} retrying={refreshing} />
             ) : phone ? (
@@ -204,7 +203,7 @@ function Trend({ points, state, note }: { points: TrendPoint[]; state: ChTourHis
           </li>
         ))}
       </ol>
-      <p className="ch-tour-rev-trend__key">A point opens its event. A grey ring means scorecards only.</p>
+      <p className="ch-tour-rev-trend__key">A point opens its event. A grey ring means scorecards only. The dotted line is the average of the points shown.</p>
       {note && <p className="ch-tour-rev-trend__note">{note}</p>}
     </div>
   );

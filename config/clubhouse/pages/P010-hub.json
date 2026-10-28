@@ -46,6 +46,9 @@
     "styles": "src/clubhouse/styles/hub.css",
     "tests": [
       "src/clubhouse/__tests__/hub.test.tsx"
+    ],
+    "also": [
+      "src/clubhouse/data/hub-shape.ts"
     ]
   },
   "catalog": "docs/clubhouse/catalog/hub.md",

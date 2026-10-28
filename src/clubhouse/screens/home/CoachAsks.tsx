@@ -28,7 +28,8 @@ export function CoachAsks({ asks }: { asks: ChPlayerAsks | null | undefined }) {
   return (
     <Link href={hub} className="ch-ph-asks">
       <span className="ch-ph-asks__k">From your coach</span>
-      <span className="ch-ph-asks__v ch-num">{parts.join(' · ')}</span>
+      {/* Each part holds together ("2 tasks due" never splits after its number); lines break only after a dot. */}
+      <span className="ch-ph-asks__v ch-num">{parts.map((p) => p.replace(/ /g, ' ')).join(' · ')}</span>
       <Icon icon={ChevronRight} size={15} />
       <LinkPending />
     </Link>

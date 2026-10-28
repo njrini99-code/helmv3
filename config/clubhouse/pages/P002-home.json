@@ -52,6 +52,12 @@
     "tests": [
       "src/clubhouse/__tests__/home.test.tsx",
       "src/clubhouse/__tests__/player-home.test.tsx"
+    ],
+    "also": [
+      "src/clubhouse/data/home-changes.ts",
+      "src/clubhouse/data/home-clock.ts",
+      "src/clubhouse/data/home-queue.ts",
+      "src/clubhouse/data/player-home.ts"
     ]
   },
   "catalog": "docs/clubhouse/catalog/home.md",

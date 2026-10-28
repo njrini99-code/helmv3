@@ -1,4 +1,4 @@
-import { ArrowDownRight, ArrowUpRight, Flag, Minus } from 'lucide-react';
+import { ArrowDownRight, ArrowUpRight, Flag } from 'lucide-react';
 import type { ReactNode } from 'react';
 import type { ChSgChange } from '../../data/stats-common';
 import type { ChGauge } from '../../data/stats-team';
@@ -117,7 +117,8 @@ export function SgChangeChip({ change, code, subject }: { change: ChSgChange; co
     <span className="ch-sgchg">
       {d != null && (
         <span className={`ch-delta ch-num ${deltaClass(tone)}`}>
-          <Icon icon={tone === '' ? Minus : d > 0 ? ArrowUpRight : ArrowDownRight} size={12} />
+          {/* No arrow without a clear change: a minus glyph beside "−1.3" read as a double minus. */}
+          {tone !== '' && <Icon icon={d > 0 ? ArrowUpRight : ArrowDownRight} size={12} />}
           {formatSigned(d)}
         </span>
       )}

@@ -715,7 +715,7 @@ describe('Player Home · what the coach is waiting on, and the player’s own re
   it('item 1: one quiet row under the head, From your coach and the counts, opening Team Hub; none when nothing waits or it didn’t load', () => {
     const view = show();
     const row = screen.getByRole('link', { name: /^From your coach/ });
-    expect(row.textContent).toMatch(/From your coach2 replies · 1 to acknowledge · 2 tasks due/);
+    expect(row.textContent).toMatch(/From your coach2\u00a0replies\u00a0· 1\u00a0to\u00a0acknowledge\u00a0· 2\u00a0tasks\u00a0due/);
     expect(row.getAttribute('href')).toBe('/golf/dashboard/team-hub');
     view.unmount();
     for (const asks of [null, { rsvps: 0, acks: 0, tasksDue: 0 }]) {
@@ -724,7 +724,7 @@ describe('Player Home · what the coach is waiting on, and the player’s own re
       again.unmount();
     }
     show(home({ asks: { rsvps: 1, acks: 0, tasksDue: 1 } }));
-    expect(screen.getByRole('link', { name: /^From your coach/ }).textContent).toMatch(/1 reply · 1 task due$/);
+    expect(screen.getByRole('link', { name: /^From your coach/ }).textContent).toMatch(/1\u00a0reply\u00a0· 1\u00a0task\u00a0due$/);
   });
 
   it('item 8: Up next says You’re going, or Reply needed, from the player’s own reply; nothing when unknown', () => {

@@ -46,6 +46,21 @@
     "tests": [
       "src/clubhouse/__tests__/stats-player.test.tsx",
       "src/clubhouse/__tests__/stats-goals.test.tsx"
+    ],
+    "also": [
+      "src/clubhouse/data/stats-common.ts",
+      "src/clubhouse/data/stats-detail.ts",
+      "src/clubhouse/data/stats-extra.ts",
+      "src/clubhouse/data/stats-figures.ts",
+      "src/clubhouse/data/stats-filter.ts",
+      "src/clubhouse/data/stats-insight.ts",
+      "src/clubhouse/data/stats-reads.ts",
+      "src/clubhouse/data/stats-weight.ts",
+      "src/clubhouse/data/paging.ts",
+      "src/clubhouse/data/leg-rows.ts",
+      "src/clubhouse/data/focus-loop.ts",
+      "src/clubhouse/data/focus-loop-shape.ts",
+      "src/clubhouse/styles/goals.css"
     ]
   },
   "catalog": "docs/clubhouse/catalog/stats-player.md",

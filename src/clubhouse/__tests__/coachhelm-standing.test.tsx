@@ -548,7 +548,7 @@ describe('the Standing screen', () => {
     expect(screen.getByRole('main').getAttribute('aria-labelledby')).toBe('ch-hl-title');
     // The hero names the part of the round that loses the most, once, and its counts use one denominator, the Tour's.
     const hero = screen.getByRole('region', { name: 'Your approach shots cost you the most strokes against the Tour' });
-    expect(hero.querySelector('.ch-hs-hero__sub')!.textContent).toBe('Ahead of the Tour on 0 of 19 stats. Every stat, strokes gained included, is against the Tour.');
+    expect(hero.querySelector('.ch-hs-hero__sub')!.textContent).toBe('Ahead of the Tour on 0 of 19 stats. Every stat, strokes gained included, is measured against the Tour.');
     expect(hero.textContent).not.toMatch(/field average|of 18|20 stats/);
     for (const g of PREVIEW_STANDING.groups) expect(screen.getByRole('region', { name: g.label })).toBeTruthy();
     expect(screen.getByRole('region', { name: 'Where strokes go' })).toBeTruthy();

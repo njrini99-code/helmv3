@@ -1957,6 +1957,8 @@
 }
 .ch-rec-field .ch-seg__b {
   justify-content: center;
+  /* "Committed" is 70px of 13px type: the control's 16px sides left it 52px at 390 and it ran past the well. */
+  padding: 0 4px;
 }
 /* A step whose day has passed: warning ink and rule, as Team Hub marks an overdue task (red is kept for under par);
    VoiceOver hears "Overdue:" first (wave 6). */

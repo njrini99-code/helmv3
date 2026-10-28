@@ -3223,6 +3223,15 @@
   .ch-stm-figs.is-three dd.is-words {
     font-size: calc(15 * var(--ch-type-k));
     letter-spacing: -0.01em;
+    /* At a larger Text Size the words wrap instead of running past the strip. */
+    white-space: normal;
+  }
+  /* The trend's words ("No clear change", 118px) need more than a third: in equal thirds they ran 15px past their column
+     at 390 and ended 4px from the screen's edge at 375. The two figures keep 0.9 each, room for "−0.9" and "Team 72.8".
+     The gauge row under them takes the same columns, so the seams run straight through both rows (the skeleton too). */
+  .ch-stm-overview .ch-stm-figs.is-three,
+  .ch-stm-overview .ch-stm-figs.is-three + .ch-stm-gauges {
+    grid-template-columns: minmax(0, 0.9fr) minmax(0, 0.9fr) minmax(0, 1.2fr);
   }
   .ch-gd.is-phone .ch-gm {
     background: var(--ch-sheet-bg);
@@ -4927,18 +4936,19 @@ html[data-fw-theme='dark'] [data-ui='clubhouse'] {
 }
 .ch-st[data-canopy] .ch-tp__d {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
-  gap: 4px;
+  gap: 2px 4px;
   min-width: 0;
   font: var(--ch-type-13-strong);
   line-height: var(--ch-lead-tight);
   font-variant-numeric: tabular-nums;
   white-space: nowrap;
 }
+/* The words take their own line under the figure: five tiles across left "No clear change vs previ…". */
 .ch-st[data-canopy] .ch-tp__d em {
-  margin-left: 4px;
-  overflow: hidden;
-  text-overflow: ellipsis;
+  flex: 1 1 100%;
+  white-space: normal;
   font: var(--ch-type-13);
   line-height: var(--ch-lead-caption);
   font-style: normal;

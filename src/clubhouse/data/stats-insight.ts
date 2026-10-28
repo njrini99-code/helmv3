@@ -30,7 +30,7 @@ export interface ChInsightLine {
   /** The signed change: "−1.2"; a rate's change in percentage points, "+3 pts". */
   figure: string;
   tone: 'is-gain' | 'is-loss';
-  /** "Scoring avg, better vs previous 10". */
+  /** "Scoring avg, better than previous 10". */
   words: string;
 }
 
@@ -53,7 +53,8 @@ export function statsInsight(changes: ReadonlyArray<ChInsightChange | null>, mos
       subject: c.subject,
       figure: `${formatSigned(c.delta, c.digits)}${c.unit === '%' ? ' pts' : ''}`,
       tone,
-      words: `${c.subject}, ${tone === 'is-gain' ? 'better' : 'worse'} ${c.against}`,
+      // "better than previous 10", as deltaWords says it; a context of its own ("Tour averages 66%") is kept as written.
+      words: `${c.subject}, ${tone === 'is-gain' ? 'better' : 'worse'} ${c.against.replace(/^vs /, 'than ')}`,
     })),
   };
 }

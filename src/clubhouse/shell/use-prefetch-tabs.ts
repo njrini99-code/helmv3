@@ -254,10 +254,14 @@ export function prefetchOnPress(router: Router, href: string, now: number): void
  * marked `data-ch-ahead`, so the first few on screen are fetched while the page is idle (useIdleRowsAhead, row 13).
  */
 export function usePressPrefetch(): (href: string | null | undefined) => { onPointerDown?: () => void; 'data-ch-ahead'?: string } {
-  // Outside the app router (a preview harness, a test rendering one row) there is nothing to fetch with: rows stay plain.
-  // The context, not useRouter, which throws there.
+  // The context, not useRouter, which throws outside the app router (a preview harness, a test rendering one row): there
+  // the press fetches nothing. The mark never depends on it: the server renders without a router, so a mark drawn only
+  // with one disagreed with the hydrated client, React kept the server's markless rows, and useIdleRowsAhead found none.
   const router = useContext(AppRouterContext) as Router | null;
-  return (href) => (href && router ? { onPointerDown: () => prefetchOnPress(router, href, Date.now()), 'data-ch-ahead': href } : {});
+  return (href) => {
+    if (!href) return {};
+    return router ? { onPointerDown: () => prefetchOnPress(router, href, Date.now()), 'data-ch-ahead': href } : { 'data-ch-ahead': href };
+  };
 }
 
 /** How many of a page's push rows on screen are fetched ahead while it is idle. */

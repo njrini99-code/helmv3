@@ -4331,12 +4331,15 @@ html[data-fw-theme='dark'] .ch-h-form__bar {
   .ch-hm-queue__v {
     display: inline;
   }
+  /* The parts wrap as a list of links: a dot would dangle at a line's end or open the next line. */
   .ch-hm-queue__sep {
-    margin: 0 6px;
+    display: none;
   }
   .ch-hm-queue__a {
-    display: inline-block;
-    padding: 12px 0;
+    display: inline-flex;
+    min-height: 44px;
+    margin-right: 14px;
+    vertical-align: middle;
   }
   .ch-hm-queue__fail {
     display: inline-block;

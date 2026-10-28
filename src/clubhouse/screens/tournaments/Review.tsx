@@ -58,7 +58,7 @@ function ReviewPage({ data, phone }: { data: ChTourReviewData; phone: boolean })
   return (
     <TourMain view="review" phone={phone} labelledBy={TITLE_ID} className={'ch-tour-rev'}>
       <TourPhoneTop phone={phone} title="Review" back={{ label: e.short, href: paths.desk(e.id) }} />
-      <TourHead id={TITLE_ID} phone={phone} crumb={<TourCrumb href={paths.desk(e.id)}>{e.name}</TourCrumb>} eyebrow={`${tourRange(e.startDate, e.endDate)} · ${e.name}`} title="Review" line={LINE} tight />
+      <TourHead id={TITLE_ID} phone={phone} crumb={phone ? undefined : <TourCrumb href={paths.desk(e.id)}>{e.name}</TourCrumb>} eyebrow={`${tourRange(e.startDate, e.endDate)} · ${e.name}`} title="Review" line={LINE} tight />
       <ReviewBody data={data} phone={phone} />
     </TourMain>
   );

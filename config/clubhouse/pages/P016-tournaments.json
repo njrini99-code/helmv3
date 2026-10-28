@@ -65,7 +65,9 @@
       "src/clubhouse/screens/tournaments/TourNotice.tsx",
       "src/clubhouse/screens/tournaments/TournamentsLoading.tsx",
       "src/app/golf/actions/tournaments.ts",
-      "src/lib/golf/tournament-refusals.ts"
+      "src/lib/golf/tournament-refusals.ts",
+      "src/clubhouse/data/tournaments-db.ts",
+      "src/clubhouse/styles/tournament-fields.css"
     ],
     "tests": [
       "src/clubhouse/__tests__/tournaments-views.test.tsx",
@@ -86,9 +88,11 @@
       "src/app/golf/actions/__tests__/tournaments.test.ts",
       "src/lib/golf/__tests__/tournament-refusals.test.ts"
     ],
-    "loader": "src/clubhouse/data/tournaments.ts"
+    "loader": "src/clubhouse/data/tournaments.ts",
+    "route": "src/clubhouse/routes/tournaments.tsx"
   },
   "catalog": "docs/clubhouse/catalog/tournaments.md",
+  "phoneSpec": "docs/clubhouse/phone/tournaments.md",
   "actions": [
     {
       "id": "ACT-P016-CREATE",

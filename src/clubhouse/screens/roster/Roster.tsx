@@ -861,6 +861,11 @@ function RosterList({
   );
 }
 
+/** A read-only field that shows its end (an invite link's team code) when it is wider than its box. */
+function scrollToEnd(el: HTMLInputElement | null) {
+  if (el) el.scrollLeft = el.scrollWidth;
+}
+
 function InviteModal({
   open,
   onClose,
@@ -880,7 +885,15 @@ function InviteModal({
   onRetry: () => void;
 }) {
   const copy = useCopyText();
-  const link = code && typeof window !== 'undefined' ? `${window.location.origin}/golf/join/${encodeURIComponent(code)}` : null;
+  // Read after mount, never in render: the server has no window or navigator, so a sheet open on first paint
+  // (`?invite=1`) would hydrate a different link row and button than it was served with.
+  const [origin, setOrigin] = useState<string | null>(null);
+  const [canShare, setCanShare] = useState(false);
+  useEffect(() => {
+    setOrigin(window.location.origin);
+    setCanShare(typeof navigator.share === 'function');
+  }, []);
+  const link = code && origin ? `${origin}/golf/join/${encodeURIComponent(code)}` : null;
   const share = async () => {
     if (!link) return;
     try {
@@ -912,9 +925,16 @@ function InviteModal({
             <div className="ch-field">
               <span className="ch-field__label">Or send the invite link</span>
               <div className="ch-rs-inv__link">
-                {/* The scheme is left off and the field clips from the start (roster.css), so the code at the end stays in view; Copy and Share send the full URL. */}
-                <input className="ch-input" readOnly value={link.replace(/^https?:\/\//, '')} aria-label="Invite link" onFocus={(e) => e.currentTarget.select()} />
-                {typeof navigator !== 'undefined' && 'share' in navigator ? (
+                {/* The scheme is left off and the field opens scrolled to its end, so the code stays in view; Copy and Share send the full URL. */}
+                <input
+                  className="ch-input"
+                  readOnly
+                  value={link.replace(/^https?:\/\//, '')}
+                  aria-label="Invite link"
+                  ref={scrollToEnd}
+                  onFocus={(e) => e.currentTarget.select()}
+                />
+                {canShare ? (
                   <Button variant="primary" leftIcon={Share} onClick={() => void share()}>
                     Share
                   </Button>

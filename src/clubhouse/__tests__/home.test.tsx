@@ -996,7 +996,8 @@ describe('Home · Coach Home’s own contracts', () => {
     wrap(<CoachHome data={PREVIEW_HOME} />);
     expect(screen.getByRole('heading', { level: 1, name: PREVIEW_HOME.greeting })).toBeTruthy();
     expect(document.body.textContent).toContain(PREVIEW_HOME.todayLabel);
-    expect(screen.getByText(PREVIEW_HOME.subline!)).toBeTruthy();
+    // The text matcher folds the title's no-break space into a space.
+    expect(screen.getByText(PREVIEW_HOME.subline!.replace(/\u00a0/g, ' '))).toBeTruthy();
     expect(screen.getByRole('link', { name: /Message team/ })).toBeTruthy();
     expect(screen.getByRole('link', { name: /New event/ })).toBeTruthy();
     expect(screen.getByRole('heading', { level: 2, name: 'This week' })).toBeTruthy();

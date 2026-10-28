@@ -99,6 +99,11 @@
   flex-wrap: wrap;
   gap: 8px;
 }
+/* Phone: the toggles sit under the heading, one full-width row each, above the chart. */
+.ch-tour-rev-hist.is-phone .ch-tour-rev-tools {
+  display: grid;
+  margin-bottom: 12px;
+}
 .ch-tour-rev-trend {
   padding: 16px 20px 16px;
   border-radius: var(--ch-radius-card);
@@ -114,7 +119,8 @@
   letter-spacing: var(--ch-track-15);
   color: var(--ch-text-primary);
 }
-.ch-tour-rev-trend__s {
+/* Two classes: `.ch-root p` (base.css) would otherwise zero these lines' margins. */
+.ch-tour-rev-trend .ch-tour-rev-trend__s {
   margin: 4px 0 0;
   font: var(--ch-type-13);
   line-height: var(--ch-lead-caption);
@@ -186,14 +192,14 @@
   font: var(--ch-type-13-strong);
   color: var(--ch-text-primary);
 }
-.ch-tour-rev-trend__key {
+.ch-tour-rev-trend .ch-tour-rev-trend__key {
   margin: 8px 0 0;
   font: var(--ch-type-13);
   line-height: var(--ch-lead-caption);
   color: var(--ch-text-secondary);
 }
-.ch-tour-rev-trend__note {
-  margin: 8px 0 0;
+.ch-tour-rev-trend .ch-tour-rev-trend__note {
+  margin: 12px 0 0;
   max-width: 80ch;
   font: var(--ch-type-14);
   color: var(--ch-text-secondary);

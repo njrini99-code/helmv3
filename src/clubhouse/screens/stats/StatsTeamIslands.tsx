@@ -2,7 +2,7 @@
 
 import { useHeroTone } from '../../ui/PageHero';
 import { withPointSpan } from '../../ui/point-span';
-import { ArrowDownRight, ArrowUpRight, CalendarRange, Download, Minus, TrendingDown, TrendingUp } from 'lucide-react';
+import { ArrowDownRight, ArrowUpRight, CalendarRange, Download, TrendingDown, TrendingUp } from 'lucide-react';
 import Link from 'next/link';
 import { createContext, useContext, useEffect, useId, useMemo, useState, useTransition, type PointerEvent as ReactPointerEvent, type ReactNode } from 'react';
 import { useRouter } from 'next/navigation';
@@ -409,7 +409,7 @@ function TeamTrend({ data, focus, setFocus }: { data: ChTeamCharts; focus: strin
             )}
             {lead?.delta != null && (
               <span className={`ch-sgt__chg ch-num ${leadTone === 'is-gain' || leadTone === 'is-loss' ? leadTone : 'is-flat'}`}>
-                <Icon icon={leadTone === '' ? Minus : lead.delta > 0 ? ArrowUpRight : ArrowDownRight} size={16} />
+                {leadTone !== '' && <Icon icon={lead.delta > 0 ? ArrowUpRight : ArrowDownRight} size={16} />}
                 {formatSigned(lead.delta, lead.digits)}
                 <em>{deltaWords(lead.delta, leadTone, lead.context || 'vs previous 10')}</em>
               </span>

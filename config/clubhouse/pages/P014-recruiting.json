@@ -49,6 +49,11 @@
     "styles": "src/clubhouse/styles/recruiting.css",
     "tests": [
       "src/clubhouse/__tests__/recruiting.test.tsx"
+    ],
+    "also": [
+      "src/clubhouse/data/recruiting-calendar.ts",
+      "src/clubhouse/data/recruiting-film.ts",
+      "src/clubhouse/data/recruiting-shape.ts"
     ]
   },
   "catalog": "docs/clubhouse/catalog/recruiting.md",

@@ -1550,7 +1550,7 @@ describe('Stats player · what changed (row 70)', () => {
       expect(twins.some((el) => ink.test(el.getAttribute('class') ?? '')), `${b.textContent} toned alike below`).toBe(true);
     }
   };
-  const LINES = ['−0.8 Putts per round, better vs previous 10', '−5.6 pts Greens in regulation, worse vs previous 10'];
+  const LINES = ['−0.8 Putts per round, better than previous 10', '−5.6 pts Greens in regulation, worse than previous 10'];
 
   it('desktop: the window against the one before, only past each change’s error, and the Rounds tab tones them alike', async () => {
     const user = userEvent.setup();
