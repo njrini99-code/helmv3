@@ -19,7 +19,7 @@
 -- VERIFY: select 1 where has_function_privilege('service_role',
 -- VERIFY: 'public.get_user_last_active()', 'EXECUTE');
 
-REVOKE ALL ON FUNCTION public.get_user_last_active() FROM PUBLIC;
+REVOKE ALL ON FUNCTION public.get_user_last_active() FROM public;
 REVOKE ALL ON FUNCTION public.get_user_last_active() FROM anon;
 REVOKE ALL ON FUNCTION public.get_user_last_active() FROM authenticated;
 GRANT EXECUTE ON FUNCTION public.get_user_last_active() TO service_role;

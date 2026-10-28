@@ -10,8 +10,8 @@
 -- so a replayed database lacks these two policies.
 --
 -- ROLLBACK: drop policy admin_allowlist_no_client_access on
--- ROLLBACK: public.admin_allowlist; drop policy auth_rate_limits_no_client_access
--- ROLLBACK: on public.auth_rate_limits.
+-- ROLLBACK: public.admin_allowlist; drop policy
+-- ROLLBACK: auth_rate_limits_no_client_access on public.auth_rate_limits.
 --
 -- VERIFY: select 1 from pg_policies where schemaname = 'public'
 -- VERIFY: and tablename = 'admin_allowlist'

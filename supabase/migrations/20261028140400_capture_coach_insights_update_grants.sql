@@ -32,11 +32,11 @@ SET LOCAL lock_timeout = '5s';
 REVOKE UPDATE ON TABLE public.golf_coach_insights FROM authenticated;
 
 GRANT UPDATE (
-  status,
-  acknowledged_at,
-  dismissed,
-  dismissed_at,
-  resolved_at,
-  metadata,
-  lifecycle_state
+    status,
+    acknowledged_at,
+    dismissed,
+    dismissed_at,
+    resolved_at,
+    metadata,
+    lifecycle_state
 ) ON TABLE public.golf_coach_insights TO authenticated;

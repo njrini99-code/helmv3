@@ -18,12 +18,14 @@
 -- VERIFY: where id = 'helm-bridge-feedback' and public = false
 -- VERIFY: and file_size_limit = 8388608;
 
-INSERT INTO storage.buckets (id, name, public, file_size_limit, allowed_mime_types)
+INSERT INTO storage.buckets (
+    id, name, public, file_size_limit, allowed_mime_types
+)
 VALUES (
-  'helm-bridge-feedback',
-  'helm-bridge-feedback',
-  false,
-  8388608,
-  ARRAY['image/png', 'image/jpeg', 'image/webp', 'image/gif']
+    'helm-bridge-feedback',
+    'helm-bridge-feedback',
+    false,
+    8388608,
+    ARRAY['image/png', 'image/jpeg', 'image/webp', 'image/gif']
 )
 ON CONFLICT (id) DO NOTHING;

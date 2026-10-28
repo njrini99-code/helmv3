@@ -37,38 +37,40 @@ REVOKE ALL ON TABLE public.crm_coaches FROM anon;
 
 CREATE OR REPLACE VIEW public.v_crm_coaches_by_school
 WITH (security_invoker = true) AS
-SELECT division,
-  school,
-  conference,
-  program,
-  role_level,
-  is_primary_contact,
-  name,
-  title,
-  email,
-  phone,
-  status,
-  email_status,
-  is_starred,
-  priority,
-  count(*) OVER (PARTITION BY school, division) AS coaches_at_school,
-  id
+SELECT
+    division,
+    school,
+    conference,
+    program,
+    role_level,
+    is_primary_contact,
+    name,
+    title,
+    email,
+    phone,
+    status,
+    email_status,
+    is_starred,
+    priority,
+    count(*) OVER (PARTITION BY school, division) AS coaches_at_school,
+    id
 FROM public.crm_coaches
-WHERE is_archived IS NOT TRUE
-ORDER BY division, school, program, is_primary_contact DESC,
-  CASE role_level
-    WHEN 'head_coach'::text THEN 0
-    WHEN 'director'::text THEN 1
-    WHEN 'associate_head_coach'::text THEN 2
-    WHEN 'unknown'::text THEN 3
-    WHEN 'other'::text THEN 4
-    WHEN 'volunteer'::text THEN 5
-    WHEN 'assistant_coach'::text THEN 6
-    ELSE 7
-  END, name;
+WHERE is_archived IS NOT true
+ORDER BY
+    division, school, program, is_primary_contact DESC,
+    CASE role_level
+        WHEN 'head_coach'::text THEN 0
+        WHEN 'director'::text THEN 1
+        WHEN 'associate_head_coach'::text THEN 2
+        WHEN 'unknown'::text THEN 3
+        WHEN 'other'::text THEN 4
+        WHEN 'volunteer'::text THEN 5
+        WHEN 'assistant_coach'::text THEN 6
+        ELSE 7
+    END, name;
 
 REVOKE ALL ON TABLE public.v_crm_coaches_by_school FROM anon;
 REVOKE INSERT, UPDATE, DELETE, TRUNCATE, REFERENCES, TRIGGER
-  ON TABLE public.v_crm_coaches_by_school FROM authenticated;
+ON TABLE public.v_crm_coaches_by_school FROM authenticated;
 GRANT SELECT ON TABLE public.v_crm_coaches_by_school TO authenticated;
 GRANT ALL ON TABLE public.v_crm_coaches_by_school TO service_role;

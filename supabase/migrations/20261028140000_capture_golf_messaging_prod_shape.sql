@@ -142,26 +142,26 @@ $capture$;
 -- already exists, so nothing is built).
 -- squawk-ignore require-concurrent-index-creation
 CREATE INDEX IF NOT EXISTS golf_message_mentions_message_idx
-  ON public.golf_message_mentions USING btree (message_id);
+ON public.golf_message_mentions USING btree (message_id);
 
 -- squawk-ignore require-concurrent-index-creation
 CREATE INDEX IF NOT EXISTS golf_message_mentions_user_idx
-  ON public.golf_message_mentions USING btree (mentioned_user_id)
-  WHERE (mentioned_user_id IS NOT NULL);
+ON public.golf_message_mentions USING btree (mentioned_user_id)
+WHERE (mentioned_user_id IS NOT NULL);
 
 -- squawk-ignore require-concurrent-index-creation
 CREATE INDEX IF NOT EXISTS golf_message_responses_message_idx
-  ON public.golf_message_responses USING btree (message_id);
+ON public.golf_message_responses USING btree (message_id);
 
 -- squawk-ignore require-concurrent-index-creation
 CREATE INDEX IF NOT EXISTS golf_messages_pinned_idx
-  ON public.golf_messages USING btree (conversation_id, pinned_at DESC)
-  WHERE (pinned_at IS NOT NULL);
+ON public.golf_messages USING btree (conversation_id, pinned_at DESC)
+WHERE (pinned_at IS NOT NULL);
 
 -- squawk-ignore require-concurrent-index-creation
 CREATE INDEX IF NOT EXISTS golf_messages_reply_to_idx
-  ON public.golf_messages USING btree (reply_to_id)
-  WHERE (reply_to_id IS NOT NULL);
+ON public.golf_messages USING btree (reply_to_id)
+WHERE (reply_to_id IS NOT NULL);
 
 -- 4. Mention policies: a sender records mentions on their own message, and a
 -- conversation member reads the mentions on messages they can see. Created

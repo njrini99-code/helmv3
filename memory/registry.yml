@@ -2379,6 +2379,14 @@ systems:
       - supabase/migrations/*add_missing_foreign_key_indexes*.sql
       # 2026-10-23: graveyard table grants and the anon function default.
       - supabase/migrations/*anon_surface_grants*.sql
+      # 2026-10-28: replay captures of production-only hardening that touch
+      # no single feature (repair role, deny-all policies, Realtime members,
+      # the crm_coaches shape, named without "crm" to stay out of
+      # admin_platform's *crm* glob).
+      - supabase/migrations/*capture_helm_repair_ro_access*.sql
+      - supabase/migrations/*capture_internal_tables_deny_policies*.sql
+      - supabase/migrations/*capture_realtime_email_tables*.sql
+      - supabase/migrations/*capture_coach_directory_prod_shape*.sql
     criticality: high
   review_gate:
     docs: .github/branch-protection.md
