@@ -49,6 +49,28 @@ was catalog-only. Nothing was written to production.
 All eight are marked **HOLD — CAPTURE** in `HELD.md`. They wait only on the
 owner's freeze. They are not on staging yet (see "Replay check").
 
+## What the from-empty replay found (2026-10-28)
+
+With the captures in place, the pgTAP suite runs against production's shape
+for the first time. Two tests failed, and both point at real differences:
+
+1. **Deleting a poll fails against production's CHECK.** The app's
+   `deleteMessage` clears a golf poll's payload, and the applied
+   `20261025020200` poll freeze allows that write. Production's
+   `golf_messages_payload_matches_kind` refuses a non-text row with no
+   payload, so the delete errors and the coach sees "Failed to delete
+   message". `20261028140800_golf_messages_deleted_poll_payload_check.sql`
+   (HOLD) widens the CHECK to allow a NULL payload on a deleted row. Apply it
+   before Clubhouse polls are used on production. The other way is to keep
+   the payload on delete in the app, which needs no database change but
+   keeps a deleted poll's question stored.
+2. **`coach_insights_player_update.sql` expected two columns.** It encoded
+   the OBSOLETE `20260528011000`, which left `authenticated` UPDATE on
+   `acknowledged_at` and `dismissed_at` only. The app's acknowledge, dismiss
+   and reactivate writes also set `status`, `dismissed`, `lifecycle_state`
+   and the rest of production's seven, so the test now checks those seven.
+   Content, evidence and `coach_id` stay out of reach, as before.
+
 ## Not captured: the repo is right and production is behind
 
 1. **Goal policies (security gap in production).**
