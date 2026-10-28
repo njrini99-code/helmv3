@@ -1,6 +1,6 @@
 # 2026-10-28 — Messages visual pass
 
-## 2026-10-28 — Bubbles on 16 with a 6 tail, cards on 16, reaction glyphs at the house stroke
+## 2026-10-28 — Bubbles on 16 with a 6 tail; reaction glyphs at the house stroke
 
 ```text
 Design package: none (Clubhouse visual pass 2026-10-28, area E; RUBRIC H17 and
