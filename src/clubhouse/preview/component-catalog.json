@@ -9943,6 +9943,7 @@
         "ch-feed__acts",
         "ch-feed__ask",
         "ch-feed__t",
+        "ch-iconbtn",
         "ch-in",
         "ch-in-wrap",
         "ch-in__at",
@@ -10090,6 +10091,36 @@
           "name": "--ch-plate",
           "value": "color-mix(in oklab, var(--ch-warning-600) 80%, var(--ch-ink-900))",
           "scope": ".ch-in__plate[data-tone='amber']"
+        },
+        {
+          "name": "--ch-plate",
+          "value": "color-mix(in oklab, var(--ch-ink-700) 22%, var(--ch-bg-surface))",
+          "scope": "html[data-fw-theme='dark'] .ch-in__plate"
+        },
+        {
+          "name": "--ch-plate",
+          "value": "var(--ch-green-fill-600)",
+          "scope": "html[data-fw-theme='dark'] .ch-in__plate[data-tone='green']"
+        },
+        {
+          "name": "--ch-plate",
+          "value": "var(--ch-green-800)",
+          "scope": "html[data-fw-theme='dark'] .ch-in__plate[data-tone='forest']"
+        },
+        {
+          "name": "--ch-plate",
+          "value": "color-mix(in oklab, var(--ch-info-600) 35%, var(--ch-info-100))",
+          "scope": "html[data-fw-theme='dark'] .ch-in__plate[data-tone='slate']"
+        },
+        {
+          "name": "--ch-plate",
+          "value": "color-mix(in oklab, var(--ch-champagne-500) 40%, var(--ch-bg-surface))",
+          "scope": "html[data-fw-theme='dark'] .ch-in__plate[data-tone='champagne']"
+        },
+        {
+          "name": "--ch-plate",
+          "value": "color-mix(in oklab, var(--ch-warning-600) 40%, var(--ch-bg-surface))",
+          "scope": "html[data-fw-theme='dark'] .ch-in__plate[data-tone='amber']"
         }
       ]
     },
