@@ -25,7 +25,7 @@ Held items:     none
 
 ### Verified
 
-- `src/lib/coachhelm/v3/chat/agent-tools.clubhouse-gate.test.ts`: absent
+- `src/lib/coachhelm/v3/chat/__tests__/agent-tools.clubhouse-gate.test.ts`: absent
   with the flag off or the team off the allowlist, present otherwise.
 - `src/lib/coachhelm/v3/chat/__tests__/team-read-tools.test.ts`: a
   `qualifying` round counts and reads as a qualifier round.

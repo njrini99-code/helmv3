@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import type { CoachChatContext } from './context';
+import type { CoachChatContext } from '../context';
 
 /**
  * `get_team_rounds` and `get_qualifiers` were built for Clubhouse's Ask. The
@@ -12,7 +12,7 @@ import type { CoachChatContext } from './context';
 const flags = vi.hoisted(() => ({ on: new Set<string>() }));
 vi.mock('@/lib/flags/is-enabled', () => ({ isFlagEnabled: (id: string) => flags.on.has(id) }));
 
-import { buildCoachTools } from './agent-tools';
+import { buildCoachTools } from '../agent-tools';
 
 const CLUBHOUSE_TOOLS = ['get_team_rounds', 'get_qualifiers'];
 
