@@ -43,7 +43,6 @@ export interface TeamRoundResult {
   tiedAtBoundary: string[];
   reason?: 'too_few_scores';
   missing?: string[];
-  dqSwapPreview?: { ifDq: string; nowCounts: string; total: number; toPar: number } | null;
   /** 5L.7.1: for `live`, how many counting scores are not on the course yet ("3 of 4 counting in"); 0 otherwise. */
   short?: number;
 }

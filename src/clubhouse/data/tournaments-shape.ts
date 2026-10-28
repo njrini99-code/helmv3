@@ -197,9 +197,8 @@ export function eventRoundPar(par18: number | null | undefined, holesPerRound: n
   return holesPerRound === 9 && par18 >= 45 ? Math.round(par18 / 2) : par18;
 }
 
-/** The engine's team round in the views' shape (`reason` and the DQ preview are stricter there). */
+/** The engine's team round in the views' shape (`reason` and `missing` are optional there). */
 export function teamRoundView(r: EngineTeamRound, roundNumber: number, roundEventId: string, par: number): ChTourTeamRound {
-  const p = r.dqSwapPreview;
   return {
     kind: r.kind,
     total: r.total,
@@ -209,7 +208,6 @@ export function teamRoundView(r: EngineTeamRound, roundNumber: number, roundEven
     tiedAtBoundary: r.tiedAtBoundary,
     ...(r.reason ? { reason: r.reason } : {}),
     ...(r.missing.length ? { missing: r.missing } : {}),
-    dqSwapPreview: p && p.nowCounts != null && p.total != null && p.toPar != null ? { ifDq: p.ifDq, nowCounts: p.nowCounts, total: p.total, toPar: p.toPar } : null,
     roundNumber,
     roundEventId,
     par,

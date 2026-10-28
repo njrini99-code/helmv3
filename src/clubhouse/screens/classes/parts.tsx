@@ -50,7 +50,8 @@ export function timetableDays(classes: readonly ChClass[]): readonly string[] {
 
 /**
  * P012-A1/A2: the one header over Your classes. The days once (not 25 raised keys), today a soft light band down the
- * list, and a team event this week that meets a class drawn where it happens: a field-green band on its day, named.
+ * list, and a team event this week that meets a class drawn where it happens: a field-green band on its day, named
+ * in the day's column on desktop and on a line under the days on the phone.
  * Drawing only: each class says when it meets in its own name (CH-12801), and the overlaps are said in words beside.
  */
 export function TimetableHead({ days, todayIso, weekDates, conflicts }: { days: readonly string[]; todayIso: string; weekDates: readonly string[]; conflicts: readonly ChConflict[] }) {
@@ -71,6 +72,19 @@ export function TimetableHead({ days, todayIso, weekDates, conflicts }: { days: 
           );
         })}
       </span>
+      {/* The phone names the event on a line of its own under the days, at the 12px floor, where a fifth of the
+          screen held it to 11px and a cut word (design picks, 2026-10-28). The day keeps its band. */}
+      {byDay.size > 0 && (
+        <span className="ch-cl-tthead__evs">
+          {days
+            .filter((d) => byDay.has(d))
+            .map((d) => (
+              <span key={d}>
+                <b>{DAY_SHORT[d]}</b> {eventLabel(byDay.get(d)!)}
+              </span>
+            ))}
+        </span>
+      )}
     </div>
   );
 }

@@ -1988,7 +1988,8 @@ html[data-fw-theme='dark'] .ch-cl-ok__ic {
    as long as the meeting with its start in the cell numeral, empty paper on a day off. Today is one soft light band
    down the list; a day a team event meets a class is a field-green band, named in the header; a meeting it overlaps
    carries an amber notch. The header and the cells are drawing (aria-hidden): each class names when it meets. */
-.ch-cl-tthead {
+.ch-cl-tthead,
+.ch-cl-tthead__evs {
   display: none;
 }
 .ch-cl .ch-cl-card__week {
@@ -2161,11 +2162,23 @@ html[data-fw-theme='dark'] .ch-cl-tthead__days > span.is-today:not(.is-team) {
   .ch-cl.is-phone .ch-cl-card__week {
     padding-top: 6px;
   }
-  /* A team event's chip in a phone day column has about 50px for its words: a tighter inset and the narrower cut
-     hold "Pinehurst" whole (it broke "Pinehur / st"), at the size it was. */
+  /* A phone day column has about 50px, so a team event's chip there sat at 11px under the 12px floor, and at 12px
+     "Pinehurst" no longer fit (design picks, 2026-10-28). The column keeps its band; the event is named on a line of
+     its own under the days, at 12px, its day first. */
   .ch-cl.is-phone .ch-cl-tthead__days i {
-    padding-inline: 4px;
-    font-variation-settings: 'wdth' 88;
+    display: none;
+  }
+  .ch-cl.is-phone .ch-cl-tthead__evs {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px 12px;
+    padding: 6px 6px 0;
+    font: var(--ch-type-12-medium);
+    color: var(--ch-text-secondary);
+  }
+  .ch-cl.is-phone .ch-cl-tthead__evs b {
+    font: var(--ch-type-12-strong);
+    color: var(--ch-text-primary);
   }
 }
 .ch-cl .ch-cl-tb__wkb em {
