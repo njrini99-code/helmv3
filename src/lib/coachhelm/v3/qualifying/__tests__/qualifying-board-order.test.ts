@@ -193,8 +193,9 @@ describe('Manage selections and Confirm squad in the board’s order', () => {
     const sb = writeClient();
     const r = await confirmSelection(sb as never, { qualifier_id: 'q1', user_id: 'coach-user', order: 'board' });
     expect(r.ok).toBe(true);
-    const written = await sb.from('golf_qualifier_selections').select('player_id, selection_type');
-    expect((written.data as Array<{ player_id: string }>).map((s) => s.player_id).sort()).toEqual(['a', 'c']);
+    const { data: written, error: readError } = await sb.from('golf_qualifier_selections').select('player_id, selection_type');
+    expect(readError).toBeNull();
+    expect((written as Array<{ player_id: string }>).map((s) => s.player_id).sort()).toEqual(['a', 'c']);
     // The board, from the same rounds, puts the same two above the line.
     expect(boardOf(SHORT_LEADS, 2, 2).rows.filter((x) => x.state === 'qualified').map((x) => x.playerId)).toEqual(['a', 'c']);
     // Every read in the confirm (the squad and the re-read for the brief) used the board's order.
@@ -216,7 +217,8 @@ describe('Manage selections and Confirm squad in the board’s order', () => {
     const sb = writeClient();
     const r = await confirmSelection(sb as never, { qualifier_id: 'q1', user_id: 'coach-user' });
     expect(r.ok).toBe(true);
-    const written = await sb.from('golf_qualifier_selections').select('player_id, selection_type');
-    expect((written.data as Array<{ player_id: string }>).map((s) => s.player_id).sort()).toEqual(['a', 'b']);
+    const { data: written, error: readError } = await sb.from('golf_qualifier_selections').select('player_id, selection_type');
+    expect(readError).toBeNull();
+    expect((written as Array<{ player_id: string }>).map((s) => s.player_id).sort()).toEqual(['a', 'b']);
   });
 });

@@ -41,12 +41,16 @@ export async function readViewerParticipants(
   supabase: Sb,
   viewerId: string,
 ): Promise<{ data: ViewerParticipantRow[] | null; error: unknown }> {
-  const withHide = await supabase
+  const { data, error } = await supabase
     .from('golf_conversation_participants')
     .select('conversation_id, last_read_at, hidden_at')
     .eq('user_id', viewerId);
-  if (!withHide.error || !missingHiddenAt(withHide.error)) return withHide;
-  return supabase.from('golf_conversation_participants').select('conversation_id, last_read_at').eq('user_id', viewerId);
+  if (!error || !missingHiddenAt(error)) return { data, error };
+  const { data: plain, error: plainError } = await supabase
+    .from('golf_conversation_participants')
+    .select('conversation_id, last_read_at')
+    .eq('user_id', viewerId);
+  return { data: plain, error: plainError };
 }
 
 /** Whether a conversation the viewer hid is back in their inbox: a message (from anyone) arrived after the hide. */
