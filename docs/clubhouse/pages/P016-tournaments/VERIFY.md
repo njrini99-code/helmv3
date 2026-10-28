@@ -33,6 +33,14 @@ Phase is before, after, baseline or evidence.
 
 | Label | Phase | Commit | What it shows |
 | --- | --- | --- | --- |
+| `P016__tournament-desk__coach__390x844__light-one-back__after__2faf3cf.png` | after | 2faf3cf | tournament-desk (coach), 390x844px, light-one-back |
+| `P016__tournament-desk__coach__390x844__light-r432-s0__before__a9d2b19.png` | before | a9d2b19 | tournament-desk (coach), 390x844px, light-r432-s0; /clubhouse-preview/tournament-desk; synthetic preview |
+| `P016__tournament-review__coach__390x844__light-one-back__after__2faf3cf.png` | after | 2faf3cf | tournament-review (coach), 390x844px, light-one-back |
+| `P016__tournament-review__coach__390x844__light-r440-s0__before__a9d2b19.png` | before | a9d2b19 | tournament-review (coach), 390x844px, light-r440-s0; /clubhouse-preview/tournament-review; synthetic preview |
+| `P016__tournament-history__coach__390x844__light-across-seasons__after__2faf3cf.png` | after | 2faf3cf | tournament-history (coach), 390x844px, light-across-seasons |
+| `P016__tournament-history__coach__390x844__light-r448-s0__before__a9d2b19.png` | before | a9d2b19 | tournament-history (coach), 390x844px, light-r448-s0; /clubhouse-preview/tournament-history; synthetic preview |
+| `P016__tournament-history__coach__1280x900__light-trend-key__after__2faf3cf.png` | after | 2faf3cf | tournament-history (coach), 1280x900px, light-trend-key |
+| `P016__tournament-history__coach__1280x900__light-r448-s0__before__a9d2b19.png` | before | a9d2b19 | tournament-history (coach), 1280x900px, light-r448-s0; /clubhouse-preview/tournament-history; synthetic preview |
 
 ## Open verification gaps
 

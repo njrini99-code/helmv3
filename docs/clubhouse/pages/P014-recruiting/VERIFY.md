@@ -256,6 +256,9 @@ before, after, baseline or evidence.
 | `P014__documents__coach__390__detail__after__477ccdf.png` | after | 477ccdf | Film off: the preview's sample film row is not shown (no video can be stored yet) |
 | `P014__documents__coach__1440__drop-hint__after__477ccdf.png` | after | 477ccdf | Film off: drop hint "Drop a file here to add it." |
 | `P014__documents__coach__390__no-documents__after__477ccdf.png` | after | 477ccdf | Film off: empty row "Schedules, transcripts and notes" |
+| `P014__recruiting-add__coach__390x844__light-stage-control__after__2faf3cf.png` | after | 2faf3cf | recruiting-add (coach), 390x844px, light-stage-control |
+| `P014__recruiting__coach__390x844__light-r163-state-add-s0__before__a9d2b19.png` | before | a9d2b19 | recruiting (coach), 390x844px, light-r163-state-add-s0; /clubhouse-preview/recruiting?state=add; synthetic preview |
+| `P014__recruiting-add__coach__375x844__light-stage-control__after__2faf3cf.png` | after | 2faf3cf | recruiting-add (coach), 375x844px, light-stage-control |
 
 ## Historical verification gaps
 

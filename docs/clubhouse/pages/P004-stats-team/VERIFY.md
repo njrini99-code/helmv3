@@ -308,6 +308,8 @@ before, after, baseline or evidence.
 | `P004__team-rank__coach__1440__scoring__after__8449655.png` | after | 8449655 | team-rank (coach), 1440px, scoring, after: scoring average menu choice, lower is better plotted to the right, no gain or loss color; /clubhouse-preview/stats; synthetic preview, captured in the cloud container |
 | `P004__team-rank__coach__390__default__after__8449655.png` | after | 8449655 | team-rank (coach), 390px, default, after: phone panel with 44px rows, short names, native metric menu; /clubhouse-preview/stats; synthetic preview, captured in the cloud container |
 | `P004__team-rank__coach__390__putting-pinned__after__8449655.png` | after | 8449655 | team-rank (coach), 390px, putting-pinned, after: putting leg, every dot an early read (under 15 rounds), Jonah pinned, Needs 5 rounds; /clubhouse-preview/stats; synthetic preview, captured in the cloud container |
+| `P004__stats-team__coach__1280x900__light-tape-captions__after__2faf3cf.png` | after | 2faf3cf | stats-team (coach), 1280x900px, light-tape-captions |
+| `P004__stats__coach__1280x900__light-r019-s0__before__a9d2b19.png` | before | a9d2b19 | stats (coach), 1280x900px, light-r019-s0; /clubhouse-preview/stats; synthetic preview |
 
 ## 2026-10-02 — Mobile design fidelity verification
 

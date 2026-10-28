@@ -289,6 +289,8 @@ before, after, baseline or evidence.
 | `P013__board__player__390x844__course-plan-light__after__8b6bf54.png` | after | 8b6bf54 | board (player), 390x844px, course-plan-light |
 | `P013__board__player__390x844__course-plan-none-dark__after__8b6bf54.png` | after | 8b6bf54 | board (player), 390x844px, course-plan-none-dark |
 | `P013__board__player__390x844__course-plan-none-light__after__8b6bf54.png` | after | 8b6bf54 | board (player), 390x844px, course-plan-none-light |
+| `P013__standing__coach__1280x900__light-method-line__after__2faf3cf.png` | after | 2faf3cf | standing (coach), 1280x900px, light-method-line |
+| `P013__coachhelm-coach-player__coach__390x844__light-r387-view-standing-s0__before__a9d2b19.png` | before | a9d2b19 | coachhelm-coach-player (coach), 390x844px, light-r387-view-standing-s0; /clubhouse-preview/coachhelm-coach-player?view=standing; synthetic preview |
 
 ## Historical verification gaps
 
