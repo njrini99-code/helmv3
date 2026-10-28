@@ -1378,6 +1378,7 @@ them would bury everything above.
 | `docs/operations/2026-08-26-migration-history-drift.md` | current | - | - | yes | - |
 | `docs/operations/2026-09-30-sg-conventions-research.md` | current | - | - | - | - |
 | `docs/operations/2026-09-30-sg-penalty-and-shot-end-before-after.md` | current | - | - | - | - |
+| `docs/operations/2026-10-28-prod-drift-capture.md` | current | - | - | - | - |
 | `docs/operations/APPLY_PATH.md` | current | - | - | - | - |
 | `docs/operations/BASEBALLHELM_BUSINESS_CONTRACT_MATRIX.md` | current | - | - | yes | - |
 | `docs/operations/BASEBALLHELM_FEATURE_READINESS_MATRIX.md` | current | - | - | yes | 4 |
