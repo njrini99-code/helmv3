@@ -15,7 +15,7 @@ vi.mock('./read-tools', async (importOriginal) => {
     Object.entries(real).map(([k, v]) => [k, typeof v === 'function' && /^(get|compare)[A-Z]/.test(k) ? vi.fn(async () => stub) : v]),
   );
 });
-// Every flag on, so a flag-gated read (tournaments, and the team reads where gated) is in the set.
+// Every flag on and teamTools true (Clubhouse on for the team), so every gated read is in the set.
 vi.mock('@/lib/flags/is-enabled', () => ({ isFlagEnabled: () => true }));
 
 import { buildCoachTools } from './agent-tools';
@@ -31,7 +31,7 @@ const ctx: CoachChatContext = {
 
 async function stepLabel(name: string, input: Record<string, unknown> = {}) {
   const writer = { write: vi.fn() };
-  const tools = buildCoachTools({ sb: {} as never, ctx, conversationId: 'conv-1', writer: writer as never, collect: vi.fn() });
+  const tools = buildCoachTools({ sb: {} as never, ctx, conversationId: 'conv-1', writer: writer as never, collect: vi.fn(), teamTools: true });
   const t = tools[name];
   expect(t, name).toBeDefined();
   await t!.execute!(input as never, {} as never);
@@ -49,7 +49,7 @@ describe('agent-tools — every read announces its own step', () => {
   });
 
   it('no get_* read falls back to the generic “Working”', async () => {
-    const tools = buildCoachTools({ sb: {} as never, ctx, conversationId: 'conv-1', writer: { write: vi.fn() } as never, collect: vi.fn() });
+    const tools = buildCoachTools({ sb: {} as never, ctx, conversationId: 'conv-1', writer: { write: vi.fn() } as never, collect: vi.fn(), teamTools: true });
     const reads = Object.keys(tools).filter((k) => k.startsWith('get_'));
     expect(reads.length).toBeGreaterThan(8);
     for (const name of reads) {
