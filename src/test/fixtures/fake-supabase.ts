@@ -4,6 +4,7 @@
 // Supports:
 //   - from(table).select(cols).eq/neq/in/gte/lte/is(...).order(...).limit(n).range(a,b)
 //   - .or('col.eq.x,col.like.v3:%') — flat eq / neq / like / is.null disjunctions
+//   - .contains(col, [values]) — array column holds every value
 //   - .single() / .maybeSingle() / awaiting the builder for a list result
 //   - from(table).insert(payload) / .update / .delete / .upsert(payload, {onConflict})
 //     all return a thenable that resolves to { data, error, count } and supports
@@ -118,6 +119,15 @@ class QueryBuilder<T = Row> implements PromiseLike<{ data: T[]; error: unknown }
   }
   in(col: string, values: unknown[]): this {
     this.state.filters.push((row) => values.includes(row[col]));
+    return this;
+  }
+  // Array column contains every given value (PostgREST `cs`), e.g.
+  // `.contains('player_ids', [playerId])`.
+  contains(col: string, values: unknown[]): this {
+    this.state.filters.push((row) => {
+      const v = row[col];
+      return Array.isArray(v) && values.every((x) => v.includes(x));
+    });
     return this;
   }
   gt(col: string, value: unknown): this {

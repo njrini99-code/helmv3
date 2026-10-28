@@ -108,7 +108,7 @@
       "kind": "policy",
       "name": "bpe_player_read_visible",
       "class": "not-needed",
-      "reason": "No player read today: the live baseball_practice_effectiveness_reviews_select is staff-only, so the player_visible toggle reaches no player. Stricter, not a leak; whether players should read these reviews is an open owner call.",
+      "reason": "No player read today: the live baseball_practice_effectiveness_reviews_select is staff-only, so the player_visible toggle reaches no player. Stricter, not a leak. Owner call 2026-10-28: players read their own visible reviews; held migration 20261028120000 adds baseball_practice_effectiveness_reviews_select_player and drops this name. Reclassify to superseded once applied.",
       "verified": "2026-10-23"
     },
     {
