@@ -155,6 +155,8 @@ function useHeldMoves(timezone: string, events: ChCalEvent[], today: string, onS
     if (!h) return;
     h.write();
   }, []);
+  /** Moves written offline, each waiting on the window's `online` event; leaving the page removes them, so none writes later. */
+  const waiting = useRef(new Set<() => void>());
   useEffect(() => {
     const leave = () => {
       // Offline, a move can't be written as the page goes: it is dropped, and the event shows its server time on return.
@@ -162,9 +164,13 @@ function useHeldMoves(timezone: string, events: ChCalEvent[], today: string, onS
       flush();
     };
     window.addEventListener('pagehide', leave);
+    const queued = waiting.current;
     return () => {
       window.removeEventListener('pagehide', leave);
-      flush();
+      // Leaving inside the app (no pagehide) drops an offline move the same way: the toast said leaving drops it.
+      leave();
+      for (const back of queued) window.removeEventListener('online', back);
+      queued.clear();
     };
   }, [flush]);
 
@@ -234,8 +240,10 @@ function useHeldMoves(timezone: string, events: ChCalEvent[], today: string, onS
           toast({ title: 'Waiting for a connection to save', body: 'Leaving this page now drops the move.', replace: 'calendar-move' });
           const back = () => {
             window.removeEventListener('online', back);
+            waiting.current.delete(back);
             void send(tokens.current.get(tokenKey(e)) ?? base.version ?? null, false);
           };
+          waiting.current.add(back);
           window.addEventListener('online', back);
           return;
         }
