@@ -2429,7 +2429,8 @@ html[data-fw-theme='dark'] .ch-rv .ch-rv-yn.is-y {
 
 /* Phone text floor (high-fidelity audit F09, PROGRESS Q-141): on a phone no text in this stylesheet is drawn
    under 12px. Desktop keeps the sizes above. SVG chart text is in viewBox units, so it takes 12.5px. Kept
-   exceptions: the tab bar labels (11.5px, Q-139) and the bell's count numeral. Keep this block last. */
+   exceptions: the tab bar labels (11.5px, Q-139) and the bell's count numeral. Keep this block after the screen
+   rules it floors; its second part, at the end of this file, comes last. */
 @media (max-width: 820px) {
   /* The 12px pins for numerals in fixed cells moved to the floor's last block, at the end of this file. */
   .ch-rd-season__f dt,
@@ -5961,7 +5962,8 @@ button.ch-hip__row:focus-visible,
 /* Phone text floor, part two (visual pass 2026-10-28, H12): the floor's 12px pins for numerals in fixed cells, moved
    here from the floor block above because rules written after that block drew several at 11px on a phone (the hole
    numbers in the in-progress strip, the fairway and green cells, the putt cells, the hole map, the compare cells).
-   Keep this block last. */
+   Each takes 12px at the default size and still grows with iPhone Text Size, as the hub's floor does, so none is
+   smaller than before at any size. Keep this block last. */
 @media (max-width: 820px) {
   .ch-rd-rib__t,
   .ch-rd-rib__v,
@@ -5977,6 +5979,6 @@ button.ch-hip__row:focus-visible,
   .ch-hmap-t__n,
   .ch-hmap-t__p,
   .ch-cmp__cell em {
-    font-size: 12px;
+    font-size: max(12px, calc(12 * var(--ch-type-k)));
   }
 }
