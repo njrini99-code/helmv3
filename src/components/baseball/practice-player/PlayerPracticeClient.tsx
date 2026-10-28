@@ -19,6 +19,9 @@
 //   - Class-conflict flags only appear when class schedule data was available
 //     AND a wall-clock start time was present on the practice. No fake flags.
 //   - If fetch failed, shows a user-friendly error with no raw internals.
+//   - Coach reviews show only what the server returned for this player: the
+//     ones a coach marked visible to players that name this player. None (or
+//     a failed review read) means no review section, never an error.
 // =============================================================================
 
 import { useState } from 'react';
@@ -29,6 +32,7 @@ import { AlertTriangle, Package, UserCircle2, BarChart2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { IconClock, IconMapPin, IconChevronDown, IconChevronUp } from '@/components/icons';
 import type { PlayerPracticeView } from '@/app/baseball/actions/practice';
+import { PRACTICE_REVIEW_VERDICT_LABEL } from '@/lib/baseball/read-models/player-practice-reviews';
 import { cn } from '@/lib/utils';
 import { fairwayScope } from '@/lib/redesign/flag';
 import { SectionMasthead, EditorsLetter, PaperCard, InkBadge, Reveal } from '@/components/baseball/living-annual';
@@ -269,6 +273,7 @@ function PracticeCard({
                     ))}
                   </ol>
                 )}
+                {practice.coachReviews.length > 0 && <CoachReviews reviews={practice.coachReviews} />}
               </div>
             </m.div>
           )}
@@ -399,5 +404,28 @@ function PracticeBlockRow({
         </div>
       )}
     </li>
+  );
+}
+
+// =============================================================================
+// CoachReviews — the practice reviews a coach shared with this player.
+// =============================================================================
+
+function CoachReviews({ reviews }: { reviews: PlayerPracticeView['coachReviews'] }) {
+  return (
+    <section className="mt-5 border-t border-[color:var(--hairline)] pt-4" aria-label="From your coach">
+      <h3 className="text-eyebrow font-medium uppercase tracking-[0.1em] text-text-tertiary">From your coach</h3>
+      <ul className="mt-2 space-y-3">
+        {reviews.map((review) => (
+          <li key={review.id} className="font-annual text-body-sm">
+            <div className="flex flex-wrap items-center gap-2">
+              {review.focusArea && <span className="font-semibold text-text-primary">{review.focusArea}</span>}
+              {review.verdict && <InkBadge label={PRACTICE_REVIEW_VERDICT_LABEL[review.verdict]} tone="neutral" />}
+            </div>
+            <p className="mt-0.5 leading-relaxed text-text-secondary">{review.conclusion}</p>
+          </li>
+        ))}
+      </ul>
+    </section>
   );
 }

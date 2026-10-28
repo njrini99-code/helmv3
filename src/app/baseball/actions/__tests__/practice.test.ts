@@ -547,3 +547,116 @@ describe('getPlayerPractices — block visibility + class conflicts', () => {
     expect(view!.blocks[0]!.hasClassConflict).toBe(false);
   });
 });
+
+// -----------------------------------------------------------------------------
+// (6) getPlayerPractices — coach practice reviews the player may see.
+//     The fake has no RLS, so these prove the in-process rule on its own:
+//     player_visible only, and only reviews that name this player.
+// -----------------------------------------------------------------------------
+
+describe('getPlayerPractices — coach reviews (visible-only, own-only)', () => {
+  const practiceRow = {
+    id: 'practice-1',
+    team_id: 'team-1',
+    title: 'Tuesday plan',
+    focus: null,
+    status: 'published',
+    event_id: null,
+    published_at: '2026-07-10T00:00:00.000Z',
+    created_at: '2026-07-10T00:00:00.000Z',
+    event: null,
+    attendance: [],
+    blocks: [],
+  };
+  const review = (id: string, visibility: string, playerIds: string[]) => ({
+    id,
+    team_id: 'team-1',
+    practice_id: 'practice-1',
+    focus_area: 'Two-strike approach',
+    conclusion: `Conclusion ${id}`,
+    verdict: null,
+    visibility,
+    player_ids: playerIds,
+    generated_at: '2026-07-12T00:00:00.000Z',
+  });
+
+  beforeEach(() => {
+    mockContext = {
+      userId: 'user-1',
+      activeTeamId: 'team-1',
+      activeRole: 'player',
+      activeCoachId: null,
+      activePlayerId: 'player-1',
+      fellBackFromStale: false,
+    };
+  });
+
+  it('attaches only the player’s own player_visible reviews to the practice', async () => {
+    fake = createFakeSupabase({
+      user: { id: 'user-1' },
+      tables: {
+        baseball_practices: [practiceRow],
+        baseball_practice_effectiveness_reviews: [
+          review('mine', 'player_visible', ['player-1']),
+          review('staff', 'staff_only', ['player-1']),
+          review('restricted', 'restricted', ['player-1']),
+          review('teammate', 'player_visible', ['player-2']),
+          review('team-level', 'player_visible', []),
+        ],
+      },
+    });
+
+    const result = await getPlayerPractices();
+    expect(result.success).toBe(true);
+    expect(result.data![0]!.coachReviews.map((r) => r.id)).toEqual(['mine']);
+  });
+
+  it('shows no reviews and no error when RLS returns none (held policy unapplied)', async () => {
+    fake = createFakeSupabase({
+      user: { id: 'user-1' },
+      tables: { baseball_practices: [practiceRow], baseball_practice_effectiveness_reviews: [] },
+    });
+
+    const result = await getPlayerPractices();
+    expect(result.success).toBe(true);
+    expect(result.data![0]!.coachReviews).toEqual([]);
+  });
+
+  it('keeps the practice list when the review read fails', async () => {
+    fake = createFakeSupabase({
+      user: { id: 'user-1' },
+      tables: { baseball_practices: [practiceRow] },
+    });
+    const realFrom = fake.from.bind(fake);
+    vi.spyOn(fake, 'from').mockImplementation(((table: string) => {
+      if (table !== 'baseball_practice_effectiveness_reviews') return realFrom(table);
+      const failing = {
+        select: () => failing,
+        in: () => failing,
+        eq: () => failing,
+        contains: () => failing,
+        order: () => Promise.resolve({ data: null, error: { code: '42501', message: 'permission denied' } }),
+      };
+      return failing;
+    }) as typeof fake.from);
+
+    const result = await getPlayerPractices();
+    expect(result.success).toBe(true);
+    expect(result.data).toHaveLength(1);
+    expect(result.data![0]!.coachReviews).toEqual([]);
+  });
+
+  it('reads no reviews for a coach viewer (no player id)', async () => {
+    mockContext = { ...mockContext, activeRole: 'coach', activeCoachId: 'coach-1', activePlayerId: null };
+    fake = createFakeSupabase({
+      user: { id: 'user-1' },
+      tables: {
+        baseball_practices: [practiceRow],
+        baseball_practice_effectiveness_reviews: [review('mine', 'player_visible', ['player-1'])],
+      },
+    });
+
+    const result = await getPlayerPractices();
+    expect(result.data![0]!.coachReviews).toEqual([]);
+  });
+});

@@ -676,6 +676,8 @@ CREATE POLICY "baseball_practice_effectiveness_reviews_insert" ON "public"."base
 
 CREATE POLICY "baseball_practice_effectiveness_reviews_select" ON "public"."baseball_practice_effectiveness_reviews" FOR SELECT TO "authenticated" USING ("public"."is_baseball_team_staff"("team_id"));
 
+CREATE POLICY "baseball_practice_effectiveness_reviews_select_player" ON "public"."baseball_practice_effectiveness_reviews" FOR SELECT TO "authenticated" USING ((("visibility" = 'player_visible'::"text") AND (( SELECT "public"."get_my_baseball_player_id"() AS "get_my_baseball_player_id") = ANY ("player_ids")) AND "public"."is_baseball_team_member"("team_id")));
+
 CREATE POLICY "baseball_practice_effectiveness_reviews_update" ON "public"."baseball_practice_effectiveness_reviews" FOR UPDATE TO "authenticated" USING ("public"."has_baseball_staff_capability"("team_id", 'can_manage_practice'::"text")) WITH CHECK ("public"."has_baseball_staff_capability"("team_id", 'can_manage_practice'::"text"));
 
 CREATE POLICY "baseball_practice_lineup_slots_delete" ON "public"."baseball_practice_lineup_slots" FOR DELETE TO "authenticated" USING ("public"."has_baseball_staff_capability"("team_id", 'can_manage_practice'::"text"));
