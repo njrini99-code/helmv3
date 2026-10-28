@@ -3,12 +3,14 @@
 ## 2026-10-28 — Profile hero and tabs on Text Size, dark tab underline contrast, phone figures and rows
 
 ```text
-Design package: none (pre-deploy visual pass, owner: "contrast in the profile and tabs in desktop", 2026-10-28)
+Design package: none (pre-deploy visual pass, owner: "contrast in the profile
+                and tabs in desktop", 2026-10-28)
 PR/commit: visual-pass-2026-10-28
 Contract IDs: none
 Actions: none
 Data impact: none
-Held items: Text Size at the largest steps and the hero at 1280 need a WebKit/iPhone check (captures were Chromium only)
+Held items:     Text Size at the largest steps and the hero at 1280 need a
+                WebKit/iPhone check (captures were Chromium only)
 ```
 
 ### Changed
