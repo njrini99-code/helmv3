@@ -2886,7 +2886,9 @@ html[data-fw-theme='dark'] .ch-in__plate[data-tone='amber'] {
     align-self: center;
   }
   /* The 30pt chevrons keep where they were drawn; each reaches 44 by 44 past its box, outward only so the two never
-     overlap, and the row is no taller (visual pass 2026-10-28; RUBRIC H10). */
+     overlap, and the row is no taller (visual pass 2026-10-28; RUBRIC H10). The shared centred touch box on every
+     .ch-btn (ui.css, pointer: coarse) is off here: two centred boxes 2px apart overlap by 12px, so a tap on the right
+     edge of Previous went to Next. Each ::before is 44 by 44 on its own. */
   .ch-calm-weekstep > .ch-iconbtn {
     position: relative;
   }
@@ -2900,6 +2902,9 @@ html[data-fw-theme='dark'] .ch-in__plate[data-tone='amber'] {
   }
   .ch-calm-weekstep > .ch-iconbtn:last-child::before {
     inset-inline-end: -13px;
+  }
+  .ch-calm-weekstep > .ch-iconbtn::after {
+    content: none;
   }
   .ch-calm-dayk:has(.ch-calm-weekstep) {
     flex-wrap: wrap;
