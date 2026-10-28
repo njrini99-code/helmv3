@@ -538,7 +538,7 @@ export function Roster({ data }: { data: ChRoster }) {
           {attn.map((p) => (
             <PlayerPeek key={p.id} player={rosterPeek(p)}>
               <button type="button" className="ch-rs-attn__c" onClick={() => openSel(p.id)}>
-                <Avatar name={p.name} id={p.id} size="xs" />
+                <Avatar name={p.name} id={p.id} size="sm" />
                 <b>{p.firstName}</b>
                 <span className={`ch-rs-attn__n is-${p.attention!.tone}`}>{p.attention!.text}</span>
               </button>
@@ -744,10 +744,17 @@ function RosterList({
                 <span className="ch-rs-face__top">
                   <span />
                   {/* CH-3802: the status is a word; the dot is decoration, drawn only under All where it tells players
-                      apart (P003-A3: under Active or Inactive every dot is the same). CH-3602: on desktop the cell takes
-                      the Ledger tint on hover and a deeper one on press; the phone's card lifts. */}
-                  {show === 'all' && <span className={`ch-rs-face__dot is-${p.status}`} aria-hidden="true" />}
-                  <span className="ch-sr-only">{p.status === 'active' ? 'Active' : 'Inactive'}</span>
+                      apart (P003-A3: under Active or Inactive every dot is the same, so the word is for VoiceOver alone).
+                      Visual pass 2026-10-28 (H13): under All the word shows beside its dot, never the colour alone.
+                      CH-3602: on desktop the cell takes the Ledger tint on hover and a deeper one on press. */}
+                  {show === 'all' ? (
+                    <span className={`ch-rs-face__st is-${p.status}`}>
+                      <span className={`ch-rs-face__dot is-${p.status}`} aria-hidden="true" />
+                      {p.status === 'active' ? 'Active' : 'Inactive'}
+                    </span>
+                  ) : (
+                    <span className="ch-sr-only">{p.status === 'active' ? 'Active' : 'Inactive'}</span>
+                  )}
                 </span>
                 <span className="ch-rs-face__av">
                   <Avatar name={p.name} id={p.id} size={76} />

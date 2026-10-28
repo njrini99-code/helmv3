@@ -405,7 +405,7 @@ export function RosterPhoneRow({
     <PlayerPeek player={rosterPeek(p)}>
       <ViewTransition name={`ch-rsm-row-${p.id}`} update={slide ? 'ch-rsm-reorder' : 'none'} enter="none" exit="none" share="none" default="none">
         <button type="button" className="ch-rsm-row" aria-label={label} data-ch-code="CH-3806" onClick={() => onOpen(p.id)} {...hold}>
-          <Avatar name={p.name} id={p.id} size="lg" />
+          <Avatar name={p.name} id={p.id} size="md" />
           <span className="ch-rsm-row__b">
             <b>{p.name}</b>
             {/* The class year stays plain; only the note takes its tone (amber for a slide, green for a gain). */}
@@ -430,6 +430,10 @@ export function RosterPhoneRow({
               {rowFigure(bySg ? sg : p.avg, bySg)}
             </b>
             <span className="ch-num">{bySg ? 'SG / rd' : `${formatHcp(p.handicap)} ${TERMS.handicap.short}`}</span>
+          </span>
+          {/* Visual pass 2026-10-28 (P003 checklist): the row opens the player, so it ends on the list chevron. */}
+          <span className="ch-rsm-row__chev" aria-hidden="true">
+            <Icon icon={ChevronRight} size={16} />
           </span>
         </button>
       </ViewTransition>

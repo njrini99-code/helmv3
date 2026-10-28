@@ -799,7 +799,10 @@ describe('Roster · phone (docs/clubhouse/phone/roster.md)', () => {
     expect(jonah.getAttribute('data-ch-code')).toBe('CH-3806');
     expect(jonah.querySelector('.ch-rsm-row__spark')?.getAttribute('aria-hidden')).toBe('true');
     const luca = screen.getByRole('button', { name: /^Luca Ferraro, Freshman, Early read · 2 rounds/ });
-    expect(luca.querySelector('svg')).toBeNull();
+    // No spark under three rounds. (Visual pass 2026-10-28: every row now ends on the list chevron, an svg of its own.)
+    expect(luca.querySelector('.ch-rsm-row__spark')).toBeNull();
+    expect([...luca.querySelectorAll('svg')].filter((g) => !g.closest('.ch-rsm-row__chev'))).toEqual([]);
+    expect(luca.querySelector('.ch-rsm-row__chev')?.getAttribute('aria-hidden')).toBe('true');
     expect(screen.getByRole('button', { name: /^Mia Thornton, Junior, inactive, Improving, average 73.8/ })).toBeTruthy();
   });
 
