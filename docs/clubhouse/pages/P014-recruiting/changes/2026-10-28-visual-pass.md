@@ -20,5 +20,6 @@ Held items:     none
 
 ### Verification
 
-- stylelint on recruiting.css: exit 0; recruiting tests pass via `scripts/test.sh`.
+- stylelint on recruiting.css: exit 0; recruiting tests pass via
+  `scripts/test.sh`.
 - Before/after: recruiting--add at 393, light and dark.

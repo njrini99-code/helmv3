@@ -29,4 +29,5 @@ Held items:     the inline move mark and the color-mix() dashes want a look in S
 
 - stylelint (clubhouse config) and eslint on the touched files: exit 0.
 - `scripts/test.sh` with the page's tests: qualifier suites pass.
-- Before/after: /home/claude/vp/before, before-states-G2 and after-G2 (qualifiers, qualifier at 393 and 1280, light and dark).
+- Before/after: /home/claude/vp/before, before-states-G2 and after-G2
+  (qualifiers, qualifier at 393 and 1280, light and dark).

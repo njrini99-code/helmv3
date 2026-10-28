@@ -1630,6 +1630,7 @@
       ],
       "styles": [
         "src/clubhouse/styles/classes.css",
+        "src/clubhouse/styles/tournaments-review.css",
         "src/clubhouse/styles/ui.css"
       ],
       "examples": [],
@@ -2830,6 +2831,7 @@
       "file": "src/clubhouse/screens/home/SkeletonDeskHead.tsx",
       "group": "screens",
       "exports": [
+        "SkeletonDeskForm",
         "SkeletonDeskHead"
       ],
       "styles": [
@@ -3546,7 +3548,8 @@
       "styles": [
         "src/clubhouse/styles/base.css",
         "src/clubhouse/styles/onboard-tokens.css",
-        "src/clubhouse/styles/onboard.css"
+        "src/clubhouse/styles/onboard.css",
+        "src/clubhouse/styles/tokens.css"
       ],
       "examples": [],
       "fixture": "Contextual module"
@@ -8534,6 +8537,7 @@
         "Section"
       ],
       "styles": [
+        "src/clubhouse/styles/tournaments-review.css",
         "src/clubhouse/styles/ui.css"
       ],
       "examples": [],
@@ -8661,6 +8665,7 @@
         "Spinner"
       ],
       "styles": [
+        "src/clubhouse/styles/base.css",
         "src/clubhouse/styles/controls.css"
       ],
       "examples": [],
@@ -9710,6 +9715,7 @@
         "ch-serif-num",
         "ch-sgm",
         "ch-sheet",
+        "ch-spinner",
         "ch-sr-only",
         "ch-sr-only--focusable",
         "ch-textarea",
@@ -9939,6 +9945,7 @@
         "ch-feed__acts",
         "ch-feed__ask",
         "ch-feed__t",
+        "ch-iconbtn",
         "ch-in",
         "ch-in-wrap",
         "ch-in__at",
@@ -10086,6 +10093,36 @@
           "name": "--ch-plate",
           "value": "color-mix(in oklab, var(--ch-warning-600) 80%, var(--ch-ink-900))",
           "scope": ".ch-in__plate[data-tone='amber']"
+        },
+        {
+          "name": "--ch-plate",
+          "value": "color-mix(in oklab, var(--ch-ink-700) 22%, var(--ch-bg-surface))",
+          "scope": "html[data-fw-theme='dark'] .ch-in__plate"
+        },
+        {
+          "name": "--ch-plate",
+          "value": "var(--ch-green-fill-600)",
+          "scope": "html[data-fw-theme='dark'] .ch-in__plate[data-tone='green']"
+        },
+        {
+          "name": "--ch-plate",
+          "value": "var(--ch-green-800)",
+          "scope": "html[data-fw-theme='dark'] .ch-in__plate[data-tone='forest']"
+        },
+        {
+          "name": "--ch-plate",
+          "value": "color-mix(in oklab, var(--ch-info-600) 35%, var(--ch-info-100))",
+          "scope": "html[data-fw-theme='dark'] .ch-in__plate[data-tone='slate']"
+        },
+        {
+          "name": "--ch-plate",
+          "value": "color-mix(in oklab, var(--ch-champagne-500) 40%, var(--ch-bg-surface))",
+          "scope": "html[data-fw-theme='dark'] .ch-in__plate[data-tone='champagne']"
+        },
+        {
+          "name": "--ch-plate",
+          "value": "color-mix(in oklab, var(--ch-warning-600) 40%, var(--ch-bg-surface))",
+          "scope": "html[data-fw-theme='dark'] .ch-in__plate[data-tone='amber']"
         }
       ]
     },
@@ -11823,6 +11860,7 @@
         "ch-hm-delta",
         "ch-hm-empty",
         "ch-hm-form",
+        "ch-hm-form__basis",
         "ch-hm-form__dot",
         "ch-hm-form__figs",
         "ch-hm-form__fill",
@@ -11913,6 +11951,7 @@
         "ch-ph-acts",
         "ch-ph-asks",
         "ch-ph-asks__k",
+        "ch-ph-asks__p",
         "ch-ph-asks__v",
         "ch-ph-bench",
         "ch-ph-bench__k",
@@ -13985,6 +14024,7 @@
         "ch-rs-face__meta",
         "ch-rs-face__name",
         "ch-rs-face__note",
+        "ch-rs-face__st",
         "ch-rs-face__top",
         "ch-rs-faces",
         "ch-rs-faces--team",
@@ -14091,6 +14131,7 @@
         "ch-rsm-row",
         "ch-rsm-row--static",
         "ch-rsm-row__b",
+        "ch-rsm-row__chev",
         "ch-rsm-row__spark",
         "ch-rsm-row__v",
         "ch-rsm-rq",
@@ -14816,7 +14857,7 @@
         },
         {
           "name": "--ch-rd-under-b",
-          "value": "#d0574a",
+          "value": "#c4493b",
           "scope": ".ch-rd .ch-rd-stage"
         },
         {
@@ -15347,6 +15388,7 @@
         "ch-pbar__right",
         "ch-pbar__text",
         "ch-pbar__title",
+        "ch-pbar__tt",
         "ch-pscreen",
         "ch-pscrim",
         "ch-ptr",
@@ -15687,6 +15729,7 @@
         "ch-lb__open",
         "ch-lb__r",
         "ch-lb__rail",
+        "ch-lb__slot",
         "ch-lb__team",
         "ch-lb__v",
         "ch-lb__who",
@@ -15901,6 +15944,7 @@
         "ch-sv-pb__mk",
         "ch-sv-pb__needs",
         "ch-sv-pb__scale",
+        "ch-sv-pb__slot",
         "ch-sv-pb__tick",
         "ch-sv-pb__tour",
         "ch-sv-pb__whisk",
@@ -16125,6 +16169,16 @@
           "name": "--ch-stm-inset",
           "value": "64px",
           "scope": "@media (max-width: 820px) → .ch-stm.is-team .ch-stm-list"
+        },
+        {
+          "name": "--ch-chart-gain",
+          "value": "var(--ch-stage-up)",
+          "scope": ".ch-st[data-canopy] .ch-sgt__chg"
+        },
+        {
+          "name": "--ch-chart-loss",
+          "value": "var(--ch-stage-down)",
+          "scope": ".ch-st[data-canopy] .ch-sgt__chg"
         },
         {
           "name": "--ch-ivory-0",
@@ -16460,7 +16514,10 @@
     },
     {
       "file": "src/clubhouse/styles/tokens.css",
-      "classes": [],
+      "classes": [
+        "ch-au",
+        "ch-ox"
+      ],
       "tokens": [
         {
           "name": "--ch-ivory-0",
@@ -17054,7 +17111,7 @@
         },
         {
           "name": "--ch-text-placeholder",
-          "value": "#736f66",
+          "value": "#69655d",
           "scope": "[data-ui='clubhouse']"
         },
         {
@@ -18474,7 +18531,7 @@
         },
         {
           "name": "--ch-switch-track-shadow",
-          "value": "inset 0 0 0 1px rgb(28 25 18 / 0.08), inset 0 1px 2px rgb(28 25 18 / 0.1)",
+          "value": "inset 0 0 0 1px rgb(28 25 18 / 0.42), inset 0 1px 2px rgb(28 25 18 / 0.1)",
           "scope": "[data-ui='clubhouse']"
         },
         {
@@ -18495,6 +18552,41 @@
         {
           "name": "--ch-switch-thumb-shadow",
           "value": "0 0 0 0.5px rgb(28 25 18 / 0.12), 0 1px 2px rgb(28 25 18 / 0.18),\n    0 3px 8px -2px rgb(28 25 18 / 0.2)",
+          "scope": "[data-ui='clubhouse']"
+        },
+        {
+          "name": "--ch-tab-font",
+          "value": "var(--ch-type-14-medium)",
+          "scope": "[data-ui='clubhouse']"
+        },
+        {
+          "name": "--ch-tab-ink",
+          "value": "var(--ch-text-tertiary)",
+          "scope": "[data-ui='clubhouse']"
+        },
+        {
+          "name": "--ch-tab-ink-hover",
+          "value": "var(--ch-text-primary)",
+          "scope": "[data-ui='clubhouse']"
+        },
+        {
+          "name": "--ch-tab-ink-selected",
+          "value": "var(--ch-forest-800)",
+          "scope": "[data-ui='clubhouse']"
+        },
+        {
+          "name": "--ch-tab-bar",
+          "value": "var(--ch-green-fill-600)",
+          "scope": "[data-ui='clubhouse']"
+        },
+        {
+          "name": "--ch-tab-bar-h",
+          "value": "2px",
+          "scope": "[data-ui='clubhouse']"
+        },
+        {
+          "name": "--ch-tab-gap",
+          "value": "24px",
           "scope": "[data-ui='clubhouse']"
         },
         {
@@ -18774,7 +18866,7 @@
         },
         {
           "name": "--ch-text-placeholder",
-          "value": "#8f897c",
+          "value": "#a09a8c",
           "scope": "html[data-fw-theme='dark'] [data-ui='clubhouse']"
         },
         {
@@ -19634,17 +19726,17 @@
         },
         {
           "name": "--ch-switch-track-shadow",
-          "value": "inset 0 0 0 1px rgb(255 255 255 / 0.05), inset 0 1px 2px rgb(0 0 0 / 0.4)",
+          "value": "inset 0 0 0 1px rgb(237 231 216 / 0.3), inset 0 1px 2px rgb(0 0 0 / 0.4)",
           "scope": "html[data-fw-theme='dark'] [data-ui='clubhouse']"
         },
         {
           "name": "--ch-switch-on-bg",
-          "value": "var(--ch-accent)",
+          "value": "#2e8459",
           "scope": "html[data-fw-theme='dark'] [data-ui='clubhouse']"
         },
         {
           "name": "--ch-switch-on-shadow",
-          "value": "inset 0 0 0 1px rgb(0 0 0 / 0.25), inset 0 1px 2px rgb(0 0 0 / 0.3)",
+          "value": "inset 0 1px 2px rgb(0 0 0 / 0.3)",
           "scope": "html[data-fw-theme='dark'] [data-ui='clubhouse']"
         },
         {
@@ -19655,6 +19747,16 @@
         {
           "name": "--ch-switch-thumb-shadow",
           "value": "0 0 0 0.5px rgb(0 0 0 / 0.3), 0 1px 2px rgb(0 0 0 / 0.4), 0 3px 8px -2px rgb(0 0 0 / 0.45)",
+          "scope": "html[data-fw-theme='dark'] [data-ui='clubhouse']"
+        },
+        {
+          "name": "--ch-tab-bar",
+          "value": "var(--ch-green-600)",
+          "scope": "html[data-fw-theme='dark'] [data-ui='clubhouse']"
+        },
+        {
+          "name": "--ch-tab-ink-selected",
+          "value": "var(--ch-green-700)",
           "scope": "html[data-fw-theme='dark'] [data-ui='clubhouse']"
         },
         {
@@ -20562,11 +20664,14 @@
     {
       "file": "src/clubhouse/styles/tournaments-review.css",
       "classes": [
+        "ch-sec__actions",
+        "ch-sec__head",
         "ch-tour-rev",
         "ch-tour-rev-bar",
         "ch-tour-rev-bars",
         "ch-tour-rev-body",
         "ch-tour-rev-dot",
+        "ch-tour-rev-hist",
         "ch-tour-rev-layer",
         "ch-tour-rev-layer__ev",
         "ch-tour-rev-layers",
@@ -20850,6 +20955,16 @@
           "scope": ".ch-avatar"
         },
         {
+          "name": "--ch-av-floor",
+          "value": "min(12px, calc(var(--ch-av-size, 32px) * 0.42))",
+          "scope": ".ch-avatar"
+        },
+        {
+          "name": "--ch-av-floor",
+          "value": "12px",
+          "scope": "@media (max-width: 820px) → .ch-avatar"
+        },
+        {
           "name": "--ch-av-bg",
           "value": "#e5e2db",
           "scope": ".ch-avatar[data-tone='stone']"
@@ -21069,6 +21184,7 @@
     {
       "file": "src/clubhouse/styles/whats-new.css",
       "classes": [
+        "ch-lgr__go",
         "ch-lgr__lead",
         "ch-lgr__title",
         "ch-lgr__txt",

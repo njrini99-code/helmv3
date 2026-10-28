@@ -33,9 +33,11 @@ Held items:     Safari/iPhone: vector-effect: non-scaling-stroke on the reaction
 
 - `messages.test`, `messages-polls-css`, `conv-row-seams` and the CSS ratchets
   (`chips-tabs`, `elevation-tokens`, `hairlines`, `legacy-type-roles`,
-  `long-lists-css`, `large-title`) pass; `look-feel-pass-css` fails only on other
+  `long-lists-css`, `large-title`) pass; `look-feel-pass-css` fails only on
+  other
   areas' in-progress files (roster, stats, home, tournaments-review), not
   messages.css.
 - Before: `/home/claude/vp/before/{light,dark}/{393,1280}/messages*.png`; after:
-  `/home/claude/vp/after-E/` and `/home/claude/vp/after-int-E/` (thread, composer,
+  `/home/claude/vp/after-E/` and `/home/claude/vp/after-int-E/` (thread,
+  composer,
   long press, reaction bar, details).
