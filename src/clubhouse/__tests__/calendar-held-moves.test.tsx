@@ -174,4 +174,74 @@ describe('P-4 held moves', () => {
       expect(a.editRecurringEvent).not.toHaveBeenCalled();
     });
   });
+
+  describe('offline: the move waits for a connection, and leaving drops it', () => {
+    let line: ReturnType<typeof vi.spyOn>;
+    beforeEach(() => {
+      line = vi.spyOn(window.navigator, 'onLine', 'get').mockReturnValue(true);
+    });
+    afterEach(() => line.mockRestore());
+    const reconnect = () =>
+      act(async () => {
+        line.mockReturnValue(true);
+        window.dispatchEvent(new Event('online'));
+      });
+
+    it('staying on the page, the waiting move writes once on reconnect', async () => {
+      wrap(cal());
+      nudge();
+      line.mockReturnValue(false);
+      await expire();
+      expect(screen.getByText('Waiting for a connection to save')).toBeTruthy();
+      expect(a.updateGolfEvent).not.toHaveBeenCalled();
+      await reconnect();
+      await reconnect();
+      expect(a.updateGolfEvent).toHaveBeenCalledTimes(1);
+      expect(a.updateGolfEvent).toHaveBeenCalledWith('e9', expect.objectContaining({ startTime: '13:45' }));
+    });
+
+    it('a move waiting for a connection is dropped when the coach leaves: reconnecting afterwards writes nothing', async () => {
+      const page = wrap(cal());
+      nudge();
+      line.mockReturnValue(false);
+      await expire();
+      expect(screen.getByText('Waiting for a connection to save')).toBeTruthy();
+      const removed = vi.spyOn(window, 'removeEventListener');
+      page.unmount();
+      expect(removed.mock.calls.some(([type]) => type === 'online')).toBe(true);
+      removed.mockRestore();
+      await reconnect();
+      expect(a.updateGolfEvent).not.toHaveBeenCalled();
+    });
+
+    it('a move waiting for a connection is dropped on pagehide too: a page restored from the back-forward cache writes nothing on reconnect', async () => {
+      wrap(cal());
+      nudge();
+      line.mockReturnValue(false);
+      await expire();
+      expect(screen.getByText('Waiting for a connection to save')).toBeTruthy();
+      act(() => {
+        window.dispatchEvent(new Event('pagehide'));
+      });
+      await reconnect();
+      expect(a.updateGolfEvent).not.toHaveBeenCalled();
+    });
+
+    it('a move still in its Undo window when the coach leaves offline is dropped, not queued', async () => {
+      const page = wrap(cal());
+      nudge();
+      line.mockReturnValue(false);
+      page.unmount();
+      await reconnect();
+      await expire();
+      expect(a.updateGolfEvent).not.toHaveBeenCalled();
+    });
+
+    it('leaving online still writes the held move at once, as before', () => {
+      const page = wrap(cal());
+      nudge();
+      page.unmount();
+      expect(a.updateGolfEvent).toHaveBeenCalledTimes(1);
+    });
+  });
 });

@@ -11,6 +11,7 @@
 import { createClient } from '@/lib/supabase/server';
 import { withAdminObserved } from '@/lib/admin/observed-action';
 import { calendarUnreadCutoffIso } from './unified-notifications-model';
+import { countUnreadMessages, readViewerParticipants } from '@/lib/golf/unread-message-count';
 
 interface ActionResult<T = void> {
   success: boolean;
@@ -77,11 +78,8 @@ async function getCoachNotificationCountsImpl(
         // feed collapses them into one summary item. Same cutoff as the feed.
         .gte('created_at', calendarUnreadCutoffIso()) as Promise<{ count: number | null; error: unknown }>,
 
-      // 2. Conversations the coach participates in
-      supabase
-        .from('golf_conversation_participants')
-        .select('conversation_id, last_read_at')
-        .eq('user_id', viewerId),
+      // 2. Conversations the coach participates in, with their read and hide marks
+      readViewerParticipants(supabase, viewerId),
     ]);
 
     const calendarNotifications = calendarResult.count || 0;
@@ -108,23 +106,11 @@ async function getCoachNotificationCountsImpl(
 
     if (participantsError) {
       unreadMessages = null;
-    } else if (participants.length > 0) {
-      const counts = await Promise.all(
-        participants.map(async (p) => {
-          const { count, error } = await supabase
-            .from('golf_messages')
-            .select('*', { count: 'exact', head: true })
-            .eq('conversation_id', p.conversation_id)
-            .neq('sender_id', viewerId)
-            .gt('created_at', p.last_read_at || '1970-01-01');
-          return error ? null : (count ?? 0);
-        })
-      );
-      // One unreadable conversation makes the TOTAL unknown — reporting the
-      // partial sum as if it were complete is the same lie, just smaller.
-      unreadMessages = counts.some((c) => c === null)
-        ? null
-        : counts.reduce((sum: number, c) => sum + (c ?? 0), 0);
+    } else {
+      // A deleted (hidden) conversation is skipped until a new message brings
+      // it back, as the inbox does (src/lib/golf/unread-message-count.ts). One unreadable
+      // conversation makes the TOTAL unknown.
+      unreadMessages = await countUnreadMessages(supabase, viewerId, participants);
     }
 
     return {

@@ -109,7 +109,7 @@ describe('the live writes call the shared actions Fairway calls, unchanged', () 
     expect(actions.setQualifierEntrants).not.toHaveBeenCalled();
   });
 
-  it('the selection writes are the CoachHelm workspace’s actions, with its arguments', async () => {
+  it('the selection writes are the CoachHelm workspace’s actions, with its arguments; the tie and confirm add the board’s order', async () => {
     await LIVE_SELECTION_WRITES.advance('q1', 'scoring');
     await LIVE_SELECTION_WRITES.setPick('q1', 'p1', 'Steady in the wind');
     await LIVE_SELECTION_WRITES.removePick('q1', 'p1');
@@ -118,9 +118,11 @@ describe('the live writes call the shared actions Fairway calls, unchanged', () 
     expect(actions.advanceSelectionState).toHaveBeenCalledWith('q1', 'scoring');
     expect(actions.setQualifierCoachPick).toHaveBeenCalledWith('q1', 'p1', 'Steady in the wind');
     expect(actions.removeQualifierCoachPick).toHaveBeenCalledWith('q1', 'p1');
+    // Owner decision A ("Match the board"): Clubhouse ranks the tie at the cut as its board does, a card a round
+    // short below the full cards. Fairway's workspace calls the same action without an order (the plain order).
     expect(actions.chooseQualifierTiePlace.mock.calls).toEqual([
-      ['q1', 'p2', true],
-      ['q1', 'p2', false],
+      ['q1', 'p2', true, 'board'],
+      ['q1', 'p2', false, 'board'],
     ]);
   });
 
@@ -129,7 +131,8 @@ describe('the live writes call the shared actions Fairway calls, unchanged', () 
     await expect(LIVE_SELECTION_WRITES.confirm('q1')).resolves.toEqual({ success: true, data: { notified: false } });
     actions.confirmQualifierSelection.mockResolvedValueOnce({ ok: true });
     await expect(LIVE_SELECTION_WRITES.confirm('q1')).resolves.toEqual({ success: true, data: { notified: true } });
-    expect(actions.confirmQualifierSelection).toHaveBeenCalledWith('q1');
+    // The squad confirmed is the one the board showed above the line (owner decision A).
+    expect(actions.confirmQualifierSelection).toHaveBeenCalledWith('q1', 'board');
   });
 });
 

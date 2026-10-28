@@ -1,13 +1,13 @@
 'use client';
 
-import { ChartColumn, Flag, MessageSquare } from 'lucide-react';
+import { ChartColumn, Flag, MessageSquare, Radio } from 'lucide-react';
 import type { ReactNode } from 'react';
 import { messagesPrefillHref } from '../screens/messages/prefill';
 import { firstName } from '../lib/names';
 import { rebuiltHref } from '../shell/nav';
 import { PeekTarget, type PeekAction } from '../ui/Peek';
 import { HoleBeads, useRing } from './HoleBeads';
-import { LIVE_COPY } from './copy';
+import { LIVE_COPY, LIVE_ROUTE } from './copy';
 import { MomentumLine } from './MomentumLine';
 import { laneAria, laneFreshness, laneSubline, nextHole, thruText, toParText, type LaneFreshness, type LiveLane } from './model';
 import type { LaneChange } from './use-live-rounds';
@@ -125,7 +125,10 @@ export function peekActions(lane: LiveLane): PeekAction[] {
   const out: PeekAction[] = [];
   const msg = messagesPrefillHref({ players: [lane.playerId], draft: '', title: lane.name });
   if (msg) out.push({ label: `Message ${firstName(lane.name)}`, icon: MessageSquare, href: rebuiltHref(msg, 'coach') });
-  out.push({ label: 'Open round', icon: ChartColumn, href: rebuiltHref(`/golf/dashboard/rounds/${lane.roundId}`, 'coach') });
+  // A round still in progress (out, or in and not posted) is followed on Live: its review would only send the coach there.
+  // A posted round, and one the player stopped, has a review that opens.
+  if (lane.phase === 'on_course' || lane.phase === 'finished') out.push({ label: 'Follow on Live', icon: Radio, href: `${LIVE_ROUTE}?player=${encodeURIComponent(lane.playerId)}` });
+  else out.push({ label: 'Open round', icon: ChartColumn, href: rebuiltHref(`/golf/dashboard/rounds/${lane.roundId}`, 'coach') });
   if (lane.roundType === 'qualifier' && lane.qualifierId) out.push({ label: 'Open qualifier', icon: Flag, href: rebuiltHref(`/golf/dashboard/qualifiers/${lane.qualifierId}`, 'coach') });
   return out;
 }
