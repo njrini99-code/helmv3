@@ -16,8 +16,8 @@ vi.mock('@/app/golf/actions/messages', () => ({
   getGolfConversationParticipantIdentities: vi.fn(async () => ({})),
 }));
 
-/** The first participants read answers with `rows`; every other read answers empty. */
-function makeSupabase(rows: unknown[]) {
+/** The inbox RPC answers `rpcRows`; the first participants read answers with `rows`; every other read answers empty. */
+function makeSupabase(rows: unknown[], rpcRows: unknown[] = []) {
   let first = true;
   const chainFor = (table: string) => {
     const result = table === 'golf_conversation_participants' && first ? ((first = false), { data: rows, error: null }) : { data: [], error: null };
@@ -33,14 +33,32 @@ function makeSupabase(rows: unknown[]) {
     return proxy;
   };
   return {
-    rpc: vi.fn(async () => ({ data: [], error: null })),
+    rpc: vi.fn(async () => ({ data: rpcRows, error: null })),
     from: vi.fn((table: string) => chainFor(table)),
   };
 }
 
-const chat = (id: string, hidden_at: string | null) => ({
+const chat = (id: string, hidden_at: string | null, channel = false) => ({
   hidden_at,
-  conversation: { id, created_at: '2026-10-20T10:00:00Z', updated_at: '2026-10-20T10:00:00Z', is_team_chat: true, is_team_channel: false, title: `Chat ${id}`, created_by: 'coach-1' },
+  conversation: { id, created_at: '2026-10-20T10:00:00Z', updated_at: '2026-10-20T10:00:00Z', is_team_chat: true, is_team_channel: channel, title: `Chat ${id}`, created_by: 'coach-1' },
+});
+
+/** A row as the inbox RPC returns it: a hidden chat it lists has had a newer message since the hide. */
+const rpcRow = (id: string) => ({
+  id,
+  created_at: '2026-10-20T10:00:00Z',
+  updated_at: '2026-10-22T10:00:00Z',
+  creator_id: 'coach-1',
+  last_message_content: 'New since the delete',
+  last_message_at: '2026-10-22T10:00:00Z',
+  last_message_sender_id: 'coach-1',
+  unread_count: 1,
+  participant_ids: ['coach-1', 'user-1'],
+  participant_names: ['Coach', 'Player'],
+  is_group: true,
+  title: `Chat ${id}`,
+  participant_count: 2,
+  is_team_channel: false,
 });
 
 describe('loadGolfConversationRail — group chats the viewer deleted', () => {
@@ -50,6 +68,20 @@ describe('loadGolfConversationRail — group chats the viewer deleted', () => {
     expect(res.ok).toBe(true);
     const ids = res.ok ? res.rows.map((r) => r.id) : [];
     expect(ids).toContain('kept');
+    expect(ids).not.toContain('deleted');
+  });
+
+  it('still shows every chat it should: the team channel, and a deleted chat a newer message brought back', async () => {
+    const { loadGolfConversationRail } = await import('@/hooks/golf/use-golf-messages');
+    const supabase = makeSupabase(
+      [chat('channel', null, true), chat('back', '2026-10-21T09:00:00Z'), chat('deleted', '2026-10-21T09:00:00Z')],
+      [rpcRow('back')],
+    );
+    const res = await loadGolfConversationRail(supabase as never, 'user-1');
+    expect(res.ok).toBe(true);
+    const ids = res.ok ? res.rows.map((r) => r.id) : [];
+    expect(ids).toContain('channel');
+    expect(ids.filter((id) => id === 'back')).toHaveLength(1);
     expect(ids).not.toContain('deleted');
   });
 });

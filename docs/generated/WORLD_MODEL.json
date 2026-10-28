@@ -26364,6 +26364,11 @@
         },
         {
           "kind": "import_graph",
+          "path": "src/app/golf/actions/coach-notifications.ts",
+          "anchor": "src/lib/golf/unread-message-count"
+        },
+        {
+          "kind": "import_graph",
           "path": "src/app/golf/actions/communication.ts",
           "anchor": "src/lib/golf/resolve-team"
         },
@@ -26371,6 +26376,11 @@
           "kind": "import_graph",
           "path": "src/app/golf/actions/messages.ts",
           "anchor": "src/lib/golf/with-golf-action"
+        },
+        {
+          "kind": "import_graph",
+          "path": "src/app/golf/actions/player-notifications.ts",
+          "anchor": "src/lib/golf/unread-message-count"
         }
       ]
     },

@@ -11,7 +11,7 @@
 import { createClient } from '@/lib/supabase/server';
 import { withAdminObserved } from '@/lib/admin/observed-action';
 import { calendarUnreadCutoffIso } from './unified-notifications-model';
-import { countUnreadMessages, readViewerParticipants } from './unread-message-count';
+import { countUnreadMessages, readViewerParticipants } from '@/lib/golf/unread-message-count';
 
 interface ActionResult<T = void> {
   success: boolean;
@@ -108,7 +108,7 @@ async function getCoachNotificationCountsImpl(
       unreadMessages = null;
     } else {
       // A deleted (hidden) conversation is skipped until a new message brings
-      // it back, as the inbox does (unread-message-count.ts). One unreadable
+      // it back, as the inbox does (src/lib/golf/unread-message-count.ts). One unreadable
       // conversation makes the TOTAL unknown.
       unreadMessages = await countUnreadMessages(supabase, viewerId, participants);
     }

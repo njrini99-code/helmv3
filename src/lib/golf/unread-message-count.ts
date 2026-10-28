@@ -2,7 +2,8 @@
  * The Messages badge's unread count, shared by the coach and player badge actions (coach-notifications.ts,
  * player-notifications.ts). Not a server action: a plain module the two actions call with their own client.
  *
- * Unread: messages someone else sent after the viewer's `last_read_at`, summed over the viewer's conversations.
+ * Unread: messages someone else sent after the viewer's `last_read_at` and has not deleted, summed over the viewer's
+ * conversations.
  *
  * A conversation the viewer deleted is skipped (wiring review 2026-10-27, item 3). Delete is a per-person hide: it sets
  * the viewer's `hidden_at` and nothing else (conversation-hide.ts), so before this the deleted conversation's unread
@@ -82,6 +83,7 @@ export async function countUnreadMessages(
         .select('*', { count: 'exact', head: true })
         .eq('conversation_id', p.conversation_id)
         .neq('sender_id', viewerId)
+        .eq('is_deleted', false)
         .gt('created_at', p.last_read_at || '1970-01-01');
       return error ? null : (count ?? 0);
     }),

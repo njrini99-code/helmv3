@@ -160,6 +160,11 @@ describe.each(counters)('$name: a deleted conversation', ({ unread }) => {
     expect(await unread()).toBe(0);
   });
 
+  it('never counts a message its sender deleted, as the inbox row does not', async () => {
+    seed([part('kept', at(0))], [msg('kept', 5), msg('kept', 6, { is_deleted: true })]);
+    expect(await unread()).toBe(1);
+  });
+
   it('on a database without hidden_at, reads the rows again without it and counts every conversation', async () => {
     db.noHiddenAtColumn = true;
     seed([part('a', at(0)), part('b', null)], [msg('a', 5), msg('b', 6), msg('b', 7)]);

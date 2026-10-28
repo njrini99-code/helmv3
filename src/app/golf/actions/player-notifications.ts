@@ -12,7 +12,7 @@
 
 import { createClient } from '@/lib/supabase/server';
 import { calendarUnreadCutoffIso } from './unified-notifications-model';
-import { countUnreadMessages, readViewerParticipants } from './unread-message-count';
+import { countUnreadMessages, readViewerParticipants } from '@/lib/golf/unread-message-count';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { revalidatePath } from 'next/cache';
 import { logServerError } from '@/lib/server-error-logger';
@@ -290,7 +290,7 @@ async function getPlayerNotificationCountsImpl(
     } else {
       // Parallel per-conversation counts (each has its own last_read_at); a
       // deleted (hidden) conversation is skipped until a new message brings it
-      // back, as the inbox does (unread-message-count.ts).
+      // back, as the inbox does (src/lib/golf/unread-message-count.ts).
       unreadMessages = await countUnreadMessages(supabase, userId, participants);
     }
 

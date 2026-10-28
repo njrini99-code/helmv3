@@ -19,9 +19,10 @@ Held items:     none
   conversation does, from the viewer's last read, so the badge and the row
   it opens agree.
 - The two counters share one counting function
-  (`src/app/golf/actions/unread-message-count.ts`). On a database without
-  the `hidden_at` column it reads the rows again without it, and counts
-  every conversation as before.
+  (`src/lib/golf/unread-message-count.ts`). On a database without the
+  `hidden_at` column it reads the rows again without it, and counts every
+  conversation as before. A message its sender deleted never counts, as in
+  the inbox row.
 - The inbox rail's second read, which adds team and group chats the inbox
   function left out, now skips one the viewer deleted. Before, a deleted
   group chat came straight back in the inbox.
