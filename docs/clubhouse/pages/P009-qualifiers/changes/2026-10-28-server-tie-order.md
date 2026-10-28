@@ -33,6 +33,10 @@ Held items:     none
   short card are never tied.
 - Ask's `get_qualifiers` counts rounds as the board does and adds rank,
   position and total to par per player.
+- Fairway gives no stroke gap between a full card and a card a round
+  short: the player panel's lead and line facts say "Leads", "1 round
+  fewer in", "Inside" or "Outside" instead. The field stats drop the
+  travel-cut gap and keep the spread to the full cards (review of #2404).
 
 ### Why
 
@@ -52,3 +56,6 @@ Held items:     none
 - `standings-parity.test.tsx`: Fairway, the workspace and Clubhouse
   agree on a short card through the real loaders.
 - `team-read-tools.test.ts`: Ask's standings follow the same order.
+- `FairwayQualifierLeaderboard.board.test.tsx` and
+  `qualifier-stats.test.ts`: a full card at +4 above a short card at −2
+  shows no "−6 shots" and no "On the line" on either side.

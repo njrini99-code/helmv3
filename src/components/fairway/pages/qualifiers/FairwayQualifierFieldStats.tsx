@@ -113,7 +113,7 @@ export function FairwayQualifierFieldStats({
       key: 'spread',
       label: 'Spread',
       value: <Figure n={totals.spread.shots} unit={totals.spread.shots === 1 ? 'shot' : 'shots'} />,
-      sub: `${formatToPar(totals.spread.best)} to ${formatToPar(totals.spread.worst)}, first to last`,
+      sub: `${formatToPar(totals.spread.best)} to ${formatToPar(totals.spread.worst)}, ${totals.spread.partial ? 'across the full cards' : 'first to last'}`,
     });
   }
   if (totals.travelCut) {

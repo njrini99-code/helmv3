@@ -222,6 +222,23 @@ describe('FairwayQualifierLeaderboard — the board', () => {
     expect(panel).toHaveTextContent('LeadLeads by 2 shots');
   });
 
+  it('gives no stroke gap between a full card and a card a round short (the one order puts the short card below)', () => {
+    // A full card at +4 ranks above a card a round short at −2 (owner decision 10). That is not "leads by −6 shots",
+    // "−6 shots back", or both "on the line" when the travel cut falls between them.
+    feed([feedEntry('Mason Rivers', 2, 148, 4), feedEntry('Cole Bennett', 1, 70, -2)]);
+    const { table } = renderBoard({ numRounds: 2, selectionSlotsTotal: 1, selectionSlotsCoachPick: 0, roundsByPlayer: undefined });
+    const mason = openPanel(table, 'Mason Rivers');
+    expect(mason).toHaveTextContent('LeadLeads');
+    expect(mason).not.toHaveTextContent(/Leads by/);
+    expect(mason).toHaveTextContent('Travel cutInside');
+    const cole = openPanel(table, 'Cole Bennett');
+    expect(cole).toHaveTextContent('Lead1 round fewer in');
+    expect(cole).toHaveTextContent('Travel cutOutside');
+    for (const panel of [mason, cole]) {
+      expect(panel).not.toHaveTextContent(/shots? (back|clear)|Leads by|On the line|[-−]6/);
+    }
+  });
+
   it('marks a missed round on a closed qualifier as not played', () => {
     feed([feedEntry('Cole Bennett', 1, 71, -1), feedEntry('Mason Rivers', 2, 144, 0)], 'completed');
     const { table } = renderBoard({

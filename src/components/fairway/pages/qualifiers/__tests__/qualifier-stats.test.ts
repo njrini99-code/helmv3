@@ -47,7 +47,7 @@ describe('fieldTotals (feed)', () => {
     expect(totals.cards).toBe(14);
     expect(totals.averageScore).toBeCloseTo(1028 / 14, 6);
     expect(totals.averageToPar).toBeCloseTo(20 / 14, 6);
-    expect(totals.spread).toEqual({ best: -3, worst: 11, shots: 14 });
+    expect(totals.spread).toEqual({ best: -3, worst: 11, shots: 14, partial: false });
     // Jackson +3 is the last one in; Dylan +6 the first one out.
     expect(totals.travelCut).toEqual({ lastIn: 3, firstOut: 6, shots: 3 });
   });
@@ -56,6 +56,21 @@ describe('fieldTotals (feed)', () => {
     expect(fieldTotals(STANDINGS, 0).travelCut).toBeNull();
     expect(fieldTotals(STANDINGS, 7).travelCut).toBeNull();
     expect(fieldTotals(STANDINGS.slice(0, 1), 5).spread).toBeNull();
+  });
+
+  it('gives no stroke gap across a full card and a card a round short (the one order ranks the short card below)', () => {
+    // A full card at +4 above a card a round short at −2: not "−6 shots" at the cut, and not on one spread.
+    const mixed = deriveStandings([
+      { player_id: 'a', player_name: 'Avery', rounds_completed: 2, total_score: 140, total_to_par: -4 },
+      { player_id: 'm', player_name: 'Mason', rounds_completed: 2, total_score: 148, total_to_par: 4 },
+      { player_id: 'c', player_name: 'Cole', rounds_completed: 1, total_score: 70, total_to_par: -2 },
+    ]);
+    expect(mixed.map((s) => s.playerId)).toEqual(['a', 'm', 'c']);
+    const totals = fieldTotals(mixed, 2);
+    expect(totals.travelCut).toBeNull();
+    expect(totals.spread).toEqual({ best: -4, worst: 4, shots: 8, partial: true });
+    // Between two full cards the gap is still given.
+    expect(fieldTotals(mixed, 1).travelCut).toEqual({ lastIn: -4, firstOut: 4, shots: 8 });
   });
 });
 
