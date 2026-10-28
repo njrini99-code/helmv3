@@ -16,12 +16,15 @@ type RoundRow = {
  * P-5 8.10: the round refs for the calendar's tournament events, read only when golf_tournaments_v1 is on and the window
  * has tournament events. One read of the rounds (with their tournament), one of every round of those tournaments (to
  * tell a cancelled tournament), and, for a coach only, one of the entries (a draft lineup). Players learn only whether
- * the lineup is published (4.33's revealed-only rule). Any failure returns `failed`: events load without refs.
+ * the lineup is published (4.33's revealed-only rule): `lineup_published_at` set and reached. A lock is not a publish, so
+ * a locked lineup that is not published (or whose publish is scheduled later) reads `none` to a player. Any failure
+ * returns `failed`: events load without refs.
  */
 export async function loadRoundRefs(
   supabase: object,
   eventIds: string[],
   role: 'coach' | 'player',
+  nowMs: number = Date.now(),
 ): Promise<{ refs: Map<string, ChCalRoundRef>; failed: boolean; error?: unknown }> {
   const refs = new Map<string, ChCalRoundRef>();
   if (!eventIds.length) return { refs, failed: false };
@@ -47,7 +50,7 @@ export async function loadRoundRefs(
   for (const r of rows) {
     const t = r.tournament;
     if (!t) continue;
-    const lineup: ChCalRoundRef['lineup'] = t.lineup_locked_at ? (role === 'coach' ? 'locked' : 'published') : t.lineup_published_at ? 'published' : role === 'coach' && drafted.has(t.id) ? 'draft' : 'none';
+    const lineup = lineupFor(t, role, drafted.has(t.id), nowMs);
     refs.set(r.round_event_id, {
       tournamentId: t.id,
       name: t.name,
@@ -65,4 +68,24 @@ export async function loadRoundRefs(
     });
   }
   return { refs, failed: false };
+}
+
+/**
+ * A round's lineup in the calendar's word. A coach sees the whole state (locked first, then published, then a draft from
+ * the entries). A player sees `published` only once `lineup_published_at` is set and has been reached, the same reveal
+ * the Tournaments page uses (`lineupStateOf`); otherwise `none`, never `locked` or `draft`.
+ */
+export function lineupFor(
+  t: { lineup_locked_at: string | null; lineup_published_at: string | null },
+  role: 'coach' | 'player',
+  drafted: boolean,
+  nowMs: number,
+): ChCalRoundRef['lineup'] {
+  if (role === 'player') {
+    const at = t.lineup_published_at ? Date.parse(t.lineup_published_at) : NaN;
+    return Number.isFinite(at) && at <= nowMs ? 'published' : 'none';
+  }
+  if (t.lineup_locked_at) return 'locked';
+  if (t.lineup_published_at) return 'published';
+  return drafted ? 'draft' : 'none';
 }
