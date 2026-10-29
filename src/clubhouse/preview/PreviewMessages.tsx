@@ -52,7 +52,11 @@ const msg = (id: string, senderId: string, when: string, text: string, extra: Pa
   ...extra,
 });
 
-/** Premium features P-2: a coach's van poll in the travel group, five of eight in, ending tomorrow at 6 PM. */
+/**
+ * Premium features P-2: a coach's van poll in the travel group, five of eight in, with no end time. The poll clock
+ * never runs earlier than the real date, so a fixed end in October 2026 read as "Voting ended" and the preview showed
+ * no open poll to vote on.
+ */
 const vanPoll: Poll = {
   question: 'Which van are you riding in Thursday?',
   options: [
@@ -60,7 +64,7 @@ const vanPoll: Poll = {
     { id: 'o2', label: 'Van 2 with Coach Whitfield' },
   ],
   multi: false,
-  closesAt: at(15, 18, 0),
+  closesAt: null,
   closedAt: null,
 };
 /** P-2 slice 8: a closed multi-answer poll, so the preview draws a final result beside the open one. */

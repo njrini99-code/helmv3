@@ -3438,17 +3438,30 @@ html[data-fw-theme='dark'] .ch-ms-sec.is-ann {
   /* ink-500 holds 3:1 over every fill the mark sits on (4.30 on green-200 at its lowest; ink-400 fell to 2.19). */
   --ch-poll-mark-ring: var(--ch-ink-500);
   --ch-poll-check: var(--ch-text-on-accent);
+  /* Depth: the card is a raised sheet (lit rim, hairline, a soft cast) on a faint green wash, and each choice is a key
+     on it, so the card reads as something to press rather than a flat list. */
+  --ch-poll-opt-bg: var(--ch-bg-surface);
+  --ch-poll-opt-shadow: var(--ch-highlight), 0 0 0 1px rgb(28 25 18 / 0.08), 0 1px 2px rgb(28 25 18 / 0.05),
+    0 4px 10px -6px rgb(28 25 18 / 0.16);
+  --ch-poll-opt-lift: var(--ch-highlight), 0 0 0 1px rgb(28 25 18 / 0.12), 0 2px 4px rgb(28 25 18 / 0.06),
+    0 10px 18px -10px rgb(28 25 18 / 0.24);
+  --ch-poll-opt-sunk: inset 0 1px 2px rgb(28 25 18 / 0.12), 0 0 0 1px rgb(28 25 18 / 0.1);
+  --ch-poll-on-glow: 0 8px 16px -10px rgb(21 90 57 / 0.55);
   container: ch-poll / inline-size;
   width: min(360px, 100%);
-  padding: var(--ch-space-3);
+  padding: var(--ch-space-4) var(--ch-space-3) var(--ch-space-3);
   border-radius: var(--ch-radius-card);
-  background: var(--ch-sheet-bg);
-  box-shadow: 0 0 0 var(--ch-hairline-w) var(--ch-border-hairline), var(--ch-elevation-bubble);
+  background: linear-gradient(180deg, var(--ch-sheet-bg) 0%, color-mix(in oklab, var(--ch-sheet-bg), var(--ch-green-50) 70%) 100%);
+  box-shadow: var(--ch-highlight), 0 0 0 var(--ch-hairline-w) var(--ch-border-hairline), var(--ch-elevation-raised);
   color: var(--ch-text-primary);
 }
 html[data-fw-theme='dark'] [data-ui='clubhouse'] .ch-ms-poll {
   --ch-poll-level: var(--ch-green-600);
   --ch-poll-ring: var(--ch-green-600);
+  --ch-poll-opt-shadow: var(--ch-highlight), 0 0 0 1px rgb(255 255 255 / 0.07), 0 2px 6px -2px rgb(0 0 0 / 0.5);
+  --ch-poll-opt-lift: var(--ch-highlight), 0 0 0 1px rgb(255 255 255 / 0.12), 0 10px 18px -10px rgb(0 0 0 / 0.7);
+  --ch-poll-opt-sunk: inset 0 1px 3px rgb(0 0 0 / 0.5), 0 0 0 1px rgb(255 255 255 / 0.08);
+  --ch-poll-on-glow: 0 8px 18px -10px rgb(107 187 140 / 0.45);
 }
 /* D2: on a phone a poll's column takes the card's width, not the 82% a bubble gets. */
 /* The card is an inline-size container, so its content gives its column no width, and a percentage width inside a
@@ -3484,10 +3497,18 @@ html[data-fw-theme='dark'] [data-ui='clubhouse'] .ch-ms-poll {
   font: var(--ch-type-12-medium);
   color: var(--ch-text-tertiary);
 }
+/* The glyph sits on a small coin (padding on the outer svg), the poll's mark in the thread. */
 .ch-ms-poll__head svg {
+  box-sizing: content-box;
+  padding: 4px;
+  border-radius: 50%;
+  background: var(--ch-green-100);
+  box-shadow: inset 0 0 0 1px color-mix(in oklab, var(--ch-green-200), transparent 40%);
   color: var(--ch-green-700);
 }
 .ch-ms-poll.is-closed .ch-ms-poll__head svg {
+  background: var(--ch-bg-subtle);
+  box-shadow: inset 0 0 0 1px var(--ch-border-hairline);
   color: var(--ch-text-tertiary);
 }
 .ch-ms-poll__dot {
@@ -3504,7 +3525,7 @@ html[data-fw-theme='dark'] [data-ui='clubhouse'] .ch-ms-poll {
   color: var(--ch-warning-600);
 }
 .ch-ms-poll__q {
-  margin: 6px 2px 0;
+  margin: 10px 2px 0;
   font: var(--ch-type-17-strong);
   letter-spacing: var(--ch-track-17);
   text-wrap: balance;
@@ -3518,7 +3539,7 @@ html[data-fw-theme='dark'] [data-ui='clubhouse'] .ch-ms-poll {
 .ch-ms-poll__opts {
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: 8px;
   margin: var(--ch-space-3) 0 0;
   padding: 0;
   list-style: none;
@@ -3535,14 +3556,18 @@ html[data-fw-theme='dark'] [data-ui='clubhouse'] .ch-ms-poll {
   overflow: hidden;
   border: 0;
   border-radius: var(--ch-radius-md);
-  background: var(--ch-bg-subtle);
-  box-shadow: inset 0 0 0 var(--ch-hairline-w) var(--ch-border-hairline);
+  background: var(--ch-poll-opt-bg);
+  box-shadow: var(--ch-poll-opt-shadow);
   color: var(--ch-text-primary);
   font: var(--ch-type-16-medium);
   letter-spacing: var(--ch-track-16);
   text-align: left;
   cursor: pointer;
-  transition: box-shadow var(--ch-dur-quick) var(--ch-ease), background-color 0s linear;
+  /* A key: it lifts under a pointer, sinks on press and springs back on release (the release beat, spring curve). */
+  transition:
+    box-shadow var(--ch-dur-quick) var(--ch-ease),
+    translate var(--ch-dur-release) var(--ch-ease-spring),
+    background-color 0s linear;
   -webkit-tap-highlight-color: transparent;
 }
 @media (pointer: fine) and (min-width: 821px) {
@@ -3554,21 +3579,32 @@ html[data-fw-theme='dark'] [data-ui='clubhouse'] .ch-ms-poll {
 }
 /* D8: a full-width row deepens its tint on press (after the press delay), it doesn't shrink. */
 .ch-ms-poll__opt[data-ch-pressed]:not([aria-disabled='true']) {
-  background-color: color-mix(in oklab, var(--ch-bg-subtle), var(--ch-green-600) 11%);
+  background-color: color-mix(in oklab, var(--ch-poll-opt-bg), var(--ch-green-600) 11%);
+  box-shadow: var(--ch-poll-opt-sunk);
+  translate: 0 1px;
   transition-delay: var(--ch-dur-press-delay);
+  transition-duration: var(--ch-dur-press);
 }
 @media (hover: hover) {
   .ch-ms-poll__opt:active:not([aria-disabled='true']) {
-    background-color: color-mix(in oklab, var(--ch-bg-subtle), var(--ch-green-600) 11%);
+    background-color: color-mix(in oklab, var(--ch-poll-opt-bg), var(--ch-green-600) 11%);
+    box-shadow: var(--ch-poll-opt-sunk);
+    translate: 0 1px;
     transition-delay: var(--ch-dur-press-delay);
+    transition-duration: var(--ch-dur-press);
   }
 }
+/* A closed poll's rows are results, not keys: flat on the card, no lift. */
 .ch-ms-poll__opt[aria-disabled='true'] {
   cursor: default;
 }
+.ch-ms-poll.is-closed .ch-ms-poll__opt {
+  background: color-mix(in oklab, var(--ch-poll-opt-bg), var(--ch-bg-subtle) 50%);
+  box-shadow: inset 0 0 0 1px var(--ch-border-hairline);
+}
 .ch-ms-poll__opt.is-on {
   background: var(--ch-selected-bg);
-  box-shadow: inset 0 0 0 1.5px var(--ch-poll-ring);
+  box-shadow: inset 0 0 0 1.5px var(--ch-poll-ring), var(--ch-poll-on-glow);
 }
 .ch-ms-poll__opt:focus-visible {
   outline: 2px solid var(--ch-border-focus);
@@ -3590,7 +3626,8 @@ html[data-fw-theme='dark'] [data-ui='clubhouse'] .ch-ms-poll {
 .ch-ms-poll__fill {
   inset: 0;
   z-index: -1;
-  background: var(--ch-green-100);
+  /* Deepens toward its leading edge, so the share reads as a bar with a front, not a tint. */
+  background: linear-gradient(90deg, var(--ch-green-50), var(--ch-green-100) 70%, color-mix(in oklab, var(--ch-green-100), var(--ch-green-200) 60%));
 }
 /* D4: the fill alone is 1.1:1 on the track; a 3 px line at the row's foot carries the share at 3:1. */
 .ch-ms-poll__level {
@@ -3602,7 +3639,10 @@ html[data-fw-theme='dark'] [data-ui='clubhouse'] .ch-ms-poll {
 }
 /* Final: the leader is named and filled, the rest recede (their labels stay at full ink). */
 .ch-ms-poll.is-closed .ch-ms-poll__opt.is-lead .ch-ms-poll__fill {
-  background: var(--ch-green-200);
+  background: linear-gradient(90deg, var(--ch-green-100), var(--ch-green-200));
+}
+.ch-ms-poll.is-closed .ch-ms-poll__opt.is-lead:not(.is-on) {
+  box-shadow: inset 0 0 0 1px color-mix(in oklab, var(--ch-green-500), transparent 55%), var(--ch-poll-on-glow);
 }
 .ch-ms-poll.is-closed .ch-ms-poll__opt.is-lead .ch-ms-poll__label {
   font: var(--ch-type-16-strong);
@@ -3620,18 +3660,24 @@ html[data-fw-theme='dark'] [data-ui='clubhouse'] .ch-ms-poll {
 .ch-ms-poll.is-closed .ch-ms-poll__opt:not(.is-lead) .ch-ms-poll__level {
   background: var(--ch-ink-500);
 }
+/* "Most votes" is a chip on the leader's bar. */
 .ch-ms-poll__tag {
   flex: none;
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: var(--ch-bg-surface);
+  box-shadow: var(--ch-highlight), 0 1px 2px rgb(21 90 57 / 0.18);
   font: var(--ch-type-12-medium);
   line-height: var(--ch-lead-tight);
   color: var(--ch-green-700);
 }
 @media (hover: hover) {
   .ch-ms-poll__opt:not([aria-disabled='true']):hover {
-    box-shadow: inset 0 0 0 1px var(--ch-border-strong);
+    box-shadow: var(--ch-poll-opt-lift);
+    translate: 0 -1px;
   }
   .ch-ms-poll__opt.is-on:not([aria-disabled='true']):hover {
-    box-shadow: inset 0 0 0 1.5px var(--ch-poll-ring);
+    box-shadow: inset 0 0 0 1.5px var(--ch-poll-ring), var(--ch-poll-on-glow);
   }
 }
 .ch-ms-poll__mark {
@@ -3650,12 +3696,20 @@ html[data-fw-theme='dark'] [data-ui='clubhouse'] .ch-ms-poll {
 }
 .ch-ms-poll__opt.is-on .ch-ms-poll__mark {
   background: var(--ch-selected-strong);
-  box-shadow: none;
+  box-shadow: var(--ch-elevation-pill-on);
 }
 /* M3: only a tap that checks the row plays it (data-pop, set from the tap): a card that loads already voted, or a
-   realtime change, shows the glyph at rest. */
+   realtime change, shows the glyph at rest. The coin settles from a squeeze while the check springs in. */
+.ch-ms-poll__mark[data-pop] {
+  animation: ch-ms-poll-mark var(--ch-dur-release) var(--ch-ease-spring);
+}
 .ch-ms-poll__mark[data-pop] svg {
   animation: ch-ms-poll-check var(--ch-dur-release) var(--ch-ease-spring);
+}
+@keyframes ch-ms-poll-mark {
+  from {
+    transform: scale(0.82);
+  }
 }
 @keyframes ch-ms-poll-check {
   from {
@@ -3694,7 +3748,9 @@ html[data-fw-theme='dark'] [data-ui='clubhouse'] .ch-ms-poll {
   flex-wrap: wrap;
   align-items: center;
   gap: 4px 16px;
-  padding: 12px 2px 0;
+  margin-top: 12px;
+  padding: 10px 2px 0;
+  border-top: var(--ch-hairline-w) solid var(--ch-border-hairline);
   font: var(--ch-type-13);
   color: var(--ch-text-tertiary);
 }
@@ -3742,6 +3798,16 @@ html[data-fw-theme='dark'] [data-ui='clubhouse'] .ch-ms-poll {
   .ch-ms-poll__mark {
     transition: none;
   }
+  /* No lift or sink: depth stays, movement goes. */
+  .ch-ms-poll__opt,
+  .ch-ms-poll__opt:hover,
+  .ch-ms-poll__opt:active,
+  .ch-ms-poll__opt[data-ch-pressed] {
+    translate: none;
+  }
+  .ch-ms-poll__mark[data-pop] {
+    animation: none;
+  }
   /* M3: opacity only on the quick beat. */
   .ch-ms-poll__mark[data-pop] svg {
     animation: ch-ms-poll-check-fade var(--ch-dur-quick) var(--ch-ease);
@@ -3753,6 +3819,10 @@ html[data-fw-theme='dark'] [data-ui='clubhouse'] .ch-ms-poll {
 [data-motion='off'] .ch-ms-poll__mark {
   transition: none;
 }
+[data-motion='off'] .ch-ms-poll__opt {
+  translate: none !important;
+}
+[data-motion='off'] .ch-ms-poll__mark[data-pop],
 [data-motion='off'] .ch-ms-poll__mark[data-pop] svg {
   animation: none;
 }
