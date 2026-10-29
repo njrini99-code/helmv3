@@ -1945,12 +1945,20 @@ a.ch-th-reads__r:focus-visible {
 /* The delays are not durations, so Animations off and Reduce Motion end every one here too, in case a live mark outlives
    the setting being turned on mid-answer. */
 @media (prefers-reduced-motion: reduce) {
-  .ch-th-cv[data-live] *,
-  .ch-th-cv[data-live] .ch-line__path {
+  .ch-th-cv[data-live] .ch-th-cv__in,
+  .ch-th-cv[data-live] .ch-line[data-draw] .ch-line__path,
+  .ch-th-cv[data-live] .ch-line[data-draw] .ch-line__dot,
+  .ch-th-cv[data-live] .ch-th-bar__track > span,
+  .ch-th-cv[data-live] .ch-th-rank__bar,
+  .ch-th-cv[data-live] .ch-th-leg__track > span {
     animation: none;
   }
 }
-:where([data-motion='off']) .ch-th-cv[data-live] *,
-:where([data-motion='off']) .ch-th-cv[data-live] .ch-line__path {
+[data-motion='off'] .ch-th-cv[data-live] .ch-th-cv__in,
+[data-motion='off'] .ch-th-cv[data-live] .ch-line[data-draw] .ch-line__path,
+[data-motion='off'] .ch-th-cv[data-live] .ch-line[data-draw] .ch-line__dot,
+[data-motion='off'] .ch-th-cv[data-live] .ch-th-bar__track > span,
+[data-motion='off'] .ch-th-cv[data-live] .ch-th-rank__bar,
+[data-motion='off'] .ch-th-cv[data-live] .ch-th-leg__track > span {
   animation: none;
 }

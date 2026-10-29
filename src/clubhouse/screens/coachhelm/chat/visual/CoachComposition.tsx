@@ -223,8 +223,11 @@ function Block({ block, drawIn }: { block: ResolvedBlock; drawIn: boolean }) {
 
 export function CoachComposition({ composition, live = false }: { composition: ValidatedComposition; live?: boolean }) {
   const reduced = useChReducedMotion();
-  // Decided once, at mount: a visual that arrived in the live answer moves; one restored with the thread never does.
-  const [animate] = useState(() => live && !reduced);
+  // Whether it arrived in the live answer is decided once, at mount: one restored with the thread never moves, and the answer
+  // finishing does not replay or snap anything. Reduced motion is read on every render, so a setting that resolves after
+  // hydration (its server snapshot is "off") or is turned on mid-answer still draws the visual final.
+  const [arrivedLive] = useState(live);
+  const animate = arrivedLive && !reduced;
   const split = composition.layout === 'split';
   const { ms, series } = figuresOf(composition.blocks);
   const entity = entityOf(ms, series);
