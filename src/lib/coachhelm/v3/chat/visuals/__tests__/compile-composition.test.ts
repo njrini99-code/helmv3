@@ -169,6 +169,32 @@ describe('compileComposition', () => {
     expect(r.ok && r.composition.coverageNotes).toEqual(['Two rounds have no score.']);
   });
 
+  it('keeps a read visible when another window of the same metric is what was drawn', () => {
+    const longer = env({
+      measurements: [m('scoring_average_mean', 74.0, { window_start: '2026-01-10', sample_size: 30 })],
+      series: [series('scoring_average', [78, 77, 75, 74, 73], { window_start: '2026-01-10' })],
+    });
+    const r = compileComposition(
+      spec([{ type: 'headline', ref: 'e9', metricId: 'scoring_average_mean' }, { type: 'trend', ref: 'e1' }]),
+      new Map([...reads, ['e9', longer]]),
+      NOW,
+    );
+    expect(r.ok && r.composition.evidenceRefs).toEqual(['e1']);
+  });
+
+  it('keeps a figure-level caveat when the read itself says complete', () => {
+    const stale = env({
+      measurements: [m('scoring_average', 73.2, { coverage: 'partial', coverage_note: 'Stats are being refreshed.' })],
+    });
+    const r = compileComposition(
+      spec([{ type: 'headline', ref: 'e8', metricId: 'scoring_average' }]),
+      new Map([...reads, ['e8', stale]]),
+      NOW,
+    );
+    expect(r.ok && r.composition.evidenceRefs).toEqual(['e8']);
+    expect(r.ok && r.composition.coverageNotes).toEqual(['Stats are being refreshed.']);
+  });
+
   it('refuses a split over two players or two reads that disagree', () => {
     const two = new Map([['e5', env({ measurements: [m('sg_tee', 0.2, { unit: 'strokes' }), m('sg_putting', 0.1, { unit: 'strokes', entity: P2 })] })]]);
     expect(compileComposition(spec([{ type: 'split', refs: ['e5'] }]), two, NOW)).toMatchObject({ ok: false, reason: 'nothing_to_draw' });

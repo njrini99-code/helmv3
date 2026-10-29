@@ -839,11 +839,20 @@ function TeamTable({
                     </span>
                   )}
                 </th>
-                {metrics.map((metric) => (
-                  <td key={metric} className="whitespace-nowrap px-3 py-3 text-right last:pr-4 sm:last:pr-5">
-                    <ComparisonCell m={find(id, metric)} isBest={best.get(metric) === id} />
-                  </td>
-                ))}
+                {metrics.map((metric) => {
+                  const m = find(id, metric);
+                  return (
+                    <td key={metric} className="whitespace-nowrap px-3 py-3 text-right last:pr-4 sm:last:pr-5">
+                      <ComparisonCell m={m} isBest={best.get(metric) === id} />
+                      {/* Samples differ across this player's figures: say each one where it stands. */}
+                      {m && !headerSample.get(id) && m.sample_size > 0 && (
+                        <span className="block font-fw-sans text-caption text-text-tertiary">
+                          {m.sample_size} {m.sample_unit}
+                        </span>
+                      )}
+                    </td>
+                  );
+                })}
               </tr>
             ))}
           </tbody>

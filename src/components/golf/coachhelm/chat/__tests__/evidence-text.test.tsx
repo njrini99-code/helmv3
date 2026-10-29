@@ -68,4 +68,15 @@ describe('ComparisonTable', () => {
     expect(best[0]!.parentElement?.textContent).toContain('72');
     expect(best[1]!.parentElement?.textContent).toContain('54%');
   });
+
+  it('keeps each figure\'s sample in the team table when samples differ', () => {
+    const players = ['Ava', 'Ben', 'Cal', 'Dee'];
+    const ms = players.flatMap((p, i) => [
+      m(p, 'scoring_average', 'Scoring average', 72 + i, { sample_size: 10 + i }),
+      m(p, 'putt_make_pct', 'Putts made', 40 + i, { unit: 'percent', direction: 'higher_better', sample_size: 60 + i, sample_unit: 'attempts' }),
+    ]);
+    render(<ComparisonTable measurements={ms} />);
+    expect(screen.getByText('10 rounds')).toBeTruthy();
+    expect(screen.getByText('63 attempts')).toBeTruthy();
+  });
 });

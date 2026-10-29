@@ -37,8 +37,12 @@ const canonical = (value: unknown): string =>
       : v,
   );
 
-const key = (m: Measurement) => `${m.entity.id}|${m.metric_id}`;
-const seriesKey = (s: MeasurementSeries) => `${s.entity.id}|${s.metric_id}`;
+// What the composition drew, by full content: two reads of the same metric over
+// different windows are different observations, and drawing one must not hide the other.
+const key = (m: Measurement) => canonical(m);
+/** One player's one metric: where two reads must agree, or the later one wins. */
+const slot = (m: Measurement) => `${m.entity.id}|${m.metric_id}`;
+const seriesKey = (s: MeasurementSeries) => canonical(s);
 const isBucketSeries = (s: MeasurementSeries) => s.points.some((p) => p.bucket !== null);
 const drawable = (m: Measurement) => m.value !== null && m.coverage !== 'unavailable';
 
@@ -133,9 +137,9 @@ function resolveBlock(block: CompositionBlockSpec, evidence: ReadonlyMap<string,
         if (!drawable(m) || m.unit !== 'strokes' || (want && !want.has(m.metric_id))) continue;
         // `sg_total` is the whole, not a part; a split of the parts leaves it out unless asked for.
         if (!want && m.metric_id === 'sg_total') continue;
-        const had = byKey.get(key(m));
+        const had = byKey.get(slot(m));
         if (had && had.value !== m.value) return { ok: false, why: `two reads disagree on ${m.metric_label}` };
-        byKey.set(key(m), m);
+        byKey.set(slot(m), m);
       }
       const ms = [...byKey.values()];
       if (ms.length < 2) return { ok: false, why: 'a split needs at least two signed figures' };
@@ -155,7 +159,7 @@ function resolveBlock(block: CompositionBlockSpec, evidence: ReadonlyMap<string,
       const want = block.metricIds ? new Set(block.metricIds) : null;
       const byKey = new Map<string, Measurement>();
       for (const m of envs.flatMap((e) => e.measurements)) {
-        if (drawable(m) && (!want || want.has(m.metric_id))) byKey.set(key(m), m);
+        if (drawable(m) && (!want || want.has(m.metric_id))) byKey.set(slot(m), m);
       }
       const ms = [...byKey.values()];
       const players = new Set(ms.map((m) => m.entity.id));
@@ -215,8 +219,11 @@ export function compileComposition(
     ...new Set(
       evidenceRefs
         .map((ref) => evidence.get(ref)!)
-        .filter((e) => e.coverage !== 'complete' && e.coverage_note)
-        .map((e) => e.coverage_note as string),
+        // The read's own note, and every figure's: a stale cache marks the
+        // measurement partial while the envelope can still say complete.
+        .flatMap((e) => [e, ...e.measurements, ...e.series])
+        .filter((x) => x.coverage !== 'complete' && x.coverage_note)
+        .map((x) => x.coverage_note as string),
     ),
   ];
 

@@ -82,7 +82,8 @@ renders final on mount" for chat visuals, at the owner's request.)
 
 ## 4. Message mechanics
 
-Text
+### Text
+
 - Answer body 16px / 1.65, primary ink (≥ 13:1 on the canvas); the lead
   sentence 17px at weight 500. Measure about 68ch; visuals may run wider.
 - Paragraph gap 14px; 16–20px between prose and a visual. Prose after a
@@ -92,7 +93,8 @@ Text
 - The coach's message: right-aligned tinted bubble, body size, primary ink,
   max 85% width. The assistant: no bubble.
 
-Streaming
+### Streaming
+
 - Re-render at most every 50ms (`useChat({ throttle: 50 })`).
 - Follow the bottom only while the coach is at the bottom; an upward scroll
   releases it; a round "jump to latest" button returns.
@@ -100,23 +102,27 @@ Streaming
 - Word smoothing (`smoothStream`) is wanted but the installed `ai` build
   omits it from its type exports; revisit on the next SDK bump.
 
-Working states
+### Working states
+
 - Before text: one "Thinking" line; while tools run, a step list in coach
   language ("Reading Maya's last 12 rounds"), spinner → check → warning.
 - When the answer starts, steps collapse to one row ("Worked for 6s · 3
   steps") that re-expands; the summary survives reload.
 - Stopped or failed: keep the partial text, add one status line with Retry.
 
-Actions
+### Actions
+
 - A proposal shows exactly what will be written, with a specific verb
   ("Create task"), and collapses to a receipt with a link once confirmed.
 
-Chrome
+### Chrome
+
 - Copy / retry under a finished answer; always visible on touch, on hover on
   desktop; 44pt targets on the phone.
 - Follow-up suggestions: at most three, one wrapped row.
 
-Loading between tabs and conversations
+### Loading between tabs and conversations
+
 - A skeleton shaped like the real first paint (not a spinner, not a generic
   block); a short cross-fade (≈180ms) between tabs; no layout jump when data
   lands; scroll restored per conversation.
