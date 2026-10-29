@@ -350,7 +350,8 @@
 }
 .ch-ms-row.is-sel .ch-ms-row__bot > span:first-child,
 .ch-ms-row.is-sel.is-unread .ch-ms-row__bot > span:first-child,
-.ch-ms-row.is-sel .ch-ms-row__bot em {
+.ch-ms-row.is-sel .ch-ms-row__bot em,
+.ch-ms-row.is-sel .ch-ms-row__poll {
   color: rgb(255 255 255 / 0.86);
 }
 .ch-ms-row.is-sel .ch-ms-grp {
@@ -470,16 +471,18 @@
   overflow: auto;
   overscroll-behavior: contain;
 }
-/* Scrolled off its top, the thread fades into the header over 16px rather than being cut off under it (use-thread-anchor
-   toggles the class; the shell's canopy fades the same way). */
+/* Scrolled off its top, the thread fades into the header rather than being cut off under it (use-thread-anchor
+   toggles the class; the shell's canopy fades the same way). 40px, a timestamp line and its gap: at 16px a half-cut
+   "1:44 AM" still read as clipped under the header. */
 .ch-ms-scroll.is-scrolled {
-  -webkit-mask-image: linear-gradient(180deg, transparent, #000 16px);
-  mask-image: linear-gradient(180deg, transparent, #000 16px);
+  -webkit-mask-image: linear-gradient(180deg, transparent, #000 40px);
+  mask-image: linear-gradient(180deg, transparent, #000 40px);
 }
+/* The composer's measure (816 with the same 32px inset), so bubbles and the field share both edges. */
 .ch-ms-msgs {
   display: flex;
   flex-direction: column;
-  max-width: var(--ch-measure-reading);
+  max-width: 816px;
   margin: 0 auto;
   padding: 0 32px;
 }
@@ -518,7 +521,7 @@
   flex-direction: column;
   gap: 4px;
   min-width: 0;
-  max-width: min(520px, 78%);
+  max-width: min(560px, 78%);
 }
 .ch-ms-msg.is-mine .ch-ms-msg__col {
   align-items: flex-end;
@@ -3977,6 +3980,8 @@ html[data-fw-theme='dark'] [data-ui='clubhouse'] .ch-ms-poll {
 }
 /* D25: the poll glyph in the inbox row and a reply quote. */
 .ch-ms-row__poll {
+  /* Inline: the global svg reset is display:block, which broke "Coach:", the glyph and the question onto three lines. */
+  display: inline-block;
   margin-right: 4px;
   vertical-align: -2px;
   color: var(--ch-green-700);
