@@ -47,6 +47,13 @@ Held items:     motion on a real iPhone (Safari, the Capacitor shell); the
   outnumber the metrics, the best per metric marked by its direction; a to-par
   score is signed with E for even; strokes gained is green or amber by sign,
   against the baseline.
+- The Board | Ask strip keeps its x across the switch on the desktop: the Ask's
+  strip now ends at the Board's right edge (page gutter plus the Board
+  header's 4px), 1228 at 1280 and 1388 at 1440 on both views and in the Ask
+  skeleton (it sat 25px right). Its y still differs (Board 225, or 193 with no
+  roster, at the foot of its title header; Ask 76, at the top of the chat):
+  matching it from the Ask would take a band of about 150px above the chat, so
+  it is left to the Board header (coachhelm.css) to bring the strip up.
 
 ### Verified
 

@@ -12,15 +12,18 @@
   color: var(--ch-text-primary);
 }
 
-/* The sub-tab strip: the team at the left, Board | Ask at the right, where the Board's own header draws the same control, so
-   switching views never moves it (2026-10-19). On the phone the control spans the strip, as on the Board. */
+/* The sub-tab strip: the team at the left, Board | Ask at the right. On the desktop its right edge is the Board's: the page
+   gutter plus the Board header's 4px inset (.ch-hl, .ch-hl-h in coachhelm.css), so the control keeps its x when the view
+   switches (measured in WebKit, 2026-10-29: it sat 25px right of the Board's at 1280 and 1440). Its height differs: the
+   Board draws it at the foot of its title header, the Ask at the top of the chat (see the P013 change of 2026-10-29). On the
+   phone the control spans the strip, as on the Board. */
 .ch-ask-top {
   display: flex;
   flex: none;
   align-items: center;
   justify-content: space-between;
   gap: 12px;
-  padding: 12px 20px 8px 24px;
+  padding: 12px calc(var(--ch-page-gutter) + 4px) 8px 24px;
   border-bottom: var(--ch-hairline-w) solid var(--ch-border-hairline);
 }
 .ch-ask-top .ch-ask-tabs {

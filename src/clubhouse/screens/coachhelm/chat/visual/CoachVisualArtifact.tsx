@@ -1,13 +1,11 @@
 'use client';
 
 import { useRef, useState, type KeyboardEvent } from 'react';
-import { Table2 } from 'lucide-react';
 import type { ValidatedVisualArtifact } from '@/lib/coachhelm/v3/chat/visuals/schema';
 import { sourceLine, type AskTable } from '../../../../data/coachhelm-chat-thread';
 import { changeTone, formatFixed, formatSG } from '../../../../lib/format';
 import { haptic } from '../../../../lib/haptics';
-import { Icon } from '../../../../ui/Icon';
-import { DataTable } from '../Evidence';
+import { DataTable, TableToggle } from '../Evidence';
 
 const ANNOTATION_WORD = { measured: 'Measured', association: 'Pattern', hypothesis: 'To test' } as const;
 
@@ -72,10 +70,7 @@ function SgAnatomy({ artifact }: { artifact: ValidatedVisualArtifact }) {
             {artifact.coverage === 'partial' && <span className="ch-th-va__chip">Partial data</span>}
           </p>
         </div>
-        <button type="button" className="ch-th-toggle" aria-pressed={asTable} onClick={() => setAsTable((v) => !v)} data-ch-code="CH-13852">
-          <Icon icon={Table2} size={14} />
-          View as table
-        </button>
+        <TableToggle pressed={asTable} onToggle={() => setAsTable((v) => !v)} />
       </div>
 
       {asTable ? (
