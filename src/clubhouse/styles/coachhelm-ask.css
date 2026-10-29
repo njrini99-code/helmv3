@@ -1345,3 +1345,52 @@ html:not([data-fw-theme='dark']) .ch-ask {
     box-shadow: 0 0 0 var(--ch-hairline-w) var(--ch-green-600), var(--ch-elevation-raised);
   }
 }
+
+/* Ask's skeleton on desktop (AskSkeleton.tsx): drawn in the loaded page's own classes, so the strip is where the page puts it
+   (the team at the left, Board | Ask at the right) and the greeting, composer, starters and capabilities land in place. Only
+   what a placeholder needs beyond those classes is here (this sheet is the page's). On the phone it keeps its own shape. */
+.ch-ask-sk .ch-ask-team {
+  min-width: 148px;
+  box-sizing: border-box;
+}
+.ch-ask-sk .ch-ask-hist__new {
+  pointer-events: none;
+}
+.ch-ask-sk__lines {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 4px 8px 0;
+}
+.ch-ask-sk__lines > .ch-skel-ln:first-child {
+  margin-top: 8px;
+}
+.ch-ask-sk__greet {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: 100%;
+}
+.ch-ask-sk__greet > .ch-skel-ln {
+  justify-content: center;
+  width: 100%;
+}
+.ch-ask-sk__pills {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 6px 6px;
+}
+@media (max-width: 820px) {
+  .ch-ask.ch-ask-sk .ch-ask-sk__desk {
+    display: none;
+  }
+}
+
+/* The Ask view settles in after a switch the same way the board's views do (coachhelm.css, ch-view-enter): its body or its
+   plain state rises from the dimmed opacity, desktop only. */
+@media (min-width: 821px) {
+  .ch-ask[data-ch-enter]:not(.is-phone) > :is(.ch-ask-body, .ch-ask-plain) {
+    animation: ch-view-enter var(--ch-dur-quick) var(--ch-ease) backwards;
+  }
+}

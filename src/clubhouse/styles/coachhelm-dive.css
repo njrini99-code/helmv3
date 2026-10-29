@@ -1305,7 +1305,7 @@ main[data-canopy] .ch-hd-it.is-on,
    category and stance over its rule, the claim, and What, Why, Next and When as label rows on soft rules, then the actions. */
 @media (min-width: 821px) {
   main[data-canopy] .ch-hd-sk__grp > .ch-skel:first-child {
-    margin: 7px 6px 7px;
+    margin: 6px 6px 8px;
   }
   main[data-canopy] .ch-hd-sk__it {
     height: 82px;
@@ -1321,8 +1321,8 @@ main[data-canopy] .ch-hd-it.is-on,
   .ch-hd-sk__row {
     display: flex;
     align-items: flex-start;
-    gap: 34px;
-    padding-top: 18px;
+    gap: 32px;
+    padding-top: 16px;
     box-sizing: border-box;
     box-shadow: inset 0 var(--ch-hairline-w) 0 var(--ch-ledger-rule-soft);
   }

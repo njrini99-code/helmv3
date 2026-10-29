@@ -98,7 +98,7 @@ function useEnter(href: string): ChViewEnter {
     const t = window.setTimeout(() => setOn(false), DIM_MS + 120);
     return () => window.clearTimeout(t);
   }, [from, href]);
-  return on && from !== null ? { 'data-ch-enter': '', style: { '--ch-enter-from': from.toFixed(3) } as CSSProperties } : {};
+  return on && from !== null ? { 'data-ch-enter': '', style: { '--ch-enter-from': String(Math.round(from * 1000) / 1000) } as CSSProperties } : {};
 }
 
 /** For tests: forget a switch in flight. */

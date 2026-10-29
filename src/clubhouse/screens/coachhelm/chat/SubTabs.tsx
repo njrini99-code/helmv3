@@ -20,7 +20,7 @@ export type CoachHelmView = keyof typeof COACHHELM_HREF;
  */
 export function CoachHelmTabs({ active, onGo, held = false }: { active: CoachHelmView; onGo?: (view: CoachHelmView) => void; held?: boolean }) {
   return (
-    <div className="ch-ask-tabs" data-ch-code={held ? undefined : 'CH-13923'} inert={held || undefined} aria-hidden={held || undefined}>
+    <div className="ch-ask-tabs" data-ch-strip="" data-ch-code={held ? undefined : 'CH-13923'} inert={held || undefined} aria-hidden={held || undefined}>
       <Segmented
         label="CoachHelm view"
         value={active}

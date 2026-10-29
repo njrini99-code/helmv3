@@ -910,47 +910,6 @@
   --ch-skel-sheen: rgb(255 255 255 / 0.16);
 }
 
-/* Ask's skeleton on desktop (AskSkeleton.tsx): drawn in the loaded page's own classes, so the strip is where the page puts it
-   (the team at the left, Board | Ask at the right) and the greeting, composer, starters and capabilities land in place. Only
-   what a placeholder needs beyond those classes is here (coachhelm-ask.css is the page's). On the phone it keeps its own shape. */
-.ch-ask-sk .ch-ask-team {
-  min-width: 148px;
-  box-sizing: border-box;
-}
-.ch-ask-sk .ch-ask-hist__new {
-  pointer-events: none;
-}
-.ch-ask-sk__lines {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-  padding: 4px 8px 0;
-}
-.ch-ask-sk__lines > .ch-skel-ln:first-child {
-  margin-top: 8px;
-}
-.ch-ask-sk__greet {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  width: 100%;
-}
-.ch-ask-sk__greet > .ch-skel-ln {
-  justify-content: center;
-  width: 100%;
-}
-.ch-ask-sk__pills {
-  display: flex;
-  flex-wrap: wrap;
-  justify-content: center;
-  gap: 6px 6px;
-}
-@media (max-width: 820px) {
-  .ch-ask.ch-ask-sk .ch-ask-sk__desk {
-    display: none;
-  }
-}
-
 /* Narrow canvases: one column */
 @container chhl (max-width: 900px) {
   .ch-hl-grid,
@@ -1115,8 +1074,7 @@
 }
 /* Desktop only (the brief is desktop's): the phone keeps its approved swap, and its top bar is drawn inside the same main. */
 @media (min-width: 821px) {
-  .ch-hl[data-ch-enter]:not(.is-phone) > :not(.ch-hl-h):not(.ch-hv-tabs):not(.ch-ask-tabs),
-  .ch-ask[data-ch-enter]:not(.is-phone) > :is(.ch-ask-body, .ch-ask-plain) {
+  .ch-hl[data-ch-enter]:not(.is-phone) > :not(.ch-hl-h):not([data-ch-strip]) {
     animation: ch-view-enter var(--ch-dur-quick) var(--ch-ease) backwards;
   }
 }

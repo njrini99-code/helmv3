@@ -76,7 +76,7 @@ export function PlayerHelmTabs({ active, onGo, coach = false, held = false }: { 
     );
   }
   return (
-    <div className="ch-hv-tabs" data-ch-code={held ? undefined : 'CH-13930'} inert={held || undefined} aria-hidden={held || undefined}>
+    <div className="ch-hv-tabs" data-ch-strip="" data-ch-code={held ? undefined : 'CH-13930'} inert={held || undefined} aria-hidden={held || undefined}>
       <Segmented<PlayerHelmView> label="CoachHelm view" value={active} options={views.map((v) => ({ value: v, label: PLAYER_HELM_TAB_LABEL[v] }))} onChange={(v) => onGo?.(v)} />
       {development && (
         <Button variant="ghost" size="sm" href={development} rightIcon={ArrowUpRight} feel="select">
