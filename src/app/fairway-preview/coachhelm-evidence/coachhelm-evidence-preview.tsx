@@ -1,6 +1,8 @@
 'use client';
 
+import * as React from 'react';
 import type { UIMessage } from 'ai';
+import type { ValidatedComposition } from '@/lib/coachhelm/v3/chat/visuals/composition';
 import { fairwayScope } from '@/lib/redesign/flag';
 import { ChatThread } from '@/components/golf/coachhelm/chat/ChatThread';
 import type { Measurement, MeasurementSeries, ToolEnvelope } from '@/lib/coachhelm/v3/chat/provenance';
@@ -160,12 +162,43 @@ const UNAVAILABLE = envelope({
   coverage_note: 'The stats service did not respond. Try again in a minute.',
 });
 
+// What `compileComposition` returns for a model design over the reads above:
+// the figures are the reads' own objects.
+const COMPOSED: ValidatedComposition = {
+  artifactId: 'vc-fixture',
+  schemaVersion: 1,
+  kind: 'compose',
+  title: 'Approach play is where Maya gives strokes back',
+  lede: 'Her scoring keeps improving, but the iron game is the one part of her round still costing her.',
+  layout: 'split',
+  blocks: [
+    { type: 'headline', measurement: SG.measurements[1]!, label: 'Biggest leak' },
+    { type: 'trend', series: SCORING.series[0]!, reference: 'average' },
+    { type: 'split', measurements: SG.measurements },
+    { type: 'bands', series: PROXIMITY.series[0]!, highlight: '150–200 yds' },
+    { type: 'note', kind: 'association', text: 'Her longest approaches finish furthest away, which is where the strokes go.' },
+    { type: 'note', kind: 'hypothesis', text: 'Club selection from long range may be worth a look in practice.' },
+  ],
+  evidenceRefs: [],
+  coverageNotes: [],
+  dataHash: 'fixture',
+  createdAt: AS_OF,
+};
+
 let seq = 0;
 const ev = (e: ToolEnvelope) => ({ type: 'data-evidence', id: `ev-${seq++}`, data: { envelope: e } });
 const text = (t: string) => ({ type: 'text', text: t });
 const user = (id: string, t: string): UIMessage => ({ id, role: 'user', parts: [{ type: 'text', text: t }] });
 const assistant = (id: string, parts: unknown[]): UIMessage =>
   ({ id, role: 'assistant', parts }) as unknown as UIMessage;
+
+const COMPOSED_TURN: UIMessage[] = [
+  user('u0', 'Where is Maya losing strokes, and is she getting better?'),
+  assistant('a0', [
+    { type: 'data-visual-composition', id: 'visual-vc-fixture', data: COMPOSED },
+    text('Spend the next two practices on 150 to 200 yard approaches; her scoring trend says the rest of her game is carrying her.'),
+  ]),
+];
 
 const MESSAGES: UIMessage[] = [
   user('u1', 'How is Maya putting this season?'),
@@ -192,9 +225,21 @@ const MESSAGES: UIMessage[] = [
 const noop = () => undefined;
 
 export function CoachHelmEvidencePreview() {
+  // `?live` mounts the composed answer as a streaming turn, so its visuals
+  // animate in; the replay button remounts it to watch again.
+  const [run, setRun] = React.useState(0);
+  const [live, setLive] = React.useState(false);
+  React.useEffect(() => setLive(new URLSearchParams(window.location.search).has('live')), []);
   return (
     <div className={fairwayScope('min-h-dvh bg-canvas')}>
-      <main className="mx-auto w-full max-w-[52rem] px-4 py-8">
+      <main className="mx-auto flex w-full max-w-[52rem] flex-col gap-8 px-4 py-8">
+        {live && (
+          // eslint-disable-next-line helm/no-raw-button -- dev-only fixture control
+          <button type="button" className="self-start font-fw-sans text-caption text-accent-ink underline" onClick={() => setRun((r) => r + 1)}>
+            Replay motion
+          </button>
+        )}
+        <ChatThread key={`${run}-${live}`} messages={COMPOSED_TURN} busy={live} onApprove={noop} onDeny={noop} />
         <ChatThread messages={MESSAGES} busy={false} onApprove={noop} onDeny={noop} />
       </main>
     </div>

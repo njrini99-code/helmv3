@@ -149,6 +149,10 @@ export function useCoachHelmChat(options: UseCoachHelmChatOptions = {}): UseCoac
   const chat = useChat({
     transport,
     messages: options.initialMessages,
+    // Re-render the thread at most every 50ms while an answer streams: the
+    // prose is re-parsed on each update, and per-token renders made long
+    // answers stutter on an iPhone.
+    throttle: 50,
     // Recording an approval is a LOCAL state change: `addToolApprovalResponse`
     // writes the coach's answer into the message parts and stops there. Nothing
     // goes back to the server, so the suspended tool call is never resumed.

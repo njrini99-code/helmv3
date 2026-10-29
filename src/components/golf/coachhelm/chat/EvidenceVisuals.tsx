@@ -30,11 +30,7 @@ import { computeSeriesTrend, Sparkline, TrendChip } from '@/components/fairway/c
 import { dotRadiusForN, isHollowDot } from '@/components/fairway/charts/MakeCurve';
 import { InlineNotice } from '@/components/fairway/feedback';
 import { BarRows, DivergingRows, EvidenceCard, Headline, LineFigure } from './EvidenceFigures';
-import type {
-  Measurement,
-  MeasurementSeries,
-  ToolEnvelope,
-} from '@/lib/coachhelm/v3/chat/provenance';
+import type { Measurement, MeasurementSeries, ToolEnvelope } from '@/lib/coachhelm/v3/chat/provenance';
 
 /** Below this, a "trend" is not a trend. See rule 1 above. */
 const MIN_POINTS_FOR_CHART = 3;
@@ -92,7 +88,6 @@ function formatFreshness(iso: string): string {
   return `${days} day${days === 1 ? '' : 's'} ago`;
 }
 
-
 /** "Sep 26" — the x-axis and headline vocabulary. */
 function formatDay(iso: string): string {
   return new Intl.DateTimeFormat('en-US', { month: 'short', day: 'numeric' }).format(
@@ -116,12 +111,7 @@ function plural(n: number, word: string): string {
  * A coach learns where to look for "how much data is this?" once, and then it
  * is free.
  */
-function provenanceText(
-  win: string | null,
-  sampleSize: number,
-  sampleUnit: string,
-  asOf: string,
-): string {
+function provenanceText(win: string | null, sampleSize: number, sampleUnit: string, asOf: string): string {
   return [win, sampleSize > 0 ? `${sampleSize} ${sampleUnit}` : null, `computed ${formatFreshness(asOf)}`]
     .filter(Boolean)
     .join(' · ');
@@ -140,7 +130,9 @@ export function CoverageNotice({ envelope }: { envelope: ToolEnvelope }) {
   return (
     <InlineNotice
       tone={isFailure ? 'warning' : 'info'}
-      title={isFailure ? 'Could not read this' : envelope.coverage === 'empty' ? 'No data yet' : 'Partial data'}
+      title={
+        isFailure ? 'Could not read this' : envelope.coverage === 'empty' ? 'No data yet' : 'Partial data'
+      }
     >
       {envelope.coverage_note}
     </InlineNotice>
@@ -180,9 +172,8 @@ export function MetricPanel({
   // they agree, and only the part that genuinely differs — the sample — stays
   // per-metric.
   const sharedWindow =
-    shown.every(
-      (m) => m.window_start === first.window_start && m.window_end === first.window_end,
-    ) && shown.every((m) => m.as_of === first.as_of);
+    shown.every((m) => m.window_start === first.window_start && m.window_end === first.window_end) &&
+    shown.every((m) => m.as_of === first.as_of);
   const sharedSample = shown.every(
     (m) => m.sample_size === first.sample_size && m.sample_unit === first.sample_unit,
   );
@@ -217,9 +208,7 @@ export function MetricPanel({
         {shown.map((m) => (
           <div key={`${m.entity.id}-${m.metric_id}`} className="min-w-0 bg-surface px-4 py-3.5 sm:px-5">
             <p className="font-fw-sans text-caption text-text-secondary">{m.metric_label}</p>
-            {!entityLabel && (
-              <p className="font-fw-sans text-caption text-text-tertiary">{m.entity.label}</p>
-            )}
+            {!entityLabel && <p className="font-fw-sans text-caption text-text-tertiary">{m.entity.label}</p>}
             <p className="mt-1.5 font-fw-sans text-h2 tabular-nums text-text-primary">
               {formatValue(m.value, m.unit)}
             </p>
@@ -278,15 +267,10 @@ function goodDirectionOf(direction: Measurement['direction']): 'up' | 'down' {
  * envelope. Only at three or more readings — the same threshold the full trend
  * chart holds to (rule 1).
  */
-function MetricTrend({
-  measurement: m,
-  series,
-}: {
-  measurement: Measurement;
-  series: MeasurementSeries[];
-}) {
+function MetricTrend({ measurement: m, series }: { measurement: Measurement; series: MeasurementSeries[] }) {
   const history = series.find(
-    (s) => s.metric_id === m.metric_id && s.entity.id === m.entity.id && s.points.length >= MIN_POINTS_FOR_CHART,
+    (s) =>
+      s.metric_id === m.metric_id && s.entity.id === m.entity.id && s.points.length >= MIN_POINTS_FOR_CHART,
   );
   if (!history) return null;
 
@@ -428,7 +412,11 @@ export function TrendChart({
       }}
     >
       <LineFigure
-        points={series.points.map((p, i) => ({ key: `${p.at}-${i}`, label: formatDay(p.at), value: p.value }))}
+        points={series.points.map((p, i) => ({
+          key: `${p.at}-${i}`,
+          label: formatDay(p.at),
+          value: p.value,
+        }))}
         format={fmt}
         reference={reference}
       />
@@ -575,9 +563,7 @@ function SeriesAsTable({ series }: { series: MeasurementSeries }) {
       <dl className="divide-y divide-border-subtle">
         {series.points.map((p, i) => (
           <div key={i} className="flex items-baseline justify-between gap-4 py-2 first:pt-0 last:pb-0">
-            <dt className="font-fw-sans text-body-sm text-text-secondary">
-              {p.bucket ?? formatDay(p.at)}
-            </dt>
+            <dt className="font-fw-sans text-body-sm text-text-secondary">{p.bucket ?? formatDay(p.at)}</dt>
             <dd className="font-fw-sans text-body-sm font-semibold tabular-nums text-text-primary">
               {formatValue(p.value, series.unit)}
             </dd>
@@ -644,12 +630,21 @@ export function ComparisonTable({ measurements }: { measurements: Measurement[] 
           </caption>
           <thead>
             <tr className="border-b border-border-subtle">
-              <th scope="col" className="px-4 pb-3 pt-4 text-left align-bottom font-fw-sans text-caption text-text-tertiary sm:px-5">
+              <th
+                scope="col"
+                className="px-4 pb-3 pt-4 text-left align-bottom font-fw-sans text-caption text-text-tertiary sm:px-5"
+              >
                 Metric
               </th>
               {players.map(([id, label]) => (
-                <th key={id} scope="col" className="px-3 pb-3 pt-4 text-right align-bottom last:pr-4 sm:last:pr-5">
-                  <span className="block font-fw-sans text-body-sm font-semibold text-text-primary">{label}</span>
+                <th
+                  key={id}
+                  scope="col"
+                  className="px-3 pb-3 pt-4 text-right align-bottom last:pr-4 sm:last:pr-5"
+                >
+                  <span className="block font-fw-sans text-body-sm font-semibold text-text-primary">
+                    {label}
+                  </span>
                   {headerSample.get(id) && (
                     <span className="block font-fw-sans text-caption font-normal text-text-tertiary">
                       {headerSample.get(id)}
@@ -697,9 +692,7 @@ export function ComparisonTable({ measurements }: { measurements: Measurement[] 
                               isBest ? 'font-semibold text-accent-ink' : 'font-medium text-text-primary',
                             )}
                           >
-                            {isBest && (
-                              <span aria-hidden className="size-1.5 rounded-full bg-accent-fill" />
-                            )}
+                            {isBest && <span aria-hidden className="size-1.5 rounded-full bg-accent-fill" />}
                             {m ? formatValue(m.value, m.unit) : '—'}
                             {isBest && <span className="sr-only"> (better)</span>}
                           </span>
@@ -762,7 +755,10 @@ export function RankingList({
         sorted ? (
           <Headline
             value={fmt(leader.value!)}
-            caption={[`${leader.entity.label} is first of ${plural(ranked.length, 'player')}`, directionNote(first.direction)]
+            caption={[
+              `${leader.entity.label} is first of ${plural(ranked.length, 'player')}`,
+              directionNote(first.direction),
+            ]
               .filter(Boolean)
               .join(' · ')}
           />
@@ -807,17 +803,23 @@ export function RankingList({
 }
 
 /** A strokes-gained breakdown: which side of zero, and by how much. */
-export function StrokesGainedFigure({ sg }: { sg: NonNullable<ReturnType<typeof strokesGainedCategories>> }) {
+export function StrokesGainedFigure({
+  sg,
+  showHeadline = true,
+}: {
+  sg: NonNullable<ReturnType<typeof strokesGainedCategories>>;
+  /** Off inside a composition whose own headline already names the largest loss. */
+  showHeadline?: boolean;
+}) {
   const fmt = (v: number) => formatValue(v, 'strokes');
   return (
     <EvidenceCard
       overline={sg.entityLabel}
       title="Strokes gained"
       headline={
-        <Headline
-          value={fmt(sg.worst.value)}
-          caption={`Largest loss: ${sg.worst.label.toLowerCase()}`}
-        />
+        showHeadline && (
+          <Headline value={fmt(sg.worst.value)} caption={`Largest loss: ${sg.worst.label.toLowerCase()}`} />
+        )
       }
       provenance={sg.subtitle}
       ariaLabel={sg.takeaway}

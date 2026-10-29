@@ -30,6 +30,8 @@ import { cn } from '@/lib/utils';
 import { InstrumentTable, InstrumentTableToggle } from '@/components/fairway/charts';
 import type { ChartTableData } from '@/components/fairway/charts';
 import { niceAxis } from '@/components/fairway/charts/TrendChart';
+import { motion } from 'motion/react';
+import { EVIDENCE_MOTION, useEvidenceMotion } from './EvidenceMotion';
 
 // ---------------------------------------------------------------------------
 // Card
@@ -46,7 +48,8 @@ export interface EvidenceCardProps {
   /** Spoken summary of the figure (the figure itself is hidden from AT). */
   ariaLabel: string;
   tableData?: ChartTableData;
-  children: React.ReactNode;
+  /** The figure. Optional: a headline card is all headline. */
+  children?: React.ReactNode;
   className?: string;
 }
 
@@ -81,27 +84,29 @@ export function EvidenceCard({
             {title}
           </h3>
         </div>
-        {hasTable && (
-          <InstrumentTableToggle show={showTable} onToggle={() => setShowTable((v) => !v)} />
-        )}
+        {hasTable && <InstrumentTableToggle show={showTable} onToggle={() => setShowTable((v) => !v)} />}
       </header>
 
       {headline && <div className="px-4 pt-3 sm:px-5">{headline}</div>}
 
-      <div className="px-4 pb-4 pt-4 sm:px-5 sm:pb-5">
-        {showTable && tableData ? (
-          <InstrumentTable data={tableData} />
-        ) : (
-          // `inert`, not just aria-hidden: the figure is decorative for a
-          // screen reader (the table is the readout), and nothing inside it
-          // should take focus.
-          <div role="img" aria-label={ariaLabel} className="relative w-full">
-            <div aria-hidden inert className="w-full">
-              {children}
+      {children == null ? (
+        <div className="pb-4 sm:pb-5" />
+      ) : (
+        <div className="px-4 pb-4 pt-4 sm:px-5 sm:pb-5">
+          {showTable && tableData ? (
+            <InstrumentTable data={tableData} />
+          ) : (
+            // `inert`, not just aria-hidden: the figure is decorative for a
+            // screen reader (the table is the readout), and nothing inside it
+            // should take focus.
+            <div role="img" aria-label={ariaLabel} className="relative w-full">
+              <div aria-hidden inert className="w-full">
+                {children}
+              </div>
             </div>
-          </div>
-        )}
-      </div>
+          )}
+        </div>
+      )}
 
       {provenance && (
         <footer className="border-t border-border-subtle px-4 py-2.5 sm:px-5">
@@ -269,6 +274,8 @@ function LineSvg({
   area: boolean;
   gradientId: string;
 }) {
+  const animate = useEvidenceMotion();
+  const d0 = EVIDENCE_MOTION.figureDelay;
   // Half a band of inset on each side so the first and last dots, and their
   // labels, never sit on the card edge.
   const inset = xLabels === 'all' ? Math.min(32, (width - gutter) / (points.length * 2)) : 8;
@@ -278,7 +285,8 @@ function LineSvg({
   const y1 = height - PLOT_BOTTOM;
   const span = axis.max - axis.min || 1;
 
-  const xAt = (i: number) => (points.length === 1 ? (x0 + x1) / 2 : x0 + ((x1 - x0) * i) / (points.length - 1));
+  const xAt = (i: number) =>
+    points.length === 1 ? (x0 + x1) / 2 : x0 + ((x1 - x0) * i) / (points.length - 1);
   const yAt = (v: number) => y1 - ((v - axis.min) / span) * (y1 - y0);
 
   const r1 = (n: number) => Math.round(n * 10) / 10;
@@ -347,15 +355,25 @@ function LineSvg({
         </g>
       )}
 
-      <path d={areaPath} fill={`url(#${gradientId})`} opacity={area ? 1 : 0.6} />
+      <motion.path
+        d={areaPath}
+        fill={`url(#${gradientId})`}
+        initial={animate ? { opacity: 0 } : false}
+        animate={{ opacity: area ? 1 : 0.6 }}
+        transition={{ duration: EVIDENCE_MOTION.line.duration, delay: animate ? d0 + 0.2 : 0 }}
+      />
 
-      <path
+      {/* The line draws left to right, round by round; then each round's dot lands. */}
+      <motion.path
         d={path}
         fill="none"
         stroke="var(--fw-color-accent-500)"
         strokeWidth={2}
         strokeLinejoin="round"
         strokeLinecap="round"
+        initial={animate ? { pathLength: 0 } : false}
+        animate={{ pathLength: 1 }}
+        transition={{ ...EVIDENCE_MOTION.line, delay: animate ? d0 : 0 }}
       />
 
       {/* Points */}
@@ -364,10 +382,25 @@ function LineSvg({
         const r = p.radius ?? (isLast && valueLabels === 'last' ? 4.5 : 3);
         const showValue = valueLabels === 'all';
         const cy = yAt(p.value);
+        // Each dot lands as the line reaches it.
+        const at = d0 + EVIDENCE_MOTION.line.duration * (last > 0 ? i / last : 1) * 0.9;
         return (
-          <g key={p.key}>
+          <motion.g
+            key={p.key}
+            initial={animate ? { opacity: 0 } : false}
+            animate={{ opacity: 1 }}
+            transition={{ ...EVIDENCE_MOTION.dot, delay: animate ? at : 0 }}
+          >
             {p.emphasis && (
-              <circle cx={xAt(i)} cy={cy} r={r + 5} fill="none" stroke="var(--fw-color-accent-500)" strokeWidth={1.5} opacity={0.5} />
+              <circle
+                cx={xAt(i)}
+                cy={cy}
+                r={r + 5}
+                fill="none"
+                stroke="var(--fw-color-accent-500)"
+                strokeWidth={1.5}
+                opacity={0.5}
+              />
             )}
             {isLast && valueLabels === 'last' && (
               <circle cx={xAt(i)} cy={cy} r={r + 4} fill="var(--fw-color-accent-500)" opacity={0.14} />
@@ -404,7 +437,7 @@ function LineSvg({
                 {p.label}
               </text>
             )}
-          </g>
+          </motion.g>
         );
       })}
     </svg>
@@ -444,6 +477,7 @@ export function BarRows({
   format: (value: number) => string;
   scale?: 'zero' | 'fit';
 }) {
+  const animate = useEvidenceMotion();
   const max = Math.max(...rows.map((r) => Math.abs(r.value)), 0) || 1;
   const fit = React.useMemo(() => {
     if (scale !== 'fit') return null;
@@ -460,7 +494,7 @@ export function BarRows({
   return (
     <div>
       <ol className="flex flex-col gap-3">
-        {rows.map((r) => (
+        {rows.map((r, idx) => (
           <li
             key={r.key}
             className="grid grid-cols-[minmax(0,8.5rem)_minmax(0,1fr)] items-center gap-x-3 sm:grid-cols-[minmax(0,11rem)_minmax(0,1fr)]"
@@ -486,7 +520,13 @@ export function BarRows({
             <div className="flex min-w-0 items-center gap-2.5">
               {fit ? (
                 <div className="relative h-2 min-w-0 flex-1 rounded-full bg-surface-sunken">
-                  <span
+                  <motion.span
+                    initial={animate ? { opacity: 0 } : false}
+                    animate={{ opacity: 1 }}
+                    transition={{
+                      ...EVIDENCE_MOTION.dot,
+                      delay: animate ? EVIDENCE_MOTION.figureDelay + idx * 0.05 : 0,
+                    }}
                     className={cn(
                       'absolute top-1/2 size-3 -translate-x-1/2 -translate-y-1/2 rounded-full ring-2 ring-[var(--fw-color-surface)]',
                       r.emphasis ? 'bg-accent-fill' : 'bg-[var(--fw-color-accent-300)]',
@@ -496,9 +536,15 @@ export function BarRows({
                 </div>
               ) : (
                 <div className="h-2 min-w-0 flex-1 rounded-full bg-surface-sunken">
-                  <div
+                  <motion.div
+                    initial={animate ? { scaleX: 0 } : false}
+                    animate={{ scaleX: 1 }}
+                    transition={{
+                      ...EVIDENCE_MOTION.bar,
+                      delay: animate ? EVIDENCE_MOTION.figureDelay + idx * 0.05 : 0,
+                    }}
                     className={cn(
-                      'h-full rounded-full',
+                      'h-full origin-left rounded-full',
                       r.emphasis ? 'bg-accent-fill' : 'bg-[var(--fw-color-accent-300)]',
                     )}
                     style={{ width: `${position(r.value)}%` }}
@@ -548,6 +594,7 @@ export function DivergingRows({
   rows: Array<{ key: string; label: string; value: number }>;
   format: (value: number) => string;
 }) {
+  const animate = useEvidenceMotion();
   const max = Math.max(...rows.map((r) => Math.abs(r.value)), 0.1);
   return (
     <div>
@@ -558,7 +605,7 @@ export function DivergingRows({
       <ol className="relative flex flex-col gap-3.5">
         {/* The zero line, the baseline every bar is measured from. */}
         <span aria-hidden className="pointer-events-none absolute inset-y-0 left-1/2 w-px bg-border-strong" />
-        {rows.map((r) => {
+        {rows.map((r, idx) => {
           // 34% of the width at most, so the printed value always fits beyond
           // the longest bar.
           const pct = (Math.abs(r.value) / max) * 34;
@@ -567,27 +614,40 @@ export function DivergingRows({
             <li key={r.key} className="relative">
               <p className="mb-1 font-fw-sans text-body-sm text-text-primary">{r.label}</p>
               <div className="relative h-5">
-                <div
-                  className="absolute top-0 h-full rounded-fw-sm"
+                <motion.div
+                  initial={animate ? { scaleX: 0 } : false}
+                  animate={{ scaleX: 1 }}
+                  transition={{
+                    ...EVIDENCE_MOTION.bar,
+                    delay: animate ? EVIDENCE_MOTION.figureDelay + idx * 0.06 : 0,
+                  }}
+                  className={cn(
+                    'absolute top-0 h-full rounded-fw-sm',
+                    gained ? 'origin-left' : 'origin-right',
+                  )}
                   style={{
                     background: gained ? 'var(--fw-viz-div-pos)' : 'var(--fw-viz-div-neg)',
                     width: `${Math.max(pct, 0.75)}%`,
                     ...(gained ? { left: '50%' } : { right: '50%' }),
                   }}
                 />
-                <span
+                <motion.span
+                  initial={animate ? { opacity: 0 } : false}
+                  animate={{ opacity: 1 }}
+                  transition={{
+                    ...EVIDENCE_MOTION.dot,
+                    delay: animate ? EVIDENCE_MOTION.figureDelay + 0.3 + idx * 0.06 : 0,
+                  }}
                   className={cn(
                     'absolute top-0 flex h-full items-center font-fw-sans text-caption font-semibold tabular-nums',
                     gained ? 'text-fw-success-ink' : 'text-fw-warning-ink',
                   )}
                   style={
-                    gained
-                      ? { left: `calc(50% + ${pct}% + 6px)` }
-                      : { right: `calc(50% + ${pct}% + 6px)` }
+                    gained ? { left: `calc(50% + ${pct}% + 6px)` } : { right: `calc(50% + ${pct}% + 6px)` }
                   }
                 >
                   {format(r.value)}
-                </span>
+                </motion.span>
               </div>
             </li>
           );

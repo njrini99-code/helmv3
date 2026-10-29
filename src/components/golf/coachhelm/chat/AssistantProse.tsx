@@ -49,15 +49,18 @@ export function AssistantProse({
   const blocks = React.useMemo(() => parseBlocks(text), [text]);
 
   return (
-    <div className={cn('flex flex-col gap-3', className)}>
+    // 16px body at 1.65, the reading size of the best chat answers (research,
+    // docs/architecture/coachhelm-visual-playbook.md): 15px regular on the
+    // tinted canvas read as faint next to the charts.
+    <div className={cn('flex flex-col gap-3.5', className)}>
       {blocks.map((block, i) => {
         if (block.kind === 'list') {
           return (
             <ul key={i} className="flex flex-col gap-1.5 pl-1">
               {block.items.map((item, j) => (
                 <li key={j} className="flex gap-2.5">
-                  <span aria-hidden className="mt-[0.6em] h-1 w-1 shrink-0 rounded-full bg-text-tertiary" />
-                  <span className="font-fw-sans text-body text-text-primary [text-wrap:pretty]">
+                  <span aria-hidden className="mt-[0.7em] size-1.5 shrink-0 rounded-full bg-text-secondary" />
+                  <span className="font-fw-sans text-callout leading-[1.65] text-text-primary [text-wrap:pretty]">
                     <Inline text={item} playersByName={playersByName} />
                   </span>
                 </li>
@@ -73,7 +76,7 @@ export function AssistantProse({
             key={i}
             className={cn(
               'font-fw-sans text-text-primary [text-wrap:pretty]',
-              isTakeaway ? 'text-body-lg leading-[1.55]' : 'text-body leading-[1.65]',
+              isTakeaway ? 'text-body-lg font-medium leading-[1.55]' : 'text-callout leading-[1.65]',
             )}
           >
             <Inline text={block.text} playersByName={playersByName} />
