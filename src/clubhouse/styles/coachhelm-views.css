@@ -274,3 +274,10 @@
   outline: 2px solid var(--ch-border-focus);
   outline-offset: 2px;
 }
+
+/* Loading, desktop: a player's brief is two lines of the head (Skeletons.tsx), at the loaded lines' height. */
+.ch-hv-sk-brief {
+  display: flex;
+  flex-direction: column;
+  max-width: 56ch;
+}

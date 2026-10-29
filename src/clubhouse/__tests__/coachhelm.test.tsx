@@ -13,9 +13,11 @@ const hapticSpy = vi.hoisted(() => vi.fn());
 vi.mock('../lib/haptics', () => ({ haptic: hapticSpy }));
 vi.mock('../lib/track', () => ({ chReport: vi.fn(), chTrail: vi.fn(), chTagSession: vi.fn() }));
 const router = vi.hoisted(() => ({ push: vi.fn(), refresh: vi.fn(), replace: vi.fn() }));
+const search = vi.hoisted(() => ({ current: new URLSearchParams() as URLSearchParams | null }));
 vi.mock('next/navigation', () => ({
   useRouter: () => router,
   usePathname: () => '/golf/dashboard/coachhelm',
+  useSearchParams: () => search.current,
   redirect: (to: string) => {
     throw new Error(`redirect:${to}`);
   },
@@ -50,7 +52,7 @@ import { areaTypeFor, formatComparison, splitContent, toChInsight, withoutColleg
 import { partitionInsights, playersLine, pulseRows, sortCoachPlayers, type ChCoachHelmData, type ChPlayerHelm, type ChTourBaseline } from '../data/coachhelm-shape';
 import { ClubhouseCoachHelmRoute } from '../routes/coachhelm';
 import { CoachBoard } from '../screens/coachhelm/CoachBoard';
-import { CoachHelmRouteSkeleton, CoachHelmSkeleton } from '../screens/coachhelm/CoachHelmSkeleton';
+import { CoachHelmRouteSkeleton, CoachHelmSkeleton, routeSkeletonFor } from '../screens/coachhelm/CoachHelmSkeleton';
 import { PlayerBoard } from '../screens/coachhelm/PlayerBoard';
 import { DiveSkeleton } from '../screens/coachhelm/views/Skeletons';
 import { LIVE_COACHHELM_WRITES, LIVE_PLAYER_WRITES, type ChCoachHelmWrites, type ChPlayerWrites } from '../screens/coachhelm/writes';
@@ -1306,7 +1308,9 @@ describe('CoachHelm route skeleton', () => {
     const main = screen.getByRole('main', { name: 'Loading CoachHelm' });
     expect(main.getAttribute('data-ch-code')).toBe('CH-13402');
     expect(main.querySelector('.ch-hl-sk__pulse')).toBeNull();
-    expect(main.querySelector('.ch-hl-sk--coach .ch-hl-sk__card')).not.toBeNull();
+    // Desktop: the focus's claim is the green card it lands as, beside the players' rows (mocked desktop here).
+    expect(main.querySelector('.ch-hl-sk--coach .ch-hl-sk__claim.ch-hl-focus__head')).not.toBeNull();
+    expect(main.querySelectorAll('.ch-hl-sk--coach .ch-hl-sk__p').length).toBeGreaterThanOrEqual(4);
   });
 
   it('130204 the route’s skeleton takes the signed-in role’s shape, and the player’s until it is known', () => {
@@ -1320,6 +1324,50 @@ describe('CoachHelm route skeleton', () => {
     unmount();
     render(<CoachHelmRouteSkeleton />);
     expect(code('CH-13401')).not.toBeNull();
+  });
+
+  it('the route’s skeleton is the view the address names, as the route decides it, so a hard load draws one shape, not the board’s and then the view’s', () => {
+    const q = (s: string) => new URLSearchParams(s);
+    // The coach's: Ask; a player's Deep dive or Standing only with the player; the board for the rest (the flagged views too).
+    expect(routeSkeletonFor('coach', q('view=ask'))).toBe('ask');
+    expect(routeSkeletonFor('coach', q('view=deep-dive&player=p1'))).toBe('coach-deep-dive');
+    expect(routeSkeletonFor('coach', q('view=standing&player=p1'))).toBe('coach-standing');
+    expect(routeSkeletonFor('coach', q('view=profile&player=p1'))).toBe('coach-standing');
+    expect(routeSkeletonFor('coach', q('view=deep-dive'))).toBe('coach');
+    for (const view of ['track-record', 'monday-brief', 'brief', 'nonsense', '']) expect(routeSkeletonFor('coach', q(`view=${view}`))).toBe('coach');
+    expect(routeSkeletonFor('coach', null)).toBe('coach');
+    // The player's own: Standing (and its old address) and the Deep dive; a player's ?view=ask is their board, as the route draws it.
+    expect(routeSkeletonFor('player', q('view=standing'))).toBe('standing');
+    expect(routeSkeletonFor('player', q('view=profile'))).toBe('standing');
+    expect(routeSkeletonFor('player', q('view=deep-dive&player=x'))).toBe('deep-dive');
+    expect(routeSkeletonFor('player', q('view=ask'))).toBe('player');
+    // Before the shell knows who is signed in: the player's shapes.
+    expect(routeSkeletonFor(undefined, q('view=ask'))).toBe('player');
+  });
+
+  it('130204 a coach’s hard load of Ask draws Ask’s skeleton from the route’s loading file, and of a player’s Deep dive the Deep dive’s', () => {
+    const coach = { role: 'coach' as const, userId: 'u', name: 'X' };
+    try {
+      search.current = new URLSearchParams('view=ask');
+      const { unmount } = render(
+        <GolfUserProvider userData={coach}>
+          <CoachHelmRouteSkeleton />
+        </GolfUserProvider>,
+      );
+      expect(code('CH-13420')).not.toBeNull();
+      expect(code('CH-13402')).toBeNull();
+      unmount();
+      search.current = new URLSearchParams('view=deep-dive&player=p1');
+      render(
+        <GolfUserProvider userData={coach}>
+          <CoachHelmRouteSkeleton />
+        </GolfUserProvider>,
+      );
+      expect(code('CH-13480')).not.toBeNull();
+      expect(screen.getByRole('main', { name: 'Loading this player’s deep dive' })).toBeTruthy();
+    } finally {
+      search.current = new URLSearchParams();
+    }
   });
 });
 

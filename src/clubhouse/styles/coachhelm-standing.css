@@ -859,3 +859,57 @@ main[data-canopy] .ch-hs-r:not(:first-child) .ch-hs-r__f dt {
   clip-path: inset(50%);
   white-space: nowrap;
 }
+
+/* Loading, desktop (WebKit 1280 and 1440, 2026-10-29). Where you stand loads on the green board it lands as (237px: 32px in, the
+   window's line over the board's own rule, the two-line headline and its note), with the bars in the board's light ink
+   (.ch-sk-on-green), never a flat block that turns green when it lands. Where strokes go loads as its ladder rows: the stat and its
+   figure, the bar under them and the "Because" line, 105px each. */
+@media (min-width: 821px) {
+  main[data-canopy] .ch-hs-sk__hero.is-board {
+    min-height: 237px;
+    padding: 32px;
+    box-sizing: border-box;
+    border-radius: var(--ch-radius-xl);
+    background: var(--ch-board-bg);
+    box-shadow: var(--ch-board-shadow);
+  }
+  main[data-canopy] .ch-hs-sk__hero.is-board .ch-hs-sk__col {
+    gap: 0;
+  }
+  .ch-hs-sk__k {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    height: 28px;
+    margin-bottom: 16px;
+    padding-bottom: 12px;
+    box-sizing: border-box;
+    box-shadow: inset 0 calc(-1 * var(--ch-hairline-w)) 0 var(--ch-stage-rule);
+  }
+  .ch-hs-sk__sub {
+    display: flex;
+    flex-direction: column;
+    margin-top: 16px;
+  }
+  main[data-canopy] .ch-hs-sk__r.is-ld {
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 0;
+    height: 105px;
+    padding: 17px 0 12px;
+    box-sizing: border-box;
+  }
+  .ch-hs-sk__r.is-ld > .ch-skel {
+    margin: 8px 0;
+  }
+  .ch-hs-sk__ldh {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    height: 20px;
+  }
+  .ch-hs-sk__ldh.is-why {
+    height: 36px;
+  }
+}
