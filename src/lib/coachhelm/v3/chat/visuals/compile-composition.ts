@@ -25,7 +25,8 @@ export type CompositionResult =
 
 /** Below this a "trend" is a change between two rounds, not a trend. Same rule as the chat's renderers. */
 const MIN_TREND_POINTS = 3;
-const MAX_COMPARE_PLAYERS = 4;
+/** A whole college roster: past this a comparison stops being readable on a phone. */
+const MAX_COMPARE_PLAYERS = 12;
 
 const hasDigit = (s: string) => /\p{N}/u.test(s);
 
@@ -159,7 +160,7 @@ function resolveBlock(block: CompositionBlockSpec, evidence: ReadonlyMap<string,
       const ms = [...byKey.values()];
       const players = new Set(ms.map((m) => m.entity.id));
       if (players.size < 2) return { ok: false, why: 'a comparison needs at least two players' };
-      if (players.size > MAX_COMPARE_PLAYERS) return { ok: false, why: `compare at most ${MAX_COMPARE_PLAYERS} players; use bars to rank more` };
+      if (players.size > MAX_COMPARE_PLAYERS) return { ok: false, why: `compare at most ${MAX_COMPARE_PLAYERS} players; use bars to rank the rest` };
       return { ok: true, block: { type: 'compare', measurements: ms }, drawn: { m: ms, s: [] } };
     }
   }

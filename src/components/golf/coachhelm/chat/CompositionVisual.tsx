@@ -73,7 +73,7 @@ function HeadlineBlock({ block }: { block: Extract<ResolvedBlock, { type: 'headl
   return (
     <section
       data-slot="evidence-card"
-      aria-label={`${block.label ?? m.metric_label} for ${m.entity.label}: ${formatValue(m.value, m.unit)}`}
+      aria-label={`${block.label ?? m.metric_label} for ${m.entity.label}: ${formatValue(m.value, m.unit, m)}`}
       className="flex items-center justify-between gap-4 rounded-card border border-border-subtle bg-surface px-4 py-4 sm:px-5"
     >
       <div className="min-w-0">
@@ -84,7 +84,7 @@ function HeadlineBlock({ block }: { block: Extract<ResolvedBlock, { type: 'headl
         {caption && <p className="mt-0.5 font-fw-sans text-caption text-text-secondary">{caption}</p>}
       </div>
       <p className="shrink-0 font-fw-sans text-display tabular-nums text-text-primary">
-        {formatValue(m.value, m.unit)}
+        {formatValue(m.value, m.unit, m)}
       </p>
     </section>
   );

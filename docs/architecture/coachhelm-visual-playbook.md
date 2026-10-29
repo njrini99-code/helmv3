@@ -26,7 +26,7 @@ takes `kind: "compose"` with a title, an optional one-line lede, a layout
 | `trend` | one metric over rounds | at least 3 rounds; `benchmark` only if the read carried one, else the average |
 | `bars` | distance bands, or players on one metric | bands need 2+; players need 2+; `best_first` only when the metric has a direction; `highlight` dropped if not in the data |
 | `split` | signed figures either side of zero for one player (strokes gained) | one player, one window, no conflicting reads; `sg_total` left out unless named |
-| `compare` | two to four players across the same metrics | 2–4 players |
+| `compare` | two to twelve players across the same metrics (the team table) | 2–12 players; players become rows when they outnumber metrics |
 | `note` | one sentence: `measured`, `association` (pattern) or `hypothesis` | no digit |
 
 `compile-composition.ts` copies every figure from this turn's reads, drops a
@@ -44,6 +44,7 @@ How the model chooses (the prompt's playbook, kept in step with this table):
 | Where is X losing strokes | headline (largest loss) + split + note |
 | Compare X and Y | compare + note on the difference that matters |
 | Who is best at…, team rankings | bars, `best_first` |
+| Build a dashboard, how is the team doing | compare (team table) + bars `best_first` on the key metric + note; never one card per metric |
 | Putting or proximity by distance | bars on the bands, highlight the band asked about |
 | A single number, a yes/no | no visual; the plain card is enough |
 
@@ -58,6 +59,8 @@ Every visual is one card: entity (caption, tertiary) → title (body, semibold)
 → the answer as a number (h1 tabular, with a verdict chip coloured by the
 metric's own direction) → the figure → one provenance line at the foot
 (window · sample in words · computed N ago). Never `n=`; say "15 rounds".
+A to-par score is signed ("+3.1", "E", "−0.4"). The model never writes a
+markdown table; a renderer still draws one properly if an old answer has it.
 "View as table" on every figure. Figures draw at real pixels (measure the box,
 no viewBox text scaling); a dot per round on straight segments, never a spline.
 

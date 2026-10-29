@@ -55,8 +55,8 @@ export const CompositionBlockSpec = z.discriminatedUnion('type', [
   }),
   /** Signed figures either side of zero — strokes gained by part of the game. */
   z.object({ type: z.literal('split'), refs: z.array(Ref).min(1).max(4), metricIds: z.array(MetricId).max(6).optional() }),
-  /** Two to four players across the same metrics. */
-  z.object({ type: z.literal('compare'), refs: z.array(Ref).min(1).max(4), metricIds: z.array(MetricId).max(8).optional() }),
+  /** Two to twelve players across the same metrics — a team table. */
+  z.object({ type: z.literal('compare'), refs: z.array(Ref).min(1).max(6), metricIds: z.array(MetricId).max(8).optional() }),
   /** A sentence about what the figures show, with no figure in it. */
   z.object({ type: z.literal('note'), kind: NoteKind, text: Words(160) }),
 ]);

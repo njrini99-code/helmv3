@@ -39,8 +39,23 @@ const MIN_POINTS_FOR_CHART = 3;
 // Formatting
 // ---------------------------------------------------------------------------
 
-export function formatValue(value: number | null, unit: Measurement['unit']): string {
+/** A score relative to par: "+3.1", "E", "−0.4" — golf's own notation. */
+function isToPar(metric?: { metric_id: string; metric_label: string }): boolean {
+  return Boolean(metric && (/(to|vs)_par/.test(metric.metric_id) || /to par/i.test(metric.metric_label)));
+}
+
+export function formatValue(
+  value: number | null,
+  unit: Measurement['unit'],
+  /** The metric, when known: a to-par score is signed, with "E" for even. */
+  metric?: { metric_id: string; metric_label: string },
+): string {
   if (value === null || !Number.isFinite(value)) return '—';
+  if (isToPar(metric)) {
+    if (Math.abs(value) < 0.05) return 'E';
+    const body = formatUnsigned(Math.abs(value), unit);
+    return value > 0 ? `+${body}` : `\u2212${body}`;
+  }
   // A typographic minus (U+2212), the width of the plus sign, so signed
   // columns align and "−0.42" does not read as a hyphenated word.
   return formatUnsigned(value, unit).replace(/^-/, '\u2212');
@@ -210,7 +225,7 @@ export function MetricPanel({
             <p className="font-fw-sans text-caption text-text-secondary">{m.metric_label}</p>
             {!entityLabel && <p className="font-fw-sans text-caption text-text-tertiary">{m.entity.label}</p>}
             <p className="mt-1.5 font-fw-sans text-h2 tabular-nums text-text-primary">
-              {formatValue(m.value, m.unit)}
+              {formatValue(m.value, m.unit, m)}
             </p>
             {/*
               The metric's own history, when the same envelope carried it: a
@@ -350,7 +365,9 @@ export function TrendChart({
 
   const values = series.points.map((p) => p.value);
   const mean = values.reduce((a, b) => a + b, 0) / values.length;
-  const fmt = (v: number) => formatValue(v, series.unit);
+  const fmt = (v: number) => formatValue(v, series.unit, series);
+  // A change is a change, not a score: no "E", one sign.
+  const fmtDelta = (v: number) => formatValue(v, series.unit);
   const goodDirection = goodDirectionOf(series.direction);
   const trend = computeSeriesTrend(values, { goodDirection });
   const last = series.points[series.points.length - 1]!;
@@ -386,7 +403,7 @@ export function TrendChart({
               <TrendChip
                 direction={trend.direction}
                 goodDirection={goodDirection}
-                label={`${trend.value > 0 ? '+' : ''}${fmt(trend.value)}`}
+                label={`${trend.value > 0 ? '+' : ''}${fmtDelta(trend.value)}`}
               />
             ) : undefined
           }
@@ -457,7 +474,7 @@ export function BucketChart({
   if (points.length === 0) return null;
   if (points.length < 2) return <SeriesAsTable series={series} />;
 
-  const fmt = (v: number) => formatValue(v, series.unit);
+  const fmt = (v: number) => formatValue(v, series.unit, series);
   const provenance = provenanceText(
     formatWindow(series.window_start, series.window_end),
     points.reduce((a, d) => a + d.sample, 0),
@@ -565,7 +582,7 @@ function SeriesAsTable({ series }: { series: MeasurementSeries }) {
           <div key={i} className="flex items-baseline justify-between gap-4 py-2 first:pt-0 last:pb-0">
             <dt className="font-fw-sans text-body-sm text-text-secondary">{p.bucket ?? formatDay(p.at)}</dt>
             <dd className="font-fw-sans text-body-sm font-semibold tabular-nums text-text-primary">
-              {formatValue(p.value, series.unit)}
+              {formatValue(p.value, series.unit, series)}
             </dd>
           </div>
         ))}
@@ -616,6 +633,22 @@ export function ComparisonTable({ measurements }: { measurements: Measurement[] 
   };
 
   const first = measurements[0]!;
+
+  // A team: players become rows and metrics columns, so five or twelve players
+  // read down the page instead of running off it sideways.
+  if (players.length > 3) {
+    return (
+      <TeamTable
+        players={players}
+        metrics={metrics}
+        labelOf={labelOf}
+        find={find}
+        bestOf={bestOf}
+        headerSample={headerSample}
+        first={first}
+      />
+    );
+  }
 
   return (
     <section
@@ -681,7 +714,7 @@ export function ComparisonTable({ measurements }: { measurements: Measurement[] 
                           <TrendChip
                             delta={m.value}
                             goodDirection={goodDirectionOf(m.direction)}
-                            label={formatValue(m.value, m.unit)}
+                            label={formatValue(m.value, m.unit, m)}
                             numeric
                             size="sm"
                           />
@@ -693,7 +726,7 @@ export function ComparisonTable({ measurements }: { measurements: Measurement[] 
                             )}
                           >
                             {isBest && <span aria-hidden className="size-1.5 rounded-full bg-accent-fill" />}
-                            {m ? formatValue(m.value, m.unit) : '—'}
+                            {m ? formatValue(m.value, m.unit, m) : '—'}
                             {isBest && <span className="sr-only"> (better)</span>}
                           </span>
                         )}
@@ -708,6 +741,111 @@ export function ComparisonTable({ measurements }: { measurements: Measurement[] 
                 </tr>
               );
             })}
+          </tbody>
+        </table>
+      </div>
+      <footer className="border-t border-border-subtle px-4 py-2.5 sm:px-5">
+        <p className="font-fw-sans text-caption text-text-tertiary">
+          {provenanceText(formatWindow(first.window_start, first.window_end), 0, '', first.as_of)}
+        </p>
+      </footer>
+    </section>
+  );
+}
+
+/** One figure in a comparison: strokes gained as a signed chip, everything else plain, the best marked. */
+function ComparisonCell({ m, isBest }: { m: Measurement | undefined; isBest: boolean }) {
+  if (m && m.unit === 'strokes' && m.value !== null) {
+    return (
+      <TrendChip
+        delta={m.value}
+        goodDirection={goodDirectionOf(m.direction)}
+        label={formatValue(m.value, m.unit, m)}
+        numeric
+        size="sm"
+      />
+    );
+  }
+  return (
+    <span
+      className={cn(
+        'inline-flex items-center gap-1.5 font-fw-sans text-body-sm tabular-nums',
+        isBest ? 'font-semibold text-accent-ink' : 'font-medium text-text-primary',
+      )}
+    >
+      {isBest && <span aria-hidden className="size-1.5 rounded-full bg-accent-fill" />}
+      {m ? formatValue(m.value, m.unit, m) : '—'}
+      {isBest && <span className="sr-only"> (best)</span>}
+    </span>
+  );
+}
+
+/** The team table: a row per player, a column per metric, the best in each column marked. */
+function TeamTable({
+  players,
+  metrics,
+  labelOf,
+  find,
+  bestOf,
+  headerSample,
+  first,
+}: {
+  players: [string, string][];
+  metrics: string[];
+  labelOf: (id: string) => string;
+  find: (playerId: string, metric: string) => Measurement | undefined;
+  bestOf: (metric: string) => string | null;
+  headerSample: Map<string, string | null>;
+  first: Measurement;
+}) {
+  const best = new Map(metrics.map((metric) => [metric, bestOf(metric)]));
+  const short = (label: string) => label.replace(/^strokes gained[:\s-]*/i, 'SG ').trim();
+  return (
+    <section data-slot="evidence-card" className="overflow-hidden rounded-card border border-border-subtle bg-surface">
+      <div className="overflow-x-auto">
+        <table className="w-full border-collapse">
+          <caption className="sr-only">
+            {players.length} players across {metrics.length} metrics; the best value in each column is marked.
+          </caption>
+          <thead>
+            <tr className="border-b border-border-subtle">
+              <th
+                scope="col"
+                className="sticky left-0 bg-surface px-4 pb-3 pt-4 text-left align-bottom font-fw-sans text-caption text-text-tertiary sm:px-5"
+              >
+                Player
+              </th>
+              {metrics.map((metric) => (
+                <th
+                  key={metric}
+                  scope="col"
+                  className="min-w-[5.5rem] px-3 pb-3 pt-4 text-right align-bottom font-fw-sans text-caption font-semibold text-text-secondary last:pr-4 sm:last:pr-5"
+                >
+                  {short(labelOf(metric))}
+                </th>
+              ))}
+            </tr>
+          </thead>
+          <tbody>
+            {players.map(([id, label]) => (
+              <tr key={id} className="border-b border-border-subtle last:border-0">
+                <th scope="row" className="sticky left-0 bg-surface px-4 py-3 text-left sm:px-5">
+                  <span className="block whitespace-nowrap font-fw-sans text-body-sm font-semibold text-text-primary">
+                    {label}
+                  </span>
+                  {headerSample.get(id) && (
+                    <span className="block font-fw-sans text-caption font-normal text-text-tertiary">
+                      {headerSample.get(id)}
+                    </span>
+                  )}
+                </th>
+                {metrics.map((metric) => (
+                  <td key={metric} className="whitespace-nowrap px-3 py-3 text-right last:pr-4 sm:last:pr-5">
+                    <ComparisonCell m={find(id, metric)} isBest={best.get(metric) === id} />
+                  </td>
+                ))}
+              </tr>
+            ))}
           </tbody>
         </table>
       </div>
@@ -745,7 +883,7 @@ export function RankingList({
   const ranked = sorted
     ? [...withValue].sort((a, b) => (lower ? a.value! - b.value! : b.value! - a.value!))
     : withValue;
-  const fmt = (v: number) => formatValue(v, first.unit);
+  const fmt = (v: number) => formatValue(v, first.unit, first);
   const leader = ranked[0]!;
 
   return (
@@ -936,6 +1074,6 @@ export function strokesGainedCategories(measurements: Measurement[]): {
       first.sample_unit,
       first.as_of,
     ),
-    takeaway: `Largest loss: ${worst.metric_label} at ${formatValue(worst.value, worst.unit)}.`,
+    takeaway: `Largest loss: ${worst.metric_label} at ${formatValue(worst.value, worst.unit, worst)}.`,
   };
 }
