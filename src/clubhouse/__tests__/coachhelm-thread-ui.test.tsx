@@ -84,12 +84,23 @@ describe('CH-13850 what CoachHelm is doing', () => {
     const items = within(list).getAllByRole('listitem');
     expect(items.map((i) => i.textContent)).toEqual(['Reading your roster', 'Reading the last 38 recorded rounds', 'Comparing putting by distance']);
     expect(items.map((i) => i.getAttribute('aria-current'))).toEqual([null, null, 'step']);
-    // Visual pass 2026-10-28 (rubric P013): the shimmering current step is the status; no ticking "Working 12s" line, no ring.
+    // No ticking "Working 12s" line; the avatar's wheel turns while it works (2026-10-29) and the current step is marked.
     expect(screen.queryByText(/^Working/)).toBeNull();
-    expect(document.querySelector('.ch-th-mark.is-working')).toBeNull();
-    expect(items[2]?.querySelector('.ch-th-shine')?.textContent).toBe('Comparing putting by distance');
+    expect(document.querySelector('.ch-th-mark.is-working')).not.toBeNull();
+    expect(items[2]?.querySelector('.ch-th-live')?.textContent).toBe('Comparing putting by distance');
     await userEvent.click(screen.getByRole('button', { name: 'Stop' }));
     expect(p.onStop).toHaveBeenCalledTimes(1);
+  });
+  it('the answer that takes over from the placeholder does not fade in a second time', () => {
+    const { update } = show({ messages: [], busy: false });
+    update({ messages: ASK_MSGS_WORKING.slice(0, 1), busy: true });
+    const placeholder = document.querySelector('.ch-th-ans[aria-busy="true"]');
+    expect(placeholder?.classList.contains('is-new')).toBe(true);
+    expect(placeholder?.querySelector('.ch-th-mark.is-working')).not.toBeNull();
+    update({ messages: ASK_MSGS_WORKING, busy: true });
+    const answer = screen.getByRole('article', { name: 'CoachHelm answer' });
+    expect(answer.classList.contains('is-new')).toBe(false);
+    expect(document.querySelector('.ch-th-user')?.classList.contains('is-new')).toBe(true);
   });
   it('the phone has no Stop here: the composer owns it', () => {
     show({ messages: ASK_MSGS_WORKING, busy: true, phone: true });

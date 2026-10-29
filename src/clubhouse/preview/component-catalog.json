@@ -2069,6 +2069,18 @@
       "fixture": "Contextual module"
     },
     {
+      "file": "src/clubhouse/screens/coachhelm/chat/CoachMark.tsx",
+      "group": "screens",
+      "exports": [
+        "CoachMark"
+      ],
+      "styles": [
+        "src/clubhouse/styles/coachhelm-thread.css"
+      ],
+      "examples": [],
+      "fixture": "Contextual module"
+    },
+    {
       "file": "src/clubhouse/screens/coachhelm/chat/Composer.tsx",
       "group": "screens",
       "exports": [
@@ -11178,14 +11190,13 @@
         "ch-th-legs",
         "ch-th-link",
         "ch-th-list",
+        "ch-th-live",
         "ch-th-mark",
         "ch-th-mdtable",
         "ch-th-mention",
         "ch-th-mk",
-        "ch-th-mk-ball",
-        "ch-th-mk-dimples",
-        "ch-th-mk-face",
         "ch-th-mk-helm",
+        "ch-th-mk-hub",
         "ch-th-note",
         "ch-th-p",
         "ch-th-p--lead",
@@ -11215,7 +11226,6 @@
         "ch-th-receipt__head",
         "ch-th-receipt__meta",
         "ch-th-receipt__title",
-        "ch-th-shine",
         "ch-th-sr",
         "ch-th-steps",
         "ch-th-steps__ok",

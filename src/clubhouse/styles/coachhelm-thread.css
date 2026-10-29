@@ -31,14 +31,21 @@
   height: 1px;
 }
 
-/* A new turn arrives with the base fade; the ones a thread opened with do not. Streamed paragraphs fade in (coachhelm-ask.css). */
+/* A new turn rises in on the reveal beat (opacity and transform only, so nothing below it moves); the ones a thread opened
+   with do not. Streamed paragraphs only fade, so the text being read never moves (2026-10-29). */
 @keyframes ch-th-in {
   from {
     opacity: 0;
   }
 }
+@keyframes ch-th-rise {
+  from {
+    opacity: 0;
+    transform: translateY(var(--ch-reveal-rise));
+  }
+}
 .ch-th-turn.is-new {
-  animation: ch-th-in var(--ch-dur-base) var(--ch-ease) backwards;
+  animation: ch-th-rise var(--ch-dur-release) var(--ch-ease) backwards;
 }
 /* While an answer streams, AskProse marks its block `data-streaming`; each paragraph or list fades in as it mounts, on the
    base beat, opacity only, so it never moves the text being read. A finished or reloaded answer carries no mark and draws
@@ -78,32 +85,47 @@
   align-items: flex-start;
   gap: 12px;
 }
+/* CoachHelm's avatar (CoachMark.tsx): a mint wheel on a deep green disc, the sidebar brand's colours, the same in both
+   themes because the fill stays dark. */
 .ch-th-mark {
   flex: none;
-  width: 40px;
-  height: 40px;
+  width: 36px;
+  height: 36px;
   border-radius: 50%;
   display: grid;
   place-items: center;
-  background: var(--ch-sheet-bg);
-  box-shadow: 0 0 0 var(--ch-hairline-w) var(--ch-border-hairline), var(--ch-elevation-bubble);
+  background: var(--ch-green-fill-700);
+  box-shadow: var(--ch-elevation-bubble);
 }
 .ch-th-mk {
   display: block;
 }
 .ch-th-mk-helm {
-  stroke: var(--ch-green-800);
+  stroke: var(--ch-hero-mint);
 }
-.ch-th-mk-ball {
-  fill: var(--ch-green-800);
+.ch-th-mk-hub {
+  fill: var(--ch-green-fill-700);
 }
-.ch-th-mk-face {
-  fill: var(--ch-brand-ivory);
+/* Working: the wheel turns one spoke, then holds, on the shared loop beat; transform only. CoachMark lets the last turn
+   finish before it stops, so it always comes to rest on a spoke. */
+@keyframes ch-th-turn {
+  70%,
+  100% {
+    transform: rotate(45deg);
+  }
 }
-.ch-th-mk-dimples {
-  fill: var(--ch-green-500);
+.ch-th-mark.is-working .ch-th-mk {
+  animation: ch-th-turn var(--ch-dur-shimmer) var(--ch-ease-io) infinite;
 }
-/* Working: the wheel stays still; the shimmering current step is the status (visual pass 2026-10-28). */
+@media (prefers-reduced-motion: reduce) {
+  .ch-th-mark.is-working .ch-th-mk {
+    animation: none;
+  }
+}
+[data-ui='clubhouse'][data-motion='off'] .ch-th-mark.is-working .ch-th-mk,
+[data-motion='off'] [data-ui='clubhouse'] .ch-th-mark.is-working .ch-th-mk {
+  animation: none;
+}
 .ch-th-who {
   font: var(--ch-type-13-strong);
   color: var(--ch-text-secondary);
@@ -141,61 +163,56 @@
   letter-spacing: var(--ch-track-15);
   color: var(--ch-text-secondary);
 }
-/* The live words: a band of full ink travels across them on the shared shimmer (1.9 s). The text is always readable. */
-@keyframes ch-th-shine {
-  from {
-    background-position: 130% 0;
-  }
-  to {
-    background-position: -30% 0;
-  }
-}
-.ch-th-shine {
-  background: linear-gradient(100deg, var(--ch-text-tertiary) 30%, var(--ch-text-primary) 50%, var(--ch-text-tertiary) 70%) 130% 0 / 250% 100%;
-  -webkit-background-clip: text;
-  background-clip: text;
-  -webkit-text-fill-color: transparent;
-  animation: ch-th-shine var(--ch-dur-shimmer) linear infinite;
-}
-/* Reduced motion and Settings > Animations off: the band stops and the words hold still in the line's own ink (the
-   secondary), not frozen mid-gradient. Increase Contrast and forced colours: solid ink, never a gradient (2026-10-28). */
-@media (prefers-reduced-motion: reduce) {
-  .ch-th-shine {
-    animation: none;
-    background: none;
-    -webkit-text-fill-color: currentColor;
-  }
-}
-[data-ui='clubhouse'][data-motion='off'] .ch-th-shine,
-[data-motion='off'] [data-ui='clubhouse'] .ch-th-shine {
-  animation: none;
-  background: none;
-  -webkit-text-fill-color: currentColor;
+/* The live words (the current step, "Reading your program"): secondary ink, still, always readable. The work is shown by the turning
+   wheel and the current step's dot, on the compositor; the old shimmer repainted the text every frame (2026-10-29). */
+.ch-th-live {
+  color: var(--ch-text-secondary);
 }
 @media (prefers-contrast: more), (forced-colors: active) {
-  .ch-th-shine {
-    animation: none;
-    background: none;
+  .ch-th-live {
     color: var(--ch-text-primary);
-    -webkit-text-fill-color: currentColor;
   }
 }
+/* The current step's marker: a dot in the check's 14px box, so the labels line up; it breathes in scale and opacity. */
 .ch-th-dot {
   flex: none;
-  width: 8px;
-  height: 8px;
-  margin: 4px;
+  width: 14px;
+  height: 14px;
+  display: grid;
+  place-items: center;
+}
+.ch-th-dot::before {
+  content: '';
+  width: 7px;
+  height: 7px;
   border-radius: 50%;
   background: var(--ch-green-600);
-  animation: ch-th-dot var(--ch-dur-live) var(--ch-ease) infinite;
+  animation: ch-th-dot var(--ch-dur-shimmer) var(--ch-ease-io) infinite;
 }
 @keyframes ch-th-dot {
   50% {
-    opacity: 0.35;
+    opacity: 0.4;
+    transform: scale(0.6);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .ch-th-dot::before {
+    animation: none;
+  }
+}
+[data-ui='clubhouse'][data-motion='off'] .ch-th-dot::before,
+[data-motion='off'] [data-ui='clubhouse'] .ch-th-dot::before {
+  animation: none;
+}
+/* A new step slides in from just above its place (transform and opacity) and the list grows by one row. */
+@keyframes ch-th-step {
+  from {
+    opacity: 0;
+    transform: translateY(-4px);
   }
 }
 .ch-th-steps li.is-in {
-  animation: ch-th-in var(--ch-dur-quick) var(--ch-ease) backwards;
+  animation: ch-th-step var(--ch-dur-base) var(--ch-ease) backwards;
 }
 .ch-th-note {
   max-width: 68ch;
@@ -1452,14 +1469,6 @@ a.ch-th-reads__r:focus-visible {
 :where(html[data-fw-theme='dark']) .ch-th-act[data-status='cancelled'] .ch-th-act__icon,
 :where(html[data-fw-theme='dark']) .ch-th-act[data-status='abandoned'] .ch-th-act__icon {
   background: var(--ch-ivory-400);
-}
-/* The avatar's wheel and ball: the day's deep green all but vanished on the night sheet (about 1.4:1); the night's
-   light green holds well over 3:1 there (2026-10-28). Light is unchanged. */
-:where(html[data-fw-theme='dark']) .ch-th-mk-helm {
-  stroke: var(--ch-green-600);
-}
-:where(html[data-fw-theme='dark']) .ch-th-mk-ball {
-  fill: var(--ch-green-600);
 }
 /* A chosen visual row: at night its fill sits within a shade of the card (about 1.01:1), so the selected ink rings it,
    well over 3:1 (2026-10-28). The bold label stays the second cue; light is unchanged. */

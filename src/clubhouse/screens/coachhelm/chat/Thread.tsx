@@ -21,7 +21,7 @@ import { Icon } from '../../../ui/Icon';
 import { OFFLINE_LINE } from '../../../ui/Retry';
 import { useToast } from '../../../ui/Toast';
 import { Tooltip } from '../../../ui/Tooltip';
-import { HelmMark } from '../../../shell/BrandWord';
+import { CoachMark } from './CoachMark';
 import { AskActionCard, AskReceiptCard } from './ActionCard';
 import { AskEvidenceView } from './Evidence';
 import { CoachComposition } from './visual/CoachComposition';
@@ -47,18 +47,6 @@ export interface AskThreadProps {
   onNewChat: () => void;
   evidenceFocus: EvidenceFocus | null;
   onOpenEvidence: (focus: EvidenceFocus) => void;
-}
-
-/**
- * CoachHelm's avatar: the GolfHelm wheel and ball, always still. Visual pass 2026-10-28 (rubric P013 checklist): the work is
- * shown by one shimmering status label beside it, not by a ring breathing out of the wheel.
- */
-function Mark() {
-  return (
-    <span className="ch-th-mark" aria-hidden="true">
-      <HelmMark variant="ink" size={28} />
-    </span>
-  );
 }
 
 /** The nearest ancestor that scrolls, or null when the page itself does. */
@@ -164,9 +152,19 @@ export function AskThread({ messages, busy, error, offline, phone, players, onAp
     }
   }, [turns, toast]);
 
-  // ── A new turn fades in; the ones the thread opened with do not ──
+  // ── A new turn rises in; the ones the thread opened with do not ──
   const initial = useRef<Set<string> | null>(null);
   if (initial.current === null) initial.current = new Set(turns.map((t) => t.id));
+  // The answer that takes over from the "Reading your program" placeholder is already on screen: it must not fade in a
+  // second time (the avatar and name blinked out and back, 2026-10-29). Its id is kept so it stays still on re-renders.
+  const placeholderShown = useRef(false);
+  const continued = useRef(new Set<string>());
+  if (awaiting) placeholderShown.current = true;
+  for (const t of turns) {
+    if (t.role !== 'assistant' || initial.current.has(t.id) || continued.current.has(t.id)) continue;
+    if (placeholderShown.current) continued.current.add(t.id);
+    placeholderShown.current = false;
+  }
 
   const copy = async (text: string) => {
     try {
@@ -181,7 +179,7 @@ export function AskThread({ messages, busy, error, offline, phone, players, onAp
     <div ref={rootRef} className={'ch-th' + (phone ? ' ch-th--phone' : '')} data-ch-code="CH-13850">
       <div className="ch-th-col" role="log" aria-label="Conversation">
         {turns.map((turn) => {
-          const fresh = !initial.current?.has(turn.id);
+          const fresh = !initial.current?.has(turn.id) && !continued.current.has(turn.id);
           if (turn.role === 'user') {
             return (
               <div key={turn.id} className={'ch-th-turn ch-th-user' + (fresh ? ' is-new' : '')}>
@@ -194,7 +192,7 @@ export function AskThread({ messages, busy, error, offline, phone, players, onAp
           const showFollowUps = turn.id === lastAssistantId && !busy && !pending && !error && turn.followUps.length > 0;
           return (
             <article key={turn.id} className={'ch-th-turn ch-th-ans' + (fresh ? ' is-new' : '')} aria-label="CoachHelm answer" aria-busy={turn.active || undefined}>
-              <Mark />
+              <CoachMark working={turn.active} />
               <div className="ch-th-ans__body">
                 <span className="ch-th-who">CoachHelm</span>
                 <Work turn={turn} onStop={phone ? undefined : onStop} />
@@ -263,11 +261,11 @@ export function AskThread({ messages, busy, error, offline, phone, players, onAp
         })}
         {awaiting && (
           <div className="ch-th-turn ch-th-ans is-new" aria-busy="true">
-            <Mark />
+            <CoachMark working />
             <div className="ch-th-ans__body">
               <span className="ch-th-who">CoachHelm</span>
               <p className="ch-th-think" aria-live="polite">
-                <span className="ch-th-shine">Reading your program</span>
+                <span className="ch-th-live">Reading your program</span>
               </p>
             </div>
           </div>
@@ -287,7 +285,8 @@ function Work({ turn, onStop }: { turn: AskAssistantTurn; onStop?: () => void })
   if (turn.steps.length === 0) {
     return turn.active && turn.blocks.length === 0 ? (
       <p className="ch-th-think" aria-live="polite">
-        <span className="ch-th-shine">Thinking</span>
+        {/* The placeholder's words, so the hand-over from it to the answer changes nothing on screen (2026-10-29). */}
+        <span className="ch-th-live">Reading your program</span>
       </p>
     ) : null;
   }
@@ -298,7 +297,7 @@ function Work({ turn, onStop }: { turn: AskAssistantTurn; onStop?: () => void })
         return (
           <li key={s.id} className={live ? 'is-in' : undefined} aria-current={current ? 'step' : undefined}>
             {current ? <span className="ch-th-dot" aria-hidden="true" /> : <Icon icon={Check} size={14} className="ch-th-steps__ok" />}
-            {current ? <span className="ch-th-shine">{s.label}</span> : s.label}
+            {current ? <span className="ch-th-live">{s.label}</span> : s.label}
           </li>
         );
       })}
