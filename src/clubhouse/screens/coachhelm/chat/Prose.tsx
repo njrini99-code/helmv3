@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { Fragment, useMemo } from 'react';
 import { parseProse, splitAtMentions, splitInline } from '../../../data/coachhelm-chat-thread';
 import { rebuiltHref } from '../../../shell/nav';
+import { ScrollRegion } from '../../../ui/ScrollRegion';
 
 /** A roster name goes to that player's stats when Stats is rebuilt; until then it is plain text, never a dead link. */
 export const playerStatsHref = (id: string) => rebuiltHref(`/golf/dashboard/stats?player=${id}`);
@@ -36,7 +37,7 @@ export function AskProse({ text, lead = false, playersByName, streaming = false 
         b.kind === 'table' ? (
           // An old answer's pipe table, drawn as a table: a header row, hairline rows, figures set right on tabular numbers,
           // and on a phone it scrolls sideways inside itself instead of widening the answer.
-          <div key={i} className="ch-th-mdtable" role="region" aria-label="Table" tabIndex={0}>
+          <ScrollRegion key={i} label="Table" className="ch-th-mdtable">
             <table className="ch-th-table">
               <thead>
                 <tr>
@@ -65,7 +66,7 @@ export function AskProse({ text, lead = false, playersByName, streaming = false 
                 ))}
               </tbody>
             </table>
-          </div>
+          </ScrollRegion>
         ) : b.kind === 'list' ? (
           <ul key={i} className="ch-th-list">
             {b.items.map((item, j) => (
