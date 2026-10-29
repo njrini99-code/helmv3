@@ -3798,12 +3798,10 @@ html[data-fw-theme='dark'] [data-ui='clubhouse'] .ch-ms-poll {
   .ch-ms-poll__mark {
     transition: none;
   }
-  /* No lift or sink: depth stays, movement goes. */
-  .ch-ms-poll__opt,
-  .ch-ms-poll__opt:hover,
-  .ch-ms-poll__opt:active,
-  .ch-ms-poll__opt[data-ch-pressed] {
-    translate: none;
+  /* No lift or sink: depth stays, movement goes. Important, as under Animations off: the hover and press rules
+     carry a :not([aria-disabled]) and outrank a plain selector here. */
+  .ch-ms-poll__opt {
+    translate: none !important;
   }
   .ch-ms-poll__mark[data-pop] {
     animation: none;
