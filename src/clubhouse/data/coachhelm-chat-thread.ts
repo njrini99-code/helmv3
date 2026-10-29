@@ -1,8 +1,10 @@
 import type { UIMessage } from 'ai';
 import type { ActionProposal, ActionReceipt } from '@/lib/coachhelm/v3/chat/action-types';
 import type { Measurement, MeasurementSeries, ToolEnvelope } from '@/lib/coachhelm/v3/chat/provenance';
+import { ValidatedComposition } from '@/lib/coachhelm/v3/chat/visuals/composition';
 import { ValidatedVisualArtifact } from '@/lib/coachhelm/v3/chat/visuals/schema';
-import { changeTone, formatFixed, formatSG, MINUS, NO_DATA } from '../lib/format';
+import { changeTone, formatFixed, formatSG, formatToPar, MINUS, NO_DATA } from '../lib/format';
+import { formatWallClock, zoneWallParts } from '../lib/dates';
 import { plural } from '../lib/plural';
 
 /**
@@ -24,9 +26,18 @@ const dataOf = <T>(p: Part): T | undefined => p.data as T | undefined;
 
 // ── Small formatters ───────────────────────────────────────────────────────
 
-/** A value in its unit: a true minus, an em dash for none, tabular numbers come from the CSS. */
-export function formatValue(value: number | null, unit: Measurement['unit']): string {
+/** A score relative to par ("Scoring average to par", `scoring_average_vs_par`): golf writes it signed, with E for even. */
+export function isToPar(metric?: { metric_id: string; metric_label: string } | null): boolean {
+  return Boolean(metric && (/(^|_)(to|vs)_par(_|$)/.test(metric.metric_id) || /\bto par\b/i.test(metric.metric_label)));
+}
+
+/**
+ * A value in its unit: a true minus, an em dash for none, tabular numbers come from the CSS. Given its metric, a to-par
+ * score is signed ("+3.1", "E", "−0.4"); a change between two figures is not a score, so its caller leaves the metric out.
+ */
+export function formatValue(value: number | null, unit: Measurement['unit'], metric?: { metric_id: string; metric_label: string } | null): string {
   if (value === null || !Number.isFinite(value)) return NO_DATA;
+  if (isToPar(metric)) return formatToPar(value, Number.isInteger(value) ? 0 : 1);
   const sign = (v: number) => (v < 0 ? MINUS : '');
   switch (unit) {
     case 'percent':
@@ -104,7 +115,8 @@ export type AskBlock =
   | { kind: 'evidence'; key: string; envelope: ToolEnvelope }
   | { kind: 'proposal'; key: string; view: AskProposalView }
   | { kind: 'receipt'; key: string; receipt: ActionReceipt }
-  | { kind: 'visual'; key: string; artifact: ValidatedVisualArtifact };
+  | { kind: 'visual'; key: string; artifact: ValidatedVisualArtifact }
+  | { kind: 'composition'; key: string; composition: ValidatedComposition };
 
 export interface AskUserTurn {
   role: 'user';
@@ -243,6 +255,15 @@ export function pairProposals(parts: Part[], ctx: { isLast: boolean; busy: boole
   return out;
 }
 
+/**
+ * The finished turn's receipt, one quiet line (playbook §4): "Worked for 6s · 3 steps", or "3 steps" for a turn this
+ * browser did not watch (a reloaded thread has no honest duration). What was read is said inside, when it is opened.
+ */
+export function workReceipt(steps: number, seconds: number | null): string {
+  const n = plural(steps, 'step');
+  return seconds === null ? n : `Worked for ${seconds < 10 ? formatFixed(seconds) : Math.round(seconds)}s · ${n}`;
+}
+
 /** "Read 38 rounds across 8 players": the largest sample per unit, never a sum of overlapping windows. */
 export function describeWork(steps: AskStep[], envelopes: ToolEnvelope[]): string | null {
   if (steps.length === 0) return null;
@@ -304,7 +325,14 @@ export function buildAssistantTurn(message: UIMessage, ctx: { isLast: boolean; b
     const parsed = ValidatedVisualArtifact.safeParse(dataOf<unknown>(p));
     if (parsed.success) artifacts.set(String(p.id ?? `v-${i}`), parsed.data);
   });
-  const coveredRefs = new Set([...artifacts.values()].flatMap((a) => a.evidenceRefs));
+  // A model-designed composition (visuals/composition.ts) does the same for the reads it draws in full, and only those.
+  const compositions = new Map<string, ValidatedComposition>();
+  parts.forEach((p, i) => {
+    if (p.type !== 'data-visual-composition') return;
+    const parsed = ValidatedComposition.safeParse(dataOf<unknown>(p));
+    if (parsed.success) compositions.set(String(p.id ?? `c-${i}`), parsed.data);
+  });
+  const coveredRefs = new Set([...[...artifacts.values()].flatMap((a) => a.evidenceRefs), ...[...compositions.values()].flatMap((c) => c.evidenceRefs)]);
 
   const actionBlocks = (): AskBlock[] => {
     const out: AskBlock[] = [];
@@ -343,6 +371,9 @@ export function buildAssistantTurn(message: UIMessage, ctx: { isLast: boolean; b
     } else if (p.type === 'data-visual-artifact') {
       const artifact = artifacts.get(String(p.id ?? `v-${i}`));
       if (artifact) blocks.push({ kind: 'visual', key: `v-${artifact.artifactId}`, artifact });
+    } else if (p.type === 'data-visual-composition') {
+      const composition = compositions.get(String(p.id ?? `c-${i}`));
+      if (composition) blocks.push({ kind: 'composition', key: `c-${composition.artifactId}`, composition });
     } else if (p.type === 'data-action-proposal') {
       const view = paired.get(i);
       if (view) blocks.push({ kind: 'proposal', key: `p-${view.key}`, view });
@@ -397,10 +428,27 @@ export function failedAnswerChangedNothing(messages: UIMessage[]): { changedNoth
 
 // ── Prose ──────────────────────────────────────────────────────────────────
 
-export type ProseBlock = { kind: 'paragraph'; text: string } | { kind: 'list'; items: string[] };
+export type ProseBlock =
+  | { kind: 'paragraph'; text: string }
+  | { kind: 'list'; items: string[] }
+  /** A GitHub pipe table. The model is told not to write them; older answers have them, and raw pipes read as broken. */
+  | { kind: 'table'; header: string[]; rows: string[][]; numeric: boolean[] };
+
+/** `| a | b |` is ['a', 'b']. */
+const pipeCells = (line: string) =>
+  line
+    .trim()
+    .replace(/^\|/, '')
+    .replace(/\|$/, '')
+    .split('|')
+    .map((c) => c.trim());
+const isPipeRow = (line: string) => /^\s*\|.*\|\s*$/.test(line);
+const isPipeDivider = (line: string) => /^\s*\|?\s*:?-{2,}:?\s*(\|\s*:?-{2,}:?\s*)*\|?\s*$/.test(line);
+/** A cell that is a figure: "+0.3", "−1.1", "58%", "E", "—". Such a column is set right, on tabular figures. */
+const isFigureCell = (c: string) => /^[−+-]?[\d.,]+%?$|^—$|^E$/.test(c.replace(/\*\*/g, '').trim());
 
 /**
- * Paragraphs and lists only. Headings are dropped to plain text (a heading marker is stripped, not
+ * Paragraphs, lists and pipe tables. Headings are dropped to plain text (a heading marker is stripped, not
  * honoured: rewarding headings is how a two-sentence answer becomes a wall of sections), and a lone
  * asterisk stays a character.
  */
@@ -416,8 +464,23 @@ export function parseProse(text: string): ProseBlock[] {
     if (list.length > 0) blocks.push({ kind: 'list', items: list });
     list = [];
   };
-  for (const raw of text.split('\n')) {
-    const line = raw.trimEnd();
+  const lines = text.split('\n');
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i]!.trimEnd();
+    if (isPipeRow(line) && i + 1 < lines.length && isPipeDivider(lines[i + 1]!)) {
+      flushParagraph();
+      flushList();
+      const header = pipeCells(line);
+      const rows: string[][] = [];
+      for (i += 2; i < lines.length && isPipeRow(lines[i]!); i++) {
+        const r = pipeCells(lines[i]!);
+        rows.push(header.map((_, c) => r[c] ?? ''));
+      }
+      i -= 1;
+      const numeric = header.map((_, c) => rows.length > 0 && rows.every((r) => isFigureCell(r[c] ?? '')));
+      blocks.push({ kind: 'table', header, rows, numeric });
+      continue;
+    }
     const bullet = /^\s*(?:[-*•]|\d+[.)])\s+(.*)$/.exec(line);
     if (bullet) {
       flushParagraph();
@@ -513,14 +576,45 @@ interface EvBase {
 export type AskEvidence =
   | { kind: 'unavailable'; note: string }
   | { kind: 'empty'; note: string }
-  | (EvBase & { kind: 'trend'; unit: Measurement['unit']; points: Array<{ label: string; value: number; n: number }>; reference: { label: string; value: number } | null; summary: string; goodDirection: 'up' | 'down' | null })
-  | (EvBase & { kind: 'bars'; rows: Array<{ label: string; pct: number; display: string; of: string | null; tone: 'good' | 'loss' | 'neutral' }> })
-  | (EvBase & { kind: 'ranking'; rows: Array<{ rank: number; id: string; label: string; display: string; of: string | null }> })
-  | (EvBase & { kind: 'compare' })
+  | (EvBase & { kind: 'trend'; unit: Measurement['unit']; points: Array<{ label: string; value: number; n: number }>; reference: { label: string; value: number } | null; summary: string; goodDirection: 'up' | 'down' | null; toPar?: boolean })
+  | (EvBase & { kind: 'bars'; rows: Array<{ label: string; pct: number; display: string; of: string | null; tone: 'good' | 'loss' | 'neutral'; highlight?: boolean }> })
+  | (EvBase & { kind: 'ranking'; rows: AskRankRow[]; signed: boolean })
+  | (EvBase & { kind: 'compare'; team: AskTeamTable })
   | (EvBase & { kind: 'legs'; rows: Array<{ label: string; value: number; display: string }>; takeaway: string })
   | (EvBase & { kind: 'tiles'; tiles: EvidenceTile[] })
   | (EvBase & { kind: 'reads'; playerId: string; rows: AskRead[] })
   | (EvBase & { kind: 'table' });
+
+/**
+ * One player in a ranking (playbook: rank, name, the sample in words, the value, a bar on a fitted axis). `pct` is the bar's
+ * length as a share of the largest magnitude; with `signed`, bars run either side of zero.
+ */
+export interface AskRankRow {
+  rank: number;
+  id: string;
+  label: string;
+  display: string;
+  /** "4 rounds", "of 9". */
+  of: string | null;
+  value: number;
+  pct: number;
+  /** Strokes gained by its sign; otherwise the best of the list by the metric's own direction. */
+  tone: 'good' | 'loss' | 'best' | 'plain';
+}
+
+/**
+ * Players across the same metrics. With more players than metrics the players are rows (a team table); otherwise the metrics
+ * are rows and the players columns. `best` is, per metric, the player whose value is best by that metric's direction (none
+ * when it has no direction or there is a tie).
+ */
+export interface AskTeamTable {
+  players: Array<{ id: string; label: string; sample: string | null }>;
+  metrics: Array<{ id: string; label: string; short: string; unit: Measurement['unit']; strokes: boolean }>;
+  /** cells[player][metric]: the figure as printed, and its tone (strokes gained by sign). */
+  cells: Array<Array<{ display: string; tone: 'good' | 'loss' | 'plain' } | null>>;
+  best: Array<string | null>;
+  playersAsRows: boolean;
+}
 
 /** One read an answer names (the open-signals tool's list): its id, which the coach's Deep dive opens on, and what the row says. */
 export interface AskRead {
@@ -536,8 +630,8 @@ export interface EvidenceTile {
   label: string;
   value: string;
   sub: string | null;
-  /** A loss against what the read compared it to: drawn amber, never red. */
-  tone: 'loss' | 'plain';
+  /** A loss against what the read compared it to: drawn amber, never red. A strokes gained gain is green. */
+  tone: 'loss' | 'gain' | 'plain';
 }
 
 /** Fewer points than this is a change, not a trend: drawn as a table. */
@@ -568,13 +662,64 @@ function strokesGainedLegs(ms: Measurement[]): Measurement[] | null {
   return sg.length >= 2 ? sg : null;
 }
 
-/** A column heading from a key: "target_value" becomes "Target value". */
-function heading(key: string): string {
-  const s = key.replace(/_/g, ' ').trim();
+
+const isPlain = (v: unknown): v is string | number | boolean => ['string', 'number', 'boolean'].includes(typeof v);
+
+/** Words a tool's keys spell that are not sentence case: "rsvp" is RSVP. */
+const ACRONYMS: Record<string, string> = { rsvp: 'RSVP', sg: 'SG', id: 'ID', gir: 'GIR', ott: 'OTT' };
+/** Keys whose plain heading would read as machinery. */
+const HEADINGS: Record<string, string> = {
+  requires_rsvp: 'RSVP required',
+  starts_at: 'Starts',
+  ends_at: 'Ends',
+  start_date: 'Starts',
+  end_date: 'Ends',
+  due_date: 'Due',
+  event_type: 'Type',
+  task_type: 'Type',
+  event_kind: 'Type',
+  kind: 'Type',
+  field_size: 'Field',
+  rsvp_deadline: 'RSVP by',
+  rsvp_pending_count: 'No reply',
+  rsvp_accepted: 'Going',
+  rsvp_declined: 'Not going',
+};
+
+/** A column heading from a key: "target_value" is "Target value", "requires_rsvp" is "RSVP required". */
+export function headingOf(key: string): string {
+  if (HEADINGS[key]) return HEADINGS[key];
+  const words = key.replace(/_/g, ' ').trim().split(/\s+/).map((w) => ACRONYMS[w.toLowerCase()] ?? w.toLowerCase());
+  const s = words.join(' ');
   return s.charAt(0).toUpperCase() + s.slice(1);
 }
 
-const isPlain = (v: unknown): v is string | number | boolean => ['string', 'number', 'boolean'].includes(typeof v);
+const DAY_TIME = /^(\d{4}-\d{2}-\d{2})[T ](\d{2}):(\d{2})/;
+
+/**
+ * A tool's raw cell as words: an ISO date is "Oct 29", a timestamp "Oct 30, 3 PM" in the team's zone, an enum
+ * ("in_progress") "In progress", a boolean Yes or No. Titles, names and places are drawn as written.
+ */
+export function humanCell(v: string | number | boolean, timezone?: string | null): string {
+  if (typeof v === 'boolean') return v ? 'Yes' : 'No';
+  if (typeof v === 'number') return String(v);
+  const t = v.trim();
+  if (/^\d{4}-\d{2}-\d{2}$/.test(t)) return fmtDay(t) ?? t;
+  if (DAY_TIME.test(t)) {
+    const d = new Date(t);
+    if (!Number.isNaN(d.getTime())) {
+      // The team's wall clock, through lib/dates (one clock: "3 PM", "3:30 PM"), so the server's text matches the browser's.
+      const w = zoneWallParts(d.getTime(), timezone || 'UTC');
+      if (w) {
+        const pad = (n: number) => String(n).padStart(2, '0');
+        return `${fmtDay(`${w.year}-${pad(w.month)}-${pad(w.day)}`)}, ${formatWallClock(`${w.hour}:${pad(w.minute)}`)}`;
+      }
+      return fmtDay(t) ?? t;
+    }
+  }
+  if (/^[a-z]+(?:_[a-z]+)*$/.test(t)) return headingOf(t);
+  return t;
+}
 
 /**
  * A table from a tool's `detail` when it is a list of records (open signals, focus areas,
@@ -586,11 +731,14 @@ export function detailTable(detail: unknown, caption: string): AskTable | null {
   const lists = Object.values(detail as Record<string, unknown>).filter((v): v is Array<Record<string, unknown>> => Array.isArray(v) && v.length > 0 && v.every((r) => r && typeof r === 'object' && !Array.isArray(r)));
   const rows = lists[0];
   if (!rows) return null;
+  const timezone = textOf((detail as Record<string, unknown>).timezone);
+  // A start and end time say when; ids, record stamps and a flag that is the same on every row say nothing.
   const keys = Object.keys(rows[0] ?? {})
-    .filter((k) => !/(^id$|_id$|^type$|_at$|^timezone$)/.test(k) && rows.some((r) => isPlain(r[k]) && r[k] !== ''))
+    .filter((k) => !/(^id$|_id$|^type$|^created_at$|^updated_at$|^timezone$)/.test(k) && rows.some((r) => isPlain(r[k]) && r[k] !== ''))
+    .filter((k) => !(rows.every((r) => typeof r[k] === 'boolean') && rows.every((r) => r[k] === false)))
     .slice(0, 4);
   if (keys.length === 0) return null;
-  return { caption, columns: keys.map(heading), rows: rows.slice(0, 8).map((r) => keys.map((k) => (isPlain(r[k]) && r[k] !== '' ? String(r[k]) : NO_DATA))) };
+  return { caption, columns: keys.map(headingOf), rows: rows.slice(0, 8).map((r) => keys.map((k) => (isPlain(r[k]) && r[k] !== '' ? humanCell(r[k] as string | number | boolean, timezone) : NO_DATA))) };
 }
 
 function seriesTable(s: MeasurementSeries): AskTable {
@@ -598,11 +746,11 @@ function seriesTable(s: MeasurementSeries): AskTable {
     caption: `${s.metric_label} for ${s.entity.label}`,
     // The caption already names the metric; a rate's column says what its figures are rather than repeating it.
     columns: [s.points.some((p) => p.bucket) ? 'Range' : 'Round', s.unit === 'percent' ? 'Rate' : s.metric_label, 'Sample'],
-    rows: s.points.map((p) => [p.bucket ?? fmtDay(p.at) ?? p.at, formatValue(p.value, s.unit), p.sample_size > 0 ? String(p.sample_size) : NO_DATA]),
+    rows: s.points.map((p) => [p.bucket ?? fmtDay(p.at) ?? p.at, formatValue(p.value, s.unit, s), p.sample_size > 0 ? String(p.sample_size) : NO_DATA]),
   };
 }
 
-function trendBlock(s: MeasurementSeries): AskEvidence {
+export function trendBlock(s: MeasurementSeries): Extract<AskEvidence, { kind: 'trend' }> {
   const values = s.points.map((p) => p.value);
   // A rate's average is its made count over its attempts (3 of 9 is 33%), so each round counts by its sample; without samples, plainly.
   const weight = s.points.reduce((a, p) => a + p.sample_size, 0);
@@ -621,8 +769,9 @@ function trendBlock(s: MeasurementSeries): AskEvidence {
     points: s.points.map((p) => ({ label: fmtDay(p.at) ?? p.at, value: p.value, n: p.sample_size })),
     // A real benchmark beats the series' own average: "vs the Tour" is a standard, "vs your own average" is a tautology.
     reference: bench ? { label: 'Benchmark', value: bench.value } : { label: 'Average', value: mean },
-    summary: `${s.metric_label} for ${s.entity.label}: ${formatValue(first, s.unit)} to ${formatValue(last, s.unit)} across ${s.points.length} rounds.`,
+    summary: `${s.metric_label} for ${s.entity.label}: ${formatValue(first, s.unit, s)} to ${formatValue(last, s.unit, s)} across ${s.points.length} rounds.`,
     goodDirection: s.direction === 'higher_better' ? 'up' : s.direction === 'lower_better' ? 'down' : null,
+    toPar: isToPar(s),
     source: sourceLine({ sample_size: s.points.length, sample_unit: 'rounds', window_start: s.window_start, window_end: s.window_end, as_of: s.as_of }),
     note: partialNote(s),
     bench: benchOf(s.benchmark, s.unit),
@@ -630,7 +779,7 @@ function trendBlock(s: MeasurementSeries): AskEvidence {
   };
 }
 
-function bucketBlock(s: MeasurementSeries): AskEvidence {
+export function bucketBlock(s: MeasurementSeries, highlight: string | null = null): Extract<AskEvidence, { kind: 'bars' }> {
   const rows = s.points.map((p) => ({ label: p.bucket ?? fmtDay(p.at) ?? p.at, value: p.value, n: p.sample_size }));
   const max = s.unit === 'percent' ? 100 : Math.max(1, ...rows.map((r) => Math.abs(r.value)));
   const values = rows.map((r) => r.value);
@@ -643,9 +792,10 @@ function bucketBlock(s: MeasurementSeries): AskEvidence {
     rows: rows.map((r) => ({
       label: r.label,
       pct: Math.max(0, Math.min(100, (Math.abs(r.value) / max) * 100)),
-      display: formatValue(r.value, s.unit),
+      display: formatValue(r.value, s.unit, s),
       of: r.n > 0 ? `of ${r.n}` : null,
       tone: !flagged ? 'neutral' : r.value === weak ? 'loss' : 'good',
+      ...(highlight && r.label === highlight ? { highlight: true } : {}),
     })),
     source: sourceLine({ sample_size: rows.reduce((a, r) => a + r.n, 0), sample_unit: 'attempts', window_start: s.window_start, window_end: s.window_end, as_of: s.as_of }),
     note: partialNote(s),
@@ -654,11 +804,11 @@ function bucketBlock(s: MeasurementSeries): AskEvidence {
   };
 }
 
-function measurementTable(ms: Measurement[], caption: string): AskTable {
+export function measurementTable(ms: Measurement[], caption: string): AskTable {
   return {
     caption,
     columns: ['Player', 'Metric', 'Value', 'Sample'],
-    rows: ms.map((m) => [m.entity.label, m.metric_label, formatValue(m.value, m.unit), m.sample_size > 0 ? sampleWords(m.sample_size, m.sample_unit) : NO_DATA]),
+    rows: ms.map((m) => [m.entity.label, m.metric_label, formatValue(m.value, m.unit, m), m.sample_size > 0 ? sampleWords(m.sample_size, m.sample_unit) : NO_DATA]),
   };
 }
 
@@ -686,6 +836,65 @@ export function readsOf(detail: unknown): { playerId: string; rows: AskRead[] } 
 
 /** A read's area in words: "short_game" is "Short game". */
 export const readAreaWord = (c: string | null): string | null => (c ? (c.charAt(0).toUpperCase() + c.slice(1)).replace(/_/g, ' ') : null);
+
+/** "Strokes gained: total" is "SG total" in a column heading, where room is short. */
+export const shortMetric = (label: string) => label.replace(/^strokes gained[:\s-]*/i, 'SG ').trim();
+
+const lowerIsBetter = (m: { direction: Measurement['direction'] }) => m.direction === 'lower_better';
+
+/** Players on one metric, ranked as the read gave them, each with its bar on one fitted axis (`AskRankRow`). */
+export function rankRows(ms: Measurement[], order: 'best_first' | 'as_read' = 'as_read', highlight: string | null = null): { rows: AskRankRow[]; signed: boolean } {
+  const ranked = ms.filter((m): m is Measurement & { value: number } => m.value !== null);
+  const dir = ranked[0]?.direction ?? null;
+  const sorted = order === 'best_first' && dir ? [...ranked].sort((a, b) => (dir === 'lower_better' ? a.value - b.value : b.value - a.value)) : ranked;
+  const strokes = sorted.every((m) => m.unit === 'strokes');
+  const signed = sorted.some((m) => m.value < 0);
+  const max = Math.max(1e-9, ...sorted.map((m) => Math.abs(m.value)));
+  const bestValue = dir && sorted.length > 1 ? (dir === 'lower_better' ? Math.min(...sorted.map((m) => m.value)) : Math.max(...sorted.map((m) => m.value))) : null;
+  const bestCount = bestValue === null ? 0 : sorted.filter((m) => m.value === bestValue).length;
+  return {
+    signed,
+    rows: sorted.map((m, i) => {
+      const t = strokes ? changeTone(m.value, false, 1) : '';
+      const tone: AskRankRow['tone'] = strokes ? (t === 'is-gain' ? 'good' : t === 'is-loss' ? 'loss' : 'plain') : (bestCount === 1 && m.value === bestValue) || (highlight !== null && m.entity.id === highlight) ? 'best' : 'plain';
+      return { rank: i + 1, id: m.entity.id, label: m.entity.label, display: formatValue(m.value, m.unit, m), of: ofSample(m), value: m.value, pct: (Math.abs(m.value) / max) * 100, tone };
+    }),
+  };
+}
+
+/** Players across the same metrics, as one table (`AskTeamTable`): the best per metric marked by that metric's direction. */
+export function teamTable(ms: Measurement[]): AskTeamTable {
+  const players: AskTeamTable['players'] = [];
+  const metrics: AskTeamTable['metrics'] = [];
+  for (const m of ms) {
+    if (!players.some((p) => p.id === m.entity.id)) players.push({ id: m.entity.id, label: m.entity.label, sample: null });
+    if (!metrics.some((x) => x.id === m.metric_id)) metrics.push({ id: m.metric_id, label: m.metric_label, short: shortMetric(m.metric_label), unit: m.unit, strokes: m.unit === 'strokes' });
+  }
+  const find = (pid: string, mid: string) => ms.find((m) => m.entity.id === pid && m.metric_id === mid);
+  // A player's sample, once beside their name, when every one of their figures rests on the same sample.
+  for (const p of players) {
+    const mine = ms.filter((m) => m.entity.id === p.id && m.sample_size > 0);
+    const one = mine[0];
+    if (one && mine.every((m) => m.sample_size === one.sample_size && m.sample_unit === one.sample_unit)) p.sample = sampleWords(one.sample_size, one.sample_unit);
+  }
+  const cells = players.map((p) =>
+    metrics.map((x) => {
+      const m = find(p.id, x.id);
+      if (!m) return null;
+      const t = x.strokes ? changeTone(m.value, false, 1) : '';
+      return { display: formatValue(m.value, m.unit, m), tone: (t === 'is-gain' ? 'good' : t === 'is-loss' ? 'loss' : 'plain') as 'good' | 'loss' | 'plain' };
+    }),
+  );
+  const best = metrics.map((x) => {
+    const row = players.map((p) => find(p.id, x.id)).filter((m): m is Measurement & { value: number } => Boolean(m && m.value !== null));
+    const dir = row[0]?.direction;
+    if (!dir || row.length < 2) return null;
+    const top = lowerIsBetter(row[0]!) ? Math.min(...row.map((m) => m.value)) : Math.max(...row.map((m) => m.value));
+    const at = row.filter((m) => m.value === top);
+    return at.length === 1 ? at[0]!.entity.id : null;
+  });
+  return { players, metrics, cells, best, playersAsRows: players.length > metrics.length };
+}
 
 /** One tool's output as the block this screen draws. The choice is made from the SHAPE of the evidence, never from what the model asked for. */
 export function evidenceBlocks(envelope: ToolEnvelope): AskEvidence[] {
@@ -726,21 +935,24 @@ export function evidenceBlocks(envelope: ToolEnvelope): AskEvidence[] {
         ...base,
         source: oneUnit ? sourceLine({ ...first, sample_size: ranked.reduce((sum, m) => sum + m.sample_size, 0) }) : base.source,
         note: missing > 0 ? `${missing} player${missing === 1 ? ' has' : 's have'} no recorded data for this.` : base.note,
-        rows: ranked.map((m, i) => ({ rank: i + 1, id: m.entity.id, label: m.entity.label, display: formatValue(m.value, m.unit), of: ofSample(m) })),
-        table: { caption: first.metric_label, columns: ['Rank', 'Player', first.metric_label, 'Sample'], rows: ranked.map((m, i) => [String(i + 1), m.entity.label, formatValue(m.value, m.unit), m.sample_size > 0 ? sampleWords(m.sample_size, m.sample_unit) : NO_DATA]) },
+        ...rankRows(ranked),
+        table: { caption: first.metric_label, columns: ['Rank', 'Player', first.metric_label, 'Sample'], rows: ranked.map((m, i) => [String(i + 1), m.entity.label, formatValue(m.value, m.unit, m), m.sample_size > 0 ? sampleWords(m.sample_size, m.sample_unit) : NO_DATA]) },
       });
     } else if (isComparison) {
       const names = [...new Set(ms.map((m) => m.entity.label))];
       const metricIds = [...new Set(ms.map((m) => m.metric_id))];
       const find = (n: string, id: string) => ms.find((m) => m.entity.label === n && m.metric_id === id);
+      const team = teamTable(ms);
       blocks.push({
         kind: 'compare',
-        title: `${names.join(' and ')}`,
+        // Two names read as a pair; a team is "5 players", never five names strung on "and".
+        title: names.length <= 3 ? names.join(' and ') : envelope.summary || `${names.length} players`,
         ...base,
+        team,
         table: {
           caption: `Comparison of ${names.join(' and ')} across ${plural(metricIds.length, 'metric')}, with sample sizes`,
           columns: ['Metric', ...names],
-          rows: metricIds.map((id) => [ms.find((m) => m.metric_id === id)?.metric_label ?? id, ...names.map((n) => { const m = find(n, id); return m ? `${formatValue(m.value, m.unit)}${m.sample_size > 0 ? ` (${sampleWords(m.sample_size, m.sample_unit)})` : ''}` : NO_DATA; })]),
+          rows: metricIds.map((id) => [ms.find((m) => m.metric_id === id)?.metric_label ?? id, ...names.map((n) => { const m = find(n, id); return m ? `${formatValue(m.value, m.unit, m)}${m.sample_size > 0 ? ` (${sampleWords(m.sample_size, m.sample_unit)})` : ''}` : NO_DATA; })]),
         },
       });
     } else if (legs) {
@@ -757,11 +969,24 @@ export function evidenceBlocks(envelope: ToolEnvelope): AskEvidence[] {
       });
     } else {
       const many = players.size > 1;
+      // A count whose sample is itself ("Active roster 5", sampled over 5 players) says its figure once: no "5 players" under
+      // it, and none in the source line.
+      const restates = (m: Measurement) => m.unit === 'count' && m.value !== null && m.sample_size === m.value && m.denominator === null;
+      const allRestate = ms.every(restates);
       blocks.push({
         kind: 'tiles',
         title: envelope.summary,
         ...base,
-        tiles: ms.map((m) => ({ label: many ? `${m.entity.label}, ${m.metric_label}` : m.metric_label, value: formatValue(m.value, m.unit), sub: madeOf(m), tone: 'plain' })),
+        source: allRestate ? sourceLine({ ...first, sample_size: 0 }) || null : base.source,
+        tiles: ms.map((m) => {
+          const t = m.unit === 'strokes' ? changeTone(m.value, false, 1) : '';
+          return {
+            label: many ? `${m.entity.label}, ${m.metric_label}` : m.metric_label,
+            value: formatValue(m.value, m.unit, m),
+            sub: restates(m) ? null : madeOf(m),
+            tone: t === 'is-loss' ? 'loss' : t === 'is-gain' ? 'gain' : 'plain',
+          };
+        }),
         table: measurementTable(ms, envelope.summary),
       });
     }

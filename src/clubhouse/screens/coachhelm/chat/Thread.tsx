@@ -10,10 +10,10 @@ import {
   failedAnswerChangedNothing,
   focusForProposal,
   pendingApproval,
+  workReceipt,
   type AskAssistantTurn,
   type EvidenceFocus,
 } from '../../../data/coachhelm-chat-thread';
-import { formatFixed } from '../../../lib/format';
 import { haptic } from '../../../lib/haptics';
 import { useChReducedMotion } from '../../../lib/reduced-motion';
 import { Button } from '../../../ui/Button';
@@ -24,6 +24,7 @@ import { Tooltip } from '../../../ui/Tooltip';
 import { HelmMark } from '../../../shell/BrandWord';
 import { AskActionCard, AskReceiptCard } from './ActionCard';
 import { AskEvidenceView } from './Evidence';
+import { CoachComposition } from './visual/CoachComposition';
 import { CoachVisualArtifact } from './visual/CoachVisualArtifact';
 import { AskProse, AskUserText } from './Prose';
 import '../../../styles/coachhelm-thread.css';
@@ -208,6 +209,8 @@ export function AskThread({ messages, busy, error, offline, phone, players, onAp
                   if (b.kind === 'text') return <AskProse key={b.key} text={b.text} lead={b.lead} playersByName={playersByName} streaming={turn.active} />;
                   if (b.kind === 'evidence') return <AskEvidenceView key={b.key} envelope={b.envelope} roster={players} />;
                   if (b.kind === 'visual') return <CoachVisualArtifact key={b.key} artifact={b.artifact} />;
+                  // `live`: the turn was streaming when the visual arrived; CoachComposition reads it once, at mount.
+                  if (b.kind === 'composition') return <CoachComposition key={b.key} composition={b.composition} live={turn.active} />;
                   if (b.kind === 'receipt') return <AskReceiptCard key={b.key} receipt={b.receipt} onAskAgain={onSend} />;
                   const focus = focusForProposal(turn.id, b.view);
                   return (
@@ -288,7 +291,6 @@ function Work({ turn, onStop }: { turn: AskAssistantTurn; onStop?: () => void })
       </p>
     ) : null;
   }
-  const secs = elapsed === null ? '' : ` · ${formatFixed(elapsed)}s`;
   const list = (live: boolean) => (
     <ol id={live ? undefined : listId} className="ch-th-steps" aria-label="What CoachHelm is doing" aria-live={live ? 'polite' : undefined} aria-relevant={live ? 'additions text' : undefined}>
       {turn.steps.map((s, i) => {
@@ -320,12 +322,17 @@ function Work({ turn, onStop }: { turn: AskAssistantTurn; onStop?: () => void })
   }
   return (
     <div className="ch-th-work">
+      {/* One quiet collapsed row (playbook §4): how long it worked and how many steps; what it read is inside, when opened. */}
       <button type="button" className="ch-th-work__btn" aria-expanded={open} aria-controls={listId} onClick={() => setOpen((v) => !v)}>
-        <Icon icon={Check} size={15} className="ch-th-steps__ok" />
-        {`${turn.work ?? ''}${secs}`}
+        {workReceipt(turn.steps.length, elapsed)}
         <Icon icon={ChevronDown} size={13} className={open ? 'ch-th-flip' : undefined} />
       </button>
-      {open && list(false)}
+      {open && (
+        <>
+          {turn.work && <p className="ch-th-work__read">{turn.work}</p>}
+          {list(false)}
+        </>
+      )}
     </div>
   );
 }

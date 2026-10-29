@@ -23,7 +23,6 @@ const ALLOW_NUMERIC: Record<string, number> = {
   'screens/calendar/editor.tsx': 1,
   'screens/calendar/inspector.tsx': 3,
   'screens/coachhelm/CoachBoard.tsx': 3,
-  'screens/coachhelm/chat/Evidence.tsx': 1,
   'screens/home/HomePhone.tsx': 1,
   'screens/home/LatestRound.tsx': 1,
   'screens/hub/parts.tsx': 2,

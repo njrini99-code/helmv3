@@ -100,9 +100,10 @@ describe('CH-13850 what CoachHelm is doing', () => {
     expect(screen.getByText('Reading your program')).toBeTruthy();
     expect(document.body.textContent).not.toMatch(/get_[a-z_]+/);
   });
-  it('a finished answer leaves one line that opens the steps it took', async () => {
+  it('a finished answer leaves one quiet line that opens the steps it took, and what it read', async () => {
     show();
-    const button = screen.getByRole('button', { name: /Read 3 players/ });
+    // A reloaded answer has no honest duration: the receipt is the step count alone (playbook §4).
+    const button = screen.getByRole('button', { name: '4 steps' });
     expect(button.getAttribute('aria-expanded')).toBe('false');
     // A finished answer draws still: only a streaming answer's blocks settle in (coachhelm-thread.css).
     expect(document.querySelector('.ch-th-prose')).toBeTruthy();
@@ -110,6 +111,7 @@ describe('CH-13850 what CoachHelm is doing', () => {
     await userEvent.click(button);
     expect(button.getAttribute('aria-expanded')).toBe('true');
     expect(screen.getByRole('list', { name: 'What CoachHelm is doing' }).children).toHaveLength(4);
+    expect(screen.getByText(/^Read 3 players/)).toBeTruthy();
   });
 });
 
@@ -137,7 +139,7 @@ describe('CH-13852 View as table', () => {
   it('a ranking names each player with the value and the sample', () => {
     show();
     const rank = screen.getByRole('list', { name: 'Missed downhill putts from 4 to 6 feet' });
-    expect(within(rank).getAllByRole('listitem').map((i) => i.textContent?.replace(/^\d/, ''))).toEqual(['JOJonah Okafor6 of 9', 'EBEli Brandt4 of 8', 'SASofia Alvarez2 of 7']);
+    expect(within(rank).getAllByRole('listitem').map((i) => i.textContent?.replace(/^\d/, ''))).toEqual(['Jonah Okaforof 96', 'Eli Brandtof 84', 'Sofia Alvarezof 72']);
   });
 });
 
