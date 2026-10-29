@@ -101,6 +101,59 @@ response — it does not need to read naturally, and it never counts toward
 "no ids" above; ids belong in the block, never in your prose.
 `.trim();
 
+/**
+ * The visual playbook. Appended only while `coachhelm_visual_artifacts_v1` is
+ * on, because it tells the model to call `show_visual`, which is registered
+ * under the same flag: describing a tool the model cannot call makes it try.
+ * Mirrored for people in `docs/architecture/coachhelm-visual-playbook.md`.
+ */
+const VISUALS_SECTION = `
+## Visuals you design
+
+Every read already draws as a plain card. When a question deserves more than
+that, design one visual for the answer with show_visual, kind "compose". You
+choose the building blocks, their order, what to emphasise, a title, a one-line
+lede and up to three notes; the figures are filled in from your reads, so you
+never write a number into the visual (a title, lede, label or note with a digit
+is refused). Make the reads first, then compose from their evidence_ref values.
+
+Building blocks:
+- headline: one figure set large with a few words ("Biggest leak"). Use for the
+  single number the answer turns on. At most one.
+- kpis: up to six related figures from one read, in a row.
+- trend: one metric over rounds, against her average or a real benchmark. Needs
+  three or more rounds.
+- bars: distance bands from one read, or players on one metric. Use
+  order "best_first" to rank players; highlight a band label or player name the
+  coach asked about.
+- split: signed figures either side of zero for ONE player, e.g. strokes gained
+  by part of the game.
+- compare: two to four players across the same metrics.
+- note: one sentence of interpretation. kind "measured" for what the figures
+  show, "association" for a pattern across them, "hypothesis" for a guess you
+  are flagging as a guess.
+
+How to choose:
+- "How is X doing / trending" → headline (latest or the key figure), trend.
+- "Where is X losing strokes" → headline (the largest loss), split, a note.
+- "Compare X and Y" → compare, plus a note on the one difference that matters.
+- "Who is best/worst at …", team rankings → bars with best_first.
+- Putting or proximity by distance → bars on the bands, highlight the band the
+  question is about.
+- A single number or a yes/no → no visual; the plain card is enough.
+
+Craft:
+- The title is the finding in words ("Approach play is where Maya loses
+  strokes"), not the metric name.
+- Lead with the block that answers the question; supporting blocks after it.
+- Two to four blocks. More is noise. Use layout "split" only when two figure
+  blocks are worth reading side by side.
+- One visual per answer. Then write two or three sentences that add what the
+  visual cannot say; do not restate its figures.
+- If show_visual refuses or drops a block, it says why. Fix the cause once
+  (usually a number in the text) or answer in words.
+`.trim();
+
 const ACTIONS_SECTION = `
 ## Actions
 
@@ -130,12 +183,14 @@ its own question.
  * an environment-level constant for the lifetime of a deploy, not something
  * that varies request-to-request the way `nowIso` would if it weren't
  * day-formatted, so the static prefix stays identical across requests
- * within one flag state.
+ * within one flag state. `visualsEnabled` gates {@link VISUALS_SECTION} the
+ * same way, behind `coachhelm_visual_artifacts_v1`.
  */
 export function buildInstructions(
   ctx: CoachChatContext,
   nowIso: string,
   claimsBlockEnabled: boolean,
+  visualsEnabled = false,
 ): string {
   const today = new Intl.DateTimeFormat('en-US', {
     weekday: 'long',
@@ -150,7 +205,12 @@ export function buildInstructions(
       ? 'This team has no active players yet.'
       : `Active roster (${ctx.roster.length}): ${ctx.roster.map((p) => p.name).join(', ')}.`;
 
-  const sections = [POLICY, ...(claimsBlockEnabled ? [CLAIMS_BLOCK_SECTION] : []), ACTIONS_SECTION];
+  const sections = [
+    POLICY,
+    ...(claimsBlockEnabled ? [CLAIMS_BLOCK_SECTION] : []),
+    ...(visualsEnabled ? [VISUALS_SECTION] : []),
+    ACTIONS_SECTION,
+  ];
 
   return `${sections.join('\n\n')}
 

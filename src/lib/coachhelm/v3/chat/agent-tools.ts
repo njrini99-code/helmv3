@@ -47,6 +47,8 @@ import type { ToolSet, UIMessageStreamWriter } from 'ai';
 import { z } from 'zod';
 import { isFlagEnabled } from '@/lib/flags/is-enabled';
 import { compileVisual } from './visuals/compile';
+import { compileComposition } from './visuals/compile-composition';
+import { CompositionSpec, ShowVisualInput, type ValidatedComposition } from './visuals/composition';
 import { VisualSpec, type ValidatedVisualArtifact } from './visuals/schema';
 import type { SupabaseClient } from '@supabase/supabase-js';
 import type { Database } from '@/lib/types/database';
@@ -133,6 +135,8 @@ export interface CoachChatDataParts extends Record<string, unknown> {
   'grounding-flag': { note: string };
   /** A validated, hashed scene the Ask thread draws (visuals/schema.ts). Written by show_visual, kept in the message. */
   'visual-artifact': ValidatedVisualArtifact;
+  /** A model-designed composition (visuals/composition.ts): its blocks, with figures copied from this turn's reads. */
+  'visual-composition': ValidatedComposition;
 }
 
 /** Coach-readable progress copy. Raw tool names never reach the interface. */
@@ -543,11 +547,29 @@ export function buildCoachTools({ sb, ctx, conversationId, writer, collect, team
       ? {
           show_visual: tool({
             description:
-              'Show the coach one interactive visual built from reads you already made in this answer. Use kind "sg_anatomy" after reading a single player\'s strokes gained legs (get_player_metrics with sg_tee, sg_approach, sg_around_green and sg_putting, and sg_total if you like), passing the evidence_ref of each read. You supply only the scene, a short title, those refs, and optionally which leg to open first and a few words about a leg; the figures are drawn from the reads, so neither the title nor a note may contain a number. If it is refused because the title has a number, call it once more with the title in words; if it is refused for any other reason, say what you found in words instead.',
-            inputSchema: VisualSpec,
+              'Show the coach one visual built from reads you already made in this answer; follow the visual playbook in your instructions. kind "compose": you design it from building blocks (headline, kpis, trend, bars, split, compare, note), each naming the evidence_ref of the read it draws from, plus a title in words, an optional one-line lede and layout; the figures are filled in from the reads. kind "sg_anatomy": one player\'s strokes gained legs (get_player_metrics with sg_tee, sg_approach, sg_around_green and sg_putting), passing each read\'s evidence_ref in evidenceRefs. No title, lede, label or note may contain a number. If it is refused because of a number, call it once more in words; if a block is dropped or the visual is refused for any other reason, say what you found in words instead.',
+            inputSchema: ShowVisualInput,
             execute: async (input) => {
               progress('show_visual', {});
-              const result = compileVisual(input, evidenceByRef);
+              if (input.kind === 'compose') {
+                const parsed = CompositionSpec.safeParse(input);
+                if (!parsed.success) return { status: 'refused', reason: 'invalid', message: 'A composition needs a title and at least one block.' };
+                const result = compileComposition(parsed.data, evidenceByRef);
+                if (!result.ok) return { status: 'refused', reason: result.reason, message: result.message, dropped: result.dropped };
+                writer.write({
+                  type: 'data-visual-composition',
+                  id: `visual-${result.composition.artifactId}`,
+                  data: result.composition,
+                });
+                return {
+                  status: 'shown',
+                  message: `Shown to the coach: ${result.composition.title}, with ${result.composition.blocks.map((b) => b.type).join(', ')}. Do not repeat its figures; add the one thing it does not say.`,
+                  ...(result.dropped.length > 0 ? { dropped: result.dropped } : {}),
+                };
+              }
+              const spec = VisualSpec.safeParse(input);
+              if (!spec.success) return { status: 'refused', reason: 'invalid', message: 'sg_anatomy needs the evidence_ref of each strokes gained read.' };
+              const result = compileVisual(spec.data, evidenceByRef);
               if (!result.ok) return { status: 'refused', reason: result.reason, message: result.message };
               writer.write({ type: 'data-visual-artifact', id: `visual-${result.artifact.artifactId}`, data: result.artifact });
               return {
