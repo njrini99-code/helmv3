@@ -638,8 +638,14 @@ function auditDateExpressions(
   return { scrubbed: ordinalScrubbed, claims };
 }
 
-/** "the 26th", "the 3rd" — a day of the month with no month named. No lookbehind (iOS WebView). */
-const BARE_ORDINAL_DAY_RE = /(\bthe\s+)(\d{1,2})(?:st|nd|rd|th)\b/gi;
+/**
+ * "on the 26th", "since the 3rd" — a day of the month with no month named.
+ * Calendar context only: a date preposition before it, and no noun after it
+ * ("of" and conjunctions aside), so "the 26th percentile" or "on the 26th
+ * hole" stays a number for the numeric scan. No lookbehind (iOS WebView).
+ */
+const BARE_ORDINAL_DAY_RE =
+  /(\b(?:on|since|from|until|till|through|by|before|after)\s+the\s+)(\d{1,2})(?:st|nd|rd|th)\b(?!\s+(?!(?:of|and|or|at|to|through|when|with|but)\b)[a-z])/gi;
 
 /** Tolerance for matching a written number against a measured one. */
 const MATCH_EPSILON = 0.051;

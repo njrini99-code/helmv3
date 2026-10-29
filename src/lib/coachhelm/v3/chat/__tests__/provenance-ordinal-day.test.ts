@@ -33,3 +33,14 @@ describe('auditNumericClaims: bare ordinal day of month', () => {
     expect(audit('He played on the 26th and took 26 putts.').map((c) => c.text)).toEqual(['26']);
   });
 });
+
+describe('auditNumericClaims: ordinals that are not calendar days', () => {
+  it('still flags an ordinal statistic even when an evidence date shares the day', () => {
+    expect(audit('Last round was September 26; he is in the 26th percentile.').map((c) => c.text)).toEqual(['26']);
+    expect(audit('Last round was September 26, and he bogeyed on the 26th hole.').map((c) => c.text)).toEqual(['26']);
+  });
+
+  it('accepts a calendar ordinal followed by a conjunction or "of"', () => {
+    expect(audit('Nothing since the 26th of September, and nothing after the 26th or since.')).toEqual([]);
+  });
+});
