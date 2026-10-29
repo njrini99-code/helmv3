@@ -864,6 +864,7 @@ them would bury everything above.
 | `docs/clubhouse/changes/2026-10-28-line-spread-labels.md` | current | - | - | - | - |
 | `docs/clubhouse/changes/2026-10-28-visual-pass-system.md` | current | - | - | - | - |
 | `docs/clubhouse/changes/2026-10-28-visual-pass-whats-new.md` | current | - | - | - | - |
+| `docs/clubhouse/changes/2026-10-29-initials-letters-only.md` | current | - | - | - | - |
 | `docs/clubhouse/drafts/auth-onboarding-ground-truth.md` | current | - | - | - | - |
 | `docs/clubhouse/drafts/intelligence.md` | current | - | - | - | - |
 | `docs/clubhouse/foundation-v2/02_AUTHORITY_MODEL.md` | current | - | - | yes | - |
@@ -1096,6 +1097,7 @@ them would bury everything above.
 | `docs/clubhouse/pages/P007-messages/changes/2026-10-27-seen-target.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P007-messages/changes/2026-10-28-badge-after-delete.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P007-messages/changes/2026-10-28-visual-pass.md` | current | - | - | - | - |
+| `docs/clubhouse/pages/P007-messages/changes/2026-10-29-inbox-row-and-poll-depth.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P008-settings/CHANGELOG.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P008-settings/CONTRACT.md` | current | - | - | yes | - |
 | `docs/clubhouse/pages/P008-settings/DESIGN.md` | current | - | - | - | - |
