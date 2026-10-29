@@ -172,6 +172,8 @@ export interface LinePoint {
   radius?: number;
   /** Drawn as an outline: a thin sample that must not read as a solid one. */
   hollow?: boolean;
+  /** The point the answer is about: a ring around the dot and a heavier label. */
+  emphasis?: boolean;
 }
 
 export interface LineFigureProps {
@@ -364,6 +366,9 @@ function LineSvg({
         const cy = yAt(p.value);
         return (
           <g key={p.key}>
+            {p.emphasis && (
+              <circle cx={xAt(i)} cy={cy} r={r + 5} fill="none" stroke="var(--fw-color-accent-500)" strokeWidth={1.5} opacity={0.5} />
+            )}
             {isLast && valueLabels === 'last' && (
               <circle cx={xAt(i)} cy={cy} r={r + 4} fill="var(--fw-color-accent-500)" opacity={0.14} />
             )}

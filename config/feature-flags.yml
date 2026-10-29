@@ -421,29 +421,6 @@ flags:
   # stripped from what a coach sees regardless (the system prompt asks the
   # model for one unconditionally), and the numeric audit (the SECOND check)
   # runs either way, unaffected by this flag.
-  # CoachHelm agentic visuals, phase 1 (docs/architecture/coachhelm-agentic-visuals.md): the chat's `show_visual` tool
-  # and the `data-visual-artifact` part. The model picks a scene from a closed list and names evidence the server already
-  # collected this turn; trusted code resolves, validates and hashes the data, and the Ask thread draws it. Off: the tool is
-  # not registered and the thread draws its generic evidence blocks, exactly as before.
-  - feature_id: coachhelm_visual_artifacts_v1
-    owner: golf/coachhelm
-    purpose: >-
-      Registers coach chat's show_visual tool. On, an answer about a player's strokes gained can carry one validated,
-      interactive strokes-gained anatomy (every plotted value traced to a read this turn, kept in the message so a reload
-      shows the same figures). Off: no tool, no artifact part; the generic evidence blocks draw as before.
-    type: release
-    status: active
-    created_at: "2026-10-25"
-    expires_at: "2027-03-31"
-    default: false
-    environment:
-      production: false
-      preview: true
-      development: true
-    kill_switch_behavior: null
-    cleanup_plan: >-
-      The owner turns it on after reviewing the phase 1 report. Turning it off stops new artifacts; stored ones stay in
-      their messages and a restored thread still draws them (restore.ts replays the part whatever the flag says).
   - feature_id: coachhelm_chat_claim_gate
     owner: golf/coachhelm
     purpose: >-

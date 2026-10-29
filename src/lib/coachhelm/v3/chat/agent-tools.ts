@@ -541,45 +541,41 @@ export function buildCoachTools({ sb, ctx, conversationId, writer, collect, team
       execute: read('get_recent_rounds', (input) => getRecentRounds(sb, ctx, input)),
     }),
 
-    // Visual artifacts (docs/architecture/coachhelm-agentic-visuals.md): the model names a scene and the reads behind it;
-    // trusted code draws the figures. Not registered while coachhelm_visual_artifacts_v1 is off.
-    ...(isFlagEnabled('coachhelm_visual_artifacts_v1')
-      ? {
-          show_visual: tool({
-            description:
-              'Show the coach one visual built from reads you already made in this answer; follow the visual playbook in your instructions. kind "compose": you design it from building blocks (headline, kpis, trend, bars, split, compare, note), each naming the evidence_ref of the read it draws from, plus a title in words, an optional one-line lede and layout; the figures are filled in from the reads. kind "sg_anatomy": one player\'s strokes gained legs (get_player_metrics with sg_tee, sg_approach, sg_around_green and sg_putting), passing each read\'s evidence_ref in evidenceRefs. No title, lede, label or note may contain a number. If it is refused because of a number, call it once more in words; if a block is dropped or the visual is refused for any other reason, say what you found in words instead.',
-            inputSchema: ShowVisualInput,
-            execute: async (input) => {
-              progress('show_visual', {});
-              if (input.kind === 'compose') {
-                const parsed = CompositionSpec.safeParse(input);
-                if (!parsed.success) return { status: 'refused', reason: 'invalid', message: 'A composition needs a title and at least one block.' };
-                const result = compileComposition(parsed.data, evidenceByRef);
-                if (!result.ok) return { status: 'refused', reason: result.reason, message: result.message, dropped: result.dropped };
-                writer.write({
-                  type: 'data-visual-composition',
-                  id: `visual-${result.composition.artifactId}`,
-                  data: result.composition,
-                });
-                return {
-                  status: 'shown',
-                  message: `Shown to the coach: ${result.composition.title}, with ${result.composition.blocks.map((b) => b.type).join(', ')}. Do not repeat its figures; add the one thing it does not say.`,
-                  ...(result.dropped.length > 0 ? { dropped: result.dropped } : {}),
-                };
-              }
-              const spec = VisualSpec.safeParse(input);
-              if (!spec.success) return { status: 'refused', reason: 'invalid', message: 'sg_anatomy needs the evidence_ref of each strokes gained read.' };
-              const result = compileVisual(spec.data, evidenceByRef);
-              if (!result.ok) return { status: 'refused', reason: result.reason, message: result.message };
-              writer.write({ type: 'data-visual-artifact', id: `visual-${result.artifact.artifactId}`, data: result.artifact });
-              return {
-                status: 'shown',
-                message: `Shown to the coach: ${result.artifact.title}. It plots ${result.artifact.legs.map((l) => l.label).join(', ')} for ${result.artifact.entity.label} from the reads you named. Do not repeat its figures in a table; add the one thing it does not say.`,
-              };
-            },
-          }),
+    // Visual artifacts (docs/architecture/coachhelm-agentic-visuals.md): the model designs the visual and names the
+    // reads behind it; trusted code copies the figures. Always registered (owner, 2026-10-29: no flag).
+    show_visual: tool({
+      description:
+        'Show the coach one visual built from reads you already made in this answer; follow the visual playbook in your instructions. kind "compose": you design it from building blocks (headline, kpis, trend, bars, split, compare, note), each naming the evidence_ref of the read it draws from, plus a title in words, an optional one-line lede and layout; the figures are filled in from the reads. kind "sg_anatomy": one player\'s strokes gained legs (get_player_metrics with sg_tee, sg_approach, sg_around_green and sg_putting), passing each read\'s evidence_ref in evidenceRefs. No title, lede, label or note may contain a number. If it is refused because of a number, call it once more in words; if a block is dropped or the visual is refused for any other reason, say what you found in words instead.',
+      inputSchema: ShowVisualInput,
+      execute: async (input) => {
+        progress('show_visual', {});
+        if (input.kind === 'compose') {
+          const parsed = CompositionSpec.safeParse(input);
+          if (!parsed.success) return { status: 'refused', reason: 'invalid', message: 'A composition needs a title and at least one block.' };
+          const result = compileComposition(parsed.data, evidenceByRef);
+          if (!result.ok) return { status: 'refused', reason: result.reason, message: result.message, dropped: result.dropped };
+          writer.write({
+            type: 'data-visual-composition',
+            id: `visual-${result.composition.artifactId}`,
+            data: result.composition,
+          });
+          return {
+            status: 'shown',
+            message: `Shown to the coach: ${result.composition.title}, with ${result.composition.blocks.map((b) => b.type).join(', ')}. Do not repeat its figures; add the one thing it does not say.`,
+            ...(result.dropped.length > 0 ? { dropped: result.dropped } : {}),
+          };
         }
-      : {}),
+        const spec = VisualSpec.safeParse(input);
+        if (!spec.success) return { status: 'refused', reason: 'invalid', message: 'sg_anatomy needs the evidence_ref of each strokes gained read.' };
+        const result = compileVisual(spec.data, evidenceByRef);
+        if (!result.ok) return { status: 'refused', reason: result.reason, message: result.message };
+        writer.write({ type: 'data-visual-artifact', id: `visual-${result.artifact.artifactId}`, data: result.artifact });
+        return {
+          status: 'shown',
+          message: `Shown to the coach: ${result.artifact.title}. It plots ${result.artifact.legs.map((l) => l.label).join(', ')} for ${result.artifact.entity.label} from the reads you named. Do not repeat its figures in a table; add the one thing it does not say.`,
+        };
+      },
+    }),
 
     // Whole-team reads, built for Clubhouse's Ask. This engine also serves Fairway's chat, so they are registered only
     // while Clubhouse is on for this coach's team (golf_clubhouse_ui, then the HELM_CLUBHOUSE_TEAMS allowlist). Left

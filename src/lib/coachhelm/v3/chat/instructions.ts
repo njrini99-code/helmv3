@@ -102,9 +102,7 @@ response — it does not need to read naturally, and it never counts toward
 `.trim();
 
 /**
- * The visual playbook. Appended only while `coachhelm_visual_artifacts_v1` is
- * on, because it tells the model to call `show_visual`, which is registered
- * under the same flag: describing a tool the model cannot call makes it try.
+ * The visual playbook: how the model designs a visual with `show_visual`.
  * Mirrored for people in `docs/architecture/coachhelm-visual-playbook.md`.
  */
 const VISUALS_SECTION = `
@@ -183,14 +181,12 @@ its own question.
  * an environment-level constant for the lifetime of a deploy, not something
  * that varies request-to-request the way `nowIso` would if it weren't
  * day-formatted, so the static prefix stays identical across requests
- * within one flag state. `visualsEnabled` gates {@link VISUALS_SECTION} the
- * same way, behind `coachhelm_visual_artifacts_v1`.
+ * within one flag state.
  */
 export function buildInstructions(
   ctx: CoachChatContext,
   nowIso: string,
   claimsBlockEnabled: boolean,
-  visualsEnabled = false,
 ): string {
   const today = new Intl.DateTimeFormat('en-US', {
     weekday: 'long',
@@ -207,8 +203,10 @@ export function buildInstructions(
 
   const sections = [
     POLICY,
+    VISUALS_SECTION,
+    // Last before Actions, so toggling the claim gate splices one section in
+    // and leaves the prefix before it identical (prompt caching).
     ...(claimsBlockEnabled ? [CLAIMS_BLOCK_SECTION] : []),
-    ...(visualsEnabled ? [VISUALS_SECTION] : []),
     ACTIONS_SECTION,
   ];
 

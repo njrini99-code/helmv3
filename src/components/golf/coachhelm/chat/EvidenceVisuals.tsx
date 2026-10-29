@@ -133,7 +133,7 @@ function directionNote(direction: Measurement['direction']): string | null {
 }
 
 /** Honest states, styled as information rather than error. */
-function CoverageNotice({ envelope }: { envelope: ToolEnvelope }) {
+export function CoverageNotice({ envelope }: { envelope: ToolEnvelope }) {
   if (envelope.coverage === 'complete' || !envelope.coverage_note) return null;
 
   const isFailure = envelope.coverage === 'unavailable';
@@ -161,7 +161,7 @@ function CoverageNotice({ envelope }: { envelope: ToolEnvelope }) {
  * and the shared line is dropped rather than asserting a window that is not
  * true of every value.
  */
-function MetricPanel({
+export function MetricPanel({
   measurements,
   series = [],
 }: {
@@ -351,7 +351,14 @@ function MetricReference({ measurement: m }: { measurement: Measurement }) {
  * benchmark, or the player's own average, is the dashed reference so a reader
  * can see whether the last point is off-trend or ordinary spread.
  */
-export function TrendChart({ series }: { series: MeasurementSeries }) {
+export function TrendChart({
+  series,
+  reference: referenceMode = 'auto',
+}: {
+  series: MeasurementSeries;
+  /** What the dashed line is. `auto`: a real benchmark when the read has one, else the average. */
+  reference?: 'auto' | 'average' | 'benchmark' | 'none';
+}) {
   if (series.points.length < MIN_POINTS_FOR_CHART) {
     // Rule 1: two points are a change, not a trend.
     return <SeriesAsTable series={series} />;
@@ -367,10 +374,13 @@ export function TrendChart({ series }: { series: MeasurementSeries }) {
   // A real, versioned benchmark beats the series' own mean: "vs PGA Tour" is a
   // standard, "vs your own average" is a tautology. The mean is the fallback so
   // the chart always has a reference to read the last point against.
+  const hasBenchmark = Boolean(series.benchmark && !series.benchmark.omitted_for_cohort);
   const reference =
-    series.benchmark && !series.benchmark.omitted_for_cohort
-      ? { value: series.benchmark.value, label: series.benchmark.source }
-      : { value: mean, label: 'Avg' };
+    referenceMode === 'none'
+      ? undefined
+      : hasBenchmark && referenceMode !== 'average'
+        ? { value: series.benchmark!.value, label: series.benchmark!.source }
+        : { value: mean, label: 'Avg' };
 
   const caption = [
     `Latest round, ${formatDay(last.at)}`,
@@ -442,7 +452,14 @@ export function TrendChart({ series }: { series: MeasurementSeries }) {
  *
  * Everything else is bars, which is what an unordered set of categories is.
  */
-function BucketChart({ series }: { series: MeasurementSeries }) {
+export function BucketChart({
+  series,
+  highlight = null,
+}: {
+  series: MeasurementSeries;
+  /** A band label to emphasise — the one the coach asked about. */
+  highlight?: string | null;
+}) {
   const points = series.points.map((p) => ({
     label: p.bucket ?? p.at,
     value: p.value,
@@ -497,6 +514,7 @@ function BucketChart({ series }: { series: MeasurementSeries }) {
             value: d.value,
             radius: dotRadiusForN(d.sample),
             hollow: isHollowDot(d.sample),
+            emphasis: d.label === highlight,
           }))}
           format={fmt}
           domain={[0, 100]}
@@ -528,6 +546,7 @@ function BucketChart({ series }: { series: MeasurementSeries }) {
           label: d.label,
           value: d.value,
           detail: d.sample > 0 ? `${d.sample} attempts` : undefined,
+          emphasis: d.label === highlight,
         }))}
         format={fmt}
       />
@@ -714,12 +733,23 @@ export function ComparisonTable({ measurements }: { measurements: Measurement[] 
  * Players are placed as dots on one axis fitted to their values, best first by
  * the metric's own direction, with the sample in plain words under each name.
  */
-function RankingList({ measurements }: { measurements: Measurement[] }) {
+export function RankingList({
+  measurements,
+  order = 'best_first',
+  highlight = null,
+}: {
+  measurements: Measurement[];
+  /** `best_first` sorts by the metric's own direction; `as_read` keeps the read's order. */
+  order?: 'best_first' | 'as_read';
+  /** A player id to emphasise instead of the leader. */
+  highlight?: string | null;
+}) {
   const withValue = measurements.filter((m) => m.value !== null);
   if (withValue.length === 0) return null;
   const first = withValue[0]!;
   const lower = first.direction === 'lower_better';
-  const ranked = first.direction
+  const sorted = Boolean(first.direction) && order === 'best_first';
+  const ranked = sorted
     ? [...withValue].sort((a, b) => (lower ? a.value! - b.value! : b.value! - a.value!))
     : withValue;
   const fmt = (v: number) => formatValue(v, first.unit);
@@ -729,7 +759,7 @@ function RankingList({ measurements }: { measurements: Measurement[] }) {
     <EvidenceCard
       title={first.metric_label}
       headline={
-        first.direction ? (
+        sorted ? (
           <Headline
             value={fmt(leader.value!)}
             caption={[`${leader.entity.label} is first of ${plural(ranked.length, 'player')}`, directionNote(first.direction)]
@@ -765,11 +795,11 @@ function RankingList({ measurements }: { measurements: Measurement[] }) {
         format={fmt}
         rows={ranked.map((m, i) => ({
           key: m.entity.id,
-          lead: first.direction ? String(i + 1) : undefined,
+          lead: sorted ? String(i + 1) : undefined,
           label: m.entity.label,
           value: m.value!,
           detail: m.sample_size > 0 ? `${m.sample_size} ${m.sample_unit}` : undefined,
-          emphasis: Boolean(first.direction) && i === 0,
+          emphasis: highlight ? m.entity.id === highlight : sorted && i === 0,
         }))}
       />
     </EvidenceCard>
@@ -777,7 +807,7 @@ function RankingList({ measurements }: { measurements: Measurement[] }) {
 }
 
 /** A strokes-gained breakdown: which side of zero, and by how much. */
-function StrokesGainedFigure({ sg }: { sg: NonNullable<ReturnType<typeof strokesGainedCategories>> }) {
+export function StrokesGainedFigure({ sg }: { sg: NonNullable<ReturnType<typeof strokesGainedCategories>> }) {
   const fmt = (v: number) => formatValue(v, 'strokes');
   return (
     <EvidenceCard
@@ -872,7 +902,7 @@ export function EvidenceRenderer({ envelope }: { envelope: ToolEnvelope }) {
  * metric does not get swept in. Needs at least two categories — a single
  * signed number is a figure, not a breakdown, and renders better as a tile.
  */
-function strokesGainedCategories(measurements: Measurement[]): {
+export function strokesGainedCategories(measurements: Measurement[]): {
   data: { key: string; label: string; value: number }[];
   worst: { label: string; value: number };
   entityLabel?: string;

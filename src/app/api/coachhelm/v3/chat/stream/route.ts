@@ -552,8 +552,6 @@ export async function POST(req: NextRequest) {
   // must never disagree. See `instructions.ts`'s `CLAIMS_BLOCK_SECTION` doc
   // comment.
   const claimsBlockEnabled = isFlagEnabled('coachhelm_chat_claim_gate');
-  // The visual playbook rides with the show_visual tool, registered under the same flag (agent-tools.ts).
-  const visualsEnabled = isFlagEnabled('coachhelm_visual_artifacts_v1');
 
   const stream = createUIMessageStream({
     execute: async ({ writer }) => {
@@ -595,7 +593,7 @@ export async function POST(req: NextRequest) {
         // string is ever edited.
         instructions: {
           role: 'system',
-          content: buildInstructions(ctx, new Date().toISOString(), claimsBlockEnabled, visualsEnabled),
+          content: buildInstructions(ctx, new Date().toISOString(), claimsBlockEnabled),
           providerOptions: { anthropic: { cacheControl: { type: 'ephemeral' } } },
         },
         // Pass the tool set so tool parts from earlier turns convert correctly —
