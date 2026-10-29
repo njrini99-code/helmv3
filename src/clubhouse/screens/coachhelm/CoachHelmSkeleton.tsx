@@ -245,12 +245,13 @@ export function CoachHelmSkeleton({ view, chained }: { view: 'coach' | 'player';
  * the shell knows who is signed in, and is the player's meanwhile.
  */
 export type ChRouteSkeleton = 'coach' | 'player' | 'ask' | 'coach-standing' | 'coach-deep-dive' | 'standing' | 'deep-dive';
-export function routeSkeletonFor(role: string | null | undefined, params: { get(name: string): string | null } | null): ChRouteSkeleton {
+export function routeSkeletonFor(role: string | null | undefined, params: { get(name: string): string | null; has(name: string): boolean } | null): ChRouteSkeleton {
   const view = params?.get('view') ?? undefined;
   const drill = playerHelmDrill(view);
   if (role === 'coach') {
     if (view === 'ask') return 'ask';
-    if (drill && params?.get('player')) return drill === 'standing' ? 'coach-standing' : 'coach-deep-dive';
+    // The route's test is `typeof player === 'string'`: an empty `&player=` is still a coach's view of a player (whose check fails).
+    if (drill && params?.has('player')) return drill === 'standing' ? 'coach-standing' : 'coach-deep-dive';
     return 'coach';
   }
   return drill ?? 'player';

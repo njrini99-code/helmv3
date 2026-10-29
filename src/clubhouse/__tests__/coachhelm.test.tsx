@@ -1334,6 +1334,7 @@ describe('CoachHelm route skeleton', () => {
     expect(routeSkeletonFor('coach', q('view=standing&player=p1'))).toBe('coach-standing');
     expect(routeSkeletonFor('coach', q('view=profile&player=p1'))).toBe('coach-standing');
     expect(routeSkeletonFor('coach', q('view=deep-dive'))).toBe('coach');
+    expect(routeSkeletonFor('coach', q('view=deep-dive&player='))).toBe('coach-deep-dive');
     for (const view of ['track-record', 'monday-brief', 'brief', 'nonsense', '']) expect(routeSkeletonFor('coach', q(`view=${view}`))).toBe('coach');
     expect(routeSkeletonFor('coach', null)).toBe('coach');
     // The player's own: Standing (and its old address) and the Deep dive; a player's ?view=ask is their board, as the route draws it.

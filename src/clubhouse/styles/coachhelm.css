@@ -1113,9 +1113,12 @@
     opacity: var(--ch-enter-from, 0.55);
   }
 }
-.ch-hl[data-ch-enter] > :not(.ch-hl-h):not(.ch-hv-tabs):not(.ch-ask-tabs),
-.ch-ask[data-ch-enter] > :is(.ch-ask-body, .ch-ask-plain) {
-  animation: ch-view-enter var(--ch-dur-quick) var(--ch-ease) backwards;
+/* Desktop only (the brief is desktop's): the phone keeps its approved swap, and its top bar is drawn inside the same main. */
+@media (min-width: 821px) {
+  .ch-hl[data-ch-enter]:not(.is-phone) > :not(.ch-hl-h):not(.ch-hv-tabs):not(.ch-ask-tabs),
+  .ch-ask[data-ch-enter]:not(.is-phone) > :is(.ch-ask-body, .ch-ask-plain) {
+    animation: ch-view-enter var(--ch-dur-quick) var(--ch-ease) backwards;
+  }
 }
 
 /* A skeleton that follows the route's own (loading.tsx) in the same place does not fade in again: a second fade from nothing would
