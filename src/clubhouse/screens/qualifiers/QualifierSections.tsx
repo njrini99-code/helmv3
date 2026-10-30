@@ -41,7 +41,7 @@ export function clockLabel(at: number, hours: ChClock = '12'): string {
 /**
  * The board's honest Live chip (P009-B2, D1). "Live · updated 4:12 PM" only while the realtime feed is subscribed;
  * "Paused · standings from 4:12 PM" with Refresh when it dropped or the tab slept long (StaleStandings' Try again,
- * without its "didn't load", since nothing failed to load); nothing after the last day, where the status pill says Ended (D3).
+ * without its "didn't load", since nothing failed to load); nothing after the last day, where the status pill says what it waits on (D3).
  * The dot is static (D-33). The time is set after hydration only, so the server's paint never disagrees with the reader's clock.
  */
 export function LiveChip({ view }: { view: LiveFeedView }) {
@@ -52,7 +52,7 @@ export function LiveChip({ view }: { view: LiveFeedView }) {
   const [stamped, setStamped] = useState<number | null>(null);
   useEffect(() => setStamped(Date.now()), [version]);
   const updatedAt = fixed ?? stamped;
-  // Past its last day the status pill above already says "Ended · n rounds outstanding" (D3): the board claims no feed.
+  // Past its last day the status pill above already says "Waiting on n rounds" (D3): the board claims no feed.
   if (ended || feed === 'off') return null;
   const at = updatedAt != null ? clockLabel(updatedAt, hours) : null;
   if (feed === 'paused') {

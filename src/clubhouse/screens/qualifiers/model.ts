@@ -446,9 +446,12 @@ export function endedLive(input: {
   return { outstanding: input.submitted == null ? null : Math.max(0, input.entrants * input.numRounds - input.submitted) };
 }
 
-/** "Ended · 3 rounds outstanding", or "Ended" when nothing is outstanding or the count didn't load. */
+/**
+ * "Waiting on 3 rounds", or "Past last day" when nothing is outstanding or the count didn't load. The list files it under
+ * Active, so "Ended" stays the word for a completed qualifier only: one state, one word (F-0068).
+ */
 export function endedLabel(e: { outstanding: number | null }): string {
-  return e.outstanding ? `Ended · ${plural(e.outstanding, 'round')} outstanding` : 'Ended';
+  return e.outstanding ? `Waiting on ${plural(e.outstanding, 'round')}` : 'Past last day';
 }
 
 export const STATE_LABEL: Record<Exclude<ChQRowState, null>, { tone: 'positive' | 'warning' | 'accent'; label: string }> = {

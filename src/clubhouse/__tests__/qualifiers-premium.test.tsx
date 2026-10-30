@@ -134,7 +134,7 @@ describe('P009-B2 an honest Live state', () => {
     unmount();
   });
 
-  it('the chip: Live with the time it was read; Paused with the time and Refresh; after the last day the pill says Ended, never Live', () => {
+  it('the chip: Live with the time it was read; Paused with the time and Refresh; after the last day the pill says what it waits on, never Live', () => {
     const readAt = new Date('2026-09-28T16:12:00').getTime();
     const { unmount } = wrap(<QualifierDetail data={live()} writes={fakeWrites()} live={false} feed={{ feed: 'live', updatedAt: readAt }} />);
     expect(document.querySelector('[data-feed="live"]')!.textContent).toBe('Live · updated 4:12 PM');
@@ -148,7 +148,7 @@ describe('P009-B2 an honest Live state', () => {
     paused.unmount();
     // Oct 8, a week after its Oct 1 end: 8 entrants × 3 rounds, 13 in.
     wrap(<QualifierDetail data={{ ...live(), today: '2026-10-08' }} writes={fakeWrites()} live={false} feed={{ feed: 'live', updatedAt: readAt }} />);
-    expect(document.querySelector('.ch-qf-status')!.textContent).toBe('Ended · 11 rounds outstanding');
+    expect(document.querySelector('.ch-qf-status')!.textContent).toBe('Waiting on 11 rounds');
     // Said once, by the status pill: the board claims no feed.
     expect(document.querySelector('.ch-qf-feed')).toBeNull();
     expect(screen.queryByText(/^Live/)).toBeNull();
@@ -187,17 +187,18 @@ describe('P009-B2 an honest Live state', () => {
     expect(endedLive({ ...base, today: undefined })).toBeNull();
     expect(endedLive({ ...base, status: 'completed', today: '2026-10-08' })).toBeNull();
     expect(endedLive({ ...base, submitted: null, today: '2026-10-08' })).toEqual({ outstanding: null });
-    expect(endedLabel({ outstanding: null })).toBe('Ended');
-    expect(endedLabel({ outstanding: 0 })).toBe('Ended');
-    expect(endedLabel({ outstanding: 1 })).toBe('Ended · 1 round outstanding');
+    // F-0068: "Ended" is kept for a completed qualifier; an open one past its last day says what it waits on.
+    expect(endedLabel({ outstanding: null })).toBe('Past last day');
+    expect(endedLabel({ outstanding: 0 })).toBe('Past last day');
+    expect(endedLabel({ outstanding: 1 })).toBe('Waiting on 1 round');
     // 11:00 UTC on Oct 2 is still Oct 1 at UTC−12; noon UTC is Oct 2 everywhere.
     expect(endDayFor(new Date('2026-10-02T11:00:00Z'))).toBe('2026-10-01');
     expect(endDayFor(new Date('2026-10-02T12:00:00Z'))).toBe('2026-10-02');
   });
 
-  it('D3 on the list: a live qualifier past its end says Ended on its card; with no day it stays Live', () => {
+  it('D3 on the list: a live qualifier past its end says what it waits on on its card; with no day it stays Live', () => {
     const { unmount } = wrap(<QualifiersList data={{ ...previewList('coach', 'all'), today: '2026-10-08' }} />);
-    expect(within(document.querySelector('.ch-qf-hero') as HTMLElement).getByText('Ended · 11 rounds outstanding')).toBeTruthy();
+    expect(within(document.querySelector('.ch-qf-hero') as HTMLElement).getByText('Waiting on 11 rounds')).toBeTruthy();
     // The year is dropped inside the current season (D11).
     expect(document.querySelector('.ch-qf-hero .ch-qf-meta')!.textContent).toMatch(/Sep 22 – Oct 1(?!,)/);
     unmount();
