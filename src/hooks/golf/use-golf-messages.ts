@@ -1457,6 +1457,11 @@ export async function hasActiveSession(supabase: ReturnType<typeof createClient>
 export async function loadGolfConversationRail(
   supabase: ReturnType<typeof createClient>,
   userId: string,
+  /**
+   * `allowIds`: the active-team allow-list, already read with the page (F-0014: the server action for it queued behind
+   * the page's other actions before the first rows could paint). Left out, the rail reads it itself.
+   */
+  opts: { allowIds?: string[] | null } = {},
 ): Promise<{ ok: true; rows: GolfConversationWithMeta[] } | { ok: false }> {
   // No session means every read below runs as `anon`, which has no EXECUTE on
   // get_golf_conversations_with_details or user_conversation_ids (the
@@ -1470,10 +1475,13 @@ export async function loadGolfConversationRail(
   // Note: Function added in migration, types may need regeneration with `npm run db:types`
   // The active-team allow-list is independent of the RPC, so the two run in
   // parallel instead of the server action waiting on the RPC (PERF-03).
-  const allowedIdsPromise = getGolfActiveTeamConversationIds().then(
-    (ids) => ({ ok: true as const, ids }),
-    (err: unknown) => ({ ok: false as const, err }),
-  );
+  const allowedIdsPromise =
+    opts.allowIds !== undefined
+      ? Promise.resolve({ ok: true as const, ids: opts.allowIds })
+      : getGolfActiveTeamConversationIds().then(
+          (ids) => ({ ok: true as const, ids }),
+          (err: unknown) => ({ ok: false as const, err }),
+        );
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const { data: rawData, error } = await (supabase.rpc as any)(
     'get_golf_conversations_with_details',
@@ -2037,7 +2045,13 @@ export async function loadGolfConversationRail(
  *   Components but does not reset this hook or its cache. A team switch also
  *   refetches: it's a dependency of `fetchConversations` below.
  */
-export function useGolfConversations(viewerUserId?: string | null, activeTeamId?: string | null) {
+export function useGolfConversations(
+  viewerUserId?: string | null,
+  activeTeamId?: string | null,
+  /** The active-team allow-list read with the page, for the first load only (F-0014); later loads read it fresh. */
+  opts: { allowIds?: string[] | null } = {},
+) {
+  const seedAllow = useRef(opts.allowIds);
   // Not during hydration (audit HYD-01): see useCanReadClientCache and the
   // repaint effect below.
   const canReadCache = useCanReadClientCache();
@@ -2109,7 +2123,9 @@ export function useGolfConversations(viewerUserId?: string | null, activeTeamId?
     }
     setError(false);
 
-    const result = await loadGolfConversationRail(supabase, userId);
+    const seed = seedAllow.current;
+    seedAllow.current = undefined;
+    const result = await loadGolfConversationRail(supabase, userId, seed === undefined ? {} : { allowIds: seed });
     if (!result.ok) {
       setError(true);
       // A failed background refresh must preserve the last readable inbox.

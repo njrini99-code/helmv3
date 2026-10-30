@@ -75,7 +75,7 @@ export function Messages({ data }: { data: ChMessagesData }) {
   const delayedToast = useDelayedToast();
   const clock = useNow();
   const now = clock ? clock.toISOString() : data.now;
-  const { conversations, loading, error, refetch } = useGolfConversations(data.viewerUserId, data.teamId);
+  const { conversations, loading, error, refetch } = useGolfConversations(data.viewerUserId, data.teamId, { allowIds: data.activeConversationIds });
   const [selectedId, setSelectedId] = useState<string | null>(null);
   // P-10: class awareness is a coach's line. Off (the flag, a player, the migrations unapplied) it reads nothing.
   const awareness = useClassAwareness();
