@@ -100,6 +100,7 @@ function useOffline(): boolean {
 export function RoundTracking(props: RoundTrackingProps) {
   const { round, holes, currentHoleIndex, onExit, onNavigateToHole, onOpenScorecard, onAutoSave, statusSlot, holeShots, onReviewRound, startHole = 1, dataGapAsks, recoveryPrompt = false, startPrompt } = props;
   const t = useShotTracking(props, PORTS);
+  const offline = useOffline();
   // The one-tap data prompts (CoachHelm Slice 8a, 8b): their session state lives here, beside the engine, so it survives the
   // entry's re-key on every shot and the move between holes. Each is null when it has nothing to ask.
   const puttAsk = useChPuttPrompt({ asks: dataGapAsks, holeNumber: t.currentHole?.number, shotHistory: t.shotHistory, onTag: t.handleTagPuttMiss });
@@ -174,7 +175,6 @@ export function RoundTracking(props: RoundTrackingProps) {
   // While a holed hole is being saved, or after that save failed ("kept on this device", CH-11003), the line never says
   // "Round saved": the hole's own save is the truth then. Device, syncing and retrying still agree with it, so they stay.
   const saveState = heldSaved === 'saved' && t.holeCheckpointStatus !== 'idle' ? 'idle' : heldSaved;
-  const offline = useOffline();
   const meta = [round.teeLabel && `${round.teeLabel} tees`, round.type && TYPE_LABEL[round.type]].filter(Boolean).join(' · ');
   const atStart = !!startPrompt && isRoundStartMoment({ holeScores: holes.map((h) => h.score), currentHoleIndex, startHole, shotCount: t.shotHistory.length });
   const prompts =
