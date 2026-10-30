@@ -96,4 +96,3 @@ describe('Swap height', () => {
     expect(container.querySelector<HTMLElement>('.ch-swap')!.style.height).toBe('');
   });
 });
-
