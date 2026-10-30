@@ -537,6 +537,8 @@
     --ch-tour-cmp-dcol: 150px;
   }
 }
+/* The table wrapper and its rows are layout-free: the cells sit straight in the body's grid (F-0016). */
+.ch-tour-cmp-tbl,
 .ch-tour-cmp-hd,
 .ch-tour-cmp-row {
   display: contents;
