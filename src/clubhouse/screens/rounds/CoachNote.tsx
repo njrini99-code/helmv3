@@ -5,6 +5,8 @@ import { useRouter } from 'next/navigation';
 import { saveRoundCoachNote } from '@/app/golf/actions/round-coach-note';
 import { useAction } from '../../lib/use-action';
 import { Button } from '../../ui/Button';
+import { InlineNotice } from '../../ui/Notices';
+import { useRefresh } from '../../lib/use-refresh';
 
 const NOTE_MAX = 2000;
 
@@ -16,6 +18,7 @@ const NOTE_MAX = 2000;
  */
 export function CoachNote({ roundId, note, error, canWrite, playerFirst }: { roundId: string; note: string | null; error?: boolean; canWrite: boolean; playerFirst: string | null }) {
   const router = useRouter();
+  const { refresh, refreshing } = useRefresh();
   const [editing, setEditing] = useState(false);
   const [draft, setDraft] = useState('');
   // What was just saved, shown until the page's own read of the note lands (router.refresh), so the card never flashes the old text.
@@ -100,9 +103,8 @@ export function CoachNote({ roundId, note, error, canWrite, playerFirst }: { rou
       ) : shown ? (
         <p>{shown}</p>
       ) : error ? (
-        <p className="ch-rv-cn__none" data-ch-code="CH-11222">
-          We couldn’t check for a coach note just now. Reload to try again.
-        </p>
+        // Try again in place, not "Reload" (F-0061).
+        <InlineNotice code="CH-11222" title="We couldn’t check for a coach note" onRetry={refresh} retrying={refreshing} />
       ) : (
         <p className="ch-rv-cn__none">No note on this round yet.</p>
       )}

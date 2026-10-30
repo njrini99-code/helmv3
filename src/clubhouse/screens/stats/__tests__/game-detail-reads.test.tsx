@@ -1,5 +1,5 @@
 // @vitest-environment jsdom
-import { cleanup, fireEvent, render, screen } from '@testing-library/react';
+import { cleanup, fireEvent, render, screen, within } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 /**
@@ -82,13 +82,13 @@ describe('off and failed', () => {
     expect(lines()).toHaveLength(0);
   });
 
-  it('failed draws one CH-5215 line under the section chips, and no section line', () => {
+  it('failed draws one CH-5215 notice under the section chips, with Try again in place (F-0061), and no section line', () => {
     draw(PREVIEW_READS_FAILED);
     const failed = document.querySelectorAll('[data-ch-code="CH-5215"]');
     expect(failed).toHaveLength(1);
-    expect(failed[0]!.className).toBe('ch-gx-rule');
     expect(failed[0]!.previousElementSibling?.className).toBe('ch-gd__nav');
-    expect(failed[0]!.textContent).toBe('CoachHelm’s reads didn’t load, so the sections don’t say how many there are. Try again in a moment.');
+    expect(failed[0]!.querySelector('.ch-notice__title')!.textContent).toBe('CoachHelm’s reads didn’t load');
+    expect(within(failed[0] as HTMLElement).getByRole('button', { name: 'Try again' })).toBeTruthy();
     expect(lines()).toHaveLength(0);
   });
 });
