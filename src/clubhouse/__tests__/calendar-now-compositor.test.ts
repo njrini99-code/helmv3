@@ -11,7 +11,10 @@ describe('Calendar now pulses are compositor-only (F-0047)', () => {
     for (const m of css.matchAll(/@keyframes ([\w-]+) \{/g)) {
       let depth = 1;
       let i = m.index! + m[0].length;
-      while (depth > 0 && i < css.length) depth += css[i] === '{' ? 1 : css[i] === '}' ? -1 : 0, i++;
+      while (depth > 0 && i < css.length) {
+        depth += css[i] === '{' ? 1 : css[i] === '}' ? -1 : 0;
+        i++;
+      }
       frames.push([m[1]!, css.slice(m.index!, i)]);
     }
     expect(frames.length).toBeGreaterThan(0);

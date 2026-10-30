@@ -11,7 +11,7 @@ import { useSlidePlate } from '../slide-plate';
 type Played = { keyframes: Keyframe[]; options: KeyframeAnimationOptions; anim: { currentTime: number | null; playState: string; cancel: () => void } };
 let played: Played[] = [];
 let origAnimate: typeof HTMLElement.prototype.animate | undefined;
-const X: Record<string, number> = { a: 0, b: 100, c: 200 };
+const X = { a: 0, b: 100, c: 200 } as Record<string, number> & { a: number; b: number; c: number };
 
 beforeEach(() => {
   played = [];

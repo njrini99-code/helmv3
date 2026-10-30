@@ -120,7 +120,7 @@ describe('elevation tokens (B4)', () => {
 /** Raw box-shadows per stylesheet on 2026-10-24 (row 40): rings, wells, halos and drops. Only falls. */
 const RAW_SHADOW: Record<string, number> = {
   'styles/auth.css': 6,
-  'styles/calendar.css': 29,
+  'styles/calendar.css': 28,
   'styles/classes.css': 14,
   'styles/coachhelm-ask.css': 1,
   'styles/coachhelm-dive.css': 1,
