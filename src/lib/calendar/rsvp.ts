@@ -9,6 +9,8 @@ import type { SupabaseClient } from '@supabase/supabase-js';
 import type { GolfCoach, GolfEvent, GolfEventAttendance, GolfPlayer } from '@/lib/types/golf';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { requireWriteSuccess } from './write-integrity';
+import { resolveTeamTimeZone } from './availability';
+import { formatNoticeWhen } from './timezone';
 import { profilesById, readGolfPlayerProfiles } from '@/lib/golf/player-profiles';
 
 // ============================================================================
@@ -64,7 +66,7 @@ type EventWithCreator = GolfEvent & {
   creator: Pick<GolfCoach, 'user_id'> | null;
 };
 
-type EventDateInput = Pick<GolfEvent, 'start_time'>;
+type EventDateInput = Pick<GolfEvent, 'start_time' | 'all_day'>;
 type MaybeArray<T> = T | T[] | null | undefined;
 
 function firstOrNull<T>(value: MaybeArray<T>): T | null {
@@ -260,11 +262,12 @@ export async function sendEventInvitations(
   // that doesn't ask for replies. The attendance rows above still record who is on the event.
   if (!event.requires_rsvp) return;
 
+  const timeZone = await resolveTeamTimeZone([event.team_id], supabase, 'rsvp.sendEventInvitations');
   await writeEventInvitationNotices({
     eventId,
     userIds: players.map((p) => p.user_id).filter((id): id is string => Boolean(id)),
     title: `You're invited: ${event.title}`,
-    message: `${formatEventDate(event)} ${event.location ? `at ${event.location}` : ''}`.trim(),
+    message: `${formatEventDate(event, timeZone)} ${event.location ? `at ${event.location}` : ''}`.trim(),
   });
 }
 
@@ -351,13 +354,14 @@ export async function notifyEventUpdate(
   // type means each distinct reschedule inserts exactly one fresh row
   // (repeat saves of the same time still dedupe) with no delete-then-reinsert.
   const timingKey = `${event.start_time ?? 'tbd'}|${event.end_time ?? ''}`;
+  const timeZone = changes ? null : await resolveTeamTimeZone([event.team_id], supabase, 'rsvp.notifyEventUpdate');
 
   const notifications = userIds.map(userId => ({
     user_id: userId,
     event_id: eventId,
     notification_type: `event_updated:${timingKey}`,
     title: `Event updated: ${event.title}`,
-    message: changes || `${formatEventDate(event)} ${event.location ? `at ${event.location}` : ''}`.trim(),
+    message: changes || `${formatEventDate(event, timeZone)} ${event.location ? `at ${event.location}` : ''}`.trim(),
     action_url: `/golf/dashboard/calendar?event=${eventId}`,
   }));
 
@@ -385,7 +389,7 @@ export async function notifyEventSeriesUpdate(rootId: string, eventIds: string[]
   if (eventIds.length === 0) return;
   const { data: events, error: eventsError } = await supabase
     .from('golf_events')
-    .select('id, title, start_time, end_time, all_day, location, requires_rsvp')
+    .select('id, team_id, title, start_time, end_time, all_day, location, requires_rsvp')
     .in('id', eventIds)
     .order('start_time', { ascending: true });
   if (eventsError) {
@@ -412,12 +416,13 @@ export async function notifyEventSeriesUpdate(rootId: string, eventIds: string[]
   if (userIds.length === 0) return;
 
   const later = asking.length - 1;
+  const timeZone = await resolveTeamTimeZone(first.team_id ? [first.team_id] : [], supabase, 'rsvp.notifyEventSeriesUpdate');
   const notifications = userIds.map((userId) => ({
     user_id: userId,
     event_id: first.id,
     notification_type: `event_updated:series:${rootId}:${first.start_time ?? 'tbd'}`,
     title: `Event updated: ${first.title}`,
-    message: `${formatEventDate(first as GolfEvent)}${later > 0 ? ` and ${later} later` : ''}`,
+    message: `${formatEventDate(first, timeZone)}${later > 0 ? ` and ${later} later` : ''}`,
     action_url: `/golf/dashboard/calendar?event=${first.id}`,
   }));
   const adminClient = createAdminClient();
@@ -628,23 +633,10 @@ export async function getPlayerPendingInvitations(
 // ============================================================================
 
 /**
- * Format event date for display in notifications
+ * Format event date for display in notifications, in the team's zone (F-0001: the server runs in UTC, so a zone-less
+ * format wrote a 10:00 AM New York start as 2:00 PM).
  */
-function formatEventDate(event: EventDateInput): string {
-  if (!event.start_time) return 'TBD';
-
-  const startDate = new Date(event.start_time);
-  const dateStr = startDate.toLocaleDateString('en-US', {
-    weekday: 'short',
-    month: 'short',
-    day: 'numeric',
-  });
-
-  const timeStr = startDate.toLocaleTimeString('en-US', {
-    hour: 'numeric',
-    minute: '2-digit',
-  });
-
-  return `${dateStr} at ${timeStr}`;
+function formatEventDate(event: EventDateInput, timeZone: string | null): string {
+  return formatNoticeWhen(event.start_time, event.all_day, timeZone);
 }
 
