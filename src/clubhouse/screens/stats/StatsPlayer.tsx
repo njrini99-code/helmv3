@@ -55,6 +55,7 @@ import { devMetric, devProgress, devTitle, devValue, goalLine } from './dev-form
 import { pluralWord } from '../../lib/plural';
 import { PlayerInsight } from './StatsInsight';
 import { NoData } from '../../ui/NoData';
+import { usePushOnce } from '../../lib/nav-once';
 
 type Tab = 'overview' | 'game' | 'rounds' | 'dev';
 const TABS: readonly Tab[] = ['overview', 'game', 'rounds', 'dev'];
@@ -76,6 +77,7 @@ export function formNote(first: string, scores: number[]): string {
  */
 export function StatsPlayer({ data, coachId, initialTab, reads }: { data: ChPlayerProfile; coachId: string | null; initialTab?: string; reads?: ChReadsSource }) {
   const router = useRouter();
+  const pushOnce = usePushOnce(router);
   const toast = useToast();
   const delayedToast = useDelayedToast();
   const reduced = useChReducedMotion();
@@ -136,7 +138,8 @@ export function StatsPlayer({ data, coachId, initialTab, reads }: { data: ChPlay
   const baseline = sgBaseline(data.tour);
   const base = '/golf/dashboard/stats';
   const href = (player: string | null, f: ChFilter) => statsHref(base, f, { player: player && coach ? player : null });
-  const go = (player: string | null, f: ChFilter) => start(() => router.push(href(player, f), { scroll: false }));
+  // A quick double tap on a segment pushes once (F-0026).
+  const go = (player: string | null, f: ChFilter) => start(() => pushOnce(href(player, f), { scroll: false }));
   // Changing the window or the filter while offline requests nothing (CH-5901); one that is slow says so once (CH-5902).
   const here = href(data.id, data.filter);
   const [loading, setLoading] = useState<ChFilter | null>(null);

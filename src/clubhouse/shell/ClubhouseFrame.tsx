@@ -14,6 +14,7 @@ import { useAppearancePreferences } from '@/hooks/golf/use-appearance-preference
 import { ToastProvider } from '../ui/Toast';
 import type { ChShellData } from '../data/shell';
 import { useRouter } from 'next/navigation';
+import { useNavOnce } from '../lib/nav-once';
 import { activeNavItem, isAliased, isKnownDashboardPath, isRebuilt, phoneFullScreen, phonePushedTop, routeLabel, withoutCoachParams } from './nav';
 import { Sidebar } from './Sidebar';
 import { RailToggle } from './RailToggle';
@@ -149,6 +150,8 @@ export function ClubhouseFrame({
   const relink = useRelinkEpoch(pathname, search);
   // A17: back after a minute away, or back online, the page fetches again (shell/use-quiet-refresh.ts).
   useQuietRefresh(pathname);
+  // One navigation per intent: a quick double tap doesn't push the same page twice (F-0026).
+  useNavOnce(pathname, search);
   // A player's address drops the coach-only parameters it was opened with (F-0066); what the page shows is unchanged.
   const router = useRouter();
   useEffect(() => {
