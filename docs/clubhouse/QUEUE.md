@@ -363,6 +363,13 @@ its rows together and does not map them one to one.
 | aplus-cons2-14b | IconButton for menu keys; 83 plurals onto plural(); the spread's axis under the team pill (CONS-2, CONS-14) | Clubhouse A+ | in progress | #2361 | agent/clubhouse-aplus-phase2 (Clubhouse A+ handoff); ratchets lowered; no Bridge IDs or CH codes needed |
 | polish-1027 | Production polish pass before launch: every page on the phone (390, 375) and desktop (1280), light and dark; fixes, page docs, P016 phone spec | Clubhouse polish | in progress | (this PR) | agent/clubhouse-polish |
 | polish-margin-reset | `.ch-root p` and `.ch-root h1..h3 { margin: 0 }` (styles/base.css) outrank every one-class rule: about 105 page rules that give a `p` or a heading a margin never apply. Lower the reset's specificity and review every page with before and after shots | Clubhouse polish | open | — | unclaimed (found by polish-1027; STATUS.md 2026-10-27) |
+| AUD-F-0006 | A push never commits a frame of the old page (held layer at the tap) | Clubhouse fixes | in progress | | claude/audit-fix-05-motion (Clubhouse audit fix plan, PR 5); no Bridge IDs or CH codes needed |
+| AUD-F-0007 | Calendar view switches end the height glide (owner decision 3 default) | Clubhouse fixes | in progress | | claude/audit-fix-05-motion (Clubhouse audit fix plan, PR 5); no Bridge IDs or CH codes needed |
+| AUD-F-0008 | The section strip navigates one frame after its plate lands | Clubhouse fixes | in progress | | claude/audit-fix-05-motion (Clubhouse audit fix plan, PR 5); no Bridge IDs or CH codes needed |
+| AUD-F-0017 | Slide plates retarget from their live position and velocity | Clubhouse fixes | in progress | | claude/audit-fix-05-motion (Clubhouse audit fix plan, PR 5); no Bridge IDs or CH codes needed |
+| AUD-F-0018 | Reduce Motion keeps sheet drags and the edge swipe; they settle at once | Clubhouse fixes | in progress | | claude/audit-fix-05-motion (Clubhouse audit fix plan, PR 5); no Bridge IDs or CH codes needed |
+| AUD-F-0046 | The section strip holds snap while it navigates | Clubhouse fixes | in progress | | claude/audit-fix-05-motion (Clubhouse audit fix plan, PR 5); no Bridge IDs or CH codes needed |
+| AUD-F-0047 | Calendar now-line rings animate opacity, not box-shadow | Clubhouse fixes | in progress | | claude/audit-fix-05-motion (Clubhouse audit fix plan, PR 5); no Bridge IDs or CH codes needed |
 
 <!-- markdownlint-enable MD013 -->
 
