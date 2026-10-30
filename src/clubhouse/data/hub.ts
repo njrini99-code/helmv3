@@ -14,7 +14,7 @@ import type { GolfAnnouncementMeta } from '@/lib/types/golf';
 import { chLogServer } from '../lib/track-server';
 import { rsvpOf } from './calendar';
 import { homeClock } from './home-clock';
-import { fullName, loadSeasonRounds } from './season';
+import { currentSeasonLabel, fullName, loadSeasonRounds } from './season';
 import { isoDay } from '../lib/dates';
 
 /**
@@ -303,7 +303,7 @@ export async function loadTeamHub(input: { role: ChHubRole; teamId: string; user
   // The team's clock is read in the first wave, beside the reads that don't need it (C2): only what is drawn from them does.
   const [clock, teamRes, rosterRes, docsRes, updatesRes, hidden] = await Promise.all([
     homeClock(supabase, input.teamId, now),
-    supabase.from('golf_teams').select('name, season').eq('id', input.teamId).maybeSingle(),
+    supabase.from('golf_teams').select('name').eq('id', input.teamId).maybeSingle(),
     supabase.from('golf_team_members').select('player:golf_players(id, first_name, last_name)').eq('team_id', input.teamId).eq('status', 'active'),
     getDocuments(input.teamId).catch((err: unknown) => ({ data: null, error: err instanceof Error ? err.message : 'failed' })),
     getUnifiedNotifications({ limit: 6 }).catch(() => ({ success: false as const, error: 'failed' })),
@@ -325,7 +325,8 @@ export async function loadTeamHub(input: { role: ChHubRole; teamId: string; user
     role: input.role,
     teamId: input.teamId,
     teamName: teamRes.data?.name ?? 'Your team',
-    season: teamRes.data?.season ?? null,
+    // Computed from 1 August in the team's zone, never the stored free text (F-0002).
+    season: currentSeasonLabel(now, tz),
     viewerPlayerId: input.role === 'player' ? input.playerId : null,
     playersError: input.role === 'coach' && !!rosterRes.error,
     players: input.role === 'coach' ? roster.map((p) => ({ id: p.id, name: fullName(p) })).sort((a, b) => a.name.localeCompare(b.name)) : [],

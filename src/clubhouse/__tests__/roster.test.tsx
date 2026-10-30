@@ -1263,7 +1263,7 @@ describe('Roster · behaviour contracts (P003, docs/clubhouse/pages/P003-roster/
   it('30101 Roster opens on the active players by average, with the team line, Needs a look and the join requests', () => {
     wrap(roster());
     expect(screen.getByRole('heading', { level: 1, name: 'Roster' })).toBeTruthy();
-    expect(document.querySelector('.ch-rs-team__name')!.textContent).toBe('Varsity · Fall 2026');
+    expect(document.querySelector('.ch-rs-team__name')!.textContent).toBe('Varsity · 2026–27');
     // The card's team strip has its own class: the header's avatar row (.ch-rs-team) never takes the strip's bar styles.
     expect(document.querySelector('.ch-rs-head .ch-rs-strip')).toBeNull();
     const rosterCss = readFileSync(resolve(process.cwd(), 'src/clubhouse/styles/roster.css'), 'utf8');

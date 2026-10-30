@@ -18,6 +18,7 @@ import {
   loadSeasonRounds,
   loadTeamZone,
   mean,
+  currentSeasonLabel,
   seasonStartDate,
   shortDate,
   summarizePlayer,
@@ -165,7 +166,7 @@ export async function loadRoster(input: { teamId: string; coachId: string }): Pr
   const now = new Date();
 
   const [teamRes, membersRes, requestsRes, tz] = await Promise.all([
-    supabase.from('golf_teams').select('name, join_code, season').eq('id', input.teamId).maybeSingle(),
+    supabase.from('golf_teams').select('name, join_code').eq('id', input.teamId).maybeSingle(),
     supabase
       .from('golf_team_members')
       .select('status, jersey_number, joined_at, availability, availability_updated_at, player:golf_players(id, first_name, last_name, graduation_year, hometown, state, high_school_name, handicap, handicap_index)')
@@ -282,7 +283,8 @@ export async function loadRoster(input: { teamId: string; coachId: string }): Pr
   return {
     teamId: input.teamId,
     teamName: teamRes.data?.name ?? 'Your team',
-    season: teamRes.data?.season ?? null,
+    // Computed from 1 August in the team's zone, never the stored free text (F-0002).
+    season: currentSeasonLabel(now, tz),
     joinCode: teamRes.data?.join_code ?? null,
     teamError: !!teamRes.error,
     emailInvites: canEmailPlayerInvites(),
