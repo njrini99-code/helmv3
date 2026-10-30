@@ -1,7 +1,7 @@
 'use client';
 
 import { useMemo } from 'react';
-import { Flag, Users } from 'lucide-react';
+import { Flag, UserPlus, Users } from 'lucide-react';
 import type { ChTeamRound, ChTeamRounds } from '../../data/team-rounds-shape';
 import { formatFixed, formatToPar } from '../../lib/format';
 import { NoData } from '../../ui/NoData';
@@ -14,6 +14,7 @@ import { rebuiltHref } from '../../shell/nav';
 import { usePressPrefetch } from '../../shell/use-prefetch-tabs';
 import { FigureRow, LedgerList, LedgerRow } from '../../ui/Ledger';
 import { InlineNotice } from '../../ui/Notices';
+import { Button } from '../../ui/Button';
 import { SearchField } from '../../ui/SearchField';
 import { Section } from '../../ui/Section';
 import { SectionBoundary } from '../../ui/SectionBoundary';
@@ -106,6 +107,9 @@ function TeamRoundRow({ r, by }: { r: ChTeamRound; by: Group }) {
  * figures on top, then the rounds by month or by player, each opening its review. Search by player or course, or pick a
  * player.
  */
+const inviteHref = rebuiltHref('/golf/dashboard/roster?invite=1');
+const rosterHref = rebuiltHref('/golf/dashboard/roster');
+
 export function TeamRounds({ data: fresh, teamId, live, liveNow }: { data: ChTeamRounds; teamId: string; live?: LiveSnapshot; liveNow?: number }) {
   const phone = useChPhone();
   const { refresh, refreshing } = useRefresh();
@@ -156,9 +160,36 @@ export function TeamRounds({ data: fresh, teamId, live, liveNow }: { data: ChTea
       ) : data.rounds.error ? (
         <InlineNotice code="CH-11221" title="The team’s rounds didn’t load" body="Nothing is lost. Posted rounds are still saved; try again in a moment." onRetry={refresh} retrying={refreshing} />
       ) : noRoster ? (
-        <EmptyState size="page" code="CH-11317" icon={Users} title="No players on the team yet" body="Rounds your players post show up here once they join the roster." />
+        <EmptyState
+          size="page"
+          code="CH-11317"
+          icon={Users}
+          title="No players on the team yet"
+          body="Rounds your players post show up here once they join the roster."
+          // The next step, as Home's empty team offers (F-0030).
+          action={
+            inviteHref ? (
+              <Button variant="primary" leftIcon={UserPlus} href={inviteHref}>
+                Invite players
+              </Button>
+            ) : undefined
+          }
+        />
       ) : nothing ? (
-        <EmptyState size="page" code="CH-11320" icon={Flag} title="No rounds yet" body="Every round your players post shows up here, newest first." />
+        <EmptyState
+          size="page"
+          code="CH-11320"
+          icon={Flag}
+          title="No rounds yet"
+          body="Every round your players post shows up here, newest first."
+          action={
+            rosterHref ? (
+              <Button variant="secondary" href={rosterHref}>
+                Open roster
+              </Button>
+            ) : undefined
+          }
+        />
       ) : (
         <>
           <SectionBoundary surface="rounds.team.season" label="This season" code="CH-11203">
