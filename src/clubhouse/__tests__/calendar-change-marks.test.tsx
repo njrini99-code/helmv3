@@ -681,3 +681,22 @@ describe('the feature’s contrast on the surfaces it sits on, from the tokens (
     if (theme === 'light') expect(ratio(t('ch-ink-500'), [237, 233, 223, 1]), 'ring on the phone page').toBeGreaterThanOrEqual(3);
   });
 });
+
+// F-0010 (NOT FOUND, pinned): the week grid's "Was …" line belongs to the event that moved. Hovering any other block
+// never draws it, however near that block sits.
+describe('the old-slot line is the moved event’s own (F-0010)', () => {
+  it('hovering another event on the week never draws the moved event’s "Was" line', async () => {
+    const user = userEvent.setup();
+    wrap(withMarks([recRow()], { anchor: '2026-10-14' }));
+    const moved = screen.getByRole('button', { name: /^Recovery nine, 3:30 – 5:00 PM/ });
+    const others = [...document.querySelectorAll<HTMLElement>('button.ch-ev')].filter((b) => b !== moved);
+    expect(others.length).toBeGreaterThan(0);
+    for (const b of others) {
+      await user.hover(b);
+      expect(document.querySelector('.ch-oldslot')).toBeNull();
+      await user.unhover(b);
+    }
+    await user.hover(moved);
+    expect(document.querySelector('.ch-oldslot')?.textContent).toBe('Was 3:00 PM');
+  });
+});

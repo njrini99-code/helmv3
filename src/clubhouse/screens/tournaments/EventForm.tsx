@@ -142,7 +142,8 @@ function NewEvent({ data, phone }: { data: ChTourFormData; phone: boolean }) {
       <TourHead
         id={TITLE_ID}
         phone={phone}
-        eyebrow="Tournaments"
+        // The phone's back label already says Tournaments (F-0054).
+        eyebrow={phone ? undefined : 'Tournaments'}
         title="New event"
         line="Name it, pick the days and the course. The team’s lineup comes next."
         crumb={phone ? undefined : <TourCrumb href={back} />}

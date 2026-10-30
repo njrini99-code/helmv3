@@ -131,3 +131,18 @@ describe('New event (Tournaments page)', () => {
     expect(container.querySelector('[data-ch-code="CH-16301"]')).not.toBeNull();
   });
 });
+
+describe('New event on the phone (F-0054)', () => {
+  it('names the page once: one large title, and no eyebrow repeating the back label', () => {
+    const { container } = render(<EventForm data={f.form.create} phone />);
+    const h1 = container.querySelector('h1.ch-large-title');
+    expect(h1?.textContent).toBe('New event');
+    expect(h1?.hasAttribute('data-ch-large-title')).toBe(true);
+    expect([...container.querySelectorAll('.ch-intro__eyebrow')].map((e) => e.textContent)).not.toContain('Tournaments');
+  });
+  it('desktop keeps its eyebrow and its canopy head', () => {
+    const { container } = draw();
+    expect(container.querySelector('.ch-large-title')).toBeNull();
+    expect(container.textContent).toContain('Tournaments');
+  });
+});
