@@ -10,6 +10,7 @@ import { EmptyState } from '../../ui/States';
 import { changeTone, formatFixed, formatSigned, formatToPar } from '../../lib/format';
 import { rebuiltHref } from '../../shell/nav';
 import { LinkPending } from '../../shell/LinkPending';
+import { usePressPrefetch } from '../../shell/use-prefetch-tabs';
 import { FormLine, FormRange } from '../../ui/FormLine';
 import { formRangeWords } from '../../ui/form-range';
 import { RefreshNotice } from '../../ui/RefreshNotice';
@@ -63,10 +64,12 @@ export function leaderPlaces(rows: Pick<ChLeaderRow, 'avg' | 'status'>[]): Array
 
 function Row({ p, pos, rounds }: { p: ChLeaderRow; pos: { label: string; place: number | null }; rounds?: ChLatestRound[] }) {
   const href = rebuiltHref(`/golf/dashboard/stats?player=${p.playerId}`);
+  // The player's stats are fetched on the press, and the first rows while the page is idle, as Roster's are (F-0034).
+  const press = usePressPrefetch();
   const top = pos.place != null && pos.place <= 3;
   // P002 D3: the row is a table row (a div); the link is the player's name, stretched over the row by its ::after.
   const name = href ? (
-    <Link href={href} className="ch-h-lb__go">
+    <Link href={href} className="ch-h-lb__go" {...press(href)}>
       <span className="ch-h-lb__name">{p.name}</span>
       <LinkPending />
     </Link>
