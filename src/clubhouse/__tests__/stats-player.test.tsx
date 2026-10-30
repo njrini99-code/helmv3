@@ -1586,3 +1586,16 @@ describe('Stats player · what changed (row 70)', () => {
     expect(card()).toBeNull();
   });
 });
+
+describe('My stats · landmark names (F-0064)', () => {
+  const names = () => screen.queryAllByRole('region').map((r) => r.getAttribute('aria-label') ?? document.getElementById(r.getAttribute('aria-labelledby') ?? '')?.textContent ?? '');
+  it('every region on every tab has its own name', async () => {
+    const user = userEvent.setup();
+    show(player(), null);
+    for (const t of screen.getAllByRole('tab').map((x) => x.textContent ?? '')) {
+      await openTab(user, new RegExp(`^${t.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}`));
+      const all = names();
+      expect(all.filter((n, i) => all.indexOf(n) !== i), t).toEqual([]);
+    }
+  });
+});
