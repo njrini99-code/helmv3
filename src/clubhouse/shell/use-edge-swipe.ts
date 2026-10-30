@@ -27,8 +27,9 @@ const COVERED_SHIFT = CH_UNDERLAY_SHIFT;
  * pop use), and the page beneath it draws back with it (the same parallax the pop uses). Let go past 35% of the width, or
  * flicked, and the screen leaves on the smooth spring from where it is, at the speed it had, while its Back runs; sooner
  * and it springs back. A first travel that is vertical belongs to the scroll for the rest of the touch. The selection
- * haptic ticks as the commit mark is crossed. With reduced motion the screen does not follow: the touch is read the
- * same way and a commit simply pops it.
+ * haptic ticks as the commit mark is crossed. With reduced motion the gesture still works and only its settle changes
+ * (F-0018): the screen follows the finger with nothing moving beneath it (no parallax), a commit pops it with the
+ * reduced crossfade, and a let-go short of the mark puts it back at once.
  *
  * It does not run beside a native gesture (edge-swipe.ts `nativeSwipeIsOff`), during a round, or with a sheet or dialog
  * open, and it needs the screen's own Back to run (a form's "Cancel" is not one). In the iOS app, a screen with a chevron
@@ -83,8 +84,9 @@ export function useEdgeSwipeBack(screen: RefObject<HTMLElement | null>, { enable
       const dragged = machine.phase === 'dragging';
       machine.cancel();
       stop();
-      if (!dragged || reduced) return;
+      if (!dragged) return;
       clear(el, ...covered);
+      if (reduced) return;
       if (page.length) placeUnderlay(page, 1);
     };
     const springBack = (r: EdgeRelease) => {
@@ -201,7 +203,10 @@ export function useEdgeSwipeBack(screen: RefObject<HTMLElement | null>, { enable
       if (e.cancelable) e.preventDefault();
       if (move.crossed) haptic('select');
       if (reduced) {
+        // The screen follows the finger; nothing beneath it moves.
+        if (!live) el.style.transition = 'none';
         live = true;
+        el.style.translate = `${move.frame.offset}px 0`;
         return;
       }
       if (!live) {
@@ -222,7 +227,18 @@ export function useEdgeSwipeBack(screen: RefObject<HTMLElement | null>, { enable
       stop();
       if (!release) return;
       if (reduced) {
-        if (release.outcome === 'commit') findScreenBack(el)?.click();
+        const back = release.outcome === 'commit' ? findScreenBack(el) : null;
+        if (!back) {
+          clear(el);
+          return;
+        }
+        back.click();
+        // A Back that was refused leaves the screen: put it back at once, two frames on.
+        frame = requestAnimationFrame(() => {
+          frame = requestAnimationFrame(() => {
+            if (exit.current.present) clear(el);
+          });
+        });
         return;
       }
       if (release.outcome === 'commit') commit(release);
