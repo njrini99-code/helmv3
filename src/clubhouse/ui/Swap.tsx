@@ -21,6 +21,7 @@ export function Swap({
   dir = 1,
   className,
   inline = false,
+  resize = 'ease',
   children,
 }: {
   swapKey: string | number;
@@ -30,10 +31,16 @@ export function Swap({
   className?: string;
   /** A figure inside a line of text (a stat's value): spans, laid out inline. */
   inline?: boolean;
+  /**
+   * How the frame's height follows a swap. `ease` glides it (B7); `instant` takes the new height at once, as reduced motion
+   * does, for a swap whose following siblings are the rest of the page (Calendar's Day/Month, F-0007: a page-long height
+   * glide reflows everything below it every frame). The incoming copy still settles in on the compositor either way.
+   */
+  resize?: 'ease' | 'instant';
   children: ReactNode;
 }) {
   const reduced = useChReducedMotion();
-  const frame = useSwapHeight(swapKey, inline || reduced);
+  const frame = useSwapHeight(swapKey, inline || reduced || resize === 'instant');
   const Frame = inline ? 'span' : 'div';
   const Item = inline ? m.span : m.div;
   return (

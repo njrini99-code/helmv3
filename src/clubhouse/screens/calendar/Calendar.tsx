@@ -1230,7 +1230,7 @@ function CalendarBody({
             <SectionBoundary surface={`calendar.${view}`} label="The calendar" code="CH-6210">
               {/* CH-6604: another view settles in (base in, quick out); CH-6605: another day, week or month slides 12px the
                   way it went. Both instant with reduced motion. */}
-              <Swap swapKey={view}>
+              <Swap swapKey={view} resize="instant">
                 <Swap swapKey={period.key} kind="slide" dir={period.dir}>
                   {(view === 'week' || view === 'day') && (
                     <TimeGrid dates={dates} events={events} people={people} now={now} selId={selId} flagged={flagged} onSelect={open} onDay={(d) => go('day', d)} onMove={coach ? onGridMove : undefined} onBarMove={coach ? (e, to) => onGridMove(e, to, 'bar') : undefined} daylight={daylight} coach={coach} viewerId={data.viewerPlayerId} />

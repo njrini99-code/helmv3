@@ -152,7 +152,7 @@ export function CalendarPhone({
       {!data.eventsError && (
         <SectionBoundary surface={`calendar.phone.${pv}`} label="The calendar" code="CH-6210">
           {/* CH-6604: Day, Month and List settle in as the switch moves (base in, quick out); instant with reduced motion. */}
-          <Swap swapKey={pv}>
+          <Swap swapKey={pv} resize="instant">
             {pv === 'day' && <DayView anchor={anchor} events={events} people={people} now={now} flagged={flagged} selId={selId} onDay={(d) => onView('day', d)} onOpen={onOpen} coach={coach} viewerId={viewerId} range={data.range} onNew={onNew} onMove={coach ? onMove : undefined} movedAway={data.movedAway} />}
             {pv === 'month' && <MonthGrid anchor={anchor} events={events} now={now} onPick={(d) => onView('day', d)} onStep={onStep} onMonth={(d) => onView('month', d)} />}
             {pv === 'list' &&
