@@ -363,6 +363,12 @@ its rows together and does not map them one to one.
 | aplus-cons2-14b | IconButton for menu keys; 83 plurals onto plural(); the spread's axis under the team pill (CONS-2, CONS-14) | Clubhouse A+ | in progress | #2361 | agent/clubhouse-aplus-phase2 (Clubhouse A+ handoff); ratchets lowered; no Bridge IDs or CH codes needed |
 | polish-1027 | Production polish pass before launch: every page on the phone (390, 375) and desktop (1280), light and dark; fixes, page docs, P016 phone spec | Clubhouse polish | in progress | (this PR) | agent/clubhouse-polish |
 | polish-margin-reset | `.ch-root p` and `.ch-root h1..h3 { margin: 0 }` (styles/base.css) outrank every one-class rule: about 105 page rules that give a `p` or a heading a margin never apply. Lower the reset's specificity and review every page with before and after shots | Clubhouse polish | open | — | unclaimed (found by polish-1027; STATUS.md 2026-10-27) |
+| AUD-F-0014 | Messages inbox first load reads the active team’s ids on the server (part) | Clubhouse fixes | in progress | | claude/audit-fix-07-speed (Clubhouse audit fix plan, PR 7); no Bridge IDs or CH codes needed |
+| AUD-F-0029 | Publish returns before the invitation notices (after()) | Clubhouse fixes | in progress | | claude/audit-fix-07-speed (Clubhouse audit fix plan, PR 7); no Bridge IDs or CH codes needed |
+| AUD-F-0032 | Home starts the marks hint read with the other reads (step 1) | Clubhouse fixes | in progress | | claude/audit-fix-07-speed (Clubhouse audit fix plan, PR 7); no Bridge IDs or CH codes needed |
+| AUD-F-0033 | Team Hub coach second wave starts from the clock read | Clubhouse fixes | in progress | | claude/audit-fix-07-speed (Clubhouse audit fix plan, PR 7); no Bridge IDs or CH codes needed |
+| AUD-F-0034 | Home leaderboard rows prefetch on press | Clubhouse fixes | in progress | | claude/audit-fix-07-speed (Clubhouse audit fix plan, PR 7); no Bridge IDs or CH codes needed |
+| AUD-F-0045 | Start DM speed: depends on PR 1 (#2412); follow-up | Clubhouse fixes | in progress | | claude/audit-fix-07-speed (Clubhouse audit fix plan, PR 7); no Bridge IDs or CH codes needed |
 
 <!-- markdownlint-enable MD013 -->
 
