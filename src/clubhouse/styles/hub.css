@@ -931,7 +931,8 @@
   color: var(--ch-text-secondary);
 }
 .ch-hb-file__ic em {
-  font: 700 11px/1 var(--ch-font-sans);
+  font: var(--ch-type-11-strong);
+  line-height: var(--ch-lead-tight);
   font-style: normal;
   letter-spacing: 0.02em;
 }
@@ -1887,6 +1888,13 @@
   .ch-hb-feed em,
   .ch-hb-steps li {
     font-size: calc(12 * var(--ch-type-k));
+  }
+  /* The attachment caption and the file-type glyph (F-0024). */
+  .ch-hb-ann__file em,
+  .ch-hb-file__ic em {
+    font: var(--ch-type-12-strong);
+    line-height: var(--ch-lead-tight);
+    letter-spacing: var(--ch-track-12);
   }
 }
 

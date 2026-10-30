@@ -59,8 +59,10 @@
   transform: translateY(-160%);
   transition: transform var(--ch-dur-quick) var(--ch-ease);
 }
+/* Summoned at once, eased away (F-0065): the transition above runs only on the way out. */
 .ch-skip:focus-visible {
   transform: none;
+  transition: none;
 }
 
 /* Sidebar (ivory pass on Augusta green) */

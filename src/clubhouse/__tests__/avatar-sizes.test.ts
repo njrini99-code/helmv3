@@ -1,6 +1,10 @@
-import { relative } from 'node:path';
+import { readFileSync } from 'node:fs';
+import { join, relative } from 'node:path';
+import { createElement } from 'react';
+import { renderToStaticMarkup } from 'react-dom/server';
 import { describe, expect, it } from 'vitest';
 import { code, hits, ratchet, ROOT, walk, type Hit } from './_scan';
+import { Avatar, AVATAR_SIZES, type AvatarSize } from '../ui/Avatar';
 
 /**
  * CONS-33: an avatar takes one of ui/Avatar's steps (`size="sm"`). The numeric sizes below wait on the owner's step
@@ -80,5 +84,23 @@ describe('avatar sizes on a set (CONS-33)', () => {
     const r = ratchet(hits_(), ALLOW_OWN);
     expect(r.over).toEqual([]);
     expect(r.stale).toEqual([]);
+  });
+});
+
+describe('avatar initials on the type scale (F-0073)', () => {
+  const STEPS = ['11px', '12px', '13px', '14px', '22px'];
+  const typeOf = (size: AvatarSize | number) => /--ch-av-type:\s*(\d+px)/.exec(renderToStaticMarkup(createElement(Avatar, { name: 'Ann Lee', size })))?.[1];
+  it.each(Object.keys(AVATAR_SIZES) as AvatarSize[])('step %s sets its initials on a scale step', (size) => {
+    expect(STEPS).toContain(typeOf(size));
+  });
+  it('a numeric size takes the nearest step', () => {
+    expect(typeOf(22)).toBe('11px');
+    expect(typeOf(40)).toBe('14px');
+    expect(typeOf(56)).toBe('22px');
+  });
+  it('the coin no longer sizes its initials as a share of itself', () => {
+    const ui = readFileSync(join(ROOT, 'styles/ui.css'), 'utf8');
+    expect(ui).not.toContain('* 0.34');
+    expect(ui).toMatch(/\.ch-avatar \{[^}]*font: 600 [^;]*var\(--ch-av-type, 13px\)/);
   });
 });
