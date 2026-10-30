@@ -13,7 +13,8 @@ import { liftHandoffCurtain } from '../lib/handoff';
 import { useAppearancePreferences } from '@/hooks/golf/use-appearance-preferences';
 import { ToastProvider } from '../ui/Toast';
 import type { ChShellData } from '../data/shell';
-import { activeNavItem, isAliased, isRebuilt, phoneFullScreen, phonePushedTop, routeLabel } from './nav';
+import { useRouter } from 'next/navigation';
+import { activeNavItem, isAliased, isKnownDashboardPath, isRebuilt, phoneFullScreen, phonePushedTop, routeLabel, withoutCoachParams } from './nav';
 import { Sidebar } from './Sidebar';
 import { RailToggle } from './RailToggle';
 import { TopBar } from './TopBar';
@@ -122,10 +123,14 @@ export function ClubhouseFrame({
   const teamSwitch = teamSwitchFor(userData);
   const item = activeNavItem(pathname, role, shell);
   const rebuilt = forceRebuilt || isRebuilt(pathname, role, shell);
+  // An old address on its way somewhere for this role (F-0055: a role its layout doesn't send on sees its page at once).
+  const aliased = isAliased(pathname, role);
+  // A mistyped dashboard address renders its segment, the not-found page (CH-1306), not "not rebuilt" (F-0025).
+  const known = isKnownDashboardPath(pathname);
   // A player on a page rebuilt for coaches only (Recruiting, What's new): the not-rebuilt page says it is a coach's page.
   // Not on an aliased address: there the label is the player's own nav item (stats/team reads "My stats"), so a late
   // fallback saying only coaches use it would be false.
-  const coachOnly = !rebuilt && role === 'player' && !isAliased(pathname) && isRebuilt(pathname, 'coach', shell);
+  const coachOnly = !rebuilt && role === 'player' && !aliased && isRebuilt(pathname, 'coach', shell);
   // A pushed page's bar, drawn by the shell until the page's own arrives (CH-1402); a page not rebuilt keeps the plain bar.
   // A full-screen flow hides the tab bar from its first frame, as its page will.
   const pushed = rebuilt ? phonePushedTop(pathname, role, search ? new URLSearchParams(search) : null) : null;
@@ -144,6 +149,13 @@ export function ClubhouseFrame({
   const relink = useRelinkEpoch(pathname, search);
   // A17: back after a minute away, or back online, the page fetches again (shell/use-quiet-refresh.ts).
   useQuietRefresh(pathname);
+  // A player's address drops the coach-only parameters it was opened with (F-0066); what the page shows is unchanged.
+  const router = useRouter();
+  useEffect(() => {
+    if (role !== 'player') return;
+    const clean = withoutCoachParams(pathname, search, role);
+    if (clean !== search.replace(/^\?/, '')) router.replace(`${pathname}${clean ? `?${clean}` : ''}`, { scroll: false });
+  }, [role, pathname, search, router]);
 
   // The live shell renders the animation features above the frame (ChMotionFeatures, below); a preview renders the frame alone.
   const scoped = useContext(ChMotionScope);
@@ -170,19 +182,19 @@ export function ClubhouseFrame({
                           <OfflineBanner />
                           {/* A new team is a new page: the route remounts, so nothing the old team's screen held (a search, an open panel, a live feed) carries over. */}
                           <RouteFrame routeKey={`${pathname}\u0000${userData.teamId ?? ''}${relink ? `\u0000${relink}` : ''}`} scrollKey={`${pathname}\u0000${userData.teamId ?? ''}\u0000${screenParam(search)}`}>
-                            {rebuilt ? (
+                            {rebuilt || !known ? (
                               children
                             ) : (
                               <>
                                 {/* An old address on its way somewhere draws a blank canvas, not "not rebuilt" (A30). */}
-                                {isAliased(pathname) ? (
+                                {aliased ? (
                                   <AliasWait label={item?.label ?? routeLabel(pathname) ?? 'This page'} coachOnly={coachOnly} />
                                 ) : (
                                   <NotRebuilt label={item?.label ?? routeLabel(pathname) ?? 'This page'} coachOnly={coachOnly} />
                                 )}
                                 {/* An old address Clubhouse moved redirects from inside its segment, and that redirect fires
                                     only once the segment renders: dropped, the page stood on "not rebuilt" (2026-10-14). */}
-                                {isAliased(pathname) && <div hidden>{children}</div>}
+                                {aliased && <div hidden>{children}</div>}
                               </>
                             )}
                           </RouteFrame>

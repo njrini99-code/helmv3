@@ -54,6 +54,7 @@ describe('old addresses Clubhouse moved (Simulator, 2026-10-14)', () => {
 
   it('the frame renders an aliased segment (hidden) behind the not-rebuilt page, so its streamed redirect fires', () => {
     const frame = readFileSync(join(process.cwd(), 'src/clubhouse/shell/ClubhouseFrame.tsx'), 'utf8');
-    expect(frame).toMatch(/isAliased\(pathname\) && <div hidden>\{children\}<\/div>/);
+    expect(frame).toMatch(/const aliased = isAliased\(pathname, role\);/);
+    expect(frame).toMatch(/aliased && <div hidden>\{children\}<\/div>/);
   });
 });

@@ -229,22 +229,92 @@ const CH_REBUILT_PATTERNS: Record<ChRole, readonly RegExp[]> = {
  * frame renders it (hidden) behind the not-rebuilt page instead of dropping it. A guard test keeps this list in step
  * with every route that calls redirectToClubhouse.
  */
-export const CH_ALIASED_ROUTES: readonly RegExp[] = [
-  /^\/golf\/dashboard\/(tasks|intelligence|courses|announcements|team|documents|travel)$/,
-  /^\/golf\/dashboard\/roster\/[^/]+$/,
-  // A player's old pages and everything under them: next.config sends /players/<id> on to /players/<id>/game, and an old
-  // genome link to /players/<id>/genome, before any layout runs (A30), so those are the addresses that arrive here.
-  /^\/golf\/dashboard\/players\/[^/]+(\/.*)?$/,
-  /^\/golf\/dashboard\/coachhelm\/(chat|qualifying\/[^/]+|genome\/compare|genome\/[^/]+)$/,
-  /^\/golf\/dashboard\/rounds\/[^/]+\/review$/,
-  // Rebuilt for one role and moved for the other (My qualifiers to a coach's Qualifiers, a player's Team stats to their
-  // Stats, What's new to Home): the segment must render for its redirect to run.
-  /^\/golf\/dashboard\/(my-qualifiers|stats\/team|whats-new|live)$/,
+export const CH_ALIASED_ROUTES: Readonly<Record<ChRole, readonly RegExp[]>> = (() => {
+  const both: ChRole[] = ['coach', 'player'];
+  // Each row with the roles its layout sends on (its `redirectToClubhouse({ coach, player })` keys; a guard test reads
+  // them). A role with no target is not waiting on a redirect: it sees its own page at once (F-0055).
+  const rows: Array<[RegExp, ChRole[]]> = [
+    [/^\/golf\/dashboard\/(tasks|announcements|team|documents|travel)$/, both],
+    [/^\/golf\/dashboard\/(intelligence|courses)$/, ['coach']],
+    [/^\/golf\/dashboard\/roster\/[^/]+$/, both],
+    // A player's old pages and everything under them: next.config sends /players/<id> on to /players/<id>/game, and an old
+    // genome link to /players/<id>/genome, before any layout runs (A30), so those are the addresses that arrive here.
+    [/^\/golf\/dashboard\/players\/[^/]+(\/.*)?$/, ['coach']],
+    [/^\/golf\/dashboard\/coachhelm\/(chat|qualifying\/[^/]+)$/, both],
+    [/^\/golf\/dashboard\/coachhelm\/genome\/[^/]+$/, ['coach']],
+    [/^\/golf\/dashboard\/rounds\/[^/]+\/review$/, both],
+    // Rebuilt for one role and moved for the other (My qualifiers to a coach's Qualifiers, a player's Team stats to their
+    // Stats, What's new and Live to Home): the segment must render for its redirect to run.
+    [/^\/golf\/dashboard\/my-qualifiers$/, ['coach']],
+    [/^\/golf\/dashboard\/(stats\/team|whats-new|live)$/, ['player']],
+  ];
+  return { coach: rows.filter(([, r]) => r.includes('coach')).map(([re]) => re), player: rows.filter(([, r]) => r.includes('player')).map(([re]) => re) };
+})();
+
+/** An old address on its way somewhere for `role` (either role when none is given). */
+export function isAliased(pathname: string, role?: ChRole): boolean {
+  const path = pathname.replace(/\/$/, '');
+  const roles: ChRole[] = role ? [role] : ['coach', 'player'];
+  return roles.some((r) => CH_ALIASED_ROUTES[r].some((re) => re.test(path)));
+}
+
+/**
+ * The real top-level folders of the dashboard (each holds a page): an address outside them is a mistyped one, and gets
+ * "We couldn't find that" (the dashboard's not-found page, CH-1306) rather than "hasn't been rebuilt yet" (F-0025). A
+ * guard test keeps this in step with src/app/golf/(dashboard)/dashboard.
+ */
+export const CH_DASHBOARD_SEGMENTS: readonly string[] = [
+  'announcements',
+  'calendar',
+  'classes',
+  'coachhelm',
+  'courses',
+  'dev',
+  'documents',
+  'intelligence',
+  'live',
+  'messages',
+  'my-qualifiers',
+  'players',
+  'qualifiers',
+  'recruiting',
+  'roster',
+  'rounds',
+  'settings',
+  'stats',
+  'tasks',
+  'team',
+  'team-hub',
+  'tournaments',
+  'travel',
+  'whats-new',
 ];
 
-export function isAliased(pathname: string): boolean {
+export function isKnownDashboardPath(pathname: string): boolean {
+  const seg = pathname.replace(/^\/golf\/dashboard\/?/, '').split('/')[0] ?? '';
+  return seg === '' || CH_DASHBOARD_SEGMENTS.includes(seg);
+}
+
+/**
+ * Parameters only a coach's view reads (F-0066). A player opened with one sees their own view anyway (Stats ignores
+ * `?player=` for a player), so the address drops it. Messages is not here: its `?player=`/`?user=` deep links are both
+ * roles'.
+ */
+export const CH_COACH_ONLY_PARAMS: Readonly<Record<string, readonly string[]>> = {
+  '/golf/dashboard/stats': ['player'],
+  '/golf/dashboard/coachhelm': ['player'],
+  '/golf/dashboard/rounds/course': ['player'],
+};
+
+/** `search` without the coach-only parameters of `pathname`, for a player; unchanged for a coach. */
+export function withoutCoachParams(pathname: string, search: string, role: ChRole): string {
+  if (role !== 'player') return search;
   const path = pathname.replace(/\/$/, '');
-  return CH_ALIASED_ROUTES.some((re) => re.test(path));
+  const drop = Object.entries(CH_COACH_ONLY_PARAMS).find(([prefix]) => path === prefix || path.startsWith(`${prefix}/`))?.[1];
+  if (!drop) return search;
+  const params = new URLSearchParams(search);
+  for (const k of drop) params.delete(k);
+  return params.toString();
 }
 
 export function isRebuilt(pathname: string, role: ChRole = 'coach', features?: ChNavFeatures | null): boolean {
