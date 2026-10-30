@@ -203,6 +203,7 @@ const BLOCK_FROM = 56;
  * is drawn as the Ledger draws one: a rule along its top and two lines of type under it, never a filled card (states
  * audit, 2026-10-08). It keeps its box either way, so nothing moves when the page lands. `shape="solid"` keeps a real
  * object filled at any size (a scorecard, a chart, a portrait); `shape="block"` asks for the ruled block at any size.
+ * `shape="feature"` is a green feature card in waiting (a hero), on the loaded card's own ground (F-0060).
  */
 export function Skeleton({
   width,
@@ -213,10 +214,10 @@ export function Skeleton({
   width?: number | string;
   height?: number;
   radius?: number;
-  shape?: 'block' | 'solid';
+  shape?: 'block' | 'solid' | 'feature';
 }) {
   const block = shape === 'block' || (shape === undefined && height >= BLOCK_FROM && typeof width !== 'number');
-  return <span className={block ? 'ch-skel ch-skel--block' : 'ch-skel'} style={{ width, height, borderRadius: radius }} aria-hidden="true" />;
+  return <span className={shape === 'feature' ? 'ch-skel ch-skel--feature' : block ? 'ch-skel ch-skel--block' : 'ch-skel'} style={{ width, height, borderRadius: radius }} aria-hidden="true" />;
 }
 
 /**
