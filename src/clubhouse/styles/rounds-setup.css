@@ -1,5 +1,7 @@
 /* New round setup (design/handoff/rounds-flow.css Setup, Picker, HoleConfig; rounds-course.css AddCourse) */
 .ch-rsu {
+  /* The sticky dock's height (8 + 44 + 8), so a control scrolled or tabbed into view lands clear of it (F-0049). */
+  --ch-rsu-dock-h: 60px;
   container-type: inline-size;
   container-name: chrs;
   display: flex;
@@ -637,6 +639,10 @@
   box-shadow:
     0 0 0 var(--ch-hairline-w) var(--ch-border-subtle),
     var(--ch-elevation-overlay);
+}
+/* Margins on the targets, not padding on the canvas, so the smooth scroll is untouched. */
+.ch-rsu :is(button, input, select, [role='radio']) {
+  scroll-margin-bottom: calc(var(--ch-rsu-dock-h) + 32px);
 }
 .ch-rsu-dock__s {
   flex: 1;
