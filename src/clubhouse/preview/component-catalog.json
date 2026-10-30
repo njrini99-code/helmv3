@@ -12689,6 +12689,31 @@
           "scope": ".ch-ms-poll"
         },
         {
+          "name": "--ch-poll-opt-bg",
+          "value": "var(--ch-bg-surface)",
+          "scope": ".ch-ms-poll"
+        },
+        {
+          "name": "--ch-poll-opt-shadow",
+          "value": "var(--ch-highlight), 0 0 0 1px rgb(28 25 18 / 0.08), 0 1px 2px rgb(28 25 18 / 0.05),\n    0 4px 10px -6px rgb(28 25 18 / 0.16)",
+          "scope": ".ch-ms-poll"
+        },
+        {
+          "name": "--ch-poll-opt-lift",
+          "value": "var(--ch-highlight), 0 0 0 1px rgb(28 25 18 / 0.12), 0 2px 4px rgb(28 25 18 / 0.06),\n    0 10px 18px -10px rgb(28 25 18 / 0.24)",
+          "scope": ".ch-ms-poll"
+        },
+        {
+          "name": "--ch-poll-opt-sunk",
+          "value": "inset 0 1px 2px rgb(28 25 18 / 0.12), 0 0 0 1px rgb(28 25 18 / 0.1)",
+          "scope": ".ch-ms-poll"
+        },
+        {
+          "name": "--ch-poll-on-glow",
+          "value": "0 8px 16px -10px rgb(21 90 57 / 0.55)",
+          "scope": ".ch-ms-poll"
+        },
+        {
           "name": "--ch-poll-level",
           "value": "var(--ch-green-600)",
           "scope": "html[data-fw-theme='dark'] [data-ui='clubhouse'] .ch-ms-poll"
@@ -12696,6 +12721,26 @@
         {
           "name": "--ch-poll-ring",
           "value": "var(--ch-green-600)",
+          "scope": "html[data-fw-theme='dark'] [data-ui='clubhouse'] .ch-ms-poll"
+        },
+        {
+          "name": "--ch-poll-opt-shadow",
+          "value": "var(--ch-highlight), 0 0 0 1px rgb(255 255 255 / 0.07), 0 2px 6px -2px rgb(0 0 0 / 0.5)",
+          "scope": "html[data-fw-theme='dark'] [data-ui='clubhouse'] .ch-ms-poll"
+        },
+        {
+          "name": "--ch-poll-opt-lift",
+          "value": "var(--ch-highlight), 0 0 0 1px rgb(255 255 255 / 0.12), 0 10px 18px -10px rgb(0 0 0 / 0.7)",
+          "scope": "html[data-fw-theme='dark'] [data-ui='clubhouse'] .ch-ms-poll"
+        },
+        {
+          "name": "--ch-poll-opt-sunk",
+          "value": "inset 0 1px 3px rgb(0 0 0 / 0.5), 0 0 0 1px rgb(255 255 255 / 0.08)",
+          "scope": "html[data-fw-theme='dark'] [data-ui='clubhouse'] .ch-ms-poll"
+        },
+        {
+          "name": "--ch-poll-on-glow",
+          "value": "0 8px 18px -10px rgb(107 187 140 / 0.45)",
           "scope": "html[data-fw-theme='dark'] [data-ui='clubhouse'] .ch-ms-poll"
         }
       ]
