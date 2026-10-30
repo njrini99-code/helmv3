@@ -363,6 +363,14 @@ its rows together and does not map them one to one.
 | aplus-cons2-14b | IconButton for menu keys; 83 plurals onto plural(); the spread's axis under the team pill (CONS-2, CONS-14) | Clubhouse A+ | in progress | #2361 | agent/clubhouse-aplus-phase2 (Clubhouse A+ handoff); ratchets lowered; no Bridge IDs or CH codes needed |
 | polish-1027 | Production polish pass before launch: every page on the phone (390, 375) and desktop (1280), light and dark; fixes, page docs, P016 phone spec | Clubhouse polish | in progress | (this PR) | agent/clubhouse-polish |
 | polish-margin-reset | `.ch-root p` and `.ch-root h1..h3 { margin: 0 }` (styles/base.css) outrank every one-class rule: about 105 page rules that give a `p` or a heading a margin never apply. Lower the reset's specificity and review every page with before and after shots | Clubhouse polish | open | — | unclaimed (found by polish-1027; STATUS.md 2026-10-27) |
+| AUD-F-0009 | The first click on a Team Hub row’s More opens the menu | Clubhouse fixes | in progress | | claude/audit-fix-06-shell-nav (Clubhouse audit fix plan, PR 6); no Bridge IDs or CH codes needed |
+| AUD-F-0025 | An unknown dashboard address says CH-1306, not "hasn’t been rebuilt yet" | Clubhouse fixes | in progress | | claude/audit-fix-06-shell-nav (Clubhouse audit fix plan, PR 6); no Bridge IDs or CH codes needed |
+| AUD-F-0026 | A quick double tap pushes a page once (useNavOnce, usePushOnce) | Clubhouse fixes | in progress | | claude/audit-fix-06-shell-nav (Clubhouse audit fix plan, PR 6); no Bridge IDs or CH codes needed |
+| AUD-F-0055 | An old alias goes on at once, with no blank Opening… | Clubhouse fixes | in progress | | claude/audit-fix-06-shell-nav (Clubhouse audit fix plan, PR 6); no Bridge IDs or CH codes needed |
+| AUD-F-0056 | A coach qualifying link opened by a player lands on the player’s page | Clubhouse fixes | in progress | | claude/audit-fix-06-shell-nav (Clubhouse audit fix plan, PR 6); no Bridge IDs or CH codes needed |
+| AUD-F-0057 | A double click opens a calendar event or day once | Clubhouse fixes | in progress | | claude/audit-fix-06-shell-nav (Clubhouse audit fix plan, PR 6); no Bridge IDs or CH codes needed |
+| AUD-F-0058 | Focus after Cancel or Delete never opens another event’s menu or peek | Clubhouse fixes | in progress | | claude/audit-fix-06-shell-nav (Clubhouse audit fix plan, PR 6); no Bridge IDs or CH codes needed |
+| AUD-F-0066 | A player on a coach address loses the coach parameters | Clubhouse fixes | in progress | | claude/audit-fix-06-shell-nav (Clubhouse audit fix plan, PR 6); no Bridge IDs or CH codes needed |
 
 <!-- markdownlint-enable MD013 -->
 
