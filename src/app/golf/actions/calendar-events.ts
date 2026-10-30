@@ -478,7 +478,8 @@ async function createGolfEventImpl(data: GolfEventInput): Promise<ActionResult<{
     if (validatedData.attendeeIds && validatedData.attendeeIds.length > 0) {
       try {
         const { sendEventInvitations } = await import('@/lib/calendar/rsvp');
-        await sendEventInvitations(event.id, validatedData.attendeeIds, supabase);
+        // The Bell rows go after the response (F-0029); the attendance rows, whose failure the coach hears about, stay inline.
+        await sendEventInvitations(event.id, validatedData.attendeeIds, supabase, { deferNotices: (task) => after(task) });
       } catch (inviteErr) {
         invitationsError = EVENT_INVITATIONS_FAILED;
         await logServerError(
