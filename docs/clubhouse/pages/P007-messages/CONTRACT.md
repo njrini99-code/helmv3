@@ -349,7 +349,7 @@ CH-1704, 11705 CH-1705, 11706 CH-1706, 11707 CH-1707.
 | --- | --- | --- | --- |
 | 71701 | CH-7701 | `A_CHANGE_FAILS` | A change fails |
 | 71702 | CH-7702 | `A_CHANGE_LANDS` | A change lands (edited, deleted, muted, group created; acknowledging uses the success pattern) |
-| 71703 | CH-7703 | `PICKING_A_REACTION_A_FILTER_OR_A` | Picking a reaction, a filter or a conversation |
+| 71703 | CH-7703 | `PICKING_A_REACTION_A_FILTER_OR_A` | Picking a reaction or a filter (opening a conversation or a search hit is a plain navigation tap and is silent, D-70) |
 | 71704 | CH-7704 | `A_LONG_PRESS_ON_A_MESSAGE_2` | A long press on a message (phone) |
 | 71705 | CH-7770 | `THE_HOLD_ON_SEND_REACHES_450_MS` | The hold on Send reaches 450 ms (phone, Notify anyway offered) |
 

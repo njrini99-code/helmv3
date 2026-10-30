@@ -363,6 +363,15 @@ its rows together and does not map them one to one.
 | aplus-cons2-14b | IconButton for menu keys; 83 plurals onto plural(); the spread's axis under the team pill (CONS-2, CONS-14) | Clubhouse A+ | in progress | #2361 | agent/clubhouse-aplus-phase2 (Clubhouse A+ handoff); ratchets lowered; no Bridge IDs or CH codes needed |
 | polish-1027 | Production polish pass before launch: every page on the phone (390, 375) and desktop (1280), light and dark; fixes, page docs, P016 phone spec | Clubhouse polish | in progress | (this PR) | agent/clubhouse-polish |
 | polish-margin-reset | `.ch-root p` and `.ch-root h1..h3 { margin: 0 }` (styles/base.css) outrank every one-class rule: about 105 page rules that give a `p` or a heading a margin never apply. Lower the reset's specificity and review every page with before and after shots | Clubhouse polish | open | — | unclaimed (found by polish-1027; STATUS.md 2026-10-27) |
+| AUD-F-0010 | Pinned: place-only change keeps Moved; Was line is the moved event’s own | Clubhouse fixes | in progress | | claude/audit-fix-09-messages-calendar-craft (Clubhouse audit fix plan, PR 9); no Bridge IDs or CH codes needed |
+| AUD-F-0028 | Calendar change note keeps the panel’s width (container query) | Clubhouse fixes | in progress | | claude/audit-fix-09-messages-calendar-craft (Clubhouse audit fix plan, PR 9); no Bridge IDs or CH codes needed |
+| AUD-F-0051 | Messages Announcements card on the page edge on the phone | Clubhouse fixes | in progress | | claude/audit-fix-09-messages-calendar-craft (Clubhouse audit fix plan, PR 9); no Bridge IDs or CH codes needed |
+| AUD-F-0052 | Inbox preview reads on one line inside the clamp | Clubhouse fixes | in progress | | claude/audit-fix-09-messages-calendar-craft (Clubhouse audit fix plan, PR 9); no Bridge IDs or CH codes needed |
+| AUD-F-0053 | Desktop Agenda renamed List (owner decision 6 default) | Clubhouse fixes | in progress | | claude/audit-fix-09-messages-calendar-craft (Clubhouse audit fix plan, PR 9); no Bridge IDs or CH codes needed |
+| AUD-F-0054 | Tournaments New event shows its title once on the phone | Clubhouse fixes | in progress | | claude/audit-fix-09-messages-calendar-craft (Clubhouse audit fix plan, PR 9); no Bridge IDs or CH codes needed |
+| AUD-F-0068 | An open qualifier past its last day says what it waits on | Clubhouse fixes | in progress | | claude/audit-fix-09-messages-calendar-craft (Clubhouse audit fix plan, PR 9); no Bridge IDs or CH codes needed |
+| AUD-F-0071 | Opening a conversation or an event is silent (owner decision 5 default) | Clubhouse fixes | in progress | | claude/audit-fix-09-messages-calendar-craft (Clubhouse audit fix plan, PR 9); no Bridge IDs or CH codes needed |
+| AUD-F-0074 | From your coach never ends a line on a dot | Clubhouse fixes | in progress | | claude/audit-fix-09-messages-calendar-craft (Clubhouse audit fix plan, PR 9); no Bridge IDs or CH codes needed |
 
 <!-- markdownlint-enable MD013 -->
 

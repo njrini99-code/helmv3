@@ -87,7 +87,8 @@ All 25 (CONTRACT.md).
   1 of 2, 2 of 3, 2 of 4, 3 of 5). One round of three is too thin a sample to frame a minor as contending.
 - **Sample size:** a ranked row with fewer rounds in than the most anyone has shows "n of N rounds".
 - **Live:** Live only while the realtime feed is subscribed; Paused (with the read time and Refresh) otherwise or after
-  a long-hidden tab; Ended past the end date (held at UTC−12).
+  a long-hidden tab; past the end date (held at UTC−12) the pill says what it waits on, "Waiting on n rounds" or
+  "Past last day" (F-0068, 2026-10-30): "Ended" is kept for a completed qualifier.
 - **Rank slide:** only when the ranked order changed, never under reduced motion, Animations off, a scroll, a tray,
   sheet or dialog; plates change value at once.
 
