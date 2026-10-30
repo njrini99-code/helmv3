@@ -1521,6 +1521,8 @@ html[data-fw-theme='dark'] .ch-mo__ribbon.is-held {
   align-items: center;
   gap: 8px;
   min-width: 0;
+  /* A 24px pointer target (WCAG 2.5.8; F-0022): the chips sit 4px apart, too close for the spacing exception. */
+  min-height: 24px;
   font: var(--ch-type-12-medium);
   color: var(--ch-text-secondary);
 }
@@ -2337,6 +2339,12 @@ html[data-fw-theme='dark'] .ch-in__plate[data-tone='amber'] {
   color: var(--ch-text-primary);
   outline: none;
   transition: border-color var(--ch-dur-quick) var(--ch-ease);
+}
+/* The title field is a full 44 to the finger on the phone (F-0021). */
+@media (max-width: 820px) {
+  .ch-ed__title {
+    min-height: 44px;
+  }
 }
 .ch-ed__title::placeholder {
   color: var(--ch-text-placeholder);

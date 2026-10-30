@@ -1500,6 +1500,24 @@ html[data-fw-theme='dark'] .ch-scoreboard .ch-score--double {
   }
 }
 
+/* Under a mouse every small control reaches 24 by 24 (WCAG 2.5.8; F-0022): the same invisible box, at 24. The timeline
+   thumb draws its dot with ::after, so it grows through ::before. */
+@media (pointer: fine) {
+  :where(.ch-hw-more, .ch-tr__link) {
+    position: relative;
+  }
+  :where(.ch-hw-more, .ch-tr__link, .ch-tour-cmp-div)::after {
+    position: absolute;
+    inset: min(0px, calc(50% - 12px));
+    content: '';
+  }
+  .ch-tour-cmp-tl__thumb::before {
+    position: absolute;
+    inset: min(0px, calc(50% - 12px));
+    content: '';
+  }
+}
+
 /* The course location (screens/settings/course-location.tsx, CH-8320): where the global light's sun is. Here with the light it serves, not in settings.css. */
 .ch-set-course {
   display: flex;
