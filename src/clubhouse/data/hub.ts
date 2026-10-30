@@ -301,8 +301,12 @@ export async function loadTeamHub(input: { role: ChHubRole; teamId: string; user
   const supabase = await createClient();
   const now = new Date();
   // The team's clock is read in the first wave, beside the reads that don't need it (C2): only what is drawn from them does.
+  const clockRead = homeClock(supabase, input.teamId, now);
+  // A coach's second wave (events, tasks, trips, announcements) needs only the clock's today: it starts as soon as that is
+  // known, not after the documents and the bell's notifications (F-0033).
+  const coachWave = input.role === 'coach' ? clockRead.then((c) => coachSecondWave(supabase, input, now, isoDay(now, c.tz))) : null;
   const [clock, teamRes, rosterRes, docsRes, updatesRes, hidden] = await Promise.all([
-    homeClock(supabase, input.teamId, now),
+    clockRead,
     supabase.from('golf_teams').select('name, season').eq('id', input.teamId).maybeSingle(),
     supabase.from('golf_team_members').select('player:golf_players(id, first_name, last_name)').eq('team_id', input.teamId).eq('status', 'active'),
     getDocuments(input.teamId).catch((err: unknown) => ({ data: null, error: err instanceof Error ? err.message : 'failed' })),
@@ -428,56 +432,7 @@ export async function loadTeamHub(input: { role: ChHubRole; teamId: string; user
   }
 
   // ── Coach ──
-  const weekEnd = addDays(today, 7);
-  const [annRes, tripsRes, tasksRes, eventsRes, tripEventsRes, weekRes] = await Promise.all([
-    getAnnouncementsWithMeta(input.teamId, input.userId, true).catch(() => ({ success: false as const, error: 'failed' })),
-    supabase.from('golf_travel_itineraries').select(TRIP_COLUMNS).eq('team_id', input.teamId).gte('departure_date', addDays(today, -60)).order('departure_date', { ascending: true }).limit(50),
-    // Capped (C-20): the latest due and the undated are kept, so the cap drops the oldest, not this week's; the section
-    // says how many there are in all.
-    supabase
-      .from('golf_tasks')
-      .select('id, title, description, due_date, category, status', { count: 'exact' })
-      .eq('team_id', input.teamId)
-      .is('parent_task_id', null)
-      .order('due_date', { ascending: false, nullsFirst: true })
-      .limit(HUB_TASK_CAP),
-    // The RSVPs section: this week's events that ask for replies (owner, 2026-10-08: off unless the coach turns it on).
-    supabase
-      .from('golf_events')
-      .select('id, title, event_type, start_time, all_day, location')
-      .eq('team_id', input.teamId)
-      .neq('event_type', CLASS_EVENT_TYPE)
-      .eq('requires_rsvp', true)
-      .is('cancelled_at', null)
-      .gte('start_time', now.toISOString())
-      .lt('start_time', `${weekEnd}T23:59:59Z`)
-      .order('start_time', { ascending: true })
-      .limit(50),
-    // The trip builder's Event step: the next four months of events a team travels for. Classes, practices and
-    // meetings are left out (C-20): a season's practices filled the cap before the tournaments were reached.
-    supabase
-      .from('golf_events')
-      .select('id, title, event_type, start_time, end_time, all_day, location', { count: 'exact' })
-      .eq('team_id', input.teamId)
-      .not('event_type', 'in', `(${[CLASS_EVENT_TYPE, ...NOT_TRAVELED_FOR].join(',')})`)
-      .is('cancelled_at', null)
-      .gte('start_time', now.toISOString())
-      .lt('start_time', `${addDays(today, 120)}T23:59:59Z`)
-      .order('start_time', { ascending: true })
-      .limit(HUB_TRIP_EVENT_CAP),
-    // Home's week strip: every team event from the start of today to the end of the sixth day after it (classes are a
-    // player's own timetable and never the team's). Wide by a day each side of UTC; weekOf keeps the team-local days.
-    supabase
-      .from('golf_events')
-      .select('id, title, event_type, start_time, all_day, location')
-      .eq('team_id', input.teamId)
-      .neq('event_type', CLASS_EVENT_TYPE)
-      .is('cancelled_at', null)
-      .gte('start_time', `${addDays(today, -1)}T00:00:00Z`)
-      .lt('start_time', `${addDays(today, 8)}T00:00:00Z`)
-      .order('start_time', { ascending: true })
-      .limit(100),
-  ]);
+  const [annRes, tripsRes, tasksRes, eventsRes, tripEventsRes, weekRes] = await coachWave!;
   if (weekRes.error) log('week', weekRes.error);
   if (tripEventsRes.error) log('tripEvents', tripEventsRes.error);
   if (!annRes.success) log('announcements', 'error' in annRes ? annRes.error : 'failed');
@@ -1026,4 +981,58 @@ export function formatters(tz: string, now: Date) {
       return shortFmt.format(utcDay(date));
     },
   };
+}
+
+/** A coach's second wave: everything that needs only the team's today (F-0033: started as soon as the clock is read). */
+function coachSecondWave(supabase: Awaited<ReturnType<typeof createClient>>, input: { teamId: string; userId: string }, now: Date, today: string) {
+  const weekEnd = addDays(today, 7);
+  return Promise.all([
+    getAnnouncementsWithMeta(input.teamId, input.userId, true).catch(() => ({ success: false as const, error: 'failed' })),
+    supabase.from('golf_travel_itineraries').select(TRIP_COLUMNS).eq('team_id', input.teamId).gte('departure_date', addDays(today, -60)).order('departure_date', { ascending: true }).limit(50),
+    // Capped (C-20): the latest due and the undated are kept, so the cap drops the oldest, not this week's; the section
+    // says how many there are in all.
+    supabase
+      .from('golf_tasks')
+      .select('id, title, description, due_date, category, status', { count: 'exact' })
+      .eq('team_id', input.teamId)
+      .is('parent_task_id', null)
+      .order('due_date', { ascending: false, nullsFirst: true })
+      .limit(HUB_TASK_CAP),
+    // The RSVPs section: this week's events that ask for replies (owner, 2026-10-08: off unless the coach turns it on).
+    supabase
+      .from('golf_events')
+      .select('id, title, event_type, start_time, all_day, location')
+      .eq('team_id', input.teamId)
+      .neq('event_type', CLASS_EVENT_TYPE)
+      .eq('requires_rsvp', true)
+      .is('cancelled_at', null)
+      .gte('start_time', now.toISOString())
+      .lt('start_time', `${weekEnd}T23:59:59Z`)
+      .order('start_time', { ascending: true })
+      .limit(50),
+    // The trip builder's Event step: the next four months of events a team travels for. Classes, practices and
+    // meetings are left out (C-20): a season's practices filled the cap before the tournaments were reached.
+    supabase
+      .from('golf_events')
+      .select('id, title, event_type, start_time, end_time, all_day, location', { count: 'exact' })
+      .eq('team_id', input.teamId)
+      .not('event_type', 'in', `(${[CLASS_EVENT_TYPE, ...NOT_TRAVELED_FOR].join(',')})`)
+      .is('cancelled_at', null)
+      .gte('start_time', now.toISOString())
+      .lt('start_time', `${addDays(today, 120)}T23:59:59Z`)
+      .order('start_time', { ascending: true })
+      .limit(HUB_TRIP_EVENT_CAP),
+    // Home's week strip: every team event from the start of today to the end of the sixth day after it (classes are a
+    // player's own timetable and never the team's). Wide by a day each side of UTC; weekOf keeps the team-local days.
+    supabase
+      .from('golf_events')
+      .select('id, title, event_type, start_time, all_day, location')
+      .eq('team_id', input.teamId)
+      .neq('event_type', CLASS_EVENT_TYPE)
+      .is('cancelled_at', null)
+      .gte('start_time', `${addDays(today, -1)}T00:00:00Z`)
+      .lt('start_time', `${addDays(today, 8)}T00:00:00Z`)
+      .order('start_time', { ascending: true })
+      .limit(100),
+  ]);
 }
