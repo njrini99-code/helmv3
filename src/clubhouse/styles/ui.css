@@ -1113,6 +1113,11 @@ html[data-fw-theme='dark'] .ch-btn--secondary[data-ch-pressed]:not(:disabled) {
   background: rgb(237 231 216 / 0.06);
   box-shadow: inset 0 0 0 1px rgb(237 231 216 / 0.1);
 }
+/* On a green key at night the keycap sinks instead of lightening: a white plate read 3.0-3.7:1 (F-0036). */
+:where(html[data-fw-theme='dark']) :is(.ch-btn--primary, .ch-btn--ink) .ch-btn__kbd {
+  background: rgb(0 0 0 / 0.18);
+  color: var(--ch-on-green-ink);
+}
 @media (hover: hover) {
   html[data-fw-theme='dark'] .ch-iconbtn.ch-btn--ghost:hover:not(:disabled) {
     background: rgb(237 231 216 / 0.07);
@@ -1592,7 +1597,8 @@ html[data-fw-theme='dark'] .ch-scoreboard .ch-score--double {
   width: 34px;
   height: 34px;
   border-radius: 50%;
-  background: linear-gradient(160deg, var(--ch-green-700), var(--ch-green-900));
+  /* From the fill ramp, which stays deep at night (green-700 turns pale mint there: ivory read 1.7:1, F-0005). */
+  background: linear-gradient(160deg, var(--ch-green-fill-700), var(--ch-green-900));
   color: var(--ch-on-fill-50);
   font: 700 14px/1 var(--ch-font-sans);
   box-shadow: 0 0 0 2px var(--ch-ivory-25), 0 0 0 3.5px var(--ch-champagne-500), var(--ch-elevation-mark);
@@ -1641,6 +1647,13 @@ html[data-fw-theme='dark'] .ch-scoreboard .ch-score--double {
   -webkit-background-clip: text;
   background-clip: text;
   color: transparent;
+}
+/* At night green-900 is near the zone's own ground, so the figure's lower half vanished (1.0-2.9:1, F-0062): pale mint
+   to mint instead, Lc 60+ top to bottom. */
+:where(html[data-fw-theme='dark']) .ch-znbig:not(.is-gain, .is-loss) {
+  background: linear-gradient(180deg, var(--ch-forest-900), var(--ch-green-700));
+  -webkit-background-clip: text;
+  background-clip: text;
 }
 .ch-znbig small {
   margin-left: 4px;

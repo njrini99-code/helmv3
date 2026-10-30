@@ -436,7 +436,7 @@
   min-width: 0;
   font: var(--ch-type-14-medium);
   line-height: var(--ch-lead-tight);
-  color: var(--ch-text-tertiary);
+  color: var(--ch-text-secondary);
 }
 .ch-topbar__crumb {
   display: inline-flex;
@@ -468,7 +468,7 @@
   border: 0;
   border-radius: var(--ch-radius-md);
   background: var(--ch-ivory-25);
-  color: var(--ch-text-tertiary);
+  color: var(--ch-text-secondary);
   font: var(--ch-type-14);
   text-align: left;
   box-shadow: inset 0 0 0 1px var(--ch-border-control), inset 0 1px 2px rgb(28 25 18 / 0.06);
