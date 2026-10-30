@@ -1728,6 +1728,8 @@ html[data-fw-theme='dark'] .ch-mo__ribbon.is-held {
 .ch-in-wrap {
   position: sticky;
   top: 16px;
+  /* A size container (the column is a fixed 340), so the change note reads the panel's width (F-0028). */
+  container-type: inline-size;
   max-height: calc(100vh - 110px);
   overflow: auto;
   /* The panel scrolls itself (usePanelSmoothScroll): its ends don't hand the wheel on to the canvas behind it, and
@@ -4156,6 +4158,16 @@ html[data-fw-theme='dark'] .ch-ev--busy::after {
   }
 }
 @media (max-width: 359px) {
+  .ch-change-note {
+    grid-template-columns: 20px minmax(0, 1fr);
+  }
+  .ch-change-note__a {
+    grid-column: 2;
+  }
+}
+/* The desktop panel is narrow too: the actions drop under the text there, so the text keeps the full width instead of a
+   one-word column beside Message players and Got it (F-0028). The phone sheet keeps the viewport rule above. */
+@container (max-width: 420px) {
   .ch-change-note {
     grid-template-columns: 20px minmax(0, 1fr);
   }

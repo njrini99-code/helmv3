@@ -496,3 +496,26 @@ describe('Calendar parity · the loader reads every event that overlaps its wind
     ]);
   });
 });
+
+describe('Calendar parity · one noun for the list view (F-0053, owner default)', () => {
+  const views = () => within(screen.getByRole('radiogroup', { name: 'View' })).getAllByRole('radio').map((r) => r.textContent);
+  it('desktop and phone both call it List; the desktop keeps its Week', () => {
+    const { unmount } = wrap(cal(PREVIEW_CALENDAR.events));
+    const desk = views();
+    unmount();
+    const real = window.matchMedia;
+    window.matchMedia = ((q: string) => ({ ...real(q), matches: q === '(max-width: 820px)' })) as typeof window.matchMedia;
+    try {
+      wrap(cal(PREVIEW_CALENDAR.events));
+      const phone = views();
+      for (const v of ['Day', 'Month', 'List']) {
+        expect(desk).toContain(v);
+        expect(phone).toContain(v);
+      }
+      expect(desk).toContain('Week');
+      expect(desk).not.toContain('Agenda');
+    } finally {
+      window.matchMedia = real;
+    }
+  });
+});

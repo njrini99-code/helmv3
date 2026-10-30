@@ -1179,7 +1179,7 @@ function CalendarBody({
 
       <div className="ch-cal-bar">
         <div className="ch-cal-viewctl">
-          {/* P006 D6: Agenda keeps the arrows' place (hidden, out of reach), so the toolbar doesn't shift as views change. */}
+          {/* P006 D6: List (the agenda) keeps the arrows' place (hidden, out of reach), so the toolbar doesn't shift as views change. */}
           <span className={'ch-cal-step' + (view === 'agenda' ? ' is-off' : '')} inert={view === 'agenda'} aria-hidden={view === 'agenda' || undefined}>
             <IconButton icon={ChevronLeft} label={`Previous ${view === 'agenda' ? 'month' : view}`} onClick={() => step(-1)} />
             <IconButton icon={ChevronRight} label={`Next ${view === 'agenda' ? 'month' : view}`} onClick={() => step(1)} />
@@ -1192,7 +1192,8 @@ function CalendarBody({
               { value: 'day', label: 'Day' },
               { value: 'week', label: 'Week' },
               { value: 'month', label: 'Month' },
-              { value: 'agenda', label: 'Agenda' },
+              // One noun with the phone (F-0053, owner default); the value stays `agenda`, so addresses don't change.
+              { value: 'agenda', label: 'List' },
             ]}
           />
         </div>
