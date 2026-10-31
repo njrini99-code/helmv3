@@ -87,4 +87,20 @@ describe('applyRealtimeMessageUpdate (P007 70301) — read receipts must not chu
     expect(next).not.toBe(polls);
     expect(next[0]!.payload).toEqual(closed);
   });
+
+  it('follows the attachment flag, both ways, and stays a no-op when it is unchanged (audit L1)', () => {
+    type AttMsg = Msg & { has_attachments?: boolean | null };
+    const rows: AttMsg[] = [{ id: 'a1', content: '', edited_at: null, has_attachments: false }];
+    // An update that carries the same flag (a read receipt) changes nothing.
+    expect(applyRealtimeMessageUpdate(rows, { ...rows[0]!, has_attachments: false })).toBe(rows);
+    // The sender flagged the row after inserting it: the open thread must now draw the files.
+    const flagged = applyRealtimeMessageUpdate(rows, { ...rows[0]!, has_attachments: true });
+    expect(flagged).not.toBe(rows);
+    expect(flagged[0]!.has_attachments).toBe(true);
+    // The upload failed and the sender downgraded the row to text-only.
+    const downgraded = applyRealtimeMessageUpdate(flagged, { ...flagged[0]!, has_attachments: false });
+    expect(downgraded[0]!.has_attachments).toBe(false);
+    // A payload without the column leaves the flag alone.
+    expect(applyRealtimeMessageUpdate(flagged, { id: 'a1', content: '', edited_at: null })).toBe(flagged);
+  });
 });

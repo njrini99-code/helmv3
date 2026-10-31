@@ -50,6 +50,18 @@ export function directWith(convs: readonly ChConv[], userId: string): ChConv | u
   return convs.find((c) => isDirect(c) && c.memberIds[0] === userId);
 }
 
+/**
+ * Whether an inbox row is a group. The server's `is_group` is the coach-made group flag (`is_team_chat`), so a coach
+ * group that has only two members (one player so far, or after a removal) is still a group and not a direct thread:
+ * messaging that player must not reuse it (audit L4, the server's F-0003 rule). Three or more members is a group
+ * whatever the flag says; a row with no count falls back to the flag.
+ */
+export function isGroupRow(c: { is_group?: boolean | null; participant_count?: number | null; participant_ids?: readonly string[] | null }): boolean {
+  if (c.is_group) return true;
+  const n = c.participant_count ?? c.participant_ids?.length ?? 0;
+  return n > 2;
+}
+
 /** A one-to-one thread: not a group, not the channel, two members. */
 export function isDirect(c: ChConv): boolean {
   return !c.group && !c.channel && c.memberCount === 2;

@@ -127,9 +127,9 @@ export function refusalCopy(r: TournamentRefusal, ctx: { round?: number | null; 
     case 'bad_name':
       return { key: 'bad_name', text: 'Add a name for the tournament, up to 120 characters.' };
     case 'round_started':
-      return { key: 'round_started', text: `${rn} is under way, so it can’t be changed here. Change it from Tournaments.` };
+      return { key: 'round_started', text: `${rn} is under way, so it can’t be changed.` };
     case 'round_has_scores':
-      return { key: 'round_has_scores', text: ctx.save === 'untrack' ? 'Scores are entered for this tournament, so it stays tracked.' : `${rn} has scores, so it can’t be cancelled. Change it from Tournaments.` };
+      return { key: 'round_has_scores', text: ctx.save === 'untrack' ? 'Scores are entered for this tournament, so it stays tracked.' : `${rn} has scores, so it can’t be cancelled.` };
     case 'tournament_official':
       return { key: 'tournament_official', text: 'This tournament’s results are official, so it can’t stop being tracked.' };
     case 'qualifier_not_found':
@@ -139,12 +139,12 @@ export function refusalCopy(r: TournamentRefusal, ctx: { round?: number | null; 
     case 'trip_not_found':
       return { key: 'trip_not_found', text: 'That trip is already linked to another event. Pick another or choose None.' };
     case 'entries_unavailable':
-      return { key: 'entries_unavailable', text: 'The lineup can’t be saved from here yet. Save without it and set it in Tournaments.' };
+      return { key: 'entries_unavailable', text: 'The lineup can’t be saved from here yet. Save without it.' };
     case 'round_type_locked':
     case 'round_fields_locked':
     case 'round_team_locked':
     case 'round_series_locked':
-      return { key: 'round_locked', text: `This event is part of ${tn}. Its type, name and course are changed in Tournaments.` };
+      return { key: 'round_locked', text: `This event is part of ${tn}. Its type, name and course can’t be changed from the calendar. Its day, times and notes are changed with Edit round.` };
     case 'not_coach':
       return { key: 'not_coach', text: 'Only coaches on this team can set up tournaments.' };
     case 'request_conflict':

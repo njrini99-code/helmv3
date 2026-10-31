@@ -315,17 +315,18 @@ async function syncClassToCalendarImpl(
     // meeting hours off, which also broke class status and push holds (audit 2026-10-31). The term's zone first, then
     // the team's setting; the caller's zone only when neither is set.
     const teamZone = await (async (): Promise<string | null> => {
-      const { data: term } = await admin
+      const { data: term, error: termError } = await admin
         .from('golf_team_terms')
         .select('time_zone, classes_start')
         .eq('team_id', teamId)
         .order('classes_start', { ascending: false })
         .limit(1)
         .maybeSingle();
-      const termZone = (term as { time_zone?: string | null } | null)?.time_zone;
+      // A failed zone read is "no team zone": the caller's own zone is kept, as before this lookup existed.
+      const termZone = termError ? null : (term as { time_zone?: string | null } | null)?.time_zone;
       if (termZone) return termZone;
-      const { data: settings } = await admin.from('golf_team_settings').select('timezone').eq('team_id', teamId).maybeSingle();
-      return (settings as { timezone?: string | null } | null)?.timezone ?? null;
+      const { data: settings, error: settingsError } = await admin.from('golf_team_settings').select('timezone').eq('team_id', teamId).maybeSingle();
+      return settingsError ? null : ((settings as { timezone?: string | null } | null)?.timezone ?? null);
     })().catch(() => null);
     if (teamZone) classData = { ...classData, timezone: teamZone };
 

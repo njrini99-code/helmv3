@@ -428,6 +428,23 @@ describe('Round review: never a wrong figure or a silent difference', () => {
     expect(code('CH-11216')!.textContent).toMatch(/The tee’s yardage and the player’s name are missing/);
   });
 
+  it('the Tour a review names is the team’s own baseline setting, else its gender’s; an old stored value is no baseline', async () => {
+    const tourOf = async (settings: Record<string, unknown>, gender = 'mens') => {
+      tables.current = { ...base(), golf_teams: { data: { gender } }, golf_team_settings: settings };
+      const r = await loadRoundReview(PREVIEW_REVIEW_ROUND.id, { role: 'player', playerId: 'p1', teamId: 'team1' });
+      return r.kind === 'ok' ? r.review.tour : 'not ok';
+    };
+    expect(await tourOf({ data: null })).toBe('pga');
+    expect(await tourOf({ data: null }, 'womens')).toBe('lpga');
+    // The coach chose the other Tour for this team: the stored figures were recomputed at it.
+    expect(await tourOf({ data: { sg_baseline: 'womens' } })).toBe('lpga');
+    expect(await tourOf({ data: { sg_baseline: 'pga_tour' } }, 'womens')).toBe('pga');
+    // Scratch and the NCAA divisions were removed (sg-benchmarks.ts): a stale value falls back to the gender's Tour.
+    expect(await tourOf({ data: { sg_baseline: 'd1' } })).toBe('pga');
+    // A failed settings read is no reason to drop the label: the gender's Tour stands.
+    expect(await tourOf({ error: { message: 'down' } })).toBe('pga');
+  });
+
   it('CH-11217 a failed team read says which baseline is unknown, with Try again; a player with no team gets no notice (no team is not a failure)', async () => {
     const user = userEvent.setup();
     tables.current = { ...base(), golf_teams: { error: { message: 'down' } } };

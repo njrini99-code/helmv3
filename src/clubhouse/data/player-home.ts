@@ -133,7 +133,8 @@ export async function loadPlayerHome(input: { teamId: string; playerId: string; 
     teamId: input.teamId,
     tz: clockRead.then((c) => c.tz),
     now,
-    visibleMeetings: weekRead.then((w) => new Set([w.next, ...w.todayEvents].filter((e): e is ChHomeEvent => !!e && e.type === 'meeting').map((e) => e.id))),
+    // Every meeting the player is invited to in the loaded window, not only the next one or today's.
+    visibleMeetings: weekRead.then((w) => w.meetingIds),
   });
   const [{ greeting, todayLabel, tz, day }, wk, roundsRes, playerRes, teamRes, latest, cache, bench, coachUserId, asks, changes] = await Promise.all([
     clockRead,

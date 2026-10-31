@@ -198,7 +198,9 @@ export async function fanOutEventCancelled(p: EventCancelledFanOut): Promise<voi
     // A meeting, or an event the coach invited a list to (rows the coach wrote carry notified_at), is told to that list
     // only: the whole-team union below announced a 1:1's cancellation, time and room to every player (audit
     // 2026-10-31; meetings are invitees-only since 20261018120000, and create already tells only invitees, Q-108).
-    const { data: evRow } = await adminClient.from('golf_events').select('event_type').eq('id', eventId).maybeSingle();
+    const { data: evRow, error: evError } = await adminClient.from('golf_events').select('event_type').eq('id', eventId).maybeSingle();
+    // Same rule as the attendance read above: when the type is unknown a 1:1 meeting could be announced to the team.
+    if (evError) throw evError;
     const invitedList = (attendances ?? []).some((row) => (row as { notified_at: string | null }).notified_at != null);
     const inviteesOnly = (evRow as { event_type?: string } | null)?.event_type === 'meeting' || invitedList;
     const attendanceUserIds = (attendances ?? [])

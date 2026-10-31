@@ -187,6 +187,13 @@ describe('the write', () => {
     const run = ev({ id: 'r', span: { from: '2026-10-31', to: '2026-11-02', start: 7, end: 16.5 } });
     expect(movePayload({ e: run, to: { from: '2026-10-31', to: '2026-11-02' }, kind: 'bar', scope: 'single', expectedUpdatedAt: null }, 'America/New_York')).toMatchObject({ startTime: '07:00', endTime: '16:30', timezoneOffset: 240, endTimezoneOffset: 300 });
   });
+
+  it('a run that ends at midnight keeps its last day when dragged by the bar (24:00 is the next day)', () => {
+    const run = ev({ id: 'r', span: { from: '2026-10-31', to: '2026-11-02', start: 7, end: 24 } });
+    const p = movePayload({ e: run, to: { from: '2026-11-07', to: '2026-11-09' }, kind: 'bar', scope: 'single', expectedUpdatedAt: null }, 'America/New_York');
+    // Midnight after the 9th, in the zone that is on EST by then.
+    expect(p).toMatchObject({ startDate: '2026-11-07', endDate: '2026-11-10', startTime: '07:00', endTime: '00:00', endTimezoneOffset: 300 });
+  });
 });
 
 describe('who hears', () => {

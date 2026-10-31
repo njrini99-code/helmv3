@@ -50,7 +50,8 @@ export interface ChQTeeOption {
 }
 
 export interface ChQWrites {
-  create: (input: ChQCreateInput) => Promise<ServerResult<{ qualifierId: string }>>;
+  /** `roundCoursesFailed`: the qualifier exists but its per-round courses did not save. */
+  create: (input: ChQCreateInput) => Promise<ServerResult<{ qualifierId: string; roundCoursesFailed?: boolean }>>;
   saveEdit: (id: string, plan: ChQEditPlan) => Promise<ServerResult>;
   setStatus: (id: string, status: 'in_progress' | 'completed') => Promise<ServerResult>;
   /** Courses matching the search, the team's saved ones first when there is no search. Throws when the read fails. */

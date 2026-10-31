@@ -13,7 +13,7 @@ import { InlineNotice } from '../../ui/Notices';
 import { Modal } from '../../ui/Modal';
 import { BackLink } from '../../ui/Section';
 import { SectionBoundary } from '../../ui/SectionBoundary';
-import { normalise, useAction } from '../../lib/use-action';
+import { friendlyReason, normalise, useAction } from '../../lib/use-action';
 import { chReport, chTrail } from '../../lib/track';
 import { haptic } from '../../lib/haptics';
 import { useChReducedMotion } from '../../lib/reduced-motion';
@@ -133,6 +133,14 @@ export function QualifierForm({ data, writes = LIVE_WRITES }: { data: ChQFormDat
       hint: 'Nothing was created. Check the details and try again.',
       code: 'CH-09001',
     }),
+    // The qualifier exists but its courses did not save (audit F9): the toast says so instead of a clean "created", and where to set them.
+    // A refine makes the hint the toast's whole body, so a failure keeps the server's reason (friendlyReason) as it did without one.
+    (result, c) =>
+      result.success
+        ? result.data?.roundCoursesFailed
+          ? { ...c, done: 'Qualifier created, but its courses didn’t save. Open Edit to set them.' }
+          : c
+        : { ...c, hint: friendlyReason(result.error) ?? c.hint },
   );
 
   const save = useAction(

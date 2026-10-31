@@ -3,7 +3,7 @@
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useNotificationBadges } from '@/contexts/notification-badge-context';
-import { useGolfConversations, useGolfMessages, type GolfConversationWithMeta } from '@/hooks/golf/use-golf-messages';
+import { useGolfConversations, useGolfMessages } from '@/hooks/golf/use-golf-messages';
 import { MESSAGE_REACTIONS, summarizeReactions, useMessageReactions } from '@/hooks/golf/use-message-reactions';
 import { useMessageAttachments } from '@/hooks/golf/use-message-attachments';
 import { useMessageResponses } from '@/hooks/golf/use-message-responses';
@@ -46,12 +46,9 @@ import { DraftStore } from './drafts';
 import { readMarkedUnread, withMark, writeMarkedUnread } from './marked-unread';
 import { FOUND_FOR_MS } from './use-focus-message';
 import { onRoster, takePrefill } from './prefill';
-import { directWith, firstName, groupLacksPlayer, isDirect, toChAnnouncement, type ChAnnouncement, type ChAnnouncementDetail, type ChConv, type ChFile, type ChMember, type ChMsg, type ChMute, type ChReaction, type ChReactionKey } from './model';
+import { directWith, firstName, groupLacksPlayer, isDirect, isGroupRow, toChAnnouncement, type ChAnnouncement, type ChAnnouncementDetail, type ChConv, type ChFile, type ChMember, type ChMsg, type ChMute, type ChReaction, type ChReactionKey } from './model';
 
-const isGroup = (c: GolfConversationWithMeta) => {
-  const n = c.participant_count ?? c.participant_ids?.length ?? 0;
-  return n > 0 ? n > 2 : !!c.is_group;
-};
+const isGroup = isGroupRow;
 const EMOJI_BY_KEY = Object.fromEntries(MESSAGE_REACTIONS.map((r) => [r.label, r.emoji])) as Record<ChReactionKey, string>;
 const KEY_BY_EMOJI = Object.fromEntries(MESSAGE_REACTIONS.map((r) => [r.emoji, r.label])) as Record<string, ChReactionKey>;
 
@@ -770,7 +767,18 @@ export function Messages({ data }: { data: ChMessagesData }) {
       });
       return (ok && unknown) || (!ok && !checked && attachmentRecovery.has(selectedId)) ? 'unknown' : ok && partial ? 'partial' : ok;
     },
-    retry: (id) => void msgs.retryMessage(id),
+    // Through attempt() like every other change: offline it refuses with the shared notice (nothing is sent), and a
+    // retry that fails again says so; the hook clears the row's pending mark when it lands.
+    retry: (id) =>
+      void attempt('retry', { failed: "Couldn’t send the message", hint: 'It is still in the thread, marked Not sent. Try again.', code: 'CH-7004' }, async () => {
+        const sent = await msgs.retryMessage(id);
+        if (!sent) {
+          haptic('error');
+          toast({ tone: 'error', title: "Couldn’t send the message", body: 'It is still in the thread, marked Not sent. Try again.', code: 'CH-7004' });
+          return false;
+        }
+        return true;
+      }),
     discard: (id) => msgs.discardFailedMessage(id),
     edit: (id, text) =>
       attempt('edit', { failed: "Couldn’t edit the message", hint: 'Your edit is still in the box. Try again.', code: 'CH-7007' }, async () => {

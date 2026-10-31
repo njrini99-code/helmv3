@@ -41,7 +41,7 @@ CREATE OR REPLACE FUNCTION helm_private.golf_rounds_discard_tombstone()
 RETURNS trigger
 LANGUAGE plpgsql
 SECURITY DEFINER
-SET search_path = public
+SET search_path = pg_catalog, public
 AS $$
 BEGIN
   INSERT INTO public.golf_round_discards (round_id, player_id, discarded_by, round_before, holes_before, shots_before)

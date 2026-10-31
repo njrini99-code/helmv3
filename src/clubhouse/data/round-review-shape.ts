@@ -14,6 +14,17 @@ import { roundType, teeColorFor, teeLabel, type ChRoundType, type ChTeeColor } f
  * tests use the same code.
  */
 
+/**
+ * The Tour a review's strokes gained is measured against: the team's own baseline setting (`golf_team_settings.sg_baseline`, which
+ * recomputes the stored figures when it changes), else its gender's Tour. Only the two Tours exist (sg-benchmarks.ts, 2026-06-22);
+ * an older stored value (scratch, D1 to D3) is no baseline, so the gender's applies.
+ */
+export function reviewTour(genderTour: 'pga' | 'lpga', baseline: string | null | undefined): 'pga' | 'lpga' {
+  if (baseline === 'womens') return 'lpga';
+  if (baseline === 'pga_tour') return 'pga';
+  return genderTour;
+}
+
 export type ChLie = 'tee' | 'fairway' | 'rough' | 'sand' | 'green' | 'hole' | 'penalty' | 'other';
 
 export interface ChReviewShot {

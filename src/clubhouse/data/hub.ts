@@ -573,12 +573,13 @@ function rosterNames(data: unknown): Map<string, string> {
   return new Map(rosterPlayers(data).map((p) => [p.id, fullName(p)]));
 }
 
-async function rosterPulse(supabase: Awaited<ReturnType<typeof createClient>>, names: Map<string, string>, today: string): Promise<NonNullable<ChTeamHub['pulse']> | null> {
+/** Exported for its test. The windows are exactly 30 and 14 days counting today: dates after today - 30 and after today - 14 (a `>=` on today - 30 read 31 days). */
+export async function rosterPulse(supabase: Awaited<ReturnType<typeof createClient>>, names: Map<string, string>, today: string): Promise<NonNullable<ChTeamHub['pulse']> | null> {
   const playerIds = [...names.keys()];
   if (!playerIds.length) return { rounds30: 0, active14: 0, players: 0, byPlayer: [] };
-  const res = await loadSeasonRounds(supabase, playerIds, { surface: 'hub', since: addDays(today, -30) });
+  const res = await loadSeasonRounds(supabase, playerIds, { surface: 'hub', since: addDays(today, -29) });
   if (res.error) return null;
-  const since14 = addDays(today, -14);
+  const since14 = addDays(today, -13);
   const active = new Set(res.rounds.filter((r) => r.round_date.slice(0, 10) >= since14).map((r) => r.player_id));
   const count = new Map<string, number>();
   for (const r of res.rounds) count.set(r.player_id, (count.get(r.player_id) ?? 0) + 1);

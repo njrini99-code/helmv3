@@ -268,6 +268,7 @@ export async function getPlayerTeamId(
  */
 export async function roundWasDiscarded(supabase: SupabaseClient, roundId: string, playerId: string): Promise<boolean> {
   try {
+    // nosemgrep: helmv3-server-action-missing-auth-check -- plain helper (not an action); both callers authenticated and resolved the player id
     const { data, error } = await (supabase as SupabaseClient)
       .from('golf_round_discards' as never)
       .select('round_id')
@@ -287,12 +288,14 @@ export async function qualifierTeamIdFor(
 ): Promise<string | null> {
   if (!qualifierId) return null;
   // nosemgrep: helmv3-server-action-missing-auth-check -- plain helper (no server directive, not an action); every caller has already authenticated and passes the player id
-  const { data: q } = await supabase.from('golf_qualifiers').select('team_id').eq('id', qualifierId).maybeSingle();
+  const { data: q, error: qualifierError } = await supabase.from('golf_qualifiers').select('team_id').eq('id', qualifierId).maybeSingle();
+  // A failed read is "not known": the caller falls back to the player's own team, as before this helper existed.
+  if (qualifierError) return null;
   const teamId = (q as { team_id: string | null } | null)?.team_id ?? null;
   if (!teamId) return null;
   // nosemgrep: helmv3-server-action-missing-auth-check -- plain helper; see above
-  const { data: m } = await supabase.from('golf_team_members').select('team_id').eq('team_id', teamId).eq('player_id', playerId).eq('status', 'active').limit(1).maybeSingle();
-  return m ? teamId : null;
+  const { data: m, error: memberError } = await supabase.from('golf_team_members').select('team_id').eq('team_id', teamId).eq('player_id', playerId).eq('status', 'active').limit(1).maybeSingle();
+  return !memberError && m ? teamId : null;
 }
 // deriveLieAfterFromResult, deriveLieAfter imported from '@/lib/utils/shot-helpers'
 

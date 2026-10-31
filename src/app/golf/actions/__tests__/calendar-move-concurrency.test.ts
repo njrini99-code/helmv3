@@ -223,6 +223,32 @@ describe('updateGolfEvent concurrency (P-4)', () => {
   });
 });
 
+describe('updateGolfEvent notices (audit F9)', () => {
+  // The editor sends the title and the start on every save.
+  const same = { title: 'Practice', location: 'Range', startDate: '2099-07-01', startTime: '10:00', endDate: '2099-07-01', endTime: '11:00', allDay: false, timezoneOffset: 0 };
+  const seed = () => seedAs('u-coach', withEvent(baseTables(), { start_time: '2099-07-01T10:00:00+00:00', end_time: '2099-07-01T11:00:00+00:00' }));
+
+  it('a save that changes only notes tells no one', async () => {
+    const tables = seed();
+    const res = await updateGolfEvent('event-1', { ...same, description: 'Bring rain gear' });
+    expect(res.success).toBe(true);
+    expect(tables.golf_calendar_notifications).toHaveLength(0);
+  });
+
+  it('a new place tells the people who replied', async () => {
+    const tables = seed();
+    await updateGolfEvent('event-1', { ...same, location: 'Putting green' });
+    expect(tables.golf_calendar_notifications.length).toBeGreaterThan(0);
+    expect(String(tables.golf_calendar_notifications[0]!.notification_type)).toMatch(/^event_updated:/);
+  });
+
+  it('a new time tells them too', async () => {
+    const tables = seed();
+    await updateGolfEvent('event-1', { ...same, startTime: '11:00', endTime: '12:00' });
+    expect(tables.golf_calendar_notifications.length).toBeGreaterThan(0);
+  });
+});
+
 describe('series moves (P-4 6.4, 8.7)', () => {
   it('editRecurringEvent refuses a target row that changed since it was read', async () => {
     const { editRecurringEvent } = await import('../recurring-events');
@@ -250,7 +276,8 @@ describe('series moves (P-4 6.4, 8.7)', () => {
     for (const row of tables.golf_calendar_notifications) {
       expect(notificationTypeAllowed(String(row.notification_type))).toBe(true);
     }
-    expect(tables.golf_calendar_notifications[0]!.notification_type).toBe('event_updated:series:occ-0:2099-07-01T14:00:00+00:00');
+    // The key carries the occurrence's start and a short hash of what else the notice shows (place, title, type).
+    expect(tables.golf_calendar_notifications[0]!.notification_type).toMatch(/^event_updated:series:occ-0:2099-07-01T14:00:00\+00:00\|[0-9a-f]{12}$/);
   });
 
   it('the CHECK helper rejects the old series key', () => {

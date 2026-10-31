@@ -1,7 +1,7 @@
 import 'server-only';
 import { createClient } from '@/lib/supabase/server';
 import { fetchAllRowsResult } from '@/lib/supabase/fetch-all-rows';
-import { getValidTimezone } from '@/lib/calendar/timezone';
+import { eventDaySpan, getValidTimezone } from '@/lib/calendar/timezone';
 import { classIdFromDescription, isClassEvent, stripClassTag } from '@/lib/calendar/class-events';
 import { describeRecurrenceRule, parseRecurrenceRule } from '@/lib/golf/recurrence';
 import { chLogServer } from '../lib/track-server';
@@ -246,8 +246,9 @@ export async function loadCalendar(input: {
           .lte('start_date', range.to)
           .limit(500)
       : null,
-    // CH-6309: has this team ever scheduled anything? A count, no rows; a coach's question only.
-    input.role === 'coach' ? supabase.from('golf_events').select('id', { count: 'exact', head: true }).eq('team_id', input.teamId) : null,
+    // CH-6309: has this team ever scheduled anything? A count, no rows; a coach's question only. Class meetings synced
+    // from players' schedules are not the coach scheduling anything, so they do not end the first-run state (audit L7).
+    input.role === 'coach' ? supabase.from('golf_events').select('id', { count: 'exact', head: true }).eq('team_id', input.teamId).neq('event_type', 'class') : null,
   ]);
   if (everRes?.error) chLogServer('calendar', 'eventCount', everRes.error, 'calendar');
   const firstRun = !!everRes && !everRes.error && everRes.count === 0;
@@ -380,9 +381,13 @@ export async function loadCalendar(input: {
           : null,
     };
     if (r.all_day) {
-      // All-day rows are stored as UTC-midnight dates: read the date part, never zone it.
-      const s = r.start_time.slice(0, 10);
-      const e = (r.end_time ?? r.start_time).slice(0, 10);
+      // All-day rows are stored as UTC-midnight dates: read the date part, never zone it. A row written as the team's own
+      // local day edges (start 04:00Z, end 03:59Z the day after its last day) is read by eventDaySpan, the canonical
+      // helper, so it does not draw a trailing extra day (audit F8). For the app's own rows it gives the same two dates.
+      const span = eventDaySpan({ start_time: r.start_time, end_time: r.end_time, all_day: true }, timezone);
+      const ymd = (d: Date) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+      const s = span ? ymd(span.first) : r.start_time.slice(0, 10);
+      const e = span ? ymd(span.last) : (r.end_time ?? r.start_time).slice(0, 10);
       for (let d = s < range.from ? range.from : s, n = 0; d <= e && n < 62; d = addDays(d, 1), n++) {
         if (d > range.to) break;
         events.push({ ...base, date: d, start: null, end: null, allDay: true, span: s === e ? null : { from: s, to: e } });

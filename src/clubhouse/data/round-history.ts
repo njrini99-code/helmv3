@@ -2,6 +2,7 @@ import 'server-only';
 import { createClient } from '@/lib/supabase/server';
 import { fetchAllRowsResult } from '@/lib/supabase/fetch-all-rows';
 import { chunkIds } from '@/lib/supabase/chunk-ids';
+import { deriveRoundTotal } from '@/lib/golf/round-total';
 import { chLogServer } from '../lib/track-server';
 import { historyHoleIds, toReviewHistory, type ChHistoryRound, type ChHistoryRoundRow, type ChReviewHistory } from './round-history-shape';
 import { loadTeamZone, SEASON_DEFAULT_TZ, seasonStartDate } from './season';
@@ -68,7 +69,9 @@ export function startReviewHistory(
         log('history-list', listRes.error);
         return null;
       }
-      const list = listRes.data ?? [];
+      // The record chips compare this round's canonical total (the review draws it) with the others', so the others use the same
+      // total: front plus back where both are stored, as the library and the course page do (round-total.ts: ~5% drift by one).
+      const list = (listRes.data ?? []).map((r) => ({ ...r, total_score: deriveRoundTotal(r).total }));
       const ids = historyHoleIds(round, list);
       const holes = new Map<string, ChPlayHole[]>();
       for (const chunk of chunkIds(ids)) {

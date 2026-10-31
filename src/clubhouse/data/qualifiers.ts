@@ -213,14 +213,25 @@ export interface ChQFormData {
 function entrantOf(p: PlayerCols, now: Date, tz: string): ChQEntrant {
   return { playerId: p.id, name: fullName(p), classYear: classYearLabel(p.graduation_year, now, tz) };
 }
+
+/**
+ * What the Edit form calls an entrant with no readable profile. The profile read admits active members only
+ * (`user_is_coach_of_golf_player`), so an injured, redshirt or inactive entrant has no name here. They are still entered, so the form
+ * lists them (not on the active roster) and keeps them in the player list it saves: left out, a save removed them silently, or was
+ * refused with "N players have a round" and no names (audit F7). The board and Confirm squad still rank only entrants with a readable
+ * profile (the server loader, `lib/coachhelm/v3/qualifying/loader.ts`, drops the rest), so the board is not changed here; showing
+ * them there needs a staff-scoped name read, which is a migration. (CH-09224)
+ */
+export const INACTIVE_PLAYER = 'Inactive player';
+
 const ENTRY_SELECT = 'qualifier_id, player_id';
 const ROUND_SELECT = 'id, qualifier_id, player_id, qualifier_round_number, total_score, score_to_par, round_date, course_name, holes_played, status, is_test';
 
 /**
  * The entries of the team's qualifiers, each with its entrant's name. The names come through golf_player_profiles (the
  * team's roster, read beside the entries, so no extra round trip), not an embed: a player may no longer read a
- * teammate's golf_players row (security review S4). An entrant no longer on the roster has no name, as before (the
- * policy only ever admitted active members).
+ * teammate's golf_players row (security review S4). An entrant no longer on the roster has no readable profile (the
+ * policy only ever admits active members); the board leaves them out, the Edit form lists them as INACTIVE_PLAYER.
  */
 async function readEntries(supabase: Supabase, qualifierIds: string[], teamId: string, surface: string): Promise<{ rows: EntryRow[]; error: boolean }> {
   const [entries, profiles] = await Promise.all([readEntryRows(supabase, qualifierIds, surface), readGolfPlayerProfiles(supabase, { teamIds: [teamId] })]);
@@ -659,7 +670,7 @@ export async function loadQualifierForm(input: { teamId: string; qualifierId: st
   const [entries, usedRes, placedRes, coursesRes] = await Promise.all([
     readEntries(supabase, [q.id], q.team_id, 'qualifiers'),
     // Any round counts, started or not: an entrant with one can't be removed (setQualifierEntrants), and its slot can't be cut.
-    supabase.from('golf_rounds').select('player_id, qualifier_round_number').eq('qualifier_id', q.id).limit(1000),
+    supabase.from('golf_rounds').select('player_id, qualifier_round_number, status').eq('qualifier_id', q.id).limit(1000),
     // So does a selection row, confirmed or not (setQualifierEntrants refuses both).
     supabase.from('golf_qualifier_selections').select('player_id').eq('qualifier_id', q.id),
     supabase.from('golf_qualifier_round_courses').select('round_number, course_id, course_name, tee_id').eq('qualifier_id', q.id).order('round_number', { ascending: true }),
@@ -670,17 +681,20 @@ export async function loadQualifierForm(input: { teamId: string; qualifierId: st
   const courseRows = (coursesRes.data ?? []) as Array<{ round_number: number; course_id: string | null; course_name: string | null; tee_id: string | null }>;
   const { tees, teesError } = await readTees(supabase, courseRows);
 
-  const used = (usedRes.data ?? []) as Array<{ player_id: string; qualifier_round_number: number | null }>;
+  const used = (usedRes.data ?? []) as Array<{ player_id: string; qualifier_round_number: number | null; status?: string | null }>;
   const roundIds = new Set(used.map((u) => u.player_id));
   const placedIds = new Set(((placedRes.data ?? []) as Array<{ player_id: string }>).map((r) => r.player_id));
   const lockOf = (id: string): ChQFormPlayer['locked'] => (roundIds.has(id) ? 'round' : placedIds.has(id) ? 'squad' : false);
-  const entered = entries.rows.filter((e) => e.player).map((e) => e.player as PlayerCols);
+  // Every entrant, including one whose profile cannot be read: left out of the form they would be missing from the saved player list
+  // and silently removed (or refused with "players have a round" and no names). They show as "Former player", not on the roster.
   const rosterIds = new Set(roster.map((p) => p.id));
+  const entered = entries.rows.map((e) => e.player ?? { id: e.player_id, first_name: null, last_name: null, graduation_year: null, unreadable: true });
+  const named = (p: PlayerCols & { unreadable?: true }) => (p.unreadable ? INACTIVE_PLAYER : fullName(p));
   const players: ChQFormPlayer[] = [
     ...roster,
     ...entered.filter((p) => !rosterIds.has(p.id)),
   ]
-    .map((p) => ({ id: p.id, name: fullName(p), classYear: classYearLabel(p.graduation_year, now, tz), locked: lockOf(p.id), inactive: !rosterIds.has(p.id) }))
+    .map((p: PlayerCols & { unreadable?: true }) => ({ id: p.id, name: named(p), classYear: p.unreadable ? null : classYearLabel(p.graduation_year, now, tz), locked: lockOf(p.id), inactive: !rosterIds.has(p.id) }))
     .sort(byLast);
 
   return {
@@ -714,7 +728,9 @@ export async function loadQualifierForm(input: { teamId: string; qualifierId: st
     playersError: !!rosterRes.error || entries.error || !!usedRes.error || !!placedRes.error,
     coursesError: !!coursesRes.error || teesError,
     squadLocked: parseSelectionState(q.selection_state) === 'selected',
-    minRounds: Math.max(1, ...used.map((u) => u.qualifier_round_number ?? 1)),
+    // Only a started or finished round holds a slot: the database refuses a lower count only for those (the round-cap trigger), so an
+    // abandoned round at slot 3 must not stop the count going to 2 (audit F10). `used` above still holds every status for the locks.
+    minRounds: Math.max(1, ...used.filter((u) => u.status === 'in_progress' || u.status === 'completed').map((u) => u.qualifier_round_number ?? 1)),
   };
 }
 

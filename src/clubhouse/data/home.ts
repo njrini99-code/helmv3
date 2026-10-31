@@ -537,6 +537,8 @@ export interface ChHomeWeek {
   todayEvents: ChHomeEvent[];
   /** The first competition later this week, for the week strip's note. */
   weekNote: { weekday: string; title: string } | null;
+  /** Every meeting the viewer sees in the loaded window (a player's own invited meetings, Decision B), for scoping their change marks. */
+  meetingIds: Set<string>;
 }
 
 /**
@@ -813,6 +815,7 @@ export async function loadHomeWeek(
     next: eventsRes.error || !upcoming ? null : toPhone(upcoming),
     todayEvents: eventsRes.error ? [] : todays.map(toPhone),
     weekNote: firstLater ? { weekday: weekdayOf(firstLater.localDate), title: firstLater.title } : null,
+    meetingIds: new Set(eventsRes.error ? [] : events.filter((e) => e.event_type === 'meeting').map((e) => e.id)),
   };
 
 }

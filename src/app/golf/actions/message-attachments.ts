@@ -373,6 +373,15 @@ async function getGolfMessageAttachmentsImpl(messageId: string): Promise<{
       return { error: 'Unauthorized' };
     }
 
+    // A deleted message shows no files. The storage objects stay (the sender can still be audited), but nobody
+    // gets a signed URL for them any more. A failed read here falls through: RLS still scopes the attachment rows.
+    const { data: parent, error: parentError } = await supabase
+      .from('golf_messages')
+      .select('is_deleted')
+      .eq('id', messageId)
+      .maybeSingle();
+    if (!parentError && parent?.is_deleted) return { attachments: [] };
+
     // Get attachments
     const { data: attachments, error } = await supabase
       .from('golf_message_attachments')

@@ -21,6 +21,7 @@ import { withAdminObserved } from '@/lib/admin/observed-action';
 import { describeError } from '@/lib/utils/describe-error';
 import { assertGolfConversationAudience } from '@/lib/golf/conversation-audience';
 import { readGolfPlayerProfiles } from '@/lib/golf/player-profiles';
+import { readViewerParticipants } from '@/lib/golf/unread-message-count';
 import { validateGolfReplyTarget } from '@/lib/golf/message-replies';
 import { isFlagEnabled } from '@/lib/flags/is-enabled';
 
@@ -1498,11 +1499,8 @@ async function searchGolfMessagesImpl(
       return { results: [] };
     }
 
-    // Get all conversation IDs the user participates in
-    const { data: participantRows, error: participantError } = await supabase
-      .from('golf_conversation_participants')
-      .select('conversation_id')
-      .eq('user_id', user.id);
+    // Get all conversation IDs the user participates in, with their hide mark.
+    const { data: participantRows, error: participantError } = await readViewerParticipants(supabase, user.id);
 
     // A failed read is not "no results" (contracts 70403, 70619): the page says the search failed.
     if (participantError) return { results: [], error: 'Search failed' };
@@ -1510,7 +1508,29 @@ async function searchGolfMessagesImpl(
       return { results: [] };
     }
 
-    const conversationIds = participantRows.map(r => r.conversation_id);
+    // A conversation the viewer deleted is out of their inbox, so it is out of their search too: a hit would open
+    // a thread the page cannot show (L3). It is back, and searchable, once a message arrived after the hide
+    // (the inbox's own rule, unread-message-count.ts).
+    const conversationIds = participantRows.filter((r) => !r.hidden_at).map((r) => r.conversation_id);
+    const hiddenRows = participantRows.filter((r) => r.hidden_at);
+    if (hiddenRows.length > 0) {
+      const earliestHide = hiddenRows.reduce((min, r) => (r.hidden_at! < min ? r.hidden_at! : min), hiddenRows[0]!.hidden_at!);
+      const { data: newer, error: newerError } = await supabase
+        .from('golf_messages')
+        .select('conversation_id, created_at')
+        .in('conversation_id', hiddenRows.map((r) => r.conversation_id))
+        .eq('is_deleted', false)
+        .gt('created_at', earliestHide)
+        .limit(1000);
+      if (newerError) return { results: [], error: 'Search failed' };
+      for (const row of hiddenRows) {
+        const back = (newer ?? []).some((m) => m.conversation_id === row.conversation_id && (m.created_at ?? '') > row.hidden_at!);
+        if (back) conversationIds.push(row.conversation_id);
+      }
+    }
+    if (conversationIds.length === 0) {
+      return { results: [] };
+    }
 
     // Search messages using ilike for case-insensitive partial matching
     // Only within conversations the user is a participant of
@@ -1606,6 +1626,33 @@ async function searchGolfMessagesImpl(
       .from('golf_conversation_participants')
       .select('conversation_id, user_id')
       .in('conversation_id', matchedConvIds);
+
+    // A DM's name is the OTHER person's, who may not have sent any matching message (only the viewer's own matched):
+    // resolve the names that the sender lookup above does not hold.
+    const missingOthers = [
+      ...new Set(
+        (allParticipants || [])
+          .filter((p) => p.user_id !== user.id && !senderMap.has(p.user_id))
+          .map((p) => p.user_id),
+      ),
+    ];
+    if (missingOthers.length > 0) {
+      const [{ data: otherCoaches }, { data: otherPlayers }] = await Promise.all([
+        supabase.from('golf_coaches').select('user_id, full_name, avatar_url').in('user_id', missingOthers),
+        readGolfPlayerProfiles(supabase, { userIds: missingOthers }),
+      ]);
+      (otherCoaches || []).forEach((c) => {
+        if (c.user_id) senderMap.set(c.user_id, { name: c.full_name || 'Coach', avatar: c.avatar_url });
+      });
+      (otherPlayers || []).forEach((p) => {
+        if (p.user_id) {
+          senderMap.set(p.user_id, {
+            name: [p.first_name, p.last_name].filter(Boolean).join(' ') || 'Player',
+            avatar: p.avatar_url,
+          });
+        }
+      });
+    }
 
     // Build conversation name lookup
     const convNameMap = new Map<string, string>();

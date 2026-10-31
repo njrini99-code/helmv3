@@ -167,7 +167,7 @@ Feature Awareness System · active · criticality high · owner platform
 Golf Round Lifecycle · active · criticality high · owner product
 
 - **Relations:** 2 doc/structurally-evidenced, 27 import-graph-only (weak)
-- **Tables:** `golf_course_edit_history`, `golf_course_tee_edit_history`, `golf_course_tee_holes`, `golf_course_tees`, `golf_demo_sessions`, `golf_round_live`, `golf_round_live_prefs`, `golf_round_recap_locks`, `golf_round_recap_provenance`, `golf_team_saved_courses`
+- **Tables:** `golf_course_edit_history`, `golf_course_tee_edit_history`, `golf_course_tee_holes`, `golf_course_tees`, `golf_demo_sessions`, `golf_round_discards`, `golf_round_live`, `golf_round_live_prefs`, `golf_round_recap_locks`, `golf_round_recap_provenance`, `golf_team_saved_courses`, `helm_private`
 - **RPCs:** `golf_event_attendance_counts`, `golf_player_profiles`, `golf_set_course_image`, `reclassify_golf_round`, `record_round_coachhelm_terminal_state`, `save_partial_round_atomic`, `submit_round_atomic`
 - **Test surfaces:** 3
 - **Sentry/admin_events signals:** `course_library`, `round_tracking`

@@ -153,7 +153,7 @@ Every Bridge ID (D-68: namespace, two-digit category, two-digit item), its catal
 
 | Page | 01 | 02 | 03 | 04 | 05 | 06 | 07 | 08 | 09 | 10 | 11 | 12 | 13 | 14 | 15 | 16 | 17 | 18 | 19 | 20 | 21 | 22 | 23 | 24 | 25 | Total |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| P001 | 3 | 2 | 1 | 6 |  | 16 | 6 | 4 | 1 |  |  |  | 1 | 2 |  | 22 | 9 | 28 | 1 | 3 | 1 | 3 | 1 | 1 |  | 111 |
+| P001 | 3 | 2 | 1 | 7 |  | 17 | 6 | 4 | 1 |  |  |  | 1 | 2 |  | 22 | 9 | 28 | 1 | 3 | 1 | 3 | 1 | 1 |  | 113 |
 | P002 | 5 | 2 | 1 | 16 | 8 | 26 | 1 | 6 |  |  | 1 |  |  | 2 |  | 3 | 3 | 8 | 1 |  | 1 |  | 1 | 1 |  | 86 |
 | P003 | 2 | 3 | 3 | 9 | 4 | 24 | 2 | 6 | 1 |  | 2 | 3 | 1 | 3 |  | 4 | 4 | 10 | 1 | 1 | 1 |  | 1 | 1 |  | 86 |
 | P004 | 2 | 1 | 1 | 19 | 2 | 12 | 3 | 2 | 1 |  |  | 1 |  | 1 |  | 4 | 4 | 6 | 1 | 1 | 1 |  | 1 | 1 |  | 64 |
@@ -161,7 +161,7 @@ Every Bridge ID (D-68: namespace, two-digit category, two-digit item), its catal
 | P006 | 4 | 5 | 3 | 10 | 14 | 58 | 1 | 8 | 1 | 2 | 7 | 3 | 2 | 2 | 1 | 7 | 3 | 10 | 1 | 1 | 1 |  | 1 | 1 |  | 146 |
 | P007 | 2 | 11 | 1 | 11 | 6 | 48 | 1 | 2 | 2 | 1 | 4 | 2 | 1 | 2 | 1 | 9 | 5 | 6 | 1 | 1 | 1 |  | 2 | 1 |  | 121 |
 | P008 | 2 | 1 | 3 | 6 | 15 | 44 | 3 | 10 | 3 | 3 | 8 | 6 | 2 | 2 | 1 | 9 | 8 | 7 | 1 | 1 | 1 |  | 1 | 1 |  | 138 |
-| P009 | 7 | 7 | 4 | 13 | 14 | 34 | 7 | 12 | 2 | 1 | 4 | 4 | 1 | 2 | 1 | 3 | 3 | 4 | 4 | 3 | 2 |  | 4 | 1 |  | 137 |
+| P009 | 7 | 7 | 4 | 13 | 14 | 35 | 8 | 12 | 2 | 1 | 4 | 4 | 1 | 2 | 1 | 3 | 3 | 4 | 4 | 3 | 2 |  | 4 | 1 |  | 139 |
 | P010 | 3 | 10 |  | 16 | 10 | 25 | 1 | 4 | 1 |  | 4 | 1 | 1 | 2 | 1 | 2 | 2 | 2 | 1 | 1 | 1 |  | 1 | 1 |  | 90 |
 | P011 | 16 | 15 |  | 26 | 11 | 44 | 22 | 5 | 2 |  | 24 | 2 | 1 | 4 | 4 | 4 | 11 | 11 | 3 | 1 | 1 |  | 1 | 2 |  | 210 |
 | P012 | 3 | 3 |  | 8 | 19 | 22 | 3 | 3 | 2 |  | 5 | 1 |  | 4 | 4 | 2 | 5 | 7 | 1 | 1 | 1 |  | 1 | 1 |  | 96 |
@@ -186,6 +186,7 @@ Every Bridge ID (D-68: namespace, two-digit category, two-digit item), its catal
 | 10404 | CH-1304 | 04 Empty | `NOTHING_IS_SCHEDULED` | implemented | Nothing is scheduled |
 | 10405 | CH-1305 | 04 Empty | `A_COACH_WITH_ONE_TEAM_A_COACH` | implemented | A coach with one team, a coach who cannot switch (an assistant on several teams), or a player |
 | 10406 | CH-1306 | 04 Empty | `A_DASHBOARD_URL_THAT_MATCHES_NOTHING_OR` | implemented | A dashboard URL that matches nothing, or an id that no longer exists (a deleted round or player), inside the Clubhouse shell |
+| 10407 | CH-1307 | 04 Empty | `MORE_UNREAD_THAN_THE_BELL_LISTS` | implemented | More unread than the bell lists |
 | 10601 | CH-1001 | 06 Server / system error | `MARK_ALL_READ_IN_THE_BELL_FAILS` | implemented | "Mark all read" in the bell fails |
 | 10602 | CH-1201 | 06 Server / system error | `THE_BELLS_LIST_DOESNT_LOAD` | implemented | The bell's list doesn't load |
 | 10603 | CH-1202 | 06 Server / system error | `THE_PAGE_WAS_BUILT_FOR_AN_OLDER` | implemented | The page was built for an older version |
@@ -202,6 +203,7 @@ Every Bridge ID (D-68: namespace, two-digit category, two-digit item), its catal
 | 10614 | CH-1211 | 06 Server / system error | `A_PAGES_ONE_READ_DOESNT_LOAD_SO` | implemented | A page's one read doesn't load, so nothing can show under its head |
 | 10615 | CH-1270 | 06 Server / system error | `DELIVER_NOW_IN_THE_BELL_IS_REFUSED` | implemented | Deliver now in the bell is refused (P-10) |
 | 10616 | CH-1271 | 06 Server / system error | `A_PLAYERS_PUSHES_ARE_HELD_FOR_CLASS` | implemented | A player's pushes are held for class (P-10) |
+| 10617 | CH-1004 | 06 Server / system error | `OPENING_OR_CLEARING_A_NOTIFICATION_THE_SERVER` | implemented | Opening or clearing a notification: the server did not keep the read (it answered `success: false`, or the call failed) |
 | 10701 | CH-1901 | 07 Network / offline | `THE_DEVICE_GOES_OFFLINE` | implemented | The device goes offline |
 | 10702 | CH-1902 | 07 Network / offline | `A_SAVE_TAKES_LONGER_THAN_5_SECONDS` | implemented | A save takes longer than 5 seconds (forms, switches and CoachHelm settings) |
 | 10703 | CH-1903 | 07 Network / offline | `SOMEONE_SAVES_WHILE_OFFLINE` | implemented | Someone saves while offline |
@@ -1143,6 +1145,7 @@ Every Bridge ID (D-68: namespace, two-digit category, two-digit item), its catal
 | 90632 | CH-09222 | 06 Server / system error | `A_PLAYERS_ENTRIES_DONT_LOAD_ON_MY` | implemented | A player's entries don't load on /my-qualifiers |
 | 90633 | CH-09220 | 06 Server / system error | `A_REFRESH_OF_A_QUALIFIERS_STANDINGS_FAILS` | implemented | A refresh of a qualifier's standings fails after they were showing (a live update, a write's re-read, Try again) |
 | 90634 | CH-09223 | 06 Server / system error | `THE_PLAYERS_ROUNDS_PANEL_CRASHES` | implemented | The player's rounds panel crashes (desktop, beside the leaderboard) |
+| 90635 | CH-09224 | 06 Server / system error | `EDIT_AN_ENTRANT_WHOSE_PROFILE_CANNOT_BE` | implemented | Edit: an entrant whose profile cannot be read (injured, redshirt or inactive: the profile read admits active members only) |
 | 90701 | CH-09903 | 07 Network / offline | `THE_SQUAD_IS_CONFIRMED` | implemented | The squad is confirmed (Manage selections) |
 | 90702 |  | 07 Network / offline | `WRITES_REFUSED_OFFLINE` | implemented | Offline, none of the eight writes (create, save, close, reopen, start selecting, save a pick, remove a pick, confirm the squad) is sent: the shell's offline toast (CH-1903) names what did not happen, the error haptic fires, and the page does not move on. |
 | 90703 | CH-09904 | 07 Network / offline | `THE_LISTS_FILTER_AND_SEARCH` | reserved | The list's filter and search |
@@ -1150,6 +1153,7 @@ Every Bridge ID (D-68: namespace, two-digit category, two-digit item), its catal
 | 90705 | CH-09906 | 07 Network / offline | `PLAYER_A_LIVE_QUALIFIER_WITH_A_ROUND` | implemented | Player: a live qualifier with a round still to play, before its last day |
 | 90706 | CH-09907 | 07 Network / offline | `PLAYER_THE_SQUAD_IS_CONFIRMED` | reserved | Player: the squad is confirmed |
 | 90707 | CH-09908 | 07 Network / offline | `PLAYER_THEIR_OWN_RANKED_ROW_ON_A` | implemented | Player: their own ranked row on a board that draws a line |
+| 90708 | CH-09909 | 07 Network / offline | `COACH_A_ROUND_NUMBERS_CARDS_MIX_9` | implemented | Coach: a round number's cards mix 9 and 18 holes |
 | 90801 | CH-09310 | 08 Permission / authorization | `THE_QUALIFIER_ISNT_ON_THE_VIEWERS_TEAM` | implemented | The qualifier isn't on the viewer's team, or doesn't exist |
 | 90802 | CH-09311 | 08 Permission / authorization | `A_PLAYER_OPENS_NEW_OR_EDIT` | implemented | A player opens /new, /edit or /selection |
 | 90803 |  | 08 Permission / authorization | `COACH_ADDRESSES_READ_NOTHING_FOR_A_PLAYER` | implemented | For a player, /qualifiers/new, /qualifiers/[id]/edit and /qualifiers/[id]/selection stop at the coach-only page (CH-09311) before any loader runs, so nothing of the qualifier is read for them. |

@@ -297,13 +297,13 @@ export function Roster({ data }: { data: ChRoster }) {
   const setAvailability = useAction(
     'roster.setAvailability',
     async (p: ChRosterPlayer, to: ChAvailability) => {
-      const before = { availability: p.availability, availabilityUpdated: p.availabilityUpdated, attention: p.attention };
+      const before = { availability: p.availability, availabilityUpdated: p.availabilityUpdated, attention: p.attention, availabilityCoachNote: p.availabilityCoachNote };
       const stamp = new Date().toISOString();
       setPlayers((ps) =>
         ps.map((x) =>
           x.id === p.id
-            ? // Injured or away drops a Needs a look reason: the coach already knows why.
-              { ...x, availability: to, availabilityUpdated: stamp, attention: to === 'available' ? x.attention : null }
+            ? // Injured or away drops a Needs a look reason (the coach already knows why); available brings back what the server would show.
+              { ...x, availability: to, availabilityUpdated: stamp, attention: to === 'available' ? (x.attentionIfAvailable ?? x.attention) : null, availabilityCoachNote: to === 'available' ? null : x.availabilityCoachNote }
             : x,
         ),
       );

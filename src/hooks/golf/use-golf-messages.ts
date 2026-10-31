@@ -279,7 +279,7 @@ export type MessageWithReadStatus = GolfMessage;
  * thread would not stay where scroll-to-bottom had just put it.
  */
 export function applyRealtimeMessageUpdate<
-  T extends { id: string; content: string; edited_at: string | null; is_deleted?: boolean | null; payload?: unknown; notify_anyway_pushed_at?: string | null },
+  T extends { id: string; content: string; edited_at: string | null; is_deleted?: boolean | null; payload?: unknown; notify_anyway_pushed_at?: string | null; has_attachments?: boolean | null },
 >(prev: T[], updated: T): T[] {
   if (updated.is_deleted) {
     if (!prev.some((msg) => msg.id === updated.id)) return prev;
@@ -296,7 +296,10 @@ export function applyRealtimeMessageUpdate<
   // P-10: the "Notified anyway" caption renders from `notify_anyway_pushed_at`, which the fan-out stamps after the insert, so a change in it is a
   // change in what is rendered. A payload that carries no such column (the migration is held) leaves it as it was.
   const stamped = updated.notify_anyway_pushed_at !== undefined && (updated.notify_anyway_pushed_at ?? null) !== (current.notify_anyway_pushed_at ?? null);
-  if (current.content === updated.content && current.edited_at === updated.edited_at && !payloadChanged && !stamped) {
+  // The sender flags a message after inserting it and unflags it when the upload fails (message-attachments.ts), so a
+  // recipient who already holds the row must follow the flag or the files never appear (or a ghost chip never leaves).
+  const attachmentsChanged = typeof updated.has_attachments === 'boolean' && updated.has_attachments !== !!current.has_attachments;
+  if (current.content === updated.content && current.edited_at === updated.edited_at && !payloadChanged && !stamped && !attachmentsChanged) {
     return prev;
   }
 
@@ -307,6 +310,7 @@ export function applyRealtimeMessageUpdate<
     edited_at: updated.edited_at,
     ...(payloadChanged ? { payload: updated.payload } : {}),
     ...(stamped ? { notify_anyway_pushed_at: updated.notify_anyway_pushed_at } : {}),
+    ...(attachmentsChanged ? { has_attachments: updated.has_attachments } : {}),
   };
   return next;
 }
@@ -2228,10 +2232,17 @@ export function useGolfConversations(
           table: 'golf_conversations',
         },
         (payload) => {
-          // Only refetch if this conversation involves the current user
-          if (conversationIdsRef.current.has(payload.new.id as string)) {
-            debouncedFetch();
-          }
+          // Realtime applies the table's SELECT policy, so any UPDATE that
+          // reaches this client is a conversation the viewer takes part in
+          // (including one they deleted/hid: a new message there brings it
+          // back, and its id is not in the shown set). The 300 ms trailing
+          // debounce collapses a burst into one refetch. An event that names a
+          // different team than the active one is a team-scoped coach's other
+          // squad and is skipped.
+          const row = payload.new as { id?: string; team_id?: string | null };
+          if (!row.id) return;
+          if (!conversationIdsRef.current.has(row.id) && activeTeamId && row.team_id && row.team_id !== activeTeamId) return;
+          debouncedFetch();
         }
       ),
       { feature: 'golf.messages', channelClass: 'golf_conversations_list', subscriptionType: 'postgres_changes' },

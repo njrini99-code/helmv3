@@ -24,7 +24,7 @@ CREATE OR REPLACE FUNCTION public.golf_player_owns_class_event(p_description tex
 RETURNS boolean
 LANGUAGE sql
 STABLE SECURITY DEFINER
-SET search_path TO ''
+SET search_path = ''
 AS $function$
   SELECT EXISTS (
     SELECT 1

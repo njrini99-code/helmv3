@@ -1738,3 +1738,87 @@ describe('Roster tones say which way (row 48, CONS-20)', () => {
     expect([...document.querySelectorAll('.ch-rs-face__note.is-warning')].map((n) => n.textContent)).toEqual(['No rounds in 9 days']);
   });
 });
+
+/** Audit A6, A9, A10, A12 (Home, Roster, Hub data truth): one quiet rule, no dropped edit, an honest chip, one handicap. */
+describe('Roster · data truth', () => {
+  const NY = 'America/New_York';
+  const summary = (over: Record<string, unknown> = {}) =>
+    ({ rounds: 10, avg: 74, sgPerRound: null, trend: [], status: 'steady', formChange: null, recent: [], lastRoundDate: null, ...over }) as unknown as Parameters<typeof attentionFor>[0];
+
+  it('A6 Roster flags quiet at Home’s 7 days, counted in the team’s zone, not 9 days in UTC', () => {
+    // 21:00 Eastern on 14 Oct is 01:00 UTC on the 15th: the last round was on the 7th, so 7 team-local days.
+    const now = new Date('2026-10-15T01:00:00Z');
+    const quiet = summary({ lastRoundDate: '2026-10-07' });
+    expect(attentionFor(quiet, now, true, 'available', NY)).toEqual({ tone: 'warning', text: 'No rounds in 7 days' });
+    // Six days is not quiet.
+    expect(attentionFor(summary({ lastRoundDate: '2026-10-08' }), now, true, 'available', NY)).toBeNull();
+    // A day earlier it is 6 team-local days.
+    expect(attentionFor(quiet, new Date('2026-10-14T01:00:00Z'), true, 'available', NY)).toBeNull();
+  });
+
+  it('A6 "slipping" is Home’s form status: a raw 1.5-stroke swing that does not clear its standard error is not flagged', () => {
+    const now = new Date('2026-10-14T16:00:00Z');
+    expect(attentionFor(summary({ status: 'steady', formChange: 2.4 }), now, true, 'available', NY)).toBeNull();
+    expect(attentionFor(summary({ status: 'slipping', formChange: 2.4 }), now, true, 'available', NY)).toEqual({ tone: 'loss', text: 'Scoring up 2.4' });
+  });
+
+  it('A12 a join request shows the handicap index when the player has one, as the roster will after approval', async () => {
+    const now = Date.now();
+    tables.current = {
+      golf_team_members: { data: [] },
+      golf_players: { data: [{ id: 'q1', handicap_index: 4.2 }] },
+    };
+    actions.requests.mockResolvedValue({
+      success: true,
+      data: [
+        { id: 'r1', team_id: 't1', player_id: 'q1', status: 'pending', message: null, created_at: new Date(now - 3_600_000).toISOString(), player: { id: 'q1', first_name: 'Quinn', last_name: 'Ng', graduation_year: 2029, handicap: 9.9, hometown: null, state: null } },
+        { id: 'r2', team_id: 't1', player_id: 'q2', status: 'pending', message: null, created_at: new Date(now - 3_600_000).toISOString(), player: { id: 'q2', first_name: 'Rey', last_name: 'Ox', graduation_year: 2029, handicap: 12, hometown: null, state: null } },
+      ],
+    });
+    const data = await loadRoster({ teamId: 't1', coachId: 'c1' });
+    // Quinn has an index (4.2) and a typed 9.9; Rey has no index row, so the typed value stands.
+    expect(data.requests.map((r) => [r.name, r.handicap])).toEqual([['Quinn Ng', 4.2], ['Rey Ox', 12]]);
+  });
+
+  it('A10 marking a player available brings back their Needs a look chip, and marking them injured takes it away', async () => {
+    const user = userEvent.setup();
+    actions.availability.mockResolvedValue({ success: true });
+    const players = PREVIEW_ROSTER.players.map((p) => (p.id === 'jonah' ? { ...p, attentionIfAvailable: p.attention } : p));
+    wrap(roster({ players }));
+    const attn = () => within(screen.getByRole('region', { name: 'Needs a look' })).queryByRole('button', { name: /Jonah/ });
+    expect(attn()).toBeTruthy();
+    const run = async (item: string) => {
+      await user.click(screen.getByRole('button', { name: 'Actions for Jonah Okafor' }));
+      await waitFor(() => expect(screen.getByRole('menu').contains(document.activeElement)).toBe(true));
+      await user.click(screen.getByRole('menuitem', { name: item }));
+    };
+    await toList(user);
+    await run('Mark injured');
+    await waitFor(() => expect(attn()).toBeNull());
+    await run('Mark available');
+    await waitFor(() => expect(attn()).toBeTruthy());
+  });
+
+  it('A9 a second edit made while the first note is still saving is sent when the first lands, not dropped', async () => {
+    const user = userEvent.setup();
+    const answers: Array<(v: unknown) => void> = [];
+    actions.intent.mockReset();
+    actions.intent.mockImplementation(() => new Promise((r) => answers.push(r)));
+    wrap(roster());
+    await openPeek(user);
+    const note = (await screen.findByRole('textbox', { name: /Coach’s note/ })) as HTMLTextAreaElement;
+    await user.type(note, 'first');
+    await user.tab();
+    expect(actions.intent).toHaveBeenCalledTimes(1);
+    expect(actions.intent.mock.calls[0]![0]).toMatchObject({ notes: 'first' });
+    // Back to the field and change it while the first save has not answered.
+    await user.click(note);
+    await user.type(note, ' and second');
+    await user.tab();
+    expect(actions.intent).toHaveBeenCalledTimes(1);
+    await act(async () => answers[0]!({ ok: true }));
+    await waitFor(() => expect(actions.intent).toHaveBeenCalledTimes(2));
+    expect(actions.intent.mock.calls[1]![0]).toMatchObject({ notes: 'first and second' });
+    await act(async () => answers[1]!({ ok: true }));
+  });
+});

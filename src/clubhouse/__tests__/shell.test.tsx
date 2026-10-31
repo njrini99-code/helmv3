@@ -1375,6 +1375,45 @@ describe('Shell · behaviour contracts (P001)', () => {
     expect(document.querySelectorAll('.ch-bellp__row.is-unread')).toHaveLength(1);
   });
 
+  it('CH-1004 opening a notification the server did not keep as read puts the row back unread and says so', async () => {
+    const user = userEvent.setup();
+    const api = bell({ markRead: vi.fn(() => Promise.resolve({ success: false, error: 'Failed to mark notification read' })) });
+    await user.click(screen.getByRole('button', { name: /Notifications/ }));
+    await user.click(await screen.findByText('Ava in Varsity team'));
+    expect(api.markRead).toHaveBeenCalledTimes(1);
+    await expectCode('CH-1004', /Couldn’t mark it read/);
+    expect(code('CH-1004')!.textContent).toMatch(/They show as unread again/);
+    await user.click(screen.getByRole('button', { name: /Notifications/ }));
+    await waitFor(() => expect(document.querySelectorAll('.ch-bellp__row.is-unread')).toHaveLength(1));
+  });
+
+  it('CH-1004 a read the server kept, or one with no answer, says nothing', async () => {
+    const user = userEvent.setup();
+    const api = bell({ markRead: vi.fn(() => Promise.resolve({ success: true })) });
+    await user.click(screen.getByRole('button', { name: /Notifications/ }));
+    await user.click(await screen.findByText('Ava in Varsity team'));
+    await waitFor(() => expect(api.markRead).toHaveBeenCalledTimes(1));
+    await new Promise((r) => setTimeout(r, 20));
+    expect(code('CH-1004')).toBeNull();
+  });
+
+  it('CH-1307 the badge counts unread rows past the newest 30, and the list says so', async () => {
+    const user = userEvent.setup();
+    const feed = Array.from({ length: 30 }, (_, i) => item({ id: `n${i}`, title: `Note ${i}`, read_at: i === 0 ? null : new Date().toISOString() }));
+    bell({ unread: 4, load: vi.fn(() => Promise.resolve({ success: true, data: { items: feed } })) });
+    await user.click(screen.getByRole('button', { name: /Notifications/ }));
+    await screen.findByText('Note 0');
+    await expectCode('CH-1307', /^3 older unread aren’t listed here\. Mark all read clears them\./);
+  });
+
+  it('CH-1307 a short list has no older rows to mention', async () => {
+    const user = userEvent.setup();
+    bell({ unread: 1 });
+    await user.click(screen.getByRole('button', { name: /Notifications/ }));
+    await screen.findByText('Ava in Varsity team');
+    expect(code('CH-1307')).toBeNull();
+  });
+
   function Saver({ fn, done = 'Profile saved' }: { fn: () => Promise<{ success: boolean; error?: string }>; done?: string }) {
     const a = useAction('test.save', fn, { done, failed: "Couldn't save your profile", code: 'CH-8001' });
     return (
