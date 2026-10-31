@@ -67,5 +67,9 @@ export const getActivePlayerTeamMembership = cache(async (playerId: string) => {
     .select('team_id, golf_teams(id, name)')
     .eq('player_id', playerId)
     .eq('status', 'active')
+    // A player active on two teams (two Shenandoah squads) is not an error: the newest membership is theirs. Without
+    // the order and limit, maybeSingle returned PGRST116 and every Clubhouse page threw (audit 2026-10-31).
+    .order('created_at', { ascending: false })
+    .limit(1)
     .maybeSingle();
 });

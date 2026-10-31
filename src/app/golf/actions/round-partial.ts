@@ -22,7 +22,7 @@ import { firstBlockingPartialHoleIssue } from '@/lib/golf/round-entry-validation
 import { getUserResilient } from '@/lib/auth/resilient-get-user';
 import { describeError } from '@/lib/utils/describe-error';
 import { lieAfterRecoveryPayload, withoutLieAfterRecovery } from '@/lib/golf/data-prompts/recovery';
-import { comprehensiveShotSchema, createSafeFlightRecorder, derivePuttDistanceFeet, derivePuttMade, formatIssuePath, getPlayerTeamId, helmTracePayload, humanizeHoleFieldIssue, isRealApproachShot, isTransientAuthCheckFailure, resolveCourseId, toDbLieType } from './golf-action-shared';
+import { comprehensiveShotSchema, createSafeFlightRecorder, derivePuttDistanceFeet, derivePuttMade, formatIssuePath, getPlayerTeamId, helmTracePayload, qualifierTeamIdFor, humanizeHoleFieldIssue, isRealApproachShot, isTransientAuthCheckFailure, resolveCourseId, toDbLieType } from './golf-action-shared';
 import type { ActionResult } from './golf-action-shared';
 
 /**
@@ -692,7 +692,7 @@ async function savePartialRoundImpl(
     }
     void flightRecorder.complete('server.player', { observed: { player_id: player.id } });
 
-    const teamId = await getPlayerTeamId(supabase, player.id);
+    const teamId = (await qualifierTeamIdFor(supabase, data.qualifierId, player.id)) ?? (await getPlayerTeamId(supabase, player.id));
     const resolvedCourseId = await resolveCourseId(supabase, data.courseName, data.courseId);
 
     // A lost browser-side round id must never turn a qualifier restart into an

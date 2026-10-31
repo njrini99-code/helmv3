@@ -42,7 +42,7 @@ import { recordRescuedStepOutcome } from '@/lib/observability/helm-flight-record
 import { describeError } from '@/lib/utils/describe-error';
 import { markTeamStandingDirty } from '@/lib/coachhelm/v3/standing/refresh-queue';
 import { lieAfterRecoveryPayload } from '@/lib/golf/data-prompts/recovery';
-import { comprehensiveShotSchema, createSafeFlightRecorder, derivePuttDistanceFeet, derivePuttMade, getPlayerTeamId, helmTracePayload, humanizeHoleFieldIssue, isRealApproachShot, isTransientAuthCheckFailure, resolveCourseId, toDbLieType } from './golf-action-shared';
+import { comprehensiveShotSchema, createSafeFlightRecorder, derivePuttDistanceFeet, derivePuttMade, getPlayerTeamId, helmTracePayload, qualifierTeamIdFor, humanizeHoleFieldIssue, isRealApproachShot, isTransientAuthCheckFailure, resolveCourseId, toDbLieType } from './golf-action-shared';
 import type { ActionResult, CompletedRoundUpdatePayload, RoundApproachDetailPayload, RoundHolePayload, RoundPuttDetailPayload, RoundShotGroupPayload, RoundSubmissionBackupPayload } from './golf-action-shared';
 
 const comprehensiveHoleSchema = z.object({
@@ -817,7 +817,7 @@ async function submitGolfRoundComprehensiveImpl(
     const totalPenalties = data.holes.reduce((sum, h) => sum + (h.penaltyStrokes ?? 0), 0);
 
     // Prepare round data
-    const teamId = await getPlayerTeamId(supabase, player.id);
+    const teamId = (await qualifierTeamIdFor(supabase, effectiveQualifierId, player.id)) ?? (await getPlayerTeamId(supabase, player.id));
     let resolvedCourseId = await resolveCourseId(supabase, data.courseName, data.courseId);
     // When a Cloud Course Library tee is chosen, its course is authoritative for
     // course_id (more reliable than fuzzy name matching). Par/yards still come

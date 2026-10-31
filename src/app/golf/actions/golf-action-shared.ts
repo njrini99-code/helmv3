@@ -205,6 +205,9 @@ export async function getPlayerTeamId(
     .select('team_id')
     .eq('player_id', playerId)
     .eq('status', 'active')
+    // A player active on two teams resolves to the newest, as the Clubhouse shell does (getActivePlayerTeamMembership).
+    .order('created_at', { ascending: false })
+    .limit(1)
     .maybeSingle();
 
   // PGRST116 is not a failure here — it is `.maybeSingle()` meeting a player
@@ -250,6 +253,26 @@ export async function getPlayerTeamId(
   }
 
   return anyMembership?.team_id ?? null;
+}
+/**
+ * The team a qualifier round belongs to: the qualifier's own, when the player is an active member of it. A player active
+ * on two teams resolved through getPlayerTeamId to the newest team, so a round in the other team's qualifier was saved
+ * under the wrong team and its coach, teammates and board could not see it (audit 2026-10-31). Null when the qualifier
+ * can't be read or the player isn't on its team; the caller then keeps getPlayerTeamId's answer.
+ */
+export async function qualifierTeamIdFor(
+  supabase: SupabaseClient,
+  qualifierId: string | null | undefined,
+  playerId: string,
+): Promise<string | null> {
+  if (!qualifierId) return null;
+  // nosemgrep: helmv3-server-action-missing-auth-check -- plain helper (no server directive, not an action); every caller has already authenticated and passes the player id
+  const { data: q } = await supabase.from('golf_qualifiers').select('team_id').eq('id', qualifierId).maybeSingle();
+  const teamId = (q as { team_id: string | null } | null)?.team_id ?? null;
+  if (!teamId) return null;
+  // nosemgrep: helmv3-server-action-missing-auth-check -- plain helper; see above
+  const { data: m } = await supabase.from('golf_team_members').select('team_id').eq('team_id', teamId).eq('player_id', playerId).eq('status', 'active').limit(1).maybeSingle();
+  return m ? teamId : null;
 }
 // deriveLieAfterFromResult, deriveLieAfter imported from '@/lib/utils/shot-helpers'
 

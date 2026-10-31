@@ -1,7 +1,7 @@
 'use client';
 
 import { Check, MapPin, TriangleAlert, UserPlus, Users, X } from 'lucide-react';
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import type { ChQFormData, ChQFormRoundCourse } from '../../data/qualifiers';
 import { Avatar } from '../../ui/Avatar';
@@ -95,9 +95,14 @@ export function QualifierForm({ data, writes = LIVE_WRITES }: { data: ChQFormDat
 
   // What follows a landed write is part of the action, not of the button that started it, so the toast's Retry
   // (which runs the action again) finishes the job too: the new qualifier opens, and nobody is left to create it twice.
+  // Created once: between the action landing and the new page committing, the button was live again and a second tap
+  // made a second qualifier (audit 2026-10-31). The latch keeps the form busy until it is replaced.
+  const [created, setCreated] = useState(false);
+  const createdRef = useRef(false);
   const create = useAction(
     'qualifiers.create',
     async () => {
+      if (createdRef.current) return { success: false as const, error: 'already created' };
       const res = await writes.create({
         name: v.name.trim(),
         description: v.description.trim() || undefined,
@@ -115,7 +120,11 @@ export function QualifierForm({ data, writes = LIVE_WRITES }: { data: ChQFormDat
           .map((c) => ({ roundNumber: c.number, courseId: c.courseId, courseName: c.courseName, teeId: c.teeId })),
       });
       // The form has done its job: replaced, so Back from the new qualifier does not return to a form whose Create would make a second one.
-      if (normalise(res).success) router.replace(res.data?.qualifierId ? `${LIST}/${res.data.qualifierId}` : LIST);
+      if (normalise(res).success) {
+        createdRef.current = true;
+        setCreated(true);
+        router.replace(res.data?.qualifierId ? `${LIST}/${res.data.qualifierId}` : LIST);
+      }
       return res;
     },
     () => ({
@@ -172,7 +181,7 @@ export function QualifierForm({ data, writes = LIVE_WRITES }: { data: ChQFormDat
     // A failure with no reason (the request itself failed) has no notice, so its toast and Retry stay (CH-09002).
     (result, c) => (!result.success && result.error ? { ...c, quiet: true } : c),
   );
-  const pending = create.pending || save.pending;
+  const pending = create.pending || save.pending || created;
 
   const submit = async () => {
     setTried(true);
