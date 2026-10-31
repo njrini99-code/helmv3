@@ -10,7 +10,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 const hapticSpy = vi.hoisted(() => vi.fn());
 vi.mock('../lib/haptics', () => ({ haptic: hapticSpy }));
 vi.mock('../lib/track', () => ({ chReport: vi.fn(), chTrail: vi.fn(), chTagSession: vi.fn() }));
-const routerSpy = vi.hoisted(() => ({ push: vi.fn(), back: vi.fn() }));
+const routerSpy = vi.hoisted(() => ({ push: vi.fn(), back: vi.fn(), replace: vi.fn() }));
 vi.mock('next/navigation', () => ({ useRouter: () => routerSpy, usePathname: () => '/golf/dashboard' }));
 vi.mock('../lib/fonts', () => ({ clubhouseFontVariables: '' }));
 vi.mock('@/hooks/golf/use-appearance-preferences', () => ({ useAppearancePreferences: () => ({ showAnimations: true, updatePreferences: vi.fn() }) }));
@@ -769,7 +769,8 @@ describe('Shell · navigation and accessibility', () => {
       }
     });
 
-    it('with reduced motion a sheet does not drag', async () => {
+    // F-0018 (audit 2026-10-29): Reduce Motion changes how a drag settles, never whether there is one.
+    it('with reduced motion a sheet still drags, and a pull past the mark closes it', async () => {
       const real = window.matchMedia;
       window.matchMedia = ((q: string) => ({ ...real(q), matches: q === '(max-width: 820px)' || q === '(prefers-reduced-motion: reduce)' })) as typeof window.matchMedia;
       try {
@@ -786,8 +787,7 @@ describe('Shell · navigation and accessibility', () => {
           window.dispatchEvent(new MouseEvent('pointermove', { clientY: 300 }));
           window.dispatchEvent(new MouseEvent('pointerup', { clientY: 300 }));
         });
-        expect(dialog.style.translate).toBe('');
-        expect(onClose).not.toHaveBeenCalled();
+        expect(onClose).toHaveBeenCalled();
       } finally {
         window.matchMedia = real;
       }
@@ -1270,14 +1270,41 @@ describe('Shell · behaviour contracts (P001)', () => {
     expect(code('CH-1808')).not.toBeNull();
     expect(document.getElementById('ch-content')!.textContent).toMatch(/Roster body/);
     unmount();
-    // Lineups is rebuilt for neither role yet: a player on that address gets the notice.
-    render(
-      <ClubhouseFrame userData={player} shell={shell} pathname="/golf/dashboard/lineups">
-        <p>Lineups body</p>
+    // Dev is a real dashboard folder rebuilt for neither role: a player on that address gets the notice.
+    const second = render(
+      <ClubhouseFrame userData={player} shell={shell} pathname="/golf/dashboard/dev/haptics">
+        <p>Dev body</p>
       </ClubhouseFrame>,
     );
-    expect(screen.queryByText('Lineups body')).toBeNull();
+    expect(screen.queryByText('Dev body')).toBeNull();
     expect(code('CH-1301')).not.toBeNull();
+    second.unmount();
+    // F-0025: a mistyped address is no dashboard folder at all: its segment (the not-found page, CH-1306) renders.
+    render(
+      <ClubhouseFrame userData={player} shell={shell} pathname="/golf/dashboard/zz-x">
+        <p data-ch-code="CH-1306">We couldn’t find that</p>
+      </ClubhouseFrame>,
+    );
+    expect(code('CH-1306')).not.toBeNull();
+    expect(code('CH-1301')).toBeNull();
+  });
+
+  it('F-0066 a player’s Stats address drops the coach-only ?player=, keeping the rest; a coach’s does not', () => {
+    routerSpy.replace.mockClear();
+    const first = render(
+      <ClubhouseFrame userData={player} shell={shell} pathname="/golf/dashboard/stats" search="player=x&window=season">
+        <p>Stats body</p>
+      </ClubhouseFrame>,
+    );
+    expect(routerSpy.replace).toHaveBeenCalledWith('/golf/dashboard/stats?window=season', { scroll: false });
+    first.unmount();
+    routerSpy.replace.mockClear();
+    render(
+      <ClubhouseFrame userData={coach} shell={shell} pathname="/golf/dashboard/stats" search="player=x&window=season">
+        <p>Stats body</p>
+      </ClubhouseFrame>,
+    );
+    expect(routerSpy.replace).not.toHaveBeenCalled();
   });
 
   it('10802 a player on a page rebuilt for coaches only is told it is a coach\u2019s page; on an unbuilt one, that it is coming', () => {
@@ -1291,8 +1318,8 @@ describe('Shell · behaviour contracts (P001)', () => {
     unmount();
     // A coach on an unbuilt address still reads the plain notice.
     render(
-      <ClubhouseFrame userData={coach} shell={shell} pathname="/golf/dashboard/lineups">
-        <p>Lineups body</p>
+      <ClubhouseFrame userData={coach} shell={shell} pathname="/golf/dashboard/dev/haptics">
+        <p>Dev body</p>
       </ClubhouseFrame>,
     );
     expect(screen.getByRole('heading', { level: 1 }).textContent).toMatch(/hasn.t been rebuilt yet$/);

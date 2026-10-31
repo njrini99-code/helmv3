@@ -264,8 +264,10 @@ export function ShotEntry(p: ShotEntryProps) {
           </Sec>
         )}
 
-        {result && !holed && (
-          <Sec label={distLabel} hint="Required" tint htmlFor={DIST_ID}>
+        {/* Held from the first frame, hidden and inert until a result is picked, so the card neither grows on the pick nor
+            shrinks on Next shot (F-0019, F-0020). Layout only: the field, its value and its dispatches are unchanged. */}
+        {!holed && (
+          <Sec label={distLabel} hint="Required" tint htmlFor={DIST_ID} reserved={!result}>
             <div className="ch-rt-dist">
               {/* CH-11807: labelled by its section, aria-invalid with its message when it isn't a number. */}
               <input

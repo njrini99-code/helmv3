@@ -157,7 +157,7 @@ same way.
 | CH-6601 | Hovering or selecting an event | On hover it lifts on a soft shadow and comes to the front (180ms); selected, it takes a green ring (180ms). A press doesn't scale it: the ring is the answer (the shell's CH-1606) | `calendar.css` | preview |
 | CH-6602 | Dragging the time band in Find a time | The band follows in 15-minute steps; the overlapped lanes turn amber as it passes | `FindTime` | preview |
 | CH-6603 | The current time | A green line with the time moves down the grid | `ch-wk__now` | preview |
-| CH-6604 | Switching between Day, Week, Month and Agenda (Day, Month and List on the phone) | The new view settles in with a 6px rise (260ms) while the old one fades out (180ms), hidden from assistive tech. Instant with reduced motion | `Swap` in `Calendar` and `CalendarPhone` | calendar.test › CH-6605 CH-6604; preview (the timing) |
+| CH-6604 | Switching between Day, Week, Month and List (Day, Month and List on the phone) | The new view settles in with a 6px rise (260ms) while the old one fades out (180ms), hidden from assistive tech. Instant with reduced motion | `Swap` in `Calendar` and `CalendarPhone` | calendar.test › CH-6605 CH-6604; preview (the timing) |
 | CH-6605 | Stepping to another day, week or month (the arrows, the arrow keys, Today or a date) | The grid slides 12px the way it went (260ms in, 180ms out): a later period from the right, an earlier one from the left. Instant with reduced motion | `Swap kind="slide"` in `Calendar` | calendar.test › CH-6605 CH-6604; preview (the timing) |
 | CH-6606 | Choosing another day in the phone's week strip | The chosen day's green plate glides along the strip to it (260ms, ease-out) while the day's ink turns, and the day's heading and agenda slide 12px the way the day went (260ms in, 180ms out, the leaving copy hidden from assistive tech). Instant with reduced motion and Animations off | `.ch-calm-week::before` on `--ch-calm-at`; `Swap kind="slide"` in `CalendarPhone`'s `DayView` | calendar.test › CH-6606; WebKit 390 frame sampling (plate 150→201px over 260ms; reduced: one frame) |
 | CH-6640 | Tournament chosen (Track on), Track turned on or off, More details opened | The section's fields fade in (quick, after the 50 ms press delay); nothing moves in height; the More details chevron turns 180°. Nothing animates on first paint; reduced motion: instant | `TournamentSection`, `TournamentFields` | calendar-tournament-section.test |
@@ -166,7 +166,7 @@ same way.
 
 | # | When | They feel | How | Test |
 | --- | --- | --- | --- | --- |
-| CH-6701 | Opening an event, a day or a panel item; changing view, week or players; each Find a time step | A selection tick | `haptic('select')` | calendar.test › CH-6701 |
+| CH-6701 | Opening a day from the week header or choosing a List row; changing view, week or players; each Find a time step (opening an event is a plain navigation tap and is silent, D-70) | A selection tick | `haptic('select')` | calendar.test › CH-6701 |
 | CH-6702 | A form with a problem, or closing the editor with changes | The OS warning pattern | `haptic('warning')` | calendar.test › CH-6503 |
 | CH-6703 | A link is copied | The OS success pattern | `haptic('success')` | preview |
 

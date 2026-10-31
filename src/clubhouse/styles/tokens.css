@@ -128,7 +128,7 @@
   --ch-chart-paper: #fbf9f3;
   --ch-chart-gain: #155a39;
   /* 4.5:1 on the page tone (#ebe7dc, 5.1) and a soft well; #9a6512 fell to 4.0 once the page darkened (a11y 2026-10-07). */
-  --ch-chart-loss: #865608;
+  --ch-chart-loss: #744a06;
   /* The loss amber on a tinted cell: darker so it holds 4.5:1 on the heat fills. */
   --ch-chart-loss-on-tint: #744a06;
   /* CONS-20: the rest of the gain and loss family, so a tone paints only with it (check.mjs). A bar or a mark takes the
@@ -203,6 +203,8 @@
      the surface with depth (owner, 2026-10-06: "more ivory and text depth in the green"). */
   --ch-on-green-ink: #f4eedd;
   --ch-on-green-ink-soft: rgb(240 233 214 / 0.86);
+  /* Meta on a green plate (the Calendar inspector's Next row, F-0039). The plate is green in both themes: no night value. */
+  --ch-on-green-ink-meta: #d3e3d7;
   /* P-4: a clash line on the dark ink pill (the drag time pill): champagne on ink by day, a deep amber on ivory at night. */
   --ch-on-ink-warning: var(--ch-champagne-300);
   /* P-4: a drop target's ring (a month day, a strip day under a dragged card): 2px of green inside its edge. */
@@ -596,7 +598,7 @@
   --ch-ledger-rule-strong: rgb(110 98 62 / 0.42);
   --ch-ledger-ink: rgb(18 59 41 / 0.9);
   /* 5:1 or better on the canvas, the page and cards (was #7a6b3f, 4.25:1 on the page). */
-  --ch-ledger-eyebrow: #6e6038;
+  --ch-ledger-eyebrow: #5f5230;
   --ch-ledger-row-hover: rgb(110 98 62 / 0.05);
   /* A flush row's press: a deeper green tint, not a scale (lib/press.ts scales keys up to 240px only). */
   /* The section rule the phone board draws above a heading: an engraved double hairline. */
@@ -812,10 +814,12 @@ html[data-fw-theme='dark'] [data-ui='clubhouse'] {
   --ch-ivory-300: #3c453d;
   --ch-ivory-400: #4e584f;
   --ch-ink-950: #f7f2e6;
-  --ch-ink-900: #ede7d8;
-  --ch-ink-700: #d8d1c1;
-  --ch-ink-600: #c7c0af;
-  --ch-ink-500: #a8a193;
+  /* Night ink ramp lifted for APCA (audit 2026-10-29, F-0041/F-0062): secondary reaches Lc 75 on every night surface,
+     tertiary Lc 60, quiet ink Lc 59; the order 900 > 700 > 600 > 500 holds. */
+  --ch-ink-900: #f1ecdf;
+  --ch-ink-700: #e2dccd;
+  --ch-ink-600: #d0c9b8;
+  --ch-ink-500: #bab3a4;
   --ch-ink-400: #827d71;
   --ch-ink-300: #5c584f;
   --ch-green-25: #131d17;
@@ -966,7 +970,7 @@ html[data-fw-theme='dark'] [data-ui='clubhouse'] {
   --ch-ledger-rule-soft: rgb(205 187 142 / 0.08);
   --ch-ledger-rule-strong: rgb(205 187 142 / 0.42);
   --ch-ledger-ink: rgb(226 238 229 / 0.94);
-  --ch-ledger-eyebrow: #bba878;
+  --ch-ledger-eyebrow: #c9b88a;
   --ch-ledger-row-hover: rgb(205 187 142 / 0.06);
   --ch-ledger-rule-double: 3px double rgb(205 187 142 / 0.22);
   --ch-elevation-feature: 0 0 0 1px rgb(107 187 140 / 0.14), 0 14px 28px -18px rgb(0 0 0 / 0.8);
@@ -1015,7 +1019,12 @@ html[data-fw-theme='dark'] [data-ui='clubhouse'] {
   /* The tab bar at night: the light green (7:1 on the workspace). The deep fill was 2.99:1 there, under the 3:1 a tab
      indicator needs; the chosen label takes the same light green. */
   --ch-tab-bar: var(--ch-green-600);
-  --ch-tab-ink-selected: var(--ch-green-700);
+  /* The chosen label is the forest ink, pale mint at night (Lc 87); green-700 was Lc 64 (F-0043). Idle labels are body
+     size, so secondary ink (Lc 75+), not tertiary. */
+  --ch-tab-ink: var(--ch-text-secondary);
+  /* The chosen switcher segment starts one fill step deeper at night, and its ink is the brighter ivory, so the label reads 5.6:1 / Lc 79 at its top (F-0040). */
+  --ch-seg-on-bg: linear-gradient(180deg, var(--ch-green-fill-600) 0%, var(--ch-green-fill-700) 100%);
+  --ch-seg-on-ink: #f9f7f1;
   --ch-phone-bar-bg: rgb(17 21 18 / 0.92);
   --ch-phone-tabbar-bg: rgb(27 32 28 / 0.86);
   --ch-phone-tabbar-shelf-bg: #161b17;

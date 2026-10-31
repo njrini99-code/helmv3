@@ -17,6 +17,8 @@ import { withAdminObserved } from '@/lib/admin/observed-action';
 import { describeError } from '@/lib/utils/describe-error';
 import { rpcAttendanceCounts } from '@/lib/golf/attendance-counts-rpc';
 import { fanOutEventCancelled, fanOutEventInvitation } from '@/lib/calendar/fan-out';
+import { resolveTeamTimeZone } from '@/lib/calendar/availability';
+import { formatNoticeWhen } from '@/lib/calendar/timezone';
 import { dateString, getCoachTeamId } from './golf-action-shared';
 import type { ActionResult } from './golf-action-shared';
 
@@ -478,7 +480,8 @@ async function createGolfEventImpl(data: GolfEventInput): Promise<ActionResult<{
     if (validatedData.attendeeIds && validatedData.attendeeIds.length > 0) {
       try {
         const { sendEventInvitations } = await import('@/lib/calendar/rsvp');
-        await sendEventInvitations(event.id, validatedData.attendeeIds, supabase);
+        // The Bell rows go after the response (F-0029); the attendance rows, whose failure the coach hears about, stay inline.
+        await sendEventInvitations(event.id, validatedData.attendeeIds, supabase, { deferNotices: (task) => after(task) });
       } catch (inviteErr) {
         invitationsError = EVENT_INVITATIONS_FAILED;
         await logServerError(
@@ -925,7 +928,7 @@ async function deleteGolfEventImpl(
     // Verify event belongs to coach's team
     const { data: existingEvent, error: existingEventError } = await supabase
       .from('golf_events')
-      .select('team_id, title, status, start_time, location, requires_rsvp')
+      .select('team_id, title, status, start_time, all_day, location, requires_rsvp')
       .eq('id', eventId)
       .single();
 
@@ -1034,6 +1037,7 @@ async function deleteGolfEventImpl(
         teamId,
         title: existingEvent.title,
         startTime: existingEvent.start_time,
+        allDay: existingEvent.all_day,
         location: existingEvent.location,
         reason: options?.reason ?? '',
         notifies: existingEvent.requires_rsvp === true,
@@ -1301,7 +1305,7 @@ async function sendEventReminderToPlayersImpl(
 
     const { data: event } = await supabase
       .from('golf_events')
-      .select('id, title, start_time, location, team_id')
+      .select('id, title, start_time, all_day, location, team_id')
       .eq('id', eventId)
       .maybeSingle();
     if (!event) return { success: false, error: 'Event not found' };
@@ -1381,14 +1385,9 @@ async function sendEventReminderToPlayersImpl(
       return { success: true, data: { sent: 0 } };
     }
 
-    const start = new Date(event.start_time);
-    const timeStr = start.toLocaleString('en-US', {
-      weekday: 'short',
-      month: 'short',
-      day: 'numeric',
-      hour: 'numeric',
-      minute: '2-digit',
-    });
+    // In the team's zone (F-0001): the server runs in UTC.
+    const timeZone = await resolveTeamTimeZone([event.team_id], supabase, 'golf.sendEventReminderToPlayers');
+    const timeStr = formatNoticeWhen(event.start_time, event.all_day, timeZone);
     const message = event.location
       ? `${timeStr} at ${event.location}`
       : timeStr;

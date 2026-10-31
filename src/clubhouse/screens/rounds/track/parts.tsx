@@ -10,6 +10,7 @@ import { haptic } from '../../../lib/haptics';
 import { useChReducedMotion } from '../../../lib/reduced-motion';
 import { Icon } from '../../../ui/Icon';
 import { ScoreMark } from '../../../ui/ScoreMark';
+import { Swap } from '../../../ui/Swap';
 import { centerLine, holeShape, plotShots, pointAlong, ringRadius, type ChHoleFrame } from './hole-geometry';
 import { distanceText, roundSoFar, shotFinish, shotLine, shotTitle } from './labels';
 import { useHScroll } from '../../../ui/use-hscroll';
@@ -53,9 +54,29 @@ export function Seg<T extends string>({
 }
 
 /** A section of the entry panel, with its label and an optional Optional / Required hint. */
-export function Sec({ label, hint, tint, htmlFor, children }: { label: string; hint?: 'Optional' | 'Required'; tint?: boolean; htmlFor?: string; children: ReactNode }) {
+export function Sec({
+  label,
+  hint,
+  tint,
+  htmlFor,
+  reserved = false,
+  children,
+}: {
+  label: string;
+  hint?: 'Optional' | 'Required';
+  tint?: boolean;
+  htmlFor?: string;
+  /** Held in the card before it is needed: hidden and inert, keeping its height so nothing jumps when it appears (F-0019). */
+  reserved?: boolean;
+  children: ReactNode;
+}) {
   return (
-    <section className={'ch-rt-sec' + (tint ? ' is-tint' : '')} aria-label={htmlFor ? undefined : label}>
+    <section
+      className={'ch-rt-sec' + (tint ? ' is-tint' : '') + (reserved ? ' is-reserved' : '')}
+      aria-label={htmlFor ? undefined : label}
+      aria-hidden={reserved || undefined}
+      inert={reserved || undefined}
+    >
       <div className="ch-rt-sec__h">
         {htmlFor ? <label htmlFor={htmlFor}>{label}</label> : <span>{label}</span>}
         {hint && <em className={'ch-rt-hint' + (hint === 'Required' ? ' is-required' : '')}>{hint}</em>}
@@ -338,7 +359,10 @@ export function ShotLog({
             {shots.length} {pluralWord(shots.length, 'stroke')}
             {penalties ? ` · ${plural(penalties, 'penalty', 'penalties')}` : ''}
           </b>
-          <em>Last: {lastText}</em>
+          {/* The new line settles in on the next shot instead of swapping in place (F-0020); at once under reduced motion. */}
+          <Swap swapKey={shots.length} inline>
+            <em>Last: {lastText}</em>
+          </Swap>
         </span>
         <Icon icon={ChevronDown} size={16} className="ch-rt-log__chev" />
       </button>

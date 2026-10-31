@@ -45,7 +45,7 @@ import { DraftStore } from './drafts';
 import { readMarkedUnread, withMark, writeMarkedUnread } from './marked-unread';
 import { FOUND_FOR_MS } from './use-focus-message';
 import { onRoster, takePrefill } from './prefill';
-import { firstName, groupLacksPlayer, toChAnnouncement, type ChAnnouncement, type ChAnnouncementDetail, type ChConv, type ChFile, type ChMember, type ChMsg, type ChMute, type ChReaction, type ChReactionKey } from './model';
+import { directWith, firstName, groupLacksPlayer, isDirect, toChAnnouncement, type ChAnnouncement, type ChAnnouncementDetail, type ChConv, type ChFile, type ChMember, type ChMsg, type ChMute, type ChReaction, type ChReactionKey } from './model';
 
 const isGroup = (c: GolfConversationWithMeta) => {
   const n = c.participant_count ?? c.participant_ids?.length ?? 0;
@@ -75,7 +75,7 @@ export function Messages({ data }: { data: ChMessagesData }) {
   const delayedToast = useDelayedToast();
   const clock = useNow();
   const now = clock ? clock.toISOString() : data.now;
-  const { conversations, loading, error, refetch } = useGolfConversations(data.viewerUserId, data.teamId);
+  const { conversations, loading, error, refetch } = useGolfConversations(data.viewerUserId, data.teamId, { allowIds: data.activeConversationIds });
   const [selectedId, setSelectedId] = useState<string | null>(null);
   // P-10: class awareness is a coach's line. Off (the flag, a player, the migrations unapplied) it reads nothing.
   const awareness = useClassAwareness();
@@ -110,7 +110,7 @@ export function Messages({ data }: { data: ChMessagesData }) {
     [data.viewerUserId],
   );
 
-  const convs: ChConv[] = useMemo(
+  const loadedConvs: ChConv[] = useMemo(
     () =>
       conversations.map((c) => {
         const group = isGroup(c);
@@ -119,6 +119,7 @@ export function Messages({ data }: { data: ChMessagesData }) {
         return {
           id: c.id,
           group,
+          channel: c.is_team_channel === true,
           title: group ? c.title?.trim() || 'Group' : dir?.name ?? other?.name ?? 'Conversation',
           subtitle: group ? '' : dir?.subtitle ?? other?.subtitle ?? '',
           memberIds: group ? (c.participant_ids ?? []).filter((id) => id !== data.viewerUserId) : other ? [other.id] : [],
@@ -134,6 +135,9 @@ export function Messages({ data }: { data: ChMessagesData }) {
       }),
     [conversations, people, data.viewerUserId, marked],
   );
+  // A one-to-one thread just made, shown at once until the list's next read carries it (F-0045).
+  const [started, setStarted] = useState<ChConv | null>(null);
+  const convs = useMemo(() => (started && !loadedConvs.some((c) => c.id === started.id) ? [started, ...loadedConvs] : loadedConvs), [started, loadedConvs]);
 
   const msgs = useGolfMessages(selectedId ?? '', data.viewerUserId, { deferMarkRead: !!selectedId && selectedId === autoOpened, classAwareness: awareness });
   const liveIds = useMemo(() => msgs.messages.filter((m) => m.conversation_id === selectedId && !m.sendFailed).map((m) => m.id), [msgs.messages, selectedId]);
@@ -198,7 +202,7 @@ export function Messages({ data }: { data: ChMessagesData }) {
         });
       }
       chTrail('messages prefill');
-      const existing = to.length === 1 ? convs.find((c) => !c.group && c.memberIds[0] === to[0]) : undefined;
+      const existing = to.length === 1 ? directWith(convs, to[0]!) : undefined;
       if (existing) {
         // An unsent draft of the coach's own wins over the prefill.
         if (pre.draft && !drafts.get(existing.id)) drafts.set(existing.id, pre.draft);
@@ -305,7 +309,7 @@ export function Messages({ data }: { data: ChMessagesData }) {
 
   const startDirect = useCallback(
     async (userId: string): Promise<boolean> => {
-      const existing = convs.find((c) => !c.group && c.memberIds[0] === userId);
+      const existing = directWith(convs, userId);
       if (existing) {
         setSelectedId(existing.id);
         return true;
@@ -314,13 +318,23 @@ export function Messages({ data }: { data: ChMessagesData }) {
         chTrail('messages start direct');
         const res = await createGolfConversation([userId], data.teamId);
         if (!('conversationId' in res) || !res.conversationId) throw new Error('error' in res ? String(res.error) : 'Could not start the conversation');
+        // F-0003, a second line behind the server's: an answer the list knows as a group or the channel is refused, so
+        // nothing written for one person lands there. An id the list doesn't hold yet opens below (or says CH-7015).
+        const known = convs.find((c) => c.id === res.conversationId);
+        if (known && !isDirect(known)) {
+          chTrail('messages start direct: refused a group or channel');
+          throw new Error('The conversation returned is not a direct thread');
+        }
         landDraft(res.conversationId);
-        await refetch();
+        // F-0045: the thread opens now, from what is known of it; the list reads again behind it.
+        const dir = people.get(userId);
+        setStarted({ id: res.conversationId, group: false, channel: false, title: dir?.name ?? 'Conversation', subtitle: dir?.subtitle ?? '', memberIds: [userId], memberCount: 2, unread: 0, lastAt: new Date().toISOString(), lastSenderId: null, lastText: '', creatorId: data.viewerUserId });
         setSelectedId(res.conversationId);
         haptic('success');
+        void refetch().catch(() => undefined);
       });
     },
-    [convs, data.teamId, refetch, attempt, landDraft],
+    [convs, people, data.teamId, data.viewerUserId, refetch, attempt, landDraft],
   );
 
   const createGroup = useCallback(
@@ -885,7 +899,7 @@ export function Messages({ data }: { data: ChMessagesData }) {
     directoryError: data.directoryError,
     retryDirectory: () => router.refresh(),
     startDirect: async (userId) => {
-      const existing = convs.find((c) => !c.group && c.memberIds[0] === userId);
+      const existing = directWith(convs, userId);
       if (existing) landDraft(existing.id);
       return startDirect(userId);
     },

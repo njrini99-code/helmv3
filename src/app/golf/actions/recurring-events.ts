@@ -66,6 +66,8 @@ function seriesRsvpDeadline(deadline: string | undefined, timeZone: string | und
 import { type ExpandedEvent } from '@/lib/calendar/recurrence';
 import { format, parseISO } from 'date-fns';
 import { offsetMinutesFor } from '@/lib/golf/timezone';
+import { resolveTeamTimeZone } from '@/lib/calendar/availability';
+import { formatNoticeWhen } from '@/lib/calendar/timezone';
 import {
   generateOccurrences,
   parseRecurrenceRule,
@@ -356,8 +358,10 @@ async function fetchSeriesAttendeeUserIds(
 function deferRecurringDeleteNotify(opts: {
   userIds: string[];
   eventIds: string[];
+  teamId: string | null;
   title: string;
   startTime: string | null;
+  allDay: boolean | null;
   location: string | null;
   scope: RecurringEditScope;
   requiresRsvp: boolean;
@@ -371,15 +375,9 @@ function deferRecurringDeleteNotify(opts: {
   after(async () => {
     try {
       const adminClient = createAdminClient();
-      const startLabel = startTime
-        ? new Date(startTime).toLocaleString('en-US', {
-            weekday: 'short',
-            month: 'short',
-            day: 'numeric',
-            hour: 'numeric',
-            minute: '2-digit',
-          })
-        : 'TBD';
+      // In the team's zone (F-0001): the server runs in UTC.
+      const timeZone = await resolveTeamTimeZone(opts.teamId ? [opts.teamId] : [], adminClient, 'recurring_events.deleteNotify');
+      const startLabel = formatNoticeWhen(startTime, opts.allDay, timeZone);
       const scopeLabel = scope === 'all' ? 'The whole series' : 'This and future occurrences';
       const detail = `${scopeLabel} cancelled — ${startLabel}${location ? ` at ${location}` : ''}`;
 
@@ -1755,8 +1753,10 @@ async function deleteRecurringEventImpl(
               deferRecurringDeleteNotify({
                 userIds: attendeeUserIds,
                 eventIds: [...deleteIds],
+                teamId: targetEvent.team_id,
                 title: targetEvent.title,
                 startTime: targetEvent.start_time,
+                allDay: targetEvent.all_day,
                 location: targetEvent.location,
                 scope: 'thisAndFuture',
                 requiresRsvp: targetEvent.requires_rsvp === true,
@@ -1790,8 +1790,10 @@ async function deleteRecurringEventImpl(
           deferRecurringDeleteNotify({
             userIds: attendeeUserIds,
             eventIds: [...deleteIds],
+            teamId: targetEvent.team_id,
             title: targetEvent.title,
             startTime: targetEvent.start_time,
+            allDay: targetEvent.all_day,
             location: targetEvent.location,
             scope: 'thisAndFuture',
             requiresRsvp: targetEvent.requires_rsvp === true,
@@ -1837,8 +1839,10 @@ async function deleteRecurringEventImpl(
         deferRecurringDeleteNotify({
           userIds: legacyAttendeeUserIds,
           eventIds: affected.map((row) => row.id),
+          teamId: targetEvent.team_id,
           title: targetEvent.title,
           startTime: targetEvent.start_time,
+          allDay: targetEvent.all_day,
           location: targetEvent.location,
           scope: 'thisAndFuture',
           requiresRsvp: targetEvent.requires_rsvp === true,
@@ -1891,8 +1895,10 @@ async function deleteRecurringEventImpl(
         deferRecurringDeleteNotify({
           userIds: allAttendeeUserIds,
           eventIds: affected.map((row) => row.id),
+          teamId: targetEvent.team_id,
           title: targetEvent.title,
           startTime: targetEvent.start_time,
+          allDay: targetEvent.all_day,
           location: targetEvent.location,
           scope: 'all',
           requiresRsvp: targetEvent.requires_rsvp === true,

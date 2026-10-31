@@ -17,6 +17,17 @@ export function avatarTone(key: string): AvatarTone {
 /** CONS-33: the avatar steps. A number is the old way and is ratcheted (`__tests__/avatar-sizes.test.ts`). */
 export const AVATAR_SIZES = { xs: 24, sm: 28, md: 36, lg: 40, xl: 64 } as const;
 export type AvatarSize = keyof typeof AVATAR_SIZES;
+/** F-0073: each step's initials, on the type scale (px; the coin is a fixed size, so its initials are too). */
+export const AVATAR_TYPE: Record<AvatarSize, number> = { xs: 11, sm: 12, md: 13, lg: 14, xl: 22 };
+
+/** A numeric size takes the initials of the nearest step (the smaller on a tie). */
+function typeOf(px: number): number {
+  let best: AvatarSize = 'xs';
+  for (const k of Object.keys(AVATAR_SIZES) as AvatarSize[]) {
+    if (Math.abs(AVATAR_SIZES[k] - px) < Math.abs(AVATAR_SIZES[best] - px)) best = k;
+  }
+  return AVATAR_TYPE[best];
+}
 
 /**
  * Monogram coin. No photography in Clubhouse: initials on a calm neutral.
@@ -24,11 +35,12 @@ export type AvatarSize = keyof typeof AVATAR_SIZES;
  */
 export function Avatar({ name, id, size = 'md', ring = false }: { name: string; id?: string | null; size?: AvatarSize | number; ring?: boolean }) {
   const px = typeof size === 'number' ? size : AVATAR_SIZES[size];
+  const type = typeof size === 'number' ? typeOf(size) : AVATAR_TYPE[size];
   return (
     <span
       className={'ch-avatar' + (ring ? ' ch-avatar--ring' : '')}
       data-tone={avatarTone(id || name)}
-      style={{ ['--ch-av-size' as string]: `${px}px` }}
+      style={{ ['--ch-av-size' as string]: `${px}px`, ['--ch-av-type' as string]: `${type}px` }}
       aria-hidden="true"
     >
       {initialsOf(name)}

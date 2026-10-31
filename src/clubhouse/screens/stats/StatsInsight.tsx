@@ -10,7 +10,8 @@ import { Surface } from '../../ui/Surface';
 export function StatsInsight({ insight }: { insight: ChInsight }) {
   if (!insight) return null;
   return (
-    <Surface id="ch-st-insight" title={insight.state === 'none' ? 'No clear change' : 'What changed'}>
+    // It is the first section under the page's h1 on all four Stats screens, so its title is an h2 (F-0063).
+    <Surface id="ch-st-insight" level={2} title={insight.state === 'none' ? 'No clear change' : 'What changed'}>
       {insight.state === 'none' ? (
         <p>Nothing has moved past its usual round-to-round spread {insight.against}.</p>
       ) : (

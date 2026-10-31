@@ -430,9 +430,5 @@ export function toCreatePayload(
   };
 }
 
-/** The 1 August season turnover: "2026–27" for any date from 1 Aug 2026 to 31 Jul 2027. */
-export function seasonLabelOf(date: string): string {
-  const y = Number(date.slice(0, 4));
-  const start = date.slice(5) >= '08-01' ? y : y - 1;
-  return `${start}–${String(start + 1).slice(2)}`;
-}
+/** The 1 August season turnover: "2026–27" for any date from 1 Aug 2026 to 31 Jul 2027. One helper, in lib (F-0002). */
+export { seasonLabelOf } from '../../../lib/season-start';

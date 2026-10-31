@@ -74,7 +74,7 @@ export function AccountSheet({
     for (const el of [sheet.current, scrim.current]) el?.style.setProperty('visibility', 'hidden');
     setMoreOpen(false);
   }, [setMoreOpen]);
-  const drag = useSheetDrag(sheet, closeMore, { enabled: !reduced });
+  const drag = useSheetDrag(sheet, closeMore, { reduced });
   // CH-1602: More rises on the smooth spring and leaves on it too, at the speed it was thrown when swiped shut (CH-1611),
   // ending as it leaves sight. Read as the exit begins, since the sheet's props are fixed once it is removed.
   // A transform string, not framer's `y`: Motion hands transform and opacity to the compositor (WAAPI), so the sheet

@@ -41,6 +41,7 @@ import { useIdleFetchAhead, usePressPrefetch } from '../../shell/use-prefetch-ta
 import { windowsAhead } from './window-ahead';
 import { plural, pluralWord } from '../../lib/plural';
 import { NoData } from '../../ui/NoData';
+import { usePushOnce } from '../../lib/nav-once';
 
 /*
  * Team stats' client islands. The page itself (StatsTeam) renders on the
@@ -86,6 +87,7 @@ export function StatsTeamFrame({ filter: current, phone, children }: { filter: C
   const isPhone = useChPhone() && phone != null && !printing;
   const tone = useHeroTone();
   const router = useRouter();
+  const pushOnce = usePushOnce(router);
   const toast = useToast();
   const delayedToast = useDelayedToast();
   const [pending, start] = useTransition();
@@ -115,7 +117,8 @@ export function StatsTeamFrame({ filter: current, phone, children }: { filter: C
     }
     chTrail(isWindowChange(current, next) ? `stats window ${next.window}` : 'stats filter');
     setLoading(next);
-    start(() => router.push(statsHref('/golf/dashboard/stats', next), { scroll: false }));
+    // A quick double tap on a segment pushes once (F-0026).
+    start(() => pushOnce(statsHref('/golf/dashboard/stats', next), { scroll: false }));
   };
   return (
     <GoFilter.Provider value={{ filter: current, go, shown: rangeOf(loading ?? current) }}>

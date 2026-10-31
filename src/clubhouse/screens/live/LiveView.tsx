@@ -48,7 +48,7 @@ function LiveViewDesk({ v }: { v: LiveViewState }) {
   const root = useRef<HTMLElement>(null);
   useRovingRows(root, '.ch-lv-hit');
   const total = v.groups.onCourse.length + v.groups.finished.length + v.groups.quiet.length;
-  const failed = v.live.snapshot.error && v.live.lanes.length === 0;
+  const { failed } = v;
 
   // The split needs SPLIT_MIN_PX of the desk's own width; measured before paint so the panel never draws and then folds.
   useLayoutEffect(() => {
@@ -95,7 +95,7 @@ function LiveViewDesk({ v }: { v: LiveViewState }) {
             <span data-ch-code="CH-16610">{LIVE_COPY.viewTitle}</span>
           </LargeTitle>
         </div>
-        <FreshnessChip feed={v.live.feed} updatedAt={v.live.updatedAt} onRefresh={v.live.refresh} />
+        <FreshnessChip feed={failed ? 'connecting' : v.live.feed} updatedAt={v.live.updatedAt} onRefresh={v.live.refresh} />
       </header>
       <div className="ch-lv-tools">
         <LiveFilter v={v} />

@@ -19,6 +19,17 @@ describe('one name module (CONS-17)', () => {
     expect(initials('Theo Marchetti')).toBe('TM');
   });
 
+  it('initials skip characters that are not letters', () => {
+    expect(initials('Coach (Demo)')).toBe('CD');
+    expect(initials('(Demo)')).toBe('D');
+    expect(initials('Élodie Brandt')).toBe('ÉB');
+    expect(initials("O'Neil")).toBe('O');
+    expect(initials('Ava - Lee')).toBe('AL');
+    expect(initials('Cher')).toBe('C');
+    expect(initials('')).toBe('');
+    expect(initials('( )')).toBe('');
+  });
+
   it('names are shortened in lib/names only', () => {
     const found = hits(/function (firstName|shortName)\b|const (firstName|shortName)\s*=/, walk(ROOT, /\.tsx?$/)).filter((h) => !/^lib\/(format|names)\.ts$/.test(h.file));
     expect(found).toEqual([]);

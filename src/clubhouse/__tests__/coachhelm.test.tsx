@@ -2068,3 +2068,23 @@ describe('CoachHelm route', () => {
     expect(screen.getByText('Loading CoachHelm…')).toBeTruthy();
   });
 });
+
+describe('CoachHelm · the putting card says the Tour figure once (F-0070)', () => {
+  const putts = (): EvidenceInsight => {
+    const b = breakBias(HELM_PLAYERS.jonah.id);
+    return {
+      ...b,
+      title: '5-10 ft putting: 35%',
+      content: 'You make 35% of putts from 5-10 ft over your last 8 rounds (30 days, 40 attempts, likely 22–50%). PGA Tour players make 62%.',
+      evidence: { ...b.evidence, metric: 'putts_made_5_10ft_pct', metric_label: 'Putts Made 5-10 ft', your_value: 35, your_value_display: '35%', comparison_value: 62.2, comparison_label: 'PGA Tour make % avg', comparison_source: 'pga_baseline' },
+    } as EvidenceInsight;
+  };
+  it('the gauge reads "PGA Tour 62%", the whole number the prose uses', () => {
+    expect(toChInsight(putts()).evidence.gauge).toMatchObject({ you: '35%', cmp: 'PGA Tour 62%' });
+  });
+  it('the audit does not repeat the comparison the gauge already draws', () => {
+    const i = toChInsight(putts(), { viewer: { role: 'coach', first: 'Owen' }, engine: { flags: { support: true, cause: false, recheck: false, verdicts: false }, now: '2026-10-21T00:00:00Z', viewer: { role: 'coach', first: 'Owen' } } });
+    const audit = (i as { engine?: { audit?: Array<{ k: string; v: string }> } }).engine?.audit ?? [];
+    expect(audit.map((l) => l.v).join(' | ')).not.toContain('62');
+  });
+});

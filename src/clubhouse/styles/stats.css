@@ -3619,7 +3619,7 @@
   .ch-tick,
   .ch-tab-t__n,
   .ch-sf__n {
-    font-size: 12px;
+    font-size: calc(12 * var(--ch-type-k));
   }
   .ch-lg__r--h,
   .ch-pf-tag,
@@ -3633,7 +3633,8 @@
   .ch-stm-figs dt,
   .ch-stm-figs dd + dd,
   .ch-gx-sec__c em,
-  .ch-gx-type {
+  .ch-gx-type,
+  .ch-sv-rt__t {
     font-size: calc(12 * var(--ch-type-k));
   }
   .ch-stm-chart__t {
@@ -4214,7 +4215,6 @@ html[data-fw-theme='dark'] [data-ui='clubhouse'] {
 :where(html[data-fw-theme='dark']) .ch-sgt__end.is-sel,
 :where(html[data-fw-theme='dark']) .ch-sgm[aria-pressed='true'],
 :where(html[data-fw-theme='dark']) .ch-pf-tag,
-:where(html[data-fw-theme='dark']) .ch-tab-t[aria-selected='true'] .ch-tab-t__n,
 :where(html[data-fw-theme='dark']) .ch-fws__z.is-fw,
 :where(html[data-fw-theme='dark']) .ch-cup__lbl {
   color: var(--ch-green-700);
@@ -4259,10 +4259,14 @@ html[data-fw-theme='dark'] [data-ui='clubhouse'] {
   box-shadow: 0 0 0 1px rgb(107 187 140 / 0.22);
 }
 :where(html[data-fw-theme='dark']) .ch-tab-t__n {
+  /* Primary ink on the night well (F-0015: secondary was Lc 72). */
+  color: var(--ch-text-primary);
   background: linear-gradient(180deg, var(--ch-ivory-200), var(--ch-ivory-150));
   box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.05), inset 0 0 0 var(--ch-hairline-w) var(--ch-border-hairline);
 }
 :where(html[data-fw-theme='dark']) .ch-tab-t[aria-selected='true'] .ch-tab-t__n {
+  /* The forest ink, pale mint at night (Lc 84); green-700 was Lc 61 (F-0015). */
+  color: var(--ch-forest-800);
   background: linear-gradient(180deg, var(--ch-green-100), var(--ch-green-50));
   box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.05), inset 0 0 0 1px rgb(107 187 140 / 0.22);
 }
@@ -5396,9 +5400,10 @@ html[data-fw-theme='dark'] .ch-st .ch-sgt {
   /* SVG chart text (a Text Size pin); tabular through .ch-num on the element, so its digits line up with the axis's. */
   font: 700 15px var(--ch-font-sans);
   fill: var(--ch-ivory-25);
+  /* A halo wider than the glyph stems, in the deepest green, so the line and band never show through (F-0037). */
   paint-order: stroke;
-  stroke: var(--ch-green-800);
-  stroke-width: 5px;
+  stroke: var(--ch-green-900);
+  stroke-width: 7px;
   stroke-linejoin: round;
   pointer-events: none;
 }
@@ -5415,8 +5420,9 @@ html[data-fw-theme='dark'] .ch-st .ch-sgt {
   letter-spacing: var(--ch-track-15);
   fill: var(--ch-champagne-300);
   paint-order: stroke;
-  stroke: var(--ch-green-800);
-  stroke-width: 4px;
+  stroke: var(--ch-green-900);
+  stroke-width: 7px;
+  stroke-linejoin: round;
 }
 .ch-st[data-canopy] .ch-sgt__end {
   grid-template-columns: 22px minmax(0, 1fr) 46px auto;
@@ -7302,6 +7308,12 @@ html[data-fw-theme='dark'] .ch-sv-mix .is-double {
 .ch-sv-tr__menu .ch-select select {
   width: auto;
   height: 34px;
+}
+/* On the phone the window select is a full 44 to the finger, like every select (F-0021). */
+@media (max-width: 820px) {
+  .ch-sv-tr__menu .ch-select select {
+    height: 44px;
+  }
 }
 .ch-sv-tr__plot {
   --ch-tr-rank: 40px;

@@ -1,6 +1,7 @@
 import 'server-only';
 import { getAnnouncementsWithMeta } from '@/app/golf/actions/announcements';
 import { canHideGolfConversations } from '@/app/golf/actions/conversation-hide';
+import { getGolfActiveTeamConversationIds } from '@/app/actions/messages';
 import { getGolfSessionProfile } from '@/lib/auth/session';
 import { pickGolfDashboardRole } from '@/lib/auth/golf-dashboard-role';
 import { loadMessagesDirectory } from '../data/messages';
@@ -27,7 +28,7 @@ export async function ClubhouseMessagesRoute() {
   }
   const viewerName = session.coach?.full_name ?? ([session.player?.first_name, session.player?.last_name].filter(Boolean).join(' ') || 'You');
   const viewerPlayerId = team.role === 'player' ? team.playerId : null;
-  const [data, canHide, anns] = await Promise.all([
+  const [data, canHide, anns, activeIds] = await Promise.all([
     loadMessagesDirectory({ role: team.role, teamId: team.teamId, viewerUserId: session.userId, viewerName, viewerPlayerId }),
     // Failed, it is left out and the inbox asks for it itself once it lands (Messages), rather than hiding Delete.
     canHideGolfConversations().catch((err: unknown) => {
@@ -38,7 +39,12 @@ export async function ClubhouseMessagesRoute() {
       chLogServer('messages', 'announcements', err, 'messaging');
       return null;
     }),
+    // The list's active-team scope, so its first load runs no server action (F-0014). Failed: the list reads it itself.
+    getGolfActiveTeamConversationIds().catch((err: unknown) => {
+      chLogServer('messages', 'activeConversationIds', err, 'messaging');
+      return undefined;
+    }),
   ]);
   const announcements = anns?.success && anns.data ? anns.data.map(toChAnnouncement) : null;
-  return <Messages data={{ ...data, ...(canHide === undefined ? {} : { canHide }), announcements }} />;
+  return <Messages data={{ ...data, ...(canHide === undefined ? {} : { canHide }), ...(activeIds === undefined ? {} : { activeConversationIds: activeIds }), announcements }} />;
 }

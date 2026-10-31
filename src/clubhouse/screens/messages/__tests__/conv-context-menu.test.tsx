@@ -1,3 +1,5 @@
+import { readFileSync } from 'node:fs';
+import { join } from 'node:path';
 import { LazyMotion, domAnimation } from 'motion/react';
 import { act, cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
@@ -87,6 +89,20 @@ describe('Messages conversation row, phone (owner decision 14)', () => {
   );
   const rowButton = () => screen.getAllByRole('button', { name: /^(?!Actions for ).*Maya Reyes/ })[0]!;
   const touch = { pointerId: 1, pointerType: 'touch', isPrimary: true };
+
+  // F-0048 (by design): the hidden "Actions for …" control is the screen reader and keyboard path; a finger uses the hold or
+  // the swipe. Pin that it stays in the tree, shows when focused, and opens the same sheet with Enter.
+  it('the Actions control is reachable without a finger and opens the actions sheet with Enter', async () => {
+    const user = userEvent.setup();
+    render(phoneRow());
+    const actions = screen.getByRole('button', { name: 'Actions for Maya Reyes' });
+    expect(actions.parentElement!.classList.contains('ch-sr-only--focusable')).toBe(true);
+    actions.focus();
+    await user.keyboard('{Enter}');
+    expect(screen.getByRole('dialog', { name: /Actions for Maya Reyes|Maya Reyes/ })).toBeTruthy();
+    const base = readFileSync(join(process.cwd(), 'src/clubhouse/styles/base.css'), 'utf8');
+    expect(base).toMatch(/\.ch-sr-only--focusable:has\(:focus-visible\)\s*\{[^}]*position: static;[^}]*width: auto;/);
+  });
 
   it('a finger held still opens the row\'s actions as a sheet', () => {
     vi.useFakeTimers();

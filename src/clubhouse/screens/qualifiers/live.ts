@@ -71,7 +71,7 @@ export interface LiveFeedView {
   /** A fixed read time (the preview); otherwise the chip stamps one after hydration. */
   updatedAt?: number;
   refresh: () => void;
-  /** Still open after its last day (P009-D3): the chip says Ended instead of Live. */
+  /** Still open after its last day (P009-D3): the pill says what it waits on instead of Live. */
   ended: { outstanding: number | null } | null;
 }
 

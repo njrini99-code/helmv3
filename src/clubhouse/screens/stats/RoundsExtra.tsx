@@ -123,7 +123,7 @@ export function RoundsExtra({
             ) : undefined
           }
         >
-          <Vis id="rx-score" title="Score by round" note={`Every ${HOLES_ADJ[filter.holes]} round in this window, oldest first${x.nineRounds ? ' · 9-hole scores doubled (per 18)' : ''}`}>
+          <Vis id="rx-score" region={false} title="Score by round" note={`Every ${HOLES_ADJ[filter.holes]} round in this window, oldest first${x.nineRounds ? ' · 9-hole scores doubled (per 18)' : ''}`}>
             {x.series.score.length >= 2 ? <RoundLine points={x.series.score} digits={0} label="Score by round" lowerIsBetter /> : <Empty code="CH-5314">A line needs two rounds; this window has {x.series.score.length}.</Empty>}
           </Vis>
           {(filter.holes === '18' || (filter.holes === 'all' && hasBest(b))) && (

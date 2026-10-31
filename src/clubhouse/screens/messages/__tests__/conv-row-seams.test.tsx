@@ -86,3 +86,36 @@ describe('desktop rail seams across a row’s mounted dialog', () => {
     }
   });
 });
+
+describe('inbox row craft (PR 9)', () => {
+  const row = (c: ChConv) =>
+    render(
+      <LazyMotion features={domAnimation}>
+        <div className="ch-root ch-msp" data-ui="clubhouse">
+          <ConvRow api={api} c={c} phone />
+        </div>
+      </LazyMotion>,
+    );
+
+  it('F-0052 the clamped preview has one inline child, so "Coach: [poll] text" stays on a line', () => {
+    const { container } = row({ ...conv('g1', 'Team'), group: true, lastSenderId: 'u-coach', lastIsPoll: true, lastText: 'Poll: staging check' } as ChConv);
+    const clamp = container.querySelector('.ch-ms-row__bot > span:first-child')!;
+    expect(clamp.children).toHaveLength(1);
+    expect(clamp.children[0]!.className).toBe('ch-ms-row__prev');
+    expect(clamp.querySelector('.ch-ms-row__prev em')).toBeTruthy();
+    expect(clamp.querySelector('.ch-ms-row__prev .ch-ms-row__poll')).toBeTruthy();
+  });
+
+  it('F-0071 opening a conversation is a plain navigation tap: no haptic (D-70)', async () => {
+    const { haptic } = await import('../../../lib/haptics');
+    vi.mocked(haptic).mockClear();
+    row(conv('c9', 'Maya Reyes'));
+    fireEvent.click(screen.getAllByRole('button', { name: /^(?!Actions for ).*Maya Reyes/ })[0]!);
+    expect(api.select).toHaveBeenCalledWith('c9');
+    expect(haptic).not.toHaveBeenCalled();
+  });
+
+  it('F-0051 the phone Announcements card sits on the page edge, not 4px past it', () => {
+    expect(css).toMatch(/@media \(max-width: 820px\) \{[^@]*\.ch-msp \.ch-ms-sec\.is-ann\s*\{[^}]*margin-inline: 0;/);
+  });
+});

@@ -2,7 +2,7 @@ import 'server-only';
 import { createClient } from '@/lib/supabase/server';
 import { readGolfPlayerProfiles } from '@/lib/golf/player-profiles';
 import { chLogServer } from '../lib/track-server';
-import { classYearLabel, displayHandicap, fullName, loadTeamZone } from './season';
+import { classYearLabel, currentSeasonLabel, displayHandicap, fullName, loadTeamZone } from './season';
 
 /**
  * The player's Roster (Clubhouse): their own team, read-only. It is a separate loader from the coach's on purpose
@@ -51,7 +51,7 @@ export async function loadPlayerRoster(input: { teamId: string; playerId: string
   const now = new Date();
 
   const [teamRes, membersRes, staffRes, tz] = await Promise.all([
-    supabase.from('golf_teams').select('name, season').eq('id', input.teamId).maybeSingle(),
+    supabase.from('golf_teams').select('name').eq('id', input.teamId).maybeSingle(),
     // Teammates' display columns through golf_player_profiles: a player may no longer read a teammate's golf_players
     // row (security review S4).
     (async () => {
@@ -86,7 +86,8 @@ export async function loadPlayerRoster(input: { teamId: string; playerId: string
 
   return {
     teamName: teamRes.data?.name ?? 'Your team',
-    season: teamRes.data?.season ?? null,
+    // Computed from 1 August in the team's zone, never the stored free text (F-0002).
+    season: currentSeasonLabel(now, tz),
     teamError: !!teamRes.error,
     players,
     playersError: !!membersRes.error,

@@ -484,7 +484,7 @@ Status: DEFINED
 Calendar's own motion (61601 to 61606): an event lifts on a soft shadow and
 takes a ring when selected, the Find a time band follows the pointer in
 15-minute steps, the now line moves down the grid, another view settles in (Day,
-Week, Month and Agenda; Day, Month and List on the phone), and another day, week
+Week, Month and List; Day, Month and List on the phone), and another day, week
 or month slides the way it went; an agenda row deepens its tint on press. On the
 phone (2026-10-08) the chosen day's green plate glides along the week strip to
 the day you tap while the day's heading and agenda slide 12px the way the day
@@ -500,7 +500,7 @@ WebKit at 390 (instant with reduced motion).
 | 61601 | CH-6601 | `HOVERING_OR_SELECTING_AN_EVENT` | Hovering or selecting an event |
 | 61602 | CH-6602 | `DRAGGING_THE_TIME_BAND_IN_FIND_A` | Dragging the time band in Find a time |
 | 61603 | CH-6603 | `THE_CURRENT_TIME` | The current time |
-| 61604 | CH-6604 | `SWITCHING_BETWEEN_DAY_WEEK_MONTH_AND_AGENDA` | Switching between Day, Week, Month and Agenda (Day, Month and List on the phone) |
+| 61604 | CH-6604 | `SWITCHING_BETWEEN_DAY_WEEK_MONTH_AND_AGENDA` | Switching between Day, Week, Month and List (Day, Month and List on the phone) |
 | 61605 | CH-6605 | `STEPPING_TO_ANOTHER_DAY_WEEK_OR_MONTH` | Stepping to another day, week or month (the arrows, the arrow keys, Today or a date) |
 | 61606 | CH-6606 | `CHOOSING_ANOTHER_DAY_IN_THE_PHONES_WEEK` | Choosing another day in the phone's week strip |
 | 61607 | CH-6640 | `TOURNAMENT_CHOSEN_TRACK_TURNED_ON_OR_OFF` | Tournament chosen (Track on), Track turned on or off, More details opened |
@@ -523,7 +523,7 @@ The shell's own are 11701 to 11706.
 
 | Bridge ID | Code | Name | Meaning |
 | --- | --- | --- | --- |
-| 61701 | CH-6701 | `OPENING_AN_EVENT_A_DAY_OR_A` | Opening an event, a day or a panel item; changing view, week or players; each Find a time step |
+| 61701 | CH-6701 | `OPENING_AN_EVENT_A_DAY_OR_A` | Opening a day from the week header or choosing a List row; changing view, week or players; each Find a time step (opening an event is a plain navigation tap and is silent, D-70) |
 | 61702 | CH-6702 | `A_FORM_WITH_A_PROBLEM_OR_CLOSING` | A form with a problem, or closing the editor with changes |
 | 61703 | CH-6703 | `A_LINK_IS_COPIED` | A link is copied |
 

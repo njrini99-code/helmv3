@@ -7,6 +7,7 @@ import type { ToolEnvelope } from '@/lib/coachhelm/v3/chat/provenance';
 import { evidenceBlocks, formatValue, readAreaWord, type AskEvidence, type AskRankRow, type AskTable, type AskTeamTable, type EvidenceTile } from '../../../data/coachhelm-chat-thread';
 import { coachReadHref } from '../../../data/coachhelm-views-shape';
 import { Icon } from '../../../ui/Icon';
+import { ScrollRegion } from '../../../ui/ScrollRegion';
 import { playerStatsHref } from './Prose';
 import { afterRailMove } from '../../../lib/rail-fold';
 import { Line } from '../../../ui/charts/Line';
@@ -42,7 +43,8 @@ export function DataTable({ table, labelledBy }: { table: AskTable; labelledBy?:
   // A column of figures is set right on tabular numbers; a column of words (a title, a status, a day) reads left, at body weight.
   const numeric = table.columns.map((_, c) => c > 0 && table.rows.length > 0 && table.rows.every((r) => FIGURE.test((r[c] ?? '').trim())));
   return (
-    <div className="ch-th-tablewrap">
+    // A keyboard reaches the sideways scroll (F-0042); the caption names it, so two tables never share a name.
+    <ScrollRegion label={`${table.caption}, scrolls sideways`} className="ch-th-tablewrap" fade={false}>
       <table className="ch-th-table" aria-labelledby={labelledBy}>
         {!labelledBy && <caption className="ch-th-sr">{table.caption}</caption>}
         <thead>
@@ -62,7 +64,7 @@ export function DataTable({ table, labelledBy }: { table: AskTable; labelledBy?:
           ))}
         </tbody>
       </table>
-    </div>
+    </ScrollRegion>
   );
 }
 

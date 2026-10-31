@@ -32,6 +32,34 @@ const swap = (k: string) => (
   </LazyMotion>
 );
 
+/** F-0007 (audit 2026-10-29): `resize="instant"` swaps a page-sized view (Calendar's Day/Month) with no height glide. */
+describe('Swap resize="instant"', () => {
+  it('pins no height and sets no transition on a key change', () => {
+    const view = (k: string) => (
+      <LazyMotion features={domMax}>
+        <Swap swapKey={k} resize="instant">
+          <p>{k}</p>
+        </Swap>
+      </LazyMotion>
+    );
+    const { rerender, container } = render(view('day'));
+    const frame = container.querySelector<HTMLElement>('.ch-swap')!;
+    contentH = 600;
+    rerender(view('month'));
+    expect(frame.style.height).toBe('');
+    expect(frame.style.transition).toBe('');
+  });
+
+  it('Calendar passes it on its view switch, phone and desktop', async () => {
+    const { readFileSync } = await import('node:fs');
+    const { join } = await import('node:path');
+    for (const f of ['CalendarPhone.tsx', 'Calendar.tsx']) {
+      const src = readFileSync(join(process.cwd(), 'src/clubhouse/screens/calendar', f), 'utf8');
+      expect(src, f).toMatch(/<Swap[^>]*resize="instant"/);
+    }
+  });
+});
+
 /** B7: a swap eases its frame from the old content's height to the new one's, then lets it be `auto` again. */
 describe('Swap height', () => {
   it('on a key change the frame gets an explicit, clipped height that is cleared afterwards', async () => {

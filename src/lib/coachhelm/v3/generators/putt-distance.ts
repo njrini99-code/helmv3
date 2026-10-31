@@ -46,7 +46,7 @@ import { loadPlayerCohort } from '@/lib/coachhelm/v3/counterfactual/player-cohor
 import { attemptGate, lifetimeSpanDays, dataThroughSuffix, ATTEMPT_FLOOR } from '@/lib/coachhelm/v3/engine/window-honesty';
 import { loadStandingForMetric } from '@/lib/coachhelm/v3/standing/loader';
 import { measuredStrokesImpact } from '@/lib/coachhelm/v3/counterfactual/measured-impact';
-import { wilsonInterval, rateIntervalText } from '@/lib/coachhelm/v3/stats/interval';
+import { wilsonInterval } from '@/lib/coachhelm/v3/stats/interval';
 
 type PuttBucketKey = '3_5ft' | '5_10ft' | '10_15ft' | '15_25ft' | '25_plus_ft';
 
@@ -244,10 +244,17 @@ export class PuttDistanceGenerator extends BaseGenerator<PuttDistanceAggregate> 
     // 95% interval on the band rate (audit row 24): an 8-12 putt band moves
     // 8-12 points on a single putt, so the number never ships bare.
     const makeCi = wilsonInterval(Math.round((agg.playerValue / 100) * agg.attempts), agg.attempts);
+    // F-0070: the rate once, its likely range once and the Tour figure once, as a whole number (the card's gauge says the
+    // same "Tour 62%"). The window, the attempts and the range share one bracket.
+    const aside = [
+      agg.spanDays && agg.spanDays > 0 ? `${agg.spanDays} days` : null,
+      gate.report ? gate.disclosure.trim().slice(1, -1) : null,
+      gate.report ? `likely ${Math.round(makeCi.low)}–${Math.round(makeCi.high)}%` : null,
+    ].filter(Boolean);
     const base = (v: Voice) =>
-      `Across ${v.players} last ${agg.rounds_played} rounds${agg.spanDays && agg.spanDays > 0 ? ` (${agg.spanDays} days)` : ''} ` +
-      `${v.youre} making ${valueDisp} of putts from ${label}${gate.disclosure}${gate.report ? rateIntervalText(makeCi) : ''} ` +
-      `(${agg.cohort_gender === 'womens' ? 'LPGA' : 'PGA'} Tour ~${pgaValue.toFixed(0)}%).`;
+      `${v.Player} ${v.pick('make', 'makes')} ${valueDisp} of putts from ${label} over ${v.your} last ${agg.rounds_played} rounds` +
+      `${aside.length ? ` (${aside.join(', ')})` : ''}. ` +
+      `${agg.cohort_gender === 'womens' ? 'LPGA' : 'PGA'} Tour players make ${pgaValue.toFixed(0)}%.`;
 
     let verdict: (v: Voice) => string;
     let composedPriority: InsightPriority;

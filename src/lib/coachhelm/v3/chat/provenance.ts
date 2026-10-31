@@ -622,8 +622,30 @@ function auditDateExpressions(
     },
   );
 
-  return { scrubbed, claims };
+  // "the 26th": a day-of-month back-reference to a date the answer already
+  // gave in full ("…on September 26 … what happened on the 26th"). Staging,
+  // 2026-10-29: every player's `last_round_date` was 2026-09-26, the model
+  // wrote both forms, and "26" alone was flagged, withholding the answer.
+  // Supported only by an EXACT evidence date on that day — never by window
+  // containment, since nearly any window spans every day of the month. An
+  // unsupported one is left for the numeric scan, which flags it as before.
+  const ordinalScrubbed = scrubbed.replace(BARE_ORDINAL_DAY_RE, (whole, prefix: string, dayStr: string) => {
+    const day = String(Number(dayStr)).padStart(2, '0');
+    if (![...evidenceMonthDays].some((monthDay) => monthDay.endsWith(`-${day}`))) return whole;
+    return prefix + ' '.repeat(whole.length - prefix.length);
+  });
+
+  return { scrubbed: ordinalScrubbed, claims };
 }
+
+/**
+ * "on the 26th", "since the 3rd" — a day of the month with no month named.
+ * Calendar context only: a date preposition before it, and no noun after it
+ * ("of" and conjunctions aside), so "the 26th percentile" or "on the 26th
+ * hole" stays a number for the numeric scan. No lookbehind (iOS WebView).
+ */
+const BARE_ORDINAL_DAY_RE =
+  /(\b(?:on|since|from|until|till|through|by|before|after)\s+the\s+)(\d{1,2})(?:st|nd|rd|th)\b(?!\s+(?!(?:of|and|or|at|to|through|when|with|but)\b)[a-z])/gi;
 
 /** Tolerance for matching a written number against a measured one. */
 const MATCH_EPSILON = 0.051;

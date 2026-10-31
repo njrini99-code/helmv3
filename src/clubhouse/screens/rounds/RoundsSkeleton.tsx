@@ -130,7 +130,7 @@ export function RoundReviewSkeleton() {
           figures between hairlines in two rows, then strokes gained and the scorecard under their double rules, each head with its
           figure. rounds.css shows the shape for the width. */}
       <div className="ch-rv-sk-phone">
-        <Skeleton width="100%" height={178} radius={14} shape="solid" />
+        <Skeleton width="100%" height={178} radius={14} shape="feature" />
         <span className="ch-rv-sk-figs">
           {[0, 1, 2, 3, 4].map((i) => (
             <span key={i}>

@@ -93,3 +93,10 @@ export function clashSummary(classes: ChTravelerClass[], names: ReadonlyMap<stri
   });
   return { lines, moreTravelers: Math.max(0, order.length - CLASH_LINES), total: order.reduce((n, id) => n + byPlayer.get(id)!.length, 0) };
 }
+
+/**
+ * A row drawn the moment the coach posts or assigns, before the server answers (F-0045): its id carries this prefix, it
+ * says "Posting…" or "Assigning…" where its date goes, and it offers no menu. The page's next read replaces it.
+ */
+export const PROVISIONAL_ID = 'provisional:';
+export const isProvisional = (id: string) => id.startsWith(PROVISIONAL_ID);

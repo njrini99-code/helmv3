@@ -36,12 +36,17 @@ export function useDialogLifetime(open: boolean, {
   direction = 'bottom',
   surfaceSelector,
   focusSelector,
+  fallbackFocus,
 }: {
   direction?: 'bottom' | 'left' | 'center';
   surfaceSelector?: string;
   focusSelector?: string;
+  /** Where focus goes when the dialog closes and what opened it has gone (a deleted event: its day, the grid). */
+  fallbackFocus?: () => HTMLElement | null;
 } = {}) {
   const ref = useRef<HTMLDialogElement>(null);
+  const fallbackRef = useRef(fallbackFocus);
+  fallbackRef.current = fallbackFocus;
   const opener = useRef<Element | null>(null);
   const openRef = useRef(open);
   const content = useRef<ReactNode>(null);
@@ -57,10 +62,17 @@ export function useDialogLifetime(open: boolean, {
     if (!present) return;
     const dialog = ref.current;
     const release = acquireOverlayScroll();
+    // What had focus as it opened, to hand focus back to quietly (F-0058).
+    const opener = document.activeElement instanceof HTMLElement && document.activeElement !== document.body ? document.activeElement : null;
     return () => {
+      // The browser's own restoration is not quiet: marked first, so a peek target it lands on doesn't open (F-0058).
+      if (opener?.isConnected) opener.dataset.chPeekQuiet = '';
       // Native focus restoration must happen while the underlying page is locked,
       // including route unmounts and nested dialogs released in either order.
       dialog?.close();
+      const back = opener?.isConnected ? opener : (fallbackRef.current?.() ?? null);
+      if (back) chFocusQuietly(back);
+      else if (opener) delete opener.dataset.chPeekQuiet;
       release();
     };
   }, [present]);

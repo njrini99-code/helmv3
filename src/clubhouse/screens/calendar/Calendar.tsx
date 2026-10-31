@@ -652,6 +652,20 @@ function CalendarBody({
   useEffect(() => {
     setMade((m) => (m.length && m.every((o) => data.events.some((e) => e.id === o.id && e.round)) ? [] : m));
   }, [data.events]);
+  // F-0029: a new event drawn the moment it is published, until the page's re-read brings the stored one.
+  const [published, setPublished] = useState<ChCalEvent | null>(null);
+  useEffect(() => setPublished(null), [data.events]);
+  const provisional = useMemo(
+    () => ({
+      add: (e: ChCalEvent) => {
+        setPublished(e);
+        setEditor(null);
+        return () => setPublished(null);
+      },
+      reopen: (e: ChCalEvent) => setEditor({ event: null, copyOf: e, resend: true }),
+    }),
+    [],
+  );
   const onTournamentSaved = useCallback((t: ChTournamentSaved) => setMade(roundsOverlay(t)), []);
   const refreshQuiet = useCallback(() => router.refresh(), [router]);
   // P-5 should 5: a round or tournament cancel strikes through at once and is written when its Undo runs out.
@@ -659,10 +673,11 @@ function CalendarBody({
   const [cancellingRound, setCancellingRound] = useState<ChCalEvent | null>(null);
   const withMade = useMemo(() => {
     const base = heldCancel.struck.size ? data.events.map(heldCancel.overlay) : data.events;
-    if (!made.length) return base;
+    const shown = published ? [...base, published] : base;
+    if (!made.length) return shown;
     const ids = new Set(made.map((e) => e.id));
-    return [...base.filter((e) => !ids.has(e.id)), ...made];
-  }, [data.events, made, heldCancel.struck, heldCancel.overlay]);
+    return [...shown.filter((e) => !ids.has(e.id)), ...made];
+  }, [data.events, made, published, heldCancel.struck, heldCancel.overlay]);
   const { moves, move, undoLatest, said, heldScope } = useHeldMoves(data.timezone, data.events, data.today, refreshQuiet, preview, people);
   /** P-4 4.8: a series event dropped somewhere new, held there with its question open. */
   const [ask, setAsk] = useState<{ e: ChCalEvent; to: ChMoveTarget | ChBarTarget; kind: ChMoveKind; round?: boolean } | null>(null);
@@ -856,6 +871,8 @@ function CalendarBody({
   const count = new Set(events.filter((e) => e.type !== 'class' && e.type !== 'busy' && !e.cancelled && inView(e.date)).map((e) => e.id)).size;
   const selId = insp && (insp.kind === 'event' || insp.kind === 'attendance') ? insp.id : insp?.kind === 'overlap' ? (overlaps.find((o) => o.id === insp.id)?.eventId ?? null) : null;
   const open = (id: string, date?: string) => {
+    // A block drawn at Publish (F-0029) has no stored event to open until the page's re-read brings it.
+    if (id.startsWith('provisional:')) return;
     const e = data.events.find((x) => x.id === id && (!date || x.date === date)) ?? data.events.find((x) => x.id === id);
     if (!e) {
       // P-14: a moved-away row can link to a day outside the loaded window; the address carries the event, and its own day opens.
@@ -868,7 +885,8 @@ function CalendarBody({
     const keyboard = keyed.current && !phone && from instanceof HTMLElement && from.matches('.ch-ev, .ch-ev-bar, .ch-ag__row');
     opener.current = keyboard ? from : null;
     toPanel.current = keyboard;
-    setInsp({ kind: 'event', id: e.id, date: e.date });
+    // The event already open stays the same state, so a double click runs nothing twice (F-0057).
+    setInsp((cur) => (cur?.kind === 'event' && cur.id === e.id && cur.date === e.date ? cur : { kind: 'event', id: e.id, date: e.date }));
   };
 
   // More than one read failed: the page says so once with one Try again (the shell's CH-1209), and a part with a place
@@ -993,6 +1011,7 @@ function CalendarBody({
         <EventEditor
           seed={roundSeed ? null : editor}
           onClose={() => setEditor(null)}
+          provisional={provisional}
           onSaved={(d) => {
             setEditor(null);
             setInsp(null);
@@ -1179,7 +1198,7 @@ function CalendarBody({
 
       <div className="ch-cal-bar">
         <div className="ch-cal-viewctl">
-          {/* P006 D6: Agenda keeps the arrows' place (hidden, out of reach), so the toolbar doesn't shift as views change. */}
+          {/* P006 D6: List (the agenda) keeps the arrows' place (hidden, out of reach), so the toolbar doesn't shift as views change. */}
           <span className={'ch-cal-step' + (view === 'agenda' ? ' is-off' : '')} inert={view === 'agenda'} aria-hidden={view === 'agenda' || undefined}>
             <IconButton icon={ChevronLeft} label={`Previous ${view === 'agenda' ? 'month' : view}`} onClick={() => step(-1)} />
             <IconButton icon={ChevronRight} label={`Next ${view === 'agenda' ? 'month' : view}`} onClick={() => step(1)} />
@@ -1192,7 +1211,8 @@ function CalendarBody({
               { value: 'day', label: 'Day' },
               { value: 'week', label: 'Week' },
               { value: 'month', label: 'Month' },
-              { value: 'agenda', label: 'Agenda' },
+              // One noun with the phone (F-0053, owner default); the value stays `agenda`, so addresses don't change.
+              { value: 'agenda', label: 'List' },
             ]}
           />
         </div>
@@ -1230,7 +1250,7 @@ function CalendarBody({
             <SectionBoundary surface={`calendar.${view}`} label="The calendar" code="CH-6210">
               {/* CH-6604: another view settles in (base in, quick out); CH-6605: another day, week or month slides 12px the
                   way it went. Both instant with reduced motion. */}
-              <Swap swapKey={view}>
+              <Swap swapKey={view} resize="instant">
                 <Swap swapKey={period.key} kind="slide" dir={period.dir}>
                   {(view === 'week' || view === 'day') && (
                     <TimeGrid dates={dates} events={events} people={people} now={now} selId={selId} flagged={flagged} onSelect={open} onDay={(d) => go('day', d)} onMove={coach ? onGridMove : undefined} onBarMove={coach ? (e, to) => onGridMove(e, to, 'bar') : undefined} daylight={daylight} coach={coach} viewerId={data.viewerPlayerId} />

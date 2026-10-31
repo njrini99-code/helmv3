@@ -207,3 +207,243 @@ describe('the Ask thread at night: the avatar mark and a chosen visual row (2026
     expect(contrast(hex(token('ch-green-800', 'light')), hex(token('ch-sheet-bg', 'light')))).toBeGreaterThanOrEqual(3);
   });
 });
+
+// ── Audit 2026-10-29 (fix plan PR 3): the night contrast token pass ───────────────────────────────────────────────────
+// APCA-W3 0.0.98G-4g Lc (|Lc| used), ported from the audit's tools/contrast/contrast.mjs: #888 on #fff is Lc 63.1.
+// Owner decision 1 (default): Lc 75 for neutral body ink, Lc 60 for coloured figures, meta and eyebrows.
+const sRGBtoY = ([r, g, b]: RGB) => {
+  const t = (c: number) => Math.pow(c / 255, 2.4);
+  return 0.2126729 * t(r) + 0.7151522 * t(g) + 0.072175 * t(b);
+};
+const apcaLc = (fg: RGB, bg: RGB): number => {
+  const bc = 0.022;
+  const bx = 1.414;
+  let yt = sRGBtoY(fg);
+  let yb = sRGBtoY(bg);
+  yt = yt > bc ? yt : yt + Math.pow(bc - yt, bx);
+  yb = yb > bc ? yb : yb + Math.pow(bc - yb, bx);
+  if (Math.abs(yb - yt) < 0.0005) return 0;
+  let o: number;
+  if (yb > yt) {
+    const s = (Math.pow(yb, 0.56) - Math.pow(yt, 0.57)) * 1.14;
+    o = s < 0.1 ? 0 : s - 0.027;
+  } else {
+    const s = (Math.pow(yb, 0.65) - Math.pow(yt, 0.62)) * 1.14;
+    o = s > -0.1 ? 0 : s + 0.027;
+  }
+  return Math.abs(o * 100);
+};
+
+const LIGHT_BLOCK = tokens.slice(0, tokens.indexOf("html[data-fw-theme='dark'] [data-ui='clubhouse'] {"));
+const DARK_BLOCK = (() => {
+  const from = tokens.indexOf("html[data-fw-theme='dark'] [data-ui='clubhouse'] {");
+  return tokens.slice(from, tokens.indexOf('\n}', from));
+})();
+/** A token's value in a theme: the dark block first at night, else the light root; `var()` chains are followed. */
+const raw = (name: string, theme: 'light' | 'dark'): string => {
+  const re = new RegExp(`--${name}:\\s*([^;]+);`);
+  const v = (theme === 'dark' ? re.exec(DARK_BLOCK) : null) ?? re.exec(LIGHT_BLOCK);
+  if (!v) throw new Error(`--${name} is not defined`);
+  return v[1]!.trim();
+};
+const deref = (value: string, theme: 'light' | 'dark'): string => value.replace(/var\(--([\w-]+)\)/g, (_, n: string) => deref(raw(n, theme), theme));
+const ink = (name: string, theme: 'light' | 'dark'): RGB => {
+  const v = deref(raw(name, theme), theme);
+  if (!/^#[0-9a-fA-F]{6}$/.test(v)) throw new Error(`--${name} (${theme}) resolves to ${v}, not a hex`);
+  return hex(v);
+};
+/** The hex stops of a gradient written with tokens or literals. */
+const stops = (gradient: string, theme: 'light' | 'dark'): RGB[] => [...deref(gradient, theme).matchAll(/#[0-9a-fA-F]{6}/g)].map((m) => hex(m[0]));
+const rule = (file: string, selector: string): string => {
+  const src = css(file);
+  const at = src.indexOf(`${selector} {`);
+  if (at < 0) throw new Error(`${file}: no rule ${selector}`);
+  return src.slice(at, src.indexOf('}', at));
+};
+const NIGHT_SURFACES = ['ch-bg-page', 'ch-workspace', 'ch-bg-surface', 'ch-ivory-25', 'ch-bg-elevated', 'ch-bg-elevated-2'];
+
+describe('F-0005: the zone number coin is deep green in both themes', () => {
+  it('ivory on every stop reads 4.5:1 and Lc 75', () => {
+    const bg = /background:\s*(linear-gradient\([^;]+\));/.exec(rule('ui.css', '.ch-zn__n'))![1]!;
+    for (const theme of ['light', 'dark'] as const) {
+      const on = ink('ch-on-fill-50', theme);
+      for (const s of stops(bg, theme)) {
+        expect(contrast(on, s), `${theme}`).toBeGreaterThanOrEqual(4.5);
+        expect(apcaLc(on, s), `${theme}`).toBeGreaterThanOrEqual(75);
+      }
+    }
+  });
+});
+
+describe('F-0062: the big zone figure and quiet meta at night', () => {
+  it('the dark .ch-znbig gradient reads Lc 60 at both stops on its zone', () => {
+    const m = /:where\(html\[data-fw-theme='dark'\]\) \.ch-znbig:not\(\.is-gain, \.is-loss\) \{\s*background: (linear-gradient\([^;]+\));/.exec(css('ui.css'));
+    expect(m, 'a dark .ch-znbig rule').not.toBeNull();
+    for (const s of stops(m![1]!, 'dark')) expect(apcaLc(s, ink('ch-ivory-25', 'dark'))).toBeGreaterThanOrEqual(60);
+  });
+
+  it('dark ink-500 reaches Lc 59 on the page and the surface', () => {
+    for (const bg of ['ch-bg-page', 'ch-bg-surface']) expect(apcaLc(ink('ch-ink-500', 'dark'), ink(bg, 'dark')), bg).toBeGreaterThanOrEqual(59);
+  });
+});
+
+describe('F-0041: body ink reaches Lc 75 (neutral) on every surface', () => {
+  it('dark: secondary ink Lc 75 and tertiary Lc 60 on every night surface; the ramp keeps its order', () => {
+    for (const bg of NIGHT_SURFACES) {
+      expect(apcaLc(ink('ch-ink-700', 'dark'), ink(bg, 'dark')), `ink-700 on ${bg}`).toBeGreaterThanOrEqual(75);
+      expect(apcaLc(ink('ch-ink-600', 'dark'), ink(bg, 'dark')), `ink-600 on ${bg}`).toBeGreaterThanOrEqual(60);
+    }
+    const page = ink('ch-bg-page', 'dark');
+    const lc = ['ch-ink-900', 'ch-ink-700', 'ch-ink-600', 'ch-ink-500'].map((n) => apcaLc(ink(n, 'dark'), page));
+    expect([...lc].sort((a, b) => b - a)).toEqual(lc);
+  });
+
+  it('light: secondary ink Lc 75 and the loss ink Lc 70 on the page', () => {
+    expect(apcaLc(ink('ch-ink-700', 'light'), ink('ch-bg-page', 'light'))).toBeGreaterThanOrEqual(75);
+    expect(apcaLc(ink('ch-chart-loss', 'light'), ink('ch-bg-page', 'light'))).toBeGreaterThanOrEqual(70);
+  });
+
+  it('the top bar crumbs and search text are body size, so secondary', () => {
+    expect(rule('shell.css', '.ch-topbar__crumbs')).toMatch(/color: var\(--ch-text-secondary\)/);
+    expect(rule('shell.css', '.ch-topbar__search')).toMatch(/color: var\(--ch-text-secondary\)/);
+  });
+});
+
+describe('F-0043: the tab labels at night', () => {
+  it('idle and chosen tab ink reach Lc 75 on the workspace, the page and the surface', () => {
+    for (const bg of ['ch-workspace', 'ch-bg-page', 'ch-bg-surface']) {
+      expect(apcaLc(ink('ch-tab-ink', 'dark'), ink(bg, 'dark')), `idle on ${bg}`).toBeGreaterThanOrEqual(75);
+      expect(apcaLc(ink('ch-tab-ink-selected', 'dark'), ink(bg, 'dark')), `chosen on ${bg}`).toBeGreaterThanOrEqual(75);
+    }
+  });
+});
+
+describe('F-0015: the tab count numeral at night', () => {
+  it('the idle and chosen counts reach Lc 75 on both stops of their wells', () => {
+    const stats = css('stats.css');
+    const idle = /:where\(html\[data-fw-theme='dark'\]\) \.ch-tab-t__n \{([^}]*)\}/.exec(stats)![1]!;
+    const sel = /:where\(html\[data-fw-theme='dark'\]\) \.ch-tab-t\[aria-selected='true'\] \.ch-tab-t__n \{([^}]*)\}/.exec(stats)![1]!;
+    const color = (body: string) => /color: var\(--([\w-]+)\)/.exec(body)?.[1];
+    expect(color(idle), 'the idle count names its ink').toBeTruthy();
+    expect(color(sel), 'the chosen count names its ink').toBeTruthy();
+    for (const s of stops(/background: (linear-gradient\([^;]+\));/.exec(idle)![1]!, 'dark')) expect(apcaLc(ink(color(idle)!, 'dark'), s)).toBeGreaterThanOrEqual(75);
+    for (const s of stops(/background: (linear-gradient\([^;]+\));/.exec(sel)![1]!, 'dark')) expect(apcaLc(ink(color(sel)!, 'dark'), s)).toBeGreaterThanOrEqual(75);
+  });
+
+  it('the phone count follows Text Size (no fixed px)', () => {
+    expect(css('stats.css')).not.toMatch(/\.ch-tab-t__n,[^{]*\{\s*font-size: 12px;/);
+  });
+});
+
+describe('F-0035: the Ledger eyebrow', () => {
+  const GOLDEN = [0xe8, 0xb4, 0x6a] as RGB;
+  it('light: 5.5:1 on the page and the workspace, and Lc 60 there and under the golden-hour tint', () => {
+    const eb = ink('ch-ledger-eyebrow', 'light');
+    for (const bg of ['ch-bg-page', 'ch-workspace']) {
+      expect(contrast(eb, ink(bg, 'light')), bg).toBeGreaterThanOrEqual(5.5);
+      expect(apcaLc(eb, ink(bg, 'light')), bg).toBeGreaterThanOrEqual(60);
+    }
+    expect(apcaLc(eb, over(GOLDEN, 0.07, ink('ch-bg-page', 'light')))).toBeGreaterThanOrEqual(60);
+  });
+  it('dark: Lc 60 on the page, the workspace and the surface', () => {
+    for (const bg of ['ch-bg-page', 'ch-workspace', 'ch-bg-surface']) expect(apcaLc(ink('ch-ledger-eyebrow', 'dark'), ink(bg, 'dark')), bg).toBeGreaterThanOrEqual(60);
+  });
+});
+
+describe('F-0036: the N keycap on a primary key at night', () => {
+  it('sinks into the face: ivory reads 4.5:1 on every stop, and Home has no override', () => {
+    const r = rule('ui.css', ":where(html[data-fw-theme='dark']) :is(.ch-btn--primary, .ch-btn--ink) .ch-btn__kbd");
+    expect(r).toMatch(/background: rgb\(0 0 0 \/ 0\.18\)/);
+    expect(r).toMatch(/color: var\(--ch-on-green-ink\)/);
+    const face = /:where\(html\[data-fw-theme='dark'\]\) \.ch-btn--primary \{\s*background: (linear-gradient\([^;]+\))/.exec(css('ui.css'))![1]!;
+    for (const s of stops(face, 'dark')) expect(contrast(ink('ch-on-green-ink', 'dark'), over([0, 0, 0], 0.18, s))).toBeGreaterThanOrEqual(4.5);
+    expect(css('home.css')).not.toMatch(/\.ch-btn--primary \.ch-btn__kbd \{/);
+  });
+});
+
+describe('F-0037: the strokes-gained board callouts sit on a solid deep green', () => {
+  it('the halo is green-900 and at least 7px wide on the end callout and Best', () => {
+    for (const sel of ['.ch-st[data-canopy] .ch-sgt__callout', '.ch-st[data-canopy] .ch-sgt__best text']) {
+      const r = rule('stats.css', sel);
+      expect(r, sel).toMatch(/stroke: var\(--ch-green-900\)/);
+      expect(Number(/stroke-width: (\d+)px/.exec(r)?.[1] ?? 0), sel).toBeGreaterThanOrEqual(7);
+    }
+  });
+});
+
+describe('F-0038: the struck old time on Home’s Next row', () => {
+  it('the row detail is not faded, and the struck time takes its line’s ink', () => {
+    expect(rule('home.css', '.ch-h-agenda__row.is-next .ch-h-agenda__b')).not.toMatch(/opacity/);
+    expect(rule('home.css', '.ch-h-agenda__row.is-next .ch-was')).toMatch(/color: inherit/);
+  });
+  it('green-700 on the row tint reads 4.5:1 in both themes and Lc 60 at night', () => {
+    for (const theme of ['light', 'dark'] as const) {
+      const tint = over(ink('ch-green-600', theme), 0.06, ink('ch-workspace', theme));
+      expect(contrast(ink('ch-green-700', theme), tint), theme).toBeGreaterThanOrEqual(4.5);
+    }
+    expect(apcaLc(ink('ch-green-700', 'dark'), over(ink('ch-green-600', 'dark'), 0.06, ink('ch-workspace', 'dark')))).toBeGreaterThanOrEqual(60);
+  });
+});
+
+describe('F-0039: the Calendar inspector’s Next row', () => {
+  it('meta ink is a token, the nested row recesses, and both read 4.5:1 and Lc 70', () => {
+    const cal = css('calendar.css');
+    expect(cal).not.toMatch(/#bfd5c6/);
+    expect(rule('calendar.css', '.ch-in__nb')).toMatch(/color: var\(--ch-on-green-ink-meta\)/);
+    expect(rule('calendar.css', '.ch-in__today .ch-in__next')).toMatch(/background: rgb\(0 0 0 \/ 0\.18\)/);
+    for (const theme of ['light', 'dark'] as const) {
+      const plate = over([0xb9, 0xcb, 0xea], 0.06, ink('ch-green-fill-700', theme));
+      const row = over([0, 0, 0], 0.18, plate);
+      const meta = ink('ch-on-green-ink-meta', theme);
+      expect(contrast(meta, row), theme).toBeGreaterThanOrEqual(4.5);
+      expect(apcaLc(meta, row), theme).toBeGreaterThanOrEqual(70);
+      expect(contrast(ink('ch-stage-ink', theme), over([255, 255, 255], 0.14, row)), `${theme} time chip`).toBeGreaterThanOrEqual(4.5);
+    }
+  });
+});
+
+describe('F-0040: the chosen switcher segment at night', () => {
+  it('ivory reaches 4.5:1 and Lc 75 on every stop of the dark --ch-seg-on-bg', () => {
+    const on = ink('ch-seg-on-ink', 'dark');
+    for (const s of stops(raw('ch-seg-on-bg', 'dark'), 'dark')) {
+      expect(contrast(on, s)).toBeGreaterThanOrEqual(4.5);
+      expect(apcaLc(on, s)).toBeGreaterThanOrEqual(75);
+    }
+  });
+  it('the chosen qualifier filter’s count is not faded', () => {
+    const q = css('qualifiers.css');
+    for (const m of q.matchAll(/\.ch-qf-pill\[aria-pressed='true'\] span \{([^}]*)\}/g)) expect(m[1]).not.toMatch(/opacity/);
+  });
+});
+
+describe('opacity under 1 never fades text (fix plan PR 3, shared root 4)', () => {
+  // A rule that sets ink or type and fades it. Fading text makes its contrast depend on whatever is behind it; use an ink
+  // token instead. Disabled controls are exempt. KNOWN lists the ones found on 2026-10-30 outside the audit's findings:
+  // it may only shrink.
+  const KNOWN = new Set([
+    'calendar.css .ch-cg__title span',
+    'classes.css .ch-cl-card__week em',
+    "messages.css .ch-msp-chip[aria-pressed='true'] span",
+    'roster.css .ch-rs-em__x',
+    'rounds.css .ch-rd-strip span.is-played em',
+    'shell.css .ch-nav__section',
+    'shell.css .ch-sidebar .ch-nav__section',
+    'stats.css .ch-fws__z em',
+  ]);
+  it('no rule that sets color or font fades below 1, but a disabled state', () => {
+    const found: string[] = [];
+    for (const f of readdirSync(STYLES).filter((x) => x.endsWith('.css'))) {
+      const src = css(f).replace(/\/\*[\s\S]*?\*\//g, '');
+      for (const m of src.matchAll(/([^{}]+)\{([^{}]*)\}/g)) {
+        const sel = m[1]!.trim().replace(/\s+/g, ' ');
+        const o = /(?<![-\w])opacity:\s*([\d.]+)/.exec(m[2]!);
+        if (!o || Number(o[1]) === 0 || Number(o[1]) >= 1) continue;
+        if (!/(?<![-\w])(color|font|font-size):/.test(m[2]!)) continue;
+        if (/:disabled|\[disabled\]|aria-disabled/.test(sel)) continue;
+        const id = `${f} ${sel.split(',').pop()!.trim()}`;
+        if (!KNOWN.has(id)) found.push(id);
+      }
+    }
+    expect(found).toEqual([]);
+  });
+});

@@ -112,7 +112,7 @@ const BASE = {
   teamId: 't1',
   teamName: 'Varsity',
   playersError: false,
-  season: 'Fall 2026',
+  season: '2026–27',
   announcements: { rows: ANNS, error: false },
   trips: { rows: TRIPS, error: false },
   week: { days: WEEK, error: false },

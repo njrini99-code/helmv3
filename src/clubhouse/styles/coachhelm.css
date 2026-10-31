@@ -290,6 +290,7 @@
 }
 .ch-hl-since__b {
   all: unset;
+  position: relative;
   cursor: pointer;
   display: inline-flex;
   align-items: center;
