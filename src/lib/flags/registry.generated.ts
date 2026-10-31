@@ -172,7 +172,7 @@ export const FLAG_REGISTRY: readonly FlagDefinition[] = [
     type: "temporary_migration",
     status: "active",
     created_at: "2026-09-23",
-    expires_at: "2026-10-23",
+    expires_at: "2026-12-31",
     default: false,
     environment: {
       production: false,
@@ -274,7 +274,7 @@ export const FLAG_REGISTRY: readonly FlagDefinition[] = [
     type: "temporary_migration",
     status: "active",
     created_at: "2026-09-23",
-    expires_at: "2026-10-23",
+    expires_at: "2026-12-31",
     default: false,
     environment: {
       production: false,
