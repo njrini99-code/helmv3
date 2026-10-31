@@ -769,7 +769,8 @@ describe('Shell · navigation and accessibility', () => {
       }
     });
 
-    it('with reduced motion a sheet does not drag', async () => {
+    // F-0018 (audit 2026-10-29): Reduce Motion changes how a drag settles, never whether there is one.
+    it('with reduced motion a sheet still drags, and a pull past the mark closes it', async () => {
       const real = window.matchMedia;
       window.matchMedia = ((q: string) => ({ ...real(q), matches: q === '(max-width: 820px)' || q === '(prefers-reduced-motion: reduce)' })) as typeof window.matchMedia;
       try {
@@ -786,8 +787,7 @@ describe('Shell · navigation and accessibility', () => {
           window.dispatchEvent(new MouseEvent('pointermove', { clientY: 300 }));
           window.dispatchEvent(new MouseEvent('pointerup', { clientY: 300 }));
         });
-        expect(dialog.style.translate).toBe('');
-        expect(onClose).not.toHaveBeenCalled();
+        expect(onClose).toHaveBeenCalled();
       } finally {
         window.matchMedia = real;
       }

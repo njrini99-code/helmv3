@@ -388,6 +388,13 @@ its rows together and does not map them one to one.
 | AUD-F-0060 | Round review skeleton draws the feature hero tone | Clubhouse fixes | in progress | | claude/audit-fix-04-rounds-live-shot (Clubhouse audit fix plan, PR 4); no Bridge IDs or CH codes needed |
 | AUD-F-0061 | Coach note and Game detail read failures say so with Try again | Clubhouse fixes | in progress | | claude/audit-fix-04-rounds-live-shot (Clubhouse audit fix plan, PR 4); no Bridge IDs or CH codes needed |
 | AUD-F-0067 | Pinned by a test (no change) | Clubhouse fixes | in progress | | claude/audit-fix-04-rounds-live-shot (Clubhouse audit fix plan, PR 4); no Bridge IDs or CH codes needed |
+| AUD-F-0006 | A push never commits a frame of the old page (held layer at the tap) | Clubhouse fixes | in progress | | claude/audit-fix-05-motion (Clubhouse audit fix plan, PR 5); no Bridge IDs or CH codes needed |
+| AUD-F-0007 | Calendar view switches end the height glide (owner decision 3 default) | Clubhouse fixes | in progress | | claude/audit-fix-05-motion (Clubhouse audit fix plan, PR 5); no Bridge IDs or CH codes needed |
+| AUD-F-0008 | The section strip navigates one frame after its plate lands | Clubhouse fixes | in progress | | claude/audit-fix-05-motion (Clubhouse audit fix plan, PR 5); no Bridge IDs or CH codes needed |
+| AUD-F-0017 | Slide plates retarget from their live position and velocity | Clubhouse fixes | in progress | | claude/audit-fix-05-motion (Clubhouse audit fix plan, PR 5); no Bridge IDs or CH codes needed |
+| AUD-F-0018 | Reduce Motion keeps sheet drags and the edge swipe; they settle at once | Clubhouse fixes | in progress | | claude/audit-fix-05-motion (Clubhouse audit fix plan, PR 5); no Bridge IDs or CH codes needed |
+| AUD-F-0046 | The section strip holds snap while it navigates | Clubhouse fixes | in progress | | claude/audit-fix-05-motion (Clubhouse audit fix plan, PR 5); no Bridge IDs or CH codes needed |
+| AUD-F-0047 | Calendar now-line rings animate opacity, not box-shadow | Clubhouse fixes | in progress | | claude/audit-fix-05-motion (Clubhouse audit fix plan, PR 5); no Bridge IDs or CH codes needed |
 
 <!-- markdownlint-enable MD013 -->
 

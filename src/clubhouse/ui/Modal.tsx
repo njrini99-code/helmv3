@@ -53,7 +53,7 @@ export function Modal({
     // VoiceOver starts on the title (P001 shared finding). Tab goes on to Close and the rest.
     focusSelector: initialFocus ?? '.ch-modal__titles h2',
   });
-  const drag = useSheetDrag(ref, onClose, { enabled: phone && !reduced });
+  const drag = useSheetDrag(ref, onClose, { enabled: phone, reduced });
 
   return (
     // The click is only the backdrop dismiss; the keyboard path is Esc, which <dialog> handles through onCancel.

@@ -42,7 +42,7 @@ function useSheetDialog(open: boolean, onClose: () => void, guard?: { busy?: boo
     }
     onClose();
   };
-  const drag = useSheetDrag(ref, requestClose, { enabled: !reduced });
+  const drag = useSheetDrag(ref, requestClose, { reduced });
   const dialogProps = {
     ref,
     onCancel: (e: SyntheticEvent) => {

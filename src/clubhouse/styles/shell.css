@@ -3335,6 +3335,10 @@ html[data-fw-theme='dark'] .ch-offline {
     scroll-padding-inline: var(--ch-page-x-phone);
     scrollbar-width: none;
   }
+  /* A section chosen: the row holds still while the strip shuts, so the focused pill doesn't re-snap it (F-0046). */
+  .ch-strip__row[data-holding] {
+    scroll-snap-type: none;
+  }
   .ch-strip__row::-webkit-scrollbar {
     display: none;
   }

@@ -181,9 +181,10 @@ describe('overnight polish 2026-10-15: dark mode keeps day-only surfaces whole',
 describe('overnight polish 2026-10-15: the now line reads as live', () => {
   it('its dot and the phone pill breathe slowly, and Animations off stops both', () => {
     const cal = css('calendar.css');
-    expect(cal).toMatch(/\.ch-wk__now::before \{\s*animation: ch-now-breathe var\(--ch-dur-live\) var\(--ch-ease-io\) infinite;/);
+    // The rings breathe on their own layers' opacity since F-0047 (compositor, not box-shadow), on the same 2.8 s loop.
+    expect(cal).toMatch(/\.ch-wk__now::after \{[^}]*animation: ch-now-breathe var\(--ch-dur-live\) var\(--ch-ease-io\) infinite;/);
     expect(cal).toMatch(/animation: ch-now-pill var\(--ch-dur-live\) var\(--ch-ease-io\) infinite;/);
-    expect(cal).toMatch(/\[data-ui='clubhouse'\]\[data-motion='off'\] \.ch-wk__now::before,\s*\[data-ui='clubhouse'\]\[data-motion='off'\] \.ch-calm-now span \{\s*animation: none;/);
+    expect(cal).toMatch(/\[data-ui='clubhouse'\]\[data-motion='off'\] \.ch-wk__now::after,\s*\[data-ui='clubhouse'\]\[data-motion='off'\] \.ch-calm-now span::before \{\s*animation: none;/);
   });
 });
 

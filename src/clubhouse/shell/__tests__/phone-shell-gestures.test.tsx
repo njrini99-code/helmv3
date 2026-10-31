@@ -272,20 +272,25 @@ describe('the edge swipe on a pushed screen', () => {
     expect(parseFloat(page.style.translate)).toBeCloseTo(-24, 1);
   });
 
-  it('with reduced motion nothing follows the finger, and a commit pops it at once', () => {
+  // F-0018 (audit 2026-10-29): Reduce Motion changes how a gesture settles, never whether it works. The screen follows the
+  // finger; the page beneath stays put (no parallax); a commit pops it, and a let-go short of the mark puts it back at once.
+  it('with reduced motion the screen follows the finger, the page beneath stays, and a commit pops it', () => {
     const { el, onBack, page } = mount({ reduced: true });
     const move = swipeTo(el, 170);
     expect(move.prevented()).toBe(true);
-    expect(el.style.translate).toBe('');
+    expect(el.style.translate).toMatch(/^\d+(\.\d+)?px 0$/);
+    expect(parseFloat(el.style.translate)).toBeGreaterThan(0);
     expect(page.style.translate).toBe('');
     now += 200;
     touch(el, 'touchend', 0, 0, now);
     expect(onBack).toHaveBeenCalledTimes(1);
     onBack.mockClear();
     swipeTo(el, 60);
+    expect(parseFloat(el.style.translate)).toBeGreaterThan(0);
     now += 300;
     touch(el, 'touchend', 0, 0, now);
     expect(onBack).not.toHaveBeenCalled();
+    expect(el.style.translate).toBe('');
   });
 
   it('a Back that is refused brings the screen home again', () => {
