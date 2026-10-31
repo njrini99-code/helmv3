@@ -874,6 +874,7 @@ them would bury everything above.
 | `docs/clubhouse/changes/2026-10-30-season-label.md` | current | - | - | - | - |
 | `docs/clubhouse/changes/2026-10-30-skeleton-feature-shape.md` | current | - | - | - | - |
 | `docs/clubhouse/changes/2026-10-30-targets-type-focus.md` | current | - | - | - | - |
+| `docs/clubhouse/changes/2026-10-31-fairway-bubbles-and-send.md` | current | - | - | - | - |
 | `docs/clubhouse/drafts/auth-onboarding-ground-truth.md` | current | - | - | - | - |
 | `docs/clubhouse/drafts/intelligence.md` | current | - | - | - | - |
 | `docs/clubhouse/foundation-v2/02_AUTHORITY_MODEL.md` | current | - | - | yes | - |
