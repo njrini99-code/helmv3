@@ -970,6 +970,7 @@ them would bury everything above.
 | `docs/clubhouse/pages/P001-shell/changes/2026-10-30-offline-banner-immersive.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P001-shell/changes/2026-10-30-role-routes-and-nav-once.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P001-shell/changes/2026-10-30-skip-link.md` | current | - | - | - | - |
+| `docs/clubhouse/pages/P001-shell/changes/2026-10-31-resume-bar-discard.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P002-home/CHANGELOG.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P002-home/CONTRACT.md` | current | - | - | yes | - |
 | `docs/clubhouse/pages/P002-home/DESIGN.md` | current | - | - | - | - |
