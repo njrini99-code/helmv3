@@ -26,6 +26,10 @@ import { cn } from '@/lib/utils';
 import type { ToolEnvelope } from '@/lib/coachhelm/v3/chat/provenance';
 import type { ActionProposal, ActionReceipt } from '@/lib/coachhelm/v3/chat/action-types';
 import { EvidenceRenderer } from './EvidenceVisuals';
+import { CompositionVisual, SgAnatomyVisual } from './CompositionVisual';
+import { EvidenceMotionProvider, EvidenceReveal } from './EvidenceMotion';
+import { ValidatedComposition } from '@/lib/coachhelm/v3/chat/visuals/composition';
+import { ValidatedVisualArtifact } from '@/lib/coachhelm/v3/chat/visuals/schema';
 import { ActionProposalCard, ActionReceiptCard } from './ActionCards';
 import { AssistantProse } from './AssistantProse';
 import { TaskActivity, type TaskStep } from './TaskActivity';
@@ -141,8 +145,10 @@ function MessageTurn({
       <div className="flex justify-end">
         <p
           className={cn(
-            'max-w-[85%] rounded-fw-lg bg-surface-sunken px-3.5 py-2',
-            'font-fw-sans text-body-sm text-text-secondary',
+            // Primary ink at body size: the coach's own question is half the
+            // conversation and was set in secondary grey at 13px.
+            'max-w-[85%] whitespace-pre-wrap rounded-fw-lg bg-surface-sunken px-4 py-2.5',
+            'font-fw-sans text-body text-text-primary',
           )}
         >
           {text}
@@ -226,48 +232,80 @@ function MessageTurn({
     );
   }
 
+  // A designed visual stands in for the plain cards of the reads it draws in
+  // full: the same figures twice is noise. Parsed with the stored schema, so a
+  // part that does not validate draws nothing rather than something wrong.
+  const visuals = new Map<number, React.ReactNode>();
+  const coveredRefs = new Set<string>();
+  parts.forEach((p, i) => {
+    if (p.type === 'data-visual-composition') {
+      const parsed = ValidatedComposition.safeParse(p.data);
+      if (!parsed.success) return;
+      parsed.data.evidenceRefs.forEach((r) => coveredRefs.add(r));
+      visuals.set(i, <CompositionVisual composition={parsed.data} />);
+    } else if (p.type === 'data-visual-artifact') {
+      const parsed = ValidatedVisualArtifact.safeParse(p.data);
+      if (!parsed.success) return;
+      parsed.data.evidenceRefs.forEach((r) => coveredRefs.add(r));
+      visuals.set(i, <SgAnatomyVisual artifact={parsed.data} />);
+    }
+  });
+
   // The first non-empty text block is the takeaway. Tracked while mapping
   // because the model may open with a tool call rather than a sentence.
   let leadTaken = false;
 
   return (
-    <article className="flex flex-col gap-4">
-      <TaskActivity steps={steps} busy={busy} envelopes={envelopes} onStop={onStop} />
+    // A turn that mounts while the answer streams animates its visuals in; a
+    // turn restored from history renders final (EvidenceMotion.tsx).
+    <EvidenceMotionProvider live={busy}>
+      <article className="flex flex-col gap-4">
+        <TaskActivity steps={steps} busy={busy} envelopes={envelopes} onStop={onStop} />
 
-      {parts.map((part, index) => {
-        if (part.type === 'text') {
-          const text = String(part.text ?? '');
-          if (!text.trim()) return null;
-          const isLead = !leadTaken;
-          leadTaken = true;
-          return (
-            <div key={index} className={PROSE_WIDTH}>
-              <AssistantProse text={text} playersByName={playersByName} lead={isLead} />
-            </div>
-          );
-        }
+        {parts.map((part, index) => {
+          if (part.type === 'text') {
+            const text = String(part.text ?? '');
+            if (!text.trim()) return null;
+            const isLead = !leadTaken;
+            leadTaken = true;
+            return (
+              <div key={index} className={PROSE_WIDTH}>
+                <AssistantProse text={text} playersByName={playersByName} lead={isLead} />
+              </div>
+            );
+          }
 
-        if (part.type === 'data-evidence') {
-          const data = part.data as { envelope?: ToolEnvelope } | undefined;
-          if (!data?.envelope) return null;
-          // Wider than the prose measure on purpose — a chart reads better with
-          // room, and it is not something anyone scans line by line.
-          return (
-            <div key={index} className="max-w-[52rem]">
-              <EvidenceRenderer envelope={data.envelope} />
-            </div>
-          );
-        }
+          if (part.type === 'data-evidence') {
+            const data = part.data as { envelope?: ToolEnvelope; ref?: string } | undefined;
+            if (!data?.envelope) return null;
+            if (data.ref && coveredRefs.has(data.ref)) return null;
+            // Wider than the prose measure on purpose — a chart reads better with
+            // room, and it is not something anyone scans line by line.
+            return (
+              <EvidenceReveal key={index} className="max-w-[52rem]">
+                <EvidenceRenderer envelope={data.envelope} />
+              </EvidenceReveal>
+            );
+          }
 
-        if (part.type === 'data-action-proposal' || part.type === 'data-action-receipt') {
-          return renderActionPart(part, index, parts, onApprove, onDeny, isAbandoned);
-        }
+          if (visuals.has(index)) {
+            return (
+              <div key={index} className="max-w-[52rem]">
+                {visuals.get(index)}
+              </div>
+            );
+          }
 
-        return null;
-      })}
+          if (part.type === 'data-action-proposal' || part.type === 'data-action-receipt') {
+            return renderActionPart(part, index, parts, onApprove, onDeny, isAbandoned);
+          }
 
-      {onSuggestion && <FollowUps parts={parts} onSuggestion={onSuggestion} />}
-    </article>
+          return null;
+        })}
+
+        {onSuggestion && <FollowUps parts={parts} onSuggestion={onSuggestion} />}
+      </article>
+    </EvidenceMotionProvider>
   );
 }
 
@@ -292,9 +330,7 @@ function renderActionPart(
     // card can show "Confirmed" instead of live buttons after a decision.
     const approvalPart = parts.find(
       (p) => p.type.startsWith('tool-') && String(p.type).includes(proposal.tool),
-    ) as
-      | { toolCallId?: string; state?: string; approval?: { id?: string; approved?: boolean } }
-      | undefined;
+    ) as { toolCallId?: string; state?: string; approval?: { id?: string; approved?: boolean } } | undefined;
 
     // The SDK answers an approval by its OWN id, not the tool-call id.
     // Passing `toolCallId` here matched nothing and made Confirm inert.
@@ -340,13 +376,7 @@ function renderActionPart(
  * appears when the evidence genuinely supports it, because a row of
  * always-present generic buttons trains people to stop reading them.
  */
-function FollowUps({
-  parts,
-  onSuggestion,
-}: {
-  parts: Part[];
-  onSuggestion: (text: string) => void;
-}) {
+function FollowUps({ parts, onSuggestion }: { parts: Part[]; onSuggestion: (text: string) => void }) {
   const suggestions = React.useMemo(() => {
     const out: string[] = [];
     for (const part of parts) {
@@ -417,10 +447,7 @@ function FollowUps({
  */
 function ProgressLine({ label }: { label: string }) {
   return (
-    <p
-      className="flex items-center gap-2.5 font-fw-sans text-caption text-text-secondary"
-      aria-live="polite"
-    >
+    <p className="flex items-center gap-2.5 font-fw-sans text-caption text-text-secondary" aria-live="polite">
       <span
         aria-hidden
         className="relative h-[2px] w-7 shrink-0 overflow-hidden rounded-full bg-border-subtle"

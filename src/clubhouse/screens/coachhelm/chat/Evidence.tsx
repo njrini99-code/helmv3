@@ -1,18 +1,18 @@
 'use client';
 
 import Link from 'next/link';
-import { useLayoutEffect, useRef, useState } from 'react';
+import { useId, useLayoutEffect, useRef, useState, type CSSProperties } from 'react';
 import { ChevronRight, CircleAlert, Table2 } from 'lucide-react';
 import type { ToolEnvelope } from '@/lib/coachhelm/v3/chat/provenance';
-import { evidenceBlocks, formatValue, readAreaWord, type AskEvidence, type AskTable, type EvidenceTile } from '../../../data/coachhelm-chat-thread';
+import { evidenceBlocks, formatValue, readAreaWord, type AskEvidence, type AskRankRow, type AskTable, type AskTeamTable, type EvidenceTile } from '../../../data/coachhelm-chat-thread';
 import { coachReadHref } from '../../../data/coachhelm-views-shape';
-import { Avatar } from '../../../ui/Avatar';
 import { Icon } from '../../../ui/Icon';
 import { ScrollRegion } from '../../../ui/ScrollRegion';
 import { playerStatsHref } from './Prose';
 import { afterRailMove } from '../../../lib/rail-fold';
 import { Line } from '../../../ui/charts/Line';
-import { changeTone } from '../../../lib/format';
+import { changeTone, formatToPar } from '../../../lib/format';
+import { plural } from '../../../lib/plural';
 
 /** Who is on the coach's team: a read about anyone else is drawn, never linked. */
 type Roster = ReadonlyArray<{ id: string }>;
@@ -32,16 +32,25 @@ export function AskEvidenceView({ envelope, roster = [] }: { envelope: ToolEnvel
   );
 }
 
-export function DataTable({ table }: { table: AskTable }) {
+/** A figure cell: "58%", "−0.4", "+3.1", "E", "—", "6 of 9", "126 attempts", "27 ft". */
+const FIGURE = /^(?:[−+-]?[\d.,]+(?:%| ?(?:ft|yds|of \d+|[a-z]+))?(?: \([^)]*\))?|E|—)$/;
+
+/**
+ * A table of the figures. `labelledBy`: the id of a visible title that already says what the caption would; the table takes
+ * its name from that title instead of repeating it in a hidden caption (a screen reader and a copied transcript read it twice).
+ */
+export function DataTable({ table, labelledBy }: { table: AskTable; labelledBy?: string }) {
+  // A column of figures is set right on tabular numbers; a column of words (a title, a status, a day) reads left, at body weight.
+  const numeric = table.columns.map((_, c) => c > 0 && table.rows.length > 0 && table.rows.every((r) => FIGURE.test((r[c] ?? '').trim())));
   return (
     // A keyboard reaches the sideways scroll (F-0042); the caption names it, so two tables never share a name.
     <ScrollRegion label={`${table.caption}, scrolls sideways`} className="ch-th-tablewrap" fade={false}>
-      <table className="ch-th-table">
-        <caption className="ch-th-sr">{table.caption}</caption>
+      <table className="ch-th-table" aria-labelledby={labelledBy}>
+        {!labelledBy && <caption className="ch-th-sr">{table.caption}</caption>}
         <thead>
           <tr>
             {table.columns.map((c, i) => (
-              <th key={i} scope="col" className={i === 0 ? undefined : 'is-num'}>
+              <th key={i} scope="col" className={numeric[i] ? 'is-num' : undefined}>
                 {c}
               </th>
             ))}
@@ -50,7 +59,7 @@ export function DataTable({ table }: { table: AskTable }) {
         <tbody>
           {table.rows.map((r, i) => (
             <tr key={i}>
-              {r.map((cell, j) => (j === 0 ? <th key={j} scope="row">{cell}</th> : <td key={j} className="is-num">{cell}</td>))}
+              {r.map((cell, j) => (j === 0 ? <th key={j} scope="row">{cell}</th> : <td key={j} className={numeric[j] ? 'is-num' : 'is-text'}>{cell}</td>))}
             </tr>
           ))}
         </tbody>
@@ -83,23 +92,33 @@ export function AskEvidenceBlock({ block, bare = false, roster = [] }: { block: 
   return <Figure block={block} bare={bare} roster={roster} />;
 }
 
+/**
+ * "View as table": a quiet secondary control (owner, 2026-10-29: the green link on every card was noise). It reads "Table"
+ * beside its icon and keeps its full name for a screen reader.
+ */
+export function TableToggle({ pressed, onToggle }: { pressed: boolean; onToggle: () => void }) {
+  return (
+    <button type="button" className="ch-th-toggle" aria-pressed={pressed} aria-label="View as table" onClick={onToggle} data-ch-code="CH-13852">
+      <Icon icon={Table2} size={13} />
+      <span aria-hidden="true">Table</span>
+    </button>
+  );
+}
+
 /** The figure's chrome: a title, "View as table", the drawing, then the notes and the source. */
 function Figure({ block, bare, roster }: { block: Exclude<AskEvidence, { kind: 'unavailable' | 'empty' }>; bare: boolean; roster: Roster }) {
   const [asTable, setAsTable] = useState(false);
-  // A table or a comparison is already a table: there is nothing to switch to.
-  const isTable = block.kind === 'table' || block.kind === 'compare';
+  const titleId = useId();
+  // A table is already a table: there is nothing to switch to. A comparison draws as a table, and switches to its plain rows.
+  const isTable = block.kind === 'table';
+  const sameName = Boolean(block.table?.caption) && block.table.caption.trim() === block.title?.trim();
   return (
     <figure className={'ch-th-fig' + (bare ? ' ch-th-fig--bare' : '')} data-kind={block.kind}>
       <div className="ch-th-fig__head">
-        <figcaption>{block.title}</figcaption>
-        {!isTable && (
-          <button type="button" className="ch-th-toggle" aria-pressed={asTable} onClick={() => setAsTable((v) => !v)} data-ch-code="CH-13852">
-            <Icon icon={Table2} size={14} />
-            View as table
-          </button>
-        )}
+        <figcaption id={titleId}>{block.title}</figcaption>
+        {!isTable && <TableToggle pressed={asTable} onToggle={() => setAsTable((v) => !v)} />}
       </div>
-      {isTable || asTable ? <DataTable table={block.table} /> : <Drawing block={block} roster={roster} />}
+      {isTable || asTable ? <DataTable table={block.table} labelledBy={sameName ? titleId : undefined} /> : <Drawing block={block} roster={roster} />}
       {block.note && <p className="ch-th-fig__note">{block.note}</p>}
       {block.bench && <p className="ch-th-fig__note">{block.bench}</p>}
       {block.source && <p className="ch-th-fig__src">{block.source}</p>}
@@ -107,15 +126,18 @@ function Figure({ block, bare, roster }: { block: Exclude<AskEvidence, { kind: '
   );
 }
 
-function Drawing({ block, roster }: { block: Exclude<AskEvidence, { kind: 'unavailable' | 'empty' | 'table' | 'compare' }>; roster: Roster }) {
+/** One evidence block's drawing alone, without its figure chrome (the composition puts its own heading over it). */
+export function Drawing({ block, roster = [] }: { block: Exclude<AskEvidence, { kind: 'unavailable' | 'empty' | 'table' }>; roster?: Roster }) {
   switch (block.kind) {
+    case 'compare':
+      return <TeamTable team={block.team} label={block.title} />;
     case 'reads':
       return <Reads block={block} roster={roster} />;
     case 'bars':
       return (
         <div className="ch-th-bars" role="list" aria-label={block.title}>
-          {block.rows.map((r) => (
-            <div key={r.label} className="ch-th-bar" role="listitem" data-tone={r.tone}>
+          {block.rows.map((r, i) => (
+            <div key={r.label} style={{ '--ch-i': i } as CSSProperties} className={'ch-th-bar' + (r.highlight ? ' is-on' : '')} role="listitem" data-tone={r.tone}>
               <span className="ch-th-bar__label">{r.label}</span>
               <span className="ch-th-bar__track" aria-hidden="true">
                 <span style={{ width: `${r.pct}%` }} />
@@ -129,30 +151,7 @@ function Drawing({ block, roster }: { block: Exclude<AskEvidence, { kind: 'unava
         </div>
       );
     case 'ranking':
-      return (
-        <ol className="ch-th-rank" aria-label={block.title}>
-          {block.rows.map((r) => {
-            const href = playerStatsHref(r.id);
-            return (
-              <li key={r.id}>
-                <span className="ch-th-rank__n">{r.rank}</span>
-                <Avatar name={r.label} size={30} />
-                {href ? (
-                  <Link href={href} className="ch-th-rank__name">
-                    {r.label}
-                  </Link>
-                ) : (
-                  <span className="ch-th-rank__name">{r.label}</span>
-                )}
-                <span className="ch-th-rank__val">
-                  <b>{r.display}</b>
-                  {r.of && <span> {r.of}</span>}
-                </span>
-              </li>
-            );
-          })}
-        </ol>
-      );
+      return <Ranking rows={block.rows} signed={block.signed} label={block.title} />;
     case 'tiles':
       return <Tiles tiles={block.tiles} />;
     case 'legs':
@@ -247,7 +246,7 @@ export { placeRefLabel } from '../../../ui/charts/Line';
  * against something; a finger or the arrow keys read each point. The text equivalent is the label and the table. Drawn at
  * the width it is given (measured), so its type stays at the token size instead of scaling with the column (P013 D3).
  */
-export function Trend({ block }: { block: Extract<AskEvidence, { kind: 'trend' }> }) {
+export function Trend({ block, drawIn = false }: { block: Extract<AskEvidence, { kind: 'trend' }>; drawIn?: boolean }) {
   const box = useRef<HTMLDivElement>(null);
   const [W, setW] = useState(W0);
   useLayoutEffect(() => {
@@ -279,8 +278,10 @@ export function Trend({ block }: { block: Extract<AskEvidence, { kind: 'trend' }
   const ref = block.reference;
   // Amber when the last point is on the wrong side of the reference for a metric whose direction is known; never red.
   const worse = ref && block.goodDirection ? (block.goodDirection === 'up' ? last < ref.value : last > ref.value) : false;
-  const label = `${block.summary}${down ? ' Lower is better.' : ''} ${block.points.map((p) => `${p.label} ${formatValue(p.value, block.unit)}`).join(', ')}.`;
-  const refText = ref ? (ref.label.startsWith('Team') ? ref.label : `${ref.label} ${formatValue(ref.value, block.unit)}`) : '';
+  // A to-par score is signed, with E for even ("+3", "E", "−1"), on the line and its reference alike.
+  const fmt = (v: number) => (block.toPar ? formatToPar(v, Number.isInteger(v) ? 0 : 1) : formatValue(v, block.unit));
+  const label = `${block.summary}${down ? ' Lower is better.' : ''} ${block.points.map((p) => `${p.label} ${fmt(p.value)}`).join(', ')}.`;
+  const refText = ref ? (ref.label.startsWith('Team') ? ref.label : `${ref.label} ${fmt(ref.value)}`) : '';
   return (
     <div ref={box} className="ch-th-trendbox">
       <Line
@@ -290,7 +291,7 @@ export function Trend({ block }: { block: Extract<AskEvidence, { kind: 'trend' }
         lowerIsBetter={down}
         domain={[lo - pad, hi + pad]}
         baseline={ref ? { value: ref.value, label: refText, dashed: true } : undefined}
-        format={(v) => formatValue(v, block.unit)}
+        format={fmt}
         marks="trail"
         ends="spread"
         readAt="tip"
@@ -298,12 +299,127 @@ export function Trend({ block }: { block: Extract<AskEvidence, { kind: 'trend' }
         table={false}
         width={W}
         height={H}
+        drawIn={drawIn}
       />
       {down && (
         <p className="ch-th-dir" aria-hidden="true">
           Lower is better
         </p>
       )}
+    </div>
+  );
+}
+
+/**
+ * Players ranked on one metric (playbook §1, owner 2026-10-29: the initials list was the only team visual): rank, name, the
+ * sample in words, the figure, and a bar on one fitted axis. Strokes gained runs either side of zero, green above and amber
+ * below; any other metric marks its best by the metric's own direction.
+ */
+export function Ranking({ rows, signed, label, highlight }: { rows: AskRankRow[]; signed: boolean; label: string; highlight?: string | null }) {
+  return (
+    <ol className={'ch-th-rank' + (signed ? ' is-signed' : '')} aria-label={label}>
+      {rows.map((r, i) => {
+        const href = playerStatsHref(r.id);
+        const side = r.value < 0 ? 'neg' : 'pos';
+        return (
+          <li key={r.id} data-tone={r.tone} className={highlight && highlight === r.id ? 'is-on' : undefined} style={{ '--ch-i': i } as CSSProperties}>
+            <span className="ch-th-rank__n">{r.rank}</span>
+            <span className="ch-th-rank__who">
+              {href ? (
+                <Link href={href} className="ch-th-rank__name">
+                  {r.label}
+                </Link>
+              ) : (
+                <span className="ch-th-rank__name">{r.label}</span>
+              )}
+              {r.of && <span className="ch-th-rank__of">{r.of}</span>}
+            </span>
+            <span className="ch-th-rank__track" aria-hidden="true">
+              <span className="ch-th-rank__bar" data-side={signed ? side : undefined} style={{ width: `${signed ? r.pct / 2 : r.pct}%` }} />
+            </span>
+            <b className="ch-th-rank__val ch-num">{r.display}</b>
+          </li>
+        );
+      })}
+    </ol>
+  );
+}
+
+/**
+ * Players across the same metrics (owner, 2026-10-29: a team table, up to 12 players). With more players than metrics the
+ * players are rows and the metrics columns; otherwise the other way round. The best figure in each metric is marked by that
+ * metric's own direction, and strokes gained is coloured by its sign against the baseline.
+ */
+export function TeamTable({ team, label }: { team: AskTeamTable; label: string }) {
+  const anySg = team.metrics.some((m) => m.strokes);
+  const cell = (pi: number, mi: number) => {
+    const c = team.cells[pi]?.[mi];
+    const best = team.best[mi] === team.players[pi]?.id;
+    return (
+      <td key={`${pi}-${mi}`} className="is-num" data-tone={c?.tone === 'plain' ? undefined : c?.tone}>
+        <span className={'ch-th-team__v ch-num' + (best ? ' is-best' : '')}>
+          {best && <span className="ch-th-team__dot" aria-hidden="true" />}
+          {c?.display ?? '—'}
+          {best && <span className="ch-th-sr"> (best)</span>}
+        </span>
+      </td>
+    );
+  };
+  return (
+    <div className="ch-th-team">
+      <div className="ch-th-tablewrap">
+        <table className="ch-th-table ch-th-team__table">
+          <caption className="ch-th-sr">{`${label}: ${plural(team.players.length, 'player')} across ${plural(team.metrics.length, 'metric')}; the best in each is marked.`}</caption>
+          {team.playersAsRows ? (
+            <>
+              <thead>
+                <tr>
+                  <th scope="col">Player</th>
+                  {team.metrics.map((m) => (
+                    <th key={m.id} scope="col" className="is-num" title={m.label}>
+                      {m.short}
+                    </th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
+                {team.players.map((p, pi) => (
+                  <tr key={p.id}>
+                    <th scope="row">
+                      <span className="ch-th-team__name">{p.label}</span>
+                      {p.sample && <span className="ch-th-team__of">{p.sample}</span>}
+                    </th>
+                    {team.metrics.map((_, mi) => cell(pi, mi))}
+                  </tr>
+                ))}
+              </tbody>
+            </>
+          ) : (
+            <>
+              <thead>
+                <tr>
+                  <th scope="col">Metric</th>
+                  {team.players.map((p) => (
+                    <th key={p.id} scope="col" className="is-num">
+                      <span className="ch-th-team__name">{p.label}</span>
+                      {p.sample && <span className="ch-th-team__of">{p.sample}</span>}
+                    </th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
+                {team.metrics.map((m, mi) => (
+                  <tr key={m.id}>
+                    <th scope="row">{m.label}</th>
+                    {team.players.map((_, pi) => cell(pi, mi))}
+                  </tr>
+                ))}
+              </tbody>
+            </>
+          )}
+        </table>
+      </div>
+      {anySg && <p className="ch-th-team__key">Strokes gained is against the baseline: above zero gains strokes on it, below zero loses them.</p>}
     </div>
   );
 }

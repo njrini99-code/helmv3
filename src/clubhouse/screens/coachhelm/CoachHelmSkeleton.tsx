@@ -1,10 +1,17 @@
 'use client';
 
+import { useSearchParams } from 'next/navigation';
+import type { ReactNode } from 'react';
 import { useGolfUserOptional } from '@/contexts/golf-user-context';
-import { Skeleton } from '../../ui/States';
+import { playerHelmDrill } from '../../data/coachhelm-views-shape';
+import { SkelLine, Skeleton } from '../../ui/States';
 import { useChPhone } from '../../lib/use-phone';
 import '../../styles/coachhelm.css';
 import { LargeTitleSkeleton } from '../../ui/LargeTitle';
+import { AskSkeleton } from './chat/AskSkeleton';
+import { CoachHelmTabs } from './chat/SubTabs';
+import { PlayerHelmTabs } from './views/PlayerHelmTabs';
+import { DiveSkeleton, StandingSkeleton } from './views/Skeletons';
 
 /** One text line's box at its loaded height, with the bar centred in it (the phone intro's lines). */
 function Line({ h, w, sh, r }: { h: number; w: number | string; sh: number; r?: number }) {
@@ -54,33 +61,79 @@ function FocusSkeleton() {
   );
 }
 
-function RowsSkeleton({ rows, avatar }: { rows: number; avatar: number }) {
+/**
+ * The view strip (the player's Board, Standing and Deep dive; the coach's Board and Ask) in the place and at the
+ * height the page draws it: the phone's 44px (the 36px chips or segments and the room their tap area keeps). Without it the
+ * strip arrived with the page and pushed everything below it down. On desktop it is the strip itself, held (inert, hidden from
+ * assistive tech), so it is exactly as wide and placed as the page's and does not turn from a bar into the control on landing.
+ */
+function StripSkeleton({ coach, phone }: { coach: boolean; phone: boolean }) {
+  if (!phone) return coach ? <CoachHelmTabs active="board" held /> : <PlayerHelmTabs active="board" held />;
   return (
-    <div className="ch-hl-sk__col">
-      {Array.from({ length: rows }, (_, i) => (
-        <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-          <Skeleton width={avatar} height={avatar} radius={avatar / 2.6} />
-          <span style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 8 }}>
-            <Skeleton width="46%" height={12} />
-            <Skeleton width="72%" height={10} />
-          </span>
-          <Skeleton width={22} height={22} radius={11} />
-        </div>
-      ))}
+    <div className="ch-hl-sk__tabs" style={{ height: 44 }}>
+      <Skeleton width="100%" height={36} radius={18} />
     </div>
   );
 }
 
 /**
- * The view strip (the player's Board, Standing and Deep dive; the coach's Board and Ask) in the place and at the
- * height the page draws it: the radiogroup's 38px on desktop, the phone's 44px (the 36px chips or segments and the room their tap
- * area keeps). Without it the strip arrived with the page and pushed everything below it down.
+ * The coach's board on desktop, in the loaded page's measured boxes (WebKit 1280 and 1440, 2026-10-29): By player over its rule
+ * and the players at their 65px pitch; beside them the focus, whose claim is the page's one lit green card (201px), then the
+ * evidence, "Why we think this" and the three actions; Re-check reads under the board.
  */
-function StripSkeleton({ coach, phone }: { coach: boolean; phone: boolean }) {
+function CoachBoardBody(): ReactNode {
   return (
-    <div className="ch-hl-sk__tabs" style={{ height: phone ? 44 : 38 }}>
-      <Skeleton width={phone ? '100%' : coach ? 150 : 249} height={phone ? 36 : 38} radius={phone ? 18 : 12} />
-    </div>
+    <>
+      <div className="ch-hl-sk ch-hl-sk--coach">
+        <div>
+          <div className="ch-hl-sk__ph">
+            <Skeleton width={64} height={12} />
+          </div>
+          <div className="ch-hl-sk__pl">
+            {[46, 58, 52, 40, 36].map((w, i) => (
+              <div key={i} className="ch-hl-sk__p">
+                <Skeleton width={34} height={34} radius={17} />
+                <span>
+                  <Skeleton width={`${w + 6}%`} height={13} />
+                  <Skeleton width={`${w + 30}%`} height={10} />
+                </span>
+                {i < 3 && <Skeleton width={22} height={22} radius={11} />}
+              </div>
+            ))}
+          </div>
+        </div>
+        <div className="ch-hl-sk__focus">
+          <div className="ch-hl-focus__head ch-hl-sk__claim ch-sk-on-green">
+            <SkelLine line={18} bar={11} width={200} />
+            <SkelLine line={44} bar={30} width="64%" />
+            <SkelLine line={20} bar={11} width="42%" />
+            <SkelLine line={24} bar={13} width="72%" />
+          </div>
+          <div className="ch-hl-sk__ev">
+            <SkelLine line={20} bar={12} width={130} />
+            {[0, 1].map((i) => (
+              <span key={i} className="ch-hl-sk__evr">
+                <Skeleton width={i ? 40 : 30} height={12} />
+                <Skeleton width={28} height={13} />
+              </span>
+            ))}
+            <SkelLine line={36} bar={10} width={200} />
+          </div>
+          <div className="ch-hl-sk__why">
+            <Skeleton width={118} height={13} />
+            <Skeleton width={14} height={14} radius={4} />
+          </div>
+          <div className="ch-hl-sk__acts">
+            <Skeleton width={155} height={36} radius={10} />
+            <Skeleton width={106} height={36} radius={10} />
+            <Skeleton width={150} height={36} radius={10} />
+          </div>
+        </div>
+      </div>
+      <div className="ch-hl-sk__recheck">
+        <Skeleton width={156} height={36} radius={10} />
+      </div>
+    </>
   );
 }
 
@@ -120,12 +173,14 @@ export function CoachHelmSkeleton({ view, chained }: { view: 'coach' | 'player';
           )}
         </header>
       ) : (
+        // Each line at the loaded line's height (the role 18, the title 48, the line 21, "Since you were last here" 32), so the
+        // head is the loaded head's 195px (coach) and the strip sits where the page puts it.
         <header className="ch-hl-h has-aside" data-canopy-head="">
           {/* The role line is the coach's only (Head). */}
-          {coach && <Skeleton width={62} height={24} radius={12} />}
-          <Skeleton width={190} height={44} radius={10} />
-          <Skeleton width={360} height={14} />
-          {coach && <Skeleton width={196} height={13} />}
+          {coach && <SkelLine line={18} bar={11} width={40} />}
+          <SkelLine line={48} bar={38} width={196} />
+          <SkelLine line={21} bar={13} width={coach ? 210 : 360} />
+          {coach && <SkelLine line={32} bar={13} width={196} />}
           <div className="ch-hl-h__aside">
             <StripSkeleton coach={coach} phone={false} />
           </div>
@@ -160,10 +215,7 @@ export function CoachHelmSkeleton({ view, chained }: { view: 'coach' | 'player';
           </div>
         )
       ) : coach ? (
-        <div className="ch-hl-sk ch-hl-sk--coach">
-          <RowsSkeleton rows={4} avatar={34} />
-          <FocusSkeleton />
-        </div>
+        <CoachBoardBody />
       ) : (
         <div className="ch-hl-sk ch-hl-sk--player">
           <FocusSkeleton />
@@ -186,8 +238,42 @@ export function CoachHelmSkeleton({ view, chained }: { view: 'coach' | 'player';
   );
 }
 
-/** For loading.tsx: the shell knows who is signed in, so the skeleton takes their role's shape (a player until it is known). */
+/**
+ * Which skeleton an address draws, as `ClubhouseCoachHelmRoute` decides which view it is (routes/coachhelm.tsx): the coach's Ask
+ * for `?view=ask`; a coach's Deep dive or Standing of one player only with `&player=`; the player's own Standing or Deep dive;
+ * the board's for everything else (the Track record, the briefs, an unknown view, and a player's `?view=ask`). `role` is null until
+ * the shell knows who is signed in, and is the player's meanwhile.
+ */
+export type ChRouteSkeleton = 'coach' | 'player' | 'ask' | 'coach-standing' | 'coach-deep-dive' | 'standing' | 'deep-dive';
+export function routeSkeletonFor(role: string | null | undefined, params: { get(name: string): string | null; has(name: string): boolean } | null): ChRouteSkeleton {
+  const view = params?.get('view') ?? undefined;
+  const drill = playerHelmDrill(view);
+  if (role === 'coach') {
+    if (view === 'ask') return 'ask';
+    // The route's test is `typeof player === 'string'`: an empty `&player=` is still a coach's view of a player (whose check fails).
+    if (drill && params?.has('player')) return drill === 'standing' ? 'coach-standing' : 'coach-deep-dive';
+    return 'coach';
+  }
+  return drill ?? 'player';
+}
+
+/**
+ * For loading.tsx: the shell knows who is signed in, so the skeleton takes their role's shape (a player until it is known), and
+ * the address says which view is coming. `loading.tsx` cannot read `?view=` on the server, but this client part can, so a hard
+ * load or a link straight to Ask or a Deep dive draws that view's shape at once instead of the board's and then the view's (two
+ * skeletons in a row, the second a different shape). The view's own Suspense fallback is the same skeleton, chained, so it takes
+ * over without fading in again.
+ */
 export function CoachHelmRouteSkeleton() {
   const role = useGolfUserOptional()?.role;
-  return <CoachHelmSkeleton view={role === 'coach' ? 'coach' : 'player'} />;
+  const params = useSearchParams();
+  const which = routeSkeletonFor(role, params);
+  if (which === 'ask') return <AskSkeleton />;
+  if (which === 'coach-standing' || which === 'coach-deep-dive') {
+    // The player's name is not known until the page checks the address against the team, as the route's first skeleton says.
+    return which === 'coach-standing' ? <StandingSkeleton coach={{ first: null }} /> : <DiveSkeleton coach={{ first: null }} />;
+  }
+  if (which === 'standing') return <StandingSkeleton />;
+  if (which === 'deep-dive') return <DiveSkeleton />;
+  return <CoachHelmSkeleton view={which} />;
 }

@@ -233,6 +233,7 @@ document and run `git rev-list --count <sha>..HEAD -- <path>`.
 | --- | --- | --- | --- | --- | --- |
 | `docs/architecture/USER_ROLE_DATA_OWNERSHIP.md` | current | yes | - | - | - |
 | `docs/architecture/coachhelm-agentic-visuals.md` | current | - | - | - | - |
+| `docs/architecture/coachhelm-visual-playbook.md` | current | - | - | - | - |
 | `docs/architecture/system-maps/helm-bug-risk-register.md` | current | - | - | yes | - |
 | `docs/architecture/system-maps/helm-database-map.md` | current | - | - | - | - |
 | `docs/business/00-business-context.md` | current | - | - | yes | - |
@@ -865,6 +866,7 @@ them would bury everything above.
 | `docs/clubhouse/changes/2026-10-28-visual-pass-system.md` | current | - | - | - | - |
 | `docs/clubhouse/changes/2026-10-28-visual-pass-whats-new.md` | current | - | - | - | - |
 | `docs/clubhouse/changes/2026-10-29-initials-letters-only.md` | current | - | - | - | - |
+| `docs/clubhouse/changes/2026-10-29-line-draw-in.md` | current | - | - | - | - |
 | `docs/clubhouse/changes/2026-10-30-motion-stalls-and-reduce-motion.md` | current | - | - | - | - |
 | `docs/clubhouse/changes/2026-10-30-nav-once-menu-dialog-focus.md` | current | - | - | - | - |
 | `docs/clubhouse/changes/2026-10-30-night-contrast-tokens.md` | current | - | - | - | - |
@@ -1302,6 +1304,7 @@ them would bury everything above.
 | `docs/clubhouse/pages/P013-coachhelm/changes/2026-10-28-ask-team-tools-flag.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P013-coachhelm/changes/2026-10-28-visual-pass-whats-new.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P013-coachhelm/changes/2026-10-28-visual-pass.md` | current | - | - | - | - |
+| `docs/clubhouse/pages/P013-coachhelm/changes/2026-10-29-ask-composed-visuals.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P013-coachhelm/changes/2026-10-30-a11y-touch-type.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P013-coachhelm/changes/2026-10-30-history-sheet-reduced.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P013-coachhelm/changes/2026-10-30-putting-figure-once.md` | current | - | - | - | - |

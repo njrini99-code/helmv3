@@ -1299,3 +1299,36 @@ main[data-canopy] .ch-hd-it.is-on,
     min-height: 44px;
   }
 }
+
+/* Loading, desktop (WebKit 1280 and 1440, 2026-10-29): the list's heads at the loaded head's 34px (a group's name over its rule)
+   and its reads at their 82px (two lines and the state line), so the list does not jump up when it lands; the open read's
+   category and stance over its rule, the claim, and What, Why, Next and When as label rows on soft rules, then the actions. */
+@media (min-width: 821px) {
+  main[data-canopy] .ch-hd-sk__grp > .ch-skel:first-child {
+    margin: 6px 6px 8px;
+  }
+  main[data-canopy] .ch-hd-sk__it {
+    height: 82px;
+  }
+  .ch-hd-sk__k {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    height: 33px;
+    padding-bottom: 8px;
+    box-sizing: border-box;
+  }
+  .ch-hd-sk__row {
+    display: flex;
+    align-items: flex-start;
+    gap: 32px;
+    padding-top: 16px;
+    box-sizing: border-box;
+    box-shadow: inset 0 var(--ch-hairline-w) 0 var(--ch-ledger-rule-soft);
+  }
+  .ch-hd-sk__acts {
+    display: flex;
+    gap: 8px;
+    margin: 4px 0 16px;
+  }
+}

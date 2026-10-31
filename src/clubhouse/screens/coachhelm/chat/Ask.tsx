@@ -65,7 +65,7 @@ function AskFrame({ team, children }: { team?: string; children: ReactNode }) {
   const phone = useChPhone();
   const sw = useViewSwitch<CoachHelmView>('ask', (v) => COACHHELM_HREF[v]);
   return (
-    <main className={'ch-ask is-plain' + (phone ? ' is-phone' : '')} aria-label="Ask CoachHelm" aria-busy={sw.pending || undefined} data-ch-code="CH-13820">
+    <main className={'ch-ask is-plain' + (phone ? ' is-phone' : '')} aria-label="Ask CoachHelm" aria-busy={sw.pending || undefined} data-ch-code="CH-13820" {...sw.enter}>
       {phone && <PhoneTop start title="CoachHelm" />}
       <div className="ch-ask-top">
         <CoachHelmTabs active={sw.shown} onGo={sw.go} />
@@ -274,7 +274,7 @@ function AskChat({ data, useChatImpl, initial }: { data: ChAskData; useChatImpl:
   if (phone && evidenceOpen && evidence !== sheetEvidence) setSheetEvidence(evidence);
 
   return (
-    <main className={'ch-ask' + (phone ? ' is-phone' : '') + (showHome ? ' is-home' : '')} aria-label="Ask CoachHelm" aria-busy={sw.pending || chatSw.pending || undefined} data-switch={sw.pending ? 'view' : chatSw.pending ? 'chat' : undefined} data-ch-code="CH-13820">
+    <main className={'ch-ask' + (phone ? ' is-phone' : '') + (showHome ? ' is-home' : '')} aria-label="Ask CoachHelm" aria-busy={sw.pending || chatSw.pending || undefined} data-switch={sw.pending ? 'view' : chatSw.pending ? 'chat' : undefined} data-ch-code="CH-13820" {...sw.enter}>
       {phone && (
         <>
           <PhoneTop

@@ -279,7 +279,7 @@ export function CoachBoard({
   // With CoachHelm off (CH-13305), Ask is off too, so the strip that leads there is not drawn.
   const tabs = data.off ? null : <CoachHelmTabs active={sw.shown} onGo={sw.go} />;
   return (
-    <main className={'ch-hl' + (phone ? ' is-phone' : '')} aria-labelledby="ch-hl-title" aria-busy={sw.pending || undefined} data-canopy={phone ? undefined : ''}>
+    <main className={'ch-hl' + (phone ? ' is-phone' : '')} aria-labelledby="ch-hl-title" aria-busy={sw.pending || undefined} data-canopy={phone ? undefined : ''} {...sw.enter}>
       {phone && <PhoneTop start title="CoachHelm" />}
       {phone && tabs}
       <Head

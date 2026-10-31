@@ -636,7 +636,8 @@ server-side so the numeric audit can trace them.
 
 ### Coach chat visuals (2026-10-25)
 
-`show_visual` (flag `coachhelm_visual_artifacts_v1`) takes a scene and the
+`show_visual` (always registered; the `coachhelm_visual_artifacts_v1` flag was
+removed 2026-10-29 at the owner's request) takes a scene and the
 `evidence_ref`s the read tools returned this turn. `chat/visuals/compile.ts`
 resolves them, refuses what cannot be drawn honestly and returns a hashed
 `ValidatedVisualArtifact`; the message keeps it as `data-visual-artifact`, so a
@@ -646,6 +647,24 @@ refused or dropped (`figure_in_text`). The artifact's `evidenceRefs` name only
 the reads it draws in full (a leg or the total and nothing else), and the
 thread hides only those reads' evidence blocks, so a read named alongside
 stays visible (2026-10-27).
+
+Model-designed visuals (2026-10-29). `show_visual` `kind: "compose"` lets the
+model design the visual: building blocks (headline, kpis, trend, bars, split,
+compare, note), their order and emphasis, a title, a lede and a layout, each
+block naming the read it draws from. `chat/visuals/compile-composition.ts`
+copies every figure from those reads, drops a block it cannot draw honestly
+(and tells the model why), refuses a digit in any model-written text, and
+returns a hashed `ValidatedComposition` (`chat/visuals/composition.ts`) kept as
+`data-visual-composition` and replayed on reload. The playbook the model
+composes by is `VISUALS_SECTION` in `chat/instructions.ts`, mirrored with the
+card anatomy, motion spec and message mechanics in
+`docs/architecture/coachhelm-visual-playbook.md`. Fairway draws compositions
+and the `sg_anatomy` artifact in `ChatThread` (`CompositionVisual.tsx`, figures
+in `EvidenceFigures.tsx`, motion in `EvidenceMotion.tsx`); visuals that arrive in
+a live answer animate in, restored threads and reduced motion render final.
+Coach chat runs on Sonnet 5.5 (`MODEL_FOR_TASK.coach_chat`, 2026-10-29).
+Fixture for screenshots: `/fairway-preview/coachhelm-evidence` (`?live` replays
+the motion; dev only).
 
 ## UI Contract
 

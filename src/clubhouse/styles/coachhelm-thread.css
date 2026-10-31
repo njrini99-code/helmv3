@@ -2,6 +2,9 @@
    Everything here is under .ch-th-: the thread, an answer and its evidence, the action cards and receipts, the evidence panel. */
 
 .ch-th {
+  /* The answer's two reading roles (playbook §4): body 16px at 1.65, the lead 17px medium at 1.6. Scoped to the thread. */
+  --ch-type-answer: 400 calc(16 * var(--ch-type-k))/1.65 var(--ch-font-sans);
+  --ch-type-answer-lead: 500 calc(17 * var(--ch-type-k))/1.6 var(--ch-font-sans);
   flex: 1 1 auto;
   min-height: 0;
   overflow-y: auto;
@@ -28,14 +31,21 @@
   height: 1px;
 }
 
-/* A new turn arrives with the base fade; the ones a thread opened with do not. Streamed paragraphs fade in (coachhelm-ask.css). */
+/* A new turn rises in on the reveal beat (opacity and transform only, so nothing below it moves); the ones a thread opened
+   with do not. Streamed paragraphs only fade, so the text being read never moves (2026-10-29). */
 @keyframes ch-th-in {
   from {
     opacity: 0;
   }
 }
+@keyframes ch-th-rise {
+  from {
+    opacity: 0;
+    transform: translateY(var(--ch-reveal-rise));
+  }
+}
 .ch-th-turn.is-new {
-  animation: ch-th-in var(--ch-dur-base) var(--ch-ease) backwards;
+  animation: ch-th-rise var(--ch-dur-release) var(--ch-ease) backwards;
 }
 /* While an answer streams, AskProse marks its block `data-streaming`; each paragraph or list fades in as it mounts, on the
    base beat, opacity only, so it never moves the text being read. A finished or reloaded answer carries no mark and draws
@@ -75,32 +85,47 @@
   align-items: flex-start;
   gap: 12px;
 }
+/* CoachHelm's avatar (CoachMark.tsx): a mint wheel on a deep green disc, the sidebar brand's colours, the same in both
+   themes because the fill stays dark. */
 .ch-th-mark {
   flex: none;
-  width: 40px;
-  height: 40px;
+  width: 36px;
+  height: 36px;
   border-radius: 50%;
   display: grid;
   place-items: center;
-  background: var(--ch-sheet-bg);
-  box-shadow: 0 0 0 var(--ch-hairline-w) var(--ch-border-hairline), var(--ch-elevation-bubble);
+  background: var(--ch-green-fill-700);
+  box-shadow: var(--ch-elevation-bubble);
 }
 .ch-th-mk {
   display: block;
 }
 .ch-th-mk-helm {
-  stroke: var(--ch-green-800);
+  stroke: var(--ch-hero-mint);
 }
-.ch-th-mk-ball {
-  fill: var(--ch-green-800);
+.ch-th-mk-hub {
+  fill: var(--ch-green-fill-700);
 }
-.ch-th-mk-face {
-  fill: var(--ch-brand-ivory);
+/* Working: the wheel turns one spoke, then holds, on the shared loop beat; transform only. CoachMark lets the last turn
+   finish before it stops, so it always comes to rest on a spoke. */
+@keyframes ch-th-turn {
+  70%,
+  100% {
+    transform: rotate(45deg);
+  }
 }
-.ch-th-mk-dimples {
-  fill: var(--ch-green-500);
+.ch-th-mark.is-working .ch-th-mk {
+  animation: ch-th-turn var(--ch-dur-shimmer) var(--ch-ease-io) infinite;
 }
-/* Working: the wheel stays still; the shimmering current step is the status (visual pass 2026-10-28). */
+@media (prefers-reduced-motion: reduce) {
+  .ch-th-mark.is-working .ch-th-mk {
+    animation: none;
+  }
+}
+[data-ui='clubhouse'][data-motion='off'] .ch-th-mark.is-working .ch-th-mk,
+[data-motion='off'] [data-ui='clubhouse'] .ch-th-mark.is-working .ch-th-mk {
+  animation: none;
+}
 .ch-th-who {
   font: var(--ch-type-13-strong);
   color: var(--ch-text-secondary);
@@ -138,61 +163,56 @@
   letter-spacing: var(--ch-track-15);
   color: var(--ch-text-secondary);
 }
-/* The live words: a band of full ink travels across them on the shared shimmer (1.9 s). The text is always readable. */
-@keyframes ch-th-shine {
-  from {
-    background-position: 130% 0;
-  }
-  to {
-    background-position: -30% 0;
-  }
-}
-.ch-th-shine {
-  background: linear-gradient(100deg, var(--ch-text-tertiary) 30%, var(--ch-text-primary) 50%, var(--ch-text-tertiary) 70%) 130% 0 / 250% 100%;
-  -webkit-background-clip: text;
-  background-clip: text;
-  -webkit-text-fill-color: transparent;
-  animation: ch-th-shine var(--ch-dur-shimmer) linear infinite;
-}
-/* Reduced motion and Settings > Animations off: the band stops and the words hold still in the line's own ink (the
-   secondary), not frozen mid-gradient. Increase Contrast and forced colours: solid ink, never a gradient (2026-10-28). */
-@media (prefers-reduced-motion: reduce) {
-  .ch-th-shine {
-    animation: none;
-    background: none;
-    -webkit-text-fill-color: currentColor;
-  }
-}
-[data-ui='clubhouse'][data-motion='off'] .ch-th-shine,
-[data-motion='off'] [data-ui='clubhouse'] .ch-th-shine {
-  animation: none;
-  background: none;
-  -webkit-text-fill-color: currentColor;
+/* The live words (the current step, "Reading your program"): secondary ink, still, always readable. The work is shown by the turning
+   wheel and the current step's dot, on the compositor; the old shimmer repainted the text every frame (2026-10-29). */
+.ch-th-live {
+  color: var(--ch-text-secondary);
 }
 @media (prefers-contrast: more), (forced-colors: active) {
-  .ch-th-shine {
-    animation: none;
-    background: none;
+  .ch-th-live {
     color: var(--ch-text-primary);
-    -webkit-text-fill-color: currentColor;
   }
 }
+/* The current step's marker: a dot in the check's 14px box, so the labels line up; it breathes in scale and opacity. */
 .ch-th-dot {
   flex: none;
-  width: 8px;
-  height: 8px;
-  margin: 4px;
+  width: 14px;
+  height: 14px;
+  display: grid;
+  place-items: center;
+}
+.ch-th-dot::before {
+  content: '';
+  width: 7px;
+  height: 7px;
   border-radius: 50%;
   background: var(--ch-green-600);
-  animation: ch-th-dot var(--ch-dur-live) var(--ch-ease) infinite;
+  animation: ch-th-dot var(--ch-dur-shimmer) var(--ch-ease-io) infinite;
 }
 @keyframes ch-th-dot {
   50% {
-    opacity: 0.35;
+    opacity: 0.4;
+    transform: scale(0.6);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .ch-th-dot::before {
+    animation: none;
+  }
+}
+[data-ui='clubhouse'][data-motion='off'] .ch-th-dot::before,
+[data-motion='off'] [data-ui='clubhouse'] .ch-th-dot::before {
+  animation: none;
+}
+/* A new step slides in from just above its place (transform and opacity) and the list grows by one row. */
+@keyframes ch-th-step {
+  from {
+    opacity: 0;
+    transform: translateY(-4px);
   }
 }
 .ch-th-steps li.is-in {
-  animation: ch-th-in var(--ch-dur-quick) var(--ch-ease) backwards;
+  animation: ch-th-step var(--ch-dur-base) var(--ch-ease) backwards;
 }
 .ch-th-note {
   max-width: 68ch;
@@ -204,17 +224,23 @@
 .ch-th-prose {
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: 16px;
   max-width: 68ch;
 }
+/* The answer (playbook §4, owner 2026-10-29 "the text after the charts has not a lot of contrast"): body 16px at 1.65 in the
+   primary ink, the lead sentence 17px at medium weight. The colour already held (17.9:1 by day, 13.4:1 at night, measured in
+   WebKit); what read as faint was 16px on a 21px line, at regular weight, beside heavy figures. Prose after a visual is this
+   same rule: nothing here or in the card styles it differently. The paragraph gap is 16px, the nearest step to the
+   playbook's 14 on the spacing scale. */
 .ch-th-p {
-  font: var(--ch-type-16);
+  font: var(--ch-type-answer);
   letter-spacing: var(--ch-track-16);
+  color: var(--ch-text-primary);
   text-wrap: pretty;
 }
 .ch-th-p--lead {
-  font-size: calc(17 * var(--ch-type-k));
-  line-height: 1.6;
+  font: var(--ch-type-answer-lead);
+  letter-spacing: var(--ch-track-17);
 }
 .ch-th-p strong,
 .ch-th-list strong {
@@ -226,8 +252,35 @@
   gap: 6px;
   padding-left: 20px;
   list-style: disc;
-  font: var(--ch-type-16);
+  font: var(--ch-type-answer);
   letter-spacing: var(--ch-track-16);
+  color: var(--ch-text-primary);
+}
+
+/* An old answer's pipe table (the model no longer writes them): a header row, hairline rows, figures right on tabular
+   numbers; on a phone it scrolls sideways inside itself. */
+.ch-th-mdtable {
+  max-width: 100%;
+  overflow-x: auto;
+  border-radius: var(--ch-radius-lg);
+  box-shadow: 0 0 0 var(--ch-hairline-w) var(--ch-border-hairline);
+  background: var(--ch-bg-subtle);
+  overscroll-behavior-x: contain;
+}
+.ch-th-mdtable:focus-visible {
+  outline: 2px solid var(--ch-border-focus);
+  outline-offset: 2px;
+}
+.ch-th-mdtable .ch-th-table th,
+.ch-th-mdtable .ch-th-table td {
+  padding: 8px 12px;
+  white-space: nowrap;
+}
+.ch-th-mdtable .ch-th-table tbody th {
+  font: var(--ch-type-14-medium);
+}
+.ch-th-mdtable .ch-th-table thead th {
+  border-bottom: var(--ch-hairline-w) solid var(--ch-border-hairline);
 }
 .ch-th-mention {
   font-weight: 500;
@@ -252,12 +305,16 @@
   align-items: flex-start;
   gap: 8px;
 }
+.ch-th-work__read {
+  font: var(--ch-type-13);
+  color: var(--ch-text-secondary);
+}
 .ch-th-work__btn {
   position: relative;
   display: inline-flex;
   align-items: center;
-  gap: 8px;
-  min-height: 30px;
+  gap: 4px;
+  min-height: 28px;
   padding: 0;
   border: 0;
   background: none;
@@ -346,20 +403,22 @@
 .ch-th-fig__head > figcaption {
   font: var(--ch-type-14-strong);
 }
+/* "View as table": a quiet secondary control on every figure (owner, 2026-10-29: the green link was noise), small and in
+   the secondary ink, still a 44px reach on a phone. */
 .ch-th-toggle {
   flex: none;
   display: inline-flex;
   align-items: center;
-  gap: 6px;
-  height: 30px;
-  padding: 0 8px;
+  gap: 4px;
+  height: 28px;
+  padding: 0 6px;
   border: 0;
   border-radius: var(--ch-radius-sm);
   background: none;
   cursor: pointer;
-  font: var(--ch-type-13-medium);
+  font: var(--ch-type-12-medium);
   line-height: var(--ch-lead-tight);
-  color: var(--ch-green-600);
+  color: var(--ch-text-secondary);
 }
 .ch-th-toggle[aria-pressed='true'] {
   background: var(--ch-selected-bg);
@@ -383,8 +442,8 @@
 .ch-th-fig__src {
   padding-top: 8px;
   border-top: var(--ch-hairline-w) solid var(--ch-border-hairline);
-  font: var(--ch-type-12);
-  color: var(--ch-text-tertiary);
+  font: var(--ch-type-13);
+  color: var(--ch-text-secondary);
 }
 .ch-th-fig__take {
   margin-top: 8px;
@@ -434,6 +493,10 @@
   font: var(--ch-type-14);
   color: var(--ch-text-secondary);
 }
+.ch-th-bar.is-on .ch-th-bar__label {
+  font: var(--ch-type-14-strong);
+  color: var(--ch-text-primary);
+}
 .ch-th-bar[data-tone='loss'] .ch-th-bar__label {
   font-weight: 500;
   color: var(--ch-text-primary);
@@ -472,33 +535,41 @@
   color: var(--ch-text-tertiary);
 }
 
-/* A ranked list: rows on rules inside the figure's one card, not a second card (P013 D11) */
+/* A ranked list (playbook §1): rank, the name with its sample in words under it, a bar on one fitted axis, the figure. Rows on
+   rules inside the figure's one card, not a second card (P013 D11). Strokes gained runs either side of zero, green above and
+   amber below; another metric marks its best in green. */
 .ch-th-rank {
   list-style: none;
 }
 .ch-th-rank li {
-  display: flex;
+  display: grid;
+  grid-template-columns: 16px minmax(0, 1.3fr) minmax(48px, 1fr) auto;
   align-items: center;
-  gap: 16px;
-  min-height: 54px;
+  gap: 12px;
+  min-height: 52px;
+  padding: 4px 0;
 }
 .ch-th-rank li + li {
   border-top: var(--ch-hairline-w) solid var(--ch-border-hairline);
 }
 .ch-th-rank__n {
-  width: 16px;
   font: var(--ch-type-13-strong);
   line-height: var(--ch-lead-tight);
   font-variant-numeric: tabular-nums;
-  color: var(--ch-text-tertiary);
+  color: var(--ch-text-secondary);
+}
+.ch-th-rank__who {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
 }
 .ch-th-rank__name {
   position: relative;
-  flex: 1 1 auto;
   min-width: 0;
   font: var(--ch-type-15-medium);
   letter-spacing: var(--ch-track-15);
   color: inherit;
+  text-decoration: none;
   overflow-wrap: anywhere;
 }
 /* The name link's reach: the row's height, 44px at least (P013 D9). */
@@ -509,13 +580,137 @@ a.ch-th-rank__name::after {
   height: 44px;
   translate: 0 -50%;
 }
-.ch-th-rank__val {
-  flex: none;
-  font: var(--ch-type-14);
-  font-variant-numeric: tabular-nums;
+.ch-th-rank__of {
+  font: var(--ch-type-12);
+  color: var(--ch-text-secondary);
 }
-.ch-th-rank__val b {
-  font-weight: 600;
+.ch-th-rank__track {
+  position: relative;
+  height: 10px;
+  border-radius: var(--ch-radius-sm);
+  background: var(--ch-ivory-150);
+}
+.ch-th-rank.is-signed .ch-th-rank__track::after {
+  content: '';
+  position: absolute;
+  inset: -3px auto -3px 50%;
+  width: var(--ch-hairline-w);
+  background: var(--ch-ink-rule);
+}
+.ch-th-rank__bar {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  border-radius: var(--ch-radius-sm);
+  background: var(--ch-ink-400);
+}
+.ch-th-rank__bar[data-side='pos'] {
+  left: 50%;
+}
+.ch-th-rank__bar[data-side='neg'] {
+  left: auto;
+  right: 50%;
+}
+.ch-th-rank li[data-tone='good'] .ch-th-rank__bar,
+.ch-th-rank li[data-tone='best'] .ch-th-rank__bar {
+  background: var(--ch-chart-gain);
+}
+.ch-th-rank li[data-tone='loss'] .ch-th-rank__bar {
+  background: var(--ch-chart-loss);
+}
+.ch-th-rank__val {
+  min-width: 48px;
+  text-align: right;
+  font: var(--ch-type-15-strong);
+  letter-spacing: var(--ch-track-15);
+}
+.ch-th-rank li[data-tone='good'] .ch-th-rank__val,
+.ch-th-rank li[data-tone='best'] .ch-th-rank__val {
+  color: var(--ch-chart-gain);
+}
+.ch-th-rank li[data-tone='loss'] .ch-th-rank__val {
+  color: var(--ch-chart-loss-on-tint);
+}
+.ch-th-rank li.is-on {
+  background: var(--ch-selected-tint);
+}
+.ch-th--phone .ch-th-rank li {
+  grid-template-columns: 14px minmax(0, 1.4fr) minmax(36px, 1fr) auto;
+  gap: 8px;
+}
+
+/* Players across metrics (owner, 2026-10-29: a team table, up to 12 players): players are rows when they outnumber the
+   metrics; the best in each metric is marked with a dot and the gain ink; strokes gained is coloured by its sign. The name
+   column stays put while a phone scrolls the figures sideways. */
+.ch-th-team {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-width: 0;
+}
+.ch-th-team .ch-th-tablewrap {
+  border-radius: 0;
+  box-shadow: none;
+  background: none;
+  overscroll-behavior-x: contain;
+}
+.ch-th-team__table th,
+.ch-th-team__table td {
+  padding: 12px;
+  vertical-align: middle;
+}
+.ch-th-team__table th:first-child {
+  position: sticky;
+  left: 0;
+  z-index: 1;
+  padding-left: 0;
+  background: var(--ch-bg-subtle);
+}
+.ch-th-team__table thead th {
+  min-width: 72px;
+  vertical-align: bottom;
+  color: var(--ch-text-secondary);
+}
+.ch-th-team__table td {
+  white-space: nowrap;
+}
+.ch-th-team__name {
+  display: block;
+  font: var(--ch-type-14-medium);
+  color: var(--ch-text-primary);
+  white-space: nowrap;
+}
+.ch-th-team__of {
+  display: block;
+  font: var(--ch-type-12);
+  color: var(--ch-text-secondary);
+}
+.ch-th-team__v {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font: var(--ch-type-14-medium);
+}
+.ch-th-team__v.is-best {
+  font: var(--ch-type-14-strong);
+  color: var(--ch-chart-gain);
+}
+.ch-th-team__dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--ch-chart-gain);
+}
+.ch-th-team__table td[data-tone='good'] .ch-th-team__v {
+  color: var(--ch-chart-gain);
+}
+.ch-th-team__table td[data-tone='loss'] .ch-th-team__v {
+  color: var(--ch-chart-loss-on-tint);
+}
+.ch-th-team__key {
+  font: var(--ch-type-12);
+  color: var(--ch-text-secondary);
 }
 
 /* The reads an answer names: rows on rules, each opening the player's Deep dive on it (CH-13914) */
@@ -598,6 +793,9 @@ a.ch-th-reads__r:focus-visible {
 }
 .ch-th-tile[data-tone='loss'] .ch-th-tile__value {
   color: var(--ch-chart-loss-on-tint);
+}
+.ch-th-tile[data-tone='gain'] .ch-th-tile__value {
+  color: var(--ch-chart-gain);
 }
 .ch-th-tile__sub {
   font: var(--ch-type-12);
@@ -746,6 +944,11 @@ a.ch-th-reads__r:focus-visible {
 }
 .ch-th-table tbody td.is-num {
   font-weight: 600;
+  white-space: nowrap;
+}
+/* A column of words (a status, a day): body weight, kept on one line; the table scrolls sideways inside itself instead. */
+.ch-th-table tbody td.is-text {
+  white-space: nowrap;
 }
 
 /* Copy, and the next steps */
@@ -1267,14 +1470,6 @@ a.ch-th-reads__r:focus-visible {
 :where(html[data-fw-theme='dark']) .ch-th-act[data-status='abandoned'] .ch-th-act__icon {
   background: var(--ch-ivory-400);
 }
-/* The avatar's wheel and ball: the day's deep green all but vanished on the night sheet (about 1.4:1); the night's
-   light green holds well over 3:1 there (2026-10-28). Light is unchanged. */
-:where(html[data-fw-theme='dark']) .ch-th-mk-helm {
-  stroke: var(--ch-green-600);
-}
-:where(html[data-fw-theme='dark']) .ch-th-mk-ball {
-  fill: var(--ch-green-600);
-}
 /* A chosen visual row: at night its fill sits within a shade of the card (about 1.01:1), so the selected ink rings it,
    well over 3:1 (2026-10-28). The bold label stays the second cue; light is unchanged. */
 :where(html[data-fw-theme='dark']) .ch-th-va__row.is-on {
@@ -1523,4 +1718,256 @@ a.ch-th-reads__r:focus-visible {
 }
 .ch-th-va__note[data-kind='hypothesis'] {
   font-style: italic;
+}
+
+/* ── A model-designed visual (CoachComposition, playbook §2) ─────────────────────────────────────────────────────────
+   One card: whose figures → the finding as a title → the takeaway → the blocks → coverage → one provenance line. */
+.ch-th-cv {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  min-width: 0;
+  padding: 16px 20px;
+  border-radius: var(--ch-radius-xl);
+  background: var(--ch-bg-subtle);
+  box-shadow: 0 0 0 var(--ch-hairline-w) var(--ch-border-hairline);
+}
+.ch-th--phone .ch-th-cv {
+  padding: 16px;
+  border-radius: var(--ch-radius-lg);
+}
+.ch-th-cv__head {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.ch-th-cv__entity {
+  font: var(--ch-type-13-medium);
+  color: var(--ch-text-secondary);
+}
+.ch-th-cv__title {
+  font: var(--ch-type-17-strong);
+  letter-spacing: var(--ch-track-17);
+  color: var(--ch-text-primary);
+  text-wrap: balance;
+}
+.ch-th-cv__lede {
+  font: var(--ch-type-15);
+  letter-spacing: var(--ch-track-15);
+  color: var(--ch-text-secondary);
+  text-wrap: pretty;
+}
+.ch-th-cv__grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 16px;
+}
+/* `split` sets figure blocks two-up on a wide screen only; a phone always stacks. */
+@media (min-width: 821px) {
+  .ch-th:not(.ch-th--phone) .ch-th-cv[data-layout='split'] .ch-th-cv__grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .ch-th:not(.ch-th--phone) .ch-th-cv[data-layout='split'] .ch-th-cv__block[data-wide] {
+    grid-column: 1 / -1;
+  }
+}
+.ch-th-cv__block {
+  min-width: 0;
+}
+.ch-th-cv__fig {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  min-width: 0;
+  height: 100%;
+  padding: 12px 16px 16px;
+  border-radius: var(--ch-radius-lg);
+  background: var(--ch-sheet-bg);
+  box-shadow: 0 0 0 var(--ch-hairline-w) var(--ch-border-hairline);
+}
+.ch-th--phone .ch-th-cv__fig {
+  padding: 12px;
+}
+.ch-th-cv__fig-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  min-height: 28px;
+}
+.ch-th-cv__fig-title {
+  font: var(--ch-type-14-strong);
+  color: var(--ch-text-primary);
+}
+/* The sticky name column takes the figure's ground, not the card's. */
+.ch-th-cv__fig .ch-th-team__table th:first-child {
+  background: var(--ch-sheet-bg);
+}
+/* The answer as a number: its words on the left, the figure large on the right with a verdict in the metric's direction. */
+.ch-th-cv__hero {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 16px;
+  border-radius: var(--ch-radius-lg);
+  background: var(--ch-sheet-bg);
+  box-shadow: 0 0 0 var(--ch-hairline-w) var(--ch-border-hairline);
+}
+.ch-th-cv__hero-words {
+  display: grid;
+  gap: 4px;
+  min-width: 0;
+}
+.ch-th-cv__hero-label {
+  font: var(--ch-type-15-strong);
+  letter-spacing: var(--ch-track-15);
+  color: var(--ch-text-primary);
+}
+.ch-th-cv__hero-sub {
+  font: var(--ch-type-13);
+  color: var(--ch-text-secondary);
+}
+/* On a phone the figure goes under its words, so neither is squeezed into a column of single words. */
+.ch-th--phone .ch-th-cv__hero {
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 8px;
+}
+.ch-th--phone .ch-th-cv__hero-fig {
+  justify-items: start;
+}
+.ch-th-cv__hero-fig {
+  display: grid;
+  justify-items: end;
+  gap: 6px;
+  flex: none;
+}
+.ch-th-cv__hero-n {
+  font: var(--ch-type-34-strong);
+  line-height: var(--ch-lead-tight);
+  letter-spacing: var(--ch-track-34);
+  color: var(--ch-text-primary);
+}
+.ch-th-cv__chip {
+  padding: 2px 8px;
+  border-radius: 999px;
+  font: var(--ch-type-12-medium);
+  white-space: nowrap;
+}
+.ch-th-cv__chip[data-tone='good'] {
+  background: var(--ch-chart-gain-tint);
+  color: var(--ch-chart-gain);
+}
+.ch-th-cv__chip[data-tone='loss'] {
+  background: var(--ch-chart-loss-tint);
+  color: var(--ch-chart-loss-on-tint);
+}
+/* A note, labelled for the kind of claim it is. */
+.ch-th-cv__note {
+  font: var(--ch-type-15);
+  letter-spacing: var(--ch-track-15);
+  color: var(--ch-text-primary);
+}
+.ch-th-cv__kind {
+  display: inline-block;
+  margin-right: 6px;
+  padding: 1px 8px;
+  border-radius: 999px;
+  font: var(--ch-type-12-strong);
+  vertical-align: 1px;
+  background: var(--ch-ivory-150);
+  color: var(--ch-text-primary);
+}
+.ch-th-cv__note[data-kind='measured'] .ch-th-cv__kind {
+  background: var(--ch-chart-gain-tint);
+  color: var(--ch-chart-gain);
+}
+.ch-th-cv__note[data-kind='hypothesis'] .ch-th-cv__kind {
+  background: var(--ch-chart-loss-tint);
+  color: var(--ch-chart-loss-on-tint);
+}
+.ch-th-cv__cover {
+  font: var(--ch-type-13);
+  color: var(--ch-text-secondary);
+}
+.ch-th-cv__cover b {
+  font: var(--ch-type-13-strong);
+  color: var(--ch-text-primary);
+}
+.ch-th-cv__src {
+  margin-top: -4px;
+}
+
+/* Motion (playbook §3; the CoachHelm chat exception in .claude/rules/clubhouse.md). Only a visual that arrived in a live
+   answer carries data-live (decided once at mount, never under reduced motion or Animations off). Opacity, transform and the
+   line's path length only, on the D-64 beats: each block rises 8px over the base beat, 80ms apart (capped at six, --ch-b);
+   the line draws over the reveal beat 140ms after its block (--ch-cv-lag); its points fade in on the quick beat as the line
+   reaches them; bars grow from their baseline over the base beat, 50ms apart (--ch-cv-step). The offsets are set on the card
+   by CoachComposition, since only durations are tokens. Numbers are never counted up. */
+@keyframes ch-th-cv-rise {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+}
+@keyframes ch-th-cv-draw {
+  from {
+    stroke-dashoffset: 1;
+  }
+}
+@keyframes ch-th-cv-fade {
+  from {
+    opacity: 0;
+  }
+}
+@keyframes ch-th-cv-grow {
+  from {
+    transform: scaleX(0);
+  }
+}
+.ch-th-cv[data-live] .ch-th-cv__in {
+  animation: ch-th-cv-rise var(--ch-dur-base) var(--ch-ease) backwards;
+  animation-delay: var(--ch-b);
+}
+.ch-th-cv[data-live] .ch-line[data-draw] .ch-line__path {
+  stroke-dasharray: 1;
+  animation: ch-th-cv-draw var(--ch-dur-reveal) var(--ch-ease) backwards;
+  animation-delay: calc(var(--ch-b) + var(--ch-cv-lag));
+}
+.ch-th-cv[data-live] .ch-line[data-draw] .ch-line__dot {
+  animation: ch-th-cv-fade var(--ch-dur-quick) var(--ch-ease) backwards;
+  animation-delay: calc(var(--ch-b) + var(--ch-cv-lag) + var(--ch-dur-reveal) * var(--ch-i, 0) / (var(--ch-n, 2) - 1));
+}
+.ch-th-cv[data-live] .ch-th-bar__track > span,
+.ch-th-cv[data-live] .ch-th-rank__bar,
+.ch-th-cv[data-live] .ch-th-leg__track > span {
+  transform-origin: left center;
+  animation: ch-th-cv-grow var(--ch-dur-base) var(--ch-ease) backwards;
+  animation-delay: calc(var(--ch-b) + var(--ch-cv-lag) + var(--ch-i, 0) * var(--ch-cv-step));
+}
+/* A loss grows leftward from zero. */
+.ch-th-cv[data-live] .ch-th-rank__bar[data-side='neg'],
+.ch-th-cv[data-live] .ch-th-leg[data-sign='loss'] .ch-th-leg__track > span {
+  transform-origin: right center;
+}
+/* The delays are not durations, so Animations off and Reduce Motion end every one here too, in case a live mark outlives
+   the setting being turned on mid-answer. */
+@media (prefers-reduced-motion: reduce) {
+  .ch-th-cv[data-live] .ch-th-cv__in,
+  .ch-th-cv[data-live] .ch-line[data-draw] .ch-line__path,
+  .ch-th-cv[data-live] .ch-line[data-draw] .ch-line__dot,
+  .ch-th-cv[data-live] .ch-th-bar__track > span,
+  .ch-th-cv[data-live] .ch-th-rank__bar,
+  .ch-th-cv[data-live] .ch-th-leg__track > span {
+    animation: none;
+  }
+}
+[data-motion='off'] .ch-th-cv[data-live] .ch-th-cv__in,
+[data-motion='off'] .ch-th-cv[data-live] .ch-line[data-draw] .ch-line__path,
+[data-motion='off'] .ch-th-cv[data-live] .ch-line[data-draw] .ch-line__dot,
+[data-motion='off'] .ch-th-cv[data-live] .ch-th-bar__track > span,
+[data-motion='off'] .ch-th-cv[data-live] .ch-th-rank__bar,
+[data-motion='off'] .ch-th-cv[data-live] .ch-th-leg__track > span {
+  animation: none;
 }

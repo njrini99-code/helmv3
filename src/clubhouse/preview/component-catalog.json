@@ -2070,6 +2070,18 @@
       "fixture": "Contextual module"
     },
     {
+      "file": "src/clubhouse/screens/coachhelm/chat/CoachMark.tsx",
+      "group": "screens",
+      "exports": [
+        "CoachMark"
+      ],
+      "styles": [
+        "src/clubhouse/styles/coachhelm-thread.css"
+      ],
+      "examples": [],
+      "fixture": "Contextual module"
+    },
+    {
       "file": "src/clubhouse/screens/coachhelm/chat/Composer.tsx",
       "group": "screens",
       "exports": [
@@ -2090,12 +2102,26 @@
         "AskEvidenceBlock",
         "AskEvidenceView",
         "DataTable",
+        "Drawing",
+        "Ranking",
+        "TableToggle",
+        "TeamTable",
         "Tiles",
         "Trend"
       ],
       "styles": [
         "src/clubhouse/styles/base.css",
-        "src/clubhouse/styles/coachhelm-thread.css"
+        "src/clubhouse/styles/calendar.css",
+        "src/clubhouse/styles/class-awareness.css",
+        "src/clubhouse/styles/coachhelm-thread.css",
+        "src/clubhouse/styles/coachhelm.css",
+        "src/clubhouse/styles/goals.css",
+        "src/clubhouse/styles/home.css",
+        "src/clubhouse/styles/hub.css",
+        "src/clubhouse/styles/messages.css",
+        "src/clubhouse/styles/qualifiers.css",
+        "src/clubhouse/styles/stats.css",
+        "src/clubhouse/styles/tournaments-desk.css"
       ],
       "examples": [],
       "fixture": "Contextual module"
@@ -2188,6 +2214,29 @@
       ],
       "styles": [
         "src/clubhouse/styles/coachhelm-thread.css"
+      ],
+      "examples": [],
+      "fixture": "Contextual module"
+    },
+    {
+      "file": "src/clubhouse/screens/coachhelm/chat/visual/CoachComposition.tsx",
+      "group": "screens",
+      "exports": [
+        "CoachComposition"
+      ],
+      "styles": [
+        "src/clubhouse/styles/base.css",
+        "src/clubhouse/styles/calendar.css",
+        "src/clubhouse/styles/class-awareness.css",
+        "src/clubhouse/styles/coachhelm-thread.css",
+        "src/clubhouse/styles/coachhelm.css",
+        "src/clubhouse/styles/goals.css",
+        "src/clubhouse/styles/home.css",
+        "src/clubhouse/styles/hub.css",
+        "src/clubhouse/styles/messages.css",
+        "src/clubhouse/styles/qualifiers.css",
+        "src/clubhouse/styles/stats.css",
+        "src/clubhouse/styles/tournaments-desk.css"
       ],
       "examples": [],
       "fixture": "Contextual module"
@@ -2425,7 +2474,10 @@
         "src/clubhouse/styles/coachhelm-standing.css",
         "src/clubhouse/styles/coachhelm-views.css",
         "src/clubhouse/styles/coachhelm.css",
-        "src/clubhouse/styles/shell.css"
+        "src/clubhouse/styles/home.css",
+        "src/clubhouse/styles/qualifiers.css",
+        "src/clubhouse/styles/shell.css",
+        "src/clubhouse/styles/ui.css"
       ],
       "examples": [],
       "fixture": "Contextual module"
@@ -10537,10 +10589,14 @@
         "ch-ask-plain",
         "ch-ask-scroll",
         "ch-ask-sk",
+        "ch-ask-sk__desk",
+        "ch-ask-sk__greet",
+        "ch-ask-sk__lines",
         "ch-ask-sk__mid",
         "ch-ask-sk__ph",
         "ch-ask-sk__phgreet",
         "ch-ask-sk__phrows",
+        "ch-ask-sk__pills",
         "ch-ask-sk__rows",
         "ch-ask-state",
         "ch-ask-state__alt",
@@ -10551,7 +10607,8 @@
         "ch-empty-page",
         "ch-root",
         "ch-seg",
-        "ch-seg__b"
+        "ch-seg__b",
+        "ch-skel-ln"
       ],
       "tokens": [
         {
@@ -10723,11 +10780,14 @@
         "ch-hd-scroll",
         "ch-hd-sec",
         "ch-hd-sec__h",
+        "ch-hd-sk__acts",
         "ch-hd-sk__col",
         "ch-hd-sk__dos",
         "ch-hd-sk__grp",
         "ch-hd-sk__hero",
         "ch-hd-sk__it",
+        "ch-hd-sk__k",
+        "ch-hd-sk__row",
         "ch-hd-strip__c",
         "ch-hd-strip__chart",
         "ch-hd-tr",
@@ -10979,7 +11039,10 @@
         "ch-hs-sk__col",
         "ch-hs-sk__g",
         "ch-hs-sk__hero",
+        "ch-hs-sk__k",
+        "ch-hs-sk__ldh",
         "ch-hs-sk__r",
+        "ch-hs-sk__sub",
         "ch-hs-tally",
         "ch-hs-tr",
         "ch-hs-tr__gap",
@@ -11048,6 +11111,7 @@
       "file": "src/clubhouse/styles/coachhelm-thread.css",
       "classes": [
         "ch-btn",
+        "ch-line",
         "ch-line__dot",
         "ch-line__key",
         "ch-line__path",
@@ -11081,6 +11145,28 @@
         "ch-th-card",
         "ch-th-chip",
         "ch-th-col",
+        "ch-th-cv",
+        "ch-th-cv__block",
+        "ch-th-cv__chip",
+        "ch-th-cv__cover",
+        "ch-th-cv__entity",
+        "ch-th-cv__fig",
+        "ch-th-cv__fig-head",
+        "ch-th-cv__fig-title",
+        "ch-th-cv__grid",
+        "ch-th-cv__head",
+        "ch-th-cv__hero",
+        "ch-th-cv__hero-fig",
+        "ch-th-cv__hero-label",
+        "ch-th-cv__hero-n",
+        "ch-th-cv__hero-sub",
+        "ch-th-cv__hero-words",
+        "ch-th-cv__in",
+        "ch-th-cv__kind",
+        "ch-th-cv__lede",
+        "ch-th-cv__note",
+        "ch-th-cv__src",
+        "ch-th-cv__title",
         "ch-th-dir",
         "ch-th-dot",
         "ch-th-end",
@@ -11111,22 +11197,26 @@
         "ch-th-legs",
         "ch-th-link",
         "ch-th-list",
+        "ch-th-live",
         "ch-th-mark",
+        "ch-th-mdtable",
         "ch-th-mention",
         "ch-th-mk",
-        "ch-th-mk-ball",
-        "ch-th-mk-dimples",
-        "ch-th-mk-face",
         "ch-th-mk-helm",
+        "ch-th-mk-hub",
         "ch-th-note",
         "ch-th-p",
         "ch-th-p--lead",
         "ch-th-pill",
         "ch-th-prose",
         "ch-th-rank",
+        "ch-th-rank__bar",
         "ch-th-rank__n",
         "ch-th-rank__name",
+        "ch-th-rank__of",
+        "ch-th-rank__track",
         "ch-th-rank__val",
+        "ch-th-rank__who",
         "ch-th-read",
         "ch-th-read--error",
         "ch-th-read__icon",
@@ -11143,12 +11233,18 @@
         "ch-th-receipt__head",
         "ch-th-receipt__meta",
         "ch-th-receipt__title",
-        "ch-th-shine",
         "ch-th-sr",
         "ch-th-steps",
         "ch-th-steps__ok",
         "ch-th-table",
         "ch-th-tablewrap",
+        "ch-th-team",
+        "ch-th-team__dot",
+        "ch-th-team__key",
+        "ch-th-team__name",
+        "ch-th-team__of",
+        "ch-th-team__table",
+        "ch-th-team__v",
         "ch-th-think",
         "ch-th-tile",
         "ch-th-tile__label",
@@ -11181,9 +11277,20 @@
         "ch-th-who",
         "ch-th-work",
         "ch-th-work__btn",
+        "ch-th-work__read",
         "ch-th-work__time"
       ],
       "tokens": [
+        {
+          "name": "--ch-type-answer",
+          "value": "400 calc(16 * var(--ch-type-k))/1.65 var(--ch-font-sans)",
+          "scope": ".ch-th"
+        },
+        {
+          "name": "--ch-type-answer-lead",
+          "value": "500 calc(17 * var(--ch-type-k))/1.6 var(--ch-font-sans)",
+          "scope": ".ch-th"
+        },
         {
           "name": "--ch-line-ink",
           "value": "var(--ch-green-600)",
@@ -11261,6 +11368,7 @@
         "ch-hv-link",
         "ch-hv-next",
         "ch-hv-role-link",
+        "ch-hv-sk-brief",
         "ch-hv-sk-head",
         "ch-hv-sk-tabs",
         "ch-hv-tabs",
@@ -11360,14 +11468,23 @@
         "ch-hl-sk",
         "ch-hl-sk--coach",
         "ch-hl-sk--player",
+        "ch-hl-sk__acts",
         "ch-hl-sk__card",
         "ch-hl-sk__chips",
         "ch-hl-sk__claim",
         "ch-hl-sk__col",
+        "ch-hl-sk__ev",
+        "ch-hl-sk__evr",
+        "ch-hl-sk__focus",
         "ch-hl-sk__line",
+        "ch-hl-sk__p",
+        "ch-hl-sk__ph",
+        "ch-hl-sk__pl",
+        "ch-hl-sk__recheck",
         "ch-hl-sk__row",
         "ch-hl-sk__rule",
         "ch-hl-sk__tabs",
+        "ch-hl-sk__why",
         "ch-hl-stale",
         "ch-hl-week",
         "ch-hl-week__k",
@@ -11379,9 +11496,20 @@
         "ch-notice",
         "ch-num",
         "ch-scoreboard",
+        "ch-sk-on-green",
         "ch-skel"
       ],
       "tokens": [
+        {
+          "name": "--ch-skel-base",
+          "value": "rgb(255 255 255 / 0.1)",
+          "scope": ".ch-sk-on-green"
+        },
+        {
+          "name": "--ch-skel-sheen",
+          "value": "rgb(255 255 255 / 0.16)",
+          "scope": ".ch-sk-on-green"
+        },
         {
           "name": "--ch-ink-700",
           "value": "#1c1b18",

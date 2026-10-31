@@ -34,9 +34,12 @@ the coach confirms. Every new visual and write ships behind a flag.
 - **Phase 0**: this audit and the decision. Done.
 - **Phase 1**: `VisualSpec`, server validation, `data-visual-artifact`, one
   scene (`sg_anatomy`), restore, selection without a model call, table fallback.
-  Flag `coachhelm_visual_artifacts_v1`.
-- **Phase 2**: more reads (round, distance band, context split, shot clusters)
-  and scenes.
+  Shipped behind `coachhelm_visual_artifacts_v1`; the flag was removed
+  2026-10-29 (owner: "just add it").
+- **Phase 2**: model-designed compositions (`kind: "compose"`, 2026-10-29): the
+  model chooses blocks, order, emphasis and words; trusted code fills every
+  figure. Contract and playbook: `coachhelm-visual-playbook.md`. Still to come:
+  more reads (round, distance band, context split, shot clusters).
 - **Phase 3**: more gated actions (calendar, goal, task, message) through the
   existing proposal ledger.
 - **Phase 4 and 5**: shot replay, scenario engine, durable investigations,
@@ -44,8 +47,9 @@ the coach confirms. Every new visual and write ships behind a flag.
 
 ## Rules that do not move
 
-- The model names a scene and evidence; it never supplies data, geometry,
-  colours, code or a team id.
+- The model names a scene, or designs a composition from building blocks, and
+  names the evidence; it never supplies data, geometry, colours, code or a team
+  id.
 - A visual's numbers come from a `ToolEnvelope` this turn, or the artifact is
   refused and the generic evidence draws.
 - A written change is approved first, claimed once, and leaves a receipt

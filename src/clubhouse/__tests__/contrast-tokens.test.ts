@@ -180,12 +180,15 @@ describe('the Ask thread at night: the avatar mark and a chosen visual row (2026
   };
   const dark = (s: string) => `:where(html[data-fw-theme='dark']) ${s}`;
 
-  it('the wheel and the ball read at 3:1 or more on the night sheet (non-text marks)', () => {
-    const sheet = hex(token('ch-sheet-bg', 'dark'));
-    for (const [sel, prop] of [['.ch-th-mk-helm', 'stroke'], ['.ch-th-mk-ball', 'fill']] as const) {
-      const ink = reads(dark(sel), prop);
-      expect(contrast(hex(token(ink, 'dark')), sheet), sel).toBeGreaterThanOrEqual(3);
-    }
+  it("the avatar's wheel reads at 3:1 or more on its own disc, day and night (non-text mark)", () => {
+    expect(reads('.ch-th-mk-helm', 'stroke')).toBe('ch-hero-mint');
+    expect(reads('.ch-th-mk-hub', 'fill')).toBe('ch-green-fill-700');
+    expect(reads('.ch-th-mark', 'background')).toBe('ch-green-fill-700');
+    // The mint is one colour in both themes; the disc is green-700 by day and the night's own fill-700.
+    const mint = hex(token('ch-hero-mint', 'light'));
+    expect(tokens).toMatch(/--ch-green-fill-700: var\(--ch-green-700\);/);
+    expect(contrast(mint, hex(token('ch-green-700', 'light'))), 'light').toBeGreaterThanOrEqual(3);
+    expect(contrast(mint, hex(token('ch-green-fill-700', 'dark'))), 'dark').toBeGreaterThanOrEqual(3);
   });
 
   it('a chosen visual row is ringed at 3:1 or more on the night card', () => {
@@ -200,8 +203,6 @@ describe('the Ask thread at night: the avatar mark and a chosen visual row (2026
   });
 
   it('light keeps its deep-green mark and its unringed selected fill', () => {
-    expect(reads('.ch-th-mk-helm', 'stroke')).toBe('ch-green-800');
-    expect(reads('.ch-th-mk-ball', 'fill')).toBe('ch-green-800');
     expect(reads('.ch-th-va__row.is-on', 'background')).toBe('ch-selected-bg');
     expect(contrast(hex(token('ch-green-800', 'light')), hex(token('ch-sheet-bg', 'light')))).toBeGreaterThanOrEqual(3);
   });

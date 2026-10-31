@@ -28,8 +28,11 @@ const VIEWS: readonly PlayerHelmView[] = ['board', 'standing', 'deep-dive'];
  *
  * `coach`: a coach's views of one player (spec A): Deep dive and Standing, in that order. The Board is not one of them
  * (the way back is the header's link and the phone's Back), and Development is the player's own link, so it is not drawn.
+ *
+ * `held`: drawn by a loading skeleton (desktop), inert and hidden from assistive tech, so the strip stands where and as wide as the
+ * page draws it and does not morph from a bar into itself when the page lands.
  */
-export function PlayerHelmTabs({ active, onGo, coach = false }: { active: PlayerHelmView; onGo: (view: PlayerHelmView) => void; coach?: boolean }) {
+export function PlayerHelmTabs({ active, onGo, coach = false, held = false }: { active: PlayerHelmView; onGo?: (view: PlayerHelmView) => void; coach?: boolean; held?: boolean }) {
   const phone = useChPhone();
   const row = useRef<HTMLDivElement>(null);
   const rowEdges = useHScroll<HTMLDivElement>(row);
@@ -56,7 +59,7 @@ export function PlayerHelmTabs({ active, onGo, coach = false }: { active: Player
               onClick={() => {
                 if (v === active) return;
                 haptic('select');
-                onGo(v);
+                onGo?.(v);
               }}
             >
               {PLAYER_HELM_TAB_LABEL[v]}
@@ -73,8 +76,8 @@ export function PlayerHelmTabs({ active, onGo, coach = false }: { active: Player
     );
   }
   return (
-    <div className="ch-hv-tabs" data-ch-code="CH-13930">
-      <Segmented<PlayerHelmView> label="CoachHelm view" value={active} options={views.map((v) => ({ value: v, label: PLAYER_HELM_TAB_LABEL[v] }))} onChange={onGo} />
+    <div className="ch-hv-tabs" data-ch-strip="" data-ch-code={held ? undefined : 'CH-13930'} inert={held || undefined} aria-hidden={held || undefined}>
+      <Segmented<PlayerHelmView> label="CoachHelm view" value={active} options={views.map((v) => ({ value: v, label: PLAYER_HELM_TAB_LABEL[v] }))} onChange={(v) => onGo?.(v)} />
       {development && (
         <Button variant="ghost" size="sm" href={development} rightIcon={ArrowUpRight} feel="select">
           Development

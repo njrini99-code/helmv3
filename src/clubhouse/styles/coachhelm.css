@@ -820,11 +820,95 @@
   .ch-hl[aria-busy='true'][data-canopy] > .ch-hl-h {
     min-height: 159px;
   }
+  /* The views' heads (Standing, the Deep dive) are drawn at their loaded line heights instead (Skeletons.tsx), the coach's
+     one line and the player's two, so neither is held to one figure: a fixed 183px was 20px taller than a coach's loaded head
+     (163) and 17px taller than a player's (166), and the whole page rose when the read landed (WebKit, 2026-10-29). */
+}
 
-  /* Standing's and the Deep dive's line runs to two lines beside the views (WebKit 1440: a 183px head). */
-  .ch-hl[aria-busy='true'][data-canopy]:is([data-ch-code='CH-13470'], [data-ch-code='CH-13480']) > .ch-hl-h {
-    min-height: 183px;
+/* Loading, desktop (WebKit 1280 and 1440, 2026-10-29): the shapes the loaded page draws, at its measured heights, so nothing
+   moves when the read lands. Each line is its own box at the loaded line height with the bar centred in it (`.ch-skel-ln`). */
+@media (min-width: 821px) {
+  /* The coach's board: By player over its rule, then the players at their row pitch (63px rows, 2px apart, the avatar and two
+     lines); beside it the focus: the lit green claim card (201px), its evidence, the reasoning row and the actions. */
+  .ch-hl-sk__ph {
+    display: flex;
+    align-items: center;
+    min-height: 34px;
+    margin-bottom: 8px;
+    padding-bottom: 12px;
+    box-shadow: inset 0 calc(-1 * var(--ch-hairline-w)) 0 var(--ch-ledger-rule);
   }
+  .ch-hl-sk__pl {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    padding-top: 2px;
+  }
+  .ch-hl-sk__p {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    height: 63px;
+  }
+  .ch-hl-sk__p > .ch-skel {
+    flex: none;
+  }
+  .ch-hl-sk__p > span:not(.ch-skel) {
+    display: flex;
+    flex: 1;
+    flex-direction: column;
+    gap: 8px;
+    min-width: 0;
+  }
+  .ch-hl-sk__focus {
+    display: flex;
+    flex-direction: column;
+    gap: 24px;
+    min-width: 0;
+  }
+  .ch-hl-sk__claim {
+    min-height: 201px;
+    box-sizing: border-box;
+  }
+  .ch-hl-sk__ev {
+    display: flex;
+    flex-direction: column;
+    height: 129px;
+    padding-top: 16px;
+    box-sizing: border-box;
+    box-shadow: inset 0 var(--ch-hairline-w) 0 var(--ch-ledger-rule-soft);
+  }
+  .ch-hl-sk__evr {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    height: 37px;
+    box-shadow: inset 0 calc(-1 * var(--ch-hairline-w)) 0 var(--ch-ledger-rule-soft);
+  }
+  .ch-hl-sk__why {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    height: 44px;
+    padding-top: 16px;
+    box-sizing: border-box;
+    box-shadow: inset 0 var(--ch-hairline-w) 0 var(--ch-ledger-rule-soft);
+  }
+  .ch-hl-sk__acts {
+    display: flex;
+    gap: 8px;
+    margin-top: -8px;
+  }
+  .ch-hl-sk__recheck {
+    display: flex;
+  }
+}
+
+/* A placeholder on a green card (the board's claim, Standing's where you stand): the card's own material from the first frame,
+   with the bars in its light ink rather than the parchment's, so the card does not turn from beige to green when it lands. */
+.ch-sk-on-green {
+  --ch-skel-base: rgb(255 255 255 / 0.1);
+  --ch-skel-sheen: rgb(255 255 255 / 0.16);
 }
 
 /* Narrow canvases: one column */
@@ -978,6 +1062,22 @@
 .ch-hl[aria-busy='true']:not([aria-label^='Loading']) > :not(.ch-hl-h):not(.ch-hv-tabs):not(.ch-ask-tabs) {
   opacity: 0.55;
   pointer-events: none;
+}
+
+/* ...and the view that lands settles in rather than snapping (use-view-switch.ts `enter`): it starts at the opacity the view it
+   replaces had dimmed to (--ch-enter-from), so the two read as one cross-fade with no dip and no blank, and rises to full over the
+   quick beat. The same parts as the dim: the header and the strip, which did not change, stay still. Ask's are its body or its
+   plain state. Animations off zeroes the beat and reduced motion shortens it to nothing (base.css), so the view swaps at once. */
+@keyframes ch-view-enter {
+  from {
+    opacity: var(--ch-enter-from, 0.55);
+  }
+}
+/* Desktop only (the brief is desktop's): the phone keeps its approved swap, and its top bar is drawn inside the same main. */
+@media (min-width: 821px) {
+  .ch-hl[data-ch-enter]:not(.is-phone) > :not(.ch-hl-h):not([data-ch-strip]) {
+    animation: ch-view-enter var(--ch-dur-quick) var(--ch-ease) backwards;
+  }
 }
 
 /* A skeleton that follows the route's own (loading.tsx) in the same place does not fade in again: a second fade from nothing would

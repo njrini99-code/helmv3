@@ -69,7 +69,7 @@ export function PlayerBoard({ data, writes = LIVE_PLAYER_WRITES, coursePlanReads
   // With CoachHelm off (CH-13304) nothing is read and the views lead nowhere, so the strip is not drawn, as the coach's is not (CH-13305).
   const tabs = data.off ? null : <PlayerHelmTabs active={sw.shown} onGo={sw.go} />;
   return (
-    <main className={'ch-hl' + (phone ? ' is-phone' : '')} aria-labelledby="ch-hl-title" aria-busy={sw.pending || undefined} data-canopy={phone ? undefined : ''}>
+    <main className={'ch-hl' + (phone ? ' is-phone' : '')} aria-labelledby="ch-hl-title" aria-busy={sw.pending || undefined} data-canopy={phone ? undefined : ''} {...sw.enter}>
       {phone && <PhoneTop start title="CoachHelm" />}
       {phone && tabs}
       <Head phone={phone} aside={!phone ? tabs : undefined}>

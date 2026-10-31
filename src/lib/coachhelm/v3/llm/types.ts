@@ -9,6 +9,10 @@
  * that runs a multi-step tool loop and has to reason about which reads to make
  * before answering, so it is the task that benefits most from the newer model.
  *
+ * 2026-10-29 — coach_chat moved to Sonnet 5.5 (owner request). Hyphenated id,
+ * like the Haiku entry: the direct-key path strips `anthropic/` and hands the
+ * rest to the Anthropic API, whose id is `claude-sonnet-5-5`.
+ *
  * 2026-09-23 — round_review_narrative added (Package 8, owner decision).
  * Its own task key, deliberately NOT a reuse of round_review (round-recap.ts's
  * existing key, also used by the ephemeral, never-persisted
@@ -33,7 +37,7 @@ export type ComposeTask = 'round_review' | 'hero_narrative' | 'coach_chat' | 'ro
 export const MODEL_FOR_TASK: Record<ComposeTask, string> = {
   round_review: 'anthropic/claude-haiku-4-5',
   hero_narrative: 'anthropic/claude-haiku-4-5',
-  coach_chat: 'anthropic/claude-sonnet-5',
+  coach_chat: 'anthropic/claude-sonnet-5-5',
   round_review_narrative: 'anthropic/claude-haiku-4-5',
 };
 
@@ -105,6 +109,9 @@ const MODEL_COST_USD_PER_MTOK: Record<string, { input: number; output: number }>
   // published pricing before relying on the spend figures for billing; the
   // budget gate is only as accurate as this table.
   'anthropic/claude-sonnet-5':    { input: 3.0,  output: 15.0 },
+  // Sonnet 5.5 — the AI Gateway's published rate on 2026-10-29
+  // (ai-gateway.vercel.sh/v1/models: $2/M in, $10/M out).
+  'anthropic/claude-sonnet-5-5':  { input: 2.0,  output: 10.0 },
   'anthropic/claude-opus-4-7':    { input: 15.0, output: 75.0 },
 };
 

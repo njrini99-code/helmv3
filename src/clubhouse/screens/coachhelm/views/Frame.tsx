@@ -41,7 +41,7 @@ export function PlayerHelmFrame({ view, line, off = false, covered = false, afte
   const board = coach ? coachBoardFor(coach.playerId) : null;
   return (
     <>
-      <main className={'ch-hl ch-hv' + (phone ? ' is-phone' : '')} aria-labelledby="ch-hl-title" data-ch-view={view} data-canopy={phone ? undefined : ''} aria-busy={sw.pending || undefined} inert={covered || undefined}>
+      <main className={'ch-hl ch-hv' + (phone ? ' is-phone' : '')} aria-labelledby="ch-hl-title" data-ch-view={view} data-canopy={phone ? undefined : ''} aria-busy={sw.pending || undefined} inert={covered || undefined} {...sw.enter}>
         {phone && (coach && board ? <PhoneTop back={{ label: 'CoachHelm', onBack: () => router.push(board) }} title={coach.name} /> : <PhoneTop start title="CoachHelm" />)}
         {phone && tabs}
         {coach && board ? (

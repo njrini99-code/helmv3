@@ -1,6 +1,6 @@
 'use client';
 
-import { useId, type ReactNode } from 'react';
+import { useId, type CSSProperties, type ReactNode } from 'react';
 import { useGlide } from '../../lib/motion-glide';
 import { useChartPin } from '../../lib/use-chart-pin';
 import { ChartTable } from './ChartTable';
@@ -10,7 +10,9 @@ import { ChartTable } from './ChartTable';
  * `lowerIsBetter`), a missing value is a gap in the line, never a bridge or a zero, segments are straight, small multiples
  * share one `domain` so the same value sits at the same height in each, and ticks are a few round numbers in tabular
  * figures. A pointer, a finger dragged sideways or the arrow keys read a point in the line above the plot (`useChartPin`),
- * with a scrub tick under the finger (useChartPin's). An early line (`early`) draws its points hollow. No draw-in animation (Q-153); when the
+ * with a scrub tick under the finger (useChartPin's). An early line (`early`) draws its points hollow. No draw-in animation (Q-153), with one
+ * opt-in exception: `drawIn` (CoachHelm chat visuals that arrive in a live answer, owner 2026-10-29) gives the path a unit
+ * `pathLength` and each point its index, so the caller's stylesheet can draw the line and fade its points in; when the
  * figures change (a new window), the line, its points and its baseline glide to their new heights (useGlide, B9) while the
  * ticks and labels take theirs at once.
  */
@@ -207,6 +209,7 @@ export function Line({
   ends = true,
   interactive = true,
   table = true,
+  drawIn = false,
   width,
   height,
   className,
@@ -244,6 +247,11 @@ export function Line({
   interactive?: boolean;
   /** The figures as a visually hidden table after the summary (AX-17); off where the page offers its own table of them. */
   table?: boolean;
+  /**
+   * Opt-in draw-in (CoachHelm chat, a live answer only): the path takes `pathLength={1}` and each point `--ch-i`, and the root
+   * `data-draw`, for the caller's CSS. The caller decides once, at mount, and never under reduced motion. Off everywhere else (Q-153).
+   */
+  drawIn?: boolean;
   /** The plot's width in its own units: 340 on a phone, 680 on a desktop, or about its drawn width for a small multiple. */
   width?: number;
   /** The plot's height in its own units; the chart scales to fit its width. */
@@ -331,7 +339,7 @@ export function Line({
         </>
       )}
       {pin.active != null && <line x1={x(pin.active)} x2={x(pin.active)} y1={PAD.t - 4} y2={H - PAD.b} className="ch-line__guide" />}
-      <path d={path} className="ch-line__path" fill="none" />
+      <path d={path} className="ch-line__path" fill="none" {...(drawIn ? { pathLength: 1 } : {})} />
       {points.map((p, i) =>
         p.y == null || (marks === 'last' && i !== newest && i !== pin.active) ? null : (
           <circle
@@ -340,6 +348,7 @@ export function Line({
             cy={py(i)}
             r={i === pin.active ? 5 : marks === 'trail' && i === newest ? 4 : 3}
             className={'ch-line__dot' + (early || (marks === 'trail' && i !== newest) ? ' is-hollow' : '') + (i === pin.active ? ' is-active' : '')}
+            style={drawIn ? ({ '--ch-i': i, '--ch-n': n } as CSSProperties) : undefined}
           />
         ),
       )}
@@ -375,6 +384,7 @@ export function Line({
   return (
     <div
       className={'ch-line' + (className ? ` ${className}` : '')}
+      data-draw={drawIn ? '' : undefined}
       role="group"
       // eslint-disable-next-line jsx-a11y/no-noninteractive-tabindex -- focusable so the arrow keys can read each point, as a scroll region is focusable to scroll
       tabIndex={0}
