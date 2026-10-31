@@ -861,6 +861,15 @@
   animation: ch-shimmer-x var(--ch-dur-shimmer) linear infinite;
   content: '';
 }
+/* A green feature card in waiting (a hero), on the loaded card's ground and lift, its sweep the pale ink Home's skeleton
+   bars use, so the page doesn't flash pale to green when it lands (F-0060). */
+.ch-skel.ch-skel--feature {
+  background: var(--ch-feature-bg);
+  box-shadow: var(--ch-elevation-feature);
+}
+.ch-skel--feature::before {
+  background: linear-gradient(100deg, transparent 30%, rgb(244 241 232 / 0.12) 50%, transparent 70%);
+}
 @media (min-width: 821px) {
   /* A block in waiting (a fluid Skeleton from 56px tall, or shape="block") is drawn in the Ledger as the Ledger draws
      what it stands for: a rule along its top and two lines of type under it, not a filled card. It keeps its box, so

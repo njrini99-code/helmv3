@@ -63,6 +63,8 @@ export function useNarrow(deskWidth: number | null = null): boolean {
 
 export interface LiveViewState {
   live: UseLiveRounds;
+  /** The feed failed and nothing is held from before: say so (CH-16604) rather than "nobody on course" (F-0012). */
+  failed: boolean;
   now: number | null;
   hours: '12' | '24';
   reduced: boolean;
@@ -132,6 +134,7 @@ export function useLiveView(initial: LiveSnapshot, scope?: LiveScope, frozen = f
 
   return {
     live,
+    failed: !!live.snapshot.error && live.lanes.length === 0,
     now,
     hours,
     reduced,

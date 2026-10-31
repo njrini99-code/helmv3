@@ -378,6 +378,16 @@ its rows together and does not map them one to one.
 | AUD-F-0041 | Dark ink ramp so neutral body text reaches Lc 75 (owner decision 1 default) | Clubhouse fixes | in progress | | claude/audit-fix-03-night-contrast (Clubhouse audit fix plan, PR 3); no Bridge IDs or CH codes needed |
 | AUD-F-0043 | Team Hub and profile tab labels reach Lc 75 at night | Clubhouse fixes | in progress | | claude/audit-fix-03-night-contrast (Clubhouse audit fix plan, PR 3); no Bridge IDs or CH codes needed |
 | AUD-F-0062 | Meta and the big Stats figure reach Lc 60 at night | Clubhouse fixes | in progress | | claude/audit-fix-03-night-contrast (Clubhouse audit fix plan, PR 3); no Bridge IDs or CH codes needed |
+| AUD-F-0011 | The offline banner stays off the shot screen; the save line says offline | Clubhouse fixes | in progress | | claude/audit-fix-04-rounds-live-shot (Clubhouse audit fix plan, PR 4); no Bridge IDs or CH codes needed |
+| AUD-F-0012 | Live on the phone says a failed read with CH-16604 and Try again | Clubhouse fixes | in progress | | claude/audit-fix-04-rounds-live-shot (Clubhouse audit fix plan, PR 4); no Bridge IDs or CH codes needed |
+| AUD-F-0013 | Round setup says a failed qualifier read up front with Try again | Clubhouse fixes | in progress | | claude/audit-fix-04-rounds-live-shot (Clubhouse audit fix plan, PR 4); no Bridge IDs or CH codes needed |
+| AUD-F-0019 | The shot card reserves its distance block, so a result pick does not move it | Clubhouse fixes | in progress | | claude/audit-fix-04-rounds-live-shot (Clubhouse audit fix plan, PR 4); no Bridge IDs or CH codes needed |
+| AUD-F-0020 | The shot log line swaps in place on Next shot | Clubhouse fixes | in progress | | claude/audit-fix-04-rounds-live-shot (Clubhouse audit fix plan, PR 4); no Bridge IDs or CH codes needed |
+| AUD-F-0030 | Team rounds empty states offer Invite players and Open roster | Clubhouse fixes | in progress | | claude/audit-fix-04-rounds-live-shot (Clubhouse audit fix plan, PR 4); no Bridge IDs or CH codes needed |
+| AUD-F-0049 | Round setup fields scroll clear of the dock | Clubhouse fixes | in progress | | claude/audit-fix-04-rounds-live-shot (Clubhouse audit fix plan, PR 4); no Bridge IDs or CH codes needed |
+| AUD-F-0060 | Round review skeleton draws the feature hero tone | Clubhouse fixes | in progress | | claude/audit-fix-04-rounds-live-shot (Clubhouse audit fix plan, PR 4); no Bridge IDs or CH codes needed |
+| AUD-F-0061 | Coach note and Game detail read failures say so with Try again | Clubhouse fixes | in progress | | claude/audit-fix-04-rounds-live-shot (Clubhouse audit fix plan, PR 4); no Bridge IDs or CH codes needed |
+| AUD-F-0067 | Pinned by a test (no change) | Clubhouse fixes | in progress | | claude/audit-fix-04-rounds-live-shot (Clubhouse audit fix plan, PR 4); no Bridge IDs or CH codes needed |
 
 <!-- markdownlint-enable MD013 -->
 

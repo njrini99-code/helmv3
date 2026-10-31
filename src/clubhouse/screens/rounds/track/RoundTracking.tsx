@@ -69,7 +69,25 @@ const SAVE_WORDS = {
   error: 'Not synced yet, retrying',
   device: 'Saved on this phone',
   syncing: 'Saved on this phone · syncing',
+  // Offline the shell's banner steps aside on this immersive screen (F-0011), so the line says it.
+  offline: 'Offline · saved on this phone',
 } as const;
+
+/** Whether the phone is offline, following the online and offline events. */
+function useOffline(): boolean {
+  const [offline, setOffline] = useState(false);
+  useEffect(() => {
+    const sync = () => setOffline(navigator.onLine === false);
+    sync();
+    window.addEventListener('online', sync);
+    window.addEventListener('offline', sync);
+    return () => {
+      window.removeEventListener('online', sync);
+      window.removeEventListener('offline', sync);
+    };
+  }, []);
+  return offline;
+}
 
 /**
  * The shot screen, Clubhouse's renderer (board `rounds-track.jsx`). All of its
@@ -82,6 +100,7 @@ const SAVE_WORDS = {
 export function RoundTracking(props: RoundTrackingProps) {
   const { round, holes, currentHoleIndex, onExit, onNavigateToHole, onOpenScorecard, onAutoSave, statusSlot, holeShots, onReviewRound, startHole = 1, dataGapAsks, recoveryPrompt = false, startPrompt } = props;
   const t = useShotTracking(props, PORTS);
+  const offline = useOffline();
   // The one-tap data prompts (CoachHelm Slice 8a, 8b): their session state lives here, beside the engine, so it survives the
   // entry's re-key on every shot and the move between holes. Each is null when it has nothing to ask.
   const puttAsk = useChPuttPrompt({ asks: dataGapAsks, holeNumber: t.currentHole?.number, shotHistory: t.shotHistory, onTag: t.handleTagPuttMiss });
@@ -249,11 +268,13 @@ export function RoundTracking(props: RoundTrackingProps) {
                     <em>{far.words}</em>
                   </div>
                 )}
-                {onAutoSave && saveState !== 'idle' && (
+                {onAutoSave && (saveState !== 'idle' || offline) && (
                   // CH-11901: where the round's shots are, beside the readout (board 3), in words: retrying on its own
                   // when a save fails, and never "saved" before the server said so.
-                  <p className={'ch-rt-sync is-' + saveState} role="status" data-ch-code="CH-11901">
-                    {saveState === 'error' ? (
+                  <p className={'ch-rt-sync is-' + (offline ? 'device' : saveState)} role="status" data-ch-code="CH-11901">
+                    {offline ? (
+                      <Icon icon={CloudOff} size={13} />
+                    ) : saveState === 'error' ? (
                       <Icon icon={CloudOff} size={13} />
                     ) : saveState === 'saved' ? (
                       <Icon icon={Check} size={13} />
@@ -262,7 +283,7 @@ export function RoundTracking(props: RoundTrackingProps) {
                     ) : (
                       <Spinner size="sm" />
                     )}
-                    <span>{SAVE_WORDS[saveState]}</span>
+                    <span>{offline ? SAVE_WORDS.offline : SAVE_WORDS[saveState as Exclude<typeof saveState, 'idle'>]}</span>
                   </p>
                 )}
               </div>
