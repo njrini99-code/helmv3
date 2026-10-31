@@ -370,6 +370,7 @@ its rows together and does not map them one to one.
 | AUD-F-0034 | Home leaderboard rows prefetch on press | Clubhouse fixes | in progress | | claude/audit-fix-07-speed (Clubhouse audit fix plan, PR 7); no Bridge IDs or CH codes needed |
 | AUD-F-0045 | Start DM speed: depends on PR 1 (#2412); follow-up | Clubhouse fixes | in progress | | claude/audit-fix-07-speed (Clubhouse audit fix plan, PR 7); no Bridge IDs or CH codes needed |
 
+
 <!-- markdownlint-enable MD013 -->
 
 Counts on 2026-10-23: 137 done, 23 held, 20 closed, none in progress, none
