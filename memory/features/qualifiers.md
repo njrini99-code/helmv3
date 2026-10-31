@@ -446,4 +446,3 @@ in `docs/clubhouse/catalog/qualifiers.md` (CH-09xxx).
   is changed.
 - Submitting to a completed qualifier is open in the database too
   (`20261031134708`), as the app has been since 2026-08-31.
-
