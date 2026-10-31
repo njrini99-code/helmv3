@@ -367,6 +367,17 @@ its rows together and does not map them one to one.
 | AUD-F-0003 | A message to one person never reuses the Team Channel or a group: the server resolves only a two-person thread on this team, and the client refuses a channel or group id (CH-7002) | Clubhouse fixes | in progress | | claude/audit-fix-01-deploy-blockers (Clubhouse audit fix plan, PR 1); no Bridge IDs or CH codes needed |
 | AUD-F-0004 | Coach Start conversation opens the one-to-one thread (same root as AUD-F-0003; an id not yet in the list goes through CH-7015) | Clubhouse fixes | in progress | | claude/audit-fix-01-deploy-blockers (Clubhouse audit fix plan, PR 1); no Bridge IDs or CH codes needed |
 | AUD-F-0002 | Roster, Team Hub and Team stats show the season computed from 1 August in the team's zone ("2026–27"), not the stored free text | Clubhouse fixes | in progress | | claude/audit-fix-02-season-label (Clubhouse audit fix plan, PR 2); no Bridge IDs or CH codes needed |
+| AUD-F-0005 | Stats and Round review section numbers reach 3:1 at night (dark coin fill-700) | Clubhouse fixes | in progress | | claude/audit-fix-03-night-contrast (Clubhouse audit fix plan, PR 3); no Bridge IDs or CH codes needed |
+| AUD-F-0015 | The profile Rounds tab count reads on the tab ink at night | Clubhouse fixes | in progress | | claude/audit-fix-03-night-contrast (Clubhouse audit fix plan, PR 3); no Bridge IDs or CH codes needed |
+| AUD-F-0035 | Eyebrow and date ink reach 4.5:1 (new --ch-ledger-eyebrow day and night) | Clubhouse fixes | in progress | | claude/audit-fix-03-night-contrast (Clubhouse audit fix plan, PR 3); no Bridge IDs or CH codes needed |
+| AUD-F-0036 | The New event shortcut hint reads at 4.5:1 at night | Clubhouse fixes | in progress | | claude/audit-fix-03-night-contrast (Clubhouse audit fix plan, PR 3); no Bridge IDs or CH codes needed |
+| AUD-F-0037 | Team stats chart callouts read on a green-900 halo | Clubhouse fixes | in progress | | claude/audit-fix-03-night-contrast (Clubhouse audit fix plan, PR 3); no Bridge IDs or CH codes needed |
+| AUD-F-0038 | A struck old time on a moved practice inherits its line ink | Clubhouse fixes | in progress | | claude/audit-fix-03-night-contrast (Clubhouse audit fix plan, PR 3); no Bridge IDs or CH codes needed |
+| AUD-F-0039 | Calendar inspector meta reaches 4.5:1 at night | Clubhouse fixes | in progress | | claude/audit-fix-03-night-contrast (Clubhouse audit fix plan, PR 3); no Bridge IDs or CH codes needed |
+| AUD-F-0040 | Qualifiers list counts and meta lose opacity: 0.8 | Clubhouse fixes | in progress | | claude/audit-fix-03-night-contrast (Clubhouse audit fix plan, PR 3); no Bridge IDs or CH codes needed |
+| AUD-F-0041 | Dark ink ramp so neutral body text reaches Lc 75 (owner decision 1 default) | Clubhouse fixes | in progress | | claude/audit-fix-03-night-contrast (Clubhouse audit fix plan, PR 3); no Bridge IDs or CH codes needed |
+| AUD-F-0043 | Team Hub and profile tab labels reach Lc 75 at night | Clubhouse fixes | in progress | | claude/audit-fix-03-night-contrast (Clubhouse audit fix plan, PR 3); no Bridge IDs or CH codes needed |
+| AUD-F-0062 | Meta and the big Stats figure reach Lc 60 at night | Clubhouse fixes | in progress | | claude/audit-fix-03-night-contrast (Clubhouse audit fix plan, PR 3); no Bridge IDs or CH codes needed |
 
 <!-- markdownlint-enable MD013 -->
 

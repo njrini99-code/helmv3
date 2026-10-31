@@ -3410,7 +3410,6 @@ html[data-fw-theme='dark'] .ch-qf-board .ch-badge {
   }
   .ch-qf-pill[aria-pressed='true'] span {
     color: var(--ch-seg-on-ink);
-    opacity: 0.8;
   }
 }
 
@@ -4033,7 +4032,6 @@ button.ch-qf-prounds__r.is-open {
   }
   .ch-qf-pill[aria-pressed='true'] span {
     color: var(--ch-seg-on-ink);
-    opacity: 0.8;
   }
   .ch-qf--list .ch-qf-grid.is-ledger {
     gap: 8px;

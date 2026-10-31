@@ -1989,7 +1989,7 @@ html[data-fw-theme='dark'] .ch-mo__ribbon.is-held {
   display: block;
   font: var(--ch-type-13);
   line-height: var(--ch-lead-caption);
-  color: #bfd5c6;
+  color: var(--ch-on-green-ink-meta);
 }
 .ch-in__next > svg {
   color: #9fe0b6;
@@ -2007,7 +2007,7 @@ html[data-fw-theme='dark'] .ch-mo__ribbon.is-held {
   box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.12), var(--ch-elevation-reading);
 }
 .ch-in__today .ch-in__kick {
-  color: #bfd5c6;
+  color: var(--ch-on-green-ink-meta);
 }
 /* [data-ui] main[data-canopy] h2 (shell.css) sets the forest ink on every h2; the plate's title is ivory. The plates are
    green in both themes, so their ink is the stage's (--ch-ivory-50 turns dark in dark mode). */
@@ -2015,7 +2015,8 @@ html[data-fw-theme='dark'] .ch-mo__ribbon.is-held {
   color: var(--ch-stage-ink);
 }
 .ch-in__today .ch-in__next {
-  background: rgb(255 255 255 / 0.1);
+  /* Recessed into the plate, not lifted: a third white wash took its meta under 4.5:1 at night (F-0039). */
+  background: rgb(0 0 0 / 0.18);
   box-shadow: inset 0 0 0 var(--ch-hairline-w) var(--ch-stage-rule);
 }
 .ch-in__sec .ch-in__need {
