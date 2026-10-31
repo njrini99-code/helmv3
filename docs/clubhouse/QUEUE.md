@@ -430,6 +430,7 @@ its rows together and does not map them one to one.
 | AUD-F-0068 | An open qualifier past its last day says what it waits on | Clubhouse fixes | in progress | | claude/audit-fix-09-messages-calendar-craft (Clubhouse audit fix plan, PR 9); no Bridge IDs or CH codes needed |
 | AUD-F-0071 | Opening a conversation or an event is silent (owner decision 5 default) | Clubhouse fixes | in progress | | claude/audit-fix-09-messages-calendar-craft (Clubhouse audit fix plan, PR 9); no Bridge IDs or CH codes needed |
 | AUD-F-0074 | From your coach never ends a line on a dot | Clubhouse fixes | in progress | | claude/audit-fix-09-messages-calendar-craft (Clubhouse audit fix plan, PR 9); no Bridge IDs or CH codes needed |
+| AUD-F-0070 | The CoachHelm putting card says its rate, range and Tour figure once (shared generator; Fairway too) | Clubhouse fixes | in progress | | claude/audit-fix-10-coachhelm-putting (Clubhouse audit fix plan, PR 10); no Bridge IDs or CH codes needed |
 
 <!-- markdownlint-enable MD013 -->
 
