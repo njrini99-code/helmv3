@@ -703,6 +703,10 @@ reload (`lieFromShotResult`) restore position from.
   the active round (see the multi-device business rule above), the same way
   an explicit save `conflict` does — a stale device must never overwrite
   newer server holes, whether the staleness was noticed by a poll or a save.
+  Three consecutive “Round not found or was deleted” responses pause the
+  background poll; returning to the page retries it. This does not delete the
+  local scorecard, change the lock token, or disable save and recovery. Other
+  failures continue to retry with backoff.
 - Discarding a round races any save already in flight for the same id
   (2026-09-02, C1): a `round_missing` answer that landed after the delete
   used to re-create the round. Both round screens now refuse to drop the id

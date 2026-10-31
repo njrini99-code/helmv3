@@ -55,6 +55,8 @@ export function useRoundStatusSync({
 
     let isCancelled = false;
     let dynamicIntervalId: ReturnType<typeof setTimeout> | null = null;
+    let missingResponses = 0;
+    let pollingPaused = false;
 
     const getBackoffDelay = (): number => {
       const failures = consecutiveFailuresRef.current;
@@ -68,7 +70,7 @@ export function useRoundStatusSync({
     };
 
     const scheduleNextSync = () => {
-      if (isCancelled) return;
+      if (isCancelled || pollingPaused) return;
       if (dynamicIntervalId != null) clearTimeout(dynamicIntervalId);
       const delay = getBackoffDelay();
       dynamicIntervalId = setTimeout(() => {
@@ -88,12 +90,20 @@ export function useRoundStatusSync({
         if (isCancelled) return;
 
         if (!result.success) {
-          // Server action returned an error — count as failure for backoff
+          // A deleted or inaccessible round cannot be recovered by polling it
+          // forever. Keep the scorecard and save/recovery paths untouched;
+          // retry when the player returns to the page instead.
+          missingResponses = result.error === 'Round not found or was deleted'
+            ? missingResponses + 1
+            : 0;
+          if (missingResponses >= SYNC_CIRCUIT_BREAKER_THRESHOLD) pollingPaused = true;
           consecutiveFailuresRef.current++;
           return;
         }
 
         // Success — reset failure counter
+        missingResponses = 0;
+        pollingPaused = false;
         consecutiveFailuresRef.current = 0;
         statusSyncFailureReportedRef.current = false;
 
@@ -167,6 +177,12 @@ export function useRoundStatusSync({
 
     const handleVisibilityChange = () => {
       if (document.visibilityState === 'visible') {
+        if (pollingPaused) {
+          pollingPaused = false;
+          missingResponses = 0;
+          void syncRoundStatus();
+          return;
+        }
         // On tab re-focus, only sync if we're not in heavy backoff
         if (consecutiveFailuresRef.current < SYNC_CIRCUIT_BREAKER_THRESHOLD) {
           void syncRoundStatus();
@@ -175,6 +191,12 @@ export function useRoundStatusSync({
     };
 
     const handleFocus = () => {
+      if (pollingPaused) {
+        pollingPaused = false;
+        missingResponses = 0;
+        void syncRoundStatus();
+        return;
+      }
       if (consecutiveFailuresRef.current < SYNC_CIRCUIT_BREAKER_THRESHOLD) {
         void syncRoundStatus();
       }
@@ -182,6 +204,8 @@ export function useRoundStatusSync({
 
     const handlePageShow = () => {
       // Always attempt on pageshow (user returning to tab after long absence)
+      pollingPaused = false;
+      missingResponses = 0;
       void syncRoundStatus();
     };
 

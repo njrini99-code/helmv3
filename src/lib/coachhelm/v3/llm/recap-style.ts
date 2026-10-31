@@ -14,6 +14,19 @@ import { pct } from '@/lib/golf/stat-formulas';
 export const RECAP_MAX_WORDS = 36;
 export const RECAP_SENTENCES = 2;
 
+/**
+ * Per-sentence word caps the prompts ask for, with headroom under the
+ * enforced 36. Haiku 4.5 overshoots a total it has to count across both
+ * sentences: told "36 words or fewer", 23 of 31 first drafts ran past 36
+ * (golf_coachhelm_llm_calls, 2026-10-21 to 10-22; Sentry
+ * JAVASCRIPT-NEXTJS-15A), and a rewrite told
+ * only "28 words or fewer" still ran long 6 of 22 times. A short cap on each
+ * sentence is easier to hold than one total.
+ */
+export const RECAP_SENTENCE_WORD_TARGETS = [16, 12] as const;
+/** Tighter still for the one rewrite pass, which already ran long once. */
+export const RECAP_SHORTEN_SENTENCE_WORD_TARGETS = [14, 10] as const;
+
 export type RecapStyleViolation = 'em_dash' | 'too_many_words' | 'not_two_sentences';
 
 /** Abbreviations whose period does not end a sentence. */
@@ -30,6 +43,11 @@ function countSentences(text: string, protectedPhrases: readonly string[]): numb
   return ends + (trailing ? 1 : 0);
 }
 
+/** Words exactly as the limit counts them, so a prompt can quote the same number. */
+export function countRecapWords(text: string): number {
+  return text.trim().split(/\s+/).filter(Boolean).length;
+}
+
 /**
  * Every limit the text breaks, or `[]`. `protectedPhrases` (course and
  * player names) are masked before counting sentences so "Pinehurst No. 2"
@@ -38,7 +56,7 @@ function countSentences(text: string, protectedPhrases: readonly string[]): numb
 export function checkRecapStyle(text: string, protectedPhrases: readonly string[] = []): RecapStyleViolation[] {
   const out: RecapStyleViolation[] = [];
   if (/[—–]/.test(text)) out.push('em_dash');
-  if (text.trim().split(/\s+/).filter(Boolean).length > RECAP_MAX_WORDS) out.push('too_many_words');
+  if (countRecapWords(text) > RECAP_MAX_WORDS) out.push('too_many_words');
   if (countSentences(text, protectedPhrases) !== RECAP_SENTENCES) out.push('not_two_sentences');
   return out;
 }
