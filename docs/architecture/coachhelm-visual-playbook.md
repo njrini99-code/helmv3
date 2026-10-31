@@ -19,6 +19,7 @@ CSS, so every duration below is a design choice informed by them, not a copy.
 takes `kind: "compose"` with a title, an optional one-line lede, a layout
 (`stack` | `split`) and up to six blocks:
 
+<!-- markdownlint-disable MD013 -->
 | Block | Use for | Rules the compiler enforces |
 | --- | --- | --- |
 | `headline` | the one figure the answer turns on | the metric must exist in that read; label has no digit |
@@ -28,6 +29,7 @@ takes `kind: "compose"` with a title, an optional one-line lede, a layout
 | `split` | signed figures either side of zero for one player (strokes gained) | one player, one window, no conflicting reads; `sg_total` left out unless named |
 | `compare` | two to twelve players across the same metrics (the team table) | 2–12 players; players become rows when they outnumber metrics |
 | `note` | one sentence: `measured`, `association` (pattern) or `hypothesis` | no digit |
+<!-- markdownlint-enable MD013 -->
 
 `compile-composition.ts` copies every figure from this turn's reads, drops a
 block it cannot draw honestly and tells the model why, refuses a digit in the
@@ -38,6 +40,7 @@ coverage notes so a caveat is never hidden. The result is the
 
 How the model chooses (the prompt's playbook, kept in step with this table):
 
+<!-- markdownlint-disable MD013 -->
 | Question | Design |
 | --- | --- |
 | How is X doing / trending | headline + trend |
@@ -47,6 +50,7 @@ How the model chooses (the prompt's playbook, kept in step with this table):
 | Build a dashboard, how is the team doing | compare (team table) + bars `best_first` on the key metric + note; never one card per metric |
 | Putting or proximity by distance | bars on the bands, highlight the band asked about |
 | A single number, a yes/no | no visual; the plain card is enough |
+<!-- markdownlint-enable MD013 -->
 
 Craft: the title is the finding in words, not the metric name; the block that
 answers the question goes first; two to four blocks; `split` layout only for
@@ -66,6 +70,7 @@ no viewBox text scaling); a dot per round on straight segments, never a spline.
 
 ## 3. Motion
 
+<!-- markdownlint-disable MD013 -->
 | Element | Spec |
 | --- | --- |
 | Card / block entrance | opacity 0→1, rise 8px, 320ms, `EASE_CINEMATIC`; 80ms stagger, capped at 6 |
@@ -73,6 +78,7 @@ no viewBox text scaling); a dot per round on straight segments, never a spline.
 | Dots | fade in as the line reaches them, 220ms |
 | Bars, diverging bars | scaleX from the baseline, 420ms, 50–60ms stagger |
 | Numbers | never counted up; shown final |
+<!-- markdownlint-enable MD013 -->
 
 Only a visual that arrives in the live answer moves; a thread restored from
 history renders final (decided once at mount, never from a live `busy`

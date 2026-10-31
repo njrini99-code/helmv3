@@ -1,11 +1,12 @@
-# 2026-10-29 — CoachHelm Ask: model-designed visuals, the staging transcript, answer type
+# 2026-10-29 — CoachHelm Ask: designed visuals, staging fixes, answer type
 
 ## 2026-10-29 — Composed visuals and the staging-transcript fixes
 
 ```text
 Design package: docs/architecture/coachhelm-visual-playbook.md (owner brief
                 2026-10-29: "terrible and basic"; staging transcript "its the
-                coachhelm chat. its ass"); no owner phone board for the composed card
+                coachhelm chat. its ass"); no owner phone board for the
+                composed card
 PR/commit:      agent/coachhelm-visuals
 Contract IDs:   CH-13850, CH-13852, CH-13853 (presentation; the parts protocol is
                 unchanged: data-visual-composition = ValidatedComposition)
