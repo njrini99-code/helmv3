@@ -2166,9 +2166,10 @@ function Thread({
           ) : !api.msgs.length ? (
             <EmptyState compact code="CH-7304" title="No messages yet" body={`Say hello to ${conv.group ? "the group" : firstName(conv.title)}.`} />
           ) : (
-            // B7: a message that arrives or is deleted opens or closes in place; the thread's scroll stays with
-            // useThreadAnchor (no FLIP), and another conversation is a new list, whose messages never arrive.
-            <ListPresence key={conv.id} flip={false}>
+            // B7: a deleted message closes in place; one that arrives rises in at its full height, so the thread above it
+            // never moves (owner, 2026-10-31, as Fairway's thread does). The scroll stays with useThreadAnchor (no FLIP), and
+            // another conversation is a new list, whose messages never arrive.
+            <ListPresence key={conv.id} flip={false} arrive="rise">
               {items.flatMap((it) =>
                 it.kind === "day"
                   ? [
