@@ -64,6 +64,41 @@ describe('useRoundStatusSync', () => {
     rendered.unmount();
   });
 
+  it('pauses repeated missing-round polls and retries when the player returns', async () => {
+    vi.useFakeTimers();
+    mocks.checkRoundStaleness.mockResolvedValue({ success: false, error: 'Round not found or was deleted' });
+
+    const rendered = renderHook(() => useTestStatusSync());
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(90_000);
+      await vi.advanceTimersByTimeAsync(3_600_000);
+    });
+    expect(mocks.checkRoundStaleness).toHaveBeenCalledTimes(3);
+
+    mocks.checkRoundStaleness.mockResolvedValue({
+      success: true,
+      data: { isStale: false, currentUpdatedAt: '2026-08-25T00:00:00.000Z', status: 'in_progress' },
+    });
+    await act(async () => {
+      window.dispatchEvent(new Event('focus'));
+      await Promise.resolve();
+      await vi.advanceTimersByTimeAsync(30_000);
+    });
+    expect(mocks.checkRoundStaleness).toHaveBeenCalledTimes(5);
+    rendered.unmount();
+  });
+
+  it('continues retrying other status errors with backoff', async () => {
+    vi.useFakeTimers();
+    mocks.checkRoundStaleness.mockResolvedValue({ success: false, error: 'Failed to check round status' });
+    const rendered = renderHook(() => useTestStatusSync());
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(210_000);
+    });
+    expect(mocks.checkRoundStaleness).toHaveBeenCalledTimes(4);
+    rendered.unmount();
+  });
+
   // B2: two devices on one round. The RPCs (save_partial_round_atomic,
   // submit_round_atomic) are full-snapshot REPLACE and rely on
   // `expectedUpdatedAt` as an optimistic lock. If this hook silently resyncs
