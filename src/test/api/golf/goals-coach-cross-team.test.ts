@@ -118,6 +118,9 @@ function input(playerId: string) {
   } as never;
 }
 
+/** A day `n` days before today, as a round date. */
+const daysAgo = (n: number) => new Date(Date.now() - n * 86_400_000).toISOString().slice(0, 10);
+
 describe('createGoal — a coach cannot reach across the roster', () => {
   beforeEach(() => {
     validateCoachTeamAccess.mockReset().mockResolvedValue(true);
@@ -201,9 +204,10 @@ describe('createGoal — audit row 20 goal rules', () => {
   });
 
   it('stores the pre-start windowed average as the baseline, not the all-time standing', async () => {
+    // Inside the pre-start window whatever day the suite runs (fixed August dates aged out of it on 2026-10-31).
     loadPlayerWindowRounds.mockResolvedValue([
-      { round_date: '2026-08-01', strokes_gained_putting: -3 },
-      { round_date: '2026-08-10', strokes_gained_putting: -2.5 },
+      { round_date: daysAgo(20), strokes_gained_putting: -3 },
+      { round_date: daysAgo(10), strokes_gained_putting: -2.5 },
     ]);
     const { createClient } = await import('@/lib/supabase/server');
     const real = await (createClient as unknown as () => Promise<{ from: (t: string) => unknown }>)();
@@ -228,7 +232,7 @@ describe('createGoal — audit row 20 goal rules', () => {
   });
 
   it('refuses a target on the wrong side of the measured baseline', async () => {
-    loadPlayerWindowRounds.mockResolvedValue([{ round_date: '2026-08-01', strokes_gained_putting: 1 }]);
+    loadPlayerWindowRounds.mockResolvedValue([{ round_date: daysAgo(20), strokes_gained_putting: 1 }]);
     // sg_putting is higher-better; baseline +1.0, target +0.5 would be "met" on day one.
     const res = await createGoal(input(ON_ROSTER));
     expect(res.ok).toBe(false);
