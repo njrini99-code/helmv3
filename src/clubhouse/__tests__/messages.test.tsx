@@ -2112,6 +2112,18 @@ describe('F-0004 · coach Start conversation opens the one-to-one thread, never 
     expect(screen.queryByRole('dialog', { name: 'New message' })).toBeNull();
   });
 
+  it('F-0045 the new thread opens as soon as it is made, before the list has read it again', async () => {
+    const user = userEvent.setup();
+    live.convs.conversations = [channel, team];
+    a.createGolfConversation.mockResolvedValue({ conversationId: 'dm-eli', reused: false });
+    live.convs.refetch.mockImplementation(() => new Promise(() => {}));
+    show();
+    await startWithEli(user);
+    expect(await screen.findByRole('textbox', { name: /Message Eli$/ })).toBeTruthy();
+    expect(screen.queryByRole('dialog', { name: 'New message' })).toBeNull();
+    expect(code('CH-7015')).toBeNull();
+  });
+
   it('an answer that is the channel is refused: the sheet stays open and says so (CH-7002)', async () => {
     const user = userEvent.setup();
     live.convs.conversations = [channel, team];

@@ -110,7 +110,7 @@ export function Messages({ data }: { data: ChMessagesData }) {
     [data.viewerUserId],
   );
 
-  const convs: ChConv[] = useMemo(
+  const loadedConvs: ChConv[] = useMemo(
     () =>
       conversations.map((c) => {
         const group = isGroup(c);
@@ -135,6 +135,9 @@ export function Messages({ data }: { data: ChMessagesData }) {
       }),
     [conversations, people, data.viewerUserId, marked],
   );
+  // A one-to-one thread just made, shown at once until the list's next read carries it (F-0045).
+  const [started, setStarted] = useState<ChConv | null>(null);
+  const convs = useMemo(() => (started && !loadedConvs.some((c) => c.id === started.id) ? [started, ...loadedConvs] : loadedConvs), [started, loadedConvs]);
 
   const msgs = useGolfMessages(selectedId ?? '', data.viewerUserId, { deferMarkRead: !!selectedId && selectedId === autoOpened, classAwareness: awareness });
   const liveIds = useMemo(() => msgs.messages.filter((m) => m.conversation_id === selectedId && !m.sendFailed).map((m) => m.id), [msgs.messages, selectedId]);
@@ -323,12 +326,15 @@ export function Messages({ data }: { data: ChMessagesData }) {
           throw new Error('The conversation returned is not a direct thread');
         }
         landDraft(res.conversationId);
-        await refetch();
+        // F-0045: the thread opens now, from what is known of it; the list reads again behind it.
+        const dir = people.get(userId);
+        setStarted({ id: res.conversationId, group: false, channel: false, title: dir?.name ?? 'Conversation', subtitle: dir?.subtitle ?? '', memberIds: [userId], memberCount: 2, unread: 0, lastAt: new Date().toISOString(), lastSenderId: null, lastText: '', creatorId: data.viewerUserId });
         setSelectedId(res.conversationId);
         haptic('success');
+        void refetch().catch(() => undefined);
       });
     },
-    [convs, data.teamId, refetch, attempt, landDraft],
+    [convs, people, data.teamId, data.viewerUserId, refetch, attempt, landDraft],
   );
 
   const createGroup = useCallback(
