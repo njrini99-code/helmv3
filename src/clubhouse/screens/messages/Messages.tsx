@@ -777,12 +777,15 @@ export function Messages({ data }: { data: ChMessagesData }) {
         await msgs.editMessage(id, text);
         haptic('success');
         toast({ title: 'Message edited' });
+        // The rail's preview may be this message.
+        void refetch().catch(() => undefined);
       }),
     remove: async (id) => {
       const ok = await attempt('remove', { failed: "Couldn’t delete the message", hint: 'It’s back in the thread. Try again in a moment.', code: 'CH-7008' }, async () => {
         await msgs.removeMessage(id);
         haptic('success');
         toast({ title: 'Message deleted' });
+        void refetch().catch(() => undefined);
       });
       if (!ok) void msgs.refetch();
       return ok;
@@ -863,6 +866,8 @@ export function Messages({ data }: { data: ChMessagesData }) {
         if ('error' in res) throw new Error(res.error);
         haptic('success');
         toast({ title: 'You left the group' });
+        // A thread started here stays pinned to the list until it loads; it must not outlive leaving it.
+        setStarted((s) => (s?.id === selectedId ? null : s));
         setSelectedId(null);
         await refetch();
       });
@@ -875,6 +880,7 @@ export function Messages({ data }: { data: ChMessagesData }) {
             if (!res.success) throw new Error(res.error);
             haptic('success');
             toast({ title: 'Conversation deleted' });
+            setStarted((s) => (s?.id === id ? null : s));
             mark(id, false);
             if (id === selectedId) setSelectedId(null);
             await refetch();

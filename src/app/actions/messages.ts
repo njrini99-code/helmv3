@@ -961,13 +961,19 @@ async function createGolfTeamBroadcastImpl({
       .order('created_at', { ascending: true });
 
     if (existingConvs && existingConvs.length > 0) {
+      // Reusable: a chat the coach is still in and hasn't deleted (a hidden one opened blank, off their list), and with
+      // nobody outside the audience just chosen. "Practice" for JV must never also reach the varsity "Practice" chat.
+      const reusable: string[] = [];
       for (const candidate of existingConvs) {
         const { data: candidateParticipants } = await supabase
           .from('golf_conversation_participants')
-          .select('user_id')
+          .select('user_id, hidden_at')
           .eq('conversation_id', candidate.id);
 
+        const mine = (candidateParticipants ?? []).find((p) => p.user_id === user.id);
+        if (!mine || mine.hidden_at) continue;
         const candidateIds = [...new Set((candidateParticipants ?? []).map((p) => p.user_id))].sort();
+        if (candidateIds.every((id) => desiredParticipantIds.includes(id))) reusable.push(candidate.id);
         const sameAudience =
           candidateIds.length === desiredParticipantIds.length &&
           candidateIds.every((id, i) => id === desiredParticipantIds[i]);
@@ -978,15 +984,12 @@ async function createGolfTeamBroadcastImpl({
         }
       }
 
-      // A broadcast with this title exists, but for a DIFFERENT audience
-      // than the one just selected. Reuse the oldest such thread (rather
-      // than fragmenting into yet another same-titled conversation) but
-      // reconcile membership first: add anyone newly selected who isn't
-      // already a participant, so the message the coach is about to send
-      // actually reaches every recipient they just chose. Never remove
-      // existing participants here — golf messaging never does destructive
-      // participant writes.
-      const reuseTarget = existingConvs[0];
+      // A broadcast with this title exists for a smaller audience inside the one just selected. Reuse the oldest such
+      // thread (rather than fragmenting into yet another same-titled conversation) and add whoever is newly selected,
+      // so the message reaches every recipient just chosen. Never remove participants here — golf messaging never does
+      // destructive participant writes — which is why a chat holding anyone outside the audience is not reused.
+      const reuseTargetId = reusable[0];
+      const reuseTarget = reuseTargetId ? { id: reuseTargetId } : null;
       if (reuseTarget) {
         const { data: existingParticipants, error: existingParticipantsError } = await supabase
           .from('golf_conversation_participants')
@@ -1214,6 +1217,18 @@ interface UpdateMessageOptions {
 }
 
 /**
+ * Touch the conversation so every member's inbox (which listens to the conversation row, not to messages) reads its
+ * last message and unread count again after an edit or a delete; without it the deleted text stayed in their preview.
+ * The inbox orders by the last message, so this never moves the row. Best effort: the edit itself already landed.
+ */
+async function touchConversation(supabase: Awaited<ReturnType<typeof createClient>>, sport: Sport, conversationId: string): Promise<void> {
+  const table = sport === 'golf' ? 'golf_conversations' : 'baseball_conversations';
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { error } = await supabase.from(table as any).update({ updated_at: new Date().toISOString() }).eq('id', conversationId);
+  if (error) await logServerError(`[Messages] conversation touch failed: ${describeError(error)}`, { action: 'messages.touchConversation' });
+}
+
+/**
  * Update a message's content (edit)
  * @param messageId - The message ID to update
  * @param content - The new message content
@@ -1290,6 +1305,7 @@ export async function updateMessage({
       await logServerError(`[Messages] Failed to update message: ${describeError(updateError)}`, { action: 'messages.updateMessage' });
       throw new Error('Failed to update message');
     }
+    await touchConversation(supabase, sport, msg.conversation_id);
 
     return { success: true };
   } catch (err) {
@@ -1367,6 +1383,7 @@ export async function deleteMessage({
       await logServerError(`[Messages] Failed to delete message: ${describeError(deleteError)}`, { action: 'messages.deleteMessage' });
       throw new Error('Failed to delete message');
     }
+    await touchConversation(supabase, sport, msg.conversation_id);
 
     return { success: true };
   } catch (err) {
