@@ -305,10 +305,19 @@ export async function loadTeamHub(input: { role: ChHubRole; teamId: string; user
   // A coach's second wave (events, tasks, trips, announcements) needs only the clock's today: it starts as soon as that is
   // known, not after the documents and the bell's notifications (F-0033).
   const coachWave = input.role === 'coach' ? clockRead.then((c) => coachSecondWave(supabase, input, now, isoDay(now, c.tz))) : null;
+  // The roster is read once (a promise, so awaiting it twice doesn't send it twice); a coach's 30-day pulse needs only it
+  // and the clock, so it starts as soon as both are in, not after the second wave (F-0033).
+  const rosterRead = Promise.resolve(supabase.from('golf_team_members').select('player:golf_players(id, first_name, last_name)').eq('team_id', input.teamId).eq('status', 'active'));
+  const pulseRead =
+    input.role === 'coach'
+      ? Promise.all([clockRead, rosterRead])
+          .then(([c, r]) => (r.error ? null : rosterPulse(supabase, rosterNames(r.data), isoDay(now, c.tz))))
+          .catch(() => null)
+      : null;
   const [clock, teamRes, rosterRes, docsRes, updatesRes, hidden] = await Promise.all([
     clockRead,
     supabase.from('golf_teams').select('name, season').eq('id', input.teamId).maybeSingle(),
-    supabase.from('golf_team_members').select('player:golf_players(id, first_name, last_name)').eq('team_id', input.teamId).eq('status', 'active'),
+    rosterRead,
     getDocuments(input.teamId).catch((err: unknown) => ({ data: null, error: err instanceof Error ? err.message : 'failed' })),
     getUnifiedNotifications({ limit: 6 }).catch(() => ({ success: false as const, error: 'failed' })),
     hiddenTestRows(supabase, input.teamId),
@@ -321,9 +330,8 @@ export async function loadTeamHub(input: { role: ChHubRole; teamId: string; user
   if (docsRes.error) log('documents', docsRes.error);
   if (!updatesRes.success) log('updates', 'error' in updatesRes ? updatesRes.error : 'failed');
 
-  type P = { id: string; first_name: string | null; last_name: string | null };
-  const roster = ((rosterRes.data ?? []) as Array<{ player: P | null }>).map((m) => m.player).filter((p): p is P => !!p);
-  const names = new Map(roster.map((p) => [p.id, fullName(p)]));
+  const roster = rosterPlayers(rosterRes.data);
+  const names = rosterNames(rosterRes.data);
 
   const base = {
     role: input.role,
@@ -454,7 +462,7 @@ export async function loadTeamHub(input: { role: ChHubRole; teamId: string; user
     authorNames(supabase, anns),
     // An all-team post's audience is the roster: without it, who is left is unknown.
     rosterRes.error ? null : notAckedFor(supabase, anns.filter((a) => a.requires_acknowledgement).map((a) => a.id), names, owedPosts),
-    rosterRes.error ? Promise.resolve(null) : rosterPulse(supabase, names, today),
+    pulseRead!,
   ]);
 
   // Waiting on: built from reads already made above (attendance, acknowledgements, assignments, rounds); no new query.
@@ -554,6 +562,15 @@ export async function loadTeamHub(input: { role: ChHubRole; teamId: string; user
 }
 
 /** Coach: rounds the roster logged in 30 days and how many players logged one in 14, or null when the read failed. */
+type RosterPlayer = { id: string; first_name: string | null; last_name: string | null };
+/** The active members the roster read returned, players only. */
+function rosterPlayers(data: unknown): RosterPlayer[] {
+  return ((data ?? []) as Array<{ player: RosterPlayer | null }>).map((m) => m.player).filter((p): p is RosterPlayer => !!p);
+}
+function rosterNames(data: unknown): Map<string, string> {
+  return new Map(rosterPlayers(data).map((p) => [p.id, fullName(p)]));
+}
+
 async function rosterPulse(supabase: Awaited<ReturnType<typeof createClient>>, names: Map<string, string>, today: string): Promise<NonNullable<ChTeamHub['pulse']> | null> {
   const playerIds = [...names.keys()];
   if (!playerIds.length) return { rounds30: 0, active14: 0, players: 0, byPlayer: [] };
