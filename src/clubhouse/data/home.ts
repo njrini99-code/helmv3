@@ -23,6 +23,7 @@ import { playerMine, playerSeesMeeting, replyClosedAt, type ChRsvp } from '../sc
 import { loadAttendanceCounts, loadInvitedCounts, type ChAttendanceCounts } from './attendance-counts';
 import { confirmedLine, daysBetween, homeSubline, inviteDetail } from '../screens/home/model';
 import { firstName } from '../lib/names';
+import { weekdayMonthDay } from '../lib/dates';
 import type { MarkEntries } from '../lib/marks-cookie';
 import type { ChCalChange } from '../screens/calendar/change-view';
 import type { ChHomeChange } from '../screens/home/change-rows';
@@ -420,11 +421,10 @@ export async function loadCoachHome(input: {
   // Recency counts any countable round, nine holes included.
   const lastPlayed = new Map<string, string>();
   for (const r of seasonRounds) if (!lastPlayed.has(r.player_id)) lastPlayed.set(r.player_id, r.round_date.slice(0, 10));
-  const peekDate = new Intl.DateTimeFormat('en-GB', { timeZone: 'UTC', weekday: 'short', day: 'numeric', month: 'short' });
   const lastScored = new Map<string, NonNullable<ChLeaderRow['lastRound']>>();
   for (const r of seasonRounds) {
     if (lastScored.has(r.player_id) || r.total_score == null) continue;
-    const day = peekDate.format(new Date(`${r.round_date.slice(0, 10)}T12:00:00Z`));
+    const day = weekdayMonthDay(r.round_date.slice(0, 10));
     lastScored.set(r.player_id, { score: r.total_score, toPar: r.score_to_par ?? null, label: [r.course_name, day, r.holes_played != null && r.holes_played < 18 ? `${r.holes_played} holes` : null].filter(Boolean).join(' · ') });
   }
   const rows: ChLeaderRow[] = [];
@@ -460,7 +460,11 @@ export async function loadCoachHome(input: {
     teamId: input.teamId,
     greeting: `${greeting}, ${coachFirst}`,
     teamChatId: chatRes.error ? null : (chatRes.data?.[0]?.id ?? null),
-    subline: homeSubline(rows, { roundsError, nextCompetition: wk.nextCompetition }),
+    subline: homeSubline(rows, {
+      roundsError,
+      nextCompetition: wk.nextCompetition,
+      unposted: roster.filter((p) => !byPlayer.get(p.id)?.length).map((p) => ({ name: nameOf(p), availability: availabilityById.get(p.id) ?? 'available' })),
+    }),
     todayLabel,
     clock: { tz, day },
     week: { ...wk.week, agenda: withWas(wk.week.agenda, changes.byEvent) },

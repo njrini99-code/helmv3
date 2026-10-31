@@ -848,27 +848,37 @@ async function getAnnouncementsWithMetaImpl(
 
     // Fetch all acknowledgements (P275: bounded fan-out)
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const { data: allAcks } = await (supabase as any)
+    const { data: allAcks, error: acksError } = await (supabase as any)
       .from('golf_announcement_acknowledgements')
       .select('announcement_id, player_id')
       .in('announcement_id', announcementIds)
-      .limit(ANNOUNCEMENTS_FANOUT_LIMIT) as { data: Array<{ announcement_id: string; player_id: string }> | null };
+      .limit(ANNOUNCEMENTS_FANOUT_LIMIT) as { data: Array<{ announcement_id: string; player_id: string }> | null; error: unknown };
 
     // Fetch task counts via announcement_tasks (P275: bounded fan-out)
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const { data: allAnnTasks } = await (supabase as any)
+    const { data: allAnnTasks, error: annTasksError } = await (supabase as any)
       .from('golf_announcement_tasks')
       .select('announcement_id, task_id')
       .in('announcement_id', announcementIds)
-      .limit(ANNOUNCEMENTS_FANOUT_LIMIT) as { data: Array<{ announcement_id: string; task_id: string }> | null };
+      .limit(ANNOUNCEMENTS_FANOUT_LIMIT) as { data: Array<{ announcement_id: string; task_id: string }> | null; error: unknown };
 
     // Fetch document counts (P275: bounded fan-out)
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const { data: allAnnDocs } = await (supabase as any)
+    const { data: allAnnDocs, error: annDocsError } = await (supabase as any)
       .from('golf_announcement_documents')
       .select('announcement_id')
       .in('announcement_id', announcementIds)
-      .limit(ANNOUNCEMENTS_FANOUT_LIMIT) as { data: Array<{ announcement_id: string }> | null };
+      .limit(ANNOUNCEMENTS_FANOUT_LIMIT) as { data: Array<{ announcement_id: string }> | null; error: unknown };
+
+    // A failed count read drew "0 of N acknowledged" and hid the attachments control: refuse, like the gate above.
+    const countsError = acksError ?? annTasksError ?? annDocsError;
+    if (countsError) {
+      await logServerError(
+        `[getAnnouncementsWithMeta] acknowledgement, task or document read failed: ${describeError(countsError)}`,
+        { action: 'announcements.getAnnouncementsWithMeta', featureArea: 'announcements' },
+      );
+      return { success: false, error: 'Could not load announcements right now. Please try again.' };
+    }
 
     // Fetch task assignment completions if we have linked tasks.
     // F098: scope the read EXPLICITLY by player_id for the player view. A coach
@@ -892,23 +902,18 @@ async function getAnnouncementsWithMetaImpl(
       completedAssignments = (assignments || []).filter(a => a.status === 'completed');
     }
 
-    // Get total team member count for "all team" announcements.
-    //
-    // This is the DENOMINATOR of the acknowledgement progress a coach reads to
-    // decide whether everyone has signed the waiver. On a failed read it falls
-    // back to 0, which is wrong in a visible way (a real numerator over zero)
-    // rather than a plausible way — but it is still wrong, and it used to be
-    // wrong SILENTLY. Making it honest means typing it `number | null` and
-    // teaching the progress UI to render "unknown", which is a UI change and is
-    // deliberately not bundled here; this at least stops it happening unseen.
+    // The active roster: the denominator of the acknowledgement progress a coach reads to decide whether everyone has
+    // signed the waiver, and the filter on both sides of it. A failed read drew "N of 0"; it refuses now, like the
+    // reads above.
     const teamPlayers = await getTeamPlayerIds(supabase, teamId);
     if (!teamPlayers.ok) {
       await logServerError(
-        `[getAnnouncements] roster count read failed — acknowledgement denominator is wrong: ${describeError(teamPlayers.error)}`,
+        `[getAnnouncements] roster count read failed — acknowledgement denominator unknown: ${describeError(teamPlayers.error)}`,
         { action: 'announcements.getAnnouncements', featureArea: 'announcements' },
       );
+      return { success: false, error: 'Could not load announcements right now. Please try again.' };
     }
-    const totalTeamCount = teamPlayers.ok ? teamPlayers.ids.length : 0;
+    const activeRoster = new Set(teamPlayers.ids);
 
     // Fetch player info for acknowledged players (for avatar display)
     const allAckPlayerIds = [...new Set((allAcks || []).map(a => a.player_id))];
@@ -938,7 +943,12 @@ async function getAnnouncementsWithMetaImpl(
       const annDocs = docsByAnn[ann.id] || [];
 
       const isAllTeam = recipients.length === 0;
-      const totalRecipients = isAllTeam ? totalTeamCount : recipients.length;
+      // Both numbers over the players still on the team, so a removed player's ack or recipient row can't read
+      // "8 of 7" or "4 of 5" beside "No one is waiting on it" (which already lists the active roster only).
+      // Coach view only: a player's read of the roster is whatever RLS shows them, so their counts stay as stored.
+      const audience = isAllTeam ? activeRoster : new Set(recipients.map((r) => r.player_id).filter((id) => activeRoster.has(id)));
+      const totalRecipients = isCoach ? audience.size : isAllTeam ? activeRoster.size : recipients.length;
+      const audienceAcks = isCoach ? acks.filter((a) => audience.has(a.player_id)) : acks;
 
       // Count tasks and completions for this announcement's tasks
       const annTaskIds = annTaskLinks.map(t => t.task_id);
@@ -947,13 +957,13 @@ async function getAnnouncementsWithMetaImpl(
 
       // Get acknowledged player info (first 5 for avatar stack)
       const acknowledgedPlayers = isCoach
-        ? acks.slice(0, 5).map(a => ackPlayerMap[a.player_id]).filter((p): p is NonNullable<typeof p> => !!p)
+        ? audienceAcks.slice(0, 5).map(a => ackPlayerMap[a.player_id]).filter((p): p is NonNullable<typeof p> => !!p)
         : undefined;
 
       return {
         ...ann,
         recipient_count: recipients.length,
-        acknowledged_count: acks.length,
+        acknowledged_count: audienceAcks.length,
         total_recipients: totalRecipients,
         task_count: annAssignments.length,
         completed_task_count: annCompleted.length,

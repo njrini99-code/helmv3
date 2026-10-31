@@ -8,7 +8,7 @@ import { CLASS_EVENT_TYPE, isClassEvent } from '@/lib/calendar/class-events';
 import { isCoachHelmEnabledForCoach } from '@/lib/coachhelm/v2/gate';
 import { isFlagEnabled } from '@/lib/flags/is-enabled';
 import { todayIsoInZone } from '@/lib/golf/timezone';
-import { isoDay } from '../lib/dates';
+import { isoDay, weekdayMonthDay } from '../lib/dates';
 import { fullName } from './season';
 import { toParOf } from '../live/model';
 
@@ -303,7 +303,7 @@ function describeEvent(
   const days = startDay - dayNumber(new Date(), timezone);
   const whenLabel = days <= 0 ? 'Today' : days === 1 ? 'Tomorrow' : `In ${days} days`;
   const date = allDayDate
-    ? new Intl.DateTimeFormat('en-US', { timeZone: 'UTC', weekday: 'short', month: 'short', day: 'numeric' }).format(new Date(`${allDayDate}T12:00:00Z`))
+    ? weekdayMonthDay(allDayDate)
     : new Intl.DateTimeFormat('en-US', { timeZone: timezone, weekday: 'short', month: 'short', day: 'numeric' }).format(start);
   const time = e.all_day
     ? 'All day'

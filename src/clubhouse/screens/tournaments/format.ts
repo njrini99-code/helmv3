@@ -5,7 +5,7 @@
  * agree whatever the machine's zone. "Today" is always the view's `data.now`, never the clock.
  */
 import { formatDateOnly } from '@/lib/golf/date-only';
-import { formatClock } from '../../lib/dates';
+import { formatClock, isoDay } from '../../lib/dates';
 import { formatFixed, formatSigned, formatToPar, MINUS } from '../../lib/format';
 import type { ChTourEvent, ChTourRecord, TourFormat } from './types';
 import { formatPct } from './standings';
@@ -31,7 +31,7 @@ export function tourRange(start: string, end: string): string {
  */
 export function teamToday(now: string, timezone: string): string {
   try {
-    return new Intl.DateTimeFormat('en-CA', { timeZone: timezone, year: 'numeric', month: '2-digit', day: '2-digit' }).format(new Date(now));
+    return isoDay(now, timezone);
   } catch {
     return now.slice(0, 10);
   }

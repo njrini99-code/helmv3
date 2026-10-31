@@ -452,7 +452,8 @@ export async function loadTeamHub(input: { role: ChHubRole; teamId: string; user
   const trips = without((tripsRes.data ?? []) as unknown as TripRow[], hidden.trips);
   // Soonest due first, the undated last; the rows are put in their shown order (`taskOrder`) once their status is known.
   const tasks = without(tasksRes.data ?? [], hidden.tasks).slice().sort((a, b) => (a.due_date ?? '\uffff').localeCompare(b.due_date ?? '\uffff'));
-  const events = eventsRes.data ?? [];
+  // A timed event leaves once it starts; an all-day one stays through its day, as long as players can still reply.
+  const events = (eventsRes.data ?? []).filter((e) => Date.parse(e.start_time) + (e.all_day ? 86400000 : 0) > now.getTime());
   const tripEvents = tripEventsRes.data ?? [];
   // One attendance read for this week's events, the trips' events and the builder's events; one for task completion.
   const anns = annRes.success ? without(annRes.data ?? [], hidden.announcements) : [];
@@ -1024,7 +1025,8 @@ function coachSecondWave(supabase: Awaited<ReturnType<typeof createClient>>, inp
       .neq('event_type', CLASS_EVENT_TYPE)
       .eq('requires_rsvp', true)
       .is('cancelled_at', null)
-      .gte('start_time', now.toISOString())
+      // A day back: an all-day event is stored at UTC midnight and players can reply all that day (replyIsClosed).
+      .gte('start_time', new Date(now.getTime() - 86400000).toISOString())
       .lt('start_time', `${weekEnd}T23:59:59Z`)
       .order('start_time', { ascending: true })
       .limit(50),

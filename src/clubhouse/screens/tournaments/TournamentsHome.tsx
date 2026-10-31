@@ -280,7 +280,7 @@ function FirstRun({ untracked, newEvent }: { untracked: number; newEvent: string
 /** "Thu 5 to Sat 7 Nov · 3 calendar entries". */
 export function setUpLine(g: ChTourSetupGroup): string {
   const n = g.eventIds.length;
-  return `${tourRange(g.first, g.last)} · ${n} calendar ${n === 1 ? 'entry' : 'entries'}`;
+  return `${tourRange(g.first, g.last)} · ${plural(n, 'calendar entry', 'calendar entries')}`;
 }
 
 /**

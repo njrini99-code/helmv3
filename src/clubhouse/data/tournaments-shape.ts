@@ -262,7 +262,7 @@ const GENERIC_TAIL = /\s+(invitational|intercollegiate|classic|championships?|to
  * The event's name for tight places. The first word alone made "Tar" of the Tar Heel Invitational and "Fall vs Fall" of
  * two fall events (audit 2026-10-31): a short name stays whole, a long one drops its generic last words, else keeps two.
  */
-export function shortName(name: string): string {
+export function eventShortName(name: string): string {
   const full = name.trim();
   if (full.length <= 20) return full;
   let s = full;
@@ -364,7 +364,7 @@ export function shapeEvent(raw: TourRawEvent, now: string): ChTourEvent {
     id: t.id,
     seasonId: seasonIdOf(t.start_date),
     name: t.name,
-    short: shortName(t.name),
+    short: eventShortName(t.name),
     host: t.host,
     startDate: t.start_date,
     endDate: t.end_date,

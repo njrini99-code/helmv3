@@ -79,17 +79,28 @@ function list(parts: string[]): string {
  * in QUIET_DAYS), then the week's next competition, then the rest. Early-read
  * players are never counted as on track. Null when the rounds read failed.
  */
-export function homeSubline(allRows: ChSublineRow[], opts: { roundsError: boolean; nextCompetition: { title: string; when: string } | null }): string | null {
+export function homeSubline(
+  allRows: ChSublineRow[],
+  opts: {
+    roundsError: boolean;
+    nextCompetition: { title: string; when: string } | null;
+    /** Active players with no 18-hole round this season: no leaderboard row, so never "on track" either. */
+    unposted?: Pick<ChSublineRow, 'name' | 'availability'>[];
+  },
+): string | null {
   if (opts.roundsError) return null;
   // A player who is out is neither flagged for a quiet stretch nor counted on track (same rule as the roster's Needs a look).
   const rows = allRows.filter((r) => !isOut(r.availability));
+  const unposted = (opts.unposted ?? []).filter((r) => !isOut(r.availability));
   const flagged = rows.filter((r) => r.status === 'slipping' || (r.quietDays != null && r.quietDays >= QUIET_DAYS));
   const onTrack = rows.filter((r) => !flagged.includes(r) && r.status !== 'early');
   const early = rows.filter((r) => !flagged.includes(r) && r.status === 'early');
   const out: string[] = [];
+  // Not everyone has a read: say "with enough rounds", never "the team".
+  const partial = early.length > 0 || unposted.length > 0;
 
   if (flagged.length === 0) {
-    if (onTrack.length > 0) out.push(early.length ? 'Everyone with enough rounds is on track.' : 'The team is on track.');
+    if (onTrack.length > 0) out.push(partial ? 'Everyone with enough rounds is on track.' : 'The team is on track.');
   } else if (flagged.length <= 2) {
     const s = list(flagged.map(reason));
     out.push(`${s.charAt(0).toUpperCase()}${s.slice(1)}.`);
@@ -98,7 +109,15 @@ export function homeSubline(allRows: ChSublineRow[], opts: { roundsError: boolea
   }
   // A no-break space ahead of a title's dot keeps "· Pinehurst No. 2" from opening a line.
   if (opts.nextCompetition) out.push(`${opts.nextCompetition.title.replace(/ · /g, '\u00a0· ')} is ${opts.nextCompetition.when}.`);
-  if (flagged.length > 0 && onTrack.length > 0) out.push(early.length ? 'The others with enough rounds are on track.' : 'The rest of the team is on track.');
+  if (flagged.length > 0 && onTrack.length > 0) out.push(partial ? 'The others with enough rounds are on track.' : 'The rest of the team is on track.');
+  // With no rows at all the leaderboard's own empty state says it.
+  if (unposted.length > 0 && rows.length > 0) {
+    out.push(
+      unposted.length <= 2
+        ? `${list(unposted.map((r) => firstName(r.name)))} ${unposted.length === 1 ? 'has' : 'have'} no 18-hole round this season.`
+        : `${unposted.length} players have no 18-hole round this season.`,
+    );
+  }
   return out.length ? out.join(' ') : null;
 }
 
