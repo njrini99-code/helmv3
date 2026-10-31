@@ -1,3 +1,5 @@
+import { readFileSync } from 'node:fs';
+import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
 import { focusHour, groupClasses, isClassGroup, type ChCalEvent } from '../screens/calendar/model';
 
@@ -134,5 +136,15 @@ describe('Calendar · players\u2019 classes fold into one block (P006)', () => {
     const practice = { ...cls('p', 'x', 9, 10), type: 'practice' } as ChCalEvent;
     expect(groupClasses([cls('a', 'p1', 8, 9), practice])).toEqual(expect.arrayContaining([cls('a', 'p1', 8, 9), practice]));
     expect(groupClasses([cls('a', 'p1', 8, 9), practice])).toHaveLength(2);
+  });
+});
+
+describe('the change note in the desktop panel (F-0028)', () => {
+  const cal = readFileSync(join(process.cwd(), 'src/clubhouse/styles/calendar.css'), 'utf8').replace(/\/\*[\s\S]*?\*\//g, '');
+  it('the panel is a size container, so the note reads its width, not the window’s', () => {
+    expect(cal).toMatch(/\.ch-in-wrap \{[^}]*container-type: inline-size;/);
+  });
+  it('in a narrow panel the actions drop under the text, which keeps the full width', () => {
+    expect(cal).toMatch(/@container \(max-width: 420px\) \{\s*\.ch-change-note \{\s*grid-template-columns: 20px minmax\(0, 1fr\);\s*\}\s*\.ch-change-note__a \{\s*grid-column: 2;/);
   });
 });

@@ -191,16 +191,26 @@ export function PageIntro({
   brief,
   action,
   level = 1,
+  large = false,
   className,
   code,
   label,
-}: KitProps & { eyebrow?: ReactNode; title: ReactNode; titleId?: string; brief?: ReactNode; action?: ReactNode; level?: 1 | 2 }) {
+}: KitProps & {
+  eyebrow?: ReactNode;
+  title: ReactNode;
+  titleId?: string;
+  brief?: ReactNode;
+  action?: ReactNode;
+  level?: 1 | 2;
+  /** The page's large title on the phone (ui/LargeTitle's contract): the bar hides its own copy until this scrolls under it (F-0054). */
+  large?: boolean;
+}) {
   const Heading = level === 2 ? 'h2' : 'h1';
   return (
     <header className={cx('ch-intro', className)} data-ch-code={code}>
       {eyebrow != null && <span className="ch-intro__eyebrow">{eyebrow}</span>}
       <span className="ch-intro__row">
-        <Heading id={titleId} className="ch-intro__title" aria-label={label}>
+        <Heading id={titleId} className={cx('ch-intro__title', large ? 'ch-large-title' : undefined)} data-ch-large-title={large ? '' : undefined} aria-label={label}>
           {title}
         </Heading>
         {action != null && <span className="ch-intro__action">{action}</span>}

@@ -1038,11 +1038,13 @@ describe('Calendar · empty and loading', () => {
 });
 
 describe('Calendar · haptics and accessibility', () => {
-  it('CH-6701 opening an event ticks', async () => {
+  it('CH-6701 opening an event is plain navigation, so it is silent (D-70, F-0071)', async () => {
     const user = userEvent.setup();
     wrap(cal());
+    hapticSpy.mockClear();
     await user.click(screen.getAllByRole('button', { name: /Travel briefing/ })[0]!);
-    expect(hapticSpy).toHaveBeenCalledWith('select');
+    expect(screen.getByRole('complementary', { name: 'Details' }).textContent).toMatch(/Travel briefing/);
+    expect(hapticSpy).not.toHaveBeenCalled();
   });
 
   it('CH-6801 61002 events are named with their time, and overlaps are said out loud', () => {
@@ -1103,6 +1105,10 @@ describe('Calendar · phone (v2, Coach - Calendar - Mobile.html)', () => {
     expect(hapticSpy).toHaveBeenCalledWith('select');
     expect(live('.ch-calm-dayk')!.textContent).toMatch(/Thu 15 October/);
     expect(screen.getByRole('button', { name: /^Travel briefing/ })).toBeTruthy();
+    // Opening the event from the day's agenda is plain navigation: no tick (D-70, F-0071).
+    hapticSpy.mockClear();
+    await user.click(screen.getByRole('button', { name: /^Travel briefing/ }));
+    expect(hapticSpy).not.toHaveBeenCalled();
   });
 
   it('row 81: the coach’s More on the phone opens desktop’s items without Print, and Add busy time opens its sheet; a player has none', async () => {

@@ -203,7 +203,7 @@ export function EventBlock({
       onClick={() => {
         // A drop is not a click: the pointer that moved the block doesn't also open it.
         if (drag?.moved()) return;
-        haptic('select');
+        // D-70: opening an event is plain navigation, so it is silent (F-0071).
         onSelect(e.id);
       }}
     >
@@ -496,7 +496,7 @@ function LaneBar({
       onKeyDown={drag?.onKeyDown}
       onClick={() => {
         if (drag?.moved()) return;
-        haptic('select');
+        // D-70: opening an event is plain navigation, so it is silent (F-0071).
         onSelect(e.id);
       }}
     >

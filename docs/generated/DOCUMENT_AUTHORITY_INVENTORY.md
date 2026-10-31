@@ -868,6 +868,7 @@ them would bury everything above.
 | `docs/clubhouse/changes/2026-10-30-motion-stalls-and-reduce-motion.md` | current | - | - | - | - |
 | `docs/clubhouse/changes/2026-10-30-nav-once-menu-dialog-focus.md` | current | - | - | - | - |
 | `docs/clubhouse/changes/2026-10-30-night-contrast-tokens.md` | current | - | - | - | - |
+| `docs/clubhouse/changes/2026-10-30-page-intro-large.md` | current | - | - | - | - |
 | `docs/clubhouse/changes/2026-10-30-season-label.md` | current | - | - | - | - |
 | `docs/clubhouse/changes/2026-10-30-skeleton-feature-shape.md` | current | - | - | - | - |
 | `docs/clubhouse/changes/2026-10-30-targets-type-focus.md` | current | - | - | - | - |
@@ -989,6 +990,7 @@ them would bury everything above.
 | `docs/clubhouse/pages/P002-home/changes/2026-10-25-p6-live-rounds.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P002-home/changes/2026-10-27-polish-pass.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P002-home/changes/2026-10-28-visual-pass.md` | current | - | - | - | - |
+| `docs/clubhouse/pages/P002-home/changes/2026-10-30-coach-asks-separator.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P002-home/changes/2026-10-30-earlier-reads-and-prefetch.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P002-home/changes/2026-10-30-night-contrast.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P003-roster/CHANGELOG.md` | current | - | - | - | - |
@@ -1093,6 +1095,7 @@ them would bury everything above.
 | `docs/clubhouse/pages/P006-calendar/changes/2026-10-27-review-must-fixes.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P006-calendar/changes/2026-10-28-event-files-signed-links.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P006-calendar/changes/2026-10-28-visual-pass.md` | current | - | - | - | - |
+| `docs/clubhouse/pages/P006-calendar/changes/2026-10-30-list-label-note-width-silent-open.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P006-calendar/changes/2026-10-30-motion.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P006-calendar/changes/2026-10-30-night-contrast.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P006-calendar/changes/2026-10-30-open-once.md` | current | - | - | - | - |
@@ -1128,6 +1131,7 @@ them would bury everything above.
 | `docs/clubhouse/pages/P007-messages/changes/2026-10-28-visual-pass.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P007-messages/changes/2026-10-29-inbox-row-and-poll-depth.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P007-messages/changes/2026-10-30-direct-never-channel.md` | current | - | - | - | - |
+| `docs/clubhouse/pages/P007-messages/changes/2026-10-30-inbox-craft-silent-open.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P007-messages/changes/2026-10-30-messages-ratchets.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P007-messages/changes/2026-10-30-rail-first-load.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P007-messages/changes/2026-10-30-start-dm-at-once.md` | current | - | - | - | - |
@@ -1181,6 +1185,7 @@ them would bury everything above.
 | `docs/clubhouse/pages/P009-qualifiers/changes/2026-10-28-server-tie-order.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P009-qualifiers/changes/2026-10-28-visual-pass.md` | current | - | - | - | 1 |
 | `docs/clubhouse/pages/P009-qualifiers/changes/2026-10-30-night-contrast.md` | current | - | - | - | - |
+| `docs/clubhouse/pages/P009-qualifiers/changes/2026-10-30-past-last-day-label.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P010-hub/CHANGELOG.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P010-hub/CONTRACT.md` | current | - | - | yes | - |
 | `docs/clubhouse/pages/P010-hub/DESIGN.md` | current | - | - | - | - |
@@ -1342,6 +1347,7 @@ them would bury everything above.
 | `docs/clubhouse/pages/P016-tournaments/changes/2026-10-28-dq-team-score.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P016-tournaments/changes/2026-10-28-visual-pass.md` | current | - | - | - | 1 |
 | `docs/clubhouse/pages/P016-tournaments/changes/2026-10-30-compare-a11y-type.md` | current | - | - | - | - |
+| `docs/clubhouse/pages/P016-tournaments/changes/2026-10-30-phone-large-title.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P016-tournaments/changes/2026-10-30-season-label.md` | current | - | - | - | - |
 | `docs/clubhouse/phone/auth.md` | current | - | - | - | - |
 | `docs/clubhouse/phone/calendar.md` | current | - | - | - | - |

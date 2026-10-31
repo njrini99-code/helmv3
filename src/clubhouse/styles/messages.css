@@ -3257,6 +3257,12 @@ html[data-fw-theme='dark'] .ch-msp-thread .ch-ms-msg.is-mine.is-failed .ch-ms-bu
     inset 0 0 0 1px color-mix(in srgb, var(--ch-green-fill-600) 22%, transparent),
     var(--ch-elevation-reading-accent);
 }
+/* On the phone the card sits on the page edge (16, 20 on a large phone) like the inbox under it, not 4px past it (F-0051). */
+@media (max-width: 820px) {
+  .ch-msp .ch-ms-sec.is-ann {
+    margin-inline: 0;
+  }
+}
 .ch-ms-sec.is-ann > .ch-ms-sec__l {
   padding: 8px 12px;
 }

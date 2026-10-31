@@ -9,7 +9,7 @@ import { plural, pluralWord } from '../../lib/plural';
 
 /**
  * Live, Upcoming or Concluded (the list's own word for a finished one). Live is a static dot: no pulse (D-33). A live
- * qualifier past its last day is "Ended · n rounds outstanding", never Live (P009-D3): no dot, since nothing about it is
+ * qualifier past its last day is "Waiting on n rounds" (or "Past last day"), never Live (P009-D3, F-0068): no dot, since nothing about it is
  * live.
  */
 export function StatusPill({ status, ended = null }: { status: ChQStatus; ended?: { outstanding: number | null } | null }) {

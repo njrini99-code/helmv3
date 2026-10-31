@@ -394,8 +394,7 @@ export function MessageHits({ api, q }: { api: ChMessagesApi; q: string }) {
               type="button"
               className="ch-ms-row is-hit"
               onClick={() => {
-                // CH-7703: a tick on picking a reaction, a filter or a conversation.
-                haptic("select");
+                // D-70: opening a hit is plain navigation, so it is silent (F-0071; CH-7703 ticks a reaction or a filter).
                 chTrail("messages open search hit");
                 api.openHit(h);
               }}
@@ -431,7 +430,7 @@ export function MessageHits({ api, q }: { api: ChMessagesApi; q: string }) {
 /** One conversation in the list: the desktop rail and the phone inbox. */
 export function ConvRow({ api, c, avatarSize = 36, phone = false }: { api: ChMessagesApi; c: ChConv; avatarSize?: number; phone?: boolean }) {
   const open = () => {
-    haptic("select");
+    // D-70: opening a conversation is plain navigation, so it is silent (F-0071).
     chTrail("messages open conversation");
     api.select(c.id);
   };
@@ -589,34 +588,38 @@ function ConvRowButton({ api, c, avatarSize, onOpen, bind, plain = false }: { ap
         </span>
         <span className="ch-ms-row__bot">
           <span>
-            {c.lastText ? (
-              <>
-                {c.lastSenderId &&
-                  (c.group ||
-                    c.lastSenderId === api.viewer.userId) && (
-                    <em>
-                      {c.lastSenderId === api.viewer.userId
-                        ? "You"
-                        : firstName(
-                            personOf(api, c.lastSenderId)
-                              ?.name ?? "Member",
-                          )}
-                      :{" "}
-                    </em>
+            {/* One inline child, so the phone's two-line clamp (a vertical -webkit-box, which blockifies each child)
+                keeps the sender, the poll glyph and the text on one line (F-0052). */}
+            <span className="ch-ms-row__prev">
+              {c.lastText ? (
+                <>
+                  {c.lastSenderId &&
+                    (c.group ||
+                      c.lastSenderId === api.viewer.userId) && (
+                      <em>
+                        {c.lastSenderId === api.viewer.userId
+                          ? "You"
+                          : firstName(
+                              personOf(api, c.lastSenderId)
+                                ?.name ?? "Member",
+                            )}
+                        :{" "}
+                      </em>
+                    )}
+                  {/* D25: a poll reads as its glyph and question, not "Poll: …". */}
+                  {c.lastIsPoll ? (
+                    <>
+                      <Icon icon={ListChecks} size={13} className="ch-ms-row__poll" />
+                      {c.lastText.replace(/^Poll: /, "")}
+                    </>
+                  ) : (
+                    c.lastText
                   )}
-                {/* D25: a poll reads as its glyph and question, not "Poll: …". */}
-                {c.lastIsPoll ? (
-                  <>
-                    <Icon icon={ListChecks} size={13} className="ch-ms-row__poll" />
-                    {c.lastText.replace(/^Poll: /, "")}
-                  </>
-                ) : (
-                  c.lastText
-                )}
-              </>
-            ) : (
-              "No messages yet"
-            )}
+                </>
+              ) : (
+                "No messages yet"
+              )}
+            </span>
           </span>
           {c.unread > 0 ? (
             <span role="img"

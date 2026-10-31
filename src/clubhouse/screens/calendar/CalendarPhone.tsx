@@ -491,10 +491,8 @@ function DayPage({
                     className={`ch-calm-ev is-${e.type}` + (past ? ' is-past' : '') + (live ? ' is-live' : '') + (selId === e.id ? ' is-sel' : '') + (e.cancelled ? ' is-cancelled' : '') + (lift ? ' is-movable' : '') + (liftedId === e.id ? ' is-lifted' : '')}
                     onTouchStart={lift ? () => claimTouch('pending') : undefined}
                     aria-label={`${roundLabel(e, title).name}${roundLabel(e, title).spokenRound}, ${e.allDay ? 'all day' : e.span?.start != null ? rangeLabel(e, clock) : `${fmtHour(e.start!, true, clock)} to ${fmtHour(e.end!, true, clock)}`}${past ? ', ended' : ''}${flagged.has(e.id) ? ', schedule overlap' : ''}${reply ? ', needs your reply' : ''}${e.cancelled ? ', cancelled' : ''}${mark?.aria ?? ''}`}
-                    onClick={() => {
-                      haptic('select');
-                      onOpen(e.id, e.date);
-                    }}
+                    // D-70: opening an event is plain navigation, so it is silent (F-0071).
+                    onClick={() => onOpen(e.id, e.date)}
                   >
                     <span className="ch-calm-ev__t ch-num">
                       {startLabel(e, false, clock)}
