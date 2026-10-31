@@ -222,6 +222,19 @@ button.ch-rt-strip__h {
 }
 
 /* Body: the hole beside the entry */
+/* The hole turn (Swap slide, keyed by the hole) and the hole-out swap (owner, 2026-10-31) pass the screen's column
+   through, so the hero still takes the spare height and the entry still sits on the dock. */
+.ch-rt-turn,
+.ch-rt-turn > .ch-swap__item,
+.ch-rt-turn > .ch-swap__item > .ch-swap__body {
+  display: flex;
+  flex: 1 1 auto;
+  flex-direction: column;
+  min-height: 0;
+}
+.ch-rt-turn {
+  overflow-x: clip;
+}
 .ch-rt-body {
   display: grid;
   grid-template-columns: minmax(0, 1fr) minmax(380px, 460px);

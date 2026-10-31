@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState, type ReactNode } from 'react';
+import { useEffect, useRef, useState, type ReactNode } from 'react';
 import { Check, CloudOff, Smartphone, Table2, X } from 'lucide-react';
 import { useDistanceUnits } from '@/hooks/golf/use-distance-units';
 import { useShotTracking, type ShotTrackingPorts, type ShotTrackingProps } from '@/hooks/golf/use-shot-tracking';
@@ -15,6 +15,7 @@ import { usePhoneImmersive, usePhoneTabsHidden } from '../../../shell/phone-chro
 import { Icon } from '../../../ui/Icon';
 import { ScoreMark } from '../../../ui/ScoreMark';
 import { Spinner } from '../../../ui/Spinner';
+import { Swap } from '../../../ui/Swap';
 import { TeeSwatch, TYPE_LABEL } from '../parts';
 import { CourseView } from './CourseView';
 import { PuttMissPrompt, RecoveryPrompt } from './DataPrompts';
@@ -132,6 +133,13 @@ export function RoundTracking(props: RoundTrackingProps) {
   const [savedNote, setSavedNote] = useState<{ index: number; words: string } | null>(null);
   // The hole the player asked to leave (the strip, Back to hole): its save, if it lands, is not announced.
   const [leftHole, setLeftHole] = useState<number | null>(null);
+  // Which way the round just moved (owner, 2026-10-31: the move on after a hole was "very off"): a later hole turns in
+  // from the right, an earlier one from the left. Read during the render that changes the hole, before the effect.
+  const lastHole = useRef(currentHoleIndex);
+  const holeDir: 1 | -1 = currentHoleIndex >= lastHole.current ? 1 : -1;
+  useEffect(() => {
+    lastHole.current = currentHoleIndex;
+  }, [currentHoleIndex]);
   useEffect(() => {
     if (!savedNote) return;
     const id = window.setTimeout(() => setSavedNote(null), 4000);
@@ -225,6 +233,9 @@ export function RoundTracking(props: RoundTrackingProps) {
         {statusSlot}
         <TrackStrip holes={holes} current={currentHoleIndex} startHole={startHole} onJump={jump} />
 
+        {/* A hole change turns the page: the hole, its map and its entry slide in together (Swap `slide`, the D-64 settle
+            spring); the strip above stays put. Reduced motion and Animations off swap at once. */}
+        <Swap kind="slide" dir={holeDir} swapKey={hole.number} resize="instant" className="ch-rt-turn">
         <div className="ch-rt-body">
           <section className="ch-rt-hero" aria-label={`Hole ${hole.number}`}>
             {/* Board 3: the drawn hole is the hero; tapping it opens the course view (board 3b). */}
@@ -298,6 +309,8 @@ export function RoundTracking(props: RoundTrackingProps) {
             />
           </section>
 
+          {/* Holing out settles the hole's review in where the shot entry was, instead of snapping to it. */}
+          <Swap swapKey={holedOut ? 'review' : 'entry'} className="ch-rt-done">
           {holedOut ? (
             <HoleReview
               hole={hole}
@@ -351,7 +364,9 @@ export function RoundTracking(props: RoundTrackingProps) {
               prompts={prompts}
             />
           )}
+          </Swap>
         </div>
+        </Swap>
 
         <CourseView
           open={courseOpen}

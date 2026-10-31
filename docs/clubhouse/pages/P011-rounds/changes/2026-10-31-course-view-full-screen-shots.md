@@ -38,3 +38,32 @@ Held items:     not yet watched on a real iPhone; checked in Safari at 402 px
 - Safari, iPhone 17 size, preview `track?state=approach`: frames at 560 ms
   (ball in flight, arc drawn behind it) and 1400 ms (final), and the list
   opened.
+
+## 2026-10-31 — Finishing a hole moves on smoothly
+
+```text
+Design package: none (owner, 2026-10-31: "the animation of the transition
+                once the hole is complete is very off")
+PR/commit:      claude/round-bar-discard
+Contract IDs:   none new
+Actions:        none
+Data impact:    none
+Held items:     none
+```
+
+### Changed
+
+- RoundTracking.tsx: holing out settles the hole review in where the shot
+  entry was (Swap settle) instead of snapping; a hole change turns the page,
+  the hole, its map and its entry sliding in together from the side the
+  round moved to (Swap slide, the settle spring), the strip staying put.
+  Reduced motion and Animations off swap at once.
+- rounds-track.css: .ch-rt-turn passes the screen's column through so the
+  entry still sits on the dock.
+
+### Verification
+
+- round-tracking and shot-parity tests (41) pass.
+- WebKit (Playwright, 402 px), preview `track?state=holed`, Back to hole 5:
+  at 284 ms hole 4 is leaving (opacity 0.05, x -11) and hole 5 arriving
+  (0.85, x +6); settled by 452 ms.
