@@ -178,18 +178,56 @@ describe('Standings parity: the score', () => {
     expect(pick(F, SCORE)).toEqual(pick(C, SCORE));
   });
 
-  it('a player with fewer rounds is ranked on what is in, not excluded or averaged; level players order by more rounds in Clubhouse and the workspace', async () => {
+  it('a card a round short ranks below every full card on all three: Fairway, the workspace and Clubhouse (one order, 2026-10-28)', async () => {
     const fx: ParityFixture = {
       qualifier: qualifier({ num_rounds: 3 }),
       entries: entrants('a', 'b', 'c'),
       rounds: [rd('a', 1, 72, 0), rd('a', 2, 72, 0), rd('b', 1, 70, -2), rd('c', 1, 71, -1), rd('c', 2, 73, 1)],
     };
     const { F, W, C } = await all(fx);
-    // b (one round, −2) leads a and c (two rounds, E). a and c are level on to par and strokes: a tie.
-    expect(rankedOrder(C)).toEqual([['b'], ['a', 'c']]);
+    // b (one round, −2) has fewer rounds than the most anyone has, so it goes below the complete cards (owner
+    // decision 10); a and c are level on to par and strokes in the full group: a tie. Fairway ranked b first until
+    // 2026-10-28, when the server's order became the only one.
+    expect(rankedOrder(C)).toEqual([['a', 'c'], ['b']]);
     expect(rankedOrder(W)).toEqual(rankedOrder(C));
     expect(rankedOrder(F)).toEqual(rankedOrder(C));
+    expect(pick(F, ['label'])).toEqual(pick(C, ['label']));
     expect(pick(F, SCORE)).toEqual(pick(C, SCORE));
+  });
+
+  const CUT: Array<keyof Standing> = ['order', 'cut'];
+  /** Board cut states folded to the workspace's: the Bubble is a board-only frame, below the places on score. */
+  const asWorkspaceCut = (rows: Standing[]) => rows.map((r) => ({ ...r, cut: r.cut === 'bubble' ? 'out' : r.cut }));
+
+  it('a short card with a lower total is below the full cards and outside the places on score on all three (Fairway’s workspace gave it a place until 2026-10-28)', async () => {
+    // Two places on score. b has one round of two in at −2, the best total to par; a (E), c (+2) and d (+6) have both.
+    const fx: ParityFixture = {
+      qualifier: qualifier({ num_rounds: 2, selection_slots_total: 2 }),
+      entries: entrants('a', 'b', 'c', 'd'),
+      rounds: [rd('a', 1, 72, 0), rd('a', 2, 72, 0), rd('b', 1, 70, -2), rd('c', 1, 73, 1), rd('c', 2, 73, 1), rd('d', 1, 75, 3), rd('d', 2, 75, 3)],
+    };
+    const { F, W, C } = await all(fx);
+    expect(rankedOrder(C)).toEqual([['a'], ['c'], ['d'], ['b']]);
+    expect(rankedOrder(W)).toEqual(rankedOrder(C));
+    expect(rankedOrder(F)).toEqual(rankedOrder(C));
+    expect(pick(W, CUT)).toEqual(pick(asWorkspaceCut(C), CUT));
+    expect(byId(W, 'b')).toMatchObject({ cut: 'out', order: 3 });
+    expect(pick(F, ['order', 'label'])).toEqual(pick(C, ['order', 'label']));
+    expect(pick(W, SCORE)).toEqual(pick(C, SCORE));
+  });
+
+  it('a full card and a short card level on to par and strokes at the line are no tie anywhere: the full card is in', async () => {
+    // b's one round (a long course, 148 at +4) matches c's two (74 + 74, +4). They are in different groups.
+    const fx: ParityFixture = {
+      qualifier: qualifier({ num_rounds: 2, selection_slots_total: 2 }),
+      entries: entrants('a', 'b', 'c'),
+      rounds: [rd('a', 1, 72, 0), rd('a', 2, 72, 0), rd('b', 1, 148, 4), rd('c', 1, 74, 2), rd('c', 2, 74, 2)],
+    };
+    const { F, W, C } = await all(fx);
+    expect(byId(C, 'c').cut).toBe('in');
+    expect(byId(C, 'b').cut).toBe('out');
+    expect(pick(W, CUT)).toEqual(pick(asWorkspaceCut(C), CUT));
+    expect(pick(F, ['label', 'cut'])).toEqual(pick(C, ['label', 'cut']));
   });
 
   it('a 9-hole round adds its strokes and to par everywhere; Clubhouse averages 18-hole rounds only, Fairway averages every round (Clubhouse kept)', async () => {

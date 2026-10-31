@@ -1,6 +1,6 @@
 'use client';
 
-import { BarChart3, Check, ChevronRight, Clock, Copy, Ellipsis, UserCheck, UserMinus, UserPlus, UserX } from 'lucide-react';
+import { ChartColumn, Check, ChevronRight, Clock, Copy, Ellipsis, UserCheck, UserMinus, UserPlus, UserX } from 'lucide-react';
 import { AnimatePresence } from 'motion/react';
 import Link from 'next/link';
 import { startTransition, useCallback, useEffect, useRef, useState, ViewTransition, type ReactNode } from 'react';
@@ -9,7 +9,7 @@ import type { ChRoster, ChRosterPlayer } from '../../data/roster';
 import { Avatar } from '../../ui/Avatar';
 import { Button } from '../../ui/Button';
 import { EmptyState } from '../../ui/States';
-import { FormLine } from '../../ui/FormLine';
+import { FormLine, FormRange } from '../../ui/FormLine';
 import { Icon } from '../../ui/Icon';
 import { InlineNotice } from '../../ui/Notices';
 import { PageRefreshNotice } from '../../ui/RefreshNotice';
@@ -17,19 +17,25 @@ import { Modal } from '../../ui/Modal';
 import { PhoneBar, PhoneIconAction } from '../../ui/PhoneBar';
 import { Segmented } from '../../ui/Segmented';
 import { SectionBoundary } from '../../ui/SectionBoundary';
-import { changeTone, formatFixed, formatSigned, NO_DATA } from '../../lib/format';
-import { haptic } from '../../lib/haptics';
+import { changeTone, formatFixed, formatHcp, formatSigned, NO_DATA } from '../../lib/format';
 import { useChReducedMotion } from '../../lib/reduced-motion';
 import { rebuiltHref } from '../../shell/nav';
 import { PhoneScreen } from '../../shell/PhoneScreen';
 import { PhoneTop, usePhoneStackHistory } from '../../shell/phone-chrome';
+import { usePressPrefetch } from '../../shell/use-prefetch-tabs';
 import type { AvailabilityControl, NoteSaved } from './RosterPeek';
 import { RosterProfile } from './RosterProfile';
 import { PlayerPeek } from '../../ui/PlayerPeek';
-import { formatHcp, rosterFailedParts, rosterPeek, rowNote } from './format';
+import { rosterFailedParts, rosterPeek, rowNote } from './format';
+import { classNoteFor, NO_CLASS_LINES, type RosterClassLine, type RosterClassLines } from './class-line';
+import { ClassStatusLine } from '../../ui/ClassStatusLine';
 import { useRosterSort, type PhoneSort } from './sort';
 import { nameList, type ChJoinRequestsState } from './useJoinRequests';
 import { useCopyText } from './useCopyText';
+import { ListPresence, PresenceRow } from '../../ui/ListPresence';
+import { TERMS } from '../../lib/glossary';
+import { pluralWord } from '../../lib/plural';
+import { LargeTitle } from '../../ui/LargeTitle';
 
 export type { PhoneSort } from './sort';
 
@@ -55,6 +61,8 @@ export function RosterPhone({
   onStatus,
   onNoteSaved,
   availability,
+  classLines = NO_CLASS_LINES,
+  hold,
   onRetry,
   children,
 }: {
@@ -71,6 +79,9 @@ export function RosterPhone({
   onNoteSaved: NoteSaved;
   /** Roster's availability write (the profile's Availability panel). */
   availability: AvailabilityControl;
+  /** P-10: each player's class line, and the handlers that hold the lines still while a pointer is down. */
+  classLines?: RosterClassLines;
+  hold?: { onPointerDownCapture: () => void };
   onRetry: () => void;
   /** The dialogs (invite, remove confirm), shared with desktop. */
   children?: ReactNode;
@@ -162,10 +173,10 @@ export function RosterPhone({
               )}
             </span>
           )}
-          {/* The top bar carries the page's heading; this is the design's large title. */}
-          <p className="ch-rsm-title" aria-hidden="true">
+          {/* The top bar carries the page's heading; this is the phone's one large title (owner decision 4). */}
+          <LargeTitle as="p" hidden>
             Roster
-          </p>
+          </LargeTitle>
         </header>
 
         <PageRefreshNotice parts={failed} />
@@ -186,7 +197,7 @@ export function RosterPhone({
           <InlineNotice
             code="CH-3202"
             title="Season stats didn’t load"
-            body="The roster is complete, but averages, form and strokes gained are missing until the rounds load. The error has been reported."
+            body="The roster is complete, but averages, form and strokes gained are missing until the rounds load."
             onRetry={onRetry}
             covered={covered}
           />
@@ -196,7 +207,7 @@ export function RosterPhone({
           <InlineNotice
             code="CH-3201"
             title="The roster didn’t load"
-            body="Your players are safe. Try again; the error has been reported."
+            body="Your players are safe. Try again."
             onRetry={onRetry}
             covered={covered}
           />
@@ -233,15 +244,15 @@ export function RosterPhone({
                   data.statsError
                     ? [{ value: 'name', label: 'Name' }]
                     : [
-                        { value: 'avg', label: 'Avg', aria: 'Avg, scoring average' },
-                        { value: 'sg', label: 'SG', aria: 'SG, strokes gained' },
+                        { value: 'avg', label: 'Avg', aria: `Avg, ${TERMS.scoringAvg.long.toLowerCase()}` },
+                        { value: 'sg', label: TERMS.strokesGained.short, aria: `${TERMS.strokesGained.short}, ${TERMS.strokesGained.long.toLowerCase()}` },
                         { value: 'name', label: 'Name' },
                       ]
                 }
               />
             </div>
             <SectionBoundary surface="roster.list" label="The roster" code="CH-3205">
-              <RosterPhoneList active={active} inactive={inactive} statsError={data.statsError} sort={sortBy} onOpen={onOpen} />
+              <RosterPhoneList active={active} inactive={inactive} statsError={data.statsError} sort={sortBy} onOpen={onOpen} classLines={classLines} hold={hold} />
             </SectionBoundary>
           </>
         )}
@@ -304,12 +315,16 @@ function RosterPhoneList({
   statsError,
   sort,
   onOpen,
+  classLines,
+  hold,
 }: {
   active: ChRosterPlayer[];
   inactive: ChRosterPlayer[];
   statsError: boolean;
   sort: PhoneSort;
   onOpen: (id: string) => void;
+  classLines: RosterClassLines;
+  hold?: { onPointerDownCapture: () => void };
 }) {
   const reduced = useChReducedMotion();
   // The sort last committed to the screen. A ref, not state: recording it must not draw the list again.
@@ -320,11 +335,12 @@ function RosterPhoneList({
   const slide = !reduced && drawn.current !== sort;
   const row = (p: ChRosterPlayer) => (
     <li key={p.id}>
-      <RosterPhoneRow p={p} statsError={statsError} sort={sort} onOpen={onOpen} slide={slide} />
+      <RosterPhoneRow p={p} statsError={statsError} sort={sort} onOpen={onOpen} slide={slide} classLine={classNoteFor(p, classLines.get(p.id))} hold={hold} />
     </li>
   );
   return (
-    <>
+    // B5: the active and inactive rows' sparks share one range, so the same height is the same score down the list.
+    <FormRange trends={[...active, ...inactive].map((p) => p.trend)} earlyBelow={3}>
       {active.length > 0 && (
         <ul className="ch-rsm-panel ch-rsm-list" aria-label="Active players">
           {active.map(row)}
@@ -340,7 +356,7 @@ function RosterPhoneList({
           </ul>
         </>
       )}
-    </>
+    </FormRange>
   );
 }
 
@@ -357,14 +373,19 @@ export function RosterPhoneRow({
   sort = 'avg',
   onOpen,
   slide = false,
+  classLine = null,
+  hold,
 }: {
   p: ChRosterPlayer;
   statsError: boolean;
   sort?: PhoneSort;
   onOpen: (id: string) => void;
   slide?: boolean;
+  /** P-10: the class line that takes the note slot (a trip, or a class when nothing outranks it), or null. */
+  classLine?: RosterClassLine | null;
+  hold?: { onPointerDownCapture: () => void };
 }) {
-  const note = rowNote(p, statsError);
+  const note = classLine ? { text: classLine.text, tone: null } : rowNote(p, statsError);
   const bySg = sort === 'sg';
   const sg = p.sgPerRound;
   const label = [
@@ -383,15 +404,19 @@ export function RosterPhoneRow({
   return (
     <PlayerPeek player={rosterPeek(p)}>
       <ViewTransition name={`ch-rsm-row-${p.id}`} update={slide ? 'ch-rsm-reorder' : 'none'} enter="none" exit="none" share="none" default="none">
-        <button type="button" className="ch-rsm-row" aria-label={label} data-ch-code="CH-3806" onClick={() => onOpen(p.id)}>
-          <Avatar name={p.name} size={40} />
+        <button type="button" className="ch-rsm-row" aria-label={label} data-ch-code="CH-3806" onClick={() => onOpen(p.id)} {...hold}>
+          <Avatar name={p.name} id={p.id} size="md" />
           <span className="ch-rsm-row__b">
             <b>{p.name}</b>
             {/* The class year stays plain; only the note takes its tone (amber for a slide, green for a gain). */}
             <span>
               {p.classYear}
               {p.classYear && note?.text ? ' · ' : null}
-              {note?.text ? <span className={note.tone ? `is-${note.tone}` : undefined}>{note.text}</span> : null}
+              {classLine ? (
+                <ClassStatusLine kind={classLine.kind} text={classLine.text} />
+              ) : note?.text ? (
+                <span className={note.tone ? `is-${note.tone}` : undefined}>{note.text}</span>
+              ) : null}
               {!p.classYear && !note?.text ? ' ' : null}
             </span>
           </span>
@@ -404,7 +429,11 @@ export function RosterPhoneRow({
             <b className={`ch-num ${bySg ? changeTone(sg, false) : ''}`.trim()}>
               {rowFigure(bySg ? sg : p.avg, bySg)}
             </b>
-            <span className="ch-num">{bySg ? 'SG / rd' : `${formatHcp(p.handicap)} hcp`}</span>
+            <span className="ch-num">{bySg ? 'SG / rd' : `${formatHcp(p.handicap)} ${TERMS.handicap.short}`}</span>
+          </span>
+          {/* Visual pass 2026-10-28 (P003 checklist): the row opens the player, so it ends on the list chevron. */}
+          <span className="ch-rsm-row__chev" aria-hidden="true">
+            <Icon icon={ChevronRight} size={16} />
           </span>
         </button>
       </ViewTransition>
@@ -426,7 +455,7 @@ function RequestsBanner({ jr, error, covered, onRetry, onOpen }: { jr: ChJoinReq
       <InlineNotice
         code="CH-3203"
         title="Join requests didn’t load"
-        body="Pending requests are safe. Try again; the error has been reported."
+        body="Pending requests are safe. Try again."
         onRetry={onRetry}
         covered={covered}
       />
@@ -437,12 +466,12 @@ function RequestsBanner({ jr, error, covered, onRetry, onOpen }: { jr: ChJoinReq
   const names = jr.reqs.slice(0, 2).map((r) => r.name);
   const who = n > 2 ? `${names.join(', ')} and ${n - 2} more` : nameList(names);
   return (
-    <button type="button" className="ch-rsm-banner" aria-label={`${n} join ${n === 1 ? 'request' : 'requests'}, ${who}`} onClick={onOpen}>
+    <button type="button" className="ch-rsm-banner" aria-label={`${n} join ${pluralWord(n, 'request')}, ${who}`} onClick={onOpen}>
       <span className="ch-rsm-banner__n ch-num" aria-hidden="true">
         {n}
       </span>
       <span className="ch-rsm-banner__b">
-        <b>{n === 1 ? 'Join request' : 'Join requests'}</b>
+        <b>{pluralWord(n, 'Join request')}</b>
         <span>{who}</span>
       </span>
       <Icon icon={ChevronRight} size={16} />
@@ -480,34 +509,37 @@ function RequestsSheet({ open, onClose, data, jr }: { open: boolean; onClose: ()
       }
     >
       <div className="ch-rsm-reqs">
-        {jr.reqs.map((r) => (
-          <div key={r.id} className="ch-rsm-rq">
-            <div className="ch-rsm-rq__top">
-              <Avatar name={r.name} size={44} />
-              <span className="ch-rsm-rq__id">
-                <b>{r.name}</b>
-                <span>{[r.classYear, r.gradYear ? `Class of ${r.gradYear}` : null].filter(Boolean).join(' · ')}</span>
-              </span>
-              <span className="ch-rsm-rq__h">
-                <b className="ch-num">{formatHcp(r.handicap)}</b>
-                <span>hcp</span>
-              </span>
-            </div>
-            <div className="ch-rsm-rq__meta">
-              <Icon icon={Clock} size={13} />
-              Requested {r.requested}
-            </div>
-            <div className="ch-rsm-rq__act">
-              <Button disabled={jr.busy != null} onClick={() => void jr.decide(r, false)}>
-                Decline
-              </Button>
-              {/* Approve all is the sheet's one primary (P003 #5); each row's Approve is secondary. */}
-              <Button leftIcon={Check} disabled={jr.busy != null} feel={null} onClick={() => void jr.decide(r, true)}>
-                Approve
-              </Button>
-            </div>
-          </div>
-        ))}
+        {/* B7: a decided request closes up and the rows below slide into its place. */}
+        <ListPresence>
+          {jr.reqs.map((r) => (
+            <PresenceRow as="div" key={r.id} className="ch-rsm-rq">
+              <div className="ch-rsm-rq__top">
+                <Avatar name={r.name} size={44} />
+                <span className="ch-rsm-rq__id">
+                  <b>{r.name}</b>
+                  <span>{[r.classYear, r.gradYear ? `Class of ${r.gradYear}` : null].filter(Boolean).join(' · ')}</span>
+                </span>
+                <span className="ch-rsm-rq__h">
+                  <b className="ch-num">{formatHcp(r.handicap)}</b>
+                  <span>{TERMS.handicap.short}</span>
+                </span>
+              </div>
+              <div className="ch-rsm-rq__meta">
+                <Icon icon={Clock} size={13} />
+                Requested {r.requested}
+              </div>
+              <div className="ch-rsm-rq__act">
+                <Button disabled={jr.busy != null} onClick={() => void jr.decide(r, false)}>
+                  Decline
+                </Button>
+                {/* Approve all is the sheet's one primary (P003 #5); each row's Approve is secondary. */}
+                <Button leftIcon={Check} disabled={jr.busy != null} feel={null} onClick={() => void jr.decide(r, true)}>
+                  Approve
+                </Button>
+              </div>
+            </PresenceRow>
+          ))}
+        </ListPresence>
         {data.joinCode && (
           <>
             <div className="ch-rsm-code">
@@ -543,14 +575,16 @@ function PlayerActions({
   onStatus: (p: ChRosterPlayer) => void;
 }) {
   const statsHref = p ? rebuiltHref(`/golf/dashboard/stats?player=${p.id}`) : null;
+  // The player's stats are fetched whole as a finger lands on View stats (A13).
+  const press = usePressPrefetch();
   return (
     <Modal open={!!p} onClose={onClose} title={p?.name ?? 'Player'}>
       {p && (
         <div className="ch-rsm-panel ch-rsm-acts">
           {statsHref && (
-            <Link href={statsHref} className="ch-rsm-act" onClick={() => haptic('select')}>
+            <Link href={statsHref} className="ch-rsm-act" {...press(statsHref)}>
               <span className="ch-rsm-act__ic" aria-hidden="true">
-                <Icon icon={BarChart3} size={16} />
+                <Icon icon={ChartColumn} size={16} />
               </span>
               <b>View stats</b>
             </Link>

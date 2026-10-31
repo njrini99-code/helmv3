@@ -2,7 +2,7 @@
 
 import type { UIMessage } from 'ai';
 import { useEffect, useId, useMemo, useRef, useState } from 'react';
-import { Check, ChevronDown, CircleAlert, Copy, RotateCw, Sparkles } from 'lucide-react';
+import { Check, ChevronDown, CircleAlert, Copy, RotateCw } from 'lucide-react';
 import type { ChatErrorNotice } from '../../../data/coachhelm-chat-error';
 import {
   buildTurns,
@@ -10,6 +10,7 @@ import {
   failedAnswerChangedNothing,
   focusForProposal,
   pendingApproval,
+  workReceipt,
   type AskAssistantTurn,
   type EvidenceFocus,
 } from '../../../data/coachhelm-chat-thread';
@@ -18,11 +19,13 @@ import { useChReducedMotion } from '../../../lib/reduced-motion';
 import { Button } from '../../../ui/Button';
 import { Icon } from '../../../ui/Icon';
 import { OFFLINE_LINE } from '../../../ui/Retry';
-import { Spinner } from '../../../ui/Spinner';
 import { useToast } from '../../../ui/Toast';
 import { Tooltip } from '../../../ui/Tooltip';
+import { CoachMark } from './CoachMark';
 import { AskActionCard, AskReceiptCard } from './ActionCard';
 import { AskEvidenceView } from './Evidence';
+import { CoachComposition } from './visual/CoachComposition';
+import { CoachVisualArtifact } from './visual/CoachVisualArtifact';
 import { AskProse, AskUserText } from './Prose';
 import '../../../styles/coachhelm-thread.css';
 
@@ -73,10 +76,8 @@ function useElapsed(active: boolean): number | null {
       }
       return;
     }
+    // Nothing ticks while it works (the live line shows no clock); the duration is taken once, when the turn ends.
     if (start.current === null) start.current = performance.now();
-    setSecs(0);
-    const t = window.setInterval(() => setSecs((performance.now() - (start.current ?? performance.now())) / 1000), 200);
-    return () => window.clearInterval(t);
   }, [active]);
   return secs;
 }
@@ -151,9 +152,19 @@ export function AskThread({ messages, busy, error, offline, phone, players, onAp
     }
   }, [turns, toast]);
 
-  // ── A new turn fades in; the ones the thread opened with do not ──
+  // ── A new turn rises in; the ones the thread opened with do not ──
   const initial = useRef<Set<string> | null>(null);
   if (initial.current === null) initial.current = new Set(turns.map((t) => t.id));
+  // The answer that takes over from the "Reading your program" placeholder is already on screen: it must not fade in a
+  // second time (the avatar and name blinked out and back, 2026-10-29). Its id is kept so it stays still on re-renders.
+  const placeholderShown = useRef(false);
+  const continued = useRef(new Set<string>());
+  if (awaiting) placeholderShown.current = true;
+  for (const t of turns) {
+    if (t.role !== 'assistant' || initial.current.has(t.id) || continued.current.has(t.id)) continue;
+    if (placeholderShown.current) continued.current.add(t.id);
+    placeholderShown.current = false;
+  }
 
   const copy = async (text: string) => {
     try {
@@ -168,7 +179,7 @@ export function AskThread({ messages, busy, error, offline, phone, players, onAp
     <div ref={rootRef} className={'ch-th' + (phone ? ' ch-th--phone' : '')} data-ch-code="CH-13850">
       <div className="ch-th-col" role="log" aria-label="Conversation">
         {turns.map((turn) => {
-          const fresh = !initial.current?.has(turn.id);
+          const fresh = !initial.current?.has(turn.id) && !continued.current.has(turn.id);
           if (turn.role === 'user') {
             return (
               <div key={turn.id} className={'ch-th-turn ch-th-user' + (fresh ? ' is-new' : '')}>
@@ -181,19 +192,23 @@ export function AskThread({ messages, busy, error, offline, phone, players, onAp
           const showFollowUps = turn.id === lastAssistantId && !busy && !pending && !error && turn.followUps.length > 0;
           return (
             <article key={turn.id} className={'ch-th-turn ch-th-ans' + (fresh ? ' is-new' : '')} aria-label="CoachHelm answer" aria-busy={turn.active || undefined}>
-              <span className="ch-th-mark" aria-hidden="true">
-                <Icon icon={Sparkles} size={16} />
-              </span>
+              <CoachMark working={turn.active} />
               <div className="ch-th-ans__body">
+                <span className="ch-th-who">CoachHelm</span>
                 <Work turn={turn} onStop={phone ? undefined : onStop} />
+                {(turn.note || turn.blocks.length > 0) && (
+                  <div className="ch-th-card">
                 {turn.note && (
                   <p className="ch-th-note" data-ch-code="CH-13252">
                     {turn.note}
                   </p>
                 )}
                 {turn.blocks.map((b) => {
-                  if (b.kind === 'text') return <AskProse key={b.key} text={b.text} lead={b.lead} playersByName={playersByName} />;
-                  if (b.kind === 'evidence') return <AskEvidenceView key={b.key} envelope={b.envelope} />;
+                  if (b.kind === 'text') return <AskProse key={b.key} text={b.text} lead={b.lead} playersByName={playersByName} streaming={turn.active} />;
+                  if (b.kind === 'evidence') return <AskEvidenceView key={b.key} envelope={b.envelope} roster={players} />;
+                  if (b.kind === 'visual') return <CoachVisualArtifact key={b.key} artifact={b.artifact} />;
+                  // `live`: the turn was streaming when the visual arrived; CoachComposition reads it once, at mount.
+                  if (b.kind === 'composition') return <CoachComposition key={b.key} composition={b.composition} live={turn.active} />;
                   if (b.kind === 'receipt') return <AskReceiptCard key={b.key} receipt={b.receipt} onAskAgain={onSend} />;
                   const focus = focusForProposal(turn.id, b.view);
                   return (
@@ -210,6 +225,8 @@ export function AskThread({ messages, busy, error, offline, phone, players, onAp
                     />
                   );
                 })}
+                  </div>
+                )}
                 {turn.answerText && !turn.active && !turn.note && (
                   <div className="ch-th-tools">
                     <Tooltip>
@@ -244,12 +261,13 @@ export function AskThread({ messages, busy, error, offline, phone, players, onAp
         })}
         {awaiting && (
           <div className="ch-th-turn ch-th-ans is-new" aria-busy="true">
-            <span className="ch-th-mark" aria-hidden="true">
-              <Icon icon={Sparkles} size={16} />
-            </span>
-            <p className="ch-th-think" aria-live="polite">
-              Reading your program
-            </p>
+            <CoachMark working />
+            <div className="ch-th-ans__body">
+              <span className="ch-th-who">CoachHelm</span>
+              <p className="ch-th-think" aria-live="polite">
+                <span className="ch-th-live">Reading your program</span>
+              </p>
+            </div>
           </div>
         )}
         {error && <AskError notice={error} offline={offline} changed={failedAnswerChangedNothing(messages)} onRetry={onRetry} onNewChat={onNewChat} />}
@@ -264,48 +282,56 @@ function Work({ turn, onStop }: { turn: AskAssistantTurn; onStop?: () => void })
   const elapsed = useElapsed(turn.active);
   const [open, setOpen] = useState(false);
   const listId = useId();
-  if (turn.steps.length === 0) return null;
-  const secs = elapsed === null ? '' : ` · ${elapsed.toFixed(1)}s`;
+  if (turn.steps.length === 0) {
+    return turn.active && turn.blocks.length === 0 ? (
+      <p className="ch-th-think" aria-live="polite">
+        {/* The placeholder's words, so the hand-over from it to the answer changes nothing on screen (2026-10-29). */}
+        <span className="ch-th-live">Reading your program</span>
+      </p>
+    ) : null;
+  }
   const list = (live: boolean) => (
     <ol id={live ? undefined : listId} className="ch-th-steps" aria-label="What CoachHelm is doing" aria-live={live ? 'polite' : undefined} aria-relevant={live ? 'additions text' : undefined}>
       {turn.steps.map((s, i) => {
         const current = live && i === turn.steps.length - 1;
         return (
-          <li key={s.id} aria-current={current ? 'step' : undefined}>
-            {current ? (
-              <Spinner />
-            ) : (
-              <Icon icon={Check} size={14} className="ch-th-steps__ok" />
-            )}
-            {s.label}
+          <li key={s.id} className={live ? 'is-in' : undefined} aria-current={current ? 'step' : undefined}>
+            {current ? <span className="ch-th-dot" aria-hidden="true" /> : <Icon icon={Check} size={14} className="ch-th-steps__ok" />}
+            {current ? <span className="ch-th-live">{s.label}</span> : s.label}
           </li>
         );
       })}
     </ol>
   );
   if (turn.active) {
+    // The shimmering step label is the status (rubric P013): no ticking "Working 12s" beside it. The time it took is still
+    // said once, on the finished line below, as the Claude and ChatGPT apps do.
     return (
       <div className="ch-th-work ch-th-work--live" data-ch-code="CH-13850">
         {list(true)}
-        <span className="ch-th-work__time">
-          Working{secs}
-          {onStop && (
+        {onStop && (
+          <span className="ch-th-work__time">
             <button type="button" className="ch-th-link" onClick={onStop}>
               Stop
             </button>
-          )}
-        </span>
+          </span>
+        )}
       </div>
     );
   }
   return (
     <div className="ch-th-work">
+      {/* One quiet collapsed row (playbook §4): how long it worked and how many steps; what it read is inside, when opened. */}
       <button type="button" className="ch-th-work__btn" aria-expanded={open} aria-controls={listId} onClick={() => setOpen((v) => !v)}>
-        <Icon icon={Check} size={15} className="ch-th-steps__ok" />
-        {`${turn.work ?? ''}${secs}`}
+        {workReceipt(turn.steps.length, elapsed)}
         <Icon icon={ChevronDown} size={13} className={open ? 'ch-th-flip' : undefined} />
       </button>
-      {open && list(false)}
+      {open && (
+        <>
+          {turn.work && <p className="ch-th-work__read">{turn.work}</p>}
+          {list(false)}
+        </>
+      )}
     </div>
   );
 }

@@ -1,6 +1,7 @@
 import { Skeleton } from '../../ui/States';
 import '../../styles/rounds.css';
 import '../../styles/rounds-recover.css';
+import { LargeTitleSkeleton } from '../../ui/LargeTitle';
 
 /** Route loading for Rounds: the header, the round card beside the season, then a month of rounds, in place. On desktop the header is the framed page head at its loaded height (rounds.css). */
 export function RoundsSkeleton() {
@@ -59,9 +60,7 @@ function PhoneRoundsSkeleton() {
     <div className="ch-rd-sk-phone">
       <header className="ch-rd-sk-h">
         <SkelLine h={24} w={210} sh={11} />
-        <span className="ch-rd-sk-title" data-ch-large-title="">
-          <SkelLine h={33.5} w={168} sh={28} r={8} />
-        </span>
+        <LargeTitleSkeleton width={168} className="ch-rd-sk-title" />
         <span className="ch-rd-sk-new">
           <Skeleton width={117} height={44} radius={11} />
         </span>
@@ -131,7 +130,7 @@ export function RoundReviewSkeleton() {
           figures between hairlines in two rows, then strokes gained and the scorecard under their double rules, each head with its
           figure. rounds.css shows the shape for the width. */}
       <div className="ch-rv-sk-phone">
-        <Skeleton width="100%" height={178} radius={14} shape="solid" />
+        <Skeleton width="100%" height={178} radius={14} shape="feature" />
         <span className="ch-rv-sk-figs">
           {[0, 1, 2, 3, 4].map((i) => (
             <span key={i}>
@@ -214,5 +213,32 @@ function SkelLine({ h, w, sh, r }: { h: number; w: number | string; sh: number; 
     <span style={{ display: 'flex', alignItems: 'center', height: h }}>
       <Skeleton width={w} height={sh} radius={r} />
     </span>
+  );
+}
+
+/** P-7: the course page on its way, at its final geometry: the hero card, the figures, the hole tiles and three rows. */
+export function CourseHistorySkeleton() {
+  return (
+    <main className="ch-ch" aria-busy="true" aria-label="Loading your history here">
+      <Skeleton width="100%" height={196} radius={16} shape="solid" />
+      <div className="ch-ch-sec" aria-hidden="true">
+        <div className="ch-ch-fig">
+          {[0, 1, 2, 3].map((i) => (
+            <div key={i} className="ch-ch-fig__c">
+              <Skeleton width={56} height={12} />
+              <Skeleton width={44} height={22} />
+            </div>
+          ))}
+        </div>
+      </div>
+      <div className="ch-ch-sec" aria-hidden="true">
+        <Skeleton width="100%" height={160} radius={16} shape="solid" />
+      </div>
+      <div className="ch-ch-sec" aria-hidden="true">
+        {[0, 1, 2].map((i) => (
+          <Skeleton key={i} width="100%" height={60} radius={0} shape="block" />
+        ))}
+      </div>
+    </main>
   );
 }

@@ -3,13 +3,15 @@
   display: grid;
   gap: 4px;
   min-width: 0;
+  /* A row's lines stop at a reading width (B2): on a wide screen they ran to about 130 characters. */
+  max-width: var(--ch-measure-text);
 }
-.ch-wn-what.is-good {
-  color: var(--ch-accent);
+.ch-wn-what.is-gain {
+  color: var(--ch-chart-gain);
 }
 .ch-wn-detail {
   color: var(--ch-text-secondary);
-  font: var(--ch-type-caption);
+  font: var(--ch-type-13);
   line-height: 1.45;
   white-space: normal;
   display: -webkit-box;
@@ -22,8 +24,19 @@
 .ch-wn .ch-lgr__lead {
   min-width: 68px;
 }
+/* B22: on a title that wraps, the time sits on its first line, not in the middle of the row. */
+.ch-wn .ch-lgr__lead,
+.ch-wn .ch-lgr__txt {
+  align-self: baseline;
+}
 .ch-wn .ch-lgr__title {
   overflow: visible;
   text-overflow: clip;
   white-space: normal;
+}
+
+/* Visual pass 2026-10-28: the row's chevron is its only sign that it opens; ink-400 drew it at 2.75:1 on the phone page
+   and 3.0 on the desktop canvas. ink-500 holds 5.4:1 or more in both themes (ui.css .ch-lgr__go, requested there too). */
+.ch-wn .ch-lgr__go {
+  color: var(--ch-ink-500);
 }

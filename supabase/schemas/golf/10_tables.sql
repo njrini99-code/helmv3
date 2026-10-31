@@ -503,6 +503,25 @@ CREATE TABLE IF NOT EXISTS "public"."golf_conversation_participants" (
 
 ALTER TABLE "public"."golf_conversation_participants" OWNER TO "postgres";
 
+CREATE TABLE IF NOT EXISTS "public"."golf_conversation_read_marks" (
+    "id" bigint NOT NULL,
+    "conversation_id" "uuid" NOT NULL,
+    "user_id" "uuid" NOT NULL,
+    "read_at" timestamp with time zone NOT NULL,
+    "is_baseline" boolean DEFAULT false NOT NULL
+);
+
+ALTER TABLE "public"."golf_conversation_read_marks" OWNER TO "postgres";
+
+ALTER TABLE "public"."golf_conversation_read_marks" ALTER COLUMN "id" ADD GENERATED ALWAYS AS IDENTITY (
+    SEQUENCE NAME "public"."golf_conversation_read_marks_id_seq"
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1
+);
+
 CREATE TABLE IF NOT EXISTS "public"."golf_conversations" (
     "id" "uuid" DEFAULT "extensions"."uuid_generate_v4"() NOT NULL,
     "team_id" "uuid",
@@ -1128,8 +1147,10 @@ CREATE TABLE IF NOT EXISTS "public"."golf_messages" (
     "payload" "jsonb",
     "pinned_at" timestamp with time zone,
     "pinned_by" "uuid",
+    "notify_anyway" boolean DEFAULT false NOT NULL,
+    "notify_anyway_pushed_at" timestamp with time zone,
     CONSTRAINT "golf_messages_kind_check" CHECK (("kind" = ANY (ARRAY['text'::"text", 'system'::"text", 'practice'::"text", 'event'::"text", 'rsvp'::"text", 'poll'::"text", 'travel'::"text"]))),
-    CONSTRAINT "golf_messages_payload_matches_kind" CHECK (((("kind" = 'text'::"text") AND ("payload" IS NULL)) OR (("kind" <> 'text'::"text") AND ("payload" IS NOT NULL))))
+    CONSTRAINT "golf_messages_payload_matches_kind" CHECK (((("kind" = 'text'::"text") AND ("payload" IS NULL)) OR (("kind" <> 'text'::"text") AND (("payload" IS NOT NULL) OR ("is_deleted" IS TRUE)))))
 );
 
 ALTER TABLE "public"."golf_messages" OWNER TO "postgres";
@@ -1251,7 +1272,8 @@ CREATE TABLE IF NOT EXISTS "public"."golf_player_classes" (
     "notes" "text",
     "created_at" timestamp with time zone DEFAULT "now"(),
     "updated_at" timestamp with time zone DEFAULT "now"(),
-    "semester" "text"
+    "semester" "text",
+    "status_enabled" boolean DEFAULT true NOT NULL
 );
 
 ALTER TABLE "public"."golf_player_classes" OWNER TO "postgres";
@@ -1347,6 +1369,40 @@ CREATE TABLE IF NOT EXISTS "public"."golf_player_standing" (
 );
 
 ALTER TABLE "public"."golf_player_standing" OWNER TO "postgres";
+
+CREATE TABLE IF NOT EXISTS public.golf_player_standing_season (
+  player_id uuid NOT NULL REFERENCES public.golf_players (id) ON DELETE CASCADE,
+  metric_id text NOT NULL REFERENCES public.golf_metrics (metric_id) ON DELETE RESTRICT,
+  player_value numeric NOT NULL,
+  team_avg numeric,
+  team_n integer NOT NULL DEFAULT 0,
+  team_pct numeric,
+  level_avg numeric,
+  level_n integer NOT NULL DEFAULT 0,
+  level_pct numeric,
+  pga_value numeric NOT NULL,
+  pga_delta numeric,
+  basis text,
+  on_green_proximity_feet numeric,
+  layup_excluded_n integer,
+  rounds_n integer NOT NULL,
+  season_start date NOT NULL,
+  computed_at timestamptz NOT NULL DEFAULT now(),
+  CONSTRAINT golf_player_standing_season_pkey PRIMARY KEY (player_id, metric_id),
+  CONSTRAINT golf_player_standing_season_basis_check CHECK (basis IS NULL OR basis IN ('on_green', 'all_shot')),
+  CONSTRAINT golf_player_standing_season_rounds_n_check CHECK (rounds_n >= 0)
+);
+
+ALTER TABLE public.golf_player_standing_season OWNER TO "postgres";
+
+CREATE TABLE IF NOT EXISTS public.golf_standing_refresh_queue (
+  team_id uuid PRIMARY KEY REFERENCES public.golf_teams (id) ON DELETE CASCADE,
+  first_marked_at timestamptz NOT NULL DEFAULT now(),
+  marked_at timestamptz NOT NULL DEFAULT now(),
+  marks integer NOT NULL DEFAULT 1
+);
+
+ALTER TABLE public.golf_standing_refresh_queue OWNER TO "postgres";
 
 CREATE TABLE IF NOT EXISTS "public"."golf_player_stats_cache" (
     "id" "uuid" DEFAULT "gen_random_uuid"() NOT NULL,
@@ -1679,6 +1735,69 @@ ALTER TABLE "public"."golf_review_events" OWNER TO "postgres";
 -- Written and cleared exclusively through public.claim_round_recap_lock /
 -- public.release_round_recap_lock; see 90_comments.sql for the full
 -- COMMENT ON TABLE text.
+CREATE SEQUENCE IF NOT EXISTS "public"."golf_round_live_seq"
+    AS bigint
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+ALTER SEQUENCE "public"."golf_round_live_seq" OWNER TO "postgres";
+
+CREATE TABLE IF NOT EXISTS "public"."golf_round_live" (
+    "round_id" "uuid" NOT NULL,
+    "team_id" "uuid" NOT NULL,
+    "player_id" "uuid" NOT NULL,
+    "round_type" "text" NOT NULL,
+    "qualifier_id" "uuid",
+    "qualifier_round" integer,
+    "round_date" "date" NOT NULL,
+    "course_id" "uuid",
+    "course_name" "text",
+    "holes_planned" smallint DEFAULT 18 NOT NULL,
+    "start_position" smallint DEFAULT 1 NOT NULL,
+    "current_hole" smallint,
+    "share" "text" NOT NULL,
+    "phase" "text" DEFAULT 'on_course'::"text" NOT NULL,
+    "thru" smallint DEFAULT 0 NOT NULL,
+    "to_par" smallint,
+    "strokes" smallint,
+    "holes" "jsonb" DEFAULT '[]'::"jsonb" NOT NULL,
+    "last_hole_at" timestamp with time zone,
+    "heard_at" timestamp with time zone DEFAULT "now"() NOT NULL,
+    "is_test" boolean DEFAULT false NOT NULL,
+    "seq" bigint DEFAULT "nextval"('"public"."golf_round_live_seq"'::"regclass") NOT NULL,
+    "emit_window_at" timestamp with time zone DEFAULT "now"() NOT NULL,
+    "emit_count" integer DEFAULT 0 NOT NULL,
+    "share_changes" smallint DEFAULT 0 NOT NULL,
+    "started_at" timestamp with time zone DEFAULT "now"() NOT NULL,
+    "ended_at" timestamp with time zone,
+    "updated_at" timestamp with time zone DEFAULT "now"() NOT NULL,
+    CONSTRAINT "golf_round_live_current_hole_chk" CHECK ((("current_hole" IS NULL) OR (("current_hole" >= 1) AND ("current_hole" <= 18)))),
+    CONSTRAINT "golf_round_live_holes_chk" CHECK ((("jsonb_typeof"("holes") = 'array'::"text") AND ("jsonb_array_length"("holes") <= 18))),
+    CONSTRAINT "golf_round_live_holes_planned_chk" CHECK (("holes_planned" = ANY (ARRAY[9, 18]))),
+    CONSTRAINT "golf_round_live_phase_chk" CHECK (("phase" = ANY (ARRAY['on_course'::"text", 'finished'::"text", 'posted'::"text", 'stopped'::"text"]))),
+    CONSTRAINT "golf_round_live_round_type_chk" CHECK (("round_type" = ANY (ARRAY['practice'::"text", 'qualifier'::"text", 'tournament'::"text"]))),
+    CONSTRAINT "golf_round_live_share_chk" CHECK (("share" = ANY (ARRAY['off'::"text", 'coaches'::"text", 'team'::"text"]))),
+    CONSTRAINT "golf_round_live_share_floor_chk" CHECK ((("round_type" = 'practice'::"text") OR ("share" = 'coaches'::"text"))),
+    CONSTRAINT "golf_round_live_thru_chk" CHECK ((("thru" >= 0) AND ("thru" <= 18)))
+);
+
+ALTER TABLE "public"."golf_round_live" OWNER TO "postgres";
+
+CREATE TABLE IF NOT EXISTS "public"."golf_round_live_prefs" (
+    "player_id" "uuid" NOT NULL,
+    "practice_share" "text" DEFAULT 'off'::"text" NOT NULL,
+    "next_share" "text",
+    "next_share_at" timestamp with time zone,
+    "updated_at" timestamp with time zone DEFAULT "now"() NOT NULL,
+    CONSTRAINT "golf_round_live_prefs_next_share_chk" CHECK ((("next_share" IS NULL) OR ("next_share" = ANY (ARRAY['off'::"text", 'coaches'::"text", 'team'::"text"])))),
+    CONSTRAINT "golf_round_live_prefs_practice_share_chk" CHECK (("practice_share" = ANY (ARRAY['off'::"text", 'coaches'::"text", 'team'::"text"])))
+);
+
+ALTER TABLE "public"."golf_round_live_prefs" OWNER TO "postgres";
+
 CREATE TABLE IF NOT EXISTS "public"."golf_round_recap_locks" (
     "round_id" "uuid" NOT NULL,
     "revision" integer DEFAULT 1 NOT NULL,
@@ -2173,3 +2292,389 @@ CREATE TABLE IF NOT EXISTS "public"."putt_details" (
 );
 
 ALTER TABLE "public"."putt_details" OWNER TO "postgres";
+
+-- P016 Tournaments: held migrations 20261024100000 (tables), 100100 (RLS)
+-- and 100200 (RPCs, lineup guard), WRITTEN — HOLD — NOT APPLIED in production.
+-- Generated 2026-10-25 by pg_dump of the three files applied in order to a
+-- scratch Postgres 16 (docs/clubhouse/held/data/tournaments.md).
+
+CREATE TABLE "public"."golf_saved_comparisons" (
+    "id" "uuid" DEFAULT "gen_random_uuid"() NOT NULL,
+    "team_id" "uuid" NOT NULL,
+    "owner_id" "uuid" NOT NULL,
+    "name" "text" NOT NULL,
+    "scope_a" "text" NOT NULL,
+    "scope_b" "text" NOT NULL,
+    "bench" "text" DEFAULT 'team'::"text" NOT NULL,
+    "metric_group" "text" DEFAULT 'scoring'::"text" NOT NULL,
+    "shared" boolean DEFAULT false NOT NULL,
+    "created_at" timestamp with time zone DEFAULT "now"() NOT NULL,
+    CONSTRAINT "golf_saved_comparisons_bench_check" CHECK (("bench" = ANY (ARRAY['team'::"text", 'field'::"text", 'd1'::"text", 'top25'::"text", 'none'::"text"]))),
+    CONSTRAINT "golf_saved_comparisons_metric_group_check" CHECK (("char_length"("metric_group") <= 40)),
+    CONSTRAINT "golf_saved_comparisons_name_check" CHECK ((("char_length"("name") >= 1) AND ("char_length"("name") <= 60))),
+    CONSTRAINT "golf_saved_comparisons_scope_a_check" CHECK (("char_length"("scope_a") <= 400)),
+    CONSTRAINT "golf_saved_comparisons_scope_b_check" CHECK (("char_length"("scope_b") <= 400))
+);
+
+
+ALTER TABLE "public"."golf_saved_comparisons" OWNER TO "postgres";
+
+CREATE TABLE "public"."golf_team_seasons" (
+    "team_id" "uuid" NOT NULL,
+    "season" "text" NOT NULL,
+    "division" "text",
+    "conference" "text",
+    "official_rank" bigint,
+    "official_rank_at" "date",
+    CONSTRAINT "golf_team_seasons_conference_check" CHECK (("char_length"("conference") <= 80)),
+    CONSTRAINT "golf_team_seasons_division_check" CHECK (("division" = ANY (ARRAY['d1'::"text", 'd2'::"text", 'd3'::"text", 'naia'::"text", 'njcaa'::"text", 'other'::"text"]))),
+    CONSTRAINT "golf_team_seasons_official_rank_check" CHECK ((("official_rank" >= 1) AND ("official_rank" <= 400))),
+    CONSTRAINT "golf_team_seasons_season_check" CHECK (("season" ~ '^\d{4}-\d{2}$'::"text"))
+);
+
+
+ALTER TABLE "public"."golf_team_seasons" OWNER TO "postgres";
+
+CREATE TABLE "public"."golf_tournament_advice_givers" (
+    "tournament_id" "uuid" NOT NULL,
+    "team_id" "uuid" NOT NULL,
+    "user_id" "uuid" NOT NULL
+);
+
+
+ALTER TABLE "public"."golf_tournament_advice_givers" OWNER TO "postgres";
+
+CREATE TABLE "public"."golf_tournament_coach_presence" (
+    "round_event_id" "uuid" NOT NULL,
+    "team_id" "uuid" NOT NULL,
+    "coach_user_id" "uuid" NOT NULL,
+    "with_player_id" "uuid",
+    "updated_at" timestamp with time zone DEFAULT "now"() NOT NULL
+);
+
+
+ALTER TABLE "public"."golf_tournament_coach_presence" OWNER TO "postgres";
+
+CREATE TABLE "public"."golf_tournament_entries" (
+    "tournament_id" "uuid" NOT NULL,
+    "team_id" "uuid" NOT NULL,
+    "player_id" "uuid" NOT NULL,
+    "role" "text" NOT NULL,
+    "slot" bigint,
+    "created_at" timestamp with time zone DEFAULT "now"() NOT NULL,
+    "updated_at" timestamp with time zone DEFAULT "now"() NOT NULL,
+    CONSTRAINT "golf_tournament_entries_role_check" CHECK (("role" = ANY (ARRAY['lineup'::"text", 'alternate'::"text", 'individual'::"text"]))),
+    CONSTRAINT "golf_tournament_entries_slot_check" CHECK ((("slot" >= 1) AND ("slot" <= 9))),
+    CONSTRAINT "golf_tournament_entries_slot_role" CHECK ((("role" = 'lineup'::"text") = ("slot" IS NOT NULL)))
+);
+
+
+ALTER TABLE "public"."golf_tournament_entries" OWNER TO "postgres";
+
+CREATE TABLE "public"."golf_tournament_entry_notes" (
+    "tournament_id" "uuid" NOT NULL,
+    "team_id" "uuid" NOT NULL,
+    "player_id" "uuid" NOT NULL,
+    "reasoning" "text",
+    "updated_at" timestamp with time zone DEFAULT "now"() NOT NULL,
+    CONSTRAINT "golf_tournament_entry_notes_reasoning_check" CHECK (("char_length"("reasoning") <= 500))
+);
+
+
+ALTER TABLE "public"."golf_tournament_entry_notes" OWNER TO "postgres";
+
+CREATE TABLE "public"."golf_tournament_field_scores" (
+    "field_team_id" "uuid" NOT NULL,
+    "team_id" "uuid" NOT NULL,
+    "round_number" bigint NOT NULL,
+    "total" bigint,
+    "thru" bigint,
+    "entered_at" timestamp with time zone DEFAULT "now"() NOT NULL,
+    CONSTRAINT "golf_tournament_field_scores_round_number_check" CHECK ((("round_number" >= 1) AND ("round_number" <= 6))),
+    CONSTRAINT "golf_tournament_field_scores_thru_check" CHECK ((("thru" >= 0) AND ("thru" <= 18))),
+    CONSTRAINT "golf_tournament_field_scores_total_check" CHECK ((("total" >= 60) AND ("total" <= 800)))
+);
+
+
+ALTER TABLE "public"."golf_tournament_field_scores" OWNER TO "postgres";
+
+CREATE TABLE "public"."golf_tournament_field_teams" (
+    "id" "uuid" DEFAULT "gen_random_uuid"() NOT NULL,
+    "tournament_id" "uuid" NOT NULL,
+    "team_id" "uuid" NOT NULL,
+    "name" "text" NOT NULL,
+    "is_us" boolean DEFAULT false NOT NULL,
+    "is_b_team" boolean DEFAULT false NOT NULL,
+    "same_division" boolean DEFAULT true NOT NULL,
+    "seed" bigint,
+    "final_place" bigint,
+    "final_place_tied" boolean DEFAULT false NOT NULL,
+    "final_total" bigint,
+    CONSTRAINT "golf_tournament_field_teams_name_check" CHECK ((("char_length"("name") >= 1) AND ("char_length"("name") <= 80)))
+);
+
+
+ALTER TABLE "public"."golf_tournament_field_teams" OWNER TO "postgres";
+
+CREATE TABLE "public"."golf_tournament_link_dismissals" (
+    "team_id" "uuid" NOT NULL,
+    "round_id" "uuid" NOT NULL,
+    "dismissed_by" "uuid",
+    "dismissed_at" timestamp with time zone DEFAULT "now"() NOT NULL
+);
+
+
+ALTER TABLE "public"."golf_tournament_link_dismissals" OWNER TO "postgres";
+
+CREATE TABLE "public"."golf_tournament_player_notes" (
+    "tournament_id" "uuid" NOT NULL,
+    "team_id" "uuid" NOT NULL,
+    "player_id" "uuid" NOT NULL,
+    "shot_of_day" "text",
+    "decision" "text",
+    "next_focus" "text",
+    "shared_at" timestamp with time zone,
+    "updated_at" timestamp with time zone DEFAULT "now"() NOT NULL,
+    CONSTRAINT "golf_tournament_player_notes_decision_check" CHECK (("char_length"("decision") <= 280)),
+    CONSTRAINT "golf_tournament_player_notes_next_focus_check" CHECK (("char_length"("next_focus") <= 280)),
+    CONSTRAINT "golf_tournament_player_notes_shot_of_day_check" CHECK (("char_length"("shot_of_day") <= 280))
+);
+
+
+ALTER TABLE "public"."golf_tournament_player_notes" OWNER TO "postgres";
+
+CREATE TABLE "public"."golf_tournament_player_rounds" (
+    "round_event_id" "uuid" NOT NULL,
+    "team_id" "uuid" NOT NULL,
+    "player_id" "uuid" NOT NULL,
+    "round_id" "uuid",
+    "entered_total" bigint,
+    "entered_front" bigint,
+    "entered_back" bigint,
+    "status" "text" DEFAULT 'ok'::"text" NOT NULL,
+    "wd_after_hole" bigint,
+    "link_source" "text",
+    "note" "text",
+    "updated_by" "uuid",
+    "updated_at" timestamp with time zone DEFAULT "now"() NOT NULL,
+    CONSTRAINT "golf_tournament_player_rounds_entered_back_check" CHECK ((("entered_back" >= 10) AND ("entered_back" <= 100))),
+    CONSTRAINT "golf_tournament_player_rounds_entered_front_check" CHECK ((("entered_front" >= 10) AND ("entered_front" <= 100))),
+    CONSTRAINT "golf_tournament_player_rounds_entered_total_check" CHECK ((("entered_total" >= 20) AND ("entered_total" <= 200))),
+    CONSTRAINT "golf_tournament_player_rounds_link_source_check" CHECK (("link_source" = ANY (ARRAY['coach'::"text", 'auto'::"text", 'player'::"text"]))),
+    CONSTRAINT "golf_tournament_player_rounds_note_check" CHECK (("char_length"("note") <= 280)),
+    CONSTRAINT "golf_tournament_player_rounds_status_check" CHECK (("status" = ANY (ARRAY['ok'::"text", 'wd'::"text", 'dq'::"text", 'dq_pending'::"text"]))),
+    CONSTRAINT "golf_tournament_player_rounds_wd_after_hole_check" CHECK ((("wd_after_hole" >= 0) AND ("wd_after_hole" <= 18))),
+    CONSTRAINT "golf_tpr_one_source" CHECK ((NOT (("round_id" IS NOT NULL) AND ("entered_total" IS NOT NULL))))
+);
+
+
+ALTER TABLE "public"."golf_tournament_player_rounds" OWNER TO "postgres";
+
+CREATE TABLE "public"."golf_tournament_reflections" (
+    "tournament_id" "uuid" NOT NULL,
+    "team_id" "uuid" NOT NULL,
+    "player_id" "uuid" NOT NULL,
+    "body" "text" NOT NULL,
+    "updated_at" timestamp with time zone DEFAULT "now"() NOT NULL,
+    CONSTRAINT "golf_tournament_reflections_body_check" CHECK ((("char_length"("body") >= 1) AND ("char_length"("body") <= 2000)))
+);
+
+
+ALTER TABLE "public"."golf_tournament_reflections" OWNER TO "postgres";
+
+CREATE TABLE "public"."golf_tournament_result_marks" (
+    "id" "uuid" DEFAULT "gen_random_uuid"() NOT NULL,
+    "tournament_id" "uuid" NOT NULL,
+    "team_id" "uuid" NOT NULL,
+    "round_event_id" "uuid",
+    "state" "text" NOT NULL,
+    "reason" "text",
+    "snapshot" "jsonb" DEFAULT '{}'::"jsonb" NOT NULL,
+    "created_by" "uuid",
+    "created_at" timestamp with time zone DEFAULT "now"() NOT NULL,
+    CONSTRAINT "golf_tournament_result_marks_reason_check" CHECK (("char_length"("reason") <= 280)),
+    CONSTRAINT "golf_tournament_result_marks_state_check" CHECK (("state" = ANY (ARRAY['final'::"text", 'official'::"text", 'reopened'::"text"])))
+);
+
+
+ALTER TABLE "public"."golf_tournament_result_marks" OWNER TO "postgres";
+
+CREATE TABLE "public"."golf_tournament_reviews" (
+    "tournament_id" "uuid" NOT NULL,
+    "team_id" "uuid" NOT NULL,
+    "observation" "text",
+    "hypothesis" "text",
+    "evidence" "jsonb" DEFAULT '[]'::"jsonb" NOT NULL,
+    "updated_by" "uuid",
+    "updated_at" timestamp with time zone DEFAULT "now"() NOT NULL,
+    CONSTRAINT "golf_tournament_reviews_hypothesis_check" CHECK (("char_length"("hypothesis") <= 4000)),
+    CONSTRAINT "golf_tournament_reviews_observation_check" CHECK (("char_length"("observation") <= 4000))
+);
+
+
+ALTER TABLE "public"."golf_tournament_reviews" OWNER TO "postgres";
+
+CREATE TABLE "public"."golf_tournament_round_lineups" (
+    "round_event_id" "uuid" NOT NULL,
+    "team_id" "uuid" NOT NULL,
+    "player_id" "uuid" NOT NULL,
+    "role" "text" NOT NULL,
+    "slot" bigint,
+    "substituted_for" "uuid",
+    "substituted_at" timestamp with time zone,
+    CONSTRAINT "golf_tournament_round_lineups_role_check" CHECK (("role" = ANY (ARRAY['lineup'::"text", 'alternate'::"text", 'individual'::"text"]))),
+    CONSTRAINT "golf_tournament_round_lineups_slot_check" CHECK ((("slot" >= 1) AND ("slot" <= 9)))
+);
+
+
+ALTER TABLE "public"."golf_tournament_round_lineups" OWNER TO "postgres";
+
+CREATE TABLE "public"."golf_tournament_rounds" (
+    "round_event_id" "uuid" NOT NULL,
+    "tournament_id" "uuid" NOT NULL,
+    "team_id" "uuid" NOT NULL,
+    "round_number" bigint NOT NULL,
+    "course_id" "uuid",
+    "tee_id" "uuid",
+    "start_type" "text" DEFAULT 'tee_times'::"text" NOT NULL,
+    "first_tee_at" timestamp with time zone,
+    "status" "text" DEFAULT 'upcoming'::"text" NOT NULL,
+    "status_changed_at" timestamp with time zone DEFAULT "now"() NOT NULL,
+    "event_adopted" boolean DEFAULT false NOT NULL,
+    CONSTRAINT "golf_tournament_rounds_round_number_check" CHECK ((("round_number" >= 1) AND ("round_number" <= 6))),
+    CONSTRAINT "golf_tournament_rounds_start_type_check" CHECK (("start_type" = ANY (ARRAY['tee_times'::"text", 'shotgun'::"text", 'two_tees'::"text"]))),
+    CONSTRAINT "golf_tournament_rounds_status_check" CHECK (("status" = ANY (ARRAY['upcoming'::"text", 'live'::"text", 'suspended_weather'::"text", 'suspended_other'::"text", 'final'::"text"])))
+);
+
+
+ALTER TABLE "public"."golf_tournament_rounds" OWNER TO "postgres";
+
+CREATE TABLE "public"."golf_tournaments" (
+    "id" "uuid" DEFAULT "gen_random_uuid"() NOT NULL,
+    "team_id" "uuid" NOT NULL,
+    "name" "text" NOT NULL,
+    "start_date" "date" NOT NULL,
+    "end_date" "date" NOT NULL,
+    "course_id" "uuid",
+    "format" "text" DEFAULT '5c4'::"text" NOT NULL,
+    "players_per_team" bigint DEFAULT 5 NOT NULL,
+    "counting" bigint DEFAULT 4 NOT NULL,
+    "holes_per_round" bigint DEFAULT 18 NOT NULL,
+    "rounds_count" bigint DEFAULT 3 NOT NULL,
+    "event_kind" "text" DEFAULT 'regular'::"text" NOT NULL,
+    "tiebreak" "text" DEFAULT 'ties_stand'::"text" NOT NULL,
+    "field_size" bigint,
+    "line_kind" "text",
+    "line_value" bigint,
+    "substitutions" boolean DEFAULT false NOT NULL,
+    "lock_minutes" bigint DEFAULT 10 NOT NULL,
+    "lineup_locked_at" timestamp with time zone,
+    "lineup_published_at" timestamp with time zone,
+    "official_at" timestamp with time zone,
+    "results_url" "text",
+    "host" "text",
+    "created_by" "uuid",
+    "created_at" timestamp with time zone DEFAULT "now"() NOT NULL,
+    "updated_at" timestamp with time zone DEFAULT "now"() NOT NULL,
+    "version" integer DEFAULT 1 NOT NULL,
+    CONSTRAINT "golf_tournaments_counting_check" CHECK ((("counting" >= 1) AND ("counting" <= 9))),
+    CONSTRAINT "golf_tournaments_counting_le_players" CHECK (("counting" <= "players_per_team")),
+    CONSTRAINT "golf_tournaments_dates" CHECK (("end_date" >= "start_date")),
+    CONSTRAINT "golf_tournaments_event_kind_check" CHECK (("event_kind" = ANY (ARRAY['regular'::"text", 'conference'::"text", 'ncaa_regional'::"text", 'ncaa_championship'::"text", 'exhibition'::"text"]))),
+    CONSTRAINT "golf_tournaments_field_size_check" CHECK ((("field_size" >= 1) AND ("field_size" <= 40))),
+    CONSTRAINT "golf_tournaments_format_check" CHECK (("format" = ANY (ARRAY['5c4'::"text", '6c5'::"text", '6c4'::"text", 'custom'::"text", 'match'::"text", 'medal_match'::"text", 'individual'::"text"]))),
+    CONSTRAINT "golf_tournaments_holes_per_round_check" CHECK (("holes_per_round" = ANY (ARRAY[9, 18]))),
+    CONSTRAINT "golf_tournaments_host_check" CHECK (("char_length"("host") <= 120)),
+    CONSTRAINT "golf_tournaments_line_kind_check" CHECK (("line_kind" = ANY (ARRAY['advance'::"text", 'cut'::"text", 'match_play'::"text"]))),
+    CONSTRAINT "golf_tournaments_line_value_check" CHECK ((("line_value" >= 1) AND ("line_value" <= 40))),
+    CONSTRAINT "golf_tournaments_lock_minutes_check" CHECK ((("lock_minutes" >= 0) AND ("lock_minutes" <= 1440))),
+    CONSTRAINT "golf_tournaments_name_check" CHECK ((("char_length"("name") >= 1) AND ("char_length"("name") <= 120))),
+    CONSTRAINT "golf_tournaments_players_per_team_check" CHECK ((("players_per_team" >= 1) AND ("players_per_team" <= 9))),
+    CONSTRAINT "golf_tournaments_results_url_check" CHECK ((("results_url" IS NULL) OR ("results_url" ~ '^https://'::"text"))),
+    CONSTRAINT "golf_tournaments_rounds_count_check" CHECK ((("rounds_count" >= 1) AND ("rounds_count" <= 6))),
+    CONSTRAINT "golf_tournaments_tiebreak_check" CHECK (("tiebreak" = ANY (ARRAY['ties_stand'::"text", 'ncaa'::"text", 'playoff'::"text", 'card_playoff'::"text"])))
+);
+
+
+ALTER TABLE "public"."golf_tournaments" OWNER TO "postgres";
+CREATE TABLE IF NOT EXISTS "public"."golf_team_terms" (
+    "id" "uuid" DEFAULT "gen_random_uuid"() NOT NULL,
+    "team_id" "uuid" NOT NULL,
+    "label" "text" NOT NULL,
+    "classes_start" "date" NOT NULL,
+    "classes_end" "date" NOT NULL,
+    "exams_end" "date" NOT NULL,
+    "time_zone" "text" NOT NULL,
+    "confirmed_by" "uuid",
+    "confirmed_at" timestamp with time zone DEFAULT "now"() NOT NULL,
+    "created_at" timestamp with time zone DEFAULT "now"() NOT NULL,
+    "updated_at" timestamp with time zone DEFAULT "now"() NOT NULL
+);
+
+ALTER TABLE "public"."golf_team_terms" OWNER TO "postgres";
+
+CREATE TABLE IF NOT EXISTS "public"."golf_player_class_settings" (
+    "player_id" "uuid" NOT NULL,
+    "share_status" boolean DEFAULT true NOT NULL,
+    "hold_pushes" boolean DEFAULT true NOT NULL,
+    "updated_at" timestamp with time zone DEFAULT "now"() NOT NULL
+);
+
+ALTER TABLE "public"."golf_player_class_settings" OWNER TO "postgres";
+
+CREATE TABLE IF NOT EXISTS "public"."golf_class_exceptions" (
+    "id" "uuid" DEFAULT "gen_random_uuid"() NOT NULL,
+    "team_id" "uuid" NOT NULL,
+    "player_id" "uuid",
+    "class_id" "uuid",
+    "kind" "text" NOT NULL,
+    "starts_on" "date" NOT NULL,
+    "ends_on" "date" NOT NULL,
+    "start_time" time without time zone,
+    "end_time" time without time zone,
+    "label" "text",
+    "created_by" "uuid" DEFAULT "auth"."uid"(),
+    "created_at" timestamp with time zone DEFAULT "now"() NOT NULL
+);
+
+ALTER TABLE "public"."golf_class_exceptions" OWNER TO "postgres";
+
+CREATE TABLE IF NOT EXISTS "public"."golf_push_holds" (
+    "id" "uuid" DEFAULT "gen_random_uuid"() NOT NULL,
+    "user_id" "uuid" NOT NULL,
+    "reason" "text" NOT NULL,
+    "notification_type" "text" NOT NULL,
+    "group_key" "text" NOT NULL,
+    "dedupe_key" "text",
+    "title" "text" NOT NULL,
+    "body" "text" NOT NULL,
+    "data" "jsonb" DEFAULT '{}'::"jsonb" NOT NULL,
+    "conversation_id" "uuid",
+    "message_id" "uuid",
+    "expires_at" timestamp with time zone,
+    "held_at" timestamp with time zone DEFAULT "now"() NOT NULL,
+    "release_at" timestamp with time zone NOT NULL,
+    "claimed_at" timestamp with time zone,
+    "claim_token" "uuid",
+    "released_at" timestamp with time zone,
+    "outcome" "text",
+    "attempts" smallint DEFAULT 0 NOT NULL
+);
+
+ALTER TABLE "public"."golf_push_holds" OWNER TO "postgres";
+
+CREATE TABLE IF NOT EXISTS "public"."golf_push_hold_heartbeat" (
+    "id" boolean DEFAULT true NOT NULL,
+    "beat_at" timestamp with time zone DEFAULT "now"() NOT NULL,
+    "source" "text",
+    CONSTRAINT "golf_push_hold_heartbeat_one_row" CHECK ("id")
+);
+
+ALTER TABLE "public"."golf_push_hold_heartbeat" OWNER TO "postgres";
+
+CREATE TABLE IF NOT EXISTS "public"."golf_class_hold_dirty" (
+    "team_id" "uuid" NOT NULL,
+    "marked_at" timestamp with time zone DEFAULT "now"() NOT NULL
+);
+
+ALTER TABLE "public"."golf_class_hold_dirty" OWNER TO "postgres";

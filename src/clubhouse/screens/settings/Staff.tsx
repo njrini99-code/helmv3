@@ -1,6 +1,6 @@
 'use client';
 
-import { Copy, Link2, Share2, UserMinus, UserPlus } from 'lucide-react';
+import { Copy, Link2, Share, UserMinus, UserPlus } from 'lucide-react';
 import { useState } from 'react';
 import { Badge } from '../../ui/Badge';
 import { Button } from '../../ui/Button';
@@ -40,7 +40,7 @@ export function StaffCards({ coachId, writes }: { coachId: string | null; writes
       )}
       {requestsFailed ? (
         <Card id="set-requests" title="Assistant coach requests">
-          <InlineNotice code="CH-8213" title="Requests didn’t load." body="Nothing was changed. Try again; the error has been reported." onRetry={staff.retry} />
+          <InlineNotice code="CH-8213" title="Requests didn’t load." body="Nothing was changed. Try again." onRetry={staff.retry} />
         </Card>
       ) : (
         requests.length > 0 && (
@@ -52,10 +52,10 @@ export function StaffCards({ coachId, writes }: { coachId: string | null; writes
           >
             {requests.map((c) => (
               <Row key={c.coachId} label={pendingCoachName(c)} help={c.fullName?.trim() ? c.email : null}>
-                <Button size="sm" variant="secondary" disabled={deciding} onClick={() => setDeclining(c)}>
+                <Button size="sm" variant="secondary" busy={staff.decline.pending && staff.busyId === c.coachId} disabled={deciding} onClick={() => setDeclining(c)}>
                   {staff.decline.pending && staff.busyId === c.coachId ? 'Declining…' : 'Decline'}
                 </Button>
-                <Button size="sm" variant="primary" disabled={deciding} onClick={() => void staff.approve.run(c)}>
+                <Button size="sm" variant="primary" busy={staff.approve.pending && staff.busyId === c.coachId} disabled={deciding} onClick={() => void staff.approve.run(c)}>
                   {staff.approve.pending && staff.busyId === c.coachId ? 'Approving…' : 'Approve'}
                 </Button>
               </Row>
@@ -77,7 +77,6 @@ export function StaffCards({ coachId, writes }: { coachId: string | null; writes
             </Button>
             <Button
               variant="danger"
-              feel={null}
               onClick={() => {
                 const c = declining;
                 setDeclining(null);
@@ -95,7 +94,7 @@ export function StaffCards({ coachId, writes }: { coachId: string | null; writes
             <Segmented label="Staff role" size="sm" value={invite.role} options={STAFF_ROLE_OPTIONS} onChange={invite.setRole} />
           </Row>
           <Row label="New invite">
-            <Button size="sm" variant="secondary" leftIcon={UserPlus} disabled={invite.create.pending} onClick={() => void invite.create.run(invite.role)}>
+            <Button size="sm" variant="secondary" leftIcon={UserPlus} busy={invite.create.pending} onClick={() => void invite.create.run(invite.role)}>
               {invite.create.pending ? 'Making…' : 'Create invite'}
             </Button>
           </Row>
@@ -120,7 +119,7 @@ export function StaffCards({ coachId, writes }: { coachId: string | null; writes
                   Copy staff invite link
                 </Button>
                 {invite.canShare && (
-                  <Button size="sm" leftIcon={Share2} onClick={() => void invite.share()}>
+                  <Button size="sm" leftIcon={Share} onClick={() => void invite.share()}>
                     Share
                   </Button>
                 )}

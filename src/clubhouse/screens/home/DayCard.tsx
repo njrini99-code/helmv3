@@ -3,21 +3,30 @@
 import { Flag, MessageSquare, Navigation, Sunset, TriangleAlert } from 'lucide-react';
 import Link from 'next/link';
 import { useEffect, useRef, useState, type ReactNode } from 'react';
-import type { ChHomeEvent, ChLatestRound } from '../../data/home';
+import type { ChAgendaRow, ChHomeEvent, ChLatestRound } from '../../data/home';
 import { Avatar } from '../../ui/Avatar';
 import { Icon } from '../../ui/Icon';
 import { LedgerList, LedgerRow } from '../../ui/Ledger';
 import { formatToPar } from '../../lib/format';
 import { haptic } from '../../lib/haptics';
 import { chTrail } from '../../lib/track';
+import type { ChClock } from '../../lib/clock-cookie';
+import { useChClock, useChClockText } from '../../lib/use-clock';
+import { restyleClock } from '../../lib/clock-format';
+import { useMarkReader } from '../../lib/use-change-marks';
+import { WasValue } from '../../ui/WasValue';
+import type { ChHomeChange } from './change-rows';
 import { rebuiltHref } from '../../shell/nav';
 import { LinkPending } from '../../shell/LinkPending';
 import { TYPE_LABEL } from '../calendar/model';
 import { TYPE_ICON } from '../calendar/views';
 import { messagesPrefillHref } from '../messages/prefill';
 import { sunTimes, type LatLng } from '../../lib/sun';
+import { agendaDetail } from './agenda-clock';
 import { CALENDAR, eventHref, whenLabel } from './event-links';
 import { nudgeDraft } from './nudge-draft';
+import { firstName } from '../../lib/names';
+import { pluralWord } from '../../lib/plural';
 
 /**
  * The coach's phone Home as one living card (owner-approved phone concept, board 1 "The day, not a dashboard"): the
@@ -46,7 +55,6 @@ export function dayPhase(next: ChHomeEvent | null, todays: ChHomeEvent[], rounds
 }
 
 const WEEKDAY = new Intl.DateTimeFormat('en-US', { timeZone: 'UTC', weekday: 'long' });
-const firstName = (name: string) => name.split(' ')[0] ?? name;
 
 /** Off-site events only: "Practice green" is not a place a maps app can find. A plain link, no maps API (D1-2). */
 const DIRECTIONS = new Set<ChHomeEvent['type']>(['qualifier', 'tournament', 'travel']);
@@ -57,11 +65,12 @@ export function DayCard({ phase, now, today, onOpenRound }: { phase: Exclude<ChD
 }
 
 function EventCard({ e, live, now, today }: { e: ChHomeEvent; live: boolean; now: Date | null; today: string | null }) {
+  const t = useChClockText();
   const when = whenLabel(e, now);
   const people = e.invitees ?? [];
   const awaiting = e.awaiting ?? [];
   const end = e.rangeLabel.split(' – ')[1];
-  const kicker = e.allDay ? `${e.date === today ? 'Today' : WEEKDAY.format(new Date(`${e.date}T12:00:00Z`))} · all day` : live ? `Now${end ? ` · until ${end}` : ''}` : `Next up · ${e.startLabel}`;
+  const kicker = e.allDay ? `${e.date === today ? 'Today' : WEEKDAY.format(new Date(`${e.date}T12:00:00Z`))} · all day` : live ? `Now${end ? ` · until ${t(end)}` : ''}` : `Next up · ${t(e.startLabel)}`;
   const open = (h: string | null) => (h ? rebuiltHref(h) : null);
   const nudge = awaiting.length ? open(messagesPrefillHref({ players: awaiting.map((p) => p.id), draft: nudgeDraft(e, today), title: e.title })) : null;
   const message = !nudge && e.inviteeIds?.length ? open(messagesPrefillHref({ players: e.inviteeIds, draft: '', title: e.title })) : null;
@@ -73,7 +82,7 @@ function EventCard({ e, live, now, today }: { e: ChHomeEvent; live: boolean; now
           <Icon icon={TYPE_ICON[e.type]} size={13} />
           {kicker}
         </span>
-        <span className={'ch-hm-next__when ch-num' + (when.soon ? ' is-soon' : '')}>{when.text}</span>
+        <span className={'ch-hm-next__when ch-num' + (when.soon ? ' is-soon' : '')}>{t(when.text)}</span>
       </span>
       <h2 id="ch-hm-day-t">
         {/* The title opens the event; its press area covers the card, under the actions. */}
@@ -81,12 +90,12 @@ function EventCard({ e, live, now, today }: { e: ChHomeEvent; live: boolean; now
           {e.title}
         </Link>
       </h2>
-      <p className="ch-num">{[live || e.allDay ? null : e.rangeLabel, e.location ?? TYPE_LABEL[e.type]].filter(Boolean).join(' · ')}</p>
+      <p className="ch-num">{[live || e.allDay ? null : t(e.rangeLabel), e.location ?? TYPE_LABEL[e.type]].filter(Boolean).join(' · ')}</p>
       {e.invitees && people.length > 0 && (
         <span className="ch-hm-next__f ch-hm-day__people">
           <span className="ch-hm-stack ch-hm-day__stack" aria-hidden="true">
             {people.slice(0, 4).map((n) => (
-              <Avatar key={n} name={n} size={28} />
+              <Avatar key={n} name={n} size="sm" />
             ))}
           </span>
           <span className="ch-hm-next__rsvp ch-num">
@@ -105,19 +114,19 @@ function EventCard({ e, live, now, today }: { e: ChHomeEvent; live: boolean; now
       {(nudge || message || directions) && (
         <span className="ch-hm-day__acts">
           {nudge && (
-            <Link href={nudge} className="ch-hm-day__act is-primary" data-ch-press="" onClick={() => (haptic('select'), chTrail('home nudge'))}>
+            <Link href={nudge} className="ch-hm-day__act is-primary" data-ch-press="" onClick={() => chTrail('home nudge')}>
               <Icon icon={MessageSquare} size={16} />
               {awaiting.length === 1 ? `Nudge ${firstName(awaiting[0]!.name)}` : `Nudge ${awaiting.length}`}
             </Link>
           )}
           {message && (
-            <Link href={message} className="ch-hm-day__act is-primary" data-ch-press="" onClick={() => (haptic('select'), chTrail('home message invitees'))}>
+            <Link href={message} className="ch-hm-day__act is-primary" data-ch-press="" onClick={() => chTrail('home message invitees')}>
               <Icon icon={MessageSquare} size={16} />
               Message
             </Link>
           )}
           {directions && (
-            <a href={directions} className="ch-hm-day__act" target="_blank" rel="noopener noreferrer" data-ch-press="" onClick={() => haptic('select')}>
+            <a href={directions} className="ch-hm-day__act" target="_blank" rel="noopener noreferrer" data-ch-press="">
               <Icon icon={Navigation} size={16} />
               Directions
             </a>
@@ -173,6 +182,7 @@ export interface ChRailExtra {
  * `extras` in time order (the sunset from the global light once it lands; a competition later this week).
  */
 export function LaterToday({ todays, cardId, now, extras }: { todays: ChHomeEvent[]; cardId: string | null; now: Date | null; extras: ChRailExtra[] }) {
+  const t12 = useChClockText();
   const t = now?.getTime();
   const rows: Array<{ key: string; at: number; node: ReactNode }> = todays
     .filter((e) => e.id !== cardId && (t == null || !over(e, t)))
@@ -181,7 +191,7 @@ export function LaterToday({ todays, cardId, now, extras }: { todays: ChHomeEven
       at: e.allDay ? -1 : minutesOf(e.startIso, e.timezone),
       node: (
         <Link href={eventHref(e)} className="ch-hm-tl__a">
-          <span className="ch-hm-tl__t ch-num">{e.allDay ? 'All day' : e.startLabel.replace(/\s?[AP]M$/, '')}</span>
+          <span className="ch-hm-tl__t ch-num">{e.allDay ? 'All day' : t12(e.startLabel).replace(/\s?[AP]M$/, '')}</span>
           <span className="ch-hm-tl__rail" aria-hidden="true">
             <i className={`is-${e.type}`} />
           </span>
@@ -260,12 +270,12 @@ function minutesOf(iso: string, timeZone?: string): number {
  * The sunset row (concept board 1): today's sunset at the team's place (the global light's sun, lib/sun.ts sunTimes),
  * while it is still ahead; its line says when the light turns golden. Nothing after sunset, or where the sun doesn't set.
  */
-export function sunsetExtra(today: string | null, now: Date | null, place: { place: LatLng; timeZone: string }): ChRailExtra[] {
+export function sunsetExtra(today: string | null, now: Date | null, place: { place: LatLng; timeZone: string }, clock: ChClock = '12'): ChRailExtra[] {
   if (!today || !now) return [];
   const { sunset, goldenStart } = sunTimes(today, place.place, place.timeZone);
   if (sunset === null || sunset <= now.getTime()) return [];
-  const clock = new Intl.DateTimeFormat('en-US', { timeZone: place.timeZone, hour: 'numeric', minute: '2-digit' });
-  const short = (ms: number) => clock.format(ms).replace(/\s?[AP]M$/, '');
+  const fmt = new Intl.DateTimeFormat('en-US', { timeZone: place.timeZone, hour: clock === '24' ? '2-digit' : 'numeric', minute: '2-digit', ...(clock === '24' ? { hourCycle: 'h23' as const } : {}) });
+  const short = (ms: number) => fmt.format(ms).replace(/\s?[AP]M$/, '');
   return [
     {
       key: 'sunset',
@@ -279,9 +289,9 @@ export function sunsetExtra(today: string | null, now: Date | null, place: { pla
 }
 
 /** A competition later this week, for the rail: after today, so it sorts below today's rows. */
-export function competitionExtra(row: { id: string; timeLabel: string; title: string; detail: string | null } | undefined): ChRailExtra[] {
+export function competitionExtra(row: Pick<ChAgendaRow, 'id' | 'timeLabel' | 'title' | 'detail' | 'hm' | 'when'> | undefined, clock: ChClock = '12'): ChRailExtra[] {
   if (!row) return [];
-  return [{ key: `comp-${row.id}`, at: 24 * 60 + 1, time: row.timeLabel, title: row.title, sub: row.detail, mark: 'competition', href: `${CALENDAR}?event=${row.id}` }];
+  return [{ key: `comp-${row.id}`, at: 24 * 60 + 1, time: row.timeLabel, title: row.title, sub: agendaDetail(row, clock), mark: 'competition', href: `${CALENDAR}?event=${row.id}` }];
 }
 
 /**
@@ -293,10 +303,20 @@ const SEEN_KEY = 'ch.home.seen.v1';
 interface Seen {
   rounds: string[];
   event: { id: string; going: number } | null;
+  /** P-14: the change sessions this device has shown (older stored values have none). */
+  changes?: string[];
 }
 export interface ChSinceChip {
   key: string;
   big: string;
+  /** A schedule change's lead as a 24-hour clock reads it ("16:00"). */
+  hm?: string;
+  /** A cancelled event's old start, struck. */
+  struck?: boolean;
+  /** The edit session this row tells of, for its strike. */
+  changeId?: string;
+  /** The row's second line (a schedule change: what it was, when, who). */
+  meta?: string;
   /** The figure's under-par part, shown in the under-par red (D-42). */
   toPar?: { text: string; under: boolean };
   label: string;
@@ -304,15 +324,38 @@ export interface ChSinceChip {
   href?: string;
 }
 
-/** Pure: the chips between what was seen and what is here now. */
-export function sinceChips(prev: Seen | null, rounds: ChLatestRound[], event: ChHomeEvent | null): ChSinceChip[] {
+/** The most schedule changes the section lists before one row says how many more. */
+const MAX_CHANGE_ROWS = 3;
+
+/**
+ * Pure: the chips between what was seen and what is here now. A schedule change (P-14) leads, since a change to the plan
+ * outranks a posted round: other people's live changes this device has not shown yet and the player has not cleared with
+ * Got it, newest first, three at most and then one row for the rest.
+ */
+export function sinceChips(prev: Seen | null, rounds: ChLatestRound[], event: ChHomeEvent | null, changes: ChHomeChange[] = [], cleared: (changeId: string) => boolean = () => false): ChSinceChip[] {
   if (!prev) return [];
-  const chips: ChSinceChip[] = rounds
+  const fresh = changes.filter((c) => !(prev.changes ?? []).includes(c.changeId) && !cleared(c.changeId));
+  const changeChips: ChSinceChip[] = fresh.slice(0, MAX_CHANGE_ROWS).map((c) => ({
+    key: `c-${c.changeId}`,
+    big: c.lead.text,
+    ...(c.lead.hm ? { hm: c.lead.hm } : {}),
+    ...(c.lead.struck ? { struck: true } : {}),
+    changeId: c.changeId,
+    label: c.title,
+    meta: c.meta,
+    href: `${CALENDAR}?date=${c.date}&event=${c.eventId}`,
+  }));
+  if (fresh.length > MAX_CHANGE_ROWS) {
+    const more = fresh.length - MAX_CHANGE_ROWS;
+    changeChips.push({ key: 'c-more', big: `+${more}`, label: `${more} more ${pluralWord(more, 'change')} · Calendar`, href: CALENDAR });
+  }
+  const chips: ChSinceChip[] = changeChips;
+  chips.push(...rounds
     .filter((r) => !prev.rounds.includes(r.id))
-    .map((r) => ({ key: `r-${r.id}`, big: String(r.score), toPar: r.toPar != null ? { text: formatToPar(r.toPar), under: r.toPar < 0 } : undefined, label: `${firstName(r.playerName)} posted`, round: r }));
+    .map((r) => ({ key: `r-${r.id}`, big: String(r.score), toPar: r.toPar != null ? { text: formatToPar(r.toPar), under: r.toPar < 0 } : undefined, label: `${firstName(r.playerName)} posted`, round: r })));
   if (event && event.going != null && prev.event?.id === event.id && event.going > prev.event.going) {
     const more = event.going - prev.event.going;
-    chips.push({ key: `e-${event.id}`, big: `+${more}`, label: `${more === 1 ? 'Reply' : 'Replies'} · ${event.title}`, href: eventHref(event) });
+    chips.push({ key: `e-${event.id}`, big: `+${more}`, label: `${pluralWord(more, 'Reply', 'Replies')} · ${event.title}`, href: eventHref(event) });
   }
   return chips;
 }
@@ -321,25 +364,33 @@ function readSeen(): Seen | null {
   try {
     const raw = localStorage.getItem(SEEN_KEY);
     const v: unknown = raw ? JSON.parse(raw) : null;
-    return v && typeof v === 'object' && Array.isArray((v as Seen).rounds) ? (v as Seen) : null;
+    return v && typeof v === 'object' && Array.isArray((v as Seen).rounds) ? ({ ...(v as Seen), changes: Array.isArray((v as Seen).changes) ? (v as Seen).changes : [] }) : null;
   } catch {
     return null;
   }
 }
 
-export function SinceYouLooked({ rounds, event, onOpenRound }: { rounds: ChLatestRound[]; event: ChHomeEvent | null; onOpenRound: (r: ChLatestRound) => void }) {
+/** A stable empty list: a fresh `[]` default would re-run the effect below on every render. */
+const NO_CHANGES: ChHomeChange[] = [];
+
+export function SinceYouLooked({ rounds, event, changes = NO_CHANGES, onOpenRound }: { rounds: ChLatestRound[]; event: ChHomeEvent | null; changes?: ChHomeChange[]; onOpenRound: (r: ChLatestRound) => void }) {
   // Read once, after mount; the snapshot survives StrictMode's second effect, which would otherwise read the write.
   const prev = useRef<Seen | null | undefined>(undefined);
   const [chips, setChips] = useState<ChSinceChip[]>([]);
+  const read = useMarkReader();
+  const clock = useChClock();
   useEffect(() => {
     if (prev.current === undefined) prev.current = readSeen();
-    setChips(sinceChips(prev.current, rounds, event));
+    setChips(sinceChips(prev.current, rounds, event, changes, (id) => read(id).got));
     try {
-      localStorage.setItem(SEEN_KEY, JSON.stringify({ rounds: rounds.map((r) => r.id), event: event && event.going != null ? { id: event.id, going: event.going } : null } satisfies Seen));
+      localStorage.setItem(
+        SEEN_KEY,
+        JSON.stringify({ rounds: rounds.map((r) => r.id), event: event && event.going != null ? { id: event.id, going: event.going } : null, changes: changes.map((c) => c.changeId) } satisfies Seen),
+      );
     } catch {
       // Private mode or full storage: the chips just don't appear next time.
     }
-  }, [rounds, event]);
+  }, [rounds, event, changes, read]);
   if (!chips.length) return null;
   return (
     <section className="ch-hm-sec ch-hm-since" aria-labelledby="ch-hm-since">
@@ -350,16 +401,17 @@ export function SinceYouLooked({ rounds, event, onOpenRound }: { rounds: ChLates
           the titles of the two lists stand on one line; not a sideways rail of filled tiles. */}
       <LedgerList className="ch-hm-since__l">
         {chips.map((c) => {
+          const figure = clock === '24' && c.hm ? c.hm : c.big;
           const lead = (
             <b className="ch-hm-since__fig ch-num">
-              {c.big}
+              {c.struck && c.changeId ? <WasValue changeId={c.changeId}>{figure}</WasValue> : figure}
               {c.toPar && <em className={c.toPar.under ? 'is-under' : undefined}> {c.toPar.text}</em>}
             </b>
           );
           return c.round ? (
             <LedgerRow key={c.key} className="ch-hm-since__c" lead={lead} title={c.label} meta={c.round.meta.split(' · ').slice(0, 2).join(' · ') || undefined} onClick={() => (haptic('select'), onOpenRound(c.round!))} />
           ) : (
-            <LedgerRow key={c.key} className="ch-hm-since__c" lead={lead} title={c.label} href={c.href ?? CALENDAR} onClick={() => haptic('select')} />
+            <LedgerRow key={c.key} className="ch-hm-since__c" lead={lead} title={c.label} meta={c.meta ? restyleClock(c.meta, clock) : undefined} href={c.href ?? CALENDAR} />
           );
         })}
       </LedgerList>

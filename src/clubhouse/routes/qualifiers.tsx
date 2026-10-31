@@ -1,8 +1,10 @@
 import 'server-only';
-import { Lock, SearchX, Users } from 'lucide-react';
+import { Lock, SearchX } from 'lucide-react';
 import { getGolfSessionProfile } from '@/lib/auth/session';
 import { isUuid } from '@/lib/utils/uuid';
 import { loadQualifierDetail, loadQualifierForm, loadQualifierList, loadQualifierSelection } from '../data/qualifiers';
+import { loadLiveRounds } from '../data/live-rounds';
+import { isOwnRoundOn, qualifierLiveLines } from '../screens/qualifiers/on-course';
 import { QualifiersList } from '../screens/qualifiers/QualifiersList';
 import { QualifierDetail } from '../screens/qualifiers/QualifierDetail';
 import { QualifierForm } from '../screens/qualifiers/QualifierForm';
@@ -12,6 +14,7 @@ import { RefreshNotice } from '../ui/RefreshNotice';
 import { EmptyState } from '../ui/States';
 import { Button } from '../ui/Button';
 import { resolveClubhouseTeam } from './team';
+import { NoTeam } from '../ui/NoTeam';
 import '../styles/qualifiers.css';
 
 export type ChQView = 'list' | 'mine' | 'detail' | 'new' | 'edit' | 'selection';
@@ -35,7 +38,12 @@ export async function ClubhouseQualifiersRoute({ view, id }: { view: ChQView; id
 
   if (view === 'list' || view === 'mine') {
     const mode = view === 'mine' && team.role === 'player' ? 'mine' : 'all';
-    return <QualifiersList data={await loadQualifierList({ role: team.role, teamId: team.teamId, playerId, mode })} />;
+    // A coach also sees which qualifiers have players on the course now (CH-16622); a failed live read only leaves the line out.
+    const [list, liveNow] = await Promise.all([
+      loadQualifierList({ role: team.role, teamId: team.teamId, playerId, mode }),
+      team.role === 'coach' ? loadLiveRounds({ teamId: team.teamId, viewer: { role: 'coach', playerId: null } }) : null,
+    ]);
+    return <QualifiersList data={list} live={liveNow && !liveNow.error ? qualifierLiveLines(liveNow.lanes, Date.now()) : undefined} />;
   }
 
   if ((view === 'new' || view === 'edit' || view === 'selection') && team.role !== 'coach') return <CoachOnly view={view} id={id} />;
@@ -55,11 +63,16 @@ export async function ClubhouseQualifiersRoute({ view, id }: { view: ChQView; id
     const form = await loadQualifierForm({ teamId: team.teamId, qualifierId: id });
     return form ? <QualifierForm data={form} /> : <NotFound />;
   }
-  const detail = await loadQualifierDetail({ role: team.role, teamId: team.teamId, playerId, qualifierId: id });
+  // Who is on the course for this qualifier (4.7) is read beside the standings and never holds them up; it catches its own failure.
+  const [detail, liveNow] = await Promise.all([
+    loadQualifierDetail({ role: team.role, teamId: team.teamId, playerId, qualifierId: id }),
+    loadLiveRounds({ teamId: team.teamId, viewer: { role: team.role, playerId }, scope: { qualifierId: id } }),
+  ]);
   if (!detail) return <NotFound id={id} />;
   // The standings, facts and squad are sent now; the courses and the scorecards follow as a promise the sections read in place (owner rule 6).
   const { secondary, ...core } = detail;
-  return <QualifierDetail data={core} secondary={secondary} />;
+  const onCourse = { snapshot: liveNow, teamId: team.teamId, heldBack: team.role === 'player' && isOwnRoundOn(liveNow.lanes, playerId, id) };
+  return <QualifierDetail data={core} secondary={secondary} onCourse={onCourse} />;
 }
 
 function Frame({ children }: { children: React.ReactNode }) {
@@ -71,13 +84,7 @@ function Frame({ children }: { children: React.ReactNode }) {
 export function QualifiersNoTeam({ coach }: { coach: boolean }) {
   return (
     <Frame>
-      <EmptyState
-        size="page"
-        code="CH-09309"
-        icon={Users}
-        title="You aren’t on a team yet"
-        body={coach ? 'Qualifiers fill in once your team is set up.' : 'Your team’s qualifiers show here once a coach adds you to a team roster.'}
-      />
+      <NoTeam code="CH-09309" coach={coach} body={coach ? 'Qualifiers fill in once your team is set up.' : 'Your team’s qualifiers show here once a coach adds you to a team roster.'} />
     </Frame>
   );
 }
@@ -135,7 +142,7 @@ function SelectionDidNotLoad() {
       <RefreshNotice
         code="CH-09218"
         title="Selections didn’t load."
-        body="They couldn’t be read, so none are shown rather than a wrong list. Anything already saved is still saved. Try again; the error has been reported."
+        body="They couldn’t be read, so none are shown rather than a wrong list. Anything already saved is still saved. Try again."
       />
     </Frame>
   );

@@ -1,0 +1,16 @@
+{
+  "$comment": "The iPhone and Android app's launch and native canvas colour (A15). `active` picks the palette; `node scripts/native-canvas.mjs --apply` writes it into the colour asset, the launch screen, the splash images, the Capacitor config and Android's splash. To go back: `node scripts/native-canvas.mjs --set fairway --apply`. It ships only with a new app build. src/test/static/canvas-color-sync.test.ts pins each palette to its CSS token and every native copy to the active palette.",
+  "active": "fairway",
+  "palettes": {
+    "fairway": {
+      "light": "#F2E6D2",
+      "dark": "#0D0F0D",
+      "token": "--fw-color-canvas (src/styles/design-tokens.css)"
+    },
+    "clubhouse": {
+      "light": "#EDE9DF",
+      "dark": "#111512",
+      "token": "--ch-bg-page at phone width (src/clubhouse/styles/tokens.css)"
+    }
+  }
+}

@@ -85,6 +85,8 @@ describe('WhatsNew', () => {
     render(<WhatsNew data={toWhatsNew([item({ insightId: 'a' })], { nowMs: NOW })} />);
     await user.click(screen.getByRole('radio', { name: /Patterns 0/ }));
     expect(screen.getByText('Nothing of this kind this week')).toBeTruthy();
+    // A kind with nothing is a filtered empty (2026-10-23, filtered empties).
+    expect(document.querySelector('[data-ch-code="CH-13331"]')!.getAttribute('data-ch-state')).toBe('filtered');
     await user.click(screen.getByRole('radio', { name: /All 1/ }));
     expect(screen.getByText('Putting')).toBeTruthy();
   });

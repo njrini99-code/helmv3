@@ -29,7 +29,7 @@ scorecard, then the loading and empty phones (`GHBoards`).
 | Hero bar: team and the bell, on green | The shell's top bar in its hero variant (`usePhoneHero`): the team name in place of the title, the bell on green | `userData.teamName` |
 | Date, greeting | `data.todayLabel`, `data.greeting` | the loader, in the team's timezone |
 | Brief (sparkles line) | `data.subline` | the loader's program summary; absent when its read failed |
-| Waiting on you (draft, spec B §2; not on the board, Q-66) | `CoachQueue phone` in the hero under the brief: one line of linked parts, each a 44px target, on the well-soft surface | `data.queue` (`loadCoachQueue`): join requests, replies missing, overdue tasks, posts awaiting acknowledgement; absent with nothing waiting |
+| Waiting on you (draft, spec B §2; not on the board, Q-66) | `CoachQueue phone` in the hero under the brief: the key on its own line, then each part as a quiet 32px capsule (9% tint of its green) with a 44px hit area, rows 44px apart (visual pass 2026-10-28) | `data.queue` (`loadCoachQueue`): join requests, replies missing, overdue tasks, posts awaiting acknowledgement; absent with nothing waiting |
 | Up next card: type, countdown, title, time and place, who is going | `UpNext` → Calendar at that event (`?date=&event=`) | `data.phone.next`: the first team event not over yet, today or later in the loaded window; replies from `golf_event_attendance` |
 | No events (board 04): what the card holds, quick types, Add event | `NoEvents` (CH-2309) | quick types open the editor on that type (`?new=1&type=`) |
 | Today: a timeline with past, now and clash marks | `Today` → each row opens its event | `data.phone.today`; a clash is two of today's timed events overlapping |

@@ -270,6 +270,19 @@ export default tseslint.config(
           message:
             "Do not read e.target / e.currentTarget inside a state updater: it runs later and can see a stale value. Read the value in the handler first (const value = e.target.value) and use that.",
         },
+        {
+          // D-70 (Clubhouse A+ A14): navigation is silent, as on iOS. A Link, or a row component that takes an href (a
+          // LedgerRow, a Button drawn as a link), may tick 'press' or 'commit' (a primary action), never 'select'.
+          selector: "JSXOpeningElement:has(> JSXAttribute[name.name='href']) > JSXAttribute CallExpression[callee.name='haptic'][arguments.0.value='select']",
+          message: "A navigation link is silent (D-70): drop haptic('select') from this element, which takes an href. A primary action may use haptic('press').",
+        },
+        {
+          // The same for a handler that navigates by hand: haptic('select') and router.push in one block.
+          selector:
+            // One level under :has (esquery 1.7 misreads `:has(> A > B)`), so each statement is matched by its expression's fields.
+            "BlockStatement:has(> ExpressionStatement[expression.callee.name='haptic'][expression.arguments.0.value='select']):has(> ExpressionStatement[expression.callee.property.name='push']:matches([expression.callee.object.name='router'], [expression.callee.object.property.name='router']))",
+          message: "Navigation is silent (D-70): drop haptic('select') before router.push. A primary action may use haptic('press').",
+        },
       ],
     },
   },

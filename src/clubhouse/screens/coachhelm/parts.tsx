@@ -15,6 +15,7 @@ import { useToast } from '../../ui/Toast';
 import { CorrectionChips, ReadLater } from './Corrections';
 import { EngineState, WhyAudit } from './EngineState';
 import type { ChCoachHelmWrites } from './writes';
+import { LargeTitle } from '../../ui/LargeTitle';
 
 /**
  * The path line (design call D2): the card's second line, inside the card, in one fixed grammar: what was seen · count of
@@ -51,6 +52,24 @@ export function PathLine({ path }: { path: ChPathLine | null }) {
   );
 }
 
+/** "Tour 0.3": a comparison that ends in its figure, split so the figure sits in the ledger's figure column like the read's own. */
+const LEDGER_FIGURE = /^(.+?)\s+([+\u2212]?\d[\d.,]*(?:%| yd| ft)?)$/;
+
+/**
+ * A comparison row of the ledger. A label and a figure line up as the first row does (visual pass 2026-10-28: "Tour 0.3" sat
+ * as one left-aligned string under "Eli 1.1"); a comparison in other words stays one line. The space between them is kept, so
+ * the row still reads "Tour 0.3".
+ */
+function LedgerLine({ text }: { text: string }) {
+  const m = LEDGER_FIGURE.exec(text);
+  if (!m) return <li className="ch-num">{text}</li>;
+  return (
+    <li>
+      <span>{m[1]}</span> <span className="ch-num">{m[2]}</span>
+    </li>
+  );
+}
+
 /**
  * The evidence ledger (design call D8): the read's number and its comparison as flush rows with tabular figures, then the sample,
  * the window, the confidence word and the day. `who`: the first name the read's own row is labelled with on a coach's board; the
@@ -81,8 +100,8 @@ export function Evidence({ ev, who }: { ev: ChHelmEvidence; who?: string }) {
               <span>{who ?? 'You'}</span>
               <b className="ch-num">{ev.gauge.you}</b>
             </li>
-            <li className="ch-num">{ev.gauge.cmp}</li>
-            {ev.gauge.sec && <li className="ch-num">{ev.gauge.sec}</li>}
+            <LedgerLine text={ev.gauge.cmp} />
+            {ev.gauge.sec && <LedgerLine text={ev.gauge.sec} />}
           </ul>
         )
       )}
@@ -245,13 +264,19 @@ export function BoardPartial({ missing, what, focus = true }: { missing: ChBoard
  *  player puts "CoachHelm" there instead, and the player's name as the `title` (spec A). */
 /** `below`: one more line under the sentence, inside the header (the coach's "Since you were last here", D4). */
 export function Head({ who, title = 'CoachHelm', children, aside, below, phone = false }: { who?: ReactNode; title?: ReactNode; children: ReactNode; aside?: ReactNode; below?: ReactNode; phone?: boolean }) {
-  const Title = phone ? 'p' : 'h1';
   return (
     <header className={'ch-hl-h' + (aside ? ' has-aside' : '')} data-canopy-head="">
       {who && <span className="ch-hl-role">{who}</span>}
-      <Title id="ch-hl-title" className="ch-hl-h__t">
-        {title}
-      </Title>
+      {/* The phone's one large title (owner decision 4: the same 34 semibold sans as every section root, not the desktop's serif). */}
+      {phone ? (
+        <LargeTitle as="p" id="ch-hl-title" className="ch-hl-h__t">
+          {title}
+        </LargeTitle>
+      ) : (
+        <h1 id="ch-hl-title" className="ch-hl-h__t">
+          {title}
+        </h1>
+      )}
       <p>
         {children}
       </p>

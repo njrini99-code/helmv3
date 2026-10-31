@@ -115,6 +115,21 @@ function purgeAdminEvents(admin: AdminClient, severities: AdminEventSeverity[], 
   );
 }
 
+/**
+ * error_logs ages out on `created_at`, not `timestamp`. Only `created_at` is
+ * indexed (`idx_error_logs_created`, `idx_error_logs_created_severity`); the
+ * old `"timestamp"` filter and sort scanned the whole table (97k rows, 219 MB
+ * on 2026-10-23) on every page, 2.5 s each with a severity filter (Sentry
+ * JAVASCRIPT-NEXTJS-16Y, queryid -2342059117947792593) and 0.9 s without.
+ * The two columns agree on age: on 2026-10-23 neither held a NULL and the
+ * same rows were older than 90 days by either (20 of 97k differ by more than
+ * an hour). Both are nullable with DEFAULT now(); no writer sets
+ * `created_at`, so it always takes the default. A NULL row would never age
+ * out on either column. `created_at` is also the honest age: when the row
+ * was stored, not the time a client reported.
+ */
+const ERROR_LOGS_AGE_COLUMN = 'created_at';
+
 function purgeErrorLogsBySeverity(admin: AdminClient, severities: string[], before: string): Promise<number> {
   return purgeBatch(
     () =>
@@ -122,8 +137,8 @@ function purgeErrorLogsBySeverity(admin: AdminClient, severities: string[], befo
         .from('error_logs')
         .select('id')
         .in('severity', severities)
-        .lt('timestamp', before)
-        .order('timestamp', { ascending: true })
+        .lt(ERROR_LOGS_AGE_COLUMN, before)
+        .order(ERROR_LOGS_AGE_COLUMN, { ascending: true })
         .limit(BATCH),
     (ids) => admin.from('error_logs').delete().in('id', ids),
   );
@@ -135,8 +150,8 @@ function purgeErrorLogsBefore(admin: AdminClient, before: string): Promise<numbe
       admin
         .from('error_logs')
         .select('id')
-        .lt('timestamp', before)
-        .order('timestamp', { ascending: true })
+        .lt(ERROR_LOGS_AGE_COLUMN, before)
+        .order(ERROR_LOGS_AGE_COLUMN, { ascending: true })
         .limit(BATCH),
     (ids) => admin.from('error_logs').delete().in('id', ids),
   );

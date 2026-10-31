@@ -87,7 +87,8 @@ All 25 (CONTRACT.md).
   1 of 2, 2 of 3, 2 of 4, 3 of 5). One round of three is too thin a sample to frame a minor as contending.
 - **Sample size:** a ranked row with fewer rounds in than the most anyone has shows "n of N rounds".
 - **Live:** Live only while the realtime feed is subscribed; Paused (with the read time and Refresh) otherwise or after
-  a long-hidden tab; Ended past the end date (held at UTC−12).
+  a long-hidden tab; past the end date (held at UTC−12) the pill says what it waits on, "Waiting on n rounds" or
+  "Past last day" (F-0068, 2026-10-30): "Ended" is kept for a completed qualifier.
 - **Rank slide:** only when the ranked order changed, never under reduced motion, Animations off, a scroll, a tray,
   sheet or dialog; plates change value at once.
 
@@ -110,7 +111,13 @@ The list: head, tools, hero and cards. A qualifier: back link, head with its act
 columns (the leaderboard and, for a coach, round-by-round scores; the selections, the course per round and the
 rules). The form: two columns, with the travel squad and the actions on a sticky right column. Manage
 selections: head, steps strip, note, then two columns (on score now and the rest of the field; the coach's
-picks). The leaderboard draws the top-score line and the travel cut between rows.
+picks). The leaderboard draws the top-score line and the travel cut between
+rows: the top-score line is
+champagne (a brass label over a brass dash; champagne on the green live card),
+the travel cut a quiet ink rule.
+The board's header and its caption state the same rule ("Complete cards first,
+then total to par"). Status pills
+are the shared pill's size, 30 on the desktop and 36 on the phone.
 
 ## Phone
 

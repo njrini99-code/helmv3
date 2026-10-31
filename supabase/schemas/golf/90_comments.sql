@@ -50,6 +50,8 @@ COMMENT ON COLUMN "public"."golf_coachhelm_settings"."llm_budget_usd_per_day" IS
 
 COMMENT ON COLUMN "public"."golf_conversation_participants"."notification_level" IS 'YOUR delivery preference for this conversation: all | mentions | muted. Per-participant, never per-conversation. With muted_until set, the level lapses back to all once that timestamp passes — evaluated on read, so a stalled job can never leave somebody permanently silent.';
 
+COMMENT ON TABLE "public"."golf_conversation_read_marks" IS 'One row per time a participant''s last_read_at advanced past at least one new message from someone else (golf_record_read_mark), plus one baseline row per participant from when the log started. The first mark at or after a message''s created_at is when that person first saw it (Clubhouse Seen by, P-1). Kept 120 days. Written only by triggers; members read through RLS.';
+
 COMMENT ON TABLE "public"."golf_course_tees" IS 'Cloud tee sets for a course (Championship/Blue/White/Women''s/custom). Open-contribution + last-edited metadata + soft-delete. Rounds reference a tee via golf_rounds.tee_id but still snapshot par/yards into golf_holes.';
 
 COMMENT ON COLUMN "public"."golf_demo_sessions"."traffic_quality" IS 'Verdict on whether this gate entry was a human or a security scanner: automated | likely_human | unknown. Classified at write time from send-to-entry latency and IP fan-out.';
@@ -149,6 +151,14 @@ COMMENT ON TABLE "public"."golf_player_genome" IS 'v3 W33 per-player 80-dim geno
 
 COMMENT ON TABLE "public"."golf_player_standing" IS 'v3 standing snapshots — one row per (player_id, metric_id). Computed nightly by /api/cron/v3/standing-refresh. Powers every StandingBar render plus W17 counterfactuals. pga_value NOT NULL — metric must have a PGA baseline to land here.';
 
+COMMENT ON TABLE public.golf_player_standing_season IS 'Clubhouse Standing for this season (owner decision 9, 2026-10-24): one row per (player_id, metric_id), every metric over the rounds since 1 August in the team''s time zone. Same shape as golf_player_standing plus rounds_n and season_start. Written by refresh_player_standing_season (nightly standing-refresh cron and its dirty pass). service_role only. golf_player_standing (lifetime, Fairway) is unchanged.';
+
+COMMENT ON COLUMN public.golf_player_standing_season.rounds_n IS 'Rounds this row''s value was built from (not a cohort size: team_n and level_n are those).';
+
+COMMENT ON COLUMN public.golf_player_standing_season.season_start IS 'The first day this row covers: 1 August of the current season in the player''s team''s time zone (the earlier start when the player is on two teams).';
+
+COMMENT ON TABLE public.golf_standing_refresh_queue IS 'Teams whose Standing needs a refresh because a player saved a round (Clubhouse A+ rows 105/121, 2026-10-24). Written by mark_team_standing_dirty, read by select_dirty_standing_teams, cleared by clear_dirty_standing_teams; all three service_role only. marked_at is the debounce clock (moves on every mark), first_marked_at the cap.';
+
 COMMENT ON COLUMN "public"."golf_player_standing"."team_n" IS 'Number of teammates contributing to team_avg / team_pct. When < 5, StandingBar omits the team marker (cold-start rule per master plan Part VII.3). Row still writes for the player vs PGA comparison.';
 
 COMMENT ON COLUMN "public"."golf_player_standing"."team_pct" IS 'Player percentile (0-100) within the team for this metric. Computed via SQL PERCENT_RANK() OVER (PARTITION BY team_id ORDER BY player_value [ASC|DESC depending on metric direction]).';
@@ -178,6 +188,10 @@ COMMENT ON TABLE "public"."golf_qualifier_selections" IS 'v3 W29 per-player pick
 COMMENT ON COLUMN "public"."golf_qualifiers"."is_test" IS 'QA/demo row: hidden from player, team and CoachHelm reads (OD-03).';
 
 COMMENT ON TABLE "public"."golf_review_events" IS 'Timeline of events related to reviews for history display';
+
+COMMENT ON TABLE "public"."golf_round_live" IS 'P-6: live state of an in-progress team round, refreshed in place at commit (helm_private.golf_round_live_refresh). Never written by clients; sharing changes go through golf_round_live_set_share. Swept by golf-round-live-sweep.';
+
+COMMENT ON TABLE "public"."golf_round_live_prefs" IS 'P-6: a player''s default live sharing for practice rounds (OQ-72: off unless they choose), and the one-round choice made in round setup. Qualifier and tournament rounds are always shared with coaches.';
 
 COMMENT ON TABLE "public"."golf_round_recap_locks" IS 'Single-flight lease for a per-round LLM call, taken BEFORE compose() so a concurrent second request for the same (round_id, revision, kind) waits for or reads the first call''s result instead of making a second billable LLM call. Serves round-recap.ts (kind = ''recap'') and the round-review narrative (kind = ''round_review_narrative'') — the name predates the second caller. Row-per-(round_id,revision,kind), TTL-expiring, service-role-only — written and cleared exclusively through public.claim_round_recap_lock / public.release_round_recap_lock, never through a direct client write.';
 
@@ -288,3 +302,12 @@ COMMENT ON COLUMN "public"."golf_travel_expenses"."category" IS 'Expense categor
 COMMENT ON COLUMN "public"."golf_travel_expenses"."paid_by" IS 'Who paid: team, player, pending_reimbursement, split';
 
 COMMENT ON COLUMN "public"."golf_travel_itineraries"."is_test" IS 'QA/demo row: hidden from team reads (OD-03).';
+
+-- P016 Tournaments: held migrations 20261024100000 (tables), 100100 (RLS)
+-- and 100200 (RPCs, lineup guard), WRITTEN — HOLD — NOT APPLIED in production.
+-- Generated 2026-10-25 by pg_dump of the three files applied in order to a
+-- scratch Postgres 16 (docs/clubhouse/held/data/tournaments.md).
+
+COMMENT ON TABLE "public"."golf_tournament_player_rounds" IS 'P016 Tournaments (D-82): one row per player per tournament round, linking a golf_rounds row or holding an entered score. golf_rounds is never updated by tournaments. HELD 20261024100000.';
+
+COMMENT ON TABLE "public"."golf_tournaments" IS 'P016 Tournaments (D-81): one tournament edition for one GolfHelm team. Each competition round is a golf_events row linked through golf_tournament_rounds. version is bumped on every update (compare-and-set). HELD 20261024100000.';

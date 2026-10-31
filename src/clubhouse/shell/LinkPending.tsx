@@ -12,8 +12,9 @@ import { useLinkStatus } from 'next/link';
  * Next's guidance for dynamic routes on slow networks (`useLinkStatus`, a debounced hint): docs/clubhouse/PROGRESS.md
  * "Page transitions" (2026-10-01).
  */
-export function LinkPending() {
-  const { pending } = useLinkStatus();
+export function LinkPending({ pending: forced = false }: { pending?: boolean } = {}) {
+  const { pending: linkPending } = useLinkStatus();
+  const pending = linkPending || forced;
   if (!pending) return null;
   return (
     <span className="ch-lp" aria-hidden="false">

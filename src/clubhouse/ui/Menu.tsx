@@ -9,9 +9,24 @@ import { Icon } from './Icon';
 import { haptic } from '../lib/haptics';
 import { CH_POP, chTween } from '../lib/motion';
 import { useChReducedMotion } from '../lib/reduced-motion';
+import { chTrail } from '../lib/track';
 
 export type MenuItem =
-  | { kind?: 'item'; label: string; icon?: LucideIcon; onSelect?: () => void; href?: string; danger?: boolean; checked?: boolean }
+  | {
+      kind?: 'item';
+      label: string;
+      icon?: LucideIcon;
+      onSelect?: () => void;
+      href?: string;
+      danger?: boolean;
+      checked?: boolean;
+      /** The haptic a pick fires (D-70): `select` by default; `warning` for a remove that asks nothing first (P-5's Remove R3). */
+      feel?: 'select' | 'warning';
+      /** A second, quieter line under the label (the row grows to fit it). */
+      caption?: string;
+      /** A keyboard shortcut, right-aligned. */
+      shortcut?: string;
+    }
   | { kind: 'separator' };
 
 const W = 232;
@@ -27,23 +42,39 @@ export function Menu({
   items,
   align = 'end',
   label,
+  width = W,
+  open: controlledOpen,
+  onOpenChange,
 }: {
   trigger: (props: { ref: (el: HTMLButtonElement | null) => void; onClick: () => void; 'aria-expanded': boolean; 'aria-haspopup': 'menu'; 'aria-controls': string }) => ReactNode;
   items: MenuItem[];
   align?: 'start' | 'end';
   label: string;
+  /** The list's width in pixels (232 by default). */
+  width?: number;
+  /** Controlled: the caller opens it (a long press) and hears when it closes. Left out, the trigger's click toggles it. */
+  open?: boolean;
+  onOpenChange?: (open: boolean) => void;
 }) {
   const id = useId();
   const reduced = useChReducedMotion();
-  const [open, setOpen] = useState(false);
-  const [pos, setPos] = useState<{ left: number; top: number; maxHeight: number } | null>(null);
+  const [innerOpen, setInnerOpen] = useState(false);
+  const open = controlledOpen ?? innerOpen;
+  const setOpen = useCallback(
+    (next: boolean) => {
+      setInnerOpen(next);
+      onOpenChange?.(next);
+    },
+    [onOpenChange],
+  );
+  const [pos, setPos] = useState<{ left: number; top: number; maxHeight: number; origin: string } | null>(null);
   const btn = useRef<HTMLButtonElement | null>(null);
   const list = useRef<HTMLDivElement | null>(null);
 
   const close = useCallback((focus = true) => {
     setOpen(false);
     if (focus) btn.current?.focus();
-  }, []);
+  }, [setOpen]);
 
   useLayoutEffect(() => {
     if (!open || !btn.current) return;
@@ -54,20 +85,31 @@ export function Menu({
       const viewport = window.visualViewport;
       const bottom = Math.min(window.innerHeight - keyboard, viewport ? viewport.offsetTop + viewport.height : window.innerHeight);
       const h = list.current?.scrollHeight || list.current?.offsetHeight || 200;
-      let left = align === 'end' ? r.right - W : r.left;
-      left = Math.max(8, Math.min(left, window.innerWidth - W - 8));
+      let left = align === 'end' ? r.right - width : r.left;
+      left = Math.max(8, Math.min(left, window.innerWidth - width - 8));
       const above = Math.max(0, Math.min(r.top, bottom - 8) - 14);
       const below = Math.max(0, bottom - Math.max(8, r.bottom) - 14);
       const up = h > below && above > below;
       const maxHeight = up ? above : below;
       const top = Math.max(8, Math.min(up ? r.top - Math.min(h, maxHeight) - 6 : r.bottom + 6, bottom - 8 - Math.min(h, maxHeight)));
-      setPos({ left, top, maxHeight });
+      // B16: it grows out of its trigger, so from the corner nearest it: the bottom when it opened upward.
+      setPos({ left, top, maxHeight, origin: `${up ? 'bottom' : 'top'} ${align === 'end' ? 'right' : 'left'}` });
     };
     place();
+    // Where the trigger stood when the list opened: only a scroll that moved it closes the list (F-0009).
+    const anchor = btn.current?.getBoundingClientRect() ?? null;
     const onScroll = (e: Event) => {
       // Native fields may horizontally scroll their text on blur without moving the anchor.
       if (e.target instanceof HTMLElement && e.target.matches('input, textarea, select')) return;
       if (list.current && e.target instanceof Node && list.current.contains(e.target)) return;
+      // Any other scroll (a smooth scroll still settling, a tab strip, a list elsewhere) that left the trigger where it
+      // was keeps the list open, placed again; it opened and shut in one frame on a first click (F-0009).
+      const now = btn.current?.getBoundingClientRect();
+      if (anchor && now && Math.abs(now.top - anchor.top) <= 1 && Math.abs(now.left - anchor.left) <= 1) {
+        place();
+        return;
+      }
+      chTrail('menu close: scroll');
       // A scroll that closes the list while focus is in it would drop focus to <body>: hand it back to the trigger.
       if (list.current?.contains(document.activeElement)) btn.current?.focus({ preventScroll: true });
       close(false);
@@ -84,7 +126,7 @@ export function Menu({
       window.removeEventListener('resize', place);
       document.removeEventListener('scroll', onScroll, true);
     };
-  }, [open, align, close]);
+  }, [open, align, width, close]);
 
   useEffect(() => {
     if (!open) return;
@@ -117,7 +159,7 @@ export function Menu({
         ref: (el) => {
           btn.current = el;
         },
-        onClick: () => setOpen((o) => !o),
+        onClick: () => setOpen(!open),
         'aria-expanded': open,
         'aria-haspopup': 'menu',
         'aria-controls': id,
@@ -133,7 +175,7 @@ export function Menu({
                 aria-label={label}
                 className="ch-menu ch-popover"
                 data-ui="clubhouse"
-                style={{ left: pos?.left ?? -9999, top: pos?.top, maxHeight: pos?.maxHeight, width: W }}
+                style={{ left: pos?.left ?? -9999, top: pos?.top, maxHeight: pos?.maxHeight, width, transformOrigin: pos?.origin }}
                 initial={reduced ? { opacity: 0 } : CH_POP.initial}
                 animate={reduced ? { opacity: 1 } : CH_POP.animate}
                 exit={reduced ? { opacity: 0 } : CH_POP.exit}
@@ -181,10 +223,18 @@ export function MenuItems({ items, onClose }: { items: MenuItem[]; onClose: (foc
         const content = (
           <>
             {it.icon && <Icon icon={it.icon} size={15} />}
-            <span>{it.label}</span>
+            {it.caption ? (
+              <span className="ch-menu__text">
+                <span>{it.label}</span>
+                <span className="ch-menu__caption">{it.caption}</span>
+              </span>
+            ) : (
+              <span>{it.label}</span>
+            )}
+            {it.shortcut && <span className="ch-menu__shortcut">{it.shortcut}</span>}
           </>
         );
-        const cls = 'ch-menu__item' + (it.danger ? ' is-danger' : '');
+        const cls = 'ch-menu__item' + (it.danger ? ' is-danger' : '') + (it.caption ? ' has-caption' : '');
         const role = it.checked !== undefined ? 'menuitemradio' : 'menuitem';
         if (it.href) {
           return (
@@ -206,7 +256,7 @@ export function MenuItems({ items, onClose }: { items: MenuItem[]; onClose: (foc
             className={cls}
             tabIndex={i === first ? 0 : -1}
             onClick={() => {
-              haptic('select');
+              haptic(it.feel ?? 'select');
               onClose();
               it.onSelect?.();
             }}

@@ -46,9 +46,9 @@ describe('use-golf-messages — a stale fetch cannot overwrite the open thread (
 
   it('guards every post-await write against a conversation switch', () => {
     const guards = code.match(/liveConversationIdRef\.current !== conversationId/g) ?? [];
-    // Three awaited writes: the participants read-status, the fetch error
-    // branch, and the messages write itself.
-    expect(guards.length).toBe(3);
+    // Four guarded paths: participants read-status, the fetch error branch,
+    // the messages write, and the realtime participant receipt callback.
+    expect(guards.length).toBe(4);
   });
 
   it('guards the messages setter specifically — the write that caused the defect', () => {

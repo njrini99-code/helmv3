@@ -5,9 +5,14 @@ import { getValidTimezone } from '@/lib/calendar/timezone';
 import { classIdFromDescription, isClassEvent, stripClassTag } from '@/lib/calendar/class-events';
 import { describeRecurrenceRule, parseRecurrenceRule } from '@/lib/golf/recurrence';
 import { chLogServer } from '../lib/track-server';
+import type { MarkEntries } from '../lib/marks-cookie';
+import { whenPhrase } from '@/lib/calendar/change-mark';
+import { buildChangeMarks, type ChMovedAway } from '../screens/calendar/change-view';
 import { classYearLabel, fullName } from './season';
 import { parseAvailability } from './availability';
 import { loadAttendanceCounts } from './attendance-counts';
+import { loadRoundRefs } from './calendar-rounds';
+import { isFlagEnabled } from '@/lib/flags/is-enabled';
 import {
   addDays,
   expandBusyDates,
@@ -46,6 +51,14 @@ export interface ChCalendarData {
   membersError?: boolean;
   /** Coach only: their own blocked time failed to load (shown as a notice, never as "free"). */
   busyError: boolean;
+  /** P-5: golf_tournaments_v1 is on, so the editor offers the tournament section and rounds carry refs. */
+  tournamentsEnabled?: boolean;
+  /** P-5: the round refs failed to load: tournament events show their stored titles and can't be moved */
+  roundRefsFailed?: boolean;
+  /** Which change marks this device has seen (`s`) or cleared (`g`), from the `ch_marks` cookie, newest first (P-14). */
+  marks?: MarkEntries;
+  /** Events that left a day of the window for another (live marks only): a quiet row on the old day, linking to the new one. */
+  movedAway?: ChMovedAway[];
 }
 
 type ClassRow = { id: string; player_id: string; instructor: string | null; days: string[] | null; semester: string | null; building: string | null; room: string | null };
@@ -130,8 +143,10 @@ export async function loadCalendar(input: {
   role: 'coach' | 'player';
   teamId: string;
   viewerPlayerId: string | null;
-  /** The coach's own id, for their blocked time. */
+  /** The coach's own id, for their blocked time and for "By you" on a change mark. */
   coachId?: string | null;
+  /** The device's seen and cleared change marks (phone-hint.ts `marksHint`). */
+  marks?: MarkEntries;
   view: ChCalView;
   date?: string;
   /**
@@ -142,6 +157,12 @@ export async function loadCalendar(input: {
 }): Promise<ChCalendarData> {
   const supabase = await createClient();
 
+  // A deep link's event: only its day is read, from the same team-scoped table the window reads, so it shows nothing the
+  // window wouldn't. It starts with the first wave (C2), since it needs nothing from it; its day is placed in the zone after.
+  const targetRead =
+    !input.date && input.event && UUID.test(input.event)
+      ? supabase.from('golf_events').select('start_time, all_day').eq('id', input.event).eq('team_id', input.teamId).maybeSingle()
+      : null;
   const [settingsRes, teamRes, membersRes] = await Promise.all([
     supabase.from('golf_team_settings').select('timezone').eq('team_id', input.teamId).maybeSingle(),
     supabase.from('golf_teams').select('name').eq('id', input.teamId).maybeSingle(),
@@ -161,9 +182,8 @@ export async function loadCalendar(input: {
   const nowZ = zoned(new Date().toISOString(), timezone);
   const today = nowZ.date;
   let eventDate: string | undefined;
-  if (!input.date && input.event && UUID.test(input.event)) {
-    // Only its day is read, from the same team-scoped table the window reads, so it shows nothing the window wouldn't.
-    const { data: target, error } = await supabase.from('golf_events').select('start_time, all_day').eq('id', input.event).eq('team_id', input.teamId).maybeSingle();
+  if (targetRead) {
+    const { data: target, error } = await targetRead;
     if (error) chLogServer('calendar', 'deepLinkEvent', error, 'calendar');
     if (target?.start_time) eventDate = target.all_day ? target.start_time.slice(0, 10) : zoned(target.start_time, timezone).date;
   }
@@ -177,7 +197,7 @@ export async function loadCalendar(input: {
     .map((m) => ({
       id: m.player.id,
       name: fullName(m.player),
-      year: classYearLabel(m.player.graduation_year),
+      year: classYearLabel(m.player.graduation_year, undefined, timezone),
       ...(input.role === 'coach' ? { availability: parseAvailability(m.availability) } : {}),
     }))
     .sort((a, b) => a.name.localeCompare(b.name));
@@ -206,7 +226,7 @@ export async function loadCalendar(input: {
     fetchAllRowsResult((from, to) =>
       supabase
         .from('golf_events')
-        .select('id, title, event_type, start_time, end_time, location, description, status, all_day, recurrence_rule, parent_event_id, requires_rsvp, rsvp_deadline')
+        .select('id, title, event_type, start_time, end_time, location, course_id, description, status, all_day, recurrence_rule, parent_event_id, requires_rsvp, rsvp_deadline, updated_at, cancellation_reason, cancelled_at, change:metadata->change')
         .eq('team_id', input.teamId)
         .lt('start_time', toIso)
         .or(overlapsWindow)
@@ -286,6 +306,15 @@ export async function loadCalendar(input: {
     return (coachInvited.get(id) ?? 0) === 0;
   };
 
+  // P-14: the change marks that are still live, read against each event as it is now. A mark that is there but unreadable is
+  // reported once (CH-6023) and shows as a bare "Changed" badge.
+  const nowMs = Date.now();
+  const { marks: changeMarks, unreadable, movedAway } = buildChangeMarks(
+    rows.map((r) => ({ ...r, change: r.change as unknown })),
+    { timeZone: timezone, nowMs, coachId: input.role === 'coach' ? (input.coachId ?? null) : null, range },
+  );
+  if (unreadable.length) chLogServer('calendar', 'changeMark', new Error(`CH-6023: ${unreadable.length} change mark(s) could not be read (first: ${unreadable[0]})`), 'calendar');
+
   const events: ChCalEvent[] = [];
   for (const r of rows) {
     const cls = isClassEvent(r);
@@ -340,6 +369,15 @@ export async function loadCalendar(input: {
       cancelled,
       seriesId: r.parent_event_id ?? (r.recurrence_rule ? r.id : null),
       startIso: r.start_time,
+      // P-4: the row's updated_at, an opaque concurrency token a move sends back untouched.
+      version: r.updated_at ?? null,
+      // P-5 WP-P5: the library course the event is at, when one was chosen.
+      courseId: cls ? null : (r.course_id ?? null),
+      change: cls ? null : (changeMarks.get(r.id) ?? null),
+      cancelNote:
+        !cls && cancelled && !changeMarks.get(r.id) && r.cancelled_at
+          ? { line: `Cancelled ${whenPhrase(r.cancelled_at, new Date(nowMs).toISOString(), timezone)}`, reason: r.cancellation_reason?.trim() || null }
+          : null,
     };
     if (r.all_day) {
       // All-day rows are stored as UTC-midnight dates: read the date part, never zone it.
@@ -419,10 +457,33 @@ export async function loadCalendar(input: {
     }
   }
 
+  // P-5: round refs for the tournament events, only with golf_tournaments_v1 on (off: no tournament table is read).
+  const tournamentsEnabled = isFlagEnabled('golf_tournaments_v1');
+  let roundRefsFailed = false;
+  if (tournamentsEnabled) {
+    const tourIds = [...new Set(events.filter((e) => e.type === 'tournament').map((e) => e.id))];
+    if (tourIds.length) {
+      const { refs, failed, error } = await loadRoundRefs(supabase, tourIds, input.role);
+      if (failed) {
+        chLogServer('calendar', 'roundRefs', error, 'calendar');
+        roundRefsFailed = true;
+      }
+      for (let i = 0; i < events.length; i++) {
+        const e = events[i]!;
+        if (e.type !== 'tournament') continue;
+        const ref = refs.get(e.id);
+        if (ref) events[i] = { ...e, round: ref };
+        else if (failed) events[i] = { ...e, roundRefFailed: true };
+      }
+    }
+  }
+
   return {
     role: input.role,
     teamId: input.teamId,
     busyError,
+    tournamentsEnabled,
+    roundRefsFailed,
     viewerPlayerId: input.viewerPlayerId,
     teamName: teamRes.data?.name ?? null,
     timezone,
@@ -440,5 +501,8 @@ export async function loadCalendar(input: {
     classesError: !!classesRes.error,
     settingsError: !!settingsRes.error,
     membersError: !!membersRes.error,
+    marks: input.marks ?? [],
+    // Only for rows the viewer is shown (a meeting a player is not on is dropped from `events` above).
+    movedAway: movedAway.filter((m) => events.some((e) => e.id === m.id)),
   };
 }

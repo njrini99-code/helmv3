@@ -30,6 +30,27 @@ reserved before the browser clock is known. All-day dates and ongoing multi-day
 events follow Calendar's date-span rules. Owner decision: Safari review,
 2026-10-01.
 
+## 20xx Error toasts
+
+| # | When | They see | How | Test |
+| --- | --- | --- | --- | --- |
+| CH-2070 | Saving the term dates fails (class status, P-10) | A toast "Couldn’t save the term dates" + "Nothing was changed." with Try again. The sheet stays open with what was typed | `TermSheet` via `useAction` | class-awareness.test › CH-2070 |
+| CH-2071 | Saving a team no-class range fails | A toast "Couldn’t save the break" + "Nothing was changed." with Try again | `TeamBreakSheet` via `useAction` | class-awareness.test › CH-2071 |
+| CH-2072 | Removing a team no-class range fails | A toast "Couldn’t remove the break" + "It is still on the list." with Try again | `TeamBreakSheet` via `useAction` | class-awareness.test › CH-2072 |
+
+## 21xx Validation
+
+| # | When | They see | How | Test |
+| --- | --- | --- | --- | --- |
+| CH-2170 | The last day of classes is not after the first | "Last day of classes must be after classes start." under the form; Save keeps the dates | `validateTerm` (`term-form.ts`) | class-awareness.test › CH-2170 |
+| CH-2171 | A term shorter than 4 weeks or longer than about 6 months | "A term is 4 weeks to about 6 months." | `validateTerm` | class-awareness.test › CH-2171 |
+| CH-2172 | Exams end more than 3 weeks after the last class | "Exams end within 3 weeks of the last class." | `validateTerm` | class-awareness.test › CH-2172 |
+| CH-2173 | Exams end before the last day of classes | "Exams end on or after the last day of classes." | `validateTerm` | class-awareness.test › CH-2173 |
+| CH-2174 | The term overlaps another of the team's terms | "This overlaps Spring 2027 (Jan 12 to May 1)." The database refuses the same overlap (`23P01`) | `validateTerm` | class-awareness.test › CH-2174 |
+| CH-2175 | The term has no name | "Name the term." | `validateTerm` | class-awareness.test › CH-2175 |
+| CH-2176 | A no-class range ends before it starts | "The last day must be on or after the first." | `validateBreak` | class-awareness.test › CH-2176 |
+| CH-2177 | A no-class range is longer than 21 days | "A break is at most 21 days." | `validateBreak` | class-awareness.test › CH-2177 |
+
 ## 22xx Didn't load (inline notice with Try again; a failed read is never shown as empty)
 
 | # | When | They see | How | Test |
@@ -53,8 +74,9 @@ events follow Calendar's date-span rules. Owner decision: Safari review,
 | CH-2217 | The player's scoring or parts of the game crash while drawing | "Your scoring couldn’t be shown." The rest of Home stays | `SectionBoundary home.game` | player-home.test › CH-2217 |
 | CH-2218 | Up-and-down figures don't load (coach Home, the team's four parts) | "Up-and-down figures didn’t load" + "Strokes gained is right." above the four parts; Around green's Up and down reads "—" and strokes gained stays. With a second part failing, the page's notice (CH-1209) names "up-and-down figures" and this keeps only its title (covered) | `TeamLegs`, `TeamLegsPhone` (`legs.cacheError`); logged `clubhouse.home.roundCache` | home.test › CH-2218 |
 | CH-2219 | The Tour's marks don't load (coach Home, the team's four parts) | "Tour marks didn’t load" + "Strokes gained and the changes are right." above the four parts; each stat stands without its "· Tour 66%" mark, strokes gained and the changes stay. Covered under CH-1209 ("Tour marks") as CH-2218. An unknown tour (the team's row didn't load) has no marks and no notice | `TeamLegs`, `TeamLegsPhone` (`legs.tourError`); logged `clubhouse.home.tourBenchmarks` | home.test › CH-2219 |
-| CH-2220 | A part of "Waiting on you" doesn't load (join requests, replies, tasks or posts) | That part is left out (never shown as 0) and the row ends "· some items didn’t load"; with every part failing, the row is that line alone. With a second part failing, the page's notice (CH-1209) names "what’s waiting on you" and the row drops the line (covered) | `CoachQueue` (a null part of `queue`); logged `clubhouse.home.queue <part>` | home.test › CH-2220 |
+| CH-2220 | A part of "Waiting on you" doesn't load (join requests, replies, tasks or posts) | That part is left out (never shown as 0) and the row ends "· some items didn’t load" (on the phone, where the parts are capsules, the note follows them without the dot); with every part failing, the row is that line alone. With a second part failing, the page's notice (CH-1209) names "what’s waiting on you" and the row drops the line (covered) | `CoachQueue` (a null part of `queue`); logged `clubhouse.home.queue <part>` | home.test › CH-2220 |
 | CH-2221 | The team's four parts crash while drawing (coach Home, desktop and phone) | "The team’s game couldn’t be shown." The rest of Home stays | `SectionBoundary home.legs` | home.test › CH-2221 |
+| CH-2270 | The class day didn't load when the In class now sheet is open (the Home line is hidden while the read is in error) | "Class status didn’t load." + Try again, in the sheet | `InClassSheet` | class-awareness.test › CH-2270 |
 
 ## 23xx Empty
 
@@ -71,10 +93,11 @@ events follow Calendar's date-span rules. Owner decision: Safari review,
 | CH-2309 | Nothing on the calendar ahead (phone). A player: "Your coach’s practices and events will show here with a countdown.", no quick adds | Up next reads "No events scheduled" + what the card will hold, with Practice, Qualifier, Tournament and Meeting (each opens the editor on that type, `?new=1&type=`) and Add event. The week strip steps aside | `NoEvents` in `HomePhone` | home.test › CH-2309 |
 | CH-2310 | Fewer than two 18-hole rounds (player Home Scoring) | "One round so far." or "No rounds posted yet this season." + "Your scoring line starts with your second 18-hole round." | `PlayerGame` Scoring | player-home.test › CH-2310 |
 | CH-2311 | No fairways, greens, scrambling or putts logged (player Home) | "Nothing to break down yet." + "Fairways, greens, scrambling and putts fill in from rounds posted with those stats." | `PlayerGame` Legs | player-home.test › CH-2311 |
-| CH-2312 | A new player: no rounds, every read answered (v2 first-run, D-71) | Nothing on the calendar: the page empty state "Welcome to the team" + "Post your first round to start your stats. Team updates and your schedule show up here too." Start a round and Add classes appear once round entry and Classes are rebuilt (Q-69). Under the loaded page's framed head on desktop and the Ledger's page intro on the phone, as CH-2308. With the team's events: the loaded page keeps its head (Start a round), Up next and the week, and the same title + "Post your first round to start your stats. Your latest round, scoring line and game fill in here." with Add classes only stands in for Your latest round, Scoring and Your game | `PlayerHome` `PlayerFirstRun`, `NoRoundsYet` | player-home.test › CH-2312 |
+| CH-2312 | A new player: no rounds, every read answered (v2 first-run, D-71) | Nothing on the calendar: the page empty state "Welcome to the team" + "Post your first round to start your stats. Team updates and your schedule show up here too." New round and Add classes appear once round entry and Classes are rebuilt (Q-69). Under the loaded page's framed head on desktop and the Ledger's page intro on the phone, as CH-2308. With the team's events: the loaded page keeps its head (New round), Up next and the week, and the same title + "Post your first round to start your stats. Your latest round, scoring line and game fill in here." with Add classes only stands in for Your latest round, Scoring and Your game | `PlayerHome` `PlayerFirstRun`, `NoRoundsYet` | player-home.test › CH-2312 |
 | CH-2313 | A player on no active team | "You aren’t on a team yet" + "Ask your coach for your team’s code or an invite. Once you join, Home shows your week, your rounds and your stats." + Open team settings (Golf profile, where joining lives, CH-8302) | `PlayerHomeNoTeam` | player-home.test › CH-2313 |
 | CH-2314 | No round in the team's last 10 has hole scores (coach Home, the team's four parts) | "No hole-by-hole rounds in the last 10 yet." + "The four parts fill in once players post rounds with hole scores." in place of the ledger, under its head | `TeamLegs`, `TeamLegsPhone` (`legs.holeRounds === 0`) | home.test › CH-2314 |
 | CH-2315 | Rounds with hole scores, but no player with 3 of them (coach Home, the team's four parts) | The parts and their figures stay; Gains most and Loses most read "—", and under the ledger "No player has 3 rounds with hole scores yet, so no one is ranked." | `TeamLegs`, `TeamLegsPhone` (`legs.ranked === false`) | home.test › CH-2315 |
+| CH-2370 | Nobody on the team has a class today (the sheet is open) | Title "No classes today", sub "9 players · Class names show to coaches only.", the strip hidden, "No one has a class today."; Travelling and No class status still list | `InClassSheet` | class-awareness.test › CH-2370 |
 
 ## 24xx Loading
 
@@ -82,6 +105,13 @@ events follow Calendar's date-span rules. Owner decision: Safari review,
 | --- | --- | --- | --- | --- |
 | CH-2401 | Home is loading | A skeleton in Home's own shape (header, two panes, five leaderboard rows), so nothing shifts when data lands. On the phone the hero is the reader's own, from the shell's role: the coach's brief as three lines over the coach's Up next card, the player's Up next with its countdown under the greeting and the two keys under it; the card, the keys and the first section land within half a pixel of their bars (WebKit 390, 2026-10-08) | `HomeSkeleton`, `aria-busy` | home.test › CH-2401 |
 | CH-2402 | Try again was pressed on a section | The notice title reads "Trying again…" and the button steps aside until the page re-renders | `RefreshNotice` (`useTransition`) | preview |
+| CH-2470 | The sheet opens before the class day has arrived | Nothing for 300 ms, then a small spinner and "Loading class status" | `InClassSheet` | class-awareness.test › CH-2470 |
+
+## 25xx Confirm
+
+| # | When | They see | How | Test |
+| --- | --- | --- | --- | --- |
+| CH-2570 | The coach removes a team no-class range | "Remove this break?" + the range + "Class status counts those days again." Keep it / Remove break. Players’ own "No class today" marks are not touched | `TeamBreakSheet` | class-awareness.test › CH-2570 |
 
 ## 26xx Motion
 
@@ -89,6 +119,7 @@ events follow Calendar's date-span rules. Owner decision: Safari review,
 | --- | --- | --- | --- | --- |
 | CH-2601 | Paging the latest round | The round slides 12px out and the next slides in from that side (260ms); instant when motion is reduced | `chSwap`, `AnimatePresence popLayout` | preview |
 | CH-2602 | Hovering or pressing a leaderboard row | On desktop the row takes the Ledger row tint (180ms) as its chevron slides in from the left (260ms); a press deepens the tint and nudges the chevron 2px on (110ms), easing back over 180ms. No lift and no scale (the shell's CH-1606) | `.ch-h-lb__row.is-link`, `--ch-ledger-row-press` | preview |
+| CH-2670 | The Home class line changes (a minute tick, a refetch) | The two lines crossfade in place on `--ch-dur-quick`; instant with reduced motion; first paint never animates. No digit rolls | `Swap` in `ClassHomeLine` | preview |
 
 ## 27xx Haptics
 
@@ -107,3 +138,10 @@ events follow Calendar's date-span rules. Owner decision: Safari review,
 | CH-2804 | The round pager announces "2 of 3"; each form line has a text equivalent ("last 7 rounds: 72, 71…") | `aria-live="polite"`, `FormLine label` | home.test › CH-2701 |
 | CH-2805 | No axe violations in any preview state, 1280px and 390px | `npm run clubhouse:a11y` | a11y scan |
 | CH-2806 | On a phone the scorecard scrolls sideways; it is a named region that takes focus, so the arrow keys scroll it | `ScrollRegion` (named, focusable) | a11y scan |
+| CH-2870 | The Home class line | One button named by the whole line ("4 of 9 in class now. Everyone out of class from 2:15 PM. Opens class status"); the book glyph is decoration; Enter opens the sheet, Escape closes it and returns focus to the line, Up and Down move between rows |`ClassHomeLine`, `InClassSheet`; class-awareness.test › CH-2870|
+
+## 29xx Network and UX
+
+| # | When | They see | How | Test |
+| --- | --- | --- | --- | --- |
+| CH-2970 | The sheet is open while offline | The last class day, with a line "Updated 9:42 AM" under the sub; nothing is refetched until the connection returns | `InClassSheet` | class-awareness.test › CH-2970 |

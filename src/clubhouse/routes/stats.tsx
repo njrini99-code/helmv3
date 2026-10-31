@@ -1,5 +1,5 @@
 import 'server-only';
-import { UserX, Users } from 'lucide-react';
+import { UserX } from 'lucide-react';
 import { getGolfSessionProfile } from '@/lib/auth/session';
 import { isUuid } from '@/lib/utils/uuid';
 import { loadTeamStats } from '../data/stats-team';
@@ -12,6 +12,7 @@ import { StatsPlayer } from '../screens/stats/StatsPlayer';
 import { EmptyState } from '../ui/States';
 import { Button } from '../ui/Button';
 import { resolveClubhouseTeam } from './team';
+import { NoTeam } from '../ui/NoTeam';
 import '../styles/stats.css';
 
 /**
@@ -42,10 +43,14 @@ export async function ClubhouseStatsRoute({ player, window, tab, query }: { play
   if (player) {
     // An id that is not shaped like one is not on any team; it never reaches the database (which would answer 22P02).
     if (!isUuid(player)) return <NotOnTeam coach />;
-    // The coach's reads wait for the scope check (this coach's own team, CoachHelm on for both), and run beside the profile.
-    const reads = loadCoachPlayerScope({ coachId: team.coachId, teamId: team.teamId, playerId: player }).then(readsForScope, (): ChStatsReads => ({ status: 'failed' }));
-    const [profile, shown] = await Promise.all([loadPlayerProfile({ viewer: 'coach', teamId: team.teamId, playerId: player, window: win, filter }), reads]);
-    return profile ? <StatsPlayer data={profile} coachId={team.coachId} initialTab={tab} reads={shown} /> : <NotOnTeam coach />;
+    // The coach's reads wait for the scope check (this coach's own team, CoachHelm on for both). They start beside the profile
+    // and stream in behind it (C2): the page paints from the profile, and each "CoachHelm sees" line lands when the reads do.
+    // The promise never rejects: a failed scope check or read is `{ status: 'failed' }`.
+    const reads: Promise<ChStatsReads> = loadCoachPlayerScope({ coachId: team.coachId, teamId: team.teamId, playerId: player })
+      .then(readsForScope)
+      .catch((): ChStatsReads => ({ status: 'failed' }));
+    const profile = await loadPlayerProfile({ viewer: 'coach', teamId: team.teamId, playerId: player, window: win, filter });
+    return profile ? <StatsPlayer data={profile} coachId={team.coachId} initialTab={tab} reads={reads} /> : <NotOnTeam coach />;
   }
   return <StatsTeam data={await loadTeamStats({ teamId: team.teamId, window: win, filter })} />;
 }
@@ -53,13 +58,7 @@ export async function ClubhouseStatsRoute({ player, window, tab, query }: { play
 export function StatsNoTeam({ coach }: { coach: boolean }) {
   return (
     <main className="ch-st">
-      <EmptyState
-        size="page"
-        code="CH-4309"
-        icon={Users}
-        title="You aren’t on a team yet"
-        body={coach ? 'Stats fill in once your team is set up and players post rounds.' : 'Your stats show here once a coach adds you to a team roster.'}
-      />
+      <NoTeam code="CH-4309" coach={coach} body={coach ? 'Stats fill in once your team is set up and players post rounds.' : 'Your stats show here once a coach adds you to a team roster.'} />
     </main>
   );
 }

@@ -27,7 +27,7 @@ describe('MODEL_FOR_TASK', () => {
     expect(MODEL_FOR_TASK.hero_narrative).toBe('anthropic/claude-haiku-4-5');
   });
   it('uses Sonnet 5 for coach_chat (multi-step tool calls)', () => {
-    expect(MODEL_FOR_TASK.coach_chat).toBe('anthropic/claude-sonnet-5');
+    expect(MODEL_FOR_TASK.coach_chat).toBe('anthropic/claude-sonnet-5-5');
   });
   it('prices every model it routes to', () => {
     // An unpriced model bills at the conservative fallback rather than its real

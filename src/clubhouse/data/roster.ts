@@ -5,6 +5,7 @@ import { getTeamJoinRequests } from '@/app/golf/actions/teams';
 import { chLogServer } from '../lib/track-server';
 import { coachTour, earliestStaleFloor, loadCoachHelmGate, loadVisible, newestRounds } from './coachhelm';
 import { countReads, type ChReadCount } from './coachhelm-classify';
+import { canEmailPlayerInvites } from '@/lib/golf/player-invite-email';
 import { relativeAgo } from '../screens/roster/format';
 import { NOTE_TABLE_MISSING_CODES, parseAvailability, type ChAvailability } from './availability';
 import { fromUntyped } from '@/lib/supabase/untyped';
@@ -13,11 +14,17 @@ import {
   displayHandicap,
   fullName,
   groupByPlayer,
+  isFull18,
   loadSeasonRounds,
+  loadTeamZone,
+  mean,
+  currentSeasonLabel,
+  seasonStartDate,
   shortDate,
   summarizePlayer,
   type ChForm,
 } from './season';
+import { formatFixed } from '../lib/format';
 
 /**
  * Coach Roster (Clubhouse). Server-read, final on first paint, every section
@@ -48,7 +55,8 @@ export interface ChRosterPlayer {
   focusAreas: number | null;
   goals: number | null;
   coachNote: string | null;
-  attention: { tone: 'warning' | 'positive'; text: string } | null;
+  /** `warning`: a player gone quiet (no verdict on their scores); `loss`/`gain`: their scores moved the bad or the good way (CONS-20). */
+  attention: { tone: 'warning' | 'loss' | 'gain'; text: string } | null;
   /**
    * Can they play right now (golf_team_members.availability). Display only, on the coach's roster: it never changes team
    * access, which is `status` (Mark inactive). Inactive players can carry it too. The word comes from the team row; the
@@ -78,11 +86,18 @@ export interface ChJoinRequest {
 }
 
 export interface ChRoster {
+  /** The team this roster is for (P-10 class lines read the team's class day). Absent in fixtures. */
+  teamId?: string;
   teamName: string;
   season: string | null;
   joinCode: string | null;
   /** The team row didn't load: the name falls back and the join code is unknown, not missing. */
   teamError: boolean;
+  /**
+   * An invite email can leave the product right now (the owner's customer-email switch is on and a transport is set). The
+   * invite sheet then offers "Email invites"; without it the sheet says email is off and keeps the code and link. Absent reads as false.
+   */
+  emailInvites?: boolean;
   players: ChRosterPlayer[];
   playersError: boolean;
   /** This coach's notes didn't load: note fields are locked so a blank field can't overwrite one. */
@@ -94,6 +109,12 @@ export interface ChRoster {
    */
   availabilityCoachNotes?: boolean;
   statsError: boolean;
+  /**
+   * The team's season scoring average, pooled per round (A3): every active player's 18-hole round counts once, so a player
+   * with 3 rounds weighs a tenth of one with 30. The rounds the players' own averages read, and the team scoring average
+   * Stats shows by default (18 holes). Null with no such round or when the season read failed.
+   */
+  teamAvg: number | null;
   requests: ChJoinRequest[];
   requestsError: boolean;
   /**
@@ -131,11 +152,11 @@ export function attentionFor(
     if (days >= QUIET_DAYS) return { tone: 'warning', text: `No rounds in ${days} days` };
   }
   if (s.formChange != null && s.formChange >= 1.5) {
-    return { tone: 'warning', text: `Scoring up ${s.formChange.toFixed(1)}` };
+    return { tone: 'loss', text: `Scoring up ${formatFixed(s.formChange, 1)}` };
   }
   const last4 = s.recent.slice(0, 4).map((r) => r.total_score as number);
   if (s.avg != null && s.rounds >= 8 && last4.length === 4 && last4.every((x) => x < s.avg!)) {
-    return { tone: 'positive', text: '4 rounds under average' };
+    return { tone: 'gain', text: '4 rounds under average' };
   }
   return null;
 }
@@ -144,14 +165,15 @@ export async function loadRoster(input: { teamId: string; coachId: string }): Pr
   const supabase = await createClient();
   const now = new Date();
 
-  const [teamRes, membersRes, requestsRes] = await Promise.all([
-    supabase.from('golf_teams').select('name, join_code, season').eq('id', input.teamId).maybeSingle(),
+  const [teamRes, membersRes, requestsRes, tz] = await Promise.all([
+    supabase.from('golf_teams').select('name, join_code').eq('id', input.teamId).maybeSingle(),
     supabase
       .from('golf_team_members')
       .select('status, jersey_number, joined_at, availability, availability_updated_at, player:golf_players(id, first_name, last_name, graduation_year, hometown, state, high_school_name, handicap, handicap_index)')
       .eq('team_id', input.teamId)
       .in('status', ['active', 'inactive']),
     getTeamJoinRequests().catch((e: unknown) => ({ success: false as const, error: e instanceof Error ? e.message : String(e), data: undefined })),
+    loadTeamZone(supabase, input.teamId, 'roster'),
   ]);
 
   if (teamRes.error) chLogServer('roster', 'team', teamRes.error, 'teams');
@@ -183,7 +205,7 @@ export async function loadRoster(input: { teamId: string; coachId: string }): Pr
 
   // Rounds, focus areas, goals, this coach's notes and CoachHelm's counts, in parallel.
   const [season, focus, goals, notes, helm, availNotes] = await Promise.all([
-    ids.length ? loadSeasonRounds(supabase, ids, { surface: 'roster' }) : Promise.resolve({ rounds: [], error: false }),
+    ids.length ? loadSeasonRounds(supabase, ids, { surface: 'roster', since: seasonStartDate(now, tz) /* the team's zone, owner decision 9 */ }) : Promise.resolve({ rounds: [], error: false }),
     // Open focus areas are `active` or `in_progress`, as Fairway's roster counts them (wiring audit, 2026-10-17).
     countBy('golf_player_focus_areas', ids, (chunk) =>
       supabase.from('golf_player_focus_areas').select('player_id').in('player_id', chunk).in('status', ['active', 'in_progress']),
@@ -205,7 +227,7 @@ export async function loadRoster(input: { teamId: string; coachId: string }): Pr
       id: p.id,
       name: fullName(p),
       firstName: p.first_name || fullName(p),
-      classYear: classYearLabel(p.graduation_year, now),
+      classYear: classYearLabel(p.graduation_year, now, tz),
       gradYear: p.graduation_year,
       hometown: [p.hometown, p.state].filter(Boolean).join(', ') || null,
       highSchool: p.high_school_name,
@@ -238,11 +260,14 @@ export async function loadRoster(input: { teamId: string; coachId: string }): Pr
     };
   });
 
+  const activeIds = new Set(players.filter((p) => p.status === 'active').map((p) => p.id));
+  const teamAvg = season.error ? null : mean(season.rounds.filter((r) => activeIds.has(r.player_id) && isFull18(r)).map((r) => r.total_score as number));
+
   const requests: ChJoinRequest[] = (requestsRes.success ? (requestsRes.data ?? []) : [])
     .filter((r) => r.status === 'pending')
     .map((r) => {
       const gradYear = r.player?.graduation_year ?? null;
-      const classYear = classYearLabel(gradYear, now);
+      const classYear = classYearLabel(gradYear, now, tz);
       const requested = relativeAgo(r.created_at, now);
       return {
         id: r.id,
@@ -256,15 +281,19 @@ export async function loadRoster(input: { teamId: string; coachId: string }): Pr
     });
 
   return {
+    teamId: input.teamId,
     teamName: teamRes.data?.name ?? 'Your team',
-    season: teamRes.data?.season ?? null,
+    // Computed from 1 August in the team's zone, never the stored free text (F-0002).
+    season: currentSeasonLabel(now, tz),
     joinCode: teamRes.data?.join_code ?? null,
     teamError: !!teamRes.error,
+    emailInvites: canEmailPlayerInvites(),
     players,
     playersError: !!membersRes.error,
     notesError: notes.error,
     availabilityCoachNotes: availNotes.ready,
     statsError: season.error,
+    teamAvg,
     requests,
     requestsError: !requestsRes.success,
     helm,

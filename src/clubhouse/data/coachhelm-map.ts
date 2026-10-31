@@ -108,11 +108,16 @@ export function formatComparison(v: number, unit: InsightUnit): string {
   }
 }
 
-/** A comparison's label + its value ("Your right-to-left make % 51%"); a label that already carries numbers ("… your level putts 81%") stands alone. */
+/**
+ * A comparison's label + its value ("Your right-to-left make % 51%"); a label that already carries numbers ("… your level
+ * putts 81%") stands alone. A percent is a whole number and the anchor's "make % avg" is dropped, so the gauge says what
+ * the prose says: "PGA Tour 62%", not "PGA Tour make % avg 62.2%" (F-0070).
+ */
 function labelled(label: string | undefined, v: number, unit: InsightUnit): string {
-  const l = (label ?? '').trim();
-  if (!l) return formatComparison(v, unit);
-  return /\d/.test(l) ? l : `${l} ${formatComparison(v, unit)}`;
+  const l = (label ?? '').trim().replace(/\s+make % avg$/i, '');
+  const value = unit === 'percent' ? `${Math.round(Math.abs(v) <= 1 ? v * 100 : v)}%` : formatComparison(v, unit);
+  if (!l) return value;
+  return /\d/.test(l) ? l : `${l} ${value}`;
 }
 
 /** The units a generator names its sample in (`evidence.detail.sample_unit`, par-type.ts), as the chat's provenance names them. */
@@ -364,7 +369,8 @@ function engineFor(ins: EvidenceInsight, evidence: ChHelmEvidence, inputs: ChEng
     if (v) out.verdict = v;
   }
   if (flags.support) {
-    const comparison = evidence.gauge?.cmp ?? (ev.comparison_label?.trim() || null);
+    // A drawn gauge already says what the read is compared with: the audit keeps only the source, not the figure again (F-0070).
+    const comparison = evidence.gauge ? null : ev.comparison_label?.trim() || null;
     const audit = auditOf(ev, viewer, { sample: evidence.sample || null, comparison, cause });
     if (audit.length > 0) out.audit = audit;
   }

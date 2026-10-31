@@ -32,7 +32,7 @@
 | Decision | Status |
 |---|---|
 | Claude writes prose at **exactly 3 surfaces**: round-review summary + key takeaway, hero insight on player dashboard, coach chat. | ✅ locked |
-| Coach chat scope: Q&A + can create goals from chat (with confirmation). | ✅ locked |
+| Coach chat: Q&A, grounded visuals, confirmed actions (2026-10-25). | ✅ locked |
 | Player chat **deferred to v2**. | ✅ locked |
 | Weekly recap: deterministic templates with one LLM-composed paragraph. No AI opener on player surfaces. | ✅ locked |
 | Existing round reviews NOT auto-rewritten by v3 LLM. Refresh requires explicit user action. | ✅ locked |

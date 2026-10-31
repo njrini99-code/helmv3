@@ -1,7 +1,8 @@
 /**
- * The player's CoachHelm views beside the board (Clubhouse P013): Game profile, Standing and Deep dive. What every one of them
- * shares, kept apart from the server loaders (data/coachhelm-profile.ts, -standing.ts, -dive.ts) so the client screens, the
- * preview and the tests all use the code the page does.
+ * The player's CoachHelm views beside the board (Clubhouse P013): Standing and Deep dive. What every one of them shares, kept apart
+ * from the server loaders (data/coachhelm-standing.ts, -dive.ts, -profile.ts) so the client screens, the preview and the tests all
+ * use the code the page does. Game profile was a third view until it folded into Standing as its "How you play" section (design
+ * call, Nav: "Game profile folds into Standing"); `?view=profile` still lands there (`landsOnGame`).
  *
  * A view is the signed-in player's own: its loader takes the session's player id and nothing from the address.
  */
@@ -9,12 +10,11 @@
 /** What a view's loader answers. `off`: CoachHelm is turned off for this player. `failed`: a read the view cannot do without did not load, never "nothing here". */
 export type ChViewLoad<T> = { status: 'ready'; data: T } | { status: 'off'; reason: string | null } | { status: 'failed' };
 
-/** The views of the player's CoachHelm that are in-page: the board and the three drills `?view=` names. */
-export type PlayerHelmView = 'board' | 'profile' | 'standing' | 'deep-dive';
+/** The views of the player's CoachHelm that are in-page: the board and the two drills `?view=` names. */
+export type PlayerHelmView = 'board' | 'standing' | 'deep-dive';
 
 export const PLAYER_HELM_HREF: Record<PlayerHelmView, string> = {
   board: '/golf/dashboard/coachhelm',
-  profile: '/golf/dashboard/coachhelm?view=profile',
   standing: '/golf/dashboard/coachhelm?view=standing',
   'deep-dive': '/golf/dashboard/coachhelm?view=deep-dive',
 };
@@ -29,21 +29,37 @@ export const PLAYER_HELM_DEVELOPMENT_HREF = '/golf/dashboard/stats?tab=dev';
 
 export const PLAYER_HELM_TAB_LABEL: Record<PlayerHelmView, string> = {
   board: 'Board',
-  profile: 'Game profile',
   standing: 'Standing',
   'deep-dive': 'Deep dive',
 };
 
-/** The drill a `?view=` value names, or null for the board (and for anything else, which is the board). */
+/**
+ * Where Standing's "How you play" section is (the shape of the game Game profile drew, CH-13915): its element id, which
+ * `?view=profile` lands on and `#how-you-play` names.
+ */
+export const STANDING_GAME_ID = 'how-you-play';
+
+/**
+ * The drill a `?view=` value names, or null for the board (and for anything else, which is the board). `profile` is Game profile's
+ * old address (stored links, emails, Roster): it is Standing now, opened at "How you play" (`landsOnGame`, CH-13913).
+ */
 export function playerHelmDrill(view: string | undefined): Exclude<PlayerHelmView, 'board'> | null {
-  return view === 'profile' || view === 'standing' || view === 'deep-dive' ? view : null;
+  if (view === 'profile') return 'standing';
+  return view === 'standing' || view === 'deep-dive' ? view : null;
 }
+
+/** Whether a `?view=` value is Game profile's old address, which opens Standing at "How you play" (CH-13913). */
+export const landsOnGame = (view: string | undefined): boolean => view === 'profile';
 
 // ── A coach's views of one player (P013, spec A) ─────────────────────────────
 
-/** The three views a coach opens on one player (`?view=…&player=<golf_players.id>`), in the strip's order: the Deep dive lands first. */
+/**
+ * The views a coach opens on one player (`?view=…&player=<golf_players.id>`), in the strip's order: the Deep dive lands first. The
+ * coach's Game profile folded into Standing as the player's did, so the two stay at parity; `?view=profile&player=` lands on
+ * Standing at "How {first} plays" too.
+ */
 export type CoachPlayerView = Exclude<PlayerHelmView, 'board'>;
-export const COACH_PLAYER_VIEWS: readonly CoachPlayerView[] = ['deep-dive', 'standing', 'profile'];
+export const COACH_PLAYER_VIEWS: readonly CoachPlayerView[] = ['deep-dive', 'standing'];
 
 /**
  * Who a coach's view is about, as the client draws it: plain data made on the server from the coach's scope
@@ -83,6 +99,16 @@ export function helmViewHref(view: PlayerHelmView, voice: ChViewVoice = PLAYER_V
 
 /** The Deep dive open on one read, for this voice. */
 export const diveReadHref = (insightId: string, voice: ChViewVoice = PLAYER_VOICE) => `${helmViewHref('deep-dive', voice)}&insight=${encodeURIComponent(insightId)}`;
+
+/**
+ * A coach's Deep dive of one player, open on one of their reads (the coach Player page, CH-13914): where an Ask answer that names a
+ * read links. `roster` is the coach's own team; a player not on it gets no address, so no link is drawn to a page that would only
+ * say "isn't on your team".
+ */
+export function coachReadHref(playerId: string, insightId: string, roster: ReadonlyArray<{ id: string }>): string | null {
+  if (!playerId || !insightId || !roster.some((p) => p.id === playerId)) return null;
+  return `${coachPlayerHref('deep-dive', playerId)}&insight=${encodeURIComponent(insightId)}`;
+}
 
 const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
 

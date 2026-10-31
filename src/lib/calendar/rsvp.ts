@@ -9,6 +9,8 @@ import type { SupabaseClient } from '@supabase/supabase-js';
 import type { GolfCoach, GolfEvent, GolfEventAttendance, GolfPlayer } from '@/lib/types/golf';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { requireWriteSuccess } from './write-integrity';
+import { resolveTeamTimeZone } from './availability';
+import { formatNoticeWhen } from './timezone';
 import { profilesById, readGolfPlayerProfiles } from '@/lib/golf/player-profiles';
 
 // ============================================================================
@@ -64,7 +66,7 @@ type EventWithCreator = GolfEvent & {
   creator: Pick<GolfCoach, 'user_id'> | null;
 };
 
-type EventDateInput = Pick<GolfEvent, 'start_time'>;
+type EventDateInput = Pick<GolfEvent, 'start_time' | 'all_day'>;
 type MaybeArray<T> = T | T[] | null | undefined;
 
 function firstOrNull<T>(value: MaybeArray<T>): T | null {
@@ -173,7 +175,12 @@ export async function getEventRSVPStats(
 export async function sendEventInvitations(
   eventId: string,
   playerIds: string[],
-  supabase: SupabaseClient
+  supabase: SupabaseClient,
+  /**
+   * `deferNotices`: hand the Bell rows to the caller (its `after()`), so a publish answers once attendance is written
+   * (F-0029). Attendance stays inline: its failure is what the caller reports as invitations not sent.
+   */
+  opts: { deferNotices?: (task: () => Promise<void>) => void } = {},
 ): Promise<void> {
   if (playerIds.length === 0) return;
 
@@ -260,29 +267,55 @@ export async function sendEventInvitations(
   // that doesn't ask for replies. The attendance rows above still record who is on the event.
   if (!event.requires_rsvp) return;
 
-  // Create notifications for each player
-  const notifications = players
-    .filter(p => p.user_id)
-    .map(player => ({
-      user_id: player.user_id!,
-      event_id: eventId,
-      notification_type: 'event_invitation',
+  // The notices say the time in the team's zone (F-0001); the zone read goes with them, after the response when deferred (F-0029).
+  const notices = async () => {
+    const timeZone = await resolveTeamTimeZone([event.team_id], supabase, 'rsvp.sendEventInvitations');
+    await writeEventInvitationNotices({
+      eventId,
+      userIds: players.map((p) => p.user_id).filter((id): id is string => Boolean(id)),
       title: `You're invited: ${event.title}`,
-      message: `${formatEventDate(event)} ${event.location ? `at ${event.location}` : ''}`.trim(),
-      action_url: `/golf/dashboard/calendar?event=${eventId}`,
-    }));
+      message: `${formatEventDate(event, timeZone)} ${event.location ? `at ${event.location}` : ''}`.trim(),
+    });
+  };
+  if (opts.deferNotices) opts.deferNotices(notices);
+  else await notices();
+}
 
-  if (notifications.length > 0) {
-    // Use admin client to bypass RLS — inserting notifications for other users
-    const adminClient = createAdminClient();
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const { error: notifError } = await (adminClient as any)
-      .from('golf_calendar_notifications')
-      .upsert(notifications, { onConflict: 'event_id,user_id,notification_type', ignoreDuplicates: true });
+/**
+ * The Bell rows of an invitation (`golf_calendar_notifications`, `event_invitation`), and nothing else: it never
+ * touches attendance. sendEventInvitations writes its rows through it; P-5's tournament made from the calendar calls it
+ * on its own, so a converted R1 keeps every player's reply (sendEventInvitations would upsert them back to pending).
+ *
+ * Without `refresh` an existing row is left as it is (ignoreDuplicates, today's behaviour). With `refresh: true` the
+ * row for this event and person is replaced with the new copy and marked unread, so a convert's R1 reads as the
+ * tournament.
+ */
+export async function writeEventInvitationNotices(input: {
+  eventId: string;
+  userIds: string[];
+  title: string;
+  message: string;
+  refresh?: boolean;
+}): Promise<void> {
+  const notifications = input.userIds.map((userId) => ({
+    user_id: userId,
+    event_id: input.eventId,
+    notification_type: 'event_invitation',
+    title: input.title,
+    message: input.message,
+    action_url: `/golf/dashboard/calendar?event=${input.eventId}`,
+    ...(input.refresh ? { read_at: null, created_at: new Date().toISOString() } : {}),
+  }));
+  if (notifications.length === 0) return;
+  // Use admin client to bypass RLS — inserting notifications for other users
+  const adminClient = createAdminClient();
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { error: notifError } = await (adminClient as any)
+    .from('golf_calendar_notifications')
+    .upsert(notifications, { onConflict: 'event_id,user_id,notification_type', ignoreDuplicates: !input.refresh });
 
-    if (notifError) {
-      console.error('[sendEventInvitations] Failed to insert notifications:', notifError.message);
-    }
+  if (notifError) {
+    console.error('[sendEventInvitations] Failed to insert notifications:', notifError.message);
   }
 }
 
@@ -331,13 +364,14 @@ export async function notifyEventUpdate(
   // type means each distinct reschedule inserts exactly one fresh row
   // (repeat saves of the same time still dedupe) with no delete-then-reinsert.
   const timingKey = `${event.start_time ?? 'tbd'}|${event.end_time ?? ''}`;
+  const timeZone = changes ? null : await resolveTeamTimeZone([event.team_id], supabase, 'rsvp.notifyEventUpdate');
 
   const notifications = userIds.map(userId => ({
     user_id: userId,
     event_id: eventId,
     notification_type: `event_updated:${timingKey}`,
     title: `Event updated: ${event.title}`,
-    message: changes || `${formatEventDate(event)} ${event.location ? `at ${event.location}` : ''}`.trim(),
+    message: changes || `${formatEventDate(event, timeZone)} ${event.location ? `at ${event.location}` : ''}`.trim(),
     action_url: `/golf/dashboard/calendar?event=${eventId}`,
   }));
 
@@ -351,6 +385,61 @@ export async function notifyEventUpdate(
   if (notifError) {
     console.error('[notifyEventUpdate] Failed to insert notifications:', notifError.message);
   }
+}
+
+/**
+ * P-4: one Bell row per player for an edit that touched several occurrences of a series ("this and following"), instead
+ * of one per occurrence. Players are everyone invited to any touched occurrence that asks for replies (the same rule as
+ * notifyEventUpdate). Keyed on the series and its first touched start, so a repeat of the same move dedupes and a new
+ * one inserts fresh. The key stays under 'event_updated:' because golf_calendar_notifications_notification_type_check
+ * only admits the listed types, 'rsvp_response:%' and 'event_updated:%'. P-14 owns the wording and the push.
+ * Throws when the insert fails, so the caller's allSettled logs it instead of the players silently hearing nothing.
+ */
+export async function notifyEventSeriesUpdate(rootId: string, eventIds: string[], supabase: SupabaseClient): Promise<void> {
+  if (eventIds.length === 0) return;
+  const { data: events, error: eventsError } = await supabase
+    .from('golf_events')
+    .select('id, team_id, title, start_time, end_time, all_day, location, requires_rsvp')
+    .in('id', eventIds)
+    .order('start_time', { ascending: true });
+  if (eventsError) {
+    console.error('[notifyEventSeriesUpdate] Failed to read events:', eventsError.message);
+    return;
+  }
+  const asking = (events ?? []).filter((e) => e.requires_rsvp);
+  const first = asking[0];
+  if (!first) return;
+
+  const { data: attendances, error: attendanceError } = await supabase
+    .from('golf_event_attendance')
+    .select('player:golf_players(user_id)')
+    .in('event_id', asking.map((e) => e.id));
+  if (attendanceError) {
+    console.error('[notifyEventSeriesUpdate] Failed to read attendance:', attendanceError.message);
+    return;
+  }
+  const userIds = [
+    ...new Set(
+      ((attendances || []) as unknown as AttendanceWithUser[]).map((a) => firstOrNull(a.player)?.user_id).filter((id): id is string => Boolean(id)),
+    ),
+  ];
+  if (userIds.length === 0) return;
+
+  const later = asking.length - 1;
+  const timeZone = await resolveTeamTimeZone(first.team_id ? [first.team_id] : [], supabase, 'rsvp.notifyEventSeriesUpdate');
+  const notifications = userIds.map((userId) => ({
+    user_id: userId,
+    event_id: first.id,
+    notification_type: `event_updated:series:${rootId}:${first.start_time ?? 'tbd'}`,
+    title: `Event updated: ${first.title}`,
+    message: `${formatEventDate(first, timeZone)}${later > 0 ? ` and ${later} later` : ''}`,
+    action_url: `/golf/dashboard/calendar?event=${first.id}`,
+  }));
+  const adminClient = createAdminClient();
+  const { error } = await adminClient
+    .from('golf_calendar_notifications')
+    .upsert(notifications, { onConflict: 'event_id,user_id,notification_type', ignoreDuplicates: true });
+  if (error) throw new Error(`[notifyEventSeriesUpdate] Failed to insert notifications: ${error.message}`);
 }
 
 // ============================================================================
@@ -554,23 +643,10 @@ export async function getPlayerPendingInvitations(
 // ============================================================================
 
 /**
- * Format event date for display in notifications
+ * Format event date for display in notifications, in the team's zone (F-0001: the server runs in UTC, so a zone-less
+ * format wrote a 10:00 AM New York start as 2:00 PM).
  */
-function formatEventDate(event: EventDateInput): string {
-  if (!event.start_time) return 'TBD';
-
-  const startDate = new Date(event.start_time);
-  const dateStr = startDate.toLocaleDateString('en-US', {
-    weekday: 'short',
-    month: 'short',
-    day: 'numeric',
-  });
-
-  const timeStr = startDate.toLocaleTimeString('en-US', {
-    hour: 'numeric',
-    minute: '2-digit',
-  });
-
-  return `${dateStr} at ${timeStr}`;
+function formatEventDate(event: EventDateInput, timeZone: string | null): string {
+  return formatNoticeWhen(event.start_time, event.all_day, timeZone);
 }
 

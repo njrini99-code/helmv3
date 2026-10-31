@@ -1,6 +1,8 @@
 'use client';
 
 import type { CSSProperties } from 'react';
+import { useGlide } from '../../lib/motion-glide';
+import { shiftTransform, spanTransform } from './glide-transform';
 import { needsText } from '../../lib/stats-signal';
 import { useChartPin } from '../../lib/use-chart-pin';
 import { LIKELY_RANGE, PUTT_NEEDS, puttBandViews, puttCount, puttRate, puttReadout, puttSummary, type PuttBandInput } from './putt-bands';
@@ -43,6 +45,15 @@ export function PuttBands({ bands, compact = false }: { bands: PuttBandInput[]; 
   const readout = (i: number | null) => (i == null ? null : puttReadout(views[i]!));
   const shown = readout(pin.active);
   const spoken = readout(pin.pinned);
+  // Per band: the Tour tick, the whisker's top and bottom and the dot, gliding together on a new window (B9).
+  // Each mark is laid out at its new place at once and glides there by transform (glide-transform.ts), never by top.
+  const target = views.flatMap((b) => [
+    b.bench == null ? null : 100 - Math.min(100, Math.max(0, b.bench)),
+    b.range ? 100 - b.range.hi : null,
+    b.range ? b.range.lo : null,
+    b.rate == null ? null : 100 - b.rate,
+  ]);
+  const drawn = useGlide(target, views.map((b) => b.label).join('|'));
   return (
     <div
       className={'ch-sv-pb' + (compact ? ' is-compact' : '')}
@@ -79,24 +90,41 @@ export function PuttBands({ bands, compact = false }: { bands: PuttBandInput[]; 
               ))}
             </svg>
           )}
-          {views.map((b, i) => (
-            <div key={b.label} className={'ch-sv-pb__col ch-sv-row' + (b.state === 'early' ? ' is-early' : '') + (b.state === 'none' ? ' is-none' : '')} {...pin.item(i)}>
-              <div className="ch-sv-pb__mk">
-                <div className="ch-sv-pb__scale">
-                  {b.bench != null && <u className="ch-sv-pb__tick" style={{ top: `${100 - Math.min(100, Math.max(0, b.bench))}%` }} />}
-                  {b.range && <i className={'ch-sv-pb__whisk' + (b.range.lo <= 0 ? ' is-clip-b' : '') + (b.range.hi >= 100 ? ' is-clip-t' : '')} style={{ top: `${100 - b.range.hi}%`, bottom: `${b.range.lo}%` }} />}
-                  {b.rate != null && <b className={'ch-sv-pb__dot' + (b.grade ? ` ${b.grade}` : '')} style={{ top: `${100 - b.rate}%` }} />}
+          {views.map((b, i) => {
+            const [tick, top, bottom, dot] = target.slice(i * 4, i * 4 + 4);
+            const [nTick, nTop, nBottom, nDot] = drawn.slice(i * 4, i * 4 + 4);
+            return (
+              <div key={b.label} className={'ch-sv-pb__col ch-sv-row' + (b.state === 'early' ? ' is-early' : '') + (b.state === 'none' ? ' is-none' : '')} {...pin.item(i)}>
+                <div className="ch-sv-pb__mk">
+                  <div className="ch-sv-pb__scale">
+                    {tick != null && (
+                      <span className="ch-sv-pb__slot" style={{ transform: nTick == null ? undefined : shiftTransform('y', tick, nTick) }}>
+                        <u className="ch-sv-pb__tick" style={{ top: `${tick}%` }} />
+                      </span>
+                    )}
+                    {b.range && top != null && bottom != null && (
+                      <i
+                        className={'ch-sv-pb__whisk' + (b.range.lo <= 0 ? ' is-clip-b' : '') + (b.range.hi >= 100 ? ' is-clip-t' : '')}
+                        style={{ top: `${top}%`, bottom: `${bottom}%`, transform: nTop == null || nBottom == null ? undefined : spanTransform('y', [top, 100 - bottom], [nTop, 100 - nBottom]) }}
+                      />
+                    )}
+                    {dot != null && (
+                      <span className="ch-sv-pb__slot" style={{ transform: nDot == null ? undefined : shiftTransform('y', dot, nDot) }}>
+                        <b className={'ch-sv-pb__dot' + (b.grade ? ` ${b.grade}` : '')} style={{ top: `${dot}%` }} />
+                      </span>
+                    )}
+                  </div>
+                  {/* The phone's column is about 52px: the short form there, the whole sentence in the readout. */}
+                  {b.rate == null && <span className="ch-sv-pb__needs">{compact ? needsText('make') : PUTT_NEEDS}</span>}
                 </div>
-                {/* The phone's column is about 52px: the short form there, the whole sentence in the readout. */}
-                {b.rate == null && <span className="ch-sv-pb__needs">{compact ? needsText('make') : PUTT_NEEDS}</span>}
+                <div className="ch-sv-pb__lab">
+                  <span>{compact ? b.label.replace(/ ft$/, '') : b.label}</span>
+                  <b className={'ch-num' + (b.grade === 'is-gain' ? ' ch-gain' : b.grade === 'is-loss' ? ' ch-loss' : '')}>{puttRate(b)}</b>
+                  <small className="ch-num">{puttCount(b)}</small>
+                </div>
               </div>
-              <div className="ch-sv-pb__lab">
-                <span>{compact ? b.label.replace(/ ft$/, '') : b.label}</span>
-                <b className={'ch-num' + (b.grade === 'is-gain' ? ' ch-gain' : b.grade === 'is-loss' ? ' ch-loss' : '')}>{puttRate(b)}</b>
-                <small className="ch-num">{puttCount(b)}</small>
-              </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
       </div>
       <p className="ch-sv-pb__cap" aria-hidden="true">

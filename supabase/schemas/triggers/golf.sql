@@ -2,13 +2,23 @@ CREATE OR REPLACE TRIGGER "approach_miss_details_reject_completed_round_mutation
 
 CREATE OR REPLACE TRIGGER "golf_event_documents_team_consistency" BEFORE INSERT OR UPDATE ON "public"."golf_event_documents" FOR EACH ROW EXECUTE FUNCTION "public"."golf_event_documents_assert_same_team"();
 
+CREATE OR REPLACE TRIGGER "golf_events_touch_updated_at" BEFORE UPDATE ON "public"."golf_events" FOR EACH ROW WHEN (((old.* IS DISTINCT FROM new.*) AND (current_setting('helm.change_mark_writer'::text, true) IS DISTINCT FROM 'on'::text))) EXECUTE FUNCTION "public"."touch_updated_at"();
+
 CREATE OR REPLACE TRIGGER "golf_global_patterns_touch" BEFORE UPDATE ON "public"."golf_global_patterns" FOR EACH ROW EXECUTE FUNCTION "public"."touch_updated_at"();
 
 CREATE OR REPLACE TRIGGER "golf_holes_recompute_round_totals" AFTER INSERT OR DELETE OR UPDATE ON "public"."golf_holes" FOR EACH ROW EXECUTE FUNCTION "public"."golf_holes_recompute_round_totals_fn"();
 
 CREATE OR REPLACE TRIGGER "golf_holes_reject_completed_round_mutation" BEFORE INSERT OR DELETE OR UPDATE ON "public"."golf_holes" FOR EACH ROW EXECUTE FUNCTION "helm_private"."reject_completed_round_child_mutation"();
 
+CREATE CONSTRAINT TRIGGER "golf_holes_round_live" AFTER INSERT OR DELETE OR UPDATE OF "score", "par" ON "public"."golf_holes" DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION "helm_private"."golf_holes_round_live"();
+
 CREATE OR REPLACE TRIGGER "golf_holes_set_gir" BEFORE INSERT OR UPDATE OF "par", "score", "putts" ON "public"."golf_holes" FOR EACH ROW EXECUTE FUNCTION "public"."golf_holes_set_gir_fn"();
+
+CREATE OR REPLACE TRIGGER "golf_message_responses_poll_guard" BEFORE INSERT OR DELETE OR UPDATE ON "public"."golf_message_responses" FOR EACH ROW EXECUTE FUNCTION "public"."golf_message_responses_poll_guard"();
+
+CREATE OR REPLACE TRIGGER "golf_message_responses_touch" BEFORE INSERT OR UPDATE ON "public"."golf_message_responses" FOR EACH ROW EXECUTE FUNCTION "public"."touch_updated_at"();
+
+CREATE OR REPLACE TRIGGER "golf_messages_poll_freeze" BEFORE INSERT OR UPDATE ON "public"."golf_messages" FOR EACH ROW EXECUTE FUNCTION "public"."golf_messages_poll_freeze"();
 
 CREATE OR REPLACE TRIGGER "golf_players_anonymize_on_unlink" BEFORE UPDATE OF "user_id" ON "public"."golf_players" FOR EACH ROW EXECUTE FUNCTION "public"."golf_player_anonymize_on_unlink"();
 
@@ -21,6 +31,12 @@ CREATE OR REPLACE TRIGGER "golf_recruit_documents_same_team" BEFORE INSERT OR UP
 CREATE OR REPLACE TRIGGER "golf_recruit_documents_touch" BEFORE UPDATE ON "public"."golf_recruit_documents" FOR EACH ROW EXECUTE FUNCTION "public"."golf_recruit_documents_touch_updated_at"();
 
 CREATE OR REPLACE TRIGGER "golf_rounds_guard_lifecycle" BEFORE INSERT OR DELETE OR UPDATE ON "public"."golf_rounds" FOR EACH ROW EXECUTE FUNCTION "helm_private"."guard_golf_round_lifecycle"();
+
+CREATE TRIGGER "golf_rounds_round_live_gone" BEFORE DELETE ON "public"."golf_rounds" FOR EACH ROW WHEN (("old"."status" = 'in_progress'::"text")) EXECUTE FUNCTION "helm_private"."golf_rounds_round_live_gone"();
+
+CREATE CONSTRAINT TRIGGER "golf_rounds_round_live_ins" AFTER INSERT ON "public"."golf_rounds" DEFERRABLE INITIALLY DEFERRED FOR EACH ROW WHEN ((("new"."team_id" IS NOT NULL) AND ("new"."status" = 'in_progress'::"text"))) EXECUTE FUNCTION "helm_private"."golf_rounds_round_live"();
+
+CREATE CONSTRAINT TRIGGER "golf_rounds_round_live_upd" AFTER UPDATE OF "status", "round_type", "qualifier_id", "qualifier_round_number", "current_hole", "holes_played", "team_id", "course_name", "draft_data" ON "public"."golf_rounds" DEFERRABLE INITIALLY DEFERRED FOR EACH ROW WHEN ((("old"."status" IS DISTINCT FROM "new"."status") OR ("old"."round_type" IS DISTINCT FROM "new"."round_type") OR ("old"."qualifier_id" IS DISTINCT FROM "new"."qualifier_id") OR ("old"."qualifier_round_number" IS DISTINCT FROM "new"."qualifier_round_number") OR ("old"."current_hole" IS DISTINCT FROM "new"."current_hole") OR ("old"."holes_played" IS DISTINCT FROM "new"."holes_played") OR ("old"."team_id" IS DISTINCT FROM "new"."team_id") OR ("old"."course_name" IS DISTINCT FROM "new"."course_name") OR (("old"."draft_data" -> 'holes'::"text") IS DISTINCT FROM ("new"."draft_data" -> 'holes'::"text")) OR (("old"."draft_data" -> 'startHole'::"text") IS DISTINCT FROM ("new"."draft_data" -> 'startHole'::"text")))) EXECUTE FUNCTION "helm_private"."golf_rounds_round_live"();
 
 CREATE OR REPLACE TRIGGER "golf_shots_reject_completed_round_mutation" BEFORE INSERT OR DELETE OR UPDATE ON "public"."golf_shots" FOR EACH ROW EXECUTE FUNCTION "helm_private"."reject_completed_round_child_mutation"();
 
@@ -99,3 +115,77 @@ CREATE OR REPLACE TRIGGER "update_golf_travel_itineraries_updated_at" BEFORE UPD
 CREATE OR REPLACE TRIGGER "update_putt_details_updated_at" BEFORE UPDATE ON "public"."putt_details" FOR EACH ROW EXECUTE FUNCTION "public"."update_updated_at_column"();
 
 CREATE OR REPLACE TRIGGER "golf_coaches_guard_organization_id" BEFORE INSERT OR UPDATE OF "organization_id" ON "public"."golf_coaches" FOR EACH ROW EXECUTE FUNCTION "public"."guard_coach_organization_id"();
+
+CREATE OR REPLACE TRIGGER "golf_team_terms_guard" BEFORE INSERT OR UPDATE ON "public"."golf_team_terms" FOR EACH ROW EXECUTE FUNCTION "public"."golf_team_terms_guard"();
+
+CREATE OR REPLACE TRIGGER "golf_class_exceptions_guard" BEFORE INSERT ON "public"."golf_class_exceptions" FOR EACH ROW EXECUTE FUNCTION "public"."golf_class_exceptions_guard"();
+
+CREATE OR REPLACE TRIGGER "golf_class_hold_mark_dirty" AFTER INSERT OR DELETE OR UPDATE ON "public"."golf_class_exceptions" FOR EACH ROW EXECUTE FUNCTION "public"."golf_class_hold_mark_dirty"();
+
+CREATE OR REPLACE TRIGGER "golf_class_hold_mark_dirty" AFTER INSERT OR DELETE OR UPDATE ON "public"."golf_team_terms" FOR EACH ROW EXECUTE FUNCTION "public"."golf_class_hold_mark_dirty"();
+
+CREATE OR REPLACE TRIGGER "golf_class_hold_mark_dirty" AFTER INSERT OR DELETE OR UPDATE ON "public"."golf_player_class_settings" FOR EACH ROW EXECUTE FUNCTION "public"."golf_class_hold_mark_dirty"();
+
+CREATE OR REPLACE TRIGGER "golf_class_hold_mark_dirty" AFTER INSERT OR DELETE OR UPDATE ON "public"."golf_player_classes" FOR EACH ROW EXECUTE FUNCTION "public"."golf_class_hold_mark_dirty"();
+
+CREATE OR REPLACE TRIGGER "golf_class_hold_mark_dirty" AFTER INSERT OR DELETE OR UPDATE ON "public"."golf_event_attendance" FOR EACH ROW EXECUTE FUNCTION "public"."golf_class_hold_mark_dirty"();
+
+CREATE OR REPLACE TRIGGER "golf_messages_notify_anyway_insert" BEFORE INSERT ON "public"."golf_messages" FOR EACH ROW WHEN (("new"."notify_anyway" OR ("new"."notify_anyway_pushed_at" IS NOT NULL))) EXECUTE FUNCTION "public"."golf_messages_notify_anyway_guard"();
+
+CREATE OR REPLACE TRIGGER "golf_messages_notify_anyway_update" BEFORE UPDATE OF "notify_anyway", "notify_anyway_pushed_at" ON "public"."golf_messages" FOR EACH ROW WHEN ((("new"."notify_anyway" IS DISTINCT FROM "old"."notify_anyway") OR ("new"."notify_anyway_pushed_at" IS DISTINCT FROM "old"."notify_anyway_pushed_at"))) EXECUTE FUNCTION "public"."golf_messages_notify_anyway_guard"();
+CREATE OR REPLACE TRIGGER "golf_participants_read_mark" AFTER UPDATE OF "last_read_at" ON "public"."golf_conversation_participants" FOR EACH ROW WHEN ((("new"."last_read_at" IS NOT NULL) AND (("old"."last_read_at" IS NULL) OR ("new"."last_read_at" > "old"."last_read_at")))) EXECUTE FUNCTION "public"."golf_record_read_mark"();
+
+CREATE OR REPLACE TRIGGER "golf_participants_read_marks_on_leave" AFTER DELETE ON "public"."golf_conversation_participants" FOR EACH ROW EXECUTE FUNCTION "public"."golf_forget_read_marks"();
+
+CREATE OR REPLACE TRIGGER "golf_events_change_mark" BEFORE INSERT OR UPDATE ON "public"."golf_events" FOR EACH ROW EXECUTE FUNCTION "public"."golf_events_change_mark"();
+
+-- P016 Tournaments: held migrations 20261024100000 (tables), 100100 (RLS)
+-- and 100200 (RPCs, lineup guard), WRITTEN — HOLD — NOT APPLIED in production.
+-- Generated 2026-10-25 by pg_dump of the three files applied in order to a
+-- scratch Postgres 16 (docs/clubhouse/held/data/tournaments.md).
+
+CREATE OR REPLACE TRIGGER "golf_tcp_touch" BEFORE UPDATE ON "public"."golf_tournament_coach_presence" FOR EACH ROW EXECUTE FUNCTION "public"."touch_updated_at"();
+
+CREATE OR REPLACE TRIGGER "golf_ten_touch" BEFORE UPDATE ON "public"."golf_tournament_entry_notes" FOR EACH ROW EXECUTE FUNCTION "public"."touch_updated_at"();
+
+CREATE OR REPLACE TRIGGER "golf_tournament_advice_givers_team_guard" BEFORE INSERT OR UPDATE ON "public"."golf_tournament_advice_givers" FOR EACH ROW EXECUTE FUNCTION "helm_private"."guard_tournament_team"();
+
+CREATE OR REPLACE TRIGGER "golf_tournament_coach_presence_team_guard" BEFORE INSERT OR UPDATE ON "public"."golf_tournament_coach_presence" FOR EACH ROW EXECUTE FUNCTION "helm_private"."guard_tournament_team"();
+
+CREATE OR REPLACE TRIGGER "golf_tournament_entries_lineup_guard" BEFORE INSERT OR DELETE OR UPDATE ON "public"."golf_tournament_entries" FOR EACH ROW EXECUTE FUNCTION "helm_private"."guard_tournament_lineup"();
+
+CREATE OR REPLACE TRIGGER "golf_tournament_entries_team_guard" BEFORE INSERT OR UPDATE ON "public"."golf_tournament_entries" FOR EACH ROW EXECUTE FUNCTION "helm_private"."guard_tournament_team"();
+
+CREATE OR REPLACE TRIGGER "golf_tournament_entries_touch" BEFORE UPDATE ON "public"."golf_tournament_entries" FOR EACH ROW EXECUTE FUNCTION "public"."touch_updated_at"();
+
+CREATE OR REPLACE TRIGGER "golf_tournament_entry_notes_team_guard" BEFORE INSERT OR UPDATE ON "public"."golf_tournament_entry_notes" FOR EACH ROW EXECUTE FUNCTION "helm_private"."guard_tournament_team"();
+
+CREATE OR REPLACE TRIGGER "golf_tournament_link_dismissals_team_guard" BEFORE INSERT OR UPDATE ON "public"."golf_tournament_link_dismissals" FOR EACH ROW EXECUTE FUNCTION "helm_private"."guard_tournament_team"();
+
+CREATE OR REPLACE TRIGGER "golf_tournament_player_notes_team_guard" BEFORE INSERT OR UPDATE ON "public"."golf_tournament_player_notes" FOR EACH ROW EXECUTE FUNCTION "helm_private"."guard_tournament_team"();
+
+CREATE OR REPLACE TRIGGER "golf_tournament_player_rounds_team_guard" BEFORE INSERT OR UPDATE ON "public"."golf_tournament_player_rounds" FOR EACH ROW EXECUTE FUNCTION "helm_private"."guard_tournament_team"();
+
+CREATE OR REPLACE TRIGGER "golf_tournament_reflections_team_guard" BEFORE INSERT OR UPDATE ON "public"."golf_tournament_reflections" FOR EACH ROW EXECUTE FUNCTION "helm_private"."guard_tournament_team"();
+
+CREATE OR REPLACE TRIGGER "golf_tournament_result_marks_team_guard" BEFORE INSERT OR UPDATE ON "public"."golf_tournament_result_marks" FOR EACH ROW EXECUTE FUNCTION "helm_private"."guard_tournament_team"();
+
+CREATE OR REPLACE TRIGGER "golf_tournament_reviews_touch" BEFORE UPDATE ON "public"."golf_tournament_reviews" FOR EACH ROW EXECUTE FUNCTION "public"."touch_updated_at"();
+
+CREATE OR REPLACE TRIGGER "golf_tournament_round_lineups_lineup_guard" BEFORE INSERT OR DELETE OR UPDATE ON "public"."golf_tournament_round_lineups" FOR EACH ROW EXECUTE FUNCTION "helm_private"."guard_tournament_lineup"();
+
+CREATE OR REPLACE TRIGGER "golf_tournament_round_lineups_team_guard" BEFORE INSERT OR UPDATE ON "public"."golf_tournament_round_lineups" FOR EACH ROW EXECUTE FUNCTION "helm_private"."guard_tournament_team"();
+
+CREATE OR REPLACE TRIGGER "golf_tournament_rounds_team_guard" BEFORE INSERT OR UPDATE ON "public"."golf_tournament_rounds" FOR EACH ROW EXECUTE FUNCTION "helm_private"."guard_tournament_team"();
+
+CREATE OR REPLACE TRIGGER "golf_tournaments_touch" BEFORE UPDATE ON "public"."golf_tournaments" FOR EACH ROW EXECUTE FUNCTION "helm_private"."touch_tournament_version"();
+
+CREATE OR REPLACE TRIGGER "golf_tpn_touch" BEFORE UPDATE ON "public"."golf_tournament_player_notes" FOR EACH ROW EXECUTE FUNCTION "public"."touch_updated_at"();
+
+CREATE OR REPLACE TRIGGER "golf_tpr_touch" BEFORE UPDATE ON "public"."golf_tournament_player_rounds" FOR EACH ROW EXECUTE FUNCTION "public"."touch_updated_at"();
+
+CREATE OR REPLACE TRIGGER "golf_tref_touch" BEFORE UPDATE ON "public"."golf_tournament_reflections" FOR EACH ROW EXECUTE FUNCTION "public"."touch_updated_at"();
+-- P-5 (HELD 20261025040000 / 20261025040100)
+CREATE OR REPLACE TRIGGER "golf_events_tournament_round_guard" BEFORE UPDATE OF "event_type", "team_id", "recurring", "recurrence_rule", "parent_event_id", "status", "title", "location", "course_id" ON "public"."golf_events" FOR EACH ROW WHEN (("old"."event_type" = 'tournament'::"text")) EXECUTE FUNCTION "helm_private"."guard_tournament_round_event"();
+
+CREATE CONSTRAINT TRIGGER "golf_events_tournament_round_sync" AFTER UPDATE OF "start_time", "end_time", "all_day", "status" ON "public"."golf_events" DEFERRABLE INITIALLY DEFERRED FOR EACH ROW WHEN ((("new"."event_type" = 'tournament'::"text") AND (("old"."start_time" IS DISTINCT FROM "new"."start_time") OR ("old"."all_day" IS DISTINCT FROM "new"."all_day") OR (("old"."status" = 'cancelled'::"text") AND ("new"."status" IS DISTINCT FROM 'cancelled'::"text"))))) EXECUTE FUNCTION "helm_private"."sync_tournament_round_from_event"();

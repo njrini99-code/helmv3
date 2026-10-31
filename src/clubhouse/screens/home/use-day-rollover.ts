@@ -3,10 +3,11 @@
 import { useEffect, useRef } from 'react';
 import type { ChHomeClock } from '../../data/home';
 import { useRefresh } from '../../lib/use-refresh';
+import { isoDay } from '../../lib/dates';
 
 /** YYYY-MM-DD for an instant in a zone (the loader's `ymd`). */
 export function dayIn(now: Date, tz: string): string {
-  return new Intl.DateTimeFormat('en-CA', { timeZone: tz, year: 'numeric', month: '2-digit', day: '2-digit' }).format(now);
+  return isoDay(now, tz);
 }
 
 /** The device's zone: the fallback when the page carries no team clock (fixtures, previews). */

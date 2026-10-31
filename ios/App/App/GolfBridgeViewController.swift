@@ -30,22 +30,22 @@ class GolfBridgeViewController: CAPBridgeViewController {
     private var installedSwipeFlag: Bool?
     private static let navMessageName = "helmNav"
     private static let swipeFlagMarker = "/* helm:nativeSwipe */"
+    /// C4: iOS Reduce Transparency, mirrored onto the page as `html[data-reduce-transparency]` so Clubhouse turns its
+    /// glass solid (src/clubhouse/styles/tokens.css). WebKit has no `prefers-reduced-transparency`, so the app says it.
+    private static let reduceTransparencyMarker = "/* helm:reduceTransparency */"
+    private var installedReduceTransparency: Bool?
+    private var reduceTransparencyObserver: NSObjectProtocol?
 
     /// UserDefaults key holding the CFBundleVersion that last cleared the web cache.
     private static let cacheClearedBuildKey = "HelmWebCacheClearedForBuild"
 
-    /// The page canvas, `--fw-color-canvas` in src/styles/design-tokens.css
-    /// (light #F2E6D2, dark #0D0F0D). It is read from the FwColorCanvas colour
-    /// asset, which LaunchScreen.storyboard also uses, so the launch screen,
-    /// native view and webview are one colour in both appearances. The asset
-    /// is named after the token; src/test/static/canvas-color-sync.test.ts
-    /// fails if its values drift from the token. The inline dynamic colour is
-    /// only a fallback in case the asset is missing.
-    static let canvasColor: UIColor = UIColor(named: "FwColorCanvas") ?? UIColor { traits in
-        traits.userInterfaceStyle == .dark
-            ? UIColor(red: 16.0/255.0, green: 17.0/255.0, blue: 16.0/255.0, alpha: 1.0)
-            : UIColor(red: 247.0/255.0, green: 239.0/255.0, blue: 223.0/255.0, alpha: 1.0)
-    }
+    /// The native canvas: the launch screen, this view, the web view and its overscroll, before and around the page.
+    /// It is the AppCanvas colour asset (light and dark), which LaunchScreen.storyboard also uses, so the launch
+    /// screen, native view and web view are one colour in both appearances. Which palette it holds (Fairway's
+    /// `--fw-color-canvas` or Clubhouse's phone `--ch-bg-page`) is one switch, config/native-canvas.json, written by
+    /// scripts/native-canvas.mjs (A15); src/test/static/canvas-color-sync.test.ts pins it. The system background is only
+    /// a fallback in case the asset is missing.
+    static let canvasColor: UIColor = UIColor(named: "AppCanvas") ?? .systemBackground
 
     /// App-local Capacitor plugins register here (the documented hook for
     /// plugins that live in the app target rather than a package — CapApp-SPM's
@@ -59,6 +59,28 @@ class GolfBridgeViewController: CAPBridgeViewController {
         webView?.configuration.userContentController.add(
             HelmNavMessageHandler(owner: self), name: Self.navMessageName)
         applySwipeBack()
+        applyReduceTransparency()
+        reduceTransparencyObserver = NotificationCenter.default.addObserver(
+            forName: UIAccessibility.reduceTransparencyStatusDidChangeNotification, object: nil, queue: .main
+        ) { [weak self] _ in self?.applyReduceTransparency() }
+    }
+
+    deinit {
+        if let observer = reduceTransparencyObserver { NotificationCenter.default.removeObserver(observer) }
+    }
+
+    /// Tells the page now, and installs the value for the next page load (a document-start script).
+    private func applyReduceTransparency() {
+        let on = UIAccessibility.isReduceTransparencyEnabled
+        webView?.evaluateJavaScript(Self.reduceTransparencySource(on), completionHandler: nil)
+        guard installedReduceTransparency != on else { return }
+        replaceUserScript(marker: Self.reduceTransparencyMarker, source: Self.reduceTransparencySource(on))
+        installedReduceTransparency = on
+    }
+
+    private static func reduceTransparencySource(_ on: Bool) -> String {
+        let set = on ? "setAttribute('data-reduce-transparency', '')" : "removeAttribute('data-reduce-transparency')"
+        return "\(reduceTransparencyMarker) document.documentElement && document.documentElement.\(set);"
     }
 
     fileprivate func setOverlayOpen(_ open: Bool) {
@@ -83,17 +105,21 @@ class GolfBridgeViewController: CAPBridgeViewController {
     /// WKUserContentController cannot remove one script, so every script but
     /// ours (Capacitor's bridge, the viewport fix) is put back in order.
     private func installSwipeFlagScript(_ nativeSwipe: Bool) {
-        guard installedSwipeFlag != nativeSwipe,
-              let controller = webView?.configuration.userContentController else { return }
-        let kept = controller.userScripts.filter { !$0.source.hasPrefix(Self.swipeFlagMarker) }
+        guard installedSwipeFlag != nativeSwipe, webView != nil else { return }
+        replaceUserScript(marker: Self.swipeFlagMarker, source: "\(Self.swipeFlagMarker) window.__helmNativeSwipe = \(nativeSwipe);")
+        installedSwipeFlag = nativeSwipe
+    }
+
+    /// Replaces the document-start script that starts with `marker`. WKUserContentController cannot remove one script, so
+    /// every other script (Capacitor's bridge, the viewport fix, the other flag) is put back in order.
+    private func replaceUserScript(marker: String, source: String) {
+        guard let controller = webView?.configuration.userContentController else { return }
+        let kept = controller.userScripts.filter { !$0.source.hasPrefix(marker) }
         controller.removeAllUserScripts()
         for script in kept {
             controller.addUserScript(script)
         }
-        let source = "\(Self.swipeFlagMarker) window.__helmNativeSwipe = \(nativeSwipe);"
-        let script = WKUserScript(source: source, injectionTime: .atDocumentStart, forMainFrameOnly: true)
-        controller.addUserScript(script)
-        installedSwipeFlag = nativeSwipe
+        controller.addUserScript(WKUserScript(source: source, injectionTime: .atDocumentStart, forMainFrameOnly: true))
     }
 
     /// Round entry: new round and continue round (FairwayDashboardShell

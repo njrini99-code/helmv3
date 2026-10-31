@@ -23,7 +23,8 @@ reserve new IDs or mark manual contracts verified.
 
 Every behaviour Roster promises, by the 25 V2 categories (D-69). A contract's
 number is its Bridge ID (D-68: namespace 3, category, item); `Code` is the
-catalog code on the element and in the test (`docs/clubhouse/catalog/roster.md`).
+catalog code on the element and in the test
+(`docs/clubhouse/catalog/roster.md`).
 Rows without a code are behaviours with no single element, recorded in
 `config/clubhouse/bridge-contracts.json` by hand. The shell's contracts (P001,
 namespace 1) apply here too and are named where they carry a category.
@@ -82,7 +83,11 @@ From the shell (P001): 10101 CH-1904, 10102 SHELL_READY,
 
 Status: DEFINED
 
-Route skeleton (30201): the header, toolbar and six face cards in their final slots, and below 820px the phone's list rows, switched in CSS because the skeleton renders on the server. v2 timing: nothing for 150ms, then a fade (the shell's 11609). The page and its data arrive together, so no section loads on its own; the reads that can fail have notices (category 06).
+Route skeleton (30201): the header, toolbar and six face cards in their final
+slots, and below 820px the phone's list rows, switched in CSS because the
+skeleton renders on the server. v2 timing: nothing for 150ms, then a fade (the
+shell's 11609). The page and its data arrive together, so no section loads on
+its own; the reads that can fail have notices (category 06).
 
 | Bridge ID | Code | Name | Meaning |
 | --- | --- | --- | --- |
@@ -96,7 +101,10 @@ From the shell (P001): 10201 CH-1401, 10202 CH-1402.
 
 Status: DEFINED
 
-There is no realtime, no polling and no pull to refresh (it waits for a design, D-43). What is in flight is a write: Remove (30301) and Approve all (30302) show their progress and cannot be pressed twice. A refresh, from Try again or from the page a write revalidated, replaces what the screen holds (30303).
+There is no realtime, no polling and no pull to refresh (it waits for a design,
+D-43). What is in flight is a write: Remove (30301) and Approve all (30302) show
+their progress and cannot be pressed twice. A refresh, from Try again or from
+the page a write revalidated, replaces what the screen holds (30303).
 
 | Bridge ID | Code | Name | Meaning |
 | --- | --- | --- | --- |
@@ -108,7 +116,12 @@ There is no realtime, no polling and no pull to refresh (it waits for a design, 
 
 Status: DEFINED
 
-First-run (30401), filtered (30402, 30403) and per-player (30405) are distinct, and a failed read is never shown as empty (32101). A team without a join code is its own state (30404), and a failed team read is a different one (CH-3207, category 06). A coach with no active team gets Roster's own page state, no longer Home's (CH-3306, fixed 2026-09-30). Whole-page empties are the v2 page empty state (D-71).
+First-run (30401), filtered (30402, 30403) and per-player (30405) are distinct,
+and a failed read is never shown as empty (32101). A team without a join code is
+its own state (30404), and a failed team read is a different one (CH-3207,
+category 06). A coach with no active team gets Roster's own page state, no
+longer Home's (CH-3306, fixed 2026-09-30). Whole-page empties are the v2 page
+empty state (D-71).
 
 | Bridge ID | Code | Name | Meaning |
 | --- | --- | --- | --- |
@@ -128,9 +141,12 @@ Status: DEFINED
 
 One input has a limit: the coach's note (30501, 2,000 characters; the counter
 appears in the last 200 and typing stops at the limit). There is no
-availability note on the team row (30503 is retired with CH-3102; `setPlayerAvailability`
-refuses a note); the coach-only Why field (280 characters, 30623) exists only once its table
-does (`availabilityCoachNotes`; held migration 20261022090000). The search box takes any text. Nothing else is typed into a form:
+availability note on the team row (30503 is retired with CH-3102;
+`setPlayerAvailability`
+refuses a note); the coach-only Why field (280 characters, 30623) exists only
+once its table
+does (`availabilityCoachNotes`; held migration 20261022090000). The search box
+takes any text. Nothing else is typed into a form:
 players join by code, and the server checks who may decide a request (30803).
 What players and coaches typed comes out safely: the export writes a name that
 could be read as a formula as text (30502).
@@ -139,6 +155,7 @@ could be read as a formula as text (30502).
 | --- | --- | --- | --- |
 | 30501 | CH-3101 | `A_COACHS_NOTE_IS_WITHIN_200_CHARACTERS` | A coach's note is within 200 characters of its 2,000 limit |
 | 30502 | — | `EXPORT_CELLS_ARE_TEXT` | The CSV export writes a player's name that starts with =, +, - or @ (or a tab or a return) as text, with a leading apostrophe, so a spreadsheet never reads it as a formula; numbers are left as numbers. Availability (the word) follows Status; there is no note column. |
+| 30580 | CH-3180 | `AN_ADDRESS_TYPED_OR_PASTED_IN_EMAIL` | An address typed or pasted in Email them can’t be read as an email address |
 
 ## 06 — Server / system error
 
@@ -175,21 +192,28 @@ refused change shows the server's own sentence when it is short and readable
 | 30620 | CH-3009 | `MARKING_A_PLAYER_AVAILABLE_INJURED_OR_AWAY` | Marking a player available, injured or away fails (row menu, the panel's or phone profile's Availability control) |
 | 30622 | CH-3212 | `COACHHELMS_COUNTS_DONT_LOAD_FOR_THE_ROSTER` | CoachHelm's counts don't load for the roster (the coach's gate, the visible reads or the newest rounds) |
 | 30623 | CH-3011 | `THE_COACH_ONLY_REASON_FOR_AN_INJURED` | The coach-only reason for an injured or away player doesn’t save (Why field, on leaving it) |
+| 30680 | CH-3080 | `EMAILING_THE_INVITE_TO_PLAYERS_FAILS_THE` | Emailing the invite to players fails (Invite players › Email them): the request fails, the coach has sent a lot of invites this hour, email is paused, or the team has no code |
 
 From the shell (P001): 10601 CH-1001, 10602 CH-1201, 10603 CH-1202,
 10604 CH-1203, 10605 CH-1204, 10606 CH-1205, 10607 CH-1206, 10608 CH-1207,
 10609 CH-1208, 10610 CH-1002, 10611 CH-1003, 10612 CH-1209, 10613 CH-1210,
-10614 CH-1211.
+10614 CH-1211, 10615 CH-1270, 10616 CH-1271.
 
 ## 07 — Network / offline
 
 Status: DEFINED
 
-Roster's writes all go through useAction, so offline every one is refused before anything is sent and the toast names it (30701, the shell's 10703). A save over 5 seconds says so (10702), the banner (10701), and Try again while offline says so instead of retrying (10704). Export, Copy and the filters are local. Roster has no lost-confirmation state: a write answers or throws, and a throw is reported (32301).
+Roster's writes all go through useAction, so offline every one is refused before
+anything is sent and the toast names it (30701, the shell's 10703). A save over
+5 seconds says so (10702), the banner (10701), and Try again while offline says
+so instead of retrying (10704). Export, Copy and the filters are local. Roster
+has no lost-confirmation state: a write answers or throws, and a throw is
+reported (32301).
 
 | Bridge ID | Code | Name | Meaning |
 | --- | --- | --- | --- |
 | 30701 | — | `WRITES_REFUSED_OFFLINE` | Offline, every Roster write (a removal, an approval, a decline, Approve all, a note) is refused before anything is sent, the toast names what did not happen, and nothing on screen changes; Export, Copy and the filters are local and keep working. |
+| 30780 | CH-3980 | `CUSTOMER_EMAIL_IS_SWITCHED_OFF_FOR_EVERYONE` | Customer email is switched off for everyone (`HELM_CUSTOMER_EMAIL_ENABLED` is not `true`, `src/lib/email/outbound-gate.ts`) or no mail transport is configured, so Invite players cannot email anyone |
 
 From the shell (P001): 10701 CH-1901, 10702 CH-1902, 10703 CH-1903,
 10704 CH-1905, 10705 CH-1909, 10706 CH-1910.
@@ -198,7 +222,28 @@ From the shell (P001): 10701 CH-1901, 10702 CH-1902, 10703 CH-1903,
 
 Status: DEFINED
 
-The coach's roster is a coach's page. The page takes the Clubhouse branch for a coach with golf_clubhouse_ui on (the shell's 10801), and the route checks the session again before any read (30801). The screen follows the team the dashboard role resolves to (`resolveClubhouseTeam`, golf-dashboard-role.ts), never "has a coach row": a user whose player profile is the onboarded one beside an unfinished coach profile gets the player's roster, and the no-team page speaks to that role. A player on this address is handed their own read-only roster instead (owner, 2026-10-01): the same layout with name, class year and handicap of the active members and nothing to open or do (30804), over a loader that never asks for the coach's reads, the join code, a note, an email, a phone or a round (30805); an old /roster/[id] link goes to that list (30806). The player never gets the coach's list, the notes or the join requests. A coach with no active team gets the page empty state (CH-3306, category 04); a player with none gets CH-3308. The loader reads only the coach's active team, and only the notes this coach wrote (30802). The server decides every change and Roster shows its answer (30803). removePlayerFromTeam refuses a caller who is not a coach, has no team, or whose team the player is not on, and it refuses while the player has a saved round in progress. acceptJoinRequest and rejectJoinRequest refuse a request that is not for the coach's own team or is already processed, and approval refuses a player who is already on a team. setIntent refuses a player the coach does not coach. RLS is the second gate. A ?player= link for someone who is not on this roster opens nothing (30102).
+The coach's roster is a coach's page. The page takes the Clubhouse branch for a
+coach with golf_clubhouse_ui on (the shell's 10801), and the route checks the
+session again before any read (30801). The screen follows the team the dashboard
+role resolves to (`resolveClubhouseTeam`, golf-dashboard-role.ts), never "has a
+coach row": a user whose player profile is the onboarded one beside an
+unfinished coach profile gets the player's roster, and the no-team page speaks
+to that role. A player on this address is handed their own read-only roster
+instead (owner, 2026-10-01): the same layout with name, class year and handicap
+of the active members and nothing to open or do (30804), over a loader that
+never asks for the coach's reads, the join code, a note, an email, a phone or a
+round (30805); an old /roster/[id] link goes to that list (30806). The player
+never gets the coach's list, the notes or the join requests. A coach with no
+active team gets the page empty state (CH-3306, category 04); a player with none
+gets CH-3308. The loader reads only the coach's active team, and only the notes
+this coach wrote (30802). The server decides every change and Roster shows its
+answer (30803). removePlayerFromTeam refuses a caller who is not a coach, has no
+team, or whose team the player is not on, and it refuses while the player has a
+saved round in progress. acceptJoinRequest and rejectJoinRequest refuse a
+request that is not for the coach's own team or is already processed, and
+approval refuses a player who is already on a team. setIntent refuses a player
+the coach does not coach. RLS is the second gate. A ?player= link for someone
+who is not on this roster opens nothing (30102).
 
 | Bridge ID | Code | Name | Meaning |
 | --- | --- | --- | --- |
@@ -216,7 +261,10 @@ From the shell (P001): 10801 CLUBHOUSE_GATE, 10802 ROLE_SCOPED_NAV,
 
 Status: DEFINED
 
-A change that lands names itself in a toast and taps the success pattern once (30901; the shell's 10901). A removal also closes the dialog and the panel. Opening a player, filtering and sorting are not changes and give no toast. An export and a copy name themselves too (31702, 31703).
+A change that lands names itself in a toast and taps the success pattern once
+(30901; the shell's 10901). A removal also closes the dialog and the panel.
+Opening a player, filtering and sorting are not changes and give no toast. An
+export and a copy name themselves too (31702, 31703).
 
 | Bridge ID | Code | Name | Meaning |
 | --- | --- | --- | --- |
@@ -226,15 +274,25 @@ From the shell (P001): 10901 CHANGE_LANDED.
 
 ## 10 — Warning
 
-Status: N/A — no Roster state is a warning today; Approve all that only partly lands is an error with a Retry (category 06), and the duplicate-player notice Fairway shows has not been rebuilt (open).
+Status: N/A — no Roster state is a warning today; Approve all that only partly
 
-Fairway's roster warned when one student appears on the roster twice (#1477). Clubhouse dropped that notice, and the handoff does not draw one, so it is an open gap in VERIFY.md rather than a contract. When it is rebuilt it belongs in this category.
+lands is an error with a Retry (category 06), and the duplicate-player notice
+Fairway shows has not been rebuilt (open).
+
+Fairway's roster warned when one student appears on the roster twice (#1477).
+Clubhouse dropped that notice, and the handoff does not draw one, so it is an
+open gap in VERIFY.md rather than a contract. When it is rebuilt it belongs in
+this category.
 
 ## 11 — Destructive
 
 Status: DEFINED
 
-Remove from team asks first (31101): the dialog says who, that they can rejoin with the team code, and that their account and stats are not deleted. Pressing Remove player fires the warning haptic (31704), and the button reads Removing while it runs. Decline is not destructive: the player can ask again. On the phone the same confirm follows ⋯, then Remove from team, in red (D-42).
+Remove from team asks first (31101): the dialog says who, that they can rejoin
+with the team code, and that their account and stats are not deleted. Pressing
+Remove player fires the warning haptic (31704), and the button reads Removing
+while it runs. Decline is not destructive: the player can ask again. On the
+phone the same confirm follows ⋯, then Remove from team, in red (D-42).
 
 Mark inactive / Mark active (31102, coach only; the dropped Fairway "Change
 status", rebuilt) asks first too, from the row menu or the phone ⋯ sheet, but is
@@ -254,7 +312,10 @@ the coach's active team through the same resolver and cookie as the route.
 
 Status: DEFINED
 
-A note that fails to save stays in the field (31201). The cards or list choice is kept on the device (31202). A saved note reads back when the player is opened again (31203). Search, the status pills, the sort and the open player are per visit and are not kept. A failed removal keeps its dialog open.
+A note that fails to save stays in the field (31201). The cards or list choice
+is kept on the device (31202). A saved note reads back when the player is opened
+again (31203). Search, the status pills, the sort and the open player are per
+visit and are not kept. A failed removal keeps its dialog open.
 
 | Bridge ID | Code | Name | Meaning |
 | --- | --- | --- | --- |
@@ -266,7 +327,10 @@ A note that fails to save stays in the field (31201). The cards or list choice i
 
 Status: DEFINED
 
-Approve and Decline are optimistic: the request leaves the list at once and comes back in its place if the server refuses or throws (31301). Removing a player is not optimistic: it waits, and the dialog stays open on a failure. A note is not optimistic. Approve all takes each request off as it lands.
+Approve and Decline are optimistic: the request leaves the list at once and
+comes back in its place if the server refuses or throws (31301). Removing a
+player is not optimistic: it waits, and the dialog stays open on a failure. A
+note is not optimistic. Approve all takes each request off as it lands.
 
 | Bridge ID | Code | Name | Meaning |
 | --- | --- | --- | --- |
@@ -276,7 +340,10 @@ Approve and Decline are optimistic: the request leaves the list at once and come
 
 Status: DEFINED
 
-The toast's Retry re-runs the same change and finishes it on screen too (31403; the shell's 11402). Approve all's Retry re-runs only the requests that failed (31401). Try again on a notice refreshes the whole page, not one section (31402; the shell's 11401 for a crashed route).
+The toast's Retry re-runs the same change and finishes it on screen too (31403;
+the shell's 11402). Approve all's Retry re-runs only the requests that failed
+(31401). Try again on a notice refreshes the whole page, not one section (31402;
+the shell's 11401 for a crashed route).
 
 | Bridge ID | Code | Name | Meaning |
 | --- | --- | --- | --- |
@@ -288,9 +355,13 @@ From the shell (P001): 11401 ROUTE_TRY_AGAIN, 11402 TOAST_RETRY.
 
 ## 15 — Data freshness / sync
 
-Status: N/A — Roster is a snapshot of the moment the server rendered it, with no realtime, polling or sync.
+Status: N/A — Roster is a snapshot of the moment the server rendered it, with no
 
-What a coach changes here revalidates the page and comes back (category 03). A change made elsewhere, such as a player asking to join, shows on the next visit or on Try again.
+realtime, polling or sync.
+
+What a coach changes here revalidates the page and comes back (category 03). A
+change made elsewhere, such as a player asking to join, shows on the next visit
+or on Try again.
 
 ## 16 — Micro animation
 
@@ -323,7 +394,8 @@ From the shell (P001): 11601 CH-1601, 11602 CH-1602, 11603 CH-1603,
 
 Status: DEFINED
 
-Roster's own haptics (31701 to 31703) and the warning as Remove player is pressed (31704), on the v2 grammar (D-70), with the shell's (11701 to 11706).
+Roster's own haptics (31701 to 31703) and the warning as Remove player is
+pressed (31704), on the v2 grammar (D-70), with the shell's (11701 to 11706).
 
 | Bridge ID | Code | Name | Meaning |
 | --- | --- | --- | --- |
@@ -340,7 +412,11 @@ From the shell (P001): 11701 CH-1701, 11702 CH-1702, 11703 CH-1703,
 
 Status: DEFINED
 
-Roster's own (31801 to 31806): the table roles, a status as a word, Esc, the polite note counter, axe at 1280 and 390, and the phone row as one button. The join requests card is a labelled region, the desktop panel a named complementary landmark, and a pushed phone profile is named by the player. The shell's skip link, landmarks and dialog behaviour (11801 to 11811).
+Roster's own (31801 to 31806): the table roles, a status as a word, Esc, the
+polite note counter, axe at 1280 and 390, and the phone row as one button. The
+join requests card is a labelled region, the desktop panel a named complementary
+landmark, and a pushed phone profile is named by the player. The shell's skip
+link, landmarks and dialog behaviour (11801 to 11811).
 
 CH-1804, 11805 CH-1805, 11806 CH-1806, 11807 CH-1807, 11808 CH-1808, 11809
 CH-1809, 11810 CH-1810, 11811 CH-1811, 11812 CH-1812, 11813 CH-1813, 11814
@@ -359,6 +435,7 @@ CH-1842, 11825 CH-1816.
 | 31807 | CH-3807 | `THE_PLAYERS_ROSTER_A_TEAMMATE_IS_TEXT` | The player's roster is read-only: a teammate is text, not a control. The desktop cards and table rows and the phone rows are not links or buttons, so none takes focus or a press, and nothing on the screen opens a profile, stats or notes or does anything to a teammate. Search, layout and sort only change what is listed |
 | 31808 | CH-3808 | `THE_PLAYERS_ROSTER_NAMES_THE_COACHES` | The player's roster names the coaches (wave 7, decision D): a "Coaches" group above the players: name and role ("Head coach" first, else their title, else "Coach"), plain text like every row. Desktop: a Coach and Role table; phone: a list under its heading, then "Players". Left out when the staff read failed (logged `playerCoaches`) or none is on record |
 | 31809 | CH-3809 | `AVAILABILITY_IS_SAID_IN_WORDS_NEVER_A` | Availability is said in words, never a colour: "Injured" or "Away" (the word only, no note) in the list's line under the name, a face's note slot and the phone row, in plain ink (red is under par, amber a slide, green a gain). A face's name and a phone row's name append "injured" or "away"; the Availability control is a radio group named for the player; the head counts "· 1 injured · 1 away" among the active |
+| 31880 | CH-3880 | `EMAIL_THEM_IS_ONE_LABELLED_FIELD_EACH` | Email them is one labelled field ("Or email them"). Each address is a chip with its own `Remove eli@school.edu` button, an unreadable one adds ", can’t be read as an email address" and one that did not send ", didn’t send"; Backspace in the empty field removes the last chip; the count and the result are read politely, and an unreadable address is announced as an alert |
 
 From the shell (P001): 11801 CH-1801, 11802 CH-1802, 11803 CH-1803,
 11804 CH-1804, 11805 CH-1805, 11806 CH-1806, 11807 CH-1807, 11808 CH-1808,
@@ -371,7 +448,10 @@ From the shell (P001): 11801 CH-1801, 11802 CH-1802, 11803 CH-1803,
 
 Status: DEFINED
 
-At 820px and below Roster is the phone screen, never the desktop shrunk (31901). On a wider canvas the panel follows the cards once the container is under 1080px, and the padding tightens under 640px. The phone spec is docs/clubhouse/phone/roster.md (approved).
+At 820px and below Roster is the phone screen, never the desktop shrunk (31901).
+On a wider canvas the panel follows the cards once the container is under
+1080px, and the padding tightens under 640px. The phone spec is
+docs/clubhouse/phone/roster.md (approved).
 
 | Bridge ID | Code | Name | Meaning |
 | --- | --- | --- | --- |
@@ -400,7 +480,9 @@ From the shell (P001): 12001 CH-1906, 12002 CH-1907, 12003 CH-1908.
 
 Status: DEFINED
 
-One server pass, in two parallel rounds because the second needs the first's player ids, and nothing is fetched after first paint (32101). Web vitals are the shell's (12101). Not measured: the loader's time and layout shift (VERIFY.md).
+One server pass, in two parallel rounds because the second needs the first's
+player ids, and nothing is fetched after first paint (32101). Web vitals are the
+shell's (12101). Not measured: the loader's time and layout shift (VERIFY.md).
 
 | Bridge ID | Code | Name | Meaning |
 | --- | --- | --- | --- |
@@ -412,7 +494,8 @@ From the shell (P001): 12101 CH-1954.
 
 Status: DEFINED
 
-The shell records rage, dead and slow clicks for every page (12201 to 12203). Roster adds no events of its own.
+The shell records rage, dead and slow clicks for every page (12201 to 12203).
+Roster adds no events of its own.
 
 From the shell (P001): 12201 CH-1951, 12202 CH-1952, 12203 CH-1953.
 
@@ -420,7 +503,10 @@ From the shell (P001): 12201 CH-1951, 12202 CH-1952, 12203 CH-1953.
 
 Status: DEFINED
 
-A failed change is reported through chReport with surface roster and its action name, a crash with its section surface, and a failed server read through chLogServer('roster', ...); each intent leaves a chTrail breadcrumb (32301; the shell's 12301).
+A failed change is reported through chReport with surface roster and its action
+name, a crash with its section surface, and a failed server read through
+chLogServer('roster', ...); each intent leaves a chTrail breadcrumb (32301; the
+shell's 12301).
 
 | Bridge ID | Code | Name | Meaning |
 | --- | --- | --- | --- |
@@ -432,7 +518,9 @@ From the shell (P001): 12301 FAILURES_REPORTED.
 
 Status: DEFINED
 
-Every catalog code of kinds 0 to 5 that is not marked preview is forced by a named test, and so is each hand contract (32401). clubhouse:check fails a catalog row that no test names.
+Every catalog code of kinds 0 to 5 that is not marked preview is forced by a
+named test, and so is each hand contract (32401). clubhouse:check fails a
+catalog row that no test names.
 
 | Bridge ID | Code | Name | Meaning |
 | --- | --- | --- | --- |
@@ -444,4 +532,5 @@ From the shell (P001): 12401 TESTS_NAME_CONTRACTS.
 
 Status: N/A — the Bridge is wired later (owner, D-68).
 
-Every contract above already has its Bridge ID; the commands (open a player, approve a request, invite players) are defined when the Bridge is.
+Every contract above already has its Bridge ID; the commands (open a player,
+approve a request, invite players) are defined when the Bridge is.

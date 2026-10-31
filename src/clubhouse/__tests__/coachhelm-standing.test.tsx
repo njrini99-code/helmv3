@@ -17,11 +17,12 @@ const logServer = vi.hoisted(() => vi.fn());
 vi.mock('../lib/track-server', () => ({ chLogServer: logServer }));
 const tables = vi.hoisted(() => ({ current: {} as import('./supabase-fake').ChFakeTables }));
 vi.mock('@/lib/supabase/server', async () => (await import('./supabase-fake')).fakeServer(tables));
-const standingRead = vi.hoisted(() => ({ load: vi.fn() }));
+const standingRead = vi.hoisted(() => ({ season: vi.fn(async (_playerId?: string): Promise<{ status: string; rows?: unknown }> => ({ status: 'missing' })), load: vi.fn() }));
 // The ladder's reads are the Deep dive's own feed (`getInsightsForPlayer`, ranking, feedback, folding and limit included); here it answers what the destination delivers.
 const feed = vi.hoisted(() => ({ read: vi.fn() }));
 vi.mock('@/app/golf/actions/insight-delivery', () => ({ getInsightsForPlayer: feed.read, getTopInsightsForPlayers: vi.fn(), getThemesForPlayer: vi.fn() }));
-vi.mock('@/lib/coachhelm/v3/standing/loader', () => ({ loadPlayerStandingMap: standingRead.load }));
+// The season table (held migration 20261024151000) answers `missing` unless a test says otherwise, so the page reads the lifetime map.
+vi.mock('@/lib/coachhelm/v3/standing/loader', () => ({ loadPlayerStandingMap: standingRead.load, loadPlayerSeasonStandingMap: standingRead.season }));
 // The cohort lookup the loader reads beside the standing (CH-13272) goes to the service client; here it answers, and its failure is in coachhelm-failed-reads.test.
 vi.mock('@/lib/coachhelm/v3/counterfactual/player-cohort-loader', () => ({ loadPlayerCohort: vi.fn(async () => ({ gender: 'mens', level: null })) }));
 
@@ -30,6 +31,7 @@ import { METRIC_IDS, type MetricId } from '@/lib/coachhelm/v3/metrics/registry';
 import { METRIC_RENDER_CONFIG } from '@/lib/coachhelm/v3/standing/metric-config';
 import type { PlayerStanding } from '@/lib/coachhelm/v3/standing/types';
 import { loadPlayerStanding } from '../data/coachhelm-standing';
+import { seasonStartDate } from '../data/season';
 import { areaOf, LADDER_METRICS } from '../data/coachhelm-ladder-shape';
 import { breakBias, penalties, slope } from '../preview/fixtures-coachhelm';
 import { figure, groupOf, MIN_PROJECTION_ROUNDS, toChStanding, versus } from '../data/coachhelm-standing-shape';
@@ -96,11 +98,11 @@ describe('the standing rows as the page draws them', () => {
     expect(labelled.groups.flatMap((g) => g.rows)).toHaveLength(METRIC_IDS.length - LADDER_METRICS.size);
   });
 
-  it('figures use the true minus, a signed difference for strokes gained and a plain score for par scoring, and a dash for no data', () => {
-    expect(figure('sg_total', 'strokes', -2.14)).toBe('−2.14');
-    expect(figure('sg_total', 'strokes', 0.4)).toBe('+0.40');
+  it('figures use the true minus, a signed difference for strokes gained (one decimal, A20) and a plain score for par scoring, and a dash for no data', () => {
+    expect(figure('sg_total', 'strokes', -2.14)).toBe('−2.1');
+    expect(figure('sg_total', 'strokes', 0.4)).toBe('+0.4');
     expect(figure('scoring_par_3', 'strokes', 3.24)).toBe('3.24');
-    expect(figure('practice_tournament_delta', 'strokes', 0.82)).toBe('+0.82');
+    expect(figure('practice_tournament_delta', 'strokes', 0.82)).toBe('+0.8');
     expect(figure('gir_pct', 'percent', 58.4)).toBe('58%');
     expect(figure('approach_proximity_125_175ft', 'feet', 46.6)).toBe('47 ft');
     expect(figure('penalty_rate_per_round', 'count', 1.14)).toBe('1.1');
@@ -109,7 +111,7 @@ describe('the standing rows as the page draws them', () => {
 
   it('against the Tour: every stat, strokes gained included, is named against the Tour as Stats names it (Q-88, P013 D4), by the metric’s own direction', () => {
     const sg = rowOf(PREVIEW_STANDING, 'sg_total');
-    expect(sg).toMatchObject({ you: '−2.14', tour: { label: 'Tour', ref: 'the Tour', text: '0.00' }, vsTour: { sense: 'behind', text: '2.14 strokes behind the Tour' } });
+    expect(sg).toMatchObject({ you: '−2.1', tour: { label: 'Tour', ref: 'the Tour', text: '0.0' }, vsTour: { sense: 'behind', text: '2.1 strokes behind the Tour' } });
     expect(rowOf(PREVIEW_STANDING, 'putts_made_3_5ft_pct')).toMatchObject({ you: '71%', tour: { label: 'Tour', text: '88%' }, vsTour: { sense: 'behind', text: '17 pts behind the Tour' } });
     // A lower-is-better distance: farther is behind, closer is ahead.
     expect(rowOf(PREVIEW_STANDING, 'approach_proximity_125_175ft').vsTour).toEqual({ sense: 'behind', text: '13 ft farther than the Tour' });
@@ -193,10 +195,10 @@ describe('the standing rows as the page draws them', () => {
   it('where strokes go: the four parts of the round, raw strokes a round against the Tour with a true minus, nothing projected or added', () => {
     const { rows, top, readsFailed } = PREVIEW_STANDING.ladder;
     expect(rows.map((r) => [r.label, r.strokes, r.sense])).toEqual([
-      ['Off the tee', '−0.42', 'loss'],
-      ['Approach', '−0.91', 'loss'],
-      ['Around the green', '−0.18', 'loss'],
-      ['Putting', '−0.63', 'loss'],
+      ['Off the tee', '−0.4', 'loss'],
+      ['Approach', '−0.9', 'loss'],
+      ['Around the green', '−0.2', 'loss'],
+      ['Putting', '−0.6', 'loss'],
     ]);
     // The same figures the Strokes gained group draws: the standing rows, never a new estimate.
     expect(rows[1]!.strokes).toBe(figure('sg_approach', METRIC_RENDER_CONFIG.sg_approach.unit, -0.91));
@@ -210,10 +212,10 @@ describe('the standing rows as the page draws them', () => {
   it('a gain is green and positive, a level part is drawn as level with no bar, and none loses means no area is named', () => {
     const ladder = toChStanding([standingRow('sg_ott', 0.31, 0, null), standingRow('sg_approach', 0.004, 0, null), standingRow('sg_putting', 0.12, 0, null)], ok).ladder;
     expect(ladder.rows.map((r) => [r.strokes, r.sense, r.pct])).toEqual([
-      ['+0.31', 'gain', 100],
-      ['0.00', 'level', 0],
+      ['+0.3', 'gain', 100],
+      ['0.0', 'level', 0],
       [null, null, 0],
-      ['+0.12', 'gain', 39],
+      ['+0.1', 'gain', 39],
     ]);
     expect(ladder.top).toBeNull();
     expect(areaOf('course_management')).toBeNull();
@@ -236,7 +238,7 @@ describe('the standing rows as the page draws them', () => {
     const [tee, approach, around] = PREVIEW_STANDING_THIN.ladder.rows;
     expect(tee).toMatchObject({ strokes: null, sense: null, missing: 'Not measured yet. It fills in once your rounds have the shots it needs.' });
     expect(around!.strokes).toBeNull();
-    expect(approach!.strokes).toBe('−0.91');
+    expect(approach!.strokes).toBe('−0.9');
     const omitted = toChStanding([standingRow('sg_putting', -0.3, 0, null, { pga_omitted: true, pga_omitted_reason: 'no_womens_anchor' })], ok).ladder.rows[3]!;
     expect(omitted).toMatchObject({ strokes: null, missing: 'No Tour figure to compare this with yet.' });
   });
@@ -265,9 +267,13 @@ describe('the standing rows as the page draws them', () => {
     expect(toChStanding(rows, ok).groups.flatMap((g) => g.rows.map((r) => r.id))).toEqual(['gir_pct']);
   });
 
-  it('"refreshed" is the newest refresh among the rows, in UTC', () => {
-    expect(PREVIEW_STANDING.refreshed).toBe('Sep 30');
-    expect(toChStanding([{ ...standingRow('gir_pct', 58, 66, null), computed_at: '2026-10-01T02:00:00Z' }, standingRow('sg_total', 0, 0, null)], ok).refreshed).toBe('Oct 1');
+  it('"refreshed" is the newest refresh among the rows, on the team’s own day (A20)', () => {
+    // The preview's nightly refresh at 02:30 UTC on Sep 30 is the evening of Sep 29 on the team's Eastern day.
+    expect(PREVIEW_STANDING.refreshed).toBe('Sep 29');
+    const rows = [{ ...standingRow('gir_pct', 58, 66, null), computed_at: '2026-10-01T02:00:00Z' }, standingRow('sg_total', 0, 0, null)];
+    // 02:00 UTC on Oct 1 is the evening of Sep 30 in the Eastern default, and still Oct 1 in UTC.
+    expect(toChStanding(rows, ok).refreshed).toBe('Sep 30');
+    expect(toChStanding(rows, ok, null, { role: 'player' }, 'UTC').refreshed).toBe('Oct 1');
   });
 });
 
@@ -298,12 +304,71 @@ describe('the loader reads the signed-in player’s own standing, and says when 
     expect(out.data.counts.measures).toBe(20);
   });
 
+  it('this season first (owner decision 9): the season rows, with their counts, and the lifetime map is not read', async () => {
+    // This season's start, whenever the suite runs (a fixed date would turn into last season's next August).
+    const season = rows('pl-jonah').map((r) => ({ ...r, rounds_n: r.metric_id.startsWith('sg_') ? 11 : 13, season_start: seasonStartDate() }));
+    standingRead.season.mockResolvedValueOnce({ status: 'ok', rows: map(season) });
+    const out = await loadPlayerStanding({ playerId: 'pl-jonah' });
+    expect(standingRead.season).toHaveBeenLastCalledWith('pl-jonah');
+    expect(standingRead.load).not.toHaveBeenCalled();
+    expect(out.status).toBe('ready');
+    if (out.status !== 'ready') return;
+    expect(out.data.window).toEqual({ kind: 'season', label: 'This season', since: 'Aug 1' });
+    expect(out.data.rounds).toBe(13);
+    expect(out.data.groups.flatMap((g) => g.rows).find((r) => r.id === 'gir_pct')!.rounds).toBe(13);
+  });
+
+  it('while the season table is not deployed, the lifetime map, labelled "All time" and with no row counts', async () => {
+    standingRead.load.mockResolvedValue(map(rows('pl-jonah')));
+    const out = await loadPlayerStanding({ playerId: 'pl-jonah' });
+    expect(out.status).toBe('ready');
+    if (out.status !== 'ready') return;
+    expect(out.data.window.kind).toBe('all_time');
+    expect(out.data.rounds).toBe(14);
+    expect(out.data.groups.flatMap((g) => g.rows).every((r) => r.rounds === null)).toBe(true);
+  });
+
+  it('a season read that throws is the failed state, logged, and is not papered over with the lifetime map', async () => {
+    standingRead.season.mockRejectedValueOnce(new Error('connection reset'));
+    standingRead.load.mockResolvedValue(map(rows('pl-jonah')));
+    const out = await loadPlayerStanding({ playerId: 'pl-jonah' });
+    expect(out.status).toBe('failed');
+    expect(standingRead.load).not.toHaveBeenCalled();
+    expect(logServer).toHaveBeenCalledWith('coachhelm', 'standing.map', expect.any(Error), 'coachhelm');
+  });
+
+  it('last season’s rows are dropped, never labelled "This season" (the turn is 1 August on the team’s clock)', async () => {
+    vi.useFakeTimers({ toFake: ['Date'] });
+    try {
+      // 1 August, 06:00 UTC: 2 AM in New York (the default zone here), so this season began today.
+      vi.setSystemTime(new Date('2026-08-01T06:00:00Z'));
+      const last = rows('pl-jonah').map((r) => ({ ...r, rounds_n: 30, season_start: '2025-08-01' }));
+      const fresh = { ...rows('pl-jonah').find((r) => r.metric_id === 'gir_pct')!, rounds_n: 1, season_start: '2026-08-01' };
+      standingRead.season.mockResolvedValueOnce({ status: 'ok', rows: map([...last.filter((r) => r.metric_id !== 'gir_pct'), fresh]) });
+      const out = await loadPlayerStanding({ playerId: 'pl-jonah' });
+      expect(out.status).toBe('ready');
+      if (out.status !== 'ready') return;
+      expect(out.data.counts.measures).toBe(1);
+      expect(out.data.rounds).toBe(1);
+      expect(out.data.window).toEqual({ kind: 'season', label: 'This season', since: 'Aug 1' });
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it('a season row that is anyone else’s is never drawn either', async () => {
+    const theirs = rows('pl-other').map((r) => ({ ...r, rounds_n: 9, season_start: '2026-08-01' }));
+    standingRead.season.mockResolvedValueOnce({ status: 'ok', rows: map(theirs) });
+    const out = await loadPlayerStanding({ playerId: 'pl-jonah' });
+    expect(out.status === 'ready' && out.data.state).toBe('empty');
+  });
+
   it('a row that is anyone else’s is never drawn, whatever the standing loader returned', async () => {
     standingRead.load.mockResolvedValue(map([...rows('pl-jonah').slice(0, 2), { ...rows('pl-someone-else')[2]! }]));
     const out = await loadPlayerStanding({ playerId: 'pl-jonah' });
     if (out.status !== 'ready') throw new Error('not ready');
     expect(out.data.groups.flatMap((g) => g.rows.map((r) => r.id))).toEqual(['sg_total']);
-    expect(out.data.ladder.rows.map((r) => r.strokes)).toEqual(['−0.42', null, null, null]);
+    expect(out.data.ladder.rows.map((r) => r.strokes)).toEqual(['−0.4', null, null, null]);
   });
 
   it('each putt band is sized by its own attempts column over the rounds played; a band with none falls back to the cap', async () => {
@@ -408,7 +473,7 @@ describe('the loader reads the signed-in player’s own standing, and says when 
     const out = await loadPlayerStanding({ playerId: 'pl-jonah' });
     if (out.status !== 'ready') throw new Error('not ready');
     expect(out.data.ladder.readsFailed).toBe(true);
-    expect(out.data.ladder.rows.map((r) => r.strokes)).toEqual(['−0.42', '−0.91', '−0.18', '−0.63']);
+    expect(out.data.ladder.rows.map((r) => r.strokes)).toEqual(['−0.4', '−0.9', '−0.2', '−0.6']);
   });
 
   it('the feed throwing fails the ladder’s reads, logged, with the strokes still drawn', async () => {
@@ -417,7 +482,7 @@ describe('the loader reads the signed-in player’s own standing, and says when 
     const out = await loadPlayerStanding({ playerId: 'pl-jonah' });
     if (out.status !== 'ready') throw new Error('not ready');
     expect(out.data.ladder.readsFailed).toBe(true);
-    expect(out.data.ladder.rows.map((r) => r.strokes)).toEqual(['−0.42', '−0.91', '−0.18', '−0.63']);
+    expect(out.data.ladder.rows.map((r) => r.strokes)).toEqual(['−0.4', '−0.9', '−0.2', '−0.6']);
     expect(logServer).toHaveBeenCalledWith('coachhelm', 'standing.reads', expect.any(Error), 'coachhelm');
   });
 
@@ -447,7 +512,7 @@ describe('the loader reads the signed-in player’s own standing, and says when 
       const ladder = await ladderOf();
       expect(ladder.readsFailed).toBe(true);
       expect(ladder.rows.flatMap((r) => r.causes)).toEqual([]);
-      expect(ladder.rows.map((r) => r.strokes)).toEqual(['−0.42', '−0.91', '−0.18', '−0.63']);
+      expect(ladder.rows.map((r) => r.strokes)).toEqual(['−0.4', '−0.9', '−0.2', '−0.6']);
     });
 
     it('the Tour’s values failing (the team known, the Tour not)', async () => {
@@ -483,14 +548,15 @@ describe('the Standing screen', () => {
     expect(screen.getByRole('main').getAttribute('aria-labelledby')).toBe('ch-hl-title');
     // The hero names the part of the round that loses the most, once, and its counts use one denominator, the Tour's.
     const hero = screen.getByRole('region', { name: 'Your approach shots cost you the most strokes against the Tour' });
-    expect(hero.querySelector('.ch-hs-hero__sub')!.textContent).toBe('Ahead of the Tour on 0 of 19 stats. Every stat, strokes gained included, is against the Tour.');
+    expect(hero.querySelector('.ch-hs-hero__sub')!.textContent).toBe('Ahead of the Tour on 0 of 19 stats. Every stat, strokes gained included, is measured against the Tour.');
     expect(hero.textContent).not.toMatch(/field average|of 18|20 stats/);
     for (const g of PREVIEW_STANDING.groups) expect(screen.getByRole('region', { name: g.label })).toBeTruthy();
     expect(screen.getByRole('region', { name: 'Where strokes go' })).toBeTruthy();
     // The design call: "Most to gain" drew the hero's gap a second time; it is gone, and the hero carries no number of its own.
     expect(screen.queryByText('Most to gain')).toBeNull();
     expect(hero.querySelector('h2')!.textContent).not.toMatch(/\d/);
-    expect(screen.getByText('14 rounds · Scoring average 77.2 · Refreshed Sep 30').textContent).toBe('14 rounds\u00a0· Scoring average 77.2\u00a0· Refreshed Sep\u00a030');
+    // The window comes first (owner decision 9), and a lifetime scoring average is never stated under "This season".
+    expect(screen.getByText('This season from Aug 1 · 14 rounds · Refreshed Sep 29').textContent).toBe('This season from Aug\u00a01\u00a0· 14 rounds\u00a0· Refreshed Sep\u00a029');
   });
 
   it('each row: the stat, how they stand in words and in colour-free text, the three figures with their keys, and what closing it is worth', () => {
@@ -503,6 +569,17 @@ describe('the Standing screen', () => {
     expect(within(figures).getByText('Tour').nextElementSibling!.textContent).toBe('88%');
     expect(within(figures).getByText('Team').nextElementSibling!.textContent).toBe('66%');
     expect(li.querySelector('.ch-hs-proj')!.textContent).toMatch(/^About 0\.6 strokes a round if it matched the Tour: your scoring average 77\.2 to 76\.6, typically in about \d+ weeks?\. The projection is capped, so it is a ceiling, not a forecast\.$/);
+  });
+
+  it('each season row says how many rounds it stands on; the lifetime rows say nothing, and only they name the scoring average', () => {
+    show();
+    const gir = screen.getByRole('heading', { name: 'Greens in regulation' }).closest('li')!;
+    expect(gir.querySelector('.ch-hs-n')!.textContent).toBe('14 rounds');
+    cleanup();
+    show(standingLoad(toChStanding(STANDING_ROWS, ok)));
+    const life = screen.getByRole('heading', { name: 'Greens in regulation' }).closest('li')!;
+    expect(life.querySelector('.ch-hs-n')).toBeNull();
+    expect(screen.getByText('All time · 14 rounds · Scoring average 77.2 · Refreshed Sep 29')).toBeTruthy();
   });
 
   it('the track is decoration, hidden from assistive tech: every number is in the text beside it', () => {
@@ -532,7 +609,7 @@ describe('the Standing screen', () => {
     expect(code('CH-13371')!.textContent).toBe('3 rounds so far, so this is an early read. Projections start at 5 rounds.');
     expect(document.querySelector('.ch-hs-proj')).toBeNull();
     expect(screen.queryByText('Most to gain')).toBeNull();
-    expect(screen.getByText('3 rounds · Refreshed Sep 30').textContent).toBe('3 rounds\u00a0· Refreshed Sep\u00a030');
+    expect(screen.getByText('All time · 3 rounds · Refreshed Sep 29').textContent).toBe('All time\u00a0· 3 rounds\u00a0· Refreshed Sep\u00a029');
   });
 
   it('CH-13371 the early notice names the team floor only where a row is short of teammates', () => {
@@ -563,7 +640,7 @@ describe('the Standing screen', () => {
   it('CH-13370 nothing on file yet: the first-run page with one action, never a table of zeros', () => {
     show(standingLoad(PREVIEW_STANDING_EMPTY));
     expect(code('CH-13370')!.textContent).toMatch(/Standing starts with a few rounds.*You have posted 2 rounds\./);
-    expect(within(code('CH-13370') as HTMLElement).getByRole('link', { name: 'Start a round' }).getAttribute('href')).toBe('/golf/dashboard/rounds/new');
+    expect(within(code('CH-13370') as HTMLElement).getByRole('link', { name: 'New round' }).getAttribute('href')).toBe('/golf/dashboard/rounds/new');
     expect(document.querySelector('.ch-hs-g')).toBeNull();
   });
 
@@ -596,10 +673,10 @@ describe('the Standing screen', () => {
     const ladder = screen.getByRole('region', { name: 'Where strokes go' });
     const rows = within(ladder).getAllByRole('listitem').filter((li) => li.classList.contains('ch-hs-ld__r'));
     expect(rows.map((li) => [li.querySelector('h3')!.textContent, li.querySelector('.ch-hs-ld__v')!.textContent])).toEqual([
-      ['Off the tee', '−0.42'],
-      ['Approach', '−0.91'],
-      ['Around the green', '−0.18'],
-      ['Putting', '−0.63'],
+      ['Off the tee', '−0.4'],
+      ['Approach', '−0.9'],
+      ['Around the green', '−0.2'],
+      ['Putting', '−0.6'],
     ]);
     expect(rows[1]!.classList.contains('is-loss')).toBe(true);
     expect(rows[1]!.querySelector('.ch-hs-ld__bar')!.getAttribute('aria-hidden')).toBe('true');
@@ -634,8 +711,8 @@ describe('the Standing screen', () => {
     show();
     expect(screen.queryByRole('button', { name: /Assign|Dismiss|Accept|Decline|Save/ })).toBeNull();
     const next = screen.getByRole('heading', { name: 'Keep reading' }).closest('aside') as HTMLElement;
-    expect(within(next).getByRole('link', { name: /Game profile/ }).getAttribute('href')).toBe('/golf/dashboard/coachhelm?view=profile');
-    expect(within(next).getByRole('link', { name: /Deep dive/ }).getAttribute('href')).toBe('/golf/dashboard/coachhelm?view=deep-dive');
+    // How you play is on this page now (Game profile folded in), so the one way on is the Deep dive.
+    expect(within(next).getAllByRole('link').map((l) => l.getAttribute('href'))).toEqual(['/golf/dashboard/coachhelm?view=deep-dive']);
   });
 
   it('on the phone it is its own layout: the same page under the top bar, the views as chips', () => {

@@ -27,7 +27,7 @@ const motion = vi.hoisted(() => ({ reduced: false }));
 // Whether the arriving page's first frame is painted: true here (a page at rest), false to see its first frame.
 const arrival = vi.hoisted(() => ({ painted: true }));
 vi.mock('../lib/use-painted', async (orig) => ({ ...(await orig<typeof import('../lib/use-painted')>()), useArrivalPainted: () => arrival.painted }));
-vi.mock('../lib/reduced-motion', () => ({ useChReducedMotion: () => motion.reduced }));
+vi.mock('../lib/reduced-motion', () => ({ useChReducedMotion: () => motion.reduced, useChMotionMode: () => (motion.reduced ? 'off' : 'full') }));
 
 import type { ChRoster, ChRosterPlayer } from '../data/roster';
 import { formatFixed, formatSigned, MINUS } from '../lib/format';

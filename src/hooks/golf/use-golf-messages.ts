@@ -10,6 +10,7 @@ import { isClientDeadlineAbort } from '@/lib/client-deadline-abort';
 import { describeError, postgrestErrorContext, toPostgrestError } from '@/lib/utils/describe-error';
 import { observeRealtimeChannel } from '@/lib/observability/supabase/realtime';
 import { fetchAllRowsResult } from '@/lib/supabase/fetch-all-rows';
+import { heldTable } from '@/lib/supabase/held-table';
 import { readGolfPlayerProfiles } from '@/lib/golf/player-profiles';
 import { isGroupConversation } from '@/components/fairway/pages/messages/conversation-kind';
 import {
@@ -156,11 +157,22 @@ export interface GolfConversationWithMeta {
    */
   participant_ids?: string[];
   creator_id?: string | null;
+  /**
+   * The team's channel (`golf_conversations.is_team_channel`). A team of one player has a two-person channel, which by
+   * count alone looks like a direct thread; Clubhouse keeps a message meant for one person out of it (F-0003).
+   */
+  is_team_channel?: boolean;
 }
 
 // Extended message type with read receipt info
-export interface GolfMessage extends GolfMessageRow {
+export interface GolfMessage extends Omit<GolfMessageRow, 'notify_anyway' | 'notify_anyway_pushed_at'> {
   isRead?: boolean; // Whether the other participant has read this message
+  /**
+   * P-10 Notify anyway. Present only when the read asked for them (`classAwareness`) or on a realtime payload / an optimistic row: `notify_anyway`
+   * is the coach's flag as the database kept it, `notify_anyway_pushed_at` is set by the fan-out once a push really went out (the caption keys on it).
+   */
+  notify_anyway?: boolean | null;
+  notify_anyway_pushed_at?: string | null;
   /**
    * CLIENT-ONLY, and only ever set on an optimistic row whose send failed
    * (G-19). It is never selected, never written, and no realtime payload
@@ -191,6 +203,61 @@ export interface GolfMessage extends GolfMessageRow {
    * asking for them and are not invented here.
    */
   sendOutcome?: 'refused' | 'unknown';
+  /**
+   * CLIENT-ONLY: an optimistic row the server hasn't echoed yet (P-1 Seen by: a message still sending carries no
+   * receipt). The realtime echo and every fetch replace the row without it.
+   */
+  pending?: boolean;
+}
+
+/**
+ * Every current member's `last_read_at` in a conversation (P-1 Seen by). `error` keeps the last map it held, so a
+ * failed refetch never draws a false zero; a viewer missing from the members (removed) is an error with no map.
+ */
+export interface GolfReadMarks {
+  status: 'loading' | 'ready' | 'error';
+  byUser: ReadonlyMap<string, string | null>;
+}
+
+/** The viewer-scoped cache key of a conversation's read map. */
+export function readMarksCacheKey(conversationId: string, viewerUserId: string): string {
+  return `golf.readmarks:${conversationId}:${viewerUserId}`;
+}
+
+/** A read only ever moves forward: an older or equal `last_read_at` for someone is ignored (out-of-order realtime). */
+export function monotonicReadMark(prev: ReadonlyMap<string, string | null>, userId: string, lastReadAt: string | null): ReadonlyMap<string, string | null> {
+  if (!lastReadAt) return prev;
+  const held = prev.get(userId);
+  if (held && Date.parse(held) >= Date.parse(lastReadAt)) return prev;
+  const next = new Map(prev);
+  next.set(userId, lastReadAt);
+  return next;
+}
+
+/** One member's seen time for a message; `exact` is false when it is the read mark that covered it, not a recorded open. */
+export type GolfSeenTime = { userId: string; seenAt: string; exact: boolean };
+
+/**
+ * P-1 slice 9: per-message seen times from `golf_message_seen_times`. The migration is HELD, so until it is applied
+ * the function is missing and this returns 'unavailable' (PGRST202 / 42883) and the list keeps its count-only rows.
+ * Any other failure returns null: the caller shows what it already had, never a false zero.
+ */
+export async function fetchSeenTimes(
+  supabase: Pick<ReturnType<typeof createClient>, 'rpc'>,
+  messageId: string,
+): Promise<GolfSeenTime[] | 'unavailable' | null> {
+  // Not in the generated types until the held migration is applied.
+  const rpc = supabase.rpc as unknown as (fn: string, args: Record<string, unknown>) => PromiseLike<{ data: unknown; error: { code?: string } | null }>;
+  try {
+    const { data, error } = await rpc('golf_message_seen_times', { p_message_id: messageId });
+    if (error) return error.code === 'PGRST202' || error.code === '42883' ? 'unavailable' : null;
+    if (!Array.isArray(data)) return null;
+    return data
+      .filter((r): r is { user_id: string; seen_at: string; exact: boolean | null } => typeof r?.user_id === 'string' && typeof r?.seen_at === 'string')
+      .map((r) => ({ userId: r.user_id, seenAt: r.seen_at, exact: r.exact === true }));
+  } catch {
+    return null;
+  }
 }
 
 // Keep old name for backward compatibility
@@ -212,7 +279,7 @@ export type MessageWithReadStatus = GolfMessage;
  * thread would not stay where scroll-to-bottom had just put it.
  */
 export function applyRealtimeMessageUpdate<
-  T extends { id: string; content: string; edited_at: string | null; is_deleted?: boolean | null },
+  T extends { id: string; content: string; edited_at: string | null; is_deleted?: boolean | null; payload?: unknown; notify_anyway_pushed_at?: string | null },
 >(prev: T[], updated: T): T[] {
   if (updated.is_deleted) {
     if (!prev.some((msg) => msg.id === updated.id)) return prev;
@@ -223,12 +290,24 @@ export function applyRealtimeMessageUpdate<
   if (idx === -1) return prev;
 
   const current = prev[idx]!;
-  if (current.content === updated.content && current.edited_at === updated.edited_at) {
+  // A poll's sender closing it changes only `payload` (closeGolfPoll), so it is compared too; without it the card
+  // would keep taking votes on every screen but the sender's until a refetch.
+  const payloadChanged = 'payload' in updated && JSON.stringify(current.payload ?? null) !== JSON.stringify(updated.payload ?? null);
+  // P-10: the "Notified anyway" caption renders from `notify_anyway_pushed_at`, which the fan-out stamps after the insert, so a change in it is a
+  // change in what is rendered. A payload that carries no such column (the migration is held) leaves it as it was.
+  const stamped = updated.notify_anyway_pushed_at !== undefined && (updated.notify_anyway_pushed_at ?? null) !== (current.notify_anyway_pushed_at ?? null);
+  if (current.content === updated.content && current.edited_at === updated.edited_at && !payloadChanged && !stamped) {
     return prev;
   }
 
   const next = prev.slice();
-  next[idx] = { ...current, content: updated.content, edited_at: updated.edited_at };
+  next[idx] = {
+    ...current,
+    content: updated.content,
+    edited_at: updated.edited_at,
+    ...(payloadChanged ? { payload: updated.payload } : {}),
+    ...(stamped ? { notify_anyway_pushed_at: updated.notify_anyway_pushed_at } : {}),
+  };
   return next;
 }
 
@@ -420,6 +499,11 @@ export interface UseGolfMessagesOptions {
    * engagement and calls `markRead()`.
    */
   deferMarkRead?: boolean;
+  /**
+   * P-10 (`class_awareness_v1` is on): the load also reads `notify_anyway` and `notify_anyway_pushed_at`, for the "Notified anyway" caption. If the
+   * columns are not there yet (the migration is held) the load repeats without them. Off, no read names them.
+   */
+  classAwareness?: boolean;
 }
 
 export function useGolfMessages(
@@ -431,6 +515,8 @@ export function useGolfMessages(
   // re-runs the fetch+subscribe effect (see use-golf-messages.single-load).
   const deferMarkReadRef = useRef(options.deferMarkRead === true);
   deferMarkReadRef.current = options.deferMarkRead === true;
+  const classAwarenessRef = useRef(options.classAwareness === true);
+  classAwarenessRef.current = options.classAwareness === true;
   // Warm start: the last fetched page for this thread, if we have seen it
   // this session. Painted immediately; the fetch below refreshes it silently.
   // Requires the viewer id UP FRONT (only available when the caller hands it
@@ -450,6 +536,21 @@ export function useGolfMessages(
   // consumer (MessageThreadPane) reads this to render a recoverable error instead.
   const [error, setError] = useState<boolean>(false);
   const [otherParticipantLastReadAt, setOtherParticipantLastReadAt] = useState<string | null>(null);
+  const warmMarks =
+    canReadCache && conversationId && viewerUserId
+      ? readCachedResource<Array<[string, string | null]>>(readMarksCacheKey(conversationId, viewerUserId))
+      : null;
+  const [readMarks, setReadMarks] = useState<GolfReadMarks>(() =>
+    warmMarks?.data ? { status: 'ready', byUser: new Map(warmMarks.data) } : { status: 'loading', byUser: new Map() },
+  );
+  // A thread switch must never paint the previous group's receipts, even while the new read is pending or fails.
+  const marksScope = `${conversationId}\u0000${viewerUserId ?? ''}`;
+  const [readMarksScope, setReadMarksScope] = useState(marksScope);
+  if (readMarksScope !== marksScope) {
+    setReadMarksScope(marksScope);
+    setReadMarks(warmMarks?.data ? { status: 'ready', byUser: new Map(warmMarks.data) } : { status: 'loading', byUser: new Map() });
+    setOtherParticipantLastReadAt(null);
+  }
   const [isOtherTyping, setIsOtherTyping] = useState(false);
   const [currentUserId, setCurrentUserId] = useState<string | null>(viewerUserId ?? null);
   /**
@@ -575,13 +676,44 @@ export function useGolfMessages(
     // G-13: dropped if the reader moved on while this was in flight.
     if (liveConversationIdRef.current !== conversationId) return;
 
-    if (participants) {
+    if (participantsError || !participants) {
+      // Keep the map held so far: a failed refetch never draws a false zero.
+      setReadMarks((prev) => ({ status: 'error', byUser: prev.byUser }));
+      return;
+    }
+    if (!participants.some((p) => p.user_id === uid)) {
+      // The viewer is no longer a member (removed): no receipts.
+      setReadMarks({ status: 'error', byUser: new Map() });
+      return;
+    }
+    const byUser = new Map(participants.map((p) => [p.user_id, p.last_read_at] as [string, string | null]));
+    setReadMarks({ status: 'ready', byUser });
+    if (getCacheEpoch() === cacheEpochAtMountRef.current) {
+      writeCachedResourceIfCurrent(readMarksCacheKey(conversationId, uid), [...byUser], cacheEpochAtMountRef.current);
+    }
+    // Direct threads only (exactly two members): "the other participant" is meaningless in a group, which used to
+    // keep an arbitrary member's time here (P-1 8.1). A group never sets isRead.
+    if (participants.length === 2) {
       const otherParticipant = participants.find(p => p.user_id !== uid);
-      if (otherParticipant) {
-        setOtherParticipantLastReadAt(otherParticipant.last_read_at);
-      }
+      if (otherParticipant) setOtherParticipantLastReadAt(otherParticipant.last_read_at);
+    } else {
+      setOtherParticipantLastReadAt(null);
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [conversationId]);
+
+  const fetchOtherParticipantReadStatusRef = useRef(fetchOtherParticipantReadStatus);
+  fetchOtherParticipantReadStatusRef.current = fetchOtherParticipantReadStatus;
+  const readMarksSizeRef = useRef(0);
+  readMarksSizeRef.current = readMarks.byUser.size;
+  // P-1: back from the background (iOS pauses the socket), read the map again.
+  useEffect(() => {
+    if (!conversationId) return;
+    const onVisible = () => {
+      if (document.visibilityState === 'visible') void fetchOtherParticipantReadStatusRef.current();
+    };
+    document.addEventListener('visibilitychange', onVisible);
+    return () => document.removeEventListener('visibilitychange', onVisible);
   }, [conversationId]);
 
   const fetchMessages = useCallback(async () => {
@@ -605,26 +737,44 @@ export function useGolfMessages(
     }
     setError(false);
     // Fetch most recent 200 messages (descending for limit), then reverse for display order
-    const { data, error: fetchError } = await supabase
-      .from('golf_messages')
-      // `has_attachments` is REQUIRED here, not decorative. MessageThreadPane
-      // only calls getGolfMessageAttachments for messages whose
-      // `has_attachments` is truthy, so omitting the column from this select
-      // made it `undefined` on every message loaded from the database — the
-      // signing fetch never fired and the bubble rendered empty.
-      //
-      // It looked intermittent rather than broken because the realtime INSERT
-      // handler below takes `payload.new`, which is the FULL row and does
-      // carry the flag. So an image was visible to whoever had the thread open
-      // when it arrived, and disappeared for everyone the next time the
-      // conversation was opened. That is the "Can't see pics" report from the
-      // team chat: the sender saw it send, the recipients opened the thread
-      // later and saw nothing.
-      .select('id, conversation_id, sender_id, content, read, has_attachments, created_at, is_deleted, edited_at, reply_to_id')
-      .eq('conversation_id', conversationId)
-      .eq('is_deleted', false)
-      .order('created_at', { ascending: false })
-      .limit(200);
+    const readPlain = () =>
+      supabase
+        .from('golf_messages')
+        // `has_attachments` is REQUIRED here, not decorative. MessageThreadPane
+        // only calls getGolfMessageAttachments for messages whose
+        // `has_attachments` is truthy, so omitting the column from this select
+        // made it `undefined` on every message loaded from the database — the
+        // signing fetch never fired and the bubble rendered empty.
+        //
+        // It looked intermittent rather than broken because the realtime INSERT
+        // handler below takes `payload.new`, which is the FULL row and does
+        // carry the flag. So an image was visible to whoever had the thread open
+        // when it arrived, and disappeared for everyone the next time the
+        // conversation was opened. That is the "Can't see pics" report from the
+        // team chat: the sender saw it send, the recipients opened the thread
+        // later and saw nothing.
+        //
+        // `kind` and `payload` are required for the same reason: a poll (P-2) is
+        // `kind = 'poll'` with its question in `payload`. Without them a poll drew
+        // as a card only for whoever had the thread open when it arrived, and as
+        // its plain-text copy for everyone who opened the thread later.
+        .select('id, conversation_id, sender_id, content, read, has_attachments, created_at, is_deleted, edited_at, reply_to_id, kind, payload')
+        .eq('conversation_id', conversationId)
+        .eq('is_deleted', false)
+        .order('created_at', { ascending: false })
+        .limit(200);
+    // P-10: with class awareness on, the caption's two columns ride along (untyped: the migration is held, so the generated types lack them).
+    // A load that fails only because they are not there yet (42703) repeats as the ordinary read; any other failure is the answer. Off, no read names them.
+    const captioned = classAwarenessRef.current
+      ? await heldTable(supabase, 'golf_messages')
+          .select('id, conversation_id, sender_id, content, read, has_attachments, created_at, is_deleted, edited_at, reply_to_id, kind, payload, notify_anyway, notify_anyway_pushed_at')
+          .eq('conversation_id', conversationId)
+          .eq('is_deleted', false)
+          .order('created_at', { ascending: false })
+          .limit(200)
+      : null;
+    const missingColumn = !!captioned?.error && (captioned.error as { code?: string }).code === '42703';
+    const { data, error: fetchError } = captioned && !missingColumn ? (captioned as unknown as Awaited<ReturnType<typeof readPlain>>) : await readPlain();
 
     // P258: a failed fetch must NOT masquerade as an empty thread. Capture the
     // error so the thread can render a recoverable error state with Retry; leave
@@ -832,10 +982,15 @@ export function useGolfMessages(
           filter: `conversation_id=eq.${conversationId}`,
         },
         (payload) => {
+          if (liveConversationIdRef.current !== conversationId) return;
           const updated = payload.new as { user_id: string; last_read_at: string | null };
-          // Only update if it's the other participant's read status
-          if (updated.user_id !== currentUserIdRef.current && updated.last_read_at) {
-            setOtherParticipantLastReadAt(updated.last_read_at);
+          // Every member's read, kept monotonic (a late event never takes a "seen" back).
+          setReadMarks((prev) => (prev.byUser.has(updated.user_id) || prev.status === 'ready'
+            ? { status: prev.status, byUser: monotonicReadMark(prev.byUser, updated.user_id, updated.last_read_at) }
+            : prev));
+          // Only update if it's the other participant's read status (a direct thread: two members).
+          if (updated.user_id !== currentUserIdRef.current && updated.last_read_at && readMarksSizeRef.current <= 2) {
+            setOtherParticipantLastReadAt((held) => (held && Date.parse(held) >= Date.parse(updated.last_read_at!) ? held : updated.last_read_at));
           }
         }
       )
@@ -859,7 +1014,20 @@ export function useGolfMessages(
           }
         }
       );
-    observeRealtimeChannel(channel, { feature: 'golf.messages', channelClass: 'golf_conversation', subscriptionType: 'mixed' });
+    // P-1: a channel that dropped and came back refetches the read map once (the first SUBSCRIBED does not).
+    let sawDrop = false;
+    observeRealtimeChannel(channel, {
+      feature: 'golf.messages',
+      channelClass: 'golf_conversation',
+      subscriptionType: 'mixed',
+      onStatus: (status) => {
+        if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT' || status === 'CLOSED') sawDrop = true;
+        else if (status === 'SUBSCRIBED' && sawDrop) {
+          sawDrop = false;
+          void fetchOtherParticipantReadStatusRef.current();
+        }
+      },
+    });
 
     return () => {
       supabase.removeChannel(channel);
@@ -926,7 +1094,8 @@ export function useGolfMessages(
       ? 'unknown'
       : 'refused';
 
-  const sendMessage = async (content: string, replyToId?: string | null) => {
+  const sendMessage = async (content: string, replyToId?: string | null, sendOptions?: { notifyAnyway?: boolean }) => {
+    const notifyAnyway = sendOptions?.notifyAnyway === true;
     // Clear typing indicator when sending
     sendTypingStatus(false);
 
@@ -937,6 +1106,7 @@ export function useGolfMessages(
     // reusing it across a retry is safe rather than merely convenient.
     const optimisticId = generateClientMessageId();
     const optimisticMessage: MessageWithReadStatus = {
+      pending: true,
       id: optimisticId,
       conversation_id: conversationId,
       sender_id: currentUserId || '',
@@ -956,6 +1126,8 @@ export function useGolfMessages(
       pinned_at: null,
       pinned_by: null,
       reply_to_id: replyToId ?? null,
+      // Client-only until the stored row comes back: it lets a failed send be retried with the flag it was sent with.
+      ...(notifyAnyway ? { notify_anyway: true } : {}),
     };
     setMessages(prev => [...prev, optimisticMessage]);
 
@@ -971,9 +1143,11 @@ export function useGolfMessages(
       // reports it back as the success it is (see sendMessage/action's 23505
       // handling) instead of creating a second, duplicate row.
       const result = await withOneTransportRetry(
-        () => replyToId
-          ? sendGolfMessage(conversationId, content, optimisticId, replyToId)
-          : sendGolfMessage(conversationId, content, optimisticId),
+        () => notifyAnyway
+          ? sendGolfMessage(conversationId, content, optimisticId, replyToId ?? null, { notifyAnyway: true })
+          : replyToId
+            ? sendGolfMessage(conversationId, content, optimisticId, replyToId)
+            : sendGolfMessage(conversationId, content, optimisticId),
         SEND_TRANSPORT_RETRY_DELAY_MS,
       );
 
@@ -990,6 +1164,8 @@ export function useGolfMessages(
         throw new Error('Failed to send message');
       }
 
+      // The server confirmed it: no longer pending, even if the realtime echo is late (P-1: "Sent" can show).
+      setMessages(prev => prev.map(m => (m.id === optimisticId && m.pending ? { ...m, pending: false } : m)));
       return true;
     } catch (error) {
       // Retain the message, marked failed — see markSendFailed (G-19) — and
@@ -1034,9 +1210,11 @@ export function useGolfMessages(
 
     try {
       const result = await withOneTransportRetry(
-        () => target.reply_to_id
-          ? sendGolfMessage(conversationId, target.content, messageId, target.reply_to_id)
-          : sendGolfMessage(conversationId, target.content, messageId),
+        () => target.notify_anyway === true
+          ? sendGolfMessage(conversationId, target.content, messageId, target.reply_to_id ?? null, { notifyAnyway: true })
+          : target.reply_to_id
+            ? sendGolfMessage(conversationId, target.content, messageId, target.reply_to_id)
+            : sendGolfMessage(conversationId, target.content, messageId),
         SEND_TRANSPORT_RETRY_DELAY_MS,
       );
       if (!result || !result.success || ('error' in result && result.error)) {
@@ -1150,6 +1328,14 @@ export function useGolfMessages(
     editMessage,
     removeMessage,
     refetch: fetchMessages,
+    /**
+     * A row the server just confirmed (a sent poll, D27): drawn at once, deduped by id against the realtime insert that
+     * follows, kept in order by its time.
+     */
+    insertConfirmed: (row: MessageWithReadStatus) => setMessages((prev) => applyRealtimeMessageInsert(prev, row)),
+    /** P-1 Seen by: every member's last_read_at, kept monotonic; `refetchReadMarks` reads it again. */
+    readMarks,
+    refetchReadMarks: fetchOtherParticipantReadStatus,
     isOtherTyping,
     sendTypingStatus,
     currentUserId,
@@ -1276,6 +1462,11 @@ export async function hasActiveSession(supabase: ReturnType<typeof createClient>
 export async function loadGolfConversationRail(
   supabase: ReturnType<typeof createClient>,
   userId: string,
+  /**
+   * `allowIds`: the active-team allow-list, already read with the page (F-0014: the server action for it queued behind
+   * the page's other actions before the first rows could paint). Left out, the rail reads it itself.
+   */
+  opts: { allowIds?: string[] | null } = {},
 ): Promise<{ ok: true; rows: GolfConversationWithMeta[] } | { ok: false }> {
   // No session means every read below runs as `anon`, which has no EXECUTE on
   // get_golf_conversations_with_details or user_conversation_ids (the
@@ -1289,10 +1480,13 @@ export async function loadGolfConversationRail(
   // Note: Function added in migration, types may need regeneration with `npm run db:types`
   // The active-team allow-list is independent of the RPC, so the two run in
   // parallel instead of the server action waiting on the RPC (PERF-03).
-  const allowedIdsPromise = getGolfActiveTeamConversationIds().then(
-    (ids) => ({ ok: true as const, ids }),
-    (err: unknown) => ({ ok: false as const, err }),
-  );
+  const allowedIdsPromise =
+    opts.allowIds !== undefined
+      ? Promise.resolve({ ok: true as const, ids: opts.allowIds })
+      : getGolfActiveTeamConversationIds().then(
+          (ids) => ({ ok: true as const, ids }),
+          (err: unknown) => ({ ok: false as const, err }),
+        );
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const { data: rawData, error } = await (supabase.rpc as any)(
     'get_golf_conversations_with_details',
@@ -1325,6 +1519,7 @@ export async function loadGolfConversationRail(
   const { data: groupConvs, error: groupConvsError } = await supabase
     .from('golf_conversation_participants')
     .select(`
+      hidden_at,
       conversation:golf_conversations!inner(
         id,
         created_at,
@@ -1386,9 +1581,14 @@ export async function loadGolfConversationRail(
         created_by: string | null;
       } | null;
 
+      // A chat the viewer deleted stays hidden here too. The RPC already shows it again once a newer message
+      // arrives, so a hidden row it left out is one the viewer has not been brought back to.
+      const hidden = (gc as { hidden_at?: string | null }).hidden_at != null;
+
       if (
         conv &&
         conv.is_team_chat &&
+        !hidden &&
         !existingIds.has(conv.id) &&
         (!teamAllow || teamAllow.has(conv.id))
       ) {
@@ -1800,6 +2000,7 @@ export async function loadGolfConversationRail(
         participant_ids: conv.participant_ids ?? [],
         creator_id: conv.creator_id ?? null,
         other_participant: resolvedOther ?? resolveConversationParticipant(otherUserId, coachByUserId, playerByUserId),
+        is_team_channel: conv.is_team_channel === true,
       } as GolfConversationWithMeta;
     }
 
@@ -1826,6 +2027,7 @@ export async function loadGolfConversationRail(
       unread_count: conv.unread_count || 0,
       other_participant: otherParticipant,
       is_group: false,
+      is_team_channel: conv.is_team_channel === true,
     } as GolfConversationWithMeta;
   });
 
@@ -1850,7 +2052,13 @@ export async function loadGolfConversationRail(
  *   Components but does not reset this hook or its cache. A team switch also
  *   refetches: it's a dependency of `fetchConversations` below.
  */
-export function useGolfConversations(viewerUserId?: string | null, activeTeamId?: string | null) {
+export function useGolfConversations(
+  viewerUserId?: string | null,
+  activeTeamId?: string | null,
+  /** The active-team allow-list read with the page, for the first load only (F-0014); later loads read it fresh. */
+  opts: { allowIds?: string[] | null } = {},
+) {
+  const seedAllow = useRef(opts.allowIds);
   // Not during hydration (audit HYD-01): see useCanReadClientCache and the
   // repaint effect below.
   const canReadCache = useCanReadClientCache();
@@ -1922,7 +2130,9 @@ export function useGolfConversations(viewerUserId?: string | null, activeTeamId?
     }
     setError(false);
 
-    const result = await loadGolfConversationRail(supabase, userId);
+    const seed = seedAllow.current;
+    seedAllow.current = undefined;
+    const result = await loadGolfConversationRail(supabase, userId, seed === undefined ? {} : { allowIds: seed });
     if (!result.ok) {
       setError(true);
       // A failed background refresh must preserve the last readable inbox.

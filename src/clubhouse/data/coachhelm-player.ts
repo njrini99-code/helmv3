@@ -5,26 +5,26 @@ import { createClient } from '@/lib/supabase/server';
 import { isUuid } from '@/lib/utils/uuid';
 import { chLogServer } from '../lib/track-server';
 import { assignedByInsight, coachTour, countCountableRounds, declinedByInsight, drillTextByInsight, earliestStaleFloor, handled, loadCoachHelmGate, loadPlayerHelmGate, loadVisible, newestRounds, PLAYER_FEED_LIMIT, type CoachHelmGate } from './coachhelm';
-import { countReads, isOpenFinding, kindOf } from './coachhelm-classify';
+import { isOpenFinding, kindOf } from './coachhelm-classify';
 import { EMPTY_DIVE, readPlans, readRounds, readThemes } from './coachhelm-dive';
 import { diveCounts, orderDive, roundIdsToRead, themesByCategory, toChDeepInsight, toDiveCleared, type ChDeepDive } from './coachhelm-dive-shape';
 import { readEngineFlags, readFocusVerdicts } from './coachhelm-engine';
 import { shapeReadsLifecycle } from './coachhelm-engine-shape';
 import { toChInsight } from './coachhelm-map';
-import { toChProfile, type ChProfile } from './coachhelm-profile-shape';
+import { toChGame, type ChGameLoad } from './coachhelm-profile-shape';
 import { boardMissing, firstName } from './coachhelm-shape';
 import { loadPlayerStanding } from './coachhelm-standing';
 import type { ChStanding } from './coachhelm-standing-shape';
 import { coachHeadLine, type ChCoachPlayerHead, type ChViewLoad } from './coachhelm-views-shape';
 import { speak, type ChViewer } from './coachhelm-voice';
-import { classYearLabel } from './season';
+import { classYearLabel, loadTeamZone } from './season';
 
 /**
- * A coach's views of one player (Clubhouse P013, spec A): the Game profile, Standing and Deep dive at
+ * A coach's views of one player (Clubhouse P013, spec A): Standing (with "How {first} plays", once the Game profile) and Deep dive at
  * `/golf/dashboard/coachhelm?view=…&player=<golf_players.id>`. The address names the player; it is only ever input, and nothing
  * here trusts it until `loadCoachPlayerScope` has checked it against the coach's own team.
  *
- * The scope is a branded value that only `loadCoachPlayerScope` makes, and the three loaders take it, never an id: Standing reads
+ * The scope is a branded value that only `loadCoachPlayerScope` makes, and the loaders take it, never an id: Standing reads
  * `golf_player_standing` through the service client (`loadPlayerStandingMap`), and the goals read through it too, so an id from the
  * address that reached them unchecked would read any player's rows. A raw string, or an object shaped like a scope, does not compile
  * as one (`data/__tests__/coachhelm-player.test.ts`).
@@ -110,9 +110,10 @@ export async function loadCoachPlayerScope(input: { coachId: string; teamId: str
     const p = who.data as { first_name: string | null; last_name: string | null; graduation_year: number | null } | null;
     const name = [p?.first_name, p?.last_name].filter(Boolean).join(' ').trim() || NO_NAME;
     const first = name === NO_NAME ? NO_NAME : firstName(name);
-    const [playerGate, lastRound] = await Promise.all([loadPlayerHelmGate(playerId), newestRoundDay(supabase, playerId)]);
+    // The class year turns on 1 August in the team's zone (decision 9).
+    const [playerGate, lastRound, tz] = await Promise.all([loadPlayerHelmGate(playerId), newestRoundDay(supabase, playerId), loadTeamZone(supabase, teamId, 'coachhelm')]);
     if (playerGate.status === 'failed' || lastRound === undefined) return { status: 'failed' };
-    const head: ChCoachPlayerHead = { playerId, name, first, line: coachHeadLine(classYearLabel(p?.graduation_year ?? null, now), lastRound, now) };
+    const head: ChCoachPlayerHead = { playerId, name, first, line: coachHeadLine(classYearLabel(p?.graduation_year ?? null, now, tz), lastRound, now) };
     if (playerGate.status === 'off') return { status: 'player-off', reason: playerGate.reason, head };
     return { status: 'ok', scope: { coachId, teamId, playerId, head, lastRound } as ChCoachPlayerScope };
   } catch (err) {
@@ -124,29 +125,22 @@ export async function loadCoachPlayerScope(input: { coachId: string; teamId: str
 /** The voice every coach view of this player is in: the player by first name. */
 const coachViewer = (scope: ChCoachPlayerScope): Extract<ChViewer, { role: 'coach' }> => ({ role: 'coach', first: scope.head.first });
 
-/** The player's visible reads (the Board's own read: no exposure is recorded) and the team's Tour, for the two views that count reads. */
+/** The player's visible reads (the Board's own read: no exposure is recorded) and the team's Tour, for Standing's open reads. */
 async function visibleReads(supabase: Supabase, scope: ChCoachPlayerScope) {
   const [visible, tour] = await Promise.all([loadVisible(supabase, [scope.playerId]), coachTour(supabase, scope.teamId)]);
   return { error: visible.error, rows: visible.rows.filter((r) => r.player_id === scope.playerId), tour: tour.baseline };
 }
 
-/** How many of the player's current reads are costing strokes and how many are working (the coach's Game profile line). */
-async function readSeen(supabase: Supabase, scope: ChCoachPlayerScope): Promise<NonNullable<ChProfile['seen']>> {
-  const v = await visibleReads(supabase, scope);
-  if (v.error) return { costing: 0, working: 0, error: true };
-  return { ...countReads(v.rows, v.tour, scope.lastRound), error: false };
-}
-
 /**
- * The coach's Game profile of this player: the genome through the session's client (RLS `genome_coach_read`), shaped by the player's
- * own shaper in the coach's voice, and the one line of what CoachHelm sees. A failed genome read is the failed page.
+ * The coach's "How {first} plays" on Standing (CH-13915; the coach's Game profile folded into Standing as the player's did): the
+ * genome through the session's client (RLS `genome_coach_read`), shaped by the player's own shaper in the coach's voice. A failed
+ * read is the section's failed state (CH-13260); the rest of Standing does not depend on it.
  */
-export async function loadCoachPlayerProfile(input: { scope: ChCoachPlayerScope }, now: Date = new Date()): Promise<ChViewLoad<ChProfile>> {
+export async function loadCoachPlayerGame(input: { scope: ChCoachPlayerScope }, now: Date = new Date()): Promise<ChGameLoad> {
   const { scope } = input;
   try {
     const supabase = await createClient();
-    const [genome, seen] = await Promise.all([loadGenome(supabase, scope.playerId), readSeen(supabase, scope)]);
-    return { status: 'ready', data: { ...toChProfile(genome, now, coachViewer(scope)), seen } };
+    return { status: 'ready', data: toChGame(await loadGenome(supabase, scope.playerId), now, coachViewer(scope)) };
   } catch (err) {
     log('player.profile', err);
     return { status: 'failed' };

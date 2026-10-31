@@ -66,6 +66,8 @@ function seriesRsvpDeadline(deadline: string | undefined, timeZone: string | und
 import { type ExpandedEvent } from '@/lib/calendar/recurrence';
 import { format, parseISO } from 'date-fns';
 import { offsetMinutesFor } from '@/lib/golf/timezone';
+import { resolveTeamTimeZone } from '@/lib/calendar/availability';
+import { formatNoticeWhen } from '@/lib/calendar/timezone';
 import {
   generateOccurrences,
   parseRecurrenceRule,
@@ -152,6 +154,8 @@ interface ActionResult<T = void> {
   success: boolean;
   data?: T;
   error?: string;
+  /** P-4: the target row changed since the caller read it (`expectedUpdatedAt`). */
+  code?: 'stale';
 }
 
 interface CreateRecurringEventInput {
@@ -198,6 +202,8 @@ interface EditRecurringEventInput {
   timezoneOffset?: number; // Minutes from UTC (from Date.getTimezoneOffset())
   /** The series' IANA zone, for occurrences a rule change appends (CAL-05). */
   timeZone?: string;
+  /** P-4: the target row's `updated_at` as the caller read it; the edit is refused as stale when it differs. */
+  expectedUpdatedAt?: string;
   updates: {
     title?: string;
     description?: string;
@@ -352,8 +358,10 @@ async function fetchSeriesAttendeeUserIds(
 function deferRecurringDeleteNotify(opts: {
   userIds: string[];
   eventIds: string[];
+  teamId: string | null;
   title: string;
   startTime: string | null;
+  allDay: boolean | null;
   location: string | null;
   scope: RecurringEditScope;
   requiresRsvp: boolean;
@@ -367,15 +375,9 @@ function deferRecurringDeleteNotify(opts: {
   after(async () => {
     try {
       const adminClient = createAdminClient();
-      const startLabel = startTime
-        ? new Date(startTime).toLocaleString('en-US', {
-            weekday: 'short',
-            month: 'short',
-            day: 'numeric',
-            hour: 'numeric',
-            minute: '2-digit',
-          })
-        : 'TBD';
+      // In the team's zone (F-0001): the server runs in UTC.
+      const timeZone = await resolveTeamTimeZone(opts.teamId ? [opts.teamId] : [], adminClient, 'recurring_events.deleteNotify');
+      const startLabel = formatNoticeWhen(startTime, opts.allDay, timeZone);
       const scopeLabel = scope === 'all' ? 'The whole series' : 'This and future occurrences';
       const detail = `${scopeLabel} cancelled — ${startLabel}${location ? ` at ${location}` : ''}`;
 
@@ -1164,6 +1166,11 @@ async function editRecurringEventImpl(
       return { success: false, error: 'Not authorized' };
     }
 
+    // P-4 concurrency: the target row is checked against the version the caller read (the later rows are not, one by one).
+    if (input.expectedUpdatedAt && targetEvent.updated_at !== input.expectedUpdatedAt) {
+      return { success: false, error: 'This event changed since you opened it.', code: 'stale' };
+    }
+
     // Resolve the series root id. Modern recurring rows have either
     // recurrence_rule (root) or parent_event_id (child). Legacy rows have
     // neither — those fall back to the title/team/type heuristic below.
@@ -1482,12 +1489,14 @@ async function editRecurringEventImpl(
       const idsToNotify = notifiedIds;
       const notifyScope = input.scope;
       const notifyEventId = input.eventId;
+      const notifyRootId = rootId ?? input.eventId;
       after(async () => {
         try {
-          const { notifyEventUpdate } = await import('@/lib/calendar/rsvp');
+          const { notifyEventUpdate, notifyEventSeriesUpdate } = await import('@/lib/calendar/rsvp');
           const adminClient = createAdminClient();
+          // P-4: a move over twelve weeks is one Bell row per player, not twelve.
           const results = await Promise.allSettled(
-            idsToNotify.map((id) => notifyEventUpdate(id, adminClient)),
+            idsToNotify.length > 1 ? [notifyEventSeriesUpdate(notifyRootId, idsToNotify, adminClient)] : idsToNotify.map((id) => notifyEventUpdate(id, adminClient)),
           );
           const failed = results.filter((r) => r.status === 'rejected').length;
           if (failed > 0) {
@@ -1744,8 +1753,10 @@ async function deleteRecurringEventImpl(
               deferRecurringDeleteNotify({
                 userIds: attendeeUserIds,
                 eventIds: [...deleteIds],
+                teamId: targetEvent.team_id,
                 title: targetEvent.title,
                 startTime: targetEvent.start_time,
+                allDay: targetEvent.all_day,
                 location: targetEvent.location,
                 scope: 'thisAndFuture',
                 requiresRsvp: targetEvent.requires_rsvp === true,
@@ -1779,8 +1790,10 @@ async function deleteRecurringEventImpl(
           deferRecurringDeleteNotify({
             userIds: attendeeUserIds,
             eventIds: [...deleteIds],
+            teamId: targetEvent.team_id,
             title: targetEvent.title,
             startTime: targetEvent.start_time,
+            allDay: targetEvent.all_day,
             location: targetEvent.location,
             scope: 'thisAndFuture',
             requiresRsvp: targetEvent.requires_rsvp === true,
@@ -1826,8 +1839,10 @@ async function deleteRecurringEventImpl(
         deferRecurringDeleteNotify({
           userIds: legacyAttendeeUserIds,
           eventIds: affected.map((row) => row.id),
+          teamId: targetEvent.team_id,
           title: targetEvent.title,
           startTime: targetEvent.start_time,
+          allDay: targetEvent.all_day,
           location: targetEvent.location,
           scope: 'thisAndFuture',
           requiresRsvp: targetEvent.requires_rsvp === true,
@@ -1880,8 +1895,10 @@ async function deleteRecurringEventImpl(
         deferRecurringDeleteNotify({
           userIds: allAttendeeUserIds,
           eventIds: affected.map((row) => row.id),
+          teamId: targetEvent.team_id,
           title: targetEvent.title,
           startTime: targetEvent.start_time,
+          allDay: targetEvent.all_day,
           location: targetEvent.location,
           scope: 'all',
           requiresRsvp: targetEvent.requires_rsvp === true,

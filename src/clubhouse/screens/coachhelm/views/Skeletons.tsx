@@ -1,10 +1,13 @@
 'use client';
 
 import { useChPhone } from '../../../lib/use-phone';
-import { Skeleton } from '../../../ui/States';
+import { SkelLine, Skeleton } from '../../../ui/States';
+import { LargeTitleSkeleton } from '../../../ui/LargeTitle';
+import type { PlayerHelmView } from '../../../data/coachhelm-views-shape';
+import { PlayerHelmTabs } from './PlayerHelmTabs';
 
 /**
- * Route loading for the player's views, each in its own final shape and height (the Game profile's is CH-13460, Standing's CH-13470, the Deep dive's CH-13480), so nothing jumps
+ * Route loading for the player's views, each in its own final shape and height (Standing's is CH-13470, the Deep dive's CH-13480), so nothing jumps
  * when the read lands. `coachhelm/loading.tsx` cannot see `?view=`, so the route wraps each view in its own Suspense
  * (routes/coachhelm.tsx) and these are the fallbacks.
  *
@@ -19,12 +22,14 @@ export interface ChSkeletonCoach {
 /** "Loading your deep dive", or for a coach "Loading Jonah’s deep dive". */
 const labelFor = (what: string, coach: ChSkeletonCoach | undefined) => `Loading ${coach ? (coach.first ? `${coach.first}’s` : 'this player’s') : 'your'} ${what}`;
 
-function Chrome({ label, code, chained, brief = 2, coach, children }: { label: string; code: string; chained?: boolean; brief?: 2 | 3; coach?: ChSkeletonCoach; children: React.ReactNode }) {
+function Chrome({ label, code, view, chained, brief = 2, coach, children }: { label: string; code: string; view: PlayerHelmView; chained?: boolean; brief?: 2 | 3; coach?: ChSkeletonCoach; children: React.ReactNode }) {
   const phone = useChPhone();
-  // The sub-navigation: a bar the height of the radiogroup (desktop) or the chip row (phone), where the page puts it.
+  // The sub-navigation where the page puts it. Desktop: the strip itself, held (inert, hidden from assistive tech), at the view
+  // the address names, so it is as wide as the page's (a player's with its Development link) and does not turn from a bar into
+  // the control when the read lands. Phone: the chip row's bar.
   const tabs = (
     <div className="ch-hv-sk-tabs">
-      <Skeleton width={phone ? '100%' : 380} height={phone ? 36 : 38} radius={phone ? 18 : 12} />
+      {phone ? <Skeleton width="100%" height={36} radius={18} /> : <PlayerHelmTabs active={view} coach={!!coach} held />}
     </div>
   );
   return (
@@ -33,18 +38,19 @@ function Chrome({ label, code, chained, brief = 2, coach, children }: { label: s
       <h1 className="ch-sr-only">CoachHelm</h1>
       {phone && tabs}
       {coach ? (
-        // The player's header: the eyebrow, the name (the phone's 31px title, desktop's 44px) and the one line.
+        // The player's header: the eyebrow, the name (the phone's large title, desktop's title line) and the one line. Desktop
+        // lines are the loaded lines' boxes (18, 48, 21: a 163px head, WebKit 1280 and 1440).
         <header className={'ch-hl-h' + (phone ? '' : ' has-aside')} data-canopy-head="">
-          <Skeleton width={84} height={11} />
-          {phone ? <Line h={33.5} w={176} sh={28} r={8} /> : <Skeleton width={260} height={44} radius={10} />}
-          <Skeleton width={phone ? '72%' : 280} height={14} />
+          {phone ? <Skeleton width={84} height={11} /> : <SkelLine line={18} bar={11} width={72} />}
+          {phone ? <LargeTitleSkeleton width={176} /> : <SkelLine line={48} bar={38} width={218} />}
+          {phone ? <Skeleton width="72%" height={14} /> : <SkelLine line={21} bar={13} width={264} />}
           {!phone && <div className="ch-hl-h__aside">{tabs}</div>}
         </header>
       ) : phone ? (
-        // The phone's intro at its loaded line heights (the Mobile clubhouse pass): the 31px title (a player's page has no role eyebrow) and the brief under
+        // The phone's intro at its loaded line heights (the Mobile clubhouse pass): the large title (a player's page has no role eyebrow) and the brief under
         // the double rule, in the lines the view's own brief takes at the phone's width (`brief`: the Deep dive's runs to three).
         <header className="ch-hl-h" data-canopy-head="">
-          <Line h={33.5} w={176} sh={28} r={8} />
+          <LargeTitleSkeleton width={176} />
           <span className="ch-hl-sk__line is-two" style={brief === 3 ? { height: 65.25 } : undefined}>
             <Skeleton width="92%" height={13} />
             {brief === 3 && <Skeleton width="96%" height={13} />}
@@ -52,9 +58,13 @@ function Chrome({ label, code, chained, brief = 2, coach, children }: { label: s
           </span>
         </header>
       ) : (
+        // The player's own: the title, and the brief's two lines beside the views (48 and 42: a 166px head).
         <header className="ch-hl-h has-aside" data-canopy-head="">
-          <Skeleton width={190} height={44} radius={10} />
-          <Skeleton width={360} height={14} />
+          <SkelLine line={48} bar={38} width={196} />
+          <span className="ch-hv-sk-brief">
+            <SkelLine line={21} bar={13} width="96%" />
+            <SkelLine line={21} bar={13} width="62%" />
+          </span>
           <div className="ch-hl-h__aside">{tabs}</div>
         </header>
       )}
@@ -79,63 +89,6 @@ function PhoneHead({ w, caption = true }: { w: number; caption?: boolean }) {
       <Line h={22.8} w={w} sh={17} r={6} />
       {caption && <Skeleton width="84%" height={12} />}
     </span>
-  );
-}
-
-function MeasureSkeleton() {
-  return (
-    <div className="ch-hg-sk__m">
-      <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-        <Skeleton width={90} height={11} />
-        <Skeleton width={86} height={22} radius={11} />
-      </div>
-      <Skeleton width="52%" height={16} />
-      <Skeleton width="62%" height={28} radius={8} />
-      <Skeleton width="78%" height={13} />
-      <Skeleton width="100%" height={34} radius={10} />
-      <Skeleton width="94%" height={12} />
-      <Skeleton width="70%" height={12} />
-    </div>
-  );
-}
-
-/** The Game profile: the persona card, then the seven measures (CH-13460). */
-export function ProfileSkeleton({ chained, coach }: { chained?: boolean; coach?: ChSkeletonCoach } = {}) {
-  const phone = useChPhone();
-  if (phone) {
-    // The phone: the shape of the game's feature card, then the measures' section and its rows. The card's height is the
-    // loaded card's at 390; coachhelm-profile.css follows it at other widths.
-    return (
-      <Chrome label={labelFor('game profile', coach)} code="CH-13460" chained={chained} coach={coach}>
-        <div className="ch-hg-sk__hero">
-          <Skeleton width="100%" height={268} radius={14} shape="solid" />
-        </div>
-        <div className="ch-hg-sk__grid">
-          <PhoneHead w={150} />
-          {Array.from({ length: 3 }, (_, i) => (
-            <MeasureSkeleton key={i} />
-          ))}
-        </div>
-      </Chrome>
-    );
-  }
-  return (
-    <Chrome label={labelFor('game profile', coach)} code="CH-13460" chained={chained} coach={coach}>
-      <div className="ch-hg-sk__hero">
-        <Skeleton width={150} height={11} />
-        <Skeleton width="78%" height={32} radius={8} />
-        <Skeleton width="56%" height={32} radius={8} />
-        <div className="ch-hg-sk__stand">
-          <Skeleton width="100%" height={92} radius={14} />
-          <Skeleton width="100%" height={92} radius={14} />
-        </div>
-      </div>
-      <div className="ch-hg-sk__grid">
-        {Array.from({ length: 6 }, (_, i) => (
-          <MeasureSkeleton key={i} />
-        ))}
-      </div>
-    </Chrome>
   );
 }
 
@@ -175,7 +128,7 @@ export function StandingSkeleton({ chained, coach }: { chained?: boolean; coach?
     // The phone: where you stand's feature card (the headline and the note), then Where strokes go's four rows, then the
     // groups. The card's height is the loaded card's at 390; coachhelm-standing.css follows it at other widths.
     return (
-      <Chrome label={labelFor('standing', coach)} code="CH-13470" chained={chained} coach={coach}>
+      <Chrome label={labelFor('standing', coach)} code="CH-13470" view="standing" chained={chained} coach={coach}>
         <div className="ch-hs-sk__hero">
           <Skeleton width="100%" height={HERO_PHONE_390} radius={14} shape="solid" />
         </div>
@@ -185,19 +138,44 @@ export function StandingSkeleton({ chained, coach }: { chained?: boolean; coach?
       </Chrome>
     );
   }
+  // Desktop: where they stand on the green board it lands as (237px: the window's line over its rule, the two-line headline and
+  // its note), then Where strokes go's four ladder rows (the stat and its figure, the bar, "Because"), then the other groups.
   return (
-    <Chrome label={labelFor('standing', coach)} code="CH-13470" chained={chained} coach={coach}>
-      <div className="ch-hs-sk__hero">
+    <Chrome label={labelFor('standing', coach)} code="CH-13470" view="standing" chained={chained} coach={coach}>
+      <div className="ch-hs-sk__hero ch-scoreboard ch-sk-on-green is-board">
         <div className="ch-hs-sk__col">
-          <Skeleton width={150} height={11} />
-          <Skeleton width="86%" height={32} radius={8} />
-          <Skeleton width="60%" height={32} radius={8} />
-          <Skeleton width="78%" height={13} />
+          <span className="ch-hs-sk__k">
+            <Skeleton width={110} height={11} />
+            <Skeleton width={290} height={11} />
+          </span>
+          <SkelLine line={37.5} bar={28} width="58%" />
+          <SkelLine line={37.5} bar={28} width="44%" />
+          <span className="ch-hs-sk__sub">
+            <SkelLine line={19} bar={12} width="44%" />
+            <SkelLine line={19} bar={12} width="15%" />
+          </span>
         </div>
       </div>
-      <StandingGroupSkeleton rows={4} />
-      <StandingGroupSkeleton rows={5} />
-      <StandingGroupSkeleton rows={4} />
+      <div className="ch-hs-sk__g is-ladder">
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', height: 37, paddingBottom: 12, boxSizing: 'border-box' }}>
+          <Skeleton width={160} height={20} radius={6} />
+          <Skeleton width={360} height={12} />
+        </div>
+        {[0, 1, 2, 3].map((i) => (
+          <div key={i} className="ch-hs-sk__r is-ld">
+            <span className="ch-hs-sk__ldh">
+              <Skeleton width={[74, 70, 112, 56][i]} height={13} />
+              <Skeleton width={30} height={14} />
+            </span>
+            <Skeleton width="100%" height={4} radius={2} />
+            <span className="ch-hs-sk__ldh is-why">
+              <Skeleton width={60} height={12} />
+              <Skeleton width={96} height={12} />
+            </span>
+          </div>
+        ))}
+      </div>
+      <StandingGroupSkeleton rows={2} />
       <StandingGroupSkeleton rows={4} />
     </Chrome>
   );
@@ -207,23 +185,31 @@ export function StandingSkeleton({ chained, coach }: { chained?: boolean; coach?
 export function DiveSkeleton({ chained, coach }: { chained?: boolean; coach?: ChSkeletonCoach } = {}) {
   const phone = useChPhone();
   return (
-    <Chrome label={labelFor('deep dive', coach)} code="CH-13480" chained={chained} brief={3} coach={coach}>
-      {/* What CoachHelm has found: one sentence (chs-35). */}
+    <Chrome label={labelFor('deep dive', coach)} code="CH-13480" view="deep-dive" chained={chained} brief={3} coach={coach}>
+      {/* What CoachHelm has found: one sentence (chs-35), two lines on desktop at its 40ch measure. */}
       <div className="ch-hd-sk__hero">
         <div className="ch-hd-sk__col">
-          <Skeleton width={phone ? '88%' : '52%'} height={phone ? 22 : 26} radius={8} />
+          {phone ? (
+            <Skeleton width="88%" height={22} radius={8} />
+          ) : (
+            <span>
+              <SkelLine line={28} bar={20} width={330} />
+              <SkelLine line={28} bar={20} width={300} />
+            </span>
+          )}
         </div>
       </div>
       <div className="ch-hd">
         <div className="ch-hd-rail">
-          {[4, 2].map((rows, g) => (
+          {[3, 2].map((rows, g) => (
             <div key={g} className="ch-hd-sk__grp">
-              {phone ? <PhoneHead w={110} /> : <Skeleton width={110} height={16} radius={6} />}
+              {phone ? <PhoneHead w={110} /> : <Skeleton width={g ? 124 : 60} height={16} radius={6} />}
               {Array.from({ length: rows }, (_, i) => (
                 <div key={i} className="ch-hd-sk__it">
                   <span style={{ display: 'flex', flexDirection: 'column', gap: 8, minWidth: 0 }}>
-                    <Skeleton width="38%" height={10} />
                     <Skeleton width="86%" height={14} />
+                    {!phone && <Skeleton width="62%" height={14} />}
+                    <Skeleton width="38%" height={10} />
                   </span>
                   <Skeleton width={34} height={16} />
                 </div>
@@ -232,13 +218,28 @@ export function DiveSkeleton({ chained, coach }: { chained?: boolean; coach?: Ch
           ))}
         </div>
         {!phone && (
+          // The open read: its category and stance over the rule, the claim, then What, Why, Next and When as label rows on
+          // soft rules, the actions, and What was measured.
           <div className="ch-hd-sk__dos">
-            <Skeleton width={90} height={11} />
-            <Skeleton width="78%" height={32} radius={8} />
-            <Skeleton width="92%" height={15} />
-            <Skeleton width="100%" height={150} radius={14} />
-            <Skeleton width="100%" height={112} radius={14} />
-            <Skeleton width="100%" height={168} radius={14} />
+            <span className="ch-hd-sk__k">
+              <Skeleton width={128} height={12} />
+              <Skeleton width={46} height={12} />
+            </span>
+            <SkelLine line={48} bar={30} width="56%" />
+            {[66, 66, 45, 45].map((h, i) => (
+              <span key={i} className="ch-hd-sk__row" style={{ height: h }}>
+                <Skeleton width={34} height={12} />
+                <span style={{ display: 'flex', flexDirection: 'column', gap: 8, flex: 1 }}>
+                  <Skeleton width={i < 2 ? '86%' : '40%'} height={13} />
+                  {i < 2 && <Skeleton width="48%" height={13} />}
+                </span>
+              </span>
+            ))}
+            <span className="ch-hd-sk__acts">
+              <Skeleton width={156} height={38} radius={10} />
+              <Skeleton width={88} height={38} radius={10} />
+              <Skeleton width={136} height={38} radius={10} />
+            </span>
             <Skeleton width="100%" height={196} radius={14} />
           </div>
         )}

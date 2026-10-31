@@ -9,11 +9,13 @@ import { haptic } from '../lib/haptics';
 import { chTween } from '../lib/motion';
 import { useChReducedMotion } from '../lib/reduced-motion';
 import { chTrail } from '../lib/track';
+import { plural } from '../lib/plural';
+import { usePhoneChromeState } from './phone-chrome';
 
 /** The line under the headline when round scoring is waiting on this device (rounds, holes and shots in IndexedDB). */
 export function pendingLine(total: number): string | null {
   if (!(total > 0)) return null;
-  return `${total} ${total === 1 ? 'change' : 'changes'} saved on this device will sync when you reconnect.`;
+  return `${plural(total, 'change')} saved on this device will sync when you reconnect.`;
 }
 
 /**
@@ -27,6 +29,9 @@ export function OfflineBanner() {
   const [offline, setOffline] = useState(false);
   const reduced = useChReducedMotion();
   const pending = pendingLine(useOfflineSyncStatus().pendingCount.total);
+  // An immersive screen (the shot screen) hides the top bar, so the sticky banner sat over its Exit and Card and pushed
+  // its result chips under the bar (F-0011). It steps aside there; the screen says offline itself (the track's CH-11901).
+  const { immersive } = usePhoneChromeState();
   useEffect(() => {
     const sync = () => {
       const now = navigator.onLine === false;
@@ -49,7 +54,7 @@ export function OfflineBanner() {
   }, []);
   return (
     <AnimatePresence initial={false}>
-      {offline && (
+      {offline && !immersive && (
         <m.div
           className="ch-offline"
           role="status"
@@ -61,7 +66,7 @@ export function OfflineBanner() {
         >
           <Icon icon={WifiOff} size={15} />
           <span>
-            You&apos;re offline. You can keep reading and keep scoring a round; other changes need a connection.
+            You’re offline. You can keep reading and keep scoring a round; other changes need a connection.
             {pending && <span data-ch-offline-pending=""> {pending}</span>}
           </span>
         </m.div>

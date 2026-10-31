@@ -4,8 +4,9 @@ import { UserRound } from 'lucide-react';
 import { useState } from 'react';
 import { Avatar } from '../../ui/Avatar';
 import { Icon } from '../../ui/Icon';
+import { formatHcp } from '../../lib/format';
 import type { Draft } from './flow';
-import { REQUEST_TITLE, classOf, fmtHcp, type OnboardPath, type OnboardStep } from './logic';
+import { REQUEST_TITLE, classOf, type OnboardPath, type OnboardStep } from './logic';
 
 const MARK = '/clubhouse/auth/helm-golf-mark.png';
 
@@ -72,7 +73,7 @@ export function cardOf(d: Draft, path: OnboardPath, step: OnboardStep, now: Date
     fields: [
       ['Team', team],
       ['Class', d.grad ? `${classOf(d.grad, now)} · ’${String(d.grad).slice(2)}` : ''],
-      ['Handicap', d.hcp != null ? fmtHcp(d.hcp) : ''],
+      ['Handicap', d.hcp != null ? formatHcp(d.hcp) : ''],
     ],
     band: team || 'GolfHelm Clubhouse',
     photo: d.photoUrl,

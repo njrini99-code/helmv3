@@ -45,6 +45,11 @@
 import { tool } from 'ai';
 import type { ToolSet, UIMessageStreamWriter } from 'ai';
 import { z } from 'zod';
+import { isFlagEnabled } from '@/lib/flags/is-enabled';
+import { compileVisual } from './visuals/compile';
+import { compileComposition } from './visuals/compile-composition';
+import { CompositionSpec, ShowVisualInput, type ValidatedComposition } from './visuals/composition';
+import { VisualSpec, type ValidatedVisualArtifact } from './visuals/schema';
 import type { SupabaseClient } from '@supabase/supabase-js';
 import type { Database } from '@/lib/types/database';
 import type { CoachChatContext } from './context';
@@ -62,6 +67,10 @@ import {
   getPlayerWeakestAreas,
   getPuttingDistanceProfile,
   getRecentRounds,
+  getTeamRounds,
+  getTournaments,
+  getQualifiers,
+  TEAM_ROUND_TYPES,
   getTeamMetricRanking,
   getTeamOverview,
   getUpcomingEvents,
@@ -124,6 +133,10 @@ export interface CoachChatDataParts extends Record<string, unknown> {
    * appears in this live connection instead of only on the next reload.
    */
   'grounding-flag': { note: string };
+  /** A validated, hashed scene the Ask thread draws (visuals/schema.ts). Written by show_visual, kept in the message. */
+  'visual-artifact': ValidatedVisualArtifact;
+  /** A model-designed composition (visuals/composition.ts): its blocks, with figures copied from this turn's reads. */
+  'visual-composition': ValidatedComposition;
 }
 
 /** Coach-readable progress copy. Raw tool names never reach the interface. */
@@ -136,10 +149,14 @@ const PROGRESS_LABEL: Record<string, (input: Record<string, unknown>) => string>
   get_team_metric_ranking: () => 'Ranking the team',
   get_player_weakest_areas: () => 'Looking for where the gap is largest',
   get_recent_rounds: () => 'Reading recent rounds',
+  get_team_rounds: () => 'Reading the team’s rounds',
+  get_qualifiers: () => 'Reading qualifier standings',
+  get_tournaments: () => 'Reading tournament results',
   get_player_insights: () => 'Reading open signals',
   get_focus_areas: () => 'Checking active focus areas',
   get_upcoming_events: () => 'Checking the schedule and RSVPs',
   get_open_tasks: () => 'Checking outstanding tasks',
+  show_visual: () => 'Building the visual',
   find_player: () => 'Finding that player on your roster',
   create_recurring_practice: () => 'Preparing the practice dates',
   create_focus_area: () => 'Drafting a focus area',
@@ -155,6 +172,12 @@ export interface BuildToolsArgs {
   writer: UIMessageStreamWriter;
   /** Collects every envelope this turn produced, for the claim audit. */
   collect: (envelope: ToolEnvelope) => void;
+  /**
+   * Whether Clubhouse is on for this coach's team (`isClubhouseForTeam` in src/clubhouse/gate.ts: the
+   * golf_clubhouse_ui flag, then the HELM_CLUBHOUSE_TEAMS allowlist). The route decides it, since code outside
+   * src/clubhouse may not import the gate. Left out, the whole-team tools stay off.
+   */
+  teamTools?: boolean;
 }
 
 /**
@@ -209,7 +232,7 @@ interface GatedAction<TInput, TPlan> {
   run: (plan: TPlan) => Promise<ActionReceipt>;
 }
 
-export function buildCoachTools({ sb, ctx, conversationId, writer, collect }: BuildToolsArgs): ToolSet {
+export function buildCoachTools({ sb, ctx, conversationId, writer, collect, teamTools = false }: BuildToolsArgs): ToolSet {
   let progressId = 0;
   const progress = (toolName: string, input: Record<string, unknown>) => {
     const label = PROGRESS_LABEL[toolName]?.(input) ?? 'Working';
@@ -220,11 +243,13 @@ export function buildCoachTools({ sb, ctx, conversationId, writer, collect }: Bu
     });
   };
 
-  const evidence = (toolName: string, envelope: ToolEnvelope) => {
+  /** Every read this turn, by the `evidence_ref` the model is handed, for show_visual to resolve. Server memory only. */
+  const evidenceByRef = new Map<string, ToolEnvelope>();
+  const evidence = (toolName: string, envelope: ToolEnvelope, ref?: string) => {
     writer.write({
       type: 'data-evidence',
       id: `evidence-${toolName}-${(progressId += 1)}`,
-      data: { tool: toolName, envelope },
+      data: { tool: toolName, envelope, ...(ref ? { ref } : {}) },
     });
   };
 
@@ -236,8 +261,11 @@ export function buildCoachTools({ sb, ctx, conversationId, writer, collect }: Bu
       // HELM_COACHHELM_TEAMS canary: every roster player is on ctx.team_id, so
       // the chat's team is the scope (no read).
       const envelope = await guarded(() => runWithCoachHelmTeams([ctx.team_id], () => run(input)), collect, name, ctx);
-      evidence(name, envelope);
-      return envelope;
+      const ref = `e${evidenceByRef.size + 1}`;
+      evidenceByRef.set(ref, envelope);
+      evidence(name, envelope, ref);
+      // The ref rides on what the model reads, so it can name this read to show_visual. It is not part of `detail`.
+      return { ...envelope, evidence_ref: ref };
     };
 
   /**
@@ -512,6 +540,84 @@ export function buildCoachTools({ sb, ctx, conversationId, writer, collect }: Bu
       }),
       execute: read('get_recent_rounds', (input) => getRecentRounds(sb, ctx, input)),
     }),
+
+    // Visual artifacts (docs/architecture/coachhelm-agentic-visuals.md): the model designs the visual and names the
+    // reads behind it; trusted code copies the figures. Always registered (owner, 2026-10-29: no flag).
+    show_visual: tool({
+      description:
+        'Show the coach one visual built from reads you already made in this answer; follow the visual playbook in your instructions. kind "compose": you design it from building blocks (headline, kpis, trend, bars, split, compare, note), each naming the evidence_ref of the read it draws from, plus a title in words, an optional one-line lede and layout; the figures are filled in from the reads. kind "sg_anatomy": one player\'s strokes gained legs (get_player_metrics with sg_tee, sg_approach, sg_around_green and sg_putting), passing each read\'s evidence_ref in evidenceRefs. No title, lede, label or note may contain a number. If it is refused because of a number, call it once more in words; if a block is dropped or the visual is refused for any other reason, say what you found in words instead.',
+      inputSchema: ShowVisualInput,
+      execute: async (input) => {
+        progress('show_visual', {});
+        if (input.kind === 'compose') {
+          const parsed = CompositionSpec.safeParse(input);
+          if (!parsed.success) return { status: 'refused', reason: 'invalid', message: 'A composition needs a title and at least one block.' };
+          const result = compileComposition(parsed.data, evidenceByRef);
+          if (!result.ok) return { status: 'refused', reason: result.reason, message: result.message, dropped: result.dropped };
+          writer.write({
+            type: 'data-visual-composition',
+            id: `visual-${result.composition.artifactId}`,
+            data: result.composition,
+          });
+          return {
+            status: 'shown',
+            message: `Shown to the coach: ${result.composition.title}, with ${result.composition.blocks.map((b) => b.type).join(', ')}. Do not repeat its figures; add the one thing it does not say.`,
+            ...(result.dropped.length > 0 ? { dropped: result.dropped } : {}),
+          };
+        }
+        const spec = VisualSpec.safeParse(input);
+        if (!spec.success) return { status: 'refused', reason: 'invalid', message: 'sg_anatomy needs the evidence_ref of each strokes gained read.' };
+        const result = compileVisual(spec.data, evidenceByRef);
+        if (!result.ok) return { status: 'refused', reason: result.reason, message: result.message };
+        writer.write({ type: 'data-visual-artifact', id: `visual-${result.artifact.artifactId}`, data: result.artifact });
+        return {
+          status: 'shown',
+          message: `Shown to the coach: ${result.artifact.title}. It plots ${result.artifact.legs.map((l) => l.label).join(', ')} for ${result.artifact.entity.label} from the reads you named. Do not repeat its figures in a table; add the one thing it does not say.`,
+        };
+      },
+    }),
+
+    // Whole-team reads, built for Clubhouse's Ask. This engine also serves Fairway's chat, so they are registered only
+    // while Clubhouse is on for this coach's team (golf_clubhouse_ui, then the HELM_CLUBHOUSE_TEAMS allowlist). Left
+    // out of the tool set, the model is never offered them and a call to either is refused as an unknown tool.
+    ...(teamTools
+      ? {
+        get_team_rounds: tool({
+          description:
+            'Every active player\'s completed rounds in a window, optionally only practice, qualifier or tournament rounds (or one qualifier). Returns per-player round counts and average score, to par and putts, already computed, plus the most recent rounds. Use for any team-wide question about rounds, qualifier or tournament scoring, or practice results.',
+          inputSchema: z.object({
+            round_type: z.enum(TEAM_ROUND_TYPES).optional(),
+            qualifier_id: z.string().uuid().optional(),
+            since_days: z.number().int().min(1).max(365).default(60),
+          }),
+          execute: read('get_team_rounds', (input) => getTeamRounds(sb, ctx, input)),
+        }),
+        }
+      : {}),
+
+    // Tournaments are behind golf_tournaments_v1: the chat must not read an unreleased feature's tables.
+    ...(isFlagEnabled('golf_tournaments_v1')
+      ? {
+        get_tournaments: tool({
+          description:
+            'The team\'s tournaments, most recent first: dates, status, lineup state, where the team finished, and each player\'s round totals.',
+          inputSchema: z.object({ limit: z.number().int().min(1).max(12).default(6) }),
+          execute: read('get_tournaments', (input) => getTournaments(sb, ctx, input)),
+        }),
+        }
+      : {}),
+
+    // Same Clubhouse gate as get_team_rounds above.
+    ...(teamTools
+      ? {
+        get_qualifiers: tool({
+          description:
+            'The team\'s qualifiers, most recent first: dates, status, spots, and each player\'s standing in the qualifier board\'s order (position with T for a tie, rounds, total and average to par, average score; a card a round short ranks below every full card).',
+          inputSchema: z.object({ limit: z.number().int().min(1).max(8).default(5) }),
+          execute: read('get_qualifiers', (input) => getQualifiers(sb, ctx, input)),
+        }),
+        }
+      : {}),
 
     get_player_insights: tool({
       description: 'Open CoachHelm signals for one player, with their supporting evidence.',

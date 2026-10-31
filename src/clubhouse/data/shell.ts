@@ -6,7 +6,11 @@ import { loadAttendanceCounts, loadInvitedCounts, loadOwnRows } from './attendan
 import { playerMine, playerSeesMeeting, replyClosedAt } from '../screens/calendar/model';
 import { CLASS_EVENT_TYPE, isClassEvent } from '@/lib/calendar/class-events';
 import { isCoachHelmEnabledForCoach } from '@/lib/coachhelm/v2/gate';
+import { isFlagEnabled } from '@/lib/flags/is-enabled';
 import { todayIsoInZone } from '@/lib/golf/timezone';
+import { isoDay } from '../lib/dates';
+import { fullName } from './season';
+import { toParOf } from '../live/model';
 
 export interface ChNextEvent {
   id: string;
@@ -47,6 +51,19 @@ export interface ChShellData {
   roundInProgress?: ChRoundInProgress | null;
   /** The signed-in coach is this team's head coach: the identity line says "Head coach". False when unread (plain "Coach"). */
   viewerIsHeadCoach?: boolean;
+  /** golf_tournaments_v1 is on (P016): the Tournaments nav entry and its routes. Set by the dashboard layout, server side. */
+  tournaments?: boolean;
+  /**
+   * P-10: `class_awareness_v1` is on. Read once with the shell and handed to the client by context (useClassAwareness),
+   * because the flag registry is server-only. Off or absent: no class RPC is called anywhere and no column is sent.
+   */
+  classAwareness?: boolean;
+}
+
+/** One of the coach's players, as the palette lists them: the id it opens and the name it shows. Nothing more. */
+export interface ChShellPerson {
+  id: string;
+  name: string;
 }
 
 export interface ChRoundInProgress {
@@ -54,6 +71,8 @@ export interface ChRoundInProgress {
   course: string;
   /** The hole the player is on, when the round has recorded one. */
   hole: number | null;
+  /** Strokes over or under par through the holes scored (P-6): the Dock's "Hole 12 · −2". Null until a hole is scored. */
+  toPar?: number | null;
 }
 
 /** A round untouched for this long is not "in progress" for the accessory; the Rounds library still lists it. */
@@ -87,6 +106,30 @@ export async function countOverdueTasks(supabase: Awaited<ReturnType<typeof crea
   return count ?? 0;
 }
 
+/**
+ * The coach's players, names and ids only, for the palette (owner, decision 16). Active members only: RLS on
+ * golf_players (user_is_coach_of_golf_player) matches active members, so an inactive one would come back empty anyway.
+ * RLS scopes it to the coach's own team; a roster is well under the row cap. Each row is rebuilt as `{ id, name }`, so
+ * no other column can reach the client. Null on failure.
+ *
+ * Read only when the palette first opens (data/palette-people.ts), never with the shell: the shell rides
+ * every page's HTML, which the site's service worker keeps in Cache Storage, and the decision says in memory only.
+ */
+export async function loadPalettePeople(supabase: Awaited<ReturnType<typeof createClient>>, teamId: string): Promise<ChShellPerson[] | null> {
+  const { data, error } = await supabase
+    .from('golf_team_members')
+    .select('player:golf_players(id, first_name, last_name)')
+    .eq('team_id', teamId)
+    .eq('status', 'active')
+    .limit(1000);
+  if (error) {
+    chLogServer('shell', 'palettePeople', error, 'teams');
+    return null;
+  }
+  type P = { id: string; first_name: string | null; last_name: string | null };
+  return ((data ?? []) as Array<{ player: P | null }>).flatMap((m) => (m.player?.id ? [{ id: m.player.id, name: fullName(m.player) }] : []));
+}
+
 export async function loadClubhouseShell(teamId: string | undefined, playerId?: string | null, coachId?: string | null): Promise<ChShellData> {
   if (!teamId) return { nextEvent: null, pendingJoinRequests: null };
   const supabase = await createClient();
@@ -115,7 +158,7 @@ export async function loadClubhouseShell(teamId: string | undefined, playerId?: 
     playerId
       ? supabase
           .from('golf_rounds')
-          .select('id, course_name, current_hole')
+          .select('id, course_name, current_hole, golf_holes(par, score)')
           .eq('player_id', playerId)
           .eq('is_test', false)
           .eq('status', 'in_progress')
@@ -218,15 +261,15 @@ export async function loadClubhouseShell(teamId: string | undefined, playerId?: 
     ...(coachId ? { overdueTasks } : {}),
     timezone,
     askAvailable: askOn,
+    classAwareness: isFlagEnabled('class_awareness_v1'),
     course: courseOf(courseRes),
-    roundInProgress: round ? { id: round.id, course: round.course_name?.trim() || 'Your round', hole: round.current_hole ?? null } : null,
+    roundInProgress: round ? { id: round.id, course: round.course_name?.trim() || 'Your round', hole: round.current_hole ?? null, toPar: toParOf(round.golf_holes ?? []) } : null,
     viewerIsHeadCoach: !!staffRes && !staffRes.error && (staffRes.data ?? []).some((row) => row.role === 'head_coach'),
   };
 }
 
 function dayNumber(d: Date, timezone: string): number {
-  const [y, m, day] = new Intl.DateTimeFormat('en-CA', { timeZone: timezone, year: 'numeric', month: '2-digit', day: '2-digit' })
-    .format(d)
+  const [y, m, day] = isoDay(d, timezone)
     .split('-')
     .map(Number);
   return Date.UTC(y ?? 1970, (m ?? 1) - 1, day ?? 1) / 86_400_000;

@@ -1,6 +1,7 @@
+'use client';
+
 import Link from 'next/link';
 import { ArrowRight, UserPlus } from 'lucide-react';
-import { Icon } from '../../ui/Icon';
 import { QUIET_DAYS } from './model';
 import type { ChCoachHome, ChLatestRound, ChLeaderRow } from '../../data/home';
 import { isOut } from '../../data/availability';
@@ -11,10 +12,14 @@ import { EmptyState } from '../../ui/States';
 import { changeTone, formatFixed, formatSigned, formatToPar } from '../../lib/format';
 import { rebuiltHref } from '../../shell/nav';
 import { LinkPending } from '../../shell/LinkPending';
-import { FormLine } from '../../ui/FormLine';
+import { usePressPrefetch } from '../../shell/use-prefetch-tabs';
+import { FormLine, FormRange } from '../../ui/FormLine';
+import { formRangeWords } from '../../ui/form-range';
 import { RefreshNotice } from '../../ui/RefreshNotice';
 import { PlayerPeek, type ChPlayerPeek } from '../../ui/PlayerPeek';
 import { SideScroll } from '../../ui/SideScroll';
+import { displayPlaces, placeLabel } from '../../lib/rank';
+import { plural, pluralWord } from '../../lib/plural';
 
 const STATUS: Record<ChLeaderRow['status'], string> = {
   improving: 'Improving',
@@ -54,21 +59,19 @@ export function leaderPeek(p: ChLeaderRow, rounds: ChLatestRound[] = []): ChPlay
  * last) has no place yet: "—".
  */
 export function leaderPlaces(rows: Pick<ChLeaderRow, 'avg' | 'status'>[]): Array<{ label: string; place: number | null }> {
-  const key = (r: Pick<ChLeaderRow, 'avg'>) => Math.round(r.avg * 10);
-  return rows.map((r, i) => {
-    if (r.status === 'early') return { label: '—', place: null };
-    const first = rows.findIndex((o) => o.status !== 'early' && key(o) === key(r));
-    const tied = rows.some((o, j) => j !== i && o.status !== 'early' && key(o) === key(r));
-    return { label: `${tied ? 'T' : ''}${first + 1}`, place: first + 1 };
-  });
+  // The one rank rule (B13, lib/rank.ts): on the average as shown, to a tenth.
+  const places = displayPlaces(rows.map((r) => (r.status === 'early' ? null : r.avg)));
+  return places.map((p) => (p ? { label: placeLabel(p), place: p.place } : { label: '—', place: null }));
 }
 
 function Row({ p, pos, rounds }: { p: ChLeaderRow; pos: { label: string; place: number | null }; rounds?: ChLatestRound[] }) {
   const href = rebuiltHref(`/golf/dashboard/stats?player=${p.playerId}`);
+  // The player's stats are fetched on the press, and the first rows while the page is idle, as Roster's are (F-0034).
+  const press = usePressPrefetch();
   const top = pos.place != null && pos.place <= 3;
   // P002 D3: the row is a table row (a div); the link is the player's name, stretched over the row by its ::after.
   const name = href ? (
-    <Link href={href} className="ch-h-lb__go">
+    <Link href={href} className="ch-h-lb__go" {...press(href)}>
       <span className="ch-h-lb__name">{p.name}</span>
       <LinkPending />
     </Link>
@@ -81,7 +84,7 @@ function Row({ p, pos, rounds }: { p: ChLeaderRow; pos: { label: string; place: 
         {pos.label}
       </span>
       <span className="ch-h-lb__who" role="cell">
-        <Avatar name={p.name} size={28} />
+        <Avatar name={p.name} id={p.playerId} size="sm" />
         <span>
           {name}
           <span className="ch-h-lb__meta">
@@ -133,15 +136,14 @@ export function Leaderboard({ data, covered = false, rounds }: { data: ChCoachHo
           {!data.error && data.scorecards > 0 && (
             <span>
               Season scoring average &middot; 18-hole rounds &middot; <span className="ch-num">{data.scorecards}</span>{' '}
-              {data.scorecards === 1 ? 'scorecard' : 'scorecards'}
+              {pluralWord(data.scorecards, 'scorecard')}
             </span>
           )}
         </div>
         {rosterHref && (
-          <Link href={rosterHref} className="ch-btn ch-btn--ghost ch-btn--sm">
-            <span>Full roster</span>
-            <Icon icon={ArrowRight} size={14} />
-          </Link>
+          <Button variant="ghost" size="sm" rightIcon={ArrowRight} href={rosterHref}>
+            Full roster
+          </Button>
         )}
       </div>
 
@@ -149,7 +151,7 @@ export function Leaderboard({ data, covered = false, rounds }: { data: ChCoachHo
         <RefreshNotice
           code="CH-2204"
           title="The leaderboard didn’t load"
-          body="Scores are safe. Try again; the error has been reported."
+          body="Scores are safe. Try again."
           covered={covered}
         />
       ) : data.rosterSize === 0 ? (
@@ -174,7 +176,7 @@ export function Leaderboard({ data, covered = false, rounds }: { data: ChCoachHo
             code="CH-2305"
             shape="people"
             title="No 18-hole rounds posted yet this season."
-            body={`${data.rosterSize} ${data.rosterSize === 1 ? 'player is' : 'players are'} on the roster. The leaderboard fills in as rounds are posted.`}
+            body={`${plural(data.rosterSize, 'player is', 'players are')} on the roster. The leaderboard fills in as rounds are posted.`}
           />
         </div>
       ) : (
@@ -184,14 +186,16 @@ export function Leaderboard({ data, covered = false, rounds }: { data: ChCoachHo
               <span className="ch-sr-only">Position</span>
             </span>
             <span role="columnheader">Player</span>
-            <span role="columnheader">Last 7 rounds</span>
+            {/* The lines share one range (B5), and the header says its ends (row 102). */}
+            <span role="columnheader">{['Last 7 rounds', formRangeWords(data.rows.map((p) => p.trend))].filter(Boolean).join(' · ')}</span>
             <span role="columnheader" className="r">Avg</span>
             <span role="columnheader" className="r">To par</span>
             <span role="columnheader" className="r">SG / rd</span>
           </div>
           {(() => {
             const places = leaderPlaces(data.rows);
-            return data.rows.map((p, i) => <Row key={p.playerId} p={p} pos={places[i]!} rounds={rounds} />);
+            // B5: the board's form lines share one range, so the same height is the same score in every row.
+            return <FormRange trends={data.rows.map((p) => p.trend)}>{data.rows.map((p, i) => <Row key={p.playerId} p={p} pos={places[i]!} rounds={rounds} />)}</FormRange>;
           })()}
         </SideScroll>
       )}

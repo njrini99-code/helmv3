@@ -1,5 +1,8 @@
 import type { CoachPhilosophy } from '@/lib/coachhelm/types';
 import type { ChannelPref, NotificationCategory, PrefsByCategory } from '@/lib/coachhelm/v3/notifications/router';
+import type { ChClock } from '../../lib/clock-cookie';
+import { formatHcp } from '../../lib/format';
+import { plural } from '../../lib/plural';
 
 /**
  * Settings (Clubhouse): one page with a section rail. Every section carries
@@ -160,6 +163,12 @@ export const DISTANCE_OPTIONS = [
   { value: 'meters', label: 'Meters' },
 ] as const;
 
+/** How every time reads (the `ch_clock` cookie, lib/use-clock.tsx). Display only: times are stored in 24 hours, in the team's zone. */
+export const CLOCK_OPTIONS = [
+  { value: '12', label: '12-hour' },
+  { value: '24', label: '24-hour' },
+] as const satisfies ReadonlyArray<{ value: ChClock; label: string }>;
+
 export const TIMEZONE_OPTIONS = [
   { value: 'America/New_York', label: 'Eastern (ET)' },
   { value: 'America/Chicago', label: 'Central (CT)' },
@@ -178,7 +187,7 @@ export function remindersValid(r: ChReminders): boolean {
 
 export function hoursLabel(h: number): string {
   if (h % 24 === 0) return `${h / 24} ${h === 24 ? 'day' : 'days'} before`;
-  return `${h} ${h === 1 ? 'hour' : 'hours'} before`;
+  return `${plural(h, 'hour')} before`;
 }
 
 export function minutesLabel(m: number): string {
@@ -197,21 +206,21 @@ export interface ChProblem {
 const problem = (code: string, text: string, field?: string): ChProblem => (field ? { code, text, field } : { code, text });
 
 export function profileProblem(role: 'coach' | 'player', p: { fullName: string; firstName: string; lastName: string }): ChProblem | null {
-  if (role === 'coach') return p.fullName.trim() ? null : problem('CH-8101', 'Add your name.');
-  return p.firstName.trim() && p.lastName.trim() ? null : problem('CH-8102', 'Add your first and last name.');
+  if (role === 'coach') return p.fullName.trim() ? null : problem('CH-8101', 'Add your name.', 'set-fullname');
+  return p.firstName.trim() && p.lastName.trim() ? null : problem('CH-8102', 'Add your first and last name.', p.firstName.trim() ? 'set-last' : 'set-first');
 }
 
 export function passwordProblem(current: string, next: string, confirm: string): ChProblem | null {
-  if (!current) return problem('CH-8105', 'Enter your current password.');
-  if (next.length < 8) return problem('CH-8106', 'Use at least 8 characters.');
-  if (next !== confirm) return problem('CH-8107', "The new passwords don’t match.");
+  if (!current) return problem('CH-8105', 'Enter your current password.', 'set-pw-cur');
+  if (next.length < 8) return problem('CH-8106', 'Use at least 8 characters.', 'set-pw-new');
+  if (next !== confirm) return problem('CH-8107', "The new passwords don’t match.", 'set-pw-confirm');
   return null;
 }
 
 export function emailProblem(next: string, current: string | null): ChProblem | null {
   const v = next.trim();
-  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v)) return problem('CH-8103', 'Enter a valid email address.');
-  if (current && v.toLowerCase() === current.toLowerCase()) return problem('CH-8104', 'That is already your email.');
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v)) return problem('CH-8103', 'Enter a valid email address.', 'set-newemail');
+  if (current && v.toLowerCase() === current.toLowerCase()) return problem('CH-8104', 'That is already your email.', 'set-newemail');
   return null;
 }
 
@@ -226,11 +235,54 @@ export function remindersProblem(r: ChReminders): ChProblem | null {
   return remindersValid(r) ? null : problem('CH-8111', 'The first reminder has to come before the final one.');
 }
 
+/**
+ * A handicap as the player types it: blank is null, and "+1.2" is a plus
+ * handicap, stored negative (as onboarding stores it and formatHcp shows it).
+ * NaN when it doesn't parse, for the range checks to catch.
+ */
+export function parseHcp(s: string): number | null {
+  const t = s.trim();
+  if (t === '') return null;
+  const plus = t.startsWith('+');
+  const rest = plus ? t.slice(1).trim() : t;
+  const v = rest === '' ? Number.NaN : Number(rest);
+  return plus ? -Math.abs(v) : v;
+}
+
+/**
+ * The one handicap Settings shows, labelled "Handicap index": the same number
+ * Home shows (data/player-home.ts reads handicap_index ?? handicap), in Home's
+ * formatHcp ("4.3", "+1.2"). Blank when neither is set.
+ */
+export function shownHandicapIndex(d: Pick<ChGolfDetails, 'handicap' | 'handicapIndex'>): string {
+  const n = parseHcp(d.handicapIndex.trim() !== '' ? d.handicapIndex : d.handicap);
+  return n == null || !Number.isFinite(n) ? '' : formatHcp(n);
+}
+
+/** Golf details as the form edits them: the one handicap field holds Home's number. */
+export function golfDetailsShown(d: ChGolfDetails): ChGolfDetails {
+  return { ...d, handicapIndex: shownHandicapIndex(d) };
+}
+
+/**
+ * What a golf-details save writes, from the form's draft and what was loaded.
+ * Left as shown, both stored handicap columns go back as they were (saving the
+ * phone never copies the handicap into the index). A new number goes to
+ * handicap_index, which Home reads first. Cleared, both go blank, so Home
+ * shows no handicap either.
+ */
+export function golfDetailsToSave(draft: ChGolfDetails, loaded: ChGolfDetails): ChGolfDetails {
+  const typed = parseHcp(draft.handicapIndex);
+  if (typed === parseHcp(shownHandicapIndex(loaded))) return { ...draft, handicap: loaded.handicap, handicapIndex: loaded.handicapIndex };
+  if (typed == null) return { ...draft, handicap: '', handicapIndex: '' };
+  return { ...draft, handicap: loaded.handicap };
+}
+
 /** Numeric golf fields: blank is null, anything else must parse and sit in range. */
 export function golfDetailsProblem(d: ChGolfDetails): ChProblem | null {
   const num = (s: string) => (s.trim() === '' ? null : Number(s));
-  const h = num(d.handicap);
-  const hi = num(d.handicapIndex);
+  const h = parseHcp(d.handicap);
+  const hi = parseHcp(d.handicapIndex);
   const y = num(d.graduationYear);
   if (h != null && (!Number.isFinite(h) || h < -10 || h > 54)) return problem('CH-8112', 'Handicap must be between −10 and 54.');
   if (hi != null && (!Number.isFinite(hi) || hi < -10 || hi > 54)) return problem('CH-8113', 'Handicap index must be between −10 and 54.');

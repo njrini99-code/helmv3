@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { CalendarDays, MoreHorizontal, Search } from 'lucide-react';
+import { CalendarDays, Ellipsis, Search } from 'lucide-react';
 import { Avatar } from '../ui/Avatar';
 import { Badge } from '../ui/Badge';
 import { Button, IconButton } from '../ui/Button';
@@ -61,8 +61,8 @@ export function ComponentGallery() {
       <div className="ch-gallery__row"><Button disabled>Disabled</Button><button type="button" className="ch-btn ch-btn--primary" disabled aria-busy="true">Saving changes…</button>
         <Button onClick={() => toast({ title: 'Could not save', tone: 'error', body: 'Your changes are still here. Try again.' })}>Show error toast</Button></div>
           <div className="ch-gallery__row"><Button size="sm" leftIcon={Search}>Small action</Button><Button size="lg" rightIcon={CalendarDays}>Large action</Button>
-        <IconButton icon={MoreHorizontal} label="Preview more actions" onClick={() => toast({ title: 'More actions', body: 'Local preview only.' })} />
-        <IconButton icon={MoreHorizontal} label="Unavailable actions" disabled /></div>
+        <IconButton icon={Ellipsis} label="Preview more actions" onClick={() => toast({ title: 'More actions', body: 'Local preview only.' })} />
+        <IconButton icon={Ellipsis} label="Unavailable actions" disabled /></div>
     </section>
     <section className="ch-gallery__section" aria-labelledby="gallery-fields"><h2 id="gallery-fields">Fields and selection</h2>
       <label className="ch-gallery__field">Event name<input className="ch-input" value={name} onChange={event => setName(event.target.value)} /></label>
@@ -111,7 +111,7 @@ export function ComponentGallery() {
     <section className="ch-gallery__section" aria-labelledby="gallery-phone"><h2 id="gallery-phone">Phone control parts</h2>
       <p>These are the real bar controls. Pushed-screen transitions and immersive shell behavior are covered in the page and popup previews.</p>
       <PhoneBar lead title="Preview detail" back={{ label: 'Components', onBack: () => toast({ title: 'Back action', body: 'This fixture stays open.' }) }}
-        action={<PhoneIconAction icon={MoreHorizontal} label="Preview phone actions" onClick={() => setOpen(true)} />} />
+        action={<PhoneIconAction icon={Ellipsis} label="Preview phone actions" onClick={() => setOpen(true)} />} />
       <div className="ch-gallery__row"><PhoneTextAction onClick={() => setOpen(true)}>Continue</PhoneTextAction><PhoneTextAction disabled onClick={() => {}}>Unavailable</PhoneTextAction><PhoneTextAction busy onClick={() => {}}>Saving…</PhoneTextAction></div>
     </section>
     <section className="ch-gallery__section" aria-labelledby="gallery-motion"><h2 id="gallery-motion">Motion</h2>

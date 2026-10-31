@@ -32,10 +32,10 @@ export function StandingsSpread({ rows, topScore }: { rows: ChQRow[]; topScore: 
       lastX[lane] = x;
       return { r, x, lane };
     });
-    // The cut sits between the last player on score and the next, when they are apart.
-    const ranked = [...scored].sort((a, b) => (a.position ?? 99) - (b.position ?? 99));
-    const a = ranked[topScore - 1]?.toPar;
-    const b = ranked[topScore]?.toPar;
+    // The cut sits between the last player on score and the next, when they are apart. The rows are in the board's
+    // order as the server gave it (ranking.ts rankStandings), so it is read as given, never re-sorted.
+    const a = scored[topScore - 1]?.toPar;
+    const b = scored[topScore]?.toPar;
     const cut = topScore > 0 && a != null && b != null && b > a ? at((a + b) / 2) : null;
     const step = hi - lo > 22 ? 5 : hi - lo > 9 ? 2 : 1;
     const ticks: number[] = [];

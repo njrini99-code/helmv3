@@ -184,8 +184,9 @@ describe('Team stats · the filter bar', () => {
     const user = userEvent.setup();
     showTeam(team({ filter: filt({ window: 'season', types: ['qualifier'], courses: ['Pine Hollow'] }), window: 'season', roundCount: 0, grid: [], players: [], putting: null, bests: [] }));
     await expectCode('CH-4313', /No rounds match these filters/);
-    // The whole body is empty, so it is the page's empty state, as CH-4301 is (states audit, 2026-10-08).
-    expect(code('CH-4313')!.classList.contains('ch-empty-page')).toBe(true);
+    // The whole body is empty, so it is the page's empty state, as CH-4301 is (states audit, 2026-10-08), drawn as
+    // filtered rather than with the first-run medallion (CONS-11, auditor on #2361).
+    expect(code('CH-4313')!.closest('.ch-es--page.ch-es--filtered')).not.toBeNull();
     expect(screen.queryByText(/No stats yet/)).toBeNull();
     expect(code('CH-4301')).toBeNull();
     expect(code('CH-4302')).toBeNull();

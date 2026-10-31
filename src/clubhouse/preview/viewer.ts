@@ -6,7 +6,7 @@
 export type PreviewViewer = 'coach' | 'theo' | 'jonah';
 
 const THEO = new Set(['home-player', 'hub-player', 'roster-player']);
-const JONAH = new Set(['rounds', 'classes', 'track', 'setup', 'calendar-player', 'messages-player', 'qualifiers-player', 'qualifier-player', 'my-qualifiers']);
+const JONAH = new Set(['rounds', 'classes', 'track', 'setup', 'calendar-player', 'messages-player', 'qualifiers-player', 'qualifier-player', 'my-qualifiers', 'tournament-player']);
 
 export function previewViewer(screen: string, state: string | undefined): PreviewViewer {
   if (THEO.has(screen)) return 'theo';

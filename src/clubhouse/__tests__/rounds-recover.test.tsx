@@ -321,7 +321,7 @@ describe('Round recovery: Restore', () => {
     expect(mocks.haptic).toHaveBeenCalledWith('error');
     expect(mocks.router.push).not.toHaveBeenCalled();
     expect(screen.getByText('Finley GC')).toBeTruthy();
-    await user.click(within(code('CH-11017')!).getByRole('button', { name: 'Retry' }));
+    await user.click(within(code('CH-11017')!).getByRole('button', { name: 'Try again' }));
     await waitFor(() => expect(mocks.router.push).toHaveBeenCalledWith(`/golf/dashboard/rounds/continue/${ROUND_ID}`));
     expect(resume).toHaveBeenCalledTimes(2);
   });
@@ -432,7 +432,7 @@ describe('Round recovery: Discard', () => {
     await expectCode('CH-11019', /Couldn’t discard the round at Finley GC/);
     expect(mocks.haptic).toHaveBeenCalledWith('error');
     expect(screen.getByText('Finley GC')).toBeTruthy();
-    await user.click(within(code('CH-11019')!).getByRole('button', { name: 'Retry' }));
+    await user.click(within(code('CH-11019')!).getByRole('button', { name: 'Try again' }));
     await waitFor(() => expect(screen.queryByText('Finley GC')).toBeNull());
     expect(discard).toHaveBeenCalledTimes(2);
   });

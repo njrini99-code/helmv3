@@ -324,6 +324,8 @@ ALTER TABLE "public"."golf_confidence_calibration" ENABLE ROW LEVEL SECURITY;
 
 ALTER TABLE "public"."golf_conversation_participants" ENABLE ROW LEVEL SECURITY;
 
+ALTER TABLE "public"."golf_conversation_read_marks" ENABLE ROW LEVEL SECURITY;
+
 ALTER TABLE "public"."golf_conversations" ENABLE ROW LEVEL SECURITY;
 
 ALTER TABLE "public"."golf_course_edit_history" ENABLE ROW LEVEL SECURITY;
@@ -416,6 +418,10 @@ ALTER TABLE "public"."golf_player_notification_state" ENABLE ROW LEVEL SECURITY;
 
 ALTER TABLE "public"."golf_player_standing" ENABLE ROW LEVEL SECURITY;
 
+ALTER TABLE public.golf_player_standing_season ENABLE ROW LEVEL SECURITY;
+
+ALTER TABLE public.golf_standing_refresh_queue ENABLE ROW LEVEL SECURITY;
+
 ALTER TABLE "public"."golf_player_stats_cache" ENABLE ROW LEVEL SECURITY;
 
 ALTER TABLE "public"."golf_players" ENABLE ROW LEVEL SECURITY;
@@ -441,6 +447,10 @@ ALTER TABLE "public"."golf_recruit_documents" ENABLE ROW LEVEL SECURITY;
 ALTER TABLE "public"."golf_recruits" ENABLE ROW LEVEL SECURITY;
 
 ALTER TABLE "public"."golf_review_events" ENABLE ROW LEVEL SECURITY;
+
+ALTER TABLE "public"."golf_round_live" ENABLE ROW LEVEL SECURITY;
+
+ALTER TABLE "public"."golf_round_live_prefs" ENABLE ROW LEVEL SECURITY;
 
 ALTER TABLE "public"."golf_round_recap_locks" ENABLE ROW LEVEL SECURITY;
 
@@ -629,3 +639,53 @@ ALTER TABLE "graveyard"."golf_player_baselines" ENABLE ROW LEVEL SECURITY;
 ALTER TABLE "graveyard"."golf_tracer_health_snapshot" ENABLE ROW LEVEL SECURITY;
 
 ALTER TABLE "graveyard"."golf_validations" ENABLE ROW LEVEL SECURITY;
+
+-- P016 Tournaments: held migrations 20261024100000 (tables), 100100 (RLS)
+-- and 100200 (RPCs, lineup guard), WRITTEN — HOLD — NOT APPLIED in production.
+-- Generated 2026-10-25 by pg_dump of the three files applied in order to a
+-- scratch Postgres 16 (docs/clubhouse/held/data/tournaments.md).
+
+ALTER TABLE "public"."golf_saved_comparisons" ENABLE ROW LEVEL SECURITY;
+
+ALTER TABLE "public"."golf_team_seasons" ENABLE ROW LEVEL SECURITY;
+
+ALTER TABLE "public"."golf_tournament_advice_givers" ENABLE ROW LEVEL SECURITY;
+
+ALTER TABLE "public"."golf_tournament_coach_presence" ENABLE ROW LEVEL SECURITY;
+
+ALTER TABLE "public"."golf_tournament_entries" ENABLE ROW LEVEL SECURITY;
+
+ALTER TABLE "public"."golf_tournament_entry_notes" ENABLE ROW LEVEL SECURITY;
+
+ALTER TABLE "public"."golf_tournament_field_scores" ENABLE ROW LEVEL SECURITY;
+
+ALTER TABLE "public"."golf_tournament_field_teams" ENABLE ROW LEVEL SECURITY;
+
+ALTER TABLE "public"."golf_tournament_link_dismissals" ENABLE ROW LEVEL SECURITY;
+
+ALTER TABLE "public"."golf_tournament_player_notes" ENABLE ROW LEVEL SECURITY;
+
+ALTER TABLE "public"."golf_tournament_player_rounds" ENABLE ROW LEVEL SECURITY;
+
+ALTER TABLE "public"."golf_tournament_reflections" ENABLE ROW LEVEL SECURITY;
+
+ALTER TABLE "public"."golf_tournament_result_marks" ENABLE ROW LEVEL SECURITY;
+
+ALTER TABLE "public"."golf_tournament_reviews" ENABLE ROW LEVEL SECURITY;
+
+ALTER TABLE "public"."golf_tournament_round_lineups" ENABLE ROW LEVEL SECURITY;
+
+ALTER TABLE "public"."golf_tournament_rounds" ENABLE ROW LEVEL SECURITY;
+
+ALTER TABLE "public"."golf_tournaments" ENABLE ROW LEVEL SECURITY;
+ALTER TABLE "public"."golf_team_terms" ENABLE ROW LEVEL SECURITY;
+
+ALTER TABLE "public"."golf_player_class_settings" ENABLE ROW LEVEL SECURITY;
+
+ALTER TABLE "public"."golf_class_exceptions" ENABLE ROW LEVEL SECURITY;
+
+ALTER TABLE "public"."golf_push_holds" ENABLE ROW LEVEL SECURITY;
+
+ALTER TABLE "public"."golf_push_hold_heartbeat" ENABLE ROW LEVEL SECURITY;
+
+ALTER TABLE "public"."golf_class_hold_dirty" ENABLE ROW LEVEL SECURITY;

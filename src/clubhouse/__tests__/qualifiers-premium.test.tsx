@@ -134,7 +134,7 @@ describe('P009-B2 an honest Live state', () => {
     unmount();
   });
 
-  it('the chip: Live with the time it was read; Paused with the time and Refresh; after the last day the pill says Ended, never Live', () => {
+  it('the chip: Live with the time it was read; Paused with the time and Refresh; after the last day the pill says what it waits on, never Live', () => {
     const readAt = new Date('2026-09-28T16:12:00').getTime();
     const { unmount } = wrap(<QualifierDetail data={live()} writes={fakeWrites()} live={false} feed={{ feed: 'live', updatedAt: readAt }} />);
     expect(document.querySelector('[data-feed="live"]')!.textContent).toBe('Live · updated 4:12 PM');
@@ -148,7 +148,7 @@ describe('P009-B2 an honest Live state', () => {
     paused.unmount();
     // Oct 8, a week after its Oct 1 end: 8 entrants × 3 rounds, 13 in.
     wrap(<QualifierDetail data={{ ...live(), today: '2026-10-08' }} writes={fakeWrites()} live={false} feed={{ feed: 'live', updatedAt: readAt }} />);
-    expect(document.querySelector('.ch-qf-status')!.textContent).toBe('Ended · 11 rounds outstanding');
+    expect(document.querySelector('.ch-qf-status')!.textContent).toBe('Waiting on 11 rounds');
     // Said once, by the status pill: the board claims no feed.
     expect(document.querySelector('.ch-qf-feed')).toBeNull();
     expect(screen.queryByText(/^Live/)).toBeNull();
@@ -187,17 +187,18 @@ describe('P009-B2 an honest Live state', () => {
     expect(endedLive({ ...base, today: undefined })).toBeNull();
     expect(endedLive({ ...base, status: 'completed', today: '2026-10-08' })).toBeNull();
     expect(endedLive({ ...base, submitted: null, today: '2026-10-08' })).toEqual({ outstanding: null });
-    expect(endedLabel({ outstanding: null })).toBe('Ended');
-    expect(endedLabel({ outstanding: 0 })).toBe('Ended');
-    expect(endedLabel({ outstanding: 1 })).toBe('Ended · 1 round outstanding');
+    // F-0068: "Ended" is kept for a completed qualifier; an open one past its last day says what it waits on.
+    expect(endedLabel({ outstanding: null })).toBe('Past last day');
+    expect(endedLabel({ outstanding: 0 })).toBe('Past last day');
+    expect(endedLabel({ outstanding: 1 })).toBe('Waiting on 1 round');
     // 11:00 UTC on Oct 2 is still Oct 1 at UTC−12; noon UTC is Oct 2 everywhere.
     expect(endDayFor(new Date('2026-10-02T11:00:00Z'))).toBe('2026-10-01');
     expect(endDayFor(new Date('2026-10-02T12:00:00Z'))).toBe('2026-10-02');
   });
 
-  it('D3 on the list: a live qualifier past its end says Ended on its card; with no day it stays Live', () => {
+  it('D3 on the list: a live qualifier past its end says what it waits on on its card; with no day it stays Live', () => {
     const { unmount } = wrap(<QualifiersList data={{ ...previewList('coach', 'all'), today: '2026-10-08' }} />);
-    expect(within(document.querySelector('.ch-qf-hero') as HTMLElement).getByText('Ended · 11 rounds outstanding')).toBeTruthy();
+    expect(within(document.querySelector('.ch-qf-hero') as HTMLElement).getByText('Waiting on 11 rounds')).toBeTruthy();
     // The year is dropped inside the current season (D11).
     expect(document.querySelector('.ch-qf-hero .ch-qf-meta')!.textContent).toMatch(/Sep 22 – Oct 1(?!,)/);
     unmount();
@@ -208,10 +209,10 @@ describe('P009-B2 an honest Live state', () => {
 });
 
 describe('P009-A1 standings on hand-hung plates', () => {
-  it('movement is against the board before the latest round: Jonah up 2, Ava down 1, Priya down 3, Sofia unmoved', () => {
+  it('movement is against the board before the latest round: Jonah up 2, Ava down 1, Priya down 2, Sofia unmoved', () => {
     expect(at('jonah').move).toBe(2);
     expect(at('ava').move).toBe(-1);
-    expect(at('priya').move).toBe(-3);
+    expect(at('priya').move).toBe(-2);
     expect(at('sofia').move).toBe(0);
     // One round in: nothing to compare with.
     const e = (id: string) => ({ playerId: id, name: id, classYear: null });
@@ -220,9 +221,10 @@ describe('P009-A1 standings on hand-hung plates', () => {
     expect(one.rows.map((r) => r.move)).toEqual([null, null]);
     // A player first ranked in the latest round has no movement.
     const late = buildBoard({ entrants: [e('a'), e('b')], rounds: [rd('a', 1, 0), rd('a', 2, 0), rd('b', 2, -2)], squad: 1, picks: 0, status: 'in_progress', selectionState: 'scoring', selections: null, numRounds: 3 });
+    // (B, with only round two in, is a round short, so it stands below A: owner decision 10.)
     expect(late.rows.map((r) => [r.playerId, r.move])).toEqual([
+      ['a', 0],
       ['b', null],
-      ['a', -1],
     ]);
   });
 
@@ -233,8 +235,10 @@ describe('P009-A1 standings on hand-hung plates', () => {
     const row = (name: string) => within(table).getByRole('rowheader', { name: new RegExp(name) }).closest('[role="row"]') as HTMLElement;
     expect(row('Sofia').querySelector('.ch-qf-plate.is-under')!.textContent).toBe('−3');
     expect(row('Jonah').querySelector('.ch-qf-plate')!.className).not.toMatch(/is-under/);
-    expect(row('Jonah').querySelector('.ch-qf-move.is-gain')!.textContent).toBe('▲2, up 2 since the last round');
-    expect(row('Priya').querySelector('.ch-qf-move.is-loss')!.textContent).toBe('▼3, down 3 since the last round');
+    expect(row('Jonah').querySelector('.ch-qf-move.is-gain')!.textContent).toBe('2, up 2 since the last round');
+    // The mark is an icon, hidden from the reader: the font has no "▲" (A23).
+    expect(row('Jonah').querySelector('.ch-qf-move.is-gain [aria-hidden] svg')).not.toBeNull();
+    expect(row('Priya').querySelector('.ch-qf-move.is-loss')!.textContent).toBe('2, down 2 since the last round');
     // Thru is dots, one per scheduled round, the played ones filled (owner, 2026-10-16), read as words.
     expect(row('Jonah').querySelector('.ch-qf-dots')!.getAttribute('aria-label')).toBe('2 of 3 rounds');
     expect(row('Jonah').querySelectorAll('.ch-qf-dots i.is-on')).toHaveLength(2);
@@ -251,20 +255,24 @@ describe('P009-A1 standings on hand-hung plates', () => {
     expect(t[0]!.parentElement!.textContent).toBe('T2');
   });
 
-  it('phone: one header for the board, then a row a player with Pos, Player, the plate and Thru; no labels repeated in the rows', () => {
+  it('phone: one header for the board, then a row a player with Pos, Player, the plate over its Total (row 75) and Thru; no labels repeated in the rows', () => {
     const real = window.matchMedia;
     window.matchMedia = ((q: string) => ({ ...real(q), matches: q === '(max-width: 820px)' })) as typeof window.matchMedia;
     try {
       wrap(<QualifierDetail data={live()} writes={fakeWrites()} live={false} />);
       const heads = document.querySelectorAll('.ch-qfm-lbhead');
       expect(heads).toHaveLength(1);
-      expect([...heads[0]!.children].map((c) => c.textContent)).toEqual(['Pos', 'Player', 'To par', 'Thru']);
+      expect([...heads[0]!.children].map((c) => c.textContent)).toEqual(['Pos', 'Player', 'To parTotal', 'Thru']);
       expect(heads[0]!.getAttribute('aria-hidden')).toBe('true');
       const rows = [...document.querySelectorAll('.ch-qfm-lb__row')];
       expect(rows.length).toBe(8);
       for (const r of rows) expect(r.textContent).not.toMatch(/Rounds|Avg|Total/);
-      const luca = screen.getByRole('button', { name: /^Luca Ferraro, 6, \+8, 1 of 3 rounds\. Show their rounds$/ });
+      const luca = screen.getByRole('button', { name: /^Luca Ferraro, 7, \+8, \d+ strokes, 1 of 3 rounds\. Show their rounds$/ });
       expect(luca.querySelector('.ch-qf-plate')!.textContent).toBe('+8');
+      expect(luca.querySelector('.ch-qfm-lb__tot')!.textContent).toMatch(/^\d+$/);
+      // The same ranking sentence as desktop's caption (row 75), with decision 10's order.
+      expect(document.querySelector('.ch-qf-cap')!.textContent).toMatch(/^Complete cards rank first, by total to par, then total strokes, then more rounds played; a card a round short sits below them\. Top \d+ qualify on score/);
+      // During play a card a round short gives its pace, not "Missed a round": it may still play the round (decision 10).
       expect(luca.querySelector('.ch-qf-thin')!.textContent).toBe('1 of 3 rounds');
     } finally {
       window.matchMedia = real;
@@ -284,15 +292,16 @@ describe('P009-C2 pace beside the total', () => {
     expect([1, 2, 3, 4, 5].map(bubbleMinRounds)).toEqual([1, 1, 2, 2, 3]);
     expect(at('luca').state).toBeNull();
     expect(at('eli').state).toBe('bubble');
-    // The ranking itself is unchanged: Luca still stands 6th, above Priya.
-    expect([at('luca').position, at('priya').position]).toEqual([6, 7]);
+    // Owner decision 10: Luca, a round short, stands below every complete card, Priya's +10 included.
+    expect([at('luca').position, at('priya').position]).toEqual([7, 6]);
     expect(bubbleNote(3, 'in_progress')).toBe(' The bubble needs 2 of 3 rounds in.');
     expect(bubbleNote(1, 'in_progress')).toBe('');
     expect(bubbleNote(3, 'completed')).toBe('');
   });
 
-  it('a row with fewer rounds in than the most anyone has carries "1 of 3 rounds"; a row that kept pace carries nothing', () => {
+  it('during play a row with fewer rounds in than the most anyone has carries its pace, "1 of 3 rounds"; a row that kept pace carries nothing', () => {
     const b = live().board!;
+    expect(at('luca').missed).toBe(false);
     expect(sampleNote(at('luca'), b, 3)).toBe('1 of 3 rounds');
     expect(sampleNote(at('priya'), b, 3)).toBeNull();
   });

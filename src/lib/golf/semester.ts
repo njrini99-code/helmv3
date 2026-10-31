@@ -32,7 +32,7 @@ function isValidCustomStart(customStartDate: string, termYear: number, endDate: 
 
 /** Inclusive term windows, keyed by term. Sole definition — the switch below
  *  and the contradiction check both read from here so they cannot drift. */
-const TERM_WINDOWS = {
+export const TERM_WINDOWS = {
   spring: { start: (y: number) => `${y}-01-15`, end: (y: number) => `${y}-05-15` },
   summer: { start: (y: number) => `${y}-06-01`, end: (y: number) => `${y}-08-15` },
   fall:   { start: (y: number) => `${y}-08-20`, end: (y: number) => `${y}-12-15` },

@@ -1,13 +1,18 @@
 'use client';
 
-import { CalendarDays, MessageSquare, Navigation } from 'lucide-react';
+import { CalendarDays, Clock, MessageSquare, Navigation } from 'lucide-react';
 import type { ReactNode } from 'react';
 import { Icon } from '../../ui/Icon';
-import { PeekTarget, type PeekAction } from '../../ui/Peek';
+import { useChClock } from '../../lib/use-clock';
+import { restyleClock } from '../../lib/clock-format';
+import { PeekTarget, type PeekAction, type PeekLift } from '../../ui/Peek';
+import { draggable } from './drag-model';
 import { rebuiltHref } from '../../shell/nav';
 import { messagesPrefillHref } from '../messages/prefill';
 import { dayNum, dowOf, fmtHour, monthName, rangeLabel, TYPE_LABEL, type ChCalEvent, type ChCalPerson } from './model';
 import { TYPE_ICON } from './type-icon';
+import { EventLiveRow } from './live-events';
+import { useRowMark } from './change-note';
 
 /**
  * P006-C3: an event peeks where it is listed: a hold on the phone's agenda row, a rest of the pointer on a week block.
@@ -16,24 +21,29 @@ import { TYPE_ICON } from './type-icon';
  */
 const OFF_SITE = new Set(['qualifier', 'tournament', 'travel']);
 
-export function eventPeekActions(e: ChCalEvent, coach: boolean, people: Map<string, ChCalPerson>, onOpen: () => void): PeekAction[] {
+export function eventPeekActions(e: ChCalEvent, coach: boolean, people: Map<string, ChCalPerson>, onOpen: () => void, onAdjust?: () => void): PeekAction[] {
   // An event that doesn't ask for replies has no one to nudge (owner, 2026-10-08).
   const waiting = coach && e.rsvpRequired ? e.people.filter((p) => (e.rsvp[p] ?? 'pending') === 'pending') : [];
+  // The nudge is a message to the players, so its time is written in the app's own voice (12 hours), not this device's clock.
   const when = e.allDay ? `${dowOf(e.date)} ${dayNum(e.date)} ${monthName(e.date)}` : `${dowOf(e.date)} ${dayNum(e.date)} ${monthName(e.date)} at ${fmtHour(e.start!)}`;
   const href = waiting.length ? messagesPrefillHref({ players: waiting, draft: `Can you let me know if you’re coming to ${e.title} (${when})? You can reply on the event in Calendar.`, title: e.title }) : null;
   const nudge = href ? rebuiltHref(href) : null;
   const first = waiting.length === 1 ? (people.get(waiting[0]!)?.name.split(' ')[0] ?? 'them') : null;
   return [
     { label: 'Open', icon: CalendarDays, onSelect: onOpen },
+    // P-4 4.7.6: resize and fine moves on touch, where grips are no finger targets.
+    ...(onAdjust && draggable(e, coach) === 'timed' && !e.span ? [{ label: 'Adjust time', icon: Clock, onSelect: onAdjust }] : []),
     ...(nudge ? [{ label: first ? `Nudge ${first}` : `Nudge ${waiting.length}`, icon: MessageSquare, href: nudge }] : []),
     ...(e.location && OFF_SITE.has(e.type) ? [{ label: 'Directions', icon: Navigation, href: `https://maps.apple.com/?q=${encodeURIComponent(e.location)}` }] : []),
   ];
 }
 
 export function EventPeekCard({ e, coach, people }: { e: ChCalEvent; coach: boolean; people: Map<string, ChCalPerson> }) {
+  const clock = useChClock();
   const counts = { accepted: 0, maybe: 0, declined: 0, pending: 0 };
   for (const p of e.people) counts[(e.rsvp[p] ?? 'pending') as keyof typeof counts] += 1;
   const waiting = e.people.filter((p) => (e.rsvp[p] ?? 'pending') === 'pending').map((p) => people.get(p)?.name.split(' ')[0]).filter(Boolean);
+  const mark = useRowMark()(e);
   return (
     <div className="ch-evpeek">
       <span className="ch-evpeek__k">
@@ -42,9 +52,17 @@ export function EventPeekCard({ e, coach, people }: { e: ChCalEvent; coach: bool
       </span>
       <b className="ch-evpeek__t">{e.title}</b>
       <span className="ch-evpeek__m ch-num">
-        {dowOf(e.date)} {dayNum(e.date)} {monthName(e.date)} · {rangeLabel(e)}
+        {dowOf(e.date)} {dayNum(e.date)} {monthName(e.date)} · {rangeLabel(e, clock)}
       </span>
       {e.location && <span className="ch-evpeek__m">{e.location}</span>}
+      {coach && <EventLiveRow e={e} />}
+      {/* P-14: what changed, in one quiet line (the strike is static here; nothing animates in a peek). */}
+      {mark && (
+        <span className="ch-evpeek__chg">
+          {restyleClock(mark.change.panelLine1, clock)}
+          {mark.change.byLabel && mark.change.byLabel !== 'you' ? ` · ${mark.change.byLabel}` : ''}
+        </span>
+      )}
       {coach && e.people.length > 0 && !e.rsvpRequired && (
         // No replies asked for: the card says who is on it, never a reply count.
         <span className="ch-evpeek__r ch-num">
@@ -63,10 +81,30 @@ export function EventPeekCard({ e, coach, people }: { e: ChCalEvent; coach: bool
 }
 
 /** Wraps an event's row or block so it peeks; the row keeps its own tap. Classes and busy time don't peek. */
-export function EventPeek({ e, coach, people, onOpen, disabled = false, children }: { e: ChCalEvent; coach: boolean; people: Map<string, ChCalPerson>; onOpen: () => void; disabled?: boolean; children: ReactNode }) {
+export function EventPeek({
+  e,
+  coach,
+  people,
+  onOpen,
+  onAdjust,
+  lift,
+  disabled = false,
+  children,
+}: {
+  e: ChCalEvent;
+  coach: boolean;
+  people: Map<string, ChCalPerson>;
+  onOpen: () => void;
+  /** P-4: the peek's "Adjust time" (a coach's movable timed event). */
+  onAdjust?: () => void;
+  /** P-4: the hold picks the event up (a coach's movable event). */
+  lift?: PeekLift;
+  disabled?: boolean;
+  children: ReactNode;
+}) {
   if (e.type === 'class' || e.type === 'busy') return <>{children}</>;
   return (
-    <PeekTarget label={e.title} disabled={disabled} card={() => <EventPeekCard e={e} coach={coach} people={people} />} actions={eventPeekActions(e, coach, people, onOpen)}>
+    <PeekTarget label={e.title} disabled={disabled} lift={lift} card={() => <EventPeekCard e={e} coach={coach} people={people} />} actions={eventPeekActions(e, coach, people, onOpen, onAdjust)}>
       {children}
     </PeekTarget>
   );

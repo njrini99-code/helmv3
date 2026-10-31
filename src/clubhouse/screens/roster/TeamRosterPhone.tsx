@@ -8,8 +8,11 @@ import { InlineNotice } from '../../ui/Notices';
 import { Segmented } from '../../ui/Segmented';
 import { SectionBoundary } from '../../ui/SectionBoundary';
 import { PhoneTop } from '../../shell/phone-chrome';
-import { formatHcp } from './format';
+import { formatHcp } from '../../lib/format';
 import { sortTeammates, teammateLine, type TeamSort } from './team';
+import { TERMS } from '../../lib/glossary';
+import { pluralWord } from '../../lib/plural';
+import { LargeTitle } from '../../ui/LargeTitle';
 
 /**
  * The player's phone Roster: the coach's phone list (docs/clubhouse/phone/roster.md) as plain text. The top bar
@@ -34,15 +37,15 @@ export function TeamRosterPhone({ data, onRetry }: { data: ChPlayerRoster; onRet
               {data.players.length > 0 && (
                 <>
                   {' '}
-                  · <span className="ch-num">{data.players.length}</span> {data.players.length === 1 ? 'player' : 'players'}
+                  · <span className="ch-num">{data.players.length}</span> {pluralWord(data.players.length, 'player')}
                 </>
               )}
             </span>
           )}
-          {/* The top bar carries the page's heading; this is the design's large title. */}
-          <p className="ch-rsm-title" aria-hidden="true">
+          {/* The top bar carries the page's heading; this is the phone's one large title (owner decision 4). */}
+          <LargeTitle as="p" hidden>
             Roster
-          </p>
+          </LargeTitle>
         </header>
 
         <TeamCoachesPhone coaches={data.coaches} />
@@ -51,7 +54,7 @@ export function TeamRosterPhone({ data, onRetry }: { data: ChPlayerRoster; onRet
           <InlineNotice
             code="CH-3210"
             title="The roster didn’t load"
-            body="Your team is safe. Try again; the error has been reported."
+            body="Your team is safe. Try again."
             onRetry={onRetry}
           />
         ) : data.players.length === 0 ? (
@@ -69,7 +72,7 @@ export function TeamRosterPhone({ data, onRetry }: { data: ChPlayerRoster; onRet
                   options={[
                     { value: 'name', label: 'Name' },
                     { value: 'class', label: 'Class' },
-                    { value: 'hcp', label: 'HCP', aria: 'HCP, handicap' },
+                    { value: 'hcp', label: TERMS.handicap.short, aria: `${TERMS.handicap.short}, ${TERMS.handicap.long.toLowerCase()}` },
                   ]}
                 />
               </div>
@@ -107,7 +110,7 @@ function TeamCoachesPhone({ coaches }: { coaches: ChPlayerRoster['coaches'] }) {
         {coaches.map((c) => (
           <li key={c.id}>
             <div className="ch-rsm-row ch-rsm-row--static">
-              <Avatar name={c.name} size={40} />
+              <Avatar name={c.name} size="md" />
               <span className="ch-rsm-row__b">
                 <b>{c.name}</b>
                 <span>{c.role}</span>
@@ -127,14 +130,14 @@ function TeamCoachesPhone({ coaches }: { coaches: ChPlayerRoster['coaches'] }) {
 function TeammateRow({ p }: { p: ChTeammate }) {
   return (
     <div className="ch-rsm-row ch-rsm-row--static">
-      <Avatar name={p.name} size={40} />
+      <Avatar name={p.name} id={p.id} size="md" />
       <span className="ch-rsm-row__b">
         <b>{p.name}</b>
         <span>{teammateLine(p) || ' '}</span>
       </span>
       <span className="ch-rsm-row__v">
         <b className="ch-num">{formatHcp(p.handicap)}</b>
-        <span>hcp</span>
+        <span>{TERMS.handicap.short}</span>
       </span>
     </div>
   );

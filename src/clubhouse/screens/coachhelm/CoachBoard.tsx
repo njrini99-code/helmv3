@@ -29,6 +29,7 @@ import { CoursePlan } from './CoursePlan';
 import { LIVE_COACHHELM_WRITES, LIVE_COURSE_PLAN_READS, LIVE_RECHECK_WRITES, type ChCoachHelmWrites, type ChCoursePlanReads, type ChRecheckWrites } from './writes';
 import { RecheckReads } from './Recheck';
 import { SideScroll } from '../../ui/SideScroll';
+import { pluralWord } from '../../lib/plural';
 
 /** Where each control goes. A target that isn't rebuilt yet isn't drawn (nav.rebuiltHref), never a dead button. */
 export const coachBoardLinks = {
@@ -190,7 +191,7 @@ export function CoachBoard({
                         setByHand(true);
                       }}
                     >
-                      <Avatar name={p.name} size={phone ? 28 : 34} />
+                      <Avatar name={p.name} id={p.id} size={phone ? 28 : 34} />
                       <span>
                         <b>{p.name}</b>
                         <em>{dismissed[p.top.id] ? 'Dismissed' : p.top.title}</em>
@@ -207,11 +208,11 @@ export function CoachBoard({
                     <span>
                       <b>
                         {r.name && r.id ? (
-                          <Link className="ch-hl-note__a" href={coachPlayerHref('standing', r.id)} onClick={() => haptic('select')}>
+                          <Link className="ch-hl-note__a" href={coachPlayerHref('standing', r.id)}>
                             {r.name}
                           </Link>
                         ) : (
-                          (r.name ?? `${r.more} more ${r.more === 1 ? 'player' : 'players'}`)
+                          (r.name ?? `${r.more} more ${pluralWord(r.more, 'player')}`)
                         )}
                       </b>
                       <em>No reads yet</em>
@@ -220,7 +221,7 @@ export function CoachBoard({
                 ))}
                 {heldOnly.map((p) => (
                   <div key={p.id} className="ch-hl-pl is-none" data-ch-code="CH-13943">
-                    <Avatar name={p.name} size={phone ? 28 : 34} />
+                    <Avatar name={p.name} id={p.id} size={phone ? 28 : 34} />
                     <span>
                       <b>{p.name}</b>
                       <em>Not enough yet</em>
@@ -278,7 +279,7 @@ export function CoachBoard({
   // With CoachHelm off (CH-13305), Ask is off too, so the strip that leads there is not drawn.
   const tabs = data.off ? null : <CoachHelmTabs active={sw.shown} onGo={sw.go} />;
   return (
-    <main className={'ch-hl' + (phone ? ' is-phone' : '')} aria-labelledby="ch-hl-title" aria-busy={sw.pending || undefined} data-canopy={phone ? undefined : ''}>
+    <main className={'ch-hl' + (phone ? ' is-phone' : '')} aria-labelledby="ch-hl-title" aria-busy={sw.pending || undefined} data-canopy={phone ? undefined : ''} {...sw.enter}>
       {phone && <PhoneTop start title="CoachHelm" />}
       {phone && tabs}
       <Head
@@ -341,7 +342,11 @@ function SinceLine({ pulse }: { pulse: ChPulse }) {
   if (n === 0 && !gaps) {
     return (
       <div className="ch-hl-since is-quiet" data-ch-code="CH-13309">
-        Nothing new since you were last here.
+        Nothing new since you were last here.{' '}
+        {/* G4 row 88: the quiet line is the commonest state, and it had no way into What's new but the palette. */}
+        <Link className="ch-hl-note__a" href="/golf/dashboard/whats-new">
+          What’s new
+        </Link>
       </div>
     );
   }
@@ -349,7 +354,10 @@ function SinceLine({ pulse }: { pulse: ChPulse }) {
   if (n === 0 && gaps && pulse.missing) {
     return (
       <div className="ch-hl-since is-quiet" role="status" data-ch-code="CH-13206">
-        Since you were last here: {gaps.charAt(0).toLowerCase() + gaps.slice(1)} didn’t load, so what is new was not checked.
+        Since you were last here: {gaps.charAt(0).toLowerCase() + gaps.slice(1)} didn’t load, so what is new was not checked.{' '}
+        <Link className="ch-hl-note__a" href="/golf/dashboard/whats-new">
+          What’s new
+        </Link>
       </div>
     );
   }
@@ -373,6 +381,10 @@ function SinceLine({ pulse }: { pulse: ChPulse }) {
             {gaps} didn’t load, so anything made from {pulse.missing.length === 1 ? 'it' : 'them'} is missing here and was not checked.
           </div>
         )}
+        {/* B11: the way into What's new, which had none but the palette. */}
+        <Link className="ch-hl-note__a ch-hl-since__all" href="/golf/dashboard/whats-new">
+          Everything in What’s new
+        </Link>
       </div>
     </div>
   );
@@ -433,7 +445,7 @@ function SinceFromRead({ read }: { read: Promise<ChPulseResult> }) {
 /** CH-13405: the line on its way, at the line's own height, so the header does not move when it lands. */
 function SinceSkeleton() {
   return (
-    <div className="ch-hl-since is-loading" aria-busy="true" aria-label="Loading what’s new since you were last here" data-ch-code="CH-13405">
+    <div role="status" className="ch-hl-since is-loading" aria-busy="true" aria-label="Loading what’s new since you were last here" data-ch-code="CH-13405">
       <Skeleton width={196} height={13} />
     </div>
   );

@@ -20,82 +20,88 @@ function StageLine({ height, bar, width }: { height: number; bar: number; width:
 
 /**
  * Desktop Home's head in waiting, in the reader's own shape (the shell's role, as SkeletonPhoneHero): the coach's has the
- * two-line brief and, under the head, the team's scoring form on its stage (CoachHome renders TeamForm there); the
- * player's head is the date, the greeting and the two actions, with no brief and no form. So the sheet lands where its
- * bars were for either. Without a role (a test, a coach) it draws the coach's.
+ * two-line brief; the player's head is the date, the greeting and the two actions. So the sheet that follows lands where
+ * its bars were for either. Without a role (a test, a coach) it draws the coach's.
  */
 export function SkeletonDeskHead() {
   const player = useClubhouseRole() === 'player';
   return (
-    <>
-      {/* Line for line as loaded (perf 2026-10-01, measured with `npm run clubhouse:perf`): the date, the greeting, a two-line sentence and the two actions. */}
-      <header className="ch-h-head" data-canopy-head="">
-        <Line height={14}>
-          <Skeleton width={140} height={13} />
-        </Line>
-        {/* The sans greeting's line in the framed head (44px type, 47.5px line; WebKit 1440, 2026-10-07). */}
-        <Line height={47.5}>
-          <Skeleton width={400} height={38} radius={10} />
-        </Line>
-        {!player && (
-          <div style={{ display: 'flex', flexDirection: 'column', justifyContent: 'center', gap: 10, height: 49.6 }}>
-            <Skeleton width="90%" height={14} />
-            <Skeleton width="60%" height={14} />
-          </div>
-        )}
-        <div className="ch-h-head__actions">
-          <Skeleton width={150} height={36} radius={10} />
-          <Skeleton width={130} height={36} radius={10} />
+    // Line for line as loaded (perf 2026-10-01, measured with `npm run clubhouse:perf`): the date, the greeting, a two-line sentence and the two actions.
+    <header className="ch-h-head" data-canopy-head="">
+      <Line height={14}>
+        <Skeleton width={140} height={13} />
+      </Line>
+      {/* The sans greeting's line in the framed head (44px type, 47.5px line; WebKit 1440, 2026-10-07). */}
+      <Line height={47.5}>
+        <Skeleton width={400} height={38} radius={10} />
+      </Line>
+      {!player && (
+        <div style={{ display: 'flex', flexDirection: 'column', justifyContent: 'center', gap: 8, height: 49.6 }}>
+          <Skeleton width="90%" height={14} />
+          <Skeleton width="60%" height={14} />
         </div>
-      </header>
+      )}
+      <div className="ch-h-head__actions">
+        <Skeleton width={150} height={36} radius={10} />
+        <Skeleton width={130} height={36} radius={10} />
+      </div>
+    </header>
+  );
+}
+
+/**
+ * The coach's team form and the team's four parts in waiting, drawn after the week's sheet as the loaded page draws
+ * them (row 79: the day comes first, CoachHome). Nothing for a player, whose Home has neither.
+ */
+export function SkeletonDeskForm() {
+  const player = useClubhouseRole() === 'player';
+  if (player) return null;
+  return (
+    <>
       {/* TeamForm's own grid (it stacks under 1100px as the loaded one does): the lead's four lines, the plot's box left
           empty, and the three figure rows. Shapes only: no line is drawn before there are rounds to draw it from. */}
-      {!player && (
-        <section className="ch-h-form" aria-hidden="true">
-          <div className="ch-h-form__lead">
-            <StageLine height={16.8} bar={11} width={150} />
-            <StageLine height={64} bar={48} width={150} />
-            <StageLine height={18} bar={12} width={130} />
-            <StageLine height={16.9} bar={10} width={170} />
-          </div>
-          <div className="ch-h-form__plot" />
-          <div className="ch-h-form__figs">
-            {[0, 1, 2].map((k) => (
-              <div key={k}>
-                <StageLine height={20.3} bar={12} width="100%" />
-              </div>
-            ))}
-          </div>
-        </section>
-      )}
-      {/* The team's four parts at the stage's foot (TeamLegs): its heading, then the column row and four rows. */}
-      {!player && (
-        <section className="ch-h-legs" aria-hidden="true">
-          <div className="ch-h-sec">
-            <div>
-              <Line height={24}>
-                <Skeleton width={150} height={21} />
-              </Line>
-              <Line height={20}>
-                <Skeleton width={420} height={13} />
-              </Line>
+      <section className="ch-h-form" aria-hidden="true">
+        <div className="ch-h-form__lead">
+          <StageLine height={16.8} bar={11} width={150} />
+          <StageLine height={64} bar={48} width={150} />
+          <StageLine height={18} bar={12} width={130} />
+          <StageLine height={16.9} bar={10} width={170} />
+        </div>
+        <div className="ch-h-form__plot" />
+        <div className="ch-h-form__figs">
+          {[0, 1, 2].map((k) => (
+            <div key={k}>
+              <StageLine height={20.3} bar={12} width="100%" />
             </div>
-            <Skeleton width={104} height={30} radius={10} />
+          ))}
+        </div>
+      </section>
+      {/* The team's four parts at the stage's foot (TeamLegs): its heading, then the column row and four rows. */}
+      <section className="ch-h-legs" aria-hidden="true">
+        <div className="ch-h-sec">
+          <div>
+            <Line height={24}>
+              <Skeleton width={150} height={21} />
+            </Line>
+            <Line height={20}>
+              <Skeleton width={420} height={13} />
+            </Line>
           </div>
-          <div className="ch-h-legs__skel">
-            {[0, 1, 2, 3, 4].map((k) => (
-              <div key={k} className="ch-h-legs__skrow">
-                <Skeleton width={k ? 90 : 40} height={13} />
-                <Skeleton width={k ? 170 : 60} height={13} />
-                <Skeleton width={k ? 40 : 50} height={13} />
-                <Skeleton width={k ? 180 : 90} height={13} />
-                <Skeleton width={k ? 110 : 80} height={13} />
-                <Skeleton width={k ? 110 : 80} height={13} />
-              </div>
-            ))}
-          </div>
-        </section>
-      )}
+          <Skeleton width={104} height={30} radius={10} />
+        </div>
+        <div className="ch-h-legs__skel">
+          {[0, 1, 2, 3, 4].map((k) => (
+            <div key={k} className="ch-h-legs__skrow">
+              <Skeleton width={k ? 90 : 40} height={13} />
+              <Skeleton width={k ? 170 : 60} height={13} />
+              <Skeleton width={k ? 40 : 50} height={13} />
+              <Skeleton width={k ? 180 : 90} height={13} />
+              <Skeleton width={k ? 110 : 80} height={13} />
+              <Skeleton width={k ? 110 : 80} height={13} />
+            </div>
+          ))}
+        </div>
+      </section>
     </>
   );
 }

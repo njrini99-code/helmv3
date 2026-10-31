@@ -1,5 +1,6 @@
 import { briefCountsLine, briefTeamLine, type MondayBrief } from '@/lib/coachhelm/v3/monday-brief/brief';
 import { LADDER_RUNG_WORD } from '@/lib/coachhelm/v3/monday-brief/words';
+import { pluralWord } from '../lib/plural';
 
 /**
  * The coach Monday brief as the Clubhouse view draws it (P013 `?view=monday-brief`, flag `coachhelm_monday_brief_v1`; CoachHelm
@@ -86,6 +87,6 @@ export function toChMondayBrief(b: MondayBrief): ChMondayBrief {
     rows,
     counts: briefCountsLine(b.counts),
     cleared: b.cleared.map((c) => `${c.player_name} · ${c.title}`),
-    outOfDate: n > 0 ? `Out of date (${n}): ${n === 1 ? 'a newer round is' : 'newer rounds are'} not in ${n === 1 ? 'this read' : 'these reads'} yet. Reads two or more rounds behind are left out of the brief.` : null,
+    outOfDate: n > 0 ? `Out of date (${n}): ${pluralWord(n, 'a newer round is', 'newer rounds are')} not in ${pluralWord(n, 'this read', 'these reads')} yet. Reads two or more rounds behind are left out of the brief.` : null,
   };
 }

@@ -8,9 +8,9 @@ const RAW: Raw[] = [
   ['theo', 'Theo Marchetti', 'Senior', 2027, 'Asheville, NC', 'active', 70.9, -0.8, 24, 1.8, [72, 71, 71, 70, 70, 71, 70], 1, 3, [['Oakmont CC', 'Oct 12', 70, -1], ['Pine Needles', 'Oct 11', 69, -3], ['Finley GC', 'Oct 4', 71, -1]], null, '4'],
   ['sofia', 'Sofia Alvarez', 'Senior', 2027, 'San Antonio, TX', 'active', 71.6, 1.9, 22, 1.1, [72, 72, 71, 72, 71, 71, 71], 2, 2, [['Oakmont CC', 'Oct 12', 71, 0], ['Finley GC', 'Oct 8', 72, 0], ['Finley GC', 'Oct 4', 71, -1]], null, '11'],
   ['ava', 'Ava Lindqvist', 'Junior', 2028, 'Gothenburg, SE', 'active', 72.4, 2.4, 19, 0.6, [73, 74, 72, 72, 72, 73, 72], 1, 2, [['Oakmont CC', 'Oct 12', 72, 1], ['Finley GC', 'Oct 8', 73, 1], ['Finley GC', 'Oct 4', 72, 0]], null, null],
-  ['jonah', 'Jonah Okafor', 'Sophomore', 2029, 'Charlotte, NC', 'active', 74.1, 3.9, 21, -0.9, [72, 72, 73, 74, 75, 74, 75], 2, 1, [['Pine Needles', 'Oct 11', 76, 4], ['Finley GC', 'Oct 8', 75, 3], ['Finley GC', 'Oct 4', 74, 2]], { tone: 'warning', text: 'Scoring up 2.1' }, null],
+  ['jonah', 'Jonah Okafor', 'Sophomore', 2029, 'Charlotte, NC', 'active', 74.1, 3.9, 21, -0.9, [72, 72, 73, 74, 75, 74, 75], 2, 1, [['Pine Needles', 'Oct 11', 76, 4], ['Finley GC', 'Oct 8', 75, 3], ['Finley GC', 'Oct 4', 74, 2]], { tone: 'loss', text: 'Scoring up 2.1' }, null],
   ['eli', 'Eli Brandt', 'Junior', 2028, 'Raleigh, NC', 'active', 74.8, 4.2, 14, -0.4, [74, 75, 74, 75, 75, 74, 75], 0, 0, [['Finley GC', 'Oct 5', 75, 3], ['Finley GC', 'Sep 28', 74, 2], ['Lonnie Poole', 'Sep 27', 75, 3]], { tone: 'warning', text: 'No rounds in 9 days' }, null],
-  ['priya', 'Priya Natarajan', 'Freshman', 2030, 'Cary, NC', 'active', 75.2, 5.1, 16, -1.4, [78, 77, 77, 76, 75, 75, 74], 1, 2, [['Finley GC', 'Oct 10', 74, 2], ['Finley GC', 'Oct 8', 75, 3], ['Finley GC', 'Oct 4', 75, 3]], { tone: 'positive', text: '4 rounds under average' }, null],
+  ['priya', 'Priya Natarajan', 'Freshman', 2030, 'Cary, NC', 'active', 75.2, 5.1, 16, -1.4, [78, 77, 77, 76, 75, 75, 74], 1, 2, [['Finley GC', 'Oct 10', 74, 2], ['Finley GC', 'Oct 8', 75, 3], ['Finley GC', 'Oct 4', 75, 3]], { tone: 'gain', text: '4 rounds under average' }, null],
   ['luca', 'Luca Ferraro', 'Freshman', 2030, 'Bologna, IT', 'active', 76.3, 6.0, 2, null, [77, 76], 0, 1, [['Finley GC', 'Oct 8', 76, 4], ['Finley GC', 'Oct 1', 77, 5]], null, null],
   ['mia', 'Mia Thornton', 'Junior', 2028, 'Greenville, SC', 'inactive', 73.8, 3.4, 9, -0.2, [74, 73, 74, 74, 73], 0, 0, [['Finley GC', 'Sep 12', 74, 2]], null, null],
 ];
@@ -44,14 +44,22 @@ export const PREVIEW_ROSTER_HELM: ChRoster['helm'] = {
   },
 };
 
+/** The team average as loadRoster pools it (A3): each active player's rounds at their average, over every round, not a mean of the means. */
+const POOLED_AVG = (() => {
+  const active = RAW.filter((r) => r[5] === 'active');
+  const rounds = active.reduce((a, r) => a + r[8], 0);
+  return rounds ? active.reduce((a, r) => a + r[6] * r[8], 0) / rounds : null;
+})();
+
 export const PREVIEW_ROSTER: ChRoster = {
   teamName: 'Varsity',
-  season: 'Fall 2026',
+  season: '2026–27',
   joinCode: 'FINLEY-26',
   teamError: false,
   notesError: false,
   playersError: false,
   statsError: false,
+  teamAvg: POOLED_AVG,
   requestsError: false,
   helm: PREVIEW_ROSTER_HELM,
   requests: [
@@ -101,12 +109,13 @@ export const PREVIEW_ROSTER_AVAILABILITY: ChRoster = {
   players: PREVIEW_ROSTER.players.map((p) => (AVAILABILITY[p.id] ? { ...p, ...AVAILABILITY[p.id], attention: null } : p)),
 };
 
-export const PREVIEW_ROSTER_EMPTY: ChRoster = { ...PREVIEW_ROSTER, players: [], requests: [] };
-export const PREVIEW_ROSTER_FAILED: ChRoster = { ...PREVIEW_ROSTER, playersError: true, requestsError: true, players: [], requests: [] };
+export const PREVIEW_ROSTER_EMPTY: ChRoster = { ...PREVIEW_ROSTER, players: [], requests: [], teamAvg: null };
+export const PREVIEW_ROSTER_FAILED: ChRoster = { ...PREVIEW_ROSTER, playersError: true, requestsError: true, players: [], requests: [], teamAvg: null };
 /** Reads that fail while the roster itself loads: stats, the team row and this coach's notes. */
 export const PREVIEW_ROSTER_PARTIAL: ChRoster = {
   ...PREVIEW_ROSTER,
   statsError: true,
+  teamAvg: null,
   teamError: true,
   notesError: true,
   joinCode: null,
@@ -120,6 +129,9 @@ export const PREVIEW_ROSTER_PARTIAL: ChRoster = {
 export const PREVIEW_ROSTER_HELM_FAILED: ChRoster = { ...PREVIEW_ROSTER, helm: { status: 'failed' } };
 /** `?state=helm-off`: CoachHelm is off for this coach, so the panel draws no CoachHelm block. */
 export const PREVIEW_ROSTER_HELM_OFF: ChRoster = { ...PREVIEW_ROSTER, helm: { status: 'off' } };
+
+/** `?state=invite-email&invite=1`: email invites are on, so the invite sheet offers "Email them" (CH-3080, CH-3180, CH-3880); without it the sheet says email is off (CH-3980). */
+export const PREVIEW_ROSTER_EMAIL_INVITES: ChRoster = { ...PREVIEW_ROSTER, emailInvites: true };
 
 /** The player's Roster (Theo's): the coaches, then the active players only, as loadPlayerRoster returns them (name, class, handicap). */
 export const PREVIEW_PLAYER_ROSTER: ChPlayerRoster = {

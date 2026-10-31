@@ -73,7 +73,8 @@ for (const size of sizes) {
         await page.keyboard.press('Enter');
         const dialog = page.locator('dialog[open]');
         await expect(dialog).toHaveCount(1);
-        const surface = kind === 'ActionSheet' ? dialog : dialog.locator('.ch-modal__panel, .ch-setm-sheet, .ch-rec-sheet, .ch-rec-act').first();
+        // RecActionSheet renders the shared ActionSheet since #2361, so the dialog itself is its surface.
+        const surface = kind === 'ActionSheet' || kind === 'RecActionSheet' ? dialog : dialog.locator('.ch-modal__panel, .ch-fsheet').first();
         await bounded(surface, page);
         // Native modal inertness prevents focusing the page beneath it.
         expect(await opener.evaluate((element) => {
@@ -159,7 +160,8 @@ test('keyboard alternatives reveal without covering their message or priority la
   await page.setViewportSize({ width: 390, height: 844 });
   await page.goto('/clubhouse-preview/messages');
   // The phone board opens on the conversation list; open the first thread.
-  await page.locator('.ch-msp-list .ch-ms-sec.is-date button').first().click();
+  // The row itself: since the swipe rows (#2361) each row also holds its hidden swipe and keyboard action buttons.
+  await page.locator('.ch-msp-list .ch-ms-sec.is-date button.ch-ms-row').first().click();
   const thread = page.locator('.ch-msp-thread');
   await expect(thread).toBeInViewport();
   await expect.poll(() => thread.evaluate(element => Math.round(element.getBoundingClientRect().left))).toBe(0);

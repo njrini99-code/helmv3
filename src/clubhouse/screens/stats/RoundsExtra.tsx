@@ -2,7 +2,8 @@ import type { ReactNode } from 'react';
 import { HOLES_ADJ, hasPrevious, hasRange, isFiltered, type ChFilter } from '../../data/stats-filter';
 import type { ChBests } from '../../data/stats-figures';
 import type { ChProfileExtra } from '../../data/stats-player';
-import { formatPct, formatSigned, formatToPar, NO_DATA } from '../../lib/format';
+import { formatFixed, formatPct, formatSigned, formatToPar, NO_DATA } from '../../lib/format';
+import { halvesTone } from '../../lib/stats-signal';
 import { DataTable, Empty, RoundLine, Rule, Tiles } from './detail';
 import { BestCardShare } from './BestCard';
 import { bestCardFields } from './best-card-fields';
@@ -87,15 +88,16 @@ export function RoundsExtra({
         : filter.window === 'season'
           ? 'The season has no earlier window to compare with.'
           : 'Qualifier rounds have no earlier window to compare with.';
-  const change = (last: number | null, previous: number | null, digits: number, lowerIsBetter: boolean) => {
+  // A change is toned only when it clears its standard error and still prints at its digits (A1, the one change rule).
+  const change = (last: number | null, previous: number | null, digits: number, lowerIsBetter: boolean, se: number | null) => {
     if (last == null || previous == null) return { v: NO_DATA };
     const d = last - previous;
-    const flat = Math.abs(d) < (digits ? 0.05 : 0.5);
-    return { v: formatSigned(d, digits), tone: flat ? undefined : (lowerIsBetter ? d < 0 : d > 0) ? ('gain' as const) : ('loss' as const) };
+    const tone = halvesTone({ delta: d, se }, lowerIsBetter, digits);
+    return { v: formatSigned(d, digits), tone: tone === 'is-gain' ? ('gain' as const) : tone === 'is-loss' ? ('loss' as const) : undefined };
   };
   if (zones && !phone) {
     const scoreChange = c?.rows.find((r) => r.label === 'Scoring avg');
-    const sc = scoreChange ? change(scoreChange.last, scoreChange.previous, scoreChange.digits, scoreChange.lowerIsBetter) : null;
+    const sc = scoreChange ? change(scoreChange.last, scoreChange.previous, scoreChange.digits, scoreChange.lowerIsBetter, scoreChange.se) : null;
     const best = filter.holes === '9' ? x.bests9?.score : b.score;
     return (
       <>
@@ -121,7 +123,7 @@ export function RoundsExtra({
             ) : undefined
           }
         >
-          <Vis id="rx-score" title="Score by round" note={`Every ${HOLES_ADJ[filter.holes]} round in this window, oldest first${x.nineRounds ? ' · 9-hole scores doubled (per 18)' : ''}`}>
+          <Vis id="rx-score" region={false} title="Score by round" note={`Every ${HOLES_ADJ[filter.holes]} round in this window, oldest first${x.nineRounds ? ' · 9-hole scores doubled (per 18)' : ''}`}>
             {x.series.score.length >= 2 ? <RoundLine points={x.series.score} digits={0} label="Score by round" lowerIsBetter /> : <Empty code="CH-5314">A line needs two rounds; this window has {x.series.score.length}.</Empty>}
           </Vis>
           {(filter.holes === '18' || (filter.holes === 'all' && hasBest(b))) && (
@@ -168,9 +170,9 @@ export function RoundsExtra({
                     key: r.label,
                     head: r.label,
                     cells: [
-                      r.last == null ? NO_DATA : `${r.last.toFixed(r.digits)}${r.unit}`,
-                      r.previous == null ? NO_DATA : `${r.previous.toFixed(r.digits)}${r.unit}`,
-                      change(r.last, r.previous, r.digits, r.lowerIsBetter),
+                      r.last == null ? NO_DATA : `${formatFixed(r.last, r.digits)}${r.unit}`,
+                      r.previous == null ? NO_DATA : `${formatFixed(r.previous, r.digits)}${r.unit}`,
+                      change(r.last, r.previous, r.digits, r.lowerIsBetter, r.se),
                     ],
                   }))}
                 />
@@ -226,9 +228,9 @@ export function RoundsExtra({
                 key: r.label,
                 head: r.label,
                 cells: [
-                  r.last == null ? NO_DATA : `${r.last.toFixed(r.digits)}${r.unit}`,
-                  r.previous == null ? NO_DATA : `${r.previous.toFixed(r.digits)}${r.unit}`,
-                  change(r.last, r.previous, r.digits, r.lowerIsBetter),
+                  r.last == null ? NO_DATA : `${formatFixed(r.last, r.digits)}${r.unit}`,
+                  r.previous == null ? NO_DATA : `${formatFixed(r.previous, r.digits)}${r.unit}`,
+                  change(r.last, r.previous, r.digits, r.lowerIsBetter, r.se),
                 ],
               }))}
             />

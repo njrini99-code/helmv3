@@ -292,6 +292,28 @@
     "catalog": "docs/clubhouse/catalog/shell.md"
   },
   {
+    "id": 10615,
+    "page": "P001",
+    "category": 6,
+    "item": 15,
+    "name": "DELIVER_NOW_IN_THE_BELL_IS_REFUSED",
+    "chCode": "CH-1270",
+    "meaning": "Deliver now in the bell is refused (P-10)",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/shell.md"
+  },
+  {
+    "id": 10616,
+    "page": "P001",
+    "category": 6,
+    "item": 16,
+    "name": "A_PLAYERS_PUSHES_ARE_HELD_FOR_CLASS",
+    "chCode": "CH-1271",
+    "meaning": "A player's pushes are held for class (P-10)",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/shell.md"
+  },
+  {
     "id": 10701,
     "page": "P001",
     "category": 7,
@@ -1287,6 +1309,17 @@
     "catalog": "docs/clubhouse/catalog/home.md"
   },
   {
+    "id": 20202,
+    "page": "P002",
+    "category": 2,
+    "item": 2,
+    "name": "THE_SHEET_OPENS_BEFORE_THE_CLASS_DAY",
+    "chCode": "CH-2470",
+    "meaning": "The sheet opens before the class day has arrived",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/home.md"
+  },
+  {
     "id": 20301,
     "page": "P002",
     "category": 3,
@@ -1462,6 +1495,105 @@
     "name": "ROUNDS_WITH_HOLE_SCORES_BUT_NO_PLAYER",
     "chCode": "CH-2315",
     "meaning": "Rounds with hole scores, but no player with 3 of them (coach Home, the team's four parts)",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/home.md"
+  },
+  {
+    "id": 20416,
+    "page": "P002",
+    "category": 4,
+    "item": 16,
+    "name": "NOBODY_ON_THE_TEAM_HAS_A_CLASS",
+    "chCode": "CH-2370",
+    "meaning": "Nobody on the team has a class today (the sheet is open)",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/home.md"
+  },
+  {
+    "id": 20501,
+    "page": "P002",
+    "category": 5,
+    "item": 1,
+    "name": "THE_LAST_DAY_OF_CLASSES_IS_NOT",
+    "chCode": "CH-2170",
+    "meaning": "The last day of classes is not after the first",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/home.md"
+  },
+  {
+    "id": 20502,
+    "page": "P002",
+    "category": 5,
+    "item": 2,
+    "name": "A_TERM_SHORTER_THAN_4_WEEKS_OR",
+    "chCode": "CH-2171",
+    "meaning": "A term shorter than 4 weeks or longer than about 6 months",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/home.md"
+  },
+  {
+    "id": 20503,
+    "page": "P002",
+    "category": 5,
+    "item": 3,
+    "name": "EXAMS_END_MORE_THAN_3_WEEKS_AFTER",
+    "chCode": "CH-2172",
+    "meaning": "Exams end more than 3 weeks after the last class",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/home.md"
+  },
+  {
+    "id": 20504,
+    "page": "P002",
+    "category": 5,
+    "item": 4,
+    "name": "EXAMS_END_BEFORE_THE_LAST_DAY_OF",
+    "chCode": "CH-2173",
+    "meaning": "Exams end before the last day of classes",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/home.md"
+  },
+  {
+    "id": 20505,
+    "page": "P002",
+    "category": 5,
+    "item": 5,
+    "name": "THE_TERM_OVERLAPS_ANOTHER_OF_THE_TEAMS",
+    "chCode": "CH-2174",
+    "meaning": "The term overlaps another of the team's terms",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/home.md"
+  },
+  {
+    "id": 20506,
+    "page": "P002",
+    "category": 5,
+    "item": 6,
+    "name": "THE_TERM_HAS_NO_NAME",
+    "chCode": "CH-2175",
+    "meaning": "The term has no name",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/home.md"
+  },
+  {
+    "id": 20507,
+    "page": "P002",
+    "category": 5,
+    "item": 7,
+    "name": "A_NO_CLASS_RANGE_ENDS_BEFORE_IT",
+    "chCode": "CH-2176",
+    "meaning": "A no-class range ends before it starts",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/home.md"
+  },
+  {
+    "id": 20508,
+    "page": "P002",
+    "category": 5,
+    "item": 8,
+    "name": "A_NO_CLASS_RANGE_IS_LONGER_THAN",
+    "chCode": "CH-2177",
+    "meaning": "A no-class range is longer than 21 days",
     "status": "implemented",
     "catalog": "docs/clubhouse/catalog/home.md"
   },
@@ -1710,6 +1842,61 @@
     "catalog": "docs/clubhouse/catalog/home.md"
   },
   {
+    "id": 20623,
+    "page": "P002",
+    "category": 6,
+    "item": 23,
+    "name": "SAVING_THE_TERM_DATES_FAILS",
+    "chCode": "CH-2070",
+    "meaning": "Saving the term dates fails (class status, P-10)",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/home.md"
+  },
+  {
+    "id": 20624,
+    "page": "P002",
+    "category": 6,
+    "item": 24,
+    "name": "SAVING_A_TEAM_NO_CLASS_RANGE_FAILS",
+    "chCode": "CH-2071",
+    "meaning": "Saving a team no-class range fails",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/home.md"
+  },
+  {
+    "id": 20625,
+    "page": "P002",
+    "category": 6,
+    "item": 25,
+    "name": "REMOVING_A_TEAM_NO_CLASS_RANGE_FAILS",
+    "chCode": "CH-2072",
+    "meaning": "Removing a team no-class range fails",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/home.md"
+  },
+  {
+    "id": 20626,
+    "page": "P002",
+    "category": 6,
+    "item": 26,
+    "name": "THE_CLASS_DAY_DIDNT_LOAD_WHEN_THE",
+    "chCode": "CH-2270",
+    "meaning": "The class day didn't load when the In class now sheet is open (the Home line is hidden while the read is in error)",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/home.md"
+  },
+  {
+    "id": 20701,
+    "page": "P002",
+    "category": 7,
+    "item": 1,
+    "name": "THE_SHEET_IS_OPEN_WHILE_OFFLINE",
+    "chCode": "CH-2970",
+    "meaning": "The sheet is open while offline",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/home.md"
+  },
+  {
     "id": 20801,
     "page": "P002",
     "category": 8,
@@ -1780,13 +1967,24 @@
     "category": 8,
     "item": 6,
     "name": "CONTROLS_STAY_WITH_THEIR_ROLE",
-    "meaning": "Home draws its own role's controls only: Player Home has no Message team, New event or N shortcut, no Plan, Add event or quick event types, no leaderboard and no link to another player's stats or thread, and Coach Home has no Message coach, Start a round or countdown.",
+    "meaning": "Home draws its own role's controls only: Player Home has no Message team, New event or N shortcut, no Plan, Add event or quick event types, no leaderboard and no link to another player's stats or thread, and Coach Home has no Message coach, New round or countdown.",
     "status": "implemented",
     "where": "src/clubhouse/screens/home/PlayerHome.tsx#PlayerHome; src/clubhouse/screens/home/PlayerHomePhone.tsx#PlayerHomePhone; src/clubhouse/screens/home/CoachHome.tsx#CoachHome",
     "tests": [
       "src/clubhouse/__tests__/home.test.tsx",
       "src/clubhouse/__tests__/player-home.test.tsx"
     ]
+  },
+  {
+    "id": 21101,
+    "page": "P002",
+    "category": 11,
+    "item": 1,
+    "name": "THE_COACH_REMOVES_A_TEAM_NO_CLASS",
+    "chCode": "CH-2570",
+    "meaning": "The coach removes a team no-class range",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/home.md"
   },
   {
     "id": 21401,
@@ -1831,6 +2029,17 @@
     "name": "HOVERING_OR_PRESSING_A_LEADERBOARD_ROW",
     "chCode": "CH-2602",
     "meaning": "Hovering or pressing a leaderboard row",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/home.md"
+  },
+  {
+    "id": 21603,
+    "page": "P002",
+    "category": 16,
+    "item": 3,
+    "name": "THE_HOME_CLASS_LINE_CHANGES",
+    "chCode": "CH-2670",
+    "meaning": "The Home class line changes (a minute tick, a refetch)",
     "status": "implemented",
     "catalog": "docs/clubhouse/catalog/home.md"
   },
@@ -1948,6 +2157,17 @@
     "tests": [
       "src/clubhouse/__tests__/player-home.test.tsx"
     ]
+  },
+  {
+    "id": 21808,
+    "page": "P002",
+    "category": 18,
+    "item": 8,
+    "name": "THE_HOME_CLASS_LINE",
+    "chCode": "CH-2870",
+    "meaning": "The Home class line",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/home.md"
   },
   {
     "id": 21901,
@@ -2234,6 +2454,17 @@
     "catalog": "docs/clubhouse/catalog/roster.md"
   },
   {
+    "id": 30580,
+    "page": "P003",
+    "category": 5,
+    "item": 80,
+    "name": "AN_ADDRESS_TYPED_OR_PASTED_IN_EMAIL",
+    "chCode": "CH-3180",
+    "meaning": "An address typed or pasted in Email them can’t be read as an email address",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/roster.md"
+  },
+  {
     "id": 30601,
     "page": "P003",
     "category": 6,
@@ -2487,6 +2718,17 @@
     "catalog": "docs/clubhouse/catalog/roster.md"
   },
   {
+    "id": 30680,
+    "page": "P003",
+    "category": 6,
+    "item": 80,
+    "name": "EMAILING_THE_INVITE_TO_PLAYERS_FAILS_THE",
+    "chCode": "CH-3080",
+    "meaning": "Emailing the invite to players fails (Invite players › Email them): the request fails, the coach has sent a lot of invites this hour, email is paused, or the team has no code",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/roster.md"
+  },
+  {
     "id": 30701,
     "page": "P003",
     "category": 7,
@@ -2498,6 +2740,17 @@
     "tests": [
       "src/clubhouse/__tests__/roster.test.tsx"
     ]
+  },
+  {
+    "id": 30780,
+    "page": "P003",
+    "category": 7,
+    "item": 80,
+    "name": "CUSTOMER_EMAIL_IS_SWITCHED_OFF_FOR_EVERYONE",
+    "chCode": "CH-3980",
+    "meaning": "Customer email is switched off for everyone (`HELM_CUSTOMER_EMAIL_ENABLED` is not `true`, `src/lib/email/outbound-gate.ts`) or no mail transport is configured, so Invite players cannot email anyone",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/roster.md"
   },
   {
     "id": 30801,
@@ -2889,6 +3142,17 @@
     "name": "AVAILABILITY_IS_SAID_IN_WORDS_NEVER_A",
     "chCode": "CH-3809",
     "meaning": "Availability is said in words, never a colour: \"Injured\" or \"Away\" (the word only, no note) in the list's line under the name, a face's note slot and the phone row, in plain ink (red is under par, amber a slide, green a gain). A face's name and a phone row's name append \"injured\" or \"away\"; the Availability control is a radio group named for the player; the head counts \"· 1 injured · 1 away\" among the active",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/roster.md"
+  },
+  {
+    "id": 31880,
+    "page": "P003",
+    "category": 18,
+    "item": 80,
+    "name": "EMAIL_THEM_IS_ONE_LABELLED_FIELD_EACH",
+    "chCode": "CH-3880",
+    "meaning": "Email them is one labelled field (\"Or email them\"). Each address is a chip with its own `Remove eli@school.edu` button, an unreadable one adds \", can’t be read as an email address\" and one that did not send \", didn’t send\"; Backspace in the empty field removes the last chip; the count and the result are read politely, and an unreadable address is announced as an alert",
     "status": "implemented",
     "catalog": "docs/clubhouse/catalog/roster.md"
   },
@@ -3608,7 +3872,7 @@
     "name": "THE_PHONES_SCORING_LINE_IS_AN_IMAGE",
     "chCode": "CH-4805",
     "meaning": "The phone's scoring line is an image with a written reading (\"Team scoring average by round day, from 74.8 to 73.4. Down 1.4 strokes…\"); a finger on it reads a round day (pointer only, the reading carries it for assistive technology); each player row is one link read as name, rounds, average and strokes gained (\"Early read\" under three rounds)",
-    "status": "implemented",
+    "status": "reserved",
     "catalog": "docs/clubhouse/catalog/stats-team.md"
   },
   {
@@ -4849,7 +5113,7 @@
     "category": 1,
     "item": 4,
     "name": "TIMES_ARE_THE_TEAMS_ZONE",
-    "meaning": "The loader reads every event that overlaps its window (it starts before the window ends and ends on or after its start), not only those that start in it, so a trip that began before the window fills the window's first days. Every time is resolved on the server in the team's timezone (Eastern time until the team sets one, and the page says so): a timed event is filed under its local day and hour; one that runs past midnight is on every day it covers, as production's calendar places it (its start to midnight, whole days, midnight to its end; one that ends at midnight exactly holds nothing of the next day), each day naming its part (From 7:00 AM, All day, Until 4:30 PM) and the panel the run's start and end; editing, Duplicate and a series edit from any of its days send the run's first day, start, last day and end, and it never drags; an all-day event keeps its stored dates, one entry for each day of a span.",
+    "meaning": "The loader reads every event that overlaps its window (it starts before the window ends and ends on or after its start), not only those that start in it, so a trip that began before the window fills the window's first days. Every time is resolved on the server in the team's timezone (Eastern time until the team sets one, and the page says so): a timed event is filed under its local day and hour; one that runs past midnight is on every day it covers, as production's calendar places it (its start to midnight, whole days, midnight to its end; one that ends at midnight exactly holds nothing of the next day), each day naming its part (From 7:00 AM, All day, Until 4:30 PM) and the panel the run's start and end; editing, Duplicate and a series edit from any of its days send the run's first day, start, last day and end, and in the week it is one bar in the all-day lane that drags by whole days with its times kept (P-4 4.5); an all-day event keeps its stored dates, one entry for each day of a span.",
     "status": "implemented",
     "where": "src/clubhouse/data/calendar.ts#loadCalendar, zoned",
     "tests": [
@@ -5048,6 +5312,17 @@
     "catalog": "docs/clubhouse/catalog/calendar.md"
   },
   {
+    "id": 60410,
+    "page": "P006",
+    "category": 4,
+    "item": 10,
+    "name": "THE_COURSE_PICKER_FINDS_NO_COURSE_FOR",
+    "chCode": "CH-6340",
+    "meaning": "The course picker (tournament section) finds no course for the search",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/calendar.md"
+  },
+  {
     "id": 60501,
     "page": "P006",
     "category": 5,
@@ -5088,6 +5363,116 @@
     "name": "BUSY_TIME_THAT_ENDS_BEFORE_IT_STARTS",
     "chCode": "CH-6104",
     "meaning": "Busy time that ends before it starts",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/calendar.md"
+  },
+  {
+    "id": 60505,
+    "page": "P006",
+    "category": 5,
+    "item": 5,
+    "name": "TRACK_ON_NO_COURSE",
+    "chCode": "CH-6140",
+    "meaning": "Track on, no course",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/calendar.md"
+  },
+  {
+    "id": 60506,
+    "page": "P006",
+    "category": 5,
+    "item": 6,
+    "name": "THE_LAST_DAY_IS_BEFORE_THE_FIRST",
+    "chCode": "CH-6141",
+    "meaning": "The last day is before the first day",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/calendar.md"
+  },
+  {
+    "id": 60507,
+    "page": "P006",
+    "category": 5,
+    "item": 7,
+    "name": "MORE_THAN_6_ROUNDS",
+    "chCode": "CH-6142",
+    "meaning": "More than 6 rounds (7 days with One round each day)",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/calendar.md"
+  },
+  {
+    "id": 60508,
+    "page": "P006",
+    "category": 5,
+    "item": 8,
+    "name": "A_ROUND_WOULD_START_BEFORE_THE_ONE",
+    "chCode": "CH-6143",
+    "meaning": "A round would start before the one ahead of it (round mode, the RPC, the sync trigger)",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/calendar.md"
+  },
+  {
+    "id": 60509,
+    "page": "P006",
+    "category": 5,
+    "item": 9,
+    "name": "TRACK_TURNED_ON_FOR_AN_EVENT_THAT",
+    "chCode": "CH-6144",
+    "meaning": "Track turned on for an event that was a round of a tournament that was removed",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/calendar.md"
+  },
+  {
+    "id": 60510,
+    "page": "P006",
+    "category": 5,
+    "item": 10,
+    "name": "CUSTOM_COUNTING_WITH_MORE_COUNTING_THAN_PLAYERS",
+    "chCode": "CH-6145",
+    "meaning": "Custom counting with more counting than players",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/calendar.md"
+  },
+  {
+    "id": 60511,
+    "page": "P006",
+    "category": 5,
+    "item": 11,
+    "name": "A_RESULTS_LINK_THAT_ISNT_HTTPS",
+    "chCode": "CH-6146",
+    "meaning": "A results link that isn't https",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/calendar.md"
+  },
+  {
+    "id": 60512,
+    "page": "P006",
+    "category": 5,
+    "item": 12,
+    "name": "NO_TOURNAMENT_NAME_OR_LONGER_THAN_120",
+    "chCode": "CH-6147",
+    "meaning": "No tournament name, or longer than 120",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/calendar.md"
+  },
+  {
+    "id": 60513,
+    "page": "P006",
+    "category": 5,
+    "item": 13,
+    "name": "EDITING_A_REPEATING_OCCURRENCE_OF_TYPE_TOURNAMENT",
+    "chCode": "CH-6148",
+    "meaning": "Editing a repeating occurrence of type Tournament",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/calendar.md"
+  },
+  {
+    "id": 60514,
+    "page": "P006",
+    "category": 5,
+    "item": 14,
+    "name": "EDITING_A_CANCELLED_EVENT_OF_TYPE_TOURNAMENT",
+    "chCode": "CH-6149",
+    "meaning": "Editing a cancelled event of type Tournament",
     "status": "implemented",
     "catalog": "docs/clubhouse/catalog/calendar.md"
   },
@@ -5422,6 +5807,314 @@
     "catalog": "docs/clubhouse/catalog/calendar.md"
   },
   {
+    "id": 60631,
+    "page": "P006",
+    "category": 6,
+    "item": 31,
+    "name": "SOMEONE_ELSE_CHANGED_THE_EVENT_WHILE_IT",
+    "chCode": "CH-6018",
+    "meaning": "Someone else changed the event while it was being moved (P-4 6.5)",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/calendar.md"
+  },
+  {
+    "id": 60632,
+    "page": "P006",
+    "category": 6,
+    "item": 32,
+    "name": "A_THIS_AND_FOLLOWING_SERIES_MOVE_FAILS",
+    "chCode": "CH-6019",
+    "meaning": "A \"This and following\" series move fails",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/calendar.md"
+  },
+  {
+    "id": 60633,
+    "page": "P006",
+    "category": 6,
+    "item": 33,
+    "name": "CHANGING_AN_EVENTS_LENGTH_FAILS",
+    "chCode": "CH-6020",
+    "meaning": "Changing an event's length (a grip or Alt+Shift+arrow) fails",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/calendar.md"
+  },
+  {
+    "id": 60634,
+    "page": "P006",
+    "category": 6,
+    "item": 34,
+    "name": "THE_SERVER_REFUSES_A_MOVE_BY_ROLE",
+    "chCode": "CH-6021",
+    "meaning": "The server refuses a move by role",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/calendar.md"
+  },
+  {
+    "id": 60635,
+    "page": "P006",
+    "category": 6,
+    "item": 35,
+    "name": "A_CHANGE_MARK_CANT_BE_READ_THE",
+    "chCode": "CH-6023",
+    "meaning": "A change mark can't be read (P-14): the stored mark is a shape this version doesn't know (an unknown version, a missing baseline)",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/calendar.md"
+  },
+  {
+    "id": 60636,
+    "page": "P006",
+    "category": 6,
+    "item": 36,
+    "name": "THE_EVENT_WAS_CANCELLED_OR_DELETED_WHILE",
+    "chCode": "CH-6022",
+    "meaning": "The event was cancelled or deleted while it was being moved",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/calendar.md"
+  },
+  {
+    "id": 60637,
+    "page": "P006",
+    "category": 6,
+    "item": 37,
+    "name": "SETTING_UP_A_TOURNAMENT_FROM_AN_EVENT",
+    "chCode": "CH-6048",
+    "meaning": "Setting up a tournament from an event that is already a round (someone else just did)",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/calendar.md"
+  },
+  {
+    "id": 60638,
+    "page": "P006",
+    "category": 6,
+    "item": 38,
+    "name": "THE_EVENT_BEING_SET_UP_WAS_DELETED",
+    "chCode": "CH-6049",
+    "meaning": "The event being set up was deleted or moved to another team",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/calendar.md"
+  },
+  {
+    "id": 60639,
+    "page": "P006",
+    "category": 6,
+    "item": 39,
+    "name": "A_ROUND_THAT_IS_UNDER_WAY_SUSPENDED",
+    "chCode": "CH-6050",
+    "meaning": "A round that is under way, suspended or final is changed or cancelled from the calendar",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/calendar.md"
+  },
+  {
+    "id": 60640,
+    "page": "P006",
+    "category": 6,
+    "item": 40,
+    "name": "CANCELLING_A_ROUND_OR_STOPPING_TRACKING_WHEN",
+    "chCode": "CH-6051",
+    "meaning": "Cancelling a round, or stopping tracking, when scores are entered",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/calendar.md"
+  },
+  {
+    "id": 60641,
+    "page": "P006",
+    "category": 6,
+    "item": 41,
+    "name": "THE_QUALIFIER_TO_LINK_WAS_DELETED_MEANWHILE",
+    "chCode": "CH-6052",
+    "meaning": "The qualifier to link was deleted meanwhile",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/calendar.md"
+  },
+  {
+    "id": 60642,
+    "page": "P006",
+    "category": 6,
+    "item": 42,
+    "name": "THE_TRIP_TO_LINK_IS_ALREADY_LINKED",
+    "chCode": "CH-6053",
+    "meaning": "The trip to link is already linked to another event",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/calendar.md"
+  },
+  {
+    "id": 60643,
+    "page": "P006",
+    "category": 6,
+    "item": 43,
+    "name": "A_PLAIN_SAVE_TRIES_TO_CHANGE_A",
+    "chCode": "CH-6054",
+    "meaning": "A plain save tries to change a round's type, team, series, name, place or course (the round guard)",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/calendar.md"
+  },
+  {
+    "id": 60644,
+    "page": "P006",
+    "category": 6,
+    "item": 44,
+    "name": "THE_COACH_ISNT_STAFFED_ON_THE_TEAM",
+    "chCode": "CH-6055",
+    "meaning": "The coach isn't staffed on the team (a permission refusal)",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/calendar.md"
+  },
+  {
+    "id": 60645,
+    "page": "P006",
+    "category": 6,
+    "item": 45,
+    "name": "SETTING_UP_THE_TOURNAMENT_FAILS_FOR_ANY",
+    "chCode": "CH-6056",
+    "meaning": "Setting up the tournament fails for any other reason (the transaction never committed)",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/calendar.md"
+  },
+  {
+    "id": 60646,
+    "page": "P006",
+    "category": 6,
+    "item": 46,
+    "name": "THE_QUALIFIER_TO_LINK_ALREADY_COUNTS_TOWARD",
+    "chCode": "CH-6057",
+    "meaning": "The qualifier to link already counts toward another event (not stolen)",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/calendar.md"
+  },
+  {
+    "id": 60647,
+    "page": "P006",
+    "category": 6,
+    "item": 47,
+    "name": "RESTORING_A_ROUND_THAT_ANOTHER_ROUND_HAS",
+    "chCode": "CH-6058",
+    "meaning": "Restoring a round that another round has moved in front of",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/calendar.md"
+  },
+  {
+    "id": 60648,
+    "page": "P006",
+    "category": 6,
+    "item": 48,
+    "name": "A_LINEUP_IS_SENT_BEFORE_4_33S",
+    "chCode": "CH-6059",
+    "meaning": "A lineup is sent before 4.33's set_entries RPC is applied",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/calendar.md"
+  },
+  {
+    "id": 60649,
+    "page": "P006",
+    "category": 6,
+    "item": 49,
+    "name": "SAVING_A_ROUND_FROM_THE_CALENDAR_FAILS",
+    "chCode": "CH-6060",
+    "meaning": "Saving a round from the calendar fails for any other reason",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/calendar.md"
+  },
+  {
+    "id": 60650,
+    "page": "P006",
+    "category": 6,
+    "item": 50,
+    "name": "CANCELLING_RESTORING_OR_STOPPING_TRACKING_FAILS_FOR",
+    "chCode": "CH-6061",
+    "meaning": "Cancelling, restoring or stopping tracking fails for any other reason",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/calendar.md"
+  },
+  {
+    "id": 60651,
+    "page": "P006",
+    "category": 6,
+    "item": 51,
+    "name": "THE_TOURNAMENT_CHANGED_SINCE_IT_WAS_OPENED",
+    "chCode": "CH-6241",
+    "meaning": "The tournament changed since it was opened (a version conflict)",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/calendar.md"
+  },
+  {
+    "id": 60652,
+    "page": "P006",
+    "category": 6,
+    "item": 52,
+    "name": "A_ROUNDS_DAY_OR_TIME_IS_SAVED",
+    "chCode": "CH-6041",
+    "meaning": "A round's day or time is saved from round mode (P-5 4.3)",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/calendar.md"
+  },
+  {
+    "id": 60653,
+    "page": "P006",
+    "category": 6,
+    "item": 53,
+    "name": "ROUND_MODE_FOR_A_TOURNAMENT_EVENT_WHOSE",
+    "chCode": "CH-6240",
+    "meaning": "Round mode for a tournament event whose round ref didn't load (the calendar's events did)",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/calendar.md"
+  },
+  {
+    "id": 60654,
+    "page": "P006",
+    "category": 6,
+    "item": 54,
+    "name": "A_ROUND_IS_CANCELLED_FROM_THE_CALENDAR",
+    "chCode": "CH-6042",
+    "meaning": "A round is cancelled from the calendar (CH-6540 confirmed)",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/calendar.md"
+  },
+  {
+    "id": 60655,
+    "page": "P006",
+    "category": 6,
+    "item": 55,
+    "name": "THE_WHOLE_TOURNAMENT_IS_CANCELLED_FROM_THE",
+    "chCode": "CH-6043",
+    "meaning": "The whole tournament is cancelled from the calendar (CH-6541 confirmed)",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/calendar.md"
+  },
+  {
+    "id": 60656,
+    "page": "P006",
+    "category": 6,
+    "item": 56,
+    "name": "A_ROUND_OR_THE_TOURNAMENT_IS_RESTORED",
+    "chCode": "CH-6044",
+    "meaning": "A round or the tournament is restored",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/calendar.md"
+  },
+  {
+    "id": 60657,
+    "page": "P006",
+    "category": 6,
+    "item": 57,
+    "name": "A_TOURNAMENT_IS_SET_UP_FROM_THE",
+    "chCode": "CH-6040",
+    "meaning": "A tournament is set up from the editor (P-5, `golf_tournaments_v1`)",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/calendar.md"
+  },
+  {
+    "id": 60658,
+    "page": "P006",
+    "category": 6,
+    "item": 58,
+    "name": "OPENING_A_FILE_ATTACHED_TO_AN_EVENT",
+    "chCode": "CH-6024",
+    "meaning": "Opening a file attached to an event fails (the signed link can't be made, or the file has no stored copy)",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/calendar.md"
+  },
+  {
     "id": 60701,
     "page": "P006",
     "category": 7,
@@ -5631,6 +6324,28 @@
     "catalog": "docs/clubhouse/catalog/calendar.md"
   },
   {
+    "id": 61106,
+    "page": "P006",
+    "category": 11,
+    "item": 6,
+    "name": "CANCEL_ROUND_FROM_THE_INSPECTORS_MENU_OR",
+    "chCode": "CH-6540",
+    "meaning": "Cancel round, from the inspector's menu or round mode",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/calendar.md"
+  },
+  {
+    "id": 61107,
+    "page": "P006",
+    "category": 11,
+    "item": 7,
+    "name": "CANCEL_THE_WHOLE_TOURNAMENT_INSTEAD_FROM_CH",
+    "chCode": "CH-6541",
+    "meaning": "Cancel the whole tournament instead, from CH-6540",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/calendar.md"
+  },
+  {
     "id": 61201,
     "page": "P006",
     "category": 12,
@@ -5772,7 +6487,7 @@
     "item": 4,
     "name": "SWITCHING_BETWEEN_DAY_WEEK_MONTH_AND_AGENDA",
     "chCode": "CH-6604",
-    "meaning": "Switching between Day, Week, Month and Agenda (Day, Month and List on the phone)",
+    "meaning": "Switching between Day, Week, Month and List (Day, Month and List on the phone)",
     "status": "implemented",
     "catalog": "docs/clubhouse/catalog/calendar.md"
   },
@@ -5799,13 +6514,24 @@
     "catalog": "docs/clubhouse/catalog/calendar.md"
   },
   {
+    "id": 61607,
+    "page": "P006",
+    "category": 16,
+    "item": 7,
+    "name": "TOURNAMENT_CHOSEN_TRACK_TURNED_ON_OR_OFF",
+    "chCode": "CH-6640",
+    "meaning": "Tournament chosen (Track on), Track turned on or off, More details opened",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/calendar.md"
+  },
+  {
     "id": 61701,
     "page": "P006",
     "category": 17,
     "item": 1,
     "name": "OPENING_AN_EVENT_A_DAY_OR_A",
     "chCode": "CH-6701",
-    "meaning": "Opening an event, a day or a panel item; changing view, week or players; each Find a time step",
+    "meaning": "Opening a day from the week header or choosing a List row; changing view, week or players; each Find a time step (opening an event is a plain navigation tap and is silent, D-70)",
     "status": "implemented",
     "catalog": "docs/clubhouse/catalog/calendar.md"
   },
@@ -5873,6 +6599,72 @@
     "chCode": "CH-6804",
     "meaning": "No axe violations in any preview view and state, 1280px and 390px. One known exception, listed in the scan: the 7-day week at 390px squeezes overlapping events under 24px until the phone Calendar is designed",
     "status": "reserved",
+    "catalog": "docs/clubhouse/catalog/calendar.md"
+  },
+  {
+    "id": 61805,
+    "page": "P006",
+    "category": 18,
+    "item": 5,
+    "name": "A_COMPLETED_MOVE_IS_SAID_ONCE_NEVER",
+    "chCode": "CH-6805",
+    "meaning": "A completed move is said once, never during a drag: \"Practice moved to 4:00 PM, Wednesday 15 October. Undo with Command Z.\" (Control Z off a Mac; on touch \"Undo is in the notice.\"); a resize \"Practice now ends at 6:30 PM.\"; a clash appended; Undo \"Move undone.\"",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/calendar.md"
+  },
+  {
+    "id": 61806,
+    "page": "P006",
+    "category": 18,
+    "item": 6,
+    "name": "MONTH_DRAG_IS_ANNOUNCED_PICKED_UP_FALL",
+    "chCode": "CH-6806",
+    "meaning": "Month drag is announced: \"Picked up Fall qualifier R2, Thursday 16 October. Arrow keys choose a day, Space drops, Escape cancels.\", \"Over Friday 17 October.\", \"Fall qualifier R2 moved to Friday 17 October at 8:42 AM.\", or \"Move cancelled. Fall qualifier R2 stays on Thursday 16 October.\"",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/calendar.md"
+  },
+  {
+    "id": 61807,
+    "page": "P006",
+    "category": 18,
+    "item": 7,
+    "name": "THE_TOURNAMENT_SECTION_IS_SHOWN_OR_HIDDEN",
+    "chCode": "CH-6840",
+    "meaning": "The tournament section is shown or hidden (Tournament chosen, Track turned on or off): one polite line: \"Tournament details shown. 3 rounds.\" or \"Tournament details hidden.\"",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/calendar.md"
+  },
+  {
+    "id": 61808,
+    "page": "P006",
+    "category": 18,
+    "item": 8,
+    "name": "THE_ROUNDS_CHANGE_WITH_THE_DAYS_OR",
+    "chCode": "CH-6841",
+    "meaning": "The rounds change with the days, or reorder after a day or tee change: one polite line: \"3 rounds, Thursday 5 November to Saturday 7 November.\" or \"Rounds reordered. Round 2 is now Friday 6 November at 8:30 AM.\"",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/calendar.md"
+  },
+  {
+    "id": 61809,
+    "page": "P006",
+    "category": 18,
+    "item": 9,
+    "name": "ESCAPE_WHILE_THE_TOURNAMENT_IS_BEING_CREATED",
+    "chCode": "CH-6842",
+    "meaning": "Escape (or the close button) while the tournament is being created: the editor stays open and says \"Still creating the tournament.\"",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/calendar.md"
+  },
+  {
+    "id": 61810,
+    "page": "P006",
+    "category": 18,
+    "item": 10,
+    "name": "A_ROUND_DROPPED_WHERE_IT_WOULD_START",
+    "chCode": "CH-6843",
+    "meaning": "A round dropped (or moved with Alt and an arrow) where it would start before the round ahead of it, or after the one behind: it snaps back, felt as an error, nothing asked or written. One polite line: \"R2 can’t move before R1. Move R1 first.\" (or \"R2 can’t move after R3. Move R3 first.\")",
+    "status": "implemented",
     "catalog": "docs/clubhouse/catalog/calendar.md"
   },
   {
@@ -6078,6 +6870,17 @@
     "catalog": "docs/clubhouse/catalog/messages.md"
   },
   {
+    "id": 70211,
+    "page": "P007",
+    "category": 2,
+    "item": 11,
+    "name": "THE_SEEN_BY_LIST_IS_LOADING",
+    "chCode": "CH-7411",
+    "meaning": "The Seen by list is loading",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/messages.md"
+  },
+  {
     "id": 70301,
     "page": "P007",
     "category": 3,
@@ -6186,6 +6989,28 @@
     "name": "NOTHING_AT_ALL_YET_NO_CONVERSATION_AND",
     "chCode": "CH-7309",
     "meaning": "Nothing at all yet: no conversation and no announcement (D-71)",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/messages.md"
+  },
+  {
+    "id": 70410,
+    "page": "P007",
+    "category": 4,
+    "item": 10,
+    "name": "NOBODY_HAS_SEEN_A_GROUP_MESSAGE_YET",
+    "chCode": "CH-7310",
+    "meaning": "Nobody has seen a group message yet (the Seen by list)",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/messages.md"
+  },
+  {
+    "id": 70411,
+    "page": "P007",
+    "category": 4,
+    "item": 11,
+    "name": "NOTIFY_ANYWAY_IS_OFFERED_A_COACH_A",
+    "chCode": "CH-7370",
+    "meaning": "Notify anyway is offered: a coach, a conversation of their own team, a recipient in class with pushes held (P-10)",
     "status": "implemented",
     "catalog": "docs/clubhouse/catalog/messages.md"
   },
@@ -6416,7 +7241,7 @@
     "item": 15,
     "name": "COPYING_A_MESSAGE_FAILS",
     "chCode": "CH-7020",
-    "meaning": "Copying a message fails (phone, from the long-press sheet)",
+    "meaning": "Copying a message fails (phone, from the long-press sheet; desktop, from the message menu)",
     "status": "implemented",
     "catalog": "docs/clubhouse/catalog/messages.md"
   },
@@ -6659,6 +7484,127 @@
     "name": "DELETING_A_CONVERSATION_FROM_YOUR_INBOX_FAILS",
     "chCode": "CH-7025",
     "meaning": "Deleting a conversation from your inbox fails",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/messages.md"
+  },
+  {
+    "id": 70638,
+    "page": "P007",
+    "category": 6,
+    "item": 38,
+    "name": "MARKING_A_CONVERSATION_READ_OR_UNREAD_FROM",
+    "chCode": "CH-7026",
+    "meaning": "Marking a conversation read or unread from its row (menu or swipe) fails",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/messages.md"
+  },
+  {
+    "id": 70639,
+    "page": "P007",
+    "category": 6,
+    "item": 39,
+    "name": "CLOSING_A_POLL_FAILS",
+    "chCode": "CH-7027",
+    "meaning": "Closing a poll fails (the sender's Close poll, after the confirm)",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/messages.md"
+  },
+  {
+    "id": 70640,
+    "page": "P007",
+    "category": 6,
+    "item": 40,
+    "name": "SENDING_A_POLL_FAILS",
+    "chCode": "CH-7028",
+    "meaning": "Sending a poll fails (New poll › Send poll)",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/messages.md"
+  },
+  {
+    "id": 70641,
+    "page": "P007",
+    "category": 6,
+    "item": 41,
+    "name": "A_VOTE_IS_REFUSED_BECAUSE_THE_POLL",
+    "chCode": "CH-7030",
+    "meaning": "A vote is refused because the poll ended between the tap and the write (only with the held vote guard, OQ-68)",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/messages.md"
+  },
+  {
+    "id": 70642,
+    "page": "P007",
+    "category": 6,
+    "item": 42,
+    "name": "A_VOTE_ON_A_POLL_ISNT_SAVED",
+    "chCode": "CH-7029",
+    "meaning": "A vote on a poll isn't saved (tap a choice in a poll card)",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/messages.md"
+  },
+  {
+    "id": 70643,
+    "page": "P007",
+    "category": 6,
+    "item": 43,
+    "name": "AN_EDITED_POLL_IS_SENT_AFTER_A",
+    "chCode": "CH-7031",
+    "meaning": "An edited poll is sent after a send that threw, and the earlier copy had landed after all",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/messages.md"
+  },
+  {
+    "id": 70644,
+    "page": "P007",
+    "category": 6,
+    "item": 44,
+    "name": "THE_SEEN_BY_LIST_COULDNT_LOAD",
+    "chCode": "CH-7218",
+    "meaning": "The Seen by list couldn't load (P-1)",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/messages.md"
+  },
+  {
+    "id": 70645,
+    "page": "P007",
+    "category": 6,
+    "item": 45,
+    "name": "A_COACH_IN_A_1_1_WITH",
+    "chCode": "CH-7270",
+    "meaning": "A coach, in a 1:1 with a player who is in a class or an exam right now and whose pushes are held (P-10)",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/messages.md"
+  },
+  {
+    "id": 70646,
+    "page": "P007",
+    "category": 6,
+    "item": 46,
+    "name": "A_MESSAGE_SENT_WITH_NOTIFY_ANYWAY_ONCE",
+    "chCode": "CH-7271",
+    "meaning": "A message sent with Notify anyway, once a push really reached a device (P-10)",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/messages.md"
+  },
+  {
+    "id": 70647,
+    "page": "P007",
+    "category": 6,
+    "item": 47,
+    "name": "A_COACH_IN_A_GROUP_OF_THEIR",
+    "chCode": "CH-7272",
+    "meaning": "A coach, in a group of their own team with at least one player in a class or an exam (P-10)",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/messages.md"
+  },
+  {
+    "id": 70648,
+    "page": "P007",
+    "category": 6,
+    "item": 48,
+    "name": "A_COACH_OPENS_DETAILS_ON_A_1",
+    "chCode": "CH-7273",
+    "meaning": "A coach opens Details on a 1:1 with a player of their team (P-10)",
     "status": "implemented",
     "catalog": "docs/clubhouse/catalog/messages.md"
   },
@@ -6919,6 +7865,39 @@
     "catalog": "docs/clubhouse/catalog/messages.md"
   },
   {
+    "id": 71607,
+    "page": "P007",
+    "category": 16,
+    "item": 7,
+    "name": "MUTING_A_CONVERSATION_FROM_ITS_ROW",
+    "chCode": "CH-7607",
+    "meaning": "Muting a conversation from its row (owner decision 14)",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/messages.md"
+  },
+  {
+    "id": 71608,
+    "page": "P007",
+    "category": 16,
+    "item": 8,
+    "name": "A_GROUP_MESSAGES_RECEIPT_CHANGES",
+    "chCode": "CH-7608",
+    "meaning": "A group message's receipt changes (\"Sent\" → \"Seen by 4 of 11\" → \"Seen by everyone\")",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/messages.md"
+  },
+  {
+    "id": 71609,
+    "page": "P007",
+    "category": 16,
+    "item": 9,
+    "name": "THE_SEEN_BY_SHEET_OR_POPOVER_OPENS",
+    "chCode": "CH-7609",
+    "meaning": "The Seen by sheet (phone) or popover (desktop) opens and updates live",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/messages.md"
+  },
+  {
     "id": 71701,
     "page": "P007",
     "category": 17,
@@ -6947,7 +7926,7 @@
     "item": 3,
     "name": "PICKING_A_REACTION_A_FILTER_OR_A",
     "chCode": "CH-7703",
-    "meaning": "Picking a reaction, a filter or a conversation",
+    "meaning": "Picking a reaction or a filter (opening a conversation or a search hit is a plain navigation tap and is silent, D-70)",
     "status": "implemented",
     "catalog": "docs/clubhouse/catalog/messages.md"
   },
@@ -6960,6 +7939,17 @@
     "chCode": "CH-7704",
     "meaning": "A long press on a message (phone)",
     "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/messages.md"
+  },
+  {
+    "id": 71705,
+    "page": "P007",
+    "category": 17,
+    "item": 5,
+    "name": "THE_HOLD_ON_SEND_REACHES_450_MS",
+    "chCode": "CH-7770",
+    "meaning": "The hold on Send reaches 450 ms (phone, Notify anyway offered)",
+    "status": "reserved",
     "catalog": "docs/clubhouse/catalog/messages.md"
   },
   {
@@ -7003,6 +7993,28 @@
     "name": "PHONE_A_MESSAGES_ACTIONS_HAVE_A_PATH",
     "chCode": "CH-7804",
     "meaning": "Phone: a message's actions have a path besides the long press (a \"Message actions\" button VoiceOver and keyboards reach, or a right click); each pushed screen is named by its title, and its back link names where it goes (\"Back to Messages\", \"Back to Chat\"). New message opens on its title; a hardware keyboard's Esc is Cancel, and focus returns to New message",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/messages.md"
+  },
+  {
+    "id": 71805,
+    "page": "P007",
+    "category": 18,
+    "item": 5,
+    "name": "THE_RECEIPTS_ACCESSIBLE_NAME_ON_ONE_STABLE",
+    "chCode": "CH-7805",
+    "meaning": "The receipt's accessible name (\"Seen by 9 of 11 people. Show who\") sits on one stable node, its fading copies `aria-hidden`, so a count change isn't announced; the open list says moves politely (\"Eli Brandt has seen it.\")",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/messages.md"
+  },
+  {
+    "id": 71806,
+    "page": "P007",
+    "category": 18,
+    "item": 6,
+    "name": "NOTIFY_ANYWAY_WITHOUT_A_LONG_PRESS",
+    "chCode": "CH-7870",
+    "meaning": "Notify anyway without a long press (P-10)",
     "status": "implemented",
     "catalog": "docs/clubhouse/catalog/messages.md"
   },
@@ -7852,6 +8864,28 @@
     "catalog": "docs/clubhouse/catalog/settings.md"
   },
   {
+    "id": 80643,
+    "page": "P008",
+    "category": 6,
+    "item": 43,
+    "name": "HOLD_DURING_CLASS_FAILS_TO_SAVE",
+    "chCode": "CH-8030",
+    "meaning": "Hold during class fails to save (P-10)",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/settings.md"
+  },
+  {
+    "id": 80644,
+    "page": "P008",
+    "category": 6,
+    "item": 44,
+    "name": "A_PLAYER_WITH_CLASS_STATUS_ON_OPENS",
+    "chCode": "CH-8216",
+    "meaning": "A player with class status on opens Notifications (P-10)",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/settings.md"
+  },
+  {
     "id": 80701,
     "page": "P008",
     "category": 7,
@@ -7872,6 +8906,17 @@
     "name": "CUSTOMER_EMAIL_IS_SWITCHED_OFF_FOR_EVERYONE",
     "chCode": "CH-8901",
     "meaning": "Customer email is switched off for everyone (`HELM_CUSTOMER_EMAIL_ENABLED` is not `true`, `src/lib/email/outbound-gate.ts`), so no email setting can send anything",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/settings.md"
+  },
+  {
+    "id": 80780,
+    "page": "P008",
+    "category": 7,
+    "item": 80,
+    "name": "SETTINGS_PREFERENCES_TIME_FORMAT",
+    "chCode": "CH-8980",
+    "meaning": "Settings › Preferences › Time format (a device preference, like the distance unit)",
     "status": "implemented",
     "catalog": "docs/clubhouse/catalog/settings.md"
   },
@@ -8640,7 +9685,7 @@
     "category": 1,
     "item": 1,
     "name": "LIST_READY",
-    "meaning": "The list opens with the count of active and concluded qualifiers, the All, Active and Concluded pills with their counts, search, the live qualifier (or, with none live, the active one that starts first) as the hero with its leaders, the other active ones as cards under Active and the concluded ones under Concluded; a coach also gets Create qualifier.",
+    "meaning": "The list opens with the count of active and concluded qualifiers, the All, Active and Concluded pills with their counts, search, the live qualifier (or, with none live, the active one that starts first) as the hero with its leaders, the other active ones as cards under Active and the concluded ones under Concluded; a coach also gets New qualifier.",
     "status": "implemented",
     "where": "src/clubhouse/screens/qualifiers/QualifiersList.tsx#QualifiersList",
     "tests": [
@@ -9592,6 +10637,17 @@
     "catalog": "docs/clubhouse/catalog/qualifiers.md"
   },
   {
+    "id": 90707,
+    "page": "P009",
+    "category": 7,
+    "item": 7,
+    "name": "PLAYER_THEIR_OWN_RANKED_ROW_ON_A",
+    "chCode": "CH-09908",
+    "meaning": "Player: their own ranked row on a board that draws a line",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/qualifiers.md"
+  },
+  {
     "id": 90801,
     "page": "P009",
     "category": 8,
@@ -9684,7 +10740,7 @@
     "category": 8,
     "item": 8,
     "name": "COACH_CONTROLS_HIDDEN_FROM_PLAYERS",
-    "meaning": "A player is never shown a coach control: not Create qualifier, Manage selections, Edit, Close, Reopen, the phone's Qualifier actions, round-by-round scores or the coach's Selections panel (hiding them is a courtesy; the gates are 90803 and 90810 to 90812).",
+    "meaning": "A player is never shown a coach control: not New qualifier, Manage selections, Edit, Close, Reopen, the phone's Qualifier actions, round-by-round scores or the coach's Selections panel (hiding them is a courtesy; the gates are 90803 and 90810 to 90812).",
     "status": "implemented",
     "where": "src/clubhouse/screens/qualifiers/QualifiersList.tsx; QualifierDetail.tsx; QualifierDetailPhone.tsx; QualifierSections.tsx#Selections",
     "tests": [
@@ -11309,7 +12365,7 @@
     "category": 1,
     "item": 5,
     "name": "UNBUILT_TARGETS_ARE_NOT_DRAWN",
-    "meaning": "A control whose screen is not rebuilt is not drawn, never a dead button (nav.rebuiltHref). New round, Start a round, Continue and Submit lead to /rounds/new and /rounds/continue/[id], which are rebuilt for a player (round entry, over the round engine), so they are drawn; a coach's are not, since a coach does not log rounds. /rounds/recover is rebuilt for a player (swap audit F-02) and is reached from a failed submit, so nothing in the Library links there. Every posted round in the book opens its review. A round whose review cannot be opened is still listed, as one named group. /rounds/[id]/review (CoachHelm's) is not rebuilt for either role, and neither is the coach's Rounds library.",
+    "meaning": "A control whose screen is not rebuilt is not drawn, never a dead button (nav.rebuiltHref). New round, Continue and Submit lead to /rounds/new and /rounds/continue/[id], which are rebuilt for a player (round entry, over the round engine), so they are drawn; a coach's are not, since a coach does not log rounds. /rounds/recover is rebuilt for a player (swap audit F-02) and is reached from a failed submit, so nothing in the Library links there. Every posted round in the book opens its review. A round whose review cannot be opened is still listed, as one named group. /rounds/[id]/review (CoachHelm's) is not rebuilt for either role, and neither is the coach's Rounds library.",
     "status": "implemented",
     "where": "src/clubhouse/screens/rounds/RoundsLibrary.tsx#roundsLinks; src/clubhouse/shell/nav.ts#rebuiltHref; src/clubhouse/shell/nav.ts#CH_REBUILT_PATTERNS; src/clubhouse/shell/nav.ts#CH_REBUILT_ROUTES",
     "tests": [
@@ -11621,6 +12677,17 @@
     "catalog": "docs/clubhouse/catalog/rounds.md"
   },
   {
+    "id": 110215,
+    "page": "P011",
+    "category": 2,
+    "item": 15,
+    "name": "THE_COURSE_PAGE_DIDNT_LOAD",
+    "chCode": "CH-11421",
+    "meaning": "The course page didn't load (P-7)",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/rounds.md"
+  },
+  {
     "id": 110401,
     "page": "P011",
     "category": 4,
@@ -11872,6 +12939,39 @@
     "name": "TEAM_ROUNDS_COMPLETED_ROUNDS_WITH_NO_SCORE",
     "chCode": "CH-11322",
     "meaning": "Team rounds: completed rounds with no score at all",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/rounds.md"
+  },
+  {
+    "id": 110424,
+    "page": "P011",
+    "category": 4,
+    "item": 24,
+    "name": "A_COURSE_PAGE_THIS_VIEWER_HAS_NO",
+    "chCode": "CH-11330",
+    "meaning": "A course page this viewer has no rounds at: an unknown key, or another player's course",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/rounds.md"
+  },
+  {
+    "id": 110425,
+    "page": "P011",
+    "category": 4,
+    "item": 25,
+    "name": "A_COACHS_COURSE_PAGE_FOR_A_PLAYER",
+    "chCode": "CH-11331",
+    "meaning": "A coach's course page for a player who isn't on their team, or no player named",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/rounds.md"
+  },
+  {
+    "id": 110426,
+    "page": "P011",
+    "category": 4,
+    "item": 26,
+    "name": "THE_COURSE_PAGES_HOLE_BY_HOLE_WITH",
+    "chCode": "CH-11333",
+    "meaning": "The course page's Hole by hole with no round here entered hole by hole (or the holes didn't load)",
     "status": "implemented",
     "catalog": "docs/clubhouse/catalog/rounds.md"
   },
@@ -12700,6 +13800,39 @@
     "catalog": "docs/clubhouse/catalog/rounds.md"
   },
   {
+    "id": 110760,
+    "page": "P011",
+    "category": 7,
+    "item": 60,
+    "name": "COACHHELMS_PUTT_MISS_ASK_THE_HOLES_FIRST",
+    "chCode": "CH-11960",
+    "meaning": "CoachHelm's putt-miss ask (chs-22, Slice 8a, `coachhelm_data_gap_prompt_v1`): the hole's first putt missed from a distance band one of the player's open reads is waiting on, and it has no miss tag",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/rounds.md"
+  },
+  {
+    "id": 110761,
+    "page": "P011",
+    "category": 7,
+    "item": 61,
+    "name": "THE_RECOVERY_TAP_THE_LAST_SHOT_RECORDED",
+    "chCode": "CH-11961",
+    "meaning": "The recovery tap (chs-23, Slice 8b, `coachhelm_data_prompts_v2`): the last shot recorded is a tee shot into the rough or an 'other' lie, not yet answered",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/rounds.md"
+  },
+  {
+    "id": 110762,
+    "page": "P011",
+    "category": 7,
+    "item": 62,
+    "name": "THE_COURSE_NUDGE_THE_ROUND_HAS_NO",
+    "chCode": "CH-11962",
+    "meaning": "The course nudge (chs-23, Slice 8b, `coachhelm_data_prompts_v2`): the round has no library course (a course typed by hand)",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/rounds.md"
+  },
+  {
     "id": 110801,
     "page": "P011",
     "category": 8,
@@ -13046,6 +14179,17 @@
     "catalog": "docs/clubhouse/catalog/rounds.md"
   },
   {
+    "id": 111124,
+    "page": "P011",
+    "category": 11,
+    "item": 24,
+    "name": "COMPARE_TWO_ROUNDS_AT_A_COURSE",
+    "chCode": "CH-11530",
+    "meaning": "Compare two rounds at a course (P-7)",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/rounds.md"
+  },
+  {
     "id": 111201,
     "page": "P011",
     "category": 12,
@@ -13268,7 +14412,7 @@
     "item": 3,
     "name": "CONTINUE_SUBMIT_OR_START_A_ROUND_IS",
     "chCode": "CH-11703",
-    "meaning": "Continue, Submit or Start a round is tapped",
+    "meaning": "Continue, Submit or New round is tapped",
     "status": "implemented",
     "catalog": "docs/clubhouse/catalog/rounds.md"
   },
@@ -13347,6 +14491,17 @@
     "chCode": "CH-11710",
     "meaning": "Tap in is tapped (CH-11913)",
     "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/rounds.md"
+  },
+  {
+    "id": 111760,
+    "page": "P011",
+    "category": 17,
+    "item": 60,
+    "name": "A_CHIP_IN_A_DATA_PROMPT_IS",
+    "chCode": "CH-11760",
+    "meaning": "A chip in a data prompt is tapped: a putt miss side (CH-11960), Clear shot or Blocked or punch out (CH-11961)",
+    "status": "reserved",
     "catalog": "docs/clubhouse/catalog/rounds.md"
   },
   {
@@ -13929,6 +15084,39 @@
     ]
   },
   {
+    "id": 120517,
+    "page": "P012",
+    "category": 5,
+    "item": 17,
+    "name": "AN_EXAM_ENDS_AT_OR_BEFORE_IT",
+    "chCode": "CH-12170",
+    "meaning": "An exam ends at or before it starts",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/classes.md"
+  },
+  {
+    "id": 120518,
+    "page": "P012",
+    "category": 5,
+    "item": 18,
+    "name": "AN_EXAM_IS_LONGER_THAN_4_HOURS",
+    "chCode": "CH-12171",
+    "meaning": "An exam is longer than 4 hours",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/classes.md"
+  },
+  {
+    "id": 120519,
+    "page": "P012",
+    "category": 5,
+    "item": 19,
+    "name": "AN_EXAMS_DATE_IS_OUTSIDE_THE_CONFIRMED",
+    "chCode": "CH-12172",
+    "meaning": "An exam's date is outside the confirmed term (classes start to exams end)",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/classes.md"
+  },
+  {
     "id": 120601,
     "page": "P012",
     "category": 6,
@@ -14061,6 +15249,116 @@
     "name": "DELETE_ALL_CLASSES_STOPPED_HALF_WAY_SOME",
     "chCode": "CH-12006",
     "meaning": "Delete all classes stopped half-way: some classes are gone and some are not",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/classes.md"
+  },
+  {
+    "id": 120613,
+    "page": "P012",
+    "category": 6,
+    "item": 13,
+    "name": "THE_SHARING_SWITCHS_WRITE_IS_REFUSED",
+    "chCode": "CH-12070",
+    "meaning": "The sharing switch's write is refused (class status, P-10)",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/classes.md"
+  },
+  {
+    "id": 120614,
+    "page": "P012",
+    "category": 6,
+    "item": 14,
+    "name": "NO_CLASS_TODAY_IS_REFUSED",
+    "chCode": "CH-12071",
+    "meaning": "\"No class today\" is refused",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/classes.md"
+  },
+  {
+    "id": 120615,
+    "page": "P012",
+    "category": 6,
+    "item": 15,
+    "name": "UNDO_ON_NO_CLASS_TODAY_IS_REFUSED",
+    "chCode": "CH-12072",
+    "meaning": "Undo on \"No class today\" is refused",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/classes.md"
+  },
+  {
+    "id": 120616,
+    "page": "P012",
+    "category": 6,
+    "item": 16,
+    "name": "TAGGING_UNTAGGED_CLASSES_WITH_THE_TERM_IS",
+    "chCode": "CH-12073",
+    "meaning": "Tagging untagged classes with the term is refused",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/classes.md"
+  },
+  {
+    "id": 120617,
+    "page": "P012",
+    "category": 6,
+    "item": 17,
+    "name": "A_CLASSS_USE_FOR_CLASS_STATUS_SWITCH",
+    "chCode": "CH-12074",
+    "meaning": "A class's \"Use for class status\" switch is refused",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/classes.md"
+  },
+  {
+    "id": 120618,
+    "page": "P012",
+    "category": 6,
+    "item": 18,
+    "name": "ADDING_AN_EXAM_IS_REFUSED",
+    "chCode": "CH-12075",
+    "meaning": "Adding an exam is refused",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/classes.md"
+  },
+  {
+    "id": 120619,
+    "page": "P012",
+    "category": 6,
+    "item": 19,
+    "name": "REMOVING_AN_EXAM_IS_REFUSED",
+    "chCode": "CH-12076",
+    "meaning": "Removing an exam is refused",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/classes.md"
+  },
+  {
+    "id": 120620,
+    "page": "P012",
+    "category": 6,
+    "item": 20,
+    "name": "DELIVER_NOW_IS_REFUSED",
+    "chCode": "CH-12077",
+    "meaning": "Deliver now is refused (the panel's Pushes during class row)",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/classes.md"
+  },
+  {
+    "id": 120621,
+    "page": "P012",
+    "category": 6,
+    "item": 21,
+    "name": "THE_PLAYERS_CLASS_DAY_DIDNT_LOAD",
+    "chCode": "CH-12270",
+    "meaning": "The player's class day didn't load",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/classes.md"
+  },
+  {
+    "id": 120622,
+    "page": "P012",
+    "category": 6,
+    "item": 22,
+    "name": "THE_PLAYERS_PUSHES_DURING_CLASS_ROW",
+    "chCode": "CH-12271",
+    "meaning": "The player's Pushes during class row",
     "status": "implemented",
     "catalog": "docs/clubhouse/catalog/classes.md"
   },
@@ -14202,6 +15500,17 @@
     "name": "START_OVER_IN_THE_IMPORT_REVIEW_ONCE",
     "chCode": "CH-12504",
     "meaning": "Start over in the import review, once it holds three or more classes or one came off (an emptied review, or one or two classes as read, starts over at once)",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/classes.md"
+  },
+  {
+    "id": 121105,
+    "page": "P012",
+    "category": 11,
+    "item": 5,
+    "name": "THE_PLAYER_REMOVES_AN_EXAM",
+    "chCode": "CH-12570",
+    "meaning": "The player removes an exam",
     "status": "implemented",
     "catalog": "docs/clubhouse/catalog/classes.md"
   },
@@ -14465,6 +15774,17 @@
     "where": "scripts/clubhouse/a11y.mjs (CH_A11Y_PAGES)"
   },
   {
+    "id": 121807,
+    "page": "P012",
+    "category": 18,
+    "item": 7,
+    "name": "THE_CLASS_STATUS_PANEL",
+    "chCode": "CH-12870",
+    "meaning": "The Class status panel",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/classes.md"
+  },
+  {
     "id": 121901,
     "page": "P012",
     "category": 19,
@@ -14711,8 +16031,8 @@
     "item": 9,
     "name": "PROFILE_THE_GAME_PROFILE_IS_ON_ITS",
     "chCode": "CH-13460",
-    "meaning": "Profile: the Game profile is on its way",
-    "status": "implemented",
+    "meaning": "(retired with the Game profile, chs-37) Profile: the Game profile is on its way",
+    "status": "deprecated",
     "catalog": "docs/clubhouse/catalog/coachhelm.md"
   },
   {
@@ -14821,7 +16141,7 @@
     "item": 4,
     "name": "PLAYER_COACHHELM_IS_OFF_FOR_THEM",
     "chCode": "CH-13304",
-    "meaning": "Player: CoachHelm is off for them (the board, and Game profile, Standing and Deep dive, which say the same, answered at once and with no sub-navigation)",
+    "meaning": "Player: CoachHelm is off for them (the board, and Standing and Deep dive, which say the same, answered at once and with no sub-navigation)",
     "status": "implemented",
     "catalog": "docs/clubhouse/catalog/coachhelm.md"
   },
@@ -14988,7 +16308,7 @@
     "item": 19,
     "name": "PROFILE_NO_MEASURE_HAS_ENOUGH_ROUNDS_YET",
     "chCode": "CH-13360",
-    "meaning": "Profile: no measure has enough rounds yet (no genome row, or one with nothing computed)",
+    "meaning": "Standing: How you play has no measure with enough rounds yet (no genome row, or one with nothing computed)",
     "status": "implemented",
     "catalog": "docs/clubhouse/catalog/coachhelm.md"
   },
@@ -14999,7 +16319,7 @@
     "item": 20,
     "name": "PROFILE_SOME_MEASURES_HAVE_ENOUGH_ROUNDS_AND",
     "chCode": "CH-13361",
-    "meaning": "Profile: some measures have enough rounds and some do not (an early read)",
+    "meaning": "Standing: How you play is an early read (some measures have enough rounds, some do not)",
     "status": "implemented",
     "catalog": "docs/clubhouse/catalog/coachhelm.md"
   },
@@ -15165,6 +16485,17 @@
     "name": "STANDING_A_PART_OF_THE_ROUND_ON",
     "chCode": "CH-13374",
     "meaning": "Standing: a part of the round on Where strokes go has no figure (no strokes-gained row for it, or no Tour figure to compare with)",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/coachhelm.md"
+  },
+  {
+    "id": 130460,
+    "page": "P013",
+    "category": 4,
+    "item": 60,
+    "name": "PLAYER_NO_COURSE_HAS_THREE_OF_THEIR",
+    "chCode": "CH-13333",
+    "meaning": "Player: no course has three of their countable rounds yet, or the course picked has fewer than three (chs-21)",
     "status": "implemented",
     "catalog": "docs/clubhouse/catalog/coachhelm.md"
   },
@@ -15452,7 +16783,7 @@
     "item": 25,
     "name": "PROFILE_THE_GAME_PROFILE_DOESNT_LOAD",
     "chCode": "CH-13260",
-    "meaning": "Profile: the Game profile doesn't load (the genome read fails or throws)",
+    "meaning": "Standing: How you play doesn't load (the genome read fails or throws)",
     "status": "implemented",
     "catalog": "docs/clubhouse/catalog/coachhelm.md"
   },
@@ -15584,8 +16915,8 @@
     "item": 37,
     "name": "PROFILE_WHAT_COACHHELM_SEES_DOESNT_LOAD",
     "chCode": "CH-13261",
-    "meaning": "Profile: what CoachHelm sees doesn't load (the player's insight read fails)",
-    "status": "implemented",
+    "meaning": "(retired with the Game profile, chs-37) Profile: what CoachHelm sees doesn't load",
+    "status": "deprecated",
     "catalog": "docs/clubhouse/catalog/coachhelm.md"
   },
   {
@@ -15662,6 +16993,17 @@
     "name": "RECHECK_FAILS",
     "chCode": "CH-13006",
     "meaning": "Re-check fails or is offline",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/coachhelm.md"
+  },
+  {
+    "id": 130660,
+    "page": "P013",
+    "category": 6,
+    "item": 60,
+    "name": "PLAYER_THEIR_OWN_COURSE_PLAN_DOESNT_LOAD",
+    "chCode": "CH-13233",
+    "meaning": "Player: their own course plan (chs-21) doesn't load: the courses or the plan read fails or throws",
     "status": "implemented",
     "catalog": "docs/clubhouse/catalog/coachhelm.md"
   },
@@ -16284,6 +17626,61 @@
     "catalog": "docs/clubhouse/catalog/coachhelm.md"
   },
   {
+    "id": 130760,
+    "page": "P013",
+    "category": 7,
+    "item": 60,
+    "name": "PLAYER_COACH_GAME_PROFILES_OLD_ADDRESS",
+    "chCode": "CH-13913",
+    "meaning": "Player, coach: Game profile's old address (`?view=profile`, and `view=profile&player=` for a coach; chs-37)",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/coachhelm.md"
+  },
+  {
+    "id": 130761,
+    "page": "P013",
+    "category": 7,
+    "item": 61,
+    "name": "ASK_AN_ANSWER_NAMES_A_PLAYERS_READS",
+    "chCode": "CH-13914",
+    "meaning": "Ask (coach): an answer names a player's reads (chs-39)",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/coachhelm.md"
+  },
+  {
+    "id": 130762,
+    "page": "P013",
+    "category": 7,
+    "item": 62,
+    "name": "STANDING_HOW_YOU_PLAY",
+    "chCode": "CH-13915",
+    "meaning": "Standing: How you play (chs-37)",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/coachhelm.md"
+  },
+  {
+    "id": 130763,
+    "page": "P013",
+    "category": 7,
+    "item": 63,
+    "name": "PLAYER_THEIR_OWN_COURSE_PLAN_OFFERED_BY",
+    "chCode": "CH-13916",
+    "meaning": "Player: their own Course plan (chs-21 / par-14, `coachhelm_course_plan_v1`), offered by the loader while the flag is on",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/coachhelm.md"
+  },
+  {
+    "id": 130764,
+    "page": "P013",
+    "category": 7,
+    "item": 64,
+    "name": "PLAYER_THE_PLAN_FOR_THE_COURSE_THEY",
+    "chCode": "CH-13917",
+    "meaning": "Player: the plan for the course they picked",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/coachhelm.md"
+  },
+  {
     "id": 130780,
     "page": "P013",
     "category": 7,
@@ -16755,6 +18152,17 @@
     "catalog": "docs/clubhouse/catalog/coachhelm.md"
   },
   {
+    "id": 131760,
+    "page": "P013",
+    "category": 17,
+    "item": 60,
+    "name": "PLAYER_A_COURSE_IS_PICKED_IN_THEIR",
+    "chCode": "CH-13733",
+    "meaning": "Player: a course is picked in their Course plan (chs-21)",
+    "status": "reserved",
+    "catalog": "docs/clubhouse/catalog/coachhelm.md"
+  },
+  {
     "id": 131801,
     "page": "P013",
     "category": 18,
@@ -16925,7 +18333,7 @@
     "item": 16,
     "name": "PROFILE_A_SCREEN_READER_MOVES_THROUGH_THE",
     "chCode": "CH-13860",
-    "meaning": "Profile: a screen reader moves through the page",
+    "meaning": "Standing: a screen reader moves through How you play",
     "status": "reserved",
     "catalog": "docs/clubhouse/catalog/coachhelm.md"
   },
@@ -16948,6 +18356,17 @@
     "name": "DEEP_DIVE_A_SCREEN_READER_MOVES_THROUGH",
     "chCode": "CH-13890",
     "meaning": "Deep dive: a screen reader moves through the page",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/coachhelm.md"
+  },
+  {
+    "id": 131819,
+    "page": "P013",
+    "category": 18,
+    "item": 19,
+    "name": "ASK_A_VALIDATED_VISUAL",
+    "chCode": "CH-13853",
+    "meaning": "Ask: A validated visual (strokes gained anatomy)",
     "status": "implemented",
     "catalog": "docs/clubhouse/catalog/coachhelm.md"
   },
@@ -19013,5 +20432,830 @@
     "meaning": "A read fails, or the course crashes",
     "status": "implemented",
     "catalog": "docs/clubhouse/catalog/auth.md"
+  },
+  {
+    "id": 160101,
+    "page": "P016",
+    "category": 1,
+    "item": 1,
+    "name": "COACH_HOME_SOMEONE_IS_ON_THE_COURSE",
+    "chCode": "CH-16600",
+    "meaning": "Coach Home, someone is on the course",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/tournaments.md"
+  },
+  {
+    "id": 160102,
+    "page": "P016",
+    "category": 1,
+    "item": 2,
+    "name": "COACH_HOME_ONLY_FINISHED_LANES_REMAIN",
+    "chCode": "CH-16602",
+    "meaning": "Coach Home, only finished lanes remain (each stays 30 minutes after it posted)",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/tournaments.md"
+  },
+  {
+    "id": 160103,
+    "page": "P016",
+    "category": 1,
+    "item": 3,
+    "name": "THE_HEAD_OF_THE_CARD",
+    "chCode": "CH-16603",
+    "meaning": "The head of the card",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/tournaments.md"
+  },
+  {
+    "id": 160104,
+    "page": "P016",
+    "category": 1,
+    "item": 4,
+    "name": "THE_LIVE_VIEW",
+    "chCode": "CH-16610",
+    "meaning": "The live view",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/tournaments.md"
+  },
+  {
+    "id": 160105,
+    "page": "P016",
+    "category": 1,
+    "item": 5,
+    "name": "TWO_OR_MORE_ROUND_TYPES_HAVE_LANES",
+    "chCode": "CH-16611",
+    "meaning": "Two or more round types have lanes",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/tournaments.md"
+  },
+  {
+    "id": 160106,
+    "page": "P016",
+    "category": 1,
+    "item": 6,
+    "name": "LANES_ON_THE_COURSE",
+    "chCode": "CH-16612",
+    "meaning": "Lanes on the course",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/tournaments.md"
+  },
+  {
+    "id": 160107,
+    "page": "P016",
+    "category": 1,
+    "item": 7,
+    "name": "LANES_THAT_POSTED_OR_STOPPED_TODAY",
+    "chCode": "CH-16613",
+    "meaning": "Lanes that posted or stopped today",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/tournaments.md"
+  },
+  {
+    "id": 160108,
+    "page": "P016",
+    "category": 1,
+    "item": 8,
+    "name": "THE_SORT_CONTROL",
+    "chCode": "CH-16615",
+    "meaning": "The sort control",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/tournaments.md"
+  },
+  {
+    "id": 160109,
+    "page": "P016",
+    "category": 1,
+    "item": 9,
+    "name": "A_PLAYERS_SHEET_THE_HOLE_THEY_PLAY",
+    "chCode": "CH-16616",
+    "meaning": "A player's sheet, the hole they play next",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/tournaments.md"
+  },
+  {
+    "id": 160110,
+    "page": "P016",
+    "category": 1,
+    "item": 10,
+    "name": "A_PLAYERS_SHEET_MOMENTS",
+    "chCode": "CH-16617",
+    "meaning": "A player's sheet, Moments",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/tournaments.md"
+  },
+  {
+    "id": 160111,
+    "page": "P016",
+    "category": 1,
+    "item": 11,
+    "name": "WIDE_LIVE_VIEW_NOBODY_SELECTED",
+    "chCode": "CH-16618",
+    "meaning": "Wide live view, nobody selected",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/tournaments.md"
+  },
+  {
+    "id": 160112,
+    "page": "P016",
+    "category": 1,
+    "item": 12,
+    "name": "QUALIFIER_DETAIL",
+    "chCode": "CH-16620",
+    "meaning": "Qualifier detail (built in slice 4)",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/tournaments.md"
+  },
+  {
+    "id": 160113,
+    "page": "P016",
+    "category": 1,
+    "item": 13,
+    "name": "THE_QUALIFIER_LIST",
+    "chCode": "CH-16622",
+    "meaning": "The qualifier list (slice 4)",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/tournaments.md"
+  },
+  {
+    "id": 160114,
+    "page": "P016",
+    "category": 1,
+    "item": 14,
+    "name": "THE_TEAM_ROUNDS_BAND_HOME_WHEN_ONLY",
+    "chCode": "CH-16630",
+    "meaning": "The Team rounds band (slice 4); Home when only tournaments are live",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/tournaments.md"
+  },
+  {
+    "id": 160115,
+    "page": "P016",
+    "category": 1,
+    "item": 15,
+    "name": "THE_SHARE_CHIP_ON_AN_IN_PROGRESS",
+    "chCode": "CH-16631",
+    "meaning": "The share chip on an in-progress round in the player's library (slice 4)",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/tournaments.md"
+  },
+  {
+    "id": 160116,
+    "page": "P016",
+    "category": 1,
+    "item": 16,
+    "name": "CALENDAR_PEEK_AND_INSPECTOR_AN_EVENT_WITH",
+    "chCode": "CH-16640",
+    "meaning": "Calendar peek and inspector, an event with lanes linked to it (slice 4)",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/tournaments.md"
+  },
+  {
+    "id": 160117,
+    "page": "P016",
+    "category": 1,
+    "item": 17,
+    "name": "ROUND_SETUP",
+    "chCode": "CH-16660",
+    "meaning": "Round setup (slice 2)",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/tournaments.md"
+  },
+  {
+    "id": 160118,
+    "page": "P016",
+    "category": 1,
+    "item": 18,
+    "name": "ROUND_SETUP_2",
+    "chCode": "CH-16661",
+    "meaning": "Round setup (slice 2)",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/tournaments.md"
+  },
+  {
+    "id": 160119,
+    "page": "P016",
+    "category": 1,
+    "item": 19,
+    "name": "A_QUALIFIER_ROUND_IN_SETUP",
+    "chCode": "CH-16662",
+    "meaning": "A qualifier round in setup (slice 2)",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/tournaments.md"
+  },
+  {
+    "id": 160120,
+    "page": "P016",
+    "category": 1,
+    "item": 20,
+    "name": "ROUND_SETUP_3",
+    "chCode": "CH-16663",
+    "meaning": "Round setup (slice 2)",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/tournaments.md"
+  },
+  {
+    "id": 160121,
+    "page": "P016",
+    "category": 1,
+    "item": 21,
+    "name": "A_QUALIFIER_LANES_SECOND_LINE",
+    "chCode": "CH-16670",
+    "meaning": "A qualifier lane's second line",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/tournaments.md"
+  },
+  {
+    "id": 160122,
+    "page": "P016",
+    "category": 1,
+    "item": 22,
+    "name": "A_PRACTICE_OR_TOURNAMENT_LANES_SECOND_LINE",
+    "chCode": "CH-16671",
+    "meaning": "A practice or tournament lane's second line",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/tournaments.md"
+  },
+  {
+    "id": 160123,
+    "page": "P016",
+    "category": 1,
+    "item": 23,
+    "name": "A_ROUND_THE_PLAYER_STOPPED",
+    "chCode": "CH-16674",
+    "meaning": "A round the player stopped",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/tournaments.md"
+  },
+  {
+    "id": 160124,
+    "page": "P016",
+    "category": 1,
+    "item": 24,
+    "name": "ALL_HOLES_SCORED_NOT_POSTED",
+    "chCode": "CH-16675",
+    "meaning": "All holes scored, not posted",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/tournaments.md"
+  },
+  {
+    "id": 160125,
+    "page": "P016",
+    "category": 1,
+    "item": 25,
+    "name": "A_ROUND_WAS_POSTED",
+    "chCode": "CH-16676",
+    "meaning": "A round was posted",
+    "status": "reserved",
+    "catalog": "docs/clubhouse/catalog/tournaments.md"
+  },
+  {
+    "id": 160126,
+    "page": "P016",
+    "category": 1,
+    "item": 26,
+    "name": "THE_PLAYERS_OWN_LIVE_CARD",
+    "chCode": "CH-16680",
+    "meaning": "The player's own live card (slice 1)",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/tournaments.md"
+  },
+  {
+    "id": 160127,
+    "page": "P016",
+    "category": 1,
+    "item": 27,
+    "name": "THE_PLAYERS_OWN_LIVE_CARD_2",
+    "chCode": "CH-16681",
+    "meaning": "The player's own live card (slice 1)",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/tournaments.md"
+  },
+  {
+    "id": 160128,
+    "page": "P016",
+    "category": 1,
+    "item": 28,
+    "name": "THE_PLAYERS_TEAMMATES_CARD",
+    "chCode": "CH-16682",
+    "meaning": "The player's Teammates card (slice 4)",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/tournaments.md"
+  },
+  {
+    "id": 160129,
+    "page": "P016",
+    "category": 1,
+    "item": 29,
+    "name": "ROUND_SETUP_OPEN_CALL_VERSION_2",
+    "chCode": "CH-16684",
+    "meaning": "Round setup, open call (a) version 2 (slice 2)",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/tournaments.md"
+  },
+  {
+    "id": 160130,
+    "page": "P016",
+    "category": 1,
+    "item": 30,
+    "name": "COACH_HOME_A_TOURNAMENT_TRACKS_A_LIVE",
+    "chCode": "CH-16685",
+    "meaning": "Coach Home, a tournament tracks a live round",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/tournaments.md"
+  },
+  {
+    "id": 160131,
+    "page": "P016",
+    "category": 1,
+    "item": 31,
+    "name": "MORE_LANES_THAN_THE_CARD_SHOWS",
+    "chCode": "CH-16606",
+    "meaning": "More lanes than the card shows",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/tournaments.md"
+  },
+  {
+    "id": 160201,
+    "page": "P016",
+    "category": 2,
+    "item": 1,
+    "name": "A_TOURNAMENTS_VIEW_IS_ON_ITS_WAY",
+    "chCode": "CH-16401",
+    "meaning": "A Tournaments view is on its way (`load: 'loading'`)",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/tournaments.md"
+  },
+  {
+    "id": 160301,
+    "page": "P016",
+    "category": 3,
+    "item": 1,
+    "name": "A_LIVE_READ_FAILED_OR_THE_FEED",
+    "chCode": "CH-16604",
+    "meaning": "A live read failed or the feed dropped",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/tournaments.md"
+  },
+  {
+    "id": 160401,
+    "page": "P016",
+    "category": 4,
+    "item": 1,
+    "name": "A_VIEW_ITS_LANE_HASNT_BUILT_YET",
+    "chCode": "CH-16301",
+    "meaning": "A view its lane hasn't built yet (the edit-event form, lineup builder, link inbox, live round and player view; their routes are wired and draw it with real data)",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/tournaments.md"
+  },
+  {
+    "id": 160402,
+    "page": "P016",
+    "category": 4,
+    "item": 2,
+    "name": "HOME_NO_EVENT_IN_THE_SEASON_NOTHING",
+    "chCode": "CH-16310",
+    "meaning": "Home: no event in the season, nothing failed",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/tournaments.md"
+  },
+  {
+    "id": 160403,
+    "page": "P016",
+    "category": 4,
+    "item": 3,
+    "name": "THE_SEASON_LEDGER_THE_SEASON_HAS_NO",
+    "chCode": "CH-16311",
+    "meaning": "The season ledger (Home, History): the season has no finished event yet",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/tournaments.md"
+  },
+  {
+    "id": 160404,
+    "page": "P016",
+    "category": 4,
+    "item": 4,
+    "name": "HOME_NO_EVENT_IS_UPCOMING_OR_LIVE",
+    "chCode": "CH-16312",
+    "meaning": "Home: no event is upcoming or live",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/tournaments.md"
+  },
+  {
+    "id": 160405,
+    "page": "P016",
+    "category": 4,
+    "item": 5,
+    "name": "EVENT_DESK_THE_EVENT_HAS_NO_SCORES",
+    "chCode": "CH-16320",
+    "meaning": "Event desk: the event has no scores yet (not played, nothing entered)",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/tournaments.md"
+  },
+  {
+    "id": 160406,
+    "page": "P016",
+    "category": 4,
+    "item": 6,
+    "name": "EVENT_DESK_HOLES_TAB_NO_SCORECARD_HAS",
+    "chCode": "CH-16321",
+    "meaning": "Event desk, Holes tab: no scorecard has holes (a totals-only event, or none entered)",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/tournaments.md"
+  },
+  {
+    "id": 160407,
+    "page": "P016",
+    "category": 4,
+    "item": 7,
+    "name": "REVIEW_THE_EVENT_HAS_A_REVIEW_THAT",
+    "chCode": "CH-16335",
+    "meaning": "Review: the event has a review that is not open yet (`review.open` is false: a round is not final)",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/tournaments.md"
+  },
+  {
+    "id": 160408,
+    "page": "P016",
+    "category": 4,
+    "item": 8,
+    "name": "REVIEW_THE_EVENT_HAS_NO_REVIEW",
+    "chCode": "CH-16336",
+    "meaning": "Review: the event has no review (not played, nothing to read)",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/tournaments.md"
+  },
+  {
+    "id": 160409,
+    "page": "P016",
+    "category": 4,
+    "item": 9,
+    "name": "REVIEW_THE_REVIEW_IS_OPEN_AND_HAS",
+    "chCode": "CH-16337",
+    "meaning": "Review: the review is open and has no notes or reflections",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/tournaments.md"
+  },
+  {
+    "id": 160410,
+    "page": "P016",
+    "category": 4,
+    "item": 10,
+    "name": "HISTORY_NO_EVENT_IS_FINISHED",
+    "chCode": "CH-16340",
+    "meaning": "History: no event is finished (the read worked)",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/tournaments.md"
+  },
+  {
+    "id": 160411,
+    "page": "P016",
+    "category": 4,
+    "item": 11,
+    "name": "COMPARE_A_SIDE_SELECTS_NO_ROUNDS",
+    "chCode": "CH-16350",
+    "meaning": "Compare: a side selects no rounds (a player with none in that context or period)",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/tournaments.md"
+  },
+  {
+    "id": 160412,
+    "page": "P016",
+    "category": 4,
+    "item": 12,
+    "name": "COMPARE_THERE_ARE_NO_ROUNDS_AT_ALL",
+    "chCode": "CH-16351",
+    "meaning": "Compare: there are no rounds at all (the read worked)",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/tournaments.md"
+  },
+  {
+    "id": 160413,
+    "page": "P016",
+    "category": 4,
+    "item": 13,
+    "name": "A_TOURNAMENTS_ROUTE_OPENS_BEFORE_THE_HELD",
+    "chCode": "CH-16302",
+    "meaning": "A Tournaments route opens before the held migrations are applied (a tournament table or RPC is missing: PGRST205, 42P01, PGRST202)",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/tournaments.md"
+  },
+  {
+    "id": 160414,
+    "page": "P016",
+    "category": 4,
+    "item": 14,
+    "name": "A_TOURNAMENTS_ROUTE_SIGNED_IN_BUT_ON",
+    "chCode": "CH-16303",
+    "meaning": "A Tournaments route, signed in but on no team",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/tournaments.md"
+  },
+  {
+    "id": 160415,
+    "page": "P016",
+    "category": 4,
+    "item": 15,
+    "name": "AN_EVENT_ADDRESS_THAT_IS_NOT_THIS",
+    "chCode": "CH-16304",
+    "meaning": "An event address that is not this team's (deleted, another team's, not an id)",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/tournaments.md"
+  },
+  {
+    "id": 160416,
+    "page": "P016",
+    "category": 4,
+    "item": 16,
+    "name": "A_PLAYER_ON_A_COACHS_TOURNAMENTS_PAGE",
+    "chCode": "CH-16305",
+    "meaning": "A player on a coach's Tournaments page (new or edit event, lineup, live, compare, history, link rounds)",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/tournaments.md"
+  },
+  {
+    "id": 160417,
+    "page": "P016",
+    "category": 4,
+    "item": 17,
+    "name": "NOBODY_IS_ON_THE_COURSE",
+    "chCode": "CH-16619",
+    "meaning": "Nobody is on the course",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/tournaments.md"
+  },
+  {
+    "id": 160601,
+    "page": "P016",
+    "category": 6,
+    "item": 1,
+    "name": "A_TOURNAMENTS_VIEWS_ONE_READ_FAILS",
+    "chCode": "CH-16201",
+    "meaning": "A Tournaments view's one read fails (any view; `load: 'failed'`)",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/tournaments.md"
+  },
+  {
+    "id": 160602,
+    "page": "P016",
+    "category": 6,
+    "item": 2,
+    "name": "HOME_THE_EVENTS_READ_FAILS_WHILE_THE",
+    "chCode": "CH-16210",
+    "meaning": "Home: the events read fails while the page itself loads (`errors.events`)",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/tournaments.md"
+  },
+  {
+    "id": 160603,
+    "page": "P016",
+    "category": 6,
+    "item": 3,
+    "name": "EVENT_DESK_HOLES_TAB_THE_SCORECARDS_READ",
+    "chCode": "CH-16220",
+    "meaning": "Event desk, Holes tab: the scorecards read fails (`errors.holes`)",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/tournaments.md"
+  },
+  {
+    "id": 160604,
+    "page": "P016",
+    "category": 6,
+    "item": 4,
+    "name": "EVENT_DESK_THE_FIELD_READ_FAILS",
+    "chCode": "CH-16221",
+    "meaning": "Event desk: the field read fails (`errors.field`)",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/tournaments.md"
+  },
+  {
+    "id": 160605,
+    "page": "P016",
+    "category": 6,
+    "item": 5,
+    "name": "EVENT_DESK_OVERVIEW_AND_WHO_COUNTED_THE",
+    "chCode": "CH-16222",
+    "meaning": "Event desk, Overview and Who counted: the rounds read fails (`errors.rounds`)",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/tournaments.md"
+  },
+  {
+    "id": 160606,
+    "page": "P016",
+    "category": 6,
+    "item": 6,
+    "name": "REVIEW_THE_REVIEW_READ_FAILS",
+    "chCode": "CH-16235",
+    "meaning": "Review (its own page and the desk's Review tab): the review read fails (`errors.review`)",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/tournaments.md"
+  },
+  {
+    "id": 160607,
+    "page": "P016",
+    "category": 6,
+    "item": 7,
+    "name": "HISTORY_THE_TREND_READ_FAILS",
+    "chCode": "CH-16236",
+    "meaning": "History: the trend read fails (`errors.trend`)",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/tournaments.md"
+  },
+  {
+    "id": 160608,
+    "page": "P016",
+    "category": 6,
+    "item": 8,
+    "name": "COMPARE_THE_ROUNDS_READ_FAILS",
+    "chCode": "CH-16250",
+    "meaning": "Compare: the rounds read fails (`errors.rounds`)",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/tournaments.md"
+  },
+  {
+    "id": 160609,
+    "page": "P016",
+    "category": 6,
+    "item": 9,
+    "name": "COMPARE_THE_FIELD_READ_FAILS",
+    "chCode": "CH-16251",
+    "meaning": "Compare: the field read fails (`errors.field`)",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/tournaments.md"
+  },
+  {
+    "id": 160610,
+    "page": "P016",
+    "category": 6,
+    "item": 10,
+    "name": "COMPARE_THE_HOLE_FIGURES_READ_FAILS",
+    "chCode": "CH-16252",
+    "meaning": "Compare: the hole figures read fails (`errors.holes`)",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/tournaments.md"
+  },
+  {
+    "id": 160611,
+    "page": "P016",
+    "category": 6,
+    "item": 11,
+    "name": "CHANGING_THE_SHARE_LEVEL_FAILS",
+    "chCode": "CH-16664",
+    "meaning": "Changing the share level fails (slice 2)",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/tournaments.md"
+  },
+  {
+    "id": 160612,
+    "page": "P016",
+    "category": 6,
+    "item": 12,
+    "name": "THE_SHARE_FUNCTION_IS_NOT_IN_THE",
+    "chCode": "CH-16666",
+    "meaning": "The share function is not in the database yet (slice 2)",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/tournaments.md"
+  },
+  {
+    "id": 160701,
+    "page": "P016",
+    "category": 7,
+    "item": 1,
+    "name": "THE_DEVICE_IS_OFFLINE_WHILE_THE_CARD",
+    "chCode": "CH-16605",
+    "meaning": "The device is offline while the card or the live view is open",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/tournaments.md"
+  },
+  {
+    "id": 160801,
+    "page": "P016",
+    "category": 8,
+    "item": 1,
+    "name": "THE_COACH_HAS_NO_TEAM_OR_LOST",
+    "chCode": "CH-16609",
+    "meaning": "The coach has no team, or lost access to it",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/tournaments.md"
+  },
+  {
+    "id": 161001,
+    "page": "P016",
+    "category": 10,
+    "item": 1,
+    "name": "EVENT_DESK_THE_HOSTS_PUBLISHED_NUMBER_DIFFERS",
+    "chCode": "CH-16920",
+    "meaning": "Event desk: the host's published number differs from our scorecard (`officialTotal` set and unequal)",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/tournaments.md"
+  },
+  {
+    "id": 161002,
+    "page": "P016",
+    "category": 10,
+    "item": 2,
+    "name": "A_ROUNDS_SHARING_WAS_CHANGED_30_TIMES",
+    "chCode": "CH-16665",
+    "meaning": "A round's sharing was changed 30 times (slice 2)",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/tournaments.md"
+  },
+  {
+    "id": 161201,
+    "page": "P016",
+    "category": 12,
+    "item": 1,
+    "name": "A_PLAYER_WITH_THEIR_OWN_ROUND_ON",
+    "chCode": "CH-16621",
+    "meaning": "A player with their own round on this qualifier (slice 4)",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/tournaments.md"
+  },
+  {
+    "id": 161501,
+    "page": "P016",
+    "category": 15,
+    "item": 1,
+    "name": "LANES_WITH_NO_WORD_FOR_90_MINUTES",
+    "chCode": "CH-16614",
+    "meaning": "Lanes with no word for 90 minutes",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/tournaments.md"
+  },
+  {
+    "id": 161502,
+    "page": "P016",
+    "category": 15,
+    "item": 2,
+    "name": "A_LANE_SILENT_FOR_10_MINUTES_WITH",
+    "chCode": "CH-16672",
+    "meaning": "A lane silent for 10 minutes with the last hole at least as old",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/tournaments.md"
+  },
+  {
+    "id": 161503,
+    "page": "P016",
+    "category": 15,
+    "item": 3,
+    "name": "A_LANE_SILENT_FOR_90_MINUTES",
+    "chCode": "CH-16673",
+    "meaning": "A lane silent for 90 minutes",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/tournaments.md"
+  },
+  {
+    "id": 161504,
+    "page": "P016",
+    "category": 15,
+    "item": 4,
+    "name": "TWO_OR_MORE_HOLES_LAND_IN_ONE",
+    "chCode": "CH-16677",
+    "meaning": "Two or more holes land in one read (a phone that reconnected)",
+    "status": "reserved",
+    "catalog": "docs/clubhouse/catalog/tournaments.md"
+  },
+  {
+    "id": 161505,
+    "page": "P016",
+    "category": 15,
+    "item": 5,
+    "name": "THE_PLAYERS_OWN_LIVE_CARD_NOT_SAVED",
+    "chCode": "CH-16683",
+    "meaning": "The player's own live card, not saved for 10 minutes (slice 1)",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/tournaments.md"
+  },
+  {
+    "id": 161601,
+    "page": "P016",
+    "category": 16,
+    "item": 1,
+    "name": "A_VALUE_CHANGES_AFTER_FIRST_PAINT",
+    "chCode": "CH-16601",
+    "meaning": "A value changes after first paint (a live score, a team total, a place)",
+    "status": "reserved",
+    "catalog": "docs/clubhouse/catalog/tournaments.md"
+  },
+  {
+    "id": 161801,
+    "page": "P016",
+    "category": 18,
+    "item": 1,
+    "name": "A_SIGNED_DIFFERENCE_OR_A_TRUST_STATE",
+    "chCode": "CH-16801",
+    "meaning": "A signed difference or a trust state is read",
+    "status": "reserved",
+    "catalog": "docs/clubhouse/catalog/tournaments.md"
+  },
+  {
+    "id": 161802,
+    "page": "P016",
+    "category": 18,
+    "item": 2,
+    "name": "CALENDAR_GRID_BLOCK",
+    "chCode": "CH-16641",
+    "meaning": "Calendar grid block (slice 4)",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/tournaments.md"
   }
 ]

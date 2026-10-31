@@ -49,15 +49,62 @@ export function AssistantProse({
   const blocks = React.useMemo(() => parseBlocks(text), [text]);
 
   return (
-    <div className={cn('flex flex-col gap-3', className)}>
+    // 16px body at 1.65, the reading size of the best chat answers (research,
+    // docs/architecture/coachhelm-visual-playbook.md): 15px regular on the
+    // tinted canvas read as faint next to the charts.
+    <div className={cn('flex flex-col gap-3.5', className)}>
       {blocks.map((block, i) => {
+        if (block.kind === 'table') {
+          const numeric = block.header.map((_, c) =>
+            block.rows.every((r) => /^[−+-]?[\d.,]+%?$|^—$|^E$/.test((r[c] ?? '').replace(/\*\*/g, '').trim())),
+          );
+          return (
+            <div key={i} className="overflow-x-auto rounded-card border border-border-subtle bg-surface">
+              <table className="w-full border-collapse font-fw-sans text-body-sm">
+                <thead>
+                  <tr className="border-b border-border-subtle">
+                    {block.header.map((h, c) => (
+                      <th
+                        key={c}
+                        scope="col"
+                        className={cn(
+                          'whitespace-nowrap px-3 py-2.5 font-semibold text-text-secondary first:pl-4 last:pr-4',
+                          numeric[c] ? 'text-right' : 'text-left',
+                        )}
+                      >
+                        <Inline text={h} playersByName={playersByName} />
+                      </th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody>
+                  {block.rows.map((row, r) => (
+                    <tr key={r} className="border-b border-border-subtle last:border-0">
+                      {block.header.map((_, c) => (
+                        <td
+                          key={c}
+                          className={cn(
+                            'px-3 py-2.5 text-text-primary first:pl-4 last:pr-4',
+                            numeric[c] ? 'whitespace-nowrap text-right tabular-nums' : 'text-left',
+                          )}
+                        >
+                          <Inline text={row[c] ?? ''} playersByName={playersByName} />
+                        </td>
+                      ))}
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          );
+        }
         if (block.kind === 'list') {
           return (
             <ul key={i} className="flex flex-col gap-1.5 pl-1">
               {block.items.map((item, j) => (
                 <li key={j} className="flex gap-2.5">
-                  <span aria-hidden className="mt-[0.6em] h-1 w-1 shrink-0 rounded-full bg-text-tertiary" />
-                  <span className="font-fw-sans text-body text-text-primary [text-wrap:pretty]">
+                  <span aria-hidden className="mt-[0.7em] size-1.5 shrink-0 rounded-full bg-text-secondary" />
+                  <span className="font-fw-sans text-callout leading-[1.65] text-text-primary [text-wrap:pretty]">
                     <Inline text={item} playersByName={playersByName} />
                   </span>
                 </li>
@@ -73,7 +120,7 @@ export function AssistantProse({
             key={i}
             className={cn(
               'font-fw-sans text-text-primary [text-wrap:pretty]',
-              isTakeaway ? 'text-body-lg leading-[1.55]' : 'text-body leading-[1.65]',
+              isTakeaway ? 'text-body-lg font-medium leading-[1.55]' : 'text-callout leading-[1.65]',
             )}
           >
             <Inline text={block.text} playersByName={playersByName} />
@@ -84,7 +131,21 @@ export function AssistantProse({
   );
 }
 
-type Block = { kind: 'paragraph'; text: string } | { kind: 'list'; items: string[] };
+type Block =
+  | { kind: 'paragraph'; text: string }
+  | { kind: 'list'; items: string[] }
+  | { kind: 'table'; header: string[]; rows: string[][] };
+
+/** `| a | b |` → ['a', 'b']. */
+const cells = (line: string) =>
+  line
+    .trim()
+    .replace(/^\|/, '')
+    .replace(/\|$/, '')
+    .split('|')
+    .map((c) => c.trim());
+const isTableRow = (line: string) => /^\s*\|.*\|\s*$/.test(line);
+const isDivider = (line: string) => /^\s*\|?\s*:?-{2,}:?\s*(\|\s*:?-{2,}:?\s*)*\|?\s*$/.test(line);
 
 /**
  * Split into paragraphs and lists.
@@ -113,8 +174,21 @@ function parseBlocks(text: string): Block[] {
     }
   };
 
-  for (const raw of lines) {
-    const line = raw.trimEnd();
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i]!.trimEnd();
+    // A pipe table (header, divider, rows). The model is told not to write
+    // them, but older answers have them, and raw pipes read as broken.
+    if (isTableRow(line) && i + 1 < lines.length && isDivider(lines[i + 1]!)) {
+      flushParagraph();
+      flushList();
+      const header = cells(line);
+      const rows: string[][] = [];
+      i += 2;
+      while (i < lines.length && isTableRow(lines[i]!)) rows.push(cells(lines[i++]!));
+      i -= 1;
+      blocks.push({ kind: 'table', header, rows });
+      continue;
+    }
     const bullet = /^\s*(?:[-*•]|\d+[.)])\s+(.*)$/.exec(line);
     if (bullet) {
       flushParagraph();

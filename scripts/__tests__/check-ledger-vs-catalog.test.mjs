@@ -2,8 +2,13 @@
 // for why a file under scripts/__tests__/ must be named explicitly to run.
 import { test } from 'vitest';
 import assert from 'node:assert/strict';
+import { readFileSync, readdirSync } from 'node:fs';
+import { fileURLToPath } from 'node:url';
 import {
+  ACCEPTED_CLASSES,
+  applyAcceptedAbsences,
   isUserSchema,
+  parseAcceptedAbsences,
   parseCreatedObjects,
   parseRemovedObjects,
   reconcileLedgerToCatalog,
@@ -170,5 +175,55 @@ test('isUserSchema: objects in helm_debug, helm_jobs, helm_private, graveyard an
   }
   for (const s of ['pg_catalog', 'information_schema', 'pg_toast', 'pg_temp_3']) {
     assert.equal(isUserSchema(s), false, s);
+  }
+});
+
+const missingWidget = { version: '20260101000000', file: '20260101000000_add_widgets.sql', kind: 'policy', name: 'widgets_select' };
+const missingGadget = { version: '20260101000000', file: '20260101000000_add_widgets.sql', kind: 'policy', name: 'gadgets_select' };
+const acceptWidget = { version: '20260101000000', kind: 'policy', name: 'widgets_select', class: 'superseded', reason: 'Live as widgets_read.' };
+
+test('applyAcceptedAbsences: an accepted object stops failing, an unlisted one still fails', () => {
+  const r = applyAcceptedAbsences([missingWidget, missingGadget], [acceptWidget]);
+  assert.deepEqual(r.failing, [missingGadget]);
+  assert.deepEqual(r.accepted, [{ ...missingWidget, class: 'superseded', reason: 'Live as widgets_read.' }]);
+  assert.deepEqual(r.stale, []);
+});
+
+test('applyAcceptedAbsences: an entry must match version, kind AND name', () => {
+  const sameNameOtherVersion = { ...missingWidget, version: '20260202000000' };
+  const sameNameOtherKind = { ...missingWidget, kind: 'function' };
+  const r = applyAcceptedAbsences([sameNameOtherVersion, sameNameOtherKind], [acceptWidget]);
+  assert.equal(r.failing.length, 2);
+  assert.deepEqual(r.stale, [acceptWidget]);
+});
+
+test('applyAcceptedAbsences: an entry whose object came back is reported stale', () => {
+  const r = applyAcceptedAbsences([], [acceptWidget]);
+  assert.deepEqual(r.failing, []);
+  assert.deepEqual(r.stale, [acceptWidget]);
+});
+
+test('parseAcceptedAbsences: rejects entries without a class, a reason, or a single object', () => {
+  assert.throws(() => parseAcceptedAbsences({}), /entries/);
+  assert.throws(() => parseAcceptedAbsences({ entries: [{ ...acceptWidget, reason: ' ' }] }), /reason/);
+  assert.throws(() => parseAcceptedAbsences({ entries: [{ ...acceptWidget, class: 'fine' }] }), /class/);
+  assert.throws(() => parseAcceptedAbsences({ entries: [{ ...acceptWidget, kind: 'view' }] }), /kind/);
+  assert.throws(() => parseAcceptedAbsences({ entries: [acceptWidget, acceptWidget] }), /duplicate/);
+  assert.deepEqual(parseAcceptedAbsences({ entries: [acceptWidget] }), [acceptWidget]);
+});
+
+test('the committed register parses, and every entry names an object its migration file really creates', () => {
+  const root = fileURLToPath(new URL('../..', import.meta.url));
+  const entries = parseAcceptedAbsences(
+    JSON.parse(readFileSync(`${root}scripts/db/ledger-vs-catalog-accepted.json`, 'utf-8')),
+  );
+  assert.ok(entries.length > 0);
+  for (const e of entries) {
+    assert.ok(ACCEPTED_CLASSES.includes(e.class));
+    const file = readdirSync(`${root}supabase/migrations`).find((f) => f.startsWith(`${e.version}_`));
+    assert.ok(file, `no migration file for ${e.version}`);
+    const created = parseCreatedObjects(readFileSync(`${root}supabase/migrations/${file}`, 'utf-8'));
+    const names = { table: created.tables, function: created.functions, policy: created.policies }[e.kind];
+    assert.ok(names.includes(e.name), `${file} does not create ${e.kind} ${e.name}`);
   }
 });

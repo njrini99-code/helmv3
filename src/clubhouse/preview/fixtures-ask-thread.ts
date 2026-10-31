@@ -111,6 +111,23 @@ export const ASK_EV_FAILED = envelope({ summary: 'Could not read rounds.', cover
 
 export const ASK_EV_EMPTY = envelope({ summary: 'No open signals for Theo Marchetti.', coverage: 'empty', coverage_note: 'No open signals for Theo Marchetti right now.' });
 
+/** The open-signals tool for one player (`get_player_insights`): the reads an answer names, each opening the player's Deep dive. */
+const readsFor = (playerId: string, name: string) =>
+  envelope({
+    summary: `3 open signals for ${name}.`,
+    detail: {
+      player: { player_id: playerId, name },
+      insights: [
+        { insight_id: 'in-slope', type: 'weakness', category: 'putting', title: 'Downhill putts, 4 to 6 feet', content: 'Makes 41% downhill against 74% uphill.', metric_label: 'Downhill make rate', value_display: '41%', created_at: '2026-09-28T12:00:00Z' },
+        { insight_id: 'in-pen', type: 'weakness', category: 'course_management', title: 'Penalties off the tee', content: 'About one penalty a round.', metric_label: 'Penalties per round', value_display: '1.1', created_at: '2026-09-27T12:00:00Z' },
+        { insight_id: 'in-app', type: 'strength', category: 'approach', title: 'Approach from 125 to 175 yards', content: 'Finishes inside the Tour’s proximity.', metric_label: 'Proximity, 125–175 yd', value_display: '27 ft', created_at: '2026-09-26T12:00:00Z' },
+      ],
+    },
+  });
+export const ASK_EV_READS = readsFor('p-jonah', 'Jonah Okafor');
+/** The same reads for a player who is not on this coach's team (an id the roster does not hold): drawn, never linked. */
+export const ASK_EV_READS_OTHER = readsFor('p-not-on-team', 'Cole Avery');
+
 const user = (id: string, text: string): UIMessage => ({ id, role: 'user', parts: [{ type: 'text', text }] }) as unknown as UIMessage;
 const assistant = (id: string, parts: unknown[]): UIMessage => ({ id, role: 'assistant', parts }) as unknown as UIMessage;
 const step = (n: number, label: string, tool = 'get_team_overview') => ({ type: 'data-progress', id: `progress-${n}`, data: { label, tool } });
@@ -186,6 +203,42 @@ export const ASK_MSGS_ANSWER: UIMessage[] = [
   ]),
 ];
 
+/** A validated strokes gained anatomy (visuals/schema.ts): the figures are stored in the message, the legs add to the total. */
+const SG_LEG = { sampleSize: 8, sampleUnit: 'rounds', coverage: 'complete', coverageNote: null, source: 'stats cache', method: 'sg v1', asOf: '2026-10-21T00:00:00.000Z' } as const;
+export const ASK_VISUAL_SG = {
+  artifactId: 'va-preview0001',
+  schemaVersion: 1,
+  kind: 'sg_anatomy',
+  title: 'Where Jonah gains and loses strokes',
+  intent: 'explain',
+  entity: { id: 'p-jonah', label: 'Jonah Okafor' },
+  window: { start: '2026-09-01', end: '2026-10-20' },
+  sourceAsOf: '2026-10-21T00:00:00.000Z',
+  coverage: 'complete',
+  legs: [
+    { ...SG_LEG, metricId: 'sg_tee', label: 'Off the tee', value: 0.2 },
+    { ...SG_LEG, metricId: 'sg_approach', label: 'Approach', value: -0.9 },
+    { ...SG_LEG, metricId: 'sg_around_green', label: 'Around the green', value: 0.1 },
+    { ...SG_LEG, metricId: 'sg_putting', label: 'Putting', value: -0.3 },
+  ],
+  total: { value: -0.9, sampleSize: 8, reconciles: true },
+  highlightedMetricId: 'sg_approach',
+  annotations: [{ metricId: 'sg_approach', kind: 'hypothesis', label: 'Worth testing against his approach distances before changing anything' }],
+  evidenceRefs: ['e1'],
+  dataHash: 'preview',
+  createdAt: '2026-10-25T12:00:00.000Z',
+};
+export const ASK_MSGS_VISUAL: UIMessage[] = [
+  user('u1', 'Where is Jonah losing strokes?'),
+  assistant('a1', [
+    step(1, 'Reading recorded statistics', 'get_player_metrics'),
+    step(2, 'Building the visual'),
+    text("Jonah's biggest recorded loss is on approach. Putting is the other leg below the baseline."),
+    { type: 'data-visual-artifact', id: 'visual-va-preview0001', data: ASK_VISUAL_SG },
+    text('The approach figure is the one to check against his distances first.'),
+  ]),
+];
+
 /** Working: two steps announced, nothing answered yet. */
 export const ASK_MSGS_WORKING: UIMessage[] = [user('u1', Q1), assistant('a1', [step(1, 'Reading your roster'), step(2, 'Reading the last 38 recorded rounds', 'get_recent_rounds'), step(3, 'Comparing putting by distance', 'get_putting_distance_profile')])];
 
@@ -254,7 +307,169 @@ export const ASK_MSGS_LONG: UIMessage[] = [
   assistant('a5', [text('Anytime.')]),
 ];
 
-export const ASK_FOCUS_JONAH: EvidenceFocus = { messageId: 'a2', key: ASK_PROPOSAL.idempotency_key, label: 'Jonah Okafor, downhill putts, 4 to 6 feet', playerId: 'p-jonah' };
+/** An answer that names a player's reads (CH-13914): each opens that player's Deep dive on the coach Player page. */
+export const ASK_MSGS_READS: UIMessage[] = [
+  user('u1', 'What should Jonah work on first?'),
+  assistant('a1', [step(1, 'Reading open signals', 'get_player_insights'), ev('reads', ASK_EV_READS, 'get_player_insights'), text('Start with **downhill putts from 4 to 6 feet**: it is the read that costs Jonah Okafor the most. Penalties off the tee are next.')]),
+];
+/** The same answer about a player not on the team: the reads are drawn as rows with no link. */
+export const ASK_MSGS_READS_OTHER: UIMessage[] = [
+  user('u1', 'What should Cole work on first?'),
+  assistant('a1', [step(1, 'Reading open signals', 'get_player_insights'), ev('reads', ASK_EV_READS_OTHER, 'get_player_insights'), text('Start with **downhill putts from 4 to 6 feet**, then penalties off the tee.')]),
+];
+
+// ── Model-designed visuals (visuals/composition.ts) ──────────────────────────
+// The reads carry the `ref` the stream route stamps on them, so the thread hides the plain evidence a composition draws in full.
+
+const evRef = (id: string, ref: string, e: ToolEnvelope, tool = 'get_player_metrics') => ({ type: 'data-evidence', id: `evidence-${id}`, data: { tool, envelope: e, ref } });
+const WIN_OCT = { window_start: '2026-09-01', window_end: '2026-10-20', as_of: '2026-10-21T00:00:00.000Z' };
+const sgLeg = (metric_id: string, metric_label: string, value: number): Measurement =>
+  measurement({ ...WIN_OCT, metric_id, metric_label, entity: who('p-jonah', 'Jonah Okafor'), unit: 'strokes', value, sample_size: 8, sample_unit: 'rounds', source: 'stats cache', method: 'sg v1', direction: 'higher_better' });
+const JONAH_SG = [
+  sgLeg('sg_tee', 'Strokes gained: off the tee', 0.2),
+  sgLeg('sg_approach', 'Strokes gained: approach', -0.9),
+  sgLeg('sg_around_green', 'Strokes gained: around the green', 0.1),
+  sgLeg('sg_putting', 'Strokes gained: putting', -0.3),
+];
+const JONAH_TO_PAR = series({
+  ...WIN_OCT,
+  metric_id: 'scoring_average_vs_par',
+  metric_label: 'Score to par',
+  entity: who('p-jonah', 'Jonah Okafor'),
+  unit: 'score',
+  source: 'rounds',
+  method: 'score_to_par',
+  direction: 'lower_better',
+  points: [
+    { at: '2026-09-06', value: 2, bucket: null, sample_size: 1 },
+    { at: '2026-09-13', value: 4, bucket: null, sample_size: 1 },
+    { at: '2026-09-20', value: 1, bucket: null, sample_size: 1 },
+    { at: '2026-09-27', value: 5, bucket: null, sample_size: 1 },
+    { at: '2026-10-04', value: 3, bucket: null, sample_size: 1 },
+    { at: '2026-10-11', value: 0, bucket: null, sample_size: 1 },
+    { at: '2026-10-18', value: -1, bucket: null, sample_size: 1 },
+  ],
+});
+export const ASK_EV_JONAH_SG = envelope({ summary: 'Jonah Okafor, strokes gained by part of the game', as_of: WIN_OCT.as_of, measurements: JONAH_SG });
+export const ASK_EV_JONAH_TREND = envelope({ summary: 'Jonah Okafor, score to par by round', as_of: WIN_OCT.as_of, series: [JONAH_TO_PAR] });
+
+/** A composition as compile-composition.ts stores it: the model's design, every figure copied from the two reads above. */
+export const ASK_COMPOSITION = {
+  artifactId: 'vc-preview0001',
+  schemaVersion: 1,
+  kind: 'compose',
+  title: 'Approach is where Jonah gives strokes back',
+  lede: 'His scoring has come down over the month, and approach is still the leg below the baseline.',
+  layout: 'split',
+  blocks: [
+    { type: 'headline', measurement: JONAH_SG[1], label: 'Largest loss, approach' },
+    { type: 'split', measurements: JONAH_SG },
+    { type: 'trend', series: JONAH_TO_PAR, reference: 'average' },
+    { type: 'note', kind: 'hypothesis', text: 'Worth testing against his approach distances before changing his practice.' },
+  ],
+  evidenceRefs: ['e1', 'e2'],
+  coverageNotes: [],
+  dataHash: 'preview',
+  createdAt: '2026-10-25T12:00:00.000Z',
+};
+const composeTurn = (id: string) =>
+  assistant(id, [
+    step(1, 'Reading recorded statistics', 'get_player_metrics'),
+    step(2, 'Reading his last 7 rounds', 'get_player_trend'),
+    step(3, 'Building the visual'),
+    text("Jonah's scoring is trending the right way, but **approach** is still costing him close to a stroke a round."),
+    evRef('sg', 'e1', ASK_EV_JONAH_SG),
+    evRef('trend', 'e2', ASK_EV_JONAH_TREND, 'get_player_trend'),
+    { type: 'data-visual-composition', id: 'visual-vc-preview0001', data: ASK_COMPOSITION },
+    text('Putting is the only other leg below zero, and it is small. I would put the next two practices on approach shots from 125 to 175 yards before touching his putting.'),
+  ]);
+export const ASK_MSGS_COMPOSE: UIMessage[] = [user('u1', 'How is Jonah doing, and where is he losing strokes?'), composeTurn('a1')];
+
+// ── The staging transcript (owner, 2026-10-29: "its the coachhelm chat. its ass") ──────────────────────────────────
+// Real envelope shapes from read-tools.ts: roster, tasks, tournaments, events, a team ranking and comparison, and an old
+// answer that wrote a markdown table.
+
+const TEAM = [
+  { id: 'p-jonah', name: 'Jonah Okafor', toPar: 3.1, sg: -0.4, putts: 31.2, rounds: 4 },
+  { id: 'p-eli', name: 'Eli Brandt', toPar: 1.8, sg: 0.3, putts: 30.1, rounds: 3 },
+  { id: 'p-sofia', name: 'Sofia Alvarez', toPar: -0.4, sg: 1.2, putts: 28.9, rounds: 4 },
+  { id: 'p-theo', name: 'Theo Marchetti', toPar: 0, sg: 0.6, putts: 29.6, rounds: 3 },
+  { id: 'p-priya', name: 'Priya Natarajan', toPar: 4.6, sg: -1.1, putts: 32.4, rounds: 3 },
+];
+const teamM = (p: (typeof TEAM)[number], metric_id: string, metric_label: string, unit: Measurement['unit'], value: number, direction: Measurement['direction']) =>
+  measurement({ ...WIN_OCT, metric_id, metric_label, entity: who(p.id, p.name), unit, value, sample_size: p.rounds, sample_unit: 'rounds', source: 'stats cache', method: 'season', direction });
+export const ASK_EV_ROSTER = envelope({
+  summary: 'Finley University has 5 active players.',
+  measurements: [measurement({ metric_id: 'active_roster_count', metric_label: 'Active roster', entity: who('team-1', 'Finley University', 'team'), unit: 'count', value: 5, window_start: null, window_end: null, sample_size: 5, sample_unit: 'players', source: 'roster', method: 'count_active_team_members', direction: null })],
+  detail: { team_name: 'Finley University', active_roster_count: 5, profiles_resolved: 5, players_with_rounds: 5 },
+});
+export const ASK_EV_TASKS = envelope({
+  summary: '5 open tasks, 0 overdue.',
+  detail: {
+    open_count: 5,
+    overdue_count: 0,
+    tasks: [
+      { task_id: 't1', title: 'Book the bus for the Oct 6 qualifier', due_date: '2026-10-29', status: 'pending', priority: 'high', overdue: false },
+      { task_id: 't2', title: 'Order range balls', due_date: '2026-10-31', status: 'in_progress', priority: 'regular', overdue: false },
+      { task_id: 't3', title: 'Send the travel roster to compliance', due_date: '2026-11-02', status: 'pending', priority: 'regular', overdue: false },
+      { task_id: 't4', title: 'Review Priya’s swing video', due_date: null, status: 'pending', priority: 'low', overdue: false },
+      { task_id: 't5', title: 'Update the qualifier format', due_date: '2026-11-05', status: 'in_progress', priority: 'regular', overdue: false },
+    ],
+  },
+});
+export const ASK_EV_TOURNAMENTS = envelope({
+  summary: '1 tournament, most recent first.',
+  detail: { tournaments: [{ tournament_id: 'tr1', name: 'Fall Invitational', start_date: '2026-10-12', end_date: '2026-10-13', kind: 'tournament', format: 'stroke_play', field_size: 14 }] },
+});
+export const ASK_EV_EVENTS = envelope({
+  summary: '2 events in the next 7 days.',
+  detail: {
+    timezone: 'America/New_York',
+    events: [
+      { event_id: 'ev1', title: 'Team practice', event_type: 'practice', starts_at: '2026-10-30T19:00:00Z', ends_at: '2026-10-30T21:00:00Z', location: 'Home range', requires_rsvp: false },
+      { event_id: 'ev2', title: 'Qualifier round 1', event_type: 'qualifier', starts_at: '2026-11-01T13:00:00Z', ends_at: '2026-11-01T18:00:00Z', location: 'North course', requires_rsvp: true },
+    ],
+  },
+});
+export const ASK_EV_TEAM_SG = envelope({ summary: 'Strokes gained total, the team', measurements: TEAM.map((p) => teamM(p, 'sg_total', 'Strokes gained: total', 'strokes', p.sg, 'higher_better')) });
+export const ASK_EV_TEAM_COMPARE = envelope({
+  summary: 'The team across scoring, strokes gained and putting',
+  measurements: TEAM.flatMap((p) => [
+    teamM(p, 'scoring_average_vs_par', 'Scoring average to par', 'score', p.toPar, 'lower_better'),
+    teamM(p, 'sg_total', 'Strokes gained: total', 'strokes', p.sg, 'higher_better'),
+    teamM(p, 'putts_per_round', 'Putts per round', 'score', p.putts, 'lower_better'),
+  ]),
+});
+const PIPE_TABLE = [
+  'Here is where everyone stands this season:',
+  '',
+  '| Player | SG Total | To par | Rounds |',
+  '|---|---|---|---|',
+  ...TEAM.map((p) => `| ${p.name} | ${p.sg > 0 ? '+' : ''}${p.sg} | ${p.toPar} | ${p.rounds} |`),
+  '',
+  '**Sofia Alvarez** leads the team; **Priya Natarajan** has the most to gain.',
+].join('\n');
+export const ASK_MSGS_STAGING: UIMessage[] = [
+  user('u1', 'Give me a dashboard of the team'),
+  assistant('a1', [
+    step(1, 'Reading your roster'),
+    step(2, 'Reading open tasks', 'get_open_tasks'),
+    step(3, 'Reading tournaments', 'get_tournaments'),
+    step(4, 'Reading the calendar', 'get_upcoming_events'),
+    step(5, 'Ranking the team', 'get_team_metric_ranking'),
+    step(6, 'Comparing the team', 'compare_players'),
+    ev('roster', ASK_EV_ROSTER, 'get_team_overview'),
+    ev('tasks', ASK_EV_TASKS, 'get_open_tasks'),
+    ev('tournaments', ASK_EV_TOURNAMENTS, 'get_tournaments'),
+    ev('events', ASK_EV_EVENTS, 'get_upcoming_events'),
+    text(PIPE_TABLE),
+    ev('teamsg', ASK_EV_TEAM_SG, 'get_team_metric_ranking'),
+    ev('compare', ASK_EV_TEAM_COMPARE, 'compare_players'),
+    text('Five open tasks, none overdue, and the qualifier is on Nov 1.'),
+  ]),
+];
+
+export const ASK_FOCUS_JONAH: EvidenceFocus ={ messageId: 'a2', key: ASK_PROPOSAL.idempotency_key, label: 'Jonah Okafor, downhill putts, 4 to 6 feet', playerId: 'p-jonah' };
 
 /** The sentences a failed answer shows (describeChatError on what the route sends). */
 export const ASK_ERRORS = {
@@ -268,6 +483,11 @@ export const ASK_ERRORS = {
 /** A thread by preview state name (`?state=`). */
 export const ASK_THREAD_STATES: Record<string, { messages: UIMessage[]; busy?: boolean; error?: keyof typeof ASK_ERRORS; focus?: EvidenceFocus }> = {
   answer: { messages: ASK_MSGS_ANSWER },
+  visual: { messages: ASK_MSGS_VISUAL },
+  compose: { messages: ASK_MSGS_COMPOSE },
+  // The same answer as it arrives: the turn is live when it mounts, so its visual comes in with the playbook's motion.
+  composelive: { messages: ASK_MSGS_COMPOSE, busy: true },
+  staging: { messages: ASK_MSGS_STAGING },
   thinking: { messages: ASK_MSGS_THINKING, busy: true },
   working: { messages: ASK_MSGS_WORKING, busy: true },
   action: { messages: ASK_MSGS_ACTION, focus: ASK_FOCUS_JONAH },
@@ -280,6 +500,8 @@ export const ASK_THREAD_STATES: Record<string, { messages: UIMessage[]; busy?: b
   readfail: { messages: ASK_MSGS_READFAIL },
   partial: { messages: ASK_MSGS_PARTIAL },
   long: { messages: ASK_MSGS_LONG },
+  reads: { messages: ASK_MSGS_READS },
+  readsother: { messages: ASK_MSGS_READS_OTHER },
   error: { messages: [user('u1', 'Who should play the qualifier on Oct 6?')], error: 'rate' },
   errorfault: { messages: [user('u1', 'Who should play the qualifier on Oct 6?')], error: 'fault' },
   errorbudget: { messages: [user('u1', 'Who should play the qualifier on Oct 6?')], error: 'budget' },

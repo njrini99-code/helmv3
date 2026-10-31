@@ -22,6 +22,7 @@ import { describeError } from '@/lib/utils/describe-error';
 import { assertGolfConversationAudience } from '@/lib/golf/conversation-audience';
 import { readGolfPlayerProfiles } from '@/lib/golf/player-profiles';
 import { validateGolfReplyTarget } from '@/lib/golf/message-replies';
+import { isFlagEnabled } from '@/lib/flags/is-enabled';
 
 type Sport = 'baseball' | 'golf';
 
@@ -48,6 +49,13 @@ interface SendMessageOptions {
    * useGolfMessages is an exact match instead of a heuristic guess.
    */
   clientMessageId?: string;
+  /**
+   * P-10 Notify anyway (golf, 1:1 or group, from a coach): the coach chose to interrupt, so this message skips the class hold. Stored in
+   * `golf_messages.notify_anyway`; the database trigger keeps it only for a coach of the conversation's team and resets it otherwise, so the
+   * stored value, read back below, is what the fan-out trusts. Ignored with `class_awareness_v1` off or for another sport: nothing then names
+   * the column, so a send never depends on a migration that is held.
+   */
+  notifyAnyway?: boolean;
   /** Golf's existing same-conversation reply link; omitted for ordinary messages. */
   replyToId?: string | null;
 }
@@ -92,13 +100,14 @@ async function isBaseballMessageNotificationEnabled(conversationId: string): Pro
  * @param createNotifications - Whether to create notifications for other participants (default: true)
  */
 // nosemgrep: helmv3-action-missing-revalidate -- realtime-subscribed messages UI; revalidatePath caused a full reload on every send (see note above the return)
-export async function sendMessage({
+async function sendMessageCore({
   conversationId,
   content,
   sport = 'baseball',
   createNotifications = true,
   clientMessageId,
   replyToId,
+  notifyAnyway,
 }: SendMessageOptions) {
   try {
     const supabase = await createClient();
@@ -155,6 +164,7 @@ export async function sendMessage({
 
     // Insert message
     const messagesTable = sport === 'golf' ? 'golf_messages' : 'baseball_messages';
+    const wantsNotifyAnyway = notifyAnyway === true && sport === 'golf' && isFlagEnabled('class_awareness_v1');
     const { data: insertedMessage, error: messageError } = await supabase
       .from(messagesTable as any)
       .insert({
@@ -164,6 +174,7 @@ export async function sendMessage({
         content: sanitizedContent,
         read: false,
         ...(validatedReplyId ? { reply_to_id: validatedReplyId } : {}),
+        ...(wantsNotifyAnyway ? { notify_anyway: true } : {}),
       })
       .select()
       .single();
@@ -307,10 +318,30 @@ export async function sendMessage({
     // Revalidation was causing unnecessary page reloads on every message send
     // (the nosemgrep suppression for this lives on the function declaration)
 
-    return { success: true };
+    // `message` is what the golf fan-out needs: the stored id and time, and the Notify anyway flag as the database kept it (the trigger resets it for
+    // anyone but a coach of the conversation's team). Absent on the duplicate-key path above, where the row was written by an earlier attempt.
+    const stored = insertedMessage as { id?: string; created_at?: string; notify_anyway?: boolean };
+    return {
+      success: true,
+      ...(sport === 'golf' ? { message: { id: stored.id ?? null, createdAt: stored.created_at ?? null, notifyAnyway: wantsNotifyAnyway && stored.notify_anyway === true } } : {}),
+    };
   } catch (err) {
     return formatSafeErrorResponse(err);
   }
+}
+
+// nosemgrep: helmv3-action-missing-revalidate -- realtime-subscribed messages UI; revalidatePath caused a full reload on every send (see note on sendMessageCore)
+export async function sendMessage(options: SendMessageOptions) {
+  return withoutStoredMessage(await sendMessageCore(options));
+}
+
+/** `message` is for the golf fan-out only; whoever called the action sees the answer it always gave. */
+type WithoutMessage<R> = R extends unknown ? Omit<R, 'message'> : never;
+function withoutStoredMessage<R extends { success: boolean }>(result: R): WithoutMessage<R> {
+  if (!('message' in result)) return result as WithoutMessage<R>;
+  const answer = { ...result } as R & { message?: unknown };
+  delete answer.message;
+  return answer as WithoutMessage<R>;
 }
 
 interface CreateConversationOptions {
@@ -341,7 +372,12 @@ export async function createConversation({
   // Check if conversation already exists between these users
   // Optimized: Single query instead of N+1 pattern
   const participantsTable = sport === 'golf' ? 'golf_conversation_participants' : 'baseball_conversation_participants';
-  if (participantUserIds.length === 1 && participantUserIds[0]) {
+  if (sport === 'golf' && participantUserIds.length === 1 && participantUserIds[0] && teamId) {
+    // F-0003 (audit 2026-10-29, S0): only a real one-to-one thread on this team is reused, never the Team Channel or a
+    // group the two share (that is how a player's message to Coach landed in the channel).
+    const direct = await findGolfDirectConversation(supabase, user.id, participantUserIds[0], teamId);
+    if (direct) return { conversationId: direct, reused: true };
+  } else if (sport !== 'golf' && participantUserIds.length === 1 && participantUserIds[0]) {
     const otherUserId = participantUserIds[0];
 
     // Get all conversation IDs where current user participates
@@ -545,7 +581,75 @@ export async function createConversation({
 
   revalidatePath(`/${sport}/dashboard/messages`);
 
-  return { conversationId };
+  return { conversationId, reused: false };
+}
+
+/**
+ * The golf one-to-one conversation between `viewerId` and `otherUserId` on `teamId`, or null when there is none.
+ *
+ * F-0003: the old lookup took ANY conversation the two shared (`limit(1)`, no order, no filter), so the Team Channel or
+ * a group came back for a message meant for one person. A conversation counts only when all of these hold:
+ * - both users are in it;
+ * - it is on `teamId`, and is neither the team channel nor a team chat (`IS NOT TRUE`: null is a direct thread);
+ * - it has exactly two members.
+ * The newest by `updated_at` wins. A failed read is logged and throws, so the caller says the conversation couldn't start
+ * (CH-7002) instead of making a second thread or reusing a wrong one.
+ */
+async function findGolfDirectConversation(
+  supabase: Awaited<ReturnType<typeof createClient>>,
+  viewerId: string,
+  otherUserId: string,
+  teamId: string,
+): Promise<string | null> {
+  const failed = async (read: string, error: { message: string }) => {
+    await logServerError(`[Messages] Direct thread lookup failed (${read}): ${error.message}`, { action: 'messages.createConversation', metadata: { teamId, read } });
+    throw new Error('Couldn’t check for an existing conversation');
+  };
+  const { data: mine, error: mineError } = (await supabase
+    .from('golf_conversation_participants')
+    .select('conversation_id')
+    .eq('user_id', viewerId)) as { data: { conversation_id: string }[] | null; error: { message: string } | null };
+  if (mineError) await failed('mine', mineError);
+  const mineIds = (mine ?? []).map((r) => r.conversation_id);
+  if (mineIds.length === 0) return null;
+
+  const { data: shared, error: sharedError } = (await supabase
+    .from('golf_conversation_participants')
+    .select('conversation_id')
+    .eq('user_id', otherUserId)
+    .in('conversation_id', mineIds)) as { data: { conversation_id: string }[] | null; error: { message: string } | null };
+  if (sharedError) await failed('shared', sharedError);
+  const sharedIds = [...new Set((shared ?? []).map((r) => r.conversation_id))];
+  if (sharedIds.length === 0) return null;
+
+  // Filtered here rather than with `.or(...is.false)`, so a null flag reads as "not a channel" exactly as the RLS does.
+  const { data: convs, error: convsError } = (await supabase
+    .from('golf_conversations')
+    .select('id, team_id, is_team_channel, is_team_chat, updated_at')
+    .in('id', sharedIds)
+    .eq('team_id', teamId)) as {
+    data: { id: string; team_id: string | null; is_team_channel: boolean | null; is_team_chat: boolean | null; updated_at: string | null }[] | null;
+    error: { message: string } | null;
+  };
+  if (convsError) await failed('conversations', convsError);
+  const candidates = (convs ?? [])
+    .filter((c) => c.team_id === teamId && c.is_team_channel !== true && c.is_team_chat !== true)
+    .sort((a, b) => (b.updated_at ?? '').localeCompare(a.updated_at ?? ''));
+  if (candidates.length === 0) return null;
+
+  const { data: members, error: membersError } = (await supabase
+    .from('golf_conversation_participants')
+    .select('conversation_id, user_id')
+    .in('conversation_id', candidates.map((c) => c.id))) as { data: { conversation_id: string; user_id: string }[] | null; error: { message: string } | null };
+  if (membersError) await failed('members', membersError);
+  if (!members) return null;
+  const membersOf = new Map<string, Set<string>>();
+  for (const m of members) {
+    const set = membersOf.get(m.conversation_id) ?? new Set<string>();
+    set.add(m.user_id);
+    membersOf.set(m.conversation_id, set);
+  }
+  return candidates.find((c) => membersOf.get(c.id)?.size === 2)?.id ?? null;
 }
 
 interface MarkMessagesAsReadOptions {
@@ -667,8 +771,8 @@ export async function markBaseballMessagesAsRead(conversationId: string) {
 
 // Golf-specific exports (maintain existing function signatures)
 // SEMGREP-ALLOW: realtime-subscribed messages + notifications UI; revalidate would cause reload loop
-async function sendGolfMessageImpl(conversationId: string, content: string, clientMessageId?: string, replyToId?: string | null) {
-  const result = await sendMessage({ conversationId, content, sport: 'golf', createNotifications: false, clientMessageId, replyToId });
+async function sendGolfMessageImpl(conversationId: string, content: string, clientMessageId?: string, replyToId?: string | null, opts?: { notifyAnyway?: boolean }) {
+  const result = await sendMessageCore({ conversationId, content, sport: 'golf', createNotifications: false, clientMessageId, replyToId, notifyAnyway: opts?.notifyAnyway });
 
   if (result.success) {
     const supabase = await createClient();
@@ -676,11 +780,23 @@ async function sendGolfMessageImpl(conversationId: string, content: string, clie
 
     if (user) {
       const preview = content.length > 80 ? content.substring(0, 80) + '…' : content;
-      await notifyGolfMessageRecipients(conversationId, user.id, preview);
+      // The flag as stored (not as asked for): a duplicate-key success carries none, which reads as "not flagged" here, and a push that goes
+      // out normally is the fail-open direction.
+      const stored = 'message' in result ? result.message : undefined;
+      await notifyGolfMessageRecipients(
+        conversationId,
+        user.id,
+        preview,
+        // The message id lets a held push be dropped at release if the player read the message in the app first. Flag off and not flagged:
+        // the call is the three arguments it always was.
+        stored?.notifyAnyway || isFlagEnabled('class_awareness_v1', { skipTelemetry: true })
+          ? { notifyAnyway: stored?.notifyAnyway === true, messageId: stored?.id ?? clientMessageId }
+          : undefined,
+      );
     }
   }
 
-  return result;
+  return withoutStoredMessage(result);
 }
 
 const observedSendGolfMessage = withAdminObserved(
@@ -689,8 +805,8 @@ const observedSendGolfMessage = withAdminObserved(
   sendGolfMessageImpl,
 );
 
-export async function sendGolfMessage(conversationId: string, content: string, clientMessageId?: string, replyToId?: string | null) {
-  return observedSendGolfMessage(conversationId, content, clientMessageId, replyToId);
+export async function sendGolfMessage(conversationId: string, content: string, clientMessageId?: string, replyToId?: string | null, opts?: { notifyAnyway?: boolean }) {
+  return observedSendGolfMessage(conversationId, content, clientMessageId, replyToId, opts);
 }
 
 async function createGolfConversationImpl(participantUserIds: string[], teamId?: string) {
@@ -1206,18 +1322,18 @@ export async function deleteMessage({
 
     const messagesTable = sport === 'golf' ? 'golf_messages' : 'baseball_messages';
 
-    // Verify user owns this message
+    // Verify user owns this message. Golf also reads `kind`: a deleted poll's payload is cleared with its text (P-2).
     const { data: existingMessage, error: fetchError } = await supabase
       .from(messagesTable as any)
-      .select('id, sender_id, conversation_id')
+      .select(sport === 'golf' ? 'id, sender_id, conversation_id, kind' : 'id, sender_id, conversation_id')
       .eq('id', messageId)
-      .single() as { data: { id: string; sender_id: string; conversation_id: string } | null; error: SupabaseError | null };
+      .single() as { data: { id: string; sender_id: string; conversation_id: string; kind?: string | null } | null; error: SupabaseError | null };
 
     if (fetchError || !existingMessage) {
       throw new Error('Message not found');
     }
 
-    const msg = existingMessage as { id: string; sender_id: string; conversation_id: string };
+    const msg = existingMessage as { id: string; sender_id: string; conversation_id: string; kind?: string | null };
     if (msg.sender_id !== user.id) {
       console.warn('[Security] Unauthorized message delete attempt:', {
         userId: user.id,
@@ -1235,12 +1351,14 @@ export async function deleteMessage({
       metadata: { messageId },
     });
 
-    // Soft-delete the message
+    // Soft-delete the message. A golf poll's question and choices live in `payload`, so it is cleared as well; held
+    // 20261025020200_golf_poll_payload_freeze allows exactly this write on a poll.
     const { error: deleteError } = await supabase
       .from(messagesTable as any)
       .update({
         is_deleted: true,
         content: '', // Clear content on delete for privacy
+        ...(sport === 'golf' && msg.kind === 'poll' ? { payload: null } : {}),
       })
       .eq('id', messageId)
       .eq('sender_id', user.id); // Extra safety check

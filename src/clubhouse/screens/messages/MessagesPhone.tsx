@@ -6,7 +6,7 @@ import {
   ArrowUp,
   Bell,
   BellOff,
-  BarChart3,
+  ChartColumn,
   CalendarDays,
   CalendarPlus,
   Check,
@@ -25,9 +25,13 @@ import {
   UserMinus,
   Users,
   X,
+  ListChecks,
+  BellRing,
+  Lock,
+  Share,
+  CheckCheck,
 } from "lucide-react";
 import {
-  Fragment,
   useCallback,
   useEffect,
   useMemo,
@@ -38,7 +42,10 @@ import {
 import { Avatar } from "../../ui/Avatar";
 import { EmptyState, Skeleton } from "../../ui/States";
 import { RailEmpty } from "./RailEmpty";
+import { ThreadClassSub } from "./ThreadClassSub";
+import { ThreadClassSection } from "./ThreadClassSection";
 import { Icon } from "../../ui/Icon";
+import { Button } from "../../ui/Button";
 import { InlineNotice } from "../../ui/Notices";
 import { Modal } from "../../ui/Modal";
 import { PhoneBar, PhoneIconAction, PhoneTextAction } from "../../ui/PhoneBar";
@@ -58,6 +65,7 @@ import {
   filterConvs,
   firstName,
   groupLacksPlayer,
+  isUnread,
   MESSAGE_MAX,
   sectionOf,
   threadItems,
@@ -69,6 +77,9 @@ import {
 import { AnnouncementPane, AnnouncementsSection } from "./announcements";
 import { isMessagesFirstRun, MessagesFirstRun } from "./MessagesFirstRun";
 import { fileMeta, useConversationFiles } from "./files";
+import { notePollHold, pollCardActions, PollThreadContext, type PollThreadActions } from "./polls";
+import { useSeenBy, useSeenByList } from "./seen-by";
+import { receiptCarrierId, seenByAccess, SEEN_BY_VISIBILITY } from "@/lib/golf/message-receipts";
 import {
   AddMembersModal,
   AttachButton,
@@ -88,6 +99,7 @@ import {
   ThreadBelow,
   muteLabel,
   personOf,
+  convAvatarId,
   useAddAttachments,
   useAutosize,
   useNewDivider,
@@ -96,6 +108,9 @@ import {
 import { useComposerInset } from "./composer-inset";
 import { useThreadAnchor } from "./use-thread-anchor";
 import { useFocusMessage } from "./use-focus-message";
+import { ListPresence, PresenceRow } from "../../ui/ListPresence";
+import { pluralWord } from "../../lib/plural";
+import { LargeTitle } from "../../ui/LargeTitle";
 
 /** What New message hands the thread that opens next: the text and any files picked with it. */
 type FirstMessage = { text: string; files: File[] };
@@ -232,7 +247,7 @@ function PhoneInbox({ api, onNew }: { api: ChMessagesApi; onNew: () => void }) {
   const [filter, setFilter] = useState<ChConvFilter>("all");
   const [q, setQ] = useState("");
   // Conversations with something unread, not the messages added up (D-46).
-  const unread = api.convs.filter((c) => c.unread > 0).length;
+  const unread = api.convs.filter(isUnread).length;
   const list = filterConvs(api.convs, filter, q);
   const sections: Array<[ReturnType<typeof sectionOf>, string]> = [
     ["today", "Today"],
@@ -241,41 +256,47 @@ function PhoneInbox({ api, onNew }: { api: ChMessagesApi; onNew: () => void }) {
   ];
   return (
     <div className="ch-msp-page ch-msp-home">
-      {/* With nothing to search or filter the page is the first-run empty alone (board: Empty state), not controls over nothing. */}
-      {!isMessagesFirstRun(api) && (
-        <div className="ch-msp-tools">
-          <SearchField value={q} onChange={setQ} placeholder="Search messages" label="Search conversations and messages" className="ch-msp-search" />
-          <div className="ch-msp-chips" role="group" aria-label="Filter conversations">
-            {/* The Qualifiers chips: a count is its own figure beside the word (space kept, so it reads "Unread 2"). */}
-            {(
-              [
-                ["all", "All", null],
-                ["unread", "Unread", unread],
-                ["groups", "Groups", null],
-              ] as Array<[ChConvFilter, string, number | null]>
-            ).map(([k, l, n]) => (
-              <button
-                key={k}
-                type="button"
-                className="ch-msp-chip ch-num"
-                aria-pressed={filter === k}
-                onClick={() => {
-                  if (filter !== k) haptic("select");
-                  setFilter(k);
-                }}
-              >
-                {l}
-                {n != null && <> <span>{n}</span></>}
-              </button>
-            ))}
+      <div className="ch-msp-top">
+        {/* The phone's one large title (owner decision 4, 2026-10-24); the top bar holds the page's heading, so VoiceOver reads it once. */}
+        <LargeTitle as="p" hidden>
+          Messages
+        </LargeTitle>
+        {/* With nothing to search or filter the page is the first-run empty alone (board: Empty state), not controls over nothing. */}
+        {!isMessagesFirstRun(api) && (
+          <div className="ch-msp-tools">
+            <SearchField value={q} onChange={setQ} placeholder="Search messages" label="Search conversations and messages" className="ch-msp-search" />
+            <div className="ch-msp-chips" role="group" aria-label="Filter conversations">
+              {/* The Qualifiers chips: a count is its own figure beside the word (space kept, so it reads "Unread 2"). */}
+              {(
+                [
+                  ["all", "All", null],
+                  ["unread", "Unread", unread],
+                  ["groups", "Groups", null],
+                ] as Array<[ChConvFilter, string, number | null]>
+              ).map(([k, l, n]) => (
+                <button
+                  key={k}
+                  type="button"
+                  className="ch-msp-chip ch-num"
+                  aria-pressed={filter === k}
+                  onClick={() => {
+                    if (filter !== k) haptic("select");
+                    setFilter(k);
+                  }}
+                >
+                  {l}
+                  {n != null && <> <span>{n}</span></>}
+                </button>
+              ))}
+            </div>
           </div>
-        </div>
-      )}
+        )}
+      </div>
       {api.convsError ? (
         <InlineNotice
           code="CH-7201"
           title="Conversations didn’t load"
-          body="Your messages are safe. Try again; the error has been reported."
+          body="Your messages are safe. Try again."
           onRetry={api.refetchConvs}
         />
       ) : (api.convsLoading && !api.convs.length) || api.annLoading ? (
@@ -306,9 +327,9 @@ function PhoneInbox({ api, onNew }: { api: ChMessagesApi; onNew: () => void }) {
           title="No conversations yet"
           body={api.viewer.role === "coach" ? "Start one with a player, or create a team group." : "Message a coach or a teammate to start."}
           action={
-            <button type="button" className="ch-btn ch-btn--secondary ch-btn--sm" onClick={onNew}>
+            <Button size="sm" onClick={onNew}>
               New message
-            </button>
+            </Button>
           }
         />
       ) : (
@@ -321,9 +342,11 @@ function PhoneInbox({ api, onNew }: { api: ChMessagesApi; onNew: () => void }) {
               <section key={k} className="ch-ms-sec is-date" aria-label={l}>
                 <h2 className="ch-ms-sec__l">{l}</h2>
                 <div className="ch-ms-sec__card">
-                  {rows.map((c) => (
-                    <ConvRow key={c.id} api={api} c={c} avatarSize={44} />
-                  ))}
+                  <ListPresence>
+                    {rows.map((c) => (
+                      <ConvRow key={c.id} api={api} c={c} avatarSize={44} phone />
+                    ))}
+                  </ListPresence>
                 </div>
               </section>
             );
@@ -375,6 +398,27 @@ function PhoneThread({
     setReplyToId(message.id);
     setActing(null);
   };
+  // P-1: the message that carries the receipt, and the Seen by sheet.
+  const carrierId = useMemo(
+    () => receiptCarrierId(api.msgs, { viewerId: api.viewer.userId, scope: conv.group && SEEN_BY_VISIBILITY === "everyone" ? "thread" : "mine" }),
+    [api.msgs, api.viewer.userId, conv.group],
+  );
+  const seenList = useSeenByList();
+  // A coach's own group run-ends keep room for the receipt's 44 px tap box (changelog P-01).
+  const seenListAccess = conv.group && seenByAccess(SEEN_BY_VISIBILITY, api.viewer.role, true).list;
+  // D30: Remind and Share result reply to the poll with a prefilled draft (the coach presses Send).
+  const [seed, setSeed] = useState<{ text: string; nonce: number } | null>(null);
+  const pollThread = useMemo<PollThreadActions>(
+    () => ({
+      replyWith: (messageId, text) => {
+        if (replySendingRef.current) return;
+        setReplyToId(messageId);
+        setActing(null);
+        setSeed({ text, nonce: Date.now() });
+      },
+    }),
+    [],
+  );
   useEffect(() => {
     if (replyToId && !acting) composerRef.current?.querySelector("textarea")?.focus();
   }, [replyToId, acting]);
@@ -406,17 +450,20 @@ function PhoneThread({
     }
   };
   return (
-    <PhoneScreen labelledBy={titleId} className="ch-msp-thread" keyboardAware covered={covered}>
+    <PollThreadContext.Provider value={pollThread}>
+    <PhoneScreen labelledBy={titleId} className={"ch-msp-thread" + (seenListAccess ? " is-seen-list" : "")} keyboardAware covered={covered}>
       <PhoneBar
         lead
         titleId={titleId}
         back={{ onBack, ariaLabel: "Back to Messages" }}
         title={
           <button type="button" className="ch-msp-who" onClick={onDetails}>
-            {conv.group ? <GroupMark size="sm" /> : <Avatar name={conv.title} size={30} />}
+            {conv.group ? <GroupMark size="sm" /> : <Avatar name={conv.title} id={convAvatarId(api, conv)} size={30} />}
             <span>
               <b>{conv.title}</b>
-              <em>{sub}</em>
+              <em>
+                <ThreadClassSub cls={api.classDay} conv={conv} other={conv.group ? undefined : personOf(api, conv.memberIds[0] ?? "")} sub={sub} where="phone" />
+              </em>
             </span>
           </button>
         }
@@ -429,7 +476,7 @@ function PhoneThread({
               <InlineNotice
                 code="CH-7216"
                 title="This conversation may be out of date"
-                body="It didn’t refresh. What’s here is what was last loaded. Try again; the error has been reported."
+                body="It didn’t refresh. What’s here is what was last loaded. Try again."
                 onRetry={api.refetchMsgs}
               />
             )}
@@ -437,7 +484,7 @@ function PhoneThread({
               <InlineNotice
                 code="CH-7202"
                 title="This conversation didn’t load"
-                body="Nothing was lost. Try again; the error has been reported."
+                body="Nothing was lost. Try again."
                 onRetry={api.refetchMsgs}
               />
             ) : api.msgsLoading && !api.msgs.length ? (
@@ -451,35 +498,41 @@ function PhoneThread({
             ) : !api.msgs.length ? (
               <EmptyState compact code="CH-7304" title="No messages yet" body={`Say hello to ${conv.group ? "the group" : firstName(conv.title)}.`} />
             ) : (
-              items.map((it) =>
-                it.kind === "day" ? (
-                  <div key={it.key} className="ch-ms-day">
-                    <span>{it.label}</span>
-                  </div>
-                ) : (
-                  <Fragment key={it.key}>
-                    {it.m.id === newId && <NewDivider />}
-                    <Bubble
-                      api={api}
-                      m={it.m}
-                      first={it.first}
-                      last={it.last}
-                      group={conv.group}
-                      picking={false}
-                      setPicking={() => {}}
-                      onEdit={() => setEditing(it.m)}
-                      onDelete={() => setDeleting(it.m)}
-                      onActions={it.m.deleted ? undefined : () => setActing(it.m)}
-                      onReply={() => reply(it.m)}
-                    />
-                  </Fragment>
-                ),
-              )
+              // B7, as on desktop: arrivals and deletions open and close in place; the scroll stays with useThreadAnchor.
+              <ListPresence key={conv.id} flip={false}>
+                {items.flatMap((it) =>
+                  it.kind === "day"
+                    ? [
+                        <PresenceRow as="div" key={it.key} className="ch-ms-day">
+                          <span>{it.label}</span>
+                        </PresenceRow>,
+                      ]
+                    : [
+                        ...(it.m.id === newId ? [<NewDivider key={`new-${it.key}`} />] : []),
+                        <Bubble
+                          key={it.key}
+                          api={api}
+                          m={it.m}
+                          first={it.first}
+                          last={it.last}
+                          group={conv.group}
+                          picking={false}
+                          setPicking={() => {}}
+                          onEdit={() => setEditing(it.m)}
+                          onDelete={() => setDeleting(it.m)}
+                          onActions={it.m.deleted ? undefined : () => (notePollHold(), setActing(it.m))}
+                          onReply={() => reply(it.m)}
+                          carrier={it.m.id === carrierId}
+                          onSeenBy={conv.group ? (m) => seenList.open(m, null) : undefined}
+                        />,
+                      ],
+                )}
+              </ListPresence>
             )}
             {/* CH-7602, as on desktop: no dots under a thread that didn't load or is still loading. */}
             {api.typing && !api.msgsError && !(api.msgsLoading && !api.msgs.length) && (
               <div className="ch-ms-msg is-first">
-                <span className="ch-ms-msg__av">{!conv.group && <Avatar name={conv.title} size={30} />}</span>
+                <span className="ch-ms-msg__av">{!conv.group && <Avatar name={conv.title} id={convAvatarId(api, conv)} size={30} />}</span>
                 <div className="ch-ms-msg__col">
                   <div className="ch-ms-typing" role="status" aria-label={`${conv.group ? "Someone" : firstName(conv.title)} is typing`}>
                     <i />
@@ -506,16 +559,18 @@ function PhoneThread({
         replyToId={replyToId}
         onClearReply={() => setReplyToId(null)}
         onSendingChange={(sending) => { replySendingRef.current = sending; setReplySending(sending); }}
+        seed={seed}
       />
       </div>
 
       <Modal code="CH-7604" open={acting != null} onClose={() => setActing(null)} title="Message">
         {acting && (
           <div className="ch-msp-acts">
-            <div className="ch-msp-acts__preview" aria-label="Selected message">
+            <div role="group" className="ch-msp-acts__preview" aria-label="Selected message">
               {/* Whose it is, then when (wave 5 #20): in a group the time alone doesn't say. */}
               <span className="ch-ms-msg__t ch-num">
-                {acting.mine ? "You" : firstName(personOf(api, acting.senderId)?.name ?? "Member")} · {clock(acting.at, api.timeZone)}
+                {acting.mine ? "You" : firstName(personOf(api, acting.senderId)?.name ?? "Member")} · {clock(acting.at, api.timeZone, api.clock)}
+                {conv.group && <ActingSeenMeta api={api} m={acting} />}
               </span>
               <p>{acting.text || (acting.hasAttachments ? "Attachment" : "Message")}</p>
             </div>
@@ -541,11 +596,13 @@ function PhoneThread({
               })}
             </div>
             <div className="ch-msp-panel">
+              {acting.poll && <PollSheetRows id={acting.id} done={() => setActing(null)} />}
               <SheetRow icon={Reply} label="Reply" disabled={replySending} onClick={() => reply(acting)} />
+              {conv.group && <SeenSheetRow api={api} m={acting} open={() => (setActing(null), seenList.open(acting, null))} />}
               {acting.text && (
-                <SheetRow icon={Copy} label="Copy" onClick={() => (setActing(null), void copy(acting))} />
+                <SheetRow icon={Copy} label={acting.poll ? "Copy poll" : "Copy"} onClick={() => (setActing(null), void copy(acting))} />
               )}
-              {acting.mine && acting.text && (
+              {acting.mine && acting.text && !acting.poll && (
                 <SheetRow icon={Pencil} label="Edit" onClick={() => (setActing(null), setEditing(acting))} />
               )}
               {acting.mine && (
@@ -557,7 +614,41 @@ function PhoneThread({
       </Modal>
       <EditMessageModal api={api} message={editing} onClose={() => setEditing(null)} />
       <DeleteMessageModal api={api} message={deleting} onClose={() => setDeleting(null)} />
+      {seenList.render(api, true)}
     </PhoneScreen>
+    </PollThreadContext.Provider>
+  );
+}
+
+/** P-1 slice 6: "Seen by 9 of 11" in the long-press sheet, for a coach, between Reply and Copy. */
+function SeenSheetRow({ api, m, open }: { api: ChMessagesApi; m: ChMsg; open: () => void }) {
+  const seen = useSeenBy(api, m);
+  if (!seen?.canOpen) return null;
+  return <SheetRow icon={CheckCheck} label={seen.label === "Sent" ? "Not seen yet" : seen.label} onClick={open} />;
+}
+
+/** P-1: a player under (a) sees the count of their own message in the sheet's preview line, never the list. */
+function ActingSeenMeta({ api, m }: { api: ChMessagesApi; m: ChMsg }) {
+  const seen = useSeenBy(api, m);
+  if (!seen || seen.canOpen) return null;
+  return <> · {seen.label}</>;
+}
+
+/** D26: a poll's own rows in the long-press sheet, from its card's live state: See votes, Remind, Close poll, Share result. */
+function PollSheetRows({ id, done }: { id: string; done: () => void }) {
+  const a = pollCardActions(id);
+  if (!a) return null;
+  const run = (f: () => void) => () => {
+    done();
+    f();
+  };
+  return (
+    <>
+      {a.seeVotes && <SheetRow icon={ListChecks} label="See votes" onClick={run(a.seeVotes)} />}
+      {a.remind && <SheetRow icon={BellRing} label={`Remind ${a.remind.count}`} onClick={run(a.remind.run)} />}
+      {a.close && <SheetRow icon={Lock} label="Close poll" onClick={run(a.close)} />}
+      {a.share && <SheetRow icon={Share} label="Share result" onClick={run(a.share)} />}
+    </>
   );
 }
 
@@ -631,7 +722,7 @@ function PhoneDetails({ api, conv, onBack }: { api: ChMessagesApi; conv: ChConv;
         <SectionBoundary surface="messages.details" label="Details" code="CH-7213">
           <div className="ch-msp-page">
             <section className="ch-msp-prof">
-              {conv.group ? <GroupMark size="lg" /> : <Avatar name={conv.title} size={72} />}
+              {conv.group ? <GroupMark size="lg" /> : <Avatar name={conv.title} id={convAvatarId(api, conv)} size={72} />}
               <h2>{conv.title}</h2>
               <p className="ch-num">
                 {conv.group
@@ -664,6 +755,19 @@ function PhoneDetails({ api, conv, onBack }: { api: ChMessagesApi; conv: ChConv;
               </div>
             </section>
 
+            {api.classDay && !conv.group && (
+              <ThreadClassSection
+                cls={api.classDay}
+                conv={conv}
+                other={personOf(api, conv.memberIds[0] ?? "")}
+                wrap={(content) => (
+                  <Panel title="Class status">
+                    <div className="ch-msp-pad">{content}</div>
+                  </Panel>
+                )}
+              />
+            )}
+
             {conv.group ? (
               <Panel
                 title="Members"
@@ -676,7 +780,7 @@ function PhoneDetails({ api, conv, onBack }: { api: ChMessagesApi; conv: ChConv;
                 }
               >
                 {api.membersError ? (
-                  <InlineNotice code="CH-7204" title="Members didn’t load" body="Try again; the error has been reported." onRetry={api.retryMembers} />
+                  <InlineNotice code="CH-7204" title="Members didn’t load" body="Try again." onRetry={api.retryMembers} />
                 ) : !api.members ? (
                   <div className="ch-msp-pad" aria-busy="true" data-ch-code="CH-7405">
                     <Skeleton height={36} />
@@ -688,6 +792,7 @@ function PhoneDetails({ api, conv, onBack }: { api: ChMessagesApi; conv: ChConv;
                     <PersonRow
                       key={mb.userId}
                       name={mb.name}
+                      id={personOf(api, mb.userId)?.playerId ?? mb.userId}
                       you={mb.userId === api.viewer.userId}
                       sub={[mb.subtitle, mb.userId === conv.creatorId ? "Admin" : null].filter(Boolean).join(" · ")}
                       onMessage={mb.userId === api.viewer.userId ? undefined : () => void message(mb.userId)}
@@ -699,12 +804,12 @@ function PhoneDetails({ api, conv, onBack }: { api: ChMessagesApi; conv: ChConv;
               </Panel>
             ) : (
               <Panel title="People">
-                <PersonRow name={api.viewer.name} you sub={coach ? "Coach" : "Player"} />
-                <PersonRow name={conv.title} sub={conv.subtitle} onMessage={() => void message(conv.memberIds[0] ?? "")} />
+                <PersonRow name={api.viewer.name} id={personOf(api, api.viewer.userId)?.playerId ?? api.viewer.userId} you sub={coach ? "Coach" : "Player"} />
+                <PersonRow name={conv.title} id={convAvatarId(api, conv)} sub={conv.subtitle} onMessage={() => void message(conv.memberIds[0] ?? "")} />
                 {statsHref && other?.playerId && (
                   <Link className="ch-msp-row is-btn" href={`${statsHref}?player=${encodeURIComponent(other.playerId)}`}>
                     <span className="ch-msp-row__ic">
-                      <Icon icon={BarChart3} size={16} />
+                      <Icon icon={ChartColumn} size={16} />
                     </span>
                     <span className="ch-msp-row__b">
                       <b>View stats</b>
@@ -721,7 +826,7 @@ function PhoneDetails({ api, conv, onBack }: { api: ChMessagesApi; conv: ChConv;
             {(api.muteError || !api.mute || muted || (conv.group && !mine) || api.deleteConversation) && (
               <Panel>
                 {api.muteError ? (
-                  <InlineNotice code="CH-7208" title="The mute setting didn’t load" body="Try again; the error has been reported." onRetry={api.retryMute} />
+                  <InlineNotice code="CH-7208" title="The mute setting didn’t load" body="Try again." onRetry={api.retryMute} />
                 ) : !api.mute ? (
                   <div className="ch-msp-pad" aria-busy="true" data-ch-code="CH-7407">
                     <Skeleton height={30} />
@@ -769,10 +874,10 @@ function PhoneDetails({ api, conv, onBack }: { api: ChMessagesApi; conv: ChConv;
   );
 }
 
-function PersonRow({ name, sub, you = false, onMessage, onRemove }: { name: string; sub: string; you?: boolean; onMessage?: () => void; onRemove?: () => void }) {
+function PersonRow({ name, id, sub, you = false, onMessage, onRemove }: { name: string; id?: string | null; sub: string; you?: boolean; onMessage?: () => void; onRemove?: () => void }) {
   return (
     <div className="ch-msp-row">
-      <Avatar name={name} size={36} />
+      <Avatar name={name} id={id} size="md" />
       <span className="ch-msp-row__b">
         <b>
           {name}
@@ -807,7 +912,7 @@ function FilesPanel({ api, conv }: { api: ChMessagesApi; conv: ChConv }) {
       action={files && files.length > 0 ? <span className="ch-msp-count ch-num">{files.length}</span> : undefined}
     >
       {failed ? (
-        <InlineNotice code="CH-7214" title="Files didn’t load" body="Your messages are safe. Try again; the error has been reported." onRetry={retry} />
+        <InlineNotice code="CH-7214" title="Files didn’t load" body="Your messages are safe. Try again." onRetry={retry} />
       ) : !files ? (
         <div className="ch-msp-pad" aria-busy="true" data-ch-code="CH-7409">
           <Skeleton height={36} />
@@ -1018,7 +1123,7 @@ function PhoneNewMessage({
                     <span className="ch-msp-row__b">
                       <b>Whole team</b>
                       <span className="ch-num">
-                        {players.length} {players.length === 1 ? "player" : "players"} · {coaches.length + 1} coaches
+                        {players.length} {pluralWord(players.length, "player")} · {coaches.length + 1} coaches
                       </span>
                     </span>
                     <Icon icon={ChevronRight} size={16} className="ch-msp-chev" />
@@ -1041,14 +1146,14 @@ function PhoneNewMessage({
           )}
           <h2 className="ch-ms-sec__l">{q ? "Results" : "People"}</h2>
           {api.directoryError ? (
-            <InlineNotice code="CH-7205" title="Your team list didn’t load" body="Try again; the error has been reported." onRetry={api.retryDirectory} />
+            <InlineNotice code="CH-7205" title="Your team list didn’t load" body="Try again." onRetry={api.retryDirectory} />
           ) : (
             <div className="ch-msp-panel" role="listbox" aria-multiselectable={coach} aria-label="People">
               {people.map((p) => {
                 const on = to.includes(p.userId);
                 return (
                   <button key={p.userId} type="button" role="option" aria-selected={on} className="ch-msp-row is-btn" onClick={() => toggle(p.userId)}>
-                    <Avatar name={p.name} size={40} />
+                    <Avatar name={p.name} id={p.playerId ?? p.userId} size="lg" />
                     <span className="ch-msp-row__b">
                       <b>{p.name}</b>
                       <span>{p.subtitle}</span>

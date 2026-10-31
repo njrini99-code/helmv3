@@ -44,6 +44,8 @@ export function LedgerRow({
   trail,
   href,
   onClick,
+  onPointerDown,
+  'data-ch-ahead': ahead,
   current = false,
   className,
   code,
@@ -56,6 +58,10 @@ export function LedgerRow({
   href?: string;
   /** Runs on press; it gets the click, so a caller can ignore a Ctrl/Cmd/Shift/Alt click that opens a new tab. */
   onClick?: (e: MouseEvent<HTMLElement>) => void;
+  /** Runs as a finger or the mouse goes down on a linked row: a page fetches its push target ahead (A13, usePressPrefetch). */
+  onPointerDown?: () => void;
+  /** The push target the shell fetches ahead while the page is idle, when the row is among the first on screen (row 13, usePressPrefetch). */
+  'data-ch-ahead'?: string;
   /** The row that is happening now or selected: its lead and title take the green. */
   current?: boolean;
 }) {
@@ -74,7 +80,7 @@ export function LedgerRow({
   return (
     <li className="ch-lgr__item" aria-label={href || onClick ? undefined : label}>
       {href ? (
-        <Link href={href} className={cls} data-ch-code={code} aria-label={label} onClick={onClick}>
+        <Link href={href} className={cls} data-ch-code={code} aria-label={label} onClick={onClick} onPointerDown={onPointerDown} data-ch-ahead={ahead}>
           {body}
         </Link>
       ) : onClick ? (
@@ -90,7 +96,11 @@ export function LedgerRow({
   );
 }
 
-/** A screen's key figures between two hairlines, divided by soft rules. Two to four figures. */
+/**
+ * A screen's key figures between two hairlines, divided by soft rules. Two to four figures. A gain or loss tints its
+ * figure; `under` is a count of rounds under par, not a score, so its figure stays ink and its label carries the
+ * scoreboard's red under-par disc as the key (design picks, 2026-10-28).
+ */
 export function FigureRow({
   items,
   className,
@@ -100,9 +110,9 @@ export function FigureRow({
   return (
     <dl className={cx('ch-fgr', className)} style={{ ['--ch-fgr-n' as string]: items.length }} data-ch-code={code} aria-label={label}>
       {items.map((it, i) => (
-        <div key={i} className="ch-fgr__c">
+        <div key={i} className={'ch-fgr__c' + (it.tone === 'under' ? ' is-under' : '')}>
           <dt>{it.label}</dt>
-          <dd className={'ch-num' + (it.tone ? ` is-${it.tone}` : '')}>{it.value}</dd>
+          <dd className={'ch-num' + (it.tone && it.tone !== 'under' ? ` is-${it.tone}` : '')}>{it.value}</dd>
           {it.note != null && <dd className="ch-fgr__note">{it.note}</dd>}
         </div>
       ))}
@@ -181,16 +191,26 @@ export function PageIntro({
   brief,
   action,
   level = 1,
+  large = false,
   className,
   code,
   label,
-}: KitProps & { eyebrow?: ReactNode; title: ReactNode; titleId?: string; brief?: ReactNode; action?: ReactNode; level?: 1 | 2 }) {
+}: KitProps & {
+  eyebrow?: ReactNode;
+  title: ReactNode;
+  titleId?: string;
+  brief?: ReactNode;
+  action?: ReactNode;
+  level?: 1 | 2;
+  /** The page's large title on the phone (ui/LargeTitle's contract): the bar hides its own copy until this scrolls under it (F-0054). */
+  large?: boolean;
+}) {
   const Heading = level === 2 ? 'h2' : 'h1';
   return (
     <header className={cx('ch-intro', className)} data-ch-code={code}>
       {eyebrow != null && <span className="ch-intro__eyebrow">{eyebrow}</span>}
       <span className="ch-intro__row">
-        <Heading id={titleId} className="ch-intro__title" aria-label={label}>
+        <Heading id={titleId} className={cx('ch-intro__title', large ? 'ch-large-title' : undefined)} data-ch-large-title={large ? '' : undefined} aria-label={label}>
           {title}
         </Heading>
         {action != null && <span className="ch-intro__action">{action}</span>}

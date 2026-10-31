@@ -1,6 +1,8 @@
 import type { TeamPatternResult } from '@/lib/coachhelm/v3/team-pattern/pattern';
 import { teamPatternBelowLine, teamPatternMembersLine, teamPatternStrokesLine } from '@/lib/coachhelm/v3/team-pattern/pattern';
 import type { LadderRung } from '@/lib/coachhelm/v3/support/ladder';
+import { MINUS } from '../lib/format';
+import { pluralWord } from '../lib/plural';
 
 /**
  * The Team pattern rows on the coach's CoachHelm board (Clubhouse P013;
@@ -49,17 +51,21 @@ const LADDER_WORD: Partial<Record<LadderRung, string>> = {
 export function memberValue(value: number | null, unit: string | null): string | null {
   if (value === null || !Number.isFinite(value)) return null;
   const v = Math.round(value * 10) / 10;
+  // A figure's minus is a true minus (lib/format), never the hyphen String() prints.
+  const n = v < 0 ? `${MINUS}${-v}` : String(v);
   switch (unit) {
     case 'percent':
-      return `${v}%`;
+      return `${n}%`;
     case 'strokes':
-      return `${v} ${v === 1 ? 'stroke' : 'strokes'}`;
+      // English's own rule (CONS-14): "1 stroke" and "−1 stroke", "0.4 strokes" and "2 strokes". Before CONS-14 −1 read
+      // "−1 strokes"; the one plural rule reads it as English does, as it does every other count.
+      return `${n} ${pluralWord(v, 'stroke')}`;
     case 'feet':
-      return `${v} ft`;
+      return `${n} ft`;
     case 'yards':
-      return `${v} yd`;
+      return `${n} yd`;
     default:
-      return String(v);
+      return n;
   }
 }
 

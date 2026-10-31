@@ -1,23 +1,22 @@
 import 'server-only';
 import { Suspense, type ReactNode } from 'react';
 import { redirect } from 'next/navigation';
-import { Users } from 'lucide-react';
 import { pickGolfDashboardRole } from '@/lib/auth/golf-dashboard-role';
 import { getGolfSessionProfile } from '@/lib/auth/session';
 import { isTrackRecordEnabled } from '@/lib/coachhelm/v3/track-record/flag';
 import { isMondayBriefEnabled } from '@/lib/coachhelm/v3/monday-brief/flag';
 import { emptyCoachHelm, loadCoachCoachHelm, loadCoachHelmGate, loadPlayerCoachHelm, loadPlayerHelmGate } from '../data/coachhelm';
 import { loadAskCoachHelm } from '../data/coachhelm-chat';
-import { loadCoachPlayerDeepDive, loadCoachPlayerProfile, loadCoachPlayerScope, loadCoachPlayerStanding, type ChCoachPlayerScope } from '../data/coachhelm-player';
+import { loadCoachPlayerDeepDive, loadCoachPlayerGame, loadCoachPlayerScope, loadCoachPlayerStanding, type ChCoachPlayerScope } from '../data/coachhelm-player';
 import { loadPlayerDeepDive } from '../data/coachhelm-dive';
-import { loadPlayerProfile } from '../data/coachhelm-profile';
+import { loadPlayerGame } from '../data/coachhelm-profile';
 import { loadPlayerStanding } from '../data/coachhelm-standing';
 import { loadCoachTrackRecord } from '../data/coachhelm-track-record';
 import { loadCoachMondayBrief } from '../data/coachhelm-monday-brief';
 import { loadCoachBrief } from '../data/coachhelm-coach-brief';
 import { COACH_BRIEF_HREF, isBriefSection, type ChBriefSection } from '../data/coachhelm-coach-brief-shape';
 import { COACH_TRACK_RECORD_HREF } from '../data/coachhelm-track-record-shape';
-import { PLAYER_HELM_DEVELOPMENT_HREF, playerHelmDrill, type ChViewLoad, type ChViewVoice, type CoachPlayerView as CoachPlayerViewName, type PlayerHelmView } from '../data/coachhelm-views-shape';
+import { landsOnGame, PLAYER_HELM_DEVELOPMENT_HREF, playerHelmDrill, type ChViewLoad, type ChViewVoice, type CoachPlayerView as CoachPlayerViewName, type PlayerHelmView } from '../data/coachhelm-views-shape';
 import { Ask } from '../screens/coachhelm/chat/Ask';
 import { AskSkeleton } from '../screens/coachhelm/chat/AskSkeleton';
 import { CoachBoard } from '../screens/coachhelm/CoachBoard';
@@ -25,18 +24,17 @@ import { CoachHelmSkeleton } from '../screens/coachhelm/CoachHelmSkeleton';
 import { PlayerBoard } from '../screens/coachhelm/PlayerBoard';
 import { CoachPlayerFailed, CoachPlayerNotOnTeam } from '../screens/coachhelm/views/CoachPlayerStates';
 import { DeepDive } from '../screens/coachhelm/views/DeepDive';
-import { Profile } from '../screens/coachhelm/views/Profile';
-import { DiveSkeleton, ProfileSkeleton, StandingSkeleton } from '../screens/coachhelm/views/Skeletons';
+import { DiveSkeleton, StandingSkeleton } from '../screens/coachhelm/views/Skeletons';
 import { Standing } from '../screens/coachhelm/views/Standing';
 import { TrackRecord } from '../screens/coachhelm/views/TrackRecord';
 import { MondayBrief } from '../screens/coachhelm/views/MondayBrief';
 import { CoachBrief } from '../screens/coachhelm/views/CoachBrief';
-import { EmptyState } from '../ui/States';
 import { resolveClubhouseTeam } from './team';
+import { NoTeam } from '../ui/NoTeam';
 import '../styles/coachhelm.css';
 import '../styles/coachhelm-ask.css';
 import '../styles/coachhelm-views.css';
-import '../styles/coachhelm-profile.css';
+import '../styles/coachhelm-profile.css'; // Standing's "How you play" (the measures the Game profile drew)
 import '../styles/coachhelm-standing.css';
 import '../styles/coachhelm-dive.css';
 import '../styles/coachhelm-track.css';
@@ -48,7 +46,7 @@ import '../styles/coachhelm-brief.css';
  * their team's players, whichever other teams they staff; a player reads only
  * their own insights, with or without a team, and is never handed a coach control.
  *
- * Every view of this page (the coach's Board and Ask, the player's Board, Game profile, Standing and Deep dive) is one async
+ * Every view of this page (the coach's Board and Ask, the player's Board, Standing and Deep dive) is one async
  * component inside ONE Suspense, in the same place and not keyed by view (perf, 2026-10-01). A switch between views is a
  * transition, so React keeps the view on screen, dimmed by the tabs' own pending state (`useViewSwitch`), until the next view is
  * ready, and swaps once: no blank and no skeleton flash. The boundary's fallback is the skeleton of the view the address names,
@@ -86,30 +84,34 @@ async function CoachBriefView({ coachId, teamId, section }: { coachId: string; t
 }
 
 /**
- * The player's Board, Game profile, Standing or Deep dive (`?view=`). Read only for the signed-in player (`playerId` is the
- * session's, never the address's) and only once CoachHelm is on for them, as the board is: off is the board's own "CoachHelm is
- * off" page, and a lookup that failed is the view's own "did not load", never a view that reads against a switch that is off. The
- * Board's loader checks the gate itself; a view's is checked here, before its read.
+ * The player's Board, Standing or Deep dive (`?view=`). Read only for the signed-in player (`playerId` is the session's, never the
+ * address's) and only once CoachHelm is on for them, as the board is: off is the board's own "CoachHelm is off" page, and a lookup
+ * that failed is the view's own "did not load", never a view that reads against a switch that is off. The Board's loader checks the
+ * gate itself; a view's is checked here, before its read. Standing reads "How you play" (the genome, once the Game profile) beside its
+ * rows; `at` opens it there (`?view=profile`, CH-13913).
  */
-async function PlayerHelmView({ playerId, drill, insight }: { playerId: string; drill: Exclude<PlayerHelmView, 'board'> | null; insight?: string }) {
+async function PlayerHelmView({ playerId, drill, insight, at }: { playerId: string; drill: Exclude<PlayerHelmView, 'board'> | null; insight?: string; at?: 'game' }) {
   if (!drill) return <PlayerBoard data={await loadPlayerCoachHelm({ playerId })} />;
   const gate = await loadPlayerHelmGate(playerId);
   const closed: ChViewLoad<never> | null = gate.status === 'on' ? null : gate.status === 'off' ? { status: 'off', reason: gate.reason } : { status: 'failed' };
-  if (drill === 'profile') return <Profile load={closed ?? (await loadPlayerProfile({ playerId }))} />;
-  if (drill === 'standing') return <Standing load={closed ?? (await loadPlayerStanding({ playerId }))} />;
+  if (drill === 'standing') {
+    if (closed) return <Standing load={closed} />;
+    const [standing, game] = await Promise.all([loadPlayerStanding({ playerId }), loadPlayerGame({ playerId })]);
+    return <Standing load={standing} game={game} at={at} />;
+  }
   return <DeepDive load={closed ?? (await loadPlayerDeepDive({ playerId }))} initialId={insight ?? null} />;
 }
 
 /**
- * A coach's Game profile, Standing or Deep dive of one player (`?view=…&player=<golf_players.id>`, spec A). The address's id is only
- * input: `loadCoachPlayerScope` checks it against this coach's own team (the one the shell resolved) before anything about the player
- * is read, and the three loaders take the scope it makes, never the id. An id that is not on this team, or is not an id, is one
+ * A coach's Standing or Deep dive of one player (`?view=…&player=<golf_players.id>`, spec A; `?view=profile` is Standing at "How
+ * {first} plays", CH-13913). The address's id is only input: `loadCoachPlayerScope` checks it against this coach's own team (the one
+ * the shell resolved) before anything about the player is read, and the loaders take the scope it makes, never the id. An id that is not on this team, or is not an id, is one
  * "isn't on your team" page (CH-13311), whatever it names; a check that did not load is the page's own "didn't load" (CH-13209),
  * never that page. CoachHelm off for the coach is the board's own page (CH-13305); off for the player's team is the view's own off
  * page, said by name (CH-13313). Once the player is known the view's read runs in a boundary of its own whose skeleton says whose page
- * it is; it stays in one place and is not keyed by view, so a switch between the three keeps the view on screen as the outer one does.
+ * it is; it stays in one place and is not keyed by view, so a switch between the two keeps the view on screen as the outer one does.
  */
-async function CoachPlayerPage({ coachId, teamId, playerId, drill, insight }: { coachId: string; teamId: string; playerId: string; drill: CoachPlayerViewName; insight?: string }) {
+async function CoachPlayerPage({ coachId, teamId, playerId, drill, insight, at }: { coachId: string; teamId: string; playerId: string; drill: CoachPlayerViewName; insight?: string; at?: 'game' }) {
   const checked = await loadCoachPlayerScope({ coachId, teamId, playerId });
   if (checked.status === 'not-member') return <CoachPlayerNotOnTeam />;
   if (checked.status === 'failed') return <CoachPlayerFailed />;
@@ -118,29 +120,29 @@ async function CoachPlayerPage({ coachId, teamId, playerId, drill, insight }: { 
   const voice: ChViewVoice = { role: 'coach', ...head };
   if (checked.status === 'player-off') {
     const off = { status: 'off', reason: checked.reason } as const;
-    if (drill === 'profile') return <Profile load={off} voice={voice} />;
     if (drill === 'standing') return <Standing load={off} voice={voice} />;
     return <DeepDive load={off} voice={voice} initialId={null} />;
   }
   const { scope } = checked;
   return (
     <Suspense fallback={coachPlayerSkeleton(drill, head.first)}>
-      <CoachPlayerRead scope={scope} drill={drill} voice={voice} insight={insight} />
+      <CoachPlayerRead scope={scope} drill={drill} voice={voice} insight={insight} at={at} />
     </Suspense>
   );
 }
 
 /** The view's own read, for a scope the page has checked. `?insight=` means something only on the Deep dive, and an id not on it is ignored there. */
-async function CoachPlayerRead({ scope, drill, voice, insight }: { scope: ChCoachPlayerScope; drill: CoachPlayerViewName; voice: ChViewVoice; insight?: string }) {
-  if (drill === 'profile') return <Profile load={await loadCoachPlayerProfile({ scope })} voice={voice} />;
-  if (drill === 'standing') return <Standing load={await loadCoachPlayerStanding({ scope })} voice={voice} />;
+async function CoachPlayerRead({ scope, drill, voice, insight, at }: { scope: ChCoachPlayerScope; drill: CoachPlayerViewName; voice: ChViewVoice; insight?: string; at?: 'game' }) {
+  if (drill === 'standing') {
+    const [standing, game] = await Promise.all([loadCoachPlayerStanding({ scope }), loadCoachPlayerGame({ scope })]);
+    return <Standing load={standing} game={game} voice={voice} at={at} />;
+  }
   return <DeepDive load={await loadCoachPlayerDeepDive({ scope })} voice={voice} initialId={insight ?? null} />;
 }
 
 /** A coach's view skeleton, with the player's header; `first` once the page knows who the player is. */
 function coachPlayerSkeleton(view: CoachPlayerViewName, first: string | null, chained = false): ReactNode {
   const coach = { first };
-  if (view === 'profile') return <ProfileSkeleton chained={chained} coach={coach} />;
   if (view === 'standing') return <StandingSkeleton chained={chained} coach={coach} />;
   return <DiveSkeleton chained={chained} coach={coach} />;
 }
@@ -150,17 +152,16 @@ function coachPlayerSkeleton(view: CoachPlayerViewName, first: string | null, ch
  * `chained`: it follows the route's `loading.tsx` skeleton in the same place, so it does not fade in over it a second time.
  */
 function viewSkeleton(view: PlayerHelmView): ReactNode {
-  if (view === 'profile') return <ProfileSkeleton chained />;
   if (view === 'standing') return <StandingSkeleton chained />;
   if (view === 'deep-dive') return <DiveSkeleton chained />;
   return <CoachHelmSkeleton view="player" chained />;
 }
 
 /**
- * `?player=<golf_players.id>` opens a coach's board on that player; an id not on the board is ignored. `?view=deep-dive|standing|profile`
+ * `?player=<golf_players.id>` opens a coach's board on that player; an id not on the board is ignored. `?view=deep-dive|standing`
  * with `?player=` is a coach's view of that player (spec A; Roster's View insights lands on the Deep dive), and the player's own view
- * for a player, whose `?player=` means nothing. `?view=ask` (with `?c=`) is the coach's Ask sub-tab. `?view=brief` (with `&section=`) is
- * the coach's Brief.
+ * for a player, whose `?player=` means nothing. `?view=profile` is Game profile's old address: Standing, opened at "How you play"
+ * (CH-13913), for either. `?view=ask` (with `?c=`) is the coach's Ask sub-tab. `?view=brief` (with `&section=`) is the coach's Brief.
  */
 export async function ClubhouseCoachHelmRoute({ view, player, c, insight, section }: { view?: string; player?: string; c?: string; insight?: string; section?: string } = {}) {
   if (view === 'development') redirect(PLAYER_HELM_DEVELOPMENT_HREF);
@@ -174,13 +175,7 @@ export async function ClubhouseCoachHelmRoute({ view, player, c, insight, sectio
     if (!team || team.role !== 'coach') {
       return (
         <main className="ch-hl">
-          <EmptyState
-            size="page"
-            code="CH-13308"
-            icon={Users}
-            title="You aren’t on a team yet"
-            body="Once your team is set up, CoachHelm reads the rounds your players post and shows their signals here."
-          />
+          <NoTeam code="CH-13308" coach body="Once your team is set up, CoachHelm reads the rounds your players post and shows their signals here." />
         </main>
       );
     }
@@ -197,7 +192,7 @@ export async function ClubhouseCoachHelmRoute({ view, player, c, insight, sectio
     if (coachDrill && typeof player === 'string') {
       return (
         <Suspense fallback={coachPlayerSkeleton(coachDrill, null, true)}>
-          <CoachPlayerPage coachId={team.coachId} teamId={team.teamId} playerId={player} drill={coachDrill} insight={coachDrill === 'deep-dive' && typeof insight === 'string' ? insight : undefined} />
+          <CoachPlayerPage coachId={team.coachId} teamId={team.teamId} playerId={player} drill={coachDrill} insight={coachDrill === 'deep-dive' && typeof insight === 'string' ? insight : undefined} at={landsOnGame(view) ? 'game' : undefined} />
         </Suspense>
       );
     }
@@ -232,7 +227,7 @@ export async function ClubhouseCoachHelmRoute({ view, player, c, insight, sectio
       <Suspense fallback={viewSkeleton(drill ?? 'board')}>
         {/* `?insight=` names the read the Deep dive opens on, and means nothing on the other views (a view switch carries none). It is only
             read: a pick on the Board or the Deep dive is kept in the tab's session state, and the screens never write the address. */}
-        <PlayerHelmView playerId={session.player.id} drill={drill} insight={drill === 'deep-dive' && typeof insight === 'string' ? insight : undefined} />
+        <PlayerHelmView playerId={session.player.id} drill={drill} insight={drill === 'deep-dive' && typeof insight === 'string' ? insight : undefined} at={landsOnGame(view) ? 'game' : undefined} />
       </Suspense>
     );
   }

@@ -25,7 +25,7 @@ export function queueParts(queue: ChCoachQueue | null | undefined): { parts: ChQ
   const add = (part: Omit<ChQueuePart, 'href'> & { href: string | null }) => {
     if (part.href) parts.push({ ...part, href: part.href });
   };
-  if (queue.joinRequests) add({ key: 'joins', text: n(queue.joinRequests, 'join request', 'join requests'), href: rebuiltHref('/golf/dashboard/roster', 'coach') });
+  if (queue.joinRequests) add({ key: 'joins', text: n(queue.joinRequests, 'join request', 'join requests'), href: rebuiltHref('/golf/dashboard/roster?tab=requests', 'coach') });
   if (queue.replies?.missing) {
     const events = queue.replies.events;
     const one = events.length === 1 ? events[0]! : null;
@@ -71,7 +71,8 @@ export function CoachQueue({ queue, covered = false, phone = false }: { queue: C
         ))}
         {note && (
           <span className={`${base}__fail`} data-ch-code="CH-2220">
-            {parts.length ? '· ' : ''}some items didn’t load
+            {/* On the phone the parts are capsules (home.css), so the note needs no dot to set it apart. */}
+            {parts.length && !phone ? '· ' : ''}some items didn’t load
           </span>
         )}
       </span>

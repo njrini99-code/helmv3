@@ -8,10 +8,11 @@ import { Button } from '../../ui/Button';
 import { FormLine } from '../../ui/FormLine';
 import { Icon } from '../../ui/Icon';
 import { InlineNotice } from '../../ui/Notices';
-import { formatFixed, formatSigned, formatToPar, NO_DATA } from '../../lib/format';
+import { changeTone, formatFixed, formatHcp, formatSigned, formatToPar, NO_DATA } from '../../lib/format';
 import { rebuiltHref } from '../../shell/nav';
 import { AvailabilityPanel, CoachNote, HelmPanel, LegsCaption, type AvailabilityControl, type NoteSaved } from './RosterPeek';
-import { AVAILABILITY_WORD, formatHcp, rowNote } from './format';
+import { AVAILABILITY_WORD, rowNote } from './format';
+import { pluralWord } from '../../lib/plural';
 
 /**
  * A player on the phone, pushed from the list (`?player=`): who they are,
@@ -61,7 +62,7 @@ export function RosterProfile({
   return (
     <article className="ch-rsm-prof">
       <section className="ch-rsm-hero">
-        <Avatar name={p.name} size={64} />
+        <Avatar name={p.name} id={p.id} size="xl" />
         <h2>{p.name}</h2>
         {identity && <p className="ch-rsm-hero__id">{identity}</p>}
         {place && <p className="ch-rsm-hero__m">{place}</p>}
@@ -92,7 +93,7 @@ export function RosterProfile({
         </div>
         <div>
           <dt>SG / round</dt>
-          <dd className={'ch-num' + (sg == null ? '' : sg >= 0 ? ' is-gain' : ' is-loss')}>{sg == null ? NO_DATA : formatSigned(sg)}</dd>
+          <dd className={'ch-num ' + changeTone(sg, false, 1)}>{sg == null ? NO_DATA : formatSigned(sg)}</dd>
         </div>
       </dl>
       <LegsCaption p={p} />
@@ -101,7 +102,7 @@ export function RosterProfile({
         <InlineNotice
           code="CH-3202"
           title="Season stats didn’t load"
-          body="Averages, form and recent rounds are missing until the rounds load. The error has been reported."
+          body="Averages, form and recent rounds are missing until the rounds load."
         />
       ) : (
         <section className="ch-rsm-panel" aria-labelledby={`trend-${p.id}`}>
@@ -109,7 +110,7 @@ export function RosterProfile({
             <b id={`trend-${p.id}`}>Scoring trend</b>
             {p.trend.length > 0 && (
               <span className="ch-num">
-                Last {p.trend.length} {p.trend.length === 1 ? 'round' : 'rounds'}
+                Last {p.trend.length} {pluralWord(p.trend.length, 'round')}
               </span>
             )}
           </div>
@@ -125,7 +126,7 @@ export function RosterProfile({
                 )}
                 <div className="ch-rsm-trend__lg">
                   {p.trend.length >= 3 && <span className="ch-num">{p.trend[0]}</span>}
-                  <span className={note?.tone === 'warning' ? 'is-warning' : undefined}>{note?.text}</span>
+                  <span className={note?.tone === 'warning' || note?.tone === 'loss' ? `is-${note.tone}` : undefined}>{note?.text}</span>
                   {p.trend.length >= 3 && <span className="ch-num">{p.trend[p.trend.length - 1]}</span>}
                 </div>
               </>

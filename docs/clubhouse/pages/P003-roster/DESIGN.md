@@ -95,7 +95,8 @@ All 25 (CONTRACT.md).
 The player panel slides in 16px and fades in 260ms, and switching players
 cross-fades (CH-3601). On desktop the faces are raised tiles (owner, 2026-10-08:
 "players
-need depth and contrast"): 16px apart, a 22px radius, a lit white-to-ivory
+need depth and contrast"): 16px apart, the 16px card radius, a lit
+white-to-ivory
 gradient, a gold hairline ring and a
 gold inset frame 7px inside the edge, layered shadows, a hover lift of 8px with
 a stronger gold ring, and the open
@@ -148,7 +149,7 @@ drawn from the same stylesheet, with nothing to press. What differs, and why:
   showed, and no scores, because a player is set against the Tour and never
   against teammates (the Home contract, 20803). The coach's figures, form line,
   "Needs a look", hometown, high school and notes are not drawn or loaded.
-- The header reads "Your team." and the count; there is no Invite, Export, join
+- The header reads "Roster" and the count; there is no Invite, Export, join
   requests card or player panel, and the phone top bar has the back link and no
   action. Only active members are listed, so the Active and Inactive pills are
   gone; the sort is Name, Class or Handicap.

@@ -211,7 +211,7 @@ export function ProspectForm({
       onClose={() => !saving && close()}
       width={600}
       icon={adding ? UserPlus : UserRoundPen}
-      title={adding ? 'Add prospect' : 'Edit prospect'}
+      title={adding ? 'New prospect' : 'Edit prospect'}
       description={adding ? 'Only a first name is required. Everything else can wait.' : form?.prospect ? `Update what you know about ${form.prospect.firstName}.` : undefined}
       footer={
         <>
@@ -219,7 +219,7 @@ export function ProspectForm({
             Cancel
           </Button>
           <Button variant="primary" busy={saving} feel="press" onClick={submit}>
-            {saving ? <span data-ch-code="CH-14403">Saving…</span> : adding ? 'Add prospect' : 'Save changes'}
+            {saving ? <span data-ch-code="CH-14403">Saving…</span> : adding ? 'Add' : 'Save changes'}
           </Button>
         </>
       }

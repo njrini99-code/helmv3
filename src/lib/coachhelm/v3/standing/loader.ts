@@ -210,6 +210,51 @@ export async function loadPlayerStandingMap(
   return map;
 }
 
+const SEASON_SELECT_FIELDS = `${SELECT_FIELDS}, rounds_n, season_start`;
+
+/**
+ * The season table is missing (its held migration, 20261024151000, is not applied yet): PostgREST's "relation not in the schema
+ * cache" (PGRST205) or Postgres's undefined table (42P01).
+ */
+function isMissingSeasonTableError(error: { code?: string | null; message?: string | null } | null | undefined): boolean {
+  if (!error) return false;
+  if (error.code === 'PGRST205' || error.code === '42P01') return true;
+  return /golf_player_standing_season/.test(error.message ?? '') && /does not exist|schema cache/i.test(error.message ?? '');
+}
+
+export type PlayerSeasonStandingRead =
+  | { status: 'ok'; rows: Map<MetricId, PlayerStanding> }
+  /** The season table is not there yet: the caller reads the lifetime map and says so. */
+  | { status: 'missing' };
+
+/**
+ * One player's Standing for this season (`golf_player_standing_season`, owner decision 9: from 1 August in the team's time zone),
+ * each row carrying `rounds_n` and `season_start`. Clubhouse Standing only; Fairway keeps {@link loadPlayerStandingMap}. Same
+ * read-level overrides as every loader here (cohort anchor, Tour basis, team floor). `missing` when the table is not deployed;
+ * any other failure throws, as {@link loadPlayerStandingMap} does.
+ */
+export async function loadPlayerSeasonStandingMap(playerId: string): Promise<PlayerSeasonStandingRead> {
+  const supabase = createAdminClient();
+  const { data, error } = (await fromUntyped(supabase, 'golf_player_standing_season')
+    .select(SEASON_SELECT_FIELDS)
+    .eq('player_id', playerId)) as {
+    data: Array<RawRow & { rounds_n: number | null; season_start: string | null }> | null;
+    error: { code?: string; message: string } | null;
+  };
+  if (isMissingSeasonTableError(error)) return { status: 'missing' };
+  if (error) {
+    throw new Error(`loadPlayerSeasonStandingMap(${playerId}): ${error.message}`);
+  }
+  const cohort = await loadPlayerCohort(playerId);
+  const lpga = await loadLpgaIfWomens(cohort.gender);
+  const rows = new Map<MetricId, PlayerStanding>();
+  for (const row of data ?? []) {
+    const s = toStanding(row);
+    if (s) rows.set(s.metric_id, finalizeStanding(s, cohort.gender, lpga));
+  }
+  return { status: 'ok', rows };
+}
+
 // Chunk player ids per `.in(...)` to keep the request URL well under the
 // PostgREST / proxy ~414 length limit (a full roster's UUID list is otherwise
 // one long querystring filter).

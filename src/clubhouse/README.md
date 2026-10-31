@@ -22,8 +22,10 @@ Two checks decide it, both in `gate.ts`, both server-side.
 | `*` | Every team, written on purpose. This is how a production deploy with the flag on says "no limit". |
 
 A user whose team cannot be read gets Fairway. Only the roles `coach` and
-`player` can get Clubhouse. Players get the shared screens (Stats, Calendar,
-Messages); their other screens show "not rebuilt yet".
+`player` can get Clubhouse. Players have their own Home, Rounds, Classes,
+CoachHelm and Qualifiers and share Roster, Stats, Calendar, Messages, Team Hub
+and Settings with coaches. A dashboard address Clubhouse has not rebuilt shows
+"not rebuilt yet" (`shell/NotRebuilt.tsx`).
 
 Changing the allowlist is a deploy. Vercel binds environment values to a
 deployment, so a canary change is not a hot toggle; it takes a redeploy of

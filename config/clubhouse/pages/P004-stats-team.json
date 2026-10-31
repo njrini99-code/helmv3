@@ -42,6 +42,18 @@
     "styles": "src/clubhouse/styles/stats.css",
     "tests": [
       "src/clubhouse/__tests__/stats-team.test.tsx"
+    ],
+    "also": [
+      "src/clubhouse/data/stats-common.ts",
+      "src/clubhouse/data/stats-detail.ts",
+      "src/clubhouse/data/stats-extra.ts",
+      "src/clubhouse/data/stats-figures.ts",
+      "src/clubhouse/data/stats-filter.ts",
+      "src/clubhouse/data/stats-insight.ts",
+      "src/clubhouse/data/stats-reads.ts",
+      "src/clubhouse/data/stats-weight.ts",
+      "src/clubhouse/data/paging.ts",
+      "src/clubhouse/data/leg-rows.ts"
     ]
   },
   "catalog": "docs/clubhouse/catalog/stats-team.md",

@@ -107,8 +107,8 @@ flags:
     default: false
     environment:
       production: false
-      preview: false
-      development: false
+      preview: true
+      development: true
     kill_switch_behavior: null
     cleanup_plan: >-
       Flip on once golf_coachhelm_coach_weights has accumulated enough
@@ -148,8 +148,8 @@ flags:
     default: false
     environment:
       production: false
-      preview: false
-      development: false
+      preview: true
+      development: true
     kill_switch_behavior: null
     cleanup_plan: >-
       Either promote to a permanent `release` flag once shadow-log data
@@ -227,8 +227,8 @@ flags:
     default: false
     environment:
       production: false
-      preview: false
-      development: false
+      preview: true
+      development: true
     kill_switch_behavior: null
     cleanup_plan: >-
       Either promote to a permanent `release` flag once shadow data (the
@@ -346,8 +346,8 @@ flags:
     default: false
     environment:
       production: false
-      preview: false
-      development: false
+      preview: true
+      development: true
     kill_switch_behavior: null
     cleanup_plan: >-
       Flip on (development, then preview, then production) only after the
@@ -399,8 +399,8 @@ flags:
     default: false
     environment:
       production: false
-      preview: false
-      development: false
+      preview: true
+      development: true
     kill_switch_behavior: null
     cleanup_plan: >-
       A9 slice 2 extends metric coverage, adds confounding detection (the
@@ -441,8 +441,8 @@ flags:
     default: false
     environment:
       production: false
-      preview: false
-      development: false
+      preview: true
+      development: true
     kill_switch_behavior: null
     cleanup_plan: >-
       Either promote to a permanent `release` flag once shadow-log data (the
@@ -476,8 +476,8 @@ flags:
     default: false
     environment:
       production: false
-      preview: false
-      development: false
+      preview: true
+      development: true
     kill_switch_behavior: null
     cleanup_plan: >-
       Once 20260923110000_golf_focus_area_practice_log.sql is applied in
@@ -507,8 +507,8 @@ flags:
     default: false
     environment:
       production: false
-      preview: false
-      development: false
+      preview: true
+      development: true
     kill_switch_behavior: null
     cleanup_plan: >-
       Either promote to a permanent `release` flag once the section has
@@ -539,8 +539,8 @@ flags:
     default: false
     environment:
       production: false
-      preview: false
-      development: false
+      preview: true
+      development: true
     kill_switch_behavior: null
     cleanup_plan: >-
       Either promote to a permanent `release` flag once the section has
@@ -610,8 +610,8 @@ flags:
     default: false
     environment:
       production: false
-      preview: false
-      development: false
+      preview: true
+      development: true
     kill_switch_behavior: null
     cleanup_plan: >-
       Either promote to a permanent `release` flag once the section has
@@ -757,8 +757,10 @@ flags:
       chips (Short, Long, High, Low) with a counter ("4 of 10 for your 5-10
       ft putt read"); one tap sets that shot's miss tag exactly as the
       existing optional miss chips do, and the row disappears at the
-      target. When off,
-      the pages read nothing extra and shot entry is exactly what it was.
+      target. Clubhouse shot entry (src/clubhouse/screens/rounds/track,
+      CH-11960, loaded by the round-new and round-continue routes) asks the
+      same question from the same loader. When off, the pages read nothing
+      extra and shot entry is exactly what it was.
     type: release
     status: active
     created_at: "2026-10-20"
@@ -832,8 +834,11 @@ flags:
       rough or an "other" lie, one row asks "Next shot from there?" with
       Clear shot / Blocked or punch out; the answer is stored on the tee shot
       as golf_shots.lie_after_recovery the way a miss chip is (device copy
-      first). When off, the pages read nothing extra, pass nothing down, and
-      shot entry and its round payloads are exactly what they were.
+      first). Clubhouse round entry (CH-11961 recovery tap, CH-11962 course
+      nudge, library-only picker) asks the same questions over the same
+      lib/golf/data-prompts logic. When off, the pages read nothing extra,
+      pass nothing down, and shot entry and its round payloads are exactly
+      what they were.
     type: release
     status: active
     created_at: "2026-10-21"
@@ -908,6 +913,65 @@ flags:
       When the owner turns production on and the old entrance pages are
       retired, delete them, the layout branch that chooses between them, and
       this flag in the same change.
+
+  # Clubhouse Tournaments (P016, docs/clubhouse/pages/P016-tournaments/): the
+  # nine /golf/dashboard/tournaments routes, their Clubhouse nav entry and the
+  # tournament server actions. Requires golf_clubhouse_ui (every route checks
+  # both, src/clubhouse/gate.ts isTournamentsFor). The data is six HELD
+  # migrations (20261024100000 to 100500, docs/clubhouse/held/data/
+  # tournaments.md); until they are applied every route draws the "not set up
+  # yet" state (CH-16302) and every action answers not_set_up, so preview and
+  # development, which read the one production database, stay honest. Off in
+  # production until the owner applies the migrations and turns it on.
+  - feature_id: golf_tournaments_v1
+    owner: golf/clubhouse
+    purpose: >-
+      Draws the Clubhouse Tournaments pages (season home, event desk, review,
+      history, comparison, link inbox, event form, lineup and live round) and
+      their nav entry for coaches and players, and lets the tournament server
+      actions run. Off: the routes answer not found and the nav entry is
+      hidden.
+    type: release
+    status: active
+    created_at: "2026-10-25"
+    expires_at: null
+    default: false
+    environment:
+      production: false
+      preview: true
+      development: true
+    kill_switch_behavior: null
+    cleanup_plan: >-
+      Once the owner has applied the six held Tournaments migrations, turned
+      production on and coaches have used it for a season, remove the flag
+      checks in src/clubhouse/gate.ts and this entry in one change.
+
+  # Clubhouse P-10 class awareness (plan clubhouse-handoff/build-plans/P-10-class-awareness.md). Held
+  # migrations 20261025070000 to 20261025070300 (supabase/migrations/HELD.md) must be applied first; with
+  # the flag on and the migrations absent the reads answer "no class status" and every push goes out
+  # (PGRST202 reads as nothing). On in preview and development (owner, 2026-10-25: every A+ feature is
+  # visible in a preview he deploys); off in production until the owner turns it on. Preview shares the
+  # production database, so every read and write degrades to "no class status" while the migrations are held.
+  - feature_id: class_awareness_v1
+    owner: golf/clubhouse
+    purpose: >-
+      Shows when a player is in class (the thread header, the Home line, Roster, the In class now
+      sheet, the player's Classes panel) and holds non-urgent pushes while the player is in a class
+      the coach's term dates confirm, sending them as one summary when class ends. Off: no class RPC
+      is called, no new column is sent or selected, and the push gate lets every push through.
+    type: release
+    status: active
+    created_at: "2026-10-25"
+    expires_at: null
+    default: false
+    environment:
+      production: false
+      preview: true
+      development: true
+    kill_switch_behavior: null
+    cleanup_plan: >-
+      After one team has run it for a week with no overdue or fail-open signals and every team is on,
+      delete the flag and its checks in their own reviewed change.
 
   # CoachHelm supercharge Slice 1: support and the claim ladder
   # (/mnt/project-files/coachhelm/supercharge/02-accuracy-standard.md §2-§6,
@@ -1009,8 +1073,8 @@ flags:
     default: false
     environment:
       production: false
-      preview: false
-      development: false
+      preview: true
+      development: true
     kill_switch_behavior: null
     cleanup_plan: >-
       Turn on after the owner reviews the idle-player count in the PR. Once
@@ -1112,8 +1176,11 @@ flags:
       Targets and sides only, never a club. Read only, on the coach's
       request (no event source carries a course yet). Turning it on shows
       the action to coaches in Clubhouse (itself off in production); Fairway
-      is unchanged. Off: the loader does not offer it and both server
-      actions return not available without reading anything.
+      is unchanged. The player's Board in Clubhouse shows their own Course
+      plan (CH-13916) in the player's voice, read by two actions that take
+      no player id and answer for the signed-in player only. Off: the
+      loaders do not offer it and all four server actions return not
+      available without reading anything.
     type: release
     status: active
     created_at: "2026-10-21"

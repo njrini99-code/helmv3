@@ -13,35 +13,90 @@ browser checks do not replace physical keyboard, gesture or
 assistive-technology acceptance.
 <!-- clubhouse:release-audit:end -->
 
-Route: `/golf/dashboard/classes` (players). Coaches keep the Fairway page there; the page gives a Clubhouse player the new screen and everyone else the current one. Spec: `docs/clubhouse/phone/classes.md`. Boards: `design/handoff/Player - Classes.html` and `Player - Classes - Mobile.html`.
+Route: `/golf/dashboard/classes` (players). Coaches keep the Fairway page there;
+the page gives a Clubhouse player the new screen and everyone else the current
+one. Spec: `docs/clubhouse/phone/classes.md`. Boards: `design/handoff/Player -
+Classes.html` and `Player - Classes - Mobile.html`.
 
-The player's class schedule by term: the term at a glance, every class as a card, this week's overlaps with the team's events, and the sheets to add, edit, import and remove, and Delete all classes. A class is a row of `golf_player_classes`, put on the team calendar by `syncClassToCalendar` and taken off it by `removeClassFromCalendar` (the same tables and actions the current page uses).
+The player's class schedule by term: the term at a glance, every class as a
+card, this week's overlaps with the team's events, and the sheets to add, edit,
+import and remove, and Delete all classes. A class is a row of
+`golf_player_classes`, put on the team calendar by `syncClassToCalendar` and
+taken off it by `removeClassFromCalendar` (the same tables and actions the
+current page uses).
 
 Where things live:
-- Code: `src/clubhouse/screens/classes/` (`Classes` live wrapper, `ClassesView`, `parts`, `ClassForm`, `ClassDetail`, `ImportSchedule`, `import-read`, `writes`, `ClassesSkeleton`, `ClassesNoTeam`)
-- Loader: `src/clubhouse/data/classes.ts` (`loadClasses`), with its pure steps in `classes-shape.ts`
-- Route: `src/clubhouse/routes/classes.tsx`; page: `src/app/golf/(dashboard)/dashboard/classes/page.tsx` (`LegacyClassesPage.tsx` is the current page, kept for everyone else)
+
+- Code: `src/clubhouse/screens/classes/` (`Classes` live wrapper, `ClassesView`,
+  `parts`, `ClassForm`, `ClassDetail`, `ImportSchedule`, `import-read`,
+  `writes`, `ClassesSkeleton`, `ClassesNoTeam`)
+- Loader: `src/clubhouse/data/classes.ts` (`loadClasses`), with its pure steps
+  in `classes-shape.ts`
+- Route: `src/clubhouse/routes/classes.tsx`; page:
+  `src/app/golf/(dashboard)/dashboard/classes/page.tsx` (`LegacyClassesPage.tsx`
+  is the current page, kept for everyone else)
 - Tests: `src/clubhouse/__tests__/classes.test.tsx`
-- Preview: `/clubhouse-preview/classes` (`?state=clear|empty|failed|partial|mixed|noteam|loading|failwrites|failsync|failpartial|read-notschedule|read-fault|read-none|read-warn`; the default is the board's Fall 2026 with the Pinehurst trip). Pasted text is really read by the current parser; a file is read as the state says
+- Preview: `/clubhouse-preview/classes`
+(`?state=clear|empty|failed|partial|mixed|noteam|loading|failwrites|failsync|failpartial|read-notschedule|read-fault|read-none|read-warn`;
+  the default is the board's Fall 2026 with the Pinehurst trip). Pasted text is
+  really read by the current parser; a file is read as the state says
 
-Saving a class and putting it on the calendar are two actions on purpose. A failed sync's Retry only syncs; it never inserts the class a second time (audit DATA-02: a sync failure once made a re-submit insert the class again; the current page fixed it with `syncClassSafely`, and this page avoids it by construction). A new class's row id is made in the browser when the sheet opens and travels with the save, so a save that is retried (the toast's Retry, or Add tapped again) after its answer was lost reaches the row it stored: a duplicate-key answer (23505) on that id updates that row rather than adding a second copy.
+Saving a class and putting it on the calendar are two actions on purpose. A
+failed sync's Retry only syncs; it never inserts the class a second time (audit
+DATA-02: a sync failure once made a re-submit insert the class again; the
+current page fixed it with `syncClassSafely`, and this page avoids it by
+construction). A new class's row id is made in the browser when the sheet opens
+and travels with the save, so a save that is retried (the toast's Retry, or Add
+tapped again) after its answer was lost reaches the row it stored: a
+duplicate-key answer (23505) on that id updates that row rather than adding a
+second copy.
 
-The calendar start is decided per class (`syncStartFor`). An import puts each class on the calendar from next Monday, so a schedule read mid-term doesn't fill it with meetings already held, but only where that day is inside the class's own term and leaves it standing; a class in next term, one imported before its term begins, or one in the last weeks of a term is put on the term's whole window (the sync refuses, or re-derives another term for, a start outside it). A Retry starts each class from where its failed attempt did; a save syncs the whole term. A class with no start or no end time is not synced: it is taken off the calendar (`removeClassFromCalendar`), and its card, sheet and the import result say "no time set".
+The calendar start is decided per class (`syncStartFor`). An import puts each
+class on the calendar from next Monday, so a schedule read mid-term doesn't fill
+it with meetings already held, but only where that day is inside the class's own
+term and leaves it standing; a class in next term, one imported before its term
+begins, or one in the last weeks of a term is put on the term's whole window
+(the sync refuses, or re-derives another term for, a start outside it). A Retry
+starts each class from where its failed attempt did; a save syncs the whole
+term. A class with no start or no end time is not synced: it is taken off the
+calendar (`removeClassFromCalendar`), and its card, sheet and the import result
+say "no time set".
 
-Delete all classes is `writes.removeAll`: the calendar first, one class at a time (`removeClassFromCalendar`, which is safe to repeat and cleans up a class that is already gone), then one delete of the rows that came off it, scoped to the player. The current page's rule is kept: a class whose events are still on the team calendar keeps its row, because once the row is gone nothing can target its `[class:<id>]` tag. A class is reported deleted only when the delete returned its row, or a read-back shows it is gone (a Retry after an answer was lost); a failed delete, a row a policy hid and a read-back that fails are all "off the calendar but still on your schedule". The page then drops exactly what is gone, flags the rest, and Retry repeats the same classes.
+Delete all classes is `writes.removeAll`: the calendar first, one class at a
+time (`removeClassFromCalendar`, which is safe to repeat and cleans up a class
+that is already gone), then one delete of the rows that came off it, scoped to
+the player. The current page's rule is kept: a class whose events are still on
+the team calendar keeps its row, because once the row is gone nothing can target
+its `[class:<id>]` tag. A class is reported deleted only when the delete
+returned its row, or a read-back shows it is gone (a Retry after an answer was
+lost); a failed delete, a row a policy hid and a read-back that fails are all
+"off the calendar but still on your schedule". The page then drops exactly what
+is gone, flags the rest, and Retry repeats the same classes.
 
-Every write goes through `useAction`, so these belong to the shell as well: offline refusal (CH-1903), slow saves (CH-1902) and the success and error haptics (D-70). The sync is its own action: the save and the import do not wait for it, so their sheets are free and their own slow-save notice is not held open while the calendar is told.
+Every write goes through `useAction`, so these belong to the shell as well:
+offline refusal (CH-1903), slow saves (CH-1902) and the success and error
+haptics (D-70). The sync is its own action: the save and the import do not wait
+for it, so their sheets are free and their own slow-save notice is not held open
+while the calendar is told.
 
 ## 120xx Error toasts
 
 | # | When | They see | How | Test |
 | --- | --- | --- | --- | --- |
-| CH-12001 | Adding or updating a class fails | "Couldn’t add GEOG 110" (or "Couldn’t update …") + the server's reason if it is a sentence, else "Nothing was changed. Check your connection and try again." + Retry. The sheet stays open with what was typed; nothing is sent to the calendar. Done: "Class added" or "Class updated" | `useAction('classes.save')` → `writes.save` | classes.test › CH-12001 |
-| CH-12002 | A class saved but did not reach the calendar (the sync failed, threw, wrote no meetings for a class that has them, was refused offline, or was skipped because another sync was still running, as when a class is saved while an import is being put on the calendar) | When the sync ran and failed, threw, or wrote no meetings for a class that has them: an error toast, "GEOG 110 is saved, but not on your calendar" + "GEOG 110: <reason>. Retry to try again." (for an import: "1 of 4 classes are saved, but not on your calendar" and the names) + Retry, which syncs again from the same start and does not save again. Offline, the shell's CH-1903 toast says the same with "you’re offline" and its Retry syncs. While another sync is still running (a class saved while an import is being put on the calendar) there is no toast, because nothing has failed yet: the class is flagged and the header's Retry sync puts it there. In every case the class stays in the list with "Not on your calendar", the header says "1 class is not on your calendar" with Retry sync, and the class's sheet has the same notice and button, so a saved class is never off the calendar without the flag. The class is saved first ("Class added" shows at once) and the calendar is told in the background: the sheet is free meanwhile (CH-12403) | `useAction('classes.sync')` → `writes.sync` (`syncClassToCalendar`), started by the save and the import without waiting on them; the failed ids and the start each class was synced from are held for the visit (no column records them), so a Retry repeats what failed | classes.test › CH-12002 |
+| CH-12001 | Adding or updating a class fails | "Couldn’t add GEOG 110" (or "Couldn’t update …") + the server's reason if it is a sentence, else "Nothing was changed. Try again." + Retry. The sheet stays open with what was typed; nothing is sent to the calendar. Done: "Class added" or "Class updated" | `useAction('classes.save')` → `writes.save` | classes.test › CH-12001 |
+| CH-12002 | A class saved but did not reach the calendar (the sync failed, threw, wrote no meetings for a class that has them, was refused offline, or was skipped because another sync was still running, as when a class is saved while an import is being put on the calendar) | When the sync ran and failed, threw, or wrote no meetings for a class that has them: an error toast, "GEOG 110 is saved, but not on your calendar" + "GEOG 110: <reason>. Try again." (for an import: "1 of 4 classes are saved, but not on your calendar" and the names) + Retry, which syncs again from the same start and does not save again. Offline, the shell's CH-1903 toast says the same with "you’re offline" and its Retry syncs. While another sync is still running (a class saved while an import is being put on the calendar) there is no toast, because nothing has failed yet: the class is flagged and the header's Retry sync puts it there. In every case the class stays in the list with "Not on your calendar", the header says "1 class is not on your calendar" with Retry sync, and the class's sheet has the same notice and button, so a saved class is never off the calendar without the flag. The class is saved first ("Class added" shows at once) and the calendar is told in the background: the sheet is free meanwhile (CH-12403) | `useAction('classes.sync')` → `writes.sync` (`syncClassToCalendar`), started by the save and the import without waiting on them; the failed ids and the start each class was synced from are held for the visit (no column records them), so a Retry repeats what failed | classes.test › CH-12002 |
 | CH-12003 | Removing a class fails (the calendar removal or the delete) | "Couldn’t remove STAT 201" + "Couldn’t take this class off your calendar: <reason>. The class was kept so you can try again." + Retry; the question stays open and the class stays. When the calendar part landed and only the delete failed: "It is off your calendar but still on your schedule. Try again to finish removing it." and the class is flagged "Not on your calendar". Done: "STAT 201 removed" | `useAction('classes.remove')` → `writes.remove`: the calendar first, then the row, so a retry finds it | classes.test › CH-12003 |
-| CH-12004 | Importing the reviewed rows fails to save | "Couldn’t import your schedule" + "Nothing was saved. Check your connection and try again." + Retry; the review stays as it was. Done: the "Schedule imported" view (no toast): how many classes are on the calendar and until when (each class's own term end), and which are not and why ("no meeting days", "no time set"). It does not wait for the calendar | `useAction('classes.import')` → `writes.importRows` | classes.test › CH-12004 |
-| CH-12005 | Delete all classes changed nothing: no class could be taken off the calendar (every removal failed or threw), the connection dropped, or the write threw | "Couldn’t delete your classes" + "None of them could be taken off your calendar, so all 5 were kept: <reason>. Try again." (one class: "It couldn’t be taken off your calendar, so the class was kept: <reason>.") or, with no answer, "Nothing was deleted. Check your connection and try again." + Retry. Every class stays, the question stays open, and no row was deleted (the calendar is done first, and a row is deleted only for a class that came off it). Retry repeats the same classes. Offline, the shell's CH-1903 toast says the same with "you’re offline". Done: "All 5 classes deleted" (one class: "Class deleted"), the page returns to CH-12301 | `useAction('classes.removeAll')` → `writes.removeAll` | classes.test › CH-12005 |
-| CH-12006 | Delete all classes stopped half-way: some classes are gone and some are not | "3 of 5 classes deleted" + "ENGL 105 couldn’t be taken off your calendar, so it was kept. EXSS 188 is off your calendar but still on your schedule. Retry to finish." (names up to three, then "and more"); when every calendar part landed and no row could be deleted: "Couldn’t finish deleting your classes". What the answer says is gone leaves the list at once; a class that is off the calendar but still saved is flagged "Not on your calendar" (the header's Retry sync puts it back); the question stays open and counts what is left. Retry repeats the first attempt's classes: one already gone counts as removed, so it finishes the job and never deletes twice. A row is reported deleted only when it is shown to be gone: a delete that failed, a row a policy hid and a check that can't be read are not | `useAction('classes.removeAll')` → `writes.removeAll` (the delete returns its rows; a read-back says which are left) | classes.test › CH-12006 |
+| CH-12004 | Importing the reviewed rows fails to save | "Couldn’t import your schedule" + "Nothing was saved. Try again." + Retry; the review stays as it was. Done: the "Schedule imported" view (no toast): how many classes are on the calendar and until when (each class's own term end), and which are not and why ("no meeting days", "no time set"). It does not wait for the calendar | `useAction('classes.import')` → `writes.importRows` | classes.test › CH-12004 |
+| CH-12005 | Delete all classes changed nothing: no class could be taken off the calendar (every removal failed or threw), the connection dropped, or the write threw | "Couldn’t delete your classes" + "None of them could be taken off your calendar, so all 5 were kept: <reason>. Try again." (one class: "It couldn’t be taken off your calendar, so the class was kept: <reason>.") or, with no answer, "Nothing was deleted. Try again." + Retry. Every class stays, the question stays open, and no row was deleted (the calendar is done first, and a row is deleted only for a class that came off it). Retry repeats the same classes. Offline, the shell's CH-1903 toast says the same with "you’re offline". Done: "All 5 classes deleted" (one class: "Class deleted"), the page returns to CH-12301 | `useAction('classes.removeAll')` → `writes.removeAll` | classes.test › CH-12005 |
+| CH-12006 | Delete all classes stopped half-way: some classes are gone and some are not | "3 of 5 classes deleted" + "ENGL 105 couldn’t be taken off your calendar, so it was kept. EXSS 188 is off your calendar but still on your schedule. Try again to finish." (names up to three, then "and more"); when every calendar part landed and no row could be deleted: "Couldn’t finish deleting your classes". What the answer says is gone leaves the list at once; a class that is off the calendar but still saved is flagged "Not on your calendar" (the header's Retry sync puts it back); the question stays open and counts what is left. Retry repeats the first attempt's classes: one already gone counts as removed, so it finishes the job and never deletes twice. A row is reported deleted only when it is shown to be gone: a delete that failed, a row a policy hid and a check that can't be read are not | `useAction('classes.removeAll')` → `writes.removeAll` (the delete returns its rows; a read-back says which are left) | classes.test › CH-12006 |
+| CH-12070 | The sharing switch's write is refused (class status, P-10) | A toast "Couldn’t share your class status" (or "Couldn’t stop sharing your class status") + "Nothing was changed. Try again."; the switch goes back to where it was | `ClassStatusPanel` via `useAction` | class-awareness-player.test › CH-12070 |
+| CH-12071 | "No class today" is refused | A toast "Couldn’t mark no class" + "Nothing was changed. Try again."; the sheet stays open | `ClassStatusPanel` | class-awareness-player.test › CH-12071 |
+| CH-12072 | Undo on "No class today" is refused | A toast "Couldn’t undo" + "You are still marked as having no class. Try again." | `ClassStatusPanel` | class-awareness-player.test › CH-12072 |
+| CH-12073 | Tagging untagged classes with the term is refused | A toast "Couldn’t tag your classes" + "Nothing was changed. Try again." | `ClassStatusPanel` | class-awareness-player.test › CH-12073 |
+| CH-12074 | A class's "Use for class status" switch is refused | A toast "Couldn’t change class status for this class" + "Nothing was changed. Try again."; the switch goes back | `ClassDetail` | class-awareness-player.test › CH-12074 |
+| CH-12075 | Adding an exam is refused | A toast "Couldn’t add the exam" + "Nothing was changed. Try again."; the sheet stays open with what was typed | `ClassDetail`, `ExamSheet` | class-awareness-player.test › CH-12075 |
+| CH-12076 | Removing an exam is refused | A toast "Couldn’t remove the exam" + "It is still on your list. Try again." | `ClassDetail` | class-awareness-player.test › CH-12076 |
+| CH-12077 | Deliver now is refused (the panel's Pushes during class row) | A toast "Couldn’t deliver them" + "They will arrive when class ends. Try again."; the button stays | `ClassStatusPanel` | class-awareness-player.test › CH-12077 |
 
 ## 121xx Validation
 
@@ -61,6 +116,9 @@ Every write goes through `useAction`, so these belong to the shell as well: offl
 | CH-12112 | A file that is not an image, PDF or TXT | "We can’t read that file type" + "Use a PNG, JPG or WebP screenshot, a PDF or a TXT file, or paste the text." | `screenFile` | classes.test › CH-12111 CH-12112 |
 | CH-12113 | The reader says the image is not a class schedule | "This doesn’t look like a class schedule" + the reader's sentence + Choose another file | `classifyReadError` | classes.test › CH-12113 CH-12114 |
 | CH-12114 | The reader finds no classes | "No classes found" + "We read it but couldn’t find course codes or times. Try pasting your schedule text." + Paste text | `ImportSchedule` | classes.test › CH-12113 CH-12114 |
+| CH-12170 | An exam ends at or before it starts | "The exam must end after it starts." under the form | `validateExam` (`exam-form.ts`) | class-awareness-player.test › CH-12170 |
+| CH-12171 | An exam is longer than 4 hours | "Exams can be up to 4 hours." | `validateExam` | class-awareness-player.test › CH-12171 |
+| CH-12172 | An exam's date is outside the confirmed term (classes start to exams end) | "Pick a date in Fall 2026." | `validateExam` | class-awareness-player.test › CH-12172 |
 
 ## 122xx Didn't load
 
@@ -68,8 +126,10 @@ Every write goes through `useAction`, so these belong to the shell as well: offl
 | --- | --- | --- | --- | --- |
 | CH-12201 | The player's classes don't load | "Your classes didn’t load" + "Nothing is lost. Your classes are still saved; try again in a moment." + Try again (asks the server again). It never reads as "no classes"; the head keeps Import schedule and Add class (a failed read keeps the head and its primary action, owner decision 2026-10-08), and Delete all classes is not offered beside a schedule the page can't show | `InlineNotice`; `loadClasses` logs `chLogServer('classes', 'classes', …)` | classes.test › CH-12201 |
 | CH-12202 | The team's events don't load | In the side column: "The team’s events didn’t load" + "Overlaps with practice and travel can’t be checked right now. Nothing has changed. Try again in a moment." + Try again. The classes still show; the overview draws no overlap count, no card is flagged, and the sheets claim no overlap | `OverlapsCard`; `chLogServer('classes', 'events', …)` | classes.test › CH-12202 |
-| CH-12203 | A section crashes while drawing | "The term overview couldn’t be shown." (or "Your classes", "This week’s overlaps") + "The rest of the page is fine. This has been reported automatically." + Try again | `SectionBoundary classes.term`, `classes.deck`, `classes.side` | classes.test › CH-12203 |
+| CH-12203 | A section crashes while drawing | "The term overview couldn’t be shown." (or "Your classes", "This week’s overlaps") + "The rest of the page is fine. Try again." + Try again | `SectionBoundary classes.term`, `classes.deck`, `classes.side` | classes.test › CH-12203 |
 | CH-12204 | The reader fails or throws | "Reading the schedule didn’t finish" + "Your schedule can still be added with Paste text." + Paste text instead | `ImportSchedule` | classes.test › CH-12204 |
+| CH-12270 | The player's class day didn't load | In the Class status panel: "Class status didn’t load." + Try again. The rest of Classes is untouched | `ClassStatusPanel` | class-awareness-player.test › CH-12270 |
+| CH-12271 | The player's Pushes during class row | "Pushes during class" with "Held · Change" (or "Not held", "Off while sharing is off"); Change opens Settings > Notifications. With pushes waiting it counts them ("3 updates waiting") and offers Deliver now (44 px, the dark-safe green), which sends them, ticks, and reads "Delivered" for 2 seconds | `ClassStatusPanel` | class-awareness-player.test › CH-12271 |
 
 ## 123xx Empty
 
@@ -99,6 +159,7 @@ Every write goes through `useAction`, so these belong to the shell as well: offl
 | CH-12503 | Delete all classes (a quiet red button under the deck, with a bin icon; 44px tall and full width on the phone). Not drawn with no classes (CH-12301) or when they didn't load (CH-12201); off while a save, an import, a remove, a calendar sync or a delete-all is running, because a write beside it would put back what was just taken off | "Delete all classes?" + "All 5 classes come off your schedule and your calendar, including 1 from another term. This can’t be undone." (one class: "STAT 201 comes off your schedule and your calendar. This can’t be undone."). Keep them · Delete all classes (danger; "Deleting…" while it runs, when it can't be pressed again, and Esc and Close leave it open so a delete that is still going isn't hidden). The count is what is on the page now, so after a half-way delete (CH-12006) it says what is left. It closes when everything is gone | `Modal` in `ClassesView`; `writes.removeAll` | classes.test › CH-12503 |
 | CH-12502 | Cancel or close a form that has changes | "Discard your changes?" + "What you typed here isn’t saved." Keep editing · Discard. The form comes back with what was typed if the answer is to keep editing. An untouched form closes without asking | `ClassForm` | classes.test › CH-12502 |
 | CH-12504 | Start over in the import review, once it holds three or more classes or one came off (an emptied review, or one or two classes as read, starts over at once) | "Start over?" + "The 4 classes you reviewed are let go, and nothing is imported." Keep reviewing · Start over (danger). The review steps aside while it is asked and comes back as it was | `Modal` in `ImportSchedule`; Start over warns first | classes.test › CH-12504 |
+| CH-12570 | The player removes an exam | "Remove this exam?" + "Remove STAT 201 exam on Dec 14?" Cancel / Remove | `ClassDetail` | class-awareness-player.test › CH-12570 |
 
 ## 126xx Motion
 
@@ -126,6 +187,7 @@ Every write goes through `useAction`, so these belong to the shell as well: offl
 | CH-12803 | The term overview | One labelled region: "Fall 2026, week 8 of 17, 13 credits · 5 classes, ends Dec 15"; the bars and the line are drawing and hidden | `TermBar` | classes.test › CH-12803 |
 | CH-12804 | A save is refused | Each message is next to its field with `role="alert"` and the field is `aria-invalid` and described by it; focus moves to the first one | `ClassForm` | classes.test › CH-12804 |
 | CH-12805 | The import's drop zone | A real button, so the keyboard opens the file picker too; a file dropped on it is read | `ImportSchedule` | classes.test › CH-12805 |
+| CH-12870 | The Class status panel | A region named by its heading; "Coaches see" is one group read as "Coaches see Jonah Okafor: In class until 11:25 AM"; the sharing switch is a switch named "Share class status with coaches"; the book glyph is decoration | `ClassStatusPanel`, `ClassStatusRow` | class-awareness-player.test › CH-12870 |
 
 ## 129xx Network and UX
 

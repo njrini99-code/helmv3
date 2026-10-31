@@ -1,6 +1,6 @@
 'use client';
 
-import { BellOff, Moon, RotateCcw, Smartphone } from 'lucide-react';
+import { BellOff, BookOpen, Moon, RotateCcw, Smartphone } from 'lucide-react';
 import { useState } from 'react';
 import { DELIVERY_NOTIFICATION_GROUPS } from '@/lib/coachhelm/v3/notifications/types';
 import type { ChannelPref, PrefsByCategory } from '@/lib/coachhelm/v3/notifications/router';
@@ -10,6 +10,7 @@ import { Icon } from '../../ui/Icon';
 import { Modal } from '../../ui/Modal';
 import { channelsFor, DEFAULT_CHANNELS, ROUTING_GROUPS, ROUTING_LABEL, ROUTING_QUIET_EXEMPT, type ChDevice, type ChSettingsData, type ChSettingsWrites } from './model';
 import { useDelivery, usePushToggle, useRouting, useTestPush } from './hooks';
+import { useHoldDuringClass } from './hold-during-class';
 import { Card, EmailPaused, failedReads, ReadFailed, ReadsFailed, Row, SavedMark, SettingSwitch, useWarnOnOpen } from './parts';
 
 /** Recruiting and profile-view emails don't apply to GolfHelm coaches or players (as in the current app). */
@@ -33,6 +34,7 @@ export function NotificationsSection({ data, writes, device }: { data: ChSetting
       ) : (
         <DeliveryCard prefs={data.delivery.value} writes={writes} device={device} digest={data.digest} emailPaused={data.emailPaused} />
       )}
+      <HoldCard data={data} />
       {data.playerRouting &&
         (data.playerRouting.error ? (
           <ReadFailed what="Your CoachHelm update settings" code="CH-8203" onRetry={writes.refresh} title="CoachHelm updates" description="Round reviews, goals and insights from CoachHelm. These are separate from email and push above." covered={covered} />
@@ -40,6 +42,22 @@ export function NotificationsSection({ data, writes, device }: { data: ChSetting
           <RoutingCard initial={data.playerRouting.value} writes={writes} emailPaused={data.emailPaused} />
         ))}
     </>
+  );
+}
+
+/**
+ * P-10 (CH-8216): "Hold during class", a player's one quiet row in its own card, away from Quiet mode (it defers, never silences).
+ * Draws nothing for a coach, with class status off, or while the class day is not there.
+ */
+function HoldCard({ data }: { data: ChSettingsData }) {
+  const hold = useHoldDuringClass(data);
+  if (!hold) return null;
+  return (
+    <Card id="set-class-hold" title="During class" description="Pushes can wait until class ends.">
+      <Row label={<><Icon icon={BookOpen} size={15} /> Hold during class</>} help={hold.help} saved={hold.saved} code="CH-8216">
+        <SettingSwitch label="Hold during class" hideLabel checked={hold.checked} disabled={hold.disabled} busy={hold.busy} onChange={hold.onChange} />
+      </Row>
+    </Card>
   );
 }
 
@@ -114,7 +132,7 @@ function DeliveryCard({
           <span className="ch-set-pair">
             {/* P008-C3: a test push to this person's own devices (D1-6), once push is on here. */}
             {onDevice && push.test && (
-              <Button size="sm" disabled={test.busy} onClick={() => void test.run()}>
+              <Button size="sm" busy={test.busy} onClick={() => void test.run()}>
                 {test.busy ? 'Sending…' : 'Send a test'}
               </Button>
             )}

@@ -108,7 +108,7 @@ describe('Calendar · links · CH-6504 CH-6013 New link (D3)', () => {
     expect(alert.textContent).toMatch(/Couldn’t make a new Team schedule link/);
     expect(alert.textContent).toMatch(/Failed to regenerate feed/);
     expect(code('CH-6013')).not.toBeNull();
-    expect(screen.queryByRole('button', { name: 'Retry' })).toBeNull();
+    expect(screen.queryByRole('button', { name: 'Try again' })).toBeNull();
     expect(hapticSpy).toHaveBeenCalledWith('error');
     expect(track.report).toHaveBeenCalledWith(expect.any(Error), expect.objectContaining({ action: 'calendar.regenerateFeed' }));
     // The server deletes the old link before it makes the new one, so what exists is read again.
@@ -173,7 +173,7 @@ describe('Calendar · links · CH-6505 CH-6014 Remove (D3)', () => {
     expect(track.report).toHaveBeenCalledWith(expect.any(Error), expect.objectContaining({ action: 'calendar.removeFeed' }));
 
     // The toast moves into the open dialog once it is up, so the button is found again rather than kept from `alert`.
-    await user.click(await screen.findByRole('button', { name: 'Retry' }));
+    await user.click(await screen.findByRole('button', { name: 'Try again' }));
     await waitFor(() => expect(feeds.deleteCalendarFeed).toHaveBeenCalledTimes(2));
     expect(feeds.deleteCalendarFeed).toHaveBeenLastCalledWith('team');
     await waitFor(() => expect(row.querySelector('code')).toBeNull());

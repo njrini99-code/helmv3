@@ -90,6 +90,34 @@ export function formatEventTime(iso: string, timezone: string | null | undefined
 }
 
 /**
+ * When an event is, as the notices the server writes about it say it: the Bell row, the push and the email
+ * ("Sat, Oct 31 at 10:00 AM"). A timed start is read in `timezone`; an all-day event gives its written date and no time
+ * (the rule in `eventCalendarDay`); no start is "TBD".
+ *
+ * F-0001 (audit 2026-10-29): these were `toLocaleString` with no zone, which on the server is UTC, so a 10:00 AM New
+ * York start was written as "2:00 PM".
+ */
+export function formatNoticeWhen(iso: string | null | undefined, allDay: boolean | null | undefined, timezone: string | null | undefined): string {
+  if (!iso) return 'TBD';
+  if (allDay) {
+    const written = /^\d{4}-\d{2}-\d{2}/.exec(iso)?.[0];
+    if (!written) return 'TBD';
+    return new Intl.DateTimeFormat('en-US', { timeZone: 'UTC', weekday: 'short', month: 'short', day: 'numeric' }).format(
+      new Date(`${written}T12:00:00Z`),
+    );
+  }
+  const date = new Date(iso);
+  if (Number.isNaN(date.getTime())) return 'TBD';
+  const day = new Intl.DateTimeFormat('en-US', {
+    timeZone: getValidTimezone(timezone),
+    weekday: 'short',
+    month: 'short',
+    day: 'numeric',
+  }).format(date);
+  return `${day} at ${formatEventTime(iso, timezone)}`;
+}
+
+/**
  * Compact variant with no AM/PM — for tight spaces (month-grid chips) that
  * previously used date-fns `format(date, 'h:mm')`.
  */

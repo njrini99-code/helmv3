@@ -1,12 +1,14 @@
-import { ArrowDownRight, ArrowUpRight, Flag, Minus } from 'lucide-react';
+import { ArrowDownRight, ArrowUpRight, Flag } from 'lucide-react';
 import type { ReactNode } from 'react';
 import type { ChSgChange } from '../../data/stats-common';
 import type { ChGauge } from '../../data/stats-team';
 import { Icon } from '../../ui/Icon';
 import { SerifText } from '../../ui/SerifText';
-import { formatSigned, NO_DATA } from '../../lib/format';
-import { sgScale } from '../../lib/sg';
+import { changeTone, formatFixed, formatSigned, NO_DATA } from '../../lib/format';
+import { sgBaseline, sgScale } from '../../lib/sg';
 import { deltaTone, deltaWords, type DeltaTone } from '../../lib/stats-signal';
+import { plural } from '../../lib/plural';
+import { NoData } from '../../ui/NoData';
 
 /**
  * The yardage book: charts drawn the way a caddie's book reads, numbers where
@@ -54,17 +56,22 @@ export function FigureGauge({ gauge, n }: { gauge: ChGauge; n: number }) {
     const v = gauge.kind === 'sg' ? n : gauge.toPar;
     if (v == null) return null;
     const end = gauge.kind === 'sg' ? sgScale([v]) : 6;
-    const w = pct((Math.abs(v) / end) * 50);
-    // Strokes gained above zero is good; a score above par is not.
-    const good = gauge.kind === 'sg' ? v >= 0 : v <= 0;
+    // The bar fills at most its own half (A8.4): a value past the end stops at it, and the end label says so (">+3",
+    // "<−3"; ASCII, because the font has no "≥", A23).
+    const clipped = Math.abs(v) > end;
+    const w = pct((Math.min(Math.abs(v), end) / end) * 50);
+    // Strokes gained above zero is good; a score above par is not; a value that shows as zero is neither.
+    const tone = changeTone(v, gauge.kind !== 'sg', 1);
     const right = gauge.kind === 'sg' ? v >= 0 : v > 0;
+    const endLabel = `${clipped ? (right ? '>' : '<') : ''}${formatSigned(right ? end : -end, 0)}`;
     return (
       <span className="ch-fg__gauge" aria-hidden="true">
         <span className="ch-fg__track">
-          <i className={good ? 'is-gain' : 'is-loss'} style={right ? { left: '50%', width: w } : { right: '50%', width: w }} />
+          <i className={tone} style={right ? { left: '50%', width: w } : { right: '50%', width: w }} />
           <b style={{ left: '50%' }} />
         </span>
-        <em style={{ left: '50%' }}>{gauge.kind === 'sg' ? 'Tour' : 'Par'}</em>
+        <em style={{ left: '50%' }}>{gauge.kind === 'sg' ? sgBaseline(gauge.tour === undefined ? 'pga' : gauge.tour).mark : 'Par'}</em>
+        <em className={`ch-fg__end ch-num ${right ? 'is-right' : 'is-left'}`}>{endLabel}</em>
       </span>
     );
   }
@@ -82,7 +89,7 @@ export function FigureGauge({ gauge, n }: { gauge: ChGauge; n: number }) {
   return (
     <span className="ch-fg__gauge" aria-hidden="true">
       <span className="ch-fg__track">
-        <i className={gauge.ref == null ? 'is-neutral' : n >= gauge.ref ? 'is-gain' : 'is-loss'} style={{ left: 0, width: pct(n) }} />
+        <i className={gauge.ref == null || gauge.tone === '' ? 'is-neutral' : gauge.tone ?? (n >= gauge.ref ? 'is-gain' : 'is-loss')} style={{ left: 0, width: pct(n) }} />
         {gauge.ref != null && <b style={{ left: pct(gauge.ref) }} />}
       </span>
       {gauge.ref != null && <em style={{ left: pct(gauge.ref) }}>{gauge.refLabel ?? 'Tour'}</em>}
@@ -91,8 +98,8 @@ export function FigureGauge({ gauge, n }: { gauge: ChGauge; n: number }) {
 }
 
 /** The chip class for a change's tone (stats-signal `deltaTone`): green better, amber worse, neutral ink when it is no clear change. */
-export function deltaClass(tone: DeltaTone): 'is-good' | 'is-bad' | 'is-flat' {
-  return tone === 'is-gain' ? 'is-good' : tone === 'is-loss' ? 'is-bad' : 'is-flat';
+export function deltaClass(tone: DeltaTone): 'is-gain' | 'is-loss' | 'is-flat' {
+  return tone === 'is-gain' ? 'is-gain' : tone === 'is-loss' ? 'is-loss' : 'is-flat';
 }
 
 /**
@@ -110,13 +117,21 @@ export function SgChangeChip({ change, code, subject }: { change: ChSgChange; co
     <span className="ch-sgchg">
       {d != null && (
         <span className={`ch-delta ch-num ${deltaClass(tone)}`}>
-          <Icon icon={tone === '' ? Minus : d > 0 ? ArrowUpRight : ArrowDownRight} size={12} />
+          {/* No glyph for no clear change: a dash beside a signed number read as "— −1.3"; the words say it. */}
+          {tone !== '' && <Icon icon={d > 0 ? ArrowUpRight : ArrowDownRight} size={12} />}
           {formatSigned(d)}
         </span>
       )}
       {said && <span data-ch-code={d == null ? code : undefined}>{said}</span>}
     </span>
   );
+}
+
+/** A ring's fill (A8.8): the make rate from 10 putts, a fixed low "early" fill under them, and full for a band with none. */
+export const RING_EARLY_OPACITY = 0.12;
+export function ringOpacity(attempts: number, rate: number | null): number {
+  if (rate == null) return 1;
+  return attempts < 10 ? RING_EARLY_OPACITY : 0.1 + rate * 0.85;
 }
 
 /** Putting read off rings around the cup: make rate by distance band, with the Tour rate beside it. */
@@ -137,8 +152,9 @@ export function PuttingRings({ bands }: { bands: Array<{ label: string; made: nu
         .map(({ b, r, p }) => (
           <g key={b.label}>
             <circle cx={cx} cy={cy} r={r} fill="var(--ch-chart-paper)" />
-            {/* A band with no putts stays neutral, never a pale 0%. */}
-            <circle cx={cx} cy={cy} r={r} fill={p == null ? 'var(--ch-ivory-200)' : 'var(--ch-green-500)'} fillOpacity={p == null ? 1 : 0.1 + p * 0.85} className="ch-pg-ring" />
+            {/* A band with no putts stays neutral, never a pale 0%; one under 10 putts keeps the early look, a fixed low fill
+                that reads no rate (A8.8), as its label does. */}
+            <circle cx={cx} cy={cy} r={r} fill={p == null ? 'var(--ch-ivory-200)' : 'var(--ch-green-500)'} fillOpacity={ringOpacity(b.attempts, p)} className="ch-pg-ring" />
           </g>
         ))}
       <circle cx={cx} cy={cy} r={4} fill="var(--ch-ink-900)" />
@@ -161,7 +177,7 @@ export function PuttingRings({ bands }: { bands: Array<{ label: string; made: nu
               {b.label}
             </text>
             <text x={W} y={ly} dy=".34em" textAnchor="end" className={`ch-pg-pct${below ? ' is-below' : ''}`}>
-              {pct == null ? NO_DATA : `${pct}%`}
+              {pct == null ? <NoData /> : `${pct}%`}
             </text>
           </g>
         );
@@ -170,18 +186,21 @@ export function PuttingRings({ bands }: { bands: Array<{ label: string; made: nu
   );
 }
 
-export function ParTiles({ rows }: { rows: Array<{ par: number; avg: number | null; bench: number | null }> }) {
+/** `mark`: the bench's name, the team's own Tour ("Women's Tour" for a women's team, row 110). */
+export function ParTiles({ rows, mark = 'Tour' }: { rows: Array<{ par: number; avg: number | null; bench: number | null }>; mark?: string }) {
   return (
     <div className="ch-par3">
       {rows.map((r) => (
         <div key={r.par} className="ch-par3__t">
           <span className="ch-par3__l">Par {r.par}s</span>
-          <span className="ch-par3__v ch-num">{r.avg == null ? NO_DATA : r.avg.toFixed(2)}</span>
+          <span className="ch-par3__v ch-num">{formatFixed(r.avg, 2)}</span>
           {/* Against the Tour's average for the par when there is one (lower is better), so the colour says how it compares (F-54). */}
           <span className={'ch-par3__to ch-num' + (r.avg == null || r.bench == null || Math.abs(r.avg - r.bench) < 0.005 ? '' : r.avg < r.bench ? ' ch-gain' : ' ch-loss')}>
             {r.avg == null ? 'No holes' : `${formatSigned(r.avg - r.par, 2)} to par`}
           </span>
-          {r.bench != null && <span className="ch-par3__d ch-num">Tour {r.bench.toFixed(2)}</span>}
+          {r.bench != null && <span className="ch-par3__d ch-num">
+              {mark} {formatFixed(r.bench, 2)}
+            </span>}
         </div>
       ))}
     </div>
@@ -223,7 +242,7 @@ export function FairwayStrip({ opportunities, hit, left: leftN, right: rightN }:
       </div>
       <div className="ch-fws__cap">
         <span>Miss bias</span>
-        <b>{Math.abs(bias) < 1 ? 'Even' : `${bias > 0 ? 'Left' : 'Right'} by ${Math.round(Math.abs(bias))} ${Math.round(Math.abs(bias)) === 1 ? 'pt' : 'pts'}`}</b>
+        <b>{Math.abs(bias) < 1 ? 'Even' : `${bias > 0 ? 'Left' : 'Right'} by ${plural(Math.round(Math.abs(bias)), 'pt')}`}</b>
       </div>
     </div>
   );
@@ -243,7 +262,7 @@ export function Compare({ rows, unit = '', max }: { rows: Array<{ label: string;
             {r.value != null && <span style={{ width: `${Math.min(100, (r.value / m) * 100)}%` }} />}
           </span>
           {/* Percentages are whole numbers everywhere else in Stats ("55.6%" beside "50%" read as noise, F-54). */}
-          <b className="ch-num">{r.value == null ? NO_DATA : `${unit === '%' ? Math.round(r.value) : Math.round(r.value * 10) / 10}${unit}`}</b>
+          <b className="ch-num">{r.value == null ? <NoData /> : `${unit === '%' ? Math.round(r.value) : Math.round(r.value * 10) / 10}${unit}`}</b>
         </div>
       ))}
     </div>
@@ -286,7 +305,7 @@ export function BandRows({ rows, unit, label, invert = false, none = 'No shots',
                 ) : (
                   <b className={'ch-num' + (tone === ' is-loss' ? ' ch-loss' : tone === ' is-gain' ? ' ch-gain' : '')}>{`${Math.round(r.value)}${unit}`}</b>
                 )}
-                {r.n != null && r.n > 0 && <small className="ch-num">{`${r.n} ${r.n === 1 ? 'shot' : 'shots'}`}</small>}
+                {r.n != null && r.n > 0 && <small className="ch-num">{`${plural(r.n, 'shot')}`}</small>}
               </span>
             </li>
           );
@@ -325,7 +344,7 @@ export function Ladder({
         return (
           <div key={r.band} className="ch-lad__c">
             <span className={`ch-lad__v ch-num ${tone === 'is-gain' ? 'ch-gain' : tone === 'is-loss' ? 'ch-loss' : ''}`}>
-              {r.value == null ? NO_DATA : `${Math.round(r.value)}${unit}`}
+              {r.value == null ? <NoData /> : `${Math.round(r.value)}${unit}`}
             </span>
             <span className="ch-lad__col">
               {r.value != null && <span className={`ch-lad__fill ${tone}`} style={{ height: `${(r.value / max) * 100}%` }} />}
@@ -363,7 +382,7 @@ export function GreenMiss({ m }: { m: Record<'ll' | 'lg' | 'lr' | 'l' | 'r' | 's
           </span>
         ) : (
           <span key={l} className="ch-gmiss__c" style={{ background: `color-mix(in srgb, var(--ch-st-miss-heat) ${(5 + ((v ?? 0) / max) * 32).toFixed(1)}%, transparent)` }}>
-            <b className="ch-num">{v == null ? NO_DATA : `${Math.round(v)}%`}</b>
+            <b className="ch-num">{v == null ? <NoData /> : `${Math.round(v)}%`}</b>
             <em>{l}</em>
           </span>
         ),

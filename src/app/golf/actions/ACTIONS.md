@@ -36,6 +36,7 @@ that effect.
 
 - `course-library.ts`: listCourses, listCoursesStrict, getRecentlyPlayedCourses, getCourseTeeCounts, getCourseTeeCountsStrict, getCourseDetail, getCourseTeeHoles, getTeeWithHoles, getTeeRoundDefaults, getCourseEditHistory, getTeamSavedCourses, getTeamSavedCoursesStrict, createCourse, updateCourse, softDeleteCourse, restoreCourse, setCourseImageUrl, removeCourseImage, createTee, contributeCourseFromRound, updateTee, softDeleteTee, restoreTee, saveTeamCourse, unsaveTeamCourse, setTeamCourseDefaultTee, setTeamCoursePinned
 - `golf-action-shared.ts`: resolveCourseId, getCoachTeamId, getPlayerTeamId, createSafeFlightRecorder
+- `round-live.ts`: setLiveShare, setNextLiveShare, setLivePrefs (a player's live sharing level for a round in progress, for the next round, and the default for practice rounds; Clubhouse P-6; the error map is `round-live-errors.ts`)
 - `round-coach-note.ts`: saveRoundCoachNote (a coach's note on a round, keyed by the round; Clubhouse round review)
 - `round-drafts.ts`: saveRoundDraft, loadRoundDraft, clearRoundDraft, checkRoundStaleness
 - `round-partial.ts`: savePartialRound, deleteInProgressRound
@@ -144,7 +145,7 @@ that effect.
 - `recruit-documents.ts`: getRecruitDocuments, prepareRecruitDocumentUpload, completeRecruitDocumentUpload, deleteRecruitDocument, getRecruitDocumentUrl
 - `recruiting.ts`: getRecruits, createRecruit, updateRecruit, deleteRecruit
 - `roster.ts`: removePlayerFromTeam, getTeamPlayers
-- `team-management.ts`: createAnnouncement, invitePlayerToTeam, updatePlayerStatus
+- `team-management.ts`: createAnnouncement, invitePlayerToTeam, emailPlayerInvites, updatePlayerStatus
 - `team-switcher.constants.ts`: helpers/types (no server directive)
 - `team-switcher.ts`: setActiveTeam, listCoachTeams, getActiveTeamCookie, clearActiveTeam
 - `teams.ts`: validateGolfPlayerCanJoinTeam, joinGolfTeam, processGolfTeamInvitation, createTeam, updateTeam, regenerateJoinCode, createTeamJoinRequest, getTeamJoinRequests, acceptJoinRequest, rejectJoinRequest, cancelJoinRequest, getPlayerJoinRequests, addSecondTeam, createStaffInvite, redeemStaffInvite, previewStaffInvite, listTeamCoachingStaff, listPendingAssistantCoaches, approvePendingAssistantCoach, declinePendingAssistantCoach

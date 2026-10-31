@@ -25,15 +25,18 @@ import { Menu } from '../ui/Menu';
 import { EmptyState, Skeleton } from '../ui/States';
 import { haptic } from '../lib/haptics';
 import { useAfterPaint } from '../lib/use-painted';
-import { CH_POP, chSpring, chSpringCurve } from '../lib/motion';
-import { useChReducedMotion } from '../lib/reduced-motion';
+import { CH_POP, chFade, chSpring, chSpringCurve } from '../lib/motion';
+import { useChMotionMode, useChReducedMotion } from '../lib/reduced-motion';
 import { useChPhone } from '../lib/use-phone';
 import { useSectionSwitch } from './section-switch';
 import { BellStacks, CH_NOTIFICATION_KIND } from './BellStacks';
+import { BellHeldRow } from './BellHeldRow';
 import { ago, markLocallyRead, notificationKey } from './notification-stacks';
 import { armRelink } from './relink';
 import { chReport, chTrail } from '../lib/track';
 import { useAction, type ServerResult } from '../lib/use-action';
+import { ListPresence, PresenceRow } from '../ui/ListPresence';
+import { useRovingRows } from '../lib/roving';
 
 /**
  * The notifications bell: the same feed, badge and read state as the
@@ -102,12 +105,17 @@ export function Bell() {
   const router = useRouter();
   const id = useId();
   const reduced = useChReducedMotion();
+  // Reduce Motion fades the drop and its veil over the quick beat (owner decision 2, OQ-15); Animations off is instant.
+  const mode = useChMotionMode();
   const phone = useChPhone();
   // The portal waits for hydration: the server has no document, and the phone drop is always rendered once it exists.
   const hydrated = useSyncExternalStore(noSubscribe, () => true, () => false);
   const btn = useRef<HTMLButtonElement | null>(null);
   const panel = useRef<HTMLDivElement | null>(null);
   const [open, setOpen] = useState(false);
+  // B11: ↑ and ↓ walk the notifications in the open popover; the list is one Tab stop.
+  const listRef = useRef<HTMLDivElement | null>(null);
+  useRovingRows(listRef, '.ch-bellp__row', open);
   // The feed starts loading as the finger lands on the bell, so on a phone the cards are there before the drop lands
   // and nothing swaps under it mid-motion. Cleared on close, so the next open fetches fresh.
   const [primed, setPrimed] = useState(false);
@@ -150,9 +158,9 @@ export function Bell() {
   const sheetMotion = {
     // The stacks drop from under the bar and land with the settle spring's slight give, a touch smaller as they come.
     // Transform and opacity only, nothing that re-rasterizes (no scale, no blur), so WebKit keeps it on the compositor.
-    shown: { transform: 'translateY(0px)', opacity: 1, visibility: 'visible', transition: reduced ? { duration: 0 } : { ...REVEAL_IN, opacity: chSpring('smooth') } },
+    shown: { transform: 'translateY(0px)', opacity: 1, visibility: 'visible', transition: reduced ? chFade(mode) : { ...REVEAL_IN, opacity: chSpring('smooth') } },
     gone: () => {
-      if (reduced) return { opacity: 0, transition: { duration: 0 }, transitionEnd: { visibility: 'hidden' } };
+      if (reduced) return { opacity: 0, transition: chFade(mode), transitionEnd: { visibility: 'hidden' } };
       // Back up under the bar from where the finger left it, at the speed it was thrown, fading as it goes.
       const from = dragY.current;
       dragY.current = 0;
@@ -338,7 +346,7 @@ export function Bell() {
     return () => cancelAnimationFrame(frame);
   }, [phone, open, moving]);
 
-  const markAll = useAction('shell.markAllRead', api.markAll, { done: 'All notifications marked read', failed: "Couldn't mark your notifications read", code: 'CH-1001' });
+  const markAll = useAction('shell.markAllRead', api.markAll, { done: 'All notifications marked read', failed: 'Couldn’t mark your notifications read', code: 'CH-1001' });
 
   /** Marks items read where the coach cleared them (a swipe, a stack's ×): the feed restacks at once, the server follows. */
   const clearItems = (list: UnifiedNotificationItem[]) => {
@@ -420,11 +428,12 @@ export function Bell() {
   );
   // The desktop popover's list: built only when the popover is open, never on the phone (its drop draws BellStacks).
   const body = () => (
-    <div className="ch-bellp__body">
+    <div className="ch-bellp__body" ref={listRef}>
+      <BellHeldRow />
       {listFailed ? (
-        <InlineNotice code="CH-1201" title="Notifications didn’t load" body="Try again; the error has been reported." onRetry={() => setAttempt((x) => x + 1)} />
+        <InlineNotice code="CH-1201" title="Notifications didn’t load" body="Try again." onRetry={() => setAttempt((x) => x + 1)} />
       ) : items === null ? (
-        <div className="ch-bellp__skel" aria-busy="true" aria-label="Loading notifications" data-ch-code="CH-1401">
+        <div role="status" className="ch-bellp__skel" aria-busy="true" aria-label="Loading notifications" data-ch-code="CH-1401">
           {[0, 1, 2, 3].map((k) => (
             <div key={k} className="ch-bellp__skelrow">
               <Skeleton width={32} height={32} radius={9} />
@@ -455,30 +464,33 @@ export function Bell() {
         groups.map((g) => (
           <section key={g.bucket} aria-label={DAY_BUCKET_LABEL[g.bucket]}>
             <div className="ch-bellp__day">{DAY_BUCKET_LABEL[g.bucket]}</div>
-            {g.items.map((item) => {
-              const cat = CATEGORY[item.category] ?? CATEGORY.messages;
-              const unreadRow = isUnread(item);
-              return (
-                <button key={`${item.source}:${item.id}`} type="button" className={'ch-bellp__row' + (unreadRow ? ' is-unread' : '')} onClick={() => openItem(item)}>
-                  <span className="ch-bellp__ic">
-                    <Icon icon={cat.icon} size={15} />
-                  </span>
-                  <span className="ch-bellp__main">
-                    <span className="ch-bellp__top">
-                      <b>
-                        {unreadRow && <span className="ch-sr-only">Unread: </span>}
-                        {item.title}
-                      </b>
-                      <time className="ch-num" dateTime={item.created_at}>
-                        {ago(item.created_at)}
-                      </time>
+            {/* B7: a new notification opens in; one that goes closes up under the rest. */}
+            <ListPresence>
+              {g.items.map((item) => {
+                const cat = CATEGORY[item.category] ?? CATEGORY.messages;
+                const unreadRow = isUnread(item);
+                return (
+                  <PresenceRow as="button" key={`${item.source}:${item.id}`} type="button" className={'ch-bellp__row' + (unreadRow ? ' is-unread' : '')} onClick={() => openItem(item)}>
+                    <span className="ch-bellp__ic">
+                      <Icon icon={cat.icon} size={15} />
                     </span>
-                    {item.body && <span className="ch-bellp__txt">{item.body}</span>}
-                  </span>
-                  <span className="ch-bellp__dot" aria-hidden />
-                </button>
-              );
-            })}
+                    <span className="ch-bellp__main">
+                      <span className="ch-bellp__top">
+                        <b>
+                          {unreadRow && <span className="ch-sr-only">Unread: </span>}
+                          {item.title}
+                        </b>
+                        <time className="ch-num" dateTime={item.created_at}>
+                          {ago(item.created_at)}
+                        </time>
+                      </span>
+                      {item.body && <span className="ch-bellp__txt">{item.body}</span>}
+                    </span>
+                    <span className="ch-bellp__dot" aria-hidden />
+                  </PresenceRow>
+                );
+              })}
+            </ListPresence>
           </section>
         ))
       )}
@@ -545,7 +557,7 @@ export function Bell() {
                 initial={false}
                 animate={
                   reduced
-                    ? { opacity: open ? 1 : 0, transform: 'translateY(0%)', visibility: open ? 'visible' : 'hidden', transition: { duration: 0 } }
+                    ? { opacity: open ? 1 : 0, transform: 'translateY(0%)', visibility: 'visible', transition: chFade(mode), transitionEnd: { visibility: open ? 'visible' : 'hidden' } }
                     : moving
                       ? { transform: 'translateY(0%)', opacity: 1, visibility: 'visible', transition: REVEAL_IN }
                       : { transform: 'translateY(-100%)', opacity: 1, transition: chSpring('smooth'), transitionEnd: { visibility: 'hidden' } }
@@ -600,9 +612,12 @@ export function Bell() {
                     if (e.target === e.currentTarget || (e.target as Element).classList?.contains('ch-bst-feed')) close();
                   }}
                 >
+                  <BellHeldRow />
                   <BellStacks items={items} failed={listFailed} onRetry={() => setAttempt((x) => x + 1)} onOpen={openItem} onClear={clearItems} />
                 </div>
-                <div className="ch-bst__grab" aria-hidden="true" onPointerDown={onSheetDrag} />
+                <div className="ch-bst__drag" aria-hidden="true" onPointerDown={onSheetDrag}>
+                  <span className="ch-grab" />
+                </div>
               </m.div>
             )}
             <AnimatePresence>

@@ -3,8 +3,13 @@ import { getGolfSessionProfile } from '@/lib/auth/session';
 import { loadCalendar, parseNewType, parseView } from '../data/calendar';
 import { Calendar } from '../screens/calendar/Calendar';
 import { CalendarNoTeam } from '../screens/calendar/CalendarNoTeam';
+import { loadLiveRounds } from '../data/live-rounds';
 import { resolveClubhouseTeam } from './team';
+import { marksHint } from '../lib/phone-hint';
 import '../styles/calendar.css';
+// P-5: the tournament section of the editor, round mode and the round pills (and the course picker it reuses).
+import '../styles/qualifiers.css';
+import '../styles/tournament-fields.css';
 
 /**
  * /golf/dashboard/calendar in Clubhouse. Coaches plan the team schedule;
@@ -35,14 +40,20 @@ export async function ClubhouseCalendarRoute({
   if (!team) {
     return <CalendarNoTeam coach={!!session.coach} />;
   }
-  const data = await loadCalendar({
-    role: team.role,
-    teamId: team.teamId,
-    viewerPlayerId: team.role === 'player' ? team.playerId : null,
-    coachId: team.role === 'coach' ? team.coachId : null,
-    view: parseView(view),
-    date,
-    event,
-  });
-  return <Calendar data={data} initialEvent={event} initialNew={isNew} initialWith={withPlayer} initialType={parseNewType(newType)} live />;
+  // The coach's calendar says which events have players on the course (P-6); read beside the calendar, never ahead of it. A failed
+  // live read is an empty snapshot, never an error here.
+  const [data, onCourse] = await Promise.all([
+    loadCalendar({
+      role: team.role,
+      teamId: team.teamId,
+      viewerPlayerId: team.role === 'player' ? team.playerId : null,
+      coachId: team.role === 'coach' ? team.coachId : null,
+      view: parseView(view),
+      date,
+      event,
+      marks: await marksHint(),
+    }),
+    team.role === 'coach' ? loadLiveRounds({ teamId: team.teamId, viewer: { role: 'coach', playerId: null } }) : Promise.resolve(undefined),
+  ]);
+  return <Calendar data={data} onCourse={onCourse} initialEvent={event} initialNew={isNew} initialWith={withPlayer} initialType={parseNewType(newType)} live />;
 }

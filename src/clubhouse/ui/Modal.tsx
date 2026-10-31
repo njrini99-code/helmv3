@@ -53,7 +53,7 @@ export function Modal({
     // VoiceOver starts on the title (P001 shared finding). Tab goes on to Close and the rest.
     focusSelector: initialFocus ?? '.ch-modal__titles h2',
   });
-  const drag = useSheetDrag(ref, onClose, { enabled: phone && !reduced });
+  const drag = useSheetDrag(ref, onClose, { enabled: phone, reduced });
 
   return (
     // The click is only the backdrop dismiss; the keyboard path is Esc, which <dialog> handles through onCancel.
@@ -75,7 +75,7 @@ export function Modal({
     >
       {retainContent(open && (
         <div className="ch-modal__panel">
-          <div className="ch-modal__grab" aria-hidden="true" onPointerDown={drag.onPointerDown} />
+          <div className="ch-grab" aria-hidden="true" onPointerDown={drag.onPointerDown} />
           {/* A header, so the phone's chrome rules (no text selection under a drag) apply, but no second banner landmark. */}
           <header className="ch-modal__head" role="none" onPointerDown={drag.onPointerDown}>
             {icon && (

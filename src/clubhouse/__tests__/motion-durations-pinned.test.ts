@@ -23,11 +23,32 @@ describe('Clubhouse motion durations (D-64 as built)', () => {
     expect(['press', 'quick', 'base', 'release', 'reveal'].map((s) => token(`ch-dur-${s}`))).toEqual(['110ms', '180ms', '260ms', '280ms', '520ms']);
   });
 
-  it('the page fade-through: 120ms out, a gap as long as the out, 220ms in, skeleton held 300ms', () => {
+  it('the phone page fade-through: 120ms out, a gap as long as the out, 220ms in, skeleton held 300ms', () => {
     expect(token('ch-dur-vt-out')).toBe('120ms');
     expect(token('ch-dur-vt-gap')).toBe('var(--ch-dur-vt-out)');
     expect(token('ch-dur-vt-in')).toBe('220ms');
     expect(token('ch-dur-vt-hold')).toBe('300ms');
+  });
+
+  // Owner decision 3 (Nick, 2026-10-24; OQ-14 / A10): a desktop drill-in crossfades with no gap, out 120ms and in
+  // 180ms together. Only the desktop block changes; the phone keeps the fade-through above.
+  it('the desktop drill-in crossfade: no gap, 180ms in, over the same 120ms out (decision 3, A10)', () => {
+    const at = css.indexOf('@media (min-width: 821px) {\n  html:has([data-ui=\'clubhouse\']) {');
+    expect(at, 'the desktop vt block').toBeGreaterThan(-1);
+    const desk = css.slice(at, css.indexOf('}', at));
+    expect(token('ch-dur-vt-gap', desk)).toBe('0ms');
+    expect(token('ch-dur-vt-in', desk)).toBe('180ms');
+    expect(desk).not.toMatch(/--ch-dur-vt-out:/);
+    // The phone root block still reads 120 / 220 / a gap as long as the out.
+    const root = css.slice(css.indexOf("html:has([data-ui='clubhouse']) {"));
+    expect(root.slice(0, root.indexOf('}'))).toMatch(/--ch-dur-vt-out: 120ms;\s*--ch-dur-vt-in: 220ms;\s*--ch-dur-vt-gap: var\(--ch-dur-vt-out\);/);
+  });
+
+  it('the Stats busy dim holds off 150ms (A11), named in the rules and the checklist', () => {
+    expect(token('ch-dur-busy-delay')).toBe('150ms');
+    for (const doc of ['.claude/rules/clubhouse.md', 'docs/clubhouse/CHECKLIST_TEMPLATE.md']) {
+      expect(readFileSync(join(process.cwd(), doc), 'utf8'), doc).toMatch(/busy dim holds off 150 ms/);
+    }
   });
 
   it('skeletons show at once (the wait lives in the transition hold, not a skeleton delay)', () => {

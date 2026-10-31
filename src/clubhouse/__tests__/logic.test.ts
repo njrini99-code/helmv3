@@ -5,7 +5,7 @@ vi.mock('@/lib/supabase/server', () => ({ createClient: vi.fn() }));
 vi.mock('@/lib/server-error-logger', () => ({ logServerError: vi.fn() }));
 vi.mock('@/lib/error-logging', () => ({ logError: vi.fn() }));
 
-import { formatSigned, formatToPar, formatFixed, initials, MINUS, NO_DATA } from '../lib/format';
+import { formatHcp, formatSigned, formatToPar, formatFixed, initials, MINUS, NO_DATA } from '../lib/format';
 import { classYearLabel, formStatus } from '../data/home';
 import { friendlyReason } from '../lib/use-action';
 import { activeNavItem, isRebuilt, rebuiltHref } from '../shell/nav';
@@ -40,6 +40,17 @@ describe('home logic', () => {
     expect(classYearLabel(2030, oct)).toBe('Freshman');
     expect(classYearLabel(2032, oct)).toBe('Class of 2032');
     expect(classYearLabel(null, oct)).toBeNull();
+  });
+  it('turns the class year with the season, on 1 August in the team’s zone, not the server’s UTC month (owner decision 9)', () => {
+    // 11 PM on 31 July in New York is already 1 August in UTC: the class of 2027 are still juniors there.
+    const lateJuly = new Date('2026-08-01T03:00:00Z');
+    expect(classYearLabel(2027, lateJuly, 'America/New_York')).toBe('Junior');
+    expect(classYearLabel(2027, lateJuly, 'UTC')).toBe('Senior');
+    // With no zone given, the product default's (New York), never UTC's.
+    expect(classYearLabel(2027, lateJuly)).toBe('Junior');
+    // A Pacific team turns three hours later.
+    expect(classYearLabel(2027, new Date('2026-08-01T06:00:00Z'), 'America/Los_Angeles')).toBe('Junior');
+    expect(classYearLabel(2027, new Date('2026-08-01T07:00:00Z'), 'America/Los_Angeles')).toBe('Senior');
   });
   it('reads form from the newer half against the older half, a change only past its standard error (stats visuals Q4)', () => {
     expect(formStatus([72, 73])).toBe('early');
@@ -111,7 +122,7 @@ describe('roster attention', () => {
   it('praises four straight rounds under a player’s average', () => {
     const scores = [70, 71, 70, 71, 76, 77, 76, 77];
     const s = summarizePlayer(scores.map((x, i) => round(`r${i}`, `2026-10-${String(13 - i).padStart(2, '0')}`, x)));
-    expect(attentionFor(s, now, false)).toEqual({ tone: 'positive', text: '4 rounds under average' });
+    expect(attentionFor(s, now, false)).toEqual({ tone: 'gain', text: '4 rounds under average' });
   });
   it('keeps strokes gained null below three rounds with SG', () => {
     const s = summarizePlayer([round('a', '2026-10-01', 72, { strokes_gained_total: 1 }), round('b', '2026-09-30', 72, { strokes_gained_total: 2 })]);
@@ -311,7 +322,7 @@ describe('home model', () => {
     ];
     const comp = { title: 'Qualifier · Pinehurst No. 2', when: 'Thursday' };
     expect(H.homeSubline(rows, { roundsError: false, nextCompetition: comp })).toBe(
-      'Jonah is slipping and Eli hasn’t posted a round in 9 days. Qualifier · Pinehurst No. 2 is Thursday. The others with enough rounds are on track.',
+      'Jonah is slipping and Eli hasn’t posted a round in 9 days. Qualifier\u00a0· Pinehurst No. 2 is Thursday. The others with enough rounds are on track.',
     );
     expect(H.homeSubline(rows, { roundsError: true, nextCompetition: comp })).toBeNull();
     expect(H.homeSubline([rows[0]!], { roundsError: false, nextCompetition: null })).toBe('The team is on track.');
@@ -369,6 +380,38 @@ describe('settings model', () => {
     expect(SM.golfDetailsProblem({ ...d, handicap: '60' })?.text).toMatch(/Handicap/);
     expect(SM.golfDetailsProblem({ ...d, graduationYear: '27' })?.text).toMatch(/year/);
     expect(SM.golfDetailsProblem({ ...d, state: 'North' })?.text).toMatch(/two-letter/);
+  });
+  it('reads a typed handicap: blank is null, "+1.2" is a plus handicap stored negative', () => {
+    expect(SM.parseHcp('')).toBeNull();
+    expect(SM.parseHcp(' 4.8 ')).toBe(4.8);
+    expect(SM.parseHcp('+1.2')).toBe(-1.2);
+    expect(SM.parseHcp('-1.2')).toBe(-1.2);
+    expect(SM.parseHcp('+')).toBeNaN();
+    expect(SM.parseHcp('abc')).toBeNaN();
+  });
+  it('shows the one handicap Home shows: handicap_index ?? handicap (data/player-home.ts), in formatHcp', () => {
+    const cases: Array<[number | null, number | null]> = [[2.1, 2.4], [null, 2.4], [-1.2, null], [5, null], [0, 3], [null, null], [5.25, null]];
+    for (const [index, handicap] of cases) {
+      const str = (v: number | null) => (v == null ? '' : String(v));
+      const home = index ?? handicap;
+      expect(SM.shownHandicapIndex({ handicap: str(handicap), handicapIndex: str(index) })).toBe(home == null ? '' : formatHcp(home));
+    }
+  });
+  it('saves the one handicap without touching what the player left alone', () => {
+    const loaded = { handicap: '2.4', handicapIndex: '', graduationYear: '', hometown: 'Charlotte', state: 'NC', phone: '' };
+    const shown = SM.golfDetailsShown(loaded);
+    expect(shown.handicapIndex).toBe('2.4');
+    // Untouched (or retyped as the same number): both columns go back as loaded.
+    expect(SM.golfDetailsToSave({ ...shown, phone: '555' }, loaded)).toMatchObject({ handicap: '2.4', handicapIndex: '', phone: '555' });
+    expect(SM.golfDetailsToSave({ ...shown, handicapIndex: '2.40' }, loaded)).toMatchObject({ handicap: '2.4', handicapIndex: '' });
+    // A new number goes to the index; cleared, both go blank.
+    expect(SM.golfDetailsToSave({ ...shown, handicapIndex: '3.1' }, loaded)).toMatchObject({ handicap: '2.4', handicapIndex: '3.1' });
+    expect(SM.golfDetailsToSave({ ...shown, handicapIndex: ' ' }, loaded)).toMatchObject({ handicap: '', handicapIndex: '' });
+    // A rounded index (5.25 shows as 5.3) keeps its stored digits when left alone.
+    const fine = { ...loaded, handicapIndex: '5.25' };
+    expect(SM.golfDetailsToSave(SM.golfDetailsShown(fine), fine)).toMatchObject({ handicap: '2.4', handicapIndex: '5.25' });
+    expect(SM.golfDetailsProblem({ ...shown, handicapIndex: '+1.2' })).toBeNull();
+    expect(SM.golfDetailsProblem({ ...shown, handicapIndex: '+' })?.code).toBe('CH-8113');
   });
   it('requires the first reminder before the final one', () => {
     expect(SM.remindersValid({ enabled: true, earlyHours: 1, lateMinutes: 60 })).toBe(false);

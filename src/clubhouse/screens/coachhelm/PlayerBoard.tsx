@@ -14,18 +14,20 @@ import { SectionBoundary } from '../../ui/SectionBoundary';
 import { EmptyState } from '../../ui/States';
 import { BoardPartial, FocusCard, Head, InsightRow } from './parts';
 import { ClearedLines } from './EngineState';
+import { MyCoursePlan } from './MyCoursePlan';
 import { Proposals } from './Proposals';
 import { useHydrated } from './use-hydrated';
 import { useViewSwitch } from './use-view-switch';
 import { PlayerHelmTabs } from './views/PlayerHelmTabs';
-import { LIVE_PLAYER_WRITES, type ChPlayerWrites } from './writes';
+import { LIVE_MY_COURSE_PLAN_READS, LIVE_PLAYER_WRITES, type ChMyCoursePlanReads, type ChPlayerWrites } from './writes';
+import { plural } from '../../lib/plural';
 
 /** Where each control goes. A target that isn't rebuilt yet isn't drawn (nav.rebuiltHref), never a dead button. */
 export const coachHelmLinks = {
   /** Round entry once it is rebuilt; until then the Rounds library, named for what it is. */
   startRound: (): { href: string; label: string } | null => {
     const entry = rebuiltHref('/golf/dashboard/rounds/new', 'player');
-    if (entry) return { href: entry, label: 'Start a round' };
+    if (entry) return { href: entry, label: 'New round' };
     const library = rebuiltHref('/golf/dashboard/rounds', 'player');
     return library ? { href: library, label: 'Open Rounds' } : null;
   },
@@ -36,9 +38,10 @@ export const coachHelmLinks = {
  * helm3.jsx `PlayerHelm`; spec docs/clubhouse/phone/coachhelm.md): one focus,
  * then the other things worth knowing and what is working. The player reads
  * only their own insights and has no coach controls. The one thing they write
- * is their answer to a focus area a coach proposed: Accept or Decline (Q-77).
+ * is their answer to a focus area a coach proposed: Accept or Decline (Q-77). With `coachhelm_course_plan_v1` on, their
+ * own Course plan (chs-21) sits at the foot of the side column, read only when they ask.
  */
-export function PlayerBoard({ data, writes = LIVE_PLAYER_WRITES }: { data: ChPlayerHelm; writes?: ChPlayerWrites }) {
+export function PlayerBoard({ data, writes = LIVE_PLAYER_WRITES, coursePlanReads = LIVE_MY_COURSE_PLAN_READS }: { data: ChPlayerHelm; writes?: ChPlayerWrites; coursePlanReads?: ChMyCoursePlanReads }) {
   const phone = useChPhone();
   // The read the player chose, by id and title: a refresh that takes it off the board falls back to the current focus, and says so. It is
   // kept for this tab with the shell's session state, so a way back to the board (Back, another view and back) returns to it (owner rule
@@ -66,7 +69,7 @@ export function PlayerBoard({ data, writes = LIVE_PLAYER_WRITES }: { data: ChPla
   // With CoachHelm off (CH-13304) nothing is read and the views lead nowhere, so the strip is not drawn, as the coach's is not (CH-13305).
   const tabs = data.off ? null : <PlayerHelmTabs active={sw.shown} onGo={sw.go} />;
   return (
-    <main className={'ch-hl' + (phone ? ' is-phone' : '')} aria-labelledby="ch-hl-title" aria-busy={sw.pending || undefined} data-canopy={phone ? undefined : ''}>
+    <main className={'ch-hl' + (phone ? ' is-phone' : '')} aria-labelledby="ch-hl-title" aria-busy={sw.pending || undefined} data-canopy={phone ? undefined : ''} {...sw.enter}>
       {phone && <PhoneTop start title="CoachHelm" />}
       {phone && tabs}
       <Head phone={phone} aside={!phone ? tabs : undefined}>
@@ -99,7 +102,7 @@ export function PlayerBoard({ data, writes = LIVE_PLAYER_WRITES }: { data: ChPla
               code="CH-13301"
               shape="rows"
               title="Post a round to start CoachHelm"
-              body={`CoachHelm reads the rounds you post. ${short != null ? `After ${short} ${short === 1 ? 'round' : 'rounds'}` : 'Once there is enough to go on'}, one thing to work on this week shows up here.`}
+              body={`CoachHelm reads the rounds you post. ${short != null ? `After ${plural(short, 'round')}` : 'Once there is enough to go on'}, one thing to work on this week shows up here.`}
               action={
                 startHref ? (
                   <Button variant="primary" leftIcon={Plus} href={startHref.href}>
@@ -117,7 +120,7 @@ export function PlayerBoard({ data, writes = LIVE_PLAYER_WRITES }: { data: ChPla
               body={
                 short != null
                   ? `Post ${short} more ${short === 1 ? 'round' : 'rounds'} and CoachHelm starts reading your game.`
-                  : `${data.rounds ? `You’ve posted ${data.rounds} ${data.rounds === 1 ? 'round' : 'rounds'}. ` : ''}CoachHelm needs enough rounds to find a pattern worth acting on. Every round you post sharpens the read.`
+                  : `${data.rounds ? `You’ve posted ${plural(data.rounds, 'round')}. ` : ''}CoachHelm needs enough rounds to find a pattern worth acting on. Every round you post sharpens the read.`
               }
               action={
                 startHref ? (
@@ -130,6 +133,7 @@ export function PlayerBoard({ data, writes = LIVE_PLAYER_WRITES }: { data: ChPla
           )}
           {/* CH-13992: a read cleared at its last check stays listed for two more, even when no open read is left beside it. */}
           <ClearedLines lines={data.cleared} />
+          {data.coursePlan && <MyCoursePlan reads={coursePlanReads} />}
         </>
       ) : (
         <div className="ch-hl-grid">
@@ -176,6 +180,7 @@ export function PlayerBoard({ data, writes = LIVE_PLAYER_WRITES }: { data: ChPla
                 </Button>
               )}
               <ClearedLines lines={data.cleared} />
+              {data.coursePlan && <MyCoursePlan reads={coursePlanReads} />}
               <p className="ch-hl-note">Reads update as you post rounds. Your coaches see the same insights.</p>
             </SectionBoundary>
           </aside>

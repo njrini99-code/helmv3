@@ -1,8 +1,11 @@
 'use client';
 
-import { CalendarPlus, Check, Copy, Pencil, RefreshCw, Rss, Trash2, TriangleAlert, CircleX } from 'lucide-react';
+import { plural } from '../../lib/plural';
+import { CalendarPlus, Check, Copy, Pencil, RotateCw, Rss, Trash2, TriangleAlert, CircleX } from 'lucide-react';
 import { useEffect, useMemo, useRef, useState, type KeyboardEvent, type PointerEvent } from 'react';
 import { createGolfEvent, deleteGolfEvent, deleteGolfEventPermanently, updateGolfEvent } from '@/app/golf/actions/calendar-events';
+import { createTournamentFromCalendar } from '@/app/golf/actions/tournaments-calendar';
+import { useRouter } from 'next/navigation';
 import { createRecurringEvent, deleteRecurringEvent, editRecurringEvent } from '@/app/golf/actions/recurring-events';
 import { createCalendarFeed, deleteCalendarFeed, getCalendarFeeds, regenerateCalendarFeed } from '@/app/golf/actions/calendar-feeds';
 import { serializeRecurrenceRule } from '@/lib/golf/recurrence';
@@ -23,8 +26,14 @@ import { newRequestId } from '../../data/recruiting-shape';
 import { chReport, chTrail } from '../../lib/track';
 import { haptic } from '../../lib/haptics';
 import { useChPhone } from '../../lib/use-phone';
+import { useChClock } from '../../lib/use-clock';
+import { clockAxisLabel } from '../../lib/clock-format';
 import { TYPE_LABEL, addDays, busyFor, dayNum, dowOf, fmtHour, monthName, overlaps, seedWindow, type ChCalEvent, type ChCalPerson, type ChCalType } from './model';
 import { TYPE_ICON } from './views';
+import { tournamentSavedToast, TournamentSaveNotice, TournamentSection, type TrackBlock } from './editor-tournament';
+import { LIVE_WRITES, type ChQWrites } from '../qualifiers/writes';
+import { initialTourState, receiptSentence, toCreatePayload, validate, type ChTourErrors, type ChTourState } from '../tournaments/fields/rounds-model';
+import { refusalNotice, type TournamentRefusal } from '../tournaments/fields/refusals';
 
 const EDIT_TYPES: ChCalType[] = ['practice', 'qualifier', 'tournament', 'meeting', 'travel', 'other'];
 const FROM = 7;
@@ -58,6 +67,19 @@ function runOf(e: ChCalEvent): { date: string; win: [number, number]; extra: num
 }
 
 type Repeat = 'none' | 'weekly' | 'weekdays';
+
+/** P-5: a tournament made from the editor, for the calendar's optimistic blocks (4.2). */
+export interface ChTournamentSaved {
+  tournamentId: string;
+  version: number;
+  name: string;
+  rounds: { roundNumber: number; eventId: string }[];
+  state: ChTourState;
+  invited: string[];
+  rsvp: boolean;
+  notes: string | null;
+  fromEventId: string | null;
+}
 type Scope = 'this' | 'thisAndFuture' | 'all';
 
 export interface EditorSeed {
@@ -69,6 +91,10 @@ export interface EditorSeed {
   invite?: string[];
   /** Duplicate (the event's More menu): a new event with this one's title, type, day, time, place, notes and invitees. */
   copyOf?: ChCalEvent;
+  /** P-5 E4: the inspector's Set up on an untracked tournament event opens the editor with Track already on. */
+  track?: boolean;
+  /** Reopened after a publish drawn at once failed (F-0029): the same event keeps its request id, so a Retry can't make it twice. */
+  resend?: boolean;
 }
 
 function FindTime({
@@ -88,6 +114,7 @@ function FindTime({
   ignoreId?: string;
   people: Map<string, ChCalPerson>;
 }) {
+  const clock = useChClock();
   const ref = useRef<HTMLDivElement | null>(null);
   const grab = useRef<number | null>(null);
   // The kind of pointer that last pressed a lane. A finger only moves the time once it lifts without scrolling (a click):
@@ -134,8 +161,7 @@ function FindTime({
         <div className="ch-lanes__axis" aria-hidden="true">
           {ticks.map((h) => (
             <span key={h} style={{ left: `${pct(h)}%` }}>
-              {((h + 11) % 12) + 1}
-              {h < 12 ? 'a' : 'p'}
+              {clockAxisLabel(h, clock)}
             </span>
           ))}
         </div>
@@ -180,7 +206,7 @@ function FindTime({
                   aria-valuemin={FROM}
                   aria-valuemax={TO - len}
                   aria-valuenow={win[0]}
-                  aria-valuetext={`${fmtHour(win[0])} to ${fmtHour(win[1])}`}
+                  aria-valuetext={`${fmtHour(win[0], true, clock)} to ${fmtHour(win[1], true, clock)}`}
                   onPointerDown={onDown}
                   // CH-6602: the band follows the finger or pointer as it is dragged.
                   onPointerMove={onMove}
@@ -218,10 +244,20 @@ export function EventEditor({
   timezone,
   today,
   nowHour,
+  tournamentsEnabled = false,
+  teamId,
+  courseWrites = LIVE_WRITES,
+  onTournamentSaved,
+  provisional,
 }: {
   seed: EditorSeed | null;
   onClose: () => void;
   onSaved: (date: string) => void;
+  /**
+   * A new single event is drawn the moment it is published (F-0029): `add` puts its block on the calendar and closes the
+   * editor, and returns the undo; a failure takes the block back and `reopen` opens the editor on what was typed.
+   */
+  provisional?: { add: (e: ChCalEvent) => () => void; reopen: (e: ChCalEvent) => void };
   events: ChCalEvent[];
   people: ChCalPerson[];
   /** The roster didn't load: the invite list is unknown, never "no players" (C-21). */
@@ -230,10 +266,19 @@ export function EventEditor({
   today: string;
   /** The hour now on the team's clock, so a new event today opens after it (P006 D3). */
   nowHour?: number;
+  /** P-5: golf_tournaments_v1 is on: choosing Tournament opens the tournament section. Off, the editor is as before. */
+  tournamentsEnabled?: boolean;
+  /** P-5: the calendar's team, which a tournament is made on (D-81: one tournament per team). */
+  teamId?: string;
+  /** P-5: the course picker's reads (the qualifiers' live set; the preview and tests pass their own). */
+  courseWrites?: Pick<ChQWrites, 'courses' | 'tees'>;
+  /** P-5: a tournament landed: its rounds, for the calendar's optimistic blocks. */
+  onTournamentSaved?: (saved: ChTournamentSaved) => void;
 }) {
   const base = seed?.event ?? null;
   const open = seed != null;
   const phone = useChPhone();
+  const clock = useChClock();
   const toast = useToast();
   const [title, setTitle] = useState('');
   const [type, setType] = useState<ChCalType>('practice');
@@ -256,6 +301,15 @@ export function EventEditor({
   const [baseline, setBaseline] = useState('');
   const [discarding, setDiscarding] = useState(false);
   const byId = useMemo(() => new Map(people.map((p) => [p.id, p])), [people]);
+  const router = useRouter();
+  // P-5: the tournament section. `trackPref` is the coach's own answer; until they give one, Track is on for a new
+  // event or a type change and off for a legacy tournament event (4.1.3).
+  const [trackPref, setTrackPref] = useState<boolean | null>(null);
+  const [tour, setTour] = useState<ChTourState>(() => initialTourState(today));
+  const [tourBaseline, setTourBaseline] = useState('');
+  const [tourNote, setTourNote] = useState<{ code: string; text: string; refusal: TournamentRefusal; tournamentId?: string } | null>(null);
+  const [said, setSaid] = useState('');
+  const section = useRef<HTMLElement | null>(null);
 
   // The editor seeds once per opening. A page re-read that lands while it is open (a slower refresh, a Retry
   // elsewhere) brings the same team in new arrays, and seeding again would wipe what the coach has typed.
@@ -320,13 +374,21 @@ export function EventEditor({
     setInvited(init.invited);
     setRsvp(init.rsvp);
     // A drag-to-move proposal is already a change worth keeping.
-    setBaseline(seed.proposal ? '' : snapshot({ ...init, repeat: 'none' }));
+    // A reopened publish (F-0029) is unsaved work: closing it asks first, as before it was sent.
+    setBaseline(seed.proposal || seed.resend ? '' : snapshot({ ...init, repeat: 'none' }));
     setDiscarding(false);
     setRepeat('none');
     setUntil(addDays(init.date, 56));
     setScope('this');
     setExtraDays(run?.extra ?? spanDays(e ?? c));
     setTouched(false);
+    const first = run?.date ?? (e ?? c)?.span?.from ?? init.date;
+    const nextTour = initialTourState(first, addDays(first, run?.extra ?? spanDays(e ?? c)));
+    setTour(nextTour);
+    setTourBaseline(JSON.stringify(nextTour));
+    setTrackPref(seed.track ?? null);
+    setTourNote(null);
+    setSaid('');
   }, [seed]);
 
   const moved = !!base && !!seed?.proposal && (seed.proposal[0] !== base.start || seed.proposal[1] !== base.end);
@@ -347,13 +409,21 @@ export function EventEditor({
   const runKept = multiTimed && !!baseRun && date === baseRun.date && win[0] === baseRun.win[0] && win[1] === baseRun.win[1] && extraDays === baseRun.extra;
   // A run over several days isn't checked against one day's classes, as an all-day event isn't.
   const clashes = allDay || multiTimed ? [] : invited.filter((pid) => busyFor(events, pid, date, base?.id).some((b) => overlaps(win, [b.start!, b.end!])));
-  const primary = !base ? 'Publish event' : moved ? 'Move event' : 'Save changes';
-  const invalidTitle = !title.trim();
-  const invalidTime = (!allDay && !multiTimed && win[1] <= win[0]) || needsEnd;
+  // P-5: the tournament section (4.1). Track off, or the flag off, leaves every field below as it was.
+  const tourOn = tournamentsEnabled && type === 'tournament';
+  const legacyTour = !!base && base.type === 'tournament';
+  const trackBlock: TrackBlock = base?.seriesId ? 'series' : base?.cancelled ? 'cancelled' : null;
+  const tracked = tourOn && !trackBlock && (trackPref ?? !legacyTour);
+  const tourState: ChTourState = { ...tour, name: title };
+  const tourErrors: ChTourErrors = tracked ? validate(tourState) : {};
+  const orphanRound = tracked && legacyTour ? /\s·\sR(\d)$/.exec(base!.title)?.[1] : undefined;
+  const primary = tracked ? (base ? 'Set up tournament' : 'Create tournament') : !base ? 'Publish event' : moved ? 'Move event' : 'Save changes';
+  const invalidTitle = !tracked && !title.trim();
+  const invalidTime = !tracked && ((!allDay && !multiTimed && win[1] <= win[0]) || needsEnd);
   const minutes = Math.round((win[1] - win[0]) * 60);
   const whenLabel = multiTimed
-    ? `${dowOf(date)} ${dayNum(date)} ${monthName(date).slice(0, 3)} ${fmtHour(win[0])} – ${dowOf(endDate)} ${dayNum(endDate)} ${monthName(endDate).slice(0, 3)} ${fmtHour(win[1])}`
-    : `${dowOf(date)} ${dayNum(date)} ${monthName(date).slice(0, 3)} · ${allDay ? 'All day' : `${fmtHour(win[0], false)} – ${fmtHour(win[1])}`}`;
+    ? `${dowOf(date)} ${dayNum(date)} ${monthName(date).slice(0, 3)} ${fmtHour(win[0], true, clock)} – ${dowOf(endDate)} ${dayNum(endDate)} ${monthName(endDate).slice(0, 3)} ${fmtHour(win[1], true, clock)}`
+    : `${dowOf(date)} ${dayNum(date)} ${monthName(date).slice(0, 3)} · ${allDay ? 'All day' : `${fmtHour(win[0], false, clock)} – ${fmtHour(win[1], true, clock)}`}`;
 
   // One request id per opening of the editor and set of contents: the same form with the same contents sends the
   // same id, whether the toast's Retry replays it or Publish is pressed again, so a reply that was lost after the
@@ -363,7 +433,7 @@ export function EventEditor({
   const requestIdFor = (payload: unknown) => {
     const sig = JSON.stringify(payload);
     const last = attempt.current;
-    if (last && last.seed === seed && last.sig === sig) return last.id;
+    if (last && (last.seed === seed || seed?.resend) && last.sig === sig) return last.id;
     const id = newRequestId();
     attempt.current = { seed, sig, id };
     return id;
@@ -371,6 +441,11 @@ export function EventEditor({
 
   /** The write itself: one event, a repeating series, or an edit of either (with the scope a series asks for). */
   const send = async () => {
+    if (tracked && teamId) {
+      const payload = toCreatePayload(tourState, timezone, { teamId, requestId: '', fromEventId: base?.id ?? null, description: notes, requiresRsvp: rsvp, attendeeIds: invited });
+      const { requestId: _unused, ...signature } = payload;
+      return createTournamentFromCalendar({ ...payload, requestId: requestIdFor(signature) });
+    }
     const startTime = allDay ? undefined : toHHMM(win[0]);
     const endTime = allDay ? undefined : toHHMM(win[1]);
     const tz = offsetMinutesFor(date, startTime ?? '12:00', timezone) ?? undefined;
@@ -466,7 +541,41 @@ export function EventEditor({
   const save = useAction<[], unknown>(
     'calendar.saveEvent',
     async () => {
-      const res = await send();
+      // A new one-off event goes on the calendar at once; a series, a run of days, an edit or a tournament waits.
+      const draft: ChCalEvent | null =
+        provisional && !base && !tracked && repeat === 'none' && extraDays === 0
+          ? { id: `provisional:${Date.now()}`, type, title: title.trim(), date, start: allDay ? null : win[0], end: allDay ? null : win[1], allDay, location: loc.trim() || null, notes: notes.trim() || null, recurring: null, people: invited, rsvp: {}, rsvpRequired: rsvp, owner: null, busyOnly: false, instructor: null, pattern: null, canEdit: false, cancelled: false, seriesId: null, startIso: `${date}T${allDay ? '00:00' : toHHMM(win[0])}:00`, span: null }
+          : null;
+      const undo = draft ? provisional!.add(draft) : null;
+      let res: Awaited<ReturnType<typeof send>> | undefined;
+      try {
+        res = await send();
+      } finally {
+        if (undo && draft && !normalise<unknown>(res).success) {
+          undo();
+          provisional!.reopen(draft);
+        }
+      }
+      if (tracked) {
+        const r = res as { success: boolean; error?: string; code?: TournamentRefusal; data?: { tournamentId: string; version: number; replayed: boolean; rounds: { roundNumber: number; eventId: string }[] } };
+        if (r.success && r.data) {
+          setTourNote(null);
+          const name = title.trim();
+          const id = r.data.tournamentId;
+          haptic('success');
+          const saved = tournamentSavedToast(name, id);
+          toast({ title: saved.title, code: saved.code, action: { label: saved.action, run: () => router.push(saved.href) } });
+          onTournamentSaved?.({ tournamentId: id, version: r.data.version, name, rounds: r.data.rounds, state: tourState, invited, rsvp, notes: notes.trim() || null, fromEventId: base?.id ?? null });
+          onSaved(tourState.firstDay);
+        } else {
+          const refusal = r.code ?? 'failed';
+          const n = refusalNotice(refusal, { save: 'create', name: title.trim() });
+          haptic('error');
+          setTourNote({ ...n, refusal });
+          requestAnimationFrame(() => document.getElementById('ch-tfx-save-error')?.focus());
+        }
+        return res;
+      }
       if (normalise<unknown>(res).success) {
         onSaved(date);
         const note = invitationsNote(res);
@@ -491,11 +600,25 @@ export function EventEditor({
     // A refine function changes which text a failure shows (its hint wins over the server's reason), so a failure
     // keeps the same order it had without one: the server's reason, then this hint. Only a save that landed without
     // its invitations is refined: it is quiet here because the action above already said so.
-    (result, c) => (result.success ? (invitationsNote(result) ? { ...c, quiet: true } : c) : { ...c, hint: friendlyReason(result.error) ?? c.hint }),
+    // A tournament's outcome is drawn by the section (its toast with Open, or its inline notice), so it is quiet here.
+    (result, c) => (tracked ? { ...c, quiet: true } : result.success ? (invitationsNote(result) ? { ...c, quiet: true } : c) : { ...c, hint: friendlyReason(result.error) ?? c.hint }),
   );
 
   const submit = async () => {
     setTouched(true);
+    if (tracked) {
+      // Every error shows at once; focus goes to the first (4.1.10).
+      const first = tourErrors.name ? 'ch-ed-title' : tourErrors.days ? 'ch-tfx-days' : tourErrors.course ? 'ch-tfx-course' : tourErrors.rounds ? 'ch-tfx-days' : tourErrors.counting ? 'ch-tfx-counting' : tourErrors.resultsUrl ? 'ch-tfx-results' : null;
+      if (first) {
+        haptic('warning');
+        document.getElementById(first)?.focus();
+        return;
+      }
+      if (!teamId) return;
+      chTrail(`calendar tournament ${base ? 'convert' : 'create'} submit`);
+      await save.run();
+      return;
+    }
     if (invalidTitle || invalidTime) {
       // CH-6702: the warning pattern for a form with a problem (and when closing with changes, below).
       haptic('warning');
@@ -507,9 +630,15 @@ export function EventEditor({
   };
 
   const allOn = invited.length === people.length;
-  const dirty = open && snapshot({ title, type, date, win, allDay, repeat, loc, notes, invited, rsvp }) !== baseline;
+  const tourDirty = tracked && JSON.stringify(tour) !== tourBaseline;
+  const dirty = open && (snapshot({ title, type, date, win, allDay, repeat, loc, notes, invited, rsvp }) !== baseline || tourDirty);
   // Closing with edits asks first; closing untouched just closes.
   const requestClose = () => {
+    // CH-6842: a tournament on its way can't be closed under it; Escape says so instead.
+    if (save.pending && tracked) {
+      setSaid('Still creating the tournament.');
+      return;
+    }
     if (dirty && !save.pending) {
       haptic('warning');
       setDiscarding(true);
@@ -539,7 +668,7 @@ export function EventEditor({
               Cancel
             </Button>
             <Button variant="primary" busy={save.pending} onClick={() => void submit()}>
-              {save.pending ? (base ? 'Saving…' : 'Publishing…') : primary}
+              {save.pending ? (tracked ? (base ? 'Setting up…' : 'Creating…') : base ? 'Saving…' : 'Publishing…') : primary}
             </Button>
 
     </>
@@ -557,19 +686,25 @@ export function EventEditor({
             <input
               id="ch-ed-title"
               className="ch-ed__title"
-              placeholder="Event title"
-              aria-label="Event title"
+              placeholder={tracked ? 'Pinehurst Invitational' : 'Event title'}
+              aria-label={tracked ? 'Tournament name' : 'Event title'}
               value={title}
-              aria-invalid={touched && invalidTitle}
-              aria-describedby={touched && invalidTitle ? 'ch-ed-title-err' : undefined}
+              aria-invalid={touched && (invalidTitle || (tracked && !!tourErrors.name))}
+              aria-describedby={touched && (invalidTitle || (tracked && !!tourErrors.name)) ? 'ch-ed-title-err' : undefined}
               onChange={(e) => setTitle(e.target.value)}
-              maxLength={200}
+              maxLength={tracked ? 120 : 200}
             />
             {touched && invalidTitle && (
               <p id="ch-ed-title-err" className="ch-field__help is-error" data-ch-code="CH-6101">
                 Give the event a title.
               </p>
             )}
+            {touched && tracked && tourErrors.name && (
+              <p id="ch-ed-title-err" className="ch-field__help is-error" data-ch-code={tourErrors.name.code}>
+                {tourErrors.name.text}
+              </p>
+            )}
+            {tracked && title.length >= 100 && <p className="ch-field__help ch-num">{`${title.length} of 120`}</p>}
           </div>
           <div className="ch-ed__types">
             <span className="ch-ed__lbl">Type</span>
@@ -589,6 +724,35 @@ export function EventEditor({
               }))}
             />
           </div>
+          {tourOn && (
+            <TournamentSection
+              ref={section}
+              track={tracked}
+              onTrack={(on) => {
+                setTrackPref(on);
+                setSaid(on ? `Tournament details shown. ${plural(tour.rounds.length, 'round')}.` : 'Tournament details hidden.');
+              }}
+              legacy={legacyTour}
+              block={trackBlock}
+              state={tourState}
+              onChange={(next) => setTour(next)}
+              errors={tourErrors}
+              showErrors={touched}
+              timezone={timezone}
+              courseWrites={courseWrites}
+              announce={setSaid}
+              orphan={orphanRound ? { round: Number(orphanRound) } : null}
+              disabled={save.pending}
+            />
+          )}
+          {tracked && tourNote && (
+            <TournamentSaveNotice
+              code={tourNote.code}
+              text={tourNote.text}
+              onReload={tourNote.refusal === 'stale' ? () => router.refresh() : undefined}
+            />
+          )}
+          {!tracked && (
           <div>
             <span className="ch-ed__lbl">When</span>
             <div className="ch-ed__row">
@@ -647,10 +811,13 @@ export function EventEditor({
               </div>
             )}
           </div>
-          <label className="ch-field">
-            <span className="ch-field__label">Location</span>
-            <input className="ch-input" placeholder="Practice green, Finley GC" value={loc} onChange={(e) => setLoc(e.target.value)} maxLength={500} />
-          </label>
+          )}
+          {!tracked && (
+            <label className="ch-field">
+              <span className="ch-field__label">Location</span>
+              <input className="ch-input" placeholder="Practice green, Finley GC" value={loc} onChange={(e) => setLoc(e.target.value)} maxLength={500} />
+            </label>
+          )}
           <label className="ch-field">
             <span className="ch-field__label">Notes · optional</span>
             <textarea className="ch-textarea" rows={3} placeholder="What to bring, what you’ll work on" value={notes} onChange={(e) => setNotes(e.target.value)} maxLength={5000} />
@@ -705,9 +872,9 @@ export function EventEditor({
               {rsvp ? 'Invited players are notified and reply Going, Maybe or Can’t.' : 'Off: no replies asked and no notification. It still shows on their calendars.'}
             </p>
           </div>
-          {!allDay && !multiTimed && invited.length > 0 && (
+          {!tracked && !allDay && !multiTimed && invited.length > 0 && (
             <div>
-              <div className="ch-in__sechead" style={{ marginBottom: 10 }}>
+              <div className="ch-in__sechead" style={{ marginBottom: 8 }}>
                 <span className="ch-ed__lbl" style={{ margin: 0 }}>
                   Find a time · {dowOf(date)} {dayNum(date)}
                 </span>
@@ -716,6 +883,12 @@ export function EventEditor({
               <FindTime rows={invited} events={events} date={date} win={win} setWin={setWin} ignoreId={base?.id} people={byId} />
             </div>
           )}
+          {tracked ? (
+            <p className="ch-tfx__receipt" role="note">
+              {receiptSentence({ state: tourState, convert: !!base, rsvp })}
+            </p>
+          ) : (
+          <>
           <div className={'ch-verify ' + (allDay || multiTimed || !invited.length ? 'is-quiet' : clashes.length ? 'is-warn' : 'is-ok')} role="status">
             <span className="ch-verify__ic">
               <Icon icon={clashes.length ? TriangleAlert : Check} size={14} />
@@ -740,7 +913,7 @@ export function EventEditor({
             <dt>When</dt>
             <dd className="ch-num">
               {whenLabel}
-              {moved && base && <span className="ch-rcpt__was"> · was {fmtHour(base.start!, false)} – {fmtHour(base.end!)}</span>}
+              {moved && base && <span className="ch-rcpt__was"> · was {fmtHour(base.start!, false, clock)} – {fmtHour(base.end!, true, clock)}</span>}
             </dd>
             <dt>Where</dt>
             <dd>{loc.trim() || '—'}</dd>
@@ -751,8 +924,14 @@ export function EventEditor({
             <dt>Repeats</dt>
             <dd>{base ? (base.recurring ?? 'Does not repeat') : repeat === 'none' ? 'Does not repeat' : repeat === 'weekly' ? `Weekly on ${dowOf(date)} until ${dayNum(until)} ${monthName(until).slice(0, 3)}` : `Every weekday until ${dayNum(until)} ${monthName(until).slice(0, 3)}`}</dd>
           </dl>
+          </>
+          )}
         </div>
         <button type="submit" hidden />
+        {/* CH-6840 to CH-6842: the section's polite lines (opened, rounds changed or reordered, Escape while creating). */}
+        <span className="ch-sr-only" role="status" aria-live="polite" data-ch-code="CH-6841">
+          {said}
+        </span>
       </form>
     </Modal>
     <Modal
@@ -762,7 +941,7 @@ export function EventEditor({
       width={420}
       icon={CircleX}
       title={base ? 'Discard your changes?' : 'Discard this event?'}
-      description={base ? 'Your edits to this event are lost. The event stays as it was.' : 'Nothing has been published yet. What you entered is lost.'}
+      description={`${base ? 'Your edits to this event are lost. The event stays as it was.' : 'Nothing has been published yet. What you entered is lost.'}${tourDirty ? ' The tournament details you entered are lost too.' : ''}`}
       footer={
         <>
           <Button variant="ghost" onClick={() => setDiscarding(false)}>
@@ -1023,9 +1202,9 @@ export function SubscribeSheet({ open, onClose, role }: { open: boolean; onClose
     { type: 'personal', name: 'My schedule', desc: role === 'coach' ? 'Events you run and your busy time' : 'Events you’re invited to and your classes' },
   ];
   return (
-    <Modal open={open} onClose={onClose} width={560} icon={Rss} title="Add to your calendar app" description="One-way: changes in Helm appear in Apple, Google or Outlook within an hour. Edits made there don’t come back." footer={<Button onClick={onClose}>Done</Button>}>
+    <Modal open={open} onClose={onClose} width={560} icon={Rss} title="Add to your calendar app" description="One-way: changes in Helm appear in Apple, Google or Outlook within an hour. Edits made there don’t come back." footer={<Button variant="primary" onClick={onClose}>Done</Button>}>
       {failed ? (
-        <InlineNotice code="CH-6206" title="Your calendar links didn’t load." body="Try again; the error has been reported." onRetry={() => setAttempt((a) => a + 1)} />
+        <InlineNotice code="CH-6206" title="Your calendar links didn’t load." body="Try again." onRetry={() => setAttempt((a) => a + 1)} />
       ) : !feeds ? (
         <div style={{ display: 'grid', gap: 12 }} aria-busy="true" data-ch-code="CH-6402">
           <Skeleton height={44} />
@@ -1072,7 +1251,7 @@ export function SubscribeSheet({ open, onClose, role }: { open: boolean; onClose
                 ) : (
                   f && (
                     <div className="ch-feed__acts">
-                      <Button size="sm" variant="ghost" leftIcon={RefreshCw} disabled={busy} onClick={() => setAsking({ type: r.type, kind: 'new' })}>
+                      <Button size="sm" variant="ghost" leftIcon={RotateCw} disabled={busy} onClick={() => setAsking({ type: r.type, kind: 'new' })}>
                         New link
                       </Button>
                       <Button size="sm" variant="ghost" leftIcon={Trash2} disabled={busy} onClick={() => setAsking({ type: r.type, kind: 'remove' })}>

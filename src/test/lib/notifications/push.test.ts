@@ -23,6 +23,12 @@ vi.mock('@/lib/notifications/email', () => ({
   getUserNotificationPreferences: (userId: string) => getUserNotificationPreferencesMock(userId),
 }));
 
+// These tests cover token pruning, not the class-awareness gate. With the flag on under vitest
+// (development) the gate would call admin.rpc, which this admin mock does not have, and log a
+// fail-open event that changes the logServerEvent counts below. The gate has its own suite
+// (push-class-gate.test.ts).
+vi.mock('@/lib/flags/is-enabled', () => ({ isFlagEnabled: vi.fn(() => false) }));
+
 const logServerEventMock = vi.fn(async (..._args: unknown[]) => {});
 const logServerErrorMock = vi.fn(async (..._args: unknown[]) => {});
 const logServerExceptionMock = vi.fn(async (..._args: unknown[]) => {});

@@ -197,8 +197,14 @@ describe('confirmQualifierSelection wires the service-role brief client (P009)',
     expect(await confirmQualifierSelection('q1')).toEqual({ ok: true, notified: true });
     expect(verifyTeamAccess).toHaveBeenCalledWith('t1', 'assistant-user', expect.anything());
     const call = confirm.mock.calls[0] as unknown as [unknown, unknown, { briefClient: () => unknown }];
+    // The caller chooses no order (owner, 2026-10-28): the service gets the qualifier and the user, nothing more.
     expect(call[1]).toEqual({ qualifier_id: 'q1', user_id: 'assistant-user' });
     expect(call[2].briefClient()).toBe(adminSentinel);
+
+    // An old client that still sends an order is not honoured: the server decides it.
+    confirm.mockClear();
+    await (confirmQualifierSelection as unknown as (id: string, order: string) => Promise<unknown>)('q1', 'score');
+    expect((confirm.mock.calls[0] as unknown as [unknown, unknown])[1]).toEqual({ qualifier_id: 'q1', user_id: 'assistant-user' });
 
     // Refused at the team check: the service (and so the admin brief) is never reached.
     team.allowed = false;

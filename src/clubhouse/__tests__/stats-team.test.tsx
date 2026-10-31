@@ -40,7 +40,12 @@ import { StatsSkeleton } from '../screens/stats/StatsSkeleton';
 import { ToastProvider } from '../ui/Toast';
 import { PREVIEW_PLAYER, PREVIEW_TEAM_STATS } from '../preview/fixtures-stats';
 import { filterFor } from '../data/stats-filter';
-import { ScoreLine } from '../screens/stats/StatsTeamPhone';
+import { AppRouterContext } from 'next/dist/shared/lib/app-router-context.shared-runtime';
+import { PrefetchKind } from 'next/dist/client/components/router-reducer/router-reducer-types';
+import type { ContextType } from 'react';
+import { resetPrefetchTabsForTests } from '../shell/use-prefetch-tabs';
+import { teamPlayerHref } from '../screens/stats/links';
+import { unsignedTones } from './_tone-sign';
 
 const code = (c: string) => document.querySelector(`[data-ch-code="${c}"]`);
 async function expectCode(c: string, text?: RegExp) {
@@ -88,6 +93,22 @@ beforeEach(() => {
   router.refresh.mockClear();
   router.push.mockClear();
   tables.current = seasonTables();
+});
+
+describe('Stats team · the season turns in the team’s zone (row 116, owner decision 9)', () => {
+  it('at 11 PM on 31 July in Los Angeles a Pacific team’s round that day is this season; on New York’s clock it would not be', async () => {
+    vi.useFakeTimers({ toFake: ['Date'] });
+    vi.setSystemTime(new Date('2026-08-01T06:00:00Z'));
+    try {
+      const round = { ...(seasonTables().golf_rounds as { data: Array<Record<string, unknown>> }).data[0], round_date: '2026-07-31' };
+      tables.current = { ...seasonTables(), golf_rounds: { data: [round] }, golf_team_settings: { data: { timezone: 'America/Los_Angeles' } } };
+      expect((await load()).roundCount).toBe(1);
+      tables.current = { ...seasonTables(), golf_rounds: { data: [round] }, golf_team_settings: { data: { timezone: 'America/New_York' } } };
+      expect((await load()).roundCount).toBe(0);
+    } finally {
+      vi.useRealTimers();
+    }
+  });
 });
 
 describe('Stats team · saves that fail', () => {
@@ -255,10 +276,27 @@ describe('Stats team · reads that fail', () => {
     quiet.mockRestore();
   });
 
+  it('A7 the team greens and scrambling cards hold to their floors: one round and six chances say what they need', async () => {
+    const data = await load();
+    const gir = data.figures.find((f) => f.key === 'gir')!;
+    const scr = data.figures.find((f) => f.key === 'scramble')!;
+    expect(gir).toMatchObject({ value: null, context: 'Needs 2 rounds', state: 'empty' });
+    expect(scr).toMatchObject({ value: null, context: 'Needs 10 chances', state: 'empty' });
+  });
+
   it('CH-4209 Tour benchmarks do not load: greens read against the sample, not a made-up benchmark', async () => {
+    // Two rounds with greens, so the rate clears its floor (A7) and the context is the benchmark's, not "Needs 2 rounds".
+    const base = seasonTables();
+    const day = new Date(Date.now() - 86_400_000).toISOString().slice(0, 10);
+    const twoRounds = {
+      ...base,
+      golf_rounds: { data: ['r1', 'r2'].map((id) => ({ id, player_id: 'p1', round_date: day, total_score: 72, score_to_par: 0, front_nine: 36, back_nine: 36, holes_played: 18, status: 'completed', round_type: 'practice' })) },
+      golf_round_stats_cache: { data: ['r1', 'r2'].map((round_id) => ({ round_id, greens_hit: 12, greens_total: 18, total_putts: 30, scramble_attempts: 6, scrambles_converted: 3, birdies: 2, eagles: 0 })) },
+    };
+    tables.current = twoRounds;
     const ok = await load();
     expect(ok.figures.find((f) => f.label === 'Greens in regulation')!.context).toBe('Tour averages 67%');
-    tables.current = { ...seasonTables(), golf_pga_standards: { error: { message: 'boom' } } };
+    tables.current = { ...twoRounds, golf_pga_standards: { error: { message: 'boom' } } };
     const data = await load();
     expect(logServer).toHaveBeenCalledWith('stats', 'tourBenchmarks', expect.anything());
     expect(data.figures.find((f) => f.label === 'Greens in regulation')!.context).not.toMatch(/Tour/);
@@ -539,6 +577,20 @@ describe('Stats team · phone (v2, Coach - Stats - Mobile.html)', () => {
     window.matchMedia = real;
   });
 
+  it('A13 a finger landing on a player row fetches their stats whole, once', () => {
+    resetPrefetchTabsForTests();
+    const prefetch = vi.fn();
+    const appRouter = { prefetch, push: vi.fn(), replace: vi.fn(), refresh: vi.fn(), back: vi.fn(), forward: vi.fn() } as unknown as NonNullable<ContextType<typeof AppRouterContext>>;
+    const data = stats();
+    render(<AppRouterContext.Provider value={appRouter}>{tree(data)}</AppRouterContext.Provider>);
+    const theo = data.grid.find((p) => p.name === 'Theo Marchetti')!;
+    const row = screen.getByRole('link', { name: /Theo Marchetti/ });
+    expect(row.getAttribute('href')).toBe(teamPlayerHref(theo.id, data.filter));
+    fireEvent.pointerDown(row);
+    expect(prefetch).toHaveBeenCalledTimes(1);
+    expect(prefetch).toHaveBeenCalledWith(teamPlayerHref(theo.id, data.filter), { kind: PrefetchKind.FULL });
+  });
+
   it('CH-4310 on the phone the first run has nothing to switch, so the window switch steps aside; older rounds keep it', () => {
     const { unmount } = wrap(empty({ window: 'season' }));
     expect(code('CH-4310')).not.toBeNull();
@@ -575,10 +627,33 @@ describe('Stats team · phone (v2, Coach - Stats - Mobile.html)', () => {
     // The trend sits right under the hero, before the round's other figures.
     const order = [...document.querySelectorAll('.ch-stm-hero, .ch-stm-trend, section[aria-labelledby="ch-stm-round"]')];
     expect(order.map((el) => el.className.split(' ')[0])).toEqual(['ch-stm-hero', 'ch-stm-trend', 'ch-stm-panel']);
-    expect(screen.getByRole('img', { name: /Team scoring average by round day, from 74\.8 to 73\.4\. Down 1\.4 strokes since Aug 30/ })).toBeTruthy();
+    // One change rule (A1): the newer half of the days against the older half, past its standard error, never first against last.
+    expect(screen.getByRole('img', { name: /Team scoring average by round day, from 74\.8 to 73\.4\. Down 0\.9 strokes a round, newer half vs older half\./ })).toBeTruthy();
+    expect(document.querySelector('.ch-stm-trend')!.textContent).not.toMatch(/since/);
     expect(screen.getByText('2 legs are losing strokes: Approach, Putting.')).toBeTruthy();
     // Sentence case, never tracked: the context line is the team, its active players and its sample.
     expect(document.querySelector('.ch-stm-head span')!.textContent).toBe('Varsity · 7 active players · countable rounds only');
+  });
+
+  it('the phone trend draws its value axis and takes the gain or loss ink only from its noise-tested change (row 69)', () => {
+    const line = () => document.querySelector('.ch-stm-line')!;
+    // The fixture's newer half is 0.9 lower, past its standard error: better, the gain ink, and the ticks are drawn.
+    const view = wrap(stats());
+    expect(line().classList.contains('is-gain')).toBe(true);
+    expect(line().querySelectorAll('.ch-line__grid').length).toBeGreaterThan(0);
+    view.unmount();
+    // Higher scores past the noise are worse: the loss ink, the words say Up.
+    const worse = wrap(stats({ daysHalves: { delta: 1.2, se: 0.3 } }));
+    expect(line().classList.contains('is-loss')).toBe(true);
+    expect(document.querySelector('.ch-stm-trend')!.textContent).toContain('Up 1.2 strokes a round');
+    worse.unmount();
+    // Inside the noise, and a change that prints as 0.0, are neither: the neutral ink, never a standing green.
+    for (const daysHalves of [{ delta: 0.4, se: 0.5 }, { delta: -0.04, se: 0.001 }]) {
+      const v = wrap(stats({ daysHalves }));
+      expect(line().classList.contains('is-gain') || line().classList.contains('is-loss')).toBe(false);
+      expect(document.querySelector('.ch-stm-trend')!.textContent).toContain('No clear change across the window.');
+      v.unmount();
+    }
   });
 
   it('CH-4703 CH-4805 players sort by scoring average, or by strokes gained; a row opens the player and reads as one link', async () => {
@@ -600,6 +675,27 @@ describe('Stats team · phone (v2, Coach - Stats - Mobile.html)', () => {
     wrap(stats());
     await user.click(screen.getByRole('radio', { name: /Season/ }));
     expect(router.push).toHaveBeenCalledWith('/golf/dashboard/stats?window=season', { scroll: false });
+  });
+
+  it('a toned figure on the team page carries a sign or a word; only the phone putting rates are still colour alone (row 48, CONS-20)', async () => {
+    wrap(stats());
+    await waitFor(() => expect(document.querySelector('.ch-stm .ch-stm-leg__v')).not.toBeNull());
+    // The phone's make rates below the Tour (StatsTeamPhone Putting) are amber with no word yet: may only fall, toward none.
+    expect(unsignedTones().filter((t) => !/^b\.ch-num ch-loss :: \d+%$/.test(t))).toEqual([]);
+    expect(unsignedTones().length).toBeLessThanOrEqual(4);
+  });
+
+  it('a phone window change keeps the legs and the rank mounted, so their bars glide instead of being redrawn (B9)', async () => {
+    const data = stats();
+    const view = wrap(data);
+    await waitFor(() => expect(document.querySelector('.ch-stm .ch-stm-leg__v')).not.toBeNull());
+    const bar = document.querySelector('.ch-stm .ch-stm-leg__v');
+    const dot = document.querySelector('.ch-stm .ch-sv-tr__dot');
+    expect(dot).not.toBeNull();
+    view.rerender(tree(stats({ window: 'season', legTotals: data.legTotals.map((v) => (v == null ? v : v * 2)) })));
+    // The same nodes: a remount would have drawn new ones at the new widths, with nothing to glide from.
+    expect(document.querySelector('.ch-stm .ch-stm-leg__v')).toBe(bar);
+    expect(document.querySelector('.ch-stm .ch-sv-tr__dot')).toBe(dot);
   });
 
   it('phone period changes clear unavailable comparisons and coverage without inventing zero changes', () => {
@@ -1095,7 +1191,62 @@ describe('Stats team · the figures by hand (swap audit §10)', () => {
     expect(fig('Putts per round')).toBeCloseTo((30 + 34 + 28) / 3, 10);
     // Birdies only: r3's eagle is not a birdie, as on production's Team stats page (stats-production-parity.test.ts).
     expect(fig('Birdies per round')).toBeCloseTo((2 + 0 + 3) / 3, 10);
-    expect(fig('Team SG per round')).toBeCloseTo((1.0 - 2.0 + 2.5) / 3, 10);
+    // Neither player has three rounds with shots: the team's strokes gained waits for one who does (A4).
+    expect(fig('Team SG per round')).toBeNull();
+  });
+
+  it('A4 the team strokes gained headline and leg totals read only the players at the three-round floor', async () => {
+    const legs = (r: ReturnType<typeof round>, l: number[]) => ({ ...r, strokes_gained_tee: l[0], strokes_gained_approach: l[1], strokes_gained_around_green: l[2], strokes_gained_putting: l[3] });
+    tables.current = {
+      ...seasonTables(),
+      golf_team_members: { data: [{ player: { id: 'p1', first_name: 'Theo', last_name: 'Marchetti' } }, { player: { id: 'p2', first_name: 'Jonah', last_name: 'Okafor' } }] },
+      golf_rounds: {
+        data: [
+          ...[1, 2, 3, 4, 5].map((n) => legs(round(`a${n}`, 'p1', n, 72, 1.0), [0.4, 0.3, 0.2, 0.1])),
+          legs(round('b1', 'p2', 6, 80, -4.0), [-1, -1, -1, -1]),
+        ],
+      },
+      golf_round_stats_cache: { data: [] },
+    };
+    const data = await loadTeamStats({ teamId: 't1', window: 'season' });
+    const sg = data.figures.find((f) => f.key === 'sg')!;
+    expect(sg.value).toBeCloseTo(1.0, 10);
+    expect(data.team.sgMean).toBeCloseTo(1.0, 10);
+    expect(sg.state).toBeUndefined();
+    expect(data.legTotals.map((v) => Number(v!.toFixed(2)))).toEqual([0.4, 0.3, 0.2, 0.1]);
+    // The weekly lines under the headline read the same players: no week carries the one-round player's −4.0.
+    const known = (xs: Array<number | null>) => xs.filter((v): v is number => v != null).map((v) => Number(v.toFixed(2)));
+    expect(new Set(known(data.team.sg))).toEqual(new Set([1]));
+    expect(new Set(known(sg.series))).toEqual(new Set([1]));
+    expect(['Off the tee', 'Approach', 'Around green', 'Putting'].map((l) => [...new Set(known(data.legWeeks[l as keyof typeof data.legWeeks]))])).toEqual([[0.4], [0.3], [0.2], [0.1]]);
+  });
+
+  it('A4 the change against the previous 10 sets the same players at the floor against each other, never a floored window against an unfloored one', async () => {
+    const noSg = (r: ReturnType<typeof round>) => ({ ...r, strokes_gained_total: null });
+    tables.current = {
+      ...seasonTables(),
+      golf_team_members: { data: [{ player: { id: 'p1', first_name: 'Theo', last_name: 'Marchetti' } }, { player: { id: 'p2', first_name: 'Jonah', last_name: 'Okafor' } }] },
+      golf_rounds: {
+        data: [
+          // p1: ten at +1.0, three before them at 0.0: at the floor on both sides.
+          ...Array.from({ length: 10 }, (_, i) => round(`a${i}`, 'p1', i + 1, 72, 1.0)),
+          ...[11, 12, 13].map((n) => round(`ap${n}`, 'p1', n, 72, 0)),
+          // p2: ten at 0.0, and three before them of which one has shots (−6.0): one round with shots is under the floor.
+          ...Array.from({ length: 10 }, (_, i) => round(`b${i}`, 'p2', i + 1, 72, 0)),
+          round('bp11', 'p2', 11, 72, -6),
+          noSg(round('bp12', 'p2', 12, 72, 0)),
+          noSg(round('bp13', 'p2', 13, 72, 0)),
+        ],
+      },
+      golf_round_stats_cache: { data: [] },
+    };
+    const data = await loadTeamStats({ teamId: 't1', window: 'last10' });
+    const sg = data.figures.find((f) => f.key === 'sg')!;
+    // The headline is both players' window (+0.5); the change is p1's own, +1.0 against 0.0. Pooling p2's one earlier round
+    // into the previous stretch would read −1.5 there, and a change of +2.0.
+    expect(sg.value).toBeCloseTo(0.5, 10);
+    expect(sg.delta).toBeCloseTo(1.0, 10);
+    expect(data.sgChange.delta).toBeCloseTo(1.0, 10);
   });
 
   // Swap audit C-24(a): a cache row with no hole scored holds zero birdies; it is no figure, not a round without a birdie.
@@ -1144,29 +1295,83 @@ describe('Stats team · the figures by hand (swap audit §10)', () => {
   });
 });
 
-describe('ScoreLine · the mean label keeps off the line', () => {
-  const at = (values: number[]) => {
-    const { container, unmount } = render(<ScoreLine values={values} from="Aug 30" to="Oct 12" label="Scoring" />);
-    const t = container.querySelector('.ch-stm-chart__t')!;
-    const out = { anchor: t.getAttribute('text-anchor'), y: Number(t.getAttribute('y')), mean: Number(container.querySelector('.ch-stm-chart__mean')!.getAttribute('y1')) };
-    unmount();
-    return out;
-  };
-  it('a line ending above its mean (a better finish) puts the label below the mean at the right end', () => {
-    const r = at([74.8, 74.6, 74.2, 74.4, 73.9, 73.8, 73.1, 73.5, 73.6, 73.4]);
-    expect(r.anchor).toBe('end');
-    expect(r.y).toBeGreaterThan(r.mean);
-  });
-  it('a line ending below its mean keeps the label above it at the right end', () => {
-    const r = at([73.0, 73.2, 73.4, 73.8, 74.6, 74.8]);
-    expect(r.anchor).toBe('end');
-    expect(r.y).toBeLessThan(r.mean);
-  });
-
+describe('Team stats phone · window switch', () => {
   it('a window tap re-renders the switch, not the phone page (the page no longer reads the frame)', () => {
     // The phone page read the shown window itself, so every tap re-rendered every chart in the click (2026-10-14 audit).
     const src = readFileSync('src/clubhouse/screens/stats/StatsTeamPhone.tsx', 'utf8');
     expect(src).not.toMatch(/useShownWindow|useGoWindow/);
     expect(src).toMatch(/<PhoneWindowSwitch /);
+  });
+});
+
+/** Row 70: the insight-first card at the top of Team stats, desktop and phone. */
+describe('Stats team · what changed (row 70)', () => {
+  const real = window.matchMedia;
+  afterEach(() => {
+    window.matchMedia = real;
+  });
+  const asPhone = () => {
+    window.matchMedia = ((q: string) => ({ ...real(q), matches: q === '(max-width: 820px)' })) as typeof window.matchMedia;
+  };
+  const card = () => screen.queryByRole('region', { name: /^(What changed|No clear change)$/ });
+  /** Each line the card states is toned the same way where the page draws that change: the same signed figure in the same ink. */
+  const agreesWithPage = (box: HTMLElement) => {
+    for (const b of box.querySelectorAll('b')) {
+      const ink = b.classList.contains('ch-gain') ? /\b(ch-gain|is-gain)\b/ : /\b(ch-loss|is-loss)\b/;
+      // The page prints a rate's change bare beside its rate ("+3"); the card says the unit ("+3 pts").
+      const signed = b.textContent!.replace(/ pts$/, '');
+      const twins = [...document.querySelectorAll('.ch-gain, .ch-loss, .is-gain, .is-loss')].filter((el) => !box.contains(el) && el.textContent?.includes(signed));
+      expect(twins.some((el) => ink.test(el.getAttribute('class') ?? '')), `${b.textContent} toned alike below`).toBe(true);
+    }
+  };
+
+  for (const surface of ['desktop', 'phone'] as const) {
+    it(`${surface}: states the changes past their standard error, clearest first, each toned as the page tones it`, async () => {
+      if (surface === 'phone') asPhone();
+      wrap(stats());
+      // Greens +3% (1.25 errors) and the scoring average −0.9 (1.18); strokes gained, putts, scrambling and birdies are inside theirs.
+      const box = await waitFor(() => card()!);
+      expect(within(box).getByRole('heading').textContent).toBe('What changed');
+      expect([...box.querySelectorAll('p')].map((p) => p.textContent)).toEqual(['+3 pts Greens in regulation, better than previous 10', '−0.9 Scoring average, better than previous 10']);
+      expect(unsignedTones(box)).toEqual([]);
+      agreesWithPage(box);
+    });
+
+    it(`${surface}: nothing past its error says "No clear change"; nothing to compare draws no card`, async () => {
+      if (surface === 'phone') asPhone();
+      const inside = PREVIEW_TEAM_STATS.figures.map((f) => ({ ...f, se: f.delta == null ? f.se : Math.abs(f.delta) * 2 }));
+      const view = wrap(stats({ figures: inside }));
+      const box = await waitFor(() => card()!);
+      expect(within(box).getByRole('heading').textContent).toBe('No clear change');
+      expect(box.textContent).toContain('Nothing has moved past its usual round-to-round spread vs previous 10.');
+      view.unmount();
+      wrap(stats({ figures: PREVIEW_TEAM_STATS.figures.map((f) => ({ ...f, delta: null, se: null })) }));
+      await waitFor(() => expect(document.querySelector('.ch-st, .ch-stm')).not.toBeNull());
+      expect(card()).toBeNull();
+    });
+  }
+});
+
+describe('Stats team · phone putting rates (A2)', () => {
+  const real = window.matchMedia;
+  afterEach(() => {
+    window.matchMedia = real;
+  });
+  it('a make rate is amber only when it prints below the Tour’s: 69.6% against 70% is level, 68.8% is below', async () => {
+    window.matchMedia = ((q: string) => ({ ...real(q), matches: q === '(max-width: 820px)' })) as typeof window.matchMedia;
+    const bands = [
+      { label: '5–10 ft', made: 87, attempts: 125, bench: 70 },
+      { label: '10–15 ft', made: 86, attempts: 125, bench: 70 },
+    ];
+    wrap(stats({ putting: { ...PREVIEW_TEAM_STATS.putting!, bands } }));
+    const rows = await waitFor(() => {
+      const r = [...document.querySelectorAll('.ch-stm-putt__r')];
+      expect(r).toHaveLength(2);
+      return r;
+    });
+    expect(rows.map((r) => [r.querySelector('b')!.textContent, r.querySelector('b')!.classList.contains('ch-loss')])).toEqual([
+      ['70%', false],
+      ['69%', true],
+    ]);
   });
 });

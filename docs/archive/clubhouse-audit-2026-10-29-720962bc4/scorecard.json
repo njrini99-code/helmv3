@@ -1,0 +1,1290 @@
+{
+ "run": "2026-10-29-720962bc4",
+ "scope": "lean (LEAN-PLAN.md): one pass, two graders on disjoint dimensions, no calibration, no skeptic, no hand test (T3 skipped)",
+ "overall": {
+  "score": 71.2,
+  "grade": "C-"
+ },
+ "phone": {
+  "score": 71.5,
+  "grade": "C-"
+ },
+ "desktop": {
+  "score": 70.6,
+  "grade": "C-"
+ },
+ "families": {
+  "phone": [
+   {
+    "page": "P001",
+    "name": "Shell & navigation",
+    "score": 65,
+    "grade": "D",
+    "use": 3
+   },
+   {
+    "page": "P002",
+    "name": "Home",
+    "score": 80.8,
+    "grade": "B-",
+    "use": 3
+   },
+   {
+    "page": "P003",
+    "name": "Roster",
+    "score": 65,
+    "grade": "D",
+    "use": 1
+   },
+   {
+    "page": "P004",
+    "name": "Stats (team)",
+    "score": 77.3,
+    "grade": "C+",
+    "use": 2
+   },
+   {
+    "page": "P005",
+    "name": "Stats (player profile)",
+    "score": 65,
+    "grade": "D",
+    "use": 2
+   },
+   {
+    "page": "P006",
+    "name": "Calendar",
+    "score": 77,
+    "grade": "C+",
+    "use": 3
+   },
+   {
+    "page": "P007",
+    "name": "Messages",
+    "score": 65,
+    "grade": "D",
+    "use": 3
+   },
+   {
+    "page": "P008",
+    "name": "Settings",
+    "score": 77.1,
+    "grade": "C+",
+    "use": 1
+   },
+   {
+    "page": "P009",
+    "name": "Qualifiers",
+    "score": 74.9,
+    "grade": "C",
+    "use": 1
+   },
+   {
+    "page": "P010",
+    "name": "Team Hub",
+    "score": 65,
+    "grade": "D",
+    "use": 2
+   },
+   {
+    "page": "P011",
+    "name": "Rounds, Live and shot tracking",
+    "score": 65,
+    "grade": "D",
+    "use": 3
+   },
+   {
+    "page": "P012",
+    "name": "Classes (player)",
+    "score": 76.6,
+    "grade": "C+",
+    "use": 1
+   },
+   {
+    "page": "P013",
+    "name": "CoachHelm (Ask and Board)",
+    "score": 75,
+    "grade": "C",
+    "use": 2
+   },
+   {
+    "page": "P014",
+    "name": "Recruiting (coach)",
+    "score": 76.6,
+    "grade": "C+",
+    "use": 1
+   },
+   {
+    "page": "P015",
+    "name": "Sign-in and onboarding",
+    "score": 77.1,
+    "grade": "C+",
+    "use": 1
+   },
+   {
+    "page": "P016",
+    "name": "Tournaments",
+    "score": 75.9,
+    "grade": "C+",
+    "use": 1
+   }
+  ],
+  "desktop": [
+   {
+    "page": "P001",
+    "name": "Shell & navigation",
+    "score": 65,
+    "grade": "D",
+    "use": 3
+   },
+   {
+    "page": "P002",
+    "name": "Home",
+    "score": 77,
+    "grade": "C+",
+    "use": 3
+   },
+   {
+    "page": "P003",
+    "name": "Roster",
+    "score": 65,
+    "grade": "D",
+    "use": 1
+   },
+   {
+    "page": "P004",
+    "name": "Stats (team)",
+    "score": 75.8,
+    "grade": "C+",
+    "use": 2
+   },
+   {
+    "page": "P005",
+    "name": "Stats (player profile)",
+    "score": 65,
+    "grade": "D",
+    "use": 2
+   },
+   {
+    "page": "P006",
+    "name": "Calendar",
+    "score": 72.3,
+    "grade": "C",
+    "use": 3
+   },
+   {
+    "page": "P007",
+    "name": "Messages",
+    "score": 65,
+    "grade": "D",
+    "use": 3
+   },
+   {
+    "page": "P008",
+    "name": "Settings",
+    "score": 77.7,
+    "grade": "C+",
+    "use": 1
+   },
+   {
+    "page": "P009",
+    "name": "Qualifiers",
+    "score": 74.8,
+    "grade": "C",
+    "use": 1
+   },
+   {
+    "page": "P010",
+    "name": "Team Hub",
+    "score": 65,
+    "grade": "D",
+    "use": 2
+   },
+   {
+    "page": "P011",
+    "name": "Rounds, Live and shot tracking",
+    "score": 65,
+    "grade": "D",
+    "use": 3
+   },
+   {
+    "page": "P012",
+    "name": "Classes (player)",
+    "score": 74.4,
+    "grade": "C",
+    "use": 1
+   },
+   {
+    "page": "P013",
+    "name": "CoachHelm (Ask and Board)",
+    "score": 77.3,
+    "grade": "C+",
+    "use": 2
+   },
+   {
+    "page": "P014",
+    "name": "Recruiting (coach)",
+    "score": 77,
+    "grade": "C+",
+    "use": 1
+   },
+   {
+    "page": "P015",
+    "name": "Sign-in and onboarding",
+    "score": 77.7,
+    "grade": "C+",
+    "use": 1
+   },
+   {
+    "page": "P016",
+    "name": "Tournaments",
+    "score": 73.3,
+    "grade": "C",
+    "use": 1
+   }
+  ]
+ },
+ "units": [
+  {
+   "page": "P001",
+   "screen": "Shell & navigation",
+   "surface": "phone",
+   "scores": {
+    "motion": 70,
+    "craft": 87,
+    "touch": 87,
+    "system": 87,
+    "contrast": 72,
+    "a11y": 84,
+    "correctness": 50,
+    "states": 83,
+    "content": 87,
+    "speed": 80
+   },
+   "weighted": 76.8,
+   "capped_by": "S0 F-0001",
+   "score": 65,
+   "grade": "D",
+   "findings": [
+    "F-0001",
+    "F-0008",
+    "F-0017",
+    "F-0018",
+    "F-0021",
+    "F-0025",
+    "F-0041",
+    "F-0046",
+    "F-0055",
+    "F-0056",
+    "F-0059",
+    "F-0062",
+    "F-0066",
+    "F-0072",
+    "F-0073"
+   ],
+   "evidence_complete": false,
+   "tiers": [
+    "T1",
+    "T2"
+   ]
+  },
+  {
+   "page": "P001",
+   "screen": "Shell & navigation",
+   "surface": "desktop",
+   "scores": {
+    "motion": 74,
+    "craft": 87,
+    "touch": 87,
+    "system": 84,
+    "contrast": 72,
+    "a11y": 72,
+    "correctness": 50,
+    "states": 74,
+    "content": 87,
+    "speed": 77
+   },
+   "weighted": 75.2,
+   "capped_by": null,
+   "score": 75.2,
+   "grade": "C",
+   "findings": [
+    "F-0022",
+    "F-0025",
+    "F-0041",
+    "F-0044",
+    "F-0056",
+    "F-0062",
+    "F-0065",
+    "F-0066",
+    "F-0073"
+   ],
+   "evidence_complete": false,
+   "tiers": [
+    "T1"
+   ]
+  },
+  {
+   "page": "P002",
+   "screen": "Home",
+   "surface": "phone",
+   "scores": {
+    "motion": 77,
+    "craft": 87,
+    "touch": 87,
+    "system": 87,
+    "contrast": 72,
+    "a11y": 84,
+    "correctness": 76,
+    "states": 83,
+    "content": 87,
+    "speed": 76
+   },
+   "weighted": 80.8,
+   "capped_by": null,
+   "score": 80.8,
+   "grade": "B-",
+   "findings": [
+    "F-0017",
+    "F-0026",
+    "F-0032",
+    "F-0035",
+    "F-0059",
+    "F-0074"
+   ],
+   "evidence_complete": false,
+   "tiers": [
+    "T1",
+    "T2"
+   ]
+  },
+  {
+   "page": "P002",
+   "screen": "Home",
+   "surface": "desktop",
+   "scores": {
+    "motion": 74,
+    "craft": 90,
+    "touch": 84,
+    "system": 84,
+    "contrast": 50,
+    "a11y": 76,
+    "correctness": 84,
+    "states": 74,
+    "content": 87,
+    "speed": 77
+   },
+   "weighted": 77,
+   "capped_by": null,
+   "score": 77,
+   "grade": "C+",
+   "findings": [
+    "F-0022",
+    "F-0035",
+    "F-0036",
+    "F-0038",
+    "F-0044"
+   ],
+   "evidence_complete": false,
+   "tiers": [
+    "T1"
+   ]
+  },
+  {
+   "page": "P003",
+   "screen": "Roster",
+   "surface": "phone",
+   "scores": {
+    "motion": 74,
+    "craft": 84,
+    "touch": 74,
+    "system": 80,
+    "contrast": 72,
+    "a11y": 80,
+    "correctness": 65,
+    "states": 74,
+    "content": 85,
+    "speed": 74
+   },
+   "weighted": 75.2,
+   "capped_by": null,
+   "score": 75.2,
+   "grade": "C",
+   "findings": [
+    "F-0018",
+    "F-0073"
+   ],
+   "evidence_complete": false,
+   "tiers": [
+    "T1"
+   ]
+  },
+  {
+   "page": "P003",
+   "screen": "Roster",
+   "surface": "desktop",
+   "scores": {
+    "motion": 74,
+    "craft": 84,
+    "touch": 74,
+    "system": 84,
+    "contrast": 72,
+    "a11y": 80,
+    "correctness": 65,
+    "states": 74,
+    "content": 85,
+    "speed": 74
+   },
+   "weighted": 75.6,
+   "capped_by": "S0 F-0002",
+   "score": 65,
+   "grade": "D",
+   "findings": [
+    "F-0002",
+    "F-0022",
+    "F-0073"
+   ],
+   "evidence_complete": false,
+   "tiers": [
+    "T1"
+   ]
+  },
+  {
+   "page": "P004",
+   "screen": "Stats (team)",
+   "surface": "phone",
+   "scores": {
+    "motion": 74,
+    "craft": 80,
+    "touch": 80,
+    "system": 80,
+    "contrast": 72,
+    "a11y": 76,
+    "correctness": 76,
+    "states": 83,
+    "content": 87,
+    "speed": 74
+   },
+   "weighted": 77.3,
+   "capped_by": null,
+   "score": 77.3,
+   "grade": "C+",
+   "findings": [
+    "F-0017",
+    "F-0021",
+    "F-0026",
+    "F-0035",
+    "F-0050",
+    "F-0059",
+    "F-0063",
+    "F-0073"
+   ],
+   "evidence_complete": false,
+   "tiers": [
+    "T1"
+   ]
+  },
+  {
+   "page": "P004",
+   "screen": "Stats (team)",
+   "surface": "desktop",
+   "scores": {
+    "motion": 74,
+    "craft": 84,
+    "touch": 84,
+    "system": 84,
+    "contrast": 50,
+    "a11y": 72,
+    "correctness": 84,
+    "states": 74,
+    "content": 87,
+    "speed": 77
+   },
+   "weighted": 75.8,
+   "capped_by": null,
+   "score": 75.8,
+   "grade": "C+",
+   "findings": [
+    "F-0022",
+    "F-0035",
+    "F-0037",
+    "F-0044",
+    "F-0063",
+    "F-0073"
+   ],
+   "evidence_complete": false,
+   "tiers": [
+    "T1"
+   ]
+  },
+  {
+   "page": "P005",
+   "screen": "Stats (player profile)",
+   "surface": "phone",
+   "scores": {
+    "motion": 74,
+    "craft": 80,
+    "touch": 87,
+    "system": 80,
+    "contrast": 53,
+    "a11y": 76,
+    "correctness": 72,
+    "states": 79,
+    "content": 87,
+    "speed": 76
+   },
+   "weighted": 75.7,
+   "capped_by": "S0 F-0005",
+   "score": 65,
+   "grade": "D",
+   "findings": [
+    "F-0005",
+    "F-0026",
+    "F-0034",
+    "F-0043",
+    "F-0050",
+    "F-0059",
+    "F-0061",
+    "F-0063",
+    "F-0069"
+   ],
+   "evidence_complete": false,
+   "tiers": [
+    "T1"
+   ]
+  },
+  {
+   "page": "P005",
+   "screen": "Stats (player profile)",
+   "surface": "desktop",
+   "scores": {
+    "motion": 74,
+    "craft": 84,
+    "touch": 84,
+    "system": 84,
+    "contrast": 50,
+    "a11y": 68,
+    "correctness": 80,
+    "states": 74,
+    "content": 83,
+    "speed": 77
+   },
+   "weighted": 74.8,
+   "capped_by": "S0 F-0005",
+   "score": 65,
+   "grade": "D",
+   "findings": [
+    "F-0005",
+    "F-0015",
+    "F-0022",
+    "F-0043",
+    "F-0044",
+    "F-0063",
+    "F-0064",
+    "F-0067",
+    "F-0069"
+   ],
+   "evidence_complete": false,
+   "tiers": [
+    "T1"
+   ]
+  },
+  {
+   "page": "P006",
+   "screen": "Calendar",
+   "surface": "phone",
+   "scores": {
+    "motion": 74,
+    "craft": 90,
+    "touch": 74,
+    "system": 84,
+    "contrast": 72,
+    "a11y": 84,
+    "correctness": 84,
+    "states": 75,
+    "content": 87,
+    "speed": 65
+   },
+   "weighted": 78,
+   "capped_by": "S1 F-0007",
+   "score": 77,
+   "grade": "C+",
+   "findings": [
+    "F-0007",
+    "F-0017",
+    "F-0018",
+    "F-0021",
+    "F-0023",
+    "F-0027",
+    "F-0047",
+    "F-0053",
+    "F-0059",
+    "F-0071"
+   ],
+   "evidence_complete": false,
+   "tiers": [
+    "T1",
+    "T2"
+   ]
+  },
+  {
+   "page": "P006",
+   "screen": "Calendar",
+   "surface": "desktop",
+   "scores": {
+    "motion": 74,
+    "craft": 90,
+    "touch": 84,
+    "system": 80,
+    "contrast": 50,
+    "a11y": 72,
+    "correctness": 66,
+    "states": 66,
+    "content": 87,
+    "speed": 65
+   },
+   "weighted": 72.3,
+   "capped_by": null,
+   "score": 72.3,
+   "grade": "C",
+   "findings": [
+    "F-0010",
+    "F-0022",
+    "F-0028",
+    "F-0029",
+    "F-0036",
+    "F-0039",
+    "F-0044",
+    "F-0053",
+    "F-0057",
+    "F-0058"
+   ],
+   "evidence_complete": false,
+   "tiers": [
+    "T1"
+   ]
+  },
+  {
+   "page": "P007",
+   "screen": "Messages",
+   "surface": "phone",
+   "scores": {
+    "motion": 74,
+    "craft": 80,
+    "touch": 80,
+    "system": 87,
+    "contrast": 72,
+    "a11y": 80,
+    "correctness": 65,
+    "states": 83,
+    "content": 74,
+    "speed": 70
+   },
+   "weighted": 75.6,
+   "capped_by": "S0 F-0003",
+   "score": 65,
+   "grade": "D",
+   "findings": [
+    "F-0003",
+    "F-0014",
+    "F-0021",
+    "F-0045",
+    "F-0048",
+    "F-0051",
+    "F-0052",
+    "F-0059",
+    "F-0071",
+    "F-0073"
+   ],
+   "evidence_complete": false,
+   "tiers": [
+    "T1",
+    "T2"
+   ]
+  },
+  {
+   "page": "P007",
+   "screen": "Messages",
+   "surface": "desktop",
+   "scores": {
+    "motion": 74,
+    "craft": 84,
+    "touch": 84,
+    "system": 84,
+    "contrast": 72,
+    "a11y": 76,
+    "correctness": 50,
+    "states": 74,
+    "content": 74,
+    "speed": 65
+   },
+   "weighted": 72.8,
+   "capped_by": "S0 F-0003",
+   "score": 65,
+   "grade": "D",
+   "findings": [
+    "F-0003",
+    "F-0004",
+    "F-0022",
+    "F-0044",
+    "F-0045",
+    "F-0073"
+   ],
+   "evidence_complete": false,
+   "tiers": [
+    "T1"
+   ]
+  },
+  {
+   "page": "P008",
+   "screen": "Settings",
+   "surface": "phone",
+   "scores": {
+    "motion": 74,
+    "craft": 84,
+    "touch": 74,
+    "system": 80,
+    "contrast": 72,
+    "a11y": 80,
+    "correctness": 80,
+    "states": 74,
+    "content": 87,
+    "speed": 74
+   },
+   "weighted": 77.1,
+   "capped_by": null,
+   "score": 77.1,
+   "grade": "C+",
+   "findings": [
+    "F-0021"
+   ],
+   "evidence_complete": false,
+   "tiers": [
+    "T1"
+   ]
+  },
+  {
+   "page": "P008",
+   "screen": "Settings",
+   "surface": "desktop",
+   "scores": {
+    "motion": 74,
+    "craft": 84,
+    "touch": 74,
+    "system": 84,
+    "contrast": 72,
+    "a11y": 80,
+    "correctness": 80,
+    "states": 74,
+    "content": 87,
+    "speed": 74
+   },
+   "weighted": 77.7,
+   "capped_by": null,
+   "score": 77.7,
+   "grade": "C+",
+   "findings": [
+    "F-0022"
+   ],
+   "evidence_complete": false,
+   "tiers": [
+    "T1"
+   ]
+  },
+  {
+   "page": "P009",
+   "screen": "Qualifiers",
+   "surface": "phone",
+   "scores": {
+    "motion": 74,
+    "craft": 84,
+    "touch": 74,
+    "system": 80,
+    "contrast": 53,
+    "a11y": 80,
+    "correctness": 80,
+    "states": 74,
+    "content": 79,
+    "speed": 74
+   },
+   "weighted": 74.9,
+   "capped_by": null,
+   "score": 74.9,
+   "grade": "C",
+   "findings": [
+    "F-0021",
+    "F-0040",
+    "F-0068",
+    "F-0069"
+   ],
+   "evidence_complete": false,
+   "tiers": [
+    "T1"
+   ]
+  },
+  {
+   "page": "P009",
+   "screen": "Qualifiers",
+   "surface": "desktop",
+   "scores": {
+    "motion": 74,
+    "craft": 84,
+    "touch": 74,
+    "system": 84,
+    "contrast": 53,
+    "a11y": 80,
+    "correctness": 80,
+    "states": 74,
+    "content": 83,
+    "speed": 74
+   },
+   "weighted": 74.8,
+   "capped_by": null,
+   "score": 74.8,
+   "grade": "C",
+   "findings": [
+    "F-0022",
+    "F-0040",
+    "F-0069"
+   ],
+   "evidence_complete": false,
+   "tiers": [
+    "T1"
+   ]
+  },
+  {
+   "page": "P010",
+   "screen": "Team Hub",
+   "surface": "phone",
+   "scores": {
+    "motion": 74,
+    "craft": 77,
+    "touch": 74,
+    "system": 80,
+    "contrast": 64,
+    "a11y": 76,
+    "correctness": 65,
+    "states": 74,
+    "content": 87,
+    "speed": 76
+   },
+   "weighted": 73.4,
+   "capped_by": null,
+   "score": 73.4,
+   "grade": "C",
+   "findings": [
+    "F-0024",
+    "F-0033",
+    "F-0043",
+    "F-0045",
+    "F-0063"
+   ],
+   "evidence_complete": false,
+   "tiers": [
+    "T1"
+   ]
+  },
+  {
+   "page": "P010",
+   "screen": "Team Hub",
+   "surface": "desktop",
+   "scores": {
+    "motion": 74,
+    "craft": 84,
+    "touch": 74,
+    "system": 84,
+    "contrast": 64,
+    "a11y": 76,
+    "correctness": 51,
+    "states": 74,
+    "content": 87,
+    "speed": 65
+   },
+   "weighted": 71.6,
+   "capped_by": "S0 F-0002",
+   "score": 65,
+   "grade": "D",
+   "findings": [
+    "F-0002",
+    "F-0009",
+    "F-0022",
+    "F-0043",
+    "F-0045",
+    "F-0063"
+   ],
+   "evidence_complete": false,
+   "tiers": [
+    "T1"
+   ]
+  },
+  {
+   "page": "P011",
+   "screen": "Rounds, Live and shot tracking",
+   "surface": "phone",
+   "scores": {
+    "motion": 70,
+    "craft": 90,
+    "touch": 80,
+    "system": 87,
+    "contrast": 50,
+    "a11y": 80,
+    "correctness": 84,
+    "states": 50,
+    "content": 87,
+    "speed": 65
+   },
+   "weighted": 73.7,
+   "capped_by": "S0 F-0005",
+   "score": 65,
+   "grade": "D",
+   "findings": [
+    "F-0005",
+    "F-0006",
+    "F-0011",
+    "F-0012",
+    "F-0013",
+    "F-0019",
+    "F-0020",
+    "F-0021",
+    "F-0030",
+    "F-0031",
+    "F-0035",
+    "F-0045",
+    "F-0059",
+    "F-0060",
+    "F-0061"
+   ],
+   "evidence_complete": false,
+   "tiers": [
+    "T1",
+    "T2"
+   ]
+  },
+  {
+   "page": "P011",
+   "screen": "Rounds, Live and shot tracking",
+   "surface": "desktop",
+   "scores": {
+    "motion": 74,
+    "craft": 84,
+    "touch": 77,
+    "system": 84,
+    "contrast": 50,
+    "a11y": 76,
+    "correctness": 84,
+    "states": 74,
+    "content": 87,
+    "speed": 77
+   },
+   "weighted": 75.4,
+   "capped_by": "S0 F-0005",
+   "score": 65,
+   "grade": "D",
+   "findings": [
+    "F-0005",
+    "F-0022",
+    "F-0031",
+    "F-0035",
+    "F-0044",
+    "F-0045",
+    "F-0049"
+   ],
+   "evidence_complete": false,
+   "tiers": [
+    "T1"
+   ]
+  },
+  {
+   "page": "P012",
+   "screen": "Classes (player)",
+   "surface": "phone",
+   "scores": {
+    "motion": 74,
+    "craft": 84,
+    "touch": 74,
+    "system": 80,
+    "contrast": 72,
+    "a11y": 80,
+    "correctness": 80,
+    "states": 74,
+    "content": 74,
+    "speed": 74
+   },
+   "weighted": 76.6,
+   "capped_by": null,
+   "score": 76.6,
+   "grade": "C+",
+   "findings": [
+    "F-0035"
+   ],
+   "evidence_complete": false,
+   "tiers": [
+    "T1"
+   ]
+  },
+  {
+   "page": "P012",
+   "screen": "Classes (player)",
+   "surface": "desktop",
+   "scores": {
+    "motion": 74,
+    "craft": 84,
+    "touch": 74,
+    "system": 84,
+    "contrast": 53,
+    "a11y": 80,
+    "correctness": 80,
+    "states": 74,
+    "content": 74,
+    "speed": 74
+   },
+   "weighted": 74.4,
+   "capped_by": null,
+   "score": 74.4,
+   "grade": "C",
+   "findings": [
+    "F-0035"
+   ],
+   "evidence_complete": false,
+   "tiers": [
+    "T1"
+   ]
+  },
+  {
+   "page": "P013",
+   "screen": "CoachHelm (Ask and Board)",
+   "surface": "phone",
+   "scores": {
+    "motion": 74,
+    "craft": 84,
+    "touch": 65,
+    "system": 80,
+    "contrast": 72,
+    "a11y": 72,
+    "correctness": 80,
+    "states": 74,
+    "content": 79,
+    "speed": 74
+   },
+   "weighted": 75,
+   "capped_by": null,
+   "score": 75,
+   "grade": "C",
+   "findings": [
+    "F-0021",
+    "F-0042",
+    "F-0069",
+    "F-0070"
+   ],
+   "evidence_complete": false,
+   "tiers": [
+    "T1"
+   ]
+  },
+  {
+   "page": "P013",
+   "screen": "CoachHelm (Ask and Board)",
+   "surface": "desktop",
+   "scores": {
+    "motion": 74,
+    "craft": 84,
+    "touch": 74,
+    "system": 84,
+    "contrast": 72,
+    "a11y": 80,
+    "correctness": 80,
+    "states": 74,
+    "content": 79,
+    "speed": 74
+   },
+   "weighted": 77.3,
+   "capped_by": null,
+   "score": 77.3,
+   "grade": "C+",
+   "findings": [
+    "F-0022",
+    "F-0069"
+   ],
+   "evidence_complete": false,
+   "tiers": [
+    "T1"
+   ]
+  },
+  {
+   "page": "P014",
+   "screen": "Recruiting (coach)",
+   "surface": "phone",
+   "scores": {
+    "motion": 74,
+    "craft": 84,
+    "touch": 74,
+    "system": 80,
+    "contrast": 72,
+    "a11y": 80,
+    "correctness": 80,
+    "states": 74,
+    "content": 74,
+    "speed": 74
+   },
+   "weighted": 76.6,
+   "capped_by": null,
+   "score": 76.6,
+   "grade": "C+",
+   "findings": [],
+   "evidence_complete": false,
+   "tiers": [
+    "T1"
+   ]
+  },
+  {
+   "page": "P014",
+   "screen": "Recruiting (coach)",
+   "surface": "desktop",
+   "scores": {
+    "motion": 74,
+    "craft": 84,
+    "touch": 74,
+    "system": 84,
+    "contrast": 72,
+    "a11y": 80,
+    "correctness": 80,
+    "states": 74,
+    "content": 74,
+    "speed": 74
+   },
+   "weighted": 77,
+   "capped_by": null,
+   "score": 77,
+   "grade": "C+",
+   "findings": [],
+   "evidence_complete": false,
+   "tiers": [
+    "T1"
+   ]
+  },
+  {
+   "page": "P015",
+   "screen": "Sign-in and onboarding",
+   "surface": "phone",
+   "scores": {
+    "motion": 74,
+    "craft": 84,
+    "touch": 74,
+    "system": 80,
+    "contrast": 72,
+    "a11y": 80,
+    "correctness": 80,
+    "states": 74,
+    "content": 87,
+    "speed": 74
+   },
+   "weighted": 77.1,
+   "capped_by": null,
+   "score": 77.1,
+   "grade": "C+",
+   "findings": [],
+   "evidence_complete": false,
+   "tiers": [
+    "T1"
+   ]
+  },
+  {
+   "page": "P015",
+   "screen": "Sign-in and onboarding",
+   "surface": "desktop",
+   "scores": {
+    "motion": 74,
+    "craft": 84,
+    "touch": 74,
+    "system": 84,
+    "contrast": 72,
+    "a11y": 80,
+    "correctness": 80,
+    "states": 74,
+    "content": 87,
+    "speed": 74
+   },
+   "weighted": 77.7,
+   "capped_by": null,
+   "score": 77.7,
+   "grade": "C+",
+   "findings": [],
+   "evidence_complete": false,
+   "tiers": [
+    "T1"
+   ]
+  },
+  {
+   "page": "P016",
+   "screen": "Tournaments",
+   "surface": "phone",
+   "scores": {
+    "motion": 74,
+    "craft": 80,
+    "touch": 74,
+    "system": 77,
+    "contrast": 72,
+    "a11y": 80,
+    "correctness": 80,
+    "states": 74,
+    "content": 74,
+    "speed": 74
+   },
+   "weighted": 75.9,
+   "capped_by": null,
+   "score": 75.9,
+   "grade": "C+",
+   "findings": [
+    "F-0021",
+    "F-0024",
+    "F-0035",
+    "F-0054"
+   ],
+   "evidence_complete": false,
+   "tiers": [
+    "T1"
+   ]
+  },
+  {
+   "page": "P016",
+   "screen": "Tournaments",
+   "surface": "desktop",
+   "scores": {
+    "motion": 74,
+    "craft": 84,
+    "touch": 74,
+    "system": 84,
+    "contrast": 53,
+    "a11y": 65,
+    "correctness": 80,
+    "states": 74,
+    "content": 74,
+    "speed": 74
+   },
+   "weighted": 73.3,
+   "capped_by": null,
+   "score": 73.3,
+   "grade": "C",
+   "findings": [
+    "F-0016",
+    "F-0022",
+    "F-0035"
+   ],
+   "evidence_complete": false,
+   "tiers": [
+    "T1"
+   ]
+  }
+ ],
+ "gates": {
+  "blocks-deploy": 2,
+  "blocks-flip": 25,
+  "after": 47
+ },
+ "severity": {
+  "S0": 5,
+  "S1": 11,
+  "S2": 29,
+  "S3": 25,
+  "S4": 4
+ }
+}

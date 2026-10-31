@@ -5,6 +5,7 @@ import type { ChMessagesApi } from '../screens/messages/MessagesView';
 import { MessagesView } from '../screens/messages/MessagesScreen';
 import type { ChAnnouncement, ChConv, ChFile, ChMember, ChMsg, ChMute, ChPerson, ChReaction, ChReactionKey } from '../screens/messages/model';
 import { useToast } from '../ui/Toast';
+import { buildPollPayload, encodeChoice, parsePollPayload, pollFallbackText, tallyPoll, type Poll, type PollResponseRow } from '@/lib/golf/message-polls';
 
 /**
  * The handoff's Messages sample (design/handoff/msg-data.js), driven by local
@@ -29,7 +30,7 @@ const all = ['dan', 'theo', 'sofia', 'ava', 'jonah', 'eli', 'priya'];
 const baseConvs: ChConv[] = [
   { id: 'team', group: true, title: 'Varsity team', subtitle: '', memberIds: all, memberCount: 8, unread: 3, lastAt: at(14, 14, 31), lastSenderId: 'ava', lastText: 'Does the bus leave from Finley or the field house?', creatorId: 'me' },
   { id: 'jonah', group: false, title: 'Jonah Okafor', subtitle: 'Sophomore', memberIds: ['jonah'], memberCount: 2, unread: 1, lastAt: at(14, 13, 58), lastSenderId: 'jonah', lastText: 'Can we push to 5? I have ECON until 2:15 and then a TA meeting.', creatorId: 'me' },
-  { id: 'travel', group: true, title: 'Pinehurst travel', subtitle: '', memberIds: all, memberCount: 8, unread: 0, lastAt: at(14, 11, 4), lastSenderId: 'me', lastText: 'Room list is pinned. Two to a room, same as Wolfpack.', creatorId: 'me' },
+  { id: 'travel', group: true, title: 'Pinehurst travel', subtitle: '', memberIds: all, memberCount: 8, unread: 0, lastAt: at(14, 11, 6), lastSenderId: 'me', lastText: 'Poll: Which van are you riding in Thursday?', lastIsPoll: true, creatorId: 'me' },
   { id: 'dan', group: false, title: 'Dan Whitfield', subtitle: 'Assistant coach', memberIds: ['dan'], memberCount: 2, unread: 0, lastAt: at(14, 9, 20), lastSenderId: 'dan', lastText: 'I can run the short-game block if you take Jonah.', creatorId: 'dan' },
   { id: 'eli', group: false, title: 'Eli Brandt', subtitle: 'Junior', memberIds: ['eli'], memberCount: 2, unread: 0, lastAt: at(13, 16, 10), lastSenderId: 'me', lastText: 'You need two posted rounds before Thursday.', creatorId: 'me' },
   { id: 'priya', group: false, title: 'Priya Natarajan', subtitle: 'Freshman', memberIds: ['priya'], memberCount: 2, unread: 0, lastAt: at(13, 19, 44), lastSenderId: 'priya', lastText: 'Thank you coach. I will be at the ladder.', creatorId: 'me' },
@@ -51,6 +52,45 @@ const msg = (id: string, senderId: string, when: string, text: string, extra: Pa
   ...extra,
 });
 
+/**
+ * Premium features P-2: a coach's van poll in the travel group, five of eight in, with no end time. The poll clock
+ * never runs earlier than the real date, so a fixed end in October 2026 read as "Voting ended" and the preview showed
+ * no open poll to vote on.
+ */
+const vanPoll: Poll = {
+  question: 'Which van are you riding in Thursday?',
+  options: [
+    { id: 'o1', label: 'Van 1 with Coach Reyes' },
+    { id: 'o2', label: 'Van 2 with Coach Whitfield' },
+  ],
+  multi: false,
+  closesAt: null,
+  closedAt: null,
+};
+/** P-2 slice 8: a closed multi-answer poll, so the preview draws a final result beside the open one. */
+const daysPoll: Poll = {
+  question: 'Which days work for qualifying next week?',
+  options: [
+    { id: 'o1', label: 'Monday' },
+    { id: 'o2', label: 'Tuesday' },
+    { id: 'o3', label: 'Wednesday' },
+  ],
+  multi: true,
+  closesAt: null,
+  closedAt: at(13, 20, 0),
+};
+const baseVotes: PollResponseRow[] = [
+  { message_id: 'v0', user_id: 'theo', choice: 'o1,o2' },
+  { message_id: 'v0', user_id: 'sofia', choice: 'o2' },
+  { message_id: 'v0', user_id: 'ava', choice: 'o1,o3' },
+  { message_id: 'v0', user_id: 'dan', choice: 'o2' },
+  { message_id: 'v3', user_id: 'theo', choice: 'o1' },
+  { message_id: 'v3', user_id: 'sofia', choice: 'o2' },
+  { message_id: 'v3', user_id: 'ava', choice: 'o1' },
+  { message_id: 'v3', user_id: 'dan', choice: 'o2' },
+  { message_id: 'v3', user_id: 'priya', choice: 'o1' },
+];
+
 const baseThreads: Record<string, ChMsg[]> = {
   team: [
     msg('t1', 'me', at(13, 18, 12), 'Pairings for Thursday are posted in Documents. First tee 8:42.'),
@@ -67,8 +107,10 @@ const baseThreads: Record<string, ChMsg[]> = {
     msg('j2', 'jonah', at(14, 13, 58), 'Can we push to 5? I have ECON until 2:15 and then a TA meeting.'),
   ],
   travel: [
+    msg('v0', 'me', at(13, 9, 15), 'Poll: Which days work for qualifying next week?\n1. Monday\n2. Tuesday\n3. Wednesday\nVote in GolfHelm.', { poll: daysPoll }),
     msg('v1', 'me', at(14, 11, 2), '', { hasAttachments: true }),
     msg('v2', 'me', at(14, 11, 4), 'Room list is pinned. Two to a room, same as Wolfpack.'),
+    msg('v3', 'me', at(14, 11, 6), 'Poll: Which van are you riding in Thursday?\n1. Van 1 with Coach Reyes\n2. Van 2 with Coach Whitfield\nVote in GolfHelm.', { poll: vanPoll }),
   ],
   dan: [msg('d1', 'dan', at(14, 9, 20), 'I can run the short-game block if you take Jonah.')],
   eli: [msg('e1', 'me', at(13, 16, 10), 'You need two posted rounds before Thursday.')],
@@ -144,6 +186,7 @@ export function PreviewMessages({ state, role = 'coach' }: { state?: string; rol
   const [convs, setConvs] = useState<ChConv[]>(state === 'empty' ? [] : cast.convs);
   const [threads, setThreads] = useState(cast.threads);
   const [reactions, setReactions] = useState(baseReactions);
+  const [votes, setVotes] = useState<PollResponseRow[]>(baseVotes);
   // P007 D4: as the live screen does, only desktop opens the team thread beside the rail, after hydration; the phone
   // stays on the inbox instead of pushing the thread in over it.
   const [selectedId, setSelectedId] = useState<string | null>(null);
@@ -154,6 +197,9 @@ export function PreviewMessages({ state, role = 'coach' }: { state?: string; rol
   const [anns, setAnns] = useState<ChAnnouncement[]>(state === 'empty' ? [] : baseAnns);
   const [annId, setAnnId] = useState<string | null>(state === 'announcement' ? 'an1' : null);
   const [mute, setMute] = useState<ChMute>({ muted: false, until: null });
+  // Any row's mute (owner decision 14), the open one's included: the preview's own record by conversation.
+  const [mutes, setMutes] = useState<Record<string, ChMute>>({});
+  const muteOf = useCallback(async (id: string): Promise<ChMute> => mutes[id] ?? { muted: false, until: null }, [mutes]);
 
   const files = useCallback(async (id: string) => (state === 'files-failed' ? null : (previewFiles[id] ?? [])), [state]);
   const addCandidates = useCallback(async () => (state === 'add-failed' ? null : previewCandidates), [state]);
@@ -179,7 +225,7 @@ export function PreviewMessages({ state, role = 'coach' }: { state?: string; rol
     select: (id) => {
       setSelectedId(id);
       if (id) setAnnId(null);
-      if (id) setConvs((cs) => cs.map((c) => (c.id === id ? { ...c, unread: 0 } : c)));
+      if (id) setConvs((cs) => cs.map((c) => (c.id === id ? { ...c, unread: 0, markedUnread: false } : c)));
     },
     msgs: selectedId ? (threads[selectedId] ?? []) : [],
     msgsLoading: false,
@@ -226,11 +272,43 @@ export function PreviewMessages({ state, role = 'coach' }: { state?: string; rol
         return { ...r, [messageId]: list.filter((x) => x.count > 0) };
       }),
     attachments: previewAttachments,
+    polls: {
+      tally: (messageId, poll) => tallyPoll(poll, votes, messageId, 'me'),
+      vote: (messageId, poll, optionIds) => {
+        const choice = optionIds.length ? encodeChoice(poll, optionIds) : null;
+        setVotes((v) => [...v.filter((r) => !(r.message_id === messageId && r.user_id === 'me')), ...(choice ? [{ message_id: messageId, user_id: 'me', choice }] : [])]);
+      },
+      pending: new Set<string>(),
+      error: null,
+      retry: () => undefined,
+      send: async (conversationId, draft) => {
+        const built = buildPollPayload(draft);
+        if (!built.ok) return { ok: false, error: 'Check the question and choices.' };
+        const text = pollFallbackText(built.payload);
+        const m = msg(`n${Date.now()}`, 'me', NOW, text, { seen: false, poll: parsePollPayload(built.payload) });
+        setThreads((t) => ({ ...t, [conversationId]: [...(t[conversationId] ?? []), m] }));
+        setConvs((cs) => {
+          const c = cs.find((x) => x.id === conversationId)!;
+          return [{ ...c, lastAt: NOW, lastSenderId: 'me', lastText: `Poll: ${built.payload.question}` }, ...cs.filter((x) => x.id !== conversationId)];
+        });
+        return { ok: true };
+      },
+      close: async (messageId) => {
+        setThreads((t) => Object.fromEntries(Object.entries(t).map(([k, v]) => [k, v.map((m) => (m.id === messageId && m.poll ? { ...m, poll: { ...m.poll, closedAt: NOW } } : m))])));
+        toast({ title: 'Poll closed' });
+        return true;
+      },
+    },
     members: members.filter((m) => m.userId === 'me' || all.includes(m.userId)),
     membersError: false,
     retryMembers: () => {},
     leave: async () => true,
-    deleteConversation: async () => true,
+    deleteConversation: async (id) => {
+      setConvs((cs) => cs.filter((c) => c.id !== id));
+      if (id === selectedId) setSelectedId(null);
+      toast({ title: 'Conversation deleted' });
+      return true;
+    },
     addCandidates,
     addMember: async (_userId, name) => {
       toast({ title: `Added ${name.split(' ')[0]} to ${convs.find((c) => c.id === selectedId)?.title ?? 'the group'}` });
@@ -270,6 +348,18 @@ export function PreviewMessages({ state, role = 'coach' }: { state?: string; rol
     setMute: async (muted, hours) => {
       setMute({ muted, until: muted && hours ? new Date(Date.parse(NOW) + hours * 3600000).toISOString() : null });
       toast({ title: muted ? 'Conversation muted' : 'Notifications back on' });
+      return true;
+    },
+    muteOf,
+    muteConversation: async (id, muted, hours) => {
+      const next = { muted, until: muted && hours ? new Date(Date.parse(NOW) + hours * 3600000).toISOString() : null };
+      setMutes((m) => ({ ...m, [id]: next }));
+      if (id === selectedId) setMute(next);
+      toast({ title: muted ? 'Conversation muted' : 'Notifications back on', replace: 'mute' });
+      return true;
+    },
+    setRead: async (id, read) => {
+      setConvs((cs) => cs.map((c) => (c.id === id ? { ...c, unread: read ? 0 : c.unread, markedUnread: !read } : c)));
       return true;
     },
     announcements: anns,

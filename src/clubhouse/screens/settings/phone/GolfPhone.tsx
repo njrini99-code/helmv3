@@ -1,10 +1,11 @@
 'use client';
 
 import { useState } from 'react';
-import { golfDetailsProblem, type ChGolfDetails, type ChMembership, type ChSettingsData, type ChSettingsWrites } from '../model';
+import { golfDetailsProblem, golfDetailsShown, golfDetailsToSave, type ChGolfDetails, type ChMembership, type ChSettingsData, type ChSettingsWrites } from '../model';
 import { SAVE_COPY, useMembership } from '../hooks';
 import { ReadFailed, ReadsFailed, useSaveAction } from '../parts';
 import { golfReadsFailed } from '../Golf';
+import { LiveRoundsGroup } from '../LiveRounds';
 import { ActionSheet, FormSheet, useSheetDraft } from './sheets';
 import { FieldRow, Group, NavRow, Problem } from './ui';
 
@@ -22,6 +23,7 @@ export function GolfPhone({ data, writes }: { data: ChSettingsData; writes: ChSe
       ) : (
         data.golf && <DetailsPhone details={data.golf.value} writes={writes} />
       )}
+      <LiveRoundsGroup />
       {data.membership?.error ? (
         <Group title="Team">
           <ReadFailed bare what="Your team membership" code="CH-8210" onRetry={writes.refresh} covered={covered} />
@@ -33,8 +35,8 @@ export function GolfPhone({ data, writes }: { data: ChSettingsData; writes: ChSe
   );
 }
 
+// One handicap, "Handicap index", holding the number Home shows (model shownHandicapIndex).
 const FIELDS: Array<{ key: keyof ChGolfDetails; label: string }> = [
-  { key: 'handicap', label: 'Handicap' },
   { key: 'handicapIndex', label: 'Handicap index' },
   { key: 'graduationYear', label: 'Graduation year' },
   { key: 'phone', label: 'Phone' },
@@ -44,11 +46,12 @@ const FIELDS: Array<{ key: keyof ChGolfDetails; label: string }> = [
 
 function DetailsPhone({ details, writes }: { details: ChGolfDetails; writes: ChSettingsWrites }) {
   const [editing, setEditing] = useState(false);
+  const shown = golfDetailsShown(details);
   return (
     <>
       <Group title="Golf details" note="Your coaches and teammates see your handicap and class on the roster.">
         {FIELDS.map((f) => (
-          <NavRow key={f.key} label={f.label} value={details[f.key] || 'Not set'} onClick={() => setEditing(true)} />
+          <NavRow key={f.key} label={f.label} value={shown[f.key] || 'Not set'} onClick={() => setEditing(true)} />
         ))}
       </Group>
       <GolfSheet open={editing} onClose={() => setEditing(false)} details={details} writes={writes} />
@@ -56,10 +59,10 @@ function DetailsPhone({ details, writes }: { details: ChGolfDetails; writes: ChS
   );
 }
 
-/** Golf details in a full-height sheet: Save stays off until something changes (CH-8016, CH-8112 to CH-8115). */
+/** Golf details in a full-height sheet: Save stays off until something changes (CH-8016, CH-8113 to CH-8115). */
 function GolfSheet({ open, onClose, details, writes }: { open: boolean; onClose: () => void; details: ChGolfDetails; writes: ChSettingsWrites }) {
-  const { draft, setDraft, dirty } = useSheetDraft(details, open);
-  const save = useSaveAction('settings.saveGolf', writes.saveGolf, SAVE_COPY.golf, () => onClose());
+  const { draft, setDraft, dirty } = useSheetDraft(golfDetailsShown(details), open);
+  const save = useSaveAction('settings.saveGolf', (d: ChGolfDetails) => writes.saveGolf(golfDetailsToSave(d, details)), SAVE_COPY.golf, () => onClose());
   const set = (k: keyof ChGolfDetails) => (e: React.ChangeEvent<HTMLInputElement>) => { const value = e.target.value; setDraft((d) => ({ ...d, [k]: value })); };
   const invalid = golfDetailsProblem(draft);
   return (
@@ -76,7 +79,6 @@ function GolfSheet({ open, onClose, details, writes }: { open: boolean; onClose:
       note="Your coaches and teammates see your handicap and class on the roster."
     >
       <div className="ch-setm-card">
-        <FieldRow id="set-hcp-v" label="Handicap" inline inputMode="decimal" placeholder="5.2" value={draft.handicap} onChange={set('handicap')} />
         <FieldRow id="set-hcp-i" label="Handicap index" inline inputMode="decimal" placeholder="4.8" value={draft.handicapIndex} onChange={set('handicapIndex')} />
         <FieldRow id="set-grad" label="Graduation year" inline inputMode="numeric" placeholder="2028" value={draft.graduationYear} onChange={set('graduationYear')} />
         <FieldRow id="set-phone" label="Phone" inline type="tel" autoComplete="tel" value={draft.phone} onChange={set('phone')} />

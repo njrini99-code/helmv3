@@ -1,9 +1,10 @@
 'use client';
 
-import { Bus, Check, ChevronDown, Download, FileSpreadsheet, FileText, FileType, Folder, Image as ImageIcon, Megaphone, MoreHorizontal, Pencil, Plane, Trash2, Upload } from 'lucide-react';
+import { Bus, Check, ChevronDown, Download, FileSpreadsheet, FileText, FileType, Folder, Image as ImageIcon, Megaphone, Ellipsis, Pencil, Plane, Trash2, Upload } from 'lucide-react';
 import Link from 'next/link';
 import { useEffect, useRef, useState, type CSSProperties, type DragEvent } from 'react';
 import type { ChHubAnnouncement, ChHubFile, ChHubRsvp, ChHubTask, ChHubTrip, ChHubUpdate, ChRsvp, ChTeamHub } from '../../data/hub';
+import { isProvisional } from '../../data/hub-shape';
 import { Avatar } from '../../ui/Avatar';
 import { Button } from '../../ui/Button';
 import { EmptyState } from '../../ui/States';
@@ -14,11 +15,14 @@ import { haptic } from '../../lib/haptics';
 import { normalise, useAction, type ActionCopy, type ActionResult, type ServerResult } from '../../lib/use-action';
 import { SerifText } from '../../ui/SerifText';
 import { Tooltip } from '../../ui/Tooltip';
+import { useChClockText } from '../../lib/use-clock';
 import { useChPhone } from '../../lib/use-phone';
 import { useChReducedMotion } from '../../lib/reduced-motion';
 import { radioKeys, rovingRadios } from './radio';
 import { HUB_UPLOAD_ACCEPT } from './upload-rules';
 import type { ChHubWrites } from './writes';
+import { ListPresence, PresenceRow } from '../../ui/ListPresence';
+import { plural } from '../../lib/plural';
 
 /*
  * Team Hub's sections (design/handoff/hub.jsx). Each takes what it shows and
@@ -117,6 +121,7 @@ export function Announcement({
   /** Lists and opens the post's attachments; without it the count is plain text (a preview set with no read). */
   files?: ChHubAttachments;
 }) {
+  const clk = useChClockText();
   const coach = role === 'coach';
   const pct = a.recipients ? Math.round((a.ackCount / a.recipients) * 100) : 0;
   const phone = useChPhone();
@@ -135,10 +140,10 @@ export function Announcement({
     </>
   );
   return (
-    <article className={'ch-hb-ann' + (featured ? ' is-featured' : '') + (rank ? ` is-${rank}` : '')} aria-labelledby={`ch-hb-ann-${a.id}`} data-ann={a.id}>
+    <PresenceRow as="article" className={'ch-hb-ann' + (featured ? ' is-featured' : '') + (rank ? ` is-${rank}` : '')} aria-labelledby={`ch-hb-ann-${a.id}`} data-ann={a.id}>
       {rank === 'older' && (
         <span className="ch-hb-ann__margin ch-num" aria-hidden="true">
-          {a.when}
+          {clk(a.when)}
         </span>
       )}
       {featured && <span className="ch-hb-eyebrow">{coach ? 'Latest' : a.needAck && !acked ? 'Needs your acknowledgement' : 'Latest from your coaches'}</span>}
@@ -157,9 +162,15 @@ export function Announcement({
         <Avatar name={a.by} size={32} />
         <div>
           <b>{a.by}</b>
-          <span className="ch-num">{[a.byRole, a.when].filter(Boolean).join(' · ')}</span>
+          {isProvisional(a.id) ? (
+            <span className="ch-num" data-ch-code="CH-10402" role="status">
+              Posting…
+            </span>
+          ) : (
+            <span className="ch-num">{[a.byRole, clk(a.when)].filter(Boolean).join(' · ')}</span>
+          )}
         </div>
-        {coach && (
+        {coach && !isProvisional(a.id) && (
           <Menu
             label={`More for ${a.title}`}
             align="end"
@@ -170,7 +181,7 @@ export function Announcement({
             trigger={(p) => (
               <Tooltip>
                 <button type="button" className="ch-hb-iconbtn" aria-label={`More for ${a.title}`} {...p}>
-                  <Icon icon={MoreHorizontal} size={16} />
+                  <Icon icon={Ellipsis} size={16} />
                 </button>
               </Tooltip>
             )}
@@ -205,11 +216,11 @@ export function Announcement({
         </p>
       )}
       {a.documentCount > 0 && files && <Attachments a={a} files={files} />}
-    </article>
+    </PresenceRow>
   );
 }
 
-const attachmentCount = (n: number) => (n === 1 ? '1 attachment' : `${n} attachments`);
+const attachmentCount = (n: number) => plural(n, 'attachment');
 
 /** What a post's attachment list needs from the Hub: the read, and Documents' own open (one tab, one signed link). */
 export interface ChHubAttachments {
@@ -322,6 +333,7 @@ export function TripPass({
   focus?: boolean;
   onFocused?: () => void;
 }) {
+  const clk = useChClockText();
   const pass = useRef<HTMLElement>(null);
   const reduced = useChReducedMotion();
   const scrolled = useRef(false);
@@ -333,13 +345,13 @@ export function TripPass({
   }, [focus, reduced, onFocused]);
   const manage = role === 'coach' && (onEdit || onDelete);
   const plan = [
-    t.depart && ([t.depart, `${TRANSPORT[t.transport ?? ''] ?? 'Leave'}${t.from ? ` from ${t.from}` : ''}`] as const),
+    t.depart && ([clk(t.depart), `${TRANSPORT[t.transport ?? ''] ?? 'Leave'}${t.from ? ` from ${t.from}` : ''}`] as const),
     t.hotel && (['Stay', t.hotel] as const),
-    t.back && ([t.back, 'Home'] as const),
+    t.back && ([clk(t.back), 'Home'] as const),
   ].filter((x): x is readonly [string, string] => !!x);
   return (
     // P010-A1: the next trip is the page's one paper object (hub.css `.is-next`); the trips after it stay flat rows.
-    <article ref={pass} className={'ch-hb-pass' + (big ? ' is-big' : '') + (t.upcoming && !later ? ' is-next' : '')} aria-labelledby={`ch-hb-trip-${t.id}`}>
+    <PresenceRow as="article" ref={pass} className={'ch-hb-pass' + (big ? ' is-big' : '') + (t.upcoming && !later ? ' is-next' : '')} aria-labelledby={`ch-hb-trip-${t.id}`}>
       <div className="ch-hb-pass__main">
         <div className="ch-hb-pass__top">
           <span className="ch-hb-eyebrow ch-num">
@@ -357,7 +369,7 @@ export function TripPass({
               trigger={(p) => (
                 <Tooltip>
                   <button type="button" className="ch-hb-iconbtn" aria-label={`More for ${t.name}`} {...p}>
-                    <Icon icon={MoreHorizontal} size={16} />
+                    <Icon icon={Ellipsis} size={16} />
                   </button>
                 </Tooltip>
               )}
@@ -373,7 +385,7 @@ export function TripPass({
           {!(big && t.depart) && (
             <div>
               <dt>Departs</dt>
-              <dd className="ch-num">{t.depart ?? 'To be set'}</dd>
+              <dd className="ch-num">{t.depart ? clk(t.depart) : 'To be set'}</dd>
             </div>
           )}
           {!(big && t.hotel) && (
@@ -437,7 +449,7 @@ export function TripPass({
           )}
         </div>
       )}
-    </article>
+    </PresenceRow>
   );
 }
 
@@ -482,6 +494,7 @@ export function Updates({ data, covered = false, read, onOpen }: {
 }
 
 function UpdateBody({ n }: { n: ChHubUpdate }) {
+  const clk = useChClockText();
   return (
     <>
       <span className="ch-hb-feed__b">
@@ -491,7 +504,7 @@ function UpdateBody({ n }: { n: ChHubUpdate }) {
         </b>
         {n.body && <span>{n.body}</span>}
       </span>
-      <em className="ch-num">{n.when}</em>
+      <em className="ch-num">{clk(n.when)}</em>
     </>
   );
 }
@@ -537,12 +550,12 @@ export function Tasks({
         )}
       </div>
       {data.error ? (
-        <RefreshNotice code="CH-10203" title={coach ? "Tasks didn’t load." : "Your tasks didn’t load."} body="Nothing was lost. Try again; the error has been reported." covered={covered} />
+        <RefreshNotice code="CH-10203" title={coach ? "Tasks didn’t load." : "Your tasks didn’t load."} body="Nothing was lost. Try again." covered={covered} />
       ) : !data.rows.length ? (
         <EmptyState compact code="CH-10303" title={coach ? 'No tasks assigned' : 'No tasks right now'} body={coach ? 'Assign a task and see who has done it.' : 'Tasks your coaches assign show here with their due date.'} />
       ) : (
         <div className="ch-hb-tasks">
-          {data.rows.map((t) => <TaskRow key={t.id} t={t} coach={coach} d={isDone(t)} pending={isPending(t)} onToggle={onToggle} onDelete={onDelete} focus={focusTask === t.id} onFocused={onFocused} />)}
+          <ListPresence>{data.rows.map((t) => <TaskRow key={t.id} t={t} coach={coach} d={isDone(t)} pending={isPending(t)} onToggle={onToggle} onDelete={onDelete} focus={focusTask === t.id} onFocused={onFocused} />)}</ListPresence>
           {data.total != null && data.total > data.rows.length && (
             // C-20: the list is capped; it says so rather than passing for every task.
             <p className="ch-hb-muted ch-num">
@@ -580,7 +593,7 @@ function TaskRow({ t, coach, d, pending, onToggle, onDelete, focus = false, onFo
   focus?: boolean;
   onFocused?: () => void;
 }) {
-  const row = useRef<HTMLDivElement>(null);
+  const row = useRef<HTMLElement>(null);
   const reduced = useChReducedMotion();
   // Lit from the first paint when a notification named this task; the wash fades once (or, with reduced motion, stays
   // still until the row is used).
@@ -602,14 +615,14 @@ function TaskRow({ t, coach, d, pending, onToggle, onDelete, focus = false, onFo
   }, [lit, reduced]);
   const save = useTaskSave(d, onToggle);
   return (
-    <div
+    <PresenceRow as="div"
       ref={row}
       className={'ch-hb-task' + (coach ? ' is-coach' : '') + (d ? ' is-done' : '') + (lit ? (reduced ? ' is-focus-still' : ' is-focus') : '')}
       onPointerDown={lit && reduced ? () => setLit(false) : undefined}
     >
       {coach ? (
         // A text figure and a track under it: "3/6" reads at a glance where the old ring's numeral was 8.5px.
-        <span className="ch-hb-prog" aria-label={t.done ? `${t.done[0]} of ${t.done[1]} done` : 'Completion didn’t load'}>
+        <span role="img" className="ch-hb-prog" aria-label={t.done ? `${t.done[0]} of ${t.done[1]} done` : 'Completion didn’t load'}>
           <b className="ch-num">{t.done ? `${t.done[0]}/${t.done[1]}` : '—'}</b>
           <i style={{ ['--ch-hb-p' as string]: t.done && t.done[1] ? t.done[0] / t.done[1] : 0 }} aria-hidden="true" />
         </span>
@@ -622,8 +635,14 @@ function TaskRow({ t, coach, d, pending, onToggle, onDelete, focus = false, onFo
         <b>{t.title}</b>
         {t.detail && <span>{t.detail}</span>}
       </div>
-      <em role={pending ? 'status' : undefined} data-ch-code={pending ? 'CH-10410' : undefined} aria-label={pending ? `Saving ${t.title}` : undefined} className={'ch-num' + (!d && (t.status === 'overdue' || t.due === 'Today' || t.due === 'Tomorrow') ? ' is-soon' : '')}>{pending ? 'Saving…' : d && !coach ? 'Done' : t.status === 'overdue' && !d ? `Overdue · ${t.due}` : (t.due ?? 'No date')}</em>
-      {coach && onDelete && (
+      {isProvisional(t.id) ? (
+        <em role="status" data-ch-code="CH-10404" className="ch-num">
+          Assigning…
+        </em>
+      ) : (
+        <em role={pending ? 'status' : undefined} data-ch-code={pending ? 'CH-10410' : undefined} aria-label={pending ? `Saving ${t.title}` : undefined} className={'ch-num' + (!d && (t.status === 'overdue' || t.due === 'Today' || t.due === 'Tomorrow') ? ' is-soon' : '')}>{pending ? 'Saving…' : d && !coach ? 'Done' : t.status === 'overdue' && !d ? `Overdue · ${t.due}` : (t.due ?? 'No date')}</em>
+      )}
+      {coach && onDelete && !isProvisional(t.id) && (
         <Menu
           label={`More for ${t.title}`}
           align="end"
@@ -631,13 +650,13 @@ function TaskRow({ t, coach, d, pending, onToggle, onDelete, focus = false, onFo
           trigger={(p) => (
             <Tooltip>
               <button type="button" className="ch-hb-iconbtn" aria-label={`More for ${t.title}`} {...p}>
-                <Icon icon={MoreHorizontal} size={16} />
+                <Icon icon={Ellipsis} size={16} />
               </button>
             </Tooltip>
           )}
         />
       )}
-    </div>
+    </PresenceRow>
   );
 }
 
@@ -652,6 +671,7 @@ export function Documents({
   onUpload,
   onDelete,
   covered = false,
+  picker,
 }: {
   role: ChTeamHub['role'];
   data: ChTeamHub['documents'];
@@ -662,9 +682,20 @@ export function Documents({
   onDelete: (f: ChHubFile) => void;
   /** The page's notice carries the one Try again (CH-1209): this section keeps only its title. */
   covered?: boolean;
+  /** Filled with "open the file chooser" while a coach's Documents is shown, for the phone top bar's plus. */
+  picker?: { current: (() => void) | null };
 }) {
   const coach = role === 'coach';
   const input = useRef<HTMLInputElement>(null);
+  useEffect(() => {
+    if (!picker || !coach) return;
+    picker.current = () => {
+      if (!uploading) input.current?.click();
+    };
+    return () => {
+      picker.current = null;
+    };
+  }, [picker, coach, uploading]);
   const [over, setOver] = useState(false);
   const drop = (e: DragEvent) => {
     e.preventDefault();
@@ -712,7 +743,7 @@ export function Documents({
         </>
       )}
       {data.error ? (
-        <RefreshNotice code="CH-10204" title="Documents didn’t load." body="Your files are safe. Try again; the error has been reported." covered={covered} />
+        <RefreshNotice code="CH-10204" title="Documents didn’t load." body="Your files are safe. Try again." covered={covered} />
       ) : !data.folders.length ? (
         <EmptyState code="CH-10304" shape="rows" shapeCount={3} title="No documents yet" body={coach ? 'Files you share show here in folders.' : 'Files your coaches share show here.'} />
       ) : (
@@ -723,7 +754,7 @@ export function Documents({
                 <Icon icon={Folder} size={16} />
                 {f.name}
               </h2>
-              <span className="ch-hb-muted ch-num">{f.files.length === 1 ? '1 file' : `${f.files.length} files`}</span>
+              <span className="ch-hb-muted ch-num">{plural(f.files.length, 'file')}</span>
             </div>
             <div className="ch-hb-files">
               {f.files.map((d) => (
@@ -747,7 +778,7 @@ export function Documents({
                       trigger={(p) => (
                         <Tooltip>
                           <button type="button" className="ch-hb-iconbtn" aria-label={`More for ${d.title}`} {...p}>
-                            <Icon icon={MoreHorizontal} size={16} />
+                            <Icon icon={Ellipsis} size={16} />
                           </button>
                         </Tooltip>
                       )}

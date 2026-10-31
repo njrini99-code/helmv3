@@ -4,6 +4,7 @@ import { useState } from 'react';
 import type { ChannelPref, NotificationCategory, PrefsByCategory } from '@/lib/coachhelm/v3/notifications/router';
 import { channelsFor, ROUTING_GROUPS, ROUTING_QUIET_EXEMPT, type ChDevice, type ChNativePush, type ChSettingsData, type ChSettingsWrites } from '../model';
 import { useDelivery, usePushToggle, useRouting, useTestPush } from '../hooks';
+import { useHoldDuringClass } from '../hold-during-class';
 import { DELIVERY_GROUPS } from '../Notifications';
 import { EmailPaused, ReadFailed, ReadsFailed } from '../parts';
 import { notificationReadsFailed } from '../Notifications';
@@ -33,7 +34,7 @@ export function NotificationsPhone({ data, writes, device }: { data: ChSettingsD
           <ReadFailed bare what="Your email and push settings" code="CH-8202" onRetry={writes.refresh} covered={covered} />
         </Group>
       ) : (
-        <DeliveryPhone prefs={data.delivery.value} digest={data.digest} writes={writes} device={device} emailPaused={data.emailPaused} />
+        <DeliveryPhone prefs={data.delivery.value} digest={data.digest} writes={writes} device={device} emailPaused={data.emailPaused} data={data} />
       )}
       {data.playerRouting &&
         (data.playerRouting.error ? (
@@ -53,14 +54,17 @@ function DeliveryPhone({
   writes,
   device,
   emailPaused,
+  data,
 }: {
   prefs: Record<string, boolean>;
   digest: ChSettingsData['digest'];
   writes: ChSettingsWrites;
   device: ChDevice;
   emailPaused: boolean;
+  data: ChSettingsData;
 }) {
   const { p, dg, quiet, pending, flip, flipDigest } = useDelivery(prefs, digest, writes);
+  const hold = useHoldDuringClass(data);
   const push = device.push;
   const togglePush = usePushToggle(push);
   const test = useTestPush(push);
@@ -83,6 +87,12 @@ function DeliveryPhone({
       <Group note="Pauses everything except messages from your team.">
         <SwitchRow label="Quiet mode" checked={quiet} busy={pending.has('quiet_mode')} onChange={flip('quiet_mode', 'quiet mode')} />
       </Group>
+      {/* P-10 (CH-8216): a player's one quiet row, in its own group away from Quiet mode, only with class status on. */}
+      {hold && (
+        <Group title="During class" note={hold.help} code="CH-8216">
+          <SwitchRow label="Hold during class" checked={hold.checked} disabled={hold.disabled} busy={hold.busy} onChange={hold.onChange} />
+        </Group>
+      )}
 
       {native ? (
         <NativePushGroup push={native} />

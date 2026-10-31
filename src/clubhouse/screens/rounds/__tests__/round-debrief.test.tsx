@@ -21,6 +21,7 @@ import { PREVIEW_REVIEW, PREVIEW_REVIEW_DEBRIEF, PREVIEW_REVIEW_DEBRIEF_THIN } f
 import { RoundReview } from '../RoundReview';
 import { ToastProvider } from '../../../ui/Toast';
 import '../../../__tests__/dialog-polyfill';
+import { unsignedTones } from '../../../__tests__/_tone-sign';
 
 const show = (r: ChRoundReview) =>
   render(
@@ -41,7 +42,8 @@ describe('CoachHelm 30-second debrief (chs-30)', () => {
       .getAllByRole('term')
       .map((t) => t.textContent);
     expect(terms).toEqual(['Moved', 'Your read', 'The round', 'Next']);
-    expect(box).toHaveTextContent('15 of 18 greens Your average over your last 12 rounds: 53% of greens (83% today).');
+    // Visual pass 2026-10-28: the moved figure says which way in a word (H13).
+    expect(box).toHaveTextContent('15 of 18 greens, better than usual. Your average over your last 12 rounds: 53% of greens (83% today).');
     expect(box).toHaveTextContent('Par 5 scoring Par 5s today: 6.0 a hole, against 5.6 in the read. This round moves it the wrong way; one round does not decide it.');
     expect(box).toHaveTextContent('No doubles or worse; a three-putt on hole 2.');
     expect(box).toHaveTextContent('Wedge ladder · 15 min');
@@ -67,5 +69,22 @@ describe('CoachHelm 30-second debrief (chs-30)', () => {
     show(PREVIEW_REVIEW);
     expect(screen.queryByRole('region', { name: 'Round debrief' })).toBeNull();
     expect(screen.getByRole('region', { name: 'Round recap' })).toHaveTextContent('Written by CoachHelm');
+  });
+});
+
+describe('the debrief’s toned figures (row 48, CONS-20)', () => {
+  it('the moved number is painted with the gain and loss tones, never the old good and bad words', () => {
+    show(PREVIEW_REVIEW_DEBRIEF);
+    const box = screen.getByRole('region', { name: 'Round debrief' });
+    expect(box.querySelector('.is-good, .is-bad')).toBeNull();
+    // Visual pass 2026-10-28: the moved figure carries the word that says which way (H13), inside the toned figure.
+    expect(box.querySelector('b.ch-num.is-gain')?.textContent).toBe('15 of 18 greens, better than usual.');
+  });
+
+  it('a toned figure in the review carries a sign or a word; the debrief’s moved number now says which way: may only fall', () => {
+    show(PREVIEW_REVIEW_DEBRIEF);
+    const box = screen.getByRole('region', { name: 'Round debrief' });
+    // Fell to none on 2026-10-28 (visual pass): "15 of 18 greens, better than usual."
+    expect(unsignedTones(box)).toEqual([]);
   });
 });

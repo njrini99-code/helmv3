@@ -85,7 +85,9 @@ from Roster's (`roster/format`).
 Coach: `CoachHome` (with `HomeFirstRun` and `CoachHomeNoTeam`), `HomeActions`,
 `Week`, `LatestRound`, `Leaderboard`, `HomeSkeleton` (shared by both roles; its
 phone hero is `SkeletonPhoneHero`, drawn in the reader's own shape from the
-shell's role), and the phone's `HomePhone` with `UpNext`, `NoEvents`, `Today`,
+shell's role; on the desktop `SkeletonDeskHead` draws the head and, after the
+week's sheet as the loaded page orders it, `SkeletonDeskForm` the coach's form
+and four parts), and the phone's `HomePhone` with `UpNext`, `NoEvents`, `Today`,
 `Form`, `WeekStrip`, `Rounds` and `RoundSheet`. Player: `PlayerHome` (with
 `DeskNext`, `PlayerFirstRun` and `PlayerHomeNoTeam`), `PlayerHomePhone` (with
 its paged `Latest`), `PlayerGame` (`Scoring`, `ScoreChart`, `Legs`, `Leg`,
@@ -177,7 +179,7 @@ The player's phone follows `Player - Home - Mobile.html` (`m-player-home.jsx`,
 `m-player-home.css`), not the coach's, in the Mobile clubhouse pass (owner,
 2026-10-08; the Coach Home board's round 3 carried over): the page is the
 parchment sheet, Up next with its countdown is the one green feature card,
-Message coach and Start a round under it are the shared buttons (Start a round
+Message coach and New round under it are the shared buttons (New round
 the primary), and every section below sits flush under an engraved double rule
 with its title in the bold condensed sans, with no white cards. This week draws
 today as the solid green key and a competition day as a soft green tint with its
@@ -261,7 +263,7 @@ from the board), Q-69 (the player Home's differences from the boards).
 ## Explicit non-goals
 
 Weather, a season week count, the "Needs you" rail, a phone leaderboard, a team
-switcher, a single-round recap, and for a player: Post a round, Start a round
+switcher, a single-round recap, and for a player: Post a round, New round
 and Add classes until round entry and Classes are rebuilt for players.
 
 ## Fresh-build confirmation

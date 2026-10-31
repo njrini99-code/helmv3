@@ -1,18 +1,20 @@
 'use client';
 
-import { useEffect, useMemo, useState, type CSSProperties } from 'react';
+import { useEffect, useMemo, useState, useSyncExternalStore, type CSSProperties } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { ChevronLeft, ChevronRight, Flag } from 'lucide-react';
 import { updateRoundType } from '@/app/golf/actions/round-type';
 import { distribution, type ChReviewHole, type ChReviewTypeEdit, type ChRoundReview } from '../../data/round-review-shape';
+import type { ChReviewHistory } from '../../data/round-history-shape';
 import { useAction } from '../../lib/use-action';
 import { Button } from '../../ui/Button';
 import { roundTypeFailure, savedLine, type ChRoundTypeChoice } from './entry/round-type';
 import { CoachNote } from './CoachNote';
 import { RoundTypeSheet } from './entry/RoundTypeSheet';
 import { scoreName } from './track/labels';
-import { formatFixed, formatSigned, formatToPar, NO_DATA } from '../../lib/format';
+import { changeTone, changeVerdict, formatFixed, formatSigned, formatToPar, NO_DATA } from '../../lib/format';
+import { NoData } from '../../ui/NoData';
 import { haptic } from '../../lib/haptics';
 import { useChPhone } from '../../lib/use-phone';
 import { useChReducedMotion } from '../../lib/reduced-motion';
@@ -27,7 +29,13 @@ import { Swap } from '../../ui/Swap';
 import { SectionBoundary } from '../../ui/SectionBoundary';
 import { EmptyState } from '../../ui/States';
 import { dateOf, TeeSwatch, TYPE_LABEL } from './parts';
-import { approachFinish, costliest, flow, headline, puttSplit, teeMisses } from './round-insights';
+import { approachFinish, costliest, flow, headline, puttSplit, teeMisses, turningStretch } from './round-insights';
+import { RoundSays, saysFigures } from './RoundSays';
+import { RecordChips } from './RecordChips';
+import { CourseLink } from './CourseLink';
+import { courseHref } from '../../data/course-key';
+import { shortDate } from '../../data/course-page-shape';
+import { Segmented } from '../../ui/Segmented';
 import { Zone, ZoneBig, ZoneBlock, Zones } from '../../ui/Zone';
 import { Tooltip } from '../../ui/Tooltip';
 import { PuttingViz, ScoreFlow, ShotTrail, TeeToGreen } from './RoundZones';
@@ -39,7 +47,9 @@ import { useRoundRecap } from './use-round-recap';
 import { openedFromLibrary } from './return-state';
 import { SideScroll } from '../../ui/SideScroll';
 import { rebuiltHref } from '../../shell/nav';
+import { invalidatePrefetchTabs } from '../../shell/use-prefetch-tabs';
 import type { ChDebrief } from '../../data/round-debrief-shape';
+import { plural, pluralWord } from '../../lib/plural';
 
 const LIE_LABEL: Record<string, string> = { fairway: 'Fairway', rough: 'Rough', sand: 'Sand', green: 'Green', hole: 'Holed', penalty: 'Penalty', other: 'Other', tee: 'Tee' };
 const fmt = (o: Intl.DateTimeFormatOptions) => new Intl.DateTimeFormat('en-US', { timeZone: 'UTC', ...o });
@@ -85,7 +95,7 @@ function StrokesGained({ review: r, onRetry, retrying }: { review: ChRoundReview
     );
   const baseline = sgBaseline(r.tour);
   const scale = sgScale([sg.total, ...SG_LEGS.map(([k]) => sg[k])]);
-  const tone = (v: number | null) => (v == null ? '' : v >= 0 ? ' is-gain' : ' is-loss');
+  const tone = (v: number | null) => ' ' + changeTone(v, false, 1);
   return (
     <section className="ch-rv-card ch-rv-sg" aria-labelledby="ch-rv-sg-h">
       <div className="ch-rv-card__h">
@@ -170,9 +180,9 @@ function ReviewNine({ label, holes, sel, onPick }: { label: 'Out' | 'In'; holes:
         <tr className="is-par">
           <th scope="row">Par</th>
           {holes.map((h) => (
-            <td key={h.n}>{h.par ?? NO_DATA}</td>
+            <td key={h.n}>{h.par ?? <NoData />}</td>
           ))}
-          <td>{sum('par') ?? NO_DATA}</td>
+          <td>{sum('par') ?? <NoData />}</td>
         </tr>
         <tr className="is-score">
           <th scope="row">Score</th>
@@ -184,17 +194,17 @@ function ReviewNine({ label, holes, sel, onPick }: { label: 'Out' | 'In'; holes:
             </td>
           ))}
           <td>
-            <b>{sum('score') ?? NO_DATA}</b>
+            <b>{sum('score') ?? <NoData />}</b>
           </td>
         </tr>
         <tr>
           <th scope="row">Putts</th>
           {holes.map((h) => (
             <td key={h.n} className={h.putts != null && h.putts >= 3 ? 'is-warn' : undefined}>
-              {h.putts ?? NO_DATA}
+              {h.putts ?? <NoData />}
             </td>
           ))}
-          <td>{sum('putts') ?? NO_DATA}</td>
+          <td>{sum('putts') ?? <NoData />}</td>
         </tr>
         <tr className="is-marks">
           <th scope="row">FIR</th>
@@ -227,9 +237,12 @@ function HoleCard({
   onRetry,
   retrying,
   dir,
+  before = null,
 }: {
   hole: ChReviewHole;
   dir: 1 | -1;
+  /** P-7 4.5.4: earlier plays of this hole at this course, and where its history is; null under two plays. */
+  before?: { avg: number; n: number; href: string | null; course: string; who: string | null } | null;
   count: number;
   shotsError: boolean;
   onStep: (d: -1 | 1) => void;
@@ -245,8 +258,8 @@ function HoleCard({
           <h3 id="ch-rv-hole-h">{title}</h3>
           <span>
             {[
-              strokes ? `${strokes} ${strokes === 1 ? 'shot' : 'shots'}` : null,
-              hole.putts != null ? `${hole.putts} ${hole.putts === 1 ? 'putt' : 'putts'}` : null,
+              strokes ? `${plural(strokes, 'shot')}` : null,
+              hole.putts != null ? `${plural(hole.putts, 'putt')}` : null,
               hole.penalties ? `${hole.penalties} penalty` : null,
             ]
               .filter(Boolean)
@@ -267,6 +280,18 @@ function HoleCard({
           </Tooltip>
         </div>
       </div>
+      {before && hole.par != null && (
+        <div className="ch-rv-before">
+          <p>
+            {before.who ? `${before.who} here before` : 'Here before'}: {formatFixed(hole.par + before.avg, 1)} average · {before.n} times
+          </p>
+          {before.href && (
+            <Link className="ch-rv-before__go" href={before.href}>
+              Hole {hole.n} at {before.course}
+            </Link>
+          )}
+        </div>
+      )}
       {/* The shots slide in the direction of travel (CH-11604). */}
       {/* The trail is not slid with the list: its shots draw themselves in order, so the hole changes under a still frame. */}
       {!shotsError && <ShotTrail key={hole.n} hole={hole} />}
@@ -322,6 +347,8 @@ function ChangeRoundType({ roundId, edit }: { roundId: string; edit: ChReviewTyp
       const res = await updateRoundType({ roundId, roundType: choice.type, qualifierId: choice.qualifierId, qualifierRoundNumber: choice.roundNumber });
       if (res.success) {
         setOpen(false);
+        // Stats and the qualifier pages held from before count the round under its old type (A21).
+        invalidatePrefetchTabs();
         router.refresh();
       }
       return res;
@@ -358,6 +385,9 @@ function ChangeRoundType({ roundId, edit }: { roundId: string; edit: ChReviewTyp
   );
 }
 
+/** Session storage sends no change events within a tab; the note is read once per render. */
+const noSubscribe = () => () => {};
+
 /** Where "Why?" goes: the read on the player's own Deep dive, when the Deep dive is rebuilt for them. */
 export function debriefWhyHref(readId: string): string | null {
   return rebuiltHref(`/golf/dashboard/coachhelm?view=deep-dive&insight=${encodeURIComponent(readId)}`, 'player');
@@ -380,7 +410,12 @@ function RoundDebrief({ debrief: d }: { debrief: ChDebrief }) {
           <div>
             <dt>Moved</dt>
             <dd>
-              <b className={'ch-num is-' + d.moved.tone}>{d.moved.value}</b> {d.moved.line}
+              {/* H13: the tone is never the only signal; a word says which way it moved. */}
+              <b className={'ch-num is-' + d.moved.tone}>
+                {d.moved.value}
+                <span className="ch-rv-debrief__dir">{d.moved.tone === 'gain' ? ', better than usual.' : ', worse than usual.'}</span>
+              </b>{' '}
+              {d.moved.line}
             </dd>
           </div>
         )}
@@ -416,7 +451,32 @@ function RoundDebrief({ debrief: d }: { debrief: ChDebrief }) {
   );
 }
 
-export function RoundReview({ review, typeEdit = null }: { review: ChRoundReview; typeEdit?: ChReviewTypeEdit | null }) {
+export function RoundReview({
+  review: given,
+  history: historyIn,
+  typeEdit = null,
+  initialHole = null,
+}: {
+  review: ChRoundReview;
+  /** P-7 stage 3, streamed by the server after the review (it never rejects); a fixture puts it in `review.history` instead. */
+  history?: PromiseLike<ChReviewHistory | null>;
+  typeEdit?: ChReviewTypeEdit | null;
+  /** P-7: `?hole=`, a hole to open on. */ initialHole?: number | null;
+}) {
+  const [streamed, setStreamed] = useState<{ from: PromiseLike<ChReviewHistory | null>; history: ChReviewHistory | null } | null>(null);
+  useEffect(() => {
+    if (!historyIn) return;
+    let live = true;
+    // A stream cut off in the browser is the same as a failed read: no history, and nothing said about it (P-7 4.8).
+    Promise.resolve(historyIn).then(
+      (history) => live && setStreamed({ from: historyIn, history }),
+      () => live && setStreamed({ from: historyIn, history: null }),
+    );
+    return () => {
+      live = false;
+    };
+  }, [historyIn]);
+  const review = useMemo(() => (streamed && streamed.from === historyIn ? { ...given, history: streamed.history } : given), [given, streamed, historyIn]);
   const phone = useChPhone();
   const reduced = useChReducedMotion();
   const justSubmitted = useJustSubmitted();
@@ -425,7 +485,7 @@ export function RoundReview({ review, typeEdit = null }: { review: ChRoundReview
   const r = review;
   // Only a hole the player picked is kept; until then the review opens on the first hole over par of what it has. A card that
   // arrives after a retry therefore opens there, not on the hole 1 an empty card defaulted to.
-  const [picked, setPicked] = useState<number | null>(null);
+  const [picked, setPicked] = useState<number | null>(() => (initialHole != null && review.holes.some((h) => h.n === initialHole) ? initialHole : null));
   // Which way the last move went, so the hole's shots slide in from that side.
   const [holeDir, setHoleDir] = useState<1 | -1>(1);
   const sel = picked ?? firstHole(r.holes);
@@ -443,13 +503,60 @@ export function RoundReview({ review, typeEdit = null }: { review: ChRoundReview
   const recap = useMemo(() => checkedRecap({ ...r, recap: recapText }), [r, recapText]);
   const holesScored = r.holes.filter((h) => h.score != null).length || r.holesPlayed;
   const maxD = Math.max(1, ...dist.map((d) => d.count));
-  // A coach who opened this round from Team rounds goes back there, as a player goes back to the library: the note is
-  // read after mount (session storage), so the first paint is the server's.
-  const [fromList, setFromList] = useState(false);
-  useEffect(() => setFromList(openedFromLibrary(r.id)), [r.id]);
+  // A coach who opened this round from Team rounds goes back there, as a player goes back to the library. The note is in
+  // session storage: read during render on the client (an in-app open, the only way a note exists), so the back label is
+  // right before the first paint (visual pass 2026-10-28; it was set after mount and swapped "Stats" for "Rounds" in
+  // view). A server render reads no note, and a hydrating page takes the client's answer straight after.
+  const fromList = useSyncExternalStore(
+    noSubscribe,
+    () => openedFromLibrary(r.id),
+    () => false,
+  );
   const back = coach && fromList ? { label: 'Rounds', href: '/golf/dashboard/rounds' } : reviewBack(r);
   const insight = useMemo(() => headline(r), [r]);
   const points = useMemo(() => flow(r.holes), [r.holes]);
+  // P-7: the stretch that turned the round, drawn on the arc and said in its note.
+  // A posted round keeps no start hole, so the holes run in number order. A nine-hole round is stored 1 to 9 whichever nine
+  // was played, so it names no stretch (P-7 4.1.2): its numbers may not be the card's.
+  const turning = useMemo(() => (r.holesPlayed === 9 ? null : turningStretch(points)), [points, r.holesPlayed]);
+  // P-7 4.5.2: another round under this one: the average here or the best here, each past its floor; the viewer's choice
+  // is kept on this device (`ch.rv.compare`).
+  const ghosts = r.history?.ghosts ?? null;
+  const ghostOptions = useMemo(() => {
+    const out: Array<{ value: 'none' | 'average' | 'best'; label: string }> = [{ value: 'none', label: 'None' }];
+    if (ghosts?.average) out.push({ value: 'average', label: 'Average here' });
+    if (ghosts?.best) out.push({ value: 'best', label: `Best here · ${ghosts.best.score}` });
+    return out;
+  }, [ghosts]);
+  const [ghostPref, setGhostPref] = useState<'none' | 'average' | 'best'>('none');
+  useEffect(() => {
+    try {
+      const v = window.localStorage.getItem('ch.rv.compare');
+      if (v === 'average' || v === 'best') setGhostPref(v);
+    } catch {
+      /* no storage: None */
+    }
+  }, []);
+  const ghostChoice = ghostOptions.some((o) => o.value === ghostPref) ? ghostPref : 'none';
+  const chooseGhost = (v: 'none' | 'average' | 'best') => {
+    haptic('select');
+    setGhostPref(v);
+    try {
+      window.localStorage.setItem('ch.rv.compare', v);
+    } catch {
+      /* the choice holds for this visit */
+    }
+  };
+  const ghostLine =
+    ghostChoice === 'average' && ghosts?.average
+      ? { cum: ghosts.average, label: 'Average here', spoken: 'average here', legend: 'Average here' }
+      : ghostChoice === 'best' && ghosts?.best
+        ? { cum: ghosts.best.cum, label: `Best here · ${ghosts.best.score}`, spoken: 'best here', legend: `Best here, ${shortDate(ghosts.best.date)}` }
+        : null;
+  const says = useMemo(
+    () => saysFigures({ holes: r.holes, startHole: null, usual: r.history?.usual ?? null, nine: r.holesPlayed === 9, who: coach ? (r.playerName?.split(' ')[0] ?? null) : null }),
+    [r.holes, r.history, r.holesPlayed, r.playerName, coach],
+  );
   const costly = useMemo(() => costliest(r.holes, 3), [r.holes]);
   const putting = useMemo(() => puttSplit(r.holes), [r.holes]);
   const approach = useMemo(() => approachFinish(r.holes), [r.holes]);
@@ -508,6 +615,7 @@ export function RoundReview({ review, typeEdit = null }: { review: ChRoundReview
           <span className="ch-rv-hero__k">{kicker}</span>
           {/* D11: one h1 per screen, the course; the phone bar's "Round" is plain text (heading={false}). */}
           <h1 id="ch-rv-title">{r.course}</h1>
+          <RecordChips marks={r.history?.records ?? []} />
           {insight && <p className="ch-rv-hero__h">{insight}</p>}
           {(r.tee || r.teeFacts) && (
             <span className="ch-rv-hero__m">
@@ -515,6 +623,7 @@ export function RoundReview({ review, typeEdit = null }: { review: ChRoundReview
               <span>{[r.tee, r.teeFacts].filter(Boolean).join(' · ')}</span>
             </span>
           )}
+          <CourseLink review={r} coach={coach} />
         </div>
         <div className="ch-rv-hero__s">
           <b className="ch-num">{r.score ?? NO_DATA}</b>
@@ -558,7 +667,7 @@ export function RoundReview({ review, typeEdit = null }: { review: ChRoundReview
           }
           read={
             <>
-              <ZoneBig value={formatToPar(r.toPar)} tone={r.toPar == null ? undefined : r.toPar <= 0 ? 'good' : 'bad'} />
+              <ZoneBig value={formatToPar(r.toPar)} tone={changeVerdict(r.toPar, true, 0)} />
               <div className="ch-znlines">
                 {r.holesPlayed === 18 && r.front.score != null && r.back.score != null && (
                   <span>
@@ -577,16 +686,24 @@ export function RoundReview({ review, typeEdit = null }: { review: ChRoundReview
           }
         >
           {points.length >= 2 ? (
-            <ZoneBlock title="Running score to par" note="One dot a hole; the columns under it are each hole’s strokes against par. Pick a hole to read it and see its shots.">
+            <ZoneBlock
+              title="Running score to par"
+              note={`${turning ? `${turning.words}. ` : ''}One dot a hole; the columns under it are each hole’s strokes against par. Pick a hole to read it and see its shots.`}
+            >
               <ScoreFlow
                 holes={r.holes}
                 outScore={r.front.score}
                 outToPar={r.front.toPar}
                 inScore={r.back.score}
                 inToPar={r.back.toPar}
-                onPick={(n) => {
-                  haptic('select');
+                selected={sel}
+                turning={turning}
+                ghost={ghostLine}
+                onPick={(n, via) => {
                   pick(n);
+                  // From the keyboard the slider keeps focus and the page stays put; the card below follows the value.
+                  if (via === 'key') return;
+                  haptic('select');
                   chScrollIntoView(document.getElementById('ch-rz-card'), reduced); // A-11: instant when motion is off
                 }}
               />
@@ -594,6 +711,18 @@ export function RoundReview({ review, typeEdit = null }: { review: ChRoundReview
           ) : (
             <p className="ch-znmiss">The hole-by-hole picture needs holes posted with their scores.</p>
           )}
+          {ghostOptions.length > 1 && (
+            <div className="ch-rv-ghost">
+              <Segmented label="Draw under this round" value={ghostChoice} onChange={chooseGhost} options={ghostOptions} />
+              {ghostLine && (
+                <p className="ch-rv-ghost__l">
+                  <i aria-hidden="true" />
+                  {ghostLine.legend}
+                </p>
+              )}
+            </div>
+          )}
+          {!r.holesError && <RoundSays figures={says} />}
           {r.holes.length > 0 && !r.holesError && (
             <section className="ch-rv-card" aria-labelledby="ch-rv-dist-h">
               <div className="ch-rv-card__h">
@@ -629,7 +758,7 @@ export function RoundReview({ review, typeEdit = null }: { review: ChRoundReview
           read={
             r.strokesGained?.total != null ? (
               <>
-                <ZoneBig value={formatSigned(r.strokesGained.total)} tone={r.strokesGained.total >= 0 ? 'good' : 'bad'} />
+                <ZoneBig value={formatSigned(r.strokesGained.total)} tone={changeVerdict(r.strokesGained.total)} />
                 <div className="ch-znlines">
                   <span>
                     <b>Total</b> {sgBaseline(r.tour).vs}
@@ -691,7 +820,7 @@ export function RoundReview({ review, typeEdit = null }: { review: ChRoundReview
               read={
                 r.greens ? (
                   <>
-                    <ZoneBig value={pct(r.greens.hit, r.greens.of)} unit="" tone="good" />
+                    <ZoneBig value={pct(r.greens.hit, r.greens.of)} unit="" />
                     <div className="ch-znlines">
                       <span>
                         <b>
@@ -721,7 +850,7 @@ export function RoundReview({ review, typeEdit = null }: { review: ChRoundReview
                 )}
               </ZoneBlock>
               {approach && (
-                <ZoneBlock title="How close approaches finished" note={`${approach.n} approach ${approach.n === 1 ? 'shot' : 'shots'} that found the green.`}>
+                <ZoneBlock title="How close approaches finished" note={`${approach.n} approach ${pluralWord(approach.n, 'shot')} that found the green.`}>
                   <div className="ch-rzpair">
                     <div>
                       <b className="ch-num">{Math.round(approach.avg)}</b>
@@ -786,7 +915,7 @@ export function RoundReview({ review, typeEdit = null }: { review: ChRoundReview
                       </span>
                       {hole.putts != null && (
                         <span>
-                          <b>{hole.putts}</b> {hole.putts === 1 ? 'putt' : 'putts'}
+                          <b>{hole.putts}</b> {pluralWord(hole.putts, 'putt')}
                         </span>
                       )}
                     </div>
@@ -814,7 +943,23 @@ export function RoundReview({ review, typeEdit = null }: { review: ChRoundReview
                 </section>
               </SectionBoundary>
               <SectionBoundary surface="rounds.review.hole" label="This hole" code="CH-11203">
-                {hole && <HoleCard hole={hole} dir={holeDir} count={r.holes[r.holes.length - 1]?.n ?? 18} shotsError={r.shotsError} onStep={step} onRetry={refresh} retrying={refreshing} />}
+                {hole && (
+                  <HoleCard
+                    hole={hole}
+                    dir={holeDir}
+                    count={r.holes[r.holes.length - 1]?.n ?? 18}
+                    shotsError={r.shotsError}
+                    onStep={step}
+                    onRetry={refresh}
+                    retrying={refreshing}
+                    before={(() => {
+                      const b = r.history?.hereBefore[hole.n];
+                      const c = r.history?.course;
+                      if (!b || !c) return null;
+                      return { ...b, course: c.name, who: coach ? (r.playerName?.split(' ')[0] ?? null) : null, href: rebuiltHref(courseHref(c.key, { hole: hole.n, ...(coach ? { player: r.playerId } : {}) }), coach ? 'coach' : 'player') };
+                    })()}
+                  />
+                )}
               </SectionBoundary>
             </Zone>
 
@@ -836,7 +981,7 @@ export function RoundReview({ review, typeEdit = null }: { review: ChRoundReview
                     </h3>
                     <p>{recap}</p>
                     <span className="ch-rv-recap__by">
-                      Written by CoachHelm from {holesScored} hole{holesScored === 1 ? '' : 's'}
+                      Written by CoachHelm from {holesScored} {pluralWord(holesScored, 'hole')}
                     </span>
                   </section>
                   )

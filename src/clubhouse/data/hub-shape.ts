@@ -1,5 +1,6 @@
 import type { TravelerClass } from '@/app/golf/actions/travel';
 import type { ChHubTripEvent } from './hub';
+import { firstName } from '../lib/names';
 
 /*
  * Team Hub's trip builder, the parts that are plain functions: the dates a trip covers and the warning about a traveler's
@@ -47,7 +48,6 @@ export function checkKey(teamId: string, playerIds: string[], w: ChTripWindow): 
   return [teamId, [...playerIds].sort().join(','), w.fromDate, w.toDate, w.fromTime ?? '', w.toTime ?? ''].join('|');
 }
 
-const firstName = (name: string) => name.trim().split(/\s+/)[0] || name;
 
 export interface ChClashLine {
   playerId: string;
@@ -93,3 +93,10 @@ export function clashSummary(classes: ChTravelerClass[], names: ReadonlyMap<stri
   });
   return { lines, moreTravelers: Math.max(0, order.length - CLASH_LINES), total: order.reduce((n, id) => n + byPlayer.get(id)!.length, 0) };
 }
+
+/**
+ * A row drawn the moment the coach posts or assigns, before the server answers (F-0045): its id carries this prefix, it
+ * says "Posting…" or "Assigning…" where its date goes, and it offers no menu. The page's next read replaces it.
+ */
+export const PROVISIONAL_ID = 'provisional:';
+export const isProvisional = (id: string) => id.startsWith(PROVISIONAL_ID);

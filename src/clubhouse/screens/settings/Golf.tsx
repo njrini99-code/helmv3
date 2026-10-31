@@ -5,8 +5,9 @@ import { useState } from 'react';
 import { Button } from '../../ui/Button';
 import { Icon } from '../../ui/Icon';
 import { Modal } from '../../ui/Modal';
-import { golfDetailsProblem, type ChGolfDetails, type ChMembership, type ChSettingsData, type ChSettingsWrites } from './model';
+import { golfDetailsProblem, golfDetailsShown, golfDetailsToSave, type ChGolfDetails, type ChMembership, type ChSettingsData, type ChSettingsWrites } from './model';
 import { SAVE_COPY, useMembership } from './hooks';
+import { LiveRoundsCard } from './LiveRounds';
 import { Card, Field, failedReads, ReadFailed, ReadsFailed, Row, useDraft, useReportDirty, useSaveAction, useWarnOnOpen } from './parts';
 
 /** Golf profile's reads that failed, for its one section notice (shared with GolfPhone). */
@@ -23,15 +24,17 @@ export function GolfSection({ data, writes }: { data: ChSettingsData; writes: Ch
     <>
       <ReadsFailed parts={failed} onRetry={writes.refresh} />
       {data.golf?.error ? <ReadFailed what="Your golf details" code="CH-8209" onRetry={writes.refresh} title="Golf details" description="Your coaches and teammates see your handicap and class on the roster." covered={covered} /> : data.golf && <DetailsCard details={data.golf.value} writes={writes} />}
+      <LiveRoundsCard />
       {data.membership?.error ? <ReadFailed what="Your team membership" code="CH-8210" onRetry={writes.refresh} title="Team" description="The team you play for on GolfHelm." covered={covered} /> : data.membership && <MembershipCard m={data.membership.value} writes={writes} />}
     </>
   );
 }
 
 function DetailsCard({ details, writes }: { details: ChGolfDetails; writes: ChSettingsWrites }) {
-  const f = useDraft(details);
+  // One handicap, "Handicap index", holding the number Home shows (model shownHandicapIndex).
+  const f = useDraft(golfDetailsShown(details));
   useReportDirty('golf', f.dirty);
-  const save = useSaveAction('settings.saveGolf', writes.saveGolf, SAVE_COPY.golf, (_r, saved) => f.commit(saved));
+  const save = useSaveAction('settings.saveGolf', (d: ChGolfDetails) => writes.saveGolf(golfDetailsToSave(d, details)), SAVE_COPY.golf, (_r, saved) => f.commit(saved));
   const set = (k: keyof ChGolfDetails) => (e: React.ChangeEvent<HTMLInputElement>) => { const value = e.target.value; f.setDraft((d) => ({ ...d, [k]: value })); };
   return (
     <Card
@@ -41,7 +44,6 @@ function DetailsCard({ details, writes }: { details: ChGolfDetails; writes: ChSe
       save={{ dirty: f.dirty, pending: save.pending, invalid: golfDetailsProblem(f.draft), savedAt: f.savedAt, onReset: f.reset, onSave: () => void save.run(f.draft) }}
     >
       <div className="ch-set-grid">
-        <Field id="set-hcp-v" label="Handicap" inputMode="decimal" placeholder="5.2" value={f.draft.handicap} onChange={set('handicap')} />
         <Field id="set-hcp-i" label="Handicap index" inputMode="decimal" placeholder="4.8" value={f.draft.handicapIndex} onChange={set('handicapIndex')} />
         <Field id="set-grad" label="Graduation year" inputMode="numeric" placeholder="2028" value={f.draft.graduationYear} onChange={set('graduationYear')} />
         <Field id="set-phone" label="Phone" type="tel" autoComplete="tel" value={f.draft.phone} onChange={set('phone')} />
@@ -94,7 +96,7 @@ function MembershipCard({ m, writes }: { m: ChMembership; writes: ChSettingsWrit
               <Button variant="secondary" disabled={leave.pending} onClick={() => setLeaving(false)}>
                 Stay on the team
               </Button>
-              <Button variant="danger" disabled={leave.pending} onClick={() => void leave.run()}>
+              <Button variant="danger" busy={leave.pending} onClick={() => void leave.run()}>
                 {leave.pending ? 'Leaving…' : 'Leave team'}
               </Button>
             </>

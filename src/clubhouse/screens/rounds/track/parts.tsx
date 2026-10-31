@@ -10,9 +10,11 @@ import { haptic } from '../../../lib/haptics';
 import { useChReducedMotion } from '../../../lib/reduced-motion';
 import { Icon } from '../../../ui/Icon';
 import { ScoreMark } from '../../../ui/ScoreMark';
+import { Swap } from '../../../ui/Swap';
 import { centerLine, holeShape, plotShots, pointAlong, ringRadius, type ChHoleFrame } from './hole-geometry';
 import { distanceText, roundSoFar, shotFinish, shotLine, shotTitle } from './labels';
 import { useHScroll } from '../../../ui/use-hscroll';
+import { plural, pluralWord } from '../../../lib/plural';
 
 /** A one-of-several choice (radiogroup, CH-11806: named for what it chooses). A `rare` option is drawn quieter; `note` is its small second line. */
 export function Seg<T extends string>({
@@ -52,9 +54,29 @@ export function Seg<T extends string>({
 }
 
 /** A section of the entry panel, with its label and an optional Optional / Required hint. */
-export function Sec({ label, hint, tint, htmlFor, children }: { label: string; hint?: 'Optional' | 'Required'; tint?: boolean; htmlFor?: string; children: ReactNode }) {
+export function Sec({
+  label,
+  hint,
+  tint,
+  htmlFor,
+  reserved = false,
+  children,
+}: {
+  label: string;
+  hint?: 'Optional' | 'Required';
+  tint?: boolean;
+  htmlFor?: string;
+  /** Held in the card before it is needed: hidden and inert, keeping its height so nothing jumps when it appears (F-0019). */
+  reserved?: boolean;
+  children: ReactNode;
+}) {
   return (
-    <section className={'ch-rt-sec' + (tint ? ' is-tint' : '')} aria-label={htmlFor ? undefined : label}>
+    <section
+      className={'ch-rt-sec' + (tint ? ' is-tint' : '') + (reserved ? ' is-reserved' : '')}
+      aria-label={htmlFor ? undefined : label}
+      aria-hidden={reserved || undefined}
+      inert={reserved || undefined}
+    >
       <div className="ch-rt-sec__h">
         {htmlFor ? <label htmlFor={htmlFor}>{label}</label> : <span>{label}</span>}
         {hint && <em className={'ch-rt-hint' + (hint === 'Required' ? ' is-required' : '')}>{hint}</em>}
@@ -201,7 +223,7 @@ export function HoleMap({
   const ringList = rings ? [50, 100, 150].map((v) => ({ v, r: ringRadius(s, v * unit, hole.yardage) })).filter((x): x is { v: number; r: number } => x.r != null) : [];
   const flagTop = s.pin.y - (wide ? 24 : 32);
   const flagW = wide ? 13 : 16;
-  const name = `Hole ${hole.number}, par ${hole.par}: ${plotted.length === 0 ? 'no shots yet' : `${plotted.length} shot${plotted.length === 1 ? '' : 's'} so far${holed ? ', holed' : ''}`}`;
+  const name = `Hole ${hole.number}, par ${hole.par}: ${plotted.length === 0 ? 'no shots yet' : `${plural(plotted.length, 'shot')} so far${holed ? ', holed' : ''}`}`;
   return (
     <svg viewBox={`0 0 ${s.w} ${s.h}`} preserveAspectRatio="xMidYMid slice" className={'ch-rt-map ch-rt-map--' + frame + (className ? ' ' + className : '')} role="img" aria-label={name}>
       <defs>
@@ -334,10 +356,13 @@ export function ShotLog({
         </span>
         <span className="ch-rt-log__t">
           <b>
-            {shots.length} stroke{shots.length === 1 ? '' : 's'}
-            {penalties ? ` · ${penalties} penalt${penalties === 1 ? 'y' : 'ies'}` : ''}
+            {shots.length} {pluralWord(shots.length, 'stroke')}
+            {penalties ? ` · ${plural(penalties, 'penalty', 'penalties')}` : ''}
           </b>
-          <em>Last: {lastText}</em>
+          {/* The new line settles in on the next shot instead of swapping in place (F-0020); at once under reduced motion. */}
+          <Swap swapKey={shots.length} inline>
+            <em>Last: {lastText}</em>
+          </Swap>
         </span>
         <Icon icon={ChevronDown} size={16} className="ch-rt-log__chev" />
       </button>

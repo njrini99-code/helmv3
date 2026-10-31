@@ -20,11 +20,13 @@
  * and the lines, and, for a coach, their scoring average over the rest of the
  * season (computed on the server, never sent to a player).
  *
- * The order is the shared standings order (`compareStandings` in
- * src/lib/coachhelm/v3/qualifying/ranking.ts: to par, strokes, more rounds,
- * name), the order the selection workspace confirms from; see
- * `deriveStandings`. Players level across the last place on score are a
- * "Tie at cut" (Q-114), never put in or out by row order
+ * The order is the one order (`rankStandings` in
+ * src/lib/coachhelm/v3/qualifying/ranking.ts: a card a round short below
+ * every full card, then to par, strokes, more rounds, name), the order the
+ * selection workspace confirms from and Clubhouse's board draws; see
+ * `deriveStandings`. Rows are drawn as placed, with the positions given.
+ * Players level across the last place on score are a "Tie at cut" (Q-114),
+ * never put in or out by row order
  * (docs/clubhouse/pages/P009-qualifiers/WIRING.md, "Standings parity").
  *
  * Honest states (unchanged): "Awaiting first round" before anyone scores; a
@@ -43,7 +45,6 @@ import { Surface, EmptyState, InlineNotice, StatusPill, Skeleton, Avatar, IconBu
 import type { FwStatusTone } from '@/components/fairway/controls';
 import { formatToPar } from '@/lib/golf/format-to-par';
 import { formatMetricText } from '@/lib/golf/metrics/display-registry';
-import { sameStanding } from '@/lib/coachhelm/v3/qualifying/ranking';
 import { cn } from '@/lib/utils';
 import { createClient } from '@/lib/supabase/client';
 
@@ -353,15 +354,13 @@ function StandingsBoard({
   const drawTopScoreLine = topScoreLine > 0 && coachPicks > 0 && scored.length > topScoreLine;
   const drawTravelLine = travelLine > 0 && scored.length > travelLine;
 
-  // Q-114: players level (to par and strokes) with both the last place on
-  // score and the next player share a "Tie at cut" until the coach chooses in
-  // Manage selections; stored row order never decides it. The same rule as
-  // the selection workspace and Clubhouse's board.
-  const level = (a: Standing, b: Standing) =>
-    sameStanding(
-      { toPar: a.totalToPar as number, total: a.totalScore as number },
-      { toPar: b.totalToPar as number, total: b.totalScore as number },
-    );
+  // Q-114: players level with both the last place on score and the next
+  // player share a "Tie at cut" until the coach chooses in Manage selections;
+  // stored row order never decides it. Level is what the one order says: the
+  // same position (given only inside a group, so a full card and a card a
+  // round short are never level). The same rule as the selection workspace
+  // and Clubhouse's board.
+  const level = (a: Standing, b: Standing) => a.position === b.position;
   const cutRow = topScoreLine > 0 ? scored[topScoreLine - 1] : undefined;
   const nextRow = scored[topScoreLine];
   const tieAtCut = !!cutRow && !!nextRow && level(cutRow, nextRow);
@@ -838,37 +837,56 @@ function RoundTrend({ rounds }: { rounds: LeaderboardRound[] }) {
   );
 }
 
-/** "Leads by 3 shots", "3 shots back", "4 shots clear", "On the line". */
+/**
+ * "Leads by 3 shots", "3 shots back", "4 shots clear", "On the line".
+ *
+ * A stroke gap is only given between cards with the same rounds in. The one order (ranking.ts rankStandings) puts a
+ * card a round short below every full card whatever its to par, so to par no longer rises with rank: a full card at
+ * +4 above a short card at −2 is not "6 shots" either way. Between such cards the fact says what is true instead (the
+ * lead, the rounds short, which side of the line) and gives no strokes.
+ */
 function standingFacts(row: Standing, ctx: BoardContext): Array<{ label: string; value: string }> {
   const facts: Array<{ label: string; value: string }> = [];
   const toPar = row.totalToPar;
   const rank = row.rank;
   if (toPar === null || rank === null) return facts;
-  const toParAt = (r: number) => ctx.scored[r - 1]?.totalToPar ?? null;
+  const at = (r: number): Standing | undefined => ctx.scored[r - 1];
+  const comparable = (other: Standing | undefined): other is Standing & { totalToPar: number } =>
+    !!other && other.totalToPar !== null && other.roundsCompleted === row.roundsCompleted;
   const shots = (n: number) => `${n} ${n === 1 ? 'shot' : 'shots'}`;
+  const roundsShort = (other: Standing) => {
+    const n = Math.abs(other.roundsCompleted - row.roundsCompleted);
+    return `${n} ${n === 1 ? 'round' : 'rounds'} ${row.roundsCompleted < other.roundsCompleted ? 'fewer' : 'more'} in`;
+  };
 
   // The lead.
   if (row.position === 1) {
     const sharing = ctx.scored.filter((s) => s.position === 1).length;
-    const next = ctx.scored.find((s) => s.position !== 1)?.totalToPar ?? null;
+    const next = ctx.scored.find((s) => s.position !== 1);
     facts.push({
       label: 'Lead',
-      value: sharing > 1 ? 'Shares the lead' : next !== null ? `Leads by ${shots(next - toPar)}` : 'Leads',
+      value: sharing > 1 ? 'Shares the lead' : comparable(next) ? `Leads by ${shots(next.totalToPar - toPar)}` : 'Leads',
     });
   } else {
-    const leader = toParAt(1);
-    if (leader !== null) facts.push({ label: 'Lead', value: `${shots(toPar - leader)} back` });
+    const leader = at(1);
+    if (comparable(leader)) facts.push({ label: 'Lead', value: `${shots(toPar - leader.totalToPar)} back` });
+    else if (leader) facts.push({ label: 'Lead', value: roundsShort(leader) });
   }
 
   // A line after rank `line`: inside it, the gap to the first player out;
   // outside it, the gap to the last player in. Level either way is "on" it.
+  // Across cards with different rounds in there is no gap: inside or outside.
   const lineFact = (label: string, line: number) => {
     if (line <= 0) return;
-    const lastIn = toParAt(line);
-    const firstOut = toParAt(line + 1);
-    if (lastIn === null || firstOut === null) return;
-    const gap = rank <= line ? firstOut - toPar : toPar - lastIn;
-    facts.push({ label, value: gap > 0 ? `${shots(gap)} ${rank <= line ? 'clear' : 'back'}` : 'On the line' });
+    const inside = rank <= line;
+    const other = inside ? at(line + 1) : at(line);
+    if (!other || other.totalToPar === null) return;
+    if (!comparable(other)) {
+      facts.push({ label, value: inside ? 'Inside' : 'Outside' });
+      return;
+    }
+    const gap = inside ? other.totalToPar - toPar : toPar - other.totalToPar;
+    facts.push({ label, value: gap > 0 ? `${shots(gap)} ${inside ? 'clear' : 'back'}` : 'On the line' });
   };
   lineFact('Auto-qualify line', ctx.topScoreLine);
   lineFact('Travel cut', ctx.travelLine);

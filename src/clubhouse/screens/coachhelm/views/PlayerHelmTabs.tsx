@@ -12,24 +12,27 @@ import { Icon } from '../../../ui/Icon';
 import { Segmented } from '../../../ui/Segmented';
 import { useHScroll } from '../../../ui/use-hscroll';
 
-const VIEWS: readonly PlayerHelmView[] = ['board', 'profile', 'standing', 'deep-dive'];
+const VIEWS: readonly PlayerHelmView[] = ['board', 'standing', 'deep-dive'];
 
 /**
- * The player's CoachHelm sub-navigation, the player's counterpart of the coach's Board and Ask strip (CH-13923): Board, Game
- * profile, Standing and Deep dive are views of this page, so they are one radiogroup and a choice is a route change, a real
- * address that reloads and shares. Development is not a view of this page (it is Stats' Development tab), so it is a link after
+ * The player's CoachHelm sub-navigation, the player's counterpart of the coach's Board and Ask strip (CH-13923): Board, Standing
+ * and Deep dive are views of this page, so they are one radiogroup and a choice is a route change, a real address that reloads and
+ * shares. Game profile was a fourth until it folded into Standing ("How you play"; design call, Nav). Development is not a view of this page (it is Stats' Development tab), so it is a link after
  * the group, drawn only while that screen is rebuilt, never a radio.
  *
- * Four labels and a link do not fit a phone's width as one control, so on the phone it is a row of chips that scrolls sideways
+ * The labels and a link may not fit a phone's width as one control, so on the phone it is a row of chips that scrolls sideways
  * (the phone board's `qm-switch`), with the current one brought into view.
  *
  * It is controlled: `active` is the view the tap has chosen (at once, not when the server answers) and `onGo` changes view. The
  * page that draws it owns that state (`useViewSwitch`), because it is the page that dims and is marked busy while the next view loads.
  *
- * `coach`: a coach's views of one player (spec A): Deep dive, Standing and Game profile, in that order. The Board is not one of them
+ * `coach`: a coach's views of one player (spec A): Deep dive and Standing, in that order. The Board is not one of them
  * (the way back is the header's link and the phone's Back), and Development is the player's own link, so it is not drawn.
+ *
+ * `held`: drawn by a loading skeleton (desktop), inert and hidden from assistive tech, so the strip stands where and as wide as the
+ * page draws it and does not morph from a bar into itself when the page lands.
  */
-export function PlayerHelmTabs({ active, onGo, coach = false }: { active: PlayerHelmView; onGo: (view: PlayerHelmView) => void; coach?: boolean }) {
+export function PlayerHelmTabs({ active, onGo, coach = false, held = false }: { active: PlayerHelmView; onGo?: (view: PlayerHelmView) => void; coach?: boolean; held?: boolean }) {
   const phone = useChPhone();
   const row = useRef<HTMLDivElement>(null);
   const rowEdges = useHScroll<HTMLDivElement>(row);
@@ -56,14 +59,14 @@ export function PlayerHelmTabs({ active, onGo, coach = false }: { active: Player
               onClick={() => {
                 if (v === active) return;
                 haptic('select');
-                onGo(v);
+                onGo?.(v);
               }}
             >
               {PLAYER_HELM_TAB_LABEL[v]}
             </button>
           ))}
           {development && (
-            <Link className="ch-hv-chip is-link" href={development} onClick={() => haptic('select')}>
+            <Link className="ch-hv-chip is-link" href={development}>
               Development
               <Icon icon={ArrowUpRight} size={14} />
             </Link>
@@ -73,8 +76,8 @@ export function PlayerHelmTabs({ active, onGo, coach = false }: { active: Player
     );
   }
   return (
-    <div className="ch-hv-tabs" data-ch-code="CH-13930">
-      <Segmented<PlayerHelmView> label="CoachHelm view" value={active} options={views.map((v) => ({ value: v, label: PLAYER_HELM_TAB_LABEL[v] }))} onChange={onGo} />
+    <div className="ch-hv-tabs" data-ch-strip="" data-ch-code={held ? undefined : 'CH-13930'} inert={held || undefined} aria-hidden={held || undefined}>
+      <Segmented<PlayerHelmView> label="CoachHelm view" value={active} options={views.map((v) => ({ value: v, label: PLAYER_HELM_TAB_LABEL[v] }))} onChange={(v) => onGo?.(v)} />
       {development && (
         <Button variant="ghost" size="sm" href={development} rightIcon={ArrowUpRight} feel="select">
           Development

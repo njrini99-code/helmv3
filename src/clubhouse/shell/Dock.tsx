@@ -5,6 +5,7 @@ import { ChevronRight, Flag } from 'lucide-react';
 import { createContext, useContext, useEffect, useLayoutEffect, useRef, useState, type ReactNode } from 'react';
 import { createPortal } from 'react-dom';
 import type { ChRoundInProgress } from '../data/shell';
+import { formatToPar } from '../lib/format';
 import { haptic } from '../lib/haptics';
 import { useChPhone } from '../lib/use-phone';
 import { Icon } from '../ui/Icon';
@@ -63,7 +64,9 @@ export function resumeRoundHref(round: ChRoundInProgress): string | null {
 }
 
 export function resumeRoundLabel(round: ChRoundInProgress): string {
-  return round.hole ? `${round.course} · Hole ${round.hole}` : round.course;
+  if (!round.hole) return round.course;
+  // P-6: the score so far rides with the hole ("Oakmont CC · Hole 12 · −2"); nothing scored yet, no figure.
+  return `${round.course} · Hole ${round.hole}${round.toPar != null ? ` · ${formatToPar(round.toPar)}` : ''}`;
 }
 
 /** The shell's dock, above the phone tab bar: the page's controls, then the Resume round accessory. */
@@ -130,7 +133,12 @@ export function ResumeRoundCard({ round }: { round: ChRoundInProgress }) {
         <span>Resume</span>
       </span>
       <span className="ch-next__t">{round.course}</span>
-      {round.hole && <span className="ch-next__m ch-num">Hole {round.hole}</span>}
+      {round.hole && (
+        <span className="ch-next__m ch-num">
+          Hole {round.hole}
+          {round.toPar != null && ` · ${formatToPar(round.toPar)}`}
+        </span>
+      )}
     </Link>
   );
 }

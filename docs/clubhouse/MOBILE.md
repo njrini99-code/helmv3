@@ -107,8 +107,10 @@ signed in.
 
 ## Done for a page's phone gate
 
-- [ ] Matches the mobile design at 390 × 844 side by side (and 430 where it was drawn)
-- [ ] Every catalog state checked at 390px in the preview; phone-only states numbered and tested
+- [ ] Matches the mobile design at 390 × 844 side by side (and 430 where it was
+  drawn)
+- [ ] Every catalog state checked at 390px in the preview; phone-only states
+  numbered and tested
 - [ ] `clubhouse:a11y` clean at 390px
 - [ ] On a real iPhone through `ios:dev`:
   - safe areas right

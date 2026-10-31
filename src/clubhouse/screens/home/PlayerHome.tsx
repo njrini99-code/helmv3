@@ -2,14 +2,17 @@
 
 import { GraduationCap, MessageSquare, Plus } from 'lucide-react';
 import Link from 'next/link';
+import type { ReactNode } from 'react';
 import type { ChHomeEvent } from '../../data/home';
 import type { ChPlayerHome } from '../../data/player-home';
+import type { ChPlayerLive } from '../../data/live-rounds';
 import { Button } from '../../ui/Button';
 import { EmptyState } from '../../ui/States';
 import { PageRefreshNotice } from '../../ui/RefreshNotice';
 import { Icon } from '../../ui/Icon';
 import { SectionBoundary } from '../../ui/SectionBoundary';
 import { useChPhone } from '../../lib/use-phone';
+import { useChClock, useChClockText } from '../../lib/use-clock';
 import { useNow } from '../../lib/use-now';
 import { rebuiltHref } from '../../shell/nav';
 import { LinkPending } from '../../shell/LinkPending';
@@ -20,11 +23,16 @@ import { Countdown } from './Countdown';
 import { eventHref, whenLabel } from './HomePhone';
 import { LatestRound } from './LatestRound';
 import { noRoundsYet, playerFailedParts } from './model';
+import { OwnLiveCard } from './OwnLiveCard';
+import { TeammatesLiveCard } from './TeammatesLiveCard';
 import { PlayerGame } from './PlayerGame';
 import { NoRoundsYet, PlayerHomePhone } from './PlayerHomePhone';
 import { Week } from './Week';
 import { messageCoachHref, postRoundHref } from './player-links';
 import { useHomeDayRollover } from './use-day-rollover';
+import { ChangeMarksProvider } from '../../lib/use-change-marks';
+import { MarkBadge, markSub, useRowMark } from '../calendar/change-note';
+import { NoTeam } from '../../ui/NoTeam';
 import '../../styles/home.css';
 
 /**
@@ -34,12 +42,29 @@ import '../../styles/home.css';
  * next and its countdown beside the latest round; then the player's scoring
  * and the four parts of the game. The phone is PlayerHomePhone (v2 board).
  */
-export function PlayerHome({ data, now }: { data: ChPlayerHome; /** Preview and tests: a frozen clock (ISO). */ now?: string }) {
+export function PlayerHome(props: { data: ChPlayerHome; /** Preview and tests: a frozen clock (ISO). */ now?: string; /** The player's live round and their team's (P-6); omitted, the own card is not drawn. */ live?: ChPlayerLive; playerId?: string }) {
+  return (
+    <ChangeMarksProvider marks={props.data.marks ?? []}>
+      <PlayerHomeBody {...props} />
+    </ChangeMarksProvider>
+  );
+}
+
+function PlayerHomeBody({ data, now, live, playerId }: { data: ChPlayerHome; now?: string; live?: ChPlayerLive; playerId?: string }) {
   const phone = useChPhone();
   // A page left open past the team's midnight reads itself again, so "today" is today (desktop and phone).
   useHomeDayRollover(data.clock, now !== undefined);
-  if (isPlayerFirstRun(data)) return <PlayerFirstRun data={data} />;
-  if (phone) return <PlayerHomePhone data={data} now={now} />;
+  const own =
+    live && playerId ? (
+      <SectionBoundary surface="home.live" label="Round in progress">
+        <div className="ch-lv-deskwrap">
+          <OwnLiveCard initial={live.snapshot} playerId={playerId} legs={live.legs} frozen={now !== undefined} now={now !== undefined ? Date.parse(now) : undefined} />
+          <TeammatesLiveCard initial={live.snapshot} playerId={playerId} frozen={now !== undefined} now={now !== undefined ? Date.parse(now) : undefined} />
+        </div>
+      </SectionBoundary>
+    ) : null;
+  if (isPlayerFirstRun(data)) return <PlayerFirstRun data={data} own={own} />;
+  if (phone) return <PlayerHomePhone data={data} now={now} live={live} playerId={playerId} />;
   const post = postRoundHref();
   // Two or more failed reads are told once under the head, with one Try again; each part keeps its title (CH-1209).
   const failed = playerFailedParts(data);
@@ -51,6 +76,7 @@ export function PlayerHome({ data, now }: { data: ChPlayerHome; /** Preview and 
         <DeskHead data={data} post={post} />
         <CoachAsks asks={data.asks} />
         <PageRefreshNotice parts={failed} />
+        {own}
         <div className="ch-h-sheet ch-sheet is-solo">
           <SectionBoundary surface="home.week" label="This week" code="CH-2205">
             <Week week={data.week} between={data.next ? <DeskNext e={data.next} frozen={now} /> : null} covered={covered} />
@@ -65,6 +91,7 @@ export function PlayerHome({ data, now }: { data: ChPlayerHome; /** Preview and 
       <DeskHead data={data} post={post} />
       <CoachAsks asks={data.asks} />
       <PageRefreshNotice parts={failed} />
+      {own}
       {/* One continuous surface (owner, 2026-10-06): the week and the latest round, then Scoring under a hairline. */}
       <div className="ch-h-flow ch-sheet">
         <div className="ch-h-sheet">
@@ -98,7 +125,7 @@ function DeskHead({ data, post }: { data: ChPlayerHome; post: string | null }) {
         </Button>
         {post && (
           <Button variant="primary" leftIcon={Plus} href={post}>
-            Start a round
+            New round
           </Button>
         )}
       </div>
@@ -108,6 +135,11 @@ function DeskHead({ data, post }: { data: ChPlayerHome; post: string | null }) {
 
 /** Up next inside the week (Player - Home.html `pv-next`): type, when, where, and the countdown. */
 function DeskNext({ e, frozen }: { e: ChHomeEvent; frozen?: string }) {
+  const t = useChClockText();
+  const clock = useChClock();
+  // P-14: a changed event wears a badge in the kicker and its old value struck under the range, until Got it.
+  const mark = useRowMark()(e);
+  const was = mark && !mark.change.partial ? markSub(e.location, mark.change, clock, false) : null;
   const ticking = useNow();
   const now = frozen ? new Date(frozen) : ticking;
   const when = whenLabel(e, now);
@@ -117,11 +149,13 @@ function DeskNext({ e, frozen }: { e: ChHomeEvent; frozen?: string }) {
         <span>
           <Icon icon={TYPE_ICON[e.type]} size={13} />
           Up next · {TYPE_LABEL[e.type]}
+          {mark && <MarkBadge change={mark.change} />}
         </span>
-        <span className={'ch-num' + (when.soon ? ' is-soon' : '')}>{when.text}</span>
+        <span className={'ch-num' + (when.soon ? ' is-soon' : '')}>{t(when.text)}</span>
       </span>
       <span className="ch-ph-next__t">{e.title}</span>
-      <span className="ch-ph-next__m ch-num">{[e.rangeLabel, e.location].filter(Boolean).join(' · ')}</span>
+      <span className="ch-ph-next__m ch-num">{[t(e.rangeLabel), e.location].filter(Boolean).join(' · ')}</span>
+      {was && <span className="ch-ph-next__m ch-num">{was}</span>}
       <MineBadge mine={e.mine} />
       {!e.allDay && <Countdown to={e.startIso} frozen={frozen} />}
       <LinkPending />
@@ -138,7 +172,7 @@ export function isPlayerFirstRun(data: ChPlayerHome): boolean {
 }
 
 /** The v2 first-run page empty state (gh-states.jsx, EMPTY.home.player; D-71). */
-function PlayerFirstRun({ data }: { data: ChPlayerHome }) {
+function PlayerFirstRun({ data, own }: { data: ChPlayerHome; own?: ReactNode }) {
   const start = postRoundHref();
   const classes = rebuiltHref('/golf/dashboard/classes', 'player');
   return (
@@ -149,6 +183,7 @@ function PlayerFirstRun({ data }: { data: ChPlayerHome }) {
         <span className="ch-h-head__date">{data.todayLabel}</span>
         <h1 className="ch-display">{data.greeting}</h1>
       </header>
+      {own}
       <EmptyState
         size="page"
         code="CH-2312"
@@ -158,7 +193,7 @@ function PlayerFirstRun({ data }: { data: ChPlayerHome }) {
         action={
           start ? (
             <Button variant="primary" leftIcon={Plus} href={start}>
-              Start a round
+              New round
             </Button>
           ) : undefined
         }
@@ -177,23 +212,9 @@ function PlayerFirstRun({ data }: { data: ChPlayerHome }) {
 /** A player on no active team: nothing to show yet, and how that changes. */
 export function PlayerHomeNoTeam() {
   // Joining a team lives in Settings' Golf profile (CH-8302).
-  const settings = rebuiltHref('/golf/dashboard/settings?section=golf', 'player');
   return (
     <main className="ch-h-main">
-      <EmptyState
-        size="page"
-        code="CH-2313"
-        shape="rows"
-        title="You aren’t on a team yet"
-        body="Ask your coach for your team’s code or an invite. Once you join, Home shows your week, your rounds and your stats."
-        action={
-          settings ? (
-            <Button variant="primary" href={settings}>
-              Open team settings
-            </Button>
-          ) : undefined
-        }
-      />
+      <NoTeam code="CH-2313" coach={false} body="Ask your coach for your team’s code or an invite. Once you join, Home shows your week, your rounds and your stats." />
     </main>
   );
 }

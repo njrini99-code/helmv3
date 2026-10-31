@@ -6,6 +6,7 @@ import { chLogServer } from '../lib/track-server';
 import { homeClock } from './home';
 import { seasonStartDate } from './season';
 import { courseName, roundType, seasonFrom, teeColorFor, teeLabel, toLibraryRound, type ChLibraryRound, type ChRoundListRow, type ChRoundsLibrary, type ChUnfinishedRound } from './rounds-shape';
+import { isoDay } from '../lib/dates';
 
 export type * from './rounds-shape';
 
@@ -30,7 +31,7 @@ export type * from './rounds-shape';
 type Supabase = Awaited<ReturnType<typeof createClient>>;
 
 const LIST_COLUMNS =
-  'id, course_name, tees_played, round_date, round_type, total_score, score_to_par, front_nine, back_nine, holes_played, total_putts, total_gir, total_gir_possible, total_fairways_hit, total_fairways';
+  'id, course_name, tees_played, round_date, round_type, total_score, score_to_par, front_nine, back_nine, holes_played, total_putts, total_gir, total_gir_possible, total_fairways_hit, total_fairways, course_id';
 
 // `start_hole` is the shotgun start each autosave keeps in draft_data (lib/golf/round-session/play-order.ts), not a column.
 const UNFINISHED_COLUMNS = 'id, course_name, tees_played, round_date, round_type, holes_played, current_hole, updated_at, start_hole:draft_data->startHole';
@@ -160,12 +161,12 @@ export async function loadRoundsLibrary(input: { playerId: string; teamId: strin
     completed,
     loadUnfinished(supabase, input.playerId, completed),
   ]);
-  const todayIso = new Intl.DateTimeFormat('en-CA', { timeZone: clock?.tz ?? 'America/New_York', year: 'numeric', month: '2-digit', day: '2-digit' }).format(now);
+  const todayIso = isoDay(now, clock?.tz ?? 'America/New_York');
 
   return {
     todayIso,
     rounds,
-    season: seasonFrom(rounds.list, seasonStartDate(now)),
+    season: seasonFrom(rounds.list, seasonStartDate(now, clock?.tz)),
     unfinished,
   };
 }

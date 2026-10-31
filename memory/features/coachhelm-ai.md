@@ -149,7 +149,19 @@ Use `memory/context/golfhelm-database.md` for exact columns and `memory/glossary
   asked in Fairway shot entry after a missed first putt from that band, with
   a counter toward `target_count`; one tap writes the miss tag through the
   round's autosave. Contract: the evidence contract's Slice 8a section;
-  entry side: `memory/features/shot-tracking.md`.
+  entry side: `memory/features/shot-tracking.md`. Clubhouse shot entry asks
+  it too (CH-11960, 2026-10-22).
+- Course plan (supercharge Slice 7c, behind `coachhelm_course_plan_v1`,
+  OFF; `src/lib/coachhelm/course-plan/build-plan.ts`, actions in
+  `src/app/golf/actions/coachhelm-course-plan.ts`): the coach reads a plan
+  for a player they coach (`listCoursePlanCourses`, `getCoursePlan`). The
+  player reads their own (2026-10-22, CH-13916 on their Clubhouse Board)
+  through `listMyCoursePlanCourses` and `getMyCoursePlan`, which take no
+  player id: the player is the `golf_players` row whose `user_id` is the
+  session user; no row answers forbidden, a lookup error answers failed
+  (logged). Only the player copy comes back (title, at most three lines,
+  the thin-history line below six rounds, or the line that says nothing
+  stands out); never the coach copy, never a club.
 - `upsertInsightV3` throws `InsightOwnershipLookupError` when the team or
   staff lookup keeps failing, instead of writing the row with no owner.
 - Every read that decides "is there already a row?" fails closed
@@ -252,6 +264,10 @@ Use `memory/context/golfhelm-database.md` for exact columns and `memory/glossary
     green-hit by band has no LPGA figure, so a women's approach read stays
     absent and a women's standing omits the marker. Never PGA numbers.
 
+- Genome `scoring_trend` (2026-10-24): the result carries an optional `se`,
+  the change's Welch standard error from both windows' own spreads.
+  Clubhouse's Momentum says Improving/Regressing only past it; rows stored
+  before have no `se` and read "No clear change" until the nightly run.
 - Wave 6 (2026-10-18):
   - Persona (`v3/genome/persona.ts`): `driver_usage` and `miss_side_bias` are
     style dims, never strengths or watch-outs; they only feed the course
@@ -360,6 +376,21 @@ Use `memory/context/golfhelm-database.md` for exact columns and `memory/glossary
   `hole_number`); derived tee distances carry `distance_method:
   'derived_progress'`. The metric identity table lives in
   `docs/architecture/coachhelm-evidence-contract.md`.
+- Season Standing (2026-10-24, Clubhouse A+ rows 104/105/121, owner decision
+  9; migrations `20261024150000` and `20261024151000`, both HELD, so their
+  objects are named here by migration until they are applied and
+  `db:types` picks them up): Clubhouse Standing reads the season table that
+  `20261024151000` creates, through `loadPlayerSeasonStandingMap`. Every metric
+  there covers 1 August onward in the team's `golf_team_settings.timezone`,
+  and each row carries `rounds_n` (the rounds it was built from) and
+  `season_start`. It is written by `refresh_player_standing_season` from the
+  nightly standing-refresh cron and from `/api/cron/v3/standing-refresh-dirty`
+  (every 5 min). That pass refreshes the teams a round save marked dirty
+  (`markTeamStandingDirty`, through the queue table `20261024150000` creates;
+  3-minute debounce, 30-minute cap). `golf_player_standing` (lifetime cache
+  metrics, 90-day pressure rows) is unchanged and still feeds Fairway and
+  every generator. While the season table is missing, Clubhouse falls back to
+  `golf_player_standing`, labelled "All time" with no row counts.
 - Standing Tour basis (2026-09-22, Package 7B / addendum A2): the three
   `approach_proximity_*` standing rows carry a `basis` column
   (`'on_green' | 'all_shot' | null`) written by
@@ -584,6 +615,56 @@ Use `memory/context/golfhelm-database.md` for exact columns and `memory/glossary
   else log it and store none. Rule-based, no LLM, no flag or migration; rows
   get it on their next re-analyze. Contract:
   `docs/architecture/coachhelm-evidence-contract.md` "Coach voice".
+
+### Coach chat read tools: whole-team reads (2026-10-25)
+
+`get_team_rounds`, `get_tournaments` and `get_qualifiers`
+(`src/lib/coachhelm/v3/chat/read-tools.ts`) read the active roster at once, so
+"who played best in the qualifier" no longer falls back to one player at a
+time. Rules they keep: rounds are scoped by the roster's player ids (not
+`golf_rounds.team_id`, which counts former players and misses rounds logged
+under another team), every `.in()` goes through `chunkIds`, and
+`get_tournaments` is registered only while the tournaments release flag is on.
+`get_team_rounds` and `get_qualifiers` are registered only while Clubhouse is
+on for the coach's team (`isClubhouseForTeam`, 2026-10-28): the engine is
+shared with Fairway's chat, and these were built for Clubhouse's Ask. The
+chat route decides it and passes `teamTools` to `buildCoachTools`.
+`get_team_rounds` returns one `Measurement` per player (three or more draw as
+a ranking) and a weekly team `MeasurementSeries` (drawn as a trend), so the
+Ask thread charts it from the evidence's shape; averages are computed
+server-side so the numeric audit can trace them.
+
+### Coach chat visuals (2026-10-25)
+
+`show_visual` (always registered; the `coachhelm_visual_artifacts_v1` flag was
+removed 2026-10-29 at the owner's request) takes a scene and the
+`evidence_ref`s the read tools returned this turn. `chat/visuals/compile.ts`
+resolves them, refuses what cannot be drawn honestly and returns a hashed
+`ValidatedVisualArtifact`; the message keeps it as `data-visual-artifact`, so a
+reload draws the same chart. See `docs/architecture/coachhelm-agentic-visuals.md`.
+No model text puts a figure on screen: a title or a note with a digit is
+refused or dropped (`figure_in_text`). The artifact's `evidenceRefs` name only
+the reads it draws in full (a leg or the total and nothing else), and the
+thread hides only those reads' evidence blocks, so a read named alongside
+stays visible (2026-10-27).
+
+Model-designed visuals (2026-10-29). `show_visual` `kind: "compose"` lets the
+model design the visual: building blocks (headline, kpis, trend, bars, split,
+compare, note), their order and emphasis, a title, a lede and a layout, each
+block naming the read it draws from. `chat/visuals/compile-composition.ts`
+copies every figure from those reads, drops a block it cannot draw honestly
+(and tells the model why), refuses a digit in any model-written text, and
+returns a hashed `ValidatedComposition` (`chat/visuals/composition.ts`) kept as
+`data-visual-composition` and replayed on reload. The playbook the model
+composes by is `VISUALS_SECTION` in `chat/instructions.ts`, mirrored with the
+card anatomy, motion spec and message mechanics in
+`docs/architecture/coachhelm-visual-playbook.md`. Fairway draws compositions
+and the `sg_anatomy` artifact in `ChatThread` (`CompositionVisual.tsx`, figures
+in `EvidenceFigures.tsx`, motion in `EvidenceMotion.tsx`); visuals that arrive in
+a live answer animate in, restored threads and reduced motion render final.
+Coach chat runs on Sonnet 5.5 (`MODEL_FOR_TASK.coach_chat`, 2026-10-29).
+Fixture for screenshots: `/fairway-preview/coachhelm-evidence` (`?live` replays
+the motion; dev only).
 
 ## UI Contract
 

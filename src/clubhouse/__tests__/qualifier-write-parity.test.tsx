@@ -109,7 +109,7 @@ describe('the live writes call the shared actions Fairway calls, unchanged', () 
     expect(actions.setQualifierEntrants).not.toHaveBeenCalled();
   });
 
-  it('the selection writes are the CoachHelm workspace’s actions, with its arguments', async () => {
+  it('the selection writes are the CoachHelm workspace’s actions, with its arguments; no order is passed (the server decides it)', async () => {
     await LIVE_SELECTION_WRITES.advance('q1', 'scoring');
     await LIVE_SELECTION_WRITES.setPick('q1', 'p1', 'Steady in the wind');
     await LIVE_SELECTION_WRITES.removePick('q1', 'p1');
@@ -118,6 +118,8 @@ describe('the live writes call the shared actions Fairway calls, unchanged', () 
     expect(actions.advanceSelectionState).toHaveBeenCalledWith('q1', 'scoring');
     expect(actions.setQualifierCoachPick).toHaveBeenCalledWith('q1', 'p1', 'Steady in the wind');
     expect(actions.removeQualifierCoachPick).toHaveBeenCalledWith('q1', 'p1');
+    // Owner, 2026-10-28: the server decides the tie order once (the board's), so Clubhouse calls the action exactly as
+    // Fairway's workspace does, with no order of its own.
     expect(actions.chooseQualifierTiePlace.mock.calls).toEqual([
       ['q1', 'p2', true],
       ['q1', 'p2', false],
@@ -129,7 +131,8 @@ describe('the live writes call the shared actions Fairway calls, unchanged', () 
     await expect(LIVE_SELECTION_WRITES.confirm('q1')).resolves.toEqual({ success: true, data: { notified: false } });
     actions.confirmQualifierSelection.mockResolvedValueOnce({ ok: true });
     await expect(LIVE_SELECTION_WRITES.confirm('q1')).resolves.toEqual({ success: true, data: { notified: true } });
-    expect(actions.confirmQualifierSelection).toHaveBeenCalledWith('q1');
+    // The squad confirmed is the one the board showed above the line: the server's order, not one Clubhouse passes.
+    expect(actions.confirmQualifierSelection).toHaveBeenLastCalledWith('q1');
   });
 });
 

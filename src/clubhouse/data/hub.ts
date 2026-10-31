@@ -14,7 +14,8 @@ import type { GolfAnnouncementMeta } from '@/lib/types/golf';
 import { chLogServer } from '../lib/track-server';
 import { rsvpOf } from './calendar';
 import { homeClock } from './home-clock';
-import { fullName, loadSeasonRounds } from './season';
+import { currentSeasonLabel, fullName, loadSeasonRounds } from './season';
+import { isoDay } from '../lib/dates';
 
 /**
  * Team Hub (Clubhouse; docs/clubhouse/phone/team-hub.md). One server read for
@@ -299,31 +300,45 @@ const without = <T extends { id: string }>(rows: T[], hidden: Set<string>): T[] 
 export async function loadTeamHub(input: { role: ChHubRole; teamId: string; userId: string; playerId: string | null }): Promise<ChTeamHub> {
   const supabase = await createClient();
   const now = new Date();
-  const { tz } = await homeClock(supabase, input.teamId, now);
-  const today = new Intl.DateTimeFormat('en-CA', { timeZone: tz, year: 'numeric', month: '2-digit', day: '2-digit' }).format(now);
-  const f = formatters(tz, now);
-
-  const [teamRes, rosterRes, docsRes, updatesRes, hidden] = await Promise.all([
-    supabase.from('golf_teams').select('name, season').eq('id', input.teamId).maybeSingle(),
-    supabase.from('golf_team_members').select('player:golf_players(id, first_name, last_name)').eq('team_id', input.teamId).eq('status', 'active'),
+  // The team's clock is read in the first wave, beside the reads that don't need it (C2): only what is drawn from them does.
+  const clockRead = homeClock(supabase, input.teamId, now);
+  // A coach's second wave (events, tasks, trips, announcements) needs only the clock's today: it starts as soon as that is
+  // known, not after the documents and the bell's notifications (F-0033).
+  const coachWave = input.role === 'coach' ? clockRead.then((c) => coachSecondWave(supabase, input, now, isoDay(now, c.tz))) : null;
+  // The roster is read once (a promise, so awaiting it twice doesn't send it twice); a coach's 30-day pulse needs only it
+  // and the clock, so it starts as soon as both are in, not after the second wave (F-0033).
+  const rosterRead = Promise.resolve(supabase.from('golf_team_members').select('player:golf_players(id, first_name, last_name)').eq('team_id', input.teamId).eq('status', 'active'));
+  const pulseRead =
+    input.role === 'coach'
+      ? Promise.all([clockRead, rosterRead])
+          .then(([c, r]) => (r.error ? null : rosterPulse(supabase, rosterNames(r.data), isoDay(now, c.tz))))
+          .catch(() => null)
+      : null;
+  const [clock, teamRes, rosterRes, docsRes, updatesRes, hidden] = await Promise.all([
+    clockRead,
+    supabase.from('golf_teams').select('name').eq('id', input.teamId).maybeSingle(),
+    rosterRead,
     getDocuments(input.teamId).catch((err: unknown) => ({ data: null, error: err instanceof Error ? err.message : 'failed' })),
     getUnifiedNotifications({ limit: 6 }).catch(() => ({ success: false as const, error: 'failed' })),
     hiddenTestRows(supabase, input.teamId),
   ]);
+  const { tz } = clock;
+  const today = isoDay(now, tz);
+  const f = formatters(tz, now);
   if (teamRes.error) log('team', teamRes.error);
   if (rosterRes.error) log('roster', rosterRes.error);
   if (docsRes.error) log('documents', docsRes.error);
   if (!updatesRes.success) log('updates', 'error' in updatesRes ? updatesRes.error : 'failed');
 
-  type P = { id: string; first_name: string | null; last_name: string | null };
-  const roster = ((rosterRes.data ?? []) as Array<{ player: P | null }>).map((m) => m.player).filter((p): p is P => !!p);
-  const names = new Map(roster.map((p) => [p.id, fullName(p)]));
+  const roster = rosterPlayers(rosterRes.data);
+  const names = rosterNames(rosterRes.data);
 
   const base = {
     role: input.role,
     teamId: input.teamId,
     teamName: teamRes.data?.name ?? 'Your team',
-    season: teamRes.data?.season ?? null,
+    // Computed from 1 August in the team's zone, never the stored free text (F-0002).
+    season: currentSeasonLabel(now, tz),
     viewerPlayerId: input.role === 'player' ? input.playerId : null,
     playersError: input.role === 'coach' && !!rosterRes.error,
     players: input.role === 'coach' ? roster.map((p) => ({ id: p.id, name: fullName(p) })).sort((a, b) => a.name.localeCompare(b.name)) : [],
@@ -426,56 +441,7 @@ export async function loadTeamHub(input: { role: ChHubRole; teamId: string; user
   }
 
   // ── Coach ──
-  const weekEnd = addDays(today, 7);
-  const [annRes, tripsRes, tasksRes, eventsRes, tripEventsRes, weekRes] = await Promise.all([
-    getAnnouncementsWithMeta(input.teamId, input.userId, true).catch(() => ({ success: false as const, error: 'failed' })),
-    supabase.from('golf_travel_itineraries').select(TRIP_COLUMNS).eq('team_id', input.teamId).gte('departure_date', addDays(today, -60)).order('departure_date', { ascending: true }).limit(50),
-    // Capped (C-20): the latest due and the undated are kept, so the cap drops the oldest, not this week's; the section
-    // says how many there are in all.
-    supabase
-      .from('golf_tasks')
-      .select('id, title, description, due_date, category, status', { count: 'exact' })
-      .eq('team_id', input.teamId)
-      .is('parent_task_id', null)
-      .order('due_date', { ascending: false, nullsFirst: true })
-      .limit(HUB_TASK_CAP),
-    // The RSVPs section: this week's events that ask for replies (owner, 2026-10-08: off unless the coach turns it on).
-    supabase
-      .from('golf_events')
-      .select('id, title, event_type, start_time, all_day, location')
-      .eq('team_id', input.teamId)
-      .neq('event_type', CLASS_EVENT_TYPE)
-      .eq('requires_rsvp', true)
-      .is('cancelled_at', null)
-      .gte('start_time', now.toISOString())
-      .lt('start_time', `${weekEnd}T23:59:59Z`)
-      .order('start_time', { ascending: true })
-      .limit(50),
-    // The trip builder's Event step: the next four months of events a team travels for. Classes, practices and
-    // meetings are left out (C-20): a season's practices filled the cap before the tournaments were reached.
-    supabase
-      .from('golf_events')
-      .select('id, title, event_type, start_time, end_time, all_day, location', { count: 'exact' })
-      .eq('team_id', input.teamId)
-      .not('event_type', 'in', `(${[CLASS_EVENT_TYPE, ...NOT_TRAVELED_FOR].join(',')})`)
-      .is('cancelled_at', null)
-      .gte('start_time', now.toISOString())
-      .lt('start_time', `${addDays(today, 120)}T23:59:59Z`)
-      .order('start_time', { ascending: true })
-      .limit(HUB_TRIP_EVENT_CAP),
-    // Home's week strip: every team event from the start of today to the end of the sixth day after it (classes are a
-    // player's own timetable and never the team's). Wide by a day each side of UTC; weekOf keeps the team-local days.
-    supabase
-      .from('golf_events')
-      .select('id, title, event_type, start_time, all_day, location')
-      .eq('team_id', input.teamId)
-      .neq('event_type', CLASS_EVENT_TYPE)
-      .is('cancelled_at', null)
-      .gte('start_time', `${addDays(today, -1)}T00:00:00Z`)
-      .lt('start_time', `${addDays(today, 8)}T00:00:00Z`)
-      .order('start_time', { ascending: true })
-      .limit(100),
-  ]);
+  const [annRes, tripsRes, tasksRes, eventsRes, tripEventsRes, weekRes] = await coachWave!;
   if (weekRes.error) log('week', weekRes.error);
   if (tripEventsRes.error) log('tripEvents', tripEventsRes.error);
   if (!annRes.success) log('announcements', 'error' in annRes ? annRes.error : 'failed');
@@ -497,7 +463,7 @@ export async function loadTeamHub(input: { role: ChHubRole; teamId: string; user
     authorNames(supabase, anns),
     // An all-team post's audience is the roster: without it, who is left is unknown.
     rosterRes.error ? null : notAckedFor(supabase, anns.filter((a) => a.requires_acknowledgement).map((a) => a.id), names, owedPosts),
-    rosterRes.error ? Promise.resolve(null) : rosterPulse(supabase, names, today),
+    pulseRead!,
   ]);
 
   // Waiting on: built from reads already made above (attendance, acknowledgements, assignments, rounds); no new query.
@@ -597,6 +563,15 @@ export async function loadTeamHub(input: { role: ChHubRole; teamId: string; user
 }
 
 /** Coach: rounds the roster logged in 30 days and how many players logged one in 14, or null when the read failed. */
+type RosterPlayer = { id: string; first_name: string | null; last_name: string | null };
+/** The active members the roster read returned, players only. */
+function rosterPlayers(data: unknown): RosterPlayer[] {
+  return ((data ?? []) as Array<{ player: RosterPlayer | null }>).map((m) => m.player).filter((p): p is RosterPlayer => !!p);
+}
+function rosterNames(data: unknown): Map<string, string> {
+  return new Map(rosterPlayers(data).map((p) => [p.id, fullName(p)]));
+}
+
 async function rosterPulse(supabase: Awaited<ReturnType<typeof createClient>>, names: Map<string, string>, today: string): Promise<NonNullable<ChTeamHub['pulse']> | null> {
   const playerIds = [...names.keys()];
   if (!playerIds.length) return { rounds30: 0, active14: 0, players: 0, byPlayer: [] };
@@ -977,7 +952,7 @@ function addDays(date: string, n: number): string {
 
 /** Every label in the team's timezone. */
 export function formatters(tz: string, now: Date) {
-  const ymd = (d: Date) => new Intl.DateTimeFormat('en-CA', { timeZone: tz, year: 'numeric', month: '2-digit', day: '2-digit' }).format(d);
+  const ymd = (d: Date) => isoDay(d, tz);
   const today = ymd(now);
   const utcDay = (date: string) => new Date(`${date.slice(0, 10)}T12:00:00Z`);
   const wdFmt = new Intl.DateTimeFormat('en-US', { timeZone: 'UTC', weekday: 'short' });
@@ -1024,4 +999,58 @@ export function formatters(tz: string, now: Date) {
       return shortFmt.format(utcDay(date));
     },
   };
+}
+
+/** A coach's second wave: everything that needs only the team's today (F-0033: started as soon as the clock is read). */
+function coachSecondWave(supabase: Awaited<ReturnType<typeof createClient>>, input: { teamId: string; userId: string }, now: Date, today: string) {
+  const weekEnd = addDays(today, 7);
+  return Promise.all([
+    getAnnouncementsWithMeta(input.teamId, input.userId, true).catch(() => ({ success: false as const, error: 'failed' })),
+    supabase.from('golf_travel_itineraries').select(TRIP_COLUMNS).eq('team_id', input.teamId).gte('departure_date', addDays(today, -60)).order('departure_date', { ascending: true }).limit(50),
+    // Capped (C-20): the latest due and the undated are kept, so the cap drops the oldest, not this week's; the section
+    // says how many there are in all.
+    supabase
+      .from('golf_tasks')
+      .select('id, title, description, due_date, category, status', { count: 'exact' })
+      .eq('team_id', input.teamId)
+      .is('parent_task_id', null)
+      .order('due_date', { ascending: false, nullsFirst: true })
+      .limit(HUB_TASK_CAP),
+    // The RSVPs section: this week's events that ask for replies (owner, 2026-10-08: off unless the coach turns it on).
+    supabase
+      .from('golf_events')
+      .select('id, title, event_type, start_time, all_day, location')
+      .eq('team_id', input.teamId)
+      .neq('event_type', CLASS_EVENT_TYPE)
+      .eq('requires_rsvp', true)
+      .is('cancelled_at', null)
+      .gte('start_time', now.toISOString())
+      .lt('start_time', `${weekEnd}T23:59:59Z`)
+      .order('start_time', { ascending: true })
+      .limit(50),
+    // The trip builder's Event step: the next four months of events a team travels for. Classes, practices and
+    // meetings are left out (C-20): a season's practices filled the cap before the tournaments were reached.
+    supabase
+      .from('golf_events')
+      .select('id, title, event_type, start_time, end_time, all_day, location', { count: 'exact' })
+      .eq('team_id', input.teamId)
+      .not('event_type', 'in', `(${[CLASS_EVENT_TYPE, ...NOT_TRAVELED_FOR].join(',')})`)
+      .is('cancelled_at', null)
+      .gte('start_time', now.toISOString())
+      .lt('start_time', `${addDays(today, 120)}T23:59:59Z`)
+      .order('start_time', { ascending: true })
+      .limit(HUB_TRIP_EVENT_CAP),
+    // Home's week strip: every team event from the start of today to the end of the sixth day after it (classes are a
+    // player's own timetable and never the team's). Wide by a day each side of UTC; weekOf keeps the team-local days.
+    supabase
+      .from('golf_events')
+      .select('id, title, event_type, start_time, all_day, location')
+      .eq('team_id', input.teamId)
+      .neq('event_type', CLASS_EVENT_TYPE)
+      .is('cancelled_at', null)
+      .gte('start_time', `${addDays(today, -1)}T00:00:00Z`)
+      .lt('start_time', `${addDays(today, 8)}T00:00:00Z`)
+      .order('start_time', { ascending: true })
+      .limit(100),
+  ]);
 }

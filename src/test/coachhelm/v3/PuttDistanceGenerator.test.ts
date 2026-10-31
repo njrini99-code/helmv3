@@ -163,7 +163,7 @@ describe('PuttDistanceGenerator — synthesized priority + action (PLAY: driver+
       // 90.5.toFixed(0) → "91" (PGA 3-5 ft Tour make %).
       const c = new PuttDistanceGenerator(PLAYER_ID, '3_5ft')
         .composeContent(makeAgg({ bucket: '3_5ft', playerValue: 95 }));
-      expect(c.content).toContain('PGA Tour ~91%');
+      expect(c.content).toContain('PGA Tour players make 91%.');
     });
   });
 
@@ -318,7 +318,8 @@ describe('PuttDistanceGenerator — player-own attempts per round (audit defect 
     });
     const g = new PuttDistanceGenerator('p-ci', '10_15ft');
     const c = g.composeContent((await g.aggregate())!);
-    expect(c.content).toMatch(/\(12 attempts\) \(95% range \d+-\d+%\)/);
+    // F-0070: the interval rides in the same bracket as the attempts, once ("likely", not "95% range").
+    expect(c.content).toMatch(/12 attempts, likely \d+–\d+%\)/);
     expect(c.evidence.detail?.make_ci_low).toBeLessThan(25);
     expect(c.evidence.detail?.make_ci_high).toBeGreaterThan(25);
   });

@@ -1,10 +1,10 @@
 import 'server-only';
-import { Users } from 'lucide-react';
 import { getGolfSessionProfile } from '@/lib/auth/session';
+import { loadLiveRounds } from '../data/live-rounds';
 import { loadTeamRounds } from '../data/team-rounds';
 import { TeamRounds } from '../screens/rounds/TeamRounds';
-import { EmptyState } from '../ui/States';
 import { resolveClubhouseTeam } from './team';
+import { NoTeam } from '../ui/NoTeam';
 import '../styles/rounds.css';
 
 /**
@@ -18,9 +18,11 @@ export async function ClubhouseTeamRoundsRoute() {
   if (team?.role !== 'coach') {
     return (
       <main className="ch-rd">
-        <EmptyState size="page" code="CH-11318" icon={Users} title="You aren’t on a team yet" body="The rounds your players post show up here once your team is set up." />
+        <NoTeam code="CH-11318" coach body="The rounds your players post show up here once your team is set up." />
       </main>
     );
   }
-  return <TeamRounds data={await loadTeamRounds({ teamId: team.teamId })} teamId={team.teamId} />;
+  // The live band is read beside the book, never ahead of it; a failed live read is an empty snapshot, which draws no band.
+  const [data, live] = await Promise.all([loadTeamRounds({ teamId: team.teamId }), loadLiveRounds({ teamId: team.teamId, viewer: { role: 'coach', playerId: null } })]);
+  return <TeamRounds data={data} teamId={team.teamId} live={live} />;
 }

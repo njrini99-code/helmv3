@@ -198,6 +198,21 @@ describe('100101 100102 Team Hub · Tasks (a player has the tab; the coach’s b
   });
 });
 
+describe('Team Hub · the trip card at phone width (A24)', () => {
+  it('the place has its own line; a date or a time never breaks inside itself, only between', () => {
+    show(PREVIEW_HUB_PLAYER);
+    const card = screen.getByRole('region', { name: 'Next trip' });
+    expect(card.querySelector('.ch-hw-count__where')?.textContent).toBe('Pine Needles · Southern Pines, NC');
+    // Visual pass 2026-10-28: the space before a separator is U+00A0 as well, so a wrapped line breaks after "·" or "–",
+    // never opening on one.
+    expect(card.querySelector('.ch-hw-count__when')?.textContent).toBe('Mon\u00a03\u00a0– Wed\u00a05\u00a0Nov');
+    const leaves = [...card.querySelectorAll('.ch-hw-rail li')].find((li) => li.querySelector('span')?.textContent === 'Leaves');
+    expect(leaves?.querySelector('b')?.textContent).toBe('Mon\u00a0· 12:00\u00a0PM');
+    const stays = [...card.querySelectorAll('.ch-hw-rail li')].find((li) => li.querySelector('span')?.textContent === 'Stays');
+    expect(stays?.querySelector('em')?.textContent).toBe('Pine Needles\u00a0· Southern Pines, NC');
+  });
+});
+
 describe('Team Hub · Travel', () => {
   it('the next trip’s pass counts the days to go, and only that pass', () => {
     show(PREVIEW_HUB_COACH, 'travel');

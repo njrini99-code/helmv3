@@ -10,7 +10,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 const hapticSpy = vi.hoisted(() => vi.fn());
 vi.mock('../lib/haptics', () => ({ haptic: hapticSpy }));
 vi.mock('../lib/track', () => ({ chReport: vi.fn(), chTrail: vi.fn(), chTagSession: vi.fn() }));
-const routerSpy = vi.hoisted(() => ({ push: vi.fn(), back: vi.fn() }));
+const routerSpy = vi.hoisted(() => ({ push: vi.fn(), back: vi.fn(), replace: vi.fn() }));
 vi.mock('next/navigation', () => ({ useRouter: () => routerSpy, usePathname: () => '/golf/dashboard' }));
 vi.mock('../lib/fonts', () => ({ clubhouseFontVariables: '' }));
 vi.mock('@/hooks/golf/use-appearance-preferences', () => ({ useAppearancePreferences: () => ({ showAnimations: true, updatePreferences: vi.fn() }) }));
@@ -39,7 +39,7 @@ import type { UnifiedNotificationItem } from '@/app/golf/actions/unified-notific
 import { ToastProvider, useToast } from '../ui/Toast';
 import { InlineNotice, RouteErrorView, type RouteErrorKind } from '../ui/Notices';
 import { Bell, BellSourceProvider, type ChBellApi } from '../shell/Bell';
-import { NotRebuilt } from '../shell/NotRebuilt';
+import { CH_ALIAS_WAIT_MS, NotRebuilt } from '../shell/NotRebuilt';
 import { ClubhouseNotFound } from '../shell/NotFound';
 import { OfflineBanner, pendingLine } from '../shell/OfflineBanner';
 import { useOfflineSyncStore } from '@/stores/offline-sync-store';
@@ -142,7 +142,7 @@ describe('Shell · bell', () => {
       const [open, setOpen] = useState(true);
       return (
         <Modal open={open} onClose={() => setOpen(false)} title="Edit">
-          <button type="button" onClick={() => toast({ tone: 'error', title: "Couldn't save", action: { label: 'Retry', run: retry }, code: 'CH-9999' })}>
+          <button type="button" onClick={() => toast({ tone: 'error', title: "Couldn't save", action: { label: 'Try again', run: retry }, code: 'CH-9999' })}>
             Save
           </button>
         </Modal>
@@ -159,7 +159,7 @@ describe('Shell · bell', () => {
     await user.click(screen.getByRole('button', { name: 'Save' }));
     await waitFor(() => expect(dialog.contains(code('CH-9999'))).toBe(true));
     expect(dialog.querySelector('.ch-toasts')!.getAttribute('aria-live')).toBe('polite');
-    await user.click(within(dialog).getByRole('button', { name: 'Retry' }));
+    await user.click(within(dialog).getByRole('button', { name: 'Try again' }));
     expect(retry).toHaveBeenCalledTimes(1);
     await user.click(screen.getByRole('button', { name: 'Save' }));
     await user.click(within(dialog).getByRole('button', { name: 'Close' }));
@@ -278,14 +278,14 @@ describe('Shell · page states', () => {
   });
 
   it.each([
-    ['load', 'CH-1205', '/golf/dashboard/rounds', 'Rounds didn’t load', /connection dropped/],
-    ['unknown', 'CH-1206', '/golf/dashboard/rounds/[id]/review', 'Rounds didn’t load', /reported automatically/],
-    ['unknown', 'CH-1206', '/golf/dashboard/team-hub', 'Team Hub didn’t load', /reported automatically/],
-    ['load', 'CH-1205', '/golf/dashboard/my-development', 'My development didn’t load', /connection dropped/],
-    ['unknown', 'CH-1206', '/golf/dashboard', 'Something went wrong on this page', /reported automatically/],
-    ['unknown', 'CH-1206', '/clubhouse-preview', 'Something went wrong on this page', /reported automatically/],
+    ['load', 'CH-1205', '/golf/dashboard/rounds', 'Rounds didn’t load', /^(?!.*connection).*Nothing you saved is lost\. Try again\./],
+    ['unknown', 'CH-1206', '/golf/dashboard/rounds/[id]/review', 'Rounds didn’t load', /Nothing you saved is lost\. Try again\./],
+    ['unknown', 'CH-1206', '/golf/dashboard/team-hub', 'Team Hub didn’t load', /Nothing you saved is lost\. Try again\./],
+    ['load', 'CH-1205', '/golf/dashboard/my-development', 'My development didn’t load', /^(?!.*connection).*Nothing you saved is lost\. Try again\./],
+    ['unknown', 'CH-1206', '/golf/dashboard', 'Something went wrong on this page', /Nothing you saved is lost\. Try again\./],
+    ['unknown', 'CH-1206', '/clubhouse-preview', 'Something went wrong on this page', /Nothing you saved is lost\. Try again\./],
     ['chunk', 'CH-1202', '/golf/dashboard/rounds', 'A newer version of GolfHelm is ready', /older version/],
-    ['transient', 'CH-1204', '/golf/dashboard/rounds', 'GolfHelm is slow to respond', /busy/],
+    ['transient', 'CH-1204', '/golf/dashboard/rounds', 'GolfHelm is slow to respond', /didn’t answer in time\. Nothing you saved is lost/],
   ] as const)('%s → %s names the page from its route %s', async (kind, c, route, title, body) => {
     wrap(<RouteErrorView kind={kind as RouteErrorKind} isRetrying={false} retryCount={0} onRetry={vi.fn()} homePath="/golf/dashboard" route={route} />);
     await expectCode(c);
@@ -302,6 +302,14 @@ describe('Shell · page states', () => {
     const home = screen.getByRole('link', { name: 'Back to Home' });
     expect(home.getAttribute('href')).toBe('/golf/dashboard');
     expect(home.className).toContain('ch-btn--primary');
+  });
+
+  it('CH-1301 a player on a coach-only page is told it is a coach\u2019s page, not that it is coming', async () => {
+    wrap(<NotRebuilt label="Recruiting" coachOnly />);
+    await expectCode('CH-1301', /Only coaches use Recruiting/);
+    expect(screen.getByRole('heading', { level: 1 }).textContent).toBe('Only coaches use Recruiting');
+    expect(code('CH-1301')!.textContent).not.toMatch(/rebuilt|on the list/);
+    expect(screen.getByRole('link', { name: 'Back to Home' }).getAttribute('href')).toBe('/golf/dashboard');
   });
 
   it('CH-1301 a page that is not rebuilt', async () => {
@@ -347,7 +355,7 @@ describe('Shell · network', () => {
     expect(code('CH-1901')).toBeNull();
     setOnline(false);
     act(() => void window.dispatchEvent(new Event('offline')));
-    await expectCode('CH-1901', /You're offline/);
+    await expectCode('CH-1901', /You’re offline/);
     expect(hapticSpy).toHaveBeenCalledWith('warning');
     setOnline(true);
     act(() => void window.dispatchEvent(new Event('online')));
@@ -627,7 +635,7 @@ describe('Shell · navigation and accessibility', () => {
     }
   });
 
-  it('CH-1002 a sign-out that fails says you are still signed in, with Retry', async () => {
+  it('CH-1002 a sign-out that fails says so, in the same words as Settings, with Try again', async () => {
     const user = userEvent.setup();
     signOutSpy.mockReset();
     signOutSpy.mockRejectedValueOnce(new Error('network'));
@@ -635,7 +643,8 @@ describe('Shell · navigation and accessibility', () => {
     wrap(<PhoneNav pathname="/golf/dashboard" shell={shell} role="player" user={{ name: 'Theo Marchetti' }} />);
     await user.click(screen.getByRole('button', { name: 'Account' }));
     await user.click(await screen.findByRole('button', { name: 'Sign out' }));
-    await expectCode('CH-1002', /Couldn't sign out/);
+    await expectCode('CH-1002', /Couldn’t sign you out/);
+    expect(screen.getByRole('button', { name: 'Try again' })).toBeTruthy();
     expect(hapticSpy).toHaveBeenCalledWith('error');
     expect(screen.getByRole('button', { name: 'Sign out' })).toBeTruthy();
   });
@@ -760,7 +769,8 @@ describe('Shell · navigation and accessibility', () => {
       }
     });
 
-    it('with reduced motion a sheet does not drag', async () => {
+    // F-0018 (audit 2026-10-29): Reduce Motion changes how a drag settles, never whether there is one.
+    it('with reduced motion a sheet still drags, and a pull past the mark closes it', async () => {
       const real = window.matchMedia;
       window.matchMedia = ((q: string) => ({ ...real(q), matches: q === '(max-width: 820px)' || q === '(prefers-reduced-motion: reduce)' })) as typeof window.matchMedia;
       try {
@@ -777,8 +787,7 @@ describe('Shell · navigation and accessibility', () => {
           window.dispatchEvent(new MouseEvent('pointermove', { clientY: 300 }));
           window.dispatchEvent(new MouseEvent('pointerup', { clientY: 300 }));
         });
-        expect(dialog.style.translate).toBe('');
-        expect(onClose).not.toHaveBeenCalled();
+        expect(onClose).toHaveBeenCalled();
       } finally {
         window.matchMedia = real;
       }
@@ -1056,12 +1065,20 @@ describe('Shell · phone chrome', () => {
     expect(title.textContent).toBe('Notifications');
     expect(title.firstElementChild!.className).toBe('ch-sr-only');
     view.unmount();
-    // My qualifiers is the player's: a coach there gets the not-rebuilt notice under the plain bar.
-    render(
-      <ClubhouseFrame userData={coach} shell={shell} pathname="/golf/dashboard/my-qualifiers">
-        <p>My qualifiers body</p>
-      </ClubhouseFrame>,
-    );
+    // My qualifiers is the player's: a coach there gets the not-rebuilt notice under the plain bar, once the alias has had
+    // its CH_ALIAS_WAIT_MS to redirect (A30: an old address on its way somewhere draws a blank canvas first).
+    vi.useFakeTimers();
+    try {
+      render(
+        <ClubhouseFrame userData={coach} shell={shell} pathname="/golf/dashboard/my-qualifiers">
+          <p>My qualifiers body</p>
+        </ClubhouseFrame>,
+      );
+      expect(code('CH-1301')).toBeNull();
+      act(() => vi.advanceTimersByTime(CH_ALIAS_WAIT_MS));
+    } finally {
+      vi.useRealTimers();
+    }
     expect(code('CH-1301')).not.toBeNull();
     expect(code('CH-1402')).toBeNull();
     expect(document.querySelector('.ch-topbar')!.getAttribute('data-phone')).toBe('root');
@@ -1253,14 +1270,59 @@ describe('Shell · behaviour contracts (P001)', () => {
     expect(code('CH-1808')).not.toBeNull();
     expect(document.getElementById('ch-content')!.textContent).toMatch(/Roster body/);
     unmount();
-    // Lineups is rebuilt for neither role yet: a player on that address gets the notice.
-    render(
-      <ClubhouseFrame userData={player} shell={shell} pathname="/golf/dashboard/lineups">
-        <p>Lineups body</p>
+    // Dev is a real dashboard folder rebuilt for neither role: a player on that address gets the notice.
+    const second = render(
+      <ClubhouseFrame userData={player} shell={shell} pathname="/golf/dashboard/dev/haptics">
+        <p>Dev body</p>
       </ClubhouseFrame>,
     );
-    expect(screen.queryByText('Lineups body')).toBeNull();
+    expect(screen.queryByText('Dev body')).toBeNull();
     expect(code('CH-1301')).not.toBeNull();
+    second.unmount();
+    // F-0025: a mistyped address is no dashboard folder at all: its segment (the not-found page, CH-1306) renders.
+    render(
+      <ClubhouseFrame userData={player} shell={shell} pathname="/golf/dashboard/zz-x">
+        <p data-ch-code="CH-1306">We couldn’t find that</p>
+      </ClubhouseFrame>,
+    );
+    expect(code('CH-1306')).not.toBeNull();
+    expect(code('CH-1301')).toBeNull();
+  });
+
+  it('F-0066 a player’s Stats address drops the coach-only ?player=, keeping the rest; a coach’s does not', () => {
+    routerSpy.replace.mockClear();
+    const first = render(
+      <ClubhouseFrame userData={player} shell={shell} pathname="/golf/dashboard/stats" search="player=x&window=season">
+        <p>Stats body</p>
+      </ClubhouseFrame>,
+    );
+    expect(routerSpy.replace).toHaveBeenCalledWith('/golf/dashboard/stats?window=season', { scroll: false });
+    first.unmount();
+    routerSpy.replace.mockClear();
+    render(
+      <ClubhouseFrame userData={coach} shell={shell} pathname="/golf/dashboard/stats" search="player=x&window=season">
+        <p>Stats body</p>
+      </ClubhouseFrame>,
+    );
+    expect(routerSpy.replace).not.toHaveBeenCalled();
+  });
+
+  it('10802 a player on a page rebuilt for coaches only is told it is a coach\u2019s page; on an unbuilt one, that it is coming', () => {
+    const { unmount } = render(
+      <ClubhouseFrame userData={player} shell={shell} pathname="/golf/dashboard/recruiting">
+        <p>Recruiting body</p>
+      </ClubhouseFrame>,
+    );
+    expect(screen.queryByText('Recruiting body')).toBeNull();
+    expect(screen.getByRole('heading', { level: 1 }).textContent).toBe('Only coaches use Recruiting');
+    unmount();
+    // A coach on an unbuilt address still reads the plain notice.
+    render(
+      <ClubhouseFrame userData={coach} shell={shell} pathname="/golf/dashboard/dev/haptics">
+        <p>Dev body</p>
+      </ClubhouseFrame>,
+    );
+    expect(screen.getByRole('heading', { level: 1 }).textContent).toMatch(/hasn.t been rebuilt yet$/);
   });
 
   it('10301 the bell reads its list again every time it opens', async () => {
@@ -1341,7 +1403,7 @@ describe('Shell · behaviour contracts (P001)', () => {
     wrap(<Saver fn={fn} />);
     await user.click(screen.getByRole('button', { name: 'Save' }));
     await expectCode('CH-8001', /Couldn't save your profile/);
-    await user.click(screen.getByRole('button', { name: 'Retry' }));
+    await user.click(screen.getByRole('button', { name: 'Try again' }));
     await screen.findByText('Profile saved');
     expect(fn).toHaveBeenCalledTimes(2);
   });

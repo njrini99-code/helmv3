@@ -1,0 +1,511 @@
+/*
+ * P-5 Tournaments from the calendar: the tournament section of the calendar editor (the shared TournamentFields and
+ * RoundRow), round mode's banner, the round pill on calendar blocks, the agenda caption and the round card.
+ * Plan P-05 sections 4.1, 4.3, 4.9 and 4.11.4.
+ *
+ * No left borders, stripes or inset left shadows anywhere (owner rule): every card, row, banner and block says what it
+ * is with a fill tint, a full hairline, a leading plate or glyph, a top label, or weight. Only opacity and transform
+ * move; nothing animates on first paint; every focus ring is the house ring.
+ */
+
+/* The section panel, under the type picker. */
+.ch-tfx {
+  margin-top: var(--ch-space-4);
+  padding: var(--ch-space-4);
+  background: var(--ch-bg-subtle);
+  border: var(--ch-hairline-w) solid var(--ch-border-hairline);
+  border-radius: var(--ch-radius-card);
+}
+.ch-tfx__head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--ch-space-2) var(--ch-space-3);
+  min-height: 44px;
+}
+.ch-tfx__title {
+  display: flex;
+  align-items: center;
+  gap: var(--ch-space-2);
+  margin: 0;
+  font: var(--ch-type-15-strong);
+  letter-spacing: var(--ch-track-15);
+  color: var(--ch-text-primary);
+}
+.ch-tfx__title svg {
+  color: var(--ch-green-700);
+}
+.ch-tfx__track {
+  margin-left: auto;
+  font: var(--ch-type-13-medium);
+  letter-spacing: var(--ch-track-13);
+  color: var(--ch-text-secondary);
+}
+.ch-tfx__hint {
+  margin: var(--ch-space-0_5) 0 var(--ch-space-3);
+  font: var(--ch-type-13);
+  letter-spacing: var(--ch-track-13);
+  color: var(--ch-text-tertiary);
+}
+.ch-tfx__hint.is-error {
+  color: var(--ch-danger-600);
+}
+.ch-tfx__body {
+  display: grid;
+  gap: var(--ch-space-3);
+}
+.ch-tfx__gap {
+  margin-top: var(--ch-space-2);
+}
+.ch-qf-picker__head {
+  margin: var(--ch-space-2) 0 var(--ch-space-1);
+  font: var(--ch-type-13-medium);
+  letter-spacing: var(--ch-track-13);
+  color: var(--ch-text-tertiary);
+}
+
+/* A notice inside the section: a tint and a full hairline, never a side bar. */
+.ch-tfx-note {
+  display: grid;
+  gap: var(--ch-space-1);
+  padding: var(--ch-space-3);
+  border: var(--ch-hairline-w) solid var(--ch-border-hairline);
+  border-radius: var(--ch-radius-md);
+  font: var(--ch-type-13);
+  letter-spacing: var(--ch-track-13);
+}
+.ch-tfx-note b {
+  font: var(--ch-type-13-medium);
+  letter-spacing: var(--ch-track-13);
+}
+.ch-tfx-note--error {
+  background: var(--ch-danger-100);
+  color: var(--ch-danger-600);
+}
+.ch-tfx-note--warning {
+  background: var(--ch-warning-100);
+  color: var(--ch-warning-600);
+}
+.ch-tfx-note--info {
+  background: var(--ch-info-100);
+  color: var(--ch-info-600);
+}
+.ch-tfx-note:focus-visible {
+  outline: 2px solid var(--ch-border-focus);
+  outline-offset: 2px;
+}
+.ch-tfx-note__act {
+  justify-self: start;
+}
+
+/* A label column beside its field on desktop, above it on the phone. */
+.ch-tfx__row {
+  display: grid;
+  grid-template-columns: 96px minmax(0, 1fr);
+  align-items: start;
+  gap: var(--ch-space-3);
+}
+.ch-tfx__lbl {
+  padding-top: var(--ch-space-2);
+  font: var(--ch-type-13-medium);
+  letter-spacing: var(--ch-track-13);
+  color: var(--ch-text-secondary);
+}
+.ch-tfx__pair {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: var(--ch-space-3);
+}
+.ch-tfx__help {
+  margin: var(--ch-space-1) 0 0;
+  font: var(--ch-type-13);
+  letter-spacing: var(--ch-track-13);
+  color: var(--ch-text-tertiary);
+}
+.ch-tfx__help.is-error {
+  color: var(--ch-danger-600);
+}
+
+/* The course field: a button drawn as a field. Its error state is a full ring, never a side bar. */
+.ch-tfx__course {
+  display: flex;
+  align-items: center;
+  gap: var(--ch-space-2);
+  width: 100%;
+  min-height: 36px;
+  padding: 0 var(--ch-space-3);
+  background: var(--ch-bg-surface);
+  border: var(--ch-hairline-w) solid var(--ch-border-control);
+  border-radius: var(--ch-radius-md);
+  font: var(--ch-type-14);
+  letter-spacing: var(--ch-track-14);
+  color: var(--ch-text-primary);
+  text-align: left;
+  cursor: pointer;
+}
+.ch-tfx__course > span {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.ch-tfx__course.is-empty > span {
+  color: var(--ch-text-placeholder);
+}
+.ch-tfx__course svg {
+  flex: none;
+  color: var(--ch-text-tertiary);
+}
+.ch-tfx__course:focus-visible {
+  outline: 2px solid var(--ch-border-focus);
+  outline-offset: 2px;
+}
+.ch-tfx__course[data-invalid='true'] {
+  border-color: var(--ch-danger-600);
+}
+
+/* The rounds: a nested grouped list, rows split by a hairline inset past the plate. */
+.ch-tfx__rounds {
+  background: var(--ch-bg-surface);
+  border: var(--ch-hairline-w) solid var(--ch-border-hairline);
+  border-radius: var(--ch-radius-md);
+  overflow: clip;
+  container-type: inline-size;
+}
+.ch-tfx__round {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: var(--ch-space-3);
+  min-height: 52px;
+  padding: var(--ch-space-2) var(--ch-space-2) var(--ch-space-2) var(--ch-space-3);
+}
+.ch-tfx__round + .ch-tfx__round::before,
+.ch-tfx__add::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  right: 0;
+  left: 56px;
+  height: var(--ch-hairline-w);
+  background: var(--ch-border-hairline);
+}
+.ch-tfx__plate {
+  display: grid;
+  flex: none;
+  place-items: center;
+  width: max(32px, calc(32px * var(--ch-type-scale, 1)));
+  height: max(32px, calc(32px * var(--ch-type-scale, 1)));
+  background: var(--ch-green-50);
+  border-radius: var(--ch-radius-md);
+  font: var(--ch-type-13-medium);
+  letter-spacing: var(--ch-track-13);
+  color: var(--ch-green-700);
+}
+.ch-tfx__day {
+  display: grid;
+  flex: 1;
+  gap: var(--ch-space-0_5);
+  min-width: 0;
+}
+.ch-tfx__day b {
+  font: var(--ch-type-14-medium);
+  letter-spacing: var(--ch-track-14);
+  color: var(--ch-text-primary);
+}
+.ch-tfx__day small {
+  font: var(--ch-type-13);
+  letter-spacing: var(--ch-track-13);
+  color: var(--ch-text-tertiary);
+}
+.ch-tfx__label36 {
+  padding: var(--ch-space-2) var(--ch-space-3) var(--ch-space-0_5);
+  font: var(--ch-type-13);
+  letter-spacing: var(--ch-track-13);
+  color: var(--ch-text-tertiary);
+}
+.ch-tfx__tee {
+  flex: none;
+  width: 112px;
+}
+.ch-tfx__more-btn {
+  display: grid;
+  flex: none;
+  place-items: center;
+  width: 36px;
+  height: 36px;
+  padding: 0;
+  background: transparent;
+  border: 0;
+  border-radius: var(--ch-radius-md);
+  color: var(--ch-text-secondary);
+  cursor: pointer;
+}
+.ch-tfx__more-btn:focus-visible,
+.ch-tfx__add:focus-visible,
+.ch-tfx__disclose:focus-visible {
+  outline: 2px solid var(--ch-border-focus);
+  outline-offset: 2px;
+}
+.ch-tfx__add {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: var(--ch-space-2);
+  width: 100%;
+  min-height: 44px;
+  padding: 0 var(--ch-space-3);
+  background: transparent;
+  border: 0;
+  font: var(--ch-type-13-medium);
+  letter-spacing: var(--ch-track-13);
+  color: var(--ch-green-700);
+  cursor: pointer;
+}
+.ch-tfx__lock {
+  display: flex;
+  align-items: center;
+  gap: var(--ch-space-1_5);
+  margin: var(--ch-space-2) 0 var(--ch-space-3);
+  font: var(--ch-type-13);
+  letter-spacing: var(--ch-track-13);
+  color: var(--ch-text-tertiary);
+}
+.ch-tfx__counts {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--ch-space-2);
+}
+.ch-tfx__num {
+  width: 72px;
+}
+.ch-tfx__disclose {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  min-height: 36px;
+  padding: 0;
+  background: transparent;
+  border: 0;
+  font: var(--ch-type-13-medium);
+  letter-spacing: var(--ch-track-13);
+  color: var(--ch-text-secondary);
+  cursor: pointer;
+}
+.ch-tfx__disclose svg {
+  transition: transform var(--ch-dur-quick) var(--ch-ease);
+}
+.ch-tfx__disclose[aria-expanded='true'] svg {
+  transform: rotate(180deg);
+}
+
+/* The receipt sentence, in place of the editor's receipt list. */
+.ch-tfx__receipt {
+  margin: 0;
+  padding-top: var(--ch-space-3);
+  border-top: var(--ch-hairline-w) solid var(--ch-border-hairline);
+  font: var(--ch-type-13);
+  letter-spacing: var(--ch-track-13);
+  color: var(--ch-text-secondary);
+}
+
+/* Round mode's banner: a tint and a full hairline with a leading plate. */
+.ch-tfx-banner {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--ch-space-3);
+  padding: var(--ch-space-3);
+  background: var(--ch-green-50);
+  border: var(--ch-hairline-w) solid var(--ch-border-hairline);
+  border-radius: var(--ch-radius-card);
+}
+.ch-tfx-banner .ch-tfx__plate {
+  background: var(--ch-bg-surface);
+}
+.ch-tfx-banner__t {
+  display: grid;
+  flex: 1;
+  gap: var(--ch-space-0_5);
+  min-width: 0;
+}
+.ch-tfx-banner__t b {
+  display: -webkit-box;
+  overflow: hidden;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  font: var(--ch-type-14-medium);
+  letter-spacing: var(--ch-track-14);
+  color: var(--ch-text-primary);
+}
+.ch-tfx-banner__t small {
+  font: var(--ch-type-13);
+  letter-spacing: var(--ch-track-13);
+  color: var(--ch-text-secondary);
+}
+
+/* Round cards on the desk and the season home: a top label, a plate, a full hairline. */
+.ch-tfx-cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  gap: var(--ch-space-3);
+}
+.ch-tfx-card {
+  display: grid;
+  gap: var(--ch-space-2);
+  min-height: 76px;
+  padding: var(--ch-space-3) var(--ch-space-4);
+  background: var(--ch-bg-surface);
+  border: var(--ch-hairline-w) solid var(--ch-border-hairline);
+  border-radius: var(--ch-radius-card);
+  box-shadow: var(--ch-elevation-reading);
+  color: inherit;
+  text-decoration: none;
+  transition: background-color var(--ch-dur-press) var(--ch-ease);
+}
+.ch-tfx-card[data-ch-pressed] {
+  background: var(--ch-ledger-row-press);
+}
+@media (hover: hover) {
+.ch-tfx-card:active {
+  background: var(--ch-ledger-row-press);
+}
+}
+.ch-tfx-card:focus-visible {
+  outline: 2px solid var(--ch-border-focus);
+  outline-offset: 2px;
+}
+.ch-tfx-card__top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--ch-space-2);
+  font: var(--ch-type-13);
+  letter-spacing: var(--ch-track-13);
+  color: var(--ch-text-tertiary);
+}
+.ch-tfx-card__status {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--ch-space-1_5);
+}
+.ch-tfx-card__dot {
+  width: 8px;
+  height: 8px;
+  background: var(--ch-ink-500);
+  border-radius: 50%;
+}
+.ch-tfx-card[data-status='live'] .ch-tfx-card__dot {
+  background: var(--ch-green-600);
+}
+.ch-tfx-card[data-status='live'] .ch-tfx-card__status {
+  color: var(--ch-green-700);
+}
+.ch-tfx-card[data-status='suspended'] .ch-tfx-card__dot {
+  background: var(--ch-warning-600);
+}
+.ch-tfx-card[data-status='final'] .ch-tfx-card__dot {
+  background: var(--ch-text-primary);
+}
+.ch-tfx-card__main {
+  display: flex;
+  align-items: center;
+  gap: var(--ch-space-3);
+}
+.ch-tfx-card .ch-tfx__plate {
+  width: max(40px, calc(40px * var(--ch-type-scale, 1)));
+  height: max(40px, calc(40px * var(--ch-type-scale, 1)));
+  font: var(--ch-type-14-medium);
+  letter-spacing: var(--ch-track-14);
+}
+.ch-tfx-card[data-status='cancelled'] .ch-tfx__plate {
+  background: var(--ch-bg-subtle);
+  color: var(--ch-text-tertiary);
+}
+.ch-tfx-card__text {
+  display: grid;
+  flex: 1;
+  gap: var(--ch-space-0_5);
+  min-width: 0;
+}
+.ch-tfx-card__title {
+  overflow: hidden;
+  font: var(--ch-type-15-strong);
+  letter-spacing: var(--ch-track-15);
+  color: var(--ch-text-primary);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.ch-tfx-card__sub {
+  font: var(--ch-type-13);
+  letter-spacing: var(--ch-track-13);
+  color: var(--ch-text-tertiary);
+}
+
+/* The phone: one column, labels above fields, 44 px targets. */
+@media (max-width: 719px) {
+  .ch-tfx {
+    padding: var(--ch-space-3);
+  }
+  .ch-tfx__row,
+  .ch-tfx__pair {
+    grid-template-columns: minmax(0, 1fr);
+    gap: var(--ch-space-1_5);
+  }
+  .ch-tfx__lbl {
+    padding-top: 0;
+  }
+  .ch-tfx__track {
+    margin-left: 0;
+  }
+  .ch-tfx__course {
+    min-height: 44px;
+  }
+  .ch-tfx__round {
+    min-height: 56px;
+  }
+  .ch-tfx__tee {
+    width: 104px;
+  }
+  .ch-tfx__more-btn {
+    width: 44px;
+    height: 44px;
+  }
+  .ch-tfx-cards {
+    grid-template-columns: minmax(0, 1fr);
+    gap: var(--ch-space-2);
+  }
+}
+
+/* A touch screen on a desktop layout (an iPad, a touch laptop) gets the phone's 44 × 44 hit areas too. */
+@media (pointer: coarse) {
+  .ch-tfx__course,
+  .ch-tfx__add,
+  .ch-tfx__disclose {
+    min-height: 44px;
+  }
+  .ch-tfx__more-btn {
+    width: 44px;
+    height: 44px;
+  }
+}
+
+/* Large Text Size: the tee time drops under the day text below 360 px of room. */
+@container (max-width: 359px) {
+  .ch-tfx__round {
+    flex-wrap: wrap;
+  }
+  .ch-tfx__tee {
+    order: 3;
+    width: 100%;
+    margin-left: calc(32px + var(--ch-space-3));
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ch-tfx__disclose svg,
+  .ch-tfx-card {
+    transition: none;
+  }
+}

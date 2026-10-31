@@ -7,8 +7,10 @@ import { createPortal } from 'react-dom';
 import { Avatar } from '../../ui/Avatar';
 import { Icon } from '../../ui/Icon';
 import { haptic } from '../../lib/haptics';
+import { useChClock } from '../../lib/use-clock';
 import { CH_POP, chTween } from '../../lib/motion';
 import { useChReducedMotion } from '../../lib/reduced-motion';
+import { useChTypeK } from './type-k';
 import { CAL_HH, dayNum, dowOf, fmtHour, monthName, rangeLabel, type ChCalEvent, type ChCalPerson, type ChClassGroup } from './model';
 
 const W = 340;
@@ -51,8 +53,9 @@ export function ClassGroupBlock({
 }) {
   const id = useId();
   const reduced = useChReducedMotion();
+  const clock = useChClock();
   const [open, setOpen] = useState(false);
-  const [pos, setPos] = useState<{ left: number; top: number; maxHeight: number } | null>(null);
+  const [pos, setPos] = useState<{ left: number; top: number; maxHeight: number; origin: string } | null>(null);
   const btn = useRef<HTMLButtonElement | null>(null);
   const card = useRef<HTMLDivElement | null>(null);
 
@@ -66,9 +69,11 @@ export function ClassGroupBlock({
   const names = [...new Set(g.items.map((e) => nameOf(e).split(' ')[0]!))];
   const more = names.length - 1;
   const sel = g.items.some((e) => e.id === selId);
-  const short = h < 40;
-  // Lines under the title: padding 12, title 16, a gap of 2, then 15 a line.
-  const lines = short ? 0 : Math.min(2, Math.floor((h - 30) / 15));
+  const k = useChTypeK();
+  // The lines as the CSS draws them at the reader's text size: the title 13/18 and each line under it 12/16 after a gap of
+  // 2, under 6px of padding (it counted 15 a line, so a larger Text Size pushed the last name out of the block).
+  const short = h < 6 + 34 * k;
+  const lines = short ? 0 : Math.min(2, Math.floor((h - 6 - 18 * k + 0.5) / (2 + 16 * k)));
   const fill = names.length >= 7 ? 3 : names.length >= 4 ? 2 : 1;
 
   const close = useCallback((focus = true) => {
@@ -86,7 +91,8 @@ export function ClassGroupBlock({
       const l = right ? r.right + 8 : Math.max(8, r.left - 8 - W);
       const maxHeight = window.innerHeight - 16;
       const t = Math.max(8, Math.min(r.top, window.innerHeight - 8 - Math.min(ch, maxHeight)));
-      setPos({ left: l, top: t, maxHeight });
+      // It grows from the corner beside the block: top left when it opens on the right, top right when on the left.
+      setPos({ left: l, top: t, maxHeight, origin: right ? 'top left' : 'top right' });
     };
     place();
     const onScroll = (e: Event) => {
@@ -139,7 +145,7 @@ export function ClassGroupBlock({
         data-print-visible
         className={`ch-ev ch-ev--class ch-ev--group ch-ev--fill-${fill}${short ? ' ch-ev--short' : ''}${lanes > 1 ? ' ch-ev--lane' : ''}${sel || open ? ' is-sel' : ''}`}
         style={{ top, height: h, left: `calc(${left}% + 3px)`, width: `calc(${100 - left}% - 6px)`, zIndex: lanes > 1 ? lane + 1 : undefined }}
-        aria-label={`Class: ${names.length} players, ${fmtHour(g.start)} to ${fmtHour(g.until)}. ${names.join(', ')}`}
+        aria-label={`Class: ${names.length} players, ${fmtHour(g.start, true, clock)} to ${fmtHour(g.until, true, clock)}. ${names.join(', ')}`}
         aria-haspopup="dialog"
         aria-expanded={open}
         aria-controls={id}
@@ -164,7 +170,7 @@ export function ClassGroupBlock({
                 aria-label={`Class, ${dowOf(g.date)} ${dayNum(g.date)} ${monthName(g.date)}`}
                 className="ch-cg"
                 data-ui="clubhouse"
-                style={{ left: pos?.left ?? -9999, top: pos?.top, maxHeight: pos?.maxHeight, width: W }}
+                style={{ left: pos?.left ?? -9999, top: pos?.top, maxHeight: pos?.maxHeight, width: W, transformOrigin: pos?.origin }}
                 initial={reduced ? { opacity: 0 } : CH_POP.initial}
                 animate={reduced ? { opacity: 1 } : CH_POP.animate}
                 exit={reduced ? { opacity: 0 } : CH_POP.exit}
@@ -178,7 +184,7 @@ export function ClassGroupBlock({
                   <span className="ch-cg__title">
                     <b>Class</b>
                     <span className="ch-num">
-                      {dowOf(g.date)} {dayNum(g.date)} {monthName(g.date)} · {fmtHour(g.start)} – {fmtHour(g.until)}
+                      {dowOf(g.date)} {dayNum(g.date)} {monthName(g.date)} · {fmtHour(g.start, true, clock)} – {fmtHour(g.until, true, clock)}
                     </span>
                   </span>
                   <span className="ch-cg__count ch-num">{names.length}</span>
@@ -206,7 +212,7 @@ export function ClassGroupBlock({
                             {e.busyOnly ? 'In class' : course}
                           </span>
                         </span>
-                        {(e.start !== g.start || e.end !== g.until) && <span className="ch-cg__time ch-num">{rangeLabel(e)}</span>}
+                        {(e.start !== g.start || e.end !== g.until) && <span className="ch-cg__time ch-num">{rangeLabel(e, clock)}</span>}
                         <Icon icon={ChevronRight} size={14} />
                       </button>
                     );

@@ -3,7 +3,7 @@
 import { useEffect, useLayoutEffect, useRef, useState, ViewTransition, type ReactNode, type RefObject } from 'react';
 import { CH_DUR, CH_EASE } from '../lib/motion';
 import { useChPress } from '../lib/press';
-import { useChReducedMotion } from '../lib/reduced-motion';
+import { useChMotionMode, useChReducedMotion } from '../lib/reduced-motion';
 import { markAppRunning, RouteScope } from '../lib/session-state';
 import { chReturning } from '../lib/pop-mark';
 import { canvasScrollNow } from '../lib/smooth-scroll';
@@ -11,6 +11,7 @@ import { canvasScrollNow } from '../lib/smooth-scroll';
 import '../lib/ua-pop';
 // Sets which way a phone navigation moves (push, pop or the crossfade) as the tap or the Back happens.
 import { chNavKind, chNavShown } from '../lib/nav-motion';
+import { useRouteSwipe } from './use-route-swipe';
 
 /**
  * The page frame. Each page mounts fresh on navigation (keyed by route) and is shown as soon as it is ready: the
@@ -20,8 +21,12 @@ import { chNavKind, chNavShown } from '../lib/nav-motion';
  * A navigation crossfades the page (owner 2026-10-01: a quick crossfade, never a slide): React's `<ViewTransition>`
  * keyed by route makes the old page and the new one an exit/enter pair, and `.ch-page`
  * (shell.css) fades them; the sidebar, top bar and tab bar are anchored and never move. Navigations are transitions,
- * so this runs on every in-app route change and on nothing else. Reduced motion and Settings › Animations off render without it: the page swaps at once. CH-1601.
+ * so this runs on every in-app route change and on nothing else. Under the OS Reduce Motion setting it still runs, as a
+ * plain 180ms crossfade in opacity (owner decision 2, 2026-10-24, OQ-15; shell.css); Settings › Animations off renders
+ * without it: the page swaps at once. CH-1601.
  * A Back that iOS already played with its own edge swipe swaps at once too, rather than fade a second time (CH-1908).
+ * A section switch (the tab bar, a sidebar item) swaps at once as well, with the same hold onto a skeleton (mot-03:
+ * lib/nav-motion.ts marks it `data-ch-tab`, shell.css drops the keyframes).
  * A page that arrives after its route skeleton fades in over it (useSkeletonReveal, CH-1619).
  * On a phone a drill-in pushes and Back pops instead of crossfading (lib/nav-motion.ts, shell.css); the top bar and tab
  * bar are their own view-transition groups and never fade or move.
@@ -138,6 +143,7 @@ function restoreScroll(to: { canvas: number; win: number }): () => void {
  */
 export function RouteFrame({ routeKey, scrollKey = routeKey, children }: { routeKey: string; scrollKey?: string; children: ReactNode }) {
   const reduced = useChReducedMotion();
+  const mode = useChMotionMode();
   useChPress(!reduced);
   const first = useRef(true);
   const frame = useRef<HTMLDivElement>(null);
@@ -147,7 +153,9 @@ export function RouteFrame({ routeKey, scrollKey = routeKey, children }: { route
   const [cameByNavigation] = useState(() => frameHydrated);
   const [navigated, setNavigated] = useState(false);
   if (!navigated && routeKey !== loadedKey) setNavigated(true);
-  useLayoutEffect(() => chNavShown(routeKey.split('\u0000')[0] ?? routeKey), [routeKey]);
+  useLayoutEffect(() => chNavShown(routeKey.split('\u0000')[0] ?? routeKey, routeKey), [routeKey]);
+  // A pushed page can be dragged back from the left edge, a push in flight included (C1, use-route-swipe.ts).
+  useRouteSwipe(mode === 'full', routeKey);
   useSkeletonReveal(frame, routeKey, (cameByNavigation || navigated) && !reduced);
   useEffect(() => {
     markAppRunning();
@@ -188,11 +196,11 @@ export function RouteFrame({ routeKey, scrollKey = routeKey, children }: { route
   }, [scrollKey]);
 
   const page = (
-    <div key={reduced ? routeKey : undefined} ref={frame} id="ch-content" tabIndex={-1} className="ch-frame-route">
+    <div key={mode === 'off' ? routeKey : undefined} ref={frame} id="ch-content" tabIndex={-1} className="ch-frame-route">
       <RouteScope value={routeKey}>{children}</RouteScope>
     </div>
   );
-  if (reduced) return page;
+  if (mode === 'off') return page;
   return (
     <ViewTransition key={routeKey} name="ch-page" enter="ch-page" exit="ch-page" share="ch-page" update="none" default="none">
       {page}

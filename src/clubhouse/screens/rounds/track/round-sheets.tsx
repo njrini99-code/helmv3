@@ -1,10 +1,11 @@
 'use client';
 
-import { useEffect, useRef, useState } from 'react';
-import { ArrowRight, Bookmark, Check, CirclePlay, Flag, Send, Table2, Trash2, TriangleAlert } from 'lucide-react';
-import { formatToPar, NO_DATA } from '../../../lib/format';
-import { haptic } from '../../../lib/haptics';
+import { useEffect, useRef, useState, type ReactNode } from 'react';
+import { ArrowRight, Bookmark, Check, CirclePlay, Eye, Flag, Send, Table2, Trash2, TriangleAlert } from 'lucide-react';
+import { formatToPar } from '../../../lib/format';
+import { NoData } from '../../../ui/NoData';
 import { useDialogLifetime } from '../../../lib/dialog-lifetime';
+import { Button } from '../../../ui/Button';
 import { Icon } from '../../../ui/Icon';
 import { Modal } from '../../../ui/Modal';
 import { ScoreMark } from '../../../ui/ScoreMark';
@@ -57,18 +58,18 @@ function CardNine({ label, holes, current }: { label: 'Out' | 'In'; holes: ChCar
         <tr>
           <th scope="row">Score</th>
           {holes.map((h) => (
-            <td key={h.number}>{h.score != null ? <ScoreMark score={h.score} par={h.par} size="sm" /> : NO_DATA}</td>
+            <td key={h.number}>{h.score != null ? <ScoreMark score={h.score} par={h.par} size="sm" /> : <NoData label="Not played" />}</td>
           ))}
           <td>
-            <b>{scored.length ? score : NO_DATA}</b>
+            <b>{scored.length ? score : <NoData />}</b>
           </td>
         </tr>
         <tr className="is-p">
           <th scope="row">Putts</th>
           {holes.map((h) => (
-            <td key={h.number}>{h.putts ?? NO_DATA}</td>
+            <td key={h.number}>{h.putts ?? <NoData />}</td>
           ))}
-          <td>{scored.length ? putts : NO_DATA}</td>
+          <td>{scored.length ? putts : <NoData />}</td>
         </tr>
       </tbody>
     </table>
@@ -117,7 +118,9 @@ export function ExitSheet({
   onSave,
   onKeep,
   onDiscard,
+  onConfirmOpen,
   roundType,
+  sharing,
 }: {
   open: boolean;
   course: string;
@@ -126,12 +129,16 @@ export function ExitSheet({
   discarding: boolean;
   /** What the round counts as now ("Practice"), and what opens the round-type sheet. Absent: no row. */
   roundType?: { label: string; onChange: () => void };
+  /** Who sees this round live now ("Coaches"), and what opens the Sharing sheet (P-6). Absent: no row. */
+  sharing?: { label: string; onChange: () => void };
   /** Save for later is writing the round (R-12: it shows, and the sheet can't be dismissed under it). */
   saving?: boolean;
   discardError: string | null;
   onSave: () => void;
   onKeep: () => void;
   onDiscard: () => void;
+  /** The discard question has opened: the page a discard lands on can be fetched now (F-0045). */
+  onConfirmOpen?: () => void;
 }) {
   const [confirm, setConfirm] = useState(false);
   const done = holes.filter((h) => h.score != null);
@@ -171,20 +178,10 @@ export function ExitSheet({
               </span>
             )}
           </div>
-          <button type="button" className="ch-btn ch-btn--ghost" disabled={discarding} onClick={() => setConfirm(false)}>
-            <span>Keep it</span>
-          </button>
-          <button
-            type="button"
-            className="ch-btn ch-btn--danger"
-            disabled={discarding}
-            onClick={() => {
-              haptic('warning');
-              onDiscard();
-            }}
-          >
-            <span>{discarding ? 'Discarding…' : 'Discard round'}</span>
-          </button>
+          <Button variant="ghost" disabled={discarding} onClick={() => setConfirm(false)}>Keep it</Button>
+          <Button variant="danger" busy={discarding} onClick={onDiscard}>
+            {discarding ? 'Discarding…' : 'Discard round'}
+          </Button>
         </div>
       ) : (
         <div className="ch-rt-exit__opts">
@@ -211,7 +208,23 @@ export function ExitSheet({
               </span>
             </button>
           )}
-          <button type="button" className="ch-rt-xopt is-danger" onClick={() => setConfirm(true)}>
+          {sharing && (
+            <button type="button" className="ch-rt-xopt" disabled={busy} onClick={sharing.onChange}>
+              <Icon icon={Eye} size={18} />
+              <span>
+                <b>Sharing</b>
+                <em>{sharing.label} now. Who sees this round live.</em>
+              </span>
+            </button>
+          )}
+          <button
+            type="button"
+            className="ch-rt-xopt is-danger"
+            onClick={() => {
+              setConfirm(true);
+              onConfirmOpen?.();
+            }}
+          >
             <Icon icon={Trash2} size={18} />
             <span>
               <b>Discard round</b>
@@ -241,11 +254,14 @@ export function RoundCompleteSheet({
   backHole,
   onBack,
   onSubmit,
+  notice,
 }: {
   open: boolean;
   /** "Finley GC · Blue · Oct 14". */
   heading: string;
   holes: ChSummaryHole[];
+  /** One row under the card before posting: the course nudge (CH-11962) for a round with no library course. */
+  notice?: ReactNode;
   /** The hole Back returns to (the one the player is on: with a shotgun start, not the card's last). Omitted, the card's last. */
   backHole?: number;
   onBack: () => void;
@@ -271,9 +287,7 @@ export function RoundCompleteSheet({
       code="CH-11508"
       footer={
         <>
-          <button type="button" className="ch-btn ch-btn--ghost" onClick={onBack}>
-            <span>Back to hole {backHole ?? holes[holes.length - 1]?.number ?? ''}</span>
-          </button>
+          <Button variant="ghost" onClick={onBack}>Back to hole {backHole ?? holes[holes.length - 1]?.number ?? ''}</Button>
           <button type="button" className="ch-btn ch-btn--primary ch-btn--lg" onClick={onSubmit}>
             <span>Post round</span>
             <Icon icon={Send} size={16} />
@@ -297,6 +311,7 @@ export function RoundCompleteSheet({
         </dl>
       </div>
       <Scorecard holes={holes} current={null} />
+      {notice}
       {/* R-11: no promise of edits the round review doesn't offer, or of a coach the player may not have. */}
       <p className="ch-rt-sum__n">Posting adds this round to your stats.</p>
     </Modal>
@@ -393,14 +408,10 @@ export function SubmitOverlay({
             <h2 id="ch-rt-subm-t" ref={title} tabIndex={-1} data-ch-code="CH-11005">
               The round didn&rsquo;t post
             </h2>
-            <span className="ch-rt-subm__m">{error ?? 'It’s saved on this device. Check your connection, then try again.'}</span>
-            <button type="button" className="ch-btn ch-btn--primary ch-btn--lg" onClick={onRetry}>
-              <span>Try again</span>
-            </button>
+            <span className="ch-rt-subm__m">{error ?? 'It’s saved on this device. Try again.'}</span>
+            <Button variant="primary" size="lg" onClick={onRetry}>Try again</Button>
             {onGoBack && (
-              <button type="button" className="ch-btn ch-btn--ghost" onClick={onGoBack}>
-                <span>Go back</span>
-              </button>
+              <Button variant="ghost" onClick={onGoBack}>Go back</Button>
             )}
           </>
         )}

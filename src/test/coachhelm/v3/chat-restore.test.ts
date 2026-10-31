@@ -48,6 +48,22 @@ describe('restoreUIMessages — status: complete (or legacy null), unaffected', 
     expect(restored!.parts.map((p) => p.type)).toEqual(['text', 'data-evidence']);
   });
 
+  it('replays a visual artifact after a reload, figures and hash intact', () => {
+    const artifact = { artifactId: 'va-1', kind: 'sg_anatomy', legs: [{ metricId: 'sg_putting', value: -0.3 }], dataHash: 'abc' };
+    const row = assistantRow({
+      status: 'complete',
+      ui_parts: [
+        { type: 'text', text: 'Putting is the leg to look at.' },
+        { type: 'data-visual-artifact', id: 'visual-va-1', data: artifact },
+      ],
+    });
+
+    const [restored] = restoreUIMessages([row]);
+    const part = restored!.parts.find((p) => p.type === 'data-visual-artifact') as unknown as { data: typeof artifact };
+
+    expect(part.data).toEqual(artifact);
+  });
+
   it('a legacy row (status null, no ui_parts) still renders from content as a completed answer', () => {
     const row = assistantRow({ status: null, ui_parts: null, content: 'Legacy answer text.' });
 

@@ -1,18 +1,20 @@
 import { ChevronRight } from 'lucide-react';
 import Link from 'next/link';
+import { Fragment } from 'react';
 import type { ChPlayerAsks } from '../../data/player-home';
 import { Badge } from '../../ui/Badge';
 import { Icon } from '../../ui/Icon';
 import { rebuiltHref } from '../../shell/nav';
 import { LinkPending } from '../../shell/LinkPending';
+import { plural } from '../../lib/plural';
 
 /** "2 replies · 1 to acknowledge · 1 task due": only the parts that aren't zero. */
 export function asksParts(asks: ChPlayerAsks | null | undefined): string[] {
   if (!asks) return [];
   return [
-    asks.rsvps ? `${asks.rsvps} ${asks.rsvps === 1 ? 'reply' : 'replies'}` : null,
+    asks.rsvps ? `${plural(asks.rsvps, 'reply', 'replies')}` : null,
     asks.acks ? `${asks.acks} to acknowledge` : null,
-    asks.tasksDue ? `${asks.tasksDue} ${asks.tasksDue === 1 ? 'task' : 'tasks'} due` : null,
+    asks.tasksDue ? `${plural(asks.tasksDue, 'task')} due` : null,
   ].filter((p): p is string => !!p);
 }
 
@@ -27,8 +29,20 @@ export function CoachAsks({ asks }: { asks: ChPlayerAsks | null | undefined }) {
   return (
     <Link href={hub} className="ch-ph-asks">
       <span className="ch-ph-asks__k">From your coach</span>
-      <span className="ch-ph-asks__v ch-num">{parts.join(' · ')}</span>
-      <Icon icon={ChevronRight} size={15} />
+      {/* Each part keeps to one line, so a wrap never strands its figure ("· 2" / "tasks due"); its dot leads it, so a line
+          never ends in a stranded "·" either (F-0074). */}
+      <span className="ch-ph-asks__v ch-num">
+        {parts.map((p, i) => (
+          <Fragment key={p}>
+            {i > 0 && ' '}
+            <span className="ch-ph-asks__p">
+              {i > 0 ? '· ' : ''}
+              {p}
+            </span>
+          </Fragment>
+        ))}
+      </span>
+      <Icon icon={ChevronRight} size={16} />
       <LinkPending />
     </Link>
   );

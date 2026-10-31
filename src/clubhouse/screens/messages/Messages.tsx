@@ -5,6 +5,9 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useGolfConversations, useGolfMessages, type GolfConversationWithMeta } from '@/hooks/golf/use-golf-messages';
 import { MESSAGE_REACTIONS, summarizeReactions, useMessageReactions } from '@/hooks/golf/use-message-reactions';
 import { useMessageAttachments } from '@/hooks/golf/use-message-attachments';
+import { useMessageResponses } from '@/hooks/golf/use-message-responses';
+import { encodeChoice, isPollFallbackText, parsePollPayload, pollHitOnlyInFooter, pollSearchSnippet, tallyPoll } from '@/lib/golf/message-polls';
+import { closeGolfPoll, sendGolfPoll } from '@/app/golf/actions/message-polls';
 import {
   addGolfGroupMember,
   createGolfConversation,
@@ -13,6 +16,7 @@ import {
   getGolfGroupAddCandidates,
   getGolfMessageAttachments,
   leaveGolfGroup,
+  markGolfMessagesAsRead,
   removeGolfGroupMember,
   searchGolfMessages,
 } from '@/app/golf/actions/messages';
@@ -23,6 +27,10 @@ import { completeAnnouncementTask, createEnrichedAnnouncement, getAnnouncementDe
 import { acknowledgeAnnouncement } from '@/app/golf/actions/communication';
 import { getPreviewUrl } from '@/app/golf/actions/documents';
 import { validateFile, type PendingAttachment } from '@/lib/storage/attachments';
+import { useChClock } from '../../lib/use-clock';
+import { useClassAwareness } from '../../shell/context';
+import { useTeamClassDay } from '../../lib/use-class-day';
+import { useConversationTeam } from '../../lib/use-conversation-team';
 import { isTransientNetworkErrorMessage } from '@/lib/transient-network-error';
 import { decodeMessageContent } from '@/lib/utils/decode-message-content';
 import type { ChMessagesData } from '../../data/messages';
@@ -34,9 +42,10 @@ import { haptic } from '../../lib/haptics';
 import type { ChAttachmentRecovery, ChMessagesApi } from './MessagesView';
 import { MessagesView } from './MessagesScreen';
 import { DraftStore } from './drafts';
+import { readMarkedUnread, withMark, writeMarkedUnread } from './marked-unread';
 import { FOUND_FOR_MS } from './use-focus-message';
 import { onRoster, takePrefill } from './prefill';
-import { firstName, groupLacksPlayer, toChAnnouncement, type ChAnnouncement, type ChAnnouncementDetail, type ChConv, type ChFile, type ChMember, type ChMsg, type ChMute, type ChReaction, type ChReactionKey } from './model';
+import { directWith, firstName, groupLacksPlayer, isDirect, toChAnnouncement, type ChAnnouncement, type ChAnnouncementDetail, type ChConv, type ChFile, type ChMember, type ChMsg, type ChMute, type ChReaction, type ChReactionKey } from './model';
 
 const isGroup = (c: GolfConversationWithMeta) => {
   const n = c.participant_count ?? c.participant_ids?.length ?? 0;
@@ -50,15 +59,29 @@ const KEY_BY_EMOJI = Object.fromEntries(MESSAGE_REACTIONS.map((r) => [r.emoji, r
  * the Clubhouse view. Nothing about who can message whom changes here; the
  * actions and RLS decide, and this screen reports what they say.
  */
+/**
+ * A poll's plain-text copy is several lines (pollFallbackText); the inbox row shows its first, "Poll: Which van?". The row
+ * has no message kind, so a poll is known by its whole fallback shape, not its first word: an ordinary message that
+ * starts "Poll: " keeps its text.
+ */
+// A poll's plain-text copy shows as its question; a typed message that merely starts "Poll: " keeps all its lines (D23).
+const railText = (text: string) => (isPollFallbackText(text) ? text.split('\n')[0]! : text);
+
 export function Messages({ data }: { data: ChMessagesData }) {
+  const hours = useChClock();
   const router = useRouter();
   const params = useSearchParams();
   const toast = useToast();
   const delayedToast = useDelayedToast();
   const clock = useNow();
   const now = clock ? clock.toISOString() : data.now;
-  const { conversations, loading, error, refetch } = useGolfConversations(data.viewerUserId, data.teamId);
+  const { conversations, loading, error, refetch } = useGolfConversations(data.viewerUserId, data.teamId, { allowIds: data.activeConversationIds });
   const [selectedId, setSelectedId] = useState<string | null>(null);
+  // P-10: class awareness is a coach's line. Off (the flag, a player, the migrations unapplied) it reads nothing.
+  const awareness = useClassAwareness();
+  const classOn = awareness && data.role === 'coach';
+  const teamClass = useTeamClassDay(data.teamId, { enabled: classOn });
+  const convTeamId = useConversationTeam(selectedId, classOn);
   const [autoOpened, setAutoOpened] = useState<string | null>(null);
   /**
    * The deep link last taken (null before the first read). A new one arriving while Messages is already open (a bell
@@ -75,8 +98,19 @@ export function Messages({ data }: { data: ChMessagesData }) {
   const pendingDraft = useRef<string | null>(null);
 
   const people = useMemo(() => new Map(data.directory.map((p) => [p.userId, p])), [data.directory]);
+  /** Conversations the viewer marked unread on this device (marked-unread.ts, owner decision 14). */
+  const [marked, setMarked] = useState<ReadonlySet<string>>(() => readMarkedUnread(data.viewerUserId));
+  const mark = useCallback(
+    (id: string, unread: boolean) =>
+      setMarked((ids) => {
+        const next = withMark(ids, id, unread);
+        if (next !== ids) writeMarkedUnread(data.viewerUserId, next);
+        return next;
+      }),
+    [data.viewerUserId],
+  );
 
-  const convs: ChConv[] = useMemo(
+  const loadedConvs: ChConv[] = useMemo(
     () =>
       conversations.map((c) => {
         const group = isGroup(c);
@@ -85,21 +119,27 @@ export function Messages({ data }: { data: ChMessagesData }) {
         return {
           id: c.id,
           group,
+          channel: c.is_team_channel === true,
           title: group ? c.title?.trim() || 'Group' : dir?.name ?? other?.name ?? 'Conversation',
           subtitle: group ? '' : dir?.subtitle ?? other?.subtitle ?? '',
           memberIds: group ? (c.participant_ids ?? []).filter((id) => id !== data.viewerUserId) : other ? [other.id] : [],
           memberCount: c.participant_count ?? c.participant_ids?.length ?? 2,
           unread: c.unread_count ?? 0,
+          markedUnread: marked.has(c.id),
           lastAt: c.last_message?.created_at ?? c.updated_at ?? null,
           lastSenderId: c.last_message?.sender_id ?? null,
-          lastText: decodeMessageContent(c.last_message?.content ?? ''),
+          lastText: railText(decodeMessageContent(c.last_message?.content ?? '')),
+          lastIsPoll: isPollFallbackText(decodeMessageContent(c.last_message?.content ?? '')),
           creatorId: c.creator_id ?? null,
         };
       }),
-    [conversations, people, data.viewerUserId],
+    [conversations, people, data.viewerUserId, marked],
   );
+  // A one-to-one thread just made, shown at once until the list's next read carries it (F-0045).
+  const [started, setStarted] = useState<ChConv | null>(null);
+  const convs = useMemo(() => (started && !loadedConvs.some((c) => c.id === started.id) ? [started, ...loadedConvs] : loadedConvs), [started, loadedConvs]);
 
-  const msgs = useGolfMessages(selectedId ?? '', data.viewerUserId, { deferMarkRead: !!selectedId && selectedId === autoOpened });
+  const msgs = useGolfMessages(selectedId ?? '', data.viewerUserId, { deferMarkRead: !!selectedId && selectedId === autoOpened, classAwareness: awareness });
   const liveIds = useMemo(() => msgs.messages.filter((m) => m.conversation_id === selectedId && !m.sendFailed).map((m) => m.id), [msgs.messages, selectedId]);
   const reactions = useMessageReactions(selectedId ?? '', liveIds, data.viewerUserId);
   const { sendMessageWithAttachments, getPendingAttachmentSend, retryPendingAttachmentSend } = useMessageAttachments({ recoverable: true });
@@ -129,7 +169,8 @@ export function Messages({ data }: { data: ChMessagesData }) {
 
   // Deep links: ?conversation=<id>, or ?player=<golf_players.id> or ?user=<auth user id> (a player's
   // "Message coach" on Home) to open (or start) a direct thread.
-  const linkKey = ['conversation', 'player', 'user', 'prefill'].map((k) => params.get(k) ?? '').join('\u0000');
+  // `?compose=1` (the command palette's New message, A16) opens New message with no one chosen.
+  const linkKey = ['conversation', 'player', 'user', 'prefill', 'compose'].map((k) => params.get(k) ?? '').join('\u0000');
   useEffect(() => {
     if (loading || handledParams.current === linkKey) return;
     const first = handledParams.current === null;
@@ -139,6 +180,8 @@ export function Messages({ data }: { data: ChMessagesData }) {
     const user = params.get('user');
     // Read once: the entry is deleted as it is taken, so Back or a reload never brings the draft back.
     const pre = takePrefill(params);
+    const compose = params.get('compose') === '1';
+    // New message opens over the inbox as it is (the newest thread beside the rail on desktop), so it waits for nothing.
     if (first) setParamsDone(!conv && !player && !user && !pre);
     if (params.get('prefill')) router.replace('/golf/dashboard/messages', { scroll: false });
     if (pre) {
@@ -159,7 +202,7 @@ export function Messages({ data }: { data: ChMessagesData }) {
         });
       }
       chTrail('messages prefill');
-      const existing = to.length === 1 ? convs.find((c) => !c.group && c.memberIds[0] === to[0]) : undefined;
+      const existing = to.length === 1 ? directWith(convs, to[0]!) : undefined;
       if (existing) {
         // An unsent draft of the coach's own wins over the prefill.
         if (pre.draft && !drafts.get(existing.id)) drafts.set(existing.id, pre.draft);
@@ -174,6 +217,9 @@ export function Messages({ data }: { data: ChMessagesData }) {
       // opened; one that still isn't there says so (CH-7015, MessagesScreen) rather than opening nothing.
       if (convs.length && !convs.some((c) => c.id === conv)) void refetch().catch(() => undefined).then(() => select(conv));
       else select(conv);
+    } else if (compose) {
+      router.replace('/golf/dashboard/messages', { scroll: false });
+      setPrefill({ to: [], draft: '', title: '' });
     } else if (player || user) {
       const person = data.directory.find((p) => (player ? p.playerId === player : p.userId === user));
       router.replace('/golf/dashboard/messages', { scroll: false });
@@ -198,12 +244,14 @@ export function Messages({ data }: { data: ChMessagesData }) {
         void msgs.markRead();
       } else setAutoOpened(null);
       if (id) setSelectedAnnId(null);
+      // Opening a conversation reads it, so a mark from Mark as unread goes.
+      if (id) mark(id, false);
       // A search hit sets its own target after this (openHit); any other pick leaves the last one behind.
       setFocusMessageId(null);
       setFoundMessageId(null);
       setSelectedId(id);
     },
-    [autoOpened, selectedId, msgs],
+    [autoOpened, selectedId, msgs, mark],
   );
   /** A search hit's message, gone to in the open thread (useFocusMessage), then marked for a moment. */
   const [focusMessageId, setFocusMessageId] = useState<string | null>(null);
@@ -261,7 +309,7 @@ export function Messages({ data }: { data: ChMessagesData }) {
 
   const startDirect = useCallback(
     async (userId: string): Promise<boolean> => {
-      const existing = convs.find((c) => !c.group && c.memberIds[0] === userId);
+      const existing = directWith(convs, userId);
       if (existing) {
         setSelectedId(existing.id);
         return true;
@@ -270,13 +318,23 @@ export function Messages({ data }: { data: ChMessagesData }) {
         chTrail('messages start direct');
         const res = await createGolfConversation([userId], data.teamId);
         if (!('conversationId' in res) || !res.conversationId) throw new Error('error' in res ? String(res.error) : 'Could not start the conversation');
+        // F-0003, a second line behind the server's: an answer the list knows as a group or the channel is refused, so
+        // nothing written for one person lands there. An id the list doesn't hold yet opens below (or says CH-7015).
+        const known = convs.find((c) => c.id === res.conversationId);
+        if (known && !isDirect(known)) {
+          chTrail('messages start direct: refused a group or channel');
+          throw new Error('The conversation returned is not a direct thread');
+        }
         landDraft(res.conversationId);
-        await refetch();
+        // F-0045: the thread opens now, from what is known of it; the list reads again behind it.
+        const dir = people.get(userId);
+        setStarted({ id: res.conversationId, group: false, channel: false, title: dir?.name ?? 'Conversation', subtitle: dir?.subtitle ?? '', memberIds: [userId], memberCount: 2, unread: 0, lastAt: new Date().toISOString(), lastSenderId: null, lastText: '', creatorId: data.viewerUserId });
         setSelectedId(res.conversationId);
         haptic('success');
+        void refetch().catch(() => undefined);
       });
     },
-    [convs, data.teamId, refetch, attempt, landDraft],
+    [convs, people, data.teamId, data.viewerUserId, refetch, attempt, landDraft],
   );
 
   const createGroup = useCallback(
@@ -375,9 +433,18 @@ export function Messages({ data }: { data: ChMessagesData }) {
           deleted: !!m.is_deleted,
           hasAttachments: !!m.has_attachments,
           replyToId: m.reply_to_id ?? null,
+          // "Notified anyway" only once a push really went out (the fan-out stamps it), never because the coach asked for one.
+          ...(m.notify_anyway && m.notify_anyway_pushed_at ? { notifiedAnyway: true } : {}),
+          // A poll whose payload doesn't parse draws as its plain-text copy (`content`), never as a broken card.
+          poll: m.kind === 'poll' && !m.is_deleted ? parsePollPayload(m.payload) : null,
+          pending: !!m.pending,
         })),
     [msgs.messages, msgs.currentUserId, selectedId, data.viewerUserId],
   );
+
+  // Votes on the thread's polls (P-2): one read and one realtime channel for all of them, as reactions do.
+  const pollIds = useMemo(() => chMsgs.filter((m) => m.poll && !m.failed).map((m) => m.id), [chMsgs]);
+  const responses = useMessageResponses(selectedId ?? '', pollIds, data.viewerUserId);
 
   const reactionMap = useMemo(() => {
     const out = new Map<string, ChReaction[]>();
@@ -469,14 +536,19 @@ export function Messages({ data }: { data: ChMessagesData }) {
         chReport(new Error(res.error), { surface: 'messages.search', severity: 'low' });
         return null;
       }
-      return res.results.map((r) => ({
-        messageId: r.messageId,
-        conversationId: r.conversationId,
-        conversationName: r.conversationName,
-        senderName: r.senderName,
-        text: decodeMessageContent(r.content),
-        at: r.createdAt,
-      }));
+      // A poll's hit reads as one line ("Poll: Q · A, B"), and one that matched only its "Vote in GolfHelm." footer is
+      // dropped, so "vote" doesn't find every poll (D24).
+      return res.results
+        .map((r) => ({ r, text: decodeMessageContent(r.content) }))
+        .filter(({ text }) => !(isPollFallbackText(text) && pollHitOnlyInFooter(text, q)))
+        .map(({ r, text }) => ({
+          messageId: r.messageId,
+          conversationId: r.conversationId,
+          conversationName: r.conversationName,
+          senderName: r.senderName,
+          text: isPollFallbackText(text) ? pollSearchSnippet(text) : text,
+          at: r.createdAt,
+        }));
     },
     [data.teamId],
   );
@@ -507,6 +579,29 @@ export function Messages({ data }: { data: ChMessagesData }) {
       live = false;
     };
   }, [selectedId, muteAttempt]);
+
+  /** Any conversation's mute, read when a row's Mute sheet opens (owner decision 14). Null when it didn't load. */
+  const muteOf = useCallback(async (id: string): Promise<ChMute | null> => {
+    try {
+      const r = await getGolfConversationMute(id);
+      if (r.success) return r.data;
+      chReport(new Error(r.error), { surface: 'messages.mute', severity: 'low' });
+    } catch (err) {
+      chReport(err, { surface: 'messages.mute' });
+    }
+    return null;
+  }, []);
+
+  /** Mute or unmute a conversation by id: the open one's details and any row's menu. The open one's state follows. */
+  const muteConversation = (id: string, muted: boolean, hours: number | null) =>
+    attempt('mute', { failed: muted ? "Couldn’t mute the conversation" : "Couldn’t turn notifications back on", hint: 'Try again in a moment.', code: 'CH-7011' }, async () => {
+      const r = await setGolfConversationMute(id, muted, hours);
+      if (!r.success) throw new Error(r.error);
+      if (id === selectedId) setMuteState(r.data);
+      haptic('success');
+      // One mute toast at a time: a quick mute, unmute, mute leaves only the last (CH-1910).
+      toast({ title: muted ? 'Conversation muted' : 'Notifications back on', replace: 'mute' });
+    });
 
   // Stable, like loadAttachments: the Add sheet and the Files list key their fetch on them.
   const addCandidates = useCallback(async (): Promise<ChMember[] | null> => {
@@ -546,6 +641,7 @@ export function Messages({ data }: { data: ChMessagesData }) {
     viewer: { userId: data.viewerUserId, role: data.role, name: data.viewerName },
     signers: data.signers,
     timeZone: data.timeZone,
+    clock: hours,
     now,
     teamName: data.teamName,
     convs,
@@ -554,6 +650,7 @@ export function Messages({ data }: { data: ChMessagesData }) {
     refetchConvs: () => void refetch(),
     drafts,
     attachmentRecovery,
+    classDay: classOn ? { day: teamClass.day, now: teamClass.now, teamId: data.teamId, convTeamId } : null,
     selectedId,
     select,
     msgs: chMsgs,
@@ -587,10 +684,11 @@ export function Messages({ data }: { data: ChMessagesData }) {
         return 'unknown';
       }
     },
-    send: async (text, replyToId) => {
+    send: async (text, replyToId, sendOptions) => {
       try {
         if (selectedId === autoOpened) select(selectedId);
-        if (replyToId) await msgs.sendMessage(text, replyToId);
+        if (sendOptions?.notifyAnyway) await msgs.sendMessage(text, replyToId ?? null, { notifyAnyway: true });
+        else if (replyToId) await msgs.sendMessage(text, replyToId);
         else await msgs.sendMessage(text);
         return true;
       } catch (err) {
@@ -684,6 +782,61 @@ export function Messages({ data }: { data: ChMessagesData }) {
       });
     },
     attachments: loadAttachments,
+    // P-1 Seen by: the open conversation's read map, from the thread's hook.
+    receipts: msgs.readMarks ? { status: msgs.readMarks.status, marks: msgs.readMarks.byUser, retry: () => void msgs.refetchReadMarks?.() } : undefined,
+    polls: {
+      tally: (messageId, poll) => (responses.ready ? tallyPoll(poll, responses.rows, messageId, data.viewerUserId) : null),
+      vote: (messageId, poll, optionIds) => {
+        // A tap while this poll's vote is saving is not dropped: the hook writes the latest one when the first lands.
+        const choice = optionIds.length ? encodeChoice(poll, optionIds) : null;
+        if (optionIds.length && !choice) return;
+        void attempt('vote', { failed: 'Your vote wasn’t saved', hint: 'Try again in a moment.', code: 'CH-7029' }, async () => {
+          const res = await responses.vote(messageId, choice);
+          if (res.ok) return;
+          if (res.reason === 'closed' || res.reason === 'deleted') {
+            // CH-7030: the poll ended (or its sender deleted it) between the tap and the write; the vote is put back.
+            // A former member's 42501 is `member`, which throws below to the CH-7029 toast.
+            haptic('error');
+            toast({ tone: 'error', title: 'Voting has ended', body: res.reason === 'deleted' ? 'This poll was deleted.' : 'Your vote wasn’t counted. The result is final.', code: 'CH-7030' });
+            return false;
+          }
+          throw new Error(res.reason === 'session' ? 'Sign in again to vote' : 'Vote was not saved');
+        });
+      },
+      pending: responses.pending,
+      error: responses.error,
+      retry: () => void responses.refresh(),
+      send: async (conversationId, draft, clientId, priorClientId) => {
+        let reason = 'Try again in a moment.';
+        let answered = false;
+        let earlierCopy = false;
+        const ok = await attempt('sendPoll', { failed: 'Couldn’t send the poll', hint: 'Try again in a moment.', code: 'CH-7028' }, async () => {
+          const res = await sendGolfPoll(conversationId, draft, clientId, priorClientId);
+          answered = true;
+          if (!res.success) {
+            reason = res.error;
+            earlierCopy = res.earlierCopy === true;
+            return false;
+          }
+          // D27: the saved row lands the card at once (deduped by id against the realtime insert that follows); a
+          // background refetch still covers a channel that is reconnecting.
+          if (res.row && conversationId === selectedId) msgs.insertConfirmed(res.row as Parameters<typeof msgs.insertConfirmed>[0]);
+          void msgs.refetch();
+          void refetch();
+          return true;
+        });
+        // No answer at all (it threw, or offline): the sheet keeps the id so an edited retry can ask about it (D19).
+        if (ok) return { ok: true };
+        if (earlierCopy) return { ok: false, error: reason, earlierCopy: true };
+        return answered ? { ok: false, error: reason } : { ok: false, error: reason, threw: true };
+      },
+      close: (messageId) =>
+        attempt('closePoll', { failed: 'Couldn’t close the poll', hint: 'Try again in a moment.', code: 'CH-7027' }, async () => {
+          const res = await closeGolfPoll(messageId);
+          if (!res.success) throw new Error(res.error);
+          void msgs.refetch();
+        }),
+    },
     members,
     membersError,
     retryMembers: () => setMembersAttempt((n) => n + 1),
@@ -698,18 +851,18 @@ export function Messages({ data }: { data: ChMessagesData }) {
         await refetch();
       });
     },
+    // By id: the open conversation's details and any row's menu or swipe (owner decision 14).
     deleteConversation: canHide
-      ? async () => {
-          if (!selectedId) return false;
-          return attempt('deleteConversation', { failed: "Couldn’t delete the conversation", hint: 'Try again in a moment.', code: 'CH-7025' }, async () => {
-            const res = await hideGolfConversation(selectedId);
+      ? async (id) =>
+          attempt('deleteConversation', { failed: "Couldn’t delete the conversation", hint: 'Try again in a moment.', code: 'CH-7025' }, async () => {
+            const res = await hideGolfConversation(id);
             if (!res.success) throw new Error(res.error);
             haptic('success');
             toast({ title: 'Conversation deleted' });
-            setSelectedId(null);
+            mark(id, false);
+            if (id === selectedId) setSelectedId(null);
             await refetch();
-          });
-        }
+          })
       : null,
     addCandidates,
     addMember: (userId, name) =>
@@ -746,7 +899,7 @@ export function Messages({ data }: { data: ChMessagesData }) {
     directoryError: data.directoryError,
     retryDirectory: () => router.refresh(),
     startDirect: async (userId) => {
-      const existing = convs.find((c) => !c.group && c.memberIds[0] === userId);
+      const existing = directWith(convs, userId);
       if (existing) landDraft(existing.id);
       return startDirect(userId);
     },
@@ -773,16 +926,30 @@ export function Messages({ data }: { data: ChMessagesData }) {
     mute,
     muteError,
     retryMute: () => setMuteAttempt((n) => n + 1),
-    setMute: async (muted, hours) => {
-      if (!selectedId) return false;
-      return attempt('mute', { failed: muted ? "Couldn’t mute the conversation" : "Couldn’t turn notifications back on", hint: 'Try again in a moment.', code: 'CH-7011' }, async () => {
-        const r = await setGolfConversationMute(selectedId, muted, hours);
-        if (!r.success) throw new Error(r.error);
-        setMuteState(r.data);
+    setMute: async (muted, hours) => (selectedId ? muteConversation(selectedId, muted, hours) : false),
+    muteOf,
+    muteConversation,
+    setRead: async (id, read) => {
+      if (!read) {
+        // Nothing to write: the mark is this device's own (marked-unread.ts).
+        mark(id, true);
         haptic('success');
-        // One mute toast at a time: a quick mute, unmute, mute leaves only the last (CH-1910).
-        toast({ title: muted ? 'Conversation muted' : 'Notifications back on', replace: 'mute' });
+        return true;
+      }
+      const had = convs.find((c) => c.id === id)?.unread ?? 0;
+      if (!had) {
+        mark(id, false);
+        haptic('success');
+        return true;
+      }
+      const ok = await attempt('markRead', { failed: "Couldn’t mark the conversation read", hint: 'It still shows as unread. Try again in a moment.', code: 'CH-7026' }, async () => {
+        const r: unknown = await markGolfMessagesAsRead(id);
+        if ((r as { success?: boolean } | null)?.success !== true) throw new Error('Mark read was not saved');
+        mark(id, false);
+        haptic('success');
+        await refetch();
       });
+      return ok;
     },
 
     announcements: anns,

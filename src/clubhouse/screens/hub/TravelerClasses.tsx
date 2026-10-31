@@ -1,6 +1,7 @@
 'use client';
 
 import { TriangleAlert } from 'lucide-react';
+import { useChClockText } from '../../lib/use-clock';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { checkKey, clashSummary, type ChTravelerClass, type ChTripWindow } from '../../data/hub-shape';
 import { Button } from '../../ui/Button';
@@ -8,6 +9,7 @@ import { Icon } from '../../ui/Icon';
 import { chReport } from '../../lib/track';
 import { isOffline, normalise } from '../../lib/use-action';
 import type { ChHubWrites } from './writes';
+import { pluralWord } from '../../lib/plural';
 
 /*
  * Plan a trip, Travelers step (and the Itinerary summary): which of the chosen travelers have a class during the trip.
@@ -80,7 +82,6 @@ export function useClassCheck(read: ChHubWrites['travelerClasses'], teamId: stri
   return { check, retry: useCallback(() => setAgain((n) => n + 1), []) };
 }
 
-const plural = (n: number, one: string, many: string) => (n === 1 ? one : many);
 
 /**
  * The board's clash row ("Eli has CHEM 102 lab Mon 3:00–4:15. They'd miss it to travel."), a line for each traveler with a
@@ -88,6 +89,7 @@ const plural = (n: number, one: string, many: string) => (n === 1 ? one : many);
  * (CH-10212), or nobody chosen has a class during the trip (CH-10315). The region stays mounted so a change is announced.
  */
 export function ClassClashes({ check, names, onRetry }: { check: ChClassCheck; names: ReadonlyMap<string, string>; onRetry: () => void }) {
+  const clk = useChClockText();
   const summary = check.status === 'ready' ? clashSummary(check.classes, names) : null;
   const clashes = summary && summary.lines.length > 0 ? summary : null;
   const partial = check.status === 'ready' && check.partial;
@@ -104,13 +106,13 @@ export function ClassClashes({ check, names, onRetry }: { check: ChClassCheck; n
           <div>
             {clashes.lines.map((l) => (
               <p key={l.playerId}>
-                <b>{l.who}</b> {l.when}
-                {l.more > 0 ? ` and ${l.more} more ${plural(l.more, 'class', 'classes')}` : ''}.
+                <b>{l.who}</b> {clk(l.when)}
+                {l.more > 0 ? ` and ${l.more} more ${pluralWord(l.more, 'class', 'classes')}` : ''}.
               </p>
             ))}
             {clashes.moreTravelers > 0 && (
               <p>
-                {clashes.moreTravelers} more {plural(clashes.moreTravelers, 'traveler also has', 'travelers also have')} a class during the trip.
+                {clashes.moreTravelers} more {pluralWord(clashes.moreTravelers, 'traveler also has', 'travelers also have')} a class during the trip.
               </p>
             )}
             <p>{clashes.total === 1 ? 'They’d miss it to travel.' : 'They’d miss these to travel.'}</p>

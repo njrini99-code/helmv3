@@ -32,7 +32,8 @@ free number when its catalog is started, added here and in `CATALOG_PAGE`
 | 13 | CoachHelm (coach and player) |
 | 14 | Recruiting (coach) |
 | 15 | Auth: sign in, welcome, sign up and onboarding (signed out, then new to the team) |
-| 16, 17, … | Pages after these, in the order their catalogs are started |
+| 16 | Tournaments (P016: season home, event desk, review, history, link inbox, compare, event form, lineup, live round; coach and player), and the Live rounds rows (P-6: CH-16600 to CH-16677 and CH-16680 to CH-16685, which follow the plan's copy deck, not the kinds below) |
+| 17, 18, … | Pages after these, in the order their catalogs are started |
 
 | Second digit | Kind | What it means |
 | --- | --- | --- |
@@ -79,5 +80,6 @@ its own.
 Pages: [shell](shell.md) · [home](home.md) · [roster](roster.md) ·
 [stats-team](stats-team.md) · [stats-player](stats-player.md) ·
 [calendar](calendar.md) · [messages](messages.md) · [settings](settings.md) ·
-[qualifiers](qualifiers.md) · [classes](classes.md) · [coachhelm](coachhelm.md) ·
-[recruiting](recruiting.md) · [auth](auth.md).
+[qualifiers](qualifiers.md) · [classes](classes.md) · [coachhelm](coachhelm.md)
+·
+[recruiting](recruiting.md) · [auth](auth.md) · [tournaments](tournaments.md).

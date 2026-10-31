@@ -92,9 +92,9 @@ export function SectionSwitchProvider({
   const reducedRef = useRef(reduced);
   reducedRef.current = reduced;
   const badges = useNotificationBadges();
-  const sections = useMemo(() => phoneSectionsFor(role), [role]);
+  const sections = useMemo(() => phoneSectionsFor(role, shell), [role, shell]);
   const path = pathname.replace(/\/$/, '') || '/';
-  const current = phoneSectionFor(path, role);
+  const current = phoneSectionFor(path, role, shell);
   const root = !!current && path === current.href;
   const [pending, setPending] = useState<ChNavItem | null>(null);
   const shown = pending ?? current;
@@ -184,7 +184,7 @@ export function SectionSwitchProvider({
     (delta: 1 | -1) => {
       const next = sections[indexOf(shownRef.current) + delta];
       if (!next) return false;
-      haptic('select');
+      // A step to the next section is navigation, so it is silent (D-70, A14).
       setDir(delta);
       setPending(next);
       if (openRef.current) setOpen(false);
@@ -292,6 +292,13 @@ export function SectionTrigger({ children }: { children: ReactNode }) {
     const watch = new ResizeObserver(([entry]) => {
       const w = entry?.borderBoxSize?.[0]?.inlineSize ?? entry?.contentRect.width;
       if (w === undefined) return;
+      // A name with no width is not drawn (its bar is display: none while the page's own bar holds the switcher, or its
+      // text has no font yet). There is no place to glide from, so the next drawn width lands where it is: gliding from 0
+      // started the chevron and dot on top of the name's first letters (A22).
+      if (w < 1) {
+        width.current = null;
+        return;
+      }
       const from = width.current;
       width.current = w;
       const el = tail.current;

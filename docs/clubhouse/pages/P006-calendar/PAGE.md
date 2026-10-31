@@ -23,15 +23,18 @@ earlier observations below retain their original date and scope.
 | Checklist | [screens/calendar.md](../../screens/calendar.md) |
 | Phone spec | [phone/calendar.md](../../phone/calendar.md) |
 | Design boards | [Coach - Calendar.html](../../../../design/handoff/Coach%20-%20Calendar.html) · [Calendar.html](../../../../design/handoff/Calendar.html) · [cal-views.jsx](../../../../design/handoff/cal-views.jsx) · [cal-inspector.jsx](../../../../design/handoff/cal-inspector.jsx) · [cal-editor.jsx](../../../../design/handoff/cal-editor.jsx) · [Coach - Calendar - Mobile.html](../../../../design/handoff/Coach%20-%20Calendar%20-%20Mobile.html) · [m-cal.jsx](../../../../design/handoff/m-cal.jsx) |
-| Code | [calendar](../../../../src/clubhouse/screens/calendar) · [calendar.ts](../../../../src/clubhouse/data/calendar.ts) · [calendar.tsx](../../../../src/clubhouse/routes/calendar.tsx) · [calendar.css](../../../../src/clubhouse/styles/calendar.css) |
+| Code | [calendar](../../../../src/clubhouse/screens/calendar) · [calendar.ts](../../../../src/clubhouse/data/calendar.ts) · [calendar.tsx](../../../../src/clubhouse/routes/calendar.tsx) · [calendar.css](../../../../src/clubhouse/styles/calendar.css) · [attendance-counts.ts](../../../../src/clubhouse/data/attendance-counts.ts) · [calendar-rounds.ts](../../../../src/clubhouse/data/calendar-rounds.ts) |
+| Held plans | [tournaments-from-calendar.md](../../held/data/tournaments-from-calendar.md) · [tournaments-calendar-sync.md](../../held/data/tournaments-calendar-sync.md) |
 | Audits | [AESTHETIC_AUDIT](../../AESTHETIC_AUDIT.md) · [all audits](../../AUDITS.md) |
 | Tracker | [PROGRESS.md](../../PROGRESS.md), row "Calendar" |
 | Screenshot log | [VERIFY.md, Screenshots](VERIFY.md#screenshots) |
 | Screenshots | `npm run clubhouse:shots -- gallery --page P006`, which opens `.helm/screenshots/clubhouse/P006-calendar/GALLERY.html` (local) |
 <!-- clubhouse:related:end -->
 
-The team's schedule for a coach, and a player's view of it. Coaches plan and take attendance; players
-see the team's events, reply to the ones they are invited to, and see only their own classes.
+The team's schedule for a coach, and a player's view of it. Coaches plan and
+take attendance; players
+see the team's events, reply to the ones they are invited to, and see only their
+own classes.
 
 ## Identity
 
@@ -50,51 +53,68 @@ Manifest:           config/clubhouse/pages/P006-calendar.json
 
 ### Primary user
 
-A college golf coach planning the week: practices, qualifiers, tournaments, meetings and travel, with
-every player's classes in view so that nothing is scheduled on top of one. A player uses the same page
+A college golf coach planning the week: practices, qualifiers, tournaments,
+meetings and travel, with
+every player's classes in view so that nothing is scheduled on top of one. A
+player uses the same page
 to see what is coming and to answer the coach.
 
 ### Job to be done
 
-Put the right event on the calendar at a time when the people invited can be there, know who has
-answered and who came, and never have to open a class list to find out who is busy.
+Put the right event on the calendar at a time when the people invited can be
+there, know who has
+answered and who came, and never have to open a class list to find out who is
+busy.
 
 ### Primary action
 
-Coach: publish an event (New event). Player: answer an event they are invited to (Going, Maybe, Can't
+Coach: publish an event (New event). Player: answer an event they are invited to
+(Going, Maybe, Can't
 make it).
 
 ### Secondary actions
 
-Move to another day, week or month, or to the agenda; open an event and see its responses (coach),
-edit or cancel it, take attendance, attach a file from Documents, review a schedule overlap and pick
-one of the suggested open times; choose whose schedule to show (coach); add busy time of your own
+Move to another day, week or month, or to the agenda; open an event and see its
+responses (coach),
+edit or cancel it, take attendance, attach a file from Documents, review a
+schedule overlap and pick
+one of the suggested open times; choose whose schedule to show (coach); add busy
+time of your own
 (coach); add the calendar to Apple, Google or Outlook; copy an event's link.
 
 ### Information hierarchy
 
-1. The grid for the chosen days: events by time, classes and busy time in their slots, the now line on
+1. The grid for the chosen days: events by time, classes and busy time in their
+   slots, the now line on
    today, overlaps marked.
-2. The panel beside it: today and what needs attention (Summary), or the open event with its facts,
+2. The panel beside it: today and what needs attention (Summary), or the open
+   event with its facts,
    responses and files.
-3. The tools: New event, the view switch, the people filter, Today, and the More menu.
+3. The tools: New event, the view switch, the people filter, Today, and the More
+   menu.
 
 ### User should notice first
 
-What is on today and what needs the coach's attention this week (an overlap, replies still pending);
+What is on today and what needs the coach's attention this week (an overlap,
+replies still pending);
 for a player, the events waiting on their reply.
 
 ### User should never have to think about
 
-Which timezone a time is in (the team's, stated beside the count), whether a class is in the way (it is
-marked, and the editor warns before anything is published), what a player is allowed to see (the server
-decides, and a player's browser is never sent a teammate's reply or class), or whether a change landed
+Which timezone a time is in (the team's, stated beside the count), whether a
+class is in the way (it is
+marked, and the editor warns before anything is published), what a player is
+allowed to see (the server
+decides, and a player's browser is never sent a teammate's reply or class), or
+whether a change landed
 (each says so, or says what did not happen, and keeps what was typed).
 
 ### Success looks like
 
-A coach adds a week of practices, sees that one collides with a class, moves it to a suggested open time
-and publishes, in a couple of minutes, and every failure along the way told them exactly what did not
+A coach adds a week of practices, sees that one collides with a class, moves it
+to a suggested open time
+and publishes, in a couple of minutes, and every failure along the way told them
+exactly what did not
 happen.
 
 ## Semantic features
@@ -120,15 +140,20 @@ Status:           approved
 
 ### Enters from
 
-The sidebar (both roles) and the phone tab bar (coach; a player opens it from More, D-66); Home's New
-event (`?new=1`) and its phone quick chips (`?new=1&type=`); Roster's Plan 1:1 (`?new=1&with=<player>`,
-D-52); Messages' Schedule (`?new=1`, D-47); Team Hub's Create event (`?new=1`) and each event in its
+The sidebar (both roles) and the phone tab bar (coach; a player opens it from
+More, D-66); Home's New
+event (`?new=1`) and its phone quick chips (`?new=1&type=`); Roster's Plan 1:1
+(`?new=1&with=<player>`,
+D-52); Messages' Schedule (`?new=1`, D-47); Team Hub's Create event (`?new=1`)
+and each event in its
 reply list (`?date=&event=`); the shell's next-event card (`?event=<id>`).
 
 ### Exits to
 
-The files attached to an event, which open in a new tab from Documents; a calendar app, through the
-`webcal:` link Add to calendar app hands out. Calendar has no link into another Clubhouse screen.
+The files attached to an event, which open in a new tab from Documents; a
+calendar app, through the
+`webcal:` link Add to calendar app hands out. Calendar has no link into another
+Clubhouse screen.
 
 ## Ownership
 

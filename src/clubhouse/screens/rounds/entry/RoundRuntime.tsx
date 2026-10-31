@@ -8,7 +8,11 @@ import { useAction, type ActionResult, type ServerResult } from '../../../lib/us
 import { Button } from '../../../ui/Button';
 import { Icon } from '../../../ui/Icon';
 import { ExitSheet, RoundCompleteSheet, ScorecardSheet, SubmitOverlay } from '../track/round-sheets';
+import { useRoundSharing } from '../track/LiveShareSheet';
+import type { LiveRoundType } from '../../../live/model';
+import type { LiveSharePorts } from '../../../live/share-ports';
 import { RoundTracking } from '../track/RoundTracking';
+import { CourseNudge } from './CourseNudge';
 import { reasonText } from './labels';
 import type { RoundNotices } from './ports';
 import { RecoveryDialog } from './RecoveryDialog';
@@ -16,7 +20,9 @@ import { ReloadBanner, RoundErrorBanner } from './ReloadBanner';
 import { QUALIFIER_CLOSED_REASON, SaveAsPracticeSheet } from './SaveAsPracticeSheet';
 import { cardHoles, outcomeOf, postedScore, recoveryFacts, summaryHoles, type ChRecovery, type ChRoundSession } from './session';
 import { useEntryFailureToast } from './failures';
+import { SETUP_READ_PORTS } from './setup-reads';
 import '../../../styles/rounds-track.css';
+import { invalidatePrefetchTabs } from '../../../shell/use-prefetch-tabs';
 
 /** After a round posts, its review opens once the check has had a moment (the legacy overlay counted three seconds). */
 export const POSTED_OPEN_MS = 2500;
@@ -66,6 +72,7 @@ export function RoundRuntime({
   routes,
   errorsHeld = false,
   roundType,
+  sharing,
 }: {
   session: ChRoundSession;
   capture: Capture;
@@ -75,6 +82,11 @@ export function RoundRuntime({
    * sheet (the continue screen owns it, CH-11521). The Exit sheet closes first.
    */
   roundType?: { label: string; onChange: () => void };
+  /**
+   * Live sharing (P-6): the round's id (null until its first save), its type and the ports. The Exit sheet gets a Sharing
+   * row and the sheet it opens, only when sharing is there (the live table exists) and the round can be shared.
+   */
+  sharing?: { roundId: string | null; type: LiveRoundType; ports: LiveSharePorts };
   /** A dialog outside the runtime (the recovery dialog) holds the engine's error line, so no banner says it twice. */
   errorsHeld?: boolean;
 }) {
@@ -92,6 +104,7 @@ export function RoundRuntime({
   const discarding = useRef(false);
   const practicing = useRef(false);
   const course = session.round.course;
+  const share = useRoundSharing(sharing);
 
   const exitOpen = sheet === 'exit' || session.engineExitOpen;
   const closedOpen = session.submitting && session.qualifierClosed && !session.completedRoundId;
@@ -131,7 +144,7 @@ export function RoundRuntime({
         saving.current = false;
       }
     },
-    () => ({ done: '', failed: `Couldn’t save your round at ${course}`, hint: 'Your shots are still on this device. Check your connection, then try again.', code: 'CH-11010', offline: () => s.current.offline() }),
+    () => ({ done: '', failed: `Couldn’t save your round at ${course}`, hint: 'Your shots are still on this device. Try again.', code: 'CH-11010', offline: () => s.current.offline() }),
     (result, c) => (errorOf(result) === 'busy' || errorOf(result) === 'conflict' ? { ...c, quiet: true } : { ...c, hint: reasonText(errorOf(result)) ?? c.hint }),
   );
 
@@ -235,6 +248,8 @@ export function RoundRuntime({
     if (ticked.current !== id) {
       ticked.current = id;
       haptic('success');
+      // Rounds, Stats and Roster held from before the submit would miss the new round (A21).
+      invalidatePrefetchTabs();
     }
     const t = window.setTimeout(() => routerRef.current.push(`${routesRef.current.review(id)}${JUST_SUBMITTED}`), POSTED_OPEN_MS);
     return () => window.clearTimeout(t);
@@ -276,6 +291,8 @@ export function RoundRuntime({
     ) : null;
 
   const card = cardHoles(session.holes, session.completedHoleStats);
+  // The course nudge (CH-11962) at the round's start and before posting; one view, so a link or a Skip holds in both places.
+  const nudge = session.courseNudge ?? null;
   const current = session.holes[session.currentHoleIndex]?.number ?? 1;
   const shots = (session.pendingFinalStats ?? session.completedHoleStats).reduce((n, h) => n + (h?.shots.length ?? 0), 0);
 
@@ -298,6 +315,9 @@ export function RoundRuntime({
         holeShots={(i) => session.completedHoleStats[i]?.shots ?? null}
         onReviewRound={session.pendingFinalStats && !session.submitting ? () => s.current.setShowFinishConfirm(true) : undefined}
         onAutoSave={session.onAutoSave}
+        dataGapAsks={session.dataGapAsks}
+        recoveryPrompt={session.recoveryPrompt ?? false}
+        startPrompt={nudge ? <CourseNudge nudge={nudge} ports={SETUP_READ_PORTS} /> : undefined}
         autoSaveInterval={15000}
         autoSaveDisabled={session.autoSaveDisabled}
         statusSlot={
@@ -320,6 +340,8 @@ export function RoundRuntime({
         onSave={() => void save.run('exit')}
         onKeep={closeExit}
         onDiscard={() => void discard.run('exit')}
+        // Rounds is where a discard lands: fetched as the question opens, so the delete is the only wait (F-0045).
+        onConfirmOpen={() => router.prefetch(routes.library)}
         roundType={
           roundType && {
             label: roundType.label,
@@ -329,13 +351,24 @@ export function RoundRuntime({
             },
           }
         }
+        sharing={
+          share.row && {
+            label: share.row.label,
+            onChange: () => {
+              closeExit();
+              share.row?.onChange();
+            },
+          }
+        }
       />
+      {share.sheet}
       <ScorecardSheet open={sheet === 'card'} onClose={() => setSheet(null)} course={course} tee={session.round.teeLabel} holes={card} current={current} />
       <RoundCompleteSheet
         open={finishOpen}
         heading={session.heading}
         holes={summaryHoles(session.holes, session.pendingFinalStats ?? [])}
         backHole={current}
+        notice={nudge ? <CourseNudge nudge={nudge} ports={SETUP_READ_PORTS} sheet /> : undefined}
         onBack={() => s.current.setShowFinishConfirm(false)}
         onSubmit={() => {
           const stats = s.current.pendingFinalStats;

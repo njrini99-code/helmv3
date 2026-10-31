@@ -7,7 +7,10 @@
     "/golf/dashboard/rounds",
     "/golf/dashboard/rounds/[id]",
     "/golf/dashboard/rounds/new",
-    "/golf/dashboard/rounds/continue/[id]"
+    "/golf/dashboard/rounds/continue/[id]",
+    "/golf/dashboard/rounds/recover",
+    "/golf/dashboard/rounds/course/[key]",
+    "/golf/dashboard/live"
   ],
   "roles": [
     "coach",
@@ -58,7 +61,39 @@
       "src/clubhouse/__tests__/round-entry-continue.test.tsx",
       "src/clubhouse/__tests__/round-entry-routes.test.tsx",
       "src/lib/golf/__tests__/shot-entry-rules.test.ts",
-      "src/clubhouse/__tests__/team-rounds-shape.test.ts"
+      "src/clubhouse/__tests__/team-rounds-shape.test.ts",
+      "src/clubhouse/__tests__/live-rounds-copy.test.ts",
+      "src/clubhouse/screens/rounds/__tests__/live-surfaces.test.tsx"
+    ],
+    "also": [
+      "src/clubhouse/routes/round-new.tsx",
+      "src/clubhouse/routes/round-continue.tsx",
+      "src/clubhouse/routes/round-recover.tsx",
+      "src/clubhouse/routes/round-review.tsx",
+      "src/clubhouse/routes/course-history.tsx",
+      "src/clubhouse/routes/team-rounds.tsx",
+      "src/clubhouse/routes/live.tsx",
+      "src/clubhouse/screens/live",
+      "src/clubhouse/live",
+      "src/clubhouse/styles/live.css",
+      "src/clubhouse/data/live-rounds.ts",
+      "src/clubhouse/data/round-debrief.ts",
+      "src/clubhouse/data/round-debrief-shape.ts",
+      "src/clubhouse/data/round-history.ts",
+      "src/clubhouse/data/round-history-shape.ts",
+      "src/clubhouse/data/round-review.ts",
+      "src/clubhouse/data/round-review-shape.ts",
+      "src/clubhouse/data/rounds-shape.ts",
+      "src/clubhouse/data/rounds-type-options.ts",
+      "src/clubhouse/data/team-rounds.ts",
+      "src/clubhouse/data/team-rounds-shape.ts",
+      "src/clubhouse/data/course-history.ts",
+      "src/clubhouse/data/course-history-shape.ts",
+      "src/clubhouse/data/course-key.ts",
+      "src/clubhouse/data/course-glance.ts",
+      "src/clubhouse/data/course-page-shape.ts",
+      "src/clubhouse/data/compare-rounds.ts",
+      "src/clubhouse/data/record-marks.ts"
     ]
   },
   "catalog": "docs/clubhouse/catalog/rounds.md",
@@ -270,5 +305,8 @@
       ]
     }
   ],
-  "held": []
+  "held": [
+    "docs/clubhouse/held/data/live-rounds.md",
+    "docs/clubhouse/held/data/live-rounds-realtime.md"
+  ]
 }

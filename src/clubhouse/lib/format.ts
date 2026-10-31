@@ -25,10 +25,64 @@ export function changeTone(value: number | null | undefined, lowerIsBetter: bool
   return value < 0 === lowerIsBetter ? 'is-gain' : 'is-loss';
 }
 
+/** `changeTone` as the text classes figures paint with: `ch-gain`, `ch-loss`, or '' when the shown value rounds to zero. */
+export function changeInk(value: number | null | undefined, lowerIsBetter = false, digits = 1): '' | 'ch-gain' | 'ch-loss' {
+  const tone = changeTone(value, lowerIsBetter, digits);
+  return tone === 'is-gain' ? 'ch-gain' : tone === 'is-loss' ? 'ch-loss' : '';
+}
+
+/** `changeTone` as the good or bad word a figure's `tone` prop takes, and no tone when the shown value rounds to zero. */
+export function changeVerdict(value: number | null | undefined, lowerIsBetter = false, digits = 1): 'good' | 'bad' | undefined {
+  const tone = changeTone(value, lowerIsBetter, digits);
+  return tone === 'is-gain' ? 'good' : tone === 'is-loss' ? 'bad' : undefined;
+}
+
+/**
+ * Where a figure stands against the team's, decided on the values as printed at `digits` (A5): "level with the team" when
+ * both print alike, otherwise the printed gap and "ahead of them" or "behind them". 0.44 against 0.36 prints 0.4 twice,
+ * so it is level, never "0.1 ahead".
+ */
+export function versusTeam(mine: number, team: number, lowerIsBetter: boolean, digits = 1): string {
+  const a = Number(mine.toFixed(digits));
+  const b = Number(team.toFixed(digits));
+  if (a === b) return 'level with the team';
+  const better = lowerIsBetter ? a < b : a > b;
+  return `${Math.abs(a - b).toFixed(digits)} ${better ? 'ahead of' : 'behind'} them`;
+}
+
 /** A percentage at a whole number by default: 61%, 0%, and an em dash for no data. */
 export function formatPct(value: number | null | undefined, digits = 0): string {
   if (value == null || Number.isNaN(value)) return NO_DATA;
   return `${value.toFixed(digits)}%`;
+}
+
+/** A scoring or stat average at one decimal (CONS-15): 72.4, and an em dash for no data. */
+export function formatAvg(value: number | null | undefined): string {
+  return formatFixed(value, 1);
+}
+
+/** Strokes gained, signed at one decimal everywhere (owner decision 11, 2026-10-24): +0.8, −1.2, 0.0. */
+export function formatSG(value: number | null | undefined, digits = 1): string {
+  return formatSigned(value, digits);
+}
+
+/** Handicap index at one decimal; a plus handicap (better than scratch, stored below zero) is written +1.2 (CONS-15). */
+export function formatHcp(value: number | null | undefined): string {
+  if (value == null || Number.isNaN(value)) return NO_DATA;
+  const rounded = Number(value.toFixed(1));
+  return rounded < 0 ? `+${Math.abs(rounded).toFixed(1)}` : Math.abs(rounded).toFixed(1);
+}
+
+/** A distance in whole yards by default (CONS-15): 152 yds, 8.5 ft with `unit` and `digits`. */
+export function formatDistance(value: number | null | undefined, unit = 'yds', digits = 0): string {
+  if (value == null || Number.isNaN(value)) return NO_DATA;
+  return `${value.toFixed(digits)} ${unit}`;
+}
+
+/** A finishing place: "1", "T3", or the no-data dash when there is no place. */
+export function formatPlace(place: number | null | undefined, tied = false): string {
+  if (place == null) return NO_DATA;
+  return `${tied ? 'T' : ''}${place}`;
 }
 
 export function formatFixed(value: number | null | undefined, digits = 1): string {
@@ -36,10 +90,20 @@ export function formatFixed(value: number | null | undefined, digits = 1): strin
   return value.toFixed(digits);
 }
 
+/** Letters only: a display name with punctuation in it ("Coach (Demo)") reads "CD", not "C(". */
 export function initials(name: string): string {
-  const parts = name.trim().split(/\s+/).filter(Boolean);
+  const parts = name
+    .trim()
+    .split(/\s+/)
+    .map((w) => w.replace(/[^\p{L}]/gu, ''))
+    .filter(Boolean);
   if (parts.length === 0) return '';
   const first = parts[0]?.[0] ?? '';
   const last = parts.length > 1 ? (parts[parts.length - 1]?.[0] ?? '') : '';
   return (first + last).toUpperCase();
+}
+
+/** A whole count, with the US grouping used for course yardages. */
+export function formatWhole(value: number): string {
+  return new Intl.NumberFormat('en-US', { maximumFractionDigits: 0 }).format(value);
 }

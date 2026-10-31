@@ -57,8 +57,16 @@
       "schedule": "5 * * * *"
     },
     {
+      "path": "/api/cron/class-holds-release",
+      "schedule": "*/1 * * * *"
+    },
+    {
       "path": "/api/cron/v3/standing-refresh",
       "schedule": "20 2 * * *"
+    },
+    {
+      "path": "/api/cron/v3/standing-refresh-dirty",
+      "schedule": "*/5 * * * *"
     },
     {
       "path": "/api/cron/v3/genome-nightly",

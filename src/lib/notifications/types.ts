@@ -20,7 +20,10 @@ export type NotificationType =
   | 'task_reminder'
   | 'task_assigned'
   | 'task_completed'
-  | 'dev_plan_assigned';
+  | 'dev_plan_assigned'
+  // P-10: the one summary push a class-hold release sends ("While you were in class"). No delivery-preference key: its rows were
+  // already checked against the player's preferences when they were released.
+  | 'class_summary';
 
 export interface NotificationPreferences {
   // Email preferences

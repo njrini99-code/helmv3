@@ -256,6 +256,10 @@ const observedChooseQualifierTiePlace = withAdminObserved(
   chooseQualifierTiePlaceImpl,
 );
 
+/**
+ * Which players are level at the cut is the server's call (the one order,
+ * ranking.ts rankStandings); the caller only says who gets the place.
+ */
 export async function chooseQualifierTiePlace(
   qualifier_id: string,
   player_id: string,
@@ -270,6 +274,7 @@ const observedConfirmQualifierSelection = withAdminObserved(
   confirmQualifierSelectionImpl,
 );
 
+/** The squad written is the one the server's order puts above the line, whichever surface confirms. */
 export async function confirmQualifierSelection(
   qualifier_id: string,
 ): Promise<QualifyingActionResult> {

@@ -164,6 +164,12 @@ GRANT ALL ON TABLE "public"."golf_conversation_participants" TO "authenticated";
 
 GRANT ALL ON TABLE "public"."golf_conversation_participants" TO "service_role";
 
+GRANT SELECT ON TABLE "public"."golf_conversation_read_marks" TO "authenticated";
+
+GRANT ALL ON TABLE "public"."golf_conversation_read_marks" TO "service_role";
+
+GRANT ALL ON SEQUENCE "public"."golf_conversation_read_marks_id_seq" TO "service_role";
+
 GRANT ALL ON TABLE "public"."golf_conversations" TO "anon";
 
 GRANT ALL ON TABLE "public"."golf_conversations" TO "authenticated";
@@ -416,6 +422,10 @@ GRANT ALL ON TABLE "public"."golf_player_standing" TO "authenticated";
 
 GRANT ALL ON TABLE "public"."golf_player_standing" TO "service_role";
 
+GRANT ALL ON TABLE public.golf_player_standing_season TO "service_role";
+
+GRANT ALL ON TABLE public.golf_standing_refresh_queue TO "service_role";
+
 GRANT ALL ON TABLE "public"."golf_player_stats_cache" TO "authenticated";
 
 GRANT ALL ON TABLE "public"."golf_player_stats_cache" TO "service_role";
@@ -486,6 +496,16 @@ GRANT ALL ON TABLE "public"."golf_review_events" TO "anon";
 GRANT ALL ON TABLE "public"."golf_review_events" TO "authenticated";
 
 GRANT ALL ON TABLE "public"."golf_review_events" TO "service_role";
+
+GRANT SELECT ON TABLE "public"."golf_round_live" TO "authenticated";
+
+GRANT ALL ON TABLE "public"."golf_round_live" TO "service_role";
+
+GRANT SELECT,INSERT,UPDATE ON TABLE "public"."golf_round_live_prefs" TO "authenticated";
+
+GRANT ALL ON TABLE "public"."golf_round_live_prefs" TO "service_role";
+
+GRANT SELECT,USAGE ON SEQUENCE "public"."golf_round_live_seq" TO "service_role";
 
 GRANT ALL ON TABLE "public"."golf_round_recap_locks" TO "service_role";
 
@@ -670,3 +690,77 @@ GRANT ALL ON TABLE "public"."golf_travel_itineraries" TO "service_role";
 GRANT ALL ON TABLE "public"."putt_details" TO "authenticated";
 
 GRANT ALL ON TABLE "public"."putt_details" TO "service_role";
+
+-- P016 Tournaments: held migrations 20261024100000 (tables), 100100 (RLS)
+-- and 100200 (RPCs, lineup guard), WRITTEN — HOLD — NOT APPLIED in production.
+-- Generated 2026-10-25 by pg_dump of the three files applied in order to a
+-- scratch Postgres 16 (docs/clubhouse/held/data/tournaments.md).
+
+GRANT SELECT,INSERT,DELETE,UPDATE ON TABLE "public"."golf_saved_comparisons" TO "authenticated";
+GRANT ALL ON TABLE "public"."golf_saved_comparisons" TO "service_role";
+
+GRANT SELECT,INSERT,DELETE,UPDATE ON TABLE "public"."golf_team_seasons" TO "authenticated";
+GRANT ALL ON TABLE "public"."golf_team_seasons" TO "service_role";
+
+GRANT SELECT,INSERT,DELETE,UPDATE ON TABLE "public"."golf_tournament_advice_givers" TO "authenticated";
+GRANT ALL ON TABLE "public"."golf_tournament_advice_givers" TO "service_role";
+
+GRANT SELECT,INSERT,DELETE,UPDATE ON TABLE "public"."golf_tournament_coach_presence" TO "authenticated";
+GRANT ALL ON TABLE "public"."golf_tournament_coach_presence" TO "service_role";
+
+GRANT SELECT,INSERT,DELETE,UPDATE ON TABLE "public"."golf_tournament_entries" TO "authenticated";
+GRANT ALL ON TABLE "public"."golf_tournament_entries" TO "service_role";
+
+GRANT SELECT,INSERT,DELETE,UPDATE ON TABLE "public"."golf_tournament_entry_notes" TO "authenticated";
+GRANT ALL ON TABLE "public"."golf_tournament_entry_notes" TO "service_role";
+
+GRANT SELECT,INSERT,DELETE,UPDATE ON TABLE "public"."golf_tournament_field_scores" TO "authenticated";
+GRANT ALL ON TABLE "public"."golf_tournament_field_scores" TO "service_role";
+
+GRANT SELECT,INSERT,DELETE,UPDATE ON TABLE "public"."golf_tournament_field_teams" TO "authenticated";
+GRANT ALL ON TABLE "public"."golf_tournament_field_teams" TO "service_role";
+
+GRANT SELECT,INSERT,DELETE,UPDATE ON TABLE "public"."golf_tournament_link_dismissals" TO "authenticated";
+GRANT ALL ON TABLE "public"."golf_tournament_link_dismissals" TO "service_role";
+
+GRANT SELECT,INSERT,DELETE,UPDATE ON TABLE "public"."golf_tournament_player_notes" TO "authenticated";
+GRANT ALL ON TABLE "public"."golf_tournament_player_notes" TO "service_role";
+
+GRANT SELECT,INSERT,DELETE,UPDATE ON TABLE "public"."golf_tournament_player_rounds" TO "authenticated";
+GRANT ALL ON TABLE "public"."golf_tournament_player_rounds" TO "service_role";
+
+GRANT SELECT,INSERT,DELETE,UPDATE ON TABLE "public"."golf_tournament_reflections" TO "authenticated";
+GRANT ALL ON TABLE "public"."golf_tournament_reflections" TO "service_role";
+
+GRANT SELECT,INSERT ON TABLE "public"."golf_tournament_result_marks" TO "authenticated";
+GRANT ALL ON TABLE "public"."golf_tournament_result_marks" TO "service_role";
+
+GRANT SELECT,INSERT,DELETE,UPDATE ON TABLE "public"."golf_tournament_reviews" TO "authenticated";
+GRANT ALL ON TABLE "public"."golf_tournament_reviews" TO "service_role";
+
+GRANT SELECT,INSERT,DELETE,UPDATE ON TABLE "public"."golf_tournament_round_lineups" TO "authenticated";
+GRANT ALL ON TABLE "public"."golf_tournament_round_lineups" TO "service_role";
+
+GRANT SELECT,INSERT,DELETE,UPDATE ON TABLE "public"."golf_tournament_rounds" TO "authenticated";
+GRANT ALL ON TABLE "public"."golf_tournament_rounds" TO "service_role";
+
+GRANT SELECT,INSERT,DELETE,UPDATE ON TABLE "public"."golf_tournaments" TO "authenticated";
+GRANT ALL ON TABLE "public"."golf_tournaments" TO "service_role";
+
+
+--
+GRANT SELECT,INSERT,DELETE,UPDATE ON TABLE "public"."golf_team_terms" TO "authenticated";
+GRANT ALL ON TABLE "public"."golf_team_terms" TO "service_role";
+
+GRANT SELECT,INSERT,UPDATE ON TABLE "public"."golf_player_class_settings" TO "authenticated";
+GRANT ALL ON TABLE "public"."golf_player_class_settings" TO "service_role";
+
+GRANT SELECT,INSERT,DELETE ON TABLE "public"."golf_class_exceptions" TO "authenticated";
+GRANT ALL ON TABLE "public"."golf_class_exceptions" TO "service_role";
+
+GRANT SELECT ON TABLE "public"."golf_push_holds" TO "authenticated";
+GRANT ALL ON TABLE "public"."golf_push_holds" TO "service_role";
+
+GRANT ALL ON TABLE "public"."golf_push_hold_heartbeat" TO "service_role";
+
+GRANT ALL ON TABLE "public"."golf_class_hold_dirty" TO "service_role";

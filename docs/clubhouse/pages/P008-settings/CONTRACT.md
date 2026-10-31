@@ -2,7 +2,8 @@
 
 Popup sizing, native top-layer placement and description association follow the
 [popup audit](../../POPUP_AUDIT.md). Long content remains scrollable within the
-available viewport; source/browser checks do not grant physical-device acceptance.
+available viewport; source/browser checks do not grant physical-device
+acceptance.
 
 <!-- clubhouse:release-audit:start -->
 ## 2026-10-06 — Smoothness repair
@@ -29,7 +30,8 @@ reserve new IDs or mark manual contracts verified.
 
 Every behaviour Settings promises, by the 25 V2 categories (D-69). A contract's
 number is its Bridge ID (D-68: namespace 8, category, item); `Code` is the
-catalog code on the element and in the test (`docs/clubhouse/catalog/settings.md`).
+catalog code on the element and in the test
+(`docs/clubhouse/catalog/settings.md`).
 Rows without a code are behaviours with no single element, recorded in
 `config/clubhouse/bridge-contracts.json` by hand. The shell's contracts (P001,
 namespace 1) apply here too and are named where they carry a category.
@@ -158,15 +160,15 @@ reminders off let an out-of-order schedule send and fail).
 Status: DEFINED
 
 Every change has its own toast (80601 to 80624) naming what failed and why when
-the server gave a short reason, otherwise "Check your connection and try again",
-with Retry on saves and switches. Every section that fails to load shows its own
-notice with Try again (80625 to 80635), never a blank form that could be saved
-over real data; its Try again reads the whole page again (81401). When more than
-one of a section's reads fails (Team, Notifications, Golf), the section says so
-once at its top, naming each, with the one Try again (the shell's CH-1209), and
-each part keeps only its title under its heading (states audit b6, 2026-10-08).
-A crash stays in its section (80636, SectionBoundary). The route's own errors
-are the shell's (10603 to 10607).
+the server gave a short reason, otherwise "Try again" (a form adds that its
+changes are kept), with Retry on saves and switches. Every section that fails to
+load shows its own notice with Try again (80625 to 80635), never a blank form
+that could be saved over real data; its Try again reads the whole page again
+(81401). When more than one of a section's reads fails (Team, Notifications,
+Golf), the section says so once at its top, naming each, with the one Try again
+(the shell's CH-1209), and each part keeps only its title under its heading
+(states audit b6, 2026-10-08). A crash stays in its section (80636,
+SectionBoundary). The route's own errors are the shell's (10603 to 10607).
 
 | Bridge ID | Code | Name | Meaning |
 | --- | --- | --- | --- |
@@ -212,6 +214,8 @@ are the shell's (10603 to 10607).
 | 80640 | CH-8213 | `THE_ASSISTANT_COACH_REQUESTS_DONT_LOAD` | The assistant coach requests don't load (head coach) |
 | 80641 | CH-8029 | `SEND_A_TEST_PUSH_FAILS` | Send a test push fails (P008-C3, D1-6) |
 | 80642 | CH-8214 | `EVERY_READ_FAILS` | Every read fails (phone list) |
+| 80643 | CH-8030 | `HOLD_DURING_CLASS_FAILS_TO_SAVE` | Hold during class fails to save (P-10) |
+| 80644 | CH-8216 | `A_PLAYER_WITH_CLASS_STATUS_ON_OPENS` | A player with class status on opens Notifications (P-10) |
 
 ## 07 — Network / offline
 
@@ -229,6 +233,7 @@ Report a problem check nothing first and fail with their own toast (80602,
 | --- | --- | --- | --- |
 | 80701 | — | `INSTANT_SAVE_REFUSED_OFFLINE` | While the browser is offline a switch, or a CoachHelm autosave, is refused before it changes anything: it stays where it was, nothing is sent, the error haptic fires and an error toast (CH-1903) says nothing was changed. |
 | 80702 | CH-8901 | `CUSTOMER_EMAIL_IS_SWITCHED_OFF_FOR_EVERYONE` | Customer email is switched off for everyone (`HELM_CUSTOMER_EMAIL_ENABLED` is not `true`, `src/lib/email/outbound-gate.ts`), so no email setting can send anything |
+| 80780 | CH-8980 | `SETTINGS_PREFERENCES_TIME_FORMAT` | Settings › Preferences › Time format (a device preference, like the distance unit) |
 
 From the shell (P001): 10701 CH-1901, 10702 CH-1902, 10703 CH-1903,
 10704 CH-1905, 10705 CH-1909, 10706 CH-1910.
@@ -254,7 +259,7 @@ error and no row; profile, team details, golf details and the coaching settings
 count the rows they change and fail with "Your account doesn’t have access to do
 this" (80808), as leaving a team already did. A refusal that arrives as an
 error, such as an upsert against a policy ("violates row-level security"), reads
-as "Check your connection" because the toast drops technical wording. All of
+as the access line too (saveFailureBody, since 2026-10-17). All of
 this was read from the migrations and the code, not checked against the live
 database. Off team: a coach with no team has no team cards (80401); a player
 with no team can join with a code (80402), and the server actions refuse a
@@ -305,7 +310,10 @@ From the shell (P001): 10901 CHANGE_LANDED.
 
 Status: DEFINED
 
-Report a problem when the in-app form is not available is information, not an error: email opens (81001). Two standing conditions are stated in place: push blocked in the browser (81002) and quiet mode (81003). A request to do something destructive is a confirm (category 11), not a warning.
+Report a problem when the in-app form is not available is information, not an
+error: email opens (81001). Two standing conditions are stated in place: push
+blocked in the browser (81002) and quiet mode (81003). A request to do something
+destructive is a confirm (category 11), not a warning.
 
 | Bridge ID | Code | Name | Meaning |
 | --- | --- | --- | --- |
@@ -317,7 +325,12 @@ Report a problem when the in-app form is not available is information, not an er
 
 Status: DEFINED
 
-Five confirms: Delete account (the person types delete), Leave team, Make a new invite code, Reset CoachHelm updates, and Turn off CoachHelm on your dashboards (81101 to 81105). Only Delete account fires the warning haptic when it opens (81704); the other four open silently. Open: D-70 names Remove, Delete, Discard, Exit round and Dismiss, and does not say whether Leave team and the others count. Unsaved edits have their own confirms (category 12).
+Five confirms: Delete account (the person types delete), Leave team, Make a new
+invite code, Reset CoachHelm updates, and Turn off CoachHelm on your dashboards
+(81101 to 81105). Only Delete account fires the warning haptic when it opens
+(81704); the other four open silently. Open: D-70 names Remove, Delete, Discard,
+Exit round and Dismiss, and does not say whether Leave team and the others
+count. Unsaved edits have their own confirms (category 12).
 
 | Bridge ID | Code | Name | Meaning |
 | --- | --- | --- | --- |
@@ -334,7 +347,15 @@ Five confirms: Delete account (the person types delete), Leave team, Make a new 
 
 Status: DEFINED
 
-Leaving with unsaved edits asks first: following a link (81201), switching section (81202), closing the tab (81203). A save that fails keeps the edits (81205), and a Retry that lands after the person kept typing leaves the newer typing as an unsaved edit instead of overwriting it (81205). A value saved in a section is still there when the person leaves it and comes back (81204; fixed 2026-09-30: the section used to show the value from when the page loaded, and a coach's first CoachHelm save could then create its row a second time). A slider moved just before leaving is saved, not dropped (81206; fixed 2026-09-30). A draft is never kept: Discard drops it.
+Leaving with unsaved edits asks first: following a link (81201), switching
+section (81202), closing the tab (81203). A save that fails keeps the edits
+(81205), and a Retry that lands after the person kept typing leaves the newer
+typing as an unsaved edit instead of overwriting it (81205). A value saved in a
+section is still there when the person leaves it and comes back (81204; fixed
+2026-09-30: the section used to show the value from when the page loaded, and a
+coach's first CoachHelm save could then create its row a second time). A slider
+moved just before leaving is saved, not dropped (81206; fixed 2026-09-30). A
+draft is never kept: Discard drops it.
 
 | Bridge ID | Code | Name | Meaning |
 | --- | --- | --- | --- |
@@ -349,7 +370,11 @@ Leaving with unsaved edits asks first: following a link (81201), switching secti
 
 Status: DEFINED
 
-Switches, segments, sliders and the CoachHelm settings show the new value at once and save behind it; a failure puts back that control only (81302; fixed 2026-09-30: a failed CoachHelm dashboards switch used to put back another one flipped in the meantime). A switch that is saving holds its new position and cannot be flipped again (81301).
+Switches, segments, sliders and the CoachHelm settings show the new value at
+once and save behind it; a failure puts back that control only (81302; fixed
+2026-09-30: a failed CoachHelm dashboards switch used to put back another one
+flipped in the meantime). A switch that is saving holds its new position and
+cannot be flipped again (81301).
 
 | Bridge ID | Code | Name | Meaning |
 | --- | --- | --- | --- |
@@ -360,7 +385,14 @@ Switches, segments, sliders and the CoachHelm settings show the new value at onc
 
 Status: DEFINED
 
-Try again on a section that did not load reads the whole page again on the server, not only that section (81401): the fresh read replaces the page's copy (81204), so the notice becomes its card, and the open section and unsaved edits in other cards stay. A card that is already open keeps its own draft; it reads the fresh copy the next time its section opens. Retry on an error toast repeats the same save and now finishes it the way the button does (81402; fixed 2026-09-30: after Retry landed a save the card stayed unsaved and a new invite code still showed the old one).
+Try again on a section that did not load reads the whole page again on the
+server, not only that section (81401): the fresh read replaces the page's copy
+(81204), so the notice becomes its card, and the open section and unsaved edits
+in other cards stay. A card that is already open keeps its own draft; it reads
+the fresh copy the next time its section opens. Retry on an error toast repeats
+the same save and now finishes it the way the button does (81402; fixed
+2026-09-30: after Retry landed a save the card stayed unsaved and a new invite
+code still showed the old one).
 
 | Bridge ID | Code | Name | Meaning |
 | --- | --- | --- | --- |
@@ -373,7 +405,10 @@ From the shell (P001): 11401 ROUTE_TRY_AGAIN, 11402 TOAST_RETRY.
 
 Status: DEFINED
 
-Settings is rendered on the server for each request and has no realtime. After a save that changes what the server renders the page asks for a fresh read (81501). Changes made on another device appear on the next visit. Whether the browser's router cache reuses a recent copy on a quick revisit is not verified.
+Settings is rendered on the server for each request and has no realtime. After a
+save that changes what the server renders the page asks for a fresh read
+(81501). Changes made on another device appear on the next visit. Whether the
+browser's router cache reuses a recent copy on a quick revisit is not verified.
 
 | Bridge ID | Code | Name | Meaning |
 | --- | --- | --- | --- |
@@ -413,7 +448,10 @@ From the shell (P001): 11601 CH-1601, 11602 CH-1602, 11603 CH-1603,
 
 Status: DEFINED
 
-Settings' own haptics (81701 to 81707) on the v2 grammar (D-70), with Discard added (81708), and the shell's (11701 to 11706). Open: Leave team, Make a new invite code, Reset CoachHelm updates and Turn off CoachHelm open their confirm silently (see 11).
+Settings' own haptics (81701 to 81707) on the v2 grammar (D-70), with Discard
+added (81708), and the shell's (11701 to 11706). Open: Leave team, Make a new
+invite code, Reset CoachHelm updates and Turn off CoachHelm open their confirm
+silently (see 11).
 
 | Bridge ID | Code | Name | Meaning |
 | --- | --- | --- | --- |
@@ -434,7 +472,12 @@ From the shell (P001): 11701 CH-1701, 11702 CH-1702, 11703 CH-1703,
 
 Status: DEFINED
 
-Settings' own (81801 to 81807): the rail is a navigation with the open section marked current; every switch has a name; save status and errors are announced; the notification grids are tables; dialogs trap focus and close on Esc; fields are labelled and their help or error is read with them. The shell's skip link, landmarks and dialog behaviour (11801 to 11811). Axe (clubhouse:a11y) has eight Settings pages at 1280 and 390.
+Settings' own (81801 to 81807): the rail is a navigation with the open section
+marked current; every switch has a name; save status and errors are announced;
+the notification grids are tables; dialogs trap focus and close on Esc; fields
+are labelled and their help or error is read with them. The shell's skip link,
+landmarks and dialog behaviour (11801 to 11811). Axe (clubhouse:a11y) has eight
+Settings pages at 1280 and 390.
 
 CH-1804, 11805 CH-1805, 11806 CH-1806, 11807 CH-1807, 11808 CH-1808, 11809
 CH-1809, 11810 CH-1810, 11811 CH-1811, 11812 CH-1812, 11813 CH-1813, 11814
@@ -463,7 +506,12 @@ From the shell (P001): 11801 CH-1801, 11802 CH-1802, 11803 CH-1803,
 
 Status: DEFINED
 
-At 820px or less Settings is the native phone screen (81901; owner-approved 2026-09-30, docs/clubhouse/phone/settings.md): a grouped list that pushes each section as a history entry with the tab bar kept, edit cards as full-height sheets, choices as bottom sheets and destructive choices as action sheets, over the same data, writes and catalog numbers. On a wider canvas the rail becomes a scrolling strip below 860px and form grids stack below 560px.
+At 820px or less Settings is the native phone screen (81901; owner-approved
+2026-09-30, docs/clubhouse/phone/settings.md): a grouped list that pushes each
+section as a history entry with the tab bar kept, edit cards as full-height
+sheets, choices as bottom sheets and destructive choices as action sheets, over
+the same data, writes and catalog numbers. On a wider canvas the rail becomes a
+scrolling strip below 860px and form grids stack below 560px.
 
 | Bridge ID | Code | Name | Meaning |
 | --- | --- | --- | --- |
@@ -475,7 +523,11 @@ From the shell (P001): 11901 PHONE_CHROME.
 
 Status: DEFINED
 
-Enter sends the email confirmation from New email and asks to join from the invite code field; every other card saves only with its Save button (82001). Segmented controls move with the arrow keys, sliders with the arrows, Page Up and Page Down, Home and End (the native range), and Esc closes a confirm. There are no shortcuts.
+Enter sends the email confirmation from New email and asks to join from the
+invite code field; every other card saves only with its Save button (82001).
+Segmented controls move with the arrow keys, sliders with the arrows, Page Up
+and Page Down, Home and End (the native range), and Esc closes a confirm. There
+are no shortcuts.
 
 | Bridge ID | Code | Name | Meaning |
 | --- | --- | --- | --- |
@@ -485,7 +537,11 @@ Enter sends the email confirmation from New email and asks to join from the invi
 
 Status: DEFINED
 
-One server pass in parallel batches, then first paint with the data in it, and no client fetch after paint (82101). Known and not merged: the loader reads golf_coach_philosophy twice (the weekly-email flag and the full row) and golf_teams twice (the team name and the team row). Web vitals are the shell's. Layout shift and first-load JavaScript are not measured.
+One server pass in parallel batches, then first paint with the data in it, and
+no client fetch after paint (82101). Known and not merged: the loader reads
+golf_coach_philosophy twice (the weekly-email flag and the full row) and
+golf_teams twice (the team name and the team row). Web vitals are the shell's.
+Layout shift and first-load JavaScript are not measured.
 
 | Bridge ID | Code | Name | Meaning |
 | --- | --- | --- | --- |
@@ -497,7 +553,8 @@ From the shell (P001): 12101 CH-1954.
 
 Status: DEFINED
 
-The shell records rage, dead and slow clicks for every page. Settings adds no events of its own.
+The shell records rage, dead and slow clicks for every page. Settings adds no
+events of its own.
 
 From the shell (P001): 12201 CH-1951, 12202 CH-1952, 12203 CH-1953.
 
@@ -505,7 +562,10 @@ From the shell (P001): 12201 CH-1951, 12202 CH-1952, 12203 CH-1953.
 
 Status: DEFINED
 
-Every client failure is reported with its surface and action, every read that fails on the server is logged with its read name and area, and each intent leaves a breadcrumb (82301). A missing profile row or team row is logged as well as a failed read (added 2026-09-30).
+Every client failure is reported with its surface and action, every read that
+fails on the server is logged with its read name and area, and each intent
+leaves a breadcrumb (82301). A missing profile row or team row is logged as well
+as a failed read (added 2026-09-30).
 
 | Bridge ID | Code | Name | Meaning |
 | --- | --- | --- | --- |
@@ -517,7 +577,10 @@ From the shell (P001): 12301 FAILURES_REPORTED.
 
 Status: DEFINED
 
-Two test files: settings.test.tsx (the screen) and settings-server.test.tsx (the loader, the route, the three addresses, the loading files and the live writes), plus the model checks in logic.test.ts (82401). `clubhouse:check` fails a catalog row of kinds 0 to 5 that no test names.
+Two test files: settings.test.tsx (the screen) and settings-server.test.tsx (the
+loader, the route, the three addresses, the loading files and the live writes),
+plus the model checks in logic.test.ts (82401). `clubhouse:check` fails a
+catalog row of kinds 0 to 5 that no test names.
 
 | Bridge ID | Code | Name | Meaning |
 | --- | --- | --- | --- |
@@ -527,7 +590,10 @@ From the shell (P001): 12401 TESTS_NAME_CONTRACTS.
 
 ## 25 — Helm Bridge action
 
-Status: N/A — the Bridge is wired later (owner, D-68). Every contract above already has its Bridge ID; the commands (open a section, save the open card) are defined when the Bridge is.
+Status: N/A — the Bridge is wired later (owner, D-68). Every contract above
+
+already has its Bridge ID; the commands (open a section, save the open card) are
+defined when the Bridge is.
 
 ## October 6 premium interaction corrections
 

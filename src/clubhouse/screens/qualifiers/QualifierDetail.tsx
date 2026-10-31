@@ -20,8 +20,8 @@ import { useLastGood } from '../../lib/use-last-good';
 import { useRefresh } from '../../lib/use-refresh';
 import { chTrail } from '../../lib/track';
 import { formatFixed } from '../../lib/format';
-import { bubbleNote, dayLabel, endedLive, plural, positionLabel, sampleNote, shortRange, yearOf, type ChQBoard, type ChQHole, type ChQRound, type ChQRow, type ChQStatus } from './model';
-import { Pos, qualifierPeek, StateBadge, StatusPill, ThruDots, ToPar, ToParPlate } from './parts';
+import { boardCaption, dayLabel, endedLive, plural, positionLabel, sampleNote, shortRange, viewerSelection, yearOf, type ChQBoard, type ChQHole, type ChQRound, type ChQRow, type ChQStatus } from './model';
+import { Pos, qualifierPeek, StateBadge, StatusPill, ThruDots, ToPar, ToParPlate, ViewerLineCard } from './parts';
 import { PlayerPeek } from '../../ui/PlayerPeek';
 import { useLiveStandings, type ChLiveFeed, type LiveFeedView } from './live';
 import { useRankSlide } from './rank-slide';
@@ -30,6 +30,8 @@ import { PrintHead } from './PrintHead';
 import { StandingsSpread } from './StandingsSpread';
 import { createOpenRow, PlayerRounds, type OpenRow } from './RoundsShowcase';
 import { QualifierDetailPhone } from './QualifierDetailPhone';
+import { LiveOnCourse } from './LiveOnCourse';
+import type { ChQOnCourse } from './on-course';
 import { LIST_HREF, noteIfSelectionLink, useStepBack } from './return-state';
 import { CardBodySkeleton, ParLineSkeleton, SecondaryProvider, Streamed, fulfilled, secondaryOf, settled, type ChQDetailView } from './streamed';
 import { useChPhone } from '../../lib/use-phone';
@@ -49,6 +51,7 @@ export function QualifierDetail({
   writes = LIVE_WRITES,
   live = true,
   feed: forcedFeed,
+  onCourse,
 }: {
   data: ChQDetailView;
   /** The courses and the scorecards, streaming in behind the standings. A fixture or a test may give them inside `data` instead. */
@@ -57,6 +60,8 @@ export function QualifierDetail({
   live?: boolean;
   /** The preview's stand-in for the realtime feed (it draws without one): the chip shows this state instead. */
   feed?: { feed: ChLiveFeed; updatedAt: number };
+  /** The live rounds of this qualifier (P-6): the coach's "On the course" section, and the held-back standings of a player mid-round. */
+  onCourse?: ChQOnCourse;
 }) {
   const router = useRouter();
   // Back is a step back in history when the list opened this qualifier (the list returns with its filter, search and place), and the
@@ -77,13 +82,15 @@ export function QualifierDetail({
   const [status, setStatus] = useState<ChQStatus>(data.status);
   const [confirmClose, setConfirmClose] = useState(false);
   useEffect(() => setStatus(data.status), [data.status]);
-  const liveFeed = useLiveStandings(data.id, live && status === 'in_progress', fresh);
+  // A player with a round of their own under way is held back (CH-16621): their board stays as it was until the round is posted.
+  const heldBack = !!onCourse?.heldBack;
+  const liveFeed = useLiveStandings(data.id, live && status === 'in_progress' && !heldBack, fresh, coach && onCourse ? { teamId: onCourse.teamId } : undefined);
   const feed: LiveFeedView = {
-    feed: status !== 'in_progress' ? 'off' : (forcedFeed?.feed ?? liveFeed.feed),
+    feed: status !== 'in_progress' || heldBack ? 'off' : (forcedFeed?.feed ?? liveFeed.feed),
     version: fresh,
     updatedAt: forcedFeed?.updatedAt,
     refresh: liveFeed.refresh,
-    // P009-D3: still open after its last day reads "Ended · n rounds outstanding", never Live.
+    // P009-D3: still open after its last day reads "Waiting on n rounds" (or "Past last day"), never Live.
     ended: endedLive({ status, endDate: data.endDate, today: data.today, entrants: data.entrants, numRounds: data.numRounds, submitted: data.board?.submitted ?? null }),
   };
 
@@ -146,7 +153,7 @@ export function QualifierDetail({
           </Button>
           <Button
             variant="primary"
-            disabled={close.pending}
+            busy={close.pending}
             feel={null}
             onClick={() => void close.run()}
           >
@@ -173,6 +180,7 @@ export function QualifierDetail({
           }}
           onReopen={reopenNow}
           reopenPending={reopen.pending}
+          onCourse={onCourse}
         />
         {closeConfirm}
       </SecondaryProvider>
@@ -222,7 +230,7 @@ export function QualifierDetail({
                 <Button
                   variant="ghost"
                   leftIcon={LockOpen}
-                  disabled={reopen.pending}
+                  busy={reopen.pending}
                   onClick={() => void reopenNow()}
                 >
                   {reopen.pending ? <span data-ch-code="CH-09406">Reopening…</span> : 'Reopen qualifier'}
@@ -248,6 +256,9 @@ export function QualifierDetail({
 
         <div className="ch-qf-body">
           <div className="ch-qf-col">
+            <SectionBoundary surface="qualifiers.live" label="Players on the course" code="CH-16620">
+              <LiveOnCourse onCourse={onCourse} qualifierId={data.id} day={data.today ?? null} coach={coach} active={status === 'in_progress'} phone={false} />
+            </SectionBoundary>
             <SectionBoundary surface="qualifiers.leaderboard" label="The leaderboard" code="CH-09212">
               <Leaderboard data={data} status={status} stale={stale} feed={feed} openRow={openRow} />
             </SectionBoundary>
@@ -382,7 +393,7 @@ function Leaderboard({
     <div className="ch-qf-panel__head">
       <div>
         <h2 id="ch-qf-lb">Leaderboard</h2>
-        {b && <p className="ch-num">Ranked by total to par · {plural(b.submitted, 'round')} submitted</p>}
+        {b && <p className="ch-num">Complete cards first, then total to par · {plural(b.submitted, 'round')} submitted</p>}
       </div>
       {status === 'in_progress' && b && <LiveChip view={feed} />}
     </div>
@@ -398,7 +409,7 @@ function Leaderboard({
           <InlineNotice
             code="CH-09204"
             title="Scores didn’t load"
-            body="The field isn’t shown without its scores, so nobody reads a wrong order. The error has been reported."
+            body="The field isn’t shown without its scores, so nobody reads a wrong order."
             onRetry={refresh}
             retrying={refreshing}
           />
@@ -437,6 +448,7 @@ function Leaderboard({
       <p className="ch-sr-only" aria-live="polite" data-ch-code="CH-09803">
         {announce}
       </p>
+      <ViewerLineCard board={b} viewerId={data.viewerPlayerId} numRounds={data.numRounds} selection={viewerSelection(data.selectionState, data.selections)} />
       <StandingsSpread rows={b.rows} topScore={b.topScore} />
       <div className="ch-qf-table" role="table" aria-labelledby="ch-qf-lb">
         <div role="rowgroup">
@@ -487,7 +499,7 @@ function Leaderboard({
                       <Pos position={r.position} tied={r.tied} move={r.move} />
                     </span>
                     <span role="rowheader" className="ch-qf-who">
-                      <Avatar name={r.name} size={38} />
+                      <Avatar name={r.name} id={r.playerId} size={38} />
                       <span>
                         {coach ? (
                           // P003-C1: resting on a name shows the player's card; the row still opens the scorecards.
@@ -565,7 +577,7 @@ function Leaderboard({
                 <Pos position={null} tied={false} move={null} />
               </span>
               <span role="rowheader" className="ch-qf-who">
-                <Avatar name={r.name} size={32} />
+                <Avatar name={r.name} id={r.playerId} size={32} />
                 <span>
                   <b>
                     {r.name}
@@ -593,8 +605,7 @@ function Leaderboard({
         </div>
       </div>
       <p className="ch-qf-cap">
-        Ranked by total to par, then total strokes, then more rounds played. Top {b.topScore} qualify on score
-        {data.picks ? `; ${plural(data.picks, 'coach’s pick', 'coach’s picks')}` : ''}.{bubbleNote(data.numRounds, status)}
+        {boardCaption(b, data.picks, data.numRounds, status)}
         {data.rules ? ` ${data.rules}` : ''}
       </p>
     </section>

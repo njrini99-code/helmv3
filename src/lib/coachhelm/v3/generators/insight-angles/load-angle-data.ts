@@ -53,7 +53,7 @@ const HOLE_COLUMNS = 'id, round_id, hole_number, par, score, penalty_strokes, pu
 const SHOT_COLUMNS =
   'id, round_id, hole_id, hole_number, shot_number, shot_type, club_type, lie_before, lie_after, result, ' +
   'distance_to_hole_before, distance_unit_before, distance_to_hole_after, distance_unit_after, is_penalty, ' +
-  'putt_made, miss_direction, created_at, putt_distance_feet, putt_slope, putt_break';
+  'putt_made, miss_direction, created_at, putt_distance_feet, putt_slope, putt_break, lie_after_recovery';
 
 type Sb = ReturnType<typeof createAdminClient>;
 

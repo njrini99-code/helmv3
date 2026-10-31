@@ -21,7 +21,7 @@ vi.mock('../lib/use-phone', () => ({ useChPhone: () => false, CH_PHONE_QUERY: '(
 
 import { PLAYER_HELM_HREF, type PlayerHelmView } from '../data/coachhelm-views-shape';
 import { PlayerHelmTabs } from '../screens/coachhelm/views/PlayerHelmTabs';
-import { useViewSwitch } from '../screens/coachhelm/use-view-switch';
+import { dimmedAt, resetViewSwitchForTests, useViewSwitch } from '../screens/coachhelm/use-view-switch';
 
 function deferred<T>() {
   let resolve!: (v: T) => void;
@@ -86,14 +86,14 @@ describe('a switch of view, as React runs it', () => {
  */
 describe('rapid switching between the player’s views', () => {
   const resolvedRead = (v: string) => Object.assign(Promise.resolve(v), { status: 'fulfilled', value: v }) as Promise<string>;
-  const order: PlayerHelmView[] = ['board', 'profile', 'standing', 'deep-dive'];
+  const order: PlayerHelmView[] = ['board', 'standing', 'deep-dive'];
 
   function View({ view, read }: { view: PlayerHelmView; read: Promise<string> }) {
     const text = use(read);
     const sw = useViewSwitch<PlayerHelmView>(view, (v) => PLAYER_HELM_HREF[v]);
     drawn.push(view);
     return (
-      <main data-testid="view" data-view={view} aria-busy={sw.pending || undefined}>
+      <main data-testid="view" data-view={view} aria-busy={sw.pending || undefined} {...sw.enter}>
         <PlayerHelmTabs active={sw.shown} onGo={sw.go} />
         <p>{text}</p>
       </main>
@@ -120,16 +120,16 @@ describe('rapid switching between the player’s views', () => {
     });
   async function setup() {
     drawn = [];
-    const later = { profile: deferred<string>(), standing: deferred<string>(), 'deep-dive': deferred<string>() };
-    const reads = { board: resolvedRead('Board'), profile: later.profile.promise, standing: later.standing.promise, 'deep-dive': later['deep-dive'].promise };
+    resetViewSwitchForTests();
+    const later = { standing: deferred<string>(), 'deep-dive': deferred<string>() };
+    const reads = { board: resolvedRead('Board'), standing: later.standing.promise, 'deep-dive': later['deep-dive'].promise };
     render(<Page reads={reads} />);
     await act(async () => {});
     return later;
   }
 
-  it('board, profile, standing, deep dive in quick taps: the tabs follow the last tap, the board stays on screen busy, and only the last view is drawn when it is ready', async () => {
+  it('board, standing, deep dive in quick taps: the tabs follow the last tap, the board stays on screen busy, and only the last view is drawn when it is ready', async () => {
     const later = await setup();
-    await tap('Game profile');
     await tap('Standing');
     await tap('Deep dive');
     expect(checked()).toBe('Deep dive');
@@ -137,7 +137,6 @@ describe('rapid switching between the player’s views', () => {
     expect(screen.getByTestId('view').getAttribute('aria-busy')).toBe('true');
     expect(screen.queryByTestId('skeleton')).toBeNull();
     // An earlier choice that lands late changes nothing: the last choice is the one that is waited for.
-    await act(async () => later.profile.resolve('Profile'));
     await act(async () => later.standing.resolve('Standing'));
     expect(screen.getByTestId('view').getAttribute('data-view')).toBe('board');
     expect(checked()).toBe('Deep dive');
@@ -145,32 +144,124 @@ describe('rapid switching between the player’s views', () => {
     expect(screen.getByTestId('view').getAttribute('data-view')).toBe('deep-dive');
     expect(screen.getByTestId('view').getAttribute('aria-busy')).toBeNull();
     expect(checked()).toBe('Deep dive');
-    expect(drawn).not.toContain('profile');
     expect(drawn).not.toContain('standing');
   });
 
   it('the last tap wins whichever order the views land in (the last view first, then the earlier ones)', async () => {
     const later = await setup();
-    await tap('Game profile');
     await tap('Standing');
     await tap('Deep dive');
     await act(async () => later['deep-dive'].resolve('Deep dive'));
     expect(screen.getByTestId('view').getAttribute('data-view')).toBe('deep-dive');
     await act(async () => later.standing.resolve('Standing'));
-    await act(async () => later.profile.resolve('Profile'));
     expect(screen.getByTestId('view').getAttribute('data-view')).toBe('deep-dive');
     expect(checked()).toBe('Deep dive');
   });
 
   it('tapping back to the view on screen while another loads sends the page back to it: the board, not the view that was loading', async () => {
     const later = await setup();
-    await tap('Game profile');
-    expect(checked()).toBe('Game profile');
+    await tap('Standing');
+    expect(checked()).toBe('Standing');
     await tap('Board');
     expect(checked()).toBe('Board');
-    await act(async () => later.profile.resolve('Profile'));
+    await act(async () => later.standing.resolve('Standing'));
     expect(screen.getByTestId('view').getAttribute('data-view')).toBe('board');
     expect(screen.getByTestId('view').getAttribute('aria-busy')).toBeNull();
     expect(checked()).toBe('Board');
+  });
+});
+
+
+/**
+ * The view that lands from a switch settles in (owner, 2026-10-29: the transition between the tabs was abrupt): it is marked to
+ * enter from the opacity the view it replaces had dimmed to, so the two are one cross-fade. Never on a hard load, never after a tap
+ * back to the view on screen, and the mark is dropped after the beat so a part drawn again later does not settle a second time.
+ */
+describe('the view that lands from a switch', () => {
+  const resolvedRead = (v: string) => Object.assign(Promise.resolve(v), { status: 'fulfilled', value: v }) as Promise<string>;
+  const order: PlayerHelmView[] = ['board', 'standing', 'deep-dive'];
+  function View({ view, read }: { view: PlayerHelmView; read: Promise<string> }) {
+    const text = use(read);
+    const sw = useViewSwitch<PlayerHelmView>(view, (v) => PLAYER_HELM_HREF[v]);
+    return (
+      <main data-testid="view" data-view={view} aria-busy={sw.pending || undefined} {...sw.enter}>
+        <PlayerHelmTabs active={sw.shown} onGo={sw.go} />
+        <p>{text}</p>
+      </main>
+    );
+  }
+  function Page({ reads, start = 'board' }: { reads: Record<PlayerHelmView, Promise<string>>; start?: PlayerHelmView }) {
+    const [current, setCurrent] = useState<PlayerHelmView>(start);
+    nav.push = (href) => setCurrent(order.find((v) => PLAYER_HELM_HREF[v] === href) ?? 'board');
+    return (
+      <LazyMotion features={domAnimation}>
+        <div className="ch-root" data-ui="clubhouse">
+          <Suspense fallback={<p data-testid="skeleton">skeleton</p>}>
+            <View key={current} view={current} read={reads[current]} />
+          </Suspense>
+        </div>
+      </LazyMotion>
+    );
+  }
+  const main = () => screen.getByTestId('view');
+  const tap = async (label: string) =>
+    act(async () => {
+      screen.getByRole('radio', { name: label }).click();
+    });
+
+  it('is not marked on a hard load: the page is drawn as the server drew it', async () => {
+    resetViewSwitchForTests();
+    render(<Page reads={{ board: resolvedRead('Board'), standing: resolvedRead('Standing'), 'deep-dive': resolvedRead('Deep dive') }} />);
+    await act(async () => {});
+    expect(main().hasAttribute('data-ch-enter')).toBe(false);
+  });
+
+  it('is marked to enter from where the dim had reached, and the mark is dropped after the beat', async () => {
+    resetViewSwitchForTests();
+    vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout'] });
+    try {
+      const standing = deferred<string>();
+      render(<Page reads={{ board: resolvedRead('Board'), standing: standing.promise, 'deep-dive': resolvedRead('Deep dive') }} />);
+      await act(async () => {});
+      await tap('Standing');
+      expect(main().getAttribute('data-view')).toBe('board');
+      expect(main().hasAttribute('data-ch-enter')).toBe(false);
+      await act(async () => standing.resolve('Standing'));
+      expect(main().getAttribute('data-view')).toBe('standing');
+      expect(main().hasAttribute('data-ch-enter')).toBe(true);
+      const from = Number(main().style.getPropertyValue('--ch-enter-from'));
+      expect(from).toBeGreaterThanOrEqual(0.55);
+      expect(from).toBeLessThanOrEqual(1);
+      await act(async () => {
+        vi.advanceTimersByTime(400);
+      });
+      expect(main().hasAttribute('data-ch-enter')).toBe(false);
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it('a tap back to the view on screen leaves nothing to settle: the next page that mounts is not marked', async () => {
+    resetViewSwitchForTests();
+    const standing = deferred<string>();
+    const { unmount } = render(<Page reads={{ board: resolvedRead('Board'), standing: standing.promise, 'deep-dive': resolvedRead('Deep dive') }} />);
+    await act(async () => {});
+    await tap('Standing');
+    await tap('Board');
+    await act(async () => standing.resolve('Standing'));
+    expect(main().getAttribute('data-view')).toBe('board');
+    expect(main().hasAttribute('data-ch-enter')).toBe(false);
+    unmount();
+    render(<Page start="standing" reads={{ board: resolvedRead('Board'), standing: resolvedRead('Standing'), 'deep-dive': resolvedRead('Deep dive') }} />);
+    await act(async () => {});
+    expect(main().hasAttribute('data-ch-enter')).toBe(false);
+  });
+
+  it('starts from the dim’s own curve: full at the tap, 0.55 once the quick beat has run, never lighter later', () => {
+    expect(dimmedAt(0)).toBe(1);
+    expect(dimmedAt(90)).toBeLessThan(0.6);
+    expect(dimmedAt(90)).toBeGreaterThan(0.55);
+    expect(dimmedAt(180)).toBeCloseTo(0.55, 5);
+    expect(dimmedAt(5000)).toBeCloseTo(0.55, 5);
   });
 });

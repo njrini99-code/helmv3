@@ -60,6 +60,7 @@ that loads on its own. v2 timing: nothing for 150ms, then a fade (the shell's
 | 70208 | CH-7408 | `A_MESSAGES_ATTACHMENTS_ARE_LOADING` | A message's attachments are loading |
 | 70209 | CH-7409 | `THE_SHARED_FILES_ARE_LOADING` | The shared files are loading (Details) |
 | 70210 | CH-7410 | `THE_ADD_SHEETS_LIST_IS_LOADING` | The Add sheet's list is loading |
+| 70211 | CH-7411 | `THE_SEEN_BY_LIST_IS_LOADING` | The Seen by list is loading |
 
 From the shell (P001): 10201 CH-1401, 10202 CH-1402.
 
@@ -94,6 +95,8 @@ the rail version stays until this page's v2 pass.
 | 70407 | CH-7307 | `EVERYONE_ON_THE_TEAM_IS_ALREADY_IN` | Everyone on the team is already in the group (Add) |
 | 70408 | CH-7308 | `SIGNED_IN_WITH_NO_TEAM` | Signed in with no team (coach or player) |
 | 70409 | CH-7309 | `NOTHING_AT_ALL_YET_NO_CONVERSATION_AND` | Nothing at all yet: no conversation and no announcement (D-71) |
+| 70410 | CH-7310 | `NOBODY_HAS_SEEN_A_GROUP_MESSAGE_YET` | Nobody has seen a group message yet (the Seen by list) |
+| 70411 | CH-7370 | `NOTIFY_ANYWAY_IS_OFFERED_A_COACH_A` | Notify anyway is offered: a coach, a conversation of their own team, a recipient in class with pushes held (P-10) |
 
 ## 05 — Validation
 
@@ -117,7 +120,8 @@ the whole team. Message fields stop at 5,000 characters, the server's limit.
 
 Status: DEFINED
 
-Every change has its own toast (70601 to 70616, 70636) naming what failed and what to
+Every change has its own toast (70601 to 70616, 70636) naming what failed and
+what to
 do; every section that fails to load has its own notice with Try again (70617 to
 70631). A crash stays in its section (SectionBoundary).
 
@@ -137,7 +141,7 @@ do; every section that fails to load has its own notice with Try again (70617 to
 | 70612 | CH-7014 | `POSTING_AN_ANNOUNCEMENT_FAILS` | Posting an announcement fails |
 | 70613 | CH-7016 | `A_MESSAGE_IS_REFUSED` | A message is refused |
 | 70614 | CH-7018 | `ADDING_SOMEONE_TO_A_GROUP_FAILS` | Adding someone to a group fails (the group's creator, desktop or phone Details › Add) |
-| 70615 | CH-7020 | `COPYING_A_MESSAGE_FAILS` | Copying a message fails (phone, from the long-press sheet) |
+| 70615 | CH-7020 | `COPYING_A_MESSAGE_FAILS` | Copying a message fails (phone, from the long-press sheet; desktop, from the message menu) |
 | 70616 | CH-7021 | `A_SHARED_FILE_WONT_OPEN` | A shared file won't open (Details › Files, or an announcement's Files) |
 | 70617 | CH-7201 | `CONVERSATIONS_DONT_LOAD` | Conversations don't load |
 | 70618 | CH-7202 | `A_CONVERSATIONS_MESSAGES_DONT_LOAD` | A conversation's messages don't load |
@@ -160,6 +164,17 @@ do; every section that fails to load has its own notice with Try again (70617 to
 | 70635 | CH-7217 | `PENDING_ATTACHMENT_RECOVERY_CANNOT_BE_CHECKED` | Pending attachment recovery cannot be checked |
 | 70636 | CH-7024 | `REMOVING_SOMEONE_FROM_A_GROUP_FAILS` | Removing someone from a group fails (the group's creator, desktop or phone Details › Remove) |
 | 70637 | CH-7025 | `DELETING_A_CONVERSATION_FROM_YOUR_INBOX_FAILS` | Deleting a conversation from your inbox fails |
+| 70638 | CH-7026 | `MARKING_A_CONVERSATION_READ_OR_UNREAD_FROM` | Marking a conversation read or unread from its row (menu or swipe) fails |
+| 70639 | CH-7027 | `CLOSING_A_POLL_FAILS` | Closing a poll fails (the sender's Close poll, after the confirm) |
+| 70640 | CH-7028 | `SENDING_A_POLL_FAILS` | Sending a poll fails (New poll › Send poll) |
+| 70641 | CH-7030 | `A_VOTE_IS_REFUSED_BECAUSE_THE_POLL` | A vote is refused because the poll ended between the tap and the write (only with the held vote guard, OQ-68) |
+| 70642 | CH-7029 | `A_VOTE_ON_A_POLL_ISNT_SAVED` | A vote on a poll isn't saved (tap a choice in a poll card) |
+| 70643 | CH-7031 | `AN_EDITED_POLL_IS_SENT_AFTER_A` | An edited poll is sent after a send that threw, and the earlier copy had landed after all |
+| 70644 | CH-7218 | `THE_SEEN_BY_LIST_COULDNT_LOAD` | The Seen by list couldn't load (P-1) |
+| 70645 | CH-7270 | `A_COACH_IN_A_1_1_WITH` | A coach, in a 1:1 with a player who is in a class or an exam right now and whose pushes are held (P-10) |
+| 70646 | CH-7271 | `A_MESSAGE_SENT_WITH_NOTIFY_ANYWAY_ONCE` | A message sent with Notify anyway, once a push really reached a device (P-10) |
+| 70647 | CH-7272 | `A_COACH_IN_A_GROUP_OF_THEIR` | A coach, in a group of their own team with at least one player in a class or an exam (P-10) |
+| 70648 | CH-7273 | `A_COACH_OPENS_DETAILS_ON_A_1` | A coach opens Details on a 1:1 with a player of their team (P-10) |
 
 ## 07 — Network / offline
 
@@ -221,7 +236,8 @@ Status: DEFINED
 Delete a message, Leave a group, Delete a conversation and Remove a member ask
 first (71101, 71102, 71103, 71104) and fire the warning haptic. Remove a member
 is the group's creator's, on anyone but themselves (`removeGolfGroupMember`, as
-Fairway's group details allow); the creator still can't leave (D-47). Delete a conversation (owner request,
+Fairway's group details allow); the creator still can't leave (D-47). Delete a
+conversation (owner request,
 2026-10-08, superseding D-48's "hidden") hides the thread from the person's own
 inbox only: the others keep theirs, a new message brings it back, and a team
 channel can't be deleted. It is offered only where the database has the
@@ -255,7 +271,8 @@ Status: DEFINED
 
 Sends are optimistic and reconciled in place by id; a refused one stays marked
 Not sent (71301). A removed member's row leaves at once and comes back if the
-server refuses (CH-7024). Reactions are not optimistic: picking one waits for the write.
+server refuses (CH-7024). Reactions are not optimistic: picking one waits for
+the write.
 A click on a
 reaction chip opens who reacted, and adding or taking back your own from that
 card waits for the write too; a failure toasts (70607).
@@ -309,6 +326,9 @@ rise. Reduced motion and Animations off make every swap instant.
 | 71604 | CH-7604 | `A_LONG_PRESS_ON_A_MESSAGE` | A long press on a message (phone) |
 | 71605 | CH-7605 | `OPENING_ANOTHER_CONVERSATION_OR_ANNOUNCEMENT` | Opening another conversation or announcement (desktop) |
 | 71606 | CH-7606 | `CHANGING_THE_INBOX_FILTER_ON_THE_PHONE` | Changing the inbox filter on the phone (All, Unread, Groups) |
+| 71607 | CH-7607 | `MUTING_A_CONVERSATION_FROM_ITS_ROW` | Muting a conversation from its row (owner decision 14) |
+| 71608 | CH-7608 | `A_GROUP_MESSAGES_RECEIPT_CHANGES` | A group message's receipt changes ("Sent" → "Seen by 4 of 11" → "Seen by everyone") |
+| 71609 | CH-7609 | `THE_SEEN_BY_SHEET_OR_POPOVER_OPENS` | The Seen by sheet (phone) or popover (desktop) opens and updates live |
 
 From the shell (P001): 11601 CH-1601, 11602 CH-1602, 11603 CH-1603,
 11604 CH-1604, 11605 CH-1605, 11606 CH-1606, 11607 CH-1607, 11608 CH-1608,
@@ -329,8 +349,9 @@ CH-1704, 11705 CH-1705, 11706 CH-1706, 11707 CH-1707.
 | --- | --- | --- | --- |
 | 71701 | CH-7701 | `A_CHANGE_FAILS` | A change fails |
 | 71702 | CH-7702 | `A_CHANGE_LANDS` | A change lands (edited, deleted, muted, group created; acknowledging uses the success pattern) |
-| 71703 | CH-7703 | `PICKING_A_REACTION_A_FILTER_OR_A` | Picking a reaction, a filter or a conversation |
+| 71703 | CH-7703 | `PICKING_A_REACTION_A_FILTER_OR_A` | Picking a reaction or a filter (opening a conversation or a search hit is a plain navigation tap and is silent, D-70) |
 | 71704 | CH-7704 | `A_LONG_PRESS_ON_A_MESSAGE_2` | A long press on a message (phone) |
+| 71705 | CH-7770 | `THE_HOLD_ON_SEND_REACHES_450_MS` | The hold on Send reaches 450 ms (phone, Notify anyway offered) |
 
 From the shell (P001): 11701 CH-1701, 11702 CH-1702, 11703 CH-1703,
 11704 CH-1704, 11705 CH-1705, 11706 CH-1706, 11707 CH-1707, 11708 CH-1708,
@@ -360,6 +381,8 @@ CH-1842, 11825 CH-1816.
 | 71802 | CH-7802 | `SEARCH_RESULTS_ARE_ANNOUNCED_AS_THEY_ARRIVE` | Search results are announced as they arrive; desktop Enter sends and Shift+Enter adds a line; phone Return adds a line and Send sends. Desktop React: the reaction bar takes focus on its first reaction, ← → Home End move along it, Esc or a pick returns focus to React, Tab moves on |
 | 71803 | CH-7803 | `NO_AXE_VIOLATIONS_IN_ANY_PREVIEW_STATE` | No axe violations in any preview state, 1280px and 390px |
 | 71804 | CH-7804 | `PHONE_A_MESSAGES_ACTIONS_HAVE_A_PATH` | Phone: a message's actions have a path besides the long press (a "Message actions" button VoiceOver and keyboards reach, or a right click); each pushed screen is named by its title, and its back link names where it goes ("Back to Messages", "Back to Chat"). New message opens on its title; a hardware keyboard's Esc is Cancel, and focus returns to New message |
+| 71805 | CH-7805 | `THE_RECEIPTS_ACCESSIBLE_NAME_ON_ONE_STABLE` | The receipt's accessible name ("Seen by 9 of 11 people. Show who") sits on one stable node, its fading copies `aria-hidden`, so a count change isn't announced; the open list says moves politely ("Eli Brandt has seen it.") |
+| 71806 | CH-7870 | `NOTIFY_ANYWAY_WITHOUT_A_LONG_PRESS` | Notify anyway without a long press (P-10) |
 
 From the shell (P001): 11801 CH-1801, 11802 CH-1802, 11803 CH-1803,
 11804 CH-1804, 11805 CH-1805, 11806 CH-1806, 11807 CH-1807, 11808 CH-1808,

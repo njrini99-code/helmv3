@@ -6,6 +6,11 @@
 
 ## Current State
 
+Read receipts are scoped to the active conversation and viewer. Switching
+threads immediately clears the previous group’s marks and direct-read time;
+only the target thread’s cached receipts may render while its read is pending.
+Events and reads from a previous thread cannot update the current receipts.
+
 Team Communications covers realtime team messaging and coach-to-team announcements. Messaging is conversational and realtime; announcements are structured broadcasts with urgency, targeting, linked documents, inline tasks, and acknowledgement tracking.
 
 When a player or coach opens a conversation, the thread starts at the newest

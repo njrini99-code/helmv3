@@ -209,6 +209,7 @@ export async function GET(req: NextRequest) {
     // reasons) and below (the reasons ride in the response body, which
     // `recordJobRun`'s metadata extractor captures as top-level scalars).
     if (anyActivity) {
+      const summarySeverity = result24h.failed + result1h.failed > 0 ? 'warning' : 'info';
       await logServerEvent(
         `event_reminders cron 24h sent=${result24h.sent} failed=${result24h.failed} ` +
         `1h sent=${result1h.sent} failed=${result1h.failed}`,
@@ -216,8 +217,12 @@ export async function GET(req: NextRequest) {
           action: 'cron.eventReminders.summary',
           featureArea: 'calendar',
           extra: { result24h, result1h },
+          // One Bridge stream per severity. The counts are short numbers the
+          // incident-signature normaliser keeps, so hashing the message made
+          // every distinct tally its own incident (c6641939, 6da1400f).
+          dbFingerprint: `cron-event-reminders-summary:${summarySeverity}`,
         },
-        result24h.failed + result1h.failed > 0 ? 'warning' : 'info',
+        summarySeverity,
       );
     }
 

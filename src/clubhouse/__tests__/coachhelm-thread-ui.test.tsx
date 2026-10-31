@@ -84,9 +84,23 @@ describe('CH-13850 what CoachHelm is doing', () => {
     const items = within(list).getAllByRole('listitem');
     expect(items.map((i) => i.textContent)).toEqual(['Reading your roster', 'Reading the last 38 recorded rounds', 'Comparing putting by distance']);
     expect(items.map((i) => i.getAttribute('aria-current'))).toEqual([null, null, 'step']);
-    expect(screen.getByText(/^Working/)).toBeTruthy();
+    // No ticking "Working 12s" line; the avatar's wheel turns while it works (2026-10-29) and the current step is marked.
+    expect(screen.queryByText(/^Working/)).toBeNull();
+    expect(document.querySelector('.ch-th-mark.is-working')).not.toBeNull();
+    expect(items[2]?.querySelector('.ch-th-live')?.textContent).toBe('Comparing putting by distance');
     await userEvent.click(screen.getByRole('button', { name: 'Stop' }));
     expect(p.onStop).toHaveBeenCalledTimes(1);
+  });
+  it('the answer that takes over from the placeholder does not fade in a second time', () => {
+    const { update } = show({ messages: [], busy: false });
+    update({ messages: ASK_MSGS_WORKING.slice(0, 1), busy: true });
+    const placeholder = document.querySelector('.ch-th-ans[aria-busy="true"]');
+    expect(placeholder?.classList.contains('is-new')).toBe(true);
+    expect(placeholder?.querySelector('.ch-th-mark.is-working')).not.toBeNull();
+    update({ messages: ASK_MSGS_WORKING, busy: true });
+    const answer = screen.getByRole('article', { name: 'CoachHelm answer' });
+    expect(answer.classList.contains('is-new')).toBe(false);
+    expect(document.querySelector('.ch-th-user')?.classList.contains('is-new')).toBe(true);
   });
   it('the phone has no Stop here: the composer owns it', () => {
     show({ messages: ASK_MSGS_WORKING, busy: true, phone: true });
@@ -97,13 +111,18 @@ describe('CH-13850 what CoachHelm is doing', () => {
     expect(screen.getByText('Reading your program')).toBeTruthy();
     expect(document.body.textContent).not.toMatch(/get_[a-z_]+/);
   });
-  it('a finished answer leaves one line that opens the steps it took', async () => {
+  it('a finished answer leaves one quiet line that opens the steps it took, and what it read', async () => {
     show();
-    const button = screen.getByRole('button', { name: /Read 3 players/ });
+    // A reloaded answer has no honest duration: the receipt is the step count alone (playbook §4).
+    const button = screen.getByRole('button', { name: '4 steps' });
     expect(button.getAttribute('aria-expanded')).toBe('false');
+    // A finished answer draws still: only a streaming answer's blocks settle in (coachhelm-thread.css).
+    expect(document.querySelector('.ch-th-prose')).toBeTruthy();
+    expect(document.querySelector('.ch-th-prose[data-streaming]')).toBeNull();
     await userEvent.click(button);
     expect(button.getAttribute('aria-expanded')).toBe('true');
     expect(screen.getByRole('list', { name: 'What CoachHelm is doing' }).children).toHaveLength(4);
+    expect(screen.getByText(/^Read 3 players/)).toBeTruthy();
   });
 });
 
@@ -131,7 +150,7 @@ describe('CH-13852 View as table', () => {
   it('a ranking names each player with the value and the sample', () => {
     show();
     const rank = screen.getByRole('list', { name: 'Missed downhill putts from 4 to 6 feet' });
-    expect(within(rank).getAllByRole('listitem').map((i) => i.textContent?.replace(/^\d/, ''))).toEqual(['JOJonah Okafor6 of 9', 'EBEli Brandt4 of 8', 'SASofia Alvarez2 of 7']);
+    expect(within(rank).getAllByRole('listitem').map((i) => i.textContent?.replace(/^\d/, ''))).toEqual(['Jonah Okaforof 96', 'Eli Brandtof 84', 'Sofia Alvarezof 72']);
   });
 });
 

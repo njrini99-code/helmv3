@@ -16,8 +16,13 @@ import { HomeActions } from './HomeActions';
 import { HomePhone, WeekStrip } from './HomePhone';
 import { coachFailedParts } from './model';
 import { CoachQueue } from './CoachQueue';
+import { ClassHomeLine } from './ClassHomeLine';
+import { LiveNowCard } from './LiveNowCard';
+import type { LiveSnapshot } from '../../live/model';
 import { TeamLegs } from './TeamLegs';
 import { useHomeDayRollover } from './use-day-rollover';
+import { ChangeMarksProvider } from '../../lib/use-change-marks';
+import { NoTeam } from '../../ui/NoTeam';
 import '../../styles/home.css';
 
 /**
@@ -25,12 +30,20 @@ import '../../styles/home.css';
  * and the latest round in one lit sheet, then the season leaderboard. Calm
  * and not card-heavy (the owner rejected card grids and imagery).
  */
-export function CoachHome({ data, now }: { data: ChCoachHome; /** Preview and tests: a frozen clock (ISO) for the phone's countdown. */ now?: string }) {
+export function CoachHome(props: { data: ChCoachHome; /** Preview and tests: a frozen clock (ISO) for the phone's countdown. */ now?: string; live?: LiveSnapshot }) {
+  return (
+    <ChangeMarksProvider marks={props.data.marks ?? []}>
+      <CoachHomeBody {...props} />
+    </ChangeMarksProvider>
+  );
+}
+
+function CoachHomeBody({ data, now, live }: { data: ChCoachHome; now?: string; live?: LiveSnapshot }) {
   const phone = useChPhone();
   // A page left open past the team's midnight reads itself again, so "today" is today (desktop and phone).
   useHomeDayRollover(data.clock, now !== undefined);
   if (isFirstRun(data)) return <HomeFirstRun data={data} phone={phone} />;
-  if (phone) return <HomePhone data={data} now={now} />;
+  if (phone) return <HomePhone data={data} now={now} live={live} />;
   // Two or more failed reads are told once under the head, with one Try again; each part keeps its title (CH-1209).
   const failed = coachFailedParts(data, false);
   const covered = failed.length > 1;
@@ -43,16 +56,21 @@ export function CoachHome({ data, now }: { data: ChCoachHome; /** Preview and te
         <span className="ch-h-head__date">{data.todayLabel}</span>
         <h1 className="ch-display">{data.greeting}</h1>
         {data.subline && <p className="ch-h-head__sub">{data.subline}</p>}
+        {/* P-10: the class line, after the greeting and before the actions in the tab order. Nothing with the flag off. */}
+        {data.teamId && data.clock && <ClassHomeLine teamId={data.teamId} today={data.clock.day} teamTimeZone={data.clock.tz} variant="desktop" />}
         <HomeActions teamChatId={data.teamChatId} />
       </header>
       <PageRefreshNotice parts={failed} />
-      <CoachQueue queue={data.queue} covered={covered} />
-      {data.phone.form && <TeamForm form={data.phone.form} />}
-      {data.phone.form && data.legs && !noRounds && (
-        <SectionBoundary surface="home.legs" label="The team’s game" code="CH-2221">
-          <TeamLegs legs={data.legs} covered={covered} />
+      {live && (
+        <SectionBoundary surface="home.live" label="Live now">
+          <div className="ch-lv-deskwrap">
+            <LiveNowCard initial={live} phone={false} frozen={now !== undefined} now={now !== undefined ? Date.parse(now) : undefined} />
+          </div>
         </SectionBoundary>
       )}
+      <CoachQueue queue={data.queue} covered={covered} />
+      {/* Row 79: the day comes first. The week, with today's events, and the latest round sit under Waiting on you, above
+          the two cards of figures; the team's game stays under the team's form (20105). */}
       <div className={'ch-h-sheet ch-sheet' + (noRounds ? ' is-solo' : '')}>
         <SectionBoundary surface="home.week" label="This week" code="CH-2205">
           <Week week={data.week} covered={covered} events={data.phone.today} />
@@ -63,6 +81,12 @@ export function CoachHome({ data, now }: { data: ChCoachHome; /** Preview and te
           </SectionBoundary>
         )}
       </div>
+      {data.phone.form && <TeamForm form={data.phone.form} />}
+      {data.phone.form && data.legs && !noRounds && (
+        <SectionBoundary surface="home.legs" label="The team’s game" code="CH-2221">
+          <TeamLegs legs={data.legs} covered={covered} />
+        </SectionBoundary>
+      )}
       <SectionBoundary surface="home.leaderboard" label="The leaderboard" code="CH-2207">
         <Leaderboard data={data.leaderboard} covered={covered} rounds={data.latestRounds.rounds} />
       </SectionBoundary>
@@ -134,23 +158,9 @@ function HomeFirstRun({ data, phone }: { data: ChCoachHome; phone: boolean }) {
 
 /** A coach with no active team: nothing to summarise yet, and one clear next step. */
 export function CoachHomeNoTeam() {
-  const settings = rebuiltHref('/golf/dashboard/settings?section=team', 'coach');
   return (
     <main className="ch-h-main">
-      <EmptyState
-        size="page"
-        code="CH-2307"
-        shape="rows"
-        title="You aren’t on a team yet"
-        body="Once your head coach adds you to the program, or you finish setting up your team, Home shows your week, rounds and leaderboard."
-        action={
-          settings ? (
-            <Button variant="primary" href={settings}>
-              Open team settings
-            </Button>
-          ) : undefined
-        }
-      />
+      <NoTeam code="CH-2307" coach body="Once your head coach adds you to the program, or you finish setting up your team, Home shows your week, rounds and leaderboard." />
     </main>
   );
 }

@@ -307,6 +307,8 @@ features:
         - supabase/migrations/*coachhelm*.sql
         - supabase/migrations/*insight*.sql
         - supabase/migrations/*attribution*.sql
+        # golf_prediction_performance, written by lib/coachhelm/v2/analytics.
+        - supabase/migrations/*prediction_perf*.sql
       tests:
         - src/test/coachhelm/**
         - src/test/api/cron/coachhelm*.test.ts
@@ -486,6 +488,8 @@ features:
         # glob (Phase 5 registry glob lint) by topic — round lifecycle,
         # course library, and their storage/RLS surface.
         - supabase/migrations/*course_library*.sql
+        # P-7's course history index (held).
+        - supabase/migrations/*course_history*.sql
         - supabase/migrations/*course_image*.sql
         - supabase/migrations/*course_geometry*.sql
         - supabase/migrations/*round_atomic*.sql
@@ -498,6 +502,7 @@ features:
         - supabase/migrations/*preserve_started_round*.sql
         - supabase/migrations/*single_flight*.sql
         - supabase/migrations/*submit_round_expected_updated_at*.sql
+        - supabase/migrations/*round_save_one_totals*.sql
         - supabase/migrations/*reclassify*.sql
         - supabase/migrations/*round_stranding*.sql
         - supabase/migrations/*round_recap*.sql
@@ -699,7 +704,16 @@ features:
         # follow it here.
         - src/lib/golf/round-session/**
       db:
-        - supabase/migrations/*golf_round*.sql
+        # Narrowed 2026-10-25 from *golf_round*.sql, which also swept up
+        # golf_round_lifecycle's own golf_rounds migrations (a course-history
+        # index tipped the overlap past the 40% glob lint). These name the
+        # round-write migrations shot tracking reviews, file for file.
+        - supabase/migrations/*golf_rounds_authenticated*.sql
+        - supabase/migrations/*golf_rounds_update*.sql
+        - supabase/migrations/*golf_rounds_team_write*.sql
+        - supabase/migrations/*sync_golf_rounds*.sql
+        - supabase/migrations/*golf_round_lifecycle*.sql
+        - supabase/migrations/*golf_round_totals*.sql
         - supabase/migrations/*golf_shot*.sql
         - supabase/migrations/*helm_flight_recorder*.sql
         - supabase/migrations/*helm_debug_retention.sql
@@ -787,6 +801,8 @@ features:
         - supabase/migrations/*scoring*.sql
         - supabase/migrations/*player_standing*.sql
         - supabase/migrations/*standing_global*.sql
+        # Standing's refresh queue (#2363, held).
+        - supabase/migrations/*golf_standing_refresh*.sql
         - supabase/migrations/*cohort*.sql
         - supabase/migrations/*golf_metrics_seed*.sql
         - supabase/migrations/*penalty*.sql
@@ -1134,6 +1150,8 @@ features:
         - src/lib/golf/client-resource-cache.ts
       db:
         - supabase/migrations/*messag*.sql
+        # P-2 polls' held guards (vote guard, payload freeze).
+        - supabase/migrations/*golf_poll*.sql
         - supabase/migrations/*announcement*.sql
         # Reclassified 2026-09-06 off team_access_control's retired blanket
         # glob (Phase 5 registry glob lint).
@@ -1150,6 +1168,9 @@ features:
         # held). Owned here, not by player_hub: its db globs already overlap
         # calendar_events' (check-registry-globs).
         - supabase/migrations/20261021100000_golf_player_hub_rpcs_staff_gate.sql
+        # Polls in Messages (held): the vote guard and the payload freeze carry
+        # "poll" but not "messag" in their names.
+        - supabase/migrations/*golf_poll_*.sql
       tests:
         - e2e/messages.spec.ts
         - src/clubhouse/__tests__/messages*.test.*
@@ -1523,19 +1544,9 @@ features:
         - src/app/golf/actions/player-hub-data.ts
       services:
         - src/lib/supabase/**
-      db:
-        - supabase/migrations/*task*.sql
-        # Narrowed 2026-09-23 — see calendar_events' db: list for why the
-        # blanket `*event*.sql` was replaced with these (same set, same
-        # reason: it was also matching baseball_core's own migrations).
-        - supabase/migrations/*event_attendance*.sql
-        - supabase/migrations/*notification_type_event*.sql
-        - supabase/migrations/*insight_event*.sql
-        - supabase/migrations/*admin_event*.sql
-        - supabase/migrations/*team_event_reminder*.sql
-        - supabase/migrations/*class_event*.sql
-        - supabase/migrations/*calendar_events*.sql
-        - supabase/migrations/*error_events*.sql
+      # Tasks are owned by team_operations and event/calendar schema by calendar_events.
+      # Player Hub consumes those contracts; it introduces no migrations of its own.
+      db: []
       tests:
         - src/lib/golf/nav-registry.test.ts
     integrations:
@@ -2304,7 +2315,24 @@ features:
     code:
       components:
         - src/clubhouse/**
+        - src/lib/golf/live-tables.ts
+        - src/lib/golf/live-share-copy.ts
+        - src/lib/golf/tournament-refusals.ts
+        - src/lib/golf/tournaments-tables.ts
+        - src/lib/golf/tournaments/**
+        - src/app/golf/actions/tournaments*.ts
+        - src/app/golf/actions/round-live*.ts
+        - src/app/api/cron/class-holds-release/**
         - src/app/clubhouse-preview/entry/**
+        - src/app/golf/(dashboard)/dashboard/live/**
+      db:
+        # P016 Tournaments (held; each round is a golf_events row, D-81).
+        # Plan: docs/clubhouse/held/data/tournaments.md.
+        - supabase/migrations/*golf_tournament*.sql
+        # P-10 class awareness (2026-10-25, held): terms and exceptions, the class-block functions, held pushes.
+        - supabase/migrations/*class_awareness*.sql
+        - supabase/migrations/*class_blocks*.sql
+        - supabase/migrations/*push_holds*.sql
       tests:
         - src/clubhouse/__tests__/**
         - src/app/clubhouse-preview/entry/__tests__/**
@@ -2349,6 +2377,16 @@ systems:
       - supabase/migrations/*revoke_anon_public_table_grants*.sql
       - supabase/migrations/*document_public_profile_views_definer*.sql
       - supabase/migrations/*add_missing_foreign_key_indexes*.sql
+      # 2026-10-23: graveyard table grants and the anon function default.
+      - supabase/migrations/*anon_surface_grants*.sql
+      # 2026-10-28: replay captures of production-only hardening that touch
+      # no single feature (repair role, deny-all policies, Realtime members,
+      # the crm_coaches shape, named without "crm" to stay out of
+      # admin_platform's *crm* glob).
+      - supabase/migrations/*capture_helm_repair_ro_access*.sql
+      - supabase/migrations/*capture_internal_tables_deny_policies*.sql
+      - supabase/migrations/*capture_realtime_email_tables*.sql
+      - supabase/migrations/*capture_coach_directory_prod_shape*.sql
     criticality: high
   review_gate:
     docs: .github/branch-protection.md

@@ -3,7 +3,9 @@
   "name": "Shell",
   "slug": "shell",
   "bridgeNamespace": 1,
-  "routes": [],
+  "routes": [
+    "/golf/dashboard/whats-new"
+  ],
   "roles": [
     "coach",
     "player"
@@ -46,6 +48,16 @@
       "src/clubhouse/__tests__/shell.test.tsx",
       "src/clubhouse/__tests__/native.test.tsx",
       "src/clubhouse/__tests__/team-switch.test.tsx"
+    ],
+    "also": [
+      "src/clubhouse/routes/alias.ts",
+      "src/clubhouse/routes/whats-new.tsx",
+      "src/clubhouse/screens/whats-new",
+      "src/clubhouse/data/whats-new.ts",
+      "src/clubhouse/data/whats-new-shape.ts",
+      "src/clubhouse/styles/whats-new.css",
+      "src/clubhouse/data/palette-people.ts",
+      "src/clubhouse/styles/command.css"
     ]
   },
   "catalog": "docs/clubhouse/catalog/shell.md",

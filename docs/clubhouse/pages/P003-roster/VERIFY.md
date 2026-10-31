@@ -205,6 +205,8 @@ before, after, baseline or evidence.
 | `P003__page__coach__390x792__default__after__77e553a.png` | after | 77e553a | page (coach), 390x792px, default |
 | `P003__page__player__1280x948__default__after__77e553a.png` | after | 77e553a | page (player), 1280x948px, default |
 | `P003__page__player__390x792__default__after__77e553a.png` | after | 77e553a | page (player), 390x792px, default |
+| `P003__roster-invite__coach__390x844__light-invite-link__after__2faf3cf.png` | after | 2faf3cf | roster-invite (coach), 390x844px, light-invite-link |
+| `P003__roster__coach__390x844__light-r257-state-invite-email-invite-1-s0__before__a9d2b19.png` | before | a9d2b19 | roster (coach), 390x844px, light-r257-state-invite-email-invite-1-s0; /clubhouse-preview/roster?state=invite-email&invite=1; synthetic preview |
 
 ## 2026-10-02 — Mobile design fidelity verification
 

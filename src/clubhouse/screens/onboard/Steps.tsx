@@ -30,8 +30,10 @@ import { useEffect, useId, useRef, useState, type FormEvent, type ReactNode } fr
 import { Avatar } from '../../ui/Avatar';
 import { Button } from '../../ui/Button';
 import { Icon } from '../../ui/Icon';
+import { NoData } from '../../ui/NoData';
 import { Spinner } from '../../ui/Spinner';
 import { Tooltip } from '../../ui/Tooltip';
+import { formatHcp } from '../../lib/format';
 import { haptic } from '../../lib/haptics';
 import { AuthNotice } from '../auth/AuthNotice';
 import { greetingWord } from '../auth/scene-sky';
@@ -50,7 +52,6 @@ import {
   cleanState,
   codeAutoChecks,
   codeCanSubmit,
-  fmtHcp,
   gradYears,
   hcpWords,
   hometownProblem,
@@ -500,7 +501,7 @@ export function Name({ d, up, next, path, back, dir, phone }: StepProps) {
 export function Grad({ d, up, next, path, back, dir, now }: StepProps) {
   const years = gradYears(now);
   return (
-    <Q dir={dir} back={back} eyebrow={<Who d={d} path={path} />} title={`When do you graduate, ${d.first.trim() || 'there'}?`} sub="Sets your class on the roster. Coaches use it for eligibility.">
+    <Q dir={dir} back={back} eyebrow={<Who d={d} path={path} />} title={`When do you graduate${d.first.trim() ? `, ${d.first.trim()}` : ''}?`} sub="Sets your class on the roster. Coaches use it for eligibility.">
       <div className="ch-ox-body">
         <div className="ch-ox-tiles" role="radiogroup" aria-label="Graduation year">
           {years.map((y) => (
@@ -585,7 +586,7 @@ export function Account({ d, hist, up, next, path, back, dir, phone, now, signIn
   const emailErr = err?.field === 'email' ? err.message : null;
   const pwErr = err?.field === 'pw' ? err.message : null;
   return (
-    <Q dir={dir} back={back} hold={busy} eyebrow={<Who d={d} path={path} />} title={`Create your account, ${d.first.trim() || 'there'}.`} sub="You’ll use this email and password to sign in." onSubmit={() => void submit()}>
+    <Q dir={dir} back={back} hold={busy} eyebrow={<Who d={d} path={path} />} title={`Create your account${d.first.trim() ? `, ${d.first.trim()}` : ''}.`} sub="You’ll use this email and password to sign in." onSubmit={() => void submit()}>
       <div className="ch-ox-body">
         <div className="ch-ox-fields">
           <div className="ch-ox-field">
@@ -735,7 +736,8 @@ export function Game({ d, up, next, path, back, dir, phone }: StepProps) {
           </div>
           <div className="ch-ox-hcp__row">
             <span className="ch-ox-hcp__val" data-none={none ? '' : undefined} data-plus={!none && n < 0 ? '' : undefined} aria-live="polite">
-              {none ? '—' : fmtHcp(n)}
+              {/* No handicap: the dash is seen, "No handicap yet" is heard, so the live region never reads a dash (G3 finding 9). */}
+              {none ? <NoData label="No handicap yet" /> : formatHcp(n)}
             </span>
             <span className="ch-ox-hcp__desc">{hcpWords(none ? null : n)}</span>
             {!none && (
@@ -765,7 +767,7 @@ export function Game({ d, up, next, path, back, dir, phone }: StepProps) {
                 style={{ ['--ch-ox-p' as string]: `${pct}%` }}
                 onChange={(e) => set(Number(e.target.value))}
                 aria-labelledby="ch-ox-hcp-k"
-                aria-valuetext={fmtHcp(n)}
+                aria-valuetext={formatHcp(n)}
               />
               <div className="ch-ox-scale" aria-hidden="true">
                 {MARKS.map(([v, l]) => (
@@ -869,7 +871,7 @@ export function Photo({ d, up, next, path, back, dir, phone, now }: StepProps) {
   };
 
   const name = `${d.first} ${d.last}`.trim() || 'You';
-  const meta = [d.grad ? classOf(d.grad, now) : null, d.hcp != null ? `${fmtHcp(d.hcp)} index` : null, [d.city.trim(), d.state].filter(Boolean).join(', ') || null].filter(Boolean).join(' · ') || 'Player';
+  const meta = [d.grad ? classOf(d.grad, now) : null, d.hcp != null ? `${formatHcp(d.hcp)} index` : null, [d.city.trim(), d.state].filter(Boolean).join(', ') || null].filter(Boolean).join(' · ') || 'Player';
   return (
     <Q dir={dir} back={back} hold={busy} eyebrow={<Who d={d} path={path} />} title="Put a face to the name." sub="Teammates see this on the roster and in messages." onSubmit={() => void finish()}>
       <div className="ch-ox-body">
@@ -929,13 +931,13 @@ export function Photo({ d, up, next, path, back, dir, phone, now }: StepProps) {
               {d.photoUrl ? (
                 <img className="ch-ox-av" src={d.photoUrl} alt="" />
               ) : (
-                <Avatar name={name} size={40} />
+                <Avatar name={name} size="lg" />
               )}
               <span style={{ minWidth: 0 }}>
                 <b>{name}</b>
                 <em>{meta}</em>
               </span>
-              <span className="ch-ox-prow__n">{d.hcp != null ? fmtHcp(d.hcp) : '—'}</span>
+              <span className="ch-ox-prow__n">{d.hcp != null ? formatHcp(d.hcp) : '—'}</span>
             </div>
           </div>
         </div>
@@ -961,7 +963,7 @@ export function Photo({ d, up, next, path, back, dir, phone, now }: StepProps) {
 // ── Finished ─────────────────────────────────────────────────────────────────
 
 const NEXT_STEPS: Array<[typeof Flag, string, string, string]> = [
-  [Flag, 'Start your first round', 'Scores feed your stats and CoachHelm', '/golf/dashboard/rounds/new'],
+  [Flag, 'New round', 'Scores feed your stats and CoachHelm', '/golf/dashboard/rounds/new'],
   [BookOpen, 'Add your class schedule', 'Flags travel conflicts early', '/golf/dashboard/classes'],
   [Bell, 'Turn on notifications', 'Pairings, tee times and team messages', '/golf/dashboard/settings?section=notifications'],
 ];
@@ -1009,7 +1011,7 @@ export function Done({ d, finish, dir }: StepProps) {
       sub="Your member card is ready."
     >
       <div className="ch-ox-act">
-        <Button variant="primary" size="lg" rightIcon={ArrowRight} feel="commit" onClick={() => finish('/golf/dashboard')}>
+        <Button variant="primary" size="lg" rightIcon={ArrowRight} feel="success" onClick={() => finish('/golf/dashboard')}>
           Go to your dashboard
         </Button>
       </div>
@@ -1052,7 +1054,7 @@ export function StaffDone({ d, finish, dir }: StepProps) {
       sub="Your head coach added you as an assistant coach. The roster, calendar and stats are ready for you."
     >
       <div className="ch-ox-act">
-        <Button variant="primary" size="lg" rightIcon={ArrowRight} feel="commit" onClick={() => finish('/golf/dashboard')}>
+        <Button variant="primary" size="lg" rightIcon={ArrowRight} feel="success" onClick={() => finish('/golf/dashboard')}>
           Go to your dashboard
         </Button>
       </div>

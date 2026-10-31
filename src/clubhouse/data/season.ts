@@ -4,7 +4,9 @@ import { fetchAllRowsResult } from '@/lib/supabase/fetch-all-rows';
 import { chunkIds } from '@/lib/supabase/chunk-ids';
 import { isCountableRound } from '@/lib/golf/round-countable';
 import { withCanonicalRoundTotal } from '@/lib/golf/round-total';
+import { getValidTimezone } from '@/lib/calendar/timezone';
 import { chLogServer } from '../lib/track-server';
+import { seasonLabelOf } from '../lib/season-start';
 import { deltaTone, halvesChange } from '../lib/stats-signal';
 import { hasHoleScores, isTotalOnlyCountable } from './round-scope';
 
@@ -55,9 +57,37 @@ const ROUND_COLUMNS =
 export const TREND_LENGTH = 7;
 export const MIN_SG_ROUNDS = 3;
 
-export function seasonStartDate(now = new Date()): string {
-  const y = now.getMonth() >= 7 ? now.getFullYear() : now.getFullYear() - 1;
-  return `${y}-08-01`;
+/** The zone a season turns in when the team's own isn't to hand: the one the rest of Clubhouse falls back to. */
+export const SEASON_DEFAULT_TZ = 'America/New_York';
+
+/**
+ * The season's first day: 1 August of this year from August on, else of last year, counted on the team's calendar (B13):
+ * `now`'s date in `tz`, not the server's (UTC on Vercel, which turned the season about four hours early for an Eastern
+ * team). The SQL readers still use CURRENT_DATE; moving them is C10, held.
+ */
+export function seasonStartDate(now = new Date(), tz: string = SEASON_DEFAULT_TZ): string {
+  const parts = new Intl.DateTimeFormat('en-US', { timeZone: tz, year: 'numeric', month: 'numeric' }).formatToParts(now);
+  const year = Number(parts.find((x) => x.type === 'year')!.value);
+  const month = Number(parts.find((x) => x.type === 'month')!.value);
+  return `${month >= 8 ? year : year - 1}-08-01`;
+}
+
+/**
+ * The season shown on Roster, Team Hub and Team stats: "2026–27" from 1 August in the team's zone (F-0002). Computed, never
+ * the free-text `golf_teams.season` a coach typed once in Settings, which never turned over ("2025-26" in October 2026).
+ */
+export function currentSeasonLabel(now = new Date(), tz: string = SEASON_DEFAULT_TZ): string {
+  return seasonLabelOf(seasonStartDate(now, tz));
+}
+
+/**
+ * The team's time zone, for the season's turn (owner decision 9: the season from 1 August in the team's zone). A failed read or a
+ * value that isn't a real zone falls back to the product's default, logged, so a season is never turned on the server's UTC.
+ */
+export async function loadTeamZone(supabase: Supabase, teamId: string, surface: string): Promise<string> {
+  const { data, error } = await supabase.from('golf_team_settings').select('timezone').eq('team_id', teamId).maybeSingle();
+  if (error) chLogServer(surface, 'timezone', error);
+  return getValidTimezone((data as { timezone?: string | null } | null)?.timezone ?? null);
 }
 
 /** How far back "Last 10" reads (Q-122): a rolling year, which always reaches the season start (1 August is never more than 365 days back). */
@@ -200,10 +230,14 @@ export function groupByPlayer(rounds: ChRound[]): Map<string, ChRound[]> {
   return map;
 }
 
-/** "Senior", "Junior"... from a graduation year and the academic year in progress. */
-export function classYearLabel(graduationYear: number | null, now = new Date()): string | null {
+/**
+ * "Senior", "Junior"... from a graduation year and the academic year in progress, which turns with the season: 1 August on the
+ * team's calendar (`seasonStartDate`, owner decision 9), never the server's UTC month. A caller without the team's zone gets the
+ * product default's.
+ */
+export function classYearLabel(graduationYear: number | null, now = new Date(), tz: string = SEASON_DEFAULT_TZ): string | null {
   if (!graduationYear) return null;
-  const academicEnd = now.getMonth() >= 7 ? now.getFullYear() + 1 : now.getFullYear();
+  const academicEnd = Number(seasonStartDate(now, tz).slice(0, 4)) + 1;
   const labels = ['Senior', 'Junior', 'Sophomore', 'Freshman'];
   return labels[graduationYear - academicEnd] ?? `Class of ${graduationYear}`;
 }

@@ -12,6 +12,7 @@ import { useClubhouseRole } from './context';
 import { AskSheetButton } from './AskSheet';
 import { usePhoneLargeTitle } from './large-title';
 import { SectionTrigger, useSectionGestures, useSectionSwitch } from './section-switch';
+import { SearchPill } from './command/SearchPill';
 
 /** The board's page gears: on CoachHelm and Team Hub a coach's gear opens that page's Settings section (?section=). */
 const PAGE_SETTINGS: ReadonlyArray<{ path: string; section: string; label: string }> = [
@@ -20,10 +21,9 @@ const PAGE_SETTINGS: ReadonlyArray<{ path: string; section: string; label: strin
 ];
 
 /**
- * Sticky glass bar over the canvas: breadcrumbs, the notifications bell (the
- * current app's feed) and settings. The handoff's search field arrives with
- * its own spec; it is not rendered as a dead control in the meantime
- * (tracker: data gaps).
+ * Sticky glass bar over the canvas: breadcrumbs, the search pill (desktop
+ * only: it opens the command palette, B11), the notifications bell (the
+ * current app's feed) and settings.
  *
  * Below 820px it is the owner's phone top bar (foundation.md): the tab root
  * shows the page's title and the bell; a page that renders `PhoneTop` gets
@@ -100,6 +100,7 @@ export function TopBar({
         </div>
       )}
       <div className="ch-topbar__actions">
+        <SearchPill />
         <AskSheetButton />
         <Bell />
         <Link

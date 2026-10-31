@@ -1,18 +1,20 @@
 'use client';
 
 import { useMemo } from 'react';
-import { Flag, Users } from 'lucide-react';
+import { Flag, UserPlus, Users } from 'lucide-react';
 import type { ChTeamRound, ChTeamRounds } from '../../data/team-rounds-shape';
-import { formatFixed, formatToPar, NO_DATA } from '../../lib/format';
-import { haptic } from '../../lib/haptics';
+import { formatFixed, formatToPar } from '../../lib/format';
+import { NoData } from '../../ui/NoData';
 import { useChSessionState } from '../../lib/session-state';
 import { useLastGood } from '../../lib/use-last-good';
 import { useChPhone } from '../../lib/use-phone';
 import { useRefresh } from '../../lib/use-refresh';
 import { PhoneTop } from '../../shell/phone-chrome';
 import { rebuiltHref } from '../../shell/nav';
+import { usePressPrefetch } from '../../shell/use-prefetch-tabs';
 import { FigureRow, LedgerList, LedgerRow } from '../../ui/Ledger';
 import { InlineNotice } from '../../ui/Notices';
+import { Button } from '../../ui/Button';
 import { SearchField } from '../../ui/SearchField';
 import { Section } from '../../ui/Section';
 import { SectionBoundary } from '../../ui/SectionBoundary';
@@ -21,6 +23,10 @@ import { Select } from '../../ui/Select';
 import { EmptyState } from '../../ui/States';
 import { monthLabel, shortDay, TeeSwatch, TypePill } from './parts';
 import { noteOpenedFromLibrary } from './return-state';
+import { plural, pluralWord } from '../../lib/plural';
+import { LargeTitle } from '../../ui/LargeTitle';
+import { LiveNowCard } from '../home/LiveNowCard';
+import type { LiveSnapshot } from '../../live/model';
 
 type Group = 'month' | 'player';
 
@@ -57,6 +63,8 @@ function dayLead(iso: string) {
 
 function TeamRoundRow({ r, by }: { r: ChTeamRound; by: Group }) {
   const href = teamRoundsLinks.review(r.id);
+  // The review is fetched whole as a finger lands on the row (A13), as the player's library does.
+  const press = usePressPrefetch();
   const under = r.toPar != null && r.toPar < 0;
   const meta = (
     <>
@@ -77,13 +85,14 @@ function TeamRoundRow({ r, by }: { r: ChTeamRound; by: Group }) {
       meta={<span className="ch-trd-meta">{meta}</span>}
       trail={
         <span className={'ch-trd-score' + (under ? ' is-under' : '')}>
-          <b>{r.toPar == null ? NO_DATA : formatToPar(r.toPar)}</b>
+          <b>{r.toPar == null ? <NoData /> : formatToPar(r.toPar)}</b>
           <em>{r.score}</em>
         </span>
       }
       href={href ?? undefined}
+      {...press(href)}
+      // Opening a round is navigation, so it is silent (D-70, A14).
       onClick={href ? (e) => {
-        haptic('select');
         // Only a same-tab open leaves the note (a new-tab click would leave a stale one for a later deep link), as the player library does.
         if (e.button === 0 && !e.metaKey && !e.ctrlKey && !e.shiftKey && !e.altKey) noteOpenedFromLibrary(r.id);
       } : undefined}
@@ -98,7 +107,10 @@ function TeamRoundRow({ r, by }: { r: ChTeamRound; by: Group }) {
  * figures on top, then the rounds by month or by player, each opening its review. Search by player or course, or pick a
  * player.
  */
-export function TeamRounds({ data: fresh, teamId }: { data: ChTeamRounds; teamId: string }) {
+const inviteHref = rebuiltHref('/golf/dashboard/roster?invite=1');
+const rosterHref = rebuiltHref('/golf/dashboard/roster');
+
+export function TeamRounds({ data: fresh, teamId, live, liveNow }: { data: ChTeamRounds; teamId: string; live?: LiveSnapshot; liveNow?: number }) {
   const phone = useChPhone();
   const { refresh, refreshing } = useRefresh();
   // A refresh that fails keeps the list the coach was reading and says it may be out of date; a first load that fails is the error as it came.
@@ -125,25 +137,59 @@ export function TeamRounds({ data: fresh, teamId }: { data: ChTeamRounds; teamId
         <div>
           <span className="ch-rd-k">
             {data.teamName ? `${data.teamName} · ` : ''}
-            {s.rounds ? `Since August 1 · ${s.rounds} counted ${s.rounds === 1 ? 'round' : 'rounds'}` : 'Since August 1'}
+            {s.rounds ? `Since August 1 · ${s.rounds} counted ${pluralWord(s.rounds, 'round')}` : 'Since August 1'}
           </span>
           <span className="ch-rd-upd" role="status" data-ch-code={refreshing ? 'CH-11412' : undefined}>
             {refreshing ? 'Updating…' : ''}
           </span>
-          <h1 id="ch-trd-title">Team rounds</h1>
+          <LargeTitle id="ch-trd-title">Team rounds</LargeTitle>
         </div>
       </header>
 
       {stale && <InlineNotice code="CH-11219" title="The team’s rounds may be out of date" body="We couldn’t refresh them just now. This is what loaded last time." onRetry={refresh} retrying={refreshing} />}
+
+      {/* "Live now" (P-6, CH-16630): who is out, above the book. It is its own read, so a failed one leaves the band out and the page whole. */}
+      {live && (
+        <SectionBoundary surface="rounds.team.live" label="Live now" code="CH-16630">
+          <LiveNowCard variant="band" initial={live} phone={phone} now={liveNow} frozen={liveNow != null} />
+        </SectionBoundary>
+      )}
 
       {data.rosterError ? (
         <InlineNotice code="CH-11220" title="Your roster didn’t load" body="Nothing is lost. The team’s rounds are still saved; try again in a moment." onRetry={refresh} retrying={refreshing} />
       ) : data.rounds.error ? (
         <InlineNotice code="CH-11221" title="The team’s rounds didn’t load" body="Nothing is lost. Posted rounds are still saved; try again in a moment." onRetry={refresh} retrying={refreshing} />
       ) : noRoster ? (
-        <EmptyState size="page" code="CH-11317" icon={Users} title="No players on the team yet" body="Rounds your players post show up here once they join the roster." />
+        <EmptyState
+          size="page"
+          code="CH-11317"
+          icon={Users}
+          title="No players on the team yet"
+          body="Rounds your players post show up here once they join the roster."
+          // The next step, as Home's empty team offers (F-0030).
+          action={
+            inviteHref ? (
+              <Button variant="primary" leftIcon={UserPlus} href={inviteHref}>
+                Invite players
+              </Button>
+            ) : undefined
+          }
+        />
       ) : nothing ? (
-        <EmptyState size="page" code="CH-11320" icon={Flag} title="No rounds yet" body="Every round your players post shows up here, newest first." />
+        <EmptyState
+          size="page"
+          code="CH-11320"
+          icon={Flag}
+          title="No rounds yet"
+          body="Every round your players post shows up here, newest first."
+          action={
+            rosterHref ? (
+              <Button variant="secondary" href={rosterHref}>
+                Open roster
+              </Button>
+            ) : undefined
+          }
+        />
       ) : (
         <>
           <SectionBoundary surface="rounds.team.season" label="This season" code="CH-11203">
@@ -151,10 +197,10 @@ export function TeamRounds({ data: fresh, teamId }: { data: ChTeamRounds; teamId
               label="The team this season"
               code="CH-11319"
               items={[
-                { label: 'Rounds', value: s.rounds ? s.rounds : NO_DATA, note: s.players ? `${s.players} ${s.players === 1 ? 'player' : 'players'}` : undefined },
-                { label: 'Average', value: s.avg == null ? NO_DATA : formatFixed(s.avg, 1), note: s.avg == null ? undefined : '18 holes' },
-                { label: 'Under par', value: s.rounds ? s.underPar : NO_DATA, tone: s.underPar ? 'under' : undefined, note: s.rounds ? `of ${s.rounds}` : undefined },
-                { label: 'Low round', value: best ? best.score : NO_DATA, note: best ? `${best.player.split(' ')[0]} · ${best.toPar == null ? shortDay(best.date) : formatToPar(best.toPar)}` : undefined },
+                { label: 'Rounds', value: s.rounds ? s.rounds : <NoData />, note: s.players ? `${plural(s.players, 'player')}` : undefined },
+                { label: 'Average', value: s.avg == null ? <NoData /> : formatFixed(s.avg, 1), note: s.avg == null ? undefined : '18 holes' },
+                { label: 'Under par', value: s.rounds ? s.underPar : <NoData />, tone: s.underPar ? 'under' : undefined, note: s.rounds ? `of ${s.rounds}` : undefined },
+                { label: 'Low round', value: best ? best.score : <NoData />, note: best ? `${best.player.split(' ')[0]} · ${best.toPar == null ? shortDay(best.date) : formatToPar(best.toPar)}` : undefined },
               ]}
             />
           </SectionBoundary>
@@ -188,7 +234,7 @@ export function TeamRounds({ data: fresh, teamId }: { data: ChTeamRounds; teamId
                 const avg = full.length ? full.reduce((a, r) => a + r.score, 0) / full.length : null;
                 const meta = (
                   <span className="ch-num">
-                    {g.rounds.length} {g.rounds.length === 1 ? 'round' : 'rounds'}
+                    {g.rounds.length} {pluralWord(g.rounds.length, 'round')}
                     {avg != null && ` · avg ${formatFixed(avg, 1)}`}
                   </span>
                 );

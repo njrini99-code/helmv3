@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { useNotificationBadges } from '@/contexts/notification-badge-context';
 import { useDeferredValue, useEffect, useMemo, useRef, useState, type CSSProperties } from 'react';
 import type { ChHubAnnouncement, ChHubFile, ChHubRsvp, ChHubTask, ChHubTrip, ChHubUpdate, ChRsvp, ChTeamHub } from '../../data/hub';
+import { PROVISIONAL_ID } from '../../data/hub-shape';
 import { Button } from '../../ui/Button';
 import { EmptyState } from '../../ui/States';
 import { Icon } from '../../ui/Icon';
@@ -20,6 +21,7 @@ import { useChPhone } from '../../lib/use-phone';
 import { tabListKeys } from '../../lib/tabs';
 import { HUB_TABS, type ChHubTab } from '../../lib/hub-tabs';
 import { PhoneTop } from '../../shell/phone-chrome';
+import { PhoneIconAction } from '../../ui/PhoneBar';
 import { HubStrip, TaskBoard } from './band';
 import { hubStrip, queueOf, tabAttention, taskFigures } from './hub-summary';
 import { Announcement, Documents, NewAnnouncementLine, Tasks, TripPass, Updates } from './parts';
@@ -31,6 +33,8 @@ import { LIVE_HUB_WRITES, type ChHubWrites } from './writes';
 import { useToast } from '../../ui/Toast';
 import { useHScroll } from '../../ui/use-hscroll';
 import '../../styles/hub.css';
+import { ListPresence } from '../../ui/ListPresence';
+import { LargeTitle } from '../../ui/LargeTitle';
 
 // The tabs and their `?tab=` parser live in a plain module so the server route can call the parser.
 export { parseHubTab, type ChHubTab } from '../../lib/hub-tabs';
@@ -151,6 +155,21 @@ export function TeamHub({
   const tabsEdges = useHScroll<HTMLDivElement>(tabsRef);
   const reduced = useChReducedMotion();
   useSlidePlate(tabsRef, '[aria-selected="true"] > .ch-hb-tabs__bar', tab, { reduced, kind: 'smooth' });
+  // The chosen tab is always in view in the phone's sideways strip: Tasks, opened from the strip or a link, sat past the
+  // screen's edge with only a sliver of its underline showing. The first paint jumps there; a later change glides.
+  const tabsShown = useRef(false);
+  useEffect(() => {
+    const strip = tabsRef.current;
+    const on = strip?.querySelector<HTMLElement>('[aria-selected="true"]');
+    const first = !tabsShown.current;
+    tabsShown.current = true;
+    if (!strip || !on || strip.scrollWidth <= strip.clientWidth) return;
+    const s = strip.getBoundingClientRect();
+    const b = on.getBoundingClientRect();
+    const edge = 16;
+    const by = b.left < s.left + edge ? b.left - s.left - edge : b.right > s.right - edge ? b.right - s.right + edge : 0;
+    if (by) strip.scrollTo({ left: strip.scrollLeft + by, behavior: first || reduced ? 'auto' : 'smooth' });
+  }, [tab, reduced]);
   const [replies, setReplies] = useState(() => new Map<string, ChRsvp>());
   const [acked, setAcked] = useState(() => new Set<string>());
   const [pendingWrites, setPendingWrites] = useState(() => new Set<string>());
@@ -166,6 +185,15 @@ export function TeamHub({
   // The trip open in the edit sheet.
   const [editingTrip, setEditingTrip] = useState<ChHubTrip | null>(null);
   const [assign, setAssign] = useState(false);
+  // A post or a task drawn the moment it is sent (F-0045), until the page's next read brings the real row.
+  const [provAnns, setProvAnns] = useState<ChHubAnnouncement[]>([]);
+  const [provTasks, setProvTasks] = useState<ChHubTask[]>([]);
+  const [readFor, setReadFor] = useState(data);
+  if (readFor !== data) {
+    setReadFor(data);
+    setProvAnns([]);
+    setProvTasks([]);
+  }
   const [confirm, setConfirm] = useState<Pending>(null);
   const [opening, setOpening] = useState<string | null>(null);
   const [uploading, setUploading] = useState(false);
@@ -388,10 +416,30 @@ export function TeamHub({
   const tripActions = coach ? { onEdit: setEditingTrip, onDelete: (t: ChHubTrip) => askDelete({ kind: 'trip', t }) } : {};
 
   const anns = useMemo(
-    () => data.announcements.rows.filter((a) => !gone.has(a.id)).map((a) => (edited.has(a.id) ? { ...a, ...edited.get(a.id) } : a)),
-    [data.announcements.rows, gone, edited],
+    () => [...provAnns, ...data.announcements.rows.filter((a) => !gone.has(a.id)).map((a) => (edited.has(a.id) ? { ...a, ...edited.get(a.id) } : a))],
+    [provAnns, data.announcements.rows, gone, edited],
   );
-  const tasks = useMemo(() => ({ ...data.tasks, rows: data.tasks.rows.filter((t) => !gone.has(t.id)) }), [data.tasks, gone]);
+  const tasks = useMemo(() => ({ ...data.tasks, rows: [...provTasks, ...data.tasks.rows.filter((t) => !gone.has(t.id))] }), [provTasks, data.tasks, gone]);
+  // The rows a coach's post and assignment draw at once; each add returns its undo (F-0045).
+  const provisionalPost = {
+    add: (i: Parameters<ChHubWrites['postAnnouncement']>[0]) => {
+      const id = `${PROVISIONAL_ID}${Date.now()}`;
+      const recipients = i.playerIds?.length ?? data.players.length;
+      const row: ChHubAnnouncement = { id, title: i.title.trim(), body: i.body.trim(), urgency: 'normal', by: viewerName, byRole: null, when: '', createdAt: new Date().toISOString(), needAck: i.requiresAck, acked: false, ackCount: 0, recipients, notAcked: null, documentCount: i.documentIds.length };
+      setProvAnns((rows) => [row, ...rows]);
+      return () => setProvAnns((rows) => rows.filter((r) => r.id !== id));
+    },
+    onReopen: () => setCompose(true),
+  };
+  const provisionalTask = {
+    add: (i: Parameters<ChHubWrites['assignTask']>[0]) => {
+      const id = `${PROVISIONAL_ID}${Date.now()}`;
+      const row: ChHubTask = { id, title: i.title.trim(), detail: i.detail.trim() || null, dueDate: i.dueDate, due: null, status: 'pending', done: [0, i.playerIds.length] };
+      setProvTasks((rows) => [row, ...rows]);
+      return () => setProvTasks((rows) => rows.filter((r) => r.id !== id));
+    },
+    onReopen: () => setAssign(true),
+  };
   const docs = useMemo(() => ({ ...data.documents, folders: data.documents.folders.map((f) => ({ ...f, files: f.files.filter((d) => !gone.has(d.id)) })).filter((f) => f.files.length) }), [data.documents, gone]);
   const isAcked = (a: ChHubAnnouncement) => a.acked || acked.has(a.id);
   // Home's post: the newest that loaded still waiting on this player, else the newest (no pinned posts yet, Q-70). It is
@@ -469,8 +517,17 @@ export function TeamHub({
     setTab('ann');
     setCompose(true);
   };
+  // `?tab=ann&compose=1` (the command palette's Post announcement, A16) opens the composer once, for a coach, then leaves
+  // the address on Announcements, so Back or a reload never opens it again.
+  useEffect(() => {
+    if (!coach || new URL(window.location.href).searchParams.get('compose') !== '1') return;
+    router.replace('/golf/dashboard/team-hub?tab=ann', { scroll: false });
+    openCompose();
+    // Once, on arrival.
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
   // P010 D6: the head's one primary follows the tab (Documents' own drop zone is its primary), and a tab whose read
   // failed offers none.
+  const docsPicker = useRef<(() => void) | null>(null);
   const primary = !coach
     ? null
     : (tab === 'home' || tab === 'ann') && !data.announcements.error
@@ -479,7 +536,11 @@ export function TeamHub({
         ? { label: 'Plan a trip', icon: Plane, run: () => setTripOpen(true) }
         : tab === 'tasks' && !data.tasks.error
           ? { label: 'Assign a task', icon: Plus, run: () => setAssign(true) }
-          : null;
+          : // The phone's bar keeps one plus on every tab (visual pass 2026-10-28): on Documents it opens the file
+            // chooser the drop zone opens. Desktop's head keeps the drop zone as Documents' primary (D6).
+            tab === 'docs' && phone && !data.documents.error
+            ? { label: 'Upload a document', icon: Plus, run: () => docsPicker.current?.() }
+            : null;
 
   const planTrip = () => {
     setTab('travel');
@@ -519,7 +580,12 @@ export function TeamHub({
   return (
     <main className={'ch-hb' + (phone ? ' is-phone' : '')} aria-labelledby="ch-hb-title" data-canopy={phone ? undefined : ''}>
       {phone && !coach && <PhoneTop start title="Team Hub" heading={false} />}
-      {phone && coach && <PhoneTop title="Team Hub" start heading={false} />}
+      {/* B10.1: a coach's create action is the top bar's plus, following the tab as the desktop head's primary does
+          (a post, a trip, a task, a document; none on a tab whose read failed). The glyph is the plus on every tab
+          (visual pass 2026-10-28); the label names what it makes. */}
+      {phone && coach && (
+        <PhoneTop title="Team Hub" start heading={false} action={primary ? <PhoneIconAction icon={Plus} label={primary.label} onClick={primary.run} /> : undefined} />
+      )}
       <header className="ch-hb-h" data-canopy-head="">
         <div>
           {/* Coach only (wave 7): a player is never told their own role. */}
@@ -529,12 +595,12 @@ export function TeamHub({
               Coach view
             </span>
           )}
-          <h1 id="ch-hb-title" className={phone ? 'ch-sr-only' : undefined}>
-            Team Hub
-          </h1>
+          {/* The phone's one large title (owner decision 4); desktop keeps its hero rule (hub.css). Drawn from the first
+              paint, before useChPhone hydrates, since its look is the phone's CSS alone. */}
+          <LargeTitle id="ch-hb-title">Team Hub</LargeTitle>
           <span className="ch-hb-muted">{[data.teamName, data.season].filter(Boolean).join(' · ')}</span>
         </div>
-        {primary && (
+        {primary && !phone && (
           <Button variant="primary" leftIcon={primary.icon} onClick={primary.run}>
             {primary.label}
           </Button>
@@ -547,7 +613,7 @@ export function TeamHub({
         <RefreshNotice
           code="CH-10208"
           title="The team list didn’t load."
-          body="Players can’t be chosen for a post, a trip or a task until it does; a post to the whole team still goes out. Try again; the error has been reported."
+          body="Players can’t be chosen for a post, a trip or a task until it does; a post to the whole team still goes out. Try again."
         />
       )}
 
@@ -670,14 +736,16 @@ export function TeamHub({
 
           {shownTab === 'ann' && (
             <SectionBoundary surface="hub.announcements" label="Announcements" code="CH-10205">
+              {/* The tab's own heading, so each post's h3 sits under an h2, not straight under the page's h1 (F-0063). */}
+              <h2 className="ch-sr-only">Announcements</h2>
               <div className={'ch-hb-list' + (anns.length ? ' is-edited' : '') + (coach && !phone && anns.length ? ' has-margin' : '')}>
                 {coach && <NewAnnouncementLine name={viewerName} onOpen={() => setCompose(true)} />}
                 {data.announcements.error ? (
-                  <RefreshNotice code="CH-10206" title="Announcements didn’t load." body="Nothing was lost. Try again; the error has been reported." covered={covered} />
+                  <RefreshNotice code="CH-10206" title="Announcements didn’t load." body="Nothing was lost. Try again." covered={covered} />
                 ) : !anns.length ? (
                   <EmptyState code="CH-10307" shape="rows" shapeCount={3} title="No announcements yet" body={coach ? 'Post one and see who has read it.' : 'Posts from your coaches show here.'} />
                 ) : (
-                  anns.map((a, i) => <Announcement key={a.id} a={a} role={data.role} rank={i === 0 ? 'lead' : 'older'} acked={isAcked(a)} pending={ackPending(a)} onAck={onAck} onEdit={setEditing} onDelete={(x) => askDelete({ kind: 'ann', a: x })} files={attachments} />)
+                  <ListPresence>{anns.map((a, i) => <Announcement key={a.id} a={a} role={data.role} rank={i === 0 ? 'lead' : 'older'} acked={isAcked(a)} pending={ackPending(a)} onAck={onAck} onEdit={setEditing} onDelete={(x) => askDelete({ kind: 'ann', a: x })} files={attachments} />)}</ListPresence>
                 )}
                 {coach && !phone && anns.length > 0 && !data.announcements.error && <ReadMargin anns={anns} />}
               </div>
@@ -688,18 +756,18 @@ export function TeamHub({
             <SectionBoundary surface="hub.travel" label="Travel" code="CH-10205">
               <div className="ch-hb-travel">
                 {data.trips.error ? (
-                  <RefreshNotice code="CH-10207" title="Travel didn’t load." body="Trips are safe. Try again; the error has been reported." covered={covered} />
+                  <RefreshNotice code="CH-10207" title="Travel didn’t load." body="Trips are safe. Try again." covered={covered} />
                 ) : !tripRows.length ? (
                   <EmptyState code="CH-10308" shape="time" shapeCount={3} title="No trips planned" body={coach ? 'Plan a trip and players see the itinerary here.' : 'Trips your coaches plan show here with the bus time and hotel.'} />
                 ) : (
-                  <>
-                    {nextTrip && <TripPass t={nextTrip} big role={data.role} focus={tripToFocus === nextTrip.id} onFocused={tripFocused} {...tripActions} />}
+                  <ListPresence>
+                    {nextTrip && <TripPass key={nextTrip.id} t={nextTrip} big role={data.role} focus={tripToFocus === nextTrip.id} onFocused={tripFocused} {...tripActions} />}
                     {tripRows
                       .filter((t) => t !== nextTrip)
                       .map((t) => (
                         <TripPass key={t.id} t={t} later role={data.role} focus={tripToFocus === t.id} onFocused={tripFocused} {...tripActions} />
                       ))}
-                  </>
+                  </ListPresence>
                 )}
               </div>
             </SectionBoundary>
@@ -707,7 +775,7 @@ export function TeamHub({
 
           {shownTab === 'docs' && (
             <SectionBoundary surface="hub.documents" label="Documents" code="CH-10205">
-              <Documents role={data.role} data={docs} opening={opening} uploading={uploading || upload.pending} onOpen={onOpen} onUpload={onUpload} onDelete={(f) => askDelete({ kind: 'file', f })} covered={covered} />
+              <Documents role={data.role} data={docs} opening={opening} uploading={uploading || upload.pending} onOpen={onOpen} onUpload={onUpload} onDelete={(f) => askDelete({ kind: 'file', f })} covered={covered} picker={docsPicker} />
             </SectionBoundary>
           )}
 
@@ -724,7 +792,7 @@ export function TeamHub({
 
       {coach && (
         <>
-          <ComposeSheet open={compose} onClose={() => setCompose(false)} players={data.players} playersError={data.playersError} documents={docs} travel={travelAudience} write={writes.postAnnouncement} onDone={refresh} />
+          <ComposeSheet open={compose} onClose={() => setCompose(false)} players={data.players} playersError={data.playersError} documents={docs} travel={travelAudience} write={writes.postAnnouncement} onDone={refresh} provisional={provisionalPost} />
           <ComposeSheet
             open={!!editing}
             onClose={() => setEditing(null)}
@@ -737,7 +805,7 @@ export function TeamHub({
           />
           <TripSheet open={tripOpen} onClose={() => setTripOpen(false)} teamId={data.teamId} events={data.tripEvents} players={data.players} playersError={data.playersError} write={writes.planTrip} writeTravelers={writes.setTravelers} readClasses={writes.travelerClasses} onDone={refresh} />
           <TripEditSheet trip={editingTrip} onClose={() => setEditingTrip(null)} write={writes.editTrip} onDone={refresh} />
-          <AssignSheet open={assign} onClose={() => setAssign(false)} teamId={data.teamId} players={data.players} playersError={data.playersError} write={writes.assignTask} onDone={refresh} />
+          <AssignSheet open={assign} onClose={() => setAssign(false)} teamId={data.teamId} players={data.players} playersError={data.playersError} write={writes.assignTask} onDone={refresh} provisional={provisionalTask} />
           <ConfirmDelete
             open={!!confirm}
             what={confirm?.kind === 'ann' ? 'this announcement' : confirm?.kind === 'task' ? 'this task' : confirm?.kind === 'trip' ? 'this trip' : 'this file'}

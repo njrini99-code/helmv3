@@ -12,8 +12,15 @@ import { NavPlate } from "./NavPlate";
 import { NextEventCard } from "./NextEventCard";
 import { ResumeRoundCard } from "./Dock";
 import { badgeCount } from "./badge-count";
+import { LifeBuoy, LogOut, Settings, Users } from "lucide-react";
+import { Menu, type MenuItem } from "../ui/Menu";
+import { useToast } from "../ui/Toast";
+import { haptic } from "../lib/haptics";
+import { chSignOut } from "../lib/sign-out";
+import { SIGN_OUT_FAILED } from "../lib/sign-out-copy";
+import { chReport } from "../lib/track";
 import { TeamSwitch } from "./TeamSwitch";
-import type { ChTeamSwitch } from "./team-switch";
+import { useTeamSwitch, type ChTeamSwitch } from "./team-switch";
 import { BrandLine, useBrandWrite } from './BrandWord';
 import { RailTip, useRailTip } from './RailTip';
 
@@ -35,8 +42,8 @@ export function Sidebar({
   folded?: boolean;
 }) {
   const badges = useNotificationBadges();
-  const nav = navFor(userData.role);
-  const current = activeNavItem(pathname, userData.role)?.id;
+  const nav = navFor(userData.role, shell);
+  const current = activeNavItem(pathname, userData.role, shell)?.id;
   const sections = CH_NAV_SECTIONS;
 
   const brandWrite = useBrandWrite();
@@ -107,17 +114,74 @@ export function Sidebar({
         <div className="ch-sidebar__card" inert={folded || undefined}>
           {shell.roundInProgress ? <ResumeRoundCard round={shell.roundInProgress} /> : shell.nextEvent && <NextEventCard event={shell.nextEvent} />}
         </div>
-        <div className="ch-identity">
-          <Avatar name={userData.name} size={30} />
-          <div className="ch-identity__txt">
-            <span className="ch-identity__name">{userData.name}</span>
-            <span className="ch-identity__meta">
-              {userData.role === "coach" ? (shell.viewerIsHeadCoach ? "Head coach" : "Coach") : "Player"}
-              {userData.teamName ? ` · ${userData.teamName}` : ""}
-            </span>
-          </div>
-        </div>
+        {teamSwitch ? (
+          <IdentityMenuWithTeams userData={userData} headCoach={!!shell.viewerIsHeadCoach} teamSwitch={teamSwitch} />
+        ) : (
+          <IdentityMenu userData={userData} headCoach={!!shell.viewerIsHeadCoach} />
+        )}
       </div>
     </aside>
+  );
+}
+
+/** Help in the account menu is Settings' Help and legal card, as on the phone's account sheet. */
+const HELP_HREF = "/golf/dashboard/settings#set-help";
+
+/** A head coach on more than one team: the account menu lists the teams too, the current one ticked (useTeamSwitch). */
+function IdentityMenuWithTeams({ userData, headCoach, teamSwitch }: { userData: GolfUserData; headCoach: boolean; teamSwitch: ChTeamSwitch }) {
+  const sw = useTeamSwitch(teamSwitch);
+  const teams: MenuItem[] = teamSwitch.choices.map((c) => ({ label: c.label, icon: Users, checked: c.id === sw.shownId, onSelect: () => sw.pick(c.id) }));
+  return <IdentityMenu userData={userData} headCoach={headCoach} teams={teams} />;
+}
+
+/**
+ * Who is signed in, at the sidebar's foot (B11): a menu key with Settings, the coach's teams when they can switch, Help and
+ * Sign out, the desktop's version of the phone's account sheet. Closed, it looks as the static block did; on the folded
+ * rail the avatar is the key. Sign out is the one way everywhere (lib/sign-out.ts), its failure the same toast.
+ */
+function IdentityMenu({ userData, headCoach, teams = [] }: { userData: GolfUserData; headCoach: boolean; teams?: MenuItem[] }) {
+  const toast = useToast();
+  const signOut = async () => {
+    try {
+      await chSignOut();
+    } catch (err) {
+      chReport(err, { surface: "shell.identity", action: "signOut" });
+      haptic("error");
+      toast({ tone: "error", title: SIGN_OUT_FAILED.title, body: SIGN_OUT_FAILED.body, action: { label: SIGN_OUT_FAILED.retry, run: () => void signOut() } });
+    }
+  };
+  const items: MenuItem[] = [
+    { label: "Settings", icon: Settings, href: "/golf/dashboard/settings" },
+    ...(teams.length ? [{ kind: "separator" } as const, ...teams, { kind: "separator" } as const] : []),
+    { label: "Help", icon: LifeBuoy, href: HELP_HREF },
+    { label: "Sign out", icon: LogOut, onSelect: () => void signOut() },
+  ];
+  return (
+    <Menu
+      label="Account"
+      align="start"
+      items={items}
+      trigger={(t) => (
+        <button
+          ref={t.ref}
+          type="button"
+          className="ch-identity"
+          aria-label={`${userData.name}. Account`}
+          aria-expanded={t["aria-expanded"]}
+          aria-haspopup={t["aria-haspopup"]}
+          aria-controls={t["aria-expanded"] ? t["aria-controls"] : undefined}
+          onClick={t.onClick}
+        >
+          <Avatar name={userData.name} size={30} />
+          <span className="ch-identity__txt">
+            <span className="ch-identity__name">{userData.name}</span>
+            <span className="ch-identity__meta">
+              {userData.role === "coach" ? (headCoach ? "Head coach" : "Coach") : "Player"}
+              {userData.teamName ? ` · ${userData.teamName}` : ""}
+            </span>
+          </span>
+        </button>
+      )}
+    />
   );
 }

@@ -36,6 +36,7 @@ Every Bridge ID (D-68: namespace, two-digit category, two-digit item), its catal
 | CH-8902 | 08 Permission / authorization | The phone's push permission before iOS has asked: a permission request, not the network. |
 | CH-8903 | 08 Permission / authorization | The phone's push permission as iOS answered it, changed only in its Settings app. |
 | CH-09901 | 10 Warning | The qualifier is closed: a standing condition the coach and players are told about. |
+| CH-16920 | 10 Warning | The host's number differs from our scorecard: a standing condition the coach is told about, with both numbers shown and neither picked. |
 | CH-09902 | 06 Server / system error | An edit saved only in part, or not at all: the server refused a step. |
 | CH-1904 | 01 Default / core UI | Core navigation behaviour: a new page opens at the top. |
 | CH-1911 | 08 Permission / authorization | The app asks for the phone's push permission: a permission outcome, not the network. |
@@ -102,26 +103,72 @@ Every Bridge ID (D-68: namespace, two-digit category, two-digit item), its catal
 | CH-15920 | 12 State preservation | Forgot password? opens the reset form in place with the typed address, the view kept in the URL so Back and a reload hold it. |
 | CH-15921 | 09 Success | A positive confirmation: the reset link was asked for. |
 | CH-15922 | 12 State preservation | Back to sign in brings the typed address back and pops the reset form's history entry rather than stacking one. |
+| CH-16600 | 01 Default / core UI | P-6 copy deck, numbered by the plan (CH-166xx) rather than by the catalog kinds: the category the words belong to. |
+| CH-16606 | 01 Default / core UI | P-6 copy deck, numbered by the plan (CH-166xx) rather than by the catalog kinds: the category the words belong to. |
+| CH-16602 | 01 Default / core UI | P-6 copy deck, numbered by the plan (CH-166xx) rather than by the catalog kinds: the category the words belong to. |
+| CH-16603 | 01 Default / core UI | P-6 copy deck, numbered by the plan (CH-166xx) rather than by the catalog kinds: the category the words belong to. |
+| CH-16604 | 03 Background loading / refresh | P-6 copy deck, numbered by the plan (CH-166xx) rather than by the catalog kinds: the category the words belong to. |
+| CH-16605 | 07 Network / offline | P-6 copy deck, numbered by the plan (CH-166xx) rather than by the catalog kinds: the category the words belong to. |
+| CH-16609 | 08 Permission / authorization | P-6 copy deck, numbered by the plan (CH-166xx) rather than by the catalog kinds: the category the words belong to. |
+| CH-16610 | 01 Default / core UI | P-6 copy deck, numbered by the plan (CH-166xx) rather than by the catalog kinds: the category the words belong to. |
+| CH-16611 | 01 Default / core UI | P-6 copy deck, numbered by the plan (CH-166xx) rather than by the catalog kinds: the category the words belong to. |
+| CH-16612 | 01 Default / core UI | P-6 copy deck, numbered by the plan (CH-166xx) rather than by the catalog kinds: the category the words belong to. |
+| CH-16613 | 01 Default / core UI | P-6 copy deck, numbered by the plan (CH-166xx) rather than by the catalog kinds: the category the words belong to. |
+| CH-16614 | 15 Data freshness / sync | P-6 copy deck, numbered by the plan (CH-166xx) rather than by the catalog kinds: the category the words belong to. |
+| CH-16615 | 01 Default / core UI | P-6 copy deck, numbered by the plan (CH-166xx) rather than by the catalog kinds: the category the words belong to. |
+| CH-16616 | 01 Default / core UI | P-6 copy deck, numbered by the plan (CH-166xx) rather than by the catalog kinds: the category the words belong to. |
+| CH-16617 | 01 Default / core UI | P-6 copy deck, numbered by the plan (CH-166xx) rather than by the catalog kinds: the category the words belong to. |
+| CH-16618 | 01 Default / core UI | P-6 copy deck, numbered by the plan (CH-166xx) rather than by the catalog kinds: the category the words belong to. |
+| CH-16619 | 04 Empty | P-6 copy deck, numbered by the plan (CH-166xx) rather than by the catalog kinds: the category the words belong to. |
+| CH-16620 | 01 Default / core UI | P-6 copy deck, numbered by the plan (CH-166xx) rather than by the catalog kinds: the category the words belong to. |
+| CH-16621 | 12 State preservation | P-6 copy deck, numbered by the plan (CH-166xx) rather than by the catalog kinds: the category the words belong to. |
+| CH-16622 | 01 Default / core UI | P-6 copy deck, numbered by the plan (CH-166xx) rather than by the catalog kinds: the category the words belong to. |
+| CH-16630 | 01 Default / core UI | P-6 copy deck, numbered by the plan (CH-166xx) rather than by the catalog kinds: the category the words belong to. |
+| CH-16631 | 01 Default / core UI | P-6 copy deck, numbered by the plan (CH-166xx) rather than by the catalog kinds: the category the words belong to. |
+| CH-16640 | 01 Default / core UI | P-6 copy deck, numbered by the plan (CH-166xx) rather than by the catalog kinds: the category the words belong to. |
+| CH-16641 | 18 Accessibility | P-6 copy deck, numbered by the plan (CH-166xx) rather than by the catalog kinds: the category the words belong to. |
+| CH-16660 | 01 Default / core UI | P-6 copy deck, numbered by the plan (CH-166xx) rather than by the catalog kinds: the category the words belong to. |
+| CH-16661 | 01 Default / core UI | P-6 copy deck, numbered by the plan (CH-166xx) rather than by the catalog kinds: the category the words belong to. |
+| CH-16662 | 01 Default / core UI | P-6 copy deck, numbered by the plan (CH-166xx) rather than by the catalog kinds: the category the words belong to. |
+| CH-16663 | 01 Default / core UI | P-6 copy deck, numbered by the plan (CH-166xx) rather than by the catalog kinds: the category the words belong to. |
+| CH-16664 | 06 Server / system error | P-6 copy deck, numbered by the plan (CH-166xx) rather than by the catalog kinds: the category the words belong to. |
+| CH-16665 | 10 Warning | P-6 copy deck, numbered by the plan (CH-166xx) rather than by the catalog kinds: the category the words belong to. |
+| CH-16666 | 06 Server / system error | P-6 copy deck, numbered by the plan (CH-166xx) rather than by the catalog kinds: the category the words belong to. |
+| CH-16670 | 01 Default / core UI | P-6 copy deck, numbered by the plan (CH-166xx) rather than by the catalog kinds: the category the words belong to. |
+| CH-16671 | 01 Default / core UI | P-6 copy deck, numbered by the plan (CH-166xx) rather than by the catalog kinds: the category the words belong to. |
+| CH-16672 | 15 Data freshness / sync | P-6 copy deck, numbered by the plan (CH-166xx) rather than by the catalog kinds: the category the words belong to. |
+| CH-16673 | 15 Data freshness / sync | P-6 copy deck, numbered by the plan (CH-166xx) rather than by the catalog kinds: the category the words belong to. |
+| CH-16674 | 01 Default / core UI | P-6 copy deck, numbered by the plan (CH-166xx) rather than by the catalog kinds: the category the words belong to. |
+| CH-16675 | 01 Default / core UI | P-6 copy deck, numbered by the plan (CH-166xx) rather than by the catalog kinds: the category the words belong to. |
+| CH-16676 | 01 Default / core UI | P-6 copy deck, numbered by the plan (CH-166xx) rather than by the catalog kinds: the category the words belong to. |
+| CH-16677 | 15 Data freshness / sync | P-6 copy deck, numbered by the plan (CH-166xx) rather than by the catalog kinds: the category the words belong to. |
+| CH-16680 | 01 Default / core UI | P-6 copy deck, numbered by the plan (CH-166xx) rather than by the catalog kinds: the category the words belong to. |
+| CH-16681 | 01 Default / core UI | P-6 copy deck, numbered by the plan (CH-166xx) rather than by the catalog kinds: the category the words belong to. |
+| CH-16682 | 01 Default / core UI | P-6 copy deck, numbered by the plan (CH-166xx) rather than by the catalog kinds: the category the words belong to. |
+| CH-16683 | 15 Data freshness / sync | P-6 copy deck, numbered by the plan (CH-166xx) rather than by the catalog kinds: the category the words belong to. |
+| CH-16684 | 01 Default / core UI | P-6 copy deck, numbered by the plan (CH-166xx) rather than by the catalog kinds: the category the words belong to. |
+| CH-16685 | 01 Default / core UI | P-6 copy deck, numbered by the plan (CH-166xx) rather than by the catalog kinds: the category the words belong to. |
 
 ## Count by page and category
 
 | Page | 01 | 02 | 03 | 04 | 05 | 06 | 07 | 08 | 09 | 10 | 11 | 12 | 13 | 14 | 15 | 16 | 17 | 18 | 19 | 20 | 21 | 22 | 23 | 24 | 25 | Total |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| P001 | 3 | 2 | 1 | 6 |  | 14 | 6 | 4 | 1 |  |  |  | 1 | 2 |  | 22 | 9 | 26 | 1 | 3 | 1 | 3 | 1 | 1 |  | 107 |
-| P002 | 5 | 1 | 1 | 15 |  | 22 |  | 6 |  |  |  |  |  | 2 |  | 2 | 3 | 7 | 1 |  | 1 |  | 1 | 1 |  | 68 |
-| P003 | 2 | 3 | 3 | 9 | 3 | 23 | 1 | 6 | 1 |  | 2 | 3 | 1 | 3 |  | 4 | 4 | 9 | 1 | 1 | 1 |  | 1 | 1 |  | 82 |
+| P001 | 3 | 2 | 1 | 6 |  | 16 | 6 | 4 | 1 |  |  |  | 1 | 2 |  | 22 | 9 | 26 | 1 | 3 | 1 | 3 | 1 | 1 |  | 109 |
+| P002 | 5 | 2 | 1 | 16 | 8 | 26 | 1 | 6 |  |  | 1 |  |  | 2 |  | 3 | 3 | 8 | 1 |  | 1 |  | 1 | 1 |  | 86 |
+| P003 | 2 | 3 | 3 | 9 | 4 | 24 | 2 | 6 | 1 |  | 2 | 3 | 1 | 3 |  | 4 | 4 | 10 | 1 | 1 | 1 |  | 1 | 1 |  | 86 |
 | P004 | 2 | 1 | 1 | 19 | 2 | 12 | 3 | 2 | 1 |  |  | 1 |  | 1 |  | 4 | 4 | 6 | 1 | 1 | 1 |  | 1 | 1 |  | 64 |
 | P005 | 4 | 4 | 2 | 23 | 3 | 25 | 3 | 6 | 1 |  | 1 | 2 |  | 1 | 1 | 4 | 3 | 10 | 1 | 1 | 1 |  | 1 | 1 |  | 98 |
-| P006 | 4 | 5 | 3 | 9 | 4 | 30 | 1 | 8 | 1 | 2 | 5 | 3 | 2 | 2 | 1 | 6 | 3 | 4 | 1 | 1 | 1 |  | 1 | 1 |  | 98 |
-| P007 | 2 | 10 | 1 | 9 | 6 | 37 | 1 | 2 | 2 | 1 | 4 | 2 | 1 | 2 | 1 | 6 | 4 | 4 | 1 | 1 | 1 |  | 2 | 1 |  | 101 |
-| P008 | 2 | 1 | 3 | 6 | 15 | 42 | 2 | 10 | 3 | 3 | 8 | 6 | 2 | 2 | 1 | 9 | 8 | 7 | 1 | 1 | 1 |  | 1 | 1 |  | 135 |
-| P009 | 7 | 7 | 4 | 13 | 14 | 34 | 6 | 12 | 2 | 1 | 4 | 4 | 1 | 2 | 1 | 3 | 3 | 4 | 4 | 3 | 2 |  | 4 | 1 |  | 136 |
+| P006 | 4 | 5 | 3 | 10 | 14 | 58 | 1 | 8 | 1 | 2 | 7 | 3 | 2 | 2 | 1 | 7 | 3 | 10 | 1 | 1 | 1 |  | 1 | 1 |  | 146 |
+| P007 | 2 | 11 | 1 | 11 | 6 | 48 | 1 | 2 | 2 | 1 | 4 | 2 | 1 | 2 | 1 | 9 | 5 | 6 | 1 | 1 | 1 |  | 2 | 1 |  | 121 |
+| P008 | 2 | 1 | 3 | 6 | 15 | 44 | 3 | 10 | 3 | 3 | 8 | 6 | 2 | 2 | 1 | 9 | 8 | 7 | 1 | 1 | 1 |  | 1 | 1 |  | 138 |
+| P009 | 7 | 7 | 4 | 13 | 14 | 34 | 7 | 12 | 2 | 1 | 4 | 4 | 1 | 2 | 1 | 3 | 3 | 4 | 4 | 3 | 2 |  | 4 | 1 |  | 137 |
 | P010 | 3 | 10 |  | 16 | 10 | 25 | 1 | 4 | 1 |  | 4 | 1 | 1 | 2 | 1 | 2 | 2 | 2 | 1 | 1 | 1 |  | 1 | 1 |  | 90 |
-| P011 | 16 | 14 |  | 23 | 11 | 44 | 19 | 5 | 2 |  | 23 | 2 | 1 | 4 | 4 | 4 | 10 | 11 | 3 | 1 | 1 |  | 1 | 2 |  | 201 |
-| P012 | 3 | 3 |  | 8 | 16 | 12 | 3 | 3 | 2 |  | 4 | 1 |  | 4 | 4 | 2 | 5 | 6 | 1 | 1 | 1 |  | 1 | 1 |  | 81 |
-| P013 | 7 | 15 |  | 35 | 1 | 44 | 66 | 7 | 3 |  |  | 1 |  | 3 | 4 | 4 | 8 | 18 | 1 |  | 1 |  | 1 |  |  | 219 |
+| P011 | 16 | 15 |  | 26 | 11 | 44 | 22 | 5 | 2 |  | 24 | 2 | 1 | 4 | 4 | 4 | 11 | 11 | 3 | 1 | 1 |  | 1 | 2 |  | 210 |
+| P012 | 3 | 3 |  | 8 | 19 | 22 | 3 | 3 | 2 |  | 5 | 1 |  | 4 | 4 | 2 | 5 | 7 | 1 | 1 | 1 |  | 1 | 1 |  | 96 |
+| P013 | 7 | 15 |  | 36 | 1 | 45 | 71 | 7 | 3 |  |  | 1 |  | 3 | 4 | 4 | 9 | 19 | 1 |  | 1 |  | 1 |  |  | 228 |
 | P014 | 1 | 3 | 4 | 7 | 11 | 10 | 4 | 2 | 4 |  | 2 | 1 | 1 | 1 | 1 | 4 | 3 | 8 | 1 | 1 |  |  |  |  |  | 69 |
 | P015 |  | 7 | 2 | 3 | 12 | 21 | 27 | 2 | 2 |  |  | 3 |  | 1 |  | 17 | 7 | 6 | 2 | 1 | 1 |  | 1 |  |  | 115 |
+| P016 | 31 | 1 | 1 | 17 |  | 12 | 1 | 1 |  | 2 |  | 1 |  |  | 5 | 1 |  | 2 |  |  |  |  |  |  |  | 75 |
 
 ## P001 Shell
 
@@ -153,6 +200,8 @@ Every Bridge ID (D-68: namespace, two-digit category, two-digit item), its catal
 | 10612 | CH-1209 | 06 Server / system error | `TWO_OR_MORE_PARTS_OF_A_PAGE` | implemented | Two or more parts of a page don't load |
 | 10613 | CH-1210 | 06 Server / system error | `TWO_OR_MORE_SECTIONS_OF_A_PAGE` | implemented | Two or more sections of a page crash in the browser |
 | 10614 | CH-1211 | 06 Server / system error | `A_PAGES_ONE_READ_DOESNT_LOAD_SO` | implemented | A page's one read doesn't load, so nothing can show under its head |
+| 10615 | CH-1270 | 06 Server / system error | `DELIVER_NOW_IN_THE_BELL_IS_REFUSED` | implemented | Deliver now in the bell is refused (P-10) |
+| 10616 | CH-1271 | 06 Server / system error | `A_PLAYERS_PUSHES_ARE_HELD_FOR_CLASS` | implemented | A player's pushes are held for class (P-10) |
 | 10701 | CH-1901 | 07 Network / offline | `THE_DEVICE_GOES_OFFLINE` | implemented | The device goes offline |
 | 10702 | CH-1902 | 07 Network / offline | `A_SAVE_TAKES_LONGER_THAN_5_SECONDS` | implemented | A save takes longer than 5 seconds (forms, switches and CoachHelm settings) |
 | 10703 | CH-1903 | 07 Network / offline | `SOMEONE_SAVES_WHILE_OFFLINE` | implemented | Someone saves while offline |
@@ -245,6 +294,7 @@ Every Bridge ID (D-68: namespace, two-digit category, two-digit item), its catal
 | 20104 |  | 01 Default / core UI | `COACH_QUEUE_COUNTS_AS_ITS_SCREEN` | implemented | Coach Home's "Waiting on you" (under the head on desktop, in the phone's hero, and on the first run) counts each part with the read and rule of the screen that holds it, so the two show one number: pending join requests as the sidebar's Roster badge counts them, replies missing on this week's events that still take one as Team Hub's RSVPs count "no reply" (rsvpQueue), overdue tasks as Team Hub's Tasks (taskStatus, overdueTaskCount) and posts awaiting an acknowledgement as its Announcements (unackedPostCount). Only parts above zero are drawn, in that order; with nothing waiting the row is not drawn. Each part reads on its own: one that fails is null, logged and left out, never 0 (CH-2220). |
 | 20105 |  | 01 Default / core UI | `TEAM_PARTS_ON_THE_FORMS_LAST_10` | implemented | Coach Home's four parts (The team's game; under the team's form on desktop, after Team scoring on the phone) read the form's own Last 10 rounds of the active roster, hole-level only (Q-123): strokes gained per round in each part from 3 rounds with hole scores (else none), its change against the same players' previous ten (Q-112) coloured only when it clears its standard error, the part's plain stat (Fairways, Greens, Up and down, Putts) with the Tour's mark from the team's tour, and who gains and loses most from Team Stats' ranking (ties share a place and are named together; one ranked player, or everyone in one place, loses nothing). No other player's round reaches the figures. |
 | 20201 | CH-2401 | 02 Initial loading / skeleton | `HOME_IS_LOADING` | implemented | Home is loading |
+| 20202 | CH-2470 | 02 Initial loading / skeleton | `THE_SHEET_OPENS_BEFORE_THE_CLASS_DAY` | implemented | The sheet opens before the class day has arrived |
 | 20301 |  | 03 Background loading / refresh | `CLOCK_KEEPS_TIME` | implemented | The phone's Up next line (In 50 min, Happening now) is recomputed from the device clock every minute and the player's countdown every second, so neither needs a reload. |
 | 20401 | CH-2301 | 04 Empty | `NOTHING_IS_ON_THE_CALENDAR_TODAY` | implemented | Nothing is on the calendar today |
 | 20402 | CH-2302 | 04 Empty | `NO_ROUNDS_THIS_SEASON` | implemented | No rounds this season |
@@ -261,6 +311,15 @@ Every Bridge ID (D-68: namespace, two-digit category, two-digit item), its catal
 | 20413 | CH-2313 | 04 Empty | `A_PLAYER_ON_NO_ACTIVE_TEAM` | implemented | A player on no active team |
 | 20414 | CH-2314 | 04 Empty | `NO_ROUND_IN_THE_TEAMS_LAST_10` | implemented | No round in the team's last 10 has hole scores (coach Home, the team's four parts) |
 | 20415 | CH-2315 | 04 Empty | `ROUNDS_WITH_HOLE_SCORES_BUT_NO_PLAYER` | implemented | Rounds with hole scores, but no player with 3 of them (coach Home, the team's four parts) |
+| 20416 | CH-2370 | 04 Empty | `NOBODY_ON_THE_TEAM_HAS_A_CLASS` | implemented | Nobody on the team has a class today (the sheet is open) |
+| 20501 | CH-2170 | 05 Validation | `THE_LAST_DAY_OF_CLASSES_IS_NOT` | implemented | The last day of classes is not after the first |
+| 20502 | CH-2171 | 05 Validation | `A_TERM_SHORTER_THAN_4_WEEKS_OR` | implemented | A term shorter than 4 weeks or longer than about 6 months |
+| 20503 | CH-2172 | 05 Validation | `EXAMS_END_MORE_THAN_3_WEEKS_AFTER` | implemented | Exams end more than 3 weeks after the last class |
+| 20504 | CH-2173 | 05 Validation | `EXAMS_END_BEFORE_THE_LAST_DAY_OF` | implemented | Exams end before the last day of classes |
+| 20505 | CH-2174 | 05 Validation | `THE_TERM_OVERLAPS_ANOTHER_OF_THE_TEAMS` | implemented | The term overlaps another of the team's terms |
+| 20506 | CH-2175 | 05 Validation | `THE_TERM_HAS_NO_NAME` | implemented | The term has no name |
+| 20507 | CH-2176 | 05 Validation | `A_NO_CLASS_RANGE_ENDS_BEFORE_IT` | implemented | A no-class range ends before it starts |
+| 20508 | CH-2177 | 05 Validation | `A_NO_CLASS_RANGE_IS_LONGER_THAN` | implemented | A no-class range is longer than 21 days |
 | 20601 | CH-2201 | 06 Server / system error | `THE_WEEKS_EVENTS_DONT_LOAD` | implemented | The week's events don't load |
 | 20602 | CH-2202 | 06 Server / system error | `SEASON_ROUNDS_DONT_LOAD` | implemented | Season rounds (or the roster behind them) don't load |
 | 20603 | CH-2203 | 06 Server / system error | `A_ROUND_LOADS_BUT_ITS_HOLE_BY` | implemented | A round loads but its hole-by-hole scores don't |
@@ -283,16 +342,23 @@ Every Bridge ID (D-68: namespace, two-digit category, two-digit item), its catal
 | 20620 | CH-2219 | 06 Server / system error | `THE_TOURS_MARKS_DONT_LOAD` | implemented | The Tour's marks don't load (coach Home, the team's four parts) |
 | 20621 | CH-2220 | 06 Server / system error | `A_PART_OF_WAITING_ON_YOU_DOESNT` | implemented | A part of "Waiting on you" doesn't load (join requests, replies, tasks or posts) |
 | 20622 | CH-2221 | 06 Server / system error | `THE_TEAMS_FOUR_PARTS_CRASH_WHILE_DRAWING` | implemented | The team's four parts crash while drawing (coach Home, desktop and phone) |
+| 20623 | CH-2070 | 06 Server / system error | `SAVING_THE_TERM_DATES_FAILS` | implemented | Saving the term dates fails (class status, P-10) |
+| 20624 | CH-2071 | 06 Server / system error | `SAVING_A_TEAM_NO_CLASS_RANGE_FAILS` | implemented | Saving a team no-class range fails |
+| 20625 | CH-2072 | 06 Server / system error | `REMOVING_A_TEAM_NO_CLASS_RANGE_FAILS` | implemented | Removing a team no-class range fails |
+| 20626 | CH-2270 | 06 Server / system error | `THE_CLASS_DAY_DIDNT_LOAD_WHEN_THE` | implemented | The class day didn't load when the In class now sheet is open (the Home line is hidden while the read is in error) |
+| 20701 | CH-2970 | 07 Network / offline | `THE_SHEET_IS_OPEN_WHILE_OFFLINE` | implemented | The sheet is open while offline |
 | 20801 |  | 08 Permission / authorization | `ROLE_PICKS_THE_HOME` | implemented | /golf/dashboard hands a coach with the Clubhouse flag on Coach Home and a player with it on Player Home, and everyone else the existing GolfHelm dashboard; a session holding both profiles is treated as a coach, no session is sent to sign in, and a session with neither profile to sign up. |
 | 20802 |  | 08 Permission / authorization | `TEAM_COMES_FROM_THE_SESSION` | implemented | The team Home reads is the coach's active team or the player's own active membership, taken from the session and never from the address; with no team nothing is read and the no-team page shows (CH-2307, CH-2313), and a player membership read that fails is the error page with Try again, never the no-team page. |
 | 20803 |  | 08 Permission / authorization | `PLAYER_READS_ONLY_OWN_ROUNDS` | implemented | Player Home asks only for the signed-in player's own rounds (golf_rounds filtered to their player id) and their own player row, reads no roster or teammate's figures, and sets the player against D1 benchmarks, never against teammates. |
 | 20804 |  | 08 Permission / authorization | `PLAYER_WEEK_NAMES_NO_ONE` | implemented | A player's week never names another player: loadHomeWeek is given no names, so an event reads at most a count (Green 2 · 2 players, First tee 8:42 · 1 of 2 going), and no teammate's name or id is in what the page receives. |
 | 20805 |  | 08 Permission / authorization | `MESSAGE_COACH_FINDS_THE_TEAMS_COACH` | implemented | Message coach opens Messages on ?user=<the coach's user id>: the coach who created the team (golf_teams.created_by is a golf_coaches.id) if they have an account, else a coach of the organisation who has one (the query sets no order, so which one is not fixed), else plain Messages; Messages itself opens the thread only for someone in the team directory (CH-7001, 70801). |
-| 20806 |  | 08 Permission / authorization | `CONTROLS_STAY_WITH_THEIR_ROLE` | implemented | Home draws its own role's controls only: Player Home has no Message team, New event or N shortcut, no Plan, Add event or quick event types, no leaderboard and no link to another player's stats or thread, and Coach Home has no Message coach, Start a round or countdown. |
+| 20806 |  | 08 Permission / authorization | `CONTROLS_STAY_WITH_THEIR_ROLE` | implemented | Home draws its own role's controls only: Player Home has no Message team, New event or N shortcut, no Plan, Add event or quick event types, no leaderboard and no link to another player's stats or thread, and Coach Home has no Message coach, New round or countdown. |
+| 21101 | CH-2570 | 11 Destructive | `THE_COACH_REMOVES_A_TEAM_NO_CLASS` | implemented | The coach removes a team no-class range |
 | 21401 | CH-2402 | 14 Retry / recovery | `TRY_AGAIN_WAS_PRESSED_ON_A_SECTION` | reserved | Try again was pressed on a section |
 | 21402 |  | 14 Retry / recovery | `TRY_AGAIN_ASKS_THE_SERVER_AGAIN` | implemented | Try again on a section that did not load asks the server for the whole page again (router.refresh) and, offline, says so and asks nothing; a section that crashed only draws itself again and does not ask the server. |
 | 21601 | CH-2601 | 16 Micro animation | `PAGING_THE_LATEST_ROUND` | implemented | Paging the latest round |
 | 21602 | CH-2602 | 16 Micro animation | `HOVERING_OR_PRESSING_A_LEADERBOARD_ROW` | implemented | Hovering or pressing a leaderboard row |
+| 21603 | CH-2670 | 16 Micro animation | `THE_HOME_CLASS_LINE_CHANGES` | implemented | The Home class line changes (a minute tick, a refetch) |
 | 21701 | CH-2701 | 17 Haptic | `PAGING_THE_LATEST_ROUND_2` | reserved | Paging the latest round |
 | 21702 | CH-2702 | 17 Haptic | `NEW_EVENT` | reserved | New event (button or the N key) |
 | 21703 |  | 17 Haptic | `TAPS_FOLLOW_THE_GRAMMAR` | implemented | Home's taps follow the haptic grammar: a selection tick for paging the latest round, opening a round's card, choosing a quick event type and choosing the Scoring window, the light tap for New event (button or N), Add event and, on the phone, Message coach, and nothing for Message team; Home makes no change, so none of its own controls fires a success or error haptic. |
@@ -303,6 +369,7 @@ Every Bridge ID (D-68: namespace, two-digit category, two-digit item), its catal
 | 21805 | CH-2805 | 18 Accessibility | `NO_AXE_VIOLATIONS_IN_ANY_PREVIEW_STATE` | reserved | No axe violations in any preview state, 1280px and 390px |
 | 21806 | CH-2806 | 18 Accessibility | `ON_A_PHONE_THE_SCORECARD_SCROLLS_SIDEWAYS` | reserved | On a phone the scorecard scrolls sideways; it is a named region that takes focus, so the arrow keys scroll it |
 | 21807 |  | 18 Accessibility | `COUNTDOWN_IS_A_NAMED_TIMER` | implemented | The player's countdown is a timer named for a screen reader as Starts in N days, N hours and N minutes (singular at one), and its digits, the ticking seconds included, are hidden from a screen reader, so it is heard once, not every second. |
+| 21808 | CH-2870 | 18 Accessibility | `THE_HOME_CLASS_LINE` | implemented | The Home class line |
 | 21901 |  | 19 Responsive layout | `PHONE_HOME` | implemented | At 820px and below both roles get the phone Home, never the desktop page shrunk: a hero with Up next, then for a coach Today, the team's scoring form, This week and Latest rounds, and for a player This week, Today, Your latest round, Scoring and the parts of the game; wider canvases get the desktop Home. |
 | 22101 |  | 21 Performance | `LOADERS_NEVER_THROW` | implemented | Each Home is read on the server before its first paint, and a failed read is logged through chLogServer('home', {read}) and flagged on its own section instead of throwing, so one failed read never takes the page down. |
 | 22301 |  | 23 Logging / observability | `FAILURES_REPORTED` | implemented | A section that crashes while drawing is reported through chReport with surface home.<section> (week, latestRound, leaderboard, upNext, today, form, game, legs) at high severity, a failed server read is logged through chLogServer('home', {read}), and the N shortcut and opening Up next or a round leave chTrail breadcrumbs (home new event (keyboard), home open next event, home open round). |
@@ -332,6 +399,7 @@ Every Bridge ID (D-68: namespace, two-digit category, two-digit item), its catal
 | 30501 | CH-3101 | 05 Validation | `A_COACHS_NOTE_IS_WITHIN_200_CHARACTERS` | implemented | A coach's note is within 200 characters of its 2,000 limit |
 | 30502 |  | 05 Validation | `EXPORT_CELLS_ARE_TEXT` | implemented | The CSV export writes a player's name that starts with =, +, - or @ (or a tab or a return) as text, with a leading apostrophe, so a spreadsheet never reads it as a formula; numbers are left as numbers. Availability (the word) follows Status; there is no note column. |
 | 30503 | CH-3102 | 05 Validation | `AN_AVAILABILITY_NOTE_IS_WITHIN_40_CHARACTERS` | deprecated | Retired 2026-10-21, never shipped: the availability note’s counter |
+| 30580 | CH-3180 | 05 Validation | `AN_ADDRESS_TYPED_OR_PASTED_IN_EMAIL` | implemented | An address typed or pasted in Email them can’t be read as an email address |
 | 30601 | CH-3001 | 06 Server / system error | `REMOVING_A_PLAYER_FAILS` | implemented | Removing a player fails |
 | 30602 | CH-3002 | 06 Server / system error | `APPROVING_A_JOIN_REQUEST_FAILS` | implemented | Approving a join request fails |
 | 30603 | CH-3003 | 06 Server / system error | `DECLINING_A_JOIN_REQUEST_FAILS` | implemented | Declining a join request fails |
@@ -355,7 +423,9 @@ Every Bridge ID (D-68: namespace, two-digit category, two-digit item), its catal
 | 30621 | CH-3010 | 06 Server / system error | `THE_AVAILABILITY_NOTE_DOESNT_SAVE` | deprecated | Retired 2026-10-21, never shipped: the availability note |
 | 30622 | CH-3212 | 06 Server / system error | `COACHHELMS_COUNTS_DONT_LOAD_FOR_THE_ROSTER` | implemented | CoachHelm's counts don't load for the roster (the coach's gate, the visible reads or the newest rounds) |
 | 30623 | CH-3011 | 06 Server / system error | `THE_COACH_ONLY_REASON_FOR_AN_INJURED` | implemented | The coach-only reason for an injured or away player doesn’t save (Why field, on leaving it) |
+| 30680 | CH-3080 | 06 Server / system error | `EMAILING_THE_INVITE_TO_PLAYERS_FAILS_THE` | implemented | Emailing the invite to players fails (Invite players › Email them): the request fails, the coach has sent a lot of invites this hour, email is paused, or the team has no code |
 | 30701 |  | 07 Network / offline | `WRITES_REFUSED_OFFLINE` | implemented | Offline, every Roster write (a removal, an approval, a decline, Approve all, a note) is refused before anything is sent, the toast names what did not happen, and nothing on screen changes; Export, Copy and the filters are local and keep working. |
+| 30780 | CH-3980 | 07 Network / offline | `CUSTOMER_EMAIL_IS_SWITCHED_OFF_FOR_EVERYONE` | implemented | Customer email is switched off for everyone (`HELM_CUSTOMER_EMAIL_ENABLED` is not `true`, `src/lib/email/outbound-gate.ts`) or no mail transport is configured, so Invite players cannot email anyone |
 | 30801 |  | 08 Permission / authorization | `COACH_ONLY_ROSTER` | implemented | The coach's roster (the list with its figures, the coach's notes, the join requests, Invite, Export and the player panel) is a coach's: the page hands it over for a coach with the flag on, the route checks the session again before any read, and a player is handed their own read-only roster (30804), never this one, its loader, the notes or the join requests. |
 | 30802 |  | 08 Permission / authorization | `NOTES_PRIVATE_TO_THE_COACH` | implemented | The loader reads the members of the coach's active team (active and inactive only) and only the notes this coach wrote (coach_id), so another coach's note about the same player is never loaded. |
 | 30803 |  | 08 Permission / authorization | `REFUSED_CHANGE_SHOWN_AND_UNDONE` | implemented | When the server refuses a removal, an approval, a decline or a note (not on your team, already processed, a saved round in progress, not authorized), its sentence is shown in the error toast and the screen goes back: the player stays and the dialog stays open, the request returns to its place, and the text stays in the field. |
@@ -389,6 +459,7 @@ Every Bridge ID (D-68: namespace, two-digit category, two-digit item), its catal
 | 31807 | CH-3807 | 18 Accessibility | `THE_PLAYERS_ROSTER_A_TEAMMATE_IS_TEXT` | implemented | The player's roster is read-only: a teammate is text, not a control. The desktop cards and table rows and the phone rows are not links or buttons, so none takes focus or a press, and nothing on the screen opens a profile, stats or notes or does anything to a teammate. Search, layout and sort only change what is listed |
 | 31808 | CH-3808 | 18 Accessibility | `THE_PLAYERS_ROSTER_NAMES_THE_COACHES` | implemented | The player's roster names the coaches (wave 7, decision D): a "Coaches" group above the players: name and role ("Head coach" first, else their title, else "Coach"), plain text like every row. Desktop: a Coach and Role table; phone: a list under its heading, then "Players". Left out when the staff read failed (logged `playerCoaches`) or none is on record |
 | 31809 | CH-3809 | 18 Accessibility | `AVAILABILITY_IS_SAID_IN_WORDS_NEVER_A` | implemented | Availability is said in words, never a colour: "Injured" or "Away" (the word only, no note) in the list's line under the name, a face's note slot and the phone row, in plain ink (red is under par, amber a slide, green a gain). A face's name and a phone row's name append "injured" or "away"; the Availability control is a radio group named for the player; the head counts "· 1 injured · 1 away" among the active |
+| 31880 | CH-3880 | 18 Accessibility | `EMAIL_THEM_IS_ONE_LABELLED_FIELD_EACH` | implemented | Email them is one labelled field ("Or email them"). Each address is a chip with its own `Remove eli@school.edu` button, an unreadable one adds ", can’t be read as an email address" and one that did not send ", didn’t send"; Backspace in the empty field removes the last chip; the count and the result are read politely, and an unreadable address is announced as an alert |
 | 31901 |  | 19 Responsive layout | `PHONE_LIST_AND_PROFILE` | implemented | At 820px and below Roster is the phone screen: a top bar with the back link to More and Invite players, the join requests banner, the sorted list, and each player as a pushed profile that is a history entry, so the edge swipe and Back return to the list. |
 | 32001 |  | 20 Keyboard / input | `NOTE_SAVES_ON_LEAVING_THE_FIELD` | implemented | The coach's note saves when the field loses focus, only if its trimmed text changed, and an emptied note saves as no note. |
 | 32101 |  | 21 Performance | `LOADER_NEVER_THROWS` | implemented | loadRoster reads the team, the members and the join requests in one parallel round, then rounds, focus areas, goals and this coach's notes in a second (it needs the member ids); every failed read is logged through chLogServer and flagged, never thrown, and a failed read is never shown as empty. |
@@ -456,7 +527,7 @@ Every Bridge ID (D-68: namespace, two-digit category, two-digit item), its catal
 | 41802 | CH-4802 | 18 Accessibility | `THE_STROKES_GAINED_GRID_IS_A_TABLE` | reserved | The strokes gained grid is a table with a header for every value |
 | 41803 | CH-4803 | 18 Accessibility | `LOSS_AMBER_ON_A_TINTED_GRID_CELL` | reserved | Loss amber on a tinted grid cell is darkened to hold 4.5:1 |
 | 41804 | CH-4804 | 18 Accessibility | `NO_AXE_VIOLATIONS_IN_ANY_PREVIEW_STATE` | reserved | No axe violations in any preview state, 1280px and 390px |
-| 41805 | CH-4805 | 18 Accessibility | `THE_PHONES_SCORING_LINE_IS_AN_IMAGE` | implemented | The phone's scoring line is an image with a written reading ("Team scoring average by round day, from 74.8 to 73.4. Down 1.4 strokes…"); a finger on it reads a round day (pointer only, the reading carries it for assistive technology); each player row is one link read as name, rounds, average and strokes gained ("Early read" under three rounds) |
+| 41805 | CH-4805 | 18 Accessibility | `THE_PHONES_SCORING_LINE_IS_AN_IMAGE` | reserved | The phone's scoring line is an image with a written reading ("Team scoring average by round day, from 74.8 to 73.4. Down 1.4 strokes…"); a finger on it reads a round day (pointer only, the reading carries it for assistive technology); each player row is one link read as name, rounds, average and strokes gained ("Early read" under three rounds) |
 | 41806 | CH-4806 | 18 Accessibility | `THE_ROUND_FILTER_THE_FILTER_BUTTON_SAYS` | reserved | The round filter: the Filter button says it opens a dialog and how many filters are on; each chip is a button named "Remove filter: Tournament"; Clear is "Clear filters"; the count line is a polite status region; the sheet is a labelled dialog whose groups (Round type, Holes, Time, Course, Pick rounds) are labelled, round type, holes and pick mode are toggle buttons (`aria-pressed`), courses and rounds are checkboxes in labelled lists, and the dates are labelled inputs whose error is their description |
 | 41901 |  | 19 Responsive layout | `PHONE_VIEW` | implemented | At 820px and below Team stats is the phone view (window switch, four figures, scoring line, strokes gained by leg, players sorted by Avg or SG, team putting), never a shrunken desktop; the server renders desktop and the phone view takes over at hydration. |
 | 42001 |  | 20 Keyboard / input | `KEYBOARD_PATH` | implemented | The window switch moves and chooses with the arrow keys, a leg card takes Enter, the ranked dot plot reads a player with the arrow keys and opens them with Enter, and a grid row is a link that marks its player on the trend when it takes focus. |
@@ -574,7 +645,7 @@ Every Bridge ID (D-68: namespace, two-digit category, two-digit item), its catal
 | 60101 |  | 01 Default / core UI | `CALENDAR_READY` | implemented | Calendar opens on the week that holds today, for a coach and for a player: the month, the count of team events this week and the team's zone, the week grid, and beside it the day's panel (today's events, what needs attention, where the data comes from); a coach also gets New event. On the phone the week opens as Day. |
 | 60102 |  | 01 Default / core UI | `ADDRESS_HOLDS_VIEW_DAY_AND_EVENT` | implemented | The address decides what is shown: ?view=day\|week\|month\|agenda, ?date=YYYY-MM-DD and ?event=<id> are read on the server, so the right window and the open panel are there on first paint and a state can be linked. A value that is not real (an unknown view, an impossible date such as 2026-02-30) falls back to the week and to today, an event that is no longer in the loaded range says so (CH-6305), and changing the view or the day rewrites the address. |
 | 60103 |  | 01 Default / core UI | `SEEDS_FROM_OTHER_PAGES` | implemented | ?new=1 opens New event once for a coach and drops itself from the address; &with=<player> makes it a meeting with only that player invited (a player the Calendar does not list invites nobody, never the team); &type= picks the new event's type from those a coach can create and ignores anything else. |
-| 60104 |  | 01 Default / core UI | `TIMES_ARE_THE_TEAMS_ZONE` | implemented | The loader reads every event that overlaps its window (it starts before the window ends and ends on or after its start), not only those that start in it, so a trip that began before the window fills the window's first days. Every time is resolved on the server in the team's timezone (Eastern time until the team sets one, and the page says so): a timed event is filed under its local day and hour; one that runs past midnight is on every day it covers, as production's calendar places it (its start to midnight, whole days, midnight to its end; one that ends at midnight exactly holds nothing of the next day), each day naming its part (From 7:00 AM, All day, Until 4:30 PM) and the panel the run's start and end; editing, Duplicate and a series edit from any of its days send the run's first day, start, last day and end, and it never drags; an all-day event keeps its stored dates, one entry for each day of a span. |
+| 60104 |  | 01 Default / core UI | `TIMES_ARE_THE_TEAMS_ZONE` | implemented | The loader reads every event that overlaps its window (it starts before the window ends and ends on or after its start), not only those that start in it, so a trip that began before the window fills the window's first days. Every time is resolved on the server in the team's timezone (Eastern time until the team sets one, and the page says so): a timed event is filed under its local day and hour; one that runs past midnight is on every day it covers, as production's calendar places it (its start to midnight, whole days, midnight to its end; one that ends at midnight exactly holds nothing of the next day), each day naming its part (From 7:00 AM, All day, Until 4:30 PM) and the panel the run's start and end; editing, Duplicate and a series edit from any of its days send the run's first day, start, last day and end, and in the week it is one bar in the all-day lane that drags by whole days with its times kept (P-4 4.5); an all-day event keeps its stored dates, one entry for each day of a span. |
 | 60201 | CH-6401 | 02 Initial loading / skeleton | `CALENDAR_IS_LOADING` | implemented | Calendar is loading |
 | 60202 | CH-6402 | 02 Initial loading / skeleton | `CALENDAR_APP_LINKS_ARE_LOADING` | implemented | Calendar-app links are loading |
 | 60203 | CH-6403 | 02 Initial loading / skeleton | `AN_EVENTS_FILES_ARE_LOADING` | implemented | An event's files are loading |
@@ -592,10 +663,21 @@ Every Bridge ID (D-68: namespace, two-digit category, two-digit item), its catal
 | 60407 | CH-6307 | 04 Empty | `SIGNED_IN_WITH_NO_TEAM` | implemented | Signed in with no team (coach or player) |
 | 60408 | CH-6308 | 04 Empty | `A_DAY_WITH_NOTHING_ON_IT` | implemented | A day with nothing on it (phone Day view) |
 | 60409 | CH-6309 | 04 Empty | `A_COACH_WHOSE_TEAM_HAS_NEVER_SCHEDULED` | implemented | A coach whose team has never scheduled anything (D-71) |
+| 60410 | CH-6340 | 04 Empty | `THE_COURSE_PICKER_FINDS_NO_COURSE_FOR` | implemented | The course picker (tournament section) finds no course for the search |
 | 60501 | CH-6101 | 05 Validation | `AN_EVENT_WITH_NO_TITLE` | implemented | An event with no title |
 | 60502 | CH-6102 | 05 Validation | `AN_EVENT_THAT_ENDS_BEFORE_IT_STARTS` | implemented | An event that ends before it starts |
 | 60503 | CH-6103 | 05 Validation | `BUSY_TIME_WITH_NO_NAME` | implemented | Busy time with no name |
 | 60504 | CH-6104 | 05 Validation | `BUSY_TIME_THAT_ENDS_BEFORE_IT_STARTS` | implemented | Busy time that ends before it starts |
+| 60505 | CH-6140 | 05 Validation | `TRACK_ON_NO_COURSE` | implemented | Track on, no course |
+| 60506 | CH-6141 | 05 Validation | `THE_LAST_DAY_IS_BEFORE_THE_FIRST` | implemented | The last day is before the first day |
+| 60507 | CH-6142 | 05 Validation | `MORE_THAN_6_ROUNDS` | implemented | More than 6 rounds (7 days with One round each day) |
+| 60508 | CH-6143 | 05 Validation | `A_ROUND_WOULD_START_BEFORE_THE_ONE` | implemented | A round would start before the one ahead of it (round mode, the RPC, the sync trigger) |
+| 60509 | CH-6144 | 05 Validation | `TRACK_TURNED_ON_FOR_AN_EVENT_THAT` | implemented | Track turned on for an event that was a round of a tournament that was removed |
+| 60510 | CH-6145 | 05 Validation | `CUSTOM_COUNTING_WITH_MORE_COUNTING_THAN_PLAYERS` | implemented | Custom counting with more counting than players |
+| 60511 | CH-6146 | 05 Validation | `A_RESULTS_LINK_THAT_ISNT_HTTPS` | implemented | A results link that isn't https |
+| 60512 | CH-6147 | 05 Validation | `NO_TOURNAMENT_NAME_OR_LONGER_THAN_120` | implemented | No tournament name, or longer than 120 |
+| 60513 | CH-6148 | 05 Validation | `EDITING_A_REPEATING_OCCURRENCE_OF_TYPE_TOURNAMENT` | implemented | Editing a repeating occurrence of type Tournament |
+| 60514 | CH-6149 | 05 Validation | `EDITING_A_CANCELLED_EVENT_OF_TYPE_TOURNAMENT` | implemented | Editing a cancelled event of type Tournament |
 | 60601 | CH-6001 | 06 Server / system error | `PUBLISHING_OR_SAVING_AN_EVENT_FAILS` | implemented | Publishing or saving an event fails |
 | 60602 | CH-6002 | 06 Server / system error | `CANCELLING_AN_EVENT_FAILS` | implemented | Cancelling an event fails |
 | 60603 | CH-6003 | 06 Server / system error | `CREATING_A_CALENDAR_APP_LINK_FAILS` | implemented | Creating a calendar-app link fails |
@@ -626,6 +708,34 @@ Every Bridge ID (D-68: namespace, two-digit category, two-digit item), its catal
 | 60628 | CH-6015 | 06 Server / system error | `MOVING_AN_EVENT_BY_DRAG_OR_ALT` | implemented | Moving an event by drag or Alt+arrow fails (P006-B3) |
 | 60629 | CH-6016 | 06 Server / system error | `RESTORING_A_CANCELLED_EVENT_FAILS` | implemented | Restoring a cancelled event fails |
 | 60630 | CH-6017 | 06 Server / system error | `DELETING_A_CANCELLED_EVENT_PERMANENTLY_FAILS` | implemented | Deleting a cancelled event permanently fails |
+| 60631 | CH-6018 | 06 Server / system error | `SOMEONE_ELSE_CHANGED_THE_EVENT_WHILE_IT` | implemented | Someone else changed the event while it was being moved (P-4 6.5) |
+| 60632 | CH-6019 | 06 Server / system error | `A_THIS_AND_FOLLOWING_SERIES_MOVE_FAILS` | implemented | A "This and following" series move fails |
+| 60633 | CH-6020 | 06 Server / system error | `CHANGING_AN_EVENTS_LENGTH_FAILS` | implemented | Changing an event's length (a grip or Alt+Shift+arrow) fails |
+| 60634 | CH-6021 | 06 Server / system error | `THE_SERVER_REFUSES_A_MOVE_BY_ROLE` | implemented | The server refuses a move by role |
+| 60635 | CH-6023 | 06 Server / system error | `A_CHANGE_MARK_CANT_BE_READ_THE` | implemented | A change mark can't be read (P-14): the stored mark is a shape this version doesn't know (an unknown version, a missing baseline) |
+| 60636 | CH-6022 | 06 Server / system error | `THE_EVENT_WAS_CANCELLED_OR_DELETED_WHILE` | implemented | The event was cancelled or deleted while it was being moved |
+| 60637 | CH-6048 | 06 Server / system error | `SETTING_UP_A_TOURNAMENT_FROM_AN_EVENT` | implemented | Setting up a tournament from an event that is already a round (someone else just did) |
+| 60638 | CH-6049 | 06 Server / system error | `THE_EVENT_BEING_SET_UP_WAS_DELETED` | implemented | The event being set up was deleted or moved to another team |
+| 60639 | CH-6050 | 06 Server / system error | `A_ROUND_THAT_IS_UNDER_WAY_SUSPENDED` | implemented | A round that is under way, suspended or final is changed or cancelled from the calendar |
+| 60640 | CH-6051 | 06 Server / system error | `CANCELLING_A_ROUND_OR_STOPPING_TRACKING_WHEN` | implemented | Cancelling a round, or stopping tracking, when scores are entered |
+| 60641 | CH-6052 | 06 Server / system error | `THE_QUALIFIER_TO_LINK_WAS_DELETED_MEANWHILE` | implemented | The qualifier to link was deleted meanwhile |
+| 60642 | CH-6053 | 06 Server / system error | `THE_TRIP_TO_LINK_IS_ALREADY_LINKED` | implemented | The trip to link is already linked to another event |
+| 60643 | CH-6054 | 06 Server / system error | `A_PLAIN_SAVE_TRIES_TO_CHANGE_A` | implemented | A plain save tries to change a round's type, team, series, name, place or course (the round guard) |
+| 60644 | CH-6055 | 06 Server / system error | `THE_COACH_ISNT_STAFFED_ON_THE_TEAM` | implemented | The coach isn't staffed on the team (a permission refusal) |
+| 60645 | CH-6056 | 06 Server / system error | `SETTING_UP_THE_TOURNAMENT_FAILS_FOR_ANY` | implemented | Setting up the tournament fails for any other reason (the transaction never committed) |
+| 60646 | CH-6057 | 06 Server / system error | `THE_QUALIFIER_TO_LINK_ALREADY_COUNTS_TOWARD` | implemented | The qualifier to link already counts toward another event (not stolen) |
+| 60647 | CH-6058 | 06 Server / system error | `RESTORING_A_ROUND_THAT_ANOTHER_ROUND_HAS` | implemented | Restoring a round that another round has moved in front of |
+| 60648 | CH-6059 | 06 Server / system error | `A_LINEUP_IS_SENT_BEFORE_4_33S` | implemented | A lineup is sent before 4.33's set_entries RPC is applied |
+| 60649 | CH-6060 | 06 Server / system error | `SAVING_A_ROUND_FROM_THE_CALENDAR_FAILS` | implemented | Saving a round from the calendar fails for any other reason |
+| 60650 | CH-6061 | 06 Server / system error | `CANCELLING_RESTORING_OR_STOPPING_TRACKING_FAILS_FOR` | implemented | Cancelling, restoring or stopping tracking fails for any other reason |
+| 60651 | CH-6241 | 06 Server / system error | `THE_TOURNAMENT_CHANGED_SINCE_IT_WAS_OPENED` | implemented | The tournament changed since it was opened (a version conflict) |
+| 60652 | CH-6041 | 06 Server / system error | `A_ROUNDS_DAY_OR_TIME_IS_SAVED` | implemented | A round's day or time is saved from round mode (P-5 4.3) |
+| 60653 | CH-6240 | 06 Server / system error | `ROUND_MODE_FOR_A_TOURNAMENT_EVENT_WHOSE` | implemented | Round mode for a tournament event whose round ref didn't load (the calendar's events did) |
+| 60654 | CH-6042 | 06 Server / system error | `A_ROUND_IS_CANCELLED_FROM_THE_CALENDAR` | implemented | A round is cancelled from the calendar (CH-6540 confirmed) |
+| 60655 | CH-6043 | 06 Server / system error | `THE_WHOLE_TOURNAMENT_IS_CANCELLED_FROM_THE` | implemented | The whole tournament is cancelled from the calendar (CH-6541 confirmed) |
+| 60656 | CH-6044 | 06 Server / system error | `A_ROUND_OR_THE_TOURNAMENT_IS_RESTORED` | implemented | A round or the tournament is restored |
+| 60657 | CH-6040 | 06 Server / system error | `A_TOURNAMENT_IS_SET_UP_FROM_THE` | implemented | A tournament is set up from the editor (P-5, `golf_tournaments_v1`) |
+| 60658 | CH-6024 | 06 Server / system error | `OPENING_A_FILE_ATTACHED_TO_AN_EVENT` | implemented | Opening a file attached to an event fails (the signed link can't be made, or the file has no stored copy) |
 | 60701 |  | 07 Network / offline | `FILE_REMOVAL_REFUSES_OFFLINE` | implemented | Removing a file from an event, and Undo on that, send nothing while the browser is offline: the file stays where it was, the error haptic fires, and the toast says nothing was changed (the shell's CH-1903 wording). |
 | 60801 |  | 08 Permission / authorization | `PLAYER_HAS_NO_PLANNING_TOOLS` | implemented | A player is never given a planning tool: no New event (button, N key or an editor from ?new=1), no Add busy time or Overlaps in More, no people filter, no responses, attendance, Edit event, Cancel event, Attach or Remove file, and no schedule-overlap marks. The same address for a coach has all of them. Hiding them is a courtesy; every write is checked again by its server action (60806). |
 | 60802 |  | 08 Permission / authorization | `PLAYER_READS_ONLY_THEIR_OWN_CLASSES` | implemented | The loader gives a player only their own classes (another player's class, and one whose owner cannot be resolved, are dropped before they reach the browser) and only themselves as a person; a coach gets every rostered player's classes, each with its owner. |
@@ -643,6 +753,8 @@ Every Bridge ID (D-68: namespace, two-digit category, two-digit item), its catal
 | 61103 | CH-6504 | 11 Destructive | `NEW_LINK` | implemented | New link (a calendar-app link) |
 | 61104 | CH-6505 | 11 Destructive | `REMOVE` | implemented | Remove (a calendar-app link) |
 | 61105 | CH-6506 | 11 Destructive | `DELETE_PERMANENTLY` | implemented | Delete permanently (a cancelled event's menu, coach) |
+| 61106 | CH-6540 | 11 Destructive | `CANCEL_ROUND_FROM_THE_INSPECTORS_MENU_OR` | implemented | Cancel round, from the inspector's menu or round mode |
+| 61107 | CH-6541 | 11 Destructive | `CANCEL_THE_WHOLE_TOURNAMENT_INSTEAD_FROM_CH` | implemented | Cancel the whole tournament instead, from CH-6540 |
 | 61201 | CH-6503 | 12 State preservation | `CLOSING_THE_EVENT_EDITOR_WITH_CHANGES` | implemented | Closing the event editor with changes |
 | 61202 |  | 12 State preservation | `FORM_KEPT_ON_FAILURE` | implemented | A publish, save or busy-time add that fails leaves the editor or sheet open with every field as typed; nothing is cleared until the write lands. |
 | 61203 |  | 12 State preservation | `ATTENDANCE_MARKS_KEPT_ON_A_PARTIAL_SAVE` | implemented | Saving attendance saves each changed mark on its own: the marks that saved show as Saved, the ones that did not stay Unsaved, and the button offers to save what is left ("Save attendance · 1"). |
@@ -654,16 +766,23 @@ Every Bridge ID (D-68: namespace, two-digit category, two-digit item), its catal
 | 61601 | CH-6601 | 16 Micro animation | `HOVERING_OR_SELECTING_AN_EVENT` | implemented | Hovering or selecting an event |
 | 61602 | CH-6602 | 16 Micro animation | `DRAGGING_THE_TIME_BAND_IN_FIND_A` | implemented | Dragging the time band in Find a time |
 | 61603 | CH-6603 | 16 Micro animation | `THE_CURRENT_TIME` | implemented | The current time |
-| 61604 | CH-6604 | 16 Micro animation | `SWITCHING_BETWEEN_DAY_WEEK_MONTH_AND_AGENDA` | implemented | Switching between Day, Week, Month and Agenda (Day, Month and List on the phone) |
+| 61604 | CH-6604 | 16 Micro animation | `SWITCHING_BETWEEN_DAY_WEEK_MONTH_AND_AGENDA` | implemented | Switching between Day, Week, Month and List (Day, Month and List on the phone) |
 | 61605 | CH-6605 | 16 Micro animation | `STEPPING_TO_ANOTHER_DAY_WEEK_OR_MONTH` | implemented | Stepping to another day, week or month (the arrows, the arrow keys, Today or a date) |
 | 61606 | CH-6606 | 16 Micro animation | `CHOOSING_ANOTHER_DAY_IN_THE_PHONES_WEEK` | implemented | Choosing another day in the phone's week strip |
-| 61701 | CH-6701 | 17 Haptic | `OPENING_AN_EVENT_A_DAY_OR_A` | implemented | Opening an event, a day or a panel item; changing view, week or players; each Find a time step |
+| 61607 | CH-6640 | 16 Micro animation | `TOURNAMENT_CHOSEN_TRACK_TURNED_ON_OR_OFF` | implemented | Tournament chosen (Track on), Track turned on or off, More details opened |
+| 61701 | CH-6701 | 17 Haptic | `OPENING_AN_EVENT_A_DAY_OR_A` | implemented | Opening a day from the week header or choosing a List row; changing view, week or players; each Find a time step (opening an event is a plain navigation tap and is silent, D-70) |
 | 61702 | CH-6702 | 17 Haptic | `A_FORM_WITH_A_PROBLEM_OR_CLOSING` | implemented | A form with a problem, or closing the editor with changes |
 | 61703 | CH-6703 | 17 Haptic | `A_LINK_IS_COPIED` | implemented | A link is copied |
 | 61801 | CH-6801 | 18 Accessibility | `EACH_EVENT_IS_A_BUTTON_NAMED_WITH` | implemented | Each event is a button named with its title and time, and "schedule overlap" when it has one; each day header opens the day |
 | 61802 | CH-6802 | 18 Accessibility | `THE_DETAIL_PANEL_IS_A_POLITE_LIVE` | implemented | The detail panel is a polite live region; form errors are tied to their field |
 | 61803 | CH-6803 | 18 Accessibility | `CHANGING_THE_PLAYER_FILTER_IS_ANNOUNCED` | implemented | Changing the player filter is announced ("Showing 2 players") |
 | 61804 | CH-6804 | 18 Accessibility | `NO_AXE_VIOLATIONS_IN_ANY_PREVIEW_VIEW` | reserved | No axe violations in any preview view and state, 1280px and 390px. One known exception, listed in the scan: the 7-day week at 390px squeezes overlapping events under 24px until the phone Calendar is designed |
+| 61805 | CH-6805 | 18 Accessibility | `A_COMPLETED_MOVE_IS_SAID_ONCE_NEVER` | implemented | A completed move is said once, never during a drag: "Practice moved to 4:00 PM, Wednesday 15 October. Undo with Command Z." (Control Z off a Mac; on touch "Undo is in the notice."); a resize "Practice now ends at 6:30 PM."; a clash appended; Undo "Move undone." |
+| 61806 | CH-6806 | 18 Accessibility | `MONTH_DRAG_IS_ANNOUNCED_PICKED_UP_FALL` | implemented | Month drag is announced: "Picked up Fall qualifier R2, Thursday 16 October. Arrow keys choose a day, Space drops, Escape cancels.", "Over Friday 17 October.", "Fall qualifier R2 moved to Friday 17 October at 8:42 AM.", or "Move cancelled. Fall qualifier R2 stays on Thursday 16 October." |
+| 61807 | CH-6840 | 18 Accessibility | `THE_TOURNAMENT_SECTION_IS_SHOWN_OR_HIDDEN` | implemented | The tournament section is shown or hidden (Tournament chosen, Track turned on or off): one polite line: "Tournament details shown. 3 rounds." or "Tournament details hidden." |
+| 61808 | CH-6841 | 18 Accessibility | `THE_ROUNDS_CHANGE_WITH_THE_DAYS_OR` | implemented | The rounds change with the days, or reorder after a day or tee change: one polite line: "3 rounds, Thursday 5 November to Saturday 7 November." or "Rounds reordered. Round 2 is now Friday 6 November at 8:30 AM." |
+| 61809 | CH-6842 | 18 Accessibility | `ESCAPE_WHILE_THE_TOURNAMENT_IS_BEING_CREATED` | implemented | Escape (or the close button) while the tournament is being created: the editor stays open and says "Still creating the tournament." |
+| 61810 | CH-6843 | 18 Accessibility | `A_ROUND_DROPPED_WHERE_IT_WOULD_START` | implemented | A round dropped (or moved with Alt and an arrow) where it would start before the round ahead of it, or after the one behind: it snaps back, felt as an error, nothing asked or written. One polite line: "R2 can’t move before R1. Move R1 first." (or "R2 can’t move after R3. Move R3 first.") |
 | 61901 |  | 19 Responsive layout | `PHONE_LAYOUT` | implemented | At 820px and below Calendar is the phone build, never a shrunken desktop: Day with a week strip, Month and List; an event opens in a sheet and New event is a sheet. State, writes and dialogs are the desktop's. |
 | 62001 |  | 20 Keyboard / input | `KEYBOARD_SHORTCUTS` | implemented | On the desktop N opens New event (coach), T goes to today, the left and right arrows step a day, week or month (not in the agenda), and Esc closes the open panel. None of them fires while typing in a field or with a dialog open. |
 | 62101 |  | 21 Performance | `LOADER_READS_IN_THREE_ROUNDS` | implemented | The server loader reads each table once for the whole screen, in three rounds and never per event or per player: the team's zone, name and roster; then events, class schedules and (for a coach) their busy time together; then every event's replies, one read for each 200 events. A read that fails is flagged and logged, never thrown. |
@@ -686,6 +805,7 @@ Every Bridge ID (D-68: namespace, two-digit category, two-digit item), its catal
 | 70208 | CH-7408 | 02 Initial loading / skeleton | `A_MESSAGES_ATTACHMENTS_ARE_LOADING` | implemented | A message's attachments are loading |
 | 70209 | CH-7409 | 02 Initial loading / skeleton | `THE_SHARED_FILES_ARE_LOADING` | implemented | The shared files are loading (Details) |
 | 70210 | CH-7410 | 02 Initial loading / skeleton | `THE_ADD_SHEETS_LIST_IS_LOADING` | implemented | The Add sheet's list is loading |
+| 70211 | CH-7411 | 02 Initial loading / skeleton | `THE_SEEN_BY_LIST_IS_LOADING` | implemented | The Seen by list is loading |
 | 70301 |  | 03 Background loading / refresh | `REALTIME_UPDATES_ARRIVE` | implemented | New messages, edits, deletes and reactions arrive over realtime while the page is open, without a reload; the rail refreshes its last message and unread counts the same way. |
 | 70401 | CH-7301 | 04 Empty | `NO_CONVERSATIONS_YET` | implemented | No conversations yet |
 | 70402 | CH-7302 | 04 Empty | `A_RAIL_SEARCH_OR_THE_UNREAD_FILTER` | implemented | A rail search or a filter has nothing |
@@ -696,6 +816,8 @@ Every Bridge ID (D-68: namespace, two-digit category, two-digit item), its catal
 | 70407 | CH-7307 | 04 Empty | `EVERYONE_ON_THE_TEAM_IS_ALREADY_IN` | implemented | Everyone on the team is already in the group (Add) |
 | 70408 | CH-7308 | 04 Empty | `SIGNED_IN_WITH_NO_TEAM` | implemented | Signed in with no team (coach or player) |
 | 70409 | CH-7309 | 04 Empty | `NOTHING_AT_ALL_YET_NO_CONVERSATION_AND` | implemented | Nothing at all yet: no conversation and no announcement (D-71) |
+| 70410 | CH-7310 | 04 Empty | `NOBODY_HAS_SEEN_A_GROUP_MESSAGE_YET` | implemented | Nobody has seen a group message yet (the Seen by list) |
+| 70411 | CH-7370 | 04 Empty | `NOTIFY_ANYWAY_IS_OFFERED_A_COACH_A` | implemented | Notify anyway is offered: a coach, a conversation of their own team, a recipient in class with pushes held (P-10) |
 | 70501 | CH-7101 | 05 Validation | `A_FILE_OF_THE_WRONG_TYPE_OR` | implemented | A file of the wrong type or size |
 | 70502 | CH-7102 | 05 Validation | `AN_ANNOUNCEMENT_WITH_NO_TITLE` | implemented | An announcement with no title |
 | 70503 | CH-7103 | 05 Validation | `AN_ANNOUNCEMENT_WITH_NO_BODY` | implemented | An announcement with no body |
@@ -716,7 +838,7 @@ Every Bridge ID (D-68: namespace, two-digit category, two-digit item), its catal
 | 70612 | CH-7014 | 06 Server / system error | `POSTING_AN_ANNOUNCEMENT_FAILS` | implemented | Posting an announcement fails |
 | 70613 | CH-7016 | 06 Server / system error | `A_MESSAGE_IS_REFUSED` | implemented | A message is refused |
 | 70614 | CH-7018 | 06 Server / system error | `ADDING_SOMEONE_TO_A_GROUP_FAILS` | implemented | Adding someone to a group fails (the group's creator, desktop or phone Details › Add) |
-| 70615 | CH-7020 | 06 Server / system error | `COPYING_A_MESSAGE_FAILS` | implemented | Copying a message fails (phone, from the long-press sheet) |
+| 70615 | CH-7020 | 06 Server / system error | `COPYING_A_MESSAGE_FAILS` | implemented | Copying a message fails (phone, from the long-press sheet; desktop, from the message menu) |
 | 70616 | CH-7021 | 06 Server / system error | `A_SHARED_FILE_WONT_OPEN` | implemented | A shared file won't open (Details › Files, or an announcement's Files) |
 | 70617 | CH-7201 | 06 Server / system error | `CONVERSATIONS_DONT_LOAD` | implemented | Conversations don't load |
 | 70618 | CH-7202 | 06 Server / system error | `A_CONVERSATIONS_MESSAGES_DONT_LOAD` | implemented | A conversation's messages don't load |
@@ -739,6 +861,17 @@ Every Bridge ID (D-68: namespace, two-digit category, two-digit item), its catal
 | 70635 | CH-7217 | 06 Server / system error | `PENDING_ATTACHMENT_RECOVERY_CANNOT_BE_CHECKED` | implemented | Pending attachment recovery cannot be checked |
 | 70636 | CH-7024 | 06 Server / system error | `REMOVING_SOMEONE_FROM_A_GROUP_FAILS` | implemented | Removing someone from a group fails (the group's creator, desktop or phone Details › Remove) |
 | 70637 | CH-7025 | 06 Server / system error | `DELETING_A_CONVERSATION_FROM_YOUR_INBOX_FAILS` | implemented | Deleting a conversation from your inbox fails |
+| 70638 | CH-7026 | 06 Server / system error | `MARKING_A_CONVERSATION_READ_OR_UNREAD_FROM` | implemented | Marking a conversation read or unread from its row (menu or swipe) fails |
+| 70639 | CH-7027 | 06 Server / system error | `CLOSING_A_POLL_FAILS` | implemented | Closing a poll fails (the sender's Close poll, after the confirm) |
+| 70640 | CH-7028 | 06 Server / system error | `SENDING_A_POLL_FAILS` | implemented | Sending a poll fails (New poll › Send poll) |
+| 70641 | CH-7030 | 06 Server / system error | `A_VOTE_IS_REFUSED_BECAUSE_THE_POLL` | implemented | A vote is refused because the poll ended between the tap and the write (only with the held vote guard, OQ-68) |
+| 70642 | CH-7029 | 06 Server / system error | `A_VOTE_ON_A_POLL_ISNT_SAVED` | implemented | A vote on a poll isn't saved (tap a choice in a poll card) |
+| 70643 | CH-7031 | 06 Server / system error | `AN_EDITED_POLL_IS_SENT_AFTER_A` | implemented | An edited poll is sent after a send that threw, and the earlier copy had landed after all |
+| 70644 | CH-7218 | 06 Server / system error | `THE_SEEN_BY_LIST_COULDNT_LOAD` | implemented | The Seen by list couldn't load (P-1) |
+| 70645 | CH-7270 | 06 Server / system error | `A_COACH_IN_A_1_1_WITH` | implemented | A coach, in a 1:1 with a player who is in a class or an exam right now and whose pushes are held (P-10) |
+| 70646 | CH-7271 | 06 Server / system error | `A_MESSAGE_SENT_WITH_NOTIFY_ANYWAY_ONCE` | implemented | A message sent with Notify anyway, once a push really reached a device (P-10) |
+| 70647 | CH-7272 | 06 Server / system error | `A_COACH_IN_A_GROUP_OF_THEIR` | implemented | A coach, in a group of their own team with at least one player in a class or an exam (P-10) |
+| 70648 | CH-7273 | 06 Server / system error | `A_COACH_OPENS_DETAILS_ON_A_1` | implemented | A coach opens Details on a 1:1 with a player of their team (P-10) |
 | 70701 | CH-7005 | 07 Network / offline | `THE_NETWORK_DROPS_MID_SEND` | implemented | The network drops mid-send (Safari's "Load failed", Chrome's "Failed to fetch", Firefox's "NetworkError…": the same test the bubble's CH-7017 uses, so the toast and the bubble agree; the browser's text is never shown) |
 | 70801 | CH-7001 | 08 Permission / authorization | `A_LINK_OPENS_A_PLAYER_WHO_ISNT` | implemented | A link opens a player (`?player=`) or a person (`?user=`, a player's Message coach) who isn't on the team |
 | 70802 | CH-7015 | 08 Permission / authorization | `AN_OPEN_CONVERSATION_DISAPPEARS` | implemented | An open conversation disappears (left, or another team's) |
@@ -761,14 +894,20 @@ Every Bridge ID (D-68: namespace, two-digit category, two-digit item), its catal
 | 71604 | CH-7604 | 16 Micro animation | `A_LONG_PRESS_ON_A_MESSAGE` | implemented | A long press on a message (phone) |
 | 71605 | CH-7605 | 16 Micro animation | `OPENING_ANOTHER_CONVERSATION_OR_ANNOUNCEMENT` | implemented | Opening another conversation or announcement (desktop) |
 | 71606 | CH-7606 | 16 Micro animation | `CHANGING_THE_INBOX_FILTER_ON_THE_PHONE` | implemented | Changing the inbox filter on the phone (All, Unread, Groups) |
+| 71607 | CH-7607 | 16 Micro animation | `MUTING_A_CONVERSATION_FROM_ITS_ROW` | implemented | Muting a conversation from its row (owner decision 14) |
+| 71608 | CH-7608 | 16 Micro animation | `A_GROUP_MESSAGES_RECEIPT_CHANGES` | implemented | A group message's receipt changes ("Sent" → "Seen by 4 of 11" → "Seen by everyone") |
+| 71609 | CH-7609 | 16 Micro animation | `THE_SEEN_BY_SHEET_OR_POPOVER_OPENS` | implemented | The Seen by sheet (phone) or popover (desktop) opens and updates live |
 | 71701 | CH-7701 | 17 Haptic | `A_CHANGE_FAILS` | implemented | A change fails |
 | 71702 | CH-7702 | 17 Haptic | `A_CHANGE_LANDS` | implemented | A change lands (edited, deleted, muted, group created; acknowledging uses the success pattern) |
-| 71703 | CH-7703 | 17 Haptic | `PICKING_A_REACTION_A_FILTER_OR_A` | implemented | Picking a reaction, a filter or a conversation |
+| 71703 | CH-7703 | 17 Haptic | `PICKING_A_REACTION_A_FILTER_OR_A` | implemented | Picking a reaction or a filter (opening a conversation or a search hit is a plain navigation tap and is silent, D-70) |
 | 71704 | CH-7704 | 17 Haptic | `A_LONG_PRESS_ON_A_MESSAGE_2` | implemented | A long press on a message (phone) |
+| 71705 | CH-7770 | 17 Haptic | `THE_HOLD_ON_SEND_REACHES_450_MS` | reserved | The hold on Send reaches 450 ms (phone, Notify anyway offered) |
 | 71801 | CH-7801 | 18 Accessibility | `THE_COMPOSER_IS_NAMED_FOR_THE_CONVERSATION` | reserved | The composer is named for the conversation ("Message Varsity team"); a message that didn't send is an alert |
 | 71802 | CH-7802 | 18 Accessibility | `SEARCH_RESULTS_ARE_ANNOUNCED_AS_THEY_ARRIVE` | implemented | Search results are announced as they arrive; desktop Enter sends and Shift+Enter adds a line; phone Return adds a line and Send sends. Desktop React: the reaction bar takes focus on its first reaction, ← → Home End move along it, Esc or a pick returns focus to React, Tab moves on |
 | 71803 | CH-7803 | 18 Accessibility | `NO_AXE_VIOLATIONS_IN_ANY_PREVIEW_STATE` | reserved | No axe violations in any preview state, 1280px and 390px |
 | 71804 | CH-7804 | 18 Accessibility | `PHONE_A_MESSAGES_ACTIONS_HAVE_A_PATH` | implemented | Phone: a message's actions have a path besides the long press (a "Message actions" button VoiceOver and keyboards reach, or a right click); each pushed screen is named by its title, and its back link names where it goes ("Back to Messages", "Back to Chat"). New message opens on its title; a hardware keyboard's Esc is Cancel, and focus returns to New message |
+| 71805 | CH-7805 | 18 Accessibility | `THE_RECEIPTS_ACCESSIBLE_NAME_ON_ONE_STABLE` | implemented | The receipt's accessible name ("Seen by 9 of 11 people. Show who") sits on one stable node, its fading copies `aria-hidden`, so a count change isn't announced; the open list says moves politely ("Eli Brandt has seen it.") |
+| 71806 | CH-7870 | 18 Accessibility | `NOTIFY_ANYWAY_WITHOUT_A_LONG_PRESS` | implemented | Notify anyway without a long press (P-10) |
 | 71901 |  | 19 Responsive layout | `PHONE_STACK` | implemented | At 820px and below Messages is the phone stack: Inbox, Thread, Details and New message push and pop as screens, never a shrunken desktop. |
 | 72001 |  | 20 Keyboard / input | `ENTER_TO_SEND` | implemented | In the composer Enter sends, Shift+Enter adds a line, and Enter while an IME is composing is left to the IME. |
 | 72101 |  | 21 Performance | `ONE_LOAD_PER_THREAD` | implemented | Opening a thread fetches it and subscribes to it exactly once; the server loader reads the directory in one pass and never throws for a partial read. |
@@ -849,8 +988,11 @@ Every Bridge ID (D-68: namespace, two-digit category, two-digit item), its catal
 | 80640 | CH-8213 | 06 Server / system error | `THE_ASSISTANT_COACH_REQUESTS_DONT_LOAD` | implemented | The assistant coach requests don't load (head coach) |
 | 80641 | CH-8029 | 06 Server / system error | `SEND_A_TEST_PUSH_FAILS` | implemented | Send a test push fails (P008-C3, D1-6) |
 | 80642 | CH-8214 | 06 Server / system error | `EVERY_READ_FAILS` | implemented | Every read fails (phone list) |
+| 80643 | CH-8030 | 06 Server / system error | `HOLD_DURING_CLASS_FAILS_TO_SAVE` | implemented | Hold during class fails to save (P-10) |
+| 80644 | CH-8216 | 06 Server / system error | `A_PLAYER_WITH_CLASS_STATUS_ON_OPENS` | implemented | A player with class status on opens Notifications (P-10) |
 | 80701 |  | 07 Network / offline | `INSTANT_SAVE_REFUSED_OFFLINE` | implemented | While the browser is offline a switch, or a CoachHelm autosave, is refused before it changes anything: it stays where it was, nothing is sent, the error haptic fires and an error toast (CH-1903) says nothing was changed. |
 | 80702 | CH-8901 | 07 Network / offline | `CUSTOMER_EMAIL_IS_SWITCHED_OFF_FOR_EVERYONE` | implemented | Customer email is switched off for everyone (`HELM_CUSTOMER_EMAIL_ENABLED` is not `true`, `src/lib/email/outbound-gate.ts`), so no email setting can send anything |
+| 80780 | CH-8980 | 07 Network / offline | `SETTINGS_PREFERENCES_TIME_FORMAT` | implemented | Settings › Preferences › Time format (a device preference, like the distance unit) |
 | 80801 |  | 08 Permission / authorization | `SECTIONS_BY_ROLE` | implemented | The rail lists only the sections the role has (coach: Account, Notifications, Team, CoachHelm, Preferences; player: Account, Golf profile, Notifications, Preferences), and a link naming a section the role does not have opens Account. |
 | 80802 |  | 08 Permission / authorization | `COACHING_LINK_BY_ROLE` | implemented | The old /settings/coaching-intelligence link opens the CoachHelm section for a coach; a player lands on their own Settings (Account) instead of a coach-only page. |
 | 80803 |  | 08 Permission / authorization | `NO_PROFILE_NO_PAGE` | implemented | The Settings route renders nothing, and reads nothing, for a session that has neither a coach nor a player profile, and the old notifications and coaching links send a signed-out visitor to /golf/login. |
@@ -920,7 +1062,7 @@ Every Bridge ID (D-68: namespace, two-digit category, two-digit item), its catal
 
 | Bridge ID | Code | Category | Name | Status | Meaning |
 | --- | --- | --- | --- | --- | --- |
-| 90101 |  | 01 Default / core UI | `LIST_READY` | implemented | The list opens with the count of active and concluded qualifiers, the All, Active and Concluded pills with their counts, search, the live qualifier (or, with none live, the active one that starts first) as the hero with its leaders, the other active ones as cards under Active and the concluded ones under Concluded; a coach also gets Create qualifier. |
+| 90101 |  | 01 Default / core UI | `LIST_READY` | implemented | The list opens with the count of active and concluded qualifiers, the All, Active and Concluded pills with their counts, search, the live qualifier (or, with none live, the active one that starts first) as the hero with its leaders, the other active ones as cards under Active and the concluded ones under Concluded; a coach also gets New qualifier. |
 | 90102 |  | 01 Default / core UI | `DETAIL_READY` | implemented | A qualifier opens with its status pill and name, five facts (dates, entrants, rounds submitted, course, spots), the leaderboard, and beside it the selections, the course per round and the scoring rules; a coach also gets round-by-round scores, Manage selections, Edit qualifier and Close or Reopen. |
 | 90103 |  | 01 Default / core UI | `FORM_READY` | implemented | Create opens with the whole active roster ticked, three rounds, a five-player squad and one coach's pick; Edit opens with the qualifier's own values, round courses and entrants. |
 | 90104 |  | 01 Default / core UI | `SELECTION_READY` | implemented | Manage selections opens with the qualifier's name and squad line, the three steps (Standings, Coach's picks, Squad confirmed) with the current one marked, the places on score now, the rest of the field, the coach's picks with their open slots, and the one primary action for the next step. |
@@ -1005,6 +1147,7 @@ Every Bridge ID (D-68: namespace, two-digit category, two-digit item), its catal
 | 90704 | CH-09905 | 07 Network / offline | `RETURNING_TO_THE_LIST_FROM_A_QUALIFIER` | reserved | Returning to the list from a qualifier |
 | 90705 | CH-09906 | 07 Network / offline | `PLAYER_A_LIVE_QUALIFIER_WITH_A_ROUND` | implemented | Player: a live qualifier with a round still to play, before its last day |
 | 90706 | CH-09907 | 07 Network / offline | `PLAYER_THE_SQUAD_IS_CONFIRMED` | reserved | Player: the squad is confirmed |
+| 90707 | CH-09908 | 07 Network / offline | `PLAYER_THEIR_OWN_RANKED_ROW_ON_A` | implemented | Player: their own ranked row on a board that draws a line |
 | 90801 | CH-09310 | 08 Permission / authorization | `THE_QUALIFIER_ISNT_ON_THE_VIEWERS_TEAM` | implemented | The qualifier isn't on the viewer's team, or doesn't exist |
 | 90802 | CH-09311 | 08 Permission / authorization | `A_PLAYER_OPENS_NEW_OR_EDIT` | implemented | A player opens /new, /edit or /selection |
 | 90803 |  | 08 Permission / authorization | `COACH_ADDRESSES_READ_NOTHING_FOR_A_PLAYER` | implemented | For a player, /qualifiers/new, /qualifiers/[id]/edit and /qualifiers/[id]/selection stop at the coach-only page (CH-09311) before any loader runs, so nothing of the qualifier is read for them. |
@@ -1012,7 +1155,7 @@ Every Bridge ID (D-68: namespace, two-digit category, two-digit item), its catal
 | 90805 |  | 08 Permission / authorization | `TEAM_OWNERSHIP_IN_THE_LOADERS` | implemented | The list reads only the viewer's team and never a test qualifier, and the detail, form and Manage selections loaders answer a qualifier on another team, or none, with not found (CH-09310), so its data reaches no one outside the team. |
 | 90806 |  | 08 Permission / authorization | `PLAYER_OPENS_OWN_ROUNDS_ONLY` | implemented | A player can open scorecards only for their own rounds (the row button on desktop, the rounds sheet on the phone), and the loader sends their browser only their own holes, never a teammate's. |
 | 90807 |  | 08 Permission / authorization | `PICK_REASONING_IS_COACH_ONLY` | implemented | A coach's reason for a pick is read only for a coach and is never in a player's data or on a player's screen: a player sees who was picked, not why. |
-| 90808 |  | 08 Permission / authorization | `COACH_CONTROLS_HIDDEN_FROM_PLAYERS` | implemented | A player is never shown a coach control: not Create qualifier, Manage selections, Edit, Close, Reopen, the phone's Qualifier actions, round-by-round scores or the coach's Selections panel (hiding them is a courtesy; the gates are 90803 and 90810 to 90812). |
+| 90808 |  | 08 Permission / authorization | `COACH_CONTROLS_HIDDEN_FROM_PLAYERS` | implemented | A player is never shown a coach control: not New qualifier, Manage selections, Edit, Close, Reopen, the phone's Qualifier actions, round-by-round scores or the coach's Selections panel (hiding them is a courtesy; the gates are 90803 and 90810 to 90812). |
 | 90809 |  | 08 Permission / authorization | `SELECTION_REFUSALS_IN_COACH_WORDS` | implemented | A refusal from the selection actions (not this team's coach, the squad moved on, picks not open, every pick taken, no reason, player not on the team, roster unchecked, nothing to confirm, qualifier missing) reaches the coach as a sentence saying what to do, and an unrecognised one falls back to the toast's own hint. |
 | 90810 |  | 08 Permission / authorization | `SELECTION_ACTIONS_RECHECK_THE_COACH` | implemented | Start selecting, saving or removing a pick and confirming the squad each check on the server that the caller coaches the qualifier's own team (Unauthorized, Qualifier not found, Not a coach of this team) before the service runs, and a pick must also be a player on that team. |
 | 90811 |  | 08 Permission / authorization | `SETUP_ACTIONS_RECHECK_THE_COACH` | implemented | The squad-size and entrants actions behind Edit check that the caller coaches the qualifier's team before any write, and refuse a signed-out caller and a malformed id. |
@@ -1160,7 +1303,7 @@ Every Bridge ID (D-68: namespace, two-digit category, two-digit item), its catal
 | 110102 |  | 01 Default / core UI | `REVIEW_READY` | implemented | A round's review at /golf/dashboard/rounds/[id] opens for the player who played it and for a coach of their team: the hero (day, date and type, the course, tee swatch, yards, rating and slope, then the score and its to par), the figures (Front 9, Back 9 on an 18-hole round, Putts, Fairways, Greens), the scorecard as two captioned nines, the hole card with the shots of the picked hole, the scoring distribution, and the round recap and the player's notes when there are any. It opens on the first hole over par, else the first hole. Back goes to Rounds for a player and, for a coach, to that player's rounds on Stats with the player's name (D-53); a coach's kicker names the player and the notes are labelled with the player's first name ("Jonah's notes" in the preview). |
 | 110103 |  | 01 Default / core UI | `SETUP_READY` | implemented | A new round's setup (at /golf/dashboard/rounds/new, over the new-round engine; also the dev preview) opens on the green band with its steps (Course, Scorecard, Track), the course card ("Choose a course", Browse courses), an open qualifier when there is one, Round details (type, date, holes), the scorecard's place held ("Your scorecard appears here once you pick a course and tees.") and the dock, whose Start round is off and names why ("Choose a course to start"). Picking tees reads that tee's holes and fills the scorecard; a hole changed for this round is counted and marked ("1 hole edited for this round"), edits never leave this round, and the dock then reads "Course · Tee · N holes · Par P". |
 | 110104 |  | 01 Default / core UI | `TRACKING_READY` | implemented | The shot screen (inside the round screen at /rounds/new and /rounds/continue/[id]) opens on the hole it is given: the top bar with Exit and Scorecard, the hole strip, the hole hero (hole number, par, yards, "Shot N" and the distance to the pin), the hole map and the shot log, and the shot entry, whose Next shot is off with the one thing missing named above it. Every rule and write is useShotTracking, the hook the Fairway screen runs; the round screen around it owns Exit, the scorecard, Round complete and Submit. |
-| 110105 |  | 01 Default / core UI | `UNBUILT_TARGETS_ARE_NOT_DRAWN` | implemented | A control whose screen is not rebuilt is not drawn, never a dead button (nav.rebuiltHref). New round, Start a round, Continue and Submit lead to /rounds/new and /rounds/continue/[id], which are rebuilt for a player (round entry, over the round engine), so they are drawn; a coach's are not, since a coach does not log rounds. /rounds/recover is rebuilt for a player (swap audit F-02) and is reached from a failed submit, so nothing in the Library links there. Every posted round in the book opens its review. A round whose review cannot be opened is still listed, as one named group. /rounds/[id]/review (CoachHelm's) is not rebuilt for either role, and neither is the coach's Rounds library. |
+| 110105 |  | 01 Default / core UI | `UNBUILT_TARGETS_ARE_NOT_DRAWN` | implemented | A control whose screen is not rebuilt is not drawn, never a dead button (nav.rebuiltHref). New round, Continue and Submit lead to /rounds/new and /rounds/continue/[id], which are rebuilt for a player (round entry, over the round engine), so they are drawn; a coach's are not, since a coach does not log rounds. /rounds/recover is rebuilt for a player (swap audit F-02) and is reached from a failed submit, so nothing in the Library links there. Every posted round in the book opens its review. A round whose review cannot be opened is still listed, as one named group. /rounds/[id]/review (CoachHelm's) is not rebuilt for either role, and neither is the coach's Rounds library. |
 | 110106 |  | 01 Default / core UI | `UNFINISHED_ROUNDS_ARE_LISTED` | implemented | The newest unfinished round fills the card; every other one is listed under "N more unfinished rounds" with Discard, Continue or Post. A round whose every hole has a score reads "Ready to post" (the card says "Post round"), unless a completed round already holds that course and day, and never when the hole read failed. The card's strip marks each scored hole against par and rings the next one. |
 | 110107 |  | 01 Default / core UI | `NOT_COUNTED_ROUNDS_STILL_LIST` | implemented | A posted round that does not count (isScoreCountable: every hole scored, or an 18-hole total posted without its holes, Q-123) is still listed, with a "Not counted" pill, and sets no season figure. A round posted as a total only counts toward the season average, to par and best score, and has no greens or putts to add. A 9-hole round shows its hole count in place of Out and In and sets no season figure either (full 18-hole rounds only, as on Home and Stats). |
 | 110108 |  | 01 Default / core UI | `SEARCH_AND_GROUP_THE_BOOK` | implemented | The book is searched by course (client side, any part of the name, ignoring case) and grouped by month, newest first, or by course, in the order of each course's newest round; each group shows its round count, its average over its 18-hole rounds and its low. A search with no match says so (CH-11303) and keeps the tools where they are. |
@@ -1186,6 +1329,7 @@ Every Bridge ID (D-68: namespace, two-digit category, two-digit item), its catal
 | 110212 | CH-11411 | 02 Initial loading / skeleton | `A_ROUND_TYPE_CHANGE_IS_IN_FLIGHT` | implemented | A round-type change is in flight |
 | 110213 | CH-11412 | 02 Initial loading / skeleton | `TEAM_ROUNDS_IS_REFRESHING_WITH_THE_PAGE` | implemented | Team rounds is refreshing (a Try again is running) with the page on screen |
 | 110214 | CH-11413 | 02 Initial loading / skeleton | `TEAM_ROUNDS_IS_LOADING` | implemented | Team rounds is loading |
+| 110215 | CH-11421 | 02 Initial loading / skeleton | `THE_COURSE_PAGE_DIDNT_LOAD` | implemented | The course page didn't load (P-7) |
 | 110401 | CH-11301 | 04 Empty | `NO_ROUND_POSTED_AND_NONE_IN_PROGRESS` | implemented | No round posted and none in progress |
 | 110402 | CH-11302 | 04 Empty | `ROUNDS_POSTED_BUT_NO_COUNTABLE_18_HOLE` | implemented | Rounds posted, but no countable 18-hole round since August 1 |
 | 110403 | CH-11303 | 04 Empty | `A_COURSE_SEARCH_MATCHES_NOTHING` | implemented | A course search matches nothing |
@@ -1209,6 +1353,9 @@ Every Bridge ID (D-68: namespace, two-digit category, two-digit item), its catal
 | 110421 | CH-11320 | 04 Empty | `TEAM_ROUNDS_NO_ROUND_POSTED_BY_ANYONE` | implemented | Team rounds: no round posted by anyone |
 | 110422 | CH-11321 | 04 Empty | `TEAM_ROUNDS_THE_SEARCH_OR_PLAYER_FILTER` | implemented | Team rounds: the search or player filter matches nothing |
 | 110423 | CH-11322 | 04 Empty | `TEAM_ROUNDS_COMPLETED_ROUNDS_WITH_NO_SCORE` | implemented | Team rounds: completed rounds with no score at all |
+| 110424 | CH-11330 | 04 Empty | `A_COURSE_PAGE_THIS_VIEWER_HAS_NO` | implemented | A course page this viewer has no rounds at: an unknown key, or another player's course |
+| 110425 | CH-11331 | 04 Empty | `A_COACHS_COURSE_PAGE_FOR_A_PLAYER` | implemented | A coach's course page for a player who isn't on their team, or no player named |
+| 110426 | CH-11333 | 04 Empty | `THE_COURSE_PAGES_HOLE_BY_HOLE_WITH` | implemented | The course page's Hole by hole with no round here entered hole by hole (or the holes didn't load) |
 | 110501 | CH-11101 | 05 Validation | `NEXT_SHOT_CANT_BE_RECORDED_YET` | implemented | Next shot can't be recorded yet |
 | 110502 | CH-11102 | 05 Validation | `A_SHOT_IS_POSSIBLE_BUT_UNUSUAL` | implemented | A shot is possible but unusual (a 420-yard drive onto the green; a shot that ends farther away) |
 | 110503 | CH-11103 | 05 Validation | `A_SHOT_THAT_CANT_HAPPEN` | implemented | A shot that can't happen (a 540-yard drive onto the green) |
@@ -1283,6 +1430,9 @@ Every Bridge ID (D-68: namespace, two-digit category, two-digit item), its catal
 | 110717 | CH-11922 | 07 Network / offline | `SAVE_IMAGE_DOWNLOADED_THE_PICTURE` | implemented | Save image downloaded the picture |
 | 110718 | CH-11923 | 07 Network / offline | `SHARING_THE_CARD_FAILS` | implemented | Sharing the card fails (not closing the share sheet, not a refused share) |
 | 110719 | CH-11924 | 07 Network / offline | `THE_REVIEW_IS_OPENED_STRAIGHT_FROM_POST` | implemented | The review is opened straight from Post round (`?just=submitted`) |
+| 110760 | CH-11960 | 07 Network / offline | `COACHHELMS_PUTT_MISS_ASK_THE_HOLES_FIRST` | implemented | CoachHelm's putt-miss ask (chs-22, Slice 8a, `coachhelm_data_gap_prompt_v1`): the hole's first putt missed from a distance band one of the player's open reads is waiting on, and it has no miss tag |
+| 110761 | CH-11961 | 07 Network / offline | `THE_RECOVERY_TAP_THE_LAST_SHOT_RECORDED` | implemented | The recovery tap (chs-23, Slice 8b, `coachhelm_data_prompts_v2`): the last shot recorded is a tee shot into the rough or an 'other' lie, not yet answered |
+| 110762 | CH-11962 | 07 Network / offline | `THE_COURSE_NUDGE_THE_ROUND_HAS_NO` | implemented | The course nudge (chs-23, Slice 8b, `coachhelm_data_prompts_v2`): the round has no library course (a course typed by hand) |
 | 110801 |  | 08 Permission / authorization | `LIBRARY_IS_FOR_PLAYERS` | implemented | /golf/dashboard/rounds is Clubhouse only for a player: a coach session renders nothing from the Clubhouse route and the Fairway page keeps the coach (v2 has no coach Rounds library), and the shell does not list the library as rebuilt for a coach. A player's rounds are theirs with or without a team (the team only sets the time zone that decides today). |
 | 110802 |  | 08 Permission / authorization | `REVIEW_IS_FOR_THE_PLAYER_AND_THEIR_COACHES` | implemented | A round's review opens for the player who played it and for a coach of a team the player is an active member of. Anyone else, a missing round and a test round get the same "This round isn't here" page, so it never confirms that someone else's round exists (CH-11307). A failed access check is not a permission answer: a round or a coach's membership read that fails gives "This round didn't load" with Try again (CH-11206), never "not found". |
 | 110803 |  | 08 Permission / authorization | `LIBRARY_HOLDS_ONLY_THE_PLAYERS_OWN_ROUNDS` | implemented | The library loader reads golf_rounds for the signed-in player only (their player id, no test rounds): completed rounds for the book and in-progress rounds for the card, through the RLS-scoped client, so no teammate's round is drawn. Tested in rounds-contracts.test.tsx: both reads carry the session player's id and leave test rounds out, whoever the player is, and a coach session reads nothing. |
@@ -1313,6 +1463,7 @@ Every Bridge ID (D-68: namespace, two-digit category, two-digit item), its catal
 | 111121 | CH-11521 | 11 Destructive | `CHANGE_ROUND_TYPE` | implemented | Change round type (Continue round: the Exit sheet's "Change round type" row, "Practice now. Changes what it counts toward."; a submitted round: its review's Change round type, CH-11522) |
 | 111122 | CH-11522 | 11 Destructive | `CHANGE_ROUND_TYPE_ON_A_SUBMITTED_ROUNDS` | implemented | Change round type on a submitted round's review (the player who played it, or a coach of the player's team; the Fairway round page's `RoundTypeEditor`) |
 | 111123 | CH-11523 | 11 Destructive | `THE_COACH_NOTE_CARD_ON_A_ROUNDS` | implemented | The Coach note card on a round's review |
+| 111124 | CH-11530 | 11 Destructive | `COMPARE_TWO_ROUNDS_AT_A_COURSE` | implemented | Compare two rounds at a course (P-7) |
 | 111201 |  | 12 State preservation | `SETUP_KEPT_WHEN_START_FAILS` | implemented | A Start that fails leaves the setup as it was: the course and tees, the type, the date, the holes as edited and the qualifier all stay, and Start can be pressed again or retried from the toast (CH-11007); nothing is cleared until the round opens. Tested in rounds-contracts.test.tsx: after a failed Start the course and tees, the nine, the date, the edited holes and a qualifier all stay, and pressing Start again or Retry sends the same setup. use-new-round-session.preservation.test makes the engine's create throw and checks nothing is adopted and the next start goes ahead with the same payload. |
 | 111202 |  | 12 State preservation | `SHOTS_STAY_WHEN_A_HOLE_DOESNT_SAVE` | implemented | When a holed-out hole does not save, the shot review stays with every shot listed and Try again (CH-11003); the round does not move on until the save lands, and the card says the shots are kept on this device (the engine's own copy). Tested in rounds-contracts.test.tsx: after a failed save every shot is still listed, the card says they are kept on this device, the round stays on the hole, and Try again sends the same hole. use-new-round-session.preservation.test drops the connection on the hole's checkpoint and checks the device copy holds the hole's score and shots, that Try again sends that hole, and that the copy is cleared only once the save lands. |
 | 111301 |  | 13 Optimistic UI | `DISCARD_WAITS_FOR_THE_SERVER` | implemented | Nothing on the library is optimistic: Discard keeps the card until the server has deleted the round, and the card leaves only on success, from the question or from Retry. The device's emergency copy is cleared only when the delete worked. |
@@ -1330,7 +1481,7 @@ Every Bridge ID (D-68: namespace, two-digit category, two-digit item), its catal
 | 111604 | CH-11604 | 16 Micro animation | `STEPPING_THROUGH_A_ROUNDS_HOLES` | implemented | Stepping through a round's holes |
 | 111701 | CH-11701 | 17 Haptic | `DISCARD_IS_TAPPED` | implemented | Discard is tapped |
 | 111702 | CH-11702 | 17 Haptic | `A_ROUND_IS_OPENED` | implemented | A round is opened |
-| 111703 | CH-11703 | 17 Haptic | `CONTINUE_SUBMIT_OR_START_A_ROUND_IS` | implemented | Continue, Submit or Start a round is tapped |
+| 111703 | CH-11703 | 17 Haptic | `CONTINUE_SUBMIT_OR_START_A_ROUND_IS` | implemented | Continue, Submit or New round is tapped |
 | 111704 | CH-11704 | 17 Haptic | `A_HOLE_IS_PICKED_ON_THE_REVIEWS` | implemented | A hole is picked on the review's card, or stepped with the arrows |
 | 111705 | CH-11705 | 17 Haptic | `A_SHOT_IS_RECORDED` | implemented | A shot is recorded (Next shot or Hole out) |
 | 111706 | CH-11706 | 17 Haptic | `GOING_TO_ANOTHER_HOLE` | implemented | Going to another hole |
@@ -1338,6 +1489,7 @@ Every Bridge ID (D-68: namespace, two-digit category, two-digit item), its catal
 | 111708 | CH-11708 | 17 Haptic | `THE_SECOND_TAP_OF_A_DISCARD_IN` | implemented | The second tap of a discard in round entry: the saved shots, the round already in progress, or the closed-qualifier round |
 | 111709 | CH-11709 | 17 Haptic | `A_FAILURE_APPEARS_IN_ROUND_ENTRY_AN` | implemented | A failure appears in round entry: an inline line, a toast or a banner (CH-11008 to CH-11013, CH-11902) |
 | 111710 | CH-11710 | 17 Haptic | `TAP_IN_IS_TAPPED` | implemented | Tap in is tapped (CH-11913) |
+| 111760 | CH-11760 | 17 Haptic | `A_CHIP_IN_A_DATA_PROMPT_IS` | reserved | A chip in a data prompt is tapped: a putt miss side (CH-11960), Clear shot or Blocked or punch out (CH-11961) |
 | 111801 | CH-11801 | 18 Accessibility | `A_SCREEN_READER_MOVES_THROUGH_THE_BOOK` | implemented | A screen reader moves through the book |
 | 111802 | CH-11802 | 18 Accessibility | `THE_IN_PROGRESS_CARDS_HOLE_STRIP` | implemented | The in-progress card's hole strip |
 | 111803 | CH-11803 | 18 Accessibility | `THE_SEASON_RIBBON` | implemented | The season ribbon |
@@ -1392,6 +1544,9 @@ Every Bridge ID (D-68: namespace, two-digit category, two-digit item), its catal
 | 120514 | CH-12114 | 05 Validation | `THE_READER_FINDS_NO_CLASSES` | implemented | The reader finds no classes |
 | 120515 |  | 05 Validation | `IMPORT_SKIPS_WHAT_IS_ALREADY_ON_THE_SCHEDULE` | implemented | An import reads the classes the player already has before it writes, and skips any with the same stored name and term, so importing a schedule twice never doubles the calendar. A class saved with no term, or a blank one, is in the current term, so it is the same class; the same class in another term is another class and is imported. A read that fails stops the import with nothing saved. When every class is already there nothing is inserted and nothing is synced (CH-12307). |
 | 120516 |  | 05 Validation | `ONLY_CLASSES_IN_THE_SAME_TERM_COUNT` | implemented | Every check that compares classes counts only the classes of the term in question. The exact-same-time refusal (CH-12107) and the overlap note (CH-12108) count only classes in the term the form is set to. This week's overlaps with the team (CH-12109), on the overview, the cards, the side card, the form and the import result, count only classes in the current term, because the week's events are this term's. The week's team events are the ones the player's Calendar shows: a meeting that invites no one is the coach's own (D2-8) and is left out, decided by `golf_event_attendance_counts` or, until migration 20261017102000 is applied, the attendance rows; a read that fails leaves every event in. A class with no term is in the current term. The same days and times in another term never refuse a save. |
+| 120517 | CH-12170 | 05 Validation | `AN_EXAM_ENDS_AT_OR_BEFORE_IT` | implemented | An exam ends at or before it starts |
+| 120518 | CH-12171 | 05 Validation | `AN_EXAM_IS_LONGER_THAN_4_HOURS` | implemented | An exam is longer than 4 hours |
+| 120519 | CH-12172 | 05 Validation | `AN_EXAMS_DATE_IS_OUTSIDE_THE_CONFIRMED` | implemented | An exam's date is outside the confirmed term (classes start to exams end) |
 | 120601 | CH-12001 | 06 Server / system error | `ADDING_OR_UPDATING_A_CLASS_FAILS` | implemented | Adding or updating a class fails |
 | 120602 | CH-12002 | 06 Server / system error | `A_CLASS_SAVED_BUT_DID_NOT_REACH` | implemented | A class saved but did not reach the calendar (the sync failed, threw, wrote no meetings for a class that has them, was refused offline, or was skipped because another sync was still running, as when a class is saved while an import is being put on the calendar) |
 | 120603 | CH-12003 | 06 Server / system error | `REMOVING_A_CLASS_FAILS` | implemented | Removing a class fails (the calendar removal or the delete) |
@@ -1404,6 +1559,16 @@ Every Bridge ID (D-68: namespace, two-digit category, two-digit item), its catal
 | 120610 |  | 06 Server / system error | `A_SYNC_THAT_WROTE_NOTHING_IS_A_FAILURE` | implemented | A calendar sync that returns no error but wrote no meetings for a class that has days and a time is a failure, so the class is flagged and CH-12002 says why, instead of a quietly empty calendar. A class with no days has nothing to write and is not a failure. A sync that throws is reported (surface classes.sync, low severity) and its reason reads "The calendar sync did not finish". |
 | 120611 | CH-12005 | 06 Server / system error | `DELETE_ALL_CLASSES_CHANGED_NOTHING_NO_CLASS` | implemented | Delete all classes changed nothing: no class could be taken off the calendar (every removal failed or threw), the connection dropped, or the write threw |
 | 120612 | CH-12006 | 06 Server / system error | `DELETE_ALL_CLASSES_STOPPED_HALF_WAY_SOME` | implemented | Delete all classes stopped half-way: some classes are gone and some are not |
+| 120613 | CH-12070 | 06 Server / system error | `THE_SHARING_SWITCHS_WRITE_IS_REFUSED` | implemented | The sharing switch's write is refused (class status, P-10) |
+| 120614 | CH-12071 | 06 Server / system error | `NO_CLASS_TODAY_IS_REFUSED` | implemented | "No class today" is refused |
+| 120615 | CH-12072 | 06 Server / system error | `UNDO_ON_NO_CLASS_TODAY_IS_REFUSED` | implemented | Undo on "No class today" is refused |
+| 120616 | CH-12073 | 06 Server / system error | `TAGGING_UNTAGGED_CLASSES_WITH_THE_TERM_IS` | implemented | Tagging untagged classes with the term is refused |
+| 120617 | CH-12074 | 06 Server / system error | `A_CLASSS_USE_FOR_CLASS_STATUS_SWITCH` | implemented | A class's "Use for class status" switch is refused |
+| 120618 | CH-12075 | 06 Server / system error | `ADDING_AN_EXAM_IS_REFUSED` | implemented | Adding an exam is refused |
+| 120619 | CH-12076 | 06 Server / system error | `REMOVING_AN_EXAM_IS_REFUSED` | implemented | Removing an exam is refused |
+| 120620 | CH-12077 | 06 Server / system error | `DELIVER_NOW_IS_REFUSED` | implemented | Deliver now is refused (the panel's Pushes during class row) |
+| 120621 | CH-12270 | 06 Server / system error | `THE_PLAYERS_CLASS_DAY_DIDNT_LOAD` | implemented | The player's class day didn't load |
+| 120622 | CH-12271 | 06 Server / system error | `THE_PLAYERS_PUSHES_DURING_CLASS_ROW` | implemented | The player's Pushes during class row |
 | 120701 | CH-12901 | 07 Network / offline | `A_SCREENSHOT_IS_CHOSEN_WHILE_OFFLINE` | implemented | A screenshot is chosen while offline |
 | 120702 | CH-12902 | 07 Network / offline | `A_READ_IS_SLOW` | implemented | A read is slow |
 | 120703 |  | 07 Network / offline | `WRITES_REFUSE_OFFLINE` | implemented | Every write on the page (saving a class, removing one, importing a schedule and putting classes on the calendar) is refused while the browser is offline, before anything is sent, with the shell's toast naming what did not happen (CH-1903) and the error haptic; an edit keeps the form as typed, and the toast's Retry sends it once back online. A class saved just as the connection went stays in the list, flagged as not on the calendar (CH-12002). Reading a screenshot offline is CH-12901; pasted text and a TXT file are read on the device. |
@@ -1416,6 +1581,7 @@ Every Bridge ID (D-68: namespace, two-digit category, two-digit item), its catal
 | 121102 | CH-12502 | 11 Destructive | `CANCEL_OR_CLOSE_A_FORM_THAT_HAS` | implemented | Cancel or close a form that has changes |
 | 121103 | CH-12503 | 11 Destructive | `DELETE_ALL_CLASSES_NOT_DRAWN_WITH_NO` | implemented | Delete all classes (a quiet red button under the deck, with a bin icon; 44px tall and full width on the phone). Not drawn with no classes (CH-12301) or when they didn't load (CH-12201); off while a save, an import, a remove, a calendar sync or a delete-all is running, because a write beside it would put back what was just taken off |
 | 121104 | CH-12504 | 11 Destructive | `START_OVER_IN_THE_IMPORT_REVIEW_ONCE` | implemented | Start over in the import review, once it holds three or more classes or one came off (an emptied review, or one or two classes as read, starts over at once) |
+| 121105 | CH-12570 | 11 Destructive | `THE_PLAYER_REMOVES_AN_EXAM` | implemented | The player removes an exam |
 | 121201 |  | 12 State preservation | `FORM_KEPT_ON_FAILURE` | implemented | A class that fails to save leaves its sheet open with every field as typed; nothing is cleared until the save lands, and the failure toast is inside the open sheet so its Retry is where the person is looking. An import that fails to save leaves the review as it was. A remove that fails leaves the question open and the class in the list. Cancel or close on a form with changes asks first (CH-12502), and each time the sheet opens it starts from the class being edited, or blank. |
 | 121401 |  | 14 Retry / recovery | `RETRY_FINISHES_THE_JOB` | implemented | The error toast's Retry runs the same write again with the same arguments, and when it lands everything the button would have done follows, because the follow-ups live inside the action: a save's Retry adds the class to the list, closes the sheet and starts the calendar sync; a remove's Retry takes the class out of the list and closes the question; an import's Retry shows the imported view and starts the sync; a sync's Retry puts the failed classes on the calendar. A failed sync's Retry never saves the class a second time. |
 | 121402 |  | 14 Retry / recovery | `RETRY_REPLAYS_THE_STORED_START` | reserved | Every calendar sync starts each class from the day its last attempt did. The toast's Retry replays the same arguments; the header's Retry sync and a class sheet's Retry sync pass no start, so each class takes the start held for it this visit. A Retry therefore never moves a class to a start its own term would refuse, and a class saved from its whole term is re-synced from its whole term, so a re-sync never removes the meetings already held. |
@@ -1438,6 +1604,7 @@ Every Bridge ID (D-68: namespace, two-digit category, two-digit item), its catal
 | 121804 | CH-12804 | 18 Accessibility | `A_SAVE_IS_REFUSED` | implemented | A save is refused |
 | 121805 | CH-12805 | 18 Accessibility | `THE_IMPORTS_DROP_ZONE` | implemented | The import's drop zone |
 | 121806 |  | 18 Accessibility | `NO_AXE_VIOLATIONS_IN_ANY_PREVIEW_STATE` | reserved | No axe violations on the six preview states (the board's Fall 2026, empty, failed, partial, no team and loading) at 1280px and 390px, run by npm run clubhouse:a11y from the entries in scripts/clubhouse/a11y.mjs. Reserved: it ran clean on 2026-09-30 (12 of 12), but it is a dev-server run, not a test, so no test names it. |
+| 121807 | CH-12870 | 18 Accessibility | `THE_CLASS_STATUS_PANEL` | implemented | The Class status panel |
 | 121901 |  | 19 Responsive layout | `PHONE_LAYOUT` | implemented | At 820px and below Classes is the phone build, never a shrunken desktop: the shell's top bar reads "Classes" with "‹ More" going back to More, the page keeps its own header, and the same classes and actions are there; the sheets are bottom sheets. Below a 1000px container the side column goes under the deck, and below 640px the deck is one column, the overview stacks and the two header buttons share the row. |
 | 122001 |  | 20 Keyboard / input | `ENTER_SAVES_AND_ESC_CLOSES` | reserved | Enter in a field of the Add or Edit form saves it (the form has a hidden submit button and the same refusals as the Save button), and Esc closes any sheet through the same path as Cancel or Close, so a form with changes asks first (CH-12502), with focus returning to what opened it. The day picker's days are native buttons with a pressed state, and the import's drop zone is a native button (CH-12805). Not tested here: no test presses Enter or Esc. |
 | 122101 |  | 21 Performance | `LOADER_READS_IN_ONE_PASS` | implemented | The server loader reads the page before first paint in one pass: the team's time zone, then the player's classes and the team's events for the week together (each limited to 500 rows). Each failed read is flagged on its own (classes.error, week.error) and logged, never thrown, so the other still shows. "Today" is the team's day in the team's zone (in the evening in New York it is already tomorrow in UTC), and the week runs Monday to Sunday around it. |
@@ -1463,7 +1630,7 @@ Every Bridge ID (D-68: namespace, two-digit category, two-digit item), its catal
 | 130206 | CH-13420 | 02 Initial loading / skeleton | `ASK_THE_CHAT_PAGE_LOADS` | implemented | Ask: The chat page loads |
 | 130207 | CH-13421 | 02 Initial loading / skeleton | `ASK_A_REPLY_IS_STREAMING` | implemented | Ask: A reply is streaming |
 | 130208 | CH-13450 | 02 Initial loading / skeleton | `ASK_AN_ACTION_WAS_CONFIRMED_AND_IS` | implemented | Ask: An action was confirmed and is being carried out |
-| 130209 | CH-13460 | 02 Initial loading / skeleton | `PROFILE_THE_GAME_PROFILE_IS_ON_ITS` | implemented | Profile: the Game profile is on its way |
+| 130209 | CH-13460 | 02 Initial loading / skeleton | `PROFILE_THE_GAME_PROFILE_IS_ON_ITS` | deprecated | (retired with the Game profile, chs-37) Profile: the Game profile is on its way |
 | 130210 | CH-13470 | 02 Initial loading / skeleton | `STANDING_THE_STANDING_IS_ON_ITS_WAY` | implemented | Standing: the standing is on its way |
 | 130211 | CH-13480 | 02 Initial loading / skeleton | `DEEP_DIVE_THE_INSIGHTS_ARE_ON_THEIR` | implemented | Deep dive: the insights are on their way |
 | 130212 | CH-13405 | 02 Initial loading / skeleton | `COACH_THE_BOARD_IS_DRAWN_AND_THE` | implemented | Coach: the board is drawn and the program pulse is still on its way |
@@ -1473,7 +1640,7 @@ Every Bridge ID (D-68: namespace, two-digit category, two-digit item), its catal
 | 130401 | CH-13301 | 04 Empty | `PLAYER_NO_ROUND_POSTED_YET` | implemented | Player: no round posted yet (the lede reads "One thing to work on each week, from the rounds you post.") |
 | 130402 | CH-13302 | 04 Empty | `PLAYER_ROUNDS_POSTED_NO_INSIGHT_YET` | implemented | Player: rounds posted, no insight yet |
 | 130403 | CH-13303 | 04 Empty | `PLAYER_EVERY_INSIGHT_IS_A_STRENGTH` | implemented | Player: every insight is a strength |
-| 130404 | CH-13304 | 04 Empty | `PLAYER_COACHHELM_IS_OFF_FOR_THEM` | implemented | Player: CoachHelm is off for them (the board, and Game profile, Standing and Deep dive, which say the same, answered at once and with no sub-navigation) |
+| 130404 | CH-13304 | 04 Empty | `PLAYER_COACHHELM_IS_OFF_FOR_THEM` | implemented | Player: CoachHelm is off for them (the board, and Standing and Deep dive, which say the same, answered at once and with no sub-navigation) |
 | 130405 | CH-13305 | 04 Empty | `COACH_COACHHELM_IS_OFF` | implemented | Coach: CoachHelm is off (by them, by the team, or globally) |
 | 130406 | CH-13306 | 04 Empty | `COACH_PLAYERS_ON_THE_TEAM_NO_SIGNAL` | implemented | Coach: players on the team, no signal yet |
 | 130407 | CH-13307 | 04 Empty | `COACH_NO_PLAYERS_ON_THE_TEAM` | implemented | Coach: no players on the team |
@@ -1488,8 +1655,8 @@ Every Bridge ID (D-68: namespace, two-digit category, two-digit item), its catal
 | 130416 | CH-13324 | 04 Empty | `ASK_A_CHAT_SEARCH_WITH_NO_MATCH` | implemented | Ask: A chat search with no match |
 | 130417 | CH-13325 | 04 Empty | `ASK_ROUNDS_RECORDED_NOTHING_FLAGGED` | deprecated | Ask: Rounds recorded, nothing flagged |
 | 130418 | CH-13350 | 04 Empty | `ASK_A_READ_TOOL_FOUND_NOTHING_RECORDED` | implemented | Ask: A read tool found nothing recorded |
-| 130419 | CH-13360 | 04 Empty | `PROFILE_NO_MEASURE_HAS_ENOUGH_ROUNDS_YET` | implemented | Profile: no measure has enough rounds yet (no genome row, or one with nothing computed) |
-| 130420 | CH-13361 | 04 Empty | `PROFILE_SOME_MEASURES_HAVE_ENOUGH_ROUNDS_AND` | implemented | Profile: some measures have enough rounds and some do not (an early read) |
+| 130419 | CH-13360 | 04 Empty | `PROFILE_NO_MEASURE_HAS_ENOUGH_ROUNDS_YET` | implemented | Standing: How you play has no measure with enough rounds yet (no genome row, or one with nothing computed) |
+| 130420 | CH-13361 | 04 Empty | `PROFILE_SOME_MEASURES_HAVE_ENOUGH_ROUNDS_AND` | implemented | Standing: How you play is an early read (some measures have enough rounds, some do not) |
 | 130421 | CH-13370 | 04 Empty | `STANDING_NO_STANDING_ROW_YET` | implemented | Standing: no standing row yet |
 | 130422 | CH-13371 | 04 Empty | `STANDING_AN_EARLY_READ` | implemented | Standing: an early read (rows, but under five rounds on file, or the count unknown) |
 | 130423 | CH-13372 | 04 Empty | `STANDING_A_STAT_THE_TEAM_IS_TOO` | implemented | Standing: a stat the team is too small to compare on (under five teammates have it) |
@@ -1505,6 +1672,7 @@ Every Bridge ID (D-68: namespace, two-digit category, two-digit item), its catal
 | 130433 | CH-13311 | 04 Empty | `COACH_PLAYER_PAGE_PLAYER_NOT_ON_THE` | implemented | Coach player page, player not on the team: the id in the address is not a player on this coach's team (not an id, not on the team, on another team the coach staffs, or no longer active) |
 | 130434 | CH-13313 | 04 Empty | `COACH_PLAYER_PAGE_COACHHELM_OFF_FOR_THE` | implemented | Coach player page, CoachHelm off for the player: it is off for that player's team |
 | 130435 | CH-13374 | 04 Empty | `STANDING_A_PART_OF_THE_ROUND_ON` | implemented | Standing: a part of the round on Where strokes go has no figure (no strokes-gained row for it, or no Tour figure to compare with) |
+| 130460 | CH-13333 | 04 Empty | `PLAYER_NO_COURSE_HAS_THREE_OF_THEIR` | implemented | Player: no course has three of their countable rounds yet, or the course picked has fewer than three (chs-21) |
 | 130501 | CH-13120 | 05 Validation | `ASK_SEND_WHILE_AN_ACTION_CARD_WAITS` | implemented | Ask: Send while an action card waits for Confirm or Cancel |
 | 130601 | CH-13001 | 06 Server / system error | `ASSIGN_AS_FOCUS_FAILS` | implemented | Assign as focus fails |
 | 130602 | CH-13002 | 06 Server / system error | `DISMISS_FAILS` | implemented | Dismiss fails |
@@ -1530,7 +1698,7 @@ Every Bridge ID (D-68: namespace, two-digit category, two-digit item), its catal
 | 130622 | CH-13253 | 06 Server / system error | `ASK_A_CONFIRMED_ACTION_FAILED_OR_ONLY` | implemented | Ask: A confirmed action failed or only partly completed |
 | 130623 | CH-13254 | 06 Server / system error | `ASK_THE_CONVERSATION_MOVED_PAST_A_CARD` | implemented | Ask: The conversation moved past a card that was never answered |
 | 130624 | CH-13255 | 06 Server / system error | `ASK_THE_EVIDENCE_PANEL_IS_OPENED_FOR` | implemented | Ask: The evidence panel is opened for a player the conversation has nothing on |
-| 130625 | CH-13260 | 06 Server / system error | `PROFILE_THE_GAME_PROFILE_DOESNT_LOAD` | implemented | Profile: the Game profile doesn't load (the genome read fails or throws) |
+| 130625 | CH-13260 | 06 Server / system error | `PROFILE_THE_GAME_PROFILE_DOESNT_LOAD` | implemented | Standing: How you play doesn't load (the genome read fails or throws) |
 | 130626 | CH-13270 | 06 Server / system error | `STANDING_THE_STANDING_DOESNT_LOAD` | implemented | Standing: the standing doesn't load (the standing read fails or throws) |
 | 130627 | CH-13271 | 06 Server / system error | `STANDING_THEIR_SCORING_AVERAGE_DOESNT_LOAD` | implemented | Standing: their scoring average doesn't load (the read every projection starts from fails) |
 | 130628 | CH-13280 | 06 Server / system error | `DEEP_DIVE_THE_INSIGHTS_DONT_LOAD` | implemented | Deep dive: the insights don't load (the delivery read throws, or comes back empty while undismissed insights are on file, or a read after it throws) |
@@ -1542,7 +1710,7 @@ Every Bridge ID (D-68: namespace, two-digit category, two-digit item), its catal
 | 130634 | CH-13208 | 06 Server / system error | `A_READ_BESIDE_THE_CARDS_FAILED_THE` | implemented | A read beside the cards failed: the Tour's values (or the team they come from), the drills' text, which reads are Assigned (the player's board and Deep dive), or the newest round |
 | 130635 | CH-13226 | 06 Server / system error | `ASK_A_READ_THE_PULSE_IS_MADE` | deprecated | Ask: a read the pulse is made from failed |
 | 130636 | CH-13272 | 06 Server / system error | `STANDING_THE_COHORT_LOOKUP_FAILED` | implemented | Standing: the cohort lookup (their team's gender, which picks the Tour) failed |
-| 130637 | CH-13261 | 06 Server / system error | `PROFILE_WHAT_COACHHELM_SEES_DOESNT_LOAD` | implemented | Profile: what CoachHelm sees doesn't load (the player's insight read fails) |
+| 130637 | CH-13261 | 06 Server / system error | `PROFILE_WHAT_COACHHELM_SEES_DOESNT_LOAD` | deprecated | (retired with the Game profile, chs-37) Profile: what CoachHelm sees doesn't load |
 | 130638 | CH-13230 | 06 Server / system error | `WHATS_NEW_A_REFRESH_FAILS_AFTER_THE` | implemented | What’s new: a refresh fails after the week loaded |
 | 130639 | CH-13231 | 06 Server / system error | `WHATS_NEW_THE_FEED_DOESNT_LOAD` | implemented | What’s new: the feed doesn’t load (the action fails, or the coach’s team can’t be resolved) |
 | 130640 | CH-13232 | 06 Server / system error | `WHATS_NEW_THE_FEED_CRASHES_WHILE_DRAWING` | implemented | What’s new: the feed crashes while drawing |
@@ -1550,6 +1718,7 @@ Every Bridge ID (D-68: namespace, two-digit category, two-digit item), its catal
 | 130642 | CH-13007 | 06 Server / system error | `RECHECK_RATE_LIMITED` | implemented | Re-check rate-limited |
 | 130643 | CH-13273 | 06 Server / system error | `STANDING_THE_OPEN_READS_BEHIND_WHERE_STROKES` | implemented | Standing: the open reads behind Where strokes go don't load |
 | 130644 | CH-13006 | 06 Server / system error | `RECHECK_FAILS` | implemented | Re-check fails or is offline |
+| 130660 | CH-13233 | 06 Server / system error | `PLAYER_THEIR_OWN_COURSE_PLAN_DOESNT_LOAD` | implemented | Player: their own course plan (chs-21) doesn't load: the courses or the plan read fails or throws |
 | 130701 | CH-13901 | 07 Network / offline | `AN_INSIGHT_IS_DISMISSED` | implemented | An insight is dismissed |
 | 130702 |  | 07 Network / offline | `WRITES_REFUSE_OFFLINE` | implemented | Assign as focus, Dismiss and Undo are refused while the browser is offline, before anything is sent: the shell's toast (CH-1903) names what did not happen (Couldn’t assign the focus to Jonah: you’re offline), the error haptic fires and Retry is offered. Dismiss's warning haptic has already fired when the refusal comes. |
 | 130703 | CH-13902 | 07 Network / offline | `A_PROPOSED_FOCUS_AREA_IS_ACCEPTED_OR` | implemented | A proposed focus area is accepted or declined |
@@ -1606,6 +1775,11 @@ Every Bridge ID (D-68: namespace, two-digit category, two-digit item), its catal
 | 130754 | CH-13944 | 07 Network / offline | `RECHECK_READS` | implemented | Re-check reads (coach) |
 | 130755 | CH-13945 | 07 Network / offline | `RECHECK_LANDS` | implemented | Re-check lands |
 | 130756 | CH-13996 | 07 Network / offline | `DEEP_DIVE_WHERE_IT_HAPPENED` | implemented | Deep dive: where it happened (chs-38) |
+| 130760 | CH-13913 | 07 Network / offline | `PLAYER_COACH_GAME_PROFILES_OLD_ADDRESS` | implemented | Player, coach: Game profile's old address (`?view=profile`, and `view=profile&player=` for a coach; chs-37) |
+| 130761 | CH-13914 | 07 Network / offline | `ASK_AN_ANSWER_NAMES_A_PLAYERS_READS` | implemented | Ask (coach): an answer names a player's reads (chs-39) |
+| 130762 | CH-13915 | 07 Network / offline | `STANDING_HOW_YOU_PLAY` | implemented | Standing: How you play (chs-37) |
+| 130763 | CH-13916 | 07 Network / offline | `PLAYER_THEIR_OWN_COURSE_PLAN_OFFERED_BY` | implemented | Player: their own Course plan (chs-21 / par-14, `coachhelm_course_plan_v1`), offered by the loader while the flag is on |
+| 130764 | CH-13917 | 07 Network / offline | `PLAYER_THE_PLAN_FOR_THE_COURSE_THEY` | implemented | Player: the plan for the course they picked |
 | 130780 | CH-13983 | 07 Network / offline | `COACH_THE_BRIEF_BEHIND_INTELLIGENCE` | implemented | Coach: the Brief behind /intelligence (`?view=brief`, flag `coachhelm_monday_brief_v1`) |
 | 130781 | CH-13984 | 07 Network / offline | `BRIEF_THIS_WEEKS_OPEN_READS` | implemented | Brief: this week's open reads |
 | 130782 | CH-13985 | 07 Network / offline | `BRIEF_WHAT_PLAYERS_ARE_WORKING_ON` | implemented | Brief: what players are working on |
@@ -1646,6 +1820,7 @@ Every Bridge ID (D-68: namespace, two-digit category, two-digit item), its catal
 | 131706 | CH-13752 | 17 Haptic | `ASK_A_FOLLOW_UP_IS_TAPPED` | implemented | Ask: A follow-up is tapped |
 | 131707 | CH-13780 | 17 Haptic | `DEEP_DIVE_A_READ_IN_THE_LIST` | implemented | Deep dive: a read in the list, or a round or a plan under it, is tapped |
 | 131708 | CH-13705 | 17 Haptic | `RECHECK_TAPPED` | implemented | Re-check tapped |
+| 131760 | CH-13733 | 17 Haptic | `PLAYER_A_COURSE_IS_PICKED_IN_THEIR` | reserved | Player: a course is picked in their Course plan (chs-21) |
 | 131801 | CH-13801 | 18 Accessibility | `A_SCREEN_READER_MOVES_THROUGH_THE_PAGE` | implemented | A screen reader moves through the page |
 | 131802 | CH-13802 | 18 Accessibility | `A_GAUGE` | reserved | A gauge |
 | 131803 | CH-13803 | 18 Accessibility | `AN_INSIGHT_OR_PLAYER_ROW` | implemented | An insight or player row |
@@ -1661,9 +1836,10 @@ Every Bridge ID (D-68: namespace, two-digit category, two-digit item), its catal
 | 131813 | CH-13850 | 18 Accessibility | `ASK_COACHHELM_IS_WORKING_ON_AN_ANSWER` | implemented | Ask: CoachHelm is working on an answer |
 | 131814 | CH-13851 | 18 Accessibility | `ASK_THE_EVIDENCE_CONTROL` | implemented | Ask: The evidence control |
 | 131815 | CH-13852 | 18 Accessibility | `ASK_EVIDENCE_DRAWN_AS_A_CHART` | implemented | Ask: Evidence drawn as a chart |
-| 131816 | CH-13860 | 18 Accessibility | `PROFILE_A_SCREEN_READER_MOVES_THROUGH_THE` | reserved | Profile: a screen reader moves through the page |
+| 131816 | CH-13860 | 18 Accessibility | `PROFILE_A_SCREEN_READER_MOVES_THROUGH_THE` | reserved | Standing: a screen reader moves through How you play |
 | 131817 | CH-13880 | 18 Accessibility | `STANDING_A_SCREEN_READER_MOVES_THROUGH_THE` | reserved | Standing: a screen reader moves through the page |
 | 131818 | CH-13890 | 18 Accessibility | `DEEP_DIVE_A_SCREEN_READER_MOVES_THROUGH` | implemented | Deep dive: a screen reader moves through the page |
+| 131819 | CH-13853 | 18 Accessibility | `ASK_A_VALIDATED_VISUAL` | implemented | Ask: A validated visual (strokes gained anatomy) |
 | 131901 |  | 19 Responsive layout | `PHONE_LAYOUT` | implemented | At 820px and below CoachHelm is the phone build, never a shrunken desktop: the page takes the phone frame, the shell's top bar reads CoachHelm, and the boards, writes and states are the desktop's. Separately, when the page's container is 640px wide or less the coach's players are a row of pills that scrolls sideways. Choosing an insight on the player's phone brings the focus into view; on a wider screen the page stays where it is. |
 | 132101 |  | 21 Performance | `LOADER_READS_IN_ROUNDS` | implemented | The loaders read on the server before first paint, in a few rounds and never per row. A coach: the gate; the roster, then the players' names; then the program pulse, the visible insights (paginated) and each player's top insight (one per player, so only it counts as shown in the effectiveness ledger) together; then the drills and the focus areas made from those insights together. A player: the gate, the feed (up to 30), then the drills; the dismissal and visible reads and the rounds count are read only when the feed comes back empty. A drill or focus-area read that fails is logged and the board draws without it. |
 | 132301 |  | 23 Logging / observability | `FAILURES_REPORTED` | implemented | A read that fails in a loader is logged through chLogServer('coachhelm', {read}, …) under the coachhelm feature (gate, feed, visible, dismissed, rounds, drills, assigned, roster, players, heads) and named on the page; a write that fails is reported through chReport under the coachhelm surface with its action (coachhelm.assign, coachhelm.dismiss, coachhelm.undo), at low severity when the server refused it, after a chTrail breadcrumb for the intent; a section that crashes reports under its own surface (coachhelm.focus, coachhelm.side, coachhelm.pulse, coachhelm.players). |
@@ -1861,6 +2037,86 @@ Every Bridge ID (D-68: namespace, two-digit category, two-digit item), its catal
 | 152001 | CH-15910 | 20 Keyboard / input | `THE_KEYBOARD` | implemented | The keyboard |
 | 152101 | CH-15907 | 21 Performance | `EITHER_SCREEN_LOADS_ON_A_SLOW_PHONE` | implemented | Either screen loads, on a slow phone or a fast desktop |
 | 152301 | CH-15908 | 23 Logging / observability | `A_READ_FAILS_OR_THE_COURSE_CRASHES` | implemented | A read fails, or the course crashes |
+
+## P016 Tournaments
+
+| Bridge ID | Code | Category | Name | Status | Meaning |
+| --- | --- | --- | --- | --- | --- |
+| 160101 | CH-16600 | 01 Default / core UI | `COACH_HOME_SOMEONE_IS_ON_THE_COURSE` | implemented | Coach Home, someone is on the course |
+| 160102 | CH-16602 | 01 Default / core UI | `COACH_HOME_ONLY_FINISHED_LANES_REMAIN` | implemented | Coach Home, only finished lanes remain (each stays 30 minutes after it posted) |
+| 160103 | CH-16603 | 01 Default / core UI | `THE_HEAD_OF_THE_CARD` | implemented | The head of the card |
+| 160104 | CH-16610 | 01 Default / core UI | `THE_LIVE_VIEW` | implemented | The live view |
+| 160105 | CH-16611 | 01 Default / core UI | `TWO_OR_MORE_ROUND_TYPES_HAVE_LANES` | implemented | Two or more round types have lanes |
+| 160106 | CH-16612 | 01 Default / core UI | `LANES_ON_THE_COURSE` | implemented | Lanes on the course |
+| 160107 | CH-16613 | 01 Default / core UI | `LANES_THAT_POSTED_OR_STOPPED_TODAY` | implemented | Lanes that posted or stopped today |
+| 160108 | CH-16615 | 01 Default / core UI | `THE_SORT_CONTROL` | implemented | The sort control |
+| 160109 | CH-16616 | 01 Default / core UI | `A_PLAYERS_SHEET_THE_HOLE_THEY_PLAY` | implemented | A player's sheet, the hole they play next |
+| 160110 | CH-16617 | 01 Default / core UI | `A_PLAYERS_SHEET_MOMENTS` | implemented | A player's sheet, Moments |
+| 160111 | CH-16618 | 01 Default / core UI | `WIDE_LIVE_VIEW_NOBODY_SELECTED` | implemented | Wide live view, nobody selected |
+| 160112 | CH-16620 | 01 Default / core UI | `QUALIFIER_DETAIL` | implemented | Qualifier detail (built in slice 4) |
+| 160113 | CH-16622 | 01 Default / core UI | `THE_QUALIFIER_LIST` | implemented | The qualifier list (slice 4) |
+| 160114 | CH-16630 | 01 Default / core UI | `THE_TEAM_ROUNDS_BAND_HOME_WHEN_ONLY` | implemented | The Team rounds band (slice 4); Home when only tournaments are live |
+| 160115 | CH-16631 | 01 Default / core UI | `THE_SHARE_CHIP_ON_AN_IN_PROGRESS` | implemented | The share chip on an in-progress round in the player's library (slice 4) |
+| 160116 | CH-16640 | 01 Default / core UI | `CALENDAR_PEEK_AND_INSPECTOR_AN_EVENT_WITH` | implemented | Calendar peek and inspector, an event with lanes linked to it (slice 4) |
+| 160117 | CH-16660 | 01 Default / core UI | `ROUND_SETUP` | implemented | Round setup (slice 2) |
+| 160118 | CH-16661 | 01 Default / core UI | `ROUND_SETUP_2` | implemented | Round setup (slice 2) |
+| 160119 | CH-16662 | 01 Default / core UI | `A_QUALIFIER_ROUND_IN_SETUP` | implemented | A qualifier round in setup (slice 2) |
+| 160120 | CH-16663 | 01 Default / core UI | `ROUND_SETUP_3` | implemented | Round setup (slice 2) |
+| 160121 | CH-16670 | 01 Default / core UI | `A_QUALIFIER_LANES_SECOND_LINE` | implemented | A qualifier lane's second line |
+| 160122 | CH-16671 | 01 Default / core UI | `A_PRACTICE_OR_TOURNAMENT_LANES_SECOND_LINE` | implemented | A practice or tournament lane's second line |
+| 160123 | CH-16674 | 01 Default / core UI | `A_ROUND_THE_PLAYER_STOPPED` | implemented | A round the player stopped |
+| 160124 | CH-16675 | 01 Default / core UI | `ALL_HOLES_SCORED_NOT_POSTED` | implemented | All holes scored, not posted |
+| 160125 | CH-16676 | 01 Default / core UI | `A_ROUND_WAS_POSTED` | reserved | A round was posted |
+| 160126 | CH-16680 | 01 Default / core UI | `THE_PLAYERS_OWN_LIVE_CARD` | implemented | The player's own live card (slice 1) |
+| 160127 | CH-16681 | 01 Default / core UI | `THE_PLAYERS_OWN_LIVE_CARD_2` | implemented | The player's own live card (slice 1) |
+| 160128 | CH-16682 | 01 Default / core UI | `THE_PLAYERS_TEAMMATES_CARD` | implemented | The player's Teammates card (slice 4) |
+| 160129 | CH-16684 | 01 Default / core UI | `ROUND_SETUP_OPEN_CALL_VERSION_2` | implemented | Round setup, open call (a) version 2 (slice 2) |
+| 160130 | CH-16685 | 01 Default / core UI | `COACH_HOME_A_TOURNAMENT_TRACKS_A_LIVE` | implemented | Coach Home, a tournament tracks a live round |
+| 160131 | CH-16606 | 01 Default / core UI | `MORE_LANES_THAN_THE_CARD_SHOWS` | implemented | More lanes than the card shows |
+| 160201 | CH-16401 | 02 Initial loading / skeleton | `A_TOURNAMENTS_VIEW_IS_ON_ITS_WAY` | implemented | A Tournaments view is on its way (`load: 'loading'`) |
+| 160301 | CH-16604 | 03 Background loading / refresh | `A_LIVE_READ_FAILED_OR_THE_FEED` | implemented | A live read failed or the feed dropped |
+| 160401 | CH-16301 | 04 Empty | `A_VIEW_ITS_LANE_HASNT_BUILT_YET` | implemented | A view its lane hasn't built yet (the edit-event form, lineup builder, link inbox, live round and player view; their routes are wired and draw it with real data) |
+| 160402 | CH-16310 | 04 Empty | `HOME_NO_EVENT_IN_THE_SEASON_NOTHING` | implemented | Home: no event in the season, nothing failed |
+| 160403 | CH-16311 | 04 Empty | `THE_SEASON_LEDGER_THE_SEASON_HAS_NO` | implemented | The season ledger (Home, History): the season has no finished event yet |
+| 160404 | CH-16312 | 04 Empty | `HOME_NO_EVENT_IS_UPCOMING_OR_LIVE` | implemented | Home: no event is upcoming or live |
+| 160405 | CH-16320 | 04 Empty | `EVENT_DESK_THE_EVENT_HAS_NO_SCORES` | implemented | Event desk: the event has no scores yet (not played, nothing entered) |
+| 160406 | CH-16321 | 04 Empty | `EVENT_DESK_HOLES_TAB_NO_SCORECARD_HAS` | implemented | Event desk, Holes tab: no scorecard has holes (a totals-only event, or none entered) |
+| 160407 | CH-16335 | 04 Empty | `REVIEW_THE_EVENT_HAS_A_REVIEW_THAT` | implemented | Review: the event has a review that is not open yet (`review.open` is false: a round is not final) |
+| 160408 | CH-16336 | 04 Empty | `REVIEW_THE_EVENT_HAS_NO_REVIEW` | implemented | Review: the event has no review (not played, nothing to read) |
+| 160409 | CH-16337 | 04 Empty | `REVIEW_THE_REVIEW_IS_OPEN_AND_HAS` | implemented | Review: the review is open and has no notes or reflections |
+| 160410 | CH-16340 | 04 Empty | `HISTORY_NO_EVENT_IS_FINISHED` | implemented | History: no event is finished (the read worked) |
+| 160411 | CH-16350 | 04 Empty | `COMPARE_A_SIDE_SELECTS_NO_ROUNDS` | implemented | Compare: a side selects no rounds (a player with none in that context or period) |
+| 160412 | CH-16351 | 04 Empty | `COMPARE_THERE_ARE_NO_ROUNDS_AT_ALL` | implemented | Compare: there are no rounds at all (the read worked) |
+| 160413 | CH-16302 | 04 Empty | `A_TOURNAMENTS_ROUTE_OPENS_BEFORE_THE_HELD` | implemented | A Tournaments route opens before the held migrations are applied (a tournament table or RPC is missing: PGRST205, 42P01, PGRST202) |
+| 160414 | CH-16303 | 04 Empty | `A_TOURNAMENTS_ROUTE_SIGNED_IN_BUT_ON` | implemented | A Tournaments route, signed in but on no team |
+| 160415 | CH-16304 | 04 Empty | `AN_EVENT_ADDRESS_THAT_IS_NOT_THIS` | implemented | An event address that is not this team's (deleted, another team's, not an id) |
+| 160416 | CH-16305 | 04 Empty | `A_PLAYER_ON_A_COACHS_TOURNAMENTS_PAGE` | implemented | A player on a coach's Tournaments page (new or edit event, lineup, live, compare, history, link rounds) |
+| 160417 | CH-16619 | 04 Empty | `NOBODY_IS_ON_THE_COURSE` | implemented | Nobody is on the course |
+| 160601 | CH-16201 | 06 Server / system error | `A_TOURNAMENTS_VIEWS_ONE_READ_FAILS` | implemented | A Tournaments view's one read fails (any view; `load: 'failed'`) |
+| 160602 | CH-16210 | 06 Server / system error | `HOME_THE_EVENTS_READ_FAILS_WHILE_THE` | implemented | Home: the events read fails while the page itself loads (`errors.events`) |
+| 160603 | CH-16220 | 06 Server / system error | `EVENT_DESK_HOLES_TAB_THE_SCORECARDS_READ` | implemented | Event desk, Holes tab: the scorecards read fails (`errors.holes`) |
+| 160604 | CH-16221 | 06 Server / system error | `EVENT_DESK_THE_FIELD_READ_FAILS` | implemented | Event desk: the field read fails (`errors.field`) |
+| 160605 | CH-16222 | 06 Server / system error | `EVENT_DESK_OVERVIEW_AND_WHO_COUNTED_THE` | implemented | Event desk, Overview and Who counted: the rounds read fails (`errors.rounds`) |
+| 160606 | CH-16235 | 06 Server / system error | `REVIEW_THE_REVIEW_READ_FAILS` | implemented | Review (its own page and the desk's Review tab): the review read fails (`errors.review`) |
+| 160607 | CH-16236 | 06 Server / system error | `HISTORY_THE_TREND_READ_FAILS` | implemented | History: the trend read fails (`errors.trend`) |
+| 160608 | CH-16250 | 06 Server / system error | `COMPARE_THE_ROUNDS_READ_FAILS` | implemented | Compare: the rounds read fails (`errors.rounds`) |
+| 160609 | CH-16251 | 06 Server / system error | `COMPARE_THE_FIELD_READ_FAILS` | implemented | Compare: the field read fails (`errors.field`) |
+| 160610 | CH-16252 | 06 Server / system error | `COMPARE_THE_HOLE_FIGURES_READ_FAILS` | implemented | Compare: the hole figures read fails (`errors.holes`) |
+| 160611 | CH-16664 | 06 Server / system error | `CHANGING_THE_SHARE_LEVEL_FAILS` | implemented | Changing the share level fails (slice 2) |
+| 160612 | CH-16666 | 06 Server / system error | `THE_SHARE_FUNCTION_IS_NOT_IN_THE` | implemented | The share function is not in the database yet (slice 2) |
+| 160701 | CH-16605 | 07 Network / offline | `THE_DEVICE_IS_OFFLINE_WHILE_THE_CARD` | implemented | The device is offline while the card or the live view is open |
+| 160801 | CH-16609 | 08 Permission / authorization | `THE_COACH_HAS_NO_TEAM_OR_LOST` | implemented | The coach has no team, or lost access to it |
+| 161001 | CH-16920 | 10 Warning | `EVENT_DESK_THE_HOSTS_PUBLISHED_NUMBER_DIFFERS` | implemented | Event desk: the host's published number differs from our scorecard (`officialTotal` set and unequal) |
+| 161002 | CH-16665 | 10 Warning | `A_ROUNDS_SHARING_WAS_CHANGED_30_TIMES` | implemented | A round's sharing was changed 30 times (slice 2) |
+| 161201 | CH-16621 | 12 State preservation | `A_PLAYER_WITH_THEIR_OWN_ROUND_ON` | implemented | A player with their own round on this qualifier (slice 4) |
+| 161501 | CH-16614 | 15 Data freshness / sync | `LANES_WITH_NO_WORD_FOR_90_MINUTES` | implemented | Lanes with no word for 90 minutes |
+| 161502 | CH-16672 | 15 Data freshness / sync | `A_LANE_SILENT_FOR_10_MINUTES_WITH` | implemented | A lane silent for 10 minutes with the last hole at least as old |
+| 161503 | CH-16673 | 15 Data freshness / sync | `A_LANE_SILENT_FOR_90_MINUTES` | implemented | A lane silent for 90 minutes |
+| 161504 | CH-16677 | 15 Data freshness / sync | `TWO_OR_MORE_HOLES_LAND_IN_ONE` | reserved | Two or more holes land in one read (a phone that reconnected) |
+| 161505 | CH-16683 | 15 Data freshness / sync | `THE_PLAYERS_OWN_LIVE_CARD_NOT_SAVED` | implemented | The player's own live card, not saved for 10 minutes (slice 1) |
+| 161601 | CH-16601 | 16 Micro animation | `A_VALUE_CHANGES_AFTER_FIRST_PAINT` | reserved | A value changes after first paint (a live score, a team total, a place) |
+| 161801 | CH-16801 | 18 Accessibility | `A_SIGNED_DIFFERENCE_OR_A_TRUST_STATE` | reserved | A signed difference or a trust state is read |
+| 161802 | CH-16641 | 18 Accessibility | `CALENDAR_GRID_BLOCK` | implemented | Calendar grid block (slice 4) |
 
 ## Tombstones
 

@@ -3,9 +3,9 @@
 .ch-h-main {
   display: flex;
   flex-direction: column;
-  max-width: 1120px;
+  max-width: var(--ch-measure-page);
   margin: 0 auto;
-  padding: 52px var(--ch-page-gutter) 96px;
+  padding: var(--ch-page-top-home) var(--ch-page-gutter) var(--ch-page-bottom-tall);
 }
 .ch-h-head {
   display: flex;
@@ -14,7 +14,8 @@
   max-width: 600px;
 }
 .ch-h-head__date {
-  font: 500 calc(13.5 * var(--ch-type-k))/1 var(--ch-font-sans);
+  font: var(--ch-type-14-medium);
+  line-height: var(--ch-lead-tight);
   color: var(--ch-text-tertiary);
 }
 .ch-h-head h1 {
@@ -26,7 +27,8 @@
 }
 .ch-h-head__sub {
   max-width: 470px;
-  font: 400 16px/1.5 var(--ch-font-sans);
+  font: var(--ch-type-16);
+  letter-spacing: var(--ch-track-16);
   color: var(--ch-text-secondary);
   text-wrap: pretty;
 }
@@ -40,13 +42,13 @@
 /* Desktop Home opens on the canopy (shell.css, main[data-canopy]): the date, greeting and brief in ivory on the green
    field, the actions set level with the brief at the right. No box: the green fades into the page under the week. */
 .ch-h-main--desk {
-  padding-top: 40px;
+  padding-top: var(--ch-page-top-home-desk);
 }
 .ch-h-main--desk > .ch-h-head {
   display: grid;
   grid-template-columns: minmax(0, 1fr) auto;
   column-gap: 40px;
-  row-gap: 10px;
+  row-gap: 8px;
   align-items: end;
   max-width: none;
 }
@@ -73,12 +75,12 @@
 /* The first sheet follows the title block with the page's own rhythm, where the green dissolves. */
 .ch-h-main--desk > .ch-h-head + .ch-h-sheet,
 .ch-h-main--desk > .ch-h-head + .ch-h-flow {
-  margin-top: 36px;
+  margin-top: 32px;
 }
 /* The canopy rises from under the top bar: the page's top padding is part of the green. The date line is 4px shorter
    than the page head's eyebrow (tokens.css), so the top adds it. */
 .ch-h-main--desk[data-canopy] {
-  padding-top: calc(var(--ch-page-head-top) + 4px);
+  padding-top: var(--ch-page-top-eyebrow-short-4);
 }
 .ch-h-main--desk[data-canopy] > .ch-h-head {
   padding-top: 4px;
@@ -95,7 +97,7 @@
 .ch-h-sheet {
   display: grid;
   grid-template-columns: minmax(0, 1fr) minmax(0, 1.15fr);
-  margin-top: 28px;
+  margin-top: 32px;
 }
 /* The week alone (a coach with players and no round, where the leaderboard's line says so, or the first run). */
 .ch-h-sheet.is-solo {
@@ -104,14 +106,15 @@
 /* Player Home: the week sheet and Scoring are one surface. The sheet's own margin moves to the wrapper, and Scoring
    drops its card for a seam, so the eye runs straight from the week into the scoring line. */
 .ch-h-flow.ch-sheet {
-  margin-top: 28px;
-  border-radius: var(--ch-radius-xl);
+  margin-top: 32px;
+  /* Visual pass 2026-10-28 (area A R5): cards sit on 16, as every sheet on Home does. */
+  border-radius: var(--ch-radius-card);
 }
 .ch-h-flow > .ch-h-sheet {
   margin-top: 0;
 }
 .ch-h-flow .ch-ph-game {
-  border-radius: 0 0 var(--ch-radius-xl) var(--ch-radius-xl);
+  border-radius: 0 0 var(--ch-radius-card) var(--ch-radius-card);
   background: none;
   box-shadow: var(--ch-seam-x);
 }
@@ -125,9 +128,9 @@
 .ch-h-pane {
   display: flex;
   flex-direction: column;
-  gap: 18px;
+  gap: 16px;
   min-width: 0;
-  padding: 22px 24px 20px;
+  padding: 24px 24px 20px;
 }
 .ch-h-pane__head {
   display: flex;
@@ -145,12 +148,13 @@
   display: flex;
   align-items: center;
   gap: 2px;
-  padding: 3px;
-  border-radius: calc(var(--ch-radius-lg) - 3px);
+  padding: 4px;
+  border-radius: max(var(--ch-radius-xs), calc(var(--ch-radius-lg) - var(--ch-space-1)));
 }
 .ch-h-pager > span {
   margin: 0 6px 0 8px;
-  font: var(--ch-type-caption);
+  font: var(--ch-type-13);
+  line-height: var(--ch-lead-caption);
   font-variant-numeric: tabular-nums;
   color: var(--ch-text-tertiary);
 }
@@ -168,16 +172,19 @@
   flex-direction: column;
   align-items: center;
   gap: 6px;
-  padding: 9px 0 8px;
+  padding: 8px 0 8px;
   border-radius: var(--ch-radius-md);
 }
 /* On the week strip's well tertiary measured 4.1:1 (UX360 sampled 3.7:1); secondary holds 5.4:1. Aesthetic audit X-2. */
 .ch-h-day__d {
-  font: 600 12px/1 var(--ch-font-sans);
+  font: var(--ch-type-12-strong);
+  line-height: var(--ch-lead-tight);
   color: var(--ch-text-secondary);
 }
 .ch-h-day__n {
-  font: 650 16px/1 var(--ch-font-sans);
+  font: var(--ch-type-16-strong);
+  letter-spacing: var(--ch-track-16);
+  line-height: var(--ch-lead-tight);
   font-variant-numeric: tabular-nums;
   color: var(--ch-text-primary);
 }
@@ -199,8 +206,8 @@
 .ch-h-day--today {
   border-radius: var(--ch-radius-md);
   background: linear-gradient(180deg, rgb(255 255 255 / 0.94), rgb(251 249 244 / 0.8));
-  -webkit-backdrop-filter: blur(14px) saturate(1.4);
-  backdrop-filter: blur(14px) saturate(1.4);
+  -webkit-backdrop-filter: blur(calc(var(--ch-glass-blur) * 0.7)) saturate(1.4);
+  backdrop-filter: blur(calc(var(--ch-glass-blur) * 0.7)) saturate(1.4);
   box-shadow: var(--ch-key-frost-shadow);
 }
 .ch-h-day--today .ch-h-day__n {
@@ -225,35 +232,37 @@
 }
 .ch-h-agenda__label {
   padding: 0 0 6px;
-  font: var(--ch-type-label-s);
+  font: var(--ch-type-13-medium);
+  line-height: var(--ch-lead-label);
   color: var(--ch-text-tertiary);
 }
 .ch-h-agenda__label--later {
-  padding-top: 14px;
+  padding-top: 16px;
 }
 .ch-h-agenda__row {
   display: grid;
   grid-template-columns: 52px minmax(0, 1fr) auto;
   gap: 12px;
   align-items: center;
-  padding: 10px 0;
-  border-top: 1px solid var(--ch-border-hairline);
+  padding: 8px 0;
+  border-top: var(--ch-hairline-w) solid var(--ch-border-hairline);
 }
 .ch-h-agenda__txt {
   min-width: 0;
 }
 .ch-h-agenda__t {
-  font: 500 13px/1.3 var(--ch-font-sans);
+  font: var(--ch-type-13-medium);
   font-variant-numeric: tabular-nums;
   color: var(--ch-text-tertiary);
 }
 .ch-h-agenda__a {
-  font: 500 14px/1.3 var(--ch-font-sans);
+  font: var(--ch-type-14-medium);
   color: var(--ch-text-primary);
 }
 .ch-h-agenda__b {
   margin-top: 2px;
-  font: var(--ch-type-caption);
+  font: var(--ch-type-13);
+  line-height: var(--ch-lead-caption);
   color: var(--ch-text-tertiary);
 }
 .ch-h-agenda__row.is-event .ch-h-agenda__a {
@@ -280,7 +289,10 @@
 }
 .ch-h-agenda__row.is-next .ch-h-agenda__b {
   color: var(--ch-green-700);
-  opacity: 0.8;
+}
+/* A struck old time reads like its line, as in Up next (F-0038: the faded ink-500 was 3.4:1). */
+.ch-h-agenda__row.is-next .ch-was {
+  color: inherit;
 }
 
 /* Latest round */
@@ -293,7 +305,7 @@
 .ch-h-round {
   display: flex;
   flex-direction: column;
-  gap: 18px;
+  gap: 16px;
   grid-area: 1 / 1;
   min-width: 0;
 }
@@ -314,14 +326,16 @@
 }
 .ch-h-round__name {
   overflow: hidden;
-  font: 600 15px/1.25 var(--ch-font-sans);
+  font: var(--ch-type-15-strong);
+  letter-spacing: var(--ch-track-15);
   color: var(--ch-text-primary);
   /* A long name ends in an ellipsis rather than pushing the score off the card. */
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 .ch-h-round__meta {
-  font: var(--ch-type-caption);
+  font: var(--ch-type-13);
+  line-height: var(--ch-lead-caption);
   color: var(--ch-text-tertiary);
 }
 .ch-h-round__score {
@@ -334,11 +348,13 @@
 
   font-variant-numeric: tabular-nums;
   letter-spacing: -0.026em;
-  font-variation-settings: 'wdth' 92;
+  font-variation-settings: 'wdth' 88;
   color: var(--ch-text-primary);
 }
 .ch-h-topar {
-  font: 600 15px/1 var(--ch-font-sans);
+  font: var(--ch-type-15-strong);
+  letter-spacing: var(--ch-track-15);
+  line-height: var(--ch-lead-tight);
   font-variant-numeric: tabular-nums;
   color: var(--ch-text-secondary);
 }
@@ -348,8 +364,8 @@
 .ch-h-card {
   display: flex;
   flex-direction: column;
-  gap: 10px;
-  padding: 12px 14px;
+  gap: 8px;
+  padding: 12px 16px;
   overflow-x: auto;
   border-radius: var(--ch-radius-lg);
 }
@@ -381,25 +397,28 @@
 }
 .ch-h-nine__par {
   height: 20px;
-  border-bottom: 1px solid rgb(28 25 18 / 0.14);
+  border-bottom: var(--ch-hairline-w) solid var(--ch-ink-rule);
 }
 .ch-scoreboard .ch-h-nine__par {
   border-bottom-color: var(--ch-board-rule);
 }
 .ch-h-nine__par {
-  font: 500 12px/1 var(--ch-font-sans);
+  font: var(--ch-type-12-medium);
+  line-height: var(--ch-lead-tight);
 
   font-variant-numeric: tabular-nums;
   color: var(--ch-text-tertiary);
 }
 /* Plain scores (par) read as ink, the same weight as the marks beside them. */
 .ch-h-nine__row:not(.ch-h-nine__holes):not(.ch-h-nine__par) > [role='cell'] {
-  font: 600 13.5px/1 var(--ch-font-sans);
+  font: var(--ch-type-14-strong);
+  line-height: var(--ch-lead-tight);
   font-variant-numeric: tabular-nums;
   color: var(--ch-text-primary);
 }
 .ch-h-nine__tot {
-  font: 600 14px/1 var(--ch-font-sans);
+  font: var(--ch-type-14-strong);
+  line-height: var(--ch-lead-tight);
   font-variant-numeric: tabular-nums;
   color: var(--ch-text-primary);
 }
@@ -412,23 +431,25 @@
   justify-content: space-between;
   gap: 12px;
   margin-top: 4px;
-  padding-top: 14px;
+  padding-top: 16px;
   box-shadow: var(--ch-seam-x);
 }
 .ch-h-round__stats {
   display: flex;
-  gap: 22px;
+  gap: 24px;
 }
 .ch-h-round__stats span {
   display: flex;
   align-items: baseline;
   gap: 6px;
-  font: 600 13.5px/1 var(--ch-font-sans);
+  font: var(--ch-type-14-strong);
+  line-height: var(--ch-lead-tight);
   font-variant-numeric: tabular-nums;
   color: var(--ch-text-primary);
 }
 .ch-h-round__stats em {
-  font: var(--ch-type-caption);
+  font: var(--ch-type-13);
+  line-height: var(--ch-lead-caption);
   font-style: normal;
   color: var(--ch-text-tertiary);
 }
@@ -455,14 +476,15 @@
   box-shadow: var(--ch-seam-x);
 }
 .ch-h-rail__title {
-  font: var(--ch-type-label-s);
+  font: var(--ch-type-13-medium);
+  line-height: var(--ch-lead-label);
   color: var(--ch-text-tertiary);
 }
 .ch-h-rail ul {
   display: flex;
   flex-direction: column;
   gap: 2px;
-  margin: 0 -10px;
+  margin: 0 -8px;
   padding: 0;
   list-style: none;
 }
@@ -472,7 +494,7 @@
   gap: 12px;
   align-items: center;
   width: 100%;
-  padding: 9px 10px;
+  padding: 8px 8px;
   border: 0;
   border-radius: var(--ch-radius-md);
   background: transparent;
@@ -481,21 +503,31 @@
   cursor: pointer;
   transition: background var(--ch-dur-quick) var(--ch-ease), box-shadow var(--ch-dur-quick) var(--ch-ease);
 }
+/* Visual pass 2026-10-28: the rail's 26px coin drew 10.92px initials, under the desktop's 11px floor. */
+.ch-h-rail__item .ch-avatar {
+  font: var(--ch-type-11-strong);
+  letter-spacing: 0;
+}
 @media (hover: hover) {
   .ch-h-rail__item:hover {
     background: color-mix(in oklab, var(--ch-green-600) 4.5%, transparent);
   }
 }
-.ch-h-rail__item:active {
+.ch-h-rail__item[data-ch-pressed] {
   background: color-mix(in oklab, var(--ch-green-600) 8%, transparent);
 }
+@media (hover: hover) {
+  .ch-h-rail__item:active {
+    background: color-mix(in oklab, var(--ch-green-600) 8%, transparent);
+  }
+}
 .ch-h-rail__item.is-on {
-  background: var(--ch-green-25);
+  background: var(--ch-selected-bg);
   box-shadow: inset 0 0 0 1px rgb(21 90 57 / 0.12), inset 0 1px 0 rgb(255 255 255 / 0.9);
 }
 .ch-h-rail__item:focus-visible {
   outline: 2px solid var(--ch-border-focus);
-  outline-offset: 1px;
+  outline-offset: 2px;
 }
 .ch-h-rail__who {
   display: flex;
@@ -505,27 +537,30 @@
 }
 .ch-h-rail__name {
   overflow: hidden;
-  font: 600 13.5px/1.2 var(--ch-font-sans);
+  font: var(--ch-type-14-strong);
   color: var(--ch-text-primary);
   white-space: nowrap;
   text-overflow: ellipsis;
 }
 .ch-h-rail__meta {
   overflow: hidden;
-  font: var(--ch-type-caption);
+  font: var(--ch-type-13);
+  line-height: var(--ch-lead-caption);
   color: var(--ch-text-tertiary);
   white-space: nowrap;
   text-overflow: ellipsis;
 }
 .ch-h-rail__score {
-  font: 600 17px/1 var(--ch-font-sans);
+  font: var(--ch-type-17-strong);
+  line-height: var(--ch-lead-tight);
   font-variant-numeric: tabular-nums;
   letter-spacing: -0.02em;
   color: var(--ch-text-primary);
 }
 .ch-h-rail__par {
   justify-self: end;
-  font: 600 12.5px/1 var(--ch-font-sans);
+  font: var(--ch-type-13-strong);
+  line-height: var(--ch-lead-tight);
   font-variant-numeric: tabular-nums;
   color: var(--ch-text-secondary);
 }
@@ -540,12 +575,12 @@
   justify-content: space-between;
   gap: 16px;
   margin-top: 56px;
-  padding-bottom: 14px;
+  padding-bottom: 16px;
 }
 .ch-h-sec > div {
   display: flex;
   flex-direction: column;
-  gap: 5px;
+  gap: 4px;
 }
 .ch-h-sec h2 {
   font: var(--ch-type-serif-m);
@@ -573,7 +608,7 @@
   align-items: center;
   width: 100%;
   min-width: 680px;
-  padding: 13px 22px;
+  padding: 12px 24px;
   color: inherit;
   text-decoration: none;
   transition: background var(--ch-dur-quick) var(--ch-ease);
@@ -591,8 +626,9 @@
 }
 .ch-h-lb__head {
   padding-top: 12px;
-  padding-bottom: 10px;
-  font: var(--ch-type-label-s);
+  padding-bottom: 8px;
+  font: var(--ch-type-13-medium);
+  line-height: var(--ch-lead-label);
   color: var(--ch-text-tertiary);
 }
 .ch-h-lb__row.is-link {
@@ -633,8 +669,13 @@
     translate: 0 -50%;
   }
 }
-.ch-h-lb__row.is-link:active {
+.ch-h-lb__row.is-link[data-ch-pressed] {
   background: color-mix(in oklab, var(--ch-green-600) 8%, transparent);
+}
+@media (hover: hover) {
+  .ch-h-lb__row.is-link:active {
+    background: color-mix(in oklab, var(--ch-green-600) 8%, transparent);
+  }
 }
 .ch-h-lb__row.is-link:has(.ch-h-lb__go:focus-visible) {
   outline: 2px solid var(--ch-border-focus);
@@ -650,7 +691,7 @@
   place-items: center;
   width: 26px;
   height: 26px;
-  font: 600 12.5px/1 var(--ch-font-sans);
+  font: 600 13px/1 var(--ch-font-sans);
   font-variant-numeric: tabular-nums;
   color: var(--ch-text-tertiary);
 }
@@ -698,7 +739,7 @@
 .ch-h-lb__name {
   display: block;
   overflow: hidden;
-  font: 600 14.5px/1.25 var(--ch-font-sans);
+  font: var(--ch-type-15-strong);
   letter-spacing: -0.01em;
   color: var(--ch-text-primary);
   white-space: nowrap;
@@ -707,7 +748,8 @@
 .ch-h-lb__meta {
   display: block;
   margin-top: 2px;
-  font: var(--ch-type-caption);
+  font: var(--ch-type-13);
+  line-height: var(--ch-lead-caption);
   color: var(--ch-text-tertiary);
 }
 /* The form word carries a small state dot, so the column scans by colour before it reads. */
@@ -715,7 +757,7 @@
   display: inline-block;
   width: 6px;
   height: 6px;
-  margin: 0 5px 1px 0;
+  margin: 0 4px 1px 0;
   border-radius: 50%;
   background: var(--ch-ink-300);
   vertical-align: middle;
@@ -736,13 +778,16 @@
   background: var(--ch-chart-loss);
 }
 .ch-h-lb__num {
-  font: 500 15px/1 var(--ch-font-sans);
+  font: var(--ch-type-15-medium);
+  letter-spacing: var(--ch-track-15);
+  line-height: var(--ch-lead-tight);
   font-variant-numeric: tabular-nums;
   color: var(--ch-text-secondary);
 }
 /* The season average is the row's figure. */
 .ch-h-lb__row:not(.ch-h-lb__head) > .ch-h-lb__num:nth-child(4) {
-  font: 600 17px/1 var(--ch-font-sans);
+  font: var(--ch-type-17-strong);
+  line-height: var(--ch-lead-tight);
   font-variant-numeric: tabular-nums;
   letter-spacing: -0.02em;
   color: var(--ch-text-primary);
@@ -751,11 +796,13 @@
   color: var(--ch-score-under);
 }
 .ch-h-lb__sg {
-  font: 600 14px/1 var(--ch-font-sans);
+  font: var(--ch-type-14-strong);
+  line-height: var(--ch-lead-tight);
   font-variant-numeric: tabular-nums;
 }
 .ch-h-lb__sg.is-early {
-  font: 500 12.5px/1 var(--ch-font-sans);
+  font: var(--ch-type-13-medium);
+  line-height: var(--ch-lead-tight);
   font-variant-numeric: tabular-nums;
   color: var(--ch-text-tertiary);
 }
@@ -803,16 +850,16 @@
 }
 @media (max-width: 820px) {
   .ch-h-main {
-    padding: 28px 16px 48px;
+    padding: 28px var(--ch-page-x-phone) 48px;
   }
   .ch-h-head h1 {
     font-size: calc(34 * var(--ch-type-k));
   }
   .ch-h-sheet {
-    margin-top: 28px;
+    margin-top: 32px;
   }
   .ch-h-pane {
-    padding: 18px 16px;
+    padding: 16px 16px;
   }
 }
 .ch-h-round__more {
@@ -843,7 +890,7 @@
     display: flex;
     flex-direction: column;
     box-sizing: border-box;
-    padding: 26px 20px 22px;
+    padding: 26px var(--ch-page-x-phone) 22px;
   }
   /* Each bar in a box the height of its loaded line: the date (12px, its 14.4px line under the double rule), the 31px
      greeting's line, the brief's 14.5px lines. */
@@ -852,14 +899,14 @@
     align-items: center;
     box-sizing: border-box;
     height: 31.4px;
-    padding-top: 14px;
+    padding-top: 16px;
     border-top: var(--ch-ledger-rule-double);
   }
   .ch-hm-skel__h1 {
     display: flex;
     align-items: center;
     height: 33.5px;
-    margin: 10px 0 12px;
+    margin: 8px 0 12px;
   }
   .ch-hm-skel__line {
     display: flex;
@@ -872,8 +919,8 @@
     gap: 12px;
     box-sizing: border-box;
     height: 238px;
-    margin-top: 18px;
-    padding: 18px;
+    margin-top: 16px;
+    padding: 16px;
     border-radius: var(--ch-radius-lg);
     background: var(--ch-feature-bg);
     box-shadow: var(--ch-elevation-feature);
@@ -886,7 +933,7 @@
   }
   /* The invitees' avatars on their line, and the card's action at its foot. */
   .ch-hm-skel__people {
-    margin-top: 15px;
+    margin-top: 16px;
   }
   .ch-hm-skel__act {
     margin-top: auto;
@@ -901,13 +948,13 @@
   .ch-hm-skel__keys {
     display: grid;
     grid-template-columns: 1fr 1fr;
-    gap: 10px;
-    margin-top: 14px;
+    gap: 8px;
+    margin-top: 16px;
   }
   .ch-hm-skel__body {
     display: flex;
     flex-direction: column;
-    padding: 12px 20px 30px;
+    padding: 12px var(--ch-page-x-phone) 30px;
   }
   .ch-hm-skel__sec {
     display: flex;
@@ -920,11 +967,11 @@
   .ch-hm-skel__row {
     display: flex;
     align-items: center;
-    gap: 28px;
+    gap: 32px;
     min-height: 58px;
   }
   .ch-hm-skel__row + .ch-hm-skel__row {
-    box-shadow: inset 0 1px 0 var(--ch-ledger-rule-soft);
+    box-shadow: inset 0 var(--ch-hairline-w) 0 var(--ch-ledger-rule-soft);
   }
 }
 
@@ -945,8 +992,8 @@
   .ch-hm-hero {
     display: flex;
     flex-direction: column;
-    padding: 6px 18px 20px;
-    border-radius: 0 0 28px 28px;
+    padding: 6px var(--ch-page-x-phone) 20px;
+    border-radius: 0 0 var(--ch-radius-xl) var(--ch-radius-xl);
     /* The first 72px fade from the bar's flat green, so the bar and the hero read as one surface (F-49). */
     background: linear-gradient(var(--ch-green-800), rgb(11 58 37 / 0) 72px),
       radial-gradient(90% 60% at 100% 0%, rgb(123 199 154 / 0.16), transparent 60%),
@@ -955,12 +1002,13 @@
     color: var(--ch-on-fill-100);
   }
   .ch-hm-hero__date {
-    font: 500 calc(13 * var(--ch-type-k))/1 var(--ch-font-sans);
+    font: var(--ch-type-13-medium);
+    line-height: var(--ch-lead-tight);
     color: rgb(244 241 232 / 0.62);
   }
   /* Three selectors deep on purpose: base.css's `.ch-root h1 { margin: 0 }` ties a two-selector rule, and which stylesheet loads last decides the tie (the preview route loads this one first, and the greeting sat hard against the date). */
   .ch-hm > .ch-hm-hero > h1 {
-    margin: 8px 0 10px;
+    margin: 8px 0 8px;
     font: 400 calc(38 * var(--ch-type-k))/1.04 var(--ch-font-serif);
     letter-spacing: -0.008em;
     color: var(--ch-on-green-ink);
@@ -968,12 +1016,13 @@
   }
   /* The player's hero has no brief line: the greeting sits directly on Up next. */
   .ch-hm > .ch-hm-hero.is-player > h1 {
-    margin-bottom: 18px;
+    margin-bottom: 16px;
   }
   /* Two classes: base.css zeroes every p's margin (.ch-root p), which one class loses to, and the brief sat hard against Up next. */
   .ch-hm-hero > .ch-hm-hero__brief {
-    margin: 0 0 18px;
-    font: 400 calc(14.5 * var(--ch-type-k))/1.45 var(--ch-font-sans);
+    margin: 0 0 16px;
+    font: var(--ch-type-15);
+    letter-spacing: var(--ch-track-15);
     color: rgb(244 241 232 / 0.82);
     text-wrap: pretty;
   }
@@ -989,7 +1038,7 @@
     text-decoration: none;
   }
   .ch-hm-next.is-static {
-    gap: 14px;
+    gap: 16px;
   }
   .ch-hm-next__k {
     display: flex;
@@ -1000,14 +1049,16 @@
     display: inline-flex;
     align-items: center;
     gap: 6px;
-    font: 500 calc(12.5 * var(--ch-type-k))/1 var(--ch-font-sans);
+    font: var(--ch-type-13-medium);
+    line-height: var(--ch-lead-tight);
     color: rgb(244 241 232 / 0.7);
   }
   .ch-hm-next__when {
-    padding: 6px 9px;
+    padding: 6px 8px;
     border-radius: 999px;
     background: rgb(255 255 255 / 0.1);
-    font: 600 calc(12 * var(--ch-type-k))/1 var(--ch-font-sans);
+    font: var(--ch-type-12-strong);
+    line-height: var(--ch-lead-tight);
     font-variant-numeric: tabular-nums;
     color: var(--ch-on-fill-100);
   }
@@ -1016,8 +1067,9 @@
     color: var(--ch-green-800);
   }
   .ch-hm-next h2 {
-    font: 600 calc(22 * var(--ch-type-k))/1.15 var(--ch-font-sans);
-    letter-spacing: -0.025em;
+    font: var(--ch-type-22-strong);
+    line-height: var(--ch-lead-tight);
+    letter-spacing: var(--ch-track-22);
     color: var(--ch-on-fill-100);
   }
   /* Two selectors deep so base.css's `.ch-root h2 { margin: 0 }` can't win the tie by loading last. */
@@ -1026,17 +1078,17 @@
   }
   /* The card's own line only: a notice in the card (CH-2201) keeps its ink (a descendant rule made it 1.02:1). */
   .ch-hm-next > p {
-    font: 400 calc(13.5 * var(--ch-type-k))/1.35 var(--ch-font-sans);
+    font: var(--ch-type-14);
     font-variant-numeric: tabular-nums;
     color: rgb(244 241 232 / 0.72);
   }
   .ch-hm-next__f {
     display: flex;
     align-items: center;
-    gap: 10px;
+    gap: 8px;
     margin-top: 8px;
     padding-top: 12px;
-    border-top: 1px solid rgb(255 255 255 / 0.1);
+    border-top: var(--ch-hairline-w) solid var(--ch-stage-rule);
   }
   .ch-hm-next__f > svg {
     margin-left: auto;
@@ -1055,7 +1107,8 @@
     margin-left: -4px;
   }
   .ch-hm-next__rsvp {
-    font: 400 calc(13 * var(--ch-type-k))/1 var(--ch-font-sans);
+    font: var(--ch-type-13);
+    line-height: var(--ch-lead-tight);
     font-variant-numeric: tabular-nums;
     color: rgb(244 241 232 / 0.72);
   }
@@ -1066,7 +1119,7 @@
   .ch-hm-none {
     display: flex;
     align-items: flex-start;
-    gap: 14px;
+    gap: 16px;
   }
   .ch-hm-none__ic {
     display: grid;
@@ -1080,7 +1133,7 @@
     color: var(--ch-hero-mint);
   }
   .ch-hm-none h2 {
-    font-size: calc(19 * var(--ch-type-k));
+    font-size: calc(20 * var(--ch-type-k));
   }
   .ch-hm-hero .ch-hm-none h2 {
     margin: 2px 0 4px;
@@ -1099,7 +1152,8 @@
     border-radius: 999px;
     background: rgb(255 255 255 / 0.06);
     box-shadow: inset 0 0 0 1px rgb(255 255 255 / 0.14);
-    font: 500 calc(13 * var(--ch-type-k))/1 var(--ch-font-sans);
+    font: var(--ch-type-13-medium);
+    line-height: var(--ch-lead-tight);
     color: var(--ch-on-fill-100);
     text-decoration: none;
   }
@@ -1115,7 +1169,9 @@
     border-radius: var(--ch-radius-lg);
     background: linear-gradient(180deg, #fbf9f3, #ece8dd);
     box-shadow: 0 1px 2px rgb(0 0 0 / 0.3), inset 0 1px 0 #fff;
-    font: 600 calc(15 * var(--ch-type-k))/1 var(--ch-font-sans);
+    font: var(--ch-type-15-strong);
+    letter-spacing: var(--ch-track-15);
+    line-height: var(--ch-lead-tight);
     color: var(--ch-green-800);
     text-decoration: none;
   }
@@ -1123,7 +1179,7 @@
     display: flex;
     flex-direction: column;
     gap: 26px;
-    padding: 24px 16px 28px;
+    padding: 24px var(--ch-page-x-phone) 28px;
   }
   .ch-hm-sec {
     display: flex;
@@ -1137,20 +1193,22 @@
     padding: 0 2px;
   }
   .ch-hm-sec__h h2 {
-    font: 600 calc(17 * var(--ch-type-k))/1 var(--ch-font-sans);
-    letter-spacing: -0.015em;
+    font: var(--ch-type-17-strong);
+    line-height: var(--ch-lead-tight);
+    letter-spacing: var(--ch-track-17);
     color: var(--ch-ink-950);
   }
   /* The one-line note beside a section title (m-player-home.css .mp-meta). */
   .ch-hm-meta {
-    font: 500 calc(12.5 * var(--ch-type-k))/1.25 var(--ch-font-sans);
+    font: var(--ch-type-13-medium);
     color: var(--ch-text-tertiary);
     text-align: right;
   }
   /* The player's "Today": a small label over the timeline, inside This week (.mp-lab). */
   .ch-hm-lab {
     padding: 4px 2px 0;
-    font: 600 calc(13 * var(--ch-type-k))/1 var(--ch-font-sans);
+    font: var(--ch-type-13-strong);
+    line-height: var(--ch-lead-tight);
     letter-spacing: normal;
     color: var(--ch-ink-700);
   }
@@ -1163,9 +1221,10 @@
     display: inline-flex;
     align-items: center;
     min-height: 44px;
-    margin: -15px -10px;
-    padding: 0 10px;
-    font: 500 calc(13.5 * var(--ch-type-k))/1 var(--ch-font-sans);
+    margin: -16px -8px;
+    padding: 0 8px;
+    font: var(--ch-type-14-medium);
+    line-height: var(--ch-lead-tight);
     color: var(--ch-green-700);
     text-decoration: none;
   }
@@ -1181,7 +1240,7 @@
   .ch-hm-tl__a {
     display: grid;
     grid-template-columns: 48px 14px minmax(0, 1fr) auto;
-    gap: 10px;
+    gap: 8px;
     align-items: center;
     min-height: 54px;
     padding: 0 16px;
@@ -1211,7 +1270,8 @@
     background: var(--ch-green-fill-600);
   }
   .ch-hm-tl__t {
-    font: 500 calc(13 * var(--ch-type-k))/1 var(--ch-font-sans);
+    font: var(--ch-type-13-medium);
+    line-height: var(--ch-lead-tight);
     font-variant-numeric: tabular-nums;
     color: var(--ch-ink-700);
   }
@@ -1271,11 +1331,12 @@
     text-overflow: ellipsis;
   }
   .ch-hm-tl__b b {
-    font: 600 calc(14.5 * var(--ch-type-k))/1.25 var(--ch-font-sans);
+    font: var(--ch-type-15-strong);
+    letter-spacing: var(--ch-track-15);
     color: var(--ch-ink-950);
   }
   .ch-hm-tl__b span {
-    font: 400 calc(12.5 * var(--ch-type-k))/1.3 var(--ch-font-sans);
+    font: var(--ch-type-13);
     color: var(--ch-text-tertiary);
   }
   .ch-hm-tl__w {
@@ -1288,17 +1349,19 @@
     color: var(--ch-warning-600);
   }
   .ch-hm-now {
-    padding: 5px 8px;
+    padding: 4px 8px;
     border-radius: 999px;
     background: var(--ch-green-fill-600);
-    font: 600 calc(11 * var(--ch-type-k))/1 var(--ch-font-sans);
+    font: var(--ch-type-11-strong);
+    letter-spacing: var(--ch-track-11);
+    line-height: var(--ch-lead-tight);
     color: var(--ch-text-on-accent);
   }
   .ch-hm-empty {
     display: flex;
     align-items: center;
     gap: 12px;
-    padding: 14px 16px;
+    padding: 16px 16px;
     border-radius: var(--ch-radius-lg);
     background: var(--ch-bg-surface);
     box-shadow: var(--ch-elevation-reading);
@@ -1310,17 +1373,18 @@
     display: flex;
     flex: 1;
     flex-direction: column;
-    gap: 3px;
+    gap: 4px;
   }
   .ch-hm-empty b {
-    font: 600 calc(14.5 * var(--ch-type-k))/1.2 var(--ch-font-sans);
+    font: var(--ch-type-15-strong);
+    letter-spacing: var(--ch-track-15);
   }
   .ch-hm-empty span span {
-    font: 400 calc(12.5 * var(--ch-type-k))/1.3 var(--ch-font-sans);
+    font: var(--ch-type-13);
     color: var(--ch-text-tertiary);
   }
   .ch-hm-form {
-    padding: 16px 16px 14px;
+    padding: 16px 16px 16px;
     border-radius: var(--ch-radius-xl);
     background: linear-gradient(180deg, var(--ch-ivory-25), #f6f9f6);
     box-shadow: 0 0 0 1px rgb(21 90 57 / 0.12), 0 10px 24px -18px rgb(11 58 37 / 0.35);
@@ -1336,7 +1400,8 @@
     gap: 8px;
   }
   .ch-hm-form__top em {
-    font: 500 calc(12.5 * var(--ch-type-k))/1 var(--ch-font-sans);
+    font: var(--ch-type-13-medium);
+    line-height: var(--ch-lead-tight);
     font-variant-numeric: tabular-nums;
     font-style: normal;
     color: var(--ch-ink-600);
@@ -1347,7 +1412,7 @@
     font-variant-numeric: tabular-nums;
     /* -0.035em, not tighter: the decimal point touched the 3 ("73.4" read "734"); the hero figures share it. */
     letter-spacing: -0.035em;
-    font-variation-settings: 'wdth' 92;
+    font-variation-settings: 'wdth' 88;
     color: var(--ch-text-primary);
   }
   .ch-hm-delta {
@@ -1355,12 +1420,15 @@
     flex-direction: column;
     align-items: flex-end;
     gap: 4px;
-    font: 600 16px/1 var(--ch-font-sans);
+    font: var(--ch-type-16-strong);
+    letter-spacing: var(--ch-track-16);
+    line-height: var(--ch-lead-tight);
     font-variant-numeric: tabular-nums;
     color: var(--ch-text-secondary);
   }
   .ch-hm-delta em {
-    font: 400 calc(11.5 * var(--ch-type-k))/1 var(--ch-font-sans);
+    font: var(--ch-type-12);
+    line-height: var(--ch-lead-tight);
     font-variant-numeric: tabular-nums;
     font-style: normal;
     color: var(--ch-text-tertiary);
@@ -1375,7 +1443,7 @@
     display: block;
     width: 100%;
     height: auto;
-    margin: 12px 0 10px;
+    margin: 12px 0 8px;
   }
   .ch-hm-form__fill {
     fill: rgb(30 107 69 / 0.1);
@@ -1408,83 +1476,26 @@
     border-left: 1px solid color-mix(in oklab, var(--ch-green-600) 12%, transparent);
   }
   .ch-hm-form__figs dt {
-    font: 500 calc(11.5 * var(--ch-type-k))/1 var(--ch-font-sans);
+    font: var(--ch-type-12-medium);
+    line-height: var(--ch-lead-tight);
     color: var(--ch-ink-600);
   }
   .ch-hm-form__figs dd {
-    font: 500 calc(11.5 * var(--ch-type-k))/1.1 var(--ch-font-sans);
+    font: var(--ch-type-12-medium);
+    line-height: var(--ch-lead-tight);
     font-variant-numeric: tabular-nums;
     color: var(--ch-text-tertiary);
   }
   .ch-hm-form__figs dd:nth-of-type(1) {
-    font: 500 18px/1 var(--ch-font-sans);
+    font: var(--ch-type-17-medium);
+    line-height: var(--ch-lead-tight);
     font-variant-numeric: tabular-nums;
     letter-spacing: -0.02em;
     color: var(--ch-text-primary);
   }
-  .ch-hm-week {
-    display: grid;
-    grid-template-columns: repeat(7, minmax(0, 1fr));
-    gap: 4px;
-    list-style: none;
-  }
-  .ch-hm-week__d {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 6px;
-    padding: 10px 0 9px;
-    border-radius: var(--ch-radius-lg);
-    color: inherit;
-    text-decoration: none;
-  }
-  .ch-hm-week__d em {
-    font: 500 calc(11 * var(--ch-type-k))/1 var(--ch-font-sans);
-    font-style: normal;
-    color: var(--ch-text-tertiary);
-  }
-  .ch-hm-week__d b {
-    font: 500 calc(16 * var(--ch-type-k))/1 var(--ch-font-sans);
-    font-variant-numeric: tabular-nums;
-    color: var(--ch-ink-950);
-  }
-  .ch-hm-week__d > span:not(.ch-sr-only) {
-    display: flex;
-    align-items: center;
-    gap: 2px;
-    height: 12px;
-  }
-  .ch-hm-week__d > span i {
-    width: 4px;
-    height: 4px;
-    border-radius: 50%;
-    background: rgb(28 25 18 / 0.25);
-  }
-  /* Today is a raised ivory key; the competition day a raised green one. Other days stay flat on the canvas. */
-  .ch-hm-week .is-today .ch-hm-week__d {
-    background: var(--ch-raised-bg);
-    box-shadow: var(--ch-key-raised-shadow);
-  }
-  .ch-hm-week .is-today .ch-hm-week__d b {
-    font-weight: 600;
-    color: var(--ch-green-700);
-  }
-  .ch-hm-week .is-major .ch-hm-week__d {
-    background: var(--ch-green-raised-bg);
-    box-shadow: var(--ch-green-raised-shadow);
-  }
-  .ch-hm-week .is-major .ch-hm-week__d em {
-    color: rgb(244 241 232 / 0.66);
-  }
-  .ch-hm-week .is-major .ch-hm-week__d b {
-    color: var(--ch-on-fill-100);
-  }
-  .ch-hm-week .is-major .ch-hm-week__d > span {
-    color: var(--ch-hero-mint);
-  }
   .ch-hm-week__n {
     padding: 0 2px;
-    font: 400 calc(13 * var(--ch-type-k))/1.3 var(--ch-font-sans);
+    font: var(--ch-type-13);
     color: var(--ch-ink-600);
   }
   .ch-hm-week__n b {
@@ -1499,7 +1510,7 @@
     list-style: none;
   }
   .ch-hm-list li + li {
-    border-top: 1px solid var(--ch-border-hairline);
+    border-top: var(--ch-hairline-w) solid var(--ch-border-hairline);
   }
   .ch-hm-rd {
     display: flex;
@@ -1507,7 +1518,7 @@
     gap: 12px;
     width: 100%;
     min-height: 64px;
-    padding: 10px 14px 10px 16px;
+    padding: 8px 16px 8px 16px;
     border: 0;
     background: none;
     color: inherit;
@@ -1516,27 +1527,33 @@
     touch-action: manipulation;
     transition: background var(--ch-dur-quick) var(--ch-ease);
   }
-  .ch-hm-rd:active {
+  .ch-hm-rd[data-ch-pressed] {
     background: var(--ch-bg-hover);
+  }
+  @media (hover: hover) {
+    .ch-hm-rd:active {
+      background: var(--ch-bg-hover);
+    }
   }
   .ch-hm-rd__b {
     display: flex;
     flex: 1;
     flex-direction: column;
-    gap: 3px;
+    gap: 4px;
     min-width: 0;
   }
   /* A long name keeps to one line (ellipsis), so the row keeps its height and its course and date line. */
   .ch-hm-rd__b b {
     overflow: hidden;
-    font: 600 calc(14.5 * var(--ch-type-k))/1.2 var(--ch-font-sans);
+    font: var(--ch-type-15-strong);
+    letter-spacing: var(--ch-track-15);
     color: var(--ch-text-primary);
     white-space: nowrap;
     text-overflow: ellipsis;
   }
   .ch-hm-rd__b span {
     overflow: hidden;
-    font: 400 calc(12.5 * var(--ch-type-k))/1.2 var(--ch-font-sans);
+    font: var(--ch-type-13);
     color: var(--ch-text-tertiary);
     white-space: nowrap;
     text-overflow: ellipsis;
@@ -1573,7 +1590,7 @@
     flex-direction: column;
     align-items: center;
     justify-content: center;
-    gap: 3px;
+    gap: 4px;
     min-width: 52px;
     height: 46px;
     border-radius: var(--ch-radius-lg);
@@ -1581,13 +1598,16 @@
     box-shadow: inset 0 1px 2px rgb(28 25 18 / 0.06);
   }
   .ch-hm-score b {
-    font: 500 19px/1 var(--ch-font-sans);
+    font: var(--ch-type-20-medium);
+    line-height: var(--ch-lead-tight);
     font-variant-numeric: tabular-nums;
     letter-spacing: -0.03em;
     color: var(--ch-text-primary);
   }
   .ch-hm-score em {
-    font: 600 11px/1 var(--ch-font-sans);
+    font: var(--ch-type-11-strong);
+    letter-spacing: var(--ch-track-11);
+    line-height: var(--ch-lead-tight);
     font-variant-numeric: tabular-nums;
     font-style: normal;
     color: var(--ch-ink-600);
@@ -1599,12 +1619,12 @@
   .ch-hm-sheet {
     display: flex;
     flex-direction: column;
-    gap: 10px;
+    gap: 8px;
   }
   .ch-hm-strip {
     display: grid;
     grid-template-columns: repeat(4, minmax(0, 1fr));
-    padding: 10px 12px;
+    padding: 8px 12px;
     border-radius: var(--ch-radius-lg);
   }
   .ch-hm-strip > div {
@@ -1613,11 +1633,14 @@
     gap: 4px;
   }
   .ch-hm-strip dt {
-    font: 500 calc(11.5 * var(--ch-type-k))/1 var(--ch-font-sans);
+    font: var(--ch-type-12-medium);
+    line-height: var(--ch-lead-tight);
     color: var(--ch-text-tertiary);
   }
   .ch-hm-strip dd {
-    font: 500 16px/1 var(--ch-font-sans);
+    font: var(--ch-type-16-medium);
+    letter-spacing: var(--ch-track-16);
+    line-height: var(--ch-lead-tight);
     font-variant-numeric: tabular-nums;
     color: var(--ch-text-primary);
   }
@@ -1626,7 +1649,8 @@
     color: var(--ch-text-tertiary);
   }
   .ch-hm-muted {
-    font: var(--ch-type-caption);
+    font: var(--ch-type-13);
+    line-height: var(--ch-lead-caption);
     color: var(--ch-text-tertiary);
   }
 }
@@ -1647,8 +1671,8 @@
 .ch-ph-next {
   display: flex;
   flex-direction: column;
-  margin: 14px 0 4px;
-  padding: 16px 18px;
+  margin: 16px 0 4px;
+  padding: 16px 16px;
   border-radius: var(--ch-radius-xl);
   background: radial-gradient(120% 140% at 90% -30%, rgb(255 255 255 / 0.1), transparent 55%), var(--ch-green-800);
   box-shadow: 0 0 0 1px var(--ch-green-900), var(--ch-elevation-cast);
@@ -1659,7 +1683,8 @@
   display: flex;
   justify-content: space-between;
   gap: 8px;
-  font: 500 12px/1 var(--ch-font-sans);
+  font: var(--ch-type-12-medium);
+  line-height: var(--ch-lead-tight);
   color: rgb(244 241 232 / 0.7);
 }
 .ch-ph-next__k > span:first-child {
@@ -1673,12 +1698,13 @@
 }
 .ch-ph-next__t {
   margin-top: 8px;
-  font: 600 19px/1.15 var(--ch-font-sans);
+  font: var(--ch-type-20-strong);
+  line-height: var(--ch-lead-tight);
   letter-spacing: -0.02em;
 }
 .ch-ph-next__m {
   margin-top: 4px;
-  font: 400 13px/1.3 var(--ch-font-sans);
+  font: var(--ch-type-13);
   font-variant-numeric: tabular-nums;
   color: rgb(244 241 232 / 0.72);
 }
@@ -1687,7 +1713,7 @@
 .ch-cd {
   display: grid;
   grid-template-columns: repeat(2, 1fr);
-  margin-top: 14px;
+  margin-top: 16px;
   border-radius: var(--ch-radius-lg);
   background: var(--ch-on-dark-well-bg);
   box-shadow: var(--ch-on-dark-well-shadow);
@@ -1696,20 +1722,23 @@
   display: flex;
   align-items: baseline;
   justify-content: center;
-  gap: 3px;
-  padding: 13px 0;
+  gap: 4px;
+  padding: 12px 0;
 }
 .ch-cd > span + span {
-  box-shadow: inset 1px 0 0 rgb(210 244 221 / 0.08);
+  box-shadow: inset var(--ch-hairline-w) 0 0 var(--ch-stage-rule);
 }
 .ch-cd b {
-  font: 500 22px/1 var(--ch-font-sans);
+  font: var(--ch-type-22-medium);
+  line-height: var(--ch-lead-tight);
   font-variant-numeric: tabular-nums;
-  letter-spacing: -0.04em;
+  letter-spacing: var(--ch-track-22);
   color: var(--ch-on-fill-100);
 }
 .ch-cd em {
-  font: 500 calc(11 * var(--ch-type-k))/1 var(--ch-font-sans);
+  font: var(--ch-type-11-medium);
+  letter-spacing: var(--ch-track-11);
+  line-height: var(--ch-lead-tight);
   font-style: normal;
   color: rgb(244 241 232 / 0.6);
 }
@@ -1719,11 +1748,11 @@
 .ch-ph-legs-sec {
   display: flex;
   flex-direction: column;
-  gap: 14px;
+  gap: 16px;
 }
 .ch-ph-game {
   position: relative;
-  padding: 24px 26px 22px;
+  padding: 24px 24px 24px;
   border-radius: var(--ch-radius-xl);
   background: var(--ch-sheet-bg);
   box-shadow: var(--ch-elevation-reading);
@@ -1743,7 +1772,8 @@
 }
 /* The caption under the title only: the window picker's own labels are spans too, and took this grey. */
 .ch-ph-game__h > div > span {
-  font: var(--ch-type-caption);
+  font: var(--ch-type-13);
+  line-height: var(--ch-lead-caption);
   font-variant-numeric: tabular-nums;
   color: var(--ch-text-tertiary);
 }
@@ -1751,7 +1781,7 @@
   position: relative;
   display: grid;
   grid-template-columns: minmax(0, 1fr) 220px;
-  gap: 28px;
+  gap: 32px;
   align-items: stretch;
 }
 @media (max-width: 1000px) {
@@ -1790,7 +1820,7 @@
 @media (max-width: 820px) {
   /* The phone chart is 340 units drawn a little narrower: 12.5 keeps the note at 12px or more (audit F09). */
   .ch-ph-chart__ann {
-    font-size: 12.5px;
+    font-size: 13px;
   }
 }
 .ch-ph-chart__val {
@@ -1844,14 +1874,14 @@
   flex-direction: column;
   justify-content: space-between;
   margin: 0;
-  padding-left: 28px;
+  padding-left: 32px;
   box-shadow: var(--ch-seam-y);
 }
 @media (max-width: 1000px) {
   .ch-ph-figs {
     flex-direction: row;
     flex-wrap: wrap;
-    gap: 18px 28px;
+    gap: 16px 32px;
     padding-left: 0;
     box-shadow: none;
   }
@@ -1860,7 +1890,7 @@
   display: flex;
   flex-direction: column;
   gap: 6px;
-  padding: 10px 0;
+  padding: 8px 0;
 }
 .ch-ph-figs > div + div {
   box-shadow: var(--ch-seam-x);
@@ -1870,9 +1900,9 @@
 .ch-ph-viz {
   position: relative;
   display: block;
-  margin: 2px 0 7px;
+  margin: 2px 0 8px;
   height: 8px;
-  border-radius: 4px;
+  border-radius: 999px;
   background: rgb(28 25 18 / 0.06);
   box-shadow: inset 0 1px 1px rgb(28 25 18 / 0.08);
 }
@@ -1892,11 +1922,13 @@
   width: 10px;
   height: 10px;
   box-shadow: 0 0 0 2px var(--ch-sheet-bg);
+  /* No clear change: a neutral mark, darker than the previous window's so the two stay apart. */
+  background: var(--ch-ink-500);
 }
-.ch-ph-viz--avg i.is-better {
-  background: var(--ch-green-fill-600);
+.ch-ph-viz--avg i.is-gain {
+  background: var(--ch-chart-gain);
 }
-.ch-ph-viz--avg i.is-worse {
+.ch-ph-viz--avg i.is-loss {
   background: var(--ch-chart-loss);
 }
 .ch-ph-viz--avg b {
@@ -1919,17 +1951,17 @@
   position: absolute;
   top: 1.5px;
   bottom: 1.5px;
-  border-radius: 3px;
+  border-radius: var(--ch-radius-mark);
 }
 .ch-ph-viz--sg i.is-gain {
-  background: var(--ch-green-fill-500);
+  background: var(--ch-chart-gain-fill);
 }
 .ch-ph-viz--sg i.is-loss {
-  background: var(--ch-chart-loss);
+  background: var(--ch-chart-loss-fill);
 }
 .ch-ph-viz--rounds {
   display: flex;
-  gap: 3px;
+  gap: 4px;
   margin-top: 4px;
   height: auto;
   background: none;
@@ -1938,7 +1970,7 @@
 .ch-ph-viz--rounds i {
   flex: 1;
   height: 8px;
-  border-radius: 2px;
+  border-radius: var(--ch-radius-mark);
   background: var(--ch-ivory-300);
 }
 .ch-ph-viz--rounds i.is-even {
@@ -1948,15 +1980,17 @@
   background: var(--ch-score-under);
 }
 .ch-ph-figs dt {
-  font: 500 calc(12.5 * var(--ch-type-k))/1 var(--ch-font-sans);
+  font: var(--ch-type-13-medium);
+  line-height: var(--ch-lead-tight);
   color: var(--ch-text-secondary);
 }
 .ch-ph-figs dd {
   margin: 0;
-  font: 500 32px/1 var(--ch-font-sans);
+  font: var(--ch-type-34-medium);
+  line-height: var(--ch-lead-tight);
   font-variant-numeric: tabular-nums;
-  letter-spacing: -0.026em;
-  font-variation-settings: 'wdth' 92;
+  letter-spacing: var(--ch-track-34);
+  font-variation-settings: 'wdth' 88;
   color: var(--ch-ink-950);
 }
 .ch-ph-figs dd.is-gain {
@@ -1966,7 +2000,7 @@
   color: var(--ch-chart-loss);
 }
 .ch-ph-figs .ch-ph-figs__m {
-  font: 400 calc(12 * var(--ch-type-k))/1.3 var(--ch-font-sans);
+  font: var(--ch-type-12);
   font-variant-numeric: tabular-nums;
   letter-spacing: 0;
   color: var(--ch-text-tertiary);
@@ -1983,12 +2017,12 @@
   color: var(--ch-green-700);
 }
 .ch-ph-legs-sec {
-  margin-top: 28px;
+  margin-top: 32px;
 }
 .ch-ph-legs {
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
-  gap: 14px;
+  gap: 16px;
 }
 @media (max-width: 1100px) {
   .ch-ph-legs {
@@ -1999,7 +2033,7 @@
   display: flex;
   flex-direction: column;
   gap: 8px;
-  padding: 18px 18px 16px;
+  padding: 16px 16px 16px;
   border-radius: var(--ch-radius-xl);
   background: var(--ch-sheet-bg);
   box-shadow: var(--ch-elevation-reading);
@@ -2011,22 +2045,24 @@
 }
 .ch-ph-leg__h b {
   flex: 1;
-  font: 600 calc(13.5 * var(--ch-type-k))/1 var(--ch-font-sans);
+  font: var(--ch-type-14-strong);
+  line-height: var(--ch-lead-tight);
   color: var(--ch-ink-950);
 }
 .ch-ph-leg__sg {
-  padding: 4px 7px;
+  padding: 4px 8px;
   border-radius: 999px;
-  font: 600 calc(12.5 * var(--ch-type-k))/1 var(--ch-font-sans);
+  font: var(--ch-type-13-strong);
+  line-height: var(--ch-lead-tight);
   font-variant-numeric: tabular-nums;
 }
 .ch-ph-leg__sg.is-gain {
-  background: var(--ch-positive-100);
-  color: var(--ch-green-700);
+  background: var(--ch-chart-gain-tint);
+  color: var(--ch-chart-gain);
 }
 .ch-ph-leg__sg.is-loss {
-  background: var(--ch-warning-100);
-  color: var(--ch-warning-600);
+  background: var(--ch-chart-loss-tint);
+  color: var(--ch-chart-loss);
 }
 /* Rounds to zero ("0.0"): no gain and no loss, so neither green nor amber. */
 .ch-ph-leg__sg.is-flat {
@@ -2040,14 +2076,15 @@
   margin-top: 8px;
 }
 .ch-ph-leg__v > span {
-  font: 500 34px/1 var(--ch-font-sans);
+  font: var(--ch-type-34-medium);
+  line-height: var(--ch-lead-tight);
   font-variant-numeric: tabular-nums;
-  letter-spacing: -0.026em;
-  font-variation-settings: 'wdth' 92;
+  letter-spacing: var(--ch-track-34);
+  font-variation-settings: 'wdth' 88;
   color: var(--ch-ink-950);
 }
 .ch-ph-leg__v em {
-  font: 500 calc(13 * var(--ch-type-k))/1.2 var(--ch-font-sans);
+  font: var(--ch-type-13-medium);
   font-style: normal;
   color: var(--ch-text-secondary);
 }
@@ -2060,7 +2097,7 @@
 .ch-ph-bench__t {
   position: relative;
   height: 6px;
-  border-radius: 3px;
+  border-radius: 999px;
   background: rgb(28 25 18 / 0.08);
 }
 .ch-ph-bench__t i {
@@ -2068,11 +2105,15 @@
   top: 0;
   bottom: 0;
   left: 0;
-  border-radius: 3px;
+  border-radius: var(--ch-radius-mark);
   background: linear-gradient(90deg, var(--ch-green-400), var(--ch-green-500));
 }
 .ch-ph-bench__t i.is-loss {
   background: var(--ch-chart-loss);
+}
+/* Level with the Tour as printed, or an early read: neither a gain nor a loss (A2, A7). */
+.ch-ph-bench__t i:not(.is-gain, .is-loss) {
+  background: var(--ch-ink-400);
 }
 .ch-ph-bench__t em {
   position: absolute;
@@ -2080,13 +2121,15 @@
   bottom: -4px;
   width: 2px;
   margin-left: -1px;
-  border-radius: 1px;
+  border-radius: var(--ch-radius-mark);
   background: var(--ch-text-primary);
 }
 .ch-ph-bench__k {
   display: flex;
   justify-content: space-between;
-  font: 500 calc(11 * var(--ch-type-k))/1 var(--ch-font-sans);
+  font: var(--ch-type-11-medium);
+  letter-spacing: var(--ch-track-11);
+  line-height: var(--ch-lead-tight);
   font-variant-numeric: tabular-nums;
   color: var(--ch-text-tertiary);
 }
@@ -2097,7 +2140,7 @@
 .ch-ph-leg > .ch-ph-leg__n {
   margin: 4px 0 0;
   padding-top: 6px;
-  font: 400 calc(12.5 * var(--ch-type-k))/1.4 var(--ch-font-sans);
+  font: var(--ch-type-13);
   font-variant-numeric: tabular-nums;
   color: var(--ch-text-secondary);
   text-wrap: pretty;
@@ -2159,7 +2202,8 @@
   display: flex;
   justify-content: space-between;
   margin-top: 8px;
-  font: 500 calc(12 * var(--ch-type-k))/1 var(--ch-font-sans);
+  font: var(--ch-type-12-medium);
+  line-height: var(--ch-lead-tight);
   font-variant-numeric: tabular-nums;
   color: var(--ch-text-tertiary);
 }
@@ -2184,11 +2228,12 @@
 .ch-ph-pg {
   display: flex;
   align-items: center;
-  margin: -6px -10px -6px 0;
+  margin: -6px -8px -6px 0;
 }
 .ch-ph-pg > span {
   padding: 0 2px;
-  font: 500 calc(12.5 * var(--ch-type-k))/1 var(--ch-font-sans);
+  font: var(--ch-type-13-medium);
+  line-height: var(--ch-lead-tight);
   font-variant-numeric: tabular-nums;
   color: var(--ch-text-tertiary);
 }
@@ -2224,7 +2269,7 @@
 .ch-ph-card {
   display: flex;
   flex-direction: column;
-  gap: 14px;
+  gap: 16px;
   padding: 16px;
   border-radius: var(--ch-radius-xl);
   background: var(--ch-sheet-bg);
@@ -2239,16 +2284,16 @@
   display: flex;
   flex: 1;
   flex-direction: column;
-  gap: 3px;
+  gap: 4px;
   min-width: 0;
 }
 .ch-ph-rd__b b {
-  font: 600 calc(15.5 * var(--ch-type-k))/1.2 var(--ch-font-sans);
+  font: var(--ch-type-16-strong);
   letter-spacing: -0.01em;
   color: var(--ch-ink-950);
 }
 .ch-ph-rd__b span {
-  font: 400 calc(12.5 * var(--ch-type-k))/1.25 var(--ch-font-sans);
+  font: var(--ch-type-13);
   color: var(--ch-text-tertiary);
 }
 /* Both nines in one shallow recess, a hairline between them: the scorecard reads as one instrument, not two boxes. */
@@ -2270,10 +2315,10 @@
   box-shadow: none;
 }
 .ch-ph-nines > .ch-nine + .ch-nine {
-  box-shadow: inset 0 1px 0 rgb(28 25 18 / 0.08);
+  box-shadow: inset 0 var(--ch-hairline-w) 0 var(--ch-border-hairline);
 }
 .ch-ph-nines.ch-scoreboard > .ch-nine + .ch-nine {
-  box-shadow: inset 0 1px 0 var(--ch-board-rule);
+  box-shadow: inset 0 var(--ch-hairline-w) 0 var(--ch-board-rule);
 }
 /* The card's onward link: a quiet green action at the foot, not a second raised button inside the card. Its arrow ends
    on the card's edge (.ch-btn--flush-end). */
@@ -2283,7 +2328,7 @@
 }
 /* Scoring on the phone (.mp-card.mp-paper): the title and meta sit above the card; the card opens on the window picker, then the line, the four figures and the note. */
 .ch-ph-game.is-phone {
-  gap: 14px;
+  gap: 16px;
   padding: 16px;
   border-radius: var(--ch-radius-xl);
   background: var(--ch-sheet-bg);
@@ -2298,15 +2343,15 @@
   grid-template-columns: repeat(3, 1fr);
   gap: 2px;
   height: 42px;
-  padding: 3px;
+  padding: 4px;
   border-radius: var(--ch-radius-lg);
   background: var(--ch-well-soft-bg);
   box-shadow: var(--ch-well-soft-shadow);
 }
 .ch-ph-game.is-phone .ch-seg .ch-seg__b {
   height: auto;
-  border-radius: calc(var(--ch-radius-lg) - 3px);
-  font-size: calc(13.5 * var(--ch-type-k));
+  border-radius: max(var(--ch-radius-xs), calc(var(--ch-radius-lg) - var(--ch-space-1)));
+  font-size: calc(14 * var(--ch-type-k));
 }
 /* Only the options off the chip take the quieter ink: the chosen one keeps the chip's own ink (controls.css). */
 .ch-ph-game.is-phone .ch-seg .ch-seg__b:not(.is-on) {
@@ -2314,11 +2359,11 @@
 }
 /* The chip is the green every switcher draws (controls.css, owner 2026-10-16), on this switch's tighter corner. */
 .ch-ph-game.is-phone .ch-seg .ch-seg__pill {
-  border-radius: calc(var(--ch-radius-lg) - 3px);
+  border-radius: max(var(--ch-radius-xs), calc(var(--ch-radius-lg) - var(--ch-space-1)));
 }
 .ch-ph-game.is-phone .ch-ph-game__top {
   grid-template-columns: minmax(0, 1fr);
-  gap: 14px;
+  gap: 16px;
 }
 .ch-ph-game.is-phone .ch-ph-figs {
   display: grid;
@@ -2334,14 +2379,14 @@
   letter-spacing: -0.04em;
 }
 .ch-ph-game.is-phone .ch-ph-figs .ch-ph-figs__m {
-  font-size: calc(11.5 * var(--ch-type-k));
+  font-size: calc(12 * var(--ch-type-k));
 }
 .ch-ph-game.is-phone .ch-ph-figs > div {
   padding: 12px 0;
   box-shadow: none;
 }
 .ch-ph-game.is-phone .ch-ph-figs > div:nth-child(even) {
-  padding-left: 14px;
+  padding-left: 16px;
   box-shadow: var(--ch-seam-y);
 }
 .ch-ph-game.is-phone .ch-ph-figs > div:nth-child(n + 3) {
@@ -2351,16 +2396,16 @@
   box-shadow: var(--ch-seam-x), var(--ch-seam-y);
 }
 .ch-ph-game.is-phone .ch-ph-figs dd:not(.ch-ph-figs__m) {
-  font-size: calc(26 * var(--ch-type-k));
+  font-size: calc(28 * var(--ch-type-k));
 }
 .ch-ph-game.is-phone .ch-ph-note {
   align-items: flex-start;
-  font-size: calc(13.5 * var(--ch-type-k));
+  font-size: calc(14 * var(--ch-type-k));
   text-wrap: pretty;
 }
 .ch-ph-game.is-phone .ch-ph-note svg {
   flex: none;
-  margin-top: 3px;
+  margin-top: 4px;
 }
 /* The parts of the game on the phone (.mp-legs): the title and meta above one card, the four parts ruled inside it. */
 .ch-ph-legs-sec.is-phone {
@@ -2383,20 +2428,20 @@
   box-shadow: none;
 }
 .ch-ph-legs-sec.is-phone .ch-ph-leg + .ch-ph-leg {
-  border-top: 1px solid rgb(28 25 18 / 0.08);
+  border-top: var(--ch-hairline-w) solid var(--ch-border-hairline);
 }
 .ch-ph-legs-sec.is-phone .ch-ph-leg__h b {
-  font-size: calc(14.5 * var(--ch-type-k));
+  font-size: calc(15 * var(--ch-type-k));
 }
 .ch-ph-legs-sec.is-phone .ch-ph-leg__v {
-  gap: 10px;
+  gap: 8px;
   margin-top: 0;
 }
 .ch-ph-legs-sec.is-phone .ch-ph-leg__v > span {
-  font-size: calc(30 * var(--ch-type-k));
+  font-size: calc(28 * var(--ch-type-k));
 }
 .ch-ph-legs-sec.is-phone .ch-ph-leg__v em {
-  font-size: calc(12.5 * var(--ch-type-k));
+  font-size: calc(13 * var(--ch-type-k));
 }
 .ch-ph-legs-sec.is-phone .ch-ph-bench {
   margin-top: 2px;
@@ -2416,7 +2461,6 @@
   .ch-hm-delta em,
   .ch-hm-form__figs dt,
   .ch-hm-form__figs dd,
-  .ch-hm-week__d em,
   .ch-hm-strip dt,
   .ch-cd em,
   .ch-ph-bench__k,
@@ -2429,7 +2473,7 @@
   }
   .ch-ph-chart__ax,
   .ch-ph-chart__val {
-    font-size: 12.5px;
+    font-size: 13px;
   }
 }
 
@@ -2441,7 +2485,7 @@
   width: 72px;
   height: 6px;
   margin-top: 6px;
-  border-radius: 3px;
+  border-radius: 999px;
   background: rgb(28 25 18 / 0.07);
   box-shadow: inset 0 1px 1px rgb(28 25 18 / 0.08);
 }
@@ -2459,7 +2503,7 @@
 }
 .ch-rviz--gir i {
   flex: 1;
-  border-radius: 1.5px;
+  border-radius: var(--ch-radius-mark);
   background: var(--ch-ivory-300);
 }
 .ch-rviz--gir i.is-hit {
@@ -2468,13 +2512,13 @@
 .ch-rviz--putts i {
   position: absolute;
   inset: 0 auto 0 0;
-  border-radius: 3px;
+  border-radius: var(--ch-radius-mark);
 }
-.ch-rviz--putts i.is-good {
-  background: var(--ch-green-fill-500);
+.ch-rviz--putts i.is-gain {
+  background: var(--ch-chart-gain-fill);
 }
-.ch-rviz--putts i.is-over {
-  background: var(--ch-chart-loss);
+.ch-rviz--putts i.is-loss {
+  background: var(--ch-chart-loss-fill);
 }
 .ch-rviz--putts b,
 .ch-rviz--sg::after {
@@ -2493,13 +2537,13 @@
   position: absolute;
   top: 1px;
   bottom: 1px;
-  border-radius: 2px;
+  border-radius: var(--ch-radius-mark);
 }
 .ch-rviz--sg i.is-gain {
-  background: var(--ch-green-fill-500);
+  background: var(--ch-chart-gain-fill);
 }
 .ch-rviz--sg i.is-loss {
-  background: var(--ch-chart-loss);
+  background: var(--ch-chart-loss-fill);
 }
 /* The stats row's own span rule (flex, baseline, 6px gap) also reaches the drawings; reset them. */
 .ch-h-round__stats .ch-rviz {
@@ -2517,7 +2561,7 @@
    load (WebKit 1440, 2026-10-07: 183px with the sans greeting, the two-line brief and the actions). */
 @media (min-width: 821px) {
   .ch-h-main[aria-busy='true'][data-canopy] {
-    padding-top: calc(var(--ch-page-head-top) + 4px);
+    padding-top: var(--ch-page-top-eyebrow-short-4);
   }
   .ch-h-main[aria-busy='true'][data-canopy] > .ch-h-head {
     box-sizing: border-box;
@@ -2538,7 +2582,7 @@
     margin: 0;
   }
   .ch-h-main[aria-busy='true'][data-canopy] > .ch-h-head + .ch-h-sheet {
-    margin-top: 36px;
+    margin-top: 32px;
   }
 }
 /* The loading head stacks with the loaded one on a narrow canvas, so it doesn't jump from two columns to one. */
@@ -2557,7 +2601,7 @@
    rule, split by a hairline column; the leaderboard is rows on the canvas, aligned to the head's edge. */
 @media (min-width: 821px) {
   .ch-h-main--desk[data-canopy] .ch-h-sheet > .ch-h-pane {
-    padding: 22px 0 8px;
+    padding: 24px 0 8px;
   }
   .ch-h-main--desk[data-canopy] .ch-h-sheet > .ch-h-pane:first-child {
     padding-right: 32px;
@@ -2567,16 +2611,16 @@
     padding-right: 0;
   }
   .ch-h-main--first[data-canopy] .ch-h-sheet > .ch-h-pane {
-    padding: 22px 0 8px;
+    padding: 24px 0 8px;
   }
   .ch-h-main--desk[data-canopy] .ch-h-sheet > .ch-h-pane + .ch-h-pane {
     padding-left: 32px;
-    box-shadow: inset 1px 0 0 var(--ch-ledger-rule-soft);
+    box-shadow: inset var(--ch-hairline-w) 0 0 var(--ch-ledger-rule-soft);
   }
   .ch-h-main--desk[data-canopy] .ch-h-sec {
-    margin-top: 44px;
+    margin-top: 48px;
     padding-bottom: 12px;
-    box-shadow: inset 0 -1px 0 var(--ch-ledger-rule);
+    box-shadow: inset 0 calc(-1 * var(--ch-hairline-w)) 0 var(--ch-ledger-rule);
   }
   .ch-h-main--desk[data-canopy] .ch-h-lb {
     margin-inline: -12px;
@@ -2588,8 +2632,8 @@
   .ch-h-main--desk[data-canopy] .ch-h-lb__row + .ch-h-lb__row::before {
     right: 12px;
     left: 12px;
-    height: 1px;
-    box-shadow: inset 0 1px 0 var(--ch-ledger-rule-soft);
+    height: var(--ch-hairline-w);
+    box-shadow: inset 0 var(--ch-hairline-w) 0 var(--ch-ledger-rule-soft);
   }
   @media (hover: hover) {
     .ch-h-main--desk[data-canopy] .ch-h-lb__row.is-link:hover {
@@ -2602,35 +2646,48 @@
   }
   /* CH-2602: a press deepens the row's tint and nudges its chevron 2px on, over the press beat; letting go eases back
      over quick. A row never scales (lib/press.ts, owner F02). */
-  .ch-h-main--desk[data-canopy] .ch-h-lb__row.is-link:active {
+  .ch-h-main--desk[data-canopy] .ch-h-lb__row.is-link[data-ch-pressed] {
     background: var(--ch-ledger-row-press);
     transition-duration: var(--ch-dur-press);
   }
-  .ch-h-main--desk[data-canopy] .ch-h-lb__row.is-link:active::after {
+  @media (hover: hover) {
+    .ch-h-main--desk[data-canopy] .ch-h-lb__row.is-link:active {
+      background: var(--ch-ledger-row-press);
+      transition-duration: var(--ch-dur-press);
+    }
+  }
+  .ch-h-main--desk[data-canopy] .ch-h-lb__row.is-link[data-ch-pressed]::after {
     opacity: 1;
     translate: 2px -50%;
     transition-duration: var(--ch-dur-press);
   }
+  @media (hover: hover) {
+    .ch-h-main--desk[data-canopy] .ch-h-lb__row.is-link:active::after {
+      opacity: 1;
+      translate: 2px -50%;
+      transition-duration: var(--ch-dur-press);
+    }
+  }
   /* Player Home: Scoring runs from the week without a card, at the head's edge; "Your game" is four figures on the
      canvas divided by soft rules, not four cards. */
   .ch-h-main--desk[data-canopy] .ch-ph-game {
-    padding: 30px 0 8px;
+    padding: 32px 0 8px;
     border-radius: 0;
     background: none;
-    box-shadow: inset 0 1px 0 var(--ch-ledger-rule-soft);
+    box-shadow: inset 0 var(--ch-hairline-w) 0 var(--ch-ledger-rule-soft);
   }
   .ch-h-main--desk[data-canopy] .ch-ph-game__h {
     padding-bottom: 12px;
-    box-shadow: inset 0 -1px 0 var(--ch-ledger-rule);
+    box-shadow: inset 0 calc(-1 * var(--ch-hairline-w)) 0 var(--ch-ledger-rule);
   }
   .ch-h-main--desk[data-canopy] .ch-ph-legs-sec {
-    margin-top: 44px;
+    margin-top: 48px;
   }
   .ch-h-main--desk[data-canopy] .ch-ph-legs {
     gap: 0;
   }
   .ch-h-main--desk[data-canopy] .ch-ph-leg {
-    padding: 6px 22px 4px;
+    padding: 6px 24px 4px;
     border-radius: 0;
     background: none;
     box-shadow: none;
@@ -2639,7 +2696,7 @@
     padding-left: 0;
   }
   .ch-h-main--desk[data-canopy] .ch-ph-leg + .ch-ph-leg {
-    box-shadow: inset 1px 0 0 var(--ch-ledger-rule-soft);
+    box-shadow: inset var(--ch-hairline-w) 0 0 var(--ch-ledger-rule-soft);
   }
 }
 
@@ -2648,7 +2705,7 @@
    one green feature card (Up next), and every other section flush under an engraved double rule. */
 @media (max-width: 820px) {
   .ch-hm-hero {
-    padding:52px 18px 22px;
+    padding:52px var(--ch-page-x-phone) 22px;
     color:var(--ch-ink-900);
     border-radius:0;
     box-shadow:none;
@@ -2673,7 +2730,7 @@
     margin:0 -4px 40px;
   }
   .ch-hm-hero__date {
-    padding-top:14px;
+    padding-top: 16px;
     border-top:3px double rgb(110 98 62/.2);
     /* P002 D8 (as P001 D5): the date in mixed case reads as words, not a tracked label. */
     font:500 calc(13 * var(--ch-type-k))/1.2 var(--ch-font-sans);
@@ -2684,7 +2741,7 @@
     padding:16px;
     border-radius: var(--ch-radius-lg);
     background:var(--ch-ivory-0);
-    box-shadow:0 0 0 1px var(--ch-ledger-rule);
+    box-shadow:0 0 0 var(--ch-hairline-w) var(--ch-ledger-rule);
     color:var(--ch-ink-900);
     position:relative;
     overflow:hidden;
@@ -2699,10 +2756,10 @@
     background:var(--ch-green-fill-600);
   }
   .ch-hm-next__type {
-    color:#6E6A60;
+    color:var(--ch-text-tertiary);
   }
   .ch-hm-next__when {
-    padding:5px 8px;
+    padding: 4px 8px;
     border-radius: var(--ch-radius-sm);
     background:rgb(110 98 62/.06);
     color:#3F3C35;
@@ -2715,7 +2772,7 @@
     color:var(--ch-ink-900);
   }
   .ch-hm-next p {
-    color:#6E6A60;
+    color:var(--ch-text-tertiary);
   }
   .ch-hm-next__f {
     border-top-color:rgb(110 98 62/.1);
@@ -2724,7 +2781,7 @@
     box-shadow:0 0 0 2px var(--ch-ivory-0);
   }
   .ch-hm-next__rsvp {
-    color:#6E6A60;
+    color:var(--ch-text-tertiary);
   }
   .ch-hm-next__rsvp b {
     color:var(--ch-ink-900);
@@ -2740,7 +2797,7 @@
     color:var(--ch-ink-900);
   }
   .ch-hm-none p {
-    color:#6E6A60;
+    color:var(--ch-text-tertiary);
   }
   .ch-hm-none__chip {
     border-radius: var(--ch-radius-sm);
@@ -2759,7 +2816,7 @@
   }
   .ch-hm-body {
     gap:28px;
-    padding:22px 16px 28px;
+    padding:22px var(--ch-page-x-phone) 28px;
   }
   .ch-hm-link {
     color:var(--ch-green-600);
@@ -2774,7 +2831,7 @@
   .ch-hm-empty {
     border-radius: var(--ch-radius-lg);
     background:var(--ch-ivory-0);
-    box-shadow:0 0 0 1px var(--ch-ledger-rule);
+    box-shadow:0 0 0 var(--ch-hairline-w) var(--ch-ledger-rule);
   }
   .ch-hm-tl__rail i {
     box-shadow:0 0 0 3px var(--ch-ivory-0);
@@ -2797,16 +2854,13 @@
   .ch-hm-form {
     border-radius: var(--ch-radius-lg);
     background:var(--ch-ivory-0);
-    box-shadow:0 0 0 1px var(--ch-ledger-rule);
+    box-shadow:0 0 0 var(--ch-hairline-w) var(--ch-ledger-rule);
   }
   .ch-hm-form__figs {
     border-top-color:rgb(110 98 62/.12);
   }
   .ch-hm-form__figs>div+div {
     border-left-color:rgb(110 98 62/.12);
-  }
-  .ch-hm-week__d {
-    border-radius: var(--ch-radius-sm);
   }
   .ch-hm-list {
     position:relative;
@@ -2824,20 +2878,20 @@
   .ch-hm-score {
     border-radius: var(--ch-radius-sm);
     background:rgb(110 98 62/.04);
-    box-shadow:inset 0 0 0 1px rgb(110 98 62/.08);
+    box-shadow:inset 0 0 0 var(--ch-hairline-w) var(--ch-ledger-rule-soft);
   }
   .ch-hm-score.is-under em {
     color:#9E3B2E;
   }
   .ch-hm .ch-well-soft {
     background:rgb(110 98 62/.035);
-    box-shadow:inset 0 0 0 1px rgb(110 98 62/.07);
+    box-shadow:inset 0 0 0 var(--ch-hairline-w) var(--ch-ledger-rule-soft);
   }
   .ch-hm-team {
     height:34px;
-    padding:0 12px 0 5px;
+    padding: 0 12px 0 4px;
     background:rgb(255 255 255/.07);
-    box-shadow:inset 0 0 0 1px rgb(255 255 255/.1);
+    box-shadow:inset 0 0 0 var(--ch-hairline-w) var(--ch-stage-rule);
   }
   .ch-hm-bell {
     width:36px;
@@ -2852,24 +2906,24 @@
     box-shadow:0 0 0 2px var(--ch-frame);
   }
   .ch-hm-hero {
-    padding-left:20px;
-    padding-right:20px;
+    padding-left:var(--ch-page-x-phone);
+    padding-right:var(--ch-page-x-phone);
   }
   .ch-hm-body {
     gap:32px;
-    padding:26px 20px 32px;
+    padding:26px var(--ch-page-x-phone) 32px;
   }
   .ch-hm-sec {
-    gap:14px;
+    gap: 16px;
   }
   .ch-hm-sec__h {
     align-items:baseline;
     gap:12px;
-    padding:0 0 10px;
-    border-bottom:1px solid var(--ch-ledger-rule);
+    padding: 0 0 8px;
+    border-bottom:var(--ch-hairline-w) solid var(--ch-ledger-rule);
   }
   .ch-hm-link {
-    font-size:calc(13 * var(--ch-type-k));
+    font-size: calc(13 * var(--ch-type-k));
   }
   .ch-hm-tl {
     padding:4px 0;
@@ -2878,23 +2932,25 @@
     min-height:56px;
   }
   .ch-hm-form {
-    padding:18px 18px 16px;
+    padding: 16px 16px 16px;
   }
   .ch-hm-form__top em {
     color:var(--ch-ledger-eyebrow);
-    font-size:calc(11 * var(--ch-type-k));
-    letter-spacing:.12em;
+    font-size: calc(11 * var(--ch-type-k));
+    letter-spacing: var(--ch-track-11);
   }
   .ch-hm-form__top b {
     color:var(--ch-ink-900);
   }
+  /* Visual pass 2026-10-28: a change that clears no standard error is plain ink; only .is-gain and .is-loss colour it
+     (green on "No clear change" read as a gain). The words under it take tertiary: #8A8476 was 3.07:1 on the sheet. */
   .ch-hm-delta {
-    color:#3F7556;
+    color:var(--ch-text-secondary);
   }
   .ch-hm-delta em {
     letter-spacing:0;
-    font-size:calc(11.5 * var(--ch-type-k));
-    color:#8A8476;
+    font-size: calc(12 * var(--ch-type-k));
+    color:var(--ch-text-tertiary);
   }
   .ch-hm-form__svg path:first-of-type {
     display:none;
@@ -2908,29 +2964,19 @@
     stroke:var(--ch-ivory-0);
   }
   .ch-hm-form__figs em {
-    color:#8A8476;
+    color:var(--ch-text-tertiary);
   }
-  .ch-hm-week {
-    padding:6px;
-    gap:2px;
-    background:var(--ch-ivory-0);
-    border-radius: var(--ch-radius-lg);
-    box-shadow:0 0 0 1px var(--ch-ledger-rule);
-  }
-  .ch-hm-week__d {
-    border-radius: var(--ch-radius-sm);
-    padding:10px 0 9px;
-  }
+  /* #6E6A60 measured 4.45:1 on the sheet (#eeebe1); tertiary holds 9:1. */
   .ch-hm-week__n {
-    font-size:calc(12.5 * var(--ch-type-k));
-    color:#6E6A60;
+    font-size: calc(13 * var(--ch-type-k));
+    color:var(--ch-text-tertiary);
   }
   .ch-hm-week__n b {
     color:var(--ch-green-600);
   }
   .ch-hm-rd {
     min-height:62px;
-    padding:10px 18px 10px 16px;
+    padding: 8px 16px 8px 16px;
   }
   .ch-hm-score {
     background:none;
@@ -2939,7 +2985,7 @@
     min-width:44px;
   }
   .ch-hm-score b {
-    font-size:18px;
+    font-size: calc(17 * var(--ch-type-k));
   }
   .ch-hm-need {
     padding:16px;
@@ -2949,7 +2995,7 @@
     box-shadow: var(--ch-elevation-feature);
     border-radius: var(--ch-radius-lg);
     color:#F4F1E8;
-    padding:18px;
+    padding: 16px;
   }
   .ch-hm-next::before {
     display:none;
@@ -2967,7 +3013,7 @@
   }
   .ch-hm-next h2 {
     color:#F4F1E8;
-    font-size:calc(23 * var(--ch-type-k));
+    font-size: calc(22 * var(--ch-type-k));
   }
   .ch-hm-next p {
     color:rgb(244 241 232/.7);
@@ -3008,8 +3054,8 @@
     box-shadow:none;
   }
   .ch-hm-body {
-    gap:36px;
-    padding-top:30px;
+    gap: 32px;
+    padding-top: 32px;
   }
   .ch-hm-sec {
     gap:6px;
@@ -3022,7 +3068,6 @@
   .ch-hm-tl,
   .ch-hm-list,
   .ch-hm-form,
-  .ch-hm-week,
   .ch-hm-empty {
     background:none;
     box-shadow:none;
@@ -3037,7 +3082,7 @@
     min-height:58px;
   }
   .ch-hm-tl__r+.ch-hm-tl__r {
-    box-shadow:inset 0 1px 0 rgb(110 98 62/.1);
+    box-shadow:inset 0 var(--ch-hairline-w) 0 var(--ch-ledger-rule-soft);
   }
   .ch-hm-tl__r.is-now {
     background:none;
@@ -3050,23 +3095,37 @@
     box-shadow:0 0 0 3px var(--ch-workspace);
   }
   .ch-hm-empty {
-    padding:14px 0;
-    border-bottom:1px solid rgb(110 98 62/.1);
+    padding: 16px 0;
+    border-bottom:var(--ch-hairline-w) solid var(--ch-ledger-rule-soft);
   }
   .ch-hm-rd {
     padding:12px 0;
     min-height:64px;
   }
   .ch-hm-score b {
-    font-size:20px;
-    letter-spacing:-.03em;
+    font-size: calc(20 * var(--ch-type-k));
+    letter-spacing: var(--ch-track-20);
   }
   .ch-hm-form {
-    padding-top:18px;
+    padding-top: 16px;
     border-top:var(--ch-ledger-rule-double);
   }
   .ch-hm-form__top em {
     display:none;
+  }
+  /* Visual pass 2026-10-28: the change keeps its words ("No clear change vs previous 10", as the four parts below say
+     theirs); a bare "−0.9" read as a gain. The basis stays with the desktop's stage. */
+  .ch-hm-form__top .ch-hm-delta em:not(.ch-hm-form__basis) {
+    display:block;
+    max-width:11em;
+    text-align:right;
+  }
+  /* Figures in the dense width with tabular digits (rubric, Home: "Figures are tabular, wdth 88"). */
+  .ch-hm-form__figs dd:nth-of-type(1),
+  .ch-hm-score b,
+  .ch-hm-legs__sg,
+  .ch-hm-since__fig {
+    font-variation-settings:var(--ch-wdth-dense);
   }
   .ch-hm-form__top b {
     font-size: calc(56 * var(--ch-type-k));
@@ -3074,24 +3133,17 @@
   }
   .ch-hm-form__top>span:first-child::after {
     content:"Team scoring average · last 10 rounds";
-    font:400 calc(12.5 * var(--ch-type-k))/1.3 var(--ch-font-sans);
-    color:#6E6A60;
+    font:400 calc(13 * var(--ch-type-k))/1.3 var(--ch-font-sans);
+    color:var(--ch-text-tertiary);
     margin-top:4px;
   }
   .ch-hm-form__svg {
-    margin:16px 0 14px;
+    margin: 16px 0 16px;
   }
   .ch-hm-form__figs {
     padding:12px 0;
-    border-top:1px solid var(--ch-ledger-rule);
-    border-bottom:1px solid var(--ch-ledger-rule);
-  }
-  .ch-hm-week {
-    padding:6px 0 0;
-    gap:4px;
-  }
-  .ch-hm-week__d {
-    padding:10px 0;
+    border-top:var(--ch-hairline-w) solid var(--ch-ledger-rule);
+    border-bottom:var(--ch-hairline-w) solid var(--ch-ledger-rule);
   }
   .ch-hm-rail {
     flex-direction:column;
@@ -3107,7 +3159,7 @@
     box-shadow:none;
     border-radius:0;
     padding:16px 0;
-    border-bottom:1px solid rgb(110 98 62/.1);
+    border-bottom:var(--ch-hairline-w) solid var(--ch-ledger-rule-soft);
   }
   .ch-hm-need:last-child {
     border-bottom:0;
@@ -3132,7 +3184,7 @@
    rounded lip; the board drew both inside its hero. So the hero here is the sheet itself. */
 @media (max-width: 820px) {
   .ch-hm-hero {
-    padding-top: 26px;
+    padding-top: 24px;
     background: none;
   }
   .ch-hm-hero::before {
@@ -3146,8 +3198,9 @@
      then 10px to the greeting. */
   .ch-hm > .ch-hm-hero > h1,
   .ch-hm > .ch-hm-hero.is-player > h1 {
-    margin: 10px 0 12px;
-    font: 600 calc(31 * var(--ch-type-k))/1.08 var(--ch-font-sans);
+    margin: 8px 0 12px;
+    font: var(--ch-type-34-strong);
+    line-height: var(--ch-lead-tight);
     letter-spacing: -0.038em;
     font-variation-settings: 'wdth' 88;
     color: var(--ch-ledger-ink);
@@ -3168,62 +3221,10 @@
 @media (max-width: 820px) {
   /* Section titles in the Ledger's phone heading (ui.css `.ch-sec__title`): the bold condensed sans in forest ink. */
   .ch-hm-sec__h h2 {
-    font: 600 calc(19 * var(--ch-type-k))/1.2 var(--ch-font-sans);
-    letter-spacing: -0.025em;
+    font: var(--ch-type-section);
+    letter-spacing: var(--ch-track-section);
     font-variation-settings: 'wdth' 88;
     color: var(--ch-ledger-ink);
-  }
-  /* This week as the board draws it (m-clubhouse.css round 2, m-player-home.css): today is the one solid green key, a
-     competition day a soft green tint with its flag, the other days flat on the sheet. */
-  .ch-hm-week .is-today .ch-hm-week__d {
-    background: var(--ch-green-fill-600);
-    box-shadow: none;
-  }
-  .ch-hm-week .is-today .ch-hm-week__d em {
-    color: var(--ch-on-green-ink-soft);
-  }
-  .ch-hm-week .is-today .ch-hm-week__d b {
-    color: var(--ch-on-green-ink);
-  }
-  .ch-hm-week .is-today .ch-hm-week__d > span {
-    color: var(--ch-on-green-ink);
-  }
-  .ch-hm-week .is-today .ch-hm-week__d > span i {
-    background: var(--ch-on-green-ink-soft);
-  }
-  .ch-hm-week .is-major:not(.is-today) .ch-hm-week__d {
-    background: var(--ch-green-50);
-    box-shadow: none;
-  }
-  /* The weekday letters hold 4.5:1 on their keys: the soft ivory on the green (5.5:1), green 500 on the tint (5.8:1). */
-  .ch-hm-week .is-major:not(.is-today) .ch-hm-week__d em {
-    color: var(--ch-green-500);
-  }
-  .ch-hm-week .is-major:not(.is-today) .ch-hm-week__d b {
-    font-weight: 600;
-    color: var(--ch-green-600);
-  }
-  .ch-hm-week .is-major:not(.is-today) .ch-hm-week__d > span {
-    color: var(--ch-green-600);
-  }
-  .ch-hm-week .is-today.is-major .ch-hm-week__d {
-    box-shadow: 0 0 0 2px var(--ch-hero-mint-strong);
-  }
-  /* A day is a link to it in the calendar: a press tints its key a beat after the finger lands, so a scroll that starts
-     on the strip never flashes it, and letting go clears it at once (CH-1606). Today's green key and the competition
-     day's tint deepen instead. */
-  .ch-hm-week__d {
-    transition: background var(--ch-dur-press) var(--ch-ease);
-  }
-  .ch-hm-week__d:active {
-    background: var(--ch-ledger-row-press);
-    transition-delay: var(--ch-dur-press-delay);
-  }
-  .ch-hm-week .is-major:not(.is-today) .ch-hm-week__d:active {
-    background: var(--ch-green-100);
-  }
-  .ch-hm-week .is-today .ch-hm-week__d:active {
-    background: var(--ch-green-fill-700);
   }
   /* Up next is a link: a press deepens the card's green the same beat later (CH-1606: a large surface answers with a
      deeper tint, never a scale). The card isolates its own stacking context, so the shade's negative layer paints over
@@ -3243,9 +3244,15 @@
     pointer-events: none;
     transition: opacity var(--ch-dur-press) var(--ch-ease);
   }
-  a.ch-hm-next:active::after {
+  a.ch-hm-next[data-ch-pressed]::after {
     opacity: 0.38;
     transition-delay: var(--ch-dur-press-delay);
+  }
+  @media (hover: hover) {
+    a.ch-hm-next:active::after {
+      opacity: 0.38;
+      transition-delay: var(--ch-dur-press-delay);
+    }
   }
   /* Today's rows sit on the section's edge like the Ledger's rows (ui.css `.ch-lgr__row.is-link`): the tap area runs
      12px past the text on each side and a press tints it. */
@@ -3255,9 +3262,15 @@
     border-radius: var(--ch-radius-md);
     transition: background var(--ch-dur-press) var(--ch-ease);
   }
-  .ch-hm-tl__a:active {
+  .ch-hm-tl__a[data-ch-pressed] {
     background: var(--ch-ledger-row-press);
     transition-delay: var(--ch-dur-press-delay);
+  }
+  @media (hover: hover) {
+    .ch-hm-tl__a:active {
+      background: var(--ch-ledger-row-press);
+      transition-delay: var(--ch-dur-press-delay);
+    }
   }
   .ch-hm-tl__a:focus-visible {
     outline: 2px solid var(--ch-border-focus);
@@ -3270,7 +3283,7 @@
   }
   .ch-hm-list li + li {
     border-top: 0;
-    box-shadow: inset 0 1px 0 var(--ch-ledger-rule-soft);
+    box-shadow: inset 0 var(--ch-hairline-w) 0 var(--ch-ledger-rule-soft);
   }
   .ch-hm-rd {
     width: calc(100% + 24px);
@@ -3279,9 +3292,15 @@
     border-radius: var(--ch-radius-md);
     transition: background var(--ch-dur-press) var(--ch-ease);
   }
-  .ch-hm-rd:active {
+  .ch-hm-rd[data-ch-pressed] {
     background: var(--ch-ledger-row-press);
     transition-delay: var(--ch-dur-press-delay);
+  }
+  @media (hover: hover) {
+    .ch-hm-rd:active {
+      background: var(--ch-ledger-row-press);
+      transition-delay: var(--ch-dur-press-delay);
+    }
   }
   .ch-hm-rd:focus-visible {
     outline: 2px solid var(--ch-border-focus);
@@ -3293,48 +3312,67 @@
   .ch-hm-link {
     transition: opacity var(--ch-dur-press) var(--ch-ease);
   }
-  .ch-hm-link:active {
+  .ch-hm-link[data-ch-pressed] {
     opacity: 0.55;
     transition-delay: var(--ch-dur-press-delay);
+  }
+  @media (hover: hover) {
+    .ch-hm-link:active {
+      opacity: 0.55;
+      transition-delay: var(--ch-dur-press-delay);
+    }
   }
   .ch-hm-none__chip,
   .ch-hm-none__add {
     transition: background var(--ch-dur-press) var(--ch-ease);
   }
-  .ch-hm-none__chip:active {
+  .ch-hm-none__chip[data-ch-pressed] {
     background: rgb(255 255 255 / 0.16);
     transition-delay: var(--ch-dur-press-delay);
   }
-  .ch-hm-none__add:active {
+  @media (hover: hover) {
+    .ch-hm-none__chip:active {
+      background: rgb(255 255 255 / 0.16);
+      transition-delay: var(--ch-dur-press-delay);
+    }
+  }
+  .ch-hm-none__add[data-ch-pressed] {
     background: var(--ch-ivory-200);
     transition-delay: var(--ch-dur-press-delay);
   }
+  @media (hover: hover) {
+    .ch-hm-none__add:active {
+      background: var(--ch-ivory-200);
+      transition-delay: var(--ch-dur-press-delay);
+    }
+  }
   /* The first-run pages (CH-2308, CH-2312): the head is the Ledger's page intro (ui/Ledger.tsx PageIntro), the date as
-     the eyebrow under the double rule and the greeting in the bold condensed sans, on the same 20px edge as Home. */
+     the eyebrow under the double rule and the greeting in the bold condensed sans, on the phone gutter like Home. */
   .ch-h-main--first {
-    padding: 26px 20px 48px;
+    padding: 26px var(--ch-page-x-phone) 48px;
   }
   .ch-h-main--first > .ch-h-head {
     gap: 0;
     max-width: none;
-    padding-top: 14px;
+    padding-top: 16px;
     border-top: var(--ch-ledger-rule-double);
   }
   .ch-h-main--first > .ch-h-head > .ch-h-head__date {
-    font: 500 calc(13 * var(--ch-type-k))/1.2 var(--ch-font-sans);
+    font: var(--ch-type-13-medium);
     letter-spacing: 0.01em;
     color: var(--ch-ledger-eyebrow);
   }
   .ch-h-main--first > .ch-h-head > h1 {
-    margin: 10px 0 0;
-    font: 600 calc(31 * var(--ch-type-k))/1.08 var(--ch-font-sans);
+    margin: 8px 0 0;
+    font: var(--ch-type-34-strong);
+    line-height: var(--ch-lead-tight);
     letter-spacing: -0.038em;
     font-variation-settings: 'wdth' 88;
     color: var(--ch-ledger-ink);
   }
   /* The coach's first run with events: the week strip opens a section under the intro, as on the loaded page. */
   .ch-h-main--first > .ch-hm-sec {
-    margin-top: 28px;
+    margin-top: 32px;
   }
 }
 
@@ -3346,16 +3384,16 @@
    is the player's own, scoped to `.ch-hm--player`. */
 @media (max-width: 820px) {
   .ch-hm--player .ch-ph-acts {
-    gap: 10px;
-    margin-top: 14px;
+    gap: 8px;
+    margin-top: 16px;
   }
   /* Section heads in the Ledger's phone heading (ui.css `.ch-sec__title`): the bold condensed sans in forest ink. */
   .ch-hm--player .ch-hm-sec {
-    gap: 14px;
+    gap: 16px;
   }
   .ch-hm--player .ch-hm-lab {
     padding: 6px 0 0;
-    font: 600 calc(14 * var(--ch-type-k))/1.2 var(--ch-font-sans);
+    font: var(--ch-type-14-strong);
     letter-spacing: -0.01em;
     color: var(--ch-ledger-ink);
   }
@@ -3368,9 +3406,15 @@
     box-shadow: inset 0 0 0 1px var(--ch-ledger-rule);
     transition: background var(--ch-dur-press) var(--ch-ease);
   }
-  .ch-hm--player .ch-ph-pg button:active::before {
+  .ch-hm--player .ch-ph-pg button[data-ch-pressed]::before {
     background: var(--ch-ledger-row-press);
     transition-delay: var(--ch-dur-press-delay);
+  }
+  @media (hover: hover) {
+    .ch-hm--player .ch-ph-pg button:active::before {
+      background: var(--ch-ledger-row-press);
+      transition-delay: var(--ch-dur-press-delay);
+    }
   }
   .ch-hm--player .ch-ph-pg button:focus-visible::before {
     box-shadow: 0 0 0 2px var(--ch-border-focus);
@@ -3412,30 +3456,31 @@
   }
   /* The four figures as the Ledger's figure row, two by two: hairlines above and below, soft rules between. */
   .ch-hm--player .ch-ph-game.is-phone .ch-ph-figs {
-    border-top: 1px solid var(--ch-ledger-rule);
-    border-bottom: 1px solid var(--ch-ledger-rule);
+    border-top: var(--ch-hairline-w) solid var(--ch-ledger-rule);
+    border-bottom: var(--ch-hairline-w) solid var(--ch-ledger-rule);
   }
   .ch-hm--player .ch-ph-game.is-phone .ch-ph-figs > div {
-    gap: 5px;
-    padding: 14px 0;
+    gap: 4px;
+    padding: 16px 0;
     box-shadow: none;
   }
   .ch-hm--player .ch-ph-game.is-phone .ch-ph-figs > div:nth-child(even) {
-    padding-left: 14px;
-    box-shadow: inset 1px 0 0 var(--ch-ledger-rule-soft);
+    padding-left: 16px;
+    box-shadow: inset var(--ch-hairline-w) 0 0 var(--ch-ledger-rule-soft);
   }
   .ch-hm--player .ch-ph-game.is-phone .ch-ph-figs > div:nth-child(n + 3) {
-    box-shadow: inset 0 1px 0 var(--ch-ledger-rule-soft);
+    box-shadow: inset 0 var(--ch-hairline-w) 0 var(--ch-ledger-rule-soft);
   }
   .ch-hm--player .ch-ph-game.is-phone .ch-ph-figs > div:nth-child(even):nth-child(n + 3) {
-    box-shadow: inset 0 1px 0 var(--ch-ledger-rule-soft), inset 1px 0 0 var(--ch-ledger-rule-soft);
+    box-shadow: inset 0 var(--ch-hairline-w) 0 var(--ch-ledger-rule-soft), inset var(--ch-hairline-w) 0 0 var(--ch-ledger-rule-soft);
   }
   .ch-hm--player .ch-ph-game.is-phone .ch-ph-figs dt {
-    font: 500 calc(12 * var(--ch-type-k))/1.2 var(--ch-font-sans);
+    font: var(--ch-type-12-medium);
     color: var(--ch-text-tertiary);
   }
   .ch-hm--player .ch-ph-game.is-phone .ch-ph-figs dd:not(.ch-ph-figs__m) {
-    font: 600 22px/1 var(--ch-font-sans);
+    font: var(--ch-type-22-strong);
+    line-height: var(--ch-lead-tight);
 
     font-variant-numeric: tabular-nums;
     letter-spacing: -0.03em;
@@ -3457,13 +3502,13 @@
     box-shadow: none;
   }
   .ch-hm--player .ch-ph-legs-sec.is-phone .ch-ph-leg {
-    padding: 18px 0;
+    padding: 16px 0;
   }
   .ch-hm--player .ch-ph-legs-sec.is-phone .ch-ph-leg:first-child {
     padding-top: 4px;
   }
   .ch-hm--player .ch-ph-legs-sec.is-phone .ch-ph-leg + .ch-ph-leg {
-    border-top: 1px solid var(--ch-ledger-rule-soft);
+    border-top: var(--ch-hairline-w) solid var(--ch-ledger-rule-soft);
   }
   .ch-hm--player .ch-ph-legs-sec.is-phone .ch-ph-leg__h b {
     font-size: calc(15 * var(--ch-type-k));
@@ -3479,15 +3524,15 @@
    the head's rhythm above and below; on the phone it sits under the greeting, before the week's covered title or Up
    next. */
 .ch-h-main--desk > .ch-notice {
-  margin-top: 36px;
+  margin-top: 32px;
 }
 .ch-h-main--desk > .ch-notice + .ch-h-sheet,
 .ch-h-main--desk > .ch-notice + .ch-h-flow {
-  margin-top: 36px;
+  margin-top: 32px;
 }
 /* The leaderboard's notice sits under its head's rule with the panes' 18px rhythm, as the week's does under its title. */
 .ch-h-sec + .ch-notice {
-  margin-top: 18px;
+  margin-top: 16px;
 }
 @media (max-width: 820px) {
   .ch-hm-hero > .ch-notice + .ch-notice,
@@ -3500,7 +3545,7 @@
    rules run the page's width, and the date and the greeting sit where the loaded Home sets them. */
 @media (min-width: 821px) {
   .ch-h-main--first[data-canopy] {
-    padding-top: calc(var(--ch-page-head-top) + 4px);
+    padding-top: var(--ch-page-top-eyebrow-short-4);
   }
   .ch-h-main--first[data-canopy] > .ch-h-head {
     gap: 4px;
@@ -3513,11 +3558,6 @@
    into the ground at night. The frosted today key becomes a faint lit glass, white lit tops drop to a whisper, the
    forest ink on themed surfaces becomes the Ledger's night ink, and the parchment's brown rules take the champagne
    rule. The green surfaces (the scoreboard, Up next, the countdown) are green in both themes and keep their inks. */
-html[data-fw-theme='dark'] .ch-h-main--desk > .ch-h-head .ch-btn--primary .ch-btn__kbd {
-  color: var(--ch-on-green-ink-soft);
-  background: rgb(255 255 255 / 0.1);
-  box-shadow: inset 0 0 0 1px rgb(255 255 255 / 0.12);
-}
 html[data-fw-theme='dark'] .ch-h-day--today {
   background: linear-gradient(180deg, rgb(255 255 255 / 0.14), rgb(255 255 255 / 0.08));
 }
@@ -3594,13 +3634,6 @@ html[data-fw-theme='dark'] .ch-ph-legs-sec.is-phone .ch-ph-leg + .ch-ph-leg {
   html[data-fw-theme='dark'] .ch-hm-tl__rail::before {
     background: rgb(205 187 142 / 0.16);
   }
-  /* The soft ivory measured 4.1:1 on the night fill green: the weekday letter takes the full ink. */
-  html[data-fw-theme='dark'] .ch-hm-week .is-today .ch-hm-week__d em {
-    color: var(--ch-on-green-ink);
-  }
-  html[data-fw-theme='dark'] .ch-hm-week__d > span i {
-    background: rgb(237 231 216 / 0.3);
-  }
   html[data-fw-theme='dark'] .ch-hm-score {
     box-shadow: none;
   }
@@ -3609,13 +3642,13 @@ html[data-fw-theme='dark'] .ch-ph-legs-sec.is-phone .ch-ph-leg + .ch-ph-leg {
   }
   html[data-fw-theme='dark'] .ch-hm .ch-well-soft {
     background: rgb(205 187 142 / 0.04);
-    box-shadow: inset 0 0 0 1px rgb(205 187 142 / 0.08);
+    box-shadow: inset 0 0 0 var(--ch-hairline-w) var(--ch-ledger-rule-soft);
   }
   html[data-fw-theme='dark'] .ch-hm-hero__date {
     border-top: var(--ch-ledger-rule-double);
   }
   html[data-fw-theme='dark'] .ch-hm-tl__r + .ch-hm-tl__r {
-    box-shadow: inset 0 1px 0 var(--ch-ledger-rule-soft);
+    box-shadow: inset 0 var(--ch-hairline-w) 0 var(--ch-ledger-rule-soft);
   }
   html[data-fw-theme='dark'] .ch-hm-empty,
   html[data-fw-theme='dark'] .ch-hm-need {
@@ -3626,7 +3659,7 @@ html[data-fw-theme='dark'] .ch-ph-legs-sec.is-phone .ch-ph-leg + .ch-ph-leg {
   }
   /* Under .ch-hm .is-gain and .is-loss, as the light rule is. */
   :where(html[data-fw-theme='dark']) .ch-hm-delta {
-    color: var(--ch-green-500);
+    color: var(--ch-text-secondary);
   }
   html[data-fw-theme='dark'] .ch-hm-form__svg path:nth-of-type(2) {
     stroke: var(--ch-green-500);
@@ -3670,7 +3703,7 @@ html[data-fw-theme='dark'] .ch-ph-legs-sec.is-phone .ch-ph-leg + .ch-ph-leg {
     outline: none;
   }
   .ch-root .ch-hm-day__open:focus-visible::after {
-    box-shadow: inset 0 0 0 2px var(--ch-on-green-ink);
+    box-shadow: inset 0 0 0 2px var(--ch-border-focus-on-dark);
   }
   /* A press on the card deepens its green, as the player's Up next does (a.ch-hm-next:active::after). The link's
      ::after is the hit area over the words, so the shade is the card's own layer under them; a press on an action
@@ -3686,13 +3719,25 @@ html[data-fw-theme='dark'] .ch-ph-legs-sec.is-phone .ch-ph-leg + .ch-ph-leg {
     pointer-events: none;
     transition: opacity var(--ch-dur-press) var(--ch-ease);
   }
-  .ch-hm-day:has(.ch-hm-day__open:active)::after {
+  .ch-hm-day:has(.ch-hm-day__open[data-ch-pressed])::after {
     opacity: 0.38;
     transition-delay: var(--ch-dur-press-delay);
+  }
+  @media (hover: hover) {
+    .ch-hm-day:has(.ch-hm-day__open:active)::after {
+      opacity: 0.38;
+      transition-delay: var(--ch-dur-press-delay);
+    }
   }
   /* P002 D2: 28px coins whose 2px rings just touch, so two initials always clear the next coin. */
   .ch-hm-day__stack .ch-avatar + .ch-avatar {
     margin-left: -2px;
+  }
+  /* Visual pass 2026-10-28: the 28px coin drew its initials at 11.76px (under the phone's 12px floor) and tracked
+     .04em, so "TM" met the ring. The 12 role (600), untracked. */
+  .ch-hm-day__stack .ch-avatar {
+    font: var(--ch-type-12-strong);
+    letter-spacing: 0;
   }
   /* The card is green in both themes, so its coins keep the day's neutral (tokens.css): the night coin (#243a2c) sank
      into the night green. */
@@ -3712,7 +3757,7 @@ html[data-fw-theme='dark'] .ch-ph-legs-sec.is-phone .ch-ph-leg + .ch-ph-leg {
     position: relative;
     z-index: 1;
     display: flex;
-    gap: 10px;
+    gap: 8px;
     margin-top: 8px;
   }
   .ch-hm-day__act {
@@ -3722,11 +3767,12 @@ html[data-fw-theme='dark'] .ch-ph-legs-sec.is-phone .ch-ph-leg + .ch-ph-leg {
     justify-content: center;
     gap: 8px;
     min-height: 48px;
-    padding: 0 14px;
+    padding: 0 16px;
     border-radius: var(--ch-radius-lg);
     background: rgb(244 238 221 / 0.12);
     color: var(--ch-on-green-ink);
-    font: 500 calc(15 * var(--ch-type-k))/1.2 var(--ch-font-sans);
+    font: var(--ch-type-15-medium);
+    letter-spacing: var(--ch-track-15);
     text-decoration: none;
     transition: background var(--ch-dur-press) var(--ch-ease);
   }
@@ -3735,15 +3781,26 @@ html[data-fw-theme='dark'] .ch-ph-legs-sec.is-phone .ch-ph-leg + .ch-ph-leg {
     color: var(--ch-green-800);
     font-weight: 600;
   }
-  .ch-hm-day__act:active {
+  .ch-hm-day__act[data-ch-pressed] {
     background: rgb(244 238 221 / 0.2);
     transition-delay: var(--ch-dur-press-delay);
   }
-  .ch-hm-day__act.is-primary:active {
+  @media (hover: hover) {
+    .ch-hm-day__act:active {
+      background: rgb(244 238 221 / 0.2);
+      transition-delay: var(--ch-dur-press-delay);
+    }
+  }
+  .ch-hm-day__act.is-primary[data-ch-pressed] {
     background: var(--ch-champagne-100);
   }
+  @media (hover: hover) {
+    .ch-hm-day__act.is-primary:active {
+      background: var(--ch-champagne-100);
+    }
+  }
   .ch-root .ch-hm-day__act:focus-visible {
-    outline: 2px solid var(--ch-on-green-ink);
+    outline: 2px solid var(--ch-border-focus-on-dark);
     outline-offset: 2px;
   }
   /* The recap: the day's rounds as rows on the green, each opening its scorecard. */
@@ -3755,7 +3812,7 @@ html[data-fw-theme='dark'] .ch-ph-legs-sec.is-phone .ch-ph-leg + .ch-ph-leg {
     list-style: none;
   }
   .ch-hm-day__rounds li + li {
-    border-top: 1px solid rgb(255 255 255 / 0.1);
+    border-top: var(--ch-hairline-w) solid var(--ch-stage-rule);
   }
   .ch-hm-day__rounds button {
     display: flex;
@@ -3767,7 +3824,8 @@ html[data-fw-theme='dark'] .ch-ph-legs-sec.is-phone .ch-ph-leg + .ch-ph-leg {
     border: 0;
     background: none;
     color: var(--ch-on-green-ink);
-    font: 500 calc(15 * var(--ch-type-k))/1.2 var(--ch-font-sans);
+    font: var(--ch-type-15-medium);
+    letter-spacing: var(--ch-track-15);
     cursor: pointer;
   }
   .ch-hm-day__rounds b {
@@ -3796,7 +3854,8 @@ html[data-fw-theme='dark'] .ch-ph-legs-sec.is-phone .ch-ph-leg + .ch-ph-leg {
     min-width: 68px;
   }
   .ch-hm-since__fig {
-    font: 600 17px/1 var(--ch-font-sans);
+    font: var(--ch-type-17-strong);
+    line-height: var(--ch-lead-tight);
     letter-spacing: -0.02em;
     font-variant-numeric: tabular-nums;
     color: var(--ch-text-primary);
@@ -3812,10 +3871,10 @@ html[data-fw-theme='dark'] .ch-ph-legs-sec.is-phone .ch-ph-leg + .ch-ph-leg {
     color: var(--ch-score-under);
   }
   .ch-hm-since__c .ch-lgr__title {
-    font-size: calc(14.5 * var(--ch-type-k));
+    font-size: calc(15 * var(--ch-type-k));
   }
   .ch-hm-since__c .ch-lgr__meta {
-    font: 400 calc(12.5 * var(--ch-type-k))/1.3 var(--ch-font-sans);
+    font: var(--ch-type-13);
   }
   /* Home's lists open on a tap without a chevron (Later today, Latest rounds); these rows read the same way. */
   .ch-hm-since__c .ch-lgr__go {
@@ -3833,7 +3892,7 @@ html[data-fw-theme='dark'] .ch-ph-legs-sec.is-phone .ch-ph-leg + .ch-ph-leg {
     padding-left: 8px;
   }
   .ch-hm-rd__spark + .ch-hm-score {
-    margin-left: 10px;
+    margin-left: 8px;
   }
 }
 
@@ -3841,7 +3900,7 @@ html[data-fw-theme='dark'] .ch-ph-legs-sec.is-phone .ch-ph-leg + .ch-ph-leg {
    body's sections keep between them, not flush against Try again. */
 @media (max-width: 820px) {
   .ch-hm-hero .ch-hm-sec.is-failed {
-    margin-top: 18px;
+    margin-top: 16px;
   }
 }
 
@@ -3853,13 +3912,16 @@ html[data-fw-theme='dark'] .ch-ph-legs-sec.is-phone .ch-ph-leg + .ch-ph-leg {
   align-items: center;
   gap: 32px;
   margin: 4px 0 20px;
-  padding: 22px 28px;
+  padding: 24px 32px;
   border-radius: var(--ch-radius-xl);
   background:
     radial-gradient(90% 140% at 0% 0%, rgb(159 224 182 / 0.16), transparent 58%),
     var(--ch-stage-bg);
   box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.1), var(--ch-elevation-feature);
   color: var(--ch-stage-ink);
+  /* The gain and loss pair on the green stage (CONS-20): the stage's mint and gold, which hold on it. */
+  --ch-chart-gain: var(--ch-stage-line);
+  --ch-chart-loss: var(--ch-stage-gold);
 }
 .ch-h-form__lead {
   display: grid;
@@ -3869,7 +3931,7 @@ html[data-fw-theme='dark'] .ch-ph-legs-sec.is-phone .ch-ph-leg + .ch-ph-leg {
 /* Three deep so the Ledger's forest ink on every h2 (shell.css, main[data-canopy] h2) can't put green on the green stage. */
 [data-ui='clubhouse'] .ch-h-form .ch-h-form__lead h2 {
   margin: 0;
-  font: 600 calc(14 * var(--ch-type-k))/1.2 var(--ch-font-sans);
+  font: var(--ch-type-14-strong);
   color: var(--ch-stage-ink-soft);
 }
 .ch-h-form .ch-h-form__big {
@@ -3879,29 +3941,29 @@ html[data-fw-theme='dark'] .ch-ph-legs-sec.is-phone .ch-ph-leg + .ch-ph-leg {
   letter-spacing: -0.045em;
 }
 .ch-h-form__delta {
-  font: 700 15px/1.2 var(--ch-font-sans);
+  font: 700 calc(15 * var(--ch-type-k))/1.2 var(--ch-font-sans);
   font-variant-numeric: tabular-nums;
 }
 .ch-h-form__delta em {
-  font: 400 13px/1.2 var(--ch-font-sans);
+  font: var(--ch-type-13);
   font-variant-numeric: tabular-nums;
   font-style: normal;
   color: var(--ch-stage-ink-soft);
 }
 .ch-h-form__delta.is-gain {
-  color: var(--ch-stage-line);
+  color: var(--ch-chart-gain);
 }
 .ch-h-form__delta.is-loss {
-  color: var(--ch-stage-gold);
+  color: var(--ch-chart-loss);
 }
 .ch-h-form__basis {
-  font: 400 12.5px/1.35 var(--ch-font-sans);
+  font: var(--ch-type-13);
   color: var(--ch-stage-ink-soft);
 }
 .ch-h-form__plot {
   position: relative;
   height: 124px;
-  margin-right: 34px;
+  margin-right: 32px;
 }
 .ch-h-form__svg {
   display: block;
@@ -3934,7 +3996,7 @@ html[data-fw-theme='dark'] .ch-ph-legs-sec.is-phone .ch-ph-leg + .ch-ph-leg {
 .ch-h-form__tick {
   position: absolute;
   left: 100%;
-  margin: -7px 0 0 8px;
+  margin: -8px 0 0 8px;
   font: 600 12px/1 var(--ch-font-sans);
   font-variant-numeric: tabular-nums;
   color: var(--ch-stage-ink-soft);
@@ -3952,41 +4014,43 @@ html[data-fw-theme='dark'] .ch-ph-legs-sec.is-phone .ch-ph-leg + .ch-ph-leg {
 }
 .ch-h-form__figs {
   display: grid;
-  gap: 10px;
+  gap: 8px;
   margin: 0;
 }
 .ch-h-form__figs > div {
   display: grid;
   grid-template-columns: 1fr auto auto;
   align-items: baseline;
-  gap: 10px;
-  padding-top: 10px;
-  border-top: 1px solid var(--ch-stage-rule);
+  gap: 8px;
+  padding-top: 8px;
+  border-top: var(--ch-hairline-w) solid var(--ch-stage-rule);
 }
 .ch-h-form__figs > div:first-child {
   padding-top: 0;
   border-top: 0;
 }
 .ch-h-form__figs dt {
-  font: 500 calc(13 * var(--ch-type-k))/1.2 var(--ch-font-sans);
+  font: var(--ch-type-13-medium);
   color: var(--ch-stage-ink-soft);
 }
 .ch-h-form__figs dd {
   margin: 0;
-  font: 400 calc(12 * var(--ch-type-k))/1.2 var(--ch-font-sans);
+  font: var(--ch-type-12);
   font-variant-numeric: tabular-nums;
   color: var(--ch-stage-ink-soft);
 }
 .ch-h-form__figs dd.ch-num:first-of-type {
-  font: 600 20px/1 var(--ch-font-sans);
+  font: var(--ch-type-20-strong);
+  letter-spacing: var(--ch-track-20);
+  line-height: var(--ch-lead-tight);
   font-variant-numeric: tabular-nums;
   color: var(--ch-stage-ink);
 }
 .ch-h-form__figs dd.is-gain {
-  color: var(--ch-stage-line);
+  color: var(--ch-chart-gain);
 }
 .ch-h-form__figs dd.is-loss {
-  color: var(--ch-stage-gold);
+  color: var(--ch-chart-loss);
 }
 @media (prefers-reduced-motion: reduce) {
   .ch-h-form__dot {
@@ -3996,7 +4060,7 @@ html[data-fw-theme='dark'] .ch-ph-legs-sec.is-phone .ch-ph-leg + .ch-ph-leg {
 @media (max-width: 1100px) {
   .ch-h-form {
     grid-template-columns: minmax(0, 1fr);
-    gap: 18px;
+    gap: 16px;
   }
 }
 /* The form in waiting (SkeletonDeskHead): translucent bars on the stage, each in a box its loaded line's height. */
@@ -4028,7 +4092,7 @@ html[data-fw-theme='dark'] .ch-h-form__bar {
   gap: 8px;
   min-height: 44px;
   margin-top: 12px;
-  padding: 10px 12px;
+  padding: 8px 12px;
   border-radius: var(--ch-radius-md);
   background: var(--ch-well-soft-bg);
   box-shadow: var(--ch-well-soft-shadow);
@@ -4037,17 +4101,28 @@ html[data-fw-theme='dark'] .ch-h-form__bar {
 }
 .ch-ph-asks__k {
   flex: none;
-  font: 600 calc(12.5 * var(--ch-type-k))/1.3 var(--ch-font-sans);
+  font: var(--ch-type-13-strong);
   color: var(--ch-text-primary);
 }
 .ch-ph-asks__v {
   flex: 1;
   min-width: 0;
-  font: 400 calc(12.5 * var(--ch-type-k))/1.3 var(--ch-font-sans);
+  font: var(--ch-type-13);
+}
+.ch-ph-asks__p {
+  white-space: nowrap;
 }
 .ch-ph-asks > svg {
   flex: none;
   color: var(--ch-text-tertiary);
+}
+/* A tap on the row shows, as the hover does (the press controller marks links, lib/press.ts). */
+.ch-ph-asks {
+  transition: background var(--ch-dur-press) var(--ch-ease);
+}
+.ch-ph-asks[data-ch-pressed] {
+  background: var(--ch-bg-hover);
+  transition-delay: var(--ch-dur-press-delay);
 }
 
 /* Phone: touch areas reach 44 x 44 without changing how they are drawn (W4b, 2026-10-19). */
@@ -4080,18 +4155,18 @@ html[data-fw-theme='dark'] .ch-h-form__bar {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  column-gap: 14px;
+  column-gap: 16px;
   row-gap: 2px;
   min-height: 44px;
   margin-top: 20px;
-  padding: 6px 14px;
+  padding: 6px 16px;
   border-radius: var(--ch-radius-md);
   background: var(--ch-well-soft-bg);
   box-shadow: var(--ch-well-soft-shadow);
 }
 .ch-h-queue__k {
   flex: none;
-  font: 600 calc(13 * var(--ch-type-k))/1.3 var(--ch-font-sans);
+  font: var(--ch-type-13-strong);
   color: var(--ch-text-primary);
 }
 .ch-h-queue__v {
@@ -4100,7 +4175,7 @@ html[data-fw-theme='dark'] .ch-h-form__bar {
   align-items: center;
   column-gap: 8px;
   min-width: 0;
-  font: 400 calc(13 * var(--ch-type-k))/1.3 var(--ch-font-sans);
+  font: var(--ch-type-13);
   font-variant-numeric: tabular-nums;
   color: var(--ch-text-tertiary);
 }
@@ -4132,7 +4207,7 @@ html[data-fw-theme='dark'] .ch-h-form__bar {
   margin-top: 20px;
 }
 .ch-h-main--desk > .ch-h-queue + .ch-h-sheet {
-  margin-top: 28px;
+  margin-top: 32px;
 }
 .ch-h-main--first > .ch-h-queue {
   margin-bottom: 4px;
@@ -4141,6 +4216,11 @@ html[data-fw-theme='dark'] .ch-h-form__bar {
 /* The team's game (TeamLegs.tsx): a ruled ledger under the scoring stage, on the stage's own Last 10 rounds. */
 .ch-h-legs {
   margin-top: 24px;
+}
+/* Row 79: the week's sheet comes first, so the form that follows it opens with the page's section rhythm. */
+.ch-h-main--desk > .ch-h-sheet + .ch-h-form,
+.ch-h-main[aria-busy] > .ch-h-sheet + .ch-h-form {
+  margin-top: var(--ch-space-8);
 }
 .ch-h-legs > .ch-h-sec,
 .ch-h-main--desk[data-canopy] .ch-h-legs > .ch-h-sec {
@@ -4180,25 +4260,27 @@ html[data-fw-theme='dark'] .ch-h-form__bar {
   text-align: right;
 }
 .ch-h-legs__t thead th {
-  padding-top: 10px;
+  padding-top: 8px;
   padding-bottom: 8px;
-  font: var(--ch-type-label-s);
+  font: var(--ch-type-13-medium);
+  line-height: var(--ch-lead-label);
   color: var(--ch-text-tertiary);
 }
 .ch-h-legs__t tbody tr {
-  box-shadow: inset 0 1px 0 var(--ch-ledger-rule-soft);
+  box-shadow: inset 0 var(--ch-hairline-w) 0 var(--ch-ledger-rule-soft);
 }
 .ch-h-legs__t tbody th {
-  font: 500 calc(14 * var(--ch-type-k))/1.3 var(--ch-font-sans);
+  font: var(--ch-type-14-medium);
   color: var(--ch-text-primary);
 }
 .ch-h-legs__t td {
-  font: 400 calc(13 * var(--ch-type-k))/1.3 var(--ch-font-sans);
+  font: var(--ch-type-13);
   font-variant-numeric: tabular-nums;
   color: var(--ch-text-tertiary);
 }
 .ch-h-legs__t td.ch-h-legs__sg {
-  font: 600 calc(15 * var(--ch-type-k))/1.2 var(--ch-font-sans);
+  font: var(--ch-type-15-strong);
+  letter-spacing: var(--ch-track-15);
   font-variant-numeric: tabular-nums;
   color: var(--ch-text-primary);
 }
@@ -4220,7 +4302,7 @@ html[data-fw-theme='dark'] .ch-h-form__bar {
   text-decoration: none;
 }
 .ch-h-legs__note {
-  margin-top: 10px;
+  margin-top: 8px;
   font: var(--ch-type-body-s);
   color: var(--ch-text-tertiary);
 }
@@ -4241,7 +4323,7 @@ html[data-fw-theme='dark'] .ch-h-form__bar {
   height: 33px;
 }
 .ch-h-legs__skrow + .ch-h-legs__skrow {
-  box-shadow: inset 0 1px 0 var(--ch-ledger-rule-soft);
+  box-shadow: inset 0 var(--ch-hairline-w) 0 var(--ch-ledger-rule-soft);
 }
 
 /* The Next row's replies (Week.tsx, spec B §4): a second line and one ghost Nudge under the Next badge. */
@@ -4250,7 +4332,8 @@ html[data-fw-theme='dark'] .ch-h-form__bar {
 }
 .ch-h-agenda__rsvp {
   margin-top: 2px;
-  font: var(--ch-type-caption);
+  font: var(--ch-type-13);
+  line-height: var(--ch-lead-caption);
   font-variant-numeric: tabular-nums;
   color: var(--ch-text-tertiary);
 }
@@ -4267,39 +4350,62 @@ html[data-fw-theme='dark'] .ch-h-form__bar {
 
 /* Phone: "Waiting on you" in the hero under the brief, each part a 44px target; the four parts after Team scoring. */
 @media (max-width: 820px) {
-  /* One flowing line: the key, then the parts, wrapping as text; each link's 44px target comes from its padding. */
+  /* Visual pass 2026-10-28: the key on its own line, then each part a quiet capsule that wraps whole. As one flowing
+     line the parts' 12px padding stacked into a 42px gap between wrapped lines and a dot was left at a line's end.
+     Capsules are 32px; the 12px between rows lets each ::after reach 44px without meeting the next row's. */
   .ch-hm-queue {
-    display: block;
-    margin: 0 0 18px;
-    padding: 2px 12px;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 12px 8px;
+    margin: 0 0 16px;
+    padding: 12px;
     border-radius: var(--ch-radius-md);
     background: var(--ch-well-soft-bg);
     box-shadow: var(--ch-well-soft-shadow);
-    font: 400 calc(13 * var(--ch-type-k))/20px var(--ch-font-sans);
+    font: var(--ch-type-13);
     font-variant-numeric: tabular-nums;
     color: var(--ch-text-tertiary);
   }
   .ch-hm-queue__k {
-    margin-right: 8px;
+    flex-basis: 100%;
+    margin-bottom: -4px;
     font-weight: 600;
     color: var(--ch-text-primary);
   }
   .ch-hm-queue__v {
-    display: inline;
+    display: contents;
   }
   .ch-hm-queue__sep {
-    margin: 0 6px;
+    display: none;
   }
   .ch-hm-queue__a {
-    display: inline-block;
-    padding: 12px 0;
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    min-height: 32px;
+    padding: 0 12px;
+    border-radius: 999px;
+    background: color-mix(in oklab, currentColor 9%, transparent);
+    white-space: nowrap;
+    transition: background var(--ch-dur-press) var(--ch-ease);
+  }
+  .ch-hm-queue__a::after {
+    position: absolute;
+    inset: -6px 0;
+    content: '';
+  }
+  .ch-hm-queue__a[data-ch-pressed] {
+    background: color-mix(in oklab, currentColor 16%, transparent);
+    transition-delay: var(--ch-dur-press-delay);
   }
   .ch-hm-queue__fail {
-    display: inline-block;
-    padding: 12px 0;
+    display: inline-flex;
+    align-items: center;
+    min-height: 32px;
   }
   .ch-hm-hero > .ch-hm-queue + .ch-notice {
-    margin-top: 14px;
+    margin-top: 16px;
   }
   .ch-hm-legs__list {
     margin: 0;
@@ -4315,24 +4421,26 @@ html[data-fw-theme='dark'] .ch-h-form__bar {
     padding: 12px 0 0;
   }
   .ch-hm-legs__r + .ch-hm-legs__r {
-    border-top: 1px solid var(--ch-ledger-rule-soft);
+    border-top: var(--ch-hairline-w) solid var(--ch-ledger-rule-soft);
   }
   .ch-hm-legs__l {
     grid-area: label;
-    font: 500 calc(15 * var(--ch-type-k))/1.3 var(--ch-font-sans);
+    font: var(--ch-type-15-medium);
+    letter-spacing: var(--ch-track-15);
     color: var(--ch-text-primary);
   }
   .ch-hm-legs__sg {
     grid-area: sg;
     justify-self: end;
-    font: 600 calc(15 * var(--ch-type-k))/1.3 var(--ch-font-sans);
+    font: var(--ch-type-15-strong);
+    letter-spacing: var(--ch-track-15);
     font-variant-numeric: tabular-nums;
     color: var(--ch-text-primary);
   }
   .ch-hm-legs__s {
     grid-area: stat;
     min-width: 0;
-    font: 400 calc(13 * var(--ch-type-k))/1.4 var(--ch-font-sans);
+    font: var(--ch-type-13);
     font-variant-numeric: tabular-nums;
     color: var(--ch-text-tertiary);
   }
@@ -4340,22 +4448,29 @@ html[data-fw-theme='dark'] .ch-h-form__bar {
     grid-area: chg;
     justify-self: end;
     align-self: baseline;
-    font: 400 calc(12 * var(--ch-type-k))/1.4 var(--ch-font-sans);
+    font: var(--ch-type-12);
     font-style: normal;
     text-align: right;
     color: var(--ch-text-tertiary);
   }
   .ch-hm-legs__who {
     grid-area: who;
-    font: 400 calc(13 * var(--ch-type-k))/20px var(--ch-font-sans);
+    font: var(--ch-type-13);
     color: var(--ch-text-tertiary);
   }
   .ch-hm-legs__a {
+    position: relative;
     display: inline-block;
     padding: 12px 0;
     color: var(--ch-green-600);
     font-weight: 500;
     text-decoration: none;
+  }
+  /* A short name ("Eli B.") drew a 28 x 42 target; the hit area reaches 44 each way without moving the words. */
+  .ch-hm-legs__a::after {
+    position: absolute;
+    inset: -1px min(0px, calc(50% - 22px));
+    content: '';
   }
   /* A row without names still closes on the rows' rhythm. */
   .ch-hm-legs__r:not(:has(.ch-hm-legs__who)) {
@@ -4366,4 +4481,26 @@ html[data-fw-theme='dark'] .ch-h-form__bar {
     font: var(--ch-type-body-s);
     color: var(--ch-text-tertiary);
   }
+}
+
+/* Row 50: the attribute half of the today tile's solid fallback above (WebKit has no media query; the app's bridge sets
+   html[data-reduce-transparency]). */
+:root[data-reduce-transparency] .ch-h-day--today {
+  background: #fff;
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+}
+:root[data-reduce-transparency][data-fw-theme='dark'] .ch-h-day--today {
+  background: var(--ch-ivory-200);
+}
+
+/* P-14 change marks on Home. Up next wears the badge in its kicker and the old value struck under its range, in the card's
+   own muted ink (the card is light or lit by theme, so the struck value takes whatever the line beside it takes). */
+.ch-hm-next .ch-was,
+.ch-ph-next .ch-was {
+  color: inherit;
+}
+.ch-hm-next__type .ch-badge,
+.ch-ph-next__k .ch-badge {
+  margin-inline-start: var(--ch-space-2);
 }

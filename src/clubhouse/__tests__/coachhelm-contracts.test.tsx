@@ -50,7 +50,6 @@ import { PLAYER_HELM_DEVELOPMENT_HREF, playerHelmDrill } from '../data/coachhelm
 import { ClubhouseCoachHelmRoute } from '../routes/coachhelm';
 import { CoachBoard } from '../screens/coachhelm/CoachBoard';
 import { PlayerBoard } from '../screens/coachhelm/PlayerBoard';
-import { Profile } from '../screens/coachhelm/views/Profile';
 import { Standing } from '../screens/coachhelm/views/Standing';
 import { DeepDive } from '../screens/coachhelm/views/DeepDive';
 import type { ChCoachHelmWrites } from '../screens/coachhelm/writes';
@@ -65,7 +64,7 @@ import {
   penalties,
   slope,
 } from '../preview/fixtures-coachhelm';
-import { diveLoad, PREVIEW_DIVE, PREVIEW_PROFILE, PREVIEW_STANDING, profileLoad, standingLoad } from '../preview/fixtures-coachhelm-views';
+import { diveLoad, gameLoad, PREVIEW_DIVE, PREVIEW_GAME, PREVIEW_STANDING, standingLoad } from '../preview/fixtures-coachhelm-views';
 
 const on = { userEnabled: true, teamEnabled: true, effectivelyEnabled: true, disabledReason: null, disabledBy: null } as const;
 const code = (c: string) => document.querySelector(`[data-ch-code="${c}"]`);
@@ -147,12 +146,12 @@ describe('130104 the Fairway drills’ addresses (?view=) land on a screen that 
     await expect(ClubhouseCoachHelmRoute({ view: 'development' })).rejects.toThrow('redirect:/golf/dashboard/stats?tab=dev');
   });
 
-  it('130104 ?view=profile, standing and deep-dive are the signed-in player’s own: the id comes from the session, never from the address', async () => {
+  it('130104 ?view=standing and deep-dive (and profile, Standing at How you play) are the signed-in player’s own: the id comes from the session, never from the address', async () => {
     asPlayer();
-    for (const view of ['profile', 'standing', 'deep-dive'] as const) {
+    for (const [view, drill, at] of [['profile', 'standing', 'game'], ['standing', 'standing', undefined], ['deep-dive', 'deep-dive', undefined]] as const) {
       const el = (await ClubhouseCoachHelmRoute({ view, player: 'pl-someone-else' })) as Gated;
       expect(el.type).toBe(Suspense);
-      expect(el.props.children.props).toEqual({ playerId: 'pl-jonah', drill: view });
+      expect(el.props.children.props).toEqual({ playerId: 'pl-jonah', drill, at });
     }
   });
 
@@ -161,7 +160,7 @@ describe('130104 the Fairway drills’ addresses (?view=) land on a screen that 
     for (const view of ['insights', undefined, '', 'nope', 'PROFILE']) {
       expect(playerHelmDrill(view)).toBeNull();
       const el = (await ClubhouseCoachHelmRoute({ view })) as Gated;
-      expect(el.props.children.props).toEqual({ playerId: 'pl-jonah', drill: null });
+      expect(el.props.children.props).toEqual({ playerId: 'pl-jonah', drill: null, at: undefined });
     }
   });
 
@@ -175,8 +174,8 @@ describe('130104 the Fairway drills’ addresses (?view=) land on a screen that 
     }
   });
 
-  it('130104 none of the three views says it has not been rebuilt', () => {
-    for (const node of [<Profile key="p" load={profileLoad(PREVIEW_PROFILE)} />, <Standing key="s" load={standingLoad(PREVIEW_STANDING)} />, <DeepDive key="d" load={diveLoad(PREVIEW_DIVE)} initialId={null} />]) {
+  it('130104 none of the views says it has not been rebuilt', () => {
+    for (const node of [<Standing key="s" load={standingLoad(PREVIEW_STANDING)} game={gameLoad(PREVIEW_GAME)} />, <DeepDive key="d" load={diveLoad(PREVIEW_DIVE)} initialId={null} />]) {
       const { unmount } = render(wrap(node));
       expect(document.body.textContent).not.toMatch(/rebuilt|not built yet|coming soon/i);
       expect(screen.getByRole('main')).toBeTruthy();
@@ -265,7 +264,7 @@ describe('130702 writes refuse offline, before anything is sent', () => {
     expect(w.assign).not.toHaveBeenCalled();
     expect(code('CH-13601')).toBeNull();
     setOnline(true);
-    await u.click(within(code('CH-1903') as HTMLElement).getByRole('button', { name: 'Retry' }));
+    await u.click(within(code('CH-1903') as HTMLElement).getByRole('button', { name: 'Try again' }));
     await expectCode('CH-13601', /Assigned as Jonah’s focus/);
     expect(w.assign).toHaveBeenCalledTimes(1);
   });
@@ -295,7 +294,7 @@ describe('130702 writes refuse offline, before anything is sent', () => {
     expect(w.undo).not.toHaveBeenCalled();
     expect(code('CH-13901')).not.toBeNull();
     setOnline(true);
-    await u.click(within(code('CH-1903') as HTMLElement).getByRole('button', { name: 'Retry' }));
+    await u.click(within(code('CH-1903') as HTMLElement).getByRole('button', { name: 'Try again' }));
     await waitFor(() => expect(code('CH-13901')).toBeNull());
     expect(w.undo).toHaveBeenCalledTimes(1);
   });

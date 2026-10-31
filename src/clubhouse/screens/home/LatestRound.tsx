@@ -15,7 +15,8 @@ import { EmptyState } from '../../ui/States';
 import { ScrollRegion } from '../../ui/ScrollRegion';
 import { chSwap } from '../../lib/motion';
 import { useChReducedMotion } from '../../lib/reduced-motion';
-import { changeTone, formatSigned, formatToPar, NO_DATA } from '../../lib/format';
+import { changeTone, formatSigned, formatToPar } from '../../lib/format';
+import { NoData } from '../../ui/NoData';
 import { RefreshNotice } from '../../ui/RefreshNotice';
 import { GirViz, PuttsViz, SgViz } from './RoundViz';
 
@@ -34,9 +35,9 @@ function Nine({ label, holes }: { label: string; holes: ChHoleScore[] }) {
       <div className="ch-h-nine__row ch-h-nine__par" role="row">
         <span role="rowheader">Par</span>
         {holes.map((h) => (
-          <span key={h.n} role="cell">{h.par ?? NO_DATA}</span>
+          <span key={h.n} role="cell">{h.par ?? <NoData />}</span>
         ))}
-        <span role="cell">{par ?? NO_DATA}</span>
+        <span role="cell">{par ?? <NoData />}</span>
       </div>
       <div className="ch-h-nine__row" role="row">
         <span role="rowheader">
@@ -47,7 +48,7 @@ function Nine({ label, holes }: { label: string; holes: ChHoleScore[] }) {
             <ScoreMark score={h.score} par={h.par} size="sm" />
           </span>
         ))}
-        <span role="cell" className="ch-h-nine__tot ch-num">{tot ?? NO_DATA}</span>
+        <span role="cell" className="ch-h-nine__tot ch-num">{tot ?? <NoData />}</span>
       </div>
     </div>
   );
@@ -95,7 +96,7 @@ export function LatestRound({ data, mine = false, lead, covered = false }: { dat
         <RefreshNotice
           code="CH-2202"
           title="Recent rounds didn’t load"
-          body="Posted rounds are safe. Try again; the error has been reported."
+          body="Posted rounds are safe. Try again."
           covered={covered}
         />
       ) : !r ? (
@@ -125,7 +126,7 @@ export function LatestRound({ data, mine = false, lead, covered = false }: { dat
                       <Icon icon={Flag} size={16} />
                     </span>
                   ) : (
-                    <Avatar name={r.playerName} size={36} />
+                    <Avatar name={r.playerName} id={r.playerId} size="md" />
                   )}
                   <div>
                     <div className="ch-h-round__name">{mine ? (r.meta.split(' · ')[0] ?? r.meta) : r.playerName}</div>
@@ -155,12 +156,12 @@ export function LatestRound({ data, mine = false, lead, covered = false }: { dat
                 <div className="ch-h-round__stats">
                   <span>
                     <em>GIR</em>
-                    {r.gir ?? NO_DATA}
+                    {r.gir ?? <NoData />}
                     <GirViz gir={r.gir} />
                   </span>
                   <span>
                     <em>Putts</em>
-                    {r.putts ?? NO_DATA}
+                    {r.putts ?? <NoData />}
                     <PuttsViz putts={r.putts} />
                   </span>
                   <span>
@@ -211,7 +212,7 @@ export function LatestRound({ data, mine = false, lead, covered = false }: { dat
                     setI(j);
                   }}
                 >
-                  <Avatar name={x.playerName} size={26} />
+                  <Avatar name={x.playerName} id={x.playerId} size={26} />
                   <span className="ch-h-rail__who">
                     <span className="ch-h-rail__name">{x.playerName}</span>
                     <span className="ch-h-rail__meta">{x.meta.split(' · ').slice(0, 2).join(' · ')}</span>

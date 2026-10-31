@@ -282,6 +282,10 @@ export async function removeCoachPick(
  * service-role client, having already verified the caller staffs the
  * qualifier's team. It is a factory so a missing service key fails inside the
  * best-effort block below, never the confirmation.
+ *
+ * The places on score go by the one order the loader decides (ranking.ts
+ * rankStandings); no caller chooses it, so Clubhouse and Fairway confirm the
+ * same squad their boards showed above the line.
  */
 export async function confirmSelection(
   supabase: Sb,

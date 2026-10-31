@@ -76,8 +76,11 @@ function fakeChat(start: { busy?: boolean; error?: unknown; messages?: UIMessage
  * Ask CoachHelm in the dev preview. `?state=`: new (default) | norounds | noroster | failed | unavailable | loading |
  * pulsefailed | historyempty | historyfailed | threadfailed | history (the phone drawer open) | historyclosed (the desktop
  * panel folded) | offline | error (with `&q=rate|budget|gone|fault|dropped`), and any conversation state of
- * fixtures-ask-thread.ts: answer | thinking | working | action | confirmed | cancelled | receipt | receiptfailed | abandoned |
- * rejected | readfail | partial | long. Nothing reaches the server.
+ * fixtures-ask-thread.ts: answer | visual (a strokes gained anatomy) | compose (a model-designed composition) | composelive (the same, arriving live, with
+ * its motion) | staging (the 2026-10-29 staging transcript: roster, tasks, tournaments, events, a pipe table, a team ranking and
+ * comparison) | thinking | working | action | confirmed | cancelled | receipt | receiptfailed | abandoned |
+ * rejected | readfail | partial | long | reads (an answer that names Jonah's reads, each a link to his Deep dive) | readsother
+ * (the same reads for a player not on the team: no links). Nothing reaches the server.
  */
 export function PreviewAsk({ state, kind }: { state?: string; kind?: string }) {
   const offline = state === 'offline';

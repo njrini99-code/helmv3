@@ -305,4 +305,23 @@ describe('sharedIgnoreErrors — a HELD migration RPC the app already falls back
     expect(matches(ignoreErrors, 'column golf_conversation_participants.last_read_at does not exist')).toBe(false);
     expect(matches(ignoreErrors, 'column golf_messages.hidden_at does not exist')).toBe(false);
   });
+
+  // Sentry JAVASCRIPT-NEXTJS-1D3 (production, from 2026-10-21): golf_event_attendance_counts is HELD (20261017102000);
+  // getEventRSVP and the Clubhouse attendance readers keep the row totals on PGRST202.
+  it('drops the PGRST202 auto-capture for golf_event_attendance_counts, and only that function', async () => {
+    await register();
+    const ignoreErrors = mocks.init.mock.calls[0]![0].ignoreErrors as unknown[];
+    expect(
+      matches(ignoreErrors, 'Could not find the function public.golf_event_attendance_counts(p_event_ids) in the schema cache'),
+    ).toBe(true);
+    // A live attendance RPC, or a lookalike name, going missing must still page.
+    expect(
+      matches(ignoreErrors, 'Could not find the function public.golf_player_invited_to_event(p_event_id) in the schema cache'),
+    ).toBe(false);
+    expect(
+      matches(ignoreErrors, 'Could not find the function public.golf_event_attendance_counts_v2(p_event_ids) in the schema cache'),
+    ).toBe(false);
+    // Anything else wrong with the function (once applied) still pages.
+    expect(matches(ignoreErrors, 'permission denied for function golf_event_attendance_counts')).toBe(false);
+  });
 });

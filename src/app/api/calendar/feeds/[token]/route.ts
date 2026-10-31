@@ -2,6 +2,8 @@ import { createAdminClient } from '@/lib/supabase/admin';
 import { NextRequest, NextResponse } from 'next/server';
 import { getValidTimezone, DEFAULT_TIMEZONE } from '@/lib/calendar/timezone';
 import { escapeICalText } from '@/lib/calendar/ical';
+import { feedChangeLines } from '@/lib/calendar/change-feed';
+import { isClubhouseForTeam } from '@/clubhouse/gate';
 import { fetchAllRowsResult } from '@/lib/supabase/fetch-all-rows';
 import { logServerError, logServerException } from '@/lib/server-error-logger';
 import { CLASS_EVENT_TYPE } from '@/lib/calendar/class-events';
@@ -86,6 +88,8 @@ interface CalendarFeedEvent {
   event_type: string | null;
   all_day: boolean | null;
   status: string | null;
+  /** `golf_events.metadata->change` (P-14): the event's live change mark, if any. */
+  change?: unknown;
 }
 
 interface TeamAuthRpcClient {
@@ -182,7 +186,7 @@ function formatICalDateOnlyExclusiveEnd(dateStr: string): string {
 // (CWE-93). The sibling implementation had been correct the whole time; a
 // second copy was the bug, so there is now only one.
 
-function generateVEvent(event: CalendarFeedEvent): string {
+function generateVEvent(event: CalendarFeedEvent, changeLine?: string): string {
   const lines: string[] = [];
 
   lines.push('BEGIN:VEVENT');
@@ -215,8 +219,11 @@ function generateVEvent(event: CalendarFeedEvent): string {
 
   lines.push(`SUMMARY:${escapeICalText(event.title)}`);
 
-  if (event.description) {
-    lines.push(`DESCRIPTION:${escapeICalText(event.description)}`);
+  // P-14: while the event's change mark is live, what changed leads the description ("Moved from 3:00 PM by Coach Reyes
+  // on Tue 14 April."), so a subscriber's calendar says why the event moved.
+  const description = [changeLine, event.description].filter(Boolean).join('\n');
+  if (description) {
+    lines.push(`DESCRIPTION:${escapeICalText(description)}`);
   }
 
   if (event.location) {
@@ -238,7 +245,7 @@ function generateVEvent(event: CalendarFeedEvent): string {
   return lines.join('\r\n');
 }
 
-function generateICal(events: CalendarFeedEvent[], feedName: string, timezone: string): string {
+function generateICal(events: CalendarFeedEvent[], feedName: string, timezone: string, changeLines: Map<string, string> = new Map()): string {
   const lines: string[] = [];
 
   lines.push('BEGIN:VCALENDAR');
@@ -253,7 +260,7 @@ function generateICal(events: CalendarFeedEvent[], feedName: string, timezone: s
   lines.push('X-PUBLISHED-TTL:PT60M');
 
   for (const event of events) {
-    lines.push(generateVEvent(event));
+    lines.push(generateVEvent(event, changeLines.get(event.id)));
   }
 
   lines.push('END:VCALENDAR');
@@ -390,7 +397,7 @@ export async function GET(
     const { data: events, error: eventsError } = await fetchAllRowsResult((from, to) => {
       let eventsQuery = supabase
         .from('golf_events')
-        .select('id, title, description, location, event_type, start_time, end_time, all_day, status')
+        .select('id, title, description, location, event_type, start_time, end_time, all_day, status, change:metadata->change')
         .eq('team_id', teamId)
         // A subscribed TEAM calendar must not export one player's class
         // schedule to every teammate's phone (2026-08-05).
@@ -443,7 +450,10 @@ export async function GET(
 
     const feedName = typedFeed.name || 'Helm Golf Calendar';
     const feedEvents = await scopeMeetingsToFeedOwner(supabase, typedFeed, teamId, (events || []) as CalendarFeedEvent[]);
-    const icalContent = generateICal(feedEvents, feedName, feedTimezone);
+    // P-14's change line is a Clubhouse feature: it rides the Clubhouse release flag (and its team allowlist), so with
+    // golf_clubhouse_ui off every subscribed feed is exactly what it was before change marks existed.
+    const changeLines = isClubhouseForTeam(teamId) ? feedChangeLines(feedEvents, { timeZone: feedTimezone, nowMs: now }) : undefined;
+    const icalContent = generateICal(feedEvents, feedName, feedTimezone, changeLines);
 
     return new NextResponse(icalContent, {
       headers: {

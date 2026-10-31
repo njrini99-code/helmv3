@@ -13,6 +13,8 @@ vi.mock('@/app/golf/actions/insights-feed', () => ({ dismissInsight: vi.fn(), re
 vi.mock('@/app/golf/actions/coachhelm-course-plan', () => ({ listCoursePlanCourses: vi.fn(), getCoursePlan: vi.fn() }));
 
 import { CoachBoard } from '../screens/coachhelm/CoachBoard';
+import { CoursePlan } from '../screens/coachhelm/CoursePlan';
+import { takePrefill } from '../screens/messages/prefill';
 import type { ChCoachHelmWrites, ChCoursePlanReads } from '../screens/coachhelm/writes';
 import { PREVIEW_HELM_COACH } from '../preview/fixtures-coachhelm';
 import { PREVIEW_COURSES, PREVIEW_PLANS } from '../preview/fixtures-course-plan';
@@ -73,6 +75,23 @@ describe('course plan on the coach board', () => {
     render(wrap(<CoachBoard data={{ ...PREVIEW_HELM_COACH, coursePlan: true }} writes={writes} coursePlanReads={reads({ courses: async () => ({ status: 'ok', courses: [] }) })} />));
     await userEvent.click(screen.getByRole('button', { name: 'Course plan' }));
     expect(await screen.findByText(/has no course with three rounds on it yet/)).toBeTruthy();
+  });
+
+  it('Message {who} hands the player’s version to their thread in Messages, written and not sent (row 77)', async () => {
+    render(wrap(<CoursePlan playerId="p-ava" who="Ava" reads={reads()} />));
+    await userEvent.click(screen.getByRole('button', { name: 'Course plan' }));
+    await userEvent.click(await screen.findByRole('button', { name: /Pine Hollow/ }));
+    // Visual pass 2026-10-28: was "Send to Ava"; the link only drafts, so it reads Message (rubric H1, G4 row 77).
+    const send = await screen.findByRole('link', { name: 'Message Ava' });
+    const href = send.getAttribute('href')!;
+    expect(href).toMatch(/^\/golf\/dashboard\/messages\?prefill=[a-z0-9]+$/);
+    // The address carries only the key; the draft waits in this tab, addressed to Ava alone.
+    const prefill = takePrefill(new URL(href, 'https://x.test').searchParams);
+    const plan = PREVIEW_PLANS['c-pine'];
+    if (plan.status === 'too_few') throw new Error('fixture');
+    expect(prefill).toEqual({ players: ['p-ava'], draft: [plan.player.title, ...plan.player.lines].join('\n') });
+    // Copy stays beside it.
+    expect(screen.getByRole('button', { name: 'Copy for Ava' })).toBeTruthy();
   });
 
   it('offers Try again when a read fails', async () => {

@@ -3,8 +3,9 @@
 import { CalendarCheck, CalendarDays, Check, Lock, ChevronDown, ChevronLeft, ChevronRight, ChevronsUpDown, Ellipsis, Plus, Printer, Rss, TriangleAlert, Users, X } from 'lucide-react';
 import { AnimatePresence, m, useIsPresent } from 'motion/react';
 import { useRouter } from 'next/navigation';
-import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, useTransition, type CSSProperties, type ReactNode, type RefObject } from 'react';
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, useTransition, type ComponentProps, type CSSProperties, type ReactNode, type RefObject } from 'react';
 import { useChSessionState } from '../../lib/session-state';
+import { ChangeMarksProvider } from '../../lib/use-change-marks';
 import type { ChCalendarData } from '../../data/calendar';
 import { Avatar } from '../../ui/Avatar';
 import { Button, IconButton } from '../../ui/Button';
@@ -19,19 +20,29 @@ import { Swap } from '../../ui/Swap';
 import { useNow } from '../../lib/use-now';
 import { haptic } from '../../lib/haptics';
 import { chReport, chTrail } from '../../lib/track';
-import { addDays, addMonths, CAL_HH, daylightOn, dayNum, dowOf, fmtHour, type ChDaylight, findOverlaps, focusHour, monthCells, monthKey, monthName, viewTitle, weekDates, yearOf, type ChCalEvent, type ChCalType, type ChCalView } from './model';
+import { addDays, addMonths, CAL_HH, daylightOn, dayNum, dowOf, fmtHour, type ChDaylight, findOverlaps, focusHour, monthCells, monthKey, monthName, viewTitle, weekDates, yearOf, type ChCalEvent, type ChCalPerson, type ChCalType, type ChCalView } from './model';
 import { AgendaView, MonthView, TimeGrid, type ChMoveTarget, type ChNow } from './views';
+import { barPill, barSpan, daysBetween, respan, type ChBarTarget } from './drag-model';
 import { updateGolfEvent } from '@/app/golf/actions/calendar-events';
-import { offsetMinutesFor } from '@/lib/golf/timezone';
+import { clashesAt, clashSummary } from './drag-model';
+import { writeMove, type ChMoveKind, type ChMoveScope } from './move-write';
+import { whoHears, whoHearsLine } from './who-hears';
+import { RoundMoveConfirm, SeriesScopeMenu } from './drag-popovers';
 import { useToast } from '../../ui/Toast';
 import { friendlyReason, isOffline, normalise, useAction } from '../../lib/use-action';
 import { Attendance, EventDetail, Overlap, Summary, type ChInsp, type InspCtx } from './inspector';
-import { CancelEvent, DeleteEvent, EventEditor, SubscribeSheet, type EditorSeed } from './editor';
+import { CancelEvent, DeleteEvent, EventEditor, SubscribeSheet, type ChTournamentSaved, type EditorSeed } from './editor';
+import { roundsOverlay } from './round-overlay';
+import { RoundEditor } from './editor-round';
+import { roundMoveQuestion, roundMoveRefusal } from './round-label';
+import { CancelRoundDialog, useHeldCancel } from './cancel-round';
 import { BusySheet } from './extras';
 import { CalendarPhone } from './CalendarPhone';
+import { CalendarLiveProvider } from './live-events';
+import type { LiveSnapshot } from '../../live/model';
 import { Modal } from '../../ui/Modal';
-import { Tooltip } from '../../ui/Tooltip';
 import { useChPhone } from '../../lib/use-phone';
+import { useChClock } from '../../lib/use-clock';
 import { useChReducedMotion } from '../../lib/reduced-motion';
 import { CH_POP, chTween } from '../../lib/motion';
 import { useLightPlace } from '../../shell/light';
@@ -40,6 +51,8 @@ import { usePopoverFit } from '../../lib/use-popover-fit';
 import { CalendarFirstRun } from './CalendarFirstRun';
 import { useCalendarLive } from './live';
 import { chFocusQuietly } from '../../lib/focus-quietly';
+import { usePageKeys, type ChPageKey } from '../../shell/command/page-keys';
+import { plural, pluralWord } from '../../lib/plural';
 
 function zonedNow(timeZone: string, d: Date): ChNow {
   const p: Record<string, string> = {};
@@ -97,8 +110,14 @@ function useOpenOnNow(tick: number, first: string, on: boolean, hour: number | n
 }
 
 /** Widgets whose arrow keys move their own selection or focus, and the page's popovers (A-09). */
+/** B11: the calendar's own keys, as the shortcuts sheet lists them. */
+const CAL_KEYS: readonly ChPageKey[] = [
+  { label: 'Go to today', keys: ['T'] },
+  { label: 'Previous or next', keys: ['Left', 'Right'] },
+];
+const CAL_COACH_KEYS: readonly ChPageKey[] = [{ label: 'New event', keys: ['N'] }, ...CAL_KEYS];
+
 const COMPOSITE = '[role="radiogroup"], [role="tablist"], [role="menu"], [role="menubar"], [role="listbox"], [role="grid"], [role="tree"], [role="slider"], [role="dialog"]';
-const toHHMM = (h: number) => `${String(Math.floor(h)).padStart(2, '0')}:${String(Math.round((h % 1) * 60)).padStart(2, '0')}`;
 
 /**
  * P006-B3: optimistic moves held while their toast offers Undo, then written. The write is the toast's onExpire, so it
@@ -107,86 +126,220 @@ const toHHMM = (h: number) => `${String(Math.floor(h)).padStart(2, '0')}:${Strin
  * Undo pressed after that says the move already stands.
  */
 /** `preview`: the dev preview keeps a move on screen and writes nothing. */
-function useHeldMoves(timezone: string, events: ChCalEvent[], today: string, onSaved: () => void, preview: boolean) {
+export type ChMoveOpts = { kind?: ChMoveKind; scope?: ChMoveScope };
+/** P-5: a round's version is its tournament's, so a save of R1 is the version R2's next move must send. */
+const tokenKey = (x: ChCalEvent) => (x.round ? `tour:${x.round.tournamentId}` : x.id);
+function useHeldMoves(timezone: string, events: ChCalEvent[], today: string, onSaved: () => void, preview: boolean, people: Map<string, ChCalPerson>) {
   const toast = useToast();
-  const [moves, setMoves] = useState<Map<string, ChMoveTarget>>(() => new Map());
-  /** The move waiting on its Undo; each move is its own record, so a stale toast never acts on a newer move. */
-  const held = useRef<{ id: string; write: () => void } | null>(null);
+  const clock = useChClock();
+  const [moves, setMoves] = useState<Map<string, ChMoveTarget | ChBarTarget>>(() => new Map());
+  /** CH-6805: one polite line per completed move, never during a drag. */
+  const [said, setSaid] = useState('');
+  /**
+   * The move waiting on its Undo; each move is its own record, so a stale toast never acts on a newer move. A second
+   * move of the same event inside the window replaces it (P-4 6.3): one write per burst, from the first "from".
+   */
+  const held = useRef<{ id: string; e: ChCalEvent; scope: ChMoveScope; write: () => void; undo: () => void; written: boolean } | null>(null);
+  /** The newest version each event was written at, so a following move needn't wait for the page to re-read. */
+  const tokens = useRef(new Map<string, string>());
+  const live = useRef({ events, people });
+  live.current = { events, people };
   const drop = useCallback((id: string) => setMoves((m) => (m.has(id) ? new Map([...m].filter(([k]) => k !== id)) : m)), []);
   // The server's copy has caught up: the moves already written stand on their own.
   useEffect(() => {
     setMoves((m) => (held.current && m.has(held.current.id) ? new Map([[held.current.id, m.get(held.current.id)!]]) : new Map()));
+    tokens.current.clear();
   }, [events]);
   const flush = useCallback(() => {
     const h = held.current;
     if (!h) return;
     h.write();
   }, []);
+  /** Moves written offline, each waiting on the window's `online` event; leaving the page removes them, so none writes later. */
+  const waiting = useRef(new Set<() => void>());
   useEffect(() => {
-    window.addEventListener('pagehide', flush);
-    return () => {
-      window.removeEventListener('pagehide', flush);
+    const queued = waiting.current;
+    const leave = () => {
+      // Offline, a move can't be written as the page goes: it is dropped, and the event shows its server time on return.
+      if (isOffline()) held.current = null;
       flush();
+      // A move still waiting on the connection is dropped too, also on pagehide: a page the back-forward cache restores
+      // must not write, on reconnecting, a move the toast said leaving dropped.
+      for (const back of queued) window.removeEventListener('online', back);
+      queued.clear();
+    };
+    window.addEventListener('pagehide', leave);
+    return () => {
+      window.removeEventListener('pagehide', leave);
+      // Leaving inside the app (no pagehide) drops an offline move the same way: the toast said leaving drops it.
+      leave();
     };
   }, [flush]);
+
   const move = useCallback(
-    (e: ChCalEvent, to: ChMoveTarget) => {
-      flush();
+    (e: ChCalEvent, to: ChMoveTarget | ChBarTarget, opts: ChMoveOpts = {}) => {
+      const kind = 'from' in to ? 'bar' : (opts.kind ?? 'move');
+      const scope = opts.scope ?? (e.seriesId ? 'this' : 'single');
+      const prior = held.current && held.current.id === e.id && !held.current.written ? held.current : null;
+      if (!prior) flush();
       if (isOffline()) {
         haptic('error');
         toast({ tone: 'error', title: `Couldn’t move ${e.title}: you’re offline`, body: 'Reconnect, then try again. Nothing was changed.', code: 'CH-1903' });
         return;
       }
+      // The event as it stood before the burst: its "from", its version and its people.
+      const base = prior ? prior.e : e;
       setMoves((m) => new Map(m).set(e.id, to));
+      const fail = (title: string, body: string, code: string, err?: unknown) => {
+        if (err) chReport(err, { surface: 'calendar.moveEvent', action: 'calendar.moveEvent' });
+        drop(e.id);
+        haptic('error');
+        toast({ tone: 'error', title, body, code, replace: 'calendar-move' });
+      };
+      const send = (version: string | null, again: boolean) => {
+        chTrail(again ? 'calendar move event again' : 'calendar move event');
+        return writeMove({ e: base, to, kind, scope, expectedUpdatedAt: version }, timezone)
+          .then((res) => {
+            if (res.ok) {
+              if (res.updatedAt) tokens.current.set(tokenKey(e), res.updatedAt);
+              onSaved();
+              return;
+            }
+            if (res.code === 'stale') {
+              const now = res.current && res.current.start != null ? fmtHour(res.current.start, true, clock) : null;
+              drop(e.id);
+              haptic('error');
+              toast({
+                tone: 'error',
+                title: `${base.title} changed while you were moving it`,
+                body: now ? `It’s now at ${now}. Yours wasn’t saved.` : 'Yours wasn’t saved.',
+                code: 'CH-6018',
+                replace: 'calendar-move',
+                // The coach has chosen twice: no new Undo window, the same target with the fresh version.
+                action: res.current?.version ? { label: 'Move again', run: () => void send(res.current!.version, true) } : undefined,
+              });
+              onSaved();
+              return;
+            }
+            // P-5 6.4: a round the tournament refused to move (under way, scored, out of order), in its own words.
+            if (res.code === 'refused') return fail(`Couldn’t move ${base.title}`, res.notice.text, res.notice.code);
+            if (res.code === 'gone') return fail(`${base.title} was cancelled or deleted`, 'It was changed by someone else while you were moving it.', 'CH-6022');
+            if (res.code === 'forbidden') return fail('Only coaches can move team events', 'Nothing was changed.', 'CH-6021');
+            const reason = (res.message && friendlyReason(res.message)) || null;
+            if (scope === 'thisAndFuture') return fail('Couldn’t move the series', 'Nothing was changed. Try again in a moment.', 'CH-6019', new Error(res.message || 'Series move was not saved'));
+            if (kind === 'resize') return fail(`Couldn’t change the length of ${base.title}`, reason || 'It’s back as it was. Try again in a moment.', 'CH-6020', new Error(res.message || 'Resize was not saved'));
+            return fail(`Couldn’t move ${base.title}`, reason || 'It’s back where it was. Try again in a moment.', 'CH-6015', new Error(res.message || 'Move was not saved'));
+          })
+          .catch((err) => fail(`Couldn’t move ${base.title}`, 'It’s back where it was. Try again in a moment.', 'CH-6015', err));
+      };
       const write = () => {
+        if (held.current !== entry) return;
         held.current = null;
         entry.written = true;
         if (preview) return;
-        chTrail('calendar move event');
-        const startTime = toHHMM(to.start);
-        const fail = (err: unknown) => {
-          chReport(err, { surface: 'calendar.moveEvent', action: 'calendar.moveEvent' });
-          drop(e.id);
-          haptic('error');
-          toast({ tone: 'error', title: `Couldn’t move ${e.title}`, body: (err instanceof Error && friendlyReason(err.message)) || 'It’s back where it was. Try again in a moment.', code: 'CH-6015' });
-        };
-        updateGolfEvent(e.id, {
-          startDate: to.date,
-          endDate: to.date,
-          startTime,
-          endTime: toHHMM(to.end),
-          allDay: false,
-          timezoneOffset: offsetMinutesFor(to.date, startTime, timezone) ?? undefined,
-        } as never)
-          .then((res) => (res?.success ? onSaved() : fail(new Error(res?.error || 'Move was not saved'))))
-          .catch(fail);
+        // Offline when Undo runs out: the move waits on screen and writes on reconnect (leaving drops it).
+        if (isOffline()) {
+          toast({ title: 'Waiting for a connection to save', body: 'Leaving this page now drops the move.', replace: 'calendar-move' });
+          const back = () => {
+            window.removeEventListener('online', back);
+            waiting.current.delete(back);
+            void send(tokens.current.get(tokenKey(e)) ?? base.version ?? null, false);
+          };
+          waiting.current.add(back);
+          window.addEventListener('online', back);
+          return;
+        }
+        void send(tokens.current.get(tokenKey(e)) ?? base.version ?? null, false);
       };
-      const entry = { id: e.id, write, written: false };
+      const undo = () => {
+        if (held.current !== entry) {
+          // Written already (a second press of an Undo that ran does nothing).
+          if (entry.written) toast({ title: 'Already saved. Drag it back to undo.' });
+          return;
+        }
+        held.current = null;
+        drop(e.id);
+        haptic('select');
+        setSaid('Move undone.');
+      };
+      const entry = { id: e.id, e: base, scope, write, undo, written: false };
+      // Before the replacing toast: the old toast's onExpire runs on replace and must see it is no longer current.
       held.current = entry;
-      const day = to.date === e.date ? '' : ` ${to.date === today ? 'today' : `on ${dowOf(to.date)} ${dayNum(to.date)}`}`;
-      toast({
-        title: `Moved to ${fmtHour(to.start)}${day}`,
-        action: {
-          label: 'Undo',
-          run: () => {
-            if (held.current !== entry) {
-              // Written already (a second press of an Undo that ran does nothing).
-              if (entry.written) toast({ title: 'Already saved. Drag it back to undo.' });
-              return;
-            }
-            held.current = null;
-            drop(e.id);
-            haptic('select');
+
+      const { events: evs, people: ppl } = live.current;
+      if ('from' in to) {
+        // P-4 4.9: a bar moves by days with its times kept, or one end changes.
+        const was = barSpan(base);
+        const same = daysBetween(was.from, was.to) === daysBetween(to.from, to.to);
+        const label = same ? `Moved to ${barPill(to)}` : to.from === was.from ? `Now ends ${barPill({ from: to.to, to: to.to })}` : `Now starts ${barPill({ from: to.from, to: to.from })}`;
+        toast({
+          title: label,
+          body: whoHearsLine(whoHears(base, ppl)) ?? undefined,
+          replace: 'calendar-move',
+          action: { label: 'Undo', run: undo },
+          onExpire: () => {
+            if (held.current === entry) flush();
           },
-        },
+        });
+        setSaid(`${base.title} ${same ? `moved to ${dowLong(to.from)} ${dayNum(to.from)} ${monthName(to.from)}` : label.toLowerCase()}. ${undoHint()}`);
+        return;
+      }
+      const day = to.date === base.date ? '' : ` ${to.date === today ? 'today' : `on ${dowOf(to.date)} ${dayNum(to.date)}`}`;
+      const at = fmtHour(to.start, true, clock);
+      const title =
+        kind === 'resize'
+          ? to.end !== base.end
+            ? `Ends at ${fmtHour(to.end, true, clock)}`
+            : `Starts at ${at}`
+          : scope === 'this'
+            ? `Moved this event to ${at}${day}`
+            : scope === 'thisAndFuture'
+              ? `Moved this and following to ${at}`
+              : `Moved to ${at}${day}`;
+      const clash = clashSummary(base, clashesAt(base, to, evs), evs, ppl);
+      const body = [
+        scope === 'thisAndFuture' ? `Every ${DOW_LONG[dowIndex(base.date)]} from ${monthName(base.date).slice(0, 3)} ${dayNum(base.date)}.` : null,
+        clash.line && clash.players ? `${clash.line} for ${plural(clash.players, 'player')}.` : null,
+        whoHearsLine(whoHears(base, ppl)),
+      ]
+        .filter(Boolean)
+        .join(' ');
+      toast({
+        title,
+        body: body || undefined,
+        replace: 'calendar-move',
+        action: { label: 'Undo', run: undo },
         onExpire: () => {
           if (held.current === entry) flush();
         },
       });
+      const when = `${dowLong(to.date)} ${dayNum(to.date)} ${monthName(to.date)}`;
+      setSaid(
+        `${base.title} ${kind === 'resize' ? `now ${to.end !== base.end ? `ends at ${fmtHour(to.end, true, clock)}` : `starts at ${at}`}` : `moved to ${at}, ${when}`}.${clash.line ? ` It clashes with ${clash.line.replace(/^Clashes with /, '')}.` : ''} ${undoHint()}`,
+      );
     },
-    [flush, drop, toast, timezone, today, onSaved, preview],
+    [flush, drop, toast, timezone, today, onSaved, preview, clock],
   );
-  return { moves, move };
+  /** Command or Control Z: the latest held move's Undo (P-4 6.3). */
+  const undoLatest = useCallback(() => {
+    const h = held.current;
+    if (!h) return false;
+    h.undo();
+    return true;
+  }, []);
+  /** The scope of the move held for this event, when one is: a further move of it keeps that answer, unasked. */
+  const heldScope = useCallback((id: string): ChMoveScope | null => (held.current && held.current.id === id && !held.current.written ? held.current.scope : null), []);
+  return { moves, move, undoLatest, said, heldScope };
+}
+
+const DOW_LONG = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'] as const;
+const dowIndex = (date: string) => new Date(`${date}T12:00:00Z`).getUTCDay();
+const dowLong = (date: string) => DOW_LONG[dowIndex(date)]!;
+/** "Undo with Command Z." on a Mac, "Control Z" elsewhere, and on touch the notice holds Undo. */
+function undoHint(): string {
+  if (typeof navigator === 'undefined') return '';
+  if (typeof matchMedia === 'function' && matchMedia('(pointer: coarse)').matches) return 'Undo is in the notice.';
+  return /Mac|iPhone|iPad/.test(navigator.platform || navigator.userAgent) ? 'Undo with Command Z.' : 'Undo with Control Z.';
 }
 
 /**
@@ -314,7 +467,7 @@ function PeoplePicker({ people, sel, setSel }: { people: ChCalendarData['people'
   const stack = (chosen.length ? chosen : people).slice(0, 4);
   const count = chosen.length || people.length;
   const label = !chosen.length ? 'Everyone' : chosen.length === 1 ? chosen[0]!.name : `${chosen.length} players`;
-  const detail = !chosen.length ? `Team schedule · ${people.length} ${people.length === 1 ? 'player' : 'players'}` : chosen.length === 1 ? 'Their events and classes' : chosen.map((p) => p.name.split(' ')[0]).join(', ');
+  const detail = !chosen.length ? `Team schedule · ${plural(people.length, 'player')}` : chosen.length === 1 ? 'Their events and classes' : chosen.map((p) => p.name.split(' ')[0]).join(', ');
   const list = people.filter((p) => p.name.toLowerCase().includes(q.trim().toLowerCase()));
   const tog = (id: string) => {
     haptic('select');
@@ -325,7 +478,7 @@ function PeoplePicker({ people, sel, setSel }: { people: ChCalendarData['people'
       <button ref={trigger} type="button" className={'ch-pp__trigger' + (chosen.length ? ' is-on' : '')} onClick={() => setOpen(!open)} aria-haspopup="dialog" aria-expanded={open} aria-label={`People: ${label}`}>
         <span className="ch-pp__stack">
           {stack.map((p) => (
-            <Avatar key={p.id} name={p.name} size={26} />
+            <Avatar key={p.id} name={p.name} id={p.id} size={26} />
           ))}
           {count > 4 && <span className="ch-pp__more">+{count - 4}</span>}
         </span>
@@ -360,7 +513,7 @@ function PeoplePicker({ people, sel, setSel }: { people: ChCalendarData['people'
               const on = sel.includes(p.id);
               return (
                 <button key={p.id} type="button" className="ch-pp__row" aria-pressed={on} onClick={() => tog(p.id)}>
-                  <Avatar name={p.name} size={28} />
+                  <Avatar name={p.name} id={p.id} size="sm" />
                   <span className="ch-pp__name">
                     <b>{p.name}</b>
                     <span>{p.year ?? 'Player'}</span>
@@ -384,6 +537,33 @@ function PeoplePicker({ people, sel, setSel }: { people: ChCalendarData['people'
   );
 }
 
+/**
+ * P-14: a change that arrives while the page is open (the realtime refresh) is said once, politely: "Practice moved to 4:00 PM.
+ * It was 3:00 PM." Nothing is said for what was already there when the page opened, for a change the reader made themselves
+ * (their toast covers it), or twice for the same change.
+ */
+function ChangeAnnouncer({ events }: { events: ChCalEvent[] }) {
+  const known = useRef<Set<string> | null>(null);
+  const [said, setSaid] = useState('');
+  useEffect(() => {
+    const ids = new Set<string>();
+    let fresh = '';
+    for (const e of events) {
+      const c = e.change;
+      if (!c || c.partial) continue;
+      ids.add(c.id);
+      if (known.current && !known.current.has(c.id) && !c.byMe && !fresh) fresh = c.liveText;
+    }
+    known.current = new Set([...(known.current ?? []), ...ids]);
+    if (fresh) setSaid(fresh);
+  }, [events]);
+  return (
+    <span className="ch-sr-only" role="status" aria-live="polite">
+      {said}
+    </span>
+  );
+}
+
 const buildUrl = (view: ChCalView, date: string, today: string, event?: string) => {
   const q = new URLSearchParams();
   if (view !== 'week') q.set('view', view);
@@ -394,7 +574,7 @@ const buildUrl = (view: ChCalView, date: string, today: string, event?: string) 
 };
 
 /** `frozen` pins the clock to the loaded "now" (the dev preview renders a fixed day). */
-export function Calendar({
+function CalendarBody({
   data,
   initialEvent,
   initialNew = false,
@@ -451,6 +631,7 @@ export function Calendar({
     if (returnFocus) jumpBtn.current?.focus();
   }, []);
   const phone = useChPhone();
+  const clockPref = useChClock();
   const clock = useNow();
   const now = useMemo<ChNow>(() => (clock && !frozen ? zonedNow(data.timezone, clock) : { date: data.today, hour: data.nowHour }), [clock, frozen, data.timezone, data.today, data.nowHour]);
 
@@ -465,9 +646,87 @@ export function Calendar({
   }, [data.view, data.anchor]);
 
   const people = useMemo(() => new Map(data.people.map((p) => [p.id, p])), [data.people]);
+  // P-5 4.2: a tournament just made shows its rounds at once, keyed by their real event ids, until the page's re-read
+  // brings the same rows (with their refs) and the overlay steps aside: same ids, so nothing flickers.
+  const [made, setMade] = useState<ChCalEvent[]>([]);
+  useEffect(() => {
+    setMade((m) => (m.length && m.every((o) => data.events.some((e) => e.id === o.id && e.round)) ? [] : m));
+  }, [data.events]);
+  // F-0029: a new event drawn the moment it is published, until the page's re-read brings the stored one.
+  const [published, setPublished] = useState<ChCalEvent | null>(null);
+  useEffect(() => setPublished(null), [data.events]);
+  const provisional = useMemo(
+    () => ({
+      add: (e: ChCalEvent) => {
+        setPublished(e);
+        setEditor(null);
+        return () => setPublished(null);
+      },
+      reopen: (e: ChCalEvent) => setEditor({ event: null, copyOf: e, resend: true }),
+    }),
+    [],
+  );
+  const onTournamentSaved = useCallback((t: ChTournamentSaved) => setMade(roundsOverlay(t)), []);
   const refreshQuiet = useCallback(() => router.refresh(), [router]);
-  const { moves, move } = useHeldMoves(data.timezone, data.events, data.today, refreshQuiet, preview);
-  const placed = useMemo(() => (moves.size ? data.events.map((e) => (moves.has(e.id) ? { ...e, ...moves.get(e.id)! } : e)) : data.events), [data.events, moves]);
+  // P-5 should 5: a round or tournament cancel strikes through at once and is written when its Undo runs out.
+  const heldCancel = useHeldCancel(data.events, refreshQuiet, preview);
+  const [cancellingRound, setCancellingRound] = useState<ChCalEvent | null>(null);
+  const withMade = useMemo(() => {
+    const base = heldCancel.struck.size ? data.events.map(heldCancel.overlay) : data.events;
+    const shown = published ? [...base, published] : base;
+    if (!made.length) return shown;
+    const ids = new Set(made.map((e) => e.id));
+    return [...shown.filter((e) => !ids.has(e.id)), ...made];
+  }, [data.events, made, published, heldCancel.struck, heldCancel.overlay]);
+  const { moves, move, undoLatest, said, heldScope } = useHeldMoves(data.timezone, data.events, data.today, refreshQuiet, preview, people);
+  /** P-4 4.8: a series event dropped somewhere new, held there with its question open. */
+  const [ask, setAsk] = useState<{ e: ChCalEvent; to: ChMoveTarget | ChBarTarget; kind: ChMoveKind; round?: boolean } | null>(null);
+  /** CH-6843: a round dropped out of order, said once; it snaps back and nothing is asked or written. */
+  const [orderSaid, setOrderSaid] = useState('');
+  const placed = useMemo(() => {
+    const over = ask ? new Map(moves).set(ask.e.id, ask.to) : moves;
+    if (!over.size) return withMade;
+    const out: ChCalEvent[] = [];
+    const spanned = new Set<string>();
+    for (const e of withMade) {
+      const to = over.get(e.id);
+      if (!to) out.push(e);
+      else if (!('from' in to)) out.push({ ...e, ...to });
+      else if (!spanned.has(e.id)) {
+        // A bar's day entries are laid out again for its new days, as the loader would.
+        spanned.add(e.id);
+        out.push(...respan(e, to));
+      }
+    }
+    return out;
+  }, [withMade, moves, ask]);
+  const onGridMove = useCallback(
+    (e: ChCalEvent, to: ChMoveTarget | ChBarTarget, kind: ChMoveKind) => {
+      // P-5 6.4: a round keeps its order (the editor's and the RPC's rule), then asks before it moves.
+      if (e.round) {
+        const refused = roundMoveRefusal(e, to, data.events);
+        if (refused) {
+          haptic('error');
+          setOrderSaid('');
+          requestAnimationFrame(() => setOrderSaid(refused));
+          return;
+        }
+        setAsk({ e, to, kind, round: true });
+        return;
+      }
+      const scope = e.seriesId ? heldScope(e.id) : null;
+      if (e.seriesId && !scope) {
+        setAsk({ e, to, kind });
+        return;
+      }
+      move(e, to, { kind, scope: scope ?? undefined });
+    },
+    [move, heldScope, data.events],
+  );
+  const answered = useCallback((id: string) => {
+    setAsk(null);
+    requestAnimationFrame(() => document.querySelector<HTMLElement>(`.ch-wk__grid [data-ev-id="${CSS.escape(id)}"]`)?.focus({ preventScroll: true }));
+  }, []);
   const events = useMemo(
     () => (sel.length ? placed.filter((e) => (e.type === 'class' ? e.owner != null && sel.includes(e.owner) : e.people.some((p) => sel.includes(p)))) : placed),
     [placed, sel],
@@ -532,6 +791,12 @@ export function Calendar({
       const t = e.target instanceof Element ? e.target : null;
       // A key a control already used (the View radios' arrows, a popover's Esc) is not also a calendar shortcut (A-09).
       if (e.defaultPrevented) return;
+      // P-4 6.3: Command or Control Z undoes the latest held move, read before modified keys are dropped below; never
+      // inside a field, a dialog or the editor.
+      if ((e.metaKey || e.ctrlKey) && !e.shiftKey && !e.altKey && e.key.toLowerCase() === 'z' && !t?.closest('input, textarea, select, [contenteditable="true"], dialog[open]') && !editor) {
+        if (undoLatest()) e.preventDefault();
+        return;
+      }
       if (t?.closest('input, textarea, select, [contenteditable="true"], dialog[open]') || e.metaKey || e.ctrlKey || e.altKey || editor || cancelling || deleting || subs || busyOpen) return;
       // Arrows inside a widget that moves its own selection, or inside a popover, belong to it; N and T still work there.
       if (e.key.startsWith('Arrow') && t?.closest(COMPOSITE)) return;
@@ -545,7 +810,8 @@ export function Calendar({
     };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
-  }, [coach, editor, cancelling, deleting, subs, busyOpen, view, anchor, insp, goToday, step]);
+  }, [coach, editor, cancelling, deleting, subs, busyOpen, view, anchor, insp, goToday, step, undoLatest]);
+  usePageKeys('Calendar', coach ? CAL_COACH_KEYS : CAL_KEYS);
 
   const dates = view === 'day' ? [anchor] : weekDates(anchor);
   // P006-A1: the global light's sun at the team's place, on the team's clock; one read per day shown.
@@ -605,15 +871,22 @@ export function Calendar({
   const count = new Set(events.filter((e) => e.type !== 'class' && e.type !== 'busy' && !e.cancelled && inView(e.date)).map((e) => e.id)).size;
   const selId = insp && (insp.kind === 'event' || insp.kind === 'attendance') ? insp.id : insp?.kind === 'overlap' ? (overlaps.find((o) => o.id === insp.id)?.eventId ?? null) : null;
   const open = (id: string, date?: string) => {
+    // A block drawn at Publish (F-0029) has no stored event to open until the page's re-read brings it.
+    if (id.startsWith('provisional:')) return;
     const e = data.events.find((x) => x.id === id && (!date || x.date === date)) ?? data.events.find((x) => x.id === id);
-    if (!e) return;
+    if (!e) {
+      // P-14: a moved-away row can link to a day outside the loaded window; the address carries the event, and its own day opens.
+      if (date && !data.eventsError) window.location.assign(buildUrl(view, date, data.today, id));
+      return;
+    }
     // A-25: an event opened from the keyboard (Enter or Space on its block, bar or agenda row) takes focus into its
     // panel, and closing the panel hands focus back to it. A click leaves focus where the pointer put it.
     const from = document.activeElement;
     const keyboard = keyed.current && !phone && from instanceof HTMLElement && from.matches('.ch-ev, .ch-ev-bar, .ch-ag__row');
     opener.current = keyboard ? from : null;
     toPanel.current = keyboard;
-    setInsp({ kind: 'event', id: e.id, date: e.date });
+    // The event already open stays the same state, so a double click runs nothing twice (F-0057).
+    setInsp((cur) => (cur?.kind === 'event' && cur.id === e.id && cur.date === e.date ? cur : { kind: 'event', id: e.id, date: e.date }));
   };
 
   // More than one read failed: the page says so once with one Try again (the shell's CH-1209), and a part with a place
@@ -653,6 +926,11 @@ export function Calendar({
     onDelete: (e) => setDeleting(e),
     onDuplicate: (e) => setEditor({ event: null, copyOf: e }),
     onFind: (date, invite) => setEditor({ event: null, date, invite }),
+    tournamentsEnabled: !!data.tournamentsEnabled,
+    onSetUp: (e) => setEditor({ event: e, track: true }),
+    onCancelRound: (e) => setCancellingRound(e),
+    onRestoreRound: (e) => heldCancel.restore(e, 'round'),
+    onRestoreTournament: (e) => heldCancel.restore(e, 'tournament'),
     refresh,
   };
 
@@ -671,7 +949,7 @@ export function Calendar({
         <InlineNotice
           code="CH-6212"
           title="Your team’s timezone didn’t load."
-          body={`Times are shown in ${data.zoneLabel} until it does. Try again; the error has been reported.`}
+          body={`Times are shown in ${data.zoneLabel} until it does. Try again.`}
           onRetry={refresh}
         />
       )}
@@ -679,30 +957,61 @@ export function Calendar({
         <InlineNotice
           code="CH-6213"
           title="The roster didn’t load."
-          body="Events are complete, but players can’t be invited or picked until it does. Try again; the error has been reported."
+          body="Events are complete, but players can’t be invited or picked until it does. Try again."
           onRetry={refresh}
         />
       )}
       {data.busyError && !covered && (
-        <InlineNotice code="CH-6202" title="Your busy time didn’t load." body="Team events are complete, but your own blocks aren’t shown. Try again; the error has been reported." onRetry={refresh} />
+        <InlineNotice code="CH-6202" title="Your busy time didn’t load." body="Team events are complete, but your own blocks aren’t shown. Try again." onRetry={refresh} />
       )}
       {data.classesError && !covered && (
         <InlineNotice
           code="CH-6203"
           title={coach ? "Class schedules didn’t load." : "Your classes didn’t load."}
-          body={coach ? 'Team events are complete, but class overlaps may be missing. Try again; the error has been reported.' : 'Team events are complete. Try again; the error has been reported.'}
+          body={coach ? 'Team events are complete, but class overlaps may be missing. Try again.' : 'Team events are complete. Try again.'}
           onRetry={refresh}
         />
       )}
 
     </>
   );
+  // P-5 4.3: a tracked round (or one whose ref didn't load) opens round mode, never the event editor.
+  const roundSeed = !!data.tournamentsEnabled && !!editor?.event && !editor.track && (!!editor.event.round || !!editor.event.roundRefFailed);
   const dialogs = (
     <>
       {coach && (
-        <EventEditor
-          seed={editor}
+        <RoundEditor
+          event={roundSeed ? editor!.event : null}
           onClose={() => setEditor(null)}
+          onSaved={(d) => {
+            setEditor(null);
+            setInsp(null);
+            if (d < data.range.from || d > data.range.to) go(view, d);
+            else refresh();
+          }}
+          people={data.people}
+          peopleError={!!data.membersError}
+          timezone={data.timezone}
+          onCancelRound={(e) => (setEditor(null), setCancellingRound(e))}
+          onRestoreRound={(e) => (setEditor(null), heldCancel.restore(e, 'round'))}
+        />
+      )}
+      {coach && (
+        <CancelRoundDialog
+          event={cancellingRound}
+          onClose={() => setCancellingRound(null)}
+          onConfirm={(scope, reason) => {
+            const e = cancellingRound!;
+            setCancellingRound(null);
+            heldCancel.cancel(e, scope, reason);
+          }}
+        />
+      )}
+      {coach && (
+        <EventEditor
+          seed={roundSeed ? null : editor}
+          onClose={() => setEditor(null)}
+          provisional={provisional}
           onSaved={(d) => {
             setEditor(null);
             setInsp(null);
@@ -715,6 +1024,9 @@ export function Calendar({
           timezone={data.timezone}
           today={now.date}
           nowHour={now.hour}
+          tournamentsEnabled={!!data.tournamentsEnabled}
+          teamId={data.teamId}
+          onTournamentSaved={onTournamentSaved}
         />
       )}
       {coach && (
@@ -759,6 +1071,7 @@ export function Calendar({
       <>
         <CalendarFirstRun onNew={() => setEditor({ event: null })} />
         {dialogs}
+        <ChangeAnnouncer events={data.events} />
       </>
     );
   }
@@ -777,12 +1090,14 @@ export function Calendar({
           flagged={flagged}
           selId={selId}
           notices={notices}
-          eventsNotice={data.eventsError ? <InlineNotice code="CH-6201" title="The calendar didn’t load." body="Nothing was changed. Try again; the error has been reported." onRetry={refresh} covered={covered} /> : null}
+          eventsNotice={data.eventsError ? <InlineNotice code="CH-6201" title="The calendar didn’t load." body="Nothing was changed. Try again." onRetry={refresh} covered={covered} /> : null}
           onView={go}
           onStep={step}
           onOpen={open}
           onNew={(d) => setEditor({ event: null, date: d })}
           onSubscribe={() => setSubs(true)}
+          more={coach ? moreItems.filter((i) => i.icon !== Printer) : undefined}
+          onMove={coach ? onGridMove : undefined}
         />
         {/* The desktop's detail panel, as a sheet (board: event detail). */}
         <Modal
@@ -805,6 +1120,36 @@ export function Calendar({
 
   return (
     <main className="ch-cal" data-canopy="" aria-busy={pending} /* CH-6406: busy while a view, week or save is on its way; the page dims */>
+      {/* CH-6805: a completed move, said once (never during a drag): "Practice moved to 4:00 PM, Wednesday 15 October." */}
+      <span className="ch-sr-only" role="status" aria-live="polite" data-ch-code="CH-6805">
+        {said}
+      </span>
+      <span className="ch-sr-only" role="status" aria-live="polite" data-ch-code="CH-6843">
+        {orderSaid}
+      </span>
+      {ask?.round && (
+        <RoundMoveConfirm
+          anchorId={ask.e.id}
+          question={roundMoveQuestion(ask.e, ask.to, clockPref)}
+          teeSheet={!!ask.e.round?.teeSheet}
+          onMove={() => {
+            move(ask.e, ask.to, { kind: ask.kind });
+            answered(ask.e.id);
+          }}
+          onCancel={() => answered(ask.e.id)}
+        />
+      )}
+      {ask && !ask.round && (
+        <SeriesScopeMenu
+          anchorId={ask.e.id}
+          dayChanged={'from' in ask.to || ask.to.date !== ask.e.date}
+          onPick={(scope) => {
+            move(ask.e, ask.to, { kind: ask.kind, scope });
+            answered(ask.e.id);
+          }}
+          onCancel={() => answered(ask.e.id)}
+        />
+      )}
       <header className="ch-cal-mast" data-canopy-head="">
         <div className="ch-cal-mast__l">
           <button ref={jumpBtn} type="button" className="ch-cal-title" onClick={() => setJump(!jump)} aria-expanded={jump} aria-haspopup="dialog" aria-label={`${title.main}${title.year ? ` ${title.year}` : ''}. Jump to a date`}>
@@ -813,7 +1158,7 @@ export function Calendar({
             <Icon icon={ChevronDown} size={16} />
           </button>
           <div className="ch-cal-sub">
-            {data.eventsError ? "Events didn’t load" : `${count} team ${count === 1 ? 'event' : 'events'}${view === 'week' ? ' this week' : view === 'day' ? '' : ' this month'}`} · {data.zoneLabel}
+            {data.eventsError ? "Events didn’t load" : `${count} team ${pluralWord(count, 'event')}${view === 'week' ? ' this week' : view === 'day' ? '' : ' this month'}`} · {data.zoneLabel}
           </div>
           <AnimatePresence>
             {jump && (
@@ -841,13 +1186,7 @@ export function Calendar({
           <Menu
             label="More calendar actions"
             items={moreItems}
-            trigger={(p) => (
-              <Tooltip>
-                <button type="button" className="ch-btn ch-btn--secondary ch-iconbtn" aria-label="More" {...p}>
-                  <Icon icon={Ellipsis} size={16} />
-                </button>
-              </Tooltip>
-            )}
+            trigger={(p) => <IconButton icon={Ellipsis} variant="secondary" label="More" menu={p} />}
           />
           {coach && (
             <Button variant="primary" leftIcon={Plus} kbd="N" onClick={() => setEditor({ event: null, date: view === 'day' ? anchor : undefined })}>
@@ -859,7 +1198,7 @@ export function Calendar({
 
       <div className="ch-cal-bar">
         <div className="ch-cal-viewctl">
-          {/* P006 D6: Agenda keeps the arrows' place (hidden, out of reach), so the toolbar doesn't shift as views change. */}
+          {/* P006 D6: List (the agenda) keeps the arrows' place (hidden, out of reach), so the toolbar doesn't shift as views change. */}
           <span className={'ch-cal-step' + (view === 'agenda' ? ' is-off' : '')} inert={view === 'agenda'} aria-hidden={view === 'agenda' || undefined}>
             <IconButton icon={ChevronLeft} label={`Previous ${view === 'agenda' ? 'month' : view}`} onClick={() => step(-1)} />
             <IconButton icon={ChevronRight} label={`Next ${view === 'agenda' ? 'month' : view}`} onClick={() => step(1)} />
@@ -872,7 +1211,8 @@ export function Calendar({
               { value: 'day', label: 'Day' },
               { value: 'week', label: 'Week' },
               { value: 'month', label: 'Month' },
-              { value: 'agenda', label: 'Agenda' },
+              // One noun with the phone (F-0053, owner default); the value stays `agenda`, so addresses don't change.
+              { value: 'agenda', label: 'List' },
             ]}
           />
         </div>
@@ -902,7 +1242,7 @@ export function Calendar({
       {notices}
       {data.eventsError ? (
         <div className="ch-cal-surface">
-          <InlineNotice code="CH-6201" title="The calendar didn’t load." body="Nothing was changed. Try again; the error has been reported." onRetry={refresh} covered={covered} />
+          <InlineNotice code="CH-6201" title="The calendar didn’t load." body="Nothing was changed. Try again." onRetry={refresh} covered={covered} />
         </div>
       ) : (
         <div className="ch-cal-body">
@@ -910,10 +1250,10 @@ export function Calendar({
             <SectionBoundary surface={`calendar.${view}`} label="The calendar" code="CH-6210">
               {/* CH-6604: another view settles in (base in, quick out); CH-6605: another day, week or month slides 12px the
                   way it went. Both instant with reduced motion. */}
-              <Swap swapKey={view}>
+              <Swap swapKey={view} resize="instant">
                 <Swap swapKey={period.key} kind="slide" dir={period.dir}>
                   {(view === 'week' || view === 'day') && (
-                    <TimeGrid dates={dates} events={events} people={people} now={now} selId={selId} flagged={flagged} onSelect={open} onDay={(d) => go('day', d)} onMove={coach ? move : undefined} daylight={daylight} coach={coach} viewerId={data.viewerPlayerId} />
+                    <TimeGrid dates={dates} events={events} people={people} now={now} selId={selId} flagged={flagged} onSelect={open} onDay={(d) => go('day', d)} onMove={coach ? onGridMove : undefined} onBarMove={coach ? (e, to) => onGridMove(e, to, 'bar') : undefined} daylight={daylight} coach={coach} viewerId={data.viewerPlayerId} />
                   )}
                   {view === 'month' && (
                     <MonthView
@@ -928,11 +1268,13 @@ export function Calendar({
                         if (firstEv) open(firstEv.id, d);
                         else if (monthKey(d) !== monthKey(anchor)) go('month', d);
                       }}
+                      onMove={coach ? onGridMove : undefined}
+                      onBarMove={coach ? (e, to) => onGridMove(e, to, 'bar') : undefined}
                     />
                   )}
                   {view === 'agenda' &&
                     (events.some((e) => e.date >= now.date) || events.length ? (
-                      <AgendaView events={events} people={people} now={now} selId={selId} flagged={flagged} onSelect={open} viewerId={data.viewerPlayerId} />
+                      <AgendaView events={events} people={people} now={now} selId={selId} flagged={flagged} onSelect={open} viewerId={data.viewerPlayerId} movedAway={data.movedAway} onOpenAt={open} />
                     ) : (
                       <div className="ch-cal-surface">
                         <EmptyState
@@ -961,11 +1303,29 @@ export function Calendar({
       {sel.length > 0 && (
         <span className="ch-sr-only" role="status">
           {/* CH-6803 */}
-          Showing {sel.length} {sel.length === 1 ? 'player' : 'players'}
+          Showing {sel.length} {pluralWord(sel.length, 'player')}
         </span>
       )}
 
       {dialogs}
+      <ChangeAnnouncer events={data.events} />
     </main>
+  );
+}
+
+type CalendarProps = ComponentProps<typeof CalendarBody>;
+
+/**
+ * The calendar, with the coach's live rounds around it (P-6, 4.8): `onCourse` is the first-paint snapshot, and an event of a
+ * kind players score on says how many are playing it now. A player's calendar, and any caller that gives none, is unchanged.
+ */
+export function Calendar(props: CalendarProps & { onCourse?: LiveSnapshot; liveNow?: number }) {
+  const { onCourse, liveNow, ...rest } = props;
+  return (
+    <ChangeMarksProvider marks={rest.data.marks ?? []}>
+      <CalendarLiveProvider initial={rest.data.role === 'coach' ? onCourse : undefined} frozen={rest.frozen} now={liveNow}>
+        <CalendarBody {...rest} />
+      </CalendarLiveProvider>
+    </ChangeMarksProvider>
   );
 }

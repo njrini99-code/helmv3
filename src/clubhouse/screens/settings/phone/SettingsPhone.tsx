@@ -11,8 +11,8 @@ import { useChReducedMotion } from '../../../lib/reduced-motion';
 import { initials } from '../../../lib/format';
 import { chTrail } from '../../../lib/track';
 import { PhoneTop, usePhoneStackHistory } from '../../../shell/phone-chrome';
-import { SECTIONS, type ChDevice, type ChSettingsData, type ChSettingsSection, type ChSettingsWrites } from '../model';
-import { useReportProblem, useSignOut } from '../hooks';
+import { SECTIONS, shownHandicapIndex, type ChDevice, type ChSettingsData, type ChSettingsSection, type ChSettingsWrites } from '../model';
+import { useAppVersion, useReportProblem, useSignOut } from '../hooks';
 import { AccountPhone, EmailSheet, PasswordSheet, ProfileSheet } from './AccountPhone';
 import { CoachHelmPhone } from './CoachHelmPhone';
 import { GolfPhone } from './GolfPhone';
@@ -20,9 +20,10 @@ import { NotificationsPhone } from './NotificationsPhone';
 import { PreferencesPhone } from './PreferencesPhone';
 import { TeamPhone } from './TeamPhone';
 import { HeldSheetsContext, type ChHeldSheet } from './sheets';
-import { ActionRow, Group, LinkRow, NavRow } from './ui';
+import { ActionRow, Group, InfoRow, LinkRow, NavRow } from './ui';
 import { canvasScrollNow } from '../../../lib/smooth-scroll';
 import { poppedByUA } from '../../../lib/ua-pop';
+import { LargeTitle } from '../../../ui/LargeTitle';
 
 const ICON: Record<ChSettingsSection, LucideIcon> = {
   account: UserRound,
@@ -217,9 +218,9 @@ export function SettingsPhone({
             same way; base duration, instant with reduced motion or Animations off. */}
         <AnimatePresence mode="popLayout" initial={false} custom={way}>
           <PushPage key={section ?? 'root'} sub={!!section} way={way} reduced={reduced}>
-            <p className="ch-setm-title" aria-hidden="true">
+            <LargeTitle as="p" hidden className="ch-setm-title">
               {current?.label ?? 'Settings'}
-            </p>
+            </LargeTitle>
             {section == null ? (
               <Root data={data} writes={writes} onOpen={open} onProfile={() => setProfileOpen(true)} />
             ) : (
@@ -264,6 +265,7 @@ export function everyReadFailed(data: ChSettingsData): boolean {
 function Root({ data, writes, onOpen, onProfile }: { data: ChSettingsData; writes: ChSettingsWrites; onOpen: (id: ChSettingsSection) => void; onProfile: () => void }) {
   const { report, opening } = useReportProblem();
   const { signOut, signingOut } = useSignOut(writes);
+  const version = useAppVersion();
   const coach = data.role === 'coach';
   const profile = data.profile.error ? null : data.profile.value;
   const name = profile?.fullName || data.email || 'Your profile';
@@ -271,14 +273,14 @@ function Root({ data, writes, onOpen, onProfile }: { data: ChSettingsData; write
   const [broken, setBroken] = useState<string | null>(null);
   const photo = profile?.avatarUrl && profile.avatarUrl !== broken ? profile.avatarUrl : null;
   const head = data.coachhelm && !data.coachhelm.error ? !!data.coachhelm.value.team?.isHeadCoach : false;
-  // The handicap the roster shows (data/season.ts displayHandicap): the index when set, else the handicap.
-  const hcp = data.golf && !data.golf.error ? data.golf.value.handicapIndex.trim() || data.golf.value.handicap.trim() : '';
+  // The handicap Home and the roster show (data/season.ts displayHandicap): the index when set, else the handicap.
+  const hcp = data.golf && !data.golf.error ? shownHandicapIndex(data.golf.value) : '';
   const line = coach
     ? [head ? 'Head coach' : 'Coach', data.teamName].filter(Boolean).join(' · ')
     : ['Player', data.teamName, hcp ? `HCP ${hcp}` : null].filter(Boolean).join(' · ');
   return (
     <>
-      {everyReadFailed(data) && <InlineNotice code="CH-8214" title="Settings didn’t load" body="Nothing was changed. Try again; the error has been reported." onRetry={writes.refresh} />}
+      {everyReadFailed(data) && <InlineNotice code="CH-8214" title="Settings didn’t load" body="Nothing was changed. Try again." onRetry={writes.refresh} />}
       {/* A profile that didn't load opens Account, where the notice and Try again are. */}
       <button type="button" className="ch-setm-id" onClick={profile ? onProfile : () => onOpen('account')}>
         <span className={'ch-setm-coin' + (coach ? '' : ' is-player')} aria-hidden="true">
@@ -307,6 +309,8 @@ function Root({ data, writes, onOpen, onProfile }: { data: ChSettingsData; write
         <ActionRow label="Report a problem" disabled={opening} onClick={() => void report()} />
         <LinkRow label="Privacy policy" href="/privacy" />
         <LinkRow label="Terms of service" href="/terms" />
+        {/* About: which GolfHelm this is, for a problem report or support. */}
+        <InfoRow label="Version" value={<span className="ch-num">{version}</span>} />
       </Group>
 
       <div className="ch-setm-group is-end">

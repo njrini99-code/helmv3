@@ -47,6 +47,13 @@ const live = vi.hoisted(() => ({
 }));
 vi.mock('@/hooks/golf/use-golf-messages', () => ({ useGolfConversations: () => live.convs, useGolfMessages: () => live.msgs }));
 vi.mock('@/hooks/golf/use-message-reactions', async (orig) => ({ ...(await orig<object>()), useMessageReactions: () => live.reactions }));
+const polls = vi.hoisted(() => ({
+  responses: { rows: [] as unknown[], error: null as string | null, ready: true, pending: null as string | null, refresh: vi.fn(async () => {}), vote: vi.fn(async (_messageId: string, _choice: string | null) => true) },
+  sendGolfPoll: vi.fn(async () => ({ success: true as const, id: 'poll-1' })),
+  closeGolfPoll: vi.fn(async () => ({ success: true as const, id: 'poll-1' })),
+}));
+vi.mock('@/hooks/golf/use-message-responses', () => ({ useMessageResponses: () => polls.responses }));
+vi.mock('@/app/golf/actions/message-polls', () => ({ sendGolfPoll: polls.sendGolfPoll, closeGolfPoll: polls.closeGolfPoll }));
 vi.mock('@/hooks/golf/use-message-attachments', () => ({ useMessageAttachments: () => live.files }));
 const a = vi.hoisted(() => ({
   createGolfConversation: vi.fn(),
@@ -96,6 +103,7 @@ vi.mock('@/app/golf/actions/documents', () => ({ getPreviewUrl: a.getPreviewUrl 
 import type { ChMessagesData } from '../data/messages';
 import { Messages } from '../screens/messages/Messages';
 import { groupLacksPlayer, MESSAGE_MAX } from '../screens/messages/model';
+import { messagesPrefillHref } from '../screens/messages/prefill';
 import { FOUND_FOR_MS } from '../screens/messages/use-focus-message';
 import { useThreadAnchor } from '../screens/messages/use-thread-anchor';
 import { ToastProvider } from '../ui/Toast';
@@ -158,21 +166,22 @@ function SlotHost() {
   const { setSlot } = usePhoneChromeState();
   return <div ref={setSlot} data-testid="phone-top" />;
 }
+const phoneTree = (d: ChMessagesData) => (
+  <LazyMotion features={domAnimation}>
+    <ToastProvider>
+      <PhoneChromeProvider>
+        <div className="ch-root" data-ui="clubhouse">
+          <SlotHost />
+          <Messages data={d} />
+        </div>
+      </PhoneChromeProvider>
+    </ToastProvider>
+  </LazyMotion>
+);
 function showPhone(d: ChMessagesData = data) {
   layout.phone = true;
   window.matchMedia = ((q: string) => ({ matches: false, media: q, addEventListener: () => {}, removeEventListener: () => {}, addListener: () => {}, removeListener: () => {}, onchange: null, dispatchEvent: () => false })) as never;
-  return render(
-    <LazyMotion features={domAnimation}>
-      <ToastProvider>
-        <PhoneChromeProvider>
-          <div className="ch-root" data-ui="clubhouse">
-            <SlotHost />
-            <Messages data={d} />
-          </div>
-        </PhoneChromeProvider>
-      </ToastProvider>
-    </LazyMotion>,
-  );
+  return render(phoneTree(d));
 }
 type User = ReturnType<typeof userEvent.setup>;
 const newMessage = async (user: User, kind: RegExp) => {
@@ -310,7 +319,7 @@ describe('P007 wiring · deep links (70102)', () => {
     // The address is cleaned; the same link tapped again later is taken again.
     params.current = new URLSearchParams();
     view.rerender(tree(data));
-    await userEvent.setup().click(screen.getAllByRole('button', { name: /Varsity team/ })[0]!);
+    await userEvent.setup().click(screen.getAllByRole('button', { name: /^(?!Actions for ).*Varsity team/ })[0]!);
     await screen.findByRole('textbox', { name: /Message Varsity team/ });
     params.current = new URLSearchParams('conversation=dm');
     view.rerender(tree(data));
@@ -403,7 +412,7 @@ describe('P007 wiring · the group’s creator removes a member (removeGolfGroup
     const user = userEvent.setup();
     a.removeGolfGroupMember.mockResolvedValue({ success: true });
     showPhone();
-    await user.click(await screen.findByRole('button', { name: /Varsity team/ }));
+    await user.click(await screen.findByRole('button', { name: /^(?!Actions for ).*Varsity team/ }));
     const thread = await screen.findByRole('region', { name: /Varsity team/ });
     await user.click(within(thread).getByRole('button', { name: 'Details' }));
     await user.click(await screen.findByRole('button', { name: 'Remove Jonah Okafor' }));
@@ -488,15 +497,75 @@ describe('P007 wiring · the phone’s Schedule invites the direct thread’s pl
     const user = userEvent.setup();
     live.convs.conversations = [team, dm];
     const first = showPhone();
-    await user.click(await screen.findByRole('button', { name: /Jonah Okafor/ }));
+    await user.click(await screen.findByRole('button', { name: /^(?!Actions for ).*Jonah Okafor/ }));
     const thread = await screen.findByRole('region', { name: /Jonah Okafor/ });
     await user.click(within(thread).getByRole('button', { name: 'Details' }));
     expect((await screen.findByRole('link', { name: 'Schedule' })).getAttribute('href')).toBe('/golf/dashboard/calendar?new=1&with=p-jonah');
     first.unmount();
     showPhone();
-    await user.click(await screen.findByRole('button', { name: /Varsity team/ }));
+    await user.click(await screen.findByRole('button', { name: /^(?!Actions for ).*Varsity team/ }));
     const group = await screen.findByRole('region', { name: /Varsity team/ });
     await user.click(within(group).getByRole('button', { name: 'Details' }));
     expect((await screen.findByRole('link', { name: 'Schedule' })).getAttribute('href')).toBe('/golf/dashboard/calendar?new=1');
+  });
+});
+
+describe('B7 · a message that arrives opens in place at the end of the thread', () => {
+  const reply = { id: 'm2', conversation_id: 'team', sender_id: 'jonah', content: 'On our way', created_at: '2026-10-14T18:05:00Z', isRead: false };
+  for (const phone of [false, true]) {
+    it(`${phone ? 'phone' : 'desktop'}: the opened thread is drawn in place; a new reply opens in, then hands its height back, and the rest never move`, async () => {
+      const user = userEvent.setup();
+      const view = phone ? showPhone() : show();
+      await user.click(await screen.findByRole('button', { name: /^(?!Actions for ).*Varsity team/ }));
+      await screen.findByRole('region', { name: /Varsity team/ });
+      const had = document.getElementById('ch-ms-message-m1')!;
+      expect(had.style.overflow).toBe('');
+      expect(had.style.height).toBe('');
+      live.msgs.messages = [mine, reply];
+      view.rerender(phone ? phoneTree(data) : tree(data));
+      const arrived = document.getElementById('ch-ms-message-m2')!;
+      expect(arrived.style.overflow).toBe('clip');
+      // No FLIP in a thread: the scroll is use-thread-anchor's, so the message already there takes no transform.
+      expect(had.style.transform).toBe('');
+      await waitFor(() => expect(document.getElementById('ch-ms-message-m2')!.style.height).toBe(''), { timeout: 3000 });
+      expect(document.getElementById('ch-ms-message-m2')!.style.overflow).toBe('');
+    });
+  }
+});
+
+describe('F-0003 · a message for one person never lands in a channel or group', () => {
+  // A team of one player: the Team Channel has two members, so by count alone it looks like a direct thread.
+  const channel2 = { id: 'channel', title: 'Team Channel', is_team_channel: true, participant_ids: ['me', 'dan'], participant_count: 2, unread_count: 0, other_participant: { id: 'dan', name: 'Dan Whitfield' }, last_message: { content: 'Practice moved', created_at: '2026-10-14T18:30:00Z', sender_id: 'dan' }, creator_id: 'dan' };
+  const dmDan = { id: 'dm-dan', title: null, participant_ids: ['me', 'dan'], participant_count: 2, unread_count: 0, other_participant: { id: 'dan', name: 'Dan Whitfield' }, last_message: null, creator_id: 'me' };
+  const stash = (p: { players: string[]; draft: string }) => new URL(messagesPrefillHref(p)!, 'https://x.test').searchParams;
+
+  it('a two-person Team Channel is never taken for the direct thread: ?user= starts one', async () => {
+    live.convs.conversations = [channel2];
+    a.createGolfConversation.mockResolvedValue({ conversationId: 'dm-dan', reused: false });
+    live.convs.refetch.mockImplementation(async () => {
+      live.convs.conversations = [dmDan, channel2];
+    });
+    params.current = new URLSearchParams('user=dan');
+    show(player);
+    await waitFor(() => expect(a.createGolfConversation).toHaveBeenCalledWith(['dan'], 't1'));
+    await screen.findByRole('textbox', { name: /Message Dan$/ });
+    expect(code('CH-7002')).toBeNull();
+  });
+
+  it('an answer that is a group is refused (CH-7002): the sheet stays, and the draft never lands in the group', async () => {
+    const user = userEvent.setup();
+    // The server answers with the group the coach and Jonah share (the bug F-0003 fixed on the server).
+    a.createGolfConversation.mockResolvedValue({ conversationId: 'team', reused: true });
+    params.current = stash({ players: ['p-jonah'], draft: 'Bus moved to 7' });
+    show();
+    const dialog = await screen.findByRole('dialog', { name: 'New message' });
+    await user.click(within(dialog).getByRole('button', { name: 'Start conversation' }));
+    await expectCode('CH-7002', /Couldn’t start the conversation/);
+    expect(screen.queryByRole('dialog', { name: 'New message' })).not.toBeNull();
+    expect(screen.queryByRole('textbox', { name: /Message Varsity team/ })).toBeNull();
+    await user.keyboard('{Escape}');
+    await user.click(screen.getAllByRole('button', { name: /^(?!Actions for ).*Varsity team/ })[0]!);
+    const box = (await screen.findByRole('textbox', { name: /Message Varsity team/ })) as HTMLTextAreaElement;
+    expect(box.value).toBe('');
   });
 });

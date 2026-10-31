@@ -281,6 +281,16 @@ before, after, baseline or evidence.
 | `P013__page__coach__390x792__default__after__77e553a.png` | after | 77e553a | page (coach), 390x792px, default |
 | `P013__page__player__1280x948__default__after__77e553a.png` | after | 77e553a | page (player), 1280x948px, default |
 | `P013__page__player__390x792__default__after__77e553a.png` | after | 77e553a | page (player), 390x792px, default |
+| `P013__board__player__390x844__course-plan-dark__after__8b6bf54.png` | after | 8b6bf54 | board (player), 390x844px, course-plan-dark |
+| `P013__board__player__390x844__course-plan-failed-dark__after__8b6bf54.png` | after | 8b6bf54 | board (player), 390x844px, course-plan-failed-dark |
+| `P013__board__player__390x844__course-plan-failed-light__after__8b6bf54.png` | after | 8b6bf54 | board (player), 390x844px, course-plan-failed-light |
+| `P013__board__player__390x844__course-plan-idle-dark__after__8b6bf54.png` | after | 8b6bf54 | board (player), 390x844px, course-plan-idle-dark |
+| `P013__board__player__390x844__course-plan-idle-light__after__8b6bf54.png` | after | 8b6bf54 | board (player), 390x844px, course-plan-idle-light |
+| `P013__board__player__390x844__course-plan-light__after__8b6bf54.png` | after | 8b6bf54 | board (player), 390x844px, course-plan-light |
+| `P013__board__player__390x844__course-plan-none-dark__after__8b6bf54.png` | after | 8b6bf54 | board (player), 390x844px, course-plan-none-dark |
+| `P013__board__player__390x844__course-plan-none-light__after__8b6bf54.png` | after | 8b6bf54 | board (player), 390x844px, course-plan-none-light |
+| `P013__standing__coach__1280x900__light-method-line__after__2faf3cf.png` | after | 2faf3cf | standing (coach), 1280x900px, light-method-line |
+| `P013__coachhelm-coach-player__coach__390x844__light-r387-view-standing-s0__before__a9d2b19.png` | before | a9d2b19 | coachhelm-coach-player (coach), 390x844px, light-r387-view-standing-s0; /clubhouse-preview/coachhelm-coach-player?view=standing; synthetic preview |
 
 ## Historical verification gaps
 
@@ -538,10 +548,12 @@ Captured states are not all visually approved.
 
 ## 2026-10-19 — Contract tests for nine reserved hand contracts
 
-Two new files: `src/clubhouse/__tests__/coachhelm-contracts.test.tsx` (36 cases) and
-`src/clubhouse/__tests__/coachhelm-actions-contracts.test.ts` (13 cases, the real `dismissInsight`, `reactivateInsight` and
-`createFocusAreaFromInsightV2` against a fake database). Each case names its Bridge ID in its title. No implementation file changed.
-This supersedes the "partly" and "no" rows of the table above for these contracts.
+Two new files: `src/clubhouse/__tests__/coachhelm-contracts.test.tsx` (36 cases)
+and `src/clubhouse/__tests__/coachhelm-actions-contracts.test.ts` (13 cases, the
+real `dismissInsight`, `reactivateInsight` and `createFocusAreaFromInsightV2`
+against a fake database). Each case names its Bridge ID in its title. No
+implementation file changed. This supersedes the "partly" and "no" rows of the
+table above for these contracts.
 
 | Contract | What the test forces | Result |
 | --- | --- | --- |
@@ -555,18 +567,24 @@ This supersedes the "partly" and "no" rows of the table above for these contract
 | 132101 loaders read in rounds | read waves for the coach (gate, roster, names, visible + heads, drills + focus areas; one request per kind) and the player (gate, feed beside the team, drills + proposals + focus areas; the dismissal and visible reads only on an empty feed) | pass |
 | 132301 failures reported | every named read logged under `coachhelm`; a refused write reported at low severity after its breadcrumb, a thrown one at the default severity; the pulse, players, focus and side sections each report under their own surface | pass |
 
-Run: `npx vitest run` on the four files, exit 0, 88 tests in 4 files; `npx eslint` on them, exit 0;
-`node scripts/clubhouse/registry.mjs check`, exit 0. The registry now shows 158 IDs, 150 on an element or in code, 8 reserved.
+Run: `npx vitest run` on the four files, exit 0, 88 tests in 4 files; `npx
+eslint` on them, exit 0; `node scripts/clubhouse/registry.mjs check`, exit 0.
+The registry now shows 158 IDs, 150 on an element or in code, 8 reserved.
 
-**Still reserved, and why.** 131807 is a script (`clubhouse:a11y`), not a vitest case. The other seven (130713, 130721, 130722, 131704,
-131808, 131816, 131817) each carry a catalog code and are already named in tests (`coachhelm-views`, `coachhelm-return-state`,
-`coachhelm-ask-races`, `coachhelm`, `coachhelm-profile`, `coachhelm-standing`), but the registry marks a coded contract
-`implemented` only when its CH- code appears in the source, and none of these does. The fix is a `data-ch-code` (or a comment) in the
-owning component, not a test.
+**Still reserved, and why.** 131807 is a script (`clubhouse:a11y`), not a vitest
+case. The other seven (130713, 130721, 130722, 131704, 131808, 131816, 131817)
+each carry a catalog code and are already named in tests (`coachhelm-views`,
+`coachhelm-return-state`, `coachhelm-ask-races`, `coachhelm`,
+`coachhelm-profile`, `coachhelm-standing`), but the registry marks a coded
+contract `implemented` only when its CH- code appears in the source, and none of
+these does. The fix is a `data-ch-code` (or a comment) in the owning component,
+not a test.
 
-**Wording that predates the code.** 130608 recorded a defect (on a coach's gate failure the pulse was not read and the empty line drew
-beside CH-13202); the loader now reads the pulse on a failed gate and the test pins it. 131201 says a reload opens on the first
-player: true of a hard reload; Back in the running app returns the kept pick, which is CH-13911.
+**Wording that predates the code.** 130608 recorded a defect (on a coach's gate
+failure the pulse was not read and the empty line drew beside CH-13202); the
+loader now reads the pulse on a failed gate and the test pins it. 131201 says a
+reload opens on the first player: true of a hard reload; Back in the running app
+returns the kept pick, which is CH-13911.
 
 ## 2026-10-21 — A coach's views of one player (spec A)
 

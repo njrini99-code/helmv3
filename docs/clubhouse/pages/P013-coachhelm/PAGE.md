@@ -23,7 +23,7 @@ earlier observations below retain their original date and scope.
 | Checklist | [screens/coachhelm.md](../../screens/coachhelm.md) |
 | Phone spec | [phone/coachhelm.md](../../phone/coachhelm.md) |
 | Design boards | [Player - CoachHelm.html](../../../../design/handoff/Player%20-%20CoachHelm.html) · [Coach - CoachHelm.html](../../../../design/handoff/Coach%20-%20CoachHelm.html) · [helm3.jsx](../../../../design/handoff/helm3.jsx) · [helm3.css](../../../../design/handoff/helm3.css) · [coachhelm2.css](../../../../design/handoff/coachhelm2.css) · [Coach and Player - CoachHelm - Mobile.html](../../../../design/handoff/Coach%20and%20Player%20-%20CoachHelm%20-%20Mobile.html) · [helm3.jsx](../../../../design/handoff/helm3.jsx) |
-| Code | [coachhelm](../../../../src/clubhouse/screens/coachhelm) · [coachhelm.ts](../../../../src/clubhouse/data/coachhelm.ts) · [coachhelm.tsx](../../../../src/clubhouse/routes/coachhelm.tsx) · [coachhelm.css](../../../../src/clubhouse/styles/coachhelm.css) |
+| Code | [coachhelm](../../../../src/clubhouse/screens/coachhelm) · [coachhelm.ts](../../../../src/clubhouse/data/coachhelm.ts) · [coachhelm.tsx](../../../../src/clubhouse/routes/coachhelm.tsx) · [coachhelm.css](../../../../src/clubhouse/styles/coachhelm.css) · [coachhelm-chat-error.ts](../../../../src/clubhouse/data/coachhelm-chat-error.ts) · [coachhelm-chat-links.ts](../../../../src/clubhouse/data/coachhelm-chat-links.ts) · [coachhelm-chat-shape.ts](../../../../src/clubhouse/data/coachhelm-chat-shape.ts) · [coachhelm-chat-thread.ts](../../../../src/clubhouse/data/coachhelm-chat-thread.ts) · [coachhelm-chat.ts](../../../../src/clubhouse/data/coachhelm-chat.ts) · [coachhelm-classify.ts](../../../../src/clubhouse/data/coachhelm-classify.ts) · [coachhelm-coach-brief-shape.ts](../../../../src/clubhouse/data/coachhelm-coach-brief-shape.ts) · [coachhelm-coach-brief.ts](../../../../src/clubhouse/data/coachhelm-coach-brief.ts) · [coachhelm-corrections.ts](../../../../src/clubhouse/data/coachhelm-corrections.ts) · [coachhelm-dive-shape.ts](../../../../src/clubhouse/data/coachhelm-dive-shape.ts) · [coachhelm-dive.ts](../../../../src/clubhouse/data/coachhelm-dive.ts) · [coachhelm-engine-shape.ts](../../../../src/clubhouse/data/coachhelm-engine-shape.ts) · [coachhelm-engine.ts](../../../../src/clubhouse/data/coachhelm-engine.ts) · [coachhelm-firm.ts](../../../../src/clubhouse/data/coachhelm-firm.ts) · [coachhelm-ladder-shape.ts](../../../../src/clubhouse/data/coachhelm-ladder-shape.ts) · [coachhelm-map.ts](../../../../src/clubhouse/data/coachhelm-map.ts) · [coachhelm-mentions.ts](../../../../src/clubhouse/data/coachhelm-mentions.ts) · [coachhelm-monday-brief-shape.ts](../../../../src/clubhouse/data/coachhelm-monday-brief-shape.ts) · [coachhelm-monday-brief.ts](../../../../src/clubhouse/data/coachhelm-monday-brief.ts) · [coachhelm-path.ts](../../../../src/clubhouse/data/coachhelm-path.ts) · [coachhelm-player.ts](../../../../src/clubhouse/data/coachhelm-player.ts) · [coachhelm-profile-shape.ts](../../../../src/clubhouse/data/coachhelm-profile-shape.ts) · [coachhelm-profile.ts](../../../../src/clubhouse/data/coachhelm-profile.ts) · [coachhelm-read-shape.ts](../../../../src/clubhouse/data/coachhelm-read-shape.ts) · [coachhelm-shape.ts](../../../../src/clubhouse/data/coachhelm-shape.ts) · [coachhelm-standing-shape.ts](../../../../src/clubhouse/data/coachhelm-standing-shape.ts) · [coachhelm-standing.ts](../../../../src/clubhouse/data/coachhelm-standing.ts) · [coachhelm-strokes.ts](../../../../src/clubhouse/data/coachhelm-strokes.ts) · [coachhelm-team-pattern.ts](../../../../src/clubhouse/data/coachhelm-team-pattern.ts) · [coachhelm-track-record-shape.ts](../../../../src/clubhouse/data/coachhelm-track-record-shape.ts) · [coachhelm-track-record.ts](../../../../src/clubhouse/data/coachhelm-track-record.ts) · [coachhelm-views-shape.ts](../../../../src/clubhouse/data/coachhelm-views-shape.ts) · [coachhelm-voice.ts](../../../../src/clubhouse/data/coachhelm-voice.ts) |
 | Audits | [PAGE_PERFORMANCE](../../PAGE_PERFORMANCE.md) · [AESTHETIC_AUDIT](../../AESTHETIC_AUDIT.md) · [all audits](../../AUDITS.md) |
 | Tracker | [PROGRESS.md](../../PROGRESS.md), row "CoachHelm" |
 | Screenshot log | [VERIFY.md, Screenshots](VERIFY.md#screenshots) |
@@ -42,9 +42,11 @@ dismiss it.
 Page ID:            P013
 Page Name:          CoachHelm
 Route:              /golf/dashboard/coachhelm (coach and player);
-                    a player's ?view=profile|standing|deep-dive are their own
-                    Game profile, Standing and Deep dive (?insight=<id> opens
-                    the Deep dive on a read), ?view=development goes to
+                    a player's ?view=standing|deep-dive are their own
+                    Standing and Deep dive (?insight=<id> opens the Deep
+                    dive on a read), ?view=profile (the Game profile's old
+                    address) opens Standing at How you play,
+                    ?view=development goes to
                     Stats' Development, ?view=insights and no view draw the
                     board; ?view=ask is the coach's Ask (off when CoachHelm
                     is off); ?player=<id> opens a coach's board on that
@@ -80,11 +82,12 @@ Decline it (Q-77). Coach: Assign as focus.
 ### Secondary actions
 
 Player: open another insight into the focus card, open Why we think this, try a
-failed proposals read again, and move between the Board, Game profile, Standing
-and Deep dive (their own data, read only) or on to Stats' Development. Coach:
+failed proposals read again, and move between the Board, Standing and Deep
+dive (their own data, read only) or on to Stats' Development. Coach:
 choose another player, Dismiss an insight and Undo it, open Roster, and open
-CoachHelm settings; open one player's Deep dive, Standing and Game profile
-(`?view=…&player=`, spec A, 2026-10-21), the player's own views in the coach's
+CoachHelm settings; open one player's Deep dive and Standing
+(`?view=…&player=`, spec A, 2026-10-21), also from a read an Ask answer names
+(chs-39), the player's own views in the coach's
 words, with the board's Assign as focus, Dismiss and Undo under each read of
 the Deep dive and Message after them. Both: try a failed section again.
 
@@ -100,11 +103,11 @@ the Deep dive and Message after them. Both: try a failed section again.
 3. The header: the role, "CoachHelm", and for a coach how many players have an
    open signal (the board draws one card per player, so it counts players, never
    the rows behind them).
-4. The player's views, each on a green card then white ones: the Game profile
-   (the shape of their game, then each measure), Standing (where they stand
-   against the Tour and the team, then each stat) and the Deep dive (the list of
-   reads, then one read in full with its evidence, trend and rounds). A coach
-   opens the same three for one player of their team, under that player's
+4. The player's views, each on a green card then white ones: Standing (where
+   they stand against the Tour and the team, then each stat, then How you
+   play: the shape of their game and the measures Standing has no row for) and
+   the Deep dive (the list of reads, then one read in full with its evidence,
+   trend and rounds). A coach opens the same two for one player of their team, under that player's
    header (the name, the class and the newest round).
 
 ### User should notice first

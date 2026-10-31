@@ -49,10 +49,12 @@ figures between column rules, not a green band), then "Your classes": a ruled
 list under one timetable header (P012-A1, owner 2026-10-08): the days once, each
 class's days as cells under them (an ink bar as long as the meeting with its start
 in the cell numeral, empty paper on a day off), today one soft light band down the
-list, a team day a field-green band named in the header, an overlapped meeting an
+list, a team day a field-green band named in the header (on the phone, on a
+12px line under the days), an overlapped meeting an
 amber notch (A2); on the phone the same cells under each name, the header sticky,
 beside a side column (this week's overlaps, and what the coach sees).
-Below a 1000px container the side column goes under the deck; below 640px the
+Below a 1000px container the side column goes under the deck and each class's
+days go under its name, under the header's days; below 640px the
 deck is one column, the overview stacks (the week tile beside the credits and
 the bar, the overlap count on its own row) and the two header buttons share the
 row. On the phone the shell's top bar holds "Classes" with "‹ More" and the page

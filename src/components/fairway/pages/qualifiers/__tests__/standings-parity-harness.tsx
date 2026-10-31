@@ -83,7 +83,10 @@ export async function runFairway(fx: ParityFixture): Promise<Standing[]> {
   }
 }
 
-/** The selection workspace production confirms from. It draws no position labels and no Bubble. */
+/**
+ * The selection workspace production confirms from. It draws no position labels and no Bubble. Fairway's workspace and
+ * Clubhouse's Manage selections and Confirm squad all read it the same way: the server decides the order (2026-10-28).
+ */
 export async function runWorkspace(fx: ParityFixture): Promise<Standing[] | null> {
   seed(fx);
   const ws = await loadQualifyingWorkspace(parityClient() as never, fx.qualifier.id);

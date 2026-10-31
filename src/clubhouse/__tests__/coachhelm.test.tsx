@@ -13,9 +13,11 @@ const hapticSpy = vi.hoisted(() => vi.fn());
 vi.mock('../lib/haptics', () => ({ haptic: hapticSpy }));
 vi.mock('../lib/track', () => ({ chReport: vi.fn(), chTrail: vi.fn(), chTagSession: vi.fn() }));
 const router = vi.hoisted(() => ({ push: vi.fn(), refresh: vi.fn(), replace: vi.fn() }));
+const search = vi.hoisted(() => ({ current: new URLSearchParams() as URLSearchParams | null }));
 vi.mock('next/navigation', () => ({
   useRouter: () => router,
   usePathname: () => '/golf/dashboard/coachhelm',
+  useSearchParams: () => search.current,
   redirect: (to: string) => {
     throw new Error(`redirect:${to}`);
   },
@@ -50,7 +52,7 @@ import { areaTypeFor, formatComparison, splitContent, toChInsight, withoutColleg
 import { partitionInsights, playersLine, pulseRows, sortCoachPlayers, type ChCoachHelmData, type ChPlayerHelm, type ChTourBaseline } from '../data/coachhelm-shape';
 import { ClubhouseCoachHelmRoute } from '../routes/coachhelm';
 import { CoachBoard } from '../screens/coachhelm/CoachBoard';
-import { CoachHelmRouteSkeleton, CoachHelmSkeleton } from '../screens/coachhelm/CoachHelmSkeleton';
+import { CoachHelmRouteSkeleton, CoachHelmSkeleton, routeSkeletonFor } from '../screens/coachhelm/CoachHelmSkeleton';
 import { PlayerBoard } from '../screens/coachhelm/PlayerBoard';
 import { DiveSkeleton } from '../screens/coachhelm/views/Skeletons';
 import { LIVE_COACHHELM_WRITES, LIVE_PLAYER_WRITES, type ChCoachHelmWrites, type ChPlayerWrites } from '../screens/coachhelm/writes';
@@ -504,7 +506,9 @@ describe('CoachHelm for the player, on screen', () => {
     // D8: no track; the ledger says every number in words.
     expect(document.querySelector('.ch-hl-g__t')).toBeNull();
     expect(card.getByText('You').parentElement!.textContent).toBe('You1.1');
-    expect(card.getByText('Tour 0.3')).toBeTruthy();
+    // Visual pass 2026-10-28: the comparison's figure sits in the ledger's figure column, as the read's own does.
+    expect(card.getByText('Tour').parentElement!.textContent).toBe('Tour 0.3');
+    expect(card.getByText('0.3').className).toBe('ch-num');
     // Q-88: the college cohort is not drawn, not in the legend and not in the reasoning beneath it.
     expect(card.queryByText(/College cohort/)).toBeNull();
     expect(card.queryByText(/PGA Tour avg/)).toBeNull();
@@ -530,14 +534,14 @@ describe('CoachHelm for the player, on screen', () => {
     expect(document.querySelector('.ch-hl-focus')!.closest('[aria-live="polite"]')).not.toBeNull();
   });
 
-  it('CH-13301 no round posted yet: the first-run page names what will appear, and Start a round opens round entry', async () => {
+  it('CH-13301 no round posted yet: the first-run page names what will appear, and New round opens round entry', async () => {
     showPlayer(PREVIEW_HELM_PLAYER_NO_ROUNDS);
     await expectCode('CH-13301', /Post a round to start CoachHelm.*one thing to work on this week shows up here/);
-    expect(screen.getByRole('link', { name: 'Start a round' }).getAttribute('href')).toBe('/golf/dashboard/rounds/new');
-    // With no round posted the lede doesn't claim any, and Start a round has the Plus Home and Rounds use.
+    expect(screen.getByRole('link', { name: 'New round' }).getAttribute('href')).toBe('/golf/dashboard/rounds/new');
+    // With no round posted the lede doesn't claim any, and New round has the Plus Home and Rounds use.
     expect(screen.getByText('One thing to work on each week, from the rounds you post.')).toBeTruthy();
     expect(screen.queryByText(/based on the rounds you’ve posted/)).toBeNull();
-    expect(screen.getByRole('link', { name: 'Start a round' }).querySelector('svg.lucide-plus')).not.toBeNull();
+    expect(screen.getByRole('link', { name: 'New round' }).querySelector('svg.lucide-plus')).not.toBeNull();
     expect(screen.queryByRole('link', { name: 'Open Rounds' })).toBeNull();
     // Wave 7: with the rounds still to go known, the line names them.
     cleanup();
@@ -805,7 +809,7 @@ describe('CoachHelm proposals, on the player’s board', () => {
     expect(hapticSpy).toHaveBeenCalledWith('error');
     expect(within(row('Downhill putts inside 6 ft')).getByRole('button', { name: 'Accept' })).toBeTruthy();
     expect(code('CH-13902')).toBeNull();
-    await u.click(within(code('CH-13004') as HTMLElement).getByRole('button', { name: 'Retry' }));
+    await u.click(within(code('CH-13004') as HTMLElement).getByRole('button', { name: 'Try again' }));
     await expectCode('CH-13902', /Started · Downhill putts inside 6 ft/);
     expect(w.accept).toHaveBeenCalledTimes(2);
     expect(w.accept).toHaveBeenLastCalledWith('fa-ladder');
@@ -821,7 +825,7 @@ describe('CoachHelm proposals, on the player’s board', () => {
     await u.click(within(code('CH-13912') as HTMLElement).getByRole('button', { name: 'Dismiss notification' }));
     await expectCode('CH-13005', /Couldn’t decline Lag putting from 30 ft/);
     expect(within(row('Lag putting from 30 ft')).getByRole('button', { name: 'Decline' })).toBeTruthy();
-    await u.click(within(code('CH-13005') as HTMLElement).getByRole('button', { name: 'Retry' }));
+    await u.click(within(code('CH-13005') as HTMLElement).getByRole('button', { name: 'Try again' }));
     await expectCode('CH-13902', /Declined · Lag putting from 30 ft/);
     expect(w.decline).toHaveBeenCalledTimes(2);
   });
@@ -898,6 +902,8 @@ describe('CoachHelm for the coach, on screen', () => {
       '2 players are scoring worse over their last three rounds Jonah Okafor +2.1 strokes · Eli Brandt +0.8 strokes',
       '1 active focus area has no recent progress Priya Natarajan: Lag putting',
     ]);
+    // B11: the open line is a way into What's new.
+    expect(within(list).getByRole('link', { name: 'Everything in What’s new' }).getAttribute('href')).toBe('/golf/dashboard/whats-new');
     // No block of its own comes before the decision: the header, then By player.
     expect(screen.queryByRole('region', { name: 'Program pulse' })).toBeNull();
     // The pulse's own signals item is left out: the header says it.
@@ -992,7 +998,7 @@ describe('CoachHelm for the coach, on screen', () => {
     expect(hapticSpy).toHaveBeenCalledWith('error');
     expect(screen.getByRole('button', { name: 'Assign as focus' })).toBeTruthy();
     expect(code('CH-13601')).toBeNull();
-    await u.click(within(code('CH-13001') as HTMLElement).getByRole('button', { name: 'Retry' }));
+    await u.click(within(code('CH-13001') as HTMLElement).getByRole('button', { name: 'Try again' }));
     await expectCode('CH-13601', /Assigned as Jonah’s focus/);
     expect(w.assign).toHaveBeenCalledTimes(2);
   });
@@ -1101,7 +1107,7 @@ describe('CoachHelm for the coach, on screen', () => {
     await expectCode('CH-13002', /Couldn’t dismiss the insight.*It’s still on the board/);
     expect(hapticSpy).toHaveBeenCalledWith('error');
     expect(document.querySelector('.ch-hl-focus')).not.toBeNull();
-    await u.click(within(code('CH-13002') as HTMLElement).getByRole('button', { name: 'Retry' }));
+    await u.click(within(code('CH-13002') as HTMLElement).getByRole('button', { name: 'Try again' }));
     await expectCode('CH-13901');
     expect(w.dismiss).toHaveBeenCalledTimes(2);
   });
@@ -1116,7 +1122,7 @@ describe('CoachHelm for the coach, on screen', () => {
     await u.click(await screen.findByRole('button', { name: 'Undo' }));
     await expectCode('CH-13003', /Couldn’t undo the dismissal.*It’s still dismissed/);
     expect(code('CH-13901')).not.toBeNull();
-    await u.click(within(code('CH-13003') as HTMLElement).getByRole('button', { name: 'Retry' }));
+    await u.click(within(code('CH-13003') as HTMLElement).getByRole('button', { name: 'Try again' }));
     await waitFor(() => expect(code('CH-13901')).toBeNull());
     expect(document.querySelector('.ch-hl-focus')).not.toBeNull();
     expect(w.undo).toHaveBeenCalledTimes(2);
@@ -1213,7 +1219,9 @@ describe('CoachHelm for the coach, on screen', () => {
 
   it('CH-13309 nothing flagged in the pulse says so, and does not claim all is well', () => {
     showCoach(PREVIEW_HELM_COACH_QUIET);
-    expect(code('CH-13309')!.textContent).toBe('Nothing new since you were last here.');
+    // Visual pass 2026-10-28 (G4 row 88): the quiet line now carries the way into What's new.
+    expect(code('CH-13309')!.textContent).toBe('Nothing new since you were last here. What’s new');
+    expect(within(code('CH-13309') as HTMLElement).getByRole('link', { name: 'What’s new' }).getAttribute('href')).toBe('/golf/dashboard/whats-new');
   });
 
   it('CH-13305 CoachHelm turned off for the team: said, with a way to Settings; a global switch has none', () => {
@@ -1300,7 +1308,9 @@ describe('CoachHelm route skeleton', () => {
     const main = screen.getByRole('main', { name: 'Loading CoachHelm' });
     expect(main.getAttribute('data-ch-code')).toBe('CH-13402');
     expect(main.querySelector('.ch-hl-sk__pulse')).toBeNull();
-    expect(main.querySelector('.ch-hl-sk--coach .ch-hl-sk__card')).not.toBeNull();
+    // Desktop: the focus's claim is the green card it lands as, beside the players' rows (mocked desktop here).
+    expect(main.querySelector('.ch-hl-sk--coach .ch-hl-sk__claim.ch-hl-focus__head')).not.toBeNull();
+    expect(main.querySelectorAll('.ch-hl-sk--coach .ch-hl-sk__p').length).toBeGreaterThanOrEqual(4);
   });
 
   it('130204 the route’s skeleton takes the signed-in role’s shape, and the player’s until it is known', () => {
@@ -1314,6 +1324,51 @@ describe('CoachHelm route skeleton', () => {
     unmount();
     render(<CoachHelmRouteSkeleton />);
     expect(code('CH-13401')).not.toBeNull();
+  });
+
+  it('the route’s skeleton is the view the address names, as the route decides it, so a hard load draws one shape, not the board’s and then the view’s', () => {
+    const q = (s: string) => new URLSearchParams(s);
+    // The coach's: Ask; a player's Deep dive or Standing only with the player; the board for the rest (the flagged views too).
+    expect(routeSkeletonFor('coach', q('view=ask'))).toBe('ask');
+    expect(routeSkeletonFor('coach', q('view=deep-dive&player=p1'))).toBe('coach-deep-dive');
+    expect(routeSkeletonFor('coach', q('view=standing&player=p1'))).toBe('coach-standing');
+    expect(routeSkeletonFor('coach', q('view=profile&player=p1'))).toBe('coach-standing');
+    expect(routeSkeletonFor('coach', q('view=deep-dive'))).toBe('coach');
+    expect(routeSkeletonFor('coach', q('view=deep-dive&player='))).toBe('coach-deep-dive');
+    for (const view of ['track-record', 'monday-brief', 'brief', 'nonsense', '']) expect(routeSkeletonFor('coach', q(`view=${view}`))).toBe('coach');
+    expect(routeSkeletonFor('coach', null)).toBe('coach');
+    // The player's own: Standing (and its old address) and the Deep dive; a player's ?view=ask is their board, as the route draws it.
+    expect(routeSkeletonFor('player', q('view=standing'))).toBe('standing');
+    expect(routeSkeletonFor('player', q('view=profile'))).toBe('standing');
+    expect(routeSkeletonFor('player', q('view=deep-dive&player=x'))).toBe('deep-dive');
+    expect(routeSkeletonFor('player', q('view=ask'))).toBe('player');
+    // Before the shell knows who is signed in: the player's shapes.
+    expect(routeSkeletonFor(undefined, q('view=ask'))).toBe('player');
+  });
+
+  it('130204 a coach’s hard load of Ask draws Ask’s skeleton from the route’s loading file, and of a player’s Deep dive the Deep dive’s', () => {
+    const coach = { role: 'coach' as const, userId: 'u', name: 'X' };
+    try {
+      search.current = new URLSearchParams('view=ask');
+      const { unmount } = render(
+        <GolfUserProvider userData={coach}>
+          <CoachHelmRouteSkeleton />
+        </GolfUserProvider>,
+      );
+      expect(code('CH-13420')).not.toBeNull();
+      expect(code('CH-13402')).toBeNull();
+      unmount();
+      search.current = new URLSearchParams('view=deep-dive&player=p1');
+      render(
+        <GolfUserProvider userData={coach}>
+          <CoachHelmRouteSkeleton />
+        </GolfUserProvider>,
+      );
+      expect(code('CH-13480')).not.toBeNull();
+      expect(screen.getByRole('main', { name: 'Loading this player’s deep dive' })).toBeTruthy();
+    } finally {
+      search.current = new URLSearchParams();
+    }
   });
 });
 
@@ -2011,5 +2066,25 @@ describe('CoachHelm route', () => {
     render(<Loading />);
     expect(code('CH-13401')).toBeNull();
     expect(screen.getByText('Loading CoachHelm…')).toBeTruthy();
+  });
+});
+
+describe('CoachHelm · the putting card says the Tour figure once (F-0070)', () => {
+  const putts = (): EvidenceInsight => {
+    const b = breakBias(HELM_PLAYERS.jonah.id);
+    return {
+      ...b,
+      title: '5-10 ft putting: 35%',
+      content: 'You make 35% of putts from 5-10 ft over your last 8 rounds (30 days, 40 attempts, likely 22–50%). PGA Tour players make 62%.',
+      evidence: { ...b.evidence, metric: 'putts_made_5_10ft_pct', metric_label: 'Putts Made 5-10 ft', your_value: 35, your_value_display: '35%', comparison_value: 62.2, comparison_label: 'PGA Tour make % avg', comparison_source: 'pga_baseline' },
+    } as EvidenceInsight;
+  };
+  it('the gauge reads "PGA Tour 62%", the whole number the prose uses', () => {
+    expect(toChInsight(putts()).evidence.gauge).toMatchObject({ you: '35%', cmp: 'PGA Tour 62%' });
+  });
+  it('the audit does not repeat the comparison the gauge already draws', () => {
+    const i = toChInsight(putts(), { viewer: { role: 'coach', first: 'Owen' }, engine: { flags: { support: true, cause: false, recheck: false, verdicts: false }, now: '2026-10-21T00:00:00Z', viewer: { role: 'coach', first: 'Owen' } } });
+    const audit = (i as { engine?: { audit?: Array<{ k: string; v: string }> } }).engine?.audit ?? [];
+    expect(audit.map((l) => l.v).join(' | ')).not.toContain('62');
   });
 });

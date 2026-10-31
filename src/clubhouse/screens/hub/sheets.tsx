@@ -18,6 +18,8 @@ import { normalise, useAction } from '../../lib/use-action';
 import { ClassClashes, useClassCheck } from './TravelerClasses';
 import type { ChHubWrites, ChTripInput } from './writes';
 import { radioKeys, rovingRadios } from './radio';
+import { isoDay } from '../../lib/dates';
+import { plural } from '../../lib/plural';
 
 /*
  * Team Hub's forms, each a Modal (a bottom sheet on the phone). A form keeps
@@ -86,7 +88,7 @@ function PlayerPicks({
   /** The group's id: a refused save moves focus to its first player. */
   id?: string;
 }) {
-  if (players.length === 0 && error) return <RefreshNotice code="CH-10208" title="The team list didn’t load." body="Players can’t be chosen until it does. Try again; the error has been reported." />;
+  if (players.length === 0 && error) return <RefreshNotice code="CH-10208" title="The team list didn’t load." body="Players can’t be chosen until it does. Try again." />;
   if (players.length === 0)
     return (
       <span className="ch-field__help" data-ch-code="CH-10310">
@@ -140,7 +142,7 @@ function PickAll({ players, picked, onChange }: { players: ChTeamHub['players'];
 }
 
 /** Today on this device (YYYY-MM-DD), the earliest a due date can be picked. */
-const localToday = () => new Intl.DateTimeFormat('en-CA', { year: 'numeric', month: '2-digit', day: '2-digit' }).format(new Date());
+const localToday = () => isoDay(new Date());
 
 /** Focus moved to a field after the render that shows it (a refused Publish goes back to Logistics first). */
 function useFocusAfter() {
@@ -200,10 +202,9 @@ function DocumentPicks({ documents, picked, onChange }: { documents: ChTeamHub['
           ))}
         </ul>
       )}
-      <button type="button" className="ch-btn ch-btn--secondary ch-btn--sm" aria-expanded={listing} aria-controls={listId} onClick={() => setListing((v) => !v)}>
-        <Icon icon={Paperclip} size={14} />
-        <span>Attach from Documents</span>
-      </button>
+      <Button size="sm" leftIcon={Paperclip} aria={{ expanded: listing, controls: listId }} onClick={() => setListing((v) => !v)}>
+        Attach from Documents
+      </Button>
       {listing && (
         <div className="ch-hb-dp" id={listId}>
           {folders.map((f) => (
@@ -252,6 +253,7 @@ export function ComposeSheet({
   write,
   onDone,
   edit,
+  provisional,
 }: {
   open: boolean;
   onClose: () => void;
@@ -265,6 +267,11 @@ export function ComposeSheet({
   onDone: () => void;
   /** Edit mode: the post being fixed (null while the sheet is shut) and how it is saved. `players`, `documents` and `write` are then unused. */
   edit?: { announcement: ChHubAnnouncement | null; write: ChHubWrites['editAnnouncement']; onSaved: (id: string, change: ChAnnouncementEdit) => void };
+  /**
+   * A new post shows on the page at once (F-0045): this draws its row and returns the undo. The sheet then closes before
+   * the server answers; a failure takes the row back and `onReopen` opens the sheet again with the text still in it.
+   */
+  provisional?: { add: (i: Parameters<ChHubWrites['postAnnouncement']>[0]) => () => void; onReopen: () => void };
 }) {
   const id = useId();
   const phone = useChPhone();
@@ -296,7 +303,17 @@ export function ComposeSheet({
   const create = useAction(
     'hub.postAnnouncement',
     async (i: Parameters<ChHubWrites['postAnnouncement']>[0]) => {
-      const res = await write(i);
+      const undo = provisional?.add(i);
+      if (undo) onClose();
+      let res: Awaited<ReturnType<typeof write>> | undefined;
+      try {
+        res = await write(i);
+      } finally {
+        if (undo && !(res && normalise(res).success)) {
+          undo();
+          provisional?.onReopen();
+        }
+      }
       const landed = normalise(res);
       if (landed.success) {
         setTitle('');
@@ -793,6 +810,7 @@ export function AssignSheet({
   playersError,
   write,
   onDone,
+  provisional,
 }: {
   open: boolean;
   onClose: () => void;
@@ -802,6 +820,8 @@ export function AssignSheet({
   write: ChHubWrites['assignTask'];
   /** After a task is assigned: the page reads again. */
   onDone: () => void;
+  /** The task shows at once (F-0045): its row is drawn and the sheet closes; a failure takes it back and reopens the sheet. */
+  provisional?: { add: (i: Parameters<ChHubWrites['assignTask']>[0]) => () => void; onReopen: () => void };
 }) {
   const id = useId();
   const phone = useChPhone();
@@ -822,7 +842,17 @@ export function AssignSheet({
   const give = useAction(
     'hub.assignTask',
     async (i: Parameters<ChHubWrites['assignTask']>[0]) => {
-      const res = await write(i);
+      const undo = provisional?.add(i);
+      if (undo) onClose();
+      let res: Awaited<ReturnType<typeof write>> | undefined;
+      try {
+        res = await write(i);
+      } finally {
+        if (undo && !(res && normalise(res).success)) {
+          undo();
+          provisional?.onReopen();
+        }
+      }
       if (normalise(res).success) {
         setTitle('');
         setDetail('');
@@ -835,7 +865,7 @@ export function AssignSheet({
       return res;
     },
     (i) => ({
-      done: `${i.title.trim()} assigned to ${i.playerIds.length === players.length ? 'the team' : i.playerIds.length === 1 ? '1 player' : `${i.playerIds.length} players`}`,
+      done: `${i.title.trim()} assigned to ${i.playerIds.length === players.length ? 'the team' : plural(i.playerIds.length, 'player')}`,
       failed: `Couldn’t assign ${i.title.trim() || 'the task'}`,
       hint: 'What you entered is still here.',
       code: 'CH-10007',
@@ -941,6 +971,7 @@ export function ConfirmDelete({
           <Button variant="ghost" onClick={onCancel}>
             Keep it
           </Button>
+          {/* The warning came with the question (D-70): the yes is silent, and the result answers. */}
           <Button variant="danger" busy={pending} feel={null} onClick={onConfirm}>
             {pending ? 'Deleting…' : 'Delete'}
           </Button>

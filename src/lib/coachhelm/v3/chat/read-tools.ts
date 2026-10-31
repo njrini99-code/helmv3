@@ -20,6 +20,7 @@ import type { SupabaseClient } from '@supabase/supabase-js';
 import type { Database } from '@/lib/types/database';
 import { applyInsightVisibility } from '@/lib/coachhelm/v3/insight-visibility';
 import { fetchAllRowsResult } from '@/lib/supabase/fetch-all-rows';
+import { chunkIds } from '@/lib/supabase/chunk-ids';
 import {
   mapRowToRankable,
   rankEvidenceInsights,
@@ -32,6 +33,7 @@ import { loadPinnedReadIds } from '@/lib/coachhelm/delivery/pinned-reads';
 import { isCoachHelmFlagEnabled } from '@/lib/coachhelm/canary';
 import { loadCoachWeightsForPlayer } from '@/lib/coachhelm/v3/ranking/score';
 import { loadActiveGoals } from '@/lib/coachhelm/v3/goals/loader';
+import { rankStandings } from '@/lib/coachhelm/v3/qualifying/ranking';
 import {
   type CoachChatContext,
   requireRosterPlayer,
@@ -1154,6 +1156,324 @@ export async function getOpenTasks(sb: Sb, ctx: CoachChatContext): Promise<ToolE
     coverage_note: null,
     as_of: nowIso(),
   };
+}
+
+// ===========================================================================
+// Team-wide rounds, tournaments and qualifiers
+// ===========================================================================
+
+export const TEAM_ROUND_TYPES = ['practice', 'qualifier', 'tournament'] as const;
+export type TeamRoundType = (typeof TEAM_ROUND_TYPES)[number];
+
+const dayOffset = (iso: string, days: number): string => {
+  const d = new Date(`${iso}T12:00:00Z`);
+  d.setUTCDate(d.getUTCDate() + days);
+  return d.toISOString().slice(0, 10);
+};
+/** One `.in()` read per chunk of ids, merged: PostgREST filters travel in the URL, so a long id list must not go in one. */
+async function readIn<T>(
+  ids: readonly string[],
+  read: (chunk: string[]) => PromiseLike<{ data: T[] | null; error: unknown }>,
+): Promise<{ data: T[]; error: unknown }> {
+  const out: T[] = [];
+  for (const chunk of chunkIds(ids)) {
+    const { data, error } = await read(chunk);
+    if (error) return { data: [], error };
+    out.push(...(data ?? []));
+  }
+  return { data: out, error: null };
+}
+const mean = (xs: number[]): number | null =>
+  xs.length === 0 ? null : Math.round((xs.reduce((a, b) => a + b, 0) / xs.length) * 10) / 10;
+
+/**
+ * Every active player's completed rounds, filtered by type and window. `get_recent_rounds` answers for ONE player;
+ * "who played best in the qualifier" or "how did practice rounds go this month" needs the whole roster at once, with
+ * the averages computed here so the answer never has to do arithmetic the audit cannot trace.
+ */
+export async function getTeamRounds(
+  sb: Sb,
+  ctx: CoachChatContext,
+  input: { round_type?: TeamRoundType; qualifier_id?: string; since_days: number },
+): Promise<ToolEnvelope> {
+  const since = dayOffset(todayIsoInZone(ctx.timezone), -Math.min(Math.max(input.since_days, 1), 365));
+  // Scoped by the roster's player ids, like get_recent_rounds: a round's own team_id also counts a former player's
+  // rounds and misses a player's rounds logged under another team, so the two tools would disagree.
+  const { data, error } = await readIn(ctx.roster.map((p) => p.id), (ids) => {
+    let q = sb
+      .from('golf_rounds')
+      .select('id, player_id, round_date, course_name, round_type, qualifier_id, qualifier_round_number, total_score, score_to_par, total_putts')
+      .in('player_id', ids)
+      .eq('is_test', false)
+      .eq('status', 'completed')
+      .gte('round_date', since);
+    // Older qualifier rounds are stored as 'qualifying' (round-type-utils.ts); asking for qualifier rounds counts both.
+    if (input.round_type === 'qualifier') q = q.in('round_type', ['qualifier', 'qualifying']);
+    else if (input.round_type) q = q.eq('round_type', input.round_type);
+    if (input.qualifier_id) q = q.eq('qualifier_id', input.qualifier_id);
+    return q.order('round_date', { ascending: false }).limit(600);
+  });
+  if (error) return unavailableEnvelope('Could not read the team’s rounds.', 'The rounds query failed.');
+
+  const names = new Map(ctx.roster.map((p) => [p.id, p.name]));
+  const rounds = data.sort((a, b) => String(b.round_date).localeCompare(String(a.round_date))).slice(0, 600);
+  // At the cap the oldest rounds in the window were never read: every figure below is partial, never "complete".
+  const capped = data.length >= 600;
+  const capNote = capped ? 'Only the 600 most recent rounds were read; narrow the window for an exact answer.' : null;
+  const byPlayer = new Map<string, typeof rounds>();
+  for (const r of rounds) byPlayer.set(r.player_id, [...(byPlayer.get(r.player_id) ?? []), r]);
+  const label = input.round_type ?? 'all';
+  const today = todayIsoInZone(ctx.timezone);
+  const asOf = nowIso();
+  const toPar = (rs: typeof rounds) => rs.map((r) => num(r.score_to_par)).filter((n): n is number => n !== null);
+  const metricLabel = input.round_type ? `Average score to par, ${input.round_type} rounds` : 'Average score to par';
+  // The chartable part: one measurement per player (three or more draw as a ranking) and the team's week-by-week line.
+  const measurements: Measurement[] = [...byPlayer.entries()].flatMap(([id, rs]): Measurement[] => {
+    const value = mean(toPar(rs));
+    if (value === null) return [];
+    return [{
+      metric_id: 'team_rounds_avg_to_par',
+      metric_label: metricLabel,
+      unit: 'score',
+      value,
+      entity: { kind: 'player', id, label: names.get(id) ?? 'Player' },
+      window_start: since,
+      window_end: today,
+      sample_size: toPar(rs).length,
+      sample_unit: 'rounds',
+      as_of: asOf,
+      coverage: capped ? 'partial' : 'complete',
+      coverage_note: capNote,
+      source: 'rounds',
+      method: 'mean of completed rounds',
+      denominator: null,
+      benchmark: null,
+      direction: 'lower_better',
+    }];
+  }).sort((a, b) => (a.value ?? 99) - (b.value ?? 99));
+  const weeks = new Map<string, number[]>();
+  for (const r of rounds) {
+    const v = num(r.score_to_par);
+    if (v === null) continue;
+    const d = new Date(`${String(r.round_date).slice(0, 10)}T12:00:00Z`);
+    d.setUTCDate(d.getUTCDate() - ((d.getUTCDay() + 6) % 7));
+    const key = d.toISOString().slice(0, 10);
+    weeks.set(key, [...(weeks.get(key) ?? []), v]);
+  }
+  const points = [...weeks.entries()].sort(([x], [y]) => x.localeCompare(y)).map(([at, vs]) => ({ at, value: mean(vs) as number, bucket: null, sample_size: vs.length }));
+  const series: MeasurementSeries[] = points.length >= 2
+    ? [{
+        metric_id: 'team_rounds_avg_to_par_weekly',
+        metric_label: `${metricLabel}, by week`,
+        unit: 'score',
+        entity: { kind: 'team', id: ctx.team_id, label: ctx.team_name },
+        points,
+        window_start: since,
+        window_end: today,
+        as_of: asOf,
+        coverage: capped ? 'partial' : 'complete',
+        coverage_note: capNote,
+        source: 'rounds',
+        method: 'weekly mean of completed rounds',
+        benchmark: null,
+        direction: 'lower_better',
+      }]
+    : [];
+  return {
+    summary: `${rounds.length} completed ${label === 'all' ? '' : `${label} `}round${rounds.length === 1 ? '' : 's'} by ${byPlayer.size} player${byPlayer.size === 1 ? '' : 's'} since ${since}.`,
+    measurements,
+    series,
+    detail: {
+      since,
+      round_type: input.round_type ?? null,
+      round_count: rounds.length,
+      players: [...byPlayer.entries()]
+        .map(([id, rs]) => ({
+          player_id: id,
+          name: names.get(id),
+          rounds: rs.length,
+          avg_score: mean(rs.map((r) => num(r.total_score)).filter((n): n is number => n !== null)),
+          avg_to_par: mean(rs.map((r) => num(r.score_to_par)).filter((n): n is number => n !== null)),
+          avg_putts: mean(rs.map((r) => num(r.total_putts)).filter((n): n is number => n !== null)),
+        }))
+        .sort((a, b) => (a.avg_to_par ?? 99) - (b.avg_to_par ?? 99)),
+      recent_rounds: rounds.slice(0, 60).map((r) => ({
+        round_id: r.id,
+        player: names.get(r.player_id),
+        date: r.round_date,
+        course: r.course_name,
+        // One name for qualifier rounds, whichever spelling the row was stored under.
+        round_type: r.round_type === 'qualifying' ? 'qualifier' : r.round_type,
+        qualifier_round: r.qualifier_round_number,
+        total_score: r.total_score,
+        to_par: r.score_to_par,
+        putts: r.total_putts,
+      })),
+    },
+    coverage: rounds.length === 0 ? 'empty' : capped ? 'partial' : 'complete',
+    coverage_note: capNote,
+    as_of: nowIso(),
+  };
+}
+
+/** The team's tournaments: dates, status, where the team finished, and each lineup player's round totals. */
+export async function getTournaments(sb: Sb, ctx: CoachChatContext, input: { limit: number }): Promise<ToolEnvelope> {
+  const limit = Math.min(Math.max(input.limit, 1), 12);
+  const { data, error } = await sb
+    .from('golf_tournaments')
+    .select('id, name, start_date, end_date, event_kind, format, field_size, lineup_locked_at, lineup_published_at, official_at')
+    .eq('team_id', ctx.team_id)
+    .order('start_date', { ascending: false })
+    .limit(limit);
+  if (error) return unavailableEnvelope('Could not read the team’s tournaments.', 'The tournaments query failed.');
+  const events = data ?? [];
+  if (events.length === 0) {
+    return { summary: 'No tournaments are set up yet.', measurements: [], series: [], detail: { tournaments: [] }, coverage: 'empty', coverage_note: null, as_of: nowIso() };
+  }
+  const ids = events.map((e) => e.id);
+  const [field, rds] = await Promise.all([
+    readIn(ids, (c) => sb.from('golf_tournament_field_teams').select('tournament_id, final_place, final_total').in('tournament_id', c).eq('is_us', true)),
+    readIn(ids, (c) => sb.from('golf_tournament_rounds').select('tournament_id, round_number, round_event_id, status').in('tournament_id', c)),
+  ]);
+  if (field.error || rds.error) return unavailableEnvelope('Could not read the tournaments’ results.', 'The results query failed.');
+  const roundIds = (rds.data ?? []).map((r) => r.round_event_id);
+  const scores = await readIn(roundIds, (c) => sb.from('golf_tournament_player_rounds').select('round_event_id, player_id, entered_total, status').in('round_event_id', c));
+  if (scores.error) return unavailableEnvelope('Could not read the tournaments’ scores.', 'The scores query failed.');
+
+  const names = new Map(ctx.roster.map((p) => [p.id, p.name]));
+  const today = todayIsoInZone(ctx.timezone);
+  const roundOf = new Map((rds.data ?? []).map((r) => [r.round_event_id, r]));
+  return {
+    summary: `${events.length} tournament${events.length === 1 ? '' : 's'}, most recent first.`,
+    measurements: [],
+    series: [],
+    detail: {
+      tournaments: events.map((e) => {
+        const us = (field.data ?? []).find((f) => f.tournament_id === e.id);
+        const mine = (scores.data ?? []).filter((s) => roundOf.get(s.round_event_id)?.tournament_id === e.id);
+        return {
+          tournament_id: e.id,
+          name: e.name,
+          start_date: e.start_date,
+          end_date: e.end_date,
+          kind: e.event_kind,
+          format: e.format,
+          field_size: e.field_size,
+          status: e.official_at ? 'official' : e.end_date < today ? 'finished' : e.start_date <= today ? 'in progress' : 'upcoming',
+          lineup: e.lineup_published_at ? 'published' : e.lineup_locked_at ? 'locked' : 'draft',
+          team_place: us?.final_place ?? null,
+          team_total: us?.final_total ?? null,
+          rounds: (rds.data ?? []).filter((r) => r.tournament_id === e.id).sort((a, b) => a.round_number - b.round_number).map((r) => ({ round: r.round_number, status: r.status })),
+          player_rounds: mine
+            .map((s) => ({ player: names.get(s.player_id) ?? 'Former player', round: roundOf.get(s.round_event_id)?.round_number ?? null, total: s.entered_total, status: s.status }))
+            .sort((a, b) => String(a.player).localeCompare(String(b.player)) || (a.round ?? 0) - (b.round ?? 0)),
+        };
+      }),
+    },
+    coverage: 'complete',
+    coverage_note: null,
+    as_of: nowIso(),
+  };
+}
+
+/**
+ * The team's qualifiers with each player's standing, in the one order the qualifier board, the selection workspace
+ * and Fairway use (ranking.ts rankStandings: a card a round short below every full card, then total to par, then
+ * strokes). The rounds counted are the board's: completed, not a test, with a total and a to par, one per numbered
+ * qualifier round. Players with no counted round follow, unranked.
+ */
+export async function getQualifiers(sb: Sb, ctx: CoachChatContext, input: { limit: number }): Promise<ToolEnvelope> {
+  const limit = Math.min(Math.max(input.limit, 1), 8);
+  const { data, error } = await sb
+    .from('golf_qualifiers')
+    .select('id, name, status, start_date, end_date, num_rounds, course_name, spots_available, selection_state')
+    .eq('team_id', ctx.team_id)
+    .eq('is_test', false)
+    .order('start_date', { ascending: false })
+    .limit(limit);
+  if (error) return unavailableEnvelope('Could not read the team’s qualifiers.', 'The qualifiers query failed.');
+  const quals = data ?? [];
+  if (quals.length === 0) {
+    return { summary: 'No qualifiers on record.', measurements: [], series: [], detail: { qualifiers: [] }, coverage: 'empty', coverage_note: null, as_of: nowIso() };
+  }
+  const { data: rows, error: roundsError } = await readIn(
+    quals.map((x) => x.id),
+    (c) => sb.from('golf_rounds').select('qualifier_id, player_id, total_score, score_to_par, qualifier_round_number').in('qualifier_id', c).eq('is_test', false).eq('status', 'completed').limit(900),
+  );
+  if (roundsError) return unavailableEnvelope('Could not read the qualifiers’ rounds.', 'The rounds query failed.');
+
+  const names = new Map(ctx.roster.map((p) => [p.id, p.name]));
+  return {
+    summary: `${quals.length} qualifier${quals.length === 1 ? '' : 's'}, most recent first.`,
+    measurements: [],
+    series: [],
+    detail: {
+      qualifiers: quals.map((x) => {
+        const mine = rows.filter((r) => r.qualifier_id === x.id && names.has(r.player_id));
+        return {
+          qualifier_id: x.id,
+          name: x.name,
+          status: x.status,
+          start_date: x.start_date,
+          end_date: x.end_date,
+          rounds_planned: x.num_rounds,
+          course: x.course_name,
+          spots: x.spots_available,
+          selection: x.selection_state,
+          standings: qualifierStandings(mine, names),
+        };
+      }),
+    },
+    // The rounds read stops at 900: past it some standings are short of rounds, so the list is never called complete.
+    coverage: rows.length >= 900 ? 'partial' : 'complete',
+    coverage_note: rows.length >= 900 ? 'Only 900 qualifier rounds were read; ask about fewer qualifiers for exact standings.' : null,
+    as_of: nowIso(),
+  };
+}
+
+/** One qualifier's standings for Ask, placed by the one order (ranking.ts rankStandings), never sorted here. */
+function qualifierStandings(
+  rounds: ReadonlyArray<{ player_id: string; total_score: unknown; score_to_par: unknown; qualifier_round_number: number | null }>,
+  names: ReadonlyMap<string, string>,
+) {
+  // The board's counting rule (screens/qualifiers/model.ts rankRows, loader.ts): a round needs a total and a to par,
+  // and a second round in one numbered qualifier round counts once.
+  const byPlayer = new Map<string, { totals: number[]; toPars: number[]; slots: Set<number> }>();
+  for (const r of rounds) {
+    const agg = byPlayer.get(r.player_id) ?? { totals: [], toPars: [], slots: new Set<number>() };
+    byPlayer.set(r.player_id, agg);
+    const total = num(r.total_score);
+    const toPar = num(r.score_to_par);
+    if (total === null || toPar === null) continue;
+    if (r.qualifier_round_number != null) {
+      if (agg.slots.has(r.qualifier_round_number)) continue;
+      agg.slots.add(r.qualifier_round_number);
+    }
+    agg.totals.push(total);
+    agg.toPars.push(toPar);
+  }
+  const players = [...byPlayer].map(([id, a]) => ({ id, name: names.get(id) ?? 'Former player', ...a }));
+  const sum = (xs: number[]) => xs.reduce((s, x) => s + x, 0);
+  const placed = rankStandings(
+    players.filter((p) => p.totals.length > 0),
+    (p) => ({ toPar: sum(p.toPars), total: sum(p.totals), played: p.totals.length, name: p.name }),
+  );
+  return [
+    ...placed.map(({ item: p, rank, position, tied, short }) => ({
+      player: p.name,
+      rank,
+      position: `${tied ? 'T' : ''}${position}`,
+      rounds: p.totals.length,
+      total_strokes: sum(p.totals),
+      total_to_par: sum(p.toPars),
+      avg_score: mean(p.totals),
+      avg_to_par: mean(p.toPars),
+      short_card: short,
+    })),
+    ...players
+      .filter((p) => p.totals.length === 0)
+      .map((p) => ({ player: p.name, rank: null, position: null, rounds: 0, total_strokes: null, total_to_par: null, avg_score: null, avg_to_par: null, short_card: false })),
+  ];
 }
 
 /** Name → roster player, for plain-typed references. Never leaves the server. */

@@ -91,3 +91,48 @@ describe('shotSgForRound endpoint option (20260930150000 nx rule)', () => {
     expect(s!.sg).toBeCloseTo(E('fairway', 150) - E('green', 10) - 1, 6);
   });
 });
+
+describe('next_shot_start also ports held 20261023170000 (other curve, recovery tap)', () => {
+  const opts = { endpoint: 'next_shot_start' as const };
+  // Par 4: drive to 'other' 150, punch to fairway 90, wedge to 20 ft.
+  function hole(flag: boolean | null, withDrop = false): RawShotRow[] {
+    const drive = row({ id: 'd', shot_number: 1, shot_type: 'tee', lie_before: 'tee', distance_to_hole_before: 400,
+      lie_after: 'other', result: 'other', distance_to_hole_after: 150, distance_unit_after: 'yards', lie_after_recovery: flag });
+    const drop = row({ id: 'p', shot_number: 2, shot_type: 'penalty', is_penalty: true, lie_before: 'other',
+      distance_to_hole_before: 150, lie_after: 'other', distance_to_hole_after: 150, distance_unit_after: 'yards' });
+    const off = withDrop ? 1 : 0;
+    const punch = row({ id: 'x', shot_number: 2 + off, lie_before: 'other', distance_to_hole_before: 150,
+      lie_after: 'fairway', result: 'fairway', distance_to_hole_after: 90, distance_unit_after: 'yards' });
+    const wedge = row({ id: 'w', shot_number: 3 + off, lie_before: 'fairway', distance_to_hole_before: 90 });
+    return withDrop ? [drive, drop, punch, wedge] : [drive, punch, wedge];
+  }
+  const sgOf = (rows: RawShotRow[], o = opts) => new Map(shotSgForRound(rows, PARS, 1, o).map((s) => [s.shotId, s.sg]));
+
+  it('keeps other and recovery only for the held curve', () => {
+    expect(sgNormalizeLie('other')).toBe('fairway');
+    expect(sgNormalizeLie('other', 'held')).toBe('other');
+    expect(sgNormalizeLie('recovery', 'held')).toBe('recovery');
+    expect(sgNormalizeLie('water', 'held')).toBe('fairway');
+  });
+
+  it('prices other on its own curve with next_shot_start, as fairway with own_finish', () => {
+    const held = sgOf(hole(null));
+    expect(held.get('x')).toBeCloseTo(getExpectedStrokes('other', 150) - getExpectedStrokes('fairway', 90) - 1, 6);
+    const live = sgOf(hole(null), {} as typeof opts);
+    expect(live.get('x')).toBeCloseTo(getExpectedStrokes('fairway', 150) - getExpectedStrokes('fairway', 90) - 1, 6);
+  });
+
+  it('a blocked tap moves the punch-out to the recovery curve and charges the drive', () => {
+    const sg = sgOf(hole(true));
+    expect(sg.get('d')).toBeCloseTo(getExpectedStrokes('tee', 400) - getExpectedStrokes('recovery', 150) - 1, 6);
+    expect(sg.get('x')).toBeCloseTo(getExpectedStrokes('recovery', 150) - getExpectedStrokes('fairway', 90) - 1, 6);
+    const plain = sgOf(hole(false));
+    expect(sg.get('d')! + sg.get('x')!).toBeCloseTo(plain.get('d')! + plain.get('x')!, 6);
+  });
+
+  it('a penalty drop after the blocked drive clears the tap', () => {
+    const sg = sgOf(hole(true, true));
+    expect(sg.get('d')).toBeCloseTo(getExpectedStrokes('tee', 400) - getExpectedStrokes('other', 150) - 1, 6);
+    expect(sg.get('x')).toBeCloseTo(getExpectedStrokes('other', 150) - getExpectedStrokes('fairway', 90) - 1, 6);
+  });
+});

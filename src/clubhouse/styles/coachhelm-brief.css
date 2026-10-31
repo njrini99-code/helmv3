@@ -1,25 +1,6 @@
 /* The coach's CoachHelm Monday brief (P013 `?view=monday-brief`, flag coachhelm_monday_brief_v1; CoachHelm task chs-28,
    supercharge 04 §4 and Layout 1). Up to five rows, each one line of who and what, its ladder word and strokes, one action. */
 
-.ch-hmb-back {
-  display: inline-flex;
-  align-items: center;
-  gap: 2px;
-  justify-self: start;
-  min-height: 32px;
-  color: var(--ch-green-700);
-  font: 500 calc(13.5 * var(--ch-type-k))/1 var(--ch-font-sans);
-  text-decoration: none;
-}
-.ch-hmb-back:hover {
-  text-decoration: underline;
-}
-.ch-hmb-back:focus-visible {
-  outline: 2px solid var(--ch-border-focus);
-  outline-offset: 2px;
-  border-radius: var(--ch-radius-xs);
-}
-
 .ch-hmb-body {
   display: grid;
   gap: 16px;
@@ -30,7 +11,7 @@
 .ch-hmb-ood {
   margin: 0;
   max-width: 64ch;
-  font: 400 calc(13.5 * var(--ch-type-k))/1.5 var(--ch-font-sans);
+  font: var(--ch-type-14);
   color: var(--ch-text-secondary);
 }
 .ch-hmb-team {
@@ -58,23 +39,24 @@
 .ch-hmb-row__main {
   display: flex;
   flex-direction: column;
-  gap: 3px;
+  gap: 4px;
   min-width: 0;
 }
 .ch-hmb-row__who {
-  font: 500 calc(12.5 * var(--ch-type-k))/1.35 var(--ch-font-sans);
+  font: var(--ch-type-13-medium);
   color: var(--ch-text-tertiary);
 }
 .ch-hmb-row.is-team_pattern .ch-hmb-row__who {
   color: var(--ch-warning-600);
 }
 .ch-hmb-row__t {
-  font: 600 calc(14.5 * var(--ch-type-k))/1.3 var(--ch-font-sans);
+  font: var(--ch-type-15-strong);
+  letter-spacing: var(--ch-track-15);
   color: var(--ch-text-primary);
   text-wrap: pretty;
 }
 .ch-hmb-row__m {
-  font: 400 calc(13 * var(--ch-type-k))/1.4 var(--ch-font-sans);
+  font: var(--ch-type-13);
   color: var(--ch-text-secondary);
 }
 .ch-hmb-row__m em {
@@ -84,7 +66,7 @@
 }
 .ch-hmb-row__n,
 .ch-hmb-row__b {
-  font: 400 calc(12.5 * var(--ch-type-k))/1.45 var(--ch-font-sans);
+  font: var(--ch-type-13);
   color: var(--ch-text-tertiary);
   text-wrap: pretty;
 }
@@ -95,12 +77,12 @@
 
 .ch-hmb-sub {
   margin: 0 0 6px;
-  font: 600 calc(13 * var(--ch-type-k))/1.3 var(--ch-font-sans);
+  font: var(--ch-type-13-strong);
   color: var(--ch-text-primary);
 }
 .ch-hmb-cleared li {
   padding: 4px 0;
-  font: 400 calc(13.5 * var(--ch-type-k))/1.45 var(--ch-font-sans);
+  font: var(--ch-type-14);
   color: var(--ch-text-secondary);
 }
 .ch-hmb-ood {
@@ -149,7 +131,7 @@
 }
 .ch-hbr-goals__name {
   justify-self: start;
-  font: 500 calc(12.5 * var(--ch-type-k))/1.35 var(--ch-font-sans);
+  font: var(--ch-type-13-medium);
   color: var(--ch-text-tertiary);
   text-decoration: none;
 }
@@ -173,11 +155,12 @@
   display: flex;
   flex-direction: column;
   gap: 2px;
-  font: 400 calc(13 * var(--ch-type-k))/1.4 var(--ch-font-sans);
+  font: var(--ch-type-13);
   color: var(--ch-text-secondary);
 }
 .ch-hbr-goals__p li b {
-  font: 600 calc(14.5 * var(--ch-type-k))/1.3 var(--ch-font-sans);
+  font: var(--ch-type-15-strong);
+  letter-spacing: var(--ch-track-15);
   color: var(--ch-text-primary);
 }
 .ch-hbr-goals__st {

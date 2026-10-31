@@ -7,7 +7,7 @@ import { readQualifierSelectionReasons } from '@/lib/golf/qualifier-selection-re
 import { loadQualifyingWorkspace } from '@/lib/coachhelm/v3/qualifying/loader';
 import type { QualifyingWorkspace } from '@/lib/coachhelm/v3/qualifying/types';
 import { chLogServer } from '../lib/track-server';
-import { classYearLabel, fullName } from './season';
+import { classYearLabel, fullName, loadTeamZone } from './season';
 import {
   buildBoard,
   countsOnBoard,
@@ -210,8 +210,8 @@ export interface ChQFormData {
   minRounds: number;
 }
 
-function entrantOf(p: PlayerCols, now: Date): ChQEntrant {
-  return { playerId: p.id, name: fullName(p), classYear: classYearLabel(p.graduation_year, now) };
+function entrantOf(p: PlayerCols, now: Date, tz: string): ChQEntrant {
+  return { playerId: p.id, name: fullName(p), classYear: classYearLabel(p.graduation_year, now, tz) };
 }
 const ENTRY_SELECT = 'qualifier_id, player_id';
 const ROUND_SELECT = 'id, qualifier_id, player_id, qualifier_round_number, total_score, score_to_par, round_date, course_name, holes_played, status, is_test';
@@ -312,6 +312,8 @@ async function readScorecards(supabase: Supabase, roundIds: string[]): Promise<{
 export async function loadQualifierList(input: { role: Role; teamId: string; playerId: string | null; mode: 'all' | 'mine' }): Promise<ChQList> {
   const supabase = await createClient();
   const now = new Date();
+  // The class year turns on 1 August in the team's zone (decision 9); read beside the page's other reads.
+  const tzRead = loadTeamZone(supabase, input.teamId, 'qualifiers');
   const listRes = await supabase
     .from('golf_qualifiers')
     .select(Q_COLUMNS)
@@ -336,11 +338,12 @@ export async function loadQualifierList(input: { role: Role; teamId: string; pla
   ]);
   const standingsError = entries.error || rounds.error;
 
+  const tz = await tzRead;
   const items: ChQListItem[] = qs.map((q) => {
     const status = parseStatus(q.status);
     const qEntries = entries.rows.filter((e) => e.qualifier_id === q.id && e.player);
     const board = buildBoard({
-      entrants: qEntries.map((e) => entrantOf(e.player as PlayerCols, now)),
+      entrants: qEntries.map((e) => entrantOf(e.player as PlayerCols, now, tz)),
       rounds: rounds.rows.filter((r) => r.qualifier_id === q.id).map(roundOfRow),
       squad: q.selection_slots_total,
       picks: q.selection_slots_coach_pick,
@@ -450,6 +453,8 @@ async function readRoundCourses(supabase: Supabase, qualifierIds: string[]): Pro
 export async function loadQualifierDetail(input: { role: Role; teamId: string; playerId: string | null; qualifierId: string }): Promise<ChQDetailLoad | null> {
   const supabase = await createClient();
   const now = new Date();
+  // The class year turns on 1 August in the team's zone (decision 9); read beside the page's other reads.
+  const tzRead = loadTeamZone(supabase, input.teamId, 'qualifiers');
   const qRes = await supabase.from('golf_qualifiers').select(`${Q_COLUMNS}, team_id`).eq('id', input.qualifierId).maybeSingle();
   if (qRes.error) {
     chLogServer('qualifiers', 'qualifier', qRes.error, 'qualifiers');
@@ -485,7 +490,8 @@ export async function loadQualifierDetail(input: { role: Role; teamId: string; p
   if (reasonsRes.error) chLogServer('qualifiers', 'reasons', reasonsRes.error, 'qualifiers');
 
   const qRounds = rounds.rows.map(roundOfRow);
-  const entrants = entries.rows.filter((e) => e.player).map((e) => entrantOf(e.player as PlayerCols, now));
+  const tz = await tzRead;
+  const entrants = entries.rows.filter((e) => e.player).map((e) => entrantOf(e.player as PlayerCols, now, tz));
   const nameOf = new Map(entrants.map((e) => [e.playerId, e.name]));
   // The names come from the entries: with those unread the squad is "not readable", never a row of "A player".
   const selections: Array<ChQSelection & { name: string }> | null =
@@ -614,6 +620,8 @@ const EMPTY_FORM: ChQFormValues = {
 export async function loadQualifierForm(input: { teamId: string; qualifierId: string | null }): Promise<ChQFormData | null> {
   const supabase = await createClient();
   const now = new Date();
+  // The class year turns on 1 August in the team's zone (decision 9); read beside the page's other reads.
+  const tzRead = loadTeamZone(supabase, input.teamId, 'qualifiers');
   // The roster is the team's, and the qualifier is read by its id: neither waits on the other.
   const [rosterRes, qRes] = await Promise.all([
     supabase.from('golf_team_members').select('player:golf_players(id, first_name, last_name, graduation_year)').eq('team_id', input.teamId).eq('status', 'active'),
@@ -623,8 +631,9 @@ export async function loadQualifierForm(input: { teamId: string; qualifierId: st
   const roster = ((rosterRes.data ?? []) as Array<{ player: PlayerCols | null }>).map((m) => m.player).filter((p): p is PlayerCols => !!p);
   const byLast = (a: { name: string }, b: { name: string }) => (a.name.split(' ').slice(-1)[0] ?? '').localeCompare(b.name.split(' ').slice(-1)[0] ?? '') || a.name.localeCompare(b.name);
 
+  const tz = await tzRead;
   if (!input.qualifierId || !qRes) {
-    const players = roster.map((p) => ({ id: p.id, name: fullName(p), classYear: classYearLabel(p.graduation_year, now), locked: false as const, inactive: false })).sort(byLast);
+    const players = roster.map((p) => ({ id: p.id, name: fullName(p), classYear: classYearLabel(p.graduation_year, now, tz), locked: false as const, inactive: false })).sort(byLast);
     return {
       mode: 'create',
       id: null,
@@ -671,7 +680,7 @@ export async function loadQualifierForm(input: { teamId: string; qualifierId: st
     ...roster,
     ...entered.filter((p) => !rosterIds.has(p.id)),
   ]
-    .map((p) => ({ id: p.id, name: fullName(p), classYear: classYearLabel(p.graduation_year, now), locked: lockOf(p.id), inactive: !rosterIds.has(p.id) }))
+    .map((p) => ({ id: p.id, name: fullName(p), classYear: classYearLabel(p.graduation_year, now, tz), locked: lockOf(p.id), inactive: !rosterIds.has(p.id) }))
     .sort(byLast);
 
   return {
@@ -714,7 +723,7 @@ export async function loadQualifierForm(input: { teamId: string; qualifierId: st
 export interface ChQCandidate {
   playerId: string;
   name: string;
-  /** The server's standing (to par, then total strokes); null with no score in. */
+  /** The server's rank in the one order (ranking.ts rankStandings); null with no score in. Candidates arrive in it. */
   rank: number | null;
   toPar: number | null;
   total: number | null;
@@ -748,6 +757,11 @@ export type ChQSelectionLoad = { kind: 'ok'; data: ChQSelectionData } | { kind: 
  * loader the server actions use when they confirm the squad
  * (`loadQualifyingWorkspace`), so the squad shown is the squad committed. A
  * failed read is told apart from a qualifier that isn't on the team.
+ *
+ * In the one order the server decides (ranking.ts rankStandings, the board's;
+ * owner decision A: "Match the board"): a card a round short ranks below every
+ * full card, as on the board and "You vs the line". The candidates come in
+ * that order with their rank; the screen draws them as given.
  */
 export async function loadQualifierSelection(input: { teamId: string; qualifierId: string }): Promise<ChQSelectionLoad> {
   const supabase = await createClient();

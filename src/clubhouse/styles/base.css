@@ -132,7 +132,10 @@
   margin: 0;
 }
 
-.ch-num {
+/* `svg .ch-num`: chart text sets its font shorthand in its screen's sheet, which loads later and would reset the figures
+   to proportional at the same weight; the extra element keeps them even there (row 113). */
+.ch-num,
+svg .ch-num {
   font-variant-numeric: tabular-nums;
   font-feature-settings: 'tnum';
 }
@@ -148,6 +151,11 @@
   margin: -1px;
   overflow: hidden;
   clip: rect(0 0 0 0);
+  white-space: nowrap;
+}
+/* Words that must stay on one line ("two-putting", "12:00 PM"): a plain hyphen or space in a span, because the font has
+   no non-breaking hyphen (A23, A24). */
+.ch-nowrap {
   white-space: nowrap;
 }
 
@@ -219,10 +227,11 @@
   box-shadow: var(--ch-raised-shadow);
   border-radius: var(--ch-radius-md);
 }
+/* A reading sheet is a card on the page, so it takes the card's 16 (H17); 20 belongs to a bottom sheet's top corners. */
 .ch-sheet {
   background: var(--ch-sheet-bg);
   box-shadow: var(--ch-sheet-shadow);
-  border-radius: var(--ch-radius-xl);
+  border-radius: var(--ch-radius-card);
 }
 /* System contrast modes suppress shadows; retain a visible surface boundary there. */
 @media (forced-colors: active) {
@@ -303,11 +312,23 @@ html[data-ch-vt-hold] [data-ui='clubhouse'] main[aria-busy='true'][aria-label^='
     /* A looping animation at 1ms would strobe: run it once and stop. */
     animation-iteration-count: 1 !important;
   }
+  /* Except the one spinner (OQ-18, rubric H19): it keeps turning, as iOS's activity indicator does under Reduce Motion. A
+     ring turning in place moves nothing across the screen, and a still ring reads as stuck. Animations off still stops
+     it (--ch-dur-sweep is 0 there). */
+  .ch-root .ch-spinner {
+    animation-duration: var(--ch-dur-sweep) !important;
+    animation-iteration-count: infinite !important;
+  }
   /* A dialog's scrim is its own pseudo-element in the top layer and kept its fade (audit A-12). Its own rule, so a
      browser that can't parse ::backdrop drops only this one, not the floor above. */
   .ch-root *::backdrop {
     transition-duration: 1ms !important;
     animation-duration: 1ms !important;
+  }
+  /* Except a sheet's dim (owner decision 2, 2026-10-24, OQ-15): Reduce Motion fades a sheet in and out over the quick
+     beat, in opacity only (lib/dialog-lifetime.ts), and its scrim fades with it. Animations off zeroes the quick beat. */
+  .ch-root dialog::backdrop {
+    transition-duration: var(--ch-scrim-dur, var(--ch-dur-quick)) !important;
   }
 }
 

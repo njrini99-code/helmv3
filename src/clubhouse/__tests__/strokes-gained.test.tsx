@@ -1,5 +1,5 @@
 import { LazyMotion, domAnimation } from 'motion/react';
-import { cleanup, render, screen, within } from '@testing-library/react';
+import { cleanup, render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
@@ -37,8 +37,10 @@ import { deltaTone } from '../lib/stats-signal';
 import { PlayerHome } from '../screens/home/PlayerHome';
 import { RoundReview } from '../screens/rounds/RoundReview';
 import { StatsPlayer } from '../screens/stats/StatsPlayer';
+import { ParTiles } from '../screens/stats/charts';
 import { puttingNote } from '../screens/stats/notes';
 import { StatsTeam } from '../screens/stats/StatsTeam';
+import { legScale, legScaleWords } from '../screens/stats/StatsTeamIslands';
 import { CrumbProvider } from '../shell/crumbs';
 import { PhoneChromeProvider, usePhoneChromeState } from '../shell/phone-chrome';
 import { ToastProvider } from '../ui/Toast';
@@ -105,9 +107,10 @@ beforeEach(() => {
 
 describe('the strokes gained baseline', () => {
   it('names the Tour for a men’s team, the women’s Tour baseline for a women’s team, and claims none when the tour is unknown', () => {
-    expect(sgBaseline('pga')).toEqual({ vs: 'vs Tour', noun: 'the Tour baseline' });
-    expect(sgBaseline('lpga')).toEqual({ vs: "vs the women's Tour baseline", noun: "the women's Tour baseline" });
-    expect(sgBaseline(null)).toEqual({ vs: 'vs the baseline', noun: 'the baseline' });
+    // `mark` and `zero` name the gauge's zero mark and the trend's zero line (A8.3).
+    expect(sgBaseline('pga')).toEqual({ vs: 'vs Tour', noun: 'the Tour baseline', mark: 'Tour', name: 'the Tour', zero: 'Zero is the Tour' });
+    expect(sgBaseline('lpga')).toEqual({ vs: "vs the women's Tour baseline", noun: "the women's Tour baseline", mark: "Women's Tour", name: "the women's Tour", zero: "Zero is the women's Tour" });
+    expect(sgBaseline(null)).toEqual({ vs: 'vs the baseline', noun: 'the baseline', mark: 'Baseline', name: 'the baseline', zero: 'Zero is the baseline' });
   });
 
   it('the player profile says vs Tour (never vs D1) on the hero, on the phone figure and in the comparison table; a women’s team says so', () => {
@@ -122,6 +125,15 @@ describe('the strokes gained baseline', () => {
     expect(document.querySelector('.ch-pf-hero__figs')!.textContent).toContain("Per round vs the women's Tour baseline");
     expect(document.querySelector('.ch-zn__def')!.textContent).toContain("Zero is the women's Tour baseline");
     expect(document.querySelector('.ch-lb__axis')!.textContent).toContain("Zero is the women's Tour baseline");
+    // Row 110: the gauge's legend, its title and the round-by-round note name the women's Tour too, never a bare Tour.
+    expect(document.querySelector('.ch-zlegend')!.textContent).toContain("Women's Tour 0.0");
+    expect(document.querySelector('.ch-zns')!.textContent).toMatch(/Against the team and the women's Tour|Against the women's Tour/);
+    expect(document.querySelector('.ch-zns')!.textContent).toContain("per 18 holes. Zero is the women's Tour baseline;");
+  });
+
+  it('the par tiles name the bench they are against: the women’s Tour for a women’s team (row 110)', () => {
+    render(<ParTiles rows={[{ par: 3, avg: 3.2, bench: 3.05 }]} mark={sgBaseline('lpga').mark} />);
+    expect(document.querySelector('.ch-par3__d')!.textContent).toBe("Women's Tour 3.05");
   });
 
   describe('on the phone', () => {
@@ -213,6 +225,25 @@ describe('bar scale', () => {
     expect(link.getAttribute('href')).toContain('coachhelm?player=p9');
   });
 
+  it('desktop player: a new window glides the same leg bars to their new lengths (row 5, B9); the figure beside them changes at once', async () => {
+    const win = (approach: number) => ({ ...PREVIEW_PLAYER.win, sgLegs: { tee: 0.3, approach, around: 0.1, putting: -1.9 } });
+    const view = showPlayer(player({ win: win(-2.6) }));
+    const bar = () => document.querySelectorAll<HTMLElement>('.ch-lb__bar')[1]!;
+    // Visual pass 2026-10-28 (H2, R7): the bar is laid out at its new width at once and glides by transform, so the drawn
+    // length is the laid-out width times the transform's scale; no frame animates width.
+    const drawnWidth = (el: HTMLElement) => parseFloat(el.style.width) * Math.abs(parseFloat(/scaleX\(([^)]+)\)/.exec(el.style.transform)?.[1] ?? '1'));
+    const before = bar();
+    const was = drawnWidth(before);
+    view.rerender(shell(<StatsPlayer data={player({ win: win(-1.0) })} coachId="c1" />));
+    // The page kept the chart (no remount on a window change), so the bar starts where it was; it ends on the new scale (2).
+    expect(bar()).toBe(before);
+    expect(parseFloat(bar().style.width)).toBeCloseTo((1.0 / 2) * 50, 1);
+    expect(drawnWidth(bar())).toBeCloseTo(was, 5);
+    expect(document.querySelectorAll('.ch-lb__v')[1]!.textContent).toBe('−1.0');
+    await waitFor(() => expect(bar().style.transform).toBe(''), { timeout: 2000 });
+    expect(drawnWidth(bar())).toBeCloseTo((1.0 / 2) * 50, 1);
+  });
+
   it('desktop player: the leg bars draw a −2.6 leg at 2.6 of 3 on one scale from the zero line, not clamped at 1.4', () => {
     const win = { ...PREVIEW_PLAYER.win, sgLegs: { tee: 0.3, approach: -2.6, around: 0.1, putting: -1.9 } };
     showPlayer(player({ win }));
@@ -290,7 +321,7 @@ describe('team stats · desktop', () => {
       // Green or amber only when the change clears its standard error, by the figure's own direction (lower scores and fewer
       // putts improved when they fell); otherwise neutral (stats visuals Q4).
       const t = deltaTone(f.delta, f.se, f.lowerIsBetter);
-      expect(c.querySelector('.ch-tp__svg')!.getAttribute('class'), f.label).toContain(t === 'is-gain' ? 'is-good' : t === 'is-loss' ? 'is-bad' : 'is-flat');
+      expect(c.querySelector('.ch-tp__svg')!.getAttribute('class'), f.label).toContain(t === 'is-gain' || t === 'is-loss' ? t : 'is-flat');
       expect(c.querySelector('.ch-tp__svg')!.getAttribute('aria-hidden')).toBe('true');
     }
   });
@@ -313,6 +344,14 @@ describe('team stats · desktop', () => {
     showTeam(team({ figures: [{ ...sg!, delta: null, context: 'No earlier rounds', state: 'no-comparison' }, ...rest] }));
     expect(code('CH-4312')!.textContent).toContain('No earlier rounds');
     expect(code('CH-4312')!.querySelector('svg')).toBeNull();
+  });
+
+  it('the leg cards say their one shared scale once, the same ends their lines are drawn on (row 102)', () => {
+    showTeam(team());
+    const words = legScaleWords(legScale(PREVIEW_TEAM_STATS.legWeeks));
+    const note = [...document.querySelectorAll('.ch-sv-note')].find((n) => /One scale for the four legs/.test(n.textContent ?? ''));
+    expect(note?.textContent).toBe(words);
+    expect(document.querySelector('.ch-sgm-row')!.getAttribute('aria-label')).toContain(words);
   });
 
   it('each leg card’s headline is the window’s mean a round, not the latest week: putting is −0.3 (amber) though its last week was +0.3', () => {
@@ -343,20 +382,43 @@ describe('team stats · desktop', () => {
     expect(document.querySelector('.ch-sgt__team b')!.textContent).toBe('−0.5');
   });
 
-  it('a change reads as a change: "up about 1.0 a round since Aug 30", not a level the team has gained', async () => {
+  it('A1: a change is the newer half of the weeks against the older half, said only past its standard error, never first vs last', async () => {
     const user = userEvent.setup();
     showTeam(team());
     const note = () => document.querySelector('.ch-sgt > .ch-note')!.textContent!;
-    expect(note()).toBe('The team’s strokes gained are up about 1.0 a round since Aug 30, a weekly average from −1.0 to 0.0.');
-    expect(note()).not.toMatch(/has gained|has lost/);
-    // A player: Jonah went 0.8 to −0.9.
+    // The fixture's first and last weeks differ by 1.0 (−1.0 to 0.0), but its halves sit inside their standard error.
+    expect(note()).toBe('No clear change in the team’s strokes gained across this window.');
+    expect(note()).not.toMatch(/since|has gained|has lost/);
+    // A player: Jonah went 0.8 to −0.9 from first week to last, which is noise across his halves.
     await user.click(screen.getByRole('button', { name: /Jonah/ }));
-    expect(note()).toBe('Jonah’s strokes gained are down about 1.7 a round since Aug 30, a weekly average from +0.8 to −0.9.');
+    expect(note()).toBe('No clear change in Jonah’s strokes gained across this window.');
+    // The four leg cards say the same kind of thing and never "across the window" from two end points.
+    for (const n of document.querySelectorAll('.ch-sgm__n')) expect(n.textContent).not.toMatch(/across the window|since/);
   });
 
-  it('a flat line is flat, not a change', () => {
+  it('A1: a change past its standard error is worded as one, from the halves', () => {
+    // The halves come from the loader (wp1-honest, `roundHalves`), so the override carries them with the weeks.
+    showTeam(team({ team: { ...PREVIEW_TEAM_STATS.team, sg: [-3, -3, -3, 0, 3, 3, 3], sgHalves: { delta: 6, se: 0.5 } } }));
+    expect(document.querySelector('.ch-sgt > .ch-note')!.textContent).toBe('The team’s strokes gained are up 6.0 a round, newer half vs older half.');
+  });
+
+  it('a flat line is no clear change, not a change', () => {
     showTeam(team({ team: { ...PREVIEW_TEAM_STATS.team, sg: [0.1, 0.1, 0.0, 0.1, 0.1, 0.0, 0.1] } }));
-    expect(document.querySelector('.ch-sgt > .ch-note')!.textContent).toBe('The team’s strokes gained are flat since Aug 30.');
+    expect(document.querySelector('.ch-sgt > .ch-note')!.textContent).toBe('No clear change in the team’s strokes gained across this window.');
+  });
+
+  it('A1: the grid paints a player\'s change, with an arrow, only past its standard error', () => {
+    const grid = PREVIEW_TEAM_STATS.grid.map((g, i) => (i === 0 ? { ...g, change: 0.3, changeSe: 0.5 } : i === 1 ? { ...g, change: 1.2, changeSe: 0.4 } : g));
+    showTeam(team({ grid }));
+    const cellOf = (name: string) =>
+      [...document.querySelectorAll('.ch-lg__ch')].find((c) => c.closest('[role="row"]')?.textContent?.includes(name.split(' ')[0]!)) as HTMLElement;
+    const quiet = cellOf(PREVIEW_TEAM_STATS.grid[0]!.name);
+    expect(quiet.className).not.toMatch(/ch-gain|ch-loss/);
+    expect(quiet.querySelector('svg')).toBeNull();
+    expect(quiet.getAttribute('title')).toBe('No clear change');
+    const clear = cellOf(PREVIEW_TEAM_STATS.grid[1]!.name);
+    expect(clear.className).toContain('ch-gain');
+    expect(clear.querySelector('svg')).not.toBeNull();
   });
 
   it('the trend says what the dashed line is: the Tour baseline, or the women’s; the list is the window average', () => {
@@ -435,11 +497,12 @@ describe('team loader', () => {
     expect(data.players[0]!.scoreMean).toBe(72);
   });
 
-  it('a player with fewer than three strokes gained rounds has no mean to sort by (an early read, as in the grid)', async () => {
+  it('a player with fewer than three strokes gained rounds has no mean to sort by (an early read, as in the grid), and the team headline waits too (A4)', async () => {
     tables.current = teamTables('men', three.slice(0, 2));
     const data = await loadTeamStats({ teamId: 't1', window: 'season' });
     expect(data.players[0]!.sgMean).toBeNull();
-    expect(data.figures[0]!.value).toBe(2);
+    expect(data.figures[0]).toMatchObject({ value: null, state: 'empty', context: 'Needs 3 rounds with shots from one player' });
+    expect(data.legTotals).toEqual([null, null, null, null]);
   });
 
   it('CH-4311 no strokes gained in the window: no value, never a zero', async () => {
@@ -608,7 +671,7 @@ describe('player profile · desktop', () => {
     showPlayer(player({ sgChange: { ...PREVIEW_PLAYER.sgChange, se: 0.9 } }));
     hero = [...document.querySelectorAll('.ch-pf-hero__figs > div')].find((d) => d.querySelector('dt')!.textContent === 'SG / round')!;
     chip = hero.querySelector('.ch-delta')!;
-    expect(chip.className).toContain('is-bad');
+    expect(chip.className).toContain('is-loss');
     expect(hero.querySelector('.ch-sgchg')!.lastElementChild!.textContent).toBe('Worse than previous 10');
   });
 
@@ -650,7 +713,7 @@ describe('player profile · desktop', () => {
     expect(rows.map((r) => r.querySelector('b')!.textContent)).toEqual(['Off the tee', 'Approach', 'Around green', 'Putting']);
     const read = document.querySelector('.ch-zn .ch-znbig')!;
     expect(read.textContent).toBe('−0.9');
-    expect(read.className).toContain('is-bad');
+    expect(read.className).toContain('is-loss');
     expect(document.querySelector('.ch-zn__read')!.textContent).toContain('Team −0.5');
     // Putting +0.2 is a gain even though the team is at −0.3, and a loss stays a loss when it beats the team.
     expect(rows[3]!.querySelector('.ch-lb__bar')!.className).toContain('is-gain');
@@ -748,8 +811,8 @@ describe('player profile · phone', () => {
     expect(figures.nextElementSibling!.nextElementSibling).toBe(footer);
     const change = footer.querySelector('.ch-sgchg')!;
     expect(change.querySelector('.ch-delta')!.textContent).toBe('−1.3');
-    // P005-D6: away from the SG figure, the chip names what it measures.
-    expect(change.lastElementChild!.textContent).toBe('SG a round · No clear change vs previous 10');
+    // P005-D6: away from the SG figure, the chip names what it measures, and that it is a change, not a second SG figure (Round 3 review).
+    expect(change.lastElementChild!.textContent).toBe('Change in SG a round · No clear change vs previous 10');
     const rows = [...document.querySelectorAll('.ch-spm-round')];
     expect(rows[0]!.querySelector('.ch-loss')!.textContent).toBe('−1.1 SG');
     expect(rows[1]!.querySelector('.ch-gain')!.textContent).toBe('+0.6 SG');
@@ -968,6 +1031,11 @@ describe('the Tour is the only benchmark (Q-88)', () => {
     expect(everythingSaid()).not.toMatch(BENCHMARK_WORDS);
   });
 
+  it('a women’s team’s Home names the women’s Tour on that mark (row 110)', () => {
+    wrap(<PlayerHome data={{ ...PREVIEW_PLAYER_HOME, tour: 'lpga' }} now={PREVIEW_HOME_NOW} />);
+    expect(document.querySelector('.ch-ph-bench__k')!.textContent).toContain("Women's Tour 66");
+  });
+
   describe('the benchmark read', () => {
     beforeEach(() => {
       vi.useFakeTimers({ toFake: ['Date'] });
@@ -988,8 +1056,9 @@ describe('the Tour is the only benchmark (Q-88)', () => {
     const tablesFor = (gender: string): import('./supabase-fake').ChFakeTables => ({
       golf_teams: { data: { name: 'Varsity', gender } },
       golf_team_members: { data: [{ player: { id: 'p1', first_name: 'Theo', last_name: 'Marchetti' } }] },
-      golf_rounds: { data: [rnd('r1', 'p1', 1, 1, [0.5, 0.5, null, null])] },
-      golf_round_stats_cache: { data: [{ round_id: 'r1', greens_hit: 12, greens_total: 18 }] },
+      // Two rounds with greens: the rate clears its floor (A7), so the context is the Tour's.
+      golf_rounds: { data: [rnd('r1', 'p1', 1, 1, [0.5, 0.5, null, null]), rnd('r2', 'p1', 2, 1, [0.5, 0.5, null, null])] },
+      golf_round_stats_cache: { data: ['r1', 'r2'].map((round_id) => ({ round_id, greens_hit: 12, greens_total: 18 })) },
       golf_pga_standards: standards,
       golf_shots: { data: [] },
     });

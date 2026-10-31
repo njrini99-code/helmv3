@@ -73,6 +73,7 @@ vi.mock('@ai-sdk/anthropic', () => ({
 
 import { compose, __testables } from './compose';
 import { checkBudget } from './budget';
+import { logServerEvent } from '@/lib/server-error-logger';
 import type { ComposeRequest } from './types';
 import type { EvidencePacket } from './claim-validator';
 
@@ -162,6 +163,36 @@ describe('compose() citation grounding (P0-03)', () => {
     expect(offered).toEqual(
       expect.arrayContaining([expect.objectContaining({ field: expect.any(String) })]),
     );
+  });
+
+  it('groups every discard for one task under ONE Bridge fingerprint, whatever numbers were unmatched', async () => {
+    // Production 2026-10-26..28: "unmatched=78", "unmatched=72" and
+    // "unmatched=75.4,6" for task=round_review landed as three separate
+    // incidents (2b05f489, 3105fdfb, c044533e). Small numbers survive the
+    // incident-signature normaliser, so a message that interpolates them
+    // mints a new fingerprint per discard and the guardrail's rate can never
+    // be read as one stream.
+    vi.mocked(logServerEvent).mockClear();
+    generateTextMock
+      .mockResolvedValueOnce({ text: 'You took 42 putts today.', usage: { inputTokens: 10, outputTokens: 8 } })
+      .mockResolvedValueOnce({ text: 'You took 42 putts today.', usage: { inputTokens: 12, outputTokens: 8 } })
+      .mockResolvedValueOnce({ text: 'You shot 73 with 31 putts.', usage: { inputTokens: 10, outputTokens: 8 } })
+      .mockResolvedValueOnce({ text: 'You shot 73 with 31 putts.', usage: { inputTokens: 12, outputTokens: 8 } });
+
+    await compose(baseReq(), FALLBACK);
+    await compose(baseReq(), FALLBACK);
+
+    const discards = vi
+      .mocked(logServerEvent)
+      .mock.calls.filter(([message]) => String(message).includes('discarded unverified LLM text'));
+    expect(discards).toHaveLength(2);
+    // The diagnostic tokens stay in the message for a human reading the row…
+    const [first, second] = discards;
+    expect(String(first?.[0])).toContain('unmatched=42');
+    expect(String(second?.[0])).toContain('73');
+    // …but the grouping key is task-stable.
+    expect(first?.[1].dbFingerprint).toBe('llm-compose-discard:round_review');
+    expect(second?.[1].dbFingerprint).toBe('llm-compose-discard:round_review');
   });
 
   it('recovers via retry: a grounded second draft is surfaced as verified LLM text', async () => {

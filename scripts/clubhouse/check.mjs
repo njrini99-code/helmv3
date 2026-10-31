@@ -31,10 +31,69 @@ import { checkScreenshotLog } from './shots.mjs';
 import { checkLinks } from './links.mjs';
 
 const RED_TOKENS = /var\(--ch-(score-under|chart-flag|danger-600)\)/;
+/**
+ * CONS-20: a gain or loss tone (`.is-gain`, `.is-loss`) paints only with the chart's gain and loss tokens: the ink
+ * (--ch-chart-gain, --ch-chart-loss) and its family (-fill for bars and marks, -tint under a chip, -on-tint), so one
+ * pair of colours says better and worse everywhere. A surface where they would not read (a green stage) redefines the
+ * pair on itself rather than reaching for another colour. Neutral keywords and the ink on a filled key pass.
+ */
+const TONE_SELECTOR = /\.is-(gain|loss)\b/;
+// A border's colour or shorthand (border, border-top, border-inline-start-color); never its radius, width or style.
+const TONE_PROPS = /^(color|background(-color|-image)?|fill|stroke|border(-(top|right|bottom|left|block|inline)(-(start|end))?)?(-color)?|outline(-color)?|text-decoration-color|-webkit-text-fill-color|--[a-z0-9-]+)$/;
+const TONE_VARS = /^--ch-(chart-(gain|loss)(-[a-z-]+)?|text-on-accent)$/;
+const LITERAL_COLOUR = /#[0-9a-fA-F]{3,8}\b|\b(rgba?|hsla?|oklch|oklab|lab|lch)\(/;
+
+/** The colour declarations of a gain or loss rule that reach outside the gain and loss tokens. */
+export function offToneDeclarations(selector, body) {
+  if (!TONE_SELECTOR.test(selector.replace(/:not\([^()]*(\([^()]*\)[^()]*)*\)/g, ''))) return [];
+  const out = [];
+  for (const decl of body.split(';')) {
+    const i = decl.indexOf(':');
+    if (i < 0) continue;
+    const prop = decl.slice(0, i).trim();
+    const value = decl.slice(i + 1).trim();
+    if (!TONE_PROPS.test(prop)) continue;
+    const vars = [...value.matchAll(/var\((--[a-z0-9-]+)/g)].map((m) => m[1]);
+    if (LITERAL_COLOUR.test(value) || vars.some((v) => !TONE_VARS.test(v))) out.push(`${prop}: ${value}`);
+  }
+  return out;
+}
 const RED_ALLOWED_CONTEXT = /under|birdie|eagle|flag|danger|error|invalid/i;
 /** v2 motion (D-64): press, quick, base, release, reveal, in seconds. */
 const ALLOWED_DURATIONS_S = new Set(['0', '0.11', '.11', '0.18', '.18', '0.26', '.26', '0.28', '.28', '0.52', '.52']);
 const STATUSES = /^(todo|doing|done|blocked \(.+\))$/;
+/**
+ * CONS-35: a z-index is a ladder step (tokens.css --ch-z-*), a step plus or minus 1 to 5, or a local -1 to 5 inside
+ * one component. A literal off the ladder stacks against nothing named, so its order breaks silently.
+ */
+const Z_OK = /^(?:var\(--ch-z-[a-z]+\)|calc\(var\(--ch-z-[a-z]+\) [+-] [1-5]\)|-?[0-5]|auto|inherit)$/;
+/**
+ * CONS-32: a card, panel or tile takes its corner from the radius scale (var(--ch-radius-*)), or none, a pill (999px)
+ * or a circle. The rule reads a selector's subject (its last compound), so a card's children are not cards. Named
+ * exceptions wait on a screenshot or are not cards: `file selector`.
+ */
+const CARD_SUBJECT = /card|panel|tile/;
+const CARD_RADIUS_EXEMPT = new Set([
+  // An 8px icon tile, not a card (section 4.18 CONS-32).
+  'settings.css .ch-setm-tile',
+  // A 6px hold chip inside the best-round card, not a card.
+  'stats.css .ch-bestcard__hold',
+  // 18px, between the card (16) and the sheet (20): snapping it is a visible change that waits on a shot.
+  'qualifiers.css .ch-qf-panel',
+]);
+const RADIUS_OK = (value) => value.split(/\s+/).every((t) => /^var\(--ch-radius-[\w-]+\)$/.test(t) || /^(?:0|0px|50%|999px|inherit)$/.test(t));
+/** A selector's subject: the compound after its last combinator, outside brackets and parentheses. */
+function subjectOf(part) {
+  let depth = 0;
+  let last = 0;
+  for (let i = 0; i < part.length; i += 1) {
+    const c = part[i];
+    if (c === '(' || c === '[') depth += 1;
+    else if (c === ')' || c === ']') depth -= 1;
+    else if (depth === 0 && /[\s>+~]/.test(c)) last = i + 1;
+  }
+  return part.slice(last).replace(/::?[\w-]+(?:\([^)]*\))?/g, '').trim();
+}
 const GATES = ['spec', 'desktop', 'wired', 'states', 'error-tracking', 'phone-spec', 'phone', 'motion', 'accessibility', 'performance', 'verified'];
 
 function walk(dir, out = []) {
@@ -95,12 +154,42 @@ export function checkSource(file, raw) {
       const selector = m[1].trim();
       const body = m[2];
       if (selector.startsWith('@') || /^(from|to|\d+%)/.test(selector)) continue;
-      const parts = selector.split(',').map((s) => s.trim()).filter(Boolean);
+      // Split the list on its own commas only: one inside :is(), :where() or :not() is part of a selector.
+      const parts = [];
+      let depth = 0;
+      let start = 0;
+      for (let i = 0; i < selector.length; i += 1) {
+        const c = selector[i];
+        if (c === '(') depth += 1;
+        else if (c === ')') depth -= 1;
+        else if (c === ',' && depth === 0) {
+          parts.push(selector.slice(start, i));
+          start = i + 1;
+        }
+      }
+      parts.push(selector.slice(start));
+      for (let i = parts.length - 1; i >= 0; i -= 1) {
+        parts[i] = parts[i].trim();
+        if (!parts[i]) parts.splice(i, 1);
+      }
       for (const part of parts) {
         if (!/\.ch-|\[data-ui=/.test(part)) add(m.index, `unscoped selector "${part}"`);
       }
+      for (const z of body.matchAll(/(?:^|[\s;])z-index:\s*([^;]+?)\s*(?:;|$)/g)) {
+        if (!Z_OK.test(z[1])) add(m.index, `z-index ${z[1]} in "${selector}": use a --ch-z-* step, a step plus or minus 1 to 5, or a local -1 to 5 (CONS-35)`);
+      }
+      const name = file.split('/').pop();
+      const cards = parts.map(subjectOf).filter((subj) => CARD_SUBJECT.test(subj) && !CARD_RADIUS_EXEMPT.has(`${name} ${subj}`));
+      if (cards.length) {
+        for (const r of body.matchAll(/(?:^|[\s;])(border(?:-[a-z]+)*-radius):\s*([^;]+?)\s*(?:;|$)/g)) {
+          if (!RADIUS_OK(r[2])) add(m.index, `${r[1]}: ${r[2]} on "${cards.join(', ')}": a card, panel or tile takes var(--ch-radius-*) (CONS-32)`);
+        }
+      }
       if (RED_TOKENS.test(body) && !RED_ALLOWED_CONTEXT.test(selector)) {
         add(m.index, `red token outside an under-par/flag/danger context in "${selector}"`);
+      }
+      for (const d of offToneDeclarations(selector, body)) {
+        add(m.index, `a gain or loss tone paints outside --ch-chart-gain/--ch-chart-loss (CONS-20): "${d}" in "${selector}"`);
       }
     }
   } else {
@@ -213,6 +302,7 @@ const CATALOG_PAGE = {
   coachhelm: '13',
   recruiting: '14',
   auth: '15',
+  tournaments: '16',
 };
 /** Kinds whose rows must exist in code and in a test: toasts, validation, didn't load, empty, loading, confirm. */
 const ENFORCED_KINDS = new Set(['0', '1', '2', '3', '4', '5']);

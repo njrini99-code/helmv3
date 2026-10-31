@@ -1,10 +1,12 @@
 import 'server-only';
 import { createClient } from '@/lib/supabase/server';
+import { heldTable } from '@/lib/supabase/held-table';
 import { chLogServer } from '../lib/track-server';
 import { loadInvitedCounts, loadOwnRows } from './attendance-counts';
 import { playerSeesMeeting } from '../screens/calendar/model';
 import { homeClock } from './home';
 import { addDays, termOn, toChClasses, toTeamEvent, weekDates, type ChClassesPage, type ChClassRow, type ChEventRow, type ChTeamEvent } from './classes-shape';
+import { isoDay } from '../lib/dates';
 
 export type * from './classes-shape';
 
@@ -40,18 +42,25 @@ async function hiddenMeetings(supabase: Awaited<ReturnType<typeof createClient>>
   return new Set(ids.filter((id) => !playerSeesMeeting(own ? own.has(id) : null, invited?.get(id) ?? null)));
 }
 
-export async function loadClasses(input: { playerId: string; teamId: string }): Promise<ChClassesPage> {
+export async function loadClasses(input: { playerId: string; teamId: string; /** P-10: ask for `status_enabled` too (the flag is on). */ classAwareness?: boolean }): Promise<ChClassesPage> {
   const supabase = await createClient();
   const now = new Date();
   const clock = await homeClock(supabase, input.teamId, now);
-  const todayIso = new Intl.DateTimeFormat('en-CA', { timeZone: clock.tz, year: 'numeric', month: '2-digit', day: '2-digit' }).format(now);
+  const todayIso = isoDay(now, clock.tz);
   const dates = weekDates(todayIso);
   // A trip that left a few days before Monday still touches the week; rows are placed by their zoned date below.
   const fromIso = `${addDays(dates[0]!, -3)}T00:00:00Z`;
   const toIso = `${addDays(dates[6]!, 2)}T00:00:00Z`;
 
+  // With class awareness on the rows carry `status_enabled`. If the column is not there yet (the migration is held) the read
+  // is repeated without it, so the page never loses its classes to a column that has not arrived.
+  const readClasses = async (columns: string) => heldTable(supabase, 'golf_player_classes').select(columns).eq('player_id', input.playerId).order('created_at', { ascending: true }).order('id', { ascending: true }).limit(500);
+  const readClassesAware = async () => {
+    const first = await readClasses(`${CLASS_COLUMNS}, status_enabled`);
+    return first.error?.code === '42703' ? readClasses(CLASS_COLUMNS) : first;
+  };
   const [classesRes, eventsRes] = await Promise.all([
-    supabase.from('golf_player_classes').select(CLASS_COLUMNS).eq('player_id', input.playerId).order('created_at', { ascending: true }).order('id', { ascending: true }).limit(500),
+    input.classAwareness ? readClassesAware() : readClasses(CLASS_COLUMNS),
     supabase
       .from('golf_events')
       .select(EVENT_COLUMNS)
