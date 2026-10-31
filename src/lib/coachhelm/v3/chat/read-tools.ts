@@ -55,6 +55,7 @@ import {
 } from './provenance';
 import { CLASS_EVENT_TYPE } from '@/lib/calendar/class-events';
 import { todayIsoInZone } from '@/lib/golf/timezone';
+import { isCountableRound } from '@/lib/golf/round-countable';
 
 type Sb = SupabaseClient<Database>;
 type StatsRow = Record<string, unknown>;
@@ -86,6 +87,25 @@ const str = (v: unknown): string | null => (typeof v === 'string' && v ? v : nul
  * degrades to "6 of your 7 players — I could not read one profile" rather than
  * quietly changing the size of the team.
  */
+
+/** The columns `averagedRound` reads, beyond total_score and total_putts. */
+const COUNTABLE_COLUMNS = 'holes_played, front_nine, back_nine';
+
+/**
+ * A round an average may use: a full, countable 18-hole round (round-countable.ts). Averaging a 9-hole round with
+ * 18-hole ones pulls the mean toward half a round, and a half-entered or test round is no round at all.
+ */
+function averagedRound(r: {
+  holes_played: number | null;
+  total_score: number | null;
+  front_nine: number | null;
+  back_nine: number | null;
+  total_putts: number | null;
+  strokes_gained_total?: number | null;
+}): boolean {
+  return (r.holes_played ?? 18) === 18 && isCountableRound(r);
+}
+
 export async function getTeamOverview(sb: Sb, ctx: CoachChatContext): Promise<ToolEnvelope> {
   const rosterCount = ctx.roster.length;
   const resolved = ctx.roster.filter((p) => p.first_name || p.last_name).length;
@@ -104,13 +124,18 @@ export async function getTeamOverview(sb: Sb, ctx: CoachChatContext): Promise<To
   }
 
   const ids = ctx.roster.map((p) => p.id);
-  const { data: rounds, error } = await sb
-    .from('golf_rounds')
-    .select('player_id, score_to_par, total_score, round_date')
-    .in('player_id', ids)
-    .eq('is_test', false)
-    .eq('status', 'completed')
-    .order('round_date', { ascending: false });
+  // Paged: a season of a full roster passes PostgREST's 1,000-row cap, and a capped read undercounts every player.
+  const { data: rounds, error } = await fetchAllRowsResult((from, to) =>
+    sb
+      .from('golf_rounds')
+      .select('id, player_id, score_to_par, total_score, round_date, holes_played')
+      .in('player_id', ids)
+      .eq('is_test', false)
+      .eq('status', 'completed')
+      .order('round_date', { ascending: false })
+      .order('id', { ascending: true })
+      .range(from, to),
+  );
 
   if (error) {
     return unavailableEnvelope(
@@ -119,12 +144,13 @@ export async function getTeamOverview(sb: Sb, ctx: CoachChatContext): Promise<To
     );
   }
 
-  const lastByPlayer = new Map<string, { to_par: number | null; date: string }>();
+  const lastByPlayer = new Map<string, { to_par: number | null; date: string; holes: number }>();
   const countByPlayer = new Map<string, number>();
   for (const r of rounds ?? []) {
     countByPlayer.set(r.player_id, (countByPlayer.get(r.player_id) ?? 0) + 1);
     if (!lastByPlayer.has(r.player_id)) {
-      lastByPlayer.set(r.player_id, { to_par: r.score_to_par, date: r.round_date });
+      // `holes`: a 9-hole round's to par is not comparable with an 18-hole one's.
+      lastByPlayer.set(r.player_id, { to_par: r.score_to_par, date: r.round_date, holes: r.holes_played ?? 18 });
     }
   }
 
@@ -191,6 +217,7 @@ export async function getTeamOverview(sb: Sb, ctx: CoachChatContext): Promise<To
         rounds_recorded: countByPlayer.get(p.id) ?? 0,
         last_round_to_par: lastByPlayer.get(p.id)?.to_par ?? null,
         last_round_date: lastByPlayer.get(p.id)?.date ?? null,
+        last_round_holes: lastByPlayer.get(p.id)?.holes ?? null,
       })),
     },
     coverage,
@@ -424,14 +451,16 @@ export async function getPlayerTrend(
   }
 
   const limit = Math.min(Math.max(input.last_n, 2), 40);
+  // Read past the window so "the last N rounds" are N full 18-hole rounds, not N rounds with 9-hole ones mixed in.
+  const columns = [...new Set(['id', 'round_date', 'course_name', 'round_type', 'total_score', 'total_putts', ...COUNTABLE_COLUMNS.split(', '), spec.column])];
   const { data, error } = await sb
     .from('golf_rounds')
-    .select(`id, round_date, course_name, round_type, ${spec.column}`)
+    .select(columns.join(', '))
     .eq('player_id', player.id)
     .eq('is_test', false)
     .eq('status', 'completed')
     .order('round_date', { ascending: false })
-    .limit(limit);
+    .limit(limit * 3);
 
   if (error) {
     return unavailableEnvelope(
@@ -440,7 +469,11 @@ export async function getPlayerTrend(
     );
   }
 
-  const rows = ((data as unknown as Record<string, unknown>[] | null) ?? []).slice().reverse();
+  const read = (data as unknown as Record<string, unknown>[] | null) ?? [];
+  const rows = read
+    .filter((r) => averagedRound(r as unknown as Parameters<typeof averagedRound>[0]))
+    .slice(0, limit)
+    .reverse();
   const points = rows
     .map((r) => ({
       at: String(r.round_date),
@@ -459,11 +492,13 @@ export async function getPlayerTrend(
       summary: `${player.name} has no rounds with ${spec.label.toLowerCase()} recorded.`,
       measurements: [],
       series: [],
-      coverage: rows.length === 0 ? 'empty' : 'partial',
+      coverage: read.length === 0 ? 'empty' : 'partial',
       coverage_note:
-        rows.length === 0
+        read.length === 0
           ? `${player.name} has no completed rounds on record.`
-          : `${rows.length} round${rows.length === 1 ? '' : 's'} found, but none carry ${spec.label.toLowerCase()}.`,
+          : rows.length === 0
+            ? `${player.name}'s recent rounds are 9 holes or incomplete; a trend needs full 18-hole rounds.`
+            : `${rows.length} round${rows.length === 1 ? '' : 's'} found, but none carry ${spec.label.toLowerCase()}.`,
       as_of: nowIso(),
     };
   }
@@ -827,7 +862,7 @@ export async function getRecentRounds(
 
   const { data, error } = await sb
     .from('golf_rounds')
-    .select('id, round_date, course_name, round_type, total_score, score_to_par, total_putts, strokes_gained_total')
+    .select(`id, round_date, course_name, round_type, total_score, score_to_par, total_putts, strokes_gained_total, ${COUNTABLE_COLUMNS}`)
     .eq('player_id', player.id)
     .eq('is_test', false)
     .eq('status', 'completed')
@@ -847,6 +882,9 @@ export async function getRecentRounds(
         date: r.round_date,
         course: r.course_name,
         round_type: r.round_type,
+        holes: r.holes_played ?? 18,
+        // False for a 9-hole, half-entered or implausible round: the stats pages leave it out of every average.
+        counts_in_averages: averagedRound(r),
         total_score: r.total_score,
         to_par: r.score_to_par,
         putts: r.total_putts,
@@ -1303,7 +1341,7 @@ export async function getTeamRounds(
   const { data, error } = await readIn(ctx.roster.map((p) => p.id), (ids) => {
     let q = sb
       .from('golf_rounds')
-      .select('id, player_id, round_date, course_name, round_type, qualifier_id, qualifier_round_number, total_score, score_to_par, total_putts')
+      .select(`id, player_id, round_date, course_name, round_type, qualifier_id, qualifier_round_number, total_score, score_to_par, total_putts, ${COUNTABLE_COLUMNS}`)
       .in('player_id', ids)
       .eq('is_test', false)
       .eq('status', 'completed')
@@ -1326,7 +1364,11 @@ export async function getTeamRounds(
   const label = input.round_type ?? 'all';
   const today = todayIsoInZone(ctx.timezone);
   const asOf = nowIso();
-  const toPar = (rs: typeof rounds) => rs.map((r) => num(r.score_to_par)).filter((n): n is number => n !== null);
+  // Averages use full 18-hole rounds only; the counts still list every round.
+  const toPar = (rs: typeof rounds) => rs.filter(averagedRound).map((r) => num(r.score_to_par)).filter((n): n is number => n !== null);
+  const notAveraged = rounds.filter((r) => !averagedRound(r)).length;
+  const lengthNote = notAveraged > 0 ? `${notAveraged} round${notAveraged === 1 ? ' is' : 's are'} 9 holes or incomplete and not in the averages.` : null;
+  const note = [capNote, lengthNote].filter(Boolean).join(' ') || null;
   const metricLabel = input.round_type ? `Average score to par, ${input.round_type} rounds` : 'Average score to par';
   // The chartable part: one measurement per player (three or more draw as a ranking) and the team's week-by-week line.
   const measurements: Measurement[] = [...byPlayer.entries()].flatMap(([id, rs]): Measurement[] => {
@@ -1344,9 +1386,9 @@ export async function getTeamRounds(
       sample_unit: 'rounds',
       as_of: asOf,
       coverage: capped ? 'partial' : 'complete',
-      coverage_note: capNote,
+      coverage_note: note,
       source: 'rounds',
-      method: 'mean of completed rounds',
+      method: 'mean of full 18-hole rounds',
       denominator: null,
       benchmark: null,
       direction: 'lower_better',
@@ -1354,7 +1396,7 @@ export async function getTeamRounds(
   }).sort((a, b) => (a.value ?? 99) - (b.value ?? 99));
   const weeks = new Map<string, number[]>();
   for (const r of rounds) {
-    const v = num(r.score_to_par);
+    const v = averagedRound(r) ? num(r.score_to_par) : null;
     if (v === null) continue;
     const d = new Date(`${String(r.round_date).slice(0, 10)}T12:00:00Z`);
     d.setUTCDate(d.getUTCDate() - ((d.getUTCDay() + 6) % 7));
@@ -1373,9 +1415,9 @@ export async function getTeamRounds(
         window_end: today,
         as_of: asOf,
         coverage: capped ? 'partial' : 'complete',
-        coverage_note: capNote,
+        coverage_note: note,
         source: 'rounds',
-        method: 'weekly mean of completed rounds',
+        method: 'weekly mean of full 18-hole rounds',
         benchmark: null,
         direction: 'lower_better',
       }]
@@ -1393,9 +1435,10 @@ export async function getTeamRounds(
           player_id: id,
           name: names.get(id),
           rounds: rs.length,
-          avg_score: mean(rs.map((r) => num(r.total_score)).filter((n): n is number => n !== null)),
-          avg_to_par: mean(rs.map((r) => num(r.score_to_par)).filter((n): n is number => n !== null)),
-          avg_putts: mean(rs.map((r) => num(r.total_putts)).filter((n): n is number => n !== null)),
+          rounds_averaged: rs.filter(averagedRound).length,
+          avg_score: mean(rs.filter(averagedRound).map((r) => num(r.total_score)).filter((n): n is number => n !== null)),
+          avg_to_par: mean(rs.filter(averagedRound).map((r) => num(r.score_to_par)).filter((n): n is number => n !== null)),
+          avg_putts: mean(rs.filter(averagedRound).map((r) => num(r.total_putts)).filter((n): n is number => n !== null)),
         }))
         .sort((a, b) => (a.avg_to_par ?? 99) - (b.avg_to_par ?? 99)),
       recent_rounds: rounds.slice(0, 60).map((r) => ({
@@ -1406,13 +1449,14 @@ export async function getTeamRounds(
         // One name for qualifier rounds, whichever spelling the row was stored under.
         round_type: r.round_type === 'qualifying' ? 'qualifier' : r.round_type,
         qualifier_round: r.qualifier_round_number,
+        holes: r.holes_played ?? 18,
         total_score: r.total_score,
         to_par: r.score_to_par,
         putts: r.total_putts,
       })),
     },
     coverage: rounds.length === 0 ? 'empty' : capped ? 'partial' : 'complete',
-    coverage_note: capNote,
+    coverage_note: note,
     as_of: nowIso(),
   };
 }
