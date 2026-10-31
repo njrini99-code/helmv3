@@ -602,7 +602,7 @@ async function findGolfDirectConversation(
   teamId: string,
 ): Promise<string | null> {
   const failed = async (read: string, error: { message: string }) => {
-    await logServerError(`[Messages] Direct thread lookup failed (${read}): ${error.message}`, { teamId, read });
+    await logServerError(`[Messages] Direct thread lookup failed (${read}): ${error.message}`, { action: 'messages.createConversation', metadata: { teamId, read } });
     throw new Error('Couldn’t check for an existing conversation');
   };
   const { data: mine, error: mineError } = (await supabase
