@@ -138,6 +138,17 @@
     "catalog": "docs/clubhouse/catalog/shell.md"
   },
   {
+    "id": 10407,
+    "page": "P001",
+    "category": 4,
+    "item": 7,
+    "name": "MORE_UNREAD_THAN_THE_BELL_LISTS",
+    "chCode": "CH-1307",
+    "meaning": "More unread than the bell lists",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/shell.md"
+  },
+  {
     "id": 10601,
     "page": "P001",
     "category": 6,
@@ -310,6 +321,17 @@
     "name": "A_PLAYERS_PUSHES_ARE_HELD_FOR_CLASS",
     "chCode": "CH-1271",
     "meaning": "A player's pushes are held for class (P-10)",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/shell.md"
+  },
+  {
+    "id": 10617,
+    "page": "P001",
+    "category": 6,
+    "item": 17,
+    "name": "OPENING_OR_CLEARING_A_NOTIFICATION_THE_SERVER",
+    "chCode": "CH-1004",
+    "meaning": "Opening or clearing a notification: the server did not keep the read (it answered `success: false`, or the call failed)",
     "status": "implemented",
     "catalog": "docs/clubhouse/catalog/shell.md"
   },
@@ -10591,6 +10613,17 @@
     "catalog": "docs/clubhouse/catalog/qualifiers.md"
   },
   {
+    "id": 90635,
+    "page": "P009",
+    "category": 6,
+    "item": 35,
+    "name": "EDIT_AN_ENTRANT_WHOSE_PROFILE_CANNOT_BE",
+    "chCode": "CH-09224",
+    "meaning": "Edit: an entrant whose profile cannot be read (injured, redshirt or inactive: the profile read admits active members only)",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/qualifiers.md"
+  },
+  {
     "id": 90701,
     "page": "P009",
     "category": 7,
@@ -10666,6 +10699,17 @@
     "name": "PLAYER_THEIR_OWN_RANKED_ROW_ON_A",
     "chCode": "CH-09908",
     "meaning": "Player: their own ranked row on a board that draws a line",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/qualifiers.md"
+  },
+  {
+    "id": 90708,
+    "page": "P009",
+    "category": 7,
+    "item": 8,
+    "name": "COACH_A_ROUND_NUMBERS_CARDS_MIX_9",
+    "chCode": "CH-09909",
+    "meaning": "Coach: a round number's cards mix 9 and 18 holes",
     "status": "implemented",
     "catalog": "docs/clubhouse/catalog/qualifiers.md"
   },
