@@ -26,6 +26,7 @@ export async function ClubhouseCalendarRoute({
   isNew,
   withPlayer,
   newType,
+  setUp = false,
 }: {
   view?: string;
   date?: string;
@@ -33,6 +34,8 @@ export async function ClubhouseCalendarRoute({
   isNew?: boolean;
   withPlayer?: string;
   newType?: string;
+  /** P-5 4.11.3: `?event=<id>&setup=1` from the season home's Set up from calendar: the editor with Track on. */
+  setUp?: boolean;
 }) {
   const session = await getGolfSessionProfile();
   if (!session) return null;
@@ -55,5 +58,5 @@ export async function ClubhouseCalendarRoute({
     }),
     team.role === 'coach' ? loadLiveRounds({ teamId: team.teamId, viewer: { role: 'coach', playerId: null } }) : Promise.resolve(undefined),
   ]);
-  return <Calendar data={data} onCourse={onCourse} initialEvent={event} initialNew={isNew} initialWith={withPlayer} initialType={parseNewType(newType)} live />;
+  return <Calendar data={data} onCourse={onCourse} initialEvent={event} initialNew={isNew} initialWith={withPlayer} initialType={parseNewType(newType)} initialSetUp={setUp} live />;
 }

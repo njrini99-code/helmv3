@@ -367,6 +367,7 @@ export function shapeEvent(raw: TourRawEvent, now: string): ChTourEvent {
     lineup: lineupStateOf(t, rounds, raw.entries, format, now),
     note: null,
     legacy: false,
+    createdAt: t.created_at ?? null,
   };
 }
 
