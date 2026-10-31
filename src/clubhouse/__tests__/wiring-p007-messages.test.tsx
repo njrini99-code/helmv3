@@ -103,6 +103,7 @@ vi.mock('@/app/golf/actions/documents', () => ({ getPreviewUrl: a.getPreviewUrl 
 import type { ChMessagesData } from '../data/messages';
 import { Messages } from '../screens/messages/Messages';
 import { groupLacksPlayer, MESSAGE_MAX } from '../screens/messages/model';
+import { messagesPrefillHref } from '../screens/messages/prefill';
 import { FOUND_FOR_MS } from '../screens/messages/use-focus-message';
 import { useThreadAnchor } from '../screens/messages/use-thread-anchor';
 import { ToastProvider } from '../ui/Toast';
@@ -530,4 +531,41 @@ describe('B7 · a message that arrives opens in place at the end of the thread',
       expect(document.getElementById('ch-ms-message-m2')!.style.overflow).toBe('');
     });
   }
+});
+
+describe('F-0003 · a message for one person never lands in a channel or group', () => {
+  // A team of one player: the Team Channel has two members, so by count alone it looks like a direct thread.
+  const channel2 = { id: 'channel', title: 'Team Channel', is_team_channel: true, participant_ids: ['me', 'dan'], participant_count: 2, unread_count: 0, other_participant: { id: 'dan', name: 'Dan Whitfield' }, last_message: { content: 'Practice moved', created_at: '2026-10-14T18:30:00Z', sender_id: 'dan' }, creator_id: 'dan' };
+  const dmDan = { id: 'dm-dan', title: null, participant_ids: ['me', 'dan'], participant_count: 2, unread_count: 0, other_participant: { id: 'dan', name: 'Dan Whitfield' }, last_message: null, creator_id: 'me' };
+  const stash = (p: { players: string[]; draft: string }) => new URL(messagesPrefillHref(p)!, 'https://x.test').searchParams;
+
+  it('a two-person Team Channel is never taken for the direct thread: ?user= starts one', async () => {
+    live.convs.conversations = [channel2];
+    a.createGolfConversation.mockResolvedValue({ conversationId: 'dm-dan', reused: false });
+    live.convs.refetch.mockImplementation(async () => {
+      live.convs.conversations = [dmDan, channel2];
+    });
+    params.current = new URLSearchParams('user=dan');
+    show(player);
+    await waitFor(() => expect(a.createGolfConversation).toHaveBeenCalledWith(['dan'], 't1'));
+    await screen.findByRole('textbox', { name: /Message Dan$/ });
+    expect(code('CH-7002')).toBeNull();
+  });
+
+  it('an answer that is a group is refused (CH-7002): the sheet stays, and the draft never lands in the group', async () => {
+    const user = userEvent.setup();
+    // The server answers with the group the coach and Jonah share (the bug F-0003 fixed on the server).
+    a.createGolfConversation.mockResolvedValue({ conversationId: 'team', reused: true });
+    params.current = stash({ players: ['p-jonah'], draft: 'Bus moved to 7' });
+    show();
+    const dialog = await screen.findByRole('dialog', { name: 'New message' });
+    await user.click(within(dialog).getByRole('button', { name: 'Start conversation' }));
+    await expectCode('CH-7002', /Couldn’t start the conversation/);
+    expect(screen.queryByRole('dialog', { name: 'New message' })).not.toBeNull();
+    expect(screen.queryByRole('textbox', { name: /Message Varsity team/ })).toBeNull();
+    await user.keyboard('{Escape}');
+    await user.click(screen.getAllByRole('button', { name: /^(?!Actions for ).*Varsity team/ })[0]!);
+    const box = (await screen.findByRole('textbox', { name: /Message Varsity team/ })) as HTMLTextAreaElement;
+    expect(box.value).toBe('');
+  });
 });

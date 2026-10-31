@@ -157,6 +157,11 @@ export interface GolfConversationWithMeta {
    */
   participant_ids?: string[];
   creator_id?: string | null;
+  /**
+   * The team's channel (`golf_conversations.is_team_channel`). A team of one player has a two-person channel, which by
+   * count alone looks like a direct thread; Clubhouse keeps a message meant for one person out of it (F-0003).
+   */
+  is_team_channel?: boolean;
 }
 
 // Extended message type with read receipt info
@@ -1987,6 +1992,7 @@ export async function loadGolfConversationRail(
         participant_ids: conv.participant_ids ?? [],
         creator_id: conv.creator_id ?? null,
         other_participant: resolvedOther ?? resolveConversationParticipant(otherUserId, coachByUserId, playerByUserId),
+        is_team_channel: conv.is_team_channel === true,
       } as GolfConversationWithMeta;
     }
 
@@ -2013,6 +2019,7 @@ export async function loadGolfConversationRail(
       unread_count: conv.unread_count || 0,
       other_participant: otherParticipant,
       is_group: false,
+      is_team_channel: conv.is_team_channel === true,
     } as GolfConversationWithMeta;
   });
 
