@@ -1836,6 +1836,7 @@
         "src/clubhouse/styles/coachhelm-dive.css",
         "src/clubhouse/styles/coachhelm-track.css",
         "src/clubhouse/styles/coachhelm.css",
+        "src/clubhouse/styles/controls.css",
         "src/clubhouse/styles/goals.css",
         "src/clubhouse/styles/home.css",
         "src/clubhouse/styles/hub.css",
@@ -2442,6 +2443,7 @@
         "src/clubhouse/styles/class-awareness.css",
         "src/clubhouse/styles/coachhelm-standing.css",
         "src/clubhouse/styles/coachhelm.css",
+        "src/clubhouse/styles/controls.css",
         "src/clubhouse/styles/goals.css",
         "src/clubhouse/styles/home.css",
         "src/clubhouse/styles/hub.css",
@@ -2987,6 +2989,7 @@
         "src/clubhouse/styles/hub.css",
         "src/clubhouse/styles/messages.css",
         "src/clubhouse/styles/qualifiers.css",
+        "src/clubhouse/styles/shell.css",
         "src/clubhouse/styles/stats.css",
         "src/clubhouse/styles/tournaments-desk.css",
         "src/clubhouse/styles/ui.css"
@@ -3142,7 +3145,8 @@
         "src/clubhouse/styles/qualifiers.css",
         "src/clubhouse/styles/shell.css",
         "src/clubhouse/styles/stats.css",
-        "src/clubhouse/styles/tournaments-desk.css"
+        "src/clubhouse/styles/tournaments-desk.css",
+        "src/clubhouse/styles/ui.css"
       ],
       "examples": [],
       "fixture": "Contextual module"
@@ -6877,7 +6881,8 @@
         "src/clubhouse/styles/shell.css",
         "src/clubhouse/styles/stats.css",
         "src/clubhouse/styles/tournaments-compare.css",
-        "src/clubhouse/styles/tournaments-desk.css"
+        "src/clubhouse/styles/tournaments-desk.css",
+        "src/clubhouse/styles/ui.css"
       ],
       "examples": [],
       "fixture": "Contextual module"
@@ -6906,7 +6911,8 @@
         "Timeline"
       ],
       "styles": [
-        "src/clubhouse/styles/tournaments-compare.css"
+        "src/clubhouse/styles/tournaments-compare.css",
+        "src/clubhouse/styles/ui.css"
       ],
       "examples": [],
       "fixture": "Contextual module"
@@ -7845,6 +7851,7 @@
       "exports": [
         "AVATAR_SIZES",
         "AVATAR_TONES",
+        "AVATAR_TYPE",
         "Avatar"
       ],
       "styles": [
@@ -11586,7 +11593,9 @@
         "ch-fsheet__note",
         "ch-grab",
         "ch-grab--hit",
+        "ch-hl-since__b",
         "ch-hm-link",
+        "ch-hs-ld__why",
         "ch-iconbtn",
         "ch-input",
         "ch-inset",
@@ -11741,8 +11750,6 @@
         "ch-avatar",
         "ch-badge",
         "ch-btn",
-        "ch-btn--primary",
-        "ch-btn__kbd",
         "ch-cd",
         "ch-empty",
         "ch-fgr__note",
@@ -12664,6 +12671,11 @@
           "scope": ".ch-ms-row .ch-avatar"
         },
         {
+          "name": "--ch-ms-measure",
+          "value": "816px",
+          "scope": ".ch-ms,\n.ch-msp"
+        },
+        {
           "name": "--ch-notice-fill",
           "value": "var(--ch-sheet-bg)",
           "scope": ".ch-ms-comp > .ch-notice"
@@ -12695,17 +12707,17 @@
         },
         {
           "name": "--ch-poll-opt-shadow",
-          "value": "var(--ch-highlight), 0 0 0 1px rgb(28 25 18 / 0.08), 0 1px 2px rgb(28 25 18 / 0.05),\n    0 4px 10px -6px rgb(28 25 18 / 0.16)",
+          "value": "var(--ch-highlight), 0 0 0 var(--ch-hairline-w) rgb(28 25 18 / 0.08), 0 1px 2px rgb(28 25 18 / 0.05),\n    0 4px 10px -6px rgb(28 25 18 / 0.16)",
           "scope": ".ch-ms-poll"
         },
         {
           "name": "--ch-poll-opt-lift",
-          "value": "var(--ch-highlight), 0 0 0 1px rgb(28 25 18 / 0.12), 0 2px 4px rgb(28 25 18 / 0.06),\n    0 10px 18px -10px rgb(28 25 18 / 0.24)",
+          "value": "var(--ch-highlight), 0 0 0 var(--ch-hairline-w) rgb(28 25 18 / 0.12), 0 2px 4px rgb(28 25 18 / 0.06),\n    0 10px 18px -10px rgb(28 25 18 / 0.24)",
           "scope": ".ch-ms-poll"
         },
         {
           "name": "--ch-poll-opt-sunk",
-          "value": "inset 0 1px 2px rgb(28 25 18 / 0.12), 0 0 0 1px rgb(28 25 18 / 0.1)",
+          "value": "inset 0 1px 2px rgb(28 25 18 / 0.12), 0 0 0 var(--ch-hairline-w) rgb(28 25 18 / 0.1)",
           "scope": ".ch-ms-poll"
         },
         {
@@ -14416,6 +14428,11 @@
       ],
       "tokens": [
         {
+          "name": "--ch-rsu-dock-h",
+          "value": "60px",
+          "scope": ".ch-rsu"
+        },
+        {
           "name": "--ch-rsu-fill",
           "value": "100%",
           "scope": ".ch-rsu-spine .is-done i"
@@ -15461,6 +15478,7 @@
         "ch-sidebar__foot",
         "ch-skel",
         "ch-skel--block",
+        "ch-skel--feature",
         "ch-skel-ln",
         "ch-skel-rows",
         "ch-skel-rows__r",
@@ -17013,7 +17031,7 @@
         },
         {
           "name": "--ch-chart-loss",
-          "value": "#865608",
+          "value": "#744a06",
           "scope": "[data-ui='clubhouse']"
         },
         {
@@ -17244,6 +17262,11 @@
         {
           "name": "--ch-on-green-ink-soft",
           "value": "rgb(240 233 214 / 0.86)",
+          "scope": "[data-ui='clubhouse']"
+        },
+        {
+          "name": "--ch-on-green-ink-meta",
+          "value": "#d3e3d7",
           "scope": "[data-ui='clubhouse']"
         },
         {
@@ -18388,7 +18411,7 @@
         },
         {
           "name": "--ch-ledger-eyebrow",
-          "value": "#6e6038",
+          "value": "#5f5230",
           "scope": "[data-ui='clubhouse']"
         },
         {
@@ -19018,22 +19041,22 @@
         },
         {
           "name": "--ch-ink-900",
-          "value": "#ede7d8",
+          "value": "#f1ecdf",
           "scope": "html[data-fw-theme='dark'] [data-ui='clubhouse']"
         },
         {
           "name": "--ch-ink-700",
-          "value": "#d8d1c1",
+          "value": "#e2dccd",
           "scope": "html[data-fw-theme='dark'] [data-ui='clubhouse']"
         },
         {
           "name": "--ch-ink-600",
-          "value": "#c7c0af",
+          "value": "#d0c9b8",
           "scope": "html[data-fw-theme='dark'] [data-ui='clubhouse']"
         },
         {
           "name": "--ch-ink-500",
-          "value": "#a8a193",
+          "value": "#bab3a4",
           "scope": "html[data-fw-theme='dark'] [data-ui='clubhouse']"
         },
         {
@@ -19618,7 +19641,7 @@
         },
         {
           "name": "--ch-ledger-eyebrow",
-          "value": "#bba878",
+          "value": "#c9b88a",
           "scope": "html[data-fw-theme='dark'] [data-ui='clubhouse']"
         },
         {
@@ -19807,8 +19830,18 @@
           "scope": "html[data-fw-theme='dark'] [data-ui='clubhouse']"
         },
         {
-          "name": "--ch-tab-ink-selected",
-          "value": "var(--ch-green-700)",
+          "name": "--ch-tab-ink",
+          "value": "var(--ch-text-secondary)",
+          "scope": "html[data-fw-theme='dark'] [data-ui='clubhouse']"
+        },
+        {
+          "name": "--ch-seg-on-bg",
+          "value": "linear-gradient(180deg, var(--ch-green-fill-600) 0%, var(--ch-green-fill-700) 100%)",
+          "scope": "html[data-fw-theme='dark'] [data-ui='clubhouse']"
+        },
+        {
+          "name": "--ch-seg-on-ink",
+          "value": "#f9f7f1",
           "scope": "html[data-fw-theme='dark'] [data-ui='clubhouse']"
         },
         {
@@ -20552,6 +20585,7 @@
         "ch-tour-cmp-sum",
         "ch-tour-cmp-swap",
         "ch-tour-cmp-tag",
+        "ch-tour-cmp-tbl",
         "ch-tour-cmp-title",
         "ch-tour-cmp-title__n",
         "ch-tour-cmp-title__t",
@@ -20848,6 +20882,7 @@
         "ch-hovercard__act",
         "ch-hovercard__acts",
         "ch-hscroll",
+        "ch-hw-more",
         "ch-iconbtn",
         "ch-inset",
         "ch-intro",
@@ -20941,6 +20976,9 @@
         "ch-toast__icon",
         "ch-toasts",
         "ch-toasts--in-dialog",
+        "ch-tour-cmp-div",
+        "ch-tour-cmp-tl__thumb",
+        "ch-tr__link",
         "ch-trust",
         "ch-trust--live",
         "ch-trust--official",
@@ -21004,11 +21042,6 @@
         {
           "name": "--ch-av-ring",
           "value": "var(--ch-avatar-neutral-ring)",
-          "scope": ".ch-avatar"
-        },
-        {
-          "name": "--ch-av-floor",
-          "value": "min(12px, calc(var(--ch-av-size, 32px) * 0.42))",
           "scope": ".ch-avatar"
         },
         {
