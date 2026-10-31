@@ -370,6 +370,8 @@ describe('CoachHelm read tools — sourced envelope contracts', () => {
   });
 
   it('summarizes attendance for upcoming non-cancelled events', async () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date('2026-08-18T12:00:00.000Z')); // The fixture's events are a few days out.
     const envelope = await getUpcomingEvents(
       sbWith({
         golf_events: [{
@@ -421,6 +423,8 @@ describe('CoachHelm read tools — sourced envelope contracts', () => {
   });
 
   it('carries no reply counts for an event that does not require an RSVP, so nothing nags about it (owner, 2026-10-08)', async () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date('2026-08-18T12:00:00.000Z')); // The fixture's events are a few days out.
     const envelope = await getUpcomingEvents(
       sbWith({
         golf_events: [{

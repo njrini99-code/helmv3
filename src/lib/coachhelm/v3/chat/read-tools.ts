@@ -1025,6 +1025,37 @@ export async function getFocusAreas(
 // Schedule + RSVP
 // ===========================================================================
 
+
+const EVENTS_CAP = 50;
+
+/** The calendar day in the team's zone (YYYY-MM-DD), the day all-day events are stored under. */
+function teamDay(now: Date, timeZone: string | null | undefined): string {
+  try {
+    return new Intl.DateTimeFormat('en-CA', { timeZone: timeZone || 'America/New_York' }).format(now);
+  } catch {
+    return now.toISOString().slice(0, 10);
+  }
+}
+
+/** The calendar's four replies, legacy column values included. Kept in step with rsvpOf. */
+function replyOf(status: string | null | undefined): 'accepted' | 'maybe' | 'declined' | 'pending' {
+  switch (status) {
+    case 'accepted':
+    case 'attending':
+      return 'accepted';
+    case 'tentative':
+    case 'maybe':
+      return 'maybe';
+    case 'declined':
+    case 'not_attending':
+    case 'excused':
+    case 'unexcused':
+      return 'declined';
+    default:
+      return 'pending';
+  }
+}
+
 export async function getUpcomingEvents(
   sb: Sb,
   ctx: CoachChatContext,
@@ -1036,19 +1067,26 @@ export async function getUpcomingEvents(
 
   const { data: events, error } = await sb
     .from('golf_events')
-    .select('id, title, event_type, start_time, end_time, location, requires_rsvp, rsvp_deadline, status')
+    .select('id, title, event_type, start_time, end_time, all_day, location, requires_rsvp, rsvp_deadline, status')
     .eq('team_id', ctx.team_id)
     // Players' synced class meetings share this table. Without this filter the
     // LIMIT fills with one player's semester and CoachHelm tells the coach their
     // week is classes (2026-08-05).
     .neq('event_type', CLASS_EVENT_TYPE)
-    .gte('start_time', now.toISOString())
+    // A day back: an all-day event is stored at UTC midnight, so today's is already "past" by the clock.
+    .gte('start_time', new Date(now.getTime() - 86400_000).toISOString())
     .lte('start_time', until.toISOString())
     .order('start_time', { ascending: true })
-    .limit(50);
+    .limit(EVENTS_CAP);
   if (error) return unavailableEnvelope('Could not read the calendar.', 'The events query failed.');
 
-  const rows = (events ?? []).filter((e) => e.status !== 'cancelled');
+  const today = teamDay(now, ctx.timezone);
+  const capped = (events ?? []).length >= EVENTS_CAP;
+  const rows = (events ?? []).filter(
+    (e) =>
+      e.status !== 'cancelled' &&
+      (e.all_day === true ? e.start_time.slice(0, 10) >= today : Date.parse(e.start_time) >= now.getTime()),
+  );
   if (rows.length === 0) {
     return {
       summary: `Nothing scheduled in the next ${days} days.`,
@@ -1061,7 +1099,7 @@ export async function getUpcomingEvents(
     };
   }
 
-  const { data: attendance } = await sb
+  const { data: attendance, error: attendanceError } = await sb
     .from('golf_event_attendance')
     .select('event_id, player_id, status')
     .in(
@@ -1070,13 +1108,17 @@ export async function getUpcomingEvents(
     );
 
   const nameById = new Map(ctx.roster.map((p) => [p.id, p.name]));
-  const byEvent = new Map<string, { accepted: number; declined: number; pending: string[] }>();
-  for (const e of rows) byEvent.set(e.id, { accepted: 0, declined: 0, pending: [] });
+  const byEvent = new Map<string, { accepted: number; declined: number; maybe: number; pending: string[] }>();
+  for (const e of rows) byEvent.set(e.id, { accepted: 0, declined: 0, maybe: 0, pending: [] });
   for (const a of attendance ?? []) {
     const bucket = byEvent.get(a.event_id);
     if (!bucket) continue;
-    if (a.status === 'accepted') bucket.accepted += 1;
-    else if (a.status === 'declined') bucket.declined += 1;
+    // Read the column the way the calendar does (rsvpOf in src/clubhouse/data/calendar.ts), legacy values
+    // included: 'attending', 'not_attending', 'tentative' and 'excused' were all counted as no reply.
+    const reply = replyOf(a.status);
+    if (reply === 'accepted') bucket.accepted += 1;
+    else if (reply === 'declined') bucket.declined += 1;
+    else if (reply === 'maybe') bucket.maybe += 1;
     else bucket.pending.push(nameById.get(a.player_id) ?? 'Unknown');
   }
 
@@ -1105,13 +1147,20 @@ export async function getUpcomingEvents(
           rsvp_deadline: e.rsvp_deadline,
           rsvp_accepted: b.accepted,
           rsvp_declined: b.declined,
-          rsvp_pending_count: b.pending.length,
-          rsvp_pending_names: b.pending,
+          rsvp_maybe: b.maybe,
+          // Unknown, not zero, when the replies couldn't be read.
+          ...(attendanceError ? { rsvp_unknown: true } : { rsvp_pending_count: b.pending.length, rsvp_pending_names: b.pending }),
         };
       }),
     },
-    coverage: 'complete',
-    coverage_note: null,
+    coverage: attendanceError || capped ? 'partial' : 'complete',
+    coverage_note:
+      [
+        capped ? `Only the first ${EVENTS_CAP} events in this window were read.` : null,
+        attendanceError ? 'The replies could not be read, so no one is named as not having replied.' : null,
+      ]
+        .filter(Boolean)
+        .join(' ') || null,
     as_of: nowIso(),
   };
 }
@@ -1121,9 +1170,11 @@ export async function getOpenTasks(sb: Sb, ctx: CoachChatContext): Promise<ToolE
     .from('golf_tasks')
     .select('id, title, due_date, status, priority, task_type')
     .eq('team_id', ctx.team_id)
-    .neq('status', 'completed')
+    .eq('is_test', false)
+    // `neq` alone drops a task whose status is null (NULL <> 'completed' is not true), and that task is open.
+    .or('status.is.null,status.neq.completed')
     .order('due_date', { ascending: true })
-    .limit(50);
+    .limit(TASKS_CAP);
   if (error) return unavailableEnvelope('Could not read tasks.', 'The tasks query failed.');
 
   const rows = data ?? [];
@@ -1152,11 +1203,14 @@ export async function getOpenTasks(sb: Sb, ctx: CoachChatContext): Promise<ToolE
         overdue: Boolean(t.due_date && String(t.due_date).slice(0, 10) < today),
       })),
     },
-    coverage: rows.length === 0 ? 'empty' : 'complete',
-    coverage_note: null,
+    coverage: rows.length === 0 ? 'empty' : rows.length >= TASKS_CAP ? 'partial' : 'complete',
+    coverage_note: rows.length >= TASKS_CAP ? `Only the first ${TASKS_CAP} open tasks were read, so the counts are at least these.` : null,
     as_of: nowIso(),
   };
 }
+
+const TASKS_CAP = 50;
+const TRIPS_CAP = 20;
 
 /**
  * The team's trips (golf_travel_itineraries, Clubhouse Travel), from two weeks back on, soonest first. Owner,
@@ -1169,9 +1223,10 @@ export async function getTeamTravel(sb: Sb, ctx: CoachChatContext): Promise<Tool
     .select('id, event_name, destination, departure_date, departure_time, departure_location, return_date, return_time, transportation_type, hotel_name, notes')
     .eq('team_id', ctx.team_id)
     .eq('is_test', false)
-    .gte('departure_date', since)
+    // A trip still under way counts even when it left more than two weeks ago.
+    .or(`departure_date.gte.${since},return_date.gte.${since}`)
     .order('departure_date', { ascending: true })
-    .limit(20);
+    .limit(TRIPS_CAP);
   if (error) return unavailableEnvelope('Could not read the team’s trips.', 'The travel query failed.');
 
   const rows = data ?? [];
@@ -1198,8 +1253,8 @@ export async function getTeamTravel(sb: Sb, ctx: CoachChatContext): Promise<Tool
         notes: t.notes,
       })),
     },
-    coverage: 'complete',
-    coverage_note: null,
+    coverage: rows.length >= TRIPS_CAP ? 'partial' : 'complete',
+    coverage_note: rows.length >= TRIPS_CAP ? `Only the first ${TRIPS_CAP} trips from two weeks back were read; later ones are not listed.` : null,
     as_of: nowIso(),
   };
 }

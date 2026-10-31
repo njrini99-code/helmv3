@@ -293,7 +293,7 @@ export async function coachTour(supabase: Supabase, teamId: string): Promise<Tou
  * the team is known but the Tour's values did not read, so the cards have no Tour comparison.
  */
 export async function playerTeam(supabase: Supabase, playerId: string): Promise<{ teamId: string | null; tour: ChTourBaseline | null; error: boolean; tourError: boolean }> {
-  const res = await supabase.from('golf_team_members').select('team_id, golf_teams(gender)').eq('player_id', playerId).eq('status', 'active').maybeSingle();
+  const res = await supabase.from('golf_team_members').select('team_id, golf_teams(gender)').eq('player_id', playerId).eq('status', 'active').order('created_at', { ascending: false }).limit(1).maybeSingle();
   if (res.error) {
     log('playerTeam', res.error);
     return { teamId: null, tour: null, error: true, tourError: false };

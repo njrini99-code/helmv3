@@ -134,7 +134,7 @@ async function readLadderReads(supabase: Supabase, playerId: string, viewer: ChV
  */
 async function readTeamZone(supabase: Supabase, playerId: string): Promise<string> {
   try {
-    const member = await supabase.from('golf_team_members').select('team_id').eq('player_id', playerId).eq('status', 'active').maybeSingle();
+    const member = await supabase.from('golf_team_members').select('team_id').eq('player_id', playerId).eq('status', 'active').order('created_at', { ascending: false }).limit(1).maybeSingle();
     if (member.error) log('standing.zone', member.error);
     const teamId = (member.data as { team_id: string } | null)?.team_id;
     if (!teamId) return getValidTimezone(null);

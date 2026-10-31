@@ -46,7 +46,7 @@ export default async function GolfTravelPage({ searchParams }: GolfTravelPagePro
       ? resolveCoachTeamIdWithCookie(supabase, coach.organization_id, coach.id)
       : Promise.resolve(null),
     player?.id
-      ? supabase.from('golf_team_members').select('team_id').eq('player_id', player.id).eq('status', 'active').maybeSingle()
+      ? supabase.from('golf_team_members').select('team_id').eq('player_id', player.id).eq('status', 'active').order('created_at', { ascending: false }).limit(1).maybeSingle()
       : Promise.resolve({ data: null, error: null }),
   ]);
 

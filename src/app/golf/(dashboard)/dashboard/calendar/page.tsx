@@ -97,7 +97,7 @@ export default async function GolfCalendarPage({ searchParams }: GolfCalendarPag
       // (Not firing today — all 69 membership rows are active — but the same
       // swallow on the same table was already a live bug in the join flow.)
       playerId
-        ? supabase.from('golf_team_members').select('team_id').eq('player_id', playerId).eq('status', 'active').maybeSingle()
+        ? supabase.from('golf_team_members').select('team_id').eq('player_id', playerId).eq('status', 'active').order('created_at', { ascending: false }).limit(1).maybeSingle()
         : Promise.resolve({ data: null, error: null }),
       orgId
         ? supabase.from('golf_coaches').select('id, full_name, avatar_url').eq('organization_id', orgId).order('full_name', { ascending: true }).limit(20)
