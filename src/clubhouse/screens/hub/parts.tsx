@@ -4,6 +4,7 @@ import { Bus, Check, ChevronDown, Download, FileSpreadsheet, FileText, FileType,
 import Link from 'next/link';
 import { useEffect, useRef, useState, type CSSProperties, type DragEvent } from 'react';
 import type { ChHubAnnouncement, ChHubFile, ChHubRsvp, ChHubTask, ChHubTrip, ChHubUpdate, ChRsvp, ChTeamHub } from '../../data/hub';
+import { isProvisional } from '../../data/hub-shape';
 import { Avatar } from '../../ui/Avatar';
 import { Button } from '../../ui/Button';
 import { EmptyState } from '../../ui/States';
@@ -161,9 +162,15 @@ export function Announcement({
         <Avatar name={a.by} size={32} />
         <div>
           <b>{a.by}</b>
-          <span className="ch-num">{[a.byRole, clk(a.when)].filter(Boolean).join(' · ')}</span>
+          {isProvisional(a.id) ? (
+            <span className="ch-num" data-ch-code="CH-10402" role="status">
+              Posting…
+            </span>
+          ) : (
+            <span className="ch-num">{[a.byRole, clk(a.when)].filter(Boolean).join(' · ')}</span>
+          )}
         </div>
-        {coach && (
+        {coach && !isProvisional(a.id) && (
           <Menu
             label={`More for ${a.title}`}
             align="end"
@@ -628,8 +635,14 @@ function TaskRow({ t, coach, d, pending, onToggle, onDelete, focus = false, onFo
         <b>{t.title}</b>
         {t.detail && <span>{t.detail}</span>}
       </div>
-      <em role={pending ? 'status' : undefined} data-ch-code={pending ? 'CH-10410' : undefined} aria-label={pending ? `Saving ${t.title}` : undefined} className={'ch-num' + (!d && (t.status === 'overdue' || t.due === 'Today' || t.due === 'Tomorrow') ? ' is-soon' : '')}>{pending ? 'Saving…' : d && !coach ? 'Done' : t.status === 'overdue' && !d ? `Overdue · ${t.due}` : (t.due ?? 'No date')}</em>
-      {coach && onDelete && (
+      {isProvisional(t.id) ? (
+        <em role="status" data-ch-code="CH-10404" className="ch-num">
+          Assigning…
+        </em>
+      ) : (
+        <em role={pending ? 'status' : undefined} data-ch-code={pending ? 'CH-10410' : undefined} aria-label={pending ? `Saving ${t.title}` : undefined} className={'ch-num' + (!d && (t.status === 'overdue' || t.due === 'Today' || t.due === 'Tomorrow') ? ' is-soon' : '')}>{pending ? 'Saving…' : d && !coach ? 'Done' : t.status === 'overdue' && !d ? `Overdue · ${t.due}` : (t.due ?? 'No date')}</em>
+      )}
+      {coach && onDelete && !isProvisional(t.id) && (
         <Menu
           label={`More for ${t.title}`}
           align="end"

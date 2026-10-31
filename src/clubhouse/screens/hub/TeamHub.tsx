@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { useNotificationBadges } from '@/contexts/notification-badge-context';
 import { useDeferredValue, useEffect, useMemo, useRef, useState, type CSSProperties } from 'react';
 import type { ChHubAnnouncement, ChHubFile, ChHubRsvp, ChHubTask, ChHubTrip, ChHubUpdate, ChRsvp, ChTeamHub } from '../../data/hub';
+import { PROVISIONAL_ID } from '../../data/hub-shape';
 import { Button } from '../../ui/Button';
 import { EmptyState } from '../../ui/States';
 import { Icon } from '../../ui/Icon';
@@ -184,6 +185,15 @@ export function TeamHub({
   // The trip open in the edit sheet.
   const [editingTrip, setEditingTrip] = useState<ChHubTrip | null>(null);
   const [assign, setAssign] = useState(false);
+  // A post or a task drawn the moment it is sent (F-0045), until the page's next read brings the real row.
+  const [provAnns, setProvAnns] = useState<ChHubAnnouncement[]>([]);
+  const [provTasks, setProvTasks] = useState<ChHubTask[]>([]);
+  const [readFor, setReadFor] = useState(data);
+  if (readFor !== data) {
+    setReadFor(data);
+    setProvAnns([]);
+    setProvTasks([]);
+  }
   const [confirm, setConfirm] = useState<Pending>(null);
   const [opening, setOpening] = useState<string | null>(null);
   const [uploading, setUploading] = useState(false);
@@ -406,10 +416,30 @@ export function TeamHub({
   const tripActions = coach ? { onEdit: setEditingTrip, onDelete: (t: ChHubTrip) => askDelete({ kind: 'trip', t }) } : {};
 
   const anns = useMemo(
-    () => data.announcements.rows.filter((a) => !gone.has(a.id)).map((a) => (edited.has(a.id) ? { ...a, ...edited.get(a.id) } : a)),
-    [data.announcements.rows, gone, edited],
+    () => [...provAnns, ...data.announcements.rows.filter((a) => !gone.has(a.id)).map((a) => (edited.has(a.id) ? { ...a, ...edited.get(a.id) } : a))],
+    [provAnns, data.announcements.rows, gone, edited],
   );
-  const tasks = useMemo(() => ({ ...data.tasks, rows: data.tasks.rows.filter((t) => !gone.has(t.id)) }), [data.tasks, gone]);
+  const tasks = useMemo(() => ({ ...data.tasks, rows: [...provTasks, ...data.tasks.rows.filter((t) => !gone.has(t.id))] }), [provTasks, data.tasks, gone]);
+  // The rows a coach's post and assignment draw at once; each add returns its undo (F-0045).
+  const provisionalPost = {
+    add: (i: Parameters<ChHubWrites['postAnnouncement']>[0]) => {
+      const id = `${PROVISIONAL_ID}${Date.now()}`;
+      const recipients = i.playerIds?.length ?? data.players.length;
+      const row: ChHubAnnouncement = { id, title: i.title.trim(), body: i.body.trim(), urgency: 'normal', by: viewerName, byRole: null, when: '', createdAt: new Date().toISOString(), needAck: i.requiresAck, acked: false, ackCount: 0, recipients, notAcked: null, documentCount: i.documentIds.length };
+      setProvAnns((rows) => [row, ...rows]);
+      return () => setProvAnns((rows) => rows.filter((r) => r.id !== id));
+    },
+    onReopen: () => setCompose(true),
+  };
+  const provisionalTask = {
+    add: (i: Parameters<ChHubWrites['assignTask']>[0]) => {
+      const id = `${PROVISIONAL_ID}${Date.now()}`;
+      const row: ChHubTask = { id, title: i.title.trim(), detail: i.detail.trim() || null, dueDate: i.dueDate, due: null, status: 'pending', done: [0, i.playerIds.length] };
+      setProvTasks((rows) => [row, ...rows]);
+      return () => setProvTasks((rows) => rows.filter((r) => r.id !== id));
+    },
+    onReopen: () => setAssign(true),
+  };
   const docs = useMemo(() => ({ ...data.documents, folders: data.documents.folders.map((f) => ({ ...f, files: f.files.filter((d) => !gone.has(d.id)) })).filter((f) => f.files.length) }), [data.documents, gone]);
   const isAcked = (a: ChHubAnnouncement) => a.acked || acked.has(a.id);
   // Home's post: the newest that loaded still waiting on this player, else the newest (no pinned posts yet, Q-70). It is
@@ -760,7 +790,7 @@ export function TeamHub({
 
       {coach && (
         <>
-          <ComposeSheet open={compose} onClose={() => setCompose(false)} players={data.players} playersError={data.playersError} documents={docs} travel={travelAudience} write={writes.postAnnouncement} onDone={refresh} />
+          <ComposeSheet open={compose} onClose={() => setCompose(false)} players={data.players} playersError={data.playersError} documents={docs} travel={travelAudience} write={writes.postAnnouncement} onDone={refresh} provisional={provisionalPost} />
           <ComposeSheet
             open={!!editing}
             onClose={() => setEditing(null)}
@@ -773,7 +803,7 @@ export function TeamHub({
           />
           <TripSheet open={tripOpen} onClose={() => setTripOpen(false)} teamId={data.teamId} events={data.tripEvents} players={data.players} playersError={data.playersError} write={writes.planTrip} writeTravelers={writes.setTravelers} readClasses={writes.travelerClasses} onDone={refresh} />
           <TripEditSheet trip={editingTrip} onClose={() => setEditingTrip(null)} write={writes.editTrip} onDone={refresh} />
-          <AssignSheet open={assign} onClose={() => setAssign(false)} teamId={data.teamId} players={data.players} playersError={data.playersError} write={writes.assignTask} onDone={refresh} />
+          <AssignSheet open={assign} onClose={() => setAssign(false)} teamId={data.teamId} players={data.players} playersError={data.playersError} write={writes.assignTask} onDone={refresh} provisional={provisionalTask} />
           <ConfirmDelete
             open={!!confirm}
             what={confirm?.kind === 'ann' ? 'this announcement' : confirm?.kind === 'task' ? 'this task' : confirm?.kind === 'trip' ? 'this trip' : 'this file'}

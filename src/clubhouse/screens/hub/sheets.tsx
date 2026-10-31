@@ -253,6 +253,7 @@ export function ComposeSheet({
   write,
   onDone,
   edit,
+  provisional,
 }: {
   open: boolean;
   onClose: () => void;
@@ -266,6 +267,11 @@ export function ComposeSheet({
   onDone: () => void;
   /** Edit mode: the post being fixed (null while the sheet is shut) and how it is saved. `players`, `documents` and `write` are then unused. */
   edit?: { announcement: ChHubAnnouncement | null; write: ChHubWrites['editAnnouncement']; onSaved: (id: string, change: ChAnnouncementEdit) => void };
+  /**
+   * A new post shows on the page at once (F-0045): this draws its row and returns the undo. The sheet then closes before
+   * the server answers; a failure takes the row back and `onReopen` opens the sheet again with the text still in it.
+   */
+  provisional?: { add: (i: Parameters<ChHubWrites['postAnnouncement']>[0]) => () => void; onReopen: () => void };
 }) {
   const id = useId();
   const phone = useChPhone();
@@ -297,7 +303,17 @@ export function ComposeSheet({
   const create = useAction(
     'hub.postAnnouncement',
     async (i: Parameters<ChHubWrites['postAnnouncement']>[0]) => {
-      const res = await write(i);
+      const undo = provisional?.add(i);
+      if (undo) onClose();
+      let res: Awaited<ReturnType<typeof write>> | undefined;
+      try {
+        res = await write(i);
+      } finally {
+        if (undo && !(res && normalise(res).success)) {
+          undo();
+          provisional?.onReopen();
+        }
+      }
       const landed = normalise(res);
       if (landed.success) {
         setTitle('');
@@ -794,6 +810,7 @@ export function AssignSheet({
   playersError,
   write,
   onDone,
+  provisional,
 }: {
   open: boolean;
   onClose: () => void;
@@ -803,6 +820,8 @@ export function AssignSheet({
   write: ChHubWrites['assignTask'];
   /** After a task is assigned: the page reads again. */
   onDone: () => void;
+  /** The task shows at once (F-0045): its row is drawn and the sheet closes; a failure takes it back and reopens the sheet. */
+  provisional?: { add: (i: Parameters<ChHubWrites['assignTask']>[0]) => () => void; onReopen: () => void };
 }) {
   const id = useId();
   const phone = useChPhone();
@@ -823,7 +842,17 @@ export function AssignSheet({
   const give = useAction(
     'hub.assignTask',
     async (i: Parameters<ChHubWrites['assignTask']>[0]) => {
-      const res = await write(i);
+      const undo = provisional?.add(i);
+      if (undo) onClose();
+      let res: Awaited<ReturnType<typeof write>> | undefined;
+      try {
+        res = await write(i);
+      } finally {
+        if (undo && !(res && normalise(res).success)) {
+          undo();
+          provisional?.onReopen();
+        }
+      }
       if (normalise(res).success) {
         setTitle('');
         setDetail('');
