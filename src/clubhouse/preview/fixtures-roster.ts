@@ -53,7 +53,7 @@ const POOLED_AVG = (() => {
 
 export const PREVIEW_ROSTER: ChRoster = {
   teamName: 'Varsity',
-  season: 'Fall 2026',
+  season: '2026–27',
   joinCode: 'FINLEY-26',
   teamError: false,
   notesError: false,

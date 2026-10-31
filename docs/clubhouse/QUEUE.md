@@ -366,6 +366,7 @@ its rows together and does not map them one to one.
 | AUD-F-0001 | Bell, push and email give event times in the team's zone, not the server's UTC (rsvp.ts and three fan-out sites) | Clubhouse fixes | in progress | | claude/audit-fix-01-deploy-blockers (Clubhouse audit fix plan, PR 1); no Bridge IDs or CH codes needed |
 | AUD-F-0003 | A message to one person never reuses the Team Channel or a group: the server resolves only a two-person thread on this team, and the client refuses a channel or group id (CH-7002) | Clubhouse fixes | in progress | | claude/audit-fix-01-deploy-blockers (Clubhouse audit fix plan, PR 1); no Bridge IDs or CH codes needed |
 | AUD-F-0004 | Coach Start conversation opens the one-to-one thread (same root as AUD-F-0003; an id not yet in the list goes through CH-7015) | Clubhouse fixes | in progress | | claude/audit-fix-01-deploy-blockers (Clubhouse audit fix plan, PR 1); no Bridge IDs or CH codes needed |
+| AUD-F-0002 | Roster, Team Hub and Team stats show the season computed from 1 August in the team's zone ("2026–27"), not the stored free text | Clubhouse fixes | in progress | | claude/audit-fix-02-season-label (Clubhouse audit fix plan, PR 2); no Bridge IDs or CH codes needed |
 
 <!-- markdownlint-enable MD013 -->
 

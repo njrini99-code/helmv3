@@ -6,6 +6,7 @@ import { isCountableRound } from '@/lib/golf/round-countable';
 import { withCanonicalRoundTotal } from '@/lib/golf/round-total';
 import { getValidTimezone } from '@/lib/calendar/timezone';
 import { chLogServer } from '../lib/track-server';
+import { seasonLabelOf } from '../lib/season-start';
 import { deltaTone, halvesChange } from '../lib/stats-signal';
 import { hasHoleScores, isTotalOnlyCountable } from './round-scope';
 
@@ -69,6 +70,14 @@ export function seasonStartDate(now = new Date(), tz: string = SEASON_DEFAULT_TZ
   const year = Number(parts.find((x) => x.type === 'year')!.value);
   const month = Number(parts.find((x) => x.type === 'month')!.value);
   return `${month >= 8 ? year : year - 1}-08-01`;
+}
+
+/**
+ * The season shown on Roster, Team Hub and Team stats: "2026–27" from 1 August in the team's zone (F-0002). Computed, never
+ * the free-text `golf_teams.season` a coach typed once in Settings, which never turned over ("2025-26" in October 2026).
+ */
+export function currentSeasonLabel(now = new Date(), tz: string = SEASON_DEFAULT_TZ): string {
+  return seasonLabelOf(seasonStartDate(now, tz));
 }
 
 /**
