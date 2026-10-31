@@ -134,6 +134,6 @@ describe('page widths (row 39)', () => {
   it('no other page-sized max-width is written in px', () => {
     const css = walk(join(ROOT, 'styles'), /\.css$/).filter((f) => !f.endsWith('/tokens.css'));
     const found = hits(/(?<![\w(-])max-width:\s*(?:[7-9]\d\d|\d{4,})px/, css);
-    expect(ratchet(found, { 'styles/hub.css': 1, 'styles/messages.css': 1, 'styles/shell.css': 1 })).toEqual({ over: [], stale: [] });
+    expect(ratchet(found, { 'styles/hub.css': 1, 'styles/shell.css': 1 })).toEqual({ over: [], stale: [] });
   });
 });
