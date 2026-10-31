@@ -222,6 +222,19 @@ button.ch-rt-strip__h {
 }
 
 /* Body: the hole beside the entry */
+/* The hole turn (Swap slide, keyed by the hole) and the hole-out swap (owner, 2026-10-31) pass the screen's column
+   through, so the hero still takes the spare height and the entry still sits on the dock. */
+.ch-rt-turn,
+.ch-rt-turn > .ch-swap__item,
+.ch-rt-turn > .ch-swap__item > .ch-swap__body {
+  display: flex;
+  flex: 1 1 auto;
+  flex-direction: column;
+  min-height: 0;
+}
+.ch-rt-turn {
+  overflow-x: clip;
+}
 .ch-rt-body {
   display: grid;
   grid-template-columns: minmax(0, 1fr) minmax(380px, 460px);
@@ -457,6 +470,61 @@ button.ch-rt-strip__h {
   stroke: var(--ch-on-green-ink);
   stroke-width: 2.2;
   stroke-linecap: round;
+}
+path.ch-rt-map__shot {
+  fill: none;
+}
+/* The course view plays the hole's shots once as it opens (owner, 2026-10-31; the second named exception to Q-153 in
+   .claude/rules/clubhouse.md). Each piece waits for its own --ch-rt-at, set by HoleMap from CH_DUR: a shot draws over
+   the reveal beat, the ball flies it, and the number where it landed pops in on the base beat. Opacity, transform and
+   path length only. HoleMap draws none of this under reduced motion or Animations off. */
+.ch-rt-map__shot.is-play {
+  stroke-dasharray: 1;
+  stroke-dashoffset: 1;
+  animation: ch-rt-shot-draw var(--ch-dur-reveal) var(--ch-ease) var(--ch-rt-at, 0s) both;
+}
+@keyframes ch-rt-shot-draw {
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+.ch-rt-map__ball {
+  fill: var(--ch-on-green-ink);
+  filter: drop-shadow(0 2px 3px rgb(4 20 12 / 0.45));
+  animation: ch-rt-ball var(--ch-dur-reveal) linear var(--ch-rt-at, 0s) both;
+}
+@keyframes ch-rt-ball {
+  0% {
+    opacity: 0;
+  }
+  10%,
+  80% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+  }
+}
+.ch-rt-map__stop.is-play {
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: ch-rt-stop-pop var(--ch-dur-base) var(--ch-ease-spring) var(--ch-rt-at, 0s) both;
+}
+@keyframes ch-rt-stop-pop {
+  from {
+    opacity: 0;
+    transform: scale(0.4);
+  }
+}
+.ch-rt-map__aim.is-play,
+.ch-rt-map__label.is-play,
+.ch-rt-map__left.is-play {
+  animation: ch-rt-map-in var(--ch-dur-base) var(--ch-ease) var(--ch-rt-at, 0s) both;
+}
+@keyframes ch-rt-map-in {
+  from {
+    opacity: 0;
+  }
 }
 .ch-rt-map__aim {
   stroke: var(--ch-on-green-ink);
@@ -1937,6 +2005,8 @@ button.ch-rt-strip__h {
   transition: opacity var(--ch-scrim-dur, var(--ch-dur-base)) var(--ch-scrim-ease, var(--ch-ease));
 }
 .ch-rtcv {
+  /* The folded shot list: its bar, above the home indicator. The map takes everything above it. */
+  --ch-rtcv-peek: calc(68px + env(safe-area-inset-bottom));
   position: relative;
   height: 100%;
   overflow: hidden;
@@ -1949,10 +2019,21 @@ button.ch-rt-strip__h {
   top: 0;
   right: 0;
   left: 0;
-  bottom: 236px;
+  bottom: var(--ch-rtcv-peek);
   width: 100%;
-  height: calc(100% - 236px);
+  height: calc(100% - var(--ch-rtcv-peek));
   aspect-ratio: auto;
+  transform-origin: 50% 40%;
+}
+/* The hole settles into place as the view opens, then its shots play (HoleMap play; owner, 2026-10-31). */
+.ch-rtcv__map.is-play {
+  animation: ch-rtcv-settle var(--ch-dur-reveal) var(--ch-ease) both;
+}
+@keyframes ch-rtcv-settle {
+  from {
+    opacity: 0.4;
+    transform: scale(1.06);
+  }
 }
 .ch-rtcv__top {
   position: absolute;
@@ -2045,22 +2126,52 @@ button.ch-rt-strip__h {
   display: flex;
   flex-direction: column;
   gap: 8px;
-  max-height: 46%;
-  min-height: 236px;
+  max-height: 60%;
   box-sizing: border-box;
   overflow-y: auto;
   overscroll-behavior: contain;
-  padding: 8px 20px calc(20px + env(safe-area-inset-bottom));
+  padding: 0 20px calc(20px + env(safe-area-inset-bottom));
+  /* Folded, only the bar shows; tapped or swiped up, the list rises over the map on the smooth spring. */
+  transform: translateY(calc(100% - var(--ch-rtcv-peek)));
+  transition: transform var(--ch-dur-release) var(--ch-ease-spring-smooth);
   border-radius: var(--ch-radius-sheet) var(--ch-radius-sheet) 0 0;
   background: var(--ch-ivory-100);
   color: var(--ch-ink-900);
   box-shadow: var(--ch-elevation-sheet);
 }
+.ch-rtcv__sheet.is-open {
+  transform: none;
+}
+/* The bar: the grabber, the hole and its shots in a line; the whole bar is the tap and the swipe. */
 .ch-rtcv__sh {
+  position: relative;
   display: flex;
+  flex: none;
   align-items: baseline;
   justify-content: space-between;
   gap: 12px;
+  width: 100%;
+  min-height: 68px;
+  box-sizing: border-box;
+  padding: 24px 0 12px;
+  border: 0;
+  background: none;
+  color: inherit;
+  font-family: inherit;
+  text-align: left;
+  cursor: pointer;
+  touch-action: none;
+}
+.ch-rtcv__sh .ch-grab {
+  position: absolute;
+  top: 8px;
+  left: 50%;
+  transform: translateX(-50%);
+}
+.ch-root .ch-rtcv__sh:focus-visible {
+  outline: 2px solid var(--ch-border-focus);
+  outline-offset: -2px;
+  border-radius: var(--ch-radius-md);
 }
 .ch-rtcv__sh h3 {
   margin: 0;

@@ -498,8 +498,9 @@ function PhoneThread({
             ) : !api.msgs.length ? (
               <EmptyState compact code="CH-7304" title="No messages yet" body={`Say hello to ${conv.group ? "the group" : firstName(conv.title)}.`} />
             ) : (
-              // B7, as on desktop: arrivals and deletions open and close in place; the scroll stays with useThreadAnchor.
-              <ListPresence key={conv.id} flip={false}>
+              // B7, as on desktop: a deletion closes in place and an arrival rises in at its full height, so the thread above
+              // never moves (owner, 2026-10-31, as Fairway); the scroll stays with useThreadAnchor.
+              <ListPresence key={conv.id} flip={false} arrive="rise">
                 {items.flatMap((it) =>
                   it.kind === "day"
                     ? [

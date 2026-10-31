@@ -510,10 +510,12 @@ describe('P007 wiring · the phone’s Schedule invites the direct thread’s pl
   });
 });
 
-describe('B7 · a message that arrives opens in place at the end of the thread', () => {
+// Owner, 2026-10-31 (as Fairway's thread): a message that arrives takes its height at once and only rises and fades in.
+// Opening its height pushed the thread above it up frame by frame while use-thread-anchor re-pinned the end (the jitter).
+describe('B7 · a message that arrives rises in at the end of the thread', () => {
   const reply = { id: 'm2', conversation_id: 'team', sender_id: 'jonah', content: 'On our way', created_at: '2026-10-14T18:05:00Z', isRead: false };
   for (const phone of [false, true]) {
-    it(`${phone ? 'phone' : 'desktop'}: the opened thread is drawn in place; a new reply opens in, then hands its height back, and the rest never move`, async () => {
+    it(`${phone ? 'phone' : 'desktop'}: the opened thread is drawn in place; a new reply rises in at its full height, then hands its styles back, and the rest never move`, async () => {
       const user = userEvent.setup();
       const view = phone ? showPhone() : show();
       await user.click(await screen.findByRole('button', { name: /^(?!Actions for ).*Varsity team/ }));
@@ -524,11 +526,13 @@ describe('B7 · a message that arrives opens in place at the end of the thread',
       live.msgs.messages = [mine, reply];
       view.rerender(phone ? phoneTree(data) : tree(data));
       const arrived = document.getElementById('ch-ms-message-m2')!;
-      expect(arrived.style.overflow).toBe('clip');
+      expect(arrived.style.height).toBe('');
+      expect(arrived.style.overflow).toBe('');
+      expect(arrived.style.transform).toBe('translateY(8px)');
       // No FLIP in a thread: the scroll is use-thread-anchor's, so the message already there takes no transform.
       expect(had.style.transform).toBe('');
-      await waitFor(() => expect(document.getElementById('ch-ms-message-m2')!.style.height).toBe(''), { timeout: 3000 });
-      expect(document.getElementById('ch-ms-message-m2')!.style.overflow).toBe('');
+      await waitFor(() => expect(document.getElementById('ch-ms-message-m2')!.style.opacity).not.toBe('0'), { timeout: 3000 });
+      expect(document.getElementById('ch-ms-message-m2')!.style.height).toBe('');
     });
   }
 });

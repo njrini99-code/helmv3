@@ -8153,6 +8153,7 @@
       ],
       "styles": [
         "src/clubhouse/styles/controls.css",
+        "src/clubhouse/styles/rounds-track.css",
         "src/clubhouse/styles/settings.css",
         "src/clubhouse/styles/shell.css"
       ],
@@ -8802,6 +8803,7 @@
         "src/clubhouse/styles/class-awareness.css",
         "src/clubhouse/styles/messages.css",
         "src/clubhouse/styles/recruiting.css",
+        "src/clubhouse/styles/rounds-track.css",
         "src/clubhouse/styles/ui.css"
       ],
       "examples": [],
@@ -14583,6 +14585,7 @@
         "ch-btn",
         "ch-btn--ghost",
         "ch-btn--primary",
+        "ch-grab",
         "ch-root",
         "ch-rt",
         "ch-rt--empty",
@@ -14638,6 +14641,7 @@
         "ch-rt-map--tall",
         "ch-rt-map--wide",
         "ch-rt-map__aim",
+        "ch-rt-map__ball",
         "ch-rt-map__bg",
         "ch-rt-map__cup",
         "ch-rt-map__fairway",
@@ -14705,6 +14709,7 @@
         "ch-rt-tapin__w",
         "ch-rt-top",
         "ch-rt-top__c",
+        "ch-rt-turn",
         "ch-rt-xopt",
         "ch-rtcv",
         "ch-rtcv-d",
@@ -14724,9 +14729,17 @@
         "ch-score",
         "ch-score--birdie",
         "ch-score--bogey",
+        "ch-swap__body",
+        "ch-swap__item",
         "ch-topbar"
       ],
-      "tokens": []
+      "tokens": [
+        {
+          "name": "--ch-rtcv-peek",
+          "value": "calc(68px + env(safe-area-inset-bottom))",
+          "scope": ".ch-rtcv"
+        }
+      ]
     },
     {
       "file": "src/clubhouse/styles/rounds.css",
@@ -15595,8 +15608,10 @@
         "ch-resume",
         "ch-resume__go",
         "ch-resume__ic",
+        "ch-resume__link",
         "ch-resume__m",
         "ch-resume__t",
+        "ch-resume__x",
         "ch-root",
         "ch-scrim",
         "ch-serif-num",
@@ -18679,7 +18694,7 @@
         },
         {
           "name": "--ch-elevation-bubble",
-          "value": "0 1px 2px rgb(28 25 18 / 0.04)",
+          "value": "inset 0 1px 0 rgb(255 255 255 / 0.55), 0 1px 2px rgb(28 25 18 / 0.05), 0 4px 10px rgb(28 25 18 / 0.06)",
           "scope": "[data-ui='clubhouse']"
         },
         {
@@ -18689,7 +18704,7 @@
         },
         {
           "name": "--ch-elevation-bubble-mine",
-          "value": "0 1px 2px rgb(11 58 37 / 0.08)",
+          "value": "inset 0 1px 0 rgb(255 255 255 / 0.14), 0 2px 4px rgb(11 58 37 / 0.1), 0 18px 44px -14px rgb(11 58 37 / 0.34)",
           "scope": "[data-ui='clubhouse']"
         },
         {
@@ -19889,12 +19904,12 @@
         },
         {
           "name": "--ch-elevation-bubble",
-          "value": "0 1px 2px rgb(0 0 0 / 0.3)",
+          "value": "inset 0 1px 0 rgb(255 255 255 / 0.07), 0 1px 2px rgb(0 0 0 / 0.3), 0 4px 10px rgb(0 0 0 / 0.38)",
           "scope": "html[data-fw-theme='dark'] [data-ui='clubhouse']"
         },
         {
           "name": "--ch-elevation-bubble-mine",
-          "value": "0 1px 2px rgb(0 0 0 / 0.3)",
+          "value": "inset 0 1px 0 rgb(255 255 255 / 0.1), 0 2px 4px rgb(0 0 0 / 0.38), 0 18px 44px -14px rgb(0 0 0 / 0.52)",
           "scope": "html[data-fw-theme='dark'] [data-ui='clubhouse']"
         },
         {

@@ -1,6 +1,6 @@
 'use client';
 
-import { useId, useLayoutEffect, useRef, useState, type ReactNode } from 'react';
+import { useId, useLayoutEffect, useRef, useState, type CSSProperties, type ReactNode } from 'react';
 import { Check, ChevronDown, Flag, Pencil } from 'lucide-react';
 import type { DistancePreference } from '@/lib/golf/distance-units';
 import { frontierIndex, playedBefore } from '@/lib/golf/round-session/play-order';
@@ -11,7 +11,8 @@ import { useChReducedMotion } from '../../../lib/reduced-motion';
 import { Icon } from '../../../ui/Icon';
 import { ScoreMark } from '../../../ui/ScoreMark';
 import { Swap } from '../../../ui/Swap';
-import { centerLine, holeShape, plotShots, pointAlong, ringRadius, type ChHoleFrame } from './hole-geometry';
+import { centerLine, holeShape, plotShots, pointAlong, ringRadius, shotPath, type ChHoleFrame } from './hole-geometry';
+import { CH_DUR } from '../../../lib/motion';
 import { distanceText, roundSoFar, shotFinish, shotLine, shotTitle } from './labels';
 import { useHScroll } from '../../../ui/use-hscroll';
 import { plural, pluralWord } from '../../../lib/plural';
@@ -184,6 +185,7 @@ export function HoleMap({
   rings,
   labels,
   ball,
+  play = false,
 }: {
   hole: RoundHole;
   shots: ShotRecord[];
@@ -196,6 +198,12 @@ export function HoleMap({
   labels?: DistancePreference;
   /** The ball's distance to the pin while the hole is open ("150 yds"), drawn beside the ball on the tall frame. */
   ball?: string | null;
+  /**
+   * Play the hole's shots once as it opens (the course view; owner, 2026-10-31): each shot draws along its path on the
+   * reveal beat, one after the other, a ball travels it, and the number where it landed pops in. The caller decides it
+   * once and never under reduced motion or Animations off; the drawing is final either way.
+   */
+  play?: boolean;
 }) {
   const id = useId().replace(/:/g, '');
   const s = holeShape(hole.par, frame);
@@ -206,6 +214,14 @@ export function HoleMap({
   const stops = plotted.map((p) => ({ n: p.n, at: p.from }));
   if (open) stops.push({ n: shots.length + 1, at });
   const wide = frame === 'wide';
+  // The shots' clock: the first starts once the view has settled (base), each lasts the reveal beat and the next starts
+  // when it lands. A stop shows when the shot that reached it lands; the tee's is there from the start.
+  const lead = CH_DUR.base;
+  const step = CH_DUR.reveal;
+  const landsAt = (k: number) => lead + (k + 1) * step;
+  const doneAt = landsAt(plotted.length - 1);
+  const paths = plotted.map((p) => shotPath(p.from, p.to, p.shot.distanceUnitBefore === 'feet'));
+  const timed = (delay: number): CSSProperties | undefined => (play ? ({ '--ch-rt-at': `${delay}s` } as CSSProperties) : undefined);
   const trees = [0.14, 0.32, 0.5, 0.68, 0.84].flatMap((f, i) => {
     const p = pointAlong(s, f);
     const d = s.fairway * (wide ? 1.25 : 1.35);
@@ -253,10 +269,14 @@ export function HoleMap({
         </g>
       ))}
       <rect x={s.tee.x - 10} y={s.tee.y - 4} width="20" height="8" rx="2.5" className="ch-rt-map__tee" />
-      {plotted.map((p) => (
-        <line key={p.n} x1={p.from.x} y1={p.from.y} x2={p.to.x} y2={p.to.y} className="ch-rt-map__shot" />
-      ))}
-      {open && <line x1={at.x} y1={at.y} x2={s.pin.x} y2={s.pin.y} className="ch-rt-map__aim" />}
+      {plotted.map((p, k) =>
+        wide ? (
+          <line key={p.n} x1={p.from.x} y1={p.from.y} x2={p.to.x} y2={p.to.y} className="ch-rt-map__shot" />
+        ) : (
+          <path key={p.n} d={paths[k]} pathLength={1} className={'ch-rt-map__shot' + (play ? ' is-play' : '')} style={timed(lead + k * step)} />
+        ),
+      )}
+      {open && <line x1={at.x} y1={at.y} x2={s.pin.x} y2={s.pin.y} className={'ch-rt-map__aim' + (play ? ' is-play' : '')} style={timed(doneAt)} />}
       <line x1={s.pin.x} y1={s.pin.y} x2={s.pin.x} y2={flagTop} className="ch-rt-map__pole" />
       <path d={`M${s.pin.x},${flagTop} l${flagW},4.5 l-${flagW},4.5 z`} className="ch-rt-map__flag" />
       <circle cx={s.pin.x} cy={s.pin.y} r="2.4" className="ch-rt-map__cup" />
@@ -269,7 +289,7 @@ export function HoleMap({
             const mx = (p.from.x + p.to.x) / 2 + 16;
             const my = (p.from.y + p.to.y) / 2;
             return (
-              <g key={p.n} className="ch-rt-map__label">
+              <g key={p.n} className={'ch-rt-map__label' + (play ? ' is-play' : '')} style={timed(landsAt(plotted.indexOf(p)))}>
                 <rect x={mx} y={my - 13} width={w} height="26" rx="13" />
                 <text x={mx + w / 2} y={my + 4.5} textAnchor="middle">
                   {text}
@@ -277,11 +297,19 @@ export function HoleMap({
               </g>
             );
           })}
+      {play &&
+        !wide &&
+        plotted.map((p, k) => (
+          // The ball in flight: SMIL moves it along the shot's own path; the CSS shows it only while it flies.
+          <circle key={`ball-${p.n}`} r="4.5" className="ch-rt-map__ball" style={timed(lead + k * step)}>
+            <animateMotion path={paths[k]} begin={`${lead + k * step}s`} dur={`${step}s`} fill="freeze" calcMode="spline" keyTimes="0;1" keySplines="0.22 1 0.36 1" />
+          </circle>
+        ))}
       {stops.map((st, i) => {
         const cur = open && i === stops.length - 1;
         const r = wide ? (cur ? 7.5 : 7) : 11;
         return (
-          <g key={st.n} className={'ch-rt-map__stop' + (cur ? ' is-cur' : '')}>
+          <g key={st.n} className={'ch-rt-map__stop' + (cur ? ' is-cur' : '') + (play && i > 0 ? ' is-play' : '')} style={timed(landsAt(i - 1))}>
             {cur && <circle cx={st.at.x} cy={st.at.y} r={r + 7} className="ch-rt-map__halo" />}
             <circle cx={st.at.x} cy={st.at.y} r={r} />
             <text x={st.at.x} y={st.at.y + (wide ? 3.5 : 4.5)} textAnchor="middle" className="ch-rt-map__n">
@@ -291,7 +319,7 @@ export function HoleMap({
         );
       })}
       {!wide && open && ball && (
-        <g className="ch-rt-map__left">
+        <g className={'ch-rt-map__left' + (play ? ' is-play' : '')} style={timed(doneAt)}>
           <rect x={at.x + 24} y={at.y - 14} width={ball.length * 8.4 + 22} height="28" rx="14" />
           <text x={at.x + 24 + (ball.length * 8.4 + 22) / 2} y={at.y + 5} textAnchor="middle">
             {ball}

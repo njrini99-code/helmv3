@@ -4,7 +4,7 @@
   "MD007/ul-indent": 5,
   "MD009/no-trailing-spaces": 1,
   "MD012/no-multiple-blanks": 5,
-  "MD013/line-length": 21685,
+  "MD013/line-length": 21689,
   "MD018/no-missing-space-atx": 1,
   "MD022/blanks-around-headings": 784,
   "MD024/no-duplicate-heading": 65,
@@ -12,11 +12,11 @@
   "MD026/no-trailing-punctuation": 21,
   "MD027/no-multiple-space-blockquote": 2,
   "MD028/no-blanks-blockquote": 2,
-  "MD029/ol-prefix": 77,
+  "MD029/ol-prefix": 76,
   "MD031/blanks-around-fences": 573,
-  "MD032/blanks-around-lists": 821,
+  "MD032/blanks-around-lists": 820,
   "MD033/no-inline-html": 1274,
-  "MD034/no-bare-urls": 114,
+  "MD034/no-bare-urls": 110,
   "MD036/no-emphasis-as-heading": 307,
   "MD037/no-space-in-emphasis": 21,
   "MD038/no-space-in-code": 23,
@@ -28,5 +28,5 @@
   "MD055/table-pipe-style": 4,
   "MD056/table-column-count": 39,
   "MD058/blanks-around-tables": 45,
-  "MD060/table-column-style": 5422
+  "MD060/table-column-style": 5412
 }

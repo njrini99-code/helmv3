@@ -196,3 +196,18 @@ export function ringRadius(s: ChHoleShape, yards: number, holeYards: number): nu
   if (!holeYards || yards >= holeYards) return null;
   return (yards / holeYards) * lineLength(s);
 }
+
+/**
+ * A played shot's path on the course view (owner, 2026-10-31: "there should be an animation of your shots"): a ball
+ * flight bows to one side by a seventh of its length, a putt rolls straight. The path the shot draws along and the ball
+ * travels on.
+ */
+export function shotPath(from: ChPt, to: ChPt, rolled: boolean): string {
+  const dx = to.x - from.x;
+  const dy = to.y - from.y;
+  if (rolled || dx * dx + dy * dy < 1) return `M${from.x},${from.y} L${to.x},${to.y}`;
+  const bow = 1 / 7;
+  const cx = (from.x + to.x) / 2 - dy * bow;
+  const cy = (from.y + to.y) / 2 + dx * bow;
+  return `M${from.x},${from.y} Q${cx},${cy} ${to.x},${to.y}`;
+}

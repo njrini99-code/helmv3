@@ -20,9 +20,14 @@ import { useChReducedMotion } from '../lib/reduced-motion';
  */
 
 /** The list's keys in order, and whether it has painted (a row that mounts after is an arrival); null outside a ListPresence. */
-const ListCtx = createContext<{ keys: string; painted: RefObject<boolean>; flip: boolean; reduced: boolean } | null>(null);
+const ListCtx = createContext<{ keys: string; painted: RefObject<boolean>; flip: boolean; reduced: boolean; rise: boolean } | null>(null);
 
-export function ListPresence({ children, flip = true }: { children: ReactNode; flip?: boolean }) {
+/**
+ * `arrive="rise"` (a message thread; owner, 2026-10-31, as Fairway's thread does): a row that arrives takes its height at
+ * once and only rises 8px and fades in, so nothing else on screen moves. Opening its height would push every row above
+ * it up frame by frame while the thread re-pins its end (the jitter on send).
+ */
+export function ListPresence({ children, flip = true, arrive = 'open' }: { children: ReactNode; flip?: boolean; arrive?: 'open' | 'rise' }) {
   const reduced = useChReducedMotion();
   const painted = useRef(false);
   useEffect(() => {
@@ -32,7 +37,7 @@ export function ListPresence({ children, flip = true }: { children: ReactNode; f
     .map((c) => (isValidElement(c) ? String(c.key) : ''))
     .join('|');
   return (
-    <ListCtx.Provider value={{ keys, painted, flip, reduced }}>
+    <ListCtx.Provider value={{ keys, painted, flip, reduced, rise: arrive === 'rise' }}>
       <AnimatePresence initial={false}>{children}</AnimatePresence>
     </ListCtx.Provider>
   );
@@ -53,13 +58,13 @@ export function PresenceRow({ as = 'li', children, ref, ...rest }: { as?: RowTag
     );
   }
   return (
-    <Moving as={as} keys={list.keys} flip={list.flip && !list.reduced} still={list.reduced} arrives={list.painted.current} rowRef={ref} {...rest}>
+    <Moving as={as} keys={list.keys} flip={list.flip && !list.reduced} still={list.reduced} rise={list.rise} arrives={list.painted.current} rowRef={ref} {...rest}>
       {children}
     </Moving>
   );
 }
 
-function Moving({ as, keys, flip, still, arrives, rowRef, children, ...rest }: { as: RowTag; keys: string; flip: boolean; still: boolean; arrives: boolean; rowRef?: Ref<HTMLElement>; children: ReactNode } & RowProps) {
+function Moving({ as, keys, flip, still, rise, arrives, rowRef, children, ...rest }: { as: RowTag; keys: string; flip: boolean; still: boolean; rise: boolean; arrives: boolean; rowRef?: Ref<HTMLElement>; children: ReactNode } & RowProps) {
   const present = useIsPresent();
   // A row there at first paint is never styled by the list; one that arrives later opens in, then hands its height,
   // opacity and overflow back to its own stylesheet. Under reduced motion nothing opens, closes or slides.
@@ -76,7 +81,7 @@ function Moving({ as, keys, flip, still, arrives, rowRef, children, ...rest }: {
   );
   const settle = () => {
     if (!present || !el.current) return;
-    for (const p of ['height', 'opacity', 'overflow']) el.current.style.removeProperty(p);
+    for (const p of ['height', 'opacity', 'overflow', 'transform']) el.current.style.removeProperty(p);
   };
   const Row = ROW[as] as typeof m.div;
   return (
@@ -88,8 +93,8 @@ function Moving({ as, keys, flip, still, arrives, rowRef, children, ...rest }: {
       data-leaving={present ? undefined : ''}
       aria-hidden={present ? rest['aria-hidden'] : true}
       inert={!present}
-      initial={arriving ? ENTER : false}
-      animate={arriving ? SHOWN : undefined}
+      initial={arriving ? (rise ? RISE_FROM : ENTER) : false}
+      animate={arriving ? (rise ? RISEN : SHOWN) : undefined}
       onAnimationComplete={arriving ? settle : undefined}
       exit={still ? undefined : LEAVE}
       transition={MOVE}
@@ -113,6 +118,9 @@ const SHOWN = {
   opacity: 1,
   transition: { height: MOVE, opacity: { duration: CH_DUR.base, ease: CH_EASE } },
 };
+// `rise`: the arrival moves on the compositor only (a transform string, which Motion hands to WAAPI), on the base beat.
+const RISE_FROM = { opacity: 0, transform: 'translateY(8px)' };
+const RISEN = { opacity: 1, transform: 'translateY(0px)', transition: { duration: CH_DUR.base, ease: CH_EASE } };
 // The row's own padding, margins and rules close with it, so it ends at nothing and unmounting moves no pixel.
 const LEAVE = {
   height: 0,
