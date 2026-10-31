@@ -7,6 +7,8 @@ const before = (ms: number) => NOW - ms;
 const MIN = 60_000;
 const HOUR = 60 * MIN;
 const DAY = 24 * HOUR;
+/** Noon on a calendar day in the runtime's zone: the date label reads the viewer's own day, so a UTC instant would shift it in UTC+14. */
+const localNoon = (month: number, day: number) => new Date(2026, month - 1, day, 12).getTime();
 
 describe('lib/dates (CONS-16)', () => {
   it('relative time, short: Now, 9m, 2h, 3d, then the date', () => {
@@ -14,7 +16,7 @@ describe('lib/dates (CONS-16)', () => {
     expect(relativeTime(before(9 * MIN), 'short', NOW)).toBe('9m');
     expect(relativeTime(before(2 * HOUR), 'short', NOW)).toBe('2h');
     expect(relativeTime(before(3 * DAY), 'short', NOW)).toBe('3d');
-    expect(relativeTime(Date.parse('2026-09-30T18:00:00Z'), 'short', NOW)).toBe('Sep 30');
+    expect(relativeTime(localNoon(9, 30), 'short', NOW)).toBe('Sep 30');
   });
 
   it('relative time, long: Just now, 5 minutes ago, 2 hours ago, Yesterday, then the date', () => {
@@ -23,7 +25,7 @@ describe('lib/dates (CONS-16)', () => {
     expect(relativeTime(before(5 * MIN), 'long', NOW)).toBe('5 minutes ago');
     expect(relativeTime(before(2 * HOUR), 'long', NOW)).toBe('2 hours ago');
     expect(relativeTime(before(DAY), 'long', NOW)).toBe('Yesterday');
-    expect(relativeTime(Date.parse('2026-10-10T18:00:00Z'), 'long', NOW)).toBe('Oct 10');
+    expect(relativeTime(localNoon(10, 10), 'long', NOW)).toBe('Oct 10');
     expect(relativeTime('not a date', 'long', NOW)).toBe('');
   });
 
