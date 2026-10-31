@@ -3,6 +3,7 @@
 import { deleteInProgressRound } from '@/app/golf/actions/round-partial';
 import { deleteOfflineRound } from '@/lib/offline/indexed-db';
 import { clearEmergencySave, markRoundDiscarded } from '@/lib/utils/emergency-save';
+import { OFFLINE_LINE } from '../ui/Retry';
 
 /**
  * Discard a round in progress from outside its scorecard (the Dock's Resume bar, owner 2026-10-31). The same steps as
@@ -16,7 +17,9 @@ export async function discardRoundInProgress(roundId: string, playerId: string):
     const result = await deleteInProgressRound(roundId);
     if (result && 'success' in result && !result.success) return { ok: false, error: result.error || 'Try again.' };
   } catch {
-    return { ok: false, error: 'Check your connection and try again.' };
+    // Only an offline device gets the offline line; any other throw is not a guess at the cause (B10.3).
+    const offline = typeof navigator !== 'undefined' && navigator.onLine === false;
+    return { ok: false, error: offline ? OFFLINE_LINE : 'Couldn’t discard the round. Try again.' };
   }
   clearEmergencySave(roundId, playerId);
   markRoundDiscarded(roundId, playerId);

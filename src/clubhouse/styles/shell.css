@@ -2854,8 +2854,13 @@ html[data-fw-theme='dark'] .ch-offline {
     cursor: pointer;
     transition: background-color var(--ch-dur-press) var(--ch-ease);
   }
-  .ch-resume__x:active {
+  .ch-resume__x[data-ch-pressed] {
     background: var(--ch-press-well);
+  }
+  @media (hover: hover) {
+    .ch-resume__x:active {
+      background: var(--ch-press-well);
+    }
   }
   .ch-resume__ic {
     display: grid;

@@ -2157,7 +2157,7 @@ path.ch-rt-map__shot {
   border: 0;
   background: none;
   color: inherit;
-  font: inherit;
+  font-family: inherit;
   text-align: left;
   cursor: pointer;
   touch-action: none;
