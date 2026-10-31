@@ -611,7 +611,11 @@ describe('Stats player · phone (v2, Coach - Stats - Mobile.html)', () => {
         <StatsPlayer data={player()} coachId="c1" initialTab="game" reads={PREVIEW_READS_FAILED} />
       </PhoneChromeProvider>,
     );
-    expect(code('CH-5215')!.textContent).toBe('CoachHelm’s reads didn’t load, so the sections don’t say how many there are. Try again in a moment.');
+    // F-0061: an inline notice with Try again in place of the old "try again in a moment" line.
+    const notice = code('CH-5215')! as HTMLElement;
+    expect(notice.querySelector('.ch-notice__title')!.textContent).toBe('CoachHelm’s reads didn’t load');
+    expect(notice.querySelector('.ch-notice__body')!.textContent).toBe('The sections don’t say how many there are.');
+    expect(within(notice).getByRole('button', { name: 'Try again' })).toBeTruthy();
     expect(document.querySelectorAll('[data-ch-code="CH-5215"]')).toHaveLength(1);
     expect(document.querySelector('.ch-gm__reads')).toBeNull();
   });
