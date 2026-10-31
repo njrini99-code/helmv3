@@ -38,15 +38,6 @@ function statusText(p: ChLeaderRow): string {
   return STATUS[p.status];
 }
 
-/**
- * A player whose newest round is not among Home's latest few still has rounds: the board's trend ends on their newest
- * 18-hole score (owner, 2026-10-31: the peek read "Last round —" for a player with a season average). Null with none.
- */
-function latestFromTrend(p: ChLeaderRow): ChPlayerPeek['lastRound'] {
-  const score = p.trend[p.trend.length - 1];
-  return score == null ? null : { score, toPar: null, label: 'Latest 18 holes' };
-}
-
 /** The player peek (P003-C1) from what Home already holds: the row, and the player's newest round if it is in the latest few. */
 export function leaderPeek(p: ChLeaderRow, rounds: ChLatestRound[] = []): ChPlayerPeek {
   const last = rounds.find((r) => r.playerId === p.playerId);
@@ -57,7 +48,7 @@ export function leaderPeek(p: ChLeaderRow, rounds: ChLatestRound[] = []): ChPlay
     sub: p.classYear,
     lastRound: last
       ? { score: last.score, toPar: last.toPar, label: last.meta.split(' \u00b7 ').slice(0, 2).join(' \u00b7 ') }
-      : latestFromTrend(p),
+      : (p.lastRound ?? null),
     avg: p.avg,
     trend: p.trend,
     reason: quiet ? `No round in ${p.quietDays} days` : p.status === 'slipping' ? 'Scoring is creeping up' : null,

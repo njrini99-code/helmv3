@@ -143,4 +143,16 @@ describe('the player peek card (CH-1832)', () => {
       '/golf/dashboard/coachhelm?view=deep-dive&player=p-theo',
     ]);
   });
+
+  // Owner, 2026-10-31: "last round played and there was just no data there". A page that loaded no rounds (Calendar,
+  // Messages) leaves the figures out; null still says the player has none.
+  it('draws no Last round or Average the page did not load, and "—" only when there is none', () => {
+    const { unmount } = render(<PlayerPeekCard p={{ id: 'p-theo', name: 'Theo Marchetti', sub: 'Junior' }} />);
+    expect(screen.queryByText('Last round')).toBeNull();
+    expect(screen.queryByText('Average')).toBeNull();
+    unmount();
+    render(<PlayerPeekCard p={{ id: 'p-theo', name: 'Theo Marchetti', lastRound: null, avg: null }} />);
+    expect(screen.getByText('Last round')).toBeTruthy();
+    expect(screen.getByText('Average')).toBeTruthy();
+  });
 });

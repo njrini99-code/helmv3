@@ -106,6 +106,8 @@ export interface ChLeaderRow {
   status: ChForm;
   /** Days since the player's last countable round of any length, in the team's timezone. */
   quietDays: number | null;
+  /** That newest countable round, for the player peek ("Last round 74 +2, Pinehurst · Sat 25 Oct"); null with none scored. */
+  lastRound?: { score: number; toPar: number | null; label: string } | null;
   /** Injured or away (display only). An out player is not flagged for a quiet stretch. Absent reads as available. */
   availability?: ChAvailability;
 }
@@ -418,6 +420,13 @@ export async function loadCoachHome(input: {
   // Recency counts any countable round, nine holes included.
   const lastPlayed = new Map<string, string>();
   for (const r of seasonRounds) if (!lastPlayed.has(r.player_id)) lastPlayed.set(r.player_id, r.round_date.slice(0, 10));
+  const peekDate = new Intl.DateTimeFormat('en-GB', { timeZone: 'UTC', weekday: 'short', day: 'numeric', month: 'short' });
+  const lastScored = new Map<string, NonNullable<ChLeaderRow['lastRound']>>();
+  for (const r of seasonRounds) {
+    if (lastScored.has(r.player_id) || r.total_score == null) continue;
+    const day = peekDate.format(new Date(`${r.round_date.slice(0, 10)}T12:00:00Z`));
+    lastScored.set(r.player_id, { score: r.total_score, toPar: r.score_to_par ?? null, label: [r.course_name, day, r.holes_played != null && r.holes_played < 18 ? `${r.holes_played} holes` : null].filter(Boolean).join(' · ') });
+  }
   const rows: ChLeaderRow[] = [];
   for (const p of roster) {
     const list = byPlayer.get(p.id);
@@ -434,6 +443,7 @@ export async function loadCoachHome(input: {
       sgPerRound: season.sgPerRound,
       status: season.status,
       quietDays: lastPlayed.has(p.id) ? Math.max(0, daysBetween(lastPlayed.get(p.id)!, today)) : null,
+      lastRound: lastScored.get(p.id) ?? null,
       availability: availabilityById.get(p.id) ?? 'available',
     });
   }
