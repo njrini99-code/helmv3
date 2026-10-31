@@ -1889,7 +1889,10 @@ export async function loadGolfConversationRail(
   // stop. MessageConversationRail keeps rows on screen when
   // `error && conversations.length > 0`, so the partial case stays readable.
   const loadFailure = error ?? groupConvsError;
-  if (loadFailure && !conversationsData?.length) {
+  // The RPC is the only source of direct messages: when it failed, rows recovered from the team-chat supplement are
+  // the groups alone, and an "ok" rail of them silently dropped every DM. That is a failure too (the hook keeps the
+  // last readable inbox and shows Retry); only a supplement failure keeps the RPC's rows as they are.
+  if (loadFailure && (error || !conversationsData?.length)) {
     // P257: a real backend failure (fetch error AND no rows recovered) must
     // NOT masquerade as an empty inbox. Flag it so the rail shows a
     // recoverable error with Retry instead of the cheerful empty.
