@@ -993,6 +993,7 @@ them would bury everything above.
 | `docs/clubhouse/pages/P002-home/changes/2026-10-30-coach-asks-separator.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P002-home/changes/2026-10-30-earlier-reads-and-prefetch.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P002-home/changes/2026-10-30-night-contrast.md` | current | - | - | - | - |
+| `docs/clubhouse/pages/P002-home/changes/2026-10-31-leaderboard-client.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P003-roster/CHANGELOG.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P003-roster/CONTRACT.md` | current | - | - | yes | - |
 | `docs/clubhouse/pages/P003-roster/DESIGN.md` | current | - | - | - | - |
