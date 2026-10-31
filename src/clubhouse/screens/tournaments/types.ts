@@ -248,6 +248,8 @@ export interface ChTourLineupState {
 
 export interface ChTourEvent {
   id: string;
+  /** Every round's calendar entry is cancelled: off Up next and Coming up, kept in the season's list. */
+  cancelled?: boolean;
   seasonId: string;
   name: string;
   /** "Oakmont", for tight places. */

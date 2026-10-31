@@ -13,7 +13,7 @@ import { InlineNotice } from '../../ui/Notices';
 import { Section } from '../../ui/Section';
 import { EmptyState, SkelRows, Skeleton } from '../../ui/States';
 import { useRefresh } from '../../lib/use-refresh';
-import { countLabel, countsEachRound, holesLabel, inDays, daysUntil, plural, playLabel, tourDay, tourRange } from './format';
+import { countLabel, countsEachRound, holesLabel, inDays, daysUntil, teamToday, plural, playLabel, tourDay, tourRange } from './format';
 import { SeasonLedger } from './SeasonLedger';
 import { TourChip, TourFailed, TourHead, TourLoading, TourMain, TourPhoneTop, TourViewSwitch, tourGate, useTourPhone } from './parts';
 import { useTourPaths } from './paths';
@@ -74,7 +74,7 @@ function HomeReady({ data, phone, live }: { data: ChTourHomeData; phone: boolean
   const thisSeason = data.events.filter((e) => e.seasonId === data.season.id);
   const empty = !data.errors.events && thisSeason.length === 0;
   const courseName = (id: string | undefined) => (id ? (data.courses[id]?.name ?? null) : null);
-  const upcoming = useMemo(() => data.events.filter((e) => e.status !== 'complete').sort((a, b) => a.startDate.localeCompare(b.startDate)), [data.events]);
+  const upcoming = useMemo(() => data.events.filter((e) => e.status !== 'complete' && !e.cancelled).sort((a, b) => a.startDate.localeCompare(b.startDate)), [data.events]);
   // P-5 4.11.2: the hero looks across the season boundary; the rest of next season folds into its own group.
   const hero = (data.next && upcoming.find((e) => e.id === data.next?.eventId)) ?? upcoming[0] ?? null;
   const later = upcoming.filter((e) => e !== hero && e.seasonId > data.season.id);
@@ -171,7 +171,7 @@ function NextCard({ event: e, data, phone, today = false, arrived = false }: { e
   const href = { lineup: paths.lineup(e.id), desk: paths.desk(e.id), live: paths.live(e.id), review: paths.review(e.id) }[act.to];
   const missing = next?.readiness.find((r) => !r.done);
   const live = e.status === 'live';
-  const days = daysUntil(data.now, e.startDate);
+  const days = daysUntil(teamToday(data.now, data.team.timezone), e.startDate);
   const place = data.courses[e.courseIds[0] ?? '']?.name;
   const summary = `${holesLabel(e)} · ${playLabel(e.format)}${countsEachRound(e.format) ? ` · ${countLabel(e.format)} each round` : ` · ${countLabel(e.format)}`}.`;
   const pickLineup = act.to === 'lineup';
@@ -179,7 +179,7 @@ function NextCard({ event: e, data, phone, today = false, arrived = false }: { e
     <FeatureCard
       className={'ch-tour-home-feat ch-tour-washable' + (arrived ? ' ch-tour-changed' : '')}
       kicker={`${tourRange(e.startDate, e.endDate)}${place ? ` · ${place}` : ''}`}
-      chip={live ? 'Live now' : inDays(data.now, e.startDate)}
+      chip={live ? 'Live now' : inDays(teamToday(data.now, data.team.timezone), e.startDate)}
       soon={live || (days >= 0 && days <= 1)}
       label={`Up next: ${e.name}`}
       title={

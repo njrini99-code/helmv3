@@ -272,8 +272,8 @@ async function readEvents(ctx: TourCtx, tz: string, opts: { ids?: string[]; own?
   const rids = rounds.map((r) => r.round_event_id);
   const own = opts.own;
   const [events, entries, lineups, playerRounds, fieldTeams] = await Promise.all([
-    allIn<{ id: string; start_time: string }>('roundEvents', rids, (chunk, from, to) =>
-      ctx.supabase.from('golf_events').select('id, start_time').in('id', chunk).order('id', { ascending: true }).range(from, to),
+    allIn<{ id: string; start_time: string; all_day: boolean | null; status: string | null }>('roundEvents', rids, (chunk, from, to) =>
+      ctx.supabase.from('golf_events').select('id, start_time, all_day, status').in('id', chunk).order('id', { ascending: true }).range(from, to),
     ),
     own
       ? Promise.resolve([] as TourEntryRow[])
@@ -319,6 +319,10 @@ async function readEvents(ctx: TourCtx, tz: string, opts: { ids?: string[]; own?
   const teeIds = [...new Set(rounds.map((r) => r.tee_id).filter((x): x is string => !!x))];
   const { courses, tees } = await readCourses(ctx, courseIds, teeIds);
   const startById = new Map(events.map((e) => [e.id, e.start_time]));
+  // An all-day round is stored at midnight UTC of its day: read in the team's zone it fell on the day before (audit
+  // 2026-10-31: every all-day tournament round on two teams). A cancelled calendar entry is a cancelled round.
+  const allDayById = new Map(events.map((e) => [e.id, e.all_day === true]));
+  const cancelledById = new Map(events.map((e) => [e.id, e.status === 'cancelled']));
 
   const raws: TourRawEvent[] = ts.map((t) => {
     const mine = rounds.filter((r) => r.tournament_id === t.id);
@@ -330,7 +334,8 @@ async function readEvents(ctx: TourCtx, tz: string, opts: { ids?: string[]; own?
         const start = startById.get(r.round_event_id);
         const courseId = r.course_id ?? t.course_id;
         const par18 = (r.tee_id ? tees.get(r.tee_id)?.par : null) ?? (courseId ? (courses[courseId]?.par ?? null) : null);
-        return { ...r, date: start ? isoDay(start, tz) : t.start_date, par: eventRoundPar(par18, t.holes_per_round) };
+        const date = start ? (allDayById.get(r.round_event_id) ? start.slice(0, 10) : isoDay(start, tz)) : t.start_date;
+        return { ...r, date, cancelled: cancelledById.get(r.round_event_id) === true, par: eventRoundPar(par18, t.holes_per_round) };
       }),
       entries: entries.filter((e) => e.tournament_id === t.id),
       roundLineups: lineups.filter((l) => ids.has(l.round_event_id)),
@@ -388,7 +393,7 @@ export async function loadTournamentsHome(ctx: TourCtx): Promise<TourLoad<ChTour
     const events = read.ok ? read.value.events : [];
     const seasons = seasonsFor(events.map((e) => e.startDate), info.today, info.gender, profiles);
     const season = seasons.find((s) => s.id === seasonIdOf(info.today)) ?? seasons[0]!;
-    const upcoming = events.filter((e) => e.status !== 'complete').sort((a, b) => a.startDate.localeCompare(b.startDate));
+    const upcoming = events.filter((e) => e.status !== 'complete' && !e.cancelled).sort((a, b) => a.startDate.localeCompare(b.startDate));
     const links = await section('home', 'links', () => linkTeaser(ctx, events));
     // P-5 4.11.3: tournament events on the calendar this season with no tournament row yet (a coach's Set up from
     // calendar). Series and cancelled events can't become tournaments, so they aren't offered.
@@ -440,7 +445,7 @@ export async function loadTournamentsHome(ctx: TourCtx): Promise<TourLoad<ChTour
 
 // ── Event desk (and its Review tab) ─────────────────────────────────────────────────────────────────────────────
 
-async function readReview(ctx: TourCtx, e: ChTourEvent): Promise<ChTourReview> {
+async function readReview(ctx: TourCtx, e: ChTourEvent, players: ChTourPlayer[] = []): Promise<ChTourReview> {
   const [reviews, notes, reflections] = await Promise.all([
     all<TourReviewRow>('review', (from, to) => tourTable(ctx.supabase, 'golf_tournament_reviews').select(TOUR_COLUMNS.golf_tournament_reviews).eq('tournament_id', e.id).order('tournament_id').range(from, to)),
     all<TourPlayerNoteRow>('playerNotes', (from, to) => tourTable(ctx.supabase, 'golf_tournament_player_notes').select(TOUR_COLUMNS.golf_tournament_player_notes).eq('tournament_id', e.id).order('player_id').range(from, to)),
@@ -468,7 +473,8 @@ async function readReview(ctx: TourCtx, e: ChTourEvent): Promise<ChTourReview> {
         shared: { shot: shared, decision: shared, focus: shared },
       };
     }),
-    notes: reflections.map((r) => ({ id: `reflection:${r.player_id}`, author: r.player_id, kind: 'reflection' as const, text: r.body })),
+    // The player's name, never their id (audit 2026-10-31: the Review drew reflections under a uuid).
+    notes: reflections.map((r) => ({ id: `reflection:${r.player_id}`, author: players.find((p) => p.id === r.player_id)?.name ?? 'A player', kind: 'reflection' as const, text: r.body })),
     missingReflections: team.filter((id) => !reflections.some((r) => r.player_id === id)),
     savedAt: rv?.updated_at ?? null,
   };
@@ -499,7 +505,7 @@ export async function loadTournamentDesk(ctx: TourCtx, eventId: string): Promise
           ),
         ),
       ),
-      section('desk', 'review', () => readReview(ctx, event)),
+      section('desk', 'review', () => readReview(ctx, event, players)),
       section('desk', 'adviceGivers', async () => {
         const rows = await all<TourAdviceGiverRow>('adviceGivers', (from, to) =>
           tourTable(ctx.supabase, 'golf_tournament_advice_givers').select(TOUR_COLUMNS.golf_tournament_advice_givers).eq('tournament_id', eventId).order('user_id').range(from, to),
@@ -565,11 +571,14 @@ export function historyTrend(events: readonly ChTourEvent[], courses: Record<str
   return events
     .filter((e) => e.status === 'complete')
     .map((e) => {
-      const team = e.playerRounds.filter((p) => p.role !== 'individual' && p.total != null);
+      // A withdrawn or disqualified card is not a played score (Compare leaves it out too).
+      const team = e.playerRounds.filter((p) => p.role !== 'individual' && p.total != null && p.status === 'ok');
       // Against the course rating; a course without one is read against its par (the same stand-in the comparison uses).
+      // The rating is an 18-hole figure: a 9-hole round reads against half of it, as readPool does.
       const vs = (p: (typeof team)[number]) => {
         const round = e.rounds.find((r) => r.roundEventId === p.roundEventId);
-        const rating = round ? (courses[round.courseId]?.rating ?? round.par) : 72;
+        const rated = round ? courses[round.courseId]?.rating : null;
+        const rating = rated != null ? (e.format.holes === 9 ? rated / 2 : rated) : round ? round.par : 72;
         return p.total! - rating;
       };
       const m = team.filter((p) => matched.includes(p.playerId));

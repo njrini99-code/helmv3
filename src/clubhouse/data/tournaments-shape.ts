@@ -173,6 +173,8 @@ export interface TourRawRound extends TourRoundRow {
   date: string;
   /** One player's par for the round (the tee's, else the course's); null when neither is known. */
   par: number | null;
+  /** Its calendar entry is cancelled: the round will not be played, so it never holds the event open. */
+  cancelled?: boolean;
 }
 
 export interface TourRawEvent {
@@ -254,6 +256,21 @@ export function lineupStateOf(t: TourRow, rounds: readonly TourRawRound[], entri
  * One event from its rows. Rounds that have not started and have no score add no team round; a player's score is the
  * entered total, else the linked GolfHelm round's once it is completed (D-82: golf_rounds is never changed).
  */
+const GENERIC_TAIL = /\s+(invitational|intercollegiate|classic|championships?|tournament|open|collegiate|cup)$/i;
+
+/**
+ * The event's name for tight places. The first word alone made "Tar" of the Tar Heel Invitational and "Fall vs Fall" of
+ * two fall events (audit 2026-10-31): a short name stays whole, a long one drops its generic last words, else keeps two.
+ */
+export function shortName(name: string): string {
+  const full = name.trim();
+  if (full.length <= 20) return full;
+  let s = full;
+  while (GENERIC_TAIL.test(s)) s = s.replace(GENERIC_TAIL, '');
+  if (s && s !== full && s.length <= 24) return s;
+  return full.split(/\s+/).slice(0, 2).join(' ');
+}
+
 export function shapeEvent(raw: TourRawEvent, now: string): ChTourEvent {
   const { t } = raw;
   const format: TourFormat = formatOf(t.format, t.players_per_team, t.counting, t.holes_per_round);
@@ -328,8 +345,11 @@ export function shapeEvent(raw: TourRawEvent, now: string): ChTourEvent {
   const ev = engineRounds.length ? teamEvent(engineRounds) : null;
   const result: TeamEventResult | null = ev && ev.kind !== 'none' ? { kind: ev.kind, total: ev.total, toPar: ev.toPar, rounds: teamRounds, droppedTotal: ev.droppedTotal } : null;
 
-  const allFinal = rounds.length > 0 && rounds.every((r) => r.status === 'final');
-  const anyStarted = rounds.some((r) => r.status !== 'upcoming');
+  // A round cancelled on the calendar will never be final: the event completes on the rounds that are played.
+  const played = rounds.filter((r) => !r.cancelled);
+  const cancelled = rounds.length > 0 && played.length === 0;
+  const allFinal = played.length > 0 && played.every((r) => r.status === 'final');
+  const anyStarted = played.some((r) => r.status !== 'upcoming');
   const status: ChTourEvent['status'] = allFinal ? 'complete' : anyStarted ? 'live' : 'upcoming';
   const suspended = rounds.some((r) => r.status === 'suspended_weather' || r.status === 'suspended_other');
   const trust: ChTourTrust = official ? 'official' : allFinal ? 'final' : suspended ? 'suspended' : anyStarted ? 'live' : 'upcoming';
@@ -344,7 +364,7 @@ export function shapeEvent(raw: TourRawEvent, now: string): ChTourEvent {
     id: t.id,
     seasonId: seasonIdOf(t.start_date),
     name: t.name,
-    short: t.name.split(/\s+/)[0] ?? t.name,
+    short: shortName(t.name),
     host: t.host,
     startDate: t.start_date,
     endDate: t.end_date,
@@ -353,6 +373,7 @@ export function shapeEvent(raw: TourRawEvent, now: string): ChTourEvent {
     kind: EVENT_KIND[t.event_kind],
     tiebreak: t.tiebreak,
     status,
+    cancelled,
     trust,
     mood,
     rounds: viewRounds,

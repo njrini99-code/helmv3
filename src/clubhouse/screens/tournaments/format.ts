@@ -25,6 +25,18 @@ export function tourRange(start: string, end: string): string {
   return `${tourDay(start)} – ${tourDay(end, sameMonth ? { day: 'numeric' } : { month: 'short', day: 'numeric' })}`;
 }
 
+/**
+ * The team's own date at `now` (yyyy-mm-dd). `now` is a UTC instant, so its first ten characters are tomorrow for about
+ * four hours each US evening: an event today read "Tomorrow" (audit 2026-10-31).
+ */
+export function teamToday(now: string, timezone: string): string {
+  try {
+    return new Intl.DateTimeFormat('en-CA', { timeZone: timezone, year: 'numeric', month: '2-digit', day: '2-digit' }).format(new Date(now));
+  } catch {
+    return now.slice(0, 10);
+  }
+}
+
 /** Whole days from `now`'s date to `iso`'s date (negative once it has passed). */
 export function daysUntil(now: string, iso: string): number {
   const d = (s: string) => Date.UTC(Number(s.slice(0, 4)), Number(s.slice(5, 7)) - 1, Number(s.slice(8, 10)));
