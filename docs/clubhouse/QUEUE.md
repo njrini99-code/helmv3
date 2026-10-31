@@ -409,6 +409,18 @@ its rows together and does not map them one to one.
 | AUD-F-0033 | Team Hub coach second wave starts from the clock read | Clubhouse fixes | in progress | | claude/audit-fix-07-speed (Clubhouse audit fix plan, PR 7); no Bridge IDs or CH codes needed |
 | AUD-F-0034 | Home leaderboard rows prefetch on press | Clubhouse fixes | in progress | | claude/audit-fix-07-speed (Clubhouse audit fix plan, PR 7); no Bridge IDs or CH codes needed |
 | AUD-F-0045 | Start DM speed: depends on PR 1 (#2412); follow-up | Clubhouse fixes | in progress | | claude/audit-fix-07-speed (Clubhouse audit fix plan, PR 7); no Bridge IDs or CH codes needed |
+| AUD-F-0016 | Tournaments Compare: the table holds only rows | Clubhouse fixes | in progress | | claude/audit-fix-08-a11y-touch-type (Clubhouse audit fix plan, PR 8); no Bridge IDs or CH codes needed |
+| AUD-F-0021 | Phone selects and small buttons reach 44pt | Clubhouse fixes | in progress | | claude/audit-fix-08-a11y-touch-type (Clubhouse audit fix plan, PR 8); no Bridge IDs or CH codes needed |
+| AUD-F-0022 | Desktop links, chips and handles reach 24px | Clubhouse fixes | in progress | | claude/audit-fix-08-a11y-touch-type (Clubhouse audit fix plan, PR 8); no Bridge IDs or CH codes needed |
+| AUD-F-0024 | Compare tags and Hub captions on the 12 step on the phone | Clubhouse fixes | in progress | | claude/audit-fix-08-a11y-touch-type (Clubhouse audit fix plan, PR 8); no Bridge IDs or CH codes needed |
+| AUD-F-0042 | CoachHelm evidence table is a focusable named region | Clubhouse fixes | in progress | | claude/audit-fix-08-a11y-touch-type (Clubhouse audit fix plan, PR 8); no Bridge IDs or CH codes needed |
+| AUD-F-0044 | Hover never removes the focus ring | Clubhouse fixes | in progress | | claude/audit-fix-08-a11y-touch-type (Clubhouse audit fix plan, PR 8); no Bridge IDs or CH codes needed |
+| AUD-F-0050 | Chart labels on the 12 step on the phone | Clubhouse fixes | in progress | | claude/audit-fix-08-a11y-touch-type (Clubhouse audit fix plan, PR 8); no Bridge IDs or CH codes needed |
+| AUD-F-0063 | No skipped heading levels on Stats and Team Hub | Clubhouse fixes | in progress | | claude/audit-fix-08-a11y-touch-type (Clubhouse audit fix plan, PR 8); no Bridge IDs or CH codes needed |
+| AUD-F-0064 | Every region on My stats has its own name | Clubhouse fixes | in progress | | claude/audit-fix-08-a11y-touch-type (Clubhouse audit fix plan, PR 8); no Bridge IDs or CH codes needed |
+| AUD-F-0065 | Skip to content appears on focus at once | Clubhouse fixes | in progress | | claude/audit-fix-08-a11y-touch-type (Clubhouse audit fix plan, PR 8); no Bridge IDs or CH codes needed |
+| AUD-F-0069 | Cut-off labels: browser pass pending | Clubhouse fixes | in progress | | claude/audit-fix-08-a11y-touch-type (Clubhouse audit fix plan, PR 8); no Bridge IDs or CH codes needed |
+| AUD-F-0073 | Avatar initials on the type scale | Clubhouse fixes | in progress | | claude/audit-fix-08-a11y-touch-type (Clubhouse audit fix plan, PR 8); no Bridge IDs or CH codes needed |
 
 <!-- markdownlint-enable MD013 -->
 

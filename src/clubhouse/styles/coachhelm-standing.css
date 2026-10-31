@@ -631,6 +631,7 @@
 }
 .ch-hs-ld__why {
   all: unset;
+  position: relative;
   box-sizing: border-box;
   cursor: pointer;
   display: flex;

@@ -736,6 +736,8 @@ export function TeamHub({
 
           {shownTab === 'ann' && (
             <SectionBoundary surface="hub.announcements" label="Announcements" code="CH-10205">
+              {/* The tab's own heading, so each post's h3 sits under an h2, not straight under the page's h1 (F-0063). */}
+              <h2 className="ch-sr-only">Announcements</h2>
               <div className={'ch-hb-list' + (anns.length ? ' is-edited' : '') + (coach && !phone && anns.length ? ' has-margin' : '')}>
                 {coach && <NewAnnouncementLine name={viewerName} onOpen={() => setCompose(true)} />}
                 {data.announcements.error ? (

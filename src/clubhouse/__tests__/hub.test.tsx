@@ -2861,3 +2861,16 @@ describe('Team Hub · instant writes (F-0045)', () => {
     await waitFor(() => expect(router.refresh).toHaveBeenCalled());
   });
 });
+
+describe('Team Hub · heading order (F-0063)', () => {
+  it('the Announcements tab names its list with an h2 before the posts’ h3s', () => {
+    show(PREVIEW_HUB_COACH, writes(), 'ann');
+    const panel = screen.getByRole('tabpanel');
+    const levels = within(panel)
+      .getAllByRole('heading')
+      .map((h) => Number(h.tagName.slice(1)));
+    expect(levels[0]).toBe(2);
+    for (let i = 1; i < levels.length; i++) expect(levels[i]! - levels[i - 1]!).toBeLessThanOrEqual(1);
+    expect(within(panel).getByRole('heading', { level: 2, name: 'Announcements' })).toBeTruthy();
+  });
+});

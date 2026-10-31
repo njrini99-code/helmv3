@@ -3633,7 +3633,8 @@
   .ch-stm-figs dt,
   .ch-stm-figs dd + dd,
   .ch-gx-sec__c em,
-  .ch-gx-type {
+  .ch-gx-type,
+  .ch-sv-rt__t {
     font-size: calc(12 * var(--ch-type-k));
   }
   .ch-stm-chart__t {
@@ -7307,6 +7308,12 @@ html[data-fw-theme='dark'] .ch-sv-mix .is-double {
 .ch-sv-tr__menu .ch-select select {
   width: auto;
   height: 34px;
+}
+/* On the phone the window select is a full 44 to the finger, like every select (F-0021). */
+@media (max-width: 820px) {
+  .ch-sv-tr__menu .ch-select select {
+    height: 44px;
+  }
 }
 .ch-sv-tr__plot {
   --ch-tr-rank: 40px;

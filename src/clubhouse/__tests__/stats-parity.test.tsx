@@ -735,7 +735,8 @@ describe('Rounds tab · bests and comparison', () => {
   it('score by round for the whole window, the personal bests with their course and date, and this window against the one before with its change coloured by direction', async () => {
     showPlayer(player());
     await openTab(/Rounds/);
-    const card = (id: string) => document.querySelector(`[aria-labelledby="${id}"]`) as HTMLElement;
+    // The block by its heading's id: Score by round repeats its zone's title, so it names no region of its own (F-0064).
+    const card = (id: string) => document.getElementById(id)!.closest('section') as HTMLElement;
     expect(card('rx-score').querySelector('svg.ch-gx-line')!.getAttribute('aria-label')).toContain('Aug 30 73');
     const bests = card('rx-bests');
     expect(tile(bests, 'Best score').textContent).toContain('72');
