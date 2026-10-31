@@ -1263,3 +1263,14 @@ export function collectScopedNumbers(
   }
   return [];
 }
+
+/**
+ * The numbers an envelope supports: its `detail` ({@link collectScopedNumbers}) and the counts and read window its own
+ * `summary` states ("Nothing scheduled in the next 60 days.", "14 open tasks, 13 overdue."). A summary is written by
+ * the tool from what it read, so the model restating it is grounded. Summary numbers bind to no player or metric.
+ * Owner, 2026-10-31: an answer repeating "the next 60 days" was withheld because only `detail` was read.
+ */
+export function collectEnvelopeNumbers(envelope: Pick<ToolEnvelope, 'summary' | 'detail'>): ScopedNumber[] {
+  const fromSummary = numbersInText(envelope.summary).map((value) => ({ value, player_id: null, metric_key: null }));
+  return [...(envelope.detail === undefined ? [] : collectScopedNumbers(envelope.detail)), ...fromSummary];
+}

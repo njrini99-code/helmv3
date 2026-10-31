@@ -178,10 +178,10 @@ function lastExposure(): ExposureArg[] {
 const tablesRead = (client: SupabaseClient): string[] => vi.mocked(client.from).mock.calls.map(([t]) => String(t));
 
 describe('coachhelm_reads_v1_copy', () => {
-  it('is registered, off in production and development, and on only in preview (the Demo University dry run)', () => {
+  it('is registered, on in production and preview (owner, 2026-10-31), off in development', () => {
     for (const environment of ['production', 'preview', 'development'] as const) {
       expect(evaluateFlag('coachhelm_reads_v1_copy', { environment, skipTelemetry: true })).toEqual({
-        value: environment === 'preview',
+        value: environment !== 'development',
         reason: 'environment_rollout',
       });
     }
