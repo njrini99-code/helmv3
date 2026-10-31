@@ -2,6 +2,7 @@
 
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useNotificationBadges } from '@/contexts/notification-badge-context';
 import { useGolfConversations, useGolfMessages, type GolfConversationWithMeta } from '@/hooks/golf/use-golf-messages';
 import { MESSAGE_REACTIONS, summarizeReactions, useMessageReactions } from '@/hooks/golf/use-message-reactions';
 import { useMessageAttachments } from '@/hooks/golf/use-message-attachments';
@@ -128,7 +129,8 @@ export function Messages({ data }: { data: ChMessagesData }) {
           markedUnread: marked.has(c.id),
           lastAt: c.last_message?.created_at ?? c.updated_at ?? null,
           lastSenderId: c.last_message?.sender_id ?? null,
-          lastText: railText(decodeMessageContent(c.last_message?.content ?? '')),
+          // A last message with no words is an attachment sent alone.
+          lastText: railText(decodeMessageContent(c.last_message?.content ?? '')) || (c.last_message ? 'Sent an attachment' : ''),
           lastIsPoll: isPollFallbackText(decodeMessageContent(c.last_message?.content ?? '')),
           creatorId: c.creator_id ?? null,
         };
@@ -138,6 +140,20 @@ export function Messages({ data }: { data: ChMessagesData }) {
   // A one-to-one thread just made, shown at once until the list's next read carries it (F-0045).
   const [started, setStarted] = useState<ChConv | null>(null);
   const convs = useMemo(() => (started && !loadedConvs.some((c) => c.id === started.id) ? [started, ...loadedConvs] : loadedConvs), [started, loadedConvs]);
+  // The nav badge follows the rail: it polls every 45 s, so reading a thread left the tab's count up for that long, and
+  // a new message raised the rail long before the badge (audit 2026-10-31). A beat after the rail's total moves, after
+  // the read mark has landed, the badge reads again.
+  const badges = useNotificationBadges();
+  const railUnread = convs.reduce((n, c) => n + (c.unread ?? 0), 0);
+  const firstRail = useRef(true);
+  useEffect(() => {
+    if (firstRail.current) {
+      firstRail.current = false;
+      return;
+    }
+    const t = window.setTimeout(() => void badges.refetch(), 1200);
+    return () => window.clearTimeout(t);
+  }, [railUnread]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const msgs = useGolfMessages(selectedId ?? '', data.viewerUserId, { deferMarkRead: !!selectedId && selectedId === autoOpened, classAwareness: awareness });
   const liveIds = useMemo(() => msgs.messages.filter((m) => m.conversation_id === selectedId && !m.sendFailed).map((m) => m.id), [msgs.messages, selectedId]);

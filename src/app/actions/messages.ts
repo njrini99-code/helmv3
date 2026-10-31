@@ -1487,7 +1487,9 @@ async function searchGolfMessagesImpl(
       .select('conversation_id')
       .eq('user_id', user.id);
 
-    if (participantError || !participantRows || participantRows.length === 0) {
+    // A failed read is not "no results" (contracts 70403, 70619): the page says the search failed.
+    if (participantError) return { results: [], error: 'Search failed' };
+    if (!participantRows || participantRows.length === 0) {
       return { results: [] };
     }
 
@@ -1537,7 +1539,8 @@ async function searchGolfMessagesImpl(
 
     const { data: matchingMessages, error: messagesError } = await messagesQuery;
 
-    if (messagesError || !matchingMessages || matchingMessages.length === 0) {
+    if (messagesError) return { results: [], error: 'Search failed' };
+    if (!matchingMessages || matchingMessages.length === 0) {
       return { results: [] };
     }
 
@@ -1694,20 +1697,24 @@ async function getGolfActiveTeamConversationIdsImpl(): Promise<string[] | null> 
     if (!activeTeam) return null; // fail-open: never blank the rail
 
     // The user's participant conversations that belong to the active team.
-    const { data: parts } = await supabase
+    const { data: parts, error: partsError } = await supabase
       .from('golf_conversation_participants')
       .select('conversation_id')
       .eq('user_id', user.id);
+    // Fail-open, as the docstring says: a failed read is "don't scope", never an empty allow-list (which drew a
+    // multi-team coach's inbox as "No conversations yet"; audit 2026-10-31).
+    if (partsError) return null;
     const partIds = [
       ...new Set((parts ?? []).map((p) => p.conversation_id).filter(Boolean)),
     ] as string[];
     if (partIds.length === 0) return [];
 
-    const { data: teamConvs } = await supabase
+    const { data: teamConvs, error: teamConvsError } = await supabase
       .from('golf_conversations')
       .select('id')
       .eq('team_id', activeTeam)
       .in('id', partIds);
+    if (teamConvsError) return null;
 
     return (teamConvs ?? []).map((c) => c.id as string);
   } catch (err) {

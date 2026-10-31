@@ -647,6 +647,11 @@ export function useGolfMessages(
    * belongs to a thread nobody is looking at and is dropped.
    */
   const liveConversationIdRef = useRef(conversationId);
+  // Failed sends per conversation, kept across refetches and thread switches until sent again or discarded.
+  const clientOnlyRowsRef = useRef(new Map<string, MessageWithReadStatus[]>());
+  const forgetClientOnly = (messageId: string) => {
+    for (const [conv, list] of clientOnlyRowsRef.current) clientOnlyRowsRef.current.set(conv, list.filter((m) => m.id !== messageId));
+  };
   liveConversationIdRef.current = conversationId;
 
   // Fetch other participant's last_read_at for read receipts
@@ -812,7 +817,24 @@ export function useGolfMessages(
     // entirely rather than guess at an unscoped key.
     const uidNow = currentUserIdRef.current ?? uidAtStart;
     if (uidNow) writeCachedResourceIfCurrent(messagesCacheKey(conversationId, uidNow), fresh, fetchEpoch);
-    setMessages(fresh);
+    // A send that failed (or is still on its way) is only on this device: a refetch, or a trip to another thread and
+    // back, replaced the list with the server's and the bubble and its words were gone (audit 2026-10-31; contracts
+    // 71201, 71301). They are kept beside the server's rows until sent or discarded.
+    setMessages((prev) => {
+      const store = clientOnlyRowsRef.current;
+      for (const m of prev) {
+        if (!m.sendFailed || m.conversation_id === conversationId) continue;
+        const list = store.get(m.conversation_id) ?? [];
+        if (!list.some((x) => x.id === m.id)) store.set(m.conversation_id, [...list, m]);
+      }
+      const here = new Map<string, MessageWithReadStatus>();
+      for (const m of store.get(conversationId) ?? []) here.set(m.id, m);
+      for (const m of prev) if ((m.sendFailed || m.pending) && m.conversation_id === conversationId) here.set(m.id, m);
+      const keep = [...here.values()].filter((m) => !fresh.some((f) => f.id === m.id));
+      store.set(conversationId, keep.filter((m) => m.sendFailed));
+      if (!keep.length) return fresh;
+      return [...fresh, ...keep].sort((a, b) => String(a.created_at).localeCompare(String(b.created_at)));
+    });
     setLoading(false);
 
     // Mark messages as read. Awaited + caught so a DB error in the server action
@@ -1204,7 +1226,8 @@ export function useGolfMessages(
       prev.map(m =>
         // The outcome goes with the flag. Left behind, a row that retried out
         // of `unknown` into `refused` would still be carrying the old label.
-        m.id === messageId ? { ...m, sendFailed: false, sendOutcome: undefined } : m,
+        // Pending while it goes again, so a refetch keeps it (and the success below clears it).
+        m.id === messageId ? { ...m, sendFailed: false, sendOutcome: undefined, pending: true } : m,
       ),
     );
 
@@ -1221,6 +1244,8 @@ export function useGolfMessages(
         markSendFailed(messageId, 'refused');
         return false;
       }
+      forgetClientOnly(messageId);
+      setMessages(prev => prev.map(m => (m.id === messageId && m.pending ? { ...m, pending: false } : m)));
       return true;
     } catch (error) {
       markSendFailed(messageId, classifySendFailure(error));
@@ -1241,6 +1266,7 @@ export function useGolfMessages(
    * real message, which is `removeMessage`'s job.
    */
   const discardFailedMessage = (messageId: string) => {
+    forgetClientOnly(messageId);
     setMessages(prev => prev.filter(m => !(m.id === messageId && m.sendFailed)));
   };
 
@@ -1985,8 +2011,10 @@ export async function loadGolfConversationRail(
         id: conv.id,
         created_at: conv.created_at,
         updated_at: conv.updated_at,
-        last_message: conv.last_message_content ? {
-          content: conv.last_message_content,
+        // A message with no words (a photo or a file sent alone) is still the last message: '' was read as none, and the
+        // row said "No messages yet" beside its unread count (audit 2026-10-31).
+        last_message: conv.last_message_content || conv.last_message_at ? {
+          content: conv.last_message_content ?? '',
           created_at: conv.last_message_at,
           sender_id: conv.last_message_sender_id,
         } : null,
@@ -2019,8 +2047,8 @@ export async function loadGolfConversationRail(
       id: conv.id,
       created_at: conv.created_at,
       updated_at: conv.updated_at,
-      last_message: conv.last_message_content ? {
-        content: conv.last_message_content,
+      last_message: conv.last_message_content || conv.last_message_at ? {
+        content: conv.last_message_content ?? '',
         created_at: conv.last_message_at,
         sender_id: conv.last_message_sender_id,
       } : null,
