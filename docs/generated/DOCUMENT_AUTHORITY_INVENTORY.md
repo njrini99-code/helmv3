@@ -866,6 +866,7 @@ them would bury everything above.
 | `docs/clubhouse/changes/2026-10-28-visual-pass-whats-new.md` | current | - | - | - | - |
 | `docs/clubhouse/changes/2026-10-29-initials-letters-only.md` | current | - | - | - | - |
 | `docs/clubhouse/changes/2026-10-30-motion-stalls-and-reduce-motion.md` | current | - | - | - | - |
+| `docs/clubhouse/changes/2026-10-30-nav-once-menu-dialog-focus.md` | current | - | - | - | - |
 | `docs/clubhouse/changes/2026-10-30-night-contrast-tokens.md` | current | - | - | - | - |
 | `docs/clubhouse/changes/2026-10-30-season-label.md` | current | - | - | - | - |
 | `docs/clubhouse/changes/2026-10-30-skeleton-feature-shape.md` | current | - | - | - | - |
@@ -963,6 +964,7 @@ them would bury everything above.
 | `docs/clubhouse/pages/P001-shell/changes/2026-10-30-motion-strip-and-edge-swipe.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P001-shell/changes/2026-10-30-night-contrast.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P001-shell/changes/2026-10-30-offline-banner-immersive.md` | current | - | - | - | - |
+| `docs/clubhouse/pages/P001-shell/changes/2026-10-30-role-routes-and-nav-once.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P002-home/CHANGELOG.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P002-home/CONTRACT.md` | current | - | - | yes | - |
 | `docs/clubhouse/pages/P002-home/DESIGN.md` | current | - | - | - | - |
@@ -1036,6 +1038,7 @@ them would bury everything above.
 | `docs/clubhouse/pages/P004-stats-team/changes/2026-10-28-visual-pass.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P004-stats-team/changes/2026-10-30-game-detail-reads-retry.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P004-stats-team/changes/2026-10-30-night-contrast.md` | current | - | - | - | - |
+| `docs/clubhouse/pages/P004-stats-team/changes/2026-10-30-push-once.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P004-stats-team/changes/2026-10-30-season-label.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P005-stats-player/CHANGELOG.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P005-stats-player/CONTRACT.md` | current | - | - | yes | - |
@@ -1064,6 +1067,7 @@ them would bury everything above.
 | `docs/clubhouse/pages/P005-stats-player/changes/2026-10-28-visual-pass.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P005-stats-player/changes/2026-10-30-game-detail-reads-retry.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P005-stats-player/changes/2026-10-30-night-contrast.md` | current | - | - | - | - |
+| `docs/clubhouse/pages/P005-stats-player/changes/2026-10-30-push-once.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P006-calendar/CHANGELOG.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P006-calendar/CONTRACT.md` | current | - | - | yes | - |
 | `docs/clubhouse/pages/P006-calendar/DESIGN.md` | current | - | - | - | - |
@@ -1086,6 +1090,7 @@ them would bury everything above.
 | `docs/clubhouse/pages/P006-calendar/changes/2026-10-28-visual-pass.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P006-calendar/changes/2026-10-30-motion.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P006-calendar/changes/2026-10-30-night-contrast.md` | current | - | - | - | - |
+| `docs/clubhouse/pages/P006-calendar/changes/2026-10-30-open-once.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P007-messages/CHANGELOG.md` | current | - | - | yes | 1 |
 | `docs/clubhouse/pages/P007-messages/CONTRACT.md` | current | - | - | yes | - |
 | `docs/clubhouse/pages/P007-messages/DESIGN.md` | current | - | - | yes | - |

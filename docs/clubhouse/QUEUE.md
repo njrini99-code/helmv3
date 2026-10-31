@@ -395,6 +395,14 @@ its rows together and does not map them one to one.
 | AUD-F-0018 | Reduce Motion keeps sheet drags and the edge swipe; they settle at once | Clubhouse fixes | in progress | | claude/audit-fix-05-motion (Clubhouse audit fix plan, PR 5); no Bridge IDs or CH codes needed |
 | AUD-F-0046 | The section strip holds snap while it navigates | Clubhouse fixes | in progress | | claude/audit-fix-05-motion (Clubhouse audit fix plan, PR 5); no Bridge IDs or CH codes needed |
 | AUD-F-0047 | Calendar now-line rings animate opacity, not box-shadow | Clubhouse fixes | in progress | | claude/audit-fix-05-motion (Clubhouse audit fix plan, PR 5); no Bridge IDs or CH codes needed |
+| AUD-F-0009 | The first click on a Team Hub row’s More opens the menu | Clubhouse fixes | in progress | | claude/audit-fix-06-shell-nav (Clubhouse audit fix plan, PR 6); no Bridge IDs or CH codes needed |
+| AUD-F-0025 | An unknown dashboard address says CH-1306, not "hasn’t been rebuilt yet" | Clubhouse fixes | in progress | | claude/audit-fix-06-shell-nav (Clubhouse audit fix plan, PR 6); no Bridge IDs or CH codes needed |
+| AUD-F-0026 | A quick double tap pushes a page once (useNavOnce, usePushOnce) | Clubhouse fixes | in progress | | claude/audit-fix-06-shell-nav (Clubhouse audit fix plan, PR 6); no Bridge IDs or CH codes needed |
+| AUD-F-0055 | An old alias goes on at once, with no blank Opening… | Clubhouse fixes | in progress | | claude/audit-fix-06-shell-nav (Clubhouse audit fix plan, PR 6); no Bridge IDs or CH codes needed |
+| AUD-F-0056 | A coach qualifying link opened by a player lands on the player’s page | Clubhouse fixes | in progress | | claude/audit-fix-06-shell-nav (Clubhouse audit fix plan, PR 6); no Bridge IDs or CH codes needed |
+| AUD-F-0057 | A double click opens a calendar event or day once | Clubhouse fixes | in progress | | claude/audit-fix-06-shell-nav (Clubhouse audit fix plan, PR 6); no Bridge IDs or CH codes needed |
+| AUD-F-0058 | Focus after Cancel or Delete never opens another event’s menu or peek | Clubhouse fixes | in progress | | claude/audit-fix-06-shell-nav (Clubhouse audit fix plan, PR 6); no Bridge IDs or CH codes needed |
+| AUD-F-0066 | A player on a coach address loses the coach parameters | Clubhouse fixes | in progress | | claude/audit-fix-06-shell-nav (Clubhouse audit fix plan, PR 6); no Bridge IDs or CH codes needed |
 
 <!-- markdownlint-enable MD013 -->
 

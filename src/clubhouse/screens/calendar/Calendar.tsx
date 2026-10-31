@@ -868,7 +868,8 @@ function CalendarBody({
     const keyboard = keyed.current && !phone && from instanceof HTMLElement && from.matches('.ch-ev, .ch-ev-bar, .ch-ag__row');
     opener.current = keyboard ? from : null;
     toPanel.current = keyboard;
-    setInsp({ kind: 'event', id: e.id, date: e.date });
+    // The event already open stays the same state, so a double click runs nothing twice (F-0057).
+    setInsp((cur) => (cur?.kind === 'event' && cur.id === e.id && cur.date === e.date ? cur : { kind: 'event', id: e.id, date: e.date }));
   };
 
   // More than one read failed: the page says so once with one Try again (the shell's CH-1209), and a part with a place
