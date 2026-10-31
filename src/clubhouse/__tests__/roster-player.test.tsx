@@ -126,7 +126,8 @@ describe('Player roster · what the loader reads (30805)', () => {
     expect(teamActions.requests).not.toHaveBeenCalled();
     // The selects name the columns shown and no others: no email, phone, avatar, hometown, join code or notes.
     const selected = (t: string) => String(filters[t]!.find(([k]) => k === 'select')![1][0]);
-    expect(selected('golf_teams')).toBe('name, season');
+    // The season is computed (F-0002), so the stored free-text column is no longer read.
+    expect(selected('golf_teams')).toBe('name');
     // Teammates may read every column of their team's rows (select_v5), so the player's roster never asks for
     // availability or its coach-only note (P003 availability, v1: players do not see it).
     expect(selected('golf_team_members')).toBe('player_id');
@@ -144,7 +145,8 @@ describe('Player roster · what the loader reads (30805)', () => {
     ]);
     expect(Object.keys(data.players[0]!).sort()).toEqual(['classYear', 'gradYear', 'handicap', 'id', 'isYou', 'name']);
     expect(data.teamName).toBe('Varsity');
-    expect(data.season).toBe('Fall 2026');
+    // From 1 August in the team's zone, never the row's 'Fall 2026' (F-0002).
+    expect(data.season).toMatch(/^\d{4}–\d{2}$/);
   });
 
   it('CH-3808 a coaching staff read that fails leaves the Coaches group out, never "no coaches", and is logged; the players stand', async () => {

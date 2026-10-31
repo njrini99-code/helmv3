@@ -324,10 +324,10 @@ async function setTournamentCancelledImpl(tournamentId: string, roundEventId: st
   // for rounds that actually changed. A restore notifies nobody.
   if (cancelled && changed.length) {
     const noticeOn = rid?.data && changed.includes(rid.data) ? rid.data : changed[0]!;
-    const { data: ev, error: eventReadError } = await g.supabase.from('golf_events').select('title, start_time, location, requires_rsvp').eq('id', noticeOn).maybeSingle();
+    const { data: ev, error: eventReadError } = await g.supabase.from('golf_events').select('title, start_time, all_day, location, requires_rsvp').eq('id', noticeOn).maybeSingle();
     if (eventReadError) await logServerError(`Tournament cancellation notice read failed: ${describeError(eventReadError)}`, { action: 'golf.setTournamentCancelled.notices', featureArea: 'calendar' }, 'warning');
     if (ev) {
-      const notice = { eventId: noticeOn, teamId: t.team_id, title: rid ? ev.title : t.name, startTime: ev.start_time, location: ev.location, reason: why.data ?? '', notifies: ev.requires_rsvp === true };
+      const notice = { eventId: noticeOn, teamId: t.team_id, title: rid ? ev.title : t.name, startTime: ev.start_time, allDay: ev.all_day, location: ev.location, reason: why.data ?? '', notifies: ev.requires_rsvp === true };
       after(() => fanOutEventCancelled(notice));
     }
   }

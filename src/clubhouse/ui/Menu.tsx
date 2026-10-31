@@ -9,6 +9,7 @@ import { Icon } from './Icon';
 import { haptic } from '../lib/haptics';
 import { CH_POP, chTween } from '../lib/motion';
 import { useChReducedMotion } from '../lib/reduced-motion';
+import { chTrail } from '../lib/track';
 
 export type MenuItem =
   | {
@@ -95,10 +96,20 @@ export function Menu({
       setPos({ left, top, maxHeight, origin: `${up ? 'bottom' : 'top'} ${align === 'end' ? 'right' : 'left'}` });
     };
     place();
+    // Where the trigger stood when the list opened: only a scroll that moved it closes the list (F-0009).
+    const anchor = btn.current?.getBoundingClientRect() ?? null;
     const onScroll = (e: Event) => {
       // Native fields may horizontally scroll their text on blur without moving the anchor.
       if (e.target instanceof HTMLElement && e.target.matches('input, textarea, select')) return;
       if (list.current && e.target instanceof Node && list.current.contains(e.target)) return;
+      // Any other scroll (a smooth scroll still settling, a tab strip, a list elsewhere) that left the trigger where it
+      // was keeps the list open, placed again; it opened and shut in one frame on a first click (F-0009).
+      const now = btn.current?.getBoundingClientRect();
+      if (anchor && now && Math.abs(now.top - anchor.top) <= 1 && Math.abs(now.left - anchor.left) <= 1) {
+        place();
+        return;
+      }
+      chTrail('menu close: scroll');
       // A scroll that closes the list while focus is in it would drop focus to <body>: hand it back to the trigger.
       if (list.current?.contains(document.activeElement)) btn.current?.focus({ preventScroll: true });
       close(false);

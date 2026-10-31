@@ -6487,7 +6487,7 @@
     "item": 4,
     "name": "SWITCHING_BETWEEN_DAY_WEEK_MONTH_AND_AGENDA",
     "chCode": "CH-6604",
-    "meaning": "Switching between Day, Week, Month and Agenda (Day, Month and List on the phone)",
+    "meaning": "Switching between Day, Week, Month and List (Day, Month and List on the phone)",
     "status": "implemented",
     "catalog": "docs/clubhouse/catalog/calendar.md"
   },
@@ -6531,7 +6531,7 @@
     "item": 1,
     "name": "OPENING_AN_EVENT_A_DAY_OR_A",
     "chCode": "CH-6701",
-    "meaning": "Opening an event, a day or a panel item; changing view, week or players; each Find a time step",
+    "meaning": "Opening a day from the week header or choosing a List row; changing view, week or players; each Find a time step (opening an event is a plain navigation tap and is silent, D-70)",
     "status": "implemented",
     "catalog": "docs/clubhouse/catalog/calendar.md"
   },
@@ -7926,7 +7926,7 @@
     "item": 3,
     "name": "PICKING_A_REACTION_A_FILTER_OR_A",
     "chCode": "CH-7703",
-    "meaning": "Picking a reaction, a filter or a conversation",
+    "meaning": "Picking a reaction or a filter (opening a conversation or a search hit is a plain navigation tap and is silent, D-70)",
     "status": "implemented",
     "catalog": "docs/clubhouse/catalog/messages.md"
   },

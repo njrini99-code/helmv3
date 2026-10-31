@@ -340,6 +340,8 @@ export function RoundRuntime({
         onSave={() => void save.run('exit')}
         onKeep={closeExit}
         onDiscard={() => void discard.run('exit')}
+        // Rounds is where a discard lands: fetched as the question opens, so the delete is the only wait (F-0045).
+        onConfirmOpen={() => router.prefetch(routes.library)}
         roundType={
           roundType && {
             label: roundType.label,

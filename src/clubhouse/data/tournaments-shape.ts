@@ -51,6 +51,7 @@ import type {
   TourRow,
   TourTeamSeasonRow,
 } from '@/lib/golf/tournaments-tables';
+import { seasonLabelOf } from '../lib/season-start';
 
 // ── Seasons ─────────────────────────────────────────────────────────────────────────────────────────────────────
 
@@ -67,7 +68,7 @@ export function seasonOf(id: string, gender: 'mens' | 'womens', profile: TourTea
   const division = profile?.division && profile.division !== 'other' ? profile.division : null;
   return {
     id,
-    label: `${start}–${String((start + 1) % 100).padStart(2, '0')}`,
+    label: seasonLabelOf(`${start}-08-01`),
     start: `${start}-08-01`,
     end: `${start + 1}-07-31`,
     division,

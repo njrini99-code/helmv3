@@ -1038,11 +1038,13 @@ describe('Calendar · empty and loading', () => {
 });
 
 describe('Calendar · haptics and accessibility', () => {
-  it('CH-6701 opening an event ticks', async () => {
+  it('CH-6701 opening an event is plain navigation, so it is silent (D-70, F-0071)', async () => {
     const user = userEvent.setup();
     wrap(cal());
+    hapticSpy.mockClear();
     await user.click(screen.getAllByRole('button', { name: /Travel briefing/ })[0]!);
-    expect(hapticSpy).toHaveBeenCalledWith('select');
+    expect(screen.getByRole('complementary', { name: 'Details' }).textContent).toMatch(/Travel briefing/);
+    expect(hapticSpy).not.toHaveBeenCalled();
   });
 
   it('CH-6801 61002 events are named with their time, and overlaps are said out loud', () => {
@@ -1103,6 +1105,10 @@ describe('Calendar · phone (v2, Coach - Calendar - Mobile.html)', () => {
     expect(hapticSpy).toHaveBeenCalledWith('select');
     expect(live('.ch-calm-dayk')!.textContent).toMatch(/Thu 15 October/);
     expect(screen.getByRole('button', { name: /^Travel briefing/ })).toBeTruthy();
+    // Opening the event from the day's agenda is plain navigation: no tick (D-70, F-0071).
+    hapticSpy.mockClear();
+    await user.click(screen.getByRole('button', { name: /^Travel briefing/ }));
+    expect(hapticSpy).not.toHaveBeenCalled();
   });
 
   it('row 81: the coach’s More on the phone opens desktop’s items without Print, and Add busy time opens its sheet; a player has none', async () => {
@@ -2610,5 +2616,35 @@ describe('P-5 tournaments from the calendar', () => {
     fireEvent.blur(last);
     await waitFor(() => expect(announce).toHaveBeenCalledWith('3 rounds, Thursday 5 November to Saturday 7 November.'));
     expect(onChange.mock.calls.at(-1)?.[0].rounds).toHaveLength(3);
+  });
+});
+
+describe('Calendar · Publish shows the event at once (F-0029)', () => {
+  it('the editor closes and the new event is on the calendar before the server answers', async () => {
+    const user = userEvent.setup();
+    let release: (v: { success: boolean; data?: unknown }) => void = () => {};
+    a.createGolfEvent.mockImplementation(() => new Promise((r) => (release = r)));
+    wrap(cal(), { initialNew: true });
+    await user.type(await screen.findByRole('textbox', { name: 'Event title' }), 'Short game');
+    await user.click(screen.getByRole('button', { name: 'Publish event' }));
+    await waitFor(() => expect(document.querySelector('dialog[open]')).toBeNull());
+    expect(screen.getAllByRole('button', { name: /^Short game/ }).length).toBeGreaterThan(0);
+    release({ success: true, data: { id: 'e-new' } });
+    await waitFor(() => expect(router.refresh).toHaveBeenCalled());
+  });
+
+  it('a failed publish takes the block back and reopens the editor with everything as typed', async () => {
+    const user = userEvent.setup();
+    let release: (v: { success: boolean; error?: string }) => void = () => {};
+    a.createGolfEvent.mockImplementation(() => new Promise((r) => (release = r)));
+    wrap(cal(), { initialNew: true });
+    await user.type(await screen.findByRole('textbox', { name: 'Event title' }), 'Short game');
+    await user.click(screen.getByRole('button', { name: 'Publish event' }));
+    await waitFor(() => expect(document.querySelector('dialog[open]')).toBeNull());
+    release({ success: false, error: 'nope' });
+    await expectCode('CH-6001', /Couldn’t publish Short game/);
+    expect(screen.queryAllByRole('button', { name: /^Short game/ })).toHaveLength(0);
+    expect(document.querySelector('dialog[open]')).not.toBeNull();
+    expect((screen.getByRole('textbox', { name: 'Event title' }) as HTMLInputElement).value).toBe('Short game');
   });
 });

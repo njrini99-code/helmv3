@@ -8,6 +8,7 @@ import { evidenceBlocks, formatValue, readAreaWord, type AskEvidence, type AskTa
 import { coachReadHref } from '../../../data/coachhelm-views-shape';
 import { Avatar } from '../../../ui/Avatar';
 import { Icon } from '../../../ui/Icon';
+import { ScrollRegion } from '../../../ui/ScrollRegion';
 import { playerStatsHref } from './Prose';
 import { afterRailMove } from '../../../lib/rail-fold';
 import { Line } from '../../../ui/charts/Line';
@@ -33,7 +34,8 @@ export function AskEvidenceView({ envelope, roster = [] }: { envelope: ToolEnvel
 
 export function DataTable({ table }: { table: AskTable }) {
   return (
-    <div className="ch-th-tablewrap">
+    // A keyboard reaches the sideways scroll (F-0042); the caption names it, so two tables never share a name.
+    <ScrollRegion label={`${table.caption}, scrolls sideways`} className="ch-th-tablewrap" fade={false}>
       <table className="ch-th-table">
         <caption className="ch-th-sr">{table.caption}</caption>
         <thead>
@@ -53,7 +55,7 @@ export function DataTable({ table }: { table: AskTable }) {
           ))}
         </tbody>
       </table>
-    </div>
+    </ScrollRegion>
   );
 }
 

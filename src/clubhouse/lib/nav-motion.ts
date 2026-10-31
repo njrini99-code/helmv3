@@ -58,7 +58,7 @@ function clear() {
   const root = document.documentElement;
   root.removeAttribute('data-ch-nav');
   root.removeAttribute(TAB);
-  held = null;
+  dropHeld();
 }
 
 function mark(kind: ChNavKind, tab = false) {
@@ -97,7 +97,10 @@ export function chNavShown(path: string, key: string = path): void {
   const copy = held;
   held = null;
   if (copy && copy.from === before && chNavKind() === 'push') playPush(before, path, copy.layer);
-  else settleUnders(path);
+  else {
+    copy?.layer.remove();
+    settleUnders(path);
+  }
   window.clearTimeout(lapse);
   lapse = window.setTimeout(clear, SETTLE_MS);
 }
@@ -254,10 +257,21 @@ let held: { layer: HTMLElement; from: string } | null = null;
 let pushing: { page: HTMLElement; anims: Animation[]; entry: ChUnder; curve: ReturnType<typeof chSpringCurve> } | null = null;
 
 function holdForPush(from: string) {
-  held = null;
+  dropHeld();
   if (document.documentElement.getAttribute('data-ch-nav') !== 'push') return;
   const layer = pageLayer('ch-frame-under');
-  if (layer) held = { layer, from };
+  if (!layer) return;
+  // In the document now, hidden, so its style and layout run while the page is fetched rather than in the commit that
+  // shows it, beside the new page's first layout (F-0006). playPush only shows it and starts the slide.
+  layer.style.visibility = 'hidden';
+  document.body.appendChild(layer);
+  held = { layer, from };
+}
+
+/** A held copy that no push used goes. */
+function dropHeld() {
+  held?.layer.remove();
+  held = null;
 }
 
 function dropUnders() {
@@ -287,14 +301,19 @@ function endPush(run: NonNullable<typeof pushing>) {
 
 function playPush(from: string, to: string, layer: HTMLElement) {
   const page = document.getElementById('ch-content');
-  if (!page || typeof page.animate !== 'function' || !window.matchMedia?.(PHONE).matches || chMotionModeNow() !== 'full') return;
+  if (!page || typeof page.animate !== 'function' || !window.matchMedia?.(PHONE).matches || chMotionModeNow() !== 'full') {
+    // Held at the tap, in the document: no slide, so it goes.
+    layer.remove();
+    return;
+  }
   const entry: ChUnder = { over: to, under: from, layer };
   const top = unders[unders.length - 1];
   // Pushed from a page that is itself pushed: the copies stack. From anywhere else, this is the first.
   if (!top || top.over !== from) dropUnders();
   unders.push(entry);
   while (unders.length > UNDERS_MAX) unders.shift()?.layer.remove();
-  document.body.appendChild(layer);
+  if (!layer.isConnected) document.body.appendChild(layer);
+  layer.style.visibility = '';
   const { curve, timing } = chPushTiming();
   const { parallax, dim } = chUnderLook();
   page.setAttribute('data-ch-pushing', '');

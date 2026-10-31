@@ -15,6 +15,7 @@ import type { ChStatsReads } from '../../data/stats-reads';
 import type { ChProfileExtra } from '../../data/stats-player';
 import { Icon } from '../../ui/Icon';
 import { InlineNotice } from '../../ui/Notices';
+import { useRefresh } from '../../lib/use-refresh';
 import { EmptyState } from '../../ui/States';
 import { haptic } from '../../lib/haptics';
 import { formatFixed, formatPct, NO_DATA } from '../../lib/format';
@@ -25,7 +26,7 @@ import type { PuttBandInput } from './putt-bands';
 import { ScoreMixBar } from './ScoreMixBar';
 import { Empty, More, Panel, Rule, RULE_WINDOW } from './detail';
 import { ApproachMore, PuttingMore, ScoringMore, ShortMore, TeeMore } from './GameMore';
-import { readsLineParts, READS_FAILED } from './reads-line';
+import { readsLineParts } from './reads-line';
 import { plural } from '../../lib/plural';
 import { sgBaseline, type ChSgTour } from '../../lib/sg';
 
@@ -426,11 +427,7 @@ export function GameDetail({
       </nav>
       <WithReads reads={reads}>
         {(r) =>
-          r?.status === 'failed' && (
-            <p className="ch-gx-rule" data-ch-code="CH-5215">
-              {READS_FAILED}
-            </p>
-          )
+          r?.status === 'failed' && <ReadsFailedNotice />
         }
       </WithReads>
       {x.truncated && (
@@ -754,4 +751,18 @@ function avgMake(b: GolfStats['puttingByBreak']['straight']): number | null {
   if (!n) return null;
   const made = (b.makePct0_3 ?? 0) * b.count0_3 + (b.makePct3_5 ?? 0) * b.count3_5 + (b.makePct5_10 ?? 0) * b.count5_10;
   return made / n;
+}
+
+/** CoachHelm's reads didn't load (CH-5215): said in place with Try again, which re-runs the page's read (F-0061). */
+function ReadsFailedNotice() {
+  const { refresh, refreshing } = useRefresh();
+  return (
+    <InlineNotice
+      code="CH-5215"
+      title="CoachHelm’s reads didn’t load"
+      body="The sections don’t say how many there are."
+      onRetry={refresh}
+      retrying={refreshing}
+    />
+  );
 }

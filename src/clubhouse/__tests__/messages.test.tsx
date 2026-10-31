@@ -2086,3 +2086,63 @@ describe('Messages · polls (premium features P-2)', () => {
     await waitFor(() => expect(live.msgs.insertConfirmed).toHaveBeenCalledWith(row));
   });
 });
+
+describe('F-0004 · coach Start conversation opens the one-to-one thread, never the channel', () => {
+  // The Team Channel is the newest thread, so desktop opens it beside the rail.
+  const channel = { id: 'channel', title: 'Team Channel', is_team_channel: true, participant_ids: ['me', 'jonah', 'eli', 'dan', 'dana', 'x'], participant_count: 6, unread_count: 0, last_message: { content: 'Practice moved', created_at: '2026-10-14T18:30:00Z', sender_id: 'me' }, creator_id: 'me' };
+  const dmEliNew = { id: 'dm-eli', title: null, participant_ids: ['me', 'eli'], participant_count: 2, unread_count: 0, other_participant: { id: 'eli', name: 'Eli Brandt' }, last_message: null, creator_id: 'me' };
+
+  async function startWithEli(user: User) {
+    await screen.findByRole('textbox', { name: /Message Team Channel/ });
+    const dlg = await newMessage(user, /Direct/);
+    await user.click(dlg.getByRole('option', { name: /Eli Brandt/ }));
+    await user.click(dlg.getByRole('button', { name: 'Start conversation' }));
+  }
+
+  it('picking one player and pressing Start conversation opens that player’s thread', async () => {
+    const user = userEvent.setup();
+    live.convs.conversations = [channel, team];
+    a.createGolfConversation.mockResolvedValue({ conversationId: 'dm-eli', reused: false });
+    live.convs.refetch.mockImplementation(async () => {
+      live.convs.conversations = [channel, team, dmEliNew];
+    });
+    show();
+    await startWithEli(user);
+    expect(await screen.findByRole('textbox', { name: /Message Eli$/ })).toBeTruthy();
+    expect(screen.queryByRole('dialog', { name: 'New message' })).toBeNull();
+  });
+
+  it('F-0045 the new thread opens as soon as it is made, before the list has read it again', async () => {
+    const user = userEvent.setup();
+    live.convs.conversations = [channel, team];
+    a.createGolfConversation.mockResolvedValue({ conversationId: 'dm-eli', reused: false });
+    live.convs.refetch.mockImplementation(() => new Promise(() => {}));
+    show();
+    await startWithEli(user);
+    expect(await screen.findByRole('textbox', { name: /Message Eli$/ })).toBeTruthy();
+    expect(screen.queryByRole('dialog', { name: 'New message' })).toBeNull();
+    expect(code('CH-7015')).toBeNull();
+  });
+
+  it('an answer that is the channel is refused: the sheet stays open and says so (CH-7002)', async () => {
+    const user = userEvent.setup();
+    live.convs.conversations = [channel, team];
+    a.createGolfConversation.mockResolvedValue({ conversationId: 'channel', reused: true });
+    show();
+    await startWithEli(user);
+    await expectCode('CH-7002', /Couldn’t start the conversation/);
+    expect(screen.queryByRole('dialog', { name: 'New message' })).not.toBeNull();
+  });
+
+  it('?player= with the channel open beside the rail opens the player’s thread', async () => {
+    live.convs.conversations = [channel, team];
+    a.createGolfConversation.mockResolvedValue({ conversationId: 'dm-eli', reused: false });
+    live.convs.refetch.mockImplementation(async () => {
+      live.convs.conversations = [channel, team, dmEliNew];
+    });
+    params.current = new URLSearchParams('player=p-eli');
+    show();
+    expect(await screen.findByRole('textbox', { name: /Message Eli$/ })).toBeTruthy();
+    expect(a.createGolfConversation).toHaveBeenCalledWith(['eli'], 't1');
+  });
+});

@@ -197,7 +197,7 @@ const RAW_FONT: Record<string, number> = {
   'styles/coachhelm.css': 1,
   'styles/hero-tones.css': 1,
   'styles/home.css': 15,
-  'styles/hub.css': 8,
+  'styles/hub.css': 7,
   'styles/messages.css': 1,
   'styles/onboard.css': 12,
   'styles/qualifiers.css': 16,

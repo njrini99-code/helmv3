@@ -69,7 +69,7 @@ export function TourHead({ id, phone, eyebrow, title, line, meta, actions, crumb
     return (
       <>
         {crumb}
-        <PageIntro className="ch-tour-intro" eyebrow={eyebrow} title={title} titleId={id} brief={line} />
+        <PageIntro className="ch-tour-intro" eyebrow={eyebrow} title={title} titleId={id} brief={line} large />
         {meta}
         {actions && <div className="ch-tour-head__a">{actions}</div>}
       </>

@@ -152,7 +152,7 @@ export function CalendarPhone({
       {!data.eventsError && (
         <SectionBoundary surface={`calendar.phone.${pv}`} label="The calendar" code="CH-6210">
           {/* CH-6604: Day, Month and List settle in as the switch moves (base in, quick out); instant with reduced motion. */}
-          <Swap swapKey={pv}>
+          <Swap swapKey={pv} resize="instant">
             {pv === 'day' && <DayView anchor={anchor} events={events} people={people} now={now} flagged={flagged} selId={selId} onDay={(d) => onView('day', d)} onOpen={onOpen} coach={coach} viewerId={viewerId} range={data.range} onNew={onNew} onMove={coach ? onMove : undefined} movedAway={data.movedAway} />}
             {pv === 'month' && <MonthGrid anchor={anchor} events={events} now={now} onPick={(d) => onView('day', d)} onStep={onStep} onMonth={(d) => onView('month', d)} />}
             {pv === 'list' &&
@@ -491,10 +491,8 @@ function DayPage({
                     className={`ch-calm-ev is-${e.type}` + (past ? ' is-past' : '') + (live ? ' is-live' : '') + (selId === e.id ? ' is-sel' : '') + (e.cancelled ? ' is-cancelled' : '') + (lift ? ' is-movable' : '') + (liftedId === e.id ? ' is-lifted' : '')}
                     onTouchStart={lift ? () => claimTouch('pending') : undefined}
                     aria-label={`${roundLabel(e, title).name}${roundLabel(e, title).spokenRound}, ${e.allDay ? 'all day' : e.span?.start != null ? rangeLabel(e, clock) : `${fmtHour(e.start!, true, clock)} to ${fmtHour(e.end!, true, clock)}`}${past ? ', ended' : ''}${flagged.has(e.id) ? ', schedule overlap' : ''}${reply ? ', needs your reply' : ''}${e.cancelled ? ', cancelled' : ''}${mark?.aria ?? ''}`}
-                    onClick={() => {
-                      haptic('select');
-                      onOpen(e.id, e.date);
-                    }}
+                    // D-70: opening an event is plain navigation, so it is silent (F-0071).
+                    onClick={() => onOpen(e.id, e.date)}
                   >
                     <span className="ch-calm-ev__t ch-num">
                       {startLabel(e, false, clock)}

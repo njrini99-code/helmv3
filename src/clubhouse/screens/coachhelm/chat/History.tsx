@@ -139,7 +139,7 @@ export function HistoryDrawer(props: AskHistoryProps & { open: boolean; onClose:
   const { open, onClose, onNew } = props;
   const { ref, reduced, retainContent } = useDialogLifetime(open, { direction: 'left', surfaceSelector: '.ch-ask-hist' });
   const aside = useRef<HTMLElement>(null);
-  const drag = useSheetDrag(aside, onClose, { enabled: !reduced, direction: 'left' });
+  const drag = useSheetDrag(aside, onClose, { direction: 'left', reduced });
 
   return (
     // The click is the scrim's dismiss; the keyboard path is Esc, which <dialog> reports through onCancel.

@@ -766,11 +766,11 @@ Every Bridge ID (D-68: namespace, two-digit category, two-digit item), its catal
 | 61601 | CH-6601 | 16 Micro animation | `HOVERING_OR_SELECTING_AN_EVENT` | implemented | Hovering or selecting an event |
 | 61602 | CH-6602 | 16 Micro animation | `DRAGGING_THE_TIME_BAND_IN_FIND_A` | implemented | Dragging the time band in Find a time |
 | 61603 | CH-6603 | 16 Micro animation | `THE_CURRENT_TIME` | implemented | The current time |
-| 61604 | CH-6604 | 16 Micro animation | `SWITCHING_BETWEEN_DAY_WEEK_MONTH_AND_AGENDA` | implemented | Switching between Day, Week, Month and Agenda (Day, Month and List on the phone) |
+| 61604 | CH-6604 | 16 Micro animation | `SWITCHING_BETWEEN_DAY_WEEK_MONTH_AND_AGENDA` | implemented | Switching between Day, Week, Month and List (Day, Month and List on the phone) |
 | 61605 | CH-6605 | 16 Micro animation | `STEPPING_TO_ANOTHER_DAY_WEEK_OR_MONTH` | implemented | Stepping to another day, week or month (the arrows, the arrow keys, Today or a date) |
 | 61606 | CH-6606 | 16 Micro animation | `CHOOSING_ANOTHER_DAY_IN_THE_PHONES_WEEK` | implemented | Choosing another day in the phone's week strip |
 | 61607 | CH-6640 | 16 Micro animation | `TOURNAMENT_CHOSEN_TRACK_TURNED_ON_OR_OFF` | implemented | Tournament chosen (Track on), Track turned on or off, More details opened |
-| 61701 | CH-6701 | 17 Haptic | `OPENING_AN_EVENT_A_DAY_OR_A` | implemented | Opening an event, a day or a panel item; changing view, week or players; each Find a time step |
+| 61701 | CH-6701 | 17 Haptic | `OPENING_AN_EVENT_A_DAY_OR_A` | implemented | Opening a day from the week header or choosing a List row; changing view, week or players; each Find a time step (opening an event is a plain navigation tap and is silent, D-70) |
 | 61702 | CH-6702 | 17 Haptic | `A_FORM_WITH_A_PROBLEM_OR_CLOSING` | implemented | A form with a problem, or closing the editor with changes |
 | 61703 | CH-6703 | 17 Haptic | `A_LINK_IS_COPIED` | implemented | A link is copied |
 | 61801 | CH-6801 | 18 Accessibility | `EACH_EVENT_IS_A_BUTTON_NAMED_WITH` | implemented | Each event is a button named with its title and time, and "schedule overlap" when it has one; each day header opens the day |
@@ -899,7 +899,7 @@ Every Bridge ID (D-68: namespace, two-digit category, two-digit item), its catal
 | 71609 | CH-7609 | 16 Micro animation | `THE_SEEN_BY_SHEET_OR_POPOVER_OPENS` | implemented | The Seen by sheet (phone) or popover (desktop) opens and updates live |
 | 71701 | CH-7701 | 17 Haptic | `A_CHANGE_FAILS` | implemented | A change fails |
 | 71702 | CH-7702 | 17 Haptic | `A_CHANGE_LANDS` | implemented | A change lands (edited, deleted, muted, group created; acknowledging uses the success pattern) |
-| 71703 | CH-7703 | 17 Haptic | `PICKING_A_REACTION_A_FILTER_OR_A` | implemented | Picking a reaction, a filter or a conversation |
+| 71703 | CH-7703 | 17 Haptic | `PICKING_A_REACTION_A_FILTER_OR_A` | implemented | Picking a reaction or a filter (opening a conversation or a search hit is a plain navigation tap and is silent, D-70) |
 | 71704 | CH-7704 | 17 Haptic | `A_LONG_PRESS_ON_A_MESSAGE_2` | implemented | A long press on a message (phone) |
 | 71705 | CH-7770 | 17 Haptic | `THE_HOLD_ON_SEND_REACHES_450_MS` | reserved | The hold on Send reaches 450 ms (phone, Notify anyway offered) |
 | 71801 | CH-7801 | 18 Accessibility | `THE_COMPOSER_IS_NAMED_FOR_THE_CONVERSATION` | reserved | The composer is named for the conversation ("Message Varsity team"); a message that didn't send is an alert |

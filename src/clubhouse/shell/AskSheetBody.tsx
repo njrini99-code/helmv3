@@ -52,7 +52,7 @@ export default function AskSheetBody({
     surfaceSelector: '.ch-asks__panel',
     focusSelector: '.ch-asks__title',
   });
-  const drag = useSheetDrag(ref, onClose, { enabled: phone && !reduced });
+  const drag = useSheetDrag(ref, onClose, { enabled: phone, reduced });
   const online = useSyncExternalStore(subscribeOnline, () => navigator.onLine, () => true);
   const chat = useChatImpl({
     initialContext: looking.playerId ? [{ kind: 'player', id: looking.playerId, label: looking.playerName ?? 'This player' }] : [],

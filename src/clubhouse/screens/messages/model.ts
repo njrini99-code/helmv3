@@ -21,6 +21,8 @@ export interface ChPerson {
 export interface ChConv {
   id: string;
   group: boolean;
+  /** The team's channel. With one player on the team it has two members, so `group` alone can't tell it from a DM. */
+  channel?: boolean;
   title: string;
   subtitle: string;
   /** Other participants' user ids (groups), or the one other person (direct). */
@@ -38,6 +40,19 @@ export interface ChConv {
   /** The last message is a poll's plain-text copy (`isPollFallbackText`): the row shows its glyph and question. */
   lastIsPoll?: boolean;
   creatorId: string | null;
+}
+
+/**
+ * The one-to-one thread with `userId`, if the list holds one: two members, the other being `userId`, and neither a
+ * group nor the team's channel. F-0003: a message meant for one person never goes to a channel or group.
+ */
+export function directWith(convs: readonly ChConv[], userId: string): ChConv | undefined {
+  return convs.find((c) => isDirect(c) && c.memberIds[0] === userId);
+}
+
+/** A one-to-one thread: not a group, not the channel, two members. */
+export function isDirect(c: ChConv): boolean {
+  return !c.group && !c.channel && c.memberCount === 2;
 }
 
 export interface ChMsg {

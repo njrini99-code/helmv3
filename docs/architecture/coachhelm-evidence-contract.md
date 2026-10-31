@@ -2053,7 +2053,11 @@ Other contract changes in the same pass:
   `evidenceRevisionKey` (`sample_n|window_end`) changes once on the next run.
 - **Intervals.** `putt_distance` publishes `detail.make_ci_low/high` and
   `approach_miss` `detail.green_hit_ci_low/high` (95% Wilson), both also in the
-  prose. `approach_miss` no longer emits below 8 attempts (was 5).
+  prose. `approach_miss` no longer emits below 8 attempts (was 5). Since
+  2026-10-30 (F-0070) the `putt_distance` prose names the rate, its range and
+  the Tour figure once each: "You make 35% of putts from 5-10 ft over your last
+  8 rounds (30 days, 40 attempts, likely 22–50%). PGA Tour players make 62%."
+  The evidence fields are unchanged.
 - **`putt_bias`.** No row when no distance-and-slope cut has 15 putts per
   side (the test never ran; a stale row retracts). Cut p-values are
   Holm-adjusted over the cuts tested. A balanced row carries the pooled make %

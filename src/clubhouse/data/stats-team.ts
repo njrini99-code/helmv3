@@ -3,7 +3,7 @@ import { createClient } from '@/lib/supabase/server';
 import { chLogServer } from '../lib/track-server';
 import { formatFixed, formatSigned } from '../lib/format';
 import { sgBaseline, type ChSgTour } from '../lib/sg';
-import { fullName, groupByPlayer, loadSeasonRounds, loadTeamZone, mean, MIN_SG_ROUNDS, seasonStartDate, shortDate, type ChRound } from './season';
+import { currentSeasonLabel, fullName, groupByPlayer, loadSeasonRounds, loadTeamZone, mean, MIN_SG_ROUNDS, seasonStartDate, shortDate, type ChRound } from './season';
 import {
   bandPutts,
   cachedPutts,
@@ -101,7 +101,7 @@ export type ChGauge =
 
 export interface ChTeamStats {
   teamName: string;
-  /** The team's season ("Fall 2026"), beside its name in the head's eyebrow as Roster's; null when the team has none. */
+  /** The current season ("2026–27", from 1 August in the team's zone, F-0002), beside its name in the head's eyebrow as Roster's. */
   season?: string | null;
   window: ChWindow;
   /** How many rounds Last N counts (read with `window: 'last10'`). */
@@ -185,7 +185,7 @@ export async function loadTeamStats(input: { teamId: string; window: ChWindow; f
   const f = input.filter ?? filterFor(input.window);
   const supabase = await createClient();
   const [teamRes, membersRes, tz] = await Promise.all([
-    supabase.from('golf_teams').select('name, gender, season').eq('id', input.teamId).maybeSingle(),
+    supabase.from('golf_teams').select('name, gender').eq('id', input.teamId).maybeSingle(),
     supabase
       .from('golf_team_members')
       .select('player:golf_players(id, first_name, last_name)')
@@ -416,7 +416,8 @@ export async function loadTeamStats(input: { teamId: string; window: ChWindow; f
 
   return {
     teamName: teamRes.data?.name ?? 'Your team',
-    season: teamRes.data?.season ?? null,
+    // Computed from 1 August in the team's zone, never the stored free text (F-0002).
+    season: currentSeasonLabel(new Date(), tz),
     window: f.window,
     last: f.last,
     filter: f,

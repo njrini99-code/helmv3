@@ -125,14 +125,21 @@ export function chScrimAt(offset: number, size: number): number {
  * thrown back up hard it carries on a little past that position over the same floor. Its body drags it too, once that is
  * scrolled to the top and the finger's first move is down; a scroll, a sideways move or a tap stays the body's, and
  * the row a drag started on doesn't open. A closing throw hands its speed to the exit (takeSheetFling). With reduced
- * motion there is no drag (pass `enabled: false`); Close, the scrim and Esc still close it. CH-1611.
+ * motion (`reduced`) the drag is the same and only its settle changes (F-0018): a let-go short of closing puts it back at
+ * once, and a close leaves through the dialog's reduced fade. Close, the scrim and Esc close it as ever. CH-1611.
  *
  * The sheet moves by the CSS `translate` property, which composes with the `transform` its open and close
  * animations use, so a closing sheet leaves from where the finger let go. Spread the returned handler on the parts
  * that always start a drag (the grab and the header, with `touch-action: none` there); a press on a control inside
  * them is left alone.
  */
-export function useSheetDrag(sheet: RefObject<HTMLElement | null>, onClose: () => void, { enabled = true, direction = 'down' }: { enabled?: boolean; direction?: 'down' | 'left' } = {}) {
+export function useSheetDrag(
+  sheet: RefObject<HTMLElement | null>,
+  onClose: () => void,
+  { enabled = true, direction = 'down', reduced = false }: { enabled?: boolean; direction?: 'down' | 'left'; reduced?: boolean } = {},
+) {
+  const reducedRef = useRef(reduced);
+  reducedRef.current = reduced;
   const stop = useRef<(() => void) | null>(null);
   const settling = useRef<(() => void) | null>(null);
   const fromBody = useRef(false);
@@ -213,6 +220,14 @@ export function useSheetDrag(sheet: RefObject<HTMLElement | null>, onClose: () =
           if (e.target === el && e.propertyName === 'translate') settle();
         };
         let ms = CH_DUR.release * 1000;
+        if (reducedRef.current) {
+          // Reduce Motion: back at once (F-0018).
+          el.style.transition = 'none';
+          el.style.translate = '';
+          if (dialog) chSetScrim(dialog, 1, 0);
+          settle();
+          return;
+        }
         if (Math.abs(dy) >= 0.5 && chSupportsLinear()) {
           // Toward rest from wherever it is, at the speed it was moving (progress per second), cut within half a pixel.
           // Thrown back hard, a sheet carries on past its open position as when pulled there, over its floor; a drawer

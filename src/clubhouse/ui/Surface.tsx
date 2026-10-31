@@ -17,6 +17,7 @@ export function Surface({
   footerNote,
   padded = true,
   variant = 'default',
+  level = 3,
   children,
 }: {
   id?: string;
@@ -29,18 +30,21 @@ export function Surface({
   footerNote?: ReactNode;
   padded?: boolean;
   variant?: 'default' | 'flat';
+  /** The title's heading level: 3 inside a Zone (the default), 2 when the Surface is a page's top-level section (F-0063). */
+  level?: 2 | 3;
   children?: ReactNode;
 }) {
   const head = title || actions;
+  const H = level === 2 ? 'h2' : 'h3';
   return (
     <section className={'ch-surface' + (variant === 'flat' ? ' ch-surface--flat' : '')} aria-labelledby={id && title ? `${id}-t` : undefined}>
       {head && (
         <div className="ch-surface__head">
           <div style={{ minWidth: 0 }}>
             {title && (
-              <h3 id={id ? `${id}-t` : undefined} className="ch-surface__title">
+              <H id={id ? `${id}-t` : undefined} className="ch-surface__title">
                 {title}
-              </h3>
+              </H>
             )}
             {subtitle && <div className="ch-surface__sub">{subtitle}</div>}
           </div>

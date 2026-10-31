@@ -90,7 +90,7 @@ export function QualifierDetail({
     version: fresh,
     updatedAt: forcedFeed?.updatedAt,
     refresh: liveFeed.refresh,
-    // P009-D3: still open after its last day reads "Ended · n rounds outstanding", never Live.
+    // P009-D3: still open after its last day reads "Waiting on n rounds" (or "Past last day"), never Live.
     ended: endedLive({ status, endDate: data.endDate, today: data.today, entrants: data.entrants, numRounds: data.numRounds, submitted: data.board?.submitted ?? null }),
   };
 

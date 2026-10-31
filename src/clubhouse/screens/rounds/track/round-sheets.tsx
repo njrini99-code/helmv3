@@ -118,6 +118,7 @@ export function ExitSheet({
   onSave,
   onKeep,
   onDiscard,
+  onConfirmOpen,
   roundType,
   sharing,
 }: {
@@ -136,6 +137,8 @@ export function ExitSheet({
   onSave: () => void;
   onKeep: () => void;
   onDiscard: () => void;
+  /** The discard question has opened: the page a discard lands on can be fetched now (F-0045). */
+  onConfirmOpen?: () => void;
 }) {
   const [confirm, setConfirm] = useState(false);
   const done = holes.filter((h) => h.score != null);
@@ -214,7 +217,14 @@ export function ExitSheet({
               </span>
             </button>
           )}
-          <button type="button" className="ch-rt-xopt is-danger" onClick={() => setConfirm(true)}>
+          <button
+            type="button"
+            className="ch-rt-xopt is-danger"
+            onClick={() => {
+              setConfirm(true);
+              onConfirmOpen?.();
+            }}
+          >
             <Icon icon={Trash2} size={18} />
             <span>
               <b>Discard round</b>

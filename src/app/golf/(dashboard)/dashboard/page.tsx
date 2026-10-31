@@ -205,8 +205,9 @@ export default async function GolfDashboardPage({
         if (clubhouse) {
             if (!teamId) return <CoachHomeNoTeam />;
             // Who is on the course rides beside Home's own reads and never fails them (loadLiveRounds catches its own).
+            // The marks hint feeds Home's loader only: the live read starts beside it rather than after it (F-0032).
             const [home, live] = await Promise.all([
-                loadCoachHome({ teamId, coachName: coach.full_name || 'Coach', userId, coachId: coach.id, marks: await marksHint() }),
+                marksHint().then((marks) => loadCoachHome({ teamId, coachName: coach.full_name || 'Coach', userId, coachId: coach.id, marks })),
                 loadLiveRounds({ teamId, viewer: { role: 'coach', playerId: null } }),
             ]);
             return <CoachHome data={home} live={live} />;
@@ -287,7 +288,7 @@ export default async function GolfDashboardPage({
         const team = await resolveClubhouseTeam(session);
         if (!team || team.role !== 'player') return <PlayerHomeNoTeam />;
         const [home, live] = await Promise.all([
-            loadPlayerHome({ teamId: team.teamId, playerId: team.playerId, firstName: player.first_name?.trim() || 'there', marks: await marksHint() }),
+            marksHint().then((marks) => loadPlayerHome({ teamId: team.teamId, playerId: team.playerId, firstName: player.first_name?.trim() || 'there', marks })),
             loadPlayerLive({ teamId: team.teamId, playerId: team.playerId }),
         ]);
         return <PlayerHome data={home} live={live} playerId={team.playerId} />;

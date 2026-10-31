@@ -59,8 +59,10 @@
   transform: translateY(-160%);
   transition: transform var(--ch-dur-quick) var(--ch-ease);
 }
+/* Summoned at once, eased away (F-0065): the transition above runs only on the way out. */
 .ch-skip:focus-visible {
   transform: none;
+  transition: none;
 }
 
 /* Sidebar (ivory pass on Augusta green) */
@@ -436,7 +438,7 @@
   min-width: 0;
   font: var(--ch-type-14-medium);
   line-height: var(--ch-lead-tight);
-  color: var(--ch-text-tertiary);
+  color: var(--ch-text-secondary);
 }
 .ch-topbar__crumb {
   display: inline-flex;
@@ -468,7 +470,7 @@
   border: 0;
   border-radius: var(--ch-radius-md);
   background: var(--ch-ivory-25);
-  color: var(--ch-text-tertiary);
+  color: var(--ch-text-secondary);
   font: var(--ch-type-14);
   text-align: left;
   box-shadow: inset 0 0 0 1px var(--ch-border-control), inset 0 1px 2px rgb(28 25 18 / 0.06);
@@ -860,6 +862,15 @@
   transform: translateX(-100%);
   animation: ch-shimmer-x var(--ch-dur-shimmer) linear infinite;
   content: '';
+}
+/* A green feature card in waiting (a hero), on the loaded card's ground and lift, its sweep the pale ink Home's skeleton
+   bars use, so the page doesn't flash pale to green when it lands (F-0060). */
+.ch-skel.ch-skel--feature {
+  background: var(--ch-feature-bg);
+  box-shadow: var(--ch-elevation-feature);
+}
+.ch-skel--feature::before {
+  background: linear-gradient(100deg, transparent 30%, rgb(244 241 232 / 0.12) 50%, transparent 70%);
 }
 @media (min-width: 821px) {
   /* A block in waiting (a fluid Skeleton from 56px tall, or shape="block") is drawn in the Ledger as the Ledger draws
@@ -3325,6 +3336,10 @@ html[data-fw-theme='dark'] .ch-offline {
     scroll-snap-type: x proximity;
     scroll-padding-inline: var(--ch-page-x-phone);
     scrollbar-width: none;
+  }
+  /* A section chosen: the row holds still while the strip shuts, so the focused pill doesn't re-snap it (F-0046). */
+  .ch-strip__row[data-holding] {
+    scroll-snap-type: none;
   }
   .ch-strip__row::-webkit-scrollbar {
     display: none;

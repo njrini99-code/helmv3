@@ -1,5 +1,5 @@
 // @vitest-environment jsdom
-import { cleanup, render, screen, waitFor } from '@testing-library/react';
+import { cleanup, render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
@@ -43,6 +43,10 @@ describe('CoachNote', () => {
     show({ error: true });
     expect(screen.getByText(/couldn’t check for a coach note/i)).toBeTruthy();
     expect(screen.queryByText(/No note on this round yet/)).toBeNull();
+    // F-0061: Try again in place, not "Reload".
+    const notice = document.querySelector('[data-ch-code="CH-11222"]') as HTMLElement;
+    expect(within(notice).getByRole('button', { name: 'Try again' })).toBeTruthy();
+    expect(notice.textContent).not.toMatch(/Reload/);
   });
 
   it('CH-11523 offers a coach "Add a note" on a round with none', () => {

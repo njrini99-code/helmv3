@@ -13,6 +13,7 @@ import { usePhoneImmersive, usePhoneTabsHidden } from '../../../shell/phone-chro
 import { Icon } from '../../../ui/Icon';
 import { DateField } from '../../../ui/DateField';
 import { InlineNotice } from '../../../ui/Notices';
+import { useRefresh } from '../../../lib/use-refresh';
 import { Select } from '../../../ui/Select';
 import { TeeSwatch, TYPE_LABEL } from '../parts';
 import { AddCourseSheet } from './AddCourseSheet';
@@ -81,6 +82,8 @@ function ScorecardHead() {
  * the round (docs/clubhouse/ROUNDS_PLAN.md).
  */
 export function RoundSetup({ ports, liveShare, qualifiers, today, backHref, onStarted, preselectQualifierId = null, preselectCourseId = null, glances = null, isOffline, viewerId = null }: RoundSetupProps) {
+  // The list is read on the server (NewRound), so Try again re-runs the page's render (F-0013).
+  const { refresh: retryQualifiers, refreshing: retryingQualifiers } = useRefresh();
   const [form, setForm] = useState<ChSetupForm>({
     pick: null,
     type: 'practice',
@@ -310,6 +313,16 @@ export function RoundSetup({ ports, liveShare, qualifiers, today, backHref, onSt
             )}
           </section>
 
+          {qualifiers === null && form.type !== 'qualifier' && (
+            // A list that failed is said up front, before a qualifier round is started as practice (F-0013).
+            <InlineNotice
+              code="CH-11211"
+              title="Your qualifiers didn’t load"
+              body="If this round is a qualifier, try again before you start it."
+              onRetry={retryQualifiers}
+              retrying={retryingQualifiers}
+            />
+          )}
           {offer && (
             <button type="button" className="ch-rsu-qual" onClick={() => playQualifier(offer)}>
               <span className="ch-rsu-qual__ic" aria-hidden="true">
@@ -390,7 +403,13 @@ export function RoundSetup({ ports, liveShare, qualifiers, today, backHref, onSt
               </div>
               {form.type === 'qualifier' &&
                 (qualifiers === null ? (
-                  <InlineNotice code="CH-11211" title="Your qualifiers didn’t load" body="Play it as a practice round, or come back in a moment." />
+                  <InlineNotice
+                    code="CH-11211"
+                    title="Your qualifiers didn’t load"
+                    body="Play it as a practice round, or come back in a moment."
+                    onRetry={retryQualifiers}
+                    retrying={retryingQualifiers}
+                  />
                 ) : !qualifiers.length ? (
                   // CH-11312: nothing to qualify in.
                   <p className="ch-rsu-none" data-ch-code="CH-11312">

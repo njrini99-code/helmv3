@@ -295,3 +295,13 @@ describe('how long a mark lives', () => {
     expect(withinRowHorizon('2026-04-10T12:00:00Z', now)).toBe(true);
   });
 });
+
+// F-0010 (NOT FOUND, pinned): a change of place alone is kind `place`, never a time kind, and its badge says Moved by design.
+describe('a place-only change (F-0010)', () => {
+  it('is a move of place, not of time', () => {
+    const kind = markKind({ from: base }, { ...base, location: 'Finley range' }, TZ);
+    expect(kind).toBe('place');
+    expect(['time', 'day', 'retime', 'allday']).not.toContain(kind);
+    expect(badgeWord(kind)).toBe('Moved');
+  });
+});

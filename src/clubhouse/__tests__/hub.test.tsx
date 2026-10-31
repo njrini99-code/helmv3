@@ -2819,3 +2819,58 @@ describe('Team Hub · the palette’s Post announcement (A16)', () => {
     expect(screen.queryByRole('dialog', { name: 'New announcement' })).toBeNull();
   });
 });
+
+describe('Team Hub · instant writes (F-0045)', () => {
+  it('an assigned task shows at once as Assigning…; a failure takes it back and reopens the sheet with the text kept', async () => {
+    const user = userEvent.setup();
+    let release: (v: { success: boolean }) => void = () => {};
+    const assign = vi.fn(() => new Promise<{ success: boolean }>((r) => (release = r)));
+    show(PREVIEW_HUB_COACH, writes({ assignTask: assign }), 'tasks');
+    await user.click(screen.getByRole('button', { name: 'Assign a task' }));
+    const dialog = (await screen.findByRole('dialog', { name: 'Assign a task' })) as HTMLDialogElement;
+    await user.type(within(dialog).getByRole('textbox', { name: 'Task' }), 'Book physicals');
+    await user.click(within(dialog).getByRole('button', { name: 'Assign' }));
+    // The sheet closes and the task is in the list before the server answers.
+    await waitFor(() => expect(dialog.open).toBe(false));
+    const panel = screen.getByRole('tabpanel');
+    expect(within(panel).getByText('Book physicals')).toBeTruthy();
+    expect(code('CH-10404')!.textContent).toBe('Assigning…');
+    release({ success: false });
+    await expectCode('CH-10007', /Couldn’t assign Book physicals/);
+    await waitFor(() => expect(within(screen.getByRole('tabpanel')).queryByText('Book physicals')).toBeNull());
+    expect(dialog.open).toBe(true);
+    expect((within(dialog).getByRole('textbox', { name: 'Task' }) as HTMLInputElement).value).toBe('Book physicals');
+  });
+
+  it('a new announcement shows at once as Posting… and stays until the page reads again', async () => {
+    const user = userEvent.setup();
+    let release: (v: { success: boolean; data?: { announcementId: string } }) => void = () => {};
+    const post = vi.fn(() => new Promise<{ success: boolean; data?: { announcementId: string } }>((r) => (release = r)));
+    show(PREVIEW_HUB_COACH, writes({ postAnnouncement: post }), 'ann');
+    await user.click(screen.getByRole('button', { name: 'New announcement' }));
+    const dialog = (await screen.findByRole('dialog', { name: 'New announcement' })) as HTMLDialogElement;
+    await user.type(within(dialog).getByRole('textbox', { name: 'Headline' }), 'Bus leaves at 6');
+    await user.type(within(dialog).getByRole('textbox', { name: 'Message' }), 'Details in the app.');
+    await user.click(within(dialog).getByRole('button', { name: 'Post' }));
+    await waitFor(() => expect(dialog.open).toBe(false));
+    // The headline is set in the serif in parts, so it is read as the panel's text.
+    expect(screen.getByRole('tabpanel').textContent).toContain('Bus leaves at 6');
+    expect(code('CH-10402')!.textContent).toBe('Posting…');
+    expect(screen.queryByRole('button', { name: 'More for Bus leaves at 6' })).toBeNull();
+    release({ success: true, data: { announcementId: 'n1' } });
+    await waitFor(() => expect(router.refresh).toHaveBeenCalled());
+  });
+});
+
+describe('Team Hub · heading order (F-0063)', () => {
+  it('the Announcements tab names its list with an h2 before the posts’ h3s', () => {
+    show(PREVIEW_HUB_COACH, writes(), 'ann');
+    const panel = screen.getByRole('tabpanel');
+    const levels = within(panel)
+      .getAllByRole('heading')
+      .map((h) => Number(h.tagName.slice(1)));
+    expect(levels[0]).toBe(2);
+    for (let i = 1; i < levels.length; i++) expect(levels[i]! - levels[i - 1]!).toBeLessThanOrEqual(1);
+    expect(within(panel).getByRole('heading', { level: 2, name: 'Announcements' })).toBeTruthy();
+  });
+});

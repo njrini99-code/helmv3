@@ -1,6 +1,7 @@
 'use client';
 
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { m, useMotionValue, useMotionValueEvent, useTransform } from 'motion/react';
 import { useCallback, useLayoutEffect, useRef, useState, type MouseEvent } from 'react';
 import { Avatar } from '../ui/Avatar';
@@ -24,6 +25,7 @@ import { useIdleRowsAhead, usePrefetchTabs } from './use-prefetch-tabs';
  */
 export function SectionStrip({ pathname, role, user }: { pathname: string; role: ChRole; user?: { name: string } }) {
   const sw = useSectionSwitch();
+  const router = useRouter();
   const reduced = useChReducedMotion();
   const { immersive, noTabs } = usePhoneChromeState();
   const row = useRef<HTMLDivElement>(null);
@@ -52,6 +54,8 @@ export function SectionStrip({ pathname, role, user }: { pathname: string; role:
     const el = row.current;
     const on = el?.querySelector<HTMLElement>('[aria-current="page"]');
     if (!el || !on) return;
+    // A choice held the row still while the strip shut (F-0046); opening again lets it snap.
+    delete el.dataset.holding;
     el.scrollLeft = on.offsetLeft - (el.clientWidth - on.offsetWidth) / 2;
   }, []);
 
@@ -87,6 +91,20 @@ export function SectionStrip({ pathname, role, user }: { pathname: string; role:
     window.scrollTo({ top: 0, behavior: reduced ? 'instant' : 'smooth' });
   };
 
+  /**
+   * Choosing another section (F-0008, F-0046). The row holds still, unsnapped, so the focused pill doesn't recentre it
+   * under the plate's glide; and the route change waits a frame, so the strip's close is on the compositor before the
+   * new page's commit can hold its first frame. The switch itself still swaps at once (mot-03). A modified click (a new
+   * tab) is left to the link.
+   */
+  const choose = (e: MouseEvent<HTMLAnchorElement>, s: (typeof sw.sections)[number]) => {
+    sw.choose(s);
+    if (e.defaultPrevented || e.button !== 0 || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return;
+    e.preventDefault();
+    if (row.current) row.current.dataset.holding = '';
+    requestAnimationFrame(() => window.setTimeout(() => router.push(s.href, { scroll: false }), 0));
+  };
+
   const hidden = shut && !sw.open;
   return (
     <>
@@ -113,7 +131,7 @@ export function SectionStrip({ pathname, role, user }: { pathname: string; role:
                 scroll={false}
                 className="ch-strip__pill"
                 aria-current={on ? 'page' : undefined}
-                onClick={(e) => (sw.current?.id === s.id ? retap(e, s.href) : sw.choose(s))}
+                onClick={(e) => (sw.current?.id === s.id ? retap(e, s.href) : choose(e, s))}
               >
                 {on && <span className="ch-strip__plate" aria-hidden="true" />}
                 <Icon icon={s.icon} size={16} />
@@ -126,7 +144,8 @@ export function SectionStrip({ pathname, role, user }: { pathname: string; role:
                     </span>
                   </>
                 )}
-                <LinkPending />
+                {/* The route change is the router's (a frame after the tap), so the link never reports pending itself. */}
+                <LinkPending pending={sw.switching && sw.shown?.id === s.id} />
               </Link>
             );
           })}

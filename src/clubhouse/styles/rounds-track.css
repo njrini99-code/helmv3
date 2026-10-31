@@ -2877,7 +2877,18 @@ button.ch-rt-strip__h {
    right at a smaller scale (its whole shape still shows), bring a putt's Putt result onto the first screen. Taller
    phones and the desktop are untouched. */
 @media (max-height: 700px) {
-  @container chrt (max-width: 640px) {
+  /* The distance row held before a result (F-0019): on the desk it takes no room, as before it was mounted; on the phone it
+   keeps its height, hidden, so the card's top does not move when a result is picked or on Next shot. */
+.ch-rt-card .ch-rt-sec.is-reserved {
+  display: none;
+}
+@container chrt (max-width: 640px) {
+  .ch-rt-card .ch-rt-sec.is-reserved {
+    display: block;
+    visibility: hidden;
+  }
+}
+@container chrt (max-width: 640px) {
     .ch-rt-body {
       padding-top: 4px;
     }

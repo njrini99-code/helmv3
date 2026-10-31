@@ -2,6 +2,8 @@ import { createAdminClient } from '@/lib/supabase/admin';
 import { fromUntyped } from '@/lib/supabase/untyped';
 import { logServerError } from '@/lib/server-error-logger';
 import { describeError } from '@/lib/utils/describe-error';
+import { resolveTeamTimeZone } from './availability';
+import { formatNoticeWhen } from './timezone';
 
 /**
  * The post-response notification fan-outs a calendar write starts in `after()`, extracted from createGolfEvent and
@@ -167,6 +169,8 @@ export interface EventCancelledFanOut {
   teamId: string;
   title: string;
   startTime: string | null;
+  /** `golf_events.all_day`: an all-day event is named by its date alone (F-0001). */
+  allDay?: boolean | null;
   location: string | null;
   reason: string;
   /** `golf_events.requires_rsvp` was on: only then is anyone told (owner, 2026-10-08). */
@@ -241,15 +245,9 @@ export async function fanOutEventCancelled(p: EventCancelledFanOut): Promise<voi
     const userIds = [...new Set([...attendanceUserIds, ...teamUserIds])];
     if (userIds.length === 0) return;
 
-    const startLabel = p.startTime
-      ? new Date(p.startTime).toLocaleString('en-US', {
-          weekday: 'short',
-          month: 'short',
-          day: 'numeric',
-          hour: 'numeric',
-          minute: '2-digit',
-        })
-      : 'TBD';
+    // In the team's zone (F-0001): the server runs in UTC.
+    const timeZone = await resolveTeamTimeZone([p.teamId], adminClient, 'golf.deleteEvent.cancellationFanOut');
+    const startLabel = formatNoticeWhen(p.startTime, p.allDay, timeZone);
     const detail = `${startLabel}${p.location ? ` at ${p.location}` : ''}${p.reason ? ` — ${p.reason}` : ''}`;
 
     const inAppPromise = (async () => {
