@@ -43,7 +43,8 @@ function admin(zone: string | null) {
 }
 
 async function bellRows(fake: Fake) {
-  const { data } = await fake.from('golf_calendar_notifications').select('*');
+  const { data, error } = await fake.from('golf_calendar_notifications').select('*');
+  if (error) throw new Error(`fake read failed: ${error.message}`);
   return (data ?? []) as Array<Record<string, unknown>>;
 }
 

@@ -592,7 +592,8 @@ export async function createConversation({
  * - both users are in it;
  * - it is on `teamId`, and is neither the team channel nor a team chat (`IS NOT TRUE`: null is a direct thread);
  * - it has exactly two members.
- * The newest by `updated_at` wins. A failed read finds nothing, so a new thread is made rather than a wrong one reused.
+ * The newest by `updated_at` wins. A failed read is logged and throws, so the caller says the conversation couldn't start
+ * (CH-7002) instead of making a second thread or reusing a wrong one.
  */
 async function findGolfDirectConversation(
   supabase: Awaited<ReturnType<typeof createClient>>,
@@ -600,38 +601,47 @@ async function findGolfDirectConversation(
   otherUserId: string,
   teamId: string,
 ): Promise<string | null> {
-  const { data: mine } = (await supabase
+  const failed = async (read: string, error: { message: string }) => {
+    await logServerError(`[Messages] Direct thread lookup failed (${read}): ${error.message}`, { teamId, read });
+    throw new Error('Couldn’t check for an existing conversation');
+  };
+  const { data: mine, error: mineError } = (await supabase
     .from('golf_conversation_participants')
     .select('conversation_id')
-    .eq('user_id', viewerId)) as { data: { conversation_id: string }[] | null };
+    .eq('user_id', viewerId)) as { data: { conversation_id: string }[] | null; error: { message: string } | null };
+  if (mineError) await failed('mine', mineError);
   const mineIds = (mine ?? []).map((r) => r.conversation_id);
   if (mineIds.length === 0) return null;
 
-  const { data: shared } = (await supabase
+  const { data: shared, error: sharedError } = (await supabase
     .from('golf_conversation_participants')
     .select('conversation_id')
     .eq('user_id', otherUserId)
-    .in('conversation_id', mineIds)) as { data: { conversation_id: string }[] | null };
+    .in('conversation_id', mineIds)) as { data: { conversation_id: string }[] | null; error: { message: string } | null };
+  if (sharedError) await failed('shared', sharedError);
   const sharedIds = [...new Set((shared ?? []).map((r) => r.conversation_id))];
   if (sharedIds.length === 0) return null;
 
   // Filtered here rather than with `.or(...is.false)`, so a null flag reads as "not a channel" exactly as the RLS does.
-  const { data: convs } = (await supabase
+  const { data: convs, error: convsError } = (await supabase
     .from('golf_conversations')
     .select('id, team_id, is_team_channel, is_team_chat, updated_at')
     .in('id', sharedIds)
     .eq('team_id', teamId)) as {
     data: { id: string; team_id: string | null; is_team_channel: boolean | null; is_team_chat: boolean | null; updated_at: string | null }[] | null;
+    error: { message: string } | null;
   };
+  if (convsError) await failed('conversations', convsError);
   const candidates = (convs ?? [])
     .filter((c) => c.team_id === teamId && c.is_team_channel !== true && c.is_team_chat !== true)
     .sort((a, b) => (b.updated_at ?? '').localeCompare(a.updated_at ?? ''));
   if (candidates.length === 0) return null;
 
-  const { data: members } = (await supabase
+  const { data: members, error: membersError } = (await supabase
     .from('golf_conversation_participants')
     .select('conversation_id, user_id')
-    .in('conversation_id', candidates.map((c) => c.id))) as { data: { conversation_id: string; user_id: string }[] | null };
+    .in('conversation_id', candidates.map((c) => c.id))) as { data: { conversation_id: string; user_id: string }[] | null; error: { message: string } | null };
+  if (membersError) await failed('members', membersError);
   if (!members) return null;
   const membersOf = new Map<string, Set<string>>();
   for (const m of members) {

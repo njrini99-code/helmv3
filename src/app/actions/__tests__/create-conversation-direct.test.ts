@@ -45,7 +45,8 @@ async function create() {
 }
 
 async function conversationCount() {
-  const { data } = await fake.from('golf_conversations').select('id');
+  const { data, error } = await fake.from('golf_conversations').select('id');
+  if (error) throw new Error(`fake read failed: ${error.message}`);
   return (data ?? []).length;
 }
 
