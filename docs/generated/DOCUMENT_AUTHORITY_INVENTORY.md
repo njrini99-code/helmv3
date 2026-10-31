@@ -865,6 +865,7 @@ them would bury everything above.
 | `docs/clubhouse/changes/2026-10-28-visual-pass-system.md` | current | - | - | - | - |
 | `docs/clubhouse/changes/2026-10-28-visual-pass-whats-new.md` | current | - | - | - | - |
 | `docs/clubhouse/changes/2026-10-29-initials-letters-only.md` | current | - | - | - | - |
+| `docs/clubhouse/changes/2026-10-30-motion-stalls-and-reduce-motion.md` | current | - | - | - | - |
 | `docs/clubhouse/drafts/auth-onboarding-ground-truth.md` | current | - | - | - | - |
 | `docs/clubhouse/drafts/intelligence.md` | current | - | - | - | - |
 | `docs/clubhouse/foundation-v2/02_AUTHORITY_MODEL.md` | current | - | - | yes | - |
@@ -956,6 +957,7 @@ them would bury everything above.
 | `docs/clubhouse/pages/P001-shell/changes/2026-10-27-press-prefetch-mark.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P001-shell/changes/2026-10-28-chat-alias-query.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P001-shell/changes/2026-10-28-visual-pass.md` | current | - | - | - | - |
+| `docs/clubhouse/pages/P001-shell/changes/2026-10-30-motion-strip-and-edge-swipe.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P002-home/CHANGELOG.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P002-home/CONTRACT.md` | current | - | - | yes | - |
 | `docs/clubhouse/pages/P002-home/DESIGN.md` | current | - | - | - | - |
@@ -1070,6 +1072,7 @@ them would bury everything above.
 | `docs/clubhouse/pages/P006-calendar/changes/2026-10-27-review-must-fixes.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P006-calendar/changes/2026-10-28-event-files-signed-links.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P006-calendar/changes/2026-10-28-visual-pass.md` | current | - | - | - | - |
+| `docs/clubhouse/pages/P006-calendar/changes/2026-10-30-motion.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P007-messages/CHANGELOG.md` | current | - | - | yes | 1 |
 | `docs/clubhouse/pages/P007-messages/CONTRACT.md` | current | - | - | yes | - |
 | `docs/clubhouse/pages/P007-messages/DESIGN.md` | current | - | - | yes | - |
@@ -1098,6 +1101,7 @@ them would bury everything above.
 | `docs/clubhouse/pages/P007-messages/changes/2026-10-28-badge-after-delete.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P007-messages/changes/2026-10-28-visual-pass.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P007-messages/changes/2026-10-29-inbox-row-and-poll-depth.md` | current | - | - | - | - |
+| `docs/clubhouse/pages/P007-messages/changes/2026-10-30-messages-ratchets.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P008-settings/CHANGELOG.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P008-settings/CONTRACT.md` | current | - | - | yes | - |
 | `docs/clubhouse/pages/P008-settings/DESIGN.md` | current | - | - | - | - |
@@ -1256,6 +1260,7 @@ them would bury everything above.
 | `docs/clubhouse/pages/P013-coachhelm/changes/2026-10-28-ask-team-tools-flag.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P013-coachhelm/changes/2026-10-28-visual-pass-whats-new.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P013-coachhelm/changes/2026-10-28-visual-pass.md` | current | - | - | - | - |
+| `docs/clubhouse/pages/P013-coachhelm/changes/2026-10-30-history-sheet-reduced.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P014-recruiting/CHANGELOG.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P014-recruiting/CONTRACT.md` | current | - | - | yes | - |
 | `docs/clubhouse/pages/P014-recruiting/DESIGN.md` | current | - | - | - | - |
