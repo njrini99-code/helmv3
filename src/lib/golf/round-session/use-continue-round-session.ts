@@ -684,6 +684,8 @@ export function useContinueRoundSession({
       // resurrecting it. For Save for later it would just be a redundant
       // write of data already durable server-side.
       if (roundExitedSafelyRef.current) return;
+      // Discarded in another tab or from the Resume bar: writing the device copy back would let recovery re-create it.
+      if (roundDiscardedRef.current || wasRoundDiscarded(roundId, playerId)) return;
 
       const mergedInProgress = { ...inProgressShotsByHoleRef.current };
       const holesSnapshot = holesRef.current;
@@ -719,6 +721,7 @@ export function useContinueRoundSession({
       const saveData: PartialRoundData = {
         courseName: setupData.courseName,
         ...(linkedCourseIdRef.current ? { courseId: linkedCourseIdRef.current } : {}),
+        ...(setupData.teeId ? { teeId: setupData.teeId } : {}),
         courseCity: setupData.courseCity || undefined,
         courseState: setupData.courseState || undefined,
         courseRating: setupData.courseRating ? parseFloat(setupData.courseRating) : undefined,
@@ -821,6 +824,9 @@ export function useContinueRoundSession({
     return {
       courseName: setupData.courseName,
       ...(linkedCourseIdRef.current ? { courseId: linkedCourseIdRef.current } : {}),
+      // The partial-save RPC writes tee_id from this key and NULLs it when absent: every autosave dropped the round's
+      // catalog tee (audit 2026-10-31: 133 completed rounds on four teams lost it).
+      ...(setupData.teeId ? { teeId: setupData.teeId } : {}),
       courseCity: setupData.courseCity || undefined,
       courseState: setupData.courseState || undefined,
       courseRating: setupData.courseRating ? parseFloat(setupData.courseRating) : undefined,

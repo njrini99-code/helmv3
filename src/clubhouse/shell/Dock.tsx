@@ -165,7 +165,7 @@ function DiscardRoundModal({ round, playerId, open, onClose }: { round: ChRoundI
         label="Discard the round in progress"
         title="Discard this round?"
         body={`${resumeRoundLabel(round)}. This can’t be undone.`}
-        error={error ? failureLine('Couldn’t discard the round.', error, 'It is still saved. Try again, or resume it instead.') : null}
+        error={error != null ? failureLine('Couldn’t discard the round.', error || null, 'It is still saved. Try again, or resume it instead.') : null}
         errorCode="CH-11009"
         busy={busy}
         onKeep={close}
@@ -176,7 +176,9 @@ function DiscardRoundModal({ round, playerId, open, onClose }: { round: ChRoundI
           setBusy(false);
           if (!result.ok) {
             haptic('error');
-            setError(result.error);
+            setError(result.error ?? '');
+            // A refusal can mean the round already finished or went elsewhere: read the shell again so the bar follows.
+            router.refresh();
             return;
           }
           haptic('success');

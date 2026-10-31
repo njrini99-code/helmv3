@@ -307,6 +307,8 @@ export function useShotTracking(
         // it hit `handleNextShot`'s own silent `distanceAfter === 0` bail —
         // a dead tap with no player-facing feedback at all.
         if (afterInFeet <= 0) return false;
+        // "0.4" ft rounds to 0 when saved (resolveDistanceAfter): the same dead tap, so it is not ready either.
+        if (!isMeters && Math.round(parsed) <= 0) return false;
       } else {
         // B5: this value becomes the NEXT shot's `distanceToHoleBefore`,
         // capped at 1000 yards by the server's comprehensiveShotSchema

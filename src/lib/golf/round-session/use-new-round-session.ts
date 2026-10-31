@@ -576,7 +576,7 @@ export function useNewRoundSession({ playerId, ports, routes, logSource }: NewRo
       const indexedDbSnapshots = await getRoundRecoverySnapshots()
         .then((snapshots) => snapshots
           .map((snapshot) => snapshot.data)
-          .filter((snapshot) => snapshot.playerId === playerId))
+          .filter((snapshot) => snapshot.playerId === playerId && !wasRoundDiscarded(snapshot.roundId, playerId)))
         .catch(() => [] as EmergencySaveData[]);
       const emergencyData = [localSnapshot, ...indexedDbSnapshots]
         .filter((snapshot): snapshot is EmergencySaveData => snapshot != null)
@@ -660,7 +660,12 @@ export function useNewRoundSession({ playerId, ports, routes, logSource }: NewRo
       const statsSnapshot = completedHoleStatsRef.current;
       const currentHole = currentHoleIndexRef.current;
       const mergedInProgress = { ...inProgressShotsByHoleRef.current };
-      const setup = setupDataRef.current;
+      // The device copy carries the catalog course and tee, so a restore re-creates the round linked to both.
+      const setup = {
+        ...setupDataRef.current,
+        ...(resolvedCourseIdRef.current ? { courseId: resolvedCourseIdRef.current } : {}),
+        ...(selectedTeeIdRef.current ? { teeId: selectedTeeIdRef.current } : {}),
+      };
 
       return {
         currentHole,
@@ -680,6 +685,8 @@ export function useNewRoundSession({ playerId, ports, routes, logSource }: NewRo
       // resurrecting it. For Save for later it would just be a redundant
       // write of data already durable server-side.
       if (roundExitedSafelyRef.current) return;
+      // Discarded in another tab or from the Resume bar: writing the device copy back would let recovery re-create it.
+      if (roundDiscardedRef.current || wasRoundDiscarded(savedRoundIdRef.current, playerId)) return;
       const { currentHole, holesSnapshot, statsSnapshot, mergedInProgress, setup } = buildEmergencyPayload();
 
       // 1. SYNCHRONOUS localStorage write — guaranteed to complete before page freeze
@@ -1379,6 +1386,8 @@ export function useNewRoundSession({ playerId, ports, routes, logSource }: NewRo
       timestamp: Date.now(),
       setupData: {
         ...setupData,
+        ...(resolvedCourseIdRef.current ? { courseId: resolvedCourseIdRef.current } : {}),
+        ...(selectedTeeIdRef.current ? { teeId: selectedTeeIdRef.current } : {}),
         qualifierId: selectedQualifierId ?? undefined,
         qualifierRoundNumber: selectedRoundNumber ?? undefined,
       },
@@ -1604,7 +1613,11 @@ export function useNewRoundSession({ playerId, ports, routes, logSource }: NewRo
         setConflictActionBusy(false);
         return;
       }
+      // The scorecard's discard steps (handleDeleteRound): without the mark and the queued-submit drop, a submit queued
+      // offline for this round could sync and re-create it (audit 2026-10-31).
       clearEmergencySave(inProgressConflict.roundId, playerId);
+      markRoundDiscarded(inProgressConflict.roundId, playerId);
+      forgetQueuedRound(inProgressConflict.roundId);
       setInProgressConflict(null);
       setDiscardConfirming(false);
       setConflictActionBusy(false);
@@ -3013,6 +3026,8 @@ export function useNewRoundSession({ playerId, ports, routes, logSource }: NewRo
       });
     const recoveryData: PartialRoundData = {
       courseName: rd.setupData.courseName,
+      ...(rd.setupData.courseId ? { courseId: rd.setupData.courseId } : {}),
+      ...(rd.setupData.teeId ? { teeId: rd.setupData.teeId } : {}),
       courseCity: rd.setupData.courseCity || undefined,
       courseState: rd.setupData.courseState || undefined,
       courseRating: rd.setupData.courseRating ? parseFloat(rd.setupData.courseRating) : undefined,
