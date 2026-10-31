@@ -22,7 +22,7 @@ export const FLAG_REGISTRY: readonly FlagDefinition[] = [
     expires_at: null,
     default: false,
     environment: {
-      production: false,
+      production: true,
       preview: true,
       development: true,
     },
@@ -39,7 +39,7 @@ export const FLAG_REGISTRY: readonly FlagDefinition[] = [
     expires_at: "2027-01-05",
     default: false,
     environment: {
-      production: false,
+      production: true,
       preview: true,
       development: true,
     },
@@ -56,7 +56,7 @@ export const FLAG_REGISTRY: readonly FlagDefinition[] = [
     expires_at: "2027-01-05",
     default: false,
     environment: {
-      production: false,
+      production: true,
       preview: true,
       development: true,
     },
@@ -73,7 +73,7 @@ export const FLAG_REGISTRY: readonly FlagDefinition[] = [
     expires_at: "2027-01-05",
     default: false,
     environment: {
-      production: false,
+      production: true,
       preview: true,
       development: true,
     },
@@ -90,7 +90,7 @@ export const FLAG_REGISTRY: readonly FlagDefinition[] = [
     expires_at: "2027-01-05",
     default: false,
     environment: {
-      production: false,
+      production: true,
       preview: true,
       development: true,
     },
@@ -107,7 +107,7 @@ export const FLAG_REGISTRY: readonly FlagDefinition[] = [
     expires_at: "2027-01-05",
     default: false,
     environment: {
-      production: false,
+      production: true,
       preview: true,
       development: true,
     },
@@ -124,7 +124,7 @@ export const FLAG_REGISTRY: readonly FlagDefinition[] = [
     expires_at: null,
     default: false,
     environment: {
-      production: false,
+      production: true,
       preview: true,
       development: false,
     },
@@ -141,7 +141,7 @@ export const FLAG_REGISTRY: readonly FlagDefinition[] = [
     expires_at: null,
     default: false,
     environment: {
-      production: false,
+      production: true,
       preview: true,
       development: false,
     },
@@ -158,7 +158,7 @@ export const FLAG_REGISTRY: readonly FlagDefinition[] = [
     expires_at: null,
     default: false,
     environment: {
-      production: false,
+      production: true,
       preview: true,
       development: false,
     },
@@ -175,7 +175,7 @@ export const FLAG_REGISTRY: readonly FlagDefinition[] = [
     expires_at: null,
     default: false,
     environment: {
-      production: false,
+      production: true,
       preview: true,
       development: false,
     },
@@ -192,7 +192,7 @@ export const FLAG_REGISTRY: readonly FlagDefinition[] = [
     expires_at: "2026-12-31",
     default: false,
     environment: {
-      production: false,
+      production: true,
       preview: true,
       development: false,
     },
@@ -209,7 +209,7 @@ export const FLAG_REGISTRY: readonly FlagDefinition[] = [
     expires_at: "2026-12-23",
     default: false,
     environment: {
-      production: false,
+      production: true,
       preview: true,
       development: true,
     },
@@ -226,7 +226,7 @@ export const FLAG_REGISTRY: readonly FlagDefinition[] = [
     expires_at: "2027-01-31",
     default: false,
     environment: {
-      production: false,
+      production: true,
       preview: true,
       development: false,
     },
@@ -243,7 +243,7 @@ export const FLAG_REGISTRY: readonly FlagDefinition[] = [
     expires_at: "2027-01-05",
     default: false,
     environment: {
-      production: false,
+      production: true,
       preview: true,
       development: true,
     },
@@ -260,7 +260,7 @@ export const FLAG_REGISTRY: readonly FlagDefinition[] = [
     expires_at: null,
     default: false,
     environment: {
-      production: false,
+      production: true,
       preview: true,
       development: false,
     },
@@ -277,7 +277,7 @@ export const FLAG_REGISTRY: readonly FlagDefinition[] = [
     expires_at: null,
     default: false,
     environment: {
-      production: false,
+      production: true,
       preview: true,
       development: false,
     },
@@ -294,7 +294,7 @@ export const FLAG_REGISTRY: readonly FlagDefinition[] = [
     expires_at: "2027-01-05",
     default: false,
     environment: {
-      production: false,
+      production: true,
       preview: true,
       development: true,
     },
@@ -311,7 +311,7 @@ export const FLAG_REGISTRY: readonly FlagDefinition[] = [
     expires_at: "2026-12-31",
     default: false,
     environment: {
-      production: false,
+      production: true,
       preview: true,
       development: false,
     },
@@ -328,7 +328,7 @@ export const FLAG_REGISTRY: readonly FlagDefinition[] = [
     expires_at: null,
     default: false,
     environment: {
-      production: false,
+      production: true,
       preview: true,
       development: false,
     },
@@ -345,7 +345,7 @@ export const FLAG_REGISTRY: readonly FlagDefinition[] = [
     expires_at: null,
     default: false,
     environment: {
-      production: false,
+      production: true,
       preview: true,
       development: false,
     },
@@ -362,7 +362,7 @@ export const FLAG_REGISTRY: readonly FlagDefinition[] = [
     expires_at: "2027-01-05",
     default: false,
     environment: {
-      production: false,
+      production: true,
       preview: true,
       development: true,
     },
@@ -379,7 +379,7 @@ export const FLAG_REGISTRY: readonly FlagDefinition[] = [
     expires_at: null,
     default: false,
     environment: {
-      production: false,
+      production: true,
       preview: true,
       development: true,
     },
@@ -396,7 +396,7 @@ export const FLAG_REGISTRY: readonly FlagDefinition[] = [
     expires_at: null,
     default: false,
     environment: {
-      production: false,
+      production: true,
       preview: true,
       development: false,
     },
@@ -413,7 +413,7 @@ export const FLAG_REGISTRY: readonly FlagDefinition[] = [
     expires_at: null,
     default: false,
     environment: {
-      production: false,
+      production: true,
       preview: true,
       development: false,
     },
@@ -430,7 +430,7 @@ export const FLAG_REGISTRY: readonly FlagDefinition[] = [
     expires_at: null,
     default: false,
     environment: {
-      production: false,
+      production: true,
       preview: true,
       development: false,
     },
@@ -447,7 +447,7 @@ export const FLAG_REGISTRY: readonly FlagDefinition[] = [
     expires_at: null,
     default: false,
     environment: {
-      production: false,
+      production: true,
       preview: true,
       development: false,
     },
@@ -481,7 +481,7 @@ export const FLAG_REGISTRY: readonly FlagDefinition[] = [
     expires_at: "2027-01-05",
     default: false,
     environment: {
-      production: false,
+      production: true,
       preview: true,
       development: true,
     },
@@ -498,7 +498,7 @@ export const FLAG_REGISTRY: readonly FlagDefinition[] = [
     expires_at: null,
     default: false,
     environment: {
-      production: false,
+      production: true,
       preview: true,
       development: false,
     },
@@ -515,7 +515,7 @@ export const FLAG_REGISTRY: readonly FlagDefinition[] = [
     expires_at: null,
     default: false,
     environment: {
-      production: false,
+      production: true,
       preview: true,
       development: true,
     },
@@ -549,7 +549,7 @@ export const FLAG_REGISTRY: readonly FlagDefinition[] = [
     expires_at: null,
     default: false,
     environment: {
-      production: false,
+      production: true,
       preview: true,
       development: true,
     },
@@ -566,7 +566,7 @@ export const FLAG_REGISTRY: readonly FlagDefinition[] = [
     expires_at: null,
     default: false,
     environment: {
-      production: false,
+      production: true,
       preview: false,
       development: false,
     },
