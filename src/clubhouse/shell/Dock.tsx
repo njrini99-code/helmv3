@@ -1,7 +1,8 @@
 'use client';
 
 import Link from 'next/link';
-import { ChevronRight, Flag } from 'lucide-react';
+import { useRouter } from 'next/navigation';
+import { ChevronRight, Flag, Trash2, X } from 'lucide-react';
 import { createContext, useContext, useEffect, useLayoutEffect, useRef, useState, type ReactNode } from 'react';
 import { createPortal } from 'react-dom';
 import type { ChRoundInProgress } from '../data/shell';
@@ -9,6 +10,10 @@ import { formatToPar } from '../lib/format';
 import { haptic } from '../lib/haptics';
 import { useChPhone } from '../lib/use-phone';
 import { Icon } from '../ui/Icon';
+import { Modal } from '../ui/Modal';
+import { DiscardConfirm } from '../screens/rounds/entry/parts';
+import { failureLine } from '../screens/rounds/entry/labels';
+import { discardRoundInProgress } from './discard-round';
 import { rebuiltHref } from './nav';
 import { usePhoneChromeState } from './phone-chrome';
 
@@ -74,6 +79,7 @@ export function PhoneDock({ round, pathname }: { round: ChRoundInProgress | null
   const { setSlot, pages } = useContext(Dock);
   const { immersive, noTabs, dockKept } = usePhoneChromeState();
   const ref = useRef<HTMLDivElement>(null);
+  const [discardOpen, setDiscardOpen] = useState(false);
   const href = round && !ROUND_SCREENS.test(pathname) ? resumeRoundHref(round) : null;
   // A push that is not immersive keeps the Resume round accessory (never an empty dock): PhoneScreen, shell-gestures.md.
   const shown = (!immersive && !noTabs && (pages > 0 || !!href)) || (dockKept && !noTabs && !!href);
@@ -98,27 +104,87 @@ export function PhoneDock({ round, pathname }: { round: ChRoundInProgress | null
     <div ref={ref} className="ch-dock" data-ch-code="CH-1820" hidden={!shown}>
       <div ref={setSlot} className="ch-dock__slot" />
       {href && round && (
-        <Link
-          href={href}
-          className="ch-resume"
-          data-ch-code="CH-1821"
-          aria-label={`Resume round, ${resumeRoundLabel(round)}`}
-          onClick={() => haptic('press')}
-        >
-          <span className="ch-resume__ic" aria-hidden="true">
-            <Icon icon={Flag} size={15} />
-          </span>
-          <span className="ch-resume__t">
-            <b>Round in progress</b>
-            <span className="ch-resume__m">{resumeRoundLabel(round)}</span>
-          </span>
-          <span className="ch-resume__go" aria-hidden="true">
-            Resume
-            <Icon icon={ChevronRight} size={15} />
-          </span>
-        </Link>
+        <div className="ch-resume">
+          <Link
+            href={href}
+            className="ch-resume__link"
+            data-ch-code="CH-1821"
+            aria-label={`Resume round, ${resumeRoundLabel(round)}`}
+            onClick={() => haptic('press')}
+          >
+            <span className="ch-resume__ic" aria-hidden="true">
+              <Icon icon={Flag} size={15} />
+            </span>
+            <span className="ch-resume__t">
+              <b>Round in progress</b>
+              <span className="ch-resume__m">{resumeRoundLabel(round)}</span>
+            </span>
+            <span className="ch-resume__go" aria-hidden="true">
+              Resume
+              <Icon icon={ChevronRight} size={15} />
+            </span>
+          </Link>
+          {round.playerId && (
+            <button
+              type="button"
+              className="ch-resume__x"
+              data-ch-code="CH-1823"
+              aria-label={`Discard round, ${resumeRoundLabel(round)}`}
+              onClick={() => {
+                haptic('press');
+                setDiscardOpen(true);
+              }}
+            >
+              <Icon icon={X} size={16} />
+            </button>
+          )}
+        </div>
       )}
+      {round?.playerId && <DiscardRoundModal round={round} playerId={round.playerId} open={discardOpen} onClose={() => setDiscardOpen(false)} />}
     </div>
+  );
+}
+
+/**
+ * The Resume bar's discard (owner, 2026-10-31: "let me discard it"): the scorecard's own question (CH-11515), then the
+ * scorecard's own steps (discard-round.ts). On success the shell reads again, so the bar goes.
+ */
+function DiscardRoundModal({ round, playerId, open, onClose }: { round: ChRoundInProgress; playerId: string; open: boolean; onClose: () => void }) {
+  const router = useRouter();
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const close = () => {
+    if (busy) return;
+    setError(null);
+    onClose();
+  };
+  return (
+    <Modal open={open} onClose={close} title="Round in progress" icon={Trash2} width={480} code="CH-1824">
+      <DiscardConfirm
+        code="CH-11515"
+        label="Discard the round in progress"
+        title="Discard this round?"
+        body={`${resumeRoundLabel(round)}. This can’t be undone.`}
+        error={error ? failureLine('Couldn’t discard the round.', error, 'It is still saved. Try again, or resume it instead.') : null}
+        errorCode="CH-11009"
+        busy={busy}
+        onKeep={close}
+        onDiscard={async () => {
+          setBusy(true);
+          setError(null);
+          const result = await discardRoundInProgress(round.id, playerId);
+          setBusy(false);
+          if (!result.ok) {
+            haptic('error');
+            setError(result.error);
+            return;
+          }
+          haptic('success');
+          onClose();
+          router.refresh();
+        }}
+      />
+    </Modal>
   );
 }
 

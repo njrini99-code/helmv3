@@ -2811,26 +2811,51 @@ html[data-fw-theme='dark'] .ch-offline {
     align-items: center;
     gap: 8px;
   }
+  /* The pill holds two taps: Resume (the link) and Discard (the x, CH-1823, owner 2026-10-31). */
   .ch-resume {
     display: flex;
     align-items: center;
-    gap: 8px;
+    gap: 4px;
     min-height: 48px;
-    padding: 6px 8px 6px 6px;
+    padding: 6px 6px 6px 6px;
     border-radius: 999px;
     background: var(--ch-sheet-bg);
     color: var(--ch-text-primary);
-    text-decoration: none;
     box-shadow: var(--ch-elevation-raised), 0 0 0 var(--ch-hairline-w) var(--ch-border-subtle), var(--ch-highlight);
     transition: transform var(--ch-dur-press) var(--ch-ease);
   }
-  .ch-resume[data-ch-pressed] {
+  .ch-resume:has(.ch-resume__link[data-ch-pressed]) {
     transform: scale(0.98);
   }
   @media (hover: hover) {
-    .ch-resume:active {
+    .ch-resume:has(.ch-resume__link:active) {
       transform: scale(0.98);
     }
+  }
+  .ch-resume__link {
+    display: flex;
+    flex: 1;
+    align-items: center;
+    gap: 8px;
+    min-width: 0;
+    color: inherit;
+    text-decoration: none;
+  }
+  .ch-resume__x {
+    display: grid;
+    flex: none;
+    place-items: center;
+    width: 36px;
+    height: 36px;
+    border: 0;
+    border-radius: 50%;
+    background: transparent;
+    color: var(--ch-text-tertiary);
+    cursor: pointer;
+    transition: background-color var(--ch-dur-press) var(--ch-ease);
+  }
+  .ch-resume__x:active {
+    background: var(--ch-press-well);
   }
   .ch-resume__ic {
     display: grid;

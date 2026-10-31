@@ -73,6 +73,8 @@ export interface ChRoundInProgress {
   hole: number | null;
   /** Strokes over or under par through the holes scored (P-6): the Dock's "Hole 12 · −2". Null until a hole is scored. */
   toPar?: number | null;
+  /** Whose round it is: discarding it from the Dock clears that player's copy on this device too. */
+  playerId?: string;
 }
 
 /** A round untouched for this long is not "in progress" for the accessory; the Rounds library still lists it. */
@@ -263,7 +265,7 @@ export async function loadClubhouseShell(teamId: string | undefined, playerId?: 
     askAvailable: askOn,
     classAwareness: isFlagEnabled('class_awareness_v1'),
     course: courseOf(courseRes),
-    roundInProgress: round ? { id: round.id, course: round.course_name?.trim() || 'Your round', hole: round.current_hole ?? null, toPar: toParOf(round.golf_holes ?? []) } : null,
+    roundInProgress: round && playerId ? { id: round.id, course: round.course_name?.trim() || 'Your round', hole: round.current_hole ?? null, toPar: toParOf(round.golf_holes ?? []), playerId } : null,
     viewerIsHeadCoach: !!staffRes && !staffRes.error && (staffRes.data ?? []).some((row) => row.role === 'head_coach'),
   };
 }
