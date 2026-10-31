@@ -61,6 +61,7 @@ import {
   comparePlayers,
   getFocusAreas,
   getOpenTasks,
+  getTeamTravel,
   getPlayerInsights,
   getPlayerMetric,
   getPlayerTrend,
@@ -156,6 +157,7 @@ const PROGRESS_LABEL: Record<string, (input: Record<string, unknown>) => string>
   get_focus_areas: () => 'Checking active focus areas',
   get_upcoming_events: () => 'Checking the schedule and RSVPs',
   get_open_tasks: () => 'Checking outstanding tasks',
+  get_team_travel: () => 'Checking team travel',
   show_visual: () => 'Building the visual',
   find_player: () => 'Finding that player on your roster',
   create_recurring_practice: () => 'Preparing the practice dates',
@@ -645,6 +647,13 @@ export function buildCoachTools({ sb, ctx, conversationId, writer, collect, team
       description: 'Outstanding team tasks, flagging which are overdue.',
       inputSchema: z.object({}),
       execute: read('get_open_tasks', () => getOpenTasks(sb, ctx)),
+    }),
+
+    get_team_travel: tool({
+      description:
+        "The team's trips from two weeks ago on, soonest first: event, destination, departure and return dates and times, where they leave from, transportation, hotel and notes. Use it for any travel question before saying there is no trip.",
+      inputSchema: z.object({}),
+      execute: read('get_team_travel', () => getTeamTravel(sb, ctx)),
     }),
 
     // =====================================================================
