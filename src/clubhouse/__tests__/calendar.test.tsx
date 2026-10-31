@@ -2612,3 +2612,33 @@ describe('P-5 tournaments from the calendar', () => {
     expect(onChange.mock.calls.at(-1)?.[0].rounds).toHaveLength(3);
   });
 });
+
+describe('Calendar · Publish shows the event at once (F-0029)', () => {
+  it('the editor closes and the new event is on the calendar before the server answers', async () => {
+    const user = userEvent.setup();
+    let release: (v: { success: boolean; data?: unknown }) => void = () => {};
+    a.createGolfEvent.mockImplementation(() => new Promise((r) => (release = r)));
+    wrap(cal(), { initialNew: true });
+    await user.type(await screen.findByRole('textbox', { name: 'Event title' }), 'Short game');
+    await user.click(screen.getByRole('button', { name: 'Publish event' }));
+    await waitFor(() => expect(document.querySelector('dialog[open]')).toBeNull());
+    expect(screen.getAllByRole('button', { name: /^Short game/ }).length).toBeGreaterThan(0);
+    release({ success: true, data: { id: 'e-new' } });
+    await waitFor(() => expect(router.refresh).toHaveBeenCalled());
+  });
+
+  it('a failed publish takes the block back and reopens the editor with everything as typed', async () => {
+    const user = userEvent.setup();
+    let release: (v: { success: boolean; error?: string }) => void = () => {};
+    a.createGolfEvent.mockImplementation(() => new Promise((r) => (release = r)));
+    wrap(cal(), { initialNew: true });
+    await user.type(await screen.findByRole('textbox', { name: 'Event title' }), 'Short game');
+    await user.click(screen.getByRole('button', { name: 'Publish event' }));
+    await waitFor(() => expect(document.querySelector('dialog[open]')).toBeNull());
+    release({ success: false, error: 'nope' });
+    await expectCode('CH-6001', /Couldn’t publish Short game/);
+    expect(screen.queryAllByRole('button', { name: /^Short game/ })).toHaveLength(0);
+    expect(document.querySelector('dialog[open]')).not.toBeNull();
+    expect((screen.getByRole('textbox', { name: 'Event title' }) as HTMLInputElement).value).toBe('Short game');
+  });
+});

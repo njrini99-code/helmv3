@@ -93,6 +93,8 @@ export interface EditorSeed {
   copyOf?: ChCalEvent;
   /** P-5 E4: the inspector's Set up on an untracked tournament event opens the editor with Track already on. */
   track?: boolean;
+  /** Reopened after a publish drawn at once failed (F-0029): the same event keeps its request id, so a Retry can't make it twice. */
+  resend?: boolean;
 }
 
 function FindTime({
@@ -246,10 +248,16 @@ export function EventEditor({
   teamId,
   courseWrites = LIVE_WRITES,
   onTournamentSaved,
+  provisional,
 }: {
   seed: EditorSeed | null;
   onClose: () => void;
   onSaved: (date: string) => void;
+  /**
+   * A new single event is drawn the moment it is published (F-0029): `add` puts its block on the calendar and closes the
+   * editor, and returns the undo; a failure takes the block back and `reopen` opens the editor on what was typed.
+   */
+  provisional?: { add: (e: ChCalEvent) => () => void; reopen: (e: ChCalEvent) => void };
   events: ChCalEvent[];
   people: ChCalPerson[];
   /** The roster didn't load: the invite list is unknown, never "no players" (C-21). */
@@ -366,7 +374,8 @@ export function EventEditor({
     setInvited(init.invited);
     setRsvp(init.rsvp);
     // A drag-to-move proposal is already a change worth keeping.
-    setBaseline(seed.proposal ? '' : snapshot({ ...init, repeat: 'none' }));
+    // A reopened publish (F-0029) is unsaved work: closing it asks first, as before it was sent.
+    setBaseline(seed.proposal || seed.resend ? '' : snapshot({ ...init, repeat: 'none' }));
     setDiscarding(false);
     setRepeat('none');
     setUntil(addDays(init.date, 56));
@@ -424,7 +433,7 @@ export function EventEditor({
   const requestIdFor = (payload: unknown) => {
     const sig = JSON.stringify(payload);
     const last = attempt.current;
-    if (last && last.seed === seed && last.sig === sig) return last.id;
+    if (last && (last.seed === seed || seed?.resend) && last.sig === sig) return last.id;
     const id = newRequestId();
     attempt.current = { seed, sig, id };
     return id;
@@ -532,7 +541,21 @@ export function EventEditor({
   const save = useAction<[], unknown>(
     'calendar.saveEvent',
     async () => {
-      const res = await send();
+      // A new one-off event goes on the calendar at once; a series, a run of days, an edit or a tournament waits.
+      const draft: ChCalEvent | null =
+        provisional && !base && !tracked && repeat === 'none' && extraDays === 0
+          ? { id: `provisional:${Date.now()}`, type, title: title.trim(), date, start: allDay ? null : win[0], end: allDay ? null : win[1], allDay, location: loc.trim() || null, notes: notes.trim() || null, recurring: null, people: invited, rsvp: {}, rsvpRequired: rsvp, owner: null, busyOnly: false, instructor: null, pattern: null, canEdit: false, cancelled: false, seriesId: null, startIso: `${date}T${allDay ? '00:00' : toHHMM(win[0])}:00`, span: null }
+          : null;
+      const undo = draft ? provisional!.add(draft) : null;
+      let res: Awaited<ReturnType<typeof send>> | undefined;
+      try {
+        res = await send();
+      } finally {
+        if (undo && draft && !normalise<unknown>(res).success) {
+          undo();
+          provisional!.reopen(draft);
+        }
+      }
       if (tracked) {
         const r = res as { success: boolean; error?: string; code?: TournamentRefusal; data?: { tournamentId: string; version: number; replayed: boolean; rounds: { roundNumber: number; eventId: string }[] } };
         if (r.success && r.data) {
