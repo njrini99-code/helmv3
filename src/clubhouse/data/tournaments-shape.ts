@@ -238,7 +238,10 @@ export function lineupStateOf(t: TourRow, rounds: readonly TourRawRound[], entri
   const locksAt = firstTee ? new Date(Date.parse(firstTee) - t.lock_minutes * 60_000).toISOString() : null;
   const published = t.lineup_published_at;
   const shown = published != null && Date.parse(published) <= Date.parse(now);
-  const set = entries.filter((e) => e.role === 'lineup').length;
+  // An individual event has no lineup size: each player entered is set (the form sends no team size, so the
+  // stored default of 5 read "0 of 5 set" beside three entered players).
+  const individual = format.kind === 'individual';
+  const set = entries.filter((e) => e.role === (individual ? 'individual' : 'lineup')).length;
   const status: ChTourLineupState['status'] = t.lineup_locked_at
     ? 'locked'
     : published && shown
@@ -249,7 +252,7 @@ export function lineupStateOf(t: TourRow, rounds: readonly TourRawRound[], entri
           ? 'draft'
           : 'none';
   // Who saw the reveal is held file 4's receipts table: unknown until then, never zero.
-  return { status, locksAt, publishAt: published && !shown ? published : null, publishedAt: published && shown ? published : null, seen: null, set, of: format.players };
+  return { status, locksAt, publishAt: published && !shown ? published : null, publishedAt: published && shown ? published : null, seen: null, set, of: individual ? set : format.players };
 }
 
 /**
@@ -357,7 +360,9 @@ export function shapeEvent(raw: TourRawEvent, now: string): ChTourEvent {
 
   const field = shapeField(raw, teamRounds, format, viewRounds);
   const us = field?.teams.find((x) => x.us) ?? null;
-  const finish = us && us.placeN != null && us.place ? { place: us.place, placeN: us.placeN, of: field!.size } : null;
+  // The place is among the teams with an entered score, so it is "of" them: "T2 of 10" with five entered claimed a place
+  // among teams nobody had scored.
+  const finish = us && us.placeN != null && us.place ? { place: us.place, placeN: us.placeN, of: field!.entered } : null;
   const team = playerRounds.filter((p) => p.role !== 'individual' && p.total != null);
 
   return {

@@ -71,8 +71,9 @@ function HomeLoading({ phone }: { phone: boolean }) {
 function HomeReady({ data, phone, live }: { data: ChTourHomeData; phone: boolean; live: boolean }) {
   const paths = useTourPaths();
   const { refresh, refreshing } = useRefresh();
-  const thisSeason = data.events.filter((e) => e.seasonId === data.season.id);
-  const empty = !data.errors.events && thisSeason.length === 0;
+  // Empty only with no events in any season: the ledger reads every season, and a team whose events are all last
+  // season's (or next's) lost the ledger and Add event to "No tournaments yet" once the season turned.
+  const empty = !data.errors.events && data.events.length === 0;
   const courseName = (id: string | undefined) => (id ? (data.courses[id]?.name ?? null) : null);
   const upcoming = useMemo(() => data.events.filter((e) => e.status !== 'complete' && !e.cancelled).sort((a, b) => a.startDate.localeCompare(b.startDate)), [data.events]);
   // P-5 4.11.2: the hero looks across the season boundary; the rest of next season folds into its own group.
