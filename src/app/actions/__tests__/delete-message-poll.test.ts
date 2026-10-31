@@ -82,8 +82,6 @@ describe('deleteMessage and polls', () => {
     state.row = { id: 'm3', sender_id: USER, conversation_id: 'c1' };
     expect(await deleteMessage({ messageId: 'm3', sport: 'baseball' })).toEqual({ success: true });
     expect(state.reads).toEqual([{ table: 'baseball_messages', fields: 'id, sender_id, conversation_id' }]);
-    expect(state.updates[0]).toEqual({ table: 'baseball_messages', values: { is_deleted: true, content: '' } });
-    // Then the conversation row, so every member's inbox drops the deleted text from its preview.
-    expect(state.updates[1]).toMatchObject({ table: 'baseball_conversations', values: { updated_at: expect.any(String) } });
+    expect(state.updates).toEqual([{ table: 'baseball_messages', values: { is_deleted: true, content: '' } }]);
   });
 });

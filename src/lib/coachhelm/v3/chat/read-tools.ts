@@ -470,10 +470,11 @@ export async function getPlayerTrend(
   }
 
   const read = (data as unknown as Record<string, unknown>[] | null) ?? [];
-  const rows = read
-    .filter((r) => averagedRound(r as unknown as Parameters<typeof averagedRound>[0]))
-    .slice(0, limit)
-    .reverse();
+  const full = read.filter((r) => averagedRound(r as unknown as Parameters<typeof averagedRound>[0]));
+  const rows = full.slice(0, limit).reverse();
+  // Rounds newer than the oldest one used that were not full 18-hole rounds: the ones the coach would expect to see.
+  const oldestUsed = rows[0] ? String(rows[0].round_date) : null;
+  const skipped = oldestUsed ? read.filter((r) => String(r.round_date) >= oldestUsed).length - rows.length : 0;
   const points = rows
     .map((r) => ({
       at: String(r.round_date),
@@ -512,11 +513,14 @@ export async function getPlayerTrend(
     window_start: windowStart,
     window_end: windowEnd,
     as_of: nowIso(),
-    coverage: coverageFor(points.length, rows.length),
+    coverage: skipped > 0 ? 'partial' : coverageFor(points.length, rows.length),
     coverage_note:
-      points.length < rows.length
-        ? `${rows.length - points.length} of the ${rows.length} rounds read have no ${spec.label.toLowerCase()} recorded.`
-        : null,
+      [
+        skipped > 0 ? `${skipped} newer round${skipped === 1 ? ' was' : 's were'} 9 holes or incomplete and left out; the trend uses full 18-hole rounds.` : null,
+        points.length < rows.length ? `${rows.length - points.length} of the ${rows.length} rounds read have no ${spec.label.toLowerCase()} recorded.` : null,
+      ]
+        .filter(Boolean)
+        .join(' ') || null,
     source: 'rounds',
     method: `round_level_${input.metric_id}`,
     benchmark: null,
@@ -527,7 +531,7 @@ export async function getPlayerTrend(
   const mean = values.reduce((a, b) => a + b, 0) / values.length;
 
   return {
-    summary: `${spec.label} across ${player.name}'s last ${points.length} recorded round${points.length === 1 ? '' : 's'}.`,
+    summary: `${spec.label} across ${player.name}'s last ${points.length} full 18-hole round${points.length === 1 ? '' : 's'}.`,
     measurements: [
       {
         metric_id: `${input.metric_id}_mean`,

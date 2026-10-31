@@ -44,6 +44,9 @@ interface AdminConfig {
   deleteError?: { message: string } | null;
   /** Failure of the service-role golf_player_classes ownership lookup. */
   classLookupError?: { message: string } | null;
+  /** The team's zone sources: the latest term's, then the team setting's. Absent reads as no row. */
+  termZone?: string | null;
+  settingsZone?: string | null;
 }
 
 let adminCfg: AdminConfig;
@@ -53,7 +56,7 @@ function makeAdminBuilder(table: string) {
   const op: AdminOp = { table, calls: [] };
   adminOps.push(op);
   const builder: Record<string, unknown> = {};
-  for (const m of ['select', 'eq', 'like', 'order', 'in', 'insert', 'update', 'delete']) {
+  for (const m of ['select', 'eq', 'like', 'order', 'in', 'insert', 'update', 'delete', 'limit']) {
     builder[m] = vi.fn((...args: unknown[]) => {
       op.calls.push({ name: m, args });
       return builder;
@@ -65,6 +68,8 @@ function makeAdminBuilder(table: string) {
   // would so the mock can't answer with a row the query didn't ask for.
   builder.maybeSingle = vi.fn(async () => {
     op.calls.push({ name: 'maybeSingle', args: [] });
+    if (table === 'golf_team_terms') return { data: adminCfg.termZone ? { time_zone: adminCfg.termZone, classes_start: '2026-08-20' } : null, error: null };
+    if (table === 'golf_team_settings') return { data: adminCfg.settingsZone ? { timezone: adminCfg.settingsZone } : null, error: null };
     if (table !== 'golf_player_classes') {
       throw new Error(`unexpected admin maybeSingle on ${table}`);
     }
@@ -531,6 +536,28 @@ describe('syncClassToCalendar — diff upsert (no blanket delete)', () => {
       expect(r.start_time).toMatch(/T09:00:00-05:00$/);
       expect(r.end_time).toMatch(/T10:15:00-05:00$/);
     }
+  });
+
+  it('places meetings in the team’s zone, not the device’s, when the team has one (audit 2026-10-31)', async () => {
+    adminCfg = { existingRows: [], settingsZone: 'America/Los_Angeles' };
+    // Saved from a device in New York (UTC-5): the meetings still belong at 09:00 Pacific.
+    const result = await syncClassToCalendar(classData({ timezoneOffset: 300 }), CLASS_ID, PLAYER_ID, TEAM_ID);
+    expect(result.success).toBe(true);
+    expect(insertedRows().length).toBeGreaterThan(0);
+    for (const r of insertedRows()) expect(r.start_time).toMatch(/T09:00:00-0[78]:00$/);
+  });
+
+  it('prefers the term’s zone, and keeps the device’s when neither is set', async () => {
+    adminCfg = { existingRows: [], termZone: 'America/Chicago', settingsZone: 'America/Los_Angeles' };
+    await syncClassToCalendar(classData({ timezoneOffset: 300 }), CLASS_ID, PLAYER_ID, TEAM_ID);
+    expect(insertedRows().length).toBeGreaterThan(0);
+    for (const r of insertedRows()) expect(r.start_time).toMatch(/T09:00:00-0[56]:00$/);
+
+    adminOps = [];
+    adminCfg = { existingRows: [], termZone: null, settingsZone: null };
+    await syncClassToCalendar(classData({ timezoneOffset: 300 }), CLASS_ID, PLAYER_ID, TEAM_ID);
+    expect(insertedRows().length).toBeGreaterThan(0);
+    for (const r of insertedRows()) expect(r.start_time).toMatch(/T09:00:00-05:00$/);
   });
 
   it('matches existing UTC-normalized rows back to their caller-local date (no churn after offset sync)', async () => {

@@ -1222,8 +1222,9 @@ interface UpdateMessageOptions {
  * The inbox orders by the last message, so this never moves the row. Best effort: the edit itself already landed.
  */
 async function touchConversation(supabase: Awaited<ReturnType<typeof createClient>>, sport: Sport, conversationId: string): Promise<void> {
-  const table = sport === 'golf' ? 'golf_conversations' : 'baseball_conversations';
-  const { error } = await supabase.from(table as any).update({ updated_at: new Date().toISOString() }).eq('id', conversationId);
+  // Golf only: golf_conversations_update_v2 admits any participant; baseball_conversations has no UPDATE policy.
+  if (sport !== 'golf') return;
+  const { error } = await supabase.from('golf_conversations').update({ updated_at: new Date().toISOString() }).eq('id', conversationId);
   if (error) await logServerError(`[Messages] conversation touch failed: ${describeError(error)}`, { action: 'messages.touchConversation' });
 }
 
