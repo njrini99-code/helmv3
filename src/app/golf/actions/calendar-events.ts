@@ -952,14 +952,26 @@ async function deleteGolfEventImpl(
     }
 
     if (options?.hard) {
+      // A series root's children hang off it (parent_event_id ON DELETE CASCADE): deleting the root permanently erased
+      // every occurrence, reply and attendance record of the series (audit 2026-10-31). The series has its own delete.
+      const { count: children, error: childError } = await supabase
+        .from('golf_events')
+        .select('id', { count: 'exact', head: true })
+        .eq('parent_event_id', eventId);
+      if (childError) return { success: false, error: 'Couldn’t check the series. Nothing was deleted. Try again.' };
+      if ((children ?? 0) > 0) {
+        return { success: false, error: 'This starts a series. Delete it from the series options instead, so the other dates stay or go as you choose.' };
+      }
       // Hard delete is gated: only an already-cancelled event, or one with
       // zero attendance rows, may be permanently removed (the FK cascade
       // destroys RSVPs and attendee notification history).
       if (existingEvent.status !== 'cancelled') {
-        const { count } = await supabase
+        const { count, error: countError } = await supabase
           .from('golf_event_attendance')
           .select('id', { count: 'exact', head: true })
           .eq('event_id', eventId);
+        // A failed count is not zero invitees.
+        if (countError) return { success: false, error: 'Couldn’t check who is invited. Nothing was deleted. Try again.' };
 
         if ((count ?? 0) > 0) {
           return {

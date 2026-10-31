@@ -116,6 +116,7 @@ function baseTables(): SeedTables {
     organizations: [{ id: 'org-1' }],
     golf_teams: [{ id: 'team-1', organization_id: 'org-1', created_at: '2025-01-01' }],
     golf_coaches: [{ id: 'coach-1', user_id: 'u-coach', organization_id: 'org-1' }],
+    golf_team_coach_staff: [{ team_id: 'team-1', coach_id: 'coach-1' }],
     golf_players: [
       { id: 'player-1', user_id: 'u-p1', first_name: 'Nick', last_name: 'Rini' },
       { id: 'player-2', user_id: 'u-p2', first_name: 'Ava', last_name: 'Smith' },
