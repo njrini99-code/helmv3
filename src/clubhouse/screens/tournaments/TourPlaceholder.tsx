@@ -45,7 +45,7 @@ export function TourPlaceholder({
         ) : load === 'failed' ? (
           <EmptyState size="page" tone="danger" code="CH-16201" title="Tournaments didn’t load" body="Nothing is lost. Your events and scores are still saved; try again in a moment." />
         ) : (
-          <EmptyState compact code="CH-16301" title={`${name ?? title} isn’t built yet`} body={detail} />
+          <EmptyState compact kind="first-run" code="CH-16301" title={`${name ?? title} isn’t built yet`} body={detail} />
         )}
       </section>
     );

@@ -10,7 +10,6 @@
  * Pure: no Supabase, no React. Client-safe.
  */
 
-import { NO_DATA } from '../../lib/format';
 
 export type LinkConfidence = 'high' | 'medium' | 'low';
 
@@ -193,7 +192,7 @@ export function shortDay(date: string): string {
  */
 export function linkRowParts(s: Pick<LinkSuggestion, 'round' | 'match'>): { round: string; target: string | null } {
   const r = s.round;
-  const parts = [r.playerName, r.score != null ? String(r.score) : NO_DATA, shortDay(r.date), r.courseName].filter((p): p is string => !!p);
+  const parts = [r.playerName, r.score != null ? String(r.score) : 'no score', shortDay(r.date), r.courseName].filter((p): p is string => !!p);
   const target = s.match ? `${s.match.eventRound.tournamentName} R${s.match.eventRound.roundNumber}` : null;
   return { round: parts.join(' · '), target };
 }

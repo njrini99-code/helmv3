@@ -38,7 +38,7 @@ export function Compare({ data, search, load, phone: forced, embedded = false }:
   return tourGate(load, {
     loading: () =>
       embedded ? (
-        <div className="ch-tour-cmp" data-ch-tour-view="compare" aria-busy="true" aria-label="Loading the comparison" data-ch-code="CH-16401">
+        <div className="ch-tour-cmp" data-ch-tour-view="compare" role="status" aria-busy="true" aria-label="Loading the comparison" data-ch-code="CH-16401">
           <Skeleton width="100%" height={220} radius={16} shape="solid" />
         </div>
       ) : (
@@ -161,13 +161,13 @@ function CompareReady({ data, search, phone, embedded }: { data: ChTourCompareDa
 
   const noRounds = data.rounds.length === 0;
   const body = data.errors.rounds ? (
-    <InlineNotice code="CH-16250" title="The rounds didn’t load" body="Nothing has changed. Try again; the error has been reported." onRetry={refresh} retrying={refreshing} />
+    <InlineNotice code="CH-16250" title="The rounds didn’t load" body="Nothing has changed. Try again." onRetry={refresh} retrying={refreshing} />
   ) : noRounds ? (
     <EmptyState size="page" code="CH-16351" title="No rounds to compare yet" body="Rounds from events, qualifiers and practice show here once they are in, and you can set any two samples side by side." />
   ) : (
     <>
-      {data.errors.field && <InlineNotice code="CH-16251" title="The field didn’t load" body="Versus field needs it, so it is left blank. The other figures are unaffected. Try again; the error has been reported." onRetry={refresh} retrying={refreshing} />}
-      {data.errors.holes && <InlineNotice code="CH-16252" title="The hole figures didn’t load" body="Birdies, greens, fairways and putts are left blank. Scores and strokes gained are unaffected. Try again; the error has been reported." onRetry={refresh} retrying={refreshing} />}
+      {data.errors.field && <InlineNotice code="CH-16251" title="The field didn’t load" body="Versus field needs it, so it is left blank. The other figures are unaffected. Try again." onRetry={refresh} retrying={refreshing} />}
+      {data.errors.holes && <InlineNotice code="CH-16252" title="The hole figures didn’t load" body="Birdies, greens, fairways and putts are left blank. Scores and strokes gained are unaffected. Try again." onRetry={refresh} retrying={refreshing} />}
       {!phone && (
         <div className="ch-tour-cmp-presets" role="group" aria-label="Comparison presets">
           {presets.map((p) => (

@@ -431,7 +431,8 @@ export interface ChTourHoleLedger {
 /** What a figure opens in the evidence drawer (5.13). */
 export interface ChTourEvidenceRef {
   title: string;
-  figure: string;
+  /** The figure as written, or null when there is none (the drawer shows the no-data mark). */
+  figure: string | null;
   /** The formula in words: "Counting rate = rounds that counted ÷ rounds played in team events". */
   formula: string;
   denominator: string;
@@ -439,7 +440,7 @@ export interface ChTourEvidenceRef {
     key: string;
     label: string;
     date: string;
-    value: string;
+    value: string | null;
     included: boolean;
     reason: ChTourExclusion | null;
     /** The exclusion in words, where the reason is outside `ChTourExclusion` (the metrics engine names more): "Excluded: nine holes". */
