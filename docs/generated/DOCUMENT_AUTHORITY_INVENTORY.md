@@ -666,7 +666,7 @@ document and run `git rev-list --count <sha>..HEAD -- <path>`.
 
 ### `ARCHIVE`
 
-4 file(s) under `docs/archive/` — historical evidence only, listed
+23 file(s) under `docs/archive/` — historical evidence only, listed
 by count rather than by name because none of them is a reference and enumerating
 them would bury everything above.
 
