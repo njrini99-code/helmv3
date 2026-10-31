@@ -1,3 +1,5 @@
+'use client';
+
 import Link from 'next/link';
 import { ArrowRight, UserPlus } from 'lucide-react';
 import { QUIET_DAYS } from './model';
