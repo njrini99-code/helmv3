@@ -865,6 +865,7 @@ them would bury everything above.
 | `docs/clubhouse/changes/2026-10-28-visual-pass-system.md` | current | - | - | - | - |
 | `docs/clubhouse/changes/2026-10-28-visual-pass-whats-new.md` | current | - | - | - | - |
 | `docs/clubhouse/changes/2026-10-29-initials-letters-only.md` | current | - | - | - | - |
+| `docs/clubhouse/changes/2026-10-30-targets-type-focus.md` | current | - | - | - | - |
 | `docs/clubhouse/drafts/auth-onboarding-ground-truth.md` | current | - | - | - | - |
 | `docs/clubhouse/drafts/intelligence.md` | current | - | - | - | - |
 | `docs/clubhouse/foundation-v2/02_AUTHORITY_MODEL.md` | current | - | - | yes | - |
@@ -956,6 +957,7 @@ them would bury everything above.
 | `docs/clubhouse/pages/P001-shell/changes/2026-10-27-press-prefetch-mark.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P001-shell/changes/2026-10-28-chat-alias-query.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P001-shell/changes/2026-10-28-visual-pass.md` | current | - | - | - | - |
+| `docs/clubhouse/pages/P001-shell/changes/2026-10-30-skip-link.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P002-home/CHANGELOG.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P002-home/CONTRACT.md` | current | - | - | yes | - |
 | `docs/clubhouse/pages/P002-home/DESIGN.md` | current | - | - | - | - |
@@ -1025,6 +1027,7 @@ them would bury everything above.
 | `docs/clubhouse/pages/P004-stats-team/changes/2026-10-25-reads-stream.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P004-stats-team/changes/2026-10-27-polish-pass.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P004-stats-team/changes/2026-10-28-visual-pass.md` | current | - | - | - | - |
+| `docs/clubhouse/pages/P004-stats-team/changes/2026-10-30-a11y-type.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P005-stats-player/CHANGELOG.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P005-stats-player/CONTRACT.md` | current | - | - | yes | - |
 | `docs/clubhouse/pages/P005-stats-player/DESIGN.md` | current | - | - | - | - |
@@ -1050,6 +1053,7 @@ them would bury everything above.
 | `docs/clubhouse/pages/P005-stats-player/changes/2026-10-24-what-changed-card.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P005-stats-player/changes/2026-10-27-polish-pass.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P005-stats-player/changes/2026-10-28-visual-pass.md` | current | - | - | - | - |
+| `docs/clubhouse/pages/P005-stats-player/changes/2026-10-30-a11y-type.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P006-calendar/CHANGELOG.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P006-calendar/CONTRACT.md` | current | - | - | yes | - |
 | `docs/clubhouse/pages/P006-calendar/DESIGN.md` | current | - | - | - | - |
@@ -1070,6 +1074,7 @@ them would bury everything above.
 | `docs/clubhouse/pages/P006-calendar/changes/2026-10-27-review-must-fixes.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P006-calendar/changes/2026-10-28-event-files-signed-links.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P006-calendar/changes/2026-10-28-visual-pass.md` | current | - | - | - | - |
+| `docs/clubhouse/pages/P006-calendar/changes/2026-10-30-targets.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P007-messages/CHANGELOG.md` | current | - | - | yes | 1 |
 | `docs/clubhouse/pages/P007-messages/CONTRACT.md` | current | - | - | yes | - |
 | `docs/clubhouse/pages/P007-messages/DESIGN.md` | current | - | - | yes | - |
@@ -1098,6 +1103,7 @@ them would bury everything above.
 | `docs/clubhouse/pages/P007-messages/changes/2026-10-28-badge-after-delete.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P007-messages/changes/2026-10-28-visual-pass.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P007-messages/changes/2026-10-29-inbox-row-and-poll-depth.md` | current | - | - | - | - |
+| `docs/clubhouse/pages/P007-messages/changes/2026-10-30-messages-ratchets.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P008-settings/CHANGELOG.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P008-settings/CONTRACT.md` | current | - | - | yes | - |
 | `docs/clubhouse/pages/P008-settings/DESIGN.md` | current | - | - | - | - |
@@ -1166,6 +1172,7 @@ them would bury everything above.
 | `docs/clubhouse/pages/P010-hub/changes/2026-10-24-top-bar-plus.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P010-hub/changes/2026-10-25-first-wave-reads.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P010-hub/changes/2026-10-28-visual-pass.md` | current | - | - | - | - |
+| `docs/clubhouse/pages/P010-hub/changes/2026-10-30-a11y-type.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P011-rounds/CHANGELOG.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P011-rounds/CONTRACT.md` | current | - | - | yes | - |
 | `docs/clubhouse/pages/P011-rounds/DESIGN.md` | current | - | - | - | - |
@@ -1256,6 +1263,7 @@ them would bury everything above.
 | `docs/clubhouse/pages/P013-coachhelm/changes/2026-10-28-ask-team-tools-flag.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P013-coachhelm/changes/2026-10-28-visual-pass-whats-new.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P013-coachhelm/changes/2026-10-28-visual-pass.md` | current | - | - | - | - |
+| `docs/clubhouse/pages/P013-coachhelm/changes/2026-10-30-a11y-touch-type.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P014-recruiting/CHANGELOG.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P014-recruiting/CONTRACT.md` | current | - | - | yes | - |
 | `docs/clubhouse/pages/P014-recruiting/DESIGN.md` | current | - | - | - | - |
@@ -1299,6 +1307,7 @@ them would bury everything above.
 | `docs/clubhouse/pages/P016-tournaments/changes/2026-10-27-polish-pass.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P016-tournaments/changes/2026-10-28-dq-team-score.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P016-tournaments/changes/2026-10-28-visual-pass.md` | current | - | - | - | 1 |
+| `docs/clubhouse/pages/P016-tournaments/changes/2026-10-30-compare-a11y-type.md` | current | - | - | - | - |
 | `docs/clubhouse/phone/auth.md` | current | - | - | - | - |
 | `docs/clubhouse/phone/calendar.md` | current | - | - | - | - |
 | `docs/clubhouse/phone/classes.md` | current | - | - | - | - |
