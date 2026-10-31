@@ -90,8 +90,13 @@ export function formatFixed(value: number | null | undefined, digits = 1): strin
   return value.toFixed(digits);
 }
 
+/** Letters only: a display name with punctuation in it ("Coach (Demo)") reads "CD", not "C(". */
 export function initials(name: string): string {
-  const parts = name.trim().split(/\s+/).filter(Boolean);
+  const parts = name
+    .trim()
+    .split(/\s+/)
+    .map((w) => w.replace(/[^\p{L}]/gu, ''))
+    .filter(Boolean);
   if (parts.length === 0) return '';
   const first = parts[0]?.[0] ?? '';
   const last = parts.length > 1 ? (parts[parts.length - 1]?.[0] ?? '') : '';
