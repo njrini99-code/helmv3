@@ -28,6 +28,11 @@ export interface ChMessagesData {
    */
   canHide?: boolean;
   announcements?: ChAnnouncement[] | null;
+  /**
+   * The active-team allow-list for the conversation list's first load (F-0014): read with the page so the list paints
+   * after one round trip instead of queuing a server action. Absent (the read failed): the list reads it itself.
+   */
+  activeConversationIds?: string[] | null;
 }
 
 /**

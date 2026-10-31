@@ -403,6 +403,12 @@ its rows together and does not map them one to one.
 | AUD-F-0057 | A double click opens a calendar event or day once | Clubhouse fixes | in progress | | claude/audit-fix-06-shell-nav (Clubhouse audit fix plan, PR 6); no Bridge IDs or CH codes needed |
 | AUD-F-0058 | Focus after Cancel or Delete never opens another event’s menu or peek | Clubhouse fixes | in progress | | claude/audit-fix-06-shell-nav (Clubhouse audit fix plan, PR 6); no Bridge IDs or CH codes needed |
 | AUD-F-0066 | A player on a coach address loses the coach parameters | Clubhouse fixes | in progress | | claude/audit-fix-06-shell-nav (Clubhouse audit fix plan, PR 6); no Bridge IDs or CH codes needed |
+| AUD-F-0014 | Messages inbox first load reads the active team’s ids on the server (part) | Clubhouse fixes | in progress | | claude/audit-fix-07-speed (Clubhouse audit fix plan, PR 7); no Bridge IDs or CH codes needed |
+| AUD-F-0029 | Publish returns before the invitation notices (after()) | Clubhouse fixes | in progress | | claude/audit-fix-07-speed (Clubhouse audit fix plan, PR 7); no Bridge IDs or CH codes needed |
+| AUD-F-0032 | Home starts the marks hint read with the other reads (step 1) | Clubhouse fixes | in progress | | claude/audit-fix-07-speed (Clubhouse audit fix plan, PR 7); no Bridge IDs or CH codes needed |
+| AUD-F-0033 | Team Hub coach second wave starts from the clock read | Clubhouse fixes | in progress | | claude/audit-fix-07-speed (Clubhouse audit fix plan, PR 7); no Bridge IDs or CH codes needed |
+| AUD-F-0034 | Home leaderboard rows prefetch on press | Clubhouse fixes | in progress | | claude/audit-fix-07-speed (Clubhouse audit fix plan, PR 7); no Bridge IDs or CH codes needed |
+| AUD-F-0045 | Start DM speed: depends on PR 1 (#2412); follow-up | Clubhouse fixes | in progress | | claude/audit-fix-07-speed (Clubhouse audit fix plan, PR 7); no Bridge IDs or CH codes needed |
 
 <!-- markdownlint-enable MD013 -->
 

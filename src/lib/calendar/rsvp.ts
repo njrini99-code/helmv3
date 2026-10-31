@@ -175,7 +175,12 @@ export async function getEventRSVPStats(
 export async function sendEventInvitations(
   eventId: string,
   playerIds: string[],
-  supabase: SupabaseClient
+  supabase: SupabaseClient,
+  /**
+   * `deferNotices`: hand the Bell rows to the caller (its `after()`), so a publish answers once attendance is written
+   * (F-0029). Attendance stays inline: its failure is what the caller reports as invitations not sent.
+   */
+  opts: { deferNotices?: (task: () => Promise<void>) => void } = {},
 ): Promise<void> {
   if (playerIds.length === 0) return;
 
@@ -262,13 +267,18 @@ export async function sendEventInvitations(
   // that doesn't ask for replies. The attendance rows above still record who is on the event.
   if (!event.requires_rsvp) return;
 
-  const timeZone = await resolveTeamTimeZone([event.team_id], supabase, 'rsvp.sendEventInvitations');
-  await writeEventInvitationNotices({
-    eventId,
-    userIds: players.map((p) => p.user_id).filter((id): id is string => Boolean(id)),
-    title: `You're invited: ${event.title}`,
-    message: `${formatEventDate(event, timeZone)} ${event.location ? `at ${event.location}` : ''}`.trim(),
-  });
+  // The notices say the time in the team's zone (F-0001); the zone read goes with them, after the response when deferred (F-0029).
+  const notices = async () => {
+    const timeZone = await resolveTeamTimeZone([event.team_id], supabase, 'rsvp.sendEventInvitations');
+    await writeEventInvitationNotices({
+      eventId,
+      userIds: players.map((p) => p.user_id).filter((id): id is string => Boolean(id)),
+      title: `You're invited: ${event.title}`,
+      message: `${formatEventDate(event, timeZone)} ${event.location ? `at ${event.location}` : ''}`.trim(),
+    });
+  };
+  if (opts.deferNotices) opts.deferNotices(notices);
+  else await notices();
 }
 
 /**
