@@ -62,7 +62,7 @@ export async function ClubhouseTournamentsRoute({ view, id, search = {} }: { vie
   switch (view) {
     case 'home': {
       const load = await loadTournamentsHome(ctx);
-      return load.kind === 'ready' ? <TournamentsHome data={load.data} /> : notReady(load, true, 'Tournaments');
+      return load.kind === 'ready' ? <TournamentsHome data={load.data} live /> : notReady(load, true, 'Tournaments');
     }
     case 'desk': {
       const load = await loadTournamentDesk(ctx, id!);

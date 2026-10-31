@@ -1,9 +1,10 @@
 import { CalendarDays, ChevronDown, ChevronUp, Flag, MapPin } from 'lucide-react';
 import { Badge } from '../../ui/Badge';
 import { Icon } from '../../ui/Icon';
+import { InlineNotice } from '../../ui/Notices';
 import { formatToPar } from '../../lib/format';
 import type { ChPlayerPeek } from '../../ui/PlayerPeek';
-import { endedLabel, lineGapText, positionLabel, rangeLabel, shortRange, viewerOutcomeText, viewerVsLines, yearOf, STATE_LABEL, STATUS_LABEL, type ChQBoard, type ChQRow, type ChQRowState, type ChQStatus, type ChQViewerSelection } from './model';
+import { endedLabel, lineGapText, positionLabel, rangeLabel, shortRange, viewerOutcomeText, viewerVsLines, yearOf, STATE_LABEL, STATUS_LABEL, type ChQBoard, type ChQMixedRound, type ChQRow, type ChQRowState, type ChQStatus, type ChQViewerSelection } from './model';
 import { firstName } from '../../lib/names';
 import { plural, pluralWord } from '../../lib/plural';
 
@@ -199,4 +200,15 @@ export function ViewerLineCard({
       </ul>
     </section>
   );
+}
+
+/** CH-09909: a round whose cards mix 9 and 18 holes. The board still adds them to par; the coach decides whether to fix a card. */
+export function MixedRounds({ mixed }: { mixed: readonly ChQMixedRound[] }) {
+  const first = mixed[0]!;
+  const title = mixed.length === 1 ? `Round ${first.number} mixes 9- and 18-hole cards` : `${plural(mixed.length, 'round')} mix 9- and 18-hole cards`;
+  const body =
+    mixed.length === 1
+      ? `${plural(first.nine, 'player')} played 9 holes and ${plural(first.full, 'player')} played 18. The standings add them to par as they are; check those cards if the round was meant to be one length.`
+      : `Rounds ${mixed.map((m) => m.number).join(', ')} each have 9- and 18-hole cards. The standings add them to par as they are; check those cards if each round was meant to be one length.`;
+  return <InlineNotice code="CH-09909" title={title} body={body} />;
 }

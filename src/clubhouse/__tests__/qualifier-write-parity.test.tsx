@@ -132,7 +132,11 @@ describe('the live writes call the shared actions Fairway calls, unchanged', () 
     actions.confirmQualifierSelection.mockResolvedValueOnce({ ok: true });
     await expect(LIVE_SELECTION_WRITES.confirm('q1')).resolves.toEqual({ success: true, data: { notified: true } });
     // The squad confirmed is the one the board showed above the line: the server's order, not one Clubhouse passes.
-    expect(actions.confirmQualifierSelection).toHaveBeenLastCalledWith('q1');
+    // Clubhouse sends the squad it showed only as a guard: the server refuses when the standings moved since.
+    expect(actions.confirmQualifierSelection).toHaveBeenLastCalledWith('q1', undefined);
+    actions.confirmQualifierSelection.mockResolvedValueOnce({ ok: false, error: 'cannot confirm: standings changed since this page loaded' });
+    await expect(LIVE_SELECTION_WRITES.confirm('q1', ['p1', 'p2'])).resolves.toEqual({ success: false, error: 'A round came in since this page loaded and the squad changed. Review it, then confirm again.' });
+    expect(actions.confirmQualifierSelection).toHaveBeenLastCalledWith('q1', ['p1', 'p2']);
   });
 });
 

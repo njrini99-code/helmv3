@@ -154,19 +154,25 @@ class QueryBuilder<T = Row> implements PromiseLike<{ data: T[]; error: unknown }
     this.state.filters.push((row) => row[col] !== value);
     return this;
   }
-  // `.or('a.eq.x,b.like.v3:%')` — flat PostgREST disjunctions of eq / neq /
+  // `.or('a.eq.x,b.like.v3:%')` — flat PostgREST disjunctions of eq / neq / gte /
   // like (with `%` wildcards) / is.null, the shape `applyInsightVisibility`
   // (V3_ENGINE_FILTER) chains. Anything else throws, so a test never passes
   // on a filter the fake silently ignored.
   or(filter: string): this {
     const { table } = this.state;
     const clauses = filter.split(',').map((raw) => {
-      const m = /^([^.]+)\.(eq|neq|like|is)\.(.*)$/.exec(raw.trim());
+      const m = /^([^.]+)\.(eq|neq|gte|like|is)\.(.*)$/.exec(raw.trim());
       if (!m) throw new Error(`fake-supabase: unsupported .or() clause "${raw}"`);
       const [, col, op, value] = m as unknown as [string, string, string, string];
       if (op === 'is') {
         if (value !== 'null') throw new Error(`fake-supabase: unsupported .or() clause "${raw}"`);
         return (row: Row) => cell(table, row, col) == null;
+      }
+      if (op === 'gte') {
+        return (row: Row) => {
+          const v = cell(table, row, col);
+          return v != null && String(v) >= value;
+        };
       }
       if (op === 'like') {
         const escaped = value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&').replace(/%/g, '.*');

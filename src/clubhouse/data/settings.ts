@@ -11,6 +11,7 @@ import { resolveEventReminderSettings } from '@/lib/golf/event-reminder-settings
 import type { PrefsByCategory } from '@/lib/coachhelm/v3/notifications/router';
 import type { CoachPhilosophy } from '@/lib/coachhelm/types';
 import { isCustomerEmailEnabled } from '@/lib/email/outbound-gate';
+import { DEFAULT_NOTIFICATION_PREFERENCES } from '@/lib/notifications/types';
 import { chLogServer } from '../lib/track-server';
 import type { ChCoachHelmSettings, ChScoring, ChSettingsData } from '../screens/settings/model';
 
@@ -33,6 +34,23 @@ function log(read: string, error: unknown, area = 'settings') {
 
 const str = (v: unknown) => (v == null ? '' : String(v));
 
+/**
+ * The switches an account that never saved them reads as. `getNotificationPreferences` fills a missing key with its own default
+ * (off for event pushes), but the sender merges the key's delivery default, which is on (`push.ts` through
+ * `getUserNotificationPreferences`). So an untouched account was sent event and reminder pushes while Settings showed them off.
+ * Settings shows what the sender does: a key the account has not saved reads as the delivery default. Messages stay as
+ * they were: their fan-out gates on the raw saved value, whose default is off, so the switch already agrees.
+ */
+const PUSH_KEYS_WITH_DELIVERY_DEFAULT = ['push_events'] as const;
+
+export function withDeliveryDefaults(delivery: Record<string, boolean>, saved: Record<string, unknown> | null): Record<string, boolean> {
+  const out = { ...delivery };
+  for (const key of PUSH_KEYS_WITH_DELIVERY_DEFAULT) {
+    if (saved == null || !(key in saved)) out[key] = DEFAULT_NOTIFICATION_PREFERENCES[key];
+  }
+  return out;
+}
+
 export async function loadSettings(session: GolfSessionProfile, teamId: string | null): Promise<ChSettingsData> {
   const supabase = await createClient();
   // The dashboard layout's role (golf-dashboard-role.ts), so Settings never draws the coach form for a player-shell user.
@@ -42,9 +60,11 @@ export async function loadSettings(session: GolfSessionProfile, teamId: string |
 
   // The team's name comes from the team row each role reads below, and the digest from the CoachHelm philosophy row: each
   // table is read once (the loader read golf_teams and golf_coach_philosophy twice each; readiness audit, 2026-10-17).
-  const [userRes, deliveryRes, profileRes] = await Promise.all([
+  const [userRes, deliveryRes, savedPrefsRes, profileRes] = await Promise.all([
     supabase.auth.getUser(),
     getNotificationPreferences().catch((e: unknown) => ({ data: null, error: String(e) })),
+    // Which switches this account has saved, to tell a saved "off" from one never touched (see withDeliveryDefaults).
+    supabase.from('users').select('notification_preferences').eq('id', session.userId).maybeSingle(),
     role === 'coach'
       ? supabase.from('golf_coaches').select('full_name, avatar_url, title').eq('id', coachId!).maybeSingle()
       : supabase
@@ -55,6 +75,7 @@ export async function loadSettings(session: GolfSessionProfile, teamId: string |
   ]);
   if (userRes.error) log('user', userRes.error, 'auth');
   if (deliveryRes.error || !deliveryRes.data) log('deliveryPrefs', deliveryRes.error ?? 'no data', 'notifications');
+  if (savedPrefsRes.error) log('savedPrefs', savedPrefsRes.error, 'notifications');
   if (profileRes.error) log('profile', profileRes.error);
   else if (!profileRes.data) log('profile', 'no profile row');
 
@@ -80,7 +101,11 @@ export async function loadSettings(session: GolfSessionProfile, teamId: string |
     teamId,
     teamName: null,
     profile,
-    delivery: deliveryRes.error || !deliveryRes.data ? failed : ok(deliveryRes.data as Record<string, boolean>),
+    // A failed read of the saved keys leaves the action's own values (the reason it is logged above): the switches then may show a default.
+    delivery:
+      deliveryRes.error || !deliveryRes.data
+        ? failed
+        : ok(savedPrefsRes.error ? (deliveryRes.data as Record<string, boolean>) : withDeliveryDefaults(deliveryRes.data as Record<string, boolean>, (savedPrefsRes.data?.notification_preferences as Record<string, unknown> | null) ?? null)),
     playerRouting: null,
     digest: null,
     // CH-8901: no customer email leaves while the outbound gate is off, so the email switches would control nothing.

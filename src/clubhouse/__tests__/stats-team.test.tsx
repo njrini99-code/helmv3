@@ -651,7 +651,7 @@ describe('Stats team · phone (v2, Coach - Stats - Mobile.html)', () => {
     for (const daysHalves of [{ delta: 0.4, se: 0.5 }, { delta: -0.04, se: 0.001 }]) {
       const v = wrap(stats({ daysHalves }));
       expect(line().classList.contains('is-gain') || line().classList.contains('is-loss')).toBe(false);
-      expect(document.querySelector('.ch-stm-trend')!.textContent).toContain('No clear change across the window.');
+      expect(document.querySelector('.ch-stm-trend')!.textContent).toContain('No clear change across these round days.');
       v.unmount();
     }
   });

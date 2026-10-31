@@ -279,7 +279,7 @@ export type MessageWithReadStatus = GolfMessage;
  * thread would not stay where scroll-to-bottom had just put it.
  */
 export function applyRealtimeMessageUpdate<
-  T extends { id: string; content: string; edited_at: string | null; is_deleted?: boolean | null; payload?: unknown; notify_anyway_pushed_at?: string | null },
+  T extends { id: string; content: string; edited_at: string | null; is_deleted?: boolean | null; payload?: unknown; notify_anyway_pushed_at?: string | null; has_attachments?: boolean | null },
 >(prev: T[], updated: T): T[] {
   if (updated.is_deleted) {
     if (!prev.some((msg) => msg.id === updated.id)) return prev;
@@ -296,7 +296,10 @@ export function applyRealtimeMessageUpdate<
   // P-10: the "Notified anyway" caption renders from `notify_anyway_pushed_at`, which the fan-out stamps after the insert, so a change in it is a
   // change in what is rendered. A payload that carries no such column (the migration is held) leaves it as it was.
   const stamped = updated.notify_anyway_pushed_at !== undefined && (updated.notify_anyway_pushed_at ?? null) !== (current.notify_anyway_pushed_at ?? null);
-  if (current.content === updated.content && current.edited_at === updated.edited_at && !payloadChanged && !stamped) {
+  // The sender flags a message after inserting it and unflags it when the upload fails (message-attachments.ts), so a
+  // recipient who already holds the row must follow the flag or the files never appear (or a ghost chip never leaves).
+  const attachmentsChanged = typeof updated.has_attachments === 'boolean' && updated.has_attachments !== !!current.has_attachments;
+  if (current.content === updated.content && current.edited_at === updated.edited_at && !payloadChanged && !stamped && !attachmentsChanged) {
     return prev;
   }
 
@@ -307,6 +310,7 @@ export function applyRealtimeMessageUpdate<
     edited_at: updated.edited_at,
     ...(payloadChanged ? { payload: updated.payload } : {}),
     ...(stamped ? { notify_anyway_pushed_at: updated.notify_anyway_pushed_at } : {}),
+    ...(attachmentsChanged ? { has_attachments: updated.has_attachments } : {}),
   };
   return next;
 }
@@ -647,6 +651,11 @@ export function useGolfMessages(
    * belongs to a thread nobody is looking at and is dropped.
    */
   const liveConversationIdRef = useRef(conversationId);
+  // Failed sends per conversation, kept across refetches and thread switches until sent again or discarded.
+  const clientOnlyRowsRef = useRef(new Map<string, MessageWithReadStatus[]>());
+  const forgetClientOnly = (messageId: string) => {
+    for (const [conv, list] of clientOnlyRowsRef.current) clientOnlyRowsRef.current.set(conv, list.filter((m) => m.id !== messageId));
+  };
   liveConversationIdRef.current = conversationId;
 
   // Fetch other participant's last_read_at for read receipts
@@ -812,7 +821,24 @@ export function useGolfMessages(
     // entirely rather than guess at an unscoped key.
     const uidNow = currentUserIdRef.current ?? uidAtStart;
     if (uidNow) writeCachedResourceIfCurrent(messagesCacheKey(conversationId, uidNow), fresh, fetchEpoch);
-    setMessages(fresh);
+    // A send that failed (or is still on its way) is only on this device: a refetch, or a trip to another thread and
+    // back, replaced the list with the server's and the bubble and its words were gone (audit 2026-10-31; contracts
+    // 71201, 71301). They are kept beside the server's rows until sent or discarded.
+    setMessages((prev) => {
+      const store = clientOnlyRowsRef.current;
+      for (const m of prev) {
+        if (!m.sendFailed || m.conversation_id === conversationId) continue;
+        const list = store.get(m.conversation_id) ?? [];
+        if (!list.some((x) => x.id === m.id)) store.set(m.conversation_id, [...list, m]);
+      }
+      const here = new Map<string, MessageWithReadStatus>();
+      for (const m of store.get(conversationId) ?? []) here.set(m.id, m);
+      for (const m of prev) if ((m.sendFailed || m.pending) && m.conversation_id === conversationId) here.set(m.id, m);
+      const keep = [...here.values()].filter((m) => !fresh.some((f) => f.id === m.id));
+      store.set(conversationId, keep.filter((m) => m.sendFailed));
+      if (!keep.length) return fresh;
+      return [...fresh, ...keep].sort((a, b) => String(a.created_at).localeCompare(String(b.created_at)));
+    });
     setLoading(false);
 
     // Mark messages as read. Awaited + caught so a DB error in the server action
@@ -1204,7 +1230,8 @@ export function useGolfMessages(
       prev.map(m =>
         // The outcome goes with the flag. Left behind, a row that retried out
         // of `unknown` into `refused` would still be carrying the old label.
-        m.id === messageId ? { ...m, sendFailed: false, sendOutcome: undefined } : m,
+        // Pending while it goes again, so a refetch keeps it (and the success below clears it).
+        m.id === messageId ? { ...m, sendFailed: false, sendOutcome: undefined, pending: true } : m,
       ),
     );
 
@@ -1221,6 +1248,8 @@ export function useGolfMessages(
         markSendFailed(messageId, 'refused');
         return false;
       }
+      forgetClientOnly(messageId);
+      setMessages(prev => prev.map(m => (m.id === messageId && m.pending ? { ...m, pending: false } : m)));
       return true;
     } catch (error) {
       markSendFailed(messageId, classifySendFailure(error));
@@ -1241,6 +1270,7 @@ export function useGolfMessages(
    * real message, which is `removeMessage`'s job.
    */
   const discardFailedMessage = (messageId: string) => {
+    forgetClientOnly(messageId);
     setMessages(prev => prev.filter(m => !(m.id === messageId && m.sendFailed)));
   };
 
@@ -1863,7 +1893,10 @@ export async function loadGolfConversationRail(
   // stop. MessageConversationRail keeps rows on screen when
   // `error && conversations.length > 0`, so the partial case stays readable.
   const loadFailure = error ?? groupConvsError;
-  if (loadFailure && !conversationsData?.length) {
+  // The RPC is the only source of direct messages: when it failed, rows recovered from the team-chat supplement are
+  // the groups alone, and an "ok" rail of them silently dropped every DM. That is a failure too (the hook keeps the
+  // last readable inbox and shows Retry); only a supplement failure keeps the RPC's rows as they are.
+  if (loadFailure && (error || !conversationsData?.length)) {
     // P257: a real backend failure (fetch error AND no rows recovered) must
     // NOT masquerade as an empty inbox. Flag it so the rail shows a
     // recoverable error with Retry instead of the cheerful empty.
@@ -1985,8 +2018,10 @@ export async function loadGolfConversationRail(
         id: conv.id,
         created_at: conv.created_at,
         updated_at: conv.updated_at,
-        last_message: conv.last_message_content ? {
-          content: conv.last_message_content,
+        // A message with no words (a photo or a file sent alone) is still the last message: '' was read as none, and the
+        // row said "No messages yet" beside its unread count (audit 2026-10-31).
+        last_message: conv.last_message_content || conv.last_message_at ? {
+          content: conv.last_message_content ?? '',
           created_at: conv.last_message_at,
           sender_id: conv.last_message_sender_id,
         } : null,
@@ -2019,8 +2054,8 @@ export async function loadGolfConversationRail(
       id: conv.id,
       created_at: conv.created_at,
       updated_at: conv.updated_at,
-      last_message: conv.last_message_content ? {
-        content: conv.last_message_content,
+      last_message: conv.last_message_content || conv.last_message_at ? {
+        content: conv.last_message_content ?? '',
         created_at: conv.last_message_at,
         sender_id: conv.last_message_sender_id,
       } : null,
@@ -2197,10 +2232,17 @@ export function useGolfConversations(
           table: 'golf_conversations',
         },
         (payload) => {
-          // Only refetch if this conversation involves the current user
-          if (conversationIdsRef.current.has(payload.new.id as string)) {
-            debouncedFetch();
-          }
+          // Realtime applies the table's SELECT policy, so any UPDATE that
+          // reaches this client is a conversation the viewer takes part in
+          // (including one they deleted/hid: a new message there brings it
+          // back, and its id is not in the shown set). The 300 ms trailing
+          // debounce collapses a burst into one refetch. An event that names a
+          // different team than the active one is a team-scoped coach's other
+          // squad and is skipped.
+          const row = payload.new as { id?: string; team_id?: string | null };
+          if (!row.id) return;
+          if (!conversationIdsRef.current.has(row.id) && activeTeamId && row.team_id && row.team_id !== activeTeamId) return;
+          debouncedFetch();
         }
       ),
       { feature: 'golf.messages', channelClass: 'golf_conversations_list', subscriptionType: 'postgres_changes' },

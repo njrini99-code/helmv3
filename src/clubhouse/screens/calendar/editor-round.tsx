@@ -157,11 +157,11 @@ export function RoundEditor({
 
   const banner2 = readOnly
     ? round!.tournamentCancelled
-      ? `${rn} is part of a cancelled tournament. Restore it from Tournaments.`
+      ? `${rn} is part of a cancelled tournament. Choose Restore tournament in the event’s More actions menu.`
       : round!.status === 'final'
         ? `${rn} is final.`
-        : `${rn} is under way. Change it from Tournaments.`
-    : 'Course, format and lineup are edited in Tournaments.';
+        : `${rn} is under way, so it can’t be edited.`
+    : 'Day, times, notes and who’s invited are edited here. Course, format and lineup can’t be changed yet.';
 
   const save = async () => {
     if (!dirty) {

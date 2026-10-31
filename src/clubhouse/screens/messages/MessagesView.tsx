@@ -924,19 +924,56 @@ export function Attachments({
   const [files, setFiles] = useState<ChAttachment[] | null>(null);
   const [failed, setFailed] = useState(false);
   const [attempt, setAttempt] = useState(0);
+  // Signed URLs expire (1 h). A thread left open longer re-signs them: on a timer, and on coming back to the tab.
+  const [refresh, setRefresh] = useState(0);
+  const loadedAt = useRef(0);
+  const haveFiles = useRef(false);
   useEffect(() => {
     let live = true;
-    setFailed(false);
-    load(id)
-      .then((a) => live && (a ? setFiles(a) : setFailed(true)))
-      .catch((err) => {
-        chReport(err, { surface: "messages.attachments", severity: "low" });
-        if (live) setFailed(true);
-      });
+    let retry: number | undefined;
+    const silent = haveFiles.current;
+    if (!silent) setFailed(false);
+    // The message row can reach a recipient before its attachment rows exist (separate inserts), so an
+    // empty list for a message flagged as having files is asked again once before it is believed.
+    const run = (again: boolean) =>
+      load(id)
+        .then((a) => {
+          if (!live) return;
+          if (a && a.length === 0 && again) {
+            retry = window.setTimeout(() => run(false), 1500);
+            return;
+          }
+          if (a) {
+            loadedAt.current = Date.now();
+            haveFiles.current = true;
+            setFiles(a);
+          } else if (!silent) setFailed(true);
+        })
+        .catch((err) => {
+          chReport(err, { surface: "messages.attachments", severity: "low" });
+          if (live && !silent) setFailed(true);
+        });
+    void run(true);
     return () => {
       live = false;
+      if (retry) window.clearTimeout(retry);
     };
-  }, [load, id, attempt]);
+  }, [load, id, attempt, refresh]);
+  useEffect(() => {
+    const AGE = 45 * 60_000;
+    const stale = () => haveFiles.current && Date.now() - loadedAt.current > AGE;
+    const timer = window.setInterval(() => {
+      if (stale()) setRefresh((n) => n + 1);
+    }, 5 * 60_000);
+    const onVisible = () => {
+      if (document.visibilityState === "visible" && stale()) setRefresh((n) => n + 1);
+    };
+    document.addEventListener("visibilitychange", onVisible);
+    return () => {
+      window.clearInterval(timer);
+      document.removeEventListener("visibilitychange", onVisible);
+    };
+  }, []);
   if (failed) {
     return (
       <button

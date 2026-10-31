@@ -405,7 +405,15 @@ export async function loadPlayerProfile(input: {
 
   // CH-5208: without Tour benchmarks the Tour column reads "—"; nothing is compared with a benchmark it doesn't have.
   // Strokes gained against the Tour (its benchmark is zero by definition), with the team's pooled mean for a coach; a player is never compared with teammates.
-  const sgPool = (pick: (r: ChRound) => number | null) => (effectiveCount(teamHole, pick) >= MIN_SG_ROUNDS ? weightedMean(teamHole, pick) : null);
+  // A4, as the Team page: only teammates with three whole rounds with strokes gained count, so this column reads the
+  // Team page's "Team SG per round" (audit 2026-10-31: one player's first round or two swung it here but not there).
+  const sgTeam = (() => {
+    const by = new Map<string, ChRound[]>();
+    for (const r of teamHole) by.set(r.player_id, [...(by.get(r.player_id) ?? []), r]);
+    const ready = new Set([...by].filter(([, rs]) => effectiveCount(rs, (r) => r.strokes_gained_total) >= MIN_SG_ROUNDS).map(([id]) => id));
+    return teamHole.filter((r) => ready.has(r.player_id));
+  })();
+  const sgPool = (pick: (r: ChRound) => number | null) => (effectiveCount(sgTeam, pick) >= MIN_SG_ROUNDS ? weightedMean(sgTeam, pick) : null);
   const sgRow = (label: string, you: number | null, pick: (r: ChRound) => number | null): ChComparison => ({
     label,
     group: 'Strokes gained',
@@ -538,7 +546,9 @@ export async function loadPlayerProfile(input: {
   if (input.viewer === 'coach') {
     const order = teamIds
       .map((id) => ({ id, avg: summarizePlayer(seasonOnly(byPlayer.get(id) ?? [], start)).avg }))
-      .sort((a, b) => (a.avg ?? 999) - (b.avg ?? 999));
+      // The same order whichever player is open: ties (and every player with no average yet) break on the id, so Next
+      // walks the whole team instead of bouncing between the viewed player and a tie (audit 2026-10-31).
+      .sort((a, b) => (a.avg ?? 999) - (b.avg ?? 999) || (a.id < b.id ? -1 : a.id > b.id ? 1 : 0));
     const i = order.findIndex((o) => o.id === input.playerId);
     if (order.length > 1 && i >= 0) {
       nav = {

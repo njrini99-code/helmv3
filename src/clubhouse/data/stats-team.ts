@@ -509,7 +509,10 @@ function seasonBests(
   const name = new Map(players.map((p) => [p.id, fullName(p)]));
   const out: ChTeamStats['bests'] = [];
   const meta = (r: ChRound) => [r.course_name, shortDate(r.round_date)].filter(Boolean).join(' · ');
-  const valid = rounds.filter((r) => name.has(r.player_id));
+  // Oldest first, as the player page's bests (stats-figures oldestFirst): a tie goes to the earliest round on both screens.
+  const valid = rounds
+    .filter((r) => name.has(r.player_id))
+    .sort((a, b) => (a.round_date < b.round_date ? -1 : a.round_date > b.round_date ? 1 : a.id.localeCompare(b.id)));
 
   const low = [...valid].sort((a, b) => (a.total_score ?? 999) - (b.total_score ?? 999))[0];
   if (low?.total_score != null) {

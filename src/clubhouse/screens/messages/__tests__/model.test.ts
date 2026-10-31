@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { firstUnreadId, linkParts, searchSnippet, untilLabel, type ChMsg } from '../model';
+import { directWith, firstUnreadId, isDirect, isGroupRow, linkParts, searchSnippet, untilLabel, type ChMsg } from '../model';
 
 const tz = 'America/New_York';
 // Sunday, Oct 18 2026, 2:40 PM in New York.
@@ -65,5 +65,25 @@ describe('firstUnreadId (wave 5 #17)', () => {
     expect(firstUnreadId(msgs, 0)).toBeNull();
     // More unread than loaded: the first loaded one of theirs.
     expect(firstUnreadId(msgs, 9)).toBe('a');
+  });
+});
+
+describe('isGroupRow (audit L4)', () => {
+  it('keeps a two-member coach group a group, so it is never taken for a direct thread', () => {
+    expect(isGroupRow({ is_group: true, participant_count: 2 })).toBe(true);
+  });
+
+  it('calls three or more members a group whatever the flag says, and a plain pair a direct thread', () => {
+    expect(isGroupRow({ is_group: false, participant_count: 3 })).toBe(true);
+    expect(isGroupRow({ is_group: false, participant_ids: ['a', 'b', 'c'] })).toBe(true);
+    expect(isGroupRow({ is_group: false, participant_count: 2 })).toBe(false);
+    expect(isGroupRow({})).toBe(false);
+  });
+
+  it('a two-member group is not found as the direct thread with its other member', () => {
+    const conv = { id: 'g', group: isGroupRow({ is_group: true, participant_count: 2 }), memberIds: ['p1'], memberCount: 2 };
+    const convs = [conv] as unknown as Parameters<typeof directWith>[0];
+    expect(isDirect(convs[0]!)).toBe(false);
+    expect(directWith(convs, 'p1')).toBeUndefined();
   });
 });

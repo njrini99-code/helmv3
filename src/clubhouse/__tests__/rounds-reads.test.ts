@@ -114,8 +114,8 @@ describe('Round review reads', () => {
       })(),
     );
     // The round-type options' first read (CH-11522) rides in the same wave; its taken-slot read follows only when the player has entries (none here).
-    // The coach's note on the round (golf_round_reviews, CH-11523) is one more read in the same wave.
-    expect(depth).toEqual([['golf_rounds'], ['golf_course_tees', 'golf_holes', 'golf_qualifier_entries', 'golf_round_reviews', 'golf_shots', 'golf_teams']]);
+    // The coach's note on the round (golf_round_reviews, CH-11523) is one more read in the same wave, and the team's strokes gained baseline (golf_team_settings) another.
+    expect(depth).toEqual([['golf_rounds'], ['golf_course_tees', 'golf_holes', 'golf_qualifier_entries', 'golf_round_reviews', 'golf_shots', 'golf_team_settings', 'golf_teams']]);
     expect(result.kind).toBe('ok');
   });
 

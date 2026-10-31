@@ -389,6 +389,22 @@ Two consequences worth carrying:
   `participant_count` instead. `is_team_channel` would be worse there, not
   better: it is true for a small minority of real team chats.
 
+### Clubhouse follow-ups to the same race (2026-10-31 audit)
+
+- The Clubhouse attachment tile (`Attachments` in `MessagesView.tsx`) asks once
+  more after 1.5 s when a message flagged `has_attachments` first reads zero
+  rows, and re-signs the files (1 h URLs) when the tab becomes visible after 45
+  minutes, keeping the old tiles on screen if that read fails.
+- `applyRealtimeMessageUpdate` follows `has_attachments`, so an open thread draws
+  the files when the sender flags the row, and drops the chip when the sender
+  downgrades it after a failed upload.
+- `getGolfMessageAttachments` returns no files for a deleted message.
+- `searchGolfMessages` leaves out conversations the viewer deleted (until a
+  message arrives after the hide, the inbox's own rule) and names a DM after the
+  other person even when only the viewer's own messages matched.
+- The rail refetches (300 ms debounce) on any `golf_conversations` UPDATE the
+  client receives, so a deleted conversation returns when the other person writes.
+
 ## The conversation rail is one list on one cadence (2026-09-07)
 
 The rail's rows are a divided list, not a stack of cards, and the rule is

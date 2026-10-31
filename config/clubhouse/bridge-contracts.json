@@ -138,6 +138,17 @@
     "catalog": "docs/clubhouse/catalog/shell.md"
   },
   {
+    "id": 10407,
+    "page": "P001",
+    "category": 4,
+    "item": 7,
+    "name": "MORE_UNREAD_THAN_THE_BELL_LISTS",
+    "chCode": "CH-1307",
+    "meaning": "More unread than the bell lists",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/shell.md"
+  },
+  {
     "id": 10601,
     "page": "P001",
     "category": 6,
@@ -310,6 +321,17 @@
     "name": "A_PLAYERS_PUSHES_ARE_HELD_FOR_CLASS",
     "chCode": "CH-1271",
     "meaning": "A player's pushes are held for class (P-10)",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/shell.md"
+  },
+  {
+    "id": 10617,
+    "page": "P001",
+    "category": 6,
+    "item": 17,
+    "name": "OPENING_OR_CLEARING_A_NOTIFICATION_THE_SERVER",
+    "chCode": "CH-1004",
+    "meaning": "Opening or clearing a notification: the server did not keep the read (it answered `success: false`, or the call failed)",
     "status": "implemented",
     "catalog": "docs/clubhouse/catalog/shell.md"
   },
@@ -10591,6 +10613,17 @@
     "catalog": "docs/clubhouse/catalog/qualifiers.md"
   },
   {
+    "id": 90635,
+    "page": "P009",
+    "category": 6,
+    "item": 35,
+    "name": "EDIT_AN_ENTRANT_WHOSE_PROFILE_CANNOT_BE",
+    "chCode": "CH-09224",
+    "meaning": "Edit: an entrant whose profile cannot be read (injured, redshirt or inactive: the profile read admits active members only)",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/qualifiers.md"
+  },
+  {
     "id": 90701,
     "page": "P009",
     "category": 7,
@@ -10666,6 +10699,17 @@
     "name": "PLAYER_THEIR_OWN_RANKED_ROW_ON_A",
     "chCode": "CH-09908",
     "meaning": "Player: their own ranked row on a board that draws a line",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/qualifiers.md"
+  },
+  {
+    "id": 90708,
+    "page": "P009",
+    "category": 7,
+    "item": 8,
+    "name": "COACH_A_ROUND_NUMBERS_CARDS_MIX_9",
+    "chCode": "CH-09909",
+    "meaning": "Coach: a round number's cards mix 9 and 18 holes",
     "status": "implemented",
     "catalog": "docs/clubhouse/catalog/qualifiers.md"
   },
@@ -20836,8 +20880,8 @@
     "item": 2,
     "name": "HOME_NO_EVENT_IN_THE_SEASON_NOTHING",
     "chCode": "CH-16310",
-    "meaning": "Home: no event in the season, nothing failed",
-    "status": "implemented",
+    "meaning": "Retired 2026-10-25 (P-5 4.11.1): replaced by CH-16352. Home: no event in the season, nothing failed",
+    "status": "deprecated",
     "catalog": "docs/clubhouse/catalog/tournaments.md"
   },
   {
@@ -21006,6 +21050,17 @@
     "catalog": "docs/clubhouse/catalog/tournaments.md"
   },
   {
+    "id": 160418,
+    "page": "P016",
+    "category": 4,
+    "item": 18,
+    "name": "HOME_NO_EVENT_IN_THE_SEASON_NOTHING_2",
+    "chCode": "CH-16352",
+    "meaning": "Home: no event in the season, nothing failed (P-5 4.11.1; replaces CH-16310)",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/tournaments.md"
+  },
+  {
     "id": 160601,
     "page": "P016",
     "category": 6,
@@ -21138,6 +21193,61 @@
     "catalog": "docs/clubhouse/catalog/tournaments.md"
   },
   {
+    "id": 160613,
+    "page": "P016",
+    "category": 6,
+    "item": 13,
+    "name": "STOP_TRACKING_CONFIRMED_ON_THE_DESK_AND",
+    "chCode": "CH-16050",
+    "meaning": "Stop tracking confirmed on the desk (CH-16550) and written (P-5)",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/tournaments.md"
+  },
+  {
+    "id": 160614,
+    "page": "P016",
+    "category": 6,
+    "item": 14,
+    "name": "CANCEL_TOURNAMENT_CONFIRMED_ON_THE_DESK",
+    "chCode": "CH-16051",
+    "meaning": "Cancel tournament confirmed on the desk (CH-16551)",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/tournaments.md"
+  },
+  {
+    "id": 160615,
+    "page": "P016",
+    "category": 6,
+    "item": 15,
+    "name": "RESTORE_TOURNAMENT_ON_THE_DESK",
+    "chCode": "CH-16052",
+    "meaning": "Restore tournament on the desk",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/tournaments.md"
+  },
+  {
+    "id": 160616,
+    "page": "P016",
+    "category": 6,
+    "item": 16,
+    "name": "STOP_TRACKING_REFUSED_THE_RESULTS_ARE_OFFICIAL",
+    "chCode": "CH-16053",
+    "meaning": "Stop tracking refused: the results are official",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/tournaments.md"
+  },
+  {
+    "id": 160617,
+    "page": "P016",
+    "category": 6,
+    "item": 17,
+    "name": "HOME_THE_READ_OF_THE_CALENDARS_UNTRACKED",
+    "chCode": "CH-16253",
+    "meaning": "Home (coach): the read of the calendar's untracked tournaments fails (`errors.untracked`, P-5)",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/tournaments.md"
+  },
+  {
     "id": 160701,
     "page": "P016",
     "category": 7,
@@ -21178,6 +21288,28 @@
     "name": "A_ROUNDS_SHARING_WAS_CHANGED_30_TIMES",
     "chCode": "CH-16665",
     "meaning": "A round's sharing was changed 30 times (slice 2)",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/tournaments.md"
+  },
+  {
+    "id": 161101,
+    "page": "P016",
+    "category": 11,
+    "item": 1,
+    "name": "STOP_TRACKING_FROM_THE_DESKS_TOURNAMENT_MENU",
+    "chCode": "CH-16550",
+    "meaning": "Stop tracking, from the desk's tournament menu (P-5)",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/tournaments.md"
+  },
+  {
+    "id": 161102,
+    "page": "P016",
+    "category": 11,
+    "item": 2,
+    "name": "CANCEL_TOURNAMENT_FROM_THE_DESKS_TOURNAMENT_MENU",
+    "chCode": "CH-16551",
+    "meaning": "Cancel tournament, from the desk's tournament menu (P-5; the calendar's CH-6541)",
     "status": "implemented",
     "catalog": "docs/clubhouse/catalog/tournaments.md"
   },
@@ -21259,6 +21391,17 @@
     "catalog": "docs/clubhouse/catalog/tournaments.md"
   },
   {
+    "id": 161602,
+    "page": "P016",
+    "category": 16,
+    "item": 2,
+    "name": "HOME_A_TOURNAMENT_ARRIVES_WHILE_THE_PAGE",
+    "chCode": "CH-16650",
+    "meaning": "Home: a tournament arrives while the page is open (another tab or coach set it up; P-5 M9)",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/tournaments.md"
+  },
+  {
     "id": 161801,
     "page": "P016",
     "category": 18,
@@ -21277,6 +21420,17 @@
     "name": "CALENDAR_GRID_BLOCK",
     "chCode": "CH-16641",
     "meaning": "Calendar grid block (slice 4)",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/tournaments.md"
+  },
+  {
+    "id": 161803,
+    "page": "P016",
+    "category": 18,
+    "item": 3,
+    "name": "HOME_A_TOURNAMENT_ARRIVES_WHILE_THE_PAGE_2",
+    "chCode": "CH-16850",
+    "meaning": "Home: a tournament arrives while the page is open",
     "status": "implemented",
     "catalog": "docs/clubhouse/catalog/tournaments.md"
   }

@@ -14,7 +14,8 @@ Held items:     none
 
 ### Changed
 
-- Hero subline: a no-break space ahead of a title's dot keeps "· Pinehurst No. 2"
+- Hero subline: a no-break space ahead of a title's dot keeps "· Pinehurst No.
+  2"
   from opening a line (`screens/home/model.ts` homeSubline). The phone queue and
   "From your coach" fixes this pass first carried are dropped: the visual pass
   (#2390) fixed the same spots.

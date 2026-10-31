@@ -2,7 +2,7 @@
 
 ```text
 Plan ID: HD-tournaments-round-write
-Status: HELD
+Status: RELEASED
 Pages: Tournaments (P016)
 Feature: calendar_events
 Migration: supabase/migrations/20261027100000_golf_tournament_update_round_write.sql

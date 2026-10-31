@@ -142,8 +142,8 @@ describe('CoachHelm read tools — sourced envelope contracts', () => {
       sbWith({
         golf_rounds: [{
           data: [
-            { id: 'r2', round_date: '2026-08-10', course_name: 'North', round_type: 'tournament', score_to_par: 2 },
-            { id: 'r1', round_date: '2026-08-01', course_name: 'South', round_type: 'practice', score_to_par: 6 },
+            { id: 'r2', round_date: '2026-08-10', course_name: 'North', round_type: 'tournament', score_to_par: 2, holes_played: 18, total_score: 74, front_nine: 37, back_nine: 37, total_putts: 30 },
+            { id: 'r1', round_date: '2026-08-01', course_name: 'South', round_type: 'practice', score_to_par: 6, holes_played: 18, total_score: 78, front_nine: 37, back_nine: 41, total_putts: 30 },
           ],
         }],
       }),
@@ -212,6 +212,9 @@ describe('CoachHelm read tools — sourced envelope contracts', () => {
             score_to_par: 1,
             total_putts: 29,
             strokes_gained_total: 0.8,
+            holes_played: 18,
+            front_nine: 36,
+            back_nine: 36,
           }],
         }],
       }),
@@ -225,6 +228,8 @@ describe('CoachHelm read tools — sourced envelope contracts', () => {
         date: '2026-08-16',
         course: 'Pine Valley',
         round_type: 'tournament',
+        holes: 18,
+        counts_in_averages: true,
         total_score: 72,
         to_par: 1,
         putts: 29,
@@ -370,6 +375,8 @@ describe('CoachHelm read tools — sourced envelope contracts', () => {
   });
 
   it('summarizes attendance for upcoming non-cancelled events', async () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date('2026-08-18T12:00:00.000Z')); // The fixture's events are a few days out.
     const envelope = await getUpcomingEvents(
       sbWith({
         golf_events: [{
@@ -421,6 +428,8 @@ describe('CoachHelm read tools — sourced envelope contracts', () => {
   });
 
   it('carries no reply counts for an event that does not require an RSVP, so nothing nags about it (owner, 2026-10-08)', async () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date('2026-08-18T12:00:00.000Z')); // The fixture's events are a few days out.
     const envelope = await getUpcomingEvents(
       sbWith({
         golf_events: [{

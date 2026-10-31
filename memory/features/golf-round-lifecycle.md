@@ -947,3 +947,13 @@ The completed-round Submit banner lives inside this same measured scorecard
 chrome so it remains reachable while scrolling. A ResizeObserver updates the
 published offset when the banner or save status changes height. The route
 loading placeholder reserves the same inset, context, and editor order.
+
+## Discard is final on every device (2026-10-31)
+
+- Deleting an in-progress round writes a tombstone with the round, its holes
+  and its shots (the discards table and trigger of `20261031141000`). The
+  player reads their own rows; nobody writes them but the trigger.
+- A save or submit whose round id is gone and tombstoned answers
+  `round_discarded` (not `round_missing`), so no device re-creates it; the
+  round hooks then mark it discarded locally and stop saving it.
+- A failed tombstone read keeps the old `round_missing` path.

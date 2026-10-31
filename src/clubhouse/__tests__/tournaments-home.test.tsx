@@ -10,7 +10,7 @@ afterEach(cleanup);
 
 /**
  * Season home (P016, board `Home` and the phone's `MEvents`). Catalog: CH-16201 (the one read failed), CH-16401 (on its
- * way), CH-16210 (the events section didn’t load), CH-16310 (no tournaments yet), CH-16311 (no finished events in the
+ * way), CH-16210 (the events section didn’t load), CH-16352 (P-5's first run, in place of the retired no-tournaments state), CH-16311 (no finished events in the
  * season), CH-16312 (nothing on the calendar). The figures come from the preview fixture, which carries Oakmont as
  * 858 (−6), third of 14, with 11 of 15 team scorecards holding shot data.
  */
@@ -160,7 +160,7 @@ describe.each([
     expect(text(notice)).toContain('The events didn’t load');
     expect(within(notice).getByRole('button', { name: 'Try again' })).toBeInTheDocument();
     expect(c.querySelector('.ch-tour-home-feat')).toBeNull();
-    expect(c.querySelector('[data-ch-code="CH-16310"]')).toBeNull();
+    expect(c.querySelector('[data-ch-code="CH-16352"]')).toBeNull();
   });
 
   it('draws the home without a notice when only the sections it does not draw failed (partial)', () => {
@@ -169,11 +169,12 @@ describe.each([
     expect(c.querySelector('.ch-tour-home-feat')).not.toBeNull();
   });
 
-  it('asks for the first event when there are none, with that as the only primary (CH-16310)', () => {
+  it('asks for the first tournament on the calendar when there are none, with that as the only primary (CH-16352)', () => {
     const c = draw(tourFixture('empty').home, { phone });
-    const empty = c.querySelector('[data-ch-code="CH-16310"]') as HTMLElement;
-    expect(text(empty)).toContain('No tournaments yet');
-    expect(within(empty).getByRole('link', { name: 'Add event' })).toHaveAttribute('href', '/golf/dashboard/tournaments/new');
+    const empty = c.querySelector('[data-ch-code="CH-16352"]') as HTMLElement;
+    expect(text(empty)).toContain('Your season starts on the calendar');
+    expect(within(empty).getByRole('link', { name: 'Add a tournament' })).toHaveAttribute('href', '/golf/dashboard/calendar?new=1&type=tournament');
+    expect(within(empty).getByRole('link', { name: 'Plan from here instead' })).toHaveAttribute('href', '/golf/dashboard/tournaments/new');
     expect(c.querySelectorAll('.ch-btn--primary')).toHaveLength(1);
     expect(c.querySelectorAll('a[href="/golf/dashboard/tournaments/new"]')).toHaveLength(1);
   });

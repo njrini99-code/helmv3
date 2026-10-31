@@ -2,6 +2,7 @@ import 'server-only';
 import { createClient } from '@/lib/supabase/server';
 import { fetchAllRowsResult } from '@/lib/supabase/fetch-all-rows';
 import { chunkIds } from '@/lib/supabase/chunk-ids';
+import { withCanonicalRoundTotal } from '@/lib/golf/round-total';
 import { chLogServer } from '../lib/track-server';
 import { toCourseHistory, type ChCourseHistory, type ChCourseListRow, type ChCourseWindow } from './course-page-shape';
 import { groupCourseRounds, parseCourseKey, resolveCourseKey } from './course-key';
@@ -68,7 +69,9 @@ export async function loadCourseHistory(rawKey: string, viewer: ChCourseViewer, 
   }
   if (libraryRes.error) log('library', libraryRes.error);
   if (playerRes.error) log('player', playerRes.error);
-  const list = listRes.data ?? [];
+  // Canonical totals at the boundary (round-total.ts): the headline average, Best and Last time read the same total the library row
+  // shows for the round, not the stored total_score that drifts by one on ~5% of rounds.
+  const list = (listRes.data ?? []).map(withCanonicalRoundTotal);
   const library = libraryRes.data ? { name: libraryRes.data.name, city: libraryRes.data.city ?? null, state: libraryRes.data.state ?? null } : null;
 
   // Which rounds are here, to read only their holes and the newest one's coach note.

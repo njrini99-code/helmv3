@@ -19,7 +19,7 @@ import { rebuiltHref } from '../../shell/nav';
 import { PhoneTop } from '../../shell/phone-chrome';
 import { boardCaption, dayLabel, plural, positionLabel, sampleNote, shortRange, viewerSelection, type ChQRound, type ChQRow, type ChQStatus } from './model';
 import { PrintHead } from './PrintHead';
-import { Pos, qualifierPeek, StateBadge, StatusPill, ThruDots, ToParPlate, ViewerLineCard } from './parts';
+import { MixedRounds, Pos, qualifierPeek, StateBadge, StatusPill, ThruDots, ToParPlate, ViewerLineCard } from './parts';
 import { PlayerPeek } from '../../ui/PlayerPeek';
 import type { LiveFeedView } from './live';
 import { useRankSlide } from './rank-slide';
@@ -319,6 +319,7 @@ function Board({
         {announce}
       </p>
       <ViewerLineCard board={b} viewerId={data.viewerPlayerId} numRounds={data.numRounds} selection={viewerSelection(data.selectionState, data.selections)} />
+      {coach && b.mixed && <MixedRounds mixed={b.mixed} />}
       <div className="ch-qfm-lbhead" aria-hidden="true">
         <span>Pos</span>
         <span>Player</span>

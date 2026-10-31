@@ -155,6 +155,35 @@ describe('createGolfTeamBroadcast reuses only the caller’s own same-titled cha
     expect(participantInserts).toEqual([]);
   });
 
+  it('starts a new chat when the caller’s same-titled chat holds someone outside the chosen audience', async () => {
+    world(
+      [{ id: 'varsity', team_id: TEAM, title: 'Practice', is_team_chat: true, created_by: COACH, created_at: '2026-01-01' }],
+      [
+        { conversation_id: 'varsity', user_id: COACH },
+        { conversation_id: 'varsity', user_id: 'player-user-1' },
+      ],
+    );
+
+    // "Practice" for player 2 alone must not land in the chat player 1 is in.
+    const result = await createGolfTeamBroadcast({ teamId: TEAM, title: 'Practice', selectedPlayerIds: ['p2'] });
+    expect(result).toEqual({ conversationId: 'new-conv', reused: false });
+    expect(participantInserts.flat().some((r) => r.conversation_id === 'varsity')).toBe(false);
+  });
+
+  it('starts a new chat rather than reuse one the caller deleted', async () => {
+    world(
+      [{ id: 'hidden', team_id: TEAM, title: 'Practice', is_team_chat: true, created_by: COACH, created_at: '2026-01-01' }],
+      [
+        { conversation_id: 'hidden', user_id: COACH, hidden_at: '2026-10-01T00:00:00Z' },
+        { conversation_id: 'hidden', user_id: 'player-user-1' },
+        { conversation_id: 'hidden', user_id: 'player-user-2' },
+      ],
+    );
+
+    const result = await createGolfTeamBroadcast({ teamId: TEAM, title: 'Practice', allPlayers: true });
+    expect(result).toEqual({ conversationId: 'new-conv', reused: false });
+  });
+
   it('starts a new chat when the caller created the same-titled chat but is no longer in it', async () => {
     world(
       [{ id: 'mine-left', team_id: TEAM, title: 'Practice', is_team_chat: true, created_by: COACH, created_at: '2026-01-01' }],

@@ -1,4 +1,5 @@
 import { withCanonicalRoundTotal } from '@/lib/golf/round-total';
+import { recordedPutts } from './round-scope';
 import type { ChSgTour } from '../lib/sg';
 import type { ChDebrief } from './round-debrief-shape';
 import type { ChReviewHistory } from './round-history-shape';
@@ -12,6 +13,17 @@ import { roundType, teeColorFor, teeLabel, type ChRoundType, type ChTeeColor } f
  * and `golf_shots`, kept apart from the server loader so the preview and
  * tests use the same code.
  */
+
+/**
+ * The Tour a review's strokes gained is measured against: the team's own baseline setting (`golf_team_settings.sg_baseline`, which
+ * recomputes the stored figures when it changes), else its gender's Tour. Only the two Tours exist (sg-benchmarks.ts, 2026-06-22);
+ * an older stored value (scratch, D1 to D3) is no baseline, so the gender's applies.
+ */
+export function reviewTour(genderTour: 'pga' | 'lpga', baseline: string | null | undefined): 'pga' | 'lpga' {
+  if (baseline === 'womens') return 'lpga';
+  if (baseline === 'pga_tour') return 'pga';
+  return genderTour;
+}
 
 export type ChLie = 'tee' | 'fairway' | 'rough' | 'sand' | 'green' | 'hole' | 'penalty' | 'other';
 
@@ -313,7 +325,8 @@ export function toReview(
     toPar: c.score_to_par,
     front,
     back: (r.holes_played ?? 18) === 9 ? { score: null, toPar: null } : back,
-    putts: r.total_putts,
+    // A stored 0 is "not recorded" (round-scope recordedPutts), as the library reads it: the review said "0 putts".
+    putts: recordedPutts(r.total_putts),
     fairways: r.total_fairways ? { hit: r.total_fairways_hit ?? 0, of: r.total_fairways } : null,
     greens: r.total_gir_possible ? { hit: r.total_gir ?? 0, of: r.total_gir_possible } : null,
     strokesGained: sgOf(r),

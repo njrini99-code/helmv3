@@ -240,12 +240,22 @@ async function getPlayerHubSummaryDataImpl(
 
   let tasks: PlayerTask[] = [];
   if (taskIds.length > 0) {
-    const { data: taskDetails } = await supabase
+    const { data: taskDetails, error: taskDetailsError } = await supabase
       .from('golf_tasks')
       .select('id, title, description, due_date, category, task_type')
       .in('id', taskIds)
       .eq('team_id', teamId)
       .order('due_date', { ascending: true, nullsFirst: false });
+    // The assignments read is guarded above; a failed details read drew the same empty task list.
+    if (taskDetailsError) {
+      await logServerError(`[getPlayerHubSummaryData] task details read failed — refusing to render an empty hub: ${describeError(taskDetailsError)}`, {
+        action: 'playerHub.summary',
+        featureArea: 'player_hub',
+        playerId,
+        teamId,
+      });
+      throw new Error("Couldn't load your hub just now. Please try again.");
+    }
 
     tasks = (taskDetails || []).map((t) => {
       const assignment = assignmentMap.get(t.id);

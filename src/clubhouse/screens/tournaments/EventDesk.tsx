@@ -20,6 +20,7 @@ import { Review } from './Review';
 import { TourChip, TourCrumb, TourFailed, TourHead, TourLoading, TourMain, TourPhoneTop, ToPar, tourGate, useTourPhone } from './parts';
 import { useTourPaths, type ChTourPaths } from './paths';
 import { WhoCounted } from './WhoCounted';
+import { DeskTrackMenu } from './track-actions';
 import type { ChTourDeskData, ChTourDeskSearch, ChTourDeskTab, ChTourEvent, ChTourFinding, ChTourPlayerRound, EventDeskProps } from './types';
 import '../../styles/tournaments-desk.css';
 
@@ -149,6 +150,8 @@ function DeskReady({ data, search, phone }: { data: ChTourDeskData; search: ChTo
             Manage lineup
           </Button>
         )}
+        {/* P-5 4.11.5: Cancel or Restore tournament, and Stop tracking. */}
+        <DeskTrackMenu tournamentId={e.id} name={e.name} track={data.track} />
         {'href' in primary ? (
           <Button variant="primary" leftIcon={primary.icon} href={primary.href}>
             {primary.label}

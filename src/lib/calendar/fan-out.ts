@@ -1,5 +1,4 @@
 import { createAdminClient } from '@/lib/supabase/admin';
-import { fromUntyped } from '@/lib/supabase/untyped';
 import { logServerError } from '@/lib/server-error-logger';
 import { describeError } from '@/lib/utils/describe-error';
 import { resolveTeamTimeZone } from './availability';
@@ -90,7 +89,7 @@ export async function fanOutEventInvitation(p: EventInvitationFanOut): Promise<v
         message: p.inAppMessage ?? `${p.dateLabel}${p.location ? ` at ${p.location}` : ''}`,
         action_url: `/golf/dashboard/calendar`,
       }));
-      const { error: notifError } = await fromUntyped(adminClient, 'golf_calendar_notifications')
+      const { error: notifError } = await adminClient.from('golf_calendar_notifications')
         .upsert(notifications, { onConflict: 'event_id,user_id,notification_type', ignoreDuplicates: true });
       if (notifError) {
         await logServerError(`createGolfEvent notification insert failed: ${notifError.message}`, {
@@ -192,10 +191,18 @@ export async function fanOutEventCancelled(p: EventCancelledFanOut): Promise<voi
     const adminClient = createAdminClient();
     const { data: attendances, error: attendancesError } = await adminClient
       .from('golf_event_attendance')
-      .select('player:golf_players(user_id)')
+      .select('notified_at, player:golf_players(user_id)')
       .eq('event_id', eventId);
 
     if (attendancesError) throw attendancesError;
+    // A meeting, or an event the coach invited a list to (rows the coach wrote carry notified_at), is told to that list
+    // only: the whole-team union below announced a 1:1's cancellation, time and room to every player (audit
+    // 2026-10-31; meetings are invitees-only since 20261018120000, and create already tells only invitees, Q-108).
+    const { data: evRow, error: evError } = await adminClient.from('golf_events').select('event_type').eq('id', eventId).maybeSingle();
+    // Same rule as the attendance read above: when the type is unknown a 1:1 meeting could be announced to the team.
+    if (evError) throw evError;
+    const invitedList = (attendances ?? []).some((row) => (row as { notified_at: string | null }).notified_at != null);
+    const inviteesOnly = (evRow as { event_type?: string } | null)?.event_type === 'meeting' || invitedList;
     const attendanceUserIds = (attendances ?? [])
       .map((row) => {
         const playerRef = (row as { player: { user_id: string | null } | Array<{ user_id: string | null }> | null }).player;
@@ -213,11 +220,13 @@ export async function fanOutEventCancelled(p: EventCancelledFanOut): Promise<voi
     // notified nobody even though the team was told it was happening.
     // Same two-query shape as the create fan-out above (team_members →
     // player_id → golf_players.user_id) rather than an embedded join.
-    const { data: teamMembers, error: teamMembersError } = await adminClient
-      .from('golf_team_members')
-      .select('player_id')
-      .eq('team_id', p.teamId)
-      .eq('status', 'active');
+    const { data: teamMembers, error: teamMembersError } = inviteesOnly
+      ? { data: [] as { player_id: string | null }[], error: null }
+      : await adminClient
+          .from('golf_team_members')
+          .select('player_id')
+          .eq('team_id', p.teamId)
+          .eq('status', 'active');
     if (teamMembersError) throw teamMembersError;
     const activePlayerIds = (teamMembers ?? [])
       .map((m) => m.player_id)
@@ -260,7 +269,7 @@ export async function fanOutEventCancelled(p: EventCancelledFanOut): Promise<voi
         message: detail,
         action_url: `/golf/dashboard/calendar?event=${eventId}`,
       }));
-      const { error: notifError } = await fromUntyped(adminClient, 'golf_calendar_notifications')
+      const { error: notifError } = await adminClient.from('golf_calendar_notifications')
         .upsert(notifications, { onConflict: 'event_id,user_id,notification_type', ignoreDuplicates: false });
       if (notifError) {
         await logServerError(`deleteGolfEvent cancellation notification insert failed: ${notifError.message}`, {

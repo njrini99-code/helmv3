@@ -177,6 +177,25 @@ describe('notifyEventUpdate reschedule re-notification', () => {
     }
   });
 
+  it('a place-only or title-only edit at the same time gets its own notice (audit F9)', async () => {
+    const { tables, supabase } = seed({ requires_rsvp: true });
+
+    await notifyEventUpdate('event-1', supabase);
+    expect(tables.golf_calendar_notifications).toHaveLength(1);
+
+    tables.golf_events[0]!.location = 'Putting green';
+    await notifyEventUpdate('event-1', supabase);
+    expect(tables.golf_calendar_notifications).toHaveLength(2);
+
+    tables.golf_events[0]!.title = 'Short game';
+    await notifyEventUpdate('event-1', supabase);
+    expect(tables.golf_calendar_notifications).toHaveLength(3);
+
+    // Same place, same title, same time: still one notice.
+    await notifyEventUpdate('event-1', supabase);
+    expect(tables.golf_calendar_notifications).toHaveLength(3);
+  });
+
   it('notification rows target the attendee user ids', async () => {
     const { tables, supabase } = seed({ requires_rsvp: true });
 

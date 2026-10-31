@@ -3504,6 +3504,12 @@
         ]
       },
       {
+        "id": "golf_round_discards",
+        "definedIn": [
+          "supabase/migrations/20261031141000_golf_round_discards.sql"
+        ]
+      },
+      {
         "id": "golf_round_live",
         "definedIn": [
           "supabase/migrations/20261025050000_golf_round_live.sql"
@@ -3870,6 +3876,12 @@
         "id": "helm_lifting_weight_checkin_schedules",
         "definedIn": [
           "supabase/migrations/20260625000090_helm_lifting_soreness_weight_nutrition.sql"
+        ]
+      },
+      {
+        "id": "helm_private",
+        "definedIn": [
+          "supabase/migrations/20261031140000_golf_rounds_tee_id_backfill.sql"
         ]
       }
     ],
@@ -4269,6 +4281,10 @@
       {
         "id": "golf_player_on_course",
         "definedIn": "supabase/migrations/20261025070100_golf_class_blocks_functions.sql"
+      },
+      {
+        "id": "golf_player_owns_class_event",
+        "definedIn": "supabase/migrations/20261031142000_golf_events_class_rows_private.sql"
       },
       {
         "id": "golf_player_profiles",
@@ -13016,11 +13032,6 @@
         },
         {
           "kind": "import_graph",
-          "path": "src/lib/calendar/fan-out.ts",
-          "anchor": "src/lib/supabase/untyped"
-        },
-        {
-          "kind": "import_graph",
           "path": "src/lib/calendar/meeting-invites.ts",
           "anchor": "src/lib/supabase/chunk-ids"
         }
@@ -18418,6 +18429,17 @@
     },
     {
       "source": "golf_round_lifecycle",
+      "target": "golf_round_discards",
+      "kind": "feature_table",
+      "evidence": [
+        {
+          "kind": "migration_schema",
+          "path": "supabase/migrations/20261031141000_golf_round_discards.sql"
+        }
+      ]
+    },
+    {
+      "source": "golf_round_lifecycle",
       "target": "golf_round_live",
       "kind": "feature_table",
       "evidence": [
@@ -18480,6 +18502,17 @@
         {
           "kind": "migration_schema",
           "path": "supabase/migrations/20260613160000_course_library_phase1.sql"
+        }
+      ]
+    },
+    {
+      "source": "golf_round_lifecycle",
+      "target": "helm_private",
+      "kind": "feature_table",
+      "evidence": [
+        {
+          "kind": "migration_schema",
+          "path": "supabase/migrations/20261031140000_golf_rounds_tee_id_backfill.sql"
         }
       ]
     },
@@ -21893,6 +21926,11 @@
           "kind": "import_graph",
           "path": "src/lib/coachhelm/v3/chat/read-tools.ts",
           "anchor": "src/lib/golf/timezone"
+        },
+        {
+          "kind": "import_graph",
+          "path": "src/lib/coachhelm/v3/chat/read-tools.ts",
+          "anchor": "src/lib/golf/round-countable"
         },
         {
           "kind": "import_graph",
@@ -26363,6 +26401,11 @@
           "kind": "import_graph",
           "path": "src/app/actions/messages.ts",
           "anchor": "src/lib/golf/player-profiles"
+        },
+        {
+          "kind": "import_graph",
+          "path": "src/app/actions/messages.ts",
+          "anchor": "src/lib/golf/unread-message-count"
         },
         {
           "kind": "import_graph",

@@ -2,7 +2,8 @@
 
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { useGolfConversations, useGolfMessages, type GolfConversationWithMeta } from '@/hooks/golf/use-golf-messages';
+import { useNotificationBadges } from '@/contexts/notification-badge-context';
+import { useGolfConversations, useGolfMessages } from '@/hooks/golf/use-golf-messages';
 import { MESSAGE_REACTIONS, summarizeReactions, useMessageReactions } from '@/hooks/golf/use-message-reactions';
 import { useMessageAttachments } from '@/hooks/golf/use-message-attachments';
 import { useMessageResponses } from '@/hooks/golf/use-message-responses';
@@ -45,12 +46,9 @@ import { DraftStore } from './drafts';
 import { readMarkedUnread, withMark, writeMarkedUnread } from './marked-unread';
 import { FOUND_FOR_MS } from './use-focus-message';
 import { onRoster, takePrefill } from './prefill';
-import { directWith, firstName, groupLacksPlayer, isDirect, toChAnnouncement, type ChAnnouncement, type ChAnnouncementDetail, type ChConv, type ChFile, type ChMember, type ChMsg, type ChMute, type ChReaction, type ChReactionKey } from './model';
+import { directWith, firstName, groupLacksPlayer, isDirect, isGroupRow, toChAnnouncement, type ChAnnouncement, type ChAnnouncementDetail, type ChConv, type ChFile, type ChMember, type ChMsg, type ChMute, type ChReaction, type ChReactionKey } from './model';
 
-const isGroup = (c: GolfConversationWithMeta) => {
-  const n = c.participant_count ?? c.participant_ids?.length ?? 0;
-  return n > 0 ? n > 2 : !!c.is_group;
-};
+const isGroup = isGroupRow;
 const EMOJI_BY_KEY = Object.fromEntries(MESSAGE_REACTIONS.map((r) => [r.label, r.emoji])) as Record<ChReactionKey, string>;
 const KEY_BY_EMOJI = Object.fromEntries(MESSAGE_REACTIONS.map((r) => [r.emoji, r.label])) as Record<string, ChReactionKey>;
 
@@ -128,7 +126,8 @@ export function Messages({ data }: { data: ChMessagesData }) {
           markedUnread: marked.has(c.id),
           lastAt: c.last_message?.created_at ?? c.updated_at ?? null,
           lastSenderId: c.last_message?.sender_id ?? null,
-          lastText: railText(decodeMessageContent(c.last_message?.content ?? '')),
+          // A last message with no words is an attachment sent alone.
+          lastText: railText(decodeMessageContent(c.last_message?.content ?? '')) || (c.last_message ? 'Sent an attachment' : ''),
           lastIsPoll: isPollFallbackText(decodeMessageContent(c.last_message?.content ?? '')),
           creatorId: c.creator_id ?? null,
         };
@@ -138,6 +137,20 @@ export function Messages({ data }: { data: ChMessagesData }) {
   // A one-to-one thread just made, shown at once until the list's next read carries it (F-0045).
   const [started, setStarted] = useState<ChConv | null>(null);
   const convs = useMemo(() => (started && !loadedConvs.some((c) => c.id === started.id) ? [started, ...loadedConvs] : loadedConvs), [started, loadedConvs]);
+  // The nav badge follows the rail: it polls every 45 s, so reading a thread left the tab's count up for that long, and
+  // a new message raised the rail long before the badge (audit 2026-10-31). A beat after the rail's total moves, after
+  // the read mark has landed, the badge reads again.
+  const badges = useNotificationBadges();
+  const railUnread = convs.reduce((n, c) => n + (c.unread ?? 0), 0);
+  const firstRail = useRef(true);
+  useEffect(() => {
+    if (firstRail.current) {
+      firstRail.current = false;
+      return;
+    }
+    const t = window.setTimeout(() => void badges.refetch(), 1200);
+    return () => window.clearTimeout(t);
+  }, [railUnread]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const msgs = useGolfMessages(selectedId ?? '', data.viewerUserId, { deferMarkRead: !!selectedId && selectedId === autoOpened, classAwareness: awareness });
   const liveIds = useMemo(() => msgs.messages.filter((m) => m.conversation_id === selectedId && !m.sendFailed).map((m) => m.id), [msgs.messages, selectedId]);
@@ -754,19 +767,33 @@ export function Messages({ data }: { data: ChMessagesData }) {
       });
       return (ok && unknown) || (!ok && !checked && attachmentRecovery.has(selectedId)) ? 'unknown' : ok && partial ? 'partial' : ok;
     },
-    retry: (id) => void msgs.retryMessage(id),
+    // Through attempt() like every other change: offline it refuses with the shared notice (nothing is sent), and a
+    // retry that fails again says so; the hook clears the row's pending mark when it lands.
+    retry: (id) =>
+      void attempt('retry', { failed: "Couldn’t send the message", hint: 'It is still in the thread, marked Not sent. Try again.', code: 'CH-7004' }, async () => {
+        const sent = await msgs.retryMessage(id);
+        if (!sent) {
+          haptic('error');
+          toast({ tone: 'error', title: "Couldn’t send the message", body: 'It is still in the thread, marked Not sent. Try again.', code: 'CH-7004' });
+          return false;
+        }
+        return true;
+      }),
     discard: (id) => msgs.discardFailedMessage(id),
     edit: (id, text) =>
       attempt('edit', { failed: "Couldn’t edit the message", hint: 'Your edit is still in the box. Try again.', code: 'CH-7007' }, async () => {
         await msgs.editMessage(id, text);
         haptic('success');
         toast({ title: 'Message edited' });
+        // The rail's preview may be this message.
+        void refetch().catch(() => undefined);
       }),
     remove: async (id) => {
       const ok = await attempt('remove', { failed: "Couldn’t delete the message", hint: 'It’s back in the thread. Try again in a moment.', code: 'CH-7008' }, async () => {
         await msgs.removeMessage(id);
         haptic('success');
         toast({ title: 'Message deleted' });
+        void refetch().catch(() => undefined);
       });
       if (!ok) void msgs.refetch();
       return ok;
@@ -847,6 +874,8 @@ export function Messages({ data }: { data: ChMessagesData }) {
         if ('error' in res) throw new Error(res.error);
         haptic('success');
         toast({ title: 'You left the group' });
+        // A thread started here stays pinned to the list until it loads; it must not outlive leaving it.
+        setStarted((s) => (s?.id === selectedId ? null : s));
         setSelectedId(null);
         await refetch();
       });
@@ -859,6 +888,7 @@ export function Messages({ data }: { data: ChMessagesData }) {
             if (!res.success) throw new Error(res.error);
             haptic('success');
             toast({ title: 'Conversation deleted' });
+            setStarted((s) => (s?.id === id ? null : s));
             mark(id, false);
             if (id === selectedId) setSelectedId(null);
             await refetch();

@@ -16,8 +16,10 @@ Held items:     whether to remove the now-unused Settings "Season" field is
 
 ### Changed
 
-- The Roster header team line (coach) and the player roster show the computed season. It is `currentSeasonLabel(now, zone)` (`data/season.ts`): 1 August in
-  the team's zone, en dash, "2026–27". Files: `data/roster.ts`, `data/roster-player.ts`.
+- The Roster header team line (coach) and the player roster show the computed
+  season. It is `currentSeasonLabel(now, zone)` (`data/season.ts`): 1 August in
+  the team's zone, en dash, "2026–27". Files: `data/roster.ts`,
+  `data/roster-player.ts`.
 
 ### Why
 

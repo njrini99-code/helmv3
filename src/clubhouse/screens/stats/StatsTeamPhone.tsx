@@ -35,7 +35,7 @@ import { hasRange, isFiltered } from '../../data/stats-filter';
 import { useChSessionState } from '../../lib/session-state';
 import { useArrivalPainted } from '../../lib/use-painted';
 import { useGlide } from '../../lib/motion-glide';
-import { pluralWord } from '../../lib/plural';
+import { plural, pluralWord } from '../../lib/plural';
 import { LargeTitle } from '../../ui/LargeTitle';
 import { TeamInsight } from './StatsInsight';
 import { NoData } from '../../ui/NoData';
@@ -250,7 +250,7 @@ function Trend({ data }: { data: ChTeamStats }) {
   const tone = known.length < 3 ? '' : halvesTone(change, true);
   const reading =
     tone === ''
-      ? 'No clear change across the window.'
+      ? 'No clear change across these round days.'
       : `${change!.delta < 0 ? 'Down' : 'Up'} ${formatFixed(Math.abs(change!.delta))} strokes a round, newer half vs older half.`;
   // The mean of the rounds behind the line, each counted once (A8.10): a day weighs its whole rounds, not one point a day.
   const mean = teamDaysMean(known);
@@ -268,7 +268,8 @@ function Trend({ data }: { data: ChTeamStats }) {
       <p className="ch-stm-note">
         <span>Lower is better. {reading}</span>
         <span className="ch-stm-mean ch-num" aria-hidden="true">
-          <i /> Mean {formatFixed(mean)}
+          {/* These days' own mean, not the window's average above: the line draws the last ten round days at most. */}
+          <i /> {`Mean of ${plural(known.length, 'day')}`} {formatFixed(mean)}
         </span>
       </p>
     </section>

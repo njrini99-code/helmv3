@@ -2,6 +2,7 @@ import type { TerminalRoundSubmissionData } from '@/app/golf/actions/round-draft
 import { getFailedRounds, getPendingRounds, type OfflineRound as QueuedRound } from '@/lib/offline/indexed-db';
 import { getRoundRecoverySnapshots, type RoundRecoverySnapshot } from '@/lib/offline/shot-storage';
 import type { HoleStats } from '@/lib/types/golf';
+import { wasRoundDiscarded } from '@/lib/utils/emergency-save';
 import type { ChRoundType } from '../../../data/rounds-shape';
 
 /**
@@ -185,14 +186,17 @@ function toRecoverRound(group: ChDeviceCopy[]): ChRecoverRound {
 /**
  * The rounds to offer `playerId`, newest first: another player's copies and copies with no player work in them are
  * dropped, and copies of the same round (by server id, else by what was played) collapse into one that remembers
- * them all. `copies` come in precedence order (recovery journal, queue, legacy database, emergency saves) and a tie
+ * them all, and a round `isDiscarded` names is dropped. `copies` come in precedence order (recovery journal, queue, legacy database, emergency saves) and a tie
  * in time keeps that order.
  */
-export function buildRecoverRounds(copies: ChDeviceCopy[], playerId: string): ChRecoverRound[] {
+export function buildRecoverRounds(copies: ChDeviceCopy[], playerId: string, isDiscarded: (roundId: string) => boolean = () => false): ChRecoverRound[] {
   const groups = new Map<string, ChDeviceCopy[]>();
   for (const copy of [...copies].sort((left, right) => right.timestamp - left.timestamp)) {
     if (copy.playerId !== playerId) continue;
     if (!hasRecoverableProgress(copy)) continue;
+    // A round the player discarded is never offered back (a stale tab can leave a copy behind; audit 2026-10-31).
+    const serverId = serverRoundIdOf(copy);
+    if (serverId && isDiscarded(serverId)) continue;
     const key = dedupKey(copy);
     const group = groups.get(key);
     if (group) group.push(copy);
@@ -379,6 +383,8 @@ export interface ChDeviceReaders {
   queue(): Promise<ChDeviceCopy[]>;
   legacy(): Promise<ChDeviceCopy[]>;
   emergencySaves(): ChDeviceCopy[];
+  /** Whether this player discarded the round on this device; such a round is never offered back. */
+  discarded?(roundId: string, playerId: string): boolean;
 }
 
 export const LIVE_DEVICE_READERS: ChDeviceReaders = {
@@ -393,6 +399,7 @@ export const LIVE_DEVICE_READERS: ChDeviceReaders = {
   },
   legacy: readLegacyRounds,
   emergencySaves: readEmergencySaves,
+  discarded: wasRoundDiscarded,
 };
 
 export interface ChDeviceScan {
@@ -409,7 +416,7 @@ export interface ChDeviceScan {
 export async function scanDevice(playerId: string, readers: ChDeviceReaders = LIVE_DEVICE_READERS): Promise<ChDeviceScan> {
   const [cache, queue, legacy] = await Promise.allSettled([readers.recoveryCache(), readers.queue(), readers.legacy()]);
   const ok = (result: PromiseSettledResult<ChDeviceCopy[]>) => (result.status === 'fulfilled' ? result.value : []);
-  const rounds = buildRecoverRounds([...ok(cache), ...ok(queue), ...ok(legacy), ...readers.emergencySaves()], playerId);
+  const rounds = buildRecoverRounds([...ok(cache), ...ok(queue), ...ok(legacy), ...readers.emergencySaves()], playerId, (id) => readers.discarded?.(id, playerId) ?? false);
   const unreadable = rounds.length === 0 && cache.status === 'rejected' && queue.status === 'rejected' && legacy.status === 'rejected';
   return { rounds, unreadable };
 }

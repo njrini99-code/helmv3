@@ -65,7 +65,8 @@ export async function loadCoachQueue(
       .neq('event_type', CLASS_EVENT_TYPE)
       .eq('requires_rsvp', true)
       .is('cancelled_at', null)
-      .gte('start_time', now.toISOString())
+      // A day back for an all-day event (stored at UTC midnight, open for replies all day); replyIsClosed below decides.
+      .gte('start_time', new Date(now.getTime() - 86400000).toISOString())
       .lt('start_time', `${wideEnd}T23:59:59Z`)
       .order('start_time', { ascending: true })
       .limit(50);

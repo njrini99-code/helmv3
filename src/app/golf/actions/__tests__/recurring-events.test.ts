@@ -156,6 +156,7 @@ function seriesTables(): Record<string, Row[]> {
       { id: 'coach-1', user_id: 'u-coach', organization_id: 'org-1' },
       { id: 'coach-2', user_id: 'u-other', organization_id: 'org-2' },
     ],
+    golf_team_coach_staff: [{ team_id: 'team-1', coach_id: 'coach-1' }],
     golf_events: [
       eventRow({
         id: 'ev-root',
@@ -195,6 +196,7 @@ function incidentSeriesTables(): Record<string, Row[]> {
     golf_coaches: [
       { id: 'coach-1', user_id: 'u-coach', organization_id: 'org-1' },
     ],
+    golf_team_coach_staff: [{ team_id: 'team-1', coach_id: 'coach-1' }],
     golf_events: Array.from({ length: 52 }, (_, index) => {
       const start = new Date(firstStart + index * weekMs);
       const end = new Date(start.getTime() + 2 * 60 * 60 * 1_000);
@@ -421,6 +423,7 @@ describe('deleteRecurringEvent — root promotion', () => {
   it("scope 'this' on a childless root plain-deletes", async () => {
     seed('u-coach', {
       golf_coaches: [{ id: 'coach-1', user_id: 'u-coach', organization_id: 'org-1' }],
+    golf_team_coach_staff: [{ team_id: 'team-1', coach_id: 'coach-1' }],
       golf_events: [
         eventRow({
           id: 'ev-solo',
@@ -467,6 +470,7 @@ describe('deleteRecurringEvent — root promotion', () => {
     // Root was moved to Jun 20 by a single-occurrence edit; children sit earlier.
     seed('u-coach', {
       golf_coaches: [{ id: 'coach-1', user_id: 'u-coach', organization_id: 'org-1' }],
+    golf_team_coach_staff: [{ team_id: 'team-1', coach_id: 'coach-1' }],
       golf_events: [
         eventRow({
           id: 'ev-root',
@@ -946,6 +950,7 @@ describe('editRecurringEvent — series extension', () => {
     // more than enough future dates to hit it exactly.
     seed('u-coach', {
       golf_coaches: [{ id: 'coach-1', user_id: 'u-coach', organization_id: 'org-1' }],
+    golf_team_coach_staff: [{ team_id: 'team-1', coach_id: 'coach-1' }],
       golf_events: [
         eventRow({
           id: 'ev-root',
@@ -997,6 +1002,7 @@ describe('createRecurringEvent', () => {
   it('CAL-05 a weekly 3 PM series across the 1 Nov clock change stays at 3 PM local with the zone given', async () => {
     seed('u-coach', {
       golf_coaches: [{ id: 'coach-1', user_id: 'u-coach', organization_id: 'org-1' }],
+    golf_team_coach_staff: [{ team_id: 'team-1', coach_id: 'coach-1' }],
       golf_events: [],
     });
     // Chicago: CDT (UTC-5) until 1 Nov 2026, then CST (UTC-6). The client's single offset is the root's (300).
@@ -1024,6 +1030,7 @@ describe('createRecurringEvent', () => {
   it('stores the series RSVP deadline with the zone offset on the deadline date, the same instant on every row', async () => {
     seed('u-coach', {
       golf_coaches: [{ id: 'coach-1', user_id: 'u-coach', organization_id: 'org-1' }],
+    golf_team_coach_staff: [{ team_id: 'team-1', coach_id: 'coach-1' }],
       golf_events: [],
     });
     // The editor sends datetime-local wall time. 6 PM on 2 Nov is CST (UTC-6), though the series starts in CDT (300).
@@ -1050,6 +1057,7 @@ describe('createRecurringEvent', () => {
   it('falls back to the single offset for the RSVP deadline when no zone is given', async () => {
     seed('u-coach', {
       golf_coaches: [{ id: 'coach-1', user_id: 'u-coach', organization_id: 'org-1' }],
+    golf_team_coach_staff: [{ team_id: 'team-1', coach_id: 'coach-1' }],
       golf_events: [],
     });
     const result = await createRecurringEvent({
@@ -1069,6 +1077,7 @@ describe('createRecurringEvent', () => {
   it('creates a root + children series with parent links', async () => {
     seed('u-coach', {
       golf_coaches: [{ id: 'coach-1', user_id: 'u-coach', organization_id: 'org-1' }],
+    golf_team_coach_staff: [{ team_id: 'team-1', coach_id: 'coach-1' }],
       golf_events: [],
     });
 
@@ -1107,6 +1116,7 @@ describe('createRecurringEvent', () => {
   it('expands a Mon/Wed/Fri multi-weekday rule across a month boundary', async () => {
     seed('u-coach', {
       golf_coaches: [{ id: 'coach-1', user_id: 'u-coach', organization_id: 'org-1' }],
+    golf_team_coach_staff: [{ team_id: 'team-1', coach_id: 'coach-1' }],
       golf_events: [],
     });
 
@@ -1136,6 +1146,7 @@ describe('createRecurringEvent', () => {
   it('rolls back the root when the child insert fails (no half-built series)', async () => {
     seed('u-coach', {
       golf_coaches: [{ id: 'coach-1', user_id: 'u-coach', organization_id: 'org-1' }],
+    golf_team_coach_staff: [{ team_id: 'team-1', coach_id: 'coach-1' }],
       golf_events: [],
     });
     failNthInsert(2); // first insert = root, second = children
@@ -1156,6 +1167,7 @@ describe('createRecurringEvent', () => {
   it('rejects an invalid recurrence rule', async () => {
     seed('u-coach', {
       golf_coaches: [{ id: 'coach-1', user_id: 'u-coach', organization_id: 'org-1' }],
+    golf_team_coach_staff: [{ team_id: 'team-1', coach_id: 'coach-1' }],
       golf_events: [],
     });
 
@@ -1174,6 +1186,7 @@ describe('createRecurringEvent', () => {
   it('rejects an end time before the start time instead of building an unstorable series', async () => {
     seed('u-coach', {
       golf_coaches: [{ id: 'coach-1', user_id: 'u-coach', organization_id: 'org-1' }],
+    golf_team_coach_staff: [{ team_id: 'team-1', coach_id: 'coach-1' }],
       golf_events: [],
     });
 

@@ -21,7 +21,8 @@ Anything that reaches players is a message the coach sends.
   title ("~~1:00 PM~~ · Team room"; a changed place reads "Team room ~~Lonnie
   Poole~~"; a rename puts the old name first), a small Moved / New time /
   Renamed / Changed badge in the trailing slot (Reply > overlap
-  > Cancelled > the mark > Now), and says so in its accessible name ("…, moved, was 1:00 PM").
+  > Cancelled > the mark > Now), and says so in its accessible name ("…, moved,
+  was 1:00 PM").
 - The event's detail opens on one quiet panel under the title: "Moved from 1:00
   PM", "By Coach Reyes · Tue 2:14 PM" (or "By you"). A change in more than one
   field lists Time, Day, Place, Name or Type beside what they were. Got it hides

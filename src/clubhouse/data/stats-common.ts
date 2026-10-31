@@ -167,7 +167,9 @@ export async function loadRoundCache(
   for (const { data, error } of results) {
     if (error) {
       chLogServer(surface, 'roundCache', error);
-      return { byRound, error: true };
+      // Nothing, not the chunks read so far: a partial map drew greens and putts from some rounds under a notice that
+      // says they are missing (audit 2026-10-31).
+      return { byRound: new Map(), error: true };
     }
     for (const row of data ?? []) byRound.set(row.round_id, withoutEmptyHoleCounts(row));
   }

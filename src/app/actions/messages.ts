@@ -21,6 +21,7 @@ import { withAdminObserved } from '@/lib/admin/observed-action';
 import { describeError } from '@/lib/utils/describe-error';
 import { assertGolfConversationAudience } from '@/lib/golf/conversation-audience';
 import { readGolfPlayerProfiles } from '@/lib/golf/player-profiles';
+import { readViewerParticipants } from '@/lib/golf/unread-message-count';
 import { validateGolfReplyTarget } from '@/lib/golf/message-replies';
 import { isFlagEnabled } from '@/lib/flags/is-enabled';
 
@@ -961,13 +962,19 @@ async function createGolfTeamBroadcastImpl({
       .order('created_at', { ascending: true });
 
     if (existingConvs && existingConvs.length > 0) {
+      // Reusable: a chat the coach is still in and hasn't deleted (a hidden one opened blank, off their list), and with
+      // nobody outside the audience just chosen. "Practice" for JV must never also reach the varsity "Practice" chat.
+      const reusable: string[] = [];
       for (const candidate of existingConvs) {
         const { data: candidateParticipants } = await supabase
           .from('golf_conversation_participants')
-          .select('user_id')
+          .select('user_id, hidden_at')
           .eq('conversation_id', candidate.id);
 
+        const mine = (candidateParticipants ?? []).find((p) => p.user_id === user.id);
+        if (!mine || mine.hidden_at) continue;
         const candidateIds = [...new Set((candidateParticipants ?? []).map((p) => p.user_id))].sort();
+        if (candidateIds.every((id) => desiredParticipantIds.includes(id))) reusable.push(candidate.id);
         const sameAudience =
           candidateIds.length === desiredParticipantIds.length &&
           candidateIds.every((id, i) => id === desiredParticipantIds[i]);
@@ -978,15 +985,12 @@ async function createGolfTeamBroadcastImpl({
         }
       }
 
-      // A broadcast with this title exists, but for a DIFFERENT audience
-      // than the one just selected. Reuse the oldest such thread (rather
-      // than fragmenting into yet another same-titled conversation) but
-      // reconcile membership first: add anyone newly selected who isn't
-      // already a participant, so the message the coach is about to send
-      // actually reaches every recipient they just chose. Never remove
-      // existing participants here — golf messaging never does destructive
-      // participant writes.
-      const reuseTarget = existingConvs[0];
+      // A broadcast with this title exists for a smaller audience inside the one just selected. Reuse the oldest such
+      // thread (rather than fragmenting into yet another same-titled conversation) and add whoever is newly selected,
+      // so the message reaches every recipient just chosen. Never remove participants here — golf messaging never does
+      // destructive participant writes — which is why a chat holding anyone outside the audience is not reused.
+      const reuseTargetId = reusable[0];
+      const reuseTarget = reuseTargetId ? { id: reuseTargetId } : null;
       if (reuseTarget) {
         const { data: existingParticipants, error: existingParticipantsError } = await supabase
           .from('golf_conversation_participants')
@@ -1214,6 +1218,18 @@ interface UpdateMessageOptions {
 }
 
 /**
+ * Touch the conversation so every member's inbox (which listens to the conversation row, not to messages) reads its
+ * last message and unread count again after an edit or a delete; without it the deleted text stayed in their preview.
+ * The inbox orders by the last message, so this never moves the row. Best effort: the edit itself already landed.
+ */
+async function touchConversation(supabase: Awaited<ReturnType<typeof createClient>>, sport: Sport, conversationId: string): Promise<void> {
+  // Golf only: golf_conversations_update_v2 admits any participant; baseball_conversations has no UPDATE policy.
+  if (sport !== 'golf') return;
+  const { error } = await supabase.from('golf_conversations').update({ updated_at: new Date().toISOString() }).eq('id', conversationId);
+  if (error) await logServerError(`[Messages] conversation touch failed: ${describeError(error)}`, { action: 'messages.touchConversation' });
+}
+
+/**
  * Update a message's content (edit)
  * @param messageId - The message ID to update
  * @param content - The new message content
@@ -1290,6 +1306,7 @@ export async function updateMessage({
       await logServerError(`[Messages] Failed to update message: ${describeError(updateError)}`, { action: 'messages.updateMessage' });
       throw new Error('Failed to update message');
     }
+    await touchConversation(supabase, sport, msg.conversation_id);
 
     return { success: true };
   } catch (err) {
@@ -1367,6 +1384,7 @@ export async function deleteMessage({
       await logServerError(`[Messages] Failed to delete message: ${describeError(deleteError)}`, { action: 'messages.deleteMessage' });
       throw new Error('Failed to delete message');
     }
+    await touchConversation(supabase, sport, msg.conversation_id);
 
     return { success: true };
   } catch (err) {
@@ -1481,17 +1499,38 @@ async function searchGolfMessagesImpl(
       return { results: [] };
     }
 
-    // Get all conversation IDs the user participates in
-    const { data: participantRows, error: participantError } = await supabase
-      .from('golf_conversation_participants')
-      .select('conversation_id')
-      .eq('user_id', user.id);
+    // Get all conversation IDs the user participates in, with their hide mark.
+    const { data: participantRows, error: participantError } = await readViewerParticipants(supabase, user.id);
 
-    if (participantError || !participantRows || participantRows.length === 0) {
+    // A failed read is not "no results" (contracts 70403, 70619): the page says the search failed.
+    if (participantError) return { results: [], error: 'Search failed' };
+    if (!participantRows || participantRows.length === 0) {
       return { results: [] };
     }
 
-    const conversationIds = participantRows.map(r => r.conversation_id);
+    // A conversation the viewer deleted is out of their inbox, so it is out of their search too: a hit would open
+    // a thread the page cannot show (L3). It is back, and searchable, once a message arrived after the hide
+    // (the inbox's own rule, unread-message-count.ts).
+    const conversationIds = participantRows.filter((r) => !r.hidden_at).map((r) => r.conversation_id);
+    const hiddenRows = participantRows.filter((r) => r.hidden_at);
+    if (hiddenRows.length > 0) {
+      const earliestHide = hiddenRows.reduce((min, r) => (r.hidden_at! < min ? r.hidden_at! : min), hiddenRows[0]!.hidden_at!);
+      const { data: newer, error: newerError } = await supabase
+        .from('golf_messages')
+        .select('conversation_id, created_at')
+        .in('conversation_id', hiddenRows.map((r) => r.conversation_id))
+        .eq('is_deleted', false)
+        .gt('created_at', earliestHide)
+        .limit(1000);
+      if (newerError) return { results: [], error: 'Search failed' };
+      for (const row of hiddenRows) {
+        const back = (newer ?? []).some((m) => m.conversation_id === row.conversation_id && (m.created_at ?? '') > row.hidden_at!);
+        if (back) conversationIds.push(row.conversation_id);
+      }
+    }
+    if (conversationIds.length === 0) {
+      return { results: [] };
+    }
 
     // Search messages using ilike for case-insensitive partial matching
     // Only within conversations the user is a participant of
@@ -1537,7 +1576,8 @@ async function searchGolfMessagesImpl(
 
     const { data: matchingMessages, error: messagesError } = await messagesQuery;
 
-    if (messagesError || !matchingMessages || matchingMessages.length === 0) {
+    if (messagesError) return { results: [], error: 'Search failed' };
+    if (!matchingMessages || matchingMessages.length === 0) {
       return { results: [] };
     }
 
@@ -1586,6 +1626,33 @@ async function searchGolfMessagesImpl(
       .from('golf_conversation_participants')
       .select('conversation_id, user_id')
       .in('conversation_id', matchedConvIds);
+
+    // A DM's name is the OTHER person's, who may not have sent any matching message (only the viewer's own matched):
+    // resolve the names that the sender lookup above does not hold.
+    const missingOthers = [
+      ...new Set(
+        (allParticipants || [])
+          .filter((p) => p.user_id !== user.id && !senderMap.has(p.user_id))
+          .map((p) => p.user_id),
+      ),
+    ];
+    if (missingOthers.length > 0) {
+      const [{ data: otherCoaches }, { data: otherPlayers }] = await Promise.all([
+        supabase.from('golf_coaches').select('user_id, full_name, avatar_url').in('user_id', missingOthers),
+        readGolfPlayerProfiles(supabase, { userIds: missingOthers }),
+      ]);
+      (otherCoaches || []).forEach((c) => {
+        if (c.user_id) senderMap.set(c.user_id, { name: c.full_name || 'Coach', avatar: c.avatar_url });
+      });
+      (otherPlayers || []).forEach((p) => {
+        if (p.user_id) {
+          senderMap.set(p.user_id, {
+            name: [p.first_name, p.last_name].filter(Boolean).join(' ') || 'Player',
+            avatar: p.avatar_url,
+          });
+        }
+      });
+    }
 
     // Build conversation name lookup
     const convNameMap = new Map<string, string>();
@@ -1694,20 +1761,24 @@ async function getGolfActiveTeamConversationIdsImpl(): Promise<string[] | null> 
     if (!activeTeam) return null; // fail-open: never blank the rail
 
     // The user's participant conversations that belong to the active team.
-    const { data: parts } = await supabase
+    const { data: parts, error: partsError } = await supabase
       .from('golf_conversation_participants')
       .select('conversation_id')
       .eq('user_id', user.id);
+    // Fail-open, as the docstring says: a failed read is "don't scope", never an empty allow-list (which drew a
+    // multi-team coach's inbox as "No conversations yet"; audit 2026-10-31).
+    if (partsError) return null;
     const partIds = [
       ...new Set((parts ?? []).map((p) => p.conversation_id).filter(Boolean)),
     ] as string[];
     if (partIds.length === 0) return [];
 
-    const { data: teamConvs } = await supabase
+    const { data: teamConvs, error: teamConvsError } = await supabase
       .from('golf_conversations')
       .select('id')
       .eq('team_id', activeTeam)
       .in('id', partIds);
+    if (teamConvsError) return null;
 
     return (teamConvs ?? []).map((c) => c.id as string);
   } catch (err) {
