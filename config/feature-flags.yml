@@ -68,7 +68,7 @@ flags:
     expires_at: null
     default: false
     environment:
-      production: false
+      production: true
       preview: false
       development: false
     kill_switch_behavior: >-
@@ -106,7 +106,7 @@ flags:
     expires_at: "2027-01-05"
     default: false
     environment:
-      production: false
+      production: true
       preview: true
       development: true
     kill_switch_behavior: null
@@ -147,7 +147,7 @@ flags:
     expires_at: "2027-01-05"
     default: false
     environment:
-      production: false
+      production: true
       preview: true
       development: true
     kill_switch_behavior: null
@@ -226,7 +226,7 @@ flags:
     expires_at: "2027-01-05"
     default: false
     environment:
-      production: false
+      production: true
       preview: true
       development: true
     kill_switch_behavior: null
@@ -255,7 +255,7 @@ flags:
     expires_at: "2026-12-31"
     default: false
     environment:
-      production: false
+      production: true
       preview: true
       development: false
     kill_switch_behavior: null
@@ -300,7 +300,7 @@ flags:
     expires_at: "2026-12-31"
     default: false
     environment:
-      production: false
+      production: true
       preview: true
       development: false
     kill_switch_behavior: null
@@ -345,7 +345,7 @@ flags:
     expires_at: "2027-01-05"
     default: false
     environment:
-      production: false
+      production: true
       preview: true
       development: true
     kill_switch_behavior: null
@@ -398,7 +398,7 @@ flags:
     expires_at: "2027-01-05"
     default: false
     environment:
-      production: false
+      production: true
       preview: true
       development: true
     kill_switch_behavior: null
@@ -440,7 +440,7 @@ flags:
     expires_at: "2027-01-05"
     default: false
     environment:
-      production: false
+      production: true
       preview: true
       development: true
     kill_switch_behavior: null
@@ -475,7 +475,7 @@ flags:
     expires_at: "2026-12-23"
     default: false
     environment:
-      production: false
+      production: true
       preview: true
       development: true
     kill_switch_behavior: null
@@ -506,7 +506,7 @@ flags:
     expires_at: "2027-01-05"
     default: false
     environment:
-      production: false
+      production: true
       preview: true
       development: true
     kill_switch_behavior: null
@@ -538,7 +538,7 @@ flags:
     expires_at: "2027-01-05"
     default: false
     environment:
-      production: false
+      production: true
       preview: true
       development: true
     kill_switch_behavior: null
@@ -577,7 +577,7 @@ flags:
     expires_at: "2027-01-31"
     default: false
     environment:
-      production: false
+      production: true
       preview: true
       development: false
     kill_switch_behavior: null
@@ -609,7 +609,7 @@ flags:
     expires_at: "2027-01-05"
     default: false
     environment:
-      production: false
+      production: true
       preview: true
       development: true
     kill_switch_behavior: null
@@ -653,7 +653,7 @@ flags:
     expires_at: null
     default: false
     environment:
-      production: false
+      production: true
       preview: true
       development: false
     kill_switch_behavior: null
@@ -693,7 +693,7 @@ flags:
     expires_at: null
     default: false
     environment:
-      production: false
+      production: true
       preview: true
       development: false
     kill_switch_behavior: >-
@@ -729,7 +729,7 @@ flags:
     expires_at: null
     default: false
     environment:
-      production: false
+      production: true
       preview: true
       development: false
     kill_switch_behavior: >-
@@ -767,7 +767,7 @@ flags:
     expires_at: null
     default: false
     environment:
-      production: false
+      production: true
       preview: true
       development: false
     kill_switch_behavior: null
@@ -802,7 +802,7 @@ flags:
     expires_at: null
     default: false
     environment:
-      production: false
+      production: true
       preview: true
       development: false
     kill_switch_behavior: >-
@@ -845,7 +845,7 @@ flags:
     expires_at: null
     default: false
     environment:
-      production: false
+      production: true
       preview: true
       development: false
     kill_switch_behavior: null
@@ -905,7 +905,7 @@ flags:
     expires_at: null
     default: false
     environment:
-      production: false
+      production: true
       preview: true
       development: true
     kill_switch_behavior: null
@@ -937,7 +937,7 @@ flags:
     expires_at: null
     default: false
     environment:
-      production: false
+      production: true
       preview: true
       development: true
     kill_switch_behavior: null
@@ -965,7 +965,7 @@ flags:
     expires_at: null
     default: false
     environment:
-      production: false
+      production: true
       preview: true
       development: true
     kill_switch_behavior: null
@@ -997,7 +997,7 @@ flags:
     expires_at: null
     default: false
     environment:
-      production: false
+      production: true
       preview: true
       development: false
     kill_switch_behavior: null
@@ -1039,7 +1039,7 @@ flags:
     expires_at: null
     default: false
     environment:
-      production: false
+      production: true
       preview: true
       development: false
     kill_switch_behavior: null
@@ -1072,7 +1072,7 @@ flags:
     expires_at: null
     default: false
     environment:
-      production: false
+      production: true
       preview: true
       development: true
     kill_switch_behavior: null
@@ -1111,7 +1111,7 @@ flags:
     expires_at: null
     default: false
     environment:
-      production: false
+      production: true
       preview: true
       development: false
     kill_switch_behavior: null
@@ -1151,7 +1151,7 @@ flags:
     expires_at: null
     default: false
     environment:
-      production: false
+      production: true
       preview: true
       development: false
     kill_switch_behavior: null
@@ -1187,7 +1187,7 @@ flags:
     expires_at: null
     default: false
     environment:
-      production: false
+      production: true
       preview: true
       development: false
     kill_switch_behavior: null
@@ -1216,7 +1216,7 @@ flags:
     expires_at: null
     default: false
     environment:
-      production: false
+      production: true
       preview: true
       development: false
     kill_switch_behavior: null
@@ -1257,7 +1257,7 @@ flags:
     expires_at: null
     default: false
     environment:
-      production: false
+      production: true
       preview: true
       development: false
     kill_switch_behavior: null

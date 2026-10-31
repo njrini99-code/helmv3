@@ -177,6 +177,10 @@ vi.mock('@/lib/coachhelm/v3/chat/provenance', async (importOriginal) => {
     // still a valid (unscoped) `extraSupported` entry — so every existing
     // assertion about what reaches the audit is unchanged.
     collectScopedNumbers: (...args: unknown[]) => mocks.collectNumbers(...args),
+    // route.ts reads an envelope's numbers through `collectEnvelopeNumbers` since 2026-10-31 (detail plus summary).
+    // Its summary half is covered in provenance-summary-numbers.test.ts; here it stays the detail mock.
+    collectEnvelopeNumbers: (envelope: { detail?: unknown }) =>
+      envelope.detail === undefined ? [] : mocks.collectNumbers(envelope.detail),
   };
 });
 vi.mock('@/lib/coachhelm/v3/chat/persistence', () => ({

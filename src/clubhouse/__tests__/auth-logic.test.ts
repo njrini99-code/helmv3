@@ -287,12 +287,12 @@ describe('CH-15605 reduced motion: the welcome lands in a millisecond', () => {
   });
 });
 
-describe('the front door flag defaults off in production', () => {
-  it('is registered, off in production, on for preview and development', () => {
+describe('the front door flag (owner turned production on 2026-10-31)', () => {
+  it('is registered, default off, on in production, preview and development', () => {
     const flag = FLAG_REGISTRY.find((f) => f.feature_id === 'golf_clubhouse_front_door');
     expect(flag).toBeDefined();
     expect(flag?.default).toBe(false);
-    expect(evaluateFlag('golf_clubhouse_front_door', { environment: 'production', skipTelemetry: true }).value).toBe(false);
+    expect(evaluateFlag('golf_clubhouse_front_door', { environment: 'production', skipTelemetry: true }).value).toBe(true);
     expect(evaluateFlag('golf_clubhouse_front_door', { environment: 'development', skipTelemetry: true }).value).toBe(true);
     expect(evaluateFlag('golf_clubhouse_front_door', { environment: 'preview', skipTelemetry: true }).value).toBe(true);
   });

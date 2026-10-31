@@ -1158,6 +1158,52 @@ export async function getOpenTasks(sb: Sb, ctx: CoachChatContext): Promise<ToolE
   };
 }
 
+/**
+ * The team's trips (golf_travel_itineraries, Clubhouse Travel), from two weeks back on, soonest first. Owner,
+ * 2026-10-31: asked for a travel plan, Ask said it had no way to see trips.
+ */
+export async function getTeamTravel(sb: Sb, ctx: CoachChatContext): Promise<ToolEnvelope> {
+  const since = dayOffset(todayIsoInZone(ctx.timezone), -14);
+  const { data, error } = await sb
+    .from('golf_travel_itineraries')
+    .select('id, event_name, destination, departure_date, departure_time, departure_location, return_date, return_time, transportation_type, hotel_name, notes')
+    .eq('team_id', ctx.team_id)
+    .eq('is_test', false)
+    .gte('departure_date', since)
+    .order('departure_date', { ascending: true })
+    .limit(20);
+  if (error) return unavailableEnvelope('Could not read the team’s trips.', 'The travel query failed.');
+
+  const rows = data ?? [];
+  if (rows.length === 0) {
+    return { summary: 'No upcoming or recent trips are set up.', measurements: [], series: [], detail: { trips: [] }, coverage: 'empty', coverage_note: null, as_of: nowIso() };
+  }
+  return {
+    summary: `${rows.length} trip${rows.length === 1 ? '' : 's'}.`,
+    measurements: [],
+    series: [],
+    detail: {
+      timezone: ctx.timezone,
+      trips: rows.map((t) => ({
+        trip_id: t.id,
+        event: t.event_name,
+        destination: t.destination,
+        departs_on: t.departure_date,
+        departs_at: t.departure_time,
+        departs_from: t.departure_location,
+        returns_on: t.return_date,
+        returns_at: t.return_time,
+        transportation: t.transportation_type,
+        hotel: t.hotel_name,
+        notes: t.notes,
+      })),
+    },
+    coverage: 'complete',
+    coverage_note: null,
+    as_of: nowIso(),
+  };
+}
+
 // ===========================================================================
 // Team-wide rounds, tournaments and qualifiers
 // ===========================================================================

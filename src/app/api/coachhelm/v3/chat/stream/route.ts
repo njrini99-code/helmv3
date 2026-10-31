@@ -60,7 +60,7 @@ import { buildCoachTools, isConfirmRequired } from '@/lib/coachhelm/v3/chat/agen
 import { buildInstructions } from '@/lib/coachhelm/v3/chat/instructions';
 import {
   collectDates,
-  collectScopedNumbers,
+  collectEnvelopeNumbers,
   // Imported as a value, not `type`-only: `priorTurnEvidence` runs it as a
   // zod schema (`ToolEnvelope.safeParse`) to validate a stored `ui_parts`
   // blob before trusting its shape. The inferred type of the same name is
@@ -315,10 +315,8 @@ function priorTurnEvidence(messages: readonly ChatMessage[], timezone: string): 
 
       target.measurements.push(...envelope.measurements);
       target.series.push(...envelope.series);
-      if (envelope.detail !== undefined) {
-        target.detailNumbers.push(...collectScopedNumbers(envelope.detail));
-        target.detailDates.push(...collectDates(envelope.detail, timezone));
-      }
+      target.detailNumbers.push(...collectEnvelopeNumbers(envelope));
+      if (envelope.detail !== undefined) target.detailDates.push(...collectDates(envelope.detail, timezone));
       for (const id of playerIdsHere) deferred.playerIds.add(id);
     }
   }
@@ -483,10 +481,8 @@ export async function POST(req: NextRequest) {
   const collect = (envelope: ToolEnvelope) => {
     measurements.push(...envelope.measurements);
     seriesAll.push(...envelope.series);
-    if (envelope.detail !== undefined) {
-      detailNumbers.push(...collectScopedNumbers(envelope.detail));
-      detailDates.push(...collectDates(envelope.detail, ctx.timezone));
-    }
+    detailNumbers.push(...collectEnvelopeNumbers(envelope));
+    if (envelope.detail !== undefined) detailDates.push(...collectDates(envelope.detail, ctx.timezone));
   };
 
   // Seed the audit with evidence THIS conversation already produced (see
