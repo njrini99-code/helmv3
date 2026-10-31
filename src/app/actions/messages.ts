@@ -1223,7 +1223,6 @@ interface UpdateMessageOptions {
  */
 async function touchConversation(supabase: Awaited<ReturnType<typeof createClient>>, sport: Sport, conversationId: string): Promise<void> {
   const table = sport === 'golf' ? 'golf_conversations' : 'baseball_conversations';
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const { error } = await supabase.from(table as any).update({ updated_at: new Date().toISOString() }).eq('id', conversationId);
   if (error) await logServerError(`[Messages] conversation touch failed: ${describeError(error)}`, { action: 'messages.touchConversation' });
 }
