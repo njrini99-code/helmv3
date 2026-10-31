@@ -209,7 +209,9 @@ export function NotificationBadgeProvider({ children }: { children: React.ReactN
       if (unread?.authExpired) {
         stopPolling();
       } else {
-        setNotificationsUnread(unread?.success ? (unread.data?.unread ?? 0) : 0);
+        // A failed count holds the last value, as messages do: 0 hid the badge and disabled Mark all read while the
+        // list still had unread rows (audit 2026-10-31).
+        if (unread?.success) setNotificationsUnread(unread.data?.unread ?? 0);
       }
     } catch (err) {
       if (process.env.NODE_ENV === 'development') console.error(err);

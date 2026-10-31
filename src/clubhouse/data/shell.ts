@@ -145,11 +145,13 @@ export async function loadClubhouseShell(teamId: string | undefined, playerId?: 
       // A player's synced class is never "the team's next event" (F-40): it would show one player's timetable to the
       // whole roster. Both class markers are checked, as every team-schedule read does (lib/calendar/class-events).
       .neq('event_type', CLASS_EVENT_TYPE)
-      .gte('start_time', new Date().toISOString())
+      // A day back: an all-day event is stored at midnight UTC of its day, so "from now" dropped it from 8 PM the
+      // evening before (Eastern) and for the whole day itself (audit 2026-10-31). Past timed events are filtered below.
+      .gte('start_time', new Date(Date.now() - 86_400_000).toISOString())
       .is('cancelled_at', null)
       .order('start_time', { ascending: true })
       // Room for the meetings a player isn't invited to, which are passed over (Decision B).
-      .limit(10),
+      .limit(12),
     supabase
       .from('golf_team_join_requests')
       .select('id', { count: 'exact', head: true })
@@ -218,7 +220,14 @@ export async function loadClubhouseShell(teamId: string | undefined, playerId?: 
   }
   const round = roundRes && !roundRes.error ? roundRes.data : null;
 
-  const upcoming = eventRes.error ? [] : (eventRes.data ?? []).filter((row) => !isClassEvent(row));
+  // Still ahead: a timed event from now on, an all-day event through the end of its own date (team-local today).
+  const todayN = dayNumber(new Date(), timezone);
+  const nowMs = Date.now();
+  const upcoming = eventRes.error
+    ? []
+    : (eventRes.data ?? []).filter(
+        (row) => !isClassEvent(row) && (row.all_day ? isoDayNumber(row.start_time.slice(0, 10)) >= todayN : Date.parse(row.start_time) >= nowMs),
+      );
   const forPlayer = !!playerId && !coachId;
   // Decision B (owner, wave 7), as the player's Calendar has it: a player's next event is never a meeting they aren't
   // invited to (their own attendance row, which they read before and after migration 20261017102000); the card would
@@ -270,6 +279,12 @@ export async function loadClubhouseShell(teamId: string | undefined, playerId?: 
   };
 }
 
+/** A yyyy-mm-dd date as a day number, on the same scale as dayNumber. */
+function isoDayNumber(iso: string): number {
+  const [y, m, day] = iso.split('-').map(Number);
+  return Date.UTC(y ?? 1970, (m ?? 1) - 1, day ?? 1) / 86_400_000;
+}
+
 function dayNumber(d: Date, timezone: string): number {
   const [y, m, day] = isoDay(d, timezone)
     .split('-')
@@ -282,9 +297,14 @@ function describeEvent(
   timezone: string,
 ): Omit<ChNextEvent, 'ready'> {
   const start = new Date(e.start_time);
-  const days = dayNumber(start, timezone) - dayNumber(new Date(), timezone);
+  // An all-day event is its stored date, never zoned: at midnight UTC it read as the day before in the US.
+  const allDayDate = e.all_day ? e.start_time.slice(0, 10) : null;
+  const startDay = allDayDate ? isoDayNumber(allDayDate) : dayNumber(start, timezone);
+  const days = startDay - dayNumber(new Date(), timezone);
   const whenLabel = days <= 0 ? 'Today' : days === 1 ? 'Tomorrow' : `In ${days} days`;
-  const date = new Intl.DateTimeFormat('en-US', { timeZone: timezone, weekday: 'short', month: 'short', day: 'numeric' }).format(start);
+  const date = allDayDate
+    ? new Intl.DateTimeFormat('en-US', { timeZone: 'UTC', weekday: 'short', month: 'short', day: 'numeric' }).format(new Date(`${allDayDate}T12:00:00Z`))
+    : new Intl.DateTimeFormat('en-US', { timeZone: timezone, weekday: 'short', month: 'short', day: 'numeric' }).format(start);
   const time = e.all_day
     ? 'All day'
     : new Intl.DateTimeFormat('en-US', { timeZone: timezone, hour: 'numeric', minute: '2-digit' }).format(start);

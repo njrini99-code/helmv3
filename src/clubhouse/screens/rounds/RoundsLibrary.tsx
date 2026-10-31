@@ -302,7 +302,8 @@ export function RoundsLibrary({ data: fresh, playerId, writes = LIVE_ROUNDS_WRIT
                 <EmptyState code="CH-11303" kind="filtered" compact title={`No rounds at “${q.trim()}”`} body="Check the spelling, or search part of the course name." />
               ) : (
                 groups.map((g) => {
-                  const full = g.rounds.filter((r) => r.holes === 18);
+                  // Counted 18-hole rounds only, as the season card: a round marked "Not counted" became a group's low.
+                  const full = g.rounds.filter((r) => r.holes === 18 && r.countable !== false);
                   return (
                     <section key={g.href ?? g.key} className="ch-rd-grp" aria-label={g.key}>
                       <GroupHead href={g.href ?? null} name={g.key}>

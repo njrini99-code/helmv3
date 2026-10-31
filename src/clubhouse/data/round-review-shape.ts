@@ -1,4 +1,5 @@
 import { withCanonicalRoundTotal } from '@/lib/golf/round-total';
+import { recordedPutts } from './round-scope';
 import type { ChSgTour } from '../lib/sg';
 import type { ChDebrief } from './round-debrief-shape';
 import type { ChReviewHistory } from './round-history-shape';
@@ -313,7 +314,8 @@ export function toReview(
     toPar: c.score_to_par,
     front,
     back: (r.holes_played ?? 18) === 9 ? { score: null, toPar: null } : back,
-    putts: r.total_putts,
+    // A stored 0 is "not recorded" (round-scope recordedPutts), as the library reads it: the review said "0 putts".
+    putts: recordedPutts(r.total_putts),
     fairways: r.total_fairways ? { hit: r.total_fairways_hit ?? 0, of: r.total_fairways } : null,
     greens: r.total_gir_possible ? { hit: r.total_gir ?? 0, of: r.total_gir_possible } : null,
     strokesGained: sgOf(r),
