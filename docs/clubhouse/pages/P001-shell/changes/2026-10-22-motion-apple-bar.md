@@ -13,11 +13,15 @@ Held items: none
 
 ### Changed
 
-- RailToggle marks the fold as moving (lib/rail-fold.ts) so size readers and Lenis wait it out, and the brand panel drops its frost while it moves (shell.css). A tab bar or sidebar item swaps the page at once; RouteFrame's comment says so (shell.css, data-ch-tab).
+- RailToggle marks the fold as moving (lib/rail-fold.ts) so size readers and
+  Lenis wait it out, and the brand panel drops its frost while it moves
+  (shell.css). A tab bar or sidebar item swaps the page at once; RouteFrame's
+  comment says so (shell.css, data-ch-tab).
 
 ### Why
 
-- The cross-page entry, docs/clubhouse/changes/2026-10-22-motion-apple-bar.md, holds the reasons.
+- The cross-page entry, docs/clubhouse/changes/2026-10-22-motion-apple-bar.md,
+  holds the reasons.
 
 ### Verification
 

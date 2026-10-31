@@ -434,3 +434,16 @@ in `docs/clubhouse/catalog/qualifiers.md` (CH-09xxx).
 - `memory/context/golfhelm-database.md`
 - `docs/v3-feature-audit.md`
 - `docs/v3-page-audit.md`
+
+## 9-hole rounds (owner, 2026-10-31)
+
+- A 9-hole round counts as its round. Coaches run 9-hole days on purpose
+  (an 18 + 9 shootout; 9-hole rounds 4 and 5), so the board adds every
+  completed round to par as it is.
+- When one round number mixes 9- and 18-hole cards the coach's leaderboard
+  says so (CH-09909, `mixedLengthRounds` in `screens/qualifiers/model.ts`),
+  with how many played each, so a mistaken card can be fixed. No round data
+  is changed.
+- Submitting to a completed qualifier is open in the database too
+  (`20261031134708`), as the app has been since 2026-08-31.
+

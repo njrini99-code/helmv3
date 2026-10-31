@@ -22,7 +22,7 @@ import { firstBlockingPartialHoleIssue } from '@/lib/golf/round-entry-validation
 import { getUserResilient } from '@/lib/auth/resilient-get-user';
 import { describeError } from '@/lib/utils/describe-error';
 import { lieAfterRecoveryPayload, withoutLieAfterRecovery } from '@/lib/golf/data-prompts/recovery';
-import { comprehensiveShotSchema, createSafeFlightRecorder, derivePuttDistanceFeet, derivePuttMade, formatIssuePath, getPlayerTeamId, helmTracePayload, qualifierTeamIdFor, humanizeHoleFieldIssue, isRealApproachShot, isTransientAuthCheckFailure, resolveCourseId, toDbLieType } from './golf-action-shared';
+import { comprehensiveShotSchema, createSafeFlightRecorder, derivePuttDistanceFeet, derivePuttMade, formatIssuePath, getPlayerTeamId, helmTracePayload, qualifierTeamIdFor, roundWasDiscarded, humanizeHoleFieldIssue, isRealApproachShot, isTransientAuthCheckFailure, resolveCourseId, toDbLieType } from './golf-action-shared';
 import type { ActionResult } from './golf-action-shared';
 
 /**
@@ -1314,6 +1314,12 @@ async function savePartialRoundImpl(
         // touch someone else's row. Logged as a warning, not an error — the client
         // recovers automatically and a recovered save is not an incident.
         if (typeof rpcResult.error === 'string' && ROUND_MISSING_RPC_ERROR.test(rpcResult.error)) {
+          // Gone because its player discarded it (on this device or another): never re-create it.
+          if (existingRoundId && (await roundWasDiscarded(supabase, existingRoundId, player.id))) {
+            void flightRecorder.warn('db.save_partial_round_atomic', { errorSummary: 'round_discarded' });
+            endTrace('warning');
+            return { success: false, error: 'round_discarded' };
+          }
           void flightRecorder.warn('db.save_partial_round_atomic', { errorSummary: 'round_missing' });
           endTrace('warning');
           void logServerError(`Auto-save target round is missing — client will re-create: ${rpcResult.error}`, {

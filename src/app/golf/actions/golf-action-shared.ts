@@ -260,6 +260,26 @@ export async function getPlayerTeamId(
  * under the wrong team and its coach, teammates and board could not see it (audit 2026-10-31). Null when the qualifier
  * can't be read or the player isn't on its team; the caller then keeps getPlayerTeamId's answer.
  */
+/**
+ * Whether this player discarded this round (golf_round_discards, written by the delete trigger, 20261031141000).
+ * A save or submit against a round id that no longer exists answers `round_discarded` then instead of
+ * `round_missing`, so no device rebuilds a round its player threw away. A failed read is "not known": the caller
+ * keeps its `round_missing` path, as before the table existed.
+ */
+export async function roundWasDiscarded(supabase: SupabaseClient, roundId: string, playerId: string): Promise<boolean> {
+  try {
+    const { data, error } = await (supabase as SupabaseClient)
+      .from('golf_round_discards' as never)
+      .select('round_id')
+      .eq('round_id', roundId)
+      .eq('player_id', playerId)
+      .limit(1);
+    return !error && Array.isArray(data) && data.length > 0;
+  } catch {
+    return false;
+  }
+}
+
 export async function qualifierTeamIdFor(
   supabase: SupabaseClient,
   qualifierId: string | null | undefined,

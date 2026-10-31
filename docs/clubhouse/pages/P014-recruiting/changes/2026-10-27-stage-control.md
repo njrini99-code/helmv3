@@ -27,4 +27,5 @@ Held items:     none
 ### Verification
 
 - Measured in WebKit: one row of four at 375 (80.8px segments) and 390 (84.5px),
-  each label inside its segment; desktop unchanged in layout. Recruiting tests pass.
+  each label inside its segment; desktop unchanged in layout. Recruiting tests
+  pass.

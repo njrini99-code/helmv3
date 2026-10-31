@@ -21,7 +21,7 @@ import { useRefresh } from '../../lib/use-refresh';
 import { chTrail } from '../../lib/track';
 import { formatFixed } from '../../lib/format';
 import { boardCaption, dayLabel, endedLive, plural, positionLabel, sampleNote, shortRange, viewerSelection, yearOf, type ChQBoard, type ChQHole, type ChQRound, type ChQRow, type ChQStatus } from './model';
-import { Pos, qualifierPeek, StateBadge, StatusPill, ThruDots, ToPar, ToParPlate, ViewerLineCard } from './parts';
+import { Pos, qualifierPeek, StateBadge, StatusPill, ThruDots, ToPar, ToParPlate, ViewerLineCard, MixedRounds } from './parts';
 import { PlayerPeek } from '../../ui/PlayerPeek';
 import { useLiveStandings, type ChLiveFeed, type LiveFeedView } from './live';
 import { useRankSlide } from './rank-slide';
@@ -449,6 +449,7 @@ function Leaderboard({
         {announce}
       </p>
       <ViewerLineCard board={b} viewerId={data.viewerPlayerId} numRounds={data.numRounds} selection={viewerSelection(data.selectionState, data.selections)} />
+      {coach && b.mixed && <MixedRounds mixed={b.mixed} />}
       <StandingsSpread rows={b.rows} topScore={b.topScore} />
       <div className="ch-qf-table" role="table" aria-labelledby="ch-qf-lb">
         <div role="rowgroup">

@@ -17,7 +17,8 @@ Held items: none
 
 ### Why
 
-- The cross-page entry, docs/clubhouse/changes/2026-10-22-look-and-feel-pass.md, holds the reasons.
+- The cross-page entry, docs/clubhouse/changes/2026-10-22-look-and-feel-pass.md,
+  holds the reasons.
 
 ### Verification
 

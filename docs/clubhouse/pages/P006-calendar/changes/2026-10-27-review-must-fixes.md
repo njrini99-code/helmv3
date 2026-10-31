@@ -46,7 +46,8 @@ Held items:     none
 - `src/clubhouse/__tests__/calendar-change-marks.test.tsx` (the qualifier glyph
   measured against paper from the stylesheet, light and dark),
   `src/app/api/calendar/feeds/[token]/__tests__/feed-change-line.test.ts` (flag
-  off, allowlist, flag on), `src/clubhouse/data/__tests__/calendar-rounds.test.ts`
+  off, allowlist, flag on),
+  `src/clubhouse/data/__tests__/calendar-rounds.test.ts`
   and `src/clubhouse/__tests__/calendar-rounds.test.tsx` (lineup word),
   `src/clubhouse/__tests__/calendar-held-moves.test.tsx` (offline and leaving).
   Source inspection and unit tests only; no screenshots were captured in this

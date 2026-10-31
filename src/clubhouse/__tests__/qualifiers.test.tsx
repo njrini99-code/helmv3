@@ -3573,3 +3573,16 @@ describe('Qualifiers · this file', () => {
     expect(unnamed.map((r) => r.id)).toEqual([]);
   });
 });
+
+describe('mixed-length rounds (owner, 2026-10-31)', () => {
+  it('CH-09909 names a round whose cards mix 9 and 18 holes, and only that round', async () => {
+    const { mixedLengthRounds } = await import('../screens/qualifiers/model');
+    const { MixedRounds } = await import('../screens/qualifiers/parts');
+    const r = (number: number, holesPlayed: number | null, total: number | null = 72) => ({ number, holesPlayed, total });
+    const mixed = mixedLengthRounds([r(1, 18), r(1, null), r(4, 9, 38), r(4, 18), r(4, 9, 40), r(5, 9, 36), r(5, 9, 37), r(2, 9, null)]);
+    expect(mixed).toEqual([{ number: 4, nine: 2, full: 1 }]);
+    wrap(<MixedRounds mixed={mixed} />);
+    await expectCode('CH-09909', /Round 4 mixes 9- and 18-hole cards/);
+    expect(code('CH-09909')!.textContent).toMatch(/2 players played 9 holes and 1 player played 18/);
+  });
+});

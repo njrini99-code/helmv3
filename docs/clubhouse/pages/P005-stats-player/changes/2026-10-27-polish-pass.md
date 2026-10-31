@@ -21,7 +21,8 @@ Held items:     none
   glyph before a value with no clear change, so "– −1.3" read as a double minus.
   No glyph without a clear change (`screens/stats/charts.tsx` SgChangeChip,
   `TeamTape.tsx`, `StatsTeamIslands.tsx`).
-- Desktop player head: a no-break space ahead of each dot, so a wrapped line never
+- Desktop player head: a no-break space ahead of each dot, so a wrapped line
+  never
   starts with "· Charlotte, NC" (`screens/stats/StatsPlayer.tsx`).
 
 ### Why

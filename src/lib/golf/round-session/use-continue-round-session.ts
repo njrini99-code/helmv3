@@ -476,12 +476,18 @@ export function useContinueRoundSession({
     targetRoundId: string | undefined,
   ) => {
     try {
-      return await savePartialRound(data, targetRoundId);
+      const result = await savePartialRound(data, targetRoundId);
+      // Discarded (here or on another device): this device stops saving it and never offers it back.
+      if (!result.success && result.error === 'round_discarded' && targetRoundId) {
+        roundDiscardedRef.current = true;
+        markRoundDiscarded(targetRoundId, playerId);
+      }
+      return result;
     } catch (err) {
       if (isUnreadableWriteFailure(err)) pendingUnreadableWriteRef.current = true;
       throw err;
     }
-  }, []);
+  }, [playerId]);
 
   // Throttle auto-save warning to at most once per 60s to avoid toast spam
   const showAutoSaveWarning = useCallback(() => {

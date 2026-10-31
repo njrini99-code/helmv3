@@ -558,12 +558,18 @@ export function useNewRoundSession({ playerId, ports, routes, logSource }: NewRo
     targetRoundId: string | undefined,
   ) => {
     try {
-      return await savePartialRound(data, targetRoundId);
+      const result = await savePartialRound(data, targetRoundId);
+      // Discarded (here or on another device): this device stops saving it and never offers it back.
+      if (!result.success && result.error === 'round_discarded' && targetRoundId) {
+        roundDiscardedRef.current = true;
+        markRoundDiscarded(targetRoundId, playerId);
+      }
+      return result;
     } catch (err) {
       if (targetRoundId && isUnreadableWriteFailure(err)) pendingUnreadableWriteRef.current = true;
       throw err;
     }
-  }, []);
+  }, [playerId]);
 
   // Check for the freshest emergency save on mount. Restore always persists
   // through savePartialRound before reopening Continue Round. A recovery

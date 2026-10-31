@@ -16,10 +16,12 @@ Held items:     none (golf_tournaments_v1 stays off in production;
 ### Changed
 
 - The trend's subtitle, key and note had their margins zeroed by `.ch-root p`
-  (base.css outranks a one-class rule), so the note touched the bar labels and the
+  (base.css outranks a one-class rule), so the note touched the bar labels and
+  the
   key touched the axis. The rules now carry two classes
   (`styles/tournaments-review.css`), and the note stands 12px under the key.
-- The phone back, the History toggles and the trend key's styling this pass first
+- The phone back, the History toggles and the trend key's styling this pass
+  first
   carried are dropped: the visual pass (#2395) fixed the same spots.
 
 ### Why
@@ -32,7 +34,8 @@ Held items:     none (golf_tournaments_v1 stays off in production;
 
 ### Not changed (owner)
 
-- Five views are still the base's placeholders ("… isn't built yet"): Lineup, Link
+- Five views are still the base's placeholders ("… isn't built yet"): Lineup,
+  Link
   rounds, Live round, Edit event and the player's view. "Build lineup", "Edit
   lineup" and "Follow live" lead to them. `golf_tournaments_v1` is off in
   production; it should stay off until those views are built.

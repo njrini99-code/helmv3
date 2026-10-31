@@ -31,4 +31,5 @@ Held items:     none
 ### Verification
 
 - `data/__tests__/stats-insight.test.ts`, `__tests__/stats-team.test.tsx`,
-  `__tests__/stats-player.test.tsx` (269 Stats tests pass). WebKit at 390 and 1280.
+  `__tests__/stats-player.test.tsx` (269 Stats tests pass). WebKit at 390 and
+  1280.

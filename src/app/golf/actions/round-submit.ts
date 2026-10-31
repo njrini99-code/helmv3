@@ -42,7 +42,7 @@ import { recordRescuedStepOutcome } from '@/lib/observability/helm-flight-record
 import { describeError } from '@/lib/utils/describe-error';
 import { markTeamStandingDirty } from '@/lib/coachhelm/v3/standing/refresh-queue';
 import { lieAfterRecoveryPayload } from '@/lib/golf/data-prompts/recovery';
-import { comprehensiveShotSchema, createSafeFlightRecorder, derivePuttDistanceFeet, derivePuttMade, getPlayerTeamId, helmTracePayload, qualifierTeamIdFor, humanizeHoleFieldIssue, isRealApproachShot, isTransientAuthCheckFailure, resolveCourseId, toDbLieType } from './golf-action-shared';
+import { comprehensiveShotSchema, createSafeFlightRecorder, derivePuttDistanceFeet, derivePuttMade, getPlayerTeamId, helmTracePayload, qualifierTeamIdFor, roundWasDiscarded, humanizeHoleFieldIssue, isRealApproachShot, isTransientAuthCheckFailure, resolveCourseId, toDbLieType } from './golf-action-shared';
 import type { ActionResult, CompletedRoundUpdatePayload, RoundApproachDetailPayload, RoundHolePayload, RoundPuttDetailPayload, RoundShotGroupPayload, RoundSubmissionBackupPayload } from './golf-action-shared';
 
 const comprehensiveHoleSchema = z.object({
@@ -564,6 +564,8 @@ async function submitGolfRoundComprehensiveImpl(
           rowExists = null;
         }
         if (rowExists === false) {
+          // Its player discarded it: a re-submit as new would bring back a round they threw away.
+          if (await roundWasDiscarded(supabase, existingRoundId, player.id)) return { success: false, error: 'round_discarded' };
           void logServerError('Round submit target is missing before submit — client may re-submit as new', {
             action: 'submitGolfRoundComprehensive',
             featureArea: 'shot_tracking',
@@ -1232,6 +1234,11 @@ async function submitGolfRoundComprehensiveImpl(
               // precisely BECAUSE we just proved nothing is there to duplicate;
               // blind recreation without this check could duplicate a completed
               // round, which is why the key is only returned after the lookup.
+              if (await roundWasDiscarded(supabase, existingRoundId, player.id)) {
+                void flightRecorder.warn('db.submit_round_atomic', { errorSummary: 'round_discarded' });
+                endTrace('warning');
+                return { success: false, error: 'round_discarded' };
+              }
               void flightRecorder.warn('db.submit_round_atomic', { errorSummary: 'round_missing' });
               endTrace('warning');
               await logServerError(`Round submit target is missing — client may re-submit as new: ${rpcResult.error}`, {

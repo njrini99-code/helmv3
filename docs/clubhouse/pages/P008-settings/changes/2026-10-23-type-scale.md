@@ -13,11 +13,14 @@ Held items: none
 
 ### Changed
 
-- This page's text sizes, and the shared tokens and shell it uses, moved to the nearest of the 11 steps (11 to 34px). Weights, line heights and colours are unchanged.
+- This page's text sizes, and the shared tokens and shell it uses, moved to the
+  nearest of the 11 steps (11 to 34px). Weights, line heights and colours are
+  unchanged.
 
 ### Why
 
-- The cross-page entry, docs/clubhouse/changes/2026-10-23-type-scale.md, holds the reasons.
+- The cross-page entry, docs/clubhouse/changes/2026-10-23-type-scale.md, holds
+  the reasons.
 
 ### Verification
 
