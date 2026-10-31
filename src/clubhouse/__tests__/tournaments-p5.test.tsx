@@ -176,15 +176,15 @@ describe('P-5 season home', () => {
     expect(within(first).getByRole('link', { name: 'Plan from here instead' })).toBeTruthy();
     cleanup();
     c = draw({ ...empty, untracked: [{ eventIds: ['x1', 'x2'], title: 'Fall Classic', first: '2026-10-02', last: '2026-10-03' }] });
-    expect(within(c.querySelector('[data-ch-code="CH-16352"]') as HTMLElement).getByRole('link', { name: 'Set up from calendar (1)' })).toHaveAttribute('href', '#ch-tour-home-setup');
-    const row = within(c.querySelector('#ch-tour-home-setup') as HTMLElement).getByRole('link', { name: /^Set up Fall Classic, / });
+    expect(within(c.querySelector('[data-ch-code="CH-16352"]') as HTMLElement).getByRole('link', { name: 'Set up from calendar (1)' })).toHaveAttribute('href', '#ch-tour-home-setup-t');
+    const row = within(c.querySelector('#ch-tour-home-setup-t')!.closest('section') as HTMLElement).getByRole('link', { name: /^Set up Fall Classic, / });
     expect(row).toHaveAttribute('href', '/golf/dashboard/calendar?event=x1&setup=1');
     expect(row.textContent).toMatch(/2 calendar entries/);
   });
 
   it('CH-16253: a failed untracked read says so in place; the rest of the home stands', () => {
     const c = draw({ ...ready, untracked: [], errors: { ...ready.errors, untracked: true } });
-    expect(c.querySelector('[data-ch-code="CH-16253"]')?.textContent).toMatch(/Couldn’t load your tournaments\./);
+    expect(c.querySelector('[data-ch-code="CH-16253"]')?.textContent).toMatch(/Couldn’t load your tournaments(?!\.)/);
     expect(c.querySelector('.ch-tour-home-feat')).not.toBeNull();
   });
 

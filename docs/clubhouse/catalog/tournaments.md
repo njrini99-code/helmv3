@@ -57,7 +57,7 @@ sync` mints its Bridge ID.
 | CH-16250 | Compare: the rounds read fails (`errors.rounds`) | Under the head: "The rounds didn’t load" + "Nothing has changed. Try again." + Try again, in place of the presets, sides and grid; never "No rounds to compare yet" | `InlineNotice` in `Compare` | tournaments-compare.test › CH-16250 |
 | CH-16251 | Compare: the field read fails (`errors.field`) | Above the grid: "The field didn’t load" + "Versus field needs it, so it is left blank. The other figures are unaffected. Try again." + Try again; Vs field reads "—" and every other figure stays | `InlineNotice` in `Compare` | tournaments-compare.test › CH-16251 |
 | CH-16252 | Compare: the hole figures read fails (`errors.holes`) | Above the grid: "The hole figures didn’t load" + "Birdies, greens, fairways and putts are left blank. Scores and strokes gained are unaffected. Try again." + Try again | `InlineNotice` in `Compare` | tournaments-compare.test › CH-16252 |
-| CH-16253 | Home (coach): the read of the calendar's untracked tournaments fails (`errors.untracked`, P-5) | In place of Set up from calendar: "Couldn’t load your tournaments." + "The calendar’s untracked tournaments didn’t load. Try again." + Try again. The rest of the home is unaffected | `SetUpFromCalendar` | tournaments-p5.test › CH-16253 |
+| CH-16253 | Home (coach): the read of the calendar's untracked tournaments fails (`errors.untracked`, P-5) | In place of Set up from calendar: "Couldn’t load your tournaments" + "The calendar’s untracked tournaments didn’t load. Try again." + Try again. The rest of the home is unaffected | `SetUpFromCalendar` | tournaments-p5.test › CH-16253 |
 
 ## 163xx Empty
 

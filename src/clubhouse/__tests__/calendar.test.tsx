@@ -1910,9 +1910,12 @@ describe('Calendar · who may open it, and what the route reads for them', () =>
     for (const who of ['coach', 'player'] as const) {
       signedInAs(who);
       const routed = (await page({ view: 'day', date: '2026-10-20', event: 'e1', new: '1', with: 'p2', type: 'meeting' })) as ReactElement<Record<string, unknown>>;
-      expect([routed.type, routed.props]).toEqual([ClubhouseCalendarRoute, { view: 'day', date: '2026-10-20', event: 'e1', isNew: true, withPlayer: 'p2', newType: 'meeting' }]);
+      expect([routed.type, routed.props]).toEqual([ClubhouseCalendarRoute, { view: 'day', date: '2026-10-20', event: 'e1', isNew: true, withPlayer: 'p2', newType: 'meeting', setUp: false }]);
       // Only new=1 asks for the editor.
       expect(((await page({ new: 'true' })) as ReactElement<{ isNew: boolean }>).props.isNew).toBe(false);
+      // P-5: setup=1 opens the editor with Track on (Set up from calendar); anything else does not.
+      expect(((await page({ event: 'e1', setup: '1' })) as ReactElement<{ setUp: boolean }>).props.setUp).toBe(true);
+      expect(((await page({ event: 'e1', setup: 'yes' })) as ReactElement<{ setUp: boolean }>).props.setUp).toBe(false);
     }
   });
 });

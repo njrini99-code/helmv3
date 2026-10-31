@@ -263,7 +263,7 @@ function FirstRun({ untracked, newEvent }: { untracked: number; newEvent: string
             Add a tournament
           </Button>
           {untracked > 0 ? (
-            <Button variant="ghost" href="#ch-tour-home-setup">
+            <Button variant="ghost" href="#ch-tour-home-setup-t">
               {`Set up from calendar (${untracked})`}
             </Button>
           ) : (
@@ -291,7 +291,7 @@ function SetUpFromCalendar({ groups, failed, onRetry, retrying }: { groups: ChTo
   return (
     <Section id="ch-tour-home-setup" title="Set up from calendar" meta={failed ? undefined : `${plural(groups.length, 'tournament')} not tracked yet`}>
       {failed ? (
-        <InlineNotice code="CH-16253" title="Couldn’t load your tournaments." body="The calendar’s untracked tournaments didn’t load. Try again." onRetry={onRetry} retrying={retrying} />
+        <InlineNotice code="CH-16253" title="Couldn’t load your tournaments" body="The calendar’s untracked tournaments didn’t load. Try again." onRetry={onRetry} retrying={retrying} />
       ) : (
         <LedgerList label="Untracked tournaments on the calendar" className="ch-tour-home-setup">
           {groups.map((g) => (
@@ -323,7 +323,7 @@ function NextSeason({ events, data, madeToday, arrived }: { events: ChTourEvent[
   const label = `Next season · ${id.slice(0, 4)}–${id.slice(5)}`;
   return (
     <div className="ch-tour-home-next">
-      <button type="button" className="ch-tour-home-next__row" aria-expanded={open} aria-controls="ch-tour-home-next-list" onClick={() => setOpen(!open)}>
+      <button type="button" className="ch-tour-home-next__row" aria-label={`${label} (${events.length})`} aria-expanded={open} aria-controls="ch-tour-home-next-list" onClick={() => setOpen(!open)}>
         <span>{label}</span>
         <span className="ch-tour-home-next__n ch-num">{`(${events.length})`}</span>
         <Icon icon={ChevronDown} size={16} className="ch-tour-home-next__chev" />
