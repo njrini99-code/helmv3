@@ -59,7 +59,7 @@ html[data-fw-theme='dark'] .ch-htb {
   --loss-on-tint: #e7ae57;
   --scrim: rgb(0 0 0 / 0.5);
 }
-.ch-htb button:not(.ch-btn) {
+.ch-htb button:where(:not(.ch-btn, .ch-seg__b)) {
   appearance:none;
   border:0;
   background:none;
