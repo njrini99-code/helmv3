@@ -88,6 +88,8 @@ import { EmptyState, Skeleton } from "../../ui/States";
 import { RailEmpty } from "./RailEmpty";
 import { ThreadClassSub } from "./ThreadClassSub";
 import { SendCluster } from "./NotifyAnyway";
+import { ComposerPlusV2 } from "./ComposerPlusV2";
+import { useChipRise, useSendKeyPop } from "./thread-v2";
 import { GroupClassLine } from "./GroupClassLine";
 import { ThreadClassSection } from "./ThreadClassSection";
 import { isNotifyChord, notifyChordLabel, sendNotify } from "./notify-anyway";
@@ -1599,11 +1601,13 @@ export function AttachChips({
   onRemove: (index: number) => void;
   disabled?: boolean;
 }) {
+  const reduced = useChReducedMotion();
+  const rise = useChipRise(reduced);
   if (!files.length) return null;
   return (
     <div className="ch-ms-to">
       {files.map((f, i) => (
-        <span key={`${f.name}${i}`} className="ch-ms-to__c" title={f.name}>
+        <span key={`${f.name}${i}`} className="ch-ms-to__c" title={f.name} ref={rise}>
           <Icon icon={FileText} size={13} />
           <span className="ch-ms-to__n">{f.name}</span>
           <Tooltip>
@@ -1710,6 +1714,18 @@ export function useAutosize(ta: RefObject<HTMLTextAreaElement | null>, value: st
   }, [ta, value]);
 }
 
+/** Redesign: the send key's place. Empty field, nothing there at all (computed `display: none`, MSG-ALL-09); otherwise it pops in and out. */
+function SendKeyHolder({ redesign, ready, children }: { redesign: boolean; ready: boolean; children: ReactNode }) {
+  const reduced = useChReducedMotion();
+  const { ref, hidden } = useSendKeyPop(ready, reduced);
+  if (!redesign) return <>{children}</>;
+  return (
+    <span ref={ref} className="ch-msv-sendkey" hidden={hidden}>
+      {children}
+    </span>
+  );
+}
+
 /** Within this of MESSAGE_MAX a composer counts down, so the limit never stops typing (or cuts a paste) unannounced. */
 const COUNT_FROM = 300;
 
@@ -1782,6 +1798,8 @@ export function Composer({
   const [sending, setSending] = useState(false);
   const sendingRef = useRef(false);
   const ta = useRef<HTMLTextAreaElement | null>(null);
+  const composerReduced = useChReducedMotion();
+  const chipRise = useChipRise(composerReduced);
   const footer = useRef<HTMLElement | null>(null);
   const typingTimer = useRef<number | null>(null);
   const ready = (draft.trim() || files.length || resumed) && !sending && !checking && !checkFailed && !unavailable;
@@ -1948,7 +1966,7 @@ export function Composer({
       {checkFailed && <InlineNotice code="CH-7217" title="Couldn’t check a pending send" body="Try again before sending another message." onRetry={() => setCheckAttempt((n) => n + 1)} />}
       {unconfirmed && <InlineNotice code="CH-7023" title="Couldn’t confirm this send" body="This send is unconfirmed. Retry send checks the original request; editing stays locked until its outcome is known." />}
       {effectiveParent && (
-        <div className="ch-ms-comp__reply">
+        <div className="ch-ms-comp__reply" ref={api.redesign ? chipRise : undefined}>
           <ReplyQuote api={api} replyToId={effectiveParent} />
           <IconButton icon={X} label="Cancel reply" onClick={() => { setRecoveredParent(null); onClearReply?.(); }} disabled={sending || unconfirmed || checking || checkFailed || unavailable} />
         </div>
@@ -1962,7 +1980,14 @@ export function Composer({
         onRemove={(i) => setFiles((s) => s.filter((_, j) => j !== i))}
       />
       <div className="ch-ms-comp__field">
-        {phone && conv.group && api.polls ? (
+        {api.redesign ? (
+          <ComposerPlusV2
+            api={api}
+            conv={conv}
+            disabled={unconfirmed || checking || checkFailed || unavailable}
+            onPick={(picked) => { setFiles(addFiles(filesRef.current, picked)); setMissingFiles((names) => names.filter((name) => !picked.some((file) => file.name === name))); }}
+          />
+        ) : phone && conv.group && api.polls ? (
           // D21: on a phone, one "+" with a menu (Photo or file, Poll), as iMessage's; a direct thread keeps the plain "+".
           <ComposerPlus
             api={api}
@@ -2002,7 +2027,7 @@ export function Composer({
           maxLength={MESSAGE_MAX}
           enterKeyHint={phone ? "enter" : "send"}
         />
-        <SendCluster phone={phone} ready={!!ready} unconfirmed={unconfirmed} notify={notify} mac={mac} onSend={(notifyAnyway) => void send(notifyAnyway)} />
+        <SendKeyHolder redesign={!!api.redesign} ready={!!ready || unconfirmed}><SendCluster phone={phone} ready={!!ready} unconfirmed={unconfirmed} notify={notify} mac={mac} onSend={(notifyAnyway) => void send(notifyAnyway)} /></SendKeyHolder>
       </div>
       {unavailable ? (
         <span className="ch-ms-comp__hint">

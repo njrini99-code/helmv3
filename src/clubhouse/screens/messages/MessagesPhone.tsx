@@ -112,7 +112,7 @@ import { useComposerInset } from "./composer-inset";
 import { useThreadAnchor } from "./use-thread-anchor";
 import { useThreadDragTimes } from "./use-thread-drag-times";
 import { classYearKey } from "../../lib/class-year";
-import { noteTappedFace, ThreadDatePill, ThreadJumpKey, useFaceFlight, useReplyFromTyping, useThreadMakeRoom } from "./thread-v2";
+import { noteTappedFace, ThreadDatePill, ThreadJumpKey, useFaceFlight, useReplyFromTyping, useSendRise, useThreadMakeRoom } from "./thread-v2";
 import { useFocusMessage } from "./use-focus-message";
 import { ListPresence, PresenceRow } from "../../ui/ListPresence";
 import { pluralWord } from "../../lib/plural";
@@ -558,6 +558,7 @@ function PhoneThread({
   useThreadMakeRoom(scroller, api.msgs.length, !!api.redesign, threadReduced);
   useReplyFromTyping(scroller, api.msgs.length, !!api.typing, !!api.redesign, threadReduced);
   useFaceFlight(!!api.redesign, threadReduced);
+  useSendRise(scroller, api.msgs.length, !!api.redesign, threadReduced);
   const titleId = `ch-msp-thread-${conv.id}`;
   const sub = conv.group ? `${conv.memberCount} members` : conv.subtitle;
   const copy = async (m: ChMsg) => {

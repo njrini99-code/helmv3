@@ -199,3 +199,75 @@ export function useFaceFlight(enabled: boolean, reduced: boolean): void {
     };
   }, [enabled, reduced]);
 }
+
+/** The real bubble rises from the field to its slot (M-MSG-07a): it starts over the field's text, on `send`, from its tail corner. A second send starts its own. Reduce Motion fades in place. */
+export function useSendRise(scroller: RefObject<HTMLElement | null>, count: number, enabled: boolean, reduced: boolean): void {
+  const seen = useRef(count);
+  useLayoutEffect(() => {
+    const before = seen.current;
+    seen.current = count;
+    const el = scroller.current;
+    if (!enabled || !el || count <= before || before === 0) return;
+    const rows = el.querySelectorAll<HTMLElement>('.ch-ms-msg');
+    const row = rows[rows.length - 1];
+    if (!row?.classList.contains('is-mine')) return;
+    const bub = row.querySelector<HTMLElement>('.ch-ms-bub, .ch-ms-img');
+    if (!bub?.animate) return;
+    if (reduced) {
+      bub.animate([{ opacity: 0 }, { opacity: 1 }], { duration: CH_FADE_MS });
+      return;
+    }
+    const field = document.querySelector<HTMLElement>('.ch-ms-comp textarea');
+    if (!field) return;
+    const f = field.getBoundingClientRect();
+    const b = bub.getBoundingClientRect();
+    const d = row.getBoundingClientRect().height;
+    const curve = chSpringCurve('send');
+    bub.style.transformOrigin = '100% 100%';
+    bub.animate(
+      [{ transform: `translate(${f.left - 9 - b.left}px, ${f.bottom - b.bottom - d}px) scale(0.96)`, opacity: 0.85 }, { transform: 'none', opacity: 1 }],
+      { duration: curve.ms, easing: curve.linear },
+    );
+  }, [scroller, count, enabled, reduced]);
+}
+
+/** The send key: hidden with an empty field, springs in on `pop`, and shrinks out from where it is before it hides (M-MSG-06). */
+export function useSendKeyPop(ready: boolean, reduced: boolean): { ref: RefObject<HTMLSpanElement | null>; hidden: boolean } {
+  const ref = useRef<HTMLSpanElement | null>(null);
+  const [hidden, setHidden] = useState(!ready);
+  const was = useRef(ready);
+  useLayoutEffect(() => {
+    if (was.current === ready) return;
+    was.current = ready;
+    const el = ref.current;
+    if (ready) setHidden(false);
+    if (reduced || !el?.animate) {
+      if (!ready) setHidden(true);
+      return;
+    }
+    const curve = chSpringCurve('pop');
+    const live = getComputedStyle(el);
+    const anim = el.animate(
+      ready
+        ? [{ transform: 'scale(0.4)', opacity: 0 }, { transform: 'none', opacity: 1 }]
+        : [{ transform: live.transform === 'none' ? 'none' : live.transform, opacity: live.opacity }, { transform: 'scale(0.4)', opacity: 0 }],
+      { duration: curve.ms, easing: curve.linear, fill: 'none' },
+    );
+    if (!ready) {
+      anim.onfinish = () => setHidden(true);
+      return () => {
+        anim.onfinish = null;
+      };
+    }
+  }, [ready, reduced]);
+  return { ref, hidden };
+}
+
+/** A chip rises 12 on `smooth` when it arrives; Reduce Motion, it appears (MSG-FILE-02, MSG-REPLY-02). */
+export function useChipRise(reduced: boolean): (el: HTMLElement | null) => void {
+  return (el) => {
+    if (!el || reduced || !el.animate) return;
+    const curve = chSpringCurve('smooth');
+    el.animate([{ transform: 'translateY(12px)' }, { transform: 'none' }], { duration: curve.ms, easing: curve.linear });
+  };
+}

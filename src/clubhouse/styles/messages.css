@@ -4651,3 +4651,164 @@ html[data-fw-theme='dark'] [data-ui='clubhouse'] .ch-ms-poll {
   font: 500 calc(12.5 * var(--ch-type-k)) / 1.3 var(--ch-font-sans);
   color: var(--ch-text-secondary);
 }
+
+/* Redesign, the composer: one glass pill, + key, field, send key (06 S-MSG.composer, 08 MSG-COMP). */
+[data-ch-ms-v2] .ch-ms-comp {
+  position: relative;
+}
+[data-ch-ms-v2] .ch-ms-comp::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: -24px;
+  height: 24px;
+  background: linear-gradient(transparent, var(--ch-grouped-bg));
+  pointer-events: none;
+}
+[data-ch-ms-v2] .ch-ms-comp__field {
+  display: flex;
+  align-items: flex-end;
+  gap: 6px;
+  min-height: 46px;
+  padding: 5px;
+  border: 0;
+  border-radius: 24px;
+  background: var(--ch-glass-strong);
+  box-shadow: var(--ch-card-shadow);
+}
+[data-ch-ms-v2] .ch-ms-comp__field textarea {
+  flex: 1;
+  min-width: 0;
+  min-height: 36px;
+  max-height: 132px;
+  padding: 8px 4px 7px;
+  border: 0;
+  background: none;
+  font: 400 calc(16 * var(--ch-type-k)) / calc(21 * var(--ch-type-k)) var(--ch-font-sans);
+  resize: none;
+}
+[data-ch-ms-v2] .ch-msv-sendkey[hidden] {
+  display: none;
+}
+[data-ch-ms-v2] .ch-msv-sendkey {
+  flex: none;
+  display: inline-flex;
+}
+[data-ch-ms-v2] .ch-msv-sendkey .ch-ms-send {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: var(--ch-bubble-mine-fill);
+  color: var(--ch-text-on-accent);
+}
+[data-ch-ms-v2] .ch-msv-plus {
+  position: relative;
+  flex: none;
+}
+[data-ch-ms-v2] .ch-msv-plus__key {
+  position: relative;
+  display: grid;
+  place-items: center;
+  width: 36px;
+  height: 36px;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  background: var(--ch-well-bg-flat);
+  color: var(--ch-text-primary);
+  cursor: pointer;
+}
+[data-ch-ms-v2] .ch-msv-plus__key::before {
+  content: '';
+  position: absolute;
+  inset: -4px;
+}
+[data-ch-ms-v2] .ch-msv-plus__key svg {
+  transition: transform 300ms var(--ch-ease-spring);
+}
+[data-ch-ms-v2] .ch-msv-plus__key.is-open svg {
+  transform: rotate(45deg);
+}
+[data-ch-ms-v2] .ch-msv-attach {
+  position: absolute;
+  left: -5px;
+  bottom: calc(100% + 13px);
+  z-index: 20;
+  display: grid;
+  width: 240px;
+  padding: 6px;
+  border-radius: 22px;
+  background: var(--ch-glass-strong);
+  box-shadow: var(--ch-pop-shadow, var(--ch-card-shadow));
+  transform-origin: 18px 100%;
+  animation: ch-msv-lift 471ms var(--ch-ease-spring-lift, var(--ch-ease)) backwards;
+}
+[data-ch-ms-v2] .ch-msv-attach.is-closing {
+  pointer-events: none;
+  animation: ch-msv-unlift 160ms var(--ch-ease) forwards;
+}
+@keyframes ch-msv-lift {
+  from {
+    opacity: 0;
+    transform: scale(0.4);
+  }
+}
+@keyframes ch-msv-unlift {
+  to {
+    opacity: 0;
+    transform: scale(0.7);
+  }
+}
+[data-ch-ms-v2] .ch-msv-attach > button {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-height: 46px;
+  padding: 6px 10px;
+  border: 0;
+  border-radius: 15px;
+  background: none;
+  color: var(--ch-text-primary);
+  font: 500 calc(15 * var(--ch-type-k)) / 1.2 var(--ch-font-sans);
+  text-align: left;
+  cursor: pointer;
+}
+[data-ch-ms-v2] .ch-msv-attach > button:active {
+  background: var(--ch-press-wash, var(--ch-well-bg-flat));
+}
+[data-ch-ms-v2] .ch-msv-attach__ic {
+  display: grid;
+  place-items: center;
+  width: 32px;
+  height: 32px;
+  border-radius: 10px;
+  background: var(--ch-well-bg-flat);
+  color: var(--ch-accent);
+}
+[data-ch-ms-v2] .ch-msv-attach__ic.is-photos {
+  background: var(--ch-bubble-mine-fill);
+  color: var(--ch-text-on-accent);
+}
+/* Reply, edit and file chips share one box: 44 tall, padding 6 8 6 6, radius 12 (MSG-FILE-01, MSG-REPLY-01). */
+[data-ch-ms-v2] .ch-ms-comp__reply,
+[data-ch-ms-v2] .ch-ms-to__c {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 44px;
+  margin-bottom: 6px;
+  padding: 6px 8px 6px 6px;
+  border-radius: 12px;
+  background: var(--ch-glass-strong);
+  box-shadow: var(--ch-card-shadow);
+  font: 500 calc(12.5 * var(--ch-type-k)) / 1.2 var(--ch-font-sans);
+}
+@media (prefers-reduced-motion: reduce) {
+  [data-ch-ms-v2] .ch-msv-attach {
+    animation-duration: 180ms;
+  }
+  [data-ch-ms-v2] .ch-msv-plus__key svg {
+    transition: none;
+  }
+}
