@@ -10,13 +10,14 @@ import { loadFocusAreaPracticeLogData } from '@/lib/coachhelm/focus-areas/practi
 import { loadActiveGoals, loadRecentlyAchievedGoals } from '@/lib/coachhelm/v3/goals/loader';
 import type { PlayerStanding } from '@/lib/coachhelm/v3/standing/types';
 import type { Goal } from '@/lib/coachhelm/v3/goals/types';
-import { loadPlayerHelmGate, loadProposals, playerTeam, roundsToGo } from './coachhelm';
+import { loadPlayerHelmGate, loadProposals, playerTeam, roundsToGo, topInsights } from './coachhelm';
 import { playerDiveCore } from './coachhelm-dive';
 import { coachDiveCore, loadCoachPlayerStanding, type ChCoachPlayerScope } from './coachhelm-player';
 import { firstName, partitionInsights, type ChHelmLifecycle } from './coachhelm-shape';
 import type { ChDeepInsight } from './coachhelm-dive-shape';
 import { loadPlayerStanding, readStandingRows } from './coachhelm-standing';
 import { classYearLabel, loadTeamZone, seasonStartDate } from './season';
+import { readTextFor } from './coachhelm-voice';
 import { fileDay, teamFigureOf, toChFileField, toChFilePlan, toChFileSg, toChFileTrack, type ChFileCards, type ChFileField, type ChFileIntent, type ChFilePlan, type ChFileRosterRow, type ChFileTrack, type ChFocusRow, type ChPlayerFile, type ChPlayerWeek } from './coachhelm-file-shape';
 import type { ChViewLoad } from './coachhelm-views-shape';
 import type { ChStanding } from './coachhelm-standing-shape';
@@ -25,7 +26,7 @@ type Supabase = Awaited<ReturnType<typeof createClient>>;
 
 const log = (where: string, err: unknown) => void logServerError(err instanceof Error ? err.message : String(err), { action: `coachhelm.file.${where}`, featureArea: 'coachhelm' });
 
-/** The desktop rail: the team's active players. Its second line is the class year until the board's per-player read is wired (CP-LNS-18). Records nothing. */
+/** The desktop rail: the team's active players, each with their top read, or the class year when there is none (CP-LNS-18). Only the reads the rail draws count as shown (CT0a). */
 export async function loadFileRoster(scope: ChCoachPlayerScope): Promise<ChFileRosterRow[] | null> {
   try {
     const supabase = await createClient();
@@ -40,7 +41,16 @@ export async function loadFileRoster(scope: ChCoachPlayerScope): Promise<ChFileR
       const name = [p.first_name, p.last_name].filter(Boolean).join(' ').trim() || 'Player';
       rows.push({ id: p.id, name, first: firstName(name), line: classYearLabel(p.graduation_year, now, tz) ?? '' });
     }
-    return rows.sort((a, b) => a.name.localeCompare(b.name));
+    const tops = await topInsights(
+      rows.map((r) => r.id),
+      { limit: 1, drawnLater: (shown) => Promise.resolve([...shown.values()].flatMap((list) => list.slice(0, 1).map((i) => i.id))) },
+    );
+    return rows
+      .map((r) => {
+        const top = tops.get(r.id)?.[0];
+        return top ? { ...r, line: readTextFor(top, true).title } : r;
+      })
+      .sort((a, b) => a.name.localeCompare(b.name));
   } catch (err) {
     log('roster', err);
     return null;

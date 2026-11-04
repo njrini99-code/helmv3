@@ -5,7 +5,8 @@ import { AskKnowsPanel } from './parts/KnowsPanel';
 import { AllowanceMeter, PlayerOut } from './parts/Allowance';
 import { ArtifactView } from './parts/Artifact';
 import type { AskArtifact } from './parts/artifacts';
-import { MessagesSquare, PanelLeftOpen, SquarePen } from 'lucide-react';
+import { MessagesSquare, PanelLeftOpen, Settings2, SquarePen } from 'lucide-react';
+import { Modal } from '../../../ui/Modal';
 import { useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore, type ReactNode } from 'react';
 import { useCoachHelmChat } from '@/components/golf/coachhelm/chat/useCoachHelmChat';
 import { describeChatError } from '../../../data/coachhelm-chat-error';
@@ -216,7 +217,8 @@ function AskChat({ data, useChatImpl, initial, v2 }: { data: ChAskData; useChatI
   const heading = gone ? 'Chat not found' : (title ?? 'New chat');
   const player = data.role === 'player';
   const histProps = {
-    footer: v2 && data.knows && !player ? <AskKnowsPanel knows={data.knows} conversationId={openId} /> : undefined,
+    // Desktop: at the foot of the rail. Phone: the settings sheet (S-ASK.settings.sheet).
+    footer: v2 && data.knows && !player && !phone ? <AskKnowsPanel knows={data.knows} conversationId={openId} /> : undefined,
     conversations,
     openId: chatSw.shown === NEW_CHAT ? null : chatSw.shown,
     nowIso: data.nowIso,
@@ -283,6 +285,7 @@ function AskChat({ data, useChatImpl, initial, v2 }: { data: ChAskData; useChatI
     setChatsAside(false);
     if (evidenceOpen && narrowDesktop()) setEvidence(null);
   };
+  const [settingsOpen, setSettingsOpen] = useState(false);
   // The phone sheet's subject, kept after it closes so its exit still has the content it showed.
   const [sheetEvidence, setSheetEvidence] = useState<EvidenceFocus | null>(null);
   if (phone && evidenceOpen && evidence !== sheetEvidence) setSheetEvidence(evidence);
@@ -303,9 +306,19 @@ function AskChat({ data, useChatImpl, initial, v2 }: { data: ChAskData; useChatI
                 <span className="ch-ask-ph__title">{showHome && !gone ? 'CoachHelm' : heading}</span>
               </>
             }
-            action={<PhoneIconAction icon={SquarePen} label="New chat" onClick={newChat} />}
+            action={
+              <>
+                {v2 && data.knows && !player && <PhoneIconAction icon={Settings2} label="Chat settings" onClick={() => setSettingsOpen(true)} />}
+                <PhoneIconAction icon={SquarePen} label="New chat" onClick={newChat} />
+              </>
+            }
           />
           <h1 className="ch-sr-only">Ask CoachHelm</h1>
+          {v2 && data.knows && !player && (
+            <Modal open={settingsOpen} title="Chat settings" detent={0.62} className="ch-ak-settings" onClose={() => setSettingsOpen(false)}>
+              <AskKnowsPanel knows={data.knows} conversationId={openId} />
+            </Modal>
+          )}
         </>
       )}
       <div className="ch-ask-top">

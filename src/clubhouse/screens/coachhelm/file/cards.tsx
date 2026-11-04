@@ -261,11 +261,10 @@ function Step({ on, label, date, next = false, tone }: { on: boolean; label: str
     <div className={'hs__s' + (on ? ' on' : '') + (next ? ' next' : '') + (tone ? ' is-loss' : '')}>
       <span className="fill" />
       <i>
-        {on && (
-          <svg viewBox="0 0 12 12" fill="none" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-            <path d="M2.5 6.5 5 9l4.5-5.5" />
-          </svg>
-        )}
+        {/* Always there, drawn undone: the tick can only draw itself in (M-LNS-16) if it was on the page before the step was reached. */}
+        <svg viewBox="0 0 12 12" fill="none" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+          <path d="M2.5 6.5 5 9l4.5-5.5" />
+        </svg>
       </i>
       <b>{label}</b>
       <small>{date}</small>

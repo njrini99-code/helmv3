@@ -183,6 +183,8 @@ export const CH_A11Y_PAGES = [
   ['coachhelm', '/clubhouse-preview/coachhelm-player?state=empty'],
   ['coachhelm', '/clubhouse-preview/coachhelm-player?state=norounds'],
   ['coachhelm', '/clubhouse-preview/coachhelm-player?state=failed'],
+  ['coachhelm', '/clubhouse-preview/coachhelm-player-file'],
+  ['coachhelm', '/clubhouse-preview/coachhelm-player-file?state=failed'],
   ['recruiting', '/clubhouse-preview/recruiting'],
   ['recruiting', '/clubhouse-preview/recruiting?state=empty'],
   ['recruiting', '/clubhouse-preview/recruiting?state=nomatch'],

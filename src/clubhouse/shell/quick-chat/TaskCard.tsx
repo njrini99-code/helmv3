@@ -39,14 +39,20 @@ function phaseOf(view: AskProposalView): Phase {
   if (view.status === 'cancelled' || view.status === 'abandoned') return { k: 'cancelled' };
   if (r?.status === 'held' && r.held_until) return { k: 'held', until: r.held_until };
   if (r?.status === 'failed') return { k: 'failed', reason: r.error ?? r.summary };
-  if (r) return { k: 'done', line: r.summary, told: toldLine(r.notifications), href: r.created[0]?.href ?? null };
+  if (r) return { k: 'done', line: r.summary, told: toldLine(r.notifications, view.proposal.visual?.kind), href: r.created[0]?.href ?? null };
   return view.status === 'confirmed' ? { k: 'busy' } : { k: 'draft' };
 }
-const toldLine = (n: ReadonlyArray<{ channel: string; recipients: number; status: string }>): string | null => {
+/** The drawn lines (S-RCPT.told), from the receipt's own counts. Who was told and who has seen it stay off this row: a coach can't read another user's notification rows (Can't match as drawn). */
+const toldLine = (n: ReadonlyArray<{ channel: string; recipients: number; status: string }>, kind?: string): string | null => {
   const sent = n.filter((x) => x.status !== 'failed');
   if (!sent.length) return null;
   const most = Math.max(...sent.map((x) => x.recipients));
-  return most ? `${most} ${pluralWord(most, 'player', 'players')} told.` : null;
+  if (!most) return null;
+  const who = `${most} ${pluralWord(most, 'player', 'players')}`;
+  if (kind === 'msg') return `Delivered to ${most}.`;
+  if (kind === 'qual') return `${who} got a push and an email.`;
+  if (kind === 'cal') return `${who} got it on their calendar`;
+  return `${who} told.`;
 };
 
 /** S-TASK: the card, its visual, confirm, busy, receipt with the ring, told, undone, failed, cancelled. Every receipt value is the server's. */

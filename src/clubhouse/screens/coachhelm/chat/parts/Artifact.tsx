@@ -43,6 +43,8 @@ function Versions({ n, at, onGo }: { n: number; at: number; onGo: (i: number) =>
 function Actions({ builderHref }: { builderHref: string | null }) {
   return (
     <div className="apf">
+      {/* The plan's own Save row does this in the thread (one Save row, practice-plan 02); here they wait for the Practice tab and call nothing. */}
+      <small className="apf__note">Comes with the Practice tab</small>
       {builderHref && (
         <Button variant="secondary" href={builderHref}>
           Edit in builder

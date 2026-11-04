@@ -359,14 +359,44 @@ export function ClassesView({ data, writes, statusWrites, crh = false }: { data:
     </>
   );
 
+  const crhOverlaps = (
+    <SectionBoundary surface="classes.side" label="This week’s overlaps" code="CH-12203">
+            <div id="ch-cl-overlaps" className="ch-cl-overanchor">
+              <OverlapsCardCrh groups={groups} error={week.error} onRetry={() => router.refresh()} />
+            </div>
+          </SectionBoundary>
+  );
+  const crhStatus = (
+    <Surface variant="card" padded={false}>
+            {statusWrites && (
+              <SectionBoundary surface="classes.status" label="Class status" code="CH-12203">
+                <ClassStatusPanel
+                  classes={classes}
+                  writes={statusWrites}
+                  onTagged={(termLabel) => setClasses((prev) => prev.map((c) => (c.semester ? c : { ...c, semester: termLabel })))}
+                  onResync={(id) => {
+                    const k = classes.find((x) => x.id === id);
+                    if (k) void syncClasses([k]);
+                  }}
+                  onFix={(id) => {
+                    const k = classes.find((x) => x.id === id);
+                    if (k) setForm({ editing: k, id: '' });
+                  }}
+                />
+              </SectionBoundary>
+            )}
+            <CoachNote aware={!!statusWrites} />
+          </Surface>
+  );
+
   return (
-    <main data-ch-crh={crh ? 'on' : undefined} className={'ch-cl' + (phone ? ' is-phone' : '')} aria-labelledby={phone ? undefined : 'ch-cl-title'} aria-label={phone ? 'Classes' : undefined} data-canopy={phone ? undefined : ''}>
+    <main data-ch-crh={crh ? 'on' : undefined} className={'ch-cl' + (phone ? ' is-phone' : '')} aria-labelledby={phone ? undefined : 'ch-cl-title'} aria-label={phone ? 'Classes' : undefined} data-canopy={phone || crh ? undefined : ''}>
       {/* Phone: the section's create action is the top bar's plus (B10.1), shown when the head's Add class would be: a
           first run's empty state carries its own, and a failed read keeps it (CH-12201). */}
       {phone && (
         <PhoneTop title="Classes" start action={crh && (data.classes.error || !nothing) ? <PhoneIconAction icon={Plus} label="Add or import a class" onClick={() => setAddMenu(true)} /> : data.classes.error || !nothing ? <PhoneIconAction icon={Plus} label="Add class" onClick={startAdd} /> : undefined} />
       )}
-      <header className="ch-cl-h" data-canopy-head={phone ? undefined : ''}>
+      <header className="ch-cl-h" data-canopy-head={phone || crh ? undefined : ''}>
         <div>
           {!(crh && phone) && (
             <span className="ch-cl-k">
@@ -411,7 +441,7 @@ export function ClassesView({ data, writes, statusWrites, crh = false }: { data:
         )}
       </header>
 
-      {crh && phone && data.classes.error ? (
+      {crh && data.classes.error ? (
         <Surface variant="card" level={2} padded={false} title="Your classes">
           <CrhStateBlock kind="failed" code="CH-12201" title="Classes didn’t load" body="Try again. Nothing you added is lost.">
             <Button leftIcon={RotateCw} onClick={() => router.refresh()}>
@@ -419,7 +449,7 @@ export function ClassesView({ data, writes, statusWrites, crh = false }: { data:
             </Button>
           </CrhStateBlock>
         </Surface>
-      ) : crh && phone && nothing ? (
+      ) : crh && nothing ? (
         <Surface variant="card" level={2} padded={false} title="Your classes">
           <CrhStateBlock code="CH-12301" icon={GraduationCap} title="No classes yet" body="Add your schedule so practice and travel are planned around it. Your coach sees when you’re in class. Your teammates don’t.">
             <Button variant="primary" leftIcon={Upload} onClick={startImport}>
@@ -430,42 +460,39 @@ export function ClassesView({ data, writes, statusWrites, crh = false }: { data:
             </Button>
           </CrhStateBlock>
         </Surface>
-      ) : crh && phone ? (
+      ) : crh ? (
         <>
           <SectionBoundary surface="classes.term" label="The term overview" code="CH-12203">
-            <TermCard term={term} classes={classes} week={week} todayIso={todayIso} overlaps={conflicts.length} overlapsError={week.error} onOverlaps={() => chScrollIntoView(document.getElementById('ch-cl-overlaps'), reduced)} />
+            <TermCard desk={!phone} term={term} classes={classes} week={week} todayIso={todayIso} overlaps={conflicts.length} overlapsError={week.error} onOverlaps={() => chScrollIntoView(document.getElementById('ch-cl-overlaps'), reduced)} />
           </SectionBoundary>
-          <SectionBoundary surface="classes.today" label="Today’s classes" code="CH-12203">
-            <TodayCard classes={classes} term={term} todayIso={todayIso} week={week} onOpen={(x) => setOpenId(x.id)} />
-          </SectionBoundary>
-          <SectionBoundary surface="classes.side" label="This week’s overlaps" code="CH-12203">
-            <div id="ch-cl-overlaps" className="ch-cl-overanchor">
-              <OverlapsCardCrh groups={groups} error={week.error} onRetry={() => router.refresh()} />
-            </div>
-          </SectionBoundary>
-          <SectionBoundary surface="classes.deck" label="Your classes" code="CH-12203">
-            <div className="ch-cl-deck">{deck}</div>
-          </SectionBoundary>
-          <Surface variant="card" padded={false}>
-            {statusWrites && (
-              <SectionBoundary surface="classes.status" label="Class status" code="CH-12203">
-                <ClassStatusPanel
-                  classes={classes}
-                  writes={statusWrites}
-                  onTagged={(termLabel) => setClasses((prev) => prev.map((c) => (c.semester ? c : { ...c, semester: termLabel })))}
-                  onResync={(id) => {
-                    const k = classes.find((x) => x.id === id);
-                    if (k) void syncClasses([k]);
-                  }}
-                  onFix={(id) => {
-                    const k = classes.find((x) => x.id === id);
-                    if (k) setForm({ editing: k, id: '' });
-                  }}
-                />
+          {phone ? (
+            <>
+              <SectionBoundary surface="classes.today" label="Today’s classes" code="CH-12203">
+                <TodayCard classes={classes} term={term} todayIso={todayIso} week={week} onOpen={(x) => setOpenId(x.id)} />
               </SectionBoundary>
-            )}
-            <CoachNote aware={!!statusWrites} />
-          </Surface>
+              {crhOverlaps}
+              <SectionBoundary surface="classes.deck" label="Your classes" code="CH-12203">
+                <div className="ch-cl-deck">{deck}</div>
+              </SectionBoundary>
+              {crhStatus}
+            </>
+          ) : (
+            // Desktop keeps the side layout (06 §4.9): the binders in three columns, the overlaps and the status card beside them.
+            <div className="ch-cl-dgrid">
+              <SectionBoundary surface="classes.deck" label="Your classes" code="CH-12203">
+                <section aria-labelledby="ch-cl-deck-h">
+                  <h2 id="ch-cl-deck-h" className="ch-cl-dgrid__h">
+                    Your classes<span className="ch-num">{classes.length}</span>
+                  </h2>
+                  {deck}
+                </section>
+              </SectionBoundary>
+              <aside className="ch-cl-dgrid__side">
+                {crhOverlaps}
+                {crhStatus}
+              </aside>
+            </div>
+          )}
         </>
       ) : data.classes.error ? (
         <InlineNotice code="CH-12201" title="Your classes didn’t load" body="Nothing is lost. Your classes are still saved; try again in a moment." onRetry={() => router.refresh()} />

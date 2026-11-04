@@ -95,6 +95,7 @@ export const FAMILIES = {
     shots: [
       { surface: 'insights', role: 'coach', state: 'assigned', url: '/clubhouse-preview/coachhelm?state=assigned' },
       { surface: 'insights', role: 'player', state: 'default', url: '/clubhouse-preview/coachhelm-player' },
+      { surface: 'player-file', role: 'coach', state: 'default', url: '/clubhouse-preview/coachhelm-player-file' },
     ],
   },
 };

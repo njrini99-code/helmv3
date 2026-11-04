@@ -389,13 +389,17 @@ function Ready({ data, at, insight, roster, writes, saveIntent, initialLens }: {
 }
 
 function PartFailed({ title }: { title: string }) {
+  const { refresh, refreshing } = useRefresh();
   return (
     <section className="card">
       <div className="card__h">
         <h4>{title}</h4>
       </div>
-      <p className="card__n" data-ch-code="CH-13761">
-        Couldn’t load this part. Nothing is lost; try again in a moment.
+      <p className="card__n ch-hf-partfail" data-ch-code="CH-13761">
+        Couldn’t load this part
+        <button type="button" disabled={refreshing} onClick={refresh}>
+          Try again
+        </button>
       </p>
     </section>
   );

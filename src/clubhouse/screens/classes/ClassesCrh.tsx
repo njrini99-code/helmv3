@@ -62,15 +62,17 @@ export function soonItems(term: ChTerm, week: ChWeek, todayIso: string): Array<{
 }
 
 /** The view's one feature card (06 §4.2): week, weeks left, credits by class, how far through the term today is, and Soon. */
-export function TermCard({ term, classes, week, todayIso, overlaps, overlapsError, onOverlaps }: { term: ChTerm; classes: readonly ChClass[]; week: ChWeek; todayIso: string; overlaps: number; overlapsError: boolean; onOverlaps: () => void }) {
+export function TermCard({ term, classes, week, todayIso, overlaps, overlapsError, onOverlaps, desk = false }: { desk?: boolean; term: ChTerm; classes: readonly ChClass[]; week: ChWeek; todayIso: string; overlaps: number; overlapsError: boolean; onOverlaps: () => void }) {
   const mine = classes.filter((c) => inTerm(c, term));
   const fig = termFigures(mine);
   const left = term.week != null ? Math.max(0, term.weeks - term.week) : null;
-  const heading = term.week != null ? `Week ${term.week}` : `Starts in ${plural(term.startsIn ?? 0, 'day')}`;
-  const sub = left != null ? `${plural(left, 'week')} left · term ends ${shortDay(term.end)}` : `Term ends ${shortDay(term.end)}`;
+  const week1 = term.week != null ? `Week ${term.week}` : `Starts in ${plural(term.startsIn ?? 0, 'day')}`;
+  const heading = desk && left != null ? `${week1} · ${plural(left, 'week')} left` : week1;
+  // Desktop folds the counts into the line under the heading (06 §4.9); the phone gives them their own row.
+  const sub = desk ? [mine.length > 0 ? fig.text : null, `term ends ${shortDay(term.end)}`].filter(Boolean).join(' · ') : left != null ? `${plural(left, 'week')} left · term ends ${shortDay(term.end)}` : `Term ends ${shortDay(term.end)}`;
   const pct = `${Math.max(0, Math.min(1, term.progress)) * 100}%`;
   return (
-    <section className="ch-cl-term" aria-label={`${term.label}. ${heading}. ${sub}. ${fig.text}.`}>
+    <section className={'ch-cl-term' + (desk ? ' is-desk' : '')} aria-label={`${term.label}. ${heading}. ${sub}. ${fig.text}.`}>
       <div className="ch-cl-term__top">
         {term.week != null && (
           <span className="ch-cl-term__wk" aria-hidden="true">
@@ -91,10 +93,12 @@ export function TermCard({ term, classes, week, todayIso, overlaps, overlapsErro
       </div>
       {mine.length > 0 && (
         <div className="ch-cl-term__credits">
-          <span className="ch-cl-term__cl">
-            <span className="ch-num">{plural(fig.count, 'class', 'classes')}</span>
-            <b className="ch-num">{plural(fig.credits, 'credit')}</b>
-          </span>
+          {!desk && (
+            <span className="ch-cl-term__cl">
+              <span className="ch-num">{plural(fig.count, 'class', 'classes')}</span>
+              <b className="ch-num">{plural(fig.credits, 'credit')}</b>
+            </span>
+          )}
           <span className="ch-cl-term__bar" aria-hidden="true">
             {mine.map((c) => (
               <i key={c.id} className={`ch-cl-t-${c.tone}`} style={{ flexGrow: c.credits ?? 0 }} />
