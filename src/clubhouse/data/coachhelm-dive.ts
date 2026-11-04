@@ -49,8 +49,15 @@ export async function readRounds(supabase: Supabase, playerId: string, ids: stri
 /**
  * The focus areas and goals a player has, which an insight links to. Goals read through the service client, scoped by this player id, so
  * the id is the session's or a coach's branded scope's (`data/coachhelm-player.ts`), never an address's. `null`: a read failed.
+ *
+ * L0: the service client skips RLS, so a coach's goals are held to the rule of `goals_coach_view` here: on the coach's team, and made by
+ * a coach or shared by the player. A player's private goal never reaches a coach's shape. The player keeps all of their own.
  */
-export async function readPlans(supabase: Supabase, playerId: string): Promise<{ focusAreas: DiveFocusRow[]; goals: Goal[] } | null> {
+export async function readPlans(
+  supabase: Supabase,
+  playerId: string,
+  viewer: { role: 'player' } | { role: 'coach'; teamId: string },
+): Promise<{ focusAreas: DiveFocusRow[]; goals: Goal[] } | null> {
   try {
     const [focus, active, achieved] = await Promise.all([
       supabase
@@ -63,7 +70,9 @@ export async function readPlans(supabase: Supabase, playerId: string): Promise<{
       loadRecentlyAchievedGoals(playerId),
     ]);
     if (focus.error) throw focus.error;
-    return { focusAreas: focus.data ?? [], goals: [...active, ...achieved].filter((g) => g.player_id === playerId) };
+    const own = [...active, ...achieved].filter((g) => g.player_id === playerId);
+    const goals = viewer.role === 'coach' ? own.filter((g) => g.team_id === viewer.teamId && (g.creator_role === 'coach' || g.shared_with_coach)) : own;
+    return { focusAreas: focus.data ?? [], goals };
   } catch (err) {
     log('dive.plans', err);
     return null;
@@ -131,7 +140,7 @@ async function playerDiveLoad(input: { playerId: string }, opts: { drawn?: (list
     // rather than throw, so a feed that comes back empty or fails leaves nothing hanging. The feed stays the one read that must not
     // be repeated or run ahead of the route's CoachHelm gate.
     const teamRead = handled(playerTeam(supabase, playerId));
-    const plansRead = handled(readPlans(supabase, playerId));
+    const plansRead = handled(readPlans(supabase, playerId, { role: 'player' }));
     const themesRead = handled(readThemes(playerId));
     let feed: EvidenceInsight[];
     try {

@@ -214,7 +214,7 @@ async function coachDiveLoad(input: { scope: ChCoachPlayerScope }, opts: { examp
     const supabase = await createClient();
     // The reads that record nothing as shown run beside the feed: the team's Tour, the plans and the category reads.
     const tourRead = handled(coachTour(supabase, scope.teamId));
-    const plansRead = handled(readPlans(supabase, playerId));
+    const plansRead = handled(readPlans(supabase, playerId, { role: 'coach', teamId: scope.teamId }));
     const themesRead = handled(readThemes(playerId, 'coach'));
     let feed: EvidenceInsight[];
     try {
