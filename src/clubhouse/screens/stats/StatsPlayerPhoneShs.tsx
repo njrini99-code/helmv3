@@ -229,7 +229,7 @@ export function StatsPlayerPhoneShs({
 
         <WindowCrossfade k={filterKey(data.filter)} off={false} reduced={reduced} className="ch-shs-sheet">
           {!filtered && noRounds && !firstRun && <NineHint code="CH-5324" filter={data.filter} options={data.filterOptions} who={coach ? `${first} has` : 'You have'} />}
-          {failed && <FailedCard onRetry={onRetry} />}
+          {failed && <FailedCard onRetry={onRetry} seen={data} />}
           {emptyFilter && (
             <section className="ch-shs-card ch-shs-empty">
               <FilterEmpty code="CH-5320" onClear={() => onFilter(clearFilters(data.filter))} />
@@ -320,8 +320,9 @@ export function StatsPlayerPhoneShs({
   );
 }
 
-function FailedCard({ onRetry }: { onRetry: () => void }) {
+function FailedCard({ onRetry, seen }: { onRetry: () => void; /** The page's data: a new copy means the retry came back, so Try again works again. */ seen: unknown }) {
   const [busy, setBusy] = useState(false);
+  useEffect(() => setBusy(false), [seen]);
   return (
     <section className="ch-shs-card" role="alert" data-ch-code="CH-5201">
       <div className="ch-shs-notice">

@@ -135,6 +135,7 @@ export function HelmKey() {
         aria-label="CoachHelm"
         aria-haspopup="dialog"
         aria-expanded={open}
+        aria-controls="ch-qc-panel"
         title={`CoachHelm ${modKey(true)}J`}
         data-ch-qc-key=""
         style={live ? { visibility: 'hidden' } : undefined}
@@ -142,7 +143,7 @@ export function HelmKey() {
         onFocus={warm}
         onPointerDown={warm}
         onClick={() => {
-          haptic('select');
+          haptic('press');
           toggle();
         }}
       >

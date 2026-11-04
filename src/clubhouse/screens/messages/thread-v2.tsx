@@ -20,12 +20,16 @@ export function ThreadDatePill({ scroller, forced = false }: { scroller: RefObje
       frame = 0;
       const top = el.getBoundingClientRect().top;
       let day: string | null = null;
+      let inFlow = false;
       for (const d of Array.from(el.querySelectorAll<HTMLElement>('.ch-ms-day'))) {
-        if (d.getBoundingClientRect().top > top + 8) break;
+        const at = d.getBoundingClientRect();
+        // Trap 6: a day pill already on screen near the top says the day, so the floating one doesn't double it.
+        if (at.bottom > top && at.top < top + 60) inFlow = true;
+        if (at.top > top + 8) break;
         day = d.querySelector('span')?.firstChild?.textContent ?? d.textContent;
       }
       setLabel(day);
-      setOn(day != null);
+      setOn(day != null && !inFlow);
       window.clearTimeout(timer);
       if (!forced) timer = window.setTimeout(() => setOn(false), DATE_PILL_HIDE_MS);
     };

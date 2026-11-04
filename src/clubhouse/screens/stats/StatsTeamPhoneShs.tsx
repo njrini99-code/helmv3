@@ -152,7 +152,7 @@ export function StatsTeamPhoneShs({ data }: { data: ChTeamStats }) {
             </div>
           )}
           <WindowCrossfade k={filterKey(data.filter)} off={false} reduced={reduced} className="ch-shs-sheet">
-            {data.roundsError && <TeamFailedCard />}
+            {data.roundsError && <TeamFailedCard seen={data} />}
             <PageRefreshNotice parts={failed} />
             <SectionGroupNotice />
             {filtered && data.roundCount > 0 && data.roundsEffective < 3 && <EarlyRead code="CH-4314" count={data.roundCount} whole={data.roundsEffective} />}
@@ -236,9 +236,10 @@ export function StatsTeamPhoneShs({ data }: { data: ChTeamStats }) {
   );
 }
 
-function TeamFailedCard() {
+function TeamFailedCard({ seen }: { /** The page's data: a new copy means the retry came back, so Try again works again. */ seen: unknown }) {
   const router = useRouter();
   const [busy, setBusy] = useState(false);
+  useEffect(() => setBusy(false), [seen]);
   return (
     <section className="ch-shs-card ch-shs-empty is-danger" role="alert" data-ch-code="CH-4201">
       <span className="ch-shs-empty__ic">
