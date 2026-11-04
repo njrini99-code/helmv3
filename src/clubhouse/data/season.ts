@@ -5,7 +5,6 @@ import { chunkIds } from '@/lib/supabase/chunk-ids';
 import { isCountableRound } from '@/lib/golf/round-countable';
 import { roundTypeFromDb } from '@/lib/golf/round-type-utils';
 import { withCanonicalRoundTotal } from '@/lib/golf/round-total';
-import { roundTypeFromDb } from '@/lib/golf/round-type-utils';
 import { getValidTimezone } from '@/lib/calendar/timezone';
 import { chLogServer } from '../lib/track-server';
 import { seasonLabelOf } from '../lib/season-start';
@@ -33,7 +32,6 @@ export interface ChRound {
   tees_played: string | null;
   round_date: string;
   round_type: string | null;
-  course_id?: string | null;
   total_score: number | null;
   score_to_par: number | null;
   front_nine: number | null;

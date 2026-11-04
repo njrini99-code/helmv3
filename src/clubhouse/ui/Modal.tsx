@@ -40,8 +40,6 @@ export function Modal({
   className?: string;
   /** A selector inside the sheet that takes focus as it opens instead of the heading (a new item's first field). */
   initialFocus?: string;
-  /** A screen's own hook on the dialog, for its scoped styles. */
-  className?: string;
   open: boolean;
   onClose: () => void;
   title: string;
