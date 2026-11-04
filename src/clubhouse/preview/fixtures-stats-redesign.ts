@@ -1,5 +1,7 @@
 import { filterFor } from '../data/stats-filter';
 import type { ChPlayerProfile } from '../data/stats-player';
+import type { ChPlayerHome } from '../data/player-home';
+import { PREVIEW_PLAYER_HOME } from './fixtures-player-home';
 import { PREVIEW_PLAYER, PREVIEW_PLAYER_SUGGESTED } from './fixtures-stats';
 
 /**
@@ -88,3 +90,30 @@ export function previewShsPlayer(state: string | undefined): ChPlayerProfile | n
 /** The corrected default for the redesign's preview. */
 export const PREVIEW_PLAYER_SHS = correctedPlayer(PREVIEW_PLAYER);
 export const PREVIEW_PLAYER_SHS_SELF = BASE;
+
+/** Player Home's Your game states (stats-home 08 PR 6), derived so the plain fixture keeps main's values. */
+export function previewShsHome(state: string | undefined): ChPlayerHome | null {
+  const legs = PREVIEW_PLAYER_HOME.legs;
+  if (!legs) return null;
+  const rows = legs.rows;
+  switch (state) {
+    case 'early':
+      return {
+        ...PREVIEW_PLAYER_HOME,
+        legs: {
+          ...legs,
+          rows: rows.map((r) => ({ ...r, sg: null, bench: r.key === 'approach' ? r.bench : null, early: 'early read', trend: r.trend.slice(-2), value: r.key === 'short' ? null : r.value, needs: r.key === 'short' ? 'Needs 10 chances to get up and down' : undefined, note: r.key === 'short' ? null : r.note })),
+        },
+      };
+    case 'one':
+      return { ...PREVIEW_PLAYER_HOME, legs: { ...legs, rows: rows.map((r) => ({ ...r, sg: null, trend: r.trend.slice(-1), early: 'early read' })) } };
+    case 'newseason':
+      return { ...PREVIEW_PLAYER_HOME, legs: { ...legs, rows: rows.map((r) => ({ ...r, sg: null })) } };
+    case 'partial':
+      return { ...PREVIEW_PLAYER_HOME, legs: { ...legs, cacheError: true, rows: rows.map((r) => (r.key === 'short' ? { ...r, value: null, trend: [], note: null, sg: null } : r)) } };
+    case 'long':
+      return { ...PREVIEW_PLAYER_HOME, greeting: 'Good afternoon, Christopher' };
+    default:
+      return null;
+  }
+}

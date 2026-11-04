@@ -41,7 +41,7 @@ import { PREVIEW_PLAYER_ROSTER, PREVIEW_PLAYER_ROSTER_EMPTY, PREVIEW_PLAYER_ROST
 import { StatsTeam } from '@/clubhouse/screens/stats/StatsTeam';
 import { StatsPlayer } from '@/clubhouse/screens/stats/StatsPlayer';
 import { NotOnTeam } from '@/clubhouse/routes/stats';
-import { PREVIEW_PLAYER_SHS, PREVIEW_PLAYER_SHS_SELF, previewShsPlayer } from '@/clubhouse/preview/fixtures-stats-redesign';
+import { PREVIEW_PLAYER_SHS, PREVIEW_PLAYER_SHS_SELF, previewShsHome, previewShsPlayer } from '@/clubhouse/preview/fixtures-stats-redesign';
 import { StatsSkeletonFor } from '@/clubhouse/screens/stats/StatsRouteSkeleton';
 import {
   PREVIEW_PLAYER,
@@ -272,7 +272,8 @@ export default async function ClubhousePreview({
           <HomeSkeleton />
         ) : (
           <PlayerHome
-            data={state === 'empty' ? PREVIEW_PLAYER_HOME_EMPTY : state === 'failed' ? PREVIEW_PLAYER_HOME_FAILED : state === 'noevents' ? PREVIEW_PLAYER_HOME_NO_EVENTS : state === 'norounds' ? PREVIEW_PLAYER_HOME_NO_ROUNDS : PREVIEW_PLAYER_HOME}
+            shs={shs)}
+            data={(shs ? previewShsHome(state) : null) ?? (state === 'empty' ? PREVIEW_PLAYER_HOME_EMPTY : state === 'failed' ? PREVIEW_PLAYER_HOME_FAILED : state === 'noevents' ? PREVIEW_PLAYER_HOME_NO_EVENTS : state === 'norounds' ? PREVIEW_PLAYER_HOME_NO_ROUNDS : PREVIEW_PLAYER_HOME}
             now={PREVIEW_HOME_NOW}
             // &live=practice | qualifier | stale | none: the player's own live card (P-6), off unless asked for.
             live={previewOwn(live)?.live}
