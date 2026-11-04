@@ -1239,6 +1239,16 @@ export function Bubble({
         ? [...seenItem, ...(onReply ? [{ label: "Reply", icon: Reply, onSelect: onReply }] : []), { label: "Copy", icon: Copy, onSelect: () => void copyText() }]
         : seenItem;
   const reacts = api.reactions.get(m.id) ?? [];
+  // Redesign: two taps within 300ms toggle Like, once (MSG-HOLD-06).
+  const lastTap = useRef(0);
+  const toggleLikeOnDouble = () => {
+    const now = Date.now();
+    if (now - lastTap.current < 300) {
+      lastTap.current = 0;
+      haptic("select");
+      api.react(m.id, "Like", !reacts.some((r) => r.key === "Like" && r.mine));
+    } else lastTap.current = now;
+  };
   const reduced = useChReducedMotion();
   const reactBtn = useRef<HTMLButtonElement | null>(null);
   const bar = useRef<HTMLDivElement | null>(null);
@@ -1324,7 +1334,7 @@ export function Bubble({
           </SenderPeek>
         )}
         <div className="ch-ms-msg__line">
-          <div className="ch-ms-msg__stack" {...press} {...rightClick}>
+          <div className="ch-ms-msg__stack" {...press} {...rightClick} {...(api.redesign && !m.failed && !m.deleted ? { "data-ch-press-scale": ".97", onClick: toggleLikeOnDouble, onDoubleClick: (e: ReactMouseEvent) => e.preventDefault() } : {})}>
             {m.replyToId && <ReplyQuote api={api} replyToId={m.replyToId} />}
             {m.poll ? (
               <PollCard api={api} messageId={m.id} poll={m.poll} mine={m.mine} />

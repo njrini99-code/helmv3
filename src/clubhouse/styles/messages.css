@@ -4840,3 +4840,139 @@ html[data-fw-theme='dark'] [data-ui='clubhouse'] .ch-ms-poll {
 .ch-msv-pollnew {
   border-radius: 20px;
 }
+
+/* Redesign, hold (06 S-MSG.hold). The blur is set once and never animated. */
+.ch-msv-lift {
+  position: fixed;
+  inset: 0;
+  z-index: 200;
+}
+.ch-msv-lift__scrim {
+  position: absolute;
+  inset: 0;
+  background: var(--ch-scrim, rgb(20 18 12 / 0.32));
+  -webkit-backdrop-filter: blur(14px) saturate(120%);
+  backdrop-filter: blur(14px) saturate(120%);
+}
+.ch-msv-lift__copy {
+  position: fixed;
+  pointer-events: none;
+}
+.ch-msv-lift__copy > * {
+  width: 100%;
+  max-width: none;
+  margin: 0;
+  visibility: visible !important;
+}
+.ch-msv-rbar {
+  position: fixed;
+  display: flex;
+  gap: 2px;
+  width: 260px;
+  height: 50px;
+  padding: 5px;
+  border-radius: 999px;
+  background: var(--ch-glass-strong);
+  box-shadow: var(--ch-card-shadow);
+}
+.ch-msv-rbar > button {
+  position: relative;
+  display: grid;
+  place-items: center;
+  flex: none;
+  width: 40px;
+  height: 40px;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  background: none;
+  color: var(--ch-accent);
+  cursor: pointer;
+}
+.ch-msv-rbar > button.is-on {
+  background: var(--ch-well-bg-flat);
+}
+.ch-msv-rbar > button::before {
+  content: '';
+  position: absolute;
+  inset: -2px;
+}
+.ch-msv-holdmenu {
+  position: fixed;
+  display: grid;
+  width: 236px;
+  padding: 6px;
+  border-radius: 18px;
+  background: var(--ch-glass-strong);
+  box-shadow: var(--ch-card-shadow);
+}
+.ch-msv-holdmenu > button {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-height: 42px;
+  padding: 0 10px;
+  border: 0;
+  border-radius: 12px;
+  background: none;
+  color: var(--ch-text-primary);
+  font: 500 calc(15 * var(--ch-type-k)) / 1.2 var(--ch-font-sans);
+  text-align: left;
+}
+.ch-msv-holdmenu > button:active {
+  background: var(--ch-press-wash, var(--ch-well-bg-flat));
+}
+.ch-msv-holdmenu > button svg {
+  color: var(--ch-text-secondary);
+}
+/* Reaction badges (MSG-REACT-01, 04). */
+[data-ch-ms-v2] .ch-ms-rxs {
+  position: absolute;
+  top: -14px;
+  display: flex;
+  gap: 3px;
+}
+[data-ch-ms-v2] .ch-ms-msg:not(.is-mine) .ch-ms-rxs {
+  right: -10px;
+}
+[data-ch-ms-v2] .ch-ms-msg.is-mine .ch-ms-rxs {
+  left: -10px;
+}
+/* One toast style in Messages: the page's glass pill (MSG-TOAST-01). */
+body:has([data-ch-ms-v2]) .ch-toast {
+  min-height: 31px;
+  padding: 9px 14px;
+  border-radius: 999px;
+  background: var(--ch-glass-strong);
+  color: var(--ch-text-primary);
+  font: 600 calc(13 * var(--ch-type-k)) / 1 var(--ch-font-sans);
+}
+/* The poll card (MSG-POLL-01). */
+[data-ch-ms-v2] .ch-ms-poll {
+  width: 272px;
+  padding: 14px 14px 12px;
+  border-radius: 20px 20px 6px;
+}
+@media (min-width: 821px) {
+  [data-ch-ms-v2] .ch-ms-poll {
+    width: 330px;
+  }
+}
+[data-ch-ms-v2] .ch-ms-poll__head {
+  font: 600 calc(13 * var(--ch-type-k)) / 1.3 var(--ch-font-sans);
+  color: var(--ch-text-secondary);
+}
+[data-ch-ms-v2] .ch-ms-poll__q {
+  font: 600 calc(17 * var(--ch-type-k)) / calc(22.1 * var(--ch-type-k)) var(--ch-font-sans);
+  letter-spacing: -0.01em;
+}
+[data-ch-ms-v2] .ch-ms-poll__fill {
+  transform: scaleX(var(--ch-poll-share));
+  transform-origin: 0 50%;
+  transition: transform 462ms var(--ch-ease-spring-smooth);
+}
+@media (prefers-reduced-motion: reduce) {
+  [data-ch-ms-v2] .ch-ms-poll__fill {
+    transition: none;
+  }
+}

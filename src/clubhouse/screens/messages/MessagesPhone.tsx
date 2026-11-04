@@ -112,6 +112,7 @@ import { useComposerInset } from "./composer-inset";
 import { useThreadAnchor } from "./use-thread-anchor";
 import { useThreadDragTimes } from "./use-thread-drag-times";
 import { classYearKey } from "../../lib/class-year";
+import { HoldLift } from "./hold-lift";
 import { noteTappedFace, ThreadDatePill, ThreadJumpKey, useFaceFlight, useReplyFromTyping, useSendRise, useThreadMakeRoom } from "./thread-v2";
 import { useFocusMessage } from "./use-focus-message";
 import { ListPresence, PresenceRow } from "../../ui/ListPresence";
@@ -540,6 +541,13 @@ function PhoneThread({
     if (replyToId && !acting) composerRef.current?.querySelector("textarea")?.focus();
   }, [replyToId, acting]);
   const [editing, setEditing] = useState<ChMsg | null>(null);
+  // Redesign: a pick runs the dismiss first, then what was picked (07 M-MSG-11).
+  const [holdClose, setHoldClose] = useState(0);
+  const holdAfter = useRef<(() => void) | null>(null);
+  const pickHold = (then: () => void) => {
+    holdAfter.current = then;
+    setHoldClose((n) => n + 1);
+  };
   const [deleting, setDeleting] = useState<ChMsg | null>(null);
   const scroller = useRef<HTMLDivElement | null>(null);
   const items = useMemo(() => threadItems(api.msgs, api.now, api.timeZone), [api.msgs, api.now, api.timeZone]);
@@ -712,7 +720,46 @@ function PhoneThread({
       />
       </div>
 
-      <Modal code="CH-7604" open={acting != null} onClose={() => setActing(null)} title="Message">
+      {api.redesign && acting && (
+        <HoldLift
+          key={acting.id}
+          messageId={acting.id}
+          mine={acting.mine}
+          closeSignal={holdClose}
+          onClosed={() => {
+            const then = holdAfter.current;
+            holdAfter.current = null;
+            setActing(null);
+            then?.();
+          }}
+          bar={REACTIONS.map((r) => {
+            const on = (api.reactions.get(acting.id) ?? []).some((x) => x.key === r.key && x.mine);
+            return (
+              <button
+                key={r.key}
+                type="button"
+                className={on ? "is-on" : undefined}
+                aria-label={`${on ? "Remove" : "React"} ${r.key.toLowerCase()}`}
+                aria-pressed={on}
+                onClick={() => {
+                  haptic("select");
+                  pickHold(() => api.react(acting.id, r.key, !on));
+                }}
+              >
+                <Icon icon={r.icon} size={22} />
+              </button>
+            );
+          })}
+        >
+          {acting.poll && <PollSheetRows id={acting.id} done={() => pickHold(() => undefined)} />}
+          <SheetRow icon={Reply} label="Reply" disabled={replySending} onClick={() => pickHold(() => reply(acting))} />
+          {conv.group && <SeenSheetRow api={api} m={acting} open={() => pickHold(() => seenList.open(acting, null))} />}
+          {acting.text && <SheetRow icon={Copy} label={acting.poll ? "Copy poll" : "Copy"} onClick={() => pickHold(() => void copy(acting))} />}
+          {acting.mine && acting.text && !acting.poll && <SheetRow icon={Pencil} label="Edit" onClick={() => pickHold(() => setEditing(acting))} />}
+          {acting.mine && <SheetRow icon={Trash2} label="Delete" danger onClick={() => pickHold(() => setDeleting(acting))} />}
+        </HoldLift>
+      )}
+      <Modal code="CH-7604" open={!api.redesign && acting != null} onClose={() => setActing(null)} title="Message">
         {acting && (
           <div className="ch-msp-acts">
             <div role="group" className="ch-msp-acts__preview" aria-label="Selected message">
