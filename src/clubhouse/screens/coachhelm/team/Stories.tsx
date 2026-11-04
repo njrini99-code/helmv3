@@ -2,7 +2,8 @@
 
 import { useEffect, useRef, useState } from 'react';
 import { TriangleAlert, X } from 'lucide-react';
-import { storiesOf, type ChTeamPlayer, type ChTeamStory } from '../../../data/coachhelm-team-shape';
+import { storiesOf, type ChStoryRound, type ChTeamPlayer, type ChTeamStory } from '../../../data/coachhelm-team-shape';
+import { formatFixed } from '../../../lib/format';
 import type { ChCoachBrief } from '../../../data/coachhelm-coach-brief-shape';
 import type { ChDiveTheme } from '../../../data/coachhelm-dive-shape';
 import { useChSessionState } from '../../../lib/session-state';
@@ -41,12 +42,60 @@ function TileVisual({ story }: { story: ChTeamStory }) {
   );
 }
 
+const weekdayOf = (iso: string) => new Date(`${iso}T12:00:00Z`).toLocaleDateString('en-US', { weekday: 'long', timeZone: 'UTC' });
+/** "Thursday at Hilltop", or the story's own line when no round earned it. */
+const storyWhen = (s: ChTeamStory, week: string, round: ChStoryRound | null) => (round ? [weekdayOf(round.date), round.course].filter(Boolean).join(' at ') : whenOf(s, week));
+const actionOf = (s: ChTeamStory) => (s.kind === 'working' ? 'See Working on' : s.kind === 'read' ? 'Open the read' : 'Open this');
+const holeTone = (d: number | null) => (d == null ? '' : d < 0 ? ' is-birdie' : d === 1 ? ' is-bogey' : d >= 2 ? ' is-double' : '');
+
+/** A story's picture and words (AC-STORY-03): the round's holes, or before and now against the target; nothing invented. */
+function StoryBody({ story, round }: { story: ChTeamStory; round: ChStoryRound | null }) {
+  const p = story.kind === 'working' ? story.progress : null;
+  const top = p ? Math.max(Math.abs(p.from), Math.abs(p.now), Math.abs(p.target)) || 1 : 1;
+  return (
+    <>
+      <h3>{shortOf(story)}</h3>
+      {story.kind === 'read' && round && (
+        <div className="sto-holes" role="img" aria-label={`Scores by hole, ${round.holes.length} holes`}>
+          {round.holes.map((h) => (
+            <span key={h.n} className={'sto-hole' + holeTone(h.toPar)}>
+              {h.n}
+            </span>
+          ))}
+        </div>
+      )}
+      {p && (
+        <div className="sto-bars">
+          <div className="sto-bar">
+            <span>Before the focus</span>
+            <b className="ch-num">{formatFixed(p.from)}</b>
+            <i style={{ width: `${(Math.abs(p.from) / top) * 100}%` }} />
+          </div>
+          <div className="sto-bar is-now">
+            <span>Now</span>
+            <b className="ch-num">{formatFixed(p.now)}</b>
+            <i style={{ width: `${(Math.abs(p.now) / top) * 100}%` }} />
+          </div>
+          <span className="src ch-num">Line: the {formatFixed(p.target)} target</span>
+        </div>
+      )}
+      {story.kind === 'read' && story.body && <p>{story.body}</p>}
+      {story.kind === 'read' && round && (
+        <span className="src ch-num">
+          {weekdayOf(round.date)}’s round · {round.tracked} of {round.holes.length} holes with shots tracked
+        </span>
+      )}
+    </>
+  );
+}
+
 /** The phone viewer: 5.2s a story, pausing on hold and on keyboard focus; under Reduce Motion it never advances by itself (AC-STORY-05). */
 function StoryViewer({
   stories,
   start,
   week,
   coin,
+  roundOf,
   onClose,
   onAction,
 }: {
@@ -54,6 +103,7 @@ function StoryViewer({
   start: number;
   week: string;
   coin: (s: ChTeamStory) => ChTeamPlayer | null;
+  roundOf: (s: ChTeamStory) => ChStoryRound | null;
   onClose: () => void;
   onAction: (s: ChTeamStory) => void;
 }) {
@@ -106,7 +156,7 @@ function StoryViewer({
         {p && <Coin player={p} />}
         <span className="c">
           <b>{nameOf(story).split(' ')[0]}</b>
-          <span>{whenOf(story, week)}</span>
+          <span>{storyWhen(story, week, story.kind === 'read' ? roundOf(story) : null)}</span>
         </span>
         <button type="button" className="xb" aria-label="Close stories" onClick={onClose}>
           <Icon icon={X} size={16} />
@@ -114,11 +164,11 @@ function StoryViewer({
       </div>
       {/* eslint-disable-next-line jsx-a11y/click-events-have-key-events, jsx-a11y/no-static-element-interactions -- Next, in the footer, is the keyboard's way */}
       <div className="sto-b" onClick={next}>
-        <h3>{shortOf(story)}</h3>
+        <StoryBody story={story} round={roundOf(story)} />
       </div>
       <div className="sto-f">
         <button type="button" className="btn" onClick={() => onAction(story)}>
-          {story.kind === 'working' ? 'See Working on' : 'Open this'}
+          {actionOf(story)}
         </button>
         <button type="button" className="btn gh2" onClick={next}>
           {i < stories.length - 1 ? 'Next' : 'Done'}
@@ -136,6 +186,8 @@ export function StoriesCard({
   onRetry,
   players,
   phone,
+  rounds,
+  autoOpen,
   onDesk,
   onAction,
 }: {
@@ -145,15 +197,19 @@ export function StoriesCard({
   onRetry?: () => void;
   players: readonly ChTeamPlayer[];
   phone: boolean;
+  rounds: Record<string, ChStoryRound> | null;
+  /** A link or the preview's `open=story` starts the phone viewer on the first story. */
+  autoOpen?: boolean;
   onDesk: (s: ChTeamStory) => void;
   onAction: (s: ChTeamStory) => void;
 }) {
   const names = new Map(players.map((p) => [p.id, p.name]));
   const all = storiesOf(brief, themes, names).slice(0, MAX_TILES);
   const [seen, setSeen] = useChSessionState<string[]>('coachhelm-team-stories', []);
-  const [open, setOpen] = useState<number | null>(null);
+  const [open, setOpen] = useState<number | null>(autoOpen && phone ? 0 : null);
   const byName = new Map(players.map((p) => [p.name, p]));
   const coin = (s: ChTeamStory) => byName.get(s.who) ?? null;
+  const roundOf = (s: ChTeamStory) => rounds?.[s.who] ?? null;
   const week = brief?.week ?? 'This week';
   if (failed)
     return (
@@ -222,6 +278,7 @@ export function StoriesCard({
           start={open}
           week={week}
           coin={coin}
+          roundOf={roundOf}
           onClose={() => setOpen(null)}
           onAction={(s) => {
             setOpen(null);
@@ -234,23 +291,23 @@ export function StoriesCard({
 }
 
 /** The desktop's story, in the inspector: no bars and no auto advance (AC-STORYDESK-01). */
-export function StoryDeskPanel({ story, week, onClose, onAction }: { story: ChTeamStory; week: string; onClose: () => void; onAction: (s: ChTeamStory) => void }) {
+export function StoryDeskPanel({ story, week, round = null, onClose, onAction }: { story: ChTeamStory; week: string; round?: ChStoryRound | null; onClose: () => void; onAction: (s: ChTeamStory) => void }) {
   return (
     <>
       <div className="insh">
         <span className="c">
           <b>{story.who}</b>
-          <span>{whenOf(story, week)}</span>
+          <span>{storyWhen(story, week, story.kind === 'read' ? round : null)}</span>
         </span>
         <button type="button" className="xb" aria-label="Close" onClick={onClose}>
           <Icon icon={X} size={16} />
         </button>
       </div>
-      <div className="feat ch-htb-storydesk">
-        <h3>{shortOf(story)}</h3>
+      <div className="feat ch-htb-storydesk sto-b">
+        <StoryBody story={story} round={round} />
       </div>
       <button type="button" className="btn pri" onClick={() => onAction(story)}>
-        {story.kind === 'working' ? 'See Working on' : 'Open this'}
+        {actionOf(story)}
       </button>
     </>
   );

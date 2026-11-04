@@ -57,7 +57,7 @@ export function RosterCard({ players, phone, onPlayer }: { players: readonly ChT
             <span>
               <b>{p.name}</b>
               <span className="m">
-                {[p.classYear, p.rounds ? `${p.rounds} rounds` : 'no rounds yet'].filter(Boolean).join(' · ')}
+                {[phone ? shortYear(p.classYear) : p.classYear, p.rounds ? `${p.rounds} rounds` : 'no rounds yet'].filter(Boolean).join(' · ')}
                 {p.early && p.rounds ? ' · early' : ''}
                 {p.heldBack ? ` · ${p.heldBack} held back` : ''}
               </span>
@@ -208,4 +208,9 @@ export function RecordCard({ part, desk = false }: { part: ChTeamPart<ChTrackRec
       </div>
     </section>
   );
+}
+
+/** The roster's short years on a phone (S-TEAM.roster): Fr, So, Jr, Sr. */
+function shortYear(year: string | null | undefined): string | null | undefined {
+  return year ? ({ Freshman: 'Fr', Sophomore: 'So', Junior: 'Jr', Senior: 'Sr' } as Record<string, string>)[year] ?? year : year;
 }

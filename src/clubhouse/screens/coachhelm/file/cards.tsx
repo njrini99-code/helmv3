@@ -186,10 +186,13 @@ export function CoachActions({ stage, first, assigning, disabled, messageHref, c
     );
   if (stage === 'accepted')
     return (
-      <span className="btn is-done" role="status">
-        <Icon icon={Check} size={18} />
-        {first} accepted it
-      </span>
+      <>
+        <span className="btn is-done" role="status">
+          <Icon icon={Check} size={18} />
+          {first} accepted it
+        </span>
+        {message}
+      </>
     );
   return (
     <>

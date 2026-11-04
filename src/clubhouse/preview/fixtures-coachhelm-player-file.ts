@@ -1,7 +1,7 @@
 import { toChFileField, toChFilePlan, toChFileSg, toChFileTrack, type ChFileCards, type ChFileField, type ChFilePlan, type ChFileRosterRow, type ChFileSg, type ChPlayerFile, type ChPlayerWeek } from '../data/coachhelm-file-shape';
 import type { ChLadder } from '../data/coachhelm-ladder-shape';
 import type { ChDeepInsight } from '../data/coachhelm-dive-shape';
-import { PREVIEW_COACH_DIVE, PREVIEW_COACH_VOICE } from './fixtures-coachhelm-coach-player';
+import { PREVIEW_FILE_DIVE as PREVIEW_COACH_DIVE, PREVIEW_COACH_VOICE } from './fixtures-coachhelm-coach-player';
 import type { PlayerStanding } from '@/lib/coachhelm/v3/standing/types';
 
 /** The file on the Jonah fixtures: no invented player. Every state comes through the same shapers the loader uses. */

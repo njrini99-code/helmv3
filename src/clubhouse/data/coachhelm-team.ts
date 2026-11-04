@@ -1,4 +1,5 @@
 import 'server-only';
+import type { ChStoryRound } from './coachhelm-team-shape';
 import { createClient } from '@/lib/supabase/server';
 import type { EvidenceInsight } from '@/app/golf/actions/insight-delivery';
 import { isMondayBriefEnabled } from '@/lib/coachhelm/v3/monday-brief/flag';
@@ -253,6 +254,31 @@ export async function loadCoachTeamBoard(input: { coachId: string; teamId: strin
     pulse,
     ...(isMondayBriefEnabled() ? { brief: part('brief', () => ready('brief', loadCoachBrief({ coachId: input.coachId, teamId: input.teamId, now }))) } : {}),
     ...(isTrackRecordEnabled() ? { record: part('record', () => ready('record', loadCoachTrackRecord({ coachId: input.coachId, teamId: input.teamId, now }))) } : {}),
+    storyRounds: part('storyRounds', async () => {
+      // AC-TODAY-04: only a round inside the week earns the strip; a player's newest one.
+      const since = new Date(now.getTime() - 7 * 86_400_000).toISOString().slice(0, 10);
+      const { data: rounds, error } = await supabase.from('golf_rounds').select('id, player_id, round_date, course_name').in('player_id', [...names.keys()]).gte('round_date', since).order('round_date', { ascending: false });
+      if (error) throw error;
+      const newest = new Map<string, { id: string; player_id: string; round_date: string; course_name: string | null }>();
+      for (const r of rounds ?? []) if (!newest.has(r.player_id)) newest.set(r.player_id, r);
+      const roundIds = [...newest.values()].map((r) => r.id);
+      if (!roundIds.length) return {};
+      const { data: holes, error: holesError } = await supabase.from('golf_holes').select('round_id, hole_number, par, score, putts, fairway_hit, gir').in('round_id', roundIds).order('hole_number', { ascending: true });
+      if (holesError) throw holesError;
+      const out: Record<string, ChStoryRound> = {};
+      for (const r of newest.values()) {
+        const mine = (holes ?? []).filter((h) => h.round_id === r.id);
+        const name = names.get(r.player_id);
+        if (!name || !mine.length) continue;
+        out[name] = {
+          date: r.round_date,
+          course: r.course_name,
+          holes: mine.map((h) => ({ n: h.hole_number, toPar: h.score == null ? null : h.score - h.par })),
+          tracked: mine.filter((h) => h.putts != null || h.fairway_hit != null || h.gir != null).length,
+        };
+      }
+      return out;
+    }),
     themes: part('themes', async () => {
       // At most four at a time, only players the reads say are moving (02-PLAN 4.5).
       const out: Record<string, ReturnType<typeof themesByCategory>> = {};

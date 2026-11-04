@@ -14,7 +14,7 @@ import { Modal } from '../../../ui/Modal';
 import { useFocusActions } from '../parts';
 import { LIVE_COACHHELM_WRITES, type ChCoachHelmWrites } from '../writes';
 import { RecheckReads } from '../Recheck';
-import type { ChTeamStory } from '../../../data/coachhelm-team-shape';
+import type { ChStoryRound, ChTeamStory } from '../../../data/coachhelm-team-shape';
 import type { ChDiveTheme } from '../../../data/coachhelm-dive-shape';
 import { RecordCard, RosterCard, WorkingCard } from './Cards';
 import { CourseCard } from './CourseCard';
@@ -156,7 +156,17 @@ export function TeamBoard({ askOn = false, data, courseTab = true, writes = LIVE
   const leak = useMemo(() => stationOrder(data.stations)[0] ?? 'approach', [data.stations]);
   const [station, setStation] = useState<TeamStation>(initialStation ?? leak);
   const top = useRef<HTMLElement | null>(null);
-  const [open, setOpen] = useState<TeamBoardOpen | null>(initialOpen ?? null);
+  const [open, setOpen] = useState<TeamBoardOpen | null>(initialOpen?.kind === 'story' && phone ? null : (initialOpen ?? null));
+  const [rounds, setRounds] = useState<Record<string, ChStoryRound> | null>(null);
+  useEffect(() => {
+    let live = true;
+    void Promise.resolve(data.storyRounds).then((r) => {
+      if (live && r?.status === 'ok') setRounds(r.value);
+    });
+    return () => {
+      live = false;
+    };
+  }, [data.storyRounds]);
   const close = useCallback(() => setOpen(null), []);
   const fa = useFocusActions(writes);
   // `?player=` and `?open=read&insight=`: once, after first paint, and off the address by replace (AC-TEAM-23, W-TEAM-14). An id not on the board opens
@@ -202,6 +212,8 @@ export function TeamBoard({ askOn = false, data, courseTab = true, writes = LIVE
             onRetry={onRetry}
             players={list}
             phone={phone}
+            rounds={rounds}
+            autoOpen={initialOpen?.kind === 'story'}
             onDesk={(s) => setOpen({ kind: 'story', id: s.id, story: s, week: b.status === 'ok' ? b.value.week : 'This week' })}
             onAction={storyAction}
           />
@@ -330,7 +342,7 @@ export function TeamBoard({ askOn = false, data, courseTab = true, writes = LIVE
       const p = list2.find((x) => x.id === open.id);
       return p ? <PlayerPanel player={p} data={data} onRead={openRead} fileOn={fileOn} onClose={close} /> : null;
     }
-    if (open.kind === 'story') return <StoryDeskPanel story={open.story} week={open.week} onClose={close} onAction={storyAction} />;
+    if (open.kind === 'story') return <StoryDeskPanel story={open.story} week={open.week} round={rounds?.[open.story.who] ?? null} onClose={close} onAction={storyAction} />;
     const row = data.course.history?.courses.find((c) => c.id === open.id);
     return row ? <CourseSheet row={row} data={data} onPlayer={openPlayer} onRead={openRead} onClose={close} /> : null;
   })();

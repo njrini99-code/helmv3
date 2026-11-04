@@ -11,7 +11,7 @@ export function PreviewAskV2({ state, kind, scene, stage, viewer }: { state?: st
   const flow = scene && stage ? askFlowMessages(scene, stage) : null;
   const mapped = !state && stage ? ASK_STAGE_STATE[stage] : undefined;
   return (
-    <div data-ch-ak-ready="" style={{ display: 'contents' }}>
+    <div data-ch-ak-ready="1" style={{ display: 'contents' }}>
       <PreviewAsk v2 state={flow ? undefined : (state ?? (stage === 'home' ? undefined : mapped))} kind={kind} messages={flow?.messages} busy={flow?.busy} role={viewer === 'player' ? 'player' : undefined} />
     </div>
   );

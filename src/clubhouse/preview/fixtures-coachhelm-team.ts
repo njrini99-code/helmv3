@@ -128,6 +128,12 @@ export const PREVIEW_TEAM_BOARD: ChTeamBoardData = {
   },
   pulse: { rows: [], error: false },
   record: { status: 'ok', value: PREVIEW_TRACK_RECORD },
+  storyRounds: {
+    status: 'ok',
+    value: {
+      [PLAYERS.eli.name]: { date: '2026-10-29', course: 'Hilltop', tracked: 18, holes: [0, 0, 1, 0, 0, 0, 2, 0, 0, 0, 1, 0, 0, 2, 0, 0, 1, 0].map((toPar, i) => ({ n: i + 1, toPar })) },
+    },
+  },
   brief: {
     status: 'ok',
     value: {

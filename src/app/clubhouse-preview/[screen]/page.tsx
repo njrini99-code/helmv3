@@ -565,7 +565,7 @@ export default async function ClubhousePreview({
     },
     'coachhelm-player-file': {
       path: '/golf/dashboard/coachhelm',
-      node: <PreviewCoachHelmPlayerFile state={state} viewer={view} lens={section} at={q} />,
+      node: <PreviewCoachHelmPlayerFile state={state} viewer={viewerParam ?? view} lens={(await searchParams as { lens?: string }).lens ?? section} at={q} />,
     },
     'coachhelm-read': {
       path: '/golf/dashboard/coachhelm',

@@ -2048,3 +2048,57 @@ html[data-fw-theme='dark'] .ch-htb .skl::after {
 .ch-htb {
   --ch-team-x1: inset 0 1px 2px rgb(28 25 18/.05);
 }
+
+/* The story's picture (AC-STORY-03): 18 holes in 9 columns, or before and now against the line. */
+.ch-htb .sto-holes {
+  display: grid;
+  grid-template-columns: repeat(9, minmax(0, 1fr));
+  gap: 4px;
+}
+.ch-htb .sto-hole {
+  display: grid;
+  aspect-ratio: 1;
+  place-items: center;
+  border-radius: var(--ch-radius-sm);
+  background: rgb(244 241 232 / 0.09);
+  color: var(--f-ink-2);
+  font: var(--ch-type-13-strong);
+}
+.ch-htb .sto-hole.is-birdie {
+  background: rgb(143 211 170 / 0.24);
+  color: var(--f-ink);
+}
+.ch-htb .sto-hole.is-bogey {
+  background: rgb(237 184 103 / 0.22);
+  color: var(--f-ink);
+}
+.ch-htb .sto-hole.is-double {
+  background: var(--f-loss);
+  color: #2b1a00;
+}
+.ch-htb .sto-bars {
+  display: grid;
+  gap: 12px;
+}
+.ch-htb .sto-bar {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 4px 8px;
+  color: var(--f-ink-2);
+  font: var(--ch-type-13);
+}
+.ch-htb .sto-bar b {
+  color: var(--f-ink);
+  font: var(--ch-type-15-strong);
+  letter-spacing: var(--ch-track-15);
+}
+.ch-htb .sto-bar i {
+  grid-column: 1 / -1;
+  height: 12px;
+  min-width: 8px;
+  border-radius: 999px;
+  background: rgb(244 241 232 / 0.25);
+}
+.ch-htb .sto-bar.is-now i {
+  background: rgb(143 211 170 / 0.8);
+}

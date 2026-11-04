@@ -175,7 +175,7 @@ html[data-fw-theme='dark'] .ch-hf {
 .ch-hf .r.undo b { color: var(--a-ink-2); font-weight:var(--ch-fw-400); }
 .ch-hf .r.undo .lnk { color: var(--a-accent); font: var(--ch-type-15-strong); letter-spacing: var(--ch-track-15); }
 .ch-hf .hs { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 0; margin: 4px 0 2px; }
-.ch-hf .hs__s { position: relative; display: flex; flex-direction: column; gap: 4px; padding-top: 20px; }
+.ch-hf .hs__s { position: relative; display: flex; flex-direction: column; gap: 4px; padding-top: 20px; padding-right: 8px; }
 .ch-hf .hs__s::before { content: ""; position: absolute; top: 6px; left: 0; right: 0; height: 2px; background: var(--c-track); }
 .ch-hf .hs__s:first-child::before { left: 7px; }
 .ch-hf .hs__s:last-child::before { right: auto; width: 7px; }

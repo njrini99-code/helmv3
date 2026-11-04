@@ -35,3 +35,11 @@ export const PREVIEW_COACH_DIVE: ChDeepDive = diveOf([
   coachDeep(DIVE_BREAK, FULL_INPUTS),
   coachDeep(DIVE_BIG, FULL_INPUTS),
 ], { themes: themesByCategory(DIVE_THEMES, 'coach') });
+
+/** The player file's reads (S-FILE): the top read is the accepted focus, so its sheet and the rows say so. */
+export const PREVIEW_FILE_DIVE: ChDeepDive = diveOf([
+  coachDeep(DIVE_PENALTIES, FULL_INPUTS, { drillText: DRILL, assigned: 'active' }),
+  coachDeep(DIVE_SLOPE, FULL_INPUTS),
+  coachDeep(DIVE_BREAK, FULL_INPUTS),
+  coachDeep(DIVE_BIG, FULL_INPUTS),
+], { themes: themesByCategory(DIVE_THEMES, 'coach') });
