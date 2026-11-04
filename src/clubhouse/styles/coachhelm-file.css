@@ -59,7 +59,7 @@ html[data-fw-theme='dark'] .ch-hf {
 .ch-hf.is-phone { padding: 0 16px 48px; }
 @media (min-width: 430px) { .ch-hf.is-phone { padding-inline: 20px; } }
 .ch-hf .lt { margin: 0; font: var(--ch-type-34-strong);  font-stretch: 88%; letter-spacing: -0.038em; }
-.ch-hf .sticky-seg { position: sticky; top: var(--ch-hf-stick, calc(env(safe-area-inset-top, 0px) + 56px)); z-index: 5; margin: 0 0 24px; }
+.ch-hf .sticky-seg { position: sticky; top: calc(var(--ch-phone-topbar-h, 0px) + env(safe-area-inset-top)); z-index: 5; margin: 0 0 24px; }
 .ch-hf .pv-wrap { display: flex; justify-content: center; padding-bottom: 16px; }
 .ch-hf .ch-hf-rail { display: none; }
 .ch-hf.is-desk .dmain { display: grid; grid-template-columns: minmax(0, 1fr); }
