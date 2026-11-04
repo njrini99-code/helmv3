@@ -63,7 +63,7 @@ import {
 } from "react";
 import { createPortal } from "react-dom";
 import { AnimatePresence, m as M } from "motion/react";
-import { chTween } from "../../lib/motion";
+import { CH_FADE_MS, chTween } from "../../lib/motion";
 import type { ChClock } from "../../lib/clock-cookie";
 import { useThreadAnchor } from "./use-thread-anchor";
 import { useComposerInset } from "./composer-inset";
@@ -1754,9 +1754,14 @@ export function Composer({
   onSendingChange,
   unavailable = false,
   seed = null,
+  editing = null,
+  onEditDone,
 }: {
   api: ChMessagesApi;
   conv: ChConv;
+  /** Redesign: your text message being edited; the field holds it and Send saves it (MSG-EDIT-01). */
+  editing?: ChMsg | null;
+  onEditDone?: () => void;
   /** Phone: the design's "+" attach button, and no keyboard hint. */
   phone?: boolean;
   /** A first message written before the conversation existed (the phone's New message). */
@@ -1799,6 +1804,18 @@ export function Composer({
   const sendingRef = useRef(false);
   const ta = useRef<HTMLTextAreaElement | null>(null);
   const composerReduced = useChReducedMotion();
+  // Redesign: Edit fills the field, focused, caret at the end; leaving it empties the field again.
+  const editId = editing?.id ?? null;
+  useEffect(() => {
+    if (!editing) return;
+    setDraft(editing.text);
+    const t = ta.current;
+    requestAnimationFrame(() => {
+      t?.focus();
+      t?.setSelectionRange(editing.text.length, editing.text.length);
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- once per message put up for editing
+  }, [editId]);
   const chipRise = useChipRise(composerReduced);
   const footer = useRef<HTMLElement | null>(null);
   const typingTimer = useRef<number | null>(null);
@@ -1859,6 +1876,25 @@ export function Composer({
 
   const send = async (notifyAnyway = false) => {
     if (!ready || sendingRef.current) return;
+    if (editing) {
+      const text = draft.trim();
+      if (text === editing.text.trim()) {
+        onEditDone?.();
+        setDraft("");
+        return;
+      }
+      sendingRef.current = true;
+      setSending(true);
+      const ok = await api.edit(editing.id, text);
+      sendingRef.current = false;
+      setSending(false);
+      if (ok) {
+        document.getElementById(`ch-ms-message-${editing.id}`)?.querySelector(".ch-ms-bub")?.animate([{ opacity: 0.4 }, { opacity: 1 }], { duration: composerReduced ? CH_FADE_MS : 260, easing: "cubic-bezier(.22,1,.36,1)" });
+        setDraft("");
+        onEditDone?.();
+      }
+      return;
+    }
     sendingRef.current = true;
     const text = draft.trim();
     const pending = files;
@@ -1965,6 +2001,16 @@ export function Composer({
     <footer ref={footer} className="ch-ms-comp" aria-busy={checking || sending || undefined}>
       {checkFailed && <InlineNotice code="CH-7217" title="Couldn’t check a pending send" body="Try again before sending another message." onRetry={() => setCheckAttempt((n) => n + 1)} />}
       {unconfirmed && <InlineNotice code="CH-7023" title="Couldn’t confirm this send" body="This send is unconfirmed. Retry send checks the original request; editing stays locked until its outcome is known." />}
+      {editing && (
+        <div className="ch-ms-comp__reply is-edit" ref={chipRise}>
+          <Icon icon={Pencil} size={18} />
+          <span className="ch-msv-chip__b">
+            <b>Edit message</b>
+            <span>{editing.text}</span>
+          </span>
+          <IconButton icon={X} label="Cancel edit" onClick={() => { setDraft(""); onEditDone?.(); }} />
+        </div>
+      )}
       {effectiveParent && (
         <div className="ch-ms-comp__reply" ref={api.redesign ? chipRise : undefined}>
           <ReplyQuote api={api} replyToId={effectiveParent} />
@@ -2359,6 +2405,8 @@ function Thread({
         key={conv.id}
         api={api}
         conv={conv}
+        editing={api.redesign ? editing : null}
+        onEditDone={() => setEditing(null)}
         unavailable={api.msgsError}
         replyToId={replyToId}
         onClearReply={() => setReplying(null)}
@@ -2368,7 +2416,7 @@ function Thread({
         seed={seed}
       />
 
-      <EditMessageModal api={api} message={editing} onClose={() => setEditing(null)} />
+      <EditMessageModal api={api} message={api.redesign ? null : editing} onClose={() => setEditing(null)} />
       <DeleteMessageModal api={api} message={deleting} onClose={() => setDeleting(null)} />
       {seenList.render(api, false)}
     </section>

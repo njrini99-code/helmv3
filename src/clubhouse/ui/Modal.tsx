@@ -60,7 +60,7 @@ export function Modal({
     // eslint-disable-next-line jsx-a11y/click-events-have-key-events, jsx-a11y/no-noninteractive-element-interactions
     <dialog
       ref={ref}
-      className="ch-modal"
+      className={'ch-modal' + (className ? ` ${className}` : '')}
       data-ch-code={code}
       style={{ ['--ch-modal-w' as string]: `${width}px` }}
       aria-labelledby={titleId}

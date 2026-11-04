@@ -4812,3 +4812,31 @@ html[data-fw-theme='dark'] [data-ui='clubhouse'] .ch-ms-poll {
     transition: none;
   }
 }
+.ch-msv-chip__b {
+  flex: 1;
+  min-width: 0;
+  display: grid;
+}
+.ch-msv-chip__b b {
+  font-weight: 600;
+}
+.ch-msv-chip__b span {
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  color: var(--ch-text-secondary);
+}
+/* The new poll sheet (MSG-POLLNEW-01): today's fields in the drawn look. */
+.ch-msv-pollnew .ch-field__label {
+  font: 600 calc(13 * var(--ch-type-k)) / 1.3 var(--ch-font-sans);
+  color: var(--ch-text-secondary);
+}
+.ch-msv-pollnew :is(input[type='text'], input:not([type]), textarea) {
+  min-height: 44px;
+  padding: 10px 12px;
+  border-radius: 12px;
+  background: var(--ch-well-bg-flat);
+}
+.ch-msv-pollnew {
+  border-radius: 20px;
+}

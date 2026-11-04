@@ -698,6 +698,8 @@ function PhoneThread({
         key={conv.id}
         api={api}
         conv={conv}
+        editing={api.redesign ? editing : null}
+        onEditDone={() => setEditing(null)}
         phone
         unavailable={api.msgsError}
         initialDraft={firstMessage?.text}
@@ -759,7 +761,7 @@ function PhoneThread({
           </div>
         )}
       </Modal>
-      <EditMessageModal api={api} message={editing} onClose={() => setEditing(null)} />
+      <EditMessageModal api={api} message={api.redesign ? null : editing} onClose={() => setEditing(null)} />
       <DeleteMessageModal api={api} message={deleting} onClose={() => setDeleting(null)} />
       {seenList.render(api, true)}
     </PhoneScreen>

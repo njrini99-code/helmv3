@@ -791,7 +791,8 @@ export function PollSheet({ api, conv, open, onClose }: { api: ChMessagesApi; co
       title="New poll"
       description={`Everyone in ${conv.title} can vote and see who voted.`}
       initialFocus="#ch-ms-poll-q"
-      width={480}
+      width={api.redesign ? 400 : 480}
+      className={api.redesign ? "ch-msv-pollnew" : undefined}
       action={
         !empty || multi || ends !== "none" ? (
           <button
