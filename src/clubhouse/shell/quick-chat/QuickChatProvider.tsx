@@ -44,7 +44,7 @@ export const useQuickChatRun = (): UseCoachHelmChatResult | null => useContext(Q
 /**
  * The top-bar Helm key's state. The session (the chat hook) sits in a lazy child mounted once on `warm` and never keyed by path: the stream route aborts when its request goes, so a remount per path would end the run (wiring QW1).
  */
-export function QuickChatProvider({ pathname, search, enabled, children }: { pathname: string; search: string; enabled: boolean; children: ReactNode }) {
+export function QuickChatProvider({ plans = false, pathname, search, enabled, children }: { plans?: boolean; pathname: string; search: string; enabled: boolean; children: ReactNode }) {
   // Preview only: `?qc=<state>` opens the panel at that state with the design page's fixture (QC0).
   const previewState = pathname.startsWith('/clubhouse-preview') || process.env.NODE_ENV !== 'production' ? new URLSearchParams(search).get('qc') : null;
   const initialOpen = !!previewState && previewState !== 'closed' && previewState !== 'live';
@@ -94,7 +94,7 @@ export function QuickChatProvider({ pathname, search, enabled, children }: { pat
             {previewState ? (
               <PreviewQuickChat state={previewState} open={open} onClose={() => setOpen(false)} looking={looking} pathname={pathname} />
             ) : (
-              <QuickChatSession open={open && !onCoachHelm} onClose={() => setOpen(false)} looking={looking} pathname={pathname} />
+              <QuickChatSession open={open && !onCoachHelm} onClose={() => setOpen(false)} looking={looking} pathname={pathname} planOn={plans} />
             )}
           </Suspense>
         )}

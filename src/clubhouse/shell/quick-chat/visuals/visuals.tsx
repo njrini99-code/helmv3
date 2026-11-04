@@ -5,6 +5,7 @@ import { pluralWord } from '../../../lib/plural';
 import { useEffect, useState } from 'react';
 import type { TaskVisual } from '@/lib/coachhelm/v3/chat/action-types';
 import { readQuickChatWeek, type QuickChatWeek } from '@/app/golf/actions/coachhelm-ask';
+import { useQcSeam } from '../qc-seam';
 
 type Cal = Extract<TaskVisual, { kind: 'cal' }>;
 type Msg = Extract<TaskVisual, { kind: 'msg' }>;
@@ -23,16 +24,23 @@ const time12 = (t: string) => {
   return `${h % 12 || 12}:${String(m).padStart(2, '0')} ${h < 12 ? 'AM' : 'PM'}`;
 };
 
+const untilClock = (iso: string) => {
+  const at = new Date(iso);
+  return `${at.getUTCHours() % 12 || 12}:${String(at.getUTCMinutes()).padStart(2, '0')}`;
+};
+
 /** Week strip, day rail, the new block, the facts. Hour lines 32pt apart from y 12: start − 1h to end + 1h. */
 export function EventVisual({ visual, landed, removed }: { visual: Cal; landed: boolean; removed: boolean }) {
-  const [week, setWeek] = useState<QuickChatWeek | null>(null);
+  const seam = useQcSeam();
+  const [week, setWeek] = useState<QuickChatWeek | null>(seam?.week ?? null);
   useEffect(() => {
+    if (seam) return;
     let live = true;
     void readQuickChatWeek(visual.date).then((w) => live && setWeek(w));
     return () => {
       live = false;
     };
-  }, [visual.date]);
+  }, [visual.date, seam]);
   const start = visual.start ? hours(visual.start) : null;
   const end = visual.end ? hours(visual.end) : null;
   const first = start == null ? 8 : Math.max(0, Math.floor(start) - 1);
@@ -42,7 +50,7 @@ export function EventVisual({ visual, landed, removed }: { visual: Cal; landed: 
     <>
       <div className="cal-wk">
         {(week?.days ?? [{ date: visual.date, hasEvent: false }]).map((d) => (
-          <i key={d.date} className={d.date === visual.date ? 'on' : undefined}>
+          <i key={d.date} className={d.date === visual.date ? 'on tgt' : undefined}>
             <small>{dayLong(d.date, { weekday: 'narrow' })}</small>
             <b>{Number(d.date.slice(8))}</b>
             <em className={d.hasEvent ? '' : 'n'} />
@@ -61,7 +69,10 @@ export function EventVisual({ visual, landed, removed }: { visual: Cal; landed: 
           const h = at.getUTCHours() + at.getUTCMinutes() / 60;
           return h >= first && h <= first + 4 ? (
             <div className="blk old" key={it.start + it.title} style={{ top: y(h), height: 24, padding: '4px 10px' }}>
-              <b>{it.title}</b>
+              <b>
+                {it.title}
+                {it.end && ` · until ${untilClock(it.end)}`}
+              </b>
             </div>
           ) : null;
         })}

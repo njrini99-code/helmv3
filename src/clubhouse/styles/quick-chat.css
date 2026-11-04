@@ -332,7 +332,8 @@ html[data-fw-theme='dark'] .ch-qcs {
 .ch-qcs .cmp__plus, .ch-qcs .cmp__mic { display: grid; place-items: center; width: 36px; height: 36px; flex: none; border: 0; border-radius: 50%; color: var(--a-ink-2); background: var(--a-well); cursor: pointer; }
 .ch-qcs .cmp__mic { background: none; color: var(--a-ink-3); }
 .ch-qcs .cmp__plus svg, .ch-qcs .cmp__mic svg { width: 18px; height: 18px; stroke-width: 2; }
-.ch-qcs .cmp__t { padding: 8px 4px 6px; }
+.ch-qcs .cmp__t { padding: 8px 4px 6px; border: 0; background: none; resize: none; outline: 0; }
+.ch-qcs .cmp:focus-within { box-shadow: 0 0 0 2px var(--ch-border-focus); }
 .ch-qcs .cmp__send { width: 36px; height: 36px; background: var(--a-accent); box-shadow: var(--ch-qc-shadow-13); }
 .ch-qcs .cmp__send.off { background: var(--a-well); box-shadow: none; }
 .ch-qcs .cmp__hint { display: flex; justify-content: center; gap: 12px; padding: 8px 0 0; font: var(--ch-type-13);  color: var(--a-ink-2); }
@@ -408,6 +409,7 @@ html[data-fw-theme='dark'] .ch-qck { --a-accent-text: #7cc79b; --a-tint: rgb(124
 .ch-qcs .qlist__r span { font: var(--ch-type-13-medium); color: var(--a-accent-text); }
 .ch-qcs button.steps-sum { border: 0; background: none; cursor: pointer; }
 .ch-qcs .earlier { display: grid; gap: 6px; margin-top: 16px; }
+.ch-qcs .earlier__r .rcpt__g { flex: none; background: var(--a-tint); color: var(--a-accent-text); }
 .ch-qcs .earlier small { padding-left: 2px; font: var(--ch-type-13-medium); color: var(--a-ink-2); }
 .ch-qcs .earlier__r { display: flex; align-items: center; gap: 8px; padding: 8px 12px; border-radius: var(--ch-radius-md); background: var(--a-card); }
 .ch-qcs .earlier__t { display: grid; flex: 1; min-width: 0; }

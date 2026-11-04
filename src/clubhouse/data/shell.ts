@@ -49,6 +49,8 @@ export interface ChShellData {
   askAvailable?: boolean;
   /** The top-bar Helm key and Glass quick chat (coachhelm_quick_chat_v1), on top of `askAvailable`. */
   quickChat?: boolean;
+  /** coachhelm_practice_plans_v1: the quick chat offers its plan tile. */
+  practicePlans?: boolean;
   /** The signed-in player's round in progress, touched in the last 12 hours (P001-C1): the Resume accessory. */
   roundInProgress?: ChRoundInProgress | null;
   /** The signed-in coach is this team's head coach: the identity line says "Head coach". False when unread (plain "Coach"). */
@@ -270,6 +272,7 @@ export async function loadClubhouseShell(teamId: string | undefined, playerId?: 
     timezone,
     askAvailable: askOn,
     quickChat: askOn && isFlagEnabled('coachhelm_quick_chat_v1'),
+    practicePlans: isFlagEnabled('coachhelm_practice_plans_v1'),
     classAwareness: isFlagEnabled('class_awareness_v1'),
     crh: isFlagEnabled('clubhouse_classes_roster_home_v1'),
     course: courseOf(courseRes),

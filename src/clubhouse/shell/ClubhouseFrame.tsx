@@ -172,7 +172,7 @@ export function ClubhouseFrame({
             <FrameRoot crh={shell.crh ?? false} motionOff={!showAnimations} fullScreen={fullScreen} homeRoot={rebuilt && pathname.replace(/\/$/, '') === '/golf/dashboard'}>
               <ToastProvider scope={userData.teamId ?? ''}>
                 <CrumbProvider>
-                  <MaybeQuickChat on={shell.quickChat ?? false} pathname={pathname} search={search} enabled={shell.askAvailable ?? false}>
+                  <MaybeQuickChat on={shell.quickChat ?? false} plans={shell.practicePlans ?? false} pathname={pathname} search={search} enabled={shell.askAvailable ?? false}>
                     <DockProvider>
                       {/* The first Tab on any page: jump past the navigation to the page itself (CH-1607: it slides into view). */}
                       <a className="ch-skip" href="#ch-content" data-ch-code="CH-1801">
@@ -364,9 +364,9 @@ function useReloadFromBackForwardCache(): void {
 }
 
 /** Flag off, today's Ask sheet; on, the Helm key and Glass panel. */
-function MaybeQuickChat({ on, pathname, search, enabled, children }: { on: boolean; pathname: string; search: string; enabled: boolean; children: ReactNode }) {
+function MaybeQuickChat({ on, plans, pathname, search, enabled, children }: { on: boolean; plans: boolean; pathname: string; search: string; enabled: boolean; children: ReactNode }) {
   return on ? (
-    <QuickChatProvider pathname={pathname} search={search} enabled={enabled}>
+    <QuickChatProvider plans={plans} pathname={pathname} search={search} enabled={enabled}>
       {children}
     </QuickChatProvider>
   ) : (

@@ -4,7 +4,8 @@ import type { UIMessage } from 'ai';
 import { useEffect, useState } from 'react';
 import type { UseCoachHelmChatOptions, UseCoachHelmChatResult } from '@/components/golf/coachhelm/chat/useCoachHelmChat';
 import QuickChatSession from '../shell/quick-chat/QuickChatSession';
-import { QC_FIXTURES, type QcFixture } from './fixtures-quick-chat';
+import { QC_FIXTURES, seamFor, type QcFixture } from './fixtures-quick-chat';
+import { QcSeam } from '../shell/quick-chat/qc-seam';
 import type { ChAskSheetChat } from '../shell/AskSheet';
 
 function fake(f: QcFixture): ChAskSheetChat {
@@ -39,5 +40,9 @@ export default function PreviewQuickChat({ state, open, onClose, looking, pathna
       delete document.body.dataset.qc;
     };
   }, [state]);
-  return <QuickChatSession open={open} onClose={onClose} looking={looking} pathname={pathname} chat={chat} />;
+  return (
+    <QcSeam.Provider value={seamFor(state)}>
+      <QuickChatSession open={open} onClose={onClose} looking={looking} pathname={pathname} chat={chat} />
+    </QcSeam.Provider>
+  );
 }

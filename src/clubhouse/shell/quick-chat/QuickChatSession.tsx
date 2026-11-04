@@ -9,14 +9,14 @@ import { buildTurns, pendingApproval, stepsReceipt, type AskAssistantTurn } from
 import { useChPhone } from '../../lib/use-phone';
 import { useChReducedMotion } from '../../lib/reduced-motion';
 import { conversationHref } from '../../screens/coachhelm/chat/History';
-import { BriefCard } from '../../screens/coachhelm/chat/parts/BriefCard';
-import { PlanCard } from '../../screens/coachhelm/plan/PlanCard';
-import '../../styles/coachhelm-plan.css';
 import { subscribeOnline } from '../AskSheetBody';
 import { modKey } from '../command/shortcuts';
 import type { ChAskSheetChat } from '../AskSheet';
 import { HelmMark, useQcCtx } from './QuickChatProvider';
-import { quickStarts } from './starts';
+import { QuickAsk } from './QuickAsk';
+import { useQcSeam } from './qc-seam';
+import { quickStarts, START_ICON } from './starts';
+import { PlanTask } from './visuals/PlanTask';
 import { useEarlierToday } from './earlier-today';
 import { TaskCard } from './TaskCard';
 import { useQcMotion } from './useQcMotion';
@@ -33,7 +33,7 @@ const Ico = ({ d, size }: { d: string; size?: number }) => (
 );
 
 /** The session and panel. Mounted once on `warm`; a path change doesn't touch the run. */
-export default function QuickChatSession({ open, onClose, looking, pathname, chat: useChatImpl = useCoachHelmChat, initialText = '' }: { open: boolean; onClose: () => void; looking: { label: string; playerId: string | null; playerName: string | null }; pathname: string; chat?: ChAskSheetChat; initialText?: string }) {
+export default function QuickChatSession({ open, onClose, looking, pathname, planOn = false, chat: useChatImpl = useCoachHelmChat, initialText = '' }: { planOn?: boolean; open: boolean; onClose: () => void; looking: { label: string; playerId: string | null; playerName: string | null }; pathname: string; chat?: ChAskSheetChat; initialText?: string }) {
   const router = useRouter();
   const phone = useChPhone();
   const reduced = useChReducedMotion();
@@ -174,7 +174,9 @@ export default function QuickChatSession({ open, onClose, looking, pathname, cha
 
   const fresh = turns.length === 0;
   const canSend = !!text.trim();
-  const earlier = useEarlierToday(open, fresh);
+  const seam = useQcSeam();
+  const liveEarlier = useEarlierToday(open, fresh && !seam);
+  const earlier = seam ? (seam.earlier ?? null) : liveEarlier;
   // Tab stays inside the dialog (AC-QC-PNL-08).
   const onPanelKey = (e: React.KeyboardEvent<HTMLElement>) => {
     if (e.key !== 'Tab' || !panel.current) return;
@@ -234,11 +236,14 @@ export default function QuickChatSession({ open, onClose, looking, pathname, cha
                   <h3 className="hello__t">What should we get done?</h3>
                   <p className="hello__s">You confirm everything before it happens.</p>
                   <div className="tiles">
-                    {quickStarts(pathname, false).map((t) => (
+                    {quickStarts(pathname, planOn || !!seam?.planOn).map((t) => (
                       <button key={t.id} className={'tile t-' + t.id} type="button" onClick={() => send(t.ask)}>
                         <i>
-                          <Ico d="M5 12h14M13 6l6 6-6 6" />
+                          <Ico d={START_ICON[t.id]} />
                         </i>
+                        <svg className="go" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                          <path d="M7 17L17 7M9 7h8v8" />
+                        </svg>
                         <b>{t.title}</b>
                         <span>{t.line}</span>
                       </button>
@@ -404,8 +409,8 @@ function AssistantTurn({ turn, online, stopped, onSend, onApprove, onDeny, onOpe
       {turn.blocks.map((b) => {
         if (b.kind === 'text') return <p className="say" key={b.key}>{b.text}</p>;
         if (b.kind === 'proposal') return <TaskCard key={b.key} view={b.view} online={online} onSend={onSend} onApprove={onApprove} onDeny={onDeny} onOpen={onOpen} />;
-        if (b.kind === 'plan') return <PlanCard key={b.key} plan={b.plan} onSend={onSend} />;
-        if (b.kind === 'brief') return <BriefCard key={b.key} title={b.brief.title} questions={b.brief.questions} onDone={(_a, line) => onSend(line || 'Skip, just build')} />;
+        if (b.kind === 'plan') return <PlanTask key={b.key} plan={b.plan} online={online} onOpen={onOpen} />;
+        if (b.kind === 'brief') return <QuickAsk key={b.key} brief={b.brief} onSend={onSend} />;
         return null;
       })}
     </>

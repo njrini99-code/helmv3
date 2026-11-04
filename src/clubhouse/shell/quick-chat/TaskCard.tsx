@@ -8,6 +8,7 @@ import { land, landed, taskIn, toldIn } from './task-motion';
 import type { TaskVisual } from '@/lib/coachhelm/v3/chat/action-types';
 import type { AskProposalView } from '../../data/coachhelm-chat-thread';
 import { EventVisual, MessageVisual, QualifierVisual } from './visuals/visuals';
+import { useQcSeam } from './qc-seam';
 
 /** M-TYPE: text the card writes, one character per tick; a card that isn't new shows it whole, as does Reduce Motion. */
 function useTyped(text: string, perSecond: number, on: boolean): string {
@@ -59,7 +60,8 @@ const toldLine = (n: ReadonlyArray<{ channel: string; recipients: number; status
 export function TaskCard({ view, online, onSend, onApprove, onDeny, onOpen }: { view: AskProposalView; online: boolean; onSend: (t: string) => void; onApprove: (id: string) => void; onDeny: (id: string) => void; onOpen: (href: string) => void }) {
   const visual = view.proposal.visual ?? null;
   const w = visual ? WORDS[visual.kind] : { icon: 'M5 12l5 5 9-11', sub: 'CoachHelm', chip: 'Done', busy: 'Working…', done: 'Done', failTitle: 'That didn’t go through' };
-  const [phase, setPhase] = useState<Phase>(() => phaseOf(view));
+  const seam = useQcSeam();
+  const [phase, setPhase] = useState<Phase>(() => (seam?.taskPhase === 'undone' ? { k: 'undone' } : phaseOf(view)));
   const [late, setLate] = useState(false);
   const [locked, setLocked] = useState(false);
   const ring = useRef<SVGCircleElement>(null);
