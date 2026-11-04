@@ -124,14 +124,14 @@ export function huddlePoint(p: Pick<ChTeamPlayer, 'legs'>): { x: number; y: numb
 
 export type ChTeamStory =
   | { kind: 'read'; id: string; who: string; line: string; href: string }
-  | { kind: 'working'; id: string; playerId: string | null; who: string; line: string; href: string }
+  | { kind: 'working'; id: string; playerId: string | null; who: string; line: string; href: string; progress?: { from: number; now: number; target: number } | null }
   | { kind: 'theme'; id: string; playerId: string; who: string; word: 'Improving' | 'Slipping'; line: string };
 
 /** Stories only from a structured source: the brief's rows, working rows and an Improving or Slipping theme. No round story, 9.3 A; "No clear change" never tells one. */
 export function storiesOf(brief: ChCoachBrief | null, themes: Record<string, Record<string, ChDiveTheme>> | null, names: ReadonlyMap<string, string>): ChTeamStory[] {
   const out: ChTeamStory[] = [];
   for (const r of brief?.reads ?? []) if (r.kind === 'read') out.push({ kind: 'read', id: `read:${r.id}`, who: r.who, line: r.title, href: r.href });
-  for (const w of brief?.working ?? ([] as ChBriefWorking[])) out.push({ kind: 'working', id: `working:${w.id}`, playerId: w.playerId ?? null, who: w.who, line: w.line ?? w.title, href: w.href });
+  for (const w of brief?.working ?? ([] as ChBriefWorking[])) out.push({ kind: 'working', id: `working:${w.id}`, playerId: w.playerId ?? null, who: w.who, line: w.line ?? w.title, href: w.href, progress: w.progress ?? null });
   for (const [playerId, byCat] of Object.entries(themes ?? {})) {
     for (const [cat, t] of Object.entries(byCat)) {
       const word = t.trend?.word;

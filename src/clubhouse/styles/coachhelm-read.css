@@ -1151,7 +1151,7 @@ html[data-fw-theme='dark'] .ch-hr .btn.pri {
   gap: 20px;
   min-width: 0;
 }
-@container (max-width: 1179px) {
+@media (max-width: 1179px) {
   .ch-hr.is-desk .ch-hr-desk {
     grid-template-columns: 250px minmax(0, 1fr);
   }

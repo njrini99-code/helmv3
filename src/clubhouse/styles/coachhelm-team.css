@@ -238,7 +238,7 @@ html[data-fw-theme='dark'] .ch-htb .coin.early {
 }
 .ch-htb .feat .hn b {
   font: var(--ch-type-figure-40-500); 
-  font-variation-settings:'wdth' 96;
+  font-variation-settings:'wdth' 92;
   letter-spacing: -0.038em;
   }
 .ch-htb .feat .hn span {
@@ -488,8 +488,7 @@ html[data-fw-theme='dark'] .ch-htb .coin.early {
 .ch-htb .br .bv {
   font: var(--ch-type-15-strong); 
   text-align:right;
-  
-  color:var(--loss); letter-spacing: var(--ch-track-15); }
+  color:var(--loss); }
 .ch-htb .br .bv.g {
   color:var(--gain);
 }
@@ -1825,7 +1824,8 @@ html[data-fw-theme='dark'] .ch-htb .skl::after {
 .ch-htb.is-desk .dgrid > .card {
   min-width: 0;
 }
-@container (max-width: 1179px) {
+/* The window, not the column: the rail is beside the board at 1280 (06 S-TEAM), shared with Read and the file. */
+@media (max-width: 1179px) {
   .ch-htb.is-desk .dgrid {
     grid-template-columns: minmax(0, 720px);
     justify-content: center;

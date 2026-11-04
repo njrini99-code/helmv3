@@ -1,8 +1,8 @@
 'use client';
 
 import type { ChStation, ChTeamBoardData, ChTeamPlayer } from '../data/coachhelm-team-shape';
-import { STATIONS, stationFigures } from '../data/coachhelm-team-shape';
-import { TeamBoard, type TeamStation } from '../screens/coachhelm/team/TeamBoard';
+import { courseReads, STATIONS, stationFigures, storiesOf } from '../data/coachhelm-team-shape';
+import { TeamBoard, type TeamBoardOpen, type TeamStation } from '../screens/coachhelm/team/TeamBoard';
 import { TeamBoardSkeleton } from '../screens/coachhelm/team/TeamBoardSkeleton';
 import { PREVIEW_TEAM_BOARD } from './fixtures-coachhelm-team';
 
@@ -19,6 +19,8 @@ function stateData(state: string | undefined): ChTeamBoardData {
     const empty: ChTeamPlayer[] = list.map((p) => ({ ...p, rounds: 0, early: true, reads: { needs: [], working: [] }, total: null, worst: null, legs: Object.fromEntries(STATIONS.map((s) => [s, { strokes: null, rounds: 0, missing: 'No rounds yet.' }])) as ChTeamPlayer['legs'] }));
     return { ...base, players: { list: empty, error: false }, stations: stationFigures(empty), teamTotal: { strokes: null, rounds: 0 }, course: { history: null, reads: [], against: null } };
   }
+  if (state === 'failed') return { ...base, brief: { status: 'failed' }, record: { status: 'failed' } } as ChTeamBoardData;
+  if (state === 'failed-all') return { ...base, players: { list: [], error: true } };
   if (state === 'partial') return { ...base, players: { list: [], error: true } };
   if (state === 'noplayers') return { ...base, roster: { count: 0, error: false }, players: { list: [], error: false } };
   if (state === 'long') {
@@ -29,8 +31,36 @@ function stateData(state: string | undefined): ChTeamBoardData {
   return base;
 }
 
+/** `&open=`: what the sheet or inspector opens on (02-PLAN 11). A brief or track record that failed draws its own notice (`failed`). */
+function openOf(data: ChTeamBoardData, station: TeamStation, open: string | undefined, which: string | undefined): TeamBoardOpen | undefined {
+  const list = data.players.list;
+  if (open === 'read') {
+    const reads = list.flatMap((p) => p.reads.needs);
+    const r = which === 'assigned' ? (reads.find((x) => x.assigned) ?? reads[0]) : which === 'course' ? courseReads(list)[0] : reads[0];
+    return r ? { kind: 'read', id: r.id } : undefined;
+  }
+  if (open === 'player') {
+    const leg = station === 'course' ? 'approach' : station;
+    const p = [...list].sort((a, b) => (a.legs[leg].strokes ?? 0) - (b.legs[leg].strokes ?? 0))[0];
+    return p ? { kind: 'player', id: p.id } : undefined;
+  }
+  if (open === 'course') {
+    const c = data.course.history?.courses[0];
+    return c ? { kind: 'course', id: c.id } : undefined;
+  }
+  if (open === 'story') {
+    const brief = data.brief.status === 'ok' ? data.brief.value : null;
+    const s = storiesOf(brief, null, new Map(list.map((p) => [p.id, p.name])))[0];
+    return s ? { kind: 'story', id: s.id, story: s, week: brief?.week ?? 'This week' } : undefined;
+  }
+  return undefined;
+}
+
 /** The team board with fixture data; names match the capture script's (02-PLAN 11). Nothing reaches the server. */
-export function PreviewCoachHelmTeam({ state, station }: { state?: string; station?: string; open?: string; all?: boolean }) {
+export function PreviewCoachHelmTeam({ state, station, open, read, all }: { state?: string; station?: string; open?: string; read?: string; all?: boolean }) {
   if (state === 'loading') return <TeamBoardSkeleton />;
-  return <TeamBoard data={stateData(state)} initialStation={station ? STATION_KEY[station] : undefined} />;
+  const data = stateData(state);
+  const first = station ? STATION_KEY[station] : undefined;
+  const initialStation = first ?? (read === 'course' ? 'course' : undefined);
+  return <TeamBoard data={data} onRetry={() => {}} initialStation={initialStation} initialAll={all} initialOpen={openOf(data, initialStation ?? 'approach', open, read)} />;
 }

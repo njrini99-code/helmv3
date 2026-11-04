@@ -215,7 +215,7 @@ import { ChClockProvider } from '@/clubhouse/lib/use-clock';
  *   /clubhouse-preview/coachhelm-track ?state=early | empty | unavailable | failed | off | loading   (the coach's Track record; synthetic counts)
  *   /clubhouse-preview/coachhelm-player-file ?state=accepted | noplan | proposed | seen | declined | early | empty | failed | loading | nofield | fieldfew | nointent | readsfailed | sgfailed | failwrites | duplicate | long | manyreads | oneread &view=coach | player (viewer) &section=lens &q=<card>   (the file on fake writes)
  *   /clubhouse-preview/coachhelm-read ?view=coach | player &state=loading | failed | off | gone | stale &q=penalties | putts &section=board   (one read, coachhelm_read_v1)
- *   /clubhouse-preview/coachhelm-team ?state=early | empty | partial | noplayers | long | loading &station=tee | app | sg | putt | course   (the coach's team board, coachhelm_team_board_v1)
+ *   /clubhouse-preview/coachhelm-team ?state=early | empty | failed | failed-all | partial | noplayers | long | loading &open=read | player | story | course &read=assigned | course &all=1 &station=tee | app | sg | putt | course   (the coach's team board, coachhelm_team_board_v1)
  *   /clubhouse-preview/coachhelm-brief ?state=empty | failed | off | loading   (the coach's Monday brief; synthetic reads through computeMondayBrief)
  *   /clubhouse-preview/coachhelm-coach-brief ?state=thin | noreads | partial | failed | off | loading, &section=patterns | working | record | goals   (the coach's Brief behind /intelligence)
  *   /clubhouse-preview/recruiting ?state=empty | nomatch | failed | loading | sparse | noteam | detail | add | edit | delete | docsfailed | failwrites | failstage | slow   (the coach; eight prospects, Mason Reilly first)
@@ -228,12 +228,12 @@ export default async function ClubhousePreview({
   searchParams,
 }: {
   params: Promise<{ screen: string }>;
-  searchParams: Promise<{ station?: string; flag?: string; play?: string; refresh?: string; crh?: string; state?: string; view?: string; date?: string; event?: string; bell?: string; new?: string; section?: string; q?: string; tab?: string; teams?: string; tone?: string; at?: string; round?: string; ask?: string; live?: string }>;
+  searchParams: Promise<{ open?: string; read?: string; all?: string; station?: string; flag?: string; play?: string; refresh?: string; crh?: string; state?: string; view?: string; date?: string; event?: string; bell?: string; new?: string; section?: string; q?: string; tab?: string; teams?: string; tone?: string; at?: string; round?: string; ask?: string; live?: string }>;
 }) {
   if (process.env.NODE_ENV === 'production') notFound();
   const { screen } = await params;
   const qc = (await searchParams as { qc?: string }).qc;
-  const { flag, play, station, refresh, crh: crhParam, state, view, date, event, bell, new: isNew, section, q, tab, teams, tone, at, round, ask, live } = await searchParams;
+  const { open: openParam, read: readParam, all: allParam, flag, play, station, refresh, crh: crhParam, state, view, date, event, bell, new: isNew, section, q, tab, teams, tone, at, round, ask, live } = await searchParams;
   // The phone Stats redesign renders here whatever its flag says; `&flag=off` renders main's components (stats-home 05, flagoff).
   const shs = flag !== 'off';
   // The header lab (/clubhouse-preview/header-lab) renders a page with one of the hero tones.
@@ -570,7 +570,7 @@ export default async function ClubhousePreview({
     },
     'coachhelm-team': {
       path: '/golf/dashboard/coachhelm',
-      node: <PreviewCoachHelmTeam state={state} station={station} />,
+      node: <PreviewCoachHelmTeam state={state} station={station} open={openParam} read={readParam} all={allParam === '1'} />,
     },
     coachhelm: {
       path: '/golf/dashboard/coachhelm',

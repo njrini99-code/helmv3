@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
-import { X } from 'lucide-react';
+import { TriangleAlert, X } from 'lucide-react';
 import { storiesOf, type ChTeamPlayer, type ChTeamStory } from '../../../data/coachhelm-team-shape';
 import type { ChCoachBrief } from '../../../data/coachhelm-coach-brief-shape';
 import type { ChDiveTheme } from '../../../data/coachhelm-dive-shape';
@@ -19,7 +19,19 @@ const whenOf = (s: ChTeamStory, week: string) => (s.kind === 'theme' ? 'This sea
 const shortOf = (s: ChTeamStory) => (s.kind === 'theme' ? `${s.word}: ${s.line}` : s.line);
 
 function TileVisual({ story }: { story: ChTeamStory }) {
-  // The only pictures with a source: a focus's progress and a theme's direction (no invented figures, 03 section 6).
+  // The only pictures with a source: a focus's before, now and target, and a theme's direction (no invented figures, 03 section 6).
+  const p = story.kind === 'working' ? story.progress : null;
+  if (p) {
+    const top = Math.max(Math.abs(p.from), Math.abs(p.now), Math.abs(p.target)) || 1;
+    const w = (v: number) => Math.max(8, (Math.abs(v) / top) * 108);
+    return (
+      <svg viewBox="0 0 108 40" aria-hidden="true">
+        <rect x="0" y="4" width={w(p.from)} height="12" rx="6" fill="var(--track)" />
+        <rect x="0" y="24" width={w(p.now)} height="12" rx="6" fill="var(--gain-fill)" />
+        <rect x={w(p.target) - 1} y="20" width="2" height="20" fill="var(--ink)" />
+      </svg>
+    );
+  }
   const fill = story.kind === 'theme' && story.word === 'Slipping' ? 'var(--loss-fill)' : 'var(--gain-fill)';
   return (
     <svg viewBox="0 0 108 40" aria-hidden="true">
@@ -150,6 +162,9 @@ export function StoriesCard({
           <h4>This week</h4>
         </div>
         <div className="notice">
+          <span className="ni">
+            <Icon icon={TriangleAlert} size={18} />
+          </span>
           <div>
             <b>Couldn’t load what’s new</b>
             <span>The weekly brief didn’t load. Everything below is current.</span>

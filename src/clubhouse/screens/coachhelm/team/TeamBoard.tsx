@@ -28,6 +28,7 @@ import { StationControl } from './StationControl';
 import { TeamHole } from './TeamHole';
 
 export type TeamStation = ChStation | 'course';
+export type TeamBoardOpen = { kind: 'read' | 'player' | 'course'; id: string } | { kind: 'story'; id: string; story: ChTeamStory; week: string };
 
 export interface TeamBoardProps {
   data: ChTeamBoardData;
@@ -40,6 +41,9 @@ export interface TeamBoardProps {
   initialPlayer?: string;
   initialInsight?: string;
   initialStation?: TeamStation;
+  /** The preview's `&open=` and `&all=1`: what is open on the first paint. */
+  initialOpen?: TeamBoardOpen;
+  initialAll?: boolean;
   /** The hole's Try again when the reads didn't load. */
   onRetry?: () => void;
 }
@@ -145,13 +149,13 @@ function EmptySteps() {
 }
 
 /** The coach's Team view: the green bar untouched, the switch, the title, then one green feature card (the hole). */
-export function TeamBoard({ data, courseTab = true, writes = LIVE_COACHHELM_WRITES, readOn = false, fileOn = false, initialPlayer, initialInsight, initialStation, onRetry }: TeamBoardProps) {
+export function TeamBoard({ data, courseTab = true, writes = LIVE_COACHHELM_WRITES, readOn = false, fileOn = false, initialOpen, initialAll = false, initialPlayer, initialInsight, initialStation, onRetry }: TeamBoardProps) {
   const phone = useChPhone();
   const sw = useViewSwitch<CoachHelmView>('board', (v) => COACHHELM_HREF[v], Object.keys(COACHHELM_HREF) as CoachHelmView[]);
   const leak = useMemo(() => stationOrder(data.stations)[0] ?? 'approach', [data.stations]);
   const [station, setStation] = useState<TeamStation>(initialStation ?? leak);
   const top = useRef<HTMLElement | null>(null);
-  const [open, setOpen] = useState<{ kind: 'read' | 'player' | 'course'; id: string } | { kind: 'story'; id: string; story: ChTeamStory; week: string } | null>(null);
+  const [open, setOpen] = useState<TeamBoardOpen | null>(initialOpen ?? null);
   const close = useCallback(() => setOpen(null), []);
   const fa = useFocusActions(writes);
   // `?player=` and `?open=read&insight=`: once, after first paint, and off the address by replace (AC-TEAM-23, W-TEAM-14). An id not on the board opens
@@ -227,7 +231,7 @@ export function TeamBoard({ data, courseTab = true, writes = LIVE_COACHHELM_WRIT
   );
   const spot =
     station === 'course' ? (
-      <CourseCard data={data} onRead={openRead} onCourse={openCourse} onRetry={onRetry} />
+      <CourseCard data={data} initialAll={initialAll} onRead={openRead} onCourse={openCourse} onRetry={onRetry} />
     ) : (
       <SpotCard data={data} station={station} onRead={openRead} onPlayer={openPlayer} />
     );

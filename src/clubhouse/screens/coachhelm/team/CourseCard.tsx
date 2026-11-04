@@ -102,12 +102,12 @@ function CourseRow({ row, season, readCount, onCourse }: { row: CourseHistoryRow
 }
 
 /** The Course tab: scoring history, the reads with no spot, team against Tour, courses (S-TEAM.course). */
-export function CourseCard({ data, onRead, onCourse, onRetry }: { data: ChTeamBoardData; onRead: (id: string) => void; onCourse: (id: string) => void; onRetry?: () => void }) {
+export function CourseCard({ data, initialAll = false, onRead, onCourse, onRetry }: { initialAll?: boolean; data: ChTeamBoardData; onRead: (id: string) => void; onCourse: (id: string) => void; onRetry?: () => void }) {
   const card = useRef<HTMLElement | null>(null);
   useTrendDraw(card);
   useContentIn(card, 'course', '.ch, .cmh, .crsw, .cmr, .shpw');
-  const [allCourses, setAllCourses] = useState(false);
-  const [allReads, setAllReads] = useState(false);
+  const [allCourses, setAllCourses] = useState(initialAll);
+  const [allReads, setAllReads] = useState(initialAll);
   const list = data.players.list;
   const reads = courseReads(list);
   const byId = new Map<string, ChTeamPlayer>(list.map((p) => [p.id, p]));
