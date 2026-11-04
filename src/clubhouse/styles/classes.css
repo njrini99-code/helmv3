@@ -3077,7 +3077,6 @@ html[data-fw-theme='dark'] .ch-cl-tthead__days > span.is-today:not(.is-team) {
     text-align: center;
   }
   [data-ch-crh='on'] .ch-cl-deck .ch-cl-card__week > span.is-on {
-    --ch-selected-tint: var(--ch-tile-bg);
     background: var(--ch-selected-tint);
     box-shadow: var(--ch-classes-shadow-3);
   }
