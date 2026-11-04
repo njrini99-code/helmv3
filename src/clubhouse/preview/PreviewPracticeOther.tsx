@@ -26,7 +26,7 @@ export function PreviewPracticeFormat({ state }: { state?: string }) {
   if (state === 'see') {
     return (
       <main className="ch-page">
-        <PracticePlanSheet plan={toSheetModel({ body: PP_PLAN_PART.draft.body, title: 'Thursday practice', team: 'Demo University Golf', start: new Date('2026-11-05T19:00:00Z'), end: new Date('2026-11-05T22:00:00Z'), zone: 'America/New_York', coaches: [], names: new Map(), state: 'Published' }, 'coach')} />
+        <PracticePlanSheet plan={toSheetModel({ body: PP_PLAN_PART.draft.body, title: 'Thursday practice', team: 'Demo University Golf', start: new Date('2026-11-05T19:00:00Z'), end: new Date('2026-11-05T22:00:00Z'), zone: 'America/New_York', coaches: [...PP_COACHES], names: new Map(PP_NAMES), state: 'Published' }, 'coach')} />
         <div className="ch-cpv">
           <div className="acts is-pad">
             <button type="button" className="btn-g is-fill">Share PDF</button>

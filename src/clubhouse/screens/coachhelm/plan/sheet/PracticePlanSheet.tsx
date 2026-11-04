@@ -40,8 +40,8 @@ export function PracticePlanSheet({ plan, density = 'phone' }: { plan: PlanSheet
                   Group {g.letter}
                 </span>
                 <ul>
-                  {g.names.map((n) => (
-                    <li key={n}>{n}</li>
+                  {g.names.map((n, i) => (
+                    <li key={`${n}-${i}`}>{n}</li>
                   ))}
                 </ul>
               </div>

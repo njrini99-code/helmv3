@@ -289,7 +289,7 @@ export function MovedCard({ d, failed, pictures }: { d: ChReadDetail; failed: bo
   const vals = [m.from, m.to, ...(m.ref ? [m.ref.value] : [])];
   const min = Math.min(...vals);
   const max = Math.max(...vals);
-  const y = (v: number) => 12 + (1 - (v - min) / (max - min || 1)) * (H - 40);
+  const y = (v: number) => 24 + (1 - (v - min) / (max - min || 1)) * (H - 54);
   const f = (v: number) => String(Math.round(v * 10) / 10);
   return (
     <Card id="cmoved" title="How it has moved" meta="Last change">
@@ -305,10 +305,10 @@ export function MovedCard({ d, failed, pictures }: { d: ChReadDetail; failed: bo
             <line x1={l} x2={r} y1={y(m.from)} y2={y(m.to)} stroke="var(--loss-fill)" strokeWidth="2.5" strokeLinecap="round" />
             <circle cx={l} cy={y(m.from)} r="5" fill="var(--card)" stroke="var(--neutral-fill)" strokeWidth="2.5" />
             <circle cx={r} cy={y(m.to)} r="6" fill="var(--loss-fill)" />
-            <text x={l} y={y(m.from) + (m.from > m.to ? -12 : 20)} textAnchor="middle" fontSize="13" fontWeight="600" fill="var(--ink)">
+            <text x={l} y={y(m.from) - 12} textAnchor="middle" fontSize="13" fontWeight="600" fill="var(--ink)">
               {f(m.from)}
             </text>
-            <text x={r} y={y(m.to) + (m.to > m.from ? -12 : 20)} textAnchor="middle" fontSize="13" fontWeight="600" fill="var(--ink)">
+            <text x={r} y={y(m.to) - 12} textAnchor="middle" fontSize="13" fontWeight="600" fill="var(--ink)">
               {f(m.to)}
             </text>
             <text x={l} y={H - 4} textAnchor="middle" fontSize="12" fill="var(--ink-3)">

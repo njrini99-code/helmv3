@@ -21,8 +21,10 @@ const RAW: Record<string, () => EvidenceInsight> = {
 };
 
 const OWNER = (q: string | undefined) => (q === 'penalties' ? HELM_PLAYERS.eli.name : q === 'putts' ? HELM_PLAYERS.jonah.name : HELM_PLAYERS.priya.name);
-const ROUNDS = (playerId: string) =>
-  new Map([[playerId, [{ id: 'r1', date: '2026-10-22', course: 'Lonnie Poole' }, { id: 'r2', date: '2026-10-15', course: 'Hilltop' }, { id: 'r3', date: '2026-10-08', course: 'Lonnie Poole' }, { id: 'r4', date: '2026-10-01', course: 'Hasentree' }]]]);
+const ROUNDS = () =>
+  new Map(
+    ([['r1', '2026-10-22', 'Lonnie Poole', 74, 2], ['r2', '2026-10-15', 'Hilltop', 76, 4], ['r3', '2026-10-08', 'Lonnie Poole', 72, 0], ['r4', '2026-10-01', 'Hilltop', 75, 3]] as const).map(([id, round_date, course_name, total_score, score_to_par]) => [id, { id, round_date, course_name, total_score, score_to_par, holes_played: 18 }]),
+  );
 
 /** A real row through the real shapers, so the preview can't draw what the page can't. The fixtures are today's builders with the engine's depth on them; the design page's own copy isn't in them. */
 export function previewReadView(q: string | undefined, role: 'coach' | 'player', gone = false, state?: string): ChReadView {
@@ -30,7 +32,7 @@ export function previewReadView(q: string | undefined, role: 'coach' | 'player',
   const name = OWNER(q);
   const first = name.split(' ')[0] as string;
   const viewer = role === 'coach' ? ({ role: 'coach', first } as const) : ({ role: 'player' } as const);
-  const inputs = { rounds: ROUNDS(raw.player_id) as never, focusAreas: [] as never, goals: [] as never, themes: null };
+  const inputs = { rounds: ROUNDS() as never, focusAreas: [] as never, goals: [] as never, themes: null };
   const deepOf = (r: EvidenceInsight) => {
     const base = toChInsight(r, { tour: PREVIEW_TOUR, viewer, ...(state === 'assigned' && r.id === raw.id ? { assigned: 'active' as const } : {}) } as never);
     return toChDeepInsight(r, base, inputs, (s) => s, role);

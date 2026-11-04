@@ -1,7 +1,7 @@
 import type { UIMessage } from 'ai';
 import type { ActionProposal, ActionReceipt } from '@/lib/coachhelm/v3/chat/action-types';
 import type { PlanCardPreview } from '../screens/coachhelm/plan/PlanCard';
-import { PP_PLAN_PART } from './fixtures-practice-plan';
+import { PP_COACHES, PP_NAMES, PP_PLAN_PART } from './fixtures-practice-plan';
 
 /** The design page's flows (ask/redesign FL): the words a coach said and the draft each produces, as real parts on a real turn. */
 type Flow = { q: string; scope: string; tool: string; action: string; title: string; facts: Array<[string, string]>; on: string; done: string; publish?: ActionProposal['publish'] };
@@ -54,7 +54,7 @@ const BRIEF = {
 };
 const assistant = (parts: unknown[]) => ({ id: 'a1', role: 'assistant', parts }) as unknown as UIMessage;
 const PLAN_Q = user('Build Thursday’s practice around putting');
-const planPart = (id: string, data: object) => ({ type: 'data-practice-plan', id, data: { ...data, saveOn: true } });
+const planPart = (id: string, data: object) => ({ type: 'data-practice-plan', id, data: { ...data, saveOn: true, sheet: { team: 'Demo University Golf', start: '2026-11-05T19:00:00Z', end: '2026-11-05T22:00:00Z', zone: 'America/New_York', coaches: [...PP_COACHES], names: Object.fromEntries(PP_NAMES) } } });
 const redrafted = { ...PP_PLAN_PART, draft: { ...PP_PLAN_PART.draft, version: PP_PLAN_PART.draft.version + 1, body: { ...PP_PLAN_PART.draft.body, variants: { ...PP_PLAN_PART.draft.body.variants, main: { ...PP_PLAN_PART.draft.body.variants.main, blocks: PP_PLAN_PART.draft.body.variants.main.blocks.map((b, i) => (i === 0 ? { ...b, len: b.len + 15 } : b)) } } } } };
 
 export interface AskIdRoute {
