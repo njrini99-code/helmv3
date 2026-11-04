@@ -19,6 +19,7 @@ import { useRefresh } from '../../lib/use-refresh';
 import { EmptyState } from '../../ui/States';
 import { haptic } from '../../lib/haptics';
 import { formatFixed, formatPct, NO_DATA } from '../../lib/format';
+import { NoData } from '../../ui/NoData';
 import { floorRate, sampleState } from '../../lib/stats-signal';
 import { Compare, CupMiss, FairwayStrip, GreenMiss, Ladder, ParTiles } from './charts';
 import { PuttBands } from './PuttBands';
@@ -112,6 +113,7 @@ function ReadsLineNow({ reads, area }: { reads: ChStatsReads | undefined; area: 
 }
 
 /** What a figure that has nothing behind it says in place of a bare dash (the phone's brief): the reason, in a few words. */
+const isNone = (v: unknown) => v === NO_DATA;
 const NONE_REASON: Record<string, string> = {
   'scoring:Scoring average': 'No scores yet',
   'scoring:Birdies / round': 'No holes scored',
@@ -176,12 +178,12 @@ function Sec({
       <ShsCard title="The figures" meta={detail.figuresMeta}>
         <dl className="ch-shs-m4">
           {figs.map(([l, v, n, t, needs]) => {
-            const reason = needs ?? (v === NO_DATA ? NONE_REASON[`${id}:${l}`] : undefined);
+            const reason = needs ?? (isNone(v) ? NONE_REASON[`${id}:${l}`] : undefined);
             return (
               <div key={l}>
                 <dt className="t">{l}</dt>
-                <dd className={`v${t ? ` ch-shs-${t}` : ''}${reason ? ' ch-shs-none' : ''}`}>{reason ? NO_DATA : v}</dd>
-                {(reason || (n && v !== NO_DATA)) && <dd className="m">{reason ?? n}</dd>}
+                <dd className={`v${t ? ` ch-shs-${t}` : ''}${reason ? ' ch-shs-none' : ''}`}>{reason ? <NoData /> : v}</dd>
+                {(reason || (n && !isNone(v))) && <dd className="m">{reason ?? n}</dd>}
               </div>
             );
           })}
@@ -235,7 +237,7 @@ function Sec({
         </header>
         <dl className="ch-gm__figs">
           {figs.map(([l, v, n, t, needs]) => {
-            const reason = needs ?? (v === NO_DATA ? NONE_REASON[`${id}:${l}`] : undefined);
+            const reason = needs ?? (isNone(v) ? NONE_REASON[`${id}:${l}`] : undefined);
             return (
               <div key={l}>
                 <dt>{l}</dt>

@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import { act, cleanup, renderHook } from '@testing-library/react';
-import { afterEach, beforeEach, describe, expect, it } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { useStatsDetail, type StatsArrivalState } from '../use-stats-detail';
 
 const at = (url: string, state: unknown = null) => window.history.replaceState(state, '', url);
@@ -57,11 +57,13 @@ describe('useStatsDetail', () => {
 
   it('arrival replaces then pushes, so one Back reaches the summary', async () => {
     at('/golf/dashboard/stats?player=p1&tab=rounds');
-    const before = window.history.length;
+    // Counted on the call: history.length is not a count of pushes once an earlier test has gone Back.
+    const pushed = vi.spyOn(window.history, 'pushState');
     const { result } = hook({ tab: 'rounds' });
     expect(result.current.detail).toBe('rounds');
     expect(window.location.hash).toBe('#sd-rounds');
-    expect(window.history.length).toBe(before + 1);
+    expect(pushed).toHaveBeenCalledTimes(1);
+    pushed.mockRestore();
     const pop = popped();
     act(() => result.current.close());
     await act(async () => pop);

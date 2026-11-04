@@ -1,5 +1,6 @@
 import type { CSSProperties } from 'react';
-import { formatSigned, NO_DATA } from '../../lib/format';
+import { formatSigned } from '../../lib/format';
+import { NoData } from '../../ui/NoData';
 import { sgScale } from '../../lib/sg';
 import { divergeBar, sgTone, type ShsTone } from './shs-figures';
 
@@ -11,7 +12,7 @@ export function MiniDiverging({ rows, ready = true, fixedScale }: { rows: Readon
         {rows.map((r) => (
           <div className="ch-shs-mrow" key={r.label}>
             <span className="lab">{r.label}</span>
-            <span className="val ch-shs-none">{NO_DATA}</span>
+            <span className="val ch-shs-none"><NoData /></span>
           </div>
         ))}
       </div>
@@ -65,7 +66,7 @@ export function MiniRails({ rows, caption }: { rows: readonly MiniRailRow[]; cap
               {r.value != null && <i className={`ch-shs-fill-${railTone(r.value, r.tour)}${r.early ? ' is-early' : ''}`} data-ch-grow="" style={{ width: `${Math.max(0, Math.min(100, r.value))}%` }} />}
               {r.tour != null && <span className="ch-shs-tour" style={{ left: `${Math.max(0, Math.min(100, r.tour))}%` }} />}
             </span>
-            <span className={'v ch-num' + (r.value == null ? ' ch-shs-none' : '')}>{r.value == null ? NO_DATA : `${Math.round(r.value)}%`}</span>
+            <span className={'v ch-num' + (r.value == null ? ' ch-shs-none' : '')}>{r.value == null ? <NoData /> : `${Math.round(r.value)}%`}</span>
           </div>
         ))}
       </div>

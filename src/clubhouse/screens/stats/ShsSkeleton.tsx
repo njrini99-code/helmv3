@@ -1,3 +1,4 @@
+import { TERMS } from '../../lib/glossary';
 import '../../styles/stats-redesign.css';
 
 /** Each card keeps its loaded height (06 S-STATS loading, 393 wide), so nothing shifts as the page lands (08 criterion 93). */
@@ -16,7 +17,7 @@ const SECTIONS: ReadonlyArray<{ name: string; cards: ReadonlyArray<{ title: stri
       { title: 'Strokes gained', height: 323 },
       { title: 'Off the tee', height: 256 },
       { title: 'Approach', height: 413 },
-      { title: 'Short game', height: 262 },
+      { title: TERMS.shortGame.long, height: 262 },
       { title: 'Putting', height: 332 },
     ],
   },

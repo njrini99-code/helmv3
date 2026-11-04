@@ -2,7 +2,8 @@
 
 import { useState } from 'react';
 import type { ChCompare } from '../../data/stats-figures';
-import { formatFixed, NO_DATA } from '../../lib/format';
+import { formatFixed } from '../../lib/format';
+import { NoData } from '../../ui/NoData';
 import { halvesTone } from '../../lib/stats-signal';
 import { ShsArrow, ShsCard, ShsChevron, ShsPill } from './SummaryCard';
 import { monoPath, type ShsTone } from './shs-figures';
@@ -130,7 +131,7 @@ export function AgainstBefore({ compare, rows, how, previous }: { compare: ChCom
               <div className="ch-shs-db" key={r.label}>
                 <div>
                   <div className="l">{r.label}</div>
-                  <div className="nums">{NO_DATA}</div>
+                  <div className="nums"><NoData /></div>
                 </div>
               </div>
             );
