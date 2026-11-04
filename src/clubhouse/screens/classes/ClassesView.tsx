@@ -394,7 +394,7 @@ export function ClassesView({ data, writes, statusWrites, crh = false }: { data:
       {/* Phone: the section's create action is the top bar's plus (B10.1), shown when the head's Add class would be: a
           first run's empty state carries its own, and a failed read keeps it (CH-12201). */}
       {phone && (
-        <PhoneTop title="Classes" start action={crh && (data.classes.error || !nothing) ? <PhoneIconAction icon={Plus} label="Add or import a class" onClick={() => setAddMenu(true)} /> : data.classes.error || !nothing ? <PhoneIconAction icon={Plus} label="Add class" onClick={startAdd} /> : undefined} />
+        <PhoneTop title="Classes" start action={crh ? <PhoneIconAction icon={Plus} label="Add or import a class" onClick={() => setAddMenu(true)} /> : data.classes.error || !nothing ? <PhoneIconAction icon={Plus} label="Add class" onClick={startAdd} /> : undefined} />
       )}
       <header className="ch-cl-h" data-canopy-head={phone || crh ? undefined : ''}>
         <div>

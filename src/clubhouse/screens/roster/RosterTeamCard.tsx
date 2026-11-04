@@ -56,12 +56,12 @@ export function RosterTeamCard(props: Props) {
       )}
       {coach?.topFive && (
         <div className="ch-rs-tcard__f" role="group" aria-label={`Top five average ${formatFixed(coach.topFiveMean)}`}>
-          <span>Top five</span>
           <span className="ch-rs-tcard__coins" aria-hidden="true">
             {coach.topFive.map((p) => (
               <Avatar key={p.id} name={p.name} id={p.id} size="sm" year={yearKeyOf(p.gradYear, clock)} />
             ))}
           </span>
+          <span>Top five</span>
           <em className="ch-num">{formatFixed(coach.topFiveMean)} avg</em>
         </div>
       )}

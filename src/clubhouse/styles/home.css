@@ -5234,6 +5234,12 @@ html[data-fw-theme='dark'] .ch-h-form__bar {
   .ch-h-main[data-ch-crh='on'] .ch-hm-legs__cell {
     box-shadow: none;
   }
+  .ch-h-main[data-ch-crh='on'] .ch-hm-legs .is-gain, .ch-h-main[data-ch-crh='on'] .ch-hm-legs__grid .is-gain {
+    color: var(--ch-gain);
+  }
+  .ch-h-main[data-ch-crh='on'] .ch-hm-legs__grid .is-loss {
+    color: var(--ch-loss);
+  }
   .ch-h-main[data-ch-crh='on'] .ch-hm-legs__cell + .ch-hm-legs__cell {
     box-shadow: inset var(--ch-hairline-w) 0 0 var(--ch-separator);
   }

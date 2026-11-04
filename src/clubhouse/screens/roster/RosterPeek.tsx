@@ -150,13 +150,15 @@ function PeekBody({
 
   return (
     <>
-      <div className="ch-rs-peek__top">
-        <span className={`ch-rs-status is-${p.status}`}>
-          <i aria-hidden="true" />
-          {p.status === 'active' ? 'Active' : 'Inactive'}
-        </span>
-        <IconButton icon={X} label="Close" size="sm" onClick={onClose} />
-      </div>
+      {!crh && (
+        <div className="ch-rs-peek__top">
+          <span className={`ch-rs-status is-${p.status}`}>
+            <i aria-hidden="true" />
+            {p.status === 'active' ? 'Active' : 'Inactive'}
+          </span>
+          <IconButton icon={X} label="Close" size="sm" onClick={onClose} />
+        </div>
+      )}
       <div className="ch-rs-peek__hero">
         <span className="ch-rs-peek__av">
           <Avatar name={p.name} id={p.id} size={crh ? 76 : 96} year={crh ? yearKeyOf(p.gradYear, clock) : null} dim={crh && p.status === 'inactive'} />
@@ -195,7 +197,7 @@ function PeekBody({
         )}
       </div>
 
-      {facts.length > 0 && (
+      {!crh && facts.length > 0 && (
         <dl className="ch-rs-peek__facts">
           {facts.map((f) => (
             <div key={f.label}>
@@ -217,9 +219,11 @@ function PeekBody({
           </div>
         ))}
       </dl>
-      <LegsCaption p={p} />
+      {crh && <FormLine data={p.trend} width={292} height={70} earlyBelow={3} label={`${p.name}, last rounds: ${p.trend.join(', ') || 'none'}`} />}
+      {/* The rest lives on the full profile (06 7.12: identity, buttons, four figures, chart, the link). */}
+      {!crh && <LegsCaption p={p} />}
 
-      <div className="ch-rs-peek__sec">
+      {!crh && <div className="ch-rs-peek__sec">
         <div className="ch-rs-peek__l">
           <b>Form</b>
           <span>
@@ -230,9 +234,9 @@ function PeekBody({
         <p className="ch-rs-peek__note" data-ch-code={p.trend.length ? undefined : 'CH-3305'}>
           {p.trend.length ? FORM_NOTE[p.form] : 'Form appears once rounds are posted.'}
         </p>
-      </div>
+      </div>}
 
-      {p.recent.length > 0 && (
+      {!crh && p.recent.length > 0 && (
         <div className="ch-rs-peek__sec">
           <div className="ch-rs-peek__l">
             <b>Recent rounds</b>
@@ -251,7 +255,7 @@ function PeekBody({
         </div>
       )}
 
-      <div className="ch-rs-peek__sec">
+      {!crh && <div className="ch-rs-peek__sec">
         <div className="ch-rs-peek__l">
           <b>Development</b>
         </div>
@@ -265,22 +269,22 @@ function PeekBody({
             {devCounts}
           </div>
         )}
-      </div>
+      </div>}
 
-      <HelmBlock p={p} helm={helm} />
+      {!crh && <HelmBlock p={p} helm={helm} />}
 
-      <AvailabilityPanel key={`avail-${p.id}`} p={p} control={availability} />
+      {!crh && <AvailabilityPanel key={`avail-${p.id}`} p={p} control={availability} />}
 
-      <CoachNote key={p.id} p={p} locked={notesLocked} onSaved={onNoteSaved} />
+      {!crh && <CoachNote key={p.id} p={p} locked={notesLocked} onSaved={onNoteSaved} />}
 
       {profileHref && (
         <div className="ch-rs-peek__foot">
-          <Button variant="primary" rightIcon={ArrowRight} href={profileHref}>
+          <Button variant={crh ? 'secondary' : 'primary'} rightIcon={crh ? undefined : ArrowRight} href={profileHref}>
             Open full profile
           </Button>
         </div>
       )}
-      {p.joined && <span className="ch-rs-peek__since">{p.joined}</span>}
+      {!crh && p.joined && <span className="ch-rs-peek__since">{p.joined}</span>}
     </>
   );
 }

@@ -40,7 +40,7 @@ import { useJoinRequests } from './useJoinRequests';
 import { useCopyText } from './useCopyText';
 import { availabilityCopy, RosterPeek, type AvailabilityControl } from './RosterPeek';
 import { RosterPhone } from './RosterPhone';
-import { FormStubs, RosterPhoneCrh } from './RosterPhoneCrh';
+import { FormStubs, RequestsRow, RequestsSheetCrh, RosterPhoneCrh } from './RosterPhoneCrh';
 import { RosterLeaders } from './RosterLeaders';
 import { RosterTeamCard } from './RosterTeamCard';
 import { useDeepLinkSheet } from '../../shell/use-deep-link-sheet';
@@ -167,6 +167,7 @@ export function Roster({ data, crh = false }: { data: ChRoster; /** `clubhouse_c
   // Mid-sentence the team is its name, or "your team" when the team row didn't load (P003 #8).
   const teamRef = teamInSentence(data);
   const jr = useJoinRequests(teamRef, data.requests, crh);
+  const [requestsOpen, setRequestsOpen] = useState(false);
   const phone = useChPhone();
   // P-10: the team's class lines (flag off: nothing is fetched and the map is empty). `hold` keeps them still under a finger.
   const { lines: classLines, press: hold } = useRosterClassLines(data.teamId, players);
@@ -561,9 +562,9 @@ export function Roster({ data, crh = false }: { data: ChRoster; /** `clubhouse_c
   const failed = rosterFailedParts(data);
   const covered = failed.length > 1;
   return (
-    <main className={'ch-rs' + (crh ? ' ch-rsd' : '')} data-canopy="" data-ch-crh={crh ? 'on' : undefined}>
+    <main className={'ch-rs' + (crh ? ' ch-rsd' : '')} data-canopy={crh ? undefined : ''} data-ch-crh={crh ? 'on' : undefined}>
       {crh && <RosterDayRollover clock={data.clock} />}
-      <header className="ch-rs-head" data-canopy-head="tight">
+      <header className="ch-rs-head" data-canopy-head={crh ? undefined : 'tight'}>
         <div>
           <span className="ch-rs-team">
             <span className="ch-rs-team__name">{[data.teamName, data.season].filter(Boolean).join(' · ')}</span>
@@ -598,7 +599,7 @@ export function Roster({ data, crh = false }: { data: ChRoster; /** `clubhouse_c
         </div>
         <div className="ch-rs-head__act">
           {players.length > 0 && (
-            <Button variant="ghost" leftIcon={Download} onClick={exportCsv}>
+            <Button variant={crh ? 'secondary' : 'ghost'} leftIcon={Download} onClick={exportCsv}>
               Export
             </Button>
           )}
@@ -621,7 +622,14 @@ export function Roster({ data, crh = false }: { data: ChRoster; /** `clubhouse_c
       )}
 
       <SectionBoundary surface="roster.requests" label="Join requests" code="CH-3204">
-        <RosterRequests ref={requestsRef} teamName={teamRef} jr={jr} error={data.requestsError} covered={covered} onRetry={() => router.refresh()} />
+        {crh && !data.requestsError ? (
+          <div ref={requestsRef as never} className="ch-rsd-reqs">
+            <RequestsRow jr={jr} error={false} covered={covered} clock={data.clock} onRetry={() => router.refresh()} onOpen={() => setRequestsOpen(true)} />
+            <RequestsSheetCrh open={requestsOpen} atRest={false} onClose={() => setRequestsOpen(false)} data={data} jr={jr} clock={data.clock} />
+          </div>
+        ) : (
+          <RosterRequests ref={requestsRef} teamName={teamRef} jr={jr} error={data.requestsError} covered={covered} onRetry={() => router.refresh()} />
+        )}
       </SectionBoundary>
 
       {data.statsError && (
@@ -924,9 +932,9 @@ function RosterList({
               <SortHeader k="hcp" sort={sortBy} onSort={onSort} end>
                 HCP
               </SortHeader>
-              <span role="columnheader" className="r">SG / rd</span>
+              <span role="columnheader" className="r">{crh ? 'SG/rd' : 'SG / rd'}</span>
               <SortHeader k="rounds" sort={sortBy} onSort={onSort} end>
-                Rounds
+                {crh ? 'Rds' : 'Rounds'}
               </SortHeader>
               <span role="columnheader">
                 <span className="ch-sr-only">Actions</span>

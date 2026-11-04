@@ -432,7 +432,7 @@ export function RosterRowCrh({
 }
 
 /** The Join requests row (06 7.4): up to three coins, a "+n" coin past that, the names, a badge and a chevron. Absent with no request. */
-function RequestsRow({ jr, error, covered, clock, onRetry, onOpen }: { jr: ChJoinRequestsState; error: boolean; covered: boolean; clock: RosterClock; onRetry: () => void; onOpen: () => void }) {
+export function RequestsRow({ jr, error, covered, clock, onRetry, onOpen }: { jr: ChJoinRequestsState; error: boolean; covered: boolean; clock: RosterClock; onRetry: () => void; onOpen: () => void }) {
   if (error) return <InlineNotice code="CH-3203" title="Join requests didn’t load" body="Pending requests are safe. Try again." onRetry={onRetry} covered={covered} />;
   const n = jr.reqs.length;
   if (!n) return null;
@@ -465,7 +465,7 @@ function RequestsRow({ jr, error, covered, clock, onRetry, onOpen }: { jr: ChJoi
  * only with two or more. Opened by a link with none waiting, it says so. The last request handled here closes it, 300ms after the row
  * has faded (M-CRH-36). A decided row fades and the rows below close up (ListPresence).
  */
-function RequestsSheetCrh({ open, atRest, onClose, data, jr, clock }: { open: boolean; atRest: boolean; onClose: () => void; data: ChRoster; jr: ChJoinRequestsState; clock: RosterClock }) {
+export function RequestsSheetCrh({ open, atRest, onClose, data, jr, clock }: { open: boolean; atRest: boolean; onClose: () => void; data: ChRoster; jr: ChJoinRequestsState; clock: RosterClock }) {
   const copy = useCopyText();
   const n = jr.reqs.length;
   const had = useRef(n > 0);
