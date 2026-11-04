@@ -134,7 +134,7 @@ export function HomePhone({ data, now: frozen, live, crh = false }: { crh?: bool
         </SectionBoundary>
       </div>
 
-      <RoundSheet round={open} holesError={data.latestRounds.holesError} onClose={() => setOpen(null)} />
+      <RoundSheet crh={crh} round={open} holesError={data.latestRounds.holesError} onClose={() => setOpen(null)} />
     </main>
   );
 }
@@ -550,7 +550,7 @@ export function roundPeek(r: ChLatestRound, rows: ChCoachHome['leaderboard']['ro
 }
 
 /** A latest round's card (board 05): the figures, then Out and In; Message and the player's stats. */
-function RoundSheet({ round, holesError, onClose }: { round: ChLatestRound | null; holesError: boolean; onClose: () => void }) {
+function RoundSheet({ crh = false, round, holesError, onClose }: { crh?: boolean; round: ChLatestRound | null; holesError: boolean; onClose: () => void }) {
   const message = round ? rebuiltHref(`/golf/dashboard/messages?player=${round.playerId}`) : null;
   const recap = round ? roundHref(round.id, 'coach') : null;
   const stats = round ? rebuiltHref(`/golf/dashboard/stats?player=${round.playerId}`) : null;
@@ -560,6 +560,7 @@ function RoundSheet({ round, holesError, onClose }: { round: ChLatestRound | nul
     <Modal
       open={!!round}
       onClose={onClose}
+      detent={crh ? 0.74 : undefined}
       title={round?.playerName ?? ''}
       description={round?.meta}
       footer={
@@ -592,7 +593,7 @@ function RoundSheet({ round, holesError, onClose }: { round: ChLatestRound | nul
       }
     >
       {round && (
-        <div className="ch-hm-sheet">
+        <div className={'ch-hm-sheet' + (crh ? ' is-crh' : '')}>
           <dl className="ch-hm-strip ch-well-soft">
             <div>
               <dt>Score</dt>

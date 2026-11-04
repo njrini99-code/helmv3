@@ -4815,21 +4815,109 @@ html[data-fw-theme='dark'] .ch-h-form__bar {
   animation: none;
 }
 
-/* Coach Home, desktop (06 §11.4): a hero card, then cards on the flat canvas. */
+/* Coach Home, desktop (06 §11.4): a hero card over the flat canvas; desktop type is fixed. */
 @media (min-width: 821px) {
-  .ch-h-main[data-ch-crh='on'] .ch-h-head {
+  .ch-h-herocard {
     display: grid;
-    gap: 8px;
+    grid-template-columns: minmax(0, 1fr) 380px;
+    gap: 24px;
     padding: 22px 24px;
     border-radius: 16px;
     background: var(--ch-frame);
     color: var(--ch-on-green-plate);
   }
-  .ch-h-main[data-ch-crh='on'] .ch-h-head h1 {
+  .ch-h-herocard h1 {
     font: 650 36px / 1.05 var(--ch-font-sans);
     color: var(--ch-on-green-plate);
   }
-  .ch-h-main[data-ch-crh='on'] :is(.ch-h-head__date, .ch-h-head__sub) {
+  .ch-h-herocard :is(.ch-h-head__date, .ch-h-head__sub) {
     color: var(--ch-on-green-2);
   }
+  .ch-h-herocard__next {
+    align-self: start;
+    display: grid;
+    gap: 4px;
+    padding: 14px 16px;
+    border-radius: 14px;
+    background: var(--ch-on-green-glass, rgb(255 255 255 / 0.08));
+  }
+  .ch-h-herocard__next > span {
+    font: 600 13px / 1.2 var(--ch-font-sans);
+    color: var(--ch-on-green-2);
+  }
+  .ch-h-herocard__next > b {
+    font: 600 22px / 1.2 var(--ch-font-sans);
+  }
+  .ch-h-herocard__next > p {
+    margin: 0;
+    font: 400 15px / 1.3 var(--ch-font-sans);
+    color: var(--ch-on-green-2);
+  }
+  .ch-h-main[data-ch-crh='on'] .ch-h-grid {
+    display: grid;
+    grid-template-columns: minmax(0, 1.35fr) minmax(0, 1fr);
+    gap: 18px;
+  }
+}
+
+/* Coach Home, phone: first run, week tiles, loading (06 §11.2, 11.3). */
+.ch-hm-setup {
+  overflow: hidden;
+  border-radius: 16px;
+  background: var(--ch-card-bg);
+  box-shadow: var(--ch-card-shadow);
+}
+.ch-hm-setup h2 {
+  margin: 0;
+  padding: 14px 16px 6px;
+  font: 600 calc(17 * var(--ch-type-k)) / calc(22 * var(--ch-type-k)) var(--ch-font-sans);
+}
+.ch-hm-setup__r {
+  display: grid;
+  grid-template-columns: 36px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 12px;
+  min-height: 64px;
+  padding: 10px 16px;
+  color: inherit;
+  text-decoration: none;
+}
+.ch-hm-setup__ic {
+  display: grid;
+  place-items: center;
+  width: 36px;
+  height: 36px;
+  border-radius: 10px;
+  background: var(--ch-chip-gain-bg, var(--ch-well-bg-flat));
+  color: var(--ch-accent);
+}
+.ch-hm-setup__r b {
+  display: block;
+  font: 500 calc(16 * var(--ch-type-k)) / calc(21 * var(--ch-type-k)) var(--ch-font-sans);
+}
+.ch-hm-setup__r span span {
+  display: block;
+  font: 400 calc(15 * var(--ch-type-k)) / calc(20 * var(--ch-type-k)) var(--ch-font-sans);
+  color: var(--ch-text-secondary);
+}
+.ch-hm[data-ch-crh='on'] .ch-hm-week {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  gap: 4px;
+  padding: 10px 10px 6px;
+  border-radius: 16px;
+  background: var(--ch-card-bg);
+  box-shadow: var(--ch-card-shadow);
+}
+.ch-root[data-ch-crh='on'] .ch-hm-skel__hero:not(.is-player) {
+  background: var(--ch-frame);
+}
+.ch-root[data-ch-crh='on'] .ch-hm-skel__hero:not(.is-player) .ch-skel {
+  background: rgb(255 255 255 / 0.16);
+}
+.ch-hm-sheet.is-crh .ch-hm-strip {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+.ch-hm-sheet.is-crh .ch-hm-strip dd {
+  font: 600 calc(19 * var(--ch-type-k)) / 1 var(--ch-font-sans);
 }
