@@ -67,7 +67,7 @@ export function countsForScoring(r: { round_type: string | null }): boolean {
 }
 
 export const TREND_LENGTH = 7;
-export const MIN_SG_ROUNDS = 3;
+export { MIN_SG_ROUNDS } from './season-floors';
 
 /** The zone a season turns in when the team's own isn't to hand: the one the rest of Clubhouse falls back to. */
 export const SEASON_DEFAULT_TZ = 'America/New_York';
