@@ -14,6 +14,8 @@ export interface SegOption<V extends string> {
   disabled?: boolean;
   /** A tone class on the option's key (`is-late`), for a page rule that tints the chosen one. */
   className?: string;
+  /** A `data-*` hook on the option's button. */
+  data?: Record<string, string>;
 }
 
 /**
@@ -93,6 +95,7 @@ export function Segmented<V extends string>({
             tabIndex={on ? 0 : -1}
             disabled={o.disabled}
             className={'ch-seg__b' + (on ? ' is-on' : '') + (o.className ? ` ${o.className}` : '')}
+            {...o.data}
             onClick={() => pick(o.value)}
             onKeyDown={(e) => onKey(e, i)}
           >

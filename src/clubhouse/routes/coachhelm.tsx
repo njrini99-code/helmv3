@@ -7,8 +7,13 @@ import { isTrackRecordEnabled } from '@/lib/coachhelm/v3/track-record/flag';
 import { isMondayBriefEnabled } from '@/lib/coachhelm/v3/monday-brief/flag';
 import { COURSE_TAB, isTeamBoardEnabled, TEAM_BOARD_FIRST_VIEW } from '@/lib/coachhelm/v3/team-board/flag';
 import { isReadEnabled } from '@/lib/coachhelm/v3/read/flag';
+import { isPlayerFileEnabled } from '@/lib/coachhelm/v3/player-file/flag';
+import { loadCoachPlayerFile, loadFileRoster, loadPlayerYourWeek } from '../data/coachhelm-file';
+import { FileSkeleton } from '../screens/coachhelm/file/FileSkeleton';
+import { PlayerFile } from '../screens/coachhelm/file/PlayerFile';
+import { YourWeek } from '../screens/coachhelm/file/YourWeek';
 import { loadCoachRead, loadPlayerRead } from '../data/coachhelm-read-view';
-import { PLAYER_HELM_HREF, READ_VIEW, coachPlayerHref } from '../data/coachhelm-views-shape';
+import { FILE_BYPASS, FILE_VIEW, PLAYER_HELM_HREF, READ_VIEW, coachPlayerHref, playerFileHref, type PlayerFileCard } from '../data/coachhelm-views-shape';
 import { ReadPage, ReadSkeleton } from '../screens/coachhelm/read/ReadPage';
 import { loadCoachTeamBoard } from '../data/coachhelm-team';
 import { TeamBoard } from '../screens/coachhelm/team/TeamBoard';
@@ -49,6 +54,7 @@ import '../styles/coachhelm-track.css';
 import '../styles/coachhelm-brief.css';
 import '../styles/coachhelm-team.css';
 import '../styles/coachhelm-read.css';
+import '../styles/coachhelm-file.css';
 
 /**
  * /golf/dashboard/coachhelm in Clubhouse, for coaches and players (the Fairway
@@ -68,7 +74,7 @@ import '../styles/coachhelm-read.css';
 
 /** The coach's Board or Ask. The Board's loader checks the CoachHelm gate itself; Ask's is checked here, before its read. */
 async function CoachHelmView({ coachId, teamId, ask, conversationId, initialPlayer, initialInsight }: { initialInsight?: string; coachId: string; teamId: string; ask: boolean; conversationId?: string; initialPlayer?: string }) {
-  if (!ask && isTeamBoardEnabled() && TEAM_BOARD_FIRST_VIEW === 'hole') return <TeamBoard data={await loadCoachTeamBoard({ coachId, teamId })} initialPlayer={initialPlayer} initialInsight={initialInsight} courseTab={COURSE_TAB} readOn={isReadEnabled()} />;
+  if (!ask && isTeamBoardEnabled() && TEAM_BOARD_FIRST_VIEW === 'hole') return <TeamBoard fileOn={isPlayerFileEnabled()} data={await loadCoachTeamBoard({ coachId, teamId })} initialPlayer={initialPlayer} initialInsight={initialInsight} courseTab={COURSE_TAB} readOn={isReadEnabled()} />;
   if (!ask) return <CoachBoard data={await loadCoachCoachHelm({ coachId, teamId })} initialPlayer={initialPlayer} trackRecordHref={isTrackRecordEnabled() ? COACH_TRACK_RECORD_HREF : undefined} briefHref={isMondayBriefEnabled() ? COACH_BRIEF_HREF : undefined} />;
   // Ask is CoachHelm's, so it is off when CoachHelm is off for this coach, their team or GolfHelm, as the board is: the
   // address that led here is answered with the board's own "CoachHelm is off" page, and a lookup that failed with Ask's own
@@ -89,6 +95,34 @@ async function CoachReadPage({ coachId, teamId, playerId, insight }: { coachId: 
   const voice: ChViewVoice = { role: 'coach', ...head };
   if (checked.status === 'player-off') return <ReadPage load={{ status: 'off', reason: checked.reason }} voice={voice} />;
   return <ReadPage load={await loadCoachRead({ scope: checked.scope, insightId: insight })} voice={voice} />;
+}
+
+const FILE_CARDS: readonly string[] = ['feat', 'plan', 'field', 'reads', 'sg', 'intent', 'track'];
+
+/** A coach's file on one player: state by state as `CoachPlayerPage`; the address's id is only input (coachhelm-lenses 02-PLAN 2.2). */
+async function CoachPlayerFilePage({ coachId, teamId, playerId, at, insight }: { coachId: string; teamId: string; playerId: string; at?: string; insight?: string }) {
+  const checked = await loadCoachPlayerScope({ coachId, teamId, playerId });
+  if (checked.status === 'not-member') return <CoachPlayerNotOnTeam />;
+  if (checked.status === 'failed') return <CoachPlayerFailed />;
+  if (checked.status === 'coach-off') return <CoachBoard data={emptyCoachHelm(checked.off)} />;
+  if (checked.status === 'player-off') return <DeepDive load={{ status: 'off', reason: checked.reason }} voice={{ role: 'coach', ...checked.head }} initialId={null} />;
+  const { scope } = checked;
+  const card = at && FILE_CARDS.includes(at) ? (at as PlayerFileCard) : undefined;
+  return (
+    <Suspense fallback={<FileSkeleton first={scope.head.first} />}>
+      <CoachPlayerFileRead scope={scope} at={card} insight={insight} />
+    </Suspense>
+  );
+}
+
+async function CoachPlayerFileRead({ scope, at, insight }: { scope: ChCoachPlayerScope; at?: PlayerFileCard; insight?: string }) {
+  const [load, roster] = await Promise.all([loadCoachPlayerFile({ scope }), loadFileRoster(scope)]);
+  return <PlayerFile load={load} at={at} insight={insight} roster={roster} />;
+}
+
+async function PlayerYourWeek({ playerId }: { playerId: string }) {
+  const { load } = await loadPlayerYourWeek({ playerId });
+  return <YourWeek load={load} />;
 }
 
 /** One read for a player: the session's id, never the address's; gated as `PlayerHelmView`. */
@@ -122,6 +156,7 @@ async function CoachBriefView({ coachId, teamId, section }: { coachId: string; t
  * rows; `at` opens it there (`?view=profile`, CH-13913).
  */
 async function PlayerHelmView({ playerId, drill, insight, at }: { playerId: string; drill: Exclude<PlayerHelmView, 'board'> | null; insight?: string; at?: 'game' }) {
+  if (!drill && isPlayerFileEnabled()) return <PlayerYourWeek playerId={playerId} />;
   if (!drill) return <PlayerBoard data={await loadPlayerCoachHelm({ playerId })} />;
   const gate = await loadPlayerHelmGate(playerId);
   const closed: ChViewLoad<never> | null = gate.status === 'on' ? null : gate.status === 'off' ? { status: 'off', reason: gate.reason } : { status: 'failed' };
@@ -194,7 +229,7 @@ function viewSkeleton(view: PlayerHelmView): ReactNode {
  * for a player, whose `?player=` means nothing. `?view=profile` is Game profile's old address: Standing, opened at "How you play"
  * (CH-13913), for either. `?view=ask` (with `?c=`) is the coach's Ask sub-tab. `?view=brief` (with `&section=`) is the coach's Brief.
  */
-export async function ClubhouseCoachHelmRoute({ view, player, c, insight, section, open }: { open?: string; view?: string; player?: string; c?: string; insight?: string; section?: string } = {}) {
+export async function ClubhouseCoachHelmRoute({ view, player, c, insight, section, open, at: atCard, from }: { at?: string; from?: string; open?: string; view?: string; player?: string; c?: string; insight?: string; section?: string } = {}) {
   if (view === 'development') redirect(PLAYER_HELM_DEVELOPMENT_HREF);
   const session = await getGolfSessionProfile();
   if (!session) return null;
@@ -228,6 +263,16 @@ export async function ClubhouseCoachHelmRoute({ view, player, c, insight, sectio
     }
     // A coach's view of one player: the address names the player, and the page checks it against this team before any read.
     const coachDrill = playerHelmDrill(view);
+    if (typeof player === 'string' && isPlayerFileEnabled()) {
+      if (view === FILE_VIEW) {
+        return (
+          <Suspense fallback={<FileSkeleton first={null} />}>
+            <CoachPlayerFilePage coachId={team.coachId} teamId={team.teamId} playerId={player} at={typeof atCard === 'string' ? atCard : undefined} insight={typeof insight === 'string' ? insight : undefined} />
+          </Suspense>
+        );
+      }
+      if (coachDrill && from !== FILE_BYPASS) redirect(playerFileHref(player, { card: coachDrill === 'deep-dive' ? 'reads' : 'sg', insight: typeof insight === 'string' ? insight : undefined }, true));
+    }
     if (coachDrill && typeof player === 'string') {
       return (
         <Suspense fallback={coachPlayerSkeleton(coachDrill, null, true)}>
@@ -261,6 +306,8 @@ export async function ClubhouseCoachHelmRoute({ view, player, c, insight, sectio
     );
   }
   if (session.player) {
+    // A player on a coach's file address gets their own CoachHelm, the query dropped by replace; nothing of that player loads (CP-LNS-2).
+    if (view === FILE_VIEW && isPlayerFileEnabled()) redirect(PLAYER_HELM_HREF.board);
     if (view === READ_VIEW && isReadEnabled()) {
       if (typeof insight !== 'string') redirect(PLAYER_HELM_HREF['deep-dive']);
       return (

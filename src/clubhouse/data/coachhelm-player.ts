@@ -1,3 +1,5 @@
+import { projectInsightsForPlayer } from '@/lib/coachhelm/delivery/player-projection';
+import { shapePlayerFeed } from '@/lib/coachhelm/delivery/player-feed';
 import 'server-only';
 import { getInsightsForCoach, type EvidenceInsight } from '@/app/golf/actions/insight-delivery';
 import { loadGenome } from '@/lib/coachhelm/v3/genome/loader';
@@ -7,7 +9,7 @@ import { chLogServer } from '../lib/track-server';
 import { assignedByInsight, coachTour, countCountableRounds, declinedByInsight, drillTextByInsight, earliestStaleFloor, handled, loadCoachHelmGate, loadPlayerHelmGate, loadVisible, newestRounds, PLAYER_FEED_LIMIT, type CoachHelmGate } from './coachhelm';
 import { isOpenFinding, kindOf } from './coachhelm-classify';
 import { EMPTY_DIVE, readPlans, readRounds, readThemes } from './coachhelm-dive';
-import { diveCounts, exampleRoundIds, orderDive, roundIdsToRead, themesByCategory, toChDeepInsight, toDiveCleared, type ChDeepDive } from './coachhelm-dive-shape';
+import { diveCounts, exampleRoundIds, orderDive, roundIdsToRead, themesByCategory, toChDeepInsight, toDiveCleared, type ChDeepInsight, type ChDeepDive } from './coachhelm-dive-shape';
 import { readEngineFlags, readFocusVerdicts } from './coachhelm-engine';
 import { shapeReadsLifecycle } from './coachhelm-engine-shape';
 import { toChInsight } from './coachhelm-map';
@@ -168,10 +170,10 @@ async function openReads(supabase: Supabase, scope: ChCoachPlayerScope): Promise
  * The coach's Standing of this player: the player's own loader (`loadPlayerStanding`, which reads the standing map through the
  * service client and keeps only this player's rows) given the scope's id and the coach's voice, and the open read behind each metric.
  */
-export async function loadCoachPlayerStanding(input: { scope: ChCoachPlayerScope }): Promise<ChViewLoad<ChStanding>> {
+export async function loadCoachPlayerStanding(input: { scope: ChCoachPlayerScope; feed?: EvidenceInsight[] }): Promise<ChViewLoad<ChStanding>> {
   const { scope } = input;
   const supabase = await createClient();
-  const [standing, reads] = await Promise.all([loadPlayerStanding({ playerId: scope.playerId, viewer: coachViewer(scope), feed: () => getInsightsForCoach(scope.coachId, { player_id: scope.playerId, limit: PLAYER_FEED_LIMIT, includeMore: true }) }), openReads(supabase, scope)]);
+  const [standing, reads] = await Promise.all([loadPlayerStanding({ playerId: scope.playerId, viewer: coachViewer(scope), feed: input.feed ? () => Promise.resolve(input.feed!) : () => getInsightsForCoach(scope.coachId, { player_id: scope.playerId, limit: PLAYER_FEED_LIMIT, includeMore: true }) }), openReads(supabase, scope)]);
   if (standing.status !== 'ready') return standing;
   return { status: 'ready', data: { ...standing.data, ...(reads ? { reads } : {}) } };
 }
@@ -189,15 +191,23 @@ export async function loadCoachPlayerDeepDive(input: { scope: ChCoachPlayerScope
 }
 
 /** The Deep dive's one read, with the raw rows the read view needs and the page drops (coachhelm-read 02-PLAN 3.4). */
-export async function coachDiveCore(input: { scope: ChCoachPlayerScope }, opts: { exampleRounds?: boolean } = {}): Promise<{ load: ChViewLoad<ChDeepDive>; raw: ReadonlyMap<string, EvidenceInsight> }> {
+export async function coachDiveCore(input: { scope: ChCoachPlayerScope }, opts: { exampleRounds?: boolean; lens?: boolean } = {}): Promise<{ load: ChViewLoad<ChDeepDive>; raw: ReadonlyMap<string, EvidenceInsight>; lens: ChDeepInsight[] | null }> {
   let raw: ReadonlyMap<string, EvidenceInsight> = new Map();
-  const load = await coachDiveLoad(input, opts, (m) => {
-    raw = m;
-  });
-  return { load, raw };
+  let lens: ChDeepInsight[] | null = null;
+  const load = await coachDiveLoad(
+    input,
+    opts,
+    (m) => {
+      raw = m;
+    },
+    (l) => {
+      lens = l;
+    },
+  );
+  return { load, raw, lens };
 }
 
-async function coachDiveLoad(input: { scope: ChCoachPlayerScope }, opts: { exampleRounds?: boolean }, keep: (raw: ReadonlyMap<string, EvidenceInsight>) => void): Promise<ChViewLoad<ChDeepDive>> {
+async function coachDiveLoad(input: { scope: ChCoachPlayerScope }, opts: { exampleRounds?: boolean; lens?: boolean }, keep: (raw: ReadonlyMap<string, EvidenceInsight>) => void, keepLens: (lens: ChDeepInsight[]) => void): Promise<ChViewLoad<ChDeepDive>> {
   const { scope } = input;
   const { playerId } = scope;
   try {
@@ -260,6 +270,28 @@ async function coachDiveLoad(input: { scope: ChCoachPlayerScope }, opts: { examp
         return toChDeepInsight(raw, base, { rounds: rounds ?? new Map(), focusAreas: plans?.focusAreas ?? [], goals: plans?.goals ?? [], themes }, say, 'coach');
       }),
     );
+    if (opts.lens) {
+      // "As {first} sees it": the player's feed, shaped and projected as theirs is, in their words. Built from the rows this coach's read
+      // already holds: no `getInsightsForPlayer`, no exposure (a preview must never tick "Shown to {first}"; coachhelm-lenses R1).
+      const pv = { role: 'player' } as const;
+      const rows = projectInsightsForPlayer((await shapePlayerFeed(supabase, playerId, drawn, { limit: PLAYER_FEED_LIMIT })).shown);
+      const seen = shapeReadsLifecycle(rows, flags.recheck, pv, now);
+      keepLens(
+        seen.kept.map((r) => {
+          const base = toChInsight(r, {
+            drillText: drills.texts.get(r.id) ?? null,
+            assigned: assigned.byInsight.get(r.id) ?? null,
+            declined: declined.ids.has(r.id),
+            tour: tour.baseline,
+            newestRound,
+            viewer: pv,
+            engine: { flags, lifecycle: seen.byId.get(r.id) ?? null, focus: focus.get(r.id) ?? null, now, viewer: pv },
+          });
+          // Never the likely cause in the player's words (Read CR0): the lens has no diagnosis at all.
+          return { ...toChDeepInsight(r, base, { rounds: rounds ?? new Map(), focusAreas: plans?.focusAreas ?? [], goals: [], themes }, (t: string) => speak(t, pv), 'player'), diagnosis: null };
+        }),
+      );
+    }
     const missing = boardMissing({ drills: drills.error, assigned: assigned.error, declined: declined.error, newest: newest.error, tour: tour.error });
     return {
       status: 'ready',

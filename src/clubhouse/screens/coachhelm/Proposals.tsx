@@ -23,7 +23,7 @@ import type { ChPlayerWrites } from './writes';
  * "Tell coach why", and the decline is written when Undo stops being offered (the toast's onExpire), or at once when the page is
  * left. There is no reverse of a decline to call, so Undo is the write never sent. A write that fails puts Accept and Decline back.
  */
-function ProposalRow({ p, writes, quiet = false }: { p: ChProposal; writes: ChPlayerWrites; quiet?: boolean }) {
+export function ProposalRow({ p, writes, quiet = false }: { p: ChProposal; writes: ChPlayerWrites; quiet?: boolean }) {
   const [answered, setAnswered] = useState<'accepted' | 'declined' | null>(null);
   const accept = useAction(
     'coachhelm.acceptFocusArea',

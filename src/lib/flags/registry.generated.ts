@@ -285,6 +285,23 @@ export const FLAG_REGISTRY: readonly FlagDefinition[] = [
     cleanup_plan: "Turn on in production only after coachhelm_support_v1 has written ladders (until then every brief is empty and nothing is sent) and the owner has decided to re-enable customer email. Remove the flag once the brief has served coaches for a season.",
   },
   {
+    feature_id: "coachhelm_player_file_v1",
+    owner: "golf/coachhelm",
+    purpose: "One file per player for a coach (?view=player): the lens, the coach-only cards and the player's \"Your week\". Read only beyond the writes that exist today. Off: old links keep their addresses and view=player is the board.",
+    type: "release",
+    status: "active",
+    created_at: "2026-11-03",
+    expires_at: null,
+    default: false,
+    environment: {
+      production: false,
+      preview: false,
+      development: false,
+    },
+    kill_switch_behavior: null,
+    cleanup_plan: "Remove once the coach Deep dive dossier is retired.",
+  },
+  {
     feature_id: "coachhelm_read_v1",
     owner: "golf/coachhelm",
     purpose: "The CoachHelm read as its own view (?view=read): the funnel, the cause state, how sure, how it moved, the rounds and what to do, from evidence already stored. Read only, no new writes. Off: every link keeps today's address and view=read falls through to the board.",

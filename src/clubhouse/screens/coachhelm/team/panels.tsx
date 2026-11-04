@@ -7,6 +7,8 @@ import { coachReadHref, playerFileHref, readHref } from '../../../data/coachhelm
 import type { CourseHistoryRow } from '@/lib/coachhelm/v3/team-board/course-shape';
 import { formatFixed, formatSigned } from '../../../lib/format';
 import { Icon } from '../../../ui/Icon';
+import type { ChDeepInsight } from '../../../data/coachhelm-dive-shape';
+import { CorrectionChips } from '../Corrections';
 import { FocusActions, type ChFocusActions } from '../parts';
 import { barScale } from './SpotCard';
 import { toPar } from './CourseCard';
@@ -62,6 +64,58 @@ function Comparison({ read, first }: { read: ChInsight; first: string }) {
   );
 }
 
+/** The read's own rounds, holes and why, when the host has them (06 CP shared read sheet). Each only when the read has it. */
+function ReadEvidence({ deep, penalties, coach }: { deep: ChDeepInsight; penalties?: ReadonlyArray<{ label: string; value: number }> | null; coach: boolean }) {
+  const toPar = deep.rounds.strip;
+  const strip = penalties?.length ? penalties.map((p) => p.value) : toPar;
+  const low = strip.length ? Math.min(0, ...strip) : 0;
+  const span = (strip.length ? Math.max(...strip) : 1) - low || 1;
+  const b = deep.base;
+  const meta = [b.evidence.sample, b.evidence.window, deep.firmness, b.evidence.asOf?.toLowerCase()].filter(Boolean).join(' · ');
+  return (
+    <>
+      {strip.length > 0 && (
+        <section className="card">
+          <div className="ch">
+            <h4>{penalties?.length ? `Penalties in the last ${strip.length} rounds` : `Score to par, last ${strip.length} rounds`}</h4>
+          </div>
+          <div className="ch-hf-strip" aria-hidden="true">
+            {strip.map((v, i) => (
+              <i key={i} className={penalties?.length && v >= 2 ? 'hi' : ''} style={{ height: `${Math.max(5, ((v - low) / span) * 100)}%` }} />
+            ))}
+          </div>
+        </section>
+      )}
+      {deep.where && deep.where.holes.length > 0 && (
+        <section className="card">
+          <div className="ch">
+            <h4>Where it happened</h4>
+          </div>
+          <div className="ch-hf-holes">
+            {deep.where.holes.slice(0, 3).map((h, i) => (
+              <div key={h.key || i}>
+                <span>
+                  {h.date} · Hole {h.hole}
+                </span>
+                <p>{[h.course, h.what].filter(Boolean).join(' · ')}</p>
+              </div>
+            ))}
+          </div>
+        </section>
+      )}
+      {b.why && (
+        <section className="card">
+          <div className="ch">
+            <h4>{coach ? 'Why we think this' : 'Why CoachHelm thinks this'}</h4>
+          </div>
+          <p className="ch-hf-why">{b.why}</p>
+          {meta && <p className="ch-hf-whym">{meta}</p>}
+        </section>
+      )}
+    </>
+  );
+}
+
 /** The read, one component in the phone sheet and the desktop inspector (AC-READ). */
 export function ReadPanel({
   read,
@@ -71,21 +125,39 @@ export function ReadPanel({
   readOn,
   roster,
   onClose,
+  role = 'coach',
+  deep,
+  penalties,
+  dismissible = false,
+  fileHost = false,
 }: {
   read: ChInsight;
-  player: ChTeamPlayer;
-  fa: ChFocusActions;
+  player: Pick<ChTeamPlayer, 'id' | 'name' | 'first' | 'rounds' | 'early'>;
+  fa?: ChFocusActions;
   missing?: ChTeamBoardData['missing'];
   readOn: boolean;
   roster: ReadonlyArray<{ id: string }>;
   onClose: () => void;
+  /** A player's sheet: their words, no coin, no footer, no cause (06 CP shared read sheet). */
+  role?: 'coach' | 'player';
+  /** The file's host adds the read's rounds, holes, why and corrections. */
+  deep?: ChDeepInsight;
+  /** `golf_rounds.total_penalties`, last 8 countable rounds, oldest first; only on a penalty read. */
+  penalties?: ReadonlyArray<{ label: string; value: number }> | null;
+  /** Lenses has a place for Undo; Team doesn't (W-TEAM-12). */
+  dismissible?: boolean;
+  /** Lenses leaves "Open the full read" out with Read off; Team links today's Deep dive. */
+  fileHost?: boolean;
 }) {
-  const cause = read.engine?.cause?.word;
+  const coach = role === 'coach';
+  const cause = coach ? read.engine?.cause?.word : undefined;
   const word = read.evidence.read?.word;
-  const href = coachReadHref(player.id, read.id, roster) ? readHref(player.id, read.id, readOn) : null;
+  const canLink = fileHost ? readOn : !!coachReadHref(player.id, read.id, roster);
+  const href = !canLink ? null : coach ? readHref(player.id, read.id, readOn) : readHref(null, read.id, readOn);
+  const cx = deep?.base.engine?.corrections;
   return (
     <>
-      <Head lead={<Coin player={player} />} name={player.name} line={`${areaName(read)} · ${player.rounds} rounds this season`} onClose={onClose} />
+      {coach ? <Head lead={<Coin player={player} />} name={player.name} line={`${areaName(read)} · ${player.rounds} rounds this season`} onClose={onClose} /> : <Head lead={null} name={areaName(read)} line="" onClose={onClose} />}
       <h3>{read.title}</h3>
       <p className="lede">{read.lede}</p>
       <div className="evs">
@@ -95,7 +167,8 @@ export function ReadPanel({
         {cause && <span className="chipk">Cause: {cause}</span>}
         {read.evidence.window && <span className="chipk">{read.evidence.window}</span>}
       </div>
-      <Comparison read={read} first={player.first} />
+      <Comparison read={read} first={coach ? player.first : 'You'} />
+      {deep && <ReadEvidence deep={deep} penalties={penalties} coach={coach} />}
       {read.week?.title ? (
         <section className="card">
           <div className="drill">
@@ -127,9 +200,14 @@ export function ReadPanel({
           </div>
         </section>
       )}
-      {!read.stale && (
+      {cx && (
+        <section className="card ch-hf-cx">
+          <CorrectionChips c={cx} />
+        </section>
+      )}
+      {coach && fa && !read.stale && (
         <div className="acts" data-acts="">
-          <FocusActions fa={fa} target={{ playerId: player.id, first: player.first, ins: read }} missing={missing} where="board" noDismiss />
+          <FocusActions fa={fa} target={{ playerId: player.id, first: player.first, ins: read }} missing={missing} where="board" noDismiss={!dismissible} />
         </div>
       )}
       {href && (

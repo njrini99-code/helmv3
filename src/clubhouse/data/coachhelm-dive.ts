@@ -103,7 +103,7 @@ export async function loadPlayerDeepDive(input: { playerId: string }): Promise<C
 }
 
 /** The Deep dive's one read, with the raw rows. `drawn` narrows what counts as shown: the read page records only the read it shows. */
-export async function playerDiveCore(input: { playerId: string }, opts: { drawn?: (list: readonly ChDeepInsight[]) => string[] } = {}): Promise<{ load: ChViewLoad<ChDeepDive>; raw: ReadonlyMap<string, EvidenceInsight> }> {
+export async function playerDiveCore(input: { playerId: string }, opts: { drawn?: (list: readonly ChDeepInsight[], feedOrder: readonly string[]) => string[] } = {}): Promise<{ load: ChViewLoad<ChDeepDive>; raw: ReadonlyMap<string, EvidenceInsight> }> {
   let raw: ReadonlyMap<string, EvidenceInsight> = new Map();
   const load = await playerDiveLoad(input, opts, (m) => {
     raw = m;
@@ -111,7 +111,7 @@ export async function playerDiveCore(input: { playerId: string }, opts: { drawn?
   return { load, raw };
 }
 
-async function playerDiveLoad(input: { playerId: string }, opts: { drawn?: (list: readonly ChDeepInsight[]) => string[] }, keep: (raw: ReadonlyMap<string, EvidenceInsight>) => void): Promise<ChViewLoad<ChDeepDive>> {
+async function playerDiveLoad(input: { playerId: string }, opts: { drawn?: (list: readonly ChDeepInsight[], feedOrder: readonly string[]) => string[] }, keep: (raw: ReadonlyMap<string, EvidenceInsight>) => void): Promise<ChViewLoad<ChDeepDive>> {
   const { playerId } = input;
   // CH13-21: only the cards this page draws count as shown, and with coachhelm_recheck_v1 on it knows that only once the lifecycle
   // shaping has dropped the cleared reads, the retired contradictions and a pair's second member. Every return says which ids it drew
@@ -199,7 +199,7 @@ async function playerDiveLoad(input: { playerId: string }, opts: { drawn?: (list
         status: 'ready',
         data: { list, tour: tourName, rounds: null, themes: themesByCategory(themes), roundsFailed: rounds === null, plansFailed: plans === null, themesFailed: themes === null, counts: diveCounts(list), ...(missing ? { missing } : {}), ...(shaped.clearedReads.length > 0 ? { cleared: shaped.clearedReads.map((c) => toDiveCleared(c.read, c.line)) } : {}) },
       },
-      opts.drawn?.(list) ?? list.map((i) => i.base.id),
+      opts.drawn?.(list, drawn.map((i) => i.id)) ?? list.map((i) => i.base.id),
     );
   } catch (err) {
     log('dive', err);

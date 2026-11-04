@@ -152,7 +152,7 @@ async function readTeamZone(supabase: Supabase, playerId: string): Promise<strin
  * zone, each row with its own round count); while that table is not deployed (its migration is held), the lifetime table, which the
  * page labels "All time" rather than call it a season. Only rows that are this player's are kept, whatever a loader returned.
  */
-async function readRows(playerId: string): Promise<{ ok: true; rows: PlayerStanding[]; window: ChStandWindowKind } | { ok: false }> {
+export async function readStandingRows(playerId: string): Promise<{ ok: true; rows: PlayerStanding[]; window: ChStandWindowKind } | { ok: false }> {
   try {
     const season = await loadPlayerSeasonStandingMap(playerId);
     if (season.status === 'ok') return { ok: true, rows: [...season.rows.values()].filter((r) => r.player_id === playerId), window: 'season' };
@@ -176,7 +176,7 @@ export async function loadPlayerStanding(input: { playerId: string; viewer?: ChV
   try {
     const supabase = await createClient();
     const [map, baseline, cohort, reads, zone] = await Promise.all([
-      readRows(input.playerId),
+      readStandingRows(input.playerId),
       readBaseline(supabase, input.playerId),
       readCohort(input.playerId),
       readLadderReads(supabase, input.playerId, input.viewer ?? { role: 'player' }, input.feed),

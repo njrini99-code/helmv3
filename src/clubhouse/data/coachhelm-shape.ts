@@ -166,6 +166,10 @@ export interface ChProposal {
   from: string | null;
   /** The proposing coach's user id, for "Tell coach why" after a decline; null when unknown, and then the link is not offered. */
   coachUserId?: string | null;
+  /** The assigning coach's display name (`golf_coaches.full_name`); absent when the read failed, and the page says "Your coach". */
+  coachName?: string;
+  /** When it was proposed (ISO). */
+  at?: string;
 }
 
 /**

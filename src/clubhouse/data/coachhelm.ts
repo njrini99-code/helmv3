@@ -97,7 +97,7 @@ export async function loadPlayerDismissed(supabase: Supabase, playerId: string):
  * `min_rounds_for_signal` through the engine's own resolver, never under the miner's minimum, `resolveMinerWindows`) less the
  * countable completed rounds in its lookback window. For the empty board's "Post 2 more rounds"; null when a read failed.
  */
-async function roundsToGo(supabase: Supabase, playerId: string): Promise<number | null> {
+export async function roundsToGo(supabase: Supabase, playerId: string): Promise<number | null> {
   try {
     const settings = await getPlayerSignalSettings(playerId);
     const { minRounds, lookbackDays } = resolveMinerWindows({ minRounds: settings.minRoundsForSignal, lookbackDays: settings.patternLookbackDays });
@@ -310,7 +310,7 @@ export async function playerTeam(supabase: Supabase, playerId: string): Promise<
  * A proposal made through Fairway's Add focus area or Ask CoachHelm before they wrote the team carries none (`team_id` null), so the
  * read is the player's own proposals on their team or on no team: filtering on the team alone hid every one of those from the player it was for.
  */
-async function loadProposals(supabase: Supabase, playerId: string, teamId: string | null, insights: ReadonlyArray<{ id: string; title: string }>): Promise<ChPlayerHelm['proposals']> {
+export async function loadProposals(supabase: Supabase, playerId: string, teamId: string | null, insights: ReadonlyArray<{ id: string; title: string }>): Promise<ChPlayerHelm['proposals']> {
   if (!teamId) return { list: [], error: false };
   const res = await supabase
     .from('golf_player_focus_areas')
@@ -327,21 +327,25 @@ async function loadProposals(supabase: Supabase, playerId: string, teamId: strin
   const titles = new Map(insights.map((i) => [i.id, speak(i.title, { role: 'player' })]));
   const rows = res.data ?? [];
   const coaches = await coachUserIds(supabase, rows.map((r) => r.coach_id).filter((id): id is string => !!id));
-  const list: ChProposal[] = rows.map((r) => ({ id: r.id, title: r.title, from: (r.from_insight_id && titles.get(r.from_insight_id)) || null, coachUserId: (r.coach_id && coaches?.get(r.coach_id)) || null }));
+  const list: ChProposal[] = rows.map((r) => ({ id: r.id, title: r.title, from: (r.from_insight_id && titles.get(r.from_insight_id)) || null, coachUserId: (r.coach_id && coaches?.get(r.coach_id)?.userId) || null, ...(r.created_at ? { at: r.created_at } : {}), ...(r.coach_id && coaches?.get(r.coach_id)?.name ? { coachName: coaches.get(r.coach_id)!.name as string } : {}) }));
   return { list, error: false };
 }
 
 /** The user ids of these coaches (golf_coaches is readable to any signed-in user). A failed read is logged and leaves them unknown. */
 /** Proposing coaches' user ids by coach id, or null when the read failed (each proposal then offers no "Tell coach why"). */
-async function coachUserIds(supabase: Supabase, coachIds: string[]): Promise<Map<string, string> | null> {
+async function coachUserIds(supabase: Supabase, coachIds: string[]): Promise<Map<string, { userId: string; name: string | null }> | null> {
   const ids = [...new Set(coachIds)];
   if (!ids.length) return new Map();
-  const res = await supabase.from('golf_coaches').select('id, user_id').in('id', ids);
+  const res = await supabase.from('golf_coaches').select('id, user_id, full_name').in('id', ids);
   if (res.error) {
     log('proposalCoaches', res.error);
     return null;
   }
-  return new Map((res.data ?? []).filter((c): c is { id: string; user_id: string } => !!c.user_id).map((c) => [c.id, c.user_id]));
+  const coachWord = (full: string | null) => {
+    const last = full?.trim().split(/\s+/).pop();
+    return last ? `Coach ${last}` : null;
+  };
+  return new Map((res.data ?? []).flatMap((c) => (c.user_id ? [[c.id, { userId: c.user_id, name: coachWord(c.full_name) }] as const] : [])));
 }
 
 /** The disabled gate names why; a failed lookup is a failed read, not "off". */
