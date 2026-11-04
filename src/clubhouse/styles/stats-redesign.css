@@ -2162,8 +2162,3 @@ p.ch-shs-mini-cap {
 .ch-shs-chart {
   --ch-border-focus: var(--ch-on-green-plate);
 }
-
-/* The coach's player head: the coin at 48 (ui/Avatar's named step, sized here). */
-.ch-spm-head .ch-avatar {
-  --ch-av-size: 48px !important;
-}
