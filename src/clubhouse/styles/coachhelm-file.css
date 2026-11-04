@@ -55,7 +55,6 @@ html[data-fw-theme='dark'] .ch-hf {
   --c-zero: #ada697;
 }
 .ch-hf { background: var(--a-page); padding-bottom: 48px; }
-.ch-hf .ch-num {  }
 .ch-hf .ch-hf-flow { display: flex; flex-direction: column; gap: 24px; min-width: 0; }
 .ch-hf.is-phone { padding: 0 16px 48px; }
 @media (min-width: 430px) { .ch-hf.is-phone { padding-inline: 20px; } }

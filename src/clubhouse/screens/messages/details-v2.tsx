@@ -254,7 +254,6 @@ function PhotoTile({ api, file, onOpen }: { api: ChMessagesApi; file: ChFile; on
   }, [read, file.id, file.messageId]);
   return (
     <button type="button" className="ch-msv-ptile" aria-label={`Open ${file.name}`} onClick={onOpen}>
-      {/* eslint-disable-next-line @next/next/no-img-element -- a short-lived signed address */}
       {url && <img src={url} alt="" loading="lazy" />}
     </button>
   );

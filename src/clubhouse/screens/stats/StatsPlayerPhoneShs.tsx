@@ -787,7 +787,7 @@ function GameAreaDetail({ id, data, reads, onRetry }: { id: 'scoring' | 'tee' | 
   let hero: ReactNode;
   let bench: ReactNode = null;
   let before: ReactNode = null;
-  let after: ReactNode = null;
+  let after: ReactNode;
   if (id === 'scoring') {
     const change = scoringChange(data);
     hero = (

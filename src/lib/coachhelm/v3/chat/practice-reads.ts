@@ -5,7 +5,7 @@ import type { CoachChatContext } from './context';
 import { nowIso, unavailableEnvelope, type ToolEnvelope } from './provenance';
 import { practiceTables, type TeamDrillRow } from '@/lib/golf/practice-db';
 import { isPracticeMissing } from '@/lib/golf/practice-errors';
-import { toClassDay } from '@/clubhouse/data/class-day-shape';
+import { toClassDay } from '@/lib/golf/class-day-shape';
 import { getShotPattern } from './shot-reads';
 
 type Sb = SupabaseClient<Database>;

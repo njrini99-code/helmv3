@@ -240,8 +240,6 @@ html[data-fw-theme='dark'] .ch-hr {
   padding:12px 0 12px;
   font: var(--ch-type-15); 
   color:var(--ink-2); letter-spacing: var(--ch-track-15); }
-.ch-hr .num {
-  }
 .ch-hr .feat {
   background:var(--feat);
   color:var(--f-ink);

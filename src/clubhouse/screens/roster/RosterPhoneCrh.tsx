@@ -1,7 +1,8 @@
 'use client';
 
 import { ChartColumn, Check, ChevronRight, CircleAlert, Copy, Ellipsis, RotateCw, UserCheck, UserMinus, UserPlus, Users, UserX } from 'lucide-react';
-import { AnimatePresence, useReducedMotion } from 'motion/react';
+import { AnimatePresence } from 'motion/react';
+import { useChReducedMotion } from '../../lib/reduced-motion';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useCallback, useEffect, useRef, useState, type MouseEvent, type ReactNode } from 'react';
@@ -336,7 +337,7 @@ export function RosterPhoneCrh({
 
 /** A profile from a link is at rest on its first frame: this presence is new with the profile in it, so it runs no `initial` (M-CRH-46). */
 function ProfilePresence({ atRest, children }: { atRest: boolean; children: ReactNode }) {
-  const reduced = useReducedMotion();
+  const reduced = useChReducedMotion();
   return atRest || reduced ? (
     <AnimatePresence key="rest" initial={false}>
       {children}
