@@ -152,7 +152,7 @@ export function ReadPage({ load, voice, writes = LIVE_COACHHELM_WRITES, fallback
   const insight = read?.insight ?? null;
   const target = insight && coach ? { playerId: voice.playerId, first, ins: insight } : null;
   return (
-    <main className={'ch-hr ' + (phone ? 'is-phone' : 'is-desk')} data-ch-screen="coachhelm-read">
+    <main className={'ch-hr ' + (phone ? 'is-phone' : 'is-desk')} data-ch-screen="coachhelm-read" data-ch-hr-page="">
       {bar}
       {phone ? (
         <div className="sheet">{body}</div>

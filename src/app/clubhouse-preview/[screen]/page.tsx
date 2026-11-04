@@ -228,12 +228,12 @@ export default async function ClubhousePreview({
   searchParams,
 }: {
   params: Promise<{ screen: string }>;
-  searchParams: Promise<{ open?: string; read?: string; all?: string; station?: string; flag?: string; play?: string; refresh?: string; crh?: string; state?: string; view?: string; date?: string; event?: string; bell?: string; new?: string; section?: string; q?: string; tab?: string; teams?: string; tone?: string; at?: string; round?: string; ask?: string; live?: string }>;
+  searchParams: Promise<{ viewer?: string; screen?: string; open?: string; read?: string; all?: string; station?: string; flag?: string; play?: string; refresh?: string; crh?: string; state?: string; view?: string; date?: string; event?: string; bell?: string; new?: string; section?: string; q?: string; tab?: string; teams?: string; tone?: string; at?: string; round?: string; ask?: string; live?: string }>;
 }) {
   if (process.env.NODE_ENV === 'production') notFound();
   const { screen } = await params;
   const qc = (await searchParams as { qc?: string }).qc;
-  const { open: openParam, read: readParam, all: allParam, flag, play, station, refresh, crh: crhParam, state, view, date, event, bell, new: isNew, section, q, tab, teams, tone, at, round, ask, live } = await searchParams;
+  const { viewer: viewerParam, screen: screenParam, open: openParam, read: readParam, all: allParam, flag, play, station, refresh, crh: crhParam, state, view, date, event, bell, new: isNew, section, q, tab, teams, tone, at, round, ask, live } = await searchParams;
   // The phone Stats redesign renders here whatever its flag says; `&flag=off` renders main's components (stats-home 05, flagoff).
   const shs = flag !== 'off';
   // The header lab (/clubhouse-preview/header-lab) renders a page with one of the hero tones.
@@ -566,7 +566,7 @@ export default async function ClubhousePreview({
     },
     'coachhelm-read': {
       path: '/golf/dashboard/coachhelm',
-      node: <PreviewCoachHelmRead state={state} viewer={view} q={q} screen={section} />,
+      node: <PreviewCoachHelmRead state={state} viewer={viewerParam ?? view} q={q} screen={screenParam ?? section} />,
     },
     'coachhelm-team': {
       path: '/golf/dashboard/coachhelm',
