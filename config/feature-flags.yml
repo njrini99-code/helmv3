@@ -912,6 +912,27 @@ flags:
     cleanup_plan: >-
       Remove the flag and the old phone flattening blocks once the owner has
       turned it on in production and the screens have held for a season.
+  - feature_id: golf_messages_redesign_v1
+    owner: golf/clubhouse
+    purpose: >-
+      The redesigned Clubhouse Messages (design-refresh/messages, PR 11a to
+      11h). Sets data-ch-ms-v2 on the Messages root, which scopes every new
+      rule; the phone and desktop screens branch on it. Off, Messages renders
+      as main: no row typing listener, no row mute read, and typing clears at
+      3 seconds.
+    type: release
+    status: active
+    created_at: "2026-11-03"
+    expires_at: null
+    default: false
+    environment:
+      production: false
+      preview: false
+      development: false
+    kill_switch_behavior: null
+    cleanup_plan: >-
+      Once the owner has turned it on in production, delete the old rules and
+      --ch-bubble-mine-bg in the cleanup PR 02-PLAN names, then remove the flag.
   # The Clubhouse refresh foundation (design-refresh/ PR 2 and 3). Off everywhere
   # until the owner turns it on.
   - feature_id: clubhouse_refresh_v1

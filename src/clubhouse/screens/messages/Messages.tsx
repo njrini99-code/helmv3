@@ -1,5 +1,9 @@
 'use client';
 
+import { useConversationPins } from './use-conversation-pins';
+import { useNotificationBadges } from '@/contexts/notification-badge-context';
+import { useRowMutes } from './use-row-mutes';
+import { useTypingByConversation } from './use-typing-by-conversation';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useGolfConversations, useGolfMessages, type GolfConversationWithMeta } from '@/hooks/golf/use-golf-messages';
@@ -34,7 +38,7 @@ import { useConversationTeam } from '../../lib/use-conversation-team';
 import { isTransientNetworkErrorMessage } from '@/lib/transient-network-error';
 import { decodeMessageContent } from '@/lib/utils/decode-message-content';
 import type { ChMessagesData } from '../../data/messages';
-import { useDelayedToast, useToast } from '../../ui/Toast';
+import { useDelayedToast, useToast, useToastPill } from '../../ui/Toast';
 import { useNow } from '../../lib/use-now';
 import { chReport, chTrail } from '../../lib/track';
 import { CH_SLOW_SAVE_AFTER, friendlyReason, isOffline } from '../../lib/use-action';
@@ -139,7 +143,7 @@ export function Messages({ data }: { data: ChMessagesData }) {
   const [started, setStarted] = useState<ChConv | null>(null);
   const convs = useMemo(() => (started && !loadedConvs.some((c) => c.id === started.id) ? [started, ...loadedConvs] : loadedConvs), [started, loadedConvs]);
 
-  const msgs = useGolfMessages(selectedId ?? '', data.viewerUserId, { deferMarkRead: !!selectedId && selectedId === autoOpened, classAwareness: awareness });
+  const msgs = useGolfMessages(selectedId ?? '', data.viewerUserId, { ...(data.redesign ? { typingExpiryMs: 5000 } : {}), deferMarkRead: !!selectedId && selectedId === autoOpened, classAwareness: awareness });
   const liveIds = useMemo(() => msgs.messages.filter((m) => m.conversation_id === selectedId && !m.sendFailed).map((m) => m.id), [msgs.messages, selectedId]);
   const reactions = useMessageReactions(selectedId ?? '', liveIds, data.viewerUserId);
   const { sendMessageWithAttachments, getPendingAttachmentSend, retryPendingAttachmentSend } = useMessageAttachments({ recoverable: true });
@@ -243,6 +247,8 @@ export function Messages({ data }: { data: ChMessagesData }) {
         setAutoOpened(null);
         void msgs.markRead();
       } else setAutoOpened(null);
+      // Redesign: after a failed deep link, leaving the thread lets the desktop open the newest beside the rail (02 Completeness 11b).
+      if (!id && data.redesign) setParamsDone(true);
       if (id) setSelectedAnnId(null);
       // Opening a conversation reads it, so a mark from Mark as unread goes.
       if (id) mark(id, false);
@@ -529,6 +535,8 @@ export function Messages({ data }: { data: ChMessagesData }) {
     [data.directory, data.viewerPlayerId],
   );
 
+  const convIdsRef = useRef<ReadonlySet<string>>(new Set());
+  const badges = useNotificationBadges();
   const searchMessages = useCallback(
     async (q: string) => {
       const res = await searchGolfMessages(q, data.teamId);
@@ -541,6 +549,8 @@ export function Messages({ data }: { data: ChMessagesData }) {
       return res.results
         .map((r) => ({ r, text: decodeMessageContent(r.content) }))
         .filter(({ text }) => !(isPollFallbackText(text) && pollHitOnlyInFooter(text, q)))
+        // Redesign: a hidden conversation isn't in the list, so the hits leave it out too until a newer message brings it back.
+        .filter(({ r }) => !data.redesign || convIdsRef.current.has(r.conversationId))
         .map(({ r, text }) => ({
           messageId: r.messageId,
           conversationId: r.conversationId,
@@ -550,7 +560,7 @@ export function Messages({ data }: { data: ChMessagesData }) {
           at: r.createdAt,
         }));
     },
-    [data.teamId],
+    [data.teamId, data.redesign],
   );
 
   // Mute state for the open conversation.
@@ -637,14 +647,25 @@ export function Messages({ data }: { data: ChMessagesData }) {
     return res.attachments.map((a) => ({ id: a.id, name: a.fileName, size: a.fileSize, mime: a.mimeType, url: a.url ?? null }));
   }, []);
 
+  const redesign = data.redesign ?? false;
+  useToastPill(redesign);
+  convIdsRef.current = new Set(convs.map((c) => c.id));
+  const rowMutes = useRowMutes(data.viewerUserId, redesign);
+  const convIds = useMemo(() => convs.map((c) => c.id), [convs]);
+  const pins = useConversationPins(data.viewerUserId, data.teamId ?? '', convIds, redesign);
+  const typingByConv = useTypingByConversation(data.viewerUserId, convIds, selectedId, redesign);
+  const shownConvs = useMemo(() => (redesign && rowMutes.muted ? convs.map((c) => ({ ...c, muted: rowMutes.muted!.has(c.id) })) : convs), [redesign, rowMutes.muted, convs]);
+
   const api: ChMessagesApi = {
+    redesign,
+    ...(redesign ? { pins, typingByConv } : {}),
     viewer: { userId: data.viewerUserId, role: data.role, name: data.viewerName },
     signers: data.signers,
     timeZone: data.timeZone,
     clock: hours,
     now,
     teamName: data.teamName,
-    convs,
+    convs: shownConvs,
     convsLoading: loading,
     convsError: !!error && !conversations.length,
     refetchConvs: () => void refetch(),
@@ -660,6 +681,7 @@ export function Messages({ data }: { data: ChMessagesData }) {
     msgsStale: !!msgs.error && chMsgs.length > 0,
     refetchMsgs: () => void msgs.refetch(),
     typing: msgs.isOtherTyping,
+    typingUserIds: msgs.typingUserIds,
     onTyping: (on) => msgs.sendTypingStatus(on),
     loadPendingAttachmentSend: async () => {
       if (!selectedId) return null;
@@ -862,6 +884,7 @@ export function Messages({ data }: { data: ChMessagesData }) {
             mark(id, false);
             if (id === selectedId) setSelectedId(null);
             await refetch();
+            if (redesign) void badges.refetch();
           })
       : null,
     addCandidates,
@@ -928,7 +951,13 @@ export function Messages({ data }: { data: ChMessagesData }) {
     retryMute: () => setMuteAttempt((n) => n + 1),
     setMute: async (muted, hours) => (selectedId ? muteConversation(selectedId, muted, hours) : false),
     muteOf,
-    muteConversation,
+    muteConversation: redesign
+      ? async (id, muted, hours) => {
+          const ok = await muteConversation(id, muted, hours);
+          if (ok) rowMutes.refresh();
+          return ok;
+        }
+      : muteConversation,
     setRead: async (id, read) => {
       if (!read) {
         // Nothing to write: the mark is this device's own (marked-unread.ts).
@@ -948,6 +977,7 @@ export function Messages({ data }: { data: ChMessagesData }) {
         mark(id, false);
         haptic('success');
         await refetch();
+        if (redesign) void badges.refetch();
       });
       return ok;
     },

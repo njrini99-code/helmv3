@@ -14,6 +14,8 @@ export interface ChPerson {
   name: string;
   role: 'coach' | 'player';
   subtitle: string;
+  /** The coin's class year (Messages redesign); null for a coach or an unknown year. */
+  gradYear?: number | null;
   /** golf_players.id, for links to the player's stats. */
   playerId: string | null;
 }
@@ -40,6 +42,8 @@ export interface ChConv {
   /** The last message is a poll's plain-text copy (`isPollFallbackText`): the row shows its glyph and question. */
   lastIsPoll?: boolean;
   creatorId: string | null;
+  /** Messages redesign: the viewer muted this conversation (the row's glyph). Absent with the flag off or before the read lands. */
+  muted?: boolean;
 }
 
 /**

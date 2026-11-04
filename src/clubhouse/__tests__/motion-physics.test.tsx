@@ -62,6 +62,27 @@ describe('D-64 springs (extension, 2026-10-08)', () => {
     expect(chSpring('settle', true)).toEqual({ duration: 0 });
   });
 
+  it('the three Messages springs keep the values the owner signed off', () => {
+    for (const [kind, stiffness, damping, peak] of [
+      ['send', 155, 21.9, 1.003],
+      ['pop', 439, 27.2, 1.068],
+      ['lift', 350, 31.8, 1.006],
+    ] as const) {
+      expect(chSpring(kind)).toMatchObject({ stiffness: expect.closeTo(stiffness, 0), damping: expect.closeTo(damping, 1) });
+      let high = 0;
+      for (let t = 0; t <= 1.5; t += 0.001) high = Math.max(high, chSpringAt(kind, t));
+      expect(Math.abs(high - peak)).toBeLessThanOrEqual(0.001);
+    }
+  });
+
+  it('the tokens for those springs are their sampled curves', () => {
+    const tokens = readFileSync(join(process.cwd(), 'src/clubhouse/styles/tokens.css'), 'utf8');
+    for (const kind of ['send', 'pop', 'lift'] as const) {
+      expect(tokens).toContain(`--ch-ease-spring-${kind}: ${chSpringCurve(kind).linear};`);
+      expect(tokens).toContain(`--ch-dur-spring-${kind}: ${chSpringCurve(kind).ms}ms;`);
+    }
+  });
+
   it('never pass their mark by more than their bounce, and a thrown curve starts at the throw speed', () => {
     const peak = (kind: 'smooth' | 'settle', v0 = 0) => Math.max(...Array.from({ length: 1500 }, (_, i) => chSpringAt(kind, i / 1000, v0)));
     expect(peak('smooth')).toBeLessThanOrEqual(1);

@@ -12,6 +12,8 @@ export interface ChMessagesData {
   viewerName: string;
   /** golf_players.id when the viewer is a player (announcement acknowledgements and tasks). */
   viewerPlayerId: string | null;
+  /** golf_messages_redesign_v1 is on (read in routes/messages.tsx): the redesigned screens. */
+  redesign?: boolean;
   teamId: string;
   teamName: string | null;
   timeZone: string;
@@ -85,10 +87,10 @@ export async function loadMessagesDirectory(input: {
   const directory: ChPerson[] = [
     ...coaches
       .filter((c) => c.user_id && c.user_id !== input.viewerUserId)
-      .map((c) => ({ userId: c.user_id!, name: c.full_name?.trim() || 'Coach', role: 'coach' as const, subtitle: c.title?.trim() || 'Coach', playerId: null })),
+      .map((c) => ({ userId: c.user_id!, name: c.full_name?.trim() || 'Coach', role: 'coach' as const, gradYear: null, subtitle: c.title?.trim() || 'Coach', playerId: null })),
     ...players
       .filter((p) => p.user_id !== input.viewerUserId)
-      .map((p) => ({ userId: p.user_id!, name: fullName(p), role: 'player' as const, subtitle: classYearLabel(p.graduation_year, undefined, timeZone) ?? 'Player', playerId: p.id })),
+      .map((p) => ({ userId: p.user_id!, name: fullName(p), role: 'player' as const, gradYear: p.graduation_year ?? null, subtitle: classYearLabel(p.graduation_year, undefined, timeZone) ?? 'Player', playerId: p.id })),
   ].sort((a, b) => (a.role === b.role ? a.name.localeCompare(b.name) : a.role === 'coach' ? -1 : 1));
 
   return {

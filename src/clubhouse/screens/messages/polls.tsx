@@ -367,9 +367,28 @@ export function PollCard({
                 <span className="ch-ms-poll__fill" aria-hidden="true" />
                 <span className="ch-ms-poll__level" aria-hidden="true" />
                 <span className="ch-ms-poll__mark" aria-hidden="true" data-pop={on && tapped === o.id ? "" : undefined}>
-                  {on && <Icon icon={Check} size={12} />}
+                  {on &&
+                    (api.redesign ? (
+                      <svg className="ch-msv-tick" width="12" height="12" viewBox="0 0 12 12" aria-hidden="true">
+                        <path d="M2.2 6.4 4.9 9l4.9-5.6" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" pathLength={20} strokeDasharray={20} />
+                      </svg>
+                    ) : (
+                      <Icon icon={Check} size={12} />
+                    ))}
                 </span>
                 <span className="ch-ms-poll__label">{o.label}</span>
+                {api.redesign && tally && (tally.voters[o.id]?.length ?? 0) > 0 && (
+                  <span className="ch-msv-pollfaces" aria-hidden="true">
+                    {[...(tally.voters[o.id] ?? [])]
+                      .sort((a, b) => (a === api.viewer.userId ? 1 : b === api.viewer.userId ? -1 : 0))
+                      .slice(-3)
+                      .map((id) => (
+                        <span key={id} data-pop={id === api.viewer.userId && tapped === o.id ? "" : undefined}>
+                          <Avatar name={api.directory.find((p) => p.userId === id)?.name ?? (id === api.viewer.userId ? api.viewer.name : "Member")} size={18} />
+                        </span>
+                      ))}
+                  </span>
+                )}
                 {/* M8: the leader's tag fades in when the poll closes live (nothing animates on a card drawn final). */}
                 <AnimatePresence initial={false}>
                   {lead && closed && <FadeCopy key="tag" className="ch-ms-poll__tag">{tied ? "Tied" : "Most votes"}</FadeCopy>}
@@ -461,7 +480,10 @@ function PollVotesModal({
   const nameOf = (id: string) => (id === me ? "You" : (api.directory.find((p) => p.userId === id)?.name ?? "Member"));
   const members = new Set([me, ...(conv?.memberIds ?? [])]);
   const order = (ids: readonly string[]) => [...ids].sort((a, b) => (a === me ? -1 : b === me ? 1 : nameOf(a).localeCompare(nameOf(b))));
-  const waiting = tally && conv ? order(pollWaiting(tally, [me, ...conv.memberIds])) : [];
+  const allWaiting = tally && conv ? order(pollWaiting(tally, [me, ...conv.memberIds])) : [];
+  // Redesign: "Hasn't voted" lists players, coaches left out (MSG-VOTES-01).
+  const waiting = api.redesign ? allWaiting.filter((id) => api.directory.find((p) => p.userId === id)?.role !== "coach" && !(id === me && api.viewer.role === "coach")) : allWaiting;
+  const totalVotes = poll.options.reduce((sum, o) => sum + (tally?.voters[o.id]?.length ?? 0), 0);
   const row = (id: string) => (
     <li key={id} className="ch-ms-pollv__row">
       <Avatar name={id === me ? api.viewer.name : nameOf(id)} size="sm" />
@@ -473,16 +495,23 @@ function PollVotesModal({
     <Modal
       open={open}
       onClose={onClose}
-      icon={ListChecks}
+      icon={api.redesign ? undefined : ListChecks}
       title="Votes"
       description={poll.question}
-      width={440}
+      width={api.redesign ? 400 : 440}
+      className={api.redesign ? "ch-msv-sheet ch-msv-votes" : undefined}
       action={closed ? <span className="ch-ms-pollv__final">Final</span> : undefined}
       footer={
         remind ? (
+          api.redesign ? (
+            <button type="button" className="ch-msv-draftrem" onClick={remind.run}>
+              Draft a reminder
+            </button>
+          ) : (
           <Button variant="primary" onClick={remind.run}>
             Remind {remind.count}
           </Button>
+          )
         ) : undefined
       }
     >
@@ -493,8 +522,16 @@ function PollVotesModal({
             <section key={o.id} className="ch-ms-pollv__opt" aria-label={o.label}>
               <h3 className="ch-ms-pollv__h">
                 <span>{o.label}</span>
-                <span className="ch-num">{ids.length}</span>
+                <span className="ch-num">
+                  {ids.length}
+                  {api.redesign && totalVotes > 0 ? ` · ${Math.round((ids.length / totalVotes) * 100)}%` : ""}
+                </span>
               </h3>
+              {api.redesign && (
+                <span className="ch-msv-votebar" aria-hidden="true">
+                  <i style={{ width: `${totalVotes ? (ids.length / totalVotes) * 100 : 0}%` }} />
+                </span>
+              )}
               {ids.length ? <ul className="ch-ms-pollv__who">{ids.map(row)}</ul> : <p className="ch-ms-pollv__none">No votes yet</p>}
             </section>
           );
@@ -791,7 +828,8 @@ export function PollSheet({ api, conv, open, onClose }: { api: ChMessagesApi; co
       title="New poll"
       description={`Everyone in ${conv.title} can vote and see who voted.`}
       initialFocus="#ch-ms-poll-q"
-      width={480}
+      width={api.redesign ? 400 : 480}
+      className={api.redesign ? "ch-msv-pollnew" : undefined}
       action={
         !empty || multi || ends !== "none" ? (
           <button

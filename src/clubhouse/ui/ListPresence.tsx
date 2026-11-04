@@ -20,14 +20,14 @@ import { useChReducedMotion } from '../lib/reduced-motion';
  */
 
 /** The list's keys in order, and whether it has painted (a row that mounts after is an arrival); null outside a ListPresence. */
-const ListCtx = createContext<{ keys: string; painted: RefObject<boolean>; flip: boolean; reduced: boolean; rise: boolean } | null>(null);
+const ListCtx = createContext<{ keys: string; painted: RefObject<boolean>; flip: boolean; reduced: boolean; rise: boolean; inbox: boolean; cut: boolean } | null>(null);
 
 /**
  * `arrive="rise"` (a message thread; owner, 2026-10-31, as Fairway's thread does): a row that arrives takes its height at
  * once and only rises 8px and fades in, so nothing else on screen moves. Opening its height would push every row above
  * it up frame by frame while the thread re-pins its end (the jitter on send).
  */
-export function ListPresence({ children, flip = true, arrive = 'open' }: { children: ReactNode; flip?: boolean; arrive?: 'open' | 'rise' }) {
+export function ListPresence({ children, flip = true, arrive = 'open', cut = false }: { children: ReactNode; flip?: boolean; /** `inbox` (Messages' redesign, 07 M-MSG-03b and CP-11): a row arrives by fading in its place, leaves by fading and shrinking to .96 over 180ms, and rows glide on the 462ms push. */ arrive?: 'open' | 'rise' | 'inbox'; /** With `inbox`: rows leaving go in one frame (a filter change, not a row leaving the list). */ cut?: boolean }) {
   const reduced = useChReducedMotion();
   const painted = useRef(false);
   useEffect(() => {
@@ -37,7 +37,7 @@ export function ListPresence({ children, flip = true, arrive = 'open' }: { child
     .map((c) => (isValidElement(c) ? String(c.key) : ''))
     .join('|');
   return (
-    <ListCtx.Provider value={{ keys, painted, flip, reduced, rise: arrive === 'rise' }}>
+    <ListCtx.Provider value={{ keys, painted, flip, reduced, rise: arrive === 'rise', inbox: arrive === 'inbox', cut }}>
       <AnimatePresence initial={false}>{children}</AnimatePresence>
     </ListCtx.Provider>
   );
@@ -58,13 +58,13 @@ export function PresenceRow({ as = 'li', children, ref, ...rest }: { as?: RowTag
     );
   }
   return (
-    <Moving as={as} keys={list.keys} flip={list.flip && !list.reduced} still={list.reduced} rise={list.rise} arrives={list.painted.current} rowRef={ref} {...rest}>
+    <Moving as={as} keys={list.keys} flip={list.flip && !list.reduced} still={list.reduced} rise={list.rise} inbox={list.inbox} cut={list.cut} arrives={list.painted.current} rowRef={ref} {...rest}>
       {children}
     </Moving>
   );
 }
 
-function Moving({ as, keys, flip, still, rise, arrives, rowRef, children, ...rest }: { as: RowTag; keys: string; flip: boolean; still: boolean; rise: boolean; arrives: boolean; rowRef?: Ref<HTMLElement>; children: ReactNode } & RowProps) {
+function Moving({ as, keys, flip, still, rise, inbox, cut, arrives, rowRef, children, ...rest }: { as: RowTag; keys: string; flip: boolean; still: boolean; rise: boolean; inbox: boolean; cut: boolean; arrives: boolean; rowRef?: Ref<HTMLElement>; children: ReactNode } & RowProps) {
   const present = useIsPresent();
   // A row there at first paint is never styled by the list; one that arrives later opens in, then hands its height,
   // opacity and overflow back to its own stylesheet. Under reduced motion nothing opens, closes or slides.
@@ -93,11 +93,11 @@ function Moving({ as, keys, flip, still, rise, arrives, rowRef, children, ...res
       data-leaving={present ? undefined : ''}
       aria-hidden={present ? rest['aria-hidden'] : true}
       inert={!present}
-      initial={arriving ? (rise ? RISE_FROM : ENTER) : false}
-      animate={arriving ? (rise ? RISEN : SHOWN) : undefined}
+      initial={arriving ? (inbox ? INBOX_FROM : rise ? RISE_FROM : ENTER) : false}
+      animate={arriving ? (inbox ? INBOX_SHOWN : rise ? RISEN : SHOWN) : undefined}
       onAnimationComplete={arriving ? settle : undefined}
-      exit={still ? undefined : LEAVE}
-      transition={MOVE}
+      exit={still ? undefined : inbox ? (cut ? INBOX_CUT : INBOX_LEAVE) : LEAVE}
+      transition={inbox ? PUSH : MOVE}
     >
       {children}
     </Row>
@@ -112,6 +112,12 @@ const ROW = { li: m.li, div: m.div, article: m.article, section: m.section, butt
  */
 const SMOOTH = chSpringCurve('smooth');
 const MOVE = { duration: SMOOTH.ms / 1000, ease: SMOOTH.ease };
+/** Messages' inbox, on the house push's clock. */
+const PUSH = { duration: 0.462, ease: SMOOTH.ease };
+const INBOX_FROM = { opacity: 0 };
+const INBOX_SHOWN = { opacity: 1, transition: PUSH };
+const INBOX_LEAVE = { opacity: 0, scale: 0.96, transition: { duration: 0.18, ease: CH_EASE } };
+const INBOX_CUT = { opacity: 0, transition: { duration: 0 } };
 const ENTER = { height: 0, opacity: 0, overflow: 'clip' as const };
 const SHOWN = {
   height: 'auto',

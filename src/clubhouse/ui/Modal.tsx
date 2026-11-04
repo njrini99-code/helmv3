@@ -36,6 +36,8 @@ export function Modal({
   action?: ReactNode;
   /** Catalog number (docs/clubhouse/catalog). */
   code?: string;
+  /** An extra class on the dialog (a lane's own sheet). */
+  className?: string;
   /** A selector inside the sheet that takes focus as it opens instead of the heading (a new item's first field). */
   initialFocus?: string;
   /** A screen's own hook on the dialog, for its scoped styles. */

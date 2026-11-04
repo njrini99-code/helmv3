@@ -228,12 +228,12 @@ export default async function ClubhousePreview({
   searchParams,
 }: {
   params: Promise<{ screen: string }>;
-  searchParams: Promise<{ station?: string; flag?: string; refresh?: string; crh?: string; state?: string; view?: string; date?: string; event?: string; bell?: string; new?: string; section?: string; q?: string; tab?: string; teams?: string; tone?: string; at?: string; round?: string; ask?: string; live?: string }>;
+  searchParams: Promise<{ station?: string; flag?: string; play?: string; refresh?: string; crh?: string; state?: string; view?: string; date?: string; event?: string; bell?: string; new?: string; section?: string; q?: string; tab?: string; teams?: string; tone?: string; at?: string; round?: string; ask?: string; live?: string }>;
 }) {
   if (process.env.NODE_ENV === 'production') notFound();
   const { screen } = await params;
   const qc = (await searchParams as { qc?: string }).qc;
-  const { flag, station, refresh, crh: crhParam, state, view, date, event, bell, new: isNew, section, q, tab, teams, tone, at, round, ask, live } = await searchParams;
+  const { flag, play, station, refresh, crh: crhParam, state, view, date, event, bell, new: isNew, section, q, tab, teams, tone, at, round, ask, live } = await searchParams;
   // The phone Stats redesign renders here whatever its flag says; `&flag=off` renders main's components (stats-home 05, flagoff).
   const shs = flag !== 'off';
   // The header lab (/clubhouse-preview/header-lab) renders a page with one of the hero tones.
@@ -517,7 +517,7 @@ export default async function ClubhousePreview({
     },
     messages: {
       path: '/golf/dashboard/messages',
-      node: state === 'loading-route' ? <MessagesSkeleton /> : <PreviewMessages state={state} />,
+      node: state === 'loading-route' ? <MessagesSkeleton /> : <PreviewMessages state={state} view={view} play={play} />,
     },
     settings: {
       path: '/golf/dashboard/settings',

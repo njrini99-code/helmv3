@@ -10,7 +10,27 @@ import { EmptyState } from '../../ui/States';
  * in the list, the rail's compact empty (CH-7301) and the thread's (CH-7305)
  * take over.
  */
-export function MessagesFirstRun({ coach, onNew }: { coach: boolean; onNew: () => void }) {
+export function MessagesFirstRun({ coach, onNew, redesign = false, teamName, onTeam }: { coach: boolean; onNew: () => void; /** golf_messages_redesign_v1: one still card (S-MSG.empty). */ redesign?: boolean; teamName?: string; onTeam?: () => void }) {
+  if (redesign)
+    return (
+      <section className="ch-msv-empty" data-ch-code="CH-7309">
+        <svg viewBox="0 0 96 64" width="96" height="64" aria-hidden="true">
+          <rect x="6" y="8" width="58" height="34" rx="14" fill="var(--ch-well-bg-flat)" />
+          <rect x="32" y="24" width="58" height="32" rx="14" fill="var(--ch-bubble-mine-fill)" />
+        </svg>
+        <h2>No conversations yet</h2>
+        <p>{coach ? `Start a thread with ${teamName ?? 'the whole team'} or message a player directly.` : `Message a coach or a teammate on ${teamName ?? 'your team'}.`}</p>
+        <button type="button" className="ch-msv-empty__cta" onClick={onNew}>
+          <SquarePen size={18} aria-hidden="true" />
+          Start a conversation
+        </button>
+        {onTeam && (
+          <button type="button" className="ch-msv-empty__ghost" onClick={onTeam}>
+            Message the team
+          </button>
+        )}
+      </section>
+    );
   return (
     <EmptyState
       size="page"

@@ -196,6 +196,10 @@ function SeenByBody({ api, m, compact }: { api: ChMessagesApi; m: ChMsg; compact
     const raw = r!.marks.get(userId) ?? null;
     // A forged future last_read_at is shown as now (changelog P-01): never "Last opened tomorrow".
     const lastOpened = raw && Number.isFinite(nowMs) && Date.parse(raw) > nowMs ? api.now : raw;
+    if (api.redesign) {
+      const meta = section === "notYet" ? "Hasn’t opened this chat" : lastOpened ? railTime(lastOpened, api.now, api.timeZone, api.clock) : "";
+      return { userId, name, role, lastOpened, seenAt: null, meta, label: [name, meta.toLowerCase()].filter(Boolean).join(", ") };
+    }
     const opened = section === "notYet" ? (lastOpened ? `Last opened ${railTime(lastOpened, api.now, api.timeZone, api.clock)}` : "Hasn’t opened this chat") : "";
     const meta = [role === "coach" ? "Coach" : "", opened].filter(Boolean).join(" · ");
     const label = [name, role === "coach" ? "coach" : "", section === "notYet" ? opened.toLowerCase() : ""].filter(Boolean).join(", ");
@@ -246,13 +250,24 @@ function SeenByBody({ api, m, compact }: { api: ChMessagesApi; m: ChMsg; compact
     <div ref={listEl} className="ch-seen-list" data-ch-code={s.seen.length === 0 ? "CH-7310" : undefined}>
       {offline && <p className="ch-seen-note">You’re offline. This may be out of date.</p>}
       <AnimatePresence initial={false}>
-        {section("notYet", "Not yet", notYet)}
-        {section("seen", "Seen", seen)}
+        {api.redesign ? (
+          <>
+            {section("seen", "Seen", [...seen].sort((a, b) => Date.parse(b.lastOpened ?? "") - Date.parse(a.lastOpened ?? "")))}
+            {section("notYet", "Not seen yet", notYet)}
+          </>
+        ) : (
+          <>
+            {section("notYet", "Not yet", notYet)}
+            {section("seen", "Seen", seen)}
+          </>
+        )}
       </AnimatePresence>
-      <p className="ch-seen-note">
-        Seen means they opened this chat after it was sent.
-        {m.poll ? " Voting is in See votes." : ""}
-      </p>
+      {!api.redesign && (
+        <p className="ch-seen-note">
+          Seen means they opened this chat after it was sent.
+          {m.poll ? " Voting is in See votes." : ""}
+        </p>
+      )}
       <span className="ch-sr-only" role="status">
         {status}
       </span>
@@ -265,6 +280,15 @@ export function SeenBySheet({ api, m, onClose }: { api: ChMessagesApi; m: ChMsg 
   const r = api.receipts;
   const s = m && r && r.marks.size ? seenBy(m.at, m.senderId, r.marks) : null;
   const all = !!s && s.total > 0 && s.seen.length >= s.total;
+  if (api.redesign) {
+    // One component, phone sheet and desktop card (MSG-SEEN-01); the close key never squeezes (MSG-SEEN-04).
+    const cut = m ? (m.poll ? m.poll.question : m.text || "Attachment").slice(0, 46) : "";
+    return (
+      <Modal code="CH-7609" open={m != null} onClose={onClose} title="Seen by" description={s ? `${s.seen.length} of ${s.total} · ${cut}` : cut} width={400} className="ch-msv-sheet">
+        {m && <SeenByBody api={api} m={m} compact={false} />}
+      </Modal>
+    );
+  }
   return (
     <Modal code="CH-7609" open={m != null} onClose={onClose} title={listTitle(s)} icon={all ? CheckCheck : undefined} description={m ? quoteOf(m) : undefined} width={440}>
       {m && <SeenByBody api={api} m={m} compact={false} />}
@@ -385,7 +409,7 @@ export function useSeenByList(): {
     render: (api, phone) => {
       // A message deleted while the list is open closes it.
       const live = state ? api.msgs.find((x) => x.id === state.m.id && !x.deleted) ?? null : null;
-      return phone ? (
+      return phone || api.redesign ? (
         <SeenBySheet api={api} m={live} onClose={() => setState(null)} />
       ) : (
         <SeenByPopover api={api} m={live} anchor={state?.anchor ?? null} onClose={() => setState(null)} />
