@@ -1,6 +1,6 @@
 'use client';
 
-import { CalendarPlus, ChartLine, Target, Trophy, Users, type LucideIcon } from 'lucide-react';
+import { ArrowRight, CalendarPlus, ChartLine, Target, Trophy, Users, type LucideIcon } from 'lucide-react';
 import type { ReactNode } from 'react';
 import { askSuggestionSub, type ChAskData, type ChAskSuggestion } from '../../../data/coachhelm-chat-shape';
 import { haptic } from '../../../lib/haptics';
@@ -88,6 +88,74 @@ function Pills({ suggestions, onAsk }: { suggestions: ChAskSuggestion[]; onAsk: 
         </li>
       ))}
     </ul>
+  );
+}
+
+const TAG: Record<ChAskSuggestion['id'], string> = { brief: 'Team', strokes: 'Strokes gained', trending: 'Season', week: 'Practice plan' };
+const DOT: Record<string, string> = { warn: 'is-warn', loss: 'is-warn', down: 'is-warn', gain: 'is-good-dot', up: 'is-good-dot' };
+const greeting = (hour: number) => (hour < 12 ? 'Good morning' : hour < 18 ? 'Good afternoon' : 'Good evening');
+
+/**
+ * Ask v2's home (06 E-HOME): the greeting, what moved since Monday from the Board (each line asks about itself), and starter rows with their tag. A player reads their own focus and
+ * the Ask this week word instead; the meter is the screen's. The team's or player's scope sits above it, in the screen's scope line.
+ */
+export function AskHomeV2({ data, phone, heroComposer, onAsk, focus }: { data: ChAskData; phone: boolean; heroComposer: ReactNode; onAsk: (text: string) => void; focus?: ReadonlyArray<{ text: string; ask: string | null }> }) {
+  const player = data.role === 'player';
+  const findings = data.pulse?.findings ?? [];
+  const hour = new Date(data.nowIso).getHours();
+  return (
+    <div className={'ch-ak-home' + (phone ? ' is-phone' : '')} data-ch="ask-home">
+      <div className="hi">
+        <h2>{player ? `${greeting(hour).replace('Good ', '').replace(/^./, (c) => c.toUpperCase())}${data.firstName ? `, ${data.firstName}` : ''}` : `${greeting(hour)}, Coach`}</h2>
+        <p>{player ? 'I read your rounds and shots. Only you and your coaches see this.' : `I can read every round, shot, practice and event for ${data.teamName}.`}</p>
+      </div>
+      {data.noRounds && <NothingYet phone={phone} />}
+      {player
+        ? !!focus?.length && (
+            <div className="pulse">
+              <b>Your focus</b>
+              {focus.map((l) => (
+                <button type="button" className="rw" key={l.text} disabled={!l.ask} onClick={() => l.ask && onAsk(l.ask)}>
+                  <i className="is-warn" />
+                  <span>{l.text}</span>
+                </button>
+              ))}
+            </div>
+          )
+        : findings.length > 0 && (
+            <div className="pulse">
+              <b>Since Monday</b>
+              {findings.slice(0, 3).map((f) => (
+                <button type="button" className="rw" key={f.id} disabled={!f.ask} onClick={() => f.ask && onAsk(f.ask)}>
+                  <i className={DOT[String(f.tone)] ?? 'is-flat'} />
+                  <span>{f.headline}</span>
+                </button>
+              ))}
+              <small>From the CoachHelm board · tap any line to ask</small>
+            </div>
+          )}
+      {data.suggestions.length > 0 && (
+        <ul className="sugg" aria-label="Questions to start with">
+          {data.suggestions.slice(0, 4).map((s) => (
+            <li key={s.id}>
+              <button
+                type="button"
+                data-ch-code="CH-13721"
+                onClick={() => {
+                  haptic('select');
+                  onAsk(s.text);
+                }}
+              >
+                <Icon icon={ArrowRight} size={18} />
+                <span>{s.text}</span>
+                <small>{TAG[s.id]}</small>
+              </button>
+            </li>
+          ))}
+        </ul>
+      )}
+      {!phone && heroComposer}
+    </div>
   );
 }
 

@@ -153,7 +153,7 @@ const PUBLISH: ActionProposal & { tool: string } = {
 const approval = (state: 'approval-requested' | 'approval-responded', approved?: boolean) => ({ type: 'tool-publish_practice_plan', toolCallId: 'call-1', input: {}, state, approval: approved === undefined ? { id: 'approval-1' } : { id: 'approval-1', approved } });
 const proposalParts = (extra: unknown[]) => [{ type: 'data-action-proposal', id: 'proposal-key-plan', data: PUBLISH }, ...extra];
 const receipt = (status: 'held' | 'completed'): ActionReceipt =>
-  ({ status, ...(status === 'held' ? { held_until: new Date(Date.now() + 8000).toISOString() } : {}), action: PUBLISH.action, summary: 'Published · Thu, Nov 5, 2:00 PM', created: [{ kind: 'practice_plan', label: 'Thursday practice', href: '/golf/dashboard/practice/plan/preview' }], notifications: status === 'held' ? [] : [{ channel: 'push', recipients: 11, status: 'sent', summary: 'Told 11 · push and bell' }], idempotency_key: 'key-plan' }) as unknown as ActionReceipt;
+  ({ status, ...(status === 'held' ? { held_until: '2099-01-01T00:00:00Z' } : {}), action: PUBLISH.action, summary: 'Published · Thu, Nov 5, 2:00 PM', created: [{ kind: 'practice_plan', label: 'Thursday practice', href: '/golf/dashboard/practice/plan/preview' }], notifications: status === 'held' ? [] : [{ channel: 'push', recipients: 11, status: 'sent', summary: 'Told 11 · push and bell' }], idempotency_key: 'key-plan' }) as unknown as ActionReceipt;
 
 export const PT_FOLDERS = [{ name: 'Practice plans', count: 4 }, { name: 'Hargrove Invitational', count: 2 }, { name: 'Fall 2026 season', count: 11 }, { name: 'Short game', count: 3 }];
 const WITH = { folders: PT_FOLDERS };

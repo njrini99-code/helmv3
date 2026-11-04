@@ -22,7 +22,7 @@ import { AskComposer, useRefuseOffline } from './Composer';
 import { askDraftKey, useAskKept } from './drafts';
 import { AskEvidencePanel } from './EvidencePanel';
 import { conversationHref, HistoryDrawer, HistoryPanel } from './History';
-import { AskHome } from './Home';
+import { AskHome, AskHomeV2 } from './Home';
 import { AskInputsFailed, AskNoRoster, AskThreadFailed, AskUnavailable } from './States';
 import { useViewSwitch } from '../use-view-switch';
 import { COACHHELM_HREF, CoachHelmTabs, type CoachHelmView } from './SubTabs';
@@ -252,7 +252,7 @@ function AskChat({ data, useChatImpl, initial, v2 }: { data: ChAskData; useChatI
   ) : data.threadFailed ? (
     <AskThreadFailed onNew={newChat} />
   ) : showHome ? (
-    <AskHome data={data} phone={phone} heroComposer={composer('hero')} onAsk={ask} />
+    v2 ? <AskHomeV2 data={data} phone={phone} heroComposer={composer('hero')} onAsk={ask} focus={data.focus} /> : <AskHome data={data} phone={phone} heroComposer={composer('hero')} onAsk={ask} />
   ) : (
     <SectionBoundary surface="coachhelm.ask.thread" label="The conversation" code="CH-13225">
       <AskThread
@@ -351,6 +351,11 @@ function AskChat({ data, useChatImpl, initial, v2 }: { data: ChAskData; useChatI
               )}
               <h1 className="ch-ask-head__t">{heading}</h1>
             </header>
+          )}
+          {v2 && phone && !gone && (
+            <p className="ch-ak-scope">
+              Reading <b>{player ? 'My rounds' : data.teamName} · {showHome ? 'this season' : 'last 30 days'}</b>
+            </p>
           )}
           <div className={'ch-ask-scroll' + (showHome ? ' is-home' : !gone && !data.threadFailed ? ' is-thread' : '')}>{body}</div>
           {player && out && (

@@ -73,7 +73,21 @@ export function Steps({ steps, active, seconds, waiting = false, stopped = false
       )}
     </ol>
   );
-  if (active || waiting || stopped) return <div className="work">{list(true)}</div>;
+  if (active || waiting || stopped) {
+    return (
+      <div className="work open">
+        {active && (
+          <div className="sum is-live" aria-hidden="true">
+            <span className="t">
+              <span className="shim">Working</span>
+            </span>
+            <Icon icon={ChevronDown} size={16} />
+          </div>
+        )}
+        {list(true)}
+      </div>
+    );
+  }
   return (
     <div className={'work' + (open ? ' open' : '')}>
       <button type="button" className="sum" aria-expanded={open} aria-controls={id} onClick={() => setOpen((v) => !v)}>

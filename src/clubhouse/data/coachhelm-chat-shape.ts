@@ -209,6 +209,10 @@ export interface ChAskData {
   /** The player's Ask: their word for the week, no amount ever. */
   allowance?: AskAllowanceBucket;
   role?: 'coach' | 'player';
+  /** The player's first name, for the home's greeting. */
+  firstName?: string;
+  /** The player's own focus lines on Ask's home. */
+  focus?: Array<{ text: string; ask: string | null }>;
 }
 
 export type ChAskLoad =

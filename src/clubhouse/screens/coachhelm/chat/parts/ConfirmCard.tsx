@@ -28,13 +28,27 @@ const FLOWS: Record<string, { verb: string; busy: string; chip: string }> = {
   create_recruit: { verb: 'Add recruit', busy: 'Adding…', chip: 'Added' },
 };
 FLOWS.publish_practice_plan = { verb: 'Publish', busy: 'Publishing…', chip: 'Published' };
+/** Where a confirmed draft lands (the page's `hs`): the screen and section, with this row on top. Its neighbours would need a read per screen, so only the new row draws. */
+const LANDS: Record<string, { app: string; where: string }> = {
+  create_event: { app: 'Calendar', where: 'Wednesday' },
+  create_recurring_practice: { app: 'Calendar', where: 'Practices' },
+  create_team_announcement: { app: 'Messages', where: 'Announcements' },
+  create_announcement: { app: 'Messages', where: 'Announcements' },
+  create_trip: { app: 'Hub', where: 'Trips' },
+  create_qualifier: { app: 'Qualifiers', where: 'This season' },
+  set_lineup: { app: 'Tournaments', where: 'Lineup' },
+  create_task: { app: 'Tasks', where: 'To do' },
+  create_goal: { app: 'Stats', where: 'Goals' },
+  create_focus_area: { app: 'Home', where: 'Focus' },
+  add_round_note: { app: 'Rounds', where: 'Coach notes' },
+};
 const fallback = { icon: ClipboardCheck, verb: () => 'Confirm', busy: 'Working…', chip: 'Done' };
 
 /** Kit ② to ⑤: the draft as what it will become, who hears about it, then the capsule, the receipt with 8 seconds of Undo, and the Told row. Nothing is written before the named button. */
 export function ConfirmCard({ view, inlineReceipt, onApprove, onDeny }: { view: AskProposalView; inlineReceipt: ActionReceipt | null; onApprove: (id: string) => void; onDeny: (id: string) => void }) {
   const { proposal: p, status } = view;
   const flow = FLOWS[view.tool];
-  const kind = KIND[view.tool] ?? (flow ? { icon: ClipboardCheck, verb: () => flow.verb, busy: flow.busy, chip: flow.chip } : fallback);
+  const kind = KIND[view.tool] ?? (flow ? { icon: ClipboardCheck, verb: () => flow.verb, busy: flow.busy, chip: flow.chip } : { ...fallback, verb: () => p.action });
   const [pressed, setPressed] = useState(false);
   const receipt = inlineReceipt ?? view.receipt;
   const players = p.affects.filter((a) => a.kind === 'player').length;
@@ -86,6 +100,19 @@ export function ConfirmCard({ view, inlineReceipt, onApprove, onDeny }: { view: 
           )}
         </div>
       </div>
+      {!cancelled && LANDS[view.tool] && (
+        <div className="ch-ak-hs">
+          <div className="hs-h">
+            <b>{LANDS[view.tool]!.app}</b>
+            <span>{LANDS[view.tool]!.where}</span>
+            <small>Where it lands</small>
+          </div>
+          <div className={'hsr nw' + (receipt ? ' is-in' : '')}>
+            <b>{p.summary}</b>
+            <span>{receipt ? 'Just now' : 'Draft'}</span>
+          </div>
+        </div>
+      )}
       {undecided &&
         p.publish?.sample && (
           <div className="ch-cpv-sample">
