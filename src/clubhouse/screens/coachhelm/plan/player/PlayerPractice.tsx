@@ -8,6 +8,7 @@ import { ClipboardList, FolderClosed } from 'lucide-react';
 import { useState, type ReactNode } from 'react';
 import { Icon } from '../../../../ui/Icon';
 import { LargeTitle } from '../../../../ui/LargeTitle';
+import { Segmented } from '../../../../ui/Segmented';
 
 export interface PlayerStop {
   time: string;
@@ -59,14 +60,16 @@ export function PlayerPractice({ data, everyone }: { data: PlayerPracticeData; e
           </div>
         )}
       </section>
-      <div className="seg2" role="tablist" aria-label="Whose plan">
-        <button type="button" role="tab" aria-selected={tab === 'mine'} className={tab === 'mine' ? 'on' : ''} onClick={() => setTab('mine')}>
-          Your practice
-        </button>
-        <button type="button" role="tab" aria-selected={tab === 'all'} className={tab === 'all' ? 'on' : ''} onClick={() => setTab('all')}>
-          Everyone
-        </button>
-      </div>
+      <Segmented
+        label="Whose plan"
+        block
+        value={tab}
+        options={[
+          { value: 'mine', label: 'Your practice' },
+          { value: 'all', label: 'Everyone' },
+        ]}
+        onChange={setTab}
+      />
       {tab === 'mine' ? (
         <section className="art" aria-label="Your stops">
           {data.stops.map((s) => (

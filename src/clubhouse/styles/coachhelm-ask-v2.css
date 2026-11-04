@@ -230,12 +230,8 @@ html[data-fw-theme='dark'] .ch-ak-th {
 
 /* AK8: tone and CoachHelm knows, under the chats. */
 .ch-ak-settings .ch-ak-knows { border-top: 0; padding: 0; gap: 16px; }
-.ch-ak-settings .ch-ak-knows__tone button { min-height: 44px; font: var(--ch-type-15-strong); letter-spacing: var(--ch-track-15); }
 .ch-ak-pane .apf__note, .ch-ak-push .apf__note { flex-basis: 100%; font: var(--ch-type-13); color: var(--ch-text-secondary); }
-.ch-ak-knows { display: grid; gap: 8px; padding: 12px 12px; border-top: var(--ch-hairline-w) solid var(--ch-separator); }
-.ch-ak-knows__tone { display: grid; grid-auto-flow: column; grid-auto-columns: 1fr; gap: 2px; padding: 2px; border-radius: var(--ch-radius-sm); background: var(--ch-canvas-sunken, var(--ch-bg-page)); }
-.ch-ak-knows__tone button { padding: 6px 4px; border: 0; border-radius: var(--ch-radius-sm); background: none; color: var(--ch-text-secondary); font: var(--ch-type-12-medium);  cursor: pointer; }
-.ch-ak-knows__tone button[aria-pressed='true'] { background: var(--ch-seg-on-bg); color: var(--ch-seg-on-ink); }
+.ch-ak-knows { display: grid; grid-template-columns: minmax(0, 1fr); gap: 8px; padding: 12px 12px; border-top: var(--ch-hairline-w) solid var(--ch-separator); }
 .ch-ak-knows h3 { margin: 0; font: var(--ch-type-12-strong); color: var(--ch-text-secondary); }
 .ch-ak-knows ul { display: grid; gap: 4px; margin: 0; padding: 0; list-style: none; font: var(--ch-type-13);  }
 .ch-ak-knows li { display: flex; gap: 6px; align-items: start; justify-content: space-between; }
