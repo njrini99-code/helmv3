@@ -41,16 +41,19 @@ describe('clubhouse_refresh_v1', () => {
 });
 
 describe('titleOnScroll', () => {
-  it('shrinks to 86% and fades over the title’s height', () => {
-    expect(titleOnScroll(0, 41, false)).toEqual({ scale: 1, opacity: 1 });
-    expect(titleOnScroll(41, 41, false)).toEqual({ scale: 0.86, opacity: 0 });
-    expect(titleOnScroll(500, 41, false)).toEqual({ scale: 0.86, opacity: 0 });
+  it('shrinks to 86% and fades to 10% over the first 56px', () => {
+    expect(titleOnScroll(0, false)).toEqual({ scale: 1, opacity: 1 });
+    const end = titleOnScroll(56, false);
+    expect(end.scale).toBeCloseTo(0.86);
+    expect(end.opacity).toBeCloseTo(0.1);
+    expect(titleOnScroll(500, false)).toEqual(end);
   });
   it('fades only under Reduce Motion', () => {
-    expect(titleOnScroll(41, 41, true)).toEqual({ scale: 1, opacity: 0 });
+    const end = titleOnScroll(56, true);
+    expect(end.scale).toBe(1);
+    expect(end.opacity).toBeCloseTo(0.1);
   });
-  it('holds still with no height or a bounce above the top', () => {
-    expect(titleOnScroll(10, 0, false)).toEqual({ scale: 1, opacity: 1 });
-    expect(titleOnScroll(-20, 41, false)).toEqual({ scale: 1, opacity: 1 });
+  it('holds still on a bounce above the top', () => {
+    expect(titleOnScroll(-20, false)).toEqual({ scale: 1, opacity: 1 });
   });
 });

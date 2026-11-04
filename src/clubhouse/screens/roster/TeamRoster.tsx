@@ -19,6 +19,9 @@ import { NoData } from '../../ui/NoData';
 import { TERMS } from '../../lib/glossary';
 import { useChPhone } from '../../lib/use-phone';
 import { TeamRosterPhone } from './TeamRosterPhone';
+import { TeamRosterPhoneCrh } from './TeamRosterPhoneCrh';
+import { useHomeDayRollover } from '../home/use-day-rollover';
+import { yearKeyOf, yearLineOf, type RosterClock } from './format';
 import { sortTeammates, teammateLine, type TeamSort } from './team';
 import '../../styles/roster.css';
 import { SideScroll } from '../../ui/SideScroll';
@@ -34,7 +37,12 @@ const VIEW_KEY = 'ch-roster-view';
  * request, player panel or "needs a look", and a teammate shows what Fairway's player roster did (name, class year
  * and handicap), never scores. Search, the layout and the sort only change what this screen lists.
  */
-export function TeamRoster({ data }: { data: ChPlayerRoster }) {
+function TeamDayRollover({ clock }: { clock: RosterClock }) {
+  useHomeDayRollover(clock, !clock);
+  return null;
+}
+
+export function TeamRoster({ data, crh = false }: { data: ChPlayerRoster; /** `clubhouse_classes_roster_home_v1`, from the server. */ crh?: boolean }) {
   const router = useRouter();
   const phone = useChPhone();
   const [q, setQ] = useState('');
@@ -69,11 +77,20 @@ export function TeamRoster({ data }: { data: ChPlayerRoster }) {
     );
   }, [players, q, sort]);
 
+  if (phone && crh) {
+    return (
+      <>
+        <TeamDayRollover clock={data.clock} />
+        <TeamRosterPhoneCrh data={data} onRetry={() => router.refresh()} />
+      </>
+    );
+  }
   if (phone) return <TeamRosterPhone data={data} onRetry={() => router.refresh()} />;
 
   return (
     // The coach's page material (P003 #1): the framed head and the Ledger, so player and coach read as one product.
-    <main className="ch-rs" data-canopy="">
+    <main className="ch-rs" data-canopy="" data-ch-crh={crh ? 'on' : undefined}>
+      {crh && <TeamDayRollover clock={data.clock} />}
       <header className="ch-rs-head" data-canopy-head="tight">
         <div>
           <span className="ch-rs-team">
@@ -103,7 +120,7 @@ export function TeamRoster({ data }: { data: ChPlayerRoster }) {
         <>
           {/* Nothing to search, sort or lay out for one row. */}
           <SectionBoundary surface="roster.team" label="The roster" code="CH-3211">
-            <TeammateList rows={rows} view={view} q={q} onClearSearch={() => setQ('')} />
+            <TeammateList rows={rows} view={view} q={q} onClearSearch={() => setQ('')} crh={crh} clock={data.clock} />
           </SectionBoundary>
           <p className="ch-rs-solo" data-ch-code="CH-3309">
             You’re the first one here. Teammates show up as they join.
@@ -152,7 +169,7 @@ export function TeamRoster({ data }: { data: ChPlayerRoster }) {
           </div>
 
           <SectionBoundary surface="roster.team" label="The roster" code="CH-3211">
-            <TeammateList rows={rows} view={view} q={q} onClearSearch={() => setQ('')} />
+            <TeammateList rows={rows} view={view} q={q} onClearSearch={() => setQ('')} crh={crh} clock={data.clock} />
           </SectionBoundary>
         </>
       )}
@@ -192,7 +209,7 @@ function TeamCoaches({ coaches }: { coaches: ChPlayerRoster['coaches'] }) {
 }
 
 /** The teammates, as cards or a table: plain text, never a control (CH-3807). Its own component so the boundary contains it. */
-function TeammateList({ rows, view, q, onClearSearch }: { rows: ChTeammate[]; view: View; q: string; onClearSearch: () => void }) {
+function TeammateList({ rows, view, q, onClearSearch, crh = false, clock }: { rows: ChTeammate[]; view: View; q: string; onClearSearch: () => void; /** The lane's flag: year coins and the year line, nothing else changes on desktop (05 S-ROSTER.player). */ crh?: boolean; clock?: RosterClock }) {
   if (rows.length === 0) {
     return (
       <EmptyState
@@ -211,10 +228,10 @@ function TeammateList({ rows, view, q, onClearSearch }: { rows: ChTeammate[]; vi
           <li key={p.id} className="ch-rs-face ch-rs-face--static">
             <span className="ch-rs-face__top" />
             <span className="ch-rs-face__av">
-              <Avatar name={p.name} id={p.id} size={76} />
+              <Avatar name={p.name} id={p.id} size={76} year={crh ? yearKeyOf(p.gradYear, clock) : null} />
             </span>
             <span className="ch-rs-face__name">{p.name}</span>
-            <span className="ch-rs-face__meta">{teammateLine(p) || ' '}</span>
+            <span className="ch-rs-face__meta">{crh ? [p.isYou ? 'You' : null, yearLineOf(p.gradYear, clock)].filter(Boolean).join(' · ') || ' ' : teammateLine(p) || ' '}</span>
             <span className="ch-rs-face__figs ch-rs-face__figs--one">
               <span>
                 <b className="ch-num">{formatHcp(p.handicap)}</b>HCP
@@ -238,7 +255,7 @@ function TeammateList({ rows, view, q, onClearSearch }: { rows: ChTeammate[]; vi
         <div key={p.id} role="row" className="ch-rs-row">
           <span role="cell" className="ch-rs-who__cell">
             <span className="ch-rs-who ch-rs-who--static">
-              <Avatar name={p.name} id={p.id} size="lg" />
+              <Avatar name={p.name} id={p.id} size="lg" year={crh ? yearKeyOf(p.gradYear, clock) : null} />
               <span>
                 <b>{p.name}</b>
                 {p.isYou && <span className="ch-rs-who__m">You</span>}
@@ -246,7 +263,7 @@ function TeammateList({ rows, view, q, onClearSearch }: { rows: ChTeammate[]; vi
             </span>
           </span>
           <span role="cell" className="ch-rs-num2">
-            {p.classYear ?? <NoData />}
+            {(crh ? yearLineOf(p.gradYear, clock) : p.classYear) ?? <NoData />}
           </span>
           <span role="cell" className="r ch-num ch-rs-num2">
             {formatHcp(p.handicap)}

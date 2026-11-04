@@ -50,10 +50,14 @@ const REFRESH_EDGE_AT = 8;
 /** Refresh: how far a large title shrinks as it scrolls under the bar (DESIGN_LANGUAGE 5, 8). */
 const REFRESH_TITLE_MIN_SCALE = 0.86;
 
-/** The large title at scroll `y`: it shrinks to 86% and fades over its own height. Reduced: it fades only. Scroll-linked, so no curve. */
-export function titleOnScroll(y: number, height: number, reduced: boolean): { scale: number; opacity: number } {
-  const p = height > 0 ? Math.min(1, Math.max(0, y / height)) : 0;
-  return { scale: reduced ? 1 : 1 - (1 - REFRESH_TITLE_MIN_SCALE) * p, opacity: 1 - p };
+/** Refresh: the scroll over which it does (classes-roster-home 08 #10). */
+const REFRESH_TITLE_RANGE = 56;
+const REFRESH_TITLE_MIN_OPACITY = 0.1;
+
+/** The large title at scroll `y`: over the first 56px it shrinks to 86% and fades to 10%. Reduced: it fades only. Scroll-linked, so no curve. */
+export function titleOnScroll(y: number, reduced: boolean): { scale: number; opacity: number } {
+  const p = Math.min(1, Math.max(0, y / REFRESH_TITLE_RANGE));
+  return { scale: reduced ? 1 : 1 - (1 - REFRESH_TITLE_MIN_SCALE) * p, opacity: 1 - (1 - REFRESH_TITLE_MIN_OPACITY) * p };
 }
 
 function motionAllowed(el: Element): boolean {
@@ -102,7 +106,7 @@ export function watchLargeTitle(bar: HTMLElement, canvas: HTMLElement): () => vo
     const y = window.scrollY;
     bar.toggleAttribute('data-scrolled', y > (refresh ? REFRESH_EDGE_AT : 0));
     if (refresh && target) {
-      const { scale, opacity } = titleOnScroll(y, target.offsetHeight, !motionAllowed(canvas));
+      const { scale, opacity } = titleOnScroll(y, !motionAllowed(canvas));
       target.style.scale = scale === 1 ? '' : String(scale);
       target.style.opacity = opacity === 1 ? '' : String(opacity);
     }

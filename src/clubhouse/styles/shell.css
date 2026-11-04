@@ -4375,15 +4375,24 @@ html[data-ch-handoff] [data-ui='clubhouse'] .ch-brand:has(.ch-brand__line.is-wri
     font: var(--ch-type-meta);
     color: var(--ch-text-secondary);
   }
-  .ch-app[data-ch-refresh='on'] [data-ch-sticky-controls] {
+  .ch-app[data-ch-refresh='on'] :is([data-ch-sticky-controls], .ch-stickybar) {
     position: sticky;
     z-index: 2;
-    top: var(--ch-sticky-top, 0);
+    top: calc(var(--ch-phone-topbar-h) + env(safe-area-inset-top));
+    padding-block: 8px;
     background: var(--ch-grouped-bg);
   }
 }
 @media (min-width: 821px) {
   .ch-large-title__context {
     display: none;
+  }
+}
+
+/* The coach's Home bar and hero are one green (Nick, 31 Oct; 06 §11.1). Only with the lane on, and only over a coach hero; player Home
+   follows through data-ch-hero-flat (stats-home PR 6), so a --ch-frame bar never sits over a --ch-green-800 hero. */
+@media (max-width: 820px) {
+  .ch-root[data-ch-crh='on'][data-phone-hero]:has(.ch-hm[data-ch-crh='on'], [data-ch-hero-flat]) .ch-topbar {
+    background: var(--ch-frame);
   }
 }

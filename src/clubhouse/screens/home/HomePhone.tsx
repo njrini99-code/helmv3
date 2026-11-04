@@ -1,9 +1,10 @@
 'use client';
 
-import { ArrowRight, ChartColumn, BrainCircuit, CalendarDays, CalendarPlus, ChevronRight, MessageSquare, Plus, Sun, TriangleAlert } from 'lucide-react';
+import { Sparkles, ArrowRight, ChartColumn, BrainCircuit, CalendarDays, CalendarPlus, ChevronRight, MessageSquare, Plus, Sun, TriangleAlert } from 'lucide-react';
 import Link from 'next/link';
 import { useMemo, useState, type ReactNode } from 'react';
 import type { ChCoachHome, ChHomeEvent, ChLatestRound, ChTeamForm } from '../../data/home';
+import type { ChYearKey } from '../../lib/class-year';
 import { Avatar } from '../../ui/Avatar';
 import { Button } from '../../ui/Button';
 import { EmptyState } from '../../ui/States';
@@ -54,7 +55,7 @@ const newEventHref = (type?: ChHomeEvent['type']) => `${CALENDAR}?new=1${type ? 
  * phone's extra figures come from `data.phone`. `now` freezes the clock for
  * the preview and the tests.
  */
-export function HomePhone({ data, now: frozen, live }: { data: ChCoachHome; now?: string; /** Who is on the course now (P-6); omitted, the card is not drawn. */ live?: LiveSnapshot }) {
+export function HomePhone({ data, now: frozen, live, crh = false }: { crh?: boolean; data: ChCoachHome; now?: string; /** Who is on the course now (P-6); omitted, the card is not drawn. */ live?: LiveSnapshot }) {
   usePhoneHero(true);
   const ticking = useNow();
   const now = useMemo(() => (frozen ? new Date(frozen) : ticking), [frozen, ticking]);
@@ -70,12 +71,13 @@ export function HomePhone({ data, now: frozen, live }: { data: ChCoachHome; now?
   const rounds = data.latestRounds.error ? [] : data.latestRounds.rounds;
 
   return (
-    <main className="ch-hm" aria-label="Home">
+    <main className="ch-hm" aria-label="Home" data-ch-crh={crh ? 'on' : undefined}>
       <header className="ch-hm-hero">
         <span className="ch-hm-hero__date">{data.todayLabel}</span>
         <h1>{data.greeting}</h1>
         {data.subline && (
           <p className="ch-hm-hero__brief">
+            {crh && <Icon icon={Sparkles} size={14} />}
             {data.subline}
           </p>
         )}
@@ -88,7 +90,7 @@ export function HomePhone({ data, now: frozen, live }: { data: ChCoachHome; now?
               <RefreshNotice code="CH-2201" title="This week’s schedule didn’t load" body="Your events are safe. Try again." covered={covered} />
             </FailedSec>
           ) : (
-            <Day phone={phone} rounds={rounds} now={now} today={today} onOpenRound={setOpen} />
+            <Day phone={phone} rounds={rounds} now={now} today={today} onOpenRound={setOpen} years={crh ? data.yearById : undefined} />
           )}
         </SectionBoundary>
       </header>
@@ -102,12 +104,12 @@ export function HomePhone({ data, now: frozen, live }: { data: ChCoachHome; now?
           </SectionBoundary>
         )}
         <SectionBoundary surface="home.today" label="Today" code="CH-2214">
-          <Later data={data} rounds={rounds} now={now} today={today} quiet={nothingAhead} onOpenRound={setOpen} />
+          <Later crh={crh} data={data} rounds={rounds} now={now} today={today} quiet={nothingAhead} onOpenRound={setOpen} />
         </SectionBoundary>
 
         {phone.form ? (
           <SectionBoundary surface="home.form" label="Team scoring" code="CH-2212">
-            <Form form={phone.form} />
+            <Form form={phone.form} crh={crh} />
           </SectionBoundary>
         ) : data.latestRounds.error ? (
           <FailedSec id="ch-hm-form-failed" title="Team scoring">
@@ -117,7 +119,7 @@ export function HomePhone({ data, now: frozen, live }: { data: ChCoachHome; now?
 
         {phone.form && data.legs && (
           <SectionBoundary surface="home.legs" label="The team’s game" code="CH-2221">
-            <TeamLegsPhone legs={data.legs} covered={covered} />
+            <TeamLegsPhone legs={data.legs} covered={covered} crh={crh} />
           </SectionBoundary>
         )}
 
@@ -128,11 +130,11 @@ export function HomePhone({ data, now: frozen, live }: { data: ChCoachHome; now?
         )}
 
         <SectionBoundary surface="home.latestRound" label="Latest rounds" code="CH-2206">
-          <Rounds data={data.latestRounds} trends={data.leaderboard.error ? null : data.leaderboard.rows} onOpen={setOpen} covered={covered} />
+          <Rounds years={crh ? data.yearById : undefined} data={data.latestRounds} trends={data.leaderboard.error ? null : data.leaderboard.rows} onOpen={setOpen} covered={covered} />
         </SectionBoundary>
       </div>
 
-      <RoundSheet round={open} holesError={data.latestRounds.holesError} onClose={() => setOpen(null)} />
+      <RoundSheet crh={crh} round={open} holesError={data.latestRounds.holesError} onClose={() => setOpen(null)} />
     </main>
   );
 }
@@ -140,20 +142,20 @@ export function HomePhone({ data, now: frozen, live }: { data: ChCoachHome; now?
 type DayProps = { rounds: ChLatestRound[]; now: Date | null; today: string | null; onOpenRound: (r: ChLatestRound) => void };
 
 /** Up next's place: the day card, or how to add the first event. */
-function Day({ phone, rounds, now, today, onOpenRound }: DayProps & { phone: ChCoachHome['phone'] }) {
+function Day({ phone, rounds, now, today, onOpenRound, years }: DayProps & { phone: ChCoachHome['phone']; years?: Record<string, ChYearKey> }) {
   const phase = dayPhase(phone.next, phone.today, rounds, now, today);
-  return phase ? <DayCard phase={phase} now={now} today={today} onOpenRound={onOpenRound} /> : <NoEvents />;
+  return phase ? <DayCard years={years} phase={phase} now={now} today={today} onOpenRound={onOpenRound} /> : <NoEvents />;
 }
 
 /**
  * Today's place: an empty day keeps Today's own empty state (with Plan); otherwise the rail of what's left after the
  * card, and what changed since the coach last looked.
  */
-function Later({ data, rounds, now, today, quiet, onOpenRound }: DayProps & { data: ChCoachHome; quiet: boolean }) {
+function Later({ crh = false, data, rounds, now, today, quiet, onOpenRound }: DayProps & { crh?: boolean; data: ChCoachHome; quiet: boolean }) {
   const { phone } = data;
   const place = useLightPlace();
   const clock = useChClock();
-  if (data.week.error || !phone.today.length) return <Today list={phone.today} now={now} failed={data.week.error} quiet={quiet} />;
+  if (data.week.error || !phone.today.length) return <Today card={crh} list={phone.today} now={now} failed={data.week.error} quiet={quiet} />;
   const phase = dayPhase(phone.next, phone.today, rounds, now, today);
   const card = phase?.kind === 'event' ? phase.e : null;
   const later = data.week.agenda.find((a) => a.when === 'later' && a.id !== card?.id);
@@ -260,7 +262,7 @@ function NoEvents() {
  * reads "Now"; with none under way, the next one reads "Next". A row that has passed keeps its ink: only its time
  * steps back, so it never looks disabled.
  */
-export function Today({ list, now, failed, quiet, canPlan = true, inline = false }: { list: ChHomeEvent[]; now: Date | null; failed: boolean; quiet: boolean; canPlan?: boolean; inline?: boolean }) {
+export function Today({ list, now, failed, quiet, canPlan = true, inline = false, card = false }: { /** The coach's card, with the lane's flag: a Clash chip in words. Player Home's calls never pass it. */ card?: boolean; list: ChHomeEvent[]; now: Date | null; failed: boolean; quiet: boolean; canPlan?: boolean; inline?: boolean }) {
   const t12 = useChClockText();
   if (failed) return null;
   const t = now?.getTime();
@@ -300,7 +302,7 @@ export function Today({ list, now, failed, quiet, canPlan = true, inline = false
               {e.conflict ? (
                 <span className="ch-hm-tl__w" title="Overlaps another event">
                   <Icon icon={TriangleAlert} size={13} />
-                  <span className="ch-sr-only">Overlaps another event</span>
+                  {card ? <span>Clash</span> : <span className="ch-sr-only">Overlaps another event</span>}
                 </span>
               ) : mark ? (
                 <span className="ch-hm-now">{live ? 'Now' : 'Next'}</span>
@@ -354,7 +356,7 @@ export function partOf(n: number, of: number): string {
  * The team's scoring form: the average, its change, the line, and three figures. Gains green, losses amber (D-42).
  * The average, greens and putts share one basis, which the strip states (`formBasis`); the week's count is its own.
  */
-function Form({ form }: { form: ChTeamForm }) {
+function Form({ form, crh = false }: { form: ChTeamForm; crh?: boolean }) {
   const W = 320;
   const H = 64;
   const pts = form.line;
@@ -368,9 +370,18 @@ function Form({ form }: { form: ChTeamForm }) {
   const avgTone = deltaTone(form.delta, form.deltaSe, true);
   return (
     <section className="ch-hm-form" aria-labelledby="ch-hm-form">
+      {crh && (
+        <div className="ch-hm-form__head">
+          <h2>Team scoring</h2>
+          <Link href={rebuiltHref('/golf/dashboard/stats') ?? '#'} className="ch-hm-link">
+            Team stats
+          </Link>
+        </div>
+      )}
       <div className="ch-hm-form__top">
         <span>
-          <em id="ch-hm-form">Team scoring average</em>
+          {/* The lane: the label is real text, not the old rule's ::after (06 §11.2). */}
+          <em id="ch-hm-form">{crh ? 'Average · last 10 rounds' : 'Team scoring average'}</em>
           <b className="ch-num">{withPointSpan(formatFixed(form.avg))}</b>
         </span>
         <span className={'ch-hm-delta ch-num ' + avgTone}>
@@ -457,7 +468,7 @@ function FailedSec({ id, title, children }: { id: string; title: string; childre
   );
 }
 
-function Rounds({ data, trends, onOpen, covered }: { data: ChCoachHome['latestRounds']; trends: ChCoachHome['leaderboard']['rows'] | null; onOpen: (r: ChLatestRound) => void; covered: boolean }) {
+function Rounds({ years, data, trends, onOpen, covered }: { years?: Record<string, ChYearKey>; data: ChCoachHome['latestRounds']; trends: ChCoachHome['leaderboard']['rows'] | null; onOpen: (r: ChLatestRound) => void; covered: boolean }) {
   const trendOf = new Map((trends ?? []).map((p) => [p.playerId, p.trend]));
   const teamStats = rebuiltHref('/golf/dashboard/stats');
   return (
@@ -492,7 +503,7 @@ function Rounds({ data, trends, onOpen, covered }: { data: ChCoachHome['latestRo
                       onOpen(r);
                     }}
                   >
-                    <Avatar name={r.playerName} id={r.playerId} size={38} />
+                    <Avatar name={r.playerName} id={r.playerId} size={38} year={years?.[r.playerId] ?? null} />
                     <span className="ch-hm-rd__b">
                       <b>{r.playerName}</b>
                       <RoundMeta meta={r.meta} />
@@ -539,7 +550,7 @@ export function roundPeek(r: ChLatestRound, rows: ChCoachHome['leaderboard']['ro
 }
 
 /** A latest round's card (board 05): the figures, then Out and In; Message and the player's stats. */
-function RoundSheet({ round, holesError, onClose }: { round: ChLatestRound | null; holesError: boolean; onClose: () => void }) {
+function RoundSheet({ crh = false, round, holesError, onClose }: { crh?: boolean; round: ChLatestRound | null; holesError: boolean; onClose: () => void }) {
   const message = round ? rebuiltHref(`/golf/dashboard/messages?player=${round.playerId}`) : null;
   const recap = round ? roundHref(round.id, 'coach') : null;
   const stats = round ? rebuiltHref(`/golf/dashboard/stats?player=${round.playerId}`) : null;
@@ -549,6 +560,7 @@ function RoundSheet({ round, holesError, onClose }: { round: ChLatestRound | nul
     <Modal
       open={!!round}
       onClose={onClose}
+      detent={crh ? 0.74 : undefined}
       title={round?.playerName ?? ''}
       description={round?.meta}
       footer={
@@ -581,7 +593,7 @@ function RoundSheet({ round, holesError, onClose }: { round: ChLatestRound | nul
       }
     >
       {round && (
-        <div className="ch-hm-sheet">
+        <div className={'ch-hm-sheet' + (crh ? ' is-crh' : '')}>
           <dl className="ch-hm-strip ch-well-soft">
             <div>
               <dt>Score</dt>

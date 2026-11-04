@@ -1,18 +1,20 @@
 'use client';
 
-import { Pencil, RotateCw, TriangleAlert } from 'lucide-react';
+import { Bus, Pencil, RotateCw, TriangleAlert } from 'lucide-react';
 import { useCallback, useEffect, useState } from 'react';
 import { parseSemesterDates } from '@/lib/golf/semester';
 import {
   calendarGap,
   conflictsOf,
   daysLabel,
+  dayToken,
   eventLabel,
   gapReason,
   hasNoTime,
   isFlexible,
   longDay,
   shortDay,
+  tabParts,
   timeRange,
   upcomingMeetings,
   type ChClass,
@@ -30,7 +32,9 @@ import { ExamSheet } from './ExamSheet';
 import { examsOfClass } from './exam-form';
 import type { ChClassStatusWrites, ChExam } from './class-status-writes';
 import { Icon } from '../../ui/Icon';
+import { GroupList, GroupRow } from '../../ui/GroupList';
 import { Modal } from '../../ui/Modal';
+import { Surface } from '../../ui/Surface';
 import { plural } from '../../lib/plural';
 
 /**
@@ -40,6 +44,7 @@ import { plural } from '../../lib/plural';
  * drawn (docs/clubhouse/phone/classes.md, gaps).
  */
 export function ClassDetail({
+  crh = false,
   c,
   todayIso,
   term,
@@ -53,6 +58,8 @@ export function ClassDetail({
   statusWrites,
   onStatusEnabled,
 }: {
+  /** `clubhouse_classes_roster_home_v1` on a phone: the identity block, Meets, Time, Room and Credits, and This week (06 §5). */
+  crh?: boolean;
   c: ChClass | null;
   todayIso: string;
   term: ChTerm;
@@ -106,6 +113,7 @@ export function ClassDetail({
   // A class that isn't on the calendar (no days, or no full time) has no meetings to list.
   const gap = c ? calendarGap(c) : null;
   const meetings = c && !gap ? upcomingMeetings(c, own && own.start > todayIso ? own.start : todayIso, own?.end ?? term.end, 4) : [];
+  const thisWeek = c && !gap ? week.dates.filter((d) => c.days.includes(dayToken(d))) : [];
   const facts: Array<[string, string]> = c
     ? [
         ['When', flexible ? (hasNoTime(c) ? `${daysLabel(c.days)} · No time set` : 'No fixed meeting') : `${daysLabel(c.days)} · ${timeRange(c.start, c.end, hours)}`],
@@ -121,8 +129,9 @@ export function ClassDetail({
     <Modal
       open={!!c && !adding && !removing}
       onClose={onClose}
-      title={c?.name ?? ''}
-      description={c ? [c.code, c.credits != null ? `${plural(c.credits, 'credit')}` : null, c.semester].filter(Boolean).join(' · ') : undefined}
+      detent={crh ? 0.9 : undefined}
+      title={crh && c ? [tabParts(c).top, tabParts(c).bottom].filter(Boolean).join(' ') : (c?.name ?? '')}
+      description={crh ? undefined : c ? [c.code, c.credits != null ? `${plural(c.credits, 'credit')}` : null, c.semester].filter(Boolean).join(' · ') : undefined}
       width={460}
       footer={
         c && (
@@ -136,9 +145,9 @@ export function ClassDetail({
                 onRemove(c);
               }}
             >
-              Remove class
+              {crh ? 'Remove' : 'Remove class'}
             </Button>
-            <Button leftIcon={Pencil} onClick={() => onEdit(c)}>
+            <Button variant={crh ? 'primary' : undefined} leftIcon={Pencil} onClick={() => onEdit(c)}>
               Edit class
             </Button>
           </>
@@ -178,15 +187,52 @@ export function ClassDetail({
               onRemoveExam={setRemoving}
             />
           )}
-          <dl className="ch-cl-facts">
-            {facts.map(([k, val]) => (
+          {crh && (
+            <div className={`ch-cl-dhero ch-cl-t-${c.tone}`}>
+              <span className="ch-cl-card__code">
+                <b>{tabParts(c).top}</b>
+                {tabParts(c).bottom}
+              </span>
+              <b className="ch-cl-dhero__n">{c.name}</b>
+              {c.instructor && <em>{c.instructor}</em>}
+            </div>
+          )}
+          <dl className={'ch-cl-facts' + (crh ? ' is-grid' : '')}>
+            {(crh
+              ? ([
+                  ['Meets', daysLabel(c.days) || '—'],
+                  ['Time', timeRange(c.start, c.end, hours) ?? '—'],
+                  ['Room', c.location ?? '—'],
+                  ['Credits', c.credits != null ? String(c.credits) : '—'],
+                ] as Array<[string, string]>)
+              : facts
+            ).map(([k, val]) => (
               <div key={k}>
                 <dt>{k}</dt>
                 <dd>{val}</dd>
               </div>
             ))}
           </dl>
-          {meetings.length > 0 && (
+          {crh && (
+            <Surface variant="card" padded={false} title="This week" actions={<span className="ch-cl-meta ch-num">{plural(thisWeek.length, 'meeting')}</span>}>
+              <GroupList inset="16px">
+                {thisWeek.map((d) => (
+                  <GroupRow key={d} className="ch-cl-wk">
+                    <span>
+                      <b className="ch-num">{longDay(d)}</b>
+                      <span className="ch-num">{timeRange(c.start, c.end, hours) ?? '—'}</span>
+                    </span>
+                    {mine.some((x) => x.date === d) && (
+                      <span className="ch-cl-chip is-warn">
+                        <Icon icon={Bus} size={12} /> Travel
+                      </span>
+                    )}
+                  </GroupRow>
+                ))}
+              </GroupList>
+            </Surface>
+          )}
+          {!crh && meetings.length > 0 && (
             <section className="ch-cl-meet" aria-labelledby="ch-cl-meet-h">
               <h3 id="ch-cl-meet-h">Next meetings</h3>
               <ol>

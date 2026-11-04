@@ -20,7 +20,7 @@ import { useChReducedMotion } from '../../lib/reduced-motion';
 import { formatFixed, formatHcp, formatSigned, formatToPar, NO_DATA } from '../../lib/format';
 import { NoData } from '../../ui/NoData';
 import { rebuiltHref } from '../../shell/nav';
-import { AVAILABILITY_WORD, legsCaption, relativeAgo } from './format';
+import { AVAILABILITY_WORD, legsCaption, relativeAgo, yearKeyOf, yearLineOf, type RosterClock } from './format';
 import { usePressPrefetch } from '../../shell/use-prefetch-tabs';
 import { plural, pluralWord } from '../../lib/plural';
 import { ClassStatusLine } from '../../ui/ClassStatusLine';
@@ -42,7 +42,12 @@ export function RosterPeek({
   availability,
   helm,
   classLine,
+  crh = false,
+  clock,
 }: {
+  /** The lane's flag: year coin and chip, no repeated class line. */
+  crh?: boolean;
+  clock?: RosterClock;
   p: ChRosterPlayer | undefined;
   notesLocked: boolean;
   onClose: () => void;
@@ -83,7 +88,7 @@ export function RosterPeek({
           exit={reduced ? { opacity: 0 } : { opacity: 0, transform: 'translateX(12px)' }}
           transition={chTween('base', reduced)}
         >
-          <PeekBody p={p} notesLocked={notesLocked} onClose={onClose} onNoteSaved={onNoteSaved} availability={availability} helm={helm} classLine={classLine} />
+          <PeekBody p={p} notesLocked={notesLocked} onClose={onClose} onNoteSaved={onNoteSaved} availability={availability} helm={helm} classLine={classLine} crh={crh} clock={clock} />
         </m.aside>
       )}
     </AnimatePresence>
@@ -98,7 +103,11 @@ function PeekBody({
   availability,
   helm,
   classLine,
+  crh = false,
+  clock,
 }: {
+  crh?: boolean;
+  clock?: RosterClock;
   p: ChRosterPlayer;
   notesLocked: boolean;
   onClose: () => void;
@@ -117,7 +126,8 @@ function PeekBody({
   const facts = [
     { icon: MapPin, label: 'Hometown', value: p.hometown },
     { icon: School, label: 'High school', value: p.highSchool },
-    { icon: GraduationCap, label: 'Class of', value: p.gradYear ? String(p.gradYear) : null },
+    // The year chip says it behind the flag, so it isn't said twice.
+    { icon: GraduationCap, label: 'Class of', value: !crh && p.gradYear ? String(p.gradYear) : null },
     { icon: Hash, label: 'Jersey', value: p.jersey },
   ].filter((f) => f.value);
   const messageHref = rebuiltHref(`/golf/dashboard/messages?player=${encodeURIComponent(p.id)}`);
@@ -149,13 +159,20 @@ function PeekBody({
       </div>
       <div className="ch-rs-peek__hero">
         <span className="ch-rs-peek__av">
-          <Avatar name={p.name} id={p.id} size={96} />
+          <Avatar name={p.name} id={p.id} size={crh ? 76 : 96} year={crh ? yearKeyOf(p.gradYear, clock) : null} dim={crh && p.status === 'inactive'} />
         </span>
         <h2 className="ch-display">{p.name}</h2>
-        <span className="ch-rs-peek__sub">
-          {[p.classYear, p.gradYear ? `Class of ${p.gradYear}` : null, p.availability !== 'available' ? AVAILABILITY_WORD[p.availability] : null].filter(Boolean).join(' · ') ||
-            'Player'}
-        </span>
+        {crh ? (
+          <span className="ch-rs-ychip" data-year={yearKeyOf(p.gradYear, clock) ?? undefined}>
+            <i aria-hidden="true" />
+            {[yearLineOf(p.gradYear, clock), p.availability !== 'available' ? AVAILABILITY_WORD[p.availability] : null].filter(Boolean).join(' · ') || 'Player'}
+          </span>
+        ) : (
+          <span className="ch-rs-peek__sub">
+            {[p.classYear, p.gradYear ? `Class of ${p.gradYear}` : null, p.availability !== 'available' ? AVAILABILITY_WORD[p.availability] : null].filter(Boolean).join(' · ') ||
+              'Player'}
+          </span>
+        )}
         {classLine && (
           <span className="ch-rs-peek__class">
             <ClassStatusLine kind={classLine.kind} text={classLine.text} />
@@ -353,7 +370,7 @@ const NOTE_WARN = 200;
 export type NoteSaved = (playerId: string, note: string | null) => void;
 
 /** The coach's private note. Shared by the desktop panel and the phone profile (D-56). */
-export function CoachNote({ p, locked, onSaved }: { p: ChRosterPlayer; locked: boolean; onSaved: NoteSaved }) {
+export function CoachNote({ p, locked, onSaved, onDirty }: { p: ChRosterPlayer; locked: boolean; onSaved: NoteSaved; /** Behind the lane's flag: the field holds text not yet saved, so the profile asks before it leaves. */ onDirty?: (dirty: boolean) => void }) {
   const [saved, setSaved] = useState(p.coachNote ?? '');
   const [draft, setDraft] = useState(p.coachNote ?? '');
   const save = useAction(
@@ -392,8 +409,13 @@ export function CoachNote({ p, locked, onSaved }: { p: ChRosterPlayer; locked: b
         readOnly={locked}
         placeholder={locked ? undefined : `Something to remember about ${p.firstName}`}
         aria-describedby={locked || left <= NOTE_WARN ? helpId : undefined}
-        onChange={(e) => setDraft(e.target.value)}
+        onChange={(e) => {
+          setDraft(e.target.value);
+          onDirty?.(e.target.value.trim() !== saved.trim());
+        }}
         onBlur={async () => {
+          // Leaving the field saves it, so it is no longer unsaved text to ask about.
+          onDirty?.(false);
           if (locked) return;
           const next = draft.trim();
           if (next === saved.trim()) return;

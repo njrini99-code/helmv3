@@ -653,6 +653,38 @@
   --ch-typing-dot: #7a766c;
   --ch-ring-own: #8c703a;
   --ch-switch-off-ring: #8f8b81;
+  --ch-chart-line: #3f7556;
+  --ch-countdown-on-green: #e3f5e9;
+  --ch-coin-bg: #e9e3d3;
+  --ch-coin-ink: #5a4e36;
+  --ch-coin-ring: rgb(90 78 54 / 0.22);
+  --ch-champagne-dot: #e2c98f;
+  --ch-on-green-2: rgb(244 241 232 / 0.84);
+  --ch-on-green-3: rgb(244 241 232 / 0.72);
+  /* Clubhouse classes, roster and home lane (design-refresh/classes-roster-home 06 1.2): additive, read only by its flagged screens. */
+  --ch-crh-ink2: #46433d;
+  --ch-crh-ink4: #5f5c55;
+  --ch-accent-ink: #155a39;
+  --ch-accent-tint: rgb(21 90 57 / 0.1);
+  --ch-card-bg-raised: #f8f6f0;
+  --ch-tile-bg: #fffefb;
+  --ch-warn-bg: rgb(154 87 0 / 0.1);
+  --ch-warn-ink: #7a4500;
+  --ch-warn-icon: #9a5700;
+  --ch-warn-ring: rgb(154 87 0 / 0.22);
+  --ch-warn-on-green: #f6d69e;
+  --ch-warn-on-green-bg: rgb(231 174 87 / 0.18);
+  --ch-on-green-chip: #e3f5e9;
+  --ch-on-green-chip-bg: rgb(123 199 154 / 0.18);
+  --ch-on-green-rule: rgb(244 241 232 / 0.14);
+  --ch-on-green-mark: rgb(244 241 232 / 0.5);
+  --ch-switch-on: #2e8a57;
+  --ch-crh-card-shadow: 0 0 0 1px var(--ch-card-ring), 0 1px 2px rgb(28 25 18 / 0.05), 0 8px 20px -12px rgb(28 25 18 / 0.12);
+  --ch-crh-leader-shadow: 0 1px 2px rgb(28 25 18 / 0.05), 0 8px 20px -14px rgb(28 25 18 / 0.12);
+  --ch-crh-btn-shadow: 0 0 0 1px var(--ch-card-ring), 0 1px 2px rgb(28 25 18 / 0.05);
+  --ch-crh-btn-pri-shadow: inset 0 1px 0 rgb(255 255 255 / 0.12), 0 6px 14px -8px rgb(11 58 37 / 0.7);
+  --ch-crh-sheet-shadow: 0 -10px 40px -10px rgb(0 0 0 / 0.35);
+  --ch-crh-well-shadow: inset 0 1px 2px rgb(28 25 18 / 0.05);
   /* The one feature card: the frame's green, lit faintly from its top right corner. */
   --ch-feature-bg: radial-gradient(120% 90% at 100% 0%, rgb(123 199 154 / 0.14), transparent 60%), var(--ch-green-800);
   --ch-elevation-feature: 0 0 0 1px #082b1c, 0 14px 28px -18px rgb(11 58 37 / 0.7);
@@ -878,6 +910,24 @@ html[data-fw-theme='dark'] [data-ui='clubhouse'] {
   --ch-yr-jr: #46739a;
   --ch-yr-so: #8b6b30;
   --ch-yr-fr: #a3533e;
+  --ch-chart-line: #6db488;
+  --ch-coin-bg: #2a2e27;
+  --ch-coin-ink: #dcd3bc;
+  --ch-coin-ring: rgb(220 211 188 / 0.18);
+  --ch-crh-ink2: #d0c9b8;
+  --ch-crh-ink4: #ada697;
+  --ch-accent-ink: #7cc79b;
+  --ch-accent-tint: rgb(124 199 155 / 0.12);
+  --ch-card-bg-raised: #1d231f;
+  --ch-tile-bg: rgb(255 255 255 / 0.09);
+  --ch-warn-bg: rgb(231 174 87 / 0.12);
+  --ch-warn-ink: #f0c77e;
+  --ch-warn-icon: #e7ae57;
+  --ch-warn-ring: rgb(231 174 87 / 0.24);
+  --ch-crh-card-shadow: 0 0 0 1px var(--ch-card-ring), inset 0 1px 0 rgb(255 255 255 / 0.04);
+  --ch-crh-leader-shadow: 0 1px 2px rgb(0 0 0 / 0.3), 0 8px 20px -14px rgb(0 0 0 / 0.5);
+  --ch-crh-btn-shadow: 0 0 0 1px var(--ch-card-ring), 0 1px 2px rgb(0 0 0 / 0.3);
+  --ch-crh-well-shadow: inset 0 1px 2px rgb(0 0 0 / 0.3);
   --ch-on-ink-warning: #8a5a0c;
   /* 4.5:1 or more on every night surface a field or menu sits on, the raised -2 well the darkest (4.7:1; it was #8f897c,
      3.78 there and 4.27 on the raised surface). Visual pass 2026-10-28. */
@@ -1404,10 +1454,12 @@ html[data-fw-theme='dark']:has([data-ui='clubhouse']) body {
 
 /* The refresh's chart fills (DESIGN_LANGUAGE §3). Scoped so today's --ch-chart-*-fill values stay as they are with the flag off. */
 [data-ch-refresh='on'] {
+  --ch-score-under: #9e3b2e;
   --ch-chart-gain-fill: #1f6b45;
   --ch-chart-loss-fill: #b86f0c;
 }
 html[data-fw-theme='dark'] [data-ch-refresh='on'] {
+  --ch-score-under: #f28b7d;
   --ch-chart-gain-fill: #4fa877;
   --ch-chart-loss-fill: #e09a35;
 }

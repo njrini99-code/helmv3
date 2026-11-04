@@ -7,9 +7,9 @@ import { LargeTitleSkeleton } from '../../ui/LargeTitle';
  * final slots; on a phone, the list's rows (switched in CSS, since this renders on the server). Join requests and Needs a
  * look are drawn only when there are some, so the skeleton leaves them out and they push the grid down when they come.
  */
-export function RosterSkeleton() {
+export function RosterSkeleton({ crh = false }: { /** `clubhouse_classes_roster_home_v1`, from the server. */ crh?: boolean }) {
   return (
-    <main className="ch-rs" data-canopy="" aria-busy="true" aria-label="Loading roster" data-ch-code="CH-3401">
+    <main className={'ch-rs' + (crh ? ' ch-rsx' : '')} data-canopy="" aria-busy="true" aria-label="Loading roster" data-ch-code="CH-3401" data-ch-crh={crh ? 'on' : undefined}>
       <div className="ch-rs-skel-desk">
         <header className="ch-rs-head" data-canopy-head="tight">
           <div>
@@ -50,7 +50,7 @@ export function RosterSkeleton() {
         </div>
       </div>
       {/* The phone page's own classes, so the eyebrow, the title, the sort and each row land where the loaded page puts them. */}
-      <div className="ch-rsm-skel ch-rsm-page">
+      {crh ? <RosterPhoneSkeletonCrh /> : <div className="ch-rsm-skel ch-rsm-page">
         <div className="ch-rsm-head">
           <Skeleton width={124} height={14.4} />
           <LargeTitleSkeleton width={128} />
@@ -77,7 +77,39 @@ export function RosterSkeleton() {
             </li>
           ))}
         </ul>
-      </div>
+      </div>}
     </main>
+  );
+}
+
+/** Behind the lane's flag (06 7.8): a green block with ivory bars for the team card, then the Active card's rows. No spinner, no sweep. */
+function RosterPhoneSkeletonCrh() {
+  return (
+    <div className="ch-rsm-skel ch-rsm-page">
+      <div className="ch-rsm-head">
+        <LargeTitleSkeleton width={128} />
+        <Skeleton width={150} height={15} />
+      </div>
+      <div className="ch-rs-tcard ch-rs-tcard--skel" aria-hidden="true">
+        <Skeleton width="44%" height={14} />
+        <Skeleton width="30%" height={12} />
+        <Skeleton width="100%" height={10} />
+        <Skeleton width="70%" height={12} />
+      </div>
+      <div className="ch-rsx-sec">
+        <div className="ch-surface ch-surface--card" aria-hidden="true">
+          {Array.from({ length: 6 }, (_, i) => (
+            <div key={i} className="ch-group__row" data-two-line="">
+              <Skeleton width={32} height={32} radius={16} />
+              <span className="ch-rsx-row__b">
+                <Skeleton width={`${52 - i * 5}%`} height={13} />
+                <Skeleton width={`${70 - i * 7}%`} height={11} />
+              </span>
+              <Skeleton width={34} height={16} />
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
   );
 }

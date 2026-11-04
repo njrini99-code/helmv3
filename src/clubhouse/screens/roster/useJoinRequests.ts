@@ -1,11 +1,15 @@
 'use client';
 
+import { useRouter } from 'next/navigation';
 import { useCallback, useMemo, useRef, useState } from 'react';
 import { acceptJoinRequest, rejectJoinRequest } from '@/app/golf/actions/teams';
 import type { ChJoinRequest } from '../../data/roster';
 import { normalise, useAction, type ActionCopy, type ActionResult, type ServerResult } from '../../lib/use-action';
 import { chReport } from '../../lib/track';
 import { pluralWord } from '../../lib/plural';
+
+/** What `acceptJoinRequest` and `rejectJoinRequest` answer once a request is already decided (teams.ts). */
+const ALREADY_HANDLED = 'This request has already been processed';
 
 /** "Grace Liu", "Grace Liu and Owen Park", "Grace Liu, Owen Park and Sam Reyes". */
 export function nameList(names: string[]): string {
@@ -30,7 +34,10 @@ type AllOutcome = { added: ChJoinRequest[]; failed: ChJoinRequest[] };
  * failed and says how many were added (CH-3007). Failures stay in the list,
  * and the toast's Retry only re-runs those.
  */
-export function useJoinRequests(teamName: string, initial: ChJoinRequest[]) {
+export function useJoinRequests(teamName: string, initial: ChJoinRequest[], crh = false) {
+  const router = useRouter();
+  // S-ROSTER.requests.elsewhere (behind the lane's flag): another coach got there first. The row stays gone, no toast, and the page reads again.
+  const elsewhere = useRef(new Set<string>());
   /** Requests decided here, hidden until the server's list stops sending them. */
   const [decided, setDecided] = useState<ReadonlySet<string>>(() => new Set());
   const reqs = useMemo(() => (decided.size ? initial.filter((r) => !decided.has(r.id)) : initial), [initial, decided]);
@@ -55,7 +62,13 @@ export function useJoinRequests(teamName: string, initial: ChJoinRequest[]) {
       hide(r.id);
       try {
         const res = await call();
-        if (!normalise(res).success) restore(r.id);
+        const out = normalise(res);
+        if (crh && !out.success && out.error === ALREADY_HANDLED) {
+          elsewhere.current.add(r.id);
+          router.refresh();
+          return { success: true };
+        }
+        if (!out.success) restore(r.id);
         return res;
       } catch (err) {
         restore(r.id);
@@ -64,8 +77,10 @@ export function useJoinRequests(teamName: string, initial: ChJoinRequest[]) {
         setBusy(null);
       }
     },
-    [hide, restore],
+    [crh, hide, restore, router],
   );
+  /** A decision another coach had already made says nothing here. */
+  const quietIfElsewhere = useCallback((r: ChJoinRequest) => elsewhere.current.has(r.id), []);
 
   const approve = useAction(
     'roster.approveRequest',
@@ -80,12 +95,18 @@ export function useJoinRequests(teamName: string, initial: ChJoinRequest[]) {
       failed: `Couldn’t approve ${r.name}`,
       hint: 'The request may have been withdrawn. Refresh to see the latest.',
       code: 'CH-3002',
+      get quiet() {
+        return quietIfElsewhere(r);
+      },
     }),
   );
   const decline = useAction('roster.declineRequest', (r: ChJoinRequest) => decideOne(r, () => rejectJoinRequest(r.id)), (r) => ({
     done: `Request from ${r.name} declined`,
     failed: `Couldn’t decline ${r.name}’s request`,
     code: 'CH-3003',
+    get quiet() {
+      return quietIfElsewhere(r);
+    },
   }));
 
   const approveEach = useCallback(

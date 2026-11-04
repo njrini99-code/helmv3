@@ -169,7 +169,7 @@ export function ClubhouseFrame({
         <PhoneChromeProvider>
           <SectionSwitchProvider pathname={pathname} role={role} shell={shell}>
             {/* The toast region renders inside .ch-root so it gets the Clubhouse tokens and fonts. */}
-            <FrameRoot motionOff={!showAnimations} fullScreen={fullScreen} homeRoot={rebuilt && pathname.replace(/\/$/, '') === '/golf/dashboard'}>
+            <FrameRoot crh={shell.crh ?? false} motionOff={!showAnimations} fullScreen={fullScreen} homeRoot={rebuilt && pathname.replace(/\/$/, '') === '/golf/dashboard'}>
               <ToastProvider scope={userData.teamId ?? ''}>
                 <CrumbProvider>
                   <MaybeQuickChat on={shell.quickChat ?? false} pathname={pathname} search={search} enabled={shell.askAvailable ?? false}>
@@ -229,7 +229,7 @@ export function ClubhouseFrame({
 }
 
 /** `.ch-root`, marked while a pushed phone screen covers the page, so toasts sit above its composer instead of the hidden tab bar. */
-function FrameRoot({ motionOff, fullScreen, homeRoot, children }: { motionOff: boolean; fullScreen: boolean; homeRoot: boolean; children: ReactNode }) {
+function FrameRoot({ crh, motionOff, fullScreen, homeRoot, children }: { crh: boolean; motionOff: boolean; fullScreen: boolean; homeRoot: boolean; children: ReactNode }) {
   const { immersive, noTabs, hero: pageHero } = usePhoneChromeState();
   const sections = useSectionSwitch();
   // P001-D4: Home's phone bar is the green hero's from the server's first paint (the device's last layout, F-36), not
@@ -254,6 +254,7 @@ function FrameRoot({ motionOff, fullScreen, homeRoot, children }: { motionOff: b
     <div
       ref={rootRef}
       className={`ch-root ${clubhouseFontVariables}`}
+      data-ch-crh={crh ? 'on' : undefined}
       data-ui="clubhouse"
       data-motion={motionOff ? 'off' : undefined}
       data-phone-immersive={immersive ? '' : undefined}

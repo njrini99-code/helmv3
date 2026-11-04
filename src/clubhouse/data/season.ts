@@ -4,6 +4,7 @@ import { fetchAllRowsResult } from '@/lib/supabase/fetch-all-rows';
 import { chunkIds } from '@/lib/supabase/chunk-ids';
 import { isCountableRound } from '@/lib/golf/round-countable';
 import { withCanonicalRoundTotal } from '@/lib/golf/round-total';
+import { roundTypeFromDb } from '@/lib/golf/round-type-utils';
 import { getValidTimezone } from '@/lib/calendar/timezone';
 import { chLogServer } from '../lib/track-server';
 import { seasonLabelOf } from '../lib/season-start';
@@ -30,6 +31,7 @@ export interface ChRound {
   tees_played: string | null;
   round_date: string;
   round_type: string | null;
+  course_id?: string | null;
   total_score: number | null;
   score_to_par: number | null;
   front_nine: number | null;
@@ -54,6 +56,14 @@ export interface ChRound {
 
 const ROUND_COLUMNS =
   'id, player_id, course_id, course_name, tees_played, round_date, round_type, total_score, score_to_par, front_nine, back_nine, holes_played, total_putts, total_gir, total_gir_possible, total_fairways_hit, total_fairways, strokes_gained_total, strokes_gained_tee, strokes_gained_approach, strokes_gained_around_green, strokes_gained_putting';
+
+/**
+ * Whether a round goes into a scoring average: true when `round_type` is null or `roundTypeFromDb(round_type) !== 'practice'`. The
+ * one helper Roster, Home and Stats call under their lane flags (START_HERE, shared values). Latest rounds lists every round.
+ */
+export function countsForScoring(r: Pick<ChRound, 'round_type'>): boolean {
+  return r.round_type == null || roundTypeFromDb(r.round_type) !== 'practice';
+}
 
 export const TREND_LENGTH = 7;
 export const MIN_SG_ROUNDS = 3;

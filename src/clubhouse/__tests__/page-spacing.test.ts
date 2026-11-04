@@ -126,6 +126,7 @@ const PHONE_BLEEDS: [file: string, context: string, selector: string][] = [
   ['stats.css', PHONE, '.ch-stm .ch-gd.is-phone .ch-gd__nav'],
   ['rounds-setup.css', PHONE, ".ch-rsu[data-ui='clubhouse'] .ch-rsu-band"],
   ['rounds-setup.css', PHONE, ".ch-rsu[data-ui='clubhouse'] .ch-rsu-dock"],
+  ['roster.css', PHONE, "[data-ch-crh='on'] .ch-rs-ldrs"],
 ];
 const GUTTER = 'var(--ch-page-x-phone)';
 const BLEED = 'calc(-1 * var(--ch-page-x-phone))';
