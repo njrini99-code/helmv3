@@ -111,7 +111,6 @@ import {
 import { useComposerInset } from "./composer-inset";
 import { useThreadAnchor } from "./use-thread-anchor";
 import { useThreadDragTimes } from "./use-thread-drag-times";
-import { classYearKey } from "../../lib/class-year";
 import { ConversationSearch, detailsLine, MembersCard, MuteMenu, PhotosAndFiles, popIn, QuickActions, tokenBeat, useMuteAction } from "./details-v2";
 import { HelloCard } from "./HelloCard";
 import { HoldLift } from "./hold-lift";
@@ -312,7 +311,7 @@ function PhoneInboxV2({ api, onNew }: { api: ChMessagesApi; onNew: () => void })
           ))}
         </section>
       ) : firstRun ? (
-        <MessagesFirstRun redesign coach={api.viewer.role === "coach"} teamName={api.teamName} onNew={onNew} />
+        <MessagesFirstRun redesign coach={api.viewer.role === "coach"} teamName={api.teamName ?? undefined} onNew={onNew} />
       ) : (
         <div className="ch-msp-list">
           {filter === "all" && !q.trim() && pinned.length > 0 && (
@@ -332,7 +331,7 @@ function PhoneInboxV2({ api, onNew }: { api: ChMessagesApi; onNew: () => void })
                       {c.group ? (
                         <span className="ch-ms-grp ch-msv-pin__grp"><Icon icon={Users} size={31} /></span>
                       ) : (
-                        <Avatar name={c.title} id={convAvatarId(api, c)} size={62} year={convYear(api, c)} />
+                        <Avatar name={c.title} id={convAvatarId(api, c)} size="xl" year={convYear(api, c)} />
                       )}
                       <span className="ch-msv-pin__l">{c.group ? c.title : firstName(c.title)}</span>
                     </button>
@@ -590,7 +589,7 @@ function PhoneThread({
         back={{ onBack, ariaLabel: "Back to Messages" }}
         title={
           <button type="button" className="ch-msp-who" onClick={onDetails}>
-            {conv.group ? <GroupMark size="sm" /> : <Avatar name={conv.title} id={convAvatarId(api, conv)} size={30} year={who?.gradYear ? classYearKey(who.gradYear, new Date(api.now), api.timeZone) : null} />}
+            {conv.group ? <GroupMark size="sm" /> : <Avatar name={conv.title} id={convAvatarId(api, conv)} size={30} year={convYear(api, conv)} />}
             <span>
               <b>{conv.title}</b>
               <em>
@@ -680,7 +679,7 @@ function PhoneThread({
                 const name = firstName(who?.name ?? conv.title);
                 return (
                   <div key={id} className="ch-ms-msg is-first">
-                    <span className="ch-ms-msg__av">{<Avatar name={who?.name ?? conv.title} id={who ? (who.playerId ?? who.userId) : convAvatarId(api, conv)} size={30} />}</span>
+                    <span className="ch-ms-msg__av">{<Avatar name={who?.name ?? conv.title} id={who ? (who.playerId ?? who.userId) : convAvatarId(api, conv)} size="sm" />}</span>
                     <div className="ch-ms-msg__col">
                       <div className={"ch-msv-typing" + (conv.group ? " has-name" : "")} role="status" aria-label={`${name} is typing`}>
                         {conv.group && <b className="ch-msv-bname">{name}</b>}
@@ -1411,7 +1410,7 @@ function PhoneNewMessage({
                 const on = to.includes(p.userId);
                 return (
                   <button key={p.userId} type="button" role="option" aria-selected={on} className="ch-msp-row is-btn" onClick={() => toggle(p.userId)}>
-                    <Avatar name={p.name} id={p.playerId ?? p.userId} size={api.redesign ? 32 : "lg"} />
+                    {api.redesign ? <Avatar name={p.name} id={p.playerId ?? p.userId} size="md" /> : <Avatar name={p.name} id={p.playerId ?? p.userId} size="lg" />}
                     <span className="ch-msp-row__b">
                       <b>{p.name}</b>
                       <span>{p.subtitle}</span>

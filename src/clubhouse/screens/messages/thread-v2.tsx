@@ -259,6 +259,7 @@ export function useSendKeyPop(ready: boolean, reduced: boolean): { ref: RefObjec
         anim.onfinish = null;
       };
     }
+    return;
   }, [ready, reduced]);
   return { ref, hidden };
 }

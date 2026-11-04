@@ -10,7 +10,7 @@ export const PLAYER_STARTERS = ['Can we find time to talk this week?', 'Here’s
 export function HelloCard({ name, id, role, coach, year, onStarter }: { name: string; id?: string | null; role: string; coach: boolean; year?: Parameters<typeof Avatar>[0]['year']; onStarter: (text: string) => void }) {
   return (
     <section className="ch-msv-hello">
-      <Avatar name={name} id={id} size={72} year={year} />
+      <Avatar name={name} id={id} size="xl" year={year} />
       <b>{name}</b>
       <small>{[role, 'No messages yet'].filter(Boolean).join(' · ')}</small>
       <div className="ch-msv-hello__s">

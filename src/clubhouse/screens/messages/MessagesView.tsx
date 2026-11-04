@@ -601,7 +601,7 @@ function RowMuteModal({ api, c, open, onClose }: { api: ChMessagesApi; c: ChConv
 
 /** A direct thread with a player whose year is known: the coin's year colour. */
 export function convYear(api: ChMessagesApi, c: ChConv) {
-  if (c.group) return null;
+  if (!api.redesign || c.group) return null;
   const person = personOf(api, c.memberIds[0] ?? "");
   return person?.gradYear ? classYearKey(person.gradYear, new Date(api.now), api.timeZone) : null;
 }
@@ -1614,8 +1614,8 @@ export function Bubble({
             );
           })}
         >
-          {menuItems.map((item) => (
-            <button key={item.label} type="button" className={item.danger ? "is-danger" : undefined} onClick={() => liftPick(item.onSelect)}>
+          {menuItems.flatMap((item) => (item.kind === "separator" ? [] : [item])).map((item) => (
+            <button key={item.label} type="button" className={item.danger ? "is-danger" : undefined} onClick={() => { if (item.onSelect) liftPick(item.onSelect); }}>
               <span>{item.label}</span>
               {item.icon && <Icon icon={item.icon} size={18} />}
             </button>
@@ -2415,17 +2415,7 @@ function Thread({
         </div>
         <div className="ch-ms-th__act">
           {api.redesign && (
-            <Tooltip>
-              <button
-                type="button"
-                className={"ch-btn ch-iconbtn " + (searching ? "ch-btn--secondary" : "ch-btn--ghost")}
-                aria-label="Search this conversation"
-                aria-pressed={searching}
-                onClick={() => setSearching((v) => !v)}
-              >
-                <Icon icon={Search} size={16} />
-              </button>
-            </Tooltip>
+            <IconButton icon={Search} label="Search this conversation" variant={searching ? "secondary" : "ghost"} pressed={searching} onClick={() => setSearching((v) => !v)} />
           )}
           {calendarHref && api.viewer.role === "coach" && (
             <Tooltip>
@@ -2935,7 +2925,7 @@ function Details({
             <Icon icon={Users} size={22} />
           </span>
         ) : (
-          <Avatar name={conv.title} id={convAvatarId(api, conv)} size={api.redesign ? 64 : "xl"} ring={!api.redesign} year={api.redesign ? convYear(api, conv) : null} />
+          <Avatar name={conv.title} id={convAvatarId(api, conv)} size="xl" ring={!api.redesign} year={api.redesign ? convYear(api, conv) : null} />
         )}
         <b>{conv.title}</b>
         <span>
@@ -3549,7 +3539,7 @@ export function MessagesDesktop({ api }: { api: ChMessagesApi }) {
               : "Conversations with your coaches and teammates, and the team’s announcements."
           }
         />
-        <MessagesFirstRun redesign={!!api.redesign} teamName={api.teamName} coach={api.viewer.role === "coach"} onNew={() => setCompose(true)} />
+        <MessagesFirstRun redesign={!!api.redesign} teamName={api.teamName ?? undefined} coach={api.viewer.role === "coach"} onNew={() => setCompose(true)} />
         <NewMessage api={api} open={compose} onClose={closeCompose} />
       </main>
     );

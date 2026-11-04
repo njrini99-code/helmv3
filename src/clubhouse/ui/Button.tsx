@@ -106,6 +106,8 @@ interface IconButtonKey extends IconButtonBase {
   scroll?: undefined;
   onClick?: () => void;
   disabled?: boolean;
+  /** A toggle's state, when the key is one. */
+  pressed?: boolean;
   /** A menu's trigger props (ui/Menu's `trigger`): the key opens that menu (CONS-2). */
   menu?: { ref: (el: HTMLButtonElement | null) => void; onClick: () => void; 'aria-expanded': boolean; 'aria-haspopup': 'menu'; 'aria-controls': string };
 }
@@ -144,6 +146,7 @@ export function IconButton(props: IconButtonKey | IconButtonLink) {
         ref={menu?.ref}
         type="button"
         aria-label={label}
+        aria-pressed={props.pressed}
         aria-expanded={menu?.['aria-expanded']}
         aria-haspopup={menu?.['aria-haspopup']}
         aria-controls={menu?.['aria-controls']}

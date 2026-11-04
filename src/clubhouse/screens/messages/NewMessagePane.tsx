@@ -93,7 +93,7 @@ export function NewMessagePane({ api, onCancel, onDialog }: { api: ChMessagesApi
             </header>
             {people.map((p) => (
               <button key={p.userId} type="button" className="ch-msv-suggest__r" onClick={() => pick(p.userId)}>
-                <Avatar name={p.name} id={p.playerId ?? p.userId} size={32} />
+                <Avatar name={p.name} id={p.playerId ?? p.userId} size="md" />
                 <span className="ch-msv-member__b">
                   <b>{p.name}</b>
                   <span>{p.subtitle}</span>

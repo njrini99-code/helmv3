@@ -205,7 +205,7 @@ export function MembersCard({
             const coach = (you ? api.viewer.role : personOf(api, m.userId)?.role) === 'coach';
             return (
               <div key={m.userId} className="ch-msv-member">
-                <Avatar name={m.name} id={personOf(api, m.userId)?.playerId ?? m.userId} size={32} />
+                <Avatar name={m.name} id={personOf(api, m.userId)?.playerId ?? m.userId} size="md" />
                 <span className="ch-msv-member__b">
                   <b>{you ? 'You' : m.name}</b>
                   <span>{[m.subtitle, m.userId === conv.creatorId ? 'Admin' : null].filter(Boolean).join(' · ')}</span>
