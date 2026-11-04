@@ -1,5 +1,6 @@
 'use client';
 
+import type { ChYearKey } from '../../lib/class-year';
 import { Flag, MessageSquare, Navigation, Sunset, TriangleAlert } from 'lucide-react';
 import Link from 'next/link';
 import { useEffect, useRef, useState, type ReactNode } from 'react';
@@ -60,11 +61,11 @@ const WEEKDAY = new Intl.DateTimeFormat('en-US', { timeZone: 'UTC', weekday: 'lo
 const DIRECTIONS = new Set<ChHomeEvent['type']>(['qualifier', 'tournament', 'travel']);
 export const directionsHref = (e: ChHomeEvent) => (e.location && DIRECTIONS.has(e.type) ? `https://maps.apple.com/?q=${encodeURIComponent(e.location)}` : null);
 
-export function DayCard({ phase, now, today, onOpenRound }: { phase: Exclude<ChDayPhase, null>; now: Date | null; today: string | null; onOpenRound: (r: ChLatestRound) => void }) {
-  return phase.kind === 'recap' ? <Recap rounds={phase.rounds} onOpen={onOpenRound} /> : <EventCard e={phase.e} live={phase.live} now={now} today={today} />;
+export function DayCard({ phase, now, today, onOpenRound, years }: { years?: Record<string, ChYearKey>; phase: Exclude<ChDayPhase, null>; now: Date | null; today: string | null; onOpenRound: (r: ChLatestRound) => void }) {
+  return phase.kind === 'recap' ? <Recap rounds={phase.rounds} onOpen={onOpenRound} /> : <EventCard years={years} e={phase.e} live={phase.live} now={now} today={today} />;
 }
 
-function EventCard({ e, live, now, today }: { e: ChHomeEvent; live: boolean; now: Date | null; today: string | null }) {
+function EventCard({ e, live, now, today, years }: { e: ChHomeEvent; live: boolean; now: Date | null; today: string | null; years?: Record<string, ChYearKey> }) {
   const t = useChClockText();
   const when = whenLabel(e, now);
   const people = e.invitees ?? [];
@@ -94,9 +95,11 @@ function EventCard({ e, live, now, today }: { e: ChHomeEvent; live: boolean; now
       {e.invitees && people.length > 0 && (
         <span className="ch-hm-next__f ch-hm-day__people">
           <span className="ch-hm-stack ch-hm-day__stack" aria-hidden="true">
-            {people.slice(0, 4).map((n) => (
-              <Avatar key={n} name={n} size="sm" />
-            ))}
+            {people.slice(0, 4).map((n, i) => {
+              // Ids and names line up only when every invitee has a name (`going`'s own test); otherwise name-only coins.
+              const id = e.inviteeIds && e.inviteeIds.length === people.length ? e.inviteeIds[i] : undefined;
+              return <Avatar key={n} name={n} id={id} size="sm" year={id ? (years?.[id] ?? null) : null} />;
+            })}
           </span>
           <span className="ch-hm-next__rsvp ch-num">
             {e.going != null ? (

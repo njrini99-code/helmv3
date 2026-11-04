@@ -30,7 +30,7 @@ import '../../styles/home.css';
  * and the latest round in one lit sheet, then the season leaderboard. Calm
  * and not card-heavy (the owner rejected card grids and imagery).
  */
-export function CoachHome(props: { data: ChCoachHome; /** Preview and tests: a frozen clock (ISO) for the phone's countdown. */ now?: string; live?: LiveSnapshot }) {
+export function CoachHome(props: { crh?: boolean; data: ChCoachHome; /** Preview and tests: a frozen clock (ISO) for the phone's countdown. */ now?: string; live?: LiveSnapshot }) {
   return (
     <ChangeMarksProvider marks={props.data.marks ?? []}>
       <CoachHomeBody {...props} />
@@ -38,12 +38,12 @@ export function CoachHome(props: { data: ChCoachHome; /** Preview and tests: a f
   );
 }
 
-function CoachHomeBody({ data, now, live }: { data: ChCoachHome; now?: string; live?: LiveSnapshot }) {
+function CoachHomeBody({ data, now, live, crh = false }: { data: ChCoachHome; now?: string; live?: LiveSnapshot; crh?: boolean }) {
   const phone = useChPhone();
   // A page left open past the team's midnight reads itself again, so "today" is today (desktop and phone).
   useHomeDayRollover(data.clock, now !== undefined);
   if (isFirstRun(data)) return <HomeFirstRun data={data} phone={phone} />;
-  if (phone) return <HomePhone data={data} now={now} live={live} />;
+  if (phone) return <HomePhone data={data} now={now} live={live} crh={crh} />;
   // Two or more failed reads are told once under the head, with one Try again; each part keeps its title (CH-1209).
   const failed = coachFailedParts(data, false);
   const covered = failed.length > 1;
@@ -51,7 +51,7 @@ function CoachHomeBody({ data, now, live }: { data: ChCoachHome; now?: string; l
   // malformed read is left to its section's boundary (CH-2206), so this never throws above it.
   const noRounds = !data.latestRounds.error && Array.isArray(data.latestRounds.rounds) && data.latestRounds.rounds.length === 0 && !data.leaderboard.error && data.leaderboard.rosterSize > 0;
   return (
-    <main className="ch-h-main ch-h-main--desk" data-canopy="">
+    <main className="ch-h-main ch-h-main--desk" data-canopy="" data-ch-crh={crh ? 'on' : undefined}>
       <header className="ch-h-head" data-canopy-head="">
         <span className="ch-h-head__date">{data.todayLabel}</span>
         <h1 className="ch-display">{data.greeting}</h1>

@@ -633,6 +633,9 @@
   --ch-yr-so: #86672c;
   --ch-yr-fr: #9a4a35;
   --ch-yr-ink: #ffffff;
+  --ch-chart-line: #3f7556;
+  --ch-countdown-on-green: #e3f5e9;
+  --ch-score-under: #9e3b2e;
   --ch-coin-bg: #e9e3d3;
   --ch-coin-ink: #5a4e36;
   --ch-coin-ring: rgb(90 78 54 / 0.22);
@@ -873,6 +876,8 @@ html[data-fw-theme='dark'] [data-ui='clubhouse'] {
   --ch-yr-jr: #46739a;
   --ch-yr-so: #8b6b30;
   --ch-yr-fr: #a3533e;
+  --ch-chart-line: #6db488;
+  --ch-score-under: #f28b7d;
   --ch-coin-bg: #2a2e27;
   --ch-coin-ink: #dcd3bc;
   --ch-coin-ring: rgb(220 211 188 / 0.18);

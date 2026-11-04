@@ -1,5 +1,6 @@
 'use client';
 
+import { Surface } from '../../ui/Surface';
 import Link from 'next/link';
 import { Fragment } from 'react';
 import { ArrowRight, ChartColumn } from 'lucide-react';
@@ -201,8 +202,52 @@ function PeopleLine({ leg }: { leg: ChTeamLeg }) {
  * The same four parts on the phone (docs/clubhouse/phone/home.md, Q-66 drafting): rows between hairlines after Team
  * scoring. The row is not a link; the names are.
  */
-export function TeamLegsPhone({ legs, covered = false }: { legs: ChTeamLegs; covered?: boolean }) {
+/** The lane's diverging bar (06 §11.2): from a centre zero, min(50, |sg| / 3.5 x 50)% wide. It grows once, in CSS, when Home is first shown. */
+export const legBarWidth = (sg: number | null) => (sg == null ? 0 : Math.min(50, (Math.abs(sg) / 3.5) * 50));
+
+export function TeamLegsPhone({ legs, covered = false, crh = false }: { legs: ChTeamLegs; covered?: boolean; crh?: boolean }) {
   const team = rebuiltHref('/golf/dashboard/stats', 'coach');
+  if (crh) {
+    const worst = [...legs.rows].filter((l) => l.sg != null).sort((a, b) => (a.sg as number) - (b.sg as number)).slice(0, 2).filter((l) => (l.sg as number) < 0).map((l) => l.label);
+    const note = legs.ranked && worst.length ? `${worst.join(' and ')} cost${worst.length === 1 ? 's' : ''} the most. Names open that player’s game on Stats.` : null;
+    return (
+      <Surface variant="card" level={2} padded={false} title="The team’s game" actions={<span className="ch-hm-meta">SG per round</span>} footerNote={note ?? undefined}>
+        <Notices legs={legs} covered={covered} />
+        {legs.holeRounds === 0 ? (
+          <NoHoleRounds />
+        ) : (
+          <>
+            <ul className="ch-hm-legs__grid" aria-label={`Strokes gained per round ${sgBaseline(legs.tour).vs}, last 10 rounds`}>
+              {legs.rows.map((leg) => {
+                const change = legChange(leg);
+                const tone = changeTone(leg.sg, false);
+                return (
+                  <li key={leg.key} className="ch-hm-legs__cell">
+                    <b className="ch-hm-legs__l">{leg.label}</b>
+                    <span className={'ch-hm-legs__sg ch-num ' + tone}>
+                      {formatSigned(leg.sg)}
+                      <small>SG</small>
+                    </span>
+                    <i className="ch-hm-legs__bar" aria-hidden="true">
+                      <i className={tone + ((leg.sg ?? 0) < 0 ? ' is-neg' : '')} style={{ width: `${legBarWidth(leg.sg)}%` }} />
+                    </i>
+                    <span className="ch-hm-legs__s ch-num">{legStatText(leg.stat)}</span>
+                    <em className={'ch-hm-legs__c ' + change.tone}>{change.words}</em>
+                    <PeopleLine leg={leg} />
+                  </li>
+                );
+              })}
+            </ul>
+            {!legs.ranked && (
+              <p className="ch-hm-legs__note" data-ch-code="CH-2315">
+                {NOBODY_RANKED}
+              </p>
+            )}
+          </>
+        )}
+      </Surface>
+    );
+  }
   return (
     <section className="ch-hm-sec ch-hm-legs" aria-labelledby="ch-hm-legs-t">
       <div className="ch-hm-sec__h">

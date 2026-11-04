@@ -6,7 +6,8 @@ import { CLASS_EVENT_TYPE } from '@/lib/calendar/class-events';
 import { eventDaySpan } from '@/lib/calendar/timezone';
 import { chLogServer } from '../lib/track-server';
 import { homeClock, ymd } from './home-clock';
-import { classYearLabel, fullName, groupByPlayer, isFull18, lastTenFloor, loadSeasonRounds, mean, MIN_SG_ROUNDS, seasonStartDate, summarizePlayer, type ChForm, type ChRound } from './season';
+import { classYearKey, type ChYearKey } from '../lib/class-year';
+import { classYearLabel, countsForScoring, fullName, groupByPlayer, isFull18, lastTenFloor, loadSeasonRounds, mean, MIN_SG_ROUNDS, seasonStartDate, summarizePlayer, type ChForm, type ChRound } from './season';
 import { LEGS, sgLegs, teamGrid, type ChLeg } from './stats-team';
 import { legRows } from './leg-rows';
 import { loadCoachQueue, type ChCoachQueue } from './home-queue';
@@ -250,6 +251,8 @@ export interface ChCoachHome {
   /** holesError: the rounds loaded but their hole-by-hole detail didn't. */
   latestRounds: { rounds: ChLatestRound[]; error: boolean; holesError: boolean };
   leaderboard: { rows: ChLeaderRow[]; scorecards: number; rosterSize: number; error: boolean };
+  /** Behind the lane's flag: each rostered player's class year, for the coins. */
+  yearById?: Record<string, ChYearKey>;
   /** The phone Home's extra reads (docs/clubhouse/phone/home.md). Each follows its source's error flag. */
   phone: {
     /** The next team event from now, today or later in the loaded window. */
@@ -310,6 +313,8 @@ export function wideEventWindow(now: Date): { from: string; to: string } {
 const WEEKDAYS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
 
 export async function loadCoachHome(input: {
+  /** `clubhouse_classes_roster_home_v1`: practice rounds leave the averages, and each player's year reaches the coins. */
+  crh?: boolean;
   teamId: string;
   coachName: string;
   /** For Team Hub's announcements read (the queue); it reads the session itself. */
@@ -404,7 +409,9 @@ export async function loadCoachHome(input: {
   const { today, weekStart, weekEnd } = wk;
 
   // ── Season rounds ──
-  const { rounds, error: roundsError } = seasonRead;
+  const { rounds: readRounds, error: roundsError } = seasonRead;
+  // Behind the lane's flag, practice rounds stay out of every scoring figure below (DECISIONS); Latest rounds is read apart and lists them.
+  const rounds = input.crh ? readRounds.filter(countsForScoring) : readRounds;
   const full = rounds.filter(isFull18);
   const start = seasonStartDate(now, tz);
   const seasonRounds = seasonOnly(rounds, start);
@@ -458,6 +465,7 @@ export async function loadCoachHome(input: {
     leaderboard: { rows, scorecards: seasonFull.length, rosterSize: roster.length, error: roundsError },
     phone: { next: withChange(wk.next, changes.byEvent), today: wk.todayEvents.map((e) => withChange(e, changes.byEvent)), form, weekNote: wk.weekNote },
     legs,
+    ...(input.crh ? { yearById: Object.fromEntries(roster.flatMap((p) => { const y = classYearKey(p.graduation_year, now, tz); return y ? [[p.id, y]] : []; })) } : {}),
     queue,
     changes: changes.rows,
     marks: input.marks ?? [],
