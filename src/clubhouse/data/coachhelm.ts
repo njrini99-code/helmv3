@@ -667,7 +667,7 @@ export async function eligibleForPatterns(supabase: Supabase, playerIds: string[
  * engine's cause families shared by enough of the roster, from the visible
  * reads the board already loaded. Off, or a failed read, draws nothing.
  */
-export async function teamPatternsOf(supabase: Supabase, teamId: string, roster: ReadonlyArray<{ id: string; name: string }>, openRows: Promise<readonly RankableEvidenceInsight[]>): Promise<ChTeamPatterns | null> {
+export async function teamPatternsOf(supabase: Supabase, teamId: string, roster: ReadonlyArray<{ id: string; name: string }>, openRows: Promise<readonly RankableEvidenceInsight[]>, onFail?: () => void): Promise<ChTeamPatterns | null> {
   if (!teamPatternEnabled() || roster.length === 0) return null;
   try {
     const [eligible, rows] = await Promise.all([
@@ -677,7 +677,10 @@ export async function teamPatternsOf(supabase: Supabase, teamId: string, roster:
       ),
       openRows,
     ]);
-    if (!eligible) return null;
+    if (!eligible) {
+      onFail?.();
+      return null;
+    }
     const areas = new Map(rows.map((r) => [r.id, areaOf(r.category)]));
     const areaOfInsight = (id: string) => areas.get(id) ?? null;
     const result = computeTeamPatterns({
@@ -689,6 +692,7 @@ export async function teamPatternsOf(supabase: Supabase, teamId: string, roster:
     return toChTeamPatterns(result, new Map(roster.map((p) => [p.id, p.name])), areaOfInsight);
   } catch (err) {
     log('teamPatterns', err);
+    onFail?.();
     return null;
   }
 }

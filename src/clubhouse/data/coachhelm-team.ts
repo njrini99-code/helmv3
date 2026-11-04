@@ -2,6 +2,7 @@ import 'server-only';
 import { createClient } from '@/lib/supabase/server';
 import type { EvidenceInsight } from '@/app/golf/actions/insight-delivery';
 import { isMondayBriefEnabled } from '@/lib/coachhelm/v3/monday-brief/flag';
+import { teamPatternEnabled } from '@/lib/coachhelm/v3/team-pattern/flag';
 import { isTrackRecordEnabled } from '@/lib/coachhelm/v3/track-record/flag';
 import { toCourseHistory } from '@/lib/coachhelm/v3/team-board/course-shape';
 import { loadPlayersStandingMap } from '@/lib/coachhelm/v3/standing/loader';
@@ -155,6 +156,7 @@ export async function loadCoachTeamBoard(input: { coachId: string; teamId: strin
   const allReads = [...firmByPlayer.values()].flat();
   const readIds = allReads.map((i) => i.id);
 
+  let patternsFailed = false;
   const newestRead = newestRounds(supabase, ids, earliestStaleFloor([...visible.rows, ...allReads]));
   const openRows = Promise.all([newestRead, tourRead]).then(([n, t]) => visible.rows.filter((r) => isOpenFinding(r, t.baseline, n.days.get(r.player_id) ?? null)));
   const [drills, assigned, declined, newest, tourResult, patterns, focus, corrections, seasonRounds] = await Promise.all([
@@ -163,7 +165,9 @@ export async function loadCoachTeamBoard(input: { coachId: string; teamId: strin
     declinedByInsight(supabase, readIds),
     newestRead,
     tourRead,
-    teamPatternsOf(supabase, input.teamId, roster, openRows),
+    teamPatternsOf(supabase, input.teamId, roster, openRows, () => {
+      patternsFailed = true;
+    }),
     readFocusVerdicts(supabase, readIds, flags.verdicts),
     readCorrections(supabase, { role: 'coach', teamIds: [input.teamId], reads: allReads.map((i) => ({ id: i.id, playerId: i.player_id })) }),
     roundsRead,
@@ -236,6 +240,7 @@ export async function loadCoachTeamBoard(input: { coachId: string; teamId: strin
     teamTotal: { strokes: teamTotalOf(list), rounds: countable.length },
     course: { history, reads: courseReads(list), against },
     patterns,
+    patternsStatus: !teamPatternEnabled() ? 'off' : patternsFailed ? 'failed' : 'ok',
     notEnough: notEnoughOf(heldBack),
     ...(missing ? { missing } : {}),
     pulse,

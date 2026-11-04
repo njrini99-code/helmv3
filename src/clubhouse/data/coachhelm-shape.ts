@@ -98,6 +98,8 @@ export interface ChHelmWeek {
 export interface ChInsight {
   id: string;
   playerId: string;
+  /** The strokes a round at stake as a figure ("0.6"), only with an estimate (`strokesAtStake`). */
+  stakes?: string | null;
   /** The team board's station: the raw category through `areaOf`; null for scoring, pressure and course management. */
   area?: ChLadderAreaId | null;
   /** "Putting", "Course management". */

@@ -10,6 +10,8 @@ import { LargeTitle, LargeTitleContext } from '../../../ui/LargeTitle';
 import { rebuiltHref } from '../../../shell/nav';
 import { CoachHelmTabs, COACHHELM_HREF, type CoachHelmView } from '../chat/SubTabs';
 import { useViewSwitch } from '../use-view-switch';
+import { CourseCard } from './CourseCard';
+import { SpotCard } from './SpotCard';
 import { StationControl } from './StationControl';
 import { TeamHole } from './TeamHole';
 
@@ -26,7 +28,6 @@ export interface TeamBoardProps {
   /** Later PRs' cards: each receives the live station. */
   slots?: {
     today?: ReactNode;
-    spot?: (s: { station: TeamStation; phone: boolean }) => ReactNode;
     huddle?: ReactNode;
     roster?: ReactNode;
     working?: ReactNode;
@@ -141,6 +142,10 @@ export function TeamBoard({ data, courseTab = true, initialStation, slots, onRet
   const leak = useMemo(() => stationOrder(data.stations)[0] ?? 'approach', [data.stations]);
   const [station, setStation] = useState<TeamStation>(initialStation ?? leak);
   const top = useRef<HTMLElement | null>(null);
+  const [, setOpen] = useState<{ kind: 'read' | 'player' | 'course'; id: string } | null>(null);
+  const openRead = (id: string) => setOpen({ kind: 'read', id });
+  const openPlayer = (id: string) => setOpen({ kind: 'player', id });
+  const openCourse = (id: string) => setOpen({ kind: 'course', id });
   const list: ChTeamPlayer[] = data.players.list;
   const noRounds = data.teamTotal.rounds === 0;
   const tabs = data.off ? null : <CoachHelmTabs active={sw.shown} onGo={sw.go} boardLabel="Team" />;
@@ -152,6 +157,12 @@ export function TeamBoard({ data, courseTab = true, initialStation, slots, onRet
     </header>
   );
   const course = courseReads(list).length;
+  const spot =
+    station === 'course' ? (
+      <CourseCard data={data} onRead={openRead} onCourse={openCourse} onRetry={onRetry} />
+    ) : (
+      <SpotCard data={data} station={station} onRead={openRead} onPlayer={openPlayer} />
+    );
   const failedHole = (
     <section className="card ch-htb-failed" role="alert" data-ch-team-card="hole">
       <div className="notice">
@@ -208,7 +219,7 @@ export function TeamBoard({ data, courseTab = true, initialStation, slots, onRet
       <>
         {slots?.today}
         <Hero data={data} station={station} setStation={setStation} phone course={course} courseTab={courseTab} />
-        {slots?.spot?.({ station, phone })}
+        {spot}
         {slots?.huddle}
         {slots?.roster}
         {slots?.working}
@@ -220,7 +231,7 @@ export function TeamBoard({ data, courseTab = true, initialStation, slots, onRet
       <div className="dgrid">
         <div className="dcol">
           <Hero data={data} station={station} setStation={setStation} phone={false} course={course} courseTab={courseTab} />
-          {slots?.spot?.({ station, phone })}
+          {spot}
         </div>
         <div className="dcol">
           {slots?.today}

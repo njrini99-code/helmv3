@@ -61,6 +61,8 @@ export interface ChTeamBoardData {
   teamTotal: { strokes: number | null; rounds: number };
   course: { history: CourseHistory | null; reads: ChInsight[]; against: ChTourRow[] | null };
   patterns?: ChTeamPatterns | null;
+  /** off: nothing is drawn; failed: the card says so, never "no pattern" (W-TEAM-6). */
+  patternsStatus?: 'ok' | 'off' | 'failed';
   notEnough?: ChNotEnough;
   missing?: ChBoardMissing;
   pulse: ChCoachHelmData['pulse'];

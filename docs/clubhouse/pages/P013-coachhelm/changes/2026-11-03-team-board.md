@@ -32,3 +32,14 @@ Actions:        none
 Data impact:    the route calls loadCoachTeamBoard with the flag on; off everywhere
 Held items:     none
 ```
+
+## 2026-11-03 — CT2: the spot card and the Course card
+
+```text
+Design package: design-refresh/coachhelm-team/ (CT2)
+PR/commit:      agent/ct2-spot
+Contract IDs:   none
+Actions:        none
+Data impact:    none; `stakes` and `patternsStatus` are additive
+Held items:     none
+```

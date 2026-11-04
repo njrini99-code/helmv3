@@ -1,3 +1,4 @@
+import { strokesAtStake } from './coachhelm-strokes';
 import { areaOf } from './coachhelm-ladder-shape';
 import type { EvidenceInsight } from '@/app/golf/actions/insight-delivery';
 import type { InsightEvidence, InsightUnit } from '@/lib/coachhelm/v2/insights/types';
@@ -299,6 +300,7 @@ export function toChInsight(
     id: ins.id,
     playerId: ins.player_id,
     area,
+    stakes: strokesAtStake(ev),
     category: unit.category,
     priority,
     strength: kind === 'strength',

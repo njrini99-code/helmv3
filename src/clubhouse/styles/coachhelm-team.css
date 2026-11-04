@@ -1924,3 +1924,42 @@ html[data-fw-theme='dark'] .ch-htb .skl::after {
 .ch-htb .steps p {
   margin: 0;
 }
+
+/* The bars scale from the zero line; no width, left or right moves (AC-SPOT-04). */
+.ch-htb .br .bf {
+  transition: transform 520ms var(--spring);
+}
+.ch-htb .br .bf.l {
+  right: 16%;
+  left: 0;
+  transform-origin: 100% 50%;
+}
+.ch-htb .br .bf.g {
+  right: 0;
+  left: 84%;
+  transform-origin: 0% 50%;
+}
+.ch-htb .br .bmiss {
+  font: 400 calc(13px * var(--k)) / 1.3 var(--sans);
+  color: var(--ink-2);
+}
+.ch-htb .br .bv.is-none {
+  color: var(--ink-3);
+}
+.ch-htb .br .bn {
+  text-overflow: ellipsis;
+}
+.ch-htb .more {
+  min-height: 44px;
+}
+.ch-htb .more.is-inline {
+  min-height: 0;
+  padding: 0;
+}
+.ch-htb.is-phone .ch-htb-coursedesk,
+.ch-htb.is-desk .ch-htb-coursephone {
+  display: none;
+}
+.ch-htb.is-desk .ch-htb-coursedesk .spl-r > .shpw {
+  margin-top: auto;
+}
