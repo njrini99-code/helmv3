@@ -532,7 +532,7 @@ export function buildCoachTools({ sb, ctx, conversationId, writer, collect: coll
     toolName: f.name,
     plan: (input) => {
       const d = f.plan(ctx, input);
-      const proposal: ActionProposal = { visual: d.visual, action: d.action, summary: d.summary, facts: d.facts, affects: d.affects ?? [], notifications: d.notifications, missing: d.facts.filter((x) => x.missing).map((x) => x.label), idempotency_key: keyOf(d.key) };
+      const proposal: ActionProposal = { visual: d.visual, ...(d.publish ? { publish: d.publish } : {}), action: d.action, summary: d.summary, facts: d.facts, affects: d.affects ?? [], notifications: d.notifications, missing: d.facts.filter((x) => x.missing).map((x) => x.label), idempotency_key: keyOf(d.key) };
       return { plan: input, proposal };
     },
     run: async (input) => {

@@ -1,4 +1,5 @@
 'use client';
+import { CorrectionChips } from '../Corrections';
 import { formatFixed } from '../../../lib/format';
 
 import { useEffect, useRef, useState } from 'react';
@@ -248,6 +249,12 @@ export function SureCard({ d, voice, pictures }: { d: ChReadDetail; voice: ChVie
                   </li>
                 ))}
               </ul>
+            </div>
+          )}
+          {d.insight.engine?.corrections && (
+            <div className="ch-hr-correct">
+              <b>Is this read right?</b>
+              <CorrectionChips c={d.insight.engine.corrections} />
             </div>
           )}
           {voice.role === 'coach' && s.rung && (

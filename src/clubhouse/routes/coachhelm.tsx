@@ -101,7 +101,7 @@ async function CoachReadPage({ coachId, teamId, playerId, insight }: { coachId: 
   const head = checked.status === 'ok' ? checked.scope.head : checked.head;
   const voice: ChViewVoice = { role: 'coach', ...head };
   if (checked.status === 'player-off') return <ReadPage load={{ status: 'off', reason: checked.reason }} voice={voice} />;
-  return <ReadPage load={await loadCoachRead({ scope: checked.scope, insightId: insight })} voice={voice} />;
+  return <ReadPage askOn={isAskV2Enabled()} load={await loadCoachRead({ scope: checked.scope, insightId: insight })} voice={voice} />;
 }
 
 const FILE_CARDS: readonly string[] = ['feat', 'plan', 'field', 'reads', 'sg', 'intent', 'track'];
@@ -137,7 +137,7 @@ async function PlayerReadView({ playerId, insight }: { playerId: string; insight
   const gate = await loadPlayerHelmGate(playerId);
   if (gate.status === 'off') return <ReadPage load={{ status: 'off', reason: gate.reason }} voice={{ role: 'player' }} />;
   if (gate.status === 'failed') return <ReadPage load={{ status: 'failed' }} voice={{ role: 'player' }} />;
-  return <ReadPage load={await loadPlayerRead({ playerId, insightId: insight })} voice={{ role: 'player' }} />;
+  return <ReadPage askOn={isAskV2Enabled()} load={await loadPlayerRead({ playerId, insightId: insight })} voice={{ role: 'player' }} />;
 }
 
 /** The coach's Track record (`?view=track-record`, flag `coachhelm_track_record_v1`; the route checks the flag). Its loader checks the CoachHelm gate. */

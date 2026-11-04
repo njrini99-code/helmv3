@@ -25,7 +25,7 @@ export interface FlowDef<I> {
   name: string;
   description: string;
   input: z.ZodType<I>;
-  plan: (ctx: CoachChatContext, input: I) => { visual?: ActionProposal['visual']; facts: ProposalFact[]; action: string; summary: string; notifications: string[]; affects?: ActionProposal['affects']; key: Array<string | number> };
+  plan: (ctx: CoachChatContext, input: I) => { visual?: ActionProposal['visual']; publish?: ActionProposal['publish']; facts: ProposalFact[]; action: string; summary: string; notifications: string[]; affects?: ActionProposal['affects']; key: Array<string | number> };
   run: (ctx: CoachChatContext, input: I) => Promise<{ ok: boolean; error?: string; summary: string; href?: string; kind: string; label?: string; notifications?: ActionReceipt['notifications'] }>;
 }
 

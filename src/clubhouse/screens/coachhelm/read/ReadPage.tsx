@@ -2,6 +2,8 @@
 
 import { useRefresh } from '../../../lib/use-refresh';
 import { Ellipsis } from 'lucide-react';
+import { askAboutReadHref } from '../chat/ask-links';
+import { Icon } from '../../../ui/Icon';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
@@ -55,7 +57,7 @@ function Failed({ title, body, code, action }: { title: string; body: string; co
 }
 
 /** One read, in full (S-READ). The bar and the sidebar are today's. */
-export function ReadPage({ load, voice, writes = LIVE_COACHHELM_WRITES, fallbackFirst }: { load: ChViewLoad<ChReadView>; voice: ChViewVoice; writes?: ChCoachHelmWrites; fallbackFirst?: string }) {
+export function ReadPage({ load, voice, writes = LIVE_COACHHELM_WRITES, fallbackFirst, askOn = false }: { /** coachhelm_ask_v2: the Ask link appears only with it (CP-READ-20). */ askOn?: boolean; load: ChViewLoad<ChReadView>; voice: ChViewVoice; writes?: ChCoachHelmWrites; fallbackFirst?: string }) {
   const phone = useChPhone();
   const router = useRouter();
   const { refresh } = useRefresh();
@@ -120,7 +122,8 @@ export function ReadPage({ load, voice, writes = LIVE_COACHHELM_WRITES, fallback
     const sure = <SureCard d={read} voice={voice} pictures={pictures} />;
     const moved = <MovedCard d={read} failed={data.failed.themes} pictures={pictures} />;
     const rounds = <RoundsCard d={read} failed={data.failed.rounds} />;
-    const todo = <DoCard d={read} voice={voice} fa={fa} missing={data.missing} messageHref={messageHref} askHref={null} practiceHref={null} />;
+    const askHref = askAboutReadHref({ insightId: read.insight.id, title: read.insight.title, first: coach ? first : undefined }, askOn);
+    const todo = <DoCard d={read} voice={voice} fa={fa} missing={data.missing} messageHref={messageHref} askHref={askHref} practiceHref={null} />;
     body = phone ? (
       <>
         {notice}
@@ -135,6 +138,22 @@ export function ReadPage({ load, voice, writes = LIVE_COACHHELM_WRITES, fallback
     ) : (
       <>
         <div className="ch-hr-col">
+          {/* S-READ-DESK: the read's actions, where the phone has its bar. */}
+          <div className="ch-hr-deskbar">
+            {askHref && (
+              <Link className="btn sec" href={askHref}>
+                Ask about this read
+              </Link>
+            )}
+            {messageHref && (
+              <Link className="btn sec" href={messageHref}>
+                Message {first}
+              </Link>
+            )}
+            <button type="button" className="ib" aria-label="More" onClick={() => setMore(true)}>
+              <Icon icon={Ellipsis} size={18} />
+            </button>
+          </div>
           {notice}
           {head}
           {where}

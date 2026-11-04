@@ -11,7 +11,7 @@ const wait = <T,>(v: T) => new Promise<T>((r) => setTimeout(() => r(v), 400));
 /** One read with fake writes. Nothing reaches the server. */
 export function PreviewCoachHelmRead({ state, viewer, q, screen }: { state?: string; viewer?: string; q?: string; screen?: string }) {
   const role = viewer === 'player' ? 'player' : 'coach';
-  const view = previewReadView(q, role, state === 'gone');
+  const view = previewReadView(q, role, state === 'gone', state);
   const voice: ChViewVoice = role === 'coach' ? { role: 'coach', playerId: view.head.playerId ?? '', name: view.head.name, first: view.head.first, line: '' } : { role: 'player' };
   if (state === 'loading') return <ReadSkeleton />;
   if (screen === 'board' && view.read)

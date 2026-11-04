@@ -1275,3 +1275,45 @@ html[data-fw-theme='dark'] .ch-hr .btn.pri {
 .ch-hr {
   --ch-hr-cap-size: calc(12px * min(var(--k, 1), 1.2));
 }
+
+.ch-hr .ch-hr-deskbar {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  gap: 8px;
+}
+.ch-hr .ch-hr-correct {
+  display: grid;
+  gap: 8px;
+  padding-top: 12px;
+  border-top: var(--ch-hairline-w) solid var(--ch-separator);
+}
+.ch-hr .ch-hr-deskbar > a {
+  display: inline-flex;
+  align-items: center;
+  min-height: 36px;
+  padding: 0 12px;
+  border-radius: 999px;
+  background: var(--ch-card-bg);
+  box-shadow: var(--ch-card-shadow);
+  color: var(--ch-text-primary);
+  font: var(--ch-type-14-strong);
+}
+.ch-hr .ch-hr-deskbar > button {
+  position: relative;
+  display: grid;
+  width: 36px;
+  height: 36px;
+  place-items: center;
+  border: 0;
+  border-radius: 50%;
+  background: var(--ch-card-bg);
+  box-shadow: var(--ch-card-shadow);
+  color: var(--ch-text-primary);
+  cursor: pointer;
+}
+.ch-hr .ch-hr-deskbar > button::before {
+  content: "";
+  position: absolute;
+  inset: -4px;
+}
