@@ -59,7 +59,7 @@ html[data-fw-theme='dark'] .ch-htb {
   --loss-on-tint: #e7ae57;
   --scrim: rgb(0 0 0 / 0.5);
 }
-.ch-htb button {
+.ch-htb button:not(.ch-btn) {
   appearance:none;
   border:0;
   background:none;
@@ -1890,6 +1890,23 @@ html[data-fw-theme='dark'] .ch-htb .skl::after {
   height: var(--ch-hairline-w);
   overflow: hidden;
   clip-path: inset(50%);
+}
+.ch-htb-sheet .ch-modal__body {
+  padding-inline: 16px;
+}
+.ch-htb-sheet .acts .ch-btn {
+  flex: 1;
+  justify-content: center;
+}
+.ch-htb-storydesk h3 {
+  color: var(--f-ink);
+}
+.ch-htb :is(h1, h2, h3, h4, [tabindex='-1']):focus {
+  outline: none;
+}
+.ch-htb .ch-seg__b {
+  justify-content: center;
+  text-align: center;
 }
 .ch-htb-sheet .ch-modal__panel {
   max-height: 86%;

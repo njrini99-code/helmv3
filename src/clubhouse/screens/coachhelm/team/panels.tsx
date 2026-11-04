@@ -11,6 +11,8 @@ import { Icon } from '../../../ui/Icon';
 import type { ChDeepInsight } from '../../../data/coachhelm-dive-shape';
 import { CorrectionChips } from '../Corrections';
 import { FocusActions, type ChFocusActions } from '../parts';
+import { askAboutReadHref } from '../chat/ask-links';
+import { Button } from '../../../ui/Button';
 import { barScale } from './SpotCard';
 import { toPar } from './CourseCard';
 import { STATION_NAME, STATION_SHORT } from './hole-geometry';
@@ -124,6 +126,7 @@ export function ReadPanel({
   fa,
   missing,
   readOn,
+  askOn = false,
   roster,
   onClose,
   role = 'coach',
@@ -137,6 +140,8 @@ export function ReadPanel({
   fa?: ChFocusActions;
   missing?: ChTeamBoardData['missing'];
   readOn: boolean;
+  /** `coachhelm_ask_v2`: the Ask lane's link beside Assign. */
+  askOn?: boolean;
   roster: ReadonlyArray<{ id: string }>;
   onClose: () => void;
   /** A player's sheet: their words, no coin, no footer, no cause (06 CP shared read sheet). */
@@ -155,6 +160,7 @@ export function ReadPanel({
   const word = read.evidence.read?.word;
   const canLink = fileHost ? readOn : !!coachReadHref(player.id, read.id, roster);
   const href = !canLink ? null : coach ? readHref(player.id, read.id, readOn) : readHref(null, read.id, readOn);
+  const ask = coach ? askAboutReadHref({ insightId: read.id, title: read.title, first: player.first }, askOn) : null;
   const cx = deep?.base.engine?.corrections;
   return (
     <>
@@ -209,6 +215,11 @@ export function ReadPanel({
       {coach && fa && !read.stale && (
         <div className="acts" data-acts="">
           <FocusActions fa={fa} target={{ playerId: player.id, first: player.first, ins: read }} missing={missing} where="board" noDismiss={!dismissible} />
+          {ask && (
+            <Button variant="secondary" href={ask}>
+              Ask about this
+            </Button>
+          )}
         </div>
       )}
       {href && (

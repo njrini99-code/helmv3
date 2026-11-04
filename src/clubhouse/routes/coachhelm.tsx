@@ -81,7 +81,7 @@ async function PlayerAskView() {
 }
 
 async function CoachHelmView({ coachId, teamId, ask, conversationId, initialPlayer, initialInsight }: { initialInsight?: string; coachId: string; teamId: string; ask: boolean; conversationId?: string; initialPlayer?: string }) {
-  if (!ask && isTeamBoardEnabled() && TEAM_BOARD_FIRST_VIEW === 'hole') return <TeamBoard fileOn={isPlayerFileEnabled()} data={await loadCoachTeamBoard({ coachId, teamId })} initialPlayer={initialPlayer} initialInsight={initialInsight} courseTab={COURSE_TAB} readOn={isReadEnabled()} />;
+  if (!ask && isTeamBoardEnabled() && TEAM_BOARD_FIRST_VIEW === 'hole') return <TeamBoard askOn={isAskV2Enabled()} fileOn={isPlayerFileEnabled()} data={await loadCoachTeamBoard({ coachId, teamId })} initialPlayer={initialPlayer} initialInsight={initialInsight} courseTab={COURSE_TAB} readOn={isReadEnabled()} />;
   if (!ask) return <CoachBoard data={await loadCoachCoachHelm({ coachId, teamId })} initialPlayer={initialPlayer} trackRecordHref={isTrackRecordEnabled() ? COACH_TRACK_RECORD_HREF : undefined} briefHref={isMondayBriefEnabled() ? COACH_BRIEF_HREF : undefined} />;
   // Ask is CoachHelm's, so it is off when CoachHelm is off for this coach, their team or GolfHelm, as the board is: the
   // address that led here is answered with the board's own "CoachHelm is off" page, and a lookup that failed with Ask's own

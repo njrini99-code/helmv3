@@ -169,7 +169,7 @@ export function StoriesCard({
             <b>Couldn’t load what’s new</b>
             <span>The weekly brief didn’t load. Everything below is current.</span>
             {onRetry && (
-              <Button variant="ghost" size="sm" onClick={onRetry}>
+              <Button variant="secondary" size="sm" onClick={onRetry}>
                 Try again
               </Button>
             )}

@@ -37,6 +37,7 @@ export interface TeamBoardProps {
   writes?: ChCoachHelmWrites;
   /** The server's answers for the cross-lane links (`coachhelm_read_v1`, `coachhelm_player_file_v1`). */
   readOn?: boolean;
+  askOn?: boolean;
   fileOn?: boolean;
   initialPlayer?: string;
   initialInsight?: string;
@@ -149,7 +150,7 @@ function EmptySteps() {
 }
 
 /** The coach's Team view: the green bar untouched, the switch, the title, then one green feature card (the hole). */
-export function TeamBoard({ data, courseTab = true, writes = LIVE_COACHHELM_WRITES, readOn = false, fileOn = false, initialOpen, initialAll = false, initialPlayer, initialInsight, initialStation, onRetry }: TeamBoardProps) {
+export function TeamBoard({ askOn = false, data, courseTab = true, writes = LIVE_COACHHELM_WRITES, readOn = false, fileOn = false, initialOpen, initialAll = false, initialPlayer, initialInsight, initialStation, onRetry }: TeamBoardProps) {
   const phone = useChPhone();
   const sw = useViewSwitch<CoachHelmView>('board', (v) => COACHHELM_HREF[v], Object.keys(COACHHELM_HREF) as CoachHelmView[]);
   const leak = useMemo(() => stationOrder(data.stations)[0] ?? 'approach', [data.stations]);
@@ -323,7 +324,7 @@ export function TeamBoard({ data, courseTab = true, writes = LIVE_COACHHELM_WRIT
       const owner = list2.find((p) => [...p.reads.needs, ...p.reads.working].some((r) => r.id === open.id));
       const read = owner && [...owner.reads.needs, ...owner.reads.working].find((r) => r.id === open.id);
       if (!owner || !read) return <GonePanel onClose={close} />;
-      return <ReadPanel read={read} player={owner} fa={fa} missing={data.missing} readOn={readOn} roster={list2} onClose={close} />;
+      return <ReadPanel askOn={askOn} read={read} player={owner} fa={fa} missing={data.missing} readOn={readOn} roster={list2} onClose={close} />;
     }
     if (open.kind === 'player') {
       const p = list2.find((x) => x.id === open.id);
@@ -355,7 +356,7 @@ export function TeamBoard({ data, courseTab = true, writes = LIVE_COACHHELM_WRIT
       {/* W-TEAM-16: today's Re-check, under the board, not in the record card. */}
       {!data.off && data.roster.count > 0 && <RecheckReads players={data.roster.count} />}
       {phone ? (
-        <Modal open={!!openPanel} onClose={close} title="Details" className="ch-htb-sheet" initialFocus=".xb">
+        <Modal open={!!openPanel} onClose={close} title="Details" className="ch-htb-sheet">
           <div className="ins">{openPanel}</div>
         </Modal>
       ) : (
