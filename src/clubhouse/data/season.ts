@@ -25,6 +25,7 @@ type Supabase = Awaited<ReturnType<typeof createClient>>;
 export interface ChRound {
   id: string;
   player_id: string;
+  course_id?: string | null;
   course_name: string | null;
   tees_played: string | null;
   round_date: string;
@@ -52,7 +53,7 @@ export interface ChRound {
 }
 
 const ROUND_COLUMNS =
-  'id, player_id, course_name, tees_played, round_date, round_type, total_score, score_to_par, front_nine, back_nine, holes_played, total_putts, total_gir, total_gir_possible, total_fairways_hit, total_fairways, strokes_gained_total, strokes_gained_tee, strokes_gained_approach, strokes_gained_around_green, strokes_gained_putting';
+  'id, player_id, course_id, course_name, tees_played, round_date, round_type, total_score, score_to_par, front_nine, back_nine, holes_played, total_putts, total_gir, total_gir_possible, total_fairways_hit, total_fairways, strokes_gained_total, strokes_gained_tee, strokes_gained_approach, strokes_gained_around_green, strokes_gained_putting';
 
 export const TREND_LENGTH = 7;
 export const MIN_SG_ROUNDS = 3;

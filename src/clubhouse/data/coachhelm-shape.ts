@@ -2,6 +2,7 @@ import type { PulseItem, PulseSource } from '@/lib/coachhelm/v3/chat/program-pul
 import type { ChReadEngine } from './coachhelm-engine-shape';
 import type { ChPathLine } from './coachhelm-path';
 import type { ChNotEnough } from './coachhelm-firm';
+import type { ChLadderAreaId } from './coachhelm-ladder-shape';
 import type { ChTeamPatterns } from './coachhelm-team-pattern';
 import { plural, pluralWord } from '../lib/plural';
 
@@ -97,6 +98,8 @@ export interface ChHelmWeek {
 export interface ChInsight {
   id: string;
   playerId: string;
+  /** The team board's station: the raw category through `areaOf`; null for scoring, pressure and course management. */
+  area?: ChLadderAreaId | null;
   /** "Putting", "Course management". */
   category: string;
   priority: ChHelmPri;

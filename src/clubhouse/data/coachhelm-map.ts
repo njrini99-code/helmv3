@@ -1,3 +1,4 @@
+import { areaOf } from './coachhelm-ladder-shape';
 import type { EvidenceInsight } from '@/app/golf/actions/insight-delivery';
 import type { InsightEvidence, InsightUnit } from '@/lib/coachhelm/v2/insights/types';
 import { confidenceLabel, confidenceTier, type ConfidenceTier } from '@/lib/coachhelm/confidence-label';
@@ -279,6 +280,7 @@ export function toChInsight(
   const say = (text: string) => speak(text, extra.viewer);
   // chs-40: a coach's card is spoken from the stored coach copy when the row has it (numbers identical), else the row's own text.
   const voiced = readTextFor(ins, (extra.engine?.viewer ?? extra.viewer)?.role === 'coach');
+  const area = areaOf(ins.category);
   const priority: ChHelmPri = ins.priority === 'urgent' ? 'high' : ins.priority === 'high' || ins.priority === 'medium' ? ins.priority : 'low';
   const you = num(ev.your_value);
   const kind = kindOf(ins, tour);
@@ -296,6 +298,7 @@ export function toChInsight(
   return {
     id: ins.id,
     playerId: ins.player_id,
+    area,
     category: unit.category,
     priority,
     strength: kind === 'strength',

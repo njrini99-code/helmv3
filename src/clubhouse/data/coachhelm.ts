@@ -13,6 +13,7 @@ import { resolveMinerWindows } from '@/lib/coachhelm/v2/mining/pattern-miner';
 import { chLogServer } from '../lib/track-server';
 import { isOpenFinding, kindOf, staleFloor } from './coachhelm-classify';
 import { toChInsight } from './coachhelm-map';
+import { areaOf } from './coachhelm-ladder-shape';
 import { isNotEnoughYet, notEnoughOf, notEnoughRead, splitFirm, type ChNotEnoughPlayer } from './coachhelm-firm';
 import { readEngineFlags, readFocusVerdicts } from './coachhelm-engine';
 import { readCorrections } from './coachhelm-corrections';
@@ -666,7 +667,7 @@ export async function eligibleForPatterns(supabase: Supabase, playerIds: string[
  * engine's cause families shared by enough of the roster, from the visible
  * reads the board already loaded. Off, or a failed read, draws nothing.
  */
-async function teamPatternsOf(supabase: Supabase, teamId: string, roster: ReadonlyArray<{ id: string; name: string }>, openRows: Promise<readonly RankableEvidenceInsight[]>): Promise<ChTeamPatterns | null> {
+export async function teamPatternsOf(supabase: Supabase, teamId: string, roster: ReadonlyArray<{ id: string; name: string }>, openRows: Promise<readonly RankableEvidenceInsight[]>): Promise<ChTeamPatterns | null> {
   if (!teamPatternEnabled() || roster.length === 0) return null;
   try {
     const [eligible, rows] = await Promise.all([
@@ -677,21 +678,24 @@ async function teamPatternsOf(supabase: Supabase, teamId: string, roster: Readon
       openRows,
     ]);
     if (!eligible) return null;
+    const areas = new Map(rows.map((r) => [r.id, areaOf(r.category)]));
+    const areaOfInsight = (id: string) => areas.get(id) ?? null;
     const result = computeTeamPatterns({
       teamId,
       reads: rows.map((r) => ({ id: r.id, player_id: r.player_id, insight_type: r.insight_type ?? '', evidence: r.evidence })),
       rosterTotal: roster.length,
       eligiblePlayerIds: eligible,
     });
-    return toChTeamPatterns(result, new Map(roster.map((p) => [p.id, p.name])));
+    return toChTeamPatterns(result, new Map(roster.map((p) => [p.id, p.name])), areaOfInsight);
   } catch (err) {
     log('teamPatterns', err);
     return null;
   }
 }
 
-async function topInsights(ids: string[]): Promise<Map<string, EvidenceInsight[]>> {
+export async function topInsights(ids: string[], opts?: { limit?: number; drawnLater?: (shown: Map<string, EvidenceInsight[]>) => Promise<readonly string[]> }): Promise<Map<string, EvidenceInsight[]>> {
   try {
+    if (opts) return await getTopInsightsForPlayers(ids, opts);
     // One insight per player: only the top of each row is drawn, so only it is counted as shown in the effectiveness ledger.
     return await getTopInsightsForPlayers(ids, { limit: 1 });
   } catch (err) {
@@ -733,7 +737,7 @@ async function pulseOf(): Promise<ChPulse> {
  * board without waiting for it and an early return leaves nothing unhandled. A pulse that threw is `failed`, which the board draws
  * as the pulse not loading (CH-13203), logged here.
  */
-function pulseLater(): Promise<ChPulseResult> {
+export function pulseLater(): Promise<ChPulseResult> {
   return handled(
     pulseOf().then(
       (pulse): ChPulseResult => ({ status: 'ok', pulse }),

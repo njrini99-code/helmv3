@@ -49,6 +49,8 @@
       "src/clubhouse/__tests__/whats-new.test.tsx"
     ],
     "also": [
+      "src/clubhouse/data/coachhelm-team.ts",
+      "src/clubhouse/data/coachhelm-team-shape.ts",
       "src/clubhouse/data/coachhelm-chat-error.ts",
       "src/clubhouse/data/coachhelm-chat-links.ts",
       "src/clubhouse/data/coachhelm-chat-shape.ts",

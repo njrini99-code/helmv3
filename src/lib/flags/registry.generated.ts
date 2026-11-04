@@ -421,6 +421,23 @@ export const FLAG_REGISTRY: readonly FlagDefinition[] = [
     cleanup_plan: "Turn on (development, preview, production) only after the owner applies 20261020114500_golf_coachhelm_run_log.sql (HELD.md row; the writer treats the missing table as not available, so order is not a correctness issue) and the support back-test (scripts/coachhelm/support-backtest.ts) meets the 02 §8 acceptance bars. Remove the flag and the isSupportPassEnabled branches once the ladder renderers ship and the pass has run stably for a month.",
   },
   {
+    feature_id: "coachhelm_team_board_v1",
+    owner: "golf/coachhelm",
+    purpose: "The coach's CoachHelm Team view in Clubhouse (P013): the golf hole, the spot card, stories, huddle, roster, working and track record. Read only, no new writes. Off: the board renders as today.",
+    type: "release",
+    status: "active",
+    created_at: "2026-11-03",
+    expires_at: null,
+    default: false,
+    environment: {
+      production: false,
+      preview: false,
+      development: false,
+    },
+    kill_switch_behavior: null,
+    cleanup_plan: "Remove once the old CoachBoard is deleted.",
+  },
+  {
     feature_id: "coachhelm_team_pattern_v1",
     owner: "golf/coachhelm",
     purpose: "Gates two Slice 7b pieces. (1) Team patterns on the Clubhouse coach CoachHelm board: a cause family (support family, band and miss side) that at least 3 players and at least 30% of the players with 3 or more countable rounds share, each at Likely or above on the support ladder, drawn as up to 4 rows with the players count, the team strokes a round at stake (sum of the shrunk strokes of those players), the common practice block and the list of those players; computed at delivery from the reads the board already loads, coach only. (2) The same-day field context: for rounds where 3 or more teammates played the same course on the same day, each round's score relative to the team's mean that day. The bad-day-floor read records it and does not fire when most of the player's bad rounds were hard days for the whole field; the pressure read records it as audit detail (\"Relative to the team on the day\"). When off, nothing new is read or written and every read is as before.",
