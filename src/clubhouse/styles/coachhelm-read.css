@@ -1360,7 +1360,7 @@ html[data-fw-theme='dark'] .ch-hr .btn.pri {
   display: grid;
   width: 250px;
   padding: 4px;
-  border-radius: 12px;
+  border-radius: var(--ch-radius-md);
   background: var(--ch-card-bg);
   box-shadow: var(--ch-sheet-shadow);
 }
@@ -1369,11 +1369,14 @@ html[data-fw-theme='dark'] .ch-hr .btn.pri {
   align-items: center;
   min-height: 36px;
   padding: 0 12px;
-  border-radius: 8px;
+  border-radius: var(--ch-radius-sm);
   color: var(--ch-text-primary);
   font: var(--ch-type-15);
+  letter-spacing: var(--ch-track-15);
 }
 .ch-hr-swr .pop a[aria-current] {
-  background: var(--ch-well-bg-flat);
+  background: var(--ch-selected-bg);
+  color: var(--ch-selected-ink);
   font: var(--ch-type-15-medium);
+  letter-spacing: var(--ch-track-15);
 }

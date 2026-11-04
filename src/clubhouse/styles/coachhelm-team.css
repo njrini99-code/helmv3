@@ -589,11 +589,10 @@ html[data-fw-theme='dark'] .ch-htb .coin.early {
   transition-duration:110ms;
 }
 .ch-htb .btn.pri {
-  background:var(--accent);
-  color:#F6F1E3!important;
-}
-html[data-fw-theme='dark'] .ch-htb .btn.pri {
-  color:#0E120F!important;
+  background: var(--ch-key-primary-bg);
+  box-shadow: var(--ch-key-primary-shadow);
+  color: var(--ch-on-green-ink)!important;
+  text-shadow: var(--ch-on-green-text-shadow-s);
 }
 .ch-htb .btn.gh {
   color:var(--accent)!important;

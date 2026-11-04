@@ -448,14 +448,13 @@ html[data-fw-theme='dark'] .ch-th[data-v2] {
   padding-inline: 0;
 }
 .ch-ak-mark {
-  appearance: none;
-  padding: 0;
-  border: 0;
-  background: none;
-  color: inherit;
-  font: inherit;
-  text-align: inherit;
+  all: unset;
+  box-sizing: border-box;
   cursor: pointer;
+}
+.ch-ak-mark:focus-visible {
+  outline: 2px solid var(--ch-border-focus);
+  outline-offset: 2px;
 }
 .ch-ak-miss .w {
   cursor: pointer;
@@ -472,7 +471,7 @@ html[data-fw-theme='dark'] .ch-th[data-v2] {
   width: 32px;
   height: 32px;
   border: 0;
-  border-radius: 8px;
+  border-radius: var(--ch-radius-sm);
   background: var(--ch-well-bg-flat);
   color: var(--ch-text-secondary);
 }
@@ -484,4 +483,11 @@ html[data-fw-theme='dark'] .ch-th[data-v2] {
 .ch-th-cv__full {
   display: grid;
   gap: 16px;
+}
+/* The live keys' finish. */
+.ch-th[data-v2] .conf .btns .p:not(.cap) {
+  background: var(--ch-key-primary-bg);
+  box-shadow: var(--ch-key-primary-shadow);
+  color: var(--ch-on-green-ink);
+  text-shadow: var(--ch-on-green-text-shadow-s);
 }

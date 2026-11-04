@@ -76,6 +76,7 @@ export const DESIGN_VOTES: PollResponseRow[] = [
 ];
 
 export const DESIGN_THREADS: Record<string, ChMsg[]> = {
+  jack: [],
   team: [
     msg('t1', 'me', at(15, 16, 12), 'Qualifier pairings for next week are up in Documents. Three rounds at Lonnie Poole, Monday to Wednesday.'),
     msg('t2', 'me', at(15, 16, 13), DESIGN_POLL.question, { poll: DESIGN_POLL }),
@@ -225,7 +226,7 @@ export function designRouteFixture(view?: string): { people: ChPerson[]; convs: 
     return {
       people: DESIGN_PEOPLE,
       convs: [...DESIGN_CONVS, conv('jack', { title: 'Jack Liu', subtitle: 'Freshman', lastAt: null, lastSenderId: null, lastText: '' })],
-      threads: { ...DESIGN_THREADS, jack: [] },
+      threads: DESIGN_THREADS,
     };
   }
   return { people: DESIGN_PEOPLE, convs: DESIGN_CONVS, threads: DESIGN_THREADS };

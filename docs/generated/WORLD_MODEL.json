@@ -21491,6 +21491,11 @@
         },
         {
           "kind": "import_graph",
+          "path": "src/lib/coachhelm/v3/chat/practice-draft.ts",
+          "anchor": "src/lib/supabase/server"
+        },
+        {
+          "kind": "import_graph",
           "path": "src/lib/coachhelm/v3/chat/read-tools.ts",
           "anchor": "src/lib/supabase/fetch-all-rows"
         },
@@ -22720,6 +22725,11 @@
         {
           "kind": "import_graph",
           "path": "src/lib/coachhelm/v3/chat/create-tools.ts",
+          "anchor": "src/app/actions/messages"
+        },
+        {
+          "kind": "import_graph",
+          "path": "src/lib/coachhelm/v3/chat/practice-draft.ts",
           "anchor": "src/app/actions/messages"
         }
       ]

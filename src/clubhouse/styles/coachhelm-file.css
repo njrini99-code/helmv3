@@ -330,3 +330,15 @@ html[data-fw-theme='dark'] .ch-hf {
   --ch-file-x1: inset 0 1px 2px rgb(28 25 18 / 0.06);
 }
 .ch-hf.is-phone .dmain { display: block; }
+/* The live keys' finish. */
+.ch-hf .btn.pri {
+  background: var(--ch-key-primary-bg);
+  box-shadow: var(--ch-key-primary-shadow);
+  color: var(--ch-on-green-ink);
+  text-shadow: var(--ch-on-green-text-shadow-s);
+}
+.ch-hf .btn.sec {
+  background: var(--ch-key-secondary-bg);
+  box-shadow: var(--ch-btn-secondary-shadow);
+  color: var(--ch-text-primary);
+}

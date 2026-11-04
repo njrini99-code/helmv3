@@ -287,7 +287,7 @@ export function PreviewMessages({ state, view, play, role = 'coach' }: { state?:
         return true;
       }, () => {
         document.body.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }));
-        document.querySelector<HTMLElement>('.ch-msv-plus__key')?.getAttribute('aria-expanded') === 'true' && plus();
+        if (el('.ch-msv-plus__key')?.getAttribute('aria-expanded') === 'true') plus();
         return true;
       }],
       // The drag's stop, held still for the shot (06 S-MSG.times).

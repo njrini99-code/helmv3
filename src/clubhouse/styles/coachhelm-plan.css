@@ -1642,6 +1642,7 @@ html[data-fw-theme='dark'] .ch-cpv-vz {
   padding: 0 16px;
   color: var(--ch-text-primary);
   font: var(--ch-type-15);
+  letter-spacing: var(--ch-track-15);
 }
 .ch-cpv-full .fbar .vsw {
   display: inline-flex;
@@ -1657,7 +1658,7 @@ html[data-fw-theme='dark'] .ch-cpv-vz {
   width: 28px;
   height: 28px;
   border: 0;
-  border-radius: 6px;
+  border-radius: var(--ch-radius-sm);
   background: var(--ch-well-bg-flat);
   color: var(--ch-text-primary);
 }
@@ -1682,4 +1683,17 @@ html[data-fw-theme='dark'] .ch-cpv-vz {
 .ch-cpv .rlinks a {
   color: var(--ch-accent);
   font: var(--ch-type-15-medium);
+  letter-spacing: var(--ch-track-15);
+}
+/* The live keys' finish. */
+.ch-cpv .btn-p {
+  background: var(--ch-key-primary-bg);
+  box-shadow: var(--ch-key-primary-shadow);
+  color: var(--ch-on-green-ink);
+  text-shadow: var(--ch-on-green-text-shadow-s);
+}
+.ch-cpv .btn-g {
+  background: var(--ch-key-secondary-bg);
+  box-shadow: var(--ch-btn-secondary-shadow);
+  color: var(--ch-text-primary);
 }

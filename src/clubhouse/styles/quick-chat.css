@@ -427,3 +427,15 @@ html[data-fw-theme='dark'] .ch-qck { --a-accent-text: #7cc79b; --a-tint: rgb(124
     display: none;
   }
 }
+/* The live keys' finish. */
+.ch-qcs .btn.primary {
+  background: var(--ch-key-primary-bg);
+  box-shadow: var(--ch-key-primary-shadow);
+  color: var(--ch-on-green-ink);
+  text-shadow: var(--ch-on-green-text-shadow-s);
+}
+.ch-qcs .btn.ghost {
+  background: var(--ch-key-secondary-bg);
+  box-shadow: var(--ch-btn-secondary-shadow);
+  color: var(--ch-text-primary);
+}

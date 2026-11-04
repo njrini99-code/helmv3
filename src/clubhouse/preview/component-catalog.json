@@ -20477,6 +20477,21 @@
           "scope": "[data-ui='clubhouse']"
         },
         {
+          "name": "--ch-key-primary-bg",
+          "value": "linear-gradient(180deg, #0d3f28 0%, #0f4429 50%, var(--ch-field-green) 100%)",
+          "scope": "[data-ui='clubhouse']"
+        },
+        {
+          "name": "--ch-key-primary-shadow",
+          "value": "0 0 0 1px #0e462c, inset 0 1px 0 rgb(255 255 255 / 0.1), 0 1px 2px rgb(12 65 40 / 0.22), 0 4px 10px -6px rgb(12 65 40 / 0.4)",
+          "scope": "[data-ui='clubhouse']"
+        },
+        {
+          "name": "--ch-key-secondary-bg",
+          "value": "linear-gradient(180deg, #fefdfa 0%, #f7f5ef 100%)",
+          "scope": "[data-ui='clubhouse']"
+        },
+        {
           "name": "--ch-btn-secondary-shadow",
           "value": "0 0 0 1px rgb(28 25 18 / 0.07), inset 0 -1px 0 rgb(28 25 18 / 0.05), inset 0 1px 0 #fff, 0 1px 2px rgb(28 25 18 / 0.08), 0 4px 10px -5px rgb(28 25 18 / 0.18)",
           "scope": "[data-ui='clubhouse']"
@@ -23394,6 +23409,16 @@
         {
           "name": "--ch-seg-pill-lift-shadow",
           "value": "var(--ch-elevation-control), 0 2px 6px -2px rgb(0 0 0 / 0.5)",
+          "scope": "html[data-fw-theme='dark'] [data-ui='clubhouse']"
+        },
+        {
+          "name": "--ch-key-primary-bg",
+          "value": "linear-gradient(180deg, #25734d 0%, #1d613f 100%)",
+          "scope": "html[data-fw-theme='dark'] [data-ui='clubhouse']"
+        },
+        {
+          "name": "--ch-key-secondary-bg",
+          "value": "linear-gradient(180deg, #2a312b 0%, #232a24 100%)",
           "scope": "html[data-fw-theme='dark'] [data-ui='clubhouse']"
         },
         {
