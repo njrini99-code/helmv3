@@ -355,6 +355,11 @@
   --ch-type-eyebrow: 500 calc(13 * var(--ch-type-k))/calc(18 * var(--ch-type-k)) var(--ch-font-sans);
   --ch-track-eyebrow: 0;
   --ch-type-card-title: 600 calc(17 * var(--ch-type-k))/calc(22 * var(--ch-type-k)) var(--ch-font-sans);
+  /* Clubhouse refresh, PR 1: row title, meta, and the two figures (width and tracking are the caller's; DESIGN_LANGUAGE 6). */
+  --ch-type-row: 500 calc(16 * var(--ch-type-k))/calc(21 * var(--ch-type-k)) var(--ch-font-sans);
+  --ch-type-meta: 400 calc(15 * var(--ch-type-k))/calc(20 * var(--ch-type-k)) var(--ch-font-sans);
+  --ch-type-figure-hero: 500 calc(40 * var(--ch-type-k))/1 var(--ch-font-sans);
+  --ch-type-figure: 600 calc(17 * var(--ch-type-k))/1 var(--ch-font-sans);
   --ch-track-card-title: var(--ch-track-17);
 
   /* Space and layout */
@@ -603,6 +608,31 @@
   /* A flush row's press: a deeper green tint, not a scale (lib/press.ts scales keys up to 240px only). */
   /* The section rule the phone board draws above a heading: an engraved double hairline. */
   --ch-ledger-rule-double: 3px double rgb(110 98 62 / 0.22);
+  /* Clubhouse refresh, PR 1 (design-refresh/DESIGN_LANGUAGE.md 3, 6, "Adopted from threads"). Additive: nothing reads them yet. */
+  --ch-grouped-bg: #f2f0e9;
+  --ch-card-bg: #fffefb;
+  --ch-well-bg-flat: #f6f4ee;
+  --ch-separator: rgb(28 27 24 / 0.1);
+  --ch-card-ring: rgb(28 27 24 / 0.07);
+  --ch-card-shadow: 0 1px 2px rgb(28 25 18 / 0.05), 0 8px 20px -12px rgb(28 25 18 / 0.12);
+  --ch-gain: #14613d;
+  --ch-loss: #9a5700;
+  --ch-flag: #b3261e;
+  --ch-chart-gain-fill: #1f6b45;
+  --ch-chart-loss-fill: #b86f0c;
+  --ch-chart-flat: #6b675f;
+  --ch-chart-track: #ebe5d8;
+  --ch-chart-zero: #5f5c55;
+  --ch-feature-ink: #f4f1e8;
+  --ch-feature-ink-2: #d3d9cb;
+  --ch-feature-gain: #8fd3aa;
+  --ch-feature-loss: #edb867;
+  --ch-feature-flag: #f49a8d;
+  --ch-yr-sr: #1f6b45;
+  --ch-yr-jr: #3d6787;
+  --ch-yr-so: #86672c;
+  --ch-yr-fr: #9a4a35;
+  --ch-yr-ink: #ffffff;
   /* The one feature card: the frame's green, lit faintly from its top right corner. */
   --ch-feature-bg: radial-gradient(120% 90% at 100% 0%, rgb(123 199 154 / 0.14), transparent 60%), var(--ch-green-800);
   --ch-elevation-feature: 0 0 0 1px #082b1c, 0 14px 28px -18px rgb(11 58 37 / 0.7);
@@ -755,6 +785,9 @@
      run in script. */
   --ch-ease-spring-smooth: var(--ch-ease);
   --ch-dur-spring-smooth: var(--ch-dur-base);
+  /* The settle spring for a part CSS moves (a switch thumb): chSpring('settle'). Where linear() is missing, the ease-out over base. */
+  --ch-ease-spring-settle: var(--ch-ease);
+  --ch-dur-spring-settle: var(--ch-dur-base);
   --ch-reveal-offset: 40ms;
   --ch-reveal-step: 55ms;
   --ch-reveal-rise: 10px;
@@ -791,6 +824,25 @@
  */
 html[data-fw-theme='dark'] [data-ui='clubhouse'] {
   color-scheme: dark;
+  /* Clubhouse refresh, PR 1. Dark Sophomore is #8B6B30 (DECISIONS: white reads 4.95:1; the language table's #8F6E31 gives 4.7). */
+  --ch-grouped-bg: #0e120f;
+  --ch-card-bg: #191e1a;
+  --ch-well-bg-flat: #141815;
+  --ch-separator: rgb(241 236 223 / 0.1);
+  --ch-card-ring: rgb(255 255 255 / 0.06);
+  --ch-card-shadow: 0 1px 0 rgb(255 255 255 / 0.04) inset;
+  --ch-gain: #7cc79b;
+  --ch-loss: #e7ae57;
+  --ch-flag: #f28b7d;
+  --ch-chart-gain-fill: #4fa877;
+  --ch-chart-loss-fill: #e09a35;
+  --ch-chart-flat: #a39d90;
+  --ch-chart-track: #2c322d;
+  --ch-chart-zero: #ada697;
+  --ch-yr-sr: #2a7a51;
+  --ch-yr-jr: #46739a;
+  --ch-yr-so: #8b6b30;
+  --ch-yr-fr: #a3533e;
   --ch-on-ink-warning: #8a5a0c;
   /* 4.5:1 or more on every night surface a field or menu sits on, the raised -2 well the darkest (4.7:1; it was #8f897c,
      3.78 there and 4.27 on the raised surface). Visual pass 2026-10-28. */
@@ -1084,6 +1136,8 @@ html[data-fw-theme='dark'] [data-ui='clubhouse'] {
   [data-ui='clubhouse'] {
     --ch-ease-spring-smooth: linear(0, 0.0418, 0.136, 0.2508, 0.3677, 0.477, 0.5739, 0.657, 0.7266, 0.7839, 0.8303, 0.8675, 0.8971, 0.9204, 0.9387, 0.953, 0.964, 0.9725, 0.9791, 0.9841, 0.988, 0.9909, 0.9931, 0.9948, 0.9961, 0.9971, 0.9978, 0.9983, 0.9988, 1);
     --ch-dur-spring-smooth: 462ms;
+    --ch-ease-spring-settle: linear(0, 0.0429, 0.1419, 0.2645, 0.3907, 0.509, 0.6136, 0.7024, 0.7754, 0.8338, 0.8795, 0.9145, 0.9408, 0.9601, 0.974, 0.9839, 0.9906, 0.9952, 0.9981, 0.9998, 1.0008, 1.0013, 1.0015, 1.0015, 1.0014, 1.0012, 1);
+    --ch-dur-spring-settle: 417ms;
   }
 }
 
@@ -1097,6 +1151,9 @@ html[data-fw-theme='dark'] [data-ui='clubhouse'] {
   --ch-dur-release: 0ms;
   --ch-dur-reveal: 0ms;
   --ch-dur-spring-smooth: 0ms;
+  --ch-dur-spring-settle: 0ms;
+  /* Not zeroed: a reduced transition is an opacity crossfade this long. Equal to CH_FADE_MS (lib/motion.ts). */
+  --ch-dur-crossfade-rm: 180ms;
   --ch-reveal-offset: 0ms;
   --ch-reveal-step: 0ms;
   --ch-reveal-rise: 0px;
@@ -1131,7 +1188,7 @@ html:has([data-ui='clubhouse']) {
      (PhoneScreen), and how far the page beneath draws back (UIKit's parallax, about a third). */
   --ch-dur-vt-push: 260ms;
   --ch-ease-vt-push: cubic-bezier(0.22, 1, 0.36, 1);
-  --ch-vt-parallax: -30%;
+  --ch-vt-parallax: -24%;
   /* The dim on the page beneath a push (B16, CH-1618): PhoneScreen's scrim, and the same depth as a filter for a route
      push, whose page beneath is a view-transition snapshot that cannot take an overlay. */
   --ch-push-dim: rgb(20 18 12 / 0.1);
