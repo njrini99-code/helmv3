@@ -1517,6 +1517,7 @@ li + li > .ch-shs-rrow::before {
 }
 .ch-shs-hb .l {
   font: var(--ch-type-16-medium);
+  letter-spacing: var(--ch-track-16);
   color: var(--s-ink);
 }
 .ch-shs-hb .l small {
@@ -1526,6 +1527,7 @@ li + li > .ch-shs-rrow::before {
 }
 .ch-shs-hb .v {
   font: var(--ch-type-17-strong);
+  letter-spacing: var(--ch-track-17);
   text-align: right;
 }
 .ch-shs-tour-key {
@@ -1539,7 +1541,7 @@ li + li > .ch-shs-rrow::before {
 .ch-shs-tour-key i {
   width: 2px;
   height: 12px;
-  border-radius: 1px;
+  border-radius: var(--ch-radius-mark);
   background: var(--s-ink);
 }
 .ch-shs-skey {
@@ -1553,6 +1555,7 @@ li + li > .ch-shs-rrow::before {
   align-items: baseline;
   gap: 6px;
   font: var(--ch-type-15);
+  letter-spacing: var(--ch-track-15);
   color: var(--s-ink-2);
 }
 .ch-shs-skey i {
@@ -1560,11 +1563,11 @@ li + li > .ch-shs-rrow::before {
   align-self: center;
   width: 10px;
   height: 10px;
-  border-radius: 3px;
+  border-radius: var(--ch-radius-mark);
 }
 .ch-shs-skey b {
   margin-left: auto;
-  font-weight: var(--ch-fw-600);
+  font-weight:var(--ch-fw-600);
   color: var(--s-ink);
 }
 /* Focus: 2px, offset 2, on anything that lacks its own rule above. */

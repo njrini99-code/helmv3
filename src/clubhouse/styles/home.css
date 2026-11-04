@@ -5263,7 +5263,7 @@ html[data-fw-theme='dark'] .ch-h-form__bar {
   }
   .ch-h-main[data-ch-crh='on'] {
     gap: 16px;
-    padding: 28px 36px 40px;
+    padding: 24px 32px 40px;
   }
   .ch-h-herocard .ch-hm-queue {
     display: grid;
@@ -5387,13 +5387,14 @@ html[data-fw-theme='dark'] .ch-h-form__bar {
   }
   .ch-h-main[data-ch-crh='on'] .ch-hm-form__top b {
     font: var(--ch-type-figure-40-500);
-    letter-spacing: -0.04em;
+    letter-spacing: var(--ch-track-34);
   }
   .ch-h-main[data-ch-crh='on'] .ch-hm-delta {
     display: grid;
     gap: 4px;
     justify-items: end;
     font: var(--ch-type-17-strong);
+    letter-spacing: var(--ch-track-17);
   }
   .ch-h-main[data-ch-crh='on'] .ch-hm-delta em {
     font: var(--ch-type-13);

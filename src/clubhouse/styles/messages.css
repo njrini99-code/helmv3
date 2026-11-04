@@ -4954,7 +4954,7 @@ html[data-fw-theme='dark'] [data-ui='clubhouse'] .ch-ms-poll {
   display: none;
 }
 [data-ch-ms-v2] .ch-ms-day b {
-  font-weight: 400;
+  font-weight:var(--ch-fw-400);
 }
 [data-ch-ms-v2] .ch-ms-row__top:has(.ch-msv-dot) b {
   flex: 1 1 auto;
@@ -4969,7 +4969,7 @@ html[data-fw-theme='dark'] [data-ui='clubhouse'] .ch-ms-poll {
   border-radius: 50%;
   background: var(--ch-accent);
 }
-[data-ch-ms-v2] .ch-msv-card .ch-ms-row {
+[data-ch-ms-v2] .ch-msv-card :where(.ch-ms-row) {
   padding-inline: 16px;
 }
 [data-ch-ms-v2] .ch-msv-files .ch-msp-none {

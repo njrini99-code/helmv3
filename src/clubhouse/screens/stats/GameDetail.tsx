@@ -644,7 +644,7 @@ export function GameDetail({
                 </div>
               </>
             ) : (
-              <EmptyState compact code="CH-5317" title="No drive results logged." />
+              <EmptyState compact code="CH-5317" kind="first-run" title="No drive results logged." />
             )}
           </ShsCard>
         ) : (

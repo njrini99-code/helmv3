@@ -3256,7 +3256,7 @@ html[data-fw-theme='dark'] .ch-cl-tthead__days > span.is-today:not(.is-team) {
 /* Classes, desktop, behind the lane's flag (06 §4.9): main padding 28 36 40, gap 22; the term card as a row; binders in 3 columns beside a 340 aside. */
 .ch-cl[data-ch-crh='on']:not(.is-phone) {
   gap: 20px;
-  padding: 28px 36px 40px;
+  padding: 24px 32px 40px;
   background: var(--ch-grouped-bg);
 }
 .ch-cl[data-ch-crh='on']:not(.is-phone) .ch-cl-h {
@@ -3264,7 +3264,7 @@ html[data-fw-theme='dark'] .ch-cl-tthead__days > span.is-today:not(.is-team) {
 }
 .ch-cl[data-ch-crh='on']:not(.is-phone) .ch-cl-h h1 {
   margin: 6px 0 0;
-  font: var(--ch-type-large-title);
+  font: var(--ch-type-34-strong);
   letter-spacing: var(--ch-track-large-title);
   color: var(--ch-text-primary);
 }
@@ -3285,12 +3285,14 @@ html[data-fw-theme='dark'] .ch-cl-tthead__days > span.is-today:not(.is-team) {
 }
 .ch-cl-term.is-desk .ch-cl-term__wk b {
   font: var(--ch-type-34-strong);
+  letter-spacing: var(--ch-track-34);
 }
 .ch-cl-term.is-desk .ch-cl-term__h {
   grid-area: head;
 }
 .ch-cl-term.is-desk .ch-cl-term__h h2 {
   font: var(--ch-type-22-strong);
+  letter-spacing: var(--ch-track-22);
   color: var(--ch-on-green-plate);
 }
 .ch-cl-term.is-desk .ch-cl-term__over {
@@ -3338,7 +3340,7 @@ html[data-fw-theme='dark'] .ch-cl-tthead__days > span.is-today:not(.is-team) {
 .ch-cl[data-ch-crh='on']:not(.is-phone) .ch-cl-deck {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 14px;
+  gap: 12px;
 }
 .ch-cl[data-ch-crh='on']:not(.is-phone) .ch-cl-add {
   display: none;

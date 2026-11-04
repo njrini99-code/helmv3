@@ -3475,12 +3475,12 @@ html:has([data-ui='clubhouse'])::view-transition-new(.ch-rsm-reorder) {
 @media (min-width: 821px) {
   [data-ch-crh='on'].ch-rsd {
     gap: 16px;
-    padding: 28px 36px 40px;
+    padding: 24px 32px 40px;
     background: var(--ch-grouped-bg);
   }
   [data-ch-crh='on'].ch-rsd .ch-rs-head h1 {
     margin: 4px 0;
-    font: var(--ch-type-large-title);
+    font: var(--ch-type-34-strong);
     letter-spacing: var(--ch-track-large-title);
     color: var(--ch-text-primary);
     -webkit-text-fill-color: currentcolor;

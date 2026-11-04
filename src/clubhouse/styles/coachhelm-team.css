@@ -238,7 +238,7 @@ html[data-fw-theme='dark'] .ch-htb .coin.early {
 }
 .ch-htb .feat .hn b {
   font: var(--ch-type-figure-40-500); 
-  font-variation-settings:'wdth' 92;
+  font-variation-settings:'wdth' 88;
   letter-spacing: -0.038em;
   }
 .ch-htb .feat .hn span {
@@ -487,6 +487,7 @@ html[data-fw-theme='dark'] .ch-htb .coin.early {
 }
 .ch-htb .br .bv {
   font: var(--ch-type-15-strong); 
+  letter-spacing: var(--ch-track-15);
   text-align:right;
   color:var(--loss); }
 .ch-htb .br .bv.g {

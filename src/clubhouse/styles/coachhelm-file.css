@@ -122,7 +122,7 @@ html[data-fw-theme='dark'] .ch-hf {
 .ch-hf .ch-hf-partfail { display: flex; align-items: center; justify-content: space-between; gap: 12px; font: var(--ch-type-14); }
 .ch-hf .ch-hf-partfail button { position: relative; flex: none; padding: 0; border: 0; background: none; font: var(--ch-type-14-strong); color: var(--ch-accent); cursor: pointer; }
 .ch-hf .ch-hf-partfail button::before { content: ""; position: absolute; inset: -12px -8px; }
-.ch-hf .ch-hf-partfail button:focus-visible { outline: 2px solid var(--ch-border-focus); outline-offset: 2px; border-radius: 4px; }
+.ch-hf .ch-hf-partfail button:focus-visible { outline: 2px solid var(--ch-border-focus); outline-offset: 2px; border-radius: var(--ch-radius-xs); }
 .ch-hf .card__n { margin: 0; padding: 12px 16px 16px; border-top: var(--ch-hairline-w) solid var(--a-sep); font: var(--ch-type-15);  color: var(--a-ink-2); letter-spacing: var(--ch-track-15); }
 .ch-hf .card.tap { cursor: pointer; transition: box-shadow 0s; }
 .ch-hf .card.tap[data-ch-pressed] { box-shadow: var(--ch-file-shadow-2); transition-delay: 50ms; }

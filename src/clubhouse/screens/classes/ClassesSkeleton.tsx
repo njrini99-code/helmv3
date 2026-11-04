@@ -1,6 +1,6 @@
 import { SkelLine, Skeleton } from '../../ui/States';
 import '../../styles/classes.css';
-import { LargeTitle, LargeTitleSkeleton } from '../../ui/LargeTitle';
+import { LargeTitleSkeleton } from '../../ui/LargeTitle';
 import { CrhSkelCard } from '../../ui/CrhSkelCard';
 
 /** Route loading for Classes: the header, the term overview, then the deck of classes beside the week's side card, in place. On desktop the header is the framed page head at its loaded height and the deck's placeholders are rows (classes.css). */
@@ -59,9 +59,8 @@ export function ClassesSkeleton() {
           the shape for the width, so the server needs no width to draw it. */}
       {/* The lane's flag is on `.ch-root`; CSS picks which phone skeleton shows, since this route's loading is a client component (06 §4.8). */}
       <div className="ch-cl-sk-crh" aria-hidden="true">
-        <LargeTitle as="p" hidden className="ch-cl-title">
-          Classes
-        </LargeTitle>
+        {/* A plain title: the skeleton's one large-title block is the phone shape's below, and CSS shows one shape. */}
+        <p className="ch-large-title ch-cl-title">Classes</p>
         <Skeleton width={190} height={15} />
         <span className="ch-cl-sk-crh__term">
           {['38%', '62%', '100%', '54%'].map((w, i) => (
