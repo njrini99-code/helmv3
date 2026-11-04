@@ -684,7 +684,7 @@ function PhoneThread({
                 const who = personOf(api, id);
                 const name = firstName(who?.name ?? conv.title);
                 return (
-                  <div key={id} className="ch-ms-msg is-first">
+                  <div key={id} className={"ch-ms-msg is-first" + (conv.group ? " is-group" : "")}>
                     <span className="ch-ms-msg__av">{<Avatar name={who?.name ?? conv.title} id={who ? (who.playerId ?? who.userId) : convAvatarId(api, conv)} size="sm" />}</span>
                     <div className="ch-ms-msg__col">
                       <div className={"ch-msv-typing" + (conv.group ? " has-name" : "")} role="status" aria-label={`${name} is typing`}>

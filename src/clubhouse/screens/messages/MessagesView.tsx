@@ -759,7 +759,7 @@ function Rail({ api, onNew }: { api: ChMessagesApi; onNew: () => void }) {
   // B11: ↑ and ↓ walk the conversations; the rail is one Tab stop.
   useRovingRows(body, ".ch-ms-row");
   usePageKeys("Messages", RAIL_KEYS);
-  const [filter, setFilter] = useState<ChConvFilter>("all");
+  const [filter, setFilter] = useState<ChConvFilter>(api.designFilter ?? "all");
   const [q, setQ] = useState("");
   const unread = api.convs.filter(isUnread).length;
   const list = filterConvs(api.convs, filter, q);
@@ -786,7 +786,7 @@ function Rail({ api, onNew }: { api: ChMessagesApi; onNew: () => void }) {
             </button>
           </Tooltip>
         </div>
-        {api.redesign && <p className="ch-ms-rail__ctx ch-num">{firstRun ? "No conversations yet" : inboxContextDesktop(unread, api.convs.length)}</p>}
+        {api.redesign && <p className="ch-ms-rail__ctx ch-num">{firstRun ? "No conversations yet" : (api.convsLoading && !api.convs.length) || api.annLoading ? "Loading conversations" : inboxContextDesktop(unread, api.convs.length)}</p>}
         <SearchField
           value={q}
           onChange={setQ}
@@ -973,7 +973,7 @@ function ReactionChip({ api, messageId, r, arriving = false }: { api: ChMessages
         }}
       >
         <Icon icon={REACTION_ICON[r.key]} size={12} />
-        {r.count}
+        {!api.redesign || r.count > 1 ? r.count : null}
       </button>
       {typeof document !== "undefined" &&
         createPortal(
@@ -1276,6 +1276,8 @@ export function Bubble({
       ]
     : m.mine
       ? [
+          ...(api.redesign && onReply ? [{ label: "Reply", icon: Reply, onSelect: onReply }] : []),
+          ...(api.redesign && m.text ? [{ label: "Copy", icon: Copy, onSelect: () => void copyText() }] : []),
           // An attachment-only message has no text to edit (as the phone's sheet: wave 5 #8).
           ...(m.text ? [{ label: "Edit", icon: Pencil, onSelect: onEdit }] : []),
           ...seenItem,
@@ -2429,6 +2431,8 @@ function Thread({
     return () => el.removeEventListener("scroll", on);
   }, [api.redesign]);
 
+  const typistId = api.typingUserIds?.[0] ?? api.typingByConv?.get(conv.id)?.[0];
+  const typist = typistId ? personOf(api, typistId) : undefined;
   return (
     <PollThreadContext.Provider value={pollThread}>
     <section
@@ -2574,19 +2578,28 @@ function Thread({
           )}
           {/* No dots under a thread that didn't load or is still loading (states audit c9): nothing to type into yet. */}
           {api.typing && !api.msgsError && !(api.msgsLoading && !api.msgs.length) && (
-            <div className="ch-ms-msg is-first" /* CH-7602: the typing dots */>
-              {/* The realtime hook says someone is typing, not who: a direct thread knows, a group doesn't. */}
-              <span className="ch-ms-msg__av">{!conv.group && <Avatar name={conv.title} id={convAvatarId(api, conv)} size={30} />}</span>
+            <div className={"ch-ms-msg is-first" + (conv.group ? " is-group" : "")} /* CH-7602: the typing dots */>
+              {/* The realtime hook says someone is typing, not who: a direct thread knows; the redesign's group reads the typers. */}
+              <span className="ch-ms-msg__av">
+                {api.redesign ? (
+                  conv.group && typist && <Avatar name={typist.name} id={typist.playerId ?? typist.userId} size={30} />
+                ) : (
+                  !conv.group && <Avatar name={conv.title} id={convAvatarId(api, conv)} size={30} />
+                )}
+              </span>
               <div className="ch-ms-msg__col">
-                <div
-                  className="ch-ms-typing"
-                  role="status"
-                  aria-label={`${conv.group ? "Someone" : firstName(conv.title)} is typing`}
-                >
-                  <i />
-                  <i />
-                  <i />
-                </div>
+                {api.redesign ? (
+                  <div className={"ch-msv-typing" + (conv.group ? " has-name" : "")} role="status" aria-label={`${conv.group ? (typist ? firstName(typist.name) : "Someone") : firstName(conv.title)} is typing`}>
+                    {conv.group && typist && <b className="ch-msv-bname">{firstName(typist.name)}</b>}
+                    <span className="ch-msv-typing__dots"><i /><i /><i /></span>
+                  </div>
+                ) : (
+                  <div className="ch-ms-typing" role="status" aria-label={`${conv.group ? "Someone" : firstName(conv.title)} is typing`}>
+                    <i />
+                    <i />
+                    <i />
+                  </div>
+                )}
               </div>
             </div>
           )}

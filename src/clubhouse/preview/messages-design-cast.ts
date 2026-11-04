@@ -126,7 +126,8 @@ const DESIGN_PHOTO = `data:image/svg+xml,${encodeURIComponent('<svg xmlns="http:
 
 export const designAttachments = async (messageId: string) => {
   if (messageId === 'o1') return [{ id: 'da-o1', name: 'Swing video.mov', size: 42 * 1024 * 1024, mime: 'video/quicktime', url: null }];
-  if (messageId === 'e7') return [{ id: 'da-e7', name: 'Back nine.jpg', size: 2 * 1024 * 1024, mime: 'image/svg+xml', url: DESIGN_PHOTO }, ...Array.from({ length: 6 }, (_, i) => ({ id: `df-p${i}`, name: `Back nine ${i + 1}.jpg`, size: 2 * 1024 * 1024, mime: 'image/svg+xml', url: DESIGN_PHOTO }))];
+  if (messageId === 'e7') return [{ id: 'da-e7', name: 'Back nine.jpg', size: 2 * 1024 * 1024, mime: 'image/svg+xml', url: DESIGN_PHOTO }];
+  if (messageId === 'df-photos') return Array.from({ length: 6 }, (_, i) => ({ id: `df-p${i}`, name: `Back nine ${i + 1}.jpg`, size: 2 * 1024 * 1024, mime: 'image/svg+xml', url: DESIGN_PHOTO }));
   return [];
 };
 
@@ -163,12 +164,12 @@ export const DESIGN_ROUTE_CONV: Record<string, string> = {
 export const designPins = (view?: string): string[] => (view === 'rowmenu' ? ['team', 'eli'] : view === 'empty' ? [] : ['team', 'eli', 'dana']);
 
 /** `rowtyping`: Eli typing in his thread, Maya in the Qualifier group. */
-export const designRowTyping = (view?: string): ReadonlyMap<string, string[]> => new Map(view === 'rowtyping' ? [['eli', ['eli']], ['quals', ['maya']]] : []);
+export const designRowTyping = (view?: string): ReadonlyMap<string, string[]> => new Map(view === 'grouptyping' ? [['team', ['maya']]] : view === 'rowtyping' ? [['eli', ['eli']], ['quals', ['maya']]] : []);
 
 /** S-MSG.details: the thread's six photos and its two files, tiles and rows. */
 export const designFiles: Record<string, ChFile[]> = {
   eli: [
-    ...Array.from({ length: 6 }, (_, i) => ({ id: `df-p${i}`, messageId: 'e7', name: `Back nine ${i + 1}.jpg`, size: 2 * 1024 * 1024, mime: 'image/svg+xml', sentAt: at(15, 15, i), senderId: 'eli' })),
+    ...Array.from({ length: 6 }, (_, i) => ({ id: `df-p${i}`, messageId: 'df-photos', name: `Back nine ${i + 1}.jpg`, size: 2 * 1024 * 1024, mime: 'image/svg+xml', sentAt: at(15, 15, i), senderId: 'eli' })),
     { id: 'df-a', messageId: 'e7', name: 'Lineup · Saturday.pdf', size: 240 * 1024, mime: 'application/pdf', sentAt: at(15, 12, 0), senderId: 'me' },
     { id: 'df-b', messageId: 'e7', name: 'Yardage notes.pdf', size: 180 * 1024, mime: 'application/pdf', sentAt: at(14, 12, 0), senderId: 'eli' },
   ] as ChFile[],

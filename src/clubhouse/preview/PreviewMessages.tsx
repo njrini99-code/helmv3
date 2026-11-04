@@ -215,6 +215,8 @@ export function PreviewMessages({ state, view, play, role = 'coach' }: { state?:
     if (!design) return;
     const id = view ? DESIGN_ROUTE_CONV[view] : undefined;
     if (id) setSelectedId(id);
+    // Desktop opens Eli beside the rail on the inbox routes, as the page does.
+    else if (view && ['inbox', 'unread', 'longinbox', 'rowtyping'].includes(view) && window.matchMedia('(min-width: 821px)').matches) setSelectedId('eli');
     const add = (senderId: string, text: string) => {
       setSelectedId((open) => {
         const to = open ?? 'team';
@@ -233,6 +235,7 @@ export function PreviewMessages({ state, view, play, role = 'coach' }: { state?:
     if (!design || !view) return;
     const el = (sel: string) => document.querySelector<HTMLElement>(sel);
     const lastMine = () => Array.from(document.querySelectorAll<HTMLElement>('.ch-ms-msg.is-mine .ch-ms-msg__stack')).pop() ?? null;
+    const lastTheirs = () => Array.from(document.querySelectorAll<HTMLElement>('.ch-ms-msg:not(.is-mine) .ch-ms-msg__stack')).pop() ?? null;
     const click = (target: () => HTMLElement | null | undefined) => () => {
       const found = target();
       found?.click();
@@ -264,10 +267,10 @@ export function PreviewMessages({ state, view, play, role = 'coach' }: { state?:
       mute: [details, named('Mute')],
       attach: [plus],
       pollnew: [plus, named('Poll')],
-      hold: [hold(lastMine)],
+      hold: [hold(lastTheirs)],
       holdseen: [hold(lastMine)],
-      react: [hold(lastMine)],
-      reply: [hold(() => Array.from(document.querySelectorAll<HTMLElement>('.ch-ms-msg:not(.is-mine) .ch-ms-msg__stack')).pop() ?? null), named('Reply')],
+      react: [hold(lastTheirs), click(() => el('.ch-msv-rbar button:nth-child(2)'))],
+      reply: [hold(lastTheirs), named('Reply')],
       edit: [hold(lastMine), named('Edit')],
       rowmenu: [rowMenu],
       pinlimit: [rowMenu],
@@ -310,7 +313,7 @@ export function PreviewMessages({ state, view, play, role = 'coach' }: { state?:
     // The preview forces the redesign on for the design fixture, whatever the flag says.
     redesign: design,
     designFilter: design && view === 'unread' ? 'unread' : undefined,
-    ...(design ? { pins, typingByConv: designRowTyping(view) } : {}),
+    ...(design ? { pins, typingByConv: designRowTyping(view), ...(view === 'grouptyping' ? { typingUserIds: ['maya'] } : {}) } : {}),
     viewer: { userId: 'me', role, name: cast.me.name },
     signers: { 'c-maya': { name: 'Maya Reyes', title: 'Head coach' } },
     timeZone: TZ,

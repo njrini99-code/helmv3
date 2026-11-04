@@ -56,7 +56,8 @@ export function HoldLift({ messageId, mine, bar, children, onClosed, closeSignal
       rbar.current?.animate([{ transform: 'scale(.5)', opacity: 0 }, { transform: 'none', opacity: 1 }], { duration: pop.ms, easing: pop.linear });
       menu.current?.animate([{ transform: 'scale(.8)', opacity: 0 }, { transform: 'none', opacity: 1 }], { duration: lift.ms, easing: lift.linear });
     }
-    menu.current?.querySelector<HTMLElement>('button')?.focus({ preventScroll: true });
+    // The first reaction takes focus, as the page's toolbar (its first control).
+    rbar.current?.querySelector<HTMLElement>('button')?.focus({ preventScroll: true });
     return () => {
       el.style.visibility = '';
     };

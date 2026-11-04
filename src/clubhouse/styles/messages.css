@@ -4517,8 +4517,8 @@ html[data-fw-theme='dark'] [data-ui='clubhouse'] .ch-ms-poll {
   padding: 4px 12px;
   border-radius: 999px;
   background: var(--ch-glass-strong);
-  -webkit-backdrop-filter: var(--ch-glass-blur);
-  backdrop-filter: var(--ch-glass-blur);
+  -webkit-backdrop-filter: blur(var(--ch-glass-blur));
+  backdrop-filter: blur(var(--ch-glass-blur));
   box-shadow: var(--ch-shadow-float);
   font: var(--ch-type-13-medium);
   color: var(--ch-text-secondary);
@@ -4548,8 +4548,8 @@ html[data-fw-theme='dark'] [data-ui='clubhouse'] .ch-ms-poll {
   border: 0;
   border-radius: 50%;
   background: var(--ch-glass-strong);
-  -webkit-backdrop-filter: var(--ch-glass-blur);
-  backdrop-filter: var(--ch-glass-blur);
+  -webkit-backdrop-filter: blur(var(--ch-glass-blur));
+  backdrop-filter: blur(var(--ch-glass-blur));
   box-shadow: var(--ch-shadow-float);
   color: var(--ch-text-primary);
   animation: ch-msv-jump-in var(--ch-dur-spring-pop) var(--ch-ease-spring-pop) both;
@@ -4863,8 +4863,8 @@ html[data-fw-theme='dark'] [data-ui='clubhouse'] .ch-ms-poll {
   position: absolute;
   inset: 0;
   background: var(--ch-scrim, rgb(20 18 12 / 0.32));
-  -webkit-backdrop-filter: var(--ch-glass-blur);
-  backdrop-filter: var(--ch-glass-blur);
+  -webkit-backdrop-filter: blur(var(--ch-glass-blur));
+  backdrop-filter: blur(var(--ch-glass-blur));
 }
 .ch-msv-lift__copy {
   position: fixed;
@@ -5548,8 +5548,8 @@ body:has([data-ch-ms-v2]) .ch-toast {
   justify-content: space-between;
   padding: 12px 24px;
   background: var(--ch-glass-bg, var(--ch-card-bg));
-  -webkit-backdrop-filter: var(--ch-glass-blur);
-  backdrop-filter: var(--ch-glass-blur);
+  -webkit-backdrop-filter: blur(var(--ch-glass-blur));
+  backdrop-filter: blur(var(--ch-glass-blur));
 }
 .ch-msv-newpane__bar > b {
   font: var(--ch-type-15-strong);
@@ -5611,8 +5611,8 @@ body:has([data-ch-ms-v2]) .ch-toast {
     inset: 0 0 auto;
     z-index: 3;
     background: var(--ch-glass-strong);
-    -webkit-backdrop-filter: var(--ch-glass-blur);
-    backdrop-filter: var(--ch-glass-blur);
+    -webkit-backdrop-filter: blur(var(--ch-glass-blur));
+    backdrop-filter: blur(var(--ch-glass-blur));
   }
   [data-ch-ms-v2] .ch-ms-th::after {
     content: '';
@@ -5637,8 +5637,8 @@ body:has([data-ch-ms-v2]) .ch-toast {
     overflow: auto;
     padding: 8px 24px;
     background: var(--ch-glass-bg);
-    -webkit-backdrop-filter: var(--ch-glass-blur);
-    backdrop-filter: var(--ch-glass-blur);
+    -webkit-backdrop-filter: blur(var(--ch-glass-blur));
+    backdrop-filter: blur(var(--ch-glass-blur));
   }
 }
 .ch-msv-hoverbar {
@@ -5653,8 +5653,8 @@ body:has([data-ch-ms-v2]) .ch-toast {
   border-radius: 999px;
   background: var(--ch-glass-bg);
   box-shadow: var(--ch-card-shadow);
-  -webkit-backdrop-filter: var(--ch-glass-blur);
-  backdrop-filter: var(--ch-glass-blur);
+  -webkit-backdrop-filter: blur(var(--ch-glass-blur));
+  backdrop-filter: blur(var(--ch-glass-blur));
   opacity: 0;
   pointer-events: none;
   transform: translateY(4px) scale(0.96);
@@ -5824,8 +5824,8 @@ body:has([data-ch-ms-v2]) .ch-toast {
   background: var(--ch-glass-bg);
   color: var(--ch-text-primary);
   font: var(--ch-type-13-strong);
-  -webkit-backdrop-filter: var(--ch-glass-blur);
-  backdrop-filter: var(--ch-glass-blur);
+  -webkit-backdrop-filter: blur(var(--ch-glass-blur));
+  backdrop-filter: blur(var(--ch-glass-blur));
   pointer-events: auto;
 }
 .ch-toasts.is-pill .ch-toast__icon,
@@ -5844,4 +5844,18 @@ body:has([data-ch-ms-v2]) .ch-toast {
 [data-ch-ms-v2] .ch-ms-row.is-sel .ch-ms-grp {
   background: var(--ch-bubble-mine-fill);
   color: var(--ch-text-on-accent);
+}
+/* The hold menu and scrim blur what's behind them (M-MSG-10); a 1:1 draws no face beside its bubbles. */
+[data-ch-ms-v2] .ch-msv-holdmenu,
+.ch-msv-holdmenu {
+  -webkit-backdrop-filter: blur(var(--ch-glass-blur));
+  backdrop-filter: blur(var(--ch-glass-blur));
+}
+[data-ch-ms-v2] .ch-ms-msg:not(.is-group) > .ch-ms-msg__av {
+  display: none;
+}
+.ch-msv-typing__n {
+  margin-right: 8px;
+  font: var(--ch-type-13-strong);
+  color: var(--ch-text-primary);
 }
