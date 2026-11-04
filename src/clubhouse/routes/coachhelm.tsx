@@ -7,6 +7,7 @@ import { isTrackRecordEnabled } from '@/lib/coachhelm/v3/track-record/flag';
 import { isMondayBriefEnabled } from '@/lib/coachhelm/v3/monday-brief/flag';
 import { COURSE_TAB, isTeamBoardEnabled, TEAM_BOARD_FIRST_VIEW } from '@/lib/coachhelm/v3/team-board/flag';
 import { isReadEnabled } from '@/lib/coachhelm/v3/read/flag';
+import { isAskV2Enabled } from '@/lib/coachhelm/v3/chat/ask-flag';
 import { isPlayerFileEnabled } from '@/lib/coachhelm/v3/player-file/flag';
 import { loadCoachPlayerFile, loadFileRoster, loadPlayerYourWeek } from '../data/coachhelm-file';
 import { FileSkeleton } from '../screens/coachhelm/file/FileSkeleton';
@@ -55,6 +56,7 @@ import '../styles/coachhelm-brief.css';
 import '../styles/coachhelm-team.css';
 import '../styles/coachhelm-read.css';
 import '../styles/coachhelm-file.css';
+import '../styles/coachhelm-ask-v2.css';
 
 /**
  * /golf/dashboard/coachhelm in Clubhouse, for coaches and players (the Fairway
@@ -82,7 +84,7 @@ async function CoachHelmView({ coachId, teamId, ask, conversationId, initialPlay
   const gate = await loadCoachHelmGate(coachId);
   if (gate.status === 'off') return <CoachBoard data={emptyCoachHelm(gate.off)} />;
   if (gate.status === 'failed') return <Ask load={{ status: 'failed' }} />;
-  return <Ask load={await loadAskCoachHelm({ conversationId })} />;
+  return <Ask v2={isAskV2Enabled()} load={await loadAskCoachHelm({ conversationId })} />;
 }
 
 /** One read for a coach: state by state as `CoachPlayerPage` (coachhelm-read 02-PLAN 3.3). */

@@ -82,7 +82,7 @@ function fakeChat(start: { busy?: boolean; error?: unknown; messages?: UIMessage
  * rejected | readfail | partial | long | reads (an answer that names Jonah's reads, each a link to his Deep dive) | readsother
  * (the same reads for a player not on the team: no links). Nothing reaches the server.
  */
-export function PreviewAsk({ state, kind }: { state?: string; kind?: string }) {
+export function PreviewAsk({ state, kind, v2 = false }: { state?: string; kind?: string; v2?: boolean }) {
   const offline = state === 'offline';
   useEffect(() => {
     if (!offline) return;
@@ -124,5 +124,5 @@ export function PreviewAsk({ state, kind }: { state?: string; kind?: string }) {
   }, [state, kind]);
 
   if (state === 'loading') return <AskSkeleton />;
-  return <Ask load={load} chat={chat} initial={initial} />;
+  return <Ask v2={v2} load={load} chat={chat} initial={initial} />;
 }

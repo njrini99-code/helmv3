@@ -22,6 +22,7 @@ import { OFFLINE_LINE } from '../../../ui/Retry';
 import { useToast } from '../../../ui/Toast';
 import { Tooltip } from '../../../ui/Tooltip';
 import { CoachMark } from './CoachMark';
+import { AnswerCard } from './parts/AnswerCard';
 import { AskActionCard, AskReceiptCard } from './ActionCard';
 import { AskEvidenceView } from './Evidence';
 import { CoachComposition } from './visual/CoachComposition';
@@ -30,6 +31,8 @@ import { AskProse, AskUserText } from './Prose';
 import '../../../styles/coachhelm-thread.css';
 
 export interface AskThreadProps {
+  /** Ask v2's answer card, steps, chips and tool cards. Off: today's markup. */
+  v2?: boolean;
   messages: UIMessage[];
   /** A turn is in flight. */
   busy: boolean;
@@ -88,7 +91,7 @@ function useElapsed(active: boolean): number | null {
  * the coach sends, and stays where the coach scrolled to while an answer streams. Streamed text
  * does not animate; a new turn arrives with the base fade.
  */
-export function AskThread({ messages, busy, error, offline, phone, players, onApprove, onDeny, onSend, onStop, onRetry, onNewChat, evidenceFocus, onOpenEvidence }: AskThreadProps) {
+export function AskThread({ v2 = false, messages, busy, error, offline, phone, players, onApprove, onDeny, onSend, onStop, onRetry, onNewChat, evidenceFocus, onOpenEvidence }: AskThreadProps) {
   const toast = useToast();
   const reduced = useChReducedMotion();
   const turns = useMemo(() => buildTurns(messages, { busy }), [messages, busy]);
@@ -176,7 +179,7 @@ export function AskThread({ messages, busy, error, offline, phone, players, onAp
   };
 
   return (
-    <div ref={rootRef} className={'ch-th' + (phone ? ' ch-th--phone' : '')} data-ch-code="CH-13850">
+    <div ref={rootRef} className={'ch-th' + (phone ? ' ch-th--phone' : '')} data-ch-code="CH-13850" data-v2={v2 ? '' : undefined}>
       <div className="ch-th-col" role="log" aria-label="Conversation">
         {turns.map((turn) => {
           const fresh = !initial.current?.has(turn.id) && !continued.current.has(turn.id);
@@ -190,6 +193,25 @@ export function AskThread({ messages, busy, error, offline, phone, players, onAp
             );
           }
           const showFollowUps = turn.id === lastAssistantId && !busy && !pending && !error && turn.followUps.length > 0;
+          if (v2) {
+            return (
+              <AnswerCard
+                key={turn.id}
+                turn={turn}
+                fresh={fresh}
+                showFollowUps={showFollowUps}
+                playersByName={playersByName}
+                onSend={onSend}
+                actions={(b) => {
+                  if (b.kind === 'receipt') return <AskReceiptCard key={b.key} receipt={b.receipt} onAskAgain={onSend} />;
+                  if (b.kind !== 'proposal') return null;
+                  const focus = focusForProposal(turn.id, b.view);
+                  return <AskActionCard key={b.key} view={b.view} messageId={turn.id} phone={phone} hasEvidence={focus ? evidenceAvailable(messages, focus) : false} evidenceOpen={evidenceFocus?.key === b.view.key} onApprove={onApprove} onDeny={onDeny} onOpenEvidence={onOpenEvidence} />;
+                }}
+                players={players}
+              />
+            );
+          }
           return (
             <article key={turn.id} className={'ch-th-turn ch-th-ans' + (fresh ? ' is-new' : '')} aria-label="CoachHelm answer" aria-busy={turn.active || undefined}>
               <CoachMark working={turn.active} />

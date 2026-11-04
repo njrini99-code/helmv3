@@ -166,6 +166,36 @@ const PROGRESS_LABEL: Record<string, (input: Record<string, unknown>) => string>
   create_team_announcement: () => 'Drafting a team update',
 };
 
+/** The same words, past tense, for the row once the read is back (Ask v2). */
+const PROGRESS_DONE: Record<string, string> = {
+  get_team_overview: 'Read your roster',
+  get_player_metrics: 'Read recorded statistics',
+  get_player_trend: 'Read the recorded rounds',
+  get_putting_distance_profile: 'Compared putting by distance',
+  compare_players: 'Compared players on the same window',
+  get_team_metric_ranking: 'Ranked the team',
+  get_player_weakest_areas: 'Found where the gap is largest',
+  get_recent_rounds: 'Read recent rounds',
+  get_team_rounds: 'Read the team’s rounds',
+  get_qualifiers: 'Read qualifier standings',
+  get_tournaments: 'Read tournament results',
+  get_player_insights: 'Read open signals',
+  get_focus_areas: 'Checked active focus areas',
+  get_upcoming_events: 'Checked the schedule and RSVPs',
+  get_open_tasks: 'Checked outstanding tasks',
+  get_team_travel: 'Checked team travel',
+  find_player: 'Found that player on your roster',
+  show_visual: 'Built the visual',
+};
+
+/** One short fact from the envelope's own counts, never a number not in it; it goes through `collect` with the envelope, so the audit already knows it. */
+function detailFor(envelope: ToolEnvelope): string | undefined {
+  const m = envelope.measurements[0];
+  if (!m || !m.sample_size) return undefined;
+  const unit = m.sample_unit === 'rounds' ? (m.sample_size === 1 ? 'round' : 'rounds') : m.sample_size === 1 ? String(m.sample_unit).replace(/s$/, '') : String(m.sample_unit);
+  return `${m.sample_size} ${unit}`;
+}
+
 export interface BuildToolsArgs {
   sb: Sb;
   ctx: CoachChatContext;
@@ -180,6 +210,8 @@ export interface BuildToolsArgs {
    * src/clubhouse may not import the gate. Left out, the whole-team tools stay off.
    */
   teamTools?: boolean;
+  /** Ask v2 (`coachhelm_ask_v2` and Clubhouse on for the team): steps update in place, and new tools join. Fairway's chat never sets it. */
+  askV2?: boolean;
 }
 
 /**
@@ -234,14 +266,25 @@ interface GatedAction<TInput, TPlan> {
   run: (plan: TPlan) => Promise<ActionReceipt>;
 }
 
-export function buildCoachTools({ sb, ctx, conversationId, writer, collect, teamTools = false }: BuildToolsArgs): ToolSet {
+export function buildCoachTools({ sb, ctx, conversationId, writer, collect, teamTools = false, askV2 = false }: BuildToolsArgs): ToolSet {
   let progressId = 0;
   const progress = (toolName: string, input: Record<string, unknown>) => {
     const label = PROGRESS_LABEL[toolName]?.(input) ?? 'Working';
+    const id = `progress-${(progressId += 1)}`;
     writer.write({
       type: 'data-progress',
-      id: `progress-${(progressId += 1)}`,
+      id,
       data: { label, tool: toolName },
+    });
+    return { id, label };
+  };
+  /** Ask v2: the SDK replaces a data part with the same id, so the row updates in place. */
+  const progressEnd = (step: { id: string; label: string }, toolName: string, envelope: ToolEnvelope | null, failed: boolean) => {
+    if (!askV2) return;
+    writer.write({
+      type: 'data-progress',
+      id: step.id,
+      data: { label: step.label, tool: toolName, state: failed ? 'failed' : 'done', done: PROGRESS_DONE[toolName] ?? step.label, ...(envelope && detailFor(envelope) ? { detail: detailFor(envelope) } : {}) },
     });
   };
 
@@ -259,10 +302,11 @@ export function buildCoachTools({ sb, ctx, conversationId, writer, collect, team
   const read =
     <I extends Record<string, unknown>>(name: string, run: (input: I) => Promise<ToolEnvelope>) =>
     async (input: I) => {
-      progress(name, input);
+      const step = progress(name, input);
       // HELM_COACHHELM_TEAMS canary: every roster player is on ctx.team_id, so
       // the chat's team is the scope (no read).
       const envelope = await guarded(() => runWithCoachHelmTeams([ctx.team_id], () => run(input)), collect, name, ctx);
+      progressEnd(step, name, envelope, envelope.coverage === 'unavailable');
       const ref = `e${evidenceByRef.size + 1}`;
       evidenceByRef.set(ref, envelope);
       evidence(name, envelope, ref);

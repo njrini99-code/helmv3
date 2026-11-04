@@ -86,6 +86,23 @@ export function sourceLine(m: { sample_size: number; sample_unit: Measurement['s
 export interface AskStep {
   id: string;
   label: string;
+  /** Ask v2's replaced progress part; old parts lack them and draw as today. */
+  state?: 'active' | 'done' | 'failed';
+  /** The past-tense label. */
+  done?: string;
+  /** One fact the read returned. */
+  detail?: string;
+}
+
+/** One read of a turn, by the ref the model cites (Ask v2). */
+export interface AskTurnRead {
+  ref: string;
+  tool: string;
+  /** "Putts per round". */
+  name: string;
+  /** "Putts · 30 days". */
+  chip: string;
+  envelope: ToolEnvelope;
 }
 
 /** The pairing of one proposal card with the tool part that carries its approval. */
@@ -139,6 +156,10 @@ export interface AskAssistantTurn {
   followUps: string[];
   /** The last turn, while it streams. */
   active: boolean;
+  /** Ask v2: every read of the turn, in order. */
+  reads?: AskTurnRead[];
+  /** Ask v2: the block types of a `show_visual` still on its way; null with none. */
+  pendingVisual?: string[] | null;
 }
 
 export type AskTurn = AskUserTurn | AskAssistantTurn;
@@ -306,12 +327,80 @@ export function plainText(text: string): string {
   return text.replace(/\*\*(.+?)\*\*/g, '$1').trim();
 }
 
+/** "4 steps · 3s": the folded line of a finished turn. A reloaded thread has no honest duration, so it says only the steps. */
+export function stepsReceipt(steps: readonly AskStep[], seconds: number | null): string {
+  const n = plural(steps.length, 'step');
+  return seconds === null ? n : `${n} · ${Math.max(1, Math.round(seconds))}s`;
+}
+
+const READ_NAME: Record<string, string> = {
+  get_team_overview: 'Roster',
+  get_player_metrics: 'Statistics',
+  get_player_trend: 'Trend',
+  get_putting_distance_profile: 'Putts',
+  compare_players: 'By player',
+  get_team_metric_ranking: 'By player',
+  get_player_weakest_areas: 'Largest gaps',
+  get_recent_rounds: 'Recent rounds',
+  get_team_rounds: 'Team rounds',
+  get_qualifiers: 'Qualifiers',
+  get_tournaments: 'Tournaments',
+  get_player_insights: 'Open reads',
+  get_focus_areas: 'Focus areas',
+  get_upcoming_events: 'Schedule',
+  get_open_tasks: 'Tasks',
+  get_team_travel: 'Travel',
+};
+
+function windowWords(m: Measurement | undefined): string | null {
+  if (!m?.window_start || !m.window_end) return m?.sample_unit === 'rounds' && m.sample_size > 0 ? `${m.sample_size} rounds` : null;
+  const days = Math.round((Date.parse(m.window_end) - Date.parse(m.window_start)) / 86_400_000);
+  return Number.isFinite(days) && days > 0 ? `${days} days` : null;
+}
+
+function turnReadsOf(parts: ReadonlyArray<Record<string, unknown> & { type: string }>): AskTurnRead[] {
+  const out: AskTurnRead[] = [];
+  for (const p of parts) {
+    if (p.type !== 'data-evidence') continue;
+    const d = dataOf<{ tool?: string; envelope?: ToolEnvelope; ref?: string }>(p);
+    if (!d?.envelope || !d.ref) continue;
+    const tool = d.tool ?? '';
+    const name = READ_NAME[tool] ?? 'Read';
+    const win = windowWords(d.envelope.measurements[0]);
+    out.push({ ref: d.ref, tool, name, chip: win ? `${name} · ${win}` : name, envelope: d.envelope });
+  }
+  return out;
+}
+
+/** What a read chip's popover says: only what the envelope holds (AK2). */
+export function readRows(read: AskTurnRead): Array<{ label: string; value: string }> {
+  const m = read.envelope.measurements[0];
+  if (!m) return [{ label: 'Read', value: read.name }];
+  const line = sourceLine(m);
+  return [
+    ...(m.sample_size > 0 ? [{ label: 'Sample', value: sampleWords(m.sample_size, m.sample_unit) }] : []),
+    ...(windowWords(m) ? [{ label: 'Window', value: windowWords(m) as string }] : []),
+    ...(line && !m.sample_size ? [{ label: 'Source', value: line }] : []),
+    ...(fmtDay(m.as_of) ? [{ label: 'Computed', value: fmtDay(m.as_of) as string }] : []),
+  ];
+}
+
+function pendingVisualOf(parts: ReadonlyArray<Record<string, unknown> & { type: string }>): string[] | null {
+  const tool = [...parts].reverse().find((p) => p.type === 'tool-show_visual');
+  if (!tool || (tool.state !== 'input-streaming' && tool.state !== 'input-available')) return null;
+  const blocks = (tool.input as { blocks?: Array<{ type?: unknown }> } | undefined)?.blocks;
+  return Array.isArray(blocks) ? blocks.map((b) => String(b?.type ?? '')).filter(Boolean) : [];
+}
+
 /** One assistant message as the thread draws it. */
 export function buildAssistantTurn(message: UIMessage, ctx: { isLast: boolean; busy: boolean }): AskAssistantTurn {
   const parts = partsOf(message);
   const steps: AskStep[] = parts
     .filter((p) => p.type === 'data-progress')
-    .map((p, i) => ({ id: String(p.id ?? `step-${i}`), label: stepLabel(dataOf<{ label?: string }>(p)?.label) }));
+    .map((p, i) => {
+      const d = dataOf<{ label?: string; state?: AskStep['state']; done?: string; detail?: string }>(p);
+      return { id: String(p.id ?? `step-${i}`), label: stepLabel(d?.label), ...(d?.state ? { state: d.state } : {}), ...(d?.done ? { done: stepLabel(d.done) } : {}), ...(d?.detail ? { detail: d.detail } : {}) };
+    });
   const envelopes = parts
     .filter((p) => p.type === 'data-evidence')
     .map((p) => dataOf<{ envelope?: ToolEnvelope }>(p)?.envelope)
@@ -395,6 +484,8 @@ export function buildAssistantTurn(message: UIMessage, ctx: { isLast: boolean; b
     work: describeWork(steps, envelopes),
     followUps: hasAction ? [] : followUpsFor(envelopes),
     active,
+    reads: turnReadsOf(parts),
+    pendingVisual: pendingVisualOf(parts),
   };
 }
 

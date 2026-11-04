@@ -1,0 +1,102 @@
+'use client';
+
+import { Copy } from 'lucide-react';
+import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
+import type { AskAssistantTurn, AskBlock } from '../../../../data/coachhelm-chat-thread';
+import { Icon } from '../../../../ui/Icon';
+import { useToast } from '../../../../ui/Toast';
+import { CoachMark } from '../CoachMark';
+import { AskEvidenceView } from '../Evidence';
+import { AskProse } from '../Prose';
+import { CoachComposition } from '../visual/CoachComposition';
+import { CoachVisualArtifact } from '../visual/CoachVisualArtifact';
+import { FollowUps } from './FollowUps';
+import { ReadChip } from './ReadChip';
+import { Sources } from './Sources';
+import { Steps } from './Steps';
+import { ToolSkeleton } from './ToolCard';
+
+/** Seconds this browser watched the turn run; null for a reloaded turn (no honest duration). */
+function useRan(active: boolean): number | null {
+  const start = useRef<number | null>(null);
+  const [secs, setSecs] = useState<number | null>(null);
+  useEffect(() => {
+    if (active) {
+      start.current ??= performance.now();
+      return;
+    }
+    if (start.current != null) {
+      setSecs((performance.now() - start.current) / 1000);
+      start.current = null;
+    }
+  }, [active]);
+  return secs;
+}
+
+/** One card per assistant turn (the Messages receive surface): steps, prose with its read chips, visuals, sources; follow-ups sit under it. */
+export function AnswerCard({ turn, fresh, showFollowUps, playersByName, players, onSend, actions }: { turn: AskAssistantTurn; fresh: boolean; showFollowUps: boolean; playersByName: Record<string, string>; players: Array<{ id: string; name: string }>; onSend: (text: string) => void; actions: (b: Extract<AskBlock, { kind: 'proposal' | 'receipt' }>) => ReactNode }) {
+  const seconds = useRan(turn.active);
+  const toast = useToast();
+  const reads = turn.reads ?? [];
+  const known = useMemo(() => new Set(reads.map((r) => r.ref)), [reads]);
+  const chip = useMemo(
+    () => ({
+      known,
+      draw: (ref: string) => {
+        const read = reads.find((r) => r.ref === ref);
+        return read ? <ReadChip read={read} /> : null;
+      },
+    }),
+    [known, reads],
+  );
+  const waiting = turn.blocks.some((b) => b.kind === 'proposal' && (b.view.status === 'live' || b.view.status === 'preparing'));
+  const copy = async () => {
+    try {
+      await navigator.clipboard.writeText(turn.answerText);
+      toast({ title: 'Copied' });
+    } catch {
+      toast({ title: 'Couldn’t copy that' });
+    }
+  };
+  return (
+    <div className={'ch-ak-turn' + (fresh ? ' is-new' : '')}>
+      <article className="msg-a" aria-label="CoachHelm answer" aria-busy={turn.active || undefined}>
+        <div className="who">
+          <CoachMark working={turn.active} />
+          CoachHelm
+        </div>
+        <Steps steps={turn.steps} active={turn.active} seconds={seconds} waiting={waiting} />
+        {turn.note && (
+          <p className="prose ch-th-note" data-ch-code="CH-13252">
+            {turn.note}
+          </p>
+        )}
+        {turn.blocks.map((b) => {
+          if (b.kind === 'text')
+            return (
+              <div className="prose" key={b.key}>
+                <AskProse text={b.text} lead={b.lead} playersByName={playersByName} streaming={turn.active} chip={chip} />
+              </div>
+            );
+          if (b.kind === 'evidence') return <AskEvidenceView key={b.key} envelope={b.envelope} roster={players} />;
+          if (b.kind === 'visual') return <CoachVisualArtifact key={b.key} artifact={b.artifact} />;
+          if (b.kind === 'composition') return <CoachComposition key={b.key} composition={b.composition} live={turn.active} />;
+          return actions(b);
+        })}
+        {turn.pendingVisual && <ToolSkeleton types={turn.pendingVisual} />}
+        {!turn.active && (reads.length > 0 || turn.answerText) && (
+          <div className="acts">
+            <Sources reads={reads} />
+            <span className="sp" />
+            {turn.answerText && !turn.note && (
+              <button type="button" className="sb" aria-label="Copy" onClick={() => void copy()}>
+                <Icon icon={Copy} size={16} />
+              </button>
+            )}
+          </div>
+        )}
+      </article>
+      {showFollowUps && <FollowUps items={turn.followUps} onSend={onSend} />}
+    </div>
+  );
+}

@@ -83,7 +83,7 @@ function AskFrame({ team, children }: { team?: string; children: ReactNode }) {
  * `load` is what the server read (data/coachhelm-chat.ts): a roster of nobody and a context that did not load are their own
  * pages; everything else is the chat. The conversation itself runs on the production hook and route, unchanged.
  */
-export function Ask({ load, chat = useCoachHelmChat, initial }: { load: ChAskLoad; chat?: ChAskChat; initial?: ChAskInitial }) {
+export function Ask({ load, chat = useCoachHelmChat, initial, v2 = false }: { load: ChAskLoad; chat?: ChAskChat; initial?: ChAskInitial; v2?: boolean }) {
   if (load.status === 'noRoster') {
     return (
       <AskFrame team={load.teamName}>
@@ -99,10 +99,10 @@ export function Ask({ load, chat = useCoachHelmChat, initial }: { load: ChAskLoa
     );
   }
   // A different conversation is a different chat: the hook reads its starting messages once.
-  return <AskChat key={load.data.notFound ? 'gone' : (load.data.thread?.id ?? 'new')} data={load.data} useChatImpl={chat} initial={initial} />;
+  return <AskChat key={load.data.notFound ? 'gone' : (load.data.thread?.id ?? 'new')} data={load.data} useChatImpl={chat} initial={initial} v2={v2} />;
 }
 
-function AskChat({ data, useChatImpl, initial }: { data: ChAskData; useChatImpl: ChAskChat; initial?: ChAskInitial }) {
+function AskChat({ data, useChatImpl, initial, v2 }: { data: ChAskData; useChatImpl: ChAskChat; initial?: ChAskInitial; v2: boolean }) {
   const phone = useChPhone();
   // A switch to the Board moves the strip at once and dims the chat (aria-busy) until the Board is ready.
   const sw = useViewSwitch<CoachHelmView>('ask', (v) => COACHHELM_HREF[v]);
@@ -242,6 +242,7 @@ function AskChat({ data, useChatImpl, initial }: { data: ChAskData; useChatImpl:
   ) : (
     <SectionBoundary surface="coachhelm.ask.thread" label="The conversation" code="CH-13225">
       <AskThread
+        v2={v2}
         messages={chat.messages}
         busy={chat.busy}
         error={notice}

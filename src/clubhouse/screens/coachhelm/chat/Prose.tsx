@@ -1,7 +1,8 @@
 'use client';
 
 import Link from 'next/link';
-import { Fragment, useMemo } from 'react';
+import { Fragment, useMemo, type ReactNode } from 'react';
+import { splitReadMarkers } from '@/lib/coachhelm/v3/chat/read-markers';
 import { parseProse, splitAtMentions, splitInline } from '../../../data/coachhelm-chat-thread';
 import { rebuiltHref } from '../../../shell/nav';
 import { ScrollRegion } from '../../../ui/ScrollRegion';
@@ -15,10 +16,14 @@ export const playerStatsHref = (id: string) => rebuiltHref(`/golf/dashboard/stat
  * While the answer streams, each paragraph or list settles in as it arrives (an opacity fade on the base beat,
  * coachhelm-thread.css); a finished or reloaded answer draws still.
  */
-export function AskProse({ text, lead = false, playersByName, streaming = false }: { text: string; lead?: boolean; playersByName: Record<string, string>; streaming?: boolean }) {
+export function AskProse({ text, lead = false, playersByName, streaming = false, chip }: { /** Ask v2: draws `[e2]` as a read chip. */ chip?: { known: ReadonlySet<string>; draw: (ref: string) => ReactNode }; text: string; lead?: boolean; playersByName: Record<string, string>; streaming?: boolean }) {
   const names = useMemo(() => Object.keys(playersByName), [playersByName]);
   const blocks = useMemo(() => parseProse(text), [text]);
-  const inline = (s: string) =>
+  const inline = (s: string): ReactNode => {
+    if (!chip) return plainInline(s);
+    return splitReadMarkers(s, chip.known).map((seg, i) => ('ref' in seg ? <Fragment key={`r${i}`}>{chip.draw(seg.ref)}</Fragment> : <Fragment key={`t${i}`}>{plainInline(seg.text)}</Fragment>));
+  };
+  const plainInline = (s: string) =>
     splitInline(s, names).map((seg, i) => {
       const id = seg.mention ? playersByName[seg.mention] : undefined;
       const href = id ? playerStatsHref(id) : null;

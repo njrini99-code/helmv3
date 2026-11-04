@@ -159,6 +159,7 @@ import '@/clubhouse/styles/coachhelm-brief.css';
 import '@/clubhouse/styles/coachhelm-team.css';
 import '@/clubhouse/styles/coachhelm-read.css';
 import '@/clubhouse/styles/coachhelm-file.css';
+import '@/clubhouse/styles/coachhelm-ask-v2.css';
 import { PreviewCoachHelmRead } from '@/clubhouse/preview/PreviewCoachHelmRead';
 import { PreviewCoachHelmPlayerFile } from '@/clubhouse/preview/PreviewCoachHelmPlayerFile';
 import { PreviewCoachHelmTeam } from '@/clubhouse/preview/PreviewCoachHelmTeam';
@@ -590,6 +591,10 @@ export default async function ClubhousePreview({
     'coachhelm-ask': {
       path: '/golf/dashboard/coachhelm',
       node: <PreviewAsk state={state} kind={q} />,
+    },
+    'coachhelm-ask-v2': {
+      path: '/golf/dashboard/coachhelm',
+      node: <PreviewAsk state={state} kind={q} v2 />,
     },
     'coachhelm-views': {
       path: '/golf/dashboard/coachhelm',

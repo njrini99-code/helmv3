@@ -24,6 +24,8 @@
  *                      charts and receipts rather than only the prose.
  * ========================================================================== */
 
+import { isAskV2Enabled } from '@/lib/coachhelm/v3/chat/ask-flag';
+import { stripReadMarkers } from '@/lib/coachhelm/v3/chat/read-markers';
 import type { NextRequest } from 'next/server';
 import { NextResponse } from 'next/server';
 import { z } from 'zod';
@@ -549,6 +551,9 @@ export async function POST(req: NextRequest) {
   // comment.
   const claimsBlockEnabled = isFlagEnabled('coachhelm_chat_claim_gate');
 
+  // Ask v2 only where Clubhouse is on for the team: this route also serves Fairway's chat (coachhelm-ask 02, hard rules).
+  const askV2 = isAskV2Enabled() && isClubhouseForTeam(ctx.team_id);
+
   const stream = createUIMessageStream({
     execute: async ({ writer }) => {
       const tools = buildCoachTools({
@@ -559,6 +564,7 @@ export async function POST(req: NextRequest) {
         collect,
         // Ask's whole-team tools follow Clubhouse for this team (flag, then allowlist).
         teamTools: isClubhouseForTeam(ctx.team_id),
+        askV2,
       });
 
       const result = streamText({
@@ -589,7 +595,7 @@ export async function POST(req: NextRequest) {
         // string is ever edited.
         instructions: {
           role: 'system',
-          content: buildInstructions(ctx, new Date().toISOString(), claimsBlockEnabled),
+          content: buildInstructions(ctx, new Date().toISOString(), claimsBlockEnabled, { askV2 }),
           providerOptions: { anthropic: { cacheControl: { type: 'ephemeral' } } },
         },
         // Pass the tool set so tool parts from earlier turns convert correctly —
@@ -913,7 +919,8 @@ export async function POST(req: NextRequest) {
       const { strippedText, claims } = claimsBlockEnabled
         ? extractAndValidateChatClaims(rawText, measurements)
         : extractAndValidateClaimsSafe(rawText, null);
-      turnText = strippedText.trim();
+      // Read markers are the UI's: the "2" in `e2` is not a claim, and the stored `content` never carries one. The parts keep them.
+      turnText = (askV2 ? stripReadMarkers(strippedText) : strippedText).trim();
       turnVerdict = computeTurnVerdict({
         streamComplete: !streamErrored,
         text: turnText,
