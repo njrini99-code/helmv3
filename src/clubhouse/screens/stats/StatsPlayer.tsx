@@ -43,6 +43,7 @@ import { FocusLoop } from './FocusLoop';
 import { ProposalAnswer } from './ProposalAnswer';
 import { GoalSetButton, GoalStatus, GoalSuggestions } from './Goals';
 import { StatsPlayerPhone } from './StatsPlayerPhone';
+import { StatsPlayerPhoneShs } from './StatsPlayerPhoneShs';
 import { changeWords, UpdatingNote, WindowSwitch } from './WindowSwitch';
 import { useChSessionState } from '../../lib/session-state';
 import { CACHE_ERROR, countWords, FORM_STEADY, shotsWords } from './notes';
@@ -51,11 +52,12 @@ import { PrintHead, usePrinting } from './PrintHead';
 import { OverviewZones } from './OverviewZones';
 import { Zone, ZoneBig as Big, Zones } from '../../ui/Zone';
 import { FilterEmpty, NineHint, StatsFilter } from './StatsFilter';
-import { devMetric, devProgress, devTitle, devValue, goalLine } from './dev-format';
+import { devMetric, devProgress, devTitle, devValue, goalLine, progressOf } from './dev-format';
 import { pluralWord } from '../../lib/plural';
 import { PlayerInsight } from './StatsInsight';
 import { NoData } from '../../ui/NoData';
 import { usePushOnce } from '../../lib/nav-once';
+import { desktopTabOfHash } from './detail-route';
 
 type Tab = 'overview' | 'game' | 'rounds' | 'dev';
 const TABS: readonly Tab[] = ['overview', 'game', 'rounds', 'dev'];
@@ -75,7 +77,7 @@ export function formNote(first: string, scores: number[]): string {
  * `initialTab` is the URL's `tab` (Roster's "All N" opens `tab=rounds`, D-53); anything else opens Overview. `reads` is what CoachHelm
  * sees per Game detail section (data/stats-reads.ts); without it Game detail draws no count line.
  */
-export function StatsPlayer({ data, coachId, initialTab, reads }: { data: ChPlayerProfile; coachId: string | null; initialTab?: string; reads?: ChReadsSource }) {
+export function StatsPlayer({ data, coachId, initialTab, reads, shs = false }: { data: ChPlayerProfile; coachId: string | null; initialTab?: string; reads?: ChReadsSource; /** clubhouse_stats_redesign_v1, read on the server. Off, this page is main's. */ shs?: boolean }) {
   const router = useRouter();
   const pushOnce = usePushOnce(router);
   const toast = useToast();
@@ -87,6 +89,12 @@ export function StatsPlayer({ data, coachId, initialTab, reads }: { data: ChPlay
   // `?tab=rounds`, D-53) wins until a tab is chosen.
   const [keptTab, setKeptTab] = useChSessionState<Tab>('profile-tab', 'overview');
   const named = useRef<Tab | undefined>(TABS.find((t) => t === initialTab));
+  // A phone's shared `#sd-rounds` or `#sd-goals` link means something on desktop too: its tab (08 criterion 77). Any other `#sd-*` opens Overview.
+  useEffect(() => {
+    if (!shs || phone) return;
+    const t = desktopTabOfHash(window.location.hash);
+    if (t) setTab(t);
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps -- read once, as the page opens
   const tab = named.current ?? keptTab;
   // The underline and the selected tab move on the press; the panel (the heavy part) renders just behind them.
   const shownTab = useDeferredValue(tab);
@@ -209,6 +217,26 @@ export function StatsPlayer({ data, coachId, initialTab, reads }: { data: ChPlay
 
   // CH-5903: the figures on screen are dimmed until the new ones land; this says which ones they are.
   const updating = <UpdatingNote from={data.filter} to={loading} code="CH-5903" />;
+  if (phone && shs)
+    return (
+      <main className="ch-st is-phone" aria-busy={pending} data-ch-code={pending ? 'CH-5402' : undefined}>
+        <StatsPlayerPhoneShs
+          data={data}
+          initialTab={initialTab}
+          reads={reads}
+          playerHref={href(data.id, data.filter)}
+          messageHref={messageHref}
+          windowShown={rangeOf(loading ?? data.filter)}
+          onWindow={changeWindow}
+          onFilter={changeFilter}
+          onBackToTeam={() => go(null, data.filter)}
+          onAddFocus={coach && coachId ? () => setFocusOpen(true) : null}
+          onRetry={() => router.refresh()}
+          updating={updating}
+        />
+        {sheet}
+      </main>
+    );
   if (phone)
     return (
       <>
@@ -364,7 +392,7 @@ export function StatsPlayer({ data, coachId, initialTab, reads }: { data: ChPlay
             {shownTab === 'overview' && !emptyFilter && !failed && (
               <SectionBoundary surface="stats.player.overview" label="The overview" code="CH-5204">
                 {data.cacheError && <InlineNotice code="CH-5213" title={CACHE_ERROR.title} body={CACHE_ERROR.body} onRetry={() => router.refresh()} />}
-                <Overview data={data} coach={coach} onOpenLeg={openLeg} />
+                <Overview data={data} coach={coach} onOpenLeg={openLeg} shs={shs} />
               </SectionBoundary>
             )}
 
@@ -378,7 +406,7 @@ export function StatsPlayer({ data, coachId, initialTab, reads }: { data: ChPlay
                     onRetry={() => router.refresh()}
                   />
                 ) : data.stats && data.stats.roundsPlayed > 0 ? (
-                  <GameDetail s={data.stats} x={data.extra} bench={data.bench} tour={data.tour} first={coach ? first : 'You'} rounds={w.rounds} window={data.window} basis={basisWords(data.filter)} holes={data.filter.holes} puttBands={data.puttBands} reads={reads} onRetry={() => router.refresh()} />
+                  <GameDetail s={data.stats} x={data.extra} bench={data.bench} tour={data.tour} first={coach ? first : 'You'} rounds={w.rounds} window={data.window} basis={basisWords(data.filter)} holes={data.filter.holes} puttBands={data.puttBands} reads={reads} onRetry={() => router.refresh()} shs={shs} />
                 ) : (
                   <div className="ch-st-card">
                     <EmptyState code="CH-5301" title="No shot-by-shot rounds in this window." body="Game detail fills in from rounds posted hole by hole with shots. Totals-only rounds still count toward scoring." />
@@ -428,7 +456,7 @@ export function StatsPlayer({ data, coachId, initialTab, reads }: { data: ChPlay
  */
 
 /** Memoised: the seven zones are the page's heaviest read, and the tab's own state (the focus sheet, a transition) must not recompute them. */
-const Overview = memo(function Overview({ data, coach, onOpenLeg }: { data: ChPlayerProfile; coach: boolean; onOpenLeg: (label: string) => void }) {
+const Overview = memo(function Overview({ data, coach, onOpenLeg, shs }: { data: ChPlayerProfile; coach: boolean; onOpenLeg: (label: string) => void; shs: boolean }) {
   const first = data.firstName;
   const trendRounds = [...data.rounds].reverse().slice(-10).map((r) => ({ label: r.date, course: r.course, score: per18(r.score, r.holes), toPar: r.toPar == null ? null : per18(r.toPar, r.holes), holes: r.holes }));
   // Seven zones, one per stat area; the last holds the scoring-form ribbon. Every figure is read from the profile (see OverviewZones).
@@ -437,6 +465,7 @@ const Overview = memo(function Overview({ data, coach, onOpenLeg }: { data: ChPl
       data={data}
       coach={coach}
       onOpenLeg={onOpenLeg}
+      shs={shs}
       ribbon={
         <PlayerStage
           rounds={trendRounds.map((r) => ({ label: r.label, course: r.course, score: r.score, toPar: r.toPar, holes: r.holes }))}
@@ -640,12 +669,6 @@ function Development({ data, coach, first, onAdd }: { data: ChPlayerProfile; coa
       </Zones>
     </>
   );
-}
-
-function progressOf(baseline: number | null, current: number | null, target: number | null): number | null {
-  if (baseline == null || current == null || target == null || baseline === target) return null;
-  const p = ((current - baseline) / (target - baseline)) * 100;
-  return Math.max(0, Math.min(100, Math.round(p)));
 }
 
 const AREAS = [

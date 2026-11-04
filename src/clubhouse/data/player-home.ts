@@ -99,7 +99,7 @@ function log(read: string, error: unknown) {
 
 const shortDate = new Intl.DateTimeFormat('en-US', { timeZone: 'UTC', month: 'short', day: 'numeric' });
 
-export async function loadPlayerHome(input: { teamId: string; playerId: string; firstName: string; /** The device's seen and cleared change marks (phone-hint.ts `marksHint`). */ marks?: MarkEntries }): Promise<ChPlayerHome> {
+export async function loadPlayerHome(input: { teamId: string; playerId: string; firstName: string; /** clubhouse_stats_redesign_v1: ten-round sparks and the putt count. */ shs?: boolean; /** The device's seen and cleared change marks (phone-hint.ts `marksHint`). */ marks?: MarkEntries }): Promise<ChPlayerHome> {
   const supabase = await createClient();
   const now = new Date();
 
@@ -157,7 +157,7 @@ export async function loadPlayerHome(input: { teamId: string; playerId: string; 
   // Strokes gained is the season's ("Season, per round"; each leg's "this season").
   // The season turns on 1 August in the team's zone (owner decision 9).
   const season = summarizePlayer(seasonOnly(full, seasonStartDate(now, tz)));
-  const legs = roundsRes.error ? null : { rows: legRows(window, cache.byRound, bench, season.sgLegs), cacheError: cache.error, benchError: bench === null || bench.size === 0 };
+  const legs = roundsRes.error ? null : { rows: legRows(window, cache.byRound, bench, season.sgLegs, { shs: input.shs }), cacheError: cache.error, benchError: bench === null || bench.size === 0 };
 
   const points: ChScoringPoint[] = full
     .slice(0, SCORING_MAX)

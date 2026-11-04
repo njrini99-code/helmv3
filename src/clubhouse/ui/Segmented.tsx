@@ -38,6 +38,7 @@ export function Segmented<V extends string>({
   size = 'md',
   redraws = false,
   block = false,
+  hook,
 }: {
   label: string;
   value: V;
@@ -48,6 +49,8 @@ export function Segmented<V extends string>({
   redraws?: boolean;
   /** Fill the row: the options share its width equally, as a form field's choice does. */
   block?: boolean;
+  /** A capture hook on each option (`data-ch`, with `data-v`); absent, none is drawn. */
+  hook?: string;
 }) {
   const reduced = useChReducedMotion();
   const refs = useRef<Array<HTMLButtonElement | null>>([]);
@@ -96,6 +99,8 @@ export function Segmented<V extends string>({
             disabled={o.disabled}
             className={'ch-seg__b' + (on ? ' is-on' : '') + (o.className ? ` ${o.className}` : '')}
             {...o.data}
+            data-ch={hook}
+            data-v={hook ? o.value : undefined}
             onClick={() => pick(o.value)}
             onKeyDown={(e) => onKey(e, i)}
           >

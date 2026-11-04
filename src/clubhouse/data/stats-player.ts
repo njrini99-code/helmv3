@@ -6,7 +6,7 @@ import { chLogServer } from '../lib/track-server';
 import { loadFocusLoops } from './focus-loop';
 import type { ChFocusLoop } from './focus-loop-shape';
 import type { ChSgTour } from '../lib/sg';
-import { classYearLabel, displayHandicap, fullName, groupByPlayer, loadSeasonRounds, loadTeamZone, MIN_SG_ROUNDS, seasonStartDate, shortDate, summarizePlayer, type ChPlayerSeason, type ChRound } from './season';
+import { classYearLabel, countsForScoring, displayHandicap, fullName, groupByPlayer, loadSeasonRounds, loadTeamZone, MIN_SG_ROUNDS, seasonStartDate, shortDate, summarizePlayer, type ChPlayerSeason, type ChRound } from './season';
 import {
   bandPutts,
   cachedPutts,
@@ -16,6 +16,7 @@ import {
   loadRoundCache,
   loadSince,
   loadTourBenchmarks,
+  practiceCut,
   previousInFilter,
   PUTT_BANDS_NINE,
   rate,
@@ -219,6 +220,12 @@ export function isRoundLevelFallback(stats: GolfStats | null | undefined, window
   return stats.totalEagles + stats.totalBirdies + stats.totalPars + stats.totalBogeys + stats.totalDoublePlus === 0;
 }
 
+/** The by-type row's Practice cell from the uncut window, on figures that otherwise leave practice rounds out. */
+function withPracticeRow(s: GolfStats, uncut: ChRound[]): GolfStats {
+  const practice = uncut.filter((r) => r.total_score != null && !countsForScoring(r));
+  return { ...s, practiceScoringAvg: weightedMean(practice, (r) => r.total_score), practiceRounds: practice.length };
+}
+
 export async function loadPlayerProfile(input: {
   viewer: ChViewer;
   teamId: string;
@@ -226,8 +233,12 @@ export async function loadPlayerProfile(input: {
   window: ChWindow;
   /** The round filter; omitted, it is the window alone. */
   filter?: ChFilter;
+  /** clubhouse_stats_redesign_v1: practice rounds leave the default figures (below). Off, they count as they always have. */
+  shs?: boolean;
 }): Promise<ChPlayerProfile | null> {
   const f = input.filter ?? filterFor(input.window);
+  // With the redesign on, the figures leave practice rounds out unless the filter asks for a type or picks rounds by hand (data/season.ts).
+  const counted = (rounds: ChRound[]) => (practiceCut(input.shs, f) ? rounds.filter(countsForScoring) : rounds);
   const supabase = await createClient();
   const now = new Date();
   const coach = input.viewer === 'coach';
@@ -332,7 +343,7 @@ export async function loadPlayerProfile(input: {
   // The heavy reads need only the player's own rounds (the window's ids), so they start now; the teammates' rounds, the Tour's
   // averages and the player's focus areas and goals are still on their way and are awaited after.
   const ownByPlayer = groupByPlayer(ownRes.rounds);
-  const ownWin = roundsInFilter(ownByPlayer.get(input.playerId) ?? [], f, start);
+  const ownWin = roundsInFilter(counted(ownByPlayer.get(input.playerId) ?? []), f, start);
   const ownHole = holeRounds(ownWin);
   // Every shot-level figure counts exactly the window's own rounds with their holes (the ones the Rounds table lists, of the lengths the filter chose),
   // newest 100 at most: the detail read is given these ids instead of a date preset, which would count a different set.
@@ -379,7 +390,8 @@ export async function loadPlayerProfile(input: {
   const sprayRead = roundsFailed ? { spray: null, error: false } : sprayReadRaw;
 
   const byPlayer = groupByPlayer(seasonRes.rounds);
-  const mine = byPlayer.get(input.playerId) ?? [];
+  const allMine = byPlayer.get(input.playerId) ?? [];
+  const mine = counted(allMine);
   const winRounds = roundsInFilter(mine, f, start);
   // A custom range, and Last 10, can read rounds from before the season: the season's own figures count this season only.
   const season = summarizePlayer(seasonOnly(mine, start));
@@ -388,7 +400,7 @@ export async function loadPlayerProfile(input: {
   const holeWin = holeRounds(winRounds);
 
   // Team rounds in the same window, for coach comparisons only (scores: all of them; hole-level: those with their holes).
-  const teamWin = coach ? teamIds.flatMap((id) => roundsInFilter(byPlayer.get(id) ?? [], f, start)) : [];
+  const teamWin = coach ? teamIds.flatMap((id) => roundsInFilter(counted(byPlayer.get(id) ?? []), f, start)) : [];
   const teamHole = holeRounds(teamWin);
   // The player's own cache rows and the teammates' (the comparisons' team column), one lookup as before.
   const cache = { byRound: new Map([...cacheOwn.byRound, ...cacheOthers.byRound]), error: cacheOwn.error || cacheOthers.error };
@@ -428,7 +440,9 @@ export async function loadPlayerProfile(input: {
   if (detailFailed && !detail.error) chLogServer('stats', detailFallback ? 'detailedStatsFallback' : 'detailedStatsEmpty', `no detail for ${holeWin.length} rounds`, 'stats_analytics');
   // The calculator's per-round counts and scoring average are not per 18 when a nine-hole round is in the window, and its scoring leaves out
   // a round posted as a total only: restated (stats-weight).
-  const s = detailFailed || !detail.stats ? null : perEighteen(detail.stats, winRounds);
+  const perRoundStats = detailFailed || !detail.stats ? null : perEighteen(detail.stats, winRounds);
+  // GameMore's by-type row compares practice with tournament play, so its Practice cell keeps the uncut window on purpose.
+  const s = perRoundStats && practiceCut(input.shs, f) ? withPracticeRow(perRoundStats, roundsInFilter(allMine, f, start)) : perRoundStats;
 
   // Strokes gained against the previous 10 matching rounds; only the newest-ten cut has one (not a range, not picked rounds).
   const prevList = previousInFilter(mine, f, start);
@@ -439,7 +453,8 @@ export async function loadPlayerProfile(input: {
   const puttBands = putts.error || !putts.rows.length ? null : bandPutts(putts.rows, bench);
   const puttBandsNine = putts.error || !putts.rows.length ? null : bandPutts(putts.rows, bench, PUTT_BANDS_NINE);
   const approach = approachShots.error || !approachShots.rows.length ? null : approachBands(approachShots.rows, bench);
-  const pressure = pressureGap(winRounds);
+  // The pressure gap sets practice against tournament play, so it keeps the uncut window on purpose.
+  const pressure = pressureGap(roundsInFilter(allMine, f, start));
   const opening = holes.error ? null : openingDelta(holes.rows);
   const toughest = holes.error ? null : toughestHoles(holes.rows);
 
@@ -537,7 +552,7 @@ export async function loadPlayerProfile(input: {
   let nav: ChPlayerProfile['nav'] = null;
   if (input.viewer === 'coach') {
     const order = teamIds
-      .map((id) => ({ id, avg: summarizePlayer(seasonOnly(byPlayer.get(id) ?? [], start)).avg }))
+      .map((id) => ({ id, avg: summarizePlayer(seasonOnly(counted(byPlayer.get(id) ?? []), start)).avg }))
       .sort((a, b) => (a.avg ?? 999) - (b.avg ?? 999));
     const i = order.findIndex((o) => o.id === input.playerId);
     if (order.length > 1 && i >= 0) {
@@ -557,7 +572,7 @@ export async function loadPlayerProfile(input: {
     window: f.window,
     last: f.last,
     filter: f,
-    filterOptions: filterOptions(mine, undefined, start),
+    filterOptions: filterOptions(allMine, undefined, start),
     id: p.id,
     name: fullName(p),
     firstName: p.first_name || fullName(p),

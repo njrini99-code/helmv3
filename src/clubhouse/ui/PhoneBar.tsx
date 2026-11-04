@@ -17,7 +17,7 @@ export interface ChPhoneBarParts {
    * chevron (a conversation). `chevron: false` makes it a plain text action
    * on the left ("Cancel").
    */
-  back?: { label?: string; onBack: () => void; ariaLabel?: string; chevron?: boolean } | null;
+  back?: { label?: string; onBack: () => void; ariaLabel?: string; chevron?: boolean; /** A capture hook (`data-ch`). */ hook?: string } | null;
   title: ReactNode;
   /** Left-aligned title block (a conversation's avatar, name and subline) instead of a centred title. */
   lead?: boolean;
@@ -47,6 +47,7 @@ export function PhoneBarParts({ back, title, lead = false, start = false, action
           type="button"
           className={'ch-pbar__back' + (back.label ? '' : ' is-bare') + (chevron ? '' : ' is-text')}
           onClick={back.onBack}
+          data-ch={back.hook}
           aria-label={back.ariaLabel ?? (!chevron ? back.label : back.label ? `Back to ${back.label}` : 'Back')}
         >
           {chevron && <Icon icon={ChevronLeft} size={20} />}

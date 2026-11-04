@@ -2845,3 +2845,33 @@ main[data-ch-crh='on'] :focus-visible {
 .ch-qcs .recent__r .t {
   font-variant-numeric: tabular-nums;
 }
+
+/* Lane figures: tabular from the one owner (CONS-39). */
+.ch-shs-ax,
+.ch-shs-bench-k,
+.ch-shs-bigv,
+.ch-shs-cmp-row .v,
+.ch-shs-d-hero__fig,
+.ch-shs-db .nums,
+.ch-shs-drow .val,
+.ch-shs-fig,
+.ch-shs-fig-sub,
+.ch-shs-gc .v,
+.ch-shs-leg__v,
+.ch-shs-m3 .v,
+.ch-shs-m4 .v,
+.ch-shs-mini-key,
+.ch-shs-mr .v,
+.ch-shs-mrow .val,
+.ch-shs-prow .rk,
+.ch-shs-prow .val,
+.ch-shs-rib .ry,
+.ch-shs-scale > span:nth-child(2),
+.ch-shs-score,
+.ch-shs-strip .v,
+.ch-shs-tbl,
+.ch-shs-tp,
+/*@7@*/
+.ch-shs-pill {
+  font-variant-numeric: tabular-nums;
+}

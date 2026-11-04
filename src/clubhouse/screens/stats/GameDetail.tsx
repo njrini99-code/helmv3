@@ -3,7 +3,7 @@
 import { ArrowRight, CircleDot, Crosshair, Flag, FlagTriangleRight, MoveUpRight, type LucideIcon } from 'lucide-react';
 import Link from 'next/link';
 import { Suspense, use, useEffect, useState, type ReactNode } from 'react';
-import { gameSectionFromHash } from './legs';
+import { gameSectionFromHash, type GameSectionId } from './legs';
 import { useChReducedMotion } from '../../lib/reduced-motion';
 import { useChSessionState } from '../../lib/session-state';
 import type { GolfStats } from '@/lib/utils/golf-stats-calculator-shots';
@@ -24,9 +24,11 @@ import { Compare, CupMiss, FairwayStrip, GreenMiss, Ladder, ParTiles } from './c
 import { PuttBands } from './PuttBands';
 import type { PuttBandInput } from './putt-bands';
 import { ScoreMixBar } from './ScoreMixBar';
-import { Empty, More, Panel, Rule, RULE_WINDOW } from './detail';
+import { Empty, More, MoreOpen, Panel, Rule, RULE_WINDOW } from './detail';
+import { ShsCard } from './SummaryCard';
 import { ApproachMore, PuttingMore, ScoringMore, ShortMore, TeeMore } from './GameMore';
 import { readsLineParts } from './reads-line';
+import { missSplit } from './miss-split';
 import { plural } from '../../lib/plural';
 import { sgBaseline, type ChSgTour } from '../../lib/sg';
 
@@ -146,6 +148,7 @@ function Sec({
   reads,
   more,
   children,
+  detail,
 }: {
   id: string;
   /** The phone shows one section at a time (the chips switch it); desktop shows all five. */
@@ -164,8 +167,59 @@ function Sec({
   /** The figures below the headline: a "More detail" disclosure. */
   more: ReactNode;
   children: ReactNode;
+  /** The section as a pushed detail's body (clubhouse_stats_redesign_v1): the page's blocks around every panel of today's. */
+  detail?: GameAreaDetail;
 }) {
   if (hide) return null;
+  if (detail) {
+    const figures = (
+      <ShsCard title="The figures" meta={detail.figuresMeta}>
+        <dl className="ch-shs-m4">
+          {figs.map(([l, v, n, t, needs]) => {
+            const reason = needs ?? (v === NO_DATA ? NONE_REASON[`${id}:${l}`] : undefined);
+            return (
+              <div key={l}>
+                <dt className="t">{l}</dt>
+                <dd className={`v${t ? ` ch-shs-${t}` : ''}${reason ? ' ch-shs-none' : ''}`}>{reason ? NO_DATA : v}</dd>
+                {(reason || (n && v !== NO_DATA)) && <dd className="m">{reason ?? n}</dd>}
+              </div>
+            );
+          })}
+        </dl>
+      </ShsCard>
+    );
+    const panels = <div className="ch-gm__body">{children}</div>;
+    return (
+      <section className="ch-gm is-detail" id={`gm-${id}`} aria-label={title}>
+        {detail.hero}
+        {detail.figuresFirst && (
+          <ShsCard title={detail.bench ? 'You and the Tour' : 'In short'}>
+            <p className="ch-shs-plead">{lead}</p>
+            {detail.bench}
+          </ShsCard>
+        )}
+        {detail.figuresFirst ? (
+          <>
+            {figures}
+            {panels}
+            {detail.before}
+          </>
+        ) : (
+          <>
+            {detail.before}
+            {panels}
+            {figures}
+          </>
+        )}
+        {detail.after}
+        <MoreOpen.Provider value>{more}</MoreOpen.Provider>
+        <ShsCard title="What this counts">
+          <Rule how={how}>{rule}</Rule>
+          {reads}
+        </ShsCard>
+      </section>
+    );
+  }
   return (
     <section className="ch-gm" id={`gm-${id}`} aria-labelledby={`gm-${id}-t`}>
       <div className="ch-gm__id">
@@ -202,6 +256,17 @@ function Sec({
   );
 }
 
+/** What a redesigned detail draws around a section's own panels. */
+export interface GameAreaDetail {
+  hero: ReactNode;
+  bench?: ReactNode;
+  before?: ReactNode;
+  after?: ReactNode;
+  figuresMeta?: string;
+  /** Parts lead with In short and The figures; Scoring puts its chart and panels first (08 criterion 32). */
+  figuresFirst: boolean;
+}
+
 /**
  * Game detail: every section leads with one head-pro sentence built from the
  * numbers below it, then four figures against the Tour where golf_pga_standards has
@@ -224,6 +289,9 @@ export function GameDetail({
   reads,
   onRetry,
   phone = false,
+  only,
+  shs = false,
+  asDetail,
 }: {
   s: GolfStats;
   /** What the profile reads beyond the shot-level figures: per-round lines, holes, approach proximity, where shots finish. */
@@ -245,6 +313,12 @@ export function GameDetail({
   reads?: ChReadsSource;
   onRetry?: () => void;
   phone?: boolean;
+  /** One section alone, for a pushed detail page: no chips, no hash listener, and the session's choice is not read. */
+  only?: GameSectionId;
+  /** clubhouse_stats_redesign_v1: Missed short reads the calculator's own figure. */
+  shs?: boolean;
+  /** With `only`: draw that section as the redesign's pushed detail. */
+  asDetail?: GameAreaDetail;
 }) {
   // The player reading their own stats is "You": the verb agrees and mid-sentence it is lower case (F-45).
   const reduced = useChReducedMotion();
@@ -255,12 +329,12 @@ export function GameDetail({
   // on desktop it only follows the scroll, so it is not kept.
   const [chosen, setChosen] = useChSessionState<string>('game-section', 'scoring');
   const [spied, setSpied] = useState<string>('scoring');
-  const on = phone ? chosen : spied;
+  const on = only ?? (phone ? chosen : spied);
   const setOn = phone ? setChosen : setSpied;
-  const show = (id: string) => !phone || on === id;
+  const show = (id: string) => (only ? only === id : !phone || on === id);
 
   useEffect(() => {
-    if (phone) return;
+    if (phone || only) return;
     const els = SECTIONS.map(([id]) => document.getElementById(`gm-${id}`)).filter((e): e is HTMLElement => !!e);
     const io = new IntersectionObserver(
       (entries) => {
@@ -271,13 +345,13 @@ export function GameDetail({
     );
     els.forEach((e) => io.observe(e));
     return () => io.disconnect();
-  }, [phone]);
+  }, [phone, only]);
 
   // An address that ends `#gm-<section>` (the team grid's leg figures) names the phone's section: it is chosen, then scrolled
   // to once it is in the page, since the phone draws only the chosen one. A new request each time, so the same hash twice scrolls twice.
   const [asked, setAsked] = useState<{ id: string } | null>(null);
   useEffect(() => {
-    if (!phone) return;
+    if (!phone || only) return;
     const read = () => {
       const id = gameSectionFromHash(window.location.hash);
       if (!id) return;
@@ -287,7 +361,7 @@ export function GameDetail({
     read();
     window.addEventListener('hashchange', read);
     return () => window.removeEventListener('hashchange', read);
-  }, [phone, setChosen]);
+  }, [phone, only, setChosen]);
   useEffect(() => {
     if (!phone || !asked || on !== asked.id) return;
     const el = document.getElementById(`gm-${asked.id}`);
@@ -354,8 +428,7 @@ export function GameDetail({
   ];
   const tourProx = (x.approach ?? []).map((b) => ({ band: b.label.replace('-', '–').replace(' yd', ''), value: b.value, bench: b.bench, n: b.shots, floor: b.floor }));
   const worstProx = tourProx.filter((b) => b.value != null && b.bench != null).sort((a, b) => b.value! - b.bench! - (a.value! - a.bench!))[0];
-  const missShort = (s.approachMissShortPct ?? 0) + (s.approachMissShortLeftPct ?? 0) + (s.approachMissShortRightPct ?? 0);
-  const missLong = (s.approachMissLongPct ?? 0) + (s.approachMissLongLeftPct ?? 0) + (s.approachMissLongRightPct ?? 0);
+  const { short: missShort, long: missLong } = missSplit(s, shs);
   const hasMiss = s.approachMissTotal > 0;
 
   // Short game
@@ -417,14 +490,16 @@ export function GameDetail({
 
   return (
     <div className={'ch-gd' + (phone ? ' is-phone' : '')}>
-      <nav className="ch-gd__nav" aria-label="Game sections">
-        {SECTIONS.map(([id, l]) => (
-          <button key={id} type="button" className="ch-pill" aria-pressed={on === id} onClick={() => jump(id)}>
-            {l}
-          </button>
-        ))}
-        <span className="ch-gd__src">{sample} logged</span>
-      </nav>
+      {!only && (
+        <nav className="ch-gd__nav" aria-label="Game sections">
+          {SECTIONS.map(([id, l]) => (
+            <button key={id} type="button" className="ch-pill" aria-pressed={on === id} onClick={() => jump(id)}>
+              {l}
+            </button>
+          ))}
+          <span className="ch-gd__src">{sample} logged</span>
+        </nav>
+      )}
       <WithReads reads={reads}>
         {(r) =>
           r?.status === 'failed' && <ReadsFailedNotice />
@@ -438,6 +513,7 @@ export function GameDetail({
 
       <Sec
         id="scoring"
+        detail={asDetail}
         hide={!show('scoring')}
         reads={<ReadsLine reads={reads} area="scoring" />}
         icon={Flag}
@@ -478,6 +554,7 @@ export function GameDetail({
 
       <Sec
         id="tee"
+        detail={asDetail}
         hide={!show('tee')}
         reads={<ReadsLine reads={reads} area="tee" />}
         icon={MoveUpRight}
@@ -527,6 +604,7 @@ export function GameDetail({
 
       <Sec
         id="approach"
+        detail={asDetail}
         hide={!show('approach')}
         reads={<ReadsLine reads={reads} area="approach" />}
         icon={Crosshair}
@@ -627,6 +705,7 @@ export function GameDetail({
 
       <Sec
         id="short"
+        detail={asDetail}
         hide={!show('short')}
         reads={<ReadsLine reads={reads} area="short" />}
         icon={FlagTriangleRight}
@@ -681,6 +760,7 @@ export function GameDetail({
 
       <Sec
         id="putting"
+        detail={asDetail}
         hide={!show('putting')}
         reads={<ReadsLine reads={reads} area="putting" />}
         icon={CircleDot}

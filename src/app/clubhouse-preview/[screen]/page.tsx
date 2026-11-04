@@ -40,6 +40,8 @@ import { RosterSkeleton } from '@/clubhouse/screens/roster/RosterSkeleton';
 import { PREVIEW_PLAYER_ROSTER, PREVIEW_PLAYER_ROSTER_EMPTY, PREVIEW_PLAYER_ROSTER_FAILED, PREVIEW_ROSTER, PREVIEW_ROSTER_AVAILABILITY, PREVIEW_ROSTER_BIG, PREVIEW_ROSTER_CRH, PREVIEW_ROSTER_EARLY, PREVIEW_ROSTER_EMPTY, PREVIEW_ROSTER_FAILED, PREVIEW_ROSTER_EMAIL_INVITES, PREVIEW_ROSTER_HELM_FAILED, PREVIEW_ROSTER_HELM_OFF, PREVIEW_ROSTER_LONG, PREVIEW_ROSTER_NO_REQUESTS, PREVIEW_ROSTER_ONE_REQUEST, PREVIEW_ROSTER_PARTIAL } from '@/clubhouse/preview/fixtures-roster';
 import { StatsTeam } from '@/clubhouse/screens/stats/StatsTeam';
 import { StatsPlayer } from '@/clubhouse/screens/stats/StatsPlayer';
+import { NotOnTeam } from '@/clubhouse/routes/stats';
+import { PREVIEW_PLAYER_SHS, PREVIEW_PLAYER_SHS_SELF, previewShsHome, previewShsPlayer } from '@/clubhouse/preview/fixtures-stats-redesign';
 import { StatsSkeletonFor } from '@/clubhouse/screens/stats/StatsRouteSkeleton';
 import {
   PREVIEW_PLAYER,
@@ -62,6 +64,7 @@ import {
   PREVIEW_TEAM_STATS,
 } from '@/clubhouse/preview/fixtures-stats';
 import '@/clubhouse/styles/stats.css';
+import '@/clubhouse/styles/stats-redesign.css';
 import '@/clubhouse/styles/calendar.css';
 import '@/clubhouse/styles/tournament-fields.css';
 import '@/clubhouse/styles/messages.css';
@@ -225,12 +228,14 @@ export default async function ClubhousePreview({
   searchParams,
 }: {
   params: Promise<{ screen: string }>;
-  searchParams: Promise<{ station?: string; refresh?: string; crh?: string; state?: string; view?: string; date?: string; event?: string; bell?: string; new?: string; section?: string; q?: string; tab?: string; teams?: string; tone?: string; at?: string; round?: string; ask?: string; live?: string }>;
+  searchParams: Promise<{ station?: string; flag?: string; refresh?: string; crh?: string; state?: string; view?: string; date?: string; event?: string; bell?: string; new?: string; section?: string; q?: string; tab?: string; teams?: string; tone?: string; at?: string; round?: string; ask?: string; live?: string }>;
 }) {
   if (process.env.NODE_ENV === 'production') notFound();
   const { screen } = await params;
   const qc = (await searchParams as { qc?: string }).qc;
-  const { station, refresh, crh: crhParam, state, view, date, event, bell, new: isNew, section, q, tab, teams, tone, at, round, ask, live } = await searchParams;
+  const { flag, station, refresh, crh: crhParam, state, view, date, event, bell, new: isNew, section, q, tab, teams, tone, at, round, ask, live } = await searchParams;
+  // The phone Stats redesign renders here whatever its flag says; `&flag=off` renders main's components (stats-home 05, flagoff).
+  const shs = flag !== 'off';
   // The header lab (/clubhouse-preview/header-lab) renders a page with one of the hero tones.
   const heroTone = heroToneFrom(tone);
   const qDetail = (role: 'coach' | 'player') => {
@@ -284,7 +289,8 @@ export default async function ClubhousePreview({
           <HomeSkeleton />
         ) : (
           <PlayerHome
-            data={state === 'empty' ? PREVIEW_PLAYER_HOME_EMPTY : state === 'failed' ? PREVIEW_PLAYER_HOME_FAILED : state === 'noevents' ? PREVIEW_PLAYER_HOME_NO_EVENTS : state === 'norounds' ? PREVIEW_PLAYER_HOME_NO_ROUNDS : PREVIEW_PLAYER_HOME}
+            shs={shs}
+            data={(shs ? previewShsHome(state) : null) ?? (state === 'empty' ? PREVIEW_PLAYER_HOME_EMPTY : state === 'failed' ? PREVIEW_PLAYER_HOME_FAILED : state === 'noevents' ? PREVIEW_PLAYER_HOME_NO_EVENTS : state === 'norounds' ? PREVIEW_PLAYER_HOME_NO_ROUNDS : PREVIEW_PLAYER_HOME)}
             now={PREVIEW_HOME_NOW}
             // &live=practice | qualifier | stale | none: the player's own live card (P-6), off unless asked for.
             live={previewOwn(live)?.live}
@@ -430,55 +436,60 @@ export default async function ClubhousePreview({
       path: '/golf/dashboard/stats',
       node:
         state === 'loading' ? (
-          <StatsSkeletonFor profile={false} />
+          <StatsSkeletonFor profile={false} shs={shs} />
         ) : state === 'empty' ? (
-          <StatsTeam data={{ ...PREVIEW_TEAM_STATS, roundCount: 0, grid: [], players: [], putting: null, bests: [], filterOptions: { ...PREVIEW_TEAM_STATS.filterOptions, rounds: [], total: 0, courses: [] } }} />
+          <StatsTeam data={{ ...PREVIEW_TEAM_STATS, roundCount: 0, grid: [], players: [], putting: null, bests: [], filterOptions: { ...PREVIEW_TEAM_STATS.filterOptions, rounds: [], total: 0, courses: [] } }} shs={shs} />
         ) : state === 'failed' ? (
-          <StatsTeam data={{ ...PREVIEW_TEAM_STATS, roundsError: true }} />
+          <StatsTeam data={{ ...PREVIEW_TEAM_STATS, roundsError: true }} shs={shs} />
         ) : state === 'partial' ? (
-          <StatsTeam data={{ ...PREVIEW_TEAM_STATS, cacheError: true, puttsError: true, figures: PREVIEW_TEAM_STATS.figures.map((f) => (f.label === 'Scoring average' ? f : { ...f, value: null, delta: null })) }} />
+          <StatsTeam data={{ ...PREVIEW_TEAM_STATS, cacheError: true, puttsError: true, figures: PREVIEW_TEAM_STATS.figures.map((f) => (f.label === 'Scoring average' ? f : { ...f, value: null, delta: null })) }} shs={shs} />
         ) : state === 'filtered' ? (
-          <StatsTeam data={PREVIEW_TEAM_FILTERED} />
+          <StatsTeam data={PREVIEW_TEAM_FILTERED} shs={shs} />
         ) : state === 'nomatch' ? (
-          <StatsTeam data={PREVIEW_TEAM_NOMATCH} />
+          <StatsTeam data={PREVIEW_TEAM_NOMATCH} shs={shs} />
         ) : state === 'earlyfilter' ? (
-          <StatsTeam data={PREVIEW_TEAM_EARLY_FILTER} />
+          <StatsTeam data={PREVIEW_TEAM_EARLY_FILTER} shs={shs} />
         ) : state === 'nines' ? (
-          <StatsTeam data={PREVIEW_TEAM_NINES} />
+          <StatsTeam data={PREVIEW_TEAM_NINES} shs={shs} />
         ) : state === 'last20' ? (
-          <StatsTeam data={PREVIEW_TEAM_LAST20} />
+          <StatsTeam data={PREVIEW_TEAM_LAST20} shs={shs} />
         ) : state === 'demo' ? (
-          <StatsTeam data={PREVIEW_TEAM_DEMO} />
+          <StatsTeam data={PREVIEW_TEAM_DEMO} shs={shs} />
         ) : state === 'crash' ? (
           // Malformed sections, so every SectionBoundary (CH-4204 to CH-4208) catches and reports once.
-          <StatsTeam data={{ ...PREVIEW_TEAM_STATS, figures: null as never, players: null as never, legWeeks: null as never, putting: { putts: 1, bands: null as never }, bests: null as never }} />
+          <StatsTeam data={{ ...PREVIEW_TEAM_STATS, figures: null as never, players: null as never, legWeeks: null as never, putting: { putts: 1, bands: null as never }, bests: null as never }} shs={shs} />
         ) : (
-          <StatsTeam data={PREVIEW_TEAM_STATS} />
+          <StatsTeam data={PREVIEW_TEAM_STATS} shs={shs} />
         ),
     },
     player: {
       path: '/golf/dashboard/stats',
       node:
         state === 'failed' ? (
-          <StatsPlayer data={{ ...PREVIEW_PLAYER, roundsError: true, statsError: true, devError: true }} coachId="preview-coach" />
+          <StatsPlayer data={{ ...PREVIEW_PLAYER, roundsError: true, statsError: true, devError: true }} coachId="preview-coach" shs={shs} />
         ) : state === 'loading' ? (
-          <StatsSkeletonFor profile />
+          <StatsSkeletonFor profile shs={shs} />
+        ) : state === 'denied' && shs ? (
+          <NotOnTeam coach={false} />
+        ) : shs && previewShsPlayer(state) ? (
+          <StatsPlayer data={previewShsPlayer(state)!} coachId={null} initialTab={tab} shs />
         ) : state === 'filtered' ? (
-          <StatsPlayer data={PREVIEW_PLAYER_FILTERED} coachId="preview-coach" />
+          <StatsPlayer data={PREVIEW_PLAYER_FILTERED} coachId="preview-coach" shs={shs} />
         ) : state === 'nomatch' ? (
-          <StatsPlayer data={PREVIEW_PLAYER_NOMATCH} coachId="preview-coach" />
+          <StatsPlayer data={PREVIEW_PLAYER_NOMATCH} coachId="preview-coach" shs={shs} />
         ) : state === 'nines' ? (
-          <StatsPlayer data={PREVIEW_PLAYER_NINES} coachId="preview-coach" />
+          <StatsPlayer data={PREVIEW_PLAYER_NINES} coachId="preview-coach" shs={shs} />
         ) : state === 'loops' ? (
-          <StatsPlayer data={PREVIEW_PLAYER_LOOPS} coachId="preview-coach" />
+          <StatsPlayer data={PREVIEW_PLAYER_LOOPS} coachId="preview-coach" shs={shs} />
         ) : state === 'loops-self' ? (
-          <StatsPlayer data={PREVIEW_PLAYER_LOOPS_SELF} coachId={null} />
+          <StatsPlayer data={PREVIEW_PLAYER_LOOPS_SELF} coachId={null} shs={shs} />
         ) : (
           <StatsPlayer
-            data={state === 'early' ? PREVIEW_PLAYER_EARLY : state === 'self' ? PREVIEW_PLAYER_SUGGESTED : PREVIEW_PLAYER}
+            data={state === 'early' ? PREVIEW_PLAYER_EARLY : state === 'self' ? (shs ? PREVIEW_PLAYER_SHS_SELF : PREVIEW_PLAYER_SUGGESTED) : shs ? PREVIEW_PLAYER_SHS : PREVIEW_PLAYER}
             coachId={state === 'self' ? null : 'preview-coach'}
             initialTab={tab}
             reads={state === 'readsoff' ? { status: 'off' } : state === 'readsfailed' ? PREVIEW_READS_FAILED : state === 'self' ? PREVIEW_SELF_READS : PREVIEW_PLAYER_READS}
+            shs={shs}
           />
         ),
     },

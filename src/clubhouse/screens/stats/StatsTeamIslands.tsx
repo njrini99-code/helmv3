@@ -76,9 +76,9 @@ export function useShownWindow(): ChRange {
  * The phone's window switch, reading the frame itself: a tap moves the pill at once and re-renders only this, not the
  * whole page (the page re-rendered every chart in the click, 40ms in the Simulator audit, 2026-10-14).
  */
-export function PhoneWindowSwitch({ custom }: { custom: boolean }) {
+export function PhoneWindowSwitch({ custom, hook }: { custom: boolean; hook?: string }) {
   const go = useGoWindow();
-  return <WindowSwitch value={useShownWindow()} onChange={go} custom={custom} />;
+  return <WindowSwitch value={useShownWindow()} onChange={go} custom={custom} hook={hook} />;
 }
 
 /** The page frame: changing the window or the filter dims the page and marks it busy until the new rounds land. */
@@ -178,9 +178,9 @@ export function ShowSeason() {
 }
 
 /** The round filter (Filter button, chips, count line and sheet), changing the team page's address through the frame. */
-export function TeamFilter({ filter, options, count, phone = false }: { filter: ChFilter; options: ChTeamStats['filterOptions']; count: number; phone?: boolean }) {
+export function TeamFilter({ filter, options, count, phone = false, hook }: { hook?: string; filter: ChFilter; options: ChTeamStats['filterOptions']; count: number; phone?: boolean }) {
   const { go } = useContext(GoFilter);
-  return <StatsFilter filter={filter} options={options} count={count} onChange={go} phone={phone} team codes={{ empty: 'CH-4313', pickEmpty: 'CH-4315', pickCap: 'CH-4316', range: 'CH-4101', holes: 'CH-4318' }} />;
+  return <StatsFilter filter={filter} options={options} count={count} onChange={go} phone={phone} team hook={hook} codes={{ empty: 'CH-4313', pickEmpty: 'CH-4315', pickCap: 'CH-4316', range: 'CH-4101', holes: 'CH-4318' }} />;
 }
 
 /** The filter leaves no round: CH-4313, the whole page body, so the page's empty state; Clear filters is the way back. */

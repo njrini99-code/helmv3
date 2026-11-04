@@ -13,6 +13,7 @@ import { trendRounds, withValue } from './round-trend';
 import { PuttBands } from './PuttBands';
 import { ScoreMixBar } from './ScoreMixBar';
 import { sgLegBars } from './leg-rows';
+import { missSplit } from './miss-split';
 import { plural, pluralWord } from '../../lib/plural';
 
 /**
@@ -45,7 +46,7 @@ function Track({ value, lo = 0, hi = 100, team, tour, bad = false, neutral = fal
   );
 }
 
-export function OverviewZones({ data, coach, ribbon, onOpenLeg }: { data: ChPlayerProfile; coach: boolean; ribbon: ReactNode; onOpenLeg?: (label: string) => void }) {
+export function OverviewZones({ data, coach, ribbon, onOpenLeg, shs = false }: { data: ChPlayerProfile; coach: boolean; ribbon: ReactNode; onOpenLeg?: (label: string) => void; /** clubhouse_stats_redesign_v1: Missed short reads the calculator's own figure. */ shs?: boolean }) {
   const w = data.win;
   const s: Stats | null = data.stats && !data.statsError ? data.stats : null;
   const cmp = (label: string) => data.comparisons.find((c) => c.label === label);
@@ -107,8 +108,7 @@ export function OverviewZones({ data, coach, ribbon, onOpenLeg }: { data: ChPlay
 
   // 4 · approach
   const miss = s && s.approachMissTotal > 0 ? s : null;
-  const mShort = miss ? (miss.approachMissShortPct ?? 0) + (miss.approachMissShortLeftPct ?? 0) + (miss.approachMissShortRightPct ?? 0) : 0;
-  const mLong = miss ? (miss.approachMissLongPct ?? 0) + (miss.approachMissLongLeftPct ?? 0) + (miss.approachMissLongRightPct ?? 0) : 0;
+  const { short: mShort, long: mLong } = miss ? missSplit(miss, shs) : { short: 0, long: 0 };
   const mLeft = miss ? (miss.approachMissLeftPct ?? 0) : 0;
   const mRight = miss ? (miss.approachMissRightPct ?? 0) : 0;
   const mSum = Math.max(1, mShort + mLong + mLeft + mRight);

@@ -13,6 +13,8 @@ import { floorRate, type FloorKind } from '../lib/stats-signal';
 
 /** Points in a leg's spark line. */
 export const LEG_TREND = 7;
+/** With clubhouse_stats_redesign_v1, a spark reads the window's ten rounds, so "Improving" and "Slipping" can show (Nick's call, stats-home 08 criterion 92). */
+export const SHS_LEG_TREND = 10;
 export type ChLegKey = 'tee' | 'approach' | 'short' | 'putting';
 
 export interface ChPlayerLeg {
@@ -50,7 +52,8 @@ export const LEG_LABELS: Record<ChLegKey, [string, string]> = {
 type Pick = { made: number; total: number } | null;
 
 /** The four parts of the game over the window: a weighted rate (never a mean of percentages), a per-round trend, and one line. */
-export function legRows(window: ChRound[], cache: Map<string, ChRoundCache>, bench: Map<string, number> | null, sg: ReturnType<typeof summarizePlayer>['sgLegs']): ChPlayerLeg[] {
+export function legRows(window: ChRound[], cache: Map<string, ChRoundCache>, bench: Map<string, number> | null, sg: ReturnType<typeof summarizePlayer>['sgLegs'], opts: { shs?: boolean } = {}): ChPlayerLeg[] {
+  const trendLength = opts.shs ? SHS_LEG_TREND : LEG_TREND;
   const oldestFirst = [...window].reverse();
   const rateOf = (pick: (r: ChRound) => Pick) => {
     let made = 0;
@@ -69,7 +72,7 @@ export function legRows(window: ChRound[], cache: Map<string, ChRoundCache>, ben
       .map(pick)
       .filter((p): p is { made: number; total: number } => !!p && p.total > 0)
       .map((p) => (p.made / p.total) * 100)
-      .slice(-LEG_TREND);
+      .slice(-trendLength);
   const fairways = (r: ChRound): Pick => {
     const c = cache.get(r.id);
     if (r.total_fairways_hit != null && r.total_fairways) return { made: r.total_fairways_hit, total: r.total_fairways };
@@ -149,8 +152,12 @@ export function legRows(window: ChRound[], cache: Map<string, ChRoundCache>, ben
         .map((r) => recordedPutts(r.total_putts))
         .filter((v): v is number => v != null)
         .reverse()
-        .slice(-LEG_TREND),
-      threes.length ? `${(threes.reduce((a, b) => a + b, 0) / threes.length).toFixed(1)} three-putts a round` : null,
+        .slice(-trendLength),
+      opts.shs && putts.length
+        ? `${putts.reduce((a, b) => a + b, 0)} putts in the last ${plural(putts.length, 'round')}`
+        : threes.length
+          ? `${(threes.reduce((a, b) => a + b, 0) / threes.length).toFixed(1)} three-putts a round`
+          : null,
     ),
   ];
 }
