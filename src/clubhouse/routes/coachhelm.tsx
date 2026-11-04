@@ -57,6 +57,7 @@ import '../styles/coachhelm-team.css';
 import '../styles/coachhelm-read.css';
 import '../styles/coachhelm-file.css';
 import '../styles/coachhelm-ask-v2.css';
+import '../styles/coachhelm-plan.css';
 
 /**
  * /golf/dashboard/coachhelm in Clubhouse, for coaches and players (the Fairway

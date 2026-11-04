@@ -42,6 +42,8 @@
  * that will execute — not a client-side guess at what might happen.
  * ========================================================================== */
 
+import { getClassTimes, getDrillBank, getTeamPuttingProfile, getTeamStrokesGained } from './practice-reads';
+import { practiceDraftTool, publishFlow } from './practice-draft';
 import { askDraftTools } from './ask-draft-tools';
 import { CREATE_FLOWS, CREATE_TOOL_NAMES, LINEUP_FLOWS, type FlowDef } from './create-tools';
 import { getProximityByBand, getRoundDetail, getShotPattern } from './shot-reads';
@@ -115,7 +117,7 @@ const CONFIRM_REQUIRED_TOOLS = [
 export type ConfirmRequiredTool = (typeof CONFIRM_REQUIRED_TOOLS)[number];
 
 export function isConfirmRequired(name: string): name is ConfirmRequiredTool {
-  return (CONFIRM_REQUIRED_TOOLS as readonly string[]).includes(name) || CREATE_TOOL_NAMES.includes(name);
+  return name === 'publish_practice_plan' || (CONFIRM_REQUIRED_TOOLS as readonly string[]).includes(name) || CREATE_TOOL_NAMES.includes(name);
 }
 
 /**
@@ -232,6 +234,8 @@ export interface BuildToolsArgs {
   teamTools?: boolean;
   /** Ask v2 (`coachhelm_ask_v2` and Clubhouse on for the team): steps update in place, and new tools join. Fairway's chat never sets it. */
   askV2?: boolean;
+  /** coachhelm_practice_plans_v1: the four reads, the brief, the draft and publish. */
+  practicePlans?: boolean;
   /** Ask v2: runs after the response is sent (`after` in the route), for the Undo hold's release. */
   defer?: (fn: () => Promise<unknown>) => void;
 }
@@ -288,7 +292,12 @@ interface GatedAction<TInput, TPlan> {
   run: (plan: TPlan) => Promise<ActionReceipt>;
 }
 
-export function buildCoachTools({ sb, ctx, conversationId, writer, collect, teamTools = false, askV2 = false, defer }: BuildToolsArgs): ToolSet {
+export function buildCoachTools({ sb, ctx, conversationId, writer, collect: collectOuter, teamTools = false, practicePlans = false, askV2 = false, defer }: BuildToolsArgs): ToolSet {
+  const seenEnvelopes: ToolEnvelope[] = [];
+  const collect = (e: ToolEnvelope) => {
+    seenEnvelopes.push(e);
+    collectOuter(e);
+  };
   let progressId = 0;
   const progress = (toolName: string, input: Record<string, unknown>) => {
     const label = PROGRESS_LABEL[toolName]?.(input) ?? 'Working';
@@ -681,6 +690,16 @@ export function buildCoachTools({ sb, ctx, conversationId, writer, collect, team
     ...(askV2 ? Object.fromEntries((isFlagEnabled('golf_tournaments_v1') ? [...CREATE_FLOWS, ...LINEUP_FLOWS] : CREATE_FLOWS).map((f) => [f.name, flowTool(f)])) : {}),
 
     ...(askV2 ? askDraftTools({ sb, ctx, writer }) : {}),
+    ...(practicePlans && teamTools
+      ? {
+          get_class_times: tool({ description: 'Who is in class on a day, per tracked player. Read before planning a practice.', inputSchema: z.object({ date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/) }), execute: read('get_class_times', (input) => getClassTimes(sb, ctx, input)) }),
+          get_drill_bank: tool({ description: 'Team drills and the GolfHelm library, with the refs a plan must use. A drill is never invented.', inputSchema: z.object({ category: z.string().max(40).optional() }), execute: read('get_drill_bank', (input) => getDrillBank(sb, ctx, input)) }),
+          get_team_strokes_gained: tool({ description: 'The team\'s strokes gained per area over recent rounds.', inputSchema: z.object({ rounds: z.number().int().min(3).max(30).default(10) }), execute: read('get_team_strokes_gained', (input) => getTeamStrokesGained(sb, ctx, input)) }),
+          get_team_putting_profile: tool({ description: 'The team\'s putting by distance.', inputSchema: z.object({ rounds: z.number().int().min(3).max(30).default(10) }), execute: read('get_team_putting_profile', (input) => getTeamPuttingProfile(sb, ctx, input)) }),
+          ...practiceDraftTool({ ctx, writer, envelopes: () => seenEnvelopes }),
+          [publishFlow.name]: flowTool(publishFlow as unknown as FlowDef<never>),
+        }
+      : {}),
 
     // Ask v2's reads: only with `coachhelm_ask_v2` and Clubhouse on for the team, so Fairway's tool set is what it was.
     ...(askV2

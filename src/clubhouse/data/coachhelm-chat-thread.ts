@@ -128,6 +128,8 @@ export interface AskProposalView {
   receipt: ActionReceipt | null;
 }
 
+import type { PlanPartData } from '../screens/coachhelm/plan/PlanCard';
+
 export interface AskBriefData {
   title: string;
   questions: Array<{ id: string; title: string; why?: string; multi?: boolean; options: Array<{ id: string; label: string; hint?: string }>; pick?: string[] }>;
@@ -148,6 +150,7 @@ export type AskBlock =
   | { kind: 'receipt'; key: string; receipt: ActionReceipt }
   | { kind: 'visual'; key: string; artifact: ValidatedVisualArtifact }
   | { kind: 'composition'; key: string; composition: ValidatedComposition }
+  | { kind: 'plan'; key: string; plan: PlanPartData }
   | { kind: 'brief'; key: string; brief: AskBriefData }
   | { kind: 'handoff'; key: string; handoff: AskHandoffData };
 
@@ -478,6 +481,8 @@ export function buildAssistantTurn(message: UIMessage, ctx: { isLast: boolean; b
     } else if (p.type === 'data-visual-artifact') {
       const artifact = artifacts.get(String(p.id ?? `v-${i}`));
       if (artifact) blocks.push({ kind: 'visual', key: `v-${artifact.artifactId}`, artifact });
+    } else if (p.type === 'data-practice-plan') {
+      blocks.push({ kind: 'plan', key: `plan-${String(p.id ?? i)}`, plan: p.data as PlanPartData });
     } else if (p.type === 'data-brief') {
       blocks.push({ kind: 'brief', key: `brief-${i}`, brief: p.data as AskBriefData });
     } else if (p.type === 'data-handoff') {

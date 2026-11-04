@@ -24,6 +24,7 @@
  *                      charts and receipts rather than only the prose.
  * ========================================================================== */
 
+import { isPracticePlansEnabled } from '@/lib/coachhelm/v3/practice-plan/flag';
 import { runPlayerTurn } from '@/lib/coachhelm/v3/chat/player-turn';
 import { knowsSection, readAskKnows } from '@/lib/coachhelm/v3/chat/ask-knows';
 import { isAskV2Enabled, isPlayerAskEnabled } from '@/lib/coachhelm/v3/chat/ask-flag';
@@ -574,6 +575,7 @@ export async function POST(req: NextRequest) {
         // Ask's whole-team tools follow Clubhouse for this team (flag, then allowlist).
         teamTools: isClubhouseForTeam(ctx.team_id),
         askV2,
+        practicePlans: isPracticePlansEnabled(),
         defer: (fn) => after(fn),
       });
 
@@ -669,7 +671,8 @@ export async function POST(req: NextRequest) {
         // the gate the whole action framework rests on — a model cannot reach
         // a write, only an approval request.
         toolApproval: ({ toolCall }) => (isConfirmRequired(toolCall.toolName) ? 'user-approval' : 'not-applicable'),
-        stopWhen: stepCountIs(8),
+        // The brief ends the turn: the coach's answers are the next message (practice-plan 02 §4.2).
+        stopWhen: [stepCountIs(8), ({ steps }: { steps: ReadonlyArray<{ toolCalls: ReadonlyArray<{ toolName: string }> }> }) => !!steps.at(-1)?.toolCalls.some((t) => t.toolName === 'ask_practice_brief')],
         onChunk: () => {
           if (firstTokenMs === null) firstTokenMs = Date.now() - startedAt;
         },

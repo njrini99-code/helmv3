@@ -9,6 +9,8 @@ import { useChPhone } from '../../lib/use-phone';
 import { useChReducedMotion } from '../../lib/reduced-motion';
 import { conversationHref } from '../../screens/coachhelm/chat/History';
 import { BriefCard } from '../../screens/coachhelm/chat/parts/BriefCard';
+import { PlanCard } from '../../screens/coachhelm/plan/PlanCard';
+import '../../styles/coachhelm-plan.css';
 import { subscribeOnline } from '../AskSheetBody';
 import type { ChAskSheetChat } from '../AskSheet';
 import { HelmMark, useQcCtx } from './QuickChatProvider';
@@ -309,6 +311,7 @@ function AssistantTurn({ turn, online, stopped, onSend, onApprove, onDeny, onOpe
       {turn.blocks.map((b) => {
         if (b.kind === 'text') return <p className="say" key={b.key}>{b.text}</p>;
         if (b.kind === 'proposal') return <TaskCard key={b.key} view={b.view} online={online} onSend={onSend} onApprove={onApprove} onDeny={onDeny} onOpen={onOpen} />;
+        if (b.kind === 'plan') return <PlanCard key={b.key} plan={b.plan} onSend={onSend} />;
         if (b.kind === 'brief') return <BriefCard key={b.key} title={b.brief.title} questions={b.brief.questions} onDone={(_a, line) => onSend(line || 'Skip, just build')} />;
         return null;
       })}
