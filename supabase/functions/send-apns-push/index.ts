@@ -1,5 +1,7 @@
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
+import { p256 } from "npm:@noble/curves@1.9.7/p256";
 import { withObservedRequest } from "../_shared/observability.ts";
+import { createProviderTokenSource, type Es256Signer } from "./provider-token.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -49,55 +51,27 @@ interface PushRequest {
 }
 
 /**
- * Generate a JWT for APNs authentication using the .p8 key
+ * APNs provider token. NEVER mint one per request or per isolate: Apple throttles
+ * a key that presents new tokens more than once every 20 minutes
+ * (429 TooManyProviderTokenUpdates), and a Messages send boots several fresh
+ * isolates at once. `createProviderTokenSource` makes every isolate produce the
+ * byte-identical token for the current 40-minute window; see provider-token.ts.
  */
-async function generateAPNsJWT(): Promise<string> {
+const es256: Es256Signer = (digest, privateKey) => p256.sign(digest, privateKey).toCompactRawBytes();
+
+let providerTokens: ReturnType<typeof createProviderTokenSource> | null = null;
+
+function providerTokenSource(): ReturnType<typeof createProviderTokenSource> {
+  if (providerTokens) return providerTokens;
   const teamId = Deno.env.get("APNS_TEAM_ID");
   const keyId = Deno.env.get("APNS_KEY_ID");
-  const privateKey = Deno.env.get("APNS_PRIVATE_KEY"); // .p8 key contents
+  const privateKeyPem = Deno.env.get("APNS_PRIVATE_KEY"); // .p8 key contents
 
-  if (!teamId || !keyId || !privateKey) {
+  if (!teamId || !keyId || !privateKeyPem) {
     throw new Error("APNs configuration missing: APNS_TEAM_ID, APNS_KEY_ID, APNS_PRIVATE_KEY");
   }
-
-  const header = { alg: "ES256", kid: keyId };
-  const payload = {
-    iss: teamId,
-    iat: Math.floor(Date.now() / 1000),
-  };
-
-  const encodedHeader = btoa(JSON.stringify(header))
-    .replace(/\+/g, "-").replace(/\//g, "_").replace(/=/g, "");
-  const encodedPayload = btoa(JSON.stringify(payload))
-    .replace(/\+/g, "-").replace(/\//g, "_").replace(/=/g, "");
-
-  const unsignedToken = `${encodedHeader}.${encodedPayload}`;
-
-  // Parse PEM private key
-  const pemContents = privateKey
-    .replace("-----BEGIN PRIVATE KEY-----", "")
-    .replace("-----END PRIVATE KEY-----", "")
-    .replace(/\s/g, "");
-  const keyBytes = Uint8Array.from(atob(pemContents), c => c.charCodeAt(0));
-
-  const cryptoKey = await crypto.subtle.importKey(
-    "pkcs8",
-    keyBytes,
-    { name: "ECDSA", namedCurve: "P-256" },
-    false,
-    ["sign"]
-  );
-
-  const signature = await crypto.subtle.sign(
-    { name: "ECDSA", hash: "SHA-256" },
-    cryptoKey,
-    new TextEncoder().encode(unsignedToken)
-  );
-
-  const encodedSignature = btoa(String.fromCharCode(...new Uint8Array(signature)))
-    .replace(/\+/g, "-").replace(/\//g, "_").replace(/=/g, "");
-
-  return `${unsignedToken}.${encodedSignature}`;
+  providerTokens = createProviderTokenSource({ teamId, keyId, privateKeyPem }, { signer: es256 });
+  return providerTokens;
 }
 
 /**
@@ -191,7 +165,7 @@ Deno.serve(withObservedRequest("send-apns-push", async (req: Request) => {
       ? "https://api.sandbox.push.apple.com"
       : "https://api.push.apple.com";
 
-    const jwt = await generateAPNsJWT();
+    const jwt = await providerTokenSource().get();
 
     const level = interruptionLevel ?? "active";
 
