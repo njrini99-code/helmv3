@@ -1,12 +1,14 @@
 'use client';
 
-import { Sparkles, ArrowRight, ChartColumn, BrainCircuit, CalendarDays, CalendarPlus, ChevronRight, MessageSquare, Plus, Sun, TriangleAlert } from 'lucide-react';
+import { RotateCw, Sparkles, ArrowRight, ChartColumn, BrainCircuit, CalendarDays, CalendarPlus, ChevronRight, MessageSquare, Plus, Sun, TriangleAlert } from 'lucide-react';
 import Link from 'next/link';
 import { useMemo, useState, type ReactNode } from 'react';
 import type { ChCoachHome, ChHomeEvent, ChLatestRound, ChTeamForm } from '../../data/home';
 import type { ChYearKey } from '../../lib/class-year';
 import { Avatar } from '../../ui/Avatar';
 import { Button } from '../../ui/Button';
+import { CrhStateBlock } from '../../ui/CrhStateBlock';
+import { useRefresh } from '../../lib/use-refresh';
 import { EmptyState } from '../../ui/States';
 import { FormLine, FormRange } from '../../ui/FormLine';
 import { Icon } from '../../ui/Icon';
@@ -75,22 +77,22 @@ export function HomePhone({ data, now: frozen, live, crh = false }: { crh?: bool
       <header className="ch-hm-hero">
         <span className="ch-hm-hero__date">{data.todayLabel}</span>
         <h1>{data.greeting}</h1>
-        {data.subline && (
+        {(data.subline || (crh && failed.length > 0)) && (
           <p className="ch-hm-hero__brief">
             {crh && <Icon icon={Sparkles} size={14} />}
-            {data.subline}
+            {crh && failed.length > 0 ? CRH_PART_FAILED : data.subline}
           </p>
         )}
         <CoachQueue queue={data.queue} covered={covered} phone />
-        <PageRefreshNotice parts={failed} />
+        {!crh && <PageRefreshNotice parts={failed} />}
         <SectionBoundary surface="home.upNext" label="Up next" code="CH-2213">
-          {data.week.error ? (
+          {data.week.error && crh ? null : data.week.error ? (
             // On the sheet, not in the green card: inside it the notice took the card's ivory ink and its words vanished.
             <FailedSec id="ch-hm-upnext-failed" title="Up next">
               <RefreshNotice code="CH-2201" title="This week’s schedule didn’t load" body="Your events are safe. Try again." covered={covered} />
             </FailedSec>
           ) : (
-            <Day phone={phone} rounds={rounds} now={now} today={today} onOpenRound={setOpen} years={crh ? data.yearById : undefined} />
+            <Day crh={crh} phone={phone} rounds={rounds} now={now} today={today} onOpenRound={setOpen} years={crh ? data.yearById : undefined} />
           )}
         </SectionBoundary>
       </header>
@@ -111,6 +113,8 @@ export function HomePhone({ data, now: frozen, live, crh = false }: { crh?: bool
           <SectionBoundary surface="home.form" label="Team scoring" code="CH-2212">
             <Form form={phone.form} crh={crh} />
           </SectionBoundary>
+        ) : data.latestRounds.error && crh ? (
+          <CrhFailedCard id="ch-hm-form-failed" title="Team scoring" href={rebuiltHref('/golf/dashboard/stats') ?? '#'} link="Team stats" code="CH-2211" what="Scoring didn’t load" body="Your rounds are safe. Try again in a moment." />
         ) : data.latestRounds.error ? (
           <FailedSec id="ch-hm-form-failed" title="Team scoring">
             <RefreshNotice code="CH-2211" title="Team scoring didn’t load" body="Posted rounds are safe. Try again." covered={covered} />
@@ -129,9 +133,9 @@ export function HomePhone({ data, now: frozen, live, crh = false }: { crh?: bool
           </SectionBoundary>
         )}
 
-        <SectionBoundary surface="home.latestRound" label="Latest rounds" code="CH-2206">
+        {!(crh && data.latestRounds.error) && <SectionBoundary surface="home.latestRound" label="Latest rounds" code="CH-2206">
           <Rounds years={crh ? data.yearById : undefined} data={data.latestRounds} trends={data.leaderboard.error ? null : data.leaderboard.rows} onOpen={setOpen} covered={covered} />
-        </SectionBoundary>
+        </SectionBoundary>}
       </div>
 
       <RoundSheet crh={crh} round={open} holesError={data.latestRounds.holesError} onClose={() => setOpen(null)} />
@@ -142,9 +146,9 @@ export function HomePhone({ data, now: frozen, live, crh = false }: { crh?: bool
 type DayProps = { rounds: ChLatestRound[]; now: Date | null; today: string | null; onOpenRound: (r: ChLatestRound) => void };
 
 /** Up next's place: the day card, or how to add the first event. */
-function Day({ phone, rounds, now, today, onOpenRound, years }: DayProps & { phone: ChCoachHome['phone']; years?: Record<string, ChYearKey> }) {
+function Day({ phone, rounds, now, today, onOpenRound, years, crh = false }: DayProps & { crh?: boolean; phone: ChCoachHome['phone']; years?: Record<string, ChYearKey> }) {
   const phase = dayPhase(phone.next, phone.today, rounds, now, today);
-  return phase ? <DayCard years={years} phase={phase} now={now} today={today} onOpenRound={onOpenRound} /> : <NoEvents />;
+  return phase ? <DayCard crh={crh} years={years} phase={phase} now={now} today={today} onOpenRound={onOpenRound} /> : <NoEvents />;
 }
 
 /**
@@ -155,6 +159,16 @@ function Later({ crh = false, data, rounds, now, today, quiet, onOpenRound }: Da
   const { phone } = data;
   const place = useLightPlace();
   const clock = useChClock();
+  // The lane: one Today card with every event of the day, the next one marked (06 §11.2); "Later today" is the flag-off page's rail.
+  if (crh && data.week.error) return <CrhFailedCard id="ch-hm-today-failed" title="Today" href={CALENDAR} link="Calendar" code="CH-2201" what="Today didn’t load" body="Your events are safe. Try again." />;
+  if (crh && phone.today.length) {
+    return (
+      <>
+        <Today card list={phone.today} now={now} failed={false} quiet={quiet} />
+        {!data.latestRounds.error && <SinceYouLooked rounds={rounds} event={null} changes={data.changes ?? []} onOpenRound={onOpenRound} />}
+      </>
+    );
+  }
   if (data.week.error || !phone.today.length) return <Today card={crh} list={phone.today} now={now} failed={data.week.error} quiet={quiet} />;
   const phase = dayPhase(phone.next, phone.today, rounds, now, today);
   const card = phase?.kind === 'event' ? phase.e : null;
@@ -270,7 +284,7 @@ export function Today({ list, now, failed, quiet, canPlan = true, inline = false
     const end = e.endIso ? Date.parse(e.endIso) : Date.parse(e.startIso);
     return { e, past: !e.allDay && t != null && end <= t, live: !e.allDay && t != null && Date.parse(e.startIso) <= t && end > t };
   });
-  const next = inline && t != null && !rows.some((r) => r.live) ? rows.find((r) => !r.past && !r.e.allDay)?.e.id : undefined;
+  const next = (inline || card) && t != null && !rows.some((r) => r.live) ? rows.find((r) => !r.past && !r.e.allDay)?.e.id : undefined;
   const body = !list.length ? (
     <div className="ch-hm-empty" data-ch-code="CH-2301">
       <Icon icon={Sun} size={18} />
@@ -356,7 +370,7 @@ export function partOf(n: number, of: number): string {
  * The team's scoring form: the average, its change, the line, and three figures. Gains green, losses amber (D-42).
  * The average, greens and putts share one basis, which the strip states (`formBasis`); the week's count is its own.
  */
-function Form({ form, crh = false }: { form: ChTeamForm; crh?: boolean }) {
+export function Form({ form, crh = false }: { form: ChTeamForm; crh?: boolean }) {
   const W = 320;
   const H = 64;
   const pts = form.line;
@@ -457,6 +471,27 @@ export function WeekStrip({ days, note, children }: { days: ChCoachHome['week'][
  * P002 D5: a part that didn't load keeps the section it would have been, with the same head (title over the rule) as
  * Latest rounds, so a page with several failures reads as one list of sections at one rhythm.
  */
+/** The drawn failed state (06 §11.3): the page says so under the greeting, each card keeps its head and offers its own Try again. */
+export const CRH_PART_FAILED = 'Some of today didn’t load. What did is below.';
+export function CrhFailedCard({ id, title, href, link, code, what, body }: { id: string; title: string; href: string; link: string; code: string; what: string; body: string }) {
+  const { refresh, refreshing } = useRefresh();
+  return (
+    <section className="ch-hm-sec ch-dh-failed" aria-labelledby={id}>
+      <div className="ch-hm-sec__h">
+        <h2 id={id}>{title}</h2>
+        <Link href={href} className="ch-hm-link">
+          {link}
+        </Link>
+      </div>
+      <CrhStateBlock kind="failed" code={code} title={what} body={body}>
+        <Button leftIcon={RotateCw} busy={refreshing} onClick={refresh}>
+          Try again
+        </Button>
+      </CrhStateBlock>
+    </section>
+  );
+}
+
 function FailedSec({ id, title, children }: { id: string; title: string; children: ReactNode }) {
   return (
     <section className="ch-hm-sec is-failed" aria-labelledby={id}>

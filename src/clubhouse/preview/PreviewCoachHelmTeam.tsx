@@ -49,7 +49,8 @@ function openOf(data: ChTeamBoardData, station: TeamStation, open: string | unde
     return c ? { kind: 'course', id: c.id } : undefined;
   }
   if (open === 'story') {
-    const brief = data.brief.status === 'ok' ? data.brief.value : null;
+    const part = data.brief instanceof Promise ? null : data.brief;
+    const brief = part?.status === 'ok' ? part.value : null;
     const s = storiesOf(brief, null, new Map(list.map((p) => [p.id, p.name])))[0];
     return s ? { kind: 'story', id: s.id, story: s, week: brief?.week ?? 'This week' } : undefined;
   }

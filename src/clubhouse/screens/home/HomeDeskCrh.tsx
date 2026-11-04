@@ -1,31 +1,71 @@
 'use client';
 
-import type { ChCoachHome, ChTeamLegs } from '../../data/home';
-import { changeTone, formatAvg, formatSigned, formatToPar } from '../../lib/format';
+import Link from 'next/link';
+import type { ChCoachHome, ChHomeEvent } from '../../data/home';
+import { TYPE_LABEL } from '../calendar/model';
+import { TYPE_ICON } from '../calendar/views';
+import { CALENDAR, eventHref, whenLabel } from './event-links';
+import { Icon } from '../../ui/Icon';
+import { useChClockText } from '../../lib/use-clock';
+import { formatAvg, formatToPar } from '../../lib/format';
 import { Avatar } from '../../ui/Avatar';
-import { NoData } from '../../ui/NoData';
-import { legChange, legStatText } from './TeamLegs';
 import { leaderPlaces } from './Leaderboard';
 
-/** The team's game on the desktop's redesign: four columns with dividers (`.dlegs`, classes-roster-home 06 11). */
-export function DeskLegs({ legs }: { legs: ChTeamLegs }) {
+/** Up next in the hero's right column: glass, no chevron (06 §11.4). */
+export function DeskNext({ e, now }: { e: ChHomeEvent; now: Date | null }) {
+  const t = useChClockText();
+  const when = whenLabel(e, now);
+  const people = e.invitees ?? [];
   return (
-    <section className="ch-dh-card" aria-labelledby="ch-dh-legs">
-      <h2 id="ch-dh-legs" className="ch-dh-card__t">
-        The team’s game
-      </h2>
-      <ul className="ch-dh-legs">
-        {legs.rows.map((leg) => {
-          const change = legChange(leg);
-          return (
-            <li key={leg.key}>
-              <b className="ch-dh-legs__l">{leg.label}</b>
-              <b className={'ch-dh-legs__sg ch-num ' + changeTone(leg.sg, false)}>{leg.sg == null ? <NoData /> : formatSigned(leg.sg)}</b>
-              <span className="ch-num">{legStatText(leg.stat)}</span>
-              <em className={change.tone}>{change.words}</em>
-            </li>
-          );
-        })}
+    <Link href={eventHref(e)} className="ch-h-herocard__next">
+      <span className="ch-dh-next__k">
+        <span>
+          <Icon icon={TYPE_ICON[e.type]} size={13} />
+          {TYPE_LABEL[e.type]}
+        </span>
+        <em className="ch-num">{t(when.text)}</em>
+      </span>
+      <b>{e.title}</b>
+      <p className="ch-num">{[t(e.rangeLabel), e.location].filter(Boolean).join(' · ')}</p>
+      {people.length > 0 && (
+        <span className="ch-dh-next__f">
+          <span className="ch-hm-stack" aria-hidden="true">
+            {people.slice(0, 5).map((n) => (
+              <Avatar key={n} name={n} size="xs" />
+            ))}
+          </span>
+          <span className="ch-num">{e.going != null ? `${e.going} of ${people.length} going` : `${people.length} invited`}</span>
+        </span>
+      )}
+    </Link>
+  );
+}
+
+/** This week: today's rows, then what is coming, rows 56 (06 §11.4). */
+export function DeskAgenda({ rows }: { rows: ChCoachHome['week']['agenda'] }) {
+  const t = useChClockText();
+  return (
+    <section className="ch-dh-card" aria-labelledby="ch-dh-week">
+      <div className="ch-dh-card__h">
+        <h2 id="ch-dh-week" className="ch-dh-card__t">
+          This week
+        </h2>
+        <Link href={CALENDAR} className="ch-hm-link">
+          Calendar
+        </Link>
+      </div>
+      <ul className="ch-dh-rows ch-dh-rows--agenda">
+        {rows.map((r) => (
+          <li key={r.id}>
+            <span className="ch-dh-rank ch-num">{t(r.timeLabel)}</span>
+            <i className={r.isNext ? 'is-next' : ''} aria-hidden="true" />
+            <span className="ch-dh-rows__b">
+              <b>{r.title}</b>
+              {r.detail && <span>{r.detail}</span>}
+            </span>
+            {r.isNext && <span className="ch-hm-now">Next</span>}
+          </li>
+        ))}
       </ul>
     </section>
   );

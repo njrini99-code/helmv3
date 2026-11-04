@@ -1,6 +1,7 @@
 'use client';
 
-import { DeskBoard, DeskLegs, DeskRounds } from './HomeDeskCrh';
+import { DeskAgenda, DeskBoard, DeskNext, DeskRounds } from './HomeDeskCrh';
+import { CALENDAR } from './event-links';
 import { CalendarPlus, ChevronRight, Flag, Sparkles, UserPlus } from 'lucide-react';
 import Link from 'next/link';
 import type { ChCoachHome } from '../../data/home';
@@ -16,13 +17,13 @@ import { Week } from './Week';
 import { LatestRound } from './LatestRound';
 import { Leaderboard } from './Leaderboard';
 import { HomeActions } from './HomeActions';
-import { HomePhone, WeekStrip } from './HomePhone';
+import { CRH_PART_FAILED, CrhFailedCard, Form, HomePhone, WeekStrip } from './HomePhone';
 import { coachFailedParts } from './model';
 import { CoachQueue } from './CoachQueue';
 import { ClassHomeLine } from './ClassHomeLine';
 import { LiveNowCard } from './LiveNowCard';
 import type { LiveSnapshot } from '../../live/model';
-import { TeamLegs } from './TeamLegs';
+import { TeamLegs, TeamLegsPhone } from './TeamLegs';
 import { useHomeDayRollover } from './use-day-rollover';
 import { ChangeMarksProvider } from '../../lib/use-change-marks';
 import { NoTeam } from '../../ui/NoTeam';
@@ -55,24 +56,17 @@ function CoachHomeBody({ data, now, live, crh = false }: { data: ChCoachHome; no
   const noRounds = !data.latestRounds.error && Array.isArray(data.latestRounds.rounds) && data.latestRounds.rounds.length === 0 && !data.leaderboard.error && data.leaderboard.rosterSize > 0;
   if (crh)
     return (
-      <main className="ch-h-main ch-h-main--desk" data-canopy="" data-ch-crh="on">
+      <main className="ch-h-main ch-h-main--desk" data-ch-crh="on">
         <header className="ch-h-herocard">
           <div>
             <span className="ch-h-head__date">{data.todayLabel}</span>
             <h1 className="ch-display">{data.greeting}</h1>
-            {data.subline && <p className="ch-h-head__sub">{data.subline}</p>}
+            {(data.subline || failed.length > 0) && <p className="ch-h-head__sub">{failed.length > 0 ? CRH_PART_FAILED : data.subline}</p>}
             {data.teamId && data.clock && <ClassHomeLine teamId={data.teamId} today={data.clock.day} teamTimeZone={data.clock.tz} variant="desktop" />}
-            <HomeActions teamChatId={data.teamChatId} />
+            <CoachQueue queue={data.queue} covered={covered} phone />
           </div>
-          {data.phone.next && (
-            <div className="ch-h-herocard__next">
-              <span>Up next</span>
-              <b>{data.phone.next.title}</b>
-              <p>{[data.phone.next.rangeLabel, data.phone.next.location].filter(Boolean).join(' · ')}</p>
-            </div>
-          )}
+          {data.phone.next && <DeskNext e={data.phone.next} now={now ? new Date(now) : null} />}
         </header>
-        <PageRefreshNotice parts={failed} />
         {live && (
           <SectionBoundary surface="home.live" label="Live now">
             <div className="ch-lv-deskwrap">
@@ -80,20 +74,29 @@ function CoachHomeBody({ data, now, live, crh = false }: { data: ChCoachHome; no
             </div>
           </SectionBoundary>
         )}
-        <CoachQueue queue={data.queue} covered={covered} />
         <div className="ch-h-grid">
           <SectionBoundary surface="home.week" label="This week" code="CH-2205">
-            <Week week={data.week} covered={covered} events={data.phone.today} />
+            {data.week.error ? (
+              <CrhFailedCard id="ch-dh-week-failed" title="This week" href={CALENDAR} link="Calendar" code="CH-2201" what="This week didn’t load" body="Your events are safe. Try again." />
+            ) : (
+              <DeskAgenda rows={data.week.agenda} />
+            )}
           </SectionBoundary>
-          {data.phone.form && <TeamForm form={data.phone.form} />}
+          {data.phone.form ? (
+            <SectionBoundary surface="home.form" label="Team scoring" code="CH-2212">
+              <Form form={data.phone.form} crh />
+            </SectionBoundary>
+          ) : data.latestRounds.error ? (
+            <CrhFailedCard id="ch-dh-form-failed" title="Team scoring" href={rebuiltHref('/golf/dashboard/stats') ?? '#'} link="Team stats" code="CH-2211" what="Scoring didn’t load" body="Your rounds are safe. Try again in a moment." />
+          ) : null}
         </div>
         {data.phone.form && data.legs && !noRounds && (
           <SectionBoundary surface="home.legs" label="The team’s game" code="CH-2221">
-            {data.legs.holeRounds === 0 ? <TeamLegs legs={data.legs} covered={covered} /> : <DeskLegs legs={data.legs} />}
+            <TeamLegsPhone legs={data.legs} covered={covered} crh />
           </SectionBoundary>
         )}
         <div className="ch-h-grid">
-          {!noRounds && (
+          {!noRounds && !data.latestRounds.error && (
             <SectionBoundary surface="home.latestRound" label="The latest round" code="CH-2206">
               {data.latestRounds.error || data.latestRounds.rounds.length === 0 ? <LatestRound data={data.latestRounds} covered={covered} /> : <DeskRounds rounds={data.latestRounds.rounds} />}
             </SectionBoundary>
