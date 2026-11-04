@@ -1,16 +1,12 @@
 'use client';
 
-import { initials } from '../../../lib/names';
+import { Avatar } from '../../../ui/Avatar';
+import { Badge } from '../../../ui/Badge';
 import type { ChInsight } from '../../../data/coachhelm-shape';
 import type { ChTeamPlayer } from '../../../data/coachhelm-team-shape';
-import { coinColor } from './TeamHole';
 
 export function Coin({ player, small = false }: { player: Pick<ChTeamPlayer, 'id' | 'name' | 'early'>; small?: boolean }) {
-  return (
-    <span className={'coin' + (small ? ' sm' : '') + (player.early ? ' early' : '')} style={{ ['--c' as string]: coinColor(player.id) }} aria-hidden="true">
-      {initials(player.name)}
-    </span>
-  );
+  return small ? <Avatar name={player.name} id={player.id} size="xs" dim={!!player.early} /> : <Avatar name={player.name} id={player.id} size="sm" dim={!!player.early} />;
 }
 
 export function Chevron() {
@@ -32,10 +28,10 @@ export function ReadRow({ player, read, onOpen }: { player: ChTeamPlayer; read: 
           {player.first}: {read.title}
         </b>
         <span className="ev">
-          {read.stakes && <span className="chipk l">{read.stakes} a round</span>}
+          {read.stakes && <Badge tone="warning">{read.stakes} a round</Badge>}
           {read.evidence.sample && <span>{read.evidence.sample}</span>}
-          {word && <span className={'chipk' + (word === 'Solid read' ? ' g' : '')}>{word}</span>}
-          {read.stale && <span className="chipk">Out of date</span>}
+          {word && <Badge tone={word === 'Solid read' ? 'positive' : 'neutral'}>{word}</Badge>}
+          {read.stale && <Badge>Out of date</Badge>}
         </span>
       </span>
       <Chevron />

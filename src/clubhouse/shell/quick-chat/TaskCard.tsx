@@ -1,4 +1,6 @@
 'use client';
+
+import { Button } from '../../ui/Button';
 import { pluralWord } from '../../lib/plural';
 
 import { useEffect, useLayoutEffect, useRef, useState } from 'react';
@@ -181,31 +183,20 @@ export function TaskCard({ view, online, onSend, onApprove, onDeny, onOpen }: { 
             {!online && <p className="say quiet">You’re offline. Nothing was saved.</p>}
             <div className="btns">
               {shown.k === 'draft' && (
-                <button
-                  type="button"
-                  className="btn ghost"
-                  disabled={locked || !view.approvalId}
-                  onClick={() => {
+                <Button variant="ghost" size="lg" disabled={locked || !view.approvalId} onClick={() => {
                     setLocked(true);
                     if (view.approvalId) onDeny(view.approvalId);
-                  }}
-                >
+                  }}>
                   Cancel
-                </button>
+                </Button>
               )}
-              <button
-                type="button"
-                className={'btn primary' + (shown.k === 'busy' ? ' busy' : '')}
-                disabled={locked || !view.approvalId || !online || shown.k === 'busy'}
-                onClick={() => {
+              <Button variant="primary" size="lg" className="qc-act" busy={shown.k === 'busy'} disabled={locked || !view.approvalId || !online || shown.k === 'busy'} onClick={() => {
                   setLocked(true);
                   setPhase({ k: 'busy' });
                   if (view.approvalId) onApprove(view.approvalId);
-                }}
-              >
+                }}>
                 <span className="lbl">{shown.k === 'busy' ? w.busy : view.proposal.action}</span>
-                <span className="sweep" />
-              </button>
+              </Button>
             </div>
           </>
         )}

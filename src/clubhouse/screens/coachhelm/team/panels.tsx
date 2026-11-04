@@ -1,4 +1,6 @@
 'use client';
+
+import { Badge } from '../../../ui/Badge';
 import { pluralWord } from '../../../lib/plural';
 
 import { X } from 'lucide-react';
@@ -168,11 +170,11 @@ export function ReadPanel({
       <h3>{read.title}</h3>
       <p className="lede">{read.lede}</p>
       <div className="evs">
-        {read.stale && <span className="chipk">Out of date</span>}
-        {read.stakes && <span className="chipk l">Worth {read.stakes} a round</span>}
-        {word && <span className={'chipk' + (word === 'Solid read' ? ' g' : '')}>{word}</span>}
-        {cause && <span className="chipk">Cause: {cause}</span>}
-        {read.evidence.window && <span className="chipk">{read.evidence.window}</span>}
+        {read.stale && <Badge>Out of date</Badge>}
+        {read.stakes && <Badge tone="warning">Worth {read.stakes} a round</Badge>}
+        {word && <Badge tone={word === 'Solid read' ? 'positive' : 'neutral'}>{word}</Badge>}
+        {cause && <Badge>Cause: {cause}</Badge>}
+        {read.evidence.window && <Badge>{read.evidence.window}</Badge>}
       </div>
       <Comparison read={read} first={coach ? player.first : 'You'} />
       {deep && <ReadEvidence deep={deep} penalties={penalties} coach={coach} />}
@@ -300,7 +302,7 @@ export function PlayerPanel({ player, data, onRead, fileOn, onClose }: { player:
               <span>
                 <b>{r.title}</b>
                 <span className="ev">
-                  {r.stakes && <span className="chipk l">{r.stakes} a round</span>}
+                  {r.stakes && <Badge tone="warning">{r.stakes} a round</Badge>}
                   {r.evidence.sample && <span>{r.evidence.sample}</span>}
                 </span>
               </span>
@@ -415,9 +417,9 @@ export function GonePanel({ onClose }: { onClose: () => void }) {
   return (
     <>
       <Head lead={null} name="This read isn’t on the board anymore" line="It may have been resolved, or the player has left the team." onClose={onClose} />
-      <button type="button" className="btn gh" onClick={onClose}>
+      <Button variant="ghost" size="lg" onClick={onClose}>
         Close
-      </button>
+      </Button>
     </>
   );
 }

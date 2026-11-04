@@ -1,4 +1,6 @@
 'use client';
+
+import { Badge } from '../../../ui/Badge';
 import { pluralWord } from '../../../lib/plural';
 
 import { STATIONS, type ChTeamPlayer } from '../../../data/coachhelm-team-shape';
@@ -62,7 +64,7 @@ export function RosterCard({ players, phone, onPlayer }: { players: readonly ChT
                 {p.heldBack ? ` · ${p.heldBack} held back` : ''}
               </span>
             </span>
-            {!phone && (p.rounds ? p.worst ? <span className="lm chipk l">Loses most: {STATION_SHORT[p.worst]}</span> : <span /> : <span className="lm chipk">No rounds yet</span>)}
+            {!phone && (p.rounds ? p.worst ? <span className="lm"><Badge tone="warning">Loses most: {STATION_SHORT[p.worst]}</Badge></span> : <span /> : <span className="lm chipk">No rounds yet</span>)}
             {p.rounds ? (
               <>
                 <FingerPrint player={p} labels={!phone} />

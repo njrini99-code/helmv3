@@ -141,14 +141,14 @@ export function ReadPage({ load, voice, writes = LIVE_COACHHELM_WRITES, fallback
           {/* S-READ-DESK: the read's actions, where the phone has its bar. */}
           <div className="ch-hr-deskbar">
             {askHref && (
-              <Link className="btn sec" href={askHref}>
+              <Button variant="secondary" size="lg" href={askHref}>
                 Ask about this read
-              </Link>
+              </Button>
             )}
             {messageHref && (
-              <Link className="btn sec" href={messageHref}>
+              <Button variant="secondary" size="lg" href={messageHref}>
                 Message {first}
-              </Link>
+              </Button>
             )}
             <button type="button" className="ib" aria-label="More" onClick={() => setMore(true)}>
               <Icon icon={Ellipsis} size={18} />

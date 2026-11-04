@@ -1,5 +1,9 @@
 'use client';
 
+import { Button } from '../../../ui/Button';
+
+import { Badge } from '../../../../clubhouse/ui/Badge';
+
 import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { listPlanFolders, savePracticePlanDraft, undoPracticePlanDraft } from '@/app/golf/actions/coachhelm-practice-plans';
 import type { PlanPartData } from '../../../screens/coachhelm/plan/PlanCard';
@@ -92,7 +96,7 @@ export function PlanTask({ plan, online, onOpen }: { plan: PlanPartData; online:
           <b>{plan.title}</b>
           <span>Practice plan</span>
         </span>
-        <span className={'chip' + (phase.k === 'saved' ? ' ok' : phase.k === 'failed' ? ' fail' : '')}>{chip}</span>
+        <Badge tone={phase.k === 'saved' ? 'positive' : phase.k === 'failed' ? 'warning' : 'neutral'}>{chip}</Badge>
       </div>
       <div className="task__b">
         <div className="pbar" aria-hidden="true">
@@ -170,9 +174,9 @@ export function PlanTask({ plan, online, onOpen }: { plan: PlanPartData; online:
                       }}
                     >
                       <input aria-label="Folder name" ref={(el) => el?.focus()} maxLength={NAME_MAX} placeholder="Folder name" value={name} onChange={(e) => setName(e.target.value)} />
-                      <button type="submit" className="btn primary" disabled={!clean || dupe || reserved}>
+                      <Button variant="primary" size="lg" className="qc-act" type="submit" disabled={!clean || dupe || reserved}>
                         Create
-                      </button>
+                      </Button>
                       {clean && (dupe || reserved) && <p className="say quiet">{reserved ? '“Team” is the team’s own folder.' : 'You already have that folder.'}</p>}
                     </form>
                   ) : (
@@ -208,14 +212,13 @@ export function PlanTask({ plan, online, onOpen }: { plan: PlanPartData; online:
             {!online && <p className="say quiet">You’re offline. Nothing was saved.</p>}
             <div className="btns">
               {phase.k !== 'busy' && (
-                <button type="button" className="btn ghost" onClick={() => setPhase({ k: 'cancelled' })}>
+                <Button variant="ghost" size="lg" onClick={() => setPhase({ k: 'cancelled' })}>
                   Cancel
-                </button>
+                </Button>
               )}
-              <button type="button" className={'btn primary' + (phase.k === 'busy' ? ' busy' : '')} disabled={!saveOn || !online || needsEvent || phase.k === 'busy'} onClick={() => void save()}>
+              <Button variant="primary" size="lg" className="qc-act" busy={phase.k === 'busy'} disabled={!saveOn || !online || needsEvent || phase.k === 'busy'} onClick={() => void save()}>
                 <span className="lbl">{phase.k === 'busy' ? 'Saving…' : phase.k === 'failed' ? 'Try again' : 'Save plan'}</span>
-                <span className="sweep" />
-              </button>
+              </Button>
             </div>
           </>
         )}

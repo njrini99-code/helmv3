@@ -88,8 +88,6 @@ html[data-fw-theme='dark'] .ch-th[data-v2] {
 .ch-th[data-v2] .conf .tt { min-width: 0; flex: 1; }
 .ch-th[data-v2] .conf .tt b { display: block; font: var(--ch-type-16-strong);  color: var(--ch-text-primary); letter-spacing: var(--ch-track-16); }
 .ch-th[data-v2] .conf .tt span { display: block; font: var(--ch-type-14);  color: var(--ch-text-secondary); }
-.ch-th[data-v2] .dchip { flex: none; padding: 2px 8px; border-radius: 999px; background: var(--ch-well-bg-flat); box-shadow: 0 0 0 0.5px var(--ak-hair); font: var(--ch-type-12-strong); color: var(--ch-text-secondary); }
-.ch-th[data-v2] .dchip.ok { background: var(--ak-tint); color: var(--ch-accent); box-shadow: none; }
 .ch-th[data-v2] .evd { margin: 12px 16px 6px; padding: 12px; border-radius: var(--ch-radius-md); background: var(--ch-well-bg-flat); box-shadow: var(--ch-well-shadow); }
 .ch-th[data-v2] .evd.dim { filter: saturate(0); }
 .ch-th[data-v2] .evd .ls { display: grid; gap: 4px; min-width: 0; }
@@ -100,8 +98,6 @@ html[data-fw-theme='dark'] .ch-th[data-v2] {
 .ch-th[data-v2] .conf .btns { display: flex; align-items: center; gap: 8px; padding: 12px 16px 12px; }
 .ch-th[data-v2] .conf .btns button { position: relative; cursor: pointer; }
 .ch-th[data-v2] .conf .btns button::after { content: ''; position: absolute; inset: -3px 0; }
-.ch-th[data-v2] .conf .btns .c { padding: 8px 8px; border: 0; border-radius: var(--ch-radius-sm); background: none; font: var(--ch-type-15-medium); color: var(--ch-text-secondary); letter-spacing: var(--ch-track-15); }
-.ch-th[data-v2] .conf .btns .c:disabled { opacity: 0.5; }
 .ch-th[data-v2] .conf .btns .p { margin-left: auto; padding: 8px 12px; border: 0; border-radius: var(--ch-radius-sm); background: var(--ch-accent); color: var(--ch-text-on-accent); font: var(--ch-type-15-strong); overflow: hidden; letter-spacing: var(--ch-track-15); }
 .ch-th[data-v2] .conf .btns .p.cap { padding: 8px 16px; border-radius: 999px; background: var(--ak-tint); color: var(--ch-accent); }
 .ch-th[data-v2] .conf .btns .p.cap::before { content: ''; position: absolute; left: 0; bottom: 0; width: 40%; height: 2px; border-radius: var(--ch-radius-mark); background: var(--ch-accent); animation: ch-ak-capsule 0.9s linear infinite; }
@@ -484,10 +480,9 @@ html[data-fw-theme='dark'] .ch-th[data-v2] {
   display: grid;
   gap: 16px;
 }
-/* The live keys' finish. */
-.ch-th[data-v2] .conf .btns .p:not(.cap) {
-  background: var(--ch-key-primary-bg);
-  box-shadow: var(--ch-key-primary-shadow);
-  color: var(--ch-on-green-ink);
-  text-shadow: var(--ch-on-green-text-shadow-s);
+.ch-th[data-v2] .conf .btns .ch-btn--primary, .ch-th[data-v2] .conf .btns .p.cap {
+  margin-left: auto;
+}
+.ch-th[data-v2] .dchip {
+  flex: none;
 }

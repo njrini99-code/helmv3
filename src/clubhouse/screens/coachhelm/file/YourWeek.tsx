@@ -1,5 +1,7 @@
 'use client';
 
+import { Button } from '../../../ui/Button';
+
 import { useRefresh } from '../../../lib/use-refresh';
 import { Check } from 'lucide-react';
 import { useMemo, useState } from 'react';
@@ -52,7 +54,7 @@ export function YourWeek({ load, writes = LIVE_PLAYER_WRITES }: { load: ChViewLo
         <ProposalRow p={proposal} writes={writes} />
       </ul>
     ) : stage === 'accepted' ? (
-      <span className="btn is-done" role="status">
+      <span className="stat-done" role="status">
         <Icon icon={Check} size={18} />
         Your focus since {cards.plan?.since}
       </span>
@@ -82,9 +84,9 @@ export function YourWeek({ load, writes = LIVE_PLAYER_WRITES }: { load: ChViewLo
               <div className="empty">
                 <b>No rounds yet</b>
                 <p>Reads start after 4 full rounds in the last 90 days.</p>
-                <a className="btn pri" href="/golf/dashboard/rounds">
+                <Button variant="primary" size="lg" href="/golf/dashboard/rounds">
                   Go to Rounds
-                </a>
+                </Button>
               </div>
             </section>
           ) : phone ? (

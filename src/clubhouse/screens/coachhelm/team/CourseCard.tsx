@@ -1,4 +1,6 @@
 'use client';
+
+import { Badge } from '../../../ui/Badge';
 import { formatWith } from '../../../lib/dates';
 import { pluralWord } from '../../../lib/plural';
 
@@ -128,9 +130,9 @@ export function CourseCard({ data, initialAll = false, onRead, onCourse, onRetry
   );
   const chip =
     history?.last4 == null ? (
-      <span className="chipk">Early season</span>
+      <Badge>Early season</Badge>
     ) : (
-      <span className={'chipk' + (history.last4 < season ? ' g' : history.last4 > season ? ' l' : '')}>Last 4 weeks {toPar(history.last4)}</span>
+      <Badge tone={history.last4 < season ? 'positive' : history.last4 > season ? 'warning' : 'neutral'}>Last 4 weeks {toPar(history.last4)}</Badge>
     );
   const courses = history?.courses ?? [];
   const shownCourses = allCourses ? courses : courses.slice(0, COURSE_CAP);

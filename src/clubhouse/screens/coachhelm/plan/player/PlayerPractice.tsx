@@ -1,7 +1,10 @@
 'use client';
 
+import { Button } from '../../../../ui/Button';
+
+import { Avatar } from '../../../../ui/Avatar';
+
 import { ClipboardList, FolderClosed } from 'lucide-react';
-import Link from 'next/link';
 import { useState, type ReactNode } from 'react';
 import { Icon } from '../../../../ui/Icon';
 import { LargeTitle } from '../../../../ui/LargeTitle';
@@ -46,9 +49,7 @@ export function PlayerPractice({ data, everyone }: { data: PlayerPracticeData; e
           <div className="grpl">
             <span className="avs" aria-hidden="true">
               {data.group.mates.slice(0, 3).map((m) => (
-                <span className="av" key={m}>
-                  {m.slice(0, 2).toUpperCase()}
-                </span>
+                <Avatar key={m} name={m} size="xs" />
               ))}
             </span>
             <span>
@@ -93,9 +94,9 @@ export function PlayerPractice({ data, everyone }: { data: PlayerPracticeData; e
               <span className="m">{data.documents}</span>
             </div>
             {data.planHref && (
-              <Link className="btn-s" href={data.planHref}>
+              <Button variant="secondary" size="sm" href={data.planHref}>
                 Open the plan
-              </Link>
+              </Button>
             )}
           </header>
         </section>

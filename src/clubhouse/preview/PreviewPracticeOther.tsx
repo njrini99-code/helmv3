@@ -1,5 +1,7 @@
 'use client';
 
+import { Button } from '../ui/Button';
+
 import { PracticePlanSheet } from '../screens/coachhelm/plan/sheet/PracticePlanSheet';
 import { toSheetModel } from '../screens/coachhelm/plan/sheet/plan-sheet-model';
 import { PlanFormat, type FormatView } from '../screens/coachhelm/plan/format/PlanFormat';
@@ -29,8 +31,8 @@ export function PreviewPracticeFormat({ state }: { state?: string }) {
         <PracticePlanSheet plan={toSheetModel({ body: PP_PLAN_PART.draft.body, title: 'Thursday practice', team: 'Demo University Golf', start: new Date('2026-11-05T19:00:00Z'), end: new Date('2026-11-05T22:00:00Z'), zone: 'America/New_York', coaches: [...PP_COACHES], names: new Map(PP_NAMES), state: 'Published' }, 'coach')} />
         <div className="ch-cpv">
           <div className="acts is-pad">
-            <button type="button" className="btn-g is-fill">Share PDF</button>
-            <button type="button" className="btn-p is-fill">Print</button>
+            <Button variant="secondary" className="is-fill">Share PDF</Button>
+            <Button variant="primary" className="is-fill">Print</Button>
           </div>
         </div>
       </main>

@@ -169,12 +169,12 @@ function StoryViewer({
         <StoryBody story={story} round={roundOf(story)} />
       </div>
       <div className="sto-f">
-        <button type="button" className="btn" onClick={() => onAction(story)}>
+        <Button variant="secondary" size="lg" onClick={() => onAction(story)}>
           {actionOf(story)}
-        </button>
-        <button type="button" className="btn gh2" onClick={next}>
+        </Button>
+        <Button variant="ghost" size="lg" className="ch-btn--on-green" onClick={next}>
           {i < stories.length - 1 ? 'Next' : 'Done'}
-        </button>
+        </Button>
       </div>
     </div>
   );
@@ -311,9 +311,9 @@ export function StoryDeskPanel({ story, week, round = null, onClose, onAction }:
       <div className="feat ch-htb-storydesk sto-b">
         <StoryBody story={story} round={round} />
       </div>
-      <button type="button" className="btn pri" onClick={() => onAction(story)}>
+      <Button variant="primary" size="lg" onClick={() => onAction(story)}>
         {actionOf(story)}
-      </button>
+      </Button>
     </>
   );
 }

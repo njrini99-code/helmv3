@@ -142,28 +142,6 @@ html[data-fw-theme='dark'] .ch-hr {
 .ch-hr .ctx .cl {
   font: var(--ch-type-15);
   color:var(--ink-2); letter-spacing: var(--ch-track-15); }
-.ch-hr .seg {
-  display:flex;
-  padding:2px;
-  border-radius: var(--ch-radius-md);
-  background:var(--well);
-  box-shadow: var(--ch-read-x1);
-  position:relative;
-}
-.ch-hr .seg span {
-  flex:1;
-  text-align:center;
-  font: var(--ch-type-15-medium);
-  padding:8px 0;
-  border-radius: var(--ch-radius-sm);
-  color:var(--ink-2);
-  position:relative;
-  z-index:1; letter-spacing: var(--ch-track-15); }
-.ch-hr .seg span.on {
-  background:var(--ch-seg-on-bg);
-  color:var(--seg-ink);
-  box-shadow:var(--ch-read-shadow-1);
-}
 .ch-hr .chips {
   display:flex;
   gap:8px;
@@ -389,39 +367,6 @@ html[data-fw-theme='dark'] .ch-hr {
   display:flex;
   gap:8px;
   align-items:center;
-}
-.ch-hr .btn {
-  appearance:none;
-  border:0;
-  display:inline-flex;
-  align-items:center;
-  justify-content:center;
-  gap:8px;
-  min-height:46px;
-  padding:0 16px;
-  border-radius: var(--ch-radius-md);
-  font: var(--ch-type-16-strong);
-  cursor:pointer;
-  transition:transform 280ms var(--ease),background 200ms var(--ease); letter-spacing: var(--ch-track-16); }
-.ch-hr .btn[data-ch-pressed] {
-  transform:scale(.97);
-  transition-duration:110ms;
-}
-.ch-hr .btn.pri {
-  background:var(--accent);
-  color:#F6F1E3;
-  flex:1;
-}
-html[data-fw-theme='dark'] .ch-hr .btn.pri {
-  color:#0E120F;
-}
-.ch-hr .btn.gh {
-  background:transparent;
-  color:var(--accent);
-  box-shadow:inset 0 0 0 var(--ch-hairline-w) var(--sep);
-}
-.ch-hr .btn.gh.wide {
-  flex:1;
 }
 .ch-hr .assigned {
   flex:1;
@@ -959,12 +904,6 @@ html[data-fw-theme='dark'] .ch-hr .btn.pri {
 }
 .ch-hr .ntc b {
   font-weight:var(--ch-fw-600);}
-.ch-hr .ntc .btn {
-  min-height:36px;
-  padding:0 12px;
-  border-radius: var(--ch-radius-sm);
-  font: var(--ch-type-15);
-  justify-self:start; letter-spacing: var(--ch-track-15); }
 .ch-hr .card>.ntc {
   margin:0 16px 16px;
 }
@@ -1379,4 +1318,7 @@ html[data-fw-theme='dark'] .ch-hr .btn.pri {
   color: var(--ch-selected-ink);
   font: var(--ch-type-15-medium);
   letter-spacing: var(--ch-track-15);
+}
+.ch-hr .ntc .ch-btn {
+  flex: none;
 }

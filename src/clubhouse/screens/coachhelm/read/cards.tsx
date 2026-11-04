@@ -1,4 +1,6 @@
 'use client';
+
+import { Badge } from '../../../ui/Badge';
 import { CorrectionChips } from '../Corrections';
 import { formatFixed } from '../../../lib/format';
 
@@ -327,9 +329,9 @@ export function MovedCard({ d, failed, pictures }: { d: ChReadDetail; failed: bo
             The category read didn’t load.
           </p>
         ) : m.theme?.sg ? (
-          <span className="chipk ch-hr-chip">
+          <span className="ch-hr-chip"><Badge>
             {m.theme.label} strokes gained {m.theme.sg} a round{m.theme.trend ? ` · ${m.theme.trend.word}` : ''}
-          </span>
+          </Badge></span>
         ) : null}
       </div>
     </Card>

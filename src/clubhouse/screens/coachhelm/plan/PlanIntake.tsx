@@ -1,5 +1,7 @@
 'use client';
 
+import { Button } from '../../../ui/Button';
+
 import { ClipboardList, FileText } from 'lucide-react';
 import { useState } from 'react';
 import type { AskBriefData } from '../../../data/coachhelm-chat-thread';
@@ -61,17 +63,12 @@ export function PlanIntake({ brief, onSend }: { brief: AskBriefData; onSend: (li
           </div>
         )}
         <div className="acts is-pad">
-          <button
-            type="button"
-            className="btn-p is-wide"
-            disabled={!ready}
-            onClick={() => {
+          <Button variant="primary" size="lg" className="is-wide" disabled={!ready} onClick={() => {
               setDone(true);
               onSend(brief.questions.map((q) => q.options.filter((o) => picks[q.id]?.includes(o.id)).map((o) => o.label).join(', ')).join(' · '));
-            }}
-          >
+            }}>
             Build the plan
-          </button>
+          </Button>
         </div>
       </section>
     </div>

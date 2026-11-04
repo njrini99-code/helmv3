@@ -1,5 +1,7 @@
 'use client';
 
+import { Button } from '../../../ui/Button';
+
 import { ArrowUp, Check, ChevronDown, ChevronLeft, ChevronRight, ClipboardList, FolderClosed, Minus, Plus, X } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { createPortal } from 'react-dom';
@@ -211,9 +213,9 @@ export function PlanCard({ plan, onSend, fresh = false }: { plan: PlanPartData; 
             <span className="m">{['Draft', redrafted.length ? plan.title : plan.when].filter(Boolean).join(' · ')}</span>
           </div>
           {!writing && (
-            <button type="button" className="btn-s" onClick={() => setFull(true)}>
+            <Button variant="secondary" size="sm" onClick={() => setFull(true)}>
               Open
-            </button>
+            </Button>
           )}
         </header>
         <div className="strip" aria-hidden="true">
@@ -347,12 +349,12 @@ export function PlanCard({ plan, onSend, fresh = false }: { plan: PlanPartData; 
               <>
                 <p className="inert">Comes with the Practice tab</p>
                 <div className="acts">
-                  <button type="button" className="btn-g" disabled>
+                  <Button variant="secondary" disabled>
                     Save draft
-                  </button>
-                  <button type="button" className="btn-p" disabled>
+                  </Button>
+                  <Button variant="primary" disabled>
                     Publish…
-                  </button>
+                  </Button>
                 </div>
               </>
             ) : state.k === 'saved' ? (
@@ -383,9 +385,9 @@ export function PlanCard({ plan, onSend, fresh = false }: { plan: PlanPartData; 
                   </span>
                 </div>
                 {error && <p className="inert is-fail">{error}</p>}
-                <button type="button" className="btn-p is-wide" onClick={() => onSend(`Publish the plan ${plan.title}`)}>
+                <Button variant="primary" size="lg" className="is-wide" onClick={() => onSend(`Publish the plan ${plan.title}`)}>
                   Publish…
-                </button>
+                </Button>
               </div>
             ) : (
               <>
@@ -433,9 +435,9 @@ export function PlanCard({ plan, onSend, fresh = false }: { plan: PlanPartData; 
                       >
                         <Icon icon={FolderClosed} size={18} className="fi" />
                         <input className="inp" ref={(el) => el?.focus()} aria-label="Folder name" maxLength={FIELD_MAX} value={name} placeholder="Folder name" onChange={(e) => setName(e.target.value)} />
-                        <button type="submit" className="btn-s" disabled={!clean || dupe || reserved}>
+                        <Button variant="secondary" size="sm" type="submit" disabled={!clean || dupe || reserved}>
                           Create
-                        </button>
+                        </Button>
                         {clean && (dupe || reserved) && <p className="inert is-fail">{reserved ? '“Team” is the team’s own folder.' : 'You already have that folder.'}</p>}
                       </form>
                     ) : (
@@ -458,12 +460,12 @@ export function PlanCard({ plan, onSend, fresh = false }: { plan: PlanPartData; 
                   </div>
                 ) : (
                   <div className="acts">
-                    <button type="button" className="btn-g" onClick={() => void save()}>
+                    <Button variant="secondary" onClick={() => void save()}>
                       {state.k === 'failed' ? 'Try again' : 'Save draft'}
-                    </button>
-                    <button type="button" className="btn-p" onClick={() => onSend(`Publish the plan ${plan.title}`)}>
+                    </Button>
+                    <Button variant="primary" onClick={() => onSend(`Publish the plan ${plan.title}`)}>
                       Publish…
-                    </button>
+                    </Button>
                   </div>
                 )}
                 {state.k === 'saving' && (
@@ -592,9 +594,9 @@ export function PlanCard({ plan, onSend, fresh = false }: { plan: PlanPartData; 
                     {a.name}
                     <KindChip kind={a.kind} />
                   </span>
-                  <button type="button" className="btn-s" onClick={() => pickAlt(sheet?.kind === 'swap' ? sheet.id : '', a)}>
+                  <Button variant="secondary" size="sm" onClick={() => pickAlt(sheet?.kind === 'swap' ? sheet.id : '', a)}>
                     Use
-                  </button>
+                  </Button>
                   <span className="d">
                     <span className="ch-num">{a.min} min</span> · {a.line}
                   </span>
@@ -686,17 +688,17 @@ export function PlanCard({ plan, onSend, fresh = false }: { plan: PlanPartData; 
           </div>
           <div className="fdock">
             {/* Inert until the builder ships (N-00 slice 1, 02-PLAN). */}
-            <button type="button" className="btn-g" aria-disabled="true" onClick={(e) => e.preventDefault()}>
+            <Button variant="secondary" disabled>
               Edit in builder
-            </button>
+            </Button>
             {!phone && state.k !== 'saved' && (
-              <button type="button" className="btn-g" disabled={state.k === 'saving'} onClick={() => void save()}>
+              <Button variant="secondary" busy={state.k === 'saving'} onClick={() => void save()}>
                 {state.k === 'saving' ? 'Saving…' : 'Save draft…'}
-              </button>
+              </Button>
             )}
-            <button type="button" className="btn-p" onClick={() => { setFull(false); onSend(`Publish the plan ${plan.title}`); }}>
+            <Button variant="primary" onClick={() => { setFull(false); onSend(`Publish the plan ${plan.title}`); }}>
               Publish…
-            </button>
+            </Button>
           </div>
         </div>,
         document.querySelector('.ch-root') ?? document.body,

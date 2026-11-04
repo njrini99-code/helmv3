@@ -132,6 +132,17 @@
     background: var(--ch-green-100);
   }
 }
+/* A ghost on a green surface (feature cards, stories): the ghost's own green would vanish there. */
+.ch-btn--ghost.ch-btn--on-green {
+  color: var(--ch-on-green-ink);
+  background: rgb(255 255 255 / 0.1);
+}
+@media (hover: hover) {
+  .ch-btn--ghost.ch-btn--on-green:hover:not(:disabled) {
+    color: var(--ch-on-green-ink);
+    background: rgb(255 255 255 / 0.16);
+  }
+}
 .ch-btn--ink {
   color: #faf9f5;
   background: linear-gradient(180deg, #2e2c28 0%, #1c1b18 100%);

@@ -1,5 +1,9 @@
 'use client';
-import { AVATAR_SIZES, type AvatarSize } from '../../../ui/Avatar';
+
+import { Button } from '../../../ui/Button';
+
+import { Avatar } from '../../../ui/Avatar';
+import { Badge, type BadgeTone } from '../../../ui/Badge';
 import { pluralWord } from '../../../lib/plural';
 
 import Link from 'next/link';
@@ -9,7 +13,6 @@ import type { ChDeepInsight } from '../../../data/coachhelm-dive-shape';
 import { FILE_SIGN, fileAimLabel, fileAlertLabel, fileAreaLabel, playerKicker, type ChFileCards, type ChFileField, type ChFileIntent, type ChFilePlan, type ChFileSg, type ChFileStage, type ChFileTrack } from '../../../data/coachhelm-file-shape';
 import { stanceOf, type ChInsight } from '../../../data/coachhelm-shape';
 import { formatFixed } from '../../../lib/format';
-import { initials } from '../../../lib/names';
 import { Icon } from '../../../ui/Icon';
 import type { ChFocusActions } from '../parts';
 
@@ -29,13 +32,7 @@ export function CardHead({ title, meta, lock = false, id }: { title: string; met
   );
 }
 
-export function Avatar({ name, size }: { name: string; size: AvatarSize }) {
-  return (
-    <span className="av" style={{ ['--s' as string]: `${AVATAR_SIZES[size]}px` }} aria-hidden="true">
-      {initials(name)}
-    </span>
-  );
-}
+const CHIP_TONE: Record<string, BadgeTone> = { gain: 'positive', loss: 'warning', plain: 'neutral', acc: 'accent' };
 
 function cmpCells(i: ChInsight, team: number | null) {
   const c = i.compare;
@@ -169,15 +166,14 @@ export function EarlyFeature({ lens, first, rounds, toGo }: { lens: FileLens; fi
 /** A coach's feature actions, by stage (06 §6). */
 export function CoachActions({ stage, first, assigning, disabled, messageHref, canAssign, onAssign }: { stage: ChFileStage; first: string; assigning: boolean; disabled: boolean; messageHref: string; canAssign: boolean; onAssign: () => void }) {
   const message = (
-    <a className="btn ghost" href={messageHref}>
-      <Icon icon={MessageSquare} size={18} />
+    <Button variant="ghost" size="lg" className="ch-btn--on-green" href={messageHref} leftIcon={MessageSquare}>
       Message {first}
-    </a>
+    </Button>
   );
   if (stage === 'suggested' || stage === 'shown')
     return (
       <>
-        <span className="btn is-done" role="status">
+        <span className="stat-done" role="status">
           <Icon icon={Check} size={18} />
           Sent to {first}
         </span>
@@ -187,7 +183,7 @@ export function CoachActions({ stage, first, assigning, disabled, messageHref, c
   if (stage === 'accepted')
     return (
       <>
-        <span className="btn is-done" role="status">
+        <span className="stat-done" role="status">
           <Icon icon={Check} size={18} />
           {first} accepted it
         </span>
@@ -197,10 +193,9 @@ export function CoachActions({ stage, first, assigning, disabled, messageHref, c
   return (
     <>
       {canAssign && (
-        <button type="button" className="btn light" data-ch-hf-assign="" data-ch-press="" disabled={assigning || disabled} aria-busy={assigning || undefined} onClick={onAssign}>
-          <Icon icon={Flag} size={18} />
+        <Button data={{ 'data-ch-hf-assign': '' }} variant="secondary" size="lg" disabled={assigning || disabled} busy={assigning || undefined} onClick={onAssign} leftIcon={Flag}>
           {assigning ? 'Assigning' : 'Assign as focus'}
-        </button>
+        </Button>
       )}
       {message}
     </>
@@ -291,7 +286,7 @@ function GoalBlock({ goal }: { goal: NonNullable<ChFilePlan['goal']> }) {
         <b>{goal.title}</b>
         <small>{goal.line}</small>
       </div>
-      {goal.word && <span className={`chip ${chip}`}>{goal.word}</span>}
+      {goal.word && <Badge tone={CHIP_TONE[chip] ?? 'neutral'}>{goal.word}</Badge>}
       {goal.points.length > 0 && (
         <svg viewBox={`0 0 ${W} ${H}`} role="img" aria-label={`${goal.title}: ${goal.points.map((p) => `${p.label} ${p.value}`).join(', ')}`}>
           {goal.target != null && (
@@ -411,7 +406,7 @@ function readRow(d: ChDeepInsight, lens: FileLens, assigned: boolean, onOpen: (i
   const firm = lens === 'player' ? d.base.evidence.read?.word : d.firmness;
   return (
     <button type="button" className="r" key={d.base.id} data-ch-hf-read={d.base.id} onClick={() => onOpen(d.base.id)}>
-      <span className={`chip ${tone}`}>{stance.word}</span>
+      <Badge tone={CHIP_TONE[tone] ?? 'neutral'}>{stance.word}</Badge>
       <span className="r__t">
         <b className="l2">{d.base.title}</b>
         <small>{[area, d.base.value, firm].filter(Boolean).join(' · ')}</small>
@@ -488,7 +483,7 @@ export function WorkingCard({ list, onOpen }: { list: ChDeepInsight[]; onOpen: (
       <CardHead id="ch-hf-working" title="What’s working" meta="Top strength" />
       <div className="rows">
         <button type="button" className="r" data-ch-hf-read={d.base.id} onClick={() => onOpen(d.base.id)}>
-          <span className="chip gain">Working</span>
+          <Badge tone="positive">Working</Badge>
           <span className="r__t">
             <b className="l2">{d.base.title}</b>
             <small>{d.base.value}</small>
@@ -538,9 +533,9 @@ export function IntentCard({ intent, first, onEdit }: { intent: ChFileIntent | n
           <p className="cb-p">
             Not set yet. Until you set one, CoachHelm treats {first} as <b>Develop</b> with <b>Balanced</b> alerts.
           </p>
-          <button type="button" className="btn sec" data-ch-hf-intent-edit="" data-ch-press="" onClick={onEdit}>
+          <Button data={{ 'data-ch-hf-intent-edit': '' }} variant="secondary" size="lg" onClick={onEdit}>
             Set a plan
-          </button>
+          </Button>
         </div>
       )}
     </section>
@@ -577,7 +572,7 @@ export function TrackCard({ track, first }: { track: ChFileTrack; first: string 
             <div className="rows ch-hf-trackrows">
               {track.rows.map((r) => (
                 <div className="r static" key={r.id}>
-                  <span className={`chip ${r.word === 'Improved' ? 'gain' : 'plain'}`}>{r.word}</span>
+                  <Badge tone={r.word === 'Improved' ? 'positive' : 'neutral'}>{r.word}</Badge>
                   <span className="r__t">
                     <b>{r.title}</b>
                     {r.meta && <small className="ch-num">{r.meta}</small>}

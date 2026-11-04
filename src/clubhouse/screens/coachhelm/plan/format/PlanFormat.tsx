@@ -1,5 +1,7 @@
 'use client';
 
+import { Button } from '../../../../ui/Button';
+
 import { Camera, Check, ChevronLeft, CircleCheck, Clock, FileText, Image as ImageIcon, Users } from 'lucide-react';
 import Link from 'next/link';
 import { useRef, useState } from 'react';
@@ -162,12 +164,12 @@ export function PlanFormat({ teamId = '', initial = { k: 'empty' }, current = 'G
             </div>
           ))}
           <div className="acts is-pad">
-            <button type="button" className="btn-g" onClick={() => setSheet(true)}>
+            <Button variant="secondary" onClick={() => setSheet(true)}>
               Try another
-            </button>
-            <button type="button" className="btn-p is-fill" onClick={() => void use()}>
+            </Button>
+            <Button variant="primary" className="is-fill" onClick={() => void use()}>
               Use this format
-            </button>
+            </Button>
           </div>
         </section>
       )}
@@ -215,9 +217,9 @@ export function PlanFormat({ teamId = '', initial = { k: 'empty' }, current = 'G
             </p>
           )}
           <div className="acts is-pad">
-            <button type="button" className="btn-p is-wide" onClick={() => setSheet(true)}>
+            <Button variant="primary" size="lg" className="is-wide" onClick={() => setSheet(true)}>
               Upload a plan
-            </button>
+            </Button>
           </div>
           <div className="fhint">A PDF, a photo of a printed sheet, or a Word or Excel file.</div>
         </section>

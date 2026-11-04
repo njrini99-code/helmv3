@@ -146,7 +146,7 @@ const PUBLISH: ActionProposal & { tool: string } = {
     heading: 'Publish Thursday’s plan?',
     tellsLine: '9 players and 2 coaches, push and bell',
     folder: 'Practice plans',
-    coins: ['SM', 'MR', 'LH', 'EB', 'JO', 'OP', 'NK', 'AC', 'JR'].map((initials, tone) => ({ initials, tone })),
+    coins: ['Sam Moore', 'Jonah Okafor', 'Eli Brandt', 'Theo Marchetti', 'Ava Lindqvist', 'Priya Natarajan', 'Sofia Alvarez', 'Dan Whitfield', 'Owen Park'].map((name) => ({ name })),
     sample: { player: 'Jonah', title: 'Practice plan for Thursday', body: '2:00 PM · You start on the putting green with Group B' },
   },
 };

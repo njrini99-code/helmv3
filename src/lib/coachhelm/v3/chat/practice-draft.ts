@@ -129,8 +129,6 @@ export function practiceDraftTool({ ctx, writer, envelopes, evidenceByRef }: { c
   };
 }
 
-const initialsOf = (name: string) => name.split(/\s+/).filter(Boolean).slice(0, 2).map((w) => w[0]?.toUpperCase() ?? '').join('');
-
 /** One text message in the team channel, with no second push. False when it could not post (the publish still stands); the coach must be a participant. */
 async function postPlanToTeamChat(ctx: CoachChatContext, content: string): Promise<boolean> {
   const sb = await createClient();
@@ -157,7 +155,7 @@ export const publishFlow: FlowDef<z.infer<typeof publishInput>> = {
     return {
       action: `Publish to ${i.people} people`,
       summary: i.title,
-      publish: { heading: `Publish ${i.title}?`, coins: players.slice(0, 9).map((p, n) => ({ initials: initialsOf(p.name), tone: n })), tellsLine, folder: 'Practice plans', teamChat: i.team_chat, ...(first ? { sample: { player: first.name.split(' ')[0] ?? first.name, title: i.title, body: i.first_player_line } } : {}) },
+      publish: { heading: `Publish ${i.title}?`, coins: players.slice(0, 9).map((p) => ({ name: p.name })), tellsLine, folder: 'Practice plans', teamChat: i.team_chat, ...(first ? { sample: { player: first.name.split(' ')[0] ?? first.name, title: i.title, body: i.first_player_line } } : {}) },
       facts: [{ label: 'When', value: i.when }, { label: 'Where', value: i.where || 'Not set' }, { label: 'Tells', value: tellsLine }, { label: 'What they get', value: i.first_player_line }],
       notifications: [`It files in Documents and ${i.people} people hear once Undo closes, 8 seconds later.${i.team_chat ? ' The plan posts in Team chat, with no second push.' : ''}`],
       key: ['publish_plan', i.plan_id, String(i.version), i.team_chat ? 'chat' : 'no-chat'],

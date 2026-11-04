@@ -1,10 +1,14 @@
 'use client';
 
+import { Button } from '../../../../ui/Button';
+
 import { Check, CircleAlert, ClipboardCheck, ArrowUpRight, Flag, Megaphone, CalendarPlus, Truck, Trophy, Target, type LucideIcon } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
 import type { ActionReceipt } from '@/lib/coachhelm/v3/chat/action-types';
 import type { AskProposalView } from '../../../../data/coachhelm-chat-thread';
 import { askLinkHref } from '../../../../data/coachhelm-chat-links';
+import { Avatar } from '../../../../ui/Avatar';
+import { Badge } from '../../../../ui/Badge';
 import { Icon } from '../../../../ui/Icon';
 import { Switch } from '../../../../ui/Switch';
 
@@ -86,7 +90,7 @@ export function ConfirmCard({ view, inlineReceipt, onApprove, onDeny, onSend }: 
           <b>{p.publish ? p.publish.heading : (HEAD[view.tool]?.title ?? p.action)}</b>
           {!(p.publish && receipt) && <span>{p.summary}</span>}
         </span>
-        {!(p.publish && receipt?.status !== 'completed') && <span className={'dchip' + (receipt?.status === 'completed' ? ' ok' : '')}>{receipt?.status === 'completed' ? kind.chip : 'Draft'}</span>}
+        {!(p.publish && receipt?.status !== 'completed') && <span className="dchip"><Badge tone={receipt?.status === 'completed' ? 'positive' : 'neutral'}>{receipt?.status === 'completed' ? kind.chip : 'Draft'}</Badge></span>}
       </div>
       <div className={'evd' + (cancelled ? ' dim' : '')}>
         <div className="ls">
@@ -96,17 +100,15 @@ export function ConfirmCard({ view, inlineReceipt, onApprove, onDeny, onSend }: 
                 <span className="k">Tells</span>
                 <span className="v">
                   <span className="avs" aria-hidden="true">
-                    {p.publish.coins.map((c, i) => (
-                      <span key={i} className={`av t-${c.tone % 6}`}>
-                        {c.initials}
-                      </span>
+                    {p.publish.coins.map((c) => (
+                      <Avatar key={c.name} name={c.name} size="xs" />
                     ))}
                   </span>
                   <span className="tells">{p.publish.tellsLine}</span>
                   {undecided && onSend && (
-                    <button type="button" className="chg" onClick={() => replaceWith(`Change who hears about ${p.summary}`)}>
+                    <Button variant="secondary" size="sm" className="chg" onClick={() => replaceWith(`Change who hears about ${p.summary}`)}>
                       Change
-                    </button>
+                    </Button>
                   )}
                 </span>
               </div>
@@ -164,12 +166,10 @@ export function ConfirmCard({ view, inlineReceipt, onApprove, onDeny, onSend }: 
       )}
       {undecided && (
         <div className="btns">
-          <button type="button" className="c" disabled={pressed || !view.approvalId} onClick={() => answer(false)}>
+          <Button variant="ghost" disabled={pressed || !view.approvalId} onClick={() => answer(false)}>
             Cancel
-          </button>
-          <button type="button" className={'p' + (pressed ? ' cap' : '')} data-ch-press="" disabled={pressed || !view.approvalId || p.missing.length > 0} onClick={() => answer(true)}>
-            {pressed ? kind.busy : p.publish ? p.action : kind.verb(count)}
-          </button>
+          </Button>
+          {pressed ? <span className="p cap">{kind.busy}</span> : <Button variant="primary" disabled={pressed || !view.approvalId || p.missing.length > 0} onClick={() => answer(true)}>{p.publish ? p.action : kind.verb(count)}</Button>}
         </div>
       )}
       {status === 'confirmed' && !receipt && (

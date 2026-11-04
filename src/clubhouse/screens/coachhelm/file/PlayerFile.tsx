@@ -1,4 +1,6 @@
 'use client';
+
+import { Button } from '../../../ui/Button';
 import { formatWith } from '../../../lib/dates';
 
 import { useRefresh } from '../../../lib/use-refresh';
@@ -24,7 +26,8 @@ import { Swap } from '../../../ui/Swap';
 import { GonePanel, ReadPanel } from '../team/panels';
 import { useFocusActions } from '../parts';
 import { LIVE_COACHHELM_WRITES, type ChCoachHelmWrites } from '../writes';
-import { Avatar, CoachActions, EarlyFeature, FeatureCard, FieldCard, IntentCard, PlanCard, ReadsCard, SgCard, TrackCard, WorkingCard, type FileLens } from './cards';
+import {  CoachActions, EarlyFeature, FeatureCard, FieldCard, IntentCard, PlanCard, ReadsCard, SgCard, TrackCard, WorkingCard, type FileLens } from './cards';
+import { Avatar } from '../../../ui/Avatar';
 import { IntentSheet, LIVE_SAVE_INTENT } from './IntentSheet';
 
 const EASE = 'cubic-bezier(0.22, 1, 0.36, 1)';
@@ -107,9 +110,9 @@ export function FileFailed({ who, onRetry }: { who: string; onRetry: () => void 
         </span>
         <b>Couldn’t load {who}</b>
         <p>Nothing was lost. Try again.</p>
-        <button type="button" className="btn sec" data-ch-hf-retry="" onClick={onRetry}>
+        <Button data={{ 'data-ch-hf-retry': '' }} variant="secondary" size="lg" onClick={onRetry}>
           Try again
-        </button>
+        </Button>
       </div>
     </section>
   );
@@ -201,15 +204,15 @@ function Ready({ data, at, insight, roster, writes, saveIntent, initialLens }: {
     lens === 'player' ? (
       planNow?.stage === 'suggested' || planNow?.stage === 'shown' ? (
         <>
-          <button type="button" className="btn light" aria-disabled="true" data-ch-hf-accept="" onClick={(e) => e.preventDefault()}>
+          <Button data={{ 'data-ch-hf-accept': '' }} variant="secondary" size="lg" disabled>
             Accept
-          </button>
-          <button type="button" className="btn ghost" aria-disabled="true" data-ch-hf-decline="" onClick={(e) => e.preventDefault()}>
+          </Button>
+          <Button data={{ 'data-ch-hf-decline': '' }} variant="ghost" size="lg" className="ch-btn--on-green" disabled>
             Decline
-          </button>
+          </Button>
         </>
       ) : planNow?.stage === 'accepted' ? (
-        <span className="btn is-done" role="status">
+        <span className="stat-done" role="status">
           <Icon icon={Check} size={18} />
           Your focus since {planNow.since}
         </span>
@@ -237,9 +240,9 @@ function Ready({ data, at, insight, roster, writes, saveIntent, initialLens }: {
           <b>No rounds yet</b>
           <p>Reads start after 4 full rounds in the last 90 days.</p>
           {lens === 'coach' && (
-            <a className="btn sec" href={messageHref}>
+            <Button variant="secondary" size="lg" href={messageHref}>
               Message {first}
-            </a>
+            </Button>
           )}
         </div>
       </section>

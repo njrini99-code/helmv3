@@ -71,12 +71,10 @@ html[data-fw-theme='dark'] .ch-hf {
   .ch-hf.is-desk .ch-hf-rail { display: block; padding: 16px 12px; border-right: var(--ch-hairline-w) solid var(--a-sep); max-height: calc(100dvh - 72px); overflow-y: auto; position: sticky; top: 0; }
 }
 @media (min-width: 1180px) { .ch-hf.is-desk .ch-hf-flow { max-width: none; } }
-.ch-hf .dhead .aseg { background: none; box-shadow: none; padding: 0; display: block; }
 .ch-hf .dhead.is-week { margin-bottom: 24px; }
 .ch-hf.is-phone .dhead.is-week { margin-top: 20px; display: block; }
 .ch-hf.is-phone .dhead.is-week p { margin-top: 4px; }
 .ch-hf .feat { color: var(--a-feat-1); }
-.ch-hf .feat a.btn, .ch-hf a.btn { text-decoration: none; }
 .ch-hf .ch-hf-coachline { margin: 0 -20px; }
 .ch-hf .goal svg .gl { stroke: var(--c-gain); stroke-width: 1.5; stroke-dasharray: 4 4; }
 .ch-hf .goal svg .pl { fill: none; stroke: var(--c-neutral); stroke-width: 2.2; stroke-linecap: round; stroke-linejoin: round; }
@@ -142,19 +140,8 @@ html[data-fw-theme='dark'] .ch-hf {
 .ch-hf .feat__ev { display: flex; flex-wrap: wrap; gap: 6px; }
 .ch-hf .feat__ev span { padding: 4px 8px; border-radius: var(--ch-radius-tail); background: rgb(255 255 255 / 0.1); font: var(--ch-type-13-strong); color: var(--a-feat-1); }
 .ch-hf .feat__acts { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 2px; }
-.ch-hf .btn { display: inline-flex; align-items: center; justify-content: center; gap: 8px; min-height: 44px; padding: 0 16px; border: 0; border-radius: var(--ch-radius-md); font: var(--ch-type-15-strong);  cursor: pointer; letter-spacing: var(--ch-track-15); }
-.ch-hf .btn svg { width: 18px; height: 18px; }
-.ch-hf .btn.light { background: #f4f1e8; color: #0b3a25; }
-.ch-hf .btn.ghost { background: rgb(255 255 255 / 0.1); color: var(--a-feat-1); }
-.ch-hf .btn.pri { background: linear-gradient(180deg, var(--seg-a), var(--seg-b)); color: #f4eedd; }
-.ch-hf .btn.sec { background: var(--a-well); color: var(--a-ink); box-shadow: 0 0 0 var(--ch-hairline-w) var(--a-ring); }
-.ch-hf .btn.is-done { background: rgb(143 211 170 / 0.12); color: var(--a-feat-gain); } /* .12, not .18: 5.38:1 dark (.18 gave 4.71) */
-.ch-hf .av { display: inline-grid; place-items: center; flex: none; width: var(--s, 32px); height: var(--s, 32px); border-radius: 50%; background: var(--yc, var(--ch-yr-jr)); color: #fff; font: var(--ch-type-12-strong); box-shadow: inset 0 var(--ch-hairline-w) 0 rgb(255 255 255 / 0.18); }
-.ch-hf .chip { display: inline-block; padding: 2px 6px; border-radius: var(--ch-radius-tail); font: var(--ch-type-13-strong);  white-space: nowrap; }
-.ch-hf .chip.loss { color: var(--a-loss); background: color-mix(in srgb, var(--a-loss) 8%, transparent); } /* 8%, not 11%: 4.99:1 light (11% gave 4.78) */
-.ch-hf .chip.gain { color: var(--a-gain); background: color-mix(in srgb, var(--a-gain) 11%, transparent); }
-.ch-hf .chip.plain { color: var(--a-ink-2); background: color-mix(in srgb, var(--a-ink-2) 9%, transparent); }
-.ch-hf .chip.acc { color: var(--a-accent); background: color-mix(in srgb, var(--a-accent) 11%, transparent); }
+.ch-hf .stat-done { display: inline-flex; align-items: center; gap: 8px; min-height: 44px; padding: 0 16px; border-radius: var(--ch-radius-md); font: var(--ch-type-15-strong); letter-spacing: var(--ch-track-15); background: rgb(143 211 170 / 0.12); color: var(--a-feat-gain); } /* .12, not .18: 5.38:1 dark (.18 gave 4.71) */
+ /* 8%, not 11%: 4.99:1 light (11% gave 4.78) */
 .ch-hf .rows { display: flex; flex-direction: column; }
 .ch-hf .r { position: relative; display: grid; grid-template-columns: auto minmax(0, 1fr) auto; align-items: center; gap: 12px; min-height: 64px; padding: 8px 16px; border: 0; background: none; text-align: left; width: 100%; cursor: pointer; color: var(--a-ink); }
 .ch-hf .r + .r::before { content: ""; position: absolute; top: 0; left: 16px; right: 0; height: var(--ch-hairline-w); background: var(--a-sep); }
@@ -276,7 +263,6 @@ html[data-fw-theme='dark'] .ch-hf {
 .ch-hf .empty__ic svg { width: 22px; height: 22px; }
 .ch-hf .empty b { font: var(--ch-type-16-strong); letter-spacing: var(--ch-track-16); }
 .ch-hf .empty p { margin: 0; max-width: 34ch; font: var(--ch-type-14);  color: var(--a-ink-2); }
-.ch-hf .empty .btn { margin-top: 8px; }
 .ch-hf .prog { display: flex; align-items: center; gap: 6px; }
 .ch-hf .prog i { width: 28px; height: 6px; border-radius: var(--ch-radius-mark); background: rgb(244 241 232 / 0.18); }
 .ch-hf .prog i.on { background: var(--a-feat-gain); }
@@ -292,7 +278,7 @@ html[data-fw-theme='dark'] .ch-hf {
 .ch-hf .feat.tap[data-ch-pressed]:not(:has(button[data-ch-pressed])) { box-shadow: var(--ch-file-shadow-5); transition-delay: 50ms; }
 .ch-hf .well__p { margin: 0; font: var(--ch-type-15);  color: var(--a-ink-2); letter-spacing: var(--ch-track-15); }
 .ch-hf .well__m { margin: 8px 0 0; font: var(--ch-type-13-strong); color: var(--a-ink-2); }
-.ch-hf .btn.is-done-p { background: color-mix(in srgb, var(--a-gain) 12%, transparent); color: var(--a-gain); }
+.ch-hf .stat-done-p { background: color-mix(in srgb, var(--a-gain) 12%, transparent); color: var(--a-gain); }
 .ch-hf .picks { display: flex; flex-wrap: wrap; gap: 8px; }
 .ch-hf .picks button { min-height: 36px; padding: 0 12px; border: 0; border-radius: var(--ch-radius-sm); background: var(--a-card); box-shadow: var(--ch-file-shadow-6); font: var(--ch-type-14-medium);  color: var(--a-ink); cursor: pointer; }
 .ch-hf .picks button[aria-pressed="true"] { background: linear-gradient(180deg, var(--seg-a), var(--seg-b)); color: var(--seg-ink); box-shadow: var(--ch-file-shadow-7); font-weight:var(--ch-fw-600); }
@@ -330,15 +316,16 @@ html[data-fw-theme='dark'] .ch-hf {
   --ch-file-x1: inset 0 1px 2px rgb(28 25 18 / 0.06);
 }
 .ch-hf.is-phone .dmain { display: block; }
-/* The live keys' finish. */
-.ch-hf .btn.pri {
-  background: var(--ch-key-primary-bg);
-  box-shadow: var(--ch-key-primary-shadow);
-  color: var(--ch-on-green-ink);
-  text-shadow: var(--ch-on-green-text-shadow-s);
+.ch-hf .empty .ch-btn {
+  margin-top: 8px;
 }
-.ch-hf .btn.sec {
-  background: var(--ch-key-secondary-bg);
-  box-shadow: var(--ch-btn-secondary-shadow);
-  color: var(--ch-text-primary);
+.ch-hf .feat .ch-btn--ghost {
+  color: var(--ch-on-green-ink);
+  background: rgb(255 255 255 / 0.1);
+}
+@media (hover: hover) {
+  .ch-hf .feat .ch-btn--ghost:hover:not(:disabled) {
+    color: var(--ch-on-green-ink);
+    background: rgb(255 255 255 / 0.16);
+  }
 }

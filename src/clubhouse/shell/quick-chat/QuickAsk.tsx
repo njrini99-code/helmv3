@@ -1,5 +1,7 @@
 'use client';
 
+import { Button } from '../../ui/Button';
+
 import { useState } from 'react';
 import type { AskBriefData } from '../../data/coachhelm-chat-thread';
 
@@ -36,17 +38,12 @@ export function QuickAsk({ brief, onSend }: { brief: AskBriefData; onSend: (line
           </div>
         </div>
       ))}
-      <button
-        className="btn primary"
-        type="button"
-        disabled={!ready || done}
-        onClick={() => {
+      <Button variant="primary" size="lg" className="qc-act" disabled={!ready || done} onClick={() => {
           setDone(true);
           onSend(line());
-        }}
-      >
+        }}>
         <span className="lbl">{/plan/i.test(brief.title) || brief.questions.some((q) => /work on/i.test(q.title)) ? 'Build the plan' : 'Set it up'}</span>
-      </button>
+      </Button>
     </div>
   );
 }

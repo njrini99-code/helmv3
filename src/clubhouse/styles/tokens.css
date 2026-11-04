@@ -233,10 +233,6 @@
   /* A quiet raised chip in a soft segmented well. */
   --ch-seg-pill-lift-shadow: var(--ch-elevation-control), 0 2px 6px -2px rgb(28 25 18 / 0.16);
   /* Secondary button: soft ring, lit top, shallow lift. */
-  /* The live keys' faces (ui.css .ch-btn--primary, --secondary), for a lane's own button class. */
-  --ch-key-primary-bg: linear-gradient(180deg, #0d3f28 0%, #0f4429 50%, var(--ch-field-green) 100%);
-  --ch-key-primary-shadow: 0 0 0 1px #0e462c, inset 0 1px 0 rgb(255 255 255 / 0.1), 0 1px 2px rgb(12 65 40 / 0.22), 0 4px 10px -6px rgb(12 65 40 / 0.4);
-  --ch-key-secondary-bg: linear-gradient(180deg, #fefdfa 0%, #f7f5ef 100%);
   --ch-btn-secondary-shadow: 0 0 0 1px rgb(28 25 18 / 0.07), inset 0 -1px 0 rgb(28 25 18 / 0.05), inset 0 1px 0 #fff, 0 1px 2px rgb(28 25 18 / 0.08), 0 4px 10px -5px rgb(28 25 18 / 0.18);
   /* Secondary button hover: a touch more ring and lift. */
   --ch-btn-secondary-hover-shadow: 0 0 0 1px rgb(28 25 18 / 0.1), inset 0 -1px 0 rgb(28 25 18 / 0.05), inset 0 1px 0 #fff, 0 2px 4px rgb(28 25 18 / 0.09), 0 8px 16px -8px rgb(28 25 18 / 0.22);
@@ -1088,8 +1084,6 @@ html[data-fw-theme='dark'] [data-ui='clubhouse'] {
   --ch-key-raised-shadow: var(--ch-elevation-control), 0 0 0 1px rgb(255 255 255 / 0.06), 0 6px 12px -8px rgb(0 0 0 / 0.6);
   --ch-on-dark-primary-shadow: inset 0 1px 0 rgb(255 255 255 / 0.6), 0 0 0 1px rgb(0 0 0 / 0.2), 0 1px 2px rgb(0 0 0 / 0.4), 0 8px 16px -8px rgb(0 0 0 / 0.6);
   --ch-seg-pill-lift-shadow: var(--ch-elevation-control), 0 2px 6px -2px rgb(0 0 0 / 0.5);
-  --ch-key-primary-bg: linear-gradient(180deg, #25734d 0%, #1d613f 100%);
-  --ch-key-secondary-bg: linear-gradient(180deg, #2a312b 0%, #232a24 100%);
   --ch-btn-secondary-shadow: 0 0 0 1px rgb(237 231 216 / 0.1), inset 0 1px 0 rgb(255 255 255 / 0.06), 0 1px 2px rgb(0 0 0 / 0.4), 0 4px 10px -5px rgb(0 0 0 / 0.5);
   --ch-btn-secondary-hover-shadow: 0 0 0 1px rgb(237 231 216 / 0.16), inset 0 1px 0 rgb(255 255 255 / 0.08), 0 2px 4px rgb(0 0 0 / 0.45), 0 8px 16px -8px rgb(0 0 0 / 0.55);
   --ch-score-birdie-shadow: inset 0 0 0 1px rgb(239 133 118 / 0.45), 0 1px 2px rgb(0 0 0 / 0.4);

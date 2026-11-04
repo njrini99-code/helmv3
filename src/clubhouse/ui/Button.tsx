@@ -24,6 +24,8 @@ interface CommonProps {
   aria?: { label?: string; expanded?: boolean; controls?: string; pressed?: boolean };
   /** A `data-ch-code` for the state this key starts (the CH- catalog). */
   code?: string;
+  /** Extra `data-*` hooks, for a capture tool or a test to find this key. */
+  data?: Record<`data-${string}`, string>;
   children: ReactNode;
 }
 
@@ -39,7 +41,7 @@ type ButtonProps = CommonProps &
   });
 
 export function Button(props: ButtonProps) {
-  const { variant = 'secondary', size = 'md', leftIcon, rightIcon, kbd, className, aria, code, children } = props;
+  const { variant = 'secondary', size = 'md', leftIcon, rightIcon, kbd, className, aria, code, data, children } = props;
   // A primary press confirms; a destructive one warns as it is pressed (CONS-1).
   const feel = props.feel === undefined ? (variant === 'primary' ? 'press' : variant === 'danger' ? 'warning' : null) : props.feel;
   const cls = ['ch-btn', `ch-btn--${variant}`, size !== 'md' && `ch-btn--${size}`, className].filter(Boolean).join(' ');
@@ -59,7 +61,7 @@ export function Button(props: ButtonProps) {
   );
   if (props.href !== undefined) {
     return (
-      <Link href={props.href} className={cls} aria-keyshortcuts={kbd} aria-label={aria?.label} data-ch-code={code} onClick={() => feel && haptic(feel)}>
+      <Link href={props.href} className={cls} aria-keyshortcuts={kbd} aria-label={aria?.label} data-ch-code={code} {...data} onClick={() => feel && haptic(feel)}>
         {inner}
       </Link>
     );
@@ -74,6 +76,7 @@ export function Button(props: ButtonProps) {
       aria-controls={aria?.controls}
       aria-pressed={aria?.pressed}
       data-ch-code={code}
+      {...data}
       disabled={props.disabled || props.busy}
       aria-busy={props.busy || undefined}
       onClick={(e) => {
