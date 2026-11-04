@@ -1604,3 +1604,19 @@ html[data-fw-theme='dark'] .ch-cpv-vz {
   color: var(--ch-text-secondary);
   font: var(--ch-type-13);
 }
+.ch-cpv .fi {
+  color: var(--ch-accent);
+}
+.ch-cpv .fr.nw .n {
+  color: var(--ch-accent);
+}
+/* S-FMT.found: each part found gets a green ring, its tag inside the page. */
+.ch-cpv .smp.found > * {
+  position: relative;
+  border-radius: var(--ch-radius-xs);
+  box-shadow: 0 0 0 2px var(--ch-accent);
+}
+.ch-cpv .smp.found .tagr {
+  right: 4px;
+  top: 4px;
+}

@@ -2581,11 +2581,7 @@ function Thread({
             <div className={"ch-ms-msg is-first" + (conv.group ? " is-group" : "")} /* CH-7602: the typing dots */>
               {/* The realtime hook says someone is typing, not who: a direct thread knows; the redesign's group reads the typers. */}
               <span className="ch-ms-msg__av">
-                {api.redesign ? (
-                  conv.group && typist && <Avatar name={typist.name} id={typist.playerId ?? typist.userId} size={30} />
-                ) : (
-                  !conv.group && <Avatar name={conv.title} id={convAvatarId(api, conv)} size={30} />
-                )}
+                {(api.redesign ? conv.group && typist : !conv.group) && <Avatar name={api.redesign && typist ? typist.name : conv.title} id={api.redesign && typist ? (typist.playerId ?? typist.userId) : convAvatarId(api, conv)} size={30} />}
               </span>
               <div className="ch-ms-msg__col">
                 {api.redesign ? (

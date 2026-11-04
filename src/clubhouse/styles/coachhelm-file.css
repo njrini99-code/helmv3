@@ -134,7 +134,7 @@ html[data-fw-theme='dark'] .ch-hf {
 .ch-hf .feat__t { margin: 0; color: var(--ch-on-green-plate); font: var(--ch-type-28-strong);  font-stretch: 88%; letter-spacing: -0.03em; text-wrap: balance; }
 .ch-hf .feat__cmp { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
 .ch-hf .feat__cmp div { padding: 8px 12px; border-radius: var(--ch-radius-md); background: rgb(255 255 255 / 0.07); }
-.ch-hf .feat__cmp b { display: block; font: var(--ch-type-22-medium);  font-stretch: 88%; letter-spacing: -0.03em;  }
+.ch-hf .feat__cmp b { display: block; font: var(--ch-type-22-medium);  font-stretch: 88%; letter-spacing: 0;  }
 .ch-hf .feat__cmp b.loss { color: var(--a-feat-loss); }
 .ch-hf .feat__cmp span { display: block; margin-top: 4px; font: var(--ch-type-13);  color: var(--a-feat-2); }
 .ch-hf .feat__p { margin: 0; font: var(--ch-type-15);  color: var(--a-feat-2); letter-spacing: var(--ch-track-15); }

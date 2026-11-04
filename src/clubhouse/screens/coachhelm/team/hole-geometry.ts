@@ -1,3 +1,4 @@
+import { TERMS } from '../../../lib/glossary';
 import type { ChStation } from '../../../data/coachhelm-team-shape';
 
 /** The page's `HOLE.v` and `HOLE.h` tables, as typed constants; the key names move to the app's stations (AC-HOLE-03). */
@@ -98,4 +99,4 @@ export const HOLE: Record<'v' | 'h', HoleGeometry> = {
 };
 
 export const STATION_NAME: Record<ChStation, string> = { tee: 'Off the tee', approach: 'Approach', short_game: 'Around the green', putting: 'Putting' };
-export const STATION_SHORT: Record<ChStation, string> = { tee: 'Tee', approach: 'Approach', short_game: 'Short game', putting: 'Putting' };
+export const STATION_SHORT: Record<ChStation, string> = { tee: 'Tee', approach: 'Approach', short_game: TERMS.shortGame.short, putting: 'Putting' };

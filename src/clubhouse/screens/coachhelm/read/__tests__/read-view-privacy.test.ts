@@ -50,7 +50,7 @@ describe('a likely cause, by viewer', () => {
     expect(c).toMatchObject({ state: 'likely', track: 1, range: '1.1 to 2.9' });
     expect(c?.state === 'likely' && c.arms).toEqual([
       { label: 'From 175+ yards', failures: 16, n: 28 },
-      { label: 'Everywhere else', failures: 10, n: 40 },
+      { label: 'All other holes', failures: 10, n: 40 },
     ]);
     expect(c?.state === 'likely' && c.verdict).toMatch(/2\.3 times as often/);
   });

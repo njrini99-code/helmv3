@@ -51,7 +51,7 @@ export function ReadHeadline({ d, view, coach, assigned }: { d: ChReadDetail; vi
           <span className="worth">
             Worth about {h.worth.strokes} a round{h.worth.to === 'team' ? ', closed to the team average' : h.worth.to === 'tour' ? ', closed to Tour' : ''}
           </span>
-          {h.worth.estimated && <span>estimated from strokes gained</span>}
+          {h.worth.estimated && <span>estimated</span>}
         </div>
       )}
       <div className="ffoot ch-hr-foot2">
@@ -91,7 +91,7 @@ export function WhereCard({ funnel, pictures }: { funnel: NonNullable<ChReadDeta
             </div>
           ))}
         </div>
-        {!funnel.stopped && <div className="cn">Each step only shows when its count clears the engine’s floor.</div>}
+        {!funnel.stopped && <div className="cn">Each step only shows when its count clears the engine’s floor. Here all {funnel.steps.length} passed.</div>}
       </div>
     </Card>
   );
@@ -177,7 +177,7 @@ export function WhyCard({ d, voice, pictures }: { d: ChReadDetail; voice: ChView
               </div>
             )}
             <div className="verdict">
-              <b>{cause.count}.</b> {cause.eventStrokes != null ? `Each one cost about ${formatFixed(Math.abs(cause.eventStrokes), 1)} strokes.` : ''}
+              <b>{cause.count}.</b> {cause.eventStrokes != null ? `On average one cost about ${formatFixed(Math.abs(cause.eventStrokes), 1)} strokes.` : ''}
               <span className="q">Counted in {coach ? `${first}’s` : 'your'} recorded shots on these holes.</span>
             </div>
             {cause.holes.length > 0 && (
@@ -208,7 +208,7 @@ export function WhyCard({ d, voice, pictures }: { d: ChReadDetail; voice: ChView
             )}
             <div className="verdict">
               <b>{cause.gap ? `Not traced yet: ${cause.gap.have} of ${cause.gap.need}.` : 'Not traced yet.'}</b> {cause.gap?.text ?? cause.text ?? (cause.countDown ? `${cause.countDown.haveEvents} of the ${cause.countDown.needEvents} it needs, over ${cause.countDown.haveRounds} of ${cause.countDown.needRounds} rounds.` : 'CoachHelm says why once one repeats in the shots.')}
-              {cause.gap && <span className="q">Nothing new is asked during a round. It fills from the misses that already have a side.</span>}
+              {cause.gap && <span className="q">Nothing new is asked. It fills as {voice.role === 'coach' ? voice.first : 'you'} play{voice.role === 'coach' ? 's' : ''}.</span>}
             </div>
           </>
         )}
@@ -312,7 +312,7 @@ export function MovedCard({ d, failed, pictures }: { d: ChReadDetail; failed: bo
               {f(m.to)}
             </text>
             <text x={l} y={H - 4} textAnchor="middle" fontSize="12" fill="var(--ink-3)">
-              Earlier
+              Before
             </text>
             {m.through && (
               <text x={r} y={H - 4} textAnchor="middle" fontSize="12" fill="var(--ink-3)">
@@ -384,7 +384,7 @@ export function RoundsCard({ d, failed }: { d: ChReadDetail; failed: boolean }) 
       {list.length > 4 && (
         <button type="button" className="row tap ch-hr-more" aria-expanded={all} onClick={() => setAll((v) => !v)}>
           <span className="c">
-            <b>{all ? 'Show fewer' : `Show all ${list.length}`}</b>
+            <b>{all ? 'Show fewer' : list.length > 8 ? `Show newest 8 of ${list.length}` : `Show all ${list.length}`}</b>
           </span>
         </button>
       )}

@@ -125,6 +125,8 @@ function ReadsLineNow({ reads, area }: { reads: ChStatsReads | undefined; area: 
 
 /** What a figure that has nothing behind it says in place of a bare dash (the phone's brief): the reason, in a few words. */
 const isNone = (v: unknown) => v === NO_DATA;
+/** The value, or the no-data dash. */
+const dash = <T,>(v: T | null | undefined, say: (v: T) => string): string => (v == null ? NO_DATA : say(v));
 const NONE_REASON: Record<string, string> = {
   'scoring:Scoring average': 'No scores yet',
   'scoring:Birdies / round': 'No holes scored',
@@ -647,7 +649,7 @@ export function GameDetail({
         }
         figs={[
           floorFig('Fairways hit', 'fraction', fwRounds, fw, s.fairwayOpportunities ? `${s.fairwaysHit} of ${s.fairwayOpportunities} attempts` : null, undefined),
-          ['Driver distance', s.drivingDistanceDriverOnly == null ? NO_DATA : `${Math.round(s.drivingDistanceDriverOnly)} yds`, 'Average drive', undefined],
+          ['Driver distance', dash(s.drivingDistanceDriverOnly, (v) => `${Math.round(v)} yds`), 'Average drive', undefined],
           ['Penalties / round', num(s.penaltiesPerRound), benchPen != null ? `Tour ${benchPen}` : null, tone(s.penaltiesPerRound, benchPen, true)],
           ['Fairways par 5', pct(s.fairwayPctPar5), s.fairwayPctPar4 != null ? `Par 4s: ${Math.round(s.fairwayPctPar4)}%` : null, undefined],
         ]}
@@ -734,17 +736,17 @@ export function GameDetail({
         }
         figs={[
           floorFig('Greens in regulation', 'fraction', girRounds, s.girPercentage, bench.gir_pct != null ? `Tour ${bench.gir_pct}%` : null, tone(s.girPercentage, bench.gir_pct)),
-          ['Proximity · all', s.approachProximityAvg == null ? NO_DATA : `${Math.round(s.approachProximityAvg)} ft`, 'Every approach', undefined],
-          ['Missed short', hasMiss ? pct(missShort) : NO_DATA, 'Of missed greens', hasMiss && missShort > missLong ? 'loss' : undefined],
+          ['Proximity · all', dash(s.approachProximityAvg, (v) => `${Math.round(v)} ft`), 'Every approach', undefined],
+          ['Missed short', dash(hasMiss ? missShort : null, pct), 'Of missed greens', hasMiss && missShort > missLong ? 'loss' : undefined],
           ['From the rough', pct(s.girPctFromRough), s.girPctFromFairway != null ? `GIR · fairway ${Math.round(s.girPctFromFairway)}%` : null, undefined],
         ]}
         detailFigs={[
           floorFig('Greens in regulation', 'fraction', girRounds, s.girPercentage, bench.gir_pct != null ? `Tour ${bench.gir_pct}%` : null, tone(s.girPercentage, bench.gir_pct)),
           ['From the fairway', pct(s.girPctFromFairway), 'Greens hit', undefined],
           ['From the rough', pct(s.girPctFromRough), 'Greens hit', undefined],
-          ['Missed short', hasMiss ? pct(missShort) : NO_DATA, 'Of missed greens', hasMiss && missShort > missLong ? 'loss' : undefined],
+          ['Missed short', dash(hasMiss ? missShort : null, pct), 'Of missed greens', hasMiss && missShort > missLong ? 'loss' : undefined],
         ]}
-        otherFigs={[['Proximity · all', s.approachProximityAvg == null ? NO_DATA : `${Math.round(s.approachProximityAvg)} ft`, 'Every approach', undefined]]}
+        otherFigs={[['Proximity · all', dash(s.approachProximityAvg, (v) => `${Math.round(v)} ft`), 'Every approach', undefined]]}
         more={
           <More>
             <ApproachMore s={s} x={x} onRetry={onRetry} />
@@ -921,18 +923,18 @@ export function GameDetail({
           ['Putts / GIR', num(s.puttsPerGir, 2), null, undefined],
           ['3-putts / round', num(s.threePuttsPerRound), null, undefined],
           ['One-putt rate', pct(onePuttRate), 'Of holes', undefined],
-          ['First putt', s.firstPuttDistanceAvg == null ? NO_DATA : `${formatFixed(s.firstPuttDistanceAvg)} ft`, 'Average start', undefined],
+          ['First putt', dash(s.firstPuttDistanceAvg, (v) => `${formatFixed(v)} ft`), 'Average start', undefined],
         ]}
         detailFigs={[
           ['Putts / round', num(s.puttsPerRound), 'Two a green is 36', undefined],
           ['Three-putts / round', num(s.threePuttsPerRound), null, undefined],
-          ['One-putts / round', s.holesPlayed ? num((s.onePuttsTotal * 18) / s.holesPlayed) : NO_DATA, null, undefined],
-          ['Make rate 5–10 ft', fiveToTen?.rate == null ? NO_DATA : pct(fiveToTen.rate), fiveToTen?.bench != null ? `Tour ${Math.round(fiveToTen.bench)}%` : null, fiveToTen?.grade === 'is-loss' ? 'loss' : fiveToTen?.grade === 'is-gain' ? 'gain' : undefined],
+          ['One-putts / round', dash(s.holesPlayed || null, (h) => num((s.onePuttsTotal * 18) / h)), null, undefined],
+          ['Make rate 5–10 ft', dash(fiveToTen?.rate, pct), fiveToTen?.bench != null ? `Tour ${Math.round(fiveToTen.bench)}%` : null, fiveToTen?.grade === 'is-loss' ? 'loss' : fiveToTen?.grade === 'is-gain' ? 'gain' : undefined],
         ]}
         otherFigs={[
           ['Putts / GIR', num(s.puttsPerGir, 2), null, undefined],
           ['One-putt rate', pct(onePuttRate), 'Of holes', undefined],
-          ['First putt', s.firstPuttDistanceAvg == null ? NO_DATA : `${formatFixed(s.firstPuttDistanceAvg)} ft`, 'Average start', undefined],
+          ['First putt', dash(s.firstPuttDistanceAvg, (v) => `${formatFixed(v)} ft`), 'Average start', undefined],
         ]}
         more={
           <More>

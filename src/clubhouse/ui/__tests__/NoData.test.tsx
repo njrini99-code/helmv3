@@ -59,7 +59,7 @@ const BARE_NO_DATA: Record<string, number> = {
   'screens/stats/charts.tsx': 1,
   'screens/stats/detail.tsx': 1,
   'screens/stats/dev-format.ts': 1,
-  'screens/stats/GameDetail.tsx': 7,
+  'screens/stats/GameDetail.tsx': 5,
   'screens/stats/GameMore.tsx': 11,
   'screens/stats/OverviewZones.tsx': 2,
   'screens/stats/putt-bands.ts': 1,

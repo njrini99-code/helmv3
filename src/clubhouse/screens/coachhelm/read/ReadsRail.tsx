@@ -2,6 +2,7 @@
 
 import Link from 'next/link';
 import { plural } from '../../../lib/plural';
+import { Avatar } from '../../../ui/Avatar';
 import type { ChReadView } from '../../../data/coachhelm-read-view-shape';
 import type { ChViewVoice } from '../../../data/coachhelm-views-shape';
 
@@ -10,9 +11,11 @@ export function ReadsRail({ view, current, voice, hrefOf }: { view: ChReadView; 
   return (
     <nav className="card lg ch-hr-rail" aria-label={voice.role === 'coach' ? `${voice.first}’s reads` : 'Your reads'}>
       <div className="ch-hr-railh">
+        {voice.role === 'coach' && <Avatar name={voice.name} id={voice.playerId} size="md" />}
         <b>{voice.role === 'coach' ? voice.name : 'Your reads'}</b>
         <span>
-          {plural(view.counts.insights, 'read')} · {view.counts.needs} need work
+          {plural(view.counts.insights, 'open read')}
+          {view.read?.headline.foot.through ? ` · Through ${view.read.headline.foot.through}` : ''}
         </span>
       </div>
       {view.rail.map((g) => (

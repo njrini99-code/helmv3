@@ -230,6 +230,7 @@ function AskChat({ data, useChatImpl, initial, v2 }: { data: ChAskData; useChatI
   const composer = (variant: 'hero' | 'dock') => (
     <SectionBoundary surface="coachhelm.ask.composer" label="The message box" code="CH-13225">
       <AskComposer
+        hint={v2 ? (player ? 'Ask about your game' : 'Ask about your team') : undefined}
         variant={variant}
         phone={phone}
         players={data.players}
@@ -323,7 +324,7 @@ function AskChat({ data, useChatImpl, initial, v2 }: { data: ChAskData; useChatI
       )}
       <div className="ch-ask-top">
         {!player && <CoachHelmTabs active={sw.shown} onGo={sw.go} />}
-        {player && data.allowance && <AllowanceMeter bucket={data.allowance} />}
+        {player && data.allowance && !(v2 && showHome) && <AllowanceMeter bucket={data.allowance} />}
         {!phone && <TeamLabel name={data.teamName} />}
       </div>
       <div className={'ch-ask-body' + (!phone && chatsShown ? ' has-panel' : '') + (!phone && evidenceOpen ? ' has-evidence' : '')}>

@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { TriangleAlert, X } from 'lucide-react';
 import { storiesOf, type ChStoryRound, type ChTeamPlayer, type ChTeamStory } from '../../../data/coachhelm-team-shape';
+import { formatWith } from '../../../lib/dates';
 import { formatFixed } from '../../../lib/format';
 import type { ChCoachBrief } from '../../../data/coachhelm-coach-brief-shape';
 import type { ChDiveTheme } from '../../../data/coachhelm-dive-shape';
@@ -43,7 +44,7 @@ function TileVisual({ story }: { story: ChTeamStory }) {
   );
 }
 
-const weekdayOf = (iso: string) => new Date(`${iso}T12:00:00Z`).toLocaleDateString('en-US', { weekday: 'long', timeZone: 'UTC' });
+const weekdayOf = (iso: string) => formatWith(new Date(`${iso}T12:00:00Z`), { weekday: 'long', timeZone: 'UTC' });
 /** "Thursday at Hilltop", or the story's own line when no round earned it. */
 const storyWhen = (s: ChTeamStory, week: string, round: ChStoryRound | null) => (round ? [weekdayOf(round.date), round.course].filter(Boolean).join(' at ') : whenOf(s, week));
 const actionOf = (s: ChTeamStory) => (s.kind === 'working' ? 'See Working on' : s.kind === 'read' ? 'Open the read' : 'Open this');

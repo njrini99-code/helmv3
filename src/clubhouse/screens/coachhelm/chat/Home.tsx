@@ -1,5 +1,6 @@
 'use client';
 
+import { AllowanceMeter } from './parts/Allowance';
 import { ArrowRight, CalendarPlus, ChartLine, Target, Trophy, Users, type LucideIcon } from 'lucide-react';
 import type { ReactNode } from 'react';
 import { askSuggestionSub, type ChAskData, type ChAskSuggestion } from '../../../data/coachhelm-chat-shape';
@@ -134,6 +135,7 @@ export function AskHomeV2({ data, phone, heroComposer, onAsk, focus }: { data: C
               <small>From the CoachHelm board · tap any line to ask</small>
             </div>
           )}
+      {player && data.allowance && <AllowanceMeter bucket={data.allowance} />}
       {data.suggestions.length > 0 && (
         <ul className="sugg" aria-label="Questions to start with">
           {data.suggestions.slice(0, 4).map((s) => (

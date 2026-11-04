@@ -141,9 +141,9 @@ export function readCauseOf(cause: Record<string, unknown> | null | undefined, w
       return n != null && f != null ? { label, failures: f, n } : null;
     };
     const slice = String(alt?.label ?? 'This slice');
-    const arms = [arm(alt?.arm_a, slice), arm(alt?.arm_b, 'Everywhere else')].filter((x): x is { label: string; failures: number; n: number } => !!x);
+    const arms = [arm(alt?.arm_a, slice), arm(alt?.arm_b, 'All other holes')].filter((x): x is { label: string; failures: number; n: number } => !!x);
     const lift = num(alt?.lift);
-    return { state: 'likely', track: 1, arms, verdict: lift != null ? `${slice} misses ${formatFixed(lift, 1)} times as often as everywhere else.` : null, range: supportRange };
+    return { state: 'likely', track: 1, arms, verdict: lift != null ? `${slice} misses ${formatFixed(lift, 1)} times as often as all other holes.` : null, range: supportRange };
   }
   const gap = cause.data_gap as Record<string, unknown> | null | undefined;
   const cd = cause.count_down as Record<string, number> | undefined;
@@ -165,7 +165,7 @@ function checkedLabels(lines: readonly string[] | undefined): string[] {
   for (const l of lines ?? []) {
     if (/^A\d+\b/.test(l)) continue;
     const key = l.match(/^(\w+):/)?.[1];
-    out.push(key === 'length' ? 'Length of the approach' : key === 'par' ? 'Par and length of the hole' : key === 'shape' ? 'Which side the miss finished' : l);
+    out.push(key === 'length' ? 'Length of the approach' : key === 'par' ? 'Par and length of the hole' : key === 'shape' ? 'Where the miss finished' : l);
   }
   return [...new Set(out)];
 }
@@ -183,7 +183,11 @@ export function toChReadDetail(raw: EvidenceInsight, deep: ChDeepInsight, role: 
   const rows: ChReadDetail['sure']['rows'] = [];
   if (sampleN != null && factors?.sample_adequacy != null && factors.sample_adequacy > 0) {
     const need = Math.round(sampleN / Math.min(1, factors.sample_adequacy));
-    rows.push({ k: 'Sample', have: sampleN, need, text: `${sampleN} of the ${need} it needs` });
+    // 06 S-READ.sure: a coach reads the bar against the floor; a player reads the count alone.
+    const noun = (deep.base.evidence.sample ?? '').match(/\d+\s+(.+)$/)?.[1]?.trim() ?? '';
+    const said = [String(sampleN), noun].filter(Boolean).join(' ');
+    const floor = Math.ceil(need);
+    rows.push({ k: 'Sample', have: sampleN, need, text: role === 'player' ? said : sampleN >= floor ? `${said}, past the ${floor} it needs` : `${sampleN} of the ${floor} ${noun || 'it counts'} it needs`.replace(' it counts it needs',' it needs') });
   }
   const checked = cause?.checked as { holes_with_full_record?: number; of?: number; fields_missing?: string[] } | undefined;
   if (checked?.of) {
@@ -225,7 +229,9 @@ export function toChReadDetail(raw: EvidenceInsight, deep: ChDeepInsight, role: 
   };
 }
 
-export function railOf(list: readonly ChDeepInsight[], role: 'coach' | 'player'): ChReadView['rail'] {
+const TIER: Record<string, string> = { observed_sequence: 'Counted', counted: 'Counted', inferred_hypothesis: 'Likely', likely: 'Likely', not_traced: 'Not traced' };
+
+export function railOf(list: readonly ChDeepInsight[], role: 'coach' | 'player', raw?: ReadonlyMap<string, EvidenceInsight>): ChReadView['rail'] {
   return DIVE_AREAS.map((a) => ({
     label: a.label,
     rows: list
@@ -233,7 +239,7 @@ export function railOf(list: readonly ChDeepInsight[], role: 'coach' | 'player')
       .map((i) => ({
         id: i.base.id,
         title: i.base.title,
-        sub: [typeof i.stance === "object" ? i.stance.word : i.stance, role === 'coach' ? i.firmness : null].filter(Boolean).join(' · '),
+        sub: [typeof i.stance === "object" ? i.stance.word : i.stance, role === 'coach' ? (TIER[String(((raw?.get(i.base.id)?.evidence as unknown as Record<string, unknown> | undefined)?.cause as { state?: string } | undefined)?.state)] ?? i.firmness) : null].filter(Boolean).join(' · '),
         value: i.base.value,
         tone: i.base.strength ? ('good' as const) : i.base.stale ? ('plain' as const) : ('warn' as const),
       })),
@@ -248,7 +254,7 @@ export function toChReadView(dive: ChDeepDive, raw: ReadonlyMap<string, Evidence
     head,
     area: areaLabel,
     read: deep && row ? toChReadDetail(row, deep, role, head.first, calls, dive.themes) : null,
-    rail: railOf(dive.list, role),
+    rail: railOf(dive.list, role, raw),
     counts: { insights: dive.counts.insights ?? dive.list.length, needs: dive.counts.needs ?? 0 },
     ...(dive.missing ? { missing: dive.missing } : {}),
     failed: { rounds: dive.roundsFailed, plans: dive.plansFailed, themes: dive.themesFailed },

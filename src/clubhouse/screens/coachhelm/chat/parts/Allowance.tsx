@@ -9,9 +9,12 @@ import type { AskAllowanceBucket } from '../../../../data/coachhelm-chat-shape';
 export function AllowanceMeter({ bucket }: { bucket: AskAllowanceBucket }) {
   const word = bucket === 'plenty' ? 'Plenty left' : bucket === 'low' ? 'Low' : 'Paused';
   return (
-    <p className={'ch-ak-meter' + (bucket !== 'plenty' ? ' is-low' : '')}>
-      Ask this week · {word} · resets Monday
-    </p>
+    <section className={'ch-ak-meter' + (bucket !== 'plenty' ? ' is-low' : '')} aria-label={`Ask this week: ${word}, resets Monday`}>
+      <b>Ask this week</b>
+      <span>{word} · resets Monday</span>
+      {/* A bucket's level, never an amount (AK10b). */}
+      <i aria-hidden="true" className={`is-${bucket}`} />
+    </section>
   );
 }
 

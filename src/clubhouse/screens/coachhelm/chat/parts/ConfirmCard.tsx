@@ -1,6 +1,6 @@
 'use client';
 
-import { Check, CircleAlert, ClipboardCheck, ArrowUpRight, Flag, Megaphone, CalendarPlus, type LucideIcon } from 'lucide-react';
+import { Check, CircleAlert, ClipboardCheck, ArrowUpRight, Flag, Megaphone, CalendarPlus, Truck, Trophy, Target, type LucideIcon } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
 import type { ActionReceipt } from '@/lib/coachhelm/v3/chat/action-types';
 import type { AskProposalView } from '../../../../data/coachhelm-chat-thread';
@@ -42,6 +42,15 @@ const LANDS: Record<string, { app: string; where: string }> = {
   create_focus_area: { app: 'Home', where: 'Focus' },
   add_round_note: { app: 'Rounds', where: 'Coach notes' },
 };
+/** The kit's head per flow (06 kit ②): what it will become, with its own mark. */
+const HEAD: Record<string, { icon: LucideIcon; title: string }> = {
+  create_event: { icon: CalendarPlus, title: 'New event' },
+  create_trip: { icon: Truck, title: 'New trip' },
+  create_qualifier: { icon: Trophy, title: 'New qualifier' },
+  create_focus_area: { icon: Target, title: 'New focus' },
+  create_team_announcement: { icon: Megaphone, title: 'New announcement' },
+  create_announcement: { icon: Megaphone, title: 'New announcement' },
+};
 const fallback = { icon: ClipboardCheck, verb: () => 'Confirm', busy: 'Working…', chip: 'Done' };
 
 /** Kit ② to ⑤: the draft as what it will become, who hears about it, then the capsule, the receipt with 8 seconds of Undo, and the Told row. Nothing is written before the named button. */
@@ -65,10 +74,10 @@ export function ConfirmCard({ view, inlineReceipt, onApprove, onDeny }: { view: 
     <section className={'conf' + (p.publish ? ' is-pub' : '') + (receipt?.status === 'completed' ? ' flash' : '')} aria-label={p.action}>
       <div className="hd">
         <span className="ico">
-          <Icon icon={kind.icon} size={17} />
+          <Icon icon={HEAD[view.tool]?.icon ?? kind.icon} size={17} />
         </span>
         <span className="tt">
-          <b>{p.publish ? p.publish.heading : p.action}</b>
+          <b>{p.publish ? p.publish.heading : (HEAD[view.tool]?.title ?? p.action)}</b>
           {!(p.publish && receipt) && <span>{p.summary}</span>}
         </span>
         {!(p.publish && receipt?.status !== 'completed') && <span className={'dchip' + (receipt?.status === 'completed' ? ' ok' : '')}>{receipt?.status === 'completed' ? kind.chip : 'Draft'}</span>}

@@ -1317,3 +1317,18 @@ html[data-fw-theme='dark'] .ch-hr .btn.pri {
   position: absolute;
   inset: -4px;
 }
+/* S-READ.do: Assign runs the card's width. */
+.ch-hr .ch-hr-acts .ch-btn--primary {
+  width: 100%;
+  min-height: 44px;
+}
+.ch-hr .ch-hr-railh:has(.ch-avatar) {
+  grid-template-columns: auto minmax(0, 1fr);
+  column-gap: 8px;
+}
+.ch-hr .ch-hr-railh:has(.ch-avatar) .ch-avatar {
+  grid-row: 1 / span 2;
+}
+.ch-hr .hero b {
+  letter-spacing: 0;
+}

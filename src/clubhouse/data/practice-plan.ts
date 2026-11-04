@@ -1,4 +1,5 @@
 import 'server-only';
+import { formatWith } from '../lib/dates';
 import { createClient } from '@/lib/supabase/server';
 import { parsePlanBody, toPlayerPlan, type PlanBodyV2, type PlanWhy } from '@/lib/coachhelm/v3/practice-plan/model';
 import { practiceTables, type PracticePlanRow, type PracticePlanVersionRow } from '@/lib/golf/practice-db';
@@ -70,11 +71,11 @@ export async function loadPlayerPractice(planId: string, playerId: string, now: 
   const start = new Date(ctx.event.start_time);
   const zone = ctx.team?.timezone ?? 'America/New_York';
   const mine = toPlayerPlan(body, playerId, start);
-  const clockOf = (d: Date) => new Intl.DateTimeFormat('en-US', { hour: 'numeric', minute: '2-digit', hour12: true, timeZone: zone }).format(d).replace(/\s?[AP]M$/, '');
+  const clockOf = (d: Date) => formatWith(d, { hour: 'numeric', minute: '2-digit', hour12: true, timeZone: zone }).replace(/\s?[AP]M$/, '');
   const group = body.groups.find((g) => g.players.includes(playerId)) ?? null;
   const nowAt = mine.stops.findIndex((s) => s.start <= now && now < s.end);
   const nextAt = nowAt >= 0 ? nowAt + 1 : mine.stops.findIndex((s) => s.start > now);
-  const day = new Intl.DateTimeFormat('en-US', { weekday: 'long', timeZone: zone }).format(start);
+  const day = formatWith(start, { weekday: 'long', timeZone: zone });
   const end = ctx.event.end_time ? new Date(ctx.event.end_time) : null;
   return {
     status: 'ready',

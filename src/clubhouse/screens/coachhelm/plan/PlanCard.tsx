@@ -4,6 +4,7 @@ import { ArrowUp, Check, ChevronDown, ChevronLeft, ClipboardList, FolderClosed, 
 import { useRouter } from 'next/navigation';
 import { createPortal } from 'react-dom';
 import { createContext, useContext, useEffect, useMemo, useState } from 'react';
+import { plural } from '../../../lib/plural';
 import { useChPhone } from '../../../lib/use-phone';
 import { type DrillRef, type PlanBlock, type PlanDraft } from '@/lib/coachhelm/v3/practice-plan/model';
 import { listPlanFolders, savePracticePlanDraft, undoPracticePlanDraft } from '@/app/golf/actions/coachhelm-practice-plans';
@@ -456,7 +457,7 @@ export function PlanCard({ plan, onSend, fresh = false }: { plan: PlanPartData; 
                       <div key={f.name} className={'fold' + (i === 0 ? ' tg' : '')}>
                         <Icon icon={FolderClosed} size={24} />
                         <b>{f.name}</b>
-                        <span className="cnt ch-num">{f.count === 1 ? '1 plan' : `${f.count} plans`}</span>
+                        <span className="cnt ch-num">{plural(f.count, 'plan')}</span>
                       </div>
                     ))}
                   </div>
