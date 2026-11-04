@@ -870,3 +870,23 @@ so both OS reduced motion and live Animations off use immediate scrolling.
 The keyboard-only Message actions alternative becomes visible when focused;
 ordinary screen-reader labels stay hidden. Evidence and remaining reaction-menu
 keyboard review are in `docs/clubhouse/PREMIUM_AUDIT.md`.
+
+## Messages redesign (flag off, migration held)
+
+<!-- schema-drift-absent: golf_messages_redesign_v1, golf_conversation_pins, golf_pin_conversation, golf_reorder_conversation_pins -->
+`golf_messages_redesign_v1` is the redesigned Clubhouse Messages. It is off in
+every environment. It sets `data-ch-ms-v2` on the Messages root, which scopes the
+new rules. With it off, Messages renders as main: no row typing listener, no row
+mute read, and typing clears at 3 seconds.
+
+Pins (`src/clubhouse/screens/messages/use-conversation-pins.ts`):
+
+- `20261031150000_golf_conversation_pins.sql` is written and not applied.
+  `supabase/migrations/HELD.md` is authoritative for it.
+- It adds `golf_conversation_pins`, `golf_pin_conversation`,
+  `golf_reorder_conversation_pins` and the private topic `golf-pins:<user>`.
+- The limit is 3 pins per team. Once applied, the server's list is the truth.
+- Until it is applied, pins stay on the device
+  (`src/clubhouse/screens/messages/pinned.ts`) and no error shows. The hook picks
+  up the server by itself after the migration is applied.
+- With the flag off, the hook sends no request.

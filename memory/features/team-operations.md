@@ -179,6 +179,43 @@ Player Team Hub
   (`supabase/migrations/HELD.md`).
 - Travel expense split support is incomplete; do not assume per-player split logic exists.
 
+## Practice plans (flag off, migrations held)
+
+<!-- schema-drift-absent: golf_practice_plans, golf_practice_plan_versions, golf_practice_plan_lines, golf_practice_plan_opens, golf_team_drills, golf_practice_groups, golf_practice_templates, golf_practice_plan_formats -->
+The tables and functions in this section do not exist in production yet.
+
+`golf_practice_plans` is the flag for the Clubhouse plan page and its writes. It
+is off in every environment. The migrations are written and not applied.
+`supabase/migrations/HELD.md` is authoritative for their order and preconditions.
+
+- Route: `src/app/golf/(dashboard)/dashboard/practice/plan/[planId]/page.tsx`
+  renders `src/clubhouse/routes/practice.tsx`. With the flag off, or when the plan
+  does not load, it redirects to Calendar. It never shows a 404.
+- Save and publish check the flag. The other plan and drill writes do not.
+- `src/app/golf/actions/practice-plans.ts`: `savePracticePlan`,
+  `deletePracticePlan`, `recordPracticePlanOpen`.
+- `src/app/golf/actions/practice-publish.ts`: `publishPracticePlan`,
+  `takeDownPracticePlan`. Push and bell go out through
+  `src/lib/golf/practice-fanout.ts`.
+- `src/app/golf/actions/practice-library.ts`: `createTeamDrill`,
+  `copyLibraryDrill`, `archiveTeamDrill`.
+- Telemetry uses the runtime feature key `practice_plans`.
+- Tables: `golf_practice_plans`, `golf_practice_plan_versions`,
+  `golf_practice_plan_lines`, `golf_practice_plan_opens`, `golf_team_drills`,
+  `golf_practice_groups`, `golf_practice_templates` and
+  `golf_practice_plan_formats`.
+- Save, delete and the drill writes report a missing table as unavailable
+  (`src/lib/golf/practice-errors.ts`).
+- Precondition: `20261026010400` and `20261026010600` change what
+  `golf_documents` holds. Read their HELD.md rows before applying either one.
+
+<!-- schema-drift-absent: golf_documents_library -->
+`golf_documents_library` is the flag for the Documents library (N-10). It is off
+and no code reads it yet. Today's Documents keeps rendering.
+
+CoachHelm drafts plans under its own flag. See "Clubhouse redesign behind flags"
+in `memory/features/coachhelm-ai.md`.
+
 ## UI Contract
 
 - Tasks need pending, overdue, completed, reminder, template, upload-required, and empty states.
