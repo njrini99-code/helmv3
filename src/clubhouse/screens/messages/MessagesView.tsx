@@ -46,6 +46,7 @@ import {
 } from "lucide-react";
 import { classYearKey } from "../../lib/class-year";
 import type { ChPins } from "./pinned";
+import { BubbleTail } from "./thread-v2";
 import {
   useCallback,
   useEffect,
@@ -188,6 +189,8 @@ export interface ChMessagesApi {
   redesign?: boolean;
   /** The design fixture's starting filter (`view=unread`). */
   designFilter?: ChConvFilter;
+  /** Redesign only: who is typing in the open thread, one bubble each. */
+  typingUserIds?: string[];
   /** Redesign only: this device's pins (pinned.ts; account-wide with 11h). */
   pins?: ChPins;
   /** Redesign only: who is typing in each conversation on screen (use-typing-by-conversation.ts). */
@@ -1300,13 +1303,18 @@ export function Bubble({
         <span className="ch-ms-msg__av">
           {last && (
             <SenderPeek api={api} who={who}>
-              <Avatar name={who?.name ?? "Member"} id={who ? (who.playerId ?? who.userId) : null} size={30} />
+              <Avatar
+                name={who?.name ?? "Member"}
+                id={who ? (who.playerId ?? who.userId) : null}
+                size={30}
+                year={api.redesign && who?.gradYear ? classYearKey(who.gradYear, new Date(api.now), api.timeZone) : null}
+              />
             </SenderPeek>
           )}
         </span>
       )}
       <div className="ch-ms-msg__col">
-        {!m.mine && first && group && (
+        {!api.redesign && !m.mine && first && group && (
           <SenderPeek api={api} who={who}>
             <span className="ch-ms-msg__who">
               {firstName(who?.name ?? "Member")}
@@ -1321,7 +1329,10 @@ export function Bubble({
             ) : (
               m.text && (
                 <div className="ch-ms-bub">
+                  {/* Redesign: the sender's name sits inside a run's first bubble (06 S-MSG.team). */}
+                  {api.redesign && !m.mine && first && group && <b className="ch-msv-bname">{firstName(who?.name ?? "Member")}</b>}
                   <MessageText text={m.text} />
+                  {api.redesign && last && <BubbleTail />}
                 </div>
               )
             )}
@@ -1485,6 +1496,7 @@ export function Bubble({
           </span>
         )}
       </div>
+      {api.redesign && <span className="ch-msv-time ch-num">{clock(m.at, api.timeZone, api.clock)}</span>}
     </PresenceRow>
   );
 }
@@ -2187,7 +2199,7 @@ function Thread({
               <Icon icon={Users} size={17} />
             </span>
           ) : (
-            <Avatar name={conv.title} id={convAvatarId(api, conv)} size={38} />
+            <Avatar name={conv.title} id={convAvatarId(api, conv)} size={api.redesign ? 36 : 38} />
           )}
           <div style={{ minWidth: 0 }}>
             <b>{conv.title}</b>

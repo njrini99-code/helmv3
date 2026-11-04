@@ -143,7 +143,7 @@ export function Messages({ data }: { data: ChMessagesData }) {
   const [started, setStarted] = useState<ChConv | null>(null);
   const convs = useMemo(() => (started && !loadedConvs.some((c) => c.id === started.id) ? [started, ...loadedConvs] : loadedConvs), [started, loadedConvs]);
 
-  const msgs = useGolfMessages(selectedId ?? '', data.viewerUserId, { deferMarkRead: !!selectedId && selectedId === autoOpened, classAwareness: awareness });
+  const msgs = useGolfMessages(selectedId ?? '', data.viewerUserId, { ...(data.redesign ? { typingExpiryMs: 5000 } : {}), deferMarkRead: !!selectedId && selectedId === autoOpened, classAwareness: awareness });
   const liveIds = useMemo(() => msgs.messages.filter((m) => m.conversation_id === selectedId && !m.sendFailed).map((m) => m.id), [msgs.messages, selectedId]);
   const reactions = useMessageReactions(selectedId ?? '', liveIds, data.viewerUserId);
   const { sendMessageWithAttachments, getPendingAttachmentSend, retryPendingAttachmentSend } = useMessageAttachments({ recoverable: true });
@@ -680,6 +680,7 @@ export function Messages({ data }: { data: ChMessagesData }) {
     msgsStale: !!msgs.error && chMsgs.length > 0,
     refetchMsgs: () => void msgs.refetch(),
     typing: msgs.isOtherTyping,
+    typingUserIds: msgs.typingUserIds,
     onTyping: (on) => msgs.sendTypingStatus(on),
     loadPendingAttachmentSend: async () => {
       if (!selectedId) return null;

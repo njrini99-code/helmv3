@@ -110,6 +110,9 @@ import {
 } from "./MessagesView";
 import { useComposerInset } from "./composer-inset";
 import { useThreadAnchor } from "./use-thread-anchor";
+import { useThreadDragTimes } from "./use-thread-drag-times";
+import { classYearKey } from "../../lib/class-year";
+import { noteTappedFace, ThreadDatePill, ThreadJumpKey, useFaceFlight, useReplyFromTyping, useThreadMakeRoom } from "./thread-v2";
 import { useFocusMessage } from "./use-focus-message";
 import { ListPresence, PresenceRow } from "../../ui/ListPresence";
 import { pluralWord } from "../../lib/plural";
@@ -264,7 +267,7 @@ function PhoneInboxV2({ api, onNew }: { api: ChMessagesApi; onNew: () => void })
   const pinned = (api.pins?.ids ?? []).map((id) => api.convs.find((c) => c.id === id)).filter((c): c is ChConv => !!c);
   const firstRun = isMessagesFirstRun(api);
   return (
-    <div className="ch-msp-page ch-msp-home ch-msv-inbox">
+    <div className="ch-msp-page ch-msp-home ch-msv-inbox" onClickCapture={(e) => noteTappedFace(e.target)}>
       {!firstRun && (
         <div className="ch-msv-top">
           <p className="ch-msv-ctx ch-num">{context}</p>
@@ -501,6 +504,7 @@ function PhoneThread({
   covered: boolean;
 }) {
   const toast = useToast();
+  const threadReduced = useChReducedMotion();
   const [acting, setActing] = useState<ChMsg | null>(null);
   const [replyToId, setReplyToId] = useState<string | null>(null);
   const [replySending, setReplySending] = useState(false);
@@ -550,6 +554,10 @@ function PhoneThread({
     if (firstMessage) onFirstSent();
     // The composer has taken the first message; nothing else to hand over.
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
+  useThreadDragTimes(scroller, !!api.redesign, threadReduced);
+  useThreadMakeRoom(scroller, api.msgs.length, !!api.redesign, threadReduced);
+  useReplyFromTyping(scroller, api.msgs.length, !!api.typing, !!api.redesign, threadReduced);
+  useFaceFlight(!!api.redesign, threadReduced);
   const titleId = `ch-msp-thread-${conv.id}`;
   const sub = conv.group ? `${conv.memberCount} members` : conv.subtitle;
   const copy = async (m: ChMsg) => {
@@ -571,7 +579,7 @@ function PhoneThread({
         back={{ onBack, ariaLabel: "Back to Messages" }}
         title={
           <button type="button" className="ch-msp-who" onClick={onDetails}>
-            {conv.group ? <GroupMark size="sm" /> : <Avatar name={conv.title} id={convAvatarId(api, conv)} size={30} />}
+            {conv.group ? <GroupMark size="sm" /> : <Avatar name={conv.title} id={convAvatarId(api, conv)} size={30} year={who?.gradYear ? classYearKey(who.gradYear, new Date(api.now), api.timeZone) : null} />}
             <span>
               <b>{conv.title}</b>
               <em>
@@ -644,7 +652,24 @@ function PhoneThread({
               </ListPresence>
             )}
             {/* CH-7602, as on desktop: no dots under a thread that didn't load or is still loading. */}
-            {api.typing && !api.msgsError && !(api.msgsLoading && !api.msgs.length) && (
+            {api.redesign && api.typing && !api.msgsError && !(api.msgsLoading && !api.msgs.length) && (
+              (api.typingUserIds?.length ? api.typingUserIds : [conv.memberIds[0] ?? ""]).map((id) => {
+                const who = personOf(api, id);
+                const name = firstName(who?.name ?? conv.title);
+                return (
+                  <div key={id} className="ch-ms-msg is-first">
+                    <span className="ch-ms-msg__av">{<Avatar name={who?.name ?? conv.title} id={who ? (who.playerId ?? who.userId) : convAvatarId(api, conv)} size={30} />}</span>
+                    <div className="ch-ms-msg__col">
+                      <div className={"ch-msv-typing" + (conv.group ? " has-name" : "")} role="status" aria-label={`${name} is typing`}>
+                        {conv.group && <b className="ch-msv-bname">{name}</b>}
+                        <span className="ch-msv-typing__dots"><i /><i /><i /></span>
+                      </div>
+                    </div>
+                  </div>
+                );
+              })
+            )}
+            {!api.redesign && api.typing && !api.msgsError && !(api.msgsLoading && !api.msgs.length) && (
               <div className="ch-ms-msg is-first">
                 <span className="ch-ms-msg__av">{!conv.group && <Avatar name={conv.title} id={convAvatarId(api, conv)} size={30} />}</span>
                 <div className="ch-ms-msg__col">
@@ -659,7 +684,14 @@ function PhoneThread({
           </div>
         </div>
       </SectionBoundary>
-      <ThreadBelow anchor={anchor} />
+      {api.redesign ? (
+        <>
+          <ThreadDatePill scroller={scroller} />
+          <ThreadJumpKey scroller={scroller} unseen={anchor.unseen} onJump={anchor.toEnd} />
+        </>
+      ) : (
+        <ThreadBelow anchor={anchor} />
+      )}
       <div ref={composerRef} className="ch-msp-composer">
       <Composer
         key={conv.id}

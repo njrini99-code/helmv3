@@ -491,6 +491,11 @@ function useCanReadClientCache(): boolean {
  */
 export interface UseGolfMessagesOptions {
   /**
+   * How long a typer stays shown after their last event (Clubhouse Messages redesign passes 5000 with its flag on). Default 3000,
+   * today's. Each typer in `typingUserIds` expires on their own.
+   */
+  typingExpiryMs?: number;
+  /**
    * Hold back mark-as-read until the viewer engages with the thread (audit
    * DATA-01). Desktop auto-opens the first conversation beside the rail; that
    * is the product showing a thread, not the person reading it, so it must not
@@ -552,6 +557,11 @@ export function useGolfMessages(
     setOtherParticipantLastReadAt(null);
   }
   const [isOtherTyping, setIsOtherTyping] = useState(false);
+  const [typingUserIds, setTypingUserIds] = useState<string[]>([]);
+  const typerTimersRef = useRef(new Map<string, ReturnType<typeof setTimeout>>());
+  const typingExpiryMs = options.typingExpiryMs ?? 3000;
+  const typingExpiryRef = useRef(typingExpiryMs);
+  typingExpiryRef.current = typingExpiryMs;
   const [currentUserId, setCurrentUserId] = useState<string | null>(viewerUserId ?? null);
   /**
    * The same value, readable without becoming a dependency.
@@ -1002,6 +1012,20 @@ export function useGolfMessages(
           const { userId, isTyping } = payload.payload as { userId: string; isTyping: boolean };
           if (userId !== currentUserIdRef.current) {
             setIsOtherTyping(isTyping);
+            // Who is typing, each on their own clock (additive; isOtherTyping stays as it was but for the expiry length).
+            const timers = typerTimersRef.current;
+            const held = timers.get(userId);
+            if (held) clearTimeout(held);
+            timers.delete(userId);
+            if (isTyping) {
+              timers.set(userId, setTimeout(() => {
+                timers.delete(userId);
+                setTypingUserIds((ids) => ids.filter((id) => id !== userId));
+              }, typingExpiryRef.current));
+              setTypingUserIds((ids) => (ids.includes(userId) ? ids : [...ids, userId]));
+            } else {
+              setTypingUserIds((ids) => ids.filter((id) => id !== userId));
+            }
             // Auto-clear typing indicator after 3 seconds if no update
             if (isTyping) {
               if (typingTimeoutRef.current) {
@@ -1009,7 +1033,7 @@ export function useGolfMessages(
               }
               typingTimeoutRef.current = setTimeout(() => {
                 setIsOtherTyping(false);
-              }, 3000);
+              }, typingExpiryRef.current);
             }
           }
         }
@@ -1337,6 +1361,7 @@ export function useGolfMessages(
     readMarks,
     refetchReadMarks: fetchOtherParticipantReadStatus,
     isOtherTyping,
+    typingUserIds,
     sendTypingStatus,
     currentUserId,
   };
