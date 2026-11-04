@@ -618,8 +618,6 @@
   --ch-gain: #14613d;
   --ch-loss: #9a5700;
   --ch-flag: #b3261e;
-  --ch-chart-gain-fill: #1f6b45;
-  --ch-chart-loss-fill: #b86f0c;
   --ch-chart-flat: #6b675f;
   --ch-chart-track: #ebe5d8;
   --ch-chart-zero: #5f5c55;
@@ -858,8 +856,6 @@ html[data-fw-theme='dark'] [data-ui='clubhouse'] {
   --ch-gain: #7cc79b;
   --ch-loss: #e7ae57;
   --ch-flag: #f28b7d;
-  --ch-chart-gain-fill: #4fa877;
-  --ch-chart-loss-fill: #e09a35;
   --ch-chart-flat: #a39d90;
   --ch-chart-track: #2c322d;
   --ch-chart-zero: #ada697;
@@ -1393,4 +1389,14 @@ html[data-fw-theme='dark']:has([data-ui='clubhouse']) body {
     --ch-chart-loss-on-tint: #f3c77e;
     --ch-chart-flag: #f6a294;
   }
+}
+
+/* The refresh's chart fills (DESIGN_LANGUAGE §3). Scoped so today's --ch-chart-*-fill values stay as they are with the flag off. */
+[data-ch-refresh] {
+  --ch-chart-gain-fill: #1f6b45;
+  --ch-chart-loss-fill: #b86f0c;
+}
+html[data-fw-theme='dark'] [data-ch-refresh] {
+  --ch-chart-gain-fill: #4fa877;
+  --ch-chart-loss-fill: #e09a35;
 }

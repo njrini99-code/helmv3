@@ -137,7 +137,7 @@
   padding: 14px 16px 16px;
   border-radius: 18px;
   background: var(--s-card);
-  box-shadow: var(--s-shadow);
+  box-shadow: var(--ch-stats-redesign-shadow-1);
   overflow: hidden;
   color: var(--s-ink);
   min-width: 0;
@@ -230,7 +230,7 @@
   -webkit-tap-highlight-color: transparent;
 }
 .ch-shs-sum:active {
-  box-shadow: inset 0 0 0 999px var(--s-press), var(--s-shadow);
+  box-shadow: var(--ch-stats-redesign-shadow-2);
   transition-duration: 0ms;
 }
 .ch-shs-sum:focus-visible {
@@ -1038,7 +1038,7 @@
 /* The pushed detail. */
 .ch-shs-screen {
   background: var(--s-bg);
-  box-shadow: -10px 0 28px rgb(0 0 0 / 0.1);
+  box-shadow: var(--ch-stats-redesign-shadow-3);
 }
 .ch-shs-screen .ch-pbar__back {
   color: var(--ch-champagne-dot);
@@ -1506,7 +1506,7 @@ li + li > .ch-shs-rrow::before {
   border: 0;
   border-radius: 18px;
   background: var(--s-card);
-  box-shadow: var(--s-shadow);
+  box-shadow: var(--ch-stats-redesign-shadow-1);
 }
 .ch-shs-screen .ch-gm-p__t {
   margin: 0 0 10px;
@@ -1720,7 +1720,7 @@ p.ch-shs-mini-cap {
   border: 0;
   border-radius: 18px;
   background: var(--s-card);
-  box-shadow: var(--s-shadow);
+  box-shadow: var(--ch-stats-redesign-shadow-1);
 }
 .ch-shs-screen .ch-stm-panel__h {
   margin: 0 0 10px;
@@ -2013,7 +2013,7 @@ p.ch-shs-mini-cap {
   overflow: hidden;
   border-radius: 16px;
   background: var(--s-card);
-  box-shadow: var(--s-shadow);
+  box-shadow: var(--ch-stats-redesign-shadow-1);
   color: var(--s-ink);
 }
 .ch-shs-yg__h {
@@ -2207,4 +2207,9 @@ p.ch-shs-mini-cap {
   padding: 12px 16px 14px;
   font: 400 calc(15 * var(--ch-type-k)) / calc(20 * var(--ch-type-k)) var(--ch-font-sans);
   color: var(--s-ink-2);
+}
+.ch-shs, .ch-shs-screen, .ch-shs-home {
+  --ch-stats-redesign-shadow-1: var(--s-shadow);
+  --ch-stats-redesign-shadow-2: inset 0 0 0 999px var(--s-press), var(--s-shadow);
+  --ch-stats-redesign-shadow-3: -10px 0 28px rgb(0 0 0 / 0.1);
 }
