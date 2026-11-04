@@ -9,6 +9,7 @@ import { Icon } from '../../ui/Icon';
 import { RefreshNotice } from '../../ui/RefreshNotice';
 import { Segmented } from '../../ui/Segmented';
 import { changeTone, formatFixed, formatHcp, formatSigned, NO_DATA } from '../../lib/format';
+import { pluralWord } from '../../lib/plural';
 import { NoData } from '../../ui/NoData';
 import { changeSe, deltaTone, deltaWords, halvesChange } from '../../lib/stats-signal';
 import { sgBaseline, type ChSgTour } from '../../lib/sg';
@@ -555,7 +556,7 @@ function YourGameSpark({ data, lowerIsBetter, label }: { data: number[]; lowerIs
   return (
     <span className={`ch-shs-spark is-${tone}`}>
       <span className="ch-shs-spark__plot">
-        <svg viewBox={`0 0 ${w} ${h}`} preserveAspectRatio="none" role="img" aria-label={`${label}, your last ${data.length} ${data.length === 1 ? 'round' : 'rounds'}, ${word.toLowerCase()}`}>
+        <svg viewBox={`0 0 ${w} ${h}`} preserveAspectRatio="none" role="img" aria-label={`${label}, your last ${data.length} ${pluralWord(data.length, 'round')}, ${word.toLowerCase()}`}>
           {line && (
             <>
               <defs>
@@ -573,7 +574,7 @@ function YourGameSpark({ data, lowerIsBetter, label }: { data: number[]; lowerIs
         <i className="dot" style={{ left: `${(last[0] / w) * 100}%`, top: `${(last[1] / h) * 100}%` }} aria-hidden="true" />
       </span>
       <span className="ch-shs-spark__cap">
-        <span>{data.length === 1 ? 'Last round' : `Last ${data.length} rounds`}</span>
+        <span>Last {data.length} {pluralWord(data.length, 'round')}</span>
         {data.length >= 2 && <span className="w">{word}</span>}
       </span>
     </span>

@@ -7,7 +7,8 @@ import { useEffect, useRef, useState } from 'react';
 import type { ChTeamStats } from '../../data/stats-team';
 import { hasRange, isFiltered, nineRoundsInWindow } from '../../data/stats-filter';
 import { holeCoverage } from '../../data/round-scope';
-import { formatFixed, formatSigned, formatToPar, NO_DATA } from '../../lib/format';
+import { formatFixed, formatSigned, formatToPar } from '../../lib/format';
+import { NoData } from '../../ui/NoData';
 import { TERMS } from '../../lib/glossary';
 import { haptic } from '../../lib/haptics';
 import { pluralWord } from '../../lib/plural';
@@ -192,7 +193,7 @@ export function StatsTeamPhoneShs({ data }: { data: ChTeamStats }) {
                     <SummaryCard feature go="tscore" onOpen={() => go('tscore')} icon="flag" title="Team scoring average" meta={windowDays(data)} ariaLabel={`Team scoring average ${scoringFigure(data) ? figureValue(scoringFigure(data)!) : 'no value'}. Open details`}>
                       <div className="ch-shs-figs">
                         <div className="ch-shs-figline">
-                          <span className="ch-shs-fig">{scoringFigure(data) ? figureValue(scoringFigure(data)!) : NO_DATA}</span>
+                          <span className="ch-shs-fig">{scoringFigure(data) ? figureValue(scoringFigure(data)!) : <NoData />}</span>
                           {toPar(data) && <span className="ch-shs-fig-sub">{toPar(data)}</span>}
                         </div>
                         <div className="ch-shs-delta">
@@ -364,7 +365,7 @@ function TeamScoringDetail({ data, covered, days, mean }: { data: ChTeamStats; c
   const context = `${data.teamName} · ${data.activeCount} active ${pluralWord(data.activeCount, 'player')} · countable rounds only.`;
   return (
     <>
-      <DetailHero figure={f ? figureValue(f) : NO_DATA} caption={['Team scoring average', toPar(data)].filter(Boolean).join(' · ')} chips={<Change data={data} />} />
+      <DetailHero figure={f ? figureValue(f) : <NoData />} caption={['Team scoring average', toPar(data)].filter(Boolean).join(' · ')} chips={<Change data={data} />} />
       {days.length > 0 && (
         <ShsCard title="By round day" meta={mean == null ? undefined : 'Team mean dashed'}>
           <Ribbon points={days.map((d) => ({ label: d.label, value: d.score }))} lowerIsBetter reference={mean == null ? null : { value: mean, label: 'Mean' }} format={(v) => formatFixed(v, 1)} />
@@ -387,7 +388,7 @@ function TeamScoringDetail({ data, covered, days, mean }: { data: ChTeamStats; c
                 <td>
                   <b>{formatFixed(d.score)}</b>
                 </td>
-                <td>{d.n ?? NO_DATA}</td>
+                <td>{d.n ?? <NoData />}</td>
               </tr>
             ))}
           </tbody>

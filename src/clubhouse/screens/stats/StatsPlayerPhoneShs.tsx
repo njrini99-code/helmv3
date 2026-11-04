@@ -7,7 +7,8 @@ import { useEffect, useRef, useState, type ReactNode } from 'react';
 import type { ChPlayerProfile } from '../../data/stats-player';
 import { basisWords, clearFilters, hasRange, isFiltered, rangeOf, type ChFilter, type ChRange } from '../../data/stats-filter';
 import { playerInsight } from '../../data/stats-insight';
-import { formatFixed, formatHcp, formatSigned, formatToPar, NO_DATA } from '../../lib/format';
+import { formatFixed, formatHcp, formatSigned, formatToPar } from '../../lib/format';
+import { NoData } from '../../ui/NoData';
 import { TERMS } from '../../lib/glossary';
 import { haptic } from '../../lib/haptics';
 import { plural, pluralWord } from '../../lib/plural';
@@ -68,7 +69,7 @@ import { WindowSwitch } from './WindowSwitch';
 const PARTS: ReadonlyArray<{ id: 'tee' | 'approach' | 'short' | 'putting'; name: string; icon: ShsIconName; leg: string }> = [
   { id: 'tee', name: 'Off the tee', icon: 'tee', leg: 'tee' },
   { id: 'approach', name: 'Approach', icon: 'target', leg: 'approach' },
-  { id: 'short', name: 'Short game', icon: 'chip', leg: 'around' },
+  { id: 'short', name: TERMS.shortGame.long, icon: 'chip', leg: 'around' },
   { id: 'putting', name: 'Putting', icon: 'putt', leg: 'putting' },
 ];
 
@@ -77,7 +78,7 @@ const DETAIL_TITLE: Readonly<Record<StatsPlayerDetailId, string>> = {
   sg: 'Strokes gained',
   tee: 'Off the tee',
   approach: 'Approach',
-  short: 'Short game',
+  short: TERMS.shortGame.long,
   putting: 'Putting',
   rounds: 'Rounds',
   goals: 'Goals',
@@ -494,7 +495,7 @@ function Glance({ data, onOpen }: { data: ChPlayerProfile; onOpen: (id: StatsDet
         >
           <span className="t">{t.label}</span>
           <span className={'v' + (t.value == null ? ' ch-shs-none' : '')}>
-            {t.value ?? NO_DATA}
+            {t.value ?? <NoData />}
             {t.value != null && t.unit && <small>{t.unit}</small>}
           </span>
           <span className="m">{t.meta}</span>
@@ -513,7 +514,7 @@ function SgCard({ data, onOpen }: { data: ChPlayerProfile; onOpen: () => void })
     <SummaryCard go="sg" onOpen={onOpen} title="Strokes gained" meta="vs Tour" ariaLabel={`Strokes gained ${ready ? formatSigned(data.win.sgPerRound) : 'no value'} a round against the Tour. Open details`}>
       <div className="ch-shs-sb is-one">
         <div>
-          <span className={`ch-shs-bigv${tone === 'flat' ? '' : ` ch-shs-${tone}`}${ready ? '' : ' ch-shs-none'}`}>{ready ? formatSigned(data.win.sgPerRound) : NO_DATA}</span>
+          <span className={`ch-shs-bigv${tone === 'flat' ? '' : ` ch-shs-${tone}`}${ready ? '' : ' ch-shs-none'}`}>{ready ? formatSigned(data.win.sgPerRound) : <NoData />}</span>
           <div className="ch-shs-cap">{ready ? 'Strokes a round against the Tour' : `${SG_WAIT}.`}</div>
         </div>
       </div>
@@ -612,7 +613,7 @@ function PartCard({ data, part, onOpen }: { data: ChPlayerProfile; part: (typeof
       <div className="ch-shs-kfr">
         <div>
           <span className={'ch-shs-bigv' + (kf.value == null ? ' ch-shs-none' : '')}>
-            {kf.value ?? NO_DATA}
+            {kf.value ?? <NoData />}
             {kf.value != null && kf.unit && <small>{kf.unit}</small>}
           </span>
           <div className="ch-shs-cap">
@@ -645,7 +646,7 @@ function PartCard({ data, part, onOpen }: { data: ChPlayerProfile; part: (typeof
             <div key={x.t}>
               <span className="t">{x.t}</span>
               <span className={'v' + (x.v == null ? ' ch-shs-none' : '')}>
-                {x.v ?? NO_DATA}
+                {x.v ?? <NoData />}
                 {x.v != null && x.unit && <small>{x.unit}</small>}
               </span>
             </div>
@@ -823,7 +824,7 @@ function GameAreaDetail({ id, data, reads, onRetry }: { id: 'scoring' | 'tee' | 
     );
   } else {
     const kf = keyFigure(data, id);
-    hero = <DetailHero figure={kf.value ?? NO_DATA} unit={kf.value != null ? kf.unit : undefined} caption={`${kf.label} · ${label}`} chips={<PartChips data={data} leg={part!.leg} />} />;
+    hero = <DetailHero figure={kf.value ?? <NoData />} unit={kf.value != null ? kf.unit : undefined} caption={`${kf.label} · ${label}`} chips={<PartChips data={data} leg={part!.leg} />} />;
     if (kf.rail)
       bench = (
         <>
@@ -907,7 +908,7 @@ function SgDetail({ data, onPart }: { data: ChPlayerProfile; onPart: (id: StatsD
   if (!ready)
     return (
       <>
-        <DetailHero figure={NO_DATA} caption={`Strokes a round against the Tour · ${label}`} chips={<span>{SG_WAIT}</span>} />
+        <DetailHero figure={<NoData />} caption={`Strokes a round against the Tour · ${label}`} chips={<span>{SG_WAIT}</span>} />
         {how}
       </>
     );
@@ -984,7 +985,7 @@ function SgDetail({ data, onPart }: { data: ChPlayerProfile; onPart: (id: StatsD
                   <span className="c">
                     <b>{p.name}</b>
                     <span>
-                      {kf.label} {kf.value == null ? NO_DATA : `${kf.value}${kf.unit}`}
+                      {kf.label} {kf.value == null ? <NoData /> : `${kf.value}${kf.unit}`}
                     </span>
                   </span>
                   <span className="r">{sg != null && <ShsPill tone={sgTone(sg)}>{formatSigned(sg)} SG</ShsPill>}</span>
