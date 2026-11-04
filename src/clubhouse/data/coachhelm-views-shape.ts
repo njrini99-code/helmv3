@@ -110,6 +110,18 @@ export function coachReadHref(playerId: string, insightId: string, roster: Reado
   return `${coachPlayerHref('deep-dive', playerId)}&insight=${encodeURIComponent(insightId)}`;
 }
 
+/** Cross-lane links take `on` from the server (START_HERE section 4): off returns today's address byte for byte. */
+export function readHref(playerId: string, insightId: string, roster: ReadonlyArray<{ id: string }>, on = false): string | null {
+  const today = coachReadHref(playerId, insightId, roster);
+  if (!on || !today) return today;
+  return `/golf/dashboard/coachhelm?view=read&player=${encodeURIComponent(playerId)}&insight=${encodeURIComponent(insightId)}`;
+}
+
+export function playerFileHref(playerId: string, at?: string, on = false): string {
+  if (!on) return coachPlayerHref('deep-dive', playerId);
+  return `/golf/dashboard/coachhelm?view=player&player=${encodeURIComponent(playerId)}${at ? `&at=${encodeURIComponent(at)}` : ''}`;
+}
+
 const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
 
 /**

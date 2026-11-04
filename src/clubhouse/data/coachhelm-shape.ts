@@ -98,6 +98,10 @@ export interface ChHelmWeek {
 export interface ChInsight {
   id: string;
   playerId: string;
+  /** The read sheet's comparison bars: numbers, where the gauge above has only words. Team only with a pool of five or more (W-TEAM-11). */
+  compare?: { you: number | null; team: number | null; tour: number | null; higherBetter: boolean; unit: string };
+  /** The course a worst-holes read names (its signature `<player>:course_worst_holes:<course_id>`); null otherwise. */
+  courseId?: string | null;
   /** The strokes a round at stake as a figure ("0.6"), only with an estimate (`strokesAtStake`). */
   stakes?: string | null;
   /** The team board's station: the raw category through `areaOf`; null for scoring, pressure and course management. */

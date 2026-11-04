@@ -1963,3 +1963,31 @@ html[data-fw-theme='dark'] .ch-htb .skl::after {
 .ch-htb.is-desk .ch-htb-coursedesk .spl-r > .shpw {
   margin-top: auto;
 }
+
+/* The sheet is ui/Modal; its own head gives way to the panel's (AC-READ-01). */
+.ch-htb-sheet .ch-modal__head {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+}
+.ch-htb-sheet .ch-modal__panel {
+  max-height: 86%;
+  border-radius: 20px 20px 0 0;
+  background: var(--bg);
+}
+.ch-htb.is-desk {
+  position: relative;
+}
+.ch-htb .insp {
+  position: fixed;
+  top: 58px;
+  width: 420px;
+}
+.ch-htb .ins .lk {
+  text-decoration: none;
+}
+.ch-htb .ch-htb-ladnote {
+  padding: 0 16px 14px;
+}

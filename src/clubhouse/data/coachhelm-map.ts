@@ -271,6 +271,21 @@ const LIFECYCLES: readonly string[] = ['detected', 'matured', 'addressed', 'reso
  * is in (the player's first name for a coach, the player's own for the player; none leaves it as stored).
  * A strength is better than the comparison the card draws, not than a stored one the page does not show.
  */
+/** The comparison's numbers for the team board's read sheet. */
+function compareOf(ev: InsightEvidence, tour: ChTourBaseline | null): ChInsight['compare'] {
+  const p = ev.comparison?.primary;
+  const pool = p?.source === 'team_pool' && typeof p.players === 'number' && p.players >= 5 && typeof p.value === 'number' ? p.value : null;
+  return {
+    you: num(ev.your_value),
+    team: pool,
+    tour: tour?.values.get(ev.metric ?? '') ?? null,
+    higherBetter: ev.polarity === 'higher_better',
+    unit: ev.unit === 'percent' ? '%' : '',
+  };
+}
+
+const courseOfSignature = (signature: string | null | undefined): string | null => signature?.match(/:course_worst_holes:(.+)$/)?.[1] ?? null;
+
 export function toChInsight(
   ins: EvidenceInsight,
   extra: { drillText?: string | null; assigned?: ChHelmAssigned | null; declined?: boolean; tour?: ChTourBaseline | null; newestRound?: string | null; viewer?: ChViewer; engine?: ChEngineInputs } = {},
@@ -301,6 +316,8 @@ export function toChInsight(
     playerId: ins.player_id,
     area,
     stakes: strokesAtStake(ev),
+    compare: compareOf(ev, tour),
+    courseId: courseOfSignature((ins as { signature?: string | null }).signature),
     category: unit.category,
     priority,
     strength: kind === 'strength',

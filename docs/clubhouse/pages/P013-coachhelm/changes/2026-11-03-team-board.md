@@ -43,3 +43,14 @@ Actions:        none
 Data impact:    none; `stakes` and `patternsStatus` are additive
 Held items:     none
 ```
+
+## 2026-11-03 — CT3: sheets and the desktop inspector
+
+```text
+Design package: design-refresh/coachhelm-team/ (CT3)
+PR/commit:      agent/ct3-sheets
+Contract IDs:   as today's FocusActions
+Actions:        Assign through today's useFocusActions; no new write
+Data impact:    none
+Held items:     none
+```

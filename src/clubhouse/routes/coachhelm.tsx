@@ -62,8 +62,8 @@ import '../styles/coachhelm-team.css';
  */
 
 /** The coach's Board or Ask. The Board's loader checks the CoachHelm gate itself; Ask's is checked here, before its read. */
-async function CoachHelmView({ coachId, teamId, ask, conversationId, initialPlayer }: { coachId: string; teamId: string; ask: boolean; conversationId?: string; initialPlayer?: string }) {
-  if (!ask && isTeamBoardEnabled() && TEAM_BOARD_FIRST_VIEW === 'hole') return <TeamBoard data={await loadCoachTeamBoard({ coachId, teamId })} initialPlayer={initialPlayer} courseTab={COURSE_TAB} />;
+async function CoachHelmView({ coachId, teamId, ask, conversationId, initialPlayer, initialInsight }: { initialInsight?: string; coachId: string; teamId: string; ask: boolean; conversationId?: string; initialPlayer?: string }) {
+  if (!ask && isTeamBoardEnabled() && TEAM_BOARD_FIRST_VIEW === 'hole') return <TeamBoard data={await loadCoachTeamBoard({ coachId, teamId })} initialPlayer={initialPlayer} initialInsight={initialInsight} courseTab={COURSE_TAB} />;
   if (!ask) return <CoachBoard data={await loadCoachCoachHelm({ coachId, teamId })} initialPlayer={initialPlayer} trackRecordHref={isTrackRecordEnabled() ? COACH_TRACK_RECORD_HREF : undefined} briefHref={isMondayBriefEnabled() ? COACH_BRIEF_HREF : undefined} />;
   // Ask is CoachHelm's, so it is off when CoachHelm is off for this coach, their team or GolfHelm, as the board is: the
   // address that led here is answered with the board's own "CoachHelm is off" page, and a lookup that failed with Ask's own
@@ -169,7 +169,7 @@ function viewSkeleton(view: PlayerHelmView): ReactNode {
  * for a player, whose `?player=` means nothing. `?view=profile` is Game profile's old address: Standing, opened at "How you play"
  * (CH-13913), for either. `?view=ask` (with `?c=`) is the coach's Ask sub-tab. `?view=brief` (with `&section=`) is the coach's Brief.
  */
-export async function ClubhouseCoachHelmRoute({ view, player, c, insight, section }: { view?: string; player?: string; c?: string; insight?: string; section?: string } = {}) {
+export async function ClubhouseCoachHelmRoute({ view, player, c, insight, section, open }: { open?: string; view?: string; player?: string; c?: string; insight?: string; section?: string } = {}) {
   if (view === 'development') redirect(PLAYER_HELM_DEVELOPMENT_HREF);
   const session = await getGolfSessionProfile();
   if (!session) return null;
@@ -223,7 +223,7 @@ export async function ClubhouseCoachHelmRoute({ view, player, c, insight, sectio
     const ask = view === 'ask';
     return (
       <Suspense fallback={ask ? <AskSkeleton chained /> : isTeamBoardEnabled() && TEAM_BOARD_FIRST_VIEW === 'hole' ? <TeamBoardSkeleton /> : <CoachHelmSkeleton view="coach" chained />}>
-        <CoachHelmView coachId={team.coachId} teamId={team.teamId} ask={ask} conversationId={c} initialPlayer={player} />
+        <CoachHelmView coachId={team.coachId} teamId={team.teamId} ask={ask} conversationId={c} initialPlayer={player} initialInsight={open === 'read' && typeof insight === 'string' ? insight : undefined} />
       </Suspense>
     );
   }

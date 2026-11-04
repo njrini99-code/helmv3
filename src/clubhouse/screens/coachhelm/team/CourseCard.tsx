@@ -130,7 +130,7 @@ export function CourseCard({ data, onRead, onCourse, onRetry }: { data: ChTeamBo
   const courses = history?.courses ?? [];
   const shownCourses = allCourses ? courses : courses.slice(0, COURSE_CAP);
   const shownReads = allReads ? reads : reads.slice(0, READ_CAP);
-  const courseReadCount = (row: CourseHistoryRow) => reads.filter((r) => r.title.includes(row.name)).length;
+  const courseReadCount = (row: CourseHistoryRow) => reads.filter((r) => r.courseId === row.id).length;
   const historyBlock = history ? (
     <div className="cmh">
       <div className="cmk">
