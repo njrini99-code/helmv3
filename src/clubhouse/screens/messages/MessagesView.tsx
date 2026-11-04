@@ -41,7 +41,11 @@ import {
   Lock,
   BellRing,
   Share,
+  Pin,
+  PinOff,
 } from "lucide-react";
+import { classYearKey } from "../../lib/class-year";
+import type { ChPins } from "./pinned";
 import {
   useCallback,
   useEffect,
@@ -182,6 +186,10 @@ export interface ChAttachmentRecovery {
 export interface ChMessagesApi {
   /** golf_messages_redesign_v1, read on the server: the screens branch on it, and the root carries `data-ch-ms-v2`. */
   redesign?: boolean;
+  /** Redesign only: this device's pins (pinned.ts; account-wide with 11h). */
+  pins?: ChPins;
+  /** Redesign only: who is typing in each conversation on screen (use-typing-by-conversation.ts). */
+  typingByConv?: ReadonlyMap<string, string[]>;
   viewer: { userId: string; role: "coach" | "player"; name: string };
   /** Coaches by golf_coaches.id, for an announcement's signature (P007-A1). */
   signers?: Record<string, { name: string; title: string }>;
@@ -454,9 +462,17 @@ export function ConvRow({ api, c, avatarSize = 36, phone = false }: { api: ChMes
     touchHold: phone,
     items: () => [
       { label: "Open conversation", icon: MessageSquare, onSelect: open },
+      // Redesign: Pin after Open (drawn order). At three pins it stays in the menu, dimmed, saying why (PIN-SYNC D7).
+      ...(api.pins
+        ? [
+            api.pins.has(c.id)
+              ? { label: "Unpin", icon: PinOff, onSelect: () => api.pins!.toggle(c.id) }
+              : { label: "Pin", icon: Pin, caption: api.pins.atLimit ? "Pin up to 3" : undefined, disabled: api.pins.atLimit, onSelect: () => api.pins!.toggle(c.id) },
+          ]
+        : []),
       { label: unread ? "Mark as read" : "Mark as unread", icon: unread ? MailOpen : Mail, onSelect: toggleRead },
       { label: "Mute…", icon: BellOff, onSelect: () => setMuting(true) },
-      ...(askDelete ? [{ kind: "separator" as const }, { label: "Delete", icon: Trash2, danger: true, onSelect: askDelete }] : []),
+      ...(askDelete ? [{ kind: "separator" as const }, { label: api.redesign ? "Delete conversation" : "Delete", icon: Trash2, danger: true, onSelect: askDelete }] : []),
     ],
   });
   const sheets = (
@@ -564,6 +580,30 @@ function RowMuteModal({ api, c, open, onClose }: { api: ChMessagesApi; c: ChConv
   );
 }
 
+/** A direct thread with a player whose year is known: the coin's year colour. */
+export function convYear(api: ChMessagesApi, c: ChConv) {
+  if (c.group) return null;
+  const person = personOf(api, c.memberIds[0] ?? "");
+  return person?.gradYear ? classYearKey(person.gradYear, new Date(api.now), api.timeZone) : null;
+}
+
+/** The three dots a row or pin swaps its preview line for (M-MSG-30). Hidden from VoiceOver as a picture; the sentence is on the wrapper. */
+export function TypingMini() {
+  return (
+    <span className="ch-ms-typing-mini" role="img" aria-label="Typing">
+      <i />
+      <i />
+      <i />
+    </span>
+  );
+}
+
+/** Two typers by name, three or more as "Several" (05's default). */
+export function typersLine(api: ChMessagesApi, typers: readonly string[]): string {
+  if (typers.length > 2) return "Several people are typing";
+  return `${typers.map((id) => firstName(personOf(api, id)?.name ?? "Member")).join(" and ")} are typing`;
+}
+
 function ConvRowButton({ api, c, avatarSize, onOpen, bind, plain = false }: { api: ChMessagesApi; c: ChConv; avatarSize: number; onOpen: () => void; bind: ContextMenuBind; plain?: boolean }) {
   const row = {
     type: "button" as const,
@@ -572,6 +612,7 @@ function ConvRowButton({ api, c, avatarSize, onOpen, bind, plain = false }: { ap
     onClick: onOpen,
     ...bind,
   };
+  const typers = api.typingByConv?.get(c.id);
   const body = (
     <>
       {c.group ? (
@@ -579,11 +620,12 @@ function ConvRowButton({ api, c, avatarSize, onOpen, bind, plain = false }: { ap
           <Icon icon={Users} size={15} />
         </span>
       ) : (
-        <Avatar name={c.title} id={convAvatarId(api, c)} size={avatarSize} />
+        <Avatar name={c.title} id={convAvatarId(api, c)} size={avatarSize} year={api.redesign ? convYear(api, c) : null} />
       )}
       <span className="ch-ms-row__main">
         <span className="ch-ms-row__top">
           <b>{c.title}</b>
+          {api.redesign && c.muted && <Icon icon={BellOff} size={13} className="ch-ms-row__mute" aria-label="Muted" />}
           <span className="ch-num">
             {railTime(c.lastAt, api.now, api.timeZone, api.clock)}
           </span>
@@ -593,7 +635,13 @@ function ConvRowButton({ api, c, avatarSize, onOpen, bind, plain = false }: { ap
             {/* One inline child, so the phone's two-line clamp (a vertical -webkit-box, which blockifies each child)
                 keeps the sender, the poll glyph and the text on one line (F-0052). */}
             <span className="ch-ms-row__prev">
-              {c.lastText ? (
+              {typers?.length ? (
+                typers.length === 1 ? (
+                  <TypingMini />
+                ) : (
+                  typersLine(api, typers)
+                )
+              ) : c.lastText ? (
                 <>
                   {c.lastSenderId &&
                     (c.group ||
@@ -648,6 +696,38 @@ function ConvRowButton({ api, c, avatarSize, onOpen, bind, plain = false }: { ap
   );
 }
 
+/** "3 unread · 7 conversations" on the desktop rail. */
+export function inboxContextDesktop(unread: number, total: number): string {
+  return `${unread} unread · ${total} ${total === 1 ? "conversation" : "conversations"}`;
+}
+
+/** The rail's flat "Pinned" and "Recent" labels over rows (no cards on the rail; the phone draws cards). */
+function PinnedAndRecent({ api, list, row }: { api: ChMessagesApi; list: ChConv[]; row: (c: ChConv) => ReactNode }) {
+  const pinned = api.pins?.ids ?? [];
+  const pinnedRows = pinned.map((id) => list.find((c) => c.id === id)).filter((c): c is ChConv => !!c);
+  const recent = list.filter((c) => !pinned.includes(c.id));
+  return (
+    <>
+      {pinnedRows.length > 0 && (
+        <section className="ch-ms-sec" aria-label="Pinned">
+          <div className="ch-ms-sec__l">Pinned</div>
+          <div className="ch-ms-sec__card">
+            <ListPresence>{pinnedRows.map(row)}</ListPresence>
+          </div>
+        </section>
+      )}
+      {recent.length > 0 && (
+        <section className="ch-ms-sec" aria-label="Recent">
+          <div className="ch-ms-sec__l">Recent</div>
+          <div className="ch-ms-sec__card">
+            <ListPresence>{recent.map(row)}</ListPresence>
+          </div>
+        </section>
+      )}
+    </>
+  );
+}
+
 function Rail({ api, onNew }: { api: ChMessagesApi; onNew: () => void }) {
   const body = useRef<HTMLDivElement | null>(null);
   usePanelSmoothScroll(body);
@@ -679,10 +759,11 @@ function Rail({ api, onNew }: { api: ChMessagesApi; onNew: () => void }) {
             </button>
           </Tooltip>
         </div>
+        {api.redesign && <p className="ch-ms-rail__ctx ch-num">{inboxContextDesktop(unread, api.convs.length)}</p>}
         <SearchField
           value={q}
           onChange={setQ}
-          placeholder="Search people and messages"
+          placeholder={api.redesign ? "Search" : "Search people and messages"}
           label="Search conversations and messages"
         />
         <Segmented<ChConvFilter> redraws
@@ -692,7 +773,7 @@ function Rail({ api, onNew }: { api: ChMessagesApi; onNew: () => void }) {
           onChange={setFilter}
           options={[
             { value: "all", label: "All" },
-            { value: "unread", label: `Unread · ${unread}` },
+            { value: "unread", label: api.redesign ? "Unread" : `Unread · ${unread}` },
             { value: "groups", label: "Groups" },
           ]}
         />
@@ -739,7 +820,14 @@ function Rail({ api, onNew }: { api: ChMessagesApi; onNew: () => void }) {
           />
         ) : (
           <>
-            {sections.map(([k, l]) => {
+            {api.redesign && (
+              <PinnedAndRecent
+                api={api}
+                list={list}
+                row={(c) => <ConvRow key={c.id} api={api} c={c} />}
+              />
+            )}
+            {!api.redesign && sections.map(([k, l]) => {
               const rows = list.filter(
                 (c) => sectionOf(c.lastAt, api.now, api.timeZone) === k,
               );

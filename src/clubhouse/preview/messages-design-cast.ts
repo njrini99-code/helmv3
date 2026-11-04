@@ -157,6 +157,12 @@ export const DESIGN_ROUTE_CONV: Record<string, string> = {
   fresh: 'sam',
 };
 
+/** Pins per route: the page's three, with Dana unpinned for `rowmenu` so Pin is live; none on the first run (spec section 12). */
+export const designPins = (view?: string): string[] => (view === 'rowmenu' ? ['team', 'eli'] : view === 'empty' ? [] : ['team', 'eli', 'dana']);
+
+/** `rowtyping`: Eli typing in his thread, Maya in the Qualifier group. */
+export const designRowTyping = (view?: string): ReadonlyMap<string, string[]> => new Map(view === 'rowtyping' ? [['eli', ['eli']], ['quals', ['maya']]] : []);
+
 /** Every state the design page draws (05-SCREENS, README), the routes `?view=` takes. */
 export const DESIGN_ROUTES = [
   'inbox', 'unread', 'rowtyping', 'longinbox', 'loading', 'rowmenu', 'pinlimit', 'thread', 'team', 'typing', 'grouptyping', 'times', 'failed', 'long', 'datepill', 'jump', 'toast',

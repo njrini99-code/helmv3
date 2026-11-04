@@ -40,6 +40,7 @@ import {
   type ReactNode,
 } from "react";
 import { Avatar } from "../../ui/Avatar";
+import { Segmented } from "../../ui/Segmented";
 import { EmptyState, Skeleton } from "../../ui/States";
 import { RailEmpty } from "./RailEmpty";
 import { ThreadClassSub } from "./ThreadClassSub";
@@ -100,6 +101,8 @@ import {
   muteLabel,
   personOf,
   convAvatarId,
+  convYear,
+  TypingMini,
   useAddAttachments,
   useAutosize,
   useNewDivider,
@@ -181,7 +184,7 @@ export function MessagesPhone({ api }: { api: ChMessagesApi }) {
       />
       <div className="ch-msp-inbox" inert={depth > 0 || undefined}>
         <SectionBoundary surface="messages.rail" label="Your conversations" code="CH-7210">
-          <PhoneInbox api={api} onNew={() => setComposing(true)} />
+          {api.redesign ? <PhoneInboxV2 api={api} onNew={() => setComposing(true)} /> : <PhoneInbox api={api} onNew={() => setComposing(true)} />}
         </SectionBoundary>
       </div>
 
@@ -242,6 +245,109 @@ export function MessagesPhone({ api }: { api: ChMessagesApi }) {
 }
 
 /* Inbox */
+
+/** The redesign's inbox: context line, search and New, segmented, Pinned card, Recent card (06 S-MSG). No large title on the phone. */
+function PhoneInboxV2({ api, onNew }: { api: ChMessagesApi; onNew: () => void }) {
+  const [filter, setFilter] = useState<ChConvFilter>("all");
+  const [q, setQ] = useState("");
+  const unread = api.convs.filter(isUnread).length;
+  const list = filterConvs(api.convs, filter, q);
+  const loading = (api.convsLoading && !api.convs.length) || api.annLoading;
+  const context = loading ? "Loading conversations" : [`${unread} unread`, api.teamName].filter(Boolean).join(" · ");
+  const pinned = (api.pins?.ids ?? []).map((id) => api.convs.find((c) => c.id === id)).filter((c): c is ChConv => !!c);
+  const firstRun = isMessagesFirstRun(api);
+  return (
+    <div className="ch-msp-page ch-msp-home ch-msv-inbox">
+      {!firstRun && (
+        <div className="ch-msv-top">
+          <p className="ch-msv-ctx ch-num">{context}</p>
+          <div className="ch-msv-srow">
+            <SearchField value={q} onChange={setQ} placeholder="Search" label="Search conversations and messages" className="ch-msv-search" />
+            <button type="button" className="ch-msv-new" aria-label="New message" onClick={onNew}>
+              <Icon icon={SquarePen} size={19} />
+            </button>
+          </div>
+          <Segmented<ChConvFilter>
+            redraws
+            block
+            label="Filter conversations"
+            value={filter}
+            onChange={setFilter}
+            options={[
+              { value: "all", label: "All" },
+              { value: "unread", label: "Unread" },
+              { value: "groups", label: "Groups" },
+            ]}
+          />
+        </div>
+      )}
+      {api.convsError ? (
+        <InlineNotice code="CH-7201" title="Conversations didn’t load" body="Your messages are safe. Try again." onRetry={api.refetchConvs} />
+      ) : loading ? (
+        <section className="ch-msv-card" role="status" aria-label="Loading conversations" data-ch-code="CH-7402">
+          <div className="ch-msv-card__h" aria-hidden="true">
+            <span className="ch-msv-sk" style={{ width: 64, height: 11 }} />
+          </div>
+          {Array.from({ length: 5 }, (_, i) => (
+            <div key={i} className="ch-ms-row" aria-hidden="true" style={{ cursor: "default" }}>
+              <span className="ch-msv-sk" style={{ width: 44, height: 44, borderRadius: "50%" }} />
+              <span style={{ display: "grid", gap: 8 }}>
+                <span className="ch-msv-sk" style={{ width: 124.2, height: 11 }} />
+                <span className="ch-msv-sk" style={{ width: 210.6, height: 9 }} />
+              </span>
+            </div>
+          ))}
+        </section>
+      ) : firstRun ? (
+        <MessagesFirstRun coach={api.viewer.role === "coach"} onNew={onNew} />
+      ) : (
+        <Swap swapKey={filter} className="ch-msp-list">
+          {filter === "all" && !q.trim() && pinned.length > 0 && (
+            <section className="ch-msv-card" aria-label="Pinned">
+              <h2 className="ch-msv-card__h">Pinned</h2>
+              <div className="ch-msv-pins">
+                {pinned.map((c) => {
+                  const typers = api.typingByConv?.get(c.id);
+                  const said = !c.group && c.lastSenderId !== api.viewer.userId ? c.lastText : null;
+                  return (
+                    <button key={c.id} type="button" className="ch-msv-pin" onClick={() => api.select(c.id)}>
+                      {typers?.length ? (
+                        <span className="ch-msv-bubblet"><TypingMini /></span>
+                      ) : said ? (
+                        <span className="ch-msv-bubblet">{said}</span>
+                      ) : null}
+                      {c.group ? (
+                        <span className="ch-ms-grp ch-msv-pin__grp"><Icon icon={Users} size={31} /></span>
+                      ) : (
+                        <Avatar name={c.title} id={convAvatarId(api, c)} size={62} year={convYear(api, c)} />
+                      )}
+                      <span className="ch-msv-pin__l">{c.group ? c.title : firstName(c.title)}</span>
+                    </button>
+                  );
+                })}
+              </div>
+            </section>
+          )}
+          {list.length > 0 && (
+            <section className="ch-msv-card" aria-label="Recent">
+              <h2 className="ch-msv-card__h">
+                Recent <small className="ch-num">{list.length}</small>
+              </h2>
+              <ListPresence>
+                {list.map((c) => (
+                  <ConvRow key={c.id} api={api} c={c} avatarSize={44} phone />
+                ))}
+              </ListPresence>
+            </section>
+          )}
+          {!list.length && <RailEmpty filter={filter} q={q} onClearSearch={() => setQ("")} onShowAll={() => setFilter("all")} />}
+          {filter !== "groups" && <AnnouncementsSection api={api} q={q} />}
+          <MessageHits api={api} q={q} />
+        </Swap>
+      )}
+    </div>
+  );
+}
 
 function PhoneInbox({ api, onNew }: { api: ChMessagesApi; onNew: () => void }) {
   const [filter, setFilter] = useState<ChConvFilter>("all");

@@ -42,6 +42,8 @@ export interface ChConv {
   /** The last message is a poll's plain-text copy (`isPollFallbackText`): the row shows its glyph and question. */
   lastIsPoll?: boolean;
   creatorId: string | null;
+  /** Messages redesign: the viewer muted this conversation (the row's glyph). Absent with the flag off or before the read lands. */
+  muted?: boolean;
 }
 
 /**

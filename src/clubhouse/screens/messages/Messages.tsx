@@ -1,5 +1,8 @@
 'use client';
 
+import { usePinned } from './pinned';
+import { useRowMutes } from './use-row-mutes';
+import { useTypingByConversation } from './use-typing-by-conversation';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useGolfConversations, useGolfMessages, type GolfConversationWithMeta } from '@/hooks/golf/use-golf-messages';
@@ -637,15 +640,23 @@ export function Messages({ data }: { data: ChMessagesData }) {
     return res.attachments.map((a) => ({ id: a.id, name: a.fileName, size: a.fileSize, mime: a.mimeType, url: a.url ?? null }));
   }, []);
 
+  const redesign = data.redesign ?? false;
+  const rowMutes = useRowMutes(data.viewerUserId, redesign);
+  const convIds = useMemo(() => convs.map((c) => c.id), [convs]);
+  const pins = usePinned(data.viewerUserId, data.teamId ?? '', convIds, redesign);
+  const typingByConv = useTypingByConversation(data.viewerUserId, convIds, selectedId, redesign);
+  const shownConvs = useMemo(() => (redesign && rowMutes.muted ? convs.map((c) => ({ ...c, muted: rowMutes.muted!.has(c.id) })) : convs), [redesign, rowMutes.muted, convs]);
+
   const api: ChMessagesApi = {
-    redesign: data.redesign ?? false,
+    redesign,
+    ...(redesign ? { pins, typingByConv } : {}),
     viewer: { userId: data.viewerUserId, role: data.role, name: data.viewerName },
     signers: data.signers,
     timeZone: data.timeZone,
     clock: hours,
     now,
     teamName: data.teamName,
-    convs,
+    convs: shownConvs,
     convsLoading: loading,
     convsError: !!error && !conversations.length,
     refetchConvs: () => void refetch(),
@@ -929,7 +940,13 @@ export function Messages({ data }: { data: ChMessagesData }) {
     retryMute: () => setMuteAttempt((n) => n + 1),
     setMute: async (muted, hours) => (selectedId ? muteConversation(selectedId, muted, hours) : false),
     muteOf,
-    muteConversation,
+    muteConversation: redesign
+      ? async (id, muted, hours) => {
+          const ok = await muteConversation(id, muted, hours);
+          if (ok) rowMutes.refresh();
+          return ok;
+        }
+      : muteConversation,
     setRead: async (id, read) => {
       if (!read) {
         // Nothing to write: the mark is this device's own (marked-unread.ts).

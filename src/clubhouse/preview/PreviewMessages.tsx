@@ -5,7 +5,8 @@ import type { ChMessagesApi } from '../screens/messages/MessagesView';
 import { MessagesView } from '../screens/messages/MessagesScreen';
 import type { ChAnnouncement, ChConv, ChFile, ChMember, ChMsg, ChMute, ChPerson, ChReaction, ChReactionKey } from '../screens/messages/model';
 import { useToast } from '../ui/Toast';
-import { DESIGN_CONVS, DESIGN_NOW, DESIGN_PEOPLE, DESIGN_REACTIONS, DESIGN_ROUTE_CONV, DESIGN_THREADS, DESIGN_VOTES, designAttachments, designMsg } from './messages-design-cast';
+import { DESIGN_CONVS, DESIGN_NOW, DESIGN_PEOPLE, DESIGN_REACTIONS, DESIGN_ROUTE_CONV, DESIGN_THREADS, DESIGN_VOTES, designAttachments, designMsg, designPins, designRowTyping } from './messages-design-cast';
+import { usePinned } from '../screens/messages/pinned';
 import { buildPollPayload, encodeChoice, parsePollPayload, pollFallbackText, tallyPoll, type Poll, type PollResponseRow } from '@/lib/golf/message-polls';
 
 /**
@@ -246,9 +247,13 @@ export function PreviewMessages({ state, view, play, role = 'coach' }: { state?:
     [cast, people],
   );
 
+  const pinSeed = useMemo(() => designPins(view), [view]);
+  const convIds = useMemo(() => convs.map((c) => c.id), [convs]);
+  const pins = usePinned('me', 'design', convIds, design, pinSeed);
   const api: ChMessagesApi = {
     // The preview forces the redesign on for the design fixture, whatever the flag says.
     redesign: design,
+    ...(design ? { pins, typingByConv: designRowTyping(view) } : {}),
     viewer: { userId: 'me', role, name: cast.me.name },
     signers: { 'c-maya': { name: 'Maya Reyes', title: 'Head coach' } },
     timeZone: TZ,
