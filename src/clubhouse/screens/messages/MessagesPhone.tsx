@@ -114,7 +114,7 @@ import { useThreadDragTimes } from "./use-thread-drag-times";
 import { ConversationSearch, detailsLine, MembersCard, MuteMenu, PhotosAndFiles, popIn, QuickActions, tokenBeat, useMuteAction } from "./details-v2";
 import { HelloCard } from "./HelloCard";
 import { HoldLift } from "./hold-lift";
-import { noteTappedFace, ThreadDatePill, ThreadJumpKey, useFaceFlight, useReplyFromTyping, useSendRise, useThreadMakeRoom } from "./thread-v2";
+import { noteTappedFace, ThreadDatePill, ThreadJumpKey, useFaceFlight, useReplyFromTyping, useSendRise, useSpringToEnd, useThreadMakeRoom } from "./thread-v2";
 import { useFocusMessage } from "./use-focus-message";
 import { ListPresence, PresenceRow } from "../../ui/ListPresence";
 import { pluralWord } from "../../lib/plural";
@@ -565,6 +565,7 @@ function PhoneThread({
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
   useThreadDragTimes(scroller, !!api.redesign, threadReduced);
   useThreadMakeRoom(scroller, api.msgs.length, !!api.redesign, threadReduced);
+  const jumpToEnd = useSpringToEnd(scroller, anchor.toEnd, threadReduced);
   useReplyFromTyping(scroller, api.msgs.length, !!api.typing, !!api.redesign, threadReduced);
   useFaceFlight(!!api.redesign, threadReduced);
   useSendRise(scroller, api.msgs.length, !!api.redesign, threadReduced);
@@ -708,7 +709,7 @@ function PhoneThread({
       {api.redesign ? (
         <>
           <ThreadDatePill scroller={scroller} />
-          <ThreadJumpKey scroller={scroller} unseen={anchor.unseen} onJump={anchor.toEnd} />
+          <ThreadJumpKey scroller={scroller} unseen={anchor.unseen} onJump={jumpToEnd} />
         </>
       ) : (
         <ThreadBelow anchor={anchor} />

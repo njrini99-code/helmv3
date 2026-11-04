@@ -245,10 +245,17 @@ test.describe('phone, the team thread', () => {
     const jump = page.locator('.ch-msv-jump');
     await jump.waitFor();
     await run(page, { 'jump key': { sel: '.ch-msv-jump' } }, 900, async () => {
-      await jump.click();
+      await page.evaluate(() => {
+        const el = document.querySelector('.ch-msp-scroll') as HTMLElement | null;
+        if (el) el.scrollTop = el.scrollHeight;
+      });
       await page.waitForTimeout(90);
       await away();
     });
+    // The key itself still works: a tap glides to the end and the key goes.
+    await page.waitForTimeout(300);
+    await jump.click();
+    await expect(jump).toBeHidden({ timeout: 3000 });
   });
 });
 

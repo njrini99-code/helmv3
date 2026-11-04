@@ -2,7 +2,7 @@
 
 import { ArrowDown } from 'lucide-react';
 import { useEffect, useLayoutEffect, useRef, useState, type RefObject } from 'react';
-import { CH_FADE_MS, chSpringCurve } from '../../lib/motion';
+import { CH_FADE_MS, chSpringCurve, CH_EASE, chSpringAt } from '../../lib/motion';
 import { Icon } from '../../ui/Icon';
 
 const DATE_PILL_HIDE_MS = 1000;
@@ -72,13 +72,75 @@ export function ThreadJumpKey({ scroller, unseen, onJump }: { scroller: RefObjec
       if (frame) cancelAnimationFrame(frame);
     };
   }, [scroller]);
-  if (!far && unseen <= 0) return null;
+  // M-MSG-24a, b: leaving is a fade from the live values, and coming back mid-fade pops from there on the same node (case 9).
+  const wanted = far || unseen > 0;
+  const [mounted, setMounted] = useState(wanted);
+  const key = useRef<HTMLButtonElement | null>(null);
+  const leave = useRef<Animation | null>(null);
+  if (wanted && !mounted) setMounted(true);
+  useLayoutEffect(() => {
+    const el = key.current;
+    if (!el?.animate) {
+      if (!wanted) setMounted(false);
+      return;
+    }
+    if (wanted) {
+      if (!leave.current) return;
+      const live = getComputedStyle(el);
+      const from = { opacity: live.opacity, transform: live.transform };
+      leave.current.onfinish = null;
+      leave.current.cancel();
+      leave.current = null;
+      const curve = chSpringCurve('pop');
+      el.animate([from, { opacity: 1, transform: 'none' }], { duration: curve.ms, easing: curve.linear });
+      return;
+    }
+    const live = getComputedStyle(el);
+    const gone = window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'none' : 'scale(0.8)';
+    const out = el.animate([{ opacity: live.opacity, transform: live.transform }, { opacity: 0, transform: gone }], { duration: 160, easing: `cubic-bezier(${CH_EASE.join(', ')})`, fill: 'forwards' });
+    out.onfinish = () => {
+      leave.current = null;
+      setMounted(false);
+    };
+    leave.current = out;
+  }, [wanted]);
+  if (!mounted) return null;
   return (
-    <button type="button" className="ch-msv-jump" aria-label={unseen > 0 ? `Jump to latest, ${unseen} new` : 'Jump to latest'} onClick={onJump}>
+    <button ref={key} type="button" className="ch-msv-jump" aria-label={unseen > 0 ? `Jump to latest, ${unseen} new` : 'Jump to latest'} onClick={onJump}>
       <Icon icon={ArrowDown} size={19} />
       {unseen > 0 && <b className="ch-num">{unseen}</b>}
     </button>
   );
+}
+
+/**
+ * Jump to latest (M-MSG-24c): 921ms on `reveal`, the end re-read each frame so a message landing mid-glide is included. A wheel, a
+ * touch or a press on the thread stops it where it is. Reduce Motion: straight to the end.
+ */
+export function useSpringToEnd(scroller: RefObject<HTMLElement | null>, toEnd: () => void, reduced: boolean): () => void {
+  return () => {
+    const el = scroller.current;
+    if (!el || reduced) return toEnd();
+    const from = el.scrollTop;
+    const started = performance.now();
+    let frame = 0;
+    const stop = () => {
+      cancelAnimationFrame(frame);
+      for (const type of ['wheel', 'touchstart', 'pointerdown']) el.removeEventListener(type, stop);
+    };
+    for (const type of ['wheel', 'touchstart', 'pointerdown']) el.addEventListener(type, stop, { passive: true });
+    const step = (now: number) => {
+      const t = (now - started) / 1000;
+      if (t >= 0.921) {
+        stop();
+        toEnd();
+        return;
+      }
+      el.scrollTop = from + (el.scrollHeight - el.clientHeight - from) * chSpringAt('reveal', t);
+      frame = requestAnimationFrame(step);
+    };
+    frame = requestAnimationFrame(step);
+  };
 }
 
 /**

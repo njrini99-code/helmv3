@@ -12,6 +12,7 @@ import { golfPlayerTest as test, hasGolfPlayerAuth, requireGolfAuthOrSkip } from
  */
 
 const ROUTES = [
+  '/golf/dashboard/messages',
   '/golf/dashboard',
   '/golf/dashboard/stats',
   '/golf/dashboard/coachhelm',
