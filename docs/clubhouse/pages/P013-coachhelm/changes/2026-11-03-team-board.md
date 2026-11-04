@@ -76,3 +76,14 @@ Actions:        none
 Data impact:    none
 Held items:     none
 ```
+
+## 2026-11-03 — CR1 to CR5: one read, in full
+
+```text
+Design package: design-refresh/coachhelm-read/ (CR1 to CR5)
+PR/commit:      agent/cr1-5-read
+Contract IDs:   as today's FocusActions
+Actions:        Assign, Dismiss, Undo through today's useFocusActions
+Data impact:    none; the Deep dive loaders split behind unchanged exports
+Held items:     none
+```

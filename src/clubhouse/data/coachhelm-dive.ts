@@ -9,7 +9,7 @@ import { chLogServer } from '../lib/track-server';
 import { assignedByInsight, countCountableRounds, drillTextByInsight, earliestStaleFloor, handled, loadPlayerDismissed, loadVisible, newestRounds, PLAYER_FEED_LIMIT, playerTeam } from './coachhelm';
 import { kindOf } from './coachhelm-classify';
 import { boardMissing } from './coachhelm-shape';
-import { diveCounts, exampleRoundIds, orderDive, roundIdsToRead, themesByCategory, toChDeepInsight, toDiveCleared, type ChDeepDive, type DiveFocusRow, type DiveRoundRow } from './coachhelm-dive-shape';
+import { diveCounts, exampleRoundIds, orderDive, roundIdsToRead, themesByCategory, toChDeepInsight, toDiveCleared, type ChDeepDive, type ChDeepInsight, type DiveFocusRow, type DiveRoundRow } from './coachhelm-dive-shape';
 import { readEngineFlags, readFocusVerdicts } from './coachhelm-engine';
 import { readCorrections } from './coachhelm-corrections';
 import { shapeReadsLifecycle } from './coachhelm-engine-shape';
@@ -99,6 +99,19 @@ export const EMPTY_DIVE = (rounds: number | null, tour: ChDeepDive['tour']): ChD
  * of them takes the insights down.
  */
 export async function loadPlayerDeepDive(input: { playerId: string }): Promise<ChViewLoad<ChDeepDive>> {
+  return (await playerDiveCore(input)).load;
+}
+
+/** The Deep dive's one read, with the raw rows. `drawn` narrows what counts as shown: the read page records only the read it shows. */
+export async function playerDiveCore(input: { playerId: string }, opts: { drawn?: (list: readonly ChDeepInsight[]) => string[] } = {}): Promise<{ load: ChViewLoad<ChDeepDive>; raw: ReadonlyMap<string, EvidenceInsight> }> {
+  let raw: ReadonlyMap<string, EvidenceInsight> = new Map();
+  const load = await playerDiveLoad(input, opts, (m) => {
+    raw = m;
+  });
+  return { load, raw };
+}
+
+async function playerDiveLoad(input: { playerId: string }, opts: { drawn?: (list: readonly ChDeepInsight[]) => string[] }, keep: (raw: ReadonlyMap<string, EvidenceInsight>) => void): Promise<ChViewLoad<ChDeepDive>> {
   const { playerId } = input;
   // CH13-21: only the cards this page draws count as shown, and with coachhelm_recheck_v1 on it knows that only once the lifecycle
   // shaping has dropped the cleared reads, the retired contradictions and a pair's second member. Every return says which ids it drew
@@ -145,6 +158,7 @@ export async function loadPlayerDeepDive(input: { playerId: string }): Promise<C
     const now = new Date().toISOString();
     const viewer = { role: 'player' } as const;
     const shaped = shapeReadsLifecycle(drawn, flags.recheck, viewer, now);
+    keep(new Map(drawn.map((i) => [i.id, i])));
     const [drills, assigned, newest, rounds, plans, themes, focus, corrections] = await Promise.all([
       drillTextByInsight(supabase, drawn),
       assignedByInsight(
@@ -185,7 +199,7 @@ export async function loadPlayerDeepDive(input: { playerId: string }): Promise<C
         status: 'ready',
         data: { list, tour: tourName, rounds: null, themes: themesByCategory(themes), roundsFailed: rounds === null, plansFailed: plans === null, themesFailed: themes === null, counts: diveCounts(list), ...(missing ? { missing } : {}), ...(shaped.clearedReads.length > 0 ? { cleared: shaped.clearedReads.map((c) => toDiveCleared(c.read, c.line)) } : {}) },
       },
-      list.map((i) => i.base.id),
+      opts.drawn?.(list) ?? list.map((i) => i.base.id),
     );
   } catch (err) {
     log('dive', err);

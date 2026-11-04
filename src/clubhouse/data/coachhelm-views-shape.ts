@@ -110,11 +110,13 @@ export function coachReadHref(playerId: string, insightId: string, roster: Reado
   return `${coachPlayerHref('deep-dive', playerId)}&insight=${encodeURIComponent(insightId)}`;
 }
 
-/** Cross-lane links take `on` from the server (START_HERE section 4): off returns today's address byte for byte. */
-export function readHref(playerId: string, insightId: string, roster: ReadonlyArray<{ id: string }>, on = false): string | null {
-  const today = coachReadHref(playerId, insightId, roster);
-  if (!on || !today) return today;
-  return `/golf/dashboard/coachhelm?view=read&player=${encodeURIComponent(playerId)}&insight=${encodeURIComponent(insightId)}`;
+export const READ_VIEW = 'read';
+
+/** Cross-lane links take `on` from the server (START_HERE section 4): off returns today's address byte for byte. The roster guard stays with the caller (`coachReadHref`). */
+export function readHref(player: string | null, insight: string, on = false): string {
+  const enc = encodeURIComponent;
+  if (!on) return player ? `${coachPlayerHref('deep-dive', player)}&insight=${enc(insight)}` : diveReadHref(insight);
+  return player ? `/golf/dashboard/coachhelm?view=read&player=${enc(player)}&insight=${enc(insight)}` : `/golf/dashboard/coachhelm?view=read&insight=${enc(insight)}`;
 }
 
 export function playerFileHref(playerId: string, at?: string, on = false): string {

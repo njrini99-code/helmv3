@@ -7,7 +7,7 @@ import { chLogServer } from '../lib/track-server';
 import { assignedByInsight, coachTour, countCountableRounds, declinedByInsight, drillTextByInsight, earliestStaleFloor, handled, loadCoachHelmGate, loadPlayerHelmGate, loadVisible, newestRounds, PLAYER_FEED_LIMIT, type CoachHelmGate } from './coachhelm';
 import { isOpenFinding, kindOf } from './coachhelm-classify';
 import { EMPTY_DIVE, readPlans, readRounds, readThemes } from './coachhelm-dive';
-import { diveCounts, orderDive, roundIdsToRead, themesByCategory, toChDeepInsight, toDiveCleared, type ChDeepDive } from './coachhelm-dive-shape';
+import { diveCounts, exampleRoundIds, orderDive, roundIdsToRead, themesByCategory, toChDeepInsight, toDiveCleared, type ChDeepDive } from './coachhelm-dive-shape';
 import { readEngineFlags, readFocusVerdicts } from './coachhelm-engine';
 import { shapeReadsLifecycle } from './coachhelm-engine-shape';
 import { toChInsight } from './coachhelm-map';
@@ -185,6 +185,19 @@ export async function loadCoachPlayerStanding(input: { scope: ChCoachPlayerScope
  * visible reads on file mean it failed.
  */
 export async function loadCoachPlayerDeepDive(input: { scope: ChCoachPlayerScope }): Promise<ChViewLoad<ChDeepDive>> {
+  return (await coachDiveCore(input)).load;
+}
+
+/** The Deep dive's one read, with the raw rows the read view needs and the page drops (coachhelm-read 02-PLAN 3.4). */
+export async function coachDiveCore(input: { scope: ChCoachPlayerScope }, opts: { exampleRounds?: boolean } = {}): Promise<{ load: ChViewLoad<ChDeepDive>; raw: ReadonlyMap<string, EvidenceInsight> }> {
+  let raw: ReadonlyMap<string, EvidenceInsight> = new Map();
+  const load = await coachDiveLoad(input, opts, (m) => {
+    raw = m;
+  });
+  return { load, raw };
+}
+
+async function coachDiveLoad(input: { scope: ChCoachPlayerScope }, opts: { exampleRounds?: boolean }, keep: (raw: ReadonlyMap<string, EvidenceInsight>) => void): Promise<ChViewLoad<ChDeepDive>> {
   const { scope } = input;
   const { playerId } = scope;
   try {
@@ -215,13 +228,14 @@ export async function loadCoachPlayerDeepDive(input: { scope: ChCoachPlayerScope
     const now = new Date().toISOString();
     const viewer = coachViewer(scope);
     const shaped = shapeReadsLifecycle(drawn, flags.recheck, viewer, now);
+    keep(new Map(drawn.map((i) => [i.id, i])));
     const ids = drawn.map((i) => i.id);
     const [drills, assigned, declined, newest, rounds, plans, themes, focus] = await Promise.all([
       drillTextByInsight(supabase, drawn),
       assignedByInsight(supabase, ids),
       declinedByInsight(supabase, ids),
       newestRounds(supabase, [playerId], earliestStaleFloor(drawn)),
-      readRounds(supabase, playerId, drawn.flatMap((i) => roundIdsToRead(i.evidence))),
+      readRounds(supabase, playerId, drawn.flatMap((i) => [...roundIdsToRead(i.evidence), ...(opts.exampleRounds ? exampleRoundIds(i.evidence) : [])])),
       plansRead,
       themesRead,
       readFocusVerdicts(

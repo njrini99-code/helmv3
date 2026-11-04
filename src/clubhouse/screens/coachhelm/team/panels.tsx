@@ -3,7 +3,7 @@
 import { X } from 'lucide-react';
 import { STATIONS, type ChTeamBoardData, type ChTeamPlayer } from '../../../data/coachhelm-team-shape';
 import type { ChInsight } from '../../../data/coachhelm-shape';
-import { playerFileHref, readHref } from '../../../data/coachhelm-views-shape';
+import { coachReadHref, playerFileHref, readHref } from '../../../data/coachhelm-views-shape';
 import type { CourseHistoryRow } from '@/lib/coachhelm/v3/team-board/course-shape';
 import { formatFixed, formatSigned } from '../../../lib/format';
 import { Icon } from '../../../ui/Icon';
@@ -82,7 +82,7 @@ export function ReadPanel({
 }) {
   const cause = read.engine?.cause?.word;
   const word = read.evidence.read?.word;
-  const href = readHref(player.id, read.id, roster, readOn);
+  const href = coachReadHref(player.id, read.id, roster) ? readHref(player.id, read.id, readOn) : null;
   return (
     <>
       <Head lead={<Coin player={player} />} name={player.name} line={`${areaName(read)} · ${player.rounds} rounds this season`} onClose={onClose} />

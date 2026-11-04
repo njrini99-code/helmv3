@@ -157,6 +157,8 @@ import '@/clubhouse/styles/coachhelm-dive.css';
 import '@/clubhouse/styles/coachhelm-track.css';
 import '@/clubhouse/styles/coachhelm-brief.css';
 import '@/clubhouse/styles/coachhelm-team.css';
+import '@/clubhouse/styles/coachhelm-read.css';
+import { PreviewCoachHelmRead } from '@/clubhouse/preview/PreviewCoachHelmRead';
 import { PreviewCoachHelmTeam } from '@/clubhouse/preview/PreviewCoachHelmTeam';
 import { ChPhoneHintProvider } from '@/clubhouse/lib/use-phone';
 import { clockHint, phoneHint } from '@/clubhouse/lib/phone-hint';
@@ -203,6 +205,7 @@ import { ChClockProvider } from '@/clubhouse/lib/use-clock';
  *   /clubhouse-preview/coachhelm-views ?view=deep-dive ?state=engine | corrections | corrections-good | cleared | manycleared | holes | young | partsfailed | teampool | empty | norounds | failed | off | loading, &q=in-slope | in-pen | in-brk | in-dbl   (the player's Deep dive; q is the read it opens on)
  *   /clubhouse-preview/coachhelm-coach-player ?view=deep-dive | standing | profile ?state=notonteam | scopefailed | failed | gamefailed | off | loading | failwrites | duplicate, &q=in-pen | in-slope | in-brk | in-dbl   (a coach's views of Jonah, spec A; profile is Standing at How Jonah plays)
  *   /clubhouse-preview/coachhelm-track ?state=early | empty | unavailable | failed | off | loading   (the coach's Track record; synthetic counts)
+ *   /clubhouse-preview/coachhelm-read ?view=coach | player &state=loading | failed | off | gone | stale &q=penalties | putts &section=board   (one read, coachhelm_read_v1)
  *   /clubhouse-preview/coachhelm-team ?state=early | empty | partial | noplayers | long | loading &station=tee | app | sg | putt | course   (the coach's team board, coachhelm_team_board_v1)
  *   /clubhouse-preview/coachhelm-brief ?state=empty | failed | off | loading   (the coach's Monday brief; synthetic reads through computeMondayBrief)
  *   /clubhouse-preview/coachhelm-coach-brief ?state=thin | noreads | partial | failed | off | loading, &section=patterns | working | record | goals   (the coach's Brief behind /intelligence)
@@ -520,6 +523,10 @@ export default async function ClubhousePreview({
       path: '/golf/dashboard/messages',
       // eslint-disable-next-line jsx-a11y/aria-role -- role is a component prop, not an ARIA role
       node: <PreviewMessages state={state} role="player" />,
+    },
+    'coachhelm-read': {
+      path: '/golf/dashboard/coachhelm',
+      node: <PreviewCoachHelmRead state={state} viewer={view} q={q} screen={section} />,
     },
     'coachhelm-team': {
       path: '/golf/dashboard/coachhelm',

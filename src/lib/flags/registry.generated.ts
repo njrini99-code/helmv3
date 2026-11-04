@@ -285,6 +285,23 @@ export const FLAG_REGISTRY: readonly FlagDefinition[] = [
     cleanup_plan: "Turn on in production only after coachhelm_support_v1 has written ladders (until then every brief is empty and nothing is sent) and the owner has decided to re-enable customer email. Remove the flag once the brief has served coaches for a season.",
   },
   {
+    feature_id: "coachhelm_read_v1",
+    owner: "golf/coachhelm",
+    purpose: "The CoachHelm read as its own view (?view=read): the funnel, the cause state, how sure, how it moved, the rounds and what to do, from evidence already stored. Read only, no new writes. Off: every link keeps today's address and view=read falls through to the board.",
+    type: "release",
+    status: "active",
+    created_at: "2026-11-03",
+    expires_at: null,
+    default: false,
+    environment: {
+      production: false,
+      preview: false,
+      development: false,
+    },
+    kill_switch_behavior: null,
+    cleanup_plan: "Remove once the coach Deep dive dossier is retired.",
+  },
+  {
     feature_id: "coachhelm_reads_v1_copy",
     owner: "golf/coachhelm",
     purpose: "Gates the CoachHelm Slice 0 output changes. Delivery: overlapping reads fold into one at delivery and each player's feeds hold 3 open reads plus 1 strength. Freshness: a new or refreshed read needs at least 3 countable rounds and its family's attempt floor or it is held back as Watching with a count-down; a new evidence revision is a new newest round in the window (or a moved window), not a changed sample count; empty window dates are filled from the rounds read; and the nightly roster sweep re-analyzes players whose newest countable round is newer than their newest read (deterministic generators only, no LLM). Round review: a player's own round shows the 30-second debrief (one number that moved, the top open read, the round's counted facts, one next step) where the recap stood. Off until the owner reviews the shorter feeds and the Watching counts.",
