@@ -423,3 +423,9 @@ gives, never an invented benchmark:
 A figure with no value draws no gauge. Tests: `strokes-gained.test.tsx` › "every
 team figure is drawn against a real reference", and `stats-total-only.test.tsx`
 › Season.
+
+## Phone Stats redesign (flag off)
+
+`clubhouse_stats_redesign_v1` is off in every environment. It turns on summary
+cards and pushed details for My stats and Team Stats, and player Home's Your game
+card. With it off, today's screens render. It has no migration.

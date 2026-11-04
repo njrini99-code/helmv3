@@ -234,3 +234,19 @@ for scripts/clubhouse/shots.mjs.
 suite, reviewed visual baselines, CSS guard, measured-performance reader,
 Next DevTools MCP and React profiler setup. Use `npm run clubhouse:quality`
 for smoke checks and `npm run clubhouse:quality:full` for the larger matrix.
+
+## Redesign flags
+
+All of these are off in every environment (`config/feature-flags.yml`).
+
+- `clubhouse_refresh_v1` is the foundation. It sets `data-ch-refresh="on"` on the
+  app root and scopes every rule the refresh adds. With it off, every screen renders
+  as main.
+- `clubhouse_classes_roster_home_v1`: see `memory/features/roster-team.md`.
+- `clubhouse_stats_redesign_v1`: see `memory/features/stats-analytics.md`.
+- The Messages redesign flag: see `memory/features/team-communications.md`.
+- The CoachHelm flags: see `memory/features/coachhelm-ai.md`.
+- The practice plan flag: see `memory/features/team-operations.md`.
+
+The redesign's migrations are written and not applied. `supabase/migrations/HELD.md`
+is authoritative.
