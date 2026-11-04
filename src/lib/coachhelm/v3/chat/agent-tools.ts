@@ -42,6 +42,8 @@
  * that will execute — not a client-side guess at what might happen.
  * ========================================================================== */
 
+import { getProximityByBand, getRoundDetail, getShotPattern } from './shot-reads';
+import { compareSeasons, getCalendar, getCourse, getRootCauses } from './engine-reads';
 import { holdForExecution, releaseHeld } from './undo-hold';
 import { tool } from 'ai';
 import type { ToolSet, UIMessageStreamWriter } from 'ai';
@@ -49,7 +51,7 @@ import { z } from 'zod';
 import { isFlagEnabled } from '@/lib/flags/is-enabled';
 import { compileVisual } from './visuals/compile';
 import { compileComposition } from './visuals/compile-composition';
-import { CompositionSpec, ShowVisualInput, type ValidatedComposition } from './visuals/composition';
+import { CompositionSpec, CompositionSpecV2, ShowVisualInput, ShowVisualInputV2, type ValidatedComposition } from './visuals/composition';
 import { VisualSpec, type ValidatedVisualArtifact } from './visuals/schema';
 import type { SupabaseClient } from '@supabase/supabase-js';
 import type { Database } from '@/lib/types/database';
@@ -159,6 +161,13 @@ const PROGRESS_LABEL: Record<string, (input: Record<string, unknown>) => string>
   get_upcoming_events: () => 'Checking the schedule and RSVPs',
   get_open_tasks: () => 'Checking outstanding tasks',
   get_team_travel: () => 'Checking team travel',
+  get_shot_pattern: () => 'Reading the logged shots',
+  get_proximity_by_band: () => 'Reading proximity by band',
+  get_round_detail: () => 'Reading the round hole by hole',
+  get_root_causes: () => 'Reading the open causes',
+  get_calendar: () => 'Reading the team calendar',
+  get_course: () => 'Reading the course',
+  compare_seasons: () => 'Comparing the seasons',
   show_visual: () => 'Building the visual',
   find_player: () => 'Finding that player on your roster',
   create_recurring_practice: () => 'Preparing the practice dates',
@@ -185,6 +194,13 @@ const PROGRESS_DONE: Record<string, string> = {
   get_upcoming_events: 'Checked the schedule and RSVPs',
   get_open_tasks: 'Checked outstanding tasks',
   get_team_travel: 'Checked team travel',
+  get_shot_pattern: 'Read the logged shots',
+  get_proximity_by_band: 'Read proximity by band',
+  get_round_detail: 'Read the round hole by hole',
+  get_root_causes: 'Read the open causes',
+  get_calendar: 'Read the team calendar',
+  get_course: 'Read the course',
+  compare_seasons: 'Compared the seasons',
   find_player: 'Found that player on your roster',
   show_visual: 'Built the visual',
 };
@@ -607,11 +623,11 @@ export function buildCoachTools({ sb, ctx, conversationId, writer, collect, team
     show_visual: tool({
       description:
         'Show the coach one visual built from reads you already made in this answer; follow the visual playbook in your instructions. kind "compose": you design it from building blocks (headline, kpis, trend, bars, split, compare, note), each naming the evidence_ref of the read it draws from, plus a title in words, an optional one-line lede and layout; the figures are filled in from the reads. kind "sg_anatomy": one player\'s strokes gained legs (get_player_metrics with sg_tee, sg_approach, sg_around_green and sg_putting), passing each read\'s evidence_ref in evidenceRefs. No title, lede, label or note may contain a number. If it is refused because of a number, call it once more in words; if a block is dropped or the visual is refused for any other reason, say what you found in words instead.',
-      inputSchema: ShowVisualInput,
+      inputSchema: askV2 ? ShowVisualInputV2 : ShowVisualInput,
       execute: async (input) => {
         progress('show_visual', {});
         if (input.kind === 'compose') {
-          const parsed = CompositionSpec.safeParse(input);
+          const parsed = (askV2 ? CompositionSpecV2 : CompositionSpec).safeParse(input);
           if (!parsed.success) return { status: 'refused', reason: 'invalid', message: 'A composition needs a title and at least one block.' };
           const result = compileComposition(parsed.data, evidenceByRef);
           if (!result.ok) return { status: 'refused', reason: result.reason, message: result.message, dropped: result.dropped };
@@ -637,6 +653,47 @@ export function buildCoachTools({ sb, ctx, conversationId, writer, collect, team
         };
       },
     }),
+
+    // Ask v2's reads: only with `coachhelm_ask_v2` and Clubhouse on for the team, so Fairway's tool set is what it was.
+    ...(askV2
+      ? {
+        get_shot_pattern: tool({
+          description: 'Miss directions, distance left and lies from logged shots for a player or the team in a window; mode "putting" gives make rate by the Stats page\'s distance buckets. Never a figure the shots do not hold.',
+          inputSchema: z.object({ player_id: z.string().uuid().optional(), club_type: z.string().max(40).optional(), from_yards: z.number().optional(), to_yards: z.number().optional(), since_days: z.number().int().min(1).max(365).default(60), mode: z.enum(['approach', 'putting']).default('approach') }),
+          execute: read('get_shot_pattern', (input) => getShotPattern(sb, ctx, input)),
+        }),
+        get_proximity_by_band: tool({
+          description: 'Average distance left by approach band.',
+          inputSchema: z.object({ player_id: z.string().uuid().optional(), bands: z.array(z.tuple([z.number(), z.number()])).min(1).max(8), since_days: z.number().int().min(1).max(365).default(60) }),
+          execute: read('get_proximity_by_band', (input) => getProximityByBand(sb, ctx, input)),
+        }),
+        get_round_detail: tool({
+          description: 'One of the team\'s rounds hole by hole: score, putts, penalties, greens.',
+          inputSchema: z.object({ round_id: z.string().uuid() }),
+          execute: read('get_round_detail', (input) => getRoundDetail(sb, ctx, input)),
+        }),
+        get_root_causes: tool({
+          description: 'The open causes stored on a player\'s reads. Records nothing as shown.',
+          inputSchema: z.object({ player_id: z.string().uuid() }),
+          execute: read('get_root_causes', (input) => getRootCauses(sb, ctx, input)),
+        }),
+        get_calendar: tool({
+          description: 'Team events between two instants, on the team\'s clock.',
+          inputSchema: z.object({ from: z.string(), to: z.string() }),
+          execute: read('get_calendar', (input) => getCalendar(sb, ctx, input)),
+        }),
+        get_course: tool({
+          description: 'A course\'s holes, with this team\'s scoring to par by hole.',
+          inputSchema: z.object({ course_id: z.string().uuid() }),
+          execute: read('get_course', (input) => getCourse(sb, ctx, input)),
+        }),
+        compare_seasons: tool({
+          description: 'This season against last for a player or the team, with last season\'s usual range.',
+          inputSchema: z.object({ player_id: z.string().uuid().optional() }),
+          execute: read('compare_seasons', (input) => compareSeasons(sb, ctx, input)),
+        }),
+        }
+      : {}),
 
     // Whole-team reads, built for Clubhouse's Ask. This engine also serves Fairway's chat, so they are registered only
     // while Clubhouse is on for this coach's team (golf_clubhouse_ui, then the HELM_CLUBHOUSE_TEAMS allowlist). Left

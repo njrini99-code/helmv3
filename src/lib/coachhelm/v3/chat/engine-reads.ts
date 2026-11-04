@@ -1,0 +1,74 @@
+import 'server-only';
+import type { SupabaseClient } from '@supabase/supabase-js';
+import type { Database } from '@/lib/types/database';
+import { applyInsightVisibility } from '@/lib/coachhelm/v3/insight-visibility';
+import { requireRosterPlayer, type CoachChatContext } from './context';
+import { nowIso, unavailableEnvelope, type ToolEnvelope } from './provenance';
+
+type Sb = SupabaseClient<Database>;
+
+/** The open causes the Board shows, read from stored evidence, never through `getInsightsForCoach`: a chat read isn't the coach seeing the Board (no exposure). */
+export async function getRootCauses(sb: Sb, ctx: CoachChatContext, input: { player_id: string }): Promise<ToolEnvelope> {
+  const player = requireRosterPlayer(ctx, input.player_id);
+  const { data, error } = await applyInsightVisibility(sb.from('golf_coach_insights').select('id, title, category, evidence').eq('player_id', player.id).not('evidence', 'is', null)).limit(50);
+  if (error) return unavailableEnvelope(`Could not read ${player.name}'s causes.`, 'The reads query failed.');
+  const causes = (data ?? []).flatMap((r) => {
+    const c = (r.evidence as { cause?: { state?: string; word?: string; text?: string } } | null)?.cause;
+    return c && c.state ? [{ insight_id: r.id, title: r.title, category: r.category, state: c.state, word: c.word ?? null, text: c.text ?? null }] : [];
+  });
+  return { summary: `${player.name}: ${causes.length} open cause${causes.length === 1 ? '' : 's'}.`, measurements: [], series: [], detail: { player: player.name, causes }, coverage: causes.length ? 'complete' : 'empty', coverage_note: causes.length ? null : 'No stored cause for this player.', as_of: nowIso() };
+}
+
+/** Events in a window on the team's clock, with the shape the free-slot logic needs. */
+export async function getCalendar(sb: Sb, ctx: CoachChatContext, input: { from: string; to: string }): Promise<ToolEnvelope> {
+  const zone = ctx.timezone;
+  const { data, error } = await sb.from('golf_events').select('id, title, event_type, start_time, end_time, location, status').eq('team_id', ctx.team_id).neq('event_type', 'class').gte('start_time', input.from).lte('start_time', input.to).order('start_time').limit(200);
+  if (error) return unavailableEnvelope('Could not read the calendar.', 'The events query failed. This is not the same as a free week.');
+  return { summary: `${(data ?? []).length} events on the team calendar.`, measurements: [], series: [], detail: { zone, events: data ?? [], from: input.from, to: input.to }, coverage: 'complete', coverage_note: null, as_of: nowIso() };
+}
+
+/** Par, yardage and handicap by hole, and this team's scoring to par by hole from its rounds. */
+export async function getCourse(sb: Sb, ctx: CoachChatContext, input: { course_id: string }): Promise<ToolEnvelope> {
+  const tee = await sb.from('golf_course_tees').select('id').eq('course_id', input.course_id).limit(1).maybeSingle();
+  if (tee.error) return unavailableEnvelope('Could not read that course.', 'The course query failed.');
+  const holes = tee.data ? await sb.from('golf_course_tee_holes').select('hole_number, par, yardage, handicap_index').eq('tee_id', tee.data.id).order('hole_number') : { data: [], error: null };
+  if (holes.error) return unavailableEnvelope('Could not read that course.', 'The holes query failed.');
+  const rounds = await sb.from('golf_rounds').select('id').eq('team_id', ctx.team_id).eq('course_id', input.course_id).eq('status', 'completed').eq('is_test', false).limit(200);
+  const ids = (rounds.data ?? []).map((r) => r.id);
+  const scored = ids.length ? await sb.from('golf_holes').select('hole_number, par, score').in('round_id', ids) : { data: [], error: null };
+  const by = new Map<number, { sum: number; n: number }>();
+  for (const h of scored.data ?? []) {
+    if (h.score == null) continue;
+    const e = by.get(h.hole_number) ?? { sum: 0, n: 0 };
+    e.sum += h.score - h.par;
+    e.n++;
+    by.set(h.hole_number, e);
+  }
+  const list = (holes.data ?? []).map((h) => ({ ...h, team_to_par: by.get(h.hole_number) ? Math.round((by.get(h.hole_number)!.sum / by.get(h.hole_number)!.n) * 100) / 100 : null, rounds: by.get(h.hole_number)?.n ?? 0 }));
+  return { summary: `Course read: ${list.length} holes, ${ids.length} team rounds.`, measurements: [], series: [], detail: { kind: 'hole_strip', holes: list }, coverage: list.length ? 'complete' : 'empty', coverage_note: list.length ? null : 'No hole data for this course.', as_of: nowIso() };
+}
+
+const seasonOf = (d: Date) => (d.getUTCMonth() >= 7 ? d.getUTCFullYear() : d.getUTCFullYear() - 1);
+
+/** This season against last, with last season's usual range: mean plus or minus one standard deviation of round values. The method is in the note. */
+export function seasonBand(values: readonly number[]): { mean: number; lo: number; hi: number; n: number } | null {
+  if (values.length === 0) return null;
+  const mean = values.reduce((a, b) => a + b, 0) / values.length;
+  const sd = Math.sqrt(values.reduce((a, b) => a + (b - mean) ** 2, 0) / values.length);
+  const r = (v: number) => Math.round(v * 100) / 100;
+  return { mean: r(mean), lo: r(mean - sd), hi: r(mean + sd), n: values.length };
+}
+
+export async function compareSeasons(sb: Sb, ctx: CoachChatContext, input: { player_id?: string }): Promise<ToolEnvelope> {
+  const player = input.player_id ? requireRosterPlayer(ctx, input.player_id) : null;
+  const now = new Date();
+  const start = seasonOf(now);
+  let q = sb.from('golf_rounds').select('round_date, score_to_par, total_putts, holes_played').eq('team_id', ctx.team_id).eq('status', 'completed').eq('is_test', false).gte('round_date', `${start - 1}-08-01`);
+  if (player) q = q.eq('player_id', player.id);
+  const { data, error } = await q;
+  if (error) return unavailableEnvelope('Could not compare the seasons.', 'The rounds query failed.');
+  const split = (y: number) => (data ?? []).filter((r) => seasonOf(new Date(`${r.round_date}T12:00:00Z`)) === y && r.score_to_par != null).map((r) => ((r.score_to_par as number) * 18) / ((r.holes_played as number) > 0 ? (r.holes_played as number) : 18));
+  const thisYear = seasonBand(split(start));
+  const last = seasonBand(split(start - 1));
+  return { summary: `${player?.name ?? ctx.team_name}: this season against last.`, measurements: [], series: [], detail: { kind: 'season_compare', metric: 'Score to par per 18', this_season: thisYear, last_season: last, method: 'Usual range is last season’s mean plus or minus one standard deviation of round values.' }, coverage: thisYear && last ? 'complete' : 'partial', coverage_note: thisYear && last ? null : 'One of the seasons has no rounds yet.', as_of: nowIso() };
+}

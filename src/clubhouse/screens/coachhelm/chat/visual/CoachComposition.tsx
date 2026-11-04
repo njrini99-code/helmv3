@@ -18,6 +18,7 @@ import {
 } from '../../../../data/coachhelm-chat-thread';
 import { changeTone } from '../../../../lib/format';
 import { useChReducedMotion } from '../../../../lib/reduced-motion';
+import { HoleStrip, MissPattern, PuttProfile, SeasonCompare } from './blocks';
 import { DataTable, Drawing, Ranking, TableToggle, TeamTable, Tiles, Trend } from '../Evidence';
 
 /**
@@ -210,6 +211,14 @@ function Block({ block, drawIn }: { block: ResolvedBlock; drawIn: boolean }) {
           <Split ms={block.measurements} />
         </FigureBlock>
       );
+    case 'miss_pattern':
+      return <FigureBlock title="Where the misses go" table={null}><MissPattern block={block} /></FigureBlock>;
+    case 'putt_profile':
+      return <FigureBlock title="Make rate by distance" table={null}><PuttProfile block={block} /></FigureBlock>;
+    case 'season_compare':
+      return <FigureBlock title={block.metric} table={null}><SeasonCompare block={block} /></FigureBlock>;
+    case 'hole_strip':
+      return <FigureBlock title="Hole by hole" table={null}><HoleStrip block={block} /></FigureBlock>;
     case 'compare': {
       const team = teamTable(block.measurements);
       return (

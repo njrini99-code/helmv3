@@ -121,6 +121,9 @@ function BlockView({ block, hasHeadline }: { block: ResolvedBlock; hasHeadline: 
       return <ComparisonTable measurements={block.measurements} />;
     case 'note':
       return <NoteRow kind={block.kind} text={block.text} />;
+    // Ask v2's blocks are never offered here (agent-tools: askV2); a stored one draws nothing rather than failing.
+    default:
+      return null;
   }
 }
 

@@ -2,8 +2,10 @@ import 'server-only';
 import { createHash } from 'node:crypto';
 import type { Measurement, MeasurementSeries, ToolEnvelope } from '../provenance';
 import {
+  COMPOSITION_SCHEMA_V2,
   COMPOSITION_SCHEMA_VERSION,
   type CompositionBlockSpec,
+  type CompositionBlockSpecV2,
   type CompositionSpec,
   type ResolvedBlock,
   type ValidatedComposition,
@@ -48,7 +50,33 @@ const drawable = (m: Measurement) => m.value !== null && m.coverage !== 'unavail
 
 type Resolve = { ok: true; block: ResolvedBlock; drawn: { m: Measurement[]; s: MeasurementSeries[] } } | { ok: false; why: string };
 
-function resolveBlock(block: CompositionBlockSpec, evidence: ReadonlyMap<string, ToolEnvelope>): Resolve {
+/** A shot or engine block: figures come from the read's `detail`, and a ref that isn't that kind of read is refused. */
+function resolveV2(block: Exclude<CompositionBlockSpecV2, CompositionBlockSpec>, evidence: ReadonlyMap<string, ToolEnvelope>): Resolve {
+  const d = evidence.get(block.ref)?.detail as Record<string, unknown> | undefined;
+  const none = { ok: false as const, why: `read ${block.ref} is not a read this block can draw` };
+  const drawn = { m: [], s: [] };
+  if (!d) return { ok: false, why: `no usable read named ${block.ref} this answer` };
+  if (block.type === 'miss_pattern') {
+    if (d.kind !== 'miss_pattern') return none;
+    const p = d.pattern as { total: number; no_direction: number; inside_15: number; inside_25: number; wedges: Array<{ direction: string; count: number; avg_left_ft: number | null }> };
+    return { ok: true, block: { type: 'miss_pattern', total: p.total, no_direction: p.no_direction, inside_15: p.inside_15, inside_25: p.inside_25, wedges: p.wedges }, drawn };
+  }
+  if (block.type === 'putt_profile') {
+    if (d.kind !== 'putt_profile') return none;
+    return { ok: true, block: { type: 'putt_profile', buckets: (d.profile as { buckets: Array<{ id: string; label: string; attempts: number; made: number; rate: number | null }> }).buckets }, drawn };
+  }
+  if (block.type === 'season_compare') {
+    if (d.kind !== 'season_compare') return none;
+    const x = d as unknown as { metric: string; this_season: { mean: number; lo: number; hi: number; n: number } | null; last_season: { mean: number; lo: number; hi: number; n: number } | null; method: string };
+    return { ok: true, block: { type: 'season_compare', metric: x.metric, this_season: x.this_season, last_season: x.last_season, method: x.method }, drawn };
+  }
+  if (d.kind !== 'hole_strip') return none;
+  const holes = (d.holes as Array<{ hole_number: number; par: number; score?: number | null; team_to_par?: number | null }>).map((h) => ({ hole_number: h.hole_number, to_par: h.team_to_par ?? (h.score != null ? h.score - h.par : null) }));
+  return { ok: true, block: { type: 'hole_strip', holes }, drawn };
+}
+
+function resolveBlock(block: CompositionBlockSpecV2, evidence: ReadonlyMap<string, ToolEnvelope>): Resolve {
+  if (block.type === 'miss_pattern' || block.type === 'putt_profile' || block.type === 'season_compare' || block.type === 'hole_strip') return resolveV2(block, evidence);
   const read = (ref: string): ToolEnvelope | null => {
     const e = evidence.get(ref);
     return e && e.coverage !== 'unavailable' ? e : null;
@@ -171,7 +199,7 @@ function resolveBlock(block: CompositionBlockSpec, evidence: ReadonlyMap<string,
 }
 
 export function compileComposition(
-  spec: CompositionSpec,
+  spec: CompositionSpec | (Omit<CompositionSpec, 'blocks'> & { blocks: CompositionBlockSpecV2[] }),
   evidence: ReadonlyMap<string, ToolEnvelope>,
   now: Date = new Date(),
 ): CompositionResult {
@@ -234,7 +262,7 @@ export function compileComposition(
     dropped,
     composition: {
       artifactId: `vc-${dataHash.slice(0, 12)}`,
-      schemaVersion: COMPOSITION_SCHEMA_VERSION,
+      schemaVersion: blocks.some((b) => b.type === 'miss_pattern' || b.type === 'putt_profile' || b.type === 'season_compare' || b.type === 'hole_strip') ? COMPOSITION_SCHEMA_V2 : COMPOSITION_SCHEMA_VERSION,
       kind: 'compose',
       ...body,
       evidenceRefs,

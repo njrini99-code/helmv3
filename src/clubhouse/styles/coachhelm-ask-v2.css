@@ -151,3 +151,27 @@ html[data-fw-theme='dark'] .ch-th[data-v2] {
 @media (prefers-reduced-motion: reduce) {
   .ch-th[data-v2] .conf.flash::before, .ch-th[data-v2] .receipt.in .ck::after, .ch-th[data-v2] .conf .btns .p.cap::before, .ch-th[data-v2] .acard .tile.busy::after { animation: none; display: none; }
 }
+/* AK6, AK7: shot and engine blocks. Drawn at rest; marks never grow on first paint without the card's own reveal. */
+.ch-ak-miss { margin: 0; display: grid; gap: 8px; justify-items: center; }
+.ch-ak-miss svg { width: 180px; height: 180px; }
+.ch-ak-miss .trk { fill: var(--ch-well-bg-flat); }
+.ch-ak-miss .w { fill: var(--ch-chart-flat, #6b675f); opacity: 0.55; }
+.ch-ak-miss .w.hi { fill: var(--ch-chart-loss-fill, #b86f0c); opacity: 1; }
+.ch-ak-miss .flag { fill: var(--ch-text-primary); }
+.ch-ak-miss figcaption { font: 400 14px/1.3 var(--ch-font-sans); color: var(--ch-text-secondary); text-align: center; }
+.ch-ak-putts { display: grid; gap: 8px; }
+.ch-ak-putts > div { display: grid; grid-template-columns: 84px minmax(0, 1fr) 40px 24px; align-items: center; gap: 8px; font: 400 14px/1.2 var(--ch-font-sans); color: var(--ch-text-secondary); }
+.ch-ak-putts .t { display: block; height: 10px; border-radius: 5px; background: var(--ch-chart-track, #ebe5d8); overflow: hidden; }
+.ch-ak-putts .t i { display: block; height: 100%; background: var(--ch-chart-gain-fill, #1f6b45); transform-origin: 0 50%; }
+.ch-ak-putts b { font-weight: 600; color: var(--ch-text-primary); text-align: right; }
+.ch-ak-putts small { color: var(--ch-text-tertiary); text-align: right; font-size: 13px; }
+.ch-ak-season { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.ch-ak-season div { padding: 12px; border-radius: 12px; background: var(--ch-well-bg-flat); }
+.ch-ak-season b { display: block; font: 500 24px/1 var(--ch-font-sans); color: var(--ch-text-primary); }
+.ch-ak-season span { display: block; margin-top: 6px; font: 400 13px/1.25 var(--ch-font-sans); color: var(--ch-text-secondary); }
+.ch-ak-season p { grid-column: 1 / -1; margin: 0; font: 400 13px/1.35 var(--ch-font-sans); color: var(--ch-text-tertiary); }
+.ch-ak-holes { display: grid; grid-template-columns: repeat(9, minmax(0, 1fr)); gap: 4px; }
+.ch-ak-holes span { display: grid; gap: 2px; justify-items: center; padding: 6px 0; border-radius: 8px; background: var(--ch-well-bg-flat); }
+.ch-ak-holes small { font-size: 12px; color: var(--ch-text-tertiary); }
+.ch-ak-holes b { font: 600 14px/1 var(--ch-font-sans); color: var(--ch-text-primary); }
+.ch-ak-holes .u b { color: var(--ch-flag, #b3261e); }
