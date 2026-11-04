@@ -1,0 +1,1538 @@
+<title>CoachHelm Player Lenses</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Instrument+Sans:wdth,wght@75..100,400..700&family=JetBrains+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: sticky device stage on the left (one live prototype, phone or desktop, coach or player), chapters on the right.
+   App tokens are DESIGN_LANGUAGE.md (31 Oct) verbatim; page tokens match the Messages redesign page. */
+:root {
+  --pg: #f5f0e4; --pg-2: #ede8db; --card: #fcfaf5; --ink: #1c1b18; --ink-2: #3a3833; --ink-3: #5f5c55;
+  --rule: rgb(28 25 18 / 0.12); --rule-2: rgb(28 25 18 / 0.2); --champ: #8a6f3c; --champ-rule: rgb(176 149 96 / 0.38);
+  --green: #155a39; --green-ink: #155a39; --green-tint: #e6efe8; --frame: #0a331f; --frame-ink: #f4eedd; --code-bg: #efeadd;
+  --shadow-dev: 0 0 0 1px rgb(28 25 18 / 0.08), 0 30px 60px -30px rgb(10 51 31 / 0.45), 0 12px 24px -12px rgb(28 25 18 / 0.18);
+
+  --a-page: #f2f0e9; --a-card: #fffefb; --a-well: #f6f4ee; --a-ink: #1c1b18; --a-ink-2: #46433d; --a-ink-3: #5f5c55;
+  --a-gain: #14613d; --a-loss: #9a5700; --a-accent: #155a39; --a-sep: rgb(28 27 24 / 0.10); --a-ring: rgb(28 27 24 / 0.07);
+  --a-shadow: 0 0 0 1px var(--a-ring), 0 1px 2px rgb(28 25 18 / 0.05), 0 8px 20px -12px rgb(28 25 18 / 0.12);
+  --a-frame: #0a331f; --a-frame-ink: #f4eedd; --a-frame-icon: rgb(240 233 214 / 0.86); --a-champ: #dccda6;
+  --a-feat: #0b3a25; --a-feat-1: #f4f1e8; --a-feat-2: #d3d9cb; --a-feat-gain: #8fd3aa; --a-feat-loss: #edb867;
+  --c-gain: #1f6b45; --c-loss: #b86f0c; --c-neutral: #6b675f; --c-track: #ebe5d8; --c-zero: #5f5c55;
+  --yr-sr: #1f6b45; --yr-jr: #3d6787; --yr-so: #86672c; --yr-fr: #9a4a35;
+  --a-glass: rgb(253 251 247 / 0.86); --a-scrim: rgb(20 20 18 / 0.36); --a-press: rgb(28 27 24 / 0.05); --a-skel: #e2dbca; --a-skel-sheen: #ece6d8; --a-ctl: rgb(28 25 18 / 0.14); --a-ctl-strong: rgb(28 25 18 / 0.24); --a-sel: #eef5f0; --a-hover: #f9f7f1; --a-subtle: #f5f2ea;
+  --seg-a: #1f6b45; --seg-b: #155a39; --seg-ink: #f4eedd;
+
+  --f-sans: "Instrument Sans", ui-sans-serif, -apple-system, "Segoe UI", system-ui, sans-serif;
+  --f-mono: "JetBrains Mono", ui-monospace, "SF Mono", Menlo, monospace;
+  --topbar: 60px;
+  --ease: cubic-bezier(0.22, 1, 0.36, 1);
+  --spring: cubic-bezier(0.22, 1, 0.36, 1);
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --pg: #131814; --pg-2: #181d19; --card: #1b201c; --ink: #f1ecdf; --ink-2: #e2dccd; --ink-3: #bab3a4;
+    --rule: rgb(237 231 216 / 0.12); --rule-2: rgb(237 231 216 / 0.2); --champ: #c9ad74; --champ-rule: rgb(205 187 142 / 0.3);
+    --green: #23704a; --green-ink: #84c9a0; --green-tint: #1d2a22; --frame: #08150e; --frame-ink: #f4eedd; --code-bg: #20261f;
+    --shadow-dev: 0 0 0 1px rgb(237 231 216 / 0.08), 0 30px 60px -30px rgb(0 0 0 / 0.8), 0 12px 24px -12px rgb(0 0 0 / 0.5);
+    --a-page: #0e120f; --a-card: #191e1a; --a-well: #141815; --a-ink: #f1ecdf; --a-ink-2: #d0c9b8; --a-ink-3: #ada697;
+    --a-gain: #7cc79b; --a-loss: #e7ae57; --a-accent: #7cc79b; --a-sep: rgb(241 236 223 / 0.10); --a-ring: rgb(255 255 255 / 0.06);
+    --a-shadow: 0 0 0 1px var(--a-ring), inset 0 1px 0 rgb(255 255 255 / 0.04);
+    --a-frame: #08150e; --a-feat: #123d29;
+    --c-gain: #4fa877; --c-loss: #e09a35; --c-neutral: #a39d90; --c-track: #2c322d; --c-zero: #ada697;
+    --yr-sr: #2a7a51; --yr-jr: #46739a; --yr-so: #8b6b30; --yr-fr: #a3533e;
+    --a-glass: rgb(22 27 23 / 0.86); --a-scrim: rgb(2 6 4 / 0.58); --a-press: rgb(241 236 223 / 0.06); --a-skel: #252c26; --a-skel-sheen: #2e362f; --a-ctl: rgb(237 231 216 / 0.17); --a-ctl-strong: rgb(237 231 216 / 0.3); --a-sel: #16281d; --a-hover: #212722; --a-subtle: #181d19;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --pg: #131814; --pg-2: #181d19; --card: #1b201c; --ink: #f1ecdf; --ink-2: #e2dccd; --ink-3: #bab3a4;
+  --rule: rgb(237 231 216 / 0.12); --rule-2: rgb(237 231 216 / 0.2); --champ: #c9ad74; --champ-rule: rgb(205 187 142 / 0.3);
+  --green: #23704a; --green-ink: #84c9a0; --green-tint: #1d2a22; --frame: #08150e; --frame-ink: #f4eedd; --code-bg: #20261f;
+  --shadow-dev: 0 0 0 1px rgb(237 231 216 / 0.08), 0 30px 60px -30px rgb(0 0 0 / 0.8), 0 12px 24px -12px rgb(0 0 0 / 0.5);
+  --a-page: #0e120f; --a-card: #191e1a; --a-well: #141815; --a-ink: #f1ecdf; --a-ink-2: #d0c9b8; --a-ink-3: #ada697;
+  --a-gain: #7cc79b; --a-loss: #e7ae57; --a-accent: #7cc79b; --a-sep: rgb(241 236 223 / 0.10); --a-ring: rgb(255 255 255 / 0.06);
+  --a-shadow: 0 0 0 1px var(--a-ring), inset 0 1px 0 rgb(255 255 255 / 0.04);
+  --a-frame: #08150e; --a-feat: #123d29;
+  --c-gain: #4fa877; --c-loss: #e09a35; --c-neutral: #a39d90; --c-track: #2c322d; --c-zero: #ada697;
+  --yr-sr: #2a7a51; --yr-jr: #46739a; --yr-so: #8b6b30; --yr-fr: #a3533e;
+  --a-glass: rgb(22 27 23 / 0.86); --a-scrim: rgb(2 6 4 / 0.58); --a-press: rgb(241 236 223 / 0.06); --a-skel: #252c26; --a-skel-sheen: #2e362f; --a-ctl: rgb(237 231 216 / 0.17); --a-ctl-strong: rgb(237 231 216 / 0.3); --a-sel: #16281d; --a-hover: #212722; --a-subtle: #181d19;
+  color-scheme: dark;
+}
+
+/* ───── Page ───── */
+html { -webkit-text-size-adjust: 100%; }
+body { background: var(--pg); color: var(--ink); font: 400 15px/1.55 var(--f-sans); -webkit-font-smoothing: antialiased; }
+body::before { content: ""; position: fixed; inset: 0 0 auto; height: env(safe-area-inset-top, 0px); z-index: 30; background: var(--frame); }
+*, *::before, *::after { box-sizing: border-box; }
+button { font: inherit; color: inherit; }
+:focus-visible { outline: 2px solid var(--champ); outline-offset: 2px; }
+
+.top { position: sticky; top: env(safe-area-inset-top, 0px); z-index: 20; display: flex; align-items: center; gap: 12px 16px; flex-wrap: wrap; min-height: var(--topbar);
+  padding-block: 10px; padding-left: max(20px, env(safe-area-inset-left, 0px)); padding-right: max(20px, env(safe-area-inset-right, 0px));
+  background: var(--frame); color: var(--frame-ink); box-shadow: inset 0 -1px 0 rgb(201 173 116 / 0.35); }
+.brand { display: flex; align-items: center; gap: 10px; margin-right: auto; min-width: 0; }
+.brand svg { width: 26px; height: 26px; flex: none; }
+.brand b { font: 600 15px/1.2 var(--f-sans); letter-spacing: -0.01em; white-space: nowrap; }
+.brand span { font: 500 12px/1.2 var(--f-sans); color: rgb(244 238 221 / 0.75); white-space: nowrap; }
+.ctl { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.seg { display: inline-flex; padding: 3px; border-radius: 999px; background: rgb(244 238 221 / 0.1); box-shadow: inset 0 0 0 1px rgb(244 238 221 / 0.14); }
+.seg button { border: 0; background: none; padding: 6px 11px; border-radius: 999px; font: 500 12.5px/1 var(--f-sans); color: rgb(244 238 221 / 0.86); cursor: pointer; white-space: nowrap; }
+.seg button[aria-pressed="true"] { background: #f4eedd; color: #0b3a25; box-shadow: 0 1px 2px rgb(0 0 0 / 0.25); }
+
+.layout { display: grid; grid-template-columns: minmax(0, 1.05fr) minmax(0, 1fr); gap: 48px; max-width: 1500px; margin: 0 auto;
+  padding-block: 28px 96px; padding-left: max(24px, env(safe-area-inset-left, 0px)); padding-right: max(24px, env(safe-area-inset-right, 0px)); }
+.stage-col { min-width: 0; }
+.stage { position: sticky; top: calc(env(safe-area-inset-top, 0px) + var(--topbar) + 20px); height: calc(100vh - var(--topbar) - 44px - env(safe-area-inset-top, 0px)); min-height: 560px;
+  display: flex; flex-direction: column; align-items: center; gap: 14px; }
+.stage__box { position: relative; flex: 1; width: 100%; min-height: 0; }
+.stage__cap { display: flex; align-items: center; gap: 10px; min-height: 34px; padding: 6px 14px 6px 10px; border-radius: 999px; background: var(--card); box-shadow: 0 0 0 1px var(--rule); font: 500 13px/1.3 var(--f-sans); color: var(--ink-2); max-width: 100%; }
+.stage__cap i { width: 8px; height: 8px; flex: none; border-radius: 50%; background: var(--green-ink); opacity: 0.35; }
+.stage__cap.is-live i { opacity: 1; animation: live 1.2s ease-in-out infinite; }
+@keyframes live { 50% { transform: scale(0.6); } }
+.stage__cap span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.stage__cap .mono { color: var(--ink-3); font-family: var(--f-mono); font-size: 12px; }
+
+.chapters { min-width: 0; }
+.hero { padding: 8px 0 40px; border-bottom: 1px solid var(--champ-rule); }
+.eyebrow { margin: 0 0 10px; font: 600 12px/1 var(--f-sans); letter-spacing: 0.08em; text-transform: uppercase; color: var(--champ); }
+h1 { margin: 0 0 16px; font: 600 clamp(32px, 4vw, 46px)/1.04 var(--f-sans); font-stretch: 92%; letter-spacing: -0.03em; text-wrap: balance; }
+h2 { margin: 0 0 12px; font: 600 26px/1.15 var(--f-sans); letter-spacing: -0.02em; text-wrap: balance; }
+h3 { margin: 22px 0 8px; font: 600 16px/1.3 var(--f-sans); letter-spacing: -0.01em; }
+p { margin: 0 0 14px; max-width: 66ch; }
+.lead { font-size: 17px; color: var(--ink-2); }
+.muted { color: var(--ink-3); }
+.big-changes { margin: 22px 0 0; padding: 0; list-style: none; display: grid; gap: 12px; counter-reset: c; }
+.big-changes li { display: grid; grid-template-columns: 28px minmax(0, 1fr); gap: 12px; align-items: start; }
+.big-changes li::before { counter-increment: c; content: counter(c); display: grid; place-items: center; width: 26px; height: 26px; border-radius: 50%; background: var(--green-tint); color: var(--green-ink); font: 600 13px/1 var(--f-sans); }
+.big-changes b { font-weight: 600; }
+.ch { padding: 44px 0 40px; border-bottom: 1px solid var(--champ-rule); scroll-margin-top: calc(var(--topbar) + 20px); }
+.plays { display: flex; flex-wrap: wrap; gap: 8px; margin: 18px 0 22px; }
+.play { display: inline-flex; align-items: center; gap: 8px; min-height: 40px; padding: 8px 15px 8px 11px; border: 0; border-radius: 999px; cursor: pointer;
+  background: var(--card); color: var(--ink); box-shadow: 0 0 0 1px var(--rule-2), 0 1px 2px rgb(28 25 18 / 0.06); font: 500 14px/1 var(--f-sans); transition: transform 0.12s, box-shadow 0.18s; }
+.play svg { width: 16px; height: 16px; color: var(--green-ink); }
+.play:hover { box-shadow: 0 0 0 1px var(--green-ink), 0 4px 12px -6px rgb(28 25 18 / 0.25); }
+.play:active { transform: scale(0.97); }
+.spec-wrap { overflow-x: auto; margin: 6px 0 10px; border-radius: 14px; background: var(--card); box-shadow: 0 0 0 1px var(--rule); }
+table { width: 100%; border-collapse: collapse; font-size: 13.5px; }
+th, td { padding: 11px 14px; text-align: left; vertical-align: top; border-bottom: 1px solid var(--rule); }
+th { font: 600 11.5px/1.2 var(--f-sans); letter-spacing: 0.06em; text-transform: uppercase; color: var(--ink-3); background: var(--pg-2); white-space: nowrap; }
+tr:last-child td { border-bottom: 0; }
+td b { font-weight: 600; }
+.yes { color: var(--green-ink); font-weight: 600; }
+.no { color: var(--ink-3); }
+code { font-family: var(--f-mono); font-size: 0.84em; padding: 1px 5px; border-radius: 5px; background: var(--code-bg); overflow-wrap: anywhere; }
+.where { display: grid; grid-template-columns: max-content minmax(0, 1fr); gap: 8px 16px; margin: 16px 0 0; padding: 16px 18px; border-radius: 14px; background: var(--pg-2); font-size: 14px; }
+.where dt { font: 600 12px/1.6 var(--f-sans); letter-spacing: 0.05em; text-transform: uppercase; color: var(--ink-3); }
+.where dd { margin: 0; min-width: 0; }
+.flow { display: grid; gap: 10px; margin: 16px 0; }
+.flow__row { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; padding: 14px; border-radius: 14px; background: var(--card); box-shadow: 0 0 0 1px var(--rule); }
+.flow__row b { width: 100%; font: 600 12px/1.4 var(--f-sans); letter-spacing: 0.06em; text-transform: uppercase; color: var(--ink-3); margin-bottom: 4px; }
+.flow__step { padding: 6px 10px; border-radius: 9px; background: var(--pg-2); font: 500 13.5px/1.3 var(--f-sans); }
+.flow__step.new { background: var(--green-tint); color: var(--green-ink); font-weight: 600; }
+.flow__arrow { color: var(--ink-3); font-size: 13px; }
+.calls { display: grid; gap: 12px; margin: 16px 0 0; padding: 0; list-style: none; }
+.calls li { padding: 16px 18px; border-radius: 14px; background: var(--card); box-shadow: 0 0 0 1px var(--rule); }
+.calls li b { display: block; margin-bottom: 4px; font-size: 15.5px; }
+.calls li p { margin: 0 0 6px; font-size: 14.5px; color: var(--ink-2); }
+.calls .pick { display: inline-block; margin-top: 4px; padding: 3px 9px; border-radius: 999px; background: var(--green-tint); color: var(--green-ink); font: 600 12.5px/1.5 var(--f-sans); }
+.src { margin: 14px 0 0; padding: 0; list-style: none; display: grid; gap: 10px; }
+.src li { padding: 14px 16px; border-radius: 14px; background: var(--card); box-shadow: 0 0 0 1px var(--rule); font-size: 14px; }
+.src li b { display: block; margin-bottom: 2px; }
+.src li span { color: var(--ink-2); }
+.src a { color: var(--green-ink); text-underline-offset: 2px; overflow-wrap: anywhere; font-size: 12.5px; }
+.foot { padding: 36px 0 0; font-size: 13px; color: var(--ink-3); }
+
+@media (max-width: 1080px) {
+  .layout { grid-template-columns: minmax(0, 1fr); gap: 8px; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); }
+  .stage { position: relative; top: 0; height: min(88vh, 800px); min-height: 520px; }
+  .brand span { display: none; }
+}
+@media (max-width: 560px) {
+  .top { padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); }
+  .where { grid-template-columns: minmax(0, 1fr); }
+  h2 { font-size: 23px; }
+}
+
+/* ───── Devices ───── */
+.dev { position: absolute; left: 50%; top: 50%; transform-origin: 50% 50%; }
+.phone { width: 402px; height: 874px; border-radius: 62px; padding: 11px; background: #1a1c19; box-shadow: var(--shadow-dev), inset 0 0 0 1.5px #3b3e39, inset 0 0 0 4px #121411; }
+.phone__scr { position: relative; width: 100%; height: 100%; border-radius: 52px; overflow: hidden; background: var(--a-page); isolation: isolate; }
+.island { position: absolute; z-index: 60; top: 11px; left: 50%; width: 124px; height: 36px; margin-left: -62px; border-radius: 20px; background: #000; pointer-events: none; }
+.sbar { position: absolute; z-index: 55; top: 0; left: 0; right: 0; height: 54px; display: flex; align-items: center; justify-content: space-between; padding: 6px 34px 0 46px; font: 600 16px/1 var(--f-sans); color: var(--a-frame-ink); pointer-events: none; }
+.sbar svg { height: 12px; fill: currentColor; }
+.homei { position: absolute; z-index: 55; bottom: 8px; left: 50%; width: 140px; height: 5px; margin-left: -70px; border-radius: 3px; background: var(--a-ink); opacity: 0.85; pointer-events: none; }
+.desk { width: 1280px; height: 800px; border-radius: 16px; overflow: hidden; background: var(--a-frame); box-shadow: var(--shadow-dev); display: grid; grid-template-columns: 216px minmax(0, 1fr); }
+
+/* ───── App ───── */
+.app { --k: 1; font-family: var(--f-sans); color: var(--a-ink); -webkit-font-smoothing: antialiased; }
+.app svg { flex: none; }
+.ic { width: 22px; height: 22px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+.num { font-variant-numeric: tabular-nums; }
+.pg { position: absolute; inset: 0; overflow: hidden; background: var(--a-page); will-change: transform; }
+.scroll { position: absolute; inset: 0; overflow-y: auto; overflow-x: hidden; overscroll-behavior: contain; scrollbar-width: none; }
+.scroll::-webkit-scrollbar { display: none; }
+
+/* Green phone bar, unchanged from today */
+.gbar { position: absolute; z-index: 20; left: 0; right: 0; top: 0; height: 98px; padding: 54px 6px 0 16px; display: grid; grid-template-columns: 1fr auto 1fr; align-items: center; background: var(--a-frame); color: var(--a-frame-ink); }
+.gbar::after { content: ""; position: absolute; left: 0; right: 0; bottom: -16px; height: 16px; background: var(--a-page); border-radius: 16px 16px 0 0; }
+.gbar .shade { position: absolute; left: 0; right: 0; bottom: -30px; height: 14px; background: linear-gradient(rgb(0 0 0 / 0.08), transparent); opacity: 0; transition: opacity 0.18s var(--spring); pointer-events: none; }
+.gbar.is-scrolled .shade { opacity: 1; }
+.gbar__sw { justify-self: start; display: inline-flex; align-items: center; gap: 6px; border: 0; background: none; padding: 0; color: var(--a-frame-ink); font: 600 calc(18px * var(--k))/1 var(--f-sans); cursor: pointer; }
+.gbar__sw svg { width: 16px; height: 16px; opacity: 0.85; }
+.gbar__dot { width: 7px; height: 7px; border-radius: 50%; background: var(--a-champ); }
+.gbar__back { justify-self: start; display: inline-flex; align-items: center; gap: 2px; margin-left: -8px; border: 0; background: none; padding: 8px 4px; color: var(--a-champ); font: 500 calc(17px * var(--k))/1 var(--f-sans); cursor: pointer; }
+.gbar__back svg { width: 22px; height: 22px; stroke-width: 2.2; }
+.gbar__title { font: 600 calc(17px * var(--k))/1 var(--f-sans); white-space: nowrap; }
+.gbar__end { justify-self: end; display: flex; }
+.gbtn { position: relative; display: grid; place-items: center; width: 44px; height: 44px; border: 0; background: none; color: var(--a-frame-icon); cursor: pointer; }
+.gbtn b { position: absolute; top: 4px; right: 4px; min-width: 18px; height: 18px; padding: 0 5px; border-radius: 999px; background: #f4eedd; color: #0b3a25; font: 700 11px/18px var(--f-sans); text-align: center; }
+
+.body { padding: 112px 16px 48px; display: flex; flex-direction: column; gap: 24px; }
+.desk .body { padding: 20px 28px 40px; }
+.lt { margin: 0; font: 600 calc(34px * var(--k))/1.2 var(--f-sans); font-stretch: 88%; letter-spacing: -0.034em; }
+.ctx { margin: -18px 0 0; font: 400 calc(15px * var(--k))/1.33 var(--f-sans); color: var(--a-ink-2); }
+.titleblock { display: flex; flex-direction: column; gap: 22px; }
+
+/* Segmented (the green chip, one shade exception) */
+.aseg { position: relative; display: grid; grid-auto-flow: column; grid-auto-columns: 1fr; padding: 3px; border-radius: 12px; background: var(--a-well); box-shadow: inset 0 1px 2px rgb(28 25 18 / 0.06), 0 0 0 1px var(--a-ring); }
+.aseg button { position: relative; z-index: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; min-height: 36px; border: 0; background: none; border-radius: 9px; font: 500 calc(14px * var(--k))/1.1 var(--f-sans); color: var(--a-ink-2); cursor: pointer; transition: color 0.18s var(--spring); white-space: nowrap; padding: 0 10px; }
+.aseg button[aria-pressed="true"] { color: var(--seg-ink); font-weight: 600; }
+.aseg .thumb { position: absolute; z-index: 0; top: 3px; bottom: 3px; left: 3px; border-radius: 9px; background: linear-gradient(180deg, var(--seg-a), var(--seg-b)); box-shadow: 0 1px 2px rgb(11 58 37 / 0.3), inset 0 1px 0 rgb(255 255 255 / 0.14); }
+.sticky-seg { position: sticky; top: 104px; z-index: 5; margin: -8px 0 0; }
+.desk .sticky-seg { position: static; }
+
+/* Cards */
+.card { position: relative; border-radius: 16px; background: var(--a-card); box-shadow: var(--a-shadow); overflow: hidden; }
+.card__h { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; padding: 16px 16px 12px; }
+.card__h h4 { margin: 0; font: 600 calc(17px * var(--k))/1.3 var(--f-sans); letter-spacing: -0.01em; display: flex; align-items: center; gap: 7px; }
+.card__h h4 svg { width: 16px; height: 16px; color: var(--a-ink-2); }
+.card__h small { font: 400 calc(15px * var(--k))/1.33 var(--f-sans); color: var(--a-ink-2); text-align: right; }
+.card__b { padding: 4px 20px 18px; }
+.card__n { margin: 0; padding: 12px 16px 16px; border-top: 1px solid var(--a-sep); font: 400 calc(15px * var(--k))/1.4 var(--f-sans); color: var(--a-ink-2); }
+/* Cards and rows never scale (app press rule, owner 2026-10-01): a pressed tint lands 50ms after the finger, clears at once. */
+.card.tap { cursor: pointer; transition: box-shadow 0s; }
+.card.tap:active { box-shadow: var(--a-shadow), inset 0 0 0 999px var(--a-press); transition-delay: 50ms; }
+.wrap-collapse { overflow: hidden; }
+
+.feat { border-radius: 16px; padding: 20px; background: var(--a-feat); color: var(--a-feat-1); box-shadow: 0 1px 2px rgb(11 58 37 / 0.2), 0 14px 30px -18px rgb(11 58 37 / 0.6); display: flex; flex-direction: column; gap: 12px; }
+.feat__who { display: flex; align-items: center; gap: 10px; font: 500 calc(15px * var(--k))/1.3 var(--f-sans); color: var(--a-feat-2); }
+.feat__who b { color: var(--a-feat-1); font-weight: 600; }
+.feat__k { font: 500 calc(15px * var(--k))/1.3 var(--f-sans); color: var(--a-feat-2); }
+.feat__t { margin: 0; font: 600 calc(26px * var(--k))/1.15 var(--f-sans); font-stretch: 92%; letter-spacing: -0.025em; text-wrap: balance; }
+.feat__cmp { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
+.feat__cmp div { padding: 10px 12px; border-radius: 12px; background: rgb(255 255 255 / 0.07); }
+.feat__cmp b { display: block; font: 500 calc(24px * var(--k))/1 var(--f-sans); font-stretch: 92%; letter-spacing: -0.03em; font-variant-numeric: tabular-nums; }
+.feat__cmp b.loss { color: var(--a-feat-loss); }
+.feat__cmp span { display: block; margin-top: 5px; font: 400 calc(13px * var(--k))/1.2 var(--f-sans); color: var(--a-feat-2); }
+.feat__p { margin: 0; font: 400 calc(15px * var(--k))/1.42 var(--f-sans); color: var(--a-feat-2); }
+.feat__p b { color: var(--a-feat-1); font-weight: 600; }
+.feat__ev { display: flex; flex-wrap: wrap; gap: 6px; }
+.feat__ev span { padding: 4px 9px; border-radius: 7px; background: rgb(255 255 255 / 0.1); font: 600 calc(13px * var(--k))/1.3 var(--f-sans); color: var(--a-feat-1); }
+.feat__acts { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 2px; }
+.btn { display: inline-flex; align-items: center; justify-content: center; gap: 8px; min-height: 44px; padding: 0 16px; border: 0; border-radius: 12px; font: 600 calc(15px * var(--k))/1 var(--f-sans); cursor: pointer; }
+.btn svg { width: 18px; height: 18px; }
+.btn.light { background: #f4f1e8; color: #0b3a25; }
+.btn.ghost { background: rgb(255 255 255 / 0.1); color: var(--a-feat-1); }
+.btn.pri { background: linear-gradient(180deg, var(--seg-a), var(--seg-b)); color: #f4eedd; }
+.btn.sec { background: var(--a-well); color: var(--a-ink); box-shadow: 0 0 0 1px var(--a-ring); }
+.btn.is-done { background: rgb(143 211 170 / 0.12); color: var(--a-feat-gain); } /* .12, not .18: 5.38:1 dark (.18 gave 4.71) */
+
+.av { display: inline-grid; place-items: center; flex: none; width: var(--s, 32px); height: var(--s, 32px); border-radius: 50%; background: var(--yc, var(--yr-jr)); color: #fff; font: 600 calc(var(--s, 32px) * 0.38)/1 var(--f-sans); box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.18); }
+.chip { display: inline-block; padding: 2px 7px; border-radius: 7px; font: 600 calc(13px * var(--k))/1.45 var(--f-sans); white-space: nowrap; }
+.chip.loss { color: var(--a-loss); background: color-mix(in srgb, var(--a-loss) 8%, transparent); } /* 8%, not 11%: 4.99:1 light (11% gave 4.78) */
+.chip.gain { color: var(--a-gain); background: color-mix(in srgb, var(--a-gain) 11%, transparent); }
+.chip.plain { color: var(--a-ink-2); background: color-mix(in srgb, var(--a-ink-2) 9%, transparent); }
+.chip.acc { color: var(--a-accent); background: color-mix(in srgb, var(--a-accent) 11%, transparent); }
+
+/* Rows */
+.rows { display: flex; flex-direction: column; }
+.r { position: relative; display: grid; grid-template-columns: auto minmax(0, 1fr) auto; align-items: center; gap: 12px; min-height: 64px; padding: 10px 16px; border: 0; background: none; text-align: left; width: 100%; cursor: pointer; color: var(--a-ink); }
+.r + .r::before { content: ""; position: absolute; top: 0; left: 16px; right: 0; height: 1px; background: var(--a-sep); }
+.r { transition: background-color 0s; }
+.r:active { background: var(--a-press); transition-delay: 50ms; }
+.r.is-sel { background: var(--a-press); }
+.r.static:active { background: none; }
+.r__t { display: flex; flex-direction: column; gap: 3px; min-width: 0; }
+.r__t b { font: 500 calc(16px * var(--k))/1.3 var(--f-sans); }
+.r__t small { font: 400 calc(15px * var(--k))/1.33 var(--f-sans); color: var(--a-ink-2); }
+.r__e { display: flex; align-items: center; gap: 6px; color: var(--a-ink-3); }
+.r__e svg { width: 14px; height: 14px; }
+.r__fig { font: 600 calc(17px * var(--k))/1 var(--f-sans); font-variant-numeric: tabular-nums; }
+.r__ic { display: grid; place-items: center; width: 28px; height: 28px; border-radius: 8px; background: var(--a-well); color: var(--a-ink-2); box-shadow: 0 0 0 1px var(--a-ring); }
+.r__ic svg { width: 16px; height: 16px; }
+.r.static { cursor: default; }
+.r.static:active { background: none; }
+.r.undo b { color: var(--a-ink-2); font-weight: 400; }
+.r.undo .lnk { color: var(--a-accent); font: 600 calc(15px * var(--k))/1 var(--f-sans); }
+
+/* Handshake track */
+.hs { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 0; margin: 4px 0 2px; }
+.hs__s { position: relative; display: flex; flex-direction: column; gap: 4px; padding-top: 22px; }
+.hs__s::before { content: ""; position: absolute; top: 6px; left: 0; right: 0; height: 2px; background: var(--c-track); }
+.hs__s:first-child::before { left: 7px; }
+.hs__s:last-child::before { right: auto; width: 7px; }
+.hs__s .fill { position: absolute; top: 6px; left: 0; height: 2px; width: 0; background: var(--c-gain); transition: width 0.26s var(--spring); }
+.hs__s.on .fill { width: 100%; }
+.hs__s:last-child .fill { display: none; }
+.hs__s i { position: absolute; top: 0; left: 0; width: 14px; height: 14px; border-radius: 50%; background: var(--a-card); box-shadow: inset 0 0 0 2px var(--c-track); display: grid; place-items: center; transition: box-shadow 0.18s var(--spring), background 0.18s var(--spring); }
+.hs__s.on i { background: var(--c-gain); box-shadow: none; }
+.hs__s i svg { width: 9px; height: 9px; stroke: #fff; stroke-width: 3.2; stroke-dasharray: 14; stroke-dashoffset: 14; transition: stroke-dashoffset 0.26s 0.12s var(--spring); }
+.hs__s.on i svg { stroke-dashoffset: 0; }
+.hs__s b { font: 600 calc(15px * var(--k))/1.2 var(--f-sans); }
+.hs__s small { font: 400 calc(13px * var(--k))/1.3 var(--f-sans); color: var(--a-ink-3); font-variant-numeric: tabular-nums; }
+.hs__s:not(.on) b { color: var(--a-ink-2); font-weight: 500; }
+
+.goal { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 4px 12px; align-items: end; margin-top: 16px; padding-top: 14px; border-top: 1px solid var(--a-sep); }
+.goal__t b { display: block; font: 500 calc(16px * var(--k))/1.3 var(--f-sans); }
+.goal__t small { font: 400 calc(15px * var(--k))/1.33 var(--f-sans); color: var(--a-ink-2); }
+.goal svg { grid-column: 1 / -1; width: 100%; height: 72px; overflow: visible; }
+.drill { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 12px; align-items: start; margin-top: 14px; padding: 12px; border-radius: 12px; background: var(--a-well); }
+.drill .r__ic { background: var(--a-card); }
+.drill b { display: block; font: 500 calc(16px * var(--k))/1.3 var(--f-sans); }
+.drill small { display: block; font: 400 calc(15px * var(--k))/1.38 var(--f-sans); color: var(--a-ink-2); }
+
+/* SG chart */
+.sg { display: flex; flex-direction: column; gap: 14px; padding-top: 4px; }
+.sg__row { display: grid; grid-template-columns: 108px minmax(0, 1fr) 46px; align-items: center; gap: 10px; }
+.sg__row span { font: 500 calc(15px * var(--k))/1.2 var(--f-sans); }
+.sg__row b { text-align: right; font: 600 calc(16px * var(--k))/1 var(--f-sans); font-variant-numeric: tabular-nums; }
+.sg__row b.loss { color: var(--a-loss); } .sg__row b.gain { color: var(--a-gain); }
+.sg__trk { position: relative; height: 22px; border-radius: 6px; background: var(--c-track); }
+.sg__trk::after { content: ""; position: absolute; left: 50%; top: -4px; bottom: -4px; width: 1.5px; margin-left: -0.75px; background: var(--c-zero); }
+.sg__bar { position: absolute; top: 3px; bottom: 3px; border-radius: 4px; transform-origin: var(--o) 50%; }
+.sg__bar.loss { background: var(--c-loss); right: 50%; --o: 100%; }
+.sg__bar.gain { background: var(--c-gain); left: 50%; --o: 0%; }
+.sg__axis { display: grid; grid-template-columns: 108px minmax(0, 1fr) 46px; gap: 10px; font: 400 calc(13px * var(--k))/1 var(--f-sans); color: var(--a-ink-3); }
+.sg__axis div { display: flex; justify-content: space-between; }
+.sg__team { position: absolute; top: -3px; bottom: -3px; width: 3px; margin-left: -1.5px; border-radius: 2px; background: var(--a-ink); box-shadow: 0 0 0 1.5px var(--a-card); }
+.sg__key { position: relative; display: flex; align-items: center; gap: 8px; padding-left: 118px; font: 400 calc(13px * var(--k))/1.2 var(--f-sans); color: var(--a-ink-2); }
+.sg__key .sg__team { position: relative; top: auto; bottom: auto; display: inline-block; height: 14px; margin: 0; }
+
+.field { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 14px; align-items: center; }
+.field__fig { font: 500 calc(40px * var(--k))/1 var(--f-sans); font-stretch: 92%; letter-spacing: -0.04em; font-variant-numeric: tabular-nums; color: var(--a-gain); }
+.field__fig small { display: block; margin-top: 6px; font: 400 calc(13px * var(--k))/1.2 var(--f-sans); letter-spacing: 0; color: var(--a-ink-3); }
+.field__t b { display: block; font: 500 calc(16px * var(--k))/1.3 var(--f-sans); }
+.field__t small { display: block; margin-top: 2px; font: 400 calc(15px * var(--k))/1.38 var(--f-sans); color: var(--a-ink-2); }
+.dots { position: relative; height: 40px; margin-top: 16px; }
+.dots::before { content: ""; position: absolute; left: 0; right: 0; top: 19px; height: 2px; border-radius: 2px; background: var(--c-track); }
+.dots i { position: absolute; top: 13px; width: 14px; height: 14px; margin-left: -7px; border-radius: 50%; background: var(--c-neutral); box-shadow: 0 0 0 2px var(--a-card); }
+.dots i.me { top: 10px; width: 20px; height: 20px; margin-left: -10px; background: var(--c-gain); }
+.dots i.mean { top: 8px; width: 2px; height: 24px; margin-left: -1px; border-radius: 1px; background: var(--c-zero); box-shadow: none; }
+.dots__lab { display: flex; justify-content: space-between; font: 400 calc(13px * var(--k))/1 var(--f-sans); color: var(--a-ink-3); }
+
+.kv { display: grid; grid-template-columns: max-content minmax(0, 1fr); gap: 10px 16px; font: 400 calc(15px * var(--k))/1.38 var(--f-sans); }
+.kv dt { color: var(--a-ink-2); }
+.kv dd { margin: 0; font-weight: 500; }
+.vis { display: inline-flex; align-items: center; gap: 6px; font: 500 calc(13px * var(--k))/1.2 var(--f-sans); color: var(--a-ink-2); }
+.vis svg { width: 14px; height: 14px; }
+.tr3 { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; margin-bottom: 14px; }
+.tr3 div { padding: 12px; border-radius: 12px; background: var(--a-well); }
+.tr3 b { display: block; font: 500 calc(28px * var(--k))/1 var(--f-sans); font-stretch: 92%; letter-spacing: -0.03em; font-variant-numeric: tabular-nums; }
+.tr3 b.gain { color: var(--a-gain); }
+.tr3 span { display: block; margin-top: 6px; font: 400 calc(13px * var(--k))/1.25 var(--f-sans); color: var(--a-ink-2); }
+
+/* Preview pill (coach looking through the player's lens) */
+.pv { position: sticky; top: 158px; z-index: 6; align-self: center; display: inline-flex; align-items: center; gap: 8px; margin: -12px 0 -8px; padding: 8px 14px 8px 10px; border-radius: 999px; background: var(--a-card); box-shadow: 0 0 0 1px var(--a-ring), 0 6px 18px -8px rgb(28 25 18 / 0.3); font: 500 calc(14px * var(--k))/1.2 var(--f-sans); }
+.pv svg { width: 16px; height: 16px; color: var(--a-accent); }
+.desk .pv { top: 12px; }
+
+/* Sheet */
+.ovl { position: absolute; inset: 0; z-index: 50; }
+.ovl__bg { position: absolute; inset: 0; background: var(--a-scrim); }
+.sheet { position: absolute; left: 0; right: 0; bottom: 0; max-height: 86%; display: flex; flex-direction: column; border-radius: 20px 20px 0 0; background: var(--a-card); box-shadow: 0 -10px 40px -10px rgb(0 0 0 / 0.3); }
+.desk .sheet { left: 50%; right: auto; top: 50%; bottom: auto; width: 480px; max-height: 86%; border-radius: 20px; translate: -50% -50%; }
+.sheet__grab { width: 36px; height: 5px; margin: 7px auto 0; border-radius: 3px; background: var(--a-sep); flex: none; }
+.desk .sheet__grab { display: none; }
+.sheet__h { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; padding: 14px 20px 8px; }
+.sheet__h h4 { margin: 4px 0 0; font: 600 calc(22px * var(--k))/1.2 var(--f-sans); letter-spacing: -0.02em; }
+.sheet__h .x { display: grid; place-items: center; width: 32px; height: 32px; border: 0; border-radius: 50%; background: var(--a-well); color: var(--a-ink-2); cursor: pointer; flex: none; }
+.sheet__h .x svg { width: 16px; height: 16px; }
+.sheet__b { overflow-y: auto; padding: 4px 16px 34px; display: flex; flex-direction: column; gap: 16px; scrollbar-width: none; }
+.well { border-radius: 12px; background: var(--a-well); box-shadow: inset 0 1px 2px rgb(28 25 18 / 0.06); padding: 14px; }
+.well h5 { margin: 0 0 10px; font: 600 calc(15px * var(--k))/1.3 var(--f-sans); }
+.gauge { display: flex; flex-direction: column; gap: 10px; }
+.gauge div { display: grid; grid-template-columns: 56px minmax(0, 1fr) 36px; gap: 10px; align-items: center; font: 500 calc(15px * var(--k))/1 var(--f-sans); }
+.gauge i { display: block; height: 10px; border-radius: 5px; background: var(--c-neutral); transform-origin: 0 50%; }
+.gauge i.me { background: var(--c-loss); }
+.gauge b { text-align: right; font-variant-numeric: tabular-nums; }
+.strip { display: flex; align-items: flex-end; gap: 6px; height: 64px; }
+.strip i { flex: 1; border-radius: 4px 4px 0 0; background: var(--c-neutral); transform-origin: 50% 100%; min-height: 3px; }
+.strip i.hi { background: var(--c-loss); }
+.strip__lab { display: flex; justify-content: space-between; margin-top: 6px; font: 400 calc(13px * var(--k))/1 var(--f-sans); color: var(--a-ink-3); }
+.holes { display: flex; flex-direction: column; gap: 8px; }
+.holes div { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 10px; font: 400 calc(15px * var(--k))/1.38 var(--f-sans); }
+.holes span { font: 600 calc(13px * var(--k))/1.5 var(--f-sans); color: var(--a-ink-2); white-space: nowrap; font-variant-numeric: tabular-nums; }
+.cx { display: flex; flex-direction: column; gap: 8px; padding-top: 12px; border-top: 1px solid var(--a-sep); } /* today's CorrectionChips, .ch-hl-cx */
+.cx__k { margin: 0; font: 600 calc(13px * var(--k))/calc(18px * var(--k)) var(--f-sans); color: var(--a-ink-2); }
+.corr, .cx__why { display: flex; flex-wrap: wrap; gap: 8px; }
+.cx__why { padding: 8px; border-radius: 12px; background: var(--a-subtle); }
+.corr button, .cx__why button { display: inline-flex; align-items: center; min-height: 36px; padding: 0 16px; border: 1px solid var(--a-ctl); border-radius: 999px; background: var(--card); font: 600 calc(13px * var(--k))/1.2 var(--f-sans); color: var(--a-ink); cursor: pointer; transition: background-color 0.18s var(--ease), border-color 0.18s var(--ease); }
+.corr button.is-on { border-color: var(--a-ctl-strong); background: var(--a-sel); }
+.corr button:active, .cx__why button:active { background: var(--a-hover); }
+.cx.is-done { flex-direction: row; align-items: center; justify-content: space-between; }
+.cx__done { margin: 0; font: 400 calc(14px * var(--k))/calc(19px * var(--k)) var(--f-sans); color: var(--a-ink-2); }
+.cx__chg { display: inline-flex; align-items: center; min-height: 36px; padding: 0 4px; border: 0; background: none; font: 600 calc(13px * var(--k))/1.2 var(--f-sans); color: var(--a-ink); text-decoration: underline; text-underline-offset: 3px; text-decoration-color: var(--a-ctl-strong); cursor: pointer; flex-shrink: 0; }
+
+/* States: loading skeletons, empty and failed, early season */
+.sk { display: flex; flex-direction: column; gap: 10px; padding: 4px 20px 20px; }
+.sk i { position: relative; overflow: hidden; display: block; height: calc(12px * var(--k)); border-radius: 6px; background: var(--a-skel); }
+.sk i::before { content: ""; position: absolute; inset: 0; background: linear-gradient(100deg, transparent 30%, var(--a-skel-sheen) 50%, transparent 70%); transform: translateX(-100%); animation: shim 1.9s linear infinite; } /* today's .ch-skel: --ch-dur-shimmer 1.9s */
+.sk i.t { height: calc(22px * var(--k)); width: 70%; }
+.feat .sk { padding: 0; }
+.feat .sk i { background: rgb(244 241 232 / 0.10); }
+.feat .sk i::before { background: linear-gradient(100deg, transparent 30%, rgb(244 241 232 / 0.12) 50%, transparent 70%); }
+@keyframes shim { to { transform: translateX(100%); } }
+.empty { display: flex; flex-direction: column; align-items: center; gap: 8px; padding: 26px 24px 24px; text-align: center; }
+.card__h + .empty { padding-top: 6px; }
+.empty__ic { display: grid; place-items: center; width: 44px; height: 44px; margin-bottom: 4px; border-radius: 50%; background: color-mix(in srgb, var(--a-accent) 11%, transparent); color: var(--a-accent); }
+.empty__ic.warn { background: color-mix(in srgb, var(--a-loss) 12%, transparent); color: var(--a-loss); }
+.empty__ic svg { width: 22px; height: 22px; }
+.empty b { font: 600 calc(16px * var(--k))/1.3 var(--f-sans); }
+.empty p { margin: 0; max-width: 34ch; font: 400 calc(14px * var(--k))/1.45 var(--f-sans); color: var(--a-ink-2); }
+.empty .btn { margin-top: 8px; }
+.prog { display: flex; align-items: center; gap: 6px; }
+.prog i { width: 28px; height: 6px; border-radius: 3px; background: rgb(244 241 232 / 0.18); }
+.prog i.on { background: var(--a-feat-gain); }
+.prog span { margin-left: 6px; font: 500 calc(13px * var(--k))/1 var(--f-sans); color: var(--a-feat-2); }
+.sg__row b.none { color: var(--a-ink-3); }
+.field__fig.is-level { color: var(--a-ink); }
+.cb-p { margin: 0 0 14px; font: 400 calc(15px * var(--k))/1.42 var(--f-sans); color: var(--a-ink-2); }
+.cb-p:last-child { margin-bottom: 0; }
+.cb-p b { color: var(--a-ink); font-weight: 600; }
+.lnk { border: 0; background: none; padding: 0; color: var(--a-accent); font: 600 calc(15px * var(--k))/1 var(--f-sans); cursor: pointer; }
+.r.undo .lnk { min-height: 44px; }
+.feat.tap { cursor: pointer; transition: box-shadow 0s; }
+.feat.tap:active:not(:has(button:active)) { box-shadow: inset 0 0 0 999px rgb(255 255 255 / 0.05), 0 1px 2px rgb(11 58 37 / 0.2), 0 14px 30px -18px rgb(11 58 37 / 0.6); transition-delay: 50ms; }
+.well__p { margin: 0; font: 400 calc(15px * var(--k))/1.42 var(--f-sans); color: var(--a-ink-2); }
+.well__m { margin: 10px 0 0; font: 600 calc(13px * var(--k))/1.3 var(--f-sans); color: var(--a-ink-2); }
+.sheet__f { flex: none; display: flex; gap: 10px; padding: 12px 16px 34px; border-top: 1px solid var(--a-sep); }
+.desk .sheet__f { padding-bottom: 16px; }
+.sheet__f .btn { flex: 1; }
+.btn.is-done-p { background: color-mix(in srgb, var(--a-gain) 12%, transparent); color: var(--a-gain); }
+.picks { display: flex; flex-wrap: wrap; gap: 8px; }
+.picks button { min-height: 36px; padding: 0 12px; border: 0; border-radius: 10px; background: var(--a-card); box-shadow: 0 0 0 1px var(--a-ring), 0 1px 2px rgb(28 25 18 / 0.06); font: 500 calc(14px * var(--k))/1 var(--f-sans); color: var(--a-ink); cursor: pointer; }
+.picks button[aria-pressed="true"] { background: linear-gradient(180deg, var(--seg-a), var(--seg-b)); color: var(--seg-ink); box-shadow: 0 1px 2px rgb(11 58 37 / 0.3); font-weight: 600; }
+.note { display: block; width: 100%; min-height: 76px; resize: none; padding: 10px 12px; border: 0; border-radius: 10px; background: var(--a-card); box-shadow: 0 0 0 1px var(--a-ring); font: 400 calc(15px * var(--k))/1.4 var(--f-sans); color: var(--a-ink); }
+.note::placeholder { color: var(--a-ink-3); }
+.sheet__h .vis { margin-bottom: 2px; }
+/* Long names: one line with an ellipsis in bars and rows; read titles get two lines */
+.gbar.is-push { grid-template-columns: 120px minmax(0, 1fr) 120px; }
+.gbar.is-push .gbar__title { min-width: 0; overflow: hidden; text-overflow: ellipsis; text-align: center; }
+.card__h h4 { flex: none; max-width: 70%; }
+.card__h small { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.r__t small { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.r__t b { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.r__t b.l2 { white-space: normal; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; }
+.dhead > div { min-width: 0; }
+.dhead .lt { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.grid2.one { grid-template-columns: minmax(0, 640px); }
+
+.mnu-ovl { position: absolute; inset: 0; z-index: 60; }
+.mnu-bg { position: absolute; inset: 0; }
+.mnu { position: absolute; top: 92px; right: 10px; width: 232px; padding: 6px; border-radius: 14px; background: var(--a-glass); -webkit-backdrop-filter: blur(24px) saturate(170%); backdrop-filter: blur(24px) saturate(170%); box-shadow: 0 0 0 1px var(--a-ring), 0 12px 32px -8px rgb(28 25 18 / 0.28); transform-origin: top right; display: flex; flex-direction: column; gap: 2px; }
+.desk .mnu { top: 132px; right: 28px; }
+.mnu button { display: flex; align-items: center; gap: 8px; min-height: calc(34px * var(--k)); padding: 0 8px; border: 0; border-radius: 8px; background: none; color: var(--a-ink); font: 500 calc(14px * var(--k))/1.2 var(--f-sans); text-align: left; cursor: pointer; }
+.mnu button:active, .mnu button:focus-visible { background: var(--a-press); outline: none; }
+.mnu svg { width: 16px; height: 16px; flex: none; color: var(--a-accent); }
+.dhead .ib { display: grid; place-items: center; width: 36px; height: 36px; flex: none; border: 0; border-radius: 10px; background: none; color: var(--a-ink-2); cursor: pointer; }
+.dhead .ib svg { width: 19px; height: 19px; }
+.dhead p { font-size: calc(15px * var(--k)) !important; }
+/* Desktop shell */
+.dnav { display: flex; flex-direction: column; gap: 2px; padding: 16px 10px; color: rgb(230 223 204 / 0.82); }
+.dnav .logo { display: flex; align-items: center; gap: 8px; margin: 0 6px 16px; padding: 10px; border-radius: 12px; background: rgb(244 238 221 / 0.06); box-shadow: inset 0 0 0 1px rgb(201 173 116 / 0.25); color: #f4eedd; font: italic 600 22px/1 var(--f-sans); letter-spacing: -0.02em; }
+.dnav .logo svg { width: 22px; height: 22px; }
+.dnav a { display: flex; align-items: center; gap: 10px; min-height: 36px; padding: 0 12px; border-radius: 10px; font: 500 14px/1 var(--f-sans); color: inherit; text-decoration: none; }
+.dnav a svg { width: 17px; height: 17px; }
+.dnav a.on { background: #fbf8f0; color: #0b3a25; }
+.dnav h6 { margin: 14px 12px 4px; font: 500 12.5px/1 var(--f-sans); color: rgb(230 223 204 / 0.72); }
+.dnav .me { margin-top: auto; display: flex; align-items: center; gap: 10px; padding: 10px 8px; font: 600 13.5px/1.25 var(--f-sans); color: #f4eedd; }
+.dnav .me small { display: block; font-weight: 400; color: rgb(230 223 204 / 0.75); }
+.dws { position: relative; margin: 8px 8px 8px 0; border-radius: 14px; overflow: hidden; background: var(--a-page); display: flex; flex-direction: column; isolation: isolate; }
+.dtop { flex: none; display: flex; align-items: center; gap: 12px; min-height: 56px; padding: 0 18px; background: var(--a-glass); -webkit-backdrop-filter: blur(24px) saturate(170%); backdrop-filter: blur(24px) saturate(170%); box-shadow: 0 1px 0 var(--a-sep); font: 500 14px/1 var(--f-sans); color: var(--a-ink-2); }
+.dtop b { color: var(--a-ink); font-weight: 600; }
+.dtop .sp { margin-left: auto; display: flex; align-items: center; gap: 6px; }
+.dtop .ib { display: grid; place-items: center; width: 36px; height: 36px; border: 0; background: none; color: var(--a-ink-2); border-radius: 10px; cursor: pointer; }
+.dtop .ib svg { width: 19px; height: 19px; }
+.dmain { position: relative; flex: 1; min-height: 0; display: grid; grid-template-columns: 300px minmax(0, 1fr); }
+.dmain.solo { grid-template-columns: minmax(0, 1fr); }
+.drail { position: relative; border-right: 1px solid var(--a-sep); overflow: hidden; }
+.drail .scroll { padding: 18px 14px; }
+.dfile { position: relative; overflow: hidden; }
+.grid2 { display: grid; grid-template-columns: minmax(0, 1.12fr) minmax(0, 1fr); gap: 20px; align-items: start; }
+.col { display: flex; flex-direction: column; gap: 20px; min-width: 0; }
+.dhead { display: flex; align-items: center; gap: 14px; }
+.dhead .lt { font-size: calc(30px * var(--k)); }
+.dhead p { margin: 2px 0 0; font: 400 15px/1.3 var(--f-sans); color: var(--a-ink-2); }
+.dhead .aseg { margin-left: auto; width: 300px; }
+
+.app.reduce * { transition-duration: 0.001s !important; }
+.app.reduce .sk i::before { animation: none; display: none; }
+@media (prefers-reduced-motion: reduce) { .sk i::before { animation: none; display: none; } }
+@media (prefers-reduced-motion: reduce) { .play { transition: none; } }
+</style>
+
+<header class="top">
+  <div class="brand">
+    <svg viewBox="0 0 26 26" aria-hidden="true"><circle cx="13" cy="13" r="12" fill="#155a39" stroke="#c9ad74" stroke-width="1"/><path d="M9 18V8l8 3.5-8 3.5" fill="none" stroke="#f4eedd" stroke-width="1.8" stroke-linejoin="round"/></svg>
+    <b>CoachHelm player lenses</b><span>Lane 3 · coach view and player view · prep only</span>
+  </div>
+  <div class="ctl" role="group" aria-label="Prototype controls">
+    <div class="seg" data-ctl="role"><button data-v="coach" aria-pressed="true">Coach</button><button data-v="player" aria-pressed="false">Player</button></div>
+    <div class="seg" data-ctl="device"><button data-v="phone" aria-pressed="true">Phone</button><button data-v="desk" aria-pressed="false">Desktop</button></div>
+    <div class="seg" data-ctl="theme"><button data-v="light" aria-pressed="false">Light</button><button data-v="dark" aria-pressed="false">Dark</button></div>
+    <div class="seg" data-ctl="size"><button data-v="1" aria-pressed="true">Text</button><button data-v="1.18" aria-pressed="false">Larger</button><button data-v="1.36" aria-pressed="false">XXL</button></div>
+    <div class="seg" data-ctl="reduce"><button data-v="0" aria-pressed="true">Motion</button><button data-v="1" aria-pressed="false">Reduce</button></div>
+    <div class="seg" data-ctl="state" aria-label="State"><button data-v="normal" aria-pressed="true">Normal</button><button data-v="loading" aria-pressed="false">Loading</button><button data-v="early" aria-pressed="false">Early</button><button data-v="empty" aria-pressed="false">Empty</button><button data-v="failed" aria-pressed="false">Failed</button><button data-v="long" aria-pressed="false">Long names</button><button data-v="nofield" aria-pressed="false">No field</button><button data-v="nointent" aria-pressed="false">No plan</button></div>
+  </div>
+</header>
+
+<div class="layout">
+  <div class="stage-col">
+    <div class="stage">
+      <div class="stage__box" id="box"></div>
+      <div class="stage__cap" id="cap"><i></i><span id="capT">Eli Brandt's file, coach view</span><span class="mono" id="capM"></span></div>
+    </div>
+  </div>
+
+  <main class="chapters">
+    <section class="hero">
+      <p class="eyebrow">CoachHelm · coach view and player view</p>
+      <h1>One file per player, seen through two lenses</h1>
+      <p class="lead">Today a coach taps a name chip to see one read, then opens a second page for the rest and a third for Standing. The player gets those same pages with “you” swapped in. This gives every player one file that holds everything CoachHelm knows about them, and lets the coach flip it to see exactly what the player sees.</p>
+      <ol class="big-changes">
+        <li><span><b>One push to everything about a player.</b> Every read, the plan, the strokes chart, the last round against the field and the coach's own notes on one screen. No chip strip, no second page.</span></li>
+        <li><span><b>Assign as focus shows the handshake.</b> Suggested, Shown and Accepted, read from rows the engine already writes: the focus area and the insight exposure ledger (Shown is the first time the read was drawn on the player's own CoachHelm, not a tap).</span></li>
+        <li><span><b>“As Eli sees it.”</b> A lens switch on the coach's file shows the player's own screen, with the coach-only cards folded away. The coach never has to guess what reached the player.</span></li>
+        <li><span><b>The player's Board becomes “Your week”.</b> One focus with its drill, what is working, the last round against the field, and progress on the goal. Words first, the number one tap away.</span></li>
+        <li><span><b>Four things the engine already computes finally reach the screen:</b> the same-day field adjustment, the coach's plan for the player, the track record with this player, and goal check-ins.</span></li>
+      </ol>
+      <p class="muted" style="margin-top:18px;font-size:13.5px">Names and figures in the prototype are example data from Demo University Golf, drawn in the real shapes from <code>data/coachhelm-shape.ts</code>, <code>coachhelm-dive-shape.ts</code> and <code>coachhelm-standing-shape.ts</code>. Use the bar above to switch coach or player, phone or desktop, theme, text size, Reduce Motion and the state. Version 6, 3 Nov: the More menu is drawn; every motion now runs on the app’s own primitives (pushed screen, sheet, menu, press, Swap, settle spring), cards and rows take a tint instead of a scale, and chart bars are drawn at rest. Version 5 settled Nick's calls: players compare against the PGA Tour and team averages only. Version 6 follows the shared acceptance rules: Reduce Motion is the app's 180ms fade, the feature card is flat green, and the More menu, skeletons and corrections match today's app.</p>
+    </section>
+
+    <section class="ch" id="today">
+      <p class="eyebrow">Where it lives</p>
+      <h2>From three pages to one push</h2>
+      <p>What Nick called confusing is the path, not the cards. On phone the coach scrolls a chip strip to find a player, reads one top insight, then follows “All of Eli's reads” to the Deep dive and switches again to Standing. Everything below the first read is two hops away, and the coach's own context for that player lives on Roster.</p>
+      <div class="flow">
+        <div class="flow__row"><b>Today</b><span class="flow__step">Board</span><span class="flow__arrow">→</span><span class="flow__step">Tap a name chip</span><span class="flow__arrow">→</span><span class="flow__step">One read</span><span class="flow__arrow">→</span><span class="flow__step">All of Eli's reads</span><span class="flow__arrow">→</span><span class="flow__step">Deep dive</span><span class="flow__arrow">→</span><span class="flow__step">Standing tab</span></div>
+        <div class="flow__row"><b>Proposed</b><span class="flow__step">Any player row: Board, Roster, Home, an Ask answer</span><span class="flow__arrow">→</span><span class="flow__step new">Eli's file</span><span class="flow__arrow">→</span><span class="flow__step">Tap any read for its evidence</span></div>
+      </div>
+      <div class="plays">
+        <button class="play" data-play="open"><svg viewBox="0 0 24 24" class="ic"><path d="M8 5v14l11-7z" fill="currentColor" stroke="none"/></svg>Open Eli's file</button>
+        <button class="play" data-play="menu"><svg viewBox="0 0 24 24" class="ic"><path d="M8 5v14l11-7z" fill="currentColor" stroke="none"/></svg>Open the More menu</button>
+      </div>
+      <dl class="where">
+        <dt>Route</dt><dd><code>/golf/dashboard/coachhelm?view=player&amp;player=&lt;id&gt;</code>. Today's <code>?view=deep-dive&amp;player=</code> and <code>?view=standing&amp;player=</code> land on it at the matching card, so stored links keep working.</dd>
+        <dt>Entry</dt><dd>The team view's player rows (the team-view lane owns that screen), Roster's View insights, coach Home's player links and any read an Ask answer names (<code>coachReadHref</code>).</dd>
+        <dt>Phone</dt><dd>A pushed page: the same green bar with “‹ CoachHelm” in champagne, the player's name centred, More on the right. Push is today’s pushed screen: 462ms smooth spring, the page beneath draws back 24% and dims to 0.9.</dd>
+        <dt>Desktop</dt><dd>The sidebar and glass top bar stay. The roster sits in a 300px rail on the left, so moving between players never leaves the file.</dd>
+        <dt>Code</dt><dd>Replaces the coach voice of <code>views/Frame.tsx</code> and the board's single selected card in <code>CoachBoard.tsx</code>. Composes loaders that exist: <code>coachhelm-dive.ts</code>, <code>coachhelm-standing.ts</code>, <code>coachhelm-player.ts</code>.</dd>
+      </dl>
+    </section>
+
+    <section class="ch" id="file">
+      <p class="eyebrow">The coach's file</p>
+      <h2>Card by card, each answering one question</h2>
+      <p>Grouped by question, headline first, as DESIGN_LANGUAGE law 6 asks. One green feature card, everything else paper. Titles live inside their cards.</p>
+      <div class="spec-wrap"><table>
+        <thead><tr><th>Card</th><th>Question it answers</th><th>Data it draws (shape that exists)</th></tr></thead>
+        <tbody>
+          <tr><td><b>Top read</b> (feature)</td><td>What matters most for Eli right now?</td><td><code>ChInsight</code> title, value, gauge you vs cmp; <code>ChDeepInsight.closes</code> strokes worth; firmness from the claim ladder</td></tr>
+          <tr><td><b>Eli's plan</b></td><td>What did we agree, did it land, is it working?</td><td><code>ChDivePlan</code> focus and goal; Shown from <code>golf_insight_exposure</code> where <code>surface = 'player_feed'</code>; goal snapshots (<code>v3/goals</code>); <code>ChDiveOutcome</code> word</td></tr>
+          <tr><td><b>Where the strokes go</b></td><td>Which part of the game costs Eli most?</td><td><code>ChStanding</code> strokes gained rows, vs team and vs Tour</td></tr>
+          <tr><td><b>All reads</b></td><td>What else did CoachHelm find?</td><td><code>ChDeepDive.list</code> with stance words and firmness; dismissed reads with Undo</td></tr>
+          <tr><td><b>Last round in context</b></td><td>Bad day for Eli, or a hard day for the field?</td><td><code>FieldDayEntry</code>: <code>field_n</code>, <code>field_mean</code>, <code>relative</code> (<code>v3/field-day</code>; not drawn anywhere today)</td></tr>
+          <tr><td><b>Your plan for Eli</b> (coach only)</td><td>What am I aiming for with this player?</td><td><code>golf_coach_player_intent</code>: narrative goal, alert level, highlight areas, note (RLS keeps it coach-only)</td></tr>
+          <tr><td><b>Track record with Eli</b> (coach only)</td><td>When I assign Eli a focus, does it work?</td><td><code>golf_insight_action</code> and <code>golf_insight_outcome</code> for this player (today only a team-wide Track record)</td></tr>
+        </tbody>
+      </table></div>
+      <div class="plays">
+        <button class="play" data-play="sheet"><svg viewBox="0 0 24 24" class="ic"><path d="M8 5v14l11-7z" fill="currentColor" stroke="none"/></svg>Open a read's evidence</button>
+      </div>
+      <p>The evidence rule holds everywhere: no figure without its sample, window and read word beside it, and every read opens a sheet with the comparison, the rounds behind it, the holes where the counted path happened, and why CoachHelm believes it. Hudl does this for film (every stat opens its clip); here every number opens its rounds.</p>
+    </section>
+
+    <section class="ch" id="lens">
+      <p class="eyebrow">The lens</p>
+      <h2>“As Eli sees it”</h2>
+      <p>The segmented control under the bar flips the file into the player's own screen. Shared cards stay where they are and change voice (“Eli is averaging” becomes “You're averaging”). Coach-only cards fold away. Firmness drops from the claim ladder word to the read word the player feed already uses. Named teammates become the team average.</p>
+      <p>This is the answer to “a lot of the CoachHelm data isn't making it in there” from the other side: the coach can check in one tap what the player actually got, instead of trusting that a share went through.</p>
+      <div class="plays">
+        <button class="play" data-play="lens"><svg viewBox="0 0 24 24" class="ic"><path d="M8 5v14l11-7z" fill="currentColor" stroke="none"/></svg>Flip the lens</button>
+      </div>
+      <dl class="where">
+        <dt>Motion</dt><dd>The chip slides on the app’s settle spring (417ms). Cards this lens hides fold away on the 462ms smooth spring and fade over 180ms; cards it shows fold in and fade over 260ms. Shared cards change their words in place with today’s Swap: the old copy fades over 180ms while the new one fades in over 260ms and rises 6px. The preview pill folds in the same way. Reduce Motion: the lens and the pill take the app’s 180ms opacity fade (CH_FADE_MS) and nothing moves; shared cards change at once, as today’s Swap does.</dd>
+        <dt>Data</dt><dd>No new read. The lens draws the player components with <code>PLAYER_VOICE</code> from the data the coach's page already loaded, minus the coach-only fields.</dd>
+      </dl>
+    </section>
+
+    <section class="ch" id="player">
+      <p class="eyebrow">The player's CoachHelm</p>
+      <h2>Your week: one thing, why, and how it's going</h2>
+      <p>Switch the bar to Player. The player's Board keeps its place (green bar, “CoachHelm ⌄”, Board · Standing · Deep dive) but leads with a plain-language week, the way TrainingPeaks turns numbers into state words and Arccos leads with strengths. The number is always one tap away, never hidden.</p>
+      <div class="spec-wrap"><table>
+        <thead><tr><th>Card</th><th>What the player reads</th><th>Why it's framed this way</th></tr></thead>
+        <tbody>
+          <tr><td><b>Your focus</b> (feature)</td><td>The focus, who suggested it, the drill this week, Accept or Decline while it's a suggestion</td><td>The coach's ask arrives as the coach's, by name, not as a machine alert</td></tr>
+          <tr><td><b>What's working</b></td><td>The top strength with its figure; the Board's caps hold (3 reads with the focus, 1 strength), the rest counted under Also worth knowing</td><td>Strengths before leaks: the Clippd and Arccos reviews show confidence matters to practice</td></tr>
+          <tr><td><b>Your plan</b></td><td>Goal line with check-ins, the outcome word</td><td>Progress, not just a target</td></tr>
+          <tr><td><b>Last round in context</b></td><td>“Better than the field. You were 2.0 better than the field average.”</td><td>Separates a bad day from a hard course, the most common misread after a big number</td></tr>
+          <tr><td><b>Where the strokes go</b></td><td>Strokes gained vs the team average</td><td>Team average only; never named teammates</td></tr>
+        </tbody>
+      </table></div>
+      <div class="plays">
+        <button class="play" data-play="assign"><svg viewBox="0 0 24 24" class="ic"><path d="M8 5v14l11-7z" fill="currentColor" stroke="none"/></svg>Coach assigns a focus</button>
+        <button class="play" data-play="accept"><svg viewBox="0 0 24 24" class="ic"><path d="M8 5v14l11-7z" fill="currentColor" stroke="none"/></svg>Player accepts it</button>
+      </div>
+      <p>The two Plays are one story across both lenses: Assign as focus writes the proposal (<code>createFocusAreaFromInsightV2</code>), the player's first open records the exposure, and Accept is today's <code>acceptFocusArea</code>. The coach's plan card fills Suggested, Shown, Accepted as each lands.</p>
+    </section>
+
+    <section class="ch" id="matrix">
+      <p class="eyebrow">Who sees what</p>
+      <h2>The visibility rules, in one table</h2>
+      <p>Everything here is already enforced by RLS or the delivery layer except the rows marked new. The rule of thumb: the player sees every claim about themselves and its evidence; the coach additionally sees how sure CoachHelm is, their own plans, and other players by name.</p>
+      <div class="spec-wrap"><table>
+        <thead><tr><th>Piece</th><th>Coach</th><th>Player</th><th>Source</th></tr></thead>
+        <tbody>
+          <tr><td>Read: claim, figure, comparison</td><td class="yes">Yes, “Eli”</td><td class="yes">Yes, “you”</td><td><code>golf_coach_insights</code> via <code>applyInsightVisibility</code></td></tr>
+          <tr><td>Evidence: sample, window, rounds, holes</td><td class="yes">Yes</td><td class="yes">Yes</td><td>insight evidence, <code>ChDiveRounds</code>, <code>ChDiveWhere</code></td></tr>
+          <tr><td>How firm: ladder word (Seen repeatedly, Observed, Likely)</td><td class="yes">Yes</td><td class="no">Read word only (Solid, Early, Thin read)</td><td>support ladder; player feed already drops it</td></tr>
+          <tr><td>Strokes it's worth</td><td class="yes">Yes</td><td class="yes">Yes</td><td><code>ChDeepInsight.closes</code></td></tr>
+          <tr><td>Focus and its state</td><td class="yes">Suggested, Shown, Accepted</td><td class="yes">From Coach Reyes, Accept or Decline</td><td><code>golf_player_focus_areas</code>, <code>golf_insight_exposure</code> (Shown is new on screen)</td></tr>
+          <tr><td>Goal and check-ins</td><td class="yes">Yes</td><td class="yes">Yes</td><td><code>v3/goals</code> snapshots (new on screen)</td></tr>
+          <tr><td>Last round vs the field</td><td class="yes">Yes</td><td class="yes">Yes</td><td><code>v3/field-day</code> (new on screen)</td></tr>
+          <tr><td>Team comparison</td><td class="yes">Named teammates</td><td class="no">Team average only</td><td><code>ChStandRow.team</code></td></tr>
+          <tr><td>Dismissed reads and Undo</td><td class="yes">Yes</td><td class="no">Never</td><td><code>status = 'dismissed'</code></td></tr>
+          <tr><td>Corrections on a read</td><td class="yes">Not this, Wrong cause, Already on it, Show later, Good read</td><td class="yes">Not this and Good read, on their own reads</td><td><code>Corrections.tsx</code>, flag <code>coachhelm_corrections_v1</code></td></tr>
+          <tr><td>Coach's plan for the player</td><td class="yes">Yes</td><td class="no">Never</td><td><code>golf_coach_player_intent</code> (RLS: coach only)</td></tr>
+          <tr><td>Track record with this player</td><td class="yes">Yes</td><td class="no">Never</td><td><code>golf_insight_action</code>, <code>golf_insight_outcome</code> (new on screen)</td></tr>
+        </tbody>
+      </table></div>
+    </section>
+
+    <section class="ch" id="missing">
+      <p class="eyebrow">Data that never reached the views</p>
+      <h2>What the engine computes that nobody sees today</h2>
+      <p>Read from the code, not assumed. Each one has a loader or a table already; none needs a migration, and none touches what shot tracking collects.</p>
+      <div class="spec-wrap"><table>
+        <thead><tr><th>Engine output</th><th>Where it is</th><th>Where it goes</th></tr></thead>
+        <tbody>
+          <tr><td><b>Same-day field adjustment.</b> A round against teammates who played the same course that day.</td><td><code>lib/coachhelm/v3/field-day</code>. No Clubhouse file reads it.</td><td>Last round in context, both lenses</td></tr>
+          <tr><td><b>Coach's intent per player.</b> Narrative goal, alert level, highlight areas, note.</td><td><code>golf_coach_player_intent</code>. Only Roster reads it.</td><td>Your plan for Eli, coach only</td></tr>
+          <tr><td><b>Did the focus work, per player.</b></td><td><code>v3/effectiveness</code>. Shown only as the team-wide Track record.</td><td>Track record with Eli, coach only</td></tr>
+          <tr><td><b>Shown.</b> The first time the read was drawn on the player's own CoachHelm (<code>surface = 'player_feed'</code>). A proxy for seen, not a tap.</td><td><code>golf_insight_exposure</code>. Written, never drawn.</td><td>The handshake on the plan card</td></tr>
+          <tr><td><b>Goal check-ins.</b></td><td><code>v3/goals</code> evaluator snapshots. Drawn only as a one-line plan row in the Deep dive.</td><td>Goal line on the plan card, both lenses</td></tr>
+        </tbody>
+      </table></div>
+    </section>
+
+    <section class="ch" id="motion">
+      <p class="eyebrow">Motion</p>
+      <h2>Shared springs, with Reduce Motion versions</h2>
+      <div class="spec-wrap"><table>
+        <thead><tr><th>Moment</th><th>Spec</th><th>Reduce Motion</th></tr></thead>
+        <tbody>
+          <tr><td>Open a player's file</td><td>Push 462ms smooth spring; outgoing 24% left, dims to 0.9; Back and the edge swipe run it in reverse</td><td>180ms fade</td></tr>
+          <tr><td>Flip the lens</td><td>Chip 417ms settle spring; folds 462ms smooth spring; words swap 180 out / 260 in with a 6px rise</td><td>180ms fade</td></tr>
+          <tr><td>Open a read (phone)</td><td>Sheet rises 462ms smooth spring, scrim 260ms; closes on the same spring, follows the finger, 80px or a flick closes it</td><td>180ms fade</td></tr>
+          <tr><td>Open a read (desktop)</td><td>Dialog from 6px below at 0.98 scale, 260ms ease; closes back the same way</td><td>180ms fade</td></tr>
+          <tr><td>More menu</td><td>From its corner, 4px above at 0.97 scale, 180ms ease; leaves to 2px above at 0.98</td><td>180ms fade</td></tr>
+          <tr><td>Press</td><td>Buttons shrink about 6px over 110ms and spring back over 280ms; rows and cards take a tint, never a scale</td><td>Tint only</td></tr>
+          <tr><td>Assign as focus</td><td>The Suggested step fills (line 260ms, dot 180ms, tick 260ms); the card swaps with today’s Swap. Shown and Accepted fill later, at rest</td><td>Steps appear, no fill motion</td></tr>
+          <tr><td>Accept, Save plan, Dismiss, Undo</td><td>The changed card or row swaps in place: 180 out, 260 in with a 6px rise</td><td>Swaps at once</td></tr>
+          <tr><td>Chart marks</td><td>Drawn at rest. Bars never grow on first paint (owner decision, Oct 24)</td><td>Same</td></tr>
+        </tbody>
+      </table></div>
+      <p class="muted">Only transform and opacity animate, except the lens folds, which animate height on cards the user is leaving or arriving at. Every motion here uses the app’s own tokens: <code>--ch-ease</code>, the smooth and settle springs, press 110, quick 180, base 260, release 280.</p>
+    </section>
+
+    <section class="ch" id="borrowed">
+      <p class="eyebrow">Research</p>
+      <h2>What we borrowed, and from whom</h2>
+      <ul class="src">
+        <li><b>TrainingPeaks</b><span>The coach sees numbers with a compliance colour; the athlete sees a plain state word (“Fresh”, “Overloading”) with a published range and a tap for the number. Coach notes carry an eye toggle for shown or hidden. Taken: words first for the player, numbers first for the coach.</span><br><a href="https://help.trainingpeaks.com/hc/en-us/articles/41077784209165-Athlete-Home-Performance-Insights">help.trainingpeaks.com, Athlete Home</a></li>
+        <li><b>Clippd</b><span>“What To Work On” ranks areas by importance, opportunity and trend, and the player sees the same list as their roadmap. The coach is always included in anything a player shares. Taken: one list, two framings.</span><br><a href="https://clippd.com/post/what-to-work-on-your-personalised-roadmap-to-better-golf">clippd.com, What To Work On</a></li>
+        <li><b>Arccos</b><span>Three strengths beside three weaknesses; a focus area the player can lock and track over time. Taken: What's working on the player's week, and the goal line.</span><br><a href="https://golf.com/gear/arccos-new-app-update-2026/">golf.com, Arccos 2026 update</a></li>
+        <li><b>Hudl</b><span>Every stat in a report opens its clip. Taken: every number opens its rounds and holes.</span><br><a href="https://www.hudl.com/products/assist">hudl.com, Assist</a></li>
+        <li><b>Skillest</b><span>Feedback lives on the lesson with one follow-up assignment. Taken: the focus carries its drill and the coach's name.</span><br><a href="https://skillest.com/features/online-lessons">skillest.com, online lessons</a></li>
+        <li><b>Avoided</b><span>A colour with no way into its evidence (TrainingPeaks' own help warns about it), raw strokes gained dumped on players (Golf Monthly on Clippd), and a coach view that only works one player at a time (Arccos' coach dashboard).</span></li>
+      </ul>
+    </section>
+
+    <section class="ch" id="calls">
+      <p class="eyebrow">Decided</p>
+      <h2>Nick's four calls, settled 31 Oct</h2>
+      <p>Nick: “All four on Lenses.” These are now part of the design, and the build package records them.</p>
+      <ul class="calls">
+        <li><b>1. One file per player.</b><p>It replaces the board's single selected card and the coach's separate Deep dive and Standing pages. Old addresses land on the matching card. The team-view lane still owns what the board itself looks like; this only changes where a player row goes.</p><span class="pick">Yes, Oct 31</span></li>
+        <li><b>2. The “As Eli sees it” lens on the coach's file.</b><p>A preview of the player's screen, drawn from data already loaded. No new read, and the player never sees a coach-only field.</p><span class="pick">Yes, Oct 31</span></li>
+        <li><b>3. The coach's plan for the player, coach only, in its own words.</b><p>Aim (Breakout, Develop, Maintain, Bubble, Rehab), alert level, what to watch and the note. Today only Roster reads it; RLS keeps it coach-only.</p><span class="pick">Yes, Oct 31</span></li>
+        <li><b>4. Players see the team average, never teammates by name.</b><p>Coaches keep named comparisons. Every new card follows this, the same-day field included: the player sees the field's average only. Teammates' dots are coach only, because in a field of 3 to 5 a player could tell whose dot is whose.</p><span class="pick">Yes, Oct 31</span></li>
+      </ul>
+    </section>
+
+    <section class="ch" id="states">
+      <p class="eyebrow">States and capture links</p>
+      <h2>Every state, one link each</h2>
+      <p>Use the State switch in the bar, or open a link. A link is the screen first, then any tokens joined with a dash: <code>phone</code> <code>desktop</code>, <code>light</code> <code>dark</code>, <code>lens</code>, <code>sheet</code>, <code>intent</code>, <code>nofocus</code> <code>suggested</code> <code>seen</code> <code>accepted</code>, the states below, <code>larger</code> <code>xxl</code> and <code>reduce</code>. The caption under the device always shows the link for what's on screen.</p>
+      <div class="spec-wrap"><table>
+        <thead><tr><th>State</th><th>What it shows</th><th>Link</th></tr></thead>
+        <tbody>
+          <tr><td><b>Normal</b></td><td>21 rounds, a focus accepted, every card</td><td><code>#file-phone</code> · <code>#board-phone</code></td></tr>
+          <tr><td><b>Loading</b></td><td>Each card's title with skeleton bars; the feature card is a green block with 10% ivory bars. Today's skeleton sweep, 1.9s linear; the sweep is gone under Reduce Motion</td><td><code>#file-phone-loading</code></td></tr>
+          <tr><td><b>Early</b></td><td>Today's staging shape: 2 rounds, totals only. Total-only rounds don't count, so 0 of 4 rounds that count, strokes gained shows “—”, no field card (a total-only round makes no field)</td><td><code>#file-phone-early</code></td></tr>
+          <tr><td><b>Empty</b></td><td>No rounds this season. One empty card; the coach still has their plan and track record</td><td><code>#file-phone-empty</code></td></tr>
+          <tr><td><b>Failed</b></td><td>One card: couldn't load, nothing was lost, Try again</td><td><code>#file-phone-failed</code></td></tr>
+          <tr><td><b>Long names</b></td><td>Bar title and rows truncate on one line; read titles wrap to two</td><td><code>#file-phone-long</code></td></tr>
+          <tr><td><b>No field</b></td><td>No teammate played the same course that day: the card is left out, no empty card</td><td><code>#file-phone-nofield</code></td></tr>
+          <tr><td><b>No plan</b></td><td>The coach hasn't set an aim: the card says what CoachHelm assumes and offers Set a plan</td><td><code>#file-phone-nointent</code></td></tr>
+          <tr><td><b>Focus steps</b></td><td>The plan card at each step of the handshake</td><td><code>#file-phone-nofocus</code> · <code>-suggested</code> · <code>-seen</code></td></tr>
+          <tr><td><b>Sub pages</b></td><td>Evidence sheet, the plan sheet, the coach previewing the player</td><td><code>#file-phone-sheet</code> · <code>#file-phone-intent</code> · <code>#file-phone-lens</code></td></tr>
+        </tbody>
+      </table></div>
+    </section>
+
+    <section class="ch" id="build">
+      <p class="eyebrow">Build order</p>
+      <h2>PR-sized, each behind its own flag, nothing deployed</h2>
+      <p>The build package is in the project's files under <code>clubhouse-handoff/design-refresh/coachhelm-lenses/</code>: the fidelity spec, the file-by-file plan, the data checks and the capture script.</p>
+      <ol class="big-changes">
+        <li><span><b>Player file shell and route.</b> <code>?view=player&amp;player=</code>, redirects from the coach's deep-dive and standing addresses, phone push and desktop rail. Existing cards moved in.</span></li>
+        <li><span><b>Plan card with the handshake.</b> Focus areas plus the exposure ledger for Shown; goal snapshots for the line.</span></li>
+        <li><span><b>Last round in context.</b> A server read over the field-day loader for the newest round; both lenses.</span></li>
+        <li><span><b>Coach-only cards.</b> Intent (the Roster read, reused) and the per-player track record.</span></li>
+        <li><span><b>The lens.</b> Player components in <code>PLAYER_VOICE</code> over the coach's loaded data.</span></li>
+        <li><span><b>Your week for the player.</b> <code>PlayerBoard.tsx</code> rebuilt to the same cards.</span></li>
+      </ol>
+      <p class="foot">Prep only: no deploys, migrations or flag flips. Nothing here changes what shot tracking collects. No accent left-border cards anywhere. Text contrast follows DESIGN_LANGUAGE.md tokens (4.9:1 or better in light and dark).</p>
+    </section>
+  </main>
+</div>
+
+<script>
+(() => {
+  const $ = (s, r = document) => r.querySelector(s);
+  const $$ = (s, r = document) => [...r.querySelectorAll(s)];
+  const box = $('#box');
+  const S = {
+    role: 'coach', device: 'phone', k: 1, reduce: false,
+    screen: 'file',      // coach phone: 'list' | 'file'
+    menu: false,         // coach file: More menu open
+    lens: 'coach',       // coach file lens: 'coach' | 'player'
+    stage: 3,            // focus: 0 none, 1 suggested, 2 seen, 3 accepted
+    sheet: false, sel: 'eli',
+    state: 'normal',     // normal | loading | early | empty | failed | long | nofield | nointent
+  };
+  let busy = false;
+  const sysReduce = matchMedia('(prefers-reduced-motion: reduce)');
+  const RM = () => S.reduce || sysReduce.matches;
+
+  // A critically damped spring sampled into linear() where supported (the shared --ch-ease-spring-smooth).
+  // The app's smooth spring, verbatim from styles/tokens.css (--ch-ease-spring-smooth, 462ms), so the page moves like the build.
+  const APP_SMOOTH = 'linear(0, 0.0418, 0.136, 0.2508, 0.3677, 0.477, 0.5739, 0.657, 0.7266, 0.7839, 0.8303, 0.8675, 0.8971, 0.9204, 0.9387, 0.953, 0.964, 0.9725, 0.9791, 0.9841, 0.988, 0.9909, 0.9931, 0.9948, 0.9961, 0.9971, 0.9978, 0.9983, 0.9988, 1)';
+  const springEase = CSS.supports('transition-timing-function', APP_SMOOTH) ? APP_SMOOTH : 'cubic-bezier(0.22, 1, 0.36, 1)';
+  // The app's settle spring (lib/motion.ts CH_SPRINGS.settle: base 260ms visual, bounce 0.1), sampled the way chSpringCurve does: 417ms.
+  const SETTLE = 'linear(0, 0.0429, 0.1419, 0.2645, 0.3907, 0.509, 0.6136, 0.7024, 0.7754, 0.8338, 0.8795, 0.9145, 0.9408, 0.9601, 0.974, 0.9839, 0.9906, 0.9952, 0.9981, 0.9998, 1.0008, 1.0013, 1.0015, 1.0015, 1.0014, 1.0012, 1)';
+  const settleEase = CSS.supports('transition-timing-function', SETTLE) ? SETTLE : 'cubic-bezier(0.22, 1, 0.36, 1)';
+  const SETTLE_MS = 417;
+  const EASE = 'cubic-bezier(0.22, 1, 0.36, 1)'; // --ch-ease
+  const SPRING_BACK = 'cubic-bezier(0.34, 1.3, 0.64, 1)'; // --ch-ease-spring, the press release
+  const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+  const anim = (el, kf, o) => el ? el.animate(kf, { fill: 'both', ...o }).finished.catch(() => {}) : Promise.resolve();
+
+  const I = {
+    chevD: '<path d="m6 9 6 6 6-6"/>', chevL: '<path d="m15 18-6-6 6-6"/>', chevR: '<path d="m9 18 6-6-6-6"/>',
+    bell: '<path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/>',
+    more: '<circle cx="5" cy="12" r="1.2" fill="currentColor"/><circle cx="12" cy="12" r="1.2" fill="currentColor"/><circle cx="19" cy="12" r="1.2" fill="currentColor"/>',
+    flag: '<path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"/><path d="M4 22v-7"/>',
+    msg: '<path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>',
+    lock: '<rect x="4" y="11" width="16" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/>',
+    check: '<path d="M20 6 9 17l-5-5"/>', x: '<path d="M18 6 6 18M6 6l12 12"/>',
+    eye: '<path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/>',
+    target: '<circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="5"/><circle cx="12" cy="12" r="1.5"/>',
+    users: '<path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/>',
+    home: '<path d="m3 10 9-7 9 7v10a1 1 0 0 1-1 1h-5v-7H9v7H4a1 1 0 0 1-1-1z"/>',
+    helm: '<circle cx="12" cy="12" r="4"/><path d="M12 2v4M12 18v4M2 12h4M18 12h4M4.9 4.9l2.8 2.8M16.3 16.3l2.8 2.8M4.9 19.1l2.8-2.8M16.3 7.7l2.8-2.8"/>',
+    cal: '<rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/>',
+    chart: '<path d="M3 3v18h18"/><path d="M7 16v-5M12 16V8M17 16v-8"/>', gear: '<circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68 1.65 1.65 0 0 0 10 3.17V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/>',
+    sun: '<circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/>',
+  };
+  const ic = (n, cls = 'ic') => `<svg viewBox="0 0 24 24" class="${cls}" aria-hidden="true">${I[n]}</svg>`;
+
+  const ROSTER = [
+    { id: 'eli', name: 'Eli Brandt', ini: 'EB', yr: 'jr', top: 'Penalty strokes: 1.1 a round', chip: ['loss', 'Priority'] },
+    { id: 'jonah', name: 'Jonah Okafor', ini: 'JO', yr: 'sr', top: 'Downhill putts from 4 to 6 ft', chip: ['loss', 'Priority'] },
+    { id: 'priya', name: 'Priya Natarajan', ini: 'PN', yr: 'so', top: 'Under-reading left-to-right breaks', chip: ['plain', 'Worth closing'] },
+    { id: 'theo', name: 'Theo Marchetti', ini: 'TM', yr: 'fr', top: 'Double bogey or worse: 16%', chip: ['plain', 'Worth closing'] },
+    { id: 'sam', name: 'Sam Whitfield', ini: 'SW', yr: 'jr', top: 'No reads yet', chip: null },
+  ];
+  const av = (p, s = 32) => `<span class="av" style="--s:${s}px;--yc:var(--yr-${p.yr})">${p.ini}</span>`;
+
+  // Voice: the coach's words name the player; the player's say "you".
+  const V = (coachText, playerText) => (S.role === 'player' || S.lens === 'player') ? playerText : coachText;
+  const isCoachLens = () => S.role === 'coach' && S.lens === 'coach';
+
+  const READS = [
+    { id: 'pen', t: 'Penalty strokes: 1.1 a round', m: 'Course management · team 0.7', chip: ['loss', 'Priority'], firm: 'Seen repeatedly', read: 'Solid read' },
+    { id: 'app', t: 'Approach from 125 to 175 yd', m: 'Approach · 31 ft vs Tour 24 ft', chip: ['plain', 'Worth closing'], firm: 'Observed', read: 'Solid read' },
+    { id: 'tp', t: 'Three-putts: 1 in 9 holes', m: 'Putting · Tour 1 in 18', chip: ['plain', 'Minor'], firm: 'Likely', read: 'Early read' },
+    { id: 'ud', t: 'Up and down: 58%', m: 'Around the green · Tour 52%', chip: ['gain', 'Working'], firm: 'Seen repeatedly', read: 'Solid read' },
+  ];
+  const DISMISSED = { id: 'fw', t: 'Fairways hit on par 5s', m: 'Off the tee · 21 rounds', chip: ['plain', 'Minor'], firm: 'Likely', read: 'Early read' };
+  const readRow = (r) => { const coach = isCoachLens(); const c = (coach && r.id === 'pen' && S.stage > 0) ? ['acc', 'Assigned'] : r.chip; return `<button class="r" data-act="read" data-id="${r.id}"><span class="chip ${c[0]}">${c[1]}</span><span class="r__t"><b class="l2">${r.t}</b><small>${r.m} · ${coach ? r.firm : r.read}</small></span><span class="r__e">${ic('chevR')}</span></button>`; };
+  const undoRow = (r) => `<div class="r static undo" data-row="dismissed" data-id="${r.id}"><span class="r__ic">${ic('x')}</span><span class="r__t"><b>Dismissed: ${r.t}</b></span><button class="lnk" data-act="undo" data-ch-hf-undo>Undo</button></div>`;
+
+  /* ───── Cards ───── */
+  // S.state: normal | loading | early | empty | failed | long | nofield | nointent
+  const ST = () => S.state;
+  const isLoading = () => ST() === 'loading';
+  const isEarly = () => ST() === 'early';
+  const skBars = (ws) => `<div class="sk" aria-hidden="true">${ws.map((w) => `<i style="width:${w}%"></i>`).join('')}</div>`;
+  const skCard = (name, title, only) => `<section class="card" data-card="${name}"${only ? ` data-only="${only}"` : ''} aria-busy="true"><div class="card__h"><h4>${title}</h4></div>${skBars([82, 64, 74])}</section>`;
+  const mini = (icon, title, body, btn, warn) => `<div class="empty">${icon ? `<span class="empty__ic${warn ? ' warn' : ''}">${ic(icon)}</span>` : ''}<b>${title}</b><p>${body}</p>${btn || ''}</div>`;
+
+  function featCard() {
+    const coach = isCoachLens();
+    const st = S.stage;
+    if (isLoading()) return `<div class="feat" data-card="feat" aria-busy="true"><div class="sk" aria-hidden="true"><i style="width:44%"></i><i class="t"></i><i style="width:92%"></i><i style="width:70%"></i></div></div>`;
+    const lead = coach ? `<div class="feat__who">${av(ROSTER[0], 28)}<span><b>Eli's top read</b> · ${isEarly() ? 'Not yet' : 'Course management'}</span></div>` : null;
+    if (isEarly()) {
+      return `<div class="feat" data-card="feat">
+        ${lead || `<div class="feat__k">Your reads</div>`}
+        <h3 class="feat__t">${coach ? 'No reads yet' : 'Your reads start after 4 full rounds'}</h3>
+        <div class="prog" aria-label="0 of 4 rounds that count"><i></i><i></i><i></i><i></i><span>0 of 4 rounds that count</span></div>
+        <p class="feat__p">${coach ? 'CoachHelm reads a player once they have 4 full rounds, hole by hole, in the last 90 days. Eli’s 2 rounds were posted as totals, so neither counts yet.' : 'Your 2 rounds were posted as totals. Post hole by hole and CoachHelm starts reading your game after 4 full rounds.'}</p>
+        <div class="feat__ev"><span>2 rounds</span><span>Totals only</span><span>Last 90 days</span></div>
+        ${coach ? `<div class="feat__acts"><button class="btn ghost" data-act="msg">${ic('msg')}Message Eli</button></div>` : ''}
+      </div>`;
+    }
+    let acts = '';
+    if (coach) {
+      acts = st === 0
+        ? `<button class="btn light" data-act="assign">${ic('flag')}Assign as focus</button><button class="btn ghost" data-act="msg">${ic('msg')}Message Eli</button>`
+        : `<button class="btn is-done" disabled>${ic('check')}${st === 3 ? 'Eli accepted it' : 'Sent to Eli'}</button><button class="btn ghost" data-act="msg">${ic('msg')}Message Eli</button>`;
+    } else if (st === 1 || st === 2) {
+      acts = `<button class="btn light" data-act="accept">${ic('check')}Accept</button><button class="btn ghost" data-act="decline">Decline</button>`;
+    } else if (st === 3) {
+      acts = `<button class="btn is-done" disabled>${ic('check')}Your focus since Oct 5</button>`;
+    }
+    const head = lead || (st === 0 ? `<div class="feat__k">Top of your list</div>` : `<div class="feat__k">${st === 3 ? 'Your focus' : 'Coach Reyes suggests this as your focus'}</div>`);
+    const title = 'Penalty strokes: 1.1 a round';
+    const para = coach
+      ? `Across all 21 rounds on file Eli is averaging 1.1 penalty strokes a round. Closing to the team's average is worth <b>0.6 strokes a round</b>.`
+      : `You're averaging 1.1 penalty strokes a round, the team averages 0.7. Getting to the team's number is worth <b>0.6 strokes a round</b>.`;
+    return `<div class="feat tap" data-card="feat" data-act="read" data-id="pen">
+      ${head}
+      <h3 class="feat__t" data-voice>${title}</h3>
+      <div class="feat__cmp num"><div><b class="loss">1.1</b><span>${coach ? 'Eli' : 'You'}</span></div><div><b>0.7</b><span>Team</span></div><div><b>0.3</b><span>Tour</span></div></div>
+      <p class="feat__p" data-voice>${para}</p>
+      <div class="feat__ev"><span>21 rounds</span><span>All rounds</span><span>${coach ? 'Seen repeatedly' : 'Solid read'}</span></div>
+      <div class="feat__acts">${acts}</div>
+    </div>`;
+  }
+
+  function planCard() {
+    const coach = isCoachLens();
+    if (isLoading()) return skCard('plan', V("Eli's plan", 'Your plan'));
+    const st = isEarly() ? 0 : S.stage;
+    const s = (n, label, when) => `<div class="hs__s${st >= n ? ' on' : ''}" data-hs="${n}"><span class="fill"></span><i>${ic('check', '')}</i><b>${label}</b><small>${st >= n ? when : 'Not yet'}</small></div>`;
+    const track = coach
+      ? `<div class="hs">${s(1, 'Suggested', 'Oct 4')}${s(2, 'Shown to Eli', 'Oct 4, 9:12 PM')}${s(3, 'Accepted', 'Oct 5')}</div>`
+      : `<div class="rows" style="margin:0 -20px"><div class="r static"><span class="r__ic">${ic('users')}</span><span class="r__t"><b>From Coach Reyes</b><small>${st === 3 ? 'Accepted Oct 5' : st ? 'Waiting for your answer' : 'No focus yet'}</small></span><span></span></div></div>`;
+    if (st === 0) {
+      return `<section class="card" data-card="plan">
+        <div class="card__h"><h4>${V("Eli's plan", 'Your plan')}</h4><small>No focus yet</small></div>
+        <div class="card__b">${track}</div>
+        <p class="card__n">${coach ? (isEarly() ? 'Assign a focus from any read once Eli has one.' : 'Assign a focus from any read. Eli sees it as yours, by name.') : 'Your coach can set one once you have a read.'}</p>
+      </section>`;
+    }
+    const pts = [1.4, 1.3, 1.3, 1.2, 1.1];
+    const W = 320, H = 64, x = (i) => 8 + i * ((W - 16) / (pts.length - 1)), y = (v) => 6 + (1.5 - v) / (1.5 - 0.5) * (H - 12);
+    const line = pts.map((v, i) => `${i ? 'L' : 'M'}${x(i).toFixed(1)} ${y(v).toFixed(1)}`).join(' ');
+    const goalY = y(0.6).toFixed(1);
+    return `<section class="card" data-card="plan">
+      <div class="card__h"><h4>${V("Eli's plan", 'Your plan')}</h4><small class="num">Focus since Oct 5</small></div>
+      <div class="card__b">
+        ${track}
+        <div class="goal">
+          <div class="goal__t"><b>Under 0.6 penalties a round</b><small class="num">Since Oct 5: 1.4 to 1.1 · 5 check-ins</small></div>
+          <span class="chip gain">Improved</span>
+          <svg viewBox="0 0 ${W} ${H + 16}" preserveAspectRatio="none" aria-label="Goal check-ins: 1.4, 1.3, 1.3, 1.2, 1.1 against a goal of 0.6">
+            <line x1="0" x2="${W}" y1="${goalY}" y2="${goalY}" stroke="var(--c-gain)" stroke-width="1.5" stroke-dasharray="4 4"/>
+            <text x="${W}" y="${(+goalY) - 6}" text-anchor="end" fill="var(--a-ink-2)" font-size="12" font-family="var(--f-sans)">Goal 0.6</text>
+            <path d="${line}" fill="none" stroke="var(--c-neutral)" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>
+            ${pts.map((v, i) => `<circle cx="${x(i).toFixed(1)}" cy="${y(v).toFixed(1)}" r="${i === pts.length - 1 ? 4.5 : 3}" fill="${i === pts.length - 1 ? 'var(--c-loss)' : 'var(--c-neutral)'}" stroke="var(--a-card)" stroke-width="1.5"/>`).join('')}
+            <text x="8" y="${H + 14}" fill="var(--a-ink-3)" font-size="12" font-family="var(--f-sans)">Oct 5</text>
+            <text x="${W - 8}" y="${H + 14}" text-anchor="end" fill="var(--a-ink-3)" font-size="12" font-family="var(--f-sans)">Oct 30</text>
+          </svg>
+        </div>
+        <div class="drill"><span class="r__ic">${ic('target')}</span><div><b>This week: Fairway finder</b><small>14 tee shots to a 30-yard window, aimed away from the trouble side. ${V('Eli logged 2 sessions this week.', 'You logged 2 sessions this week.')}</small></div></div>
+      </div>
+    </section>`;
+  }
+
+  function sgCard() {
+    if (isLoading()) return skCard('sg', 'Where the strokes go');
+    const early = isEarly();
+    // Strokes gained per round. 0 is the PGA Tour average (the engine's own baseline); the tick is the team average.
+    const legs = [['Off the tee', -0.9, -0.2], ['Approach', -0.5, -0.2], ['Around green', 0.1, -0.1], ['Putting', -0.3, -0.2]];
+    const max = 1;
+    const at = (v) => (50 + v / max * 50).toFixed(1);
+    return `<section class="card" data-card="sg">
+      <div class="card__h"><h4>Where the strokes go</h4><small>${V('Eli vs Tour and team', 'You vs Tour and team')}</small></div>
+      <div class="card__b"><div class="sg">
+        ${legs.map(([l, v, t]) => early
+          ? `<div class="sg__row"><span>${l}</span><div class="sg__trk"></div><b class="none">—</b></div>`
+          : `<div class="sg__row"><span>${l}</span><div class="sg__trk"><i class="sg__bar ${v < 0 ? 'loss' : 'gain'}" style="width:${Math.abs(v) / max * 50}%"></i><i class="sg__team" style="left:${at(t)}%" title="Team ${t < 0 ? '−' : '+'}${Math.abs(t).toFixed(1)}"></i></div><b class="${v < 0 ? 'loss' : 'gain'}">${v < 0 ? '−' : '+'}${Math.abs(v).toFixed(1)}</b></div>`).join('')}
+        <div class="sg__axis"><span></span><div><span>−1.0</span><span>Tour</span><span>+1.0</span></div><span></span></div>
+        ${early ? '' : `<div class="sg__key"><i class="sg__team"></i>Team average</div>`}
+      </div></div>
+      <p class="card__n">${early
+        ? V("Strokes gained needs hole-by-hole scores. Eli's 2 rounds were posted as totals.", 'Strokes gained needs hole-by-hole scores. Your 2 rounds were posted as totals.')
+        : V('Against the Tour, off the tee costs Eli 0.9 a round; against the team, 0.7.', 'Against the Tour, off the tee costs you 0.9 a round; against the team, 0.7.') + ' All rounds · 21 rounds · strokes per round.'}</p>
+    </section>`;
+  }
+
+  function readsCard() {
+    const coach = isCoachLens();
+    if (isLoading()) return skCard('reads', coach ? 'All reads' : 'Also worth knowing');
+    if (isEarly()) {
+      return `<section class="card" data-card="reads">
+        <div class="card__h"><h4>${coach ? 'All reads' : 'Also worth knowing'}</h4><small>None yet</small></div>
+        ${mini('', 'No reads yet', V('CoachHelm needs 4 full rounds from Eli, hole by hole.', 'CoachHelm needs 4 full rounds from you, hole by hole.'))}
+      </section>`;
+    }
+    // Player side keeps today's Board caps (coachhelm-shape.ts NEEDS_MAX 3 with the focus, WORKING_MAX 1) and moreReadsLine.
+    const list = coach ? READS : READS.filter((r) => r.chip[1] !== 'Working' && r.id !== 'pen').slice(0, 2);
+    return `<section class="card" data-card="reads">
+      <div class="card__h"><h4>${coach ? 'All reads' : 'Also worth knowing'}</h4><small class="num">${coach ? '4 open · 1 dismissed' : `${list.length} reads`}</small></div>
+      <div class="rows">
+        ${list.map(readRow).join('')}
+        ${coach ? undoRow(DISMISSED) : ''}
+      </div>
+      ${coach ? '' : '<p class="card__n">1 more read in the Deep dive</p>'}
+    </section>`;
+  }
+
+  function workingCard() {
+    if (isEarly()) return '';
+    if (isLoading()) return skCard('working', "What's working", 'player');
+    return `<section class="card" data-card="working" data-only="player">
+      <div class="card__h"><h4>What's working</h4><small>Top strength</small></div>
+      <div class="rows">
+        <div class="r static"><span class="chip gain">Working</span><span class="r__t"><b class="l2">Up and down: 58%</b><small>Tour 52% · 21 rounds · Solid read</small></span><span></span></div>
+      </div>
+    </section>`;
+  }
+
+  function fieldCard() {
+    // Early: total-only rounds are not countable, so there is no field to draw.
+    if (ST() === 'nofield' || isEarly()) return '';
+    if (isLoading()) return skCard('field', 'Last round in context');
+    const coach = isCoachLens();
+    const pos = (v) => ((v + 2) / 12 * 100).toFixed(1); // per-18 to par, −2 … +10
+    // FieldDayEntry: field_n counts the player; field_mean includes the player.
+    const d = { date: 'Oct 26', course: 'Lonnie Poole', me: 4, meTxt: '76 (+4)', mates: [3.0, 5.0, 7.0, 8.0, 9.0] };
+    const all = [...d.mates, d.me];
+    const mean = all.reduce((x, y) => x + y, 0) / all.length;
+    const rel = d.me - mean;
+    // The page's own rule: within 1.0 stroke is level.
+    const head = rel <= -1 ? 'Better than the field' : rel >= 1 ? 'Behind the field' : 'Level with the field';
+    const relTxt = Math.abs(rel) < 1 ? 'about level with it' : `${Math.abs(rel).toFixed(1)} ${rel < 0 ? 'better' : 'worse'} than the field average`;
+    const body = V(`Eli shot ${d.meTxt}. ${d.mates.length} teammates played; the field, Eli included, averaged +${mean.toFixed(1)}, so Eli was ${relTxt}.`,
+      `You shot ${d.meTxt}. ${d.mates.length} teammates played; the field, you included, averaged +${mean.toFixed(1)}, so you were ${relTxt}.`);
+    // Teammates' dots are coach only; the player sees the field average and their own mark.
+    const dots = coach ? d.mates.map((v) => `<i style="left:${pos(v)}%"></i>`).join('') : '';
+    return `<section class="card" data-card="field">
+      <div class="card__h"><h4>Last round in context</h4><small>${d.date} · ${d.course}</small></div>
+      <div class="card__b">
+        <div class="field">
+          <div class="field__t"><b>${head}</b><small>${body}</small></div>
+          <div class="field__fig num${Math.abs(rel) < 1 ? ' is-level' : ''}">${rel < 0 ? '−' : '+'}${Math.abs(rel).toFixed(1)}<small>vs the field</small></div>
+        </div>
+        <div class="dots" aria-hidden="true">${dots}<i class="mean" style="left:${pos(mean)}%"></i><i class="me" style="left:${pos(d.me)}%"></i></div>
+        <div class="dots__lab num"><span>−2</span><span>${V('Eli', 'You')} +${d.me} · field +${mean.toFixed(1)}</span><span>+10</span></div>
+      </div>
+    </section>`;
+  }
+
+  const INTENT = { aim: 'Breakout', alerts: 'Balanced', watch: ['Course management'], note: 'Wants the 1 spot by spring. Pairs well with Jonah on practice days.' };
+  function intentCard() {
+    if (isLoading()) return skCard('intent', `${ic('lock')}Your plan for Eli`, 'coach');
+    const head = `<div class="card__h"><h4>${ic('lock')}Your plan for Eli</h4><small class="vis">${ic('eye')}Only you</small></div>`;
+    if (ST() === 'nointent') {
+      return `<section class="card" data-card="intent" data-only="coach">${head}
+        <div class="card__b"><p class="cb-p">Not set yet. Until you set one, CoachHelm treats Eli as <b>Develop</b> with <b>Balanced</b> alerts.</p>
+        <button class="btn sec" data-act="intent">Set a plan</button></div>
+      </section>`;
+    }
+    return `<section class="card" data-card="intent" data-only="coach">${head}
+      <div class="card__b"><dl class="kv">
+        <dt>Aim</dt><dd>${INTENT.aim}</dd>
+        <dt>Alerts</dt><dd>${INTENT.alerts}</dd>
+        <dt>Watching</dt><dd>${INTENT.watch.join(', ')}</dd>
+        <dt>Note</dt><dd style="font-weight:400">${INTENT.note}</dd>
+      </dl></div>
+      <p class="card__n"><button class="lnk" data-act="intent">Edit plan</button></p>
+    </section>`;
+  }
+
+  function trackCard() {
+    if (isLoading()) return skCard('track', `${ic('lock')}Track record with Eli`, 'coach');
+    const head = `<div class="card__h"><h4>${ic('lock')}Track record with Eli</h4><small>This season</small></div>`;
+    if (isEarly() || ST() === 'empty') {
+      return `<section class="card" data-card="track" data-only="coach">${head}<div class="card__b"><p class="cb-p">No focus assigned to Eli yet this season. Each one you assign lands here with how it went.</p></div></section>`;
+    }
+    return `<section class="card" data-card="track" data-only="coach">${head}
+      <div class="card__b">
+        <div class="tr3 num"><div><b>3</b><span>Focuses assigned</span></div><div><b class="gain">2</b><span>Improved</span></div><div><b>1</b><span>No change</span></div></div>
+        <div class="rows" style="margin:0 -20px -18px">
+          <div class="r static"><span class="chip gain">Improved</span><span class="r__t"><b>Lag putting from 30 ft</b><small>3-putts 1 in 7 → 1 in 9 · Sep</small></span><span></span></div>
+          <div class="r static"><span class="chip plain">No change</span><span class="r__t"><b>Wedge distance control</b><small>Held at 19 ft · Aug</small></span><span></span></div>
+        </div>
+      </div>
+    </section>`;
+  }
+
+  function emptyCard() {
+    return `<section class="card" data-card="empty">${mini('flag', 'No rounds yet',
+      V("Eli's reads start after 4 full rounds, hole by hole, in the last 90 days.", 'Your reads start after 4 full rounds, hole by hole, in the last 90 days.'),
+      isCoachLens() ? `<button class="btn sec" data-act="msg">${ic('msg')}Message Eli</button>` : `<button class="btn pri" data-act="rounds">Go to Rounds</button>`)}</section>`;
+  }
+  function failedCard() {
+    return `<section class="card" data-card="failed" role="alert">${mini('x', V("Couldn't load Eli's file", "Couldn't load your CoachHelm"),
+      'Nothing was lost. Check your connection and try again.', `<button class="btn sec" data-act="retry">Try again</button>`, true)}</section>`;
+  }
+
+  // The card sets each screen draws, by state.
+  function cardSet(where) {
+    const s = ST();
+    if (s === 'failed') return where.endsWith('R') ? [] : [failedCard()];
+    if (s === 'empty') {
+      if (where === 'coachPhone') return [emptyCard(), intentCard(), trackCard()];
+      if (where === 'playerPhone' || where === 'deskPlayerL') return [emptyCard()];
+      if (where === 'deskCoachL') return [emptyCard()];
+      if (where === 'deskCoachR') return [intentCard(), trackCard()];
+      return [];
+    }
+    const sets = {
+      coachPhone: [featCard, planCard, fieldCard, readsCard, sgCard, workingCard, intentCard, trackCard],
+      playerPhone: [featCard, workingCard, planCard, fieldCard, sgCard, readsCard],
+      deskCoachL: [featCard, planCard, sgCard],
+      deskCoachR: [fieldCard, readsCard, workingCard, intentCard, trackCard],
+      deskPlayerL: [featCard, planCard, sgCard],
+      deskPlayerR: [workingCard, fieldCard, readsCard],
+    };
+    return sets[where].map((f) => f()).filter(Boolean);
+  }
+
+  /* ───── Screens ───── */
+  const lensSeg = () => `<div class="aseg" role="group" aria-label="Lens" data-seg="lens"><span class="thumb"></span><button data-act="lens" data-v="coach" aria-pressed="${S.lens === 'coach'}">Coach view</button><button data-act="lens" data-v="player" aria-pressed="${S.lens === 'player'}">As Eli sees it</button></div>`;
+  const pvPill = () => `<div class="pv" data-pv>${ic('eye')}Previewing Eli's screen</div>`;
+
+  function cardsCoachPhone() { return cardSet('coachPhone'); }
+  function cardsPlayerPhone() { return cardSet('playerPhone'); }
+  const wrapOnly = (html) => {
+    // Lens-dependent cards are wrapped so they can fold; hidden ones render collapsed.
+    const m = html.match(/data-only="(coach|player)"/);
+    if (!m) return html;
+    const want = m[1];
+    const showing = S.role === 'player' ? want === 'player' : (S.lens === 'coach' ? want === 'coach' : want === 'player');
+    return `<div class="wrap-collapse" data-wrap="${want}" ${showing ? '' : 'hidden'}>${html}</div>`;
+  };
+
+  function phoneCoachList() {
+    return `<div class="pg" data-pg="list">
+      <div class="gbar"><button class="gbar__sw">CoachHelm ${ic('chevD')}<span class="gbar__dot"></span></button><span></span><span class="gbar__end"><button class="gbtn" aria-label="Notifications">${ic('bell')}<b>3</b></button></span><span class="shade"></span></div>
+      <div class="scroll"><div class="body">
+        <div class="titleblock"><h2 class="lt">CoachHelm</h2><p class="ctx">3 players have an open signal</p></div>
+        <section class="card"><div class="card__h"><h4>By player</h4><small>Most pressing first</small></div>
+          <div class="rows">${ROSTER.map((p) => `<button class="r${p.id === 'eli' ? ' is-target' : ''}" data-act="openfile" data-id="${p.id}">${av(p)}<span class="r__t"><b>${p.name}</b><small>${p.top}</small></span><span class="r__e">${p.chip ? `<span class="chip ${p.chip[0]}">${p.chip[1]}</span>` : ''}${ic('chevR')}</span></button>`).join('')}</div>
+          <p class="card__n">The team view itself is lane 1's. Every row here pushes the player's file.</p>
+        </section>
+      </div></div>
+    </div>`;
+  }
+
+  function phoneCoachFile() {
+    const prev = S.lens === 'player';
+    return `<div class="pg" data-pg="file">
+      <div class="gbar is-push"><button class="gbar__back" data-act="back">${ic('chevL')}CoachHelm</button><span class="gbar__title">Eli Brandt</span><span class="gbar__end"><button class="gbtn" aria-label="More" data-act="more">${ic('more')}</button></span><span class="shade"></span></div>
+      <div class="scroll"><div class="body">
+        ${S.state === 'failed' ? '' : `<div class="sticky-seg">${lensSeg()}</div>`}
+        ${prev ? pvPill() : ''}
+        ${cardsCoachPhone().map(wrapOnly).join('')}
+      </div></div>
+    </div>`;
+  }
+
+  function phonePlayer() {
+    return `<div class="pg" data-pg="player">
+      <div class="gbar"><button class="gbar__sw">CoachHelm ${ic('chevD')}<span class="gbar__dot"></span></button><span></span><span class="gbar__end"><button class="gbtn" aria-label="Notifications">${ic('bell')}<b>1</b></button></span><span class="shade"></span></div>
+      <div class="scroll"><div class="body">
+        <div class="aseg" role="group" aria-label="View" data-seg="pv"><span class="thumb"></span><button aria-pressed="true">Board</button><button aria-pressed="false">Standing</button><button aria-pressed="false">Deep dive</button></div>
+        <div class="titleblock"><h2 class="lt">Your week</h2><p class="ctx num">${S.state === 'early' ? 'Last round Sep 26' : S.state === 'empty' ? 'No rounds yet' : '21 rounds · refreshed Oct 30'}</p></div>
+        ${cardsPlayerPhone().map(wrapOnly).join('')}
+      </div></div>
+    </div>`;
+  }
+
+  function deskNav(role) {
+    const items = role === 'coach'
+      ? [['home', 'Home'], ['helm', 'CoachHelm', 1], ['cal', 'Calendar'], ['msg', 'Messages'], 'Team', ['users', 'Roster'], ['chart', 'Stats'], ['flag', 'Rounds']]
+      : [['home', 'Home'], ['helm', 'CoachHelm', 1], ['cal', 'Calendar'], ['msg', 'Messages'], 'My game', ['flag', 'Rounds'], ['chart', 'My stats']];
+    return `<nav class="dnav"><div class="logo">${ic('sun')}Golfhelm</div>${items.map((it) => typeof it === 'string' ? `<h6>${it}</h6>` : `<a class="${it[2] ? 'on' : ''}">${ic(it[0])}${it[1]}</a>`).join('')}
+      <div class="me">${role === 'coach' ? '<span class="av" style="--yc:#6b675f">MR</span><span>Maya Reyes<small>Head coach</small></span>' : `${av(ROSTER[0])}<span>Eli Brandt<small>Junior</small></span>`}</div></nav>`;
+  }
+
+  function deskCoach() {
+    const prev = S.lens === 'player';
+    const left = cardSet('deskCoachL');
+    const right = cardSet('deskCoachR');
+    return `${deskNav('coach')}<div class="dws app-ws">
+      <div class="dtop">CoachHelm <span>›</span> <b>Eli Brandt</b><span class="sp"><button class="ib">${ic('bell')}</button><button class="ib">${ic('gear')}</button></span></div>
+      <div class="dmain">
+        <aside class="drail"><div class="scroll"><section class="card"><div class="card__h"><h4>By player</h4><small>5</small></div><div class="rows">
+          ${ROSTER.map((p) => `<button class="r${p.id === 'eli' ? ' is-sel' : ''}">${av(p)}<span class="r__t"><b>${p.name}</b><small>${p.top}</small></span><span></span></button>`).join('')}
+        </div></section></div></aside>
+        <div class="dfile"><div class="scroll"><div class="body">
+          <div class="dhead">${av(ROSTER[0], 52)}<div><h2 class="lt">Eli Brandt</h2><p class="num">${S.state === 'early' ? 'Junior · Last round Sep 26' : S.state === 'empty' ? 'Junior · No rounds yet' : 'Junior · Last round Oct 26, 5 days ago · 21 rounds'}</p></div>${S.state === 'failed' ? '' : lensSeg()}<button class="ib more" aria-label="More" data-act="more">${ic('more')}</button></div>
+          ${prev ? pvPill() : ''}
+          <div class="grid2${right.length ? '' : ' one'}"><div class="col">${left.map(wrapOnly).join('')}</div>${right.length ? `<div class="col">${right.map(wrapOnly).join('')}</div>` : ''}</div>
+        </div></div></div>
+      </div></div>`;
+  }
+
+  function deskPlayer() {
+    const left = cardSet('deskPlayerL');
+    const right = cardSet('deskPlayerR');
+    return `${deskNav('player')}<div class="dws app-ws">
+      <div class="dtop"><b>CoachHelm</b><span class="sp"><button class="ib">${ic('bell')}</button><button class="ib">${ic('gear')}</button></span></div>
+      <div class="dmain solo"><div class="dfile"><div class="scroll"><div class="body">
+        <div class="dhead"><div><h2 class="lt">Your week</h2><p class="num">${S.state === 'early' ? 'Last round Sep 26' : S.state === 'empty' ? 'No rounds yet' : '21 rounds · refreshed Oct 30'}</p></div><div class="aseg" data-seg="pv"><span class="thumb"></span><button aria-pressed="true">Board</button><button aria-pressed="false">Standing</button><button aria-pressed="false">Deep dive</button></div></div>
+        <div class="grid2${right.length ? '' : ' one'}"><div class="col">${left.map(wrapOnly).join('')}</div>${right.length ? `<div class="col">${right.map(wrapOnly).join('')}</div>` : ''}</div>
+      </div></div></div></div></div>`;
+  }
+
+  // More menu: today's ui/Menu (232 wide, 34px rows, CH_POP). Two items, coach only.
+  function menuHTML() {
+    return `<div class="mnu-ovl" data-mnu><div class="mnu-bg" data-act="closemenu"></div>
+      <div class="mnu" role="menu" aria-label="More for Eli">
+        <button role="menuitem" data-act="profile">${ic('users')}Open Eli's profile</button>
+        <button role="menuitem" data-act="msg">${ic('msg')}Message Eli</button>
+      </div></div>`;
+  }
+  async function openMenu() {
+    if (S.menu) return; S.menu = true;
+    const host = S.device === 'phone' ? $('.phone__scr', box) : $('.desk', box);
+    const t = document.createElement('div'); t.innerHTML = fx(menuHTML()); const ov = t.firstElementChild; host.appendChild(ov);
+    const m = $('.mnu', ov);
+    await anim(m, RM() ? [{ opacity: 0 }, { opacity: 1 }] : [{ opacity: 0, transform: 'translateY(-4px) scale(0.97)' }, { opacity: 1, transform: 'none' }], { duration: 180, easing: EASE });
+    writeHash();
+  }
+  async function closeMenu() {
+    const ov = $('[data-mnu]', box); S.menu = false; if (!ov) return;
+    await anim($('.mnu', ov), RM() ? [{ opacity: 1 }, { opacity: 0 }] : [{ opacity: 1, transform: 'none' }, { opacity: 0, transform: 'translateY(-2px) scale(0.98)' }], { duration: 180, easing: EASE });
+    ov.remove(); writeHash();
+  }
+
+  function sheetHTML(type = S.sheet) {
+    if (type === 'intent') return intentSheetHTML();
+    const coach = isCoachLens();
+    const strip = [1, 0, 2, 1, 1, 0, 2, 1]; // golf_rounds.total_penalties, last 8 rounds
+    const corr = coach ? ['Not this', 'Wrong cause', 'Already on it', 'Show later', 'Good read'] : ['Not this', 'Good read'];
+    const focused = S.stage > 0;
+    const foot = coach
+      ? `<div class="sheet__f"><button class="btn sec" data-act="dismiss">Dismiss</button>${focused ? `<button class="btn is-done-p" disabled>${ic('check')}Eli's focus</button>` : `<button class="btn pri" data-act="assign">${ic('flag')}Assign as focus</button>`}</div>`
+      : '';
+    return `<div class="ovl" data-ovl><div class="ovl__bg" data-act="close"></div>
+      <div class="sheet" role="dialog" aria-label="Penalty strokes evidence"><div class="sheet__grab"></div>
+        <div class="sheet__h"><div>${coach && S.stage > 0 ? '<span class="chip acc">Assigned</span>' : '<span class="chip loss">Priority</span>'}<h4>Penalty strokes: 1.1 a round</h4></div><button class="x" data-act="close" aria-label="Close">${ic('x')}</button></div>
+        <div class="sheet__b">
+          <div class="well"><h5>The comparison</h5><div class="gauge num">
+            <div><span>${coach ? 'Eli' : 'You'}</span><i class="me" style="width:100%"></i><b>1.1</b></div>
+            <div><span>Team</span><i style="width:63.6%"></i><b>0.7</b></div>
+            <div><span>Tour</span><i style="width:27.3%"></i><b>0.3</b></div>
+          </div></div>
+          <div class="well"><h5>Penalties in the last 8 rounds</h5><div class="strip">${strip.map((v) => `<i class="${v >= 2 ? 'hi' : ''}" style="height:${Math.max(4, v / 2 * 100)}%"></i>`).join('')}</div><div class="strip__lab num"><span>Sep 13</span><span>Oct 26</span></div></div>
+          <div class="well"><h5>Where it happened</h5><div class="holes">
+            <div><span>Oct 12 · 7</span>Lonnie Poole · 1 penalty stroke · 5 on a par 4</div>
+            <div><span>Oct 19 · 14</span>Lonnie Poole · 2 penalty strokes · 6 on a par 4</div>
+            <div><span>Oct 26 · 3</span>Lonnie Poole · 1 penalty stroke · 5 on a par 4</div>
+          </div></div>
+          <div class="well"><h5>Why ${coach ? 'we think this' : 'CoachHelm thinks this'}</h5><p class="well__p">${coach ? 'Eli averages 1.1 penalty strokes a round across 21 rounds. The team averages 0.7 and the Tour 0.3. Counted from every round on file.' : 'You average 1.1 penalty strokes a round across 21 rounds. The team averages 0.7 and the Tour 0.3. Counted from every round on file.'}</p>
+            <p class="well__m">21 rounds · All rounds · ${coach ? 'Seen repeatedly' : 'Solid read'} · as of Oct 30</p></div>
+          ${cxHTML(corr)}
+        </div>
+        ${foot}
+      </div></div>`;
+  }
+
+  // Today's CorrectionChips: a tap records at once and leaves "Your answer: …" with Change; Not this asks why first.
+  function cxHTML(corr, done) {
+    if (done) return `<div class="cx is-done" data-cx><p class="cx__done" role="status">Your answer: ${done}.</p><button class="cx__chg" data-act="cxchg">Change</button></div>`;
+    return `<div class="cx" data-cx><p class="cx__k">Is this read right?</p><div class="corr" role="group">${corr.map((c) => `<button data-act="corr" data-k="${c}"${c === 'Not this' ? ' aria-expanded="false"' : ''}>${c}</button>`).join('')}</div>
+      <div class="cx__why" hidden>${['It’s wrong', 'Not important', 'Already known', 'No reason'].map((r) => `<button data-act="cxwhy" data-r="${r}">${r}</button>`).join('')}</div></div>`;
+  }
+
+  function intentSheetHTML() {
+    const cur = S.state === 'nointent' ? { aim: 'Develop', alerts: 'Balanced', watch: [], note: '' } : INTENT;
+    const picks = (name, opts, on, multi) => `<div class="picks" data-picks="${name}"${multi ? ' data-multi' : ''}>${opts.map((o) => `<button data-act="pick" aria-pressed="${(Array.isArray(on) ? on.includes(o) : on === o)}">${o}</button>`).join('')}</div>`;
+    return `<div class="ovl" data-ovl><div class="ovl__bg" data-act="close"></div>
+      <div class="sheet" role="dialog" aria-label="Your plan for Eli"><div class="sheet__grab"></div>
+        <div class="sheet__h"><div><span class="vis">${ic('lock')}Only you</span><h4>Your plan for Eli</h4></div><button class="x" data-act="close" aria-label="Close">${ic('x')}</button></div>
+        <div class="sheet__b">
+          <div class="well"><h5>Aim this season</h5>${picks('aim', ['Breakout', 'Develop', 'Maintain', 'Bubble', 'Rehab'], cur.aim)}</div>
+          <div class="well"><h5>How often CoachHelm flags Eli</h5>${picks('alerts', ['Aggressive', 'Balanced', 'Conservative', 'Silent'], cur.alerts)}<p class="well__m">Aggressive shows more reads, Silent shows none.</p></div>
+          <div class="well"><h5>Watching</h5>${picks('watch', ['Off the tee', 'Approach', 'Around the green', 'Putting', 'Course management'], cur.watch, true)}</div>
+          <div class="well"><h5>Note</h5><textarea class="note" rows="3" aria-label="Note" placeholder="Only you see this">${cur.note}</textarea></div>
+        </div>
+        <div class="sheet__f"><button class="btn sec" data-act="close">Cancel</button><button class="btn pri" data-act="saveintent">Save plan</button></div>
+      </div></div>`;
+  }
+
+  /* Long names: one pass over the drawn HTML so every place a name appears gets the long one. */
+  const LONG = [['Eli Brandt', 'Maximilian Okonkwo-Vandermeer'], ['Eli', 'Maximilian'], ['>EB<', '>MO<'], ['Lonnie Poole', 'Lonnie Poole Golf Course at NC State'], ['Approach from 125 to 175 yd', 'Approach from 125 to 175 yards into greens that run away from you']];
+  const fx = (html) => S.state === 'long' ? LONG.reduce((h, [a, b]) => h.split(a).join(b), html) : html;
+
+  /* ───── Render ───── */
+  function render() {
+    const phone = S.device === 'phone';
+    let inner;
+    if (phone) {
+      const scr = S.role === 'coach' ? (S.screen === 'list' ? phoneCoachList() : phoneCoachFile()) : phonePlayer();
+      inner = `<div class="dev phone"><div class="phone__scr app${RM() ? ' reduce' : ''}" style="--k:${S.k}"><div class="sbar"><span class="num">9:41</span><svg viewBox="0 0 64 12"><rect x="0" y="6" width="3" height="6" rx="1"/><rect x="5" y="4" width="3" height="8" rx="1"/><rect x="10" y="2" width="3" height="10" rx="1"/><rect x="15" y="0" width="3" height="12" rx="1"/><rect x="40" y="1" width="22" height="10" rx="3" fill="none" stroke="currentColor"/><rect x="42" y="3" width="16" height="6" rx="1.5"/></svg></div><div class="island"></div><div class="screens">${scr}</div>${S.sheet ? sheetHTML(S.sheet) : ''}${S.menu ? menuHTML() : ''}<div class="homei"></div></div></div>`;
+    } else {
+      inner = `<div class="dev desk app${RM() ? ' reduce' : ''}" style="--k:${S.k}">${S.role === 'coach' ? deskCoach() : deskPlayer()}${S.sheet ? sheetHTML(S.sheet) : ''}${S.menu ? menuHTML() : ''}</div>`;
+    }
+    box.innerHTML = fx(inner);
+    fit();
+    placeThumbs(false);
+    bindScroll();
+    caption();
+  }
+  function fit() {
+    const dev = $('.dev', box); if (!dev) return;
+    const w = dev.offsetWidth, h = dev.offsetHeight;
+    const s = Math.min(box.clientWidth / w, box.clientHeight / h, 1);
+    dev.style.transform = `translate(-50%, -50%) scale(${s})`;
+  }
+  function placeThumbs(animate) {
+    $$('.aseg', box).forEach((seg) => {
+      const on = $('button[aria-pressed="true"]', seg); const th = $('.thumb', seg); if (!on || !th) return;
+      const x = on.offsetLeft - 3, w = on.offsetWidth;
+      if (animate && !RM()) { th.style.transition = `transform ${SETTLE_MS}ms ${settleEase}, width ${SETTLE_MS}ms ${settleEase}`; } else th.style.transition = 'none';
+      th.style.width = w + 'px'; th.style.transform = `translateX(${x}px)`;
+    });
+  }
+  function bindScroll() {
+    $$('.scroll', box).forEach((sc) => {
+      const bar = sc.parentElement && $('.gbar', sc.parentElement);
+      if (bar) sc.addEventListener('scroll', () => bar.classList.toggle('is-scrolled', sc.scrollTop > 8), { passive: true });
+    });
+  }
+  function caption(live, txt, meta) {
+    const cap = $('#cap');
+    cap.classList.toggle('is-live', !!live);
+    $('#capT').textContent = txt || (S.role === 'coach'
+      ? (S.device === 'phone' && S.screen === 'list' ? 'Coach · any player row opens the file' : S.lens === 'player' ? "Coach previewing Eli's screen" : "Eli Brandt's file, coach view")
+      : "Eli's CoachHelm, player view");
+    $('#capM').textContent = meta || ((S.device === 'phone' ? '402 × 874' : '1280 × 800') + (S.state !== 'normal' ? ' · ' + S.state : '') + ' · #' + hashOf());
+  }
+  addEventListener('resize', fit);
+
+  /* ───── Motions ───── */
+  async function push(toFile) {
+    const scr = $('.screens', box); const from = $('.pg', scr);
+    S.screen = toFile ? 'file' : 'list';
+    const tmp = document.createElement('div'); tmp.innerHTML = fx(toFile ? phoneCoachFile() : phoneCoachList());
+    const to = tmp.firstElementChild; scr.appendChild(to); placeThumbs(false); bindScroll();
+    if (RM()) { await anim(to, [{ opacity: 0 }, { opacity: 1 }], { duration: 180, easing: EASE }); from.remove(); return; }
+    to.style.zIndex = toFile ? 2 : 0; from.style.zIndex = toFile ? 0 : 2;
+    const o = { duration: 462, easing: springEase };
+    await Promise.all(toFile
+      ? [anim(to, [{ transform: 'translateX(100%)' }, { transform: 'translateX(0)' }], o), anim(from, [{ transform: 'translateX(0)', filter: 'brightness(1)' }, { transform: 'translateX(-24%)', filter: 'brightness(0.9)' }], o)]
+      : [anim(from, [{ transform: 'translateX(0)' }, { transform: 'translateX(100%)' }], o), anim(to, [{ transform: 'translateX(-24%)', filter: 'brightness(0.9)' }, { transform: 'translateX(0)', filter: 'brightness(1)' }], o)]);
+    from.remove(); to.getAnimations().forEach((a) => a.cancel());
+  }
+
+  // Every motion below is one of the app's own: CH_SPRINGS.smooth (462ms), CH_SPRINGS.settle (417ms), --ch-ease,
+  // press 110 / quick 180 / base 260 / release 280. Reduce Motion is the app's CH_FADE_MS (180ms) opacity fade (SHARED-6).
+  const fold = (w, open) => {
+    // A lens-only card leaving or arriving: height on the smooth spring, opacity over quick (out) or base (in).
+    const h = w.offsetHeight;
+    const hk = open ? [{ height: '0px', marginTop: '-24px' }, { height: h + 'px', marginTop: '0px' }] : [{ height: h + 'px', marginTop: '0px' }, { height: '0px', marginTop: '-24px' }];
+    return Promise.all([
+      anim(w, hk, { duration: 462, easing: springEase }),
+      anim(w, open ? [{ opacity: 0 }, { opacity: 1 }] : [{ opacity: 1 }, { opacity: 0 }], { duration: open ? 260 : 180, easing: EASE }),
+    ]);
+  };
+
+  async function setLens(v) {
+    if (S.lens === v) return;
+    S.lens = v;
+    $$('[data-seg="lens"] button', box).forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.v === v)));
+    placeThumbs(true);
+    const scs = () => $$('.scroll', box).map((s) => s.scrollTop);
+    if (RM()) {
+      const keep = scs(); render(); $$('.scroll', box).forEach((s, i) => { s.scrollTop = keep[i] || 0; });
+      await Promise.all($$('.scroll', box).map((sc) => anim(sc, [{ opacity: 0 }, { opacity: 1 }], { duration: 180, easing: EASE })));
+      return;
+    }
+    const hideSel = v === 'player' ? '[data-wrap="coach"]' : '[data-wrap="player"]';
+    const showSel = v === 'player' ? '[data-wrap="player"]' : '[data-wrap="coach"]';
+    const jobs = [];
+    $$(hideSel, box).filter((w) => !w.hidden).forEach((w) => jobs.push(fold(w, false).then(() => { w.hidden = true; })));
+    $$(showSel, box).filter((w) => w.hidden).forEach((w) => { w.hidden = false; jobs.push(fold(w, true)); });
+    // Shared cards keep their place and change their words with today's Swap.
+    const FN = { feat: featCard, plan: planCard, field: fieldCard, reads: readsCard, sg: sgCard };
+    $$('[data-card]', box).filter((c) => !c.closest('[data-wrap]') && FN[c.dataset.card]).forEach((c) => jobs.push(swapEl(c, FN[c.dataset.card]())));
+    // The preview pill folds in under the lens control, or away.
+    const pill = $('[data-pv]', box);
+    if (v === 'player' && !pill) {
+      const at = $('.sticky-seg', box) || $('.dhead', box);
+      if (at) { at.insertAdjacentHTML('afterend', pvPill()); const pv = $('[data-pv]', box); jobs.push(fold(pv, true), anim(pv, [{ transform: 'translateY(6px)' }, { transform: 'none' }], { duration: SETTLE_MS, easing: settleEase })); }
+    } else if (v === 'coach' && pill) jobs.push(fold(pill, false).then(() => pill.remove()));
+    await Promise.all(jobs);
+    const keep = scs(); render(); $$('.scroll', box).forEach((s, i) => { s.scrollTop = keep[i] || 0; });
+  }
+
+  async function openSheet(type = 'ev') {
+    S.sheet = type;
+    const host = S.device === 'phone' ? $('.phone__scr', box) : $('.desk', box);
+    const t = document.createElement('div'); t.innerHTML = fx(sheetHTML(type)); const ov = t.firstElementChild; host.appendChild(ov);
+    const sh = $('.sheet', ov), bg = $('.ovl__bg', ov);
+    if (RM()) { await anim(ov, [{ opacity: 0 }, { opacity: 1 }], { duration: 180, easing: EASE }); return; }
+    const desk = S.device !== 'phone';
+    // Scrim: base over --ch-ease (the dialog's --ch-scrim-a). Phone sheet: ch-rise on the smooth spring. Desktop: ch-pop.
+    anim(bg, [{ opacity: 0 }, { opacity: 1 }], { duration: 260, easing: EASE });
+    await anim(sh, desk ? [{ opacity: 0, transform: 'translateY(6px) scale(0.98)' }, { opacity: 1, transform: 'none' }] : [{ transform: 'translateY(100%)' }, { transform: 'none' }], desk ? { duration: 260, easing: EASE } : { duration: 462, easing: springEase });
+  }
+  async function closeSheet() {
+    const ov = $('[data-ovl]', box); S.sheet = false; if (!ov) return;
+    const sh = $('.sheet', ov), bg = $('.ovl__bg', ov);
+    if (RM()) { await anim(ov, [{ opacity: 1 }, { opacity: 0 }], { duration: 180, easing: EASE }); ov.remove(); return; }
+    const desk = S.device !== 'phone';
+    // Today's dialog-lifetime exit: a sheet leaves on the spring it rose on, the scrim clearing with it; a dialog pops back.
+    const o = desk ? { duration: 260, easing: EASE } : { duration: 462, easing: springEase };
+    await Promise.all([
+      anim(bg, [{ opacity: 1 }, { opacity: 0 }], o),
+      anim(sh, desk ? [{ opacity: 1, transform: 'none' }, { opacity: 0, transform: 'translateY(6px) scale(0.98)' }] : [{ transform: 'none' }, { transform: 'translateY(100%)' }], o),
+    ]);
+    ov.remove();
+  }
+
+  // Today's Swap (kind settle, popLayout): the old copy leaves over quick while the new one fades in over base and
+  // rises 6px on the settle spring; the frame eases between the two heights over quick.
+  async function swapEl(old, html) {
+    if (!old || !old.isConnected) return;
+    const t = document.createElement('div'); t.innerHTML = fx(html); const nu = t.firstElementChild;
+    if (!nu) { old.remove(); return; }
+    if (RM()) { old.replaceWith(nu); return; } // today's Swap: reduced motion swaps at once
+    const h0 = old.offsetHeight, top = old.offsetTop, left = old.offsetLeft, w = old.offsetWidth;
+    old.before(nu);
+    Object.assign(old.style, { position: 'absolute', top: top + 'px', left: left + 'px', width: w + 'px', margin: '0', pointerEvents: 'none', zIndex: '1' });
+    old.setAttribute('aria-hidden', 'true'); old.inert = true;
+    const h1 = nu.offsetHeight;
+    const jobs = [
+      anim(old, [{ opacity: 1 }, { opacity: 0 }], { duration: 180, easing: EASE }).then(() => old.remove()),
+      anim(nu, [{ opacity: 0 }, { opacity: 1 }], { duration: 260, easing: EASE }),
+      anim(nu, [{ transform: 'translateY(6px)' }, { transform: 'none' }], { duration: SETTLE_MS, easing: settleEase }),
+    ];
+    if (Math.abs(h1 - h0) > 1) jobs.push(anim(nu, [{ height: h0 + 'px', overflow: 'hidden' }, { height: h1 + 'px', overflow: 'hidden' }], { duration: 180, easing: EASE }));
+    await Promise.all(jobs);
+    nu.getAnimations().forEach((a) => a.cancel());
+  }
+  const swapCard = (name, html) => swapEl($(`[data-card="${name}"]`, box), html);
+
+  async function dismissRead(id) {
+    const r = READS.find((x) => x.id === id); const row = $(`.r[data-act="read"][data-id="${id}"]`, box);
+    if (!r || !row) return;
+    const old = $('[data-row="dismissed"]', box);
+    if (old) await swapEl(old, readRow(DISMISSED));
+    await swapEl(row, undoRow(r));
+  }
+  async function undoRead(row) {
+    if (!row) return;
+    const id = row.dataset.id; const r = READS.find((x) => x.id === id) || DISMISSED;
+    await swapEl(row, readRow(r));
+  }
+
+  // The app's press controller (lib/press.ts): a button shrinks by about 6px (never below 0.96) over press 110ms on
+  // --ch-ease and springs back over release 280ms from wherever it got to. Rows and cards only tint (CSS above).
+  const pressScale = (w) => Math.max(0.96, 1 - 6 / (w || 80));
+  let held = null;
+  const pressDown = (el) => { if (!el || el.disabled || RM() || el.offsetWidth > 240) return null; el.animate([{ scale: '1' }, { scale: String(pressScale(el.offsetWidth)) }], { duration: 110, easing: EASE, fill: 'forwards' }); return el; };
+  const pressUp = (el) => { if (!el) return; const now = getComputedStyle(el).scale; el.getAnimations().forEach((a) => a.cancel()); el.animate([{ scale: now === 'none' ? '1' : now }, { scale: '1' }], { duration: 280, easing: SPRING_BACK }); };
+  box.addEventListener('pointerdown', (e) => { if (e.button !== 0) return; held = pressDown(e.target.closest('.btn, .picks button')); });
+  addEventListener('pointerup', () => { pressUp(held); held = null; });
+  addEventListener('pointercancel', () => { pressUp(held); held = null; });
+  const pressOnce = async (el) => { if (!pressDown(el)) return; await sleep(110); pressUp(el); };
+
+  async function assignStory() {
+    S.stage = 0; S.sheet = false; S.role = 'coach'; S.lens = 'coach'; S.screen = 'file'; syncCtl(); render();
+    caption(true, 'Assign as focus: the Suggested step fills, the card swaps', 'press 110/280 · line 260 · dot 180 · tick 260 · Swap');
+    await sleep(500);
+    await pressOnce($('[data-act="assign"]', box));
+    S.stage = 1;
+    const p = $('[data-card="plan"]', box);
+    await Promise.all([
+      swapCard('feat', featCard()),
+      p ? swapEl(p, planCard()) : null,
+    ]);
+    const chip = $('.r[data-id="pen"] .chip', box); if (chip) { chip.className = 'chip acc'; chip.textContent = 'Assigned'; }
+    await sleep(1400);
+    caption(true, 'Shown to Eli fills when Eli’s CoachHelm draws the read: on a later load, at rest, with no motion', 'stage 2 drawn at rest');
+    S.stage = 2; render();
+    await sleep(1600); caption(false, 'Suggested and Shown. Switch to Player, or Play “Player accepts it”.', 'stage 2 of 3');
+  }
+
+  async function acceptStory() {
+    if (S.stage === 0 || S.stage === 3) S.stage = 2;
+    S.role = 'player'; S.lens = 'coach'; S.sheet = false; syncCtl(); render();
+    caption(true, 'Eli accepts the focus', 'press 110/280 · feature and plan cards swap · 180 out / 260 in');
+    await sleep(700);
+    await pressOnce($('[data-act="accept"]', box));
+    S.stage = 3;
+    await Promise.all([swapCard('feat', featCard()), swapCard('plan', planCard())]);
+    await sleep(1100);
+    caption(true, "Back on the coach's side, the plan card reads Accepted, drawn at rest", 'no motion on load');
+    S.role = 'coach'; S.screen = 'file'; syncCtl(); render();
+    await sleep(900); caption();
+  }
+
+  async function play(kind) {
+    if (busy) return; busy = true;
+    try {
+      if (kind === 'open') {
+        S.role = 'coach'; S.lens = 'coach'; S.sheet = false; S.screen = 'list'; syncCtl();
+        if (S.device !== 'phone') { S.device = 'phone'; syncCtl(); }
+        render(); caption(true, 'Any player row pushes the file', 'push 462ms smooth spring');
+        await sleep(650);
+        const row = $('.r.is-target', box); if (row && !RM()) { row.classList.add('is-sel'); await sleep(160); }
+        await push(true); caption();
+      } else if (kind === 'menu') {
+        S.role = 'coach'; S.screen = 'file'; S.sheet = false; syncCtl(); render();
+        caption(true, 'More opens today’s menu from its corner', 'CH_POP 180ms --ch-ease');
+        await sleep(450); await openMenu(); await sleep(1300); await closeMenu(); caption();
+      } else if (kind === 'lens') {
+        S.role = 'coach'; S.screen = 'file'; S.sheet = false; S.lens = 'coach'; syncCtl(); render();
+        caption(true, 'Flip to “As Eli sees it”', 'thumb 417 settle · fold 462 smooth · Swap 180 out, 260 in');
+        await sleep(450); await setLens('player'); await sleep(1600);
+        caption(true, 'And back to the coach view', ''); await setLens('coach'); caption();
+      } else if (kind === 'sheet') {
+        if (S.sheet) await closeSheet();
+        caption(true, 'A read opens its evidence', 'sheet 462ms smooth spring · scrim 260');
+        await openSheet(); await sleep(400); caption();
+      } else if (kind === 'assign') await assignStory();
+      else if (kind === 'accept') await acceptStory();
+    } finally { busy = false; }
+  }
+  $$('[data-play]').forEach((b) => b.addEventListener('click', () => {
+    if (innerWidth <= 1080) $('.stage').scrollIntoView({ behavior: RM() ? 'auto' : 'smooth', block: 'start' });
+    play(b.dataset.play);
+  }));
+
+  /* ───── In-app taps ───── */
+  box.addEventListener('click', async (e) => {
+    const t = e.target.closest('[data-act]'); if (!t || busy) return;
+    const a = t.dataset.act;
+    if (a === 'openfile') { busy = true; try { await push(true); caption(); } finally { busy = false; } }
+    else if (a === 'back') { S.menu = false; if (S.lens === 'player') { S.lens = 'coach'; } busy = true; try { await push(false); caption(); } finally { busy = false; } }
+    else if (a === 'lens') { busy = true; try { await setLens(t.dataset.v); caption(); } finally { busy = false; } }
+    else if (a === 'read') { if (S.state === 'loading' || S.state === 'early') return; S.readId = t.dataset.id || 'pen'; busy = true; try { await openSheet('ev'); } finally { busy = false; } }
+    else if (a === 'intent') { busy = true; try { await openSheet('intent'); } finally { busy = false; } }
+    else if (a === 'pick') { const g = t.closest('[data-picks]'); if (g.hasAttribute('data-multi')) t.setAttribute('aria-pressed', String(t.getAttribute('aria-pressed') !== 'true')); else $$('button', g).forEach((b) => b.setAttribute('aria-pressed', String(b === t))); }
+    else if (a === 'saveintent') {
+      busy = true;
+      try {
+        const sh = $('[data-ovl]', box);
+        const on = (n) => $$(`[data-picks="${n}"] button[aria-pressed="true"]`, sh).map((b) => b.textContent);
+        INTENT.aim = on('aim')[0] || 'Develop'; INTENT.alerts = on('alerts')[0] || 'Balanced'; INTENT.watch = on('watch'); INTENT.note = ($('.note', sh) || {}).value || '';
+        if (!INTENT.watch.length) INTENT.watch = ['Nothing in particular'];
+        if (S.state === 'nointent') S.state = 'normal';
+        await closeSheet(); await swapCard('intent', intentCard()); caption(false, 'Saved with setIntent. Only coaches can read it.');
+      } finally { busy = false; }
+    }
+    else if (a === 'dismiss') { busy = true; try { await closeSheet(); await dismissRead(S.readId || 'pen'); caption(false, 'Dismiss: the row turns into an Undo row in place (dismissInsight)'); } finally { busy = false; } }
+    else if (a === 'undo') { busy = true; try { await undoRead(t.closest('[data-row]')); caption(false, 'Undo turns the row back into the read (reactivateInsight)'); } finally { busy = false; } }
+    else if (a === 'corr') {
+      const cx = t.closest('[data-cx]');
+      if (t.dataset.k === 'Not this') { const open = t.getAttribute('aria-expanded') !== 'true'; t.setAttribute('aria-expanded', String(open)); t.classList.toggle('is-on', open); $('.cx__why', cx).hidden = !open; }
+      else { cx.outerHTML = cxHTML(null, t.dataset.k); caption(false, 'Recorded at once (recordCoachHelmCorrection); Change asks again'); }
+    }
+    else if (a === 'cxwhy') { const r = t.dataset.r; t.closest('[data-cx]').outerHTML = cxHTML(null, r === 'No reason' ? 'Not this' : `Not this, ${r.toLowerCase()}`); caption(false, 'Recorded at once (recordCoachHelmCorrection); Change asks again'); }
+    else if (a === 'cxchg') { const coach = isCoachLens(); t.closest('[data-cx]').outerHTML = cxHTML(coach ? ['Not this', 'Wrong cause', 'Already on it', 'Show later', 'Good read'] : ['Not this', 'Good read']); }
+    else if (a === 'retry') { S.state = 'loading'; syncCtl(); render(); await sleep(900); S.state = 'normal'; syncCtl(); render(); }
+    else if (a === 'msg') { if (S.menu) await closeMenu(); caption(false, "Opens today's Messages compose to Eli"); }
+    else if (a === 'more') { if (S.menu) await closeMenu(); else await openMenu(); }
+    else if (a === 'closemenu') await closeMenu();
+    else if (a === 'profile') { await closeMenu(); caption(false, "Opens Eli's profile in Roster, as today"); }
+    else if (a === 'decline') caption(false, 'Decline is today’s declineFocusArea; the coach’s plan card then reads Declined');
+    else if (a === 'rounds') caption(false, 'Goes to Rounds, as today');
+    else if (a === 'close') { busy = true; try { await closeSheet(); } finally { busy = false; } }
+    else if (a === 'assign') { if (S.sheet) await closeSheet(); play('assign'); }
+    else if (a === 'accept') { busy = true; try { S.stage = 3; await Promise.all([swapCard('feat', featCard()), swapCard('plan', planCard())]); } finally { busy = false; } }
+  });
+
+  /* ───── Page controls ───── */
+  function syncCtl() {
+    const cur = { role: S.role, device: S.device, size: String(S.k), reduce: S.reduce ? '1' : '0', theme: document.documentElement.dataset.theme || '', state: S.state };
+    $$('[data-ctl]').forEach((g) => $$('button', g).forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.v === cur[g.dataset.ctl]))));
+  }
+  $$('[data-ctl] button').forEach((b) => b.addEventListener('click', () => {
+    if (busy) return;
+    const g = b.closest('[data-ctl]').dataset.ctl, v = b.dataset.v;
+    if (g === 'role') { S.role = v; S.lens = 'coach'; S.sheet = false; if (v === 'coach') S.screen = 'file'; }
+    if (g === 'device') { S.device = v; S.sheet = false; }
+    if (g === 'size') S.k = +v;
+    if (g === 'reduce') S.reduce = v === '1';
+    if (g === 'theme') { const now = document.documentElement.dataset.theme; if (now === v) delete document.documentElement.dataset.theme; else document.documentElement.dataset.theme = v; }
+    if (g === 'state') { S.state = v; S.sheet = false; }
+    syncCtl(); render(); writeHash();
+  }));
+
+  /* ───── Capture links ─────
+     #<screen>-<tokens…>  screen: list | file | board (board is the player's own CoachHelm). menu: the coach's More menu open.
+     Tokens in any order: phone desktop · light dark · lens (coach previewing the player) · sheet (evidence open) · intent (plan sheet open)
+     nofocus suggested seen accepted · loading early empty failed long nofield nointent · larger xxl · reduce */
+  const STATES = ['loading', 'early', 'empty', 'failed', 'long', 'nofield', 'nointent'];
+  const STAGES = ['nofocus', 'suggested', 'seen', 'accepted'];
+  function hashOf() {
+    const t = [S.role === 'player' ? 'board' : (S.device === 'phone' && S.screen === 'list' ? 'list' : 'file')];
+    t.push(S.device === 'phone' ? 'phone' : 'desktop');
+    const th = document.documentElement.dataset.theme; if (th) t.push(th);
+    if (S.role === 'coach' && S.lens === 'player') t.push('lens');
+    if (S.sheet === 'ev') t.push('sheet'); else if (S.sheet === 'intent') t.push('intent');
+    if (S.menu) t.push('menu');
+    if (S.stage !== 3) t.push(STAGES[S.stage]);
+    if (S.state !== 'normal') t.push(S.state);
+    if (S.k === 1.18) t.push('larger'); else if (S.k === 1.36) t.push('xxl');
+    if (S.reduce) t.push('reduce');
+    return t.join('-');
+  }
+  function writeHash() { try { history.replaceState(null, '', '#' + hashOf()); } catch (e) { /* preview frames may refuse */ } caption(); }
+  function readHash() {
+    const h = (location.hash || '').replace(/^#/, ''); if (!h) return false;
+    const t = h.split('-'); const scr = t[0];
+    if (!['list', 'file', 'board'].includes(scr)) return false;
+    S.role = scr === 'board' ? 'player' : 'coach'; S.screen = scr === 'list' ? 'list' : 'file';
+    S.device = t.includes('desktop') ? 'desk' : 'phone';
+    if (t.includes('dark')) document.documentElement.dataset.theme = 'dark'; else if (t.includes('light')) document.documentElement.dataset.theme = 'light'; else delete document.documentElement.dataset.theme;
+    S.lens = t.includes('lens') && S.role === 'coach' ? 'player' : 'coach';
+    S.sheet = t.includes('sheet') ? 'ev' : t.includes('intent') && S.role === 'coach' ? 'intent' : false;
+    const sg = STAGES.find((x) => t.includes(x)); S.stage = sg ? STAGES.indexOf(sg) : 3;
+    S.state = STATES.find((x) => t.includes(x)) || 'normal';
+    S.menu = t.includes('menu') && S.role === 'coach' && S.screen === 'file' && !S.sheet;
+    S.k = t.includes('xxl') ? 1.36 : t.includes('larger') ? 1.18 : 1;
+    S.reduce = t.includes('reduce');
+    return true;
+  }
+  addEventListener('hashchange', () => { if (busy) return; if (readHash()) { syncCtl(); render(); } });
+
+  readHash();
+  syncCtl();
+  render();
+  if (document.fonts && document.fonts.ready) document.fonts.ready.then(() => placeThumbs(false));
+})();
+</script>

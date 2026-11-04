@@ -1,0 +1,1080 @@
+<title>CoachHelm Read Redesign</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Instrument+Sans:wdth,wght@75..100,400..700&family=JetBrains+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: a working studio page in the Clubhouse refresh's own shell. Deep green masthead, then the live phone beside its notes,
+   then the desktop read, then the evidence: what never reaches the screen, where each piece lives, motion, research and calls. */
+:root{
+  --pg:#f1ede4; --pg-raised:#fbf8f1; --pg-sunk:#e8e2d5;
+  --fg:#1a1915; --fg-2:#46433d; --fg-3:#5f5b53;
+  --line:rgba(26,25,21,.14); --line-soft:rgba(26,25,21,.08);
+  --brand:#0b3a25; --brand-ink:#f4eedd; --brand-ink-2:rgba(244,238,221,.82);
+  --green:#155a39; --amber:#8f5200; --ok-bg:#e5f1e9; --warn-bg:#f6ead6;
+  --sans:'Instrument Sans', ui-sans-serif, -apple-system, 'Segoe UI', system-ui, sans-serif;
+  --mono:'JetBrains Mono', ui-monospace, 'SF Mono', Menlo, monospace;
+  --ease:cubic-bezier(.22,1,.36,1);
+  --spring:linear(0, .006, .025 2.8%, .101 6.1%, .539 18.9%, .721 25.3%, .849 31.5%, .937 38.1%, .968 41.8%, .991 45.7%, 1.006 50.1%, 1.015 55%, 1.017 63.9%, 1.001);
+  --spring-o:linear(0, .009, .035 2.1%, .141 4.4%, .723 12.9%, .938 16.7%, 1.017 19.4%, 1.067, 1.099 24.3%, 1.108 26%, 1.103 28.5%, 1.067 34.6%, 1.007 47.9%, .996 55.2%, 1.001);
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --pg:#0f1310; --pg-raised:#171c18; --pg-sunk:#0b0e0c;
+  --fg:#f1ecdf; --fg-2:#d0c9b8; --fg-3:#b3ac9d;
+  --line:rgba(241,236,223,.16); --line-soft:rgba(241,236,223,.08);
+  --brand:#0a2418; --brand-ink:#f4eedd; --brand-ink-2:rgba(244,238,221,.82);
+  --green:#7ccb9c; --amber:#f0b35a; --ok-bg:#1e3326; --warn-bg:#36291a; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --pg:#0f1310; --pg-raised:#171c18; --pg-sunk:#0b0e0c;
+  --fg:#f1ecdf; --fg-2:#d0c9b8; --fg-3:#b3ac9d;
+  --line:rgba(241,236,223,.16); --line-soft:rgba(241,236,223,.08);
+  --brand:#0a2418; --brand-ink:#f4eedd; --brand-ink-2:rgba(244,238,221,.82);
+  --green:#7ccb9c; --amber:#f0b35a; --ok-bg:#1e3326; --warn-bg:#36291a; color-scheme:dark}
+
+*{box-sizing:border-box}
+body{margin:0;background:var(--pg);color:var(--fg);font:400 16px/1.55 var(--sans);-webkit-font-smoothing:antialiased}
+body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);z-index:10;background:var(--brand)}
+a{color:var(--green);text-underline-offset:3px}
+code,.mono{font-family:var(--mono);font-size:.84em}
+.wrap{max-width:1200px;margin:0 auto;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+h1,h2,h3{text-wrap:balance;margin:0}
+p{margin:0}
+button{font-family:inherit}
+
+.mast{background:var(--brand);color:var(--brand-ink)}
+.mast .wrap{padding-block:40px 36px;display:grid;gap:18px}
+.mast .eyebrow{font:500 14px/1.2 var(--sans);color:var(--brand-ink-2)}
+.mast h1{font:650 clamp(32px,6vw,54px)/1.02 var(--sans);font-variation-settings:'wdth' 86;letter-spacing:-.025em;max-width:17ch}
+.mast .lead{font-size:17px;line-height:1.55;max-width:64ch;color:var(--brand-ink-2)}
+.big4{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:14px;margin:6px 0 0;padding:0;list-style:none}
+.big4 li{border-top:1px solid rgba(244,238,221,.22);padding-top:12px;font-size:14.5px;line-height:1.45;color:var(--brand-ink-2)}
+.big4 b{display:block;color:var(--brand-ink);font-weight:600;font-size:16px;margin-bottom:2px}
+
+section.blk{padding-block:44px 8px}
+.blk>.wrap>h2{font:650 clamp(24px,3.4vw,32px)/1.1 var(--sans);font-variation-settings:'wdth' 90;letter-spacing:-.02em;margin-bottom:8px}
+.blk>.wrap>.sub{color:var(--fg-2);max-width:70ch;margin-bottom:22px}
+
+/* Studio */
+.studio-grid{display:grid;grid-template-columns:minmax(0,440px) minmax(0,1fr);gap:40px;align-items:start}
+@media (max-width:960px){.studio-grid{grid-template-columns:minmax(0,1fr)}}
+.controls{display:grid;gap:10px;margin-bottom:16px}
+.crow{display:flex;flex-wrap:wrap;align-items:center;gap:8px 10px}
+.crow .lab{font:500 13.5px/1 var(--sans);color:var(--fg-2);min-width:56px}
+.pseg{display:inline-flex;flex-wrap:wrap;padding:3px;border-radius:11px;background:var(--pg-sunk);gap:2px}
+.pseg button{appearance:none;border:0;background:none;color:var(--fg-2);font:500 13.5px/1 var(--sans);padding:8px 11px;border-radius:8px;cursor:pointer;min-height:34px}
+.pseg button[aria-pressed="true"]{background:var(--pg-raised);color:var(--fg);box-shadow:0 1px 2px rgba(0,0,0,.08),0 0 0 1px var(--line-soft)}
+.pseg button:focus-visible,.play:focus-visible{outline:2px solid var(--green);outline-offset:2px}
+.plays{display:flex;flex-wrap:wrap;gap:8px;margin-top:4px}
+.play{appearance:none;border:1px solid var(--line);background:var(--pg-raised);color:var(--fg);font:500 13.5px/1 var(--sans);padding:9px 12px 9px 10px;border-radius:999px;cursor:pointer;display:inline-flex;align-items:center;gap:7px;min-height:36px}
+.play svg{flex:none;color:var(--green)}
+.play:active{transform:scale(.97)}
+.stage{display:flex;justify-content:center}
+
+/* Notes beside the phone */
+.notes{display:grid;gap:14px}
+.note{background:var(--pg-raised);border:1px solid var(--line-soft);border-radius:14px;padding:16px 18px}
+.note h3{font:600 16px/1.3 var(--sans);margin-bottom:4px;display:flex;gap:8px;align-items:baseline;flex-wrap:wrap}
+.note h3 small{font:500 12.5px/1 var(--sans);color:var(--fg-3)}
+.note p{color:var(--fg-2);font-size:15px;line-height:1.5}
+.note p+p{margin-top:6px}
+.tag{display:inline-block;font:600 12px/1 var(--sans);padding:4px 7px;border-radius:6px;background:var(--ok-bg);color:var(--green)}
+.tag.amber{background:var(--warn-bg);color:var(--amber)}
+
+/* ============ The phone (Clubhouse tokens from DESIGN_LANGUAGE.md) ============ */
+.ph{
+  --bg:#F2F0E9; --card:#FFFEFB; --well:#F6F4EE; --ink:#1C1B18; --ink-2:#46433D; --ink-3:#5F5C55;
+  --gain:#14613D; --loss:#9A5700; --flag:#B3261E; --accent:#155A39; --sep:rgb(28 27 24/.10); --ring:rgb(28 27 24/.07);
+  --gain-fill:#1F6B45; --loss-fill:#B86F0C; --neutral-fill:#6B675F; --track:#EBE5D8; --zero:#5F5C55;
+  --nav:#0a331f; --nav-ink:#f4eedd; --nav-ink-2:rgb(240 233 214/.86); --champ:#d9c48f;
+  --feat:#0B3A25; --f-ink:#F4F1E8; --f-ink-2:#D3D9CB; --f-gain:#8FD3AA; --f-loss:#EDB867; --f-track:rgb(244 241 232/.18);
+  --seg-on:linear-gradient(#1d7048,#135a38); --seg-ink:#f6f1e3; --press:rgb(28 27 24/.05);
+  --shadow:0 1px 2px rgb(28 25 18/.05),0 8px 20px -12px rgb(28 25 18/.12);
+  --k:1;
+  width:390px;max-width:100%;height:800px;border-radius:46px;background:#0c0f0d;padding:11px;
+  box-shadow:0 30px 60px -30px rgba(0,0,0,.45),0 0 0 1px rgba(0,0,0,.25);position:relative;
+}
+.ph[data-mode="dark"]{
+  --bg:#0E120F; --card:#191E1A; --well:#141815; --ink:#F1ECDF; --ink-2:#D0C9B8; --ink-3:#ADA697;
+  --gain:#7CC79B; --loss:#E7AE57; --flag:#F28B7D; --accent:#7CC79B; --sep:rgb(241 236 223/.10); --ring:rgb(255 255 255/.06);
+  --gain-fill:#4FA877; --loss-fill:#E09A35; --neutral-fill:#A39D90; --track:#2C322D; --zero:#ADA697;
+  --nav:#08150e; --feat:#123D29; --press:rgb(241 236 223/.06);
+  --shadow:0 1px 0 rgb(255 255 255/.04) inset;
+}
+.ph.is-large{width:430px}
+.ph .scr{position:relative;width:100%;height:100%;border-radius:36px;overflow:hidden;background:var(--bg);color:var(--ink);font-family:var(--sans)}
+.ph .view{position:absolute;inset:0;overflow-y:auto;overflow-x:hidden;background:var(--bg);scrollbar-width:none;will-change:transform}
+.ph .view::-webkit-scrollbar{display:none}
+.ph .view.read{transform:translateX(100%)}
+.ph[data-screen="read"] .view.board{transform:translateX(-30%)}
+.ph .view.read{z-index:2}
+.ph .dim{position:absolute;inset:0;z-index:1;background:#000;opacity:0;pointer-events:none;transition:opacity 462ms var(--spring)}
+.ph[data-screen="read"] .dim{opacity:.1}
+.ph[data-screen="read"] .view.read{transform:none;box-shadow:-12px 0 30px -18px rgba(0,0,0,.4)}
+.ph .view{transition:transform 462ms var(--spring)}
+.ph[data-rm] .view{transition:opacity 120ms linear!important;transform:none!important}
+.ph[data-rm] .dim{display:none}
+.ph[data-rm] .view.read{opacity:0;pointer-events:none}
+.ph[data-rm][data-screen="read"] .view.read{opacity:1;pointer-events:auto}
+.ph[data-rm][data-screen="read"] .view.board{opacity:0}
+.ph[data-rm] *{animation-duration:0s!important}
+.ph[data-rm] .anim,.ph[data-rm] .fbar,.ph[data-rm] .dots i,.ph[data-rm] .pn .nd,.ph[data-rm] .pn::after,.ph[data-rm] .tap,.ph[data-rm] .btn{transition:none!important}
+.ph[data-rm] .tap:active,.ph[data-rm] .tap.pressing,.ph[data-rm] .btn:active{transform:none}
+
+/* green bar */
+.ph .gbar{position:sticky;top:0;z-index:7;background:var(--nav);color:var(--nav-ink);padding-top:44px;padding-bottom:18px}
+.ph .gbar::after{content:"";position:absolute;left:0;right:0;bottom:0;height:18px;border-radius:18px 18px 0 0;background:var(--bg)}
+.ph .sbar{position:absolute;top:14px;left:28px;right:24px;display:flex;justify-content:space-between;font:600 15px/1 var(--sans);color:var(--nav-ink)}
+.ph .gb{height:48px;display:flex;align-items:center;gap:6px;padding:0 6px 4px 16px;position:relative}
+.ph.is-large .gb{padding-left:20px}
+.ph .sw{display:inline-flex;align-items:center;gap:7px;border:0;background:none;color:var(--nav-ink);font:600 calc(20px*var(--k))/1 var(--sans);letter-spacing:-.012em;padding:10px 4px 10px 0;min-height:44px;white-space:nowrap;cursor:pointer}
+.ph .sw .dot{width:6px;height:6px;border-radius:50%;background:var(--champ);margin-left:3px}
+.ph .ib{width:44px;height:44px;display:grid;place-items:center;border:0;background:none;color:var(--nav-ink-2);cursor:pointer;flex:none;position:relative}
+.ph .ib.first{margin-left:auto}
+.ph .badge{position:absolute;top:4px;right:3px;min-width:18px;height:18px;padding:0 5px;border-radius:9px;background:var(--nav);box-shadow:0 0 0 1.5px var(--nav-ink);font:600 11px/18px var(--sans);text-align:center;color:var(--nav-ink)}
+.ph .back{display:inline-flex;align-items:center;gap:2px;border:0;background:none;color:var(--champ);font:400 calc(17px*var(--k))/1 var(--sans);padding:10px 8px 10px 0;margin-left:-6px;min-height:44px;cursor:pointer;white-space:nowrap}
+.ph .ptitle{position:absolute;left:50%;transform:translateX(-50%);font:600 calc(17px*var(--k))/1 var(--sans);white-space:nowrap}
+.ph .shade{position:sticky;top:110px;height:0;z-index:6}
+
+/* sheet */
+.ph .sheet{display:flex;flex-direction:column;gap:20px;padding:6px 16px 60px}
+.ph.is-large .sheet{padding-left:20px;padding-right:20px}
+.ph .ctx{display:grid;gap:3px;padding-top:4px}
+.ph .ctx .lt{font:600 calc(30px*var(--k))/1.1 var(--sans);font-variation-settings:'wdth' 88;letter-spacing:-.03em}
+.ph .ctx .cl{font:400 calc(15px*var(--k))/1.35 var(--sans);color:var(--ink-2)}
+.ph .seg{display:flex;padding:3px;border-radius:12px;background:var(--well);box-shadow:inset 0 1px 2px rgb(28 25 18/.07);position:relative}
+.ph .seg span{flex:1;text-align:center;font:500 calc(15px*var(--k))/1 var(--sans);padding:10px 0;border-radius:9px;color:var(--ink-2);position:relative;z-index:1}
+.ph .seg span.on{background:var(--seg-on);color:var(--seg-ink);box-shadow:0 1px 2px rgba(0,0,0,.18)}
+.ph .chips{display:flex;gap:8px;overflow-x:auto;scrollbar-width:none;margin:0 -16px;padding:0 16px}
+.ph .pchip{display:inline-flex;align-items:center;gap:8px;flex:none;padding:5px 12px 5px 5px;border-radius:999px;background:var(--card);box-shadow:0 0 0 1px var(--ring);font:500 calc(15px*var(--k))/1 var(--sans);white-space:nowrap}
+.ph .pchip.on{background:var(--feat);color:var(--f-ink);box-shadow:none}
+.ph .coin{width:30px;height:30px;border-radius:50%;display:grid;place-items:center;color:#fff;font:600 12px/1 var(--sans);flex:none}
+.ph .pchip .n{font:600 12px/1 var(--sans);font-variant-numeric:tabular-nums;padding:4px 7px;border-radius:9px;background:var(--well);color:var(--ink)}
+.ph .pchip.on .n{background:rgb(244 241 232/.16);color:var(--f-ink)}
+
+/* card */
+.ph .card{background:var(--card);border-radius:16px;box-shadow:0 0 0 1px var(--ring),var(--shadow);overflow:hidden}
+.ph .ch{display:flex;align-items:baseline;justify-content:space-between;gap:10px;padding:16px 16px 12px}
+.ph .ch h4{margin:0;font:600 calc(17px*var(--k))/1.3 var(--sans)}
+.ph .ch .meta{font:400 calc(14px*var(--k))/1.3 var(--sans);color:var(--ink-2);text-align:right}
+.ph .cb{padding:0 16px 16px}
+.ph .cn{border-top:1px solid var(--sep);margin:0 16px;padding:12px 0 14px;font:400 calc(15px*var(--k))/1.4 var(--sans);color:var(--ink-2)}
+.ph .num{font-variant-numeric:tabular-nums}
+
+/* feature card (one per view) */
+.ph .feat{background:var(--feat);color:var(--f-ink);border-radius:16px;padding:18px 16px 16px;position:relative;overflow:hidden;box-shadow:0 10px 24px -14px rgba(5,30,18,.55)}
+.ph .feat::before{content:"";position:absolute;right:-60px;top:-80px;width:220px;height:220px;border-radius:50%;background:radial-gradient(closest-side,rgb(255 255 255/.07),transparent);pointer-events:none}
+.ph .feat .k{display:flex;align-items:center;gap:8px;font:500 calc(14px*var(--k))/1 var(--sans);color:var(--f-ink-2)}
+.ph .feat .st{font:600 12.5px/1 var(--sans);padding:5px 8px;border-radius:7px;background:rgb(237 184 103/.12);color:var(--f-loss)}
+.ph .feat .st.good{background:rgb(143 211 170/.12);color:var(--f-gain)}
+.ph .feat h3{font:600 calc(23px*var(--k))/1.18 var(--sans);letter-spacing:-.018em;margin:10px 0 0}
+.ph .feat .lede{font:400 calc(15px*var(--k))/1.42 var(--sans);color:var(--f-ink-2);margin-top:8px}
+.ph .hero{display:flex;flex-wrap:wrap;align-items:flex-end;column-gap:12px;row-gap:6px;margin-top:14px}
+.ph .hero b{font:500 calc(44px*var(--k))/.9 var(--sans);font-variation-settings:'wdth' 92;letter-spacing:-.04em;font-variant-numeric:tabular-nums;white-space:nowrap;flex:none}
+.ph .hero span{flex:1 1 150px;min-width:0;font:400 calc(14px*var(--k))/1.3 var(--sans);color:var(--f-ink-2);padding-bottom:3px}
+.ph .ladder{margin-top:calc(12px + 14px*(min(var(--k),1.2) - 1));margin-bottom:calc(40px*(min(var(--k),1.2) - 1));display:block;width:100%;height:auto;overflow:visible}
+.ph .ladder text{font-family:var(--sans);font-variant-numeric:tabular-nums;font-size:calc(12.5px*min(var(--k),1.2))}
+.ph .cause{display:flex;gap:10px;align-items:flex-start;margin-top:14px;padding-top:12px;border-top:1px solid rgb(244 241 232/.14);font:400 calc(15px*var(--k))/1.4 var(--sans);color:var(--f-ink)}
+.ph .tier{flex:none;font:600 12px/1 var(--sans);padding:5px 8px;border-radius:7px;margin-top:1px;white-space:nowrap}
+.ph .feat .tier{background:rgb(244 241 232/.12);color:var(--f-ink)}
+.ph .feat .tier.counted{background:rgb(143 211 170/.12);color:var(--f-gain)}
+.ph .feat .tier.likely{background:rgb(237 184 103/.12);color:var(--f-loss)}
+.ph .ffoot{display:flex;flex-wrap:wrap;justify-content:space-between;align-items:center;gap:6px 12px;margin-top:12px;font:400 calc(13.5px*var(--k))/1.3 var(--sans);color:var(--f-ink-2)}
+.ph .worth{font:600 calc(14px*var(--k))/1.2 var(--sans);color:var(--f-ink)}
+.ph .open{display:flex;align-items:center;justify-content:space-between;margin-top:14px;padding-top:12px;border-top:1px solid rgb(244 241 232/.14);font:500 calc(15px*var(--k))/1 var(--sans);color:var(--f-ink)}
+.ph .tap{cursor:pointer;transition:transform 280ms var(--ease)}
+.ph .tap:active,.ph .tap.pressing{transform:scale(.97);transition-duration:110ms}
+
+/* actions */
+.ph .acts{display:flex;gap:10px;align-items:center}
+.ph .btn{appearance:none;border:0;display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:46px;padding:0 16px;border-radius:13px;font:600 calc(15.5px*var(--k))/1 var(--sans);cursor:pointer;transition:transform 280ms var(--ease),background 200ms var(--ease)}
+.ph .btn:active{transform:scale(.97);transition-duration:110ms}
+.ph .btn.pri{background:var(--accent);color:#F6F1E3;flex:1}
+.ph[data-mode="dark"] .btn.pri{color:#0E120F}
+.ph .btn.gh{background:transparent;color:var(--accent);box-shadow:inset 0 0 0 1px var(--sep)}
+.ph .btn.gh.wide{flex:1}
+.ph .assigned{flex:1;display:flex;align-items:center;gap:10px;min-height:46px;padding:0 14px;border-radius:13px;background:color-mix(in srgb,var(--gain) 12%,transparent);color:var(--gain);font:600 calc(15px*var(--k))/1.2 var(--sans)}
+.ph .spin{width:18px;height:18px;border-radius:50%;border:2px solid currentColor;border-right-color:transparent;animation:spin .7s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+.ph .check path{stroke-dasharray:24;stroke-dashoffset:24;animation:draw 360ms var(--ease) forwards}
+@keyframes draw{to{stroke-dashoffset:0}}
+
+/* grouped rows */
+.ph .row{display:flex;align-items:center;gap:12px;min-height:52px;padding:10px 16px;position:relative}
+.ph .row+.row::before{content:"";position:absolute;top:0;left:16px;right:0;border-top:1px solid var(--sep)}
+.ph .row .c{flex:1;min-width:0}
+.ph .row .c b{display:block;font:500 calc(16px*var(--k))/1.3 var(--sans)}
+.ph .row .c span{display:block;font:400 calc(14px*var(--k))/1.35 var(--sans);color:var(--ink-2)}
+.ph .row .v{font:600 calc(16px*var(--k))/1 var(--sans);font-variant-numeric:tabular-nums;white-space:nowrap}
+.ph .row .chev{color:var(--ink-3);flex:none}
+.ph .sdot{width:9px;height:9px;border-radius:50%;flex:none}
+.ph .sdot.warn{background:var(--loss-fill)} .ph .sdot.good{background:var(--gain-fill)} .ph .sdot.plain{background:var(--neutral-fill)}
+
+/* funnel */
+.ph .fun{display:grid;gap:12px}
+.ph .fstep{display:grid;gap:5px}
+.ph .fhead{display:flex;justify-content:space-between;gap:10px;font:500 calc(15px*var(--k))/1.25 var(--sans)}
+.ph .fhead .n{font-variant-numeric:tabular-nums;font-weight:600;white-space:nowrap}
+.ph .ftrack{height:12px;border-radius:6px;background:var(--track);overflow:hidden}
+.ph .fbar{height:100%;width:100%;background:var(--neutral-fill);transform:scaleX(var(--s));transform-origin:left center;transition:transform 360ms var(--ease)}
+.ph .fbar.last{background:var(--loss-fill)}
+.ph .fstep .why{font:400 calc(14px*var(--k))/1.35 var(--sans);color:var(--ink-2)}
+.ph .fun.pre .fbar{transform:scaleX(0);transition:none}
+.ph .obs{display:inline-block;font:600 12px/1 var(--sans);padding:5px 8px;border-radius:7px;background:var(--well);color:var(--ink-2)}
+
+/* cause stepper */
+.ph .stepper{display:grid;grid-template-columns:repeat(var(--n,3),1fr);gap:4px;margin-bottom:6px}
+.ph .stepper i{height:6px;border-radius:3px;background:var(--track)}
+.ph .stepper i.on{background:var(--ink-2)}
+.ph .stepper i.on.counted{background:var(--gain-fill)}
+.ph .slab{display:grid;grid-template-columns:repeat(var(--n,3),1fr);gap:4px;font:500 calc(12.5px*var(--k))/1.25 var(--sans);color:var(--ink-3);margin-bottom:14px}
+.ph .slab span.on{color:var(--ink);font-weight:600}
+.ph .arms{display:grid;gap:14px}
+.ph .arm .ah{display:flex;justify-content:space-between;gap:10px;font:500 calc(15px*var(--k))/1.3 var(--sans);margin-bottom:7px}
+.ph .arm .ah .n{font-variant-numeric:tabular-nums;color:var(--ink-2);font-weight:400;white-space:nowrap}
+.ph .dots{display:flex;flex-wrap:wrap;gap:5px}
+.ph .dots i{width:14px;height:14px;border-radius:50%;background:var(--track);transition:transform 360ms var(--ease),opacity 360ms var(--ease)}
+.ph .dots i.f{background:var(--loss-fill)}
+.ph .dots.pre i.f{opacity:0;transform:scale(.4);transition:none}
+.ph .verdict{margin-top:14px;padding:12px 14px;border-radius:12px;background:var(--well);font:400 calc(15px*var(--k))/1.42 var(--sans);color:var(--ink)}
+.ph .verdict b{font-weight:600}
+.ph .verdict .q{display:block;margin-top:4px;color:var(--ink-2);font-size:calc(14px*var(--k))}
+.ph .path{display:flex;align-items:stretch;gap:0;margin:4px 0 2px}
+.ph .pn{flex:1;min-width:0;text-align:center;display:grid;justify-items:center;gap:6px;position:relative}
+.ph .pn .nd{width:38px;height:38px;border-radius:50%;display:grid;place-items:center;background:var(--well);box-shadow:inset 0 0 0 1.5px var(--neutral-fill);color:var(--ink);position:relative;z-index:1;transition:transform 360ms var(--ease),opacity 360ms var(--ease)}
+.ph .pn.hit .nd{background:color-mix(in srgb,var(--loss-fill) 16%,var(--card));box-shadow:inset 0 0 0 1.5px var(--loss-fill)}
+.ph .pn span{font:500 calc(13.5px*var(--k))/1.25 var(--sans)}
+.ph .pn::after{content:"";position:absolute;top:19px;left:calc(50% + 19px);right:calc(-50% + 19px);height:2px;background:var(--neutral-fill);transform-origin:left;transition:transform 360ms var(--ease)}
+.ph .pn:last-child::after{display:none}
+.ph .path.pre .pn::after{transform:scaleX(0);transition:none}
+.ph .path.pre .pn .nd{transform:scale(.7);opacity:0;transition:none}
+.ph .holes{display:flex;flex-wrap:wrap;gap:6px;margin-top:12px}
+.ph .hole{font:500 calc(13px*var(--k))/1 var(--sans);padding:7px 9px;border-radius:8px;background:var(--well);color:var(--ink);font-variant-numeric:tabular-nums}
+.ph .meter{display:flex;gap:4px;margin:6px 0 10px}
+.ph .meter i{flex:1;height:10px;border-radius:3px;background:var(--track)}
+.ph .meter i.f{background:var(--neutral-fill)}
+
+/* how sure */
+.ph .sure{display:grid;gap:12px}
+.ph .sr2{display:grid;grid-template-columns:auto minmax(0,1fr);gap:4px 12px;align-items:center}
+.ph .sr2 b{font:500 calc(15px*var(--k))/1.3 var(--sans);white-space:nowrap}
+.ph .sr2 .n{font:400 calc(14px*var(--k))/1.3 var(--sans);color:var(--ink-2);font-variant-numeric:tabular-nums;text-align:right}
+.ph .sr2 .tr{grid-column:1/-1;height:8px;border-radius:4px;background:var(--track);overflow:hidden}
+.ph .sr2 .tr i{display:block;height:100%;border-radius:4px;background:var(--gain-fill);width:var(--w)}
+.ph .sr2 .tr i.mid{background:var(--neutral-fill)}
+.ph .checked{display:grid;gap:6px;margin:0;padding:0;list-style:none}
+.ph .checked li{display:flex;gap:8px;align-items:flex-start;font:400 calc(14.5px*var(--k))/1.35 var(--sans);color:var(--ink)}
+.ph .checked svg{flex:none;margin-top:2px;color:var(--gain)}
+.ph .word{font:600 calc(20px*var(--k))/1.1 var(--sans);letter-spacing:-.01em}
+.ph .coach{font:600 11.5px/1 var(--sans);padding:4px 6px;border-radius:6px;background:var(--well);color:var(--ink-2);margin-left:6px;vertical-align:2px}
+
+/* moved */
+.ph .moved{display:block;width:100%;height:auto}
+.ph .moved text{font-family:var(--sans);font-variant-numeric:tabular-nums}
+.ph .trendchip{display:inline-flex;flex-wrap:wrap;column-gap:6px;row-gap:2px;align-items:center;font:500 calc(14px*var(--k))/1.2 var(--sans);padding:7px 10px;border-radius:9px;background:var(--well);margin-top:10px}
+.ph .trendchip .tc1{white-space:nowrap;color:var(--ink-2)}
+.ph .trendchip .tc1::before{content:"· ";color:var(--ink-3)}
+
+/* drill */
+.ph .drill{display:flex;gap:12px;align-items:flex-start}
+.ph .dicon{width:40px;height:40px;border-radius:12px;display:grid;place-items:center;background:color-mix(in srgb,var(--gain) 13%,transparent);color:var(--gain);flex:none}
+.ph .drill b{display:block;font:600 calc(16px*var(--k))/1.3 var(--sans)}
+.ph .drill .m{font:400 calc(14px*var(--k))/1.3 var(--sans);color:var(--ink-2)}
+.ph .drill p{font:400 calc(15px*var(--k))/1.45 var(--sans);color:var(--ink);margin-top:6px}
+.ph .targets{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:14px}
+.ph .tg{padding:12px;border-radius:12px;background:var(--well)}
+.ph .tg span{display:block;font:400 calc(13px*var(--k))/1.3 var(--sans);color:var(--ink-2)}
+.ph .tg b{display:block;font:600 calc(17px*var(--k))/1.2 var(--sans);font-variant-numeric:tabular-nums;margin-top:3px}
+.ph .plan{display:flex;gap:10px;align-items:center;margin-top:12px;font:400 calc(14.5px*var(--k))/1.35 var(--sans);color:var(--ink-2)}
+.ph .linkrow{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}
+.ph .lk{appearance:none;border:0;display:inline-flex;align-items:center;gap:7px;padding:9px 12px;border-radius:10px;background:var(--well);color:var(--accent);font:500 calc(14.5px*var(--k))/1 var(--sans);cursor:pointer}
+.ph .card,.ph .feat{position:relative}
+.ph .flash::after{content:"";position:absolute;inset:0;border-radius:inherit;box-shadow:inset 0 0 0 2px var(--gain);pointer-events:none;opacity:0;animation:ring 900ms var(--ease)}
+.ph .feat.flash::after{box-shadow:inset 0 0 0 2px var(--f-gain)}
+@keyframes ring{0%{opacity:0}30%{opacity:1}100%{opacity:0}}
+.ph .homebar{position:absolute;bottom:8px;left:50%;transform:translateX(-50%);width:134px;height:5px;border-radius:3px;background:var(--ink);opacity:.35;z-index:9}
+
+/* ============ Desktop ============ */
+.desk-scroll{overflow-x:auto;border-radius:18px;box-shadow:0 30px 60px -36px rgba(0,0,0,.45),0 0 0 1px var(--line)}
+.desk{width:1180px;height:820px;display:grid;grid-template-columns:232px 1fr;font-family:var(--sans);
+  --bg:#F2F0E9; --card:#FFFEFB; --well:#F6F4EE; --ink:#1C1B18; --ink-2:#46433D; --ink-3:#5F5C55;
+  --gain:#14613D; --loss:#9A5700; --accent:#155A39; --sep:rgb(28 27 24/.10); --ring:rgb(28 27 24/.07);
+  --gain-fill:#1F6B45; --loss-fill:#B86F0C; --neutral-fill:#6B675F; --track:#EBE5D8;
+  --nav:#0a331f; --nav-ink:#f4eedd; --nav-ink-2:rgb(240 233 214/.78); --champ:#d9c48f;
+  --feat:#0B3A25; --f-ink:#F4F1E8; --f-ink-2:#D3D9CB; --f-gain:#8FD3AA; --f-loss:#EDB867; --f-track:rgb(244 241 232/.18);
+  --press:rgb(28 27 24/.05); --shadow:0 1px 2px rgb(28 25 18/.05),0 8px 20px -12px rgb(28 25 18/.12); --k:1;
+  --seg-on:linear-gradient(#1d7048,#135a38); --seg-ink:#f6f1e3; --flag:#B3261E; --zero:#5F5C55;
+  background:var(--bg);color:var(--ink)}
+.desk[data-mode="dark"]{--bg:#0E120F; --card:#191E1A; --well:#141815; --ink:#F1ECDF; --ink-2:#D0C9B8; --ink-3:#ADA697;
+  --gain:#7CC79B; --loss:#E7AE57; --accent:#7CC79B; --sep:rgb(241 236 223/.10); --ring:rgb(255 255 255/.06);
+  --gain-fill:#4FA877; --loss-fill:#E09A35; --neutral-fill:#A39D90; --track:#2C322D; --nav:#08150e; --feat:#123D29;
+  --press:rgb(241 236 223/.06); --shadow:0 1px 0 rgb(255 255 255/.04) inset; --flag:#F28B7D; --zero:#ADA697}
+.desk .side{background:var(--nav);color:var(--nav-ink);padding:22px 14px;display:flex;flex-direction:column;gap:4px}
+.desk .brandrow{display:flex;align-items:center;gap:10px;font:600 17px/1 var(--sans);padding:0 8px 18px}
+.desk .logo{width:30px;height:30px;border-radius:50%;background:#E9E2CF;color:#0B3A25;display:grid;place-items:center;font:700 12px/1 var(--sans)}
+.desk .nav{display:flex;align-items:center;gap:10px;padding:9px 10px;border-radius:9px;font:500 14.5px/1 var(--sans);color:var(--nav-ink-2)}
+.desk .nav.on{background:rgb(244 238 221/.12);color:var(--nav-ink)}
+.desk .main{display:grid;grid-template-rows:auto 1fr;min-width:0;min-height:0}
+.desk .glass{height:58px;display:flex;align-items:center;gap:12px;padding:0 24px;background:color-mix(in srgb,var(--card) 78%,transparent);backdrop-filter:blur(24px) saturate(170%);border-bottom:1px solid var(--sep);font:500 14.5px/1 var(--sans);color:var(--ink-2)}
+.desk .glass b{color:var(--ink);font-weight:600}
+.desk .glass .sp{margin-left:auto;display:flex;gap:8px}
+.desk .gbtn{display:inline-flex;align-items:center;gap:7px;padding:8px 12px;border-radius:10px;background:var(--well);color:var(--ink);font:500 14px/1 var(--sans);box-shadow:inset 0 0 0 1px var(--sep)}
+.desk .body{display:grid;grid-template-columns:250px minmax(0,1fr) 320px;gap:20px;padding:22px 24px;overflow:hidden;min-height:0}
+.desk .col{display:flex;flex-direction:column;gap:16px;overflow-y:auto;min-height:0;scrollbar-width:thin;padding-bottom:24px}
+.desk .card{background:var(--card);border-radius:16px;box-shadow:0 0 0 1px var(--ring),var(--shadow);overflow:hidden}
+.desk .lg h5{margin:0;padding:12px 16px 6px;font:600 13.5px/1.2 var(--sans);color:var(--ink-2)}
+.desk .lr{display:flex;gap:10px;align-items:center;padding:10px 16px;font:500 14.5px/1.3 var(--sans);position:relative;cursor:pointer}
+.desk .lr .c{flex:1;min-width:0}
+.desk .lr .c span{display:block;font:400 13px/1.3 var(--sans);color:var(--ink-2)}
+.desk .lr.on{background:color-mix(in srgb,var(--accent) 9%,transparent)}
+.desk .lr .v{font:600 14px/1 var(--sans);font-variant-numeric:tabular-nums}
+.desk .sdot{width:9px;height:9px;border-radius:50%;flex:none}
+.desk .sdot.warn{background:var(--loss-fill)} .desk .sdot.good{background:var(--gain-fill)} .desk .sdot.plain{background:var(--neutral-fill)}
+/* desktop reuses the phone card classes */
+.desk .ph-in{display:contents}
+.desk .col>*{flex:none}
+.desk .ladder{max-width:340px}
+.desk .moved{max-width:300px}
+.desk .dsw{display:flex;gap:2px;padding:3px;border-radius:11px;background:var(--well);box-shadow:inset 0 0 0 1px var(--sep)}
+.desk .dsw button{flex:1;appearance:none;border:0;background:none;color:var(--ink-2);font:500 14px/1 var(--sans);min-height:34px;border-radius:8px;cursor:pointer;transition:transform 280ms var(--ease)}
+.desk .dsw button[aria-pressed="true"]{background:var(--card);color:var(--ink);box-shadow:0 0 0 1px var(--ring),0 1px 2px rgb(0 0 0/.08)}
+.desk .dsw button:active{transform:scale(.97);transition-duration:110ms}
+.desk .dsw button:focus-visible{outline:2px solid var(--accent);outline-offset:1px}
+.desk.ph,.desk.ph.is-large{width:1180px;max-width:none;height:820px;padding:0;border-radius:0;box-shadow:none;background:var(--bg)}
+
+/* ============ Tables and sections ============ */
+.tbl-wrap{overflow-x:auto;border-radius:14px;border:1px solid var(--line-soft);background:var(--pg-raised)}
+table{border-collapse:collapse;width:100%;min-width:760px;font-size:14.5px;line-height:1.45}
+th,td{text-align:left;vertical-align:top;padding:12px 14px;border-bottom:1px solid var(--line-soft)}
+th{font:600 13px/1.3 var(--sans);color:var(--fg-2);background:var(--pg-sunk)}
+tr:last-child td{border-bottom:0}
+td code{white-space:nowrap}
+td.n{font-variant-numeric:tabular-nums}
+.two{display:grid;grid-template-columns:minmax(0,300px) minmax(0,1fr);gap:32px;align-items:start}
+@media (max-width:820px){.two{grid-template-columns:minmax(0,1fr)}}
+.shot{width:100%;max-width:300px;border-radius:28px;box-shadow:0 0 0 1px var(--line),0 20px 40px -26px rgba(0,0,0,.5);display:block}
+.cap{font-size:13.5px;color:var(--fg-3);margin-top:8px}
+ul.clean{margin:0;padding:0;list-style:none;display:grid;gap:12px}
+ul.clean li{padding-left:18px;position:relative;color:var(--fg-2)}
+ul.clean li::before{content:"";position:absolute;left:0;top:.62em;width:7px;height:7px;border-radius:50%;background:var(--amber)}
+ul.clean li b{color:var(--fg)}
+ul.clean.ok li::before{background:var(--green)}
+.rgrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:14px}
+.rcard{background:var(--pg-raised);border:1px solid var(--line-soft);border-radius:14px;padding:16px 18px;display:grid;gap:6px;align-content:start}
+.rcard h3{font:600 16px/1.3 var(--sans)}
+.rcard p{color:var(--fg-2);font-size:14.5px;line-height:1.5}
+.rcard .use{color:var(--fg);font-size:14.5px}
+.rcard .use b{color:var(--green)}
+.calls{display:grid;gap:14px}
+.call{background:var(--pg-raised);border:1px solid var(--line-soft);border-radius:14px;padding:18px 20px;display:grid;gap:8px}
+.call h3{font:600 18px/1.3 var(--sans);display:flex;gap:10px;align-items:baseline}
+.call h3 .q{font:600 13px/1 var(--mono);color:var(--fg-3)}
+.call p{color:var(--fg-2)}
+.call .rec{color:var(--fg)}
+.call .rec b{color:var(--green)}
+.states{display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:14px}
+.stc{background:var(--pg-raised);border:1px solid var(--line-soft);border-radius:14px;padding:16px;display:grid;gap:10px;align-content:start}
+.stc .lbl{font:600 13px/1 var(--sans);color:var(--fg-3)}
+.stc .mini{background:var(--pg);border-radius:12px;padding:14px;display:grid;gap:6px;box-shadow:inset 0 0 0 1px var(--line-soft)}
+.stc .mini b{font:600 15.5px/1.3 var(--sans)}
+.stc .mini span{font-size:14px;color:var(--fg-2);line-height:1.45}
+.stc .mini .w{display:inline-block;font:600 12px/1 var(--sans);padding:5px 8px;border-radius:7px;background:var(--pg-sunk);color:var(--fg);justify-self:start}
+.stc .mini .w.good{background:var(--ok-bg);color:var(--green)}
+.stc .mini .w.warn{background:var(--warn-bg);color:var(--amber)}
+.stc p{font-size:14px;color:var(--fg-2);line-height:1.45}
+.ring{width:54px;height:54px}
+footer{padding-block:48px 64px;color:var(--fg-3);font-size:14px}
+/* Capture links: #<screen>-<read>-<viewer>-<phone|desk>-<light|dark>[-reduce][-xxl][-w430][-shot] */
+body.shot-mode>*:not(.shot-host){display:none!important}
+body.shot-mode{background:var(--pg)}
+body.shot-mode .shot-host{display:block!important;padding:0!important;margin:0!important}
+body.shot-mode .shot-host .wrap{max-width:none;padding:0}
+body.shot-mode .shot-host .wrap>*:not(.studio-grid):not(.desk-scroll){display:none!important}
+body.shot-mode .studio-grid{display:block}
+body.shot-mode .studio-grid>div>*:not(.stage),body.shot-mode .notes{display:none!important}
+body.shot-mode .stage{display:block}
+body.shot-mode .ph{width:390px;height:844px;padding:0;border-radius:0;box-shadow:none;background:none}
+body.shot-mode .ph.is-large{width:430px;height:932px}
+body.shot-mode .ph .scr{border-radius:0}
+body.shot-mode .ph .sbar,body.shot-mode .ph .homebar{display:none}
+body.shot-mode .ph .gbar{padding-top:0}
+body.shot-mode .desk-scroll{border-radius:0;box-shadow:none;overflow:visible}
+body.shot-mode .desk,body.shot-mode .desk.ph{width:1440px;height:900px}
+body.shot-mode::before{display:none}
+/* ============ v4: subscreens and states ============ */
+.ssel{font:500 13.5px/1 var(--sans);color:var(--fg);background:var(--pg-raised);border:1px solid var(--line);border-radius:9px;padding:8px 10px;min-height:36px;max-width:100%}
+.ssel:focus-visible{outline:2px solid var(--green);outline-offset:2px}
+.ph .skel{border-radius:16px;background:var(--card);box-shadow:0 0 0 1px var(--ring);animation:pulse 1.6s ease-in-out infinite}
+.ph .skel.f{background:var(--feat);box-shadow:none}
+.ph .skel.b{border-radius:13px;background:var(--well);box-shadow:none}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.55}}
+.ph[data-rm] .skel{animation:none}
+.ph .ntc{display:flex;gap:10px;align-items:flex-start;padding:12px 14px;border-radius:12px;background:var(--well);font:400 calc(14.5px*var(--k))/1.42 var(--sans);color:var(--ink)}
+.ph .ntc svg{flex:none;margin-top:2px;color:var(--ink-2)}
+.ph .ntc .c{flex:1;min-width:0;display:grid;gap:8px}
+.ph .ntc b{font-weight:600}
+.ph .ntc .btn{min-height:36px;padding:0 12px;border-radius:10px;font-size:calc(14.5px*var(--k));justify-self:start}
+.ph .card>.ntc{margin:0 16px 16px}
+.ph .am{font:400 calc(14px*var(--k))/1.4 var(--sans);color:var(--ink-2);margin-top:10px}
+.ph .feat .stale{margin-top:12px;padding-top:12px;border-top:1px solid rgb(244 241 232/.14);font:400 calc(14.5px*var(--k))/1.42 var(--sans);color:var(--f-ink-2)}
+.ph .feat .st.plain{background:rgb(244 241 232/.12);color:var(--f-ink)}
+.ph .feat.is-out h3,.ph .feat.is-out .hero b{color:var(--f-ink-2)}
+.ph .errc{display:grid;gap:10px;justify-items:start;padding:20px 16px}
+.ph .errc h4{margin:0;font:600 calc(17px*var(--k))/1.3 var(--sans)}
+.ph .errc p{font:400 calc(15px*var(--k))/1.45 var(--sans);color:var(--ink-2)}
+.ph .errc .code{font:500 12px/1 var(--mono);color:var(--ink-3)}
+.ph .cx{display:grid;gap:8px;border-top:1px solid var(--sep);padding-top:12px}
+.ph .cx .k{font:500 calc(14px*var(--k))/1.3 var(--sans);color:var(--ink-2)}
+.ph .cx .cr{display:flex;flex-wrap:wrap;gap:6px}
+.ph .cx button{appearance:none;border:0;font:500 calc(14px*var(--k))/1 var(--sans);padding:0 12px;min-height:36px;border-radius:999px;background:var(--well);color:var(--ink);box-shadow:inset 0 0 0 1px var(--sep);cursor:pointer;transition:transform 280ms var(--ease)}
+.ph .cx button:active{transform:scale(.97);transition-duration:110ms}
+.ph .cx button.on{background:color-mix(in srgb,var(--accent) 12%,transparent);color:var(--accent);box-shadow:inset 0 0 0 1px color-mix(in srgb,var(--accent) 45%,transparent)}
+.ph .cx .why2{display:flex;flex-wrap:wrap;gap:6px;padding:10px;border-radius:12px;background:var(--well)}
+.ph .cx .why2 button{background:var(--card)}
+.ph .cx .chg{background:none;box-shadow:none;color:var(--accent);padding:0 4px}
+.ph .cx .done{display:flex;align-items:center;justify-content:space-between;gap:10px;font:400 calc(14.5px*var(--k))/1.35 var(--sans);color:var(--ink-2)}
+.ph .asd{position:absolute;inset:0;z-index:20;background:rgb(0 0 0/.4);opacity:0;pointer-events:none;transition:opacity 260ms var(--ease)}
+.ph .ash{position:absolute;left:8px;right:8px;bottom:8px;z-index:21;display:grid;gap:8px;transform:translateY(calc(100% + 24px));transition:transform 462ms var(--spring);pointer-events:none}
+.ph[data-sheet] .asd{opacity:1;pointer-events:auto}
+.ph[data-sheet] .ash{transform:none;pointer-events:auto}
+.ph .ash .grp{background:color-mix(in srgb,var(--card) 94%,transparent);-webkit-backdrop-filter:blur(20px);backdrop-filter:blur(20px);border-radius:14px;overflow:hidden}
+.ph .ash .t{font:400 calc(13px*var(--k))/1.35 var(--sans);color:var(--ink-2);text-align:center;padding:13px 16px}
+.ph .ash button{display:block;width:100%;appearance:none;border:0;background:none;min-height:57px;font:400 calc(19px*var(--k))/1.2 var(--sans);color:var(--accent);border-top:1px solid var(--sep);cursor:pointer}
+.ph .ash button.red{color:var(--flag)}
+.ph .ash .grp.cancel button{font-weight:600;border-top:0}
+.ph[data-rm] .ash,.ph[data-rm] .asd{transition:opacity 120ms linear!important}
+.ph[data-rm] .ash{transform:none;opacity:0}
+.ph[data-rm][data-sheet] .ash{opacity:1}
+.desk .main{position:relative}
+.desk .menu{position:absolute;right:24px;top:62px;z-index:6;width:250px;padding:6px;border-radius:14px;background:color-mix(in srgb,var(--card) 94%,transparent);-webkit-backdrop-filter:blur(24px);backdrop-filter:blur(24px);box-shadow:0 0 0 1px var(--ring),0 18px 40px -16px rgb(0 0 0/.35);display:grid;gap:2px;transform-origin:top right;animation:pop 220ms var(--ease)}
+.desk .menu button{appearance:none;border:0;background:none;text-align:left;font:500 14.5px/1 var(--sans);color:var(--ink);padding:11px 12px;border-radius:9px;cursor:pointer}
+.desk .menu button:hover,.desk .menu button:focus-visible{background:var(--press);outline:none}
+.desk .menu button.red{color:var(--flag)}
+@keyframes pop{from{opacity:0;transform:scale(.96)}to{opacity:1;transform:none}}
+.desk[data-rm] .menu{animation:fadein 120ms linear}
+@keyframes fadein{from{opacity:0}to{opacity:1}}
+.desk .gbtn{cursor:pointer;border:0;appearance:none}
+.stc .go{font:500 13.5px/1 var(--sans);color:var(--green);text-decoration:none;justify-self:start}
+.stc .go:hover,.stc .go:focus-visible{text-decoration:underline}
+@media (prefers-reduced-motion:reduce){.ph .skel{animation:none}.desk .menu{animation:fadein 120ms linear}}
+@media (prefers-reduced-motion:reduce){.ph .fbar,.ph .dots i,.ph .pn::after,.ph .pn .nd,.ph .tap,.play{transition-duration:0s!important}.ph .view{transition:opacity 120ms linear!important}}
+</style>
+
+<header class="mast">
+  <div class="wrap">
+    <p class="eyebrow">Clubhouse · CoachHelm · the read, lane 2 of 6 · approved 31 Oct, ready for build · nothing deployed</p>
+    <h1>One read, from the miss to the drill</h1>
+    <p class="lead">Today a CoachHelm read is a green card, two numbers and a sentence. The engine behind it knows far more: where the misses gather, how sure it is, which holes, what each miss cost. This redesign puts that on the screen as pictures first and words beside them, and ends every read on what to do.</p>
+    <ul class="big4">
+      <li><b>Cause, then evidence, then the drill</b>Every read answers four questions in order: what is off, where it shows up, why CoachHelm thinks so, what to do about it.</li>
+      <li><b>About ten things come back on screen</b>The narrowing funnel, both sides of the comparison, strokes lost per miss, shot-record coverage and more. All of it is already stored on every read.</li>
+      <li><b>Summary card opens the read</b>Tap the Board card and the full read slides in, the same summary to detail pattern as the Stats refresh.</li>
+      <li><b>The evidence rule stays strict</b>Nothing is claimed without its counts. A likely cause says so, players never see a guessed cause, and a gap says what it is waiting for.</li>
+    </ul>
+  </div>
+</header>
+
+<section class="blk" id="studio">
+  <div class="wrap">
+    <h2>Try it on the phone</h2>
+    <p class="sub">The examples use the shapes the code already stores (the preview fixtures for Priya's long approaches, Eli's penalties and Jonah's downhill putts). Pick a read, switch between coach and player, and press Play to see the motion.</p>
+    <div class="studio-grid">
+      <div>
+        <div class="controls" role="group" aria-label="Prototype controls">
+          <div class="crow"><span class="lab">Read</span><div class="pseg" data-k="read"><button data-v="approach" aria-pressed="true">Long approaches</button><button data-v="penalties" aria-pressed="false">Penalties</button><button data-v="putts" aria-pressed="false">Downhill putts</button></div></div>
+          <div class="crow"><span class="lab">Viewer</span><div class="pseg" data-k="who"><button data-v="coach" aria-pressed="true">Coach</button><button data-v="player" aria-pressed="false">Player</button></div>
+            <span class="lab" style="min-width:0;margin-left:6px">Screen</span><div class="pseg" data-k="screen"><button data-v="board" aria-pressed="true">Board card</button><button data-v="read" aria-pressed="false">The read</button></div></div>
+          <div class="crow"><span class="lab">Phone</span><div class="pseg" data-k="mode"><button data-v="light" aria-pressed="true">Light</button><button data-v="dark" aria-pressed="false">Dark</button></div>
+            <div class="pseg" data-k="size"><button data-v="std" aria-pressed="true">6.1 in</button><button data-v="large" aria-pressed="false">6.7 in</button></div>
+            <div class="pseg" data-k="text"><button data-v="1" aria-pressed="true">Text</button><button data-v="1.353" aria-pressed="false">XXL</button></div>
+            <div class="pseg" data-k="rm"><button data-v="off" aria-pressed="true">Motion</button><button data-v="on" aria-pressed="false">Reduce</button></div></div>
+          <div class="crow"><span class="lab">State</span><select class="ssel" id="stsel" aria-label="State of the read"></select></div>
+          <div class="plays">
+            <button class="play" id="p-open"><svg width="14" height="14" viewBox="0 0 14 14" aria-hidden="true"><path d="M3 1.8v10.4L12 7z" fill="currentColor"/></svg>Open the read</button>
+            <button class="play" id="p-narrow"><svg width="14" height="14" viewBox="0 0 14 14" aria-hidden="true"><path d="M3 1.8v10.4L12 7z" fill="currentColor"/></svg>Narrow it down</button>
+            <button class="play" id="p-cause"><svg width="14" height="14" viewBox="0 0 14 14" aria-hidden="true"><path d="M3 1.8v10.4L12 7z" fill="currentColor"/></svg>Trace the cause</button>
+            <button class="play" id="p-assign"><svg width="14" height="14" viewBox="0 0 14 14" aria-hidden="true"><path d="M3 1.8v10.4L12 7z" fill="currentColor"/></svg>Assign as focus</button>
+          </div>
+        </div>
+        <div class="stage"><div class="ph" id="ph" data-screen="board" data-mode="light"><div class="scr" id="scr"></div></div></div>
+      </div>
+      <div class="notes" id="notes">
+        <div class="note"><h3>The Board card <small>today's green focus card, rebuilt</small></h3><p>Still the one green feature card. It now draws the number on a track against the team and the Tour, gives the cause in one line with how firm it is, says what closing the gap is worth in strokes, and opens the full read on a tap. "Why we think this" no longer folds open underneath; the read is its own page.</p></div>
+        <div class="note"><h3>What is off <small>headline card on the read</small></h3><p>The read's own sentence, the number, and the comparison ladder: you, the team pool (teammates pooled, never named) and the team's Tour. Below it, how firm the read is, its sample and the date it runs through. All of these figures are already on every read.</p></div>
+        <div class="note"><h3>Where it shows up <small>new card</small> <span class="tag">already stored</span></h3><p>The narrowing the engine already runs (length, then par and length, then shape) drawn as a funnel: 28 approaches, 16 missed, 12 on long par 4s, then the miss shape in words (9 of 12 short, 8 of 11 right). It is labelled "Observed, not a cause", which is the rule the code already enforces.</p></div>
+        <div class="note"><h3>Why CoachHelm thinks so <small>cause card</small></h3><p>A three-step track shows which of the three cause states the read is in: Not traced, Likely from totals, Counted. A likely cause shows both sides of its comparison as dots (12 of 16 against 4 of 12). A counted cause draws the shot path and the holes it happened on. A gap shows what it is waiting for. Players see "Not traced yet" in place of a likely cause, as they do today.</p></div>
+        <div class="note"><h3>How sure <small>new card</small> <span class="tag">already stored</span></h3><p>The confidence word with what it is made of: sample against what is needed, how recent the rounds are, and how many holes have a full shot record. The list of what was checked comes straight from the stored diagnosis. Coaches also see the claim ladder and its range.</p></div>
+        <div class="note"><h3>What to do <small>the output</small></h3><p>The read ends on the attached drill, its time and level, and what closing the gap is worth. Coaches can Assign as focus, Message the player or Ask CoachHelm with the read attached. Once assigned, the button becomes the Assigned chip and the plan line says the focus is active. Worth and Starts from stay; there is no verdict or target, because these numbers have no grading rule yet.</p></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="blk" id="desktop">
+  <div class="wrap">
+    <h2>The same read on desktop</h2>
+    <p class="sub">Desktop keeps the sidebar and the glass top bar. The coach's reads for one player sit in a list grouped by where they happen on a hole, so you no longer open players one at a time to find their reads. The story runs down the middle, and the evidence (how sure, how it moved, the rounds) sits in a rail on the right. It follows the phone's Read and Viewer switches.</p>
+    <div class="desk-scroll"><div class="desk" id="desk"></div></div>
+  </div>
+</section>
+
+<section class="blk" id="states">
+  <div class="wrap">
+    <h2>Every state a read can be in</h2>
+    <p class="sub">The read's state is shown in its own words, never as a missing card or a zero. Each of these states exists in the code today, with the wording it already uses.</p>
+    <div class="states" id="statecards"></div>
+  </div>
+</section>
+
+<section class="blk" id="missing">
+  <div class="wrap">
+    <h2>What CoachHelm computes that never reaches the screen</h2>
+    <p class="sub">Nick, you were right that a lot of the CoachHelm data is not making it onto the screen. Each read stores a full evidence record (<code>InsightEvidence</code> in <code>lib/coachhelm/v2/insights/types.ts</code>). The Clubhouse screens draw a thin slice of it, and a design call in October (D8) took the gauges out, so every number became words only. These fields are written today and drawn nowhere, or squeezed into one line.</p>
+    <div class="tbl-wrap"><table>
+      <thead><tr><th>Stored on the read</th><th>What it is</th><th>Today</th><th>In the redesign</th></tr></thead>
+      <tbody>
+        <tr><td><code>diagnosis.basis.narrowing.steps</code></td><td>Each narrowing step with its own count: "16 of 28 missed from 175+ yd", "12 of 16 on long par 4s", "9 of 12 finished short-right", and where it stopped</td><td>The step labels only, as small chips on the coach card</td><td>The funnel on Where it shows up</td></tr>
+        <tr><td><code>cause.alternatives</code> arms</td><td>Both sides of a likely cause: failures and attempts on each side, how many times as often, and the range</td><td>One line on the path</td><td>Two rows of dots and the verdict box</td></tr>
+        <tr><td><code>cause.event_strokes</code></td><td>Strokes lost on each failing shot, against the strokes gained baseline</td><td>Not used anywhere in Clubhouse</td><td>"On average a penalty hole cost about 1.4 strokes (across 14)" under the shot path</td></tr>
+        <tr><td><code>cause.checked</code></td><td>Holes with a full shot record out of the holes read, and which fields were missing</td><td>Not used</td><td>Shot record row on How sure</td></tr>
+        <tr><td><code>diagnosis.basis.checked</code></td><td>Plain statements of what the engine checked ("Length of the approach", "Where the miss finished")</td><td>Not used</td><td>The checked list on How sure</td></tr>
+        <tr><td><code>confidence_factors</code></td><td>Sample against what is needed, and recency</td><td>Collapsed to Solid, Early or Thin</td><td>Bars under the confidence word</td></tr>
+        <tr><td><code>comparison.lines</code></td><td>The benchmark ladder: team pool with its size and number of teammates, the Tour, the player's best and earlier self</td><td>The first line, as text</td><td>The ladder track on the headline card</td></tr>
+        <tr><td><code>cause.example_holes</code> + <code>event_strokes</code></td><td>Up to five holes where the path was recorded</td><td>A list, deep in the Deep dive</td><td>Hole chips under the path, and dots on the rounds they came from</td></tr>
+        <tr><td><code>data_gap</code> / <code>count_down</code></td><td>What a not-traced cause is waiting for: 4 of 10 misses with a side recorded, or 6 of 10 events</td><td>One sentence</td><td>A progress meter on the cause card. Shot tracking is not changed: it fills from what players already record</td></tr>
+        <tr><td><code>estimated</code>, <code>strokes_impact_method</code></td><td>Whether the figure is a projection, and how the strokes were worked out</td><td>Used only to filter, never named</td><td>"estimated" beside the strokes figure, naming the method only when it is strokes gained</td></tr>
+      </tbody>
+    </table></div>
+  </div>
+</section>
+
+<section class="blk" id="today">
+  <div class="wrap">
+    <h2>What is wrong with the read today</h2>
+    <div class="two">
+      <figure style="margin:0"><img class="shot" alt="Today's coach CoachHelm board on iPhone: player chips, the green penalties card, two ledger rows and a collapsed Why we think this." src="data:image/jpeg;base64,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KKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAoqKW4hhaNZpo42lbbGHYAu3oPU1LQAUVFFcQzNIkM0cjRNskCMCUb0PoaloAKKKKACiiigDgPDH9o+ZqptrrRo7f8Ati6yl1Exl/1nPIYD6cU2a6ltvEOpeQVHm+IrOJ9yhsqYBnqOPqOa6ybw1oM8zzT6Lp8ksjFnd7ZCzE9STjk1cOn2TSGQ2kBcyLKWMYyXUYVvqBwDTuBZooopAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFAHA+NNKhi8ZeFtT3zvPPqax7XkJSNQh4RegyeTXb3cK3ltPaedJEZEKFoX2yJkYyD2Poax9W8G6HrF8b3ULaaS4yCGF1KgUgYBADAA49Ksx+HNLje8kS3dZL2BIJ3Ez7nRRtUZzwcdxzTA534Z2UWnXfiqztg4hh1TYu9izfcHUnkmu4rC0bwjouiXrXmm20sU7Ahma5kcNnqSGYgn3rdoYBRRRSAKKKKAI/Oi/56J+dHnRf89E/On4oxQAzzov+eifnR50X/PRPzp+KMUAM86L/non50edF/z0T86fijFADPOi/wCeifnR50X/AD0T86fijFADPOi/56J+dHnRf89E/On4oxQAzzov+eifnR50X/PRPzp+KMUAM86L/non50edF/z0T86fijFADPOi/wCeifnR50X/AD0T86fijFADPOi/56J+dHnRf89E/On4oxQAzzov+eifnR50X/PRPzp+KMUAM86L/non50edF/z0T86fijFADPOi/wCeifnR50X/AD0T86fijFADPOi/56J+dHnRf89E/On4oxQAzzov+eifnR50X/PRPzp+KMUAM86L/non50edF/z0T86fijFADPOi/wCeifnR50X/AD0T86fijFADPOi/56J+dHnRf89E/On4oxQAzzov+eifnR50X/PRPzp+KMUAM86L/non50edF/z0T86fijFADPOi/wCeifnR50X/AD0T86fijFADPOi/56J+dHnRf89E/On4oxQAzzov+eifnR50X/PRPzp+KMUANWWNjhXUn0Bp9JS0AFFFFABR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"><figcaption class="cap">Today on the staging preview, 28 Oct (coach Board, light).</figcaption></figure>
+      <ul class="clean">
+        <li><b>Words only, no picture.</b> Since design call D8 every number is stated in words. "Eli 1.1, Tour 0.3" says it, but nothing shows how far apart they are, and the team pool is missing.</li>
+        <li><b>The cause is a fragment.</b> "Not yet traced shot by shot" sits mid-sentence in bold on the green card, with no sign of what it would take to trace it.</li>
+        <li><b>The reasoning folds away.</b> "Why we think this" opens a text block under the card. The narrowing, both sides of the comparison and the holes are never drawn.</li>
+        <li><b>You have to hunt for a player's reads.</b> A coach taps a player chip to see one top signal, then goes to a separate Deep dive page for the rest.</li>
+        <li><b>The read stops at the problem.</b> The drill is a line of text near the bottom, and what the fix is worth in strokes is not on the Board.</li>
+        <li><b>Off-language details.</b> The Deep dive titles use the serif (banned in the design language), and the page has seven sections that all look the same.</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<section class="blk" id="where">
+  <div class="wrap">
+    <h2>Where each piece lives in today's app</h2>
+    <p class="sub">The read is one new view on the existing CoachHelm route, behind its own flag <code>coachhelm_read_v1</code> (off everywhere). Coach address <code>?view=read&amp;player=…&amp;insight=…</code>, player address <code>?view=read&amp;insight=…</code>. Every link to a read goes through one helper, <code>readHref()</code>, which falls back to today's Deep dive while the flag is off, so nothing changes until it is turned on. Each card only draws when its data is on the read. The full build package, with the PR plan and the data map, is in <code>design-refresh/coachhelm-read/</code>.</p>
+    <div class="tbl-wrap"><table>
+      <thead><tr><th>Card</th><th>Today's code</th><th>What changes</th><th>How it behaves with what's built</th></tr></thead>
+      <tbody>
+        <tr><td>Board card</td><td><code>screens/coachhelm/parts.tsx</code>, <code>CoachBoard.tsx</code>, <code>PlayerBoard.tsx</code></td><td>Ladder track, cause line with tier chip, strokes worth, and the whole card becomes the tap target that pushes the read. Assign and Dismiss stay under it.</td><td>The tap goes through <code>readHref()</code>: the read with the flag on, today's Deep dive with it off. This lane does not edit <code>CoachBoard.tsx</code> or <code>PlayerBoard.tsx</code>; lane 1 and the Lenses lane own them and call the shared link. Without team pool data the ladder shows you and the Tour only. Without strokes, the worth line is not drawn.</td></tr>
+        <tr><td>What is off</td><td><code>views/DeepDive.tsx</code> <code>Dossier</code> header and <code>Read</code> (What, When)</td><td>Serif title becomes Instrument Sans. The What and When lines become the headline, the ladder and the firmness row.</td><td>Stance pill words unchanged (Priority, Worth closing, Minor, Working, Out of date, Assigned). Out of date keeps its CH-13903 sentence.</td></tr>
+        <tr><td>Where it shows up</td><td>New, fed by <code>narrowingOf</code> in <code>data/coachhelm-path.ts</code></td><td>Keep each step's statement and count in the dive shaper, not only its label.</td><td>Only drawn when the engine stored a narrowing (root cause flag). The stopped step shows as the last bar.</td></tr>
+        <tr><td>Why CoachHelm thinks so</td><td><code>Why</code>, <code>Where</code> and <code>EngineState</code> cause in <code>DeepDive.tsx</code>, <code>coachhelm-engine-shape.ts</code></td><td>One card with the state track, dots, path or gap meter, and the holes.</td><td>A player's likely cause still reads "Not traced yet" (Q3). Rows written before the engine cause existed show today's drivers list.</td></tr>
+        <tr><td>How sure</td><td><code>WhyAudit</code>, <code>confidence-label.ts</code>, the support pass</td><td>The word, three bars and the checked list. Coach-only claim rung and range.</td><td>The support pass stays coach-only (<code>delivery/player-projection.ts</code> strips it for players).</td></tr>
+        <tr><td>How it has moved</td><td><code>Trend</code> (movement, category theme, to-par strip)</td><td>From and to on a small slope chart against the Tour, with the category's trend chip.</td><td>No new series is invented: it draws the stored from and to values only. "No trend yet" (CH-13383) when there is none.</td></tr>
+        <tr><td>The rounds behind it</td><td><code>Rounds</code> (<code>DIVE_ROUNDS_SHOWN</code> 8)</td><td>Rows with a dot for each counted hole from that round. Each row opens the round review.</td><td>CH-13281 and CH-13382 wording unchanged.</td></tr>
+        <tr><td>What to do</td><td><code>Read</code> Next, <code>Plan</code>, <code>FocusActions</code></td><td>Drill card, strokes worth, the actions, and the plan line. After Assign, the verdict and target appear in place.</td><td>Add to practice plan is drawn only once the practice builder ships (<code>nav.rebuiltHref</code>). Ask with this read goes to the Ask lane's design.</td></tr>
+        <tr><td>The read page itself</td><td>New: <code>screens/coachhelm/read/</code> (<code>ReadPage</code> and one file per card), <code>styles/coachhelm-read.css</code> (prefix <code>.ch-hr-</code>), <code>data/coachhelm-read.ts</code> building one <code>ChReadView</code></td><td>Mounted by <code>routes/coachhelm.tsx</code> for <code>view=read</code>. Desktop adds the reads rail on the left and the evidence column on the right.</td><td>Reads only what the Deep dive already loads. A preview, <code>coachhelm-read</code>, renders it with demo data for review.</td></tr>
+        <tr><td>Peek sheet from other lanes</td><td>Lane 1's ReadSheet and the Lenses lane's EvidenceSheet</td><td>One shared sheet. Its "Open the full read" link pushes this page. <code>ReadSummaryCard</code> is exported for both.</td><td>Agreed across lanes so there is one sheet, not two.</td></tr>
+      </tbody>
+    </table></div>
+  </div>
+</section>
+
+<section class="blk" id="motion">
+  <div class="wrap">
+    <h2>Motion</h2>
+    <p class="sub">All of it uses the shared springs in <code>tokens.css</code>. Nothing counts up and nothing staggers on page load. The funnel and the dots play once, the first time their card scrolls into view, because the order they appear in is part of the evidence.</p>
+    <div class="tbl-wrap"><table>
+      <thead><tr><th>Moment</th><th>Motion</th><th>Timing</th><th>Reduce Motion</th></tr></thead>
+      <tbody>
+        <tr><td>Open the read</td><td>Card presses to 0.97, then the read pushes in from the right; the Board slides to −30% and dims</td><td>110 ms press, 462 ms <code>--ch-ease-spring-smooth</code></td><td>120 ms crossfade, no movement</td></tr>
+        <tr><td>Narrow it down</td><td>All bars grow together from the left edge to their share of the sample; the last bar is amber from the start</td><td>360 ms <code>--ch-ease</code>, once, when the card first scrolls into view</td><td>Drawn at rest</td></tr>
+        <tr><td>Trace the cause</td><td>Missed dots scale from 0.4 and fade in together (likely); path nodes scale from 0.7 and their lines grow from the left together (counted)</td><td>360 ms <code>--ch-ease</code>, once, in view</td><td>Drawn at rest</td></tr>
+        <tr><td>Assign as focus</td><td>Button holds a spinner and reads "Assigning…", then becomes the green Assigned chip with a drawn tick; the plan line updates and the card rings once; success haptic</td><td>Spinner while the save runs, tick 360 ms, ring 900 ms</td><td>Chip swaps with no tick drawing and no ring</td></tr>
+        <tr><td>More menu</td><td>The page dims to 40% black and the action sheet rises from the bottom edge; Cancel or a tap on the dim lowers it</td><td>Dim 260 ms <code>--ch-ease</code>, sheet 462 ms <code>--ch-ease-spring-smooth</code></td><td>120 ms fade, no rise</td></tr>
+        <tr><td>Dismiss and Undo</td><td>Warning haptic first, then the card's place becomes the dismissed notice with Undo; Undo puts the card back</td><td>260 ms crossfade, height does not animate</td><td>120 ms fade</td></tr>
+        <tr><td>Is this read right?</td><td>Not this opens its reasons in place under the chips; an answer becomes the quiet "Your answer" line with Change</td><td>Reasons fade in 180 ms, chips press 0.97</td><td>Instant</td></tr>
+        <tr><td>Loading</td><td>Card outlines at their real heights breathe between full and 55% opacity</td><td>1.6 s loop, ease-in-out</td><td>Still outlines, no pulse</td></tr>
+      </tbody>
+    </table></div>
+  </div>
+</section>
+
+<section class="blk" id="research">
+  <div class="wrap">
+    <h2>What the best products do, and what we took</h2>
+    <p class="sub">Research across fitness, golf and analytics products on how they explain a finding with its evidence. Sources are product docs, launch posts and reviews.</p>
+    <div class="rgrid">
+      <div class="rcard"><h3>Arccos Caddie</h3><p>One "Where to Focus" area costing the most strokes, the rest ranked behind it. "Lock this in" snapshots a baseline, sets a capped target and shows Then vs Now. Its help pages warn that a putting problem may really come from approach shots.</p><p class="use"><b>Took:</b> strokes worth on the card, and the focus verdict with its target after Assign.</p></div>
+      <div class="rcard"><h3>Clippd</h3><p>"What To Work On" ranks skill groups by Importance and Opportunity, with a trend arrow. Coaches like it because it is shot-driven and players understand it.</p><p class="use"><b>Took:</b> grouping reads by where they happen on a hole, and ranking by strokes.</p></div>
+      <div class="rcard"><h3>Oura Readiness</h3><p>A score, then a contributor list where each contributor is a short bar with a calm phrase. Advisor answers include charts of your own data.</p><p class="use"><b>Took:</b> How sure as short contributor bars under one word.</p></div>
+      <div class="rcard"><h3>Apple Health</h3><p>One fact per card with its chart and a stated comparison, plus an honest "Needs more data" group instead of a weak claim.</p><p class="use"><b>Took:</b> one question per card, and the count-down state.</p></div>
+      <div class="rcard"><h3>Mixpanel and Amplitude root cause</h3><p>Conclusion first, then each segment's share of the change, with a plain High, Medium or Low label and its reason. Amplitude draws the band of normal variation.</p><p class="use"><b>Took:</b> the two-sided dots and the range, said in words.</p></div>
+      <div class="rcard"><h3>Linear, Stripe Sigma, Claude citations</h3><p>Every chart drills to the records behind it. Sigma shows the query; Claude ties each claim to its source.</p><p class="use"><b>Took:</b> every count opens its rounds and holes.</p></div>
+      <div class="rcard"><h3>Whoop</h3><p>Numbers stated plainly, the interpretation hedged ("could indicate"). Its lighter monthly report drew complaints that it was "a letter with pictures".</p><p class="use"><b>Took:</b> keep all the depth, and hedge only the cause, never the measured number.</p></div>
+      <div class="rcard"><h3>Strava and Garmin</h3><p>Strava's AI summaries were criticised as generic. Garmin names every input behind its readiness band.</p><p class="use"><b>Took:</b> no sentence without this player's own count, distance or hole.</p></div>
+    </div>
+  </div>
+</section>
+
+<section class="blk" id="calls">
+  <div class="wrap">
+    <h2>Three calls, built with my picks</h2>
+    <p class="sub">These three change a decision made before. The page and the build package use my pick for each, marked as a default you can flip.</p>
+    <div class="calls">
+      <div class="call"><h3><span class="q">1</span>Bring pictures back into the read</h3><p>Design call D8 (October) took the gauges out so every number is said in words. This redesign draws the ladder, funnel, dots and bars again, with every figure still written beside its picture so nothing depends on colour or position alone.</p><p class="rec"><b>Built as default:</b> yes. To flip, drop the charts; the words are already written beside every picture. The words-only page is the main reason the read feels thin.</p></div>
+      <div class="call"><h3><span class="q">2</span>What players see of the cause</h3><p>Today a player never sees a likely cause, only "Not traced yet" (Q3), and that rule stays. The new funnel is observed counts, not a cause, so it can be shown to players too.</p><p class="rec"><b>Built as default:</b> keep Q3, and show players the funnel. To flip, hide the Where card for players.</p></div>
+      <div class="call"><h3><span class="q">3</span>Team pool next to the Tour on every read</h3><p>The engine can write a team pool line (teammates pooled, never named) beside the Tour, behind its own flag. The ladder looks best with both. The Tour stays the only outside benchmark.</p><p class="rec"><b>Built as default:</b> yes, once that flag is turned on after the first deploy. Until then the ladder shows the player and the Tour. To flip, leave <code>coachhelm_team_pool_v1</code> off.</p></div>
+    </div>
+  </div>
+</section>
+
+<footer><div class="wrap">Lane 2 of the CoachHelm redesign, 31 Oct 2026. Built to <code>design-refresh/DESIGN_LANGUAGE.md</code>: flat page, titles inside cards, one feature card per view, amber for losses, no accent edge cards, text at 4.9:1 or better in both themes, 16 px edge (20 px on large phones), sizes follow iPhone Text Size. Read against helmv3 at <code>75b4956</code>. Nothing here changes what shot tracking collects.</div></footer>
+
+<script>
+(function(){
+const $=(s,r=document)=>r.querySelector(s);
+const S={read:'approach',who:'coach',screen:'board',mode:'light',size:'std',text:1,rm:false,st:''};
+/* Every state and subscreen a read can be in. Hash token after the theme, e.g. #read-approach-coach-phone-light-dismissed. */
+const STATES=[['','Normal'],['loading','Loading'],['assigning','Assigning'],['proposed','Proposed, waiting on the player'],['declined','Player declined'],['noassign','Assign not offered'],['stale','Out of date'],['dismissed','Dismissed, with Undo'],['more','More menu open'],['notthis','Not this, picking why'],['answered','Answer saved'],['answerfail','Answer didn’t save'],['allrounds','All rounds open'],['notrend','No trend yet'],['partfail','Part didn’t load'],['failed','Read didn’t load'],['gone','Read no longer open'],['nopool','No team pool line'],['long','Long names and titles']];
+const STKEYS=STATES.map(x=>x[0]).filter(Boolean);
+try{S.rm=matchMedia('(prefers-reduced-motion: reduce)').matches;}catch(e){}
+try{const m=document.documentElement.getAttribute('data-theme');S.mode=m?m:(matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light');}catch(e){}
+
+const I={
+  chev:'<svg width="8" height="13" viewBox="0 0 8 13" aria-hidden="true"><path d="M1.5 1.5 6.5 6.5l-5 5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>',
+  down:'<svg width="12" height="8" viewBox="0 0 12 8" aria-hidden="true"><path d="m1.5 1.5 4.5 4.5 4.5-4.5" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"/></svg>',
+  archive:'<svg width="16" height="16" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 5h18v4H3zM5 9v10h14V9M10 13h4" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round" stroke-linecap="round"/></svg>',
+  alert:'<svg width="16" height="16" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="M12 7.5v5.5M12 16.5v.2" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>',
+  bell:'<svg width="22" height="22" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 16V11a6 6 0 1 1 12 0v5l1.5 2h-15zM10 20a2 2 0 0 0 4 0" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/></svg>',
+  more:'<svg width="22" height="22" viewBox="0 0 24 24" aria-hidden="true"><circle cx="5" cy="12" r="1.7" fill="currentColor"/><circle cx="12" cy="12" r="1.7" fill="currentColor"/><circle cx="19" cy="12" r="1.7" fill="currentColor"/></svg>',
+  back:'<svg width="12" height="20" viewBox="0 0 12 20" aria-hidden="true"><path d="M10 2 2 10l8 8" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>',
+  flag:'<svg width="17" height="17" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 21V4m0 0h11l-2 4 2 4H5" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linejoin="round" stroke-linecap="round"/></svg>',
+  target:'<svg width="20" height="20" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="8.5" fill="none" stroke="currentColor" stroke-width="1.8"/><circle cx="12" cy="12" r="4.5" fill="none" stroke="currentColor" stroke-width="1.8"/><circle cx="12" cy="12" r="1.3" fill="currentColor"/></svg>',
+  tick:'<svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true"><path d="m3 8.5 3.2 3L13 4.5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>',
+  msg:'<svg width="16" height="16" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5h16v11H9l-5 4z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/></svg>',
+  spark:'<svg width="16" height="16" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v4M12 17v4M3 12h4M17 12h4M6 6l2.5 2.5M15.5 15.5 18 18M6 18l2.5-2.5M15.5 8.5 18 6" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>',
+  tee:'<svg width="18" height="18" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v14m-3 4h6M8 17h8" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>',
+  water:'<svg width="18" height="18" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 10c2 0 2-2 4.5-2S10 10 12 10s2.5-2 4.5-2S19 10 21 10M3 15c2 0 2-2 4.5-2S10 15 12 15s2.5-2 4.5-2 2.5 2 4.5 2" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>',
+  card:'<svg width="18" height="18" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 4h12v16H6zM9 9h6M9 13h6" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/></svg>'
+};
+
+/* Example reads in the shapes the code stores (preview fixtures: fixtures-coachhelm-path.ts, -engine.ts, -views.ts). */
+const R={
+ approach:{
+  player:{name:'Priya Natarajan',first:'Priya',ini:'PN',yr:'#3D6787'}, area:'Approach', stance:'Priority', tone:'warn',
+  title:'Greens hit from 175+ yd', value:'43%', valueNote:'of greens hit from 175 yards and out',
+  ledeCoach:'From 175 yards and out Priya hits 43% of greens, against 52% for the Tour. Most of the misses finish short and right on the long par 4s.',
+  ledePlayer:'From 175 yards and out you hit 43% of greens, against 52% for the Tour. Most of the misses finish short and right on the long par 4s.',
+  ladder:{min:30,max:60,dir:'higher',unit:'%',you:43,lines:[{k:'Team pool',v:49,n:'164 approaches · 8 teammates'},{k:'Tour',v:52,n:'PGA Tour average'}],gap:'9 pts behind the Tour'},
+  sample:'28 approaches', rounds:'9 rounds', through:'Through Oct 24', firm:'Solid read', rung:'Likely', range:'Somewhere between 5 and 70 points more often on long par 4s.',
+  worth:'0.6', worthTo:'the team average',
+  causeState:'likely',
+  causeLineCoach:'Misses gather on long par 4s', causeCountCoach:'12 of 16',
+  causeLinePlayer:'Misses gather on long par 4s · not traced yet',
+  funnel:[{k:'Approaches from 175+ yd',n:28,why:'Every approach from 175 yards and out in the window.'},{k:'Missed the green',n:16,why:'16 of 28 missed from 175+ yd.'},{k:'On long par 4s',n:12,why:'12 of 16 on long par 4s.'},{k:'Miss shape',words:'9 of 12 short, 8 of 11 right'}],
+  arms:[{k:'Long par 4s',f:12,n:16},{k:'All other holes',f:4,n:12}],
+  armVerdict:'Missed more than twice as often on long par 4s (75% against 33%).',
+  sure:{word:'Solid read',sample:[28,30,'28 of the 30 approaches it needs'],sampleP:[28,30,'28 approaches'],fresh:[8,9,'Most rounds in the last 45 days'],record:[26,28,'26 of 28 holes. Miss direction is thin']},
+  checked:['Length of the approach','Par and length of the hole','Where the miss finished'],
+  moved:{from:51,to:43,fromL:'Before',toL:'Now',ref:52,refL:'Tour 52%',text:'From 51% to 43%, down 8 pts',tone:'warn',theme:'Approach strokes gained −0.42 a round · Slipping',min:30,max:60,unit:'%'},
+  roundsList:[['Oct 24','Lonnie Poole GC','76','+4',0],['Oct 19','UNC Finley','74','+2',0],['Oct 12','Prestonwood CC','78','+6',0],['Oct 5','Pinehurst No. 8','75','+3',0],['Sep 28','Lonnie Poole GC','73','+1',0],['Sep 21','Old Chatham','77','+5',0],['Sep 14','UNC Finley','72','E',0],['Aug 30','Prestonwood CC','76','+4',0],['Aug 16','Lonnie Poole GC','74','+2',0]],
+  drill:{name:'Long iron ladder',meta:'15 min · intermediate',text:'Nine balls each from 180, 190 and 200 yards to a long par 4 green. Aim at the left half and count how many finish pin-high or long.'},
+  target:'50% or better over the next 20 approaches from 175+ yd', verdictWord:'Too early to call'
+ },
+ penalties:{
+  player:{name:'Eli Brandt',first:'Eli',ini:'EB',yr:'#1F6B45'}, area:'Course and scoring', stance:'Priority', tone:'warn',
+  title:'Penalty strokes: 1.1 a round', value:'1.1', valueNote:'penalty strokes a round',
+  ledeCoach:'Across all 21 rounds on file Eli is averaging 1.1 penalty strokes a round. Eleven of the last fourteen came after a driver into the water.',
+  ledePlayer:'Across all 21 rounds on file you are averaging 1.1 penalty strokes a round. Eleven of the last fourteen came after a driver into the water.',
+  ladder:{min:0,max:1.5,dir:'lower',unit:'',you:1.1,lines:[{k:'Team pool',v:0.6,n:'212 rounds · 8 teammates'},{k:'Tour',v:0.3,n:'PGA Tour average'}],gap:'0.8 a round more than the Tour'},
+  sample:'21 rounds', rounds:'All rounds', through:'Through Oct 24', firm:'Solid read', rung:'Observed', range:'Seen in 11 of 14 penalties over 6 rounds.',
+  worth:'0.8', worthTo:'the team average',
+  causeState:'counted',
+  causeLineCoach:'Driver off the tee, into the water', causeCountCoach:'11 of 14',
+  causeLinePlayer:'Driver off the tee, into the water',
+  funnel:null,
+  path:[{k:'Driver off the tee',i:'tee'},{k:'Into the water',i:'water',hit:true},{k:'Bogey or worse',i:'card'}],
+  pathCount:'11 of 14 penalties, over 6 rounds, read from Sep 20', eventStrokes:'On average a penalty hole cost about 1.4 strokes (across 14).',
+  holes:['Oct 24 · hole 7','Oct 19 · hole 12','Oct 12 · hole 7','Oct 5 · hole 7','Oct 5 · hole 16'],
+  sure:{word:'Solid read',sample:[21,12,'21 rounds, past the 12 it needs'],sampleP:[21,12,'21 rounds'],fresh:[15,21,'Most rounds in the last 45 days'],record:[118,126,'118 of 126 holes recorded']},
+  checked:['Club off the tee','Where the tee shot finished','The score on the hole'],
+  moved:{from:0.8,to:1.1,fromL:'Before',toL:'Now',ref:0.3,refL:'Tour 0.3',text:'From 0.8 to 1.1 a round, up 0.3',tone:'warn',theme:'Course management strokes gained −0.31 a round · No clear change',min:0,max:1.5,unit:''},
+  roundsList:[['Oct 24','Lonnie Poole GC','77','+5',2],['Oct 19','UNC Finley','75','+3',2],['Oct 12','Prestonwood CC','79','+7',1],['Oct 5','Pinehurst No. 8','78','+6',3],['Sep 28','Lonnie Poole GC','74','+2',2],['Sep 21','Old Chatham','76','+4',1]],
+  drill:{name:'Fairway finder',meta:'20 min · intermediate',text:'On holes with water down the side, hit 3-wood or hybrid to the widest part of the fairway. Ten balls, count the ones that would stay dry.'},
+  target:'0.6 or fewer penalty strokes a round over the next 6 rounds', verdictWord:'Too early to call'
+ },
+ putts:{
+  player:{name:'Jonah Okafor',first:'Jonah',ini:'JO',yr:'#86672C'}, area:'Putting', stance:'Worth closing', tone:'warn',
+  title:'Downhill putts from 4–6 ft', value:'23 pts', valueNote:'lower make rate than level putts, same distance',
+  ledeCoach:'From 4 to 6 feet Jonah makes 51% of downhill putts and 74% of level ones. The gap is 23 points over 75 putts.',
+  ledePlayer:'From 4 to 6 feet you make 51% of downhill putts and 74% of level ones. The gap is 23 points over 75 putts.',
+  ladder:{min:30,max:90,dir:'higher',unit:'%',you:51,youK:'Downhill',lines:[{k:'Level, same distance',v:74,n:'your own other side'}],gap:'23 pts below Jonah’s level putts',gapPlayer:'23 pts below your level putts',noTour:true},
+  sample:'75 putts', rounds:'14 rounds', through:'Through Oct 22', firm:'Solid read', rung:'Not enough yet', range:'Watching: 4 more missed downhill putts.',
+  worth:'0.3', worthTo:'',
+  causeState:'gap',
+  causeLineCoach:'Not traced yet · counting down', causeCountCoach:'6 of 10',
+  causeLinePlayer:'Not traced yet · counting down',
+  funnel:null,
+  gap:{have:6,need:10,text:'6 of the 10 missed downhill putts it needs, over 3 rounds. Four more and CoachHelm can say how they miss.'},
+  sure:{word:'Solid read',sample:[75,60,'75 putts, past the 60 it needs'],sampleP:[75,60,'75 putts'],fresh:[14,14,'All rounds in the last 45 days'],record:[75,75,'Slope and distance on all 75']},
+  checked:['Slope of the putt','Distance, so only 4 to 6 ft is compared'],
+  moved:{from:58,to:51,fromL:'Before',toL:'Now',ref:74,refL:'Level 74%',text:'From 58% to 51%, down 7 pts',tone:'warn',theme:'Putting strokes gained −0.18 a round · No clear change',min:30,max:90,unit:'%'},
+  roundsList:[['Oct 22','UNC Finley','73','+1',0],['Oct 18','Lonnie Poole GC','75','+3',0],['Oct 11','Prestonwood CC','74','+2',0],['Oct 4','Old Chatham','72','E',0]],
+  drill:{name:'Downhill gate',meta:'12 min · beginner',text:'Two tees a ball-width apart, 5 feet down the slope. Roll 20 putts to die at the hole; count the ones through the gate.'},
+  target:'65% or better on downhill 4–6 ft over the next 40 putts', verdictWord:'Too early to call'
+ }
+};
+const OTHER={approach:[['Penalty strokes','Course and scoring · Minor','0.4','plain'],['Lag putts 30+ ft','Putting · Working','Within 3 ft','good']],penalties:[['Greens hit 125–175 yd','Approach · Worth closing','58%','warn'],['Up and downs','Around the green · Working','61%','good']],putts:[['Three-putts','Putting · Minor','1.1 a round','plain'],['Driving accuracy','Off the tee · Working','64%','good']]};
+
+let assigned=false;
+/* The read with today's state applied: long names for the long-text check, no team pool line for the flipped call 3. */
+function cur(){
+  const r=R[S.read];
+  if(S.st==='long') return Object.assign({},r,{player:Object.assign({},r.player,{name:'Alexandria Montgomery-Okonkwo',first:'Alexandria'}),
+    title:r.title+' on par 4s and par 5s played into the wind', area:r.area==='Approach'?'Approach and course management':r.area,
+    drill:Object.assign({},r.drill,{name:r.drill.name+' with a pressure finish'})});
+  return r;
+}
+const ph=$('#ph'), scr=$('#scr');
+const esc=s=>String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;');
+const voice=r=>S.who==='coach'?r.player.first:'You';
+
+function ladderSVG(r,onFeat){
+  const L=r.ladder, W=300, pad=14, x=v=>pad+(v-L.min)/(L.max-L.min)*(W-2*pad);
+  const ink=onFeat?'var(--f-ink)':'var(--ink)', ink2=onFeat?'var(--f-ink-2)':'var(--ink-2)', tr=onFeat?'var(--f-track)':'var(--track)', loss=onFeat?'var(--f-loss)':'var(--loss-fill)';
+  const lines=L.lines.filter(l=>!(S.st==='nopool'&&l.k==='Team pool'));
+  const fmt=v=>L.unit==='%'?Math.round(v)+'%':v.toFixed(1);
+  let s=`<svg class="ladder" viewBox="0 0 ${W} 78" role="img" aria-label="${esc(voice(r))} ${fmt(L.you)}. ${lines.map(l=>l.k+' '+fmt(l.v)).join('. ')}.">`;
+  s+=`<rect x="${pad}" y="30" width="${W-2*pad}" height="6" rx="3" fill="${tr}"/>`;
+  const xs=[x(L.you),...lines.map(l=>x(l.v))];
+  const lo=Math.min(...xs), hi=Math.max(...xs);
+  s+=`<rect class="anim" x="${lo}" y="30" width="${hi-lo}" height="6" rx="3" fill="${loss}" opacity=".55"/>`;
+  /* Labels under the track: centred on their tick, but two ticks closer than 76 split apart (left one ends at its tick, right one starts at it). */
+  const marks=lines.map(l=>({l,cx:x(l.v)})).sort((a,b)=>a.cx-b.cx);
+  marks.forEach((m,i)=>{m.a=m.cx>W-60?'end':m.cx<60?'start':'middle';m.tx=m.cx;});
+  for(let i=1;i<marks.length;i++){if(marks[i].cx-marks[i-1].cx<76){marks[i-1].a='end';marks[i-1].tx=marks[i-1].cx-4;marks[i].a='start';marks[i].tx=marks[i].cx+4;}}
+  marks.forEach(m=>{s+=`<line x1="${m.cx}" x2="${m.cx}" y1="24" y2="42" stroke="${ink2}" stroke-width="2" stroke-linecap="round"/>`;
+    s+=`<text x="${m.tx}" y="58" text-anchor="${m.a}" font-size="12.5" fill="${ink2}">${esc(m.l.k)}<tspan x="${m.tx}" dy="1.15em" font-weight="600" fill="${ink}">${fmt(m.l.v)}</tspan></text>`;});
+  const yx=x(L.you); const ya=yx>W-60?'end':yx<60?'start':'middle';
+  s+=`<circle cx="${yx}" cy="33" r="8" fill="${loss}" stroke="${onFeat?'var(--feat)':'var(--card)'}" stroke-width="3"/>`;
+  s+=`<text x="${yx}" y="14" text-anchor="${ya}" font-size="12.5" font-weight="600" fill="${ink}">${esc(L.youK?(S.who==='coach'?L.youK:L.youK):voice(r))} ${fmt(L.you)}</text>`;
+  return s+'</svg>';
+}
+
+function tierWord(r){
+  if(r.causeState==='counted') return ['counted', S.who==='coach'?'Counted':'Seen in your shots'];
+  if(r.causeState==='likely') return S.who==='coach'?['likely','Likely']:['plain','Where'];
+  return ['plain','Not traced'];
+}
+
+function boardHTML(r){
+  const coach=S.who==='coach'; const [tc,tw]=tierWord(r);
+  const cline=coach?r.causeLineCoach:r.causeLinePlayer;
+  const count=r.causeCountCoach;
+  const bar=coach?`<div class="gb"><button class="back">${I.back} CoachHelm</button><span class="ptitle">${esc(r.player.first)}</span><button class="ib first" aria-label="More">${I.more}</button></div>`
+    :`<div class="gb"><button class="sw">CoachHelm ${I.down}<span class="dot"></span></button><button class="ib first" aria-label="Notifications">${I.bell}<span class="badge">3</span></button></div>`;
+  return `
+  <div class="gbar"><div class="sbar"><span>9:41</span><span>●●● ▮</span></div>${bar}</div>
+  <div class="sheet">
+    <div class="ctx"><div class="lt">${coach?esc(r.player.name):'Your focus'}</div><div class="cl">${coach?'3 open reads · '+esc(r.through):'One thing to work on, from the rounds you post'}</div></div>
+    ${coach?'':'<div class="seg" aria-hidden="true"><span class="on">Board</span><span>Ask</span></div>'}
+    ${S.st==='loading'?skelPhone(true):S.st==='dismissed'&&coach?actsHTML(r,'board'):`<article class="feat tap${S.st==='stale'?' is-out':''}" id="bcard" role="link" tabindex="0" aria-label="Open the read: ${esc(r.title)}">
+      <div class="k"><span>${coach?esc(r.player.first)+' · ':''}${esc(r.area)}</span><span class="st${S.st==='stale'?' plain':''}">${S.st==='stale'?'Out of date':esc(r.stance)}</span></div>
+      <h3>${esc(r.title)}</h3>
+      <div class="hero"><b>${esc(r.value)}</b><span>${esc(r.valueNote)}</span></div>
+      ${ladderSVG(r,true)}
+      <div class="cause"><span class="tier ${tc}">${tw}</span><span>${esc(cline)}${count&&(coach||r.causeState!=='likely')?' · <b class="num">'+count+'</b>':''}</span></div>
+      <div class="ffoot"><span class="worth">Worth about ${r.worth} a round</span><span class="num">${r.sample} · ${r.rounds} · ${r.firm}</span></div>
+      ${S.st==='stale'?'<p class="stale" data-code="CH-13903">A newer round (Oct 26) is not in this read yet. It is re-read overnight.</p>':''}
+      <div class="open"><span>Open the read</span>${I.chev}</div>
+    </article>
+    ${coach?`<div id="bacts">${actsHTML(r,'board')}</div>`:''}`}
+    <div class="card"><div class="ch"><h4>${coach?'All reads':'Your other reads'}</h4><span class="meta">2 open</span></div>
+      ${OTHER[S.read].map(o=>`<div class="row"><span class="sdot ${o[3]}"></span><div class="c"><b>${o[0]}</b><span>${o[1]}</span></div><span class="v">${o[2]}</span><span class="chev">${I.chev}</span></div>`).join('')}
+    </div>
+  </div>`;
+}
+
+function actsHTML(r,where){
+  const f=esc(r.player.first);
+  if(S.st==='dismissed') return `<div class="ntc" role="status" data-code="CH-13901">${I.archive}<div class="c"><span><b>Insight dismissed.</b> It no longer shows on your board or on ${f}’s. Undo brings it back.</span><button class="btn gh" data-undo>Undo</button></div></div>`;
+  if(S.st==='noassign') return `<div class="ntc" role="note" data-code="CH-13207">${I.alert}<div class="c"><span><b>Assign as focus isn’t offered right now.</b> Whether this read was already assigned couldn’t be checked. Dismiss still works. Try again in a moment.</span></div></div>${where==='board'?'<div class="acts" style="margin-top:10px"><button class="btn gh wide" data-dismiss>Dismiss</button></div>':''}`;
+  if(S.st==='stale') return `${where==='board'?'<div class="acts"><button class="btn gh wide" data-dismiss>Dismiss</button></div>':''}<p class="am" data-code="CH-13906">This read is older than ${f}’s newest round, so it can’t be assigned as a focus yet.</p>`;
+  if(assigned||S.st==='proposed') return `<div class="acts">${assignedChip(r)}</div>${S.st==='proposed'||assigned?`<p class="am">${f} sees it as a proposal and accepts it to start.</p>`:''}`;
+  const busy=S.st==='assigning';
+  const pri=busy?`<button class="btn pri" disabled><span class="spin" aria-hidden="true"></span>Assigning…</button>`:`<button class="btn pri" data-assign>${I.flag}${S.st==='declined'?'Propose again':'Assign as focus'}</button>`;
+  return `<div class="acts">${pri}${where==='board'?`<button class="btn gh"${busy?' disabled':''} data-dismiss>Dismiss</button>`:''}</div>${S.st==='declined'?`<p class="am" data-code="CH-13907">${f} declined this as a focus. Propose again sends it back as a new proposal.</p>`:''}`;
+}
+function skelPhone(board){
+  const blk=(h,c='')=>`<div class="skel ${c}" style="height:${h}px"></div>`;
+  return board?`${blk(330,'f')}<div class="acts">${blk(46,'b')}</div>${blk(150)}`:`${blk(360,'f')}${blk(250)}${blk(270)}${blk(240)}`;
+}
+function sheetHTML(r){
+  const coach=S.who==='coach';
+  return `<div class="asd" data-close></div><div class="ash" role="dialog" aria-label="More for this read">
+    <div class="grp"><div class="t">${esc(r.title)}</div>${coach?`<button class="red" data-dismiss>Dismiss this read</button><button>Message ${esc(r.player.first)}</button>`:''}<button>Ask CoachHelm about this</button><button>Copy a link to this read</button></div>
+    <div class="grp cancel"><button data-close>Cancel</button></div></div>`;
+}
+function cxHTML(r){
+  const coach=S.who==='coach';
+  const kinds=coach?['Not this','Wrong cause','Already on it','Show later','Good read']:['Not this','Good read'];
+  if(S.st==='answered') return `<div class="cx" data-code="CH-13971"><div class="done" role="status"><span>Your answer: Not this, it’s wrong.</span><button class="chg" data-st="">Change</button></div></div>`;
+  const pick=S.st==='notthis';
+  return `<div class="cx" data-code="CH-13970"><span class="k">Is this read right?</span><div class="cr" role="group" aria-label="Is this read right?">${kinds.map(k=>`<button class="${k==='Not this'&&pick?'on':''}" ${k==='Not this'?`data-st="${pick?'':'notthis'}" aria-expanded="${pick}"`:'data-st="answered"'}>${k}</button>`).join('')}</div>
+    ${pick?`<div class="why2" role="group" aria-label="Why not this read"><button data-st="answered">It’s wrong</button><button data-st="answered">Not important</button><button data-st="answered">Already known</button><button class="chg" data-st="answered">No reason</button></div>`:''}
+    ${S.st==='answerfail'?`<p class="am" role="alert" style="margin-top:0;color:var(--flag)">That answer didn’t save. Try again.</p>`:''}</div>`;
+}
+function errHTML(r,kind){
+  const coach=S.who==='coach';
+  if(kind==='gone') return `<div class="card"><div class="errc" data-code="CH-13861"><h4>This read is no longer open</h4><p>It was cleared or dismissed after this link was made. ${coach?esc(r.player.first)+'’s':'Your'} open reads are on the board.</p><button class="btn gh" data-back>Back to ${coach?esc(r.player.first):'CoachHelm'}</button><span class="code">CH-13861</span></div></div>`;
+  return `<div class="card"><div class="errc" data-code="CH-13860"><h4>This read didn’t load</h4><p>Nothing was lost. Check the connection and try again.</p><button class="btn pri" style="flex:none" data-st="">Try again</button><span class="code">CH-13860</span></div></div>`;
+}
+function assignedChip(r){return `<div class="assigned" role="status"><svg class="check" width="20" height="20" viewBox="0 0 20 20" aria-hidden="true"><path d="m4 10.5 4 3.8L16 6" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>Assigned as ${esc(r.player.first)}’s focus</div>`}
+
+function whyHTML(r){
+  const coach=S.who==='coach';
+  const st=r.causeState;
+  const labs=coach?['Not traced','Likely, from totals','Counted in shots']:['Not traced yet','Seen in your shots'];
+  const idx=coach?(st==='counted'?2:st==='likely'?1:0):(st==='counted'?1:0); const last=labs.length-1;
+  let h=`<div class="stepper" style="--n:${labs.length}" aria-hidden="true">${labs.map((_,i)=>`<i class="${i<=idx?'on':''}${idx===last?' counted':''}"></i>`).join('')}</div>
+  <div class="slab" style="--n:${labs.length}">${labs.map((l,i)=>`<span class="${i===idx?'on':''}">${l}</span>`).join('')}</div>`;
+  if(st==='likely'&&coach){
+    h+=`<div class="arms" id="arms">${r.arms.map(a=>`<div class="arm"><div class="ah"><span>${a.k}</span><span class="n">${a.f} of ${a.n} missed · ${Math.round(a.f/a.n*100)}%</span></div><div class="dots">${Array.from({length:a.n},(_,i)=>`<i class="${i<a.f?'f':''}"></i>`).join('')}</div></div>`).join('')}</div>
+    <div class="verdict"><b>Likely, from the totals.</b> ${esc(r.armVerdict)}<span class="q">${esc(r.range)} No shot path is counted yet, so this is not a measured cause.</span></div>`;
+  } else if(st==='likely'){
+    h+=`<div class="verdict"><b>Not traced yet.</b> The misses gather on long par 4s, shown above, but no shot path explains them yet. CoachHelm says why once one repeats in your shots.</div>`;
+  } else if(st==='counted'){
+    h+=`<div class="path" id="path">${r.path.map(p=>`<div class="pn${p.hit?' hit':''}"><span class="nd">${I[p.i]}</span><span>${esc(p.k)}</span></div>`).join('')}</div>
+    <div class="verdict"><b>${esc(r.pathCount)}.</b> ${esc(r.eventStrokes)}<span class="q">Counted in ${S.who==='coach'?esc(r.player.first)+'’s':'your'} recorded shots on these holes.</span></div>
+    <div class="holes">${r.holes.map(x=>`<span class="hole">${x}</span>`).join('')}</div>`;
+  } else {
+    h+=`<div class="meter" aria-hidden="true">${Array.from({length:r.gap.need},(_,i)=>`<i class="${i<r.gap.have?'f':''}"></i>`).join('')}</div>
+    <div class="verdict"><b>Not traced yet: ${r.gap.have} of ${r.gap.need}.</b> ${esc(S.who==='coach'?r.gap.text:r.gap.text.replace('how they miss','how you miss'))}<span class="q">Nothing new is asked. It fills as ${S.who==='coach'?esc(r.player.first)+' plays':'you play'}.</span></div>`;
+  }
+  return h;
+}
+
+function movedSVG(r){
+  const m=r.moved, W=300,H=118, l=40, rr=W-40, y=v=>12+(1-(v-m.min)/(m.max-m.min))*(H-40);
+  const f=v=>m.unit==='%'?Math.round(v)+'%':v.toFixed(1);
+  return `<svg class="moved" viewBox="0 0 ${W} ${H}" role="img" aria-label="${esc(m.text)}. ${esc(m.refL)}.">
+   <line x1="${l-10}" x2="${rr+10}" y1="${y(m.ref)}" y2="${y(m.ref)}" stroke="var(--zero)" stroke-width="1.2" stroke-dasharray="3 4"/>
+   <text x="${rr+10}" y="${y(m.ref)-6}" text-anchor="end" font-size="12" fill="var(--ink-2)">${esc(m.refL)}</text>
+   <line x1="${l}" x2="${rr}" y1="${y(m.from)}" y2="${y(m.to)}" stroke="var(--loss-fill)" stroke-width="2.5" stroke-linecap="round"/>
+   <circle cx="${l}" cy="${y(m.from)}" r="5" fill="var(--card)" stroke="var(--neutral-fill)" stroke-width="2.5"/>
+   <circle cx="${rr}" cy="${y(m.to)}" r="6" fill="var(--loss-fill)"/>
+   <text x="${l}" y="${y(m.from)+(m.from>m.to?-12:20)}" text-anchor="middle" font-size="13" font-weight="600" fill="var(--ink)">${f(m.from)}</text>
+   <text x="${rr}" y="${y(m.to)+(m.to>m.from?-12:20)}" text-anchor="middle" font-size="13" font-weight="600" fill="var(--ink)">${f(m.to)}</text>
+   <text x="${l}" y="${H-4}" text-anchor="middle" font-size="12" fill="var(--ink-3)">${esc(m.fromL)}</text>
+   <text x="${rr}" y="${H-4}" text-anchor="middle" font-size="12" fill="var(--ink-3)">${esc(m.toL)}</text></svg>`;
+}
+
+function sureRow(k,a){const w=Math.min(1,a[0]/a[1]);return `<div class="sr2"><b>${k}</b><span class="n">${esc(a[2])}</span><span class="tr"><i class="${w<.8?'mid':''}" style="--w:${Math.round(w*100)}%"></i></span></div>`}
+
+function cardsMain(r){
+  const coach=S.who==='coach'; const v=voice(r);
+  const lede=coach?r.ledeCoach:r.ledePlayer;
+  const stw=S.st==='stale'?'Out of date':S.st==='dismissed'?'Dismissed':(assigned||S.st==='proposed')&&coach?'Assigned':r.stance;
+  const head=`<article class="feat${S.st==='stale'?' is-out':''}" id="rfeat">
+      <div class="k"><span>${coach?esc(r.player.first)+' · ':''}${esc(r.area)}</span><span class="st${S.st==='stale'||S.st==='dismissed'?' plain':''}">${esc(stw)}</span></div>
+      <h3>${esc(r.title)}</h3>
+      <p class="lede">${esc(lede)}</p>
+      <div class="hero"><b>${esc(r.value)}</b><span>${esc(r.valueNote)}</span></div>
+      ${ladderSVG(r,true)}
+      <div class="ffoot"><span class="worth">Worth about ${r.worth} ${r.worthTo?'a round, closed to '+esc(r.worthTo):'strokes a round'}</span><span>estimated</span></div>
+      <div class="ffoot" style="margin-top:8px;padding-top:10px;border-top:1px solid rgb(244 241 232/.14)"><span class="num">${r.sample} · ${r.rounds} · ${r.firm}${coach?' · '+r.rung:''}</span><span class="num">${r.through}</span></div>
+      ${S.st==='stale'?'<p class="stale" data-code="CH-13903">A newer round (Oct 26) is not in this read yet. It is re-read overnight.</p>':''}
+    </article>`;
+  const fun=r.funnel?`<div class="card" id="cfun"><div class="ch"><h4>Where it shows up</h4><span class="obs">Observed, not a cause</span></div><div class="cb"><div class="fun" id="fun">${r.funnel.map((s,i)=>s.words?`<div class="fstep"><div class="fhead"><span>${s.k}</span><span class="n">${esc(s.words)}</span></div></div>`:`<div class="fstep"><div class="fhead"><span>${s.k}</span><span class="n">${s.n}</span></div><div class="ftrack"><div class="fbar${i===r.funnel.filter(x=>!x.words).length-1?' last':''}" style="--s:${(s.n/r.funnel[0].n).toFixed(3)}"></div></div>${i>0?`<div class="why">${esc(s.why)}</div>`:''}</div>`).join('')}</div></div>
+    <div class="cn">Each step only shows when its count clears the engine's floor. Here all three passed.</div></div>`:'';
+  const why=`<div class="card" id="cwhy"><div class="ch"><h4>Why CoachHelm thinks so</h4><span class="meta">${r.causeState==='counted'?'Counted':r.causeState==='likely'?(coach?'Likely':'Not traced yet'):'Not traced yet'}</span></div><div class="cb">${whyHTML(r)}</div></div>`;
+  const doCard=`<div class="card" id="cdo"><div class="ch"><h4>What to do</h4><span class="meta">This week</span></div><div class="cb">
+     <div class="drill"><span class="dicon">${I.target}</span><div><b>${esc(r.drill.name)}</b><span class="m">${esc(r.drill.meta)}</span><p>${esc(r.drill.text)}</p></div></div>
+     ${`<div class="targets"><div class="tg"><span>Worth</span><b>${r.worth} a round</b></div><div class="tg"><span>Starts from</span><b>${esc(r.value)}</b></div></div>`}
+     ${coach?`<div style="margin-top:14px" id="racts">${actsHTML(r,'read')}</div>`:''}
+     <div class="linkrow">${coach?`<button class="lk">${I.msg}Message ${esc(r.player.first)}</button>`:''}<button class="lk">${I.spark}Ask CoachHelm about this</button></div>
+     <div class="plan"><span class="sdot ${assigned||S.st==='proposed'?'good':'plain'}"></span>${assigned||S.st==='proposed'?'Focus area · Proposed · from this read. It starts when '+esc(r.player.first)+' accepts.':(coach?'Not part of a focus area or goal yet.':'Not part of a focus area or goal yet. Your coach can make it one.')}</div>
+   </div></div>`;
+  return {head,fun,why,doCard};
+}
+function cardsRail(r){
+  const coach=S.who==='coach';
+  const sure=`<div class="card" id="csure"><div class="ch"><h4>How sure</h4><span class="meta">${r.sure.word}</span></div><div class="cb"><div class="sure">
+     ${sureRow('Sample',S.who==='coach'||!r.sure.sampleP?r.sure.sample:r.sure.sampleP)}${sureRow('Recent',r.sure.fresh)}${sureRow('Shot record',r.sure.record)}
+     <div><div style="font:500 calc(14px*var(--k))/1.3 var(--sans);color:var(--ink-2);margin-bottom:6px">What CoachHelm checked</div><ul class="checked">${r.checked.map(c=>`<li>${I.tick}${esc(c)}</li>`).join('')}</ul></div>
+     ${coach?`<div class="verdict" style="margin-top:0"><b>${esc(r.rung)}</b><span class="coach">Coach only</span><span class="q">${esc(r.range)}</span></div>`:''}
+     ${cxHTML(r)}
+   </div></div></div>`;
+  const moved=S.st==='notrend'?`<div class="card" id="cmoved"><div class="ch"><h4>How it has moved</h4></div><div class="cb"><p data-code="CH-13383" style="font:400 calc(15px*var(--k))/1.45 var(--sans);color:var(--ink-2)">No trend yet. This read has one check so far, so there is nothing to compare it with. The next round you post adds the second.</p></div></div>`:`<div class="card" id="cmoved"><div class="ch"><h4>How it has moved</h4><span class="meta">Last change</span></div><div class="cb">${movedSVG(r)}<div style="font:500 calc(15px*var(--k))/1.35 var(--sans);color:var(--loss);margin-top:6px">${esc(r.moved.text)}</div><span class="trendchip">${r.moved.theme.split(' · ').map((t,i)=>`<span class="tc${i}">${esc(t)}</span>`).join('')}</span></div></div>`;
+  const open=S.st==='allrounds', shown=r.roundsList.slice(0,open?8:4);
+  const rounds=S.st==='partfail'?`<div class="card" id="crounds"><div class="ch"><h4>The rounds behind it</h4></div><div class="ntc" role="note" data-code="CH-13281">${I.alert}<div class="c"><span><b>The rounds behind this read didn’t load.</b> The read itself is complete. Try again at the top of the read.</span></div></div></div>`:`<div class="card" id="crounds"><div class="ch"><h4>The rounds behind it</h4><span class="meta">${r.roundsList.length} rounds</span></div>
+    ${shown.map(x=>`<div class="row"><div class="c"><b>${x[0]} · ${esc(x[1])}</b><span>${x[4]?`${'<span class="sdot warn" style="display:inline-block;margin-right:4px"></span>'.repeat(x[4])} ${x[4]} counted ${x[4]>1?'holes':'hole'}`:'Counted in the read'}</span></div><span class="v">${x[2]} <span style="color:var(--ink-2);font-weight:500">${x[3]}</span></span><span class="chev">${I.chev}</span></div>`).join('')}
+    ${r.roundsList.length>4?`<div class="row tap" data-st="${open?'':'allrounds'}" role="button" tabindex="0" aria-expanded="${open}"><div class="c"><b style="color:var(--accent)">${open?'Show fewer':r.roundsList.length>8?'Show newest 8 of '+r.roundsList.length:'Show all '+r.roundsList.length}</b></div></div>`:''}</div>`;
+  return {sure,moved,rounds};
+}
+
+function readHTML(r){
+  const m=cardsMain(r), rl=cardsRail(r);
+  const page=S.st==='loading'?skelPhone(false):S.st==='failed'||S.st==='gone'?errHTML(r,S.st)
+    :`${S.st==='partfail'?`<div class="ntc" role="note" data-code="CH-13208">${I.alert}<div class="c"><span><b>Part of this read didn’t load.</b> The rounds behind it are missing. Everything else is here.</span><button class="btn gh" data-st="">Try again</button></div></div>`:''}${S.st==='dismissed'&&S.who==='coach'?actsHTML(r,'read'):''}${m.head}${m.fun}${m.why}${rl.sure}${rl.moved}${rl.rounds}${m.doCard}`;
+  const more=S.st!=='loading'&&S.st!=='failed'&&S.st!=='gone'&&S.st!=='dismissed';
+  return `<div class="gbar"><div class="sbar"><span>9:41</span><span>●●● ▮</span></div>
+    <div class="gb"><button class="back" data-back>${I.back} ${S.who==='coach'?esc(r.player.first):'CoachHelm'}</button><span class="ptitle">${esc(r.area)}</span>${more?`<button class="ib first" aria-label="More" data-more>${I.more}</button>`:''}</div></div>
+    <div class="sheet">${page}</div>`;
+}
+
+function renderPhone(){
+  const r=cur();
+  ph.dataset.mode=S.mode; ph.classList.toggle('is-large',S.size==='large'); ph.style.setProperty('--k',S.text);
+  if(S.rm) ph.setAttribute('data-rm',''); else ph.removeAttribute('data-rm');
+  const bt=scr.querySelector('.view.board')?.scrollTop||0, rt=scr.querySelector('.view.read')?.scrollTop||0;
+  scr.innerHTML=`<div class="view board" aria-hidden="${S.screen==='read'}">${boardHTML(r)}</div><div class="dim"></div><div class="view read" aria-hidden="${S.screen!=='read'}">${readHTML(r)}</div>${sheetHTML(r)}<div class="homebar"></div>`;
+  if(S.st==='more'&&S.screen==='read') ph.setAttribute('data-sheet',''); else ph.removeAttribute('data-sheet');
+  scr.querySelector('.view.board').scrollTop=bt; scr.querySelector('.view.read').scrollTop=rt;
+  ph.dataset.screen=S.screen;
+  wire();
+}
+function renderDesk(){
+  const r=cur(), d=$('#desk'), coach=S.who==='coach';
+  d.dataset.mode=S.mode; if(S.rm) d.setAttribute('data-rm',''); else d.removeAttribute('data-rm');
+  const m=cardsMain(r), rl=cardsRail(r);
+  const groups=[['Off the tee',[]],['Approach',[]],['Around the green',[]],['Putting',[]],['Course and scoring',[]]];
+  const items=[[r.area,r.title,r.stance+(coach?' · '+(r.causeState==='counted'?'Counted':r.causeState==='likely'?'Likely':'Not traced'):''),r.value,r.tone,S.read]]
+    .concat(OTHER[S.read].map(o=>[o[1].split(' · ')[0],o[0],o[1].split(' · ').slice(1).join(' · '),o[2],o[3],null]));
+  items.forEach(it=>(groups.find(g=>g[0]===it[0])||groups.find(g=>g[0]===R[S.read].area))[1].push(it));
+  const switcher=coach?`<div class="dsw" role="group" aria-label="Player">${['approach','penalties','putts'].map(k=>`<button data-pick="${k}" aria-pressed="${k===S.read}">${esc(R[k].player.first)}</button>`).join('')}</div>`:'';
+  const ledger=`${switcher}<div class="card lg"><div style="padding:14px 16px 4px;display:flex;align-items:center;gap:10px"><span class="coin" style="width:30px;height:30px;border-radius:50%;display:grid;place-items:center;color:#fff;font:600 12px/1 var(--sans);background:${r.player.yr}">${r.player.ini}</span><div><div style="font:600 15px/1.2 var(--sans)">${coach?esc(r.player.name):'Your reads'}</div><div style="font:400 13px/1.3 var(--sans);color:var(--ink-2)">${items.length} open reads · ${esc(r.through)}</div></div></div>
+    ${groups.filter(g=>g[1].length).map(g=>`<h5>${g[0]}</h5>${g[1].map(it=>`<div class="lr${it[5]===S.read?' on':''}" ${it[5]?`data-pick="${it[5]}"`:''}><span class="sdot ${it[4]}"></span><div class="c">${it[1]}<span>${it[2]}</span></div><span class="v">${it[3]}</span></div>`).join('')}`).join('')}</div>`;
+  d.innerHTML=`<aside class="side"><div class="brandrow"><span class="logo">FU</span>Finley Golf</div>
+    ${['Home','Calendar','Rounds','Stats','CoachHelm','Roster','Messages','Settings'].map(n=>`<div class="nav${n==='CoachHelm'?' on':''}">${n}</div>`).join('')}</aside>
+    <div class="main"><div class="glass"><span>CoachHelm</span><span>›</span>${coach?`<span>${esc(r.player.name)}</span><span>›</span>`:''}<b>${esc(r.area)}</b><span class="sp"><span class="gbtn">${I.spark} Ask about this read</span>${coach?`<span class="gbtn">${I.msg} Message ${esc(r.player.first)}</span>`:''}<button class="gbtn" data-more aria-label="More" aria-expanded="${S.st==='more'}">${I.more}</button></span></div>
+      ${S.st==='more'?`<div class="menu" role="menu">${coach?'<button class="red" role="menuitem" data-dismiss>Dismiss this read</button>':''}<button role="menuitem">Copy a link to this read</button><button role="menuitem" data-close>Close</button></div>`:''}
+      <div class="body"><div class="col">${ledger}</div>${S.st==='loading'?`<div class="col ph-scope">${skelPhone(false)}</div><div class="col"><div class="skel" style="height:300px"></div><div class="skel" style="height:220px"></div></div>`
+        :S.st==='failed'||S.st==='gone'?`<div class="col ph-scope">${errHTML(r,S.st)}</div><div class="col"></div>`
+        :`<div class="col ph-scope">${S.st==='partfail'?`<div class="ntc" role="note" data-code="CH-13208">${I.alert}<div class="c"><span><b>Part of this read didn’t load.</b> The rounds behind it are missing. Everything else is here.</span><button class="btn gh" data-st="">Try again</button></div></div>`:''}${S.st==='dismissed'&&coach?actsHTML(r,'read'):''}${m.head}${m.fun}${m.why}${m.doCard}</div><div class="col">${rl.sure}${rl.moved}${rl.rounds}</div>`}</div></div>`;
+  d.classList.add('ph'); d.style.cssText='';
+  d.querySelectorAll('[data-pick]').forEach(el=>el.addEventListener('click',()=>{set('read',el.dataset.pick)}));
+  d.querySelectorAll('[data-assign]').forEach(b=>b.addEventListener('click',()=>runAssign()));
+  wireStates(d);
+}
+
+function renderStates(){
+  const box=$('#statecards');
+  const ring=(a,b)=>{const c=2*Math.PI*22,f=a/b*c;return `<svg class="ring" viewBox="0 0 54 54" aria-hidden="true"><circle cx="27" cy="27" r="22" fill="none" stroke="var(--pg-sunk)" stroke-width="6"/><circle cx="27" cy="27" r="22" fill="none" stroke="var(--green)" stroke-width="6" stroke-linecap="round" stroke-dasharray="${f} ${c}" transform="rotate(-90 27 27)"/></svg>`};
+  const S2=[
+    ['Out of date','<span class="w">Out of date</span><b>Greens hit from 175+ yd</b><span>A newer round (Oct 26) is not in this read yet. It is re-read overnight.</span>','The headline greys, the ladder stays, nothing is counted as an open signal (CH-13903).'],
+    ['Not enough yet (count-down)',`<div style="display:flex;gap:12px;align-items:center">${ring(6,10)}<div style="display:grid;gap:4px"><b>Left-to-right putts</b><span>6 of the 10 misses it needs, over 9 rounds. Four more and it reads.</span></div></div>`,'Replaces a weak claim with what it is waiting for, like Apple Health\'s Needs more data.'],
+    ['Not traced: a shot tag is thin (data gap)',`<div style="display:flex;gap:12px;align-items:center">${ring(4,14)}<div style="display:grid;gap:4px"><b>Approach miss direction</b><span>4 tagged, 10 more to go. Tag it when you enter the round. Nothing else changes.</span></div></div>`,'Only for reads with a shot path to trace. The meter counts the tags still needed, so it is have plus still needed.'],
+    ['Cleared','<span class="w good">Cleared Oct 12</span><b>4–6 ft putts</b><span>22 of your last 29 (76%). That one is fixed.</span>','Stays in its area as one line under the open reads, up to three, then "N more cleared".'],
+    ['Contradicted (coach only for a day)','<span class="w warn">Contradicted</span><b>Driver against other clubs off the tee</b><span>The newer rounds point the other way. Shown with the read it conflicts with.</span>','Coach sees it first; the player sees it after a day, the rule the engine already has.'],
+    ['Under review','<span class="w">Under review</span><b>Up and downs from sand</b><span>Your coach is checking this read. It stays visible but is not on your focus.</span>','Drawn when a coach answers a read with a correction.'],
+    ['Didn\'t load (one part)','<b>The rounds behind this read didn’t load</b><span>The read itself is above and is not affected. Try again in a moment.</span>','Inside the card that would hold the data, never an empty card (CH-13281).']
+  ];
+  const go={'Out of date':'read-approach-coach-phone-light-stale','Didn\'t load (one part)':'read-approach-coach-phone-light-partfail','Not enough yet (count-down)':'why-putts-coach-phone-light'};
+  const slug=t=>t.toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,'');
+  box.innerHTML=S2.map(s=>`<div class="stc" id="state-${slug(s[0])}"><span class="lbl">${s[0]}</span><div class="mini">${s[1]}</div><p>${s[2]}</p>${go[s[0]]?`<a class="go" href="#${go[s[0]]}">See it on the phone</a>`:''}</div>`).join('')
+   +`<div class="stc" id="state-phone-list"><span class="lbl">Every other state, live on the phone and desktop</span><div class="mini" style="gap:8px">${STATES.filter(x=>x[0]).map(x=>`<a class="go" href="#read-approach-coach-phone-light-${x[0]}">${x[1]}</a>`).join('')}</div><p>Each one also opens from the State menu above the phone, and on desktop with <code>desk</code> in place of <code>phone</code>.</p></div>`;
+}
+
+function wireStates(root){
+  root.querySelectorAll('[data-st]').forEach(x=>x.addEventListener('click',e=>{e.stopPropagation();setSt(x.dataset.st);}));
+  root.querySelectorAll('[data-more]').forEach(x=>x.addEventListener('click',e=>{e.stopPropagation();setSt(S.st==='more'?'':'more');}));
+  root.querySelectorAll('[data-close]').forEach(x=>x.addEventListener('click',e=>{e.stopPropagation();setSt('');}));
+  root.querySelectorAll('[data-dismiss]').forEach(x=>x.addEventListener('click',e=>{e.stopPropagation();setSt('dismissed');}));
+  root.querySelectorAll('[data-undo]').forEach(x=>x.addEventListener('click',e=>{e.stopPropagation();setSt('');}));
+}
+function setSt(v){
+  /* The sheet closes before the next state draws, so it lowers instead of vanishing. */
+  if(S.st==='more'&&v!=='more'&&!S.rm){ph.removeAttribute('data-sheet');S.st=v;syncSeg();setTimeout(()=>{renderPhone();renderDesk();},v===''?470:300);return;}
+  S.st=v; syncSeg(); renderPhone(); renderDesk();
+  if(v==='more'&&S.screen==='read'){ph.removeAttribute('data-sheet');void ph.offsetWidth;requestAnimationFrame(()=>ph.setAttribute('data-sheet',''));}
+}
+function wire(){
+  wireStates(scr);
+  const b=$('#bcard',scr);
+  if(b){b.addEventListener('click',()=>openRead());b.addEventListener('keydown',e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();openRead();}});}
+  scr.querySelectorAll('[data-back]').forEach(x=>x.addEventListener('click',()=>{S.screen='board';syncSeg();ph.dataset.screen='board';flagHidden();}));
+  scr.querySelectorAll('[data-assign]').forEach(x=>x.addEventListener('click',e=>{e.stopPropagation();runAssign();}));
+}
+function flagHidden(){scr.querySelector('.view.board').setAttribute('aria-hidden',S.screen==='read');scr.querySelector('.view.read').setAttribute('aria-hidden',S.screen!=='read');}
+function syncSeg(){const sel=$('#stsel');if(sel)sel.value=S.st;document.querySelectorAll('.pseg').forEach(g=>{const k=g.dataset.k;g.querySelectorAll('button').forEach(b=>{let cur=S[k];if(k==='size')cur=S.size;if(k==='rm')cur=S.rm?'on':'off';if(k==='text')cur=String(S.text);b.setAttribute('aria-pressed',String(b.dataset.v===String(cur)));});});}
+function set(k,v){
+  if(k==='rm')S.rm=v==='on';else if(k==='text')S.text=parseFloat(v);else S[k]=v;
+  if(k==='read'||k==='who')assigned=false;
+  if(k==='who'&&v==='player'&&['dismissed','noassign','declined','proposed','assigning','more'].includes(S.st))S.st='';
+  syncSeg();renderPhone();renderDesk();
+}
+document.querySelectorAll('.pseg').forEach(g=>g.addEventListener('click',e=>{const b=e.target.closest('button');if(b)set(g.dataset.k,b.dataset.v);}));
+
+const wait=ms=>new Promise(r=>setTimeout(r,S.rm?0:ms));
+function openRead(){S.screen='read';syncSeg();const v=scr.querySelector('.view.read');v.scrollTop=0;ph.dataset.screen='read';flagHidden();}
+async function playOpen(){
+  if(S.screen==='read'){S.screen='board';syncSeg();ph.dataset.screen='board';flagHidden();await wait(520);}
+  const bv=scr.querySelector('.view.board');bv.scrollTo({top:0,behavior:S.rm?'auto':'smooth'});await wait(350);
+  const c=$('#bcard',scr);c.classList.add('pressing');await wait(160);c.classList.remove('pressing');await wait(90);openRead();
+}
+async function toRead(id){
+  if(S.screen!=='read'){openRead();await wait(500);}
+  const v=scr.querySelector('.view.read'), el=$(id,scr); if(!el) return null;
+  v.scrollTo({top:Math.max(0,el.offsetTop-120),behavior:S.rm?'auto':'smooth'});await wait(450);return el;
+}
+async function playNarrow(){
+  if(!R[S.read].funnel){set('read','approach');await wait(60);}
+  const el=await toRead('#cfun'); if(!el) return;
+  if(S.rm) return; const f=$('#fun',scr); f.classList.add('pre'); void f.offsetWidth; await wait(250); f.classList.remove('pre');
+}
+async function playCause(){
+  const r=R[S.read];
+  if(r.causeState==='gap'||(r.causeState==='likely'&&S.who!=='coach')){set('read','penalties');await wait(60);}
+  const el=await toRead('#cwhy'); if(!el) return;
+  const d=el.querySelectorAll('.dots'), p=$('#path',el);
+  if(S.rm) return;
+  if(d.length){d.forEach(x=>x.classList.add('pre'));void el.offsetWidth;await wait(250);d.forEach(x=>x.classList.remove('pre'));}
+  if(p){p.classList.add('pre');void p.offsetWidth;await wait(250);p.classList.remove('pre');}
+}
+async function runAssign(){
+  if(S.who!=='coach'){set('who','coach');await wait(60);}
+  if(assigned||S.st){assigned=false;S.st='';syncSeg();renderPhone();renderDesk();await wait(200);}
+  const inRead=S.screen==='read';
+  const btns=[...document.querySelectorAll('[data-assign]')];
+  btns.forEach(b=>{b.innerHTML='<span class="spin" aria-hidden="true"></span>Assigning';b.disabled=true;});
+  await wait(900); assigned=true;
+  const r=R[S.read];
+  renderPhone(); renderDesk();
+  const host=inRead?$('#cdo',scr):$('#bcard',scr); if(host&&!S.rm){host.classList.add('flash');setTimeout(()=>host.classList.remove('flash'),950);}
+}
+$('#p-open').addEventListener('click',playOpen);
+$('#p-narrow').addEventListener('click',playNarrow);
+$('#p-cause').addEventListener('click',playCause);
+$('#p-assign').addEventListener('click',async()=>{if(S.screen!=='read'){await toRead('#cdo');}else{await toRead('#cdo');}runAssign();});
+
+/* Capture links: #<screen>-<read>-<viewer>-<phone|desk>-<light|dark>[-reduce][-xxl][-w430][-shot]
+   screen: board | read | where | why | sure | moved | rounds | do | assigned. read: approach | penalties | putts. viewer: coach | player. */
+const SCREENS=['board','read','where','why','sure','moved','rounds','do','assigned'];
+const TARGET={where:'#cfun',why:'#cwhy',sure:'#csure',moved:'#cmoved',rounds:'#crounds',do:'#cdo',assigned:'#cdo'};
+function applyHash(){
+  const t=(location.hash||'').slice(1).split('-'); if(!t[0]||!SCREENS.includes(t[0])){document.body.classList.remove('shot-mode');return;}
+  const [scn,read,who,dev,mode]=t; const has=x=>t.includes(x);
+  if(R[read])S.read=read; if(who==='coach'||who==='player')S.who=who; if(mode==='dark'||mode==='light')S.mode=mode;
+  S.rm=has('reduce'); S.text=has('xxl')?1.353:1; S.size=has('w430')?'large':'std';
+  S.st=t.slice(5).find(x=>STKEYS.includes(x))||'';
+  S.screen=scn==='board'?'board':'read'; assigned=scn==='assigned';
+  syncSeg(); renderPhone(); renderDesk();
+  document.querySelectorAll('.shot-host').forEach(x=>x.classList.remove('shot-host'));
+  if(has('shot')){document.body.classList.add('shot-mode');(dev==='desk'?$('#desktop'):$('#studio')).classList.add('shot-host');window.scrollTo(0,0);}
+  else{document.body.classList.remove('shot-mode');(dev==='desk'?$('#desktop'):$('#studio')).scrollIntoView();}
+  const sel=TARGET[scn]; if(sel&&dev!=='desk'){const v=scr.querySelector('.view.read'),el=$(sel,v);if(el)v.scrollTop=Math.max(0,el.offsetTop-110);}
+  if(sel&&dev==='desk'){const el=$('#desk '+sel);if(el)el.scrollIntoView({block:'start'});}
+}
+window.addEventListener('hashchange',applyHash);
+(function(){const sel=$('#stsel');sel.innerHTML=STATES.map(x=>`<option value="${x[0]}">${x[1]}</option>`).join('');sel.addEventListener('change',()=>{if(S.screen!=='read'&&!['dismissed','assigning','proposed','declined','noassign','stale','loading','long','nopool'].includes(sel.value)){S.screen='read';}setSt(sel.value);});})();
+syncSeg(); renderPhone(); renderDesk(); renderStates(); applyHash(); document.documentElement.dataset.ready='1';
+})();
+</script>

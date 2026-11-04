@@ -115,6 +115,11 @@ helm-vid/
 # Gradle build FAILS. The generated vector defaults were removed in favour of
 # real branded PNGs, so these must be tracked.
 !android/app/src/main/res/**/*.png
+# Clubhouse redesign package (design-refresh/): the design shots, before and after
+# pictures and practice stills are the build reference the Claude Code agent
+# checks every PR against, so the whole package is tracked. Scoped to this one
+# folder on purpose (see the QA-pack note above).
+!design-refresh/**/*.png
 # Play Store listing assets (feature graphic, 512 icon, phone screenshots) —
 # deliverables, not scratch. Needs ** to reach assets/screenshots/, a single *
 # only matches direct children.

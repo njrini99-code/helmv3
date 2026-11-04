@@ -1,0 +1,62 @@
+## Light
+Body text                                        #1C1B18 on card               17.08
+Secondary text                                   #46433D on card                9.77
+Tertiary text, chevrons                          #5F5C55 on card                6.61
+Secondary on well (tinted panels)                #46433D on well                8.96
+Tertiary on page                                 #5F5C55 on bg                  5.85
+Loss figures on card                             #9A5700 on card                5.57
+Gain figures on card                             #14613D on card                7.42
+Accent links on card                             #155A39 on card                8.15
+Assign button label                              #F6F1E3 on accent              7.29
+Feature card ink                                 #F4F1E8 on feat               11.30
+Feature card secondary                           #D3D9CB on feat                8.84
+Stance chip on feature (amber over 12% tint)     #EDB867 on feat*floss.12       5.61
+Counted chip on feature                          #8FD3AA on feat*fgain.12       5.64
+Tier chip on feature (12% light tint)            #F4F1E8 on feat*fink.12        8.09
+Bar title on green bar                           #f4eedd on nav                12.03
+Back label (champagne) on green bar              #d9c48f on nav                 8.13
+Notice and verdict text on well                  #1C1B18 on well               15.66
+Accent on well (link chips, Undo)                #155A39 on well                7.48
+Tertiary on well (stepper off labels)            #5F5C55 on well                6.06
+Error code (mono) on card                        #5F5C55 on card                6.61
+Dismiss (flag red) on card and sheet             #B3261E on card                6.48
+Selected correction chip (accent on 12% accent)  #155A39 on card*accent.12      6.73
+Assigned chip (gain on 12% gain)                 #14613D on card*gain.12        6.16
+Desk rail open row (ink on 9% accent)            #1C1B18 on card*accent.09     14.81
+Desk rail open row secondary                     #46433D on card*accent.09      8.47
+NON-TEXT loss bar on track (3:1)                 #B86F0C on track               3.15
+NON-TEXT neutral bar on track (3:1)              #6B675F on track               4.49
+NON-TEXT gain bar on track (3:1)                 #1F6B45 on track               5.15
+NON-TEXT loss dot on card (3:1)                  #B86F0C on card                3.92
+NON-TEXT path node ring on well (3:1)            #6B675F on well                5.12
+## Dark
+Body text                                        #F1ECDF on card               14.34
+Secondary text                                   #D0C9B8 on card               10.25
+Tertiary text, chevrons                          #ADA697 on card                6.99
+Secondary on well (tinted panels)                #D0C9B8 on well               10.87
+Tertiary on page                                 #ADA697 on bg                  7.80
+Loss figures on card                             #E7AE57 on card                8.53
+Gain figures on card                             #7CC79B on card                8.45
+Accent links on card                             #7CC79B on card                8.45
+Assign button label                              #0E120F on accent              9.44
+Feature card ink                                 #F4F1E8 on feat               10.78
+Feature card secondary                           #D3D9CB on feat                8.44
+Stance chip on feature (amber over 12% tint)     #EDB867 on feat*floss.12       5.35
+Counted chip on feature                          #8FD3AA on feat*fgain.12       5.38
+Tier chip on feature (12% light tint)            #F4F1E8 on feat*fink.12        7.71
+Bar title on green bar                           #f4eedd on nav                16.12
+Back label (champagne) on green bar              #d9c48f on nav                10.89
+Notice and verdict text on well                  #F1ECDF on well               15.20
+Accent on well (link chips, Undo)                #7CC79B on well                8.96
+Tertiary on well (stepper off labels)            #ADA697 on well                7.41
+Error code (mono) on card                        #ADA697 on card                6.99
+Dismiss (flag red) on card and sheet             #F28B7D on card                7.06
+Selected correction chip (accent on 12% accent)  #7CC79B on card*accent.12      6.68
+Assigned chip (gain on 12% gain)                 #7CC79B on card*gain.12        6.68
+Desk rail open row (ink on 9% accent)            #F1ECDF on card*accent.09     12.08
+Desk rail open row secondary                     #D0C9B8 on card*accent.09      8.64
+NON-TEXT loss bar on track (3:1)                 #E09A35 on track               5.52
+NON-TEXT neutral bar on track (3:1)              #A39D90 on track               4.86
+NON-TEXT gain bar on track (3:1)                 #4FA877 on track               4.50
+NON-TEXT loss dot on card (3:1)                  #E09A35 on card                7.12
+NON-TEXT path node ring on well (3:1)            #A39D90 on well                6.65
