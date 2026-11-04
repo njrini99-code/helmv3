@@ -175,7 +175,7 @@ function HomeFirstRun({ data, phone, crh = false }: { data: ChCoachHome; phone: 
       <main className="ch-hm" aria-label="Home" data-ch-crh="on">
         <header className="ch-hm-hero">
           <span className="ch-hm-hero__date">{data.todayLabel}</span>
-          <h1>Welcome to Clubhouse.</h1>
+          <h1>Welcome to Clubhouse</h1>
           <p className="ch-hm-hero__brief">
             <Icon icon={Sparkles} size={14} />
             Set up your team and your first week shows here.

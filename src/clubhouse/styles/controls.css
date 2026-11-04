@@ -1832,8 +1832,7 @@ main[data-ch-crh='on'] .ch-modal__panel {
 }
 main[data-ch-crh='on'] .ch-modal__titles h2 {
   font: var(--ch-type-17-strong);
-  color: var(--ch-text-primary);
-}
+  color: var(--ch-text-primary); letter-spacing: var(--ch-track-17); }
 main[data-ch-crh='on'] .ch-modal__titles p {
   font: var(--ch-type-meta);
   color: var(--ch-crh-ink2);
@@ -1846,8 +1845,7 @@ main[data-ch-crh='on'] .ch-modal .ch-textarea {
   background: var(--ch-well-bg-flat);
   box-shadow: var(--ch-crh-well-shadow);
   color: var(--ch-text-primary);
-  font: var(--ch-type-17);
-}
+  font: var(--ch-type-17); letter-spacing: var(--ch-track-17); }
 main[data-ch-crh='on'] .ch-modal .ch-field__label {
   font: var(--ch-type-13-medium);
   color: var(--ch-crh-ink2);
@@ -1870,12 +1868,12 @@ main[data-ch-crh='on'] .ch-modal__foot .ch-btn {
   main[data-ch-crh='on'] .ch-modal__panel > .ch-grab {
     width: 36px;
     height: 5px;
-    margin-top: 7px;
-    border-radius: 3px;
+    margin-top: 6px;
+    border-radius: var(--ch-radius-mark);
     background: color-mix(in srgb, var(--ch-ink-900) 22%, transparent);
   }
   main[data-ch-crh='on'] .ch-modal__head {
-    padding: 8px 14px 8px 18px;
+    padding: 8px 12px 8px 16px;
   }
   main[data-ch-crh='on'] .ch-modal__head .ch-iconbtn {
     width: 32px;
@@ -1890,7 +1888,7 @@ main[data-ch-crh='on'] .ch-modal__foot .ch-btn {
   main[data-ch-crh='on'] .ch-modal__foot {
     display: grid;
     grid-template-columns: 1fr 1fr;
-    gap: 10px;
+    gap: 8px;
     padding: 12px var(--ch-page-x-phone);
     border-top: var(--ch-hairline-w) solid var(--ch-separator);
   }

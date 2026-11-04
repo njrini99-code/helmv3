@@ -1,6 +1,6 @@
 'use client';
 
-import { RefreshCw, Users } from 'lucide-react';
+import { RotateCw, Users } from 'lucide-react';
 import { useCallback, useMemo, useRef, useState } from 'react';
 import type { ChPlayerRoster, ChTeammate } from '../../data/roster-player';
 import { Avatar } from '../../ui/Avatar';
@@ -51,8 +51,8 @@ export function TeamRosterPhoneCrh({ data, onRetry }: { data: ChPlayerRoster; on
 
         {data.playersError ? (
           <Surface variant="card" level={2} padded={false} title="Teammates">
-            <CrhStateBlock kind="failed" code="CH-3210" title="The roster didn’t load" body="Check your connection and try again. Nothing was lost.">
-              <Button leftIcon={RefreshCw} onClick={onRetry}>
+            <CrhStateBlock kind="failed" code="CH-3210" title="The roster didn’t load" body="Try again. Nothing was lost.">
+              <Button leftIcon={RotateCw} onClick={onRetry}>
                 Try again
               </Button>
             </CrhStateBlock>

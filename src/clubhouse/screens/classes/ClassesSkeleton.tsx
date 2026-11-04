@@ -58,7 +58,9 @@ export function ClassesSkeleton() {
           the shape for the width, so the server needs no width to draw it. */}
       {/* The lane's flag is on `.ch-root`; CSS picks which phone skeleton shows, since this route's loading is a client component (06 §4.8). */}
       <div className="ch-cl-sk-crh" aria-hidden="true">
-        <LargeTitleSkeleton width={130} className="ch-cl-title" />
+        <div className="ch-large-title ch-large-title--skel ch-cl-title" aria-hidden="true">
+          <Skeleton width={130} height={30} radius={8} />
+        </div>
         <Skeleton width={190} height={15} />
         <span className="ch-cl-sk-crh__term">
           {['38%', '62%', '100%', '54%'].map((w, i) => (

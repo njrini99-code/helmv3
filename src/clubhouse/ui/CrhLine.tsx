@@ -7,10 +7,11 @@ export function CrhLine({ data, width = 320, height = 84, label, meanLabel }: { 
   const lo = Math.min(...data) - 0.6;
   const hi = Math.max(...data) + 0.6;
   const pad = 6;
+  const at = (v: number) => Math.round(v * 10) / 10;
   const x = (i: number) => (data.length === 1 ? width / 2 : pad + (i / (data.length - 1)) * (width - pad * 2));
   const y = (v: number) => pad + ((v - lo) / (hi - lo || 1)) * (height - pad * 2);
-  const line = data.map((v, i) => `${i === 0 ? 'M' : 'L'}${x(i).toFixed(1)} ${y(v).toFixed(1)}`).join(' ');
-  const area = `${line} L${x(data.length - 1).toFixed(1)} ${height} L${x(0).toFixed(1)} ${height} Z`;
+  const line = data.map((v, i) => `${i === 0 ? 'M' : 'L'}${at(x(i))} ${at(y(v))}`).join(' ');
+  const area = `${line} L${at(x(data.length - 1))} ${height} L${at(x(0))} ${height} Z`;
   const mean = data.reduce((a, b) => a + b, 0) / data.length;
   const last = data[data.length - 1]!;
   return (

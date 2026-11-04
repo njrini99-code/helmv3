@@ -1,6 +1,6 @@
 'use client';
 
-import { ChartColumn, Check, ChevronRight, CircleAlert, Copy, Ellipsis, RefreshCw, UserCheck, UserMinus, UserPlus, Users, UserX } from 'lucide-react';
+import { ChartColumn, Check, ChevronRight, CircleAlert, Copy, Ellipsis, RotateCw, UserCheck, UserMinus, UserPlus, Users, UserX } from 'lucide-react';
 import { AnimatePresence } from 'motion/react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
@@ -175,8 +175,8 @@ export function RosterPhoneCrh({
 
         {data.playersError ? (
           <Surface variant="card" level={2} padded={false} title="Players">
-            <CrhStateBlock kind="failed" code="CH-3201" title="The roster didn’t load" body="Check your connection and try again. Nothing was lost.">
-              <Button leftIcon={RefreshCw} onClick={onRetry}>
+            <CrhStateBlock kind="failed" code="CH-3201" title="The roster didn’t load" body="Try again. Nothing was lost.">
+              <Button leftIcon={RotateCw} onClick={onRetry}>
                 Try again
               </Button>
             </CrhStateBlock>

@@ -2,7 +2,7 @@ import { Avatar } from '../../ui/Avatar';
 import { formatFixed, NO_DATA } from '../../lib/format';
 import type { ChRosterPlayer } from '../../data/roster';
 import { classMix, teamCardFigures, yearKeyOf, type RosterClock } from './format';
-import { plural } from '../../lib/plural';
+import { plural, pluralWord } from '../../lib/plural';
 
 /** Coach or player, the same card; a player's holds neither injured, waiting nor the top five, in the DOM or in the props. */
 type Props =
@@ -33,7 +33,7 @@ export function RosterTeamCard(props: Props) {
         </span>
         <span className="ch-rs-tcard__n">
           <b className="ch-num">{total}</b>
-          <span>{total === 1 ? 'player' : 'players'}</span>
+          <span>{pluralWord(total, 'player', 'players')}</span>
         </span>
       </div>
       {mixWords && (

@@ -413,7 +413,7 @@ export function ClassesView({ data, writes, statusWrites, crh = false }: { data:
 
       {crh && phone && data.classes.error ? (
         <Surface variant="card" level={2} padded={false} title="Your classes">
-          <CrhStateBlock kind="failed" code="CH-12201" title="Classes didn’t load" body="Check your connection and try again. Nothing you added is lost.">
+          <CrhStateBlock kind="failed" code="CH-12201" title="Classes didn’t load" body="Try again. Nothing you added is lost.">
             <Button leftIcon={RotateCw} onClick={() => router.refresh()}>
               Try again
             </Button>
