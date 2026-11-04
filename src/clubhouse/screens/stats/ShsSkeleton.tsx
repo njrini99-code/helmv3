@@ -24,10 +24,25 @@ const SECTIONS: ReadonlyArray<{ name: string; cards: ReadonlyArray<{ title: stri
   { name: 'Development', cards: [{ title: 'Goals and focus areas', height: 182 }] },
 ];
 
+const TEAM_SECTIONS: typeof SECTIONS = [
+  { name: 'Overview', cards: [{ title: 'Team scoring average', height: 300, feature: true }] },
+  { name: 'Team game', cards: [{ title: 'Strokes gained by leg', height: 298 }] },
+  { name: 'Players', cards: [{ title: 'Who gains and loses', height: 262 }] },
+];
+
 /** The loading page: titles and section names show; meta, figure and body are bars; the switch is inert (criteria 93 to 96). */
 export function ShsPlayerSkeleton() {
+  return <Skeleton sections={SECTIONS} />;
+}
+
+/** Team Stats' (today's CH-4401 stays on the container). */
+export function ShsTeamSkeleton() {
+  return <Skeleton sections={TEAM_SECTIONS} code="CH-4401" />;
+}
+
+function Skeleton({ sections, code }: { sections: typeof SECTIONS; code?: string }) {
   return (
-    <main className="ch-st is-phone ch-shs" aria-busy="true" aria-label="Loading stats">
+    <main className="ch-st is-phone ch-shs" aria-busy="true" aria-label="Loading stats" data-ch-code={code}>
       <div className="ch-shs-ctl" inert>
         <div className="ch-shs-ctl__row">
           <span className="ch-seg ch-well ch-shs-skel-seg" />
@@ -35,7 +50,7 @@ export function ShsPlayerSkeleton() {
         </div>
       </div>
       <div className="ch-shs-sheet ch-shs-is-loading">
-        {SECTIONS.map((s) => (
+        {sections.map((s) => (
           <section key={s.name} className="ch-shs-skel-sec">
             <h2 className="ch-shs-sech">{s.name}</h2>
             {s.cards.map((c) => (

@@ -404,7 +404,7 @@ export default async function ClubhousePreview({
       path: '/golf/dashboard/stats',
       node:
         state === 'loading' ? (
-          <StatsSkeletonFor profile={false} />
+          <StatsSkeletonFor profile={false} shs={shs} />
         ) : state === 'empty' ? (
           <StatsTeam data={{ ...PREVIEW_TEAM_STATS, roundCount: 0, grid: [], players: [], putting: null, bests: [], filterOptions: { ...PREVIEW_TEAM_STATS.filterOptions, rounds: [], total: 0, courses: [] } }} shs={shs} />
         ) : state === 'failed' ? (

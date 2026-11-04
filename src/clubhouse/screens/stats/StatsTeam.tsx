@@ -18,6 +18,7 @@ import { teamPlayerHref } from './links';
 import { puttingNote } from './notes';
 import { LinkPending } from '../../shell/LinkPending';
 import { StatsTeamPhone } from './StatsTeamPhone';
+import { StatsTeamPhoneShs } from './StatsTeamPhoneShs';
 import { RetryNotice, ShowSeason, StatsTeamFrame, TeamCharts, TeamFilter, TeamFilterEmpty, TeamHeadActions } from './StatsTeamIslands';
 import { pluralWord } from '../../lib/plural';
 import { TeamInsight } from './StatsInsight';
@@ -47,7 +48,7 @@ export function StatsTeam({ data, shs = false }: { data: ChTeamStats; /** clubho
 
   return (
     // One group per rendered tree (the phone view groups its own): sections that crash together are told once (CH-1210).
-    <StatsTeamFrame filter={data.filter} phone={<StatsTeamPhone data={data} />}>
+    <StatsTeamFrame filter={data.filter} phone={shs ? <StatsTeamPhoneShs data={data} /> : <StatsTeamPhone data={data} />}>
       <SectionGroup>
         <PrintHead subject={[data.teamName, data.season, 'Team stats'].filter(Boolean).join(' · ')} />
         <PageHero

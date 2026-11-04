@@ -1736,6 +1736,106 @@ p.ch-shs-mini-cap {
   display: none;
 }
 
+/* Team: The round, the Round days table, player rows. */
+.ch-shs-m3 {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(calc(92 * var(--ch-type-k)), 1fr));
+  gap: 12px;
+  margin: 0;
+}
+.ch-shs-m3 > div {
+  min-width: 0;
+}
+.ch-shs-m3 dt {
+  font: 400 calc(15 * var(--ch-type-k)) / 1.3 var(--ch-font-sans);
+  color: var(--s-ink-2);
+}
+.ch-shs-m3 dd {
+  margin: 0;
+}
+.ch-shs-m3 .v {
+  margin-top: 4px;
+  font: 600 calc(24 * var(--ch-type-k)) / 1.1 var(--ch-font-sans);
+  letter-spacing: -0.02em;
+  font-variant-numeric: tabular-nums;
+}
+.ch-shs-m3 .m {
+  margin-top: 3px;
+  font: 400 calc(13 * var(--ch-type-k)) / 1.3 var(--ch-font-sans);
+  color: var(--s-ink-2);
+}
+.ch-shs-m3 .ch-shs-pill {
+  margin-top: 8px;
+}
+.ch-shs-anote {
+  margin: 12px 0 0;
+  font: 400 calc(15 * var(--ch-type-k)) / calc(20 * var(--ch-type-k)) var(--ch-font-sans);
+  color: var(--s-ink-2);
+}
+.ch-shs-tbl {
+  width: 100%;
+  border-collapse: collapse;
+  font: 400 calc(15 * var(--ch-type-k)) / 1.3 var(--ch-font-sans);
+  font-variant-numeric: tabular-nums;
+}
+.ch-shs-tbl th {
+  padding: 0 0 8px;
+  font: 400 calc(13 * var(--ch-type-k)) / 1.2 var(--ch-font-sans);
+  color: var(--s-ink-2);
+  text-align: right;
+}
+.ch-shs-tbl td {
+  padding: 9px 0;
+  border-top: 1px solid var(--s-sep);
+  text-align: right;
+}
+.ch-shs-tbl :is(th, td):first-child {
+  text-align: left;
+}
+.ch-shs-tbl b {
+  font-weight: 600;
+}
+.ch-shs-prow {
+  position: relative;
+  display: grid;
+  grid-template-columns: calc(20 * var(--ch-type-k)) calc(104 * var(--ch-type-k)) minmax(0, 1fr) calc(44 * var(--ch-type-k));
+  align-items: center;
+  gap: 10px;
+  min-height: 52px;
+  padding: 4px 16px;
+}
+.ch-shs-prow + .ch-shs-prow::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 16px;
+  right: 0;
+  height: 1px;
+  background: var(--s-sep);
+}
+.ch-shs-prow .rk {
+  font: 400 calc(13 * var(--ch-type-k)) / 1 var(--ch-font-sans);
+  color: var(--s-ink-3);
+  font-variant-numeric: tabular-nums;
+}
+.ch-shs-prow .nm {
+  overflow: hidden;
+  font: 500 calc(16 * var(--ch-type-k)) / 1.2 var(--ch-font-sans);
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+.ch-shs-prow .val {
+  font: 600 calc(17 * var(--ch-type-k)) / 1 var(--ch-font-sans);
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+}
+.ch-shs-sumfoot.is-pad {
+  margin: 8px 16px 12px;
+}
+.ch-shs-skel-seg--team {
+  display: block;
+}
+
 /* Grow once (07 M-STATS-12 to 15): a card waits at zero until a quarter of it is in view. A card with no marker class is at rest, so no script draws it whole. */
 .ch-shs-card.is-waiting:not(.is-seen) [data-ch-grow] {
   transform: scaleX(0);
@@ -1860,4 +1960,7 @@ p.ch-shs-mini-cap {
 }
 [data-motion='off'] .ch-shs-ctl::before {
   transition: none;
+}
+.ch-shs-flushrows {
+  margin: 0 -16px;
 }

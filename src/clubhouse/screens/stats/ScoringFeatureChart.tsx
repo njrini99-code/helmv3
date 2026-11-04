@@ -218,3 +218,72 @@ export function ScoringFeatureChart({ rounds, tone, onRead }: { rounds: readonly
     </div>
   );
 }
+
+/** The team's feature chart (08 criterion 50): 160 tall, its line and area always the gain fill, the mean dashed and named. Not interactive: the card is the tap. */
+export function TeamFeatureChart({ days, mean }: { days: ReadonlyArray<{ label: string; score: number | null }>; mean: number | null }) {
+  const box = useRef<HTMLDivElement>(null);
+  const [width, setWidth] = useState(320);
+  useEffect(() => {
+    const el = box.current;
+    if (!el) return;
+    const measure = () => setWidth(Math.max(240, el.clientWidth));
+    measure();
+    const ro = new ResizeObserver(measure);
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, []);
+  const known = days.filter((d): d is { label: string; score: number } => d.score != null);
+  const n = known.length;
+  if (!n) return null;
+  const R = 30;
+  const B = 24;
+  const T = 8;
+  const v = known.map((d) => d.score);
+  const lo = Math.floor(Math.min(...v) - 0.5);
+  const hi = Math.ceil(Math.max(...v) + 0.5);
+  const x = (i: number) => (n === 1 ? (width - R) / 2 : (i * (width - R)) / (n - 1));
+  const y = (q: number) => T + ((q - lo) / (hi - lo || 1)) * (H - T - B);
+  const pts = v.map((q, i) => [x(i), y(q)] as const);
+  const line = monoPath(pts);
+  const ticks: number[] = [];
+  for (let q = lo; q <= hi; q++) if ((q - lo) % (hi - lo > 4 ? 2 : 1) === 0) ticks.push(q);
+  return (
+    <div ref={box} className="ch-shs-chart" role="img" aria-label={`Team scoring average by round day, from ${v[0]!.toFixed(1)} to ${v[n - 1]!.toFixed(1)}. Lower scores sit higher.`}>
+      <svg viewBox={`0 0 ${width} ${H}`} height={H} aria-hidden="true">
+        <defs>
+          <linearGradient id="ch-shs-tg" x1="0" x2="0" y1="0" y2="1">
+            <stop offset="0" stopColor="var(--s-gain-fill)" stopOpacity=".28" />
+            <stop offset="1" stopColor="var(--s-gain-fill)" stopOpacity="0" />
+          </linearGradient>
+        </defs>
+        {ticks.map((q) => (
+          <g key={q}>
+            <line className="ch-shs-grid" x1="0" x2={width - R + 4} y1={y(q)} y2={y(q)} />
+            <text className="ch-shs-ax" x={width} y={y(q) + 4} textAnchor="end">
+              {q}
+            </text>
+          </g>
+        ))}
+        {mean != null && <line className="ch-shs-parline" x1="0" x2={width - R + 4} y1={y(mean)} y2={y(mean)} />}
+        {line && <path d={`${line}L${pts[n - 1]![0]},${H - B}L0,${H - B}Z`} fill="url(#ch-shs-tg)" />}
+        {line && <path className="ch-shs-avgline" d={line} stroke="var(--s-gain-fill)" />}
+        {pts.map((p, i) => (
+          <circle key={i} className="ch-shs-rdot" cx={p[0]} cy={p[1]} r={i === n - 1 ? 5 : 3.4} />
+        ))}
+        <text className="ch-shs-ax" x="0" y={H - 5}>
+          {known[0]!.label}
+        </text>
+        {n > 1 && (
+          <text className="ch-shs-ax" x={width - R} y={H - 5} textAnchor="end">
+            {known[n - 1]!.label}
+          </text>
+        )}
+        {mean != null && (
+          <text className="ch-shs-ax" x="4" y={y(mean) - 6}>
+            Mean {mean.toFixed(1)}
+          </text>
+        )}
+      </svg>
+    </div>
+  );
+}

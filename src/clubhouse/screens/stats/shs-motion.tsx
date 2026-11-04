@@ -82,7 +82,10 @@ export class WindowCrossfade extends Component<{ k: string; off: boolean; reduce
     const host = this.el;
     ghost.style.animationDuration = `${this.props.reduced ? CH_FADE_MS : XFADE_MS}ms`;
     host.appendChild(ghost);
-    ghost.addEventListener('animationend', () => ghost.remove(), { once: true });
+    // Off a timer too: with Animations off the copy never animates, so it would never say it finished.
+    const done = () => ghost.remove();
+    ghost.addEventListener('animationend', done, { once: true });
+    window.setTimeout(done, XFADE_MS + 100);
   }
 
   render(): ReactNode {
