@@ -54,7 +54,7 @@ Each local copy matches the published page as of 4 Nov 2026 (only the document w
 | `BUILD_CONTRACT_STANDARD.md` | 6825 | `a6266597bcb0cbb01378a760097d76d054a33941a6ec989a165ba1e90ded7ff3` |
 | `CLASSES_ROSTER_HOME_IMPLEMENTATION.md` | 19162 | `72580d70434b62ede095ac3cf981ac33d26751885d497103b4932b28258a29f6` |
 | `CODE_PROMPT.md` | 4106 | `25cbd90eecbbb70450506eb7957953d484e404c0e057a67ae0ca5ea574dc21dd` |
-| `COMPLETENESS.md` | 16940 | `6fe055d9bd1607551f172191391aa29bee7879978054b75898906fb1a415d7ef` |
+| `COMPLETENESS.md` | 17015 | `4f9e816f7175579602b255fedc447d2e279759917fd326d67bde2dbd0ea11fc2` |
 | `DECISIONS.md` | 15692 | `f18bc162cc6a6514297981667fb2a8a7550720daa022a2f59f8d4046a6f904de` |
 | `DESIGN_LANGUAGE.md` | 22556 | `3d55706ec7de1b32329a5d5dae27c736939b1f7e86910b75bd8e8432bfb25c17` |
 | `GRADIENT_TEXT_SWEEP-2026-10-31.md` | 172550 | `468ea702260fd40cb3ddd65b24c280f3ec37114dae597b7d3d10158961a8a277` |
@@ -369,9 +369,9 @@ Each local copy matches the published page as of 4 Nov 2026 (only the document w
 | `practice-plan/03-DATA-CHECKS.md` | 43697 | `516b4346f866b601eae6d9ac82415218c4604e7cacd76ea11fc32f0e923fe7dd` |
 | `practice-plan/04-FIDELITY-SPEC.md` | 18471 | `59bf741c5b2aeb60042cf81417fc07133f4c849dc34dd1b7b1f5528f6bcbf780` |
 | `practice-plan/05-SCREENS.md` | 116870 | `e4292c8851c1d68ae27c9be1f2d069b3492e7cf637a40857dbbcb43b3d4ec4fd` |
-| `practice-plan/06-SCREEN-SPECS.md` | 133943 | `4e1353b1132a0fd78b59e1e5cc73b5bd964712f89b5371c0670037065b6189b6` |
+| `practice-plan/06-SCREEN-SPECS.md` | 134087 | `76afc7989cdfc4a710998f4dadf2be29c73af0e8a6b5dd38d3513c59ebba5484` |
 | `practice-plan/07-MOTION.md` | 32478 | `ffb69bbfb7c0b86086f66861a974960e951c90f6ab464a0f0193f53e4d87b7cf` |
-| `practice-plan/08-ACCEPTANCE.md` | 48836 | `f246ee9a439f4876a82a439d52bb72ecdf3a819b82d643dda14a155aef07efa5` |
+| `practice-plan/08-ACCEPTANCE.md` | 49132 | `e0e5cbf734606acf911fe2ba1f88984bdf50a7102247498d490c9bc989ce712a` |
 | `practice-plan/COACHHELM_PRACTICE_PLAN.md` | 16630 | `f400d946a81dc16acffb66dc60411cb81a9575b9f2e1cfa2c5f207d8a1e3fa71` |
 | `practice-plan/README.md` | 4370 | `9ca2d2b2a1a846b6272eb263eb23ba5711f06c5faccb4c5762381b84d6aef8ed` |
 | `practice-plan/coachhelm-practice.html` | 179488 | `f3e33f3ab45e656b5437b0352489346864d3e4f144f45986faafdd3ae045f770` |
@@ -379,7 +379,7 @@ Each local copy matches the published page as of 4 Nov 2026 (only the document w
 | `practice-plan/capture/contrast-table.md` | 7854 | `7f65c0a2de6e35ed9978949daac0fdc53dedea3230a666b111022bd0d2c3ba90` |
 | `practice-plan/capture/extract.js` | 5076 | `d61ecb2f05773b9fd77ed8fa1e12bd6936e5d490ba35c9f9e4b5576fea53fb93` |
 | `practice-plan/held-migrations/20261102090000_golf_practice_plan_formats.sql` | 3666 | `a4251f39bbe7eaee1728cbbda5e3ecfcc8865f0488a42f75b1de89136933919f` |
-| `practice-plan/held-migrations/20261104090000_golf_practice_plan_coach_why_and_draft_row.sql` | 5235 | `f4141871568213edfdb471a6e894a77868b855c454cd2975d10f2ab4fa32c2c6` |
+| `practice-plan/held-migrations/20261104090000_golf_practice_plan_coach_why_and_draft_row.sql` | 5862 | `51ce06b4f4e522630cff62488f361126714b25f770e573b1596f528a9b0083bc` |
 | `practice-plan/redesign/coachhelm-practice.html` | 187090 | `072ba1b638ecf9ae0e705721765a78fab4bbe98fca282ac4ec3bfb6a02415720` |
 | `practice-plan/screenshots/design/S-ASK.block-sheet__open__design__dark.png` | 167419 | `8b741f24637377f91e215236661de155cd2aab160504b3ca1c6d8468954441cb` |
 | `practice-plan/screenshots/design/S-ASK.block-sheet__open__design__light.png` | 175431 | `501a20372dc3ac1f96993036a2818cbcd2d2faf47e106d39c5c326ed379e5371` |

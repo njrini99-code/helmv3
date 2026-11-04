@@ -123,7 +123,7 @@ Nick then asked: "Make sure everything's wired and complete data / feature logic
 | Coach vs player (Lenses) | 9 | W-LNS-1 to 21 | L0 traced to `readPlans` (`data/coachhelm-dive.ts:53-71`) |
 | Ask | 19 | W-ASK-1 to 28 | HM1 to HM4 written as files; teammate filter lives in `player-tools.ts` on the server |
 | Quick chat and AGENT_KIT | 16 | W-QC-1 to 15, kit K-16 to K-27 | without HM1, no held writes; the chat lives in a provider-level session so it survives navigation |
-| Practice plan | 13 | W-PP-1 to 17 | `practice_plan` push type added in N-00 slice 3; chat post sends with no second push |
+| Practice plan | 14 | W-PP-1 to 18 (18 added in review: a draft save keeps a published row's Documents title) | `practice_plan` push type added in N-00 slice 3; chat post sends with no second push |
 | Prerequisites (N-00, N-10, minimum only) | 7 | in each plan's Wiring section | 090300 narrowed; Move on plan rows; everything else marked not in this build |
 
 Nothing in any lane changes what shot tracking collects, stores or sends; every lane that reads shot-derived figures says so in its Wiring section. The engineering calls made in this pass are in DECISIONS.md, "Calls settled in the wiring pass". Full per-lane detail: `completeness/wiring-<lane>.md`.
