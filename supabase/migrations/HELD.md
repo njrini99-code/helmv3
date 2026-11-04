@@ -1097,3 +1097,11 @@ the view) would break each view's actual purpose, described per-row above.
 Anything here must say what would go wrong if it were applied, not merely that
 it is held. "Held" without a reason decays into the same unknown this file
 exists to prevent.
+
+## Applied on staging only
+
+On 2026-11-04 the owner asked for the Clubhouse redesign migrations on staging
+(PROSP DATA, `ybmwektreyrwjscxlogv`), which Preview reads. All 17 redesign rows
+above, `20261026010000` to `20261104090000`, are applied and stamped there with
+their VERIFY queries passing. They are still **HOLD** for production, which has
+none of them.

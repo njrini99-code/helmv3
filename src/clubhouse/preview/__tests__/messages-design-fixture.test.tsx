@@ -41,9 +41,9 @@ describe('the Messages design fixture', () => {
 });
 
 describe('the flag', () => {
-  it('is off in every environment', async () => {
+  it('is off in production and development, on in Preview (staging)', async () => {
     const yml = readFileSync(join(process.cwd(), 'config/feature-flags.yml'), 'utf8');
     const entry = yml.slice(yml.indexOf('feature_id: golf_messages_redesign_v1'));
-    expect(entry.slice(0, entry.indexOf('kill_switch_behavior'))).toMatch(/default: false[\s\S]*production: false\s+preview: false\s+development: false/);
+    expect(entry.slice(0, entry.indexOf('kill_switch_behavior'))).toMatch(/default: false[\s\S]*production: false\s+preview: true\s+development: false/);
   });
 });
