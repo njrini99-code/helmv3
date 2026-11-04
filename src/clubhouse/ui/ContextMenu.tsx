@@ -65,13 +65,16 @@ export function useContextMenu<T>({
   items,
   title,
   touchHold = false,
+  anchored = false,
 }: {
   label: (target: T) => string;
   items: (target: T) => MenuItem[];
   /** The sheet's heading; the label when absent. */
   title?: (target: T) => string;
   touchHold?: boolean;
-}): { bind: (target: T) => ContextMenuBind; menu: ReactNode; openSheet: (target: T) => void; cancelHold: () => void } {
+  /** A touch hold opens the menu under the row instead of a sheet (the Messages redesign's row menu). */
+  anchored?: boolean;
+}): { bind: (target: T) => ContextMenuBind; menu: ReactNode; openSheet: (target: T) => void; openAt: (target: T, el: HTMLElement) => void; cancelHold: () => void } {
   const [open, setOpen] = useState<Open<T> | null>(null);
   // Nothing is drawn, not even the presence that eases a menu out, until the list's first right-click (a long inbox has a hook per row).
   const [used, setUsed] = useState(false);
@@ -121,6 +124,7 @@ export function useContextMenu<T>({
               if (e.pointerType === 'mouse' || !e.isPrimary) return;
               hold.current.x = e.clientX;
               hold.current.y = e.clientY;
+              const rowEl = e.currentTarget;
               // A scroll anywhere (the list moving under the finger) is not a hold.
               hold.current.onScroll = () => cancelHold();
               document.addEventListener('scroll', hold.current.onScroll, true);
@@ -128,7 +132,10 @@ export function useContextMenu<T>({
                 cancelHold();
                 hold.current.fired = true;
                 haptic('press');
-                openSheet(target);
+                if (anchored && rowEl) {
+                  const r = rowEl.getBoundingClientRect();
+                  place(target, r.left + 16, r.bottom + 4, false, rowEl);
+                } else openSheet(target);
               }, CTX_HOLD_MS);
             },
             onPointerMove: (e: ReactPointerEvent<HTMLElement>) => {
@@ -170,7 +177,7 @@ export function useContextMenu<T>({
         place(target, r.left + Math.min(r.width / 2, 28), r.bottom - 4, true, e.currentTarget);
       },
     }),
-    [place, touchHold, cancelHold, openSheet],
+    [place, touchHold, anchored, cancelHold, openSheet],
   );
 
   const menu = open ? (
@@ -192,6 +199,10 @@ export function useContextMenu<T>({
       </>
     ) : null,
     openSheet,
+    openAt: (target: T, el: HTMLElement) => {
+      const r = el.getBoundingClientRect();
+      place(target, r.left + 16, r.bottom + 4, false, el);
+    },
   };
 }
 

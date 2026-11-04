@@ -43,6 +43,7 @@ import {
   Share,
   Pin,
   PinOff,
+  Flag,
 } from "lucide-react";
 import { classYearKey } from "../../lib/class-year";
 import type { ChPins } from "./pinned";
@@ -134,7 +135,7 @@ import {
   type ChFile,
   type ChReceipts,
 } from "./model";
-import { SeenByReceipt, useSeenBy, useSeenByList } from "./seen-by";
+import { HoldSeenRow, SeenByPill, SeenByReceipt, useSeenBy, useSeenByList } from "./seen-by";
 import { receiptCarrierId, SEEN_BY_VISIBILITY } from "@/lib/golf/message-receipts";
 import { AnnouncementPane, AnnouncementsSection } from "./announcements";
 import { fileKind, fileMeta, fileSize, useConversationFiles } from "./files";
@@ -475,11 +476,7 @@ export function ConvRow({ api, c, avatarSize = 36, phone = false }: { api: ChMes
   // Owner decision 14: the row's actions, each on this row's conversation whether or not it is the open one. Right-click
   // and Shift+F10 on the desktop; on the phone a 500ms long press, a keyboard's Shift+F10 or the VoiceOver button below
   // open the same rows as a sheet (ui/ContextMenu.tsx). The phone's swipes repeat Mark as read/unread and Delete.
-  const ctx = useContextMenu<ChConv>({
-    label: (row) => `Actions for ${row.title}`,
-    title: (row) => row.title,
-    touchHold: phone,
-    items: () => [
+  const rowItems: MenuItem[] = [
       { label: "Open conversation", icon: MessageSquare, onSelect: open },
       // Redesign: Pin after Open (drawn order). At three pins it stays in the menu, dimmed, saying why (PIN-SYNC D7).
       ...(api.pins
@@ -492,7 +489,13 @@ export function ConvRow({ api, c, avatarSize = 36, phone = false }: { api: ChMes
       { label: unread ? "Mark as read" : "Mark as unread", icon: unread ? MailOpen : Mail, onSelect: toggleRead },
       { label: "Mute…", icon: BellOff, onSelect: () => setMuting(true) },
       ...(askDelete ? [{ kind: "separator" as const }, { label: api.redesign ? "Delete conversation" : "Delete", icon: Trash2, danger: true, onSelect: askDelete }] : []),
-    ],
+  ];
+  const ctx = useContextMenu<ChConv>({
+    label: (row) => `Actions for ${row.title}`,
+    title: (row) => row.title,
+    touchHold: phone,
+    anchored: !!api.redesign,
+    items: () => (api.redesign ? rowItems.map((item) => (item.kind === "separator" ? item : { ...item, icon: undefined })) : rowItems),
   });
   const sheets = (
     <>
@@ -636,7 +639,7 @@ function ConvRowButton({ api, c, avatarSize, onOpen, bind, plain = false }: { ap
     <>
       {c.group ? (
         <span className="ch-ms-grp">
-          <Icon icon={Users} size={15} />
+          <Icon icon={api.redesign && c.channel ? Flag : Users} size={15} />
         </span>
       ) : (
         <Avatar name={c.title} id={convAvatarId(api, c)} size={avatarSize} year={api.redesign ? convYear(api, c) : null} />
@@ -760,6 +763,8 @@ function Rail({ api, onNew }: { api: ChMessagesApi; onNew: () => void }) {
   const [q, setQ] = useState("");
   const unread = api.convs.filter(isUnread).length;
   const list = filterConvs(api.convs, filter, q);
+  // The lane's first run (S-MSG.empty): the rail keeps Messages, New and Search; the card in the pane says the rest.
+  const firstRun = !!api.redesign && isMessagesFirstRun(api);
   const sections: Array<[ReturnType<typeof sectionOf>, string]> = [
     ["today", "Today"],
     ["week", "This week"],
@@ -781,24 +786,26 @@ function Rail({ api, onNew }: { api: ChMessagesApi; onNew: () => void }) {
             </button>
           </Tooltip>
         </div>
-        {api.redesign && <p className="ch-ms-rail__ctx ch-num">{inboxContextDesktop(unread, api.convs.length)}</p>}
+        {api.redesign && <p className="ch-ms-rail__ctx ch-num">{firstRun ? "No conversations yet" : inboxContextDesktop(unread, api.convs.length)}</p>}
         <SearchField
           value={q}
           onChange={setQ}
           placeholder={api.redesign ? "Search" : "Search people and messages"}
           label="Search conversations and messages"
         />
-        <Segmented<ChConvFilter> redraws
-          size="sm"
-          label="Filter conversations"
-          value={filter}
-          onChange={setFilter}
-          options={[
-            { value: "all", label: "All" },
-            { value: "unread", label: api.redesign ? "Unread" : `Unread · ${unread}` },
-            { value: "groups", label: "Groups" },
-          ]}
-        />
+        {!firstRun && (
+          <Segmented<ChConvFilter> redraws
+            size="sm"
+            label="Filter conversations"
+            value={filter}
+            onChange={setFilter}
+            options={[
+              { value: "all", label: "All" },
+              { value: "unread", label: api.redesign ? "Unread" : `Unread · ${unread}` },
+              { value: "groups", label: "Groups" },
+            ]}
+          />
+        )}
       </div>
       <div className="ch-ms-rail__body" ref={body}>
         {api.convsError ? (
@@ -823,7 +830,7 @@ function Rail({ api, onNew }: { api: ChMessagesApi; onNew: () => void }) {
               </div>
             ))}
           </div>
-        ) : !api.convs.length ? (
+        ) : firstRun ? null : !api.convs.length ? (
           <EmptyState
             code="CH-7301"
             compact
@@ -1336,6 +1343,14 @@ export function Bubble({
       </div>
     );
   }
+  // S-MSG.hold: Seen by has its own row on your own group message; the rest keep today's actions, Delete last.
+  const holdRows = menuItems.flatMap((item) => (item.kind === "separator" || (group && m.mine && item.label === "Seen by") ? [] : [item]));
+  const holdRow = (item: (typeof holdRows)[number]) => (
+    <button key={item.label} type="button" className={item.danger ? "is-danger" : undefined} onClick={() => { if (item.onSelect) liftPick(item.onSelect); }}>
+      <span>{item.label}</span>
+      {item.icon && <Icon icon={item.icon} size={18} />}
+    </button>
+  );
   return (
     <PresenceRow
       as="div"
@@ -1559,7 +1574,13 @@ export function Bubble({
           </span>
         ) : (
           // The lane: times live behind the drag (S-MSG.times); only your latest message keeps its receipt, as a pill (S-MSG.seen).
-          (api.redesign ? carrier && m.mine && (group || m.seen) : last || showTime) && (
+          api.redesign && group ? (
+            carrier && m.mine && (
+              <span className="ch-ms-seen-slot">
+                <SeenByPill api={api} m={m} onOpen={onSeenBy ? (el) => onSeenBy(m, el) : undefined} />
+              </span>
+            )
+          ) : (api.redesign ? carrier && m.mine && m.seen : last || showTime) && (
             <span className={"ch-ms-msg__t ch-num" + (api.redesign ? " is-pill" : "")}>
               {api.redesign ? (m.seen && !group ? `Seen ${clock(m.at, api.timeZone, api.clock)}` : null) : clock(m.at, api.timeZone, api.clock)}
               {!api.redesign && m.edited ? " · Edited" : ""}
@@ -1618,12 +1639,11 @@ export function Bubble({
             );
           })}
         >
-          {menuItems.flatMap((item) => (item.kind === "separator" ? [] : [item])).map((item) => (
-            <button key={item.label} type="button" className={item.danger ? "is-danger" : undefined} onClick={() => { if (item.onSelect) liftPick(item.onSelect); }}>
-              <span>{item.label}</span>
-              {item.icon && <Icon icon={item.icon} size={18} />}
-            </button>
-          ))}
+          {holdRows.filter((item) => !item.danger).map(holdRow)}
+          {/* S-MSG.holdseen: your own message in a group gets who read it, faces and all, between hairlines. */}
+          {group && m.mine && onSeenBy && <HoldSeenRow api={api} m={m} onOpen={() => liftPick(() => onSeenBy(m, actionsBtn.current))} />}
+          {holdRows.some((item) => item.danger) && <hr />}
+          {holdRows.filter((item) => item.danger).map(holdRow)}
         </HoldLift>
       )}
     </PresenceRow>
@@ -1662,6 +1682,13 @@ function MessageText({ text }: { text: string }) {
 }
 
 /** A parent outside the loaded history remains an honest unavailable reference. */
+/** The chip's name (S-MSG.reply): the first name, or "yourself" for your own message. */
+function replyName(api: ChMessagesApi, id: string): string {
+  const m = api.msgs.find((x) => x.id === id);
+  if (!m) return "message";
+  return m.mine ? "yourself" : firstName(personOf(api, m.senderId)?.name ?? "them");
+}
+
 export function ReplyQuote({ api, replyToId }: { api: ChMessagesApi; replyToId: string }) {
   const reduced = useChReducedMotion();
   const parent = api.msgs.find((m) => m.id === replyToId);
@@ -2128,7 +2155,21 @@ export function Composer({
     <footer ref={footer} className="ch-ms-comp" aria-busy={checking || sending || undefined}>
       {checkFailed && <InlineNotice code="CH-7217" title="Couldn’t check a pending send" body="Try again before sending another message." onRetry={() => setCheckAttempt((n) => n + 1)} />}
       {unconfirmed && <InlineNotice code="CH-7023" title="Couldn’t confirm this send" body="This send is unconfirmed. Retry send checks the original request; editing stays locked until its outcome is known." />}
-      {editing && (
+      {api.redesign && editing && (
+        <div className="ch-ms-comp__reply is-edit" ref={chipRise}>
+          <Icon icon={Pencil} size={18} />
+          Editing message
+          <IconButton icon={X} label="Cancel edit" onClick={() => { setDraft(""); onEditDone?.(); }} />
+        </div>
+      )}
+      {api.redesign && effectiveParent && (
+        <div className="ch-ms-comp__reply" ref={chipRise}>
+          <Icon icon={Reply} size={18} />
+          Replying to {replyName(api, effectiveParent)}
+          <IconButton icon={X} label="Cancel reply" onClick={() => { setRecoveredParent(null); onClearReply?.(); }} disabled={sending || unconfirmed || checking || checkFailed} />
+        </div>
+      )}
+      {!api.redesign && editing && (
         <div className="ch-ms-comp__reply is-edit" ref={chipRise}>
           <Icon icon={Pencil} size={18} />
           <span className="ch-msv-chip__b">
@@ -2138,8 +2179,8 @@ export function Composer({
           <IconButton icon={X} label="Cancel edit" onClick={() => { setDraft(""); onEditDone?.(); }} />
         </div>
       )}
-      {effectiveParent && (
-        <div className="ch-ms-comp__reply" ref={api.redesign ? chipRise : undefined}>
+      {!api.redesign && effectiveParent && (
+        <div className="ch-ms-comp__reply">
           <ReplyQuote api={api} replyToId={effectiveParent} />
           <IconButton icon={X} label="Cancel reply" onClick={() => { setRecoveredParent(null); onClearReply?.(); }} disabled={sending || unconfirmed || checking || checkFailed || unavailable} />
         </div>
@@ -2950,7 +2991,7 @@ function Details({
         />
       )}
       {api.redesign && searching && <ConversationSearch api={api} conv={conv} onClose={() => setSearching(false)} />}
-      {api.redesign && mute.choosing && <MuteMenu onPick={(h) => void mute.setMute(true, h)} onClose={() => mute.setChoosing(false)} />}
+      {api.redesign && mute.choosing && <MuteMenu anchor={mute.anchor} onPick={(h) => void mute.setMute(true, h)} onClose={() => mute.setChoosing(false)} />}
       <MuteControl api={api} />
       {api.classDay && !conv.group && (!api.redesign || api.viewer.role === "coach") && (
         <ThreadClassSection
@@ -3534,7 +3575,7 @@ export function MessagesDesktop({ api }: { api: ChMessagesApi }) {
   const [pane, setPane] = useState({ key: paneKey, turn: 0 });
   if (pane.key !== paneKey) setPane({ key: paneKey, turn: pane.key === null ? pane.turn : pane.turn + 1 });
 
-  if (isMessagesFirstRun(api) && !conv && !ann) {
+  if (!api.redesign && isMessagesFirstRun(api) && !conv && !ann) {
     return (
       // Under the page's framed head, as every page's first-run empty (states audit c4, c9); its one action is the empty's.
       <main data-view="desktop" className="ch-ms ch-ms--first" data-canopy="">
@@ -3545,7 +3586,7 @@ export function MessagesDesktop({ api }: { api: ChMessagesApi }) {
               : "Conversations with your coaches and teammates, and the team’s announcements."
           }
         />
-        <MessagesFirstRun redesign={!!api.redesign} teamName={api.teamName ?? undefined} coach={api.viewer.role === "coach"} onNew={() => setCompose(true)} />
+        <MessagesFirstRun coach={api.viewer.role === "coach"} onNew={() => setCompose(true)} />
         <NewMessage api={api} open={compose} onClose={closeCompose} />
       </main>
     );
@@ -3601,6 +3642,16 @@ export function MessagesDesktop({ api }: { api: ChMessagesApi }) {
               onBack={() => api.select(null)}
             />
           </SectionBoundary>
+        ) : api.redesign && isMessagesFirstRun(api) ? (
+          <section className="ch-ms-thread is-empty">
+            <MessagesFirstRun
+              redesign
+              teamName={api.teamName ?? undefined}
+              coach={api.viewer.role === "coach"}
+              onNew={() => setCompose(true)}
+              onTeam={api.viewer.role === "coach" ? () => { setDialogMode("group"); setCompose(true); } : undefined}
+            />
+          </section>
         ) : (
           <section className="ch-ms-thread is-empty">
             <EmptyState

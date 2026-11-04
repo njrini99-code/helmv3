@@ -1,4 +1,4 @@
-import type { ChConv, ChMsg, ChPerson, ChReaction, ChReactionKey } from '../screens/messages/model';
+import type { ChFile, ChConv, ChMsg, ChPerson, ChReaction, ChReactionKey } from '../screens/messages/model';
 import type { Poll, PollResponseRow } from '@/lib/golf/message-polls';
 
 /**
@@ -33,7 +33,7 @@ const conv = (id: string, over: Partial<ChConv> & Pick<ChConv, 'title' | 'lastAt
   ({ id, group: false, subtitle: '', memberIds: [id], memberCount: 2, unread: 0, ...over }) as ChConv;
 
 export const DESIGN_CONVS: ChConv[] = [
-  conv('team', { group: true, title: 'Demo University Golf', memberIds: TEAM, memberCount: 11, unread: 1, lastAt: at(16, 7, 31), lastSenderId: 'jack', lastText: 'Asking the real questions' }),
+  conv('team', { group: true, channel: true, creatorId: 'me', title: 'Demo University Golf', memberIds: TEAM, memberCount: 11, unread: 1, lastAt: at(16, 7, 31), lastSenderId: 'jack', lastText: 'Asking the real questions' }),
   conv('eli', { title: 'Eli Brandt', subtitle: 'Junior', lastAt: at(16, 8, 14), lastSenderId: 'me', lastText: 'Send me the card when you get a sec' }),
   conv('dana', { title: 'Dana Reyes', subtitle: 'Assistant Coach', lastAt: at(15, 16, 52), lastSenderId: 'dana', lastText: 'I can drive the second van tomorrow' }),
   conv('quals', { group: true, title: 'Qualifier group', memberIds: QUALS, memberCount: 6, lastAt: at(15, 18, 11), lastSenderId: 'dana', lastText: 'You, Eli and Owen' }),
@@ -126,7 +126,7 @@ const DESIGN_PHOTO = `data:image/svg+xml,${encodeURIComponent('<svg xmlns="http:
 
 export const designAttachments = async (messageId: string) => {
   if (messageId === 'o1') return [{ id: 'da-o1', name: 'Swing video.mov', size: 42 * 1024 * 1024, mime: 'video/quicktime', url: null }];
-  if (messageId === 'e7') return [{ id: 'da-e7', name: 'Back nine.jpg', size: 2 * 1024 * 1024, mime: 'image/svg+xml', url: DESIGN_PHOTO }];
+  if (messageId === 'e7') return [{ id: 'da-e7', name: 'Back nine.jpg', size: 2 * 1024 * 1024, mime: 'image/svg+xml', url: DESIGN_PHOTO }, ...Array.from({ length: 6 }, (_, i) => ({ id: `df-p${i}`, name: `Back nine ${i + 1}.jpg`, size: 2 * 1024 * 1024, mime: 'image/svg+xml', url: DESIGN_PHOTO }))];
   return [];
 };
 
@@ -164,6 +164,23 @@ export const designPins = (view?: string): string[] => (view === 'rowmenu' ? ['t
 
 /** `rowtyping`: Eli typing in his thread, Maya in the Qualifier group. */
 export const designRowTyping = (view?: string): ReadonlyMap<string, string[]> => new Map(view === 'rowtyping' ? [['eli', ['eli']], ['quals', ['maya']]] : []);
+
+/** S-MSG.details: the thread's six photos and its two files, tiles and rows. */
+export const designFiles: Record<string, ChFile[]> = {
+  eli: [
+    ...Array.from({ length: 6 }, (_, i) => ({ id: `df-p${i}`, messageId: 'e7', name: `Back nine ${i + 1}.jpg`, size: 2 * 1024 * 1024, mime: 'image/svg+xml', sentAt: at(15, 15, i), senderId: 'eli' })),
+    { id: 'df-a', messageId: 'e7', name: 'Lineup · Saturday.pdf', size: 240 * 1024, mime: 'application/pdf', sentAt: at(15, 12, 0), senderId: 'me' },
+    { id: 'df-b', messageId: 'e7', name: 'Yardage notes.pdf', size: 180 * 1024, mime: 'application/pdf', sentAt: at(14, 12, 0), senderId: 'eli' },
+  ] as ChFile[],
+};
+
+/** Who read t6 (S-MSG.seen, S-MSG.team): five named readers on `seen`, eight of ten elsewhere. */
+export const designReadMarks = (view?: string): ReadonlyMap<string, string | null> => {
+  const readers: Record<string, string> = view === 'seen'
+    ? { maya: at(16, 7, 6), owen: at(16, 7, 8), eli: at(16, 7, 9), luca: at(16, 7, 12), sam: at(16, 7, 21) }
+    : { maya: at(16, 7, 6), owen: at(16, 7, 8), eli: at(16, 7, 9), luca: at(16, 7, 12), sam: at(16, 7, 21), dana: at(16, 7, 22), jack: at(16, 7, 24), cole: at(16, 7, 25) };
+  return new Map(TEAM.filter((id) => id !== 'me').slice(0, 10).map((id) => [id, readers[id] ?? null]));
+};
 
 /** Every state the design page draws (05-SCREENS, README), the routes `?view=` takes. */
 export const DESIGN_ROUTES = [

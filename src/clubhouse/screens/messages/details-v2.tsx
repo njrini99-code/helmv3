@@ -1,6 +1,6 @@
 'use client';
 
-import { Bell, BellOff, CalendarDays, Clock, FileText, LogOut, MessageSquare, Paperclip, Search, UserMinus, UserPlus, UserRound } from 'lucide-react';
+import { Bell, BellOff, FileText, LogOut, Paperclip, Search, UserMinus, UserPlus, UserRound } from 'lucide-react';
 import Link from 'next/link';
 import { useEffect, useState, useLayoutEffect } from 'react';
 import { chSpringCurve } from '../../lib/motion';
@@ -34,7 +34,16 @@ export const tokenBeat = (): number => (reduced() ? 0 : chSpringCurve('pop').ms)
 /** The mute action, phone and desktop: today's three lengths and today's labels, one toast style (MSG-MUTE-01, 03). */
 export function useMuteAction(api: ChMessagesApi) {
   const toast = useToast();
-  const [choosing, setChoosing] = useState(false);
+  const [choosing, setChoosingOn] = useState(false);
+  const [anchor, setAnchor] = useState<{ left: number; top: number } | null>(null);
+  /** Opens under the key that asked (MSG-MUTE-01), clear of the screen's edge. */
+  const setChoosing = (on: boolean, from?: HTMLElement) => {
+    if (on && from) {
+      const r = from.getBoundingClientRect();
+      setAnchor({ left: Math.max(16, Math.min(r.left, window.innerWidth - 236 - 16)), top: r.bottom + 8 });
+    }
+    setChoosingOn(on);
+  };
   const [busy, setBusy] = useState(false);
   const muted = !!api.mute?.muted;
   const setMute = async (on: boolean, hours: number | null) => {
@@ -45,11 +54,11 @@ export function useMuteAction(api: ChMessagesApi) {
     setBusy(false);
     toast({ title: !on ? 'Unmuted' : hours === 8 ? 'Mute 8 hours' : hours === 24 * 7 ? 'Mute a week' : 'Until I turn it on' });
   };
-  return { choosing, setChoosing, busy, muted, setMute };
+  return { choosing, setChoosing, anchor, busy, muted, setMute };
 }
 
 /** The glass menu in the hold menu's box (MSG-MUTE-01). */
-export function MuteMenu({ onPick, onClose }: { onPick: (hours: number | null) => void; onClose: () => void }) {
+export function MuteMenu({ onPick, onClose, anchor }: { onPick: (hours: number | null) => void; onClose: () => void; anchor?: { left: number; top: number } | null }) {
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       if (e.key === 'Escape') onClose();
@@ -57,20 +66,19 @@ export function MuteMenu({ onPick, onClose }: { onPick: (hours: number | null) =
     document.addEventListener('keydown', onKey);
     return () => document.removeEventListener('keydown', onKey);
   }, [onClose]);
-  const row = (icon: typeof Clock, label: string, hours: number | null) => (
+  const row = (label: string, hours: number | null) => (
     <button type="button" role="menuitem" onClick={() => onPick(hours)}>
       <span>{label}</span>
-      <Icon icon={icon} size={18} />
     </button>
   );
   return (
     <div className="ch-msv-lift" data-ch-ms-v2="on">
       {/* eslint-disable-next-line jsx-a11y/click-events-have-key-events, jsx-a11y/no-static-element-interactions -- Esc is the keyboard's way out */}
       <div className="ch-msv-lift__scrim is-light" onClick={onClose} />
-      <div className="ch-msv-holdmenu is-mute" role="menu" aria-label="Mute this conversation">
-        {row(Clock, 'Mute 8 hours', 8)}
-        {row(CalendarDays, 'Mute a week', 24 * 7)}
-        {row(BellOff, 'Until I turn it on', null)}
+      <div className="ch-msv-holdmenu is-mute" role="menu" aria-label="Mute this conversation" style={anchor ?? undefined}>
+        {row('Mute 8 hours', 8)}
+        {row('Mute a week', 24 * 7)}
+        {row('Until I turn it on', null)}
       </div>
     </div>
   );
@@ -112,7 +120,7 @@ export function QuickActions({
           popIn(e.currentTarget, 0.92);
           if (mute.muted) return void mute.setMute(false, null);
           haptic('select');
-          mute.setChoosing(true);
+          mute.setChoosing(true, e.currentTarget);
         }}
       >
         <Icon icon={mute.muted ? BellOff : Bell} size={20} />
@@ -205,20 +213,18 @@ export function MembersCard({
             const coach = (you ? api.viewer.role : personOf(api, m.userId)?.role) === 'coach';
             return (
               <div key={m.userId} className="ch-msv-member">
-                <Avatar name={m.name} id={personOf(api, m.userId)?.playerId ?? m.userId} size="md" />
-                <span className="ch-msv-member__b">
-                  <b>{you ? 'You' : m.name}</b>
-                  <span>{[m.subtitle, m.userId === conv.creatorId ? 'Admin' : null].filter(Boolean).join(' · ')}</span>
-                </span>
+                {/* The drawn row has no key of its own: the row is what messages them (today's action, kept). */}
+                <button type="button" className="ch-msv-member__to" disabled={you} aria-label={you ? undefined : `Message ${m.name}`} onClick={() => onMessage(m.userId)}>
+                  <Avatar name={m.name} id={personOf(api, m.userId)?.playerId ?? m.userId} size="md" />
+                  <span className="ch-msv-member__b">
+                    <b>{you ? 'You' : m.name}</b>
+                    <span>{[m.subtitle, m.userId === conv.creatorId ? 'Admin' : null].filter(Boolean).join(' · ')}</span>
+                  </span>
+                </button>
                 {coach && <span className="ch-msv-coachchip">Coach</span>}
                 {onRemove && !you && (
                   <button type="button" className="ch-msp-icon is-remove" aria-label={`Remove ${m.name}`} onClick={() => onRemove(m)}>
                     <Icon icon={UserMinus} size={17} />
-                  </button>
-                )}
-                {!you && (
-                  <button type="button" className="ch-msp-icon" aria-label={`Message ${m.name}`} onClick={() => onMessage(m.userId)}>
-                    <Icon icon={MessageSquare} size={17} />
                   </button>
                 )}
               </div>
@@ -226,7 +232,7 @@ export function MembersCard({
           })}
           {!all && list.length > 6 && (
             <button type="button" className="ch-msv-seeall" onClick={() => setAll(true)}>
-              See all
+              Show all {list.length}
             </button>
           )}
         </>

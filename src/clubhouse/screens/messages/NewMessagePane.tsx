@@ -63,26 +63,6 @@ export function NewMessagePane({ api, onCancel, onDialog }: { api: ChMessagesApi
           )}
           <input ref={input} value={q} onChange={(e) => setQ(e.target.value)} aria-label="Search people" autoComplete="off" disabled={!!picked} />
         </div>
-        {coach && !term && (
-          <div className="ch-msp-panel ch-msv-newpane__more">
-            <button type="button" className="ch-msv-frow" onClick={() => onDialog('group')}>
-              <span className="ch-msv-frow__ic">
-                <Icon icon={Users} size={16} />
-              </span>
-              <span className="ch-msv-member__b">
-                <b>New group</b>
-              </span>
-            </button>
-            <button type="button" className="ch-msv-frow" onClick={() => onDialog('announce')}>
-              <span className="ch-msv-frow__ic">
-                <Icon icon={Megaphone} size={16} />
-              </span>
-              <span className="ch-msv-member__b">
-                <b>Announcement</b>
-              </span>
-            </button>
-          </div>
-        )}
         {api.directoryError ? (
           <InlineNotice code="CH-7205" title="Your team list didn’t load" body="Try again." onRetry={api.retryDirectory} />
         ) : (
@@ -102,6 +82,26 @@ export function NewMessagePane({ api, onCancel, onDialog }: { api: ChMessagesApi
             ))}
             {!people.length && <p className="ch-msp-none">{term ? `No one matches “${q.trim()}”.` : 'No one to message yet.'}</p>}
           </section>
+        )}
+        {coach && !term && (
+          <div className="ch-msp-panel ch-msv-newpane__more">
+            <button type="button" className="ch-msv-frow" onClick={() => onDialog('group')}>
+              <span className="ch-msv-frow__ic">
+                <Icon icon={Users} size={16} />
+              </span>
+              <span className="ch-msv-member__b">
+                <b>New group</b>
+              </span>
+            </button>
+            <button type="button" className="ch-msv-frow" onClick={() => onDialog('announce')}>
+              <span className="ch-msv-frow__ic">
+                <Icon icon={Megaphone} size={16} />
+              </span>
+              <span className="ch-msv-member__b">
+                <b>Announcement</b>
+              </span>
+            </button>
+          </div>
         )}
       </div>
     </section>

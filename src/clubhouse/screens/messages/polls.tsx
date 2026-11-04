@@ -824,14 +824,23 @@ export function PollSheet({ api, conv, open, onClose }: { api: ChMessagesApi; co
     <Modal
       open={open}
       onClose={onClose}
-      icon={ListChecks}
+      icon={api.redesign ? undefined : ListChecks}
       title="New poll"
-      description={`Everyone in ${conv.title} can vote and see who voted.`}
+      description={api.redesign ? undefined : `Everyone in ${conv.title} can vote and see who voted.`}
       initialFocus="#ch-ms-poll-q"
       width={api.redesign ? 400 : 480}
       className={api.redesign ? "ch-msv-pollnew" : undefined}
       action={
-        !empty || multi || ends !== "none" ? (
+        api.redesign ? (
+          <>
+            <button type="button" className="ch-msv-txtbtn is-cancel" onClick={onClose}>
+              Cancel
+            </button>
+            <button type="button" className="ch-msv-txtbtn is-strong" disabled={!ready || busy} onClick={() => void send()}>
+              {busy ? "Sending…" : "Send"}
+            </button>
+          </>
+        ) : !empty || multi || ends !== "none" ? (
           <button
             type="button"
             className="ch-ms-pollf__clear"
@@ -845,14 +854,16 @@ export function PollSheet({ api, conv, open, onClose }: { api: ChMessagesApi; co
         ) : undefined
       }
       footer={
-        <>
-          <Button variant="ghost" onClick={onClose}>
-            Cancel
-          </Button>
-          <Button variant={earlier ? "secondary" : "primary"} busy={busy} disabled={!ready} onClick={() => void send()}>
-            {busy ? "Sending…" : "Send poll"}
-          </Button>
-        </>
+        api.redesign ? undefined : (
+          <>
+            <Button variant="ghost" onClick={onClose}>
+              Cancel
+            </Button>
+            <Button variant={earlier ? "secondary" : "primary"} busy={busy} disabled={!ready} onClick={() => void send()}>
+              {busy ? "Sending…" : "Send poll"}
+            </Button>
+          </>
+        )
       }
     >
       <form
@@ -896,7 +907,7 @@ export function PollSheet({ api, conv, open, onClose }: { api: ChMessagesApi; co
         </div>
         {/* M11, M17: the chips fade out once there is something to keep, and back in when Clear empties the form. */}
         <AnimatePresence initial={false}>
-          {empty && (
+          {empty && !api.redesign && (
             <FadePart key="quick" className="ch-ms-pollf__quick">
               <span className="ch-ms-pollf__quickl" id="ch-ms-poll-quick">
                 Quick start
@@ -959,17 +970,33 @@ export function PollSheet({ api, conv, open, onClose }: { api: ChMessagesApi; co
           {options.length >= POLL_MAX_OPTIONS && options.every((o) => o.trim()) ? (
             <p className="ch-field__help">A poll takes up to 6 choices.</p>
           ) : (
-            <p className="ch-field__help">
-              <Icon icon={Plus} size={12} /> A new row appears as you fill the last one.
-            </p>
+            !api.redesign && (
+              <p className="ch-field__help">
+                <Icon icon={Plus} size={12} /> A new row appears as you fill the last one.
+              </p>
+            )
           )}
         </fieldset>
-        <Switch checked={multi} onChange={setMulti} label="Allow more than one answer" />
+        <Switch checked={multi} onChange={setMulti} label={api.redesign ? "Allow multiple answers" : "Allow more than one answer"} />
         <div className="ch-field" aria-invalid={invalid("ends")}>
-          <span className="ch-field__label" id="ch-ms-poll-ends">
-            Voting ends
-          </span>
-          {endsFit ? (
+          {!api.redesign && (
+            <span className="ch-field__label" id="ch-ms-poll-ends">
+              Voting ends
+            </span>
+          )}
+          {api.redesign ? (
+            <Menu
+              label="Closes"
+              align="start"
+              items={ENDS.map((e) => ({ label: e.label, checked: e.value === ends, onSelect: () => setEnds(e.value) }))}
+              trigger={(p) => (
+                <button type="button" className="ch-msv-closes" {...p}>
+                  Closes
+                  <b>{ENDS.find((e) => e.value === ends)!.label}</b>
+                </button>
+              )}
+            />
+          ) : endsFit ? (
             <div ref={endsRow}>
               <Segmented<Ends> label="Voting ends" value={ends} options={ENDS} onChange={setEnds} block size="sm" />
             </div>

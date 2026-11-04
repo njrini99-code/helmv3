@@ -4921,6 +4921,7 @@ html[data-fw-theme='dark'] [data-ui='clubhouse'] .ch-ms-poll {
 .ch-msv-holdmenu > button {
   display: flex;
   align-items: center;
+  justify-content: space-between;
   gap: 12px;
   min-height: 42px;
   padding: 0 8px;
@@ -4930,6 +4931,96 @@ html[data-fw-theme='dark'] [data-ui='clubhouse'] .ch-ms-poll {
   color: var(--ch-text-primary);
   font: var(--ch-type-15-medium);
   text-align: left; letter-spacing: var(--ch-track-15); }
+.ch-msv-holdmenu > hr {
+  width: 100%;
+  height: var(--ch-hairline-w);
+  margin: 4px 0;
+  border: 0;
+  background: var(--ch-border-hairline);
+}
+.ch-msv-holdmenu > button.ch-msv-seenrow {
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 6px;
+  padding: 8px 12px;
+}
+.ch-msv-seenrow__t {
+  display: flex;
+  width: 100%;
+  align-items: center;
+  justify-content: space-between;
+}
+.ch-msv-seenrow small {
+  font: var(--ch-type-13-medium);
+  color: var(--ch-text-secondary);
+}
+.ch-msv-faces {
+  display: inline-flex;
+  flex: none;
+}
+.ch-msv-faces__f {
+  display: inline-flex;
+  border-radius: 50%;
+  box-shadow: 0 0 0 1px var(--ch-card-bg);
+}
+.ch-msv-faces__f + .ch-msv-faces__f {
+  margin-left: -4px;
+}
+/* The Seen by pill (MSG-TEAM, S-MSG.team): paper, faces and a count; 44 tall by its ::before. */
+[data-ch-ms-v2] .ch-ms-seen-slot {
+  display: flex;
+  justify-content: flex-end;
+}
+[data-ch-ms-v2] .ch-msv-seen {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin: 6px 2px 0;
+  padding: 4px 8px 4px 4px;
+  border: 0;
+  border-radius: 999px;
+  background: var(--ch-card-bg);
+  box-shadow: var(--ch-card-shadow);
+  color: var(--ch-text-secondary);
+  font: var(--ch-type-13-medium);
+}
+[data-ch-ms-v2] button.ch-msv-seen {
+  cursor: pointer;
+}
+[data-ch-ms-v2] button.ch-msv-seen::before {
+  content: "";
+  position: absolute;
+  inset: -12px 0;
+}
+[data-ch-ms-v2] .ch-msv-seen b {
+  font-weight:var(--ch-fw-600);
+  color: var(--ch-text-primary);
+}
+[data-ch-ms-v2] .ch-msv-seen:focus-visible {
+  outline: 2px solid var(--ch-border-focus);
+  outline-offset: 2px;
+}
+/* Reply and edit chips (S-MSG.reply, S-MSG.edit): one small chip, an icon, the words, a 26 key with a 44 target. */
+[data-ch-ms-v2] .ch-ms-comp__reply {
+  display: inline-flex;
+  width: fit-content;
+  min-height: 0;
+  color: var(--ch-text-primary);
+}
+[data-ch-ms-v2] .ch-ms-comp__reply .ch-iconbtn {
+  position: relative;
+  width: 26px;
+  height: 26px;
+  min-width: 26px;
+  min-height: 26px;
+  color: var(--ch-text-secondary);
+}
+[data-ch-ms-v2] .ch-ms-comp__reply .ch-iconbtn::before {
+  content: "";
+  position: absolute;
+  inset: -8px;
+}
 .ch-msv-holdmenu > button[data-ch-pressed] {
   background: var(--ch-press-wash, var(--ch-well-bg-flat));
 }
@@ -5027,11 +5118,38 @@ body:has([data-ch-ms-v2]) .ch-toast {
 }
 
 /* Redesign: first run, the hello card, details (06 S-MSG.empty, .fresh, .details, .groupdetails, .mute). */
+[data-ch-ms-v2] .ch-msv-empty__illo {
+  width: 168px;
+  height: 120px;
+}
+[data-ch-ms-v2] .ch-ms-thread.is-empty:has(.ch-msv-empty) {
+  display: grid;
+  place-items: center;
+  padding: 16px;
+}
+.ch-msp-home:has(> .ch-msv-empty) {
+  display: grid;
+  align-content: center;
+  justify-items: center;
+}
+[data-ch-ms-v2] .ch-msv-suggest__h,
+.ch-msv-suggest__h {
+  margin: 0;
+  padding: 12px 16px 8px;
+  border-radius: var(--ch-radius-lg) var(--ch-radius-lg) 0 0;
+  background: var(--ch-card-bg);
+  font: var(--ch-type-17-strong);
+  letter-spacing: var(--ch-track-17);
+}
+.ch-msv-suggest__h + .ch-msp-panel {
+  margin-top: 0;
+  border-radius: 0 0 var(--ch-radius-lg) var(--ch-radius-lg);
+}
 [data-ch-ms-v2] .ch-msv-empty {
   display: grid;
   justify-items: center;
   gap: 8px;
-  width: min(358px, 100%);
+  width: min(360px, 100%);
   margin: 24px auto;
   padding: 24px 20px 20px;
   border-radius: var(--ch-radius-lg);
@@ -5164,6 +5282,109 @@ body:has([data-ch-ms-v2]) .ch-toast {
 .ch-msv-holdmenu.is-mute {
   left: var(--ch-page-x-phone);
   top: 40%;
+  z-index: var(--ch-z-popover);
+}
+.ch-ms-comp[hidden] {
+  display: none;
+}
+.ch-msv-suggest__h:has(+ .ch-msp-panel) {
+  margin-bottom: -12px;
+  padding-bottom: 12px;
+}
+.ch-msv-seeall {
+  padding-left: 16px;
+}
+.ch-seen-list.is-v2 .ch-seen-sec__h {
+  display: flex;
+  justify-content: space-between;
+  font: var(--ch-type-17-strong);
+  letter-spacing: var(--ch-track-17);
+  color: var(--ch-text-primary);
+}
+.ch-seen-list.is-v2 .ch-seen-row__body {
+  display: flex;
+  flex-direction: row;
+  flex: 1;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+.ch-msv-member__to {
+  display: flex;
+  flex: 1;
+  min-width: 0;
+  align-items: center;
+  gap: 12px;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: inherit;
+  text-align: left;
+}
+.ch-msv-member__to:not(:disabled) {
+  cursor: pointer;
+}
+.ch-msv-seeall {
+  justify-content: flex-start;
+  text-align: left;
+}
+/* New poll (S-MSG.poll-composer): Cancel, the title, Send across the head, no Close key. */
+.ch-msv-pollnew .ch-modal__head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.ch-msv-pollnew .ch-modal__titles {
+  flex: 1;
+  text-align: center;
+}
+.ch-msv-pollnew .ch-modal__action {
+  display: contents;
+}
+.ch-msv-pollnew .ch-modal__head > :last-child {
+  display: none;
+}
+.ch-msv-txtbtn {
+  min-height: 44px;
+  padding: 8px 6px;
+  border: 0;
+  background: none;
+  color: var(--ch-accent);
+  font: var(--ch-type-17-medium);
+  letter-spacing: var(--ch-track-17);
+  cursor: pointer;
+}
+.ch-msv-txtbtn.is-cancel {
+  order: -1;
+}
+.ch-msv-txtbtn.is-strong {
+  font-weight:var(--ch-fw-600);
+}
+.ch-msv-txtbtn:disabled {
+  color: var(--ch-text-tertiary);
+  cursor: default;
+}
+.ch-msv-closes {
+  display: flex;
+  width: 100%;
+  min-height: 52px;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 8px 16px;
+  border: 0;
+  border-radius: var(--ch-radius-lg);
+  background: var(--ch-card-bg);
+  box-shadow: var(--ch-card-shadow);
+  color: var(--ch-text-primary);
+  font: var(--ch-type-16-medium);
+  letter-spacing: var(--ch-track-16);
+  text-align: left;
+  cursor: pointer;
+}
+.ch-msv-closes b {
+  font-weight:var(--ch-fw-500);
+  color: var(--ch-text-secondary);
 }
 @keyframes ch-msv-det-fade {
   from {
@@ -5619,4 +5840,8 @@ body:has([data-ch-ms-v2]) .ch-toast {
   --ch-messages-x5: inset 0 0 0 1.5px var(--ch-switch-off-ring);
   --ch-messages-x6: inset 0.5px 0 0 var(--ch-separator);
   --ch-messages-x7: 0 0 0 4px var(--ch-bg-page), var(--ch-card-shadow);
+}
+[data-ch-ms-v2] .ch-ms-row.is-sel .ch-ms-grp {
+  background: var(--ch-bubble-mine-fill);
+  color: var(--ch-text-on-accent);
 }

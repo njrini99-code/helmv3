@@ -225,7 +225,7 @@ describe('chips', () => {
     const onClearReply = vi.fn();
     show(api, { replyToId: 'm1', onClearReply });
     expect(document.querySelector('.ch-ms-comp__reply')).not.toBeNull();
-    expect(document.querySelector('.ch-ms-comp__reply')!.textContent).toContain('Bus leaves at 6:15');
+    expect(document.querySelector('.ch-ms-comp__reply')!.textContent).toContain('Replying to Ava');
     fireEvent.change(field(), { target: { value: 'ok' } });
     fireEvent.keyDown(field(), { key: 'Enter' });
     await waitFor(() => expect(api.send).toHaveBeenCalledWith('ok', 'm1'));
@@ -241,12 +241,12 @@ describe('chips', () => {
     expect(api.send).not.toHaveBeenCalled();
   });
 
-  it('edit: the field holds the text, the chip says Edit message, Send saves', async () => {
+  it('edit: the field holds the text, the chip says Editing message, Send saves', async () => {
     const api = fakeApi();
     const onEditDone = vi.fn();
     show(api, { editing: msg({ mine: true, text: 'First go' }), onEditDone });
     await waitFor(() => expect(field().value).toBe('First go'));
-    expect(document.querySelector('.ch-ms-comp__reply.is-edit')!.textContent).toContain('Edit message');
+    expect(document.querySelector('.ch-ms-comp__reply.is-edit')!.textContent).toContain('Editing message');
     fireEvent.change(field(), { target: { value: 'Second go' } });
     fireEvent.keyDown(field(), { key: 'Enter' });
     await waitFor(() => expect(api.edit).toHaveBeenCalledWith('m1', 'Second go'));

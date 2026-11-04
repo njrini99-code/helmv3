@@ -5,7 +5,8 @@ import type { ChMessagesApi } from '../screens/messages/MessagesView';
 import { MessagesView } from '../screens/messages/MessagesScreen';
 import type { ChAnnouncement, ChConv, ChFile, ChMember, ChMsg, ChMute, ChPerson, ChReaction, ChReactionKey } from '../screens/messages/model';
 import { useToast } from '../ui/Toast';
-import { designLongInbox, DESIGN_CONVS, DESIGN_NOW, DESIGN_PEOPLE, DESIGN_REACTIONS, DESIGN_ROUTE_CONV, DESIGN_THREADS, DESIGN_VOTES, designAttachments, designMsg, designPins, designRowTyping } from './messages-design-cast';
+import { designFiles, designLongInbox, designReadMarks, DESIGN_CONVS, DESIGN_NOW, DESIGN_PEOPLE, DESIGN_REACTIONS, DESIGN_ROUTE_CONV, DESIGN_THREADS, DESIGN_VOTES, designAttachments, designMsg, designPins, designRowTyping } from './messages-design-cast';
+
 import { usePinned } from '../screens/messages/pinned';
 import { buildPollPayload, encodeChoice, parsePollPayload, pollFallbackText, tallyPoll, type Poll, type PollResponseRow } from '@/lib/golf/message-polls';
 
@@ -247,9 +248,11 @@ export function PreviewMessages({ state, view, play, role = 'coach' }: { state?:
     const plus = click(() => el('.ch-msv-plus__key'));
     // A phone row opens its sheet from the hold or from this control; a desktop row from a right click.
     const rowMenu = () => {
-      const phone = document.querySelector<HTMLElement>('.ch-ms-swipe .ch-sr-only--focusable button');
-      if (phone) {
-        phone.click();
+      const row = el('.ch-ms-swipe .ch-ms-row');
+      if (row) {
+        const b = row.getBoundingClientRect();
+        const at = { bubbles: true, pointerType: 'touch', isPrimary: true, clientX: b.left + 40, clientY: b.top + 20 };
+        row.dispatchEvent(new PointerEvent('pointerdown', at));
         return true;
       }
       return hold(() => el('.ch-ms-row'))();
@@ -264,11 +267,11 @@ export function PreviewMessages({ state, view, play, role = 'coach' }: { state?:
       hold: [hold(lastMine)],
       holdseen: [hold(lastMine)],
       react: [hold(lastMine)],
-      reply: [hold(lastMine), named('Reply')],
+      reply: [hold(() => Array.from(document.querySelectorAll<HTMLElement>('.ch-ms-msg:not(.is-mine) .ch-ms-msg__stack')).pop() ?? null), named('Reply')],
       edit: [hold(lastMine), named('Edit')],
       rowmenu: [rowMenu],
       pinlimit: [rowMenu],
-      seen: [click(() => el('.ch-ms-seen-slot button'))],
+      seen: [click(() => el('.ch-msv-seen'))],
       votes: [named('See votes')],
     };
     const list = steps[view] ?? [];
@@ -291,7 +294,7 @@ export function PreviewMessages({ state, view, play, role = 'coach' }: { state?:
   const [mutes, setMutes] = useState<Record<string, ChMute>>({});
   const muteOf = useCallback(async (id: string): Promise<ChMute> => mutes[id] ?? { muted: false, until: null }, [mutes]);
 
-  const files = useCallback(async (id: string) => (state === 'files-failed' ? null : (previewFiles[id] ?? [])), [state]);
+  const files = useCallback(async (id: string) => (state === 'files-failed' ? null : design ? (designFiles[id] ?? []) : (previewFiles[id] ?? [])), [state, design]);
   const addCandidates = useCallback(async () => (state === 'add-failed' ? null : previewCandidates), [state]);
 
   const drafts = useRef(new Map<string, string>());
@@ -313,6 +316,7 @@ export function PreviewMessages({ state, view, play, role = 'coach' }: { state?:
     timeZone: TZ,
     now: design ? DESIGN_NOW : NOW,
     teamName: design ? 'Demo University Golf' : 'Varsity',
+    ...(design ? { receipts: { status: 'ready' as const, marks: designReadMarks(view), retry: () => undefined } } : {}),
     convs,
     convsLoading: state === 'loading' || (design && view === 'loading'),
     convsError: state === 'failed',

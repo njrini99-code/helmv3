@@ -114,6 +114,7 @@ import { useThreadDragTimes } from "./use-thread-drag-times";
 import { ConversationSearch, detailsLine, MembersCard, MuteMenu, PhotosAndFiles, popIn, QuickActions, tokenBeat, useMuteAction } from "./details-v2";
 import { HelloCard } from "./HelloCard";
 import { HoldLift } from "./hold-lift";
+import { HoldSeenRow } from "./seen-by";
 import { noteTappedFace, ThreadDatePill, ThreadJumpKey, useFaceFlight, useReplyFromTyping, useSendRise, useSpringToEnd, useThreadMakeRoom } from "./thread-v2";
 import { useFocusMessage } from "./use-focus-message";
 import { ListPresence, PresenceRow } from "../../ui/ListPresence";
@@ -315,7 +316,7 @@ function PhoneInboxV2({ api, onNew }: { api: ChMessagesApi; onNew: () => void })
           ))}
         </section>
       ) : firstRun ? (
-        <MessagesFirstRun redesign coach={api.viewer.role === "coach"} teamName={api.teamName ?? undefined} onNew={onNew} />
+        <MessagesFirstRun redesign coach={api.viewer.role === "coach"} teamName={api.teamName ?? undefined} onNew={onNew} onTeam={api.viewer.role === "coach" ? onNew : undefined} />
       ) : (
         <div className="ch-msp-list">
           {filter !== "groups" && !q.trim() && pinned.length > 0 && (
@@ -485,9 +486,9 @@ function PhoneInbox({ api, onNew }: { api: ChMessagesApi; onNew: () => void }) {
 
 /* Thread */
 
-const GroupMark = ({ size }: { size: "sm" | "md" | "lg" }) => (
+const GroupMark = ({ size, flag = false }: { size: "sm" | "md" | "lg"; flag?: boolean }) => (
   <span className={`ch-msp-mark is-${size}`} aria-hidden="true">
-    <Icon icon={Users} size={size === "lg" ? 28 : size === "md" ? 17 : 15} />
+    <Icon icon={flag ? Flag : Users} size={size === "lg" ? 28 : size === "md" ? 17 : 15} />
   </span>
 );
 
@@ -771,12 +772,14 @@ function PhoneThread({
             );
           })}
         >
-          {acting.poll && <PollSheetRows id={acting.id} done={() => pickHold(() => undefined)} />}
-          <SheetRow icon={Reply} label="Reply" disabled={replySending} onClick={() => pickHold(() => reply(acting))} />
-          {conv.group && <SeenSheetRow api={api} m={acting} open={() => pickHold(() => seenList.open(acting, null))} />}
-          {acting.text && <SheetRow icon={Copy} label={acting.poll ? "Copy poll" : "Copy"} onClick={() => pickHold(() => void copy(acting))} />}
-          {acting.mine && acting.text && !acting.poll && <SheetRow icon={Pencil} label="Edit" onClick={() => pickHold(() => setEditing(acting))} />}
-          {acting.mine && <SheetRow icon={Trash2} label="Delete" danger onClick={() => pickHold(() => setDeleting(acting))} />}
+          {acting.poll && <PollSheetRows hold id={acting.id} done={() => pickHold(() => undefined)} />}
+          <SheetRow hold icon={Reply} label="Reply" disabled={replySending} onClick={() => pickHold(() => reply(acting))} />
+          {conv.group && !acting.mine && <SeenSheetRow hold api={api} m={acting} open={() => pickHold(() => seenList.open(acting, null))} />}
+          {acting.text && <SheetRow hold icon={Copy} label={acting.poll ? "Copy poll" : "Copy"} onClick={() => pickHold(() => void copy(acting))} />}
+          {acting.mine && acting.text && !acting.poll && <SheetRow hold icon={Pencil} label="Edit" onClick={() => pickHold(() => setEditing(acting))} />}
+          {conv.group && acting.mine && <HoldSeenRow api={api} m={acting} onOpen={() => pickHold(() => seenList.open(acting, null))} />}
+          {acting.mine && <hr />}
+          {acting.mine && <SheetRow hold icon={Trash2} label="Delete" danger onClick={() => pickHold(() => setDeleting(acting))} />}
         </HoldLift>
       )}
       <Modal code="CH-7604" open={!api.redesign && acting != null} onClose={() => setActing(null)} title="Message">
@@ -837,10 +840,10 @@ function PhoneThread({
 }
 
 /** P-1 slice 6: "Seen by 9 of 11" in the long-press sheet, for a coach, between Reply and Copy. */
-function SeenSheetRow({ api, m, open }: { api: ChMessagesApi; m: ChMsg; open: () => void }) {
+function SeenSheetRow({ api, m, open, hold }: { api: ChMessagesApi; m: ChMsg; open: () => void; hold?: boolean }) {
   const seen = useSeenBy(api, m);
   if (!seen?.canOpen) return null;
-  return <SheetRow icon={CheckCheck} label={seen.label === "Sent" ? "Not seen yet" : seen.label} onClick={open} />;
+  return <SheetRow hold={hold} icon={CheckCheck} label={seen.label === "Sent" ? "Not seen yet" : seen.label} onClick={open} />;
 }
 
 /** P-1: a player under (a) sees the count of their own message in the sheet's preview line, never the list. */
@@ -851,7 +854,7 @@ function ActingSeenMeta({ api, m }: { api: ChMessagesApi; m: ChMsg }) {
 }
 
 /** D26: a poll's own rows in the long-press sheet, from its card's live state: See votes, Remind, Close poll, Share result. */
-function PollSheetRows({ id, done }: { id: string; done: () => void }) {
+function PollSheetRows({ id, done, hold }: { id: string; done: () => void; hold?: boolean }) {
   const a = pollCardActions(id);
   if (!a) return null;
   const run = (f: () => void) => () => {
@@ -860,15 +863,22 @@ function PollSheetRows({ id, done }: { id: string; done: () => void }) {
   };
   return (
     <>
-      {a.seeVotes && <SheetRow icon={ListChecks} label="See votes" onClick={run(a.seeVotes)} />}
-      {a.remind && <SheetRow icon={BellRing} label={`Remind ${a.remind.count}`} onClick={run(a.remind.run)} />}
-      {a.close && <SheetRow icon={Lock} label="Close poll" onClick={run(a.close)} />}
-      {a.share && <SheetRow icon={Share} label="Share result" onClick={run(a.share)} />}
+      {a.seeVotes && <SheetRow hold={hold} icon={ListChecks} label="See votes" onClick={run(a.seeVotes)} />}
+      {a.remind && <SheetRow hold={hold} icon={BellRing} label={`Remind ${a.remind.count}`} onClick={run(a.remind.run)} />}
+      {a.close && <SheetRow hold={hold} icon={Lock} label="Close poll" onClick={run(a.close)} />}
+      {a.share && <SheetRow hold={hold} icon={Share} label="Share result" onClick={run(a.share)} />}
     </>
   );
 }
 
-function SheetRow({ icon, label, onClick, danger, disabled }: { icon: typeof Copy; label: string; onClick: () => void; danger?: boolean; disabled?: boolean }) {
+function SheetRow({ icon, label, onClick, danger, disabled, hold }: { icon: typeof Copy; label: string; onClick: () => void; danger?: boolean; disabled?: boolean; /** The redesign's glass menu: the word, then the icon (S-MSG.hold). */ hold?: boolean }) {
+  if (hold)
+    return (
+      <button type="button" className={danger ? "is-danger" : undefined} onClick={onClick} disabled={disabled}>
+        <span>{label}</span>
+        <Icon icon={icon} size={18} />
+      </button>
+    );
   return (
     <button type="button" className={"ch-msp-row is-btn" + (danger ? " is-danger" : "")} onClick={onClick} disabled={disabled}>
       <span className="ch-msp-row__ic">
@@ -935,12 +945,12 @@ function PhoneDetails({ api, conv, onBack }: { api: ChMessagesApi; conv: ChConv;
   };
   return (
     <PhoneScreen labelledBy={titleId} className="ch-msp-details">
-      <PhoneBar back={{ label: "Chat", onBack }} title="Details" titleId={titleId} />
+      <PhoneBar back={{ label: api.redesign ? "Back" : "Chat", onBack }} title="Details" titleId={titleId} />
       <div className="ch-msp-scroll">
         <SectionBoundary surface="messages.details" label="Details" code="CH-7213">
           <div className="ch-msp-page">
             <section className="ch-msp-prof">
-              {conv.group ? <GroupMark size="lg" /> : <Avatar name={conv.title} id={convAvatarId(api, conv)} size={api.redesign ? 84 : 72} year={api.redesign ? convYear(api, conv) : null} />}
+              {conv.group ? <GroupMark size="lg" flag={!!api.redesign && !!conv.channel} /> : <Avatar name={conv.title} id={convAvatarId(api, conv)} size={api.redesign ? 84 : 72} year={api.redesign ? convYear(api, conv) : null} />}
               <h2>{conv.title}</h2>
               <p className="ch-num">
                 {api.redesign ? detailsLine(conv, api.teamName) : conv.group
@@ -1104,7 +1114,7 @@ function PhoneDetails({ api, conv, onBack }: { api: ChMessagesApi; conv: ChConv;
           </div>
         </SectionBoundary>
       </div>
-      {api.redesign && muteV2.choosing && <MuteMenu onPick={(h) => void muteV2.setMute(true, h)} onClose={() => muteV2.setChoosing(false)} />}
+      {api.redesign && muteV2.choosing && <MuteMenu anchor={muteV2.anchor} onPick={(h) => void muteV2.setMute(true, h)} onClose={() => muteV2.setChoosing(false)} />}
       <Modal
         open={choosing}
         onClose={() => setChoosing(false)}
@@ -1233,7 +1243,9 @@ function PhoneNewMessage({
   const needsName = group && !name.trim();
   // A coach's group is a team broadcast: with no player in it, it would reach the whole team (groupLacksPlayer).
   const needsPlayer = group && groupLacksPlayer(api.viewer.role, to, api.directory);
-  const people = api.directory.filter((p) => p.name.toLowerCase().includes(q.trim().toLowerCase()));
+  // The lane's Suggested: people with no direct thread yet; a search looks through everyone (d64).
+  const direct = new Set(api.convs.filter((c) => !c.group).map((c) => c.memberIds[0]));
+  const people = api.directory.filter((p) => (q.trim() ? p.name.toLowerCase().includes(q.trim().toLowerCase()) : !api.redesign || !direct.has(p.userId) || to.includes(p.userId)));
   const players = api.directory.filter((p) => p.role === "player");
   const coaches = api.directory.filter((p) => p.role === "coach");
   const seniors = players.filter((p) => p.subtitle === "Senior");
@@ -1294,73 +1306,8 @@ function PhoneNewMessage({
     return () => document.removeEventListener("keydown", onKey);
   }, [onCancel, present]);
   const who = to.length === 1 ? firstName(personOf(api, to[0]!)?.name ?? "them") : `${to.length} people`;
-  return (
-    <PhoneScreen labelledBy="ch-msp-new-title" className="ch-msp-new" keyboardAware>
-      <PhoneBar
-        back={{ label: "Cancel", chevron: false, onBack: onCancel }}
-        title="New message"
-        titleId="ch-msp-new-title"
-        action={
-          <PhoneTextAction onClick={() => void go()} disabled={!to.length} busy={busy}>
-            {busy ? "Starting…" : group ? "Create group" : "Next"}
-          </PhoneTextAction>
-        }
-      />
-      <div className="ch-msp-to">
-        <span className="ch-msp-to__k" aria-hidden="true">
-          {api.redesign ? "To:" : "To"}
-        </span>
-        <div className="ch-msp-to__f">
-          {to.map((id) => (
-            <button key={id} type="button" className="ch-msp-tok" ref={api.redesign ? (el) => popIn(el, 0.8, true) : undefined} aria-label={`Remove ${personOf(api, id)?.name ?? "person"}`} onClick={() => toggle(id)}>
-              {firstName(personOf(api, id)?.name ?? "Member")}
-              <Icon icon={X} size={12} />
-            </button>
-          ))}
-          <input
-            className="ch-msp-to__in"
-            value={q}
-            onChange={(e) => setQ(e.target.value)}
-            placeholder={to.length ? "" : "Name or group"}
-            aria-label="Search people"
-            autoComplete="off"
-          />
-        </div>
-      </div>
-      {group && (
-        <label className="ch-msp-to is-name">
-          <span className="ch-msp-to__k">Name</span>
-          <input
-            ref={nameInput}
-            className="ch-msp-to__in"
-            value={name}
-            onChange={(e) => setName(e.target.value)}
-            placeholder="Group name"
-            maxLength={80}
-            aria-invalid={touched && needsName}
-          />
-        </label>
-      )}
-      <div className="ch-msp-scroll">
-        <div className="ch-msp-page">
-          {seed?.draft && (
-            <p className="ch-ms-new__draft">
-              <span>Your draft, ready in the conversation to edit and send</span>
-              <q>{seed.draft}</q>
-            </p>
-          )}
-          {touched && needsName && (
-            <p className="ch-field__help is-error" data-ch-code="CH-7104" role="alert">
-              Name the group so players know what it’s for.
-            </p>
-          )}
-          {touched && needsPlayer && (
-            <p className="ch-field__help is-error" data-ch-code="CH-7105" role="alert">
-              Choose at least one player. Coaches join the group once it exists.
-            </p>
-          )}
-          {coach && !q && (
-            <>
+  const quickGroups = coach && !q ? (
+<>
               <h2 className="ch-ms-sec__l">Quick groups</h2>
               <div className="ch-msp-panel">
                 <button type="button" className="ch-msp-row is-btn" onClick={onAnnounce}>
@@ -1405,8 +1352,78 @@ function PhoneNewMessage({
                 )}
               </div>
             </>
+  ) : null;
+  return (
+    <PhoneScreen labelledBy="ch-msp-new-title" className="ch-msp-new" keyboardAware>
+      <PhoneBar
+        back={{ label: "Cancel", chevron: false, onBack: onCancel }}
+        title="New message"
+        titleId="ch-msp-new-title"
+        action={
+          !api.redesign || (coach && to.length > 0) ? (
+            <PhoneTextAction onClick={() => void go()} disabled={!to.length} busy={busy}>
+              {busy ? "Starting…" : group ? "Create group" : "Next"}
+            </PhoneTextAction>
+          ) : undefined
+        }
+      />
+      <div className="ch-msp-to">
+        <span className="ch-msp-to__k" aria-hidden="true">
+          {api.redesign ? "To:" : "To"}
+        </span>
+        <div className="ch-msp-to__f">
+          {to.map((id) => (
+            <button key={id} type="button" className="ch-msp-tok" ref={api.redesign ? (el) => popIn(el, 0.8, true) : undefined} aria-label={`Remove ${personOf(api, id)?.name ?? "person"}`} onClick={() => toggle(id)}>
+              {firstName(personOf(api, id)?.name ?? "Member")}
+              <Icon icon={X} size={12} />
+            </button>
+          ))}
+          <input
+            className="ch-msp-to__in"
+            value={q}
+            onChange={(e) => setQ(e.target.value)}
+            placeholder={to.length || api.redesign ? "" : "Name or group"}
+            aria-label="Search people"
+            autoComplete="off"
+          />
+        </div>
+      </div>
+      {group && (
+        <label className="ch-msp-to is-name">
+          <span className="ch-msp-to__k">Name</span>
+          <input
+            ref={nameInput}
+            className="ch-msp-to__in"
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            placeholder="Group name"
+            maxLength={80}
+            aria-invalid={touched && needsName}
+          />
+        </label>
+      )}
+      <div className="ch-msp-scroll">
+        <div className="ch-msp-page">
+          {seed?.draft && (
+            <p className="ch-ms-new__draft">
+              <span>Your draft, ready in the conversation to edit and send</span>
+              <q>{seed.draft}</q>
+            </p>
           )}
-          <h2 className="ch-ms-sec__l">{q ? "Results" : api.redesign ? "Suggested" : "People"}</h2>
+          {touched && needsName && (
+            <p className="ch-field__help is-error" data-ch-code="CH-7104" role="alert">
+              Name the group so players know what it’s for.
+            </p>
+          )}
+          {touched && needsPlayer && (
+            <p className="ch-field__help is-error" data-ch-code="CH-7105" role="alert">
+              Choose at least one player. Coaches join the group once it exists.
+            </p>
+          )}
+          {!api.redesign && quickGroups}
+          {api.redesign && !api.directoryError && !people.length && !q ? null : (
+            <h2 className={api.redesign ? "ch-msv-suggest__h" : "ch-ms-sec__l"}>{q ? "Results" : api.redesign ? "Suggested" : "People"}</h2>
+          )}
           {api.directoryError ? (
             <InlineNotice code="CH-7205" title="Your team list didn’t load" body="Try again." onRetry={api.retryDirectory} />
           ) : (
@@ -1420,19 +1437,22 @@ function PhoneNewMessage({
                       <b>{p.name}</b>
                       <span>{p.subtitle}</span>
                     </span>
-                    <span className={"ch-msp-check" + (on ? " is-on" : "")} aria-hidden="true">
-                      {on && <Icon icon={Check} size={14} />}
-                    </span>
+                    {(!api.redesign || on) && (
+                      <span className={"ch-msp-check" + (on ? " is-on" : "")} aria-hidden="true">
+                        {on && <Icon icon={Check} size={14} />}
+                      </span>
+                    )}
                   </button>
                 );
               })}
-              {!people.length && <p className="ch-msp-none">{q.trim() ? `No one matches “${q.trim()}”.` : "No one to message yet."}</p>}
+              {!people.length && (q.trim() || !api.redesign) && <p className="ch-msp-none">{q.trim() ? `No one matches “${q.trim()}”.` : "No one to message yet."}</p>}
             </div>
           )}
           {group && <p className="ch-msp-hint ch-num">Messages to {to.length} people start a new group.</p>}
+          {api.redesign && quickGroups}
         </div>
       </div>
-      <footer ref={footer} className="ch-ms-comp">
+      <footer ref={footer} className="ch-ms-comp" hidden={api.redesign && !to.length}>
         <AttachChips files={files} onRemove={(i) => setFiles(files.filter((_, j) => j !== i))} />
         <div className="ch-ms-comp__field">
           <AttachButton phone disabled={!to.length} onPick={(picked) => setFiles(addFiles(files, picked))} />

@@ -1,6 +1,6 @@
 "use client";
 
-import { CheckCheck } from "lucide-react";
+import { CheckCheck, Eye } from "lucide-react";
 import { AnimatePresence, m as M } from "motion/react";
 import { useEffect, useLayoutEffect, useRef, useState, type ReactNode } from "react";
 import { createPortal } from "react-dom";
@@ -8,7 +8,8 @@ import { orderReceiptRows, seenBy, seenByAccess, seenByAccessibleName, seenByLab
 import { chSpring, chSpringCurve, chTween, CH_EASE } from "../../lib/motion";
 import { chSupportsLinear } from "../../lib/sheet-drag";
 import { useChMotionMode, useChReducedMotion } from "../../lib/reduced-motion";
-import { Avatar } from "../../ui/Avatar";
+import { Avatar, avatarTone } from "../../ui/Avatar";
+import { initials as initialsOf } from "../../lib/format";
 import { Icon } from "../../ui/Icon";
 import { Modal } from "../../ui/Modal";
 import { InlineNotice } from "../../ui/Notices";
@@ -97,6 +98,67 @@ export function SeenByReceipt({ api, m, onOpen }: { api: ChMessagesApi; m: ChMsg
         </span>
       )}
     </>
+  );
+}
+
+/** Up to five faces; a new one pops in as a read arrives (M-MSG-17a), never on first paint. */
+export function SeenFaces({ api, ids, size, max }: { api: ChMessagesApi; ids: readonly string[]; size: number; max: number }) {
+  const reduced = useChReducedMotion();
+  if (!ids.length) return null;
+  return (
+    <span className="ch-msv-faces" aria-hidden="true">
+      <AnimatePresence initial={false}>
+        {ids.slice(0, max).map((id) => (
+          <M.span key={id} className="ch-msv-faces__f" initial={reduced ? false : { scale: 0.4, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} transition={chSpring("pop", reduced)}>
+            {/* The lane's faces are 16 and 20 with 7 and 8 type, under Avatar's steps: the same coin, drawn at the lane's size (listed for the owner). */}
+            <span className="ch-avatar" data-tone={avatarTone(personOf(api, id)?.playerId ?? id)} style={{ ["--ch-av-size" as string]: `${size}px`, ["--ch-av-type" as string]: `${size <= 16 ? 7 : 8}px` }} aria-hidden="true">
+              {initialsOf(personOf(api, id)?.name ?? "Member")}
+            </span>
+          </M.span>
+        ))}
+      </AnimatePresence>
+    </span>
+  );
+}
+
+/** S-MSG.holdseen: the hold menu's row on your own group message: who read it, faces and a count. */
+export function HoldSeenRow({ api, m, onOpen }: { api: ChMessagesApi; m: ChMsg; onOpen: () => void }) {
+  const seen = useSeenBy(api, m);
+  if (!seen?.canOpen) return null;
+  return (
+    <>
+      <hr />
+      <button type="button" className="ch-msv-seenrow" onClick={onOpen}>
+        <span className="ch-msv-seenrow__t">
+          Seen by
+          <Icon icon={Eye} size={18} />
+        </span>
+        <SeenFaces api={api} ids={seen.s.seen} size={20} max={6} />
+        <small className="ch-num">{seen.s.seen.length} of {seen.s.total} · {seen.s.notYet.length} not yet</small>
+      </button>
+    </>
+  );
+}
+
+/** The lane's receipt (S-MSG.team): a paper pill under your latest message in a group, faces and a count; a tap opens the list. */
+export function SeenByPill({ api, m, onOpen }: { api: ChMessagesApi; m: ChMsg; onOpen?: (anchor: HTMLElement) => void }) {
+  const seen = useSeenBy(api, m);
+  if (!seen) return null;
+  const n = seen.s.seen.length;
+  const words = n > 0 && n < seen.s.total ? <>Seen by <b className="ch-num">{n}</b> of {seen.s.total}</> : seen.label;
+  const open = seen.canOpen && onOpen ? onOpen : null;
+  const name = seenByAccessibleName(seen.s, !!open);
+  return open ? (
+    <button type="button" className="ch-msv-seen" aria-label={name} data-ch-code="CH-7608" onClick={(e) => open(e.currentTarget)}>
+      <SeenFaces api={api} ids={seen.s.seen} size={16} max={5} />
+      <span aria-hidden="true">{words}</span>
+    </button>
+  ) : (
+    <span className="ch-msv-seen" data-ch-code="CH-7608">
+      <SeenFaces api={api} ids={seen.s.seen} size={16} max={5} />
+      <span className="ch-sr-only" data-ch-code="CH-7805">{name}</span>
+      <span aria-hidden="true">{words}</span>
+    </span>
   );
 }
 
@@ -206,7 +268,10 @@ function SeenByBody({ api, m, compact }: { api: ChMessagesApi; m: ChMsg; compact
     return { userId, name, role, lastOpened, seenAt: null, meta, label };
   };
   const notYet = orderReceiptRows(s.notYet.map((id) => row(id, "notYet")), "notYet");
-  const seen = orderReceiptRows(s.seen.map((id) => row(id, "seen")), "seen");
+  // The lane reads top to bottom in the order they opened it (S-MSG.seen: Maya 7:06, Owen 7:08, ...).
+  const seen = api.redesign
+    ? s.seen.map((id) => row(id, "seen")).sort((a, b) => String(a.lastOpened).localeCompare(String(b.lastOpened)))
+    : orderReceiptRows(s.seen.map((id) => row(id, "seen")), "seen");
   const offline = typeof navigator !== "undefined" && navigator.onLine === false;
   // M6: a person moving from Not yet to Seen glides to their new place (one layout id across both sections, on smooth,
   // which keeps its velocity when retargeted); the meta and the section counts cross-fade on quick (M1's swap); a section
@@ -231,7 +296,7 @@ function SeenByBody({ api, m, compact }: { api: ChMessagesApi; m: ChMsg; compact
         transition={chSpring("smooth", reduced)}
       >
         <h3 className="ch-seen-sec__h ch-num">
-          {title} · {fade(String(rows.length), String(rows.length))}
+          {api.redesign ? <><span>{title}</span>{fade(String(rows.length), String(rows.length))}</> : <>{title} · {fade(String(rows.length), String(rows.length))}</>}
         </h3>
         <ul className="ch-seen-sec__rows">
           {rows.map((x) => (
@@ -247,7 +312,7 @@ function SeenByBody({ api, m, compact }: { api: ChMessagesApi; m: ChMsg; compact
       </M.section>
     );
   return (
-    <div ref={listEl} className="ch-seen-list" data-ch-code={s.seen.length === 0 ? "CH-7310" : undefined}>
+    <div ref={listEl} className={"ch-seen-list" + (api.redesign ? " is-v2" : "")} data-ch-code={s.seen.length === 0 ? "CH-7310" : undefined}>
       {offline && <p className="ch-seen-note">You’re offline. This may be out of date.</p>}
       <AnimatePresence initial={false}>
         {api.redesign ? (
