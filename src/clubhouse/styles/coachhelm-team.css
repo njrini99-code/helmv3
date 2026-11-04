@@ -107,7 +107,7 @@ html[data-fw-theme='dark'] .ch-htb {
 .ch-htb .card {
   background:var(--card);
   border-radius:16px;
-  box-shadow:0 0 0 1px var(--ring),var(--shadow);
+  box-shadow:var(--ch-team-shadow-1);
   overflow:hidden
 }
 .ch-htb .ch {
@@ -235,7 +235,7 @@ html[data-fw-theme='dark'] .ch-htb .coin.early {
   padding:18px 16px 14px;
   position:relative;
   overflow:hidden;
-  box-shadow:0 14px 30px -18px rgba(5,30,18,.6)
+  box-shadow:var(--ch-team-shadow-2)
 }
 .ch-htb .feat .hk {
   font:500 calc(14px*var(--k))/1.2 var(--sans);
@@ -1221,7 +1221,7 @@ html[data-fw-theme='dark'] .ch-htb .btn.pri {
   border-radius:20px 20px 0 0;
   transform:translateY(105%);
   transition:transform 280ms var(--ease);
-  box-shadow:var(--shadow-lg)
+  box-shadow:var(--ch-team-shadow-3)
 }
 .ch-htb .rs.on {
   pointer-events:auto
@@ -1837,7 +1837,7 @@ html[data-fw-theme='dark'] .ch-htb .skl::after {
   bottom:0;
   width:420px;
   background:var(--bg);
-  box-shadow:-1px 0 0 var(--sep),var(--shadow-lg);
+  box-shadow:var(--ch-team-shadow-4);
   transform:translateX(102%);
   transition:transform 280ms var(--ease);
   overflow-y:auto;
@@ -2101,4 +2101,10 @@ html[data-fw-theme='dark'] .ch-htb .skl::after {
   from {
     opacity: 0;
   }
+}
+.ch-htb {
+  --ch-team-shadow-1: 0 0 0 1px var(--ring),var(--shadow);
+  --ch-team-shadow-2: 0 14px 30px -18px rgba(5,30,18,.6);
+  --ch-team-shadow-3: var(--shadow-lg);
+  --ch-team-shadow-4: -1px 0 0 var(--sep),var(--shadow-lg);
 }
