@@ -27,7 +27,7 @@ import { PREVIEW_TEAM_ROUNDS, PREVIEW_TEAM_ROUNDS_EMPTY, PREVIEW_TEAM_ROUNDS_FAI
 import { PreviewClasses } from '@/clubhouse/preview/PreviewClasses';
 import { ClassesNoTeam } from '@/clubhouse/screens/classes/ClassesNoTeam';
 import { ClassesSkeleton } from '@/clubhouse/screens/classes/ClassesSkeleton';
-import { PREVIEW_CLASSES, PREVIEW_CLASSES_CLEAR, PREVIEW_CLASSES_EMPTY, PREVIEW_CLASSES_FAILED, PREVIEW_CLASSES_MIXED, PREVIEW_CLASSES_PARTIAL } from '@/clubhouse/preview/fixtures-classes';
+import { PREVIEW_CLASSES, PREVIEW_CLASSES_CLEAR, PREVIEW_CLASSES_EMPTY, PREVIEW_CLASSES_FAILED, PREVIEW_CLASSES_MIXED, PREVIEW_CLASSES_PARTIAL, PREVIEW_CLASSES_LONG } from '@/clubhouse/preview/fixtures-classes';
 import '@/clubhouse/styles/classes.css';
 import { PREVIEW_HUB_COACH, PREVIEW_HUB_COACH_EMPTY, PREVIEW_HUB_COACH_FAILED, PREVIEW_HUB_PLAYER, PREVIEW_HUB_PLAYER_EMPTY, PREVIEW_HUB_PLAYER_FAILED } from '@/clubhouse/preview/fixtures-hub';
 import { PREVIEW_PLAYER_HOME, PREVIEW_PLAYER_HOME_EMPTY, PREVIEW_PLAYER_HOME_FAILED, PREVIEW_PLAYER_HOME_NO_EVENTS, PREVIEW_PLAYER_HOME_NO_ROUNDS } from '@/clubhouse/preview/fixtures-player-home';
@@ -323,8 +323,9 @@ export default async function ClubhousePreview({
           <ClassesNoTeam />
         ) : (
           <PreviewClasses
+            crh={crh}
             state={state}
-            data={{ clear: PREVIEW_CLASSES_CLEAR, empty: PREVIEW_CLASSES_EMPTY, failed: PREVIEW_CLASSES_FAILED, partial: PREVIEW_CLASSES_PARTIAL, mixed: PREVIEW_CLASSES_MIXED }[state ?? ''] ?? PREVIEW_CLASSES}
+            data={{ long: PREVIEW_CLASSES_LONG, clear: PREVIEW_CLASSES_CLEAR, empty: PREVIEW_CLASSES_EMPTY, failed: PREVIEW_CLASSES_FAILED, partial: PREVIEW_CLASSES_PARTIAL, mixed: PREVIEW_CLASSES_MIXED }[state ?? ''] ?? PREVIEW_CLASSES}
           />
         ),
     },

@@ -32,7 +32,7 @@ const rowOf = (id: string, i: ChClassInput, color: string | null): ChClassRow =>
  *   ?state=failpartial  Delete all classes stops half-way the first time (one kept, one off the calendar but still saved), and its Retry finishes
  *   ?state=read-notschedule | read-fault | read-none | read-warn   a file is read as that (pasted text is really read)
  */
-export function PreviewClasses({ data, state }: { data: ChClassesPage; state?: string }) {
+export function PreviewClasses({ data, state, crh = false }: { data: ChClassesPage; state?: string; crh?: boolean }) {
   const next = useRef(100);
   const partialOnce = useRef(true);
   const writes = useMemo<ChClassesWrites>(() => {
@@ -82,5 +82,5 @@ export function PreviewClasses({ data, state }: { data: ChClassesPage; state?: s
       },
     };
   }, [state, data]);
-  return <ClassesView data={data} writes={writes} />;
+  return <ClassesView data={data} writes={writes} crh={crh} />;
 }

@@ -666,4 +666,6 @@ export interface ChClassesPage {
   term: ChTerm;
   classes: { list: ChClass[]; error: boolean };
   week: ChWeek;
+  /** The team's zone and day, so a page left open reads again at the team's midnight. Used behind the lane's flag. */
+  clock?: { tz: string; day: string };
 }

@@ -140,3 +140,14 @@ export const PREVIEW_SCHEDULE_TEXT = [
   'STAT 201\tProbability and Statistics\tTTh\t9:00AM - 10:15AM\tHanes Hall 120\tDr. L. Osei\t3',
   'ECON 310\tIntermediate Macroeconomics\tMW\t10:10AM - 11:25AM\tGardner Hall 008\tProf. M. Hart\t3',
 ].join('\n');
+
+/** `?state=long`: a class name and a room long enough to wrap and to ellipsize (classes-roster-home 06 §4.8). */
+export const PREVIEW_CLASSES_LONG = {
+  ...PREVIEW_CLASSES,
+  classes: {
+    ...PREVIEW_CLASSES.classes,
+    list: PREVIEW_CLASSES.classes.list.map((c, i) =>
+      i === 1 ? { ...c, name: 'English and Creative Writing 101 · Writing Seminar for First-Year Student-Athletes', location: 'Bauman Telecommunications and Media Center, Room 203' } : c,
+    ),
+  },
+};

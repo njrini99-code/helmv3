@@ -82,6 +82,7 @@ export async function loadClasses(input: { playerId: string; teamId: string; /**
   if (!term) throw new Error('Clubhouse: no academic term for ' + todayIso);
 
   return {
+    clock: { tz: clock.tz, day: todayIso },
     todayIso,
     term,
     classes: { list: classesRes.error ? [] : toChClasses((classesRes.data ?? []) as ChClassRow[]), error: !!classesRes.error },
