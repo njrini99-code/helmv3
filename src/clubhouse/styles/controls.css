@@ -1858,6 +1858,12 @@ main[data-ch-crh='on'] .ch-modal__foot .ch-btn {
   main[data-ch-crh='on'] .ch-modal[data-ch-detent] .ch-modal__panel {
     height: min(var(--ch-modal-detent), 92dvh);
   }
+  /* The drawn sheets carry their actions under the content, on the sheet's own colour (classes-roster-home 06 §5). */
+  main[data-ch-crh='on'] .ch-modal[data-ch-detent] .ch-modal__foot {
+    background: none;
+    box-shadow: none;
+    border-top: 0;
+  }
   main[data-ch-crh='on'] .ch-modal[data-ch-detent] .ch-modal__body {
     flex: 1;
   }

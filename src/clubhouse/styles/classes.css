@@ -3154,7 +3154,6 @@ html[data-fw-theme='dark'] .ch-cl-tthead__days > span.is-today:not(.is-team) {
 [data-ch-crh='on'] .ch-cl-sk-crh {
   display: grid;
   gap: 12px;
-  padding-inline: var(--ch-page-x-phone);
 }
 [data-ch-crh='on'] .ch-cl-sk-crh__term {
   display: grid;

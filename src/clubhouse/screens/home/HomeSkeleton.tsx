@@ -1,4 +1,5 @@
 import type { ReactNode } from 'react';
+import { CrhSkelCard } from '../../ui/CrhSkelCard';
 import { Skeleton } from '../../ui/States';
 import { SkeletonDeskForm, SkeletonDeskHead } from './SkeletonDeskHead';
 import { SkeletonHeroBar } from './SkeletonHeroBar';
@@ -19,6 +20,20 @@ export function HomeSkeleton() {
       {/* Phone: the page's own shape in the Mobile clubhouse pass (the date under its double rule, the greeting, the
           coach's brief or the player's keys around the green Up next card, then the first section under its rule and
           its rows), so the hand-off changes nothing but the words (F-37). */}
+      {/* The lane's own (06 §11.3); CSS picks it, since this route's loading draws before the flag is read. */}
+      <div className="ch-hm-sk-crh" aria-hidden="true">
+        <div className="ch-hm-sk-crh__hero">
+          <Skeleton width={150} height={13} />
+          <Skeleton width={240} height={30} radius={8} />
+          <Skeleton width="86%" height={13} />
+          <Skeleton width="58%" height={13} />
+        </div>
+        <div className="ch-hm-sk-crh__body">
+          <CrhSkelCard title="Today" />
+          <CrhSkelCard title="Team scoring" rows={2} />
+          <CrhSkelCard title="The team’s game" rows={2} />
+        </div>
+      </div>
       <div className="ch-hm-skel" aria-hidden="true">
         <SkeletonPhoneHero />
         <div className="ch-hm-skel__body">

@@ -5435,3 +5435,32 @@ html[data-fw-theme='dark'] .ch-h-form__bar {
     letter-spacing: var(--ch-track-20);
   }
 }
+
+/* Coach Home loading, phone, behind the lane's flag (06 §11.3). */
+.ch-hm-sk-crh {
+  display: none;
+}
+@media (max-width: 820px) {
+  [data-ch-crh='on'] .ch-h-main[aria-busy='true'] > .ch-hm-skel {
+    display: none;
+  }
+  [data-ch-crh='on'] .ch-h-main[aria-busy='true'] > .ch-hm-sk-crh {
+    display: grid;
+    gap: 16px;
+  }
+  .ch-hm-sk-crh__hero {
+    display: grid;
+    gap: 12px;
+    padding: 8px var(--ch-page-x-phone) 24px;
+    border-radius: 0 0 var(--ch-radius-xl) var(--ch-radius-xl);
+    background: var(--ch-frame);
+    box-shadow: var(--ch-home-shadow-1);
+    --ch-skel-base: rgb(244 238 221 / 0.16);
+    --ch-skel-sheen: rgb(244 238 221 / 0.22);
+  }
+  .ch-hm-sk-crh__body {
+    display: grid;
+    gap: 12px;
+    padding-inline: var(--ch-page-x-phone);
+  }
+}
