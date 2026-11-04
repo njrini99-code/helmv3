@@ -1,6 +1,7 @@
 'use client';
 
 import { useClubhouseRole } from '../../shell/context';
+import { CrhSkelCard } from '../../ui/CrhSkelCard';
 import { Skeleton } from '../../ui/States';
 
 /**
@@ -48,6 +49,24 @@ export function SkeletonPhoneHero() {
           <Skeleton width="100%" height={44} radius={12} />
           <Skeleton width="100%" height={44} radius={12} />
         </span>
+      )}
+    </div>
+  );
+}
+
+/** The lane's cards in waiting, in the reader's own page: a coach's three, a player's Your game with its four legs. */
+export function SkeletonCrhCards() {
+  const player = useClubhouseRole() === 'player';
+  return (
+    <div className="ch-hm-sk-crh__body">
+      {player ? (
+        <CrhSkelCard title="Your game" rows={4} />
+      ) : (
+        <>
+          <CrhSkelCard title="Today" />
+          <CrhSkelCard title="Team scoring" rows={2} />
+          <CrhSkelCard title="The team’s game" rows={2} />
+        </>
       )}
     </div>
   );

@@ -131,13 +131,15 @@ export function PlayerHomePhone({ data, now: frozen, live, playerId, shs = false
             <Today list={data.today} now={now} failed={data.week.error} quiet={nothingAhead} canPlan={false} />
           </SectionBoundary>
         )}
-        {noRoundsYet(data) ? (
+        {noRoundsYet(data) && !shs ? (
           <NoRoundsYet />
         ) : (
           <>
-            <SectionBoundary surface="home.latestRound" label="Your latest round" code="CH-2206">
-              <Latest data={data.latest} covered={covered} />
-            </SectionBoundary>
+            {!noRoundsYet(data) && (
+              <SectionBoundary surface="home.latestRound" label="Your latest round" code="CH-2206">
+                <Latest data={data.latest} covered={covered} />
+              </SectionBoundary>
+            )}
             <SectionBoundary surface="home.game" label="Your scoring" code="CH-2217">
               <PlayerGame data={data} phone covered={covered} shs={shs} />
             </SectionBoundary>

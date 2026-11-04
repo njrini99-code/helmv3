@@ -29,7 +29,6 @@ import { divergeBar, filterKey, sgTone, windowShort, type ShsTone } from './shs-
 import { useGrowOnce, useStuck, WindowCrossfade } from './shs-motion';
 import { EarlyRead, NineHint } from './StatsFilter';
 import { DetailHero, StatsDetailScreen } from './StatsDetailScreen';
-import { StatsTeamFirstRun } from './StatsTeamFirstRun';
 import { PhoneWindowSwitch, RetryNotice, ShowSeason, TeamFilter, TeamFilterEmpty } from './StatsTeamIslands';
 import { figureValue, Players, Putting, reference, teamDaysMean, type ChLegPick } from './StatsTeamPhone';
 import { TeamInsight } from './StatsInsight';
@@ -166,7 +165,8 @@ export function StatsTeamPhoneShs({ data }: { data: ChTeamStats }) {
                 <span className="ch-shs-empty__ic">
                   <Icon icon={Flag} size={22} />
                 </span>
-                <StatsTeamFirstRun invite={data.activeCount === 0} />
+                <h2>No team rounds yet</h2>
+                <p>When players finish rounds with shot tracking, this page fills in: the team scoring average, strokes gained by leg, and who gains and loses.</p>
               </section>
             ) : noRounds ? (
               <section className="ch-shs-card">

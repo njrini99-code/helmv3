@@ -1,9 +1,8 @@
 import type { ReactNode } from 'react';
-import { CrhSkelCard } from '../../ui/CrhSkelCard';
 import { Skeleton } from '../../ui/States';
 import { SkeletonDeskForm, SkeletonDeskHead } from './SkeletonDeskHead';
 import { SkeletonHeroBar } from './SkeletonHeroBar';
-import { SkeletonPhoneHero } from './SkeletonPhoneHero';
+import { SkeletonCrhCards, SkeletonPhoneHero } from './SkeletonPhoneHero';
 import '../../styles/home.css';
 
 /** A bar centred in a box the height of its real line, so the text lands where the bar was. */
@@ -28,11 +27,7 @@ export function HomeSkeleton() {
           <Skeleton width="86%" height={13} />
           <Skeleton width="58%" height={13} />
         </div>
-        <div className="ch-hm-sk-crh__body">
-          <CrhSkelCard title="Today" />
-          <CrhSkelCard title="Team scoring" rows={2} />
-          <CrhSkelCard title="The team’s game" rows={2} />
-        </div>
+        <SkeletonCrhCards />
       </div>
       <div className="ch-hm-skel" aria-hidden="true">
         <SkeletonPhoneHero />
