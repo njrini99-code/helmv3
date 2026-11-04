@@ -3,7 +3,7 @@ import { createClient } from '@/lib/supabase/server';
 import { chLogServer } from '../lib/track-server';
 import { formatFixed, formatSigned } from '../lib/format';
 import { sgBaseline, type ChSgTour } from '../lib/sg';
-import { currentSeasonLabel, fullName, groupByPlayer, loadSeasonRounds, loadTeamZone, mean, MIN_SG_ROUNDS, seasonStartDate, shortDate, type ChRound } from './season';
+import { countsForScoring, currentSeasonLabel, fullName, groupByPlayer, loadSeasonRounds, loadTeamZone, mean, MIN_SG_ROUNDS, seasonStartDate, shortDate, type ChRound } from './season';
 import {
   bandPutts,
   cachedPutts,
@@ -17,6 +17,7 @@ import {
   previousInFilter,
   rate,
   rateSample,
+  practiceCut,
   roundsInFilter,
   seasonOnly,
   sgChange,
@@ -181,7 +182,7 @@ export function sgLegs(r: ChRound): Array<number | null> {
   return [r.strokes_gained_tee, r.strokes_gained_approach, r.strokes_gained_around_green, r.strokes_gained_putting];
 }
 
-export async function loadTeamStats(input: { teamId: string; window: ChWindow; filter?: ChFilter }): Promise<ChTeamStats> {
+export async function loadTeamStats(input: { teamId: string; window: ChWindow; filter?: ChFilter; /** clubhouse_stats_redesign_v1: practice rounds leave the default figures. Off, they count as they always have. */ shs?: boolean }): Promise<ChTeamStats> {
   const f = input.filter ?? filterFor(input.window);
   const supabase = await createClient();
   const [teamRes, membersRes, tz] = await Promise.all([
@@ -208,7 +209,9 @@ export async function loadTeamStats(input: { teamId: string; window: ChWindow; f
   const season = players.length
     ? await loadSeasonRounds(supabase, players.map((p) => p.id), { surface: 'stats', since: loadSince(f, start) })
     : { rounds: [], error: !!membersRes.error };
-  const byPlayer = groupByPlayer(season.rounds);
+  // With the redesign on, the team's figures leave practice rounds out unless the filter asks for a type or picks rounds by hand (data/season.ts).
+  const scoring = practiceCut(input.shs, f) ? season.rounds.filter(countsForScoring) : season.rounds;
+  const byPlayer = groupByPlayer(scoring);
 
   const windowRounds: ChRound[] = [];
   const prevRounds: ChRound[] = [];
@@ -235,8 +238,8 @@ export async function loadTeamStats(input: { teamId: string; window: ChWindow; f
   // One cache read serves the window, the previous window and the season bests (either length, and earlier ones when Last 10 or a range
   // reaches before the season): only the rounds with their holes, and only the ones a figure reads, so Last 10's wider read does not
   // pull a year of putts. The season's bests are 18-hole rounds (`seasonFull`).
-  const seasonFull = season.rounds.filter((r) => (r.holes_played ?? 18) === 18);
-  const seasonRounds = seasonOnly(season.rounds, start);
+  const seasonFull = scoring.filter((r) => (r.holes_played ?? 18) === 18);
+  const seasonRounds = seasonOnly(scoring, start);
   const figureIds = [...new Set([...holeWindow, ...holePrev, ...holeRounds(seasonRounds)].map((r) => r.id))];
   const [cache, putts, longest, bench] = await Promise.all([
     loadRoundCache(supabase, figureIds, 'stats'),
@@ -403,7 +406,7 @@ export async function loadTeamStats(input: { teamId: string; window: ChWindow; f
   const onDay = (d: string) => windowRounds.filter((r) => r.round_date === d);
 
   // Player x leg grid.
-  const grid = teamGrid(players, season.rounds, f, start);
+  const grid = teamGrid(players, scoring, f, start);
 
   // Putting make rate by distance.
   let putting: ChTeamStats['putting'] = null;

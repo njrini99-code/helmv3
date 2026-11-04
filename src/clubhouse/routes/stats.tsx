@@ -12,6 +12,7 @@ import { StatsPlayer } from '../screens/stats/StatsPlayer';
 import { EmptyState } from '../ui/States';
 import { Button } from '../ui/Button';
 import { resolveClubhouseTeam } from './team';
+import { statsRedesignEnabled } from '../gate';
 import { NoTeam } from '../ui/NoTeam';
 import '../styles/stats.css';
 
@@ -30,14 +31,16 @@ export async function ClubhouseStatsRoute({ player, window, tab, query }: { play
   if (!team) return <StatsNoTeam coach={!!session.coach} />;
   const filter = parseFilter({ ...query, ...(window !== undefined ? { window } : {}) });
   const win = filter.window;
+  // The phone Stats redesign (clubhouse_stats_redesign_v1): read here, once, and passed down; no client module reads a flag.
+  const shs = statsRedesignEnabled();
 
   if (team.role === 'player') {
     // Game detail's "CoachHelm sees…" reads beside the profile, for the session's own player id (never the address's).
     const [profile, reads] = await Promise.all([
-      loadPlayerProfile({ viewer: 'player', teamId: team.teamId, playerId: team.playerId, window: win, filter }),
+      loadPlayerProfile({ viewer: 'player', teamId: team.teamId, playerId: team.playerId, window: win, filter, shs }),
       loadStatsReads({ role: 'player', playerId: team.playerId }),
     ]);
-    return profile ? <StatsPlayer data={profile} coachId={null} initialTab={tab} reads={reads} /> : <NotOnTeam coach={false} />;
+    return profile ? <StatsPlayer data={profile} coachId={null} initialTab={tab} reads={reads} shs={shs} /> : <NotOnTeam coach={false} />;
   }
 
   if (player) {
@@ -49,10 +52,10 @@ export async function ClubhouseStatsRoute({ player, window, tab, query }: { play
     const reads: Promise<ChStatsReads> = loadCoachPlayerScope({ coachId: team.coachId, teamId: team.teamId, playerId: player })
       .then(readsForScope)
       .catch((): ChStatsReads => ({ status: 'failed' }));
-    const profile = await loadPlayerProfile({ viewer: 'coach', teamId: team.teamId, playerId: player, window: win, filter });
-    return profile ? <StatsPlayer data={profile} coachId={team.coachId} initialTab={tab} reads={reads} /> : <NotOnTeam coach />;
+    const profile = await loadPlayerProfile({ viewer: 'coach', teamId: team.teamId, playerId: player, window: win, filter, shs });
+    return profile ? <StatsPlayer data={profile} coachId={team.coachId} initialTab={tab} reads={reads} shs={shs} /> : <NotOnTeam coach />;
   }
-  return <StatsTeam data={await loadTeamStats({ teamId: team.teamId, window: win, filter })} />;
+  return <StatsTeam data={await loadTeamStats({ teamId: team.teamId, window: win, filter, shs })} shs={shs} />;
 }
 
 export function StatsNoTeam({ coach }: { coach: boolean }) {

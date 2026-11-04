@@ -40,3 +40,10 @@ export function goalLine(g: { title: string; metric?: string | null; state: stri
   const metric = devMetric(g.title, g.metric);
   return `Now ${devValue(g.current, metric)}${g.target != null ? ` · target ${devValue(g.target, metric)}` : ''}`;
 }
+
+/** How far along a goal or focus area is, 0 to 100, from its baseline to its target; null without all three (a goal never invents progress). */
+export function progressOf(baseline: number | null, current: number | null, target: number | null): number | null {
+  if (baseline == null || current == null || target == null || baseline === target) return null;
+  const p = ((current - baseline) / (target - baseline)) * 100;
+  return Math.max(0, Math.min(100, Math.round(p)));
+}

@@ -27,7 +27,7 @@ import { TeamInsight } from './StatsInsight';
  * are plain HTML, and only the islands in StatsTeamIslands (the window switch,
  * Export, Try again, and the trend, leg cards and grid) ship as client code.
  */
-export function StatsTeam({ data }: { data: ChTeamStats }) {
+export function StatsTeam({ data, shs = false }: { data: ChTeamStats; /** clubhouse_stats_redesign_v1, read on the server. Off, this page is main's. */ shs?: boolean }) {
   const noRounds = !data.roundsError && data.roundCount === 0;
   // D-71's first-run page is for no round of either length: a team with only 9-hole rounds gets CH-4301 and the CH-4319 hint instead.
   const nineOnly = noRounds && nineRoundsInWindow(data.filter, data.filterOptions);
