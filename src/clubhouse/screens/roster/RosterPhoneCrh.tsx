@@ -400,7 +400,7 @@ export function RosterRowCrh({
   return (
     <GroupRow twoLine className="ch-rsx-grow">
       <PlayerPeek player={rosterPeek(p)}>
-        <button type="button" className="ch-rsm-row ch-rsx-row" data-flip={p.id} aria-label={label} data-ch-code="CH-3806" onClick={() => onOpen(p.id)} {...hold}>
+        <button type="button" className="ch-rsm-row ch-rsx-row" data-ch-roster-row="" data-flip={p.id} aria-label={label} data-ch-code="CH-3806" onClick={() => onOpen(p.id)} {...hold}>
           <span className={kind === 'injured' ? 'ch-rsx-coin is-dim' : 'ch-rsx-coin'}>
             <Avatar name={p.name} id={p.id} size="md" year={yearKeyOf(p.gradYear, clock)} dim={kind !== 'active'} />
           </span>

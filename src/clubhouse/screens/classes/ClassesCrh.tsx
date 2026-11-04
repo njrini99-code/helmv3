@@ -5,7 +5,7 @@ import { formatWith } from '../../lib/dates';
 import { useChClock } from '../../lib/use-clock';
 import {
   addDays,
-  clockLabel,
+  timeLabel,
   dateOf,
   dayToken,
   eventLabel,
@@ -130,7 +130,7 @@ function clockParts(label: string | null): [string, string] {
 
 function ClassRow({ c, sub, onOpen }: { c: ChClass; sub: string | null; onOpen?: (c: ChClass) => void }) {
   const hours = useChClock();
-  const [time, ampm] = clockParts(clockLabel(c.start, hours));
+  const [time, ampm] = clockParts(timeLabel(c.start, hours));
   const body = (
     <>
       <span className="ch-cl-tr__t">
@@ -161,7 +161,7 @@ function ClassRow({ c, sub, onOpen }: { c: ChClass; sub: string | null; onOpen?:
 function EventRow({ e, date }: { e: ChTeamEvent; date: string }) {
   const hours = useChClock();
   const w = eventWindowOn(e, date);
-  const [time, ampm] = clockParts(w ? clockLabel(`${String(Math.floor(w[0] / 60)).padStart(2, '0')}:${String(w[0] % 60).padStart(2, '0')}`, hours) : null);
+  const [time, ampm] = clockParts(w ? timeLabel(`${String(Math.floor(w[0] / 60)).padStart(2, '0')}:${String(w[0] % 60).padStart(2, '0')}`, hours) : null);
   return (
     <GroupRow twoLine className="ch-cl-tr">
       <span className="ch-cl-tr__btn">
