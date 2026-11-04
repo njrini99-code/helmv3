@@ -75,6 +75,48 @@ export function MiniRails({ rows, caption }: { rows: readonly MiniRailRow[]; cap
   );
 }
 
+export interface HBarRow {
+  label: string;
+  /** A second line under the label ("12 attempts"). */
+  sub?: string | null;
+  /** 0 to 100; null reads as no figure, saying `needs` under the label when it has one. */
+  value: number | null;
+  tour?: number | null;
+  /** An early read: hollow, never graded. */
+  early?: boolean;
+  needs?: string | null;
+}
+
+/** A detail's rows: label, rail and figure on a shared grid, with the Tour's tick where the Tour publishes one (the page's `.hb`). */
+export function HBars({ rows, tourKey = false }: { rows: readonly HBarRow[]; tourKey?: boolean }) {
+  return (
+    <>
+      {rows.map((r) => {
+        const sub = r.value == null ? (r.needs ?? r.sub) : r.sub;
+        return (
+          <div className="ch-shs-hb" key={r.label}>
+            <span className="l">
+              {r.label}
+              {sub && <small>{sub}</small>}
+            </span>
+            <span className="ch-shs-hrail" aria-hidden="true">
+              {r.value != null && <i className={`ch-shs-fill-${r.early ? 'flat is-early' : railTone(r.value, r.tour)}`} data-ch-grow="" style={{ width: `${Math.max(0, Math.min(100, r.value))}%` }} />}
+              {r.tour != null && <span className="ch-shs-tour" style={{ left: `${Math.max(0, Math.min(100, r.tour))}%` }} />}
+            </span>
+            <span className={'v ch-num' + (r.value == null ? ' ch-shs-none' : '')}>{r.value == null ? <NoData /> : `${Math.round(r.value)}%`}</span>
+          </div>
+        );
+      })}
+      {tourKey && rows.some((r) => r.tour != null) && (
+        <div className="ch-shs-tour-key">
+          <i aria-hidden="true" />
+          Tour average
+        </div>
+      )}
+    </>
+  );
+}
+
 export interface TickerRound {
   id: string;
   score: number;

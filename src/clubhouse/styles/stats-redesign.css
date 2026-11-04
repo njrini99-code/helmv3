@@ -1484,6 +1484,89 @@ li + li > .ch-shs-rrow::before {
   padding: 0;
   border: 0;
 }
+/* A detail is the page's cards on the page: today's card and well behind them stay off, whichever phone rule set them. */
+.ch-shs-screen .ch-gd.is-phone .ch-gm.is-detail,
+.ch-shs-screen .ch-gd.is-phone .ch-gm.is-detail .ch-gm__body {
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+  overflow: visible;
+}
+.ch-shs-screen .ch-gd.is-phone .ch-gm.is-detail .ch-gm-p {
+  padding: 12px 16px 16px;
+  border-radius: var(--ch-radius-lg);
+  background: var(--s-card);
+  box-shadow: var(--ch-stats-redesign-shadow-1);
+}
+/* The panel heads read as the cards' heads, whichever phone rule set them. */
+.ch-shs-screen .ch-gd.is-phone .ch-gm.is-detail .ch-gm-p__t {
+  margin: 0 0 8px;
+  font: var(--ch-type-17-strong);
+  letter-spacing: 0;
+  text-transform: none;
+  color: var(--s-ink);
+}
+/* The page's `.hb` rows. */
+.ch-shs-hb {
+  display: grid;
+  grid-template-columns: minmax(0, calc(84 * var(--ch-type-k))) minmax(0, 1fr) calc(44 * var(--ch-type-k));
+  gap: 8px;
+  align-items: center;
+  min-height: 44px;
+  padding-block: 4px;
+}
+.ch-shs-hb .l {
+  font: var(--ch-type-16-medium);
+  color: var(--s-ink);
+}
+.ch-shs-hb .l small {
+  display: block;
+  font: var(--ch-type-13);
+  color: var(--s-ink-2);
+}
+.ch-shs-hb .v {
+  font: var(--ch-type-17-strong);
+  text-align: right;
+}
+.ch-shs-tour-key {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 12px;
+  font: var(--ch-type-13);
+  color: var(--s-ink-2);
+}
+.ch-shs-tour-key i {
+  width: 2px;
+  height: 12px;
+  border-radius: 1px;
+  background: var(--s-ink);
+}
+.ch-shs-skey {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(calc(96 * var(--ch-type-k)), 1fr));
+  gap: 8px 12px;
+  margin-top: 12px;
+}
+.ch-shs-skey div {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+  font: var(--ch-type-15);
+  color: var(--s-ink-2);
+}
+.ch-shs-skey i {
+  flex: none;
+  align-self: center;
+  width: 10px;
+  height: 10px;
+  border-radius: 3px;
+}
+.ch-shs-skey b {
+  margin-left: auto;
+  font-weight: var(--ch-fw-600);
+  color: var(--s-ink);
+}
 /* Focus: 2px, offset 2, on anything that lacks its own rule above. */
 .ch-shs :focus-visible,
 .ch-shs-screen :focus-visible {

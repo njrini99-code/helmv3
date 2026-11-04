@@ -90,12 +90,14 @@ export function Ribbon({
           </span>
         )}
       </div>
-      <span className="ry ch-num" style={{ top: `${(y(top) / H) * 100}%` }}>
-        {format(top)}
-      </span>
-      <span className="ry ch-num" style={{ top: `${(y(bot) / H) * 100}%` }}>
-        {format(bot)}
-      </span>
+      {[top, bot].map((v, i) =>
+        // A figure on the reference line would print over its label: the label already sits there.
+        ref != null && Math.abs(y(v) - y(ref)) < 14 ? null : (
+          <span key={i} className="ry ch-num" style={{ top: `calc(${y(v) / H} * 124 * var(--ch-type-k))` }}>
+            {format(v)}
+          </span>
+        ),
+      )}
       <div className="rx">
         <span>{points[0]!.label}</span>
         <span>{points[n - 1]!.label}</span>
