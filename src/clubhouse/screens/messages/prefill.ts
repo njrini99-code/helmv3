@@ -23,6 +23,10 @@ export interface ChPrefill {
   draft: string;
   /** The group's name when there are two or more. */
   title?: string;
+  /** Ask's drafts: an existing thread, a poll to post, and where the back key returns once. Still sessionStorage only. */
+  conversationId?: string;
+  poll?: { question: string; options: string[]; closes?: string; multi?: boolean };
+  returnTo?: 'ask';
 }
 
 /**
@@ -30,7 +34,7 @@ export interface ChPrefill {
  * browser (no hydration mismatch) and nothing of the draft can be read from it.
  */
 function keyOf(p: ChPrefill): string {
-  const s = JSON.stringify([p.players, p.draft, p.title ?? '']);
+  const s = JSON.stringify([p.players, p.draft, p.title ?? '', ...(p.conversationId ? [p.conversationId] : []), ...(p.poll ? [p.poll] : [])]);
   let h1 = 0x811c9dc5;
   let h2 = 0x01000193;
   for (let i = 0; i < s.length; i++) {
@@ -46,10 +50,10 @@ function keyOf(p: ChPrefill): string {
  * href's key (the same prefill writes the same entry, so calling it on every render is harmless). With no players it
  * returns null: there is nobody to write to.
  */
-export function messagesPrefillHref({ players, draft, title }: ChPrefill): string | null {
+export function messagesPrefillHref({ players, draft, title, conversationId, poll, returnTo }: ChPrefill): string | null {
   const ids = [...new Set(players.filter(Boolean))];
   if (!ids.length) return null;
-  const p: ChPrefill = { players: ids, draft: draft.slice(0, 2000), title: ids.length > 1 ? title?.slice(0, 80) || undefined : undefined };
+  const p: ChPrefill = { players: ids, draft: draft.slice(0, 2000), title: ids.length > 1 ? title?.slice(0, 80) || undefined : undefined, ...(conversationId ? { conversationId } : {}), ...(poll ? { poll } : {}), ...(returnTo ? { returnTo } : {}) };
   const key = keyOf(p);
   if (typeof window !== 'undefined') {
     try {

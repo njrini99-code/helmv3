@@ -36,6 +36,8 @@ export interface ProposalFact {
   value: string;
   /** Marks a field the coach still needs to supply (e.g. an unset location). */
   missing?: boolean;
+  /** A Read fill's source: the Worked out pill (TASK_FIELDS §1). */
+  source?: string;
 }
 
 /**

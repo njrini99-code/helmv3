@@ -1,5 +1,7 @@
 'use client';
 
+import { BriefCard } from './BriefCard';
+import { HandoffCard } from './HandoffCard';
 import { Copy } from 'lucide-react';
 import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import type { AskAssistantTurn, AskBlock } from '../../../../data/coachhelm-chat-thread';
@@ -83,6 +85,8 @@ export function AnswerCard({ turn, fresh, showFollowUps, playersByName, players,
             );
           if (b.kind === 'evidence') return <AskEvidenceView key={b.key} envelope={b.envelope} roster={players} />;
           if (b.kind === 'visual') return <CoachVisualArtifact key={b.key} artifact={b.artifact} />;
+          if (b.kind === 'brief') return <BriefCard key={b.key} title={b.brief.title} questions={b.brief.questions} onDone={(_a, line) => onSend(line || 'Skip, just build')} />;
+          if (b.kind === 'handoff') return <HandoffCard key={b.key} handoff={b.handoff} />;
           if (b.kind === 'composition') return <CoachComposition key={b.key} composition={b.composition} live={turn.active} />;
           return actions(b);
         })}

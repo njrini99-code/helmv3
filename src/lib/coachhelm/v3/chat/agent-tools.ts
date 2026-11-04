@@ -42,6 +42,8 @@
  * that will execute — not a client-side guess at what might happen.
  * ========================================================================== */
 
+import { askDraftTools } from './ask-draft-tools';
+import { CREATE_FLOWS, CREATE_TOOL_NAMES, LINEUP_FLOWS, type FlowDef } from './create-tools';
 import { getProximityByBand, getRoundDetail, getShotPattern } from './shot-reads';
 import { compareSeasons, getCalendar, getCourse, getRootCauses } from './engine-reads';
 import { holdForExecution, releaseHeld } from './undo-hold';
@@ -91,6 +93,7 @@ import { claimForExecution, recordOutcome, recordProposal } from './action-runs'
 import { runWithCoachHelmTeams } from '@/lib/coachhelm/canary';
 import {
   ActionPlanError,
+  keyOf,
   planAnnouncement,
   planFocusArea,
   planTask,
@@ -112,7 +115,7 @@ const CONFIRM_REQUIRED_TOOLS = [
 export type ConfirmRequiredTool = (typeof CONFIRM_REQUIRED_TOOLS)[number];
 
 export function isConfirmRequired(name: string): name is ConfirmRequiredTool {
-  return (CONFIRM_REQUIRED_TOOLS as readonly string[]).includes(name);
+  return (CONFIRM_REQUIRED_TOOLS as readonly string[]).includes(name) || CREATE_TOOL_NAMES.includes(name);
 }
 
 /**
@@ -514,6 +517,26 @@ export function buildCoachTools({ sb, ctx, conversationId, writer, collect, team
     return { status: receipt.status, message: receipt.summary };
   };
 
+  /** A create flow on today's gate. The team is re-read at execute, so a coach who switched teams never writes to the old one (TASK_FIELDS 5.3). */
+  const flowGated = (f: FlowDef<never>): GatedAction<never, never> => ({
+    toolName: f.name,
+    plan: (input) => {
+      const d = f.plan(ctx, input);
+      const proposal: ActionProposal = { action: d.action, summary: d.summary, facts: d.facts, affects: d.affects ?? [], notifications: d.notifications, missing: d.facts.filter((x) => x.missing).map((x) => x.label), idempotency_key: keyOf(d.key) };
+      return { plan: input, proposal };
+    },
+    run: async (input) => {
+      const r = await f.run(ctx, input);
+      const at = nowIso();
+      if (!r.ok) return { status: 'failed', action: f.name, summary: r.error ?? 'That didn’t go through. Nothing was saved.', created: [], notifications: [], partial_failures: [], error: r.error, retryable: true, at };
+      return { status: 'completed', action: f.name, summary: r.summary, created: [{ kind: r.kind, count: 1, ...(r.href ? { href: r.href } : {}), ...(r.label ? { label: r.label } : {}) }], notifications: r.notifications ?? [], partial_failures: [], retryable: false, at };
+    },
+  });
+  const flowTool = (f: FlowDef<never>) => {
+    const action = flowGated(f);
+    return tool({ description: f.description, inputSchema: f.input as never, onInputAvailable: ({ input }: { input: never }) => proposeGated(action, input), execute: (input: never) => executeGated(action, input) } as never);
+  };
+
   const FOCUS_AREA: GatedAction<Parameters<typeof planFocusArea>[1], ReturnType<typeof planFocusArea>['plan']> = {
     toolName: 'create_focus_area',
     plan: (input) => planFocusArea(ctx, input),
@@ -653,6 +676,11 @@ export function buildCoachTools({ sb, ctx, conversationId, writer, collect, team
         };
       },
     }),
+
+    // Ask v2's create flows, each on the same gate: nothing writes before the named button, and nothing is told until Undo closes.
+    ...(askV2 ? Object.fromEntries((isFlagEnabled('golf_tournaments_v1') ? [...CREATE_FLOWS, ...LINEUP_FLOWS] : CREATE_FLOWS).map((f) => [f.name, flowTool(f)])) : {}),
+
+    ...(askV2 ? askDraftTools({ ctx, writer }) : {}),
 
     // Ask v2's reads: only with `coachhelm_ask_v2` and Clubhouse on for the team, so Fairway's tool set is what it was.
     ...(askV2

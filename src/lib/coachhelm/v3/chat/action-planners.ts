@@ -27,7 +27,7 @@ import { ACTIVE_FOCUS_DUPLICATE_ERROR } from '@/lib/coachhelm/focus-areas/duplic
 export class ActionPlanError extends Error {}
 
 /** Stable, plan-derived key. Two identical intents produce one write. */
-function keyOf(parts: (string | number)[]): string {
+export function keyOf(parts: (string | number)[]): string {
   return parts
     .map((p) => String(p).toLowerCase().replace(/\s+/g, '-'))
     .join(':')

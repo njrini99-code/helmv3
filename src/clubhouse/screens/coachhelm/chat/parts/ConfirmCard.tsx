@@ -13,12 +13,27 @@ const KIND: Record<string, { icon: LucideIcon; verb: (n: number) => string; busy
   create_task: { icon: ClipboardCheck, verb: () => 'Assign task', busy: 'Assigning…', chip: 'Assigned' },
   create_team_announcement: { icon: Megaphone, verb: (n) => (n > 0 ? `Post to ${n} players` : 'Post'), busy: 'Posting…', chip: 'Posted' },
 };
+const FLOWS: Record<string, { verb: string; busy: string; chip: string }> = {
+  create_event: { verb: 'Add to calendar', busy: 'Adding…', chip: 'Added' },
+  create_trip: { verb: 'Add the trip', busy: 'Adding…', chip: 'Added' },
+  create_qualifier: { verb: 'Set qualifier', busy: 'Setting…', chip: 'Set' },
+  create_goal: { verb: 'Set goal', busy: 'Setting…', chip: 'Set' },
+  add_round_note: { verb: 'Add note', busy: 'Adding…', chip: 'Added' },
+  set_lineup: { verb: 'Set lineup', busy: 'Setting…', chip: 'Set' },
+  lock_lineup: { verb: 'Lock the lineup', busy: 'Locking…', chip: 'Locked' },
+  add_blocked_time: { verb: 'Block time', busy: 'Blocking…', chip: 'Blocked' },
+  add_team_break: { verb: 'Add break', busy: 'Adding…', chip: 'Added' },
+  save_team_term: { verb: 'Save term', busy: 'Saving…', chip: 'Saved' },
+  set_availability_note: { verb: 'Save note', busy: 'Saving…', chip: 'Saved' },
+  create_recruit: { verb: 'Add recruit', busy: 'Adding…', chip: 'Added' },
+};
 const fallback = { icon: ClipboardCheck, verb: () => 'Confirm', busy: 'Working…', chip: 'Done' };
 
 /** Kit ② to ⑤: the draft as what it will become, who hears about it, then the capsule, the receipt with 8 seconds of Undo, and the Told row. Nothing is written before the named button. */
 export function ConfirmCard({ view, inlineReceipt, onApprove, onDeny }: { view: AskProposalView; inlineReceipt: ActionReceipt | null; onApprove: (id: string) => void; onDeny: (id: string) => void }) {
   const { proposal: p, status } = view;
-  const kind = KIND[view.tool] ?? fallback;
+  const flow = FLOWS[view.tool];
+  const kind = KIND[view.tool] ?? (flow ? { icon: ClipboardCheck, verb: () => flow.verb, busy: flow.busy, chip: flow.chip } : fallback);
   const [pressed, setPressed] = useState(false);
   const receipt = inlineReceipt ?? view.receipt;
   const players = p.affects.filter((a) => a.kind === 'player').length;
@@ -49,6 +64,7 @@ export function ConfirmCard({ view, inlineReceipt, onApprove, onDeny }: { view: 
             <div key={f.label} className="f">
               <span className="k">{f.label}</span>
               {f.missing ? <span className="ns">Not set</span> : <span className="v">{f.value}</span>}
+              {f.source && <span className="inf">{f.source}</span>}
             </div>
           ))}
         </div>

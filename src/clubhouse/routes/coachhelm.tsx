@@ -7,7 +7,7 @@ import { isTrackRecordEnabled } from '@/lib/coachhelm/v3/track-record/flag';
 import { isMondayBriefEnabled } from '@/lib/coachhelm/v3/monday-brief/flag';
 import { COURSE_TAB, isTeamBoardEnabled, TEAM_BOARD_FIRST_VIEW } from '@/lib/coachhelm/v3/team-board/flag';
 import { isReadEnabled } from '@/lib/coachhelm/v3/read/flag';
-import { isAskV2Enabled } from '@/lib/coachhelm/v3/chat/ask-flag';
+import { isAskV2Enabled, isPlayerAskEnabled } from '@/lib/coachhelm/v3/chat/ask-flag';
 import { isPlayerFileEnabled } from '@/lib/coachhelm/v3/player-file/flag';
 import { loadCoachPlayerFile, loadFileRoster, loadPlayerYourWeek } from '../data/coachhelm-file';
 import { FileSkeleton } from '../screens/coachhelm/file/FileSkeleton';
@@ -20,7 +20,7 @@ import { loadCoachTeamBoard } from '../data/coachhelm-team';
 import { TeamBoard } from '../screens/coachhelm/team/TeamBoard';
 import { TeamBoardSkeleton } from '../screens/coachhelm/team/TeamBoardSkeleton';
 import { emptyCoachHelm, loadCoachCoachHelm, loadCoachHelmGate, loadPlayerCoachHelm, loadPlayerHelmGate } from '../data/coachhelm';
-import { loadAskCoachHelm } from '../data/coachhelm-chat';
+import { loadAskPlayer, loadAskCoachHelm } from '../data/coachhelm-chat';
 import { loadCoachPlayerDeepDive, loadCoachPlayerGame, loadCoachPlayerScope, loadCoachPlayerStanding, type ChCoachPlayerScope } from '../data/coachhelm-player';
 import { loadPlayerDeepDive } from '../data/coachhelm-dive';
 import { loadPlayerGame } from '../data/coachhelm-profile';
@@ -75,6 +75,10 @@ import '../styles/coachhelm-ask-v2.css';
  */
 
 /** The coach's Board or Ask. The Board's loader checks the CoachHelm gate itself; Ask's is checked here, before its read. */
+async function PlayerAskView() {
+  return <Ask load={await loadAskPlayer()} v2 />;
+}
+
 async function CoachHelmView({ coachId, teamId, ask, conversationId, initialPlayer, initialInsight }: { initialInsight?: string; coachId: string; teamId: string; ask: boolean; conversationId?: string; initialPlayer?: string }) {
   if (!ask && isTeamBoardEnabled() && TEAM_BOARD_FIRST_VIEW === 'hole') return <TeamBoard fileOn={isPlayerFileEnabled()} data={await loadCoachTeamBoard({ coachId, teamId })} initialPlayer={initialPlayer} initialInsight={initialInsight} courseTab={COURSE_TAB} readOn={isReadEnabled()} />;
   if (!ask) return <CoachBoard data={await loadCoachCoachHelm({ coachId, teamId })} initialPlayer={initialPlayer} trackRecordHref={isTrackRecordEnabled() ? COACH_TRACK_RECORD_HREF : undefined} briefHref={isMondayBriefEnabled() ? COACH_BRIEF_HREF : undefined} />;
@@ -315,6 +319,13 @@ export async function ClubhouseCoachHelmRoute({ view, player, c, insight, sectio
       return (
         <Suspense fallback={<ReadSkeleton />}>
           <PlayerReadView playerId={session.player.id} insight={insight} />
+        </Suspense>
+      );
+    }
+    if (view === 'ask' && isPlayerAskEnabled()) {
+      return (
+        <Suspense fallback={<AskSkeleton chained />}>
+          <PlayerAskView />
         </Suspense>
       );
     }

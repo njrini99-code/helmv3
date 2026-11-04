@@ -201,7 +201,7 @@ export function buildInstructions(
   ctx: CoachChatContext,
   nowIso: string,
   claimsBlockEnabled: boolean,
-  opts: { askV2?: boolean } = {},
+  opts: { askV2?: boolean; knows?: string | null } = {},
 ): string {
   const today = new Intl.DateTimeFormat('en-US', {
     weekday: 'long',
@@ -224,6 +224,7 @@ export function buildInstructions(
     ...(claimsBlockEnabled ? [CLAIMS_BLOCK_SECTION] : []),
     ACTIONS_SECTION,
     ...(opts.askV2 ? [READ_MARKER_SECTION] : []),
+    ...(opts.askV2 && opts.knows ? [opts.knows] : []),
   ];
 
   return `${sections.join('\n\n')}

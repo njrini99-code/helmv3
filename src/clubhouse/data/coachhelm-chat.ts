@@ -1,3 +1,7 @@
+import { isAskV2Enabled } from '@/lib/coachhelm/v3/chat/ask-flag';
+import { readAskKnows } from '@/lib/coachhelm/v3/chat/ask-knows';
+import { resolvePlayerChatContext } from '@/lib/coachhelm/v3/chat/player-context';
+import { readBucket } from '@/lib/coachhelm/v3/chat/player-allowance';
 import 'server-only';
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { createClient } from '@/lib/supabase/server';
@@ -169,6 +173,46 @@ export async function loadAskCoachHelm({ conversationId }: { conversationId?: st
     thread: thread?.kind === 'found' ? thread.thread : null,
     notFound: (!!asked && !wanted) || thread?.kind === 'missing',
     threadFailed: thread?.kind === 'failed',
+    knows: await askKnows(sb, ctx, wanted),
   };
   return { status: 'ready', data };
+}
+
+/** Tone and facts, only with Ask v2 on; a missing column or table (HM2 held) is null and the controls stay hidden. */
+async function askKnows(sb: Awaited<ReturnType<typeof createClient>>, ctx: { coach_id: string; team_id: string }, conversationId: string | null): Promise<ChAskData['knows']> {
+  if (!isAskV2Enabled()) return null;
+  const k = await readAskKnows(sb, { coachId: ctx.coach_id, teamId: ctx.team_id, conversationId }).catch(() => null);
+  return k ? { ...k, teamId: ctx.team_id } : null;
+}
+
+/** A player's Ask: new chat each visit until HM3, no team pulse, and only their own name. No bucket (HM4 held) is no Ask. */
+export async function loadAskPlayer(): Promise<ChAskLoad> {
+  const sb = await createClient();
+  let ctx: Awaited<ReturnType<typeof resolvePlayerChatContext>>;
+  try {
+    ctx = await resolvePlayerChatContext(sb);
+  } catch (err) {
+    log('player context', err);
+    return { status: 'failed' };
+  }
+  const bucket = await readBucket(ctx.player_id, ctx.timezone);
+  if (!bucket) return { status: 'failed' };
+  return {
+    status: 'ready',
+    data: {
+      teamName: ctx.team_name,
+      timezone: ctx.timezone,
+      nowIso: new Date().toISOString(),
+      players: [],
+      suggestions: buildAskSuggestions({ openers: [], recentCovered: 0, rosterCount: 1 }),
+      pulse: null,
+      noRounds: false,
+      conversations: { list: [], error: false },
+      thread: null,
+      notFound: false,
+      threadFailed: false,
+      role: 'player',
+      allowance: bucket,
+    },
+  };
 }

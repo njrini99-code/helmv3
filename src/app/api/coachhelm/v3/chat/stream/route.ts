@@ -24,7 +24,9 @@
  *                      charts and receipts rather than only the prose.
  * ========================================================================== */
 
-import { isAskV2Enabled } from '@/lib/coachhelm/v3/chat/ask-flag';
+import { runPlayerTurn } from '@/lib/coachhelm/v3/chat/player-turn';
+import { knowsSection, readAskKnows } from '@/lib/coachhelm/v3/chat/ask-knows';
+import { isAskV2Enabled, isPlayerAskEnabled } from '@/lib/coachhelm/v3/chat/ask-flag';
 import { stripReadMarkers } from '@/lib/coachhelm/v3/chat/read-markers';
 import type { NextRequest } from 'next/server';
 import { after, NextResponse } from 'next/server';
@@ -333,6 +335,12 @@ export async function POST(req: NextRequest) {
   try {
     ctx = await resolveCoachChatContext(supabase);
   } catch (err) {
+    // A player has no coach row: their own read-only Ask, on this route, with the role from the session.
+    if (err instanceof CoachContextError && err.status === 403 && isPlayerAskEnabled()) {
+      const body = Body.safeParse(await req.json().catch(() => null));
+      if (!body.success) return NextResponse.json({ error: 'Bad request' }, { status: 400 });
+      return runPlayerTurn(supabase, { messages: body.data.messages }, req.signal);
+    }
     if (err instanceof CoachContextError) {
       return NextResponse.json({ error: err.message }, { status: err.status });
     }
@@ -553,6 +561,7 @@ export async function POST(req: NextRequest) {
 
   // Ask v2 only where Clubhouse is on for the team: this route also serves Fairway's chat (coachhelm-ask 02, hard rules).
   const askV2 = isAskV2Enabled() && isClubhouseForTeam(ctx.team_id);
+  const knows = askV2 ? await readAskKnows(supabase, { coachId: ctx.coach_id, teamId: ctx.team_id, conversationId: convId }).catch(() => null) : null;
 
   const stream = createUIMessageStream({
     execute: async ({ writer }) => {
@@ -596,7 +605,7 @@ export async function POST(req: NextRequest) {
         // string is ever edited.
         instructions: {
           role: 'system',
-          content: buildInstructions(ctx, new Date().toISOString(), claimsBlockEnabled, { askV2 }),
+          content: buildInstructions(ctx, new Date().toISOString(), claimsBlockEnabled, { askV2, knows: knows ? knowsSection(knows) : null }),
           providerOptions: { anthropic: { cacheControl: { type: 'ephemeral' } } },
         },
         // Pass the tool set so tool parts from earlier turns convert correctly —

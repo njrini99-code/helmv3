@@ -242,6 +242,7 @@ export function AskThread({ v2 = false, onArtifact, messages, busy, error, offli
                   if (b.kind === 'visual') return <CoachVisualArtifact key={b.key} artifact={b.artifact} />;
                   // `live`: the turn was streaming when the visual arrived; CoachComposition reads it once, at mount.
                   if (b.kind === 'composition') return <CoachComposition key={b.key} composition={b.composition} live={turn.active} />;
+                  if (b.kind === 'brief' || b.kind === 'handoff') return null;
                   if (b.kind === 'receipt') return <AskReceiptCard key={b.key} receipt={b.receipt} onAskAgain={onSend} />;
                   const focus = focusForProposal(turn.id, b.view);
                   return (

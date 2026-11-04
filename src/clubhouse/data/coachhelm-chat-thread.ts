@@ -128,13 +128,28 @@ export interface AskProposalView {
   receipt: ActionReceipt | null;
 }
 
+export interface AskBriefData {
+  title: string;
+  questions: Array<{ id: string; title: string; why?: string; multi?: boolean; options: Array<{ id: string; label: string; hint?: string }>; pick?: string[] }>;
+}
+
+/** A draft that opens Messages; the tool writes nothing and the coach sends. */
+export interface AskHandoffData {
+  kind: 'board';
+  players: string[];
+  title: string;
+  draft: string;
+}
+
 export type AskBlock =
   | { kind: 'text'; key: string; text: string; lead: boolean }
   | { kind: 'evidence'; key: string; envelope: ToolEnvelope }
   | { kind: 'proposal'; key: string; view: AskProposalView }
   | { kind: 'receipt'; key: string; receipt: ActionReceipt }
   | { kind: 'visual'; key: string; artifact: ValidatedVisualArtifact }
-  | { kind: 'composition'; key: string; composition: ValidatedComposition };
+  | { kind: 'composition'; key: string; composition: ValidatedComposition }
+  | { kind: 'brief'; key: string; brief: AskBriefData }
+  | { kind: 'handoff'; key: string; handoff: AskHandoffData };
 
 export interface AskUserTurn {
   role: 'user';
@@ -463,6 +478,10 @@ export function buildAssistantTurn(message: UIMessage, ctx: { isLast: boolean; b
     } else if (p.type === 'data-visual-artifact') {
       const artifact = artifacts.get(String(p.id ?? `v-${i}`));
       if (artifact) blocks.push({ kind: 'visual', key: `v-${artifact.artifactId}`, artifact });
+    } else if (p.type === 'data-brief') {
+      blocks.push({ kind: 'brief', key: `brief-${i}`, brief: p.data as AskBriefData });
+    } else if (p.type === 'data-handoff') {
+      blocks.push({ kind: 'handoff', key: `handoff-${i}`, handoff: p.data as AskHandoffData });
     } else if (p.type === 'data-visual-composition') {
       const composition = compositions.get(String(p.id ?? `c-${i}`));
       if (composition) blocks.push({ kind: 'composition', key: `c-${composition.artifactId}`, composition });

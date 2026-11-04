@@ -1,5 +1,7 @@
 'use client';
 
+import { AskKnowsPanel } from './parts/KnowsPanel';
+import { AllowanceMeter, PlayerOut } from './parts/Allowance';
 import { ArtifactView } from './parts/Artifact';
 import type { AskArtifact } from './parts/artifacts';
 import { MessagesSquare, PanelLeftOpen, SquarePen } from 'lucide-react';
@@ -168,6 +170,7 @@ function AskChat({ data, useChatImpl, initial, v2 }: { data: ChAskData; useChatI
     onConversationId: (id) => queueMicrotask(() => adopt(id)),
   });
 
+  const out = data.allowance === 'out' || chat.messages.some((m) => m.parts.some((p) => p.type === 'data-allowance'));
   const pending = pendingApproval(chat.messages);
   const showHome = chat.messages.length === 0 && !gone && !data.threadFailed;
   const notice = chat.error ? describeChatError(chat.error) : null;
@@ -207,7 +210,9 @@ function AskChat({ data, useChatImpl, initial, v2 }: { data: ChAskData; useChatI
   }, [chat.messages.length]);
 
   const heading = gone ? 'Chat not found' : (title ?? 'New chat');
+  const player = data.role === 'player';
   const histProps = {
+    footer: v2 && data.knows && !player ? <AskKnowsPanel knows={data.knows} conversationId={openId} /> : undefined,
     conversations,
     openId: chatSw.shown === NEW_CHAT ? null : chatSw.shown,
     nowIso: data.nowIso,
@@ -300,11 +305,12 @@ function AskChat({ data, useChatImpl, initial, v2 }: { data: ChAskData; useChatI
         </>
       )}
       <div className="ch-ask-top">
-        <CoachHelmTabs active={sw.shown} onGo={sw.go} />
+        {!player && <CoachHelmTabs active={sw.shown} onGo={sw.go} />}
+        {player && data.allowance && <AllowanceMeter bucket={data.allowance} />}
         {!phone && <TeamLabel name={data.teamName} />}
       </div>
       <div className={'ch-ask-body' + (!phone && chatsShown ? ' has-panel' : '') + (!phone && evidenceOpen ? ' has-evidence' : '')}>
-        {!phone && (
+        {!phone && !player && (
           <SectionBoundary surface="coachhelm.ask.history" label="Your chats" code="CH-13225">
             <HistoryPanel {...histProps} heading="CoachHelm" open={chatsShown} onHide={() => setPanelOpen(false)} />
           </SectionBoundary>
@@ -330,7 +336,12 @@ function AskChat({ data, useChatImpl, initial, v2 }: { data: ChAskData; useChatI
             </header>
           )}
           <div className={'ch-ask-scroll' + (showHome ? ' is-home' : !gone && !data.threadFailed ? ' is-thread' : '')}>{body}</div>
-          {docked && (
+          {player && out && (
+            <div className="ch-ask-dock">
+              <PlayerOut />
+            </div>
+          )}
+          {docked && !(player && out) && (
             <div className="ch-ask-dock">
               {composer('dock')}
               {!phone && (
