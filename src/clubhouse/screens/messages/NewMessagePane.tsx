@@ -8,7 +8,8 @@ import { Avatar } from '../../ui/Avatar';
 import { Icon } from '../../ui/Icon';
 import { InlineNotice } from '../../ui/Notices';
 import { popIn, tokenBeat } from './details-v2';
-import { personOf, type ChMessagesApi } from './MessagesView';
+import type { ChMessagesApi } from './MessagesView';
+import { personOf } from './person-of';
 
 /**
  * Desktop New message, in the thread column (MSG-NEW-02): a glass bar, the To card, Suggested. A name makes a green token, then the

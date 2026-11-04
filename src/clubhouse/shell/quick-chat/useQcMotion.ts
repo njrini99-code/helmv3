@@ -1,7 +1,7 @@
 'use client';
 
 import { useCallback, useRef } from 'react';
-import { CH_EASE, CH_EASE_SHEET, CH_FADE_MS, chSpringCurve } from '../../lib/motion';
+import { CH_EASE, CH_EASE_SHEET, CH_FADE_MS, chSpringCurve, CH_DUR } from '../../lib/motion';
 
 const bez = (c: readonly number[]) => `cubic-bezier(${c.join(',')})`;
 
@@ -29,11 +29,11 @@ export function useQcMotion(reduced: boolean) {
       panel.style.transformOrigin = `${origin.x - r.left}px ${origin.y - r.top}px`;
       const curve = chSpringCurve('pour');
       anims.current.push(panel.animate([{ transform: was.t }, { transform: 'none' }], { duration: curve.ms, easing: curve.linear }));
-      anims.current.push(panel.animate([{ opacity: was.o }, { opacity: 1 }], { duration: 160, easing: bez(CH_EASE) }));
-      if (scrim) anims.current.push(scrim.animate([{ opacity: scrimFrom }, { opacity: 1 }], { duration: 260, easing: bez(CH_EASE) }));
+      anims.current.push(panel.animate([{ opacity: was.o }, { opacity: 1 }], { duration: CH_DUR.quick * 1000, easing: bez(CH_EASE) }));
+      if (scrim) anims.current.push(scrim.animate([{ opacity: scrimFrom }, { opacity: 1 }], { duration: CH_DUR.base * 1000, easing: bez(CH_EASE) }));
       // The one allowed stagger: header, body, composer (07 M-CONTENT).
       panel.querySelectorAll<HTMLElement>('[data-qc-rise]').forEach((el, i) => {
-        anims.current.push(el.animate([{ opacity: 0, transform: 'translateY(8px)' }, { opacity: 1, transform: 'none' }], { duration: 280, delay: 60 + i * 30, easing: bez(CH_EASE), fill: 'backwards' }));
+        anims.current.push(el.animate([{ opacity: 0, transform: 'translateY(8px)' }, { opacity: 1, transform: 'none' }], { duration: CH_DUR.release * 1000, delay: 60 + i * 30, easing: bez(CH_EASE), fill: 'backwards' }));
       });
     },
     [reduced],

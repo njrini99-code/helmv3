@@ -3,7 +3,8 @@
 ## 2026-11-03 — L0: readPlans holds a coach to the rule of goals_coach_view
 
 ```text
-Design package: design-refresh/coachhelm-lenses/ (PR 0; 06 "Goals in the plan", W-LNS-1)
+Design package: design-refresh/coachhelm-lenses/ (PR 0; 06 "Goals in the plan",
+                W-LNS-1)
 PR/commit:      agent/l0-private-goals
 Contract IDs:   none
 Actions:        none
@@ -25,5 +26,6 @@ Held items:     none
 
 ### Verification
 
-- coachhelm-read-plans.test (new). Not run yet: the owner deferred testing to the
+- coachhelm-read-plans.test (new). Not run yet: the owner deferred testing to
+  the
   end of the build.

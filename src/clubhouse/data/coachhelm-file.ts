@@ -101,7 +101,7 @@ async function filePractice(supabase: Supabase, row: { id: string; drill_ids: st
     let drill: string | null = null;
     if (drillId) {
       const d = await supabase.from('golf_drills').select('title').eq('id', drillId).maybeSingle();
-      drill = d.data?.title ?? null;
+      drill = d.error ? null : (d.data?.title ?? null);
     }
     if (!drill) return null;
     return { drill, count: sum?.count ?? 0 };
@@ -112,7 +112,8 @@ async function filePractice(supabase: Supabase, row: { id: string; drill_ids: st
 }
 
 async function coachLabel(supabase: Supabase, coachId: string): Promise<string> {
-  const { data } = await supabase.from('golf_coaches').select('full_name').eq('id', coachId).maybeSingle();
+  const { data, error } = await supabase.from('golf_coaches').select('full_name').eq('id', coachId).maybeSingle();
+  if (error) return 'Your coach';
   const last = data?.full_name?.trim().split(/\s+/).pop();
   return last ? `Coach ${last}` : 'Your coach';
 }
@@ -136,6 +137,7 @@ export async function loadFileField(scope: { teamId: string; playerId: string; l
       others.push((r.score_to_par * 18) / (r.holes > 0 ? r.holes : 18));
     }
     const round = await supabase.from('golf_rounds').select('total_score, course_name').eq('id', mine.round_id).maybeSingle();
+    if (round.error) throw round.error;
     return toChFileField(entry, view.role === 'coach' ? others : [], view, { date: mine.date, course: round.data?.course_name ?? null, score: round.data?.total_score ?? null }, zone);
   } catch (err) {
     log('field', err);
@@ -309,11 +311,11 @@ export async function loadPlayerYourWeek(input: { playerId: string }): Promise<{
 }
 
 async function newestDay(supabase: Supabase, playerId: string): Promise<string | null> {
-  const { data } = await supabase.from('golf_rounds').select('round_date').eq('player_id', playerId).eq('status', 'completed').order('round_date', { ascending: false }).limit(1);
-  return data?.[0]?.round_date ?? null;
+  const { data, error } = await supabase.from('golf_rounds').select('round_date').eq('player_id', playerId).eq('status', 'completed').order('round_date', { ascending: false }).limit(1);
+  return error ? null : (data?.[0]?.round_date ?? null);
 }
 
 async function latestFocus(supabase: Supabase, playerId: string): Promise<ChFocusRow | null> {
-  const { data } = await supabase.from('golf_player_focus_areas').select('id, title, status, created_at, started_at, updated_at, from_insight_id').eq('player_id', playerId).in('status', ['proposed', 'active', 'in_progress', 'declined']).order('created_at', { ascending: false }).limit(1);
-  return (data?.[0] ?? null) as ChFocusRow | null;
+  const { data, error } = await supabase.from('golf_player_focus_areas').select('id, title, status, created_at, started_at, updated_at, from_insight_id').eq('player_id', playerId).in('status', ['proposed', 'active', 'in_progress', 'declined']).order('created_at', { ascending: false }).limit(1);
+  return error ? null : ((data?.[0] ?? null) as ChFocusRow | null);
 }

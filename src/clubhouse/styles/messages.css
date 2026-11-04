@@ -4151,13 +4151,13 @@ html[data-fw-theme='dark'] [data-ui='clubhouse'] .ch-ms-poll {
   height: 5px;
   border-radius: 50%;
   background: var(--ch-typing-dot);
-  animation: ch-msv-typing 1200ms cubic-bezier(0.45, 0, 0.55, 1) infinite;
+  animation: ch-msv-typing var(--ch-dur-sweep) var(--ch-ease) infinite;
 }
 [data-ch-ms-v2] .ch-ms-typing-mini i:nth-child(2) {
-  animation-delay: 160ms;
+  animation-delay: var(--ch-dur-quick);
 }
 [data-ch-ms-v2] .ch-ms-typing-mini i:nth-child(3) {
-  animation-delay: 320ms;
+  animation-delay: var(--ch-dur-release);
 }
 @keyframes ch-msv-typing {
   0%,
@@ -4175,7 +4175,7 @@ html[data-fw-theme='dark'] [data-ui='clubhouse'] .ch-ms-poll {
   display: block;
   border-radius: var(--ch-radius-tail);
   background: color-mix(in srgb, var(--ch-text-primary) 9%, transparent);
-  animation: ch-msv-skel 1400ms ease-in-out infinite;
+  animation: ch-msv-skel var(--ch-dur-sweep) ease-in-out infinite;
 }
 @keyframes ch-msv-skel {
   50% {
@@ -4468,13 +4468,13 @@ html[data-fw-theme='dark'] [data-ui='clubhouse'] .ch-ms-poll {
   height: 7px;
   border-radius: 50%;
   background: var(--ch-typing-dot);
-  animation: ch-msv-typing 1200ms cubic-bezier(0.45, 0, 0.55, 1) infinite;
+  animation: ch-msv-typing var(--ch-dur-sweep) var(--ch-ease) infinite;
 }
 [data-ch-ms-v2] .ch-msv-typing__dots i:nth-child(2) {
-  animation-delay: 160ms;
+  animation-delay: var(--ch-dur-quick);
 }
 [data-ch-ms-v2] .ch-msv-typing__dots i:nth-child(3) {
-  animation-delay: 320ms;
+  animation-delay: var(--ch-dur-release);
 }
 @keyframes ch-msv-typing-pop {
   from {
@@ -4525,11 +4525,11 @@ html[data-fw-theme='dark'] [data-ui='clubhouse'] .ch-ms-poll {
   opacity: 0;
   pointer-events: none;
   transform: translateX(-50%);
-  transition: opacity 250ms;
+  transition: opacity var(--ch-dur-base);
 }
 [data-ch-ms-v2] .ch-msv-datepill.is-on {
   opacity: 1;
-  transition-duration: 180ms;
+  transition-duration: var(--ch-dur-quick);
 }
 @media (min-width: 821px) {
   [data-ch-ms-v2] .ch-msv-datepill {
@@ -4738,7 +4738,7 @@ html[data-fw-theme='dark'] [data-ui='clubhouse'] .ch-ms-poll {
   inset: -4px;
 }
 [data-ch-ms-v2] .ch-msv-plus__key svg {
-  transition: transform 300ms var(--ch-ease-spring);
+  transition: transform var(--ch-dur-release) var(--ch-ease-spring);
 }
 [data-ch-ms-v2] .ch-msv-plus__key.is-open svg {
   transform: rotate(45deg);
@@ -4755,11 +4755,11 @@ html[data-fw-theme='dark'] [data-ui='clubhouse'] .ch-ms-poll {
   background: var(--ch-glass-strong);
   box-shadow: var(--ch-shadow-float);
   transform-origin: 18px 100%;
-  animation: ch-msv-lift 471ms var(--ch-ease-spring-lift, var(--ch-ease)) backwards;
+  animation: ch-msv-lift var(--ch-dur-reveal) var(--ch-ease-spring-lift, var(--ch-ease)) backwards;
 }
 [data-ch-ms-v2] .ch-msv-attach.is-closing {
   pointer-events: none;
-  animation: ch-msv-unlift 160ms var(--ch-ease) forwards;
+  animation: ch-msv-unlift var(--ch-dur-quick) var(--ch-ease) forwards;
 }
 @keyframes ch-msv-lift {
   from {
@@ -4818,7 +4818,7 @@ html[data-fw-theme='dark'] [data-ui='clubhouse'] .ch-ms-poll {
 }
 @media (prefers-reduced-motion: reduce) {
   [data-ch-ms-v2] .ch-msv-attach {
-    animation-duration: 180ms;
+    animation-duration: var(--ch-dur-quick);
   }
   [data-ch-ms-v2] .ch-msv-plus__key svg {
     transition: none;
@@ -5109,7 +5109,7 @@ body:has([data-ch-ms-v2]) .ch-toast {
 [data-ch-ms-v2] .ch-ms-poll__fill {
   transform: scaleX(var(--ch-poll-share));
   transform-origin: 0 50%;
-  transition: transform 462ms var(--ch-ease-spring-smooth);
+  transition: transform var(--ch-dur-reveal) var(--ch-ease-spring-smooth);
 }
 @media (prefers-reduced-motion: reduce) {
   [data-ch-ms-v2] .ch-ms-poll__fill {
@@ -5393,11 +5393,11 @@ body:has([data-ch-ms-v2]) .ch-toast {
 }
 @media (prefers-reduced-motion: reduce) {
   [data-ch-ms-v2] .ch-ms-det {
-    animation: ch-msv-det-fade var(--ch-fade-ms, 180ms) linear;
+    animation: ch-msv-det-fade var(--ch-fade-ms, var(--ch-dur-quick)) linear;
   }
 }
 [data-ch-ms-v2] .ch-ms-det {
-  background: var(--a-surface, var(--ch-card-bg));
+  background: var(--ch-card-bg);
   box-shadow: var(--ch-messages-x6);
 }
 [data-ch-ms-v2] .ch-ms-det > .ch-msp-tiles,
@@ -5621,7 +5621,7 @@ body:has([data-ch-ms-v2]) .ch-toast {
     height: 0.5px;
     background: var(--ch-separator);
     opacity: 0;
-    transition: opacity 200ms ease;
+    transition: opacity var(--ch-dur-quick) ease;
   }
   [data-ch-ms-v2] .ch-ms-th.is-under::after {
     opacity: 1;
@@ -5658,7 +5658,7 @@ body:has([data-ch-ms-v2]) .ch-toast {
   opacity: 0;
   pointer-events: none;
   transform: translateY(4px) scale(0.96);
-  transition: opacity 160ms var(--ch-ease), transform 220ms var(--ch-ease);
+  transition: opacity var(--ch-dur-quick) var(--ch-ease), transform var(--ch-dur-quick) var(--ch-ease);
 }
 .ch-msv-hoverbar button {
   display: grid;
@@ -5695,7 +5695,7 @@ body:has([data-ch-ms-v2]) .ch-toast {
 @media (prefers-reduced-motion: reduce) {
   .ch-msv-hoverbar {
     transform: none;
-    transition: opacity var(--ch-fade-ms, 180ms) linear;
+    transition: opacity var(--ch-fade-ms, var(--ch-dur-quick)) linear;
   }
 }
 .ch-msv-holdmenu > button.is-danger {
@@ -5767,7 +5767,7 @@ body:has([data-ch-ms-v2]) .ch-toast {
   animation: ch-msv-ring-pop var(--ch-dur-spring-pop) var(--ch-ease-spring-pop);
 }
 [data-ch-ms-v2] .ch-ms-poll__mark[data-pop] .ch-msv-tick path {
-  animation: ch-msv-tick-draw 260ms var(--ch-ease);
+  animation: ch-msv-tick-draw var(--ch-dur-base) var(--ch-ease);
 }
 @keyframes ch-msv-ring-pop {
   from {
@@ -5802,7 +5802,7 @@ body:has([data-ch-ms-v2]) .ch-toast {
     animation: none;
   }
   .ch-msv-pollfaces > span[data-pop] {
-    animation: ch-msv-det-fade var(--ch-fade-ms, 180ms) linear;
+    animation: ch-msv-det-fade var(--ch-fade-ms, var(--ch-dur-quick)) linear;
   }
 }
 /* The toast pill (MSG-TOAST-01), while the redesigned page is up. */

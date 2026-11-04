@@ -13,8 +13,10 @@ Held items:     none
 
 ### Changed
 
-- Window crossfade, the scoring line's morph, grow-once marks, the sticky shade, the What changed anchor, and focus to Back on a keyboard push.
+- Window crossfade, the scoring line's morph, grow-once marks, the sticky shade,
+  the What changed anchor, and focus to Back on a keyboard push.
 
 ### Verification
 
-- stats-motion.test.tsx (new). Not run yet: the owner deferred testing to the end of the build.
+- stats-motion.test.tsx (new). Not run yet: the owner deferred testing to the
+  end of the build.

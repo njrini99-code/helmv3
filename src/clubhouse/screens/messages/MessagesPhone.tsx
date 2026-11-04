@@ -93,7 +93,6 @@ import {
   EditMessageModal,
   LeaveGroupModal,
   DeleteConversationModal,
-  MessageHits,
   NewDivider,
   REACTIONS,
   RemoveMemberModal,
@@ -110,6 +109,7 @@ import {
 } from "./MessagesView";
 import { useComposerInset } from "./composer-inset";
 import { useThreadAnchor } from "./use-thread-anchor";
+import { MessageHits } from "./message-hits";
 import { useThreadDragTimes } from "./use-thread-drag-times";
 import { ConversationSearch, detailsLine, MembersCard, MuteMenu, PhotosAndFiles, popIn, QuickActions, tokenBeat, useMuteAction } from "./details-v2";
 import { HelloCard } from "./HelloCard";

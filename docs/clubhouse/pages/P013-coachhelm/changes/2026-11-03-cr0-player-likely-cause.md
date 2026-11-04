@@ -28,7 +28,8 @@ Held items:     none
 
 ### Verification
 
-- coachhelm-dive.test CR0 cases: the player's serialized row has no drivers, cause
+- coachhelm-dive.test CR0 cases: the player's serialized row has no drivers,
+  cause
   sentence or reason; the coach's row keeps them, base untouched. Two tests
   that pinned the player seeing drivers on a likely cause were changed to pin
   their absence; the observed path now carries their driver assertions.

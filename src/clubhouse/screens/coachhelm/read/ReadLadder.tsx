@@ -5,10 +5,10 @@ export function ReadLadder({ ladder, onGreen }: { ladder: ChBenchmarkLadder; onG
   const W = 300;
   const pad = 14;
   const x = (v: number) => pad + ((v - ladder.min) / (ladder.max - ladder.min || 1)) * (W - 2 * pad);
-  const ink = onGreen ? 'var(--f-ink)' : 'var(--ink)';
-  const ink2 = onGreen ? 'var(--f-ink-2)' : 'var(--ink-2)';
-  const track = onGreen ? 'var(--f-track)' : 'var(--track)';
-  const loss = onGreen ? 'var(--f-loss)' : 'var(--loss-fill)';
+  const ink = onGreen ? 'var(--ch-hr-f-ink)' : 'var(--ch-hr-ink)';
+  const ink2 = onGreen ? 'var(--ch-hr-f-ink-2)' : 'var(--ch-hr-ink-2)';
+  const track = onGreen ? 'var(--ch-hr-f-track)' : 'var(--ch-hr-track)';
+  const loss = onGreen ? 'var(--ch-hr-f-loss)' : 'var(--ch-hr-loss-fill)';
   const xs = [x(ladder.you.value), ...ladder.lines.map((l) => x(l.value))];
   const lo = Math.min(...xs);
   const hi = Math.max(...xs);
@@ -40,7 +40,7 @@ export function ReadLadder({ ladder, onGreen }: { ladder: ChBenchmarkLadder; onG
           </text>
         </g>
       ))}
-      <circle cx={yx} cy="33" r="8" fill={loss} stroke={onGreen ? 'var(--feat)' : 'var(--card)'} strokeWidth="3" />
+      <circle cx={yx} cy="33" r="8" fill={loss} stroke={onGreen ? 'var(--ch-hr-feat)' : 'var(--ch-hr-card)'} strokeWidth="3" />
       <text x={yx} y="14" textAnchor={yx > W - 60 ? 'end' : yx < 60 ? 'start' : 'middle'} fontSize="12.5" fontWeight="600" fill={ink}>
         {ladder.you.label} {ladder.you.display}
       </text>

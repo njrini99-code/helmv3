@@ -132,8 +132,8 @@ export function practiceDraftTool({ ctx, writer, envelopes, evidenceByRef }: { c
 /** One text message in the team channel, with no second push. False when it could not post (the publish still stands); the coach must be a participant. */
 async function postPlanToTeamChat(ctx: CoachChatContext, content: string): Promise<boolean> {
   const sb = await createClient();
-  const { data } = await sb.from('golf_conversations').select('id').eq('team_id', ctx.team_id).eq('is_team_channel', true).limit(1).maybeSingle();
-  if (!data?.id) return false;
+  const { data, error } = await sb.from('golf_conversations').select('id').eq('team_id', ctx.team_id).eq('is_team_channel', true).limit(1).maybeSingle();
+  if (error || !data?.id) return false;
   const sent = await sendMessage({ conversationId: data.id, content, sport: 'golf', createNotifications: false });
   return sent.success;
 }

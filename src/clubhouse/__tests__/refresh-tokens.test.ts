@@ -15,7 +15,7 @@ const read = (css: string, name: string): string => {
   return m[1]!;
 };
 const light = (name: string) => read(tokens, name);
-const refreshDark = tokens.slice(tokens.indexOf("html[data-fw-theme='dark'] [data-ch-refresh='on'] {"));
+const refreshDark = tokens.slice(tokens.indexOf("html[data-fw-theme='dark'] .ch-root[data-ch-refresh='on']"));
 const dark = (name: string) => (/^--ch-chart-(gain|loss)-fill$/.test(name) ? read(refreshDark, name) : read(darkBlock, name));
 
 const lum = (h: string) => {

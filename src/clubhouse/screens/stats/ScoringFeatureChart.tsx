@@ -67,7 +67,7 @@ export function ScoringFeatureChart({ rounds, tone, onRead }: { rounds: readonly
     .filter((p): p is readonly [number, number] => p != null);
   const line = monoPath(avg);
   const area = avg.length ? `${line}L${avg[avg.length - 1]![0]},${H - PAD.b}L${avg[0]![0]},${H - PAD.b}Z` : '';
-  const colour = tone === 'gain' ? 'var(--s-gain-fill)' : tone === 'loss' ? 'var(--s-loss-fill)' : 'var(--s-flat)';
+  const colour = tone === 'gain' ? 'var(--ch-shs-s-gain-fill)' : tone === 'loss' ? 'var(--ch-shs-s-loss-fill)' : 'var(--ch-shs-s-flat)';
 
   // The morph, on the drawn elements: React has already written the end state, and this walks to it. A window change mid-morph starts
   // from the shape on screen; Reduce Motion and a first paint draw it at rest.
@@ -255,8 +255,8 @@ export function TeamFeatureChart({ days, mean }: { days: ReadonlyArray<{ label: 
       <svg viewBox={`0 0 ${width} ${H}`} height={H} aria-hidden="true">
         <defs>
           <linearGradient id="ch-shs-tg" x1="0" x2="0" y1="0" y2="1">
-            <stop offset="0" stopColor="var(--s-gain-fill)" stopOpacity=".28" />
-            <stop offset="1" stopColor="var(--s-gain-fill)" stopOpacity="0" />
+            <stop offset="0" stopColor="var(--ch-shs-s-gain-fill)" stopOpacity=".28" />
+            <stop offset="1" stopColor="var(--ch-shs-s-gain-fill)" stopOpacity="0" />
           </linearGradient>
         </defs>
         {ticks.map((q) => (
@@ -269,7 +269,7 @@ export function TeamFeatureChart({ days, mean }: { days: ReadonlyArray<{ label: 
         ))}
         {mean != null && <line className="ch-shs-parline" x1="0" x2={width - R + 4} y1={y(mean)} y2={y(mean)} />}
         {line && <path d={`${line}L${pts[n - 1]![0]},${H - B}L0,${H - B}Z`} fill="url(#ch-shs-tg)" />}
-        {line && <path className="ch-shs-avgline" d={line} stroke="var(--s-gain-fill)" />}
+        {line && <path className="ch-shs-avgline" d={line} stroke="var(--ch-shs-s-gain-fill)" />}
         {pts.map((p, i) => (
           <circle key={i} className="ch-shs-rdot" cx={p[0]} cy={p[1]} r={i === n - 1 ? 5 : 3.4} />
         ))}

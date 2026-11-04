@@ -1,4 +1,4 @@
-import { CH_EASE, CH_EASE_SHEET, CH_FADE_MS, chSpringCurve } from '../../lib/motion';
+import { CH_EASE, CH_EASE_SHEET, CH_FADE_MS, chSpringCurve, CH_DUR, CH_SPRING_POP_MS } from '../../lib/motion';
 
 /** The task card's motion (coachhelm 07): in, settle, confirm, the three lands, chip, receipt and told. Transform and opacity only. */
 const ease = `cubic-bezier(${CH_EASE.join(',')})`;
@@ -31,7 +31,7 @@ export async function taskIn(card: HTMLElement, reduced: boolean): Promise<void>
         { transform: 'scale(0.985)', offset: 90 / 507, easing: settle.linear },
         { transform: 'scale(1)' },
       ],
-      { duration: 507 },
+      { duration: CH_SPRING_POP_MS },
     ),
   );
   if (foot) rise(foot, 6, 260, ease);
@@ -89,7 +89,7 @@ async function landMsg(card: HTMLElement, reduced: boolean): Promise<void> {
         { transform: 'translateY(-3px) scale(1.02)', offset: 90 / 507, easing: settle.linear },
         { transform: 'none' },
       ],
-      { duration: 507 },
+      { duration: CH_SPRING_POP_MS },
     ),
   );
   await new Promise((r) => setTimeout(r, 300));
@@ -129,7 +129,7 @@ export function landed(card: HTMLElement, reduced: boolean): void {
   chip?.animate([{ opacity: 0, transform: 'scale(0.8)' }, { opacity: 1, transform: 'none' }], { duration: settle.ms, easing: settle.linear });
   if (row) rise(row, 6, settle.ms, settle.linear);
   disc?.animate([{ transform: 'scale(0.4)' }, { transform: 'none' }], { duration: settle.ms, easing: settle.linear });
-  check?.animate([{ strokeDasharray: '22', strokeDashoffset: 22 }, { strokeDasharray: '22', strokeDashoffset: 0 }], { duration: 300, delay: 100, easing: ease, fill: 'backwards' });
+  check?.animate([{ strokeDasharray: '22', strokeDashoffset: 22 }, { strokeDasharray: '22', strokeDashoffset: 0 }], { duration: CH_DUR.release * 1000, delay: 100, easing: ease, fill: 'backwards' });
   fresh?.animate([{ opacity: 0, transform: 'translateY(-14px) scale(1.04)' }, { opacity: 1, transform: 'none' }], { duration: settle.ms, easing: settle.linear });
 }
 

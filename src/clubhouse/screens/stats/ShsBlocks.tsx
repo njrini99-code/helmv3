@@ -32,7 +32,7 @@ export function HowToggle({ text }: { text: string }) {
   );
 }
 
-const fill = (tone: ShsTone) => (tone === 'gain' ? 'var(--s-gain-fill)' : tone === 'loss' ? 'var(--s-loss-fill)' : 'var(--s-flat)');
+const fill = (tone: ShsTone) => (tone === 'gain' ? 'var(--ch-shs-s-gain-fill)' : tone === 'loss' ? 'var(--ch-shs-s-loss-fill)' : 'var(--ch-shs-s-flat)');
 
 /** The trend ribbon: better is always up; a dashed reference only when its value is loaded (04 "Detail visuals"). */
 export function Ribbon({

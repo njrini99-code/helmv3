@@ -2402,16 +2402,16 @@ html[data-fw-theme='dark'] .ch-app[data-ch-refresh='on'] {
 [data-ch-crh='on'] .ch-group__row[data-ch-pressed] {
   background: color-mix(in srgb, var(--ch-ink-900) 5%, transparent);
 }
-[data-ch-crh='on'] [data-year='sr'] {
+[data-ch-crh='on'] .ch-avatar[data-year='sr'] {
   --y: var(--ch-yr-sr);
 }
-[data-ch-crh='on'] [data-year='jr'] {
+[data-ch-crh='on'] .ch-avatar[data-year='jr'] {
   --y: var(--ch-yr-jr);
 }
-[data-ch-crh='on'] [data-year='so'] {
+[data-ch-crh='on'] .ch-avatar[data-year='so'] {
   --y: var(--ch-yr-so);
 }
-[data-ch-crh='on'] [data-year='fr'] {
+[data-ch-crh='on'] .ch-avatar[data-year='fr'] {
   --y: var(--ch-yr-fr);
 }
 /* The empty and failed block, inside the card that would hold the data. */
@@ -2483,10 +2483,10 @@ html[data-fw-theme='dark'] .ch-app[data-ch-refresh='on'] {
   font: var(--ch-type-11);
   fill: var(--ch-crh-ink4); letter-spacing: var(--ch-track-11); }
 /* The focus ring (06 CP-6.1): ink on the page and cards, champagne on the green. Never after a tap. */
-main[data-ch-crh='on'] {
+[data-ui='clubhouse'] main[data-ch-crh='on'] {
   --ch-border-focus: var(--ch-accent-ink);
 }
-main[data-ch-crh='on'] :focus-visible {
+[data-ui='clubhouse'] main[data-ch-crh='on'] :focus-visible {
   outline: 2px solid var(--ch-border-focus);
   outline-offset: 2px;
 }

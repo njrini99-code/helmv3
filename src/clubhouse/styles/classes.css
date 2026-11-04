@@ -3125,17 +3125,6 @@ html[data-fw-theme='dark'] .ch-cl-tthead__days > span.is-today:not(.is-team) {
   font: var(--ch-type-16-strong);
   color: var(--ch-flag); letter-spacing: var(--ch-track-16); }
 /* The status card: one card, no header, no panel chrome inside it. */
-[data-ch-crh='on'] .ch-surface--card .ch-ca-panel {
-  background: none;
-  box-shadow: none;
-}
-[data-ch-crh='on'] .ch-surface--card .ch-ca-panel > h2 {
-  position: absolute;
-  width: var(--ch-hairline-w);
-  height: var(--ch-hairline-w);
-  overflow: hidden;
-  clip-path: inset(50%);
-}
 [data-ch-crh='on'] .ch-surface--card .ch-cl-note {
   display: flex;
   gap: 12px;

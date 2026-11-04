@@ -8,7 +8,13 @@
 
 ## What Helm is (60-second overview)
 
-**Helm Sports Labs is a multi-sport SaaS platform for college athletic programs.** It is not one app — it is a shared technical spine (Next.js, Supabase/Postgres, auth + tenancy, an AI layer, an iOS shell) with sport-specific products built on top. The thesis: college team-management software has been rebuilt sport-by-sport and program-by-program; a shared platform amortizes the expensive parts (multi-tenant security, an AI coaching-insight engine, iOS delivery, calendar/roster/comms) across products.
+**Helm Sports Labs is a multi-sport SaaS platform for college athletic
+programs.** It is not one app — it is a shared technical spine (Next.js,
+Supabase/Postgres, auth + tenancy, an AI layer, an iOS shell) with
+sport-specific products built on top. The thesis: college team-management
+software has been rebuilt sport-by-sport and program-by-program; a shared
+platform amortizes the expensive parts (multi-tenant security, an AI
+coaching-insight engine, iOS delivery, calendar/roster/comms) across products.
 
 The suite as it stands today:
 
@@ -35,14 +41,21 @@ organization (the program / school department = the BUYER/tenant)
 
 - **The buyer is the program/team, never an individual.** Players never buy anything; they are provisioned by the coach ([01-personas.md](../../business/01-personas.md) §1).
 - **Isolation is enforced at the database layer via Postgres Row-Level Security (RLS)**, not application-layer filtering. A bug in an app `WHERE` clause is routine; a bug in RLS is a cross-tenant leak of minors' data — the single worst-case, business-ending failure ([00-business-context.md](../../business/00-business-context.md) §2.1, §5.1).
-- Canonical links: coach↔team via `golf_team_coach_staff` / `baseball_team_coach_staff` (**never** `golf_coaches.team_id` — that column does not exist); player↔team via `golf_team_members` (`status = 'active'`). RLS helpers `current_player_id()`, `is_team_coach(team_uuid)`, `is_team_player(team_uuid)` are `SECURITY DEFINER` with pinned `search_path`.
-- **Admin (`/golf/admin`) is a Helm-internal, cross-tenant operator role** — outside the buyer/user model, highest blast radius if leaked.
+- Canonical links: coach↔team via `golf_team_coach_staff` /
+  `baseball_team_coach_staff` (**never** `golf_coaches.team_id` — that column
+  does not exist); player↔team via `golf_team_members` (`status = 'active'`).
+  RLS helpers `current_player_id()`, `is_team_coach(team_uuid)`,
+  `is_team_player(team_uuid)` are `SECURITY DEFINER` with pinned `search_path`.
+- **Admin (`/golf/admin`) is a Helm-internal, cross-tenant operator role** —
+  outside the buyer/user model, highest blast radius if leaked.
 
 ---
 
 ## GolfHelm
 
-**One-line:** Full college golf team management (rounds, roster, calendar, qualifiers, messaging) with an embedded AI intelligence layer — the deepest, most mature product and the reference implementation for the platform.
+**One-line:** Full college golf team management (rounds, roster, calendar,
+qualifiers, messaging) with an embedded AI intelligence layer — the deepest,
+most mature product and the reference implementation for the platform.
 
 ### Buyer vs users
 | | |
@@ -53,11 +66,17 @@ organization (the program / school department = the BUYER/tenant)
 | **Admin** | Helm-internal operators at `/golf/admin` (cross-tenant ops) |
 
 ### Top jobs-to-be-done ([02-jobs-to-be-done.md](../../business/02-jobs-to-be-done.md) §1–2)
-1. **Pick who travels** — a single qualifying/travel-selection workspace replacing spreadsheets (the stated #1 differentiator; "most-painful, most-poorly-tooled workflow in college golf").
-2. **Know who is improving and why** — Strokes Gained (SG), split OTT/APP/ARG/PUTT, plus AI-detected patterns, not raw scoring average.
-3. **Run practice and the team calendar** — one surface for practice, tournaments, qualifiers, travel, and class-conflict detection.
-4. **Message the team** — realtime messaging + acknowledgement-tracked announcements (replace GroupMe/email).
-5. **Set and approve player goals** — coach-endorsed, measurable development goals as a first-class object.
+1. **Pick who travels** — a single qualifying/travel-selection workspace
+   replacing spreadsheets (the stated #1 differentiator; "most-painful,
+   most-poorly-tooled workflow in college golf").
+2. **Know who is improving and why** — Strokes Gained (SG), split
+   OTT/APP/ARG/PUTT, plus AI-detected patterns, not raw scoring average.
+3. **Run practice and the team calendar** — one surface for practice,
+   tournaments, qualifiers, travel, and class-conflict detection.
+4. **Message the team** — realtime messaging + acknowledgement-tracked
+   announcements (replace GroupMe/email).
+5. **Set and approve player goals** — coach-endorsed, measurable development
+   goals as a first-class object.
 
 ### Key surfaces / routes (all under `/golf/*`; see [CLAUDE.md](../../../CLAUDE.md) Feature Ownership tables)
 | Area | Route | Primary table |
@@ -73,9 +92,12 @@ organization (the program / school department = the BUYER/tenant)
 
 ### Must-never-break invariants (cite [03-product-invariants.md](../../business/03-product-invariants.md))
 - **SG math correctness** (§c) — `SG = baseline_expected(start) − baseline_expected(end) − 1`, four fixed categories, cached in `golf_player_stats_cache` (never recomputed on read), every causal claim traceable to [docs/v3-research-golf-domain.md](../../v3-research-golf-domain.md). Highest numeric-correctness bar in the codebase.
-- **RLS-first tenancy** (§a) — coach↔team via `golf_team_coach_staff`, never `golf_coaches.team_id`; RLS enabled in the same migration as every new table.
-- **No destructive DELETE-then-INSERT** (§f) — highest-risk surfaces: roster, qualifier selections, round-save (documented prior data-loss incident).
-- **Calendar timezone correctness** (§b) — store UTC, render in team timezone; test recurrence across DST.
+- **RLS-first tenancy** (§a) — coach↔team via `golf_team_coach_staff`, never
+  `golf_coaches.team_id`; RLS enabled in the same migration as every new table.
+- **No destructive DELETE-then-INSERT** (§f) — highest-risk surfaces: roster,
+  qualifier selections, round-save (documented prior data-loss incident).
+- **Calendar timezone correctness** (§b) — store UTC, render in team timezone;
+  test recurrence across DST.
 - **LLM budget integrity** (§e) — see CoachHelm below.
 
 ### Current maturity / state

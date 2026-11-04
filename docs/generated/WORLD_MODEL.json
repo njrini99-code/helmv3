@@ -15651,18 +15651,8 @@
         },
         {
           "kind": "import_graph",
-          "path": "src/app/golf/actions/coachhelm-ask-credits.ts",
-          "anchor": "src/lib/supabase/untyped"
-        },
-        {
-          "kind": "import_graph",
           "path": "src/app/golf/actions/coachhelm-ask.ts",
           "anchor": "src/lib/supabase/server"
-        },
-        {
-          "kind": "import_graph",
-          "path": "src/app/golf/actions/coachhelm-ask.ts",
-          "anchor": "src/lib/supabase/untyped"
         },
         {
           "kind": "import_graph",
@@ -16395,6 +16385,11 @@
         {
           "kind": "import_graph",
           "path": "src/app/golf/actions/coachhelm-ask-credits.ts",
+          "anchor": "src/lib/coachhelm/v3/chat/ask-db"
+        },
+        {
+          "kind": "import_graph",
+          "path": "src/app/golf/actions/coachhelm-ask-credits.ts",
           "anchor": "src/lib/coachhelm/v3/chat/ask-flag"
         },
         {
@@ -16406,6 +16401,11 @@
           "kind": "import_graph",
           "path": "src/app/golf/actions/coachhelm-ask-credits.ts",
           "anchor": "src/lib/coachhelm/v3/chat/player-context"
+        },
+        {
+          "kind": "import_graph",
+          "path": "src/app/golf/actions/coachhelm-ask.ts",
+          "anchor": "src/lib/coachhelm/v3/chat/ask-db"
         },
         {
           "kind": "import_graph",
@@ -21471,17 +21471,7 @@
         },
         {
           "kind": "import_graph",
-          "path": "src/lib/coachhelm/v3/chat/ask-knows.ts",
-          "anchor": "src/lib/supabase/untyped"
-        },
-        {
-          "kind": "import_graph",
           "path": "src/lib/coachhelm/v3/chat/persistence.ts",
-          "anchor": "src/lib/supabase/untyped"
-        },
-        {
-          "kind": "import_graph",
-          "path": "src/lib/coachhelm/v3/chat/player-allowance.ts",
           "anchor": "src/lib/supabase/untyped"
         },
         {
@@ -21516,8 +21506,8 @@
         },
         {
           "kind": "import_graph",
-          "path": "src/lib/coachhelm/v3/chat/undo-hold.ts",
-          "anchor": "src/lib/supabase/untyped"
+          "path": "src/lib/coachhelm/v3/chat/shot-reads.ts",
+          "anchor": "src/lib/supabase/fetch-all-rows"
         },
         {
           "kind": "import_graph",

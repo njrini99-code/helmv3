@@ -51,7 +51,8 @@
 --   drop trigger if exists golf_participants_unpin_on_hide
 --     on public.golf_conversation_participants;
 --   drop function if exists public.golf_pin_conversation(uuid, boolean);
---   drop function if exists public.golf_reorder_conversation_pins(uuid, uuid[]);
+-- drop function if exists public.golf_reorder_conversation_pins(uuid,
+--   uuid[]);
 --   drop function if exists helm_private.golf_unpin_on_participant_change();
 --   drop function if exists helm_private.golf_pins_compact(uuid, uuid);
 --   drop function if exists helm_private.golf_pins_broadcast(uuid, uuid);
@@ -69,7 +70,8 @@ BEGIN
   END IF;
   IF NOT EXISTS (
     SELECT 1 FROM information_schema.columns
-    WHERE table_schema = 'public' AND table_name = 'golf_conversation_participants'
+    WHERE table_schema = 'public'
+        AND table_name = 'golf_conversation_participants'
       AND column_name = 'hidden_at'
   ) THEN
     RAISE EXCEPTION 'apply 20261008160000 (hidden_at) first';
@@ -85,8 +87,9 @@ END $$;
 CREATE TABLE IF NOT EXISTS public.golf_conversation_pins (
     user_id uuid NOT NULL REFERENCES auth.users (id) ON DELETE CASCADE,
     conversation_id uuid NOT NULL
-        REFERENCES public.golf_conversations (id) ON DELETE CASCADE,
+    REFERENCES public.golf_conversations (id) ON DELETE CASCADE,
     team_id uuid,
+    -- squawk-ignore prefer-bigint-over-smallint
     position smallint NOT NULL CHECK (position BETWEEN 0 AND 8),
     pinned_at timestamptz NOT NULL DEFAULT now(),
     PRIMARY KEY (user_id, conversation_id)
@@ -125,17 +128,22 @@ RETURNS integer LANGUAGE sql IMMUTABLE AS $$ SELECT 3 $$;
 CREATE OR REPLACE FUNCTION helm_private.golf_pins_lock(p_user uuid, p_team uuid)
 RETURNS void LANGUAGE sql AS $$
   SELECT pg_advisory_xact_lock(
-    hashtextextended('golf-pins:' || p_user::text || ':' || coalesce(p_team::text, 'none'), 0)
+    hashtextextended('golf-pins:' || p_user::text || ':'
+        || coalesce(p_team::text, 'none'), 0)
   );
 $$;
 
-CREATE OR REPLACE FUNCTION helm_private.golf_pins_compact(p_user uuid, p_team uuid)
-RETURNS void LANGUAGE sql SECURITY DEFINER SET search_path = public, pg_temp AS $$
+CREATE OR REPLACE FUNCTION helm_private.golf_pins_compact(
+    p_user uuid, p_team uuid
+)
+RETURNS void LANGUAGE sql
+SECURITY DEFINER SET search_path = pg_catalog, public AS $$
   UPDATE public.golf_conversation_pins p
   SET position = r.rn - 1
   FROM (
     SELECT conversation_id,
-           row_number() OVER (ORDER BY position, pinned_at, conversation_id) AS rn
+           row_number() OVER (ORDER BY position, pinned_at,
+               conversation_id) AS rn
     FROM public.golf_conversation_pins
     WHERE user_id = p_user AND team_id IS NOT DISTINCT FROM p_team
   ) r
@@ -144,30 +152,46 @@ RETURNS void LANGUAGE sql SECURITY DEFINER SET search_path = public, pg_temp AS 
     AND p.position <> r.rn - 1;
 $$;
 
-CREATE OR REPLACE FUNCTION helm_private.golf_pins_broadcast(p_user uuid, p_team uuid)
-RETURNS void LANGUAGE plpgsql SECURITY DEFINER SET search_path = public, pg_temp AS $$
+CREATE OR REPLACE FUNCTION helm_private.golf_pins_broadcast(
+    p_user uuid, p_team uuid
+)
+RETURNS void LANGUAGE plpgsql SECURITY DEFINER SET search_path = public,
+pg_temp AS $$
 BEGIN
   PERFORM realtime.send(
-    jsonb_build_object('team_id', p_team), 'pins', 'golf-pins:' || p_user::text, true
+    jsonb_build_object('team_id', p_team), 'pins', 'golf-pins:'
+        || p_user::text, true
   );
 EXCEPTION WHEN OTHERS THEN
   -- A failed nudge must never undo the pin; the app also refetches on focus.
-  RAISE WARNING 'golf pins broadcast failed for %: % (%)', p_user, SQLERRM, SQLSTATE;
+  RAISE WARNING 'golf pins broadcast failed for %: % (%)', p_user, SQLERRM,
+      SQLSTATE;
 END $$;
 
 -- The current pins of one scope, in order, as the functions answer them.
 CREATE OR REPLACE FUNCTION helm_private.golf_pins_list(p_user uuid, p_team uuid)
-RETURNS uuid[] LANGUAGE sql STABLE SECURITY DEFINER SET search_path = public, pg_temp AS $$
+RETURNS uuid[] LANGUAGE sql STABLE SECURITY DEFINER SET search_path = public,
+pg_temp AS $$
   SELECT coalesce(array_agg(conversation_id ORDER BY position), '{}')
   FROM public.golf_conversation_pins
   WHERE user_id = p_user AND team_id IS NOT DISTINCT FROM p_team;
 $$;
 
-REVOKE ALL ON FUNCTION helm_private.golf_pin_limit() FROM public, anon, authenticated;
-REVOKE ALL ON FUNCTION helm_private.golf_pins_lock(uuid, uuid) FROM public, anon, authenticated;
-REVOKE ALL ON FUNCTION helm_private.golf_pins_compact(uuid, uuid) FROM public, anon, authenticated;
-REVOKE ALL ON FUNCTION helm_private.golf_pins_broadcast(uuid, uuid) FROM public, anon, authenticated;
-REVOKE ALL ON FUNCTION helm_private.golf_pins_list(uuid, uuid) FROM public, anon, authenticated;
+REVOKE ALL ON FUNCTION helm_private.golf_pin_limit() FROM public,
+anon,
+authenticated;
+REVOKE ALL ON FUNCTION helm_private.golf_pins_lock(uuid, uuid) FROM public,
+anon,
+authenticated;
+REVOKE ALL ON FUNCTION helm_private.golf_pins_compact(uuid, uuid) FROM public,
+anon,
+authenticated;
+REVOKE ALL ON FUNCTION helm_private.golf_pins_broadcast(uuid, uuid) FROM public,
+anon,
+authenticated;
+REVOKE ALL ON FUNCTION helm_private.golf_pins_list(uuid, uuid) FROM public,
+anon,
+authenticated;
 
 -- 3. Pin and unpin -----------------------------------------------------------
 -- Idempotent: pinning a pinned conversation, or unpinning one that isn't,
@@ -177,7 +201,8 @@ REVOKE ALL ON FUNCTION helm_private.golf_pins_list(uuid, uuid) FROM public, anon
 CREATE OR REPLACE FUNCTION public.golf_pin_conversation(
     p_conversation_id uuid, p_pinned boolean
 )
-RETURNS jsonb LANGUAGE plpgsql SECURITY DEFINER SET search_path = public, pg_temp AS $$
+RETURNS jsonb LANGUAGE plpgsql SECURITY DEFINER SET search_path = public,
+pg_temp AS $$
 DECLARE
   v_user uuid := auth.uid();
   v_team uuid;
@@ -207,7 +232,8 @@ BEGIN
         PERFORM helm_private.golf_pins_compact(v_user, v_team);
         PERFORM helm_private.golf_pins_broadcast(v_user, v_team);
       END IF;
-      RETURN jsonb_build_object('team_id', v_team, 'pins', to_jsonb(helm_private.golf_pins_list(v_user, v_team)));
+      RETURN jsonb_build_object('team_id', v_team, 'pins',
+          to_jsonb(helm_private.golf_pins_list(v_user, v_team)));
     END IF;
     RAISE EXCEPTION 'not_a_member' USING ERRCODE = 'P0001';
   END IF;
@@ -225,7 +251,8 @@ BEGIN
         RAISE EXCEPTION 'pin_limit' USING ERRCODE = 'P0001',
           DETAIL = to_jsonb(helm_private.golf_pins_list(v_user, v_team))::text;
       END IF;
-      INSERT INTO public.golf_conversation_pins (user_id, conversation_id, team_id, position)
+      INSERT INTO public.golf_conversation_pins (user_id, conversation_id,
+          team_id, position)
       VALUES (v_user, p_conversation_id, v_team, v_count);
       v_changed := true;
     END IF;
@@ -241,7 +268,8 @@ BEGIN
   IF v_changed THEN
     PERFORM helm_private.golf_pins_broadcast(v_user, v_team);
   END IF;
-  RETURN jsonb_build_object('team_id', v_team, 'pins', to_jsonb(helm_private.golf_pins_list(v_user, v_team)));
+  RETURN jsonb_build_object('team_id', v_team, 'pins',
+      to_jsonb(helm_private.golf_pins_list(v_user, v_team)));
 END $$;
 
 -- 4. Reorder -----------------------------------------------------------------
@@ -252,7 +280,8 @@ END $$;
 CREATE OR REPLACE FUNCTION public.golf_reorder_conversation_pins(
     p_team_id uuid, p_order uuid[]
 )
-RETURNS jsonb LANGUAGE plpgsql SECURITY DEFINER SET search_path = public, pg_temp AS $$
+RETURNS jsonb LANGUAGE plpgsql SECURITY DEFINER SET search_path = public,
+pg_temp AS $$
 DECLARE
   v_user uuid := auth.uid();
   v_current uuid[];
@@ -260,7 +289,9 @@ BEGIN
   IF v_user IS NULL THEN
     RAISE EXCEPTION 'not_signed_in' USING ERRCODE = 'P0001';
   END IF;
-  IF p_order IS NULL OR cardinality(p_order) <> (SELECT count(DISTINCT x) FROM unnest(p_order) x) THEN
+  IF p_order IS NULL
+      OR cardinality(p_order) <> (SELECT count(DISTINCT x)
+          FROM unnest(p_order) x) THEN
     RAISE EXCEPTION 'invalid_arguments' USING ERRCODE = '22023';
   END IF;
 
@@ -268,8 +299,10 @@ BEGIN
   v_current := helm_private.golf_pins_list(v_user, p_team_id);
 
   IF cardinality(v_current) <> cardinality(p_order)
-     OR EXISTS (SELECT 1 FROM unnest(p_order) x WHERE NOT x = ANY (v_current)) THEN
-    RAISE EXCEPTION 'pins_changed' USING ERRCODE = 'P0001', DETAIL = to_jsonb(v_current)::text;
+     OR EXISTS (SELECT 1 FROM unnest(p_order) x
+         WHERE NOT x = ANY (v_current)) THEN
+    RAISE EXCEPTION 'pins_changed'
+        USING ERRCODE = 'P0001', DETAIL = to_jsonb(v_current)::text;
   END IF;
 
   IF v_current IS DISTINCT FROM p_order THEN
@@ -279,18 +312,30 @@ BEGIN
     WHERE p.user_id = v_user AND p.conversation_id = o.conversation_id;
     PERFORM helm_private.golf_pins_broadcast(v_user, p_team_id);
   END IF;
-  RETURN jsonb_build_object('team_id', p_team_id, 'pins', to_jsonb(helm_private.golf_pins_list(v_user, p_team_id)));
+  RETURN jsonb_build_object('team_id', p_team_id, 'pins',
+      to_jsonb(helm_private.golf_pins_list(v_user, p_team_id)));
 END $$;
 
-REVOKE ALL ON FUNCTION public.golf_pin_conversation(uuid, boolean) FROM public, anon;
-REVOKE ALL ON FUNCTION public.golf_reorder_conversation_pins(uuid, uuid[]) FROM public, anon;
-GRANT EXECUTE ON FUNCTION public.golf_pin_conversation(uuid, boolean) TO authenticated, service_role;
-GRANT EXECUTE ON FUNCTION public.golf_reorder_conversation_pins(uuid, uuid[]) TO authenticated, service_role;
+REVOKE ALL ON FUNCTION public.golf_pin_conversation(uuid, boolean) FROM public,
+anon;
+REVOKE ALL ON FUNCTION public.golf_reorder_conversation_pins(
+    uuid, uuid[]
+) FROM public,
+anon;
+GRANT EXECUTE ON FUNCTION public.golf_pin_conversation(
+    uuid, boolean
+) TO authenticated,
+service_role;
+GRANT EXECUTE ON FUNCTION public.golf_reorder_conversation_pins(
+    uuid, uuid[]
+) TO authenticated,
+service_role;
 
 -- 5. Leaving or hiding a conversation unpins it ------------------------------
 
 CREATE OR REPLACE FUNCTION helm_private.golf_unpin_on_participant_change()
-RETURNS trigger LANGUAGE plpgsql SECURITY DEFINER SET search_path = public, pg_temp AS $$
+RETURNS trigger LANGUAGE plpgsql SECURITY DEFINER SET search_path = public,
+pg_temp AS $$
 DECLARE
   v_team uuid;
 BEGIN
@@ -305,7 +350,10 @@ BEGIN
   RETURN NULL;
 END $$;
 
-REVOKE ALL ON FUNCTION helm_private.golf_unpin_on_participant_change() FROM public, anon, authenticated;
+REVOKE ALL ON FUNCTION helm_private.golf_unpin_on_participant_change()
+FROM public,
+anon,
+authenticated;
 
 DROP TRIGGER IF EXISTS golf_participants_unpin_on_leave
 ON public.golf_conversation_participants;
@@ -321,7 +369,8 @@ FOR EACH ROW
 WHEN (new.hidden_at IS NOT NULL AND old.hidden_at IS NULL)
 EXECUTE FUNCTION helm_private.golf_unpin_on_participant_change();
 
--- 6. Private realtime topic: golf-pins:<your id>, receive only -----------------
+-- 6. Private realtime topic: golf-pins:<your id>, receive only
+--   -----------------
 
 DROP POLICY IF EXISTS golf_pins_receive ON realtime.messages;
 CREATE POLICY golf_pins_receive ON realtime.messages

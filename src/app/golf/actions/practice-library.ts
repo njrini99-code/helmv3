@@ -42,7 +42,8 @@ async function copyLibraryDrillImpl(input: { teamId: string; drillId: string }):
   const { sb, userId } = await who();
   if (!userId) return { success: false, error: 'Not signed in.' };
   const db = practiceTables(sb);
-  const { data: src } = await sb.from('golf_drills').select('title, category, duration_min, description').eq('id', input.drillId).maybeSingle();
+  const { data: src, error: srcError } = await sb.from('golf_drills').select('title, category, duration_min, description').eq('id', input.drillId).maybeSingle();
+  if (srcError) return { success: false, error: 'Couldn’t copy the drill.', code: 'CH-17006' };
   if (!src) return { success: false, error: 'That drill is gone.', code: 'CH-17006' };
   const { data, error } = await db.from('golf_team_drills').insert({ team_id: input.teamId, name: src.title, area: 'short_game', kind: 'skill', minutes: src.duration_min, setup: src.description, copied_from_drill_id: input.drillId, created_by: userId } as never).select('id').maybeSingle();
   if (error || !data) return { success: false, error: 'Couldn’t copy the drill.', code: 'CH-17006', unavailable: isPracticeMissing(error?.code) };

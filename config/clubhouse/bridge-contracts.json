@@ -18174,6 +18174,28 @@
     "catalog": "docs/clubhouse/catalog/coachhelm.md"
   },
   {
+    "id": 131709,
+    "page": "P013",
+    "category": 17,
+    "item": 9,
+    "name": "PLAYER_FILE_SAVING_A_COACHS_PLAN_FAILS",
+    "chCode": "CH-13760",
+    "meaning": "Player File: saving a coach's plan fails",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/coachhelm.md"
+  },
+  {
+    "id": 131710,
+    "page": "P013",
+    "category": 17,
+    "item": 10,
+    "name": "PLAYER_FILE_ONE_PART_OF_THE_FILE",
+    "chCode": "CH-13761",
+    "meaning": "Player File: one part of the file didn't load",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/coachhelm.md"
+  },
+  {
     "id": 131760,
     "page": "P013",
     "category": 17,
@@ -18389,6 +18411,28 @@
     "name": "ASK_A_VALIDATED_VISUAL",
     "chCode": "CH-13853",
     "meaning": "Ask: A validated visual (strokes gained anatomy)",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/coachhelm.md"
+  },
+  {
+    "id": 131820,
+    "page": "P013",
+    "category": 18,
+    "item": 20,
+    "name": "READ_THE_LINKS_READ_IS_NO_LONGER",
+    "chCode": "CH-13861",
+    "meaning": "Read: the link's read is no longer open",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/coachhelm.md"
+  },
+  {
+    "id": 131821,
+    "page": "P013",
+    "category": 18,
+    "item": 21,
+    "name": "READ_THE_READ_DIDNT_LOAD",
+    "chCode": "CH-13866",
+    "meaning": "Read: the read didn't load",
     "status": "implemented",
     "catalog": "docs/clubhouse/catalog/coachhelm.md"
   },

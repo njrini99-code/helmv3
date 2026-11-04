@@ -93,6 +93,8 @@ import { ComposerPlusV2 } from "./ComposerPlusV2";
 import { ConversationSearch, detailsLine, MembersCard, MuteMenu, PhotosAndFiles, QuickActions, useDetailsColumn, useMuteAction } from "./details-v2";
 import { HelloCard } from "./HelloCard";
 import { HoldLift } from "./hold-lift";
+import { MessageHits } from "./message-hits";
+import { personOf } from "./person-of";
 import { NewMessagePane } from "./NewMessagePane";
 import { useChipRise, useSendKeyPop } from "./thread-v2";
 import { GroupClassLine } from "./GroupClassLine";
@@ -116,7 +118,6 @@ import {
   linkParts,
   MESSAGE_MAX,
   railTime,
-  searchSnippet,
   sectionOf,
   threadItems,
   untilLabel,
@@ -335,8 +336,7 @@ export interface ChMessagesApi {
   receipts?: ChReceipts;
 }
 
-export const personOf = (api: ChMessagesApi, userId: string) =>
-  api.directory.find((p) => p.userId === userId);
+export { personOf };
 
 /** B19: a direct conversation's coin takes the other person's tone, from the id their coin has everywhere (a player's
  *  player id, else a coach's user id); a group has none. */
@@ -357,105 +357,6 @@ function SenderPeek({ api, who, children }: { api: ChMessagesApi; who: ChPerson 
 
 /* Rail */
 
-export function MessageHits({ api, q, nameMatches, conversationId, onPicked }: { api: ChMessagesApi; q: string; /** One conversation's hits only (Details, Search). */ conversationId?: string; onPicked?: () => void; /** Redesign: how many names matched, so an empty search says it once (S-MSG.search). */ nameMatches?: number }) {
-  const [hits, setHits] = useState<ChSearchHit[] | null>(null);
-  const [failed, setFailed] = useState(false);
-  const [attempt, setAttempt] = useState(0);
-  const search = api.searchMessages;
-  const term = q.trim();
-  useEffect(() => {
-    if (term.length < 2) {
-      setHits(null);
-      return;
-    }
-    let live = true;
-    setFailed(false);
-    const t = window.setTimeout(() => {
-      search(term)
-        .then((r) => live && (r ? setHits(conversationId ? r.filter((h) => h.conversationId === conversationId) : r) : setFailed(true)))
-        .catch(() => live && setFailed(true));
-    }, 250);
-    return () => {
-      live = false;
-      window.clearTimeout(t);
-    };
-  }, [search, term, attempt, conversationId]);
-  if (term.length < 2) return null;
-  if (nameMatches != null && hits && !hits.length && !failed)
-    return nameMatches > 0 ? null : (
-      <section className="ch-msv-card ch-msv-noresults" role="status">
-        <b>No results</b>
-        <span>Try another name or word.</span>
-      </section>
-    );
-  return (
-    <section
-      className="ch-ms-sec"
-      aria-label="Messages matching your search"
-      // CH-7802: results are announced as they arrive.
-      aria-live="polite"
-    >
-      <div className="ch-ms-sec__l">In messages</div>
-      {failed ? (
-        <InlineNotice
-          code="CH-7203"
-          title="Message search didn’t load"
-          body="Conversations above still match by name."
-          onRetry={() => setAttempt((a) => a + 1)}
-        />
-      ) : !hits ? (
-        <div className="ch-ms-sec__card" aria-busy="true" data-ch-code="CH-7404">
-          <div className="ch-ms-row" style={{ cursor: "default" }}>
-            <span />
-            <Skeleton width="80%" height={13} />
-          </div>
-        </div>
-      ) : !hits.length ? (
-        <EmptyState compact kind="filtered" code="CH-7303" title={`No messages mention “${term}”`} />
-      ) : (
-        <div className="ch-ms-sec__card">
-          {hits.slice(0, 20).map((h) => {
-            // The row is one line: it opens just before the match, which is marked (wave 5 #11).
-            const cut = searchSnippet(h.text, term);
-            return (
-            <button
-              key={h.messageId}
-              type="button"
-              className="ch-ms-row is-hit"
-              onClick={() => {
-                // D-70: opening a hit is plain navigation, so it is silent (F-0071; CH-7703 ticks a reaction or a filter).
-                chTrail("messages open search hit");
-                api.openHit(h);
-                onPicked?.();
-              }}
-            >
-              <span className="ch-ms-grp">
-                <Icon icon={Search} size={14} />
-              </span>
-              <span className="ch-ms-row__main">
-                <span className="ch-ms-row__top">
-                  <b>{h.conversationName}</b>
-                  <span className="ch-num">
-                    {railTime(h.at, api.now, api.timeZone, api.clock)}
-                  </span>
-                </span>
-                <span className="ch-ms-row__bot">
-                  <span>
-                    <em>{h.senderName}: </em>
-                    {cut.before}
-                    {cut.match && <mark className="ch-ms-hit">{cut.match}</mark>}
-                    {cut.after}
-                  </span>
-                </span>
-              </span>
-            </button>
-            );
-          })}
-        </div>
-      )}
-    </section>
-  );
-}
 
 /** One conversation in the list: the desktop rail and the phone inbox. */
 export function ConvRow({ api, c, avatarSize = 36, phone = false }: { api: ChMessagesApi; c: ChConv; avatarSize?: number; phone?: boolean }) {

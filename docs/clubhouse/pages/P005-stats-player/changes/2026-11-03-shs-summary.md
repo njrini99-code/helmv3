@@ -13,8 +13,11 @@ Held items:     none
 
 ### Changed
 
-- StatsPlayer picks StatsPlayerPhoneShs on a phone with the flag on; StatsPlayerPhone stays for the flag off. GameDetail gains `asDetail`, drawing a section as a pushed detail's body with every panel kept.
+- StatsPlayer picks StatsPlayerPhoneShs on a phone with the flag on;
+  StatsPlayerPhone stays for the flag off. GameDetail gains `asDetail`, drawing
+  a section as a pushed detail's body with every panel kept.
 
 ### Verification
 
-- stats-summary-figures.test.ts and mini-rails.test.tsx (new). Not run yet: the owner deferred testing to the end of the build.
+- stats-summary-figures.test.ts and mini-rails.test.tsx (new). Not run yet: the
+  owner deferred testing to the end of the build.

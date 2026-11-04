@@ -326,7 +326,7 @@ function FailedCard({ onRetry, seen }: { onRetry: () => void; /** The page's dat
   return (
     <section className="ch-shs-card" role="alert" data-ch-code="CH-5201">
       <div className="ch-shs-notice">
-        <span className="ch-shs-notice__ic">
+        <span className="ch-shs-notice__ic--flag">
           <Icon icon={AlertTriangle} size={16} />
         </span>
         <div>
@@ -439,7 +439,7 @@ function changeSentence(lines: ReadonlyArray<{ subject: string; figure: string; 
   const parts = lines.map((l, i) => {
     const subject = i === 0 ? l.subject : l.subject.charAt(0).toLowerCase() + l.subject.slice(1);
     const down = /^[−-]/.test(l.figure);
-    return `${subject} ${/^Putts|s$/.test(l.subject) ? 'are' : 'is'} ${down ? 'down' : 'up'} ${l.figure.replace(/^[−+-]/, '')}`;
+    return `${subject} ${(l.subject.startsWith('Putts') || l.subject.endsWith('s')) ? 'are' : 'is'} ${down ? 'down' : 'up'} ${l.figure.replace(/^[−+-]/, '')}`;
   });
   const against = /than (.*)$/.exec(lines[0]?.words ?? '')?.[1];
   return `${parts.join('; ')}${against ? `, against ${against}` : ''}.`;

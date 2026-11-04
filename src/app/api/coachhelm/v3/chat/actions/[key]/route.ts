@@ -9,8 +9,8 @@ async function coachId(): Promise<{ sb: Awaited<ReturnType<typeof createClient>>
   const sb = await createClient();
   const { data: auth } = await sb.auth.getUser();
   if (!auth.user) return null;
-  const { data } = await sb.from('golf_coaches').select('id').eq('user_id', auth.user.id).maybeSingle();
-  return data ? { sb, coach: data.id } : null;
+  const { data, error } = await sb.from('golf_coaches').select('id').eq('user_id', auth.user.id).maybeSingle();
+  return data && !error ? { sb, coach: data.id } : null;
 }
 
 const none = () => NextResponse.json({ error: 'Not found' }, { status: 404 });

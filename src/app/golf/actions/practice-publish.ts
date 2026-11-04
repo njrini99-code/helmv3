@@ -17,8 +17,9 @@ const when = (iso: string, zone: string, opts: Intl.DateTimeFormatOptions) => ne
 async function firstStopNotices(sb: Awaited<ReturnType<typeof createClient>>, body: PlanBodyV2, recipients: Recipient[], eventStart: Date, title: string, time: string): Promise<PracticeNotice[]> {
   const fallback = `${time} · Open the plan to see where you start`;
   const userIds = recipients.map((r) => r.user_id);
-  const { data } = await sb.from('golf_players').select('id, user_id').in('user_id', userIds);
-  const playerOf = new Map((data ?? []).map((p) => [p.user_id, p.id]));
+  const { data, error } = await sb.from('golf_players').select('id, user_id').in('user_id', userIds);
+  // Without the players nobody can be told their own start; everyone still gets the plan's general notice.
+  const playerOf = new Map((error ? [] : (data ?? [])).map((p) => [p.user_id, p.id]));
   const byBody = new Map<string, string[]>();
   for (const u of userIds) {
     const playerId = playerOf.get(u);
@@ -56,8 +57,9 @@ async function publishPracticePlanImpl(input: { planId: string; expectedVersion:
 
   let changes: ReturnType<typeof diffVersions> | null = null;
   if (plan.live_version != null) {
-    const { data: live } = await db.from('golf_practice_plan_versions').select('body').eq('plan_id', plan.id).eq('version', plan.live_version).maybeSingle();
-    const prev = parsePlanBody(live?.body);
+    const { data: live, error: liveError } = await db.from('golf_practice_plan_versions').select('body').eq('plan_id', plan.id).eq('version', plan.live_version).maybeSingle();
+    // No earlier version to read means no "what changed" line, and the publish still stands.
+    const prev = liveError ? null : parsePlanBody(live?.body);
     if (prev) changes = diffVersions(prev, body, eventStart, zone);
   }
   const notified = input.notify !== 'none' && !changes?.wordingOnly;

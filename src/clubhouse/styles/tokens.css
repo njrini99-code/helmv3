@@ -1492,12 +1492,12 @@ html[data-fw-theme='dark']:has([data-ui='clubhouse']) body {
 }
 
 /* The refresh's chart fills (DESIGN_LANGUAGE §3). Scoped so today's --ch-chart-*-fill values stay as they are with the flag off. */
-[data-ch-refresh='on'] {
+.ch-root[data-ch-refresh='on'], [data-ui='clubhouse'] [data-ch-refresh='on'] {
   --ch-score-under: #9e3b2e;
   --ch-chart-gain-fill: #1f6b45;
   --ch-chart-loss-fill: #b86f0c;
 }
-html[data-fw-theme='dark'] [data-ch-refresh='on'] {
+html[data-fw-theme='dark'] .ch-root[data-ch-refresh='on'], html[data-fw-theme='dark'] [data-ui='clubhouse'] [data-ch-refresh='on'] {
   --ch-score-under: #f28b7d;
   --ch-chart-gain-fill: #4fa877;
   --ch-chart-loss-fill: #e09a35;

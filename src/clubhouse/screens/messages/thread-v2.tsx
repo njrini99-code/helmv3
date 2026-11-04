@@ -2,7 +2,7 @@
 
 import { ArrowDown } from 'lucide-react';
 import { useEffect, useLayoutEffect, useRef, useState, type RefObject } from 'react';
-import { CH_FADE_MS, chSpringCurve, CH_EASE, chSpringAt } from '../../lib/motion';
+import { CH_FADE_MS, chSpringCurve, CH_EASE, chSpringAt, CH_DUR, CH_SPRING_SETTLE_MS } from '../../lib/motion';
 import { Icon } from '../../ui/Icon';
 
 const DATE_PILL_HIDE_MS = 1000;
@@ -101,7 +101,7 @@ export function ThreadJumpKey({ scroller, unseen, onJump }: { scroller: RefObjec
     }
     const live = getComputedStyle(el);
     const gone = window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'none' : 'scale(0.8)';
-    const out = el.animate([{ opacity: live.opacity, transform: live.transform }, { opacity: 0, transform: gone }], { duration: 160, easing: `cubic-bezier(${CH_EASE.join(', ')})`, fill: 'forwards' });
+    const out = el.animate([{ opacity: live.opacity, transform: live.transform }, { opacity: 0, transform: gone }], { duration: CH_DUR.quick * 1000, easing: `cubic-bezier(${CH_EASE.join(', ')})`, fill: 'forwards' });
     out.onfinish = () => {
       leave.current = null;
       setMounted(false);
@@ -274,7 +274,7 @@ export function useFaceFlight(enabled: boolean, reduced: boolean): void {
     const curve = chSpringCurve('smooth');
     const flight = clone.animate(
       [{ transform: 'none' }, { transform: `translate(${to.left - rect.left}px, ${to.top - rect.top}px) scale(${to.width / (rect.width || 1)})` }],
-      { duration: 462, easing: curve.linear },
+      { duration: CH_SPRING_SETTLE_MS, easing: curve.linear },
     );
     const land = () => {
       clone.remove();

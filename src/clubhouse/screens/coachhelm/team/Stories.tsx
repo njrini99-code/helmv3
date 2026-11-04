@@ -29,16 +29,16 @@ function TileVisual({ story }: { story: ChTeamStory }) {
     const w = (v: number) => Math.max(8, (Math.abs(v) / top) * 108);
     return (
       <svg viewBox="0 0 108 40" aria-hidden="true">
-        <rect x="0" y="4" width={w(p.from)} height="12" rx="6" fill="var(--track)" />
-        <rect x="0" y="24" width={w(p.now)} height="12" rx="6" fill="var(--gain-fill)" />
-        <rect x={w(p.target) - 1} y="20" width="2" height="20" fill="var(--ink)" />
+        <rect x="0" y="4" width={w(p.from)} height="12" rx="6" fill="var(--ch-tb-track)" />
+        <rect x="0" y="24" width={w(p.now)} height="12" rx="6" fill="var(--ch-tb-gain-fill)" />
+        <rect x={w(p.target) - 1} y="20" width="2" height="20" fill="var(--ch-tb-ink)" />
       </svg>
     );
   }
-  const fill = story.kind === 'theme' && story.word === 'Slipping' ? 'var(--loss-fill)' : 'var(--gain-fill)';
+  const fill = story.kind === 'theme' && story.word === 'Slipping' ? 'var(--ch-tb-loss-fill)' : 'var(--ch-tb-gain-fill)';
   return (
     <svg viewBox="0 0 108 40" aria-hidden="true">
-      <rect x="0" y="4" width="70" height="12" rx="6" fill="var(--track)" />
+      <rect x="0" y="4" width="70" height="12" rx="6" fill="var(--ch-tb-track)" />
       <rect x="0" y="24" width="90" height="12" rx="6" fill={fill} />
     </svg>
   );

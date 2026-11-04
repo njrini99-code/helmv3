@@ -2,6 +2,7 @@ import 'server-only';
 import type { SupabaseClient } from '@supabase/supabase-js';
 import type { Database } from '@/lib/types/database';
 import { chunkIds } from '@/lib/supabase/chunk-ids';
+import { fetchAllRowsResult } from '@/lib/supabase/fetch-all-rows';
 import { PUTT_DISTANCE_BUCKETS, puttBucketFor } from '@/lib/golf/putt-distance-buckets';
 import { requireRosterPlayer, type CoachChatContext } from './context';
 import { nowIso, unavailableEnvelope, type ToolEnvelope } from './provenance';
@@ -120,9 +121,10 @@ async function shotsOf(sb: Sb, ctx: CoachChatContext, input: { player_id?: strin
   const ids = (rounds.data ?? []).map((r) => r.id);
   const shots: ShotRow[] = [];
   for (const chunk of chunkIds(ids)) {
-    const res = await sb.from('golf_shots').select(SHOT_COLUMNS).in('round_id', chunk).limit(5000);
+    // PostgREST stops at 1000 rows a response, so a long chunk is paged rather than silently cut short.
+    const res = await fetchAllRowsResult<ShotRow>((from, to) => sb.from('golf_shots').select(SHOT_COLUMNS).in('round_id', chunk).order('id').range(from, to) as never);
     if (res.error) return null;
-    shots.push(...((res.data ?? []) as unknown as ShotRow[]));
+    shots.push(...(res.data ?? []));
   }
   return { shots, rounds: ids.length, since, playerName: player?.name ?? null };
 }

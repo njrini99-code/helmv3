@@ -13,7 +13,9 @@ Held items:     none
 
 ### Changed
 
-- One glass pill; a send key that exists only with something to send; the + as a Photos, File, Poll menu; the sent bubble rising from the field; chips that rise 12.
+- One glass pill; a send key that exists only with something to send; the + as a
+  Photos, File, Poll menu; the sent bubble rising from the field; chips that
+  rise 12.
 
 ### Verification
 

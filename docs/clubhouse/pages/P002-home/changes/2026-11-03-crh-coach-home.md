@@ -7,14 +7,18 @@ Design package: design-refresh/classes-roster-home/ (PR 10)
 PR/commit:      agent/crh-pr10-home
 Contract IDs:   as today's Home
 Actions:        none new
-Data impact:    none (practice rounds left out of Home's averages under the flag; yearById added under it)
+Data impact:    none (practice rounds left out of Home's averages under the
+                flag; yearById added under it)
 Held items:     none
 ```
 
 ### Changed
 
-- HomePhone, DayCard, TeamLegsPhone branch on the flag; home.css has one new block under `.ch-hm[data-ch-crh='on']`; the hero-mode bar is `--ch-frame` under the flag.
+- HomePhone, DayCard, TeamLegsPhone branch on the flag; home.css has one new
+  block under `.ch-hm[data-ch-crh='on']`; the hero-mode bar is `--ch-frame`
+  under the flag.
 
 ### Verification
 
-- home-crh.test.ts (new). Not run yet: the owner deferred testing to the end of the build.
+- home-crh.test.ts (new). Not run yet: the owner deferred testing to the end of
+  the build.

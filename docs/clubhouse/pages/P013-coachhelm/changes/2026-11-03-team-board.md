@@ -6,7 +6,8 @@
 Design package: design-refresh/coachhelm-team/ (CT0a)
 PR/commit:      agent/ct0a-drawn-later
 Contract IDs:   none
-Actions:        getTopInsightsForPlayers takes an optional drawnLater; no caller passes it yet
+Actions:        getTopInsightsForPlayers takes an optional drawnLater; no caller
+                passes it yet
 Data impact:    none until a caller passes it
 Held items:     none
 ```
@@ -29,7 +30,8 @@ Design package: design-refresh/coachhelm-team/ (CT1)
 PR/commit:      agent/ct1-hole
 Contract IDs:   none
 Actions:        none
-Data impact:    the route calls loadCoachTeamBoard with the flag on; off everywhere
+Data impact:    the route calls loadCoachTeamBoard with the flag on; off
+                everywhere
 Held items:     none
 ```
 

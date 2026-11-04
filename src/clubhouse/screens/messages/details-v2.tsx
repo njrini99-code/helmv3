@@ -13,7 +13,9 @@ import { Skeleton } from '../../ui/States';
 import { useToast } from '../../ui/Toast';
 import { fileMeta, useConversationFiles } from './files';
 import type { ChConv, ChFile, ChMember } from './model';
-import { MessageHits, personOf, type ChMessagesApi } from './MessagesView';
+import type { ChMessagesApi } from './MessagesView';
+import { MessageHits } from './message-hits';
+import { personOf } from './person-of';
 
 const reduced = () => typeof window !== 'undefined' && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 

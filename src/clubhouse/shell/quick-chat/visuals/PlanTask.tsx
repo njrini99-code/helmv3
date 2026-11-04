@@ -15,7 +15,7 @@ import { taskIn } from '../task-motion';
 const DEFAULT = 'Practice plans';
 const NAME_MAX = 60;
 const SEG = ['a', 'b', 'c'] as const;
-const SWATCH = ['var(--a-seg1)', 'var(--a-seg2)', 'var(--a-seg3)'];
+const SWATCH = ['var(--ch-qc-a-seg1)', 'var(--ch-qc-a-seg2)', 'var(--ch-qc-a-seg3)'];
 const CLIPBOARD = 'M9 4h6v3H9zM8 5.5H6.5A1.5 1.5 0 0 0 5 7v12.5A1.5 1.5 0 0 0 6.5 21h11a1.5 1.5 0 0 0 1.5-1.5V7a1.5 1.5 0 0 0-1.5-1.5H16M9 12h6M9 16h4';
 const FOLDER = 'M3 6.5A1.5 1.5 0 0 1 4.5 5h4l2 2h9A1.5 1.5 0 0 1 21 8.5v9a1.5 1.5 0 0 1-1.5 1.5h-15A1.5 1.5 0 0 1 3 17.5z';
 const Ico = ({ d, className }: { d: string; className?: string }) => (

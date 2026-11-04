@@ -34,6 +34,7 @@ export async function getCourse(sb: Sb, ctx: CoachChatContext, input: { course_i
   const holes = tee.data ? await sb.from('golf_course_tee_holes').select('hole_number, par, yardage, handicap_index').eq('tee_id', tee.data.id).order('hole_number') : { data: [], error: null };
   if (holes.error) return unavailableEnvelope('Could not read that course.', 'The holes query failed.');
   const rounds = await sb.from('golf_rounds').select('id').eq('team_id', ctx.team_id).eq('course_id', input.course_id).eq('status', 'completed').eq('is_test', false).limit(200);
+  if (rounds.error) return unavailableEnvelope('Could not read that course.', 'The rounds query failed.');
   const ids = (rounds.data ?? []).map((r) => r.id);
   const scored = ids.length ? await sb.from('golf_holes').select('hole_number, par, score').in('round_id', ids) : { data: [], error: null };
   const by = new Map<number, { sum: number; n: number }>();

@@ -17,6 +17,12 @@ export const CH_EASE = [0.22, 1, 0.36, 1] as const;
 export const CH_EASE_IO = [0.65, 0, 0.35, 1] as const;
 export const CH_SPRING = [0.34, 1.3, 0.64, 1] as const;
 
+/** How long the shared springs take to settle, in ms: a spring's length is its physics, not a step on the scale. */
+export const CH_SPRING_SETTLE_MS = 462;
+export const CH_SPRING_POP_MS = 507;
+/** One pass of the progress sweep, in ms (--ch-dur-sweep). */
+export const CH_SWEEP_MS = 900;
+
 export const CH_DUR = {
   press: 0.11,
   quick: 0.18,

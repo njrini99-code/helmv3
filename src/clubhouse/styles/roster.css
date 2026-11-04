@@ -2874,7 +2874,7 @@ html:has([data-ui='clubhouse'])::view-transition-new(.ch-rsm-reorder) {
   display: block;
   flex-basis: 0;
   border-radius: var(--ch-radius-xs);
-  background: var(--y);
+  background: var(--ch-rs-y);
   box-shadow: var(--ch-roster-x1);
 }
 [data-ch-crh='on'] .ch-rs-mix__lg {
@@ -2894,7 +2894,7 @@ html:has([data-ui='clubhouse'])::view-transition-new(.ch-rsm-reorder) {
   width: 9px;
   height: 9px;
   border-radius: var(--ch-radius-mark);
-  background: var(--y);
+  background: var(--ch-rs-y);
 }
 [data-ch-crh='on'] .ch-rs-mix__lg b {
   font-weight:var(--ch-fw-600);
@@ -2948,7 +2948,7 @@ html:has([data-ui='clubhouse'])::view-transition-new(.ch-rsm-reorder) {
   padding: 12px 12px 12px;
   border: 0;
   border-radius: var(--ch-radius-card);
-  background: color-mix(in srgb, var(--y, var(--ch-chart-flat)) 11%, var(--ch-card-bg));
+  background: color-mix(in srgb, var(--ch-rs-y, var(--ch-chart-flat)) 11%, var(--ch-card-bg));
   box-shadow: var(--ch-roster-x3);
   color: var(--ch-text-primary);
   text-align: left;
@@ -2965,7 +2965,7 @@ html:has([data-ui='clubhouse'])::view-transition-new(.ch-rsm-reorder) {
   color: var(--ch-crh-ink2);
 }
 [data-ch-crh='on'] .ch-rs-ldr__k svg {
-  color: color-mix(in srgb, var(--y, var(--ch-chart-flat)) 62%, var(--ch-ink-900));
+  color: color-mix(in srgb, var(--ch-rs-y, var(--ch-chart-flat)) 62%, var(--ch-ink-900));
 }
 [data-ch-crh='on'] .ch-rs-ldr__v {
   font: var(--ch-type-28-strong);
@@ -2973,7 +2973,7 @@ html:has([data-ui='clubhouse'])::view-transition-new(.ch-rsm-reorder) {
   letter-spacing: var(--ch-track-28);
 }
 [data-ch-crh='on'] .ch-rs-ldr__v.is-loss {
-  color: var(--ch-loss);
+  color: var(--ch-chart-loss);
 }
 [data-ch-crh='on'] .ch-rs-ldr__v small {
   margin-left: 4px;
@@ -3140,10 +3140,10 @@ html:has([data-ui='clubhouse'])::view-transition-new(.ch-rsm-reorder) {
   }
   [data-ch-crh='on'] .ch-rsx-row__b .is-warning,
   [data-ch-crh='on'] .ch-rsx-row__b .is-loss {
-    color: var(--ch-warn-icon);
+    color: var(--ch-chart-loss);
   }
   [data-ch-crh='on'] .ch-rsx-row__b .is-gain {
-    color: var(--ch-gain);
+    color: var(--ch-chart-gain);
   }
   [data-ch-crh='on'] .ch-rsx-inj {
     display: inline-flex;
@@ -3169,10 +3169,10 @@ html:has([data-ui='clubhouse'])::view-transition-new(.ch-rsm-reorder) {
     color: var(--ch-text-primary);
   }
   [data-ch-crh='on'] .ch-rsx-row__v b.is-gain {
-    color: var(--ch-gain);
+    color: var(--ch-chart-gain);
   }
   [data-ch-crh='on'] .ch-rsx-row__v b.is-loss {
-    color: var(--ch-loss);
+    color: var(--ch-chart-loss);
   }
   [data-ch-crh='on'] .ch-rsx-row__v b.is-none {
     color: var(--ch-crh-ink4);
@@ -3291,10 +3291,10 @@ html:has([data-ui='clubhouse'])::view-transition-new(.ch-rsm-reorder) {
     color: var(--ch-text-primary);
   }
   [data-ch-crh='on'] .ch-rsx-figs dd.is-gain {
-    color: var(--ch-gain);
+    color: var(--ch-chart-gain);
   }
   [data-ch-crh='on'] .ch-rsx-figs dd.is-loss {
-    color: var(--ch-loss);
+    color: var(--ch-chart-loss);
   }
   [data-ch-crh='on'] .ch-rsx-figs dd.is-none {
     color: var(--ch-crh-ink4);
@@ -3459,8 +3459,8 @@ html:has([data-ui='clubhouse'])::view-transition-new(.ch-rsm-reorder) {
   margin-top: 6px;
   padding: 6px 8px;
   border-radius: 999px;
-  background: color-mix(in srgb, var(--y, var(--ch-accent-ink)) 14%, transparent);
-  color: color-mix(in srgb, var(--y, var(--ch-accent-ink)) 62%, var(--ch-ink-900));
+  background: color-mix(in srgb, var(--ch-rs-y, var(--ch-accent-ink)) 14%, transparent);
+  color: color-mix(in srgb, var(--ch-rs-y, var(--ch-accent-ink)) 62%, var(--ch-ink-900));
   font: var(--ch-type-13-strong);
 
 }
@@ -3468,7 +3468,7 @@ html:has([data-ui='clubhouse'])::view-transition-new(.ch-rsm-reorder) {
   width: 8px;
   height: 8px;
   border-radius: 50%;
-  background: var(--y, var(--ch-accent-ink));
+  background: var(--ch-rs-y, var(--ch-accent-ink));
 }
 
 /* Desktop (06 7.9, 7.11, 7.12, CP-6.15) */
@@ -3573,10 +3573,10 @@ html:has([data-ui='clubhouse'])::view-transition-new(.ch-rsm-reorder) {
   }
   [data-ch-crh='on'] .ch-rsx-row__b .is-warning,
   [data-ch-crh='on'] .ch-rsx-row__b .is-loss {
-    color: var(--ch-warn-icon);
+    color: var(--ch-chart-loss);
   }
   [data-ch-crh='on'] .ch-rsx-row__b .is-gain {
-    color: var(--ch-gain);
+    color: var(--ch-chart-gain);
   }
   [data-ch-crh='on'] .ch-rsx-reqs {
     display: grid;
@@ -3692,7 +3692,7 @@ html:has([data-ui='clubhouse'])::view-transition-new(.ch-rsm-reorder) {
 [data-ui='clubhouse'] {
   --ch-roster-x1: inset 0 0 0 var(--ch-hairline-w) var(--ch-on-green-mark);
   --ch-roster-x2: 0 0 0 2px var(--ch-frame);
-  --ch-roster-x3: 0 0 0 1px color-mix(in srgb, var(--y, var(--ch-chart-flat)) 24%, transparent), var(--ch-crh-leader-shadow);
+  --ch-roster-x3: 0 0 0 1px color-mix(in srgb, var(--ch-rs-y, var(--ch-chart-flat)) 24%, transparent), var(--ch-crh-leader-shadow);
   --ch-roster-x4: 0 0 0 2px var(--ch-card-bg);
   --ch-roster-x5: inset 0 0 0 1px #000;
 }

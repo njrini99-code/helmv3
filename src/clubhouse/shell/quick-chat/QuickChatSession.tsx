@@ -12,7 +12,7 @@ import { conversationHref } from '../../screens/coachhelm/chat/History';
 import { subscribeOnline } from '../AskSheetBody';
 import { modKey } from '../command/shortcuts';
 import type { ChAskSheetChat } from '../AskSheet';
-import { HelmMark, useQcCtx } from './QuickChatProvider';
+import { HelmMark, useQcCtx } from './qc-context';
 import { QuickAsk } from './QuickAsk';
 import { useQcSeam } from './qc-seam';
 import { quickStarts, START_ICON } from './starts';
@@ -66,11 +66,11 @@ export default function QuickChatSession({ open, onClose, looking, pathname, pla
     const key = keyRef.current?.getBoundingClientRect();
     if (!el || !key) return { x: window.innerWidth - 60, y: 60 };
     const bar = key.bottom;
-    el.style.setProperty('--qc-top', `${bar + 6}px`);
-    el.parentElement?.style.setProperty('--qc-scrim-top', `${bar}px`);
+    el.style.setProperty('--ch-qc-qc-top', `${bar + 6}px`);
+    el.parentElement?.style.setProperty('--ch-qc-qc-scrim-top', `${bar}px`);
     if (phone) {
       const kb = window.visualViewport ? window.visualViewport.height + window.visualViewport.offsetTop : window.innerHeight;
-      el.style.setProperty('--qc-h', `${Math.min(700, kb - bar - 6 - 8)}px`);
+      el.style.setProperty('--ch-qc-qc-h', `${Math.min(700, kb - bar - 6 - 8)}px`);
     }
     return { x: key.left + key.width / 2, y: key.top + key.height / 2 };
   }, [keyRef, phone]);

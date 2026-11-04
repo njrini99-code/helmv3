@@ -1,4 +1,5 @@
 'use client';
+import { CH_DUR } from '../../../lib/motion';
 
 import { Badge } from '../../../ui/Badge';
 import { CorrectionChips } from '../Corrections';
@@ -86,7 +87,7 @@ export function WhereCard({ funnel, pictures }: { funnel: NonNullable<ChReadDeta
               </div>
               {pictures && s.n != null && first > 0 && (
                 <div className="ftrack">
-                  <div className={'fbar' + (i === lastBar ? ' last' : '')} style={{ ['--s' as string]: s.n / first }} />
+                  <div className={'fbar' + (i === lastBar ? ' last' : '')} style={{ ['--ch-hr-s' as string]: s.n / first }} />
                 </div>
               )}
               {i > 0 && <div className="why">{s.statement}</div>}
@@ -123,12 +124,12 @@ export function WhyCard({ d, voice, pictures }: { d: ChReadDetail; voice: ChView
   return (
     <Card id="cwhy" title="Why CoachHelm thinks so" meta={cause.state === 'counted' ? 'Counted' : cause.state === 'likely' ? 'Likely' : 'Not traced yet'}>
       <div className="cb">
-        <div className="stepper" style={{ ['--n' as string]: labels.length }} aria-hidden="true">
+        <div className="stepper" style={{ ['--ch-hr-n' as string]: labels.length }} aria-hidden="true">
           {labels.map((l, i) => (
             <i key={l} className={(i <= idx ? 'on' : '') + (idx === last ? ' counted' : '')} />
           ))}
         </div>
-        <div className="slab" style={{ ['--n' as string]: labels.length }}>
+        <div className="slab" style={{ ['--ch-hr-n' as string]: labels.length }}>
           {labels.map((l, i) => (
             <span key={l} className={i === idx ? 'on' : ''}>
               {l}
@@ -298,26 +299,26 @@ export function MovedCard({ d, failed, pictures }: { d: ChReadDetail; failed: bo
       <div className="cb">
         {pictures && (
           <svg className="moved" viewBox={`0 0 ${W} ${H}`} role="img" aria-label={m.text}>
-            {m.ref && <line x1={l - 10} x2={r + 10} y1={y(m.ref.value)} y2={y(m.ref.value)} stroke="var(--zero)" strokeWidth="1.2" strokeDasharray="3 4" />}
+            {m.ref && <line x1={l - 10} x2={r + 10} y1={y(m.ref.value)} y2={y(m.ref.value)} stroke="var(--ch-hr-zero)" strokeWidth="1.2" strokeDasharray="3 4" />}
             {m.ref && (
-              <text x={r + 10} y={y(m.ref.value) - 6} textAnchor="end" fontSize="12" fill="var(--ink-2)">
+              <text x={r + 10} y={y(m.ref.value) - 6} textAnchor="end" fontSize="12" fill="var(--ch-hr-ink-2)">
                 {m.ref.label}
               </text>
             )}
-            <line x1={l} x2={r} y1={y(m.from)} y2={y(m.to)} stroke="var(--loss-fill)" strokeWidth="2.5" strokeLinecap="round" />
-            <circle cx={l} cy={y(m.from)} r="5" fill="var(--card)" stroke="var(--neutral-fill)" strokeWidth="2.5" />
-            <circle cx={r} cy={y(m.to)} r="6" fill="var(--loss-fill)" />
-            <text x={l} y={y(m.from) - 12} textAnchor="middle" fontSize="13" fontWeight="600" fill="var(--ink)">
+            <line x1={l} x2={r} y1={y(m.from)} y2={y(m.to)} stroke="var(--ch-hr-loss-fill)" strokeWidth="2.5" strokeLinecap="round" />
+            <circle cx={l} cy={y(m.from)} r="5" fill="var(--ch-hr-card)" stroke="var(--ch-hr-neutral-fill)" strokeWidth="2.5" />
+            <circle cx={r} cy={y(m.to)} r="6" fill="var(--ch-hr-loss-fill)" />
+            <text x={l} y={y(m.from) - 12} textAnchor="middle" fontSize="13" fontWeight="600" fill="var(--ch-hr-ink)">
               {f(m.from)}
             </text>
-            <text x={r} y={y(m.to) - 12} textAnchor="middle" fontSize="13" fontWeight="600" fill="var(--ink)">
+            <text x={r} y={y(m.to) - 12} textAnchor="middle" fontSize="13" fontWeight="600" fill="var(--ch-hr-ink)">
               {f(m.to)}
             </text>
-            <text x={l} y={H - 4} textAnchor="middle" fontSize="12" fill="var(--ink-3)">
+            <text x={l} y={H - 4} textAnchor="middle" fontSize="12" fill="var(--ch-hr-ink-3)">
               Before
             </text>
             {m.through && (
-              <text x={r} y={H - 4} textAnchor="middle" fontSize="12" fill="var(--ink-3)">
+              <text x={r} y={H - 4} textAnchor="middle" fontSize="12" fill="var(--ch-hr-ink-3)">
                 {m.through}
               </text>
             )}
@@ -404,7 +405,7 @@ export function DoCard({ d, voice, fa, missing, messageHref, askHref, practiceHr
   const flash = useRef<HTMLDivElement | null>(null);
   const wasAssigned = useRef(!!mine);
   useEffect(() => {
-    if (mine && !wasAssigned.current) flash.current?.animate([{ opacity: 0.7 }, { opacity: 1 }], { duration: 360 });
+    if (mine && !wasAssigned.current) flash.current?.animate([{ opacity: 0.7 }, { opacity: 1 }], { duration: CH_DUR.release * 1000 });
     wasAssigned.current = !!mine;
   }, [mine]);
   return (

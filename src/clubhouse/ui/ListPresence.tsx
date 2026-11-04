@@ -2,7 +2,7 @@
 
 import { AnimatePresence, m, useIsPresent } from 'motion/react';
 import { Children, createContext, isValidElement, useCallback, useContext, useEffect, useRef, useState, type HTMLAttributes, type ReactNode, type Ref, type RefObject } from 'react';
-import { CH_DUR, CH_EASE, chSpringCurve } from '../lib/motion';
+import { CH_DUR, CH_EASE, chSpringCurve, CH_SPRING_SETTLE_MS } from '../lib/motion';
 import { useChReducedMotion } from '../lib/reduced-motion';
 
 /**
@@ -113,7 +113,7 @@ const ROW = { li: m.li, div: m.div, article: m.article, section: m.section, butt
 const SMOOTH = chSpringCurve('smooth');
 const MOVE = { duration: SMOOTH.ms / 1000, ease: SMOOTH.ease };
 /** Messages' inbox, on the house push's clock. */
-const PUSH = { duration: 0.462, ease: SMOOTH.ease };
+const PUSH = { duration: CH_SPRING_SETTLE_MS / 1000, ease: SMOOTH.ease };
 const INBOX_FROM = { opacity: 0 };
 const INBOX_SHOWN = { opacity: 1, transition: PUSH };
 const INBOX_LEAVE = { opacity: 0, scale: 0.96, transition: { duration: 0.18, ease: CH_EASE } };

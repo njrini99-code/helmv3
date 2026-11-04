@@ -194,8 +194,8 @@ export type RosterLeader = { kind: 'low' | 'heater' | 'look'; player: ChRosterPl
  * gained hides that card, and nobody with the note hides it too.
  */
 export function leaderPicks(players: ChRosterPlayer[], statsError = false): RosterLeader[] {
-  if (statsError) return [];
-  const pool = players.filter((p) => p.status === 'active' && p.rounds >= ROSTER_EARLY_FLOOR);
+  // Display only: the caller already shows the failed notice, so no leaders is the honest card.
+  const pool = statsError ? [] : players.filter((p) => p.status === 'active' && p.rounds >= ROSTER_EARLY_FLOOR);
   const out: RosterLeader[] = [];
   const low = pool.filter((p) => p.avg != null).sort((a, b) => a.avg! - b.avg!)[0];
   if (low) out.push({ kind: 'low', player: low, value: low.avg! });

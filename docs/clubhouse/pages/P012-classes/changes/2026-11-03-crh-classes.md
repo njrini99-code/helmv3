@@ -13,8 +13,10 @@ Held items:     none
 
 ### Changed
 
-- Phone Classes branches on the flag in ClassesView; new cards in ClassesCrh.tsx. Desktop and flag-off screens are unchanged.
+- Phone Classes branches on the flag in ClassesView; new cards in
+  ClassesCrh.tsx. Desktop and flag-off screens are unchanged.
 
 ### Verification
 
-- classes-crh.test.tsx (new). Not run yet: the owner deferred testing to the end of the build.
+- classes-crh.test.tsx (new). Not run yet: the owner deferred testing to the end
+  of the build.

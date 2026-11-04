@@ -235,7 +235,7 @@ export function generatePushPayload(
       return {
         title: typeof data.title === 'string' && data.title ? data.title : 'While you were in class',
         body: String(data.body || ''),
-        data: { url: typeof data.link === 'string' && data.link.startsWith(baseUrl) ? data.link : `${baseUrl}/golf/dashboard`, type },
+        data: { url: sameOrigin(data.link, baseUrl) ? String(data.link) : `${baseUrl}/golf/dashboard`, type },
       };
     default:
       return {
@@ -671,4 +671,14 @@ export async function sendBulkPushNotification(
     }),
   );
   return { sent, failed };
+}
+
+/** A link only counts as ours when its origin is exactly ours: a prefix match would also pass https://helmsportslabs.com.evil.test. */
+function sameOrigin(link: unknown, baseUrl: string): boolean {
+  if (typeof link !== 'string') return false;
+  try {
+    return new URL(link).origin === new URL(baseUrl).origin;
+  } catch {
+    return false;
+  }
 }

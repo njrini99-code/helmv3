@@ -7,7 +7,8 @@ Design package: design-refresh/messages/ (PR 11f)
 PR/commit:      agent/msg-11f
 Contract IDs:   as today's details, mute, first run and New message
 Actions:        none new
-Data impact:    none; in-conversation search filters today's searchMessages results on the client
+Data impact:    none; in-conversation search filters today's searchMessages
+                results on the client
 Held items:     none
 ```
 
@@ -19,5 +20,6 @@ PR/commit:      agent/msg-11h
 Contract IDs:   as today's pins
 Actions:        none new; RPC golf_pin_conversation, once the owner applies
 Data impact:    none until applied; device pins stay the fallback
-Held items:     20261031150000_golf_conversation_pins.sql (WRITTEN, HOLD, NOT APPLIED)
+Held items:     20261031150000_golf_conversation_pins.sql (WRITTEN, HOLD, NOT
+                APPLIED)
 ```

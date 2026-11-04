@@ -98,7 +98,7 @@ export function TeamHole({
               })}
               {over && moreAt && (
                 <g className="scn is-more" data-ch-team-more={s} aria-hidden="true" onClick={() => onStation(s)}>
-                  <circle cx={moreAt[0]} cy={moreAt[1]} r={11} fill="var(--feat)" />
+                  <circle cx={moreAt[0]} cy={moreAt[1]} r={11} fill="var(--ch-tb-feat)" />
                   <text x={moreAt[0]} y={moreAt[1]}>
                     +{here.length - shown.length}
                   </text>

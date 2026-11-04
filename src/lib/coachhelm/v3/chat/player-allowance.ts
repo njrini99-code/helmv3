@@ -1,6 +1,6 @@
 import 'server-only';
 import { createAdminClient } from '@/lib/supabase/admin';
-import { fromUntyped } from '@/lib/supabase/untyped';
+import { askTables } from './ask-db';
 
 /** Server config only: never in a client bundle, a response or a string a player can read. */
 const PLAYER_ASK_WEEKLY_CAP_USD = 5;
@@ -33,7 +33,7 @@ function admin() {
 export async function readBucket(playerId: string, zone: string): Promise<AllowanceBucket | null> {
   const sb = admin();
   if (!sb) return null;
-  const { data, error } = await fromUntyped(sb, 'ask_usage_weekly').select('cost_micros, cap_micros').eq('player_id', playerId).eq('week_start', weekStart(new Date(), zone)).maybeSingle();
+  const { data, error } = await askTables(sb).from('ask_usage_weekly').select('cost_micros, cap_micros').eq('player_id', playerId).eq('week_start', weekStart(new Date(), zone)).maybeSingle();
   if (error) return null;
   return bucketFor(Number(data?.cost_micros ?? 0), data?.cap_micros != null ? Number(data.cap_micros) : undefined);
 }
@@ -43,6 +43,8 @@ export async function recordPlayerSpend(args: { playerId: string; teamId: string
   if (!sb) return;
   const week = weekStart(new Date(), args.zone);
   const micros = Math.round(args.usd * MICROS);
-  const { data } = await fromUntyped(sb, 'ask_usage_weekly').select('cost_micros').eq('player_id', args.playerId).eq('week_start', week).maybeSingle();
-  await fromUntyped(sb, 'ask_usage_weekly').upsert({ player_id: args.playerId, team_id: args.teamId, week_start: week, cost_micros: Number(data?.cost_micros ?? 0) + micros });
+  const { data, error } = await askTables(sb).from('ask_usage_weekly').select('cost_micros').eq('player_id', args.playerId).eq('week_start', week).maybeSingle();
+  // A failed read must not write: the upsert would start this week's count over from this one call.
+  if (error) return;
+  await askTables(sb).from('ask_usage_weekly').upsert({ player_id: args.playerId, team_id: args.teamId, week_start: week, cost_micros: Number(data?.cost_micros ?? 0) + micros });
 }

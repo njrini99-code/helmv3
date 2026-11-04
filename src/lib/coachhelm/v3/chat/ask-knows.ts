@@ -1,7 +1,7 @@
 import 'server-only';
 import type { SupabaseClient } from '@supabase/supabase-js';
 import type { Database } from '@/lib/types/database';
-import { fromUntyped } from '@/lib/supabase/untyped';
+import { askTables } from './ask-db';
 
 export type AskTone = 'straight' | 'detailed' | 'team_talk';
 export interface AskKnows {
@@ -11,11 +11,11 @@ export interface AskKnows {
 
 /** Tone and standing facts. Until HM2 is applied the table and column are missing and this answers null: the UI is hidden and tone is Straight. */
 export async function readAskKnows(sb: SupabaseClient<Database>, input: { coachId: string; teamId: string; conversationId: string | null }): Promise<AskKnows | null> {
-  const facts = await fromUntyped(sb, 'golf_coachhelm_coach_facts').select('id, text').eq('coach_id', input.coachId).eq('team_id', input.teamId).order('created_at');
+  const facts = await askTables(sb).from('golf_coachhelm_coach_facts').select('id, text').eq('coach_id', input.coachId).eq('team_id', input.teamId).order('created_at');
   if (facts.error) return null;
   let tone: AskTone = 'straight';
   if (input.conversationId) {
-    const row = await fromUntyped(sb, 'golf_coachhelm_chat_conversations').select('tone').eq('id', input.conversationId).maybeSingle();
+    const row = await askTables(sb).from('golf_coachhelm_chat_conversations').select('tone').eq('id', input.conversationId).maybeSingle();
     if (row.error) return null;
     tone = ((row.data as { tone?: AskTone } | null)?.tone ?? 'straight') as AskTone;
   }

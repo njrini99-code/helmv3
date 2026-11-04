@@ -2,7 +2,7 @@
 
 import { useEffect, useLayoutEffect, useRef, useState, type ReactNode } from 'react';
 import { createPortal } from 'react-dom';
-import { CH_FADE_MS, chSpringCurve } from '../../lib/motion';
+import { CH_FADE_MS, chSpringCurve, CH_DUR, CH_SPRING_SETTLE_MS } from '../../lib/motion';
 import { useChReducedMotion } from '../../lib/reduced-motion';
 
 /** An element's box with any press scale taken out: its place at rest. */
@@ -66,7 +66,7 @@ export function HoldLift({ messageId, mine, bar, children, onClosed, closeSignal
     } else {
       copy.current.style.transform = to;
       copy.current.animate([{ transform: `scale(${sink})` }, { transform: to }], { duration: lift.ms, easing: lift.linear });
-      scrim.current?.animate([{ opacity: 0 }, { opacity: 1 }], { duration: 462, easing: smooth.linear });
+      scrim.current?.animate([{ opacity: 0 }, { opacity: 1 }], { duration: CH_SPRING_SETTLE_MS, easing: smooth.linear });
       rbar.current?.animate([{ transform: 'scale(.5)', opacity: 0 }, { transform: 'none', opacity: 1 }], { duration: pop.ms, easing: pop.linear });
       menu.current?.animate([{ transform: 'scale(.8)', opacity: 0 }, { transform: 'none', opacity: 1 }], { duration: lift.ms, easing: lift.linear });
     }
@@ -94,9 +94,9 @@ export function HoldLift({ messageId, mine, bar, children, onClosed, closeSignal
       else finish();
       return;
     }
-    const a = rbar.current?.animate([{ opacity: 1 }, { transform: 'scale(.6)', opacity: 0 }], { duration: 160, easing: ease, fill: 'forwards' });
-    const b = menu.current?.animate([{ opacity: 1 }, { transform: 'scale(.85)', opacity: 0 }], { duration: 160, easing: ease, fill: 'forwards' });
-    const c = scrim.current?.animate([{ opacity: 1 }, { opacity: 0 }], { duration: 280, easing: ease, fill: 'forwards' });
+    const a = rbar.current?.animate([{ opacity: 1 }, { transform: 'scale(.6)', opacity: 0 }], { duration: CH_DUR.quick * 1000, easing: ease, fill: 'forwards' });
+    const b = menu.current?.animate([{ opacity: 1 }, { transform: 'scale(.85)', opacity: 0 }], { duration: CH_DUR.quick * 1000, easing: ease, fill: 'forwards' });
+    const c = scrim.current?.animate([{ opacity: 1 }, { opacity: 0 }], { duration: CH_DUR.release * 1000, easing: ease, fill: 'forwards' });
     const home = copy.current.animate([{ transform: getComputedStyle(copy.current).transform }, { transform: 'none' }], { duration: settle.ms, easing: settle.linear, fill: 'forwards' });
     home.onfinish = finish;
     outs.current = [a, b, c, home].filter((x): x is Animation => !!x);

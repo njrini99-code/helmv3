@@ -185,7 +185,7 @@ export function AskThread({ v2 = false, onArtifact, messages, busy, error, offli
 
   return (
     <PlanVersions.Provider value={planVersions}>
-    <div ref={rootRef} className={'ch-th' + (phone ? ' ch-th--phone' : '')} data-ch-code="CH-13850" data-v2={v2 ? '' : undefined}>
+    <div ref={rootRef} className={'ch-th' + (v2 ? ' ch-ak-th' : '') + (phone ? ' ch-th--phone' : '')} data-ch-code="CH-13850" data-v2={v2 ? '' : undefined}>
       <div className="ch-th-col" role="log" aria-label="Conversation">
         {turns.map((turn) => {
           const fresh = !initial.current?.has(turn.id) && !continued.current.has(turn.id);

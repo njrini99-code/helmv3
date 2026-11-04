@@ -1901,9 +1901,9 @@ a.ch-th-reads__r:focus-visible {
 
 /* Motion (playbook §3; the CoachHelm chat exception in .claude/rules/clubhouse.md). Only a visual that arrived in a live
    answer carries data-live (decided once at mount, never under reduced motion or Animations off). Opacity, transform and the
-   line's path length only, on the D-64 beats: each block rises 8px over the base beat, 80ms apart (capped at six, --ch-b);
-   the line draws over the reveal beat 140ms after its block (--ch-cv-lag); its points fade in on the quick beat as the line
-   reaches them; bars grow from their baseline over the base beat, 50ms apart (--ch-cv-step). The offsets are set on the card
+   line's path length only, on the D-64 beats: each block rises 8px over the base beat, var(--ch-dur-press) apart (capped at six, --ch-b);
+   the line draws over the reveal beat var(--ch-dur-press) after its block (--ch-cv-lag); its points fade in on the quick beat as the line
+   reaches them; bars grow from their baseline over the base beat, var(--ch-dur-press) apart (--ch-cv-step). The offsets are set on the card
    by CoachComposition, since only durations are tokens. Numbers are never counted up. */
 @keyframes ch-th-cv-rise {
   from {
@@ -1970,4 +1970,29 @@ a.ch-th-reads__r:focus-visible {
 [data-motion='off'] .ch-th-cv[data-live] .ch-th-rank__bar,
 [data-motion='off'] .ch-th-cv[data-live] .ch-th-leg__track > span {
   animation: none;
+}
+.ch-th-cv__head {
+  position: relative;
+}
+.ch-th-cv__expand {
+  position: absolute;
+  top: 0;
+  right: 0;
+  display: grid;
+  place-items: center;
+  width: 32px;
+  height: 32px;
+  border: 0;
+  border-radius: var(--ch-radius-sm);
+  background: var(--ch-well-bg-flat);
+  color: var(--ch-text-secondary);
+}
+.ch-th-cv__expand::before {
+  content: '';
+  position: absolute;
+  inset: -6px;
+}
+.ch-th-cv__full {
+  display: grid;
+  gap: 16px;
 }

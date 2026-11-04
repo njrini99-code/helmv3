@@ -11,12 +11,13 @@ export type PlanPageLoad = { status: 'ready'; plan: PlanSheetModel; stops?: Retu
 
 async function context(sb: Awaited<ReturnType<typeof createClient>>, eventId: string | null) {
   if (!eventId) return null;
-  const { data: event } = await sb.from('golf_events').select('start_time, end_time, team_id, location').eq('id', eventId).maybeSingle();
-  if (!event) return null;
-  const [{ data: team }, { data: members }] = await Promise.all([
+  const { data: event, error: eventError } = await sb.from('golf_events').select('start_time, end_time, team_id, location').eq('id', eventId).maybeSingle();
+  if (eventError || !event) return null;
+  const [{ data: team, error: teamError }, { data: members, error: membersError }] = await Promise.all([
     sb.from('golf_teams').select('name, timezone, organization_id').eq('id', event.team_id).maybeSingle(),
     sb.from('golf_team_members').select('player_id, golf_players(first_name, last_name)').eq('team_id', event.team_id).eq('status', 'active'),
   ]);
+  if (teamError || membersError) return null;
   const { data: coaches } = team?.organization_id ? await sb.from('golf_coaches').select('full_name').eq('organization_id', team.organization_id) : { data: [] };
   const names = new Map<string, string>();
   for (const m of members ?? []) {
@@ -49,7 +50,8 @@ export async function loadPlayerPlan(planId: string, playerId: string): Promise<
   const row = data as PracticePlanVersionRow | null;
   const body = row ? parsePlanBody(row.body) : null;
   if (!body) return { status: 'gone' };
-  const { data: parent } = await practiceTables(sb).from('golf_practice_plans').select('title, event_id').eq('id', planId).maybeSingle();
+  const { data: parent, error: parentError } = await practiceTables(sb).from('golf_practice_plans').select('title, event_id').eq('id', planId).maybeSingle();
+  if (parentError) return isPracticeMissing(parentError.code) ? { status: 'unavailable' } : { status: 'gone' };
   const eventId = (parent as { event_id?: string | null } | null)?.event_id ?? null;
   const ctx = await context(sb, eventId);
   if (!ctx) return { status: 'gone' };
@@ -65,7 +67,8 @@ export async function loadPlayerPractice(planId: string, playerId: string, now: 
   const row = data as PracticePlanVersionRow | null;
   const body = row ? parsePlanBody(row.body) : null;
   if (!body) return { status: 'gone' };
-  const { data: parent } = await practiceTables(sb).from('golf_practice_plans').select('title, event_id').eq('id', planId).maybeSingle();
+  const { data: parent, error: parentError } = await practiceTables(sb).from('golf_practice_plans').select('title, event_id').eq('id', planId).maybeSingle();
+  if (parentError) return isPracticeMissing(parentError.code) ? { status: 'unavailable' } : { status: 'gone' };
   const ctx = await context(sb, (parent as { event_id?: string | null } | null)?.event_id ?? null);
   if (!ctx) return { status: 'gone' };
   const start = new Date(ctx.event.start_time);

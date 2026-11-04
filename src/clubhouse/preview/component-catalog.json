@@ -167,7 +167,6 @@
       "styles": [
         "src/clubhouse/styles/base.css",
         "src/clubhouse/styles/coachhelm-ask.css",
-        "src/clubhouse/styles/coachhelm-plan.css",
         "src/clubhouse/styles/command.css",
         "src/clubhouse/styles/component-playground.css",
         "src/clubhouse/styles/controls.css",
@@ -181,6 +180,7 @@
         "src/clubhouse/styles/shell.css",
         "src/clubhouse/styles/stats-redesign.css",
         "src/clubhouse/styles/stats.css",
+        "src/clubhouse/styles/tokens.css",
         "src/clubhouse/styles/ui.css"
       ],
       "examples": [],
@@ -825,7 +825,6 @@
         "src/clubhouse/styles/auth.css",
         "src/clubhouse/styles/base.css",
         "src/clubhouse/styles/coachhelm-ask.css",
-        "src/clubhouse/styles/coachhelm-plan.css",
         "src/clubhouse/styles/command.css",
         "src/clubhouse/styles/controls.css",
         "src/clubhouse/styles/home.css",
@@ -1333,7 +1332,6 @@
         "src/clubhouse/styles/calendar.css",
         "src/clubhouse/styles/class-awareness.css",
         "src/clubhouse/styles/coachhelm-ask.css",
-        "src/clubhouse/styles/coachhelm-plan.css",
         "src/clubhouse/styles/coachhelm.css",
         "src/clubhouse/styles/command.css",
         "src/clubhouse/styles/controls.css",
@@ -1348,6 +1346,7 @@
         "src/clubhouse/styles/shell.css",
         "src/clubhouse/styles/stats-redesign.css",
         "src/clubhouse/styles/stats.css",
+        "src/clubhouse/styles/tokens.css",
         "src/clubhouse/styles/tournaments-desk.css",
         "src/clubhouse/styles/ui.css"
       ],
@@ -1395,7 +1394,6 @@
         "src/clubhouse/styles/base.css",
         "src/clubhouse/styles/calendar.css",
         "src/clubhouse/styles/coachhelm-ask.css",
-        "src/clubhouse/styles/coachhelm-plan.css",
         "src/clubhouse/styles/command.css",
         "src/clubhouse/styles/controls.css",
         "src/clubhouse/styles/home.css",
@@ -1407,6 +1405,7 @@
         "src/clubhouse/styles/shell.css",
         "src/clubhouse/styles/stats-redesign.css",
         "src/clubhouse/styles/stats.css",
+        "src/clubhouse/styles/tokens.css",
         "src/clubhouse/styles/ui.css"
       ],
       "examples": [],
@@ -1774,8 +1773,7 @@
         "ClassStatusPanel"
       ],
       "styles": [
-        "src/clubhouse/styles/class-awareness.css",
-        "src/clubhouse/styles/classes.css"
+        "src/clubhouse/styles/class-awareness.css"
       ],
       "examples": [],
       "fixture": "Contextual module"
@@ -2299,7 +2297,6 @@
         "src/clubhouse/styles/base.css",
         "src/clubhouse/styles/coachhelm-ask-v2.css",
         "src/clubhouse/styles/coachhelm-ask.css",
-        "src/clubhouse/styles/coachhelm-plan.css",
         "src/clubhouse/styles/shell.css"
       ],
       "examples": [],
@@ -2313,9 +2310,7 @@
       ],
       "styles": [
         "src/clubhouse/styles/base.css",
-        "src/clubhouse/styles/coachhelm-ask-v2.css",
         "src/clubhouse/styles/coachhelm-ask.css",
-        "src/clubhouse/styles/coachhelm-plan.css",
         "src/clubhouse/styles/shell.css"
       ],
       "examples": [],
@@ -2470,7 +2465,6 @@
       ],
       "styles": [
         "src/clubhouse/styles/coachhelm-ask-v2.css",
-        "src/clubhouse/styles/coachhelm-plan.css",
         "src/clubhouse/styles/coachhelm-thread.css"
       ],
       "examples": [],
@@ -2693,7 +2687,6 @@
         "src/clubhouse/styles/base.css",
         "src/clubhouse/styles/calendar.css",
         "src/clubhouse/styles/class-awareness.css",
-        "src/clubhouse/styles/coachhelm-ask-v2.css",
         "src/clubhouse/styles/coachhelm-thread.css",
         "src/clubhouse/styles/coachhelm.css",
         "src/clubhouse/styles/goals.css",
@@ -2951,6 +2944,7 @@
         "src/clubhouse/styles/shell.css",
         "src/clubhouse/styles/stats-redesign.css",
         "src/clubhouse/styles/stats.css",
+        "src/clubhouse/styles/tokens.css",
         "src/clubhouse/styles/tournaments-desk.css",
         "src/clubhouse/styles/ui.css"
       ],
@@ -3609,8 +3603,7 @@
         "src/clubhouse/styles/home.css",
         "src/clubhouse/styles/live.css",
         "src/clubhouse/styles/qualifiers.css",
-        "src/clubhouse/styles/shell.css",
-        "src/clubhouse/styles/stats-redesign.css"
+        "src/clubhouse/styles/shell.css"
       ],
       "examples": [],
       "fixture": "Contextual module"
@@ -4510,7 +4503,6 @@
         "DeleteMessageModal",
         "EditMessageModal",
         "LeaveGroupModal",
-        "MessageHits",
         "MessagesDesktop",
         "NewDivider",
         "REACTIONS",
@@ -4551,6 +4543,7 @@
         "src/clubhouse/styles/shell.css",
         "src/clubhouse/styles/stats-redesign.css",
         "src/clubhouse/styles/stats.css",
+        "src/clubhouse/styles/tokens.css",
         "src/clubhouse/styles/tournaments-desk.css",
         "src/clubhouse/styles/tournaments-lineup.css",
         "src/clubhouse/styles/tournaments.css",
@@ -4680,7 +4673,6 @@
       "styles": [
         "src/clubhouse/styles/base.css",
         "src/clubhouse/styles/coachhelm-ask.css",
-        "src/clubhouse/styles/coachhelm-plan.css",
         "src/clubhouse/styles/command.css",
         "src/clubhouse/styles/controls.css",
         "src/clubhouse/styles/home.css",
@@ -4692,6 +4684,31 @@
         "src/clubhouse/styles/shell.css",
         "src/clubhouse/styles/stats-redesign.css",
         "src/clubhouse/styles/stats.css",
+        "src/clubhouse/styles/tokens.css",
+        "src/clubhouse/styles/ui.css"
+      ],
+      "examples": [],
+      "fixture": "Contextual module"
+    },
+    {
+      "file": "src/clubhouse/screens/messages/message-hits.tsx",
+      "group": "screens",
+      "exports": [
+        "MessageHits"
+      ],
+      "styles": [
+        "src/clubhouse/styles/base.css",
+        "src/clubhouse/styles/calendar.css",
+        "src/clubhouse/styles/class-awareness.css",
+        "src/clubhouse/styles/coachhelm.css",
+        "src/clubhouse/styles/goals.css",
+        "src/clubhouse/styles/home.css",
+        "src/clubhouse/styles/hub.css",
+        "src/clubhouse/styles/messages.css",
+        "src/clubhouse/styles/qualifiers.css",
+        "src/clubhouse/styles/stats-redesign.css",
+        "src/clubhouse/styles/stats.css",
+        "src/clubhouse/styles/tournaments-desk.css",
         "src/clubhouse/styles/ui.css"
       ],
       "examples": [],
@@ -4762,6 +4779,7 @@
         "src/clubhouse/styles/shell.css",
         "src/clubhouse/styles/stats-redesign.css",
         "src/clubhouse/styles/stats.css",
+        "src/clubhouse/styles/tokens.css",
         "src/clubhouse/styles/tournaments-desk.css",
         "src/clubhouse/styles/ui.css"
       ],
@@ -5744,6 +5762,7 @@
       ],
       "styles": [
         "src/clubhouse/styles/base.css",
+        "src/clubhouse/styles/class-awareness.css",
         "src/clubhouse/styles/classes.css",
         "src/clubhouse/styles/roster.css",
         "src/clubhouse/styles/settings.css",
@@ -7225,7 +7244,6 @@
         "src/clubhouse/styles/calendar.css",
         "src/clubhouse/styles/class-awareness.css",
         "src/clubhouse/styles/coachhelm-ask.css",
-        "src/clubhouse/styles/coachhelm-plan.css",
         "src/clubhouse/styles/coachhelm.css",
         "src/clubhouse/styles/command.css",
         "src/clubhouse/styles/controls.css",
@@ -7241,6 +7259,7 @@
         "src/clubhouse/styles/shell.css",
         "src/clubhouse/styles/stats-redesign.css",
         "src/clubhouse/styles/stats.css",
+        "src/clubhouse/styles/tokens.css",
         "src/clubhouse/styles/tournaments-desk.css",
         "src/clubhouse/styles/ui.css"
       ],
@@ -8888,7 +8907,6 @@
         "src/clubhouse/styles/base.css",
         "src/clubhouse/styles/classes.css",
         "src/clubhouse/styles/coachhelm-ask.css",
-        "src/clubhouse/styles/coachhelm-plan.css",
         "src/clubhouse/styles/command.css",
         "src/clubhouse/styles/controls.css",
         "src/clubhouse/styles/home.css",
@@ -8900,6 +8918,7 @@
         "src/clubhouse/styles/shell.css",
         "src/clubhouse/styles/stats-redesign.css",
         "src/clubhouse/styles/stats.css",
+        "src/clubhouse/styles/tokens.css",
         "src/clubhouse/styles/ui.css"
       ],
       "examples": [],
@@ -9023,6 +9042,7 @@
         "src/clubhouse/styles/shell.css",
         "src/clubhouse/styles/stats-redesign.css",
         "src/clubhouse/styles/stats.css",
+        "src/clubhouse/styles/tokens.css",
         "src/clubhouse/styles/tournaments-desk.css",
         "src/clubhouse/styles/tournaments-lineup.css",
         "src/clubhouse/styles/tournaments.css",
@@ -9106,7 +9126,6 @@
         "src/clubhouse/styles/base.css",
         "src/clubhouse/styles/classes.css",
         "src/clubhouse/styles/coachhelm-ask.css",
-        "src/clubhouse/styles/coachhelm-plan.css",
         "src/clubhouse/styles/command.css",
         "src/clubhouse/styles/controls.css",
         "src/clubhouse/styles/home.css",
@@ -9132,7 +9151,6 @@
       "styles": [
         "src/clubhouse/styles/base.css",
         "src/clubhouse/styles/coachhelm-ask.css",
-        "src/clubhouse/styles/coachhelm-plan.css",
         "src/clubhouse/styles/command.css",
         "src/clubhouse/styles/controls.css",
         "src/clubhouse/styles/home.css",
@@ -9193,7 +9211,6 @@
         "src/clubhouse/styles/calendar.css",
         "src/clubhouse/styles/class-awareness.css",
         "src/clubhouse/styles/coachhelm-ask.css",
-        "src/clubhouse/styles/coachhelm-plan.css",
         "src/clubhouse/styles/coachhelm.css",
         "src/clubhouse/styles/command.css",
         "src/clubhouse/styles/controls.css",
@@ -9208,6 +9225,7 @@
         "src/clubhouse/styles/shell.css",
         "src/clubhouse/styles/stats-redesign.css",
         "src/clubhouse/styles/stats.css",
+        "src/clubhouse/styles/tokens.css",
         "src/clubhouse/styles/tournaments-desk.css",
         "src/clubhouse/styles/ui.css"
       ],
@@ -9323,7 +9341,6 @@
       "styles": [
         "src/clubhouse/styles/base.css",
         "src/clubhouse/styles/coachhelm-ask.css",
-        "src/clubhouse/styles/coachhelm-plan.css",
         "src/clubhouse/styles/command.css",
         "src/clubhouse/styles/controls.css",
         "src/clubhouse/styles/home.css",
@@ -9334,6 +9351,7 @@
         "src/clubhouse/styles/shell.css",
         "src/clubhouse/styles/stats-redesign.css",
         "src/clubhouse/styles/stats.css",
+        "src/clubhouse/styles/tokens.css",
         "src/clubhouse/styles/ui.css"
       ],
       "examples": [],
@@ -9348,7 +9366,6 @@
       "styles": [
         "src/clubhouse/styles/base.css",
         "src/clubhouse/styles/coachhelm-ask.css",
-        "src/clubhouse/styles/coachhelm-plan.css",
         "src/clubhouse/styles/command.css",
         "src/clubhouse/styles/controls.css",
         "src/clubhouse/styles/home.css",
@@ -9360,6 +9377,7 @@
         "src/clubhouse/styles/shell.css",
         "src/clubhouse/styles/stats-redesign.css",
         "src/clubhouse/styles/stats.css",
+        "src/clubhouse/styles/tokens.css",
         "src/clubhouse/styles/ui.css"
       ],
       "examples": [],
@@ -9451,7 +9469,6 @@
         "src/clubhouse/styles/base.css",
         "src/clubhouse/styles/classes.css",
         "src/clubhouse/styles/coachhelm-ask.css",
-        "src/clubhouse/styles/coachhelm-plan.css",
         "src/clubhouse/styles/command.css",
         "src/clubhouse/styles/controls.css",
         "src/clubhouse/styles/home.css",
@@ -9515,7 +9532,6 @@
       "styles": [
         "src/clubhouse/styles/base.css",
         "src/clubhouse/styles/coachhelm-ask.css",
-        "src/clubhouse/styles/coachhelm-plan.css",
         "src/clubhouse/styles/command.css",
         "src/clubhouse/styles/controls.css",
         "src/clubhouse/styles/home.css",
@@ -9526,6 +9542,7 @@
         "src/clubhouse/styles/shell.css",
         "src/clubhouse/styles/stats-redesign.css",
         "src/clubhouse/styles/stats.css",
+        "src/clubhouse/styles/tokens.css",
         "src/clubhouse/styles/ui.css"
       ],
       "examples": [],
@@ -9723,6 +9740,7 @@
       "exports": [
         "HelmKey",
         "HelmMark",
+        "QcRun",
         "QuickChatProvider"
       ],
       "styles": [
@@ -9765,6 +9783,17 @@
       "group": "shell",
       "exports": [
         "TaskCard"
+      ],
+      "styles": [],
+      "examples": [],
+      "fixture": "Contextual module"
+    },
+    {
+      "file": "src/clubhouse/shell/quick-chat/qc-context.tsx",
+      "group": "shell",
+      "exports": [
+        "HelmMark",
+        "QcCtx"
       ],
       "styles": [],
       "examples": [],
@@ -9826,7 +9855,6 @@
       "styles": [
         "src/clubhouse/styles/base.css",
         "src/clubhouse/styles/coachhelm-ask.css",
-        "src/clubhouse/styles/coachhelm-plan.css",
         "src/clubhouse/styles/command.css",
         "src/clubhouse/styles/controls.css",
         "src/clubhouse/styles/home.css",
@@ -9838,6 +9866,7 @@
         "src/clubhouse/styles/shell.css",
         "src/clubhouse/styles/stats-redesign.css",
         "src/clubhouse/styles/stats.css",
+        "src/clubhouse/styles/tokens.css",
         "src/clubhouse/styles/ui.css"
       ],
       "examples": [],
@@ -9996,7 +10025,6 @@
       "styles": [
         "src/clubhouse/styles/base.css",
         "src/clubhouse/styles/coachhelm-ask.css",
-        "src/clubhouse/styles/coachhelm-plan.css",
         "src/clubhouse/styles/command.css",
         "src/clubhouse/styles/controls.css",
         "src/clubhouse/styles/home.css",
@@ -10007,6 +10035,7 @@
         "src/clubhouse/styles/shell.css",
         "src/clubhouse/styles/stats-redesign.css",
         "src/clubhouse/styles/stats.css",
+        "src/clubhouse/styles/tokens.css",
         "src/clubhouse/styles/ui.css"
       ],
       "examples": [],
@@ -10262,7 +10291,6 @@
         "src/clubhouse/styles/base.css",
         "src/clubhouse/styles/calendar.css",
         "src/clubhouse/styles/coachhelm-ask.css",
-        "src/clubhouse/styles/coachhelm-plan.css",
         "src/clubhouse/styles/command.css",
         "src/clubhouse/styles/controls.css",
         "src/clubhouse/styles/home.css",
@@ -10274,6 +10302,7 @@
         "src/clubhouse/styles/shell.css",
         "src/clubhouse/styles/stats-redesign.css",
         "src/clubhouse/styles/stats.css",
+        "src/clubhouse/styles/tokens.css",
         "src/clubhouse/styles/ui.css"
       ],
       "examples": [
@@ -10448,7 +10477,6 @@
       "styles": [
         "src/clubhouse/styles/base.css",
         "src/clubhouse/styles/coachhelm-ask.css",
-        "src/clubhouse/styles/coachhelm-plan.css",
         "src/clubhouse/styles/command.css",
         "src/clubhouse/styles/controls.css",
         "src/clubhouse/styles/home.css",
@@ -10459,6 +10487,7 @@
         "src/clubhouse/styles/shell.css",
         "src/clubhouse/styles/stats-redesign.css",
         "src/clubhouse/styles/stats.css",
+        "src/clubhouse/styles/tokens.css",
         "src/clubhouse/styles/ui.css"
       ],
       "examples": [],
@@ -10494,7 +10523,6 @@
       "styles": [
         "src/clubhouse/styles/base.css",
         "src/clubhouse/styles/coachhelm-ask.css",
-        "src/clubhouse/styles/coachhelm-plan.css",
         "src/clubhouse/styles/command.css",
         "src/clubhouse/styles/controls.css",
         "src/clubhouse/styles/home.css",
@@ -10507,6 +10535,7 @@
         "src/clubhouse/styles/shell.css",
         "src/clubhouse/styles/stats-redesign.css",
         "src/clubhouse/styles/stats.css",
+        "src/clubhouse/styles/tokens.css",
         "src/clubhouse/styles/ui.css"
       ],
       "examples": [],
@@ -10828,6 +10857,7 @@
         "Surface"
       ],
       "styles": [
+        "src/clubhouse/styles/class-awareness.css",
         "src/clubhouse/styles/classes.css",
         "src/clubhouse/styles/component-playground.css",
         "src/clubhouse/styles/controls.css",
@@ -10955,7 +10985,6 @@
       "styles": [
         "src/clubhouse/styles/base.css",
         "src/clubhouse/styles/coachhelm-ask.css",
-        "src/clubhouse/styles/coachhelm-plan.css",
         "src/clubhouse/styles/command.css",
         "src/clubhouse/styles/controls.css",
         "src/clubhouse/styles/home.css",
@@ -10966,6 +10995,7 @@
         "src/clubhouse/styles/shell.css",
         "src/clubhouse/styles/stats-redesign.css",
         "src/clubhouse/styles/stats.css",
+        "src/clubhouse/styles/tokens.css",
         "src/clubhouse/styles/ui.css"
       ],
       "examples": [],
@@ -12316,6 +12346,7 @@
         "ch-ca-thread__primary",
         "ch-ca-updated",
         "ch-num",
+        "ch-surface--card",
         "ch-swap"
       ],
       "tokens": []
@@ -12325,7 +12356,6 @@
       "classes": [
         "ch-app",
         "ch-btn",
-        "ch-ca-panel",
         "ch-cl",
         "ch-cl-2",
         "ch-cl-add",
@@ -12701,35 +12731,87 @@
         "ch-ak-pane",
         "ch-ak-push",
         "ch-ak-putts",
+        "ch-ak-root",
         "ch-ak-scope",
         "ch-ak-season",
         "ch-ak-settings",
+        "ch-ak-th",
         "ch-ak-turn",
-        "ch-ask",
         "ch-btn--primary",
         "ch-cpv-pub",
-        "ch-th",
         "ch-th-col",
-        "ch-th-cv__expand",
-        "ch-th-cv__full",
-        "ch-th-cv__head",
         "ch-th-user"
       ],
       "tokens": [
         {
+          "name": "--ch-ak-k",
+          "value": "var(--ch-type-k, 1)",
+          "scope": ".ch-ak-th"
+        },
+        {
+          "name": "--ch-ak-ak-hair",
+          "value": "rgb(28 27 24 / 0.14)",
+          "scope": ".ch-ak-th"
+        },
+        {
+          "name": "--ch-ak-ak-tint",
+          "value": "rgb(21 90 57 / 0.1)",
+          "scope": ".ch-ak-th"
+        },
+        {
+          "name": "--ch-ak-ak-track",
+          "value": "#ebe5d8",
+          "scope": ".ch-ak-th"
+        },
+        {
+          "name": "--ch-ak-ak-feature",
+          "value": "#0b3a25",
+          "scope": ".ch-ak-th"
+        },
+        {
+          "name": "--ch-ak-ak-hair",
+          "value": "rgb(241 236 223 / 0.14)",
+          "scope": "html[data-fw-theme='dark'] .ch-ak-th"
+        },
+        {
+          "name": "--ch-ak-ak-tint",
+          "value": "rgb(124 199 155 / 0.14)",
+          "scope": "html[data-fw-theme='dark'] .ch-ak-th"
+        },
+        {
+          "name": "--ch-ak-ak-track",
+          "value": "#2c322d",
+          "scope": "html[data-fw-theme='dark'] .ch-ak-th"
+        },
+        {
+          "name": "--ch-ak-ak-feature",
+          "value": "#123d29",
+          "scope": "html[data-fw-theme='dark'] .ch-ak-th"
+        },
+        {
+          "name": "--ch-ak-fill",
+          "value": "20%",
+          "scope": ".ch-ak-meter i.is-low"
+        },
+        {
+          "name": "--ch-ak-fill",
+          "value": "0%",
+          "scope": ".ch-ak-meter i.is-out"
+        },
+        {
           "name": "--ch-ask-shadow-1",
-          "value": "0 0 0 0.5px var(--ak-hair), 0 1px 2px rgb(28 25 18 / 0.05)",
-          "scope": ".ch-th[data-v2]"
+          "value": "0 0 0 0.5px var(--ch-ak-ak-hair), 0 1px 2px rgb(28 25 18 / 0.05)",
+          "scope": ".ch-ak-th"
         },
         {
           "name": "--ch-ask-shadow-2",
           "value": "var(--ch-elevation-reading)",
-          "scope": ".ch-th[data-v2]"
+          "scope": ".ch-ak-th"
         },
         {
           "name": "--ch-ask-v2-x1",
           "value": "0 0 0 0.5px rgb(28 27 24 / 0.14)",
-          "scope": ".ch-th[data-v2], .ch-ak-pane, .ch-ak-out, .ch-ak-season, .ch-ak-knows, .ch-ak-meter, .ch-ak-handoff"
+          "scope": ".ch-ak-th, .ch-ak-pane, .ch-ak-out, .ch-ak-season, .ch-ak-knows, .ch-ak-meter, .ch-ak-handoff"
         }
       ]
     },
@@ -12805,6 +12887,7 @@
         "ch-ask-tabs",
         "ch-ask-team",
         "ch-ask-top",
+        "ch-cpv-full",
         "ch-empty-page",
         "ch-root",
         "ch-seg",
@@ -13134,13 +13217,268 @@
       ],
       "tokens": [
         {
+          "name": "--ch-hf-a-page",
+          "value": "var(--ch-grouped-bg, #f2f0e9)",
+          "scope": ".ch-hf"
+        },
+        {
+          "name": "--ch-hf-a-card",
+          "value": "#fffefb",
+          "scope": ".ch-hf"
+        },
+        {
+          "name": "--ch-hf-a-well",
+          "value": "#f6f4ee",
+          "scope": ".ch-hf"
+        },
+        {
+          "name": "--ch-hf-a-ink",
+          "value": "#1c1b18",
+          "scope": ".ch-hf"
+        },
+        {
+          "name": "--ch-hf-a-ink-2",
+          "value": "#46433d",
+          "scope": ".ch-hf"
+        },
+        {
+          "name": "--ch-hf-a-ink-3",
+          "value": "#5f5c55",
+          "scope": ".ch-hf"
+        },
+        {
+          "name": "--ch-hf-a-gain",
+          "value": "#14613d",
+          "scope": ".ch-hf"
+        },
+        {
+          "name": "--ch-hf-a-loss",
+          "value": "#9a5700",
+          "scope": ".ch-hf"
+        },
+        {
+          "name": "--ch-hf-a-accent",
+          "value": "#155a39",
+          "scope": ".ch-hf"
+        },
+        {
+          "name": "--ch-hf-a-sep",
+          "value": "rgb(28 27 24 / 0.1)",
+          "scope": ".ch-hf"
+        },
+        {
+          "name": "--ch-hf-a-ring",
+          "value": "rgb(28 27 24 / 0.07)",
+          "scope": ".ch-hf"
+        },
+        {
+          "name": "--ch-hf-a-shadow",
+          "value": "var(--ch-elevation-reading)",
+          "scope": ".ch-hf"
+        },
+        {
+          "name": "--ch-hf-a-feat",
+          "value": "#0b3a25",
+          "scope": ".ch-hf"
+        },
+        {
+          "name": "--ch-hf-a-feat-1",
+          "value": "#f4f1e8",
+          "scope": ".ch-hf"
+        },
+        {
+          "name": "--ch-hf-a-feat-2",
+          "value": "#d3d9cb",
+          "scope": ".ch-hf"
+        },
+        {
+          "name": "--ch-hf-a-feat-gain",
+          "value": "#8fd3aa",
+          "scope": ".ch-hf"
+        },
+        {
+          "name": "--ch-hf-a-feat-loss",
+          "value": "#edb867",
+          "scope": ".ch-hf"
+        },
+        {
+          "name": "--ch-hf-a-press",
+          "value": "rgb(28 27 24 / 0.05)",
+          "scope": ".ch-hf"
+        },
+        {
+          "name": "--ch-hf-a-skel",
+          "value": "#e2dbca",
+          "scope": ".ch-hf"
+        },
+        {
+          "name": "--ch-hf-a-skel-sheen",
+          "value": "#ece6d8",
+          "scope": ".ch-hf"
+        },
+        {
+          "name": "--ch-hf-c-gain",
+          "value": "#1f6b45",
+          "scope": ".ch-hf"
+        },
+        {
+          "name": "--ch-hf-c-loss",
+          "value": "#b86f0c",
+          "scope": ".ch-hf"
+        },
+        {
+          "name": "--ch-hf-c-neutral",
+          "value": "#6b675f",
+          "scope": ".ch-hf"
+        },
+        {
+          "name": "--ch-hf-c-track",
+          "value": "#ebe5d8",
+          "scope": ".ch-hf"
+        },
+        {
+          "name": "--ch-hf-c-zero",
+          "value": "#5f5c55",
+          "scope": ".ch-hf"
+        },
+        {
+          "name": "--ch-hf-seg-a",
+          "value": "#1f6b45",
+          "scope": ".ch-hf"
+        },
+        {
+          "name": "--ch-hf-seg-b",
+          "value": "#155a39",
+          "scope": ".ch-hf"
+        },
+        {
+          "name": "--ch-hf-seg-ink",
+          "value": "#f4eedd",
+          "scope": ".ch-hf"
+        },
+        {
+          "name": "--ch-hf-a-page",
+          "value": "var(--ch-grouped-bg, #0e120f)",
+          "scope": "html[data-fw-theme='dark'] .ch-hf"
+        },
+        {
+          "name": "--ch-hf-a-card",
+          "value": "#191e1a",
+          "scope": "html[data-fw-theme='dark'] .ch-hf"
+        },
+        {
+          "name": "--ch-hf-a-well",
+          "value": "#141815",
+          "scope": "html[data-fw-theme='dark'] .ch-hf"
+        },
+        {
+          "name": "--ch-hf-a-ink",
+          "value": "#f1ecdf",
+          "scope": "html[data-fw-theme='dark'] .ch-hf"
+        },
+        {
+          "name": "--ch-hf-a-ink-2",
+          "value": "#d0c9b8",
+          "scope": "html[data-fw-theme='dark'] .ch-hf"
+        },
+        {
+          "name": "--ch-hf-a-ink-3",
+          "value": "#ada697",
+          "scope": "html[data-fw-theme='dark'] .ch-hf"
+        },
+        {
+          "name": "--ch-hf-a-gain",
+          "value": "#7cc79b",
+          "scope": "html[data-fw-theme='dark'] .ch-hf"
+        },
+        {
+          "name": "--ch-hf-a-loss",
+          "value": "#e7ae57",
+          "scope": "html[data-fw-theme='dark'] .ch-hf"
+        },
+        {
+          "name": "--ch-hf-a-accent",
+          "value": "#7cc79b",
+          "scope": "html[data-fw-theme='dark'] .ch-hf"
+        },
+        {
+          "name": "--ch-hf-a-sep",
+          "value": "rgb(241 236 223 / 0.1)",
+          "scope": "html[data-fw-theme='dark'] .ch-hf"
+        },
+        {
+          "name": "--ch-hf-a-ring",
+          "value": "rgb(255 255 255 / 0.06)",
+          "scope": "html[data-fw-theme='dark'] .ch-hf"
+        },
+        {
+          "name": "--ch-hf-a-shadow",
+          "value": "var(--ch-elevation-reading)",
+          "scope": "html[data-fw-theme='dark'] .ch-hf"
+        },
+        {
+          "name": "--ch-hf-a-feat",
+          "value": "#123d29",
+          "scope": "html[data-fw-theme='dark'] .ch-hf"
+        },
+        {
+          "name": "--ch-hf-a-press",
+          "value": "rgb(241 236 223 / 0.06)",
+          "scope": "html[data-fw-theme='dark'] .ch-hf"
+        },
+        {
+          "name": "--ch-hf-a-skel",
+          "value": "#252c26",
+          "scope": "html[data-fw-theme='dark'] .ch-hf"
+        },
+        {
+          "name": "--ch-hf-a-skel-sheen",
+          "value": "#2e362f",
+          "scope": "html[data-fw-theme='dark'] .ch-hf"
+        },
+        {
+          "name": "--ch-hf-c-gain",
+          "value": "#4fa877",
+          "scope": "html[data-fw-theme='dark'] .ch-hf"
+        },
+        {
+          "name": "--ch-hf-c-loss",
+          "value": "#e09a35",
+          "scope": "html[data-fw-theme='dark'] .ch-hf"
+        },
+        {
+          "name": "--ch-hf-c-neutral",
+          "value": "#a39d90",
+          "scope": "html[data-fw-theme='dark'] .ch-hf"
+        },
+        {
+          "name": "--ch-hf-c-track",
+          "value": "#2c322d",
+          "scope": "html[data-fw-theme='dark'] .ch-hf"
+        },
+        {
+          "name": "--ch-hf-c-zero",
+          "value": "#ada697",
+          "scope": "html[data-fw-theme='dark'] .ch-hf"
+        },
+        {
+          "name": "--ch-hf-o",
+          "value": "100%",
+          "scope": ".ch-hf .sg__bar.loss"
+        },
+        {
+          "name": "--ch-hf-o",
+          "value": "0%",
+          "scope": ".ch-hf .sg__bar.gain"
+        },
+        {
           "name": "--ch-file-shadow-1",
-          "value": "var(--a-shadow)",
+          "value": "var(--ch-hf-a-shadow)",
           "scope": ".ch-hf"
         },
         {
           "name": "--ch-file-shadow-2",
-          "value": "var(--a-shadow), inset 0 0 0 999px var(--a-press)",
+          "value": "var(--ch-hf-a-shadow), inset 0 0 0 999px var(--ch-hf-a-press)",
           "scope": ".ch-hf"
         },
         {
@@ -13150,7 +13488,7 @@
         },
         {
           "name": "--ch-file-shadow-4",
-          "value": "0 0 0 var(--ch-hairline-w) var(--a-ring), 0 6px 18px -8px rgb(28 25 18 / 0.3)",
+          "value": "0 0 0 var(--ch-hairline-w) var(--ch-hf-a-ring), 0 6px 18px -8px rgb(28 25 18 / 0.3)",
           "scope": ".ch-hf"
         },
         {
@@ -13160,7 +13498,7 @@
         },
         {
           "name": "--ch-file-shadow-6",
-          "value": "0 0 0 var(--ch-hairline-w) var(--a-ring), 0 1px 2px rgb(28 25 18 / 0.06)",
+          "value": "0 0 0 var(--ch-hairline-w) var(--ch-hf-a-ring), 0 1px 2px rgb(28 25 18 / 0.06)",
           "scope": ".ch-hf"
         },
         {
@@ -13192,8 +13530,6 @@
     {
       "file": "src/clubhouse/styles/coachhelm-plan.css",
       "classes": [
-        "ch-ask-body",
-        "ch-ask-main",
         "ch-avatar",
         "ch-btn--primary",
         "ch-btn--sm",
@@ -13217,11 +13553,124 @@
         "ch-cpv-pub",
         "ch-cpv-sample",
         "ch-cpv-sheet",
-        "ch-cpv-vz",
-        "ch-root",
-        "ch-th"
+        "ch-cpv-vz"
       ],
       "tokens": [
+        {
+          "name": "--ch-pl-k",
+          "value": "1",
+          "scope": ".ch-cp-sheet"
+        },
+        {
+          "name": "--ch-pl-g",
+          "value": "var(--ch-pl-gA)",
+          "scope": ".ch-cp-sheet .g-A"
+        },
+        {
+          "name": "--ch-pl-gt",
+          "value": "var(--ch-pl-gA-t)",
+          "scope": ".ch-cp-sheet .g-A"
+        },
+        {
+          "name": "--ch-pl-g",
+          "value": "var(--ch-pl-gB)",
+          "scope": ".ch-cp-sheet .g-B"
+        },
+        {
+          "name": "--ch-pl-gt",
+          "value": "var(--ch-pl-gB-t)",
+          "scope": ".ch-cp-sheet .g-B"
+        },
+        {
+          "name": "--ch-pl-g",
+          "value": "var(--ch-pl-gC)",
+          "scope": ".ch-cp-sheet .g-C"
+        },
+        {
+          "name": "--ch-pl-gt",
+          "value": "var(--ch-pl-gC-t)",
+          "scope": ".ch-cp-sheet .g-C"
+        },
+        {
+          "name": "--ch-pl-ink",
+          "value": "#1C1B18",
+          "scope": ".ch-cp-sheet"
+        },
+        {
+          "name": "--ch-pl-ink-2",
+          "value": "#47443D",
+          "scope": ".ch-cp-sheet"
+        },
+        {
+          "name": "--ch-pl-ink-3",
+          "value": "#5F5C55",
+          "scope": ".ch-cp-sheet"
+        },
+        {
+          "name": "--ch-pl-rule",
+          "value": "#E6E1D5",
+          "scope": ".ch-cp-sheet"
+        },
+        {
+          "name": "--ch-pl-rule-2",
+          "value": "#CFC8B8",
+          "scope": ".ch-cp-sheet"
+        },
+        {
+          "name": "--ch-pl-accent",
+          "value": "#155A39",
+          "scope": ".ch-cp-sheet"
+        },
+        {
+          "name": "--ch-pl-loss",
+          "value": "#9A5700",
+          "scope": ".ch-cp-sheet"
+        },
+        {
+          "name": "--ch-pl-gain",
+          "value": "#14613D",
+          "scope": ".ch-cp-sheet"
+        },
+        {
+          "name": "--ch-pl-gain-tint",
+          "value": "#E8EEE8",
+          "scope": ".ch-cp-sheet"
+        },
+        {
+          "name": "--ch-pl-gA",
+          "value": "#1F6B45",
+          "scope": ".ch-cp-sheet"
+        },
+        {
+          "name": "--ch-pl-gB",
+          "value": "#2F5B7E",
+          "scope": ".ch-cp-sheet"
+        },
+        {
+          "name": "--ch-pl-gC",
+          "value": "#654A7E",
+          "scope": ".ch-cp-sheet"
+        },
+        {
+          "name": "--ch-pl-g-on",
+          "value": "#FFFFFF",
+          "scope": ".ch-cp-sheet"
+        },
+        {
+          "name": "--ch-pl-gA-t",
+          "value": "#E4EEE7",
+          "scope": ".ch-cp-sheet"
+        },
+        {
+          "name": "--ch-pl-gB-t",
+          "value": "#E3EAF2",
+          "scope": ".ch-cp-sheet"
+        },
+        {
+          "name": "--ch-pl-gC-t",
+          "value": "#ECE7F1",
+          "scope": ".ch-cp-sheet"
+        },
         {
           "name": "--ch-plan-shadow-1",
           "value": "0 0 0 var(--ch-hairline-w) rgb(28 27 24 / .08),0 1px 2px rgb(28 25 18 / .06),0 18px 38px -20px rgb(28 25 18 / .38)",
@@ -13229,8 +13678,118 @@
         },
         {
           "name": "--ch-plan-x1",
-          "value": "-1px 0 0 var(--rule)",
+          "value": "-1px 0 0 var(--ch-pl-rule)",
           "scope": ".ch-cp-sheet, .ch-cp-card"
+        },
+        {
+          "name": "--ch-pl-cpv-track",
+          "value": "#ebe5d8",
+          "scope": ".ch-cpv,\n.ch-cpv-full"
+        },
+        {
+          "name": "--ch-pl-cpv-skill",
+          "value": "#3d6787",
+          "scope": ".ch-cpv,\n.ch-cpv-full"
+        },
+        {
+          "name": "--ch-pl-cpv-random",
+          "value": "#8a6a2f",
+          "scope": ".ch-cpv,\n.ch-cpv-full"
+        },
+        {
+          "name": "--ch-pl-cpv-pressure",
+          "value": "#1f6b45",
+          "scope": ".ch-cpv,\n.ch-cpv-full"
+        },
+        {
+          "name": "--ch-pl-cpv-ga",
+          "value": "#1f6b45",
+          "scope": ".ch-cpv,\n.ch-cpv-full"
+        },
+        {
+          "name": "--ch-pl-cpv-gb",
+          "value": "#2f5b7e",
+          "scope": ".ch-cpv,\n.ch-cpv-full"
+        },
+        {
+          "name": "--ch-pl-cpv-gc",
+          "value": "#654a7e",
+          "scope": ".ch-cpv,\n.ch-cpv-full"
+        },
+        {
+          "name": "--ch-pl-cpv-gon",
+          "value": "#fff",
+          "scope": ".ch-cpv,\n.ch-cpv-full"
+        },
+        {
+          "name": "--ch-pl-cpv-sep",
+          "value": "var(--ch-separator)",
+          "scope": ".ch-cpv,\n.ch-cpv-full"
+        },
+        {
+          "name": "--ch-pl-cpv-track",
+          "value": "#2c322d",
+          "scope": "html[data-fw-theme='dark'] .ch-cpv,\nhtml[data-fw-theme='dark'] .ch-cpv-full"
+        },
+        {
+          "name": "--ch-pl-cpv-skill",
+          "value": "#6e9bc0",
+          "scope": "html[data-fw-theme='dark'] .ch-cpv,\nhtml[data-fw-theme='dark'] .ch-cpv-full"
+        },
+        {
+          "name": "--ch-pl-cpv-random",
+          "value": "#c9a35d",
+          "scope": "html[data-fw-theme='dark'] .ch-cpv,\nhtml[data-fw-theme='dark'] .ch-cpv-full"
+        },
+        {
+          "name": "--ch-pl-cpv-pressure",
+          "value": "#4fa877",
+          "scope": "html[data-fw-theme='dark'] .ch-cpv,\nhtml[data-fw-theme='dark'] .ch-cpv-full"
+        },
+        {
+          "name": "--ch-pl-cpv-ga",
+          "value": "#4fa877",
+          "scope": "html[data-fw-theme='dark'] .ch-cpv,\nhtml[data-fw-theme='dark'] .ch-cpv-full"
+        },
+        {
+          "name": "--ch-pl-cpv-gb",
+          "value": "#6e9bc0",
+          "scope": "html[data-fw-theme='dark'] .ch-cpv,\nhtml[data-fw-theme='dark'] .ch-cpv-full"
+        },
+        {
+          "name": "--ch-pl-cpv-gc",
+          "value": "#b49acb",
+          "scope": "html[data-fw-theme='dark'] .ch-cpv,\nhtml[data-fw-theme='dark'] .ch-cpv-full"
+        },
+        {
+          "name": "--ch-pl-cpv-gon",
+          "value": "#0e120f",
+          "scope": "html[data-fw-theme='dark'] .ch-cpv,\nhtml[data-fw-theme='dark'] .ch-cpv-full"
+        },
+        {
+          "name": "--ch-pl-c",
+          "value": "var(--ch-pl-cpv-skill)",
+          "scope": ".ch-cpv .lg-skill"
+        },
+        {
+          "name": "--ch-pl-c",
+          "value": "var(--ch-pl-cpv-random)",
+          "scope": ".ch-cpv .lg-random"
+        },
+        {
+          "name": "--ch-pl-c",
+          "value": "var(--ch-pl-cpv-pressure)",
+          "scope": ".ch-cpv .lg-pressure"
+        },
+        {
+          "name": "--ch-pl-cpv-track",
+          "value": "#ebe5d8",
+          "scope": ".ch-cpv-vz"
+        },
+        {
+          "name": "--ch-pl-cpv-track",
+          "value": "#2c322d",
+          "scope": "html[data-fw-theme='dark'] .ch-cpv-vz"
         }
       ]
     },
@@ -13340,6 +13899,236 @@
       ],
       "tokens": [
         {
+          "name": "--ch-hr-bg",
+          "value": "var(--ch-bg-page)",
+          "scope": ".ch-hr"
+        },
+        {
+          "name": "--ch-hr-card",
+          "value": "var(--ch-card-bg)",
+          "scope": ".ch-hr"
+        },
+        {
+          "name": "--ch-hr-well",
+          "value": "#f6f4ee",
+          "scope": ".ch-hr"
+        },
+        {
+          "name": "--ch-hr-ink",
+          "value": "#1c1b18",
+          "scope": ".ch-hr"
+        },
+        {
+          "name": "--ch-hr-ink-2",
+          "value": "#46433d",
+          "scope": ".ch-hr"
+        },
+        {
+          "name": "--ch-hr-ink-3",
+          "value": "#5f5c55",
+          "scope": ".ch-hr"
+        },
+        {
+          "name": "--ch-hr-gain",
+          "value": "#14613d",
+          "scope": ".ch-hr"
+        },
+        {
+          "name": "--ch-hr-loss",
+          "value": "#9a5700",
+          "scope": ".ch-hr"
+        },
+        {
+          "name": "--ch-hr-flag",
+          "value": "#b3261e",
+          "scope": ".ch-hr"
+        },
+        {
+          "name": "--ch-hr-accent",
+          "value": "#155a39",
+          "scope": ".ch-hr"
+        },
+        {
+          "name": "--ch-hr-sep",
+          "value": "rgb(28 27 24 / 0.1)",
+          "scope": ".ch-hr"
+        },
+        {
+          "name": "--ch-hr-ring",
+          "value": "rgb(28 27 24 / 0.07)",
+          "scope": ".ch-hr"
+        },
+        {
+          "name": "--ch-hr-gain-fill",
+          "value": "#1f6b45",
+          "scope": ".ch-hr"
+        },
+        {
+          "name": "--ch-hr-loss-fill",
+          "value": "#b86f0c",
+          "scope": ".ch-hr"
+        },
+        {
+          "name": "--ch-hr-neutral-fill",
+          "value": "#6b675f",
+          "scope": ".ch-hr"
+        },
+        {
+          "name": "--ch-hr-track",
+          "value": "#ebe5d8",
+          "scope": ".ch-hr"
+        },
+        {
+          "name": "--ch-hr-zero",
+          "value": "#5f5c55",
+          "scope": ".ch-hr"
+        },
+        {
+          "name": "--ch-hr-feat",
+          "value": "#0b3a25",
+          "scope": ".ch-hr"
+        },
+        {
+          "name": "--ch-hr-f-ink",
+          "value": "#f4f1e8",
+          "scope": ".ch-hr"
+        },
+        {
+          "name": "--ch-hr-f-ink-2",
+          "value": "#d3d9cb",
+          "scope": ".ch-hr"
+        },
+        {
+          "name": "--ch-hr-f-gain",
+          "value": "#8fd3aa",
+          "scope": ".ch-hr"
+        },
+        {
+          "name": "--ch-hr-f-loss",
+          "value": "#edb867",
+          "scope": ".ch-hr"
+        },
+        {
+          "name": "--ch-hr-f-track",
+          "value": "rgb(244 241 232 / 0.18)",
+          "scope": ".ch-hr"
+        },
+        {
+          "name": "--ch-hr-press",
+          "value": "rgb(28 27 24 / 0.05)",
+          "scope": ".ch-hr"
+        },
+        {
+          "name": "--ch-hr-shadow",
+          "value": "var(--ch-card-shadow)",
+          "scope": ".ch-hr"
+        },
+        {
+          "name": "--ch-hr-k",
+          "value": "var(--ch-type-k, 1)",
+          "scope": ".ch-hr"
+        },
+        {
+          "name": "--ch-hr-sans",
+          "value": "var(--ch-font-sans)",
+          "scope": ".ch-hr"
+        },
+        {
+          "name": "--ch-hr-ease",
+          "value": "var(--ch-ease)",
+          "scope": ".ch-hr"
+        },
+        {
+          "name": "--ch-hr-spring",
+          "value": "var(--ch-ease-spring-smooth)",
+          "scope": ".ch-hr"
+        },
+        {
+          "name": "--ch-hr-well",
+          "value": "#141815",
+          "scope": "html[data-fw-theme='dark'] .ch-hr"
+        },
+        {
+          "name": "--ch-hr-ink",
+          "value": "#f1ecdf",
+          "scope": "html[data-fw-theme='dark'] .ch-hr"
+        },
+        {
+          "name": "--ch-hr-ink-2",
+          "value": "#d0c9b8",
+          "scope": "html[data-fw-theme='dark'] .ch-hr"
+        },
+        {
+          "name": "--ch-hr-ink-3",
+          "value": "#ada697",
+          "scope": "html[data-fw-theme='dark'] .ch-hr"
+        },
+        {
+          "name": "--ch-hr-gain",
+          "value": "#7cc79b",
+          "scope": "html[data-fw-theme='dark'] .ch-hr"
+        },
+        {
+          "name": "--ch-hr-loss",
+          "value": "#e7ae57",
+          "scope": "html[data-fw-theme='dark'] .ch-hr"
+        },
+        {
+          "name": "--ch-hr-flag",
+          "value": "#f28b7d",
+          "scope": "html[data-fw-theme='dark'] .ch-hr"
+        },
+        {
+          "name": "--ch-hr-accent",
+          "value": "#7cc79b",
+          "scope": "html[data-fw-theme='dark'] .ch-hr"
+        },
+        {
+          "name": "--ch-hr-sep",
+          "value": "rgb(241 236 223 / 0.1)",
+          "scope": "html[data-fw-theme='dark'] .ch-hr"
+        },
+        {
+          "name": "--ch-hr-ring",
+          "value": "rgb(255 255 255 / 0.06)",
+          "scope": "html[data-fw-theme='dark'] .ch-hr"
+        },
+        {
+          "name": "--ch-hr-gain-fill",
+          "value": "#4fa877",
+          "scope": "html[data-fw-theme='dark'] .ch-hr"
+        },
+        {
+          "name": "--ch-hr-loss-fill",
+          "value": "#e09a35",
+          "scope": "html[data-fw-theme='dark'] .ch-hr"
+        },
+        {
+          "name": "--ch-hr-neutral-fill",
+          "value": "#a39d90",
+          "scope": "html[data-fw-theme='dark'] .ch-hr"
+        },
+        {
+          "name": "--ch-hr-track",
+          "value": "#2c322d",
+          "scope": "html[data-fw-theme='dark'] .ch-hr"
+        },
+        {
+          "name": "--ch-hr-zero",
+          "value": "#ada697",
+          "scope": "html[data-fw-theme='dark'] .ch-hr"
+        },
+        {
+          "name": "--ch-hr-feat",
+          "value": "#123d29",
+          "scope": "html[data-fw-theme='dark'] .ch-hr"
+        },
+        {
+          "name": "--ch-hr-press",
+          "value": "rgb(241 236 223 / 0.06)",
+          "scope": "html[data-fw-theme='dark'] .ch-hr"
+        },
+        {
           "name": "--ch-read-shadow-1",
           "value": "0 1px 2px rgba(0,0,0,.18)",
           "scope": ".ch-hr"
@@ -13361,7 +14150,7 @@
         },
         {
           "name": "--ch-hr-cap-size",
-          "value": "calc(12px * min(var(--k, 1), 1.2))",
+          "value": "calc(12px * min(var(--ch-hr-k, 1), 1.2))",
           "scope": ".ch-hr"
         }
       ]
@@ -13492,6 +14281,281 @@
       ],
       "tokens": [
         {
+          "name": "--ch-tb-bg",
+          "value": "var(--ch-bg-page)",
+          "scope": ".ch-htb"
+        },
+        {
+          "name": "--ch-tb-card",
+          "value": "var(--ch-card-bg)",
+          "scope": ".ch-htb"
+        },
+        {
+          "name": "--ch-tb-well",
+          "value": "#f6f4ee",
+          "scope": ".ch-htb"
+        },
+        {
+          "name": "--ch-tb-ink",
+          "value": "#1c1b18",
+          "scope": ".ch-htb"
+        },
+        {
+          "name": "--ch-tb-ink-2",
+          "value": "#46433d",
+          "scope": ".ch-htb"
+        },
+        {
+          "name": "--ch-tb-ink-3",
+          "value": "#5f5c55",
+          "scope": ".ch-htb"
+        },
+        {
+          "name": "--ch-tb-gain",
+          "value": "#14613d",
+          "scope": ".ch-htb"
+        },
+        {
+          "name": "--ch-tb-loss",
+          "value": "#9a5700",
+          "scope": ".ch-htb"
+        },
+        {
+          "name": "--ch-tb-accent",
+          "value": "#155a39",
+          "scope": ".ch-htb"
+        },
+        {
+          "name": "--ch-tb-sep",
+          "value": "rgb(28 27 24 / 0.1)",
+          "scope": ".ch-htb"
+        },
+        {
+          "name": "--ch-tb-ring",
+          "value": "rgb(28 27 24 / 0.07)",
+          "scope": ".ch-htb"
+        },
+        {
+          "name": "--ch-tb-gain-fill",
+          "value": "#1f6b45",
+          "scope": ".ch-htb"
+        },
+        {
+          "name": "--ch-tb-loss-fill",
+          "value": "#b86f0c",
+          "scope": ".ch-htb"
+        },
+        {
+          "name": "--ch-tb-neutral-fill",
+          "value": "#6b675f",
+          "scope": ".ch-htb"
+        },
+        {
+          "name": "--ch-tb-track",
+          "value": "#ebe5d8",
+          "scope": ".ch-htb"
+        },
+        {
+          "name": "--ch-tb-zero",
+          "value": "#5f5c55",
+          "scope": ".ch-htb"
+        },
+        {
+          "name": "--ch-tb-champ",
+          "value": "#dccda6",
+          "scope": ".ch-htb"
+        },
+        {
+          "name": "--ch-tb-feat",
+          "value": "#0b3a25",
+          "scope": ".ch-htb"
+        },
+        {
+          "name": "--ch-tb-f-ink",
+          "value": "#f4f1e8",
+          "scope": ".ch-htb"
+        },
+        {
+          "name": "--ch-tb-f-ink-2",
+          "value": "#d3d9cb",
+          "scope": ".ch-htb"
+        },
+        {
+          "name": "--ch-tb-f-gain",
+          "value": "#8fd3aa",
+          "scope": ".ch-htb"
+        },
+        {
+          "name": "--ch-tb-f-loss",
+          "value": "#edb867",
+          "scope": ".ch-htb"
+        },
+        {
+          "name": "--ch-tb-tint-acc",
+          "value": "rgb(21 90 57 / 0.1)",
+          "scope": ".ch-htb"
+        },
+        {
+          "name": "--ch-tb-tint-loss",
+          "value": "rgb(154 87 0 / 0.11)",
+          "scope": ".ch-htb"
+        },
+        {
+          "name": "--ch-tb-loss-on-tint",
+          "value": "#8a4d00",
+          "scope": ".ch-htb"
+        },
+        {
+          "name": "--ch-tb-shadow",
+          "value": "var(--ch-card-shadow)",
+          "scope": ".ch-htb"
+        },
+        {
+          "name": "--ch-tb-shadow-lg",
+          "value": "var(--ch-shadow-lg)",
+          "scope": ".ch-htb"
+        },
+        {
+          "name": "--ch-tb-scrim",
+          "value": "rgb(14 12 8 / 0.34)",
+          "scope": ".ch-htb"
+        },
+        {
+          "name": "--ch-tb-k",
+          "value": "var(--ch-type-k, 1)",
+          "scope": ".ch-htb"
+        },
+        {
+          "name": "--ch-tb-edge",
+          "value": "var(--ch-page-x-phone, 16px)",
+          "scope": ".ch-htb"
+        },
+        {
+          "name": "--ch-tb-sans",
+          "value": "var(--ch-font-sans)",
+          "scope": ".ch-htb"
+        },
+        {
+          "name": "--ch-tb-ease",
+          "value": "var(--ch-ease)",
+          "scope": ".ch-htb"
+        },
+        {
+          "name": "--ch-tb-spring",
+          "value": "var(--ch-ease-spring-smooth)",
+          "scope": ".ch-htb"
+        },
+        {
+          "name": "--ch-tb-spring-o",
+          "value": "var(--ch-ease-spring)",
+          "scope": ".ch-htb"
+        },
+        {
+          "name": "--ch-tb-well",
+          "value": "#141815",
+          "scope": "html[data-fw-theme='dark'] .ch-htb"
+        },
+        {
+          "name": "--ch-tb-ink",
+          "value": "#f1ecdf",
+          "scope": "html[data-fw-theme='dark'] .ch-htb"
+        },
+        {
+          "name": "--ch-tb-ink-2",
+          "value": "#d0c9b8",
+          "scope": "html[data-fw-theme='dark'] .ch-htb"
+        },
+        {
+          "name": "--ch-tb-ink-3",
+          "value": "#ada697",
+          "scope": "html[data-fw-theme='dark'] .ch-htb"
+        },
+        {
+          "name": "--ch-tb-gain",
+          "value": "#7cc79b",
+          "scope": "html[data-fw-theme='dark'] .ch-htb"
+        },
+        {
+          "name": "--ch-tb-loss",
+          "value": "#e7ae57",
+          "scope": "html[data-fw-theme='dark'] .ch-htb"
+        },
+        {
+          "name": "--ch-tb-accent",
+          "value": "#7cc79b",
+          "scope": "html[data-fw-theme='dark'] .ch-htb"
+        },
+        {
+          "name": "--ch-tb-sep",
+          "value": "rgb(241 236 223 / 0.1)",
+          "scope": "html[data-fw-theme='dark'] .ch-htb"
+        },
+        {
+          "name": "--ch-tb-ring",
+          "value": "rgb(255 255 255 / 0.06)",
+          "scope": "html[data-fw-theme='dark'] .ch-htb"
+        },
+        {
+          "name": "--ch-tb-gain-fill",
+          "value": "#4fa877",
+          "scope": "html[data-fw-theme='dark'] .ch-htb"
+        },
+        {
+          "name": "--ch-tb-loss-fill",
+          "value": "#e09a35",
+          "scope": "html[data-fw-theme='dark'] .ch-htb"
+        },
+        {
+          "name": "--ch-tb-neutral-fill",
+          "value": "#a39d90",
+          "scope": "html[data-fw-theme='dark'] .ch-htb"
+        },
+        {
+          "name": "--ch-tb-track",
+          "value": "#2c322d",
+          "scope": "html[data-fw-theme='dark'] .ch-htb"
+        },
+        {
+          "name": "--ch-tb-zero",
+          "value": "#ada697",
+          "scope": "html[data-fw-theme='dark'] .ch-htb"
+        },
+        {
+          "name": "--ch-tb-feat",
+          "value": "#123d29",
+          "scope": "html[data-fw-theme='dark'] .ch-htb"
+        },
+        {
+          "name": "--ch-tb-tint-acc",
+          "value": "rgb(124 199 155 / 0.14)",
+          "scope": "html[data-fw-theme='dark'] .ch-htb"
+        },
+        {
+          "name": "--ch-tb-tint-loss",
+          "value": "rgb(231 174 87 / 0.14)",
+          "scope": "html[data-fw-theme='dark'] .ch-htb"
+        },
+        {
+          "name": "--ch-tb-loss-on-tint",
+          "value": "#e7ae57",
+          "scope": "html[data-fw-theme='dark'] .ch-htb"
+        },
+        {
+          "name": "--ch-tb-scrim",
+          "value": "rgb(0 0 0 / 0.5)",
+          "scope": "html[data-fw-theme='dark'] .ch-htb"
+        },
+        {
+          "name": "--ch-tb-rail",
+          "value": "clamp(320px,30%,440px)",
+          "scope": ".ch-htb .dgrid"
+        },
+        {
+          "name": "--ch-tb-edge",
+          "value": "20px",
+          "scope": ".ch-htb .insp"
+        },
+        {
           "name": "--ch-team-shadow-1",
           "value": "var(--ch-elevation-reading)",
           "scope": ".ch-htb"
@@ -13503,12 +14567,12 @@
         },
         {
           "name": "--ch-team-shadow-3",
-          "value": "var(--shadow-lg)",
+          "value": "var(--ch-tb-shadow-lg)",
           "scope": ".ch-htb"
         },
         {
           "name": "--ch-team-shadow-4",
-          "value": "-1px 0 0 var(--sep),var(--shadow-lg)",
+          "value": "-1px 0 0 var(--ch-tb-sep),var(--ch-tb-shadow-lg)",
           "scope": ".ch-htb"
         },
         {
@@ -13561,9 +14625,11 @@
         "ch-th-cv__chip",
         "ch-th-cv__cover",
         "ch-th-cv__entity",
+        "ch-th-cv__expand",
         "ch-th-cv__fig",
         "ch-th-cv__fig-head",
         "ch-th-cv__fig-title",
+        "ch-th-cv__full",
         "ch-th-cv__grid",
         "ch-th-cv__head",
         "ch-th-cv__hero",
@@ -16652,13 +17718,408 @@
       ],
       "tokens": [
         {
+          "name": "--ch-qc-k",
+          "value": "1",
+          "scope": ".ch-qcs"
+        },
+        {
+          "name": "--ch-qc-a-page",
+          "value": "var(--ch-bg-page)",
+          "scope": ".ch-qcs"
+        },
+        {
+          "name": "--ch-qc-a-card",
+          "value": "#fffefb",
+          "scope": ".ch-qcs"
+        },
+        {
+          "name": "--ch-qc-a-well",
+          "value": "#f6f4ee",
+          "scope": ".ch-qcs"
+        },
+        {
+          "name": "--ch-qc-a-ink",
+          "value": "var(--ch-text-primary)",
+          "scope": ".ch-qcs"
+        },
+        {
+          "name": "--ch-qc-a-ink-2",
+          "value": "#46433d",
+          "scope": ".ch-qcs"
+        },
+        {
+          "name": "--ch-qc-a-ink-3",
+          "value": "#5f5c55",
+          "scope": ".ch-qcs"
+        },
+        {
+          "name": "--ch-qc-a-accent",
+          "value": "var(--ch-accent)",
+          "scope": ".ch-qcs"
+        },
+        {
+          "name": "--ch-qc-a-accent-ink",
+          "value": "var(--ch-text-on-accent)",
+          "scope": ".ch-qcs"
+        },
+        {
+          "name": "--ch-qc-a-accent-text",
+          "value": "#155a39",
+          "scope": ".ch-qcs"
+        },
+        {
+          "name": "--ch-qc-a-tint",
+          "value": "rgb(21 90 57 / 0.1)",
+          "scope": ".ch-qcs"
+        },
+        {
+          "name": "--ch-qc-a-loss",
+          "value": "#9a5700",
+          "scope": ".ch-qcs"
+        },
+        {
+          "name": "--ch-qc-a-loss-tint",
+          "value": "rgb(154 87 0 / 0.08)",
+          "scope": ".ch-qcs"
+        },
+        {
+          "name": "--ch-qc-a-sep",
+          "value": "rgb(28 27 24 / 0.1)",
+          "scope": ".ch-qcs"
+        },
+        {
+          "name": "--ch-qc-a-ring",
+          "value": "rgb(28 27 24 / 0.07)",
+          "scope": ".ch-qcs"
+        },
+        {
+          "name": "--ch-qc-a-frame",
+          "value": "var(--ch-frame)",
+          "scope": ".ch-qcs"
+        },
+        {
+          "name": "--ch-qc-a-frame-ink",
+          "value": "var(--ch-on-green-ink)",
+          "scope": ".ch-qcs"
+        },
+        {
+          "name": "--ch-qc-a-frame-icon",
+          "value": "var(--ch-on-green-ink-soft)",
+          "scope": ".ch-qcs"
+        },
+        {
+          "name": "--ch-qc-a-champ",
+          "value": "var(--ch-champagne-300)",
+          "scope": ".ch-qcs"
+        },
+        {
+          "name": "--ch-qc-a-champ-ink",
+          "value": "#725b2c",
+          "scope": ".ch-qcs"
+        },
+        {
+          "name": "--ch-qc-a-skel",
+          "value": "var(--ch-skel-base)",
+          "scope": ".ch-qcs"
+        },
+        {
+          "name": "--ch-qc-a-yr-sr",
+          "value": "#1f6b45",
+          "scope": ".ch-qcs"
+        },
+        {
+          "name": "--ch-qc-a-yr-jr",
+          "value": "#3d6787",
+          "scope": ".ch-qcs"
+        },
+        {
+          "name": "--ch-qc-a-yr-so",
+          "value": "#86672c",
+          "scope": ".ch-qcs"
+        },
+        {
+          "name": "--ch-qc-a-yr-fr",
+          "value": "#9a4a35",
+          "scope": ".ch-qcs"
+        },
+        {
+          "name": "--ch-qc-a-block",
+          "value": "#1f6b45",
+          "scope": ".ch-qcs"
+        },
+        {
+          "name": "--ch-qc-a-block-ink",
+          "value": "#f4f1e8",
+          "scope": ".ch-qcs"
+        },
+        {
+          "name": "--ch-qc-a-seg1",
+          "value": "#155a39",
+          "scope": ".ch-qcs"
+        },
+        {
+          "name": "--ch-qc-a-seg2",
+          "value": "#23704a",
+          "scope": ".ch-qcs"
+        },
+        {
+          "name": "--ch-qc-a-seg3",
+          "value": "#2f7d55",
+          "scope": ".ch-qcs"
+        },
+        {
+          "name": "--ch-qc-a-pglass",
+          "value": "rgb(253 252 248 / 0.84)",
+          "scope": ".ch-qcs"
+        },
+        {
+          "name": "--ch-qc-a-pglass-hi",
+          "value": "rgb(255 255 255 / 0.7)",
+          "scope": ".ch-qcs"
+        },
+        {
+          "name": "--ch-qc-a-veil",
+          "value": "rgb(242 240 233 / 0.42)",
+          "scope": ".ch-qcs"
+        },
+        {
+          "name": "--ch-qc-a-pshadow",
+          "value": "0 0 0 0.5px rgb(28 25 18 / 0.12), 0 36px 72px -26px rgb(28 25 18 / 0.4), 0 12px 28px -12px rgb(28 25 18 / 0.18)",
+          "scope": ".ch-qcs"
+        },
+        {
+          "name": "--ch-qc-a-tile",
+          "value": "#fffefb",
+          "scope": ".ch-qcs"
+        },
+        {
+          "name": "--ch-qc-a-tile-ring",
+          "value": "rgb(28 27 24 / 0.07)",
+          "scope": ".ch-qcs"
+        },
+        {
+          "name": "--ch-qc-a-shadow",
+          "value": "var(--ch-elevation-reading)",
+          "scope": ".ch-qcs"
+        },
+        {
+          "name": "--ch-qc-a-card",
+          "value": "#191e1a",
+          "scope": "html[data-fw-theme='dark'] .ch-qcs"
+        },
+        {
+          "name": "--ch-qc-a-well",
+          "value": "#141815",
+          "scope": "html[data-fw-theme='dark'] .ch-qcs"
+        },
+        {
+          "name": "--ch-qc-a-ink-2",
+          "value": "#d0c9b8",
+          "scope": "html[data-fw-theme='dark'] .ch-qcs"
+        },
+        {
+          "name": "--ch-qc-a-ink-3",
+          "value": "#ada697",
+          "scope": "html[data-fw-theme='dark'] .ch-qcs"
+        },
+        {
+          "name": "--ch-qc-a-accent-text",
+          "value": "#7cc79b",
+          "scope": "html[data-fw-theme='dark'] .ch-qcs"
+        },
+        {
+          "name": "--ch-qc-a-tint",
+          "value": "rgb(124 199 155 / 0.12)",
+          "scope": "html[data-fw-theme='dark'] .ch-qcs"
+        },
+        {
+          "name": "--ch-qc-a-loss",
+          "value": "#e7ae57",
+          "scope": "html[data-fw-theme='dark'] .ch-qcs"
+        },
+        {
+          "name": "--ch-qc-a-loss-tint",
+          "value": "rgb(231 174 87 / 0.12)",
+          "scope": "html[data-fw-theme='dark'] .ch-qcs"
+        },
+        {
+          "name": "--ch-qc-a-sep",
+          "value": "rgb(241 236 223 / 0.1)",
+          "scope": "html[data-fw-theme='dark'] .ch-qcs"
+        },
+        {
+          "name": "--ch-qc-a-ring",
+          "value": "rgb(255 255 255 / 0.06)",
+          "scope": "html[data-fw-theme='dark'] .ch-qcs"
+        },
+        {
+          "name": "--ch-qc-a-champ-ink",
+          "value": "#cdbb8e",
+          "scope": "html[data-fw-theme='dark'] .ch-qcs"
+        },
+        {
+          "name": "--ch-qc-a-yr-sr",
+          "value": "#2a7a51",
+          "scope": "html[data-fw-theme='dark'] .ch-qcs"
+        },
+        {
+          "name": "--ch-qc-a-yr-jr",
+          "value": "#46739a",
+          "scope": "html[data-fw-theme='dark'] .ch-qcs"
+        },
+        {
+          "name": "--ch-qc-a-yr-so",
+          "value": "#88692e",
+          "scope": "html[data-fw-theme='dark'] .ch-qcs"
+        },
+        {
+          "name": "--ch-qc-a-yr-fr",
+          "value": "#a3533e",
+          "scope": "html[data-fw-theme='dark'] .ch-qcs"
+        },
+        {
+          "name": "--ch-qc-a-block",
+          "value": "#4fa877",
+          "scope": "html[data-fw-theme='dark'] .ch-qcs"
+        },
+        {
+          "name": "--ch-qc-a-block-ink",
+          "value": "#0e120f",
+          "scope": "html[data-fw-theme='dark'] .ch-qcs"
+        },
+        {
+          "name": "--ch-qc-a-seg1",
+          "value": "#4fa877",
+          "scope": "html[data-fw-theme='dark'] .ch-qcs"
+        },
+        {
+          "name": "--ch-qc-a-seg2",
+          "value": "#7cc79b",
+          "scope": "html[data-fw-theme='dark'] .ch-qcs"
+        },
+        {
+          "name": "--ch-qc-a-seg3",
+          "value": "#9dd6b4",
+          "scope": "html[data-fw-theme='dark'] .ch-qcs"
+        },
+        {
+          "name": "--ch-qc-a-pglass",
+          "value": "rgb(27 32 28 / 0.84)",
+          "scope": "html[data-fw-theme='dark'] .ch-qcs"
+        },
+        {
+          "name": "--ch-qc-a-pglass-hi",
+          "value": "rgb(255 255 255 / 0.07)",
+          "scope": "html[data-fw-theme='dark'] .ch-qcs"
+        },
+        {
+          "name": "--ch-qc-a-veil",
+          "value": "rgb(14 18 15 / 0.5)",
+          "scope": "html[data-fw-theme='dark'] .ch-qcs"
+        },
+        {
+          "name": "--ch-qc-a-pshadow",
+          "value": "0 0 0 0.5px rgb(237 231 216 / 0.14), 0 36px 72px -26px rgb(0 0 0 / 0.85), 0 12px 28px -12px rgb(0 0 0 / 0.5)",
+          "scope": "html[data-fw-theme='dark'] .ch-qcs"
+        },
+        {
+          "name": "--ch-qc-a-tile",
+          "value": "#1f2520",
+          "scope": "html[data-fw-theme='dark'] .ch-qcs"
+        },
+        {
+          "name": "--ch-qc-a-tile-ring",
+          "value": "rgb(255 255 255 / 0.06)",
+          "scope": "html[data-fw-theme='dark'] .ch-qcs"
+        },
+        {
+          "name": "--ch-qc-a-shadow",
+          "value": "var(--ch-elevation-reading)",
+          "scope": "html[data-fw-theme='dark'] .ch-qcs"
+        },
+        {
+          "name": "--ch-qc-tc",
+          "value": "var(--ch-qc-a-accent-text)",
+          "scope": ".ch-qcs .tile"
+        },
+        {
+          "name": "--ch-qc-k",
+          "value": "1",
+          "scope": ".ch-qck"
+        },
+        {
+          "name": "--ch-qc-a-frame",
+          "value": "var(--ch-frame)",
+          "scope": ".ch-qck"
+        },
+        {
+          "name": "--ch-qc-a-frame-ink",
+          "value": "var(--ch-on-green-ink)",
+          "scope": ".ch-qck"
+        },
+        {
+          "name": "--ch-qc-a-frame-icon",
+          "value": "var(--ch-on-green-ink-soft)",
+          "scope": ".ch-qck"
+        },
+        {
+          "name": "--ch-qc-a-champ",
+          "value": "var(--ch-champagne-300)",
+          "scope": ".ch-qck"
+        },
+        {
+          "name": "--ch-qc-a-accent",
+          "value": "var(--ch-accent)",
+          "scope": ".ch-qck"
+        },
+        {
+          "name": "--ch-qc-a-accent-ink",
+          "value": "var(--ch-text-on-accent)",
+          "scope": ".ch-qck"
+        },
+        {
+          "name": "--ch-qc-a-accent-text",
+          "value": "#155a39",
+          "scope": ".ch-qck"
+        },
+        {
+          "name": "--ch-qc-a-tint",
+          "value": "rgb(21 90 57 / 0.1)",
+          "scope": ".ch-qck"
+        },
+        {
+          "name": "--ch-qc-a-champ-ink",
+          "value": "#725b2c",
+          "scope": ".ch-qck"
+        },
+        {
+          "name": "--ch-qc-a-page",
+          "value": "var(--ch-bg-page)",
+          "scope": ".ch-qck"
+        },
+        {
+          "name": "--ch-qc-a-accent-text",
+          "value": "#7cc79b",
+          "scope": "html[data-fw-theme='dark'] .ch-qck"
+        },
+        {
+          "name": "--ch-qc-a-tint",
+          "value": "rgb(124 199 155 / 0.12)",
+          "scope": "html[data-fw-theme='dark'] .ch-qck"
+        },
+        {
+          "name": "--ch-qc-a-champ-ink",
+          "value": "#cdbb8e",
+          "scope": "html[data-fw-theme='dark'] .ch-qck"
+        },
+        {
           "name": "--ch-qc-shadow-1",
           "value": "var(--ch-shadow-float)",
           "scope": ".ch-qcs, .ch-qck"
         },
         {
           "name": "--ch-qc-shadow-2",
-          "value": "0 0 0 var(--ch-hairline-w) var(--a-ring), 0 1px 2px rgb(28 25 18 / 0.05), 0 10px 24px -14px rgb(28 25 18 / 0.2)",
+          "value": "0 0 0 var(--ch-hairline-w) var(--ch-qc-a-ring), 0 1px 2px rgb(28 25 18 / 0.05), 0 10px 24px -14px rgb(28 25 18 / 0.2)",
           "scope": ".ch-qcs, .ch-qck"
         },
         {
@@ -16668,7 +18129,7 @@
         },
         {
           "name": "--ch-qc-shadow-4",
-          "value": "0 0 0 var(--ch-hairline-w) var(--a-ring), 0 4px 10px -6px rgb(28 25 18 / 0.25)",
+          "value": "0 0 0 var(--ch-hairline-w) var(--ch-qc-a-ring), 0 4px 10px -6px rgb(28 25 18 / 0.25)",
           "scope": ".ch-qcs, .ch-qck"
         },
         {
@@ -16678,17 +18139,17 @@
         },
         {
           "name": "--ch-qc-shadow-6",
-          "value": "0 0 0 var(--ch-hairline-w) var(--a-ring), 0 10px 24px -14px rgb(28 25 18 / 0.2)",
+          "value": "0 0 0 var(--ch-hairline-w) var(--ch-qc-a-ring), 0 10px 24px -14px rgb(28 25 18 / 0.2)",
           "scope": ".ch-qcs, .ch-qck"
         },
         {
           "name": "--ch-qc-shadow-7",
-          "value": "0 0 0 var(--ch-hairline-w) var(--a-ring), 0 6px 12px -6px rgb(28 25 18 / 0.35)",
+          "value": "0 0 0 var(--ch-hairline-w) var(--ch-qc-a-ring), 0 6px 12px -6px rgb(28 25 18 / 0.35)",
           "scope": ".ch-qcs, .ch-qck"
         },
         {
           "name": "--ch-qc-shadow-8",
-          "value": "var(--a-pshadow)",
+          "value": "var(--ch-qc-a-pshadow)",
           "scope": ".ch-qcs, .ch-qck"
         },
         {
@@ -16698,7 +18159,7 @@
         },
         {
           "name": "--ch-qc-shadow-10",
-          "value": "0 0 0 var(--ch-hairline-w) var(--a-tile-ring), 0 1px 2px rgb(28 25 18 / 0.04), 0 8px 18px -12px rgb(28 25 18 / 0.18)",
+          "value": "0 0 0 var(--ch-hairline-w) var(--ch-qc-a-tile-ring), 0 1px 2px rgb(28 25 18 / 0.04), 0 8px 18px -12px rgb(28 25 18 / 0.18)",
           "scope": ".ch-qcs, .ch-qck"
         },
         {
@@ -16718,7 +18179,7 @@
         },
         {
           "name": "--ch-qc-shadow-14",
-          "value": "inset 0 var(--ch-hairline-w) 0 var(--a-pglass-hi), var(--a-pshadow)",
+          "value": "inset 0 var(--ch-hairline-w) 0 var(--ch-qc-a-pglass-hi), var(--ch-qc-a-pshadow)",
           "scope": ".ch-qcs, .ch-qck"
         },
         {
@@ -17251,7 +18712,7 @@
         },
         {
           "name": "--ch-roster-x3",
-          "value": "0 0 0 1px color-mix(in srgb, var(--y, var(--ch-chart-flat)) 24%, transparent), var(--ch-crh-leader-shadow)",
+          "value": "0 0 0 1px color-mix(in srgb, var(--ch-rs-y, var(--ch-chart-flat)) 24%, transparent), var(--ch-crh-leader-shadow)",
           "scope": "[data-ui='clubhouse']"
         },
         {
@@ -18657,7 +20118,6 @@
         "ch-gm-p__t",
         "ch-gm__body",
         "ch-gx-tiles",
-        "ch-hm-hero",
         "ch-num",
         "ch-pbar__back",
         "ch-root",
@@ -18754,7 +20214,7 @@
         "ch-shs-nothing",
         "ch-shs-notice",
         "ch-shs-notice__b",
-        "ch-shs-notice__ic",
+        "ch-shs-notice__ic--flag",
         "ch-shs-notice__t",
         "ch-shs-parline",
         "ch-shs-pi",
@@ -18825,18 +20285,228 @@
       ],
       "tokens": [
         {
+          "name": "--ch-shs-s-bg",
+          "value": "var(--ch-grouped-bg)",
+          "scope": ".ch-shs,\n.ch-shs-screen,\n.ch-shs-home"
+        },
+        {
+          "name": "--ch-shs-s-card",
+          "value": "var(--ch-card-bg)",
+          "scope": ".ch-shs,\n.ch-shs-screen,\n.ch-shs-home"
+        },
+        {
+          "name": "--ch-shs-s-well",
+          "value": "var(--ch-well-bg-flat)",
+          "scope": ".ch-shs,\n.ch-shs-screen,\n.ch-shs-home"
+        },
+        {
+          "name": "--ch-shs-s-ink",
+          "value": "var(--ch-ink-900)",
+          "scope": ".ch-shs,\n.ch-shs-screen,\n.ch-shs-home"
+        },
+        {
+          "name": "--ch-shs-s-ink-2",
+          "value": "var(--ch-ink-600)",
+          "scope": ".ch-shs,\n.ch-shs-screen,\n.ch-shs-home"
+        },
+        {
+          "name": "--ch-shs-s-ink-3",
+          "value": "var(--ch-ink-500)",
+          "scope": ".ch-shs,\n.ch-shs-screen,\n.ch-shs-home"
+        },
+        {
+          "name": "--ch-shs-s-gain",
+          "value": "var(--ch-gain)",
+          "scope": ".ch-shs,\n.ch-shs-screen,\n.ch-shs-home"
+        },
+        {
+          "name": "--ch-shs-s-loss",
+          "value": "var(--ch-loss)",
+          "scope": ".ch-shs,\n.ch-shs-screen,\n.ch-shs-home"
+        },
+        {
+          "name": "--ch-shs-s-under",
+          "value": "var(--ch-flag)",
+          "scope": ".ch-shs,\n.ch-shs-screen,\n.ch-shs-home"
+        },
+        {
+          "name": "--ch-shs-s-accent",
+          "value": "var(--ch-stats-accent)",
+          "scope": ".ch-shs,\n.ch-shs-screen,\n.ch-shs-home"
+        },
+        {
           "name": "--ch-border-focus",
           "value": "var(--ch-stats-accent)",
           "scope": ".ch-shs,\n.ch-shs-screen,\n.ch-shs-home"
         },
         {
+          "name": "--ch-shs-s-sep",
+          "value": "var(--ch-separator)",
+          "scope": ".ch-shs,\n.ch-shs-screen,\n.ch-shs-home"
+        },
+        {
+          "name": "--ch-shs-s-sep-strong",
+          "value": "var(--ch-separator-strong)",
+          "scope": ".ch-shs,\n.ch-shs-screen,\n.ch-shs-home"
+        },
+        {
+          "name": "--ch-shs-s-press",
+          "value": "var(--ch-press-wash)",
+          "scope": ".ch-shs,\n.ch-shs-screen,\n.ch-shs-home"
+        },
+        {
+          "name": "--ch-shs-s-gain-tint",
+          "value": "var(--ch-chip-gain-bg)",
+          "scope": ".ch-shs,\n.ch-shs-screen,\n.ch-shs-home"
+        },
+        {
+          "name": "--ch-shs-s-loss-tint",
+          "value": "var(--ch-chip-loss-bg)",
+          "scope": ".ch-shs,\n.ch-shs-screen,\n.ch-shs-home"
+        },
+        {
+          "name": "--ch-shs-s-under-tint",
+          "value": "var(--ch-chip-flag-bg)",
+          "scope": ".ch-shs,\n.ch-shs-screen,\n.ch-shs-home"
+        },
+        {
+          "name": "--ch-shs-s-flat-tint",
+          "value": "var(--ch-chip-flat-bg)",
+          "scope": ".ch-shs,\n.ch-shs-screen,\n.ch-shs-home"
+        },
+        {
+          "name": "--ch-shs-s-gain-fill",
+          "value": "var(--ch-chart-gain-fill)",
+          "scope": ".ch-shs,\n.ch-shs-screen,\n.ch-shs-home"
+        },
+        {
+          "name": "--ch-shs-s-loss-fill",
+          "value": "var(--ch-chart-loss-fill)",
+          "scope": ".ch-shs,\n.ch-shs-screen,\n.ch-shs-home"
+        },
+        {
+          "name": "--ch-shs-s-flat",
+          "value": "var(--ch-chart-flat)",
+          "scope": ".ch-shs,\n.ch-shs-screen,\n.ch-shs-home"
+        },
+        {
+          "name": "--ch-shs-s-track",
+          "value": "var(--ch-chart-track)",
+          "scope": ".ch-shs,\n.ch-shs-screen,\n.ch-shs-home"
+        },
+        {
+          "name": "--ch-shs-s-zero",
+          "value": "var(--ch-chart-zero)",
+          "scope": ".ch-shs,\n.ch-shs-screen,\n.ch-shs-home"
+        },
+        {
+          "name": "--ch-shs-s-shadow",
+          "value": "var(--ch-elevation-reading)",
+          "scope": ".ch-shs,\n.ch-shs-screen,\n.ch-shs-home"
+        },
+        {
+          "name": "--ch-shs-s-ink",
+          "value": "var(--ch-on-green-plate)",
+          "scope": ".ch-shs-feature"
+        },
+        {
+          "name": "--ch-shs-s-ink-2",
+          "value": "var(--ch-feature-ink-2)",
+          "scope": ".ch-shs-feature"
+        },
+        {
+          "name": "--ch-shs-s-ink-3",
+          "value": "var(--ch-feature-ink-3)",
+          "scope": ".ch-shs-feature"
+        },
+        {
+          "name": "--ch-shs-s-gain",
+          "value": "var(--ch-feature-gain)",
+          "scope": ".ch-shs-feature"
+        },
+        {
+          "name": "--ch-shs-s-loss",
+          "value": "var(--ch-feature-loss)",
+          "scope": ".ch-shs-feature"
+        },
+        {
+          "name": "--ch-shs-s-under",
+          "value": "var(--ch-feature-under)",
+          "scope": ".ch-shs-feature"
+        },
+        {
+          "name": "--ch-shs-s-flat",
+          "value": "var(--ch-feature-flat)",
+          "scope": ".ch-shs-feature"
+        },
+        {
+          "name": "--ch-shs-s-gain-fill",
+          "value": "var(--ch-feature-gain-fill)",
+          "scope": ".ch-shs-feature"
+        },
+        {
+          "name": "--ch-shs-s-loss-fill",
+          "value": "var(--ch-feature-loss-fill)",
+          "scope": ".ch-shs-feature"
+        },
+        {
+          "name": "--ch-shs-s-sep",
+          "value": "var(--ch-feature-sep)",
+          "scope": ".ch-shs-feature"
+        },
+        {
+          "name": "--ch-shs-s-track",
+          "value": "var(--ch-feature-track)",
+          "scope": ".ch-shs-feature"
+        },
+        {
+          "name": "--ch-shs-s-zero",
+          "value": "var(--ch-feature-ink-3)",
+          "scope": ".ch-shs-feature"
+        },
+        {
+          "name": "--ch-shs-s-gain-tint",
+          "value": "var(--ch-feature-gain-tint)",
+          "scope": ".ch-shs-feature"
+        },
+        {
+          "name": "--ch-shs-s-loss-tint",
+          "value": "var(--ch-feature-loss-tint)",
+          "scope": ".ch-shs-feature"
+        },
+        {
+          "name": "--ch-shs-s-flat-tint",
+          "value": "var(--ch-feature-flat-tint)",
+          "scope": ".ch-shs-feature"
+        },
+        {
+          "name": "--ch-shs-s-card",
+          "value": "var(--ch-green-800)",
+          "scope": ".ch-shs-feature"
+        },
+        {
+          "name": "--ch-shs-tone",
+          "value": "var(--ch-shs-s-flat)",
+          "scope": ".ch-shs-spark"
+        },
+        {
+          "name": "--ch-shs-tone",
+          "value": "var(--ch-chart-gain-fill)",
+          "scope": ".ch-shs-spark.is-gain"
+        },
+        {
+          "name": "--ch-shs-tone",
+          "value": "var(--ch-chart-loss-fill)",
+          "scope": ".ch-shs-spark.is-loss"
+        },
+        {
           "name": "--ch-stats-redesign-shadow-1",
-          "value": "var(--s-shadow)",
+          "value": "var(--ch-shs-s-shadow)",
           "scope": ".ch-shs, .ch-shs-screen, .ch-shs-home"
         },
         {
           "name": "--ch-stats-redesign-shadow-2",
-          "value": "inset 0 0 0 999px var(--s-press), var(--s-shadow)",
+          "value": "inset 0 0 0 999px var(--ch-shs-s-press), var(--ch-shs-s-shadow)",
           "scope": ".ch-shs, .ch-shs-screen, .ch-shs-home"
         },
         {
@@ -18846,27 +20516,27 @@
         },
         {
           "name": "--ch-stats-redesign-x1",
-          "value": "inset 0 0 0 var(--ch-hairline-w) var(--s-sep)",
+          "value": "inset 0 0 0 var(--ch-hairline-w) var(--ch-shs-s-sep)",
           "scope": ".ch-shs, .ch-shs-screen, .ch-shs-home"
         },
         {
           "name": "--ch-stats-redesign-x2",
-          "value": "0 0 0 2.5px var(--s-card)",
+          "value": "0 0 0 2.5px var(--ch-shs-s-card)",
           "scope": ".ch-shs, .ch-shs-screen, .ch-shs-home"
         },
         {
           "name": "--ch-stats-redesign-x3",
-          "value": "inset 0 0 0 2px var(--s-zero)",
+          "value": "inset 0 0 0 2px var(--ch-shs-s-zero)",
           "scope": ".ch-shs, .ch-shs-screen, .ch-shs-home"
         },
         {
           "name": "--ch-stats-redesign-x4",
-          "value": "0 0 0 2px var(--s-card)",
+          "value": "0 0 0 2px var(--ch-shs-s-card)",
           "scope": ".ch-shs, .ch-shs-screen, .ch-shs-home"
         },
         {
           "name": "--ch-stats-redesign-x5",
-          "value": "inset 0 0 0 1.5px var(--s-flat)",
+          "value": "inset 0 0 0 1.5px var(--ch-shs-s-flat)",
           "scope": ".ch-shs, .ch-shs-screen, .ch-shs-home"
         },
         {
@@ -19797,7 +21467,8 @@
       "file": "src/clubhouse/styles/tokens.css",
       "classes": [
         "ch-au",
-        "ch-ox"
+        "ch-ox",
+        "ch-root"
       ],
       "tokens": [
         {
@@ -24618,32 +26289,32 @@
         {
           "name": "--ch-score-under",
           "value": "#9e3b2e",
-          "scope": "[data-ch-refresh='on']"
+          "scope": ".ch-root[data-ch-refresh='on'], [data-ui='clubhouse'] [data-ch-refresh='on']"
         },
         {
           "name": "--ch-chart-gain-fill",
           "value": "#1f6b45",
-          "scope": "[data-ch-refresh='on']"
+          "scope": ".ch-root[data-ch-refresh='on'], [data-ui='clubhouse'] [data-ch-refresh='on']"
         },
         {
           "name": "--ch-chart-loss-fill",
           "value": "#b86f0c",
-          "scope": "[data-ch-refresh='on']"
+          "scope": ".ch-root[data-ch-refresh='on'], [data-ui='clubhouse'] [data-ch-refresh='on']"
         },
         {
           "name": "--ch-score-under",
           "value": "#f28b7d",
-          "scope": "html[data-fw-theme='dark'] [data-ch-refresh='on']"
+          "scope": "html[data-fw-theme='dark'] .ch-root[data-ch-refresh='on'], html[data-fw-theme='dark'] [data-ui='clubhouse'] [data-ch-refresh='on']"
         },
         {
           "name": "--ch-chart-gain-fill",
           "value": "#4fa877",
-          "scope": "html[data-fw-theme='dark'] [data-ch-refresh='on']"
+          "scope": "html[data-fw-theme='dark'] .ch-root[data-ch-refresh='on'], html[data-fw-theme='dark'] [data-ui='clubhouse'] [data-ch-refresh='on']"
         },
         {
           "name": "--ch-chart-loss-fill",
           "value": "#e09a35",
-          "scope": "html[data-fw-theme='dark'] [data-ch-refresh='on']"
+          "scope": "html[data-fw-theme='dark'] .ch-root[data-ch-refresh='on'], html[data-fw-theme='dark'] [data-ui='clubhouse'] [data-ch-refresh='on']"
         }
       ]
     },
@@ -25487,7 +27158,7 @@
         {
           "name": "--ch-border-focus",
           "value": "var(--ch-accent-ink)",
-          "scope": "main[data-ch-crh='on']"
+          "scope": "[data-ui='clubhouse'] main[data-ch-crh='on']"
         },
         {
           "name": "--ch-ui-x1",

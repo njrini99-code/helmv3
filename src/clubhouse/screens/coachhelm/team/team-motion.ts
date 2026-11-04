@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useLayoutEffect, useRef, type RefObject } from 'react';
-import { CH_FADE_MS, chSpringCurve } from '../../../lib/motion';
+import { CH_FADE_MS, chSpringCurve, CH_DUR, CH_SWEEP_MS } from '../../../lib/motion';
 import { useChReducedMotion } from '../../../lib/reduced-motion';
 import { useChSessionState } from '../../../lib/session-state';
 
@@ -64,7 +64,7 @@ export function useFlyIn(svg: RefObject<SVGSVGElement | null>, ready: boolean): 
         });
         if (t < 1) frame = requestAnimationFrame(step);
         else {
-          ball.animate([{ opacity: 1 }, { opacity: 0 }], { duration: 500, delay: 300, fill: 'forwards' });
+          ball.animate([{ opacity: 1 }, { opacity: 0 }], { duration: CH_DUR.reveal * 1000, delay: 300, fill: 'forwards' });
           setFlown(true);
         }
       };
@@ -101,7 +101,7 @@ export function useRowFlip(root: RefObject<HTMLElement | null>, key: string): vo
     el.querySelectorAll<HTMLElement>('.br[data-p]').forEach((row) => {
       const was = before.get(row.dataset.p!);
       const dy = was == null ? 0 : was - now.get(row.dataset.p!)!;
-      if (Math.abs(dy) > 0.5) row.animate([{ transform: `translateY(${dy}px)` }, { transform: 'none' }], { duration: 520, easing: c.linear });
+      if (Math.abs(dy) > 0.5) row.animate([{ transform: `translateY(${dy}px)` }, { transform: 'none' }], { duration: CH_DUR.reveal * 1000, easing: c.linear });
     });
     // eslint-disable-next-line react-hooks/exhaustive-deps -- the station change alone
   }, [key]);
@@ -118,7 +118,7 @@ export function useContentIn(root: RefObject<HTMLElement | null>, key: string, s
     }
     root.current?.querySelectorAll<HTMLElement>(selector).forEach((el) => {
       if (reduced) el.animate([{ opacity: 0 }, { opacity: 1 }], { duration: CH_FADE_MS, easing: 'linear' });
-      else el.animate([{ opacity: 0, transform: 'translateY(6px)' }, { opacity: 1, transform: 'none' }], { duration: 300, easing: EASE });
+      else el.animate([{ opacity: 0, transform: 'translateY(6px)' }, { opacity: 1, transform: 'none' }], { duration: CH_DUR.release * 1000, easing: EASE });
     });
     // eslint-disable-next-line react-hooks/exhaustive-deps -- the key alone
   }, [key]);
@@ -134,10 +134,10 @@ export function useTrendDraw(root: RefObject<HTMLElement | null>): void {
       const line = svg.querySelector<SVGPathElement>('.ln');
       if (line) {
         const len = line.getTotalLength() || 600;
-        line.animate([{ strokeDasharray: `${len}`, strokeDashoffset: `${len}` }, { strokeDasharray: `${len}`, strokeDashoffset: '0' }], { duration: 900, easing: 'cubic-bezier(.3,.7,.2,1)' });
+        line.animate([{ strokeDasharray: `${len}`, strokeDashoffset: `${len}` }, { strokeDasharray: `${len}`, strokeDashoffset: '0' }], { duration: CH_SWEEP_MS, easing: 'cubic-bezier(.3,.7,.2,1)' });
       }
-      svg.querySelectorAll<SVGCircleElement>('.d').forEach((dot, i) => dot.animate([{ opacity: 0, transform: 'scale(.4)' }, { opacity: 1, transform: 'none' }], { duration: 420, delay: 120 + i * 55, easing: c.linear, fill: 'backwards' }));
-      svg.querySelectorAll<SVGTextElement>('.lv, .avl').forEach((t) => t.animate([{ opacity: 0 }, { opacity: 1 }], { duration: 260, delay: 760, fill: 'backwards' }));
+      svg.querySelectorAll<SVGCircleElement>('.d').forEach((dot, i) => dot.animate([{ opacity: 0, transform: 'scale(.4)' }, { opacity: 1, transform: 'none' }], { duration: CH_DUR.reveal * 1000, delay: 120 + i * 55, easing: c.linear, fill: 'backwards' }));
+      svg.querySelectorAll<SVGTextElement>('.lv, .avl').forEach((t) => t.animate([{ opacity: 0 }, { opacity: 1 }], { duration: CH_DUR.base * 1000, delay: 760, fill: 'backwards' }));
     });
     // eslint-disable-next-line react-hooks/exhaustive-deps -- once, as the card comes in
   }, []);
