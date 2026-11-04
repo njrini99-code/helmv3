@@ -5,6 +5,7 @@ import { formatSigned } from '../../../lib/format';
 import { patternAt, readsAt, stationOrder, type ChStation, type ChTeamBoardData, type ChTeamPlayer } from '../../../data/coachhelm-team-shape';
 import { STATION_NAME } from './hole-geometry';
 import { Coin, ReadRow } from './parts';
+import { useContentIn, useRowFlip } from './team-motion';
 
 const ZERO_AT = 84;
 const LOSS_SCALE = 1.3;
@@ -65,6 +66,8 @@ export function SpotCard({
   const patterns = patternAt(data.patterns, station);
   const names = new Map(list.map((p) => [p.id, p]));
   const card = useRef<HTMLElement | null>(null);
+  useRowFlip(card, station);
+  useContentIn(card, station, '.ch, .subh, .rds, .pat, .nopat');
   const status = data.patternsStatus ?? 'ok';
   return (
     <section ref={card} className="card spot" data-spot="" data-ch-team-card="spot" aria-label={STATION_NAME[station]}>

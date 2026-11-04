@@ -137,7 +137,7 @@ export function WorkingCard({ working, proposed, failed, onRetry }: { working: r
             </div>
           ))}
           {proposed.map(({ player, read }) => (
-            <div className="wk" key={read.id}>
+            <div className="wk is-new" key={read.id}>
               <Ring v={0} proposed />
               <div>
                 <b>

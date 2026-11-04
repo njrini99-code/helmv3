@@ -1,10 +1,11 @@
 'use client';
 
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import { courseReads, type ChTeamBoardData, type ChTeamPlayer, type ChTourRow } from '../../../data/coachhelm-team-shape';
 import type { CourseHistory, CourseHistoryRow } from '@/lib/coachhelm/v3/team-board/course-shape';
 import { formatFixed, MINUS } from '../../../lib/format';
 import { Chevron, ReadRow } from './parts';
+import { useContentIn, useTrendDraw } from './team-motion';
 
 const COURSE_CAP = 4;
 const READ_CAP = 3;
@@ -101,6 +102,9 @@ function CourseRow({ row, season, readCount, onCourse }: { row: CourseHistoryRow
 
 /** The Course tab: scoring history, the reads with no spot, team against Tour, courses (S-TEAM.course). */
 export function CourseCard({ data, onRead, onCourse, onRetry }: { data: ChTeamBoardData; onRead: (id: string) => void; onCourse: (id: string) => void; onRetry?: () => void }) {
+  const card = useRef<HTMLElement | null>(null);
+  useTrendDraw(card);
+  useContentIn(card, 'course', '.ch, .cmh, .crsw, .cmr, .shpw');
   const [allCourses, setAllCourses] = useState(false);
   const [allReads, setAllReads] = useState(false);
   const list = data.players.list;
@@ -219,7 +223,7 @@ export function CourseCard({ data, onRead, onCourse, onRetry }: { data: ChTeamBo
     </div>
   );
   return (
-    <section className="card spot cm" data-spot="" data-ch-team-card="course" aria-label="Course and scoring">
+    <section ref={card} className="card spot cm" data-spot="" data-ch-team-card="course" aria-label="Course and scoring">
       <div className="ch">
         <h4>Course and scoring</h4>
         <span className="meta">Not on the hole · {reads.length ? `${reads.length} open ${reads.length === 1 ? 'read' : 'reads'}` : 'No open reads yet'}</span>

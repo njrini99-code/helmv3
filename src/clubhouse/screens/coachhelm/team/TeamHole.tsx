@@ -1,6 +1,8 @@
 'use client';
 
+import { useRef } from 'react';
 import { avatarTone } from '../../../ui/Avatar';
+import { useFlyIn } from './team-motion';
 import { formatSigned } from '../../../lib/format';
 import { initials as initialsOf } from '../../../lib/names';
 import { STATIONS, type ChStation, type ChTeamBoardData, type ChTeamPlayer } from '../../../data/coachhelm-team-shape';
@@ -26,9 +28,11 @@ export function TeamHole({
   bare?: boolean;
 }) {
   const H = HOLE[orientation];
+  const svg = useRef<SVGSVGElement | null>(null);
+  useFlyIn(svg, !bare);
   const label = STATIONS.map((s) => `${STATION_NAME[s].toLowerCase()} ${stations[s].team == null ? 'not measured' : formatSigned(stations[s].team)}`).join(', ');
   return (
-    <svg className="holesvg" viewBox={`0 0 ${H.w} ${H.h}`} role="img" aria-label={`A golf hole showing where the team loses strokes to Tour: ${label} a round.`}>
+    <svg ref={svg} className="holesvg" viewBox={`0 0 ${H.w} ${H.h}`} role="img" aria-label={`A golf hole showing where the team loses strokes to Tour: ${label} a round.`}>
       <path className="fair" d={H.path} strokeWidth={H.fw} />
       <path className="mow" d={H.path} strokeWidth={H.fw * 0.42} />
       <ellipse className="fringe" {...H.fringe} />
@@ -39,6 +43,7 @@ export function TeamHole({
       <rect className="teebox" x={H.tee.x} y={H.tee.y} width={H.tee.w} height={H.tee.h} rx={4} />
       <line className="pole" x1={H.flag.x} y1={H.flag.y} x2={H.flag.x} y2={H.flag.y - 34} />
       <path className="flag" d={`M${H.flag.x} ${H.flag.y - 34} l16 5 -16 5z`} />
+      <path className="flight" d={H.path} />
       {!bare &&
         STATIONS.map((s) => {
           const t = H.st[s];
@@ -69,6 +74,7 @@ export function TeamHole({
                 }}
                 style={{ transformOrigin: `${t.x}px ${t.y}px` }}
               >
+                {v != null && <circle key={station === s ? 'on' : 'off'} className="pulse" cx={t.x} cy={t.y} r={r} />}
                 {v != null && <circle className="halo" cx={t.x} cy={t.y} r={r} />}
                 {v != null && <circle className="core" cx={t.x} cy={t.y} r={4.5} />}
                 <text className="sl" x={t.lx} y={t.ly} textAnchor={t.a}>
@@ -101,6 +107,7 @@ export function TeamHole({
             </g>
           );
         })}
+      <circle className="ball" r={4.2} cx={-20} cy={-20} opacity={0} />
     </svg>
   );
 }

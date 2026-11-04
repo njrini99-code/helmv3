@@ -65,3 +65,14 @@ Actions:        none new
 Data impact:    none
 Held items:     none
 ```
+
+## 2026-11-03 — CT7: team board motion
+
+```text
+Design package: design-refresh/coachhelm-team/ (CT7)
+PR/commit:      agent/ct7-motion
+Contract IDs:   none
+Actions:        none
+Data impact:    none
+Held items:     none
+```

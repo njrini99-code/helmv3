@@ -2030,3 +2030,75 @@ html[data-fw-theme='dark'] .ch-htb .skl::after {
 .ch-htb .ch-htb-workempty {
   padding-bottom: 16px;
 }
+
+/* CT7: motion at rest and in CSS; JS rows are team-motion.ts. */
+.ch-htb .holesvg .flight {
+  stroke-dasharray: none;
+}
+.ch-htb .scn {
+  transition: opacity 260ms var(--ease);
+}
+.ch-htb .insp {
+  transform: translateX(102%);
+  transition: transform 280ms var(--ease);
+}
+.ch-htb .insp.on {
+  transform: none;
+  transition: transform 462ms var(--spring);
+}
+.ch-htb .story {
+  animation: ch-htb-rise 462ms var(--spring);
+}
+.ch-htb .sto-b {
+  animation: ch-htb-slide 420ms var(--spring);
+}
+@keyframes ch-htb-rise {
+  from {
+    transform: translateY(102%);
+  }
+}
+@keyframes ch-htb-slide {
+  from {
+    opacity: 0;
+    transform: translateX(24px);
+  }
+}
+@keyframes ch-htb-wk {
+  from {
+    opacity: 0;
+    transform: scale(0.94);
+  }
+}
+.ch-htb .wk.is-new {
+  animation: ch-htb-wk 520ms var(--spring-o);
+}
+@media (prefers-reduced-motion: reduce) {
+  .ch-htb .insp {
+    opacity: 0;
+    transform: none;
+    transition: opacity var(--ch-fade-ms, 180ms) linear !important;
+  }
+  .ch-htb .insp.on {
+    opacity: 1;
+    transform: none;
+  }
+  .ch-htb .story {
+    animation: ch-htb-fade var(--ch-fade-ms, 180ms) linear !important;
+  }
+  .ch-htb .sto-b,
+  .ch-htb .wk.is-new,
+  .ch-htb .prog i.now b {
+    animation: none !important;
+  }
+}
+[data-motion='off'] .ch-htb *,
+[data-motion='off'] .ch-htb *::before,
+[data-motion='off'] .ch-htb *::after {
+  animation: none !important;
+  transition: none !important;
+}
+@keyframes ch-htb-fade {
+  from {
+    opacity: 0;
+  }
+}
