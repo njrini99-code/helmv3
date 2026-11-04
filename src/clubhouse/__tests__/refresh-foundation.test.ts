@@ -3,6 +3,7 @@ import { join } from 'node:path';
 import postcss from 'postcss';
 import { describe, expect, it } from 'vitest';
 import { FLAG_REGISTRY } from '@/lib/flags/registry.generated';
+import { titleOnScroll } from '../shell/large-title';
 
 /** Clubhouse refresh, PR 2 and 3: every rule sits under `[data-ch-refresh='on']`, so with the flag off the app renders as main. */
 
@@ -36,5 +37,20 @@ describe('clubhouse_refresh_v1', () => {
   it('a feature card is flat under the flag', () => {
     const feature = scopedRules('ui.css').filter((r) => r.props['--ch-feature-bg']);
     expect(feature.map((r) => r.props['--ch-feature-bg'])).toEqual(['var(--ch-green-800)', '#123d29']);
+  });
+});
+
+describe('titleOnScroll', () => {
+  it('shrinks to 86% and fades over the title’s height', () => {
+    expect(titleOnScroll(0, 41, false)).toEqual({ scale: 1, opacity: 1 });
+    expect(titleOnScroll(41, 41, false)).toEqual({ scale: 0.86, opacity: 0 });
+    expect(titleOnScroll(500, 41, false)).toEqual({ scale: 0.86, opacity: 0 });
+  });
+  it('fades only under Reduce Motion', () => {
+    expect(titleOnScroll(41, 41, true)).toEqual({ scale: 1, opacity: 0 });
+  });
+  it('holds still with no height or a bounce above the top', () => {
+    expect(titleOnScroll(10, 0, false)).toEqual({ scale: 1, opacity: 1 });
+    expect(titleOnScroll(-20, 41, false)).toEqual({ scale: 1, opacity: 1 });
   });
 });

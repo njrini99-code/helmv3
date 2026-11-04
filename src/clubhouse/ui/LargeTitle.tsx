@@ -31,6 +31,11 @@ export function LargeTitle({
   );
 }
 
+/** The one 15pt context line under a large title (refresh, DESIGN_LANGUAGE 5): with the title, the only text directly on the phone page. */
+export function LargeTitleContext({ className, children }: { className?: string; children: ReactNode }) {
+  return <p className={'ch-large-title__context' + (className ? ` ${className}` : '')}>{children}</p>;
+}
+
 /**
  * The large title's block in a loading skeleton (CONS-13): the same class, so the same line box, top and tracking as the
  * page's title, with a bar where the words will be. While it shows, the shell's bar hides its title exactly as it will

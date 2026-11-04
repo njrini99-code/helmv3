@@ -4362,3 +4362,28 @@ html[data-ch-handoff] [data-ui='clubhouse'] .ch-brand:has(.ch-brand__line.is-wri
     background: var(--ch-grouped-bg);
   }
 }
+
+/* Clubhouse refresh, PR 3 (clubhouse_refresh_v1, off everywhere): the large title's context line, the title's scroll scale origin
+   (shell/large-title.tsx sets scale and opacity from the scroll), and controls that stick under the green bar on the page colour.
+   The bar itself is not touched. */
+@media (max-width: 820px) {
+  .ch-app[data-ch-refresh='on'] .ch-large-title {
+    transform-origin: left bottom;
+  }
+  .ch-app[data-ch-refresh='on'] .ch-large-title__context {
+    margin: 4px 0 0;
+    font: var(--ch-type-meta);
+    color: var(--ch-text-secondary);
+  }
+  .ch-app[data-ch-refresh='on'] [data-ch-sticky-controls] {
+    position: sticky;
+    z-index: 2;
+    top: var(--ch-sticky-top, 0);
+    background: var(--ch-grouped-bg);
+  }
+}
+@media (min-width: 821px) {
+  .ch-large-title__context {
+    display: none;
+  }
+}

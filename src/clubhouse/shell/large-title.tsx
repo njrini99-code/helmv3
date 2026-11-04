@@ -45,6 +45,22 @@ export function isTucked(entry: Pick<IntersectionObserverEntry, 'isIntersecting'
 
 const PHONE = '(max-width: 820px)';
 
+/** Refresh: the shade under the bar waits for 8px of scroll (DESIGN_LANGUAGE 5). */
+const REFRESH_EDGE_AT = 8;
+/** Refresh: how far a large title shrinks as it scrolls under the bar (DESIGN_LANGUAGE 5, 8). */
+const REFRESH_TITLE_MIN_SCALE = 0.86;
+
+/** The large title at scroll `y`: it shrinks to 86% and fades over its own height. Reduced: it fades only. Scroll-linked, so no curve. */
+export function titleOnScroll(y: number, height: number, reduced: boolean): { scale: number; opacity: number } {
+  const p = height > 0 ? Math.min(1, Math.max(0, y / height)) : 0;
+  return { scale: reduced ? 1 : 1 - (1 - REFRESH_TITLE_MIN_SCALE) * p, opacity: 1 - p };
+}
+
+function motionAllowed(el: Element): boolean {
+  if (typeof window.matchMedia === 'function' && window.matchMedia('(prefers-reduced-motion: reduce)').matches) return false;
+  return !el.closest("[data-motion='off']");
+}
+
 /**
  * Watches the page's large title and the page's scroll for the shell's top bar `bar`, inside `canvas`. Sets on the
  * bar `data-large-title="tucked"` once the large title is under it (the bar's title fades in), and `data-scrolled`
@@ -79,9 +95,17 @@ export function watchLargeTitle(bar: HTMLElement, canvas: HTMLElement): () => vo
     io.observe(next);
   };
   let frame = 0;
+  // clubhouse_refresh_v1 (PR 3): the root's attribute, read once here; off, nothing below touches the title and the edge shows at 0.
+  const refresh = !!canvas.closest("[data-ch-refresh='on']");
   const edgeNow = () => {
     frame = 0;
-    bar.toggleAttribute('data-scrolled', window.scrollY > 0);
+    const y = window.scrollY;
+    bar.toggleAttribute('data-scrolled', y > (refresh ? REFRESH_EDGE_AT : 0));
+    if (refresh && target) {
+      const { scale, opacity } = titleOnScroll(y, target.offsetHeight, !motionAllowed(canvas));
+      target.style.scale = scale === 1 ? '' : String(scale);
+      target.style.opacity = opacity === 1 ? '' : String(opacity);
+    }
   };
   const onScroll = () => {
     if (!frame) frame = requestAnimationFrame(edgeNow);
@@ -99,6 +123,10 @@ export function watchLargeTitle(bar: HTMLElement, canvas: HTMLElement): () => vo
     if (frame) cancelAnimationFrame(frame);
     bar.removeAttribute('data-large-title');
     bar.removeAttribute('data-scrolled');
+    if (refresh && target) {
+      target.style.scale = '';
+      target.style.opacity = '';
+    }
   };
 }
 
