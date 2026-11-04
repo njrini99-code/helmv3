@@ -238,7 +238,7 @@ test.describe('phone, the team thread', () => {
     await page.locator(bubble).first().waitFor();
     await page.evaluate(() => {
       const f = (window as unknown as { __chMsgFixture: { incoming: (s: string) => void } }).__chMsgFixture;
-      for (let i = 0; i < 14; i++) f.incoming(`Filler ${i}`);
+      for (let i = 0; i < 30; i++) f.incoming(`Filler ${i}`);
     });
     await page.waitForTimeout(1200);
     await away();

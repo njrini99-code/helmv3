@@ -82,23 +82,35 @@ export function ThreadJumpKey({ scroller, unseen, onJump }: { scroller: RefObjec
 }
 
 /**
- * The thread making room (M-MSG-07, B7): an arriving row has its full height at frame one, and everything above moves by transform
- * only. Each arrival adds its own animation, so two in a row stack rather than restart. Skipped when reduced.
+ * The thread making room (M-MSG-07b, B7): whatever the commit added to the list (the new row, and a date pill or a receipt with
+ * it, or the typing row) has its full height at frame one, and the thread moves up by that much by transform only. Each change adds
+ * its own animation, so two in a row stack rather than restart. Only for a reader at the end: anyone reading further up stays put.
+ * Skipped when reduced. Runs after useThreadAnchor, which has already pinned the thread, in the same commit.
  */
 export function useThreadMakeRoom(scroller: RefObject<HTMLElement | null>, count: number, enabled: boolean, reduced: boolean): void {
+  const height = useRef<number | null>(null);
   const seen = useRef(count);
   useLayoutEffect(() => {
     const before = seen.current;
     seen.current = count;
-    if (!enabled || reduced || count <= before || before === 0) return;
-    const list = scroller.current?.querySelector<HTMLElement>('.ch-ms-msgs');
-    const row = list?.lastElementChild as HTMLElement | null | undefined;
-    if (!list?.animate || !row) return;
-    const h = row.getBoundingClientRect().height;
-    // A reply makes room on `reveal` (M-MSG-07b); your own send on `send`.
-    const curve = chSpringCurve(row.classList.contains('is-mine') ? 'send' : 'reveal');
-    list.animate([{ transform: `translateY(${h}px)` }, { transform: 'none' }], { duration: curve.ms, easing: curve.linear, composite: 'add' });
-  }, [scroller, count, enabled, reduced]);
+    const s = scroller.current;
+    const list = s?.querySelector<HTMLElement>('.ch-ms-msgs');
+    if (!enabled || !s || !list) return;
+    const now = list.offsetHeight;
+    const was = height.current;
+    height.current = now;
+    if (reduced || !list.animate || was == null) return;
+    const d = Math.max(-s.clientHeight, Math.min(s.clientHeight, now - was));
+    if (Math.abs(d) < 1) return;
+    const moved = list.getAnimations().length ? new DOMMatrixReadOnly(getComputedStyle(list).transform).m42 : 0;
+    const bottom = list.getBoundingClientRect().bottom - moved - s.getBoundingClientRect().top + s.scrollTop;
+    const fromEnd = bottom + (parseFloat(getComputedStyle(s).paddingBottom) || 0) - s.clientHeight - s.scrollTop;
+    if (fromEnd > 60) return;
+    const row = list.lastElementChild as HTMLElement | null;
+    // The spring follows the cause (07b): your send on `send`, a reply on `reveal`, a typing row on `pop`, a removal on `smooth`.
+    const curve = chSpringCurve(count > before ? (row?.classList.contains('is-mine') ? 'send' : 'reveal') : d > 0 ? 'pop' : 'smooth');
+    list.animate([{ transform: `translateY(${d}px)` }, { transform: 'none' }], { duration: curve.ms, easing: curve.linear, composite: 'add' });
+  });
 }
 
 /** The bubble's drawn tail (`redesign.css` `.tail`), on the last bubble of a run. */

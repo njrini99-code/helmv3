@@ -46,7 +46,7 @@ import {
 } from "lucide-react";
 import { classYearKey } from "../../lib/class-year";
 import type { ChPins } from "./pinned";
-import { BubbleTail } from "./thread-v2";
+import { BubbleTail, useThreadMakeRoom } from "./thread-v2";
 import {
   useCallback,
   useEffect,
@@ -2340,6 +2340,7 @@ function Thread({
   const focusing = !!api.focusMessageId || (!!api.foundMessageId && api.msgs.some((m) => m.id === api.foundMessageId));
   const anchor = useThreadAnchor(scroller, { convId: conv.id, count: api.msgs.length, lastMine: !!api.msgs.at(-1)?.mine, typing: api.typing, paused: focusing });
   const reducedMotion = useChReducedMotion();
+  useThreadMakeRoom(scroller, api.msgs.length, !!api.redesign, reducedMotion);
   useFocusMessage(scroller, { target: api.focusMessageId ?? null, loading: api.msgsLoading, count: api.msgs.length, reduced: reducedMotion, onDone: (id) => api.messageFocused?.(id), toEnd: anchor.toEnd });
   // The thread eases like the page does, with a longer glide (a conversation is read down a long column); desktop,
   // wheel only: a trackpad stays native.
