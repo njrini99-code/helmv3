@@ -1112,7 +1112,15 @@ export async function getInsightsForCoachWithMeta(
  */
 async function getTopInsightsForPlayersImpl(
   playerIds: string[],
-  opts: { limit?: number } = {},
+  opts: {
+    limit?: number;
+    /**
+     * For a surface that knows what it draws only after shaping the rows (the CoachHelm team board). Called once with the returned rows;
+     * the ones whose ids the promise resolves to are recorded as shown, in that order. A promise that rejects records nothing. Omitted:
+     * every returned row counts, as before.
+     */
+    drawnLater?: (shown: Map<string, EvidenceInsight[]>) => Promise<readonly string[]>;
+  } = {},
   supabaseOverride?: SupabaseClient,
 ): Promise<Map<string, EvidenceInsight[]>> {
   const out = new Map<string, EvidenceInsight[]>();
@@ -1225,6 +1233,7 @@ async function getTopInsightsForPlayersImpl(
   // a dedup read on `golf_insight_exposure` plus an insert each — which is the
   // N+1 Sentry flagged as JAVASCRIPT-NEXTJS-R2 on /golf/dashboard/stats/team.
   const exposureRows: ReturnType<typeof buildExposureRows> = [];
+  const scoresByPlayer = new Map<string, ReturnType<typeof scoreMap>>();
   const plan = await readsDeliveryPlan(supabase, [...byPlayer.keys()]);
   const supportFactors = isSupportPassEnabled();
   // Neutral weights unless `coachhelm_corrections_v1` is on: then each
@@ -1243,9 +1252,29 @@ async function getTopInsightsForPlayersImpl(
     // (RLS-scoped sweep, not a resolved coach row) so it's left null. The
     // score is the one this sweep actually ranked on (neutral weights unless
     // corrections are on).
-    exposureRows.push(
-      ...buildExposureRows(sliced, 'roster_card', null, scoreMap(rankedScored), { rankFactors: supportFactors }),
+    if (opts.drawnLater) scoresByPlayer.set(pid, scoreMap(rankedScored));
+    else
+      exposureRows.push(
+        ...buildExposureRows(sliced, 'roster_card', null, scoreMap(rankedScored), { rankFactors: supportFactors }),
+      );
+  }
+  if (opts.drawnLater) {
+    void opts.drawnLater(out).then(
+      (drawnIds) => {
+        const byId = new Map([...out.values()].flat().map((i) => [i.id, i]));
+        const drawnByPlayer = new Map<string, EvidenceInsight[]>();
+        for (const id of drawnIds) {
+          const ins = byId.get(id);
+          if (ins) drawnByPlayer.set(ins.player_id, [...(drawnByPlayer.get(ins.player_id) ?? []), ins]);
+        }
+        const rows = [...drawnByPlayer].flatMap(([pid, list]) =>
+          buildExposureRows(list, 'roster_card', null, scoresByPlayer.get(pid) ?? new Map(), { rankFactors: supportFactors }),
+        );
+        if (rows.length > 0) void recordInsightExposure(rows);
+      },
+      () => undefined,
     );
+    return out;
   }
   // Fire-and-forget, failure-silent — same contract as recordExposureForReturned.
   if (exposureRows.length > 0) void recordInsightExposure(exposureRows);
@@ -1260,7 +1289,7 @@ const observedGetTopInsightsForPlayers = withAdminObserved(
 );
 export async function getTopInsightsForPlayers(
   playerIds: string[],
-  opts: { limit?: number } = {},
+  opts: { limit?: number; drawnLater?: (shown: Map<string, EvidenceInsight[]>) => Promise<readonly string[]> } = {},
   supabaseOverride?: SupabaseClient,
 ): Promise<Map<string, EvidenceInsight[]>> {
   return observedGetTopInsightsForPlayers(playerIds, opts, supabaseOverride);
